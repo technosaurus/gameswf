@@ -8,7 +8,7 @@ include ../config
 #SDL_LDFLAGS := $(shell sdl-config --libs)
 
 SDL_INCLUDE := SDL
-LUA_INCLUDE := ../../lua/include
+LUA_INCLUDE := ../../lua-4.0/include
 
 INCLUDE_PATHS := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I..
 

@@ -10,6 +10,7 @@
 extern "C" {
 #include <lualib.h>
 }
+#include "utility.h"
 
 
 namespace config {
@@ -86,6 +87,8 @@ void	open()
 
 	//	gettable{ min, max, default, comment }
 	//	settable{ min, max, default, comment }
+
+	s_open = true;
 }
 
 
@@ -101,68 +104,77 @@ void	close()
 
 
 //
-// cvar
+// cglobal
 //
 
 
-cvar::cvar( const char* name )
+cglobal::cglobal( const char* name )
 // Constructor; leaves existing value, if any (otherwise it's 'nil').
 {
-//	lua_pushstring( config::L, name );
-//	m_lua_name_reference = lua_ref( config::L, 1 );
-	m_name_id = config::get_symbol( name );
+	config::open();
+
+	lua_pushstring( config::L, name );
+	m_lua_name_reference = lua_ref( config::L, 1 );
 }
 
 
-cvar::cvar( const char* name, const char* val )
+cglobal::cglobal( const char* name, const cvalue& val )
+// Constructor; initializes to given Lua value.
+{
+	config::open();
+
+	lua_pushstring( config::L, name );
+	m_lua_name_reference = lua_ref( config::L, 1 );
+	*this = val;	// invoke operator=(const cvalue& val)
+}
+
+
+cglobal::cglobal( const char* name, const char* val )
 // Constructor; initializes to given string value.
 {
-//	lua_pushstring( config::L, name );
-//	m_lua_name_reference = lua_ref( config::L, 1 );
-	m_name_id = config::get_symbol( name );
-	*this = val;
+	config::open();
+
+	lua_pushstring( config::L, name );
+	m_lua_name_reference = lua_ref( config::L, 1 );
+	*this = val;	// invoke operator=(const char*)
 }
 
 
-cvar::cvar( const char* name, float val )
+cglobal::cglobal( const char* name, float val )
 // Constructor; initializes to given float value.
 {
-//	lua_pushstring( config::L, name );
-//	m_lua_name_reference = lua_ref( config::L, 1 );
-	m_name_id = config::get_symbol( name );
-	*this = val;
+	config::open();
+
+	lua_pushstring( config::L, name );
+	m_lua_name_reference = lua_ref( config::L, 1 );
+	*this = val;	// invoke operator=(float f)
 }
 
 
-cvar::~cvar()
+cglobal::~cglobal()
 // Destructor; make sure our references are released.
 {
 	// drop lua reference to our name, so our name string can be
 	// gc'd if not referenced elsewhere.
-//	lua_unref( config::L, m_lua_name_reference );
-//	m_lua_name_reference = LUA_NOREF;
+	lua_unref( config::L, m_lua_name_reference );
+	m_lua_name_reference = LUA_NOREF;
 }
 
 
-const char*	cvar::get_name() const
+const char*	cglobal::get_name() const
 // Return our name.  The char[] storage is valid at least as long
 // as this variable is alive.
 {
-//	lua_getref( config::L, m_lua_name_reference );
-	config::lua_push_symbol_name( m_name_id );
+	lua_getref( config::L, m_lua_name_reference );
 	return lua_tostring( config::L, -1 );
 }
 
 
-// cvar::get_name_reference() -- for comparisons or storage maybe?
-
-
-cvar::operator float() const
+cglobal::operator float() const
 // Convert the variable to a float and return it.
 {
 	lua_getglobals( config::L );
-//	lua_getref( config::L, m_lua_name_reference );
-	config::lua_push_symbol_name( m_name_id );
+	lua_getref( config::L, m_lua_name_reference );
 	lua_gettable( config::L, -2 );	// get the value of our variable from the global table.
 	float	f = lua_tonumber( config::L, -1 );
 	lua_pop( config::L, 2 );	// discard global table & the number result.
@@ -171,50 +183,181 @@ cvar::operator float() const
 }
 
 
-void	cvar::operator=( float f )
+void	cglobal::operator=( float f )
 // Assign a float to this lua variable.
 {
 	lua_getglobals( config::L );
-//	lua_getref( config::L, m_lua_name_reference );
-	config::lua_push_symbol_name( m_name_id );
+	lua_getref( config::L, m_lua_name_reference );
 	lua_pushnumber( config::L, f );
-	lua_settable( config::L, -2 );
+	lua_settable( config::L, -3 );
 	lua_pop( config::L, 1 );	// discard the global table.
 }
 
 
-cvar::operator const char*() const
+cglobal::operator const char*() const
 // Convert to a string.
 //
 // xxx there are garbage-collection issues here!  Returned string
 // has no valid reference once stack is cleared!
 // Possible fixes:
 // - return some kind of proxy object that holds a locked Lua ref
-// - return a C++ "string" value
-// - hold a locked reference in this instance; drop it on next call to this conversion operator.
+// - return a C++ "string" value; i.e. make a copy
+// - hold a locked reference in this instance; drop it on next call to this conversion operator (blech).
 {
 	lua_getglobals( config::L );
-//	lua_getref( config::L, m_lua_name_reference );
-	config::lua_push_symbol_name( m_name_id );
+	lua_getref( config::L, m_lua_name_reference );
 	lua_gettable( config::L, -2 );	// get the value of our variable from the global table.
 	const char*	c = lua_tostring( config::L, -1 );
-	// TODO: grab a locked reference to the string!
+	// TODO: grab a locked reference to the string!  Or copy it!
 	lua_pop( config::L, 2 );	// discard global table & the string result.
 
 	return c;
 }
 
 
-void	cvar::operator=( const char* s )
-// Assign a string to this lua variable.
+void	cglobal::operator=( const cvalue& val )
+// Assign a Lua value to this lua global variable.
 {
 	lua_getglobals( config::L );
-//	lua_getref( config::L, m_lua_name_reference );
-	config::lua_push_symbol_name( m_name_id );
-	lua_pushstring( config::L, s );
-	lua_settable( config::L, -2 );
+	lua_getref( config::L, m_lua_name_reference );
+	val.lua_push();
+	lua_settable( config::L, -3 );
 	lua_pop( config::L, 1 );	// discard the global table.
 }
 
-//	void	operator=( const cvar c );
+
+void	cglobal::operator=( const char* s )
+// Assign a string to this lua variable.
+{
+	lua_getglobals( config::L );
+	lua_getref( config::L, m_lua_name_reference );
+	lua_pushstring( config::L, s );
+	lua_settable( config::L, -3 );
+	lua_pop( config::L, 1 );	// discard the global table.
+}
+
+
+cglobal::operator cvalue() const
+// Return a reference to our value.
+{
+	lua_getglobals( config::L );
+	lua_getref( config::L, m_lua_name_reference );
+	cvalue	c = cvalue::lua_stacktop_reference();
+	lua_pop( config::L, 1 );	// pop the global table.
+
+	return c;
+}
+
+
+//	void	operator=( const cglobal c );
+
+
+
+//
+// cvalue
+//
+
+
+cvalue::cvalue( const char* lua_constructor )
+// Evaluates the given code and takes a reference to the result.
+{
+	config::open();
+
+	lua_dostring( config::L, lua_constructor );	// @@ could check for error return codes, presence of return value, etc.
+	m_lua_ref = lua_ref( config::L, 1 );
+}
+
+
+cvalue::cvalue( const cvalue& c )
+{
+	lua_getref( config::L, c.m_lua_ref );
+	m_lua_ref = lua_ref( config::L, 1 );
+}
+
+
+cvalue::cvalue()
+// Creates an reference to nothing.  Use this only in special
+// circumstances; i.e. when you're about to set m_lua_ref manually.
+{
+	config::open();
+	m_lua_ref = LUA_NOREF;
+}
+
+
+cvalue	cvalue::lua_stacktop_reference()
+// Factory function; pops the value off the top of the Lua stack, and
+// return a cvalue that references the popped value.
+{
+	cvalue	c;
+	c.m_lua_ref = lua_ref( config::L, 1 );
+	return c;
+}
+
+
+cvalue::~cvalue()
+// Drop our Lua reference, to allow our value to be gc'd.
+{
+	lua_unref( config::L, m_lua_ref );
+	m_lua_ref = LUA_NOREF;
+}
+
+
+void	cvalue::lua_push() const
+// Push our value onto the top of the Lua stack.
+{
+	assert( m_lua_ref != LUA_NOREF );
+	lua_getref( config::L, m_lua_ref );
+}
+
+
+void	cvalue::operator=( const char* str )
+// Transfer our reference to the given string.
+{
+	lua_unref( config::L, m_lua_ref );
+	lua_pushstring( config::L, str );
+	m_lua_ref = lua_ref( config::L, 1 );
+}
+
+
+void	cvalue::operator=( const cvalue& c )
+// Reference the thing that c references.
+{
+	lua_unref( config::L, m_lua_ref );
+	lua_getref( config::L, c.m_lua_ref );
+	m_lua_ref = lua_ref( config::L, 1 );
+}
+
+
+cvalue::operator float() const
+// Converts this Lua value to a number, and returns it.
+{
+	lua_getref( config::L, m_lua_ref );
+	float	f = lua_tonumber( config::L, -1 );
+	lua_pop( config::L, 1 );
+	return f;
+}
+
+
+cvalue::operator const char*() const
+// Converts this Lua value to a string, and returns it.
+{
+	lua_getref( config::L, m_lua_ref );
+	const char*	str = lua_tostring( config::L, -1 );
+	lua_pop( config::L, 1 );	// @@ I'm pretty sure this imperils the string, if we just had to do a tostring() conversion!  Look into this, and/or make a copy of the string.
+	return str;
+}
+
+
+cvalue	cvalue::get( const char* index )
+// Does a table lookup.  *this should be a Lua table, and index is its
+// key.
+{
+	lua_getref( config::L, m_lua_ref );
+	lua_pushstring( config::L, index );
+	lua_gettable( config::L, -2 );
+	cvalue	c = cvalue::lua_stacktop_reference();	// references the value on the top of the Lua stack.
+	lua_pop( config::L, 1 );
+
+	return c;
+}
 
