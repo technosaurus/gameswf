@@ -26,10 +26,11 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 LIB_OUT = $(LIB_PRE)gameswf.$(LIB_EXT)
 EXE_OUT = gameswf_test_ogl$(EXE_EXT)
 PARSER_OUT = gameswf_parser$(EXE_EXT)
+PROCESSOR_OUT = gameswf_processor$(EXE_EXT)
 
 LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB)
 
-all: base_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT)
+all: base_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 
 OBJS = \
@@ -57,6 +58,9 @@ TEST_PROGRAM_OBJS = \
 PARSER_OBJS = \
 	gameswf_parser.$(OBJ_EXT) 
 
+PROCESSOR_OBJS = \
+	gameswf_processor.$(OBJ_EXT)
+
 gameswf_impl.$(OBJ_EXT): gameswf.h gameswf_impl.h gameswf_types.h
 
 $(LIB_OUT): $(OBJS)
@@ -68,6 +72,10 @@ $(EXE_OUT): $(TEST_PROGRAM_OBJS) $(LIB_OUT) $(BASE_LIB)
 
 
 $(PARSER_OUT): $(PARSER_OBJS) $(LIB_OUT) $(BASE_LIB)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+
+
+$(PROCESSOR_OUT): $(PROCESSOR_OBJS) $(LIB_OUT) $(BASE_LIB)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 
