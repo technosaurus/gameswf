@@ -66,6 +66,7 @@ namespace gameswf
 
 	struct font;
 	struct character_def;
+	struct sound_sample;
 	
 	// A polymorphic class for handling different types of
 	// resources.
@@ -76,6 +77,7 @@ namespace gameswf
 		// Override in derived classes that implement corresponding interfaces.
 		virtual font*	cast_to_font() { return 0; }
 		virtual character_def*	cast_to_character_def() { return 0; }
+		virtual sound_sample*	cast_to_sound_sample() { return 0; }
 	};
 
 

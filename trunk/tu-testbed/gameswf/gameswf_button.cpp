@@ -405,15 +405,50 @@ namespace gameswf
 
 		virtual void	set_member(const tu_string& name, const as_value& val)
 		{
-			log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
-				  name.c_str(),
-				  val.to_string());
+			if (name == "_alpha")
+			{
+				// Set alpha modulate, in percent.
+				cxform	cx = get_cxform();
+				cx.m_[3][0] = float(val.to_number()) / 100.f;
+				set_cxform(cx);
+				//m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_visible")
+			{
+				m_visible = val.to_bool();
+			}
+			else
+			{
+				log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
+					  name.c_str(),
+					  val.to_string());
+			}
 		}
 
 		virtual bool	get_member(const tu_string& name, as_value* val)
 		{
-			log_error("error: button_character_instance::get_member('%s') not implemented yet\n", name.c_str());
-			return false;
+			//v not tested
+			if (name == "_alpha")
+			{
+				// Alpha units are in percent.
+				val->set(get_cxform().m_[3][0] * 100.f);
+				return true;
+			}
+			else
+			{
+				//v tested
+				if (name == "_visible")
+				{
+					val->set(m_visible);
+				}
+				else
+				{
+					log_error("error: button_character_instance::get_member('%s') not implemented yet\n", name.c_str());
+					return false;
+				}
+			}
+			return true;
 		}
 
 		// not sure if we need to override this one.
@@ -553,7 +588,28 @@ namespace gameswf
 	{
 		assert(tag_type == 7 || tag_type == 17 || tag_type == 34);
 
-		if (tag_type == 7)
+		if (tag_type == 17)
+		{
+			assert(m_sound == NULL);
+			m_sound = new button_sound_def();
+			IF_VERBOSE_PARSE(log_msg("button sound options:\n"));
+			for (int i=0; i<4; i++)
+			{
+				button_sound_info& bs = m_sound->m_button_sounds[i];
+				bs.m_sound_id = in->read_u16();
+				if (bs.m_sound_id > 0)
+				{
+					bs.m_sam = (sound_sample_impl*) m->get_sound_sample(bs.m_sound_id);
+					if (bs.m_sam == NULL)
+					{
+//						printf("sound tag not found, sound_id=%d, button state #=%i", bs.m_sound_id, i);
+					}
+					IF_VERBOSE_PARSE(log_msg("\n	sound_id = %d\n", bs.m_sound_id));
+					bs.m_sound_style.read(in);
+				}
+			}
+		}
+		else if (tag_type == 7)
 		{
 			// Old button tag.
 				

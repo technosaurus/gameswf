@@ -241,7 +241,14 @@ namespace gameswf
 			// 0x10: linear gradient fill
 			// 0x12: radial gradient fill
 
-			assert(m_gradient_bitmap_info != NULL);
+			if (m_gradient_bitmap_info == NULL)
+			{
+				// This can happen when morphing gradient styles.
+				// assert(morphing???);
+				// log an error?
+				fill_style*	this_non_const = const_cast<fill_style*>(this);
+				this_non_const->m_gradient_bitmap_info = create_gradient_bitmap();
+			}
 
 			if (m_gradient_bitmap_info != NULL)
 			{
@@ -250,13 +257,6 @@ namespace gameswf
 					m_gradient_bitmap_info.get_ptr(),
 					m_gradient_matrix,
 					gameswf::render_handler::WRAP_CLAMP);
-			}
-			else
-			{
-				// Hack.
-				gameswf::render::fill_style_color(
-					fill_side,
-					m_color);
 			}
 		}
 		else if (m_type == 0x40
@@ -282,6 +282,47 @@ namespace gameswf
 				}
 			}
 		}
+	}
+
+
+	void	fill_style::set_lerp(const fill_style& a, const fill_style& b, float t)
+	// Sets this style to a blend of a and b.  t = [0,1]
+	{
+		assert(t >= 0 && t <= 1);
+
+		// fill style type
+		m_type = a.get_type();
+		assert(m_type == b.get_type());
+
+		// fill style color
+		m_color.set_lerp(a.get_color(), b.get_color(), t);
+
+		// fill style gradient matrix
+		//
+		// @@ TODO morphed gradients don't come out exactly
+		// right; they shift around some.  Not sure where the
+		// problem is.
+		m_gradient_matrix.set_lerp(a.m_gradient_matrix, b.m_gradient_matrix, t);
+
+		// fill style gradients
+		assert(m_gradients.size() == a.m_gradients.size());
+		assert(m_gradients.size() == b.m_gradients.size());
+		for (int j=0; j < m_gradients.size(); j++)
+		{
+			m_gradients[j].m_ratio =
+				(Uint8) frnd(
+					flerp(a.m_gradients[j].m_ratio, b.m_gradients[j].m_ratio, t)
+					);
+			m_gradients[j].m_color.set_lerp(a.m_gradients[j].m_color, b.m_gradients[j].m_color, t);
+		}
+		m_gradient_bitmap_info = NULL;
+
+		// fill style bitmap ID
+		m_bitmap_character = a.m_bitmap_character;
+		assert(m_bitmap_character == b.m_bitmap_character);
+
+		// fill style bitmap matrix
+		m_bitmap_matrix.set_lerp(a.m_bitmap_matrix, b.m_bitmap_matrix, t);
 	}
 
 

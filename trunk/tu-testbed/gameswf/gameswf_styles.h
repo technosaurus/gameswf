@@ -46,8 +46,14 @@ namespace gameswf
 
 		rgba	get_color() const { return m_color; }
 		void	set_color(rgba new_color) { m_color = new_color; }
+		int	get_type() const { return m_type; }
+
+		// For shape morphing
+		void	set_lerp(const fill_style& a, const fill_style& b, float t);
 
 	private:
+		friend struct morph2_character_def;
+
 		int	m_type;
 		rgba	m_color;
 		matrix	m_gradient_matrix;
@@ -92,7 +98,12 @@ namespace gameswf
 		void	read(stream* in, int tag_type);
 		virtual void	apply(float ratio) const;
 
+		Uint16	get_width() const { return m_width; }
+		const rgba&	get_color() const { return m_color; }
+
 	private:
+		friend struct morph2_character_def;
+
 		Uint16	m_width;	// in TWIPS
 		rgba	m_color;
 	};

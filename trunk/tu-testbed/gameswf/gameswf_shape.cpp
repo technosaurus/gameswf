@@ -1044,6 +1044,17 @@ namespace gameswf
 		return true;
 	}
 
+//vb	
+	float shape_character_def::get_height_local()
+	{
+		return m_bound.height();
+	}
+
+	float shape_character_def::get_width_local()
+	{
+		return m_bound.width();
+	}
+
 
 	void	shape_character_def::compute_bound(rect* r) const
 	// Find the bounds of this shape, and store them in
