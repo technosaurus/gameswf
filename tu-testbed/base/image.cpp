@@ -11,7 +11,7 @@
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/jpeg.h"
-#include "base/dlmalloc.h"
+//#include "base/dlmalloc.h"
 #include "base/tu_file.h"
 #include <stdlib.h>
 #include <string.h>
@@ -65,13 +65,15 @@ namespace image
 		assert(m_pitch >= m_width * 3);
 		assert((m_pitch & 3) == 0);
 
-		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+//		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+		m_data = new Uint8[m_pitch * m_height];
 	}
 
 	rgb::~rgb()
 	{
 		if (m_data) {
-			dlfree(m_data);
+//			dlfree(m_data);
+			delete [] m_data;
 			m_data = 0;
 		}
 	}
@@ -102,13 +104,15 @@ namespace image
 		assert(m_pitch >= m_width * 4);
 		assert((m_pitch & 3) == 0);
 
-		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+//		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+		m_data = new Uint8[m_pitch * m_height];
 	}
 
 	rgba::~rgba()
 	{
 		if (m_data) {
-			dlfree(m_data);
+//			dlfree(m_data);
+			delete [] m_data;
 			m_data = 0;
 		}
 	}
@@ -161,14 +165,16 @@ namespace image
 		assert(width > 0);
 		assert(height > 0);
 
-		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+//		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+		m_data = new Uint8[m_pitch * m_height];
 	}
 
 
 	alpha::~alpha()
 	{
 		if (m_data) {
-			dlfree(m_data);
+//			dlfree(m_data);
+			delete [] m_data;
 			m_data = 0;
 		}
 	}
