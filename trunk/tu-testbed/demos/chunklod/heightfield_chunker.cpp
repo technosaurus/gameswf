@@ -184,7 +184,7 @@ int	wrapped_main(int argc, char* argv[])
 				outfile = argv[arg];
 			} else {
 				// This looks like extra noise on the command line; complain and exit.
-				printf("argument '%s' looks like extra noise; exiting.\n");
+				printf("argument '%s' looks like extra noise; exiting.\n", argv[arg]);
 				print_usage();
 				exit(1);
 			}
@@ -517,7 +517,7 @@ struct heightfield {
 		size = fmax(wsize, hsize);
 
 		// Compute the log_size and make sure the size is 2^N + 1
-		log_size = (int) (log2(size - 1) + 0.5);
+		log_size = (int) (log2((float)size - 1) + 0.5);
 		if (size != (1 << log_size) + 1) {
 			if (size < 0 || size > (1 << 20)) {
 				throw "invalid heightfield dimensions";
@@ -591,7 +591,7 @@ struct heightfield {
 		
 		// Compute the dimension (width & height) for the heightfield.
 		size = imax(s->w, s->h);
-		log_size = (int) (log2(size - 1) + 0.5f);
+		log_size = (int) (log2((float)size - 1) + 0.5f);
 
 		// Expand the heightfield dimension to contain the bitmap.
 		while (((1 << log_size) + 1) < size) {
@@ -617,7 +617,7 @@ struct heightfield {
 				ReadPixel(s, imin(i, s->w - 1), imin(j, s->h - 1), &r, &g, &b, &a);
 				y = r * 1.0f;	// just using red component for now.
 
-				height(i, size - 1 - j) = y / vertical_scale;
+				height(i, size - 1 - j) = (Sint16) (y / vertical_scale);
 				m_level->get(size - 1 - j, i >> 1) = 255;	// swap height/width
 			}
 		}
@@ -792,7 +792,7 @@ Sint16	height_query(heightfield& hf, int level, int x, int z, int ax, int az, in
 
 	// This triangle is as far as the desired LOD goes.  Compute the
 	// query's height on the triangle.
-	return floor(ay + sl * dl + sr * dr + 0.5);
+	return (Sint16) floor(ay + sl * dl + sr * dr + 0.5);
 }
 
 

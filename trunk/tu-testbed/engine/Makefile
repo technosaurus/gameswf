@@ -30,4 +30,4 @@ $(ENGINE): $(OBJS)
 	$(AR) $(LIB_OUT_FLAG)$(ENGINE) $(OBJS)
 
 clean:
-	rm $(ENGINE) $(OBJS)
+	-@rm $(ENGINE) $(OBJS)

@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include <engine/config.h>
+#include <engine/utility.h>
 
 
 cfloat test_cfloat( "test_cfloat", 55.f );
@@ -28,12 +29,64 @@ namespace actorprefs {
 };
 
 
+extern "C" int luaSDL_initialize(lua_State *L);
+
+
+#define float_as_int(f) (reinterpret_cast<const int&>(f))
+#define FLOAT_AS_INT float_as_int
+
+
+bool    fequal_scaled(const float a, const float b, const int significantBits)
+// Returns true if a and b are equal, to within the given number of
+// significant mantissa bits.
+// In other words, fabs((a - b) / b) < (1.0 / (1 << bits)), but without
+// a floating-point compare
+// 
+// @@ this code could use some deeper analysis.
+{
+	const float   avg = (a + b) * 0.5f;
+
+	assert(24 - significantBits > 0);
+
+	const int	mask = ~((1 << (24 - significantBits)) - 1);	// 0's in the low bits.
+
+	return (FLOAT_AS_INT(avg) & mask) == (FLOAT_AS_INT(b) & mask)
+		|| (FLOAT_AS_INT(avg) & mask) == (FLOAT_AS_INT(a) & mask);
+}
+
+
+int	float_compare_lua(lua_State* L)
+{
+	float	a = lua_tonumber(L, -1);
+	float	b = lua_tonumber(L, -2);
+
+	lua_pushnumber(L, fequal_scaled(a, b, 10));
+
+	return 1;
+}
+
+
+int	float_as_int_lua(lua_State* L)
+{
+	float	a = lua_tonumber(L, -1);
+
+	printf("%x\n", FLOAT_AS_INT(a));
+
+	return 0;
+}
+
+
 int	main()
 {
 	config::open();
 
+	luaSDL_initialize(config::L);
+
 	lua_dofile(config::L, "property.lua");	// migrate this into config::open().
 	lua_dofile(config::L, "init.lua");
+
+	lua_register(config::L, "fc", float_compare_lua);
+	lua_register(config::L, "fasi", float_as_int_lua);
 
 	// Show initial test var values.
 	printf( "test_cfloat = %f, test_cvar = %s\n",

@@ -34,5 +34,5 @@ make_engine:
 
 clean:
 	cd ../../engine; make clean
-	rm $(CHUNKDEMO_OBJS) chunkdemo$(EXE_EXT)
-	rm heightfield_chunker.$(OBJ_EXT) heightfield_chunker$(EXE_EXT)
+	-@rm *.(OBJ_EXT)
+	-@rm chunkdemo$(EXE_EXT) heightfield_chunker$(EXE_EXT) heightfield_shader$(EXE_EXT) makebt$(EXE_EXT)

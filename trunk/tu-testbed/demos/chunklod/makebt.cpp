@@ -13,6 +13,13 @@
 #include "engine/utility.h"
 
 
+#ifndef WIN32
+//FIX: sounds like some WIN32 specifics...
+#define png_voidp_NULL NULL
+#define png_infopp_NULL NULL
+#define int_p_NULL NULL
+#endif
+
 bool	check_if_png(char *file_name);
 
 
@@ -185,8 +192,8 @@ int	main(int argc, char* argv[])
 
 	// BT data is goes in columns, bottom-to-top, left-to-right.
 	png_bytep*	row_pointers = png_get_rows(png_ptr, info_ptr);
-	{for (int i = 0; i < width; i++) {
-		for (int j = 0; j < height; j++) {
+	{for (unsigned int i = 0; i < width; i++) {
+		for (unsigned int j = 0; j < height; j++) {
 			Uint16	data = 0;
 			if (bit_depth == 8) {
 				data = ((Uint8*) (row_pointers[j]))[i];
@@ -231,3 +238,10 @@ bool	check_if_png(char *file_name)
 	
 	return !png_sig_cmp((unsigned char*) &buf[0], (png_size_t)0, PNG_BYTES_TO_CHECK);
 }
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

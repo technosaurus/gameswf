@@ -335,8 +335,6 @@ int	lod_chunk_data::render_edge(const lod_chunk& chunk, direction dir, render_op
 // the neighboring chunk(s) in the specified direction.  Returns the
 // number of triangles rendered.
 {
-	int	facing_dir = direction((int(dir) + 2) & 3);
-
 	int	triangle_count = 0;
 
 	//
@@ -929,3 +927,10 @@ Uint16	lod_chunk_tree::compute_lod(const vec3& center, const vec3& extent, const
 	return iclamp(((m_tree_depth << 8) - 1) - int(log2(fmax(1, d / m_distance_LODmax)) * 256), 0, 0x0FFFF);
 }
 
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

@@ -226,10 +226,10 @@ void	print_usage()
 		"  'e' - toggle edge rendering\n"
 		"  'u' - toggle LOD updating (turn off to freeze LOD changes)\n"
 		"  'f' - toggle viewpoint forward motion\n"
-		"  '[' - decrease max pixel error\n"
-		"  ']' - increase max pixel error\n"
-		"  ',' - decrease viewpoint speed\n"
-		"  '.' - increase viewpoint speed\n"
+		"  ',' or 'd' - decrease viewpoint speed\n"
+		"  '.' or 'g' - increase viewpoint speed\n"
+		"  '[' or 'KP -' - decrease max pixel error\n"
+		"  ']' or 'KP +' - increase max pixel error\n"
 		"\n"
 		);
 }
@@ -246,12 +246,12 @@ void	mouse_motion_handler(float dx, float dy, int state)
 	bool	left_button = (state & 1) ? true : false;
 	bool	right_button = (state & 4) ? true : false;
 
-	float	f_speed = (1 << speed);
+	float	f_speed = (1 << speed) / 800.f;
 
 	if (left_button && right_button) {
 		// Translate in the view plane.
 		vec3	right = viewer_dir.cross(viewer_up);
-		viewer_pos += right * dx / 3 * speed + viewer_up * -dy / 3 * speed;
+		viewer_pos += right * dx * f_speed + viewer_up * -dy * f_speed;
 		
 	} else if (left_button) {
 		// Rotate the viewer.
@@ -275,7 +275,7 @@ void	mouse_motion_handler(float dx, float dy, int state)
 	} else if (right_button) {
 		// Translate the viewer.
 		vec3	right = viewer_dir.cross(viewer_up);
-		viewer_pos += right * dx / 3 * speed + viewer_dir * -dy / 3 * speed;
+		viewer_pos += right * dx * f_speed + viewer_dir * -dy * f_speed;
 	}
 }
 
@@ -340,7 +340,7 @@ void	process_events()
 				move_forward = ! move_forward;
 				printf("forward motion %s\n", move_forward ? "on" : "off");
 			}
-			if (key == SDLK_LEFTBRACKET) {
+			if (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS) {
 				// Decrease max pixel error.
 				max_pixel_error -= 0.5;
 				if (max_pixel_error < 0.5) {
@@ -348,18 +348,18 @@ void	process_events()
 				}
 				printf("new max_pixel_error = %f\n", max_pixel_error);
 			}
-			if (key == SDLK_RIGHTBRACKET) {
-				// Decrease max pixel error.
+			if (key == SDLK_RIGHTBRACKET || key == SDLK_KP_PLUS) {
+				//Increase max pixel error.
 				max_pixel_error += 0.5;
 				printf("new max_pixel_error = %f\n", max_pixel_error);
 			}
-			if (key == SDLK_PERIOD) {
+			if (key == SDLK_PERIOD || key == SDLK_g) {
 				// Speed up.
 				speed++;
 				if (speed > 15) speed = 15;
 				printf( "move speed = %d\n", speed );
 			}
-			if (key == SDLK_COMMA) {
+			if (key == SDLK_COMMA || key == SDLK_d) {
 				// Slow down.
 				speed--;
 				if (speed < 1) speed = 1;
@@ -400,8 +400,10 @@ void	process_events()
 }
 
 
-#undef main	// @@ some crazy SDL/WIN32 thing that I don't understand.
-extern "C" int	main(int argc, char *argv[])
+#ifdef WIN32
+#undef main	// Under Win32 SDL redefines main, to insert its own arg preprocessing; but we don't really care about that...
+#endif // WIN32
+int	main(int argc, char *argv[])
 {
 	const char*	chunkfile = "crater/crater.chu";
 	const char*	texturefile = "crater/crater.jpg";
@@ -503,7 +505,6 @@ extern "C" int	main(int argc, char *argv[])
 	int	flags = SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : 0);
 
 	int	component_depth = 0;
-	int	z_buffer_depth = 0;
 	if (bits_per_pixel <= 16) {
 		component_depth = 5;
 
