@@ -15,8 +15,8 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 
 all: make_engine heightfield_chunker$(EXE_EXT) heightfield_shader$(EXE_EXT) chunkdemo$(EXE_EXT) makebt$(EXE_EXT)
 
-heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT) mmap_array.$(OBJ_EXT) $(ENGINE)
-	$(CC) -o $@ heightfield_chunker.$(OBJ_EXT) mmap_array.$(OBJ_EXT) $(ENGINE) $(LIBS) $(LDFLAGS)
+heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(ENGINE)
+	$(CC) -o $@ heightfield_chunker.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(ENGINE) $(LIBS) $(LDFLAGS)
 
 heightfield_shader$(EXE_EXT): heightfield_shader.$(OBJ_EXT) $(ENGINE)
 	$(CC) -o $@ heightfield_shader.$(OBJ_EXT) $(ENGINE) $(LIBS) $(LDFLAGS)

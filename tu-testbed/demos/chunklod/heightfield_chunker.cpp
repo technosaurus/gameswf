@@ -22,15 +22,16 @@
 #include <engine/geometry.h>
 
 #include "mmap_array.h"
+#include "bt_array.h"
 
 
-void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out,
-							int tree_depth,
-							float base_max_error,
-							float spacing,
-							float vertical_scale,
-							float input_vertical_scale
-							);
+void	heightfield_chunker(const char* infile, SDL_RWops* out,
+			    int tree_depth,
+			    float base_max_error,
+			    float spacing,
+			    float vertical_scale,
+			    float input_vertical_scale
+	);
 
 
 static const char*	spinner = "-\\|/";
@@ -200,11 +201,11 @@ int	wrapped_main(int argc, char* argv[])
 		exit(1);
 	}
 	
-	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
-	if (in == 0) {
-		printf("error: can't open %s for input.\n", infile);
-		exit(1);
-	}
+//	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
+//	if (in == 0) {
+//		printf("error: can't open %s for input.\n", infile);
+//		exit(1);
+//	}
 
 	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
 	if (out == 0) {
@@ -219,11 +220,11 @@ int	wrapped_main(int argc, char* argv[])
 	printf("vertical scale = %f\n", vertical_scale);
 
 	// Process the data.
-	heightfield_chunker(in, out, tree_depth, max_geometric_error, spacing, vertical_scale, input_vertical_scale);
+	heightfield_chunker(infile, out, tree_depth, max_geometric_error, spacing, vertical_scale, input_vertical_scale);
 
 	stats.output_size = SDL_RWtell(out);
 
-	SDL_RWclose(in);
+//	SDL_RWclose(in);
 	SDL_RWclose(out);
 
 	float	verts_per_chunk = stats.output_vertices / (float) stats.output_chunks;
@@ -340,20 +341,24 @@ void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8
 
 
 struct heightfield {
-	int	size;
-	int	log_size;	// size == (1 << log_size) + 1
+	int	m_size;
+	int	m_log_size;	// size == (1 << log_size) + 1
 	int	root_level;	// level of the root chunk (TODO: reverse the meaning of 'level' to be more intuitive).
 	float	sample_spacing;
 	float	vertical_scale;	// scales the units stored in heightfield_elem's.  meters == stored_Sint16 * vertical_scale
-	mmap_array<Sint16>*	m_height;
+	float	input_vertical_scale;	// scale factor to apply to input data.
+//	mmap_array<Sint16>*	m_height;
+	bt_array*	m_bt;
 	mmap_array<Uint8>*	m_level;
 
-	heightfield(float initial_vertical_scale) {
-		size = 0;
-		log_size = 0;
+	heightfield(float initial_vertical_scale, float input_scale) {
+		m_size = 0;
+		m_log_size = 0;
 		sample_spacing = 1.0f;
 		vertical_scale = initial_vertical_scale;
-		m_height = NULL;
+		input_vertical_scale = input_scale;
+//		m_height = NULL;
+		m_bt = NULL;
 		m_level = NULL;
 	}
 
@@ -364,24 +369,26 @@ struct heightfield {
 	void	clear()
 	// Frees any allocated data and resets our members.
 	{
-		if (m_height) {
-			delete m_height;
-			m_height = 0;
-		}
+//		if (m_height) {
+//			delete m_height;
+//			m_height = 0;
+//		}
 		if (m_level) {
 			delete m_level;
 			m_level = 0;
 		}
 
-		size = 0;
-		log_size = 0;
+		m_size = 0;
+		m_log_size = 0;
 	}
 
-	Sint16&	height(int x, int z)
+	Sint16	height(int x, int z)
 	// Return a (writable) reference to the height element at (x, z).
 	{
-		assert(m_height);
-		return m_height->get(z, x);	// swap indices -- since .bt is column major, this is cheaper.  Should be less impact w/ clever indexing.
+//		assert(m_height);
+//		return m_height->get(z, x);	// swap indices -- since .bt is column major, this is cheaper.  Should be less impact w/ clever indexing.
+		assert(m_bt);
+		return Sint16(m_bt->get_sample(x, z) * input_vertical_scale / vertical_scale);
 	}
 
 	int	get_level(int x, int z)
@@ -433,12 +440,12 @@ struct heightfield {
 	// If the coordinates don't specify a valid node (e.g. if the coords
 	// are outside the heightfield) then returns -1.
 	{
-		if (x < 0 || x >= size || z < 0 || z >= size) {
+		if (x < 0 || x >= m_size || z < 0 || z >= m_size) {
 			return -1;
 		}
 
 		int	l1 = lowest_one(x | z);
-		int	depth = log_size - l1 - 1;
+		int	depth = m_log_size - l1 - 1;
 
 		int	base = 0x55555555 & ((1 << depth*2) - 1);	// total node count in all levels above ours.
 		int	shift = l1 + 1;
@@ -459,7 +466,7 @@ struct heightfield {
 	// with edge skirts.)
 	{
 		int	l1 = lowest_one(coord);
-		int	depth = (log_size - l1 - 1);
+		int	depth = (m_log_size - l1 - 1);
 
 		return iclamp(root_level - depth, 0, root_level);	// TODO: reverse direction of level
 
@@ -470,17 +477,20 @@ struct heightfield {
 	}
 
 
-	int	load_bt(SDL_RWops* in, float input_vertical_scale)
-	// Load .BT format heightfield data from the given file and
-	// initialize heightfield.
+	bool	init_bt(const char* bt_filename)
+	// Use the specified .BT format heightfield data file as our height input.
 	//
-	// The given vertical scale gives the meters/unit value for
-	// the short ints stored in the heightfield structure.
-	//
-	// Return -1, and rewind the source file, if the data is not in .BT format.
+	// Return true on success, false on failure.
 	{
 		clear();
 
+		m_bt = bt_array::create(bt_filename);
+		if (m_bt == NULL) {
+			// failure.
+			return false;
+		}
+
+#if 0
 		int	start = SDL_RWtell(in);
 
 		// Read .BT header.
@@ -534,35 +544,45 @@ struct heightfield {
 			// Data must be square!
 			printf("Warning: non-square data; will extend to make it square\n");
 		}
+#endif // 0
 
-		size = imax(wsize, hsize);
+		m_size = imax(m_bt->get_width(), m_bt->get_height());
 
 		// Compute the log_size and make sure the size is 2^N + 1
-		log_size = (int) (log2((float)size - 1) + 0.5);
-		if (size != (1 << log_size) + 1) {
-			if (size < 0 || size > (1 << 20)) {
-				throw "invalid heightfield dimensions";
+		m_log_size = (int) (log2((float) m_size - 1) + 0.5);
+		if (m_size != (1 << m_log_size) + 1) {
+			if (m_size < 0 || m_size > (1 << 20)) {
+				printf("invalid heightfield dimensions -- size from file = %d\n", m_size);
+				return false;
 			}
 
 			printf("Warning: data is not (2^N + 1) x (2^N + 1); will extend to make it the correct size.\n");
 
 			// Expand log_size until it contains size.
-			while (size > (1 << log_size) + 1) {
-				log_size++;
+			while (m_size > (1 << m_log_size) + 1) {
+				m_log_size++;
 			}
-			size = (1 << log_size) + 1;
+			m_size = (1 << m_log_size) + 1;
 		}
 
-		sample_spacing = (float) (fabs(right - left) / (double) (size - 1));
+		sample_spacing = (float) (fabs(m_bt->get_right() - m_bt->get_left()) / (double) (m_size - 1));
 		printf("sample_spacing = %f\n", sample_spacing);//xxxxxxx
 
-		// Allocate the storage.
-		m_height = new mmap_array<Sint16>(size, size, true);
-		m_level = new mmap_array<Uint8>(size, (size + 1) >> 1, true);	// swap height/width; .bt is column-major
-		assert(m_height);
+		// Allocate storage for vertex activation levels.
+//		m_height = new mmap_array<Sint16>(size, size, true);
+		m_level = new mmap_array<Uint8>(m_size, (m_size + 1) >> 1, true);	// swap height/width; .bt is column-major
+//		assert(m_height);
 		assert(m_level);
 
-		printf("Loading .bt data...");
+		// Initialize level array.
+		for (int i = 0; i < m_size; i++) {
+			for (int j = 0; j < m_size; j++) {
+				m_level->get(m_size - 1 - j, i >> 1) = 255;	// swap height/width -- (to match .bt order; good idea??)
+			}
+		}
+
+#if 0
+		printf("Loading .bt data....");
 
 		// Load the data.  BT data is goes in columns, bottom-to-top, left-to-right.
 		for (int i = 0; i < wsize; i++) {
@@ -596,11 +616,13 @@ struct heightfield {
 		}}
 
 		printf("\n");
+#endif //  0
 
-		return 0;
+		return true;
 	}
 
 
+#if 0
 	void	load_bitmap(SDL_RWops* in /* float vertical_scale */)
 	// Load a bitmap from the given file, and use it to initialize our
 	// heightfield data.
@@ -645,6 +667,7 @@ struct heightfield {
 
 		SDL_FreeSurface(s);
 	}
+#endif // 0
 };
 
 
@@ -654,7 +677,7 @@ int	check_propagation(heightfield& hf, int cx, int cz, int level);
 void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level);
 
 
-void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float base_max_error, float spacing, float vertical_scale, float input_vertical_scale)
+void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, float base_max_error, float spacing, float vertical_scale, float input_vertical_scale)
 // Generate LOD chunks from the given heightfield.
 // 
 // tree_depth determines the depth of the chunk quadtree.
@@ -665,11 +688,15 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 // Spacing determines the horizontal sample spacing for bitmap
 // heightfields only.
 {
-	heightfield	hf(vertical_scale);
+	heightfield	hf(vertical_scale, input_vertical_scale);
 
 	// Load the heightfield data.
-	if (hf.load_bt(in, input_vertical_scale) < 0) {
-		hf.load_bitmap(in);
+//	if (hf.load_bt(in, input_vertical_scale) < 0) {
+	if (hf.init_bt(infile) == false) {
+//		hf.load_bitmap(in);
+		// TODO: add bitmap file capability back in...?  Or export that capability entirely to makebt?
+		printf("Can't open %s as a .BT terrain file.\n", infile);
+		return;
 	}
 
 	if (hf.sample_spacing == -1) {
@@ -678,14 +705,14 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 
 	hf.root_level = tree_depth - 1;
 
-	stats.input_vertices = hf.size * hf.size;
+	stats.input_vertices = hf.m_size * hf.m_size;
 
 	printf("updating...");
 
 	// Run a view-independent L-K style BTT update on the heightfield, to generate
 	// error and activation_level values for each element.
-	update(hf, base_max_error, 0, hf.size-1, hf.size-1, hf.size-1, 0, 0);	// sw half of the square
-	update(hf, base_max_error, hf.size-1, 0, 0, 0, hf.size-1, hf.size-1);	// ne half of the square
+	update(hf, base_max_error, 0, hf.m_size - 1, hf.m_size - 1, hf.m_size - 1, 0, 0);	// sw half of the square
+	update(hf, base_max_error, hf.m_size - 1, 0, 0, 0, hf.m_size - 1, hf.m_size - 1);	// ne half of the square
 
 	printf("done.\n");
 
@@ -694,9 +721,9 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 	// Propagate the activation_level values of verts to their
 	// parent verts, quadtree LOD style.  Gives same result as
 	// L-K.
-	for (int i = 0; i < hf.log_size; i++) {
-		propagate_activation_level(hf, hf.size >> 1, hf.size >> 1, hf.log_size - 1, i);
-		propagate_activation_level(hf, hf.size >> 1, hf.size >> 1, hf.log_size - 1, i);
+	for (int i = 0; i < hf.m_log_size; i++) {
+		propagate_activation_level(hf, hf.m_size >> 1, hf.m_size >> 1, hf.m_log_size - 1, i);
+		propagate_activation_level(hf, hf.m_size >> 1, hf.m_size >> 1, hf.m_log_size - 1, i);
 	}
 
 //	check_propagation(hf, hf.size >> 1, hf.size >> 1, hf.log_size - 1);//xxxxx
@@ -709,13 +736,13 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
 	WriteFloat32(out, vertical_scale);	// meters / unit of vertical measurement.
-	WriteFloat32(out, (1 << (hf.log_size - (tree_depth - 1))) * hf.sample_spacing);	// x/z dimension, in meters, of highest LOD chunks.
+	WriteFloat32(out, (1 << (hf.m_log_size - (tree_depth - 1))) * hf.sample_spacing);	// x/z dimension, in meters, of highest LOD chunks.
 	SDL_WriteLE32(out, 0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
 
 	printf("meshing...");
 
 	// Write out the node data for the entire chunk tree.
-	generate_node_data(out, hf, 0, 0, hf.log_size, hf.root_level);
+	generate_node_data(out, hf, 0, 0, hf.m_log_size, hf.root_level);
 
 	printf("done\n");
 }
@@ -825,10 +852,10 @@ Sint16	get_height_at_LOD(heightfield& hf, int level, int x, int z)
 {
 	if (z > x) {
 		// Query in SW quadrant.
-		return height_query(hf, level, x, z, 0, hf.size-1, hf.size-1, hf.size-1, 0, 0);	// sw half of the square
+		return height_query(hf, level, x, z, 0, hf.m_size - 1, hf.m_size - 1, hf.m_size - 1, 0, 0);	// sw half of the square
 
 	} else {	// query in NW quadrant
-		return height_query(hf, level, x, z, hf.size-1, 0, 0, 0, hf.size-1, hf.size-1);	// ne half of the square
+		return height_query(hf, level, x, z, hf.m_size - 1, 0, 0, 0, hf.m_size - 1, hf.m_size - 1);	// ne half of the square
 	}
 }
 
