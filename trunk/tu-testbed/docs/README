@@ -17,7 +17,7 @@ you can do whatever you want with it.
 PLATFORMS
 
 My goal is to have this code work on Linux and Win32.  Linux because I
-like it, and Win32 because it's so ubiquitous in game development.  At
+like it, and Win32 because it's ubiquitous in game development.  At
 any given time one platform or the other is likely to be more up to
 date, depending on which one I've been using lately.
 
