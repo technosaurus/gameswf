@@ -115,18 +115,18 @@ namespace swf
 		rgba	m_color;
 		matrix	m_gradient_matrix;
 		array<gradient_record>	m_gradients;
-		Uint16	m_bitmap_id;
+		bitmap_character*	m_bitmap_character;
 		matrix	m_bitmap_matrix;
 
 		fill_style()
 			:
 			m_type(0),
-			m_bitmap_id(0)
+			m_bitmap_character(0)
 		{
 			assert(m_gradients.size() == 0);
 		}
 
-		void	read(stream* in, int tag_type)
+		void	read(stream* in, int tag_type, movie* m)
 		{
 			m_type = in->read_u8();
 
@@ -173,11 +173,51 @@ namespace swf
 				// 0x40: tiled bitmap fill
 				// 0x41: clipped bitmap fill
 
-				m_bitmap_id = in->read_u16();
-				IF_DEBUG(printf("fsr: bitmap_id = %d\n", m_bitmap_id));
+				int	bitmap_char_id = in->read_u16();
+				IF_DEBUG(printf("fsr: bitmap_char = %d\n", bitmap_char_id));
+
+				// Look up the bitmap character.
+				m_bitmap_character = m->get_bitmap_character(bitmap_char_id);
 
 				m_bitmap_matrix.read(in);
 				IF_DEBUG(m_bitmap_matrix.print(stdout));
+			}
+		}
+
+		void	apply(int fill_side) const
+		// Push our style parameters into the renderer.
+		{
+			if (m_type == 0x00)
+			{
+				// 0x00: solid fill
+				swf::render::fill_style_color(fill_side, m_color);
+			}
+			else if (m_type == 0x10 || m_type == 0x12)
+			{
+				// 0x10: linear gradient fill
+				// 0x12: radial gradient fill
+
+				// Hack.
+				swf::render::fill_style_color(fill_side, m_color);
+			}
+			else if (m_type == 0x40
+				 || m_type == 0x41)
+			{
+				// bitmap fill (either tiled or clipped)
+				swf::render::bitmap_info*	bi = NULL;
+				if (m_bitmap_character != NULL)
+				{
+					bi = m_bitmap_character->get_bitmap_info();
+					if (bi != NULL)
+					{
+						swf::render::bitmap_wrap_mode	wmode = swf::render::WRAP_REPEAT;
+						if (m_type == 0x41)
+						{
+							wmode = swf::render::WRAP_CLAMP;
+						}
+						swf::render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix, wmode);
+					}
+				}
 			}
 		}
 	};
@@ -194,6 +234,11 @@ namespace swf
 		{
 			m_width = in->read_u16();
 			m_color.read(in, tag_type);
+		}
+
+		void	apply() const
+		{
+			swf::render::line_style_color(m_color);
 		}
 	};
 
@@ -553,6 +598,7 @@ namespace swf
 	{
 		hash<int, character*>	m_characters;
 		hash<int, font*>	m_fonts;
+		hash<int, bitmap_character*>	m_bitmap_characters;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 		array<action_buffer*>	m_action_list;	// pending actions.
@@ -601,6 +647,18 @@ namespace swf
 			font*	f = NULL;
 			m_fonts.get(font_id, &f);
 			return f;
+		}
+
+		bitmap_character*	get_bitmap_character(int character_id)
+		{
+			bitmap_character*	ch = 0;
+			m_bitmap_characters.get(character_id, &ch);
+			return ch;
+		}
+
+		void	add_bitmap_character(int character_id, bitmap_character* ch)
+		{
+			m_bitmap_characters.add(character_id, ch);
 		}
 
 		void	add_execute_tag(execute_tag* e)
@@ -903,18 +961,30 @@ namespace swf
 
 
 	// Bitmap character
-	struct bitmap_character_rgb : public character
+	struct bitmap_character_rgb : public bitmap_character
 	{
 		image::rgb*	m_image;
-		unsigned int	m_texture;
+		swf::render::bitmap_info*	m_bitmap_info;
 
 		bitmap_character_rgb()
 			:
 			m_image(0),
-			m_texture(0)
+			m_bitmap_info(0)
 		{
 		}
 
+		swf::render::bitmap_info*	get_bitmap_info()
+		{
+			if (m_image != 0)
+			{
+				// Create our bitmap info, from our image.
+				m_bitmap_info = swf::render::create_bitmap_info(m_image);
+				delete m_image;
+				m_image = 0;
+			}
+			return m_bitmap_info;
+		}
+#if 0
 		void	display(const display_info& di)
 		{
 			if (m_texture == 0)
@@ -958,7 +1028,9 @@ namespace swf
 
 			glEnd();
 		}
+#endif // 0
 	};
+
 
 	struct bitmap_character_rgba : public character
 	{
@@ -991,16 +1063,20 @@ namespace swf
 		//
 		
 		ch->m_image = image::read_swf_jpeg2(in->m_input);
+//		unsigned int	bitmap_id = swf::render::create_bitmap_id(image);
+//		delete image;
 
-		IF_DEBUG(printf("id = %d, bm = 0x%X, width = %d, height = %d, pitch = %d\n",
-				character_id,
-				(unsigned) ch->m_image,
-				ch->m_image->m_width,
-				ch->m_image->m_height,
-				ch->m_image->m_pitch));
+		m->add_bitmap_character(character_id, ch);
 
-		// add image to movie, under character id.
-		m->add_character(character_id, ch);
+//		IF_DEBUG(printf("id = %d, bm = 0x%X, width = %d, height = %d, pitch = %d\n",
+//				character_id,
+//				(unsigned) ch->m_image,
+//				ch->m_image->m_width,
+//				ch->m_image->m_height,
+//				ch->m_image->m_pitch));
+
+//		// add image to movie, under character id.
+//		m->add_character(character_id, ch);
 	}
 
 
@@ -1272,29 +1348,32 @@ namespace swf
 		{
 			if (m_fill0 > 0)
 			{
-				swf::render::fill_style0(true, fill_styles[m_fill0 - 1].m_color);
+				fill_styles[m_fill0 - 1].apply(0);
+//				swf::render::fill_style0_color(fill_styles[m_fill0 - 1].m_color);
 			}
 			else
 			{
-				swf::render::fill_style0(false, rgba());
+				swf::render::fill_style_disable(0);
 			}
 
 			if (m_fill1 > 0)
 			{
-				swf::render::fill_style1(true, fill_styles[m_fill1 - 1].m_color);
+				fill_styles[m_fill1 - 1].apply(1);
+//				swf::render::fill_style1_color(fill_styles[m_fill1 - 1].m_color);
 			}
 			else
 			{
-				swf::render::fill_style1(false, rgba());
+				swf::render::fill_style_disable(1);
 			}
 
 			if (m_line > 0)
 			{
-				swf::render::line_style(true, line_styles[m_line - 1].m_color);
+				line_styles[m_line - 1].apply();
+//				swf::render::line_style_color(line_styles[m_line - 1].m_color);
 			}
 			else
 			{
-				swf::render::line_style(false, rgba());
+				swf::render::line_style_disable();
 			}
 
 			swf::render::begin_path(m_ax, m_ay);
@@ -1307,7 +1386,7 @@ namespace swf
 	};
 
 
-	static void	read_fill_styles(array<fill_style>* styles, stream* in, int tag_type)
+	static void	read_fill_styles(array<fill_style>* styles, stream* in, int tag_type, movie* m)
 	// Read fill styles, and push them onto the given style array.
 	{
 		assert(styles);
@@ -1328,7 +1407,7 @@ namespace swf
 		for (int i = 0; i < fill_style_count; i++)
 		{
 			(*styles).resize((*styles).size() + 1);
-			(*styles)[(*styles).size() - 1].read(in, tag_type);
+			(*styles)[(*styles).size() - 1].read(in, tag_type, m);
 		}
 	}
 
@@ -1377,12 +1456,12 @@ namespace swf
 
 		virtual ~shape_character() {}
 
-		void	read(stream* in, int tag_type, bool with_style)
+		void	read(stream* in, int tag_type, bool with_style, movie* m)
 		{
 			if (with_style)
 			{
 				m_bound.read(in);
-				read_fill_styles(&m_fill_styles, in, tag_type);
+				read_fill_styles(&m_fill_styles, in, tag_type, m);
 				read_line_styles(&m_line_styles, in, tag_type);
 			}
 
@@ -1530,7 +1609,7 @@ namespace swf
 
 						fill_base = m_fill_styles.size();
 						line_base = m_line_styles.size();
-						read_fill_styles(&m_fill_styles, in, tag_type);
+						read_fill_styles(&m_fill_styles, in, tag_type, m);
 						read_line_styles(&m_line_styles, in, tag_type);
 						num_fill_bits = in->read_uint(4);
 						num_line_bits = in->read_uint(4);
@@ -1649,7 +1728,7 @@ namespace swf
 
 		shape_character*	ch = new shape_character;
 		ch->m_id = character_id;
-		ch->read(in, tag_type, true);
+		ch->read(in, tag_type, true, m);
 
 		IF_DEBUG(printf("shape_loader: id = %d, rect ", character_id);
 			 ch->m_bound.print(stdout));
@@ -1704,7 +1783,7 @@ namespace swf
 			}
 		}
 
-		void	read(stream* in, int tag_type)
+		void	read(stream* in, int tag_type, movie* m)
 		{
 			if (tag_type == 10)
 			{
@@ -1737,7 +1816,7 @@ namespace swf
 
 					// Create & read the shape.
 					shape_character*	s = new shape_character;
-					s->read(in, 2, false);
+					s->read(in, 2, false, m);
 
 					m_glyphs.push_back(s);
 				}}
@@ -1816,7 +1895,7 @@ namespace swf
 
 					// Create & read the shape.
 					shape_character*	s = new shape_character;
-					s->read(in, 22, false);
+					s->read(in, 22, false, m);
 
 					m_glyphs.push_back(s);
 				}}
@@ -1860,7 +1939,7 @@ namespace swf
 		Uint16	font_id = in->read_u16();
 		
 		font*	f = new font;
-		f->read(in, tag_type);
+		f->read(in, tag_type, m);
 
 //		IF_DEBUG(0);
 

@@ -24,6 +24,9 @@ namespace swf
 	struct display_info;
 	struct font;
 	struct action_buffer;
+	struct bitmap_character;
+	namespace render { struct bitmap_info; }
+
 
 	struct movie : public movie_interface
 	{
@@ -31,6 +34,9 @@ namespace swf
 		virtual void	add_font(int id, font* ch) {}
 		virtual font*	get_font(int id) { return NULL; }
 		virtual void	add_execute_tag(execute_tag* c) {}
+
+		virtual bitmap_character*	get_bitmap_character(int character_id) { return 0; }
+		virtual void	add_bitmap_character(int character_id, bitmap_character* ch) {}
 
 		virtual void	add_display_object(Uint16 character_id,
 						   Uint16 depth,
@@ -107,6 +113,12 @@ namespace swf
 		virtual bool	is_definition() const { return false; }
 		virtual bool	is_instance() const { return false; }
 		virtual character*	create_instance() { assert(0); return 0; }
+	};
+
+
+	struct bitmap_character : public character
+	{
+		virtual swf::render::bitmap_info*	get_bitmap_info() = 0;
 	};
 
 

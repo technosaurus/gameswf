@@ -84,8 +84,8 @@ int	main(int argc, char *argv[])
 	}
 
 	// Turn on alpha blending.
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Turn on line smoothing.  Antialiased lines can be used to
 	// smooth the outsides of shapes.
@@ -193,3 +193,10 @@ int	main(int argc, char *argv[])
 	return 0;
 }
 
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
