@@ -11,6 +11,7 @@
 
 
 #include "base/utility.h"
+#include <string.h>
 
 
 #ifndef NDEBUG
@@ -53,6 +54,13 @@ namespace gameswf
 		}
 
 		bool operator==(const point& p) const { return m_x == p.m_x && m_y == p.m_y; }
+
+		bool	bitwise_equal(const point& p) const
+		// Bitwise comparison; return true if *this is bitwise
+		// identical to p.
+		{
+			return memcmp(this, &p, sizeof(p)) == 0;
+		}
 	};
 
 

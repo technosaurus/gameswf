@@ -93,7 +93,7 @@ namespace gameswf
 				for (int i = 0; i < data_bytes; i++) { data[i] = in->read_u8(); }
 
 				// Swap bytes on behalf of the host, to make it easier for the handler.
-				// @@ I'm assuming this is a good idea?  Most sound handlers will prefer native endianness?
+				// @@ I'm assuming this is a good idea?	 Most sound handlers will prefer native endianness?
 				if (format == sound_handler::FORMAT_UNCOMPRESSED
 				    && sample_16bit)
 				{
@@ -153,9 +153,9 @@ namespace gameswf
 			bool	has_out_point = in->read_uint(1) ? true : false;
 			bool	has_in_point = in->read_uint(1) ? true : false;
 
-                        UNUSED(no_multiple);
-                        UNUSED(has_envelope);
-                        
+			UNUSED(no_multiple);
+			UNUSED(has_envelope);
+			
 			Uint32	in_point = 0;
 			Uint32	out_point = 0;
 			if (has_in_point) { in_point = in->read_u32(); }
@@ -216,11 +216,11 @@ namespace gameswf
 
 
 // @@ currently not implemented
-// 	void	sound_stream_loader(stream* in, int tag_type, movie* m)
-// 	// Load the various stream-related tags: SoundStreamHead,
-// 	// SoundStreamHead2, SoundStreamBlock.
-// 	{
-// 	}
+//	void	sound_stream_loader(stream* in, int tag_type, movie* m)
+//	// Load the various stream-related tags: SoundStreamHead,
+//	// SoundStreamHead2, SoundStreamBlock.
+//	{
+//	}
 
 
 	//
@@ -331,16 +331,16 @@ namespace gameswf
 	}
 
 
-// 	void do_stereo_block(
-// 		Sint16** out_data,	// in/out param
-// 		int n_bits,
-// 		int sample_count,
-// 		stream* in,
-// 		int left_sample,
-// 		int left_stepsize_index,
-// 		int right_sample,
-// 		int right_stepsize_index
-// 		)
+//	void do_stereo_block(
+//		Sint16** out_data,	// in/out param
+//		int n_bits,
+//		int sample_count,
+//		stream* in,
+//		int left_sample,
+//		int left_stepsize_index,
+//		int right_sample,
+//		int right_stepsize_index
+//		)
 #define DO_STEREO_BLOCK(out_data, n_bits, sample_count, in, left_sample, left_stepsize_index, right_sample, right_stepsize_index) \
 	/* Uncompress 4096 stereo sample pairs of ADPCM. */									  \
 	{															  \
@@ -368,7 +368,7 @@ namespace gameswf
 		int sample_count,	// in stereo, this is number of *pairs* of samples
 		bool stereo)
 	// Utility function: uncompress ADPCM data from in stream to
-	// out_data[].  The output buffer must have (sample_count*2)
+	// out_data[].	The output buffer must have (sample_count*2)
 	// bytes for mono, or (sample_count*4) bytes for stereo.
 	{
 		Sint16*	out_data = (Sint16*) out_data_void;
@@ -411,7 +411,7 @@ namespace gameswf
 				int	right_stepsize_index = in->read_uint(6);
 				assert(STEPSIZE_CT >= (1 << 6));	// ensure we don't need to clamp.
 
-#define DO_STEREO(n) 					\
+#define DO_STEREO(n)					\
 	DO_STEREO_BLOCK(				\
 		&out_data, n, samples_this_block,	\
 		in, sample, stepsize_index,		\

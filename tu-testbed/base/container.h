@@ -140,6 +140,24 @@ public:
 	}
 
 
+	void	append(const array<T>& other)
+	// Append the given data to our array.
+	{
+		append(other.m_buffer, other.size());
+	}
+
+
+	void	append(const T other[], int count)
+	// Append the given data to our array.
+	{
+		if (count > 0)
+		{
+			int	size0 = m_size;
+			resize(m_size + count);
+			memcpy(&m_buffer[size0], &other[0], count * sizeof(T));
+		}
+	}
+
 
 	void	resize(int new_size)
 	// Preserve existing elements.  Newly created elements are

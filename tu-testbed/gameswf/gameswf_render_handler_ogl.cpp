@@ -493,7 +493,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	draw_mesh_strip(const float coords[], int vertex_count)
+	void	draw_mesh_strip(const Sint16 coords[], int vertex_count)
 	{
 		// Set up current style.
 		m_current_styles[LEFT_STYLE].apply();
@@ -504,7 +504,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		// Send the tris to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
+		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
 		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
 
 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
@@ -520,7 +520,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	draw_line_strip(const float coords[], int vertex_count)
+	void	draw_line_strip(const Sint16 coords[], int vertex_count)
 	// Draw the line strip formed by the sequence of points.
 	{
 		// Set up current style.
@@ -532,7 +532,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		// Send the line-strip to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
+		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
 		glDrawArrays(GL_LINE_STRIP, 0, vertex_count);
 		glDisableClientState(GL_VERTEX_ARRAY);
 

@@ -135,30 +135,28 @@ namespace gameswf
 	// Utility.
 
 
-	void	write_point_array(tu_file* out, const array<point>& pt_array)
-	// Dump the given point array into the given stream.
+	void	write_coord_array(tu_file* out, const array<Sint16>& pt_array)
+	// Dump the given coordinate array into the given stream.
 	{
 		int	n = pt_array.size();
 
 		out->write_le32(n);
 		for (int i = 0; i < n; i++)
 		{
-			out->write_float32(pt_array[i].m_x);
-			out->write_float32(pt_array[i].m_y);
+			out->write_le16((Uint16) pt_array[i]);
 		}
 	}
 
 
-	void	read_point_array(tu_file* in, array<point>* pt_array)
-	// Read the point array data from the stream into *pt_array.
+	void	read_coord_array(tu_file* in, array<Sint16>* pt_array)
+	// Read the coordinate array data from the stream into *pt_array.
 	{
 		int	n = in->read_le32();
 
 		pt_array->resize(n);
 		for (int i = 0; i < n; i ++)
 		{
-			(*pt_array)[i].m_x = in->read_float32();
-			(*pt_array)[i].m_y = in->read_float32();
+			(*pt_array)[i] = (Sint16) in->read_le16();
 		}
 	}
 
@@ -175,8 +173,17 @@ namespace gameswf
 
 	void	mesh::set_tri_strip(const point pts[], int count)
 	{
-		m_triangle_strip.resize(count);
-		memcpy(&m_triangle_strip[0], &pts[0], count * sizeof(point));
+		m_triangle_strip.resize(count * 2);	// 2 coords per point
+		
+		// convert to ints.
+		for (int i = 0; i < count; i++)
+		{
+			m_triangle_strip[i * 2] = Sint16(pts[i].m_x);
+			m_triangle_strip[i * 2 + 1] = Sint16(pts[i].m_y);
+		}
+
+//		m_triangle_strip.resize(count);
+//		memcpy(&m_triangle_strip[0], &pts[0], count * sizeof(point));
 	}
 
 
@@ -186,7 +193,7 @@ namespace gameswf
 		if (m_triangle_strip.size() > 0)
 		{
 			style.apply(0);
-			render::draw_mesh_strip(&m_triangle_strip[0].m_x, m_triangle_strip.size());
+			render::draw_mesh_strip(&m_triangle_strip[0], m_triangle_strip.size() >> 1);
 		}
 	}
 
@@ -194,14 +201,14 @@ namespace gameswf
 	void	mesh::output_cached_data(tu_file* out)
 	// Dump our data to *out.
 	{
-		write_point_array(out, m_triangle_strip);
+		write_coord_array(out, m_triangle_strip);
 	}
 
 	
 	void	mesh::input_cached_data(tu_file* in)
 	// Slurp our data from *out.
 	{
-		read_point_array(in, &m_triangle_strip);
+		read_coord_array(in, &m_triangle_strip);
 	}
 
 
@@ -226,8 +233,16 @@ namespace gameswf
 		assert(coords != NULL);
 		assert(coord_count > 1);
 
-		m_coords.resize(coord_count);
-		memcpy(&m_coords[0], coords, coord_count * sizeof(coords[0]));
+//		m_coords.resize(coord_count);
+//		memcpy(&m_coords[0], coords, coord_count * sizeof(coords[0]));
+		m_coords.resize(coord_count * 2);	// 2 coords per vert
+		
+		// convert to ints.
+		for (int i = 0; i < coord_count; i++)
+		{
+			m_coords[i * 2] = Sint16(coords[i].m_x);
+			m_coords[i * 2 + 1] = Sint16(coords[i].m_y);
+		}
 	}
 
 
@@ -235,9 +250,10 @@ namespace gameswf
 	// Render this line strip in the given style.
 	{
 		assert(m_coords.size() > 1);
+		assert((m_coords.size() & 1) == 0);
 
 		style.apply();
-		render::draw_line_strip(&m_coords[0].m_x, m_coords.size());
+		render::draw_line_strip(&m_coords[0], m_coords.size() >> 1);
 	}
 
 
@@ -245,7 +261,7 @@ namespace gameswf
 	// Dump our data to *out.
 	{
 		out->write_le32(m_style);
-		write_point_array(out, m_coords);
+		write_coord_array(out, m_coords);
 	}
 
 	
@@ -253,7 +269,7 @@ namespace gameswf
 	// Slurp our data from *out.
 	{
 		m_style = in->read_le32();
-		read_point_array(in, &m_coords);
+		read_coord_array(in, &m_coords);
 	}
 
 
@@ -265,32 +281,68 @@ namespace gameswf
 		// A set of strips; we'll join them together into one
 		// strip during the flush.
 		array< array<point> >	m_strips;
+		int	m_last_strip_used;
 
-		tri_stripper() {}
-
-		void	add_triangle(const point& a, const point& b, const point& c)
-		// Add triangle to our strip.
+		tri_stripper()
+			: m_last_strip_used(-1)
 		{
-			// See if we can attach this strip to an existing strip.
-			for (int i = 0, n = m_strips.size(); i < n; i++)
+		}
+
+		void	add_trapezoid(const point& l0, const point& r0, const point& l1, const point& r1)
+		// Add two triangles to our strip.
+		{
+			// See if we can attach this mini-strip to an existing strip.
+
+			if (l0.bitwise_equal(r0) == false)
 			{
-				array<point>&	str = m_strips[i];
-				assert(str.size() >= 3);	// should have at least one tri already.
-				
-				int	last = str.size() - 1;
-				if (str[last] == a && str[last - 1] == b)
+				// Check the next strip first; trapezoids will
+				// tend to arrive in rotating order through
+				// the active strips.
+				assert(m_last_strip_used >= -1 && m_last_strip_used < m_strips.size());
+				int i = m_last_strip_used + 1, n = m_strips.size();
+				for ( ; i < n; i++)
 				{
-					// Can join this tri to this strip.
-					str.push_back(c);
-					return;
+					array<point>&	str = m_strips[i];
+					assert(str.size() >= 3);	// should have at least one tri already.
+				
+					int	last = str.size() - 1;
+					if (str[last - 1].bitwise_equal(l0) && str[last].bitwise_equal(r0))
+					{
+						// Can join these tris to this strip.
+						str.push_back(l1);
+						str.push_back(r1);
+						m_last_strip_used = i;
+						return;
+					}
+				}
+				for (i = 0; i <= m_last_strip_used; i++)
+				{
+					array<point>&	str = m_strips[i];
+					assert(str.size() >= 3);	// should have at least one tri already.
+				
+					int	last = str.size() - 1;
+					if (str[last - 1].bitwise_equal(l0) && str[last].bitwise_equal(r0))
+					{
+						// Can join these tris to this strip.
+						str.push_back(l1);
+						str.push_back(r1);
+						m_last_strip_used = i;
+						return;
+					}
 				}
 			}
+			// else this trapezoid is pointy on top, so
+			// it's almost certainly the start of a new
+			// strip.  Don't bother searching current
+			// strips.
 
 			// Can't join with existing strip, so start a new strip.
 			m_strips.resize(m_strips.size() + 1);
-			m_strips.back().push_back(a);
-			m_strips.back().push_back(b);
-			m_strips.back().push_back(c);
+			m_strips.back().resize(4);
+			m_strips.back()[0] = l0;
+			m_strips.back()[1] = r0;
+			m_strips.back()[2] = l1;
+			m_strips.back()[3] = r1;
 		}
 
 
@@ -315,11 +367,8 @@ namespace gameswf
 					if (big_strip[last] == str[1]
 					    && big_strip[last - 1] == str[0])
 					{
-						// Strips fit right together.  Append.
-						for (int j = 2, jn = str.size(); j < jn; j++)
-						{
-							big_strip.push_back(str[j]);
-						}
+ 						// Strips fit right together.  Append.
+						big_strip.append(&str[2], str.size() - 2);
 					}
 					else if (big_strip[last] == str[0]
 						 && big_strip[last - 1] == str[1])
@@ -327,10 +376,7 @@ namespace gameswf
 						// Strips fit together with a half-twist.
 						point	to_dup = big_strip[last - 1];
 						big_strip.push_back(to_dup);
-						for (int j = 2, jn = str.size(); j < jn; j++)
-						{
-							big_strip.push_back(str[j]);
-						}
+						big_strip.append(&str[2], str.size() - 2);
 					}
 					else
 					{
@@ -338,10 +384,7 @@ namespace gameswf
 						point	to_dup = big_strip[last];
 						big_strip.push_back(to_dup);
 						big_strip.push_back(str[0]);
-						for (int j = 0, jn = str.size(); j < jn; j++)
-						{
-							big_strip.push_back(str[j]);
-						}
+						big_strip.append(str);
 					}
 				}
 
@@ -392,14 +435,10 @@ namespace gameswf
 					m_strips.add(style, s);
 				}
 
-				// Be careful to emit the verts in strip-friendly order!
-				s->add_triangle(
+				s->add_trapezoid(
 					point(tr.m_lx0, tr.m_y0),
 					point(tr.m_rx0, tr.m_y0),
-					point(tr.m_lx1, tr.m_y1));
-				s->add_triangle(
 					point(tr.m_lx1, tr.m_y1),
-					point(tr.m_rx0, tr.m_y0),
 					point(tr.m_rx1, tr.m_y1));
 			}
 
