@@ -18,6 +18,8 @@ class	vec3
 // 3-element vector class, for 3D math.
 {
 public:
+	float	x, y, z;	// these guys are out in public, no m_ prefix; this matches most other conventions.
+
 	vec3() {}
 	vec3(float _X, float _Y, float _Z) { x = _X; y = _Y; z = _Z; }
 	vec3(const vec3& v) { x = v.x; y = v.y; z = v.z; }
@@ -65,8 +67,6 @@ public:
 
 	// Some handy vector constants.
 	const static vec3	zero, x_axis, y_axis, z_axis, flt_max, minus_flt_max;
-
-	float	x, y, z;
 };
 
 
