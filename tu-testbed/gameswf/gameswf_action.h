@@ -20,6 +20,7 @@ namespace gameswf
 	struct movie;
 	struct as_environment;
 	struct as_object_interface;
+	struct as_value;
 
 
 	// Base class for actions.
@@ -37,6 +38,14 @@ namespace gameswf
 	};
 
 
+	typedef void (*as_function_ptr)(
+		as_value* result,
+		void* this_ptr,
+		as_environment* env,
+		int nargs,
+		int first_arg_bottom_index);
+
+
 	// ActionScript value type.
 	struct as_value
 	{
@@ -46,17 +55,21 @@ namespace gameswf
 			STRING,
 			NUMBER,
 			OBJECT,
+			FUNCTION,
 		};
 
 		type	m_type;
 		mutable	double	m_number_value;	// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
 		mutable tu_string	m_string_value;
 		as_object_interface*	m_object_value;
+		as_function_ptr	m_function_value;
 
 		as_value()
 			:
 			m_type(UNDEFINED),
-			m_number_value(0.0)
+			m_number_value(0.0),
+			m_object_value(0),
+			m_function_value(0)
 		{
 		}
 
@@ -64,49 +77,72 @@ namespace gameswf
 			:
 			m_type(STRING),
 			m_number_value(0.0),
-			m_string_value(str)
+			m_string_value(str),
+			m_object_value(0),
+			m_function_value(0)
 		{
 		}
 
 		as_value(type e)
 			:
 			m_type(e),
-			m_number_value(0.0)
+			m_number_value(0.0),
+			m_object_value(0),
+			m_function_value(0)
 		{
 		}
 
 		as_value(bool val)
 			:
 			m_type(NUMBER),
-			m_number_value(double(val))
+			m_number_value(double(val)),
+			m_object_value(0),
+			m_function_value(0)
 		{
 		}
 
 		as_value(int val)
 			:
 			m_type(NUMBER),
-			m_number_value(val)
+			m_number_value(val),
+			m_object_value(0),
+			m_function_value(0)
 		{
 		}
 
 		as_value(float val)
 			:
 			m_type(NUMBER),
-			m_number_value(val)
+			m_number_value(val),
+			m_object_value(0),
+			m_function_value(0)
 		{
 		}
 
 		as_value(double val)
 			:
 			m_type(NUMBER),
-			m_number_value(val)
+			m_number_value(val),
+			m_object_value(0),
+			m_function_value(0)
 		{
 		}
 
 		as_value(as_object_interface* obj)
 			:
 			m_type(OBJECT),
-			m_object_value(obj)
+			m_number_value(0.0),
+			m_object_value(obj),
+			m_function_value(0)
+		{
+		}
+
+		as_value(as_function_ptr func)
+			:
+			m_type(FUNCTION),
+			m_number_value(0.0),
+			m_object_value(0),
+			m_function_value(func)
 		{
 		}
 
@@ -117,6 +153,7 @@ namespace gameswf
 		double	to_number() const;
 		bool	to_bool() const;
 		as_object_interface*	to_object() const;
+		as_function_ptr	to_function() const;
 
 		void	convert_to_number();
 		void	convert_to_string();
@@ -163,6 +200,11 @@ namespace gameswf
 		virtual ~as_object_interface() {}
 		virtual void	set_member(const tu_string& name, const as_value& val) = 0;
 		virtual as_value	get_member(const tu_string& name) = 0;
+		virtual as_value	call_method(
+			const tu_string& name,
+			as_environment* env,
+			int nargs,
+			int first_arg_bottom_index) = 0;
 	};
 
 
@@ -188,7 +230,10 @@ namespace gameswf
 		void	push(T val) { m_stack.push_back(as_value(val)); }
 		as_value	pop() { return m_stack.pop_back(); }
 		as_value&	top(int dist) { return m_stack[m_stack.size() - 1 - dist]; }
+		as_value&	bottom(int index) { return m_stack[index]; }
 		void	drop(int count) { m_stack.resize(m_stack.size() - count); }
+
+		int	get_top_index() const { return m_stack.size() - 1; }
 
 		as_value	get_variable(const tu_string& varname) const;
 

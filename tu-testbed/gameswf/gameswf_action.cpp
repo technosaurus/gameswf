@@ -10,6 +10,7 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
+#include "base/tu_random.h"
 
 #include <stdio.h>
 
@@ -53,7 +54,86 @@ namespace gameswf
 			m_members.get(name, &val);	// @@ do we need to emit an error if name has no value?
 			return val;
 		}
+
+		virtual as_value	call_method(
+			const tu_string& name,
+			as_environment* env,
+			int nargs,
+			int first_arg_bottom_index)
+		{
+			as_value	val;
+			as_value	method;
+
+			// Look up method.
+			method = get_member(name);
+
+			// Is it a function?  If so, call it.
+			as_function_ptr	func = method.to_function();
+			if (func)
+			{
+				(*func)(&val, this, env, nargs, first_arg_bottom_index);
+			}
+			else
+			{
+				log_error("error: call_method '%s' is not a function\n", name.c_str());
+			}
+
+			return val;
+		}
 	};
+
+
+	//
+	// Built-in methods
+	//
+
+
+	// One-argument simple functions.
+	#define MATH_WRAP_FUNC1(funcname)											\
+	void	math_##funcname(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
+	{															\
+		double	arg = env->bottom(first_arg_bottom_index).to_number();							\
+		result->set(funcname(arg));											\
+	}
+
+	MATH_WRAP_FUNC1(fabs);
+	MATH_WRAP_FUNC1(acos);
+	MATH_WRAP_FUNC1(asin);
+	MATH_WRAP_FUNC1(atan);
+	MATH_WRAP_FUNC1(ceil);
+	MATH_WRAP_FUNC1(cos);
+	MATH_WRAP_FUNC1(exp);
+	MATH_WRAP_FUNC1(floor);
+	MATH_WRAP_FUNC1(log);
+	MATH_WRAP_FUNC1(sin);
+	MATH_WRAP_FUNC1(sqrt);
+	MATH_WRAP_FUNC1(tan);
+
+	// Two-argument functions.
+	#define MATH_WRAP_FUNC2_EXP(funcname, expr)										\
+	void	math_##funcname(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
+	{															\
+		double	arg0 = env->bottom(first_arg_bottom_index).to_number();							\
+		double	arg1 = env->bottom(first_arg_bottom_index - 1).to_number();						\
+		result->set(expr);												\
+	}
+	MATH_WRAP_FUNC2_EXP(atan2, (atan2(arg0, arg1)));
+	MATH_WRAP_FUNC2_EXP(max, (arg0 > arg1 ? arg0 : arg1));
+	MATH_WRAP_FUNC2_EXP(min, (arg0 < arg1 ? arg0 : arg1));
+	MATH_WRAP_FUNC2_EXP(pow, (pow(arg0, arg1)));
+
+	// A couple of oddballs.
+	void	math_random(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	{
+		// Random number between 0 and 1.
+		result->set(tu_random::next_random() / double(Uint32(0x0FFFFFFFF)));
+	}
+	void	math_round(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	{
+		// round argument to nearest int.
+		double	arg0 = env->bottom(first_arg_bottom_index).to_number();
+		result->set(floor(arg0 + 0.5));
+	}
 
 
 	void	action_init()
@@ -66,7 +146,7 @@ namespace gameswf
 			// Create built-in math object.
 			as_object*	math_obj = new as_object;
 
-			// Math constants.
+			// constants
 			math_obj->set_member("e", 2.7182818284590452354);
  			math_obj->set_member("ln2", 0.69314718055994530942);
  			math_obj->set_member("log2e", 1.4426950408889634074);
@@ -76,7 +156,21 @@ namespace gameswf
  			math_obj->set_member("sqrt1_2", 0.7071067811865475244);
  			math_obj->set_member("sqrt2", 1.4142135623730950488);
 
-			// @@ todo math methods
+			// math methods
+			math_obj->set_member("abs", &math_fabs);
+			math_obj->set_member("acos", &math_acos);
+			math_obj->set_member("asin", &math_asin);
+			math_obj->set_member("atan", &math_atan);
+			math_obj->set_member("ceil", &math_ceil);
+			math_obj->set_member("cos", &math_cos);
+			math_obj->set_member("exp", &math_exp);
+			math_obj->set_member("floor", &math_floor);
+			math_obj->set_member("log", &math_log);
+			math_obj->set_member("random", &math_random);
+			math_obj->set_member("round", &math_log);
+			math_obj->set_member("sin", &math_sin);
+			math_obj->set_member("sqrt", &math_sqrt);
+			math_obj->set_member("tan", &math_tan);
 
  			s_built_ins.add("math", math_obj);
 		}
@@ -536,8 +630,29 @@ namespace gameswf
 					env->top(0) -= 1;
 					break;
 				case 0x52:	// call method
-					// @@ TODO
+				{
+					as_object_interface*	obj = env->top(1).to_object();
+					int	nargs = env->top(2).to_number();
+					as_value	result;
+
+					if (obj)
+					{
+						result = obj->call_method(
+							env->top(0).to_tu_string(),
+							env,
+							nargs,
+							env->get_top_index() - 3);
+					}
+					else
+					{
+						// @@ log error?
+						log_error("error: call_method op on invalid object.\n");
+						result = as_value();	// UNDEFINED
+					}
+					env->drop(nargs + 2);
+					env->top(0) = result;
 					break;
+				}
 				case 0x53:	// new method
 					// @@ TODO
 					break;
@@ -924,6 +1039,22 @@ namespace gameswf
 		else
 		{
 			return NULL;	// @@ or return a valid "null object"?
+		}
+	}
+
+
+	as_function_ptr	as_value::to_function() const
+	// Return value as a function ptr.  Returns NULL if value is
+	// not a function.
+	{
+		if (m_type == FUNCTION)
+		{
+			// OK.
+			return m_function_value;
+		}
+		else
+		{
+			return NULL;	// @@ or return a valid "null function"?
 		}
 	}
 

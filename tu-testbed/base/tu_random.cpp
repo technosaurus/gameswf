@@ -22,7 +22,7 @@ namespace tu_random
 	// provide a RNG that has passed extensive tests of randomness,
 	// particularly those in [3], yet is simple and fast --
 	// approximately 30 million random 32-bit integers per second on a
-	// 850MHz PC.  THe preiod is a*b^n, where a is the multiplier, n
+	// 850MHz PC.  The period is a*b^n, where a is the multiplier, n
 	// the size of the seed table and b=2^32-1.  (a is chosen so that
 	// b is a primitive root of the prime a*b^n + 1.)"
 	//
@@ -57,13 +57,13 @@ namespace tu_random
         
 	static Uint32	Q[8] =
 	{
-		0xECE59F5, // 248404469,
+		0x0ECE59F5, //  248404469,
 		0x7BE3FAAD, // 2078538413, 
                 0x927D4636, // 2457683510,  -1837283786 
 		0x6DC8F60B, // 1841886731, 
-		0x123C5E6F, // 305946223, 
+		0x123C5E6F, //  305946223, 
 		0xA7CFA077, // 2815402103, 
-		0x2BEC5B77, // 736910199, 
+		0x2BEC5B77, //  736910199, 
 		0xB0DF8DF6, // 2967440886,
 	};
 
