@@ -318,7 +318,7 @@ void xml_onload(gameswf::as_value* result, gameswf::as_object_interface* this_pt
 
 void xml_ondata(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
 
-void xml_loaded(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
+void xml_loaded(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 }	// end namespace gameswf
 
