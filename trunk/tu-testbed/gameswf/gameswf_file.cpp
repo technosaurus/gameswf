@@ -1,4 +1,4 @@
-// gameswf_file.h	-- Thatcher Ulrich <tu@tulrich.com> 2003
+// gameswf_file.h	-- Ignacio Castaño, Thatcher Ulrich <tu@tulrich.com> 2003
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -89,8 +89,10 @@ namespace gameswf
 	void file::close() 
 	// Close this file.
 	{ 
-		if(m_close) 
+		if(m_close)
+		{
 			m_close(m_data); 
+		}
 		m_data = NULL; 
 		m_read = NULL; 
 		m_write = NULL; 
@@ -102,7 +104,8 @@ namespace gameswf
 	void 	file::write_string(const char* src)
 	{
 		do {
-			write8(*src); 
+			write8(*src);
+			src++;
 		} while(*src!=NULL);
 	}
 	
