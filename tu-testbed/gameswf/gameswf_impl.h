@@ -162,6 +162,7 @@ namespace gameswf
 	{
 		virtual ~execute_tag() {}
 		virtual void	execute(movie* m) {}
+		virtual void	execute_state(movie* m) {}
 	};
 
 
