@@ -496,11 +496,11 @@ namespace gameswf
 		}
 
 		// Dump line-strips into renderer.
-		for (int i = 0; i < m_line_strips.size(); i++)
+		{for (int i = 0; i < m_line_strips.size(); i++)
 		{
 			int	style = m_line_strips[i].get_style();
 			m_line_strips[i].display(line_styles[style], 1.0);
-		}
+		}}
 	}
 
 	void	mesh_set::display(
@@ -524,11 +524,11 @@ namespace gameswf
 		}
 
 		// Dump line-strips into renderer.
-		for (int i = 0; i < m_line_strips.size(); i++)
+		{for (int i = 0; i < m_line_strips.size(); i++)
 		{
 			int	style = m_line_strips[i].get_style();
 			m_line_strips[i].display(line_styles[style], ratio);
-		}
+		}}
 	}
 
 	void	mesh_set::set_tri_strip(int style, const point pts[], int count)
