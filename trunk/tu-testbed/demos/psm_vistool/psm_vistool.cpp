@@ -143,6 +143,9 @@ void	draw_segment(const vec3& a, const vec3& b)
 }
 
 
+static float	s_shadow_falloff_length = 60.0f;
+
+
 struct occluder
 // Basically a circular object, to stand in for a shadow occluder.
 {
@@ -163,29 +166,31 @@ struct occluder
 	{
 	}
 
-	void	draw()
-	{
-		glColor3f(0, 0, 1);
-		draw_filled_circle(m_position.x, m_position.y, m_radius);
-	}
+	void	draw();
 
 	bool	hit(const vec3& v)
 	{
 		return (v - m_position).magnitude() <= m_radius;
 	}
-};
 
+	float	get_max_projection(const vec3& axis);
+	bool	has_visible_shadow();
+};
 
 
 static float	s_viewer_y = -250;
 static float	s_view_tan = 1.0f;
 static float	s_near_plane_distance = 10;
 static float	s_far_plane_distance = 500;
+static vec3	s_light_arrow_spot(150, -200, 0);
+
 static vec3	s_light_direction(1, 0, 0);
+static vec3	s_light_right(0, -1, 0);
+
 static array<occluder>	s_occluders;
 
 
-vec3	frustum_point(int i)
+vec3	get_frustum_point(int i)
 // Returns the i'th frustum vertex (i in [0,3]).
 // Goes ccw around the boundary.
 {
@@ -202,21 +207,33 @@ vec3	frustum_point(int i)
 }
 
 
+vec3	get_frustum_normal(int i)
+// Returns the i'th frustum plane normal (i in [0,3]).
+// Goes ccw around the boundary.
+{
+	assert(i >= 0 && i < 4);
+
+	vec3	p0 = get_frustum_point(i);
+	vec3	p1 = get_frustum_point((i + 1) & 3);
+
+	vec3	n = p1 - p0;
+	n = vec3(n.y, -n.x, 0);	// get the perpendicular.
+	n.normalize();
+
+	return n;
+}
+
+
 void	draw_frustum()
 // Draw a schematic top-view of a view frustum.
 {
 	glColor3f(1, 1, 1);
 	glBegin(GL_LINE_STRIP);
-// 	glVertex3f(-s_near_plane_distance * s_view_tan / 2, s_viewer_y + s_near_plane_distance, 1);
-// 	glVertex3f( s_near_plane_distance * s_view_tan / 2, s_viewer_y + s_near_plane_distance, 1);
-// 	glVertex3f( s_far_plane_distance * s_view_tan / 2, s_viewer_y + s_far_plane_distance, 1);
-// 	glVertex3f(-s_far_plane_distance * s_view_tan / 2, s_viewer_y + s_far_plane_distance, 1);
-// 	glVertex3f(-s_near_plane_distance * s_view_tan / 2, s_viewer_y + s_near_plane_distance, 1);
-	glVertex3fv(frustum_point(0));
-	glVertex3fv(frustum_point(1));
-	glVertex3fv(frustum_point(2));
-	glVertex3fv(frustum_point(3));
-	glVertex3fv(frustum_point(0));
+	glVertex3fv(get_frustum_point(0));
+	glVertex3fv(get_frustum_point(1));
+	glVertex3fv(get_frustum_point(2));
+	glVertex3fv(get_frustum_point(3));
+	glVertex3fv(get_frustum_point(0));
 	glEnd();
 }
 
@@ -228,7 +245,7 @@ float	frustum_max_projection(const vec3& axis)
 	float	max = -1000000.f;
 	for (int i = 0; i < 4; i++)
 	{
-		vec3	v = frustum_point(i);
+		vec3	v = get_frustum_point(i);
 		float	proj = v * axis;
 		if (proj > max)
 		{
@@ -250,6 +267,75 @@ void	draw_occluders()
 }
 
 
+float	circle_max_projection(const vec3& axis, const vec3& center, float radius)
+// Returns the maximum projection of any point on the circle onto the
+// given axis.
+{
+	return center * axis + radius;
+}
+
+
+void	occluder::draw()
+{
+	// Shadow: dark gray shadow circle & sides.
+	vec3	shadow_spot = m_position + s_light_direction * s_shadow_falloff_length;
+
+	// Shadow circle.
+	glColor3f(0.25f, 0.25f, 0.25f);
+	draw_filled_circle(shadow_spot.x, shadow_spot.y, m_radius);
+
+	// Rectangle connecting object w/ shadow circle.
+	glBegin(GL_TRIANGLE_STRIP);
+	glVertex2fv(m_position + s_light_right * m_radius);
+	glVertex2fv(shadow_spot + s_light_right * m_radius);
+	glVertex2fv(m_position - s_light_right * m_radius);
+	glVertex2fv(shadow_spot - s_light_right * m_radius);
+	glEnd();
+
+	// Filled blue circle for the object itself.
+	glColor3f(0.5f, 0.5f, 1);
+	draw_filled_circle(m_position.x, m_position.y, m_radius);
+}
+
+
+float	occluder::get_max_projection(const vec3& axis)
+// Return our maximum projection onto the given axis.
+{
+	return circle_max_projection(axis, m_position, m_radius);
+}
+
+
+bool	occluder::has_visible_shadow()
+// Return true if this occluder can cast a shadow into the view
+// frustum.
+{
+	// The usual conservative frustum test: see if object is
+	// excluded by any of our frustum planes.
+	//
+	// @@ I'm curious to see if a tighter test would be helpful...
+
+	for (int i = 0; i < 4; i++)
+	{
+		vec3	frustum_normal = get_frustum_normal(i);
+		vec3	frustum_point = get_frustum_point(i);
+
+		float	dist_from_plane =
+			fmin(
+				frustum_normal * m_position,
+				frustum_normal * (m_position + s_light_direction * s_shadow_falloff_length))
+			- m_radius;;
+
+		if (dist_from_plane > frustum_normal * frustum_point)
+		{
+			// This plane excludes us; we can't affect the visible frustum.
+			return false;
+		}
+	}
+
+	return true;
+}
+
+
 float	occluders_max_projection(const vec3& axis)
 // Returns the maximum projection of any occluder point onto the given
 // axis.
@@ -257,11 +343,13 @@ float	occluders_max_projection(const vec3& axis)
 	float	max = -1000000.f;
 	for (int i = 0; i < s_occluders.size(); i++)
 	{
-		vec3	v = s_occluders[i].m_position;
-		float	proj = v * axis + s_occluders[i].m_radius;
-		if (proj > max)
+		if (s_occluders[i].has_visible_shadow())
 		{
-			max = proj;
+			float	proj = s_occluders[i].get_max_projection(axis);
+			if (proj > max)
+			{
+				max = proj;
+			}
 		}
 	}
 
@@ -330,17 +418,32 @@ vec3	from_persp(const vec3& v)
 }
 
 
+void	draw_light_arrow()
+// Draw an arrow icon showing the direction of the light.
+{
+	vec3	tip(s_light_arrow_spot + s_light_direction * 50.0f);
+	vec3	tip_l(tip - s_light_direction * 5.0f - s_light_right * 5.0f);
+	vec3	tip_r(tip - s_light_direction * 5.0f + s_light_right * 5.0f);
+
+	glColor3f(1, 1, 0.5f);
+	glBegin(GL_LINE_STRIP);
+	glVertex2fv(s_light_arrow_spot);
+	glVertex2fv(tip);
+	glVertex2fv(tip_l);
+	glVertex2fv(tip_r);
+	glVertex2fv(tip);
+	glEnd();
+}
+
+
 void	draw_light_rays(float density)
 // Show post-perspective light rays in ordinary space.
 {
-	// Direction perpendicular to the light.
-	vec3	light_right(s_light_direction.y, -s_light_direction.x, 0);
-
 	// Find the max necessary boundary of our light ray projections.
 	float	proj0, proj1;
-	find_projection_bounds(&proj0, &proj1, light_right);
-	vec3	extreme_0 = light_right * proj0;
-	vec3	extreme_1 = light_right * proj1;
+	find_projection_bounds(&proj0, &proj1, s_light_right);
+	vec3	extreme_0 = s_light_right * proj0;
+	vec3	extreme_1 = s_light_right * proj1;
 
 	vec3	extreme_0_prime = to_persp(extreme_0);
 	vec3	extreme_1_prime = to_persp(extreme_1);
@@ -378,8 +481,16 @@ void	draw_stuff(const controls& c, float density)
 	if (c.m_mouse_right)
 	{
 		// Re-compute light direction.
-		s_light_direction = mouse_pos;
+		s_light_direction = mouse_pos - s_light_arrow_spot;
 		s_light_direction.normalize();
+
+		// Direction perpendicular to the light.
+		s_light_right = vec3(s_light_direction.y, -s_light_direction.x, 0);
+
+		// Draw a white line to the mouse, so the user can see
+		// what they're orbiting around.
+		glColor3f(1, 1, 1);
+		draw_segment(s_light_arrow_spot, mouse_pos);
 	}
 
 	if (c.m_mouse_left_click)
@@ -408,6 +519,7 @@ void	draw_stuff(const controls& c, float density)
 		}
 	}
 
+	draw_light_arrow();
 	draw_light_rays(density);
 	draw_occluders();
 
