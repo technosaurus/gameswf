@@ -32,6 +32,20 @@
 
 namespace gameswf
 {
+	static string_hash<movie_interface*>	s_movie_library;
+
+	static file_opener_function	s_opener_function = NULL;
+
+	void	register_file_opener_callback(file_opener_function opener)
+	// Remember the given function pointer, and use it to open
+	// files for loading library movies.
+	{
+		s_opener_function = opener;
+	}
+
+	
+
+
 	// Keep a table of loader functions for the different tag types.
 	static hash<int, loader_function>	s_tag_loaders;
 

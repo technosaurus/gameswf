@@ -30,6 +30,11 @@
 #include "engine/dlmalloc.h"
 
 
+#ifdef __VISUALC__
+#pragma warning(disable : 4345)	// in MSVC 7.1, warning about placement new POD default initializer
+#endif // __VISUALC__
+
+
 template<class T>
 class array {
 // Resizable array.  Don't put anything in here that can't be moved

@@ -55,16 +55,34 @@ namespace gameswf
 
 
 	//
+	// Library management
+	//
+
+	// Release any library movies we've cached.  Do this when you want
+	// maximum cleanup.
+	void	clear_library();
+
+	// Register a callback to the host, for providing a file, given a
+	// "URL" (i.e. a path name).  This is for supporting SWF
+	// "libraries", where movies can share resources (fonts and
+	// sprites) from a source movie.
+	//
+	// gameswf will call this when it needs to create a library movie.
+	typedef tu_file* (*file_opener_function)(const char* url_or_path);
+	void	register_file_opener_callback(file_opener_function opener);
+
+
+	//
 	// Loader callbacks.
 	//
 
-	struct stream;
-	struct movie;
-	typedef void (*loader_function)(stream* input, int tag_type, movie* m);
-
+	// @@ move this into a more private header
 	// Register a loader function for a certain tag type.  Most
 	// standard tags are handled within gameswf.  Host apps might want
 	// to call this in order to handle special tag types.
+	struct stream;
+	struct movie;
+	typedef void (*loader_function)(stream* input, int tag_type, movie* m);
 	void	register_tag_loader(int tag_type, loader_function lf);
 
 
