@@ -31,6 +31,8 @@ namespace image
 			 SDL_Surface* in, float in_x0, float in_y0, float in_x1, float in_y1);
 
 	void	write_jpeg(SDL_RWops* out, SDL_Surface* image, int quality);
+
+	SDL_Surface*	read_jpeg(SDL_RWops* in);
 };
 
 
