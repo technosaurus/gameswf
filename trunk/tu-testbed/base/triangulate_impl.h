@@ -595,9 +595,6 @@ int	poly<coord_t>::find_valid_bridge_vert(const array<vert_t>& sorted_verts, int
 			// poly sorting, we know that the edge
 			// (pvi,pv1) can only intersect this poly.
 
-			// Avoid attaching to verts that are already
-			// duped.  Can create tangled paths.
-
 			if (any_edge_intersection(sorted_verts, v1, vi) == false)
 			{
 				return vi;
@@ -738,13 +735,6 @@ restart_build_ear_list:
 			// be invalid due to degenerate removal.
 			ear_list->clear();
 			goto restart_build_ear_list;
-
-// 			//
-// 			// Clip it first.  (Clipper pops from the back.)
-// 			ear_list->push_back(vi);
-
-// 			// Clip it right away.
-// 			break;
 		}
 		else if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v) > 0)
 		{
@@ -754,7 +744,6 @@ restart_build_ear_list:
 				if (! ear_contains_reflex_vertex(*sorted_verts, pvi->m_prev, vi, pvi->m_next))
 				{
 					// Valid ear.
-					ear_list->push_back(vi);
 					is_ear = true;
 				}
 			}
@@ -763,6 +752,8 @@ restart_build_ear_list:
 		if (is_ear)
 		{
 			// Add to the ear list.
+			ear_list->push_back(vi);
+
 			if (ear_list->size() >= MAX_EAR_COUNT)
 			{
 				// Don't add any more ears.

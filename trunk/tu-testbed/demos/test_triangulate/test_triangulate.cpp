@@ -329,7 +329,7 @@ int	main()
 	offset_path(&paths.back(), 1200, 300);
 #endif
 
-#if 1
+#if 0
 	// Lots of circles.
 
 	// @@ set this to 100 for a good performance torture test of bridge-finding.
@@ -413,6 +413,50 @@ int	main()
 	make_star(&paths.back(), 100, 300, 3);
 	reverse_path(&paths.back());
 #endif
+
+#if 1
+	// A direct, simplified expression of the "gnarly twist".
+	paths.resize(paths.size() + 1);
+
+	paths.back().push_back(0);
+	paths.back().push_back(0);
+
+	paths.back().push_back(3);
+	paths.back().push_back(0);
+
+	paths.back().push_back(3);
+	paths.back().push_back(2);
+
+	paths.back().push_back(0);
+	paths.back().push_back(2);
+
+	paths.back().push_back(0);
+	paths.back().push_back(3);
+
+	paths.back().push_back(2);
+	paths.back().push_back(3);
+
+	paths.back().push_back(2);
+	paths.back().push_back(2);
+
+	paths.back().push_back(2.5f);
+	paths.back().push_back(0.5f);
+
+	paths.back().push_back(1.5f);
+	paths.back().push_back(0.5f);
+
+	paths.back().push_back(2);
+	paths.back().push_back(2);
+
+	paths.back().push_back(2);
+	paths.back().push_back(3);
+
+	paths.back().push_back(0);
+	paths.back().push_back(3);
+
+	paths.back().push_back(0);
+	paths.back().push_back(2);
+#endif // 0
 
 #if 0
 	// Spiral.
