@@ -710,10 +710,11 @@ namespace gameswf
 			{
 				int	tag_type = str.open_tag();
 				loader_function	lf = NULL;
-				IF_VERBOSE_PARSE(log_msg("tag_type = %d\n", tag_type));
+				//IF_VERBOSE_PARSE(log_msg("tag_type = %d\n", tag_type));
 				if (tag_type == 1)
 				{
 					// show frame tag -- advance to the next frame.
+					IF_VERBOSE_PARSE(log_msg("  show_frame\n"));
 					m_loading_frame++;
 				}
 				else if (s_tag_loaders.get(tag_type, &lf))
@@ -1654,6 +1655,9 @@ namespace gameswf
 		void	read(stream* in)
 		{
 			m_color.read_rgb(in);
+
+			IF_VERBOSE_PARSE(log_msg("  set_background_color: (%d %d %d)\n",
+						 m_color.m_r, m_color.m_g, m_color.m_b));
 		}
 	};
 
@@ -1767,7 +1771,7 @@ namespace gameswf
 		
 		Uint16	character_id = in->read_u16();
 
-		IF_VERBOSE_PARSE(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+		IF_VERBOSE_PARSE(log_msg("  define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		//
 		// Read the image data.
@@ -1861,7 +1865,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		IF_VERBOSE_PARSE(log_msg("define_bits_jpeg3_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+		IF_VERBOSE_PARSE(log_msg("  define_bits_jpeg3_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		Uint32	jpeg_size = in->read_u32();
 		Uint32	alpha_position = in->get_position() + jpeg_size;
@@ -1923,7 +1927,7 @@ namespace gameswf
 		Uint16	width = in->read_u16();
 		Uint16	height = in->read_u16();
 
-		IF_VERBOSE_PARSE(log_msg("dbl2l: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
+		IF_VERBOSE_PARSE(log_msg("  defbitslossless2: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
 				tag_type,
 				character_id,
 				bitmap_format,
@@ -2169,12 +2173,12 @@ namespace gameswf
 		       || tag_type == 32);
 
 		Uint16	character_id = in->read_u16();
+		IF_VERBOSE_PARSE(log_msg("  shape_loader: id = %d\n", character_id));
 
 		shape_character_def*	ch = new shape_character_def;
 		ch->read(in, tag_type, true, m);
 
-		IF_VERBOSE_PARSE(log_msg("shape_loader: id = %d, rect ", character_id);
-				 ch->get_bound().print());
+		IF_VERBOSE_PARSE(log_msg("  bound rect:"); ch->get_bound().print());
 
 		m->add_character(character_id, ch);
 	}
@@ -2183,7 +2187,7 @@ namespace gameswf
 	{
 		assert(tag_type == 46);
 		Uint16 character_id = in->read_u16();
-		IF_VERBOSE_PARSE(log_msg("shape_morph_loader: id = %d\n", character_id));
+		IF_VERBOSE_PARSE(log_msg("  shape_morph_loader: id = %d\n", character_id));
 		morph2_character_def* morph = new morph2_character_def;
 		morph->read(in, tag_type, true, m);
 		m->add_character(character_id, morph);
@@ -2399,9 +2403,18 @@ namespace gameswf
 				m_depth = in->read_u16();
 				m_matrix.read(in);
 
+				IF_VERBOSE_PARSE(
+					log_msg("  char_id = %d\n"
+						"  depth = %d\n"
+						"  mat = \n",
+						m_character_id,
+						m_depth);
+					m_matrix.print());
+
 				if (in->get_position() < in->get_tag_end_position())
 				{
 					m_color_transform.read_rgb(in);
+					IF_VERBOSE_PARSE(log_msg("  cxform:\n"); m_color_transform.print());
 				}
 			}
 			else if (tag_type == 26)
@@ -2418,29 +2431,36 @@ namespace gameswf
 				bool	flag_move = in->read_uint(1) ? true : false;
 
 				m_depth = in->read_u16();
+				IF_VERBOSE_PARSE(log_msg("  depth = %d\n", m_depth));
 
 				if (has_char) {
 					m_character_id = in->read_u16();
+					IF_VERBOSE_PARSE(log_msg("  char id = %d\n", m_character_id));
 				}
+
 				if (has_matrix) {
 					m_has_matrix = true;
 					m_matrix.read(in);
+					IF_VERBOSE_PARSE(log_msg("  mat:\n"); m_matrix.print());
 				}
 				if (has_cxform) {
 					m_has_cxform = true;
 					m_color_transform.read_rgba(in);
+					IF_VERBOSE_PARSE(log_msg("  cxform:\n"); m_color_transform.print());
 				}
 				
 				if (has_ratio) {
 					m_ratio = (float)in->read_u16() / (float)65535;
+					IF_VERBOSE_PARSE(log_msg("  ratio: %f\n", m_ratio));
 				}
 				
 				if (has_name) {
 					m_name = in->read_string();
+					IF_VERBOSE_PARSE(log_msg("  name = %s\n", m_name ? m_name : "<null>"));
 				}
 				if (has_clip_bracket) {
 					m_clip_depth = in->read_u16(); 
-					IF_VERBOSE_PARSE(log_msg("HAS CLIP BRACKET!\n"));
+					IF_VERBOSE_PARSE(log_msg("  clip_depth = %d\n", m_clip_depth));
 				}
 				if (has_actions)
 				{
@@ -2459,6 +2479,8 @@ namespace gameswf
 						all_flags = in->read_u16();
 					}
 					UNUSED(all_flags);
+
+					IF_VERBOSE_PARSE(log_msg("  actions: flags = 0x%X\n", all_flags));
 
 					// Read swf_events.
 					for (;;)
@@ -2507,11 +2529,6 @@ namespace gameswf
 				}
                                 
 				//log_msg("place object at depth %i\n", m_depth);
-
-				IF_VERBOSE_PARSE({log_msg("po2r: name = %s\n", m_name ? m_name : "<null>");
-					 log_msg("po2r: char id = %d, mat:\n", m_character_id);
-					 m_matrix.print();}
-					);
 			}
 		}
 
@@ -2570,6 +2587,8 @@ namespace gameswf
 	void	place_object_2_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		assert(tag_type == 4 || tag_type == 26);
+
+		IF_VERBOSE_PARSE(log_msg("  place_object_2\n"));
 
 		place_object_2*	ch = new place_object_2;
 		ch->read(in, tag_type, m->get_version());
@@ -2733,7 +2752,7 @@ namespace gameswf
 			m_frame_count = in->read_u16();
 			m_playlist.resize(m_frame_count);	// need a playlist for each frame
 
-			IF_VERBOSE_PARSE(log_msg("sprite: frames = %d\n", m_frame_count));
+			IF_VERBOSE_PARSE(log_msg("  frames = %d\n", m_frame_count));
 
 			m_loading_frame = 0;
 
@@ -2744,6 +2763,7 @@ namespace gameswf
 				if (tag_type == 1)
 				{
 					// show frame tag -- advance to the next frame.
+					IF_VERBOSE_PARSE(log_msg("  show_frame (sprite)\n"));
 					m_loading_frame++;
 				}
 				else if (s_tag_loaders.get(tag_type, &lf))
@@ -2760,6 +2780,8 @@ namespace gameswf
 
 				in->close_tag();
 			}
+
+			IF_VERBOSE_PARSE(log_msg("  -- sprite END --\n"));
 		}
 	};
 
@@ -3227,6 +3249,7 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
 		// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
@@ -4155,14 +4178,12 @@ namespace gameswf
 	{
 		assert(tag_type == 39);
                 
-		IF_VERBOSE_PARSE(log_msg("sprite\n"));
-
 		int	character_id = in->read_u16();
+
+		IF_VERBOSE_PARSE(log_msg("  sprite\n  char id = %d\n", character_id));
 
 		sprite_definition*	ch = new sprite_definition(m);	// @@ combine sprite_definition with movie_def_impl
 		ch->read(in);
-
-		IF_VERBOSE_PARSE(log_msg("sprite: char id = %d\n", character_id));
 
 		m->add_character(character_id, ch);
 	}
@@ -4318,7 +4339,7 @@ namespace gameswf
 		remove_object_2*	t = new remove_object_2;
 		t->read(in);
 
-		IF_VERBOSE_PARSE(log_msg("remove_object_2(%d)\n", t->m_depth));
+		IF_VERBOSE_PARSE(log_msg("  remove_object_2(%d)\n", t->m_depth));
 
 		m->add_execute_tag(t);
 	}
@@ -4357,8 +4378,8 @@ namespace gameswf
 		sprite_definition* ch = (sprite_definition*) m->get_character_def(sprite_character_id);
 		assert(ch != NULL);
 
-		IF_VERBOSE_PARSE(log_msg("tag %d: do_init_action_loader\n", tag_type));
-		IF_VERBOSE_ACTION(log_msg("-- init actions in sprite %d\n", sprite_character_id));
+		IF_VERBOSE_PARSE(log_msg("  tag %d: do_init_action_loader\n", tag_type));
+		IF_VERBOSE_ACTION(log_msg("  -- init actions in sprite %d\n", sprite_character_id));
 
 		ch->m_init_actions = new action_buffer;
 		ch->m_init_actions->read(in);
@@ -4378,14 +4399,14 @@ namespace gameswf
 
 		int	count = in->read_u16();
 
-		IF_VERBOSE_PARSE(log_msg("export: count = %d\n", count));
+		IF_VERBOSE_PARSE(log_msg("  export: count = %d\n", count));
 
 		// Read the exports.
 		for (int i = 0; i < count; i++)
 		{
 			Uint16	id = in->read_u16();
 			char*	symbol_name = in->read_string();
-			IF_VERBOSE_PARSE(log_msg("export: id = %d, name = %s\n", id, symbol_name));
+			IF_VERBOSE_PARSE(log_msg("  export: id = %d, name = %s\n", id, symbol_name));
 
 			if (font* f = m->get_font(id))
 			{
@@ -4425,7 +4446,7 @@ namespace gameswf
 		char*	source_url = in->read_string();
 		int	count = in->read_u16();
 
-		IF_VERBOSE_PARSE(log_msg("import: source_url = %s, count = %d\n", source_url, count));
+		IF_VERBOSE_PARSE(log_msg("  import: source_url = %s, count = %d\n", source_url, count));
 
 		// Try to load the source movie into the movie library.
 		movie_definition_sub*	source_movie = NULL;
@@ -4446,7 +4467,7 @@ namespace gameswf
 		{
 			Uint16	id = in->read_u16();
 			char*	symbol_name = in->read_string();
-			IF_VERBOSE_PARSE(log_msg("import: id = %d, name = %s\n", id, symbol_name));
+			IF_VERBOSE_PARSE(log_msg("  import: id = %d, name = %s\n", id, symbol_name));
 
 			if (s_no_recurse_while_loading)
 			{

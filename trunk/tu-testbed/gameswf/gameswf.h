@@ -633,6 +633,7 @@ namespace gameswf
 		rgba	transform(const rgba in) const;
 		void	read_rgb(stream* in);
 		void	read_rgba(stream* in);
+		void	print() const;
 
 		static cxform	identity;
 	};
