@@ -19,22 +19,37 @@ namespace gameswf
 	{
 		button_character_definition*	m_def;
 		array<character *>	m_record_character;
+
+		enum mouse_flags
+		{
+			IDLE = 0,
+			FLAG_OVER = 1,
+			FLAG_DOWN = 2,
+			OVER_DOWN = FLAG_OVER|FLAG_DOWN,
+
+			// aliases
+			OVER_UP = FLAG_OVER,
+			OUT_DOWN = FLAG_DOWN
+		};
+		int	m_last_mouse_flags, m_mouse_flags;
+
 		enum mouse_state
 		{
-			OUT,		// when the mouse is not over the button, and mouse button is up.
-			OUT_DOWN,	// when the mouse is not over the button, and mouse button is down.
-			DOWN,		// when the mouse is over us, and mouse button is down.
-			OVER		// when the mouse is over us, and mouse button is not pressed.
+			UP = 0,
+			DOWN,
+			OVER
 		};
-		mouse_state	m_last_mouse_state, m_mouse_state;
+		mouse_state m_mouse_state;
 
 		button_character_instance(button_character_definition* def)
 			:
-			m_def(def)
+			m_def(def),
+			m_last_mouse_flags(IDLE),
+			m_mouse_flags(IDLE),
+			m_mouse_state(UP)
 		{
 			assert(m_def);
 			set_id(def->get_id());
-			restart();
 
 			int r, r_num =  m_def->m_button_records.size();
 			m_record_character.resize(r_num);
@@ -70,8 +85,9 @@ namespace gameswf
 
 		void	restart()
 		{
-			m_last_mouse_state = OUT;
-			m_mouse_state = OUT;
+			m_last_mouse_flags = IDLE;
+			m_mouse_flags = IDLE;
+			m_mouse_state = UP;
 			int r, r_num =  m_record_character.size();
 			for (r = 0; r < r_num; r++)
 			{
@@ -87,133 +103,29 @@ namespace gameswf
 		{
 			assert(m);
 
-			// Stop the movie.
-		//	m->set_play_state( movie::STOP );
+			// Get current mouse capture.
+			int id = m->get_mouse_capture();
 
-			// Look at the mouse state, and figure out our button state.  We want to
-			// know if the mouse is hovering over us, and whether it's clicking on us.
-			m_last_mouse_state = m_mouse_state;
-			int	mx, my, mbuttons;
-			m->get_mouse_state(&mx, &my, &mbuttons);
-			m_mouse_state = OUT;
-
-			// Find the mouse position in button-space.
-			point	mouse_position;
-			mat.transform_by_inverse(&mouse_position, point(PIXELS_TO_TWIPS(mx), PIXELS_TO_TWIPS(my)));
-
-			{for (int i = 0; i < m_def->m_button_records.size(); i++)
+			// update state if no mouse capture or we have the capture.
+			//if (id == -1 || (!m_def->m_menu && id == get_id()))
+			if (id == -1 || id == get_id())
 			{
-				button_record&	rec = m_def->m_button_records[i];
-				if (rec.m_character == NULL
-				    || rec.m_hit_test == false)
-				{
-					continue;
-				}
-
-				// Find the mouse position in character-space.
-				point	sub_mouse_position;
-				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
-
-				if (rec.m_character->point_test(sub_mouse_position.m_x, sub_mouse_position.m_y))
-				{
-					// The mouse is inside the shape.
-					m_mouse_state = OVER;
-					break;
-				}
-			}}
-
-			if (mbuttons)
-			{
-				// Mouse button is pressed.
-				if (m_mouse_state == OVER)
-				{
-					// Flash button is pressed.
-					m_mouse_state = DOWN;
-				}
-				else
-				{
-					m_mouse_state = OUT_DOWN;
-				}
+				update_state(m, mat);
 			}
 
-			// OUT/OUT_DOWN/DOWN/OVER
-			// Figure out what button_action::condition these states signify.
-			button_action::condition	c = (button_action::condition) 0;
-			if (m_mouse_state == OVER)
-			{
-				if (m_last_mouse_state == OUT)
-				{
-					c = button_action::IDLE_TO_OVER_UP;
-				}
-				else if (m_last_mouse_state == DOWN)
-				{
-					c = button_action::OVER_DOWN_TO_OVER_UP;
-				}
-			}
-			else if (m_mouse_state == OUT)
-			{
-				if (m_last_mouse_state == OVER)
-				{
-					c = button_action::OVER_UP_TO_IDLE;
-				}
-				else if (m_last_mouse_state == OUT_DOWN)
-				{
-					c = button_action::OUT_DOWN_TO_IDLE;
-				}
-				else if (m_last_mouse_state == DOWN)
-				{
-					c = button_action::OVER_DOWN_TO_IDLE;
-				}
-			}
-			else if (m_mouse_state == OUT_DOWN)
-			{
-				if (m_last_mouse_state == DOWN)
-				{
-					c = button_action::OVER_DOWN_TO_OUT_DOWN;
-				}
-			}
-			else if (m_mouse_state == DOWN)
-			{
-				if (m_last_mouse_state == OVER)
-				{
-					c = button_action::OVER_UP_TO_OVER_DOWN;
-				}
-				else if (m_last_mouse_state == OUT_DOWN)
-				{
-					c = button_action::OUT_DOWN_TO_OVER_DOWN;
-				}
-				else if (m_last_mouse_state == OUT)
-				{
-					c = button_action::IDLE_TO_OVER_DOWN;
-				}
-			}
-
-			// Add appropriate actions to the movie's execute list...
-			{for (int i = 0; i < m_def->m_button_actions.size(); i++)
-			{
-				if (m_def->m_button_actions[i].m_conditions & c)
-				{
-					// Matching action.
-					for (int j = 0; j < m_def->m_button_actions[i].m_actions.size(); j++)
-					{
-						m->add_action_buffer(&(m_def->m_button_actions[i].m_actions[j]));
-					}
-				}
-			}}
 
 			// Advance our relevant characters.
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
-				if (rec.m_character == NULL)
+				if (m_record_character[i] == NULL)
 				{
 					continue;
 				}
 
 				matrix	sub_matrix = mat;
 				sub_matrix.concatenate(rec.m_button_matrix);
-				if (m_mouse_state == OUT
-				    || m_mouse_state == OUT_DOWN)
+				if (m_mouse_state == UP)
 				{
 					if (rec.m_up)
 					{
@@ -242,21 +154,207 @@ namespace gameswf
 			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
-				if (rec.m_character == NULL)
+				if (m_record_character[i] == NULL)
 				{
 					continue;
 				}
-				if (((m_mouse_state == OUT || m_mouse_state == OUT_DOWN) && rec.m_up)
+				if ((m_mouse_state == UP && rec.m_up)
 				    || (m_mouse_state == DOWN && rec.m_down)
 				    || (m_mouse_state == OVER && rec.m_over))
 				{
 					display_info	sub_di = di;
 					sub_di.m_matrix.concatenate(rec.m_button_matrix);
 					sub_di.m_color_transform.concatenate(rec.m_button_cxform);
-					rec.m_character->display(sub_di);
+					m_record_character[i]->display(sub_di);
 				}
 			}
 		}
+
+		inline int	transition(int a, int b) const
+		// Combine the flags to avoid a conditional. It would be faster with a macro.
+		{
+			return (a << 2) | b;
+		}
+
+		void	update_state(movie* m, const matrix& mat) 
+		// Update button state.
+		{
+
+			// Look at the mouse state, and figure out our button state.  We want to
+			// know if the mouse is hovering over us, and whether it's clicking on us.
+			int	mx, my, mbuttons;
+			m->get_mouse_state(&mx, &my, &mbuttons);
+
+			m_last_mouse_flags = m_mouse_flags;
+			m_mouse_flags = 0;
+
+			// Find the mouse position in button-space.
+			point	mouse_position;
+			mat.transform_by_inverse(&mouse_position, point(PIXELS_TO_TWIPS(mx), PIXELS_TO_TWIPS(my)));
+
+			{for (int i = 0; i < m_def->m_button_records.size(); i++)
+			{
+				button_record&	rec = m_def->m_button_records[i];
+				if (rec.m_character == NULL
+				    || rec.m_hit_test == false)
+				{
+					continue;
+				}
+
+				// Find the mouse position in character-space.
+				point	sub_mouse_position;
+				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
+
+				if (rec.m_character->point_test(sub_mouse_position.m_x, sub_mouse_position.m_y))
+				{
+					// The mouse is inside the shape.
+					m_mouse_flags |= FLAG_OVER;
+					break;
+				}
+			}}
+
+			if (mbuttons)
+			{
+				// Mouse button is pressed.
+				m_mouse_flags |= FLAG_DOWN;
+			}
+
+
+			if (m_mouse_flags == m_last_mouse_flags)
+			{
+				// No state change
+				return;
+			}
+
+
+			// Figure out what button_action::condition these states signify.
+			button_action::condition	c = (button_action::condition) 0;
+			
+			int t = transition(m_last_mouse_flags, m_mouse_flags);
+
+			// Common transitions.
+			if (t == transition(IDLE, OVER_UP))	// Roll Over
+			{
+				c = button_action::IDLE_TO_OVER_UP;
+				m_mouse_state = OVER;
+			}
+			else if (t == transition(OVER_UP, IDLE))	// Roll Out
+			{
+				c = button_action::OVER_UP_TO_IDLE;
+				m_mouse_state = UP;
+			}
+			else 
+
+			// Menu button transitions.
+			if (m_def->m_menu)
+			{
+				if (t == transition(OVER_UP, OVER_DOWN))	// Press
+				{
+					c = button_action::OVER_UP_TO_OVER_DOWN;
+					m_mouse_state = DOWN;
+				}
+				else if (t == transition(OVER_DOWN, OVER_UP))	// Release
+				{
+					c = button_action::OVER_DOWN_TO_OVER_UP;
+					m_mouse_state = OVER;
+				}
+				else if (t == transition(IDLE, OVER_DOWN))	// Drag Over
+				{
+					c = button_action::IDLE_TO_OVER_DOWN;
+					m_mouse_state = DOWN;
+				}
+				else if (t == transition(OVER_DOWN, IDLE))	// Drag Out
+				{
+					c = button_action::OVER_DOWN_TO_IDLE;
+					m_mouse_state = UP;
+				}
+			}
+
+			// Push button transitions.
+			else
+			{
+				if (t == transition(OVER_UP, OVER_DOWN))	// Press
+				{
+					c = button_action::OVER_UP_TO_OVER_DOWN;
+					m_mouse_state = DOWN;
+					m->set_mouse_capture( get_id() );
+				}
+				else if (t == transition(OVER_DOWN, OVER_UP))	// Release
+				{
+					c = button_action::OVER_DOWN_TO_OVER_UP;
+					m_mouse_state = OVER;
+					m->set_mouse_capture( -1 );
+				}
+				else if (t == transition(OUT_DOWN, OVER_DOWN))	// Drag Over
+				{
+					c = button_action::OUT_DOWN_TO_OVER_DOWN;
+					m_mouse_state = DOWN;
+				}
+				else if (t == transition(OVER_DOWN, OUT_DOWN))	// Drag Out
+				{
+					c = button_action::OVER_DOWN_TO_OUT_DOWN;
+					m_mouse_state = UP;
+				}
+				else if (t == transition(OUT_DOWN, IDLE))	// Release Outside
+				{
+					c = button_action::OUT_DOWN_TO_IDLE;
+					m_mouse_state = UP;
+					m->set_mouse_capture( -1 );
+				}
+			}
+
+			// restart the characters of the new state.
+			restart_characters();
+
+			// Add appropriate actions to the movie's execute list...
+			{for (int i = 0; i < m_def->m_button_actions.size(); i++)
+			{
+				if (m_def->m_button_actions[i].m_conditions & c)
+				{
+					// Matching action.
+					for (int j = 0; j < m_def->m_button_actions[i].m_actions.size(); j++)
+					{
+						m->add_action_buffer(&(m_def->m_button_actions[i].m_actions[j]));
+					}
+				}
+			}}
+		}
+
+		void restart_characters()
+		{
+			// Advance our relevant characters.
+			{for (int i = 0; i < m_def->m_button_records.size(); i++)
+			{
+				//button_record&	rec = m_def->m_button_records[i];
+				if (m_record_character[i] != NULL)
+				{
+					m_record_character[i]->restart();
+				}
+
+				/*if (m_mouse_state == UP)
+				{
+					if (rec.m_up)
+					{
+						m_record_character[i]->restart();
+					}
+				}
+				else if (m_mouse_state == DOWN)
+				{
+					if (rec.m_down)
+					{
+						m_record_character[i]->restart();
+					}
+				}
+				else if (m_mouse_state == OVER)
+				{
+					if (rec.m_over)
+					{
+						m_record_character[i]->restart();
+					}
+				}*/
+			}}
+		}
+
 	};
 
 
@@ -369,8 +467,8 @@ namespace gameswf
 		}
 		else if (tag_type == 34)
 		{
-			int	flags = in->read_u8();
-			flags = flags;	// inhibit warning
+			// Read the menu flag.
+			m_menu = in->read_u8() != 0;
 
 			int	button_2_action_offset = in->read_u16();
 			int	next_action_pos = in->get_position() + button_2_action_offset - 2;
