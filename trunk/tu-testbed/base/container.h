@@ -387,35 +387,31 @@ private:
 
 template<class T, class U, class hash_functor = fixed_size_hash<T> >
 class hash {
-// Fairly stupid hash table.  TODO: study Lua's hashes, use their
-// tricks.
+// Hash table, linear probing, internal chaining.  One
+// interesting/nice thing about this implementation is that the table
+// itself is a flat chunk of memory containing no pointers, only
+// relative indices.  If the key and value types of the hash contain
+// no pointers, then the hash can be serialized using raw IO.  Could
+// come in handy.
 //
-// Never shrinks, unless you explicitly clear() or resize() it.
-// Expands on demand, though.  For best results, if you know roughly
-// how big your table will be, default it to that size when you create
-// it.
+// Never shrinks, unless you explicitly clear() it.  Expands on
+// demand, though.  For best results, if you know roughly how big your
+// table will be, default it to that size when you create it.
 public:
-	hash() { m_entry_count = 0;  m_size_mask = 0; }
-	hash(int size_hint) { m_entry_count = 0; m_size_mask = 0; resize(size_hint); }
-	~hash() {
-		clear();
-	}
+	hash() : m_table(NULL) { }
+	hash(int size_hint) : m_table(NULL) { set_capacity(size_hint); }
+	~hash() { clear(); }
 
 	// @@ need a "remove()"
 
 	void	set(const T& key, const U& value)
 	// Set a new or existing value under the key, to the value.
 	{
-		if (m_table.size() > 0)
+		int	index = find_index(key);
+		if (index >= 0)
 		{
-			unsigned int	hash_value = hash_functor()(key);
-			int	index = hash_value & m_size_mask;	// % m_table.size();
-			for (int i = 0; i < m_table[index].size(); i++) {
-				if (m_table[index][i].first == key) {
-					m_table[index][i].second = value;
-					return;
-				}
-			}
+			E(index).second = value;
+			return;
 		}
 
 		// Entry under key doesn't exist.
@@ -425,35 +421,100 @@ public:
 	void	add(const T& key, const U& value)
 	// Add a new value to the hash table, under the specified key.
 	{
-		assert(get(key, NULL) == false);
+		assert(find_index(key) == -1);
 
-		m_entry_count++;
 		check_expand();
+		assert(m_table);
+		m_table->m_entry_count++;
 
 		unsigned int	hash_value = hash_functor()(key);
-		entry	e;
-		e.first = key;
-		e.second = value;
+		int	index = hash_value & m_table->m_size_mask;
 
-		int	index = hash_value & m_size_mask;	// % m_table.size();
-		m_table[index].push_back(e);
+		entry*	natural_entry = &(E(index));
+		
+		if (natural_entry->is_empty())
+		{
+			// Put the new entry in.
+			new (natural_entry) entry(key, value, -1, hash_value);
+		}
+		else
+		{
+			// Find a blank spot.
+			int	blank_index = index;
+			for (;;)
+			{
+				blank_index = (blank_index + 1) & m_table->m_size_mask;
+				if (E(blank_index).is_empty()) break;	// found it
+			}
+			entry*	blank_entry = &E(blank_index);
+
+			if (int(natural_entry->m_hash_value & m_table->m_size_mask) == index)
+			{
+				// Collision.  Link into this chain.
+
+				// Move existing list head.
+				new (blank_entry) entry(*natural_entry);	// placement new, copy ctor
+
+				// Put the new info in the natural entry.
+				natural_entry->first = key;
+				natural_entry->second = value;
+				natural_entry->m_next_in_chain = blank_index;
+				natural_entry->m_hash_value = hash_value;
+			}
+			else
+			{
+				// Existing entry does not naturally
+				// belong in this slot.  Existing
+				// entry must be moved.
+
+				// Find natural location of collided element (i.e. root of chain)
+				int	collided_index = natural_entry->m_hash_value & m_table->m_size_mask;
+				for (;;)
+				{
+					entry*	e = &E(collided_index);
+					if (e->m_next_in_chain == index)
+					{
+						// Here's where we need to splice.
+						new (blank_entry) entry(*natural_entry);
+						e->m_next_in_chain = blank_index;
+						break;
+					}
+					collided_index = e->m_next_in_chain;
+					assert(collided_index >= 0 && collided_index <= m_table->m_size_mask);
+				}
+
+				// Put the new data in the natural entry.
+				natural_entry->first = key;
+				natural_entry->second = value;
+				natural_entry->m_hash_value = hash_value;
+				natural_entry->m_next_in_chain = -1;
+			}
+		}
 	}
 
 	void	clear()
 	// Remove all entries from the hash table.
 	{
-		for (int i = 0; i < m_table.size(); i++) {
-			m_table[i].clear();
+		if (m_table)
+		{
+			// Delete the entries.
+			for (int i = 0, n = m_table->m_size_mask; i <= n; i++)
+			{
+				entry*	e = &E(i);
+				if (e->is_empty() == false)
+				{
+					e->clear();
+				}
+			}
+			tu_free(m_table, sizeof(table) + sizeof(entry) * (m_table->m_size_mask + 1));
+			m_table = NULL;
 		}
-		m_table.clear();
-		m_entry_count = 0;
-		m_size_mask = 0;
 	}
 
 	bool	is_empty() const
 	// Returns true if the hash is empty.
 	{
-		return m_entry_count==0;
+		return m_table == NULL || m_table->m_entry_count == 0;
 	}
 
 
@@ -469,116 +530,104 @@ public:
 	// If value == NULL, return true or false according to the
 	// presence of the key, but don't touch *value.
 	{
-		if (m_table.size() == 0) {
-			return false;
-		}
-
-		size_t	hash_value = hash_functor()(key);
-		int	index = hash_value & m_size_mask;	// % m_table.size();
-		for (int i = 0; i < m_table[index].size(); i++) {
-			if (m_table[index][i].first == key) {
-				if (value) {
-					*value = m_table[index][i].second;
-				}
-				return true;
+		int	index = find_index(key);
+		if (index >= 0)
+		{
+			if (value) {
+				*value = E(index).second;
 			}
+			return true;
 		}
 		return false;
 	}
 
+
+	int	size()
+	{
+		return m_table == NULL ? 0 : m_table->m_entry_count;
+	}
+
+
 	void	check_expand()
-	// Resize the hash table, if it looks like the size is too small
-	// for the current number of entries.
+	// Resize the hash table to fit one more entry.  Often this
+	// doesn't involve any action.
 	{
-		int	new_size = m_table.size();
-
-		if (m_table.size() == 0 && m_entry_count > 0) {
-			// Need to expand.  Let's make the base table size 256
-			// elements.
-			new_size = 256;
-		} else if (m_table.size() * 2 < m_entry_count) {
-			// Expand.
-			new_size = (m_entry_count * 3) >> 1;
-		}
-
-		if (new_size != m_table.size()) {
-			resize(new_size);
+		if (m_table == NULL) {
+			// Initial creation of table.  Make a minimum-sized table.
+			set_raw_capacity(16);
+		} else if (m_table->m_entry_count * 3 > (m_table->m_size_mask + 1) * 2) {
+			// Table is more than 2/3rds full.  Expand.
+			set_raw_capacity(m_table->m_entry_count * 2);
 		}
 	}
 
 
-	void	resize(int new_size)
-	// Resize the hash table to the given size (Rehash the contents of
-	// the current table).
+	void	set_capacity(int new_size)
+	// Size the hash so that it can comfortably contain the given
+	// number of elements.  If the hash already contains more
+	// elements than new_size, then this may be a no-op.
 	{
-		if (new_size <= 0) {
-			// Special case.
-			clear();
-			return;
-		}
+		int	new_raw_size = (new_size * 3) / 2;
+		if (new_raw_size < size()) { return; }
 
-		// Force new_size to be a power of two.
-		int	bits = fchop(log2((float)(new_size-1)) + 1);
-		assert((1 << bits) >= new_size);
-
-		new_size = 1 << bits;
-		m_size_mask = new_size - 1;
-
-		array< array<entry> >	new_table(new_size);
-
-		// Copy all entries to the new table.
-		{for (int i = 0; i < m_table.size(); i++) {
-			for (int j = 0; j < m_table[i].size(); j++) {
-				entry&	e = m_table[i][j];
-				unsigned int	hash_value = hash_functor()(e.first);
-				
-				int	index = hash_value & m_size_mask;	// % new_table.size();
-				new_table[index].push_back(e);
-			}
-			m_table[i].clear();
-		}}
-		m_table.clear();
-
-		// Replace old table data with new table's data.
-		m_table.transfer_members(&new_table);
+		set_raw_capacity(new_raw_size);
 	}
+
 
 	// Behaves much like std::pair
 	struct entry
 	{
+		int	m_next_in_chain;	// internal chaining for collisions
+		size_t	m_hash_value;		// avoids recomputing.  Worthwhile?
 		T	first;
 		U	second;
+
+		entry() : m_next_in_chain(-2) {}
+		entry(const entry& e)
+			: m_next_in_chain(e.m_next_in_chain), m_hash_value(e.m_hash_value), first(e.first), second(e.second)
+		{
+		}
+		entry(const T& key, const U& value, int next_in_chain, int hash_value)
+			: m_next_in_chain(next_in_chain), m_hash_value(hash_value), first(key), second(value)
+		{
+		}
+		bool	is_empty() const { return m_next_in_chain == -2; }
+		bool	is_end_of_chain() const { return m_next_in_chain == -1; }
+
+		void	clear()
+		{
+			first.~T();	// placement delete
+			second.~U();	// placement delete
+			m_next_in_chain = -2;
+		}
 	};
 	
 	// Iterator API, like STL.
 
 	struct const_iterator
 	{
-		T	get_key() const { return m_hash->m_table[m_index0][m_index1].first; }
-		U	get_value() const { return m_hash->m_table[m_index0][m_index1].second; }
+		T	get_key() const { return m_hash->E(m_index).first; }
+		U	get_value() const { return m_hash->E(m_index).second; }
 
-		const entry&	operator*() const { return m_hash->m_table[m_index0][m_index1]; }
+		const entry&	operator*() const
+		{
+			assert(is_end() == false && (m_hash->E(m_index).is_empty() == false));
+			return m_hash->E(m_index);
+		}
 		const entry*	operator->() const { return &(operator*()); }
 
 		void	operator++()
 		{
 			assert(m_hash);
 
-			if (m_index0 < m_hash->m_table.size())
+			// Find next non-empty entry.
+			if (m_index <= m_hash->m_table->m_size_mask)
 			{
-				if (m_index1 < m_hash->m_table[m_index0].size() - 1)
+				m_index++;
+				while (m_index <= m_hash->m_table->m_size_mask
+				       && m_hash->E(m_index).is_empty())
 				{
-					m_index1++;
-				}
-				else
-				{
-					m_index0++;
-					while (m_index0 < m_hash->m_table.size()
-					       && m_hash->m_table[m_index0].size() == 0)
-					{
-						m_index0++;
-					}
-					m_index1 = 0;
+					m_index++;
 				}
 			}
 		}
@@ -593,8 +642,7 @@ public:
 			{
 				return
 					m_hash == it.m_hash
-					&& m_index0 == it.m_index0
-					&& m_index1 == it.m_index1;
+					&& m_index == it.m_index;
 			}
 		}
 
@@ -605,22 +653,22 @@ public:
 		{
 			return
 				m_hash == NULL
-				|| m_index0 >= m_hash->m_table.size();
+				|| m_hash->m_table == NULL
+				|| m_index > m_hash->m_table->m_size_mask;
 		}
 
 	protected:
 		friend class hash<T,U,hash_functor>;
 
-		const_iterator(const hash* h, int i0, int i1)
+		const_iterator(const hash* h, int index)
 			:
 			m_hash(h),
-			m_index0(i0),
-			m_index1(i1)
+			m_index(index)
 		{
 		}
 
 		const hash*	m_hash;
-		int	m_index0, m_index1;
+		int	m_index;
 	};
 	friend struct const_iterator;
 
@@ -628,15 +676,19 @@ public:
 	struct iterator : public const_iterator
 	{
 		// Allow non-const access to entries.
-		entry&	operator*() const { return const_cast<hash*>(m_hash)->m_table[m_index0][m_index1]; }
+		entry&	operator*() const
+		{
+			assert(is_end() == false);
+			return const_cast<hash*>(m_hash)->E(m_index);
+		}
 		entry*	operator->() const { return &(operator*()); }
 
 	private:
 		friend class hash<T,U,hash_functor>;
 
-		iterator(hash* h, int i0, int i1)
+		iterator(hash* h, int i0)
 			:
-			const_iterator(h, i0, i1)
+			const_iterator(h, i0)
 		{
 		}
 	};
@@ -645,41 +697,145 @@ public:
 
 	iterator	begin()
 	{
+		if (m_table == 0) return iterator(NULL, 0);
+
 		// Scan til we hit the first valid entry.
 		int	i0 = 0;
-		while (i0 < m_table.size()
-			&& m_table[i0].size() == 0)
+		while (i0 <= m_table->m_size_mask
+			&& E(i0).is_empty())
 		{
 			i0++;
 		}
-		return iterator(this, i0, 0);
+		return iterator(this, i0);
 	}
-	iterator	end() { return iterator(NULL, 0, 0); }
+	iterator	end() { return iterator(NULL, 0); }
 
 	const_iterator	begin() const { return const_cast<hash*>(this)->begin(); }
 	const_iterator	end() const { return const_cast<hash*>(this)->end(); }
 
 	iterator	find(const T& key)
 	{
-		if (m_table.size() == 0) {
-			return iterator(NULL, 0, 0);
+		int	index = find_index(key);
+		if (index >= 0)
+		{
+			return iterator(this, index);
 		}
-
-		size_t	hash_value = hash_functor()(key);
-		int	index = hash_value & m_size_mask;	// % m_table.size();
-		for (int i = 0; i < m_table[index].size(); i++) {
-			if (m_table[index][i].first == key) {
-				return iterator(this, index, i);
-			}
-		}
-		return iterator(NULL, 0, 0);
+		return iterator(NULL, 0);
 	}
+
 	const_iterator	find(const T& key) const { return const_cast<hash*>(this)->find(key); }
 
 private:
-	int	m_entry_count;
-	int	m_size_mask;
-	array< array<entry> >	m_table;
+	hash(const hash& h) { assert(0); } // @@ TODO
+	void	operator=(const hash& h) { assert(0); }	// @@ TODO
+
+	int	find_index(const T& key) const
+	// Find the index of the matching entry.  If no match, then return -1.
+	{
+		if (m_table == NULL) return -1;
+
+		size_t	hash_value = hash_functor()(key);
+		int	index = hash_value & m_table->m_size_mask;
+
+		const entry*	e = &E(index);
+		if (e->is_empty()) return -1;
+		if (int(e->m_hash_value & m_table->m_size_mask) != index) return -1;	// occupied by a collider
+
+		for (;;)
+		{
+			assert((e->m_hash_value & m_table->m_size_mask) == (hash_value & m_table->m_size_mask));
+
+			if (e->m_hash_value == hash_value && e->first == key)
+			{
+				// Found it.
+				return index;
+			}
+			assert(! (e->first == key));	// keys are equal, but hash differs!
+
+			// Keep looking through the chain.
+			index = e->m_next_in_chain;
+			if (index == -1) break;	// end of chain
+
+			assert(index >= 0 && index <= m_table->m_size_mask);
+			e = &E(index);
+
+			assert(e->is_empty() == false);
+		}
+		return -1;
+	}
+
+	// Helpers.
+	entry&	E(int index)
+	{
+		assert(m_table);
+		assert(index >= 0 && index <= m_table->m_size_mask);
+		return *(((entry*) (m_table + 1)) + index);
+	}
+	const entry&	E(int index) const
+	{
+		assert(m_table);
+		assert(index >= 0 && index <= m_table->m_size_mask);
+		return *(((entry*) (m_table + 1)) + index);
+	}
+
+
+	void	set_raw_capacity(int new_size)
+	// Resize the hash table to the given size (Rehash the
+	// contents of the current table).  The arg is the number of
+	// hash table entries, not the number of elements we should
+	// actually contain (which will be less than this).
+	{
+		if (new_size <= 0) {
+			// Special case.
+			clear();
+			return;
+		}
+
+		// Force new_size to be a power of two.
+		int	bits = fchop(log2((float)(new_size-1)) + 1);
+		assert((1 << bits) >= new_size);
+
+		new_size = 1 << bits;
+
+		hash<T, U, hash_functor>	new_hash;
+		new_hash.m_table = (table*) tu_malloc(sizeof(table) + sizeof(entry) * new_size);
+		new_hash.m_table->m_entry_count = 0;
+		new_hash.m_table->m_size_mask = new_size - 1;
+		{for (int i = 0; i < new_size; i++)
+		{
+			new_hash.E(i).m_next_in_chain = -2;	// mark empty
+		}}
+		
+		// Copy stuff to new_hash
+		if (m_table)
+		{
+			for (int i = 0, n = m_table->m_size_mask; i <= n; i++)
+			{
+				entry*	e = &E(i);
+				if (e->is_empty() == false)
+				{
+					// Insert old entry into new hash.
+					new_hash.add(e->first, e->second);
+					e->clear();	// placement delete of old element
+				}
+			}
+
+			// Delete our old data buffer.
+			delete [] m_table;
+		}
+
+		// Steal new_hash's data.
+		m_table = new_hash.m_table;
+		new_hash.m_table = NULL;
+	}
+
+	struct table
+	{
+		int	m_entry_count;
+		int	m_size_mask;
+		// entry array goes here!
+	};
+	table*	m_table;
 };
 
 
