@@ -66,8 +66,14 @@ private:
 		int face_count,
 		face faces[],
 		int axis,
-		float offset);
+		float offset
+		// for debugging
+		, const axial_box& back_bounds
+		, const axial_box& bounds
+		, const axial_box& front_bounds
+		);
 	float	evaluate_split(int face_count, face faces[], const axial_box& bounds, int axis, float offset);
+	int	classify_face(const face& f, int axis, float offset);
 
 	array<vec3>	m_verts;
 	node*	m_root;

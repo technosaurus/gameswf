@@ -18,6 +18,16 @@ struct axial_box
 	axial_box();	// zero box
 	axial_box(const vec3& min, const vec3& max);
 
+	enum invalid_ctor
+	{
+		INVALID
+	};
+	axial_box(invalid_ctor e, const vec3& min, const vec3& max);
+
+	//
+	// Getters
+	//
+
 	bool	is_valid() const;
 
 	vec3	get_center() const { return (m_min + m_max) * 0.5f; }
@@ -29,7 +39,16 @@ struct axial_box
 	// Get one of the 8 corner verts.
 	vec3	get_corner(int i) const;
 
+	float	get_surface_area() const;
+
+	//
+	// Setters
+	//
+
 	void	set_min_max(const vec3& min, const vec3& max);
+
+	// No validity check -- for intentionally setting an invalid box.
+	void	set_min_max_invalid(const vec3& min, const vec3& max);
 
 	void	set_center_extent(const vec3& center, const vec3& extent);
 
@@ -45,6 +64,13 @@ struct axial_box
 
 	// Expand the box.
 	void	set_enclosing(const vec3& v);
+
+	//
+	// Etc
+	//
+
+	bool	encloses(const vec3& v) const;
+	bool	encloses(const axial_box& b) const;
 
 private:
 	vec3	m_min, m_max;
@@ -68,6 +94,13 @@ inline	axial_box::axial_box(const vec3& min, const vec3& max)
 }
 
 
+inline	axial_box::axial_box(invalid_ctor e, const vec3& min, const vec3& max)
+// Init from extremes, don't check validity.
+{
+	set_min_max_invalid(min, max);
+}
+
+
 inline bool	axial_box::is_valid() const
 // Return true if we're OK.
 {
@@ -78,12 +111,46 @@ inline bool	axial_box::is_valid() const
 }
 
 
+inline vec3	axial_box::get_corner(int i) const
+{
+	assert(is_valid());
+	assert(i >= 0 && i < 8);
+
+	return vec3(
+		i & 1 ? m_min.x : m_max.x,
+		i & 2 ? m_min.y : m_max.y,
+		i & 4 ? m_min.z : m_max.z);
+}
+
+
+inline float	axial_box::get_surface_area() const
+{
+	assert(is_valid());
+
+	vec3	sides(m_max);
+	sides -= m_min;
+
+	return
+		(sides.x * sides.y
+		 + sides.x * sides.z
+		 + sides.y * sides.z) * 2;
+}
+
+
 inline void	axial_box::set_min_max(const vec3& min, const vec3& max)
 {
 	m_min = min;
 	m_max = max;
 	
 	assert(is_valid());
+}
+
+
+inline void	axial_box::set_min_max_invalid(const vec3& min, const vec3& max)
+// Don't check validity.
+{
+	m_min = min;
+	m_max = max;
 }
 
 
@@ -102,18 +169,6 @@ inline void	axial_box::set_extent(const vec3& extent)
 inline void	axial_box::set_center(const vec3& center)
 {
 	set_center_extent(center, get_extent());
-}
-
-
-inline vec3	axial_box::get_corner(int i) const
-{
-	assert(is_valid());
-	assert(i >= 0 && i < 8);
-
-	return vec3(
-		i & 1 ? m_min.x : m_max.x,
-		i & 2 ? m_min.y : m_max.y,
-		i & 4 ? m_min.z : m_max.z);
 }
 
 
@@ -149,6 +204,30 @@ inline void	axial_box::set_enclosing(const vec3& v)
 	m_max.z = fmax(m_max.z, v.z);
 
 	assert(is_valid());
+}
+
+
+inline bool	axial_box::encloses(const vec3& v) const
+// Return true if the given point is inside this box.
+{
+	assert(is_valid());
+
+	return
+		m_min.x <= v.x
+		&& m_min.y <= v.y
+		&& m_min.z <= v.z
+		&& m_max.x >= v.x
+		&& m_max.y >= v.y
+		&& m_max.z >= v.z;
+}
+
+
+inline bool	axial_box::encloses(const axial_box& b) const
+// Return true if this box encloses the given box.
+{
+	assert(is_valid());
+
+	return encloses(b.m_min) && encloses(b.m_max);
 }
 
 
