@@ -6,8 +6,8 @@
 #define CHUNKLOD_H
 
 
-#include "geometry.h"
-#include "cull.h"	// Hm.  Put cull stuff in geometry?
+#include <engine/geometry.h>
+#include <engine/cull.h>	// Hm.  Put cull stuff in geometry?
 
 
 struct lod_chunk;
@@ -32,7 +32,7 @@ public:
 	lod_chunk_tree(SDL_RWops* src);
 	void	set_parameters(float max_pixel_error, float screen_width, float horizontal_FOV_degrees);
 	void	update(const vec3& viewpoint);
-	void	render(const plane_info frustum[6], render_options opt);
+	int	render(const plane_info frustum[6], render_options opt);
 
 	// Used by our contained chunks.
 	Uint16	compute_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;

@@ -11,9 +11,12 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+
+#include <engine/cull.h>
+#include <engine/utility.h>
+#include <engine/ogl.h>
+
 #include "chunklod.h"
-#include "cull.h"
-#include "utility.h"
 
 
 static int	window_width = 1024;
@@ -41,10 +44,11 @@ render_options	render_opt;
 
 float	max_pixel_error = 5.0f;
 
-int	triangle_counter = 0;
-
-
-
+bool	measure_performance = false;
+int	frame_count;
+int	total_triangle_count = 0;
+int	frame_triangle_count = 0;
+int	performance_timer = 0;
 
 
 void	apply_matrix(const matrix& m)
@@ -215,6 +219,7 @@ void	print_usage()
 		"\n"
 		"Controls:\n"
 		"  'q' - quit\n"
+		"  'p' - toggle performance reporting\n"
 		"  'w' - toggle wireframe\n"
 		"  'b' - toggle rendering of geometry & bounding boxes\n"
 		"  'm' - toggle vertex morphing\n"
@@ -308,6 +313,7 @@ void	process_events()
 			if (strcmp(keyname, "m") == 0) {
 				// Toggle rendering of vertex morphing.
 				render_opt.morph = !render_opt.morph;
+				printf( "morphing = %d\n", render_opt.morph );
 			}
 			if (strcmp(keyname, "f") == 0) {
 				// Toggle viewpoint motion.
@@ -335,6 +341,16 @@ void	process_events()
 				// Slow down.
 				speed--;
 				if (speed < 1) speed = 1;
+			}
+			if (strcmp(keyname, "p") == 0) {
+				// Toggle performance monitor.
+				measure_performance = ! measure_performance;
+				if ( measure_performance ) {
+					// Reset counters & timer.
+					frame_count = 0;
+					total_triangle_count = frame_triangle_count = 0;
+					performance_timer = 0;
+				}
 			}
 			break;
 		}
@@ -393,6 +409,9 @@ extern "C" int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	// Initialize the engine's opengl subsystem (loads extensions if possible).
+	ogl::open();
+
 	// Load a texture.
 	SDL_Surface*	texture = IMG_Load("crater/crater.jpg");
 	if (texture) {
@@ -423,11 +442,15 @@ extern "C" int	main(int argc, char *argv[])
 	}
 	lod_chunk_tree*	model = new lod_chunk_tree(in);
 
+	// try setting this once and for all...
+	glEnableClientState(GL_VERTEX_ARRAY);
+
 	// Main loop.
 	Uint32	last_ticks = SDL_GetTicks();
 	for (;;) {
 		Uint32	ticks = SDL_GetTicks();
-		float	delta_t = ( ticks - last_ticks ) / 1000.f;
+		int	delta_ticks = ticks - last_ticks;
+		float	delta_t = delta_ticks / 1000.f;
 		last_ticks = ticks;
 
 		process_events();
@@ -442,9 +465,30 @@ extern "C" int	main(int argc, char *argv[])
 
 		clear();
 
-		model->render(transformed_frustum_plane, render_opt);
+		frame_triangle_count += model->render(transformed_frustum_plane, render_opt);
 
 		SDL_GL_SwapBuffers();
+
+		// Performance counting.
+		if ( measure_performance ) {
+			frame_count ++;
+			total_triangle_count += frame_triangle_count;
+			performance_timer += delta_ticks;
+
+			// See if one second has elapsed.
+			if ( performance_timer > 1000 ) {
+				// Print out stats for the previous second.
+				float	fps = frame_count / ( performance_timer / 1000.f );
+				float	tps = total_triangle_count / ( performance_timer / 1000.f );
+				printf( "fps = %3.1f : tri/s = %3.2fM : tri/frame = %2.3fM\n", fps, tps / 1000000.f, frame_triangle_count / 1000000.f );
+
+				total_triangle_count = 0;
+				performance_timer = 0;
+				frame_count = 0;
+			}
+
+			frame_triangle_count = 0;
+		}
 	}
 
 	return 0;
