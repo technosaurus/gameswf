@@ -9,21 +9,30 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <config.h>
+#include <engine/config.h>
 
 
-declare_cfloat( test_cfloat, 55.f );
-declare_cvar( test_cvar, "testfilename.txt" );
+cfloat test_cfloat( "test_cfloat", 55.f );
+cvalue c10("return 10");
+cglobal test_cglobal( "test_cglobal", cvalue( "return 'string bobo'" ) );
+
+// cvalue("poly(vec3(10,10,10), vec3(20,10,10), vec3(10,20,10))");
+
+// cvar("test_float", cfloat(55.f));	// declares global Lua var "test_cfloat"
+
+
 
 int	main()
 {
 	// Show initial test var values.
-	printf( "test_cfloat = %f, test_cvar = %s\n", float(test_cfloat), (const char*) test_cvar );
+	printf( "test_cfloat = %f, test_cglobal = %s\n",
+			(float) test_cfloat,
+			(const char*) test_cglobal );
 
 	// Change the values, and show the results.
 	test_cfloat = 100.5f;
-	test_cvar = "newfilename.jpg";
-	printf( "test_cfloat = %f, test_cvar = %s\n", float(test_cfloat), (const char*) test_cvar );
+	test_cglobal = "newfilename.jpg";
+	printf( "test_cfloat = %f, test_cglobal = %s\n", (float) test_cfloat, (const char*) test_cglobal );
 
 	// Interpreter loop, to fiddle with cfloats & cvars...
 	for (;;) {
@@ -37,11 +46,11 @@ int	main()
 		}
 		
 		// Execute it.
-		lua_dostring( config::g_luastate, buffer );
+		lua_dostring( config::L, buffer );
 	}
 
 	// Show ending var values.
-	printf( "test_cfloat = %f, test_cvar = %s\n", float(test_cfloat), (const char*) test_cvar );
+	printf( "test_cfloat = %f, test_cglobal = %s, test_cvalue = %s\n", (float) test_cfloat, (const char*) cglobal("test_cglobal"), (const char*) c10 );
 
 	return 0;
 }

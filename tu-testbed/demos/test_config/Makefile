@@ -1,29 +1,30 @@
 # Makefile for config demo
 
-SDL_CFLAGS := $(shell sdl-config --cflags)
-SDL_LDFLAGS := $(shell sdl-config --libs)
+include ../../config
 
 SDL_INCLUDE := SDL
-LUA_INCLUDE := c:/thatcher/lua/include
-ENGINE_INCLUDE := c:/thatcher/tu-testbed/engine
+LUA := c:/thatcher/lua-4.0
+LUA_INCLUDE := $(LUA)/include
 
-INCLUDE := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I$(ENGINE_INCLUDE)
+INCLUDE_PATHS := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I$(ENGINE_INCLUDE)
 
-LUA := c:/thatcher/lua/lib/liblua.a c:/thatcher/lua/lib/liblualib.a
-ENGINE := c:/thatcher/tu-testbed/engine/engine.a
+#SDL_CFLAGS := $(shell sdl-config --cflags)
+#SDL_LDFLAGS := $(shell sdl-config --libs)
 
-LIBS := $(ENGINE) $(LUA)
+CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
+LDFLAGS := $(SDL_LDFLAGS) $(LDFLAGS)
 
-CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE) -g
-LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
-# -lstdc++
+LUA_LIBS := $(LUA)/lib/liblua.$(LIB_EXT) $(LUA)/lib/liblualib.$(LIB_EXT)
 
-OBJS := test_config.o
+LIBS := $(ENGINE) $(LUA_LIBS) $(LIBS)
 
-.cpp.o :
-	g++ -c $^ $(CFLAGS)
+#CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE) -g
+#LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
 
-all: test_config
+OBJS := test_config.$(OBJ_EXT) # SDL_wrap.$(OBJ_EXT)
 
-test_config: $(OBJS)
-	g++ -o test_config $(OBJS) $(LIBS)
+all: test_config$(EXE_EXT)
+
+test_config$(EXE_EXT): $(OBJS) $(ENGINE)
+	$(CC) -o $@ $(OBJS) $(LIBS) $(LDFLAGS)
+
