@@ -1432,8 +1432,8 @@ namespace gameswf
 	void	clear()
 	// Maximum release of resources.
 	{
-		sprite_builtins_clear();
 		clear_library();
+		sprite_builtins_clear();
 		fontlib::clear();
 		action_clear();
 	}
@@ -1505,6 +1505,41 @@ namespace gameswf
 		s_movie_library.clear();
 		s_movie_library_inst.clear();
 	}
+
+// tulrich: Vitaly sent this code.  I don't trust it though!  It looks
+// like it may be dropping refs in order to remove cyclic references.
+// I would rather fix the source of any cyclic references directly.
+//
+// 	void clear_library()
+// 	// Drop all library references to movie_definitions, so they
+// 	// can be cleaned up.
+// 	{
+// 		{for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it =
+// 			      s_movie_library_inst.begin();
+// 		      it != s_movie_library_inst.end();
+// 		      ++it)
+// 		{
+// 			smart_ptr<movie_interface> obj = it->second;
+// 			while (obj->get_ref_count() > 2)            
+// 			{                               
+// 				obj->drop_ref();
+// 			}
+// 		}}
+// 		s_movie_library_inst.clear();
+//   
+// 		{for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = s_movie_library.begin();
+// 		      it != s_movie_library.end();                                                            
+// 		      ++it)                        
+// 		{
+// 			smart_ptr<movie_definition_sub> obj = it->second;
+// 			while (obj->get_ref_count() > 2)                 
+// 			{                               
+// 				obj->drop_ref();
+// 			}
+// 		}}
+// 		s_movie_library.clear();
+// 	}
+
 
 	movie_definition*	create_library_movie(const char* filename)
 	// Try to load a movie from the given url, if we haven't

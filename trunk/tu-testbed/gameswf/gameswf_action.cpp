@@ -3291,7 +3291,9 @@ namespace gameswf
 			ARG_U16,
 			ARG_S16,
 			ARG_PUSH_DATA,
-			ARG_DECL_DICT };
+			ARG_DECL_DICT,
+			ARG_FUNCTION2
+		};
 		struct inst_info
 		{
 			int	m_action_id;
@@ -3387,6 +3389,7 @@ namespace gameswf
 			{ 0x8B, "set_target", ARG_STR },
 			{ 0x8C, "goto_frame_lbl", ARG_STR },
 			{ 0x8D, "wait_for_fr_exp", ARG_HEX },
+			{ 0x8E, "function2", ARG_FUNCTION2 },
 			{ 0x94, "with", ARG_U16 },
 			{ 0x96, "push_data", ARG_PUSH_DATA },
 			{ 0x99, "goto", ARG_S16 },
@@ -3601,6 +3604,64 @@ namespace gameswf
 					log_msg("\"\n");
 					i++;
 				}
+			}
+			else if (fmt == ARG_FUNCTION2)
+			{
+				// Signature info for a function2 opcode.
+				int	i = 0;
+				const char*	function_name = (const char*) &instruction_data[3 + i];
+				i += strlen(function_name) + 1;
+
+				int	arg_count = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
+				i += 2;
+
+				int	reg_count = instruction_data[3 + i];
+				i++;
+
+				log_msg("\n\t\tname = '%s', arg_count = %d, reg_count = %d\n",
+					function_name, arg_count, reg_count);
+
+				bool	preload_global = (instruction_data[3 + i] & 0x80) != 0;
+				i++;
+
+				bool	preload_parent = (instruction_data[3 + i] & 0x01) != 0;
+				bool	preload_root   = (instruction_data[3 + i] & 0x02) != 0;
+				bool	suppress_super = (instruction_data[3 + i] & 0x04) != 0;
+				bool	preload_super  = (instruction_data[3 + i] & 0x08) != 0;
+				bool	suppress_args  = (instruction_data[3 + i] & 0x10) != 0;
+				bool	preload_args   = (instruction_data[3 + i] & 0x20) != 0;
+				bool	suppress_this  = (instruction_data[3 + i] & 0x40) != 0;
+				bool	preload_this   = (instruction_data[3 + i] & 0x80) != 0;
+				i++;
+
+				log_msg("\t\t        pp = %d\n"
+					"\t\t        pr = %d\n"
+					"\t\tss = %d, ps = %d\n"
+					"\t\tsa = %d, pa = %d\n"
+					"\t\tst = %d, pt = %d\n",
+					int(preload_parent),
+					int(preload_root),
+					int(suppress_super),
+					int(preload_super),
+					int(suppress_args),
+					int(preload_args),
+					int(suppress_this),
+					int(preload_this));
+
+				for (int argi = 0; argi < arg_count; argi++)
+				{
+					int	arg_register = instruction_data[3 + i];
+					i++;
+					const char*	arg_name = (const char*) &instruction_data[3 + i];
+					i += strlen(arg_name) + 1;
+
+					log_msg("\t\targ[%d] - reg[%d] - '%s'\n", argi, arg_register, arg_name);
+				}
+
+				int	function_length = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
+				i += 2;
+
+				log_msg("\t\tfunction length = %d\n", function_length);
 			}
 		}
 		else

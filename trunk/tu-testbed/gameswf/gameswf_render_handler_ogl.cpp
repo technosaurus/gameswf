@@ -900,7 +900,7 @@ void	software_resample(
 	}
 
 	glTexImage2D(GL_TEXTURE_2D, 0, in_format, dst_width, dst_height, 0, out_format, GL_UNSIGNED_BYTE, rescaled);
-	delete rescaled;
+	delete [] rescaled;
 }
 
 
@@ -1013,7 +1013,7 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rescaled->m_width, rescaled->m_height,
 				GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 
-		delete rescaled;
+		delete [] rescaled;
 #endif
 	}
 	else
@@ -1076,7 +1076,7 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
 
-		delete rescaled;
+		delete [] rescaled;
 #endif
 	}
 	else
