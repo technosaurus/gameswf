@@ -93,7 +93,7 @@ instead?
   it worth all the pain of interfacing to a C/C++ world?  My guess is
   probably not, but I don't really know.
 
-* Dylan?  It has a free implementation in Gwydion Dylan; not how
+* Dylan?  It has a free implementation in Gwydion Dylan; not sure how
   mature it is.  I'm absolutely not interested in any language which
   doesn't have a good free implementation.  Dylan, to me, looks like
   Common Lisp given a makeover by someone concerned with some mundane
