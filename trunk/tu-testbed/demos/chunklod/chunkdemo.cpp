@@ -589,7 +589,7 @@ int	main(int argc, char *argv[])
 			printf("Can't open '%s'\n", chunkfile);
 			exit(1);
 		}
-		lod_chunk_tree*	model = new lod_chunk_tree(in);
+		lod_chunk_tree*	model = new lod_chunk_tree(in, texture_quadtree);
 
 		// Enable vertex array, and just leave it on.
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -637,7 +637,7 @@ int	main(int argc, char *argv[])
 
 			model->set_parameters(max_pixel_error, (float) window_width, horizontal_fov_degrees);
 			if (enable_update) {
-				model->update(viewer_pos, texture_quadtree);
+				model->update(viewer_pos);
 			}
 
 			clear();
@@ -668,6 +668,9 @@ int	main(int argc, char *argv[])
 				frame_triangle_count = 0;
 			}
 		}
+
+		delete model;
+		if (texture_quadtree) delete texture_quadtree;
 
 		SDL_RWclose(in);
 	}

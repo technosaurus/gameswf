@@ -1,21 +1,23 @@
 GENERAL
 
-* Rough percent-done reporting for the batch tools
+* rationalize the executable names.
 
-* Streaming.  Have a worker thread.
+* change the chunk file format: put the table-of-contents in the
+  beginning (or end), with file offsets to the chunk data itself (so
+  chunkdemo doesn't have to scan the entire chunk file at startup).
 
-  * main annoyance is what to do when data isn't ready.  Can result in
-    pops when data becomes available.
-
-* Selective LOD.  This is a compression approach where less detail is
-  used in areas that it's known that the viewpoint will stay far away
-  from.  Like in Soul Ride, and my adaptive quadtree demo.  This is
-  mostly be a matter of describing the desired LOD info to the
-  chunker.
+* Adaptive detail.  This is a compression approach where less detail
+  is used in areas that it's known that the viewpoint will stay far
+  away from.  Like in Soul Ride, and my adaptive quadtree demo (and
+  virtually every game since the beginning of time...).  This is
+  mostly a matter of describing the desired LOD info to the chunker,
+  and letting it prune the chunk tree.
 
 * demonstrate putting several chunks next to each other -- most
   big-terrain games want this kind of functionality for paging
-  purposes.
+  purposes.  Also it's easier to handle really giant datasets in
+  pieces, because otherwise you run into filesystem limitations and
+  processing time nightmares.
 
 
 HEIGHTFIELD CHUNKER
@@ -33,6 +35,18 @@ HEIGHTFIELD CHUNKER
 
 CHUNKDEMO
 
+* IMPORTANT OPTIMIZATION TARGET:
+  wglShareLists/whatever-the-X-equivalent is, so that the textures can
+  be built by the loader thread.  Short of that, maybe a homemade
+  alternative to grody gluBuild2DMipmaps() would cut down on latency.
+  As it is, even with threading, there are still some annoying
+  framerate hitches that are not entirely necessary.
+
+* Really simple free-list for reusing texture objects!
+
+* Investigate the growing heap -- Bug?  Fragmentation?
+  Win32-specific?
+
 * deal with .tqt of a different depth than the .chu (just truncate
   .tqt queries)
 
@@ -41,8 +55,6 @@ CHUNKDEMO
   with the substantial per-vertex CPU processing that goes on during
   streaming, so the vertex shader may not be worth it for apps that
   aren't CPU limited.)
-
-* background loader thread
 
 * No collision-detection right now!  The chunk data is render-friendly
   but collision-query unfriendly.  The options as I see it are:
@@ -74,9 +86,10 @@ HEIGHTFIELD SHADER
   nor is it flexible.
 
 * Use Lua configuration to specify shaders.  Would be nice to do the
-  standard tricks, like choose a surface based on slope & altitude.
+  standard tricks, like choose an "ecosystem" based on slope &
+  altitude & curvature.
 
-* Noise, blending, or other techniques at tile boundaries.
+* Noise, blending, etc.
 
 * Better lighting, with shadows, and possibly some crude secondary
   lighting.

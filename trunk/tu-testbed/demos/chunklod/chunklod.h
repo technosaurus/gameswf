@@ -36,14 +36,13 @@ class lod_chunk_tree {
 // Use this class as the UI to a chunked-LOD object.
 // !!! turn this into an interface class and get the data into the .cpp file !!!
 public:
-	lod_chunk_tree(SDL_RWops* src);
+	lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree);
 	~lod_chunk_tree();
 
 	// External interface.
 	void	set_parameters(float max_pixel_error, float screen_width, float horizontal_FOV_degrees);
-	void	update(const vec3& viewpoint, const tqt* texture_quadtree);
+	void	update(const vec3& viewpoint);
 	int	render(const view_state& v, render_options opt);
-	void	shutdown();	// make sure loader thread is terminated, since it holds pointers into the tqt.
 
 	void	get_bounding_box(vec3* box_center, vec3* box_extent);
 
@@ -60,6 +59,7 @@ public:
 	float	m_base_chunk_dimension;	// x/z size of highest LOD chunks.
 	int	m_chunk_count;
 	lod_chunk**	m_chunk_table;
+	const tqt*	m_texture_quadtree;
 	chunk_tree_loader*	m_loader;
 };
 
