@@ -411,10 +411,28 @@ namespace gameswf
 	void	clear_library();
 	
 	//
-	// Font library control; gameswf shares its fonts among all loaded
-	// movies!
+	// Font library control.  gameswf is able to substitute fonts
+	// from the font library, in case a movie lacks glyphs for a
+	// declared font.  This would come into play since in recent
+	// versions of SWF, the movie is allowed to use "system
+	// fonts".  E.g. it can declare a font named "Arial", but not
+	// provide glyphs for it, and then the OS is expected to
+	// provide the font or a suitable replacement.
 	//
-	
+	// gameswf does not try to handle this automatically; if your
+	// host program wants to emulate this behavior, it needs to
+	// load a movie that includes glyph info for the standard
+	// fonts you want, and then explicitly pull those fonts out of
+	// the movie_def and add them to fontlib.
+	//
+	// @@ TODO: not all public APIs to enable this are in place
+	// yet!  Need md::get_font_count()/get_font(), and
+	// fontlib::add_font().
+	//
+	// Otherwise, text written in a font with no glyphs just
+	// doesn't render at all.  (@@ Hm, should probably render it
+	// as boxes or something?)
+
 	struct font;
 	namespace fontlib
 	{

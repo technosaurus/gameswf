@@ -19,8 +19,20 @@ namespace gameswf
 {
 	struct movie_def_impl;
 
+	struct texture_glyph;
 	namespace fontlib
 	{
+		// For adding fonts.
+		void	add_font(font* f);
+
+		// For drawing a textured glyph w/ current render transforms.
+		void	draw_glyph(const matrix& m, const texture_glyph* g, rgba color);
+
+		// Return the pixel height of text, such that the
+		// texture glyphs are sampled 1-to-1 texels-to-pixels.
+		// I.e. the height of the glyph box, in texels.
+		float	get_nominal_texture_glyph_height();
+
 		// Builds cached glyph textures from shape info.
 		void	generate_font_bitmaps(const array<font*>& fonts, movie_definition_sub* owner);
 		
