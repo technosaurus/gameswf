@@ -29,12 +29,18 @@ namespace jpeg
 		// Read header and create a jpeg input object.
 		static input*	create(SDL_RWops* in);
 
-		// Read SWF JPEG2-style header (separate encoding
-		// table followed by image data), and create jpeg
-		// input object.
-		static input*	create_swf_jpeg2(SDL_RWops* in);
+// 		// Read SWF JPEG2-style header (separate encoding
+// 		// table followed by image data), and create jpeg
+// 		// input object.
+// 		static input*	create_swf_jpeg2(SDL_RWops* in);
+
+		static input*	create_swf_jpeg2_header_only(SDL_RWops* in);
 
 		virtual ~input();
+
+		virtual void	discard_partial_buffer() = 0;
+		virtual void	start_image() = 0;
+		virtual void	finish_image() = 0;
 
 		virtual int	get_height() const = 0;
 		virtual int	get_width() const = 0;

@@ -12,7 +12,7 @@
 #include "engine/utility.h"
 #include <SDL/SDL.h>
 struct SDL_RWops;
-
+namespace jpeg { struct input; };
 
 namespace image
 {
@@ -77,6 +77,10 @@ namespace image
 	// For reading SWF JPEG2-style image data (slight variation on
 	// ordinary JPEG).
 	rgb*	read_swf_jpeg2(SDL_RWops* in);
+
+	// For reading SWF JPEG2-style image data, using pre-loaded
+	// headers stored in the given jpeg::input object.
+	rgb*	read_swf_jpeg2_with_tables(jpeg::input* loader);
 
 	// Fast, in-place, DESTRUCTIVE resample.  For making mip-maps.
 	// Munges the input image to produce the output image.

@@ -17,6 +17,7 @@
 #include "gameswf_render.h"
 #include "gameswf_stream.h"
 #include "engine/image.h"
+#include "engine/jpeg.h"
 #include <string.h>	// for memset
 #include <zlib.h>
 #include <typeinfo>
@@ -503,7 +504,8 @@ namespace gameswf
 		if (size <= 0)
 		{
 			// error.
-			assert(0);
+			IF_DEBUG(printf("error: move_display_object() -- no objects on display list\n"));
+//			assert(0);
 			return;
 		}
 
@@ -511,7 +513,8 @@ namespace gameswf
 		if (index < 0 || index >= size)
 		{
 			// error.
-			assert(0);
+			IF_DEBUG(printf("error: move_display_object() -- can't find object at depth %d\n", depth));
+//			assert(0);
 			return;
 		}
 
@@ -614,7 +617,7 @@ namespace gameswf
 		if (size <= 0)
 		{
 			// error.
-			assert(0);
+			IF_DEBUG(printf("remove_display_object: no characters in display list"));
 			return;
 		}
 
@@ -705,6 +708,7 @@ namespace gameswf
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 		array<action_buffer*>	m_action_list;	// pending actions.
+		string_hash<int>	m_named_frames;
 
 		// array<int>	m_frame_start;	// tag indices of frame starts. ?
 
@@ -719,6 +723,9 @@ namespace gameswf
 		float	m_time_remainder;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 
+		jpeg::input*	m_jpeg_in;
+
+
 		movie_impl()
 			:
 			m_frame_rate(30.0f),
@@ -730,11 +737,18 @@ namespace gameswf
 			m_time_remainder(0.0f),
 			m_mouse_x(0),
 			m_mouse_y(0),
-			m_mouse_buttons(0)
+			m_mouse_buttons(0),
+			m_jpeg_in(0)
 		{
 		}
 
-		virtual ~movie_impl() {}
+		virtual ~movie_impl()
+		{
+			if (m_jpeg_in)
+			{
+				delete m_jpeg_in;
+			}
+		}
 
 		int	get_current_frame() const { return m_current_frame; }
 
@@ -805,7 +819,35 @@ namespace gameswf
 			m_playlist[m_current_frame].push_back(e);
 		}
 
+		void	add_frame_name(const char* name)
+		// Labels the frame currently being loaded with the
+		// given name.  A copy of the name string is made and
+		// kept in this object.
+		{
+			assert(m_current_frame >= 0 && m_current_frame < m_frame_count);
+
+			tu_string	n = name;
+			assert(m_named_frames.get(n, NULL) == false);	// frame should not already have a name (?)
+			m_named_frames.add(n, m_current_frame);
+		}
+
 		
+		void	set_jpeg_loader(jpeg::input* j_in)
+		// Set an input object for later loading DefineBits
+		// images (JPEG images without the table info).
+		{
+			assert(m_jpeg_in == NULL);
+			m_jpeg_in = j_in;
+		}
+
+		jpeg::input*	get_jpeg_loader()
+		// Get the jpeg input loader, to load a DefineBits
+		// image (one without table info).
+		{
+			return m_jpeg_in;
+		}
+
+
 		void	add_display_object(Uint16 character_id,
 					   Uint16 depth,
 					   const cxform& color_transform,
@@ -1050,6 +1092,11 @@ namespace gameswf
 				str.close_tag();
 			}
 
+			if (m_jpeg_in)
+			{
+				delete m_jpeg_in;
+			}
+
 			restart();
 		}
 	};
@@ -1066,7 +1113,9 @@ namespace gameswf
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(4, place_object_2_loader);
+			register_tag_loader(6, define_bits_jpeg_loader);
 			register_tag_loader(7, button_character_loader);
+			register_tag_loader(8, jpeg_tables_loader);
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
 			register_tag_loader(11, define_text_loader);
@@ -1074,6 +1123,7 @@ namespace gameswf
 			register_tag_loader(20, define_bits_lossless_2_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
+			register_tag_loader(24, null_loader);	// "protect" tag; we're not an authoring tool so we don't care.
 			register_tag_loader(26, place_object_2_loader);
 			register_tag_loader(28, remove_object_2_loader);
 			register_tag_loader(32, define_shape_loader);
@@ -1081,6 +1131,7 @@ namespace gameswf
 			register_tag_loader(34, button_character_loader);
 			register_tag_loader(36, define_bits_lossless_2_loader);
 			register_tag_loader(39, sprite_loader);
+			register_tag_loader(43, frame_label_loader);
 			register_tag_loader(48, define_font_loader);
 		}
 	}
@@ -1104,6 +1155,19 @@ namespace gameswf
 	// Some tag implementations
 	//
 
+
+	void	null_loader(stream* in, int tag_type, movie* m)
+	// Silently ignore the contents of this tag.
+	{
+	}
+
+	void	frame_label_loader(stream* in, int tag_type, movie* m)
+	// Label the current frame of m with the name from the stream.
+	{
+		char*	n = in->read_string();
+		m->add_frame_name(n);
+		delete [] n;
+	}
 
 	struct set_background_color : public execute_tag
 	{
@@ -1181,13 +1245,48 @@ namespace gameswf
 	};
 
 
+	void	jpeg_tables_loader(stream* in, int tag_type, movie* m)
+	// Load JPEG compression tables that can be used to load
+	// images further along in the stream.
+	{
+		assert(tag_type == 8);
+
+		jpeg::input*	j_in = jpeg::input::create_swf_jpeg2_header_only(in->m_input);
+		assert(j_in);
+
+		m->set_jpeg_loader(j_in);
+	}
+
+
+	void	define_bits_jpeg_loader(stream* in, int tag_type, movie* m)
+	// A JPEG image without included tables; those should be in an
+	// existing jpeg::input object stored in the movie.
+	{
+		assert(tag_type == 6);
+
+		Uint16	character_id = in->read_u16();
+
+		bitmap_character_rgb*	ch = new bitmap_character_rgb();
+		ch->m_id = character_id;
+
+		//
+		// Read the image data.
+		//
+		
+		jpeg::input*	j_in = m->get_jpeg_loader();
+		assert(j_in);
+		j_in->discard_partial_buffer();
+		ch->m_image = image::read_swf_jpeg2_with_tables(j_in);
+		m->add_bitmap_character(character_id, ch);
+	}
+
+
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie* m)
 	{
 		assert(tag_type == 21);
 		
 		Uint16	character_id = in->read_u16();
 
-		in->align();
 		IF_DEBUG(printf("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
@@ -3130,14 +3229,14 @@ namespace gameswf
 			}
 
 			// Read actions.
-			for (;;)
+//			for (;;)
 			{
 				action_buffer	a;
 				a.read(in);
 				if (a.is_null())
 				{
 					// End marker; no more action records.
-					break;
+//					break;
 				}
 				m_actions.push_back(a);
 			}
@@ -3486,10 +3585,18 @@ namespace gameswf
 				int	length = in->read_u16();
 				m_buffer.push_back(length & 0x0FF);
 				m_buffer.push_back((length >> 8) & 0x0FF);
+				IF_DEBUG(printf("action: 0x%02X[%d]", action_id, length));
 				for (int i = 0; i < length; i++)
 				{
-					m_buffer.push_back(in->read_u8());
+					unsigned char	b = in->read_u8();
+					m_buffer.push_back(b);
+					IF_DEBUG(printf(" 0x%02X", b));
 				}
+				IF_DEBUG(printf("\n"));
+			}
+			else
+			{
+				IF_DEBUG(printf("action: 0x%02X\n", action_id));
 			}
 		}
 	}

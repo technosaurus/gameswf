@@ -18,6 +18,9 @@
 #include "engine/utility.h"
 
 
+namespace jpeg { struct input; }
+
+
 namespace gameswf
 {
 	struct stream;
@@ -35,6 +38,10 @@ namespace gameswf
 		virtual void	add_font(int id, font* ch) {}
 		virtual font*	get_font(int id) { return NULL; }
 		virtual void	add_execute_tag(execute_tag* c) {}
+		virtual void	add_frame_name(const char* name) {}
+
+		virtual void	set_jpeg_loader(jpeg::input* j_in) {}
+		virtual jpeg::input*	get_jpeg_loader() { return NULL; }
 
 		virtual bitmap_character*	get_bitmap_character(int character_id) { return 0; }
 		virtual void	add_bitmap_character(int character_id, bitmap_character* ch) {}
@@ -159,7 +166,10 @@ namespace gameswf
 
 	struct movie_container;
 
+	void	null_loader(stream* in, int tag_type, movie* m);
 	void	set_background_color_loader(stream* in, int tag_type, movie* m);
+	void	jpeg_tables_loader(stream* in, int tag_type, movie* m);
+	void	define_bits_jpeg_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie* m);
 	void	define_shape_loader(stream* in, int tag_type, movie* m);
 	void	define_font_loader(stream* in, int tag_type, movie* m);
@@ -171,6 +181,7 @@ namespace gameswf
 	void	remove_object_2_loader(stream* in, int tag_type, movie* m);
 	void	do_action_loader(stream* in, int tag_type, movie* m);
 	void	button_character_loader(stream* in, int tag_type, movie* m);
+	void	frame_label_loader(stream* in, int tag_type, movie* m);
 
 };	// end namespace gameswf
 
