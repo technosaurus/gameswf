@@ -28,6 +28,7 @@ namespace gameswf
 	struct font;
 	struct action_buffer;
 	struct bitmap_character;
+	struct sound_sample { virtual ~sound_sample() {} };
 	namespace render { struct bitmap_info; }
 
 
@@ -52,6 +53,9 @@ namespace gameswf
 
 		virtual bitmap_character*	get_bitmap_character(int character_id) { return 0; }
 		virtual void	add_bitmap_character(int character_id, bitmap_character* ch) {}
+
+		virtual sound_sample*	get_sound_sample(int character_id) { return 0; }
+		virtual void	add_sound_sample(int character_id, sound_sample* sam) {}
 
 		virtual void	add_display_object(Uint16 character_id,
 						   Uint16 depth,

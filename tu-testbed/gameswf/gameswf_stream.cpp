@@ -31,6 +31,25 @@ namespace gameswf
 	{
 	}
 
+
+// @@ better?
+// 	int	stream::read_uint(int bitcount)
+// 	{
+//		assert(bitcount <= 24);
+// 		while (m_unused_bits < bitcount)
+// 		{
+// 			// Get more data.
+// 			m_current_bits |= m_input->read_byte() << m_unused_bits;
+// 			m_unused_bits += 8;
+// 		}
+
+// 		int	result = m_current_bits & ((1 << bitcount) - 1);
+// 		m_current_bits >>= bitcount;
+// 		m_unused_bits -= bitcount;
+		
+// 		return result;
+// 	}
+
 	
 	int	stream::read_uint(int bitcount)
 	// Reads a bit-packed unsigned integer from the stream

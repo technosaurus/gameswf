@@ -159,10 +159,13 @@ namespace gameswf
 		enum format_type
 		{
 			FORMAT_RAW = 0,		// unspecified format.  Useful for 8-bit sounds???
-			FORMAT_ADPCM = 1,
+			FORMAT_ADPCM = 1,	// gameswf doesn't pass this through; it uncompresses and sends FORMAT_NATIVE16
 			FORMAT_MP3 = 2,
 			FORMAT_UNCOMPRESSED = 3,	// 16 bits/sample, little-endian
 			FORMAT_NELLYMOSER = 6,	// Mystery proprietary format; see nellymoser.com
+
+			// gameswf tries to convert data to this format when possible:
+			FORMAT_NATIVE16 = 7	// gameswf extension: 16 bits/sample, native-endian
 		};
 		// If stereo is true, samples are interleaved w/ left sample first.
 
@@ -184,7 +187,15 @@ namespace gameswf
 			) = 0;
 
 		// gameswf calls this when it wants you to play the defined sound.
-		virtual void	play_sound(int sound_handle /* , volume, pan, etc? */) = 0;
+		//
+		// loop_count == 0 means play the sound once (1 means play it twice, etc)
+		virtual void	play_sound(int sound_handle, int loop_count /* , volume, pan, etc? */) = 0;
+
+		// Stop the specified sound if it's playing.
+		// (Normally a full-featured sound API would take a
+		// handle specifying the *instance* of a playing
+		// sample, but SWF is not expressive that way.)
+		virtual void	stop_sound(int sound_handle) = 0;
 
 		// gameswf calls this when it's done with a particular sound.
 		virtual void	delete_sound(int sound_handle) = 0;
@@ -198,16 +209,6 @@ namespace gameswf
 	// If you want sound support, you should set this at startup,
 	// before loading or playing any movies!
 	void	set_sound_handler(sound_handler* s);
-
-	// Utility function to uncompress ADPCM.  Output data is
-	// actually SIGNED 16-BIT INTEGER, native endianness.
-	// data_out must have enough room for sample_count*2 bytes in
-	// mono, or sample_count*4 bytes in stereo.
-	void	adpcm_expand(
-		void* data_out,
-		const void* data_in,
-		int sample_count,	// in stereo, this is number of *pairs* of samples
-		bool stereo);
 
 }	// namespace gameswf
 

@@ -22,12 +22,21 @@ basic_files = \
 		tu-testbed/docs/README	\
 		tu-testbed/docs/STYLE
 
-engine_files = \
-		tu-testbed/engine/Makefile \
-		tu-testbed/engine/*.cpp	\
-		tu-testbed/engine/*.c	\
-		tu-testbed/engine/*.h	\
-		tu-testbed/engine/TODO
+base_files = \
+		tu-testbed/base/Makefile \
+		tu-testbed/base/*.cpp	\
+		tu-testbed/base/*.c	\
+		tu-testbed/base/*.h	\
+		tu-testbed/base/TODO
+
+geometry_files = \
+		tu-testbed/geometry/Makefile \
+		tu-testbed/geometry/*.cpp	\
+		tu-testbed/geometry/*.c	\
+		tu-testbed/geometry/*.h	\
+		tu-testbed/geometry/TODO
+
+engine_files = $(base_files) $(geometry_files)
 
 chunklod_files = \
 		tu-testbed/go_chunklod.bat	\
@@ -79,7 +88,7 @@ chunkdemo.zip:
 
 gameswf.zip:
 	cd ..; zip tu-testbed/gameswf.zip	\
-		$(basic_files) $(engine_files) $(gameswf_files)
+		$(basic_files) $(base_files) $(gameswf_files)
 
 bspdemo.zip:
 	cd ..; zip tu-testbed/bspdemo.zip \
@@ -93,12 +102,7 @@ bspdemo.zip:
 		tu-testbed/demos/bsp/TODO	\
 		tu-testbed/demos/bsp/*.ply	\
 		tu-testbed/demos/bsp/*.pl	\
-		tu-testbed/engine/Makefile \
-		tu-testbed/engine/*.cpp	\
-		tu-testbed/engine/*.h	\
-		tu-testbed/engine/TODO
-	# Include the lua stuff to make it easier to build the demo.
-	cd ..; zip tu-testbed/bspdemo.zip -r lua/*
+		$(engine_files)
 
 psm_vistool.zip:
 	cd ..; zip tu-testbed/psm_vistool.zip \

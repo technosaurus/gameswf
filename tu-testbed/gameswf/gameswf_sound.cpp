@@ -26,16 +26,31 @@ namespace gameswf
 	}
 
 
-	struct sound_sample
+	struct sound_sample_impl : public sound_sample
 	{
 		int	m_sound_handler_id;
 
-		sound_sample(int id)
+		sound_sample_impl(int id)
 			:
 			m_sound_handler_id(id)
 		{
 		}
+
+		~sound_sample_impl()
+		{
+			if (s_sound_handler)
+			{
+				s_sound_handler->delete_sound(m_sound_handler_id);
+			}
+		}
 	};
+
+	// Utility function to uncompress ADPCM.
+	static void	adpcm_expand(
+		void* data_out,
+		stream* in,
+		int sample_count,	// in stereo, this is number of *pairs* of samples
+		bool stereo);
 
 
 	void	define_sound_loader(stream* in, int tag_type, movie* m)
@@ -59,10 +74,41 @@ namespace gameswf
 		// If we have a sound_handler, ask it to init this sound.
 		if (s_sound_handler)
 		{
-			// @@ This is pretty awful -- lots of copying, slow reading.
-			int	data_bytes = in->get_tag_end_position() - in->get_position();
-			unsigned char*	data = new unsigned char[data_bytes];
-			for (int i = 0; i < data_bytes; i++) { data[i] = in->read_u8(); }
+			int	data_bytes = 0;
+			unsigned char*	data = NULL;
+
+			if (format == sound_handler::FORMAT_ADPCM)
+			{
+				// Uncompress the ADPCM before handing data to host.
+				data_bytes = sample_count * (stereo ? 4 : 2);
+				data = new unsigned char[data_bytes];
+				adpcm_expand(data, in, sample_count, stereo);
+				format = sound_handler::FORMAT_NATIVE16;
+			}
+			else
+			{
+				// @@ This is pretty awful -- lots of copying, slow reading.
+				data_bytes = in->get_tag_end_position() - in->get_position();
+				data = new unsigned char[data_bytes];
+				for (int i = 0; i < data_bytes; i++) { data[i] = in->read_u8(); }
+
+				// Swap bytes on behalf of the host, to make it easier for the handler.
+				// @@ I'm assuming this is a good idea?  Most sound handlers will prefer native endianness?
+				if (format == sound_handler::FORMAT_UNCOMPRESSED
+				    && sample_16bit)
+				{
+					// Swap sample bytes and fix sign bit.
+					for (int i = 0; i < data_bytes - 1; i += 2)
+					{
+					#ifndef _TU_LITTLE_ENDIAN_
+						swap(data[i], data[i+1]);
+					#endif // not _TU_LITTLE_ENDIAN_
+//						*(Sint16*)(&data[i]) ^= 0x0000;	// @@ ?
+					}
+
+					format = sound_handler::FORMAT_NATIVE16;
+				}
+			}
 			
 			int	handler_id = s_sound_handler->create_sound(
 				data,
@@ -71,18 +117,100 @@ namespace gameswf
 				format,
 				s_sample_rate_table[sample_rate],
 				stereo);
-//			sound_sample*	sam = new sound_sample(handler_id);
-//			m->add_sound(character_id, sam);
+			sound_sample*	sam = new sound_sample_impl(handler_id);
+			m->add_sound_sample(character_id, sam);
 
 			delete [] data;
 		}
 	}
 
 
+	struct start_sound_tag : public execute_tag
+	{
+		Uint16	m_handler_id;
+		int	m_loop_count;
+		bool	m_stop_playback;
+
+		start_sound_tag()
+			:
+			m_handler_id(0),
+			m_loop_count(0),
+			m_stop_playback(false)
+		{
+		}
+
+
+		void	read(stream* in, int tag_type, movie* m, const sound_sample_impl* sam)
+		// Initialize this StartSound tag from the stream & given sample.
+		// Insert ourself into the movie.
+		{
+			assert(sam);
+
+			in->read_uint(2);	// skip reserved bits.
+			m_stop_playback = in->read_uint(1) ? true : false;
+			bool	no_multiple = in->read_uint(1) ? true : false;
+			bool	has_envelope = in->read_uint(1) ? true : false;
+			bool	has_loops = in->read_uint(1) ? true : false;
+			bool	has_out_point = in->read_uint(1) ? true : false;
+			bool	has_in_point = in->read_uint(1) ? true : false;
+
+			Uint32	in_point = 0;
+			Uint32	out_point = 0;
+			if (has_in_point) { in_point = in->read_u32(); }
+			if (has_out_point) { out_point = in->read_u32(); }
+			if (has_loops) { m_loop_count = in->read_u16(); }
+			// if (has_envelope) { env_count = read_uint8(); read envelope entries; }
+
+			m_handler_id = sam->m_sound_handler_id;
+			m->add_execute_tag(this);
+		}
+
+
+		void	execute(movie* m)
+		{
+			if (s_sound_handler)
+			{
+				if (m_stop_playback)
+				{
+					s_sound_handler->stop_sound(m_handler_id);
+				}
+				else
+				{
+					s_sound_handler->play_sound(m_handler_id, m_loop_count);
+				}
+			}
+		}
+	};
+
+
 	void	start_sound_loader(stream* in, int tag_type, movie* m)
 	// Load a StartSound tag.
 	{
+		assert(tag_type == 15);
+
+		Uint16	sound_id = in->read_u16();
+
+		sound_sample_impl*	sam = (sound_sample_impl*) m->get_sound_sample(sound_id);
+		if (sam)
+		{
+			start_sound_tag*	sst = new start_sound_tag();
+			sst->read(in, tag_type, m, sam);
+
+			IF_VERBOSE_PARSE(log_msg("start_sound tag: id=%d, stop = %d, loop ct = %d\n",
+						 sound_id, int(sst->m_stop_playback), sst->m_loop_count));
+		}
+		else
+		{
+			if (s_sound_handler)
+			{
+				log_error("start_sound_loader: sound_id %d is not defined\n", sound_id);
+			}
+		}
+		
 	}
+
+
+	// void	define_button_sound(...) ???
 
 
 // @@ currently not implemented
@@ -133,148 +261,142 @@ namespace gameswf
 	// Original IMA spec doesn't seem to be on the web :(
 
 
-	template<int n_bits> void do_sample(int& sample, int& stepsize_index, int raw_code)
-	// Core of ADPCM -- generate a single sample based on previous
-	// sample and compressed input sample.
-	//
-	// sample and stepsize_index are in/out params.  raw_code is the
-	// N-bit compressed input sample.
-	{
-		assert(raw_code >= 0 && raw_code < (1 << n_bits));
+	// @@ lots of macros here!  It seems that VC6 can't correctly
+	// handle integer template args, although it's happy to
+	// compile them?!
 
-		static const int	HI_BIT = (1 << (n_bits - 1));
-		int*	index_update_table = s_index_update_tables[n_bits - 2];
-
-		// Core of ADPCM.
-
-		int	code_mag = raw_code & (HI_BIT - 1);
-		bool	code_sign_bit = (raw_code & HI_BIT) ? 1 : 0;
-		int	mag = (code_mag << 1) + 1;	// shift in an LSB (they do this so that pos & neg zero are different)
-
-		int	stepsize = s_stepsize[stepsize_index];
-
-		// Compute the new sample.  It's the predicted value
-		// (i.e. the previous value), plus a delta.  The delta
-		// comes from the code times the stepsize.  going for
-		// something like: delta = stepsize * (code * 2 + 1) >> code_bits
-		int	delta = (stepsize * mag) >> (n_bits - 1);
-		if (code_sign_bit) delta = -delta;
-
-		sample += delta;
-		sample = iclamp(sample, -32768, 32767);
-
-		// Update our stepsize index.  Use a lookup table.
-		stepsize_index += index_update_table[raw_code];
-		stepsize_index = iclamp(stepsize_index, 0, STEPSIZE_CT - 1);
+//	void DO_SAMPLE(int n_bits, int& sample, int& stepsize_index, int raw_code)
+#define DO_SAMPLE(n_bits, sample, stepsize_index, raw_code)									\
+	{															\
+		assert(raw_code >= 0 && raw_code < (1 << n_bits));								\
+																\
+		static const int	HI_BIT = (1 << (n_bits - 1));								\
+		int*	index_update_table = s_index_update_tables[n_bits - 2];							\
+																\
+		/* Core of ADPCM. */												\
+																\
+		int	code_mag = raw_code & (HI_BIT - 1);									\
+		bool	code_sign_bit = (raw_code & HI_BIT) ? 1 : 0;								\
+		int	mag = (code_mag << 1) + 1;	/* shift in LSB (they do this so that pos & neg zero are different)*/	\
+																\
+		int	stepsize = s_stepsize[stepsize_index];									\
+																\
+		/* Compute the new sample.  It's the predicted value			*/					\
+		/* (i.e. the previous value), plus a delta.  The delta			*/					\
+		/* comes from the code times the stepsize.  going for			*/					\
+		/* something like: delta = stepsize * (code * 2 + 1) >> code_bits	*/					\
+		int	delta = (stepsize * mag) >> (n_bits - 1);								\
+		if (code_sign_bit) delta = -delta;										\
+																\
+		sample += delta;												\
+		sample = iclamp(sample, -32768, 32767);										\
+																\
+		/* Update our stepsize index.  Use a lookup table. */								\
+		stepsize_index += index_update_table[code_mag];									\
+		stepsize_index = iclamp(stepsize_index, 0, STEPSIZE_CT - 1);							\
 	}
 
 
-	template<int n_bits>
-	int	extract_bits(const unsigned char*& in_data, int& current_bits, int& unused_bits)
-	// Get an n_bits integer from the input stream.  current_bits is a
-	// temp repository for the next few bits of input.  unused_bits
-	// tells us how many bits of current_bits are valid.
+	struct in_stream
 	{
-		if (unused_bits < n_bits)
+		const unsigned char*	m_in_data;
+		int	m_current_bits;
+		int	m_unused_bits;
+
+		in_stream(const unsigned char* data)
+			:
+			m_in_data(data),
+			m_current_bits(0),
+			m_unused_bits(0)
 		{
-			// Get more data.
-			current_bits |= (*in_data) << unused_bits;
-			in_data++;
-			unused_bits += 8;
 		}
+	};
 
-		int	result = current_bits & ((1 << n_bits) - 1);
-		current_bits >>= n_bits;
-		unused_bits -= n_bits;
 
-		return result;
+//	void DO_MONO_BLOCK(Sint16** out_data, int n_bits, int sample_count, stream* in, int sample, int stepsize_index)
+#define DO_MONO_BLOCK(out_data, n_bits, sample_count, in, sample, stepsize_index)						\
+	{															\
+		/* First sample doesn't need to be decompressed. */								\
+		sample_count--;													\
+		*(*out_data)++ = (Sint16) sample;										\
+																\
+		while (sample_count--)												\
+		{														\
+			int	raw_code = in->read_uint(n_bits);								\
+			DO_SAMPLE(n_bits, sample, stepsize_index, raw_code);	/* sample & stepsize_index are in/out params */	\
+			*(*out_data)++ = (Sint16) sample;									\
+		}														\
 	}
 
 
-	template<int n_bits>
-	void do_mono_block(Sint16* out_data, const unsigned char* in_data, int sample, int stepsize_index)
-	// Uncompress 4096 mono samples of ADPCM.
-	{
-		int	sample_count = 4096;
-		int	current_bits = 0;
-		int	unused_bits = 0;
-
-		while (sample_count--)
-		{
-			*out_data++ = (Sint16) sample;
-			int	raw_code = extract_bits<n_bits>(in_data, current_bits, unused_bits);
-			do_sample<n_bits>(sample, stepsize_index, raw_code);	// sample & stepsize_index are in/out params
-		}
-	}
-
-
-	template<int n_bits>
-	void do_stereo_block(
-		Sint16* out_data,
-		const unsigned char* in_data,
-		int left_sample,
-		int left_stepsize_index,
-		int right_sample,
-		int right_stepsize_index
-		)
-	// Uncompress 4096 stereo sample pairs of ADPCM.
-	{
-		int	sample_count = 4096;
-		int	current_bits = 0;
-		int	unused_bits = 0;
-
-		while (sample_count--)
-		{
-			*out_data++ = (Sint16) left_sample;
-			int	left_raw_code = extract_bits<n_bits>(in_data, current_bits, unused_bits);
-			do_sample<n_bits>(left_sample, left_stepsize_index, left_raw_code);
-
-			*out_data++ = (Sint16) right_sample;
-			int	right_raw_code = extract_bits<n_bits>(in_data, current_bits, unused_bits);
-			do_sample<n_bits>(right_sample, right_stepsize_index, right_raw_code);
-		}
+// 	void do_stereo_block(
+// 		Sint16** out_data,	// in/out param
+// 		int n_bits,
+// 		int sample_count,
+// 		stream* in,
+// 		int left_sample,
+// 		int left_stepsize_index,
+// 		int right_sample,
+// 		int right_stepsize_index
+// 		)
+#define DO_STEREO_BLOCK(out_data, n_bits, sample_count, in, left_sample, left_stepsize_index, right_sample, right_stepsize_index) \
+	/* Uncompress 4096 stereo sample pairs of ADPCM. */									  \
+	{															  \
+		/* First samples don't need to be decompressed. */								  \
+		sample_count--;													  \
+		*(*out_data)++ = (Sint16) left_sample;										  \
+		*(*out_data)++ = (Sint16) right_sample;										  \
+																  \
+		while (sample_count--)												  \
+		{														  \
+			int	left_raw_code = in->read_uint(n_bits);								  \
+			DO_SAMPLE(n_bits, left_sample, left_stepsize_index, left_raw_code);					  \
+			*(*out_data)++ = (Sint16) left_sample;									  \
+																  \
+			int	right_raw_code = in->read_uint(n_bits);								  \
+			DO_SAMPLE(n_bits, right_sample, right_stepsize_index, right_raw_code);					  \
+			*(*out_data)++ = (Sint16) right_sample;									  \
+		}														  \
 	}
 
 
 	void	adpcm_expand(
 		void* out_data_void,
-		const void* in_data_void,
+		stream* in,
 		int sample_count,	// in stereo, this is number of *pairs* of samples
 		bool stereo)
-	// Utility function: uncompress ADPCM data from in_data[] to
+	// Utility function: uncompress ADPCM data from in stream to
 	// out_data[].  The output buffer must have (sample_count*2)
 	// bytes for mono, or (sample_count*4) bytes for stereo.
 	{
-		int	blocks = sample_count >> 12;	// 4096 samples per block!
-		int	extra_samples = sample_count & ((1 << 12) - 1);
-
 		Sint16*	out_data = (Sint16*) out_data_void;
 
-		const unsigned char*	in_data = (const unsigned char*) in_data_void;
-
 		// Read header.
-		int	n_bits = (*in_data++) & 3 + 2;	// 2 to 5 bits
+		int	n_bits = in->read_uint(2) + 2;	// 2 to 5 bits
 
-		while (blocks--)
+		while (sample_count)
 		{
 			// Read initial sample & index values.
-			int	sample = (*in_data++);
-			sample += (*in_data++) << 8;
-			if (sample & 0x08000) { sample |= ~0x07FFF; }	// sign-extend
+			int	sample = in->read_sint(16);
 
-			int	stepsize_index = (*in_data++);
-			stepsize_index = iclamp(stepsize_index, 0, STEPSIZE_CT - 1);
+			int	stepsize_index = in->read_uint(6);
+			assert(STEPSIZE_CT >= (1 << 6));	// ensure we don't need to clamp.
+
+			int	samples_this_block = imin(sample_count, 4096);
+			sample_count -= samples_this_block;
 
 			if (stereo == false)
 			{
-				switch (n_bits) {
+#define DO_MONO(n) DO_MONO_BLOCK(&out_data, n, samples_this_block, in, sample, stepsize_index)
+
+				switch (n_bits)
+				{
 				default: assert(0); break;
-				case 2: do_mono_block<2>(out_data, in_data, sample, stepsize_index); break;
-				case 3: do_mono_block<3>(out_data, in_data, sample, stepsize_index); break;
-				case 4: do_mono_block<4>(out_data, in_data, sample, stepsize_index); break;
-				case 5: do_mono_block<5>(out_data, in_data, sample, stepsize_index); break;
+				case 2: DO_MONO(2); break;
+				case 3: DO_MONO(3); break;
+				case 4: DO_MONO(4); break;
+				case 5: DO_MONO(5); break;
 				}
-				out_data += 4096;
 			}
 			else
 			{
@@ -282,31 +404,26 @@ namespace gameswf
 
 				// Got values for left channel; now get initial sample
 				// & index for right channel.
-				int	right_sample = (*in_data++);
-				right_sample += (*in_data++) << 8;
-				if (right_sample & 0x08000) { right_sample |= ~0x07FFF; }	// sign-extend
-				
-				int	right_stepsize_index = (*in_data++);
-				right_stepsize_index = iclamp(right_stepsize_index, 0, STEPSIZE_CT - 1);
+				int	right_sample = in->read_sint(16);
 
-				switch (n_bits) {
+				int	right_stepsize_index = in->read_uint(6);
+				assert(STEPSIZE_CT >= (1 << 6));	// ensure we don't need to clamp.
+
+#define DO_STEREO(n) 					\
+	DO_STEREO_BLOCK(				\
+		&out_data, n, samples_this_block,	\
+		in, sample, stepsize_index,		\
+		right_sample, right_stepsize_index)
+			
+				switch (n_bits)
+				{
 				default: assert(0); break;
-				case 2: do_stereo_block<2>(out_data, in_data, sample, stepsize_index, right_sample, right_stepsize_index); break;
-				case 3: do_stereo_block<3>(out_data, in_data, sample, stepsize_index, right_sample, right_stepsize_index); break;
-				case 4: do_stereo_block<4>(out_data, in_data, sample, stepsize_index, right_sample, right_stepsize_index); break;
-				case 5: do_stereo_block<5>(out_data, in_data, sample, stepsize_index, right_sample, right_stepsize_index); break;
+				case 2: DO_STEREO(2); break;
+				case 3: DO_STEREO(3); break;
+				case 4: DO_STEREO(4); break;
+				case 5: DO_STEREO(5); break;
 				}
-				out_data += 4096 * 2;
 			}
-		}
-
-		if (extra_samples)
-		{
-			log_error(
-				"ADPCM buffer should have a multiple of 4096 samples.  Padding %d samples with 0's\n",
-				extra_samples);
-			int	extra_bytes = extra_samples * (stereo ? 4 : 2);
-			memset(out_data, 0, extra_bytes);
 		}
 	}
 

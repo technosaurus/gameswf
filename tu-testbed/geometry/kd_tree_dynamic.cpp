@@ -585,18 +585,18 @@ void	kd_tree_dynamic::clip_faces(array<face>* faces, int axis, float offset)
 			// Sort...
 			if (vr[0] > vr[1])
 			{
-				swap(vr[0], vr[1]);
-				swap(f.m_vi[0], f.m_vi[1]);
+				swap(&vr[0], &vr[1]);
+				swap(&f.m_vi[0], &f.m_vi[1]);
 			}
 			if (vr[1] > vr[2])
 			{
-				swap(vr[1], vr[2]);
-				swap(f.m_vi[1], f.m_vi[2]);
+				swap(&vr[1], &vr[2]);
+				swap(&f.m_vi[1], &f.m_vi[2]);
 			}
 			if (vr[0] > vr[1])
 			{
-				swap(vr[0], vr[1]);
-				swap(f.m_vi[0], f.m_vi[1]);
+				swap(&vr[0], &vr[1]);
+				swap(&f.m_vi[0], &f.m_vi[1]);
 			}
 
 			if (vr[0] == 0 || vr[2] == 0)

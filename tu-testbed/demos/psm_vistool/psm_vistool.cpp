@@ -369,7 +369,7 @@ void	find_projection_bounds(float* min_proj, float* max_proj, const vec3& axis)
 	if (fp0 > fp1)
 	{
 		my_axis = -axis;
-		swap(fp0, fp1);
+		swap(&fp0, &fp1);
 	}
 
 	// Check occluders.
