@@ -11,9 +11,11 @@
 // morphing is always vertical).
 
 
-#include <windows.h>
-#include <GL/gl.h>
-#include "utility.h"
+#include <stdlib.h>
+
+#include <engine/ogl.h>
+#include <engine/utility.h>
+
 #include "chunklod.h"
 
 
@@ -86,11 +88,13 @@ struct lod_chunk {
 	morph_info	morph_verts;	// extra info for CPU morphing of verts
 
 //methods:
+	// needs a destructor!
+
 	void	clear(int level);
 	void	update(const lod_chunk_tree& c, const vec3& viewpoint);
 	void	force_parent_enabled(const vec3& viewpoint);
 	void	morph_vertices(vertex_info* verts, const morph_info& morph_verts, float f);
-	void	render(const plane_info frustum[6], cull::result_info cull_info, render_options opt);
+	int	render(const plane_info frustum[6], cull::result_info cull_info, render_options opt);
 
 	void	load(SDL_RWops* in, int level);
 	void	compute_bounding_box();
@@ -107,7 +111,7 @@ struct lod_edge {
 	morph_info	morph_verts[4];	// info for CPU morphing the edge verts
 
 //methods:
-	void	render();
+	int	render();
 	void	clear();
 };
 
@@ -152,7 +156,7 @@ void	vertex_info::load(SDL_RWops* in)
 {
 	// Load verts.
 	vertex_count = SDL_ReadLE16(in);
-	vertices = new vec3[vertex_count];
+	vertices = (vec3*) ogl::allocate_vertex_memory( vertex_count * sizeof(vec3) );
 	for (int i = 0; i < vertex_count; i++) {
 		vertices[i].set(0, ReadFloat32(in));
 		vertices[i].set(1, ReadFloat32(in));
@@ -161,7 +165,7 @@ void	vertex_info::load(SDL_RWops* in)
 		
 	// Load indices.
 	index_count = SDL_ReadLE32(in);
-	indices = new Uint16[index_count];
+	indices = new Uint16[ index_count ];
 	{for (int i = 0; i < index_count; i++) {
 		indices[i] = SDL_ReadLE16(in);
 	}}
@@ -174,7 +178,7 @@ void	morph_info::load(SDL_RWops* in)
 // Load info about a set of morph vertices.
 {
 	vertex_count = SDL_ReadLE16(in);
-	vertices = new vertex[vertex_count];
+	vertices = new vertex[ vertex_count ];
 	for (int i = 0; i < vertex_count; i++) {
 		vertices[i].index = SDL_ReadLE16(in);
 		vertices[i].y0 = ReadFloat32(in);
@@ -188,13 +192,10 @@ void	morph_info::load(SDL_RWops* in)
 void	vertex_info::render()
 // Render this vertex buffer.
 {
-	// !!! change this to use the array calls instead !!!
 	glColor3f(1, 1, 1);
 
 	glVertexPointer(3, GL_FLOAT, 0, (float*) &(vertices[0]));
-//	glLockArraysEXT(0, VertexCount);
 	glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, indices);
-//	glUnlockArraysEXT();
 
 //	glBegin(GL_TRIANGLES);
 //	for (int i = 0; i < index_count; i++) {
@@ -302,9 +303,11 @@ void	lod_chunk::morph_vertices(vertex_info* verts, const morph_info& morph_verts
 }
 
 
-void	lod_chunk::render(const plane_info frustum[6], cull::result_info cull_info, render_options opt)
+int	lod_chunk::render(const plane_info frustum[6], cull::result_info cull_info, render_options opt)
 // Draws the given lod tree.  Uses the current state stored in the
 // tree w/r/t enabled & LOD level.
+//
+// Returns the number of triangles rendered.
 {
 //	// Frustum culling.
 //	if (cull_info.active_planes) {
@@ -314,6 +317,8 @@ void	lod_chunk::render(const plane_info frustum[6], cull::result_info cull_info,
 //			return;
 //		}
 //	}
+
+	int	triangle_count = 0;
 
 	if (enabled) {
 		if (opt.morph) {
@@ -330,45 +335,54 @@ void	lod_chunk::render(const plane_info frustum[6], cull::result_info cull_info,
 		if (opt.show_geometry) {
 			// draw this chunk.
 			verts.render();
+			triangle_count += verts.index_count / 3;
 		}
 	} else {
 		// recurse to children.  some subset of our descendants will be rendered in our stead.
 		for (int i = 0; i < child_count; i++) {
-			children[i]->render(frustum, cull_info, opt);
+			triangle_count += children[i]->render(frustum, cull_info, opt);
 		}
 
 		// recurse to child edges, to make sure the cracks get filled between our child chunks.
 		{for (int i = 0; i < child_edge_count; i++) {
-			child_edges[i]->render();
+			triangle_count += child_edges[i]->render();
 		}}
 	}
+
+	return triangle_count;
 }
 
 
-void	lod_edge::render()
+int	lod_edge::render()
 // Draw the edge, according to the enabled & LOD info stored in the
 // given tree.
+// 
+// Returns the number of triangles rendered.
 {
+	int	triangle_count = 0;
 /*
 	if (either neighbor enabled) {
 		if (t_junction) {
 			// joining three chunks; two at finer LOD and one at current LOD
 			morph our three sets of verts;
 			render_verts(v, verts, t_junction_mesh);
+			triangle_count += something;
 		} else {
 			// joining two chunks at the same level.
 			morph our morph verts;
 			render_verts(v, verts, plain_junction_mesh);
+			triangle_count += something;
 		}
 	} else {
 		// recurse to child edges.  some subset of our descendents will be rendered.
 		for (int i = 0; i < 2; i++) {
 			if (children[i]) {
-				children[i]->render();
+				triangle_count += children[i]->render();
 			}
 		}
 	}
 */
+	return triangle_count;
 }
 
 
@@ -487,15 +501,21 @@ void	lod_chunk_tree::update(const vec3& viewpoint)
 }
 
 
-void	lod_chunk_tree::render(const plane_info frustum[6], render_options opt)
+int	lod_chunk_tree::render(const plane_info frustum[6], render_options opt)
 // Displays our model, using the LOD state computed during the last
 // call to update().
+//
+// Returns the number of triangles rendered.
 {
-	glEnableClientState(GL_VERTEX_ARRAY);
+	int	triangle_count = 0;
 
-	root->render(frustum, cull::result_info(), opt);
+//	glEnableClientState(GL_VERTEX_ARRAY);
 
-	glDisableClientState(GL_VERTEX_ARRAY);
+	triangle_count = root->render(frustum, cull::result_info(), opt);
+
+//	glDisableClientState(GL_VERTEX_ARRAY);
+
+	return triangle_count;
 }
 
 
