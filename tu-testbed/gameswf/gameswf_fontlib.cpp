@@ -602,27 +602,89 @@ namespace fontlib
 			{
 				// Yes, a real bitwise match.  Use the previous
 				// image's texture data.
-				const texture_glyph&	identical_tg = identical_image->m_source_font->get_texture_glyph(
-					identical_image->m_glyph_index);
+				texture_glyph	identical_tg =
+					identical_image->
+					m_source_font->
+					get_texture_glyph(identical_image->m_glyph_index);
+
+				if (identical_tg.is_renderable() == false)
+				{
+					// The matching glyph hasn't been pushed into the font yet.
+					// Search for it in s_pending_glyphs.
+					bool	found_it = false;
+					for (int i = 0, n = s_pending_glyphs.size(); i < n; i++)
+					{
+						const pending_glyph_info&	pgi = s_pending_glyphs[i];
+						if (pgi.m_source_font == identical_image->m_source_font
+						    && pgi.m_glyph_index == identical_image->m_glyph_index)
+						{
+							// This is the one we want to alias with.
+							identical_tg = pgi.m_texture_glyph;
+							found_it = true;
+						}
+					}
+
+					if (found_it == false)
+					{
+						// Should not happen -- glyph should either be in the font, or in s_pending_glyphs.
+						assert(0);
+						return false;
+					}
+				}
+
+				texture_glyph	tg;
+
+				// copy the bitmap & uv data from identical_tg
+				tg = identical_tg;
+
+				// Use our own offset, in case it's different.
+				tg.m_uv_origin.m_x = tg.m_uv_bounds.m_x_min
+					+ rgi.m_offset_x / GLYPH_CACHE_TEXTURE_SIZE;
+				tg.m_uv_origin.m_y = tg.m_uv_bounds.m_y_min
+					+ rgi.m_offset_y / GLYPH_CACHE_TEXTURE_SIZE;
+
 				if (identical_tg.is_renderable())
 				{
-					texture_glyph	tg;
-
-					// copy the bitmap & uv data from identical_tg
-					tg = identical_tg;
-
-					// Use our own offset, in case it's different.
-					tg.m_uv_origin.m_x = tg.m_uv_bounds.m_x_min
-						+ rgi.m_offset_x / GLYPH_CACHE_TEXTURE_SIZE;
-					tg.m_uv_origin.m_y = tg.m_uv_bounds.m_y_min
-						+ rgi.m_offset_y / GLYPH_CACHE_TEXTURE_SIZE;
-
-					s_pending_glyphs.push_back(pending_glyph_info(rgi.m_source_font, rgi.m_glyph_index, tg));
-
-					return true;
+					// This image is already packed and has a valid bitmap_info.
+					// Push straight into our font.
+					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg);
 				}
+				else
+				{
+					// Set bitmap_info and push into font once texture is done being packed.
+					s_pending_glyphs.push_back(
+						pending_glyph_info(
+							rgi.m_source_font,
+							rgi.m_glyph_index,
+							tg));
+				}
+
+				return true;
 			}
 			// else hash matched, but images didn't.
+		}
+		else
+		{
+#if 0
+#ifndef NDEBUG
+			// Sanity check the hash -- there should be no
+			// image in it that exactly matches this
+			// image.
+			for (hash<unsigned int, const rendered_glyph_info*>::const_iterator it = image_hash.begin();
+			     it != image_hash.end();
+			     ++it)
+			{
+				if (*(rgi.m_image) == *(it->second->m_image))
+				{
+					// bah!  what up???
+					unsigned int	hash_a = rgi.m_image->compute_hash();
+					unsigned int	hash_b = it->second->m_image->compute_hash();
+
+					log_msg("a = %x, b = %x\n", hash_a, hash_b);//xxxxx
+				}
+			}
+#endif // not NDEBUG
+#endif // 0
 		}
 
 		return false;
@@ -727,7 +789,6 @@ namespace fontlib
 							rgi.m_source_font,
 							rgi.m_glyph_index,
 							tg));
-					//rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg.get_ptr());
 
 					// Add this into the hash so it can possibly be reused.
 					if (image_hash.get(rgi.m_image_hash, NULL) == false)
@@ -873,7 +934,6 @@ namespace fontlib
 		// skip number of bitmaps.
 		int	bitmaps_used_base = owner->get_bitmap_info_count();
 		int	size_pos = out->get_position();
-		//log_msg("size_pos = %d\n", size_pos);//xxxxxxxx
 		out->write_le16(0);
 		
 		// save bitmaps
@@ -884,12 +944,9 @@ namespace fontlib
 		s_saving = false;
 		s_file = NULL;
 		
-		//log_msg("wrote bitmaps, pos = %d\n", out->get_position());//xxxxxxxx
-
 		// save number of bitmaps.
 		out->set_position(size_pos);
 		out->write_le16(owner->get_bitmap_info_count() - bitmaps_used_base);
-		//log_msg("bitmap count = %d\n", s_bitmaps_used.size() - bitmaps_used_base);//xxxxxx
 		out->go_to_end();
 		
 		// save number of fonts.
@@ -915,7 +972,7 @@ namespace fontlib
 					out->write_le32(g);
 
 					// save bitmap index.
-					// @@ blech
+					// @@ blech, linear search
 					int bi;
 					for (bi = bitmaps_used_base; bi < owner->get_bitmap_info_count(); bi++)
 					{
