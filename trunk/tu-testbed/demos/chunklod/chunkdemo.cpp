@@ -95,8 +95,8 @@ void	setup_projection_matrix(int w, int h, float horizontal_fov_degrees)
 	float	farz = 80000;
 
 	float	aspect_ratio = float(h) / float(w);
-	float	horizontal_fov = horizontal_fov_degrees * M_PI / 180.f;
-	float	vertical_fov = atan(tan(horizontal_fov / 2.f) * aspect_ratio) * 2;
+	float	horizontal_fov = (float) (horizontal_fov_degrees * M_PI / 180.f);
+	float	vertical_fov = atanf(tanf(horizontal_fov / 2.f) * aspect_ratio) * 2;
 	
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -104,7 +104,7 @@ void	setup_projection_matrix(int w, int h, float horizontal_fov_degrees)
 	float	m[16];
 	int	i;
 	for (i = 0; i < 16; i++) m[i] = 0;
-	m[0] = -1.0 / tan(vertical_fov / 2.f);
+	m[0] = -1.0f / tanf(vertical_fov / 2.0f);
 	m[5] = -m[0] / aspect_ratio;
 	m[10] = (farz + nearz) / (farz - nearz);
 	m[11] = 1;
@@ -119,18 +119,18 @@ void	setup_projection_matrix(int w, int h, float horizontal_fov_degrees)
 	// Compute values for the frustum planes.  Normals point inwards towards the visible volume.
 	frustum_plane[0].set(0, 0, 1, nearz * 10);	// near.
 	frustum_plane[1].set(0, 0, -1, -farz * 0.1);	// far.
-	frustum_plane[2].set(-cos(horizontal_fov/2), 0, sin(horizontal_fov/4), 0);	// left.
-	frustum_plane[3].set(cos(horizontal_fov/2), 0, sin(horizontal_fov/4), 0);	// right.
-	frustum_plane[4].set(0, -cos(vertical_fov/2), sin(vertical_fov/4), 0);	// top.
-	frustum_plane[5].set(0, cos(vertical_fov/2), sin(vertical_fov/4), 0);	// bottom.
+	frustum_plane[2].set(-cosf(horizontal_fov/2), 0, sinf(horizontal_fov/4), 0);	// left.
+	frustum_plane[3].set(cosf(horizontal_fov/2), 0, sinf(horizontal_fov/4), 0);	// right.
+	frustum_plane[4].set(0, -cosf(vertical_fov/2), sinf(vertical_fov/4), 0);	// top.
+	frustum_plane[5].set(0, cosf(vertical_fov/2), sinf(vertical_fov/4), 0);	// bottom.
 #else
 	// Compute values for the frustum planes.  Normals point inwards towards the visible volume.
 	frustum_plane[0].set(0, 0, 1, nearz);	// near.
 	frustum_plane[1].set(0, 0, -1, -farz);	// far.
-	frustum_plane[2].set(-cos(horizontal_fov/2), 0, sin(horizontal_fov/2), 0);	// left.
-	frustum_plane[3].set(cos(horizontal_fov/2), 0, sin(horizontal_fov/2), 0);	// right.
-	frustum_plane[4].set(0, -cos(vertical_fov/2), sin(vertical_fov/2), 0);	// top.
-	frustum_plane[5].set(0, cos(vertical_fov/2), sin(vertical_fov/2), 0);	// bottom.
+	frustum_plane[2].set(-cosf(horizontal_fov/2), 0, sinf(horizontal_fov/2), 0);	// left.
+	frustum_plane[3].set(cosf(horizontal_fov/2), 0, sinf(horizontal_fov/2), 0);	// right.
+	frustum_plane[4].set(0, -cosf(vertical_fov/2), sinf(vertical_fov/2), 0);	// top.
+	frustum_plane[5].set(0, cosf(vertical_fov/2), sinf(vertical_fov/2), 0);	// bottom.
 #endif
 }
 
@@ -172,6 +172,11 @@ void	clear()
 
 	// Enable z-buffer.
 	glDepthFunc(GL_LEQUAL);	// smaller z gets priority
+
+	// Turn on back-face culling.
+	glFrontFace(GL_CCW);
+	glEnable(GL_CULL_FACE);
+	
 
 	// Set the wireframe state.
 	if (wireframe_mode) {
@@ -246,7 +251,7 @@ void	mouse_motion_handler(float dx, float dy, int state)
 	bool	left_button = (state & 1) ? true : false;
 	bool	right_button = (state & 4) ? true : false;
 
-	float	f_speed = (1 << speed) / 800.f;
+	float	f_speed = (1 << speed) / 200.f;
 
 	if (left_button && right_button) {
 		// Translate in the view plane.
@@ -256,11 +261,11 @@ void	mouse_motion_handler(float dx, float dy, int state)
 	} else if (left_button) {
 		// Rotate the viewer.
 		viewer_theta += -dx / 100;
-		while (viewer_theta < 0) viewer_theta += 2 * M_PI;
-		while (viewer_theta >= 2 * M_PI) viewer_theta -= 2 * M_PI;
+		while (viewer_theta < 0) viewer_theta += (float) (2 * M_PI);
+		while (viewer_theta >= 2 * M_PI) viewer_theta -= (float) (2 * M_PI);
 
 		viewer_phi += -dy / 100;
-		const float	plimit = M_PI / 2;
+		const float	plimit = (float) (M_PI / 2);
 		if (viewer_phi > plimit) viewer_phi = plimit;
 		if (viewer_phi < -plimit) viewer_phi = -plimit;
 
@@ -292,7 +297,7 @@ void	process_events()
 
 			int	key = event.key.keysym.sym;
 			
-			if (key == SDLK_q) {
+			if (key == SDLK_q || key == SDLK_ESCAPE) {
 				// Quit on 'q'.
 				exit(0);
 			}
@@ -558,7 +563,14 @@ int	main(int argc, char *argv[])
 		glEnable(GL_TEXTURE_2D);
 	}
 
-	try {
+// Sometimes (under Win32) for debugging it's better to not catch
+// exceptions.
+//#define CATCH_EXCEPTIONS
+#ifdef CATCH_EXCEPTIONS
+	try
+#endif // CATCH_EXCEPTIONS
+	{
+
 		// Load our chunked model.
 		SDL_RWops*	in = SDL_RWFromFile(chunkfile, "rb");
 		if (in == NULL) {
@@ -605,10 +617,10 @@ int	main(int argc, char *argv[])
 
 			if ( move_forward ) {
 				// Drift the viewpoint forward.
-				viewer_pos += viewer_dir * delta_t * (1 << speed) * 0.50f;
+				viewer_pos += viewer_dir * delta_t * (float) (1 << speed) * 0.50f;
 			}
 
-			model->set_parameters(max_pixel_error, window_width, horizontal_fov_degrees);
+			model->set_parameters(max_pixel_error, (float) window_width, horizontal_fov_degrees);
 			if (enable_update) {
 				model->update(viewer_pos);
 			}
@@ -644,6 +656,7 @@ int	main(int argc, char *argv[])
 
 		SDL_RWclose(in);
 	}
+#ifdef CATCH_EXCEPTIONS
 	catch (const char* message) {
 		printf("run-time exception: %s\n", message);
 		exit(1);
@@ -653,6 +666,7 @@ int	main(int argc, char *argv[])
 		printf("run-time exception: unknown type\n");
 		exit(1);
 	}
+#endif // CATCH_EXCEPTIONS
 
 	return 0;
 }
