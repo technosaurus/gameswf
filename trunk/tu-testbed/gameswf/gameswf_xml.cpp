@@ -413,7 +413,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
 
   xmlfirstnode_obj->obj = xmlnodes; // copy XML tree to XMLNode
   
-  log_msg("Created First XMLNode %s at 0x%X\n", xmlnodes->nodeName().c_str(), xmlnodes);
+  //log_msg("Created First XMLNode %s at 0x%X\n", xmlnodes->nodeName().c_str(), xmlnodes);
   
   // this is only used by network messages
   xml->set_member("firstChild", xmlfirstnode_obj);
@@ -424,7 +424,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
   // This sets up the top level for parsing from memory
   for (i=0; i<xobj->obj.length(); i++) {
     xmlnode_as_object *xmlnode1_obj      = new xmlnode_as_object;
-    log_msg("Created XMLNode1 %s at 0x%X\n", xmlnodes->nodeName().c_str(), xmlnode1_obj );
+    //log_msg("Created XMLNode1 %s at 0x%X\n", xmlnodes->nodeName().c_str(), xmlnode1_obj );
     inum = i;
     xobj->set_member(inum.to_string(), xmlnode1_obj);
     xmlnode1_obj->set_member("nodeName", xmlnodes->_name.c_str());
@@ -454,7 +454,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
   
   for (childa=0; childa < xmlnodes->length(); childa++) {
     xmlnodeA_obj = new xmlnode_as_object;
-    log_msg("Created XMLNodeA %s at 0x%X\n", xmlnodes->nodeName().c_str(), xmlnodeA_obj );
+    //log_msg("Created XMLNodeA %s at 0x%X\n", xmlnodes->nodeName().c_str(), xmlnodeA_obj );
 
     xmlnodeA_obj->obj = xmlnodes->_children[childa];
 
@@ -469,7 +469,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     xmlnodeA_obj->set_member("length", xmlnodeA_obj->obj.length());
 
     xmlnodeB_obj = new xmlnode_as_object;
-    log_msg("Created XMLNodeB %s at 0x%X\n", xmlnodes->_children[childa]->nodeName().c_str(), xmlnodeB_obj );
+    //log_msg("Created XMLNodeB %s at 0x%X\n", xmlnodes->_children[childa]->nodeName().c_str(), xmlnodeB_obj );
     xmlnodeA_obj->set_member("childNodes", xmlnodeB_obj);
     xmlnodeA_obj->set_member("firstChild", xmlnodeB_obj);
     //xmlnodeA_obj->set_member(inum.to_string(), xmlnodeB_obj);
@@ -479,7 +479,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
       
     for (childb=0; childb < xmlnodeA_obj->obj.length(); childb++) {
       xmlnodeC_obj = new xmlnode_as_object;
-      log_msg("Created XMLNodeC %s at 0x%X\n", xmlnodes->_children[childa]->_children[childb]->nodeName().c_str(), xmlnodeC_obj );
+      //log_msg("Created XMLNodeC %s at 0x%X\n", xmlnodes->_children[childa]->_children[childb]->nodeName().c_str(), xmlnodeC_obj );
       xmlnodeC_obj->obj = xmlnodes->_children[childa]->_children[childb];
       nodename =          xmlnodes->_children[childa]->_children[childb]->nodeName().c_str();
       nodevalue =         xmlnodes->_children[childa]->_children[childb]->nodeValue();
@@ -495,8 +495,8 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
       xmlnodeC_obj->set_member("length", xmlnodeC_obj->obj.length());
       for (childc=0; childc <  xmlnodeC_obj->obj.length(); childc++) {
         xmlnodeD_obj = new xmlnode_as_object;
-        log_msg("Created XMLNodeD %s at 0x%X\n",
-                            xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeName().c_str(), xmlnodeD_obj );
+        //log_msg("Created XMLNodeD %s at 0x%X\n",
+        // xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeName().c_str(), xmlnodeD_obj );
         // xmlnodeD_obj->obj = xmlnodes->_children[childa]->_children[childb]->_children[childc];
         nodename =          xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeName().c_str();
         nodevalue =         xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeValue();
@@ -566,25 +566,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   //  node
   node->obj = *ptr->obj.firstChild();
 
-#if 1
   ptr->obj.setupStackFrames(ptr, env);
-#else
-  env->set_variable("nodeName", name, 0);
-  // env->set_variable("nodeName", first_node->name.c_str(), dummy_stack);
-  // env->set_variable("firstChild", ptr, with_stack);
-  as_c_function_ptr func;
-  func = xml_firstchild;
-  // (ARQ_IP_XML.firstChild.childNodes.length)
-  //ptr->set_member("firstChild", node);
-  ptr->set_member("firstChild", ptr);
-  ptr->set_member("length", ptr->obj.length()); // This is actually a variable but
-                                // for some reason it gets looked for as a method
-  env->set_variable("childNodes", ptr, 0);
-
-  // Now this gets to be fun. We have to lay out all the values of the variables
-  // so when the callback is executed it can walk through the arrays of nodes.
-  ptr->obj.reset_stack_depth();
-#endif
   
 #if 1
   if (this_ptr->get_member("onLoad", &method)) {

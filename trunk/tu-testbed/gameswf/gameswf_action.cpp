@@ -1229,8 +1229,6 @@ namespace gameswf
 		int nargs,
 		int first_arg_bottom_index)
 	{
-		log_error("FIXME: string_method is: %s\n", method_name.c_str());
-
 		if (method_name == "charCodeAt")
 		{
 			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
@@ -1760,10 +1758,6 @@ namespace gameswf
 					as_value variable = env->get_variable(var_string, with_stack);
 					env->push(variable);
 
-#if 0
-					log_msg("FIXME: Get Variable name: %s, type is %s\n",
-						var_string.c_str(), types[variable.m_type]);
-#endif				
 					IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s \n",
 								  var_string.c_str(),
 								  variable.to_tu_string().c_str()));
@@ -1772,10 +1766,6 @@ namespace gameswf
 				}
 				case 0x1D:	// set variable
 				{
-#if 0
-					log_msg("FIXME: Set Variable name: %s\n",
-						env->top(1).to_tu_string().c_str());
-#endif
 					env->set_variable(env->top(1).to_tu_string(), env->top(0), with_stack);
 					IF_VERBOSE_ACTION(log_msg("-- set var: %s \n",
 								  env->top(1).to_tu_string().c_str()));
@@ -2012,12 +2002,9 @@ namespace gameswf
 				case 0x3D:	// call function
 				{
 					as_value	function;
-					log_error("FIXME: Looking for call function '%s'\n",
-						  env->top(0).to_tu_string().c_str());
 					if (env->top(0).get_type() == as_value::STRING)
 					{
 						// Function is a string; lookup the function.
-						// log_error("FIXME: Found STRING\n");
 						const tu_string&	function_name = env->top(0).to_tu_string();
 						function = env->get_variable(function_name, with_stack);
 
@@ -2030,12 +2017,10 @@ namespace gameswf
 					}
 					else
 					{
-						log_error("FIXME: Found Function Object\n");
 						// Hopefully the actual function object is here.
 						function = env->top(0);
 					}
 					int	nargs = (int) env->top(1).to_number();
-					log_error("FIXME: calling method\n");
 					as_value	result = call_method(function, env, NULL, nargs, env->get_top_index() - 2);
 					env->drop(nargs + 1);
 					env->top(0) = result;
@@ -2601,13 +2586,9 @@ namespace gameswf
 					int	nargs = (int) env->top(2).to_number();
 					as_value	result;
 					const tu_string&	method_name = env->top(0).to_tu_string();
-					log_msg("Looking for method name: %s\n",
-						env->top(0).to_tu_string().c_str());	// FIXME:
 					as_object_interface*	obj = env->top(1).to_object();
 					if (obj)
 					{
-						log_msg("Looking for call_method: %s\n",
-							method_name.c_str());	// FIXME:
 						as_value	method;
 						if (obj->get_member(method_name, &method))
 						{
@@ -2635,13 +2616,12 @@ namespace gameswf
 					}
 					else if (env->top(1).get_type() == as_value::STRING)
 					{
-						log_msg("FIXME: STRING %s\n",
-							env->top(1).to_tu_string().c_str());						// Hack to call String methods.  as_value
-						// should maybe be subclassed from as_object_interface
-						// instead, or have as_value::to_object() make a proxy
-						// or something.
-						result = string_method(
-							env,
+					// Hack to call String methods.  as_value
+					// should maybe be subclassed from as_object_interface
+					// instead, or have as_value::to_object() make a proxy
+					// or something.
+					result = string_method(
+							       env,
 							env->top(1).to_tu_string(),
 							env->top(0).to_tu_stringi(),
 							nargs,
@@ -2936,20 +2916,6 @@ namespace gameswf
 
 				case 0x94:	// with
 				{
-#if 0				// FIXME: hack with action, change stack depth
-					xml_as_object *xml;
-					xmlnode_as_object *xmlnode;
-					as_object_interface* obj = env->top(2).to_object();
-					if (obj) {
-						xml = (xml_as_object *)obj;
-						xmlnode = (xmlnode_as_object *)obj;
-						xml->obj.change_stack_frame(with_stack.size(), xml, env);
-					} else {
-						log_error("WITH: no object!\n");
-						tu_string str = env->top(0).to_string();
-						//env->set_variable("nodeName", str.c_str(), 0);
-					}
-#endif
 					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
 					IF_VERBOSE_ACTION(log_msg("-------------- with block start: stack size is %d\n", with_stack.size()));
 					if (with_stack.size() < 8)
