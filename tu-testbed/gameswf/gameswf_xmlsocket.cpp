@@ -7,7 +7,17 @@
 #include "config.h"
 #endif
 
-#include <string>
+#include "gameswf_log.h"
+#include "gameswf_xmlsocket.h"
+#include "gameswf_timers.h"
+
+// FIXME
+using namespace gameswf;
+
+
+#ifdef HAVE_LIBXML
+
+#include <string>	// tulrich: FIXME
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/fcntl.h>
@@ -23,12 +33,6 @@
 
 // FIXME
 using namespace std;
-
-#include "gameswf_log.h"
-#include "gameswf_xmlsocket.h"
-#include "gameswf_timers.h"
-
-#ifdef HAVE_LIBXML
 
 namespace gameswf
 {

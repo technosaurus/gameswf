@@ -1080,7 +1080,9 @@ namespace gameswf
 	
 		virtual void    do_something(void *timer)
 		{
+#ifdef __PRETTY_FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#endif
 		}
 		
 		// 0-based!!
@@ -4464,21 +4466,27 @@ namespace gameswf
 		// on the XML socket connection.
 		virtual void	on_event_xmlsocket_onxml()
 		{
+#ifdef __PRETTY_FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#endif
 			on_event(event_id::SOCK_XML);
 		}
 		
 		// Do the events that (appear to) happen on a specified interval.
 		virtual void	on_event_interval_timer()
 		{
+#ifdef __PRETTY_FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#endif
 			on_event(event_id::TIMER);
 		}
 
 		// Do the events that happen as a MovieClip (swf 7 only) loads.
 		virtual void	on_event_load_progress()
 		{
+#ifdef __PRETTY_FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#endif
 			on_event(event_id::LOAD_PROGRESS);
 		}
 

@@ -3,11 +3,17 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include <string>
+
 #include "gameswf_string.h"
 #include "gameswf_log.h"
 
 using namespace std;
+
+
+#ifndef __PRETTY_FUNCTION__
+#define __PRETTY_FUNCTION__ "__PRETTY_FUNCTION__"
+#endif
+
 
 namespace gameswf
 {  
@@ -30,12 +36,12 @@ BaseString::~BaseString()
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
-std::string
+const tu_string& 
 BaseString::toString(void *)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 
-  return "";                    // FIXME: this is just to shut up G++ for now
+  return tu_string("");                    // FIXME: this is just to shut up G++ for now
 }
 
 String::String(const char *str) : BaseString(str)
@@ -50,7 +56,7 @@ String::~String()
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
-std::string
+tu_string
 String::charAt(short index)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
@@ -64,14 +70,14 @@ String::charCodeAt(short index)
   return -1;                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
-String::concat(std::string str1, std::string str2)
+tu_string
+String::concat(tu_string str1, tu_string str2)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::fromCharCode(short code)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
@@ -79,97 +85,97 @@ String::fromCharCode(short code)
 }
 
 short
-String::indexOf(std::string str, int short)
+String::indexOf(tu_string str, int short)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return -1;                    // FIXME: this is just to shut up G++ for now
 }
 
 short
-String::indexOf(std::string str)
+String::indexOf(tu_string str)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return -1;                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
-String::lastIndexOf(std::string, int index)
+tu_string
+String::lastIndexOf(tu_string, int index)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
-String::lastIndexOf(std::string)
+tu_string
+String::lastIndexOf(tu_string)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::slice(int start) 
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::slice(int start, int end)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
-String::split(std::string str)
+tu_string
+String::split(tu_string str)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
-String::split(std::string, int limit)
+tu_string
+String::split(tu_string, int limit)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::substr(int start)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::substr(int start, int end)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::substring(int start)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::substring(int start, int end)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string 
+tu_string 
 String::toLowerCase()
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
   return "";                    // FIXME: this is just to shut up G++ for now
 }
 
-std::string
+tu_string
 String::toUpperCase()
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
@@ -208,7 +214,7 @@ string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, ga
   //  double value = env->bottom(first_arg - 1).to_number();
   //  log_msg("%s: New string name is:  %s = %g\n", __PRETTY_FUNCTION__, filespec.c_str(), value);
   // log_msg("%s: New string name is:  %s\n", __PRETTY_FUNCTION__, filespec.c_str());
-  result->set(str);
+  result->set(str);	// tulrich: LEAK -- fixme -- String is not an as_object_interface*
 }
 
 } // end of gameswf namespace

@@ -1,12 +1,9 @@
 #ifndef __MOVIE_H__
 #define __MOVIE_H__
 
-#include <string>
-
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
-#include "gameswf_log.h"
 
 namespace gameswf
 {
@@ -17,11 +14,11 @@ class MovieClipLoader : public gameswf::character_def
   MovieClipLoader();
   ~MovieClipLoader();
 
-  void load(std::string filespec);
+  void load(const tu_string& filespec);
   
   gameswf::as_object *getProgress(gameswf::as_object *ao);
 
-  bool loadClip(std::string str, void *);
+  bool loadClip(const tu_string& str, void *);
   void unloadClip(void *);
   void addListener(void *);
   void removeListener(void *);
