@@ -6,7 +6,9 @@
 -- Sample SDL game written in Lua.
 
 
---use("SDL")
+if use then
+	use("SDL")
+end
 
 
 _ = [[-- emulate a couple of SDL #define's
@@ -166,9 +168,9 @@ function handle_event(event)
 -- called by main loop when it detects an SDL event.
 	if event.type == SDL.SDL_KEYDOWN then
 		local	sym = event.key.keysym.sym
-		if sym == SDLK_q or sym == SDLK_ESCAPE then
+		if sym == SDL.SDLK_q or sym == SDL.SDLK_ESCAPE then
 			gamestate.active = nil
-		elseif sym == SDLK_s then
+		elseif sym == SDL.SDLK_s then
 			-- take a screenshot...
 			SDL.SDL_SaveBMP(gamestate.screen, "screenshot.bmp")
 		end
