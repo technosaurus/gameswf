@@ -78,6 +78,14 @@ endif
 %.$(OBJ_EXT): %.c
 	$(CC) -c $^ $(CFLAGS)
 
-# TODO: figure out how to get rid of the ../..
-ENGINE := ../../engine/engine.$(LIB_EXT)
-ENGINE_INCLUDE := ../..
+
+ENGINE := $(TOP)/engine/engine.$(LIB_EXT)
+ENGINE_INCLUDE := $(TOP)
+
+LIBPNG_DIR := $(TOP)/../libpng
+LIBPNG_INCLUDE := $(LIBPNG_DIR)
+LIBPNG := $(LIBPNG_DIR)/libpng.$(LIB_EXT)
+
+ZLIB_DIR := $(TOP)/../zlib
+ZLIB_INCLUDE := $(ZLIB_DIR)
+ZLIB := $(ZLIB_DIR)/zlib.$(LIB_EXT)
