@@ -426,7 +426,7 @@ namespace gameswf
 		}
 
 
-		character*	create_character_instance(movie* parent, int id);
+		smart_ptr<character>	create_character_instance(movie* parent, int id);
 
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m)
@@ -889,7 +889,7 @@ namespace gameswf
 	};
 
 
-	character*	edit_text_character_def::create_character_instance(movie* parent, int id)
+	smart_ptr<character>	edit_text_character_def::create_character_instance(movie* parent, int id)
 	{
 		if (m_font == NULL)
 		{
@@ -901,9 +901,9 @@ namespace gameswf
 			}
 		}
 
-		edit_text_character*	ch = new edit_text_character(parent, this, id);
+		smart_ptr<edit_text_character>	ch = new edit_text_character(parent, this, id);
 		ch->set_name(m_default_name.c_str());
-		return ch;
+		return ch.get_ptr();
 	}
 
 

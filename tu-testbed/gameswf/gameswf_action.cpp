@@ -1568,8 +1568,8 @@ namespace gameswf
 				case 0x81:	// goto frame
 				{
 					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
-					// Convert from 1-based to 0-based
-					frame--;
+					// frame number arg is 0-based already !?
+					//frame--;
 					env->get_target()->goto_frame(frame);
 					break;
 				}
