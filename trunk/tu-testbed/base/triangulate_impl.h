@@ -82,17 +82,22 @@ inline bool	vertex_left_test(const vec2<sint32>& a, const vec2<sint32>& b, const
 
 
 template<class coord_t>
-bool	vertex_in_triangle(const vec2<coord_t>& v, const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
-// Return true if v is inside or on the border of (a,b,c).
+bool	vertex_in_ear(const vec2<coord_t>& v, const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
+// Return true if v is inside (a,b,c) or on the edges [b,a) or [b,c).
 // (a,b,c) must be in ccw order!
 {
 	assert(vertex_left_test(b, a, c) == false);	// check ccw order
 
 	// Inverted tests, so that our triangle includes the boundary.
-	return
-		vertex_left_test(b, a, v) == false
-		&& vertex_left_test(c, b, v) == false
-		&& vertex_left_test(a, c, v) == false;
+	bool	ab_in = vertex_left_test(b, a, v) == false;	// inverted test includes boundary
+	bool	bc_in = vertex_left_test(c, b, v) == false;	// inverted test includes boundary
+	bool	ca_in = vertex_left_test(c, a, v);		// non-inverted test excludes boundary
+
+	// ensure v==a and v==c cases are being handled correctly.
+	assert(ca_in == false || (a == v) == false);
+	assert(ca_in == false || (c == v) == false);
+
+	return ab_in && bc_in && ca_in;
 }
 
 
@@ -206,9 +211,10 @@ inline bool	edges_intersect_sub(const array<poly_vert<float> >& sorted_verts, in
 	const vec2<float>&	e1v0 = sorted_verts[e1v0i].m_v;
 	const vec2<float>&	e1v1 = sorted_verts[e1v1i].m_v;
 
-	// @@ need epsilons here, or are zeros OK?  I think the issue
-	// is underflow in case of very small determinants.  Our
-	// determinants are doubles, so I think we're good.
+	// Note: exact equality here.  I think the reason to use
+	// epsilons would be underflow in case of very small
+	// determinants.  Our determinants are doubles, so I think
+	// we're good.
 	if (e0v0.x == e0v1.x && e0v0.y == e0v1.y)
 	{
 		// e0 is zero length.
@@ -270,9 +276,10 @@ inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, i
 		// e0 is zero length.
 		if (e1v0.x == e1v1.x && e1v0.y == e1v1.y)
 		{
-			// Both edges are zero length.
-			// They intersect only if they're coincident.
-			return e0v0.x == e1v0.x && e0v0.y == e1v0.y;
+			// Both edges are zero length.  Treat them as
+			// non-coincident (even if they're all on the
+			// same point).
+			return false;
 		}
 	}
 
@@ -280,7 +287,14 @@ inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, i
 	sint64	det10 = determinant_sint32(e0v0, e0v1, e1v0);
 	sint64	det11 = determinant_sint32(e0v0, e0v1, e1v1);
 
-	if (det10 * det11 > 0)
+	// Note: we do >= 0 checks here, instead of > 0.  We are
+	// intentionally not considering it an intersection if an
+	// endpoint is coincident with one edge, or if the edges
+	// overlap perfectly.  The overlap case is common with
+	// perfectly vertical edges at the same coordinate; it doesn't
+	// hurt us any to treat them as non-crossing.
+
+	if (det10 * det11 >= 0)
 	{
 		// e1 doesn't cross the line of e0.
 		return false;
@@ -290,7 +304,7 @@ inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, i
 	sint64	det00 = determinant_sint32(e1v0, e1v1, e0v0);
 	sint64	det01 = determinant_sint32(e1v0, e1v1, e0v1);
 
-	if (det00 * det01 > 0)
+	if (det00 * det01 >= 0)
 	{
 		// e0 doesn't cross the line of e1.
 		return false;
@@ -322,8 +336,11 @@ bool	edges_intersect(const array<poly_vert<coord_t> >& sorted_verts, int e0v0, i
 	if (coincident[1][1] && !coincident[0][0]) return false;
 
 	// Both verts identical: early out.
-	if (coincident[0][0] && coincident[1][1]) return true;
-	if (coincident[1][0] && coincident[0][1]) return true;
+	//
+	// Note: treat this as no intersection!  This is mainly useful
+	// for things like coincident vertical bridge edges.
+	if (coincident[0][0] && coincident[1][1]) return false;
+	if (coincident[1][0] && coincident[0][1]) return false;
 
 	// Check for intersection.
 	return edges_intersect_sub(sorted_verts, e0v0, e0v1, e1v0, e1v1);
@@ -363,15 +380,15 @@ struct poly
 
 	int	find_valid_bridge_vert(const array<poly_vert<coord_t> >& sorted_verts, int v1);
 
-	void	build_ear_list(array<int>* ear_list, const array<vert_t>& sorted_verts);
+	void	build_ear_list(array<int>* ear_list, const array<vert_t>& sorted_verts, tu_random::generator* rg);
 
 	void	emit_and_remove_ear(array<coord_t>* result, array<vert_t>* sorted_verts, int v0, int v1, int v2);
 	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int v1, int v2);
 
-	bool	triangle_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2);
+	bool	ear_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2);
 	bool	vert_in_cone(const array<vert_t>& sorted_verts, int vert, int cone_v0, int cone_v1, int cone_v2);
 
-	bool	is_valid(const array<vert_t>& sorted_verts) const;
+	bool	is_valid(const array<vert_t>& sorted_verts, bool check_consecutive_dupes = true) const;
 
 	void	invalidate(const array<vert_t>& sorted_verts);
 
@@ -385,7 +402,7 @@ struct poly
 
 
 template<class coord_t>
-bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts) const
+bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_consecutive_dupes /* = true */) const
 // Assert validity.
 {
 #ifndef NDEBUG
@@ -423,8 +440,16 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts) const
 			found_leftmost = true;
 		}
 
+		if (check_consecutive_dupes && v_next != vi)
+		{
+			// Subsequent verts are not allowed to be
+			// coincident; that causes errors in ear
+			// classification.
+			assert((sorted_verts[vi].m_v == sorted_verts[v_next].m_v) == false);
+		}
+
 		vert_count++;
-		vi = sorted_verts[vi].m_next;
+		vi = v_next;
 	}
 	while (vi != first_vert);
 
@@ -483,7 +508,7 @@ void	poly<coord_t>::append_vert(array<vert_t>* sorted_verts, int vert_index)
 // Link the specified vert into our loop.
 {
 	assert(vert_index >= 0 && vert_index < sorted_verts->size());
-	assert(is_valid(*sorted_verts));
+	assert(is_valid(*sorted_verts, false /* don't check for consecutive dupes, poly is not finished */));
 
 	m_vertex_count++;
 
@@ -519,42 +544,61 @@ void	poly<coord_t>::append_vert(array<vert_t>* sorted_verts, int vert_index)
 		}
 	}
 
-	assert(is_valid(*sorted_verts));
+	assert(is_valid(*sorted_verts, false /* don't check for consecutive dupes, poly is not finished */));
 }
 
 
 template<class coord_t>
 int	poly<coord_t>::find_valid_bridge_vert(const array<vert_t>& sorted_verts, int v1)
-// Find a vert v, in this poly, such that the edge (v,v1) doesn't
-// intersect any edges in this poly.
+// Find a vert v, in this poly, such that v is to the left of v1, and
+// the edge (v,v1) doesn't intersect any edges in this poly.
 {
 	assert(is_valid(sorted_verts));
 
 	const poly_vert<coord_t>*	pv1 = &(sorted_verts[v1]);
 
-	int	first_vert = m_loop;
-	int	vi = first_vert;
-	int	vert_count = 0;
-	do
+	// Held recommends searching verts near v1 first.  And for
+	// correctness, we may only consider verts to the left of v1.
+	// A fast & easy way to implement this is to walk backwards in
+	// our vert array, starting with v1-1.
+
+	for (int vi = v1 - 1; vi >= 0; vi--)
 	{
 		const poly_vert<coord_t>*	pvi = &sorted_verts[vi];
 
-		if (compare_vertices<coord_t>((void*) pvi, (void*) pv1) <= 0)
+		assert(compare_vertices<coord_t>((void*) pvi, (void*) pv1) <= 0);
+
+		if (pvi->m_poly_owner == this)
 		{
+			// Candidate is to the left of pv1, so it
+			// might be valid.  We don't consider verts to
+			// the right of v1, because of possible
+			// intersection with other polys.  Due to the
+			// poly sorting, we know that the edge
+			// (pvi,pv1) can only intersect this poly.
+
 			if (any_edge_intersection(sorted_verts, v1, vi) == false)
 			{
 				return vi;
 			}
 		}
-		
-		vi = sorted_verts[vi].m_next;
+		else
+		{
+			// pvi is owned by some other poly, which I
+			// believe signifies bad input, or possibly
+			// bad poly sorting?
+			//
+			// Assert for now; maybe later this gets
+			// demoted to a log message, or even ignored.
+			assert(0);
+		}
 	}
-	while (vi != first_vert);
 
 	// Ugh!  No valid bridge vert.  Shouldn't happen with valid
 	// data.  For invalid data, just pick something and live with
 	// the intersection.
-	assert(0);
+	fprintf(stderr, "can't find bridge for vert %d!\n", v1);//xxxxxxxxx
+
 	return m_leftmost_vert;
 }
 
@@ -584,16 +628,59 @@ void	poly<coord_t>::remap_for_duped_verts(int v0, int v1)
 
 
 template<class coord_t>
-void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& sorted_verts)
+void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& sorted_verts, tu_random::generator* rg)
 // Fill in *ear_list with a list of ears that can be clipped.
 {
+	assert(is_valid(sorted_verts));
+
+	// Optimization: limit the size of the ear list to some
+	// smallish number.  After scanning, move m_loop to after the
+	// last ear, so the next scan will pick up in fresh territory.
+	//
+	// We do this to avoid an N^2 search for invalid ears, after
+	// clipping an ear.
+	//
+	// I'm not sure there's much/any cost to keeping this value
+	// small.
+	int	MAX_EAR_COUNT = 4;
+
+// define this if you want to randomize the ear selection (should
+// improve the average ear shape, at low cost).
+//#define RANDOMIZE
+#ifdef RANDOMIZE
+	// Randomization: skip a random number of verts before
+	// starting to look for ears.  (Or skip some random verts in
+	// between ears?)
+	if (m_vertex_count > 6)
+	{
+		// Decide how many verts to skip.
+
+		// Here's a lot of twiddling to avoid a % op.  Worth it?
+		int	random_range = m_vertex_count >> 2;
+		static const int	MASK_TABLE_SIZE = 8;
+		int	random_mask[MASK_TABLE_SIZE] = {
+			1, 1, 1, 3, 3, 3, 3, 7	// roughly, the largest (2^N-1) <= index
+		};
+		if (random_range >= MASK_TABLE_SIZE) random_range = MASK_TABLE_SIZE - 1;
+		assert(random_range > 0);
+
+		int	random_skip = rg->next_random() & random_mask[random_range];
+
+		// Do the skipping, by manipulating m_loop.
+		while (random_skip-- > 0)
+		{
+			m_loop = sorted_verts[m_loop].m_next;
+		}
+	}
+#endif // RANDOMIZE
+
 	assert(is_valid(sorted_verts));
 	assert(ear_list);
 	assert(ear_list->size() == 0);
 
 	int	first_vert = m_loop;
 	int	vi = first_vert;
-	int	vert_count = 0;
+//x	int	vert_count = 0;
 	do
 	{
 		const poly_vert<coord_t>*	pvi = &(sorted_verts[vi]);
@@ -614,6 +701,8 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 		// in the cone(v[i-2],v[i-1],v[i]) (not strictly necessary,
 		// but used for efficiency and robustness)
 
+		bool	is_ear = false;
+
 		if ((pv_prev->m_v == pv_next->m_v)
 		    || (pvi->m_v == pv_next->m_v)
 		    || (pvi->m_v == pv_prev->m_v))
@@ -622,24 +711,44 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 			//
 			// Treat this as an ear; we definitely want to
 			// get rid of it.
-			ear_list->push_back(vi);
+			is_ear = true;
 		}
 		else if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v))
 		{
-			if (! triangle_contains_reflex_vertex(sorted_verts, pvi->m_prev, vi, pvi->m_next))
+			if (vert_in_cone(sorted_verts, pvi->m_prev, vi, pvi->m_next, pv_next->m_next)
+			    && vert_in_cone(sorted_verts, pvi->m_next, pv_prev->m_prev, pvi->m_prev, vi))
 			{
-				if (vert_in_cone(sorted_verts, pvi->m_prev, vi, pvi->m_next, pv_next->m_next)
-				    && vert_in_cone(sorted_verts, pvi->m_next, pv_prev->m_prev, pvi->m_prev, vi))
+				if (! ear_contains_reflex_vertex(sorted_verts, pvi->m_prev, vi, pvi->m_next))
 				{
 					// Valid ear.
-					ear_list->push_back(vi);
+					is_ear = true;
 				}
 			}
 		}
-		
+
+		if (is_ear)
+		{
+			// Add to the ear list.
+			ear_list->push_back(vi);
+
+			if (ear_list->size() >= MAX_EAR_COUNT)
+			{
+				// Don't add any more ears.
+
+				// Adjust m_loop so that the next
+				// search starts at the end of the
+				// current search.
+				m_loop = pvi->m_next;
+
+				break;
+			}
+		}
+
 		vi = pvi->m_next;
 	}
 	while (vi != first_vert);
+
+	assert(is_valid(sorted_verts));
 }
 
 
@@ -666,13 +775,22 @@ void	poly<coord_t>::emit_and_remove_ear(
 		m_loop = v0;
 	}
 
-	// emit the vertex list for the triangle.
-	result->push_back(pv0->m_v.x);
-	result->push_back(pv0->m_v.y);
-	result->push_back(pv1->m_v.x);
-	result->push_back(pv1->m_v.y);
-	result->push_back(pv2->m_v.x);
-	result->push_back(pv2->m_v.y);
+	if (pv0->m_v == pv1->m_v
+	    || pv1->m_v == pv2->m_v
+	    || pv2->m_v == pv0->m_v)
+	{
+		// Degenerate triangle!  Don't emit it.
+	}
+	else
+	{
+		// emit the vertex list for the triangle.
+		result->push_back(pv0->m_v.x);
+		result->push_back(pv0->m_v.y);
+		result->push_back(pv1->m_v.x);
+		result->push_back(pv1->m_v.y);
+		result->push_back(pv2->m_v.x);
+		result->push_back(pv2->m_v.y);
+	}
 
 	// Unlink v1.
 
@@ -695,6 +813,27 @@ void	poly<coord_t>::emit_and_remove_ear(
 		// We shouldn't actually need m_leftmost_vert during
 		// this phase of the algo, so kill it!
 		m_leftmost_vert = -1;
+	}
+
+	if (pv0->m_v == pv2->m_v)
+	{
+		// We've created a duplicate vertex by removing a
+		// degenerate ear.  Must eliminate the duplication.
+
+		// Unlink pv2.
+		if (m_loop == v2)
+		{
+			m_loop = v0;
+		}
+		if (m_leftmost_vert == v2)
+		{
+			m_leftmost_vert = -1;
+		}
+
+		pv0->m_next = pv2->m_next;
+		(*sorted_verts)[pv2->m_next].m_prev = v0;
+
+		m_vertex_count--;
 	}
 
 	assert(is_valid(*sorted_verts));
@@ -730,69 +869,103 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 
 
 template<class coord_t>
-bool	poly<coord_t>::triangle_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2)
+bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2)
 // Return true if any of this poly's reflex verts are inside the
-// specified triangle.
+// specified ear.  The definition of inside is: a reflex vertex in the
+// interior of the triangle (v0,v1,v2), or on the segments [v1,v0) or
+// [v1,v2).
 {
-	// TODO an accel structure would help here, for very large
-	// polys.  Could use the edge spatial index to find verts
-	// within the triangle bound.
+	// @@ TODO an accel structure could help here, for very large
+	// polys in some configurations.  Could use the edge spatial
+	// index to find verts within the triangle bound.
+	//
+	// Currently the horizontal culling is fast due to the sorted
+	// indices.  The vertical culling has early outs, but could
+	// possibly have to look at lots of verts if there is a ton of
+	// vertical overlap.
 
 	assert(is_valid(sorted_verts));
 
-	// Find index bounds for the triangle, for culling.
+	// Find the min/max of our triangle indices, for fast
+	// index-based culling.
 	int	min_index = v0;
 	int	max_index = v0;
-	if (v1 < min_index)
+	if (v1 < min_index) min_index = v1;
+	if (v1 > max_index) max_index = v1;
+	if (v2 < min_index) min_index = v2;
+	if (v2 > max_index) max_index = v2;
+
+	// Careful here: must expand min/max to include coincident
+	// verts in our traversal.
+	while (min_index > 0 && sorted_verts[min_index - 1].m_v == sorted_verts[min_index].m_v)
 	{
-		min_index = v1;
+		min_index--;
 	}
-	if (v1 > max_index)
+	while (max_index < sorted_verts.size() - 1 && sorted_verts[max_index + 1].m_v == sorted_verts[max_index].m_v)
 	{
-		max_index = v1;
+		max_index++;
 	}
-	if (v2 < min_index)
-	{
-		min_index = v2;
-	}
-	if (v2 > max_index)
-	{
-		max_index = v2;
-	}
+
 	assert(min_index < max_index);
 	assert(min_index <= v0 && min_index <= v1 && min_index <= v2);
 	assert(max_index >= v0 && max_index >= v1 && max_index >= v2);
 
-	int	first_vert = m_loop;
-	int	vi = first_vert;
-	do
-	{
-		int	v_next = sorted_verts[vi].m_next;
+	// Find min/max vertical bounds, for culling.
+	coord_t	min_y = sorted_verts[v0].m_v.y;
+	coord_t	max_y = sorted_verts[v0].m_v.y;
+	if (sorted_verts[v1].m_v.y < min_y) min_y = sorted_verts[v1].m_v.y;
+	if (sorted_verts[v1].m_v.y > max_y) max_y = sorted_verts[v1].m_v.y;
+	if (sorted_verts[v2].m_v.y < min_y) min_y = sorted_verts[v2].m_v.y;
+	if (sorted_verts[v2].m_v.y > max_y) max_y = sorted_verts[v2].m_v.y;
+	assert(min_y <= max_y);
+	assert(min_y <= sorted_verts[v0].m_v.y && min_y <= sorted_verts[v1].m_v.y && min_y <= sorted_verts[v2].m_v.y);
+	assert(max_y >= sorted_verts[v0].m_v.y && max_y >= sorted_verts[v1].m_v.y && max_y >= sorted_verts[v2].m_v.y);
 
-		if (vi > min_index && vi < max_index
-		    && vi != v0 && vi != v1 && vi != v2)
+	// We're using the sorted vert array to reduce our search
+	// area.  Walk between min_index and max_index, only
+	// considering verts with m_poly_owner==this.  This cheaply
+	// considers only verts within the horizontal bounds of the
+	// triangle.
+	for (int vi = min_index; vi <= max_index; vi++)
+	{
+		const vert_t*	pvi = &sorted_verts[vi];
+		if (pvi->m_poly_owner != this)
 		{
-			int	v_prev = sorted_verts[vi].m_prev;
+			// Not part of this poly; ignore it.
+			continue;
+		}
+
+		if (vi != v0 && vi != v1 && vi != v2
+		    && pvi->m_v.y >= min_y
+		    && pvi->m_v.y <= max_y)
+		{
+			// vi is within the triangle's bounding box.
+
+			//xxxxxx
+			if (v1 == 131 && vi == 132)
+			{
+				vi = vi;//xxxxx
+			}
+
+			int	v_next = pvi->m_next;
+			int	v_prev = pvi->m_prev;
 
 			// @@ cache this in vert?  Must refresh when
 			// ear is clipped, polys are joined, etc.
 			bool	reflex = vertex_left_test(
 				sorted_verts[v_next].m_v,
-				sorted_verts[vi].m_v,
+				pvi->m_v,
 				sorted_verts[v_prev].m_v);
 
 			if (reflex
-			    && vertex_in_triangle(
-				    sorted_verts[vi].m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
+			    && vertex_in_ear(
+				    pvi->m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
 			{
 				// Found one.
 				return true;
 			}
 		}
-		
-		vi = v_next;
 	}
-	while (vi != first_vert);
 
 	// Didn't find any qualifying verts.
 	return false;
@@ -888,7 +1061,7 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> paths[])
 	for (int i = 0; i < path_count; i++)
 	{
 		// Create a poly for this path.
-		const array<coord_t>&	path = (paths[i]);
+		const array<coord_t>&	path = paths[i];
 
 		if (path.size() < 3)
 		{
@@ -900,9 +1073,26 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> paths[])
 		m_polys.push_back(p);
 
 		// Add this path's verts to our list.
-		assert((path.size() & 1) == 0);
-		for (int j = 0, n = path.size(); j < n; j += 2)	// vertex coords come in pairs.
+		int	path_size = path.size();
+		if (path.size() & 1)
 		{
+			// Bad input, odd number of coords.
+			assert(0);
+			fprintf(stderr, "path[%d] has odd number of coords (%d), dropping last value\n", i, path.size());//xxxx
+			path_size--;
+		}
+		for (int j = 0; j < path_size; j += 2)	// vertex coords come in pairs.
+		{
+			int	prev_point = j - 2;
+			if (j == 0) prev_point = path_size - 2;
+
+			if (path[j] == path[prev_point] && path[j + 1] == path[prev_point + 1])
+			{
+				// Duplicate point; drop it.
+				continue;
+			}
+
+			// Insert point.
 			int	vert_index = m_sorted_verts.size();
 
 			poly_vert<coord_t>	vert(path[j], path[j+1], p, vert_index);
@@ -910,12 +1100,20 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> paths[])
 
 			p->append_vert(&m_sorted_verts, vert_index);
 		}
+		assert(p->is_valid(m_sorted_verts));
+
+		if (p->m_vertex_count == 0)
+		{
+			// This path was degenerate; kill it.
+			delete p;
+			m_polys.pop_back();
+		}
 	}
 
 	// Sort the vertices.
 	qsort(&m_sorted_verts[0], m_sorted_verts.size(), sizeof(m_sorted_verts[0]), compare_vertices<coord_t>);
 	assert(m_sorted_verts.size() <= 1
-	       || compare_vertices<coord_t>((void*) &m_sorted_verts[0], (void*) &m_sorted_verts[1]) == -1);	// check order
+	       || compare_vertices<coord_t>((void*) &m_sorted_verts[0], (void*) &m_sorted_verts[1]) <= 0);	// check order
 
 	// Remap the vertex indices, so that the polys and the
 	// sorted_verts have the correct, sorted, indices.  We can
@@ -975,8 +1173,6 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 			//       v2 is to the left of v1,
 			//       and v1-v2 seg doesn't intersect any other edges
 
-			// @@ we should try verts closer to v1 first; they're more likely
-			// to be valid
 			//     // (note that since v1 is next-most-leftmost, v1-v2 can't
 			//     // hit anything in p, or any paths further down the list,
 			//     // it can only hit edges in full_poly) (need to think
@@ -1112,7 +1308,37 @@ static void	recovery_process(
 	array<poly<coord_t>*>* polys,	// polys waiting to be processed
 	poly<coord_t>* P,	// current poly
 	array<int>* Q,	// ears
-	const array<poly_vert<coord_t> >& sorted_verts);
+	const array<poly_vert<coord_t> >& sorted_verts,
+	tu_random::generator* rg);
+
+
+template<class coord_t>
+inline void	debug_emit_poly_loop(
+	array<coord_t>* result,
+	const array<poly_vert<coord_t> >& sorted_verts,
+	poly<coord_t>* P)
+// Fill *result with a poly loop representing P.
+{
+	result->resize(0);	// clear existing junk.
+
+	int	first_vert = P->m_loop;
+	int	vi = first_vert;
+	do
+	{
+		result->push_back(sorted_verts[vi].m_v.x);
+		result->push_back(sorted_verts[vi].m_v.y);
+		vi = sorted_verts[vi].m_next;
+	}
+	while (vi != first_vert);
+
+	// Loop back to beginning, and pad to a multiple of 3 coords.
+	do
+	{
+		result->push_back(sorted_verts[vi].m_v.x);
+		result->push_back(sorted_verts[vi].m_v.y);
+	}
+	while (result->size() % 6);
+}
 
 
 template<class coord_t>
@@ -1128,6 +1354,10 @@ static void compute_triangulation(
 		return;
 	}
 
+	// Local generator, for some parts of the algo that need random numbers.
+	tu_random::generator	rand_gen;
+
+	// Poly environment; most of the state of the algo.
 	poly_env<coord_t>	penv;
 
 	penv.init(path_count, paths);
@@ -1199,7 +1429,7 @@ static void compute_triangulation(
 		penv.m_polys.pop_back();
 
 		array<int>	Q;	// Q is the ear list	
-		P->build_ear_list(&Q, penv.m_sorted_verts);
+		P->build_ear_list(&Q, penv.m_sorted_verts, &rand_gen);
 
 		bool	ear_was_clipped = false;
 		while (P->m_vertex_count > 3)
@@ -1234,28 +1464,9 @@ static void compute_triangulation(
 				// debug hack: emit current state of P
 				static int s_tricount = 0;
 				s_tricount++;
-				if (s_tricount >= 5)
+				if (s_tricount >= 174)	// 174
 				{
-					result->resize(0);	// clear existing junk.
-
-					int	first_vert = P->m_loop;
-					int	vi = first_vert;
-					do
-					{
-						result->push_back(penv.m_sorted_verts[vi].m_v.x);
-						result->push_back(penv.m_sorted_verts[vi].m_v.y);
-						vi = penv.m_sorted_verts[vi].m_next;
-					}
-					while (vi != first_vert);
-
-					// Loop back to beginning, and pad to a multiple of 3 coords.
-					do
-					{
-						result->push_back(penv.m_sorted_verts[vi].m_v.x);
-						result->push_back(penv.m_sorted_verts[vi].m_v.y);
-					}
-					while (result->size() % 6);
-
+					debug_emit_poly_loop(result, penv.m_sorted_verts, P);
 					return;
 				}
 #endif // HACK
@@ -1265,13 +1476,20 @@ static void compute_triangulation(
 			else if (ear_was_clipped == true)
 			{
 				// Re-examine P for new ears.
-				P->build_ear_list(&Q, penv.m_sorted_verts);
+				P->build_ear_list(&Q, penv.m_sorted_verts, &rand_gen);
 				ear_was_clipped = false;
 			}
 			else
 			{
 				// No valid ears; we're in trouble so try some fallbacks.
-				recovery_process(&penv.m_polys, P, &Q, penv.m_sorted_verts);
+
+#if 1
+				// xxx for debugging: show the state of P when we hit the recovery process.
+				debug_emit_poly_loop(result, penv.m_sorted_verts, P);
+				return;
+#endif
+
+				recovery_process(&penv.m_polys, P, &Q, penv.m_sorted_verts, &rand_gen);
 				ear_was_clipped = false;
 			}
 		}
@@ -1300,7 +1518,8 @@ void	recovery_process(
 	array<poly<coord_t>*>* polys,
 	poly<coord_t>* P,
 	array<int>* Q,
-	const array<poly_vert<coord_t> >& sorted_verts)
+	const array<poly_vert<coord_t> >& sorted_verts,
+	tu_random::generator* rg)
 {
 	// recovery_process:
 	//   if two edges in P, e[i-1] and e[i+1] intersect:
@@ -1326,6 +1545,8 @@ void	recovery_process(
 		{
 			// Insert (1,2,3) as an ear.
 			Q->push_back(ev2);
+
+			fprintf(stderr, "recovery_process: self-intersecting sequence, treating %d as an ear\n", ev2);//xxxx
 
 			// Resume regular processing.
 			return;
@@ -1374,6 +1595,8 @@ void	recovery_process(
 			// regardless of other problems it may have.
 			Q->push_back(vi);
 
+			fprintf(stderr, "recovery_process: found convex vert, treating %d as an ear\n", vi);//xxxx
+
 			// Resume regular processing.
 			return;
 		}
@@ -1384,12 +1607,14 @@ void	recovery_process(
 	while (vi != first_vert);
 
 	// Case 4: Pick a random vert and treat it as an ear.
-	int	random_vert = tu_random::next_random() % vert_count;
+	int	random_vert = rg->next_random() % vert_count;
 	for (vi = first_vert; random_vert > 0; random_vert--)
 	{
 		vi = sorted_verts[vi].m_next;
 	}
 	Q->push_back(vi);
+
+	fprintf(stderr, "recovery_process: treating random vert %d as an ear\n", vi);//xxxx
 
 	// Resume.
 	return;
