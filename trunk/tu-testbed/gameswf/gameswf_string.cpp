@@ -33,7 +33,7 @@ BaseString::~BaseString()
 {
   _name = "";
   _value = "";
-  log_msg("%s: \n", __FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
 }
 
 const tu_string& 
@@ -53,7 +53,7 @@ String::~String()
 {
   _name = "";
   _value = "";
-  log_msg("%s: \n", __FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
 }
 
 tu_string

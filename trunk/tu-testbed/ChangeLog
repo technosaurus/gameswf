@@ -1,3 +1,14 @@
+2005-04-03  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xml.cpp (setupStackFrames): Grab nodeValue for
+	all elements if there is any.
+	* gameswf/gameswf_action.cpp (MATH_WRAP_FUNC): Return an
+	as_value.
+	(call_method) Needs to check if the method is a NUMBER.
+	* gameswf/gameswf_xml.cpp (extractNode): Add some filtering of
+	bogus data content (just a CR) that seems to be creeping in from
+	libxml. This gets rid of the extraneous "undefined" fields.
+	
 2005-04-02  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* configure.ac: Add --disable-xml option to not look for XML or

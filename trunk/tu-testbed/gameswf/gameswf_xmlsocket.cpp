@@ -53,7 +53,7 @@ XMLSocket::XMLSocket()
 
 XMLSocket::~XMLSocket()
 {
-  log_msg("%s: \n", __FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
 }
 
 bool
@@ -273,19 +273,8 @@ XMLSocket::anydata(int fd, tu_string &data)
         msg = ptr;
         //        strcpy(msg, ptr);
       }
-      //if (msg[strlen(msg)-2] == '>')
-      //if (((msg[0] == '<') && (msg[1] == '?')) && ((msg[msg.size()-2] == '>') && (msg[msg.size()-3] == 'T'))) {
-      // if (strchr(ptr, '\n')) {
       if (ptr[strlen(ptr)-1] == '\n') {
         ifdata = true;
-#if 0
-        printf("%s: Adding message %d: \"%s\"\n", __FUNCTION__, _messages.size(), msg.c_str());
-        printf("%s: message (%d) last three bytes are %d, %d, %d: \n", __FUNCTION__,
-               strlen(ptr),
-               ptr[strlen(ptr)-2],
-               ptr[strlen(ptr)-1],
-               ptr[strlen(ptr)]);
-#endif
         _messages.push_back(msg);
         pos = strlen(ptr);
         ptr += pos + 1;
@@ -399,7 +388,7 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
       log_error("error in call_method(): method is not a function\n");
     }    
   } else {
-    ptr->set_event_handler(event_id::SOCK_CONNECT, (as_c_function_ptr)&xmlsocket_event_connect);
+    //ptr->set_event_handler(event_id::SOCK_CONNECT, (as_c_function_ptr)&xmlsocket_event_connect);
   }
 
 #if 1
