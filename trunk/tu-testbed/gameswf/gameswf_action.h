@@ -12,7 +12,7 @@
 
 #include "gameswf_types.h"
 
-#include <engine/container.h>
+#include "base/container.h"
 
 
 namespace gameswf

@@ -11,10 +11,9 @@
 
 #include "gameswf_render.h"
 
-#include "engine/ogl.h"
-#include "engine/utility.h"
-#include "engine/container.h"
-#include "engine/geometry.h"
+#include "base/ogl.h"
+#include "base/utility.h"
+#include "base/container.h"
 #include "gameswf_types.h"
 #include "gameswf_tesselate.h"
 #include <stdlib.h>

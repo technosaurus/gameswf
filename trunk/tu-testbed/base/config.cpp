@@ -5,6 +5,9 @@
 
 // Configuration glue.  C++ interface to Lua scripting library.
 
+// @@ move/finish this later...
+#if 0
+
 
 #include "config.h"
 extern "C" {
@@ -442,3 +445,5 @@ cvalue	cvalue::get( const char* index )
 	return c;
 }
 
+
+#endif // 0

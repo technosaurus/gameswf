@@ -27,8 +27,8 @@ postscript::postscript(tu_file* out, const char* title)
 	m_out(out),
 	m_page(0),
 	m_x0(1000),
-	m_y0(1000),
 	m_x1(0),
+	m_y0(1000),
 	m_y1(0),
 	m_empty(true)
 // Initialize the file & this struct, etc.

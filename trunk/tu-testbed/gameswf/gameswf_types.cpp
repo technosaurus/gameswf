@@ -6,7 +6,7 @@
 // Some basic types for gameswf.
 
 
-#include "engine/ogl.h"
+#include "base/ogl.h"
 #include "gameswf_types.h"
 
 #include "gameswf_log.h"

@@ -17,9 +17,8 @@
 
 #include "gameswf_tesselate.h"
 #include "gameswf_types.h"
-#include "engine/utility.h"
-#include "engine/container.h"
-#include "engine/geometry.h"
+#include "base/utility.h"
+#include "base/container.h"
 #include <stdlib.h>
 
 

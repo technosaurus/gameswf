@@ -14,8 +14,8 @@
 #include "gameswf_types.h"
 #include "SDL.h"
 #include <assert.h>
-#include "engine/container.h"
-#include "engine/utility.h"
+#include "base/container.h"
+#include "base/utility.h"
 
 
 namespace jpeg { struct input; }

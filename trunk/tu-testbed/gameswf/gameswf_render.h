@@ -11,7 +11,7 @@
 
 
 #include "gameswf_types.h"
-#include "engine/image.h"
+#include "base/image.h"
 
 
 namespace gameswf

@@ -10,6 +10,11 @@
 #define CONFIG_H
 
 
+// @@ this probably doesn't belong in "base"... move it somewhere and
+// finish later...
+#if 0
+
+
 extern "C" {
 #include <lua.h>
 }
@@ -298,5 +303,7 @@ END_PREFS
 //
 // could even use "using" declarations...
 
+
+#endif // 0
 
 #endif // CONFIG_H
