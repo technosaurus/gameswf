@@ -138,6 +138,8 @@ namespace gameswf
 			assert(0);
 		}
 
+		virtual bool	has_looped() const { return true; }
+
 		//
 		// ActionScript.
 		//
