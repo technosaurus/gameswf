@@ -15,8 +15,14 @@
 #undef main	// SDL wackiness
 
 
-#define SCALE	2.0f
+#define SCALE	6.0f
 #define OVERSIZE	1.0f
+
+
+#if 0
+// xxxx HACK FOR DEBUGGING
+int	hilite_depth = -1;
+#endif // 0
 
 
 int	main(int argc, char *argv[])
@@ -77,6 +83,7 @@ int	main(int argc, char *argv[])
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
+	bool	paused = false;
 	Uint32	last_ticks = SDL_GetTicks();
 	for (;;)
 	{
@@ -99,6 +106,25 @@ int	main(int argc, char *argv[])
 				{
 					exit(0);
 				}
+				else if (key == SDLK_p)
+				{
+					// Toggle paused state.
+					paused = ! paused;
+					printf("paused = %d\n", int(paused));
+				}
+#if 0
+				else if (key == SDLK_MINUS)
+				{
+					hilite_depth--;
+					printf("hilite depth = %d\n", hilite_depth);
+				}
+				else if (key == SDLK_EQUALS)
+				{
+					hilite_depth++;
+					printf("hilite depth = %d\n", hilite_depth);
+				}
+#endif // 0
+
 				break;
 			}
 
@@ -111,16 +137,26 @@ int	main(int argc, char *argv[])
 			}
 		}
 
-		m->advance(delta_t);
+		if (paused == false)
+		{
+			int	frame0 = m->get_current_frame();
+			{
+				m->advance(delta_t);
+			}
+			int	frame1 = m->get_current_frame();
+			if (frame0 != frame1)
+			{
+				// Movie frame has changed -- show the new frame.
 
-		glClearDepth(1.0f);		// Depth Buffer Setup
-		glDisable(GL_DEPTH_TEST);	// Enables Depth Testing
-		glDrawBuffer(GL_BACK);
-		glClear(GL_COLOR_BUFFER_BIT);
+				glDisable(GL_DEPTH_TEST);	// Disable depth testing.
+				glDrawBuffer(GL_BACK);
+				glClear(GL_COLOR_BUFFER_BIT);
 
-		m->display();
+				m->display();
 
-		SDL_GL_SwapBuffers();
+				SDL_GL_SwapBuffers();
+			}
+		}
 
 		SDL_Delay(10);
 	}

@@ -116,6 +116,60 @@ namespace swf
 	};
 
 
+	// RGB --> 24 bit color
+
+	// RGBA
+	struct rgba
+	{
+		Uint8	m_r, m_g, m_b, m_a;
+
+		rgba() : m_r(255), m_g(255), m_b(255), m_a(255) {}
+
+		rgba(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+			:
+			m_r(r), m_g(g), m_b(b), m_a(a)
+		{
+		}
+
+		void	ogl_color() const
+		// Set the glColor to our state.
+		{
+			glColor4ub(m_r, m_g, m_b, m_a);
+		}
+
+		void	read(stream* in, int tag_type)
+		{
+			if (tag_type <= 22)
+			{
+				read_rgb(in);
+			}
+			else
+			{
+				read_rgba(in);
+			}
+		}
+
+		void	read_rgba(stream* in)
+		{
+			read_rgb(in);
+			m_a = in->read_u8();
+		}
+
+		void	read_rgb(stream* in)
+		{
+			m_r = in->read_u8();
+			m_g = in->read_u8();
+			m_b = in->read_u8();
+			m_a = 0x0FF;
+		}
+
+		void	print(FILE* out)
+		{
+			fprintf(out, "rgba: %d %d %d %d\n", m_r, m_g, m_b, m_a);
+		}
+	};
+
+
 	struct cxform
 	{
 		float	m_[4][2];	// [RGBA][mult, add]
@@ -148,6 +202,21 @@ namespace swf
 			m_[2][0] *= c.m_[2][0];
 			m_[3][0] *= c.m_[3][0];
 		}
+
+		
+		rgba	transform(const rgba in) const
+		// Apply our transform to the given color; return the result.
+		{
+			rgba	result;
+
+			result.m_r = fclamp(in.m_r * m_[0][0] + m_[0][1] * 255.0f, 0, 255);
+			result.m_g = fclamp(in.m_g * m_[1][0] + m_[1][1] * 255.0f, 0, 255);
+			result.m_b = fclamp(in.m_b * m_[2][0] + m_[2][1] * 255.0f, 0, 255);
+			result.m_a = fclamp(in.m_a * m_[3][0] + m_[3][1] * 255.0f, 0, 255);
+
+			return result;
+		}
+
 
 		void	read_rgb(stream* in)
 		{
@@ -221,47 +290,6 @@ namespace swf
 			m_color_transform.concatenate(di.m_color_transform);
 			m_matrix.concatenate(di.m_matrix);
 			m_ratio = di.m_ratio;
-		}
-	};
-
-	// RGB --> 24 bit color
-
-	// RGBA
-	struct rgba
-	{
-		Uint8	m_r, m_g, m_b, m_a;
-
-		rgba() : m_r(255), m_g(255), m_b(255), m_a(255) {}
-
-		void	read(stream* in, int tag_type)
-		{
-			if (tag_type <= 22)
-			{
-				read_rgb(in);
-			}
-			else
-			{
-				read_rgba(in);
-			}
-		}
-
-		void	read_rgba(stream* in)
-		{
-			read_rgb(in);
-			m_a = in->read_u8();
-		}
-
-		void	read_rgb(stream* in)
-		{
-			m_r = in->read_u8();
-			m_g = in->read_u8();
-			m_b = in->read_u8();
-			m_a = 0x0FF;
-		}
-
-		void	print(FILE* out)
-		{
-			fprintf(out, "rgba: %d %d %d %d\n", m_r, m_g, m_b, m_a);
 		}
 	};
 
@@ -562,7 +590,9 @@ namespace swf
 
 	static void	move_display_object(array<display_object_info>* display_list,
 					    Uint16 depth,
+					    bool use_cxform,
 					    const cxform& color_xform,
+					    bool use_matrix,
 					    const matrix& mat,
 					    float ratio)
 	// Updates the transform properties of the object at
@@ -593,8 +623,14 @@ namespace swf
 			return;
 		}
 
-		di.m_color_transform = color_xform;
-		di.m_matrix = mat;
+		if (use_cxform)
+		{
+			di.m_color_transform = color_xform;
+		}
+		if (use_matrix)
+		{
+			di.m_matrix = mat;
+		}
 		di.m_ratio = ratio;
 	}
 		
@@ -649,6 +685,37 @@ namespace swf
 	};
 
 
+
+	static bool	execute_actions(movie* m, const array<action_buffer*>& action_list)
+	// Execute the actions in the action list, on the given movie.
+	// Return true if the actions did something to change the
+	// current_frame of the movie.
+	{
+		{for (int i = 0; i < action_list.size(); i++)
+		{
+			int	local_current_frame = m->get_current_frame();
+
+			action_list[i]->execute(m);
+
+			// @@ the action could possibly have changed
+			// the size of m_action_list... do we have to
+			// do anything special to make sure
+			// m_action_list.m_size is re-read from RAM,
+			// and not cached in a register???  Declare it
+			// volatile, or something like that?
+
+			// Frame state could have changed!
+			if (m->get_current_frame() != local_current_frame)
+			{
+				// @@ would this be more elegant if we passed back a "early-out" flag from execute?
+				return true;
+			}
+		}}
+
+		return false;
+	}
+
+
 	//
 	// movie_impl
 	//
@@ -683,9 +750,12 @@ namespace swf
 
 		virtual ~movie_impl() {}
 
+		int	get_current_frame() const { return m_current_frame; }
+
 		void	add_character(int character_id, character* c)
 		{
 			assert(c);
+			assert(c->m_id == character_id);
 			m_characters.add(character_id, c);
 		}
 
@@ -727,11 +797,11 @@ namespace swf
 		}
 
 
-		void	move_display_object(Uint16 depth, const cxform& color_xform, const matrix& mat, float ratio)
+		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio)
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
-			swf::move_display_object(&m_display_list, depth, color_xform, mat, ratio);
+			swf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
 		}
 
 
@@ -741,7 +811,7 @@ namespace swf
 			swf::remove_display_object(&m_display_list, depth);
 		}
 
-		void	add_action(action_buffer* a)
+		void	add_action_buffer(action_buffer* a)
 		// Add the given action buffer to the list of action
 		// buffers to be processed at the end of the next
 		// frame advance.
@@ -764,18 +834,41 @@ namespace swf
 
 		void	advance(float delta_time)
 		{
+			// Call advance() on each object in our
+			// display list.  Takes care of sprites.
+			for (int i = 0; i < m_display_list.size(); i++)
+			{
+				m_display_list[i].m_character->advance(delta_time);
+			}
+
 			m_time += delta_time;
 			int	target_frame_number = (int) floorf(m_time * m_frame_rate);
-			assert(target_frame_number >= m_current_frame);
 
 			if (target_frame_number >= m_frame_count)
 			{
-				// Either clamp, or loop here...
-
-				// Loop.
-				restart();
-				target_frame_number = 0;
+ 				// Loop.  Correct?  Or should we hang?
+  				target_frame_number = 0;
+  				restart();
 			}
+
+			goto_frame(target_frame_number);
+		}
+
+
+		void	goto_frame(int target_frame_number)
+		// Set the movie state at the specified frame number.
+		// If the target frame number is in the future, we can
+		// do this incrementally; otherwise we have to rewind
+		// and advance from the beginning.
+		{
+			if (target_frame_number < m_current_frame)
+			{
+				// Can't incrementally update, so start from the beginning.
+				restart();
+			}
+
+			assert(target_frame_number >= m_current_frame);
+			assert(target_frame_number < m_frame_count);
 
 			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
 			{
@@ -787,16 +880,11 @@ namespace swf
 				}
 
 				// Take care of this frame's actions.
-				for (int i = 0; i < m_action_list.size(); i++)
+				if (execute_actions(this, m_action_list))
 				{
-					m_action_list[i]->execute(this);
-
-					// @@ the action could possibly have changed the size of
-					// m_action_list... do we have to do anything special to
-					// make sure m_action_list.m_size is re-read from RAM, and
-					// not cached in a register???
-
-					// @@ also, deal w/ frame stuff; frame state could have changed!
+					// Some action called goto_frame() or restart() or something like that.
+					// Exit this function immediately before undoing desired changes.
+					return;
 				}
 				m_action_list.resize(0);
 
@@ -804,19 +892,11 @@ namespace swf
 			}
 
 //			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
-
-			// Call advance() on each object in our
-			// display list.  Takes care of sprites.
-			for (int i = 0; i < m_display_list.size(); i++)
-			{
-				m_display_list[i].m_character->advance(delta_time);
-			}
 		}
 
 		void	display()
+		// Show our display list.
 		{
-//			IF_DEBUG(printf("displaying frame %d\n", m_current_frame));
-
 			// renderer->reset();
 
 			// @@ deal with background color...
@@ -827,13 +907,32 @@ namespace swf
 				m_frame_size.m_y_min, m_frame_size.m_y_max,
 				-1, 1);
 			
-			// Display all display objects, starting at
-			// max depth and moving up.
-			for (int i = m_display_list.size() - 1; i >= 0; i--)
+			// Display all display objects.  Lower depths
+			// are obscured by higher depths.
+			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	di = m_display_list[i];
 
-				di.m_character->display(di);
+#if 0
+				// xxxx DEBUG HACK
+				extern int	hilite_depth;
+				if (di.m_depth == hilite_depth)
+				{
+					// Draw this layer in red.
+					cxform	saved = di.m_color_transform;
+					di.m_color_transform.m_[0][0] = 0;
+					di.m_color_transform.m_[1][0] = 0;
+					di.m_color_transform.m_[2][0] = 0;
+					di.m_color_transform.m_[0][1] = 1;
+					di.m_character->display(di);
+					di.m_color_transform = saved;
+				}
+				else
+				// xxxx DEBUG HACK
+#endif // 0
+				{
+					di.m_character->display(di);
+				}
 
 //				printf("display %s\n", typeid(*(di.m_character)).name());
 			}
@@ -1049,6 +1148,7 @@ namespace swf
 		IF_DEBUG(printf("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
+		ch->m_id = character_id;
 
 		//
 		// Read the image data.
@@ -1132,6 +1232,7 @@ namespace swf
 		IF_DEBUG(printf("dbl2l: id = %d, fmt = %d, w = %d, h = %d\n", character_id, bitmap_format, width, height));
 
 		bitmap_character_rgba*	ch = new bitmap_character_rgba();
+		ch->m_id = character_id;
 		ch->m_image = image::create_rgba(width, height);
 
 		if (bitmap_format == 3)
@@ -1394,11 +1495,14 @@ namespace swf
 						// add *blank* edge
 						m_edges.push_back(edge(0, 0, x, y, -1, -1, -1));
 					}
-					if (flags & 0x02) {
+					if ((flags & 0x02)
+					    && num_fill_bits > 0)
+					{
 						// fill_style_0_change = 1;
 						fill_0 = in->read_uint(num_fill_bits);
 					}
-					if (flags & 0x04) {
+					if ((flags & 0x04)
+					    && num_fill_bits) {
 						// fill_style_1_change = 1;
 						fill_1 = in->read_uint(num_fill_bits);
 					}
@@ -1496,8 +1600,10 @@ namespace swf
 
 			di.m_matrix.ogl_multiply();
 
+			rgba	c(255, 255, 255, 255);
+			di.m_color_transform.transform(c).ogl_color();
+
 			glBegin(GL_LINES);
-			glColor3f(1, 1, 1);
 			for (int i = 0; i < m_edges.size(); i++)
 			{
 				const edge&	e = m_edges[i];
@@ -1529,6 +1635,7 @@ namespace swf
 		Uint16	character_id = in->read_u16();
 
 		shape_character*	ch = new shape_character;
+		ch->m_id = character_id;
 		ch->read(in, tag_type, true);
 
 		IF_DEBUG(printf("shape_loader: id = %d, rect ", character_id);
@@ -1599,7 +1706,7 @@ namespace swf
 				m_glyphs.reserve(count);
 
 				// Read the glyph shapes.
-				for (int i = 0; i < count; i++)
+				{for (int i = 0; i < count; i++)
 				{
 					// Seek to the start of the shape data.
 					int	new_pos = table_base + offsets[i];
@@ -1611,7 +1718,7 @@ namespace swf
 					s->read(in, 2, false);
 
 					m_glyphs.push_back(s);
-				}
+				}}
 			}
 			else
 			{
@@ -1815,6 +1922,7 @@ namespace swf
 		Uint16	character_id = in->read_u16();
 		
 		text_character*	ch = new text_character;
+		ch->m_id = character_id;
 		IF_DEBUG(printf("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
@@ -1834,6 +1942,8 @@ namespace swf
 		float	m_ratio;
 		cxform	m_color_transform;
 		matrix	m_matrix;
+		bool	m_has_matrix;
+		bool	m_has_cxform;
 		Uint16	m_depth;
 		Uint16	m_character_id;
 		enum place_type {
@@ -1847,6 +1957,8 @@ namespace swf
 			:
 			m_name(NULL),
 			m_ratio(0),
+			m_has_matrix(false),
+			m_has_cxform(false),
 			m_depth(0),
 			m_character_id(0),
 			m_place_type(PLACE)
@@ -1872,9 +1984,11 @@ namespace swf
 				m_character_id = in->read_u16();
 			}
 			if (has_matrix) {
+				m_has_matrix = true;
 				m_matrix.read(in);
 			}
 			if (has_cxform) {
+				m_has_cxform = true;
 				m_color_transform.read_rgba(in);
 			}
 			if (has_ratio) {
@@ -1918,6 +2032,7 @@ namespace swf
 			switch (m_place_type)
 			{
 			case PLACE:
+				IF_DEBUG(printf("  place: cid %2d depth %2d\n", m_character_id, m_depth));
 				m->add_display_object(m_character_id,
 						      m_depth,
 						      m_color_transform,
@@ -1926,13 +2041,17 @@ namespace swf
 				break;
 
 			case MOVE:
+				IF_DEBUG(printf("   move: depth %2d\n", m_depth));
 				m->move_display_object(m_depth,
+						       m_has_cxform,
 						       m_color_transform,
+						       m_has_matrix,
 						       m_matrix,
 						       m_ratio);
 				break;
 
 			case REPLACE:
+				IF_DEBUG(printf("replace: cid %d depth %d\n", m_character_id, m_depth));
 				m->remove_display_object(m_depth);
 				m->add_display_object(m_character_id,
 						      m_depth,
@@ -2046,6 +2165,7 @@ namespace swf
 		sprite_definition*	m_def;
 		int	m_current_frame;
 		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
+		array<action_buffer*>	m_action_list;
 
 		float	m_time;
 
@@ -2058,6 +2178,7 @@ namespace swf
 			m_time(0)
 		{
 			assert(m_def);
+			m_id = def->m_id;
 		}
 
 		bool	is_instance() const { return true; }
@@ -2065,10 +2186,12 @@ namespace swf
 		int	get_width() { assert(0); return 0; }
 		int	get_height() { assert(0); return 0; }
 
+		int	get_current_frame() const { return m_current_frame; }
 
 		void	restart()
 		{
 			m_display_list.resize(0);
+			m_action_list.resize(0);
 			m_current_frame = -1;
 			m_time = 0;
 		}
@@ -2078,38 +2201,68 @@ namespace swf
 		{
 			assert(m_def && m_def->m_movie);
 
-			m_time += delta_time;
-			int	target_frame_number = (int) floorf(m_time * m_def->m_movie->m_frame_rate);
-			assert(target_frame_number >= m_current_frame);
-
-			if (target_frame_number >= m_def->m_frame_count)
-			{
-				// Either clamp, or loop here...
-
-				// Loop.
-				restart();
-				target_frame_number = 0;
-			}
-
-			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
-			{
-				array<execute_tag*>&	playlist = m_def->m_playlist[frame];
-				for (int i = 0; i < playlist.size(); i++)
-				{
-					execute_tag*	e = playlist[i];
-					e->execute(this);
-				}
-				m_current_frame = frame;
-			}
-
-//			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
-
 			// Call advance() on each object in our
 			// display list.  Takes care of sprites.
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				m_display_list[i].m_character->advance(delta_time);
 			}
+
+			m_time += delta_time;
+			int	target_frame_number = (int) floorf(m_time * m_def->m_movie->m_frame_rate);
+
+			if (target_frame_number >= m_def->m_frame_count)
+			{
+				// Loop.  Correct?  Or should we hang?
+				target_frame_number = 0;
+				restart();
+//				// Hang.
+//				target_frame_number = m_def->m_frame_count - 1;
+//				m_display_list.resize(0);
+			}
+
+			goto_frame(target_frame_number);
+		}
+
+
+		void	goto_frame(int target_frame_number)
+		// Set the movie state at the specified frame number.
+		// If the target frame number is in the future, we can
+		// do this incrementally; otherwise we have to rewind
+		// and advance from the beginning.
+		{
+			if (target_frame_number < m_current_frame)
+			{
+				// Can't incrementally update, so start from the beginning.
+				restart();
+			}
+
+			assert(target_frame_number >= m_current_frame);
+			assert(target_frame_number < m_def->m_frame_count);
+
+			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
+			{
+				// Handle the normal frame updates.
+				array<execute_tag*>&	playlist = m_def->m_playlist[frame];
+				for (int i = 0; i < playlist.size(); i++)
+				{
+					execute_tag*	e = playlist[i];
+					e->execute(this);
+				}
+
+				// Take care of this frame's actions.
+				if (execute_actions(this, m_action_list))
+				{
+					// Some action called goto_frame() or restart() or something like that.
+					// Exit this function immediately before undoing desired changes.
+					return;
+				}
+				m_action_list.resize(0);
+
+				m_current_frame = frame;
+			}
+
+//			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
 		}
 
 		void	display()
@@ -2120,17 +2273,34 @@ namespace swf
 
 		void	display(const display_info& di)
 		{
-			// Display all display objects, starting at
-			// max depth and moving up.
-			for (int i = m_display_list.size() - 1; i >= 0; i--)
+			// Show the character id at each depth.
+			IF_DEBUG(
+			{
+				printf("s %2d | ", m_id);
+				for (int i = 1; i < 10; i++)
+				{
+					int	id = get_id_at_depth(i);
+					if (id == -1) { printf("%d:     ", i); }
+					else { printf("%d: %2d  ", i, id); }
+				}
+				printf("\n");
+			});
+
+			// Show the display list.
+			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	dobj = m_display_list[i];
 
 				display_info	sub_di = di;
 				sub_di.concatenate(dobj);
+				/* xxx */
+				sub_di.m_color_transform.m_[0][0] = 1;
+				sub_di.m_color_transform.m_[1][0] = 1;
+				sub_di.m_color_transform.m_[2][0] = 0;
 				dobj.m_character->display(sub_di);
 			}
 		}
+
 
 		void	add_display_object(Uint16 character_id,
 					   Uint16 depth,
@@ -2153,11 +2323,11 @@ namespace swf
 		}
 
 
-		void	move_display_object(Uint16 depth, const cxform& color_xform, const matrix& mat, float ratio)
+		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio)
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
-			swf::move_display_object(&m_display_list, depth, color_xform, mat, ratio);
+			swf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
 		}
 
 
@@ -2165,6 +2335,24 @@ namespace swf
 		// Remove the object at the specified depth.
 		{
 			swf::remove_display_object(&m_display_list, depth);
+		}
+
+
+		int	get_id_at_depth(int depth)
+		// For debugging -- return the id of the character at the specified depth.
+		// Return -1 if nobody's home.
+		{
+			int	index = find_display_index(m_display_list, depth);
+			if (index >= m_display_list.size()
+			    || m_display_list[index].m_depth != depth)
+			{
+				// No object at that depth.
+				return -1;
+			}
+
+			character*	ch = m_display_list[index].m_character;
+
+			return ch->m_id;
 		}
 	};
 
@@ -2190,6 +2378,7 @@ namespace swf
 		assert(mi);
 
 		sprite_definition*	ch = new sprite_definition(mi);
+		ch->m_id = character_id;
 		ch->read(in);
 
 		IF_DEBUG(printf("sprite: char id = %d\n", character_id));
@@ -2227,7 +2416,11 @@ namespace swf
 			m_depth = in->read_u16();
 		}
 
-		void	execute(movie* m) { /* TODO */ }
+		void	execute(movie* m)
+		{
+			IF_DEBUG(printf(" remove: depth %2d\n", m_depth));
+			m->remove_display_object(m_depth);
+		}
 	};
 
 
@@ -2286,6 +2479,8 @@ namespace swf
 			int	action_id = m_buffer[pc];
 			if ((action_id & 0x80) == 0)
 			{
+				IF_DEBUG(printf("aid = 0x%x\n", action_id));
+
 				// Simple action; no extra data.
 				switch (action_id)
 				{
@@ -2317,9 +2512,14 @@ namespace swf
 			}
 			else
 			{
+				IF_DEBUG(printf("aid = 0x%02x ", action_id));
+
 				// Action containing extra data.
 				int	length = m_buffer[pc + 1] | (m_buffer[pc + 2] << 8);
 				int	next_pc = pc + length + 3;
+
+				IF_DEBUG({for (int i = 0; i < imin(length, 8); i++) { printf("0x%02x ", m_buffer[pc + 3 + i]); } printf("\n"); });
+				
 				switch (action_id)
 				{
 				default:
@@ -2386,14 +2586,16 @@ namespace swf
 			m_buf.read(in);
 		}
 
-		void	execute_tag(movie* m)
+		void	execute(movie* m)
 		{
-			m_buf.execute(m);
+			m->add_action_buffer(&m_buf);
 		}
 	};
 
 	void	do_action_loader(stream* in, int tag_type, movie* m)
 	{
+		IF_DEBUG(printf("tag %d: do_action_loader\n", tag_type));
+
 		assert(in);
 		assert(tag_type == 12);
 		assert(m);
