@@ -21,7 +21,7 @@
 #include <engine/geometry.h>
 
 
-void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out, int tree_depth, float base_max_error);
+void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out, int tree_depth, float base_max_error, float spacing);
 
 
 void	error(const char* fmt)
@@ -42,13 +42,15 @@ void	print_usage()
 	printf("heightfield_chunker: program for processing terrain data and generating\n"
 		   "a chunked LOD data file suitable for viewing by 'chunklod'.\n\n"
 		   "This program has been donated to the Public Domain by Thatcher Ulrich <tu@tulrich.com>\n\n"
-		   "usage: heightfield_chunker [-d depth] [-e error] <input_filename> <output_filename>\n"
+		   "usage: heightfield_chunker [-d depth] [-e error] [-s hspacing] <input_filename> <output_filename>\n"
 		   "\n"
 		   "\tThe input filename should either be a .BT format terrain file with\n"
 		   "\t(2^N+1) x (2^N+1) datapoints, or a grayscale bitmap.\n"
 		   "\n"
 		   "\t'depth' gives the depth of the quadtree of chunks to generate; default = 6\n"
 		   "\t'error' gives the maximum geometric error to allow at full LOD; default = 0.5\n"
+		   "\t'hspacing' determines the horizontal spacing between grid points, ONLY if the\n"
+		   "\t\tinput file is a bitmap (.bt files contain spacing info).  default = 4\n"
 		);
 }
 
@@ -82,6 +84,7 @@ int	main(int argc, char* argv[])
 	// Default processing parameters.
 	int	tree_depth = 6;
 	float	max_geometric_error = 1.0f;
+	float	spacing = 4.0f;
 
 	// Process command-line options.
 	char*	infile = NULL;
@@ -119,6 +122,19 @@ int	main(int argc, char* argv[])
 
 				} else {
 					printf( "error: -e option must be followed by a value for the maximum geometric error\n" );
+					print_usage();
+					exit( 1 );
+				}
+				break;
+
+			case 's':
+				// Set the horizontal spacing.
+				arg++;
+				if ( arg < argc ) {
+					spacing = atof( argv[ arg ] );
+
+				} else {
+					printf( "error: -s option must be followed by a value for the horizontal grid spacing\n" );
 					print_usage();
 					exit( 1 );
 				}
@@ -166,18 +182,29 @@ int	main(int argc, char* argv[])
 	printf( "depth = %d, max error = %f\n", tree_depth, max_geometric_error );
 
 	// Process the data.
-	heightfield_chunker( in, out, tree_depth, max_geometric_error);
+	heightfield_chunker( in, out, tree_depth, max_geometric_error, spacing);
 
 	stats.output_size = SDL_RWtell(out);
 
 	SDL_RWclose(in);
 	SDL_RWclose(out);
 
+	float	verts_per_chunk = stats.output_vertices / (float) stats.output_chunks;
+
 	// Print some stats.
 	printf("========================================\n");
 	printf("                chunks: %10d\n", stats.output_chunks);
 	printf("           input verts: %10d\n", stats.input_vertices);
 	printf("          output verts: %10d\n", stats.output_vertices);
+
+	printf("       avg verts/chunk: %10.0f\n", verts_per_chunk);
+	if (verts_per_chunk < 1000) {
+		printf("NOTE: verts/chunk is low; for higher poly throughput consider setting '-d %d' on the command line and reprocessing.\n",
+			   tree_depth - 1);
+	} else if (verts_per_chunk > 5000) {
+		printf("NOTE: verts/chunk is high; for smoother framerate consider setting '-d %d' on the command line and reprocessing.\n",
+			   tree_depth + 1);
+	}
 
 	printf("          output bytes: %10d\n", stats.output_size);
 	printf("      bytes/input vert: %10.2f\n", stats.output_size / (float) stats.input_vertices);
@@ -473,7 +500,7 @@ struct heightfield {
 		}
 		size = (1 << log_size) + 1;
 
-		sample_spacing = 1.0;	// TODO: parameterize this
+		sample_spacing = -1;	// Overridden later...
 
 		// Allocate storage.
 		int	sample_count = size * size;
@@ -504,19 +531,26 @@ int	check_propagation(heightfield& hf, int cx, int cz, int level);
 void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level);
 
 
-void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float base_max_error)
+void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float base_max_error, float spacing)
 // Generate LOD chunks from the given heightfield.
 // 
 // tree_depth determines the depth of the chunk quadtree.
 // 
 // base_max_error specifies the maximum allowed geometric vertex error,
 // at the finest level of detail.
+//
+// Spacing determines the horizontal sample spacing for bitmap
+// heightfields only.
 {
 	heightfield	hf;
 
 	// Load the heightfield data.
 	if (hf.load_bt(in) < 0) {
 		hf.load_bitmap(in);
+	}
+
+	if (hf.sample_spacing == -1) {
+		hf.sample_spacing = spacing;
 	}
 
 	// Initialize the mesh info -- clear the meshing 
@@ -819,6 +853,10 @@ void	generate_block(heightfield& hf, int level, int log_size, int cx, int cz);
 void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, int tz, int rx, int rz, int level);
 
 
+static const char*	spinner = "-\\|/";
+static int spin_count = 0;
+
+
 void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level)
 // Given a square of data, with northwest corner at (x0, z0) and
 // comprising ((1<<log_size)+1) verts along each axis, this function
@@ -850,7 +888,7 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	// Generate the mesh.
 	generate_block(hf, level, log_size, x0 + half_size, z0 + half_size);
 
-	printf(".");
+	printf("\b%c", spinner[(spin_count++)&3]);
 
 //	// Print some interesting info.
 //	printf("chunk: (%d, %d) size = %d\n", x0, z0, size);
