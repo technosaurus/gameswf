@@ -29,6 +29,12 @@ namespace gameswf
 	struct sound_sample
 	{
 		int	m_sound_handler_id;
+
+		sound_sample(int id)
+			:
+			m_sound_handler_id(id)
+		{
+		}
 	};
 
 
@@ -45,16 +51,30 @@ namespace gameswf
 		bool	stereo = in->read_uint(1) ? true : false;
 		int	sample_count = in->read_u32();
 
+		static int	s_sample_rate_table[] = { 5512, 11025, 22050, 44100 };
+
 		IF_VERBOSE_PARSE(log_msg("define sound: ch=%d, format=%d, rate=%d, 16=%d, stereo=%d, ct=%d\n",
 					 character_id, int(format), sample_rate, int(sample_16bit), int(stereo), sample_count));
 
 		// If we have a sound_handler, ask it to init this sound.
 		if (s_sound_handler)
 		{
-//			void*	data = read the rest of the tag data;
-//			int	handler_id = s_sound_handler->create_sound(data, data_bytes, sample_count, format, stereo);
+			// @@ This is pretty awful -- lots of copying, slow reading.
+			int	data_bytes = in->get_tag_end_position() - in->get_position();
+			unsigned char*	data = new unsigned char[data_bytes];
+			for (int i = 0; i < data_bytes; i++) { data[i] = in->read_u8(); }
+			
+			int	handler_id = s_sound_handler->create_sound(
+				data,
+				data_bytes,
+				sample_count,
+				format,
+				s_sample_rate_table[sample_rate],
+				stereo);
 //			sound_sample*	sam = new sound_sample(handler_id);
 //			m->add_sound(character_id, sam);
+
+			delete [] data;
 		}
 	}
 
@@ -113,7 +133,6 @@ namespace gameswf
 	// Original IMA spec doesn't seem to be on the web :(
 
 
-
 	template<int n_bits> void do_sample(int& sample, int& stepsize_index, int raw_code)
 	// Core of ADPCM -- generate a single sample based on previous
 	// sample and compressed input sample.
@@ -150,7 +169,6 @@ namespace gameswf
 	}
 
 
-
 	template<int n_bits>
 	int	extract_bits(const unsigned char*& in_data, int& current_bits, int& unused_bits)
 	// Get an n_bits integer from the input stream.  current_bits is a
@@ -183,9 +201,9 @@ namespace gameswf
 
 		while (sample_count--)
 		{
+			*out_data++ = (Sint16) sample;
 			int	raw_code = extract_bits<n_bits>(in_data, current_bits, unused_bits);
 			do_sample<n_bits>(sample, stepsize_index, raw_code);	// sample & stepsize_index are in/out params
-			*out_data++ = (Sint16) sample;
 		}
 	}
 
@@ -207,34 +225,38 @@ namespace gameswf
 
 		while (sample_count--)
 		{
+			*out_data++ = (Sint16) left_sample;
 			int	left_raw_code = extract_bits<n_bits>(in_data, current_bits, unused_bits);
 			do_sample<n_bits>(left_sample, left_stepsize_index, left_raw_code);
-			*out_data++ = (Sint16) left_sample;
 
+			*out_data++ = (Sint16) right_sample;
 			int	right_raw_code = extract_bits<n_bits>(in_data, current_bits, unused_bits);
 			do_sample<n_bits>(right_sample, right_stepsize_index, right_raw_code);
-			*out_data++ = (Sint16) right_sample;
 		}
 	}
 
 
 	void	adpcm_expand(
 		void* out_data_void,
-		const unsigned char* in_data,
+		const void* in_data_void,
 		int sample_count,	// in stereo, this is number of *pairs* of samples
 		bool stereo)
-	// Utility function: uncompress ADPCM data from in_data[] to out_data[].
+	// Utility function: uncompress ADPCM data from in_data[] to
+	// out_data[].  The output buffer must have (sample_count*2)
+	// bytes for mono, or (sample_count*4) bytes for stereo.
 	{
 		int	blocks = sample_count >> 12;	// 4096 samples per block!
 		int	extra_samples = sample_count & ((1 << 12) - 1);
 
 		Sint16*	out_data = (Sint16*) out_data_void;
 
+		const unsigned char*	in_data = (const unsigned char*) in_data_void;
+
+		// Read header.
+		int	n_bits = (*in_data++) & 3 + 2;	// 2 to 5 bits
+
 		while (blocks--)
 		{
-			// Read header.
-			int	n_bits = (*in_data++) & 3 + 2;	// 2 to 5 bits
-
 			// Read initial sample & index values.
 			int	sample = (*in_data++);
 			sample += (*in_data++) << 8;
@@ -242,7 +264,6 @@ namespace gameswf
 
 			int	stepsize_index = (*in_data++);
 			stepsize_index = iclamp(stepsize_index, 0, STEPSIZE_CT - 1);
-
 
 			if (stereo == false)
 			{
@@ -277,13 +298,15 @@ namespace gameswf
 				}
 				out_data += 4096 * 2;
 			}
+		}
 
-			if (extra_samples)
-			{
-				log_error("ADPCM buffer should have a multiple of 4096 samples.  Padding %d samples with 0's\n", extra_samples);
-				int	extra_bytes = extra_samples * (stereo ? 4 : 2);
-				memset(out_data, 0, extra_bytes);
-			}
+		if (extra_samples)
+		{
+			log_error(
+				"ADPCM buffer should have a multiple of 4096 samples.  Padding %d samples with 0's\n",
+				extra_samples);
+			int	extra_bytes = extra_samples * (stereo ? 4 : 2);
+			memset(out_data, 0, extra_bytes);
 		}
 	}
 
