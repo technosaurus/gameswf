@@ -1,0 +1,71 @@
+// tu_file_SDL.cpp	-- Ignacio Castaño, Thatcher Ulrich <tu@tulrich.com> 2003
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
+// tu_file constructor, for creating a tu_file from an SDL_RWops*
+// stream.  In its own source file so that if clients of the engine
+// library don't call it, it won't get pulled in by the linker and
+// won't try to link with SDL.
+
+
+#include "engine/tu_file.h"
+#include <SDL.h>
+
+
+// TODO: add error detection and reporting!!!
+static int sdl_read_func(void* dst, int bytes, void* appdata) 
+{
+	assert(dst);
+	assert(appdata);
+	return SDL_RWread((SDL_RWops*) appdata, dst, 1, bytes);
+}
+static int sdl_write_func(const void* src, int bytes, void* appdata)
+{
+	assert(src);
+	assert(appdata);
+	return SDL_RWwrite((SDL_RWops*) appdata, src, 1, bytes);
+}
+static int sdl_seek_func(int pos, void *appdata)
+{
+	assert(pos >= 0);
+	assert(appdata);
+	return SDL_RWseek((SDL_RWops*) appdata, pos, SEEK_SET);
+}
+static int sdl_tell_func(const void *appdata)
+{
+	assert(appdata);
+	return SDL_RWtell((SDL_RWops*) appdata);
+}
+static int sdl_close_func(const void *appdata)
+{
+	assert(appdata);
+	return SDL_RWclose((SDL_RWops*) appdata);
+}
+
+	
+tu_file::tu_file(SDL_RWops* sdl_stream, bool autoclose)
+// Create a tu_file object that can be used to read/write stuff.  Use
+// an SDL_RWops* as the underlying implementation.
+//
+// If autoclose is true, then the sdl_stream has SDL_RWclose()
+// called on it when the resulting file object is destructed.
+{
+	assert(sdl_stream);
+
+	m_data = (void*) sdl_stream;
+	m_read = sdl_read_func;
+	m_write = sdl_write_func;
+	m_seek = sdl_seek_func;
+	m_tell = sdl_tell_func;
+	m_close = autoclose ? sdl_close_func : NULL;
+	m_error = NO_ERROR;
+}
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

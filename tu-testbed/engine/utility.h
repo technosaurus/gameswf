@@ -11,7 +11,8 @@
 
 #include <assert.h>
 #include <math.h>
-#include <SDL/SDL_endian.h>
+//#include <SDL/SDL_endian.h>
+#include "engine/tu_types.h"
 
 
 #ifdef _WIN32
@@ -25,6 +26,10 @@
 
 #endif // not NDEBUG
 #endif // _WIN32
+
+
+// Compile-time assert.
+#define compiler_assert(x)	extern char _dummy_array[(x) ? 1 : -1]
 
 
 //
@@ -110,6 +115,7 @@ void	swap(T& a, T& b)
 }
 
 
+#if 0
 //
 // Read/write bytes to SDL_RWops streams.
 //
@@ -170,6 +176,8 @@ inline double	ReadDouble64(SDL_RWops* src) {
 	u.l = SDL_ReadLE64(src);
 	return u.d;
 }
+
+#endif // 0
 
 
 // Handy macro to quiet compiler warnings about unused parameters/variables.

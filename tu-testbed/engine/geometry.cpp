@@ -5,7 +5,8 @@
 
 #include <math.h>
 #include <float.h>
-#include "geometry.h"
+#include "engine/geometry.h"
+#include "engine/tu_file.h"
 
 
 const vec3	vec3::zero( 0, 0, 0 );
@@ -147,21 +148,21 @@ float	vec3::sqrmag() const
 }
 
 
-void	vec3::read(SDL_RWops* in)
+void	vec3::read(tu_file* in)
 // Read our values from the given stream.
 {
-	x = ReadFloat32(in);
-	y = ReadFloat32(in);
-	z = ReadFloat32(in);
+	x = in->read_float32();
+	y = in->read_float32();
+	z = in->read_float32();
 }
 
 
-void	vec3::write(SDL_RWops* out)
+void	vec3::write(tu_file* out)
 // Write our contents to the given stream.
 {
-	WriteFloat32(out, x);
-	WriteFloat32(out, y);
-	WriteFloat32(out, z);
+	out->write_float32(x);
+	out->write_float32(y);
+	out->write_float32(z);
 }
 
 

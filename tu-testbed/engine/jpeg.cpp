@@ -9,30 +9,31 @@
 
 #include "engine/jpeg.h"
 #include "engine/utility.h"
+#include "engine/tu_file.h"
 #include <stdio.h>
 extern "C" {
 #include <jpeglib.h>
 }
-#include <SDL/SDL.h>
 
 
 namespace jpeg
 {
 	static const int	IO_BUF_SIZE = 4096;
 
-	// A jpeglib source manager that reads from a SDL_RWops.  Paraphrased
+	// A jpeglib source manager that reads from a tu_file.  Paraphrased
 	// from IJG jpeglib jdatasrc.c.
 	struct rw_source
 	{
 		struct jpeg_source_mgr	m_pub;		/* public fields */
 
-		SDL_RWops*	m_in_stream;		/* source stream */
+		tu_file*	m_in_stream;		/* source stream */
 		bool	m_start_of_file;		/* have we gotten any data yet? */
 		JOCTET	m_buffer[IO_BUF_SIZE];	/* start of buffer */
 
-		rw_source(SDL_RWops* in)
-			: m_in_stream(in),
-			  m_start_of_file(true)
+		rw_source(tu_file* in)
+			:
+			m_in_stream(in),
+			m_start_of_file(true)
 		// Constructor.  The caller is responsible for closing the input stream
 		// after it's done using us.
 		{
@@ -58,7 +59,7 @@ namespace jpeg
 		{
 			rw_source*	src = (rw_source*) cinfo->src;
 
-			size_t	bytes_read = SDL_RWread(src->m_in_stream, src->m_buffer, 1, IO_BUF_SIZE);
+			size_t	bytes_read = src->m_in_stream->read_bytes(src->m_buffer, IO_BUF_SIZE);
 
 			if (bytes_read <= 0) {
 				// Is the file completely empty?
@@ -143,7 +144,7 @@ namespace jpeg
 	};
 
 	
-	void	setup_rw_source(jpeg_decompress_struct* cinfo, SDL_RWops* instream)
+	void	setup_rw_source(jpeg_decompress_struct* cinfo, tu_file* instream)
 	// Set up the given decompress object to read from the given
 	// stream.
 	{
@@ -152,17 +153,18 @@ namespace jpeg
 	}
 
 
-	// A jpeglib destination manager that writes to a SDL_RWops.
+	// A jpeglib destination manager that writes to a tu_file.
 	// Paraphrased from IJG jpeglib jdatadst.c.
 	struct rw_dest
 	{
 		struct jpeg_destination_mgr	m_pub;	/* public fields */
 
-		SDL_RWops*	m_out_stream;		/* source stream */
+		tu_file*	m_out_stream;		/* source stream */
 		JOCTET	m_buffer[IO_BUF_SIZE];	/* start of buffer */
 
-		rw_dest(SDL_RWops* out)
-			: m_out_stream(out)
+		rw_dest(tu_file* out)
+			:
+			m_out_stream(out)
 		// Constructor.  The caller is responsible for closing
 		// the output stream after it's done using us.
 		{
@@ -190,9 +192,10 @@ namespace jpeg
 			rw_dest*	dest = (rw_dest*) cinfo->dest;
 			assert(dest);
 
-			if (SDL_RWwrite(dest->m_out_stream, dest->m_buffer, 1, IO_BUF_SIZE) != IO_BUF_SIZE)
+			if (dest->m_out_stream->write_bytes(dest->m_buffer, IO_BUF_SIZE) != IO_BUF_SIZE)
 			{
 				// Error.
+				// @@ bah, exceptions suck.  TODO consider alternatives.
 				throw "jpeg::rw_dest couldn't write data.";
 			}
 
@@ -212,7 +215,8 @@ namespace jpeg
 			// Write any remaining data.
 			int	datacount = IO_BUF_SIZE - dest->m_pub.free_in_buffer;
 			if (datacount > 0) {
-				if (SDL_RWwrite(dest->m_out_stream, dest->m_buffer, 1, datacount) != datacount) {
+				if (dest->m_out_stream->write_bytes(dest->m_buffer, datacount) != datacount)
+				{
 					// Error.
 					throw "jpeg::rw_dest::term_destination couldn't write data.";
 				}
@@ -225,7 +229,7 @@ namespace jpeg
 	};
 
 
-	void	setup_rw_dest(j_compress_ptr cinfo, SDL_RWops* outstream)
+	void	setup_rw_dest(j_compress_ptr cinfo, tu_file* outstream)
 	// Set up the given compress object to write to the given
 	// output stream.
 	{
@@ -251,7 +255,7 @@ namespace jpeg
 		enum SWF_DEFINE_BITS_JPEG2 { SWF_JPEG2 };
 		enum SWF_DEFINE_BITS_JPEG2_HEADER_ONLY { SWF_JPEG2_HEADER_ONLY };
 
-		input_impl(SDL_RWops* in)
+		input_impl(tu_file* in)
 			:
 			m_compressor_opened(false)
 		// Constructor.  Read the header data from in, and
@@ -267,30 +271,8 @@ namespace jpeg
 			start_image();
 		}
 
-#if 0
-		input_impl(SWF_DEFINE_BITS_JPEG2 e, SDL_RWops* in)
-			:
-			m_compressor_opened(false)
-		// The SWF file format stores JPEG images with the
-		// encoding tables separate from the image data.  This
-		// constructor reads the encoding tables, and then
-		// prepares to read the image data.
-		{
-			m_cinfo.err = jpeg_std_error(&m_jerr);
 
-			// Initialize decompression object.
-			jpeg_create_decompress(&m_cinfo);
-
-			setup_rw_source(&m_cinfo, in);
-
-			// Read the encoding tables.
-			jpeg_read_header(&m_cinfo, FALSE);
-
-			start_image();
-		}
-#endif // 0
-
-		input_impl(SWF_DEFINE_BITS_JPEG2_HEADER_ONLY e, SDL_RWops* in)
+		input_impl(SWF_DEFINE_BITS_JPEG2_HEADER_ONLY e, tu_file* in)
 			:
 			m_compressor_opened(false)
 		// The SWF file format stores JPEG images with the
@@ -405,14 +387,14 @@ namespace jpeg
 	};
 
 
-	/*static*/ input*	input::create(SDL_RWops* in)
+	/*static*/ input*	input::create(tu_file* in)
 	// Create and return a jpeg-input object that will read from the
 	// given input stream.
 	{
 		return new input_impl(in);
 	}
 
-	/*static*/ input*	input::create_swf_jpeg2_header_only(SDL_RWops* in)
+	/*static*/ input*	input::create_swf_jpeg2_header_only(tu_file* in)
 	// Read SWF JPEG2-style header.  App needs to call
 	// start_image() before loading any image data.  Multiple
 	// images can be loaded by bracketing within
@@ -434,7 +416,7 @@ namespace jpeg
 		struct jpeg_compress_struct	m_cinfo;
 		struct jpeg_error_mgr m_jerr;
 
-		output_impl(SDL_RWops* out, int width, int height, int quality)
+		output_impl(tu_file* out, int width, int height, int quality)
 		// Constructor.  Read the header data from in, and
 		// prepare to read data.
 		{
@@ -476,7 +458,7 @@ namespace jpeg
 	};
 
 
-	/*static*/ output*	output::create(SDL_RWops* in, int width, int height, int quality)
+	/*static*/ output*	output::create(tu_file* in, int width, int height, int quality)
 	// Create and return a jpeg-input object that will read from the
 	// given input stream.
 	{

@@ -9,13 +9,14 @@
 
 #include "gameswf_stream.h"
 #include "gameswf_types.h"
+#include "engine/tu_file.h"
 #include <string.h>
 
 
 namespace gameswf
 {
 	
-	stream::stream(SDL_RWops* input)
+	stream::stream(tu_file* input)
 		:
 		m_input(input),
 		m_current_byte(0),
@@ -59,7 +60,7 @@ namespace gameswf
 					bits_needed = 0;
 				}
 			} else {
-				m_current_byte = ReadByte(m_input);
+				m_current_byte = m_input->read_byte();
 				m_unused_bits = 8;
 			}
 		}
@@ -93,30 +94,30 @@ namespace gameswf
 	float	stream::read_fixed()
 	{
 		m_unused_bits = 0;
-		Sint32	val = SDL_ReadLE32(m_input);
+		Sint32	val = m_input->read_le32();
 		return (float) val / 65536.0f;
 	}
 
 	void	stream::align() { m_unused_bits = 0; m_current_byte = 0; }
 
-	Uint8	stream::read_u8() { align(); return ReadByte(m_input); }
-	Sint8	stream::read_s8() { align(); return ReadByte(m_input); }
+	Uint8	stream::read_u8() { align(); return m_input->read_byte(); }
+	Sint8	stream::read_s8() { align(); return m_input->read_byte(); }
 	Uint16	stream::read_u16()
 	{
 		align();
 //		IF_DEBUG(printf("filepos = %d ", SDL_RWtell(m_input)));
-		int	val = SDL_ReadLE16(m_input);
+		int	val = m_input->read_le16();
 //		IF_DEBUG(printf("val = 0x%X\n", val));
 		return val;
 	}
-	Sint16	stream::read_s16() { align(); return SDL_ReadLE16(m_input); }
+	Sint16	stream::read_s16() { align(); return m_input->read_le16(); }
 	Uint32	stream::read_u32()
 	{
 		align();
-		Uint32	val = SDL_ReadLE32(m_input);
+		Uint32	val = m_input->read_le32();
 		return val;
 	}
-	Sint32	stream::read_s32() { align(); return SDL_ReadLE32(m_input); }
+	Sint32	stream::read_s32() { align(); return m_input->read_le32(); }
 
 
 	char*	stream::read_string()
@@ -176,7 +177,7 @@ namespace gameswf
 	int	stream::get_position()
 	// Return our current (byte) position in the input stream.
 	{
-		return SDL_RWtell(m_input);
+		return m_input->get_position();
 	}
 
 
@@ -195,7 +196,7 @@ namespace gameswf
 		}
 
 		// Do the seek.
-		SDL_RWseek(m_input, pos, SEEK_SET);
+		m_input->set_position(pos);
 	}
 
 
@@ -217,7 +218,7 @@ namespace gameswf
 		int	tag_length = tag_header & 0x3F;
 		assert(m_unused_bits == 0);
 		if (tag_length == 0x3F) {
-			tag_length = SDL_ReadLE32(m_input);
+			tag_length = m_input->read_le32();
 		}
 
 		IF_DEBUG(printf("tag type = %d, tag length = %d\n", tag_type, tag_length));
@@ -235,12 +236,12 @@ namespace gameswf
 	{
 		assert(m_tag_stack.size() > 0);
 		int	end_pos = m_tag_stack.pop_back();
-		SDL_RWseek(m_input, end_pos, SEEK_SET);
+		m_input->set_position(end_pos);
 
 		m_unused_bits = 0;
 	}
 
-}; // end namespace gameswf
+} // end namespace gameswf
 
 	
 // Local Variables:

@@ -11,7 +11,7 @@
 
 #include "engine/container.h"
 #include "engine/image.h"
-struct SDL_RWops;
+class tu_file;
 
 
 class tqt
@@ -36,7 +36,7 @@ private:
 	array<unsigned int>	m_toc;
 	int	m_depth;
 	int	m_tile_size;
-	SDL_RWops*	m_source;
+	tu_file*	m_source;
 };
 
 

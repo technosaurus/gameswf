@@ -4,12 +4,6 @@
 TOP = ..
 include $(TOP)/config
 
-ifeq ($(TU_TESTBED_COMPILER), gcc)
-SDL_CFLAGS := $(shell sdl-config --cflags)
-SDL_LDFLAGS := $(shell sdl-config --libs)
-endif
-
-SDL_INCLUDE := -ISDL
 LUA_INCLUDE := -I$(TOP)/../lua-4.0.1/include
 
 INCLUDE_PATHS := $(SDL_INCLUDE) $(LUA_INCLUDE) $(ENGINE_INCLUDE) $(LIBPNG_INCLUDE) $(ZLIB_INCLUDE) $(JPEGLIB_INCLUDE)
@@ -30,7 +24,10 @@ SRCS := \
 	jpeg.cpp \
 	image.cpp \
 	image_filters.cpp \
-	tqt.cpp
+	tqt.cpp	\
+	tu_file.cpp	\
+	tu_file_SDL.cpp	\
+	tu_types.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
 

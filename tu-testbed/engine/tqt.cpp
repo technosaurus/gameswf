@@ -9,6 +9,7 @@
 #include "engine/ogl.h"
 #include "engine/tqt.h"
 #include "engine/image.h"
+#include "engine/tu_file.h"
 
 
 static const int	TQT_VERSION = 1;
@@ -28,23 +29,23 @@ struct tqt_header_info {
 };
 
 
-static tqt_header_info	read_tqt_header_info(SDL_RWops* in)
+static tqt_header_info	read_tqt_header_info(tu_file* in)
 // Read .tqt header file info from the given stream, and return a
 // struct containing the info.  If the file doesn't look like .tqt,
 // then set m_version in the return value to 0.
 {
 	tqt_header_info	info;
 
-	int	tag = SDL_ReadLE32(in);
+	int	tag = in->read_le32();
 	if (tag != 0x00747174 /* "tqt\0" */) {
 		// Wrong header tag.
 		info.m_version = 0;	// signal invalid header.
 		return info;
 	}
 
-	info.m_version = SDL_ReadLE32(in);
-	info.m_tree_depth = SDL_ReadLE32(in);
-	info.m_tile_size = SDL_ReadLE32(in);
+	info.m_version = in->read_le32();
+	info.m_tree_depth = in->read_le32();
+	info.m_tile_size = in->read_le32();
 
 	return info;
 }
@@ -54,7 +55,7 @@ tqt::tqt(const char* filename)
 // Constructor.  Open the file and read the table of contents.  Keep
 // the stream open in order to load textures on demand.
 {
-	m_source = SDL_RWFromFile(filename, "rb");
+	m_source = new tu_file(filename, "rb");
 	if (m_source == NULL) {
 		throw "tqt::tqt() can't open file.";
 	}
@@ -74,7 +75,7 @@ tqt::tqt(const char* filename)
 	// index'ed tile's JPEG data, relative to the start of the file.
 	m_toc.resize(node_count(m_depth));
 	for (int i = 0; i < node_count(m_depth); i++) {
-		m_toc[i] = SDL_ReadLE32(m_source);
+		m_toc[i] = m_source->read_le32();
 	}
 }
 
@@ -82,7 +83,7 @@ tqt::tqt(const char* filename)
 tqt::~tqt()
 // Destructor.  Close input file and release resources.
 {
-	SDL_RWclose(m_source);
+	delete m_source;
 }
 
 
@@ -107,7 +108,7 @@ image::rgb*	tqt::load_image(int level, int col, int row) const
 	assert(index < m_toc.size());
 
 	// Load the .jpg and make a texture from it.
-	SDL_RWseek(m_source, m_toc[index], SEEK_SET);
+	m_source->set_position(m_toc[index]);
 	image::rgb*	im = image::read_jpeg(m_source);
 
 	return im;
@@ -136,16 +137,17 @@ image::rgb*	tqt::load_image(int level, int col, int row) const
 // Return true if the given file looks like a .tqt file of our
 // appropriate version.  Do this by attempting to read the header.
 {
-	SDL_RWops*	in = SDL_RWFromFile(filename, "rb");
-	if (in == NULL) {
+	tu_file	in(filename, "rb");
+	if (in.get_error())
+	{
 		return false;
 	}
 
 	// Read header.
-	tqt_header_info	info = read_tqt_header_info(in);
-	SDL_RWclose(in);
+	tqt_header_info	info = read_tqt_header_info(&in);
 
-	if (info.m_version != TQT_VERSION) {
+	if (info.m_version != TQT_VERSION)
+	{
 		return false;
 	}
 	

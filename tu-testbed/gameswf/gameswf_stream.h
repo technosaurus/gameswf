@@ -11,7 +11,7 @@
 
 
 #include "engine/container.h"
-#include "SDL.h"
+class tu_file;
 
 
 namespace gameswf
@@ -19,14 +19,14 @@ namespace gameswf
 	// stream is used to encapsulate bit-packed file reads.
 	struct stream
 	{
-		SDL_RWops*	m_input;
+		tu_file*	m_input;
 		Uint8	m_current_byte;
 		Uint8	m_unused_bits;
 
 		array<int>	m_tag_stack;	// position of end of tag
 
 
-		stream(SDL_RWops* input);
+		stream(tu_file* input);
 		int	read_uint(int bitcount);
 		int	read_sint(int bitcount);
 		float	read_fixed();

@@ -12,29 +12,29 @@
 
 struct jpeg_decompress_struct;
 struct jpeg_compress_struct;
-struct SDL_RWops;
+class tu_file;
 
 
 namespace jpeg
 {
-	// jpeglib data source constructors, for using SDL_RWops instead
+	// jpeglib data source constructors, for using tu_file* instead
 	// of stdio for jpeg IO.
-	void	setup_rw_source(jpeg_decompress_struct* cinfo, SDL_RWops* instream);
-	void	setup_rw_dest(jpeg_compress_struct* cinfo, SDL_RWops* outstream);
+	void	setup_rw_source(jpeg_decompress_struct* cinfo, tu_file* instream);
+	void	setup_rw_dest(jpeg_compress_struct* cinfo, tu_file* outstream);
 
 
 	// Helper object for reading jpeg image data.  Basically a thin
 	// wrapper around jpeg_decompress_struct.
 	struct input {
 		// Read header and create a jpeg input object.
-		static input*	create(SDL_RWops* in);
+		static input*	create(tu_file* in);
 
 // 		// Read SWF JPEG2-style header (separate encoding
 // 		// table followed by image data), and create jpeg
 // 		// input object.
 // 		static input*	create_swf_jpeg2(SDL_RWops* in);
 
-		static input*	create_swf_jpeg2_header_only(SDL_RWops* in);
+		static input*	create_swf_jpeg2_header_only(tu_file* in);
 
 		virtual ~input();
 
@@ -49,9 +49,10 @@ namespace jpeg
 
 
 	// Helper object for writing jpeg image data.
-	struct output {
+	struct output
+	{
 		// Create an output object.   Quality goes from 1-100.
-		static output*	create(SDL_RWops* out, int width, int height, int quality);
+		static output*	create(tu_file* out, int width, int height, int quality);
 
 		virtual ~output();
 
