@@ -34,7 +34,7 @@ namespace ogl {
 
 
 	// Big, fast vertex-memory buffer.
-	const int	VERTEX_BUFFER_SIZE = 4 << 20;
+	const int	VERTEX_BUFFER_SIZE = 16 << 20;
 	void*	vertex_memory_buffer = 0;
 	int	vertex_memory_top = 0;
 	bool	vertex_memory_from_malloc = false;	// tells us whether to wglFreeMemoryNV() or free() the buffer when we're done.
