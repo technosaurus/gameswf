@@ -45,7 +45,7 @@ kd_tree_dynamic::kd_tree_dynamic(
 	const int indices[])
 // Constructor; build the kd-tree from the given triangle soup.
 {
-	assert(vert_count > 0);
+	assert(vert_count > 0 && vert_count < 65536);
 	assert(triangle_count > 0);
 
 	// Copy the verts.
@@ -265,11 +265,11 @@ void	kd_tree_dynamic::compute_actual_bounds(axial_box* result, int face_count, f
 
 static int	classify_coord(float coord, float offset)
 {
-	if (coord < offset - EPSILON)
+	if (coord < offset /* - EPSILON */)
 	{
 		return -1;
 	}
-	else if (coord > offset + EPSILON)
+	else if (coord > offset /* + EPSILON */)
 	{
 		return 1;
 	}
@@ -923,6 +923,65 @@ void	kd_tree_dynamic::diagram_dump(tu_file* out) const
 	inf.get_node_coords(&root_x, &root_y);
 
 	node_diagram(&inf, m_root, root_x, root_y);
+
+	delete ps;
+}
+
+
+static void	mesh_node_dump(
+	postscript* ps,
+	int axis,
+	kd_tree_dynamic::node* node,
+	const axial_box& bound,
+	const array<vec3>& verts)
+// Draw faces under node, projected onto given axis plane.  Scale to fit paper.
+{
+	if (node == NULL) return;
+
+	if (node->m_leaf)
+	{
+		// Draw faces.
+		for (int i = 0, n = node->m_leaf->m_faces.size(); i < n; i++)
+		{
+			vec3	v[3] = {
+				verts[node->m_leaf->m_faces[i].m_vi[0]],
+				verts[node->m_leaf->m_faces[i].m_vi[1]],
+				verts[node->m_leaf->m_faces[i].m_vi[2]]
+			};
+
+			float	x[3], y[3];
+			int	axis1 = (axis + 1) % 3;
+			int	axis2 = (axis + 2) % 3;
+			for (int vert = 0; vert < 3; vert++)
+			{
+				x[vert] = (v[vert][axis1] - bound.get_min()[axis1]) / bound.get_size()[axis1];
+				y[vert] = (v[vert][axis2] - bound.get_min()[axis2]) / bound.get_size()[axis2];
+
+				x[vert] = flerp(float(MARGIN), float(X_SIZE - MARGIN), x[vert]);
+				y[vert] = flerp(float(MARGIN), float(Y_SIZE - MARGIN), y[vert]);
+			}
+
+			// Draw triangle.
+			ps->line(x[0], y[0], x[1], y[1]);
+			ps->line(x[1], y[1], x[2], y[2]);
+			ps->line(x[2], y[2], x[0], y[0]);
+		}
+
+		return;
+	}
+	
+	mesh_node_dump(ps, axis, node->m_neg, bound, verts);
+	mesh_node_dump(ps, axis, node->m_pos, bound, verts);
+}
+
+
+void	kd_tree_dynamic::mesh_diagram_dump(tu_file* out, int axis) const
+// Generate a Postscript schematic diagram of the mesh, orthogonal to
+// the given axis.
+{
+	postscript*	ps = new postscript(out, "kd-tree diagram");
+	
+	mesh_node_dump(ps, axis, m_root, get_bound(), m_verts);
 
 	delete ps;
 }

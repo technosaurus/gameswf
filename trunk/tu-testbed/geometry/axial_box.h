@@ -32,6 +32,7 @@ struct axial_box
 
 	vec3	get_center() const { return (m_min + m_max) * 0.5f; }
 	vec3	get_extent() const { return (m_max - m_min) * 0.5f; }
+	vec3	get_size() const { return m_max - m_min; }
 
 	const vec3&	get_min() const { return m_min; }
 	const vec3&	get_max() const { return m_max; }

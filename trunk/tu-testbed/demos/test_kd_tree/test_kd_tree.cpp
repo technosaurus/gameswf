@@ -19,6 +19,13 @@ void	print_usage()
 		"kd-tree code tester\n"
 		"\n"
 		"specify the desired .txt filename containing mesh info\n"
+		"\n"
+		"options\n"
+		"  -d    (default) dump tree diagram to stdout, in PostScript format\n"
+		"  -x    dump mesh diagram projected along x axis, in PostScript format\n"
+		"  -y    dump mesh diagram projected along y axis, in PostScript format\n"
+		"  -z    dump mesh diagram projected along z axis, in PostScript format\n"
+		"  -r    shoot random rays at the model and print timings\n"
 		);
 }
 
@@ -30,6 +37,10 @@ static void	test_cast_against_tree(const kd_tree_dynamic* tree);
 int main(int argc, const char** argv)
 {
 	const char*	infile = NULL;
+	bool	do_dump = true;
+	bool	do_ray_test = false;
+	bool	do_mesh_dump = false;
+	int	mesh_axis = 0;
 
 	// Parse args.
 	for (int arg = 1; arg < argc; arg++)
@@ -48,6 +59,37 @@ int main(int argc, const char** argv)
 			case 'h':	// help
 				print_usage();
 				exit(1);
+				break;
+
+			case 'd':
+				do_dump = true;
+				do_ray_test = false;
+				do_mesh_dump = false;
+				break;
+
+			case 'r':
+				do_dump = false;
+				do_ray_test = true;
+				do_mesh_dump = false;
+				break;
+
+			case 'x':
+				do_dump = false;
+				do_ray_test = false;
+				do_mesh_dump = true;
+				mesh_axis = 0;
+				break;
+			case 'y':
+				do_dump = false;
+				do_ray_test = false;
+				do_mesh_dump = true;
+				mesh_axis = 1;
+				break;
+			case 'z':
+				do_dump = false;
+				do_ray_test = false;
+				do_mesh_dump = true;
+				mesh_axis = 2;
 				break;
 			}
 		}
@@ -73,14 +115,30 @@ int main(int argc, const char** argv)
 		exit(1);
 	}
 
+	uint64	start_ticks = tu_timer::get_profile_ticks();
 	kd_tree_dynamic*	tree = make_kd_tree(infile);
-
-	if (tree)
+	uint64	end_ticks = tu_timer::get_profile_ticks();
+	if (do_ray_test)
 	{
-//		tree->diagram_dump(&tu_file(stdout, false));
+		// Print timings for building.
+		printf("read file and built kd_tree_dynamic in %3.3f seconds\n",
+		       tu_timer::profile_ticks_to_seconds(end_ticks - start_ticks));
 	}
 
-	test_cast_against_tree(tree);
+	if (do_dump && tree)
+	{
+		tree->diagram_dump(&tu_file(stdout, false));
+	}
+
+	if (do_mesh_dump && tree)
+	{
+		tree->mesh_diagram_dump(&tu_file(stdout, false), mesh_axis);
+	}
+
+	if (do_ray_test && tree)
+	{
+		test_cast_against_tree(tree);
+	}
 
 	delete tree;
 
@@ -130,6 +188,14 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 	if (sscanf(line, "verts: %d", &vert_count) != 1)
 	{
 		printf("can't read vert count\n");
+		return NULL;
+	}
+
+	// Can't handle big meshes; TODO split the meshes and make a
+	// forest of kd_trees in this case.
+	if (vert_count >= 65536)
+	{
+		printf("too many verts; must be <64K\n");
 		return NULL;
 	}
 	
@@ -204,14 +270,22 @@ void	test_cast_against_tree(const kd_tree_dynamic* tree)
 {
 	static const int	RAY_COUNT = 100000;
 
-	printf("starting to cast...\n");
+	printf("building kd_tree_packed...\n");
 
-	uint64	start_ticks = tu_timer::get_profile_ticks();
+	uint64	start_build_ticks = tu_timer::get_profile_ticks();
 
 	// Make a packed tree.
 	kd_tree_packed*	kd = kd_tree_packed::build(tree);
 
+	uint64	end_build_ticks = tu_timer::get_profile_ticks();
+
+	printf("built in %3.3f seconds\n", tu_timer::profile_ticks_to_seconds(end_build_ticks - start_build_ticks));
+
 	const axial_box&	bound = kd->get_bound();
+
+	printf("starting to cast...\n");
+
+	uint64	start_cast_ticks = tu_timer::get_profile_ticks();
 
 	for (int i = 0; i < RAY_COUNT; i++)
 	{
@@ -224,13 +298,23 @@ void	test_cast_against_tree(const kd_tree_dynamic* tree)
 			end = bound.get_random_point();
 		}
 
+		// xxx debugging: force all rays parallel to some axis...
+		do
+		{
+			end = bound.get_random_point();
+			start.y = end.y;
+			start.z = end.z;
+		}
+		while ((start - end).sqrmag() < 1e-3f);
+		// xxx
+
 		ray_query	ray(ray_query::start_end, start, end);
 
 		bool	result = kd->ray_test(ray);
 	}
 
 	uint64	end_ticks = tu_timer::get_profile_ticks();
-	double	seconds = tu_timer::profile_ticks_to_seconds(end_ticks - start_ticks);
+	double	seconds = tu_timer::profile_ticks_to_seconds(end_ticks - start_cast_ticks);
 	double	secs_per_ray = seconds / RAY_COUNT;
 	printf("%d ray casts took %3.3f seconds, %3.3f micros/ray\n", RAY_COUNT, seconds, secs_per_ray * 1000000);
 	printf("tests: %d nodes, %d leaves, %d faces\n",
