@@ -1,11 +1,5 @@
 #ifndef __XML_H__
-#define __XML_H_
-
-#include <vector>
-#include <string>
-
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
+#define __XML_H__
 
 #include "gameswf_log.h"
 #include "gameswf_action.h"
@@ -13,6 +7,16 @@
 #include "gameswf_log.h"
 
 #include "gameswf_xmlsocket.h"
+
+
+#if TU_CONFIG_LINK_TO_LIBXML
+
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+
+
+namespace gameswf
+{
 
 class XMLAttr
 {
@@ -247,7 +251,7 @@ class XML
   
   //    hash<gameswf::event_id, gameswf::as_value>	_event_handlers;
 #if 0
-    std::vector<struct node *> _childNodes; // Read-only; returns an array containing
+    array<struct node *> _childNodes; // Read-only; returns an array containing
                                             // references to the child
                                             // nodes of the specified
                                             // node.
@@ -310,6 +314,10 @@ void xml_ondata(gameswf::as_value* result, gameswf::as_object_interface* this_pt
 
 void xml_loaded(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
 
+}	// end namespace gameswf
 
-// __XML_H_
-#endif
+
+#endif // TU_CONFIG_LINK_TO_LIBXML
+
+#endif	// __XML_H__
+

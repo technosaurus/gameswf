@@ -34,3 +34,7 @@
 // content to make unpacked formats.
 // #define TU_CONFIG_LINK_TO_JPEGLIB 0
 // #define TU_CONFIG_LINK_TO_ZLIB 0
+
+// For enabling XML/XMLSocket functionality in gameswf, using GNOME
+// libxml
+// #define TU_CONFIG_LINK_TO_LIBXML 1

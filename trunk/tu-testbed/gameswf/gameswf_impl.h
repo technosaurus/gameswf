@@ -269,6 +269,7 @@ namespace gameswf
 		int    add_interval_timer(void *timer)
 		{
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+			return -1;	// ???
 		}
 		
 		void    clear_interval_timer(int x)

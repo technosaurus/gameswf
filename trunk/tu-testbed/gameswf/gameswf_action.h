@@ -360,6 +360,8 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 
 		virtual movie*	to_movie() = 0;
+
+// tulrich FIXME: as_object_interface should be pure virtual
 #if 1
                 // ActionScript event handler.
                 // array<as_value *>    m_event_handlers;
@@ -374,6 +376,7 @@ namespace gameswf
                 bool    get_event_handler(event_id id, gameswf::as_value* result)
                 {
                         //return m_event_handlers.get(id, result);
+			return false;
                 }
 #endif
 	};

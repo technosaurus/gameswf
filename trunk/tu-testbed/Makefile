@@ -1,15 +1,18 @@
 # Makefile for tu-testbed project.
 
 # Very miscellaneous at the moment.
-
-
 all:
 	make -C base
-	make -C demos/chunklod
+	make -C geometry
+	make -C gameswf
+#	make -C demos/chunklod
 
 clean:
-	make -C engine clean
-	make -C demos/chunklod clean
+	make -C base clean
+	make -C geometry clean
+	make -C gameswf clean
+#	make -C engine clean
+#	make -C demos/chunklod clean
 
 TAGS: .PHONY
 	-rm -rf TAGS

@@ -58,6 +58,11 @@
 #define TU_CONFIG_LINK_TO_LIBPNG 1
 #endif
 
+// define TU_CONFIG_LINK_TO_LIBXML to 1 to include XML support in
+// gameswf, depending on the GNOME libxml library.
+#ifndef TU_CONFIG_LINK_TO_LIBXML
+#define TU_CONFIG_LINK_TO_LIBXML 0
+#endif
 
 
 #endif // TU_CONFIG_H

@@ -25,6 +25,7 @@ as_object *
 MovieClipLoader::getProgress(as_object *ao)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
+  return NULL;
 }
 
 
@@ -32,6 +33,7 @@ bool
 MovieClipLoader::loadClip(std::string str, void *)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
+  return false;
 }
 
 void

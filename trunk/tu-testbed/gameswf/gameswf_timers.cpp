@@ -43,6 +43,8 @@ namespace gameswf
     _interval = ms * 0.01;
     // _interval = ms * 0.000001;
     start();
+
+    return 0;
   }
 
   int
@@ -53,6 +55,8 @@ namespace gameswf
     _env = en;
     // _interval = ms * 0.000001;
     start();
+
+    return 0;
   }
   int
   Timer::setInterval(as_value obj, int ms, array<struct variable *> *locals)
@@ -62,6 +66,8 @@ namespace gameswf
     _locals = locals;
     // _interval = ms * 0.000001;
     start();
+
+    return 0;
   }
 
   int
@@ -73,6 +79,8 @@ namespace gameswf
     _object = this_ptr;
     // _interval = ms * 0.000001;
     start();
+
+    return 0;
   }
 
   void
@@ -110,7 +118,7 @@ namespace gameswf
   void
   timer_setinterval(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
   {
-    int ret, i;
+    int i;
     as_value	method;
     log_msg("%s: args=%d\n", __PRETTY_FUNCTION__, nargs);
     

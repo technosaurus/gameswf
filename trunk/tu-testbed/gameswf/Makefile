@@ -24,26 +24,29 @@ all: base_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 
 LIB_OBJS = \
-	gameswf_xml.$(OBJ_EXT)	        \
-	gameswf_movie.$(OBJ_EXT)	\
-	gameswf_xmlsocket.$(OBJ_EXT)	\
-	gameswf_string.$(OBJ_EXT)	\
 	gameswf_action.$(OBJ_EXT)	\
 	gameswf_button.$(OBJ_EXT)	\
 	gameswf_dlist.$(OBJ_EXT)	\
-	gameswf_font.$(OBJ_EXT)	\
+	gameswf_font.$(OBJ_EXT)		\
 	gameswf_fontlib.$(OBJ_EXT)	\
-	gameswf_impl.$(OBJ_EXT)	\
-	gameswf_log.$(OBJ_EXT)	\
+	gameswf_impl.$(OBJ_EXT)		\
+	gameswf_log.$(OBJ_EXT)		\
 	gameswf_morph2.$(OBJ_EXT)	\
+	gameswf_movie.$(OBJ_EXT)	\
 	gameswf_render.$(OBJ_EXT)	\
 	gameswf_shape.$(OBJ_EXT)	\
 	gameswf_sound.$(OBJ_EXT)	\
 	gameswf_stream.$(OBJ_EXT)	\
+	gameswf_string.$(OBJ_EXT)	\
 	gameswf_styles.$(OBJ_EXT)	\
 	gameswf_tesselate.$(OBJ_EXT)	\
 	gameswf_text.$(OBJ_EXT)		\
-	gameswf_types.$(OBJ_EXT)
+	gameswf_textfield.$(OBJ_EXT)	\
+	gameswf_textformat.$(OBJ_EXT)	\
+	gameswf_timers.$(OBJ_EXT)	\
+	gameswf_types.$(OBJ_EXT)	\
+	gameswf_xml.$(OBJ_EXT)	        \
+	gameswf_xmlsocket.$(OBJ_EXT)
 
 TEST_PROGRAM_OBJS = \
 	gameswf_test_ogl.$(OBJ_EXT) \
@@ -88,4 +91,3 @@ depend:
 	makedepend *.cpp
 
 fresh: clean all
-

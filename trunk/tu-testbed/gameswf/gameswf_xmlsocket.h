@@ -11,10 +11,12 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 
-#include <string>
+
+#if TU_CONFIG_LINK_TO_LIBXML
+
 
 class XMLSocket {
- public:
+public:
   XMLSocket();
   ~XMLSocket();
   
@@ -29,11 +31,11 @@ class XMLSocket {
   
   
   // Event Handlers
-  void onClose(std::string);
-  void onConnect(std::string);
-  void onData(std::string);
-  void onXML(std::string);
- private:
+  void onClose(tu_string);
+  void onConnect(tu_string);
+  void onData(tu_string);
+  void onXML(tu_string);
+private:
   tu_string     _host;
   short         _port;
   int           _sockfd;
@@ -72,5 +74,7 @@ void xmlsocket_event_connect(gameswf::as_value* result, gameswf::as_object_inter
 void xmlsocket_event_xml(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
 
 
-// __XMLSOCKETSOCKET_H__
-#endif
+#endif // TU_CONFIG_LINK_TO_LIBXML
+
+#endif	// __XMLSOCKETSOCKET_H__
+
