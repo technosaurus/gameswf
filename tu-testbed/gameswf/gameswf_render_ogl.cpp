@@ -18,11 +18,6 @@
 #include <stdlib.h>
 
 
-// On some cards, an antialiased line around the outside of a shape
-// actually makes for passable antialiasing.  Unfortunately it also
-// expands the apparent size of the shape by a pixel or two :(
-#define SOFT_LINE_OUTLINE	0
-
 // On any multitexture card, we should be able to modulate in an edge
 // texture for nice edge antialiasing.
 #define USE_MULTITEXTURE_ANTIALIASING	1
@@ -686,7 +681,8 @@ namespace render
 	}
 
 
-	void	end_shape()
+	void	output_current_segments()
+	// Draw our shapes and lines, then clear the segment list.
 	{
 		if (s_shape_has_line)
 		{
@@ -799,6 +795,7 @@ namespace render
 	// will make a 1-pixel wide feathered antialised edge along
 	// {a,b}.
 	{
+#if 0
 		// Basically, find the normal to the edge {a,b} and then compute normal * {a,c} and normal*{a,d}
 
 		float	nx = (b.m_y - a.m_y);
@@ -809,6 +806,16 @@ namespace render
 
 		*s0 = nx * (c.m_x - a.m_x) + ny * (c.m_y - a.m_y);
 		*s1 = nx * (d.m_x - a.m_x) + ny * (d.m_y - a.m_y);
+#else
+		*s0 = (c.m_x - a.m_x) * 0.5f * s_pixel_scale / 20.f;
+		*s1 = (d.m_x - a.m_x) * 0.5f * s_pixel_scale / 20.f;
+
+		if (a.m_y > b.m_y)
+		{
+			*s0 = -*s0;
+			*s1 = -*s1;
+		}
+#endif // 0
 	}
 
 
@@ -887,10 +894,17 @@ namespace render
 					//
 					// Where edges {a,b} and {c,d} will be antialiased.
 
-					const point&	a = slab[i].m_begin;
-					const point&	b = slab[i].m_end;
-					const point&	c = slab[i + 1].m_begin;
-					const point&	d = slab[i + 1].m_end;
+					point	a = slab[i].m_begin;
+					point	b = slab[i].m_end;
+					point	c = slab[i + 1].m_begin;
+					point	d = slab[i + 1].m_end;
+
+					// Expand the trapezoid by a pixel to make up for
+					// the reduced coverage due to antialiasing.
+					a.m_x -= 20.f / s_pixel_scale;
+					b.m_x -= 20.f / s_pixel_scale;
+					c.m_x += 20.f / s_pixel_scale;
+					d.m_x += 20.f / s_pixel_scale;
 
 					const point	e((a.m_x + c.m_x) * 0.5f, (a.m_y + c.m_y) * 0.5f);
 					const point	f((b.m_x + d.m_x) * 0.5f, (b.m_y + d.m_y) * 0.5f);
@@ -945,6 +959,12 @@ namespace render
 				}
 			}
 		}
+	}
+
+
+	void	end_shape()
+	{
+		output_current_segments();
 	}
 
 
@@ -1055,106 +1075,6 @@ namespace render
 	void	end_path()
 	// Mark the end of a set of edges that all use the same styles.
 	{
-#if 0
-		// If we have a line style, then draw the line.
-		if (s_current_line_style.is_valid()
-		    && s_current_path.size() > 1)
-		{
-			s_current_line_style.apply(s_matrix_stack.back());
-			
-			// Render the line using a series of
-			// rectangles, connnected by pie-wedges.
-
-			// Decide how many increments to divide the
-			// circle into, to make nice circular connectors.
-			// s_current_line_width ...;
-
-			bool	closed_loop = false;
-			if (s_current_path[0] == s_current_path.back())
-			{
-				closed_loop = true;
-			}
-			if (closed_loop == false)
-			{
-				// Start with a semicircle end-cap.
-				draw end cap(s_current_path[0], direction...);
-			}
-			point	left = something;
-			point	right = something;
-			for (int i = 0; i < s_current_path.size() - 1; i++)
-			{
-				// get from s_current_path[i] to s_current_path[i+1]
-				
-				// glBegin(GL_TRIANGLE_STRIP);
-				// glVertex2f(left); glVertex2f(right);
-				// glVertex2f(next_left); glVertex2f(next_right);
-				// glEnd();
-
-				left = next_left;
-				right = next_right;
-
-				// connector...
-				if (i + 1 < s_current_path.size() - 1)
-				{
-					// Connect to the next segment.
-					if (left turn)
-					{
-						// Left turn.
-						next_right = whatever;
-						
-						// Triangle fan
-					}
-					else
-					{
-						// Right turn.
-						next_left = whatever;
-
-						// Triangle fan
-					}
-				}
-				else
-				{
-					// End the segment.
-					if (closed_loop)
-					{
-						// connect to s_current_path[0]
-					}
-					else
-					{
-						// semi-circle end-cap
-					}
-				}
-
-			}
-		}
-#endif // 0
-
-#if SOFT_LINE_OUTLINE
-		// Trace out the path outline, for antialiasing of filled shapes.
-
-		if (s_current_left_style.is_valid())
-		{
- 			s_current_left_style.apply(s_matrix_stack.back());
-			glBegin(GL_LINE_STRIP);
-			for (int i = 0; i < s_current_path.size(); i++)
-			{
-				glVertex2f(s_current_path[i].m_x, s_current_path[i].m_y);
-			}
-			glEnd();
-		}
-		
-		if (s_current_right_style.is_valid())
-		{
-			s_current_right_style.apply(s_matrix_stack.back());
-			glBegin(GL_LINE_STRIP);
-			for (int i = 0; i < s_current_path.size(); i++)
-			{
-				glVertex2f(s_current_path[i].m_x, s_current_path[i].m_y);
-			}
-			glEnd();
-		}
-#endif // SOFT_LINE_OUTLINE
-
 		s_current_path.resize(0);
 	}
 
