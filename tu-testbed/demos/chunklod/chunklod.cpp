@@ -260,7 +260,7 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 		enabled = true;
 		tree_enabled = true;
 
-		lod = iclamp(lod & 0xFF00, desired_lod, lod | 0x0FF);
+		lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
 		
 		// make sure neighbors are subdivided enough.
 		for (int i = 0; i < neighbor_count; i++) {
@@ -535,6 +535,6 @@ Uint16	lod_chunk_tree::compute_lod(const vec3& center, const vec3& extent, const
 
 //	printf("c_lod(): d = %f, dLm = %f, vx = %f vy = %f vz = %f\n", d, distance_LODmax, viewpoint.get_x(), viewpoint.get_y(), viewpoint.get_z());//xxxxxxxx
 
-	return iclamp(0, ((tree_depth << 8) - 1) - int(log2(fmax(1, d / distance_LODmax)) * 256), 0x0FFFF);
+	return iclamp(((tree_depth << 8) - 1) - int(log2(fmax(1, d / distance_LODmax)) * 256), 0, 0x0FFFF);
 }
 
