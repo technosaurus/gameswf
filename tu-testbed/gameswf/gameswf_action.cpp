@@ -2179,7 +2179,11 @@ namespace gameswf
 	{
 		for (const char* p = word; *p; p++)
 		{
-			if (*p == '.' || *p == '/')
+			if (*p == '.' && p[1] == '.')
+			{
+				p++;
+			}
+			else if (*p == '.' || *p == '/')
 			{
 				return p;
 			}
