@@ -11,7 +11,7 @@
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
 #include "base/tu_random.h"
-#include "gameswf_sound.h"	//v
+#include "gameswf_sound.h"
 
 #include <stdio.h>
 
@@ -63,6 +63,25 @@
 // String()
 
 
+// TODO builtins
+//
+// Number.toString() -- takes an optional arg that specifies the base
+//
+// parseInt(), parseFloat()
+//
+// Boolean() type cast
+//
+// typeof operator --> "number", "string", "boolean", "object" (also
+// for arrays), "null", "movieclip", "function", "undefined"
+//
+// isNaN()
+//
+// Number.MAX_VALUE, Number.MIN_VALUE
+//
+// String.fromCharCode()
+
+
+
 namespace gameswf
 {
 	//
@@ -75,15 +94,8 @@ namespace gameswf
 	// Statics.
 	bool	s_inited = false;
 	smart_ptr<as_object>	s_global;
-	stringi_hash<as_c_function_ptr>	s_objects_interface;
-
 	fscommand_callback	s_fscommand_handler = NULL;
 
-//vb
-	void register_as_object(const char* object_name, as_c_function_ptr handler)
-	{
-		s_objects_interface.add(object_name, handler);
-	}
 
 #define EXTERN_MOVIE
 #ifdef EXTERN_MOVIE
@@ -161,6 +173,37 @@ namespace gameswf
 		s_fscommand_handler = handler;
 	}
 
+
+	//
+	// array object
+	//
+
+
+	struct as_array_object : public as_object
+	{
+// @@ TODO
+//		as_array_object()
+//		{
+//			this->set_member("length", &array_not_impl);
+//			this->set_member("join", &array_not_impl);
+//			this->set_member("concat", &array_not_impl);
+//			this->set_member("slice", &array_not_impl);
+//			this->set_member("push", &array_not_impl);
+//			this->set_member("unshift", &array_not_impl);
+//			this->set_member("pop", &array_not_impl);
+//			this->set_member("shift", &array_not_impl);
+//			this->set_member("splice", &array_not_impl);
+//			this->set_member("sort", &array_not_impl);
+//			this->set_member("sortOn", &array_not_impl);
+//			this->set_member("reverse", &array_not_impl);
+//			this->set_member("toString", &array_not_impl);
+//		}
+	};
+
+	void	array_not_impl(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		log_error("array methods not implemented yet\n");
+	}
 
 
 	//
@@ -241,13 +284,24 @@ namespace gameswf
 				our_env->add_local("this", as_value(our_env->m_target));
 			}
 
+			// Init arguments array, if it's going to be needed.
+			smart_ptr<as_array_object>	arg_array;
+			if ((m_function2_flags & 0x04) || ! (m_function2_flags & 0x08))
+			{
+				arg_array = new as_array_object;
+
+				as_value	index_number;
+				for (int i = 0; i < nargs; i++)
+				{
+					index_number.set(i);
+					arg_array->set_member(index_number.to_string(), our_env->bottom(first_arg - i));
+				}
+			}
+
 			if (m_function2_flags & 0x04)
 			{
 				// preload 'arguments' into a register.
-
-				// @@ 'arguments' is an array of all the function args.
-				log_error("TODO: implement 'arguments' in function2 dispatch (reg)\n");
-
+				(*(our_env->local_register_ptr(current_reg))).set(arg_array.get_ptr());
 				current_reg++;
 			}
 
@@ -258,7 +312,7 @@ namespace gameswf
 			else
 			{
 				// Put 'arguments' in a local var.
-				log_error("TODO: implement 'arguments' in function2 displatch (var)\n");
+ 				our_env->add_local("arguments", as_value(arg_array.get_ptr()));
 			}
 
 			if (m_function2_flags & 0x10)
@@ -289,9 +343,9 @@ namespace gameswf
 			if (m_function2_flags & 0x80)
 			{
 				// Put '_parent' in a register.
-				
-				// @@ WTF is _parent?  Need to read docs.
-				log_error("TODO: implement '_parent' in function2 dispatch (reg)\n");
+				array<with_stack_entry>	dummy;
+				as_value	parent = our_env->get_variable("_parent", dummy);
+				(*(our_env->local_register_ptr(current_reg))) = parent;
 				current_reg++;
 			}
 
@@ -550,20 +604,6 @@ namespace gameswf
 
 
 	//
-	// array object
-	//
-
-
-	struct as_array_object : public as_object
-	{
-	};
-
-	void	array_not_impl(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
-	{
-		log_error("array methods not implemented yet\n");
-	}
-
-	//
 	// sound object
 	//
 
@@ -702,7 +742,7 @@ namespace gameswf
 		// Create built-in math object.
 		as_object*	math_obj = new as_object;
 
-		// constants
+		// constant
 		math_obj->set_member("e", 2.7182818284590452354);
 		math_obj->set_member("ln2", 0.69314718055994530942);
 		math_obj->set_member("log2e", 1.4426950408889634074);
@@ -1049,6 +1089,8 @@ namespace gameswf
 		// Log our argument.
 		//
 		// @@ what if we get extra args?
+		//
+		// @@ Array gets special treatment.
 		const char* arg0 = env->bottom(first_arg_bottom_index).to_string();
 		log_msg("%s\n", arg0);
 	}
@@ -1081,21 +1123,6 @@ namespace gameswf
 	// Constructor for ActionScript class Array.
 	{
 		smart_ptr<as_array_object>	ao = new as_array_object;
-
-// @@ TODO
-//		ao->set_member("length", &array_not_impl);
-//		ao->set_member("join", &array_not_impl);
-//		ao->set_member("concat", &array_not_impl);
-//		ao->set_member("slice", &array_not_impl);
-//		ao->set_member("push", &array_not_impl);
-//		ao->set_member("unshift", &array_not_impl);
-//		ao->set_member("pop", &array_not_impl);
-//		ao->set_member("shift", &array_not_impl);
-//		ao->set_member("splice", &array_not_impl);
-//		ao->set_member("sort", &array_not_impl);
-//		ao->set_member("sortOn", &array_not_impl);
-//		ao->set_member("reverse", &array_not_impl);
-//		ao->set_member("toString", &array_not_impl);
 
 		if (nargs == 0)
 		{
@@ -1157,24 +1184,6 @@ namespace gameswf
 		if (s_inited)
 		{
 			s_inited = false;
-
-// @@ !! as_value objects do ref-counting now, which is good for
-// safety, and necessary for all the places where we allocate new
-// as_objects and stash the pointer in as_value.  There is a danger of
-// getting cycles, due to variables in a movie's as_environment
-// keeping a pointer to the movie itself ("_root" or "this").
-// 
-//xxxxx
-// 			for (stringi_hash<as_value>::iterator it = s_global.begin();
-// 			     it != s_global.end();
-// 			     ++it)
-// 			{
-// 				as_object_interface*	obj = it->second.to_object();
-// 				if (obj)
-// 				{
-// 					delete obj;	// obj->drop_ref()
-// 				}
-// 			}
 
 			s_global->clear();
 			s_global = NULL;
@@ -1250,11 +1259,19 @@ namespace gameswf
 			assert(end >= start);
 
 			tu_string	result = this_string.utf8_substring(start, end);
-			//.c_str() + start);
-			//result.resize(end - start);	// @@ check this!
 
 			return as_value(result);
 		}
+		// @@ isEmpty()
+		// concat()
+		// lastIndexOf()
+		// length property
+		// substr()
+		// slice()
+		// split()
+		// toUpperCase()
+		// toLowerCase()
+		// etc.
 
 		return as_value();
 	}
@@ -1916,7 +1933,7 @@ namespace gameswf
 					// @@ TODO
 					
 					// Apparently this can be used to remove properties from
-					// an object.
+					// an object?
 
 					log_error("todo opcode: %02X\n", action_id);
 					break;
@@ -2659,7 +2676,7 @@ namespace gameswf
 						else if (type == 2)
 						{
 							// NULL
-							env->push(as_value());	// @@???
+							env->push(as_value());	// @@ null is different from undefined!
 
 							IF_VERBOSE_ACTION(log_msg("-------------- pushed NULL\n"));
 						}
@@ -2757,7 +2774,7 @@ namespace gameswf
 							{
 								log_error("error: dict_lookup(%d) is out of bounds!\n", id);
 								env->push(0);
-								IF_VERBOSE_ACTION(log_msg("-------------- pushed 0 @@\n"));
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed 0\n"));
 							}
 						}
 						else if (type == 9)
@@ -2774,7 +2791,7 @@ namespace gameswf
 								log_error("error: dict_lookup(%d) is out of bounds!\n", id);
 								env->push(0);
 
-								IF_VERBOSE_ACTION(log_msg("-------------- pushed 0 @@"));
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed 0"));
 							}
 						}
 					}
@@ -2933,8 +2950,7 @@ namespace gameswf
 					}
 					else
 					{
-						// @@ are frame numbers here 1-based or 0-based???
-						// @@ guessing 0-based for now.
+						// Frame numbers appear to be 0-based!  @@ Verify.
 						env->get_target()->goto_frame(int(env->top(0).to_number()));
 					}
 					env->get_target()->set_play_state(state);
@@ -3001,16 +3017,30 @@ namespace gameswf
 		if (m_type == STRING) { /* don't need to do anything */ }
 		else if (m_type == NUMBER)
 		{
+			// @@ Moock says if value is a NAN, then result is "NaN"
+			// INF goes to "Infinity"
+			// -INF goes to "-Infinity"
 			char buffer[50];
 			snprintf(buffer, 50, "%g", m_number_value);
 			m_string_value = buffer;
 		}
 		else if (m_type == UNDEFINED)
 		{
+			// @@ Moock says this should be ""
 			m_string_value = "undefined";
 		}
+		// else if (m_type == NULLTYPE) { /* @@ Moock says "null" */ }
+		// else if (m_type == BOOLEAN) { /* @@ Moock says "true" or "false" */ }
 		else if (m_type == OBJECT)
 		{
+			// @@ Moock says, "the value that results from
+			// calling toString() on the object".
+			//
+			// The default toString() returns "[object
+			// Object]" but may be customized.
+			//
+			// A Movieclip returns the absolute path of the object.
+
 			const char*	val = NULL;
 			if (m_object_value)
 			{
@@ -3024,6 +3054,8 @@ namespace gameswf
 			else
 			{
 				// @@ actually, we need to return our full path.
+				//
+				// @@ Flash seems to do "[object Object]" or some such.
 				char buffer[50];
 				snprintf(buffer, 50, "<object 0x%X>", (unsigned) m_object_value);
 				m_string_value = buffer;
@@ -3056,6 +3088,12 @@ namespace gameswf
 	{
 		if (m_type == STRING)
 		{
+			// @@ Moock says the rule here is: if the
+			// string is a valid float literal, then it
+			// gets converted; otherwise it is set to NaN.
+			//
+			// Also, "Infinity", "-Infinity", and "NaN"
+			// are recognized.
 			m_number_value = atof(m_string_value.c_str());
 			return m_number_value;
 		}
@@ -3065,6 +3103,12 @@ namespace gameswf
 		}
 		else if (m_type == OBJECT && m_object_value != NULL)
 		{
+			// @@ Moock says the result here should be
+			// "the return value of the object's valueOf()
+			// method".
+			//
+			// Arrays and Movieclips should return NaN.
+
 			// Text characters with var names could get in
 			// here.
 			return atof(m_object_value->get_text_value());
@@ -3091,11 +3135,17 @@ namespace gameswf
 			}
 			else
 			{
+				// @@ Moock: "true if the string can
+				// be converted to a valid nonzero
+				// number".
+				//
+				// Empty string --> false
 				return to_number() != 0.0;
 			}
 		}
 		else if (m_type == NUMBER)
 		{
+			// @@ Moock says, NaN --> false
 			return m_number_value != 0.0;
 		}
 		else if (m_type == OBJECT)
@@ -3153,7 +3203,7 @@ namespace gameswf
 		}
 		else
 		{
-			return NULL;	// @@ or return a valid "null function"?
+			return NULL;
 		}
 	}
 
@@ -4146,32 +4196,7 @@ namespace gameswf
 				uint16	flags = (instruction_data[3 + i]) | (instruction_data[3 + i + 1] << 8);
 				i += 2;
 
-				// @@ Trying to figure out what "suppress" means.
-				//
-				// In MTASC source, they say "*Register" and "*NoVar"
-				// for "preload_*" and "suppress_*".
-				//
-				// The Flasm documentation says:
-				//
-				// "They will neither be stored in registers nor accessible by name
-				// inside of function2 [...]"
-				//
-				// So the suppress flags prevent those vars from being available by name?
-				// What is the point of that?  Is it completely useless?  Or is the point
-				// that the Macromedia player creates local vars for "this", "arguments" and/or
-				// "super" when they're not suppressed.  I guess that must be it.
-				//
-				// "arguments" seems to be an array containing copies of the function
-				// args!  So that should definitely be suppressed whenever possible.
-
 				// @@ What is the difference between "super" and "_parent"?
-
-				// @@ What is the difference between "_global" and "_root"?
-				//
-				// ==> _global is essentially the player object, which can contain multiple
-				// stacked movies.  Each movie has its own _root, but there's only one
-				// _global in the player.  The movies can be referenced as _level0,
-				// _level1, etc.
 
 				bool	preload_global = (flags & 0x100) != 0;
 				bool	preload_parent = (flags & 0x80) != 0;
