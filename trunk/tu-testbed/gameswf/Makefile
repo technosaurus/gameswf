@@ -31,6 +31,7 @@ LIB_OBJS = \
 	gameswf_fontlib.$(OBJ_EXT)	\
 	gameswf_impl.$(OBJ_EXT)	\
 	gameswf_log.$(OBJ_EXT)	\
+	gameswf_morph.$(OBJ_EXT) \
 	gameswf_render.$(OBJ_EXT)	\
 	gameswf_shape.$(OBJ_EXT)	\
 	gameswf_sound.$(OBJ_EXT)	\
