@@ -8,7 +8,6 @@
 
 #include "SDL.h"
 #include "gameswf.h"
-#include "gameswf_log.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -246,7 +245,7 @@ int	main(int argc, char *argv[])
 //	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 5);
 //	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
 
 	int	width = int(m->get_width() * s_scale);
 	int	height = int(m->get_height() * s_scale);
