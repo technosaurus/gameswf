@@ -13,20 +13,22 @@ INCLUDE_PATHS := $(ENGINE_INCLUDE) $(ZLIB_INCLUDE)
 CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 
-LIBS := $(LIB_OUT) $(ENGINE) $(LIBS) $(JPEGLIB) $(ZLIB)
+LIBS := $(LIB_OUT) $(GEOMETRY_LIB) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB)
 
 
-all: engine quad_distance_test$(EXE_EXT)
+all: engine_libs quad_distance_test$(EXE_EXT)
 
 
-quad_distance_test$(EXE_EXT): quad_distance_test.$(OBJ_EXT) $(ENGINE)
+quad_distance_test$(EXE_EXT): quad_distance_test.$(OBJ_EXT) $(GEOMETRY_LIB) $(BASE_LIB)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 
-engine:
-	make -C $(TOP)/engine
+engine_libs:
+	$(MAKE) -C $(TOP)/base
+	$(MAKE) -C $(TOP)/geometry
 
 
 clean:
-	make -C $(TOP)/engine clean
+	$(MAKE) -C $(TOP)/base clean
+	$(MAKE) -C $(TOP)/geometry clean
 	rm quad_distance_test.$(OBJ_EXT) quad_distance_test$(EXE_EXT)
