@@ -37,4 +37,12 @@
 #endif
 
 
+// define TU_CONFIG_LINK_TO_JPEGLIB to 0 to exclude jpeg code from
+// your build.  Be aware of what you're doing -- it may break
+// features!
+#ifndef TU_CONFIG_LINK_TO_JPEGLIB
+#define TU_CONFIG_LINK_TO_JPEGLIB 1
+#endif
+
+
 #endif // TU_CONFIG_H

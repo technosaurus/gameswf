@@ -19,13 +19,6 @@ class tu_file;
 
 namespace jpeg
 {
-	// jpeglib data source constructors, for using tu_file* instead
-	// of stdio for jpeg IO.
-	void	setup_rw_source(jpeg_decompress_struct* cinfo, tu_file* instream);
-	void	setup_rw_dest(jpeg_compress_struct* cinfo, tu_file* outstream);
-
-
-	// Helper object for reading jpeg image data.  Basically a thin
 	// wrapper around jpeg_decompress_struct.
 	struct input {
 		// Read header and create a jpeg input object.
@@ -37,7 +30,6 @@ namespace jpeg
 // 		static input*	create_swf_jpeg2(SDL_RWops* in);
 
 		static input*	create_swf_jpeg2_header_only(tu_file* in);
-
 		virtual ~input();
 
 		virtual void	discard_partial_buffer() = 0;
