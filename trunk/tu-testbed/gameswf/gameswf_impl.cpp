@@ -688,6 +688,10 @@ namespace gameswf
 			// @@ for each character, delete it if it's an instance
 		}
 
+
+		movie_definition*	get_movie_definition() { return m_def; }
+
+
 		int	get_current_frame() const { return m_current_frame; }
 
 		void	notify_mouse_state(int x, int y, int buttons)

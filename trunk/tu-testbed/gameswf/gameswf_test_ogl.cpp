@@ -285,10 +285,16 @@ int	main(int argc, char *argv[])
 	glLoadIdentity();
 
 	// Load the actual movie.
-	gameswf::movie_interface*	m = gameswf::create_movie(infile);
-	if (m == NULL)
+	gameswf::movie_definition*	md = gameswf::create_movie(infile);
+	if (md == NULL)
 	{
 		fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
+		exit(1);
+	}
+	gameswf::movie_interface*	m = md->create_instance();
+	if (m == NULL)
+	{
+		fprintf(stderr, "error: can't create movie instance\n");
 		exit(1);
 	}
 
@@ -428,6 +434,8 @@ int	main(int argc, char *argv[])
 	}
 
 done:
+	delete m;
+	delete md;
 	delete sound;
 	delete render;
 	return 0;
