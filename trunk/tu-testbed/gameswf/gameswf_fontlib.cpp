@@ -144,6 +144,27 @@ namespace fontlib
 	{
 		// Really dumb implementation.  Just search for a fit.
 
+		// @@ much faster algo, due to JARE:
+		//
+		// * keep a list of "candidate points"; initialize it with {0,0}
+		//
+		// * each time we add a rect, add its lower-left and
+		// upper-right as candidate points.
+		//
+		// * search the candidate points only, when looking
+		// for a good spot.  If we find a good one, also try
+		// to scanning left or up as well; sometimes this can
+		// close some open space.
+		//
+		// * when we use a candidate point, remove it from the list.
+
+		// @@ or, keep a "horizon", and play tetris by putting
+		// each new rect in the spot furthest to the (left |
+		// top).  Actually, the horizon probably kicks butt,
+		// because you can do the coverage search just by
+		// looking ahead in the horizon.  Occasionally you'll
+		// lose some empty space due to bubbles, though...
+
 		// Width/height coords, scaled down to the coverage map.
 		int	round_up_add = (1 << GLYPH_PACK_ROUNDING_BITS);
 		int	cw = (width + round_up_add) >> GLYPH_PACK_ROUNDING_BITS;
