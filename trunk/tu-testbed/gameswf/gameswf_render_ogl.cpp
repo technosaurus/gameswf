@@ -25,7 +25,7 @@
 
 // On any multitexture card, we should be able to modulate in an edge
 // texture for nice edge antialiasing.
-#define USE_MULTITEXTURE_ANTIALIASING	0
+#define USE_MULTITEXTURE_ANTIALIASING	1
 
 
 namespace gameswf
@@ -34,12 +34,20 @@ namespace render
 {
 	// Some renderer state.
 
+	// Hint that tells us how the physical output is zoomed.  This
+	// is important for getting the antialiasing and curve
+	// subdivision right.
+	static float	s_pixel_scale = 1.0f;
+
+	// Enable/disable antialiasing.
+	static bool	s_enable_antialias = true;
+
 	// Curve subdivision error tolerance (in TWIPs)
-	static float	s_tolerance = 20.0f;
+	static float	s_tolerance = 20.0f / s_pixel_scale;
 
 	// Controls whether we do antialiasing by modulating in a special edge texture.
-	static bool	s_multitextureAntialias = false;
-	static unsigned int	s_edgeTextureID = 0;
+	static bool	s_multitexture_antialias = false;
+	static unsigned int	s_edge_texture_id = 0;
 
 	static bool	s_wireframe = false;
 
@@ -406,40 +414,42 @@ namespace render
 		cxform	cx_identity;
 		s_cxform_stack.push_back(cx_identity);
 
-		// See if we can use multitexture antialiasing.
-		s_multitextureAntialias = false;
-#if USE_MULTITEXTURE_ANTIALIASING
-		int	tex_units = 0;
-		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &tex_units);
-		if (tex_units >= 2)
+		// See if we want to, and can, use multitexture
+		// antialiasing.
+		s_multitexture_antialias = false;
+		if (s_enable_antialias)
 		{
-			s_multitextureAntialias = true;
+			int	tex_units = 0;
+			glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &tex_units);
+			if (tex_units >= 2)
+			{
+				s_multitexture_antialias = true;
+			}
+
+			// Make sure we have an edge texture available.
+			if (s_multitexture_antialias == true
+			    && s_edge_texture_id == 0)
+			{
+				// Very simple texture: 2 texels wide, 1 texel high.
+				// Both texels are white; left texel is all clear, right texel is all opaque.
+				unsigned char	edge_data[8] = { 255, 255, 255, 0, 255, 255, 255, 255 };
+
+				ogl::active_texture(GL_TEXTURE1_ARB);
+				glEnable(GL_TEXTURE_2D);
+				glGenTextures(1, &s_edge_texture_id);
+				glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
+
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, edge_data);
+
+				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// @@ should we use a 1D texture???
+				ogl::active_texture(GL_TEXTURE0_ARB);
+			}
 		}
-
-		// Make sure we have an edge texture available.
-		if (s_multitextureAntialias == true
-		    && s_edgeTextureID == 0)
-		{
-			// Very simple texture: 2 texels wide, 1 texel high.
-			// Both texels are white; left texel is all clear, right texel is all opaque.
-			unsigned char	edge_data[8] = { 255, 255, 255, 0, 255, 255, 255, 255 };
-
-			ogl::active_texture(GL_TEXTURE1_ARB);
-			glEnable(GL_TEXTURE_2D);
-			glGenTextures(1, &s_edgeTextureID);
-			glBindTexture(GL_TEXTURE_2D, s_edgeTextureID);
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, edge_data);
-
-			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// @@ should we use a 1D texture???
-			ogl::active_texture(GL_TEXTURE0_ARB);
-		}
-#endif	// USE_MULTITEXTURE_ANTIALIASING
 	}
 
 
@@ -783,6 +793,25 @@ namespace render
 	}
 
 
+	void	compute_antialias_s_coords(float* s0, float* s1, const point& a, const point& b, const point& c, const point& d)
+	// Given the quad {a,b,c,d}, compute texture coords s0,s1
+	// such that setting texture coords {0,0,s0,s1} for the quad
+	// will make a 1-pixel wide feathered antialised edge along
+	// {a,b}.
+	{
+		// Basically, find the normal to the edge {a,b} and then compute normal * {a,c} and normal*{a,d}
+
+		float	nx = (b.m_y - a.m_y);
+		float	ny = - (b.m_x - a.m_x);
+		float	scale = (1.0f / sqrtf(nx * nx + ny * ny)) * (0.5f * s_pixel_scale / 20.f);
+		nx *= scale;
+		ny *= scale;
+
+		*s0 = nx * (c.m_x - a.m_x) + ny * (c.m_y - a.m_y);
+		*s1 = nx * (d.m_x - a.m_x) + ny * (d.m_y - a.m_y);
+	}
+
+
 	void	peel_off_and_render(int i0, int i1, float y0, float y1)
 	// Clip the interval [y0, y1] off of the segments from s_current_segments[i0 through (i1-1)]
 	// and render the clipped segments.  Modifies the values in s_current_segments.
@@ -823,8 +852,7 @@ namespace render
 		qsort(&slab[0], slab.size(), sizeof(slab[0]), compare_segment_x);
 
 		// Render pairs.
-#if USE_MULTITEXTURE_ANTIALIASING
-		if (s_multitextureAntialias)
+		if (s_multitexture_antialias)
 		{
 			for (int i = 0; i < slab.size() - 1; i++)
 			{
@@ -835,34 +863,60 @@ namespace render
 					slab[i].m_left_style.apply(s_matrix_stack.back());
 
 					ogl::active_texture(GL_TEXTURE1_ARB);
-					glBindTexture(GL_TEXTURE_2D, s_edgeTextureID);
+					glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
 					glEnable(GL_TEXTURE_2D);	// @@ should we use a 1D texture???
 					ogl::active_texture(GL_TEXTURE0_ARB);
 
-					glBegin(GL_TRIANGLES);
+					glBegin(GL_QUADS);
 
-					float	e1 = sqrtf(
-						(slab[i].m_begin.m_x - slab[i].m_end.m_x) * (slab[i].m_begin.m_x - slab[i].m_end.m_x)
-						+ (slab[i].m_begin.m_y - slab[i].m_end.m_y) * (slab[i].m_begin.m_y - slab[i].m_end.m_y));
-					float	s1 = (((slab[i + 1].m_end.m_x - slab[i].m_end.m_x) * (slab[i].m_begin.m_y - slab[i].m_end.m_y))
-						      - ((slab[i + 1].m_end.m_y - slab[i].m_end.m_y) * (slab[i].m_begin.m_x - slab[i].m_end.m_x)))
-						      / e1;
+					// Here's what we have:
+					//
+					//    a   +--------------+ c
+					//       /                \
+					//      /                  \
+					//   b +------------------- + d
+					//
+					// We'll turn it into:
+					//
+					//               e
+					//    a   +------+-------+ c
+					//       /       |        \
+					//      /         |        \
+					//   b +----------+-------- + d
+					//                f
+					//
+					// Where edges {a,b} and {c,d} will be antialiased.
 
-					s1 = 200.f;//xxxx
+					const point&	a = slab[i].m_begin;
+					const point&	b = slab[i].m_end;
+					const point&	c = slab[i + 1].m_begin;
+					const point&	d = slab[i + 1].m_end;
+
+					const point	e((a.m_x + c.m_x) * 0.5f, (a.m_y + c.m_y) * 0.5f);
+					const point	f((b.m_x + d.m_x) * 0.5f, (b.m_y + d.m_y) * 0.5f);
+
+					float	s0, s1;
+					compute_antialias_s_coords(&s0, &s1, a, b, f, e);
 
 					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
+					glVertex2f(a.m_x, a.m_y);
 					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1 * 0.5f, 0.0f);	// todo: s = fn(verts)
-					glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
+					glVertex2f(b.m_x, b.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s0, 0.0f);
+					glVertex2f(f.m_x, f.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1, 0.0f);
+					glVertex2f(e.m_x, e.m_y);
+
+					compute_antialias_s_coords(&s0, &s1, d, c, e, f);
 
 					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
+					glVertex2f(d.m_x, d.m_y);
 					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1 * 0.5f, 0.0f);	// xxx compute s2
-					glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
+					glVertex2f(c.m_x, c.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s0, 0.0f);
+					glVertex2f(e.m_x, e.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1, 0.0f);
+					glVertex2f(f.m_x, f.m_y);
 
 					glEnd();
 
@@ -873,7 +927,6 @@ namespace render
 			}
 		}
 		else
-#endif // USE_MULTITEXTURE_ANTIALIASING
 		{
 			for (int i = 0; i < slab.size() - 1; i++)
 			{
@@ -1107,6 +1160,34 @@ namespace render
 
 }	// end namespace render
 };	// end namespace gameswf
+
+
+// Some external interfaces.
+namespace gameswf
+{
+	void	set_antialiased(bool enable)
+	// Call with 'true' to enable antialiasing; with 'false' to
+	// turn it off.
+	{
+		render::s_enable_antialias = enable;
+	}
+
+
+	void	set_pixel_scale(float scale)
+	// Call with the zoom factor the movie is being displayed at.
+	// I.e. if you're showing the movie 2x normal size, then pass
+	// 2.0f.  This is important for getting the antialiasing and
+	// curve subdivision right.
+	{
+		if (scale > 0)
+		{
+			render::s_pixel_scale = scale;
+			render::s_tolerance = 20.0f / render::s_pixel_scale;
+		}
+	}
+
+};	// end namespace gameswf
+
 
 
 // Local Variables:

@@ -56,6 +56,12 @@ namespace gameswf
 	// Register a loader function for a certain tag type.
 	void	register_tag_loader(int tag_type, loader_function lf);
 
+	//
+	// Render control.
+	//
+	void	set_antialiased(bool enable);
+	void	set_pixel_scale(float scale);
+
 };	// namespace gameswf
 
 
