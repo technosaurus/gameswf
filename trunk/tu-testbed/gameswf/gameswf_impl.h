@@ -11,6 +11,7 @@
 
 
 #include "gameswf.h"
+#include "gameswf_action.h"
 #include "gameswf_types.h"
 #include "gameswf_log.h"
 #include <assert.h>
@@ -146,9 +147,24 @@ namespace gameswf
 
 		virtual bool	set_edit_text(const char* var_name, const char* new_text)
 		{
+			return set_value(var_name, new_text);
+		}
+
+		//
+		// ActionScript.
+		//
+
+
+		virtual bool	set_value(const char* var_name, const as_value& val)
+		{
 			assert(0);
 			return false;
 		}
+
+
+		//
+		// Caching.
+		//
 
 		virtual void	output_cached_data(tu_file* out) {}
 		virtual void	input_cached_data(tu_file* in) {}
@@ -156,7 +172,7 @@ namespace gameswf
 
 
 	// SWF movies contain "characters" to represent the various elements.
-	struct character : public movie
+	struct character : public movie, public as_variable_interface
 	{
 	private:
 		int	m_id;
@@ -204,11 +220,9 @@ namespace gameswf
 		virtual character*	create_instance() { assert(0); return 0; }
 		virtual character*	get_definition() { return this; }
 
-		// An interface designed to be used by
-		// edit_text_character, or any other character that
-		// can reasonably accept a text value.
-		// Return true on success.
-		virtual bool	set_edit_text(const char* new_text) { assert(0); return false; }
+		// Interface for ActionScript variable support.
+		// E.g. for setting dynamic text values.
+		virtual bool	set_value(const as_value& val) { assert(0); return false; }
 	};
 
 

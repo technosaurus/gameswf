@@ -97,36 +97,14 @@ namespace gameswf
 	//
 
 
-	static bool	execute_actions(movie* m, const array<action_buffer*>& action_list)
-	// Execute the actions in the action list, on the given movie.
-	// Return true if the actions did something to change the
-	// current_frame or play state of the movie.
+	static void	execute_actions(as_environment* env, const array<action_buffer*>& action_list)
+	// Execute the actions in the action list, in the given
+	// environment.
 	{
-		{for (int i = 0; i < action_list.size(); i++)
+		for (int i = 0; i < action_list.size(); i++)
 		{
-			//int	local_current_frame = m->get_current_frame();
-
-			action_list[i]->execute(m);
-
-			// @@ the action could possibly have changed
-			// the size of m_action_list... do we have to
-			// do anything special to make sure
-			// m_action_list.m_size is re-read from RAM,
-			// and not cached in a register???  Declare it
-			// volatile, or something like that?
-
-			/* Ignacio: What is this for? 
-			- Goto actions may add new actions to the action list!
-			- you are never using the return value...
-			// Frame state could have changed!
-			if (m->get_current_frame() != local_current_frame)
-			{
-				// @@ would this be more elegant if we passed back a "early-out" flag from execute?
-				return true;
-			}*/
-		}}
-
-		return false;
+			action_list[i]->execute(env);
+		}
 	}
 
 
@@ -211,6 +189,9 @@ namespace gameswf
 
 		jpeg::input*	m_jpeg_in;
 
+		// for ActionScript.
+		as_environment	m_as_environment;
+
 
 		movie_impl()
 			:
@@ -230,6 +211,7 @@ namespace gameswf
 			m_mouse_capture_id(-1),
 			m_jpeg_in(0)
 		{
+			m_as_environment.set_target(this);
 		}
 
 		virtual ~movie_impl()
@@ -636,7 +618,7 @@ namespace gameswf
 		void	do_actions()
 		// Take care of this frame's actions.
 		{
-			execute_actions(this, m_action_list);
+			execute_actions(&m_as_environment, m_action_list);
 			m_action_list.resize(0);
 		}
 
@@ -802,7 +784,7 @@ namespace gameswf
 		}
 
 
-		bool	set_edit_text(const char* var_name, const char* new_text)
+		bool	set_value(const char* var_name, const as_value& val)
 		// Find the named character in the movie, and set its
 		// text to the given string.  Return true on success.
 		{
@@ -813,7 +795,7 @@ namespace gameswf
 				bool	success = false;
 				for (int i = 0; i < ch_array->size(); i++)
 				{
-					success = (*ch_array)[i]->set_edit_text(new_text) || success;
+					success = (*ch_array)[i]->set_value(val) || success;
 				}
 				return success;
 			}
@@ -2029,6 +2011,9 @@ namespace gameswf
 		float	m_time_remainder;
 		bool	m_update_frame;
 
+		as_environment	m_as_environment;
+
+
 		virtual ~sprite_instance()
 		{
 			m_display_list.clear();
@@ -2045,6 +2030,8 @@ namespace gameswf
 		{
 			assert(m_def);
 			set_id(def->get_id());
+
+			m_as_environment.set_target(this);
 		}
 
 		bool	is_instance() const { return true; }
@@ -2175,7 +2162,7 @@ namespace gameswf
 		void	do_actions()
 		// Take care of this frame's actions.
 		{
-			execute_actions(this, m_action_list);
+			execute_actions(&m_as_environment, m_action_list);
 			m_action_list.resize(0);
 		}
 

@@ -388,13 +388,19 @@ namespace gameswf
 		}
 
 
-		virtual bool	set_edit_text(const char* new_text)
+		virtual bool	set_value(const as_value& new_val)
 		// Overload from class character.
 		// Set our text to the given string.
 		{
-			if (new_text == m_text)
+			set_text(new_val.to_string());
+			return true;
+		}
+
+		void	set_text(const char* new_text)
+		{
+			if (m_text == new_text)
 			{
-				return true;
+				return;
 			}
 
 			m_text = new_text;
@@ -405,8 +411,6 @@ namespace gameswf
 			}
 
 			format_text();
-
-			return true;
 		}
 
 		
@@ -684,7 +688,7 @@ namespace gameswf
 			if (has_text)
 			{
 				char*	str = in->read_string();
-				set_edit_text(str);
+				set_text(str);
 				delete [] str;
 			}
 		}
