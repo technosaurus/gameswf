@@ -54,6 +54,16 @@ namespace gameswf
 	}
 
 
+	static bool	s_use_cache_files = true;
+
+	void	set_use_cache_files(bool use_cache)
+	// Enable/disable attempts to read cache files when loading
+	// movies.
+	{
+		s_use_cache_files = use_cache;
+	}
+
+
 	// Keep a table of loader functions for the different tag types.
 	static hash<int, loader_function>	s_tag_loaders;
 
@@ -197,7 +207,7 @@ namespace gameswf
 		float	m_time_remainder;
 		bool	m_update_frame;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
-		int m_mouse_capture_id;
+		int	m_mouse_capture_id;
 
 		jpeg::input*	m_jpeg_in;
 
@@ -1103,8 +1113,7 @@ namespace gameswf
 
 
 	movie_interface*	create_movie(const char* filename)
-	// External API.  Create a movie from the given stream, and
-	// return it.
+	// Create the movie from the specified .swf file.
 	{
 		if (s_opener_function == NULL)
 		{
@@ -1133,46 +1142,28 @@ namespace gameswf
 
 		delete in;
 
-		return m;
-	}
-
-
-	movie_interface*	create_movie_with_cache(const char* filename)
-	// Create the movie from the specified .swf file.  Look for
-	// and load any corresponding .gsc ("gameswf cache") file as
-	// well.
-	{
-		movie_interface*	m = create_movie(filename);
-		if (m == NULL)
+		if (m && s_use_cache_files)
 		{
-			return m;
-		}
+			// Try to load a .gsc file.
+			tu_string	cache_filename(filename);
+			cache_filename += ".gsc";
+			tu_file*	cache_in = s_opener_function(cache_filename.c_str());
+			if (cache_in == NULL
+			    || cache_in->get_error() != TU_FILE_NO_ERROR)
+			{
+				// Can't open cache file; don't sweat it.
+				IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
 
-		if (s_opener_function == NULL)
-		{
-			// No way to try to open the cache file.
-			return m;
-		}
+				m->generate_font_bitmaps();	// can't read cache, so generate font texture data.
+			}
+			else
+			{
+				// Load the cached data.
+				m->input_cached_data(cache_in);
+			}
 
-		// Try to load a .gsc file.
-		tu_string	cache_filename(filename);
-		cache_filename += ".gsc";
-		tu_file*	cache_in = s_opener_function(cache_filename.c_str());
-		if (cache_in == NULL
-		    || cache_in->get_error() != TU_FILE_NO_ERROR)
-		{
-			// Can't open cache file; don't sweat it.
-			IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
-
-			m->generate_font_bitmaps();	// can't read cache, so generate font texture data.
+			delete cache_in;
 		}
-		else
-		{
-			// Load the cached data.
-			m->input_cached_data(cache_in);
-		}
-
-		delete cache_in;
 
 		return m;
 	}
@@ -1202,7 +1193,7 @@ namespace gameswf
 		}
 
 		// Try to open a file under the url.
-		movie_interface*	mov = create_movie_with_cache(url.c_str());
+		movie_interface*	mov = create_movie(url.c_str());
 		movie_impl*	m = static_cast<movie_impl*>(mov);
 
 		if (m == NULL)

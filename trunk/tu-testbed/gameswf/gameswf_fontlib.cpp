@@ -49,31 +49,11 @@ namespace fontlib
 	// The dimensions of the textures that the glyphs get packed into.
 	static const int	GLYPH_CACHE_TEXTURE_SIZE = 256;
 
-	// Align packed glyphs on pixel boundaries of multiples of (1
-	// << GLYPH_PACK_ROUNDING_BITS).  I.e. if
-	// GLYPH_PACK_ROUNDING_BITS == 2, then align the packed glyphs
-	// on 4-pixel boundaries.  The idea here is to avoid bleeding
-	// of packed glyphs into their neighbors, when drawing scaled
-	// glyphs with mip-mapping.
-	//
-	// @@ based on my experiments, PAD_PIXELS is *much* more
-	// visually effective than ROUNDING_BITS.  ROUNDING_BITS may
-	// still be helpful since it reduces the amount of work our
-	// brute-force rectangle packer does.  Should just fix the
-	// packer to use a horizon or some better data structure than
-	// a coverage bitmap.
-	static const int	GLYPH_PACK_ROUNDING_BITS = 0;
-
 	// How much space to leave around the individual glyph image.
 	// This should be at least 1.  The bigger it is, the smoother
 	// the boundaries of minified text will be, but the more
 	// texture space is wasted.
 	const int PAD_PIXELS = 3;
-
-	// We make a little bitmap coverage thingy, to help pack our
-	// glyphs into the cache texture.  Basically we play Tetris
-	// with the glyph rects.
-	static const int	GLYPH_COVERAGE_BITMAP_SIZE = (GLYPH_CACHE_TEXTURE_SIZE >> GLYPH_PACK_ROUNDING_BITS);
 
 	//
 	// State for the glyph packer.
@@ -157,6 +137,29 @@ namespace fontlib
 
 	static bool	s_saving = false;
 	static tu_file*	s_file = NULL;
+
+
+	static void	ensure_cache_image_available()
+	{
+		if (s_current_bitmap_info == NULL)
+		{
+			// Set up a cache.
+			s_current_bitmap_info = render::create_bitmap_info_blank();
+			s_bitmaps_used.push_back(s_current_bitmap_info);
+
+			if (s_current_cache_image == NULL)
+			{
+				s_current_cache_image = new Uint8[GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE];
+			}
+			memset(s_current_cache_image, 0, GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE);
+
+			// Initialize the coverage data.
+			s_covered_rects.resize(0);
+			s_anchor_points.resize(0);
+			s_anchor_points.push_back(pointi(0, 0));	// seed w/ upper-left of texture.
+		}
+	}
+
 
 	void	finish_current_texture()
 	{
@@ -284,13 +287,8 @@ namespace fontlib
 	bool	pack_rectangle(int* px, int* py, int width, int height)
 	// Find a spot for the rectangle in the current cache image.
 	// Return true if there's a spot; false if there's no room.
-	//
-	// @@ for better packing, we should keep *several* textures
-	// open and try to pack rects into the dregs of old textures
-	// before closing them.  Often smaller glyphs that come after
-	// a big glyph can fit in some leftover space.
-	//
-	// @@ we could also be on the lookout for glyphs w/ identical
+	// 
+	// @@ Should we be on the lookout for glyphs w/ identical
 	// image data?  I.e. compute a hash on the image data; check
 	// hash table before packing a duplicate?
 	{
@@ -352,80 +350,46 @@ namespace fontlib
 		return false;
 	}
 
-// The old stuff.
-#if 0
-		// Really dumb implementation.  Just search for a fit.
 
+	// This is for keeping track of our rendered glyphs, before
+	// packing them into textures and registering with the font.
+	struct rendered_glyph_info
+	{
+		font*	m_source_font;
+		int	m_glyph_index;
+		image::alpha*	m_image;
+		float	m_offset_x;
+		float	m_offset_y;
 
-		// Width/height coords, scaled down to the coverage map.
-		int	round_up_add = (1 << GLYPH_PACK_ROUNDING_BITS);
-		int	cw = (width + round_up_add) >> GLYPH_PACK_ROUNDING_BITS;
-		int	ch = (height + round_up_add) >> GLYPH_PACK_ROUNDING_BITS;
-
-		for (int j = 0; j < GLYPH_COVERAGE_BITMAP_SIZE - ch + 1; j++)
+		rendered_glyph_info()
+			:
+			m_source_font(0),
+			m_glyph_index(0),
+			m_image(0),
+			m_offset_x(0),
+			m_offset_y(0)
 		{
-			for (int i = 0; i < GLYPH_COVERAGE_BITMAP_SIZE - cw + 1; i++)
-			{
-				// Fit?
-				bool	fail = false;
-				for (int jj = 0; jj < ch && fail == false; jj++)
-				{
-					for (int ii = 0; ii < cw; ii++)
-					{
-						if (s_coverage_image[(j + jj) * GLYPH_COVERAGE_BITMAP_SIZE + (i + ii)])
-						{
-							fail = true;
-							break;
-						}
-					}
-				}
-				if (fail == false)
-				{
-					// Found a spot.
-
-					// Mark the coverage map as filled.
-					for (int jj = 0; jj < ch; jj++)
-					{
-						memset(s_coverage_image + (j + jj) * GLYPH_COVERAGE_BITMAP_SIZE + i,
-						       0xFF,
-						       cw);
-					}
-
-					*px = i << GLYPH_PACK_ROUNDING_BITS;
-					*py = j << GLYPH_PACK_ROUNDING_BITS;
-					
-					return true;
-				}
-			}
 		}
 
-		return false;
-	}
-#endif // 0
+		~rendered_glyph_info()
+		{
+			delete m_image;
+		}
+	};
 
 
-	texture_glyph*	texture_pack(
-		Uint8* image_data,
-		int min_x,
-		int min_y,
-		int max_x,
-		int max_y,
-		float offset_x,
-		float offset_y
-		)
+#if 0
+	texture_glyph*	texture_pack(const rendered_glyph_info& rgi)
 	// Pack the given image data into an available texture, and
-	// return a new texture_glyph structure containging info for
+	// return a new texture_glyph structure containing info for
 	// rendering the cached glyph.
 	{
-		int	raw_width = (max_x - min_x + 1);
-		int	raw_height = (max_y - min_y + 1);
+		int	raw_width = rgi.m_image->m_width;
+		int	raw_height = rgi.m_image->m_height;
 
-		// Round up to nearest rounding boundary.  We also
-		// need to leave at least 1 texel worth of blank space
-		// all around the glyph image.
-		static const int	mask = (1 << GLYPH_PACK_ROUNDING_BITS) - 1;
-		int	width = (raw_width + (PAD_PIXELS * 2) + mask) & ~mask;
-		int	height = (raw_height + (PAD_PIXELS * 2) + mask) & ~mask;
+		// Need to pad around the outside.
+		int	width = raw_width + (PAD_PIXELS * 2);
+		int	height = raw_height + (PAD_PIXELS * 2);
 
 		assert(width < GLYPH_CACHE_TEXTURE_SIZE);
 		assert(height < GLYPH_CACHE_TEXTURE_SIZE);
@@ -442,12 +406,8 @@ namespace fontlib
 				if (s_current_cache_image == NULL)
 				{
 					s_current_cache_image = new Uint8[GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE];
-
-//					assert(s_coverage_image == NULL);
-//					s_coverage_image = new Uint8[GLYPH_COVERAGE_BITMAP_SIZE * GLYPH_COVERAGE_BITMAP_SIZE];
 				}
 				memset(s_current_cache_image, 0, GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE);
-//				memset(s_coverage_image, 0, GLYPH_COVERAGE_BITMAP_SIZE * GLYPH_COVERAGE_BITMAP_SIZE);
 
 				// Initialize the coverage data.
 				s_covered_rects.resize(0);
@@ -465,15 +425,15 @@ namespace fontlib
 					memcpy(s_current_cache_image
 					       + (pack_y + PAD_PIXELS + j) * GLYPH_CACHE_TEXTURE_SIZE
 					       + pack_x + PAD_PIXELS,
-					       image_data + (min_y + j) * GLYPH_FINAL_SIZE + min_x,
+					       image::scanline(rgi.m_image, j),
 					       raw_width);
 				}
 
 				// Fill out the glyph info.
 				texture_glyph*	tg = new texture_glyph;
 				tg->m_bitmap_info = s_current_bitmap_info;
-				tg->m_uv_origin.m_x = (float(pack_x) - min_x + offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
-				tg->m_uv_origin.m_y = (float(pack_y) - min_y + offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_origin.m_x = (float(pack_x) /* - min_x */ + rgi.m_offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_origin.m_y = (float(pack_y) /* - min_y */ + rgi.m_offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
 				tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
 				tg->m_uv_bounds.m_x_max = float(pack_x + width) / (GLYPH_CACHE_TEXTURE_SIZE);
 				tg->m_uv_bounds.m_y_min = float(pack_y) / (GLYPH_CACHE_TEXTURE_SIZE);
@@ -496,6 +456,7 @@ namespace fontlib
 		assert(0);
 		return NULL;
 	}
+#endif // 0
 
 
 	static void	software_trapezoid(
@@ -563,11 +524,13 @@ namespace fontlib
 	};
 
 
-	static texture_glyph*	make_texture_glyph(const shape_character* sh)
+	static void	render_glyph(rendered_glyph_info* rgi, const shape_character* sh)
 	// Render the given outline shape into a cached font texture.
-	// Return a new texture_glyph struct that gives enough info to
-	// render the cached glyph as a textured quad.
+	// 
+	// Return fill in the image and offset members of the given
+	// rgi.
 	{
+		assert(rgi);
 		assert(sh);
 		assert(s_render_buffer);
 
@@ -641,11 +604,21 @@ namespace fontlib
 			}
 		}
 
-		// Pack into an available texture.
-		return texture_pack(output, min_x, min_y, max_x, max_y,
-				    offset_x / s_rendering_box * GLYPH_FINAL_SIZE,
-				    offset_y / s_rendering_box * GLYPH_FINAL_SIZE);
+		// Fill in rendered_glyph_info.
+		rgi->m_image = new image::alpha(max_x - min_x + 1, max_y - min_y + 1);
+		rgi->m_offset_x = offset_x / s_rendering_box * GLYPH_FINAL_SIZE - min_x;
+		rgi->m_offset_y = offset_y / s_rendering_box * GLYPH_FINAL_SIZE - min_y;
+
+		// Copy the rendered glyph into the new image.
+		{for (int j = 0, n = rgi->m_image->m_height; j < n; j++)
+		{
+			memcpy(
+				image::scanline(rgi->m_image, j),
+				output + (min_y + j) * GLYPH_FINAL_SIZE + min_x,
+				rgi->m_image->m_width);
+		}}
 	}
+
 
 	static int compare_glyphs( const void * a, const void * b ) {
 		return *(int *)b - *(int *)a;
@@ -658,12 +631,128 @@ namespace fontlib
 	};
 
 
-	static void	generate_font_bitmaps(font* f)
-	// Build cached textured versions of the font's glyphs, and
-	// store them in the font.
+	void	pack_and_assign_glyphs(array<rendered_glyph_info>* glyph_info)
+	// Pack the given glyphs into textures, and push the
+	// texture_glyph info into the source fonts.
+	//
+	// Re-arranges the glyphs (i.e. sorts them by size) but
+	// otherwise doesn't munge the array.
 	{
+		// Sort the glyphs by size (biggest first).
+		struct sorter
+		{
+			static int	sort_by_size(const void* a, const void* b)
+			// For qsort.
+			{
+				const rendered_glyph_info*	ga = (const rendered_glyph_info*) a;
+				const rendered_glyph_info*	gb = (const rendered_glyph_info*) b;
+
+				int	a_size = ga->m_image->m_width + ga->m_image->m_height;
+				int	b_size = gb->m_image->m_width + gb->m_image->m_height;
+
+				return b_size - a_size;
+			}
+		};
+		if (glyph_info->size())
+		{
+			qsort(&(*glyph_info)[0], glyph_info->size(), sizeof((*glyph_info)[0]), sorter::sort_by_size);
+		}
+
+		// Flag for whether we've processed this glyph yet.
+		array<bool>	packed;
+		packed.resize(glyph_info->size());
+		for (int i = 0, n = packed.size(); i < n; i++)
+		{
+			packed[i] = false;
+		}
+
+		// Pack the glyphs.
+		{for (int i = 0, n = glyph_info->size(); i < n; )
+		{
+			int	index = i;
+
+			ensure_cache_image_available();
+
+			// Try to pack a glyph into the existing texture.
+			for (;;)
+			{
+				const rendered_glyph_info&	rgi = (*glyph_info)[index];
+
+				int	raw_width = rgi.m_image->m_width;
+				int	raw_height = rgi.m_image->m_height;
+
+				// Need to pad around the outside.
+				int	width = raw_width + (PAD_PIXELS * 2);
+				int	height = raw_height + (PAD_PIXELS * 2);
+
+				assert(width < GLYPH_CACHE_TEXTURE_SIZE);
+				assert(height < GLYPH_CACHE_TEXTURE_SIZE);
+
+				// Does this glyph fit?
+				int	pack_x = 0, pack_y = 0;
+				if (pack_rectangle(&pack_x, &pack_y, width, height))
+				{
+					// Fits!
+					// Blit the output image into its new spot.
+					for (int j = 0; j < raw_height; j++)
+					{
+						memcpy(s_current_cache_image
+						       + (pack_y + PAD_PIXELS + j) * GLYPH_CACHE_TEXTURE_SIZE
+						       + pack_x + PAD_PIXELS,
+						       image::scanline(rgi.m_image, j),
+						       raw_width);
+					}
+
+					// Fill out the glyph info.
+					texture_glyph*	tg = new texture_glyph;
+					tg->m_bitmap_info = s_current_bitmap_info;
+					tg->m_uv_origin.m_x = (pack_x + rgi.m_offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg->m_uv_origin.m_y = (pack_y + rgi.m_offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg->m_uv_bounds.m_x_max = float(pack_x + width) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg->m_uv_bounds.m_y_min = float(pack_y) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg->m_uv_bounds.m_y_max = float(pack_y + height) / (GLYPH_CACHE_TEXTURE_SIZE);
+
+					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg);
+
+					packed[index] = true;
+
+					break;
+				}
+				else
+				{
+					// Try the next unpacked glyph.
+					index++;
+					while (index < n && packed[index]) index++;
+
+					if (index >= n)
+					{
+						// None of the glyphs will fit.  Finish off this texture.
+						finish_current_texture();
+						ensure_cache_image_available();
+
+						// And go around again.
+						index = i;
+					}
+				}
+			}
+
+			// Skip to the next unpacked glyph.
+			while (i < n && packed[i]) i++;
+		}}
+	}
+
+
+
+	static void	generate_font_bitmaps(array<rendered_glyph_info>* glyph_info, font* f)
+	// Render images for each of the font's glyphs, and put the
+	// info about them in the given array.
+	{
+		assert(glyph_info);
 		assert(f);
 
+// do this after rendering
+#if 0
 		int	count = f->get_glyph_count();
 		if (count == 0)
 		{
@@ -713,6 +802,38 @@ namespace fontlib
 				f->add_texture_glyph(sorted_array[i].i, tg);
 			}
 		}
+#endif // 0
+
+		for (int i = 0, n = f->get_glyph_count(); i < n; i++)
+		{
+			if (f->get_texture_glyph(i) == NULL)
+			{
+				shape_character*	sh = f->get_glyph(i);
+				if (sh)
+				{
+					rect	glyph_bounds;
+					sh->compute_bound(&glyph_bounds);
+
+					int w = (int) glyph_bounds.width();
+					int h = (int) glyph_bounds.height();
+					if (glyph_bounds.width() < 0)
+					{
+						// Invalid width; this must be an empty glyph.
+						// Don't bother generating a texture for it.
+					}
+					else
+					{
+						// Add a glyph.
+						glyph_info->resize(glyph_info->size() + 1);
+						rendered_glyph_info&	rgi = glyph_info->back();
+						rgi.m_source_font = f;
+						rgi.m_glyph_index = i;
+
+						render_glyph(&rgi, sh);
+					}
+				}
+			}
+		}
 	}
 
 
@@ -733,10 +854,15 @@ namespace fontlib
 		assert(s_render_buffer == NULL);
 		s_render_buffer = new Uint8[GLYPH_RENDER_SIZE * GLYPH_RENDER_SIZE];
 
+		// Build the glyph images.
+		array<rendered_glyph_info>	glyph_info;
 		for (int i = 0; i < fonts.size(); i++)
 		{
-			generate_font_bitmaps(fonts[i]);
+			generate_font_bitmaps(&glyph_info, fonts[i]);
 		}
+
+		// Pack all the rendered glyphs and push the info into their fonts.
+		pack_and_assign_glyphs(&glyph_info);
 
 		// Finish off any pending cache texture.
 		finish_current_texture();

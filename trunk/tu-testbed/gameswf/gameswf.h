@@ -92,23 +92,21 @@ namespace gameswf
 		int* height,
 		float* frames_per_second,
 		int* frame_count);
-	
-	// Create a gameswf::movie_interface from the given input
-	// file name.  DOES NOT look for ".gsc" cache files, so
-	// you might prefer the create_movie_with_cache() API.
-	//
-	// Uses the register file-opener callback to read the files
-	// themselves.
-	movie_interface*	create_movie(const char* filename);
 
-	// Create a gameswf::movie_interface from the given file
-	// name, and also try to load any cached data file (".gsc")
-	// that corresponds to the given movie file.  This will still
-	// work even if there is no cache file.
+	// Enable/disable attempts to read cache files (.gsc) when
+	// loading movies.
+	void	set_use_cache_files(bool use_cache);
+	
+	// Create a gameswf::movie_interface from the given file name.
+	// Normally, will also try to load any cached data file
+	// (".gsc") that corresponds to the given movie file.  This
+	// will still work even if there is no cache file.  You can
+	// disable the attempts to load cache files by calling
+	// gameswf::use_cache_files(false).
 	//
 	// Uses the registered file-opener callback to read the files
 	// themselves.
-	movie_interface*	create_movie_with_cache(const char* filename);
+	movie_interface*	create_movie(const char* filename);
 	
 	
 	//

@@ -121,6 +121,58 @@ namespace image
 	}
 
 
+	//
+	// alpha
+	//
+
+
+	alpha*	create_alpha(int width, int height)
+	// Create an system-memory 8-bit alpha surface.
+	{
+		alpha*	s = new alpha(width, height);
+
+		return s;
+	}
+
+
+	alpha::alpha(int width, int height)
+		:
+		image_base(0, width, height, width)
+	{
+		assert(width > 0);
+		assert(height > 0);
+
+		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+	}
+
+
+	alpha::~alpha()
+	{
+		if (m_data) {
+			dlfree(m_data);
+			m_data = 0;
+		}
+	}
+
+
+	void	alpha::set_pixel(int x, int y, Uint8 a)
+	// Set the pixel at the given position.
+	{
+		assert(x >= 0 && x < m_width);
+		assert(y >= 0 && y < m_height);
+
+		Uint8*	data = scanline(this, y) + x;
+
+		data[0] = a;
+	}
+
+
+
+	//
+	// utility
+	//
+
+
 	void	write_jpeg(tu_file* out, rgb* image, int quality)
 	// Write the given image to the given out stream, in jpeg format.
 	{

@@ -42,6 +42,15 @@ namespace image
 		void	set_pixel(int x, int y, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 	};
 
+	// 8-bit alpha image.
+	struct alpha : public image_base
+	{
+		alpha(int width, int height);
+		~alpha();
+
+		void	set_pixel(int x, int y, Uint8 a);
+	};
+
 
 	// Make a system-memory 24-bit bitmap surface.  24-bit packed
 	// data, red byte first.
@@ -51,6 +60,11 @@ namespace image
 	// Make a system-memory 32-bit bitmap surface.  Packed data,
 	// red byte first.
 	rgba*	create_rgba(int width, int height);
+
+
+	// Make a system-memory 8-bit bitmap surface.
+	alpha*	create_alpha(int width, int height);
+
 	
 	inline Uint8*	scanline(image_base* surf, int y)
 	{
