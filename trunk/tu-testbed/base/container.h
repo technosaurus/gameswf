@@ -4,20 +4,10 @@
 // whatever you want with it.
 
 // Generic C++ containers.  Problem: STL is murder on compile times,
-// and is hard to debug.  And also it's really easy to shoot yourself
-// in the foot.  In general I don't like it very much.
-//
-// These are not as comprehensive or general, but I think might be
-// more usable for day-to-day coding.  Someday when STL compiles with
-// lightning speed, these can go away or (where the interface
-// diverges) turn into tiny wrappers.
-//
-// Basic approach: array<> acts like a stripped-down version of
-// std::vector<>, or a slightly beefed up native array.
-//
-// hash<> is a very simple take on std::hash_map, without the awful
-// iterator-oriented interface.
-
+// and is hard to debug.  These are substitutes that compile much
+// faster and are somewhat easier to debug.  Not as featureful,
+// efficient or hammered-on as STL though.  You can use STL
+// implementations if you want; see _TU_USE_STL.
 
 #ifndef CONTAINER_H
 #define CONTAINER_H
@@ -178,6 +168,11 @@ class string_hash : public hash<tu_string, U, std::hash<std::string> >
 
 
 #else // not _TU_USE_STL
+
+
+//
+// Homemade containers; almost strict subsets of STL.
+//
 
 
 #ifdef _WIN32
@@ -548,7 +543,7 @@ public:
 		U	second;
 	};
 	
-	// Iterator API.  @@ TODO fix the API so it's more STL-like.  No point in confusing clients.
+	// Iterator API, like STL.
 
 	struct const_iterator
 	{
@@ -655,7 +650,7 @@ public:
 	iterator	end() { return iterator(this, m_table.size(), 0); }
 
 	const_iterator	begin() const { return const_cast<hash*>(this)->begin(); }
-	const_iterator	end() const { return const_cast<hash*>(this)->begin(); }
+	const_iterator	end() const { return const_cast<hash*>(this)->end(); }
 
 private:
 	int	m_entry_count;
