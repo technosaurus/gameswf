@@ -27,6 +27,7 @@ SRCS := \
 	tqt.cpp	\
 	tu_file.cpp	\
 	tu_file_SDL.cpp	\
+	tu_random.cpp	\
 	tu_types.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
