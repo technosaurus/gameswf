@@ -1685,11 +1685,9 @@ namespace gameswf
 		Uint16 character_id = in->read_u16();
 		IF_VERBOSE_PARSE(log_msg("shape_morph_loader: id = %d\n",
 					 character_id));
-#if MORPH
 		shape_morph_def* morph = new shape_morph_def;
 		morph->read(in, tag_type, true, m);
 		m->add_character(character_id, morph);
-#endif
 	}
 
 	//
