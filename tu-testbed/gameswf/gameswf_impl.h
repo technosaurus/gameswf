@@ -181,6 +181,7 @@ namespace gameswf
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie* m);
 	void	define_shape_loader(stream* in, int tag_type, movie* m);
 	void	define_font_loader(stream* in, int tag_type, movie* m);
+	void	define_font_info_loader(stream* in, int tag_type, movie* m);
 	void	define_text_loader(stream* in, int tag_type, movie* m);
 	void	place_object_2_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie* m);

@@ -338,6 +338,76 @@ namespace gameswf
 		fprintf(out, "rgba: %d %d %d %d\n", m_r, m_g, m_b, m_a);
 	}
 
+
+	//
+	// rect
+	//
+
+
+	void	rect::read(stream* in)
+	{
+		in->align();
+		int	nbits = in->read_uint(5);
+		m_x_min = in->read_sint(nbits);
+		m_x_max = in->read_sint(nbits);
+		m_y_min = in->read_sint(nbits);
+		m_y_max = in->read_sint(nbits);
+
+//		IF_DEBUG(printf("rect::read() nbits = %d\n", nbits));
+//		IF_DEBUG(print(stdout));
+	}
+
+	void	rect::print(FILE* out)
+	// Debug spew.
+	{
+		fprintf(out, "xmin = %g, ymin = %g, xmax = %g, ymax = %g\n",
+			TWIPS_TO_PIXELS(m_x_min),
+			TWIPS_TO_PIXELS(m_y_min),
+			TWIPS_TO_PIXELS(m_x_max),
+			TWIPS_TO_PIXELS(m_y_max));
+	}
+
+#if 0
+	void	rect::debug_display(const display_info& di)
+	// Show the rectangle.
+	{
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+
+		di.m_matrix.ogl_multiply();
+
+		glColor3f(1, 1, 0);
+		glBegin(GL_LINE_STRIP);
+		{
+			glVertex2f(m_x_min, m_y_min);
+			glVertex2f(m_x_min, m_y_max);
+			glVertex2f(m_x_max, m_y_max);
+			glVertex2f(m_x_max, m_y_min);
+			glVertex2f(m_x_min, m_y_min);
+		}
+		glEnd();
+
+		glPopMatrix();
+	}
+#endif // 0
+
+	
+	bool	rect::point_test(float x, float y)
+	// Return true if the specified point is inside this rect.
+	{
+		if (x < m_x_min
+		    || x > m_x_max
+		    || y < m_y_min
+		    || y > m_y_max)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
+
 };	// end namespace gameswf
 
 

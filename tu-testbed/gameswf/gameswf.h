@@ -68,7 +68,8 @@ namespace gameswf
 
 
 	//
-	// Font library control; gameswf shares fonts among all loaded movies!
+	// Font library control; gameswf shares its fonts among all loaded
+	// movies!
 	//
 
 	namespace fontlib
