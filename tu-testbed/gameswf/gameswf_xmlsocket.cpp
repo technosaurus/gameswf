@@ -55,7 +55,6 @@ XMLSocket::~XMLSocket()
 bool
 XMLSocket::connect(const char *host, int port)
 {
-  log_msg("%s: to host %s at port %d\n", __PRETTY_FUNCTION__, host, port);
   struct sockaddr_in  sock_in;
   fd_set              fdset;
   struct timeval      tval;
@@ -69,6 +68,8 @@ XMLSocket::connect(const char *host, int port)
     _connect = false;
     return false;
   }
+
+  log_msg("%s: to host %s at port %d\n", __PRETTY_FUNCTION__, host, port);
   
   memset(&sock_in, 0, sizeof(struct sockaddr_in));
   memset(&thishostname, 0, MAXHOSTNAMELEN);
@@ -470,10 +471,10 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
     if (this_ptr->get_member("onData", &method)) {
       as_c_function_ptr	func = method.to_c_function();
       as_as_function* as_func = method.to_as_function();
-      //log_msg("Got data from socket!!\n%s", data.c_str());
       log_msg("Got %d messages from XMLsocket\n", ptr->obj.messagesCount());
       for (i=0; i<ptr->obj.messagesCount(); i++) {
         tu_string data = ptr->obj[i];
+        //log_msg("Got data from socket!!\n%s", data.c_str());
         // 
         if (((data[0] != '<') && ((data[1] != 'R') || (data[1] != '?')))
             || (data[data.size()-2] != '>')){

@@ -1,3 +1,9 @@
+2005-03-28  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xml.cpp: Process XML messages one level
+	deeper. Properly setup stack so firstChild.firstChild.nodeValue
+	actually works.
+
 2005-03-26  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_xmlsocket.cpp (anydata): Read as much data as

@@ -27,7 +27,12 @@ public:
 private:
 };
 
-class XMLNode 
+struct xmlattr_as_object : public gameswf::as_object
+{
+  XMLAttr obj;
+};
+ 
+class XMLNode
 {
 public:
   XMLNode();
@@ -59,9 +64,14 @@ public:
     return _children[0];
   }
   
-  array<XMLNode *> childNodes()
+  array<XMLNode *>childNodes()
   {
     return _children;
+  }  
+
+  array<XMLAttr *> attributesGet()
+  {
+    return _attributes;
   }  
 
   XMLNode *operator [] (int x)
@@ -118,7 +128,12 @@ toString() 	XML.toString()
   array<XMLAttr *>   _attributes;
 };
 
-class XML 
+struct xmlnode_as_object : public gameswf::as_object
+{
+  XMLNode obj;
+};
+
+class XML
 {
  public:
   XML();
@@ -158,7 +173,6 @@ class XML
     return _nodes->_children;
   }
   
-
   //  Returns true if the specified node has child nodes; otherwise, returns false.
   bool hasChildNodes()
   {
@@ -167,39 +181,10 @@ class XML
 
   XMLNode *extractNode(xmlNodePtr node);
 
-#if 1
-  // This implements a way to keep track of the stack depth from from
-  // within a 'with' keyword block
-  int _stack_depth;
-  void	next_stack_depth()
-  {
-    _stack_depth++;
-  }
-  
-  void	set_stack_depth(int x)
-  {
-    _stack_depth = x;
-  }
-  
-  int	get_stack_depth()
-  {
-    return _stack_depth;
-  }
-  
-  void	reset_stack_depth()
-  {
-    _stack_depth = 0;
-  }
-#endif
   void  change_stack_frame(int frame, gameswf::as_object *xml, gameswf::as_environment *env);
   void  setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env);
+  XMLNode *setupFrame(gameswf::xmlnode_as_object *xml, gameswf::as_environment *env);
   
-#if 0
-  std::vector<struct node *> childNodesGet() 
-    {
-      return _childNodes;
-    }
-#endif
   const char *nodeNameGet() 
     {
       return _nodename;
@@ -286,16 +271,6 @@ class XML
 struct xml_as_object : public gameswf::as_object
 {
   XML obj;
-};
-
-struct xmlnode_as_object : public gameswf::as_object
-{
-  XMLNode obj;
-};
-
-struct xmlattr_as_object : public gameswf::as_object
-{
-  XMLAttr obj;
 };
 
 

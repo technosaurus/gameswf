@@ -37,7 +37,6 @@ XML::XML()
 {
   _loaded = false;
   _nodename = 0;
-  _stack_depth = 0;
 }
 
 
@@ -130,17 +129,17 @@ XML::extractNode(xmlNodePtr node)
       next = childnode->next;
       if (next != 0) {
         child = extractNode(next);
-        //log_msg("Pushing childNode after extractNode()\n");
+        //log_msg("Pushing childNode1 %s after extractNode()\n", child->_name.c_str());
         element->_children.push_back(child);
       } else {
         ptr = childnode->content;
         if (ptr != NULL) {
           child = new XMLNode;
           memset(child, 0, sizeof (XMLNode));
-          //log_msg("extractChildNode from text for %s has contents %s\n", node->name, ptr);
+          // log_msg("extractChildNode from text for %s has contents %s\n", node->name, ptr);
           child->_name  = reinterpret_cast<const char *>(node->name);
           child->_value = reinterpret_cast<const char *>(ptr);
-          //log_msg("Pushing childNode1 %s\n", node->name);
+          //log_msg("Pushing childNode %s\n", child->_name.c_str());
           element->_children.push_back(child);
         }
       }
@@ -154,8 +153,10 @@ XML::extractNode(xmlNodePtr node)
       }
       if (next != 0) {
         child = extractNode(next);
-        //log_msg("Pushing childNode2 %s\n", childnode->name);
-        element->_children.push_back(child);
+        if (strcmp(child->_name.c_str(), "text") != 0) {
+          //log_msg("Pushing childNode2 %s after extractNode()\n", child->_name.c_str());
+          element->_children.push_back(child);
+        }
       } else {
         next = childnode->children;
         if (next != 0) {
@@ -168,7 +169,7 @@ XML::extractNode(xmlNodePtr node)
             if (ptr != NULL) {
               child = new XMLNode;
               memset(child, 0, sizeof (XMLNode));
-              //log_msg("extractChildNode from text for %s has contents %s\n", childnode->name, ptr);
+              //log_msg("extractChildNode2 from text for %s has contents %s\n", childnode->name, ptr);
               child->_name  = reinterpret_cast<const char *>(childnode->name);
               child->_value = reinterpret_cast<const char *>(ptr);
               //log_msg("Pushing childNode4 %s\n", childnode->name);
@@ -194,7 +195,7 @@ XML::extractNode(xmlNodePtr node)
   // See if we have any Attributes (properties)
   attr = node->properties;
   while (attr != NULL) {
-    // log_msg("extractNode %s has property %s, value is %s\n", node->name, attr->name, attr->children->content);
+    //log_msg("extractNode %s has property %s, value is %s\n", node->name, attr->name, attr->children->content);
     XMLAttr *attrib = new XMLAttr;
     attrib->_name = reinterpret_cast<const char *>(attr->name);
     attrib->_value = reinterpret_cast<const char *>(attr->children->content);
@@ -223,13 +224,16 @@ XML::extractNode(xmlNodePtr node)
 bool
 XML::parseDoc(xmlDocPtr document)
 {
+#if 0
   // struct node *element, *child, *first;
-  XMLNode *element, *child, *grandchild, *test;
-  xmlNodePtr cur;
+  XMLNode *element, *child, *grandchild;
   xmlNodePtr children;
   xmlNodePtr lastchild;
   const xmlChar *tmpstr;
   xmlAttrPtr attr;
+#endif
+  XMLNode *top;
+  xmlNodePtr cur;
 
   if (document == 0) {
     log_error("Can't load XML file!\n");
@@ -240,9 +244,9 @@ XML::parseDoc(xmlDocPtr document)
 
 #if 1
   if (cur != NULL) {
-    test = extractNode(cur);
+    top = extractNode(cur);
     //_nodes->_name = reinterpret_cast<const char *>(cur->name);
-    _nodes = test;
+    _nodes = top;
     //cur = cur->next;
   }
 #else
@@ -522,20 +526,77 @@ XML::change_stack_frame(int frame, gameswf::as_object *xml, gameswf::as_environm
 }
 #endif
 
+XMLNode *
+XML::setupFrame(xmlnode_as_object *xml, as_environment *env)
+{
+  int child, i;
+  tu_string nodename;
+  as_value  nodevalue;
+  as_value inum;
+  xmlnode_as_object *xmlchildnode_obj;
+  xmlnode_as_object *xmlnode_obj;
+  xmlattr_as_object* attr_obj;
+  
+  xml_as_object *xobj = (xml_as_object *)xml;  
+  
+  XMLNode     *xmlnodes = xobj->obj.firstChild();
+  while (xmlnodes != NULL) {
+    // Get the data for this node
+    nodename   = xmlnodes->_name;
+    nodevalue  = xmlnodes->_value;
+    
+    // Create a new AS object for this node's children
+    xmlnode_obj = new xmlnode_as_object;
+    log_msg("Created XMLNode %s at 0x%X\n", nodename.c_str(), xmlnode_obj);
+    xmlnode_obj->obj = xmlnodes;
+    
+    // Set these members in the top level object passed in.
+    xobj->set_member("childNodes",  xmlnode_obj);         // the child nodes is the new object
+    xobj->set_member("firstChild",  xobj);                // the first child is ourself
+    xobj->set_member("length",      xmlnodes->length());  // the number of chldren we have
+    xobj->set_member("nodeName",    nodename.c_str());    // all nodes have a name
+    if (nodevalue.to_string()) {
+      xmlnode_obj->set_member("nodeValue", nodevalue.to_string());
+    }
+    
+    // Process the attributes, if any
+    attr_obj = new xmlattr_as_object;
+    for (i=0; i<xmlnodes->_attributes.size(); i++) {
+    attr_obj->set_member(xmlnodes->_attributes[i]->_name, xmlnodes->_attributes[i]->_value);
+    }
+    xmlnode_obj->set_member("attributes", attr_obj);
+    
+    // Process the children, if there are any
+    for (child=0; child<xmlnodes->length(); child++){
+      nodename   = xmlnodes->_children[child]->_name;
+      nodevalue  = xmlnodes->_children[child]->_value;
+      xmlchildnode_obj = new xmlnode_as_object;
+      log_msg("Created child XMLNode %s at 0x%X\n", nodename.c_str(), xmlchildnode_obj);
+      xmlchildnode_obj->obj = xmlnodes->_children[child];
+      //xmlnode_as_object *next = (xmlnode_as_object *)setupFrame((as_object *)xmlnode_obj);
+      setupFrame(xmlchildnode_obj, env);
+      inum = child;
+      xmlnode_obj->set_member(inum.to_string(), xmlchildnode_obj);
+    }
+    
+    return xmlnodes;
+  }
+}
+  
 // This sets up the stack frames for all the nodes from the XML file, so they
 // can have the right vales in the right stack frame for the executing AS
 // fucntion later.
 void
 XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
 {
-  
+
   xml_as_object *xobj = (xml_as_object *)xml;
   //xmlnode_as_object *xmlnode_obj      = new xmlnode_as_object;
   xmlnode_as_object *xmlfirstnode_obj = new xmlnode_as_object;
   //xmlnode_as_object *xmlchildnode_obj = new xmlnode_as_object;
   xmlattr_as_object*	nattr_obj     = new xmlattr_as_object;
 
-  int childa, childb, childc, i, j, k;
+  int childa, childb, childc, childd, i, j, k;
   tu_string nodename;
   as_value  *nodevalue;
   int len;
@@ -544,6 +605,8 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
   xmlnode_as_object *xmlnodeB_obj;
   xmlnode_as_object *xmlnodeC_obj;
   xmlnode_as_object *xmlnodeD_obj;
+  xmlnode_as_object *xmlnodeE_obj;
+  xmlnode_as_object *xmlnodeF_obj;
   
   //log_msg("%s:\n",  __PRETTY_FUNCTION__);
   
@@ -592,8 +655,6 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     attr_obj->set_member(xmlnodes->_attributes[i]->_name, xmlnodes->_attributes[i]->_value);
   }
   xmlfirstnode_obj->set_member("attributes", attr_obj);
-
-
   
   for (childa=0; childa < xmlnodes->length(); childa++) {
     xmlnodeA_obj = new xmlnode_as_object;
@@ -610,7 +671,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     //  xmlnodeA_obj->set_member("nodeValue", nodename.c_str());
     //}
     xmlnodeA_obj->set_member("length", xmlnodeA_obj->obj.length());
-
+    
     xmlnodeB_obj = new xmlnode_as_object;
     //log_msg("Created XMLNodeB %s at 0x%X\n", xmlnodes->_children[childa]->nodeName().c_str(), xmlnodeB_obj );
     xmlnodeA_obj->set_member("childNodes", xmlnodeB_obj);
@@ -622,14 +683,14 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
       
     for (childb=0; childb < xmlnodeA_obj->obj.length(); childb++) {
       xmlnodeC_obj = new xmlnode_as_object;
-      //log_msg("Created XMLNodeC %s at 0x%X\n", xmlnodes->_children[childa]->_children[childb]->nodeName().c_str(), xmlnodeC_obj );
+      //log_msg("Created XMLNodeC %s at 0x%X\n", xmlnodes->_children[childa]->_children[childb]->nodeName().c_str(), xmlnodeC_obj);
       xmlnodeC_obj->obj = xmlnodes->_children[childa]->_children[childb];
       nodename =          xmlnodes->_children[childa]->_children[childb]->nodeName().c_str();
       nodevalue =         xmlnodes->_children[childa]->_children[childb]->nodeValue();
       
       inum = childb;
       xmlnodeB_obj->set_member(inum.to_string(), xmlnodeC_obj);
-
+      xmlnodeC_obj->set_member("childNodes", xmlnodeC_obj);
       xmlnodeC_obj->set_member("firstChild", xmlnodeC_obj);
       xmlnodeC_obj->set_member("nodeName", nodename.c_str());
       if (nodevalue->to_string()) {
@@ -637,38 +698,52 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
       }
       xmlnodeC_obj->set_member("length", xmlnodeC_obj->obj.length());
       for (childc=0; childc <  xmlnodeC_obj->obj.length(); childc++) {
+        
         xmlnodeD_obj = new xmlnode_as_object;
-        //log_msg("Created XMLNodeD %s at 0x%X\n",
-        // xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeName().c_str(), xmlnodeD_obj );
-        // xmlnodeD_obj->obj = xmlnodes->_children[childa]->_children[childb]->_children[childc];
+        xmlnodeD_obj->obj = xmlnodes->_children[childa]->_children[childb]->_children[childc];
         nodename =          xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeName().c_str();
         nodevalue =         xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeValue();
+        //log_msg("Created XMLNodeD %s at 0x%X\n", nodename.c_str(), xmlnodeD_obj);
         inum = childc;
         xmlnodeC_obj->set_member(inum.to_string(), xmlnodeD_obj);
         
+        xmlnodeD_obj->set_member("childNodes", xmlnodeD_obj);
         xmlnodeD_obj->set_member("firstChild", xmlnodeD_obj);
         xmlnodeD_obj->set_member("nodeName", nodename.c_str());
         xmlnodeD_obj->set_member("length", xmlnodeD_obj->obj.length());
+
         if (nodevalue->to_string()) {
           xmlnodeD_obj->set_member("nodeValue", nodevalue->to_string());
         }
-#if 1
         if (xmlnodes->_children[childa]->_children[childb]->length() > 0) {
           if (xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes.size() > 0) {
             for (k=0; k<xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes.size(); k++) {
-              attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_name, xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_value);
+              attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_name,
+                                   xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_value);
             }
             xmlnodeD_obj->set_member("attributes", attr_obj);
           }
         }
-#endif
         
+        for (childd=0; childd <  xmlnodeD_obj->obj.length(); childd++) {
+          xmlnodeE_obj = new xmlnode_as_object;
+          nodename =  xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->nodeName().c_str();
+          nodevalue = xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->nodeValue();
+          xmlnodeE_obj->obj = xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd];
+          //log_msg("Created XMLNodeE %s at 0x%X, value %s\n", nodename.c_str(), xmlnodeE_obj, nodevalue->to_string());
+          xmlnodeE_obj->set_member("firstChild", xmlnodeE_obj);
+          xmlnodeE_obj->set_member("nodeName", nodename.c_str());
+          if (nodevalue->to_string()) {
+            xmlnodeE_obj->set_member("nodeValue", nodevalue->to_string());
+          }
+          inum = childd;
+          xmlnodeD_obj->set_member(inum.to_string(), xmlnodeE_obj);
+        }
         //xmlnodeB_obj->set_member("length", xmlnodeB_obj->obj.length());      
       }
       xmlnodeB_obj->set_member("childNodes", xmlnodeC_obj);
     }
   }
-  
 }
 
 //
@@ -709,7 +784,14 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   //  node
   node->obj = *ptr->obj.firstChild();
 
+// FIXME: decide...
+#if 1
+  // The old way
   ptr->obj.setupStackFrames(ptr, env);
+#else
+  // The new recursive way
+  ptr->obj.setupFrame(node, env);
+#endif
   
 #if 1
   if (this_ptr->get_member("onLoad", &method)) {
@@ -865,7 +947,7 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
 
   XMLNode *xmlnodes = xml_obj->obj.firstChild();  
   
-  xml_obj->obj.reset_stack_depth();
+  //xml_obj->obj.reset_stack_depth();
   //xml_obj->set_member("load", xml_load);
   // env->set_variable("childNodes", xml_obj, 0);
   xml_obj->set_member("firstChild", xmlfirstnode_obj);
