@@ -23,6 +23,207 @@
 
 namespace swf
 {
+	struct matrix
+	{
+		float	m_[2][3];
+
+		matrix()
+		{
+			// Default to identity.
+			set_identity();
+		}
+
+
+		void	set_identity()
+		// Set the matrix to identity.
+		{
+			memset(&m_[0], 0, sizeof(m_));
+			m_[0][0] = 1;
+			m_[1][1] = 1;
+		}
+
+
+		void	concatenate(const matrix& m)
+		// Concatenate m's transform onto ours.  When
+		// transforming points, m happens first, then our
+		// original xform.
+		{
+			matrix	t;
+			t.m_[0][0] = m_[0][0] * m.m_[0][0] + m_[0][1] * m.m_[1][0];
+			t.m_[1][0] = m_[1][0] * m.m_[0][0] + m_[1][1] * m.m_[1][0];
+			t.m_[0][1] = m_[0][0] * m.m_[0][1] + m_[0][1] * m.m_[1][1];
+			t.m_[1][1] = m_[1][0] * m.m_[0][1] + m_[1][1] * m.m_[1][1];
+			t.m_[0][2] = m_[0][0] * m.m_[0][2] + m_[0][1] * m.m_[1][2] + m_[0][2];
+			t.m_[1][2] = m_[1][0] * m.m_[0][2] + m_[1][1] * m.m_[1][2] + m_[1][2];
+
+			*this = t;
+		}
+
+
+		void	read(stream* in)
+		{
+			in->align();
+
+			set_identity();
+
+			int	has_scale = in->read_uint(1);
+			if (has_scale)
+			{
+				int	scale_nbits = in->read_uint(5);
+				m_[0][0] = in->read_sint(scale_nbits) / 65536.0f;
+				m_[1][1] = in->read_sint(scale_nbits) / 65536.0f;
+			}
+			int	has_rotate = in->read_uint(1);
+			if (has_rotate)
+			{
+				int	rotate_nbits = in->read_uint(5);
+				m_[1][0] = in->read_sint(rotate_nbits) / 65536.0f;
+				m_[0][1] = in->read_sint(rotate_nbits) / 65536.0f;
+			}
+
+			int	translate_nbits = in->read_uint(5);
+			if (translate_nbits > 0) {
+				m_[0][2] = in->read_sint(translate_nbits);
+				m_[1][2] = in->read_sint(translate_nbits);
+			}
+
+			IF_DEBUG(printf("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
+		}
+
+
+		void	print(FILE* out) const
+		{
+			fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[0][0], m_[0][1], TWIPS_TO_PIXELS(m_[0][2]));
+			fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
+		}
+
+		void	ogl_multiply() const
+		// Apply this matrix onto the top of the currently
+		// selected OpenGL matrix stack.
+		{
+			float	m[16];
+			memset(&m[0], 0, sizeof(m));
+			m[0] = m_[0][0];
+			m[1] = m_[1][0];
+			m[4] = m_[0][1];
+			m[5] = m_[1][1];
+			m[10] = 1;
+			m[12] = m_[0][2];
+			m[13] = m_[1][2];
+			m[15] = 1;
+			glMultMatrixf(m);
+		}
+	};
+
+
+	struct cxform
+	{
+		float	m_[4][2];	// [RGBA][mult, add]
+
+		cxform()
+		// Initialize to identity transform.
+		{
+			m_[0][0] = 1;
+			m_[1][0] = 1;
+			m_[2][0] = 1;
+			m_[3][0] = 1;
+			m_[0][1] = 0;
+			m_[1][1] = 0;
+			m_[2][1] = 0;
+			m_[3][1] = 0;
+		}
+
+		void	concatenate(const cxform& c)
+		// Concatenate c's transform onto ours.  When
+		// transforming colors, c's transform is applied
+		// first, then ours.
+		{
+			m_[0][1] += m_[0][0] * c.m_[0][1];
+			m_[1][1] += m_[1][0] * c.m_[1][1];
+			m_[2][1] += m_[2][0] * c.m_[2][1];
+			m_[3][1] += m_[3][0] * c.m_[3][1];
+
+			m_[0][0] *= c.m_[0][0];
+			m_[1][0] *= c.m_[1][0];
+			m_[2][0] *= c.m_[2][0];
+			m_[3][0] *= c.m_[3][0];
+		}
+
+		void	read_rgb(stream* in)
+		{
+			in->align();
+
+			int	has_add = in->read_uint(1);
+			int	has_mult = in->read_uint(1);
+			int	nbits = in->read_uint(4);
+
+			if (has_mult) {
+				m_[0][0] = in->read_sint(nbits);
+				m_[1][0] = in->read_sint(nbits);
+				m_[2][0] = in->read_sint(nbits);
+				m_[3][0] = 1;
+			}
+			else {
+				for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
+			}
+			if (has_add) {
+				m_[0][1] = in->read_sint(nbits);
+				m_[1][1] = in->read_sint(nbits);
+				m_[2][1] = in->read_sint(nbits);
+				m_[3][1] = 1;
+			}
+			else {
+				for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
+			}
+		}
+
+		void	read_rgba(stream* in)
+		{
+			int	has_add = in->read_uint(1);
+			int	has_mult = in->read_uint(1);
+			int	nbits = in->read_uint(4);
+
+			if (has_mult) {
+				m_[0][0] = in->read_sint(nbits);
+				m_[1][0] = in->read_sint(nbits);
+				m_[2][0] = in->read_sint(nbits);
+				m_[3][0] = in->read_sint(nbits);
+			}
+			else {
+				for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
+			}
+			if (has_add) {
+				m_[0][1] = in->read_sint(nbits);
+				m_[1][1] = in->read_sint(nbits);
+				m_[2][1] = in->read_sint(nbits);
+				m_[3][1] = in->read_sint(nbits);
+			}
+			else {
+				for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
+			}
+		}
+	};
+
+
+	// Information about how to display an element.
+	struct display_info
+	{
+		int	m_depth;
+		cxform	m_color_transform;
+		matrix	m_matrix;
+		float	m_ratio;
+
+		void	concatenate(const display_info& di)
+		// Concatenate the transforms from di into our
+		// transforms.
+		{
+			m_depth = di.m_depth;
+			m_color_transform.concatenate(di.m_color_transform);
+			m_matrix.concatenate(di.m_matrix);
+			m_ratio = di.m_ratio;
+		}
+	};
+
 	// RGB --> 24 bit color
 
 	// RGBA
@@ -90,72 +291,27 @@ namespace swf
 				TWIPS_TO_PIXELS(m_x_max),
 				TWIPS_TO_PIXELS(m_y_max));
 		}
-	};
 
-
-	struct matrix
-	{
-		float	m_[2][3];
-
-		matrix()
+		void	debug_display(const display_info& di)
+		// Show the rectangle.
 		{
-			// Default to identity.
-			memset(&m_[0], 0, sizeof(m_));
-			m_[0][0] = 1;
-			m_[1][1] = 1;
-		}
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
 
+			di.m_matrix.ogl_multiply();
 
-		void	concatenate(const matrix& m)
-		// Concatenate m's transform onto ours.  When
-		// transforming points, m happens first, then our
-		// original xform.
-		{
-			matrix	t;
-			t.m_[0][0] = m_[0][0] * m.m_[0][0] + m_[0][1] * m.m_[1][0];
-			t.m_[1][0] = m_[1][0] * m.m_[0][0] + m_[1][1] * m.m_[1][0];
-			t.m_[0][1] = m_[0][0] * m.m_[0][1] + m_[0][1] * m.m_[1][1];
-			t.m_[1][1] = m_[1][0] * m.m_[0][1] + m_[1][1] * m.m_[1][1];
-			t.m_[0][2] = m_[0][0] * m.m_[0][2] + m_[0][1] * m.m_[1][2] + m_[0][2];
-			t.m_[1][2] = m_[1][0] * m.m_[0][2] + m_[1][1] * m.m_[1][2] + m_[1][2];
-
-			*this = t;
-		}
-
-
-		void	read(stream* in)
-		{
-			in->align();
-
-			memset(&m_[0], 0, sizeof(m_));
-
-			int	has_scale = in->read_uint(1);
-			if (has_scale)
+			glColor3f(1, 1, 0);
+			glBegin(GL_LINE_STRIP);
 			{
-				int	scale_nbits = in->read_uint(5);
-				m_[0][0] = in->read_sint(scale_nbits) / 65536.0f;
-				m_[1][1] = in->read_sint(scale_nbits) / 65536.0f;
+				glVertex2f(m_x_min, m_y_min);
+				glVertex2f(m_x_min, m_y_max);
+				glVertex2f(m_x_max, m_y_max);
+				glVertex2f(m_x_max, m_y_min);
+				glVertex2f(m_x_min, m_y_min);
 			}
-			int	has_rotate = in->read_uint(1);
-			if (has_rotate)
-			{
-				int	rotate_nbits = in->read_uint(5);
-				m_[1][0] = in->read_sint(rotate_nbits) / 65536.0f;
-				m_[0][1] = in->read_sint(rotate_nbits) / 65536.0f;
-			}
+			glEnd();
 
-			int	translate_nbits = in->read_uint(5);
-			if (translate_nbits > 0) {
-				m_[0][2] = in->read_sint(translate_nbits);
-				m_[1][2] = in->read_sint(translate_nbits);
-			}
-		}
-
-
-		void	print(FILE* out)
-		{
-			fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[0][0], m_[0][1], m_[0][2]);
-			fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], m_[1][2]);
+			glPopMatrix();
 		}
 	};
 
@@ -254,95 +410,6 @@ namespace swf
 	};
 
 
-	struct cxform
-	{
-		float	m_[4][2];	// [RGBA][mult, add]
-
-		cxform()
-		// Initialize to identity transform.
-		{
-			m_[0][0] = 1;
-			m_[1][0] = 1;
-			m_[2][0] = 1;
-			m_[3][0] = 1;
-			m_[0][1] = 0;
-			m_[1][1] = 0;
-			m_[2][1] = 0;
-			m_[3][1] = 0;
-		}
-
-		void	concatenate(const cxform& c)
-		// Concatenate c's transform onto ours.  When
-		// transforming colors, c's transform is applied
-		// first, then ours.
-		{
-			m_[0][1] += m_[0][0] * c.m_[0][1];
-			m_[1][1] += m_[1][0] * c.m_[1][1];
-			m_[2][1] += m_[2][0] * c.m_[2][1];
-			m_[3][1] += m_[3][0] * c.m_[3][1];
-
-			m_[0][0] *= c.m_[0][0];
-			m_[1][0] *= c.m_[1][0];
-			m_[2][0] *= c.m_[2][0];
-			m_[3][0] *= c.m_[3][0];
-		}
-
-		void	read_rgb(stream* in)
-		{
-			in->align();
-
-			int	has_add = in->read_uint(1);
-			int	has_mult = in->read_uint(1);
-			int	nbits = in->read_uint(4);
-
-			if (has_mult) {
-				m_[0][0] = in->read_sint(nbits);
-				m_[1][0] = in->read_sint(nbits);
-				m_[2][0] = in->read_sint(nbits);
-				m_[3][0] = 1;
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
-			}
-			if (has_add) {
-				m_[0][1] = in->read_sint(nbits);
-				m_[1][1] = in->read_sint(nbits);
-				m_[2][1] = in->read_sint(nbits);
-				m_[3][1] = 1;
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
-			}
-		}
-
-		void	read_rgba(stream* in)
-		{
-			int	has_add = in->read_uint(1);
-			int	has_mult = in->read_uint(1);
-			int	nbits = in->read_uint(4);
-
-			if (has_mult) {
-				m_[0][0] = in->read_sint(nbits);
-				m_[1][0] = in->read_sint(nbits);
-				m_[2][0] = in->read_sint(nbits);
-				m_[3][0] = in->read_sint(nbits);
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
-			}
-			if (has_add) {
-				m_[0][1] = in->read_sint(nbits);
-				m_[1][1] = in->read_sint(nbits);
-				m_[2][1] = in->read_sint(nbits);
-				m_[3][1] = in->read_sint(nbits);
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
-			}
-		}
-	};
-
-
 	struct bitmap : public character {
 	};
 
@@ -372,24 +439,6 @@ namespace swf
 	}
 
 
-	// Information about how to display an element.
-	struct display_info
-	{
-		int	m_depth;
-		cxform	m_color_transform;
-		matrix	m_matrix;
-		float	m_ratio;
-
-		void	concatenate(const display_info& di)
-		// Concatenate the transforms from di into our
-		// transforms.
-		{
-			m_depth = di.m_depth;
-			m_color_transform.concatenate(di.m_color_transform);
-			m_matrix.concatenate(di.m_matrix);
-			m_ratio = di.m_ratio;
-		}
-	};
 
 
 	// A struct to serve as an entry in the display list.
@@ -703,14 +752,16 @@ namespace swf
 
 		void	display()
 		{
+//			IF_DEBUG(printf("displaying frame %d\n", m_current_frame));
+
 			// renderer->reset();
 
 			// @@ deal with background color...
 
 			glMatrixMode(GL_MODELVIEW);
 			glPushMatrix();
-			glOrtho(-m_frame_size.m_x_max * 16, m_frame_size.m_x_max * 16,
-				-m_frame_size.m_y_max * 16, m_frame_size.m_y_max * 16,
+			glOrtho(m_frame_size.m_x_min, m_frame_size.m_x_max,
+				m_frame_size.m_y_min, m_frame_size.m_y_max,
 				-1, 1);
 			
 			// Display all display objects, starting at
@@ -1342,6 +1393,12 @@ namespace swf
 		void	display(const display_info& di)
 		// Draw the shape using the given environment.
 		{
+			IF_DEBUG(printf("sc::d() rect = "); m_bound.print(stdout));
+			IF_DEBUG(printf("sc::d() matr = "); di.m_matrix.print(stdout));
+
+//			IF_DEBUG(m_bound.debug_display(di));
+//			return;
+
 			// @@ set color transform into the renderer...
 			// @@ set matrix into the renderer...
 
@@ -1353,17 +1410,8 @@ namespace swf
 
 			glMatrixMode(GL_MODELVIEW);
 			glPushMatrix();
-			float	m[16];
-			memset(&m[0], 0, sizeof(m));
-			m[0] = di.m_matrix.m_[0][0];
-			m[1] = di.m_matrix.m_[1][0];
-			m[4] = di.m_matrix.m_[0][1];
-			m[5] = di.m_matrix.m_[1][1];
-			m[10] = 1;
-			m[12] = di.m_matrix.m_[0][2];
-			m[13] = di.m_matrix.m_[0][3];
-			m[15] = 1;
-			glMultMatrixf(m);
+
+			di.m_matrix.ogl_multiply();
 
 			glBegin(GL_LINES);
 			glColor3f(1, 1, 1);
