@@ -175,6 +175,12 @@ void	postscript::linewidth(float w)
 
 
 // @@ linestyle ?
+
+
+void	postscript::fill()
+{
+	m_out->printf("f\n");
+}
 	
 
 void	postscript::font(const char* name, float size)

@@ -34,12 +34,14 @@ namespace triangulate
 //
 // cl -Od -Zi -o triangulate_test.exe -I../ triangulate_float.cpp tu_random.cpp -DTEST_TRIANGULATE_FLOAT
 
-int	main()
+
+void	test_square()
+// A very minimal, easy test.
 {
-	// test linkage.
 	array<float>	result;
 	array<array<float> >	paths;
 
+	// Make a square.
 	paths.resize(1);
 	paths[0].push_back(0);
 	paths[0].push_back(0);
@@ -50,15 +52,31 @@ int	main()
 	paths[0].push_back(0);
 	paths[0].push_back(1);
 
+	// Triangulate.
 	triangulate::compute(&result, paths.size(), &paths[0]);
 
+	// Dump.
 	for (int i = 0; i < result.size(); i++)
 	{
 		printf("%f\n", result[i]);
 	}
+}
+
+
+int	main()
+{
+	test_square();
 
 	return 0;
 }
 
 
 #endif // TEST_TRIANGULATE_FLOAT
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

@@ -43,6 +43,8 @@ struct postscript
 	void	lineto(float x0, float y0);
 	void	linewidth(float w);
 	// linestyle ?
+
+	void	fill();	// after a sequence of moveto/lineto
 	
 	void	font(const char* name, float size);
 	void	printf(float x, float y, const char* fmt, ...);	// printf-style output

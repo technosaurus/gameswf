@@ -12,12 +12,20 @@
 
 namespace triangulate
 {
-	// Version using float coords
+	// Version using sint32 coords
 	void	compute(
 		array<sint32>* result,	// trilist
 		int path_count,
-		const array<sint32> **paths)
+		const array<sint32> paths[])
 	{
 		compute_triangulation<sint32>(result, path_count, paths);
 	}
 }
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
