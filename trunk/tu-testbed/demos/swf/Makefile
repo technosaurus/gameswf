@@ -11,7 +11,7 @@ include $(TOP)/config
 INCLUDE_PATHS := -I$(ENGINE_INCLUDE)
 
 CFLAGS := -g $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
-LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
+LDFLAGS := -g $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 
 LIB_OUT = $(LIB_PRE)swf.$(LIB_EXT)
 EXE_OUT = test_swf$(EXE_EXT)
@@ -37,4 +37,4 @@ $(EXE_OUT): test_swf.$(OBJ_EXT) $(LIB_OUT)
 
 
 clean:
-	rm $(LIB_OUT) $(EXE_OUT)
+	rm test_swf.$(OBJ_EXT) $(OBJS) $(LIB_OUT) $(EXE_OUT)

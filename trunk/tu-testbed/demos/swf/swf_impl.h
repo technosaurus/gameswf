@@ -29,12 +29,14 @@ namespace swf
 	// SWF movies contain "characters" to represent the various elements.
 	struct character
 	{
+		virtual ~character() {}
 		virtual void	execute(float time) {}	// OpenGL state contains viewport, transforms, etc.
 	};
 
-	// Control tags include things like setting the background
-	// color, etc.
-	struct control_tag
+	// Execute tags include things that control the operation of
+	// the movie.  Essentially, these are the events associated
+	// with a frame.
+	struct execute_tag
 	{
 		virtual void	execute(float time) {}
 	};
@@ -60,7 +62,10 @@ namespace swf
 		Sint8	read_s8();
 		Uint16	read_u16();
 		Sint16	read_s16();
+		char*	read_string();	// reads *and new[]'s* the string -- ownership passes to caller!
+
 		int	get_position();
+		int	get_tag_end_position();
 		int	open_tag();
 		void	close_tag();
 	};
@@ -69,6 +74,12 @@ namespace swf
 	void	set_background_color_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie* m);
 	void	define_shape_loader(stream* in, int tag_type, movie* m);
+	void	place_object_2_loader(stream* in, int tag_type, movie* m);
+	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie* m);
+	void	sprite_loader(stream* in, int tag_type, movie* m);
+	void	show_frame_loader(stream* in, int tag_type, movie* m);
+	void	end_loader(stream* in, int tag_type, movie* m);
+	void	remove_object_2_loader(stream* in, int tag_type, movie* m);
 };
 
 #endif // SWF_IMPL_H
