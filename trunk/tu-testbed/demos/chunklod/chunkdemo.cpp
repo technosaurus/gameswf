@@ -5,7 +5,9 @@
 // Demo program to show chunked LOD rendering.
 
 
+#ifdef WIN32
 #include <windows.h>
+#endif
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 #include <GL/gl.h>
