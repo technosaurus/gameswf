@@ -10,7 +10,7 @@ AM_INIT_AUTOMAKE(gameswf, 0.2)
 AM_MAINTAINER_MODE
 AC_PROG_MAKE_SET
 
-dnl Use the lib_tnet network library, if specified.
+dnl Use the POSIX Threads library, if specified.
 AC_ARG_ENABLE(pthreads, [  --enable-pthreads            Enable support for pthreads],
 [case "${enableval}" in
   yes) pthreads=yes ;;
@@ -20,6 +20,19 @@ esac])
 
 if test x$pthreads = xyes; then
     AC_DEFINE([HAVE_PTHREADS], [], [Use POSIX Threads])
+fi
+
+dnl Add XML support, if specified.
+AC_ARG_ENABLE(libxml, [  --disable-xml            Disable support for xml and xmlsocket],
+[case "${enableval}" in
+  yes) disablexml=yes ;;
+  no)  disablexml=no ;;
+  *)   AC_MSG_ERROR([bad value ${enableval} for disable-xml option]) ;;
+esac])
+
+if test -z $enable_xml; then
+    AC_DEFINE([HAVE_LIBXML], [], [Use XML])
+    AM_PATH_LIBXML2
 fi
 
 AC_PROG_CC
@@ -34,8 +47,6 @@ AM_PATH_OPENGL
 AM_PATH_ZLIB
 AM_PATH_JPEG
 AM_PATH_PNG
-
-AM_PATH_LIBXML2
 
 dnl Look for pthreads
 if test x"$pthreads" = x"yes"; then
