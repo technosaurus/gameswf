@@ -13,23 +13,16 @@
 #define CONTAINER_H
 
 
-// Use this in case your STL needs some unusual stuff to be
-// predefined.  For example, maybe you #define new/delete to be
-// something special.
-#ifdef _TU_USE_STL_COMPATIBILITY_INCLUDE
-#include _TU_USE_STL_COMPATIBILITY_INCLUDE
-#endif
-
-
+#include "base/tu_config.h"
+#include "base/utility.h"
 #include <stdlib.h>
 #include <string.h>
 #include <new>	// for placement new
-#include "base/utility.h"
-#include "base/dlmalloc.h"
 
 
 // If you prefer STL implementations instead of home cooking, then put
-// -D_TU_USE_STL=1 in your compiler flags, or just define it here:
+// -D_TU_USE_STL=1 in your compiler flags, or do it in config.h, or
+// do it right here:
 //#define _TU_USE_STL 1
 
 
@@ -178,6 +171,8 @@ class string_hash : public hash<tu_string, U, std::hash<std::string> >
 #ifdef _WIN32
 #pragma warning(disable : 4345)	// in MSVC 7.1, warning about placement new POD default initializer
 #endif // _WIN32
+
+
 
 
 template<class T>
@@ -341,19 +336,20 @@ public:
 	void	reserve(int rsize)
 	{
 		assert(m_size >= 0);
+		int	old_size = m_size;
 		m_buffer_size = rsize;
 
 		// Resize the buffer.
 		if (m_buffer_size == 0) {
 			if (m_buffer) {
-				dlfree(m_buffer);
+				tu_free(m_buffer, sizeof(T) * old_size);
 			}
 			m_buffer = 0;
 		} else {
 			if (m_buffer) {
-				m_buffer = (T*) dlrealloc(m_buffer, sizeof(T) * m_buffer_size);
+				m_buffer = (T*) tu_realloc(m_buffer, sizeof(T) * m_buffer_size, sizeof(T) * old_size);
 			} else {
-				m_buffer = (T*) dlmalloc(sizeof(T) * m_buffer_size);
+				m_buffer = (T*) tu_malloc(sizeof(T) * m_buffer_size);
 			}
 		}			
 	}

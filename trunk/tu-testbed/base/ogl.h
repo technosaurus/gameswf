@@ -8,6 +8,7 @@
 #ifndef OGL_H
 #define OGL_H
 
+#include "base/tu_config.h"
 #include "base/tu_opengl_includes.h"
 
 namespace ogl {

@@ -10,6 +10,8 @@
 #define JPEG_H
 
 
+#include "base/tu_config.h"
+
 struct jpeg_decompress_struct;
 struct jpeg_compress_struct;
 class tu_file;
