@@ -6,15 +6,16 @@
 #include <string>
 #include "gameswf_textformat.h"
 #include "gameswf_log.h"
-using namespace gameswf;
 
+namespace gameswf
+{  
 
-TextFormat::TextFormat()
+text_format::text_format()
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
-TextFormat::~TextFormat()
+text_format::~text_format()
 {
 }
 
@@ -40,3 +41,4 @@ textformat_underline(gameswf::as_value* result, gameswf::as_object_interface* th
     result->set(ptr->text_obj.underlined());
 }
 
+} // end of gameswf namespace
