@@ -31,7 +31,7 @@
 #endif // M_PI
 
 
-static ogl::vertex_stream*	s_stream = NULL;
+//static ogl::vertex_stream*	s_stream = NULL;
 
 static float	s_vertical_scale = 1.0;
 
@@ -1065,8 +1065,8 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 	int	triangle_count = 0;
 
 	// Grab some space to put processed verts.
-	assert(s_stream);
-	float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * m_verts.vertex_count);
+//	assert(s_stream);
+	float*	output_verts = (float*) ogl::stream_get_vertex_memory(sizeof(float) * 3 * m_verts.vertex_count);
 
 	// Process our vertices into the output buffer.
 	float	f = (chunk.m_lod & 255) / 255.0f;
@@ -1076,6 +1076,8 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 	morph_vertices(output_verts, m_verts, box_center, box_extent, f);
 
 	if (opt.show_geometry) {
+		ogl::stream_flush_combiners();
+
 		// draw this chunk.
 		glColor3f(1, 1, 1);
 		glVertexPointer(3, GL_FLOAT, 0, output_verts);
@@ -1809,10 +1811,10 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 //
 // Returns the number of triangles rendered.
 {
-	// Make sure we have a vertex stream.
-	if (s_stream == NULL) {
-		s_stream = new ogl::vertex_stream(4 << 20);
-	}
+//	// Make sure we have a vertex stream.
+//	if (s_stream == NULL) {
+//		s_stream = new ogl::vertex_stream(4 << 20);
+//	}
 
 	int	triangle_count = 0;
 

@@ -52,6 +52,30 @@ namespace ogl {
 	int	vertex_memory_top = 0;
 	bool	vertex_memory_from_malloc = false;	// tells us whether to wglFreeMemoryNV() or free() the buffer when we're done.
 
+
+	class vertex_stream {
+	// Class to facilitate streaming verts to the video card.  Takes
+	// care of fencing, and buffer bookkeeping.
+	public:
+		vertex_stream(int buffer_size);
+		~vertex_stream();
+	
+		void*	reserve_memory(int size);
+		void	flush_combiners();
+	
+	private:
+		int	m_quarter_buffer_size;
+		int	m_buffer_top;
+		void*	m_buffer;
+		int	m_extra_bytes;	// extra bytes after last block; used to pad up to write-combiner alignment
+	
+		unsigned int	m_fence[4];
+	};
+
+
+	vertex_stream*	s_stream = NULL;
+
+
 	void	open()
 	// Scan for extensions.
 	{
@@ -169,6 +193,46 @@ namespace ogl {
 	}
 
 
+	void*	stream_get_vertex_memory(int size)
+	// Return a buffer to contain size bytes of vertex memory.
+	// Put your vertex data in it, then call
+	// stream_flush_combiners(), then call glDrawElements() to
+	// draw the primitives.
+	{
+		if (s_stream == NULL) {
+			s_stream = new vertex_stream(VERTEX_BUFFER_SIZE);
+		}
+
+		return s_stream->reserve_memory(size);
+	}
+
+
+	void	stream_flush_combiners()
+	// Make sure to flush all data written to the most recently
+	// requested vertex buffer (requested by the last call to
+	// stream_get_vertex_memory()).  Ensure that the data doesn't
+	// get hung up in a processor write-combiner.
+	{
+		assert(s_stream);
+		if (s_stream == NULL) return;
+
+		s_stream->flush_combiners();
+	}
+
+
+	static const int	WRITE_COMBINER_ALIGNMENT = 64;	// line-size (in bytes) of the write-combiners, must be power of 2
+
+
+	int	wc_align_up(int size)
+	// Return given size, rounded up to the next nearest write combiner
+	// alignment boundary.
+	{
+		assert((WRITE_COMBINER_ALIGNMENT & (WRITE_COMBINER_ALIGNMENT - 1)) == 0);	// make sure it's a power of 2
+
+		return (size + WRITE_COMBINER_ALIGNMENT - 1) & ~(WRITE_COMBINER_ALIGNMENT - 1);
+	}
+
+
 	//
 	// vertex_stream
 	//
@@ -181,6 +245,7 @@ namespace ogl {
 		m_quarter_buffer_size = buffer_size / 4;
 		m_buffer = ogl::allocate_vertex_memory(buffer_size);
 		m_buffer_top = 0;
+		m_extra_bytes = 0;
 	
 		// set up fences.
 		ogl::gen_fences(4, &m_fence[0]);
@@ -206,15 +271,19 @@ namespace ogl {
 	{
 		// @@ using quarter buffers instead of half buffers, because
 		// of a suspected driver or cache bug...
+		// @@ probably isn't the problem though.
 
 		assert(size <= m_quarter_buffer_size);
+
+		int	aligned_size = wc_align_up(size);
+		m_extra_bytes = aligned_size - size;
 	
 		for (int quarter = 1; quarter <= 4; quarter++)
 		{
 			int	border = m_quarter_buffer_size * quarter;
 
 			if (m_buffer_top <= border
-				&& m_buffer_top + size > border)
+			    && m_buffer_top + aligned_size > border)
 			{
 				// Crossing into the next quarter.
 				ogl::set_fence(m_fence[quarter - 1]);
@@ -226,13 +295,29 @@ namespace ogl {
 		}
 	
 		void*	buf = ((char*) m_buffer) + m_buffer_top;
-		m_buffer_top += size;
+		m_buffer_top += aligned_size;
 	
 		// @@ is it helpful/necessary to do alignment?
 	
 		return buf;
 	}
 	
+	
+	void	vertex_stream::flush_combiners()
+	// Make sure the tail of the block returned by the last call
+	// to reserve_memory() gets written to the system RAM.  If the
+	// block doesn't end on a write-combiner line boundary, the
+	// last bit of data may still be waiting to be flushed.
+	//
+	// That's my theory anyway -- farfetched but I'm not sure how
+	// else to explain certain bug reports of spurious triangles
+	// being rendered.
+	{
+		if (m_extra_bytes) {
+			// Fill up the rest of the last write-combiner line.
+			memset(((char*) m_buffer) + m_buffer_top - m_extra_bytes, 0, m_extra_bytes);
+		}
+	}
 };
 
 

@@ -223,7 +223,7 @@ void	print_usage()
 		"domain, as far as I know!  See http://jratcliff.flipcode.com for\n"
 		"details.\n"
 		"\n"
-		"usage: chunkdemo [dataset.chu] [texture.jpg]\n"
+		"usage: chunkdemo [dataset.chu] [texture.jpg | texture.tqt]\n"
 		"    [-w width] [-h height] [-b bits/pixel] [-f] [-t [0|1]] [-2]\n"
 		"\n"
 		"    '-f' means use a fullscreen window.\n"

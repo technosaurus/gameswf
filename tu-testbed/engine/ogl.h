@@ -69,23 +69,9 @@ namespace ogl {
 	void	set_fence(unsigned int fence_id);
 	void	finish_fence(unsigned int fence_id);
 
-	class vertex_stream {
-	// Class to facilitate streaming verts to the video card.  Takes
-	// care of fencing, and buffer bookkeeping.
-	public:
-		vertex_stream(int buffer_size);
-		~vertex_stream();
-	
-		void*	reserve_memory(int size);
-	
-	private:
-		int	m_quarter_buffer_size;
-		int	m_buffer_top;
-		void*	m_buffer;
-	
-		unsigned int	m_fence[4];
-	};
-		
+	// Stream operations; for pushing dynamic vertex data.
+	void*	stream_get_vertex_memory(int size);
+	void	stream_flush_combiners();	// do this after filling your buffer, and before calling glDrawElements()
 };
 
 
@@ -101,3 +87,9 @@ namespace ogl {
 
 #endif // OGL_H
 
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
