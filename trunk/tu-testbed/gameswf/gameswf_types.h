@@ -57,6 +57,7 @@ namespace gameswf
 		void	transform(point* result, const point& p) const;
 		void	transform_by_inverse(point* result, const point& p) const;
 		void	set_inverse(const matrix& m);
+		bool	does_flip() const;	// return true if we flip handedness
 	};
 
 

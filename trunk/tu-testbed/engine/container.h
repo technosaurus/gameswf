@@ -172,14 +172,14 @@ class fixed_size_hash
 // Computes a hash of an object's representation.
 {
 public:
-	static int	compute(const T& data)
+	static unsigned int	compute(const T& data)
 	{
 		unsigned char*	p = (unsigned char*) &data;
 		int	size = sizeof(T);
 
 		// Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
 		// Due to Dan Bernstein.  Allegedly very good on strings.
-		int	h = 5381;
+		unsigned int	h = 5381;
 		while (size > 0) {
 			h = ((h << 5) + h) ^ *p;
 			p++;
@@ -220,7 +220,7 @@ public:
 		m_entry_count++;
 		check_expand();
 
-		int	hash_value = hash_functor::compute(key);
+		unsigned int	hash_value = hash_functor::compute(key);
 		entry	e;
 		e.key = key;
 		e.value = value;
@@ -257,7 +257,7 @@ public:
 			return false;
 		}
 
-		int	hash_value = hash_functor::compute(key);
+		unsigned int	hash_value = hash_functor::compute(key);
 		int	index = hash_value % m_table.size();
 		for (int i = 0; i < m_table[index].size(); i++) {
 			if (m_table[index][i].key == key) {
@@ -314,7 +314,7 @@ public:
 		{for (int i = 0; i < m_table.size(); i++) {
 			for (int j = 0; j < m_table[i].size(); j++) {
 				entry&	e = m_table[i][j];
-				int	hash_value = hash_functor::compute(e.key);
+				unsigned int	hash_value = hash_functor::compute(e.key);
 				
 				int	index = hash_value & m_size_mask;	// % new_table.size();
 				new_table[index].push_back(e);
@@ -398,16 +398,16 @@ class string_hash_functor
 // ::length() and ::[int]).
 {
 public:
-	static int	compute(const T& data)
+	static unsigned int	compute(const T& data)
 	{
 		int	size = data.length();
 
 		// Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
 		// Due to Dan Bernstein.  Allegedly very good on strings.
-		int	h = 5381;
+		unsigned int	h = 5381;
 		while (size > 0) {
 			size--;
-			h = ((h << 5) + h) ^ data[size];
+			h = ((h << 5) + h) ^ (unsigned) data[size];
 		}
 
 		// Alternative: "sdbm" hash function, suggested at same web page above.
