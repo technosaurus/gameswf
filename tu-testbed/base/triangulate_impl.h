@@ -238,7 +238,14 @@ inline bool	edges_intersect_sub(const array<poly_vert<float> >& sorted_verts, in
 	double	det10 = determinant_float(e0v0, e0v1, e1v0);
 	double	det11 = determinant_float(e0v0, e0v1, e1v1);
 
-	if (det10 * det11 > 0)
+	// Note: we do >= 0 checks here, instead of > 0.  We are
+	// intentionally not considering it an intersection if an
+	// endpoint is coincident with one edge, or if the edges
+	// overlap perfectly.  The overlap case is common with
+	// perfectly vertical edges at the same coordinate; it doesn't
+	// hurt us any to treat them as non-crossing.
+
+	if (det10 * det11 >= 0)
 	{
 		// e1 doesn't cross the line of e0.
 		return false;
@@ -248,7 +255,7 @@ inline bool	edges_intersect_sub(const array<poly_vert<float> >& sorted_verts, in
 	double	det00 = determinant_float(e1v0, e1v1, e0v0);
 	double	det01 = determinant_float(e1v0, e1v1, e0v1);
 
-	if (det00 * det01 > 0)
+	if (det00 * det01 >= 0)
 	{
 		// e0 doesn't cross the line of e1.
 		return false;
@@ -982,16 +989,20 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 						return true;
 					}
 
-					// Check collinear case, where cones of vk and v1 overlap exactly.
+					// Check colinear case, where cones of vk and v1 overlap exactly.
 					if (v_prev_left == 0 && v_next_left == 0)
 					{
 						// @@ TODO: there's a somewhat complex non-local area test that tells us
 						// whether vk qualifies as a contained reflex vert.
 						//
 						// For the moment, deny the ear.
+						//
+						// The question is, is this test required for correctness?  Because it
+						// seems pretty expensive to compute.  If it's not required, I think it's
+						// better to always assume the ear is invalidated.
 
 						//xxx
-						fprintf(stderr, "collinear case in ear_contains_reflex_vertex; returning true\n");
+						//fprintf(stderr, "colinear case in ear_contains_reflex_vertex; returning true\n");
 
 						return true;
 					}
