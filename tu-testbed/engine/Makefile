@@ -1,7 +1,8 @@
 # Makefile for tu-testbed/engine library
 
 
-include ../config
+TOP = ..
+include $(TOP)/config
 
 ifeq ($(TU_TESTBED_COMPILER), gcc)
 SDL_CFLAGS := $(shell sdl-config --cflags)
@@ -9,9 +10,9 @@ SDL_LDFLAGS := $(shell sdl-config --libs)
 endif
 
 SDL_INCLUDE := SDL
-LUA_INCLUDE := ../../lua-4.0/include
+LUA_INCLUDE := $(TOP)/../lua-4.0/include
 
-INCLUDE_PATHS := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I..
+INCLUDE_PATHS := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I$(ENGINE_INCLUDE)
 
 CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
@@ -19,9 +20,6 @@ LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 
 SRCS := config.cpp geometry.cpp cull.cpp bsp.cpp ogl.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
-
-#%.$(OBJ_EXT) : %.cpp
-#	$(CC) -c $^ $(CFLAGS)
 
 
 ENGINE = engine.$(LIB_EXT)
