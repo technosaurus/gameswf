@@ -12,10 +12,13 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 	$(CC) -c $^ $(CFLAGS)
 
 
-all: heightfield_chunker$(EXE_EXT) chunkdemo$(EXE_EXT)
+all: heightfield_chunker$(EXE_EXT) heightfield_shader$(EXE_EXT) chunkdemo$(EXE_EXT)
 
-heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT)
-	$(CC) -o $@ heightfield_chunker.$(OBJ_EXT) $(LIBS) $(LDFLAGS)
+heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT) $(ENGINE)
+	$(CC) -o $@ heightfield_chunker.$(OBJ_EXT) $(ENGINE) $(LIBS) $(LDFLAGS)
+
+heightfield_shader$(EXE_EXT): heightfield_shader.$(OBJ_EXT) $(ENGINE)
+	$(CC) -o $@ heightfield_shader.$(OBJ_EXT) $(ENGINE) $(LIBS) $(LDFLAGS)
 
 CHUNKDEMO_OBJS = chunkdemo.$(OBJ_EXT) chunklod.$(OBJ_EXT)
 
