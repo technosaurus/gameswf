@@ -57,6 +57,48 @@ namespace gameswf
 	};
 
 
+	struct mesh
+	// For holding a pre-tesselated shape.
+	{
+		mesh();
+
+//		void	add_vertex(...);
+		void	add_triangle(const point& a, const point& b, const point& c);
+
+		void	display(const display_info& di, const fill_style& style) const;
+
+	private:
+		array<point>	m_triangle_list;	// 3 points per tri
+	};
+
+
+	struct mesh_set
+	// A whole shape, tesselated to a certain error tolerance.
+	{
+		mesh_set();
+		mesh_set(const array<path>& paths,
+			 float error_tolerance
+			 );
+
+		int	get_last_frame_rendered() const;
+		void	set_last_frame_rendered(int frame_counter);
+		bool	can_render_within_tolerance(const display_info& di, float error_tolerance) const;
+
+		void display(const display_info& di, const array<fill_style>& fills) const;
+
+	private:
+		struct mesh_info
+		{
+			int	m_fill_index;
+			mesh	m_mesh;
+		};
+
+		int	m_last_frame_rendered;
+		float	m_error_tolerance;
+		array<mesh_info>	m_meshes;
+	};
+
+
 	struct shape_character : public character
 	// Represents the outline of one or more shapes, along with
 	// information on fill and line styles.
@@ -75,6 +117,9 @@ namespace gameswf
 		array<fill_style>	m_fill_styles;
 		array<line_style>	m_line_styles;
 		array<path>	m_paths;
+
+		// Cached pre-tesselated meshes.
+		array<mesh_set>	m_cached_meshes;
 	};
 
 }	// end namespace gameswf

@@ -154,6 +154,79 @@ namespace gameswf
 
 
 	//
+	// mesh
+	//
+
+	
+	mesh::mesh()
+	{
+	}
+
+
+	void	mesh::add_triangle(const point& a, const point& b, const point& c)
+	{
+		m_triangle_list.push_back(a);
+		m_triangle_list.push_back(b);
+		m_triangle_list.push_back(c);
+	}
+
+
+	void	mesh::display(const display_info& di, const fill_style& style) const
+	{
+		// pass to renderer.
+		// renderer::draw_mesh(di.something, style, &m_triangle_list[0].m_x, m_triangle_list.size() / 3);
+	}
+
+
+	//
+	// mesh_set
+	//
+
+
+	mesh_set::mesh_set()
+		:
+		m_last_frame_rendered(-1),
+		m_error_tolerance(0)	// invalid -- don't use this constructor; it's only here for array (@@ fix array)
+	{
+	}
+
+
+	mesh_set::mesh_set(const array<path>& paths, float error_tolerance)
+	// Tesselate the paths into a different mesh for each fill style.
+		:
+		m_last_frame_rendered(0),
+		m_error_tolerance(error_tolerance)
+	{
+		// ... tesselate
+	}
+
+
+	int	mesh_set::get_last_frame_rendered() const { return m_last_frame_rendered; }
+	void	mesh_set::set_last_frame_rendered(int frame_counter) { m_last_frame_rendered = frame_counter; }
+
+
+	bool	mesh_set::can_render_within_tolerance(
+		const display_info& di,
+		float error_tolerance) const
+	{
+		assert(m_error_tolerance > 0);
+
+		// ...  di.something * error_tolerance > m_error_tolerance ?
+
+		return true;
+	}
+
+
+	void	mesh_set::display(const display_info& di, const array<fill_style>& fills) const
+	// Throw our meshes at the renderer.
+	{
+		assert(m_error_tolerance > 0);
+
+		// ...
+	}
+
+
+	//
 	// helper functions.
 	//
 
@@ -455,6 +528,25 @@ namespace gameswf
 	// override our default set of fill styles (e.g. when
 	// rendering text).
 	{
+		// @@
+		// error_tolerance = some function of di.m_matrix max scale and global error tolerance
+		//
+		// bool rendered = false;
+		// for (m_cached_meshes)
+		//   if (m_cached_meshes[i].can_render_within_tolerance(error_tolerance))
+		//     m_cached_meshes[i].display(di, fill_styles);
+		//     m_cached_meshes[i].set_last_frame_rendered(di.m_frame_counter);
+		//     rendered = true;
+		// 
+		// if (rendered == false)
+		//   // construct a new mesh for this error tolerance
+		//   mesh_set	m(m_paths, error_tolerance);
+		//   m_cached_meshes.push_back(m);
+		//   m.display(di, fill_styles);
+		//
+		// // clean out mesh_sets that haven't been used recently
+
+
 		gameswf::render::push_apply_matrix(di.m_matrix);
 		gameswf::render::push_apply_cxform(di.m_color_transform);
 
