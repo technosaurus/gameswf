@@ -56,7 +56,7 @@ namespace gameswf
 	{
 		m_type = in->read_u8();
 
-		IF_VERBOSE_PARSE(log_msg("fsr type = 0x%X\n", m_type));
+		IF_VERBOSE_PARSE(log_msg("  fill_style read type = 0x%X\n", m_type));
 
 		if (m_type == 0x00)
 		{
@@ -67,7 +67,7 @@ namespace gameswf
 				m_color.read_rgba(in);
 			}
 
-			IF_VERBOSE_PARSE(log_msg("fsr color: ");
+			IF_VERBOSE_PARSE(log_msg("  color: ");
 					 m_color.print());
 		}
 		else if (m_type == 0x10 || m_type == 0x12)
@@ -105,7 +105,7 @@ namespace gameswf
 				m_gradients[i].read(in, tag_type);
 			}
 
-			IF_VERBOSE_PARSE(log_msg("fsr: num_gradients = %d\n", num_gradients));
+			IF_VERBOSE_PARSE(log_msg("  gradients: num_gradients = %d\n", num_gradients));
 
 			// @@ hack.
 			if (num_gradients > 0)
@@ -131,7 +131,7 @@ namespace gameswf
 			// 0x41: clipped bitmap fill
 
 			int	bitmap_char_id = in->read_u16();
-			IF_VERBOSE_PARSE(log_msg("fsr: bitmap_char = %d\n", bitmap_char_id));
+			IF_VERBOSE_PARSE(log_msg("  bitmap_char = %d\n", bitmap_char_id));
 
 			// Look up the bitmap character.
 			m_bitmap_character = md->get_bitmap_character(bitmap_char_id);

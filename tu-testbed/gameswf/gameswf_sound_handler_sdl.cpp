@@ -6,10 +6,11 @@
 // A gameswf::sound_handler that uses SDL_mixer for output
 
 
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 #include "base/container.h"
 #include "SDL_mixer.h"
-#include "gameswf_log.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_types.h"	// for IF_VERBOSE_* macros
 
 
 // Use SDL_mixer to handle gameswf sounds.
@@ -60,10 +61,15 @@ struct SDL_sound_handler : gameswf::sound_handler
 			case AUDIO_S16MSB: format_str = "S16MSB"; break;
 			}
 	    
-			printf("SDL_mixer: opened %d times, frequency=%dHz, format=%s, stereo=%s\n",
-				num_times_opened,	m_sample_rate, format_str, m_stereo ? "yes" : "no");
+			IF_VERBOSE_DEBUG(
+				gameswf::log_msg("SDL_mixer: opened %d times, frequency=%dHz, format=%s, stereo=%s\n",
+					     num_times_opened,
+					     m_sample_rate,
+					     format_str,
+					     m_stereo ? "yes" : "no"));
 			char name[32];
-			printf("Using audio driver: %s\n", SDL_AudioDriverName(name, 32));
+			IF_VERBOSE_DEBUG(
+				gameswf::log_msg("Using audio driver: %s\n", SDL_AudioDriverName(name, 32)));
 		}
 	}
 
@@ -122,13 +128,13 @@ struct SDL_sound_handler : gameswf::sound_handler
 
 			convert_mp3_data(&adjusted_data, &adjusted_size, data, sample_count, 0, sample_rate, stereo);
 #else
-			printf("mp3 format sound requested; this demo does not handle mp3\n");
+			IF_VERBOSE_DEBUG(gameswf::log_msg("mp3 format sound requested; this demo does not handle mp3\n"));
 #endif
 			break;
 
 		default:
 			// Unhandled format.
-			printf("unknown format sound requested; this demo does not handle it\n");
+			IF_VERBOSE_DEBUG(gameswf::log_msg("unknown format sound requested; this demo does not handle it\n"));
 			break;
 		}
 

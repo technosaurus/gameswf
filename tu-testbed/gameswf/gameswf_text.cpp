@@ -160,29 +160,51 @@ namespace gameswf
 			for (int j = 0; j < rec.m_glyphs.size(); j++)
 			{
 				int	index = rec.m_glyphs[j].m_glyph_index;
-				const texture_glyph&	tg = fnt->get_texture_glyph(index);
 					
 				mat = base_matrix;
 				mat.concatenate_translation(x, y);
 				mat.concatenate_scale(scale);
 
-				shape_character_def*	glyph = fnt->get_glyph(index);
-
-				if (tg.is_renderable()
-				    && (use_glyph_textures || glyph == NULL))
+				if (index == -1)
 				{
-					fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
+					// Invalid glyph; render it as an empty box.
+					render::set_matrix(mat);
+					render::line_style_color(transformed_color);
+
+					// The EM square is 1024x1024, but usually isn't filled up.
+					// We'll use about half the width, and around 3/4 the height.
+					// Values adjusted by eye.
+					// The Y baseline is at 0; negative Y is up.
+					static const Sint16	s_empty_char_box[5 * 2] =
+					{
+						 32,   32,
+						480,   32,
+						480, -656,
+						 32, -656,
+						 32,   32
+					};
+					render::draw_line_strip(s_empty_char_box, 5);
 				}
 				else
 				{
+					const texture_glyph&	tg = fnt->get_texture_glyph(index);
+					shape_character_def*	glyph = fnt->get_glyph(index);
 
-					// Draw the character using the filled outline.
-					if (glyph)
+					if (tg.is_renderable()
+					    && (use_glyph_textures || glyph == NULL))
 					{
-						glyph->display(mat, cx, pixel_scale, s_dummy_style, s_dummy_line_style);
+						fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
+					}
+					else
+					{
+
+						// Draw the character using the filled outline.
+						if (glyph)
+						{
+							glyph->display(mat, cx, pixel_scale, s_dummy_style, s_dummy_line_style);
+						}
 					}
 				}
-
 				x += rec.m_glyphs[j].m_glyph_advance;
 			}
 		}
@@ -626,6 +648,36 @@ namespace gameswf
 				val->set((r << 16) + (g << 8) + b);
 				return true;
 			}
+			else if (name == "_x")
+			{
+				matrix	m = get_matrix();	// @@ get_world_matrix()???
+				val->set(TWIPS_TO_PIXELS(m.m_[0][2]));
+				return true;
+			}
+			else if (name == "_y")
+			{
+				matrix	m = get_matrix();	// @@ get_world_matrix()???
+				val->set(TWIPS_TO_PIXELS(m.m_[1][2]));
+				return true;
+			}
+			else if (name == "_width")
+			{
+				// @@ TODO should implement this in
+				// character and inherit into both here and sprite_instance
+				rect	transformed_rect;
+				transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
+				val->set(TWIPS_TO_PIXELS(transformed_rect.width()));
+				return true;
+			}
+			else if (name == "_height")
+			{
+				// @@ TODO should implement this in
+				// character and inherit into both here and sprite_instance
+				rect	transformed_rect;
+				transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
+				val->set(TWIPS_TO_PIXELS(transformed_rect.height()));
+				return true;
+			}
 
 			return false;
 		}
@@ -814,7 +866,8 @@ namespace gameswf
 							  m_def->m_font->get_name());
 					}
 
-					continue;
+					// Drop through and use index == -1; this will display
+					// using the empty-box glyph
 				}
 				text_glyph_record::glyph_entry	ge;
 				ge.m_glyph_index = index;

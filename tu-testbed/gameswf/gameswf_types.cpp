@@ -145,7 +145,7 @@ namespace gameswf
 			m_[1][2] = (float) in->read_sint(translate_nbits);
 		}
 
-		IF_VERBOSE_PARSE(log_msg("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
+		//IF_VERBOSE_PARSE(log_msg("  mat: has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
 	}
 
 
@@ -390,6 +390,17 @@ namespace gameswf
 		else {
 			for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
 		}
+	}
+
+
+	void	cxform::print() const
+	// Debug log.
+	{
+		log_msg("    *         +\n");
+		log_msg("| %4.4f %4.4f|\n", m_[0][0], m_[0][1]);
+		log_msg("| %4.4f %4.4f|\n", m_[1][0], m_[1][1]);
+		log_msg("| %4.4f %4.4f|\n", m_[2][0], m_[2][1]);
+		log_msg("| %4.4f %4.4f|\n", m_[3][0], m_[3][1]);
 	}
 
 

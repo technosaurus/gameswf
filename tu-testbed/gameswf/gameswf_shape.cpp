@@ -630,7 +630,7 @@ namespace gameswf
 			}
 		}
 
-		IF_VERBOSE_PARSE(log_msg("rfs: fsc = %d\n", fill_style_count));
+		IF_VERBOSE_PARSE(log_msg("  read_fill_styles: count = %d\n", fill_style_count));
 
 		// Read the styles.
 		for (int i = 0; i < fill_style_count; i++)
@@ -647,7 +647,7 @@ namespace gameswf
 		// Get the count.
 		int	line_style_count = in->read_u8();
 
-		IF_VERBOSE_PARSE(log_msg("rls: lsc = %d\n", line_style_count));
+		IF_VERBOSE_PARSE(log_msg("  read_line_styles: count = %d\n", line_style_count));
 
 		// @@ does the 0xFF flag apply to all tag types?
 		// if (tag_type > 2)
@@ -655,10 +655,9 @@ namespace gameswf
 			if (line_style_count == 0xFF)
 			{
 				line_style_count = in->read_u16();
+				IF_VERBOSE_PARSE(log_msg("  read_line_styles: count2 = %d\n", line_style_count));
 			}
 		// }
-
-		IF_VERBOSE_PARSE(log_msg("rls: lsc2 = %d\n", line_style_count));
 
 		// Read the styles.
 		for (int i = 0; i < line_style_count; i++)
@@ -704,7 +703,7 @@ namespace gameswf
 		int	num_fill_bits = in->read_uint(4);
 		int	num_line_bits = in->read_uint(4);
 
-		IF_VERBOSE_PARSE(log_msg("scr: nfb = %d, nlb = %d\n", num_fill_bits, num_line_bits));
+		IF_VERBOSE_PARSE(log_msg("  shape_character read: nfillbits = %d, nlinebits = %d\n", num_fill_bits, num_line_bits));
 
 		// These are state variables that keep the
 		// current position & style of the shape
@@ -760,7 +759,7 @@ namespace gameswf
 					current_path.m_ax = x;
 					current_path.m_ay = y;
 
-					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("scr: moveto %4g %4g\n", x, y));
+					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character read: moveto %4g %4g\n", x, y));
 				}
 				if ((flags & 0x02)
 					&& num_fill_bits > 0)
@@ -779,7 +778,7 @@ namespace gameswf
 						style += fill_base;
 					}
 					current_path.m_fill0 = style;
-					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("scr: fill0 = %d\n", current_path.m_fill0));
+					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character read: fill0 = %d\n", current_path.m_fill0));
 				}
 				if ((flags & 0x04)
 					&& num_fill_bits > 0)
@@ -798,7 +797,7 @@ namespace gameswf
 						style += fill_base;
 					}
 					current_path.m_fill1 = style;
-					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("scr: fill1 = %d\n", current_path.m_fill1));
+					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character read: fill1 = %d\n", current_path.m_fill1));
 				}
 				if ((flags & 0x08)
 					&& num_line_bits > 0)
@@ -817,12 +816,12 @@ namespace gameswf
 						style += line_base;
 					}
 					current_path.m_line = style;
-					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("scr: line = %d\n", current_path.m_line));
+					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character_read: line = %d\n", current_path.m_line));
 				}
 				if (flags & 0x10) {
 					assert(tag_type >= 22);
 
-					IF_VERBOSE_PARSE(log_msg("scr: more fill styles\n"));
+					IF_VERBOSE_PARSE(log_msg("  shape_character read: more fill styles\n"));
 
 					// Store the current path if any.
 					if (! current_path.is_empty())
@@ -862,7 +861,7 @@ namespace gameswf
 					float	ax = cx + in->read_sint(num_bits);
 					float	ay = cy + in->read_sint(num_bits);
 
-					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("scr: curved edge   = %4g %4g - %4g %4g - %4g %4g\n", x, y, cx, cy, ax, ay));
+					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character read: curved edge   = %4g %4g - %4g %4g - %4g %4g\n", x, y, cx, cy, ax, ay));
 
 					current_path.m_edges.push_back(edge(cx, cy, ax, ay));	
 
@@ -893,7 +892,7 @@ namespace gameswf
 						}
 					}
 
-					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("scr: straight edge = %4g %4g - %4g %4g\n", x, y, x + dx, y + dy));
+					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character_read: straight edge = %4g %4g - %4g %4g\n", x, y, x + dx, y + dy));
 
 					current_path.m_edges.push_back(edge(x + dx/2, y + dy/2, x + dx, y + dy));
 
