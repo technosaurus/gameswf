@@ -286,6 +286,10 @@ namespace gameswf
 
 		// Return visibility status.
 		virtual bool	get_visible() const = 0;
+
+		// Set and get userdata, that's useful for the fs_command handler.
+		virtual void * get_userdata() = 0;
+		virtual void set_userdata(void *) = 0;
 	};
 
 	// Try to grab movie info from the header of the given .swf
