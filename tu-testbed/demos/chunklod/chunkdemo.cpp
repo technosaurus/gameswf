@@ -23,6 +23,8 @@
 #include "chunklod.h"
 
 
+static bool	fullscreen = false;
+static int	bits_per_pixel = 0;	// 0 --> use the desktop depth.
 static int	window_width = 1024;
 static int	window_height = 768;
 static float	horizontal_fov_degrees = 90.f;
@@ -206,6 +208,9 @@ void	print_usage()
 		"details.\n"
 		"\n"
 		"usage: chunkdemo [dataset.chu] [texture.jpg]\n"
+		"    [-w width] [-h height] [-b bits/pixel] [-f]\n"
+		"\n"
+		"    '-f' means use a fullscreen window.\n"
 		"    by default, looks for crater/crater.chu and crater/crater.jpg\n"
 		"\n"
 		"Controls:\n"
@@ -228,7 +233,6 @@ void	print_usage()
 		"\n"
 		);
 }
-
 
 
 //
@@ -402,12 +406,75 @@ extern "C" int	main(int argc, char *argv[])
 	const char*	chunkfile = "crater/crater.chu";
 	const char*	texturefile = "crater/crater.jpg";
 
-	// Override the default args, if any are supplied.
-	if (argc > 1) {
-		chunkfile = argv[1];
-	}
-	if (argc > 2) {
-		texturefile = argv[2];
+	// Process command-line args.
+	int	file_arg_index = 0;
+	for (int i = 1; i < argc; i++) {
+		switch (argv[i][0]) {
+		case '-': {
+			switch (argv[i][1]) {
+			case 0:
+			default:
+				printf("error: unknown switch '%s'\n\n", argv[i]);
+				print_usage();
+				exit(1);
+				break;
+
+			case 'w':	// window width.
+				i++;
+				if (i >= argc) {
+					printf("error: -w switch must be followed by a window width (in pixels)\n\n");
+					print_usage();
+					exit(1);
+				}
+				window_width = atoi(argv[i]);
+				// bounds checking here?
+				break;
+
+			case 'h':	// window height.
+				i++;
+				if (i >= argc) {
+					printf("error: -h switch must be followed by a window height (in pixels)\n\n");
+					print_usage();
+					exit(1);
+				}
+				window_height = atoi(argv[i]);
+				// bounds checking here?
+				break;
+
+			case 'b':	// bits per pixel
+				i++;
+				if (i >= argc) {
+					printf("error: -b switch must be followed by the desired window bits per pixel\n\n");
+					print_usage();
+					exit(1);
+				}
+				bits_per_pixel = atoi(argv[i]);
+				break;
+
+			case 'f':	// fullscreen flag.
+				fullscreen = true;
+				break;
+			}
+			break;
+		}
+
+		default: {	// file args.
+			if (file_arg_index == 0) {
+				chunkfile = argv[i];
+				file_arg_index++;
+
+			} else if (file_arg_index == 1) {
+				texturefile = argv[i];
+				file_arg_index++;
+
+			} else {
+				printf("error: too many args, starting with '%s'.\n\n", argv[i]);
+				print_usage();
+				exit(1);
+			}
+			break;
+		}
+		}
 	}
 
 	// Print out program info.
@@ -421,6 +488,7 @@ extern "C" int	main(int argc, char *argv[])
 	}
 	atexit(SDL_Quit);
 
+	// Get current display info.
 	const SDL_VideoInfo* info = NULL;
 	info = SDL_GetVideoInfo();
 	if (!info) {
@@ -428,23 +496,41 @@ extern "C" int	main(int argc, char *argv[])
 		exit(1);
 	}
 
-	int	bpp = info->vfmt->BitsPerPixel;
-	int	flags = SDL_OPENGL | (0 ? SDL_FULLSCREEN : 0);
+	if (bits_per_pixel == 0) {
+		// Take the default desktop depth.
+		bits_per_pixel = info->vfmt->BitsPerPixel;
+	}
+	int	flags = SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : 0);
 
-	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
-	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
+	int	component_depth = 0;
+	int	z_buffer_depth = 0;
+	if (bits_per_pixel <= 16) {
+		component_depth = 5;
+
+	} else if (bits_per_pixel <= 32) {
+		component_depth = 8;
+
+	} else {
+		component_depth = bits_per_pixel / 4;
+		// Assume the user knows what they're trying to do.
+	}
+
+	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, component_depth );
+	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, component_depth );
+	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, component_depth );
 	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 	// Set the video mode.
-	if (SDL_SetVideoMode(window_width, window_height, bpp, flags) == 0) {
+	if (SDL_SetVideoMode(window_width, window_height, bits_per_pixel, flags) == 0) {
 		fprintf(stderr, "SDL_SetVideoMode() failed.");
 		exit(1);
 	}
 
 	// Initialize the engine's opengl subsystem (loads extensions if possible).
 	ogl::open();
+
+	printf("Window: %d x %d x %d\n", window_width, window_height, bits_per_pixel);
 
 	// Load a texture.
 	SDL_Surface*	texture = IMG_Load(texturefile);
@@ -471,87 +557,93 @@ extern "C" int	main(int argc, char *argv[])
 		glEnable(GL_TEXTURE_2D);
 	}
 
-	// Load our chunked model.
-	SDL_RWops*	in = SDL_RWFromFile(chunkfile, "rb");
-	if (in == NULL) {
-		printf("Can't open '%s'\n", chunkfile);
-		exit(1);
-	}
-	lod_chunk_tree*	model = new lod_chunk_tree(in);
-
-	// Enable vertex array, and just leave it on.
-	glEnableClientState(GL_VERTEX_ARRAY);
-
-	view.m_frame_number = 1;
-
-	// Set up automatic texture-coordinate generation.
-	// Basically we're just stretching the current texture
-	// over the entire model.
-	vec3	center, extent;
-	model->get_bounding_box(&center, &extent);
-	float	xsize = extent.get_x() * 2;
-	float	zsize = extent.get_z() * 2;
-
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	float	p[4] = { 0, 0, 0, 0 };
-	p[0] = 1.0f / xsize;
-	glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
-	p[0] = 0;
-
-	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	p[2] = 1.0f / zsize;
-	glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
-
-	glEnable(GL_TEXTURE_GEN_S);
-	glEnable(GL_TEXTURE_GEN_T);
-
-	// Main loop.
-	Uint32	last_ticks = SDL_GetTicks();
-	for (;;) {
-		Uint32	ticks = SDL_GetTicks();
-		int	delta_ticks = ticks - last_ticks;
-		float	delta_t = delta_ticks / 1000.f;
-		last_ticks = ticks;
-
-		process_events();
-
-		if ( move_forward ) {
-			// Drift the viewpoint forward.
-			viewer_pos += viewer_dir * delta_t * (1 << speed) * 0.50f;
+	try {
+		// Load our chunked model.
+		SDL_RWops*	in = SDL_RWFromFile(chunkfile, "rb");
+		if (in == NULL) {
+			printf("Can't open '%s'\n", chunkfile);
+			exit(1);
 		}
+		lod_chunk_tree*	model = new lod_chunk_tree(in);
 
-		model->set_parameters(max_pixel_error, window_width, horizontal_fov_degrees);
-		if (enable_update) {
-			model->update(viewer_pos);
-		}
+		// Enable vertex array, and just leave it on.
+		glEnableClientState(GL_VERTEX_ARRAY);
 
-		clear();
+		view.m_frame_number = 1;
 
-		frame_triangle_count += model->render(view, render_opt);
+		// Set up automatic texture-coordinate generation.
+		// Basically we're just stretching the current texture
+		// over the entire model.
+		vec3	center, extent;
+		model->get_bounding_box(&center, &extent);
+		float	xsize = extent.get_x() * 2;
+		float	zsize = extent.get_z() * 2;
 
-		SDL_GL_SwapBuffers();
-		view.m_frame_number++;
+		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+		float	p[4] = { 0, 0, 0, 0 };
+		p[0] = 1.0f / xsize;
+		glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+		p[0] = 0;
 
-		// Performance counting.
-		if ( measure_performance ) {
-			frame_count ++;
-			total_triangle_count += frame_triangle_count;
-			performance_timer += delta_ticks;
+		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+		p[2] = 1.0f / zsize;
+		glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
 
-			// See if one second has elapsed.
-			if ( performance_timer > 1000 ) {
-				// Print out stats for the previous second.
-				float	fps = frame_count / ( performance_timer / 1000.f );
-				float	tps = total_triangle_count / ( performance_timer / 1000.f );
-				printf( "fps = %3.1f : tri/s = %3.2fM : tri/frame = %2.3fM\n", fps, tps / 1000000.f, frame_triangle_count / 1000000.f );
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
 
-				total_triangle_count = 0;
-				performance_timer = 0;
-				frame_count = 0;
+		// Main loop.
+		Uint32	last_ticks = SDL_GetTicks();
+		for (;;) {
+			Uint32	ticks = SDL_GetTicks();
+			int	delta_ticks = ticks - last_ticks;
+			float	delta_t = delta_ticks / 1000.f;
+			last_ticks = ticks;
+
+			process_events();
+
+			if ( move_forward ) {
+				// Drift the viewpoint forward.
+				viewer_pos += viewer_dir * delta_t * (1 << speed) * 0.50f;
 			}
 
-			frame_triangle_count = 0;
+			model->set_parameters(max_pixel_error, window_width, horizontal_fov_degrees);
+			if (enable_update) {
+				model->update(viewer_pos);
+			}
+
+			clear();
+
+			frame_triangle_count += model->render(view, render_opt);
+
+			SDL_GL_SwapBuffers();
+			view.m_frame_number++;
+
+			// Performance counting.
+			if ( measure_performance ) {
+				frame_count ++;
+				total_triangle_count += frame_triangle_count;
+				performance_timer += delta_ticks;
+
+				// See if one second has elapsed.
+				if ( performance_timer > 1000 ) {
+					// Print out stats for the previous second.
+					float	fps = frame_count / ( performance_timer / 1000.f );
+					float	tps = total_triangle_count / ( performance_timer / 1000.f );
+					printf( "fps = %3.1f : tri/s = %3.2fM : tri/frame = %2.3fM\n", fps, tps / 1000000.f, frame_triangle_count / 1000000.f );
+
+					total_triangle_count = 0;
+					performance_timer = 0;
+					frame_count = 0;
+				}
+
+				frame_triangle_count = 0;
+			}
 		}
+	}
+	catch (const char* message) {
+		printf("run-time exception: %s\n", message);
+		exit(1);
 	}
 
 	return 0;
