@@ -54,12 +54,7 @@ namespace gameswf
 		// Set line and fill styles.  You may change line and
 		// fill styles outside a begin_path()/end_path() pair.
 		void	fill_style_disable(int fill_side);
-		void	line_style_disable();
-
 		void	fill_style_color(int fill_side, rgba color);
-		void	line_style_color(rgba color);
-
-		void	line_style_width(float width);
 
 		enum bitmap_wrap_mode
 		{
@@ -67,6 +62,10 @@ namespace gameswf
 			WRAP_CLAMP
 		};
 		void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm);
+
+		void	line_style_disable();
+		void	line_style_color(rgba color);
+		void	line_style_width(float width);
 
 		// A path is enclosed within a shape.  If fill styles
 		// are active, a path should be a closed shape
