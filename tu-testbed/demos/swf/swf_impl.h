@@ -50,6 +50,17 @@ namespace swf
 						   float ratio)
 		{
 		}
+
+		virtual void	move_display_object(Uint16 depth,
+											const cxform& color_transform,
+											const matrix& mat,
+											float ratio)
+		{
+		}
+
+		virtual void	remove_display_object(Uint16 depth)
+		{
+		}
 	};
 
 
