@@ -29,10 +29,12 @@ namespace swf
 	struct display_info;
 	struct cxform;
 	struct matrix;
+	struct font;
 
 	struct movie : public movie_interface
 	{
 		virtual void	add_character(int id, character* ch) {}
+		virtual void	add_font(int id, font* ch) {}
 		virtual void	add_execute_tag(execute_tag* c) {}
 
 		virtual void	add_display_object(Uint16 character_id,
@@ -103,6 +105,7 @@ namespace swf
 		char*	read_string();	// reads *and new[]'s* the string -- ownership passes to caller!
 
 		int	get_position();
+		void	set_position(int pos);
 		int	get_tag_end_position();
 		int	open_tag();
 		void	close_tag();
@@ -114,6 +117,7 @@ namespace swf
 	void	set_background_color_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie* m);
 	void	define_shape_loader(stream* in, int tag_type, movie* m);
+	void	define_font_loader(stream* in, int tag_type, movie* m);
 	void	place_object_2_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie* m);
 	void	sprite_loader(stream* in, int tag_type, movie* m);
