@@ -1,5 +1,5 @@
 Chunk LOD demo
-17 Nov 2001
+1 Jan 2002
 Thatcher Ulrich <tu@tulrich.com> http://tulrich.com
 
 Demo of chunked LOD scheme.  Uses static meshes with lerping and
@@ -78,6 +78,20 @@ console.
 
 CHANGES
 
+1 Jan 2002
+
+I'm passing GL_SHORTs to glVertexPointer, using glTranslatef and
+glScalef to do the simple decompression, instead of doing it via CPU.
+Lightens the CPU load, and cuts the size/bandwidth of AGP vertex data
+in half.
+
+Also, I rearranged the edge data so that the edge data is not shared;
+instead each chunk is packaged together with edge data for all four of
+the chunk's borders.  This causes a little data redundancy, but it
+lets the edge verts be quantized relative to the chunk's local
+coordinates, and simplifies the renderer slightly.
+
+
 17 Nov 2001
 
 Quantization of vertices to 16 bits/coord.
@@ -155,8 +169,7 @@ It does occasionally happen in my demo that an LOD transition will
 cause a pop.  This bears further investigation; I think this may be
 related to the way I compute the distance from the viewpoint to the
 nearest point in a chunk.  However, it could be an inherent flaw in
-the approach.  This bears further investigation.  Nevertheless, the
-practical visual impact is minimal.
+the approach.  Nevertheless, the practical visual impact is minimal.
 
 Problem 2), cracks between chunks, is made even worse by the lerping
 scheme.  Adjacent chunks at the same level are not guaranteed to match
@@ -180,12 +193,16 @@ resolution of the texture can be pre-computed using the LOD math, so
 that the precomputed texture provides maximum visible detail without
 wasting RAM.  Because the chunks are localized, it should also be
 possible to compute a decent per-chunk texgen mapping so that no
-vertex u,v's need to be stored in most cases.  There are some
-interesting open questions about texture popping though, if the
-mappings change significantly between chunks.  My sense is that if
-enough texture resolution is available, which should be easy to
-guarantee, that the popping would be minimal, but I haven't tried it
-yet.
+vertex u,v's need to be stored in most cases.
+
+There are some interesting open questions about texture popping
+though, if the mappings change significantly between chunks.  My sense
+is that if enough texture resolution is available, which should be
+easy to guarantee, that the popping would be minimal, but I haven't
+tried it yet.  Of course the sensible thing to do is probably to just
+hardcode texture u,v's in the vertex data.  It's a shameful waste of
+memory most of the time, but it's flexible, very common, and with
+paging & adequate buffers it shouldn't hurt too much.
 
 In this demo, though, I'm just using a simple large projected texture
 over the whole model.
