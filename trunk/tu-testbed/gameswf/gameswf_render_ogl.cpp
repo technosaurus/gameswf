@@ -680,15 +680,34 @@ namespace render
 	}
 
 
-	void	begin_shape()
+	void	draw_line_strip(const float coords[], int vertex_count)
+	// Draw the line strip formed by the sequence of points.
 	{
-		// make sure our shape state is cleared out.
+		assert(s_line_style >= 0);
+		assert(s_line_style < s_current_styles.size());
+
+		// Set up current style.
+		matrix	ident;
+		ident.set_identity();
+		s_current_styles[s_line_style].apply(ident);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		s_matrix_stack.back().ogl_multiply();
+
+		// Send the tris to OpenGL
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
+		glDrawArrays(GL_LINE_STRIP, 0, vertex_count);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glPopMatrix();
+
+		// Clear the current style(s).
 		s_current_styles.resize(0);
 		s_left_style = -1;
 		s_right_style = -1;
 		s_line_style = -1;
-
-		gameswf::tesselate::begin_shape(s_tolerance / 20.0f);
 	}
 
 
@@ -714,8 +733,9 @@ namespace render
 			glEnd();
 		}
 
-		void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
-		// Draw the specified line segment.
+
+		void	accept_line_strip(int style, const point coords[], int coord_count)
+		// Draw a line strip, given a style and an array of points.
 		{
 			assert(style >= 0 && style < s_current_styles.size());
 			assert(s_current_styles[style].is_valid());
@@ -723,19 +743,31 @@ namespace render
 			s_current_styles[style].apply(s_matrix_stack.back());
 
 			// Draw the line segment.
-			glBegin(GL_LINES);
-			glVertex2f(x0, y0);
-			glVertex2f(x1, y1);
-			glEnd();
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, (float*) coords);
+			glDrawArrays(GL_LINE_STRIP, 0, coord_count);
+			glDisableClientState(GL_VERTEX_ARRAY);
 		}
 	};
+
+
+	void	begin_shape()
+	{
+		// make sure our shape state is cleared out.
+		s_current_styles.resize(0);
+		s_left_style = -1;
+		s_right_style = -1;
+		s_line_style = -1;
+
+		static opengl_accepter	o;
+		gameswf::tesselate::begin_shape(&o, s_tolerance / 20.0f);
+	}
 
 
 	void	end_shape()
 	{
 		// Render the shape stored in the tesselator.
-		opengl_accepter	o;
-		gameswf::tesselate::end_shape(&o);
+		gameswf::tesselate::end_shape();
 	}
 
 

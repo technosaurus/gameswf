@@ -329,7 +329,7 @@ namespace fontlib
 			software_trapezoid(y0, y1, lx0, lx1, rx0, rx1);
 		}
 
-		virtual void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
+		virtual void	accept_line_strip(int style, const point coords[], int coord_count)
 		{
 			assert(0);	// Shape glyphs should not contain lines.
 		}
@@ -809,8 +809,9 @@ namespace fontlib
 	void	draw_string(const font* f, float x, float y, float size, const char* text)
 	// Host-driven text rendering function. This not-tested and unfinished.
 	{
-		// A dummy array with a white fill style.  For passing to shape_character::display().
+		// Dummy arrays with a white fill style.  For passing to shape_character::display().
 		static array<fill_style>	s_dummy_style;
+		static array<line_style>	s_dummy_line_style;
 		static display_info	s_dummy_display_info;
 		if (s_dummy_style.size() < 1)
 		{
@@ -849,7 +850,7 @@ namespace fontlib
 				// Draw the character using the filled outline.
 				if (glyph)
 				{
-					glyph->display(s_dummy_display_info, s_dummy_style);
+					glyph->display(s_dummy_display_info, s_dummy_style, s_dummy_line_style);
 				}
 			}
 

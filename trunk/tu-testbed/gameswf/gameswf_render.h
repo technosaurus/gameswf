@@ -53,6 +53,13 @@ namespace gameswf
 		// be float[vertex_count*2]
 		void	draw_mesh(const float coords[], int vertex_count);
 
+		// Draw a line-strip using the current line style.
+		// Clear the style list after rendering.
+		//
+		// Coords is a list of (x,y) coordinate pairs, in
+		// sequence.
+		void	draw_line_strip(const float coords[], int vertex_count);
+
 		// A shape has one or more paths.  The paths in a
 		// shape are rasterized together using a typical
 		// polygon odd-even rule.

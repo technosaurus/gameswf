@@ -68,13 +68,27 @@ namespace gameswf
 	{
 		mesh();
 
-//		void	add_vertex(...);
 		void	add_triangle(const point& a, const point& b, const point& c);
 
 		void	display(const fill_style& style) const;
 
 	private:
 		array<point>	m_triangle_list;	// 3 points per tri
+	};
+
+
+	struct line_strip
+	// For holding a line-strip (i.e. polyline).
+	{
+		line_strip();
+		line_strip(int style, const point coords[], int coord_count);
+
+		int	get_style() const { return m_style; }
+		void	display(const line_style& style) const;
+
+	private:
+		int	m_style;
+		array<point>	m_coords;
 	};
 
 
@@ -88,14 +102,19 @@ namespace gameswf
 		void	set_last_frame_rendered(int frame_counter);
 		float	get_error_tolerance() const { return m_error_tolerance; }
 
-		void display(const display_info& di, const array<fill_style>& fills) const;
+		void display(
+			const display_info& di,
+			const array<fill_style>& fills,
+			const array<line_style>& line_styles) const;
 
 		void	add_triangle(int style, const point& a, const point& b, const point& c);
+		void	add_line_strip(int style, const point coords[], int coord_count);
 
 	private:
 		int	m_last_frame_rendered;
 		float	m_error_tolerance;
 		array<mesh>	m_meshes;	// One mesh per style.
+		array<line_strip>	m_line_strips;
 	};
 
 
@@ -108,7 +127,10 @@ namespace gameswf
 
 		void	read(stream* in, int tag_type, bool with_style, movie* m);
 		void	display(const display_info& di);
-		void	display(const display_info& di, const array<fill_style>& fill_styles) const;
+		void	display(
+			const display_info& di,
+			const array<fill_style>& fill_styles,
+			const array<line_style>& line_styles) const;
 		void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
 		bool	point_test(float x, float y);
 		const rect&	get_bound() const { return m_bound; }
