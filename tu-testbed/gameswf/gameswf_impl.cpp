@@ -347,6 +347,7 @@ namespace gameswf
 		{
 			smart_ptr<character_def>	ch;
 			m_characters.get(character_id, &ch);
+			assert(ch == NULL || ch->m_ref_count > 1);
 			return ch.get_ptr();
 		}
 
@@ -365,6 +366,7 @@ namespace gameswf
 		{
 			smart_ptr<font>	f;
 			m_fonts.get(font_id, &f);
+			assert(f == NULL || f->m_ref_count > 1);
 			return f.get_ptr();
 		}
 
@@ -372,6 +374,7 @@ namespace gameswf
 		{
 			smart_ptr<bitmap_character_def>	ch;
 			m_bitmap_characters.get(character_id, &ch);
+			assert(ch == NULL || ch->m_ref_count > 1);
 			return ch.get_ptr();
 		}
 
@@ -385,6 +388,7 @@ namespace gameswf
 		{
 			smart_ptr<sound_sample>	ch;
 			m_sound_samples.get(character_id, &ch);
+			assert(ch == NULL || ch->m_ref_count > 1);
 			return ch.get_ptr();
 		}
 
@@ -2535,6 +2539,7 @@ namespace gameswf
 			}
 			m_display_list.add_display_object(ch.get_ptr(), depth, color_transform, matrix, ratio, clip_depth);
 
+			assert(ch == NULL || ch->m_ref_count > 1);
 			return ch.get_ptr();
 		}
 
