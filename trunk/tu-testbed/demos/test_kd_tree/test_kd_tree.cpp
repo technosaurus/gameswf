@@ -342,7 +342,7 @@ void	test_cast_against_tree(const array<kd_tree_dynamic*>& treelist)
 
 	for (int i = 0; i < RAY_COUNT; i++)
 	{
-//#define RANDOM_RAY
+#define RANDOM_RAY
 #ifdef RANDOM_RAY
 		// Ray between two random points within the volume.
 		vec3	start = bound.get_random_point();
@@ -353,7 +353,7 @@ void	test_cast_against_tree(const array<kd_tree_dynamic*>& treelist)
 		{
 			end = bound.get_random_point();
 		}
-#else
+#else  // SHORT_RAY
 		// Short rays at some random point within the volume.
 		vec3	start = bound.get_random_point();
 		vec3	disp = unit_box.get_random_point() * 100.f;

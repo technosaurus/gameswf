@@ -430,8 +430,8 @@ static bool	ray_test_face(const kd_ray_query_info& qi, kd_face* face)
 	const vec3&	v1 = qi.m_verts[face->m_vi[1]];
 	const vec3&	v2 = qi.m_verts[face->m_vi[2]];
 
-	vec3	edge1 = (v1 - v0);
-	vec3	edge2 = (v2 - v0);
+	vec3	edge1(v1); edge1 -= v0;
+	vec3	edge2(v2); edge2 -= v0;
 	vec3	unscaled_normal;
 	unscaled_normal.set_cross(edge1, edge2);
 
