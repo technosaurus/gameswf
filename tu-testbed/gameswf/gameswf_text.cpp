@@ -801,11 +801,19 @@ namespace gameswf
 				if (index == -1)
 				{
 					// error -- missing glyph!
-					log_error("edit_text_character::display() -- missing glyph for char %d "
-						  "-- make sure character shapes for font %s are being exported "
-						  "into your SWF file!\n",
-						  code,
-						  m_def->m_font->get_name());
+					
+					// Log an error, but don't log too many times.
+					static int	s_log_count = 0;
+					if (s_log_count < 10)
+					{
+						s_log_count++;
+						log_error("edit_text_character::display() -- missing glyph for char %d "
+							  "-- make sure character shapes for font %s are being exported "
+							  "into your SWF file!\n",
+							  code,
+							  m_def->m_font->get_name());
+					}
+
 					continue;
 				}
 				text_glyph_record::glyph_entry	ge;

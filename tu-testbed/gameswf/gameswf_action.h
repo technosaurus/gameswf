@@ -275,6 +275,7 @@ namespace gameswf
 
 		const char*	to_string() const;
 		const tu_string&	to_tu_string() const;
+		const tu_stringi&	to_tu_stringi() const;
 		double	to_number() const;
 		bool	to_bool() const;
 		as_object_interface*	to_object() const;
@@ -358,6 +359,7 @@ namespace gameswf
 	struct as_environment
 	{
 		array<as_value>	m_stack;
+		as_value	m_register[4];
 		movie*	m_target;
 		stringi_hash<as_value>	m_variables;
 

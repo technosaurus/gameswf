@@ -897,6 +897,7 @@ namespace gameswf
 		int	m_mouse_capture_id;
 		void * m_userdata;
 		movie::drag_state	m_drag_state;
+		bool	m_on_event_load_called;
 
 
 		movie_root(movie_def_impl* def)
@@ -914,7 +915,8 @@ namespace gameswf
 			m_mouse_y(0),
 			m_mouse_buttons(0),
 			m_mouse_capture_id(-1),
-			m_userdata(NULL)
+			m_userdata(NULL),
+			m_on_event_load_called(false)
 		{
 			assert(m_def != NULL);
 
@@ -1031,6 +1033,15 @@ namespace gameswf
 		void	restart() { m_movie->restart(); }
 		void	advance(float delta_time)
 		{
+			if (m_on_event_load_called == false)
+			{
+				// Must do loading events.  For child sprites this is
+				// done by the dlist, but root movies don't get added
+				// to a dlist, so we do it here.
+				m_on_event_load_called = true;
+				m_movie->on_event_load();
+			}
+
 			m_timer += delta_time;
 			m_movie->advance(delta_time);
 		}
@@ -3209,7 +3220,9 @@ namespace gameswf
 			// value won't go away after we return!!!
 			// It'll go away during the next call to this
 			// function though!!!  NOT THREAD SAFE!
-			static as_value	val = m_as_environment.get_variable(path, empty_with_stack);
+			static as_value	val;
+
+			val = m_as_environment.get_variable(path, empty_with_stack);
 
 			return val.to_string();	// ack!
 		}
@@ -3764,11 +3777,6 @@ namespace gameswf
 
 		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
-
-		// Must do loading events.  For child sprites this is
-		// done by the dlist, but root movies don't get added
-		// to a dlist, so we do it here.
-		root_movie->on_event_load();
 
 		m->add_ref();
 		return m;
