@@ -63,6 +63,7 @@ public:
 	T*	operator->() const { assert(m_ptr); return m_ptr; }
 	T*	get_ptr() const { return m_ptr; }
 	bool	operator==(const smart_ptr<T>& p) const { return m_ptr == p.m_ptr; }
+	bool	operator!=(const smart_ptr<T>& p) const { return m_ptr != p.m_ptr; }
 	bool	operator==(T* p) const { return m_ptr == p; }
 	bool	operator!=(T* p) const { return m_ptr != p; }
 
