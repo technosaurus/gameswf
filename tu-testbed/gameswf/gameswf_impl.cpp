@@ -735,8 +735,8 @@ namespace gameswf
 		~movie_root()
 		{
 			assert(m_def);
-			m_def->drop_ref();
 			if (m_movie) m_movie->drop_ref();
+			m_def->drop_ref();
 		}
 
 		void	set_root_movie(movie* root_movie)
