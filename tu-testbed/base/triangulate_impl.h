@@ -426,6 +426,8 @@ struct poly
 
 	void	flip_triple_configuration(array<vert_t>* sorted_verts, int v0, int v1, int v2);
 
+	void	update_connected_sub_poly(array<vert_t>* sorted_verts, int v_start, int v_stop);
+
 //data:
 	int	m_loop;	// index of first vert
 	int	m_leftmost_vert;
@@ -950,6 +952,37 @@ void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 
 	assert(is_valid(*sorted_verts, true /* do check for dupes; there shouldn't be any! */));
 }
+
+
+template<class coord_t>
+void	poly<coord_t>::update_connected_sub_poly(array<vert_t>* sorted_verts, int v_first_in_subloop, int v_first_after_subloop)
+// Given the beginning and end of a sub-loop that has just been linked
+// into our loop, update the verts on the sub-loop to have the correct
+// owner, update our m_leftmost_vert and our m_vert_count.
+{
+	assert(v_first_in_subloop != v_first_after_subloop);
+
+	int	vi = v_first_in_subloop;
+	do
+	{
+		vert_t*	pv = &(*sorted_verts)[vi];
+
+		pv->m_poly_owner = this;
+		m_vertex_count++;
+
+		// Update leftmost vert.
+		if (pv->m_my_index < m_leftmost_vert)
+		{
+			m_leftmost_vert = pv->m_my_index;
+		}
+
+		vi = pv->m_next;
+	}
+	while (vi != v_first_after_subloop);
+
+	assert(is_valid(*sorted_verts));
+}
+
 
 
 template<class coord_t>
@@ -1542,10 +1575,6 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 		// assume that the enclosing boundary is the leftmost
 		// path; this is true if the regions are valid and
 		// don't intersect.
-		//
-		// @@ are we screwed in case the leftmost path isn't
-		// actually the enclosing path (i.e. the data is
-		// bugged)?  Or does it not really matter...
 		poly<coord_t>*	full_poly = m_polys[0];
 
 		// Iterate from left to right
@@ -1584,11 +1613,19 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 }
 
 
-// TODO
 template<class coord_t>
 void	poly_env<coord_t>::join_paths_with_bridge(int vert_on_main_poly, int vert_on_sub_poly)
+// Absorb the sub-poly into the main poly, using a zero-area bridge
+// between the two given verts.
 {
 	assert(vert_on_main_poly != vert_on_sub_poly);
+
+	poly<coord_t>*	main_poly = m_sorted_verts[vert_on_main_poly].m_poly_owner;
+	poly<coord_t>*	sub_poly = m_sorted_verts[vert_on_sub_poly].m_poly_owner;
+
+	assert(main_poly != NULL);
+	assert(sub_poly != NULL);
+	assert(main_poly != sub_poly);
 
 	if (m_sorted_verts[vert_on_main_poly].m_v == m_sorted_verts[vert_on_sub_poly].m_v)
 	{
@@ -1609,26 +1646,7 @@ void	poly_env<coord_t>::join_paths_with_bridge(int vert_on_main_poly, int vert_o
 		m_sorted_verts[main_next].m_prev = vert_on_sub_poly;
 
 		// Fixup sub poly so it's now properly a part of the main poly.
-		// @@ almost dupe of code below, could pull this out
-		poly<coord_t>*	main_poly = pv_main->m_poly_owner;
-		poly<coord_t>*	sub_poly = pv_sub->m_poly_owner;
-		poly_vert<coord_t>*	v = &m_sorted_verts[pv_main->m_next];
-		do
-		{
-			v->m_poly_owner = main_poly;
-
-			// Update leftmost vert.
-			if (v->m_my_index < v->m_poly_owner->m_leftmost_vert)
-			{
-				v->m_poly_owner->m_leftmost_vert = v->m_my_index;
-			}
-
-			v = &m_sorted_verts[v->m_next];
-		}
-		while (v != &m_sorted_verts[main_next]);
-
-		main_poly->m_vertex_count += sub_poly->m_vertex_count;	// all the sub_poly's verts.
-
+		main_poly->update_connected_sub_poly(&m_sorted_verts, pv_sub->m_my_index, main_next);
 		sub_poly->invalidate(m_sorted_verts);
 
 		return;
@@ -1666,25 +1684,7 @@ void	poly_env<coord_t>::join_paths_with_bridge(int vert_on_main_poly, int vert_o
 	pv_sub->m_prev = vert_on_main_poly;		// (pv_main)
 
 	// Fixup sub poly so it's now properly a part of the main poly.
-	poly<coord_t>*	main_poly = pv_main->m_poly_owner;
-	poly<coord_t>*	sub_poly = pv_sub->m_poly_owner;
-	poly_vert<coord_t>*	v = pv_sub;
-	do
-	{
-		v->m_poly_owner = main_poly;
-
-		// Update leftmost vert.
-		if (v->m_my_index < v->m_poly_owner->m_leftmost_vert)
-		{
-			v->m_poly_owner->m_leftmost_vert = v->m_my_index;
-		}
-
-		v = &m_sorted_verts[v->m_next];
-	}
-	while (v != pv_main2);
-
-	main_poly->m_vertex_count += 2 + sub_poly->m_vertex_count;	// 2 for the duped verts, plus all the sub_poly's verts.
-
+	main_poly->update_connected_sub_poly(&m_sorted_verts, vert_on_sub_poly, pv_main2->m_next);
 	sub_poly->invalidate(m_sorted_verts);
 
 	assert(pv_main->m_poly_owner->is_valid(m_sorted_verts));
@@ -1879,7 +1879,9 @@ static void compute_triangulation(
 				// v0 and v2 must be removed from ear
 				// list, if they're in it.
 				//
-				// @@ sucks, must optimize (perhaps limit the size of Q?)
+				// This sucks, unless the size of Q is
+				// limited (it should be).  See
+				// build_ear_list().
 				for (int i = 0, n = Q.size(); i < n; i++)
 				{
 					if (Q[i] == v0 || Q[i] == v2)

@@ -344,7 +344,7 @@ int	main()
 	offset_path(&paths.back(), 1200, 300);
 #endif
 
-#if 0
+#if 1
 	// Lots of circles.
 
 	// @@ set this to 100 for a good performance torture test of bridge-finding.
@@ -360,7 +360,7 @@ int	main()
 	}}
 #endif
 
-#if 1
+#if 0
 	// Lots of concentric circles.
 	static int	CIRCLE_COUNT = 20;	// CIRCLE_COUNT >= 10 is a good performance test.
 	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
