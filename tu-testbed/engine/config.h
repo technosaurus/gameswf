@@ -3,7 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// Configuration glue.  C++ interface to Lua scripting library.
+// Configuration glue.  C++ interface to Lua scripting library, plus utilities.
 
 
 #ifndef CONFIG_H
@@ -18,8 +18,24 @@ extern "C" {
 namespace config {
 	void	open();
 	void	close();
+	// void	clear();
 
-	extern lua_State*	g_luastate;
+	//
+	// Symbol table.
+	//
+
+	typedef int symbol;
+
+	symbol	check_symbol( const char* name );	// symbol look-up, but don't create if it's not there.
+	symbol	get_symbol( const char* name );	// symbol look-up; create if necessary.
+	const char*	get_symbol_name( symbol id );
+	void	lua_push_symbol_name( symbol id );
+
+	//
+	// Globals to help interface w/ Lua.  User code usually won't be
+	// interested in these.
+	//
+	extern lua_State*	L;	// Lua state.  Passed as a param to most lua_ calls.
 	extern int	g_cfloat_tag;
 };
 
@@ -29,59 +45,32 @@ class cvar {
 // have to do hash lookups & type coercion to access from the C++ side.
 // Some possible gc issues with conversion to C strings.
 public:
-	cvar( const char* name ) {
-		m_lua_name = name;
-	}
+	cvar( const char* name );
+	cvar( const char* name, const char* val );
+	cvar( const char* name, float val );
+	~cvar();
 
-	cvar( const char* name, const char* val ) {
-		m_lua_name = name;
-		*this = val;
-	}
+	const char*	get_name() const;
 
-	cvar( const char* name, float val ) {
-		m_lua_name = name;
-		*this = val;
-	}
+	// get_name_reference() -- for comparisons or storage maybe?
 
-	const char*	get_name() { return m_lua_name; }
+	// float access
+	operator float() const;
+	void	operator=( float f );
 
-	operator float()
-	// Convert the variable to a float and return it.
-	{
-		lua_getglobal( config::g_luastate, m_lua_name );
-		float	f = lua_tonumber( config::g_luastate, 1 );
-		lua_pop( config::g_luastate, 1 );
-		return f;
-	}
+	// string access
+	operator const char*() const;
+	void	operator=( const char* s );
 
-	void	operator=( float f )
-	// Assign a float to this lua variable.
-	{
-		lua_pushnumber( config::g_luastate, f );
-		lua_setglobal( config::g_luastate, m_lua_name );
-	}
+	// TODO: vec3 access
+	// TODO: actor, component access
 
-	operator const char*()
-	// Convert to a string.
-	//
-	// xxx there are garbage-collection issues here!  Returned string
-	// has no valid reference once stack is cleared!
-	{
-		lua_getglobal( config::g_luastate, m_lua_name );
-		const char* c = lua_tostring( config::g_luastate, 1 );
-		lua_pop( config::g_luastate, 1 );
-		return c;
-	}
-
-	void	operator=( const char* s )
-	// Assign a string to this lua variable.
-	{
-		lua_pushstring( config::g_luastate, s );
-		lua_setglobal( config::g_luastate, m_lua_name );
-	}
+	// cvar assignment
+	void	operator=( const cvar c );
 
 private:
-	const char*	m_lua_name;	// name of Lua global variable.
+//	int	m_lua_name_reference;	// Lua reference to the name of this var, for fast lookup.
+	config::symbol	m_name_id;
 };
 
 
@@ -101,7 +90,7 @@ private:
 //
 //	snowflakes++;
 //	snowflakes = 10;
-//	for ( i = 0; i < snowflakes; i++ ) {	// hash lookup here.
+//	for ( i = 0; i < snowflakes; i++ ) {	// hash lookup here -- but uses symbol ref, not raw string.
 //		make_snowflake( snowflake_image );
 //	}
 
@@ -109,7 +98,7 @@ private:
 class cfloat
 // A class that holds a floating point value.  Accessible from Lua via
 // a global variable.  Has the time efficiency of an ordinary C++
-// float when accessed from C++, so it's cool to use these in inner
+// float when accessed from C++, so it's OK to use these in inner
 // loops.
 {
 public:
@@ -122,15 +111,16 @@ public:
 		//		error( "cfloat( name ) already defined!" );
 		//	} else {
 		//		value = tonumber( original value )
+		//	}
 		// }
 
 		// make sure config::open() has been called.
 		config::open();
 
 		// assign us to a Lua global variable, and identify us to Lua as a cfloat.
-		lua_pushuserdata( config::g_luastate, this );
-		lua_settag( config::g_luastate, config::g_cfloat_tag );
-		lua_setglobal( config::g_luastate, name );
+		lua_pushuserdata( config::L, this );
+		lua_settag( config::L, config::g_cfloat_tag );
+		lua_setglobal( config::L, name );
 	}
 
 	~cfloat()
@@ -156,6 +146,7 @@ public:
 	// config::open() will hook in some handlers so Lua can have access to our value.
 //private:
 	float	m_value;
+	// hold a name_id?
 };
 
 
