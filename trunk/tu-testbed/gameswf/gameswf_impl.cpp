@@ -260,6 +260,8 @@ namespace gameswf
 		int	get_width() const { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.width())); }
 		int	get_height() const { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
 
+		virtual int	get_version() const { return m_version; }
+
 		virtual int	get_loading_frame() const { return m_loading_frame; }
 
 		virtual void	export_resource(const tu_string& symbol, resource* res)
@@ -1554,6 +1556,94 @@ namespace gameswf
 
 
 	//
+	// swf_event
+	//
+	// For embedding event handlers in place_object_2
+
+
+	struct swf_event
+	{
+		event_id	m_event;
+		action_buffer	m_action_buffer;
+		as_value	m_method;
+
+		swf_event()
+		{
+		}
+
+		void	attach_to(character* ch) const
+		{
+			ch->set_event_handler(m_event, m_method);
+		}
+
+		void	read(stream* in, Uint32 flags)
+		{
+			assert(flags != 0);
+
+			// Scream if more than one bit is set, since we're not set up to handle
+			// that, and it doesn't seem possible to express in ActionScript source,
+			// so it's important to know if this ever occurs in the wild.
+			if (flags & (flags - 1))
+			{
+				log_error("error: swf_event::read() -- more than one event type encoded!  "
+					  "unexpected! flags = 0x%x\n", flags);
+			}
+
+			// 14 bits reserved, 18 bits used
+
+			static const event_id	s_code_bits[18] =
+			{
+				event_id::id_code::LOAD,
+				event_id::id_code::ENTER_FRAME,
+				event_id::id_code::UNLOAD,
+				event_id::id_code::MOUSE_MOVE,
+				event_id::id_code::MOUSE_DOWN,
+				event_id::id_code::MOUSE_UP,
+				event_id::id_code::KEY_DOWN,
+				event_id::id_code::KEY_UP,
+				event_id::id_code::DATA,
+				event_id::id_code::INITIALIZE,
+				event_id::id_code::PRESS,
+				event_id::id_code::RELEASE,
+				event_id::id_code::RELEASE_OUTSIDE,
+				event_id::id_code::ROLL_OVER,
+				event_id::id_code::ROLL_OUT,
+				event_id::id_code::DRAG_OVER,
+				event_id::id_code::DRAG_OUT,
+			};
+
+			for (int i = 0, mask = 1; i < sizeof(s_code_bits)/sizeof(s_code_bits[0]); i++, mask <<= 1)
+			{
+				if (flags & mask)
+				{
+					m_event = s_code_bits[i];
+					break;
+				}
+			}
+
+			// what to do w/ key_press???  Is the data in the reserved parts of the flags???
+			if (flags & (1 << 17))
+			{
+				log_error("swf_event::read -- KEY_PRESS found, not handled yet, flags = 0x%x\n", flags);
+			}
+
+			Uint32	event_length = in->read_u32();
+			UNUSED(event_length);
+
+			// Read the actions.
+			m_action_buffer.read(in);
+
+			// Create a function to execute the actions.
+			array<with_stack_entry>	empty_with_stack;
+			as_as_function*	func = new as_as_function(&m_action_buffer, NULL, 0, empty_with_stack);	// @@ leak
+			func->set_length(m_action_buffer.get_length());
+
+			m_method.set(func);
+		}
+	};
+
+
+	//
 	// place_object_2
 	//
 	
@@ -1573,6 +1663,7 @@ namespace gameswf
 			MOVE,
 			REPLACE,
 		} m_place_type;
+		array<swf_event>	m_event_handlers;
 
 
 		place_object_2()
@@ -1594,7 +1685,7 @@ namespace gameswf
 			m_name = NULL;
 		}
 
-		void	read(stream* in, int tag_type)
+		void	read(stream* in, int tag_type, int movie_version)
 		{
 			assert(tag_type == 4 || tag_type == 26);
 
@@ -1614,7 +1705,7 @@ namespace gameswf
 			{
 				in->align();
 
-				in->read_uint(1);	// reserved flag -- "has actions" in versions >= 5
+				bool	has_actions = in->read_uint(1) ? true : false;
 				bool	has_clip_bracket = in->read_uint(1) ? true : false;
 				bool	has_name = in->read_uint(1) ? true : false;
 				bool	has_ratio = in->read_uint(1) ? true : false;
@@ -1644,11 +1735,54 @@ namespace gameswf
                                 if (has_name) {
 					m_name = in->read_string();
 				}
-                                  
 				if (has_clip_bracket) {
 					m_clip_depth = in->read_u16(); 
 					IF_VERBOSE_PARSE(log_msg("HAS CLIP BRACKET!\n"));
 				}
+				if (has_actions)
+				{
+					Uint16	reserved = in->read_u16();
+
+					// The logical 'or' of all the following handlers.
+					// I don't think we care about this...
+					Uint32	all_flags = 0;
+					if (movie_version >= 6)
+					{
+						all_flags = in->read_u32();
+					}
+					else
+					{
+						all_flags = in->read_u16();
+					}
+					UNUSED(all_flags);
+
+					// Read swf_events.
+					for (;;)
+					{
+						// Read event.
+						in->align();
+
+						Uint32	this_flags = 0;
+						if (movie_version >= 6)
+						{
+							this_flags = in->read_u32();
+						}
+						else
+						{
+							this_flags = in->read_u16();
+						}
+
+						if (this_flags == 0)
+						{
+							// Done with events.
+							break;
+						}
+
+						m_event_handlers.resize(m_event_handlers.size() + 1);
+						m_event_handlers.back().read(in, this_flags);
+					}
+				}
+
 
 				if (has_char == true && flag_move == true)
 				{
@@ -1682,7 +1816,8 @@ namespace gameswf
 			switch (m_place_type)
 			{
 			case PLACE:
-				m->add_display_object(
+			{
+				character*	ch = m->add_display_object(
 					m_character_id,
 					m_name,
 					m_depth,
@@ -1690,7 +1825,15 @@ namespace gameswf
 					m_matrix,
 					m_ratio,
 					m_clip_depth);
+
+				// Add event handlers to ch.
+				if (ch)
+				{
+					attach_events(ch);
+				}
+
 				break;
+			}
 
 			case MOVE:
 				m->move_display_object(
@@ -1725,6 +1868,17 @@ namespace gameswf
 		{
 			execute(m);
 		}
+
+		void	attach_events(character* ch)
+		// Push our swf_event handlers into ch.
+		{
+			assert(ch);
+
+			for (int i = 0, n = m_event_handlers.size(); i < n; i++)
+			{
+				m_event_handlers[i].attach_to(ch);
+			}
+		}
 	};
 
 
@@ -1734,7 +1888,7 @@ namespace gameswf
 		assert(tag_type == 4 || tag_type == 26);
 
 		place_object_2*	ch = new place_object_2;
-		ch->read(in, tag_type);
+		ch->read(in, tag_type, m->get_version());
 
 		m->add_execute_tag(ch);
 	}
@@ -1779,6 +1933,7 @@ namespace gameswf
 		virtual int	get_frame_count() const { return m_frame_count; }
 		virtual float	get_frame_rate() const { return m_movie_def->get_frame_rate(); }
 		virtual int	get_loading_frame() const { return m_loading_frame; }
+		virtual int	get_version() const { return m_movie_def->get_version(); }
 		virtual void	add_character(int id, character_def* ch) { log_error("add_character tag appears in sprite tags!\n"); }
 		virtual void	add_font(int id, font* ch) { log_error("add_font tag appears in sprite tags!\n"); }
 		virtual font*	get_font(int id) { return m_movie_def->get_font(id); }
@@ -2199,12 +2354,25 @@ namespace gameswf
 		void	on_enter_frame()
 		// Dispatch onEnterFrame handler, if any.
 		{
-			static tu_string	s_enter_frame_method_name("onEnterFrame");
-
-			as_value	method;
-			if (get_member(s_enter_frame_method_name, &method))
+			// First, check for built-in event handler.
 			{
-				call_method0(method, &m_as_environment, this);
+				as_value	method;
+				if (get_event_handler(event_id(event_id::ENTER_FRAME), &method))
+				{
+					// Dispatch.
+					call_method0(method, &m_as_environment, this);
+				}
+			}
+
+			// Check for member function.
+			{
+				static tu_string	s_enter_frame_method_name("onEnterFrame");
+
+				as_value	method;
+				if (get_member(s_enter_frame_method_name, &method))
+				{
+					call_method0(method, &m_as_environment, this);
+				}
 			}
 		}
 
@@ -2220,7 +2388,7 @@ namespace gameswf
 			m_display_list.display();
 		}
 
-		void	add_display_object(
+		character*	add_display_object(
 			Uint16 character_id,
 			const char* name,
 			Uint16 depth,
@@ -2236,7 +2404,7 @@ namespace gameswf
 			if (cdef == NULL)
 			{
 				log_error("sprite::add_display_object(): unknown cid = %d\n", character_id);
-				return;
+				return NULL;
 			}
 
 			// If we already have this object on this
@@ -2250,7 +2418,7 @@ namespace gameswf
 			{
 //				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
 				move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
-				return;
+				return NULL;
 			}
 
 			assert(cdef);
@@ -2261,6 +2429,8 @@ namespace gameswf
 				ch->set_name(name);
 			}
 			m_display_list.add_display_object(ch, depth, color_transform, matrix, ratio, clip_depth);
+
+			return ch;
 		}
 
 
@@ -2275,7 +2445,6 @@ namespace gameswf
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
-			//gameswf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
 			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio, clip_depth);
 		}
 
@@ -2822,9 +2991,11 @@ namespace gameswf
 		// at a new depth.
 		{
 			character* ch = m_display_list.get_character_by_name(name);
-			if( ch ) 
+			if (ch)
 			{
 				add_display_object(ch->get_id(), newname, depth, ch->get_cxform(), ch->get_matrix(), ch->get_ratio(), ch->get_clip_depth());
+				// @@ TODO need to duplicate ch's event handlers, and presumably other members?
+				// Probably should make a character::clone() function to handle this.
 			}
 		}
 
@@ -2835,6 +3006,8 @@ namespace gameswf
 			character* ch = m_display_list.get_character_by_name(name);
 			if( ch ) 
 			{
+				// @@ TODO: should only remove movies that were created via clone_display_object --
+				// apparently original movies, placed by anim events, are immune to this.
 				remove_display_object(ch->get_depth());
 			}
 		}

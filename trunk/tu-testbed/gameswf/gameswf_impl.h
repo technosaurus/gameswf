@@ -45,7 +45,7 @@ namespace gameswf
 		virtual character_def*	get_character_def(int id) = 0;
 
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
-
+		virtual int	get_version() const = 0;
 
 		// For use during creation.
 		virtual int	get_loading_frame() const = 0;
@@ -88,14 +88,16 @@ namespace gameswf
 		// display-list management.
 		//
 
-		virtual void	add_display_object(Uint16 character_id,
-						   const char* name,
-						   Uint16 depth,
-						   const cxform& color_transform,
-						   const matrix& mat,
-						   float ratio,
-                                                   Uint16 clip_depth)
+		virtual character*	add_display_object(
+			Uint16 character_id,
+			const char* name,
+			Uint16 depth,
+			const cxform& color_transform,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth)
 		{
+			return NULL;
 		}
 
 		virtual void	move_display_object(
@@ -289,7 +291,6 @@ namespace gameswf
 	// It represents a single active element in a movie.
 	struct character : public movie
 	{
-		// @@ stuff from display_info
 		movie*	m_parent;
 		tu_string	m_name;
 		int	m_depth;
@@ -298,6 +299,7 @@ namespace gameswf
 		float	m_ratio;
                 Uint16 	m_clip_depth;
 		bool	m_visible;
+		hash<event_id, as_value>	m_event_handlers;
 
 		character(movie* parent)
 			:
@@ -361,6 +363,16 @@ namespace gameswf
 			m.concatenate(get_cxform());
 
 			return m;
+		}
+
+		// Event handler accessors.
+		bool	get_event_handler(event_id id, as_value* result)
+		{
+			return m_event_handlers.get(id, result);
+		}
+		void	set_event_handler(event_id id, const as_value& method)
+		{
+			m_event_handlers.set(id, method);
 		}
 
 		// Movie interfaces.  By default do nothing.  sprite_instance and some others override these.
