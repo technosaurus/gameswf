@@ -32,6 +32,7 @@ OBJS = \
 	gameswf_shape.$(OBJ_EXT)	\
 	gameswf_stream.$(OBJ_EXT)	\
 	gameswf_styles.$(OBJ_EXT)	\
+	gameswf_tesselate.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)
 
 gameswf_impl.$(OBJ_EXT): gameswf.h gameswf_impl.h gameswf_types.h
