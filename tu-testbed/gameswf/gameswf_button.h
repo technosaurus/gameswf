@@ -28,8 +28,6 @@ namespace gameswf
 		cxform	m_button_cxform;
 
 		bool	read(stream* in, int tag_type, movie_definition_sub* m);
-		
-		void	resolve_character(character* inst);
 	};
 	
 

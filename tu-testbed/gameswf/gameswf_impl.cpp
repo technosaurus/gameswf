@@ -319,6 +319,7 @@ namespace gameswf
 		string_hash<int>	m_named_frames;	// 0-based frame #'s
 		string_hash< smart_ptr<resource> >	m_exports;
 		array<import_info>	m_imports;
+		array< smart_ptr<movie_definition> >	m_import_source_movies;	// hold a ref on these, to keep them alive
 
 		rect	m_frame_size;
 		float	m_frame_rate;
@@ -432,7 +433,8 @@ namespace gameswf
 			// @@ should be safe, but how can we verify
 			// it?  Compare a member function pointer, or
 			// something?
-			movie_definition_sub*	def = static_cast<movie_definition_sub*>(source_movie);
+			movie_def_impl*	def_impl = static_cast<movie_def_impl*>(source_movie);
+			movie_definition_sub*	def = static_cast<movie_definition_sub*>(def_impl);
 
 			// Iterate in reverse, since we remove stuff along the way.
 			for (int i = m_imports.size() - 1; i >= 0; i--)
@@ -460,6 +462,9 @@ namespace gameswf
 						// Add this character to our characters.
 						add_character(inf.m_character_id, ch);
 						imported = true;
+
+						// Hold a ref, to keep this source movie_definition alive.
+						m_import_source_movies.push_back(source_movie);
 					}
 					else
 					{
@@ -483,7 +488,14 @@ namespace gameswf
 
 		character_def*	get_character_def(int character_id)
 		{
-			assert(in_import_table(character_id) == false);	// make sure character_id is resolved
+#ifndef NDEBUG
+			// make sure character_id is resolved
+			if (in_import_table(character_id))
+			{
+				log_error("get_character_def(): character_id %d is still waiting to be imported\n",
+					  character_id);
+			}
+#endif // not NDEBUG
 
 			smart_ptr<character_def>	ch;
 			m_characters.get(character_id, &ch);
@@ -505,7 +517,14 @@ namespace gameswf
 
 		font*	get_font(int font_id)
 		{
-			assert(in_import_table(font_id) == false);	// make sure font_id is resolved
+#ifndef NDEBUG
+			// make sure font_id is resolved
+			if (in_import_table(font_id))
+			{
+				log_error("get_font(): font_id %d is still waiting to be imported\n",
+					  font_id);
+			}
+#endif // not NDEBUG
 
 			smart_ptr<font>	f;
 			m_fonts.get(font_id, &f);
@@ -2225,7 +2244,7 @@ namespace gameswf
 	// and displayed in the parent movie's display list.
 
 
-	struct sprite_definition : public character_def, public movie_definition_sub
+	struct sprite_definition : public movie_definition_sub, public character_def
 	{
 		movie_definition_sub*	m_movie_def;		// parent movie.
 		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
@@ -2275,12 +2294,18 @@ namespace gameswf
 		virtual void	add_import(const char* source_url, int id, const char* symbol) { assert(0); }
 		virtual void	visit_imported_movies(import_visitor* v) { assert(0); }
 		virtual void	resolve_import(const char* source_url, movie_definition* d) { assert(0); }
-		virtual character_def*	get_character_def(int id) { return m_movie_def->get_character_def(id); }
+		virtual character_def*	get_character_def(int id)
+		{
+			return m_movie_def->get_character_def(id);
+		}
 		virtual void	generate_font_bitmaps() { assert(0); }
 		virtual void	output_cached_data(tu_file* out) { assert(0); }
 		virtual void	input_cached_data(tu_file* in) { assert(0); }
 
-		movie_interface*	create_instance() { return NULL; }
+		virtual movie_interface*	create_instance()
+		{
+			return NULL;
+		}
 
 		// overloads from character_def
 		virtual character*	create_character_instance(movie* parent, int id);
