@@ -76,9 +76,7 @@ namespace gameswf
 	{
 		static array<fill_style>	s_dummy_style;	// used to pass a color on to shape_character::display()
 		static array<line_style>	s_dummy_line_style;
-
 		s_dummy_style.resize(1);
-
 
 		display_info	sub_di = di;
 		sub_di.m_matrix.concatenate(mat);
@@ -296,7 +294,7 @@ namespace gameswf
 	// runtime (by script or host).
 	{
 		rect	m_rect;
-//		array<text_glyph_record>	m_text_glyph_records;
+		array<text_glyph_record>	m_text_glyph_records;
 		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
 		array<line_style>	m_dummy_line_style;
 
@@ -392,6 +390,11 @@ namespace gameswf
 		// Overload from class character.
 		// Set our text to the given string.
 		{
+			if (new_text == m_text)
+			{
+				return true;
+			}
+
 			m_text = new_text;
 			if (m_max_length > 0
 			    && m_text.length() > m_max_length)
@@ -399,9 +402,74 @@ namespace gameswf
 				m_text.resize(m_max_length);
 			}
 
+			format_text();
+
 			return true;
 		}
 		
+
+		// Convert the characters in m_text into a series of
+		// text_glyph_records to be rendered.
+		void	format_text()
+		{
+			m_text_glyph_records.resize(0);
+
+			if (m_font == NULL) return;
+
+			text_glyph_record	rec;	// one to work on
+			rec.m_style.m_font = m_font;
+			rec.m_style.m_color = m_color;
+			rec.m_style.m_x_offset = 0;
+			rec.m_style.m_y_offset = m_text_height;
+			rec.m_style.m_text_height = m_text_height;
+			rec.m_style.m_has_x_offset = true;
+			rec.m_style.m_has_y_offset = true;
+
+			float	x = rec.m_style.m_x_offset;
+			float	y = rec.m_style.m_y_offset;
+			UNUSED(y);
+
+			float scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+
+			for (int j = 0; j < m_text.length(); j++)
+			{
+				Uint16	code = m_text[j];
+				int	index = m_font->get_glyph_index(code);
+				if (index == -1)
+				{
+					// error -- missing glyph!
+					log_error("edit_text_character::display() -- missing glyph for char %d\n", code);
+					continue;
+				}
+				text_glyph_record::glyph_entry	ge;
+				ge.m_glyph_index = index;
+				ge.m_glyph_advance = m_font->get_advance(index) * scale;	// TODO: kerning
+
+// Really need to check this per-word, not per glyph
+#if 0
+				if (m_word_wrap && x > something)
+				{
+					// TODO: align the current line
+
+					// Add the line to our output records.
+					m_text_glyph_records.push_back(rec);
+
+					// start a new record
+				}
+#endif // 0
+
+				rec.m_glyphs.push_back(ge);
+
+				x += ge.m_glyph_advance;
+
+				// TODO: alignment
+				// TODO: HTML markup
+			}
+
+			// Add this line to our output.
+			m_text_glyph_records.push_back(rec);
+		}
+
 
 		void	read(stream* in, int tag_type, movie* m)
 		{
@@ -467,7 +535,7 @@ namespace gameswf
 			if (has_text)
 			{
 				char*	str = in->read_string();
-				m_text = str;
+				set_edit_text(str);
 				delete [] str;
 			}
 		}
@@ -476,15 +544,10 @@ namespace gameswf
 		void	display(const display_info& di)
 		// Draw the dynamic string.
 		{
-			display_info	sub_di = di;
-
-			matrix	base_matrix = sub_di.m_matrix;
-			float	base_matrix_max_scale = base_matrix.get_max_scale();
-
 			if (m_border)
 			{
 				// Show white background + black bounding box.
-				render::set_matrix(base_matrix);
+				render::set_matrix(di.m_matrix);
 
 				point	coords[6];
 				coords[0] = m_rect.get_corner(0);
@@ -501,59 +564,8 @@ namespace gameswf
 				render::draw_line_strip(&coords[0].m_x, 5);
 			}
 
-			float	scale = 1.0f;
-			float	x = 0.0f;
-			float	y = 0.0f + m_text_height;
-
-			if (m_font == NULL) return;
-
-			scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
-			float	text_screen_height = base_matrix_max_scale
-				* scale
-				* 1024.0f
-				/ 20.0f
-				* get_pixel_scale();
-			bool	use_shape_glyphs =
-				text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
-			
-			m_dummy_style[0].set_color(m_color);
-
-			rgba	transformed_color = sub_di.m_color_transform.transform(m_color);
-
-			for (int j = 0; j < m_text.length(); j++)
-			{
-				Uint16	code = m_text[j];
-				int	index = m_font->get_glyph_index(code);
-				if (index == -1)
-				{
-					// error -- missing glyph!
-					log_error("edit_text_character::display() -- missing glyph for char %d\n", code);
-					continue;
-				}
-				const texture_glyph*	tg = m_font->get_texture_glyph(index);
-					
-				sub_di.m_matrix = base_matrix;
-				sub_di.m_matrix.concatenate_translation( x, y );
-				sub_di.m_matrix.concatenate_scale( scale );
-
-				if (tg && ! use_shape_glyphs)
-				{
-					fontlib::draw_glyph(sub_di.m_matrix, tg, transformed_color);
-				}
-				else
-				{
-					shape_character*	glyph = m_font->get_glyph(index);
-					
-					// Draw the character using the filled outline.
-					if (glyph) glyph->display(sub_di, m_dummy_style, m_dummy_line_style);
-				}
-
-				x += m_font->get_advance(index) * scale;
-
-				// TODO: word-wrap
-				// TODO: alignment
-				// TODO: HTML markup
-			}
+			// Draw our actual text.
+			display_glyph_records(di, matrix::identity, m_text_glyph_records);
 		}
 	};
 
