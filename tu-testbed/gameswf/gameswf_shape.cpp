@@ -940,6 +940,44 @@ namespace gameswf
 	}
 
 
+	static void	show_fill_number(const point& p, int fill_number)
+	{
+		// We're inside a glBegin(GL_LINES)
+
+		// Eh, let's do it in binary, least sig four bits...
+		float	x = p.m_x;
+		float	y = p.m_y;
+
+		int	mask = 8;
+		while (mask)
+		{
+			if (mask & fill_number)
+			{
+				// Vert line --> 1.
+				glVertex2f(x, y - 40.0f);
+				glVertex2f(x, y + 40.0f);
+			}
+			else
+			{
+				// Rectangle --> 0.
+				glVertex2f(x - 10.0f, y - 40.0f);
+				glVertex2f(x + 10.0f, y - 40.0f);
+
+				glVertex2f(x + 10.0f, y - 40.0f);
+				glVertex2f(x + 10.0f, y + 40.0f);
+
+				glVertex2f(x - 10.0f, y + 40.0f);
+				glVertex2f(x + 10.0f, y + 40.0f);
+
+				glVertex2f(x - 10.0f, y - 40.0f);
+				glVertex2f(x - 10.0f, y + 40.0f);
+			}
+			x += 40.0f;
+			mask >>= 1;
+		}
+	}
+
+
 	static void	debug_display_shape_paths(
 		const matrix& mat,
 		float object_space_max_error,
@@ -1008,6 +1046,10 @@ namespace gameswf
 						   p0.m_y);
 					glVertex2f(p0.m_x - dir.m_x * ARROW_MAG - right.m_x * ARROW_MAG,
 						   p0.m_y - dir.m_y * ARROW_MAG - right.m_y * ARROW_MAG);
+
+					show_fill_number(point(p0.m_x - right.m_x * ARROW_MAG * 4,
+							       p0.m_y - right.m_y * ARROW_MAG * 4),
+							 p.m_fill0);
 				}
 				if (p.m_fill1 != 0)
 				{
@@ -1016,6 +1058,10 @@ namespace gameswf
 						   p0.m_y);
 					glVertex2f(p0.m_x - dir.m_x * ARROW_MAG + right.m_x * ARROW_MAG,
 						   p0.m_y - dir.m_y * ARROW_MAG + right.m_y * ARROW_MAG);
+
+					show_fill_number(point(p0.m_x + right.m_x * ARROW_MAG * 4,
+							       p0.m_y + right.m_y * ARROW_MAG * 4),
+							 p.m_fill1);
 				}
 			}}
 			glEnd();
