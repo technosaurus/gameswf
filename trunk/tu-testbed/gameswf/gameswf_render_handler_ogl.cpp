@@ -39,7 +39,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	
 	void set_antialiased(bool enable)
 	{
-	    m_enable_antialias = enable;
+		m_enable_antialias = enable;
 	}
 
 	static void make_next_miplevel(int* width, int* height, Uint8* data)
@@ -101,10 +101,12 @@ struct render_handler_ogl : public gameswf::render_handler
 		const gameswf::bitmap_info*	m_bitmap_info;
 		gameswf::matrix	m_bitmap_matrix;
 		gameswf::cxform	m_bitmap_color_transform;
+		bool	m_has_nonzero_bitmap_additive_color;
 
 		fill_style()
 			:
-			m_mode(INVALID)
+			m_mode(INVALID),
+			m_has_nonzero_bitmap_additive_color(false)
 		{
 		}
 
@@ -134,11 +136,10 @@ struct render_handler_ogl : public gameswf::render_handler
 					// Set up the texture for rendering.
 
 					{
-						// For the moment we can only handle the modulate part of the
-						// color transform...
-						// How would we handle any additive part?  Realistically we
-						// need to use a pixel shader.	Although there is a GL_COLOR_SUM
-						// extension that can set an offset for R,G,B (but apparently not A).
+						// Do the modulate part of the color
+						// transform in the first pass.  The
+						// additive part, if any, needs to
+						// happen in a second pass.
 						glColor4f(m_bitmap_color_transform.m_[0][0],
 							  m_bitmap_color_transform.m_[1][0],
 							  m_bitmap_color_transform.m_[2][0],
@@ -185,6 +186,46 @@ struct render_handler_ogl : public gameswf::render_handler
 			}
 		}
 
+
+		bool	needs_second_pass() const
+		// Return true if we need to do a second pass to make
+		// a valid color.  This is for cxforms with additive
+		// parts; this is the simplest way (that we know of)
+		// to implement an additive color with stock OpenGL.
+		{
+			if (m_mode == BITMAP_WRAP
+			    || m_mode == BITMAP_CLAMP)
+			{
+				return m_has_nonzero_bitmap_additive_color;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		void	apply_second_pass() const
+		// Set OpenGL state for a necessary second pass.
+		{
+			assert(needs_second_pass());
+
+			glDisable(GL_TEXTURE_2D);
+			glColor4f(
+				m_bitmap_color_transform.m_[0][1] / 255.0f,
+				m_bitmap_color_transform.m_[1][1] / 255.0f,
+				m_bitmap_color_transform.m_[2][1] / 255.0f,
+				m_bitmap_color_transform.m_[3][1] / 255.0f
+				);
+
+			glBlendFunc(GL_ONE, GL_ONE);
+		}
+
+		void	cleanup_second_pass() const
+		{
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		}
+
+
 		void	disable() { m_mode = INVALID; }
 		void	set_color(gameswf::rgba color) { m_mode = COLOR; m_color = color; }
 		void	set_bitmap(const gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm, const gameswf::cxform& color_transform)
@@ -194,6 +235,18 @@ struct render_handler_ogl : public gameswf::render_handler
 			m_bitmap_info = bi;
 			m_bitmap_matrix = m;
 			m_bitmap_color_transform = color_transform;
+
+			if (m_bitmap_color_transform.m_[0][1] > 1.0f
+			    || m_bitmap_color_transform.m_[1][1] > 1.0f
+			    || m_bitmap_color_transform.m_[2][1] > 1.0f
+			    || m_bitmap_color_transform.m_[3][1] > 1.0f)
+			{
+				m_has_nonzero_bitmap_additive_color = true;
+			}
+			else
+			{
+				m_has_nonzero_bitmap_additive_color = false;
+			}
 		}
 		bool	is_valid() const { return m_mode != INVALID; }
 	};
@@ -389,7 +442,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 	static void	apply_color(const gameswf::rgba& c)
-	// multiply current matrix with opengl matrix
+	// Set the given color.
 	{
 		glColor4ub(c.m_r, c.m_g, c.m_b, c.m_a);
 	}
@@ -453,6 +506,14 @@ struct render_handler_ogl : public gameswf::render_handler
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
 		glDrawArrays(GL_TRIANGLES, 0, vertex_count);
+
+		if (m_current_styles[LEFT_STYLE].needs_second_pass())
+		{
+			m_current_styles[LEFT_STYLE].apply_second_pass();
+			glDrawArrays(GL_TRIANGLES, 0, vertex_count);
+			m_current_styles[LEFT_STYLE].cleanup_second_pass();
+		}
+
 		glDisableClientState(GL_VERTEX_ARRAY);
 
 		glPopMatrix();
