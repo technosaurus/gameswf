@@ -364,23 +364,25 @@ public:
 		return &m_buffer[0];
 	}
 
-	operator=(const char* str)
+	// operator= returns void; if you want to know why, ask Charles Bloom :)
+	// (executive summary: a = b = c is an invitation to bad code)
+	void	operator=(const char* str)
 	{
 		m_buffer.resize(strlen(str) + 1);
 		strcpy(&m_buffer[0], str);
 	}
 
-	operator=(const tu_string& str)
+	void	operator=(const tu_string& str)
 	{
 		m_buffer = str.m_buffer;
 	}
 
-	operator==(const char* str) const
+	bool	operator==(const char* str) const
 	{
 		return strcmp(*this, str) == 0;
 	}
 
-	operator==(const tu_string& str) const
+	bool	operator==(const tu_string& str) const
 	{
 		return strcmp(*this, str) == 0;
 	}

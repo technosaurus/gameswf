@@ -140,6 +140,9 @@ namespace gameswf
 			m_is_bold = (in->read_uint(1) != 0);
 			Uint8	reserved = in->read_u8();
 
+			// Inhibit warning.
+			reserved = reserved;
+
 			m_name = in->read_string_with_length();
 
 			int	glyph_count = in->read_u16();

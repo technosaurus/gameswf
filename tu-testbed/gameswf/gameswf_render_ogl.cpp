@@ -241,7 +241,7 @@ namespace render
 			assert(h == height);
 #endif // not NDEBUG
 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
 
 			// Build mips.
 			int	level = 1;
@@ -1124,16 +1124,16 @@ namespace render
 					// Here's what we have:
 					//
 					//    a   +--------------+ c
-					//       /                \
-					//      /                  \
+					//       /                \ 
+					//      /                  \ 
 					//   b +------------------- + d
 					//
 					// We'll turn it into:
 					//
 					//               e
 					//    a   +------+-------+ c
-					//       /       |        \
-					//      /         |        \
+					//       /       |        \ 
+					//      /         |        \ 
 					//   b +----------+-------- + d
 					//                f
 					//
