@@ -388,21 +388,8 @@ namespace gameswf
 
 		character_def*	get_character_def(int character_id)
 		{
-			if (character_id == 29)
-			{
-				character_id = character_id;//xxxxxxxx break here
-			}
-
 			character_def*	ch = NULL;
-			hash<int,character_def*>::iterator	it = m_characters.find(character_id);
-			if (it != m_characters.end())
-			{
-				hash<int,character_def*>::entry*	ent = &(*it);
-				ent = ent;
-
-				ch = it->second;
-			}
-//			m_characters.get(character_id, &ch);
+			m_characters.get(character_id, &ch);
 			return ch;
 		}
 
