@@ -6,6 +6,7 @@
 // Code for the text tags.
 
 
+#include "base/utf8.h"
 #include "gameswf_impl.h"
 #include "gameswf_shape.h"
 #include "gameswf_stream.h"
@@ -698,9 +699,11 @@ namespace gameswf
 			int	last_space_glyph = -1;
 			int	last_line_start_record = 0;
 
-			for (int j = 0; j < m_text.length(); j++)
+			const char*	text = &m_text[0];
+//			for (int j = 0; j < m_text.length(); j++)
+			while (Uint32 code = utf8::decode_next_unicode_character(&text))
 			{
-// @@ ??
+// @@ try to truncate overflow text??
 #if 0
 				if (y + m_def->m_font->get_descent() * scale > m_def->m_rect.height())
 				{
@@ -710,10 +713,10 @@ namespace gameswf
 				}
 #endif // 0
 
-				Uint16	code = m_text[j];
+				//Uint16	code = m_text[j];
 
-				x += m_def->m_font->get_kerning_adjustment(last_code, code) * scale;
-				last_code = code;
+				x += m_def->m_font->get_kerning_adjustment(last_code, (int) code) * scale;
+				last_code = (int) code;
 
 				if (code == 13 || code == 10)
 				{
@@ -753,7 +756,7 @@ namespace gameswf
 					last_space_glyph = rec.m_glyphs.size();
 				}
 
-				int	index = m_def->m_font->get_glyph_index(code);
+				int	index = m_def->m_font->get_glyph_index((Uint16) code);
 				if (index == -1)
 				{
 					// error -- missing glyph!
