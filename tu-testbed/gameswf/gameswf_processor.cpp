@@ -62,14 +62,14 @@ static void	print_usage()
 		"\n"
 		"usage: gameswf_processor [options] [swf files to process...]\n"
 		"\n"
-		"Preprocesses the given SWF movie files.  Optionally insert preprocessed shape\n"
-		"and font data back into the input files, so the SWF files can be loaded\n"
+		"Preprocesses the given SWF movie files.  Optionally write preprocessed shape\n"
+		"and font data to cache files, so the associated SWF files can be loaded\n"
 		"faster by gameswf.\n"
 		"\n"
 		"options:\n"
 		"\n"
 		"  -h          Print this info.\n"
-		"  -a          Append data into the input files.\n"
+		"  -w          Write a .gsc file with preprocessed info, for each input file.\n"
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -vp         Be verbose about movie parsing\n"
 		"  -va         Be verbose about ActionScript\n"
@@ -88,7 +88,7 @@ static gameswf::movie_definition*	play_movie(const char* filename);
 static int	write_cache_file(const movie_data& md);
 
 
-static bool	s_append = false;
+static bool	s_do_output = false;
 static bool	s_stop_on_errors = true;
 
 
@@ -110,10 +110,10 @@ int	main(int argc, char *argv[])
 				print_usage();
 				exit(1);
 			}
-			else if (argv[arg][1] == 'a')
+			else if (argv[arg][1] == 'w')
 			{
-				// Append cached data to the input files.
-				s_append = true;
+				// Write cache files.
+				s_do_output = true;
 			}
 			else if (argv[arg][1] == 'v')
 			{
@@ -173,7 +173,7 @@ int	main(int argc, char *argv[])
 	}
 
 	// Now append processed data.
-	if (s_append)
+	if (s_do_output)
 	{
 		for (int i = 0, n = data.size(); i < n; i++)
 		{
