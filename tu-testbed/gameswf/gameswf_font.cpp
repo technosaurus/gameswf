@@ -37,9 +37,15 @@ namespace gameswf
 		// Iterate over m_glyphs and free the shapes.
 		for (int i = 0; i < m_glyphs.size(); i++)
 		{
-			delete m_glyphs[i];
+			m_glyphs[i]->drop_ref();
 		}
 		m_glyphs.resize(0);
+
+		// Delete the texture glyphs.
+		{for (int i = 0, n = m_texture_glyphs.size(); i < n; i++)
+		{
+			delete m_texture_glyphs[i];
+		}}
 
 		// Delete the name string.
 		if (m_name)
@@ -97,6 +103,7 @@ namespace gameswf
 	{
 		assert(tag_type == 10 || tag_type == 48);
 
+		// No add_ref() here, to avoid cycle.  m_owning_movie is our owner, so it has a ref to us.
 		m_owning_movie = m;
 
 		if (tag_type == 10)

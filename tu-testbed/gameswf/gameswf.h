@@ -35,7 +35,6 @@ namespace gameswf
 	struct resource;
 	struct rgba;
 	struct sound_handler;
-	struct sound_sample;
 	struct stream;
 	
 	//
@@ -110,7 +109,7 @@ namespace gameswf
 	// This is the client program's interface to the definition of
 	// a movie (i.e. the shared constant source info).
 	//
-	struct movie_definition : public ref_counted
+	struct movie_definition : virtual public ref_counted
 	{
 		virtual int	get_width() const = 0;
 		virtual int	get_height() const = 0;
@@ -132,7 +131,7 @@ namespace gameswf
 	// This is the client program's interface to an instance of a
 	// movie (i.e. an independent stateful live movie).
 	//
-	struct movie_interface : public ref_counted
+	struct movie_interface : virtual public ref_counted
 	{
 		virtual movie_definition*	get_movie_definition() = 0;
 
@@ -283,6 +282,7 @@ namespace gameswf
 	namespace fontlib
 	{
 		// For accessing the fonts in the library.
+		void	clear();
 		int	get_font_count();
 		font*	get_font(int index);
 		font*	get_font(const char* name);
@@ -448,7 +448,7 @@ namespace gameswf
 	
 	// You must define a subclass of bitmap info and render_handler, and pass an instance to
 	// set_render_handler().
-	struct bitmap_info
+	struct bitmap_info : virtual public ref_counted
 	{
 		unsigned int	m_texture_id;
 		int	m_original_width;

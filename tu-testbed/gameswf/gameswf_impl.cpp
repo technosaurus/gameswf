@@ -175,6 +175,7 @@ namespace gameswf
 
 	ref_counted::~ref_counted()
 	{
+		assert(m_ref_count == 0);
 	}
 
 	void	ref_counted::add_ref()
@@ -289,6 +290,61 @@ namespace gameswf
 		{
 		}
 
+		~movie_def_impl()
+		{
+			// Release our characters.
+			{for (hash<int, character_def*>::iterator it = m_characters.begin();
+			     it != m_characters.end();
+			     ++it)
+			{
+				it->second->drop_ref();
+			}}
+
+			// Release our fonts
+			{for (hash<int, font*>::iterator it = m_fonts.begin();
+			      it != m_fonts.end();
+			      ++it)
+			{
+				it->second->drop_ref();
+			}}
+
+			// Release our bitmap characters
+			{for (hash<int, bitmap_character_def*>::iterator it = m_bitmap_characters.begin();
+			     it != m_bitmap_characters.end();
+			     ++it)
+			{
+				it->second->drop_ref();
+			}}
+
+			// Release our sound samples.
+			{for (hash<int, sound_sample*>::iterator it = m_sound_samples.begin();
+			     it != m_sound_samples.end();
+			     ++it)
+			{
+				it->second->drop_ref();
+			}}
+
+			// Release our playlist data.
+			{for (int i = 0, n = m_playlist.size(); i < n; i++)
+			{
+				for (int j = 0, m = m_playlist[i].size(); j < m; j++)
+				{
+					delete m_playlist[i][j];
+				}
+			}}
+
+			// Release our resources.
+			{for (string_hash<resource*>::iterator it = m_exports.begin();
+			      it != m_exports.end();
+			      ++it)
+			{
+				it->second->drop_ref();
+			}}
+
+			assert(m_jpeg_in == NULL);	// It's supposed to be cleaned up in read()
+		}
+
+
 		movie_interface*	create_instance();
 
 		// ...
@@ -326,13 +382,27 @@ namespace gameswf
 		void	add_character(int character_id, character_def* c)
 		{
 			assert(c);
+			c->add_ref();
 			m_characters.add(character_id, c);
 		}
 
 		character_def*	get_character_def(int character_id)
 		{
+			if (character_id == 29)
+			{
+				character_id = character_id;//xxxxxxxx break here
+			}
+
 			character_def*	ch = NULL;
-			m_characters.get(character_id, &ch);
+			hash<int,character_def*>::iterator	it = m_characters.find(character_id);
+			if (it != m_characters.end())
+			{
+				hash<int,character_def*>::entry*	ent = &(*it);
+				ent = ent;
+
+				ch = it->second;
+			}
+//			m_characters.get(character_id, &ch);
 			return ch;
 		}
 
@@ -344,6 +414,7 @@ namespace gameswf
 		void	add_font(int font_id, font* f)
 		{
 			assert(f);
+			f->add_ref();
 			m_fonts.add(font_id, f);
 		}
 
@@ -363,6 +434,8 @@ namespace gameswf
 
 		void	add_bitmap_character(int character_id, bitmap_character_def* ch)
 		{
+			assert(ch);
+			ch->add_ref();
 			m_bitmap_characters.add(character_id, ch);
 		}
 
@@ -375,6 +448,8 @@ namespace gameswf
 
 		virtual void	add_sound_sample(int character_id, sound_sample* sam)
 		{
+			assert(sam);
+			sam->add_ref();
 			m_sound_samples.add(character_id, sam);
 		}
 
@@ -1145,6 +1220,16 @@ namespace gameswf
 		{
 		}
 
+		~bitmap_character_rgb()
+		{
+			if (m_image) { delete m_image; }
+			if (m_bitmap_info)
+			{
+				m_bitmap_info->drop_ref();
+				m_bitmap_info = NULL;
+			}
+		}
+
 		gameswf::bitmap_info*	get_bitmap_info()
 		{
 			if (m_image != 0)
@@ -1164,7 +1249,17 @@ namespace gameswf
 		image::rgba*	m_image;
 		gameswf::bitmap_info*	m_bitmap_info;
 
-		bitmap_character_rgba() : m_image(0) {}
+		bitmap_character_rgba() : m_image(0), m_bitmap_info(0) {}
+
+		~bitmap_character_rgba()
+		{
+			if (m_image) { delete m_image; }
+			if (m_bitmap_info)
+			{
+				m_bitmap_info->drop_ref();
+				m_bitmap_info = NULL;
+			}
+		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{

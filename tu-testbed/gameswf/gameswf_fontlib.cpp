@@ -999,6 +999,16 @@ namespace fontlib
 	}
 
 
+	void	clear()
+	// Release all the fonts we know about.
+	{
+		for (int i = 0, n = s_fonts.size(); i < n; i++)
+		{
+			s_fonts[i]->drop_ref();
+		}
+	}
+
+
 	int	get_font_count()
 	// Return the number of fonts in our library.
 	{
@@ -1047,6 +1057,8 @@ namespace fontlib
 	void	add_font(font* f)
 	// Add the given font to our library.
 	{
+		assert(f);
+
 #ifndef NDEBUG
 		// Make sure font isn't already in the list.
 		for (int i = 0; i < s_fonts.size(); i++)
@@ -1055,6 +1067,7 @@ namespace fontlib
 		}
 #endif // not NDEBUG
 
+		f->add_ref();
 		s_fonts.push_back(f);
 	}
 

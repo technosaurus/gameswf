@@ -33,6 +33,15 @@ namespace gameswf
 		point	m_uv_origin;	// the origin of the glyph box, in uv coords
 
 		texture_glyph() : m_bitmap_info(NULL) {}
+
+		~texture_glyph()
+		{
+			if (m_bitmap_info)
+			{
+				m_bitmap_info->drop_ref();
+				m_bitmap_info = NULL;
+			}
+		}
 	};
 
 

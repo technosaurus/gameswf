@@ -643,10 +643,27 @@ public:
 		}
 		return iterator(this, i0, 0);
 	}
-	iterator	end() { return iterator(this, m_table.size(), 0); }
+	iterator	end() { return iterator(NULL, 0, 0); }
 
 	const_iterator	begin() const { return const_cast<hash*>(this)->begin(); }
 	const_iterator	end() const { return const_cast<hash*>(this)->end(); }
+
+	iterator	find(const T& key)
+	{
+		if (m_table.size() == 0) {
+			return iterator(NULL, 0, 0);
+		}
+
+		size_t	hash_value = hash_functor()(key);
+		int	index = hash_value & m_size_mask;	// % m_table.size();
+		for (int i = 0; i < m_table[index].size(); i++) {
+			if (m_table[index][i].first == key) {
+				return iterator(this, index, i);
+			}
+		}
+		return iterator(NULL, 0, 0);
+	}
+	const_iterator	find(const T& key) const { return const_cast<hash*>(this)->find(key); }
 
 private:
 	int	m_entry_count;
