@@ -208,16 +208,27 @@ int	main()
 	paths.resize(paths.size() + 1);
 	make_square(&paths.back(), 1100);
 
-	// Make a little square inside.
+	// Another square.
 	paths.resize(paths.size() + 1);
-	make_square(&paths.back(), 100);
-	reverse_path(&paths.back());
+	make_square(&paths.back(), 1100);
+	offset_path(&paths.back(), 1200, 100);
+#endif
 
-	// Make a little star island.
+#if 1
+	// Make a square.
 	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 50, 250, 3);
-	offset_path(&paths.back(), -300, -300);
-	reverse_path(&paths.back());
+	make_square(&paths.back(), 1100);
+
+// 	// Make a little square inside.
+// 	paths.resize(paths.size() + 1);
+// 	make_square(&paths.back(), 100);
+// 	reverse_path(&paths.back());
+
+// 	// Make a little star island.
+// 	paths.resize(paths.size() + 1);
+// 	make_star(&paths.back(), 50, 250, 3);
+// 	offset_path(&paths.back(), -300, -300);
+// 	reverse_path(&paths.back());
 
 	// Make a circle.
 	paths.resize(paths.size() + 1);
@@ -225,13 +236,18 @@ int	main()
 	offset_path(&paths.back(), 300, 300);
 	reverse_path(&paths.back());
 
-// 	// Make a circle inside the circle.
-// 	paths.resize(paths.size() + 1);
-// 	make_star(&paths.back(), 50, 50, 8);
-// 	offset_path(&paths.back(), 300, 300);
+	// Make a circle inside the circle.
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 50, 50, 5);
+	offset_path(&paths.back(), 300, 300);
+
+	// Make a circle outside the big square.
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 50, 50, 8);
+	offset_path(&paths.back(), 1200, 300);
 #endif
 
-#if 1
+#if 0
 	// Make a star.
  	static const int	STAR_POINTS = 6;
  	static const float	INNER_RADIUS = 1000;

@@ -614,7 +614,17 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 		// in the cone(v[i-2],v[i-1],v[i]) (not strictly necessary,
 		// but used for efficiency and robustness)
 
-		if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v))
+		if ((pv_prev->m_v == pv_next->m_v)
+		    || (pvi->m_v == pv_next->m_v)
+		    || (pvi->m_v == pv_prev->m_v))
+		{
+			// Degenerate case: zero-area triangle.
+			//
+			// Treat this as an ear; we definitely want to
+			// get rid of it.
+			ear_list->push_back(vi);
+		}
+		else if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v))
 		{
 			if (! triangle_contains_reflex_vertex(sorted_verts, pvi->m_prev, vi, pvi->m_next))
 			{
@@ -1224,7 +1234,7 @@ static void compute_triangulation(
 				// debug hack: emit current state of P
 				static int s_tricount = 0;
 				s_tricount++;
-				if (s_tricount >= 14)
+				if (s_tricount >= 5)
 				{
 					result->resize(0);	// clear existing junk.
 
