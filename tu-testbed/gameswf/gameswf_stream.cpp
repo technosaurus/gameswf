@@ -132,13 +132,14 @@ namespace gameswf
 		{
 			buffer.push_back(c);
 		}
+		buffer.push_back(0);
 
 		if (buffer.size() == 0)
 		{
 			return NULL;
 		}
 
-		char*	retval = new char[buffer.size() + 1];
+		char*	retval = new char[buffer.size()];
 		strcpy(retval, &buffer[0]);
 
 		return retval;
