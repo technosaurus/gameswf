@@ -14,6 +14,26 @@
 #include <SDL/SDL_endian.h>
 
 
+// assert_else, for asserting with associated recovery code.  Follow
+// "assert_else( predicate )" with a block of code to execute when the
+// predicate is false.  In debug builds this code will be executed if
+// you step past the assert.  In release builds this code there's no
+// assert, but the recovery block will be executed when predicate is
+// false.
+//
+// usage:
+//	assert_else( p ) {
+//		block of recovery code for when p is false;
+//	}
+//
+//	assert_else( p );	// no recovery code.
+//
+//	assert_else( p ) return;	// recovery code doesn't need to be a block.
+//
+#define assert_else(p)	\
+	if ( !(p) && (assert(0), 1) )
+
+
 #ifndef M_PI
 #define M_PI 3.141592654
 #endif // M_PI
