@@ -93,7 +93,13 @@ void	my_draw_bitmap(FT_Bitmap* bitmap, int left_x, int top_y )
 		int	x = sw;
 		while (x-- > 0)
 		{
-			*dst++ = 255 - *src++;
+			uint8	d = *dst;
+			uint8	s = 255 - *src++;
+			if (s < d)
+			{
+				*dst = s;
+			}
+			dst++;
 		}
 	}
 }
