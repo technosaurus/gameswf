@@ -356,7 +356,7 @@ namespace fontlib
 		float	offset_x = 0.f;
 		float	offset_y = s_rendering_box;
 		rect	glyph_bounds;
-		sh->get_bounds(&glyph_bounds);
+		sh->compute_bound(&glyph_bounds);
 		if (glyph_bounds.m_x_min < 0)
 		{
 			offset_x = - glyph_bounds.m_x_min;
@@ -448,7 +448,7 @@ namespace fontlib
 				{
 					// get a rough estimation of glyph size
 					rect	glyph_bounds;
-					sh->get_bounds(&glyph_bounds);
+					sh->compute_bound(&glyph_bounds);
 
 					int w = (int) glyph_bounds.width();
 					int h = (int) glyph_bounds.height();

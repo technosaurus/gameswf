@@ -111,16 +111,19 @@ namespace gameswf
 		void	display(const display_info& di, const array<fill_style>& fill_styles) const;
 		void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
 		bool	point_test(float x, float y);
-		void	get_bounds(rect* r) const;
+		const rect&	get_bound() const { return m_bound; }
+		void	compute_bound(rect* r) const;
 
-	//private:
+	private:
+		void	sort_and_clean_meshes(int display_number) const;
+		
 		rect	m_bound;
 		array<fill_style>	m_fill_styles;
 		array<line_style>	m_line_styles;
 		array<path>	m_paths;
 
 		// Cached pre-tesselated meshes.
-		mutable array<mesh_set>	m_cached_meshes;
+		mutable array<mesh_set*>	m_cached_meshes;
 	};
 
 }	// end namespace gameswf

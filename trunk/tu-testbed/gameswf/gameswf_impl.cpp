@@ -1363,9 +1363,9 @@ namespace gameswf
 		ch->read(in, tag_type, true, m);
 
 		IF_DEBUG(printf("shape_loader: id = %d, rect ", character_id);
-			 ch->m_bound.print(stdout));
-		IF_DEBUG(printf("shape_loader: fill style ct = %d, line style ct = %d, path ct = %d\n",
-				ch->m_fill_styles.size(), ch->m_line_styles.size(), ch->m_paths.size()));
+			 ch->get_bound().print(stdout));
+//		IF_DEBUG(printf("shape_loader: fill style ct = %d, line style ct = %d, path ct = %d\n",
+//				ch->m_fill_styles.size(), ch->m_line_styles.size(), ch->m_paths.size()));
 
 		m->add_character(character_id, ch);
 	}

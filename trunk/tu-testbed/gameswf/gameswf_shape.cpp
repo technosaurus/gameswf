@@ -373,6 +373,11 @@ namespace gameswf
 
 	shape_character::~shape_character()
 	{
+		// Free our mesh_sets.
+		for (int i = 0; i < m_cached_meshes.size(); i++)
+		{
+			delete m_cached_meshes[i];
+		}
 	}
 
 
@@ -611,11 +616,18 @@ namespace gameswf
 		bool rendered = false;
 		for (int i = 0; i < m_cached_meshes.size(); i++)
 		{
-			if (m_cached_meshes[i].get_error_tolerance() < object_space_max_error)
+			if (object_space_max_error > m_cached_meshes[i]->get_error_tolerance() * 3.0f)
+			{
+				// Mesh is too high-res; the remaining
+				// meshes are higher res, so give up.
+				break;
+			}
+
+			if (object_space_max_error > m_cached_meshes[i]->get_error_tolerance())
 			{
 				// Do it.
-				m_cached_meshes[i].display(di, fill_styles);
-				m_cached_meshes[i].set_last_frame_rendered(di.m_display_number);
+				m_cached_meshes[i]->display(di, fill_styles);
+				m_cached_meshes[i]->set_last_frame_rendered(di.m_display_number);
 				rendered = true;
 				break;
 			}
@@ -624,53 +636,65 @@ namespace gameswf
 		if (rendered == false)
 		{
 			// Construct a new mesh to handle this error tolerance.
-			mesh_set	m(this, object_space_max_error * 0.5f);
+			mesh_set*	m = new mesh_set(this, object_space_max_error * 0.75f);
 			m_cached_meshes.push_back(m);
-			m.display(di, fill_styles);
-			m.set_last_frame_rendered(di.m_display_number);
+			m->display(di, fill_styles);
+			m->set_last_frame_rendered(di.m_display_number);
+
+			sort_and_clean_meshes(di.m_display_number);
 		}
+	}
 
-		// TODO clean out mesh_sets that haven't been used recently...
-		// (need to keep them sorted from high error to low error)
 
-#if 0
+	static int	sort_by_decreasing_error(const void* A, const void* B)
+	{
+		const mesh_set*	a = (const mesh_set*) A;
+		const mesh_set*	b = (const mesh_set*) B;
 
-		gameswf::render::push_apply_matrix(di.m_matrix);
-		gameswf::render::push_apply_cxform(di.m_color_transform);
-
-		gameswf::render::begin_shape();
-		for (int i = 0; i < m_paths.size(); i++)
+		if (a->get_error_tolerance() > b->get_error_tolerance())
 		{
-			if (m_paths[i].m_new_shape == true)
+			return 1;
+		}
+		else if (a->get_error_tolerance() < b->get_error_tolerance())
+		{
+			return -1;
+		}
+		else
+		{
+			return 0;
+		}
+	}
+
+
+	void	shape_character::sort_and_clean_meshes(int display_number) const
+	// Maintain cached meshes.  Clean out mesh_sets that haven't
+	// been used recently, and make sure they're sorted from high
+	// error to low error.
+	{
+		// Remove meshes that haven't been used in a long
+		// time.
+		for (int i = 0; i < m_cached_meshes.size(); i++)
+		{
+			mesh_set*	m = m_cached_meshes[i];
+			if (display_number - m->get_last_frame_rendered() > 60)
 			{
-				// @@ this is awful -- need a better shape loader!!!
-				gameswf::render::end_shape();
-				gameswf::render::begin_shape();
-			}
-			else
-			{
-				m_paths[i].display(di, fill_styles, m_line_styles);
+				// We haven't used this mesh in a while, so toss it.
+				m_cached_meshes[i] = m_cached_meshes.back();
+				m_cached_meshes.resize(m_cached_meshes.size() - 1);
+				delete m;
+				i--;
 			}
 		}
-#if 0
-		// Show bounding box.
-		gameswf::render::line_style_color(rgba(0, 0, 0, 255));
-		gameswf::render::fill_style_disable(0);
-		gameswf::render::fill_style_disable(1);
-		rect	bounds;
-		get_bounds(&bounds);
-		gameswf::render::begin_path(bounds.m_x_min, bounds.m_y_min);
-		gameswf::render::add_line_segment(bounds.m_x_max, bounds.m_y_min);
-		gameswf::render::add_line_segment(bounds.m_x_max, bounds.m_y_max);
-		gameswf::render::add_line_segment(bounds.m_x_min, bounds.m_y_max);
-		gameswf::render::add_line_segment(bounds.m_x_min, bounds.m_y_min);
-		gameswf::render::end_path();
-#endif // 0
-		gameswf::render::end_shape();
 
-		gameswf::render::pop_cxform();
-		gameswf::render::pop_matrix();
-#endif // 0
+		// Re-sort.
+		if (m_cached_meshes.size() > 0)
+		{
+			qsort(
+				&m_cached_meshes[0],
+				m_cached_meshes.size(),
+				sizeof(m_cached_meshes[0]),
+				sort_by_decreasing_error);
+		}
 	}
 
 		
@@ -720,7 +744,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character::get_bounds(rect* r) const
+	void	shape_character::compute_bound(rect* r) const
 	// Find the bounds of this shape, and store them in
 	// the given rectangle.
 	{

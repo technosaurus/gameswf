@@ -380,7 +380,7 @@ namespace gameswf
 //		IF_DEBUG(print(stdout));
 	}
 
-	void	rect::print(FILE* out)
+	void	rect::print(FILE* out) const
 	// Debug spew.
 	{
 		fprintf(out, "xmin = %g, ymin = %g, xmax = %g, ymax = %g\n",
@@ -415,7 +415,7 @@ namespace gameswf
 #endif // 0
 
 	
-	bool	rect::point_test(float x, float y)
+	bool	rect::point_test(float x, float y) const
 	// Return true if the specified point is inside this rect.
 	{
 		if (x < m_x_min
