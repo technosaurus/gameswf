@@ -12,11 +12,17 @@ ifndef TU_TESTBED_COMPILER
 		OSTYPE = $(shell uname)
 	endif
 	OSTYPE := $(patsubst Linux, linux, $(OSTYPE))
+	OSTYPE := $(patsubst Darwin, darwin, $(OSTYPE))
+
+	# default to msvc
+	TU_TESTBED_COMPILER = msvc
 
 	ifneq (,$(findstring linux, $(OSTYPE)))
 		TU_TESTBED_COMPILER = gcc
-	else
-		TU_TESTBED_COMPILER = msvc
+	endif
+
+	ifneq (,$(findstring darwin, $(OSTYPE)))
+		TU_TESTBED_COMPILER = gcc3
 	endif
 endif
 
@@ -72,9 +78,9 @@ else
 	CC_DEBUG_FLAGS := -Ox -DNDEBUG=1
 	MAKE_DLL := cl /nologo /LD
 endif
+endif
 
-
-else
+ifeq ($(TU_TESTBED_COMPILER), gcc)
 
 # GCC
 CC := $(TU_TESTBED_COMPILER)
@@ -119,6 +125,51 @@ endif
 
 endif # GCC
 
+ifeq ($(TU_TESTBED_COMPILER), gcc3)
+# make configuration for the tu-testbed engine library
+# use this if compiling for linux
+
+CC := $(TU_TESTBED_COMPILER)
+AR := ar -r -s
+LIB_OUT_FLAG :=
+LIB_PRE := lib
+LIB_EXT := a
+OBJ_EXT := o
+EXE_EXT :=
+DLL_EXT := so
+LIBS := -lSDL -lm -lstdc++
+DLL_LIBS := -ldl
+SDL_CFLAGS := $(shell sdl-config --cflags)
+SDL_LDFLAGS := $(shell sdl-config --libs)
+CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -fPIC -Wall
+LDFLAGS := -lstdc++
+MAKE_DLL := gcc3 -shared
+
+# On Unix-like machines, these libraries are usually installed in
+# standard locations.
+
+LIBPNG_DIR := $(TOP)/../libpng
+LIBPNG_INCLUDE := -I$(LIBPNG_DIR)
+LIBPNG := $(LIBPNG_DIR)/libpng.$(LIB_EXT)
+
+ZLIB_DIR := $(TOP)/../zlib
+ZLIB_INCLUDE := -I$(ZLIB_DIR)
+ZLIB := $(ZLIB_DIR)/libz.$(LIB_EXT)
+
+JPEGLIB_DIR := $(TOP)/../jpeg-6b
+JPEGLIB_INCLUDE := -I$(JPEGLIB_DIR)
+JPEGLIB := $(JPEGLIB_DIR)/libjpeg.$(LIB_EXT)
+
+
+ifeq ($(DEBUG), 1)
+	# gcc debug flags
+	CC_DEBUG_FLAGS := -g
+	LDFLAGS := -g
+else
+	# gcc non-debug flags
+	CC_DEBUG_FLAGS := -O2 -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
+endif
+endif
 
 %.$(OBJ_EXT): %.cpp
 	$(CC) -c $< $(CFLAGS)

@@ -39,8 +39,9 @@ bool	raycast_render = 1;
 bool	point_sample_render = 0;
 bool	splat_render = 0;
 
-
+#ifndef __MACH__
 #undef main	// some wacky SDL thing...
+#endif
 int	main( int argc, char *argv[] )
 {
 	// parse a .ply file...
