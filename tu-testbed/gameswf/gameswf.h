@@ -72,10 +72,9 @@ namespace gameswf
 	// movies!
 	//
 
+	struct font;
 	namespace fontlib
 	{
-		struct font;
-
 		// Builds cached glyph textures from shape info.
 		void	generate_font_bitmaps();
 
@@ -100,9 +99,9 @@ namespace gameswf
 //		// For direct text rendering from the host app.
 //		void	draw_string(const font* f, float x, float y, float size, const char* text);
 //		void	draw_string(const font* f, float x, float y, float size, const wchar* text);	// wide-char version
-	};
+	}
 
-};	// namespace gameswf
+}	// namespace gameswf
 
 
 #endif // GAMESWF_H

@@ -22,6 +22,8 @@ namespace gameswf
 
 		bitmap_info*	create_bitmap_info(image::rgb* im);
 		bitmap_info*	create_bitmap_info(image::rgba* im);
+		bitmap_info*	create_bitmap_info_blank();
+		void	set_alpha_image(bitmap_info* bi, int w, int h, Uint8* data);	// @@ munges *data!!!
 		void	delete_bitmap_info(bitmap_info* bi);
 
 		// Bracket the displaying of a frame from a movie.
@@ -75,6 +77,17 @@ namespace gameswf
 		void	add_line_segment(float ax, float ay);
 		void	add_curve_segment(float cx, float cy, float ax, float ay);
 		void	end_path();
+
+		// Special function to draw a rectangular bitmap;
+		// intended for textured glyph rendering.  Applies
+		// current transforms to points and color.
+		void	draw_bitmap(const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color);
+
+		// Some hacky stuff for use by the fontlib texture-cacher.
+		// Basically redirects rendering output to a RAM byte array.
+		void	software_mode_enable(int width, int height);
+		void	software_mode_disable();
+		Uint8*	get_software_mode_buffer();
 
 	};	// end namespace render
 };	// end namespace gameswf

@@ -130,6 +130,9 @@ int	main(int argc, char *argv[])
 
 	ogl::open();
 
+	// Generate cached textured versions of fonts.
+	gameswf::fontlib::generate_font_bitmaps();
+
 	// Turn on alpha blending.
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

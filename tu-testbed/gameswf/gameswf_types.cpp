@@ -408,6 +408,16 @@ namespace gameswf
 		}
 	}
 
+
+	void	rect::expand_to_point(float x, float y)
+	// Expand this rectangle to enclose the given point.
+	{
+		m_x_min = fmin(m_x_min, x);
+		m_y_min = fmin(m_y_min, y);
+		m_x_max = fmax(m_x_max, x);
+		m_y_max = fmax(m_y_max, y);
+	}
+
 };	// end namespace gameswf
 
 

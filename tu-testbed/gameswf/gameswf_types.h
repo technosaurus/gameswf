@@ -28,7 +28,7 @@ namespace gameswf
 
 	struct point
 	{
-		float	m_x, m_y;	// should probably use integer TWIPs...
+		float	m_x, m_y;
 
 		point() : m_x(0), m_y(0) {}
 		point(float x, float y) : m_x(x), m_y(y) {}
@@ -117,6 +117,7 @@ namespace gameswf
 		void	read(stream* in);
 		void	print(FILE* out);
 		bool	point_test(float x, float y);
+		void	expand_to_point(float x, float y);
 	};
 	
 
