@@ -792,6 +792,13 @@ namespace gameswf
 				return false;
 			}
 		}
+
+
+		void	output_cached_data(tu_file* out)
+		// Dump our cached data into the given stream.
+		{
+			out->printf("Hello from movie_impl::output_cached_data()!\n");	// xxx debug
+		}
 	};
 
 
@@ -2063,7 +2070,7 @@ namespace gameswf
 
 		int	character_id = in->read_u16();
 
-		movie_impl*	mi = dynamic_cast<movie_impl*>(m);
+		movie_impl*	mi = static_cast<movie_impl*>(m);
 		assert(mi);
 
 		sprite_definition*	ch = new sprite_definition(mi);

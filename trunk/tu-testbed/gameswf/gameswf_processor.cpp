@@ -148,10 +148,14 @@ int	main(int argc, char *argv[])
 		{
 			if (s_stop_on_errors)
 			{
-				// @@ quit.
+				// Fail.
+				fprintf(stderr, "error processing movie '%s', quitting\n", infiles[i]);
+				exit(1);
 			}
 		}
 	}
+
+	return 0;
 }
 
 
@@ -224,6 +228,16 @@ int	process_movie(const char* filename)
 	if (s_append)
 	{
 		// grab computed data for this movie, dump it into a buffer
+		tu_file	cached_data(tu_file::memory_buffer);
+		m->output_cached_data(&cached_data);
+
+		printf("generated %d bytes of cached data\n", cached_data.get_position());
+
+		cached_data.set_position(0);	// rewind
+
+		// xxx temp debug code: dump cached data to stdout
+		tu_file	tu_stdout(stdout, false);
+		tu_stdout.copy_from(&cached_data);
 
 		// if (s_append)
 		// {

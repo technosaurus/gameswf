@@ -37,13 +37,22 @@ class tu_file
 public:
 	typedef int (* read_func)(void* dst, int bytes, void* appdata);
 	typedef int (* write_func)(const void* src, int bytes, void* appdata);
-	typedef int (* seek_func)(int pos, void *appdata);
-	typedef int (* seek_to_end_func)(void *appdata);
-	typedef int (* tell_func)(const void *appdata);
-	typedef int (* close_func)(void *appdata);
+	typedef int (* seek_func)(int pos, void* appdata);
+	typedef int (* seek_to_end_func)(void* appdata);
+	typedef int (* tell_func)(const void* appdata);
+	typedef bool (* get_eof_func)(void* appdata);
+	typedef int (* close_func)(void* appdata);
 
 	// The generic constructor; supply functions for the implementation.
-	tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, seek_to_end_func ef, tell_func tf, close_func cf=NULL);
+	tu_file(
+		void * appdata,
+		read_func rf,
+		write_func wf,
+		seek_func sf,
+		seek_to_end_func ef,
+		tell_func tf,
+		get_eof_func gef,
+		close_func cf=NULL);
 
 	// Make a file from an ordinary FILE*.
 	tu_file(FILE* fp, bool autoclose);
@@ -56,7 +65,14 @@ public:
 	// file when we are destroyed.
 	tu_file(const char* name, const char* mode);
 
+	// Make a memory-buffer file for read/write.
+	enum memory_buffer_enum { memory_buffer };
+	tu_file(memory_buffer_enum m);
+
 	~tu_file();
+
+	// Copy remaining contents of *in into *this.
+	void	copy_from(tu_file* in);
 
 	Uint64	read_le64();
 	Uint32 	read_le32();
@@ -97,6 +113,7 @@ public:
 	int	get_position() const { return m_tell(m_data); }
 	void 	set_position(int p) { m_seek(p, m_data); }
 	void	go_to_end() { m_seek_to_end(m_data); }
+	bool	get_eof() { return m_get_eof(m_data); }
 
 	int	get_error() { return m_error; }
 
@@ -120,16 +137,13 @@ private:
 
 	void	close();
 
-//	Uint16	swap16(Uint16 u);
-//	Uint32	swap32(Uint32 u);
-//	Uint64	swap64(Uint64 u);
-
 	void * 	m_data;
 	read_func 	m_read;
 	write_func 	m_write;
 	seek_func 	m_seek;
 	seek_to_end_func 	m_seek_to_end;
 	tell_func 	m_tell;
+	get_eof_func	m_get_eof;
 	close_func 	m_close;
 	int	m_error;
 };
@@ -170,7 +184,7 @@ private:
 
 
 inline void	tu_file::write_float32(float value)
-// Write a 32-bit litt-endian double to this file.
+// Write a 32-bit little-endian double to this file.
 {
 	union alias {
 		float	f;
