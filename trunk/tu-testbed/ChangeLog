@@ -7,7 +7,10 @@
 	(call_method) Needs to check if the method is a NUMBER.
 	* gameswf/gameswf_xml.cpp (extractNode): Add some filtering of
 	bogus data content (just a CR) that seems to be creeping in from
-	libxml. This gets rid of the extraneous "undefined" fields.
+	libxml. This gets rid of the extraneous "undefined" fields. Free
+	the pointer after calling xmlParseFile.
+
+	* gameswf/gameswf_xml.cpp: Free xml doc pointer after parsing.
 	
 2005-04-02  Rob Savoye  <rob@bertha.welcomehome.org>
 

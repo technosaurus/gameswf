@@ -142,7 +142,7 @@ XML::extractNode(xmlNodePtr node)
           memset(child, 0, sizeof (XMLNode));
           child->_name  = reinterpret_cast<const char *>(node->name);
           child->_value = reinterpret_cast<const char *>(ptr);
-          //log_msg("extractChildNode for %s has contents %s\n", node->name, ptr);
+          //log_msg("extractChildNode1 for %s has contents %s\n", node->name, ptr);
           //log_msg("Pushing childNode %s\n", child->_name.c_str());
           element->_children.push_back(child);
           xmlFree(ptr);
@@ -218,7 +218,7 @@ XML::extractNode(xmlNodePtr node)
     //ptr = node->children->content;
     ptr = xmlNodeGetContent(node->children);
     if (ptr != NULL) {
-      if ((ptr[0] != '\n') && (ptr[1] != ' '))
+      if ((strchr((const char *)ptr, '\n') == 0) && (ptr[0] != 0))
       {
         //log_msg("extractChildNode3 from text for %s has contents %s\n", node->name, ptr);
         element->_value = reinterpret_cast<const char *>(ptr);
@@ -407,7 +407,9 @@ XML::parseXML(tu_string xml_in)
     return false;
   }
   
-  return parseDoc(_doc);
+  bool ret = parseDoc(_doc);
+  xmlFreeDoc(_doc);
+  return ret;
 }
 
 // This reads in an XML file from disk and parses into into a memory resident
@@ -424,8 +426,9 @@ XML::load(const char *filespec)
     return false;
   }
 
-  parseDoc(_doc);
-  return true;
+  bool ret = parseDoc(_doc);
+  xmlFreeDoc(_doc);
+  return ret;
 }
 
 bool
@@ -603,6 +606,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     }
     if (nodevalue->to_string()) {
       xmlnodeA_obj->set_member("nodeValue", nodevalue->to_string());
+      //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
     }
     xmlnodeB_obj = new xmlnode_as_object;
     //log_msg("Created XMLNodeB %s at 0x%X\n",
@@ -615,6 +619,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     nodevalue =         xmlnodes->_children[childa]->nodeValue();
     if (nodevalue->to_string()) {
       xmlnodeB_obj->set_member("nodeValue", nodevalue->to_string());
+      //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
     }
     xmlnodeB_obj->set_member("length", len);
     xmlnodeB_obj->set_member("firstChild", xmlnodeB_obj);
@@ -642,6 +647,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
       xmlnodeC_obj->set_member("nodeName", nodename.c_str());
       if (nodevalue->to_string()) {
         xmlnodeC_obj->set_member("nodeValue", nodevalue->to_string());
+        //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
       }
       if (xmlnodes->_children[childa]->_children[childb]->_attributes.size() > 0) {
         for (i=0; i<xmlnodes->_children[childa]->_attributes.size(); i++) {
@@ -671,6 +677,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
 
         if (nodevalue->to_string()) {
           xmlnodeD_obj->set_member("nodeValue", nodevalue->to_string());
+          //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
         }
         if (xmlnodes->_children[childa]->_children[childb]->length() > 0) {
           if (xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes.size() > 0) {
@@ -696,6 +703,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
           xmlnodeE_obj->set_member("nodeName", nodename.c_str());
           if (nodevalue->to_string()) {
             xmlnodeE_obj->set_member("nodeValue", nodevalue->to_string());
+            //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
           }
           inum = childd;
           xmlnodeD_obj->set_member(inum.to_string(), xmlnodeE_obj);
