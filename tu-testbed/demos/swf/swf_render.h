@@ -14,6 +14,10 @@ namespace swf
 {
 	namespace render
 	{
+//		void	fill_style0(....);
+//		void	fill_style1(....);
+//		void	line_style(...);
+
 		void	begin_shape(float ax, float ay);
 		void	add_line_segment(float ax, float ay);
 		void	add_curve_segment(float cx, float cy, float ax, float ay);
