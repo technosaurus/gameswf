@@ -77,6 +77,7 @@ namespace gameswf
 		virtual character_def*	cast_to_character_def() { return 0; }
 	};
 
+
 };	// end namespace gameswf
 
 

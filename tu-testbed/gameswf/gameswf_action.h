@@ -81,7 +81,46 @@ namespace gameswf
 		int nargs,
 		int first_arg_bottom_index);
 
-	struct as_as_function;	// forward decl
+	//
+	// as_as_function
+	//
+	// ActionScript function.
+
+	struct as_as_function : public ref_counted
+	{
+		action_buffer*	m_action_buffer;
+		as_environment*	m_env;	// @@ need ref-counting here!!!
+		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
+		int	m_start_pc;
+		int	m_length;
+		array<tu_string>	m_args;
+
+		// NULL environment is allowed -- if so, then
+		// functions will be executed in the caller's
+		// environment, rather than the environment where they
+		// were defined.
+		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
+			:
+			m_action_buffer(ab),
+			m_env(env),
+			m_with_stack(with_stack),
+			m_start_pc(start),
+			m_length(0)
+		{
+			assert(m_action_buffer);
+		}
+
+		void	add_arg(const char* name)
+		{
+			m_args.push_back(name);
+		}
+
+		void	set_length(int len) { assert(len >= 0); m_length = len; }
+
+		// Dispatch.
+		void	operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg);
+	};
+
 
 	// ActionScript value type.
 	struct as_value
@@ -113,18 +152,19 @@ namespace gameswf
 		{
 		}
 
+		as_value(const as_value& v)
+			:
+			m_type(UNDEFINED),
+			m_number_value(0.0)
+		{
+			*this = v;
+		}
+
 		as_value(const char* str)
 			:
 			m_type(STRING),
 			m_number_value(0.0),
 			m_string_value(str)
-		{
-		}
-
-		as_value(type e)
-			:
-			m_type(e),
-			m_number_value(0.0)
 		{
 		}
 
@@ -176,7 +216,16 @@ namespace gameswf
 			m_type(AS_FUNCTION),
 			m_as_function_value(func)
 		{
+			if (m_as_function_value)
+			{
+				m_as_function_value->add_ref();
+			}
 		}
+
+		~as_value() { drop_refs(); }
+
+		// Useful when changing types/values.
+		void	drop_refs();
 
 		type	get_type() const { return m_type; }
 
@@ -191,15 +240,38 @@ namespace gameswf
 		void	convert_to_number();
 		void	convert_to_string();
 
-		void	set(const tu_string& str) { m_type = STRING; m_string_value = str; }
-		void	set(const char* str) { m_type = STRING; m_string_value = str; }
-		void	set(double val) { m_type = NUMBER; m_number_value = val; }
-		void	set(bool val) { m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
-		void	set(int val) { set(double(val)); }
-		void	set(as_object_interface* obj) { m_type = OBJECT; m_object_value = obj; }
-		void	set(as_c_function_ptr func) { m_type = C_FUNCTION; m_c_function_value = func; }
-		void	set(as_as_function* func) { m_type = AS_FUNCTION, m_as_function_value = func; }
-		void	set_undefined() { m_type = UNDEFINED; }
+		void	set(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
+		void	set(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
+		void	set(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
+		void	set(bool val) { drop_refs(); m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
+		void	set(int val) { drop_refs(); set(double(val)); }
+		void	set(as_object_interface* obj) { drop_refs(); m_type = OBJECT; m_object_value = obj; }
+		void	set(as_c_function_ptr func) { drop_refs(); m_type = C_FUNCTION; m_c_function_value = func; }
+		void	set(as_as_function* func)
+		{
+			if (m_type != AS_FUNCTION || m_as_function_value != func)
+			{
+				drop_refs();
+				m_type = AS_FUNCTION;
+				m_as_function_value = func;
+				if (m_as_function_value)
+				{
+					m_as_function_value->add_ref();
+				}
+			}
+		}
+		void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
+
+		void	operator=(const as_value& v)
+		{
+			if (v.m_type == UNDEFINED) set_undefined();
+			else if (v.m_type == STRING) set(v.m_string_value);
+			else if (v.m_type == NUMBER) set(v.m_number_value);
+			else if (v.m_type == OBJECT) set(v.m_object_value);
+			else if (v.m_type == C_FUNCTION) set(v.m_c_function_value);
+			else if (v.m_type == STRING) set(v.m_string_value);
+			else if (v.m_type == AS_FUNCTION) set(v.m_as_function_value);
+		}
 
 		bool	operator==(const as_value& v) const;
 		bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
@@ -288,6 +360,7 @@ namespace gameswf
 
 		void	set_local(const tu_string& varname, const as_value& val);
 		void	add_local(const tu_string& varname, const as_value& val);	// when you know it doesn't exist.
+		void	declare_local(const tu_string& varname);	// Declare varname; undefined unless it already exists.
 
 		bool	get_member(const tu_string& varname, as_value* val) const;
 		void	set_member(const tu_string& varname, const as_value& val);
@@ -351,6 +424,7 @@ namespace gameswf
 		const as_value& arg0, const as_value& arg1, const as_value& arg2);
 
 
+	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const char* method_call);
 
 	//
 	// event_id
@@ -409,47 +483,6 @@ namespace gameswf
 
 		// Return the name of a method-handler function corresponding to this event.
 		const tu_string&	get_function_name() const;
-	};
-
-
-	//
-	// as_as_function
-	//
-	// ActionScript function.
-
-	struct as_as_function
-	{
-		action_buffer*	m_action_buffer;
-		as_environment*	m_env;	// @@ need ref-counting here!!!
-		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
-		int	m_start_pc;
-		int	m_length;
-		array<tu_string>	m_args;
-
-		// NULL environment is allowed -- if so, then
-		// functions will be executed in the caller's
-		// environment, rather than the environment where they
-		// were defined.
-		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
-			:
-			m_action_buffer(ab),
-			m_env(env),
-			m_with_stack(with_stack),
-			m_start_pc(start),
-			m_length(0)
-		{
-			assert(m_action_buffer);
-		}
-
-		void	add_arg(const char* name)
-		{
-			m_args.push_back(name);
-		}
-
-		void	set_length(int len) { assert(len >= 0); m_length = len; }
-
-		// Dispatch.
-		void	operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg);
 	};
 
 

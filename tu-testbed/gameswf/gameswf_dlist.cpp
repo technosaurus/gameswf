@@ -163,7 +163,7 @@ namespace gameswf
 
 		display_object_info	di;
 		di.m_ref = true;
-		di.m_character = ch;
+		di.set_character(ch);
 		di.m_character->set_depth(depth);
 		di.m_character->set_cxform(color_xform);
 		di.m_character->set_matrix(mat);
@@ -279,6 +279,7 @@ namespace gameswf
 		}
 		
 		character*	old_ch = di.m_character;
+		old_ch->add_ref();
 
 		// Put the new character in its place.
 		assert(ch);
@@ -287,7 +288,7 @@ namespace gameswf
 		
 		// Set the display properties.
 		di.m_ref = true;
-		di.m_character = ch;
+		di.set_character(ch);
 
 		if (use_cxform)
 		{
@@ -313,7 +314,7 @@ namespace gameswf
 		ch->set_clip_depth(clip_depth);
 
 		// Delete the old character.
-		delete old_ch;
+		old_ch->drop_ref();
 	}
 	
 	
@@ -352,9 +353,10 @@ namespace gameswf
 		int i, n = m_display_object_array.size();
 		for (i = 0; i < n; i++)
 		{
-			character*	ch = m_display_object_array[i].m_character;
-			ch->on_event(event_id::UNLOAD);
-			delete ch;
+			display_object_info&	di = m_display_object_array[i];
+			//character*	ch = m_display_object_array[i].m_character;
+			di.m_character->on_event(event_id::UNLOAD);
+//			delete ch;
 		}
 		
 		m_display_object_array.clear();
@@ -386,8 +388,9 @@ namespace gameswf
 			
 			if (dobj.m_ref == false)
 			{
-				delete dobj.m_character;
-				dobj.m_character = NULL;
+//				delete dobj.m_character;
+//				dobj.m_character = NULL;
+				dobj.set_character(NULL);
 
 				m_display_object_array.remove(i);
 				r++;
@@ -417,7 +420,7 @@ namespace gameswf
 					continue;
 				}
 
-				dobj.m_character->advance(delta_time);
+				ch->advance(delta_time);
 			}
 		}
 	}
