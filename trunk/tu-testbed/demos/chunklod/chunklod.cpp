@@ -904,7 +904,7 @@ void	lod_chunk_tree::set_parameters(float max_pixel_error, float screen_width_pi
 	// distance_LODmax is the distance below which we need to be
 	// at the maximum LOD.  It's used in compute_lod(), which is
 	// called by the chunks during update().
-	m_distance_LODmax = m_error_LODmax * screen_width_pixels / (tan_half_FOV * max_pixel_error);
+	m_distance_LODmax = m_error_LODmax * screen_width_pixels / (2 * tan_half_FOV * max_pixel_error);
 }
 
 

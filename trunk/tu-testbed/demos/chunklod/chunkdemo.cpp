@@ -50,7 +50,7 @@ bool	wireframe_mode = false;
 bool	enable_update = true;
 render_options	render_opt;
 
-float	max_pixel_error = 5.0f;
+float	max_pixel_error = 2.5f;
 
 bool	measure_performance = false;
 int	frame_count;
