@@ -247,7 +247,7 @@ namespace gameswf
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
 
-		virtual character*	create_character_instance(movie* parent, int id);	// default is to make a generic_character
+		virtual smart_ptr<character>	create_character_instance(movie* parent, int id);	// default is to make a generic_character
 
 		// From resource interface.
 		virtual character_def*	cast_to_character_def() { return this; }

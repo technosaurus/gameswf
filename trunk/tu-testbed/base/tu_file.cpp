@@ -110,9 +110,9 @@ struct membuf
 
 	membuf()
 		:
-		m_position(0),
 		m_size(0),
 		m_data(0),
+		m_position(0),
 		m_read_only(false)
 	{
 	}

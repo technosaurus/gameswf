@@ -10,6 +10,9 @@ Productizing
 
 Tasks to make gameswf ready for including in real games.
 
+* ActionScript is not case sensitive (for variable and character
+  names)!  But gameswf is!  Fix gameswf.
+  
 * hooks so that preprocessor and loader can deal with special,
   host-specific data like vertex buffers and textures in a custom way
   if desired.
@@ -17,6 +20,16 @@ Tasks to make gameswf ready for including in real games.
 * fix memory leaks, need reference counting
 
 * pick a version number, post a release
+
+* for data binding, we have:
+
+  gameswf-push (fscommand)
+  host-push (call_method, set_variable)
+  host-pull (call_method, get_variable)
+  
+  we are missing gameswf-pull.  This would be useful for things like
+  looking up localized text in the game engine's translation table,
+  among other things.
 
 
 General
@@ -109,7 +122,9 @@ ActionScript
 * generate or collect some game-gui-like movies
 
 * will need some good test programs to make sure VM is doing the right
-  thing.
+  thing.  SET UP AUTOMATED REGRESSION TESTS -- can be a shell script
+  that runs test movies in verbose mode and compares ActionScript
+  logging against expected output.
 
 * implement remaining opcodes and library functions
 
@@ -196,3 +211,14 @@ Renderer
 
   Self-intersection of the expanded/shrunk mesh is a bitch.
   E.g. concave vertices, and tiny holes (like in minified text).
+
+  Reasons not to mess with this:
+
+  * sounds like a bunch of work
+
+  * non-antialiased rendering on Xbox does not look that bad.
+
+  * hardware keeps getting better; could just turn on multisample
+    rendering
+
+  * artists can work around it
