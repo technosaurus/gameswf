@@ -7,6 +7,9 @@
 #include "config.h"
 #endif
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
@@ -394,6 +397,7 @@ XML::parseXML(tu_string xml_in)
 bool
 XML::load(const char *filespec)
 {
+  
   log_msg("Load XML file: %s\n", filespec);
   _doc = xmlParseFile(filespec);
 
@@ -420,111 +424,6 @@ XML::operator [] (int x) {
 
   return _nodes->_children[x];
 }
-
-#if 0
-//  <ADDRESSES>
-//   <ARQ>
-//     <IP>10.1.2.170</IP>
-//     <PORT>80</PORT>
-//   </ARQ>
-//   <SERVER>
-//     <IP>10.1.3.154</IP>
-//     <PORT>5000</PORT>
-//   </SERVER>
-// </ADDRESSES>
-//
-// frame=0, previous frame=0 == true ADDRESSES
-//
-// frame=1, previous frame=0 > true  ARQ    [0]
-// frame=2, previous frame=1 < true  IP     [0,0]
-// frame=2, previous frame=2 == true PORT   [0,1]
-//
-// frame=1, previous frame=2 < true  SERVER [1]
-// frame=2, previous frame=1 > true  IP     [1,0]
-// frame=2, previous frame=2 == true PORT   [1,1]
-void
-XML::change_stack_frame(int frame, gameswf::as_object *xml, gameswf::as_environment *env)
-{
-  // array<XMLNode *> xmlnodes = xml.childNodes();
-  xml_as_object *xobj = (xml_as_object *)xml;
-  xmlnode_as_object *xnode_obj = (xmlnode_as_object *)xml;
-  static int previous_frame = 0;
-  static int childa=0, childb=0;
-  int i;
-  as_value inum;
-  XMLNode *node;
-
-  log_msg("%s: frame=%d, previous frame=%d",
-                   __PRETTY_FUNCTION__, frame, previous_frame);
-  log_msg("\tchilda=%d, childb=%d\n", childa, childb);
-
-  if (xml == 0) {
-    log_error("No XML object!\n");
-    return;
-  }
-  
-  XMLNode *xmlnodes = xobj->obj.firstChild();
-  
-  // Set the firstChild element, which is the first node of the parsed tree.
-  if ((childa == 0) && (childb == 0)) {
-    //xml->set_member("0", xmlnodes->nodeName().c_str());
-    //env->set_variable("nodeName", xnode_obj->obj._name.c_str(), 0);
-    env->set_variable("nodeName", xmlnodes->nodeName().c_str(), 0);
-    env->set_variable("firstChild", xml, 0);
-  } else {
-    // Loop through all the child nodes and set the indexes
-    for (i=0; i < xmlnodes->_children.size(); i++) {
-      inum = i;
-      xml->set_member(inum.to_string(),  xmlnodes->_children[childa-1]->_children[i]->nodeName().c_str());
-      //xml->set_member("0",  xmlnodes->_children[childa-1]->_children[0]->nodeName().c_str());
-    }
-  }
-  
-  ///// ------------------------
-  if ((childa == 0) && (frame > previous_frame)) {
-    env->set_variable("nodeName",  xmlnodes->_children[childa-1]->nodeName().c_str(), 0);
-    xmlattr_as_object*	attr_obj = new xmlattr_as_object;
-    for (i=0; i<xmlnodes->_attributes.size(); i++) {
-      attr_obj->set_member(xmlnodes->_children[childa-1]->_attributes[i]->_name, xmlnodes->_attributes[i]->_value);
-    }
-    env->set_variable("attributes", attr_obj, 0);
-  }
-    ///// ------------------------
-  
-  
-  if ((childa > 0) && (childb == 0)) {
-    env->set_variable("nodeName",  xmlnodes->_children[childa-1]->nodeName().c_str(), 0);
-    //env->set_variable("nodeValue", xmlnodes->_children[childa-1]->nodeValue()->to_string(), 0);
-    
-    xml->set_member("nodeValue",   xmlnodes->_children[childa-1]->nodeValue()->to_string());
-
-  }
-
-  if (childb > 0)  {
-    env->set_variable("nodeName",  xmlnodes->_children[childa-1]->_children[childb-1]->nodeName().c_str(), 0);
-    //env->set_variable("nodeValue", xmlnodes->_children[childa-1]->_children[childb-1]->nodeValue()->to_string(), 0);
-    xml->set_member("nodeValue",   xmlnodes->_children[childa-1]->_children[childb-1]->nodeValue()->to_string());
-  }  
-
-  // Set the indexes based on the changing of the stack frames
-  if (frame == previous_frame) {
-    childa++;
-    childb = 0;
-  } else {
-    if (frame != previous_frame) {
-      childb++;
-    }
-  }
-
-  previous_frame = frame;
-
-  if (childa > xmlnodes->_children.size()) {
-    log_msg("Resetting XML stack, XML tree traversal done.\n");
-    childa = childb = previous_frame = 0;
-  }
-  
-}
-#endif
 
 XMLNode *
 XML::setupFrame(xmlnode_as_object *xml, as_environment *env)
@@ -756,6 +655,8 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   as_value	method;
   as_value	val;
   bool          ret;
+  struct stat   stats;
+
 
   log_msg("%s:\n", __PRETTY_FUNCTION__);
   
@@ -765,16 +666,28 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   assert(ptr);
   const tu_string filespec = env->bottom(first_arg).to_string();
 
+  // If the file doesn't exist, don't try to do anything.
+  if (stat(filespec.c_str(), &stats) < 0) {
+    fprintf(stderr, "ERROR: doesn't exist.%s\n", filespec.c_str());
+    result->set(false);
+    return;
+  }
+  
   // Set the argument to the function event handler based on whether the load
   // was successful or failed.
   ret = ptr->obj.load(filespec);
+  result->set(ret);
+
+  if (ret == false) {
+    return;
+  }
+    
   //env->bottom(first_arg) = ret;
   array<with_stack_entry> with_stack;
   array<with_stack_entry> dummy_stack;
   //  struct node *first_node = ptr->obj.firstChildGet();
   
   //const char *name = ptr->obj.nodeNameGet();
-  result->set(true);
 
   if (ptr->obj.hasChildNodes() == false) {
     log_error("%s: No child nodes!\n", __PRETTY_FUNCTION__);

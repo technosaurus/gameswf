@@ -251,7 +251,7 @@ XMLSocket::anydata(int fd, tu_string &data)
     memset(buf, 0, INBUF);
     ret = ::read(_sockfd, buf, INBUF-1);
     //log_msg("%s: read %d bytes\n", __FUNCTION__, ret);
-    //log_msg("%s: read (%d,%d) %s\n", __FUNCTION__, buf[0], buf[1], buf);
+    //log_msg("%s: read (%d,%d) %s\n", __FUNCTION__, buf[0], buf[1], buf);    
     ptr = buf;
     pos = 1;
     while (pos > 0) {

@@ -1,3 +1,11 @@
+2005-04-01  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_test_ogl.cpp (key_event): Add trapping ENTER and
+	ESCAPE too. These supposedly get turned on by an
+	fscommand('trapallkeys', true) somehow.
+	* gameswf/gameswf_xml.cpp (xml_load): Don't try to open an XML
+	disk file that doesn't exist, or the path is wrong.
+
 2005-03-28  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_xml.cpp: Process XML messages one level
