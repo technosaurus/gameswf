@@ -250,11 +250,10 @@ namespace gameswf
 				    || (m_mouse_state == DOWN && rec.m_down)
 				    || (m_mouse_state == OVER && rec.m_over))
 				{
-					gameswf::render::push_apply_matrix(rec.m_button_matrix);
-					gameswf::render::push_apply_cxform(rec.m_button_cxform);
-					rec.m_character->display(di);
-					gameswf::render::pop_matrix();
-					gameswf::render::pop_cxform();
+					display_info	sub_di = di;
+					sub_di.m_matrix.concatenate(rec.m_button_matrix);
+					sub_di.m_color_transform.concatenate(rec.m_button_cxform);
+					rec.m_character->display(sub_di);
 				}
 			}
 		}

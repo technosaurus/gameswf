@@ -1468,6 +1468,7 @@ namespace gameswf
 		matrix	m_matrix;
 		array<text_glyph_record>	m_text_glyph_records;
 		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
+		array<line_style>	m_dummy_line_style;
 
 		text_character()
 		{
@@ -1643,7 +1644,7 @@ namespace gameswf
 						shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
 
 						// Draw the character using the filled outline.
-						if (glyph) glyph->display(sub_di, m_dummy_style);
+						if (glyph) glyph->display(sub_di, m_dummy_style, m_dummy_line_style);
 					}
 
 					x += rec.m_glyphs[j].m_glyph_advance;

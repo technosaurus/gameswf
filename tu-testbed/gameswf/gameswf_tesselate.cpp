@@ -94,8 +94,11 @@ namespace tesselate
 	static void	peel_off_and_emit(int i0, int i1, float y0, float y1);
 
 
-	void	begin_shape(float curve_error_tolerance)
+	void	begin_shape(trapezoid_accepter* accepter, float curve_error_tolerance)
 	{
+		assert(accepter);
+		s_accepter = accepter;
+
 		// ensure we're not already in a shape or path.
 		// make sure our shape state is cleared out.
 		assert(s_current_segments.size() == 0);
@@ -201,25 +204,6 @@ namespace tesselate
 	void	output_current_segments()
 	// Draw our shapes and lines, then clear the segment list.
 	{
-		if (s_shape_has_line)
-		{
-			//
-			// Emit our line segments.
-			//
-			{for (int i = 0; i < s_current_segments.size(); i++)
-			{
-				const fill_segment&	seg = s_current_segments[i];
-				if (seg.m_line_style != -1)
-				{
-					s_accepter->accept_line_segment(
-						seg.m_line_style,
-						seg.m_begin.m_x, seg.m_begin.m_y,
-						seg.m_end.m_x, seg.m_end.m_y);
-				}
-			}}
-		}
-
-
 		if (s_shape_has_fill)
 		{
 			//
@@ -370,12 +354,11 @@ namespace tesselate
 	}
 
 
-	void	end_shape(trapezoid_accepter* accepter)
+	void	end_shape()
 	{
-		assert(accepter);
-		s_accepter = accepter;
-
 		output_current_segments();
+
+		s_accepter = NULL;
 	}
 
 
@@ -490,9 +473,12 @@ namespace tesselate
 	void	end_path()
 	// Mark the end of a set of edges that all use the same styles.
 	{
-		if (s_current_line_style >= 0)
+		if (s_current_line_style >= 0 && s_current_path.size() > 1)
 		{
-			// @@ emit a bunch of line segments, eh?
+			//
+			// Emit our line.
+			//
+			s_accepter->accept_line_strip(s_current_line_style, &s_current_path[0], s_current_path.size());
 		}
 
 		s_current_path.resize(0);

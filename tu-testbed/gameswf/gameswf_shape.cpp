@@ -208,6 +208,42 @@ namespace gameswf
 
 
 	//
+	// line_strip
+	//
+
+
+	line_strip::line_strip()
+	// Default constructor, for array<>.
+		:
+		m_style(-1)
+	{}
+
+
+	line_strip::line_strip(int style, const point coords[], int coord_count)
+	// Construct the line strip (polyline) made up of the given sequence of points.
+		:
+		m_style(style)
+	{
+		assert(style >= 0);
+		assert(coords != NULL);
+		assert(coord_count > 1);
+
+		m_coords.resize(coord_count);
+		memcpy(&m_coords[0], coords, coord_count * sizeof(coords[0]));
+	}
+
+
+	void	line_strip::display(const line_style& style) const
+	// Render this line strip in the given style.
+	{
+		assert(m_coords.size() > 1);
+
+		style.apply();
+		render::draw_line_strip(&m_coords[0].m_x, m_coords.size());
+	}
+
+
+	//
 	// mesh_set
 	//
 
@@ -248,9 +284,10 @@ namespace gameswf
 					point(tr.m_rx1, tr.m_y1));
 			}
 
-			virtual void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
+			void	accept_line_strip(int style, const point coords[], int coord_count)
+			// Remember this line strip in our mesh set.
 			{
-				// @@ discard for now!  TODO save these as well.
+				m->add_line_strip(style, coords, coord_count);
 			}
 		};
 		collect_traps	accepter(this);
@@ -265,7 +302,10 @@ namespace gameswf
 	void	mesh_set::set_last_frame_rendered(int frame_counter) { m_last_frame_rendered = frame_counter; }
 
 
-	void	mesh_set::display(const display_info& di, const array<fill_style>& fills) const
+	void	mesh_set::display(
+		const display_info& di,
+		const array<fill_style>& fills,
+		const array<line_style>& line_styles) const
 	// Throw our meshes at the renderer.
 	{
 		assert(m_error_tolerance > 0);
@@ -275,9 +315,16 @@ namespace gameswf
 		render::push_apply_cxform(di.m_color_transform);
 
 		// Dump meshes into renderer, one mesh per style.
-		for (int i = 0; i < m_meshes.size(); i++)
+		{for (int i = 0; i < m_meshes.size(); i++)
 		{
 			m_meshes[i].display(fills[i]);
+		}}
+
+		// Dump line-strips into renderer.
+		for (int i = 0; i < m_line_strips.size(); i++)
+		{
+			int	style = m_line_strips[i].get_style();
+			m_line_strips[i].display(line_styles[style]);
 		}
 
 		render::pop_cxform();
@@ -299,6 +346,18 @@ namespace gameswf
 		}
 
 		m_meshes[style].add_triangle(a, b, c);
+	}
+
+	
+	void	mesh_set::add_line_strip(int style, const point coords[], int coord_count)
+	// Add the specified line strip to our list of things to render.
+	{
+		assert(style >= 0);
+		assert(style < 1000);	// sanity check
+		assert(coords != NULL);
+		assert(coord_count > 1);
+
+		m_line_strips.push_back(line_strip(style, coords, coord_count));
 	}
 
 
@@ -600,11 +659,14 @@ namespace gameswf
 	void	shape_character::display(const display_info& di)
 	// Draw the shape using our own inherent styles.
 	{
-		display(di, m_fill_styles);
+		display(di, m_fill_styles, m_line_styles);
 	}
 
 		
-	void	shape_character::display(const display_info& di, const array<fill_style>& fill_styles) const
+	void	shape_character::display(
+		const display_info& di,
+		const array<fill_style>& fill_styles,
+		const array<line_style>& line_styles) const
 	// Display our shape.  Use the fill_styles arg to
 	// override our default set of fill styles (e.g. when
 	// rendering text).
@@ -626,7 +688,7 @@ namespace gameswf
 			if (object_space_max_error > m_cached_meshes[i]->get_error_tolerance())
 			{
 				// Do it.
-				m_cached_meshes[i]->display(di, fill_styles);
+				m_cached_meshes[i]->display(di, fill_styles, line_styles);
 				m_cached_meshes[i]->set_last_frame_rendered(di.m_display_number);
 				rendered = true;
 				break;
@@ -638,7 +700,7 @@ namespace gameswf
 			// Construct a new mesh to handle this error tolerance.
 			mesh_set*	m = new mesh_set(this, object_space_max_error * 0.75f);
 			m_cached_meshes.push_back(m);
-			m->display(di, fill_styles);
+			m->display(di, fill_styles, line_styles);
 			m->set_last_frame_rendered(di.m_display_number);
 
 			sort_and_clean_meshes(di.m_display_number);
@@ -701,21 +763,21 @@ namespace gameswf
 	void	shape_character::tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const
 	// Push our shape data through the tesselator.
 	{
-		tesselate::begin_shape(error_tolerance);
+		tesselate::begin_shape(accepter, error_tolerance);
 		for (int i = 0; i < m_paths.size(); i++)
 		{
 			if (m_paths[i].m_new_shape == true)
 			{
 				// Hm; should handle separate sub-shapes in a less lame way.
-				tesselate::end_shape(accepter);
-				tesselate::begin_shape(error_tolerance);
+				tesselate::end_shape();
+				tesselate::begin_shape(accepter, error_tolerance);
 			}
 			else
 			{
 				m_paths[i].tesselate();
 			}
 		}
-		tesselate::end_shape(accepter);
+		tesselate::end_shape();
 	}
 
 
