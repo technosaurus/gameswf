@@ -14,9 +14,9 @@ Tasks to make gameswf ready for including in real games.
   very nice to be able to restrict the size of font textures for
   particular fonts that don't need to be scaled up.  RAM is precious.
 
-  Here's what I'm thinking:
+  Here's what I'm doing:
 
-  * pass a flag to gameswf_test_ogl, like we do now for font caching.
+  * auxiliary program gameswf_processor for generating cache data.
     Specify any number of .swf movies.
 
   * the program loads all the movies and executes all the frames.
@@ -41,6 +41,9 @@ Tasks to make gameswf ready for including in real games.
 * try to keep external #includes out of gameswf.h -- currently the
   render_handler has the bulk of the external dependencies.
 
+* use Sint16 TWIP coordinates in all reasonable places to cut down on
+  memory and processing.
+
 
 General
 =======
@@ -55,28 +58,6 @@ General
 
 * sprites as button characters are not working.  (Maybe they are
   now??)
-
-* the half-implemented action stuff is an obstacle to progress; many
-  of my test movies don't work because "goto frame" and/or some other
-  actions are not working correctly.  Need to fix this.  Ideas:
-
-  * disable all but the very simplest actions (i.e. up to SWF 4.0 or
-    so), while working out the basics
-
-  * make sure the frame semantics are correct.  I'm not 100% clear on
-    the semantics of frame transitions.  I think that "being on frame
-    N" means that N's tags and actions have been executed.  "goto N"
-    is still unclear to me: does it mean that N's tags and actions
-    should be executed, or do we start with N+1?  Does the display
-    list need to be cleared, left as-is, or set to some pristine
-    condition for frame N?  But the display list is built
-    incrementally.  So this needs experimentation.  I haven't looked
-    at flashsource's GPL code for this; maybe that will clear things
-    up.
-
-  * collect a canonical set of test movies and check them into CVS
-
-  * generate or collect some game-gui-like movies
 
 * host-app to gameswf communication
 
@@ -101,10 +82,39 @@ General
 
 * named elements APIs, for easier UI programming in the host app
 
-* ActionScript needs to basically work
-
 * Would be good if one of the log options produced a nice usable
   human-readable parsing of the file.  Or even a SSWF equivalent?
+
+
+ActionScript
+============
+
+* figure out what virtual-machine state is involved in ActionScript,
+  and where to hang it.
+
+  Each "thread" has a stack, and a target environment (?)
+
+  What's in the environment?  Locals, etc?  Is there an environment in
+  every sprite, basically?
+
+* make sure the frame semantics are correct.  I'm not 100% clear on
+  the semantics of frame transitions.  I think that "being on frame N"
+  means that N's tags and actions have been executed.  "goto N" is
+  still unclear to me: does it mean that N's tags and actions should
+  be executed, or do we start with N+1?  Does the display list need to
+  be cleared, left as-is, or set to some pristine condition for frame
+  N?  But the display list is built incrementally.  So this needs
+  experimentation.  I haven't looked at flashsource's GPL code for
+  this; maybe that will clear things up.
+
+* collect a canonical set of test movies and check them into CVS
+
+* generate or collect some game-gui-like movies
+
+* will need some good test programs to make sure VM is doing the right
+  thing.
+
+* implement each opcode and library function
 
 
 Renderer
