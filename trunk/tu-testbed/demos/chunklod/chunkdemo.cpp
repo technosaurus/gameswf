@@ -30,6 +30,11 @@ static int	bits_per_pixel = 0;	// 0 --> use the desktop depth.
 static int	window_width = 1024;
 static int	window_height = 768;
 static float	horizontal_fov_degrees = 90.f;
+static bool	two_phase_render = false;	// use this to combat z-precision problems
+
+
+static float	nearz = 4.0;
+static float	farz = 160000;
 
 
 vec3	viewer_dir(1, 0, 0);
@@ -42,7 +47,7 @@ vec3	viewer_pos(512, 300, 512);
 
 static plane_info	frustum_plane[6];
 //static plane_info	transformed_frustum_plane[6];
-static view_state	view;
+static view_state	s_view;
 
 
 int	speed = 9;
@@ -84,7 +89,7 @@ void	apply_matrix(const matrix& m)
 }
 
 
-void	setup_projection_matrix(int w, int h, float horizontal_fov_degrees)
+void	setup_projection_matrix(int w, int h, float horizontal_fov_degrees, float nearz, float farz)
 // Set up viewport & projection matrix.
 // w and h are the window dimensions in pixels.
 // horizontal_fov is in degrees.
@@ -94,8 +99,6 @@ void	setup_projection_matrix(int w, int h, float horizontal_fov_degrees)
 	//
 	// Set up projection matrix.
 	//
-	float	nearz = 4.0;
-	float	farz = 160000;
 
 	float	aspect_ratio = float(h) / float(w);
 	float	horizontal_fov = (float) (horizontal_fov_degrees * M_PI / 180.f);
@@ -147,29 +150,33 @@ void	clear()
 	glDrawBuffer(GL_BACK);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
 
+
+void	setup_view(float nearz, float farz)
+{
 	// Set up the projection and view matrices.
 
 	// Projection matrix.
 	glMatrixMode(GL_PROJECTION);
-	setup_projection_matrix(window_width, window_height, horizontal_fov_degrees);
+	setup_projection_matrix(window_width, window_height, horizontal_fov_degrees, nearz, farz);
 
 	// View matrix.
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	view.m_matrix.View(viewer_dir, viewer_up, viewer_pos);
-	apply_matrix(view.m_matrix);
+	s_view.m_matrix.View(viewer_dir, viewer_up, viewer_pos);
+	apply_matrix(s_view.m_matrix);
 
 	// Transform the frustum planes from view coords into world coords.
 	int	i;
 	for (i = 0; i < 6; i++) {
 		// Rotate the plane from view coords into world coords.  I'm pretty sure this is not a slick
 		// way to do this :)
-		plane_info&	tp = view.m_frustum[i];
+		plane_info&	tp = s_view.m_frustum[i];
 		plane_info&	p = frustum_plane[i];
-		view.m_matrix.ApplyInverseRotation(&tp.normal, p.normal);
+		s_view.m_matrix.ApplyInverseRotation(&tp.normal, p.normal);
 		vec3	v;
-		view.m_matrix.ApplyInverse(&v, p.normal * p.d);
+		s_view.m_matrix.ApplyInverse(&v, p.normal * p.d);
 		tp.d = v * tp.normal;
 	}
 
@@ -216,9 +223,10 @@ void	print_usage()
 		"details.\n"
 		"\n"
 		"usage: chunkdemo [dataset.chu] [texture.jpg]\n"
-		"    [-w width] [-h height] [-b bits/pixel] [-f]\n"
+		"    [-w width] [-h height] [-b bits/pixel] [-f] [-2]\n"
 		"\n"
 		"    '-f' means use a fullscreen window.\n"
+		"    '-2' means use two-phase rendering, to improve z-buffer precision\n"
 		"    by default, looks for crater/crater.chu and crater/crater.jpg\n"
 		"\n"
 		"Controls:\n"
@@ -234,6 +242,7 @@ void	print_usage()
 		"  'e' - toggle edge rendering\n"
 		"  'u' - toggle LOD updating (turn off to freeze LOD changes)\n"
 		"  'f' - toggle viewpoint forward motion\n"
+		"  '2' - toggle 2-phase rendering (for z-buffer precision)\n"
 		"  ',' or 'd' - decrease viewpoint speed\n"
 		"  '.' or 'g' - increase viewpoint speed\n"
 		"  '[' or 'KP -' - decrease max pixel error\n"
@@ -379,6 +388,10 @@ void	process_events()
 				}
 				printf("perf monitor %s\n", measure_performance ? "on" : "off");
 			}
+			if (key == SDLK_2) {
+				two_phase_render = ! two_phase_render;
+				printf("two-phase rendering %s\n", two_phase_render ? "on" : "off");
+			}
 			if (key == SDLK_QUESTION || key == SDLK_F1 || key == SDLK_h) {
 				print_usage();
 			}
@@ -459,6 +472,10 @@ int	main(int argc, char *argv[])
 			case 'f':	// fullscreen flag.
 				fullscreen = true;
 				break;
+
+			case '2':	// two-pass flag
+				two_phase_render = true;
+				break;
 			}
 			break;
 		}
@@ -503,18 +520,21 @@ int	main(int argc, char *argv[])
 
 	if (bits_per_pixel == 0) {
 		// Take the default desktop depth.
-		bits_per_pixel = info->vfmt->BitsPerPixel;
+		//bits_per_pixel = info->vfmt->BitsPerPixel;
 	}
 	int	flags = SDL_OPENGL | (fullscreen ? SDL_FULLSCREEN : 0);
 
 	int	component_depth = 0;
-	if (bits_per_pixel <= 16) {
+	int	z_depth = 32;
+	if (bits_per_pixel > 0 && bits_per_pixel <= 16) {
 		component_depth = 5;
-
-	} else if (bits_per_pixel <= 32) {
+		z_depth = 16;
+	}
+	else if (bits_per_pixel <= 32) {
 		component_depth = 8;
-
-	} else {
+		z_depth = 24;
+	}
+	else {
 		component_depth = bits_per_pixel / 4;
 		// Assume the user knows what they're trying to do.
 	}
@@ -522,7 +542,7 @@ int	main(int argc, char *argv[])
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, component_depth );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, component_depth );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, component_depth );
-	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, z_depth );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 	// Set the video mode.
@@ -606,7 +626,7 @@ int	main(int argc, char *argv[])
 		// Enable vertex array, and just leave it on.
 		glEnableClientState(GL_VERTEX_ARRAY);
 
-		view.m_frame_number = 1;
+		s_view.m_frame_number = 1;
 
 		if (texture_quadtree == NULL)
 		{
@@ -652,10 +672,25 @@ int	main(int argc, char *argv[])
 
 			clear();
 
-			frame_triangle_count += model->render(view, render_opt);
+			float	midz = farz;
+			if (two_phase_render) {
+				// Draw the far part of the terrain, then clear the z-buffer before
+				// drawing the near part.  Helps (a lot!) w/ z-buffer precision.
+				midz = sqrt(nearz * farz);
+
+				setup_view(midz * 0.9f, farz);
+
+				frame_triangle_count += model->render(s_view, render_opt);
+
+				glClear(GL_DEPTH_BUFFER_BIT);
+			}
+
+			setup_view(nearz, midz);
+
+			frame_triangle_count += model->render(s_view, render_opt);
 
 			SDL_GL_SwapBuffers();
-			view.m_frame_number++;
+			s_view.m_frame_number++;
 
 			// Performance counting.
 			if ( measure_performance ) {
