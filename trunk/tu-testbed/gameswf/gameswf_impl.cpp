@@ -163,6 +163,39 @@ namespace gameswf
 
 
 	//
+	// ref_counted
+	//
+
+
+	ref_counted::ref_counted()
+		:
+		m_ref_count(0)
+	{
+	}
+
+	ref_counted::~ref_counted()
+	{
+	}
+
+	void	ref_counted::add_ref()
+	{
+		assert(m_ref_count >= 0);
+		m_ref_count++;
+	}
+
+	void	ref_counted::drop_ref()
+	{
+		assert(m_ref_count > 0);
+		m_ref_count--;
+		if (m_ref_count <= 0)
+		{
+			// Delete me!
+			delete this;
+		}
+	}
+
+
+	//
 	// character
 	//
 
@@ -630,13 +663,24 @@ namespace gameswf
 			m_mouse_buttons(0),
 			m_mouse_capture_id(-1)
 		{
+			assert(m_def);
+			m_def->add_ref();
+
 			set_display_viewport(0, 0, m_def->get_width(), m_def->get_height());
 		}
 
+		~movie_root()
+		{
+			assert(m_def);
+			m_def->drop_ref();
+			if (m_movie) m_movie->drop_ref();
+		}
 
 		void	set_root_movie(movie* root_movie)
 		{
-			m_movie = root_movie; assert(m_movie);
+			m_movie = root_movie;
+			assert(m_movie);
+			m_movie->add_ref();
 
 			m_movie->on_event(event_id::LOAD);
 		}
@@ -710,11 +754,6 @@ namespace gameswf
 		{
 			return m_pixel_scale;
 		}
-
-//		character_def*	get_character_def(int character_id)
-//		{
-//			return m_def->get_character_def(character_id);
-//		}
 
 		// @@ Is this one necessary?
 		character*	get_character(int character_id)
@@ -793,6 +832,13 @@ namespace gameswf
 		virtual const char*	get_variable(const char* path_to_var) const
 		{
 			return m_movie->get_variable(path_to_var);
+		}
+
+		// For ActionScript interfacing convenience.
+		virtual const char*	call_method(const char* method_call)
+		{
+			assert(m_movie);
+			return m_movie->call_method(method_call);
 		}
 
 		virtual void	set_visible(bool visible) { m_movie->set_visible(visible); }
@@ -979,6 +1025,7 @@ namespace gameswf
 			delete cache_in;
 		}
 
+		m->add_ref();
 		return m;
 	}
 
@@ -1010,6 +1057,7 @@ namespace gameswf
 			if (m)
 			{
 				// Return cached movie.
+				m->add_ref();
 				return m;
 			}
 		}
@@ -1023,9 +1071,11 @@ namespace gameswf
 		}
 		else
 		{
+			mov->add_ref();
 			s_movie_library.add(fn, mov);
 		}
 
+		mov->add_ref();
 		return mov;
 	}
 	
@@ -1637,7 +1687,7 @@ namespace gameswf
 
 			// Create a function to execute the actions.
 			array<with_stack_entry>	empty_with_stack;
-			as_as_function*	func = new as_as_function(&m_action_buffer, NULL, 0, empty_with_stack);	// @@ leak
+			as_as_function*	func = new as_as_function(&m_action_buffer, NULL, 0, empty_with_stack);
 			func->set_length(m_action_buffer.get_length());
 
 			m_method.set(func);
@@ -2051,11 +2101,6 @@ namespace gameswf
 
 		as_environment	m_as_environment;
 
-		virtual ~sprite_instance()
-		{
-			m_display_list.clear();
-		}
-
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
 			:
 			character(parent, id),
@@ -2072,7 +2117,17 @@ namespace gameswf
 		{
 			assert(m_def);
 			assert(m_root);
+			
+			m_def->add_ref();
+			m_root->add_ref();
 			m_as_environment.set_target(this);
+		}
+
+		virtual ~sprite_instance()
+		{
+			m_display_list.clear();
+			m_def->drop_ref();
+			m_root->drop_ref();
 		}
 
 		movie_interface*	get_root_interface() { return m_root; }
@@ -2962,7 +3017,14 @@ namespace gameswf
 			character* ch = m_display_list.get_character_by_name(name);
 			if (ch)
 			{
-				add_display_object(ch->get_id(), newname, depth, ch->get_cxform(), ch->get_matrix(), ch->get_ratio(), ch->get_clip_depth());
+				add_display_object(
+					ch->get_id(),
+					newname,
+					depth,
+					ch->get_cxform(),
+					ch->get_matrix(),
+					ch->get_ratio(),
+					ch->get_clip_depth());
 				// @@ TODO need to duplicate ch's event handlers, and presumably other members?
 				// Probably should make a character::clone() function to handle this.
 			}
@@ -3013,6 +3075,11 @@ namespace gameswf
 			return false;
 		}
 
+
+		virtual const char*	call_method(const char* method_call)
+		{
+			return call_method_parsed(&m_as_environment, this, method_call);
+		}
 	};
 
 
@@ -3035,6 +3102,7 @@ namespace gameswf
 		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
 
+		m->add_ref();
 		return m;
 	}
 

@@ -31,6 +31,27 @@ namespace gameswf
 		{
 		}
 
+		~display_object_info()
+		{
+			if (m_character) m_character->drop_ref();
+		}
+
+		void	operator=(const display_object_info& di)
+		{
+			m_ref = di.m_ref;
+			set_character(di.m_character);
+		}
+
+		void	set_character(character* ch)
+		{
+			if (m_character != ch)
+			{
+				if (m_character) m_character->drop_ref();
+				m_character = ch;
+				if (m_character) m_character->add_ref();
+			}
+		}
+
 		static int compare(const void* _a, const void* _b); // For qsort().
 	};
 

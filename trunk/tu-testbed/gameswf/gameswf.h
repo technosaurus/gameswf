@@ -94,19 +94,31 @@ namespace gameswf
 	sound_handler*	create_sound_handler_sdl();
 
 
+	// For stuff that's tricky to keep track of w/r/t ownership & cleanup.
+	struct ref_counted
+	{
+		int	m_ref_count;
+
+		ref_counted();
+		virtual ~ref_counted();
+		void	add_ref();
+		void	drop_ref();
+	};
+
+
 	//
 	// This is the client program's interface to the definition of
 	// a movie (i.e. the shared constant source info).
 	//
-	struct movie_definition
+	struct movie_definition : public ref_counted
 	{
-		virtual ~movie_definition() {}
-
 		virtual int	get_width() const = 0;
 		virtual int	get_height() const = 0;
 		virtual int	get_frame_count() const = 0;
 		virtual float	get_frame_rate() const = 0;
 
+		// This calls add_ref() on the movie_interface internally.
+		// Call drop_ref() on the movie_interface when you're done with it.
 		virtual movie_interface*	create_instance() = 0;
 
 		// For caching precomputed stuff.  Generally of
@@ -120,10 +132,8 @@ namespace gameswf
 	// This is the client program's interface to an instance of a
 	// movie (i.e. an independent stateful live movie).
 	//
-	struct movie_interface
+	struct movie_interface : public ref_counted
 	{
-		virtual ~movie_interface() {}
-
 		virtual movie_definition*	get_movie_definition() = 0;
 
 		virtual int	get_current_frame() const = 0;
@@ -170,6 +180,34 @@ namespace gameswf
 		virtual const char*	get_variable(const char* path_to_var) const = 0;
 		// @@ do we want a version that returns a number?
 
+		// ActionScript method call.  Caller can set result
+		// to NULL if they're not interested in a return
+		// value.  On return, *result points to a static
+		// string buffer with the result; caller should use
+		// the value immediately before making more calls to
+		// gameswf.  NOT THREAD SAFE!!!
+		// 
+		// This function does some very basic parsing on
+		// method_call.  method_call should be a string of the
+		// form:
+		//
+		// "path.to.method_name(arg0, arg1, arg2)"
+		//
+		// where argN can be a string or numerical literal.
+		// String literals must be single- or double-quote
+		// delimited.  Numeric literals are parsed with
+		// atof().  Examples:
+		//
+		//    _root.my_clip.init_stuff(10, 47.5, 'Hello')
+		//    set_ball_speed(1.25, -78.3)
+		//
+		// Don't be fooled; this is not an ActionScript
+		// language parser, it doesn't recognize expressions
+		// or anything tricky.
+		//
+		// Needless to say, this is not blazingly fast.
+		virtual const char*	call_method(const char* method_call) = 0;
+
 		// Make the movie visible/invisible.  An invisible
 		// movie does not advance and does not render.
 		virtual void	set_visible(bool visible) = 0;
@@ -205,6 +243,9 @@ namespace gameswf
 	//
 	// Uses the registered file-opener callback to read the files
 	// themselves.
+	//
+	// This calls add_ref() on the newly created definition; call
+	// drop_ref() when you're done with it.
 	movie_definition*	create_movie(const char* filename);
 
 	// Create a gameswf::movie_definition from the given file name.
@@ -219,6 +260,9 @@ namespace gameswf
 	// (e.g. fonts) to other movies as well.
 	//
 	// @@ this explanation/functionality could be clearer!
+	//
+	// This calls add_ref() on the newly created definition; call
+	// drop_ref() when you're done with it.
 	movie_definition*	create_library_movie(const char* filename);
 	
 	
@@ -412,7 +456,7 @@ namespace gameswf
 		
 		bitmap_info() 
 			:
-		m_texture_id(0),
+			m_texture_id(0),
 			m_original_width(0),
 			m_original_height(0){}
 		

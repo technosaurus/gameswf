@@ -106,7 +106,7 @@ namespace gameswf
 		int	args_to_pass = imin(nargs, m_args.size());
 		for (int i = 0; i < args_to_pass; i++)
 		{
-			our_env->add_local(m_args[i], caller_env->bottom(first_arg + i));
+			our_env->add_local(m_args[i], caller_env->bottom(first_arg - i));
 		}
 
 		// Execute the actions.
@@ -128,6 +128,9 @@ namespace gameswf
 		as_object_interface* this_ptr,
 		int nargs,
 		int first_arg_bottom_index)
+	// first_arg_bottom_index is the stack index, from the bottom, of the first argument.
+	// Subsequent arguments are at *lower* indices.  E.g. if first_arg_bottom_index = 7,
+	// then arg1 is at env->bottom(7), arg2 is at env->bottom(6), etc.
 	{
 		as_value	val;
 
@@ -156,9 +159,117 @@ namespace gameswf
 		as_environment* env,
 		as_object_interface* this_ptr)
 	{
-		return call_method(method, env, this_ptr, 0, env->get_top_index());
+		return call_method(method, env, this_ptr, 0, env->get_top_index() + 1);
 	}
 		
+	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const char* method_call)
+	// Big fat slow stringified interface for calling ActionScript.
+	// Handy for external binding.
+	{
+		static const int	BUFSIZE = 1000;
+		char	buffer[BUFSIZE];
+		array<const char*>	tokens;
+
+		// Brutal crap parsing.  Basically null out any
+		// delimiter characters, so that the method name and
+		// args sit in the buffer as null-terminated C
+		// strings.  Leave an intial ' character as the first
+		// char in a string argument.
+		// Don't verify parens or matching quotes or anything.
+		{
+			strncpy(buffer, method_call, BUFSIZE);
+			buffer[BUFSIZE - 1] = 0;
+			char*	p = buffer;
+
+			char	in_quote = 0;
+			bool	in_arg = false;
+			for (;; p++)
+			{
+				char	c = *p;
+				if (c == 0)
+				{
+					// End of string.
+					break;
+				}
+				else if (c == in_quote)
+				{
+					// End of quotation.
+					assert(in_arg);
+					*p = 0;
+					in_quote = 0;
+					in_arg = false;
+				}
+				else if (in_arg)
+				{
+					if (in_quote == 0)
+					{
+						if (c == ')' || c == '(' || c == ',' || c == ' ')
+						{
+							// End of arg.
+							*p = 0;
+							in_arg = false;
+						}
+					}
+				}
+				else
+				{
+					// Not in arg.  Watch for start of arg.
+					assert(in_quote == 0);
+					if (c == '\'' || c == '\"')
+					{
+						// Start of quote.
+						in_quote = c;
+						in_arg = true;
+						*p = '\'';	// ' at the start of the arg, so later we know this is a string.
+						tokens.push_back(p);
+					}
+					else if (c == ' ' || c == ',')
+					{
+						// Non-arg junk, null it out.
+						*p = 0;
+					}
+					else
+					{
+						// Must be the start of a numeric arg.
+						in_arg = true;
+						tokens.push_back(p);
+					}
+				}
+			}
+		}
+
+		array<with_stack_entry>	dummy_with_stack;
+		as_value	method = env->get_variable(tokens[0], dummy_with_stack);
+
+		// check method
+
+		// Push args onto env stack (reverse order!).
+		int	nargs = tokens.size() - 1;
+		for (int i = nargs; i > 0; i--)
+		{
+			const char*	arg = tokens[i];
+			if (arg[0] == '\'')
+			{
+				// String arg.
+				env->push(arg + 1);
+			}
+			else
+			{
+				// Arg must be numeric.
+				env->push(atof(arg));
+			}
+		}
+
+		// Do the call.
+		as_value	result = call_method(method, env, this_ptr, nargs, env->get_top_index());
+		env->drop(nargs);
+
+		// Return pointer to static string for return value.
+		static tu_string	s_retval;
+		s_retval = result.to_tu_string();
+		return s_retval.c_str();
+	}
+
 
 
 	//
@@ -545,6 +656,33 @@ namespace gameswf
 			math_init();
 			key_init();
 		}
+	}
+
+
+	//
+	// string
+	//
+
+
+	as_value	string_method(
+		as_environment* env,
+		const tu_string& this_string,
+		const tu_string& method_name,
+		int nargs,
+		int first_arg_bottom_index)
+	{
+		if (method_name == "charCodeAt")
+		{
+			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
+			if (index >= 0 && index < this_string.length())
+			{
+				return as_value(this_string[index]);
+			}
+
+			return as_value(0);
+		}
+
+		return as_value();
 	}
 
 
@@ -1095,7 +1233,22 @@ namespace gameswf
 
 				case 0x3D:	// call function
 				{
-					// @@ TODO
+					as_value	function;
+					if (env->top(0).get_type() == as_value::STRING)
+					{
+						// Function is a string; lookup the function.
+						const tu_string&	function_name = env->top(0).to_tu_string();
+						function = env->get_variable(function_name, with_stack);
+					}
+					else
+					{
+						// Hopefully the actual function object is here.
+						function = env->top(0);
+					}
+					int	nargs = (int) env->top(1).to_number();
+					as_value	result = call_method(function, env, NULL, nargs, env->get_top_index() - 2);
+					env->drop(nargs + 1);
+					env->top(0) = result;
 					break;
 				}
 				case 0x3E:	// return
@@ -1121,7 +1274,9 @@ namespace gameswf
 				}
 				case 0x41:	// declare local
 				{
-					// @@ TODO
+					const tu_string&	varname = env->top(0).to_tu_string();
+					env->declare_local(varname);
+					env->drop(1);
 					break;
 				}
 				case 0x42:	// declare array
@@ -1260,6 +1415,19 @@ namespace gameswf
 						{
 							log_error("error: call_method can't find method %s\n", method_name.c_str());
 						}
+					}
+					else if (env->top(1).get_type() == as_value::STRING)
+					{
+						// Hack to call String methods.  as_value
+						// should maybe be subclassed from as_object_interface
+						// instead, or have as_value::to_object() make a proxy
+						// or something.
+						result = string_method(
+							env,
+							env->top(1).to_tu_string(),
+							env->top(0).to_tu_string(),
+							nargs,
+							env->get_top_index() - 3);
 					}
 					else
 					{
@@ -1585,7 +1753,6 @@ namespace gameswf
 
 				case 0x9B:	// declare function
 				{
-					// @@ need ref count on this and env!  On objects entries in with_stack too!
 					as_as_function*	func = new as_as_function(this, env, next_pc, with_stack);
 
 					int	i = pc;
@@ -1775,6 +1942,18 @@ namespace gameswf
 		{
 			return m_number_value != 0.0;
 		}
+		else if (m_type == OBJECT)
+		{
+			return m_object_value != NULL;
+		}
+		else if (m_type == C_FUNCTION)
+		{
+			return m_c_function_value != NULL;
+		}
+		else if (m_type == AS_FUNCTION)
+		{
+			return m_as_function_value != NULL;
+		}
 		else
 		{
 			return false;
@@ -1867,6 +2046,18 @@ namespace gameswf
 		to_tu_string();	// make sure our m_string_value is initialized
 		m_type = STRING;
 		m_string_value += str;
+	}
+
+	void	as_value::drop_refs()
+	// Drop any ref counts we have; this happens prior to changing our value.
+	{
+		if (m_type == AS_FUNCTION)
+		{
+			if (m_as_function_value)
+			{
+				m_as_function_value->drop_ref();
+			}
+		}
 	}
 
 
@@ -2048,6 +2239,24 @@ namespace gameswf
 	}
 
 
+	void	as_environment::declare_local(const tu_string& varname)
+	// Create the specified local var if it doesn't exist already.
+	{
+		// Is it in the current frame already?
+		int	index = find_local(varname);
+		if (index < 0)
+		{
+			// Not in frame; create a new local var.
+			assert(varname.length() > 0);	// null varnames are invalid!
+    			m_local_frames.push_back(frame_slot(varname, as_value()));
+		}
+		else
+		{
+			// In frame already; don't mess with it.
+		}
+	}
+
+	
 	bool	as_environment::get_member(const tu_string& varname, as_value* val) const
 	{
 		return m_variables.get(varname, val);

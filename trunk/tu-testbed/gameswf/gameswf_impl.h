@@ -394,6 +394,8 @@ namespace gameswf
 
 		virtual void	get_drag_state(drag_state* st) { assert(m_parent); m_parent->get_drag_state(st); }
 
+		virtual const char*	call_method(const char* method_call) { assert(0); return NULL; }
+
 		virtual void	set_visible(bool visible) { m_visible = visible; }
 		virtual bool	get_visible() const { return m_visible; }
 
