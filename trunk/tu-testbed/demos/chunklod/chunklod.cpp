@@ -111,13 +111,13 @@ void	lod_chunk::add_edge(lod_edge* e)
 // the crack between this chunk and a neighbor.  When we render
 // ourself, we'll call ->render() on this edge.
 {
+	edge_count++;
 	if (edges) {
 		edges = (lod_edge**) realloc(edges, sizeof(lod_edge*) * edge_count);
 	} else {
 		edges = (lod_edge**) malloc(sizeof(lod_edge*) * edge_count);
 	}
-	edges[edge_count] = e;
-	edge_count++;
+	edges[edge_count-1] = e;
 }
 
 
