@@ -14,29 +14,10 @@
 
 namespace gameswf
 {
-	// Dumb little proxy for holding button characters & applying transforms.
-	struct button_record_container : public character
-	{
-		int	m_id;
-
-		button_record_container(movie* parent, const matrix& mat, const cxform& cx, int id)
-			:
-			character(parent),
-			m_id(id)
-		{
-			set_matrix(mat);
-			set_cxform(cx);
-		}
-
-		virtual int	get_id() const { return m_id; }
-		virtual const char*	get_name() const { return ""; }
-	};
-
 	struct button_character_instance : public character
 	{
 		button_character_definition*	m_def;
 		array<character*>	m_record_character;
-		array<button_record_container*>	m_container;
 
 		enum mouse_flags
 		{
@@ -71,18 +52,16 @@ namespace gameswf
 
 			int r, r_num =  m_def->m_button_records.size();
 			m_record_character.resize(r_num);
-			m_container.resize(r_num);
 
 			for (r = 0; r < r_num; r++)
 			{
 				character_def* cdef = m_def->m_button_records[r].m_character;
 				const matrix&	mat = m_def->m_button_records[r].m_button_matrix;
 				const cxform&	cx = m_def->m_button_records[r].m_button_cxform;
-				button_record_container*	container = new button_record_container(
-					this, mat, cx, get_id());
-				m_container[r] = container;
 
-				character*	ch = cdef->create_character_instance(container);
+				character*	ch = cdef->create_character_instance(this);
+				ch->set_matrix(mat);
+				ch->set_cxform(cx);
 				m_record_character[r] = ch;
 				ch->restart();
 			}
@@ -91,12 +70,10 @@ namespace gameswf
 		~button_character_instance()
 		{
 			int r, r_num =  m_record_character.size();
-			assert(m_container.size() == r_num);
 
 			for (r = 0; r < r_num; r++)
 			{
 				delete m_record_character[r];
-				delete m_container[r];
 			}
 		}
 
@@ -180,10 +157,6 @@ namespace gameswf
 				    || (m_mouse_state == DOWN && rec.m_down)
 				    || (m_mouse_state == OVER && rec.m_over))
 				{
-//					display_info	sub_di = di;
-//					sub_di.m_matrix.concatenate(rec.m_button_matrix);
-//					sub_di.m_color_transform.concatenate(rec.m_button_cxform);
-					// @@ Hm, do we need a proxy container here?
 					m_record_character[i]->display();
 				}
 			}
@@ -441,15 +414,6 @@ namespace gameswf
 	// Constructor.
 	{
 	}
-
-
-// 	bool	button_character_definition::is_definition() const
-// 	// Return true, so that a containing movie knows to create an instance
-// 	// for storing in its display list, instead of storing the definition
-// 	// directly.
-// 	{
-// 		return true;
-// 	}
 
 
 	void	button_character_definition::read(stream* in, int tag_type, movie_definition_sub* m)
