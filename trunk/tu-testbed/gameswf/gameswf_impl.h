@@ -41,7 +41,7 @@ namespace gameswf
 	struct stream;
 	struct swf_event;
 
-	void save_extern_movie(const movie_interface* m);
+	void save_extern_movie(movie_interface* m);
 
 	// Extra internal interfaces added to movie_definition
 	struct movie_definition_sub : public movie_definition
