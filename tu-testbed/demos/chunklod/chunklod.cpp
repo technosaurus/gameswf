@@ -309,14 +309,14 @@ int	lod_chunk::render(const plane_info frustum[6], cull::result_info cull_info, 
 //
 // Returns the number of triangles rendered.
 {
-//	// Frustum culling.
-//	if (cull_info.active_planes) {
-//		cull_info = compute_box_visibility(box_center, box_extent, frustum, cull_info);
-//		if (cull_info.culled) {
-//			// Bounding box is not visible; no need to draw this node or its children.
-//			return;
-//		}
-//	}
+	// Frustum culling.
+	if (cull_info.active_planes) {
+		cull_info = cull::compute_box_visibility(box_center, box_extent, frustum, cull_info);
+		if (cull_info.culled) {
+			// Bounding box is not visible; no need to draw this node or its children.
+			return 0;
+		}
+	}
 
 	int	triangle_count = 0;
 
