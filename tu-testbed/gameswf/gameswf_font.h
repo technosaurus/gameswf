@@ -32,10 +32,14 @@ namespace gameswf
 	};
 
 
-	struct font
+	struct font : public resource
 	{
 		font();
 		~font();
+
+		// override from resource.
+		virtual font*	cast_to_font() { return this; }
+
 		int	get_glyph_count() const { return m_glyphs.size(); }
 		shape_character*	get_glyph(int glyph_index) const;
 		void	read(stream* in, int tag_type, movie* m);

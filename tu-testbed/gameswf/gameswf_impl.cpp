@@ -32,18 +32,6 @@
 
 namespace gameswf
 {
-	static string_hash<movie_interface*>	s_movie_library;
-
-	static file_opener_function	s_opener_function = NULL;
-
-	void	register_file_opener_callback(file_opener_function opener)
-	// Remember the given function pointer, and use it to open
-	// files for loading library movies.
-	{
-		s_opener_function = opener;
-	}
-
-	
 
 
 	// Keep a table of loader functions for the different tag types.
@@ -430,6 +418,7 @@ namespace gameswf
 		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 		array<action_buffer*>	m_action_list;	// pending actions.
 		string_hash<int>	m_named_frames;
+		string_hash<resource*>	m_exports;
 
 		// array<int>	m_frame_start;	// tag indices of frame starts. ?
 
@@ -501,6 +490,29 @@ namespace gameswf
 			*y = m_mouse_y;
 			*buttons = m_mouse_buttons;
 		}
+
+
+		virtual void	export_resource(const tu_string& symbol, resource* res)
+		// Expose one of our resources under the given symbol,
+		// for export.  Other movies can import it.
+		{
+			// SWF sometimes exports the same thing more than once!
+			if (m_exports.get(symbol, NULL) == false)
+			{
+				m_exports.add(symbol, res);
+			}
+		}
+
+
+		virtual resource*	get_exported_resource(const tu_string& symbol)
+		// Get the named exported resource, if we expose it.
+		// Otherwise return NULL.
+		{
+			resource*	res = NULL;
+			m_exports.get(symbol, &res);
+			return res;
+		}
+
 
 		void	add_character(int character_id, character* c)
 		{
@@ -879,6 +891,7 @@ namespace gameswf
 			{
 				int	tag_type = str.open_tag();
 				loader_function	lf = NULL;
+				log_msg("tag_type = %d\n", tag_type);//xxxxxx
 				if (tag_type == 1)
 				{
 					// show frame tag -- advance to the next frame.
@@ -964,6 +977,8 @@ namespace gameswf
 			register_tag_loader(39, sprite_loader);
 			register_tag_loader(43, frame_label_loader);
 			register_tag_loader(48, define_font_loader);
+			register_tag_loader(56, export_loader);
+			register_tag_loader(57, import_loader);
 		}
 	}
 
@@ -981,6 +996,69 @@ namespace gameswf
 	}
 
 
+	//
+	// library stuff, for sharing resources among different movies.
+	//
+
+
+	static string_hash<movie*>	s_movie_library;
+
+	static file_opener_function	s_opener_function = NULL;
+
+	void	register_file_opener_callback(file_opener_function opener)
+	// Host calls this to register a function for opening files
+	// for loading library movies.
+	{
+		s_opener_function = opener;
+	}
+
+	
+	movie*	load_library_movie(const tu_string& url)
+	// Try to load a movie from the given url, if we haven't
+	// loaded it already.  Add it to our library on success, and
+	// return a pointer to it.
+	{
+		// Is the movie alread in the library?
+		{
+			movie*	m = NULL;
+			s_movie_library.get(url, &m);
+			if (m)
+			{
+				// Return cached movie.
+				return m;
+			}
+		}
+
+		// Try to open a file under the url.
+		if (s_opener_function == NULL)
+		{
+			// Don't even have a way to open the file.
+			log_error("error: no file opener function; "
+				  "see gameswf::register_file_opener_callback\n");
+			return NULL;
+		}
+		tu_file*	in_file = s_opener_function(url.c_str());
+		if (in_file == NULL)
+		{
+			log_error("error: file opener function returned null\n");
+			return NULL;
+		}
+		else if (in_file->get_error())
+		{
+			log_error("error: file opener can't open '%s'\n", url.c_str());
+			return NULL;
+		}
+
+		ensure_loaders_registered();
+
+		movie_impl*	m = new movie_impl;
+		m->read(in_file);
+
+		s_movie_library.add(url, m);
+
+		return m;
+	}
+	
 
 	//
 	// Some tag implementations
@@ -2226,7 +2304,100 @@ namespace gameswf
 
 		m->add_execute_tag(da);
 	}
-};
+
+
+	//
+	// export
+	//
+
+
+	void	export_loader(stream* in, int tag_type, movie* m)
+	// Load an export tag (for exposing internal resources of m)
+	{
+		assert(tag_type == 56);
+
+		int	count = in->read_u16();
+
+		IF_DEBUG(log_msg("export: count = %d\n", count));
+
+		// Read the exports.
+		for (int i = 0; i < count; i++)
+		{
+			Uint16	id = in->read_u16();
+			char*	symbol_name = in->read_string();
+			IF_DEBUG(log_msg("export: id = %d, name = %s\n", id, symbol_name));
+
+			if (font* f = m->get_font(id))
+			{
+				// Expose this font for export.
+				m->export_resource(tu_string(symbol_name), f);
+			}
+			else
+			{
+				log_error("export error: don't know how to export resource '%s'\n",
+					  symbol_name);
+			}
+
+			delete [] symbol_name;
+		}
+	}
+
+
+	//
+	// import
+	//
+
+
+	void	import_loader(stream* in, int tag_type, movie* m)
+	// Load an import tag (for pulling in external resources)
+	{
+		assert(tag_type == 57);
+
+		char*	source_url = in->read_string();
+		int	count = in->read_u16();
+
+		log_msg("import: source_url = %s, count = %d\n", source_url, count);
+
+		// Try to load the source movie into the movie library.
+		movie*	source_movie = load_library_movie(source_url);
+		if (source_movie == NULL)
+		{
+			// Give up on imports.
+			log_error("can't import movie from url %s\n", source_url);
+			return;
+		}
+
+		// Get the imports.
+		for (int i = 0; i < count; i++)
+		{
+			Uint16	id = in->read_u16();
+			char*	symbol_name = in->read_string();
+			log_msg("import: id = %d, name = %s\n", id, symbol_name);
+
+			resource* res = source_movie->get_exported_resource(symbol_name);
+			if (res == NULL)
+			{
+				log_error("import error: resource '%s' is not exported from movie '%s'\n",
+					  symbol_name, source_url);
+			}
+			else if (font* f = res->cast_to_font())
+			{
+				// Add this shared font to the currently-loading movie.
+				m->add_font(id, f);
+			}
+			else
+			{
+				log_error("import error: resource '%s' from movie '%s' has unknown type\n",
+					  symbol_name, source_url);
+			}
+
+			delete [] symbol_name;
+		}
+
+		delete [] source_url;
+	}
+
+}
 
 
 // Local Variables:

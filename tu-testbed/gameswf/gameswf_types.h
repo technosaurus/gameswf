@@ -144,7 +144,19 @@ namespace gameswf
 				(i < 2) ? m_y_min : m_y_max);
 		}
 	};
+
+
+	struct font;
 	
+	// A polymorphic class for handling different types of
+	// resources.
+	struct resource
+	{
+		virtual ~resource() {}
+
+		// Override in derived classes that implement font interface.
+		virtual font*	cast_to_font() { return 0; }
+	};
 
 };	// end namespace gameswf
 

@@ -62,7 +62,7 @@ namespace gameswf
 			for (int i = 0; i < glyph_count; i++)
 			{
 				m_glyphs[i].m_glyph_index = in->read_uint(glyph_bits);
-				m_glyphs[i].m_glyph_advance = in->read_sint(advance_bits);
+				m_glyphs[i].m_glyph_advance = (float) in->read_sint(advance_bits);
 			}
 		}
 	};

@@ -33,6 +33,12 @@ namespace gameswf
 
 	struct movie : public movie_interface
 	{
+		virtual void	export_resource(const tu_string& symbol, resource* res) {}
+		virtual resource*	get_exported_resource(const tu_string& symbol)
+		{
+			return NULL;
+		}
+
 		virtual void	add_character(int id, character* ch) {}
 		virtual character*	get_character(int id) { return NULL; }
 		virtual void	add_font(int id, font* ch) {}
@@ -211,6 +217,8 @@ namespace gameswf
 	void	do_action_loader(stream* in, int tag_type, movie* m);
 	void	button_character_loader(stream* in, int tag_type, movie* m);
 	void	frame_label_loader(stream* in, int tag_type, movie* m);
+	void	export_loader(stream* in, int tag_type, movie* m);
+	void	import_loader(stream* in, int tag_type, movie* m);
 
 
 	struct texture_glyph;
