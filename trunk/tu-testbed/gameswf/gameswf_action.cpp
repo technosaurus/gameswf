@@ -49,6 +49,8 @@
 // Sprite built in methods:
 // play()
 // stop()
+// gotoAndStop()
+// gotoAndPlay()
 // nextFrame()
 // startDrag()
 // getURL()
@@ -88,7 +90,12 @@ namespace gameswf
 	// as_as_function
 	//
 
-	void	as_as_function::operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg)
+	void	as_as_function::operator()(
+		as_value* result,
+		as_object_interface* this_ptr,
+		as_environment* caller_env,
+		int nargs,
+		int first_arg)
 	// Dispatch.
 	{
 		as_environment*	our_env = m_env;
@@ -284,7 +291,7 @@ namespace gameswf
 
 	// One-argument simple functions.
 	#define MATH_WRAP_FUNC1(funcname)											\
-	void	math_##funcname(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
+	void	math_##funcname(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
 	{															\
 		double	arg = env->bottom(first_arg_bottom_index).to_number();							\
 		result->set(funcname(arg));											\
@@ -305,7 +312,7 @@ namespace gameswf
 
 	// Two-argument functions.
 	#define MATH_WRAP_FUNC2_EXP(funcname, expr)										\
-	void	math_##funcname(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
+	void	math_##funcname(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
 	{															\
 		double	arg0 = env->bottom(first_arg_bottom_index).to_number();							\
 		double	arg1 = env->bottom(first_arg_bottom_index - 1).to_number();						\
@@ -317,12 +324,12 @@ namespace gameswf
 	MATH_WRAP_FUNC2_EXP(pow, (pow(arg0, arg1)));
 
 	// A couple of oddballs.
-	void	math_random(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	math_random(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
 	{
 		// Random number between 0 and 1.
 		result->set(tu_random::next_random() / double(Uint32(0x0FFFFFFFF)));
 	}
-	void	math_round(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	math_round(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
 	{
 		// round argument to nearest int.
 		double	arg0 = env->bottom(first_arg_bottom_index).to_number();
@@ -473,7 +480,7 @@ namespace gameswf
 	};
 
 
-	void	key_add_listener(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_add_listener(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	// Add a listener (first arg is object reference) to our list.
 	// Listeners will have "onKeyDown" and "onKeyUp" methods
 	// called on them when a key changes state.
@@ -497,7 +504,7 @@ namespace gameswf
 		ko->add_listener(listener);
 	}
 
-	void	key_get_ascii(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_get_ascii(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	// Return the ascii value of the last key pressed.
 	{
 		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
@@ -518,7 +525,7 @@ namespace gameswf
 		}
 	}
 
-	void	key_get_code(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_get_code(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	// Returns the keycode of the last key pressed.
 	{
 		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
@@ -527,7 +534,7 @@ namespace gameswf
 		result->set(ko->get_last_key_pressed());
 	}
 
-	void	key_is_down(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_is_down(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	// Return true if the specified (first arg keycode) key is pressed.
 	{
 		if (nargs < 1)
@@ -544,7 +551,7 @@ namespace gameswf
 		result->set(ko->is_key_down(code));
 	}
 
-	void	key_is_toggled(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_is_toggled(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	// Given the keycode of NUM_LOCK or CAPSLOCK, returns true if
 	// the associated state is on.
 	{
@@ -552,7 +559,7 @@ namespace gameswf
 		result->set(false);
 	}
 
-	void	key_remove_listener(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_remove_listener(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	// Remove a previously-added listener.
 	{
 		if (nargs < 1)
@@ -1539,6 +1546,8 @@ namespace gameswf
 				case 0x81:	// goto frame
 				{
 					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					// Convert from 1-based to 0-based
+					frame--;
 					env->get_target()->goto_frame(frame);
 					break;
 				}
@@ -1841,8 +1850,10 @@ namespace gameswf
 					break;
 				}
 
-				case 0x9F:	// goto expression (?)
+				case 0x9F:	// goto frame expression (?)
 				{
+					assert(0);
+					log_error("error: unimplemented opcode 0x9F, goto_frame_exp\n");
 					break;
 				}
 				
@@ -2670,7 +2681,7 @@ namespace gameswf
 		// Show instruction.
 		if (info == NULL)
 		{
-			log_msg("<unknown>[%02X]", action_id);
+			log_msg("<unknown>[0x%02X]", action_id);
 		}
 		else
 		{
