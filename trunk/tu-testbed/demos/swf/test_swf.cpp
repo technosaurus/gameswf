@@ -82,12 +82,17 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	// Turn on alpha blending.
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	glMatrixMode(GL_PROJECTION);
 	glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
 	bool	paused = false;
+	float	speed_scale = 1.0f;
 	Uint32	last_ticks = SDL_GetTicks();
 	for (;;)
 	{
@@ -95,6 +100,11 @@ int	main(int argc, char *argv[])
 		int	delta_ticks = ticks - last_ticks;
 		float	delta_t = delta_ticks / 1000.f;
 		last_ticks = ticks;
+
+		if (paused == true)
+		{
+			delta_t = 0.0f;
+		}
 
 		// Handle input.
 		SDL_Event	event;
@@ -128,6 +138,16 @@ int	main(int argc, char *argv[])
 					printf("hilite depth = %d\n", hilite_depth);
 				}
 #endif // 0
+				else if (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS)
+				{
+					paused = true;
+					delta_t = -0.1f;
+				}
+				else if (key == SDLK_RIGHTBRACKET || key == SDLK_KP_PLUS)
+				{
+					paused = true;
+					delta_t = +0.1f;
+				}
 
 				break;
 			}
@@ -141,25 +161,22 @@ int	main(int argc, char *argv[])
 			}
 		}
 
-		if (paused == false)
+		int	frame0 = m->get_current_frame();
 		{
-			int	frame0 = m->get_current_frame();
-			{
-				m->advance(delta_t);
-			}
-			int	frame1 = m->get_current_frame();
-			if (frame0 != frame1)
-			{
-				// Movie frame has changed -- show the new frame.
+			m->advance(delta_t * speed_scale);
+		}
+		int	frame1 = m->get_current_frame();
+		if (frame0 != frame1)
+		{
+			// Movie frame has changed -- show the new frame.
 
-				glDisable(GL_DEPTH_TEST);	// Disable depth testing.
-				glDrawBuffer(GL_BACK);
-				glClear(GL_COLOR_BUFFER_BIT);
+			glDisable(GL_DEPTH_TEST);	// Disable depth testing.
+			glDrawBuffer(GL_BACK);
+			glClear(GL_COLOR_BUFFER_BIT);
 
-				m->display();
+			m->display();
 
-				SDL_GL_SwapBuffers();
-			}
+			SDL_GL_SwapBuffers();
 		}
 
 		SDL_Delay(10);

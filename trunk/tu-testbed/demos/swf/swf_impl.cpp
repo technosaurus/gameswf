@@ -987,7 +987,8 @@ namespace swf
 			m_time += delta_time;
 			int	target_frame_number = (int) floorf(m_time * m_frame_rate);
 
-			if (target_frame_number >= m_frame_count)
+			if (target_frame_number >= m_frame_count
+			    || target_frame_number < 0)
 			{
  				// Loop.  Correct?  Or should we hang?
   				target_frame_number = 0;
@@ -1061,6 +1062,9 @@ namespace swf
 				extern int	hilite_depth;
 				if (di.m_depth == hilite_depth)
 				{
+					// Don't draw any more layers.
+					break;
+
 					// Draw this layer in red.
 					cxform	saved = di.m_color_transform;
 					di.m_color_transform.m_[0][0] = 0;
@@ -1577,51 +1581,29 @@ namespace swf
 		{
 			if (m_fill0 > 0)
 			{
-				fill_styles[m_fill0 - 1].apply(di);
-
-				// @@ really we need to pass these styles to
-				// the renderer, since a self-intersecting
-				// shape needs to select between fill0 and
-				// fill1 depending on what the shape turns out
-				// to be.
-
-				swf::render::begin_shape(m_ax, m_ay);
-				for (int i = 0; i < m_edges.size(); i++)
-				{
-					m_edges[i].emit_curve();
-				}
-				swf::render::end_shape();
+				fill_styles[m_fill0 - 1].apply(di);	//xxxx
+				swf::render::fill_style0(/*...*/);
 			}
+			// else { swf::render::fill_style0(/* ... null ... */); }
 
 			if (m_fill1 > 0)
 			{
 				fill_styles[m_fill1 - 1].apply(di);
-
-				// @@ really we need to pass these styles to
-				// the renderer, since a self-intersecting
-				// shape needs to select between fill0 and
-				// fill1 depending on what the shape turns out
-				// to be.
-
-				swf::render::begin_shape(m_ax, m_ay);
-				for (int i = 0; i < m_edges.size(); i++)
-				{
-					m_edges[i].emit_curve();
-				}
-				swf::render::end_shape();
+				swf::render::fill_style1(/*...*/);
 			}
 
 			if (m_line > 0)
 			{
 				line_styles[m_line - 1].apply(di);	// actually need to pass this to swf::render
-
-				swf::render::begin_shape(m_ax, m_ay);
-				for (int i = 0; i < m_edges.size(); i++)
-				{
-					m_edges[i].emit_curve();
-				}
-				swf::render::end_shape();
+				swf::render::line_style(/*...*/);
 			}
+
+			swf::render::begin_path(m_ax, m_ay);
+			for (int i = 0; i < m_edges.size(); i++)
+			{
+				m_edges[i].emit_curve();
+			}
+			swf::render::end_path();
 		}
 	};
 
@@ -1869,22 +1851,17 @@ namespace swf
 
 			// @@ emit edges to the renderer...
 
-			// xx For now, just spam the screen with a
-			// wireframe of our shape...
-			float	x = 0, y = 0;
-
 			glMatrixMode(GL_MODELVIEW);
 			glPushMatrix();
 
 			di.m_matrix.ogl_multiply();
 
-//			rgba	c(255, 255, 255, 255);
-//			di.m_color_transform.transform(c).ogl_color();
-
+			swf::render::begin_shape();
 			for (int i = 0; i < m_paths.size(); i++)
 			{
 				m_paths[i].display(di, fill_styles, m_line_styles);
 			}
+			swf::render::end_shape();
 
 			glPopMatrix();
 		}
@@ -2493,7 +2470,8 @@ namespace swf
 			m_time += delta_time;
 			int	target_frame_number = (int) floorf(m_time * m_def->m_movie->m_frame_rate);
 
-			if (target_frame_number >= m_def->m_frame_count)
+			if (target_frame_number >= m_def->m_frame_count
+			    || target_frame_number < 0)
 			{
 				// Loop.  Correct?  Or should we hang?
 				target_frame_number = 0;
@@ -2575,10 +2553,17 @@ namespace swf
 
 				display_info	sub_di = di;
 				sub_di.concatenate(dobj);
-//				/* xxx */
-//				sub_di.m_color_transform.m_[0][0] = 1;
-//				sub_di.m_color_transform.m_[1][0] = 1;
-//				sub_di.m_color_transform.m_[2][0] = 0;
+#if 1
+				// xxxx DEBUG HACK
+				extern int	hilite_depth;
+				if (di.m_depth == hilite_depth)
+				{
+					// Don't draw any more layers.
+					break;
+				}
+				else
+				// xxxx DEBUG HACK
+#endif // 1
 				dobj.m_character->display(sub_di);
 			}
 		}
