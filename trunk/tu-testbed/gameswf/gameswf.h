@@ -305,13 +305,13 @@ namespace gameswf
 		//
 		// This is not an ActionScript language parser, it
 		// doesn't recognize expressions or anything tricky.
-#ifdef __GCC__
+#ifdef __GNUC__
 		// use the following to catch errors: (only with gcc)
 		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
-			__attribute__((format (printf, 2, 3))) = 0;
-#else	// not __GCC__
+			__attribute__((format (printf, 3, 4))) = 0;	// "this" is an implied param, so fmt is 3 and ... is 4!
+#else	// not __GNUC__
 		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
-#endif	// not __GCC__
+#endif	// not __GNUC__
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args) = 0;
 
 
