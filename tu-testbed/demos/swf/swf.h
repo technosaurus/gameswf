@@ -24,9 +24,11 @@ namespace swf
 	{
 		virtual int	get_width() = 0;
 		virtual int	get_height() = 0;
+		virtual int	get_current_frame() const = 0;
 
 		virtual void	restart() = 0;
 		virtual void	advance(float delta_time) = 0;
+		virtual void	goto_frame(int frame_number) = 0;
 		virtual void	display() = 0;
 	};
 

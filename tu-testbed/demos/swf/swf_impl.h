@@ -48,9 +48,11 @@ namespace swf
 		}
 
 		virtual void	move_display_object(Uint16 depth,
-											const cxform& color_transform,
-											const matrix& mat,
-											float ratio)
+						    bool use_cxform,
+						    const cxform& color_transform,
+						    bool use_matrix,
+						    const matrix& mat,
+						    float ratio)
 		{
 		}
 
@@ -59,21 +61,33 @@ namespace swf
 		}
 
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
+
+		void	goto_frame(int target_frame_number) { assert(0); }
 	};
 
 
 	// SWF movies contain "characters" to represent the various elements.
 	struct character : public movie
 	{
+		int	m_id;
+		
+		character()
+			:
+			m_id(-1)
+		{
+		}
+
 		virtual ~character() {}
 		virtual void	display(const display_info& di) {}	// renderer state contains context
 
 		// Movie interfaces.  By default do nothing.  sprite will override these.
 		int	get_width() { return 0; }
 		int	get_height() { return 0; }
-		virtual void	restart() { assert(0); }
-		virtual void	advance(float delta_time) {}
-		virtual void	display() {}
+		int	get_current_frame() const { assert(0); return 0; }
+		void	restart() { assert(0); }
+		void	advance(float delta_time) {}
+		void	goto_frame(int target_frame) {}
+		void	display() {}
 
 		// Instance/definition interface; useful for things
 		// like sprites, which have an immutable definition
