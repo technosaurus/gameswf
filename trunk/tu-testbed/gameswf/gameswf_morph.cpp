@@ -50,14 +50,16 @@ namespace gameswf {
 		int fill_style_count = in->read_variable_count();
 		
 		IF_VERBOSE_PARSE(log_msg("smd: fsc = %d\n", fill_style_count));
-		for (int i = 0; i < fill_style_count; i++)
+		for (int i = 0; i < fill_style_count; i++) {
 			m_fill_styles.push_back(morph_fill_style(in, m));
+		}
 
 		int line_style_count = in->read_variable_count();
 		
 		IF_VERBOSE_PARSE(log_msg("smd: lsc = %d\n", line_style_count));
-		for (int i = 0; i < line_style_count; i++)
+		for (int i = 0; i < line_style_count; i++) {
 			m_line_styles.push_back(morph_line_style(in));
+		}
 
 		int edges1 = read_shape_record(in, m, true);
 		IF_VERBOSE_PARSE(log_msg("morph: read %d edges for shape 1\n",
@@ -168,9 +170,7 @@ namespace gameswf {
 			}
 
 			int flags = in->read_uint(5);
-			if (flags == 0) {
-				return edge_count;
-			}
+			if (flags == 0) return edge_count;
 
 			if (flags & 0x01) { // MOVETO
 				int num_move_bits = in->read_uint(5);
@@ -193,24 +193,21 @@ namespace gameswf {
 			if ((flags & 0x02) && fill_bits) { // FILL0
 				assert(start);
 				int style = in->read_uint(fill_bits);
-				if (style > 0)
-					style += fill_base;
+				if (style > 0) style += fill_base;
 				current_path.m_fill0 = style;
 			}
 
 			if ((flags & 0x04) && fill_bits) { // FILL1
 				assert(start);
 				int style = in->read_uint(fill_bits);
-				if (style > 0)
-					style += fill_base;
+				if (style > 0) style += fill_base;
 				current_path.m_fill1 = style;
 			}
 			
 			if ((flags & 0x08) && line_bits) { // LINE
 				assert(start);
 				int style = in->read_uint(line_bits);
-				if (style > 0)
-					style += line_base;
+				if (style > 0) style += line_base;
 				current_path.m_line = style;
 			}
 
@@ -229,12 +226,14 @@ namespace gameswf {
 				line_base = m_line_styles.size();
 
 				int count = in->read_variable_count();
-				for (int i = 0; i < count; i++)
+				for (int i = 0; i < count; i++) {
 					m_fill_styles.push_back(morph_fill_style(in, m));
+				}
 
 				count = in->read_variable_count();
-				for (int i = 0; i < count; i++)
+				for (int i = 0; i < count; i++) {
 					m_line_styles.push_back(morph_line_style(in));
+				}
 
 				fill_bits = in->read_uint(4);
 				fill_bits = in->read_uint(4);
@@ -263,10 +262,12 @@ namespace gameswf {
 
 	morph_fill_style::~morph_fill_style()
 	{
-		if (m_gradient_bitmap_info[0])
+		if (m_gradient_bitmap_info[0]) {
 			m_gradient_bitmap_info[0]->drop_ref();
-		if (m_gradient_bitmap_info[1])
+		}
+		if (m_gradient_bitmap_info[1]) {
 			m_gradient_bitmap_info[1]->drop_ref();
+		}
 	}
 
 	void morph_fill_style::read(stream* in, movie_definition_sub* m)
