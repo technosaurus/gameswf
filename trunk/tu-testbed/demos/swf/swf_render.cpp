@@ -104,14 +104,22 @@ namespace render
 			int	w = 1; while (w < im->m_width) { w <<= 1; }
 			int	h = 1; while (h < im->m_height) { h <<= 1; }
 
-			image::rgba*	rescaled = image::create_rgba(w, h);
-			image::resample(rescaled, 0, 0, w - 1, h - 1,
-					im, 0, 0, im->m_width, im->m_height);
+			if (w != im->m_width
+			    || h != im->m_height)
+			{
+				image::rgba*	rescaled = image::create_rgba(w, h);
+				image::resample(rescaled, 0, 0, w - 1, h - 1,
+						im, 0, 0, im->m_width, im->m_height);
 		
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
-//			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_image->m_width, m_image->m_height, GL_RGB, GL_UNSIGNED_BYTE, m_image->m_data);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
 
-			delete rescaled;
+				delete rescaled;
+			}
+			else
+			{
+				// Use original image directly.
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+			}
 		}
 	};
 
@@ -131,6 +139,7 @@ namespace render
 		rgba	m_color;
 		const bitmap_info*	m_bitmap_info;
 		matrix	m_bitmap_matrix;
+		cxform	m_bitmap_color_transform;
 
 		fill_style()
 			:
@@ -163,11 +172,34 @@ namespace render
 				{
 					// Set up the texture for rendering.
 
+					{
+						// For the moment we can only handle the modulate part of the
+						// color transform...
+						// How would we handle any additive part?  Realistically we
+						// need to use a pixel shader.
+						glColor4f(m_bitmap_color_transform.m_[0][0],
+							  m_bitmap_color_transform.m_[1][0],
+							  m_bitmap_color_transform.m_[2][0],
+							  m_bitmap_color_transform.m_[3][0]
+							  );
+					}
+
 					glEnable(GL_TEXTURE_2D);
 					glBindTexture(GL_TEXTURE_2D, m_bitmap_info->m_texture_id);
 					glEnable(GL_TEXTURE_GEN_S);
 					glEnable(GL_TEXTURE_GEN_T);
 				
+					if (m_mode == BITMAP_CLAMP)
+					{
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+					}
+					else
+					{
+						assert(m_mode == BITMAP_WRAP);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+					}
 
 					// It appears as though the bitmap matrix is the
 					// inverse of the matrix I want to apply to the TWIPs
@@ -203,12 +235,13 @@ namespace render
 
 		void	disable() { m_mode = INVALID; }
 		void	set_color(rgba color) { m_mode = COLOR; m_color = color; }
-		void	set_bitmap(const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm)
+		void	set_bitmap(const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm, const cxform& color_transform)
 		{
 			m_mode = (wm == WRAP_REPEAT) ? BITMAP_WRAP : BITMAP_CLAMP;
 			m_color = rgba();
 			m_bitmap_info = bi;
 			m_bitmap_matrix = m;
+			m_bitmap_color_transform = color_transform;
 		}
 		bool	is_valid() const { return m_mode != INVALID; }
 	};
@@ -329,6 +362,8 @@ namespace render
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// GL_MODULATE
+
+		glDisable(GL_TEXTURE_2D);
 
 		// Clear the background, if background color has alpha > 0.
 		if (background_color.m_a > 0.0f)
@@ -482,14 +517,14 @@ namespace render
 	{
 		if (fill_side == 0)
 		{
-			s_current_left_style.set_bitmap(bi, m, wm);
+			s_current_left_style.set_bitmap(bi, m, wm, s_cxform_stack.back());
 			s_shape_has_fill = true;
 		}
 		else
 		{
 			assert(fill_side == 1);
 
-			s_current_right_style.set_bitmap(bi, m, wm);
+			s_current_right_style.set_bitmap(bi, m, wm, s_cxform_stack.back());
 			s_shape_has_fill = true;
 		}
 	}

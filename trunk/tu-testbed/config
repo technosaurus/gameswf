@@ -43,9 +43,11 @@ LIB_PRE :=
 OBJ_EXT := obj
 EXE_EXT := .exe
 DLL_EXT := dll
+SDL_DIR := $(TOP)/../SDL-1.2.5
+SDL_INCLUDE := -I "$(SDL_DIR)/include"
 SDL_LIBS := winmm.lib dxguid.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
-LIBS := opengl32.lib glu32.lib SDL_image.lib SDL.lib gdi32.lib oldnames.lib $(SDL_LIBS)
-CFLAGS := $(CFLAGS) /MD -GR -GX -DWIN32=1 $(USE_DL_MALLOC_FLAG) -W3 -I "$(INCLUDE)/SDL"
+LIBS := opengl32.lib glu32.lib $(SDL_DIR)/SDL.lib gdi32.lib oldnames.lib $(SDL_LIBS)
+CFLAGS := $(CFLAGS) /MD -GR -GX -DWIN32=1 $(USE_DL_MALLOC_FLAG) -W3 $(SDL_INCLUDE)
 LDFLAGS := /link /NODEFAULTLIB:libc.lib /INCREMENTAL:NO
 
 LIBPNG_DIR := $(TOP)/../libpng
@@ -83,12 +85,12 @@ LIB_EXT := a
 OBJ_EXT := o
 EXE_EXT :=
 DLL_EXT := so
-LIBS := -lSDL_image -lSDL -lGL -lGLU -lm
+LIBS := -lSDL -lGL -lGLU -lm
 DLL_LIBS := -ldl
 SDL_CFLAGS := $(shell sdl-config --cflags)
 SDL_LDFLAGS := $(shell sdl-config --libs)
 CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -fpic -Wall
-LDFLAGS := -lGL -lGLU -lSDL_image
+LDFLAGS := -lGL -lGLU
 MAKE_DLL := gcc -shared
 
 # On Unix-like machines, these libraries are usually installed in
