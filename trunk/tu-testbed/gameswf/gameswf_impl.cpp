@@ -293,7 +293,6 @@ namespace gameswf
 		void	add_character(int character_id, character_def* c)
 		{
 			assert(c);
-//			assert(c->get_id() == character_id);
 			m_characters.add(character_id, c);
 		}
 
@@ -1153,7 +1152,6 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-//		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1176,7 +1174,6 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-//		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1253,7 +1250,6 @@ namespace gameswf
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
 		bitmap_character_rgba*	ch = new bitmap_character_rgba();
-//		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1299,7 +1295,6 @@ namespace gameswf
 		{
 			// RGB image data.
 			bitmap_character_rgb*	ch = new bitmap_character_rgb();
-//			ch->set_id(character_id);
 			ch->m_image = image::create_rgb(width, height);
 
 			if (bitmap_format == 3)
@@ -1406,7 +1401,6 @@ namespace gameswf
 			assert(tag_type == 36);
 
 			bitmap_character_rgba*	ch = new bitmap_character_rgba();
-//			ch->set_id(character_id);
 			ch->m_image = image::create_rgba(width, height);
 
 			if (bitmap_format == 3)
@@ -1513,7 +1507,6 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		shape_character_def*	ch = new shape_character_def;
-//		ch->set_id(character_id);
 		ch->read(in, tag_type, true, m);
 
 		IF_VERBOSE_PARSE(log_msg("shape_loader: id = %d, rect ", character_id);
@@ -2518,20 +2511,6 @@ namespace gameswf
 		//
 
 
-		// don't override set_self_value; it's nonsensical for sprite_instance.
-
-// @@ nuke
-#if 0
-		/* sprite_instance */
-		virtual bool	get_self_value(as_value* val)
-		// Return a reference to ourself.
-		{
-			val->set(static_cast<as_object_interface*>(this));
-			return true;
-		}
-#endif // 0
-
-
 		/* sprite_instance */
 		virtual void	set_variable(const char* path_to_var, const char* new_value)
 		{
@@ -3070,7 +3049,6 @@ namespace gameswf
 		int	character_id = in->read_u16();
 
 		sprite_definition*	ch = new sprite_definition(m);	// @@ combine sprite_definition with movie_def_impl
-//		ch->set_id(character_id);
 		ch->read(in);
 
 		IF_VERBOSE_PARSE(log_msg("sprite: char id = %d\n", character_id));
@@ -3144,7 +3122,6 @@ namespace gameswf
 		int	character_id = in->read_u16();
 
 		button_character_definition*	ch = new button_character_definition;
-//		ch->set_id(character_id);
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);
@@ -3206,7 +3183,7 @@ namespace gameswf
 		char*	source_url = in->read_string();
 		int	count = in->read_u16();
 
-		log_msg("import: source_url = %s, count = %d\n", source_url, count);
+		IF_VERBOSE_PARSE(log_msg("import: source_url = %s, count = %d\n", source_url, count));
 
 		// Try to load the source movie into the movie library.
 		movie_definition_sub*	source_movie = create_library_movie_sub(source_url);
@@ -3222,7 +3199,7 @@ namespace gameswf
 		{
 			Uint16	id = in->read_u16();
 			char*	symbol_name = in->read_string();
-			log_msg("import: id = %d, name = %s\n", id, symbol_name);
+			IF_VERBOSE_PARSE(log_msg("import: id = %d, name = %s\n", id, symbol_name));
 
 			resource* res = source_movie->get_exported_resource(symbol_name);
 			if (res == NULL)
