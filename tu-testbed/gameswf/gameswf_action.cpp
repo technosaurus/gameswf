@@ -448,7 +448,8 @@ namespace gameswf
 					movie*	target = env->find_target(env->top(2).to_tu_string());
 					if (target)
 					{
-						target->set_property(env->top(1).to_number(), env->top(0));
+						// double to int cast !
+						target->set_property( (int) env->top(1).to_number(), env->top(0));
 					}
 					env->drop(3);
 					break;
