@@ -280,7 +280,7 @@ void	make_kd_trees(array<kd_tree_dynamic*>* treelist, const char* filename)
 
 
 
-void	print_ray_stats(uint64 start_ticks, uint64 end_ticks, int ray_count)
+void	print_ray_stats(uint64 start_ticks, uint64 end_ticks, int ray_count, int hit_count)
 {
 	assert(ray_count > 0);
 
@@ -292,6 +292,7 @@ void	print_ray_stats(uint64 start_ticks, uint64 end_ticks, int ray_count)
 	       ray_count, seconds, secs_per_ray * 1000000,
 	       rays_per_sec / 1000
 	       );
+	printf("hit_count: %d\n", hit_count);
 	printf("tests: %d nodes, %d leaves, %d faces\n",
 	       kd_tree_packed::s_ray_test_node_count,
 	       kd_tree_packed::s_ray_test_leaf_count,
@@ -338,6 +339,8 @@ void	test_cast_against_tree(const array<kd_tree_dynamic*>& treelist)
 
 	uint64	start_cast_ticks = tu_timer::get_profile_ticks();
 
+	int	hit_count = 0;
+
 	axial_box	unit_box(vec3(-0.5f, -0.5f, -0.5f), vec3(0.5f, 0.5f, 0.5f));
 
 	for (int i = 0; i < RAY_COUNT; i++)
@@ -370,13 +373,17 @@ void	test_cast_against_tree(const array<kd_tree_dynamic*>& treelist)
 		for (int ti = 0, tn = kds.size(); ti < tn; ti++)
 		{
 			result = kds[ti]->ray_test(ray);
-			if (result) break;	// early out on hit
+			if (result)
+			{
+				hit_count++;
+				break;	// early out on hit
+			}
 		}
 	}
 
 	uint64	end_ticks = tu_timer::get_profile_ticks();
 
-	print_ray_stats(start_cast_ticks, end_ticks, RAY_COUNT);
+	print_ray_stats(start_cast_ticks, end_ticks, RAY_COUNT, hit_count);
 }
 
 
@@ -472,6 +479,8 @@ void	test_cast_recorded_rays(const array<kd_tree_dynamic*>& treelist, const char
 
 	uint64	start_cast_ticks = tu_timer::get_profile_ticks();
 
+	int	hit_count = 0;
+
 	for (int i = 0, n = rays.size(); i < n; i += 2)
 	{
 		const vec3&	start = rays[i];
@@ -485,7 +494,11 @@ void	test_cast_recorded_rays(const array<kd_tree_dynamic*>& treelist, const char
 		for (int ti = 0, tn = kds.size(); ti < tn; ti++)
 		{
 			result = kds[ti]->ray_test(ray);
-			if (result) break;	// early out on hit
+			if (result)
+			{
+				hit_count++;
+				break;	// early out on hit
+			}
 		}
 	}
 
@@ -493,7 +506,7 @@ void	test_cast_recorded_rays(const array<kd_tree_dynamic*>& treelist, const char
 
 	int	ray_count = rays.size() / 2;
 
-	print_ray_stats(start_cast_ticks, end_ticks, ray_count);
+	print_ray_stats(start_cast_ticks, end_ticks, ray_count, hit_count);
 }
 
 

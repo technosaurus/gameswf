@@ -26,9 +26,8 @@ static const int	MAX_SPLIT_PLANES_TESTED = 10;
 // MSPT=10.  But the tree building is much slower.
 
 // On one dataset I checked, SORT_VERTICES makes queries ~10% faster.
-// On some others, it seemed to make no difference.  It's slow to
-// create though, which probably means I have a performance bug in
-// hash<>.
+// On most others, it seemed to make no difference.  It takes extra
+// time to do the sort, though.
 
 
 float	kd_tree_dynamic::face::get_min_coord(int axis, const array<vec3>& verts) const
