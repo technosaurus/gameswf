@@ -11,8 +11,10 @@ LIB_EXT := lib
 OBJ_EXT := obj
 EXE_EXT := .exe
 LIBS := opengl32.lib glu32.lib SDL_image.lib SDL.lib gdi32.lib oldnames.lib
-CFLAGS := $(CFLAGS) -I$(INCLUDE_DIRS) -Zi -GX -DWIN32=1
+CFLAGS := $(CFLAGS) -I$(INCLUDE_DIRS) -Zi -GX -DWIN32=1 -Ox
 LDFLAGS := $(LIBS) /MD
+#CC_DEBUG_FLAGS := /Zi /DNDEBUG=1
+#LIB_DEBUG_FLAGS := $(CC_DEBUG_FLAGS)
 
 #else
 #
@@ -26,7 +28,7 @@ LDFLAGS := $(LIBS) /MD
 #LIBS := -lSDL_image -lSDL -lGL -lGLU 
 #SDL_CFLAGS := $(shell sdl-config --cflags)
 #SDL_LDFLAGS := $(shell sdl-config --libs)
-#CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS) -g
+#CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -O2 -I$(INCLUDE_DIRS) -g
 #LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
 #
 #endif
