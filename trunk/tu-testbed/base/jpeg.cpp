@@ -238,6 +238,30 @@ namespace jpeg
 
 
 	//
+	// Error handler
+	//
+
+
+	void	jpeg_error_exit(j_common_ptr cinfo)
+	// Called when jpeglib has a fatal error.
+	{
+		assert(0);
+
+		tu_error_exit(1, "internal error in jpeglib");
+	}
+
+
+	static void	setup_jpeg_err(jpeg_error_mgr* jerr)
+	// Set up some error handlers for the jpeg lib.
+	{
+		// Set up defaults.
+		jpeg_std_error(jerr);
+
+		jerr->error_exit = jpeg_error_exit;
+	}
+
+
+	//
 	// wrappers
 	//
 
@@ -248,9 +272,10 @@ namespace jpeg
 	{
 		// State needed for input.
 		struct jpeg_decompress_struct	m_cinfo;
-		struct jpeg_error_mgr m_jerr;
+		struct jpeg_error_mgr	m_jerr;
 
 		bool	m_compressor_opened;
+
 
 		enum SWF_DEFINE_BITS_JPEG2 { SWF_JPEG2 };
 		enum SWF_DEFINE_BITS_JPEG2_HEADER_ONLY { SWF_JPEG2_HEADER_ONLY };
@@ -261,7 +286,8 @@ namespace jpeg
 		// Constructor.  Read the header data from in, and
 		// prepare to read data.
 		{
-			m_cinfo.err = jpeg_std_error(&m_jerr);
+			setup_jpeg_err(&m_jerr);
+			m_cinfo.err = &m_jerr;
 
 			// Initialize decompression object.
 			jpeg_create_decompress(&m_cinfo);
@@ -282,7 +308,8 @@ namespace jpeg
 		// start_image() and finish_image() around any calls
 		// to get_width/height/components and read_scanline.
 		{
-			m_cinfo.err = jpeg_std_error(&m_jerr);
+			setup_jpeg_err(&m_jerr);
+			m_cinfo.err = &m_jerr;
 
 			// Initialize decompression object.
 			jpeg_create_decompress(&m_cinfo);

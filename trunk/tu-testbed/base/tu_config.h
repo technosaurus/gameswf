@@ -28,5 +28,9 @@
 #define tu_free(old_ptr, old_size) dlfree(old_ptr)
 #endif
 
+// tu_error_exit() is for fatal errors; it should not return!
+#ifndef tu_error_exit
+#define tu_error_exit(error_code, error_message) { fprintf(stderr, error_message); exit(error_code); }
+#endif
 
 #endif // TU_CONFIG_H
