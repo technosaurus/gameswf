@@ -12,14 +12,6 @@ General
   * switch to shape rendering at larger scales (when the textures will
     be stretched)
 
-  * text rendering is slightly blurrier than a scanline renderer would
-    do it, due to mip-mapping.  Probably not fixable in a good way --
-    *can* be fixed by not allowing scaling and by always pinning glyph
-    origin to a pixel center; maybe that could be a host-driven
-    rendering option or something, for specialized body text.  But,
-    results are still nice for scalable, smoothly animating display
-    text.
-
 * sprites as button characters are not working.
 
 * the half-implemented action stuff is an obstacle to progress; many
@@ -56,19 +48,18 @@ General
     screen, and then another button to accept.  Not sure of the best
     way to shoehorn this into SWF.
 
+    Current best idea: map gamepad buttons to keyboard keys, and use
+    ActionScript to interpret keypresses.  Need enough ActionScript
+    support so that this works.
+
 * packaging
 
-  * eliminate SDL dependencies; need a minimal stream interface that
-    game engines can easily bind to FILE* or SDL_RWops* or whatever
-    crazy thing they use internally to read their resource files.
+  * verify that library itself doesn't require SDL
 
   * libjpeg and libz dependencies are necessary, so leave as-is
 
   * Xbox port (important to me personally; maybe not a high priority
     for others)
-
-  * make a script or makefile target to zip up the code into a nice
-    distro
 
   * pick a version number, post a release
 
@@ -81,7 +72,7 @@ General
 
 * named elements APIs, for easier UI programming in the host app
 
-* more action stuff
+* ActionScript needs to basically work
 
 
 Renderer
@@ -89,13 +80,8 @@ Renderer
 
 It's horribly slow right now, and has some glitches :(
 
-* examine the sorting, improve:
-
-  * don't sort more than necessary
-
-  * don't allocate willy-nilly (examine use of array<>)
-
-* antialiasing
+* antialiasing (probably just give up; textured text glyphs are pretty
+  nice and address the major requirement of smooth text)
 
   * in a "good enough for now" condition; currently using a half-pixel
     half-transparent line around the outside of shapes, and textured
@@ -111,16 +97,18 @@ It's horribly slow right now, and has some glitches :(
 
   * treat line segments as true line segments, instead of a flat curve.
 
-  * get rid of naive (mis)use of array<>
+  * get rid of naive (mis)use of array<>; use a more
+    statically-allocated array to hold intermediate results.
 
   * coarse clip/cull
 
-  * pre-cache shape tesselation?  Re-gen on the fly based on scale;
-    with hysteresis.  Or is there some nice precomputation we can do
-    without evaluating specific curve points, and then just rip
-    through making strips & fans?
+  * tulrich: DOING THIS: precompute shape tesselation.  Re-gen on the
+    fly based on scale as necessary, cache the results in each shape
+    character.  Cache has a list of fill styles plus a list of
+    vertices & triangles per fill style (i.e. a mesh), for the
+    renderer to just rip through in a hurry.
 
-* real lines
+* real lines (low priority)
 
   I think the way to handle this is to take advantage of a (mipmapped)
   circle texture, say 16x16, and actually draw rectangles.  But then
