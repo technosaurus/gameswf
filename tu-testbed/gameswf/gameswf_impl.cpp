@@ -731,9 +731,6 @@ namespace gameswf
 				// Done with the zlib_adapter.
 				delete in;
 			}
-
-			int	current_position = original_in->get_position();
-			UNUSED(current_position);
 		}
 
 
@@ -1479,7 +1476,7 @@ namespace gameswf
 		assert(j_in);
 		j_in->discard_partial_buffer();
 
-		bitmap_info*	bi(NULL);
+		bitmap_info*	bi = NULL;
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			image::rgb*	im = image::read_swf_jpeg2_with_tables(j_in);
@@ -1510,7 +1507,7 @@ namespace gameswf
 		// Read the image data.
 		//
 		
-		bitmap_info*	bi(NULL);
+		bitmap_info*	bi = NULL;
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			image::rgb* im = image::read_swf_jpeg2(in->get_underlying_stream());
@@ -1594,7 +1591,7 @@ namespace gameswf
 		Uint32	jpeg_size = in->read_u32();
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
-		bitmap_info*	bi(NULL);
+		bitmap_info*	bi = NULL;
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			//
@@ -1651,7 +1648,7 @@ namespace gameswf
 				width,
 				height));
 
-		bitmap_info*	bi(NULL);
+		bitmap_info*	bi = NULL;
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			if (tag_type == 20)
