@@ -823,6 +823,34 @@ namespace gameswf
 	// @@ Maybe someday make these local to the movie_interface?
 	void	notify_key_event(key::code k, bool down);
 
+
+	// Some optional helpers.
+	namespace tools
+	{
+		struct process_options
+		{
+			bool	m_zip_whole_file;
+			bool	m_remove_image_data;
+			bool	m_remove_font_glyph_shapes;
+
+			process_options()
+				:
+				m_zip_whole_file(false),
+				m_remove_image_data(false),
+				m_remove_font_glyph_shapes(false)
+			{
+			}
+		};
+
+		// Copy tags from *in to *out, applying the given
+		// options.  *in should be a SWF-format stream.  The
+		// output will be a SWF-format stream.
+		//
+		// Returns 0 on success, or a non-zero error-code on
+		// failure.
+		int	process_swf(tu_file* swf_in, tu_file* swf_out, const process_options& options);
+	}
+
 }	// namespace gameswf
 
 
