@@ -67,6 +67,8 @@ namespace gameswf
 
 		void	display(const fill_style& style) const;
 
+		void	output_cached_data(tu_file* out);
+		void	input_cached_data(tu_file* in);
 	private:
 		array<point>	m_triangle_list;	// 3 points per tri
 	};
@@ -78,9 +80,11 @@ namespace gameswf
 		line_strip();
 		line_strip(int style, const point coords[], int coord_count);
 
-		int	get_style() const { return m_style; }
 		void	display(const line_style& style) const;
 
+		int	get_style() const { return m_style; }
+		void	output_cached_data(tu_file* out);
+		void	input_cached_data(tu_file* in);
 	private:
 		int	m_style;
 		array<point>	m_coords;
@@ -93,8 +97,8 @@ namespace gameswf
 		mesh_set();
 		mesh_set(const shape_character* sh, float error_tolerance);
 
-		int	get_last_frame_rendered() const;
-		void	set_last_frame_rendered(int frame_counter);
+//		int	get_last_frame_rendered() const;
+//		void	set_last_frame_rendered(int frame_counter);
 		float	get_error_tolerance() const { return m_error_tolerance; }
 
 		void display(
@@ -105,8 +109,11 @@ namespace gameswf
 		void	add_triangle(int style, const point& a, const point& b, const point& c);
 		void	add_line_strip(int style, const point coords[], int coord_count);
 
+		void	output_cached_data(tu_file* out);
+		void	input_cached_data(tu_file* in);
+
 	private:
-		int	m_last_frame_rendered;
+//		int	m_last_frame_rendered;	// @@ Hm, we shouldn't spontaneously drop cached data I don't think...
 		float	m_error_tolerance;
 		array<mesh>	m_meshes;	// One mesh per style.
 		array<line_strip>	m_line_strips;
@@ -131,8 +138,8 @@ namespace gameswf
 		const rect&	get_bound() const { return m_bound; }
 		void	compute_bound(rect* r) const;
 
-		// void	output_cached_data(tu_file* out);
-		// void	input_cached_data(tu_file* in);
+		void	output_cached_data(tu_file* out);
+		void	input_cached_data(tu_file* in);
 
 	private:
 		void	sort_and_clean_meshes(int display_number) const;

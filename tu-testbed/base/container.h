@@ -380,9 +380,97 @@ public:
 		m_table.transfer_members(&new_table);
 	}
 
-	// @@ need an API for iterating over all contents, probably using a (blech) iterator.
+
+	// Iterator API.  @@ TODO fix the API so it's more STL-like.  No point in confusing clients.
+
+	struct iterator
+	{
+		// @@ in STL, operator* returns a pair<T,U>, right?
+		// We could return a struct entry, and rename the
+		// members of struct entry as {first,second}, no?
+
+		T	get_key() const { return m_hash->m_table[m_index0][m_index1].key; }
+		U	get_value() const { return m_hash->m_table[m_index0][m_index1].value; }
+
+		void	operator++()
+		{
+			assert(m_hash);
+
+			if (m_index0 < m_hash->m_table.size())
+			{
+				if (m_index1 < m_hash->m_table[m_index0].size() - 1)
+				{
+					m_index1++;
+				}
+				else
+				{
+					m_index0++;
+					while (m_index0 < m_hash->m_table.size()
+					       && m_hash->m_table[m_index0].size() == 0)
+					{
+						m_index0++;
+					}
+					m_index1 = 0;
+				}
+			}
+		}
+
+		bool	operator==(const iterator& it) const
+		{
+			if (is_end() && it.is_end())
+			{
+				return true;
+			}
+			else
+			{
+				return
+					m_hash == it.m_hash
+					&& m_index0 == it.m_index0
+					&& m_index1 == it.m_index1;
+			}
+		}
+
+		bool	operator!=(const iterator& it) const { return ! (*this == it); }
+
+
+		bool	is_end() const
+		{
+			return
+				m_hash == NULL
+				|| m_index0 >= m_hash->m_table.size();
+		}
+
+	private:
+		friend class hash<T,U,hash_functor>;
+
+		iterator(const hash* h, int i0, int i1)
+			:
+			m_hash(h),
+			m_index0(i0),
+			m_index1(i1)
+		{
+		}
+
+		const hash*	m_hash;
+		int	m_index0, m_index1;
+	};
+	friend struct iterator;
+
+	iterator	begin() const
+	{
+		// Scan til we hit the first valid entry.
+		int	i0 = 0;
+		while (i0 < m_table.size()
+			&& m_table[i0].size() == 0)
+		{
+			i0++;
+		}
+		return iterator(this, i0, 0);
+	}
+	iterator	end() const { return iterator(this, m_table.size(), 0); }
 
 private:
+
 	struct entry {
 		T	key;
 		U	value;

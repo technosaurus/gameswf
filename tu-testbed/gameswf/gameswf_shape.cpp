@@ -14,6 +14,8 @@
 #include "gameswf_stream.h"
 #include "gameswf_tesselate.h"
 
+#include "base/tu_file.h"
+
 #include <float.h>
 
 
@@ -129,7 +131,38 @@ namespace gameswf
 		tesselate::end_path();
 	}
 
-		
+
+	// Utility.
+
+
+	void	write_point_array(tu_file* out, const array<point>& pt_array)
+	// Dump the given point array into the given stream.
+	{
+		int	n = pt_array.size();
+
+		out->write_le32(n);
+		for (int i = 0; i < n; i++)
+		{
+			out->write_float32(pt_array[i].m_x);
+			out->write_float32(pt_array[i].m_y);
+		}
+	}
+
+
+	void	read_point_array(tu_file* in, array<point>* pt_array)
+	// Read the point array data from the stream into *pt_array.
+	{
+		int	n = in->read_le32();
+
+		pt_array->resize(n);
+		for (int i = 0; i < n; i ++)
+		{
+			(*pt_array)[i].m_x = in->read_float32();
+			(*pt_array)[i].m_y = in->read_float32();
+		}
+	}
+
+
 	//
 	// mesh
 	//
@@ -156,6 +189,20 @@ namespace gameswf
 			style.apply(0);
 			render::draw_mesh(&m_triangle_list[0].m_x, m_triangle_list.size());
 		}
+	}
+
+
+	void	mesh::output_cached_data(tu_file* out)
+	// Dump our data to *out.
+	{
+		write_point_array(out, m_triangle_list);
+	}
+
+	
+	void	mesh::input_cached_data(tu_file* in)
+	// Slurp our data from *out.
+	{
+		read_point_array(in, &m_triangle_list);
 	}
 
 
@@ -195,6 +242,22 @@ namespace gameswf
 	}
 
 
+	void	line_strip::output_cached_data(tu_file* out)
+	// Dump our data to *out.
+	{
+		out->write_le32(m_style);
+		write_point_array(out, m_coords);
+	}
+
+	
+	void	line_strip::input_cached_data(tu_file* in)
+	// Slurp our data from *out.
+	{
+		m_style = in->read_le32();
+		read_point_array(in, &m_coords);
+	}
+
+
 	//
 	// mesh_set
 	//
@@ -202,7 +265,7 @@ namespace gameswf
 
 	mesh_set::mesh_set()
 		:
-		m_last_frame_rendered(-1),
+//		m_last_frame_rendered(-1),
 		m_error_tolerance(0)	// invalid -- don't use this constructor; it's only here for array (@@ fix array)
 	{
 	}
@@ -213,7 +276,7 @@ namespace gameswf
 	mesh_set::mesh_set(const shape_character* sh, float error_tolerance)
 	// Tesselate the shape's paths into a different mesh for each fill style.
 		:
-		m_last_frame_rendered(0),
+//		m_last_frame_rendered(0),
 		m_error_tolerance(error_tolerance)
 	{
 		struct collect_traps : public tesselate::trapezoid_accepter
@@ -252,8 +315,8 @@ namespace gameswf
 	}
 
 
-	int	mesh_set::get_last_frame_rendered() const { return m_last_frame_rendered; }
-	void	mesh_set::set_last_frame_rendered(int frame_counter) { m_last_frame_rendered = frame_counter; }
+//	int	mesh_set::get_last_frame_rendered() const { return m_last_frame_rendered; }
+//	void	mesh_set::set_last_frame_rendered(int frame_counter) { m_last_frame_rendered = frame_counter; }
 
 
 	void	mesh_set::display(
@@ -265,8 +328,6 @@ namespace gameswf
 		assert(m_error_tolerance > 0);
 
 		// Setup transforms.
-//		render::push_apply_matrix(di.m_matrix);
-//		render::push_apply_cxform(di.m_color_transform);
 		render::set_matrix(di.m_matrix);
 		render::set_cxform(di.m_color_transform);
 
@@ -282,9 +343,6 @@ namespace gameswf
 			int	style = m_line_strips[i].get_style();
 			m_line_strips[i].display(line_styles[style]);
 		}
-
-//		render::pop_cxform();
-//		render::pop_matrix();
 	}
 
 
@@ -314,6 +372,48 @@ namespace gameswf
 		assert(coord_count > 1);
 
 		m_line_strips.push_back(line_strip(style, coords, coord_count));
+	}
+
+
+	void	mesh_set::output_cached_data(tu_file* out)
+	// Dump our data to the output stream.
+	{
+		out->write_float32(m_error_tolerance);
+
+		int	mesh_n = m_meshes.size();
+		out->write_le32(mesh_n);
+		for (int i = 0; i < mesh_n; i++)
+		{
+			m_meshes[i].output_cached_data(out);
+		}
+
+		int	lines_n = m_line_strips.size();
+		out->write_le32(lines_n);
+		{for (int i = 0; i < lines_n; i++)
+		{
+			m_line_strips[i].output_cached_data(out);
+		}}
+	}
+
+
+	void	mesh_set::input_cached_data(tu_file* in)
+	// Grab our data from the input stream.
+	{
+		m_error_tolerance = in->read_float32();
+
+		int	mesh_n = in->read_le32();
+		m_meshes.resize(mesh_n);
+		for (int i = 0; i < mesh_n; i++)
+		{
+			m_meshes[i].input_cached_data(in);
+		}
+
+		int	lines_n = in->read_le32();
+		m_line_strips.resize(lines_n);
+		{for (int i = 0; i < lines_n; i++)
+		{
+			m_line_strips[i].input_cached_data(in);
+		}}
 	}
 
 
@@ -647,7 +747,7 @@ namespace gameswf
 			{
 				// Do it.
 				m_cached_meshes[i]->display(di, fill_styles, line_styles);
-				m_cached_meshes[i]->set_last_frame_rendered(di.m_display_number);
+//				m_cached_meshes[i]->set_last_frame_rendered(di.m_display_number);
 				rendered = true;
 				break;
 			}
@@ -659,7 +759,7 @@ namespace gameswf
 			mesh_set*	m = new mesh_set(this, object_space_max_error * 0.75f);
 			m_cached_meshes.push_back(m);
 			m->display(di, fill_styles, line_styles);
-			m->set_last_frame_rendered(di.m_display_number);
+//			m->set_last_frame_rendered(di.m_display_number);
 
 			sort_and_clean_meshes(di.m_display_number);
 		}
@@ -691,6 +791,9 @@ namespace gameswf
 	// been used recently, and make sure they're sorted from high
 	// error to low error.
 	{
+// @@ I think it's bad policy to dump cached meshes.  Maybe I'm wrong,
+// so keep the code around for now...
+#if 0
 		// Remove meshes that haven't been used in a long
 		// time.
 		for (int i = 0; i < m_cached_meshes.size(); i++)
@@ -705,6 +808,7 @@ namespace gameswf
 				i--;
 			}
 		}
+#endif // 0
 
 		// Re-sort.
 		if (m_cached_meshes.size() > 0)
@@ -782,6 +886,35 @@ namespace gameswf
 				r->expand_to_point(p.m_edges[j].m_ax, p.m_edges[j].m_ay);
 //					r->expand_to_point(p.m_edges[j].m_cx, p.m_edges[j].m_cy);
 			}
+		}
+	}
+
+
+	void	shape_character::output_cached_data(tu_file* out)
+	// Dump our precomputed mesh data to the given stream.
+	{
+		int	n = m_cached_meshes.size();
+		out->write_le32(n);
+
+		for (int i = 0; i < n; i++)
+		{
+			m_cached_meshes[i]->output_cached_data(out);
+		}
+	}
+
+
+	void	shape_character::input_cached_data(tu_file* in)
+	// Initialize our mesh data from the given stream.
+	{
+		int	n = in->read_le32();
+
+		m_cached_meshes.resize(n);
+
+		for (int i = 0; i < n; i++)
+		{
+			mesh_set*	ms = new mesh_set();
+			ms->input_cached_data(in);
+			m_cached_meshes[i] = ms;
 		}
 	}
 

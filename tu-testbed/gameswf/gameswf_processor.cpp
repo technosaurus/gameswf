@@ -235,9 +235,9 @@ int	process_movie(const char* filename)
 
 		cached_data.set_position(0);	// rewind
 
-		// xxx temp debug code: dump cached data to stdout
-		tu_file	tu_stdout(stdout, false);
-		tu_stdout.copy_from(&cached_data);
+		// // xxx temp debug code: dump cached data to stdout
+		// tu_file	tu_stdout(stdout, false);
+		// tu_stdout.copy_from(&cached_data);
 
 		// if (s_append)
 		// {
