@@ -2183,7 +2183,7 @@ namespace gameswf
 							Timer *timer = new Timer;
 							as_c_function_ptr ondata_handler =
 								(as_c_function_ptr)&xmlsocket_event_ondata;
-							timer->setInterval(ondata_handler, 500);
+							timer->setInterval(ondata_handler, 10);
 							timer->setObject(xmlsock_obj);
 							current_movie->add_interval_timer(timer);
 #endif

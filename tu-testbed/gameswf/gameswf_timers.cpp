@@ -104,7 +104,7 @@ namespace gameswf
     if (_start > 0.0) {
       uint64 ticks = tu_timer::get_profile_ticks();
       double now = tu_timer::profile_ticks_to_seconds(ticks);
-      //log_msg("%s: now is %f, start time is %f, interval is %f\n", __PRETTY_FUNCTION__, now, _start, _interval);
+      //printf("FIXME: %s: now is %f, start time is %f, interval is %f\n", __FUNCTION__, now, _start, _interval);
       if (now > _start + _interval) {
         _start = now;               // reset the timer
         log_msg("Timer expired! \n");
