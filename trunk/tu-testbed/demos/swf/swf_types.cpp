@@ -197,10 +197,10 @@ namespace swf
 	{
 		rgba	result;
 
-		result.m_r = fclamp(in.m_r * m_[0][0] + m_[0][1], 0, 255);
-		result.m_g = fclamp(in.m_g * m_[1][0] + m_[1][1], 0, 255);
-		result.m_b = fclamp(in.m_b * m_[2][0] + m_[2][1], 0, 255);
-		result.m_a = fclamp(in.m_a * m_[3][0] + m_[3][1], 0, 255);
+		result.m_r = (Uint8) fclamp(in.m_r * m_[0][0] + m_[0][1], 0, 255);
+		result.m_g = (Uint8) fclamp(in.m_g * m_[1][0] + m_[1][1], 0, 255);
+		result.m_b = (Uint8) fclamp(in.m_b * m_[2][0] + m_[2][1], 0, 255);
+		result.m_a = (Uint8) fclamp(in.m_a * m_[3][0] + m_[3][1], 0, 255);
 
 		return result;
 	}
@@ -268,7 +268,7 @@ namespace swf
 	void	rgba::ogl_color() const
 	// Set the glColor to our state.
 	{
-		glColor4ub(m_r, m_g, m_b, m_a /** 0.3f/*xxxx*/);
+		glColor4ub(m_r, m_g, m_b, m_a);
 	}
 
 	void	rgba::read(stream* in, int tag_type)
