@@ -671,24 +671,40 @@ private:
 };
 
 
-// very simple string-like type
+// String-like type.  Attempt to be memory-efficient with small strings.
 class tu_string
 {
 public:
-	tu_string() { m_buffer.push_back(0); }
+	tu_string() { m_local.m_size = 1; m_local.m_buffer[0] = 0; }
 	tu_string(const char* str)
 	{
-		m_buffer.resize(strlen(str) + 1);
-		strcpy(&m_buffer[0], str);
+		m_local.m_size = 1;
+		m_local.m_buffer[0] = 0;
+
+		int	new_size = strlen(str);
+		resize(new_size);
+		strcpy(get_buffer(), str);
 	}
 	tu_string(const tu_string& str)
 	{
-		m_buffer = str.m_buffer;
+		m_local.m_size = 1;
+		m_local.m_buffer[0] = 0;
+
+		resize(str.size());
+		strcpy(get_buffer(), str.get_buffer());
+	}
+
+	~tu_string()
+	{
+		if (using_heap())
+		{
+			dlfree(m_heap.m_buffer);
+		}
 	}
 
 	operator const char*() const
 	{
-		return &m_buffer[0];
+		return get_buffer();
 	}
 
 	const char*	c_str() const
@@ -700,13 +716,14 @@ public:
 	// (executive summary: a = b = c is an invitation to bad code)
 	void	operator=(const char* str)
 	{
-		m_buffer.resize(strlen(str) + 1);
-		strcpy(&m_buffer[0], str);
+		resize(strlen(str));
+		strcpy(get_buffer(), str);
 	}
 
 	void	operator=(const tu_string& str)
 	{
-		m_buffer = str.m_buffer;
+		resize(str.size());
+		strcpy(get_buffer(), str.get_buffer());
 	}
 
 	bool	operator==(const char* str) const
@@ -719,19 +736,36 @@ public:
 		return strcmp(*this, str) == 0;
 	}
 
-	int	length() const { return m_buffer.size() - 1; }
+	int	length() const
+	{
+		if (using_heap() == false)
+		{
+			return m_local.m_size - 1;
+		}
+		else
+		{
+			return m_heap.m_size - 1;
+		}
+	}
 	int	size() const { return length(); }
 
-	char&	operator[](int index) { return m_buffer[index]; }
-	const char&	operator[](int index) const { return m_buffer[index]; }
+	char&	operator[](int index)
+	{
+		assert(index >= 0 && index <= size());
+		return get_buffer()[index];
+	}
+	const char&	operator[](int index) const
+	{
+		return (*(const_cast<tu_string*>(this)))[index];
+	}
 
 	void	operator+=(const char* str)
 	{
 		int	str_length = strlen(str);
 		int	old_length = length();
 		assert(old_length >= 0);
-		m_buffer.resize(old_length + str_length + 1);
-		strcpy(&m_buffer[old_length], str);
+		resize(old_length + str_length);
+		strcpy(get_buffer() + old_length, str);
 	}
 
 	void	operator+=(const tu_string& str)
@@ -739,8 +773,8 @@ public:
 		int	str_length = str.length();
 		int	old_length = length();
 		assert(old_length >= 0);
-		m_buffer.resize(old_length + str_length + 1);
-		strcpy(&m_buffer[old_length], str.c_str());
+		resize(old_length + str_length);
+		strcpy(get_buffer() + old_length, str.c_str());
 	}
 
 	tu_string	operator+(const char* str) const
@@ -768,16 +802,65 @@ public:
 		return *this > str.c_str();
 	}
 
-	void	resize(int new_size)
-	{
-		assert(new_size >= 0);
 
-		m_buffer.resize(new_size + 1);
-		m_buffer.back() = 0;	// terminate with \0
-	}
+	void	resize(int new_size);
 
 private:
-	array<char>	m_buffer;	// we do store the terminating \0
+//	array<char>	m_buffer;	// we do store the terminating \0
+
+	char*	get_buffer()
+	{
+		if (using_heap() == false)
+		{
+			return m_local.m_buffer;
+		}
+		else
+		{
+			return m_heap.m_buffer;
+		}
+	}
+
+	const char*	get_buffer() const
+	{
+		return const_cast<tu_string*>(this)->get_buffer();
+	}
+
+
+	bool	using_heap() const
+	{
+		bool	heap = m_heap.m_all_ones == (char) 0xFF;
+		return heap;
+	}
+
+	// The idea here is that tu_string is a 16-byte structure,
+	// which uses internal storage for strings of 14 characters or
+	// less.  For longer strings, it allocates a heap buffer, and
+	// keeps the buffer-tracking info in the same bytes that would
+	// be used for internal string storage.
+	//
+	// A string that's implemented like vector<char> is typically
+	// 12 bytes plus heap storage, so this seems like a decent
+	// thing to try.  Also, a zero-length string still needs a
+	// terminator character, which with vector<char> means an
+	// unfortunate heap alloc just to hold a single '0'.
+	union
+	{
+		// Internal storage.
+		struct
+		{
+			char	m_size;
+			char	m_buffer[15];
+		} m_local;
+
+		// Heap storage.
+		struct
+		{
+			char	m_all_ones;	// flag to indicate heap storage is in effect.
+			int	m_size;
+			int	m_capacity;
+			char*	m_buffer;
+		} m_heap;
+	};
 };
 
 

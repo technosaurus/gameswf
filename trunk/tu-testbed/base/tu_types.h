@@ -15,7 +15,7 @@
 #include <stdio.h>
 
 
-#if defined(__I386__) || defined(_WIN32)
+#if defined(__i386__) || defined(_WIN32)
 
 	// On known little-endian platforms, define this stuff.
 	#define _TU_LITTLE_ENDIAN_	1
