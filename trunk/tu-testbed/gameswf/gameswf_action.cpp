@@ -1763,7 +1763,7 @@ namespace gameswf
 				case 0x88:	// decl_dict: declare dictionary
 				{
 					int	i = pc;
-					int	count = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					//int	count = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
 					i += 2;
 
 					process_decl_dict(pc, next_pc);
