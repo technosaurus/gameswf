@@ -194,7 +194,10 @@ namespace gameswf
 			assert(0);
 			return "";
 		}
-		
+
+		virtual void * get_userdata() { assert(0); return NULL; }
+		virtual void set_userdata(void *) { assert(0); }
+
 		// External
 		virtual bool	has_looped() const { return true; }
 
@@ -225,6 +228,7 @@ namespace gameswf
 
 		virtual void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth) { assert(0); }
 		virtual void	remove_display_object(const tu_string& name) { assert(0); }
+
 	};
 
 

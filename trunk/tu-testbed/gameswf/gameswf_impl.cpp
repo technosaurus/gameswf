@@ -873,8 +873,9 @@ namespace gameswf
 		float	m_timer;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 		int	m_mouse_capture_id;
-
+		void * m_userdata;
 		movie::drag_state	m_drag_state;
+
 
 		movie_root(movie_def_impl* def)
 			:
@@ -890,7 +891,8 @@ namespace gameswf
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
-			m_mouse_capture_id(-1)
+			m_mouse_capture_id(-1),
+			m_userdata(NULL)
 		{
 			assert(m_def != NULL);
 
@@ -1070,6 +1072,9 @@ namespace gameswf
 
 		virtual void	set_visible(bool visible) { m_movie->set_visible(visible); }
 		virtual bool	get_visible() const { return m_movie->get_visible(); }
+
+		virtual void * get_userdata() { return m_userdata; }
+		virtual void set_userdata(void * ud ) { m_userdata = ud;  }
 	};
 
 
