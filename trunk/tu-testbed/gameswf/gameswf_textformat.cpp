@@ -20,6 +20,26 @@ text_format::~text_format()
 }
 
 
+// In a paragraph, change the format of a range of characters.
+void
+text_format::setTextFormat (text_format &format)
+{
+  log_msg("%s: \n", __PRETTY_FUNCTION__);
+}
+
+void
+text_format::setTextFormat (int index, text_format &format)
+{
+  log_msg("%s: \n", __PRETTY_FUNCTION__);
+}
+
+void
+text_format::setTextFormat (int start, int end, text_format &format)
+{
+  log_msg("%s: \n", __PRETTY_FUNCTION__);
+}
+
+
 void
 textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
@@ -40,5 +60,6 @@ textformat_underline(gameswf::as_value* result, gameswf::as_object_interface* th
     
     result->set(ptr->text_obj.underlined());
 }
+
 
 } // end of gameswf namespace

@@ -1,3 +1,12 @@
+2005-03-24  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xmlsocket.cpp: Add a NULL when sending XML
+	messages, and don't strip off the NULL when reading XML messages.
+	* gameswf/gameswf_textfield.{cpp,h}: Remove as unnecessary.
+	* gameswf/Makefile.in: Don't build gameswf_textfield, we don't need it.
+	* gameswf/gameswf_textformat.cpp: Add minimal support for all
+	forms of setTextFormat.
+
 2005-03-23  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* configure.ac: Don't try to configure the empty testsuite

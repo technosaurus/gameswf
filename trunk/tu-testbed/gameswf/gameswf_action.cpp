@@ -18,7 +18,6 @@
 #include "gameswf_movie.h"
 #include "gameswf_timers.h"
 #include "gameswf_textformat.h"
-#include "gameswf_textfield.h"
 #include "gameswf_sound.h"
 #ifdef HAVE_LIBXML
 #include "gameswf_xml.h"
@@ -2110,22 +2109,8 @@ namespace gameswf
 							textformat_as_object*	text_obj = new textformat_as_object;
 							log_msg("\tCreated New TextFormat object at 0x%X\n", (unsigned int)text_obj);
 							
-							text_obj->set_member("underline", &textformat_underline);
 							new_obj = text_obj;
 						} else		
-						if (classname.to_tu_string()=="TextField")
-						{
-							as_value handler = (as_c_function_ptr)&textfield_new;
-							current_movie->set_member("TextField", handler);
-							
-							textfield_as_object*	text_obj = new textfield_as_object;
-							log_msg("\tCreated New TextField object at 0x%X\n", (unsigned int)text_obj);
-							//text_obj->set_member("_visible", &textfield_visible);
-							//text_obj->set_member("_width", &textfield_width);
-							text_obj->set_member("_visible", true);
-							text_obj->set_member("_width", "10");
-							new_obj = text_obj;
-						} else
 						// This is where ActionScript objects go
 					        if (classname.to_tu_string()=="XML")
 						{
