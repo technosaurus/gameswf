@@ -299,6 +299,7 @@ namespace gameswf
 	{
 		UNUSED(ratio);
 		gameswf::render::line_style_color(m_color);
+		gameswf::render::line_style_width(m_width);
 	}
 
 }
