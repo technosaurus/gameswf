@@ -517,14 +517,14 @@ namespace gameswf
 		{
 			matrix	m = get_world_matrix();
 			float	h = m_def->get_height_local() * m.m_[1][1];
-			return TWIPS_TO_PIXELS(h);
+			return h;
 		}
 
 		virtual float	get_width()
 		{
 			matrix	m = get_world_matrix();
 			float	w = m_def->get_width_local() * m.m_[0][0];
-			return TWIPS_TO_PIXELS(w);
+			return w;
 		}
 		
 	};

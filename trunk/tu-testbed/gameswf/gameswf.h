@@ -129,8 +129,8 @@ namespace gameswf
 	//
 	struct movie_definition : virtual public ref_counted
 	{
-		virtual float	get_width() const = 0;
-		virtual float	get_height() const = 0;
+		virtual float	get_width_pixels() const = 0;
+		virtual float	get_height_pixels() const = 0;
 		virtual int	get_frame_count() const = 0;
 		virtual float	get_frame_rate() const = 0;
 

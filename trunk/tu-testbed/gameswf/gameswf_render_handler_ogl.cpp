@@ -6,6 +6,13 @@
 // A gameswf::render_handler that uses SDL & OpenGL
 
 
+// choose the resampling method:
+// 1 = hardware (experimental, should be fast, makes garbage in various circumstances)
+// 2 = fast software bilinear (default)
+// 3 = use image::resample(), slow software resampling
+#define RESAMPLE_METHOD 2
+
+
 #include "gameswf.h"
 #include "gameswf_types.h"
 #include "base/image.h"
@@ -628,6 +635,178 @@ struct render_handler_ogl : public gameswf::render_handler
 // bitmap_info_ogl implementation
 
 
+
+void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8* src_data, int dst_width, int dst_height)
+// Code from Alex Streit
+//
+// Sets the current texture to a resampled/expanded version of the
+// given image data.
+{
+	assert(bytes_per_pixel == 3 || bytes_per_pixel == 4);
+
+	unsigned int	in_format = bytes_per_pixel == 3 ? GL_RGB8 : GL_RGBA8;
+	unsigned int	out_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
+
+	// alex: use the hardware to resample the image
+	// issue: does not work when image > allocated window size!
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glPushAttrib(GL_TEXTURE_BIT | GL_ENABLE_BIT);
+	{
+		char* temp = new char[dst_width * dst_height * bytes_per_pixel];
+		//memset(temp,255,w*h*3);
+		glTexImage2D(GL_TEXTURE_2D, 0, in_format, dst_width, dst_height, 0, out_format, GL_UNSIGNED_BYTE, temp);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, src_width, src_height, GL_RGB, GL_UNSIGNED_BYTE, src_data);
+
+		glLoadIdentity();
+		glViewport(0, 0, dst_width, dst_height);
+		glOrtho(0, dst_width, 0, dst_height, 0.9, 1.1);
+		glColor3f(1, 1, 1);
+		glNormal3f(0, 0, 1);
+		glBegin(GL_QUADS);
+		{
+			glTexCoord2f(0, (float) src_height / dst_height);
+			glVertex3f(0, 0, -1);
+			glTexCoord2f( (float) src_width / dst_width, (float) src_height / dst_height);
+			glVertex3f(dst_width, 0, -1);
+			glTexCoord2f( (float) src_width / dst_width, 0);
+			glVertex3f(dst_width, dst_height, -1);
+			glTexCoord2f(0, 0);
+			glVertex3f(0, dst_height, -1);
+		}
+		glEnd();
+		glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0,0, dst_width, dst_height, 0);
+		delete temp;
+	}
+	glPopAttrib();
+	glPopMatrix();
+	glPopMatrix();
+}
+
+
+void	software_resample(
+	int bytes_per_pixel,
+	int src_width,
+	int src_height,
+	int src_pitch,
+	uint8* src_data,
+	int dst_width,
+	int dst_height)
+// Code from Alex Streit
+//
+// Creates an OpenGL texture of the specified dst dimensions, from a
+// resampled version of the given src image.  Does a bilinear
+// resampling to create the dst image.
+{
+	assert(bytes_per_pixel == 3 || bytes_per_pixel == 4);
+
+	assert(dst_width >= src_width);
+	assert(dst_height >= src_height);
+
+	unsigned int	in_format = bytes_per_pixel == 3 ? GL_RGB8 : GL_RGBA8;
+	unsigned int	out_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
+
+	// FAST bi-linear filtering
+	// the code here is designed to be fast, not readable
+	Uint8* rescaled = new Uint8[dst_width * dst_height * bytes_per_pixel];
+	float Uf, Vf;		// fractional parts
+	float Ui, Vi;		// integral parts
+	float w1, w2, w3, w4;	// weighting
+	Uint8* psrc;
+	Uint8* pdst = rescaled;
+	// i1,i2,i3,i4 are the offsets of the surrounding 4 pixels
+	const int i1 = 0;
+	const int i2 = bytes_per_pixel;
+	int i3 = src_pitch;
+	int i4 = src_pitch + bytes_per_pixel;
+	// change in source u and v
+	float dv = (float)(src_height-2) / dst_height;
+	float du = (float)(src_width-2) / dst_width;
+	// source u and source v
+	float U;
+	float V=0;
+
+#define BYTE_SAMPLE(offset)	\
+	(Uint8) (w1 * psrc[i1 + (offset)] + w2 * psrc[i2 + (offset)] + w3 * psrc[i3 + (offset)] + w4 * psrc[i4 + (offset)])
+
+	if (bytes_per_pixel == 3)
+	{
+		for (int v = 0; v < dst_height; ++v)
+		{
+			Vf = modff(V, &Vi);
+			V+=dv;
+			U=0;
+
+			for (int u = 0; u < dst_width; ++u)
+			{
+				Uf = modff(U, &Ui);
+				U+=du;
+
+				w1 = (1 - Uf) * (1 - Vf);
+				w2 = Uf * (1 - Vf);
+				w3 = (1 - Uf) * Vf;
+				w4 = Uf * Vf;
+				psrc = &src_data[(int) (Vi * src_pitch) + (int) (Ui * bytes_per_pixel)];
+
+				*pdst++ = BYTE_SAMPLE(0);	// red
+				*pdst++ = BYTE_SAMPLE(1);	// green
+				*pdst++ = BYTE_SAMPLE(2);	// blue
+
+				psrc += 3;
+			}
+		}
+
+#ifdef DEBUG_WRITE_TEXTURES_TO_PPM
+		static int s_image_sequence = 0;
+		char temp[256];
+		sprintf(temp, "image%d.ppm", s_image_sequence++);
+		FILE* f = fopen(temp, "wb");
+		if (f)
+		{
+			fprintf(f, "P6\n# test code\n%d %d\n255\n", dst_width, dst_height);
+			fwrite(rescaled, dst_width * dst_height * 3, 1, f);
+			fclose(f);
+		}
+#endif
+	}
+	else
+	{
+		assert(bytes_per_pixel == 4);
+
+		for (int v = 0; v < dst_height; ++v)
+		{
+			Vf = modff(V, &Vi);
+			V+=dv;
+			U=0;
+
+			for (int u = 0; u < dst_width; ++u)
+			{
+				Uf = modff(U, &Ui);
+				U+=du;
+
+				w1 = (1 - Uf) * (1 - Vf);
+				w2 = Uf * (1 - Vf);
+				w3 = (1 - Uf) * Vf;
+				w4 = Uf * Vf;
+				psrc = &src_data[(int) (Vi * src_pitch) + (int) (Ui * bytes_per_pixel)];
+
+				*pdst++ = BYTE_SAMPLE(0);	// red
+				*pdst++ = BYTE_SAMPLE(1);	// green
+				*pdst++ = BYTE_SAMPLE(2);	// blue
+				*pdst++ = BYTE_SAMPLE(3);	// alpha
+
+				psrc += 4;
+			}
+		}
+	}
+
+	glTexImage2D(GL_TEXTURE_2D, 0, in_format, dst_width, dst_height, 0, out_format, GL_UNSIGNED_BYTE, rescaled);
+	delete rescaled;
+}
+
+
 bitmap_info_ogl::bitmap_info_ogl()
 // Make a placeholder bitmap_info.  Must be filled in later before
 // using.
@@ -706,6 +885,12 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 	int	w = 1; while (w < im->m_width) { w <<= 1; }
 	int	h = 1; while (h < im->m_height) { h <<= 1; }
 
+#if (RESAMPLE_METHOD == 1)
+	assert(im->m_width * 3 == im->m_pitch);
+	hardware_resample(3, im->m_width, im->m_height, im->m_data, w, h);
+#elif (RESAMPLE_METHOD == 2)
+	software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+#else
 	image::rgb*	rescaled = image::create_rgb(w, h);
 	image::resample(rescaled, 0, 0, w - 1, h - 1,
 			im, 0, 0, (float) im->m_width, (float) im->m_height);
@@ -714,6 +899,7 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rescaled->m_width, rescaled->m_height, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 
 	delete rescaled;
+#endif
 }
 
 
@@ -742,6 +928,13 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 	if (w != im->m_width
 	    || h != im->m_height)
 	{
+#if (RESAMPLE_METHOD == 1)
+		assert(im->m_width * 4 == im->m_pitch);
+		hardware_resample(4, im->m_width, im->m_height, im->m_data, w, h);
+#elif (RESAMPLE_METHOD == 2)
+		software_resample(4, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+#else
+		// Fancy but slow software resampling.
 		image::rgba*	rescaled = image::create_rgba(w, h);
 		image::resample(rescaled, 0, 0, w - 1, h - 1,
 				im, 0, 0, (float) im->m_width, (float) im->m_height);
@@ -749,6 +942,7 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
 
 		delete rescaled;
+#endif
 	}
 	else
 	{
@@ -756,6 +950,7 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
 	}
 }
+
 
 
 gameswf::render_handler*	gameswf::create_render_handler_ogl()
