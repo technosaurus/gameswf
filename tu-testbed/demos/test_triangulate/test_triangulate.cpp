@@ -393,6 +393,28 @@ int	main()
 #endif
 
 #if 0
+	// @@ TODO this one has a gnarly twist that puts us into the
+	// recovery mode.  See "Case A" in recovery_process() in
+	// triangulate_imp.h.
+
+	// Stars with touching verts on different paths.
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 2300, 3000, 20);
+
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 2300, 1100, 20);
+	reverse_path(&paths.back());
+
+ 	paths.resize(paths.size() + 1);
+ 	make_star(&paths.back(), 800, 1100, 20);
+
+	// Make a star island.
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 100, 300, 3);
+	reverse_path(&paths.back());
+#endif
+
+#if 0
 	// Spiral.
 	paths.resize(paths.size() + 1);
 	make_spiral(&paths.back(), 10, 20);

@@ -395,17 +395,20 @@ struct poly
 
 	int	find_valid_bridge_vert(const array<poly_vert<coord_t> >& sorted_verts, int v1);
 
-	void	build_ear_list(array<int>* ear_list, const array<vert_t>& sorted_verts, tu_random::generator* rg);
+	void	build_ear_list(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg);
 
 	void	emit_and_remove_ear(array<coord_t>* result, array<vert_t>* sorted_verts, int v0, int v1, int v2);
 	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int v1, int v2);
 
 	bool	ear_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2);
 	bool	vert_in_cone(const array<vert_t>& sorted_verts, int vert, int cone_v0, int cone_v1, int cone_v2);
+	bool	vert_is_duplicated(const array<vert_t>& sorted_verts, int v0);
 
 	bool	is_valid(const array<vert_t>& sorted_verts, bool check_consecutive_dupes = true) const;
 
 	void	invalidate(const array<vert_t>& sorted_verts);
+
+	void	remove_degenerate_chain(array<vert_t>* sorted_verts, int vi);
 
 //data:
 	int	m_loop;	// index of first vert
@@ -592,6 +595,9 @@ int	poly<coord_t>::find_valid_bridge_vert(const array<vert_t>& sorted_verts, int
 			// poly sorting, we know that the edge
 			// (pvi,pv1) can only intersect this poly.
 
+			// Avoid attaching to verts that are already
+			// duped.  Can create tangled paths.
+
 			if (any_edge_intersection(sorted_verts, v1, vi) == false)
 			{
 				return vi;
@@ -643,10 +649,12 @@ void	poly<coord_t>::remap_for_duped_verts(int v0, int v1)
 
 
 template<class coord_t>
-void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& sorted_verts, tu_random::generator* rg)
+void	poly<coord_t>::build_ear_list(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg)
 // Fill in *ear_list with a list of ears that can be clipped.
 {
-	assert(is_valid(sorted_verts));
+	assert(is_valid(*sorted_verts));
+
+restart_build_ear_list:
 
 	// Optimization: limit the size of the ear list to some
 	// smallish number.  After scanning, move m_loop to after the
@@ -684,12 +692,12 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 		// Do the skipping, by manipulating m_loop.
 		while (random_skip-- > 0)
 		{
-			m_loop = sorted_verts[m_loop].m_next;
+			m_loop = (*sorted_verts)[m_loop].m_next;
 		}
 	}
 #endif // RANDOMIZE
 
-	assert(is_valid(sorted_verts));
+	assert(is_valid(*sorted_verts));
 	assert(ear_list);
 	assert(ear_list->size() == 0);
 
@@ -697,14 +705,14 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 	int	vi = first_vert;
 	do
 	{
-		const poly_vert<coord_t>*	pvi = &(sorted_verts[vi]);
-		const poly_vert<coord_t>*	pv_prev = &(sorted_verts[pvi->m_prev]);
-		const poly_vert<coord_t>*	pv_next = &(sorted_verts[pvi->m_next]);
+		const poly_vert<coord_t>*	pvi = &((*sorted_verts)[vi]);
+		const poly_vert<coord_t>*	pv_prev = &((*sorted_verts)[pvi->m_prev]);
+		const poly_vert<coord_t>*	pv_next = &((*sorted_verts)[pvi->m_next]);
 
 		// classification of ear, CE2 from FIST paper:
 		//
 		// v[i-1],v[i],v[i+1] of P form an ear of P iff
-		// 
+		//
 		// 1. v[i] is a convex vertex
 		//
 		// 2. the interior plus boundary of triangle
@@ -723,18 +731,27 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 		{
 			// Degenerate case: zero-area triangle.
 			//
-			// Clip it first.  (Clipper pops from the back.)
-			ear_list->push_back(vi);
+			// Remove it (and any additional degenerates chained onto this ear).
+			remove_degenerate_chain(sorted_verts, vi);
 
-			// Clip it right away.
-			break;
+			// Restart our ear search.  Results so far may
+			// be invalid due to degenerate removal.
+			ear_list->clear();
+			goto restart_build_ear_list;
+
+// 			//
+// 			// Clip it first.  (Clipper pops from the back.)
+// 			ear_list->push_back(vi);
+
+// 			// Clip it right away.
+// 			break;
 		}
 		else if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v) > 0)
 		{
-			if (vert_in_cone(sorted_verts, pvi->m_prev, vi, pvi->m_next, pv_next->m_next)
-			    && vert_in_cone(sorted_verts, pvi->m_next, pv_prev->m_prev, pvi->m_prev, vi))
+			if (vert_in_cone(*sorted_verts, pvi->m_prev, vi, pvi->m_next, pv_next->m_next)
+			    && vert_in_cone(*sorted_verts, pvi->m_next, pv_prev->m_prev, pvi->m_prev, vi))
 			{
-				if (! ear_contains_reflex_vertex(sorted_verts, pvi->m_prev, vi, pvi->m_next))
+				if (! ear_contains_reflex_vertex(*sorted_verts, pvi->m_prev, vi, pvi->m_next))
 				{
 					// Valid ear.
 					ear_list->push_back(vi);
@@ -763,7 +780,7 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 	}
 	while (vi != first_vert);
 
-	assert(is_valid(sorted_verts));
+	assert(is_valid(*sorted_verts, true /* do check for dupes */));
 }
 
 
@@ -790,9 +807,13 @@ void	poly<coord_t>::emit_and_remove_ear(
 		m_loop = v0;
 	}
 
+	// Make sure m_leftmost_vert is dead; we don't need it now.
+	m_leftmost_vert = -1;
+
 	if (vertex_left_test(pv0->m_v, pv1->m_v, pv2->m_v) == 0)
 	{
 		// Degenerate triangle!  Don't emit it.
+		assert(0);	// This should have already been removed by remove_degenerate_chain().
 	}
 	else
 	{
@@ -821,15 +842,11 @@ void	poly<coord_t>::emit_and_remove_ear(
 	// We lost v1.
 	m_vertex_count--;
 
-	if (m_leftmost_vert == v1)
-	{
-		// We shouldn't actually need m_leftmost_vert during
-		// this phase of the algo, so kill it!
-		m_leftmost_vert = -1;
-	}
-
 	if (pv0->m_v == pv2->m_v)
 	{
+		// remove_degenerate_chain() should take care of this, right?
+		assert(0);
+
 		// We've created a duplicate vertex by removing a
 		// degenerate ear.  Must eliminate the duplication.
 
@@ -837,10 +854,6 @@ void	poly<coord_t>::emit_and_remove_ear(
 		if (m_loop == v2)
 		{
 			m_loop = v0;
-		}
-		if (m_leftmost_vert == v2)
-		{
-			m_leftmost_vert = -1;
 		}
 
 		pv0->m_next = pv2->m_next;
@@ -850,6 +863,77 @@ void	poly<coord_t>::emit_and_remove_ear(
 	}
 
 	assert(is_valid(*sorted_verts));
+}
+
+
+template<class coord_t>
+void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
+// Remove the degenerate ear at vi, and any degenerate ear formed as
+// we remove the previous one.
+{
+	for (;;)
+	{
+		assert(is_valid(*sorted_verts, false /* don't check for dupes yet */));
+
+		poly_vert<coord_t>*	pv1 = &(*sorted_verts)[vi];
+		poly_vert<coord_t>*	pv0 = &(*sorted_verts)[pv1->m_prev];
+		poly_vert<coord_t>*	pv2 = &(*sorted_verts)[pv1->m_next];
+
+		if (m_loop == vi)
+		{
+			// Change m_loop, since we're about to lose it.
+			m_loop = pv0->m_my_index;
+		}
+
+		// Make sure m_leftmost_vert is dead; we don't need it now.
+		m_leftmost_vert = -1;
+
+		// Unlink vi.
+
+		assert(pv0->m_poly_owner == this);
+		assert(pv1->m_poly_owner == this);
+		assert(pv2->m_poly_owner == this);
+
+		pv0->m_next = pv2->m_my_index;
+		pv2->m_prev = pv0->m_my_index;
+
+		pv1->m_next = -1;
+		pv1->m_prev = -1;
+		pv1->m_poly_owner = NULL;
+
+		// We lost vi.
+		m_vertex_count--;
+
+		assert(is_valid(*sorted_verts, false /* don't check for dupes yet */));
+
+		if (m_vertex_count < 3)
+		{
+			break;
+		}
+
+		// If we've created another degenerate, then remove it as well.
+		if (pv0->m_v == pv2->m_v)
+		{
+			// We've created a dupe in the chain, remove it now.
+			vi = pv0->m_my_index;
+		}
+		else if (vertex_left_test((*sorted_verts)[pv0->m_prev].m_v, pv0->m_v, pv2->m_v) == 0)
+		{
+			// More degenerate.
+			vi = pv0->m_my_index;
+		}
+		else if (vertex_left_test(pv0->m_v, pv2->m_v, (*sorted_verts)[pv2->m_next].m_v) == 0)
+		{
+			// More degenerate.
+			vi = pv2->m_my_index;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	assert(is_valid(*sorted_verts, true /* do check for dupes; there shouldn't be any! */));
 }
 
 
@@ -872,7 +956,7 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 		{
 			return true;
 		}
-		
+
 		vi = v_next;
 	}
 	while (vi != first_vert);
@@ -954,11 +1038,13 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 		{
 			// vk is within the triangle's bounding box.
 
-			//xxxxxx
+#if 0
+			//xxxxxx debug hook
 			if (v1 == 131 && vk == 132)
 			{
-				vk = vk;//xxxxx
+				vk = vk;//xxxxx breakpoint here
 			}
+#endif
 
 			int	v_next = pvk->m_next;
 			int	v_prev = pvk->m_prev;
@@ -1035,7 +1121,7 @@ bool	poly<coord_t>::vert_in_cone(const array<vert_t>& sorted_verts, int vert, in
 	bool	acute_cone = vertex_left_test(sorted_verts[cone_v0].m_v, sorted_verts[cone_v1].m_v, sorted_verts[cone_v2].m_v) > 0;
 
 	// Include boundary in our tests.
-	bool	left_of_01 = 
+	bool	left_of_01 =
 		vertex_left_test(sorted_verts[cone_v0].m_v, sorted_verts[cone_v1].m_v, sorted_verts[vert].m_v) >= 0;
 	bool	left_of_12 =
 		vertex_left_test(sorted_verts[cone_v1].m_v, sorted_verts[cone_v2].m_v, sorted_verts[vert].m_v) >= 0;
@@ -1050,6 +1136,45 @@ bool	poly<coord_t>::vert_in_cone(const array<vert_t>& sorted_verts, int vert, in
 		// Obtuse cone.  Cone is union of half-planes.
 		return left_of_01 || left_of_12;
 	}
+}
+
+
+template<class coord_t>
+bool	poly<coord_t>::vert_is_duplicated(const array<vert_t>& sorted_verts, int vert)
+// Return true if there's another vertex in this poly, coincident with vert.
+{
+	// Scan backwards.
+	{for (int vi = vert - 1; vi >= 0; vi--)
+	{
+		if ((sorted_verts[vi].m_v == sorted_verts[vert].m_v) == false)
+		{
+			// No more coincident verts scanning backward.
+			break;
+		}
+		if (sorted_verts[vi].m_poly_owner == this)
+		{
+			// Found a dupe vert.
+			return true;
+		}
+	}}
+
+	// Scan forwards.
+	{for (int vi = vert + 1, n = sorted_verts.size(); vi < n; vi++)
+	{
+		if ((sorted_verts[vi].m_v == sorted_verts[vert].m_v) == false)
+		{
+			// No more coincident verts scanning forward.
+			break;
+		}
+		if (sorted_verts[vi].m_poly_owner == this)
+		{
+			// Found a dupe vert.
+			return true;
+		}
+	}}
+
+	// Didn't find a dupe.
+	return false;
 }
 
 
@@ -1214,7 +1339,7 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 		while (m_polys.size() > 1)
 		{
 			int	v1 = m_polys[1]->m_leftmost_vert;
-			
+
 			//     find v2 in full_poly, such that:
 			//       v2 is to the left of v1,
 			//       and v1-v2 seg doesn't intersect any other edges
@@ -1251,6 +1376,52 @@ template<class coord_t>
 void	poly_env<coord_t>::join_paths_with_bridge(int vert_on_main_poly, int vert_on_sub_poly)
 {
 	assert(vert_on_main_poly != vert_on_sub_poly);
+
+	if (m_sorted_verts[vert_on_main_poly].m_v == m_sorted_verts[vert_on_sub_poly].m_v)
+	{
+		// Special case: verts to join are coincident.  We
+		// don't actually need to make a bridge with new
+		// verts; we only need to adjust the links and do
+		// fixup.
+		poly_vert<coord_t>*	pv_main = &m_sorted_verts[vert_on_main_poly];
+		poly_vert<coord_t>*	pv_sub = &m_sorted_verts[vert_on_sub_poly];
+
+		int	main_next = pv_main->m_next;
+		int	sub_prev = pv_sub->m_prev;
+
+		pv_main->m_next = pv_sub->m_next;
+		m_sorted_verts[pv_main->m_next].m_prev = vert_on_main_poly;
+
+		pv_sub->m_next = main_next;
+		m_sorted_verts[main_next].m_prev = vert_on_sub_poly;
+
+		// Fixup sub poly so it's now properly a part of the main poly.
+		// @@ almost dupe of code below, could pull this out
+		poly<coord_t>*	main_poly = pv_main->m_poly_owner;
+		poly<coord_t>*	sub_poly = pv_sub->m_poly_owner;
+		poly_vert<coord_t>*	v = &m_sorted_verts[pv_main->m_next];
+		do
+		{
+			v->m_poly_owner = main_poly;
+
+			// Update leftmost vert.
+			if (v->m_my_index < v->m_poly_owner->m_leftmost_vert)
+			{
+				v->m_poly_owner->m_leftmost_vert = v->m_my_index;
+			}
+
+			v = &m_sorted_verts[v->m_next];
+		}
+		while (v != &m_sorted_verts[main_next]);
+
+		main_poly->m_vertex_count += sub_poly->m_vertex_count;	// all the sub_poly's verts.
+
+		sub_poly->invalidate(m_sorted_verts);
+
+		return;
+	}
+
+	// Normal case, need to dupe verts and create zero-area bridge.
 
 	dupe_two_verts(vert_on_main_poly, vert_on_sub_poly);
 
@@ -1439,7 +1610,7 @@ static void compute_triangulation(
 	// classification of ear, CE2 from FIST paper:
 	//
 	// v[i-1],v[i],v[i+1] of P form an ear of P iff
-	// 
+	//
 	// 1. v[i] is a convex vertex
 	//
 	// 2. the interior plus boundary of triangle
@@ -1451,7 +1622,7 @@ static void compute_triangulation(
 	// but used for efficiency and robustness)
 
 	// ear-clip, adapted from FIST paper:
-	//   
+	//
 	//   list<poly> L;
 	//   L.insert(full_poly)
 	//   while L not empty:
@@ -1474,8 +1645,8 @@ static void compute_triangulation(
 		poly<coord_t>*	P = penv.m_polys.back();
 		penv.m_polys.pop_back();
 
-		array<int>	Q;	// Q is the ear list	
-		P->build_ear_list(&Q, penv.m_sorted_verts, &rand_gen);
+		array<int>	Q;	// Q is the ear list
+		P->build_ear_list(&Q, &penv.m_sorted_verts, &rand_gen);
 
 		bool	ear_was_clipped = false;
 		while (P->m_vertex_count > 3)
@@ -1510,10 +1681,10 @@ static void compute_triangulation(
 				// debug hack: emit current state of P
 				static int s_tricount = 0;
 				s_tricount++;
-				if (s_tricount >= 100)	// 87
+				if (s_tricount >= 78)	// 79
 				{
-					debug_emit_poly_loop(result, penv.m_sorted_verts, P);
-					return;
+//					debug_emit_poly_loop(result, penv.m_sorted_verts, P);
+//					return;
 				}
 #endif // HACK
 
@@ -1522,7 +1693,7 @@ static void compute_triangulation(
 			else if (ear_was_clipped == true)
 			{
 				// Re-examine P for new ears.
-				P->build_ear_list(&Q, penv.m_sorted_verts, &rand_gen);
+				P->build_ear_list(&Q, &penv.m_sorted_verts, &rand_gen);
 				ear_was_clipped = false;
 			}
 			else
@@ -1530,7 +1701,7 @@ static void compute_triangulation(
 				// No valid ears; we're in trouble so try some fallbacks.
 
 #if 0
-				// xxx for debugging: show the state of P when we hit the recovery process.
+				// xxx hack for debugging: show the state of P when we hit the recovery process.
 				debug_emit_poly_loop(result, penv.m_sorted_verts, P);
 				return;
 #endif
@@ -1578,7 +1749,7 @@ void	recovery_process(
 	//     pick a random convex vert and add it to Q
 	//   else
 	//     pick a random vert and add it to Q
-	
+
 	// Case 1: two edges, e[i-1] and e[i+1], intersect; we insert
 	// the overlapping ears into Q and resume.
 	{for (int vi = sorted_verts[P->m_loop].m_next; vi != P->m_loop; vi = sorted_verts[vi].m_next)
@@ -1598,6 +1769,39 @@ void	recovery_process(
 			return;
 		}
 	}}
+
+	// Case A: self-bridge
+	//
+	// Not mentioned in FIST, unless this is somehow a variation
+	// on Case 2.  Can happen when multiple loops bridge into the
+	// same vert.
+	//
+	// E.g., point A is a coincident vert that got bridged into,
+	// and now it's tangled, and preventing progress.
+	//
+        //      +---<---\/--->---+     <---- envision this double loop
+        //      |+-->---/\---<--+|            as having zero width
+        //      ||              ||
+        //      ||              ^v
+        //      ||              ||A
+        //      |+------<-------)(----<----+
+        //      |              /  \        |
+        //      |             /    \       |
+        //      |            /      \      |
+        //      |           -----<----     |
+        //      v                          ^
+        //      |                          |
+        //      |                          |
+        //      |                          |
+        //      +------------->------------+
+	//
+	// Attempted fix: find a triple dupe like A and untangle it.
+	// Convert the three crossing paths into three coincident
+	// corners that can be clipped separately.  Need to check that
+	// the untangling keeps the poly intact as a single loop.
+
+	// TODO implement.
+
 
 // Because I'm lazy, I'm skipping this test for now...
 #if 0
@@ -1646,7 +1850,7 @@ void	recovery_process(
 			// Resume regular processing.
 			return;
 		}
-		
+
 		vert_count++;
 		vi = sorted_verts[vi].m_next;
 	}
@@ -1669,7 +1873,7 @@ void	recovery_process(
 
 // Local Variables:
 // mode: C++
-// c-basic-offset: 8 
+// c-basic-offset: 8
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
