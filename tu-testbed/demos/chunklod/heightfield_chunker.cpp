@@ -78,7 +78,8 @@ struct stats {
 // A default value, to determine quantization of vertical units.
 // TODO: set this value based on info from the .BT file header, or
 // scale it to the largest height in the data.
-const float MAX_HEIGHT = 32767.0;
+// Or at least make it a command-line option.
+const float MAX_HEIGHT = 10000.0;
 
 
 // @@ under Win32, SDL likes to define its own main(), to fix up arg
@@ -295,8 +296,8 @@ void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8
 
 
 struct heightfield_elem {
-	float	y;
-	float	error;
+	Sint16	y;
+	Sint16	error;	// compress this to a byte?  Definitely can be done -- the drawback is possible very tiny (~20th of a pixel?) pop on LOD change.
 	Sint8	activation_level;
 
 	heightfield_elem() { y = 0; clear(); }
@@ -332,12 +333,14 @@ struct heightfield {
 	int	size;
 	int	log_size;
 	float	sample_spacing;
+	float	vertical_scale;	// scales the units stored in heightfield_elem's.  meters == stored_Sint16 * vertical_scale
 	heightfield_elem*	data;
 
-	heightfield() {
+	heightfield(float initial_vertical_scale) {
 		size = 0;
 		log_size = 0;
 		sample_spacing = 1.0f;
+		vertical_scale = initial_vertical_scale;
 		data = 0;
 	}
 
@@ -403,6 +406,9 @@ struct heightfield {
 	int	load_bt(SDL_RWops* in)
 	// Load .BT format heightfield data from the given file and
 	// initialize heightfield.
+	//
+	// The given vertical scale gives the meters/unit value for
+	// the short ints stored in the heightfield structure.
 	//
 	// Return -1, and rewind the source file, if the data is not in .BT format.
 	{
@@ -486,7 +492,7 @@ struct heightfield {
 				} else if (sample_size == 4) {
 					y = SDL_ReadLE32(in);
 				}
-				data[i + (size - 1 - j) * size].y = y;
+				data[i + (size - 1 - j) * size].y = frnd(y / vertical_scale);
 			}
 		}
 
@@ -529,7 +535,7 @@ struct heightfield {
 				ReadPixel(s, imin(i, s->w - 1), imin(j, s->h - 1), &r, &g, &b, &a);
 				y = r * 1.0f;	// just using red component for now.
 
-				data[i + (size - 1 - j) * size].y = y;
+				data[i + (size - 1 - j) * size].y = y / vertical_scale;
 			}
 		}
 
@@ -541,7 +547,7 @@ struct heightfield {
 void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int rz, int lx, int lz);
 void	propagate_activation_level(heightfield& hf, int cx, int cz, int level, int target_level);
 int	check_propagation(heightfield& hf, int cx, int cz, int level);
-void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level, float vertical_scale);
+void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level);
 
 
 void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float base_max_error, float spacing, float vertical_scale)
@@ -555,7 +561,7 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 // Spacing determines the horizontal sample spacing for bitmap
 // heightfields only.
 {
-	heightfield	hf;
+	heightfield	hf(vertical_scale);
 
 	// Load the heightfield data.
 	if (hf.load_bt(in) < 0) {
@@ -609,7 +615,7 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 	printf("meshing...");
 
 	// Write out the node data for the entire chunk tree.
-	generate_node_data(out, hf, 0, 0, hf.log_size, tree_depth-1, vertical_scale);
+	generate_node_data(out, hf, 0, 0, hf.log_size, tree_depth-1);
 
 	printf("done\n");
 }
@@ -634,7 +640,7 @@ void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int r
 	int	bz = rz + (dz >> 1);
 
 	float	error = hf.elem(bx, bz).y - (hf.elem(lx, lz).y + hf.elem(rx, rz).y) / 2.f;
-	hf.elem(bx, bz).error = error;	// Set this vert's error value.
+	hf.elem(bx, bz).error = floor(error / hf.vertical_scale + 0.5);	// Set this vert's error value.
 	if (error >= base_max_error) {
 		// Compute the mesh level above which this vertex
 		// needs to be included in LOD meshes.
@@ -653,9 +659,12 @@ void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int r
 const float	SQRT_2 = sqrtf(2);
 
 
-float	height_query(const heightfield& hf, int level, int x, int z, int ax, int az, int rx, int rz, int lx, int lz)
+Sint16	height_query(const heightfield& hf, int level, int x, int z, int ax, int az, int rx, int rz, int lx, int lz)
 // Returns the height of the query point (x,z) within the triangle (a, r, l),
 // as tesselated to the specified LOD.
+//
+// Return value is in heightfield discrete coords.  To get meters,
+// multiply by hf.vertical_scale.
 {
 	// If the query is on one of our verts, return that vert's height.
 	if ((x == ax && z == az)
@@ -701,17 +710,17 @@ float	height_query(const heightfield& hf, int level, int x, int z, int ax, int a
 		}
 	}
 
-	float	ay = hf.get_elem(ax, az).y;
-	float	dr = hf.get_elem(rx, rz).y - ay;
-	float	dl = hf.get_elem(lx, lz).y - ay;
+	Sint16	ay = hf.get_elem(ax, az).y;
+	Sint16	dr = hf.get_elem(rx, rz).y - ay;
+	Sint16	dl = hf.get_elem(lx, lz).y - ay;
 
 	// This triangle is as far as the desired LOD goes.  Compute the
 	// query's height on the triangle.
-	return ay + sl * dl + sr * dr;
+	return floor(ay + sl * dl + sr * dr + 0.5);
 }
 
 
-float	get_height_at_LOD(const heightfield& hf, int level, int x, int z)
+Sint16	get_height_at_LOD(const heightfield& hf, int level, int x, int z)
 // Returns the height of the mesh as simplified to the specified level
 // of detail.
 {
@@ -842,7 +851,7 @@ int	check_propagation(heightfield& hf, int cx, int cz, int level)
 	max_act = imax(max_act, ew);
 
 	if (max_act > c) {
-		printf("cp error! center! lev = %d, cx = %d, cz = %d, alev = %d, max_act = %d ee = %d en = %d ew = %d es = %d err = %f\n", level, cx, cz, c, max_act, ee, en, ew, es, hf.elem(cx, cz).error);	//xxxxx
+		printf("cp error! center! lev = %d, cx = %d, cz = %d, alev = %d, max_act = %d ee = %d en = %d ew = %d es = %d err = %d\n", level, cx, cz, c, max_act, ee, en, ew, es, hf.elem(cx, cz).error);	//xxxxx
 	}
 
 	return imax(max_act, c);
@@ -853,7 +862,7 @@ namespace mesh {
 	void	clear();
 	void	emit_vertex(const heightfield& hf, int ax, int az);	// call this in strip order.
 	int	lookup_index(int x, int z);
-	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level, float vertical_scale);
+	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level);
 
 	void	add_edge_strip_index(int edge_dir, int index);
 	void	add_edge_vertex_lo(int edge_dir, int x, int z);
@@ -875,7 +884,7 @@ static const char*	spinner = "-\\|/";
 static int spin_count = 0;
 
 
-void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level, float vertical_scale)
+void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level)
 // Given a square of data, with northwest corner at (x0, z0) and
 // comprising ((1<<log_size)+1) verts along each axis, this function
 // generates the mesh using verts which are active at the given level.
@@ -927,15 +936,15 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	generate_edge_data(out, hf, 3, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level, level > 0);	// south
 
 	// write out the mesh data.
-	mesh::write(out, hf, level, vertical_scale);
+	mesh::write(out, hf, level);
 
 	// recurse to child regions, to generate child chunks.
 	if (level > 0) {
 		int	half_size = (1 << (log_size-1));
-		generate_node_data(out, hf, x0, z0, log_size-1, level-1, vertical_scale);	// nw
-		generate_node_data(out, hf, x0 + half_size, z0, log_size-1, level-1, vertical_scale);	// ne
-		generate_node_data(out, hf, x0, z0 + half_size, log_size-1, level-1, vertical_scale);	// sw
-		generate_node_data(out, hf, x0 + half_size, z0 + half_size, log_size-1, level-1, vertical_scale);	// se
+		generate_node_data(out, hf, x0, z0, log_size-1, level-1);	// nw
+		generate_node_data(out, hf, x0 + half_size, z0, log_size-1, level-1);	// ne
+		generate_node_data(out, hf, x0, z0 + half_size, log_size-1, level-1);	// sw
+		generate_node_data(out, hf, x0 + half_size, z0 + half_size, log_size-1, level-1);	// se
 	}
 }
 
@@ -1239,7 +1248,6 @@ namespace mesh {
 
 	static void	write_vertex(SDL_RWops* rw, const heightfield& hf,
 				     int level, const vec3& box_center, const vec3& compress_factor,
-				     float vertical_scale,
 				     const vert_info& v)
 	// Utility function, to output the quantized data for a vertex.
 	{
@@ -1248,7 +1256,7 @@ namespace mesh {
 		Sint16	x, y, z;
 
 		x = (int) floor(((v.x * hf.sample_spacing - box_center.get_x()) * compress_factor.get_x()) + 0.5);
-		y = (int) floor(e.y / vertical_scale + 0.5);
+		y = e.y;
 		z = (int) floor(((v.z * hf.sample_spacing - box_center.get_z()) * compress_factor.get_z()) + 0.5);
 
 		SDL_WriteLE16(rw, x);
@@ -1256,13 +1264,13 @@ namespace mesh {
 		SDL_WriteLE16(rw, z);
 
 		// Morph info.  Should work out to 0 if the vert is not a morph vert.
-		float	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
-		int	morph_delta = floor((lerped_height - e.y) / vertical_scale + 0.5);
+		Sint16	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
+		int	morph_delta = (lerped_height - e.y);
 		SDL_WriteLE16(rw, (Sint16) morph_delta);
 		assert(morph_delta == (Sint16) morph_delta);	// Watch out for overflow.
 	}
 
-	void	write(SDL_RWops* rw, const heightfield& hf, int level, float vertical_scale)
+	void	write(SDL_RWops* rw, const heightfield& hf, int level)
 	// Write out the current chunk.
 	{
 		// Write bounding box.  Bounding box also determines the scale
@@ -1287,8 +1295,7 @@ namespace mesh {
 		// Write vertices.  All verts contain morph info.
 		SDL_WriteLE16(rw, vertices.size());
 		for (int i = 0; i < vertices.size(); i++) {
-			write_vertex(rw, hf, level, box_center, compress_factor, vertical_scale,
-				     vertices[i]);
+			write_vertex(rw, hf, level, box_center, compress_factor, vertices[i]);
 		}
 
 		{
@@ -1342,12 +1349,12 @@ namespace mesh {
 			SDL_WriteLE16(rw, edge_hi[edge_dir][1].size());
 
 			{for (int i = 0; i < edge_lo[edge_dir].size(); i++) {
-				write_vertex(rw, hf, level, box_center, compress_factor, vertical_scale,
+				write_vertex(rw, hf, level, box_center, compress_factor,
 					     edge_lo[edge_dir][i]);
 			}}
 			{for (int j = 0; j < 2; j++) {
 				{for (int i = 0; i < edge_hi[edge_dir][j].size(); i++) {
-					write_vertex(rw, hf, level-1, box_center, compress_factor, vertical_scale,
+					write_vertex(rw, hf, level-1, box_center, compress_factor,
 						     edge_hi[edge_dir][j][i]);
 				}}
 			}}
@@ -1362,7 +1369,7 @@ namespace mesh {
 		vertex_indices.push_back(index);
 
 		// Check coordinates and update bounding box.
-		vec3	v(x * hf.sample_spacing, hf.get_elem(x, z).y, z * hf.sample_spacing);
+		vec3	v(x * hf.sample_spacing, hf.get_elem(x, z).y * hf.vertical_scale, z * hf.sample_spacing);
 		for (int i = 0; i < 3; i++) {
 			if (v.get(i) < min.get(i)) {
 				min.set(i, v.get(i));
