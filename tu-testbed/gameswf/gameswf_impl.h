@@ -241,9 +241,6 @@ namespace gameswf
 
 		virtual ~character_def() {}
 
-//		void	set_id(int id) { m_id = id; }
-//		int	get_id() const { return m_id; }
-
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
 
@@ -323,7 +320,6 @@ namespace gameswf
 
 		// Accessors for basic display info.
 		int	get_id() const { return m_id; }
-//		void	set_id(int id) { m_id = id; }
 		movie*	get_parent() const { return m_parent; }
 		int	get_depth() const { return m_depth; }
 		void	set_depth(int d) { m_depth = d; }
