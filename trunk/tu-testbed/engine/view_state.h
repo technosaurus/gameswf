@@ -15,13 +15,17 @@
 #include "cull.h"
 
 
-class view_state
+struct view_state
 // Description of basic rendering state.  Passed as an arg to
 // visual::render().
 {
 	int	m_frame_number;
 	matrix	m_matrix;
-	plane_info	m_frustum[6];
+	plane_info	m_frustum[6];	// In local coordinates.
+
+	// @@ Should this contain the culling state?  Or keep that separate?
+
+	// @@ Add transformation methods, perhaps lazy updating of frustum planes... ??
 };
 
 
