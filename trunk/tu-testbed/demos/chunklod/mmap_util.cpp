@@ -36,12 +36,12 @@ namespace mmap_util {
 		}
 
 		HANDLE	filehandle = CreateFile(filename,
-										GENERIC_READ | (writeable ? GENERIC_WRITE : 0),
-										FILE_SHARE_READ,
-										NULL,
-										OPEN_ALWAYS,
-										FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS | (create_file ? FILE_ATTRIBUTE_TEMPORARY : 0),
-										NULL);
+						GENERIC_READ | (writeable ? GENERIC_WRITE : 0),
+						FILE_SHARE_READ,
+						NULL,
+						OPEN_ALWAYS,
+						FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS | (create_file ? FILE_ATTRIBUTE_TEMPORARY : 0),
+						NULL);
 		if (filehandle == INVALID_HANDLE_VALUE) {
 			// Failure.
 			throw "can't CreateFile";
@@ -71,10 +71,27 @@ namespace mmap_util {
 				free((void*) filename);
 			}
 
+			printf("mmap_util::map(): CreateFileMapping failed.\n");
+
 			return NULL;
 		}
 
 		void*	data = MapViewOfFile(file_mapping, writeable ? FILE_MAP_WRITE : FILE_MAP_READ, 0, 0, size);
+		if (data == NULL) {
+			printf("mmap_util::map(): MapViewOfFile failed.  size = %d\n", size);
+
+			LPVOID lpMsgBuf;
+			FormatMessage(
+				FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+				NULL,
+				GetLastError(),
+				MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Default language
+				(LPTSTR) &lpMsgBuf,
+				0,
+				NULL);
+			printf("%s\n", lpMsgBuf);
+			LocalFree(lpMsgBuf);
+		}
 
 		CloseHandle(file_mapping);
 		CloseHandle(filehandle);

@@ -26,7 +26,7 @@ bool	check_if_png(char *file_name);
 #undef main	// SDL wackiness.
 int	main(int argc, char* argv[])
 {
-	printf("usage: makebt <inputfile.png> <outputfile.bt> [-s horizontal_scale]\n");
+	printf("usage: makebt <inputfile.png> <outputfile.bt> [-s horizontal_scale] [-v vertical_scale]\n");
 
 	char*	input_file = NULL;
 	char*	output_file = NULL;
@@ -49,7 +49,7 @@ int	main(int argc, char* argv[])
 					printf("error: must follow -s with a number to scale the horizontal units with\n");
 					exit(1);
 				}
-				h_scale = atof(argv[arg]);
+				h_scale = (float) atof(argv[arg]);
 				break;
 			case 'v':	// vertical scale
 				arg++;
@@ -57,7 +57,7 @@ int	main(int argc, char* argv[])
 					printf("error: must follow -v with a number to scale the vertical units with\n");
 					exit(1);
 				}
-				v_scale = atof(argv[arg]);
+				v_scale = (float) atof(argv[arg]);
 				break;
 			}
 		}
@@ -190,20 +190,23 @@ int	main(int argc, char* argv[])
 		SDL_RWwrite(out, "\0", 1, 1);
 	}
 
-	// BT data is goes in columns, bottom-to-top, left-to-right.
+	// BT data goes in columns, bottom-to-top, left-to-right.
 	png_bytep*	row_pointers = png_get_rows(png_ptr, info_ptr);
 	{for (unsigned int i = 0; i < width; i++) {
 		for (unsigned int j = 0; j < height; j++) {
 			Uint16	data = 0;
 			if (bit_depth == 8) {
-				data = ((Uint8*) (row_pointers[j]))[i];
+				data = ((Uint8*) (row_pointers[height - 1 - j]))[i];
 			}
 			else {
-				data = ((Uint16*) (row_pointers[j]))[i];
+				data = SDL_SwapBE16(((Uint16*) (row_pointers[height - 1 - j]))[i]);
 			}
+			data = iclamp((int) (data * v_scale), 0, 0x0FFFF);
 			SDL_WriteLE16(out, data);
 		}
 	}}
+
+	SDL_RWclose(out);
 	
 	/* clean up after the read, and free any memory allocated - REQUIRED */
 	png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);
