@@ -19,30 +19,140 @@ namespace swf
 {
 namespace render
 {
+	// Some renderer state.
+
 	// Curve subdivision error tolerance (in TWIPs)
 	static float	s_tolerance = 20.0f;
+
+	// Output size.
+	static float	s_display_width;
+	static float	s_display_height;
+
+
+	// A struct used to hold info about an OpenGL texture.
+	struct bitmap_info
+	{
+		unsigned int	m_texture_id;	// OpenGL texture id
+		int	m_width;
+		int	m_height;
+
+		bitmap_info(image::rgb* im)
+			:
+			m_texture_id(0),
+			m_width(0),
+			m_height(0)
+		{
+			assert(im);
+
+			// Create the texture.
+
+			glEnable(GL_TEXTURE_2D);
+			glGenTextures(1, &m_texture_id);
+			glBindTexture(GL_TEXTURE_2D, m_texture_id);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* LINEAR_MIPMAP_LINEAR */);
+		
+			m_width = 1; while (m_width < im->m_width) { m_width <<= 1; }
+			m_height = 1; while (m_height < im->m_height) { m_height <<= 1; }
+
+			image::rgb*	rescaled = image::create_rgb(m_width, m_height);
+			image::resample(rescaled, 0, 0, m_width - 1, m_height - 1,
+					im, 0, 0, im->m_width, im->m_height);
+		
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
+//			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_image->m_width, m_image->m_height, GL_RGB, GL_UNSIGNED_BYTE, m_image->m_data);
+
+			delete rescaled;
+		}
+	};
 
 
 	struct fill_style
 	{
+		enum mode
+		{
+			INVALID,
+			COLOR,
+			BITMAP_WRAP,
+			BITMAP_CLAMP,
+			LINEAR_GRADIENT,
+			RADIAL_GRADIENT,
+		};
+		mode	m_mode;
 		rgba	m_color;
-		bool	m_valid;
+		const bitmap_info*	m_bitmap_info;
+		matrix	m_bitmap_matrix;
 
 		fill_style()
 			:
-			m_valid(false)
+			m_mode(INVALID)
 		{
 		}
 
-		void	apply() const
+		void	apply(const matrix& current_matrix) const
 		// Push our style into OpenGL.
 		{
-			assert(m_valid == true);
-			m_color.ogl_color();
+			assert(m_mode != INVALID);
+
+			if (m_mode == COLOR)
+			{
+				m_color.ogl_color();
+				glDisable(GL_TEXTURE_2D);
+			}
+			else if (m_mode == BITMAP_WRAP
+				 || m_mode == BITMAP_CLAMP)
+			{
+				assert(m_bitmap_info != NULL);
+
+				m_color.ogl_color();
+
+				if (m_bitmap_info == NULL)
+				{
+					glDisable(GL_TEXTURE_2D);
+				}
+				else
+				{
+					// Set up the texture for rendering.
+
+					glEnable(GL_TEXTURE_2D);
+					glBindTexture(GL_TEXTURE_2D, m_bitmap_info->m_texture_id);
+					glEnable(GL_TEXTURE_GEN_S);
+					glEnable(GL_TEXTURE_GEN_T);
+				
+					float	width = m_bitmap_info->m_width * 6.0f/*xxx*/;
+					float	height = m_bitmap_info->m_height * 6.0f/*xxx*/;
+
+					float	x_origin = current_matrix.m_[0][2];
+					float	y_origin = current_matrix.m_[1][2];
+
+					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+					float	p[4] = { 0, 0, 0, 0 };
+					p[0] = 1.0f / width;
+					p[3] = -x_origin / width;
+					glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+					p[0] = 0.0f;
+
+					glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+					p[1] = 1.0f / height;
+					p[3] = -y_origin / height;
+					glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+				}
+			}
 		}
 
-		void	set_valid(bool valid) { m_valid = valid; }
-		bool	is_valid() const { return m_valid; }
+		void	disable() { m_mode = INVALID; }
+		void	set_color(rgba color) { m_mode = COLOR; m_color = color; }
+		void	set_bitmap(const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm)
+		{
+			m_mode = (wm == WRAP_REPEAT) ? BITMAP_WRAP : BITMAP_CLAMP;
+			m_color = rgba();
+			m_bitmap_info = bi;
+			m_bitmap_matrix = m;
+		}
+		bool	is_valid() const { return m_mode != INVALID; }
 	};
 
 
@@ -100,7 +210,7 @@ namespace render
 	};
 
 
-	// Renderer state.
+	// More Renderer state.
 	static array<fill_segment>	s_current_segments;
 	static array<point>	s_current_path;
 	static point	s_last_point;
@@ -117,6 +227,22 @@ namespace render
 	static void	peel_off_and_render(int i0, int i1, float y0, float y1);
 
 
+	bitmap_info*	create_bitmap_info(image::rgb* im)
+	// Given an image, returns a pointer to a bitmap_info struct
+	// that can later be passed to fill_styleX_bitmap(), to set a
+	// bitmap fill style.
+	{
+		return new bitmap_info(im);
+	}
+
+
+	void	delete_bitmap_info(bitmap_info* bi)
+	// Delete the given bitmap info struct.
+	{
+		delete bi;
+	}
+
+
 	void	begin_display(
 		rgba background_color,
 		float x0, float x1, float y0, float y1)
@@ -125,9 +251,14 @@ namespace render
 	// given dimensions (and fills the background...).  Call
 	// end_display() when you're done.
 	{
+		s_display_width = fabsf(x1 - x0);
+		s_display_height = fabsf(y1 - y0);
+
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 		glOrtho(x0, x1, y0, y1, -1, 1);
+
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// GL_MODULATE
 
 		// Clear the background, if background color has alpha > 0.
 		if (background_color.m_a > 0.0f)
@@ -223,50 +354,73 @@ namespace render
 	}
 
 
-	void	fill_style0(bool enable, rgba color)
+	void	fill_style_disable(int fill_side)
+	// Don't fill on the {0 == left, 1 == right} side of a path.
+	{
+		if (fill_side == 0)
+		{
+			s_current_left_style.disable();
+		}
+		else
+		{
+			assert(fill_side == 1);
+			s_current_right_style.disable();
+		}
+	}
+
+
+	void	line_style_disable()
+	// Don't draw a line on this path.
+	{
+		s_current_line_style.disable();
+	}
+
+
+	void	fill_style_color(int fill_side, rgba color)
 	// Set fill style for the left interior of the shape.  If
 	// enable is false, turn off fill for the left interior.
 	{
 		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
 
-		s_current_left_style.set_valid(enable);
-		s_current_left_style.m_color = s_cxform_stack.back().transform(color);
-		if (enable == true
-		    && s_shape_has_fill == false)
+		if (fill_side == 0)
 		{
+			s_current_left_style.set_color(s_cxform_stack.back().transform(color));
+			s_shape_has_fill = true;
+		}
+		else
+		{
+			assert(fill_side == 1);
+
+			s_current_right_style.set_color(s_cxform_stack.back().transform(color));
 			s_shape_has_fill = true;
 		}
 	}
 
 
-	void	fill_style1(bool enable, rgba color)
-	// Set fill style for the right interior of the shape.  If
-	// enable is false, turn off fill for the right interior.
-	{
-		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
-
-		s_current_right_style.set_valid(enable);
-		s_current_right_style.m_color = s_cxform_stack.back().transform(color);
-		if (enable == true
-		    && s_shape_has_fill == false)
-		{
-			s_shape_has_fill = true;
-		}
-	}
-
-
-	void	line_style(bool enable, rgba color)
+	void	line_style_color(rgba color)
 	// Set the line style of the shape.  If enable is false, turn
 	// off lines for following curve segments.
 	{
 		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
 
-		s_current_line_style.set_valid(enable);
-		s_current_line_style.m_color = s_cxform_stack.back().transform(color);
-		if (enable == true
-		    && s_shape_has_line == false)
+		s_current_line_style.set_color(s_cxform_stack.back().transform(color));
+		s_shape_has_line = true;
+	}
+
+
+	void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm)
+	{
+		if (fill_side == 0)
 		{
-			s_shape_has_line = true;
+			s_current_left_style.set_bitmap(bi, m, wm);
+			s_shape_has_fill = true;
+		}
+		else
+		{
+			assert(fill_side == 1);
+
+			s_current_right_style.set_bitmap(bi, m, wm);
+			s_shape_has_fill = true;
 		}
 	}
 
@@ -281,9 +435,9 @@ namespace render
 		assert(s_current_path.size() == 0);
 		s_current_path.resize(0);
 
-		s_current_line_style.set_valid(false);
-		s_current_left_style.set_valid(false);
-		s_current_right_style.set_valid(false);
+		s_current_line_style.disable();
+		s_current_left_style.disable();
+		s_current_right_style.disable();
 		s_shape_has_fill = false;
 		s_shape_has_line = false;
 	}
@@ -379,7 +533,7 @@ namespace render
 				const fill_segment&	seg = s_current_segments[i];
 				if (seg.m_line_style.is_valid())
 				{
-					seg.m_line_style.apply();
+					seg.m_line_style.apply(s_matrix_stack.back());
 					glVertex2f(seg.m_begin.m_x, seg.m_begin.m_y);
 					glVertex2f(seg.m_end.m_x, seg.m_end.m_y);
 				}
@@ -511,7 +665,7 @@ namespace render
 			{
 				// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
 
-				slab[i].m_left_style.apply();
+				slab[i].m_left_style.apply(s_matrix_stack.back());
 
 				glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
 				glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
@@ -630,11 +784,85 @@ namespace render
 	void	end_path()
 	// Mark the end of a set of edges that all use the same styles.
 	{
+#if 0
+		// If we have a line style, then draw the line.
+		if (s_current_line_style.is_valid()
+		    && s_current_path.size() > 1)
+		{
+			s_current_line_style.apply(s_matrix_stack.back());
+			
+			// Render the line using a series of
+			// rectangles, connnected by pie-wedges.
+
+			// Decide how many increments to divide the
+			// circle into, to make nice circular connectors.
+			// s_current_line_width ...;
+
+			bool	closed_loop = false;
+			if (s_current_path[0] == s_current_path.back())
+			{
+				closed_loop = true;
+			}
+			if (closed_loop == false)
+			{
+				// Start with a semicircle end-cap.
+				draw end cap(s_current_path[0], direction...);
+			}
+			point	left = something;
+			point	right = something;
+			for (int i = 0; i < s_current_path.size() - 1; i++)
+			{
+				// get from s_current_path[i] to s_current_path[i+1]
+				
+				// glBegin(GL_TRIANGLE_STRIP);
+				// glVertex2f(left); glVertex2f(right);
+				// glVertex2f(next_left); glVertex2f(next_right);
+				// glEnd();
+
+				left = next_left;
+				right = next_right;
+
+				// connector...
+				if (i + 1 < s_current_path.size() - 1)
+				{
+					// Connect to the next segment.
+					if (left turn)
+					{
+						// Left turn.
+						next_right = whatever;
+						
+						// Triangle fan
+					}
+					else
+					{
+						// Right turn.
+						next_left = whatever;
+
+						// Triangle fan
+					}
+				}
+				else
+				{
+					// End the segment.
+					if (closed_loop)
+					{
+						// connect to s_current_path[0]
+					}
+					else
+					{
+						// semi-circle end-cap
+					}
+				}
+
+			}
+		}
+#endif // 0
+
 		// Trace out the path outline, for antialiasing of filled shapes.
 
 		if (s_current_left_style.is_valid())
 		{
-			s_current_left_style.apply();
+			s_current_left_style.apply(s_matrix_stack.back());
 			glBegin(GL_LINE_STRIP);
 			for (int i = 0; i < s_current_path.size(); i++)
 			{
@@ -645,7 +873,7 @@ namespace render
 		
 		if (s_current_right_style.is_valid())
 		{
-			s_current_right_style.apply();
+			s_current_right_style.apply(s_matrix_stack.back());
 			glBegin(GL_LINE_STRIP);
 			for (int i = 0; i < s_current_path.size(); i++)
 			{
