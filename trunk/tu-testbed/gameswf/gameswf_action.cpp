@@ -372,7 +372,7 @@ namespace gameswf
 	struct key_as_object : public as_object
 	{
 		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
-		array<as_object_interface*>	m_listeners;
+		array<as_object_interface*>	m_listeners;	// should use weak ptr's for this!
 		int	m_last_key_pressed;
 
 		key_as_object()
@@ -655,6 +655,28 @@ namespace gameswf
 
 			math_init();
 			key_init();
+		}
+	}
+
+
+	void	action_clear()
+	{
+		if (s_inited)
+		{
+			s_inited = false;
+
+			for (string_hash<as_value>::iterator it = s_built_ins.begin();
+			     it != s_built_ins.end();
+			     ++it)
+			{
+				as_object_interface*	obj = it->second.to_object();
+				if (obj)
+				{
+					delete obj;	// obj->drop_ref()
+				}
+			}
+
+			s_built_ins.clear();
 		}
 	}
 

@@ -138,6 +138,7 @@ namespace gameswf
 				shape_character_def* s = new shape_character_def;
 				s->read(in, 2, false, m);
 
+				s->add_ref();
 				m_glyphs.push_back(s);
 			}}
 		}
@@ -209,6 +210,7 @@ namespace gameswf
 				shape_character_def* s = new shape_character_def;
 				s->read(in, 22, false, m);
 
+				s->add_ref();
 				m_glyphs.push_back(s);
 			}}
 

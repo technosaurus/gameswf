@@ -411,6 +411,9 @@ namespace gameswf
 	// Some handy helpers
 	//
 
+	// Clean up any stray heap stuff we've allocated.
+	void	action_clear();
+
 	// Dispatching methods from C++.
 	as_value	call_method0(const as_value& method, as_environment* env, as_object_interface* this_ptr);
 	as_value	call_method1(

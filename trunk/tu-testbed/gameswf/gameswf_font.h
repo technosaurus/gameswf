@@ -42,6 +42,16 @@ namespace gameswf
 				m_bitmap_info = NULL;
 			}
 		}
+
+		void	set_bitmap_info(bitmap_info* bi)
+		{
+			if (m_bitmap_info != bi)
+			{
+				if (m_bitmap_info) m_bitmap_info->drop_ref();
+				m_bitmap_info = bi;
+				if (m_bitmap_info) m_bitmap_info->add_ref();
+			}
+		}
 	};
 
 
