@@ -19,14 +19,12 @@ struct render_options {
 	bool	show_box;
 	bool	show_geometry;
 	bool	morph;
-	bool	show_edges;
 
 	render_options()
 		:
 		show_box(false),
 		show_geometry(true),
-		morph(true),
-		show_edges(true)
+		morph(true)
 	{
 	}
 };
@@ -40,14 +38,15 @@ public:
 	~lod_chunk_tree();
 
 	// External interface.
-	void	set_parameters(float max_pixel_error, float screen_width, float horizontal_FOV_degrees);
+	void	set_parameters(float max_pixel_error, float max_texel_size, float screen_width, float horizontal_FOV_degrees);
 	void	update(const vec3& viewpoint);
 	int	render(const view_state& v, render_options opt);
 
 	void	get_bounding_box(vec3* box_center, vec3* box_extent);
 
-	// Internal interface, used by our contained chunks.
+	// Internal interfaces, used by our contained chunks.
 	Uint16	compute_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
+	int	compute_texture_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
 
 //data:
 	lod_chunk*	m_chunks;
@@ -55,6 +54,7 @@ public:
 	int	m_tree_depth;	// from chunk data.
 	float	m_error_LODmax;	// from chunk data.
 	float	m_distance_LODmax;	// computed from chunk data params and set_parameters() inputs --> controls displayed LOD level.
+	float	m_texture_distance_LODmax;	// computed from texture quadtree params and set_parameters() --> controls when textures kick in.
 	float	m_vertical_scale;	// from chunk data; displayed_height = y_data * m_vertical_scale.
 	float	m_base_chunk_dimension;	// x/z size of highest LOD chunks.
 	int	m_chunk_count;

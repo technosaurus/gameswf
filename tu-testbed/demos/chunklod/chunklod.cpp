@@ -3,23 +3,23 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// Hardware-friendly chunked LOD.  Chunks are aware of edges shared by
-// their neighbors and fill appropriately.  Chunks are organized in a
-// tree, with each successive level having half the max vertex error
-// of its parent.  Collapsed vertices in each chunk are morphed
-// according to the view distance of the chunk.  Morphing is just
-// simple lerping and can be done by the CPU, or with a vertex shader
-// (at the expense of doubling the size of the vertex data in general,
-// or upping it to 4 coords/vert for heightfield terrain, where vertex
-// morphing is always vertical).
+// Hardware-friendly chunked LOD.  Chunks are organized in a tree,
+// with each successive level having half the max vertex error of its
+// parent.  Collapsed vertices in each chunk are morphed according to
+// the view distance of the chunk.  Morphing is just simple lerping
+// and can be done by the CPU, or with a vertex shader.
+//
+// A quadtree-tiled texture is used to cover the terrain.
 
 
 #include <stdlib.h>
 #include <string.h>
 
-#include <engine/ogl.h>
-#include <engine/utility.h>
-#include <engine/tqt.h>
+#include "engine/ogl.h"
+#include "engine/utility.h"
+#include "engine/tqt.h"
+#include "engine/image.h"
+
 #include "SDL/SDL_thread.h"
 
 #include "chunklod.h"
@@ -41,7 +41,7 @@ namespace lod_tile_freelist
 // Cuts down on needless texture creation/destruction.
 {
 	array<unsigned int>	s_free_textures;
-	const int	FREELIST_SIZE_LIMIT = 20;
+	const int	FREELIST_SIZE_LIMIT = 10;
 
 	void	free_texture(unsigned int texture_id)
 	// Dispose of the given texture object.  May be recycled.
@@ -84,13 +84,22 @@ namespace lod_tile_freelist
 			// Recycle.
 
 			// Grab a texture from the end of the list.
-			texture_id = s_free_textures[s_free_textures.size() - 1];
+			texture_id = s_free_textures.back();
 			s_free_textures.resize(s_free_textures.size() - 1);
 
 			glBindTexture(GL_TEXTURE_2D, texture_id);
 
 			// Put the new data in the old texture.
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+
+			// Build mips.
+			int	level = 1;
+			while (surf->w > 1 || surf->h > 1) {
+				image::make_next_miplevel(surf);
+				glTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+				level++;
+			}
+
 		}
 		else
 		{
@@ -106,11 +115,16 @@ namespace lod_tile_freelist
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surf->w, surf->h, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
-		}
-			
-		// @@ we could probably improve on this -- subsample in-place and do the glTexSubImage stuff.
-		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
 
+			// Build mips.
+			int	level = 1;
+			while (surf->w > 1 || surf->h > 1) {
+				image::make_next_miplevel(surf);
+				glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, surf->w, surf->h, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+				level++;
+			}
+		}
+	
 		SDL_FreeSurface(surf);
 
 		return texture_id;
@@ -225,7 +239,7 @@ struct lod_chunk {
 	Uint8	m_level;
 
 	bool	m_split;	// true if this node should be rendered by descendents.  @@ pack this somewhere as a bitflag.  LSB of lod?
-	Uint16	lod;	// LOD of this chunk.  high byte never changes; low byte is the morph parameter.
+	Uint16	m_lod;		// LOD of this chunk.  high byte never changes; low byte is the morph parameter.
 
 	// Vertical bounds, for constructing bounding box.
 	Sint16	m_min_y, m_max_y;
@@ -247,20 +261,19 @@ struct lod_chunk {
 
 	void	do_split(lod_chunk_tree* tree, const vec3& viewpoint);
 	bool	can_split(lod_chunk_tree* tree);	// return true if this chunk can split.  Also, request the necessary data for future, if not.
-//	void	load_data(SDL_RWops* src, const tqt* texture_quadtree);
 	void	unload_data();
 
 	void	warm_up_data(lod_chunk_tree* tree, float priority);
 	void	request_unload_subtree(lod_chunk_tree* tree);
 
-	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt);
+	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt, bool texture_bound);
 
-	void	read(SDL_RWops* in, int level, lod_chunk_tree* tree);
+	void	read(SDL_RWops* in, int recursion_count, lod_chunk_tree* tree);
 	void	lookup_neighbors(lod_chunk_tree* tree);
 
 	// Utilities.
 
-	bool	has_resident_data()
+	bool	has_resident_data() const
 	{
 		return m_data != NULL;
 	}
@@ -270,19 +283,24 @@ struct lod_chunk {
 		return m_children[0] != NULL;
 	}
 
+	int	get_level() const
+	{
+		return m_level;
+	}
+
 	void	compute_bounding_box(const lod_chunk_tree& tree, vec3* box_center, vec3* box_extent)
 	{
 		float	level_factor = (1 << (tree.m_tree_depth - 1 - m_level));
 
-		box_center->y() = (m_max_y + m_min_y) * 0.5f * tree.m_vertical_scale;
-		box_extent->y() = (m_max_y - m_min_y) * 0.5f * tree.m_vertical_scale;
-
-		box_center->x() = (m_x + 0.5f) * level_factor * tree.m_base_chunk_dimension;
-		box_center->z() = (m_z + 0.5f) * level_factor * tree.m_base_chunk_dimension;
-
-		const float	EXTRA_BOX_SIZE = 1e-3f;	// this is to make chunks overlap by about a millimeter, to avoid cracks.
-		box_extent->x() = level_factor * tree.m_base_chunk_dimension * 0.5f + EXTRA_BOX_SIZE;
-		box_extent->z() = box_extent->get_x();
+		box_center->y = (m_max_y + m_min_y) * 0.5f * tree.m_vertical_scale;
+		box_extent->y = (m_max_y - m_min_y) * 0.5f * tree.m_vertical_scale;
+			     
+		box_center->x = (m_x + 0.5f) * level_factor * tree.m_base_chunk_dimension;
+		box_center->z = (m_z + 0.5f) * level_factor * tree.m_base_chunk_dimension;
+			     
+		const float  	EXTRA_BOX_SIZE = 1e-3f;	// this is to make chunks overlap by about a millimeter, to avoid cracks.
+		box_extent->x = level_factor * tree.m_base_chunk_dimension * 0.5f + EXTRA_BOX_SIZE;
+		box_extent->z = box_extent->get_x();
 	}
 };
 
@@ -501,6 +519,7 @@ void	chunk_tree_loader::request_chunk_load(lod_chunk* chunk, float urgency)
 	if (chunk->m_parent == NULL
 	    || chunk->m_parent->m_data != NULL)
 	{
+#if 0
 		// See if we're in the request queue already.
 		// Ugh, N^2.  TODO use a hash to do this lookup.
 		for (int i = 0; i < m_load_queue.size(); i++) {
@@ -510,9 +529,11 @@ void	chunk_tree_loader::request_chunk_load(lod_chunk* chunk, float urgency)
 				return;
 			}
 		}
-
 		// Not listed already.
+#endif // 0
+
 		m_load_queue.push_back(pending_load_request(chunk, urgency));
+		
 	}
 }
 
@@ -694,13 +715,6 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 			       const vec3& box_center, const vec3& box_extent)
 // Render a chunk.
 {
-	if (opt.show_geometry || opt.show_edges) {
-		if (m_texture_id) {
-			bind_texture_tile(m_texture_id, box_center, box_extent);
-		}
-	}
-
-
 	int	triangle_count = 0;
 
 	// Grab some space to put processed verts.
@@ -708,7 +722,7 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 	float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * m_verts.vertex_count);
 
 	// Process our vertices into the output buffer.
-	float	f = (chunk.lod & 255) / 255.0f;
+	float	f = (chunk.m_lod & 255) / 255.0f;
 	if (opt.morph == false) {
 		f = 0;
 	}
@@ -820,7 +834,7 @@ void	lod_chunk::update(lod_chunk_tree* tree, const vec3& viewpoint)
 	Uint16	desired_lod = tree->compute_lod(box_center, box_extent, viewpoint);
 
 	if (has_children()
-		&& desired_lod > (lod | 0x0FF)
+		&& desired_lod > (m_lod | 0x0FF)
 		&& can_split(tree))
 	{
 		do_split(tree, viewpoint);
@@ -831,23 +845,31 @@ void	lod_chunk::update(lod_chunk_tree* tree, const vec3& viewpoint)
 		}
 	} else {
 		// We're good... this chunk can represent its region within the max error tolerance.
-		if ((lod & 0xFF00) == 0) {
+		if ((m_lod & 0xFF00) == 0) {
 			// Root chunk -- make sure we have valid morph value.
-			lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
-//			// tbp: and that we also have something to display :)
-//			load_data(tree->m_loader->get_source(), texture_quadtree);
+			m_lod = iclamp(desired_lod, m_lod & 0xFF00, m_lod | 0x0FF);
+
+			assert((m_lod >> 8) == m_level);
 		}
 
 		// Request residency for our children, and request our
 		// grandchildren and further descendents be unloaded.
 		if (has_children()) {
 			float	priority = 0;
-			if (desired_lod > (lod & 0xFF00)) {
-				priority = (lod & 0x0FF) / 255.0f;
+			if (desired_lod > (m_lod & 0xFF00)) {
+				priority = (m_lod & 0x0FF) / 255.0f;
 			}
 
-			for (int i = 0; i < 4; i++) {
-				m_children[i]->warm_up_data(tree, priority);
+			if (priority < 0.5f) {
+				for (int i = 0; i < 4; i++) {
+					m_children[i]->request_unload_subtree(tree);
+				}
+			}
+			else
+			{
+				for (int i = 0; i < 4; i++) {
+					m_children[i]->warm_up_data(tree, priority);
+				}
 			}
 		}
 	}
@@ -875,7 +897,7 @@ void	lod_chunk::do_split(lod_chunk_tree* tree, const vec3& viewpoint)
 				vec3	box_center, box_extent;
 				c->compute_bounding_box(*tree, &box_center, &box_extent);
 				Uint16	desired_lod = tree->compute_lod(box_center, box_extent, viewpoint);
-				c->lod = iclamp(desired_lod, c->lod & 0xFF00, c->lod | 0x0FF);
+				c->m_lod = iclamp(desired_lod, c->m_lod & 0xFF00, c->m_lod | 0x0FF);
 			}}
 		}
 
@@ -944,30 +966,6 @@ bool	lod_chunk::can_split(lod_chunk_tree* tree)
 }
 
 
-#if 0
-void	lod_chunk::load_data(SDL_RWops* src, const tqt* texture_quadtree)
-// Immediately load our data.  Use loader->request_chunk_load() to
-// schedule a similar operation in the background.
-{
-	if (m_data == NULL) {
-		assert(m_parent == NULL || m_parent->m_data != NULL);
-
-		// Load the data.
-		
-		// Texture.
-		int	texture_id = 0;
-		if (texture_quadtree) {
-			texture_id = texture_quadtree->get_texture_id(/*texture_quadtree->get_depth() - 1 - */ m_level, m_x, m_z);
-		}
-
-		// Geometry.
-		SDL_RWseek(src, m_data_file_position, SEEK_SET);
-		m_data = new lod_chunk_data(src, texture_id);
-	}
-}
-#endif // 0
-
-
 void	lod_chunk::unload_data()
 // Immediately unload our data.
 {
@@ -1002,13 +1000,25 @@ void	lod_chunk::warm_up_data(lod_chunk_tree* tree, float priority)
 		tree->m_loader->request_chunk_load(this, priority);
 	}
 
-	// Request unload.  Skip a generation.
+	// Request unload.  Skip a generation if our priority is
+	// fairly high.
 	if (has_children()) {
-		for (int i = 0; i < 4; i++) {
-			lod_chunk*	c = m_children[i];
-			if (c->has_children()) {
-				for (int j = 0; j < 4; j++) {
-					c->m_children[j]->request_unload_subtree(tree);
+		if (priority < 0.5f) {
+			// Dump our child nodes' data.
+			for (int i = 0; i < 4; i++) {
+				m_children[i]->request_unload_subtree(tree);
+			}
+		}
+		else
+		{
+			// Fairly high priority; leave our children
+			// loaded, but dump our grandchildren's data.
+			for (int i = 0; i < 4; i++) {
+				lod_chunk*	c = m_children[i];
+				if (c->has_children()) {
+					for (int j = 0; j < 4; j++) {
+						c->m_children[j]->request_unload_subtree(tree);
+					}
 				}
 			}
 		}
@@ -1034,7 +1044,7 @@ void	lod_chunk::request_unload_subtree(lod_chunk_tree* tree)
 }
 
 
-int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt)
+int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt, bool texture_bound)
 // Draws the given lod tree.  Uses the current state stored in the
 // tree w/r/t split & LOD level.
 //
@@ -1056,15 +1066,43 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 
 	int	triangle_count = 0;
 
+	if (texture_bound == false && opt.show_geometry == true) {
+		// Decide whether to bind a texture.
+		
+		if (m_data->m_texture_id == 0)
+		{
+			// No texture id, so nothing to bind in any case.
+		}
+		else
+		{
+			// If there's no possibility of binding a
+			// texture further down the tree, then bind
+			// now.
+			if (m_split == false
+			    || has_children() == false
+			    || m_children[0]->m_data == NULL
+			    || m_children[0]->m_data->m_texture_id == 0)
+			{
+				bind_texture_tile(m_data->m_texture_id, box_center, box_extent);
+				texture_bound = true;
+			}
+			else
+			{
+				// Bind a texture if the viewpoint is
+				// close enough.
+				int	desired_tex_level = c.compute_texture_lod(box_center, box_extent, v.get_viewpoint());
+				if (desired_tex_level <= m_level)
+				{
+					bind_texture_tile(m_data->m_texture_id, box_center, box_extent);
+					texture_bound = true;
+				}
+			}
+		}
+	}
+
+
 	if (m_split) {
 		assert(has_children());
-
-		// If we have a texture but our children don't have
-		// textures, then bind our texture to stretch over
-		// them as well.
-		if (m_data->m_texture_id && m_children[0]->m_data->m_texture_id == 0) {
-			bind_texture_tile(m_data->m_texture_id, box_center, box_extent);
-		}
 
 		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
 		for (int i = 0; i < 4; i++) {
@@ -1072,8 +1110,8 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 			// EXPLODE (for showing the chunks very
 			// explicitly)
 			if (explode) {
-				int	level = c.m_tree_depth - ((this->lod) >> 8);
-				float	offset = 30.f * ((1 << level) / float(1 << c.m_tree_depth));
+				int	tree_height = c.m_tree_depth - ((this->m_lod) >> 8);
+				float	offset = 30.f * ((1 << tree_height) / float(1 << c.m_tree_depth));
 
 				glMatrixMode(GL_MODELVIEW);
 				glPushMatrix();
@@ -1094,7 +1132,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 				}
 			}
 
-			triangle_count += m_children[i]->render(c, v, cull_info, opt);
+			triangle_count += m_children[i]->render(c, v, cull_info, opt, texture_bound);
 
 			// EXPLODE
 			if (explode) {
@@ -1106,9 +1144,10 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 		if (opt.show_box) {
 			// draw bounding box.
 			glDisable(GL_TEXTURE_2D);
-			float	f = (lod & 255) / 255.0f;	//xxx
+			float	f = (m_lod & 255) / 255.0f;	//xxx
 			glColor3f(f, 1 - f, 0);
 			draw_box(box_center - box_extent, box_center + box_extent);
+			glEnable(GL_TEXTURE_2D);
 		}
 
 		// Display our data.
@@ -1119,9 +1158,9 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 }
 
 
-void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
+void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree)
 // Read chunk data from the given file and initialize this chunk with it.
-// Recursively loads child chunks for level > 0.
+// Recursively loads child chunks for recurse_count > 0.
 {
 	m_split = false;
 
@@ -1130,7 +1169,7 @@ void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 	if (chunk_label > tree->m_chunk_count)
 	{
 		assert(0);
-		printf("invalid chunk_label: %d, level = %d\n", chunk_label, level);
+		printf("invalid chunk_label: %d, recurse_count = %d\n", chunk_label, recurse_count);
 		exit(1);
 	}
 	assert(tree->m_chunk_table[chunk_label] == 0);
@@ -1160,12 +1199,12 @@ void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 	assert(m_data_file_position + chunk_size == SDL_RWtell(in));
 
 	// Recurse to child chunks.
-	if (level > 0) {
+	if (recurse_count > 0) {
 		for (int i = 0; i < 4; i++) {
 			m_children[i] = &tree->m_chunks[tree->m_chunks_allocated++];
-			m_children[i]->lod = lod + 0x100;
+			m_children[i]->m_lod = m_lod + 0x100;
 			m_children[i]->m_parent = this;
-			m_children[i]->read(in, level-1, tree);
+			m_children[i]->read(in, recurse_count - 1, tree);
 		}
 	} else {
 		for (int i = 0; i < 4; i++) {
@@ -1215,14 +1254,15 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 	// Read and verify a "CHU\0" header tag.
 	Uint32	tag = SDL_ReadLE32(src);
 	if (tag != (('C') | ('H' << 8) | ('U' << 16))) {
-		throw "Input file is not in .CHU format";
+		printf("Input file is not in .CHU format");
+		exit(1);
 	}
 
 	int	format_version = SDL_ReadLE16(src);
 	if (format_version != 8)
 	{
-		assert(0);
-		throw "Input format has non-matching version number";
+		printf("Input format has non-matching version number");
+		exit(1);
 	}
 
 	m_tree_depth = SDL_ReadLE16(src);
@@ -1237,14 +1277,14 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 
 	// Compute a sane default value for distance_LODmax, in case the client code
 	// neglects to call set_parameters().
-	set_parameters(5.0f, 640.0f, 90.0f);
+	set_parameters(5.0f, 1.0f, 640.0f, 90.0f);
 
 	// Load the chunk tree (not the actual data).
 	m_chunks_allocated = 0;
 	m_chunks = new lod_chunk[m_chunk_count];
 
 	m_chunks_allocated++;
-	m_chunks[0].lod = 0;
+	m_chunks[0].m_lod = 0;
 	m_chunks[0].m_parent = 0;
 	m_chunks[0].read(src, m_tree_depth-1, this);
 	m_chunks[0].lookup_neighbors(this);
@@ -1307,7 +1347,7 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 		glEnable(GL_TEXTURE_GEN_T);
 
 		// Render the chunked LOD tree.
-		triangle_count += m_chunks[0].render(*this, v, cull::result_info(), opt);
+		triangle_count += m_chunks[0].render(*this, v, cull::result_info(), opt, m_texture_quadtree == NULL ? true : false);
 	}
 
 	return triangle_count;
@@ -1323,7 +1363,7 @@ void	lod_chunk_tree::get_bounding_box(vec3* box_center, vec3* box_extent)
 }
 
 
-void	lod_chunk_tree::set_parameters(float max_pixel_error, float screen_width_pixels, float horizontal_FOV_degrees)
+void	lod_chunk_tree::set_parameters(float max_pixel_error, float max_texel_size, float screen_width_pixels, float horizontal_FOV_degrees)
 // Initializes some internal parameters which are used to compute
 // which chunks are split during update().
 //
@@ -1332,12 +1372,33 @@ void	lod_chunk_tree::set_parameters(float max_pixel_error, float screen_width_pi
 // vertex error of no more than max_pixel_error (at the center of the
 // viewport) when rendered.
 {
+	assert(max_pixel_error > 0);
+	assert(max_texel_size > 0);
+	assert(screen_width_pixels > 0);
+	assert(horizontal_FOV_degrees > 0 && horizontal_FOV_degrees < 180.0f);
+
 	const float	tan_half_FOV = tanf(0.5f * horizontal_FOV_degrees * (float) M_PI / 180.0f);
+	const float	K = screen_width_pixels / tan_half_FOV;
 
 	// distance_LODmax is the distance below which we need to be
 	// at the maximum LOD.  It's used in compute_lod(), which is
 	// called by the chunks during update().
-	m_distance_LODmax = m_error_LODmax * screen_width_pixels / (2 * tan_half_FOV * max_pixel_error);
+	m_distance_LODmax = (m_error_LODmax / max_pixel_error) * K;
+
+	// m_texture_distance_LODmax is the distance below which we
+	// need to be at the leaf texture resolution.  It's used in
+	// compute_texture_lod(), which is called by the chunks during
+	// render() to decide when to bind a texture.
+	m_texture_distance_LODmax = 1.0f;	// default doesn't matter; it doesn't get used if we don't have a texture quadtree.
+	if (m_texture_quadtree)
+	{
+		// Compute the geometric size of a texel at the
+		// highest LOD in our chunk tree.
+		assert(m_texture_quadtree->get_tile_size() > 1);
+		float	texel_size_LODmax = m_base_chunk_dimension / (m_texture_quadtree->get_tile_size() - 1);	// 1 texel used up by the border.
+
+		m_texture_distance_LODmax = (texel_size_LODmax / max_texel_size) * K;
+	}
 }
 
 
@@ -1359,6 +1420,27 @@ Uint16	lod_chunk_tree::compute_lod(const vec3& center, const vec3& extent, const
 
 	return iclamp(((m_tree_depth << 8) - 1) - int(log2(fmax(1, d / m_distance_LODmax)) * 256), 0, 0x0FFFF);
 }
+
+
+int	lod_chunk_tree::compute_texture_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const
+// Given an AABB and the viewpoint, this function computes a desired
+// texture LOD level, based on the distance from the viewpoint to the
+// nearest point on the box.  So, desired LOD is purely a function of
+// distance and the texture tree & chunk tree parameters.
+{
+	vec3	disp = viewpoint - center;
+	disp.set(0, fmax(0, fabsf(disp.get(0)) - extent.get(0)));
+	disp.set(1, fmax(0, fabsf(disp.get(1)) - extent.get(1)));
+	disp.set(2, fmax(0, fabsf(disp.get(2)) - extent.get(2)));
+
+//	disp.set(1, 0);	//xxxxxxx just do calc in 2D, for debugging
+
+	float	d = 0;
+	d = sqrtf(disp * disp);
+
+	return (m_tree_depth - 1 - int(log2(fmax(1, d / m_texture_distance_LODmax))));
+}
+
 
 
 // Local Variables:

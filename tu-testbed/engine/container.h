@@ -54,6 +54,14 @@ public:
 		(*this)[new_size-1] = val;
 	}
 
+	// Access the first element.
+	T&	front() { return (*this)[0]; }
+	const T&	front() const { return (*this)[0]; }
+
+	// Access the last element.
+	T&	back() { return (*this)[m_size-1]; }
+	const T&	back() const { return (*this)[m_size-1]; }
+
 	void	clear()
 	// Empty and destruct all elements.
 	{

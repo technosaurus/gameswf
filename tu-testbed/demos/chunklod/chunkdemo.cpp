@@ -20,6 +20,7 @@
 #include "engine/utility.h"
 #include "engine/ogl.h"
 #include "engine/tqt.h"
+#include "engine/image.h"
 
 #include "chunklod.h"
 
@@ -52,6 +53,7 @@ bool	enable_update = true;
 render_options	render_opt;
 
 float	max_pixel_error = 2.5f;
+float	max_texel_size = 1.0f;
 
 bool	measure_performance = false;
 int	frame_count;
@@ -326,11 +328,6 @@ void	process_events()
 				       render_opt.show_geometry ? "on" : "off",
 				       render_opt.show_box ? "on" : "off");
 			}
-			if (key == SDLK_e) {
-				// Toggle edge rendering.
-				render_opt.show_edges = !render_opt.show_edges;
-				printf("render edges %s\n", render_opt.show_edges ? "on" : "off");
-			}
 			if (key == SDLK_m) {
 				// Toggle rendering of vertex morphing.
 				render_opt.morph = !render_opt.morph;
@@ -565,7 +562,14 @@ int	main(int argc, char *argv[])
 //			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->w, texture->h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
-			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, texture->w, texture->h, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
+
+			// Build mips.
+			int	level = 1;
+			while (texture->w > 1 || texture->h > 1) {
+				image::make_next_miplevel(texture);
+				glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, texture->w, texture->h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
+				level++;
+			}
 
 			SDL_FreeSurface(texture);
 
@@ -591,6 +595,14 @@ int	main(int argc, char *argv[])
 		}
 		lod_chunk_tree*	model = new lod_chunk_tree(in, texture_quadtree);
 
+		vec3	center, extent;
+		model->get_bounding_box(&center, &extent);
+
+		// Initialize viewpoint: middle of the bounding box in
+		// the x-z plane, top of the box in the y axis.
+		viewer_pos = center;
+		viewer_pos.y += extent.y;
+
 		// Enable vertex array, and just leave it on.
 		glEnableClientState(GL_VERTEX_ARRAY);
 
@@ -601,8 +613,6 @@ int	main(int argc, char *argv[])
 			// Set up automatic texture-coordinate generation.
 			// Basically we're just stretching the current texture
 			// over the entire model.
-			vec3	center, extent;
-			model->get_bounding_box(&center, &extent);
 			float	xsize = extent.get_x() * 2;
 			float	zsize = extent.get_z() * 2;
 
@@ -635,7 +645,7 @@ int	main(int argc, char *argv[])
 				viewer_pos += viewer_dir * delta_t * (float) (1 << speed) * 0.50f;
 			}
 
-			model->set_parameters(max_pixel_error, (float) window_width, horizontal_fov_degrees);
+			model->set_parameters(max_pixel_error, max_texel_size, (float) window_width, horizontal_fov_degrees);
 			if (enable_update) {
 				model->update(viewer_pos);
 			}
@@ -689,6 +699,8 @@ int	main(int argc, char *argv[])
 	return 0;
 }
 
+
+// Local Variables:
 // mode: C++
 // c-basic-offset: 8 
 // tab-width: 8

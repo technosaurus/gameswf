@@ -23,6 +23,13 @@ struct view_state
 	matrix	m_matrix;
 	plane_info	m_frustum[6];	// In local coordinates.
 
+	vec3	get_viewpoint() const
+	{
+		vec3 v;
+		m_matrix.ApplyInverseRotation(&v, -m_matrix.GetColumn(3));
+		return v;
+	}
+
 	// @@ Should this contain the culling state?  Or keep that separate?
 
 	// @@ Add transformation methods, perhaps lazy updating of frustum planes... ??

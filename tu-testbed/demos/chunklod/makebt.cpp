@@ -26,13 +26,15 @@ bool	check_if_png(char *file_name);
 #undef main	// SDL wackiness.
 int	main(int argc, char* argv[])
 {
-	printf("usage: makebt <inputfile.png> <outputfile.bt> [-s horizontal_scale] [-v vertical_scale]\n");
+	printf("usage: makebt <inputfile.png> <outputfile.bt> [-s horizontal_scale] [-v vertical_scale]\n\t[-t min_threshold]\n");
 
 	char*	input_file = NULL;
 	char*	output_file = NULL;
 
-	float	h_scale = 1.0;
-	float	v_scale = 1.0;
+	float	h_scale = 1.0f;
+	float	v_scale = 1.0f;
+	int	min_threshold = 0;
+	float	thresh_scale = 1.0f;
 
 	// parse arguments.
 	for (int arg = 1; arg < argc; arg++) {
@@ -59,6 +61,15 @@ int	main(int argc, char* argv[])
 				}
 				v_scale = (float) atof(argv[arg]);
 				break;
+			case 't':	// min threshold
+				arg++;
+				if (arg >= argc) {
+					printf("error: must follow -t with a number for the minimum height threshold\n"
+					       "('sea level') -- everything below that gets mapped to 0 height.\n");
+					exit(1);
+				}
+				min_threshold = atoi(argv[arg]);
+				break;
 			}
 		}
 		else {
@@ -80,7 +91,7 @@ int	main(int argc, char* argv[])
 		exit(1);
 	}
 
-	printf("in = '%s', out = '%s', h_scale = %g, v_scale = %g\n", input_file, output_file, h_scale, v_scale);
+	printf("in = '%s', out = '%s', h_scale = %g, v_scale = %g, thresh = %d\n", input_file, output_file, h_scale, v_scale, min_threshold);
 
 	FILE*	in;
 	SDL_RWops*	out;
@@ -166,9 +177,19 @@ int	main(int argc, char* argv[])
 		return 1;
 	}
 
+	// Compute threshold scale.
+	if (bit_depth == 8) {
+		thresh_scale = 255.0f / (255 - imin(min_threshold, 254));
+	}
+	else {
+		thresh_scale = 65535.0f / (65535 - imin(min_threshold, 65534));
+	}
+
 	//
 	// Write the .bt
 	//
+
+	printf("PNG width = %d, height = %d\n", width, height);
 
 	SDL_RWwrite(out, "binterr1.1", 1, 10);
 
@@ -190,6 +211,9 @@ int	main(int argc, char* argv[])
 		SDL_RWwrite(out, "\0", 1, 1);
 	}
 
+	int	min = 65535;
+	int	max = 0;
+
 	// BT data goes in columns, bottom-to-top, left-to-right.
 	png_bytep*	row_pointers = png_get_rows(png_ptr, info_ptr);
 	{for (unsigned int i = 0; i < width; i++) {
@@ -201,7 +225,11 @@ int	main(int argc, char* argv[])
 			else {
 				data = SDL_SwapBE16(((Uint16*) (row_pointers[height - 1 - j]))[i]);
 			}
-			data = iclamp((int) (data * v_scale), 0, 0x0FFFF);
+			data = iclamp((int) ((data - min_threshold) * thresh_scale * v_scale), 0, 0x0FFFF);
+
+			if (data > max) { max = data; }
+			if (data < min) { min = data; }
+
 			SDL_WriteLE16(out, data);
 		}
 	}}
@@ -213,6 +241,8 @@ int	main(int argc, char* argv[])
 	
 	/* close the file */
 	fclose(in);
+
+	printf("min height = %d, max height = %d\n", min, max);
 
 	return 0;
 }
