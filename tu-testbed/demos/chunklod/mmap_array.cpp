@@ -116,12 +116,25 @@ namespace mmap_array_helper {
 #else // not WIN32
 
 
-#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <cassert>
+
+#include "engine/container.h"
+
 
 
 // wrappers for mmap/munmap
 namespace mmap_array_helper {
+	hash<void*, char*>	s_temp_filenames;
 
 	// Create a memory-mapped window into a file.  If filename is
 	// NULL, create a temporary file for the data.  If a valid
@@ -138,35 +151,84 @@ namespace mmap_array_helper {
 	{
 		assert(size > 0);
 
+		int fildes;
+		bool created = false;
+		char *tmpname = NULL;
+		void* data = NULL;
 		if (filename == NULL) {
-			// make a temporary filename.
-			filename = tmpnam(NULL);
+			// make a temporary file.
+			tmpname  = new char[64];
+			strcpy(tmpname, "/tmp/chunker-XXXXXX");
+			fildes = mkstemp(tmpname);	
+			if (fildes == -1) {
+				return NULL;
+			} else {
+				created = true;
+			}
+	
+			// Force file growing
+			if (lseek(fildes,size,SEEK_SET) == -1) {
+				goto UNWIND;
+			}
+			write(fildes,'\0',1) == -1;
 		}
 		// else if size == 0 then size = filesize(filename);
-
-		int	fildes = open(filename, (writeable ? O_RDWR : O_RDONLY) | O_CREAT);
-		if (fildes == -1) {
-			// Failure.
-			return NULL;
+		else {
+			fildes = open(filename, (writeable ? O_RDWR : O_RDONLY) | O_CREAT);
+			if (fildes == -1) {
+				// Failure.
+				return NULL;
+			}
+			size = lseek(fildes,0,SEEK_END);
+			if (size <= 0) {
+				goto UNWIND;
+			}
 		}
-
-		void*	data = mmap(0, size, PROT_READ | (writable ? PROT_WRITE : 0), MAP_SHARED, fildes, 0);
+		lseek(fildes,0,SEEK_SET);
+		data = mmap(0, size, PROT_READ | (writeable ? PROT_WRITE : 0), MAP_SHARED, fildes, 0);
 
 		if (data == (void*) -1) {
 			// Failure.
-			close(fildes);
-			return NULL;
+			goto UNWIND;
+		}
+		else if (created) {
+			s_temp_filenames.add(data, tmpname);
 		}
 		return data;
-	}
 
+	UNWIND: // No execeptions => gotos ;)
+		perror("mmap_array_helper::map() -- ");
+		// At least opened at this point
+		close(fildes);
+		if (created) {
+			unlink(tmpname);
+			delete tmpname;
+		}
+		return NULL;
+	}
+	     
 
 	// Unmap a file mapped via map().
 	void	unmap(void* data, int size)
 	{
 		munmap(data, size);
+		char*	filename = NULL;
+		if (s_temp_filenames.get(data, &filename)) {
+			// Need to delete this temporary file.
+			unlink(filename);
+			delete filename;
+
+			// @@ need to remove (data, filename) from s_temp_filenames!
+		}			
 	}
 };
 
 
 #endif // not WIN32
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

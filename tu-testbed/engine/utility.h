@@ -42,10 +42,20 @@
 // some misc handy math functions
 //
 inline int	iabs(int i) { if (i < 0) return -i; else return i; }
-inline int	imax(int a, int b) { if (a < b) return b; else return a; }
-inline float	fmax(float a, float b) { if (a < b) return b; else return a; }
-inline int	imin(int a, int b) { if (a < b) return a; else return b; }
-inline float	fmin(float a, float b) { if (a < b) return a; else return b; }
+#ifdef __GNUC__
+	// use the builtin (gcc) operator. ugly, but not my call.
+	#define imax _max
+	#define fmax _max
+	#define _max(a,b) ((a)>?(b))
+	#define imin _min
+	#define fmin _min
+	#define _min(a,b) ((a)<?(b))
+#else // not GCC
+	inline int	imax(int a, int b) { if (a < b) return b; else return a; }
+	inline float	fmax(float a, float b) { if (a < b) return b; else return a; }
+	inline int	imin(int a, int b) { if (a < b) return a; else return b; }
+	inline float	fmin(float a, float b) { if (a < b) return a; else return b; }
+#endif // not GCC
 
 inline int	iclamp(int i, int min, int max) {
 	assert( min <= max );

@@ -66,7 +66,6 @@ int	wrapped_main(int argc, char* argv[])
 	// Process command-line options.
 	char*	infile = NULL;
 	char*	outfile = NULL;
-	char*	lightmap_filename = NULL;
 	char*	tilemap = NULL;
 	array<texture_tile>	tileset;
 	float	resolution = 1.0;
@@ -122,7 +121,7 @@ int	wrapped_main(int argc, char* argv[])
 				outfile = argv[arg];
 			} else {
 				// This looks like extra noise on the command line; complain and exit.
-				printf( "argument '%s' looks like extra noise; exiting.\n" );
+				printf( "argument '%s' looks like extra noise; exiting.\n", argv[arg]);
 				print_usage();
 				exit( 1 );
 			}
@@ -397,7 +396,7 @@ struct heightfield {
 		size = fmax(width, height);
 
 		// Compute the log_size and make sure the size is 2^N + 1
-		log_size = (int) (log2(size - 1) + 0.5);
+		log_size = (int) (log2((float)(size - 1)) + 0.5);
 		if (size != (1 << log_size) + 1) {
 			if (size < 0 || size > (1 << 20)) {
 				throw "invalid heightfield dimensions";
@@ -422,7 +421,7 @@ struct heightfield {
 		// Load the data.  BT data is goes in columns, bottom-to-top, left-to-right.
 		for (int i = 0; i < width; i++) {
 			for (int j = 0; j < height; j++) {
-				float	y;
+				float	y = 0.f;
 				if (float_flag) {
 					y = ReadFloat32(in);
 				} else if (sample_size == 2) {
@@ -461,7 +460,7 @@ struct heightfield {
 	
 		// Compute the dimension (width & height) for the heightfield.
 		size = imax(s->w, s->h);
-		log_size = (int) (log2(size - 1) + 0.5f);
+		log_size = (int) (log2((float)(size - 1)) + 0.5f);
 	
 		// Expand the heightfield dimension to contain the bitmap.
 		while (((1 << log_size) + 1) < size) {
@@ -627,3 +626,9 @@ const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g
 	return result;
 }
 
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

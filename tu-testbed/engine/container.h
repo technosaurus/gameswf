@@ -237,7 +237,7 @@ public:
 		}
 
 		// Force new_size to be a power of two.
-		int	bits = fchop(log2(new_size-1) + 1);
+		int	bits = fchop(log2((float)(new_size-1)) + 1);
 		assert((1 << bits) >= new_size);
 
 		new_size = 1 << bits;
@@ -247,7 +247,8 @@ public:
 		// Init entries in new_table, since constructors aren't
 		// called.
 		for (int i = 0; i < new_size; i++) {
-			new_table[i].transfer_members(&array<entry>(0));
+			array<entry> nullentry(0);
+			new_table[i].transfer_members(&nullentry);
 		}
 
 		// Copy all entries to the new table.
@@ -281,3 +282,9 @@ private:
 
 #endif // CONTAINER_H
 
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
