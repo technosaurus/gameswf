@@ -73,7 +73,7 @@ namespace gameswf
 
 	// Statics.
 	bool	s_inited = false;
-	string_hash<as_value>	s_built_ins;
+	stringi_hash<as_value>	s_built_ins;
 
 	fscommand_callback	s_fscommand_handler = NULL;
 
@@ -691,7 +691,7 @@ namespace gameswf
 		{
 			s_inited = false;
 
-			for (string_hash<as_value>::iterator it = s_built_ins.begin();
+			for (stringi_hash<as_value>::iterator it = s_built_ins.begin();
 			     it != s_built_ins.end();
 			     ++it)
 			{
@@ -848,12 +848,21 @@ namespace gameswf
 	// Disassemble one instruction to the log.
 	static void	log_disasm(const unsigned char* instruction_data);
 
+	action_buffer::action_buffer()
+		:
+		m_decl_dict_processed_at(-1)
+	{
+	}
+
+
 	void	action_buffer::read(stream* in)
 	{
 		// Read action bytes.
 		for (;;)
 		{
 			int	instruction_start = m_buffer.size();
+
+			int	pc = m_buffer.size();
 
 			int	action_id = in->read_u8();
 			m_buffer.push_back(action_id);
@@ -871,7 +880,7 @@ namespace gameswf
 				}
 			}
 
-			IF_VERBOSE_ACTION(log_msg("\t"); log_disasm(&m_buffer[instruction_start]); );
+			IF_VERBOSE_ACTION(log_msg("%4d\t", pc); log_disasm(&m_buffer[instruction_start]); );
 
 			if (action_id == 0)
 			{
@@ -879,39 +888,86 @@ namespace gameswf
 				break;
 			}
 		}
+	}
 
-		// Interpret decl_dict, to initialize m_dictionary, if
-		// it appears at the head of this action buffer.
-		int	first_id = m_buffer[0];
-		if (first_id == 0x88)
+
+	void	action_buffer::process_decl_dict(int start_pc, int stop_pc)
+	// Interpret the decl_dict opcode.  Don't read stop_pc or
+	// later.  A dictionary is some static strings embedded in the
+	// action buffer; there should only be one dictionary per
+	// action buffer.
+	//
+	// NOTE: Normally the dictionary is declared as the first
+	// action in an action buffer, but I've seen what looks like
+	// some form of copy protection that amounts to:
+	//
+	// <start of action buffer>
+	//          push true
+	//          branch_if_true label
+	//          decl_dict   [0]   // this is never executed, but has lots of orphan data declared in the opcode
+	// label:   // (embedded inside the previous opcode; looks like an invalid jump)
+	//          ... "protected" code here, including the real decl_dict opcode ...
+	//          <end of the dummy decl_dict [0] opcode>
+	//
+	// So we just interpret the first decl_dict we come to, and
+	// cache the results.  If we ever hit a different decl_dict in
+	// the same action_buffer, then we log an error and ignore it.
+	{
+		assert(stop_pc <= m_buffer.size());
+
+		if (m_decl_dict_processed_at == start_pc)
 		{
-			// decl_dict is first opcode.
-			int	i = 0;
-			int	length = m_buffer[i + 1] | (m_buffer[i + 2] << 8);
-			int	count = m_buffer[i + 3] | (m_buffer[i + 4] << 8);
-			i += 2;
+			// We've already processed this decl_dict.
+			int	count = m_buffer[start_pc + 3] | (m_buffer[start_pc + 4] << 8);
+			assert(m_dictionary.size() == count);
+			return;
+		}
 
-			m_dictionary.resize(count);
+		if (m_decl_dict_processed_at != -1)
+		{
+			log_error("error: process_decl_dict(%d, %d): decl_dict was already processed at %d\n",
+				  start_pc,
+				  stop_pc,
+				  m_decl_dict_processed_at);
+			return;
+		}
 
-			// Index the strings.
-			for (int ct = 0; ct < count; ct++)
+		m_decl_dict_processed_at = start_pc;
+
+		// Actual processing.
+		int	i = start_pc;
+		int	length = m_buffer[i + 1] | (m_buffer[i + 2] << 8);
+		int	count = m_buffer[i + 3] | (m_buffer[i + 4] << 8);
+		i += 2;
+
+		assert(start_pc + 3 + length == stop_pc);
+
+		m_dictionary.resize(count);
+
+		// Index the strings.
+		for (int ct = 0; ct < count; ct++)
+		{
+			// Point into the current action buffer.
+			m_dictionary[ct] = (const char*) &m_buffer[3 + i];
+
+			while (m_buffer[3 + i])
 			{
-				// Point into the current action buffer.
-				m_dictionary[ct] = (const char*) &m_buffer[3 + i];
-
-				while (m_buffer[3 + i])
+				// safety check.
+				if (i >= stop_pc)
 				{
-					// safety check.
-					if (i >= length)
+					log_error("error: action buffer dict length exceeded\n");
+
+					// Jam something into the remaining (invalid) entries.
+					while (ct < count)
 					{
-						log_error("error: action buffer dict length exceeded>\n");
-						break;
+						m_dictionary[ct] = "<invalid>";
+						ct++;
 					}
-					
-					i++;
+					return;
 				}
 				i++;
 			}
+			i++;
 		}
 	}
 
@@ -1601,21 +1657,14 @@ namespace gameswf
 					break;
 				}
 
-				case 0x88:	// declare dictionary
+				case 0x88:	// decl_dict: declare dictionary
 				{
-					if (pc != 0)
-					{
-						log_error("encountered decl_dict at offset %d into actionbuffer.  Expected it at offset 0 only.\n", pc);
-					}
-
 					int	i = pc;
 					int	count = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
 					i += 2;
 
-					if (count != m_dictionary.size())
-					{
-						log_error("encountered decl_dict that does not match m_dictionary!\n");
-					}
+					process_decl_dict(pc, next_pc);
+
 					break;
 				}
 
@@ -1884,7 +1933,13 @@ namespace gameswf
 					if (test)
 					{
 						next_pc += offset;
-						// @@ TODO range checks
+
+						if (next_pc > stop_pc)
+						{
+							log_error("branch to offset %d -- this section only runs to %d\n",
+								  next_pc,
+								  stop_pc);
+						}
 					}
 					break;
 				}
