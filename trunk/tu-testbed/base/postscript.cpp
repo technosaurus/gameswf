@@ -171,9 +171,9 @@ void	postscript::font(const char* name, float size)
 }
 
 
-#ifdef WIN32
+#ifdef _WIN32
 #define vsnprintf	_vsnprintf
-#endif // WIN32
+#endif // _WIN32
 
 
 void	postscript::printf(float x, float y, const char* fmt, ...)

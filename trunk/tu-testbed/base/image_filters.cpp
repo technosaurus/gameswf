@@ -18,7 +18,6 @@
 #include "base/tu_math.h"
 #include <stdio.h>
 #include <string.h>
-#include <SDL.h>
 
 
 namespace {
