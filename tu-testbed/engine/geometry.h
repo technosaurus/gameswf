@@ -41,10 +41,12 @@ public:
 	vec3	operator/(float f) const { return this->operator*(1.0f / f); }
 	vec3	cross(const vec3& v) const;
 
-	vec3&	normalize();
+	// returns original length; if length is zero, sets our value to fallback.
+	float	normalize(const vec3& fallback = vec3::x_axis);
+
 	vec3&	operator=(const vec3& v) { x = v.x; y = v.y; z = v.z; return *this; }
 	vec3&	operator+=(const vec3& v);
-	vec3& operator-=(const vec3& v);
+	vec3&	operator-=(const vec3& v);
 	vec3&	operator*=(float f);
 	vec3&	operator/=(float f) { return this->operator*=(1.0f / f); }
 
@@ -65,8 +67,6 @@ public:
 	const static vec3	zero, x_axis, y_axis, z_axis;
 
 	float	x, y, z;
-//private:
-//	float	m[3];
 };
 
 
