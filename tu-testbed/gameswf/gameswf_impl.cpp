@@ -3579,6 +3579,17 @@ namespace gameswf
 		{
 			assert(m_parent == NULL);	// should only be called on the root movie.
 
+			if (path_to_var == NULL)
+			{
+				log_error("error: NULL path_to_var passed to set_variable()\n");
+				return;
+			}
+			if (new_value == NULL)
+			{
+				log_error("error: NULL passed to set_variable('%s', NULL)\n", path_to_var);
+				return;
+			}
+
 			array<with_stack_entry>	empty_with_stack;
 			tu_string	path(path_to_var);
 			as_value	val(new_value);
@@ -3589,7 +3600,11 @@ namespace gameswf
 		/* sprite_instance */
 		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value)
 		{
-			assert(path_to_var);
+			if (path_to_var == NULL)
+			{
+				log_error("error: NULL path_to_var passed to set_variable()\n");
+				return;
+			}
 			if (new_value == NULL)
 			{
 				log_error("error: NULL passed to set_variable('%s', NULL)\n", path_to_var);
