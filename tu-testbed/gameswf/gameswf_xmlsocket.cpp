@@ -116,7 +116,7 @@ XMLSocket::connect(const char *host, int port)
     tval.tv_usec = 0;
     
     ret = ::select(_sockfd+1, &fdset, NULL, NULL, &tval);
-    
+
     // If interupted by a system call, try again
     if (ret == -1 && errno == EINTR)
       {
@@ -138,6 +138,7 @@ XMLSocket::connect(const char *host, int port)
                 _sockfd);
       continue;
     }
+
     if (ret > 0) {
       ret = ::connect(_sockfd, reinterpret_cast<struct sockaddr *>(&sock_in), sizeof(sock_in));
       if (ret == 0) {
@@ -237,10 +238,11 @@ XMLSocket::anydata(tu_string &data)
       if (ch != '\0') {
         buf[i++] = ch;
       } else {
-        ::read(_sockfd, &ch, 1);
+        // ::read(_sockfd, &ch, 1); // don't read ahead.  '\0' ends the message. 
         break;
       }
     }
+    //log_msg("%s: read %d bytes, data was %s\n", __FUNCTION__, ret, buf);
 
     data = buf;
     return true;
@@ -252,8 +254,10 @@ bool
 XMLSocket::send(tu_string str)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
+  str += tu_string( "\0", 1);
   int ret = write(_sockfd, str.c_str(), str.size());
 
+  //log_msg("%s: sent %d bytes, data was %s\n", __FUNCTION__, ret, str.c_str());
   if (ret == str.size()) {
     return true;
   } else {
