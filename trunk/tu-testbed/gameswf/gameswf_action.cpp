@@ -19,36 +19,85 @@ namespace gameswf
 	//
 
 
+	//
+	// do_action
+	//
+
+
+	// Thin wrapper around action_buffer.
+	struct do_action : public execute_tag
+	{
+		action_buffer	m_buf;
+
+		void	read(stream* in)
+		{
+			m_buf.read(in);
+		}
+
+		void	execute(movie* m)
+		{
+			m->add_action_buffer(&m_buf);
+		}
+
+		void	execute_state(movie* m)
+		{
+			// left empty because actions don't have to be replayed when seeking the movie.
+		}
+	};
+
+	void	do_action_loader(stream* in, int tag_type, movie* m)
+	{
+		IF_VERBOSE_PARSE(log_msg("tag %d: do_action_loader\n", tag_type));
+
+		IF_VERBOSE_ACTION(log_msg("-- actions in frame %d\n", m->get_current_frame()));
+
+		assert(in);
+		assert(tag_type == 12);
+		assert(m);
+		
+		do_action*	da = new do_action;
+		da->read(in);
+
+		m->add_execute_tag(da);
+	}
+
+
+	//
+	// action_buffer
+	//
+
+	// Disassemble one instruction to the log.
+	static void	log_disasm(const unsigned char* instruction_data);
+
 	void	action_buffer::read(stream* in)
 	{
 		// Read action bytes.
 		for (;;)
 		{
+			int	instruction_start = m_buffer.size();
+
 			int	action_id = in->read_u8();
 			m_buffer.push_back(action_id);
-			if (action_id == 0)
-			{
-				// end of action buffer.
-				return;
-			}
+
 			if (action_id & 0x80)
 			{
 				// Action contains extra data.  Read it.
 				int	length = in->read_u16();
 				m_buffer.push_back(length & 0x0FF);
 				m_buffer.push_back((length >> 8) & 0x0FF);
-				IF_VERBOSE_ACTION(log_msg("action: 0x%02X[%d]", action_id, length));
 				for (int i = 0; i < length; i++)
 				{
 					unsigned char	b = in->read_u8();
 					m_buffer.push_back(b);
-					IF_VERBOSE_ACTION(log_msg(" 0x%02X", b));
 				}
-				IF_VERBOSE_ACTION(log_msg("\n"));
 			}
-			else
+
+			IF_VERBOSE_ACTION(log_msg("\t"); log_disasm(&m_buffer[instruction_start]); );
+
+			if (action_id == 0)
 			{
-				IF_VERBOSE_ACTION(log_msg("action: 0x%02X\n", action_id));
+				// end of action buffer.
+				return;
 			}
 		}
 	}
@@ -70,7 +119,7 @@ namespace gameswf
 			int	action_id = m_buffer[pc];
 			if ((action_id & 0x80) == 0)
 			{
-				IF_VERBOSE_ACTION(log_msg("aid = 0x%02x\n", action_id));
+				IF_VERBOSE_ACTION(log_msg("EX:\t"); log_disasm(&m_buffer[pc]));
 
 				// Simple action; no extra data.
 				switch (action_id)
@@ -112,7 +161,7 @@ namespace gameswf
 				case 0x14:	// string length
 				case 0x15:	// substring
 				case 0x18:	// int
-				case 0x1C:	// eval
+				case 0x1C:	// get variable
 				case 0x1D:	// set variable
 				case 0x20:	// set target expression
 				case 0x21:	// string concat
@@ -137,7 +186,7 @@ namespace gameswf
 			}
 			else
 			{
-				IF_VERBOSE_ACTION(log_msg("aid = 0x%02x ", action_id));
+				IF_VERBOSE_ACTION(log_msg("EX:\t"); log_disasm(&m_buffer[pc]));
 
 				// Action containing extra data.
 				int	length = m_buffer[pc + 1] | (m_buffer[pc + 2] << 8);
@@ -209,6 +258,299 @@ namespace gameswf
 			}
 		}
 	}
+
+
+#define COMPILE_DISASM 1
+
+#ifndef COMPILE_DISASM
+
+	void	log_disasm(const unsigned char* instruction_data)
+	// No disassembler in this version...
+	{
+		log_msg("<no disasm>\n");
+	}
+
+#else // COMPILE_DISASM
+
+	void	log_disasm(const unsigned char* instruction_data)
+	// Disassemble one instruction to the log.
+	{
+		enum arg_format { ARG_NONE = 0, ARG_STR, ARG_HEX, ARG_PUSH_DATA, ARG_DECL_DICT };
+		struct inst_info
+		{
+			int	m_action_id;
+			const char*	m_instruction;
+
+			arg_format	m_arg_format;
+		};
+
+		static inst_info	s_instruction_table[] = {
+			{ 0x04, "next_frame", ARG_NONE },
+			{ 0x05, "prev_frame", ARG_NONE },
+			{ 0x06, "play", ARG_NONE },
+			{ 0x07, "stop", ARG_NONE },
+			{ 0x08, "toggle qlt", ARG_NONE },
+			{ 0x09, "stop_sounds", ARG_NONE },
+			{ 0x0A, "add", ARG_NONE },
+			{ 0x0B, "sub", ARG_NONE },
+			{ 0x0C, "mul", ARG_NONE },
+			{ 0x0D, "div", ARG_NONE },
+			{ 0x0E, "equ", ARG_NONE },
+			{ 0x0F, "lt", ARG_NONE },
+			{ 0x10, "and", ARG_NONE },
+			{ 0x11, "or", ARG_NONE },
+			{ 0x12, "not", ARG_NONE },
+			{ 0x13, "str_eq", ARG_NONE },
+			{ 0x14, "str_len", ARG_NONE },
+			{ 0x15, "substr", ARG_NONE },
+			{ 0x18, "int", ARG_NONE },
+			{ 0x1C, "get_var", ARG_NONE },
+			{ 0x1D, "set_var", ARG_NONE },
+			{ 0x20, "set_tgt_exp", ARG_NONE },
+			{ 0x21, "str_cat", ARG_NONE },
+			{ 0x22, "get_prop", ARG_NONE },
+			{ 0x23, "set_prop", ARG_NONE },
+			{ 0x24, "dup_clip", ARG_NONE },
+			{ 0x25, "rem_clip", ARG_NONE },
+			{ 0x26, "trace", ARG_NONE },
+			{ 0x27, "start_drag_movie", ARG_NONE },
+			{ 0x28, "stop_drag_movie", ARG_NONE },
+			{ 0x29, "str_lt", ARG_NONE },
+			{ 0x30, "random", ARG_NONE },
+			{ 0x31, "mb_length", ARG_NONE },
+			{ 0x32, "ord", ARG_NONE },
+			{ 0x33, "chr", ARG_NONE },
+			{ 0x34, "get_timer", ARG_NONE },
+			{ 0x35, "mb_substr", ARG_NONE },
+			{ 0x37, "mb_chr", ARG_NONE },
+			{ 0x3A, "delete", ARG_NONE },
+			{ 0x3B, "delete_all", ARG_NONE },
+			{ 0x3C, "set_local", ARG_NONE },
+			{ 0x3D, "call_func", ARG_NONE },
+			{ 0x3E, "return", ARG_NONE },
+			{ 0x3F, "mod", ARG_NONE },
+			{ 0x40, "new", ARG_NONE },
+			{ 0x41, "decl_local", ARG_NONE },
+			{ 0x42, "decl_array", ARG_NONE },
+			{ 0x43, "decl_obj", ARG_NONE },
+			{ 0x44, "type_of", ARG_NONE },
+			{ 0x45, "get_target", ARG_NONE },
+			{ 0x46, "enumerate", ARG_NONE },
+			{ 0x47, "add_t", ARG_NONE },
+			{ 0x48, "lt_t", ARG_NONE },
+			{ 0x49, "eq_t", ARG_NONE },
+			{ 0x4A, "number", ARG_NONE },
+			{ 0x4B, "string", ARG_NONE },
+			{ 0x4C, "dup", ARG_NONE },
+			{ 0x4D, "swap", ARG_NONE },
+			{ 0x4E, "get_member", ARG_NONE },
+			{ 0x4F, "set_member", ARG_NONE },
+			{ 0x50, "inc", ARG_NONE },
+			{ 0x51, "dec", ARG_NONE },
+			{ 0x52, "call_method", ARG_NONE },
+			{ 0x53, "new_method", ARG_NONE },
+			{ 0x54, "is_inst_of", ARG_NONE },
+			{ 0x55, "enum_object", ARG_NONE },
+			{ 0x60, "bit_and", ARG_NONE },
+			{ 0x61, "bit_or", ARG_NONE },
+			{ 0x62, "bit_xor", ARG_NONE },
+			{ 0x63, "shl", ARG_NONE },
+			{ 0x64, "asr", ARG_NONE },
+			{ 0x65, "lsr", ARG_NONE },
+			{ 0x66, "eq_strict", ARG_NONE },
+			{ 0x67, "gt_t", ARG_NONE },
+			{ 0x68, "gt_str", ARG_NONE },
+			
+			{ 0x81, "goto_frame", ARG_HEX },
+			{ 0x83, "get_url", ARG_STR },
+			{ 0x88, "decl_dict", ARG_DECL_DICT },
+			{ 0x8A, "wait_for_frame", ARG_HEX },
+			{ 0x8B, "set_target", ARG_STR },
+			{ 0x8C, "goto_frame_lbl", ARG_STR },
+			{ 0x8D, "wait_for_fr_exp", ARG_HEX },
+			{ 0x96, "push_data", ARG_PUSH_DATA },
+			{ 0x99, "goto", ARG_HEX },
+			{ 0x9A, "get_url2", ARG_HEX },
+			{ 0x9D, "branch_if_true", ARG_HEX },
+			{ 0x9E, "call_frame", ARG_HEX },
+			{ 0x9F, "goto_exp", ARG_HEX },
+			{ 0x00, "<end>", ARG_NONE }
+		};
+
+		int	action_id = instruction_data[0];
+		inst_info*	info = NULL;
+
+		for (int i = 0; ; i++)
+		{
+			if (s_instruction_table[i].m_action_id == action_id)
+			{
+				info = &s_instruction_table[i];
+			}
+
+			if (s_instruction_table[i].m_action_id == 0)
+			{
+				// Stop at the end of the table and give up.
+				break;
+			}
+		}
+
+		arg_format	fmt = ARG_HEX;
+
+		// Show instruction.
+		if (info == NULL)
+		{
+			log_msg("<unknown>[%02X]", action_id);
+		}
+		else
+		{
+			log_msg("%-15s", info->m_instruction);
+			fmt = info->m_arg_format;
+		}
+
+		// Show instruction argument(s).
+		if (action_id & 0x80)
+		{
+			int	length = instruction_data[1] | (instruction_data[2] << 8);
+
+			// log_msg(" [%d]", length);
+
+			if (fmt == ARG_HEX)
+			{
+				for (int i = 0; i < length; i++)
+				{
+					log_msg(" 0x%02X", instruction_data[3 + i]);
+				}
+				log_msg("\n");
+			}
+			else if (fmt == ARG_STR)
+			{
+				log_msg(" \"");
+				for (int i = 0; i < length; i++)
+				{
+					log_msg("%c", instruction_data[3 + i]);
+				}
+				log_msg("\"\n");
+			}
+			else if (fmt == ARG_PUSH_DATA)
+			{
+				log_msg("\n");
+				int i = 0;
+				while (i < length)
+				{
+					int	type = instruction_data[3 + i];
+					i++;
+					log_msg("\t\t");	// indent
+					if (type == 0)
+					{
+						// string
+						log_msg("\"");
+						while (instruction_data[3 + i])
+						{
+							log_msg("%c", instruction_data[3 + i]);
+							i++;
+						}
+						i++;
+						log_msg("\"\n");
+					}
+					else if (type == 1)
+					{
+						// float
+						// pull LE32 float
+						// log_msg("%f\n", f);
+						i += 4;
+						log_msg("<float> @@TODO\n");
+					}
+					else if (type == 2)
+					{
+						log_msg("NULL\n");
+					}
+					else if (type == 3)
+					{
+						log_msg("undef\n");
+					}
+					else if (type == 4)
+					{
+						// contents of register
+						int	reg = instruction_data[3 + i];
+						i++;
+						log_msg("reg[%d]\n", reg);
+					}
+					else if (type == 5)
+					{
+						int	bool_val = instruction_data[3 + i];
+						i++;
+						log_msg("bool(%d)\n", bool_val);
+					}
+					else if (type == 6)
+					{
+						// double
+						// wacky format: 45670123
+						i += 8;
+						log_msg("<double> @@TODO\n");
+					}
+					else if (type == 7)
+					{
+						// int32
+						Sint32	val = instruction_data[3 + i]
+							| (instruction_data[3 + i + 1] << 8)
+							| (instruction_data[3 + i + 2] << 16)
+							| (instruction_data[3 + i + 3] << 24);
+						i += 4;
+						log_msg("(int) %d\n", val);
+					}
+					else if (type == 8)
+					{
+						int	id = instruction_data[3 + i];
+						i++;
+						log_msg("dict_lookup[%d]\n", id);
+					}
+					else if (type == 9)
+					{
+						int	id = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
+						i += 2;
+						log_msg("dict_lookup_lg[%d]\n", id);
+					}
+				}
+			}
+			else if (fmt == ARG_DECL_DICT)
+			{
+				int	i = 0;
+				int	count = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
+				i += 2;
+
+				log_msg(" [%d]\n", count);
+
+				// Print strings.
+				for (int ct = 0; ct < count; ct++)
+				{
+					log_msg("\t\t");	// indent
+
+					log_msg("\"");
+					while (instruction_data[3 + i])
+					{
+						// safety check.
+						if (i >= length)
+						{
+							log_msg("<disasm error -- length exceeded>\n");
+							break;
+						}
+
+						log_msg("%c", instruction_data[3 + i]);
+						i++;
+					}
+					log_msg("\"\n");
+					i++;
+				}
+			}
+		}
+		else
+		{
+			log_msg("\n");
+		}
+	}
+
+#endif // COMPILE_DISASM
+
 };
 
 

@@ -94,8 +94,8 @@ namespace fontlib
 		recti(int x0 = 0, int x1 = 0, int y0 = 0, int y1 = 0)
 			:
 			m_x_min(x0),
-			m_y_min(x1),
-			m_x_max(y0),
+			m_x_max(x1),
+			m_y_min(y0),
 			m_y_max(y1)
 		{
 		}
@@ -310,7 +310,7 @@ namespace fontlib
 		for (int i = 0, n = s_anchor_points.size(); i < n; i++)
 		{
 			const pointi&	p = s_anchor_points[i];
-			recti	r(p.m_x, p.m_y, p.m_x + width, p.m_y + height);
+			recti	r(p.m_x, p.m_x + width, p.m_y, p.m_y + height);
 
 			// Is this spot any good?
 			if (is_rect_available(r))
@@ -318,7 +318,7 @@ namespace fontlib
 				// Good spot.  Scan left to see if we can tighten it up.
 				while (r.m_x_min > 0)
 				{
-					recti	r2(r.m_x_min - 1, r.m_y_min, r.m_x_min - 1 + width, r.m_y_min + height);
+					recti	r2(r.m_x_min - 1, r.m_x_min - 1 + width, r.m_y_min, r.m_y_min + height);
 					if (is_rect_available(r2))
 					{
 						// Shift left.

@@ -1560,7 +1560,7 @@ namespace gameswf
 					m_place_type = PLACE;
 				}
                                 
-                                log_msg("place object at depth %i\n", m_depth);
+				//log_msg("place object at depth %i\n", m_depth);
 
 				IF_VERBOSE_PARSE({log_msg("po2r: name = %s\n", m_name ? m_name : "<null>");
 					 log_msg("po2r: char id = %d, mat:\n", m_character_id);
@@ -1677,6 +1677,8 @@ namespace gameswf
 		{
 			m_playlist[m_current_frame].push_back(c);
 		}
+
+		int	get_current_frame() const { return m_current_frame; }
 
 		void	read(stream* in)
 		// Read the sprite info.  Consists of a series of tags.
@@ -2055,7 +2057,7 @@ namespace gameswf
 	{
 		assert(tag_type == 39);
                 
-                log_msg("sprite\n");
+		IF_VERBOSE_PARSE(log_msg("sprite\n"));
 
 		int	character_id = in->read_u16();
 
@@ -2136,48 +2138,6 @@ namespace gameswf
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);
-	}
-
-
-
-
-	//
-	// do_action
-	//
-
-	// Thin wrapper around action_buffer.
-	struct do_action : public execute_tag
-	{
-		action_buffer	m_buf;
-
-		void	read(stream* in)
-		{
-			m_buf.read(in);
-		}
-
-		void	execute(movie* m)
-		{
-			m->add_action_buffer(&m_buf);
-		}
-
-		void	execute_state(movie* m)
-		{
-			// left empty because actions don't have to be replayed when seeking the movie.
-		}
-	};
-
-	void	do_action_loader(stream* in, int tag_type, movie* m)
-	{
-		IF_VERBOSE_PARSE(log_msg("tag %d: do_action_loader\n", tag_type));
-
-		assert(in);
-		assert(tag_type == 12);
-		assert(m);
-		
-		do_action*	da = new do_action;
-		da->read(in);
-
-		m->add_execute_tag(da);
 	}
 
 

@@ -7,7 +7,6 @@
 
 
 #include "gameswf.h"
-#include "gameswf_types.h"
 #include "base/image.h"
 #include "base/ogl.h"
 

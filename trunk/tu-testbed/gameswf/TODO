@@ -1,20 +1,14 @@
 Bugs
 ====
 
-* are sprite animations skipping slightly at the end?
+* there's a pop when transitioning from textured to mesh-rendered
+  glyphs; probably the texture fonts aren't registered exactly right?
 
 
 Productizing
 ============
 
 Tasks to make gameswf ready for including in real games.
-
-* remove filename and FILE for caching in fontlib, and replace with
-  tu_file* abstraction.
-
-* abstract the renderer?  Probably it's OK to just compile the
-  renderer you want; this seems lower priority.  Need an Xbox renderer
-  anyway.
 
 * a good way to pre-compute tesselations of shapes.  Also, it would be
   very nice to be able to restrict the size of font textures for
@@ -40,9 +34,6 @@ Tasks to make gameswf ready for including in real games.
   * at load time, when we see these extra tags, we jam the data right
     into the corresponding characters without having to compute it.
 
-* verify that library itself doesn't require SDL; avoid gratuitous
-  c-library dependencies (I think we're mostly OK there)
-
 * fix memory leaks
 
 * pick a version number, post a release
@@ -61,10 +52,6 @@ General
 
   * try it out; maybe add a little text output to chunklod or
     something
-
-  * there's a pop when transitioning from textured to mesh-rendered
-    glyphs; probably the texture fonts aren't registered exactly
-    right?
 
 * sprites as button characters are not working.  (Maybe they are
   now??)
