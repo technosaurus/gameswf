@@ -10,8 +10,8 @@
 #include <stdlib.h>
 #include <png.h>
 #include <SDL.h>
-#include "engine/utility.h"
-#include "engine/tu_file.h"
+#include "base/utility.h"
+#include "base/tu_file.h"
 
 
 bool	check_if_png(char *file_name);

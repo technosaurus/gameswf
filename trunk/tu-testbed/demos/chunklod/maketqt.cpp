@@ -15,13 +15,13 @@ extern "C" {
 #include <jpeglib.h>
 }
 
-#include "engine/utility.h"
-#include "engine/container.h"
-#include "engine/geometry.h"
-#include "engine/jpeg.h"
-#include "engine/image.h"
-#include "engine/tqt.h"
-#include "engine/tu_file.h"
+#include "base/utility.h"
+#include "base/container.h"
+#include "base/jpeg.h"
+#include "base/image.h"
+#include "base/tu_file.h"
+#include "geometry/geometry.h"
+#include "geometry/tqt.h"
 
 
 static const char*	spinner = "-\\|/";

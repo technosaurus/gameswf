@@ -9,8 +9,8 @@
 #define TQT_H
 
 
-#include "engine/container.h"
-#include "engine/image.h"
+#include "base/container.h"
+#include "base/image.h"
 class tu_file;
 
 

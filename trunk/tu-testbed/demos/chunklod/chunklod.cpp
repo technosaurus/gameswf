@@ -15,12 +15,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "engine/dlmalloc.h"
-#include "engine/image.h"
-#include "engine/ogl.h"
-#include "engine/tqt.h"
-#include "engine/tu_file.h"
-#include "engine/utility.h"
+#include "base/dlmalloc.h"
+#include "base/image.h"
+#include "base/ogl.h"
+#include "base/tu_file.h"
+#include "base/utility.h"
+#include "geometry/tqt.h"
 
 #include "SDL_thread.h"
 

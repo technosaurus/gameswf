@@ -20,10 +20,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "engine/cull.h"
-#include "engine/utility.h"
-#include "engine/ogl.h"
-#include "engine/tqt.h"
+#include "base/utility.h"
+#include "base/ogl.h"
+#include "geometry/cull.h"
+#include "geometry/tqt.h"
 
 #include "chunklod.h"
 

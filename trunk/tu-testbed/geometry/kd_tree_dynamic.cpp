@@ -7,9 +7,9 @@
 // soup.
 
 
-#include "engine/kd_tree_dynamic.h"
+#include "geometry/kd_tree_dynamic.h"
 
-#include "engine/tu_file.h"
+#include "base/tu_file.h"
 
 
 static const float	EPSILON = 1e-6f;
@@ -768,7 +768,7 @@ void	kd_tree_dynamic::node::dump(tu_file* out, int depth) const
 }
 
 
-#include "engine/postscript.h"
+#include "base/postscript.h"
 
 
 static const int	X_SIZE = 612;

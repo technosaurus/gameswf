@@ -9,7 +9,7 @@
 #define BSP_H
 
 
-#include <engine/geometry.h>
+#include "geometry/geometry.h"
 
 
 class bsp_node {

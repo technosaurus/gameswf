@@ -7,9 +7,9 @@
 // vs. static triangle soup
 
 
-#include "engine/kd_tree_packed.h"
+#include "geometry/kd_tree_packed.h"
 
-#include "engine/axial_box.h"
+#include "geometry/axial_box.h"
 
 
 struct ray_test_result;

@@ -17,11 +17,11 @@
 
 #include <SDL.h>
 
-#include "engine/utility.h"
-#include "engine/container.h"
-#include "engine/geometry.h"
-#include "engine/tqt.h"
-#include "engine/tu_file.h"
+#include "base/utility.h"
+#include "base/container.h"
+#include "base/tu_file.h"
+#include "geometry/geometry.h"
+#include "geometry/tqt.h"
 
 #include "mmap_array.h"
 #include "bt_array.h"
