@@ -840,7 +840,7 @@ namespace gameswf
 			Uint32	header = in->read_le32();
 			Uint32	file_length = in->read_le32();
 
-			int	m_version = (header >> 24) & 255;
+			m_version = (header >> 24) & 255;
 			if ((header & 0x0FFFFFF) != 0x00535746)
 			{
 				// ERROR
