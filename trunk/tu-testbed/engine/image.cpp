@@ -61,7 +61,7 @@ namespace image
 
 		for (int j = 0; j <= dyo; j++) {
 			for (int i = 0; i <= dxo; i++) {
-				// @@ simple point-sample.
+				// @@ simple nearest-neighbor point-sample.
 				float	x = i * x_factor + in_x0;
 				float	y = j * y_factor + in_y0;
 				x = fclamp(x, 0.f, float(src->w - 1));

@@ -42,23 +42,6 @@ void	print_usage()
 }
 
 
-#if 0
-static int	quadtree_node_count(int depth)
-// Return the number of nodes in a fully populated quadtree of the specified depth.
-{
-	return 0x55555555 & ((1 << depth*2) - 1);
-}
-
-
-static int	quadtree_node_index(int level, int col, int row)
-// Given a tree level and the indices of a node within that tree
-// depth, this function returns a node index.
-{
-	return quadtree_node_count(level) + (row << level) + col;
-}
-#endif // 0
-
-
 struct tqt_info {
 	SDL_RWops* out;
 	array<Uint32>&	toc;
@@ -235,8 +218,6 @@ int	main(int argc, char* argv[])
 		float	y0 = float(row) / tile_dim * j_in->get_height();
 		float	y1 = float(row + 1) / tile_dim * j_in->get_height();
 
-//		scroll_strip(strip, j_in, &strip_top, y1);
-
 		int	lines_to_read = imin(int(y1), j_in->get_height()) - (strip_top + strip->h);
 		if (lines_to_read > 0)
 		{
@@ -253,24 +234,6 @@ int	main(int argc, char* argv[])
 
 			strip_top += lines_to_read;
 		}
-
-#if 0
-		// read in enough more scanlines so the strip covers [y0, y1].
-		// @@ this implementation is very inefficient!
-		while (strip_top + strip->h - 1 <= int(y1)
-		       && strip_top + strip->h < j_in->get_height())
-		{
-			// Scroll up.
-			for (int i = 0; i < strip->h - 1; i++) {
-				memcpy(image::scanline(strip, i), image::scanline(strip, i+1), strip->w * 3);
-			}
-			strip_top++;
-
-			// Read new data into the last scanline.
-			j_in->read_scanline(image::scanline(strip, next_scanline - strip_top));
-			next_scanline++;
-		}
-#endif // 0
 
 		for (int col = 0; col < tile_dim; col++) {
 			float	x0 = float(col) / tile_dim * j_in->get_width();
@@ -354,8 +317,13 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 			int	half_tile = p->tile_size >> 1;
 			int	ox = i ? half_tile : 0;
 			int	oy = j ? half_tile : 0;
+			float	shave = 0.5f * float(p->tile_size - 1) / float(p->tile_size - 2);
+			float	ix = i ? shave : 0;
+			float	iy = j ? shave : 0;
 			image::resample(tile, ox, oy, ox + half_tile - 1, oy + half_tile - 1,
-					child_tile, 0.f, 0.f, (float) p->tile_size, (float) p->tile_size);	// @@ need to shave off a half pixel on the inside edges
+					child_tile,
+					ix, iy,
+					ix + float(p->tile_size) - shave, iy + float(p->tile_size) - shave);
 
 			SDL_FreeSurface(child_tile);
 		}
