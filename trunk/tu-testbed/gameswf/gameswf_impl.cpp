@@ -2814,6 +2814,12 @@ namespace gameswf
 			int	tag_end = in->get_tag_end_position();
 
 			m_frame_count = in->read_u16();
+			// ALEX: some SWF files have been seen that have 0-frame sprites.
+			// The Macromedia player behaves as if they have 1 frame.
+			if (m_frame_count < 1)
+			{
+				m_frame_count = 1;
+			}
 			m_playlist.resize(m_frame_count);	// need a playlist for each frame
 
 			IF_VERBOSE_PARSE(log_msg("  frames = %d\n", m_frame_count));
