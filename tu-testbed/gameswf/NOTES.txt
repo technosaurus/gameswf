@@ -7,6 +7,9 @@ legalities before putting them in a game:
 
 http://moorstation.org/typoasis/typoasis1.htm
 
+I've been working on and off on Tuffy, a Public Domain font family,
+http://tulrich.com/fonts
+
 
 ActionScript Notes
 ==================
