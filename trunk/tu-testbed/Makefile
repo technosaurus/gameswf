@@ -4,8 +4,8 @@
 
 
 all:
-	cd engine; make; cd ..
-	cd demos; make; cd ..
+	make -C engine
+	make -C demos/chunklod
 
 
 # Need a better way to do this.

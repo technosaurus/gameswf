@@ -3,9 +3,10 @@
 
 include ../config
 
-# if under Unix:
-#SDL_CFLAGS := $(shell sdl-config --cflags)
-#SDL_LDFLAGS := $(shell sdl-config --libs)
+ifeq ($(TU_TESTBED_COMPILER), gcc)
+SDL_CFLAGS := $(shell sdl-config --cflags)
+SDL_LDFLAGS := $(shell sdl-config --libs)
+endif
 
 SDL_INCLUDE := SDL
 LUA_INCLUDE := ../../lua-4.0/include
@@ -16,18 +17,11 @@ CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 # -lstdc++
 
+SRCS := config.cpp geometry.cpp cull.cpp bsp.cpp ogl.cpp
+OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 
-# TODO: there's probably some slick way to apply the OBJ_EXT to a file list.
-OBJS := \
-	config.$(OBJ_EXT)	\
-	geometry.$(OBJ_EXT) \
-	cull.$(OBJ_EXT)	\
-	bsp.$(OBJ_EXT)	\
-	ogl.$(OBJ_EXT)
-
-
-%.obj : %.cpp
-	$(CC) -c $^ $(CFLAGS)
+#%.$(OBJ_EXT) : %.cpp
+#	$(CC) -c $^ $(CFLAGS)
 
 
 ENGINE = engine.$(LIB_EXT)
