@@ -1,9 +1,12 @@
 2005-03-24  Rob Savoye  <rob@bertha.welcomehome.org>
 
+	* gameswf/gameswf_xml.cpp (extractNode): New method to recursively
+	parse XML data. Make _nodes a pointer.
 	* gameswf/gameswf_xmlsocket.cpp: Add a NULL when sending XML
 	messages, and don't strip off the NULL when reading XML messages.
 	* gameswf/gameswf_textfield.{cpp,h}: Remove as unnecessary.
-	* gameswf/Makefile.in: Don't build gameswf_textfield, we don't need it.
+	* gameswf/Makefile.in: Don't build gameswf_textfield, we don't
+	need it.
 	* gameswf/gameswf_textformat.cpp: Add minimal support for all
 	forms of setTextFormat.
 
