@@ -24,6 +24,9 @@
 /* Define to 1 if you have the <png.h> header file. */
 #undef HAVE_PNG_H
 
+/* Use POSIX Threads */
+#undef HAVE_PTHREADS
+
 /* Define to 1 if you have the <SDL_mixer.h> header file. */
 #undef HAVE_SDL_MIXER_H
 

@@ -9,9 +9,7 @@
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
-
 #include "gameswf_xmlsocket.h"
-
 
 #ifdef HAVE_LIBXML
 

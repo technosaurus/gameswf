@@ -10,6 +10,7 @@
 #include <string>
 #include <sys/types.h>
 #include <sys/time.h>
+#include <sys/fcntl.h>
 #include <unistd.h>
 #include <sys/select.h>
 #include <netinet/in.h>
@@ -27,14 +28,12 @@ using namespace std;
 #include "gameswf_xmlsocket.h"
 #include "gameswf_timers.h"
 
-// FIXME
-using namespace gameswf;
-
-
 #ifdef HAVE_LIBXML
 
 namespace gameswf
-{  
+{
+
+const int INBUF = 7000;
 
 XMLSocket::XMLSocket()
 {
@@ -43,6 +42,7 @@ XMLSocket::XMLSocket()
   _xmldata = false;
   _closed = false;
   _connect = false;
+  _processing = false;
   _port = 0;
   _sockfd = 0;
 }
@@ -161,6 +161,8 @@ XMLSocket::connect(const char *host, int port)
   log_msg("\tConnect at port %d on IP %s for fd #%d\n", port,
           ::inet_ntoa(sock_in.sin_addr), _sockfd);
   
+  fcntl(_sockfd, F_SETFL, O_NONBLOCK);
+
   _connect = true;
   return true;
 }
@@ -180,84 +182,130 @@ XMLSocket::close()
 bool
 XMLSocket::anydata(tu_string &data)
 {
+  //printf("%s: \n", __PRETTY_FUNCTION__);
+  anydata(_sockfd, data);
+}
+
+bool XMLSocket::processingData()
+{
+  //printf("%s: processing flags is is %d\n", __PRETTY_FUNCTION__, _processing);
+  return _processing;
+}
+
+void XMLSocket::processing(bool x)
+{
+  //printf("%s: set processing flag to %d\n", __PRETTY_FUNCTION__, x);
+  _processing = x;
+}
+
+bool
+XMLSocket::anydata(int fd, tu_string &data)
+{
   fd_set                fdset;
   struct timeval        tval;
   int                   ret = 0, i;
-  char                  buf[512];
+  char                  buf[INBUF];
+  int                   retries = 10;
+  char                  *ptr;
+  int                   pos;
+  bool                  ifdata = false;
+  static tu_string             remainder;
 
-  memset(buf, 0, 512);
-  
-  //printf("%s: \n", __PRETTY_FUNCTION__);
+  //log_msg("%s: \n", __PRETTY_FUNCTION__);
 
-  if (_sockfd <= 0) {
+  if (fd <= 0) {
     return false;
   }
-  
-  
-  if (_sockfd > 0) {
-    while (ret <= 0) {
-      FD_ZERO(&fdset);
-      FD_SET(_sockfd, &fdset);
-      
-      tval.tv_sec = 0;
-      tval.tv_usec = 10;
-      
-      ret = ::select(_sockfd+1, &fdset, NULL, NULL, &tval);
-      
-      // If interupted by a system call, try again
-      if (ret == -1 && errno == EINTR) {
-        log_msg("The socket for fd #%d was interupted by a system call!\n",
-                _sockfd);
-        continue;
-      }
-      if (ret == -1) {
-        log_msg("The socket for fd #%d never was available!\n",
-                  _sockfd);
-          return false;
-      }
-      if (ret > 0) {
-        log_msg("There is data in the socket for fd #%d!\n",
-                  _sockfd);        
-        break;
-      }
-      if (ret == 0) {
-        log_msg("There is no data in the socket for fd #%d!\n",
-                _sockfd);      
-        return false;
-      }
+  while (retries-- > 0) {
+    FD_ZERO(&fdset);
+    FD_SET(fd, &fdset);
+    
+    tval.tv_sec = 0;
+    tval.tv_usec = 10;
+    
+    ret = ::select(fd+1, &fdset, NULL, NULL, &tval);
+    
+    // If interupted by a system call, try again
+    if (ret == -1 && errno == EINTR) {
+      log_msg("The socket for fd #%d was interupted by a system call!\n",
+              fd);
+      continue;
     }
-    // Read the data from the socket
-    //ret = ::read(_sockfd, buf, 512);
-    char ch;
-    i = 0;
-    while (ret = ::read(_sockfd, &ch, 1)) {
-      if (i >= 512) {
-        break;
+    if (ret == -1) {
+      log_msg("The socket for fd #%d never was available!\n", fd);
+      return false;
+    }
+    if (ret == 0) {
+      //log_msg("There is no data in the socket for fd #%d!\n", fd);
+      if (ifdata) {
+        remainder = ptr;
       }
-      // log_msg("*%c", ch);
-      if (ch != '\0') {
-        buf[i++] = ch;
+      return ifdata;
+    }
+    if (ret > 0) {
+      //log_msg("There is data in the socket for fd #%d!\n", fd);        
+      //break;
+    }
+    processing(true);
+    memset(buf, 0, INBUF);
+    ret = ::read(_sockfd, buf, INBUF);
+    //log_msg("%s: read %d bytes\n", __FUNCTION__, ret);
+    //log_msg("%s: read (%d,%d) %s\n", __FUNCTION__, buf[0], buf[1], buf);
+    ptr = buf;
+    pos = 1;
+    while (pos > 0) {
+      tu_string msg;
+      //ptr = strchr('\0', buf);
+      if (remainder.size() > 0) {
+        //printf("%s: The remainder is: \"%s\"\n", __FUNCTION__, remainder.c_str());
+        //printf("%s: The rest of the message is: \"%s\"\n", __FUNCTION__, ptr);
+        msg = remainder;
+        msg += buf;
+        //ptr =
+        //printf("%s: The whole message for %d is: \"%s\"\n", __FUNCTION__, _messages.size(), msg.c_str());
+        remainder.resize(0);
       } else {
-#ifdef USE_NETCAT
-        // Remove the NULL when reading from netcat.
-        // When talking to a real application, '\0' ends the message.
-        // so we want to leave it intact.
-        ::read(_sockfd, &ch, 1);
+        msg = ptr;
+        //        strcpy(msg, ptr);
+      }
+      //if (msg[strlen(msg)-2] == '>')
+      //if (((msg[0] == '<') && (msg[1] == '?')) && ((msg[msg.size()-2] == '>') && (msg[msg.size()-3] == 'T'))) {
+      // if (strchr(ptr, '\n')) {
+      if (ptr[strlen(ptr)-1] == '\n') {
+        ifdata = true;
+#if 0
+        printf("%s: Adding message %d: \"%s\"\n", __FUNCTION__, _messages.size(), msg.c_str());
+        printf("%s: message (%d) last three bytes are %d, %d, %d: \n", __FUNCTION__,
+               strlen(ptr),
+               ptr[strlen(ptr)-2],
+               ptr[strlen(ptr)-1],
+               ptr[strlen(ptr)]);
 #endif
+        _messages.push_back(msg);
+        pos = strlen(ptr);
+        ptr += pos + 1;
+        //remainder.resize(0);
+      } else {
+        remainder = ptr;
+        if (remainder.size() > 0) {
+          //printf("%s: Adding remainder: \"%s\"\n", __FUNCTION__, remainder.c_str());
+        } else {
+          remainder = "";
+        }
         break;
       }
     }
-    //printf("%s: read %d bytes, data was %s\n", __FUNCTION__, strlen(buf), buf);
-    data = buf;
-    return true;
   }
-  return false;
+  
+  data = buf;
+
+  return true;
 }
 
 bool
 XMLSocket::send(tu_string str)
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  //log_msg("%s: \n", __PRETTY_FUNCTION__);
   str += tu_string( "\0", 1);
   int ret = write(_sockfd, str.c_str(), str.size());
 
@@ -354,7 +402,7 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
   Timer *timer = new Timer;
   as_c_function_ptr ondata_handler =
     (as_c_function_ptr)&xmlsocket_event_ondata;
-  timer->setInterval(ondata_handler, 300, ptr, env);
+  timer->setInterval(ondata_handler, 50, ptr, env);
   timer->setObject(ptr);
   mov->add_interval_timer(timer);
 #endif
@@ -399,36 +447,63 @@ xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
 }
 
 
-// This is the default event handler, and is usually redefined in the SWF script
 void
 xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 {
-  log_msg("%s: nargs is %d\n", __PRETTY_FUNCTION__, nargs);
+  //log_msg("%s: nargs is %d\n", __PRETTY_FUNCTION__, nargs);
     
   as_value	method;
   as_value	val;
-  tu_string     data;
+  array<tu_string> msgs;
+  tu_string     tmp;
+  int           i;
   
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*)this_ptr;
   assert(ptr);
-
-  if (ptr->obj.anydata(data)) {
+  if (ptr->obj.processingData()) {
+    log_msg("Still processing data!\n");
+    result->set(false);
+    return;
+  }
+    
+  if (ptr->obj.anydata(tmp)) {
     if (this_ptr->get_member("onData", &method)) {
-      //log_msg("Got data from socket!!\n%s", data.c_str());
-      env->push(as_value(data));
       as_c_function_ptr	func = method.to_c_function();
-      if (func) {
-        // It's a C function.  Call it.
-        //log_msg("Calling C function for onData\n");
-        (*func)(&val, this_ptr, env, 1, 0);
-      } else if (as_as_function* as_func = method.to_as_function()) {
-        // It's an ActionScript function.  Call it.
-        //log_msg("Calling ActionScript function for onData\n");
-        (*as_func)(&val, this_ptr, env, 1, 0);
-      } else {
-        log_error("error in call_method(): method is not a function\n");
+      as_as_function* as_func = method.to_as_function();
+      //log_msg("Got data from socket!!\n%s", data.c_str());
+      log_msg("Got %d messages from XMLsocket\n", ptr->obj.messagesCount());
+      for (i=0; i<ptr->obj.messagesCount(); i++) {
+        tu_string data = ptr->obj[i];
+        // 
+        if (((data[0] != '<') && ((data[1] != 'R') || (data[1] != '?')))
+            || (data[data.size()-2] != '>')){
+          printf("%s: bad message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
+          //printf("%s: previous message was message: \"%s\"\n", __FUNCTION__, ptr->obj[i-1]);
+          //delete data;
+          continue;
+        }
+
+        //log_msg("%s: Got message %s: ", data.c_str());
+        env->push(as_value(data));
+        if (func) {
+          // It's a C function.  Call it.
+          //log_msg("Calling C function for onData\n");
+          (*func)(&val, this_ptr, env, 1, 0);
+        } else if (as_func) {
+          // It's an ActionScript function.  Call it.
+          //log_msg("Calling ActionScript function for onData, processing msg %d\n", i);
+          (*as_func)(&val, this_ptr, env, 1, 0);
+        } else {
+          log_error("error in call_method(): method is not a function\n");
+        }
+        env->pop();
+        //printf("%s: Removing message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
+        //ptr->obj.messageRemove(i);
       }
-      env->pop();
+      //printf("%s: Removing messages\n", __FUNCTION__);
+      ptr->obj.messagesClear();
+      ptr->obj.processing(false);
+      //msgs->clear();
     } else {
       log_msg("FIXME: Couldn't find onData!\n");
     }
@@ -436,7 +511,8 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
 
   //  env->pop();
 
-  result->set(&data);
+  //result->set(&data);
+  result->set(true);
 }
 
 void
@@ -495,6 +571,15 @@ xmlsocket_event_connect(as_value* result, as_object_interface* this_ptr, as_envi
 void
 xmlsocket_event_xml(as_value* result, as_object_interface* this_ptr, as_environment* env)
 {
+  
+}
+
+void *
+main_read_thread(void *arg)
+{
+  int                 sockfd;
+
+  sockfd = *(int *)arg;
   
 }
 

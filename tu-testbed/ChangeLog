@@ -1,4 +1,20 @@
+2005-03-26  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xmlsocket.cpp (anydata): Read as much data as
+	there is on the socket. Break up the data into seperate messages,
+	and store them in a queue.
+	(xmlsocket_event_ondata): Process all the messages in the message
+	queue before reading more messages. Call onData callback on all
+	messages without returning. 
+	
 2005-03-25  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/Makefile.in: Add optional pthreads support. (currently
+	unused)
+	* gameswf/gameswf_xmlsocket.h: Add prototype for pthread entry
+	point. (currently unused)
+	* gameswf/gameswf_xmlsocket.cpp: Add pthread entry point that
+	reads the socket. (currently unused)
 
 	* gameswf/gameswf_impl.cpp: Check for socket data every time
 	through the advance loop. Don't use an interupt handler, it's
