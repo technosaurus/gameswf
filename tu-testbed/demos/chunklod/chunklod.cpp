@@ -35,7 +35,9 @@ float	morph_curve(float f)
 // verts.
 //
 // A function with flat sections near 0 and 1 may help avoid popping
-// when chunks switch LODs.
+// when chunks switch LODs.  Such popping is only an issue under some
+// more extreme parameters of allowed pixel error and chunk size.
+// Need to analyze this further to understand the conditions better.
 //
 // Alternatively, a time-based morph might work.  Or a morph
 // computation that looks around in the tree to make sure it
@@ -104,10 +106,6 @@ static vertex_streaming_buffer*	s_stream = NULL;
 
 struct vertex_info {
 // Structure for storing morphable vertex mesh info.
-
-	vec3	m_origin;
-	float	m_scale;
-
 	int	vertex_count;
 	struct vertex {
 		Sint16	x[3];
@@ -124,30 +122,78 @@ struct vertex_info {
 	// texture id
 	// other?
 
-	void	load(SDL_RWops* in);
+	void	read(SDL_RWops* in);
 
 	// TODO: destructor.
 };
 
 
-struct lod_edge;
-struct view_info;
+enum direction {
+	EAST = 0,
+	NORTH,
+	WEST,
+	SOUTH
+};
+
+
+struct lod_edge {
+	int	vertex_count;
+	int	midpoint_index;
+	Uint16*	indices;
+
+	int	ribbon_index_count;
+	Uint16*	ribbon_indices;
+
+	void	read(SDL_RWops* in);
+
+	// @@ constructor, destructor
+};
+
+
+void	lod_edge::read(SDL_RWops* in)
+// Initialize this edge structure from the specified stream.
+{
+	midpoint_index = SDL_ReadLE16(in);
+	vertex_count = SDL_ReadLE16(in);
+	indices = new Uint16[vertex_count];
+
+	for (int i = 0; i < vertex_count; i++) {
+		indices[i] = SDL_ReadLE16(in);
+	}
+
+	// @@ hm, might be nice to have array<>::read()/write().
+
+	ribbon_index_count = SDL_ReadLE16(in);
+	assert(ribbon_index_count % 3 == 0);	// this is a triangle list; should be 3n indices.
+	ribbon_indices = new Uint16[ribbon_index_count];
+	{for (int i = 0; i < ribbon_index_count; i++) {
+		ribbon_indices[i] = SDL_ReadLE16(in);
+	}}
+}
+
 
 struct lod_chunk {
+//data:
 	lod_chunk*	parent;
 	Uint16	lod;	// LOD of this chunk.  high byte never changes; low byte is the morph parameter.
 	bool	enabled;	// true if this node should be rendered
 	bool	tree_enabled;	// true if any descendent is enabled
 
-	// These are the edges we directly border on.
-	int	edge_count;
-	lod_edge**	edges;
+//	// These are the edges we directly border on.
+//	int	edge_count;
+//	lod_edge**	edges;
+	// Our edges.
+	lod_edge	edge[4];
 
 	int	child_count;
 	lod_chunk**	children;
 
-	int	neighbor_count;
-	lod_chunk**	neighbors;
+//	int	neighbor_count;
+//	lod_chunk**	neighbors;
+	union {
+		int	label;
+		lod_chunk*	chunk;
+	} neighbor[4];
 
 	// AABB, used for deciding when to enable.
 	vec3	box_center;
@@ -159,31 +205,20 @@ struct lod_chunk {
 //methods:
 	// needs a destructor!
 
-	void	clear(int level);
+	void	clear();
+	void	incremental_clear();
 	void	update(const lod_chunk_tree& c, const vec3& viewpoint);
-	void	force_parent_enabled(const vec3& viewpoint);
+	void	enable(const lod_chunk_tree& base, const vec3& viewpoint);
+	void	force_parent_enabled(const lod_chunk_tree& base, const vec3& viewpoint);
 	int	render(const view_state& v, cull::result_info cull_info, render_options opt);
+	int	render_edge(direction dir, render_options opt);
 
-	void	load(SDL_RWops* in, int level, lod_chunk_tree* tree);
-	void	compute_bounding_box();
+	void	read(SDL_RWops* in, int level, lod_chunk_tree* tree);
+	void	lookup_neighbors(lod_chunk_tree* tree);
+//	void	compute_bounding_box();
 
-	void	add_edge(lod_edge* e);
+//	void	add_edge(lod_edge* e);
 };
-
-
-void	lod_chunk::add_edge(lod_edge* e)
-// Adds the given edge to our collection; the given edge should fill
-// the crack between this chunk and a neighbor.  When we render
-// ourself, we'll call ->render() on this edge.
-{
-	edge_count++;
-	if (edges) {
-		edges = (lod_edge**) realloc(edges, sizeof(lod_edge*) * edge_count);
-	} else {
-		edges = (lod_edge**) malloc(sizeof(lod_edge*) * edge_count);
-	}
-	edges[edge_count-1] = e;
-}
 
 
 static void	draw_box(const vec3& min, const vec3& max)
@@ -218,14 +253,9 @@ static void	draw_box(const vec3& min, const vec3& max)
 }
 
 
-void	vertex_info::load(SDL_RWops* in)
+void	vertex_info::read(SDL_RWops* in)
 // Read vert info from the given file.
 {
-	m_origin.set(0, ReadFloat32(in));
-	m_origin.set(1, ReadFloat32(in));
-	m_origin.set(2, ReadFloat32(in));
-	m_scale = ReadFloat32(in);
-
 	vertex_count = SDL_ReadLE16(in);
 	vertices = new vertex[ vertex_count ];
 	for (int i = 0; i < vertex_count; i++) {
@@ -250,51 +280,37 @@ void	vertex_info::load(SDL_RWops* in)
 	// Load the real triangle count, for computing statistics.
 	triangle_count = SDL_ReadLE32(in);
 
-//	printf("vertex_info::load() -- vertex_count = %d, index_count = %d\n", vertex_count, index_count);//xxxxxxxx
+//	printf("vertex_info::read() -- vertex_count = %d, index_count = %d\n", vertex_count, index_count);//xxxxxxxx
 }
 
 
-struct lod_edge {
-	lod_edge*	child[2];
-
-	lod_chunk*	neighbor[2];	// pointers to neighboring chunks.
-
-	int	midpoint_index;	// Index of the vert which is the midpoint of the edge.
-	vertex_info	verts;
-
-	Uint16*	connecting_strip;	// Simple strip for connecting two copies of the edge (which are morphed differently).
-	int	rendered_frame;
-
-//methods:
-	void	load(SDL_RWops* in, lod_chunk_tree* tree);
-	int	render(const view_state& v, render_options opt);
-	void	clear();
-};
-
-
-void	lod_chunk::clear(int level)
+void	lod_chunk::clear()
 // Clears lod_fraction and enabled values throughout our subtree.
 // Do this before doing update().
 {
 	enabled = false;
 	tree_enabled = false;
 
-	if (level > 0) {
-		for (int i = 0; i < child_count; i++) {
-			children[i]->clear(level - 1);
-		}
-	}
-		
-	for (int i = 0; i < edge_count; i++) {
-		edges[i]->clear();
+	for (int i = 0; i < child_count; i++) {
+		children[i]->clear();
 	}
 }
 
 
-void	lod_edge::clear()
-// Reset, before rendering.
+void	lod_chunk::incremental_clear()
+// Clears the enabled values throughout the subtree.  If this node is
+// enabled, then the recursion does not continue to the child nodes,
+// since their enabled values should be false.
 {
-	rendered_frame = 0;
+	tree_enabled = false;
+	if (enabled) {
+		enabled = false;
+	} else {
+		// Recurse to children.
+		for (int i = 0; i < child_count; i++) {
+			children[i]->incremental_clear();
+		}
+	}
 }
 
 
@@ -308,28 +324,13 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 // !!!  For correct results, the tree must have been clear()ed before
 // calling update() !!!
 {
-	tree_enabled = true;
-
 	Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
-//	printf("desired_lod = %x, lod = %x\n", desired_lod, lod);//xxxxx
 
-	if (desired_lod <= (lod | 0x0FF) || child_count == 0) {
+	if (child_count == 0 || (tree_enabled == enabled && desired_lod <= (lod | 0x0FF)))
+	{
 		// We're good... this chunk can represent its region within the max error tolerance.
-		enabled = true;
-		tree_enabled = true;
+		enable(base, viewpoint);
 
-		lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
-		
-		// make sure neighbors are subdivided enough.
-		for (int i = 0; i < neighbor_count; i++) {
-			neighbors[i]->force_parent_enabled(viewpoint);
-		}
-
-		// make sure ancestors aren't enabled...
-		for (lod_chunk* p = parent; p; p = p->parent) {
-			p->enabled = false;
-			p->tree_enabled = true;
-		}
 	} else {
 		// Recurse to children.
 		for (int i = 0; i < child_count; i++) {
@@ -339,15 +340,51 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 }
 
 
-void	lod_chunk::force_parent_enabled(const vec3& viewpoint)
-// Forces our parent chunk to be enabled if it isn't already.  Computes
-// the LOD parameter according to the distance from the viewpoint.
+void	lod_chunk::force_parent_enabled(const lod_chunk_tree& base, const vec3& viewpoint)
+// Forces our parent chunk to be enabled if it isn't already.
 {
-	// xxxxx
+	if (parent && parent->tree_enabled == false) {
+		parent->enable(base, viewpoint);
+	}
 }
 
 
-static void	morph_vertices(vec3* verts, const vertex_info& morph_verts, float f)
+void	lod_chunk::enable(const lod_chunk_tree& base, const vec3& viewpoint)
+// Enable this chunk.  Use the given viewpoint to decide what morph
+// level to use.
+{
+	if (enabled == false && tree_enabled == false) {
+		enabled = true;
+		tree_enabled = true;
+
+		Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
+		lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
+
+		// make sure ancestors aren't enabled...
+		for (lod_chunk* p = parent; p; p = p->parent) {
+			if (p->enabled) {
+				p->enabled = false;
+
+				// Make sure descendents are enabled.
+				for (int i = 0; i < p->child_count; i++) {
+					p->children[i]->enable(base, viewpoint);
+				}
+			} else {
+				p->tree_enabled = true;
+			}
+		}
+
+		// make sure neighbors are subdivided enough.
+		for (int i = 0; i < 4; i++) {
+			if (neighbor[i].chunk) {
+				neighbor[i].chunk->force_parent_enabled(base, viewpoint);
+			}
+		}
+	}
+}
+
+
+static void	morph_vertices(vec3* verts, const vertex_info& morph_verts, float f, const vec3& box_center, const vec3& box_extent)
 // Adjust the positions of our morph vertices according to f, the
 // given morph parameter.  verts is the output buffer for processed
 // verts.
@@ -359,18 +396,46 @@ static void	morph_vertices(vec3* verts, const vertex_info& morph_verts, float f)
 // @@ This functionality could be shifted into a vertex program for
 // the GPU.
 {
-	float	ox = morph_verts.m_origin.get_x();
-	float	oy = morph_verts.m_origin.get_y();
-	float	oz = morph_verts.m_origin.get_z();
-	float	scale = morph_verts.m_scale;
+	float	ox = box_center.get_x();
+	float	oy = box_center.get_y();
+	float	oz = box_center.get_z();
 
-	float	one_minus_f = (1.0f - f) * scale;
+	float	sx = box_extent.get_x() / ((1 << 15) - 1);
+	float	sy = box_extent.get_y() / ((1 << 15) - 1);
+	float	sz = box_extent.get_z() / ((1 << 15) - 1);
+
+	float	one_minus_f = (1.0f - f) * sy;
 
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
 		const vertex_info::vertex&	v = morph_verts.vertices[i];
-		verts[i].set(0, ox + scale * v.x[0]);
-		verts[i].set(1, oy + scale * v.x[1] + v.y_delta * one_minus_f);	// lerp the y value of the vert.
-		verts[i].set(2, oz + scale * v.x[2]);
+		verts[i].set(0, ox + sx * v.x[0]);
+		verts[i].set(1, oy + sy * v.x[1] + v.y_delta * one_minus_f);	// lerp the y value of the vert.
+		verts[i].set(2, oz + sz * v.x[2]);
+	}
+}
+
+
+static void	morph_indexed_vertices(vec3* verts, const vertex_info& morph_verts, float f,
+								   const vec3& box_center, const vec3& box_extent,
+								   int count, Uint16* indices)
+// Similar to morph_vertices, except instead of ripping straight through morph_verts,
+// we pick particular verts specified by indices[0..count-1]
+{
+	float	ox = box_center.get_x();
+	float	oy = box_center.get_y();
+	float	oz = box_center.get_z();
+
+	float	sx = box_extent.get_x() / ((1 << 15) - 1);
+	float	sy = box_extent.get_y() / ((1 << 15) - 1);
+	float	sz = box_extent.get_z() / ((1 << 15) - 1);
+
+	float	one_minus_f = (1.0f - f) * sy;
+
+	for (int i = 0; i < count; i++) {
+		const vertex_info::vertex&	v = morph_verts.vertices[indices[i]];
+		verts[i].set(0, ox + sx * v.x[0]);
+		verts[i].set(1, oy + sy * v.x[1] + v.y_delta * one_minus_f);	// lerp the y value of the vert.
+		verts[i].set(2, oz + sz * v.x[2]);
 	}
 }
 
@@ -408,7 +473,7 @@ int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_o
 		if (opt.morph == false) {
 			f = 0;
 		}
-		morph_vertices(output_verts, verts, f);
+		morph_vertices(output_verts, verts, f, box_center, box_extent);
 
 		if (opt.show_geometry) {
 			// draw this chunk.
@@ -419,15 +484,161 @@ int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_o
 		}
 
 		if (opt.show_edges) {
-			for (int i = 0; i < edge_count; i++) {
-				triangle_count += edges[i]->render(v, opt);
+			for (int i = 0; i < 4; i++) {
+				triangle_count += render_edge((direction) i, opt);
 			}
+//			// Render the edges we might be responsible for.
+//			triangle_count += render_edge(EAST, opt);
+//			triangle_count += render_edge(SOUTH, opt);
 		}
 	} else {
-		// recurse to children.  some subset of our descendants will be rendered in our stead.
+		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
 		for (int i = 0; i < child_count; i++) {
 			triangle_count += children[i]->render(v, cull_info, opt);
 		}
+	}
+
+	return triangle_count;
+}
+
+
+static int	join_rows(vec3* v0, int count0, vec3* v1, int count1);
+
+
+int	lod_chunk::render_edge(direction dir, render_options opt)
+// Draw the ribbon connecting the edge of this chunk to the edge(s) of
+// the neighboring chunk(s) in the specified direction.  Returns the
+// number of triangles rendered.
+{
+	int	facing_dir = direction((int(dir) + 2) & 3);
+
+	int	triangle_count = 0;
+
+	//
+	// Figure out which of the three cases we have:
+	//
+	// 1) our neighbor is a chunk at our same LOD (but probably has a
+	// different morph value).  We only handle this if this is the
+	// EAST or SOUTH edge of our chunk.  Otherwise, the other chunk is
+	// responsible for rendering (this prevents double-rendering of
+	// the edge.)
+	//
+	// To render, all we have to do is zip up the corresponding verts.
+	//
+	//  |           |
+	//  |    us     |
+	//  +-*-*-*-*-*-+
+	//  |/|/|/|/|/|/|  <-- simple zig-zag tri strip
+	//  +-*-*-*-*-*-+
+	//  |  neighbor |
+	//  |           |
+	//
+	//
+	// 2) our neighbors are actually two chunks, at the next higher
+	// LOD.  We have to stitch together our verts with the verts of
+	// the two neighbors.
+	//
+	//  |           |
+	//  |    us     |
+	//  +-*-*-*-*-*-+
+	//  |/|\|\|\|/|\|  <-- more complex connecting ribbon
+	//  +***********+
+	//  |  n0 |  n1 |
+	//  |     |     |
+	//
+	// 3) same as 2, but we're one of the high LOD chunks.  In this
+	// case we don't render anything; the lower-LOD chunk is
+	// responsible for rendering the edge.
+
+	lod_chunk*	n = neighbor[(int) dir].chunk;
+	if (n == NULL) {
+		// No neighbor, so no edge to worry about.
+		return triangle_count;
+	}
+	if (n->enabled) {
+		// two matching edges.
+		if (dir == EAST || dir == SOUTH) {
+
+			float	f0 = morph_curve((lod & 255) / 255.0f);
+			float	f1 = morph_curve((n->lod & 255) / 255.0f);
+			if (opt.morph == false) {
+				f0 = f1 = 0;
+			}
+			int	c0 = edge[dir].vertex_count;
+			vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * c0 * 2);
+			morph_indexed_vertices(output_verts, verts, f0,
+								   box_center, box_extent,
+								   c0, edge[dir].indices);
+			morph_indexed_vertices(output_verts + c0, n->verts, f1,
+								   n->box_center, n->box_extent,
+								   c0, n->edge[facing_dir].indices);
+
+			// Draw the connecting ribbon.  Just a zig-zag strip between
+			// the two edges.
+			glVertexPointer(3, GL_FLOAT, 0, output_verts);
+			glBegin(GL_TRIANGLE_STRIP);
+			for (int i = 0; i < c0; i++) {
+				glArrayElement(i);
+				glArrayElement(i + c0);
+			}
+			glEnd();
+		
+			triangle_count += c0 * 2 - 2;
+		}
+
+	} else if (n->tree_enabled) {
+		// we have the low LOD edge; children of our neighbor have the high LOD edges.
+
+		// Find the neighbors we need to mesh with.
+
+		// table indexed by the direction of our big low-LOD edge.
+		int	child_index[4][2] = {
+			{ 0, 2 },	// EAST
+			{ 2, 3 },	// NORTH
+			{ 1, 3 },	// WEST
+			{ 0, 1 }	// SOUTH
+		};
+		lod_chunk*	n0 = n->children[child_index[dir][0]];
+		lod_chunk*	n1 = n->children[child_index[dir][1]];
+
+		assert(n0);
+		assert(n1);
+
+		float	f = morph_curve((lod & 255) / 255.0f);
+		float	f0 = morph_curve((n0->lod & 255) / 255.0f);
+		float	f1 = morph_curve((n1->lod & 255) / 255.0f);
+		if (opt.morph == false) {
+			f = f0 = f1 = 0;
+		}
+
+		const lod_edge&	e = edge[dir];
+		const lod_edge&	e0 = n0->edge[facing_dir];
+		const lod_edge&	e1 = n1->edge[facing_dir];
+
+		vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * (e.vertex_count + e0.vertex_count + e1.vertex_count));
+
+		morph_indexed_vertices(output_verts, verts, f,
+							   box_center, box_extent,
+							   e.vertex_count, e.indices);
+		morph_indexed_vertices(output_verts + e.vertex_count, n0->verts, f0,
+							   n0->box_center, n0->box_extent,
+							   e0.vertex_count, e0.indices);
+		morph_indexed_vertices(output_verts + e.vertex_count + e0.vertex_count, n1->verts, f1,
+							   n1->box_center, n1->box_extent,
+							   e1.vertex_count, e1.indices);
+
+		// Draw the connecting ribbon.
+
+		// Get the edge with the ribbon data.  Normally it's only on the east and south edges.
+		const lod_edge&	r = (dir == EAST || dir == SOUTH) ? edge[dir] : n->edge[facing_dir];
+
+		assert(r.ribbon_index_count);
+		glVertexPointer(3, GL_FLOAT, 0, (float*) output_verts);
+		glDrawElements(GL_TRIANGLES, r.ribbon_index_count, GL_UNSIGNED_SHORT, r.ribbon_indices);
+		triangle_count += r.ribbon_index_count / 3;
+
+	} else {
+		// Our neighbor is responsible for this case.
 	}
 
 	return triangle_count;
@@ -471,128 +682,40 @@ static int	join_rows(vec3* v0, int count0, vec3* v1, int count1)
 }
 
 
-int	lod_edge::render(const view_state& v, render_options opt)
-// Draw the edge, according to the enabled & LOD info stored in the
-// given tree.
-// 
-// Returns the number of triangles rendered.
-//
-// The given frame number is used as a guard to prevent rendering edges more than once
-// in a single rendering pass.
-{
-	// Avoid rendering more than once in a single pass.
-	if (rendered_frame == v.m_frame_number) {
-		return 0;
-	}
-	rendered_frame = v.m_frame_number;
-
-	int	triangle_count = 0;
-	if (neighbor[0]->enabled && neighbor[1]->enabled) {
-		// joining two chunks at the same level.
-		float	f0 = morph_curve((neighbor[0]->lod & 255) / 255.0f);
-		float	f1 = morph_curve((neighbor[1]->lod & 255) / 255.0f);
-		if (opt.morph == false) {
-			f0 = f1 = 0;
-		}
-
-		assert(s_stream);
-		vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * verts.vertex_count * 2);
-		morph_vertices(output_verts, verts, f0);	// First copy of verts gets neighbor[0]'s morph.
-		morph_vertices(&output_verts[verts.vertex_count], verts, f1);	// Second copy of verts gets neighbor[1]'s morph.
-
-		// Use a precomputed strip to zip these edges together.
-		glVertexPointer(3, GL_FLOAT, 0, output_verts);
-		glDrawElements(GL_TRIANGLE_STRIP, (verts.vertex_count - 1) * 2, GL_UNSIGNED_SHORT, connecting_strip);
-
-		triangle_count += 2 * (verts.vertex_count - 1) - 2;
-	}
-	else if (neighbor[0]->enabled && child[0] && child[1] && child[0]->neighbor[1]->enabled)
-	{
-		// This is a t-junction.  neighbor[0] has the low LOD, while child[0]->neighbor[1] and
-		// child[1]->neighbor[1] have the matching high LOD edges.
-		float	f0 = morph_curve((neighbor[0]->lod & 255) / 255.0f);
-		float	fc0 = morph_curve((child[0]->neighbor[1]->lod & 255) / 255.0f);
-		float	fc1 = morph_curve((child[1]->neighbor[1]->lod & 255) / 255.0f);
-		if (opt.morph == false) {
-			f0 = fc0 = fc1 = 0;
-		}
-
-		assert(s_stream);
-		vec3*	output_verts = (vec3*) s_stream->reserve_memory(
-			sizeof(vec3) *
-			(verts.vertex_count
-			 + child[0]->verts.vertex_count
-			 + child[1]->verts.vertex_count));
-
-		vec3*	out_c0 = output_verts + verts.vertex_count;
-		vec3*	out_c1 = out_c0 + child[0]->verts.vertex_count;
-
-		morph_vertices(output_verts, verts, f0);
-		morph_vertices(out_c0, child[0]->verts, fc0);
-		morph_vertices(out_c1, child[1]->verts, fc1);
-
-		// generate weirdo mesh to join this stuff.  Would be nicer
-		// to precompute this strip and make sure it makes some sense.
-
-		triangle_count += join_rows(output_verts, midpoint_index + 1,
-									out_c0, child[0]->verts.vertex_count);
-		triangle_count += join_rows(output_verts + midpoint_index, verts.vertex_count - midpoint_index,
-									out_c1, child[1]->verts.vertex_count);
-	}
-	else if (neighbor[1]->enabled && child[0] && child[1] && child[0]->neighbor[0]->enabled)
-	{
-		// This is a t-junction.  neighbor[1] has the low LOD, while child[0]->neighbor[0] and
-		// child[1]->neighbor[0] have the matching high LOD edges.
-		float	f1 = morph_curve((neighbor[1]->lod & 255) / 255.0f);
-		float	fc0 = morph_curve((child[0]->neighbor[0]->lod & 255) / 255.0f);
-		float	fc1 = morph_curve((child[1]->neighbor[0]->lod & 255) / 255.0f);
-		if (opt.morph == false) {
-			f1 = fc0 = fc1 = 0;
-		}
-
-		assert(s_stream);
-		int	vert_count = verts.vertex_count + child[0]->verts.vertex_count + child[1]->verts.vertex_count;
-		vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * vert_count);
-
-		vec3*	out_c0 = output_verts + verts.vertex_count;
-		vec3*	out_c1 = out_c0 + child[0]->verts.vertex_count;
-
-		morph_vertices(output_verts, verts, f1);
-		morph_vertices(out_c0, child[0]->verts, fc0);
-		morph_vertices(out_c1, child[1]->verts, fc1);
-
-		// generate weirdo mesh to join this stuff.  Would be nicer
-		// to precompute this strip and make sure it makes some sense.
-
-		triangle_count += join_rows(output_verts, midpoint_index + 1,
-									out_c0, child[0]->verts.vertex_count);
-		triangle_count += join_rows(output_verts + midpoint_index, verts.vertex_count - midpoint_index,
-									out_c1, child[1]->verts.vertex_count);
-	}
-
-	return triangle_count;
-}
-
-
-void	lod_chunk::load(SDL_RWops* in, int level, lod_chunk_tree* tree)
+void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 // Read chunk data from the given file and initialize this chunk with it.
 // Recursively loads child chunks for level > 0.
 {
+	enabled = false;
+	tree_enabled = false;
+
 	// Get this chunk's label, and add it to the table.
 	int	chunk_label = SDL_ReadLE32(in);
 	assert_else(chunk_label < tree->chunk_count) {
-		throw "invalid chunk label";
+		printf("invalid chunk_label: %d, level = %d\n", chunk_label, level);
+		exit(1);
 	}
 	assert(tree->chunk_table[chunk_label] == 0);
 	tree->chunk_table[chunk_label] = this;
 
-	// Load the data.
-	verts.load(in);
+	// Initialize neighbor links.
+	{for (int i = 0; i < 4; i++) {
+		neighbor[i].label = SDL_ReadLE32(in);
+	}}
 
-	neighbor_count = 0;
+	// Initialize our bounding box.
+	box_center.read(in);
+	box_extent.read(in);
+
+	// Load the data.
+	verts.read(in);
+
+	// Read the edge data.
+	{for (int i = 0; i < 4; i++) {
+		edge[i].read(in);
+	}}
+
 	child_count = 0;
-	edge_count = 0;
-	edges = 0;
 
 	// Recurse to child chunks.
 	if (level > 0) {
@@ -602,120 +725,34 @@ void	lod_chunk::load(SDL_RWops* in, int level, lod_chunk_tree* tree)
 			children[i] = new lod_chunk;
 			children[i]->lod = lod + 0x100;
 			children[i]->parent = this;
-			children[i]->load(in, level-1, tree);
-		}
-	}
-
-	// Load data for internal edges.
-	int	ct = ReadByte(in);
-	for (int i = 0; i < ct; i++) {
-		lod_edge*	e = new lod_edge;
-		e->load(in, tree);
-	}
-}
-
-
-void	lod_edge::load(SDL_RWops* in, lod_chunk_tree* tree)
-// Initialize this edge from the given input file.  Also creates and
-// initializes all child edges of this edge.  This edge is an internal
-// edge of the given parent, and should only border on chunks which
-// are descendants of *parent.  *tree contains a lookup table for
-// getting the pointers to the chunks associated with an edge.  This
-// function modifies the chunks referenced by the edges, by adding the
-// edges to the chunks.
-{
-	rendered_frame = 0;
-
-	// Get pointers to the two neighbor chunks.
-	for (int i = 0; i < 2; i++) {
-		int	label = SDL_ReadLE32(in);
-		assert_else(label >= 0 && label < tree->chunk_count && tree->chunk_table[label] != NULL) {
-			throw "can't load edge data; refers to undefined chunk.";
-		}
-		neighbor[i] = tree->chunk_table[label];
-
-		// Attach ourselves to each neighbor.
-		neighbor[i]->add_edge(this);
-	}
-
-	// Load vertices.
-	midpoint_index = SDL_ReadLE16(in);
-
-	verts.load(in);
-
-	// Initialize the indices of a connecting strip, to use when
-	// connecting the two differently-morphed versions of this edge.
-	// It's just a plain zig-zag.
-	connecting_strip = new Uint16[(verts.vertex_count - 1) * 2];
-	{for (int i = 0, index = 0; i < verts.vertex_count - 1; i++) {
-		connecting_strip[index++] = i;
-		connecting_strip[index++] = verts.vertex_count + i + 1;
-	}}
-
-	// Initialize & load child edges.
-	bool	load_children = ReadByte(in);
-	if (load_children) {
-		for (int i = 0; i < 2; i++) {
-			child[i] = new lod_edge;
-			child[i]->load(in, tree);
+			children[i]->read(in, level-1, tree);
 		}
 	} else {
-		for (int i = 0; i < 2; i++) {
-			child[i] = NULL;
-		}
+		child_count = 0;
+		children = NULL;
 	}
 }
 
-	
-void	lod_chunk::compute_bounding_box()
-// Computes the dimensions of our AABB based on our vertex info as well as
-// our child nodes, if any.
+
+void	lod_chunk::lookup_neighbors(lod_chunk_tree* tree)
+// Convert our neighbor labels to neighbor pointers.  Recurse to child chunks.
 {
-	// Initialize an AABB based on the vertex info.  !!! should precompute this and store it in the file !!!
-	vec3	Min(1000000, 1000000, 1000000),
-		Max(-1000000, -1000000, -1000000);
-
-	// Check vertices for Min/Max coords.
-	for (int i = 0; i < verts.vertex_count; i++) {
-		for (int j = 0; j < 3; j++) {
-			float	f = verts.m_origin.get(j) + verts.m_scale * verts.vertices[i].x[j];
-			if (f < Min.get(j)) Min.set(j, f);
-			if (f > Max.get(j)) Max.set(j, f);
+	for (int i = 0; i < 4; i++) {
+		assert_else(neighbor[i].label >= -1 && neighbor[i].label < tree->chunk_count) {
+			neighbor[i].label = -1;
+		}
+		if (neighbor[i].label == -1) {
+			neighbor[i].chunk = NULL;
+		} else {
+			neighbor[i].chunk = tree->chunk_table[neighbor[i].label];
 		}
 	}
 
-#if 0
-	// Check morph verts for additional y Min/Max.
-	{for (int i = 0; i < morph_verts.vertex_count; i++) {
-		float	f = morph_verts.vertices[i].y0;
-		if (f < Min.get(1)) Min.set(1, f);
-		if (f > Max.get(1)) Max.set(1, f);
-
-		f += morph_verts.vertices[i].delta;
-		if (f < Min.get(1)) Min.set(1, f);
-		if (f > Max.get(1)) Max.set(1, f);
-	}}
-#endif // 0
-
-	// Compute, and check, bounds of child chunks.
 	{for (int i = 0; i < child_count; i++) {
-		children[i]->compute_bounding_box();
-
-		vec3	child_Min = children[i]->box_center - children[i]->box_extent;
-		vec3	child_Max = children[i]->box_center + children[i]->box_extent;
-		for (int j = 0; j < 3; j++) {
-			float	f = child_Min.get(j);
-			if (f < Min.get(j)) Min.set(j, f);
-
-			f = child_Max.get(j);
-			if (f > Max.get(j)) Max.set(j, f);
-		}
+		children[i]->lookup_neighbors(tree);
 	}}
-
-	// Compute AABB center & extent based on Min/Max.
-	box_center = (Max + Min) * 0.5;
-	box_extent = (Max - Min) * 0.5;
 }
+
 
 
 //
@@ -757,9 +794,8 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	root = new lod_chunk;
 	root->lod = 0;
 	root->parent = 0;
-	root->load(src, tree_depth-1, this);
-
-	root->compute_bounding_box();
+	root->read(src, tree_depth-1, this);
+	root->lookup_neighbors(this);
 }
 
 
@@ -767,7 +803,7 @@ void	lod_chunk_tree::update(const vec3& viewpoint)
 // Initializes tree state, so it can be rendered.  The given viewpoint
 // is used to do distance-based LOD switching on our contained chunks.
 {
-	root->clear(tree_depth - 1);
+	root->clear();
 	root->update(*this, viewpoint);
 }
 
@@ -785,13 +821,18 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 
 	int	triangle_count = 0;
 
-//	glEnableClientState(GL_VERTEX_ARRAY);
-
 	triangle_count = root->render(v, cull::result_info(), opt);
 
-//	glDisableClientState(GL_VERTEX_ARRAY);
-
 	return triangle_count;
+}
+
+
+void	lod_chunk_tree::get_bounding_box(vec3* box_center, vec3* box_extent)
+// Returns the bounding box of the data in this chunk tree.
+{
+	assert(root);
+	*box_center = root->box_center;
+	*box_extent = root->box_extent;
 }
 
 
@@ -828,8 +869,6 @@ Uint16	lod_chunk_tree::compute_lod(const vec3& center, const vec3& extent, const
 
 	float	d = 0;
 	d = sqrt(disp * disp);
-
-//	printf("c_lod(): d = %f, dLm = %f, vx = %f vy = %f vz = %f\n", d, distance_LODmax, viewpoint.get_x(), viewpoint.get_y(), viewpoint.get_z());//xxxxxxxx
 
 	return iclamp(((tree_depth << 8) - 1) - int(log2(fmax(1, d / distance_LODmax)) * 256), 0, 0x0FFFF);
 }

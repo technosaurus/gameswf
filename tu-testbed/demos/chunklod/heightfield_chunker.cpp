@@ -1,4 +1,7 @@
-// heightfield_chunker.cpp	-- tu@tulrich.com Copyright 2001 by Thatcher Ulrich
+// heightfield_chunker.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2001
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
 
 // Program to take heightfield input and generate a chunked-lod
 // structure as output.  Uses quadtree decomposition, with a
@@ -15,6 +18,7 @@
 
 #include <engine/utility.h>
 #include <engine/container.h>
+#include <engine/geometry.h>
 
 
 void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out, int tree_depth, float base_max_error);
@@ -37,6 +41,7 @@ void	print_usage()
 	// no args, or -h or -?.  print usage.
 	printf("heightfield_chunker: program for processing terrain data and generating\n"
 		   "a chunked LOD data file suitable for viewing by 'chunklod'.\n\n"
+		   "This program has been donated to the Public Domain by Thatcher Ulrich <tu@tulrich.com>\n\n"
 		   "usage: heightfield_chunker [-d depth] [-e error] <input_filename> <output_filename>\n"
 		   "\n"
 		   "\tThe input filename should either be a .BT format terrain file with\n"
@@ -76,11 +81,11 @@ int	main(int argc, char* argv[])
 {
 	// Default processing parameters.
 	int	tree_depth = 6;
-	float	max_geometric_error = 0.5f;
+	float	max_geometric_error = 1.0f;
 
 	// Process command-line options.
-	char*	infile = NULL; //argv[1];
-	char*	outfile = NULL; //argv[2];
+	char*	infile = NULL;
+	char*	outfile = NULL;
 
 	for ( int arg = 1; arg < argc; arg++ ) {
 		if ( argv[arg][0] == '-' ) {
@@ -161,7 +166,7 @@ int	main(int argc, char* argv[])
 	printf( "depth = %d, max error = %f\n", tree_depth, max_geometric_error );
 
 	// Process the data.
-	heightfield_chunker( in, out, tree_depth, max_geometric_error );
+	heightfield_chunker( in, out, tree_depth, max_geometric_error);
 
 	stats.output_size = SDL_RWtell(out);
 
@@ -333,7 +338,14 @@ struct heightfield {
 	// function returns its node index.  The node index is essentially
 	// the node's rank in a breadth-first quadtree traversal.  Assumes
 	// a [nw, ne, sw, se] traversal order.
+	//
+	// If the coordinates don't specify a valid node (e.g. if the coords
+	// are outside the heightfield) then returns -1.
 	{
+		if (x < 0 || x >= size || z < 0 || z >= size) {
+			return -1;
+		}
+
 		int	l1 = lowest_one(x | z);
 		int	depth = log_size - l1 - 1;
 
@@ -516,10 +528,16 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 
 	stats.input_vertices = hf.size * hf.size;
 
+	printf("updating...");
+
 	// Run a view-independent L-K style BTT update on the heightfield, to generate
 	// error and activation_level values for each element.
 	update(hf, base_max_error, 0, hf.size-1, hf.size-1, hf.size-1, 0, 0);	// sw half of the square
 	update(hf, base_max_error, hf.size-1, 0, 0, 0, hf.size-1, hf.size-1);	// ne half of the square
+
+	printf("done.\n");
+
+	printf("propagating...");
 
 	// Propagate the activation_level values of verts to their
 	// parent verts, quadtree LOD style.  Gives same result as
@@ -529,7 +547,9 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 		propagate_activation_level(hf, hf.size >> 1, hf.size >> 1, hf.log_size - 1, i);
 	}
 
-	check_propagation(hf, hf.size >> 1, hf.size >> 1, hf.log_size - 1);//xxxxx
+//	check_propagation(hf, hf.size >> 1, hf.size >> 1, hf.log_size - 1);//xxxxx
+
+	printf("done\n");
 
 	// Write a .chu header for the output file.
 	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
@@ -538,8 +558,12 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
 	SDL_WriteLE32(out, 0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
 
+	printf("meshing...");
+
 	// Write out the node data for the entire chunk tree.
 	generate_node_data(out, hf, 0, 0, hf.log_size, tree_depth-1);
+
+	printf("done\n");
 }
 
 
@@ -779,14 +803,15 @@ int	check_propagation(heightfield& hf, int cx, int cz, int level)
 
 namespace mesh {
 	void	clear();
-	void	emit_vertex(int ax, int az);	// call this in strip order.
-	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level, int chunk_label);
+	void	emit_vertex(const heightfield& hf, int ax, int az);	// call this in strip order.
+	int	lookup_index(int x, int z);
+	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level);
 };
 
 
 void	gen_mesh(heightfield& hf, int level, int ax, int az, int rx, int rz, int lx, int lz);
 
-void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, int bx, int bz);
+void	generate_edge_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int x1, int z1, int level, bool generate_ribbon);
 
 
 struct gen_state;
@@ -795,13 +820,15 @@ void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, in
 
 
 void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level)
-// Given a square of data, with center at (x0, z0) and comprising
-// ((1<<log_size)+1) verts along each axis, this function generates
-// the mesh using verts which are active at the given level.
+// Given a square of data, with northwest corner at (x0, z0) and
+// comprising ((1<<log_size)+1) verts along each axis, this function
+// generates the mesh using verts which are active at the given level.
 //
 // If we're not at the base level (level > 0), then also recurses to
 // quadtree child nodes and generates their data.
 {
+	stats.output_chunks++;
+
 	int	size = (1 << log_size);
 	int	half_size = size >> 1;
 	int	cx = x0 + half_size;
@@ -820,17 +847,31 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	hf.elem(x0, z0 + size).activate(level);
 	hf.elem(x0 + size, z0 + size).activate(level);
 
-	// Ensure our center vert is activated, too.
-	hf.elem(x0 + half_size, z0 + half_size).activate(level);
-
 	// Generate the mesh.
 	generate_block(hf, level, log_size, x0 + half_size, z0 + half_size);
+
+	printf(".");
 
 //	// Print some interesting info.
 //	printf("chunk: (%d, %d) size = %d\n", x0, z0, size);
 
+	// Write our label.
+	SDL_WriteLE32(out, chunk_label);
+
+	// Write the labels of our neighbors.
+	SDL_WriteLE32(out, hf.node_index(cx + size, cz));	// EAST
+	SDL_WriteLE32(out, hf.node_index(cx, cz - size));	// NORTH
+	SDL_WriteLE32(out, hf.node_index(cx - size, cz));	// WEST
+	SDL_WriteLE32(out, hf.node_index(cx, cz + size));	// SOUTH
+
 	// write out the mesh data.
-	mesh::write(out, hf, level, chunk_label);
+	mesh::write(out, hf, level);
+
+	// Generate data for our edges.
+	generate_edge_data(out, hf, cx + half_size, cz - half_size, cx + half_size, cz + half_size, level, level > 0);	// east
+	generate_edge_data(out, hf, cx - half_size, cz - half_size, cx + half_size, cz - half_size, level, false);	// north
+	generate_edge_data(out, hf, cx - half_size, cz - half_size, cx - half_size, cz + half_size, level, false);	// west
+	generate_edge_data(out, hf, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level, level > 0);	// south
 
 	// recurse to child regions, to generate child chunks.
 	if (level > 0) {
@@ -839,28 +880,6 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 		generate_node_data(out, hf, x0 + half_size, z0, log_size-1, level-1);	// ne
 		generate_node_data(out, hf, x0, z0 + half_size, log_size-1, level-1);	// sw
 		generate_node_data(out, hf, x0 + half_size, z0 + half_size, log_size-1, level-1);	// se
-	}
-
-	// Generate data for the four internal edges.
-	if (level > 0) {
-		// Four internal edges.  They connect the center with each of
-		// the four outside edges, and stitch together our subnodes.
-		// The "edges" are a polyline made up of all the active
-		// vertices along the border between the relevant active
-		// nodes.
-		//
-		// Each edge is actually the root of a binary tree of edges,
-		// which join all of the subchunks of the quadtree along the
-		// root edge.  Tip o' the hat to Sean Barrett for "LOD edge"
-		// == "binary tree" concept.
-		WriteByte(out, 4);	// edge count.
-		generate_edge(out, hf, level - 1, cx, cz, cx + half_size, cz /* e edge */);
-		generate_edge(out, hf, level - 1, cx, cz, cx, cz - half_size /* n edge */);
-		generate_edge(out, hf, level - 1, cx, cz, cx - half_size, cz /* w edge */);
-		generate_edge(out, hf, level - 1, cx, cz, cx, cz + half_size /* s edge */);
-	} else {
-		// No subnodes --> no internal edges.
-		WriteByte(out, 0);	// edge count.
 	}
 }
 
@@ -913,9 +932,7 @@ void	generate_block(heightfield& hf, int activation_level, int log_size, int cx,
 		state.my_buffer[i>>1][i&1] = -1;
 	}
 
-	mesh::clear();
-
-	mesh::emit_vertex(q[0][0], q[0][1]);
+	mesh::emit_vertex(hf, q[0][0], q[0][1]);
 	state.set_my_buffer(q[0][0], q[0][1]);
 
 	{for (int i = 0; i < 4; i++) {
@@ -926,11 +943,11 @@ void	generate_block(heightfield& hf, int activation_level, int log_size, int cx,
 			// tulrich: jump via degenerate?
 			int	x = state.my_buffer[1 - state.ptr][0];
 			int	z = state.my_buffer[1 - state.ptr][1];
-			mesh::emit_vertex(x, z);	// or, emit vertex(last - 1);
+			mesh::emit_vertex(hf, x, z);	// or, emit vertex(last - 1);
 		}
 
 		// Initial vertex of quadrant.
-		mesh::emit_vertex(q[i][0], q[i][1]);
+		mesh::emit_vertex(hf, q[i][0], q[i][1]);
 		state.set_my_buffer(q[i][0], q[i][1]);
 		state.previous_level = 2 * log_size + 1;
 
@@ -944,7 +961,7 @@ void	generate_block(heightfield& hf, int activation_level, int log_size, int cx,
 	}}
 	if (state.in_my_buffer(q[0][0], q[0][1]) == false) {
 		// finish off the strip.  @@ may not be necessary?
-		mesh::emit_vertex(q[0][0], q[0][1]);
+		mesh::emit_vertex(hf, q[0][0], q[0][1]);
 	}
 }
 
@@ -969,9 +986,9 @@ void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, in
 			} else {
 				int	x = s->my_buffer[1 - s->ptr][0];
 				int	z = s->my_buffer[1 - s->ptr][1];
-				mesh::emit_vertex(x, z);	// or, emit vertex(last - 1);
+				mesh::emit_vertex(hf, x, z);	// or, emit vertex(last - 1);
 			}
-			mesh::emit_vertex(tx, tz);
+			mesh::emit_vertex(hf, tx, tz);
 			s->set_my_buffer(tx, tz);
 			s->previous_level = recursion_level;
 		}
@@ -981,47 +998,25 @@ void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, in
 }
 
 
-void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, int bx, int bz)
-// Takes the coordinates of the endpoints of a N<-->S or E<-->W line
-// in the heightfield, and writes out the lod_edge data for that line.
-// That means the vertices along that line which are active at the
-// specified level, with morphing info, along with the labels of the
-// bordering heightfield nodes on either side.
+void	generate_edge_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int x1, int z1, int level, bool generate_ribbon)
+// Write out the data for an edge of the chunk that was just generated.
+// (x0,z0) - (x1,z1) defines the extent of the edge in the heightfield.
+// level determines which vertices in the mesh are active.
 //
-// Also, does binary subdivision of the edge, and writes lod_edge data
-// for all the descendant edges.
+// If generate_ribbon is true, then write a triangle list for the
+// ribbon which will stitch this edge with two matching higher-lod
+// neighbors.
 {
-	// Compute the half-delta of the edge coords.  Useful for finding the midpoint of the edge,
-	// and the center of neighboring chunks.
-	int	hdx = (bx - ax) >> 1;
-	int	hdz = (bz - az) >> 1;
+	assert(x0 <= x1);
+	assert(z0 <= z1);
 
-	// We must write out the chunk labels of the nodes that this edge
-	// connects.  This is essential information for the chunk
-	// renderer, so it can locate the chunks to attach the edge to.
-	// In this program we're generating a LOD chunk tree from a
-	// quadtree heightfield, which is completely regular, so the chunk
-	// labels are implicit given the location of the chunk, just by
-	// using the breadth-first quadtree traversal index (depth-first
-	// works too, like swizzling, but the index computation needs to
-	// know the total tree depth).  We must write it out explicitly
-	// because we want the renderer to be capable of dealing with more
-	// general mesh structures.
-	int	neighbor0 = hf.node_index(ax + hdx + hdz, az + hdz + hdx);	// center of neighbor chunk.
-	int	neighbor1 = hf.node_index(ax + hdx - hdz, az + hdz - hdx);	// center of the other neighbor chunk.
-
-	// If we always sort the labels, then the edge ordering should be
-	// coherent throughout the tree.  I.e. neighbor0 of my child edges
-	// should be the child chunks of my neighbor0.  (This is important
-	// to the renderer, when stitching a "t junction" of LODs.)
-	if (neighbor0 > neighbor1) {
-		int	temp = neighbor0;	// swap.
-		neighbor0 = neighbor1;
-		neighbor1 = temp;
-	}
-
-	SDL_WriteLE32(out, neighbor0);
-	SDL_WriteLE32(out, neighbor1);
+	// We're going to write a list of vertex indices that comprise the
+	// edge.  The indices reference the vertex array of the
+	// just-written chunk.
+	//
+	// We're also going to write the index (in this list) of the
+	// midpoint vertex of the edge, so the renderer can join
+	// t-junctions.
 
 	//
 	// Vertices.
@@ -1032,11 +1027,12 @@ void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, i
 	int	midpoint_index = 0;
 
 	// Step along the edge.
-	int	dx = iclamp(hdx, -1, 1);
-	int	dz = iclamp(hdz, -1, 1);
-	int steps = imax(iabs(bx - ax), iabs(bz - az)) + 1;
-	for (int i = 0, x = ax, z = az; i < steps; i++, x += dx, z += dz) {
-		if (x == ax + hdx && z == az + hdz) {
+	int	dx = (x0 < x1) ? 1 : 0;
+	int	dz = (z0 < z1) ? 1 : 0;
+	int steps = imax(x1 - x0, z1 - z0) + 1;
+	int	halfway = steps >> 1;
+	for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz) {
+		if (i == halfway) {
 			midpoint_index = verts;
 		}
 
@@ -1048,116 +1044,176 @@ void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, i
 
 	SDL_WriteLE16(out, midpoint_index);
 
-	// TODO: scale and offset, before quantizing...
-	// xxxx write dummy offset & scale for now.
-	WriteFloat32(out, 0);
-	WriteFloat32(out, 0);
-	WriteFloat32(out, 0);
-	WriteFloat32(out, 1);
-
 	// Write the active verts.
 	assert(verts < (1 << 16));
 	SDL_WriteLE16(out, verts);	// vertex count.
-	{for (int i = 0, x = ax, z = az; i < steps; i++, x += dx, z += dz) {
+	{for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz) {
 		const heightfield_elem&	e = hf.get_elem(x, z);
-		int	l = e.activation_level;
 		if (e.activation_level >= level) {
-			SDL_WriteLE16(out, (int) (x * hf.sample_spacing));
-			SDL_WriteLE16(out, (int) (e.y));
-			SDL_WriteLE16(out, (int) (z * hf.sample_spacing));
+			// Find the index of this vertex in the mesh vertex array.
+			int	index = mesh::lookup_index(x, z);
+			assert(index >= 0);	// vertex is active, so it must be in the mesh vertices!
 
-			// Morph info.  Works out to 0 for non-morphing verts.
-			float	lerped_height = get_height_at_LOD(hf, level + 1, x, z);
-			SDL_WriteLE16(out, lerped_height - e.y);	// delta, to get to y value of parent mesh.
+			SDL_WriteLE16(out, index);
 		}
 	}}
 
-	// TODO: compute the correct strips and write them out.  Currently
-	// they're generated on the fly in chunkdemo.
-	SDL_WriteLE32(out, 0);	// xxx for now, a zero-length strip...
+	if (generate_ribbon) {
+		// if we're not at the base level, generate a triangle list which
+		// specifies how to stitch this edge with a matching edge composed
+		// of the facing edge of two higher-LOD neighbors.
+		array<Uint16>	triangle_list;
+		
+		// walk the edge, examining low-LOD and high-LOD vertices.
+		int	lo_index = 0;
+		int	hi_index = verts;
+		
+		{for (int i = 1, x = x0 + dx, z = z0 + dz; i < steps; i++, x += dx, z += dz) {
+			const heightfield_elem&	e = hf.get_elem(x, z);
+			if (e.activation_level >= level - 1) {
+				// high-lod vertex.
+				triangle_list.push_back(lo_index);
+				triangle_list.push_back(hi_index);
+				hi_index++;
+				triangle_list.push_back(hi_index);
 
-	// real triangle count == 0; will get recomputed by renderer.
-	SDL_WriteLE32(out, 0);
+				if (e.activation_level >= level) {
+					// also a low-lod vertex.
+					triangle_list.push_back(lo_index);
+					triangle_list.push_back(hi_index);
+					lo_index++;
+					triangle_list.push_back(lo_index);
 
-//	// Print some stats.
-//	printf("\t\tedge, verts = %d, mverts = %d\n", verts, morph_verts);
-	
-	// Write out child edges, if we have them.
-	if (level > 0) {
-		WriteByte(out, 1);	// "children present" flag.
-		generate_edge(out, hf, level - 1, ax, az, ax + hdx, az + hdz);
-		generate_edge(out, hf, level - 1, ax + hdx, az + hdz, bx, bz);
+					if (lo_index == midpoint_index) {
+						// Extra filler triangle, between the two hi-lod edges.
+						triangle_list.push_back(lo_index);
+						triangle_list.push_back(hi_index);
+						hi_index++;
+						triangle_list.push_back(hi_index);
+					}
+				}
+			}
+		}}
+
+		assert(triangle_list.size() < (1 << 16));
+		SDL_WriteLE16(out, triangle_list.size());
+		{for (int i = 0; i < triangle_list.size(); i++) {
+			SDL_WriteLE16(out, triangle_list[i]);
+		}}
 	} else {
-		WriteByte(out, 0);	// "no children" flag.
+		// zero-length triangle list.  This could be implicit, and
+		// save a couple bytes, at the expense of extra logic in the
+		// loader.
+		SDL_WriteLE16(out, 0);
 	}
 }
+
 
 
 namespace mesh {
 // mini module for building up mesh data.
 
+//data:
 	struct vert_info {
-		int	x, z;
+		Sint16	x, z;
 
+		vert_info() : x(-1), z(-1) {}
 		vert_info(int vx, int vz) : x(vx), z(vz) {}
+		bool	operator==(const vert_info& v) { return x == v.x && z == v.z; }
 	};
 
 	array<vert_info>	vertices;
 	array<int>	vertex_indices;
+	hash<vert_info, int>	index_table;	// to accelerate get_vertex_index()
 
+	vec3	min, max;	// for bounding box.
+
+
+//code:
 	int	get_vertex_index(int x, int z)
 	// Return the index of the specified vert.  If the vert isn't
 	// in our vertex list, then add it to the end.
 	{
-		// Look for the vert in our vertex list.  Should
-		// probably use a map or something instead of linear
-		// search.
-		for (int i = 0; i < vertices.size(); i++) {
-			if (vertices[i].x == x && vertices[i].z == z) {
-				// Found our vert.  Return the index.
-				return i;
-			}
+		int	index = lookup_index(x, z);
+
+		if (index != -1) {
+			// We already have that vert.
+			return index;
 		}
 
-		vertices.push_back(vert_info(x, z));
+		index = vertices.size();
+		vert_info	v(x, z);
+		vertices.push_back(v);
+		index_table.add(v, index);
 
-		return vertices.size() - 1;
+		return index;
 	}
+
+
+	int	lookup_index(int x, int z)
+	// Return the index in the current vertex array of the specified
+	// vertex.  If the vertex can't be found in the current array,
+	// then returns -1.
+	{
+		int	index;
+		if (index_table.get(vert_info(x, z), &index)) {
+			// Found it.
+			return index;
+		}
+		// Didn't find it.
+		return -1;
+	}
+
 
 	void	clear()
 	// Reset and empty all our containers, to start a fresh mesh.
 	{
-		vertices.resize(0);
-		vertex_indices.resize(0);
+		vertices.clear();
+		vertex_indices.clear();
+		index_table.clear();
+
+		min = vec3(1000000, 1000000, 1000000);
+		max = vec3(-1000000, -1000000, -1000000);
 	}
 
 
-	void	write(SDL_RWops* rw, const heightfield& hf, int level, int chunk_label)
+	void	write(SDL_RWops* rw, const heightfield& hf, int level)
+	// Write out the current chunk.
 	{
-		// Label the chunk, so edge datasets can specify the chunks they're associated with.
-		SDL_WriteLE32(rw, chunk_label);
+		// Write bounding box.  Bounding box also determines the scale
+		// and offset for quantizing the verts.
+		vec3	box_center = (min + max) * 0.5f;
+		vec3	box_extent = (max - min) * 0.5f;
+		box_center.write(rw);
+		box_extent.write(rw);
 
-		// Write origin and scale.
-		// TODO: fix this.  should also write bounding box to the file.
-		WriteFloat32(rw, 0);
-		WriteFloat32(rw, 0);
-		WriteFloat32(rw, 0);
-		WriteFloat32(rw, 1);
+		vec3	compress_factor;
+		{for (int i = 0; i < 3; i++) {
+			compress_factor.set(i, ((1 << 15) - 1) / fmax(1.0, box_extent.get(i)));
+		}}
 
-		// TODO: scale and offset, before quantizing...
+		// WriteFloat32(rw, 1);	// morph scale -- could/should be implicit; just use the max geometric error for this tree level
+
+		// Make sure the vertex buffer is not too big.
+		if (vertices.size() >= (1 << 16)) {
+			printf("error: chunk contains > 64K vertices.  Try processing again, but use\n"
+				   "the -d <depth> option to make a deeper chunk tree.\n");
+			exit(1);
+		}
 
 		// Write vertices.  All verts contain morph info.
 		SDL_WriteLE16(rw, vertices.size());
 		for (int i = 0; i < vertices.size(); i++) {
 			const vert_info&	v = vertices[i];
 			const heightfield_elem&	e = hf.get_elem(v.x, v.z);
-			SDL_WriteLE16(rw, (int) (v.x * hf.sample_spacing));
-			SDL_WriteLE16(rw, (int) e.y);	// true y value
-			SDL_WriteLE16(rw, (int) (v.z * hf.sample_spacing));
+
+			SDL_WriteLE16(rw, frnd((v.x * hf.sample_spacing - box_center.x()) * compress_factor.x()));
+			SDL_WriteLE16(rw, frnd((e.y - box_center.y()) * compress_factor.y()));
+			SDL_WriteLE16(rw, frnd((v.z * hf.sample_spacing - box_center.z()) * compress_factor.z()));
 
 			// Morph info.  Should work out to 0 if the vert is not a morph vert.
 			float	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
-			SDL_WriteLE16(rw, (int) (lerped_height - e.y));	// delta, to get to y value of parent mesh.
+			SDL_WriteLE16(rw, frnd((lerped_height - e.y) * compress_factor.y()));	// xxx should base the compress_factor on the max geometric error!
 		}
 
 		{
@@ -1192,11 +1248,22 @@ namespace mesh {
 	}
 
 
-	void	emit_vertex(int x, int z)
+	void	emit_vertex(const heightfield& hf, int x, int z)
 	// Call this in strip order.  Inserts the given vert into the current strip.
 	{
 		int	index = get_vertex_index(x, z);
 		vertex_indices.push_back(index);
+
+		// Check coordinates and update bounding box.
+		vec3	v(x * hf.sample_spacing, hf.get_elem(x, z).y, z * hf.sample_spacing);
+		for (int i = 0; i < 3; i++) {
+			if (v.get(i) < min.get(i)) {
+				min.set(i, v.get(i));
+			}
+			if (v.get(i) > max.get(i)) {
+				max.set(i, v.get(i));
+			}
+		}
 
 		// Peephole optimization: if the strip begins with three of
 		// the same vert in a row, as generate_block() often causes,

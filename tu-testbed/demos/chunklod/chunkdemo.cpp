@@ -177,24 +177,6 @@ void	clear()
 	} else {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	}
-
-	// Set up automatic texture-coordinate generation.
-	// Basically we're just stretching the current texture
-	// over the entire model.
-	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	float	p[4] = { 0, 0, 0, 0 };
-	float	slope = 1.0 / 1024;
-	float	intercept = 1.0;
-	p[0] = slope;
-	glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
-	p[0] = 0;
-
-	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	p[2] = slope;
-	glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
-
-	glEnable(GL_TEXTURE_GEN_S);
-	glEnable(GL_TEXTURE_GEN_T);
 }
 
 
@@ -370,7 +352,7 @@ void	process_events()
 			if (key == SDLK_PERIOD) {
 				// Speed up.
 				speed++;
-				if (speed > 10) speed = 10;
+				if (speed > 15) speed = 15;
 				printf( "move speed = %d\n", speed );
 			}
 			if (key == SDLK_COMMA) {
@@ -452,7 +434,7 @@ extern "C" int	main(int argc, char *argv[])
 	SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
 	SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
-	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
+	SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 24 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
 	// Set the video mode.
@@ -494,12 +476,31 @@ extern "C" int	main(int argc, char *argv[])
 	}
 	lod_chunk_tree*	model = new lod_chunk_tree(in);
 
-	// try setting this once and for all...
+	// Enable vertex array, and just leave it on.
 	glEnableClientState(GL_VERTEX_ARRAY);
 
 	view.m_frame_number = 1;
-//	v.m_matrix = ...;
-//	v.m_frustum = ...;
+
+	// Set up automatic texture-coordinate generation.
+	// Basically we're just stretching the current texture
+	// over the entire model.
+	vec3	center, extent;
+	model->get_bounding_box(&center, &extent);
+	float	xsize = extent.get_x() * 2;
+	float	zsize = extent.get_z() * 2;
+
+	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	float	p[4] = { 0, 0, 0, 0 };
+	p[0] = 1.0f / xsize;
+	glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+	p[0] = 0;
+
+	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	p[2] = 1.0f / zsize;
+	glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+
+	glEnable(GL_TEXTURE_GEN_S);
+	glEnable(GL_TEXTURE_GEN_T);
 
 	// Main loop.
 	Uint32	last_ticks = SDL_GetTicks();

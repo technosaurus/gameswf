@@ -39,8 +39,11 @@ public:
 	void	update(const vec3& viewpoint);
 	int	render(const view_state& v, render_options opt);
 
+	void	get_bounding_box(vec3* box_center, vec3* box_extent);
+
 	// Used by our contained chunks.
 	Uint16	compute_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
+
 //data:
 	lod_chunk*	root;
 	int	tree_depth;	// from chunk data.
