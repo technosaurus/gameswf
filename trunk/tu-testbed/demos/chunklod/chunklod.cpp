@@ -176,20 +176,14 @@ struct lod_chunk {
 //data:
 	lod_chunk*	parent;
 	Uint16	lod;	// LOD of this chunk.  high byte never changes; low byte is the morph parameter.
-	bool	enabled;	// true if this node should be rendered
-	bool	tree_enabled;	// true if any descendent is enabled
+	bool	split;	// true if this node should be rendered by descendents.
 
-//	// These are the edges we directly border on.
-//	int	edge_count;
-//	lod_edge**	edges;
 	// Our edges.
 	lod_edge	edge[4];
 
 	int	child_count;
 	lod_chunk**	children;
 
-//	int	neighbor_count;
-//	lod_chunk**	neighbors;
 	union {
 		int	label;
 		lod_chunk*	chunk;
@@ -200,24 +194,18 @@ struct lod_chunk {
 	vec3	box_extent;
 	
 	vertex_info	verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
-//	morph_info	morph_verts;	// extra info for CPU morphing of verts
 
 //methods:
 	// needs a destructor!
 
 	void	clear();
-	void	incremental_clear();
 	void	update(const lod_chunk_tree& c, const vec3& viewpoint);
-	void	enable(const lod_chunk_tree& base, const vec3& viewpoint);
-	void	force_parent_enabled(const lod_chunk_tree& base, const vec3& viewpoint);
+	void	do_split(const lod_chunk_tree& base, const vec3& viewpoint);
 	int	render(const view_state& v, cull::result_info cull_info, render_options opt);
 	int	render_edge(direction dir, render_options opt);
 
 	void	read(SDL_RWops* in, int level, lod_chunk_tree* tree);
 	void	lookup_neighbors(lod_chunk_tree* tree);
-//	void	compute_bounding_box();
-
-//	void	add_edge(lod_edge* e);
 };
 
 
@@ -285,101 +273,74 @@ void	vertex_info::read(SDL_RWops* in)
 
 
 void	lod_chunk::clear()
-// Clears lod_fraction and enabled values throughout our subtree.
-// Do this before doing update().
-{
-	enabled = false;
-	tree_enabled = false;
-
-	for (int i = 0; i < child_count; i++) {
-		children[i]->clear();
-	}
-}
-
-
-void	lod_chunk::incremental_clear()
 // Clears the enabled values throughout the subtree.  If this node is
 // enabled, then the recursion does not continue to the child nodes,
 // since their enabled values should be false.
+//
+// Do this before calling update().
 {
-	tree_enabled = false;
-	if (enabled) {
-		enabled = false;
-	} else {
+	if (split) {
+		split = false;
+
 		// Recurse to children.
 		for (int i = 0; i < child_count; i++) {
-			children[i]->incremental_clear();
+			children[i]->clear();
 		}
 	}
 }
 
 
 void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
-// Computes 'lod' and 'enabled' values for this chunk and its
-// subtree, based on the given camera parameters and the parameters
-// stored in 'base'.  Traverses the tree and forces neighbor
-// chunks to a valid LOD, and updates its contained edges to prevent
-// cracks.
+// Computes 'lod' and split values for this chunk and its subtree,
+// based on the given camera parameters and the parameters stored in
+// 'base'.  Traverses the tree and forces neighbor chunks to a valid
+// LOD, and updates its contained edges to prevent cracks.
 //
 // !!!  For correct results, the tree must have been clear()ed before
 // calling update() !!!
 {
 	Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
 
-	if (child_count == 0 || (tree_enabled == enabled && desired_lod <= (lod | 0x0FF)))
+	if (child_count && desired_lod > (lod | 0x0FF))
 	{
-		// We're good... this chunk can represent its region within the max error tolerance.
-		enable(base, viewpoint);
+		do_split(base, viewpoint);
 
-	} else {
 		// Recurse to children.
 		for (int i = 0; i < child_count; i++) {
 			children[i]->update(base, viewpoint);
 		}
+	} else {
+		// We're good... this chunk can represent its region within the max error tolerance.
 	}
 }
 
 
-void	lod_chunk::force_parent_enabled(const lod_chunk_tree& base, const vec3& viewpoint)
-// Forces our parent chunk to be enabled if it isn't already.
-{
-	if (parent && parent->tree_enabled == false) {
-		parent->enable(base, viewpoint);
-	}
-}
-
-
-void	lod_chunk::enable(const lod_chunk_tree& base, const vec3& viewpoint)
+void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 // Enable this chunk.  Use the given viewpoint to decide what morph
 // level to use.
 {
-	if (enabled == false && tree_enabled == false) {
-		enabled = true;
-		tree_enabled = true;
+	if (split == false) {
+		split = true;
 
-		Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
-		lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
+		// Make sure children have a valid lod value.
+		{for (int i = 0; i < child_count; i++) {
+			lod_chunk*	c = children[i];
+			Uint16	desired_lod = base.compute_lod(c->box_center, c->box_extent, viewpoint);
+			c->lod = iclamp(desired_lod, c->lod & 0xFF00, c->lod | 0x0FF);
+		}}
 
-		// make sure ancestors aren't enabled...
-		for (lod_chunk* p = parent; p; p = p->parent) {
-			if (p->enabled) {
-				p->enabled = false;
-
-				// Make sure descendents are enabled.
-				for (int i = 0; i < p->child_count; i++) {
-					p->children[i]->enable(base, viewpoint);
-				}
-			} else {
-				p->tree_enabled = true;
-			}
+		// make sure ancestors are split...
+		for (lod_chunk* p = parent; p && p->split == false; p = p->parent) {
+			p->do_split(base, viewpoint);
 		}
 
 		// make sure neighbors are subdivided enough.
-		for (int i = 0; i < 4; i++) {
-			if (neighbor[i].chunk) {
-				neighbor[i].chunk->force_parent_enabled(base, viewpoint);
+		{for (int i = 0; i < 4; i++) {
+			lod_chunk*	n = neighbor[i].chunk;
+			if (n && n->parent && n->parent->split == false) {
+				n->parent->do_split(base, viewpoint);
 			}
-		}
+		}}
 	}
 }
 
@@ -442,7 +403,7 @@ static void	morph_indexed_vertices(vec3* verts, const vertex_info& morph_verts, 
 
 int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_options opt)
 // Draws the given lod tree.  Uses the current state stored in the
-// tree w/r/t enabled & LOD level.
+// tree w/r/t split & LOD level.
 //
 // Returns the number of triangles rendered.
 {
@@ -457,7 +418,12 @@ int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_o
 
 	int	triangle_count = 0;
 
-	if (enabled) {
+	if (split) {
+		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
+		for (int i = 0; i < child_count; i++) {
+			triangle_count += children[i]->render(v, cull_info, opt);
+		}
+	} else {
 		if (opt.show_box) {
 			// draw bounding box.
 			glColor3f(0, 1, 0);
@@ -487,14 +453,6 @@ int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_o
 			for (int i = 0; i < 4; i++) {
 				triangle_count += render_edge((direction) i, opt);
 			}
-//			// Render the edges we might be responsible for.
-//			triangle_count += render_edge(EAST, opt);
-//			triangle_count += render_edge(SOUTH, opt);
-		}
-	} else {
-		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
-		for (int i = 0; i < child_count; i++) {
-			triangle_count += children[i]->render(v, cull_info, opt);
 		}
 	}
 
@@ -555,7 +513,7 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 		// No neighbor, so no edge to worry about.
 		return triangle_count;
 	}
-	if (n->enabled) {
+	if (n->split == false && n->parent && n->parent->split == true) {
 		// two matching edges.
 		if (dir == EAST || dir == SOUTH) {
 
@@ -586,7 +544,7 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 			triangle_count += c0 * 2 - 2;
 		}
 
-	} else if (n->tree_enabled) {
+	} else if (n->split) {
 		// we have the low LOD edge; children of our neighbor have the high LOD edges.
 
 		// Find the neighbors we need to mesh with.
@@ -686,8 +644,7 @@ void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 // Read chunk data from the given file and initialize this chunk with it.
 // Recursively loads child chunks for level > 0.
 {
-	enabled = false;
-	tree_enabled = false;
+	split = false;
 
 	// Get this chunk's label, and add it to the table.
 	int	chunk_label = SDL_ReadLE32(in);
@@ -838,7 +795,7 @@ void	lod_chunk_tree::get_bounding_box(vec3* box_center, vec3* box_extent)
 
 void	lod_chunk_tree::set_parameters(float max_pixel_error, float screen_width_pixels, float horizontal_FOV_degrees)
 // Initializes some internal parameters which are used to compute
-// which chunks are enabled during update().
+// which chunks are split during update().
 //
 // Given a screen width and horizontal field of view, the
 // lod_chunk_tree when properly updated guarantees a screen-space
