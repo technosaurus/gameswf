@@ -310,7 +310,7 @@ namespace gameswf
 	};
 
 
-	struct as_object_interface
+	struct as_object_interface : virtual public ref_counted
 	{
 		virtual ~as_object_interface() {}
 
