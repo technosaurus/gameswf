@@ -979,7 +979,14 @@ namespace swf
 		Uint16	character_id = in->read_u16();
 
 		in->align();
+		IF_DEBUG(printf("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
+
+		//
+		// Read the image data.
+		//
+		
 		ch->m_image = image::read_swf_jpeg2(in->m_input);
 
 		IF_DEBUG(printf("id = %d, bm = 0x%X, width = %d, height = %d, pitch = %d\n",

@@ -32,7 +32,7 @@ $(LIB_OUT): $(OBJS)
 	$(AR) $(LIB_OUT_FLAG)$@ $^
 
 
-$(EXE_OUT): test_swf.$(OBJ_EXT) $(LIB_OUT)
+$(EXE_OUT): test_swf.$(OBJ_EXT) $(LIB_OUT) $(ENGINE)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 

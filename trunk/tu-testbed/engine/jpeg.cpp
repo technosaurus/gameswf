@@ -74,6 +74,21 @@ namespace jpeg
 				bytes_read = 2;
 			}
 
+			// Hack to work around SWF bug: sometimes data
+			// starts with FFD9FFD8, when it should be
+			// FFD8FFD9!
+			if (src->m_start_of_file && bytes_read >= 4)
+			{
+				if (src->m_buffer[0] == 0xFF
+				    && src->m_buffer[1] == 0xD9 
+				    && src->m_buffer[2] == 0xFF
+				    && src->m_buffer[3] == 0xD8)
+				{
+					src->m_buffer[1] = 0xD8;
+					src->m_buffer[3] = 0xD9;
+				}
+			}
+
 			// Expose buffer state to clients.
 			src->m_pub.next_input_byte = src->m_buffer;
 			src->m_pub.bytes_in_buffer = bytes_read;
