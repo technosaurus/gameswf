@@ -297,11 +297,92 @@ void	set_to_array(array<float>* path, int array_size, const float array_data[])
 }
 
 
+static bool	is_all_whitespace(const char* str)
+// Return true if the given string is all whitespace.
+{
+	while (int c = *str++)
+	{
+		if (c == '\n'
+		    || c == ' '
+		    || c == '\r'
+		    || c == '\t')
+		{
+			// Whitespace.
+		}
+		else
+		{
+			// Non-whitespace.
+			return false;
+		}
+	}
 
-int	main()
+	return true;
+}
+
+
+int	main(int argc, const char** argv)
 {
 	array<float>	result;
 	array<array<float> >	paths;
+
+	if (argc > 1)
+	{
+		if (strcmp(argv[1], "-i") == 0)
+		{
+			// Take input from stdin.
+			bool	start_new_path = true;
+			for (;;)
+			{
+				char	line[80];
+				if (fgets(line, 80, stdin) == NULL)
+				{
+					// EOF.
+					break;
+				}
+
+				if (is_all_whitespace(line))
+				{
+					// Start a new path on next valid input line.
+					start_new_path = true;
+				}
+				else
+				{
+					float	x = 0, y = 0;
+					int	coord_count = sscanf(line, "%f, %f", &x, &y);
+					if (coord_count != 2)
+					{
+						fprintf(stderr, "invalid input format.\n");
+						exit(1);
+					}
+
+					if (start_new_path)
+					{
+						start_new_path = false;
+						paths.resize(paths.size() + 1);
+					}
+
+					// Add another point to the current path.
+					paths.back().push_back(x);
+					paths.back().push_back(y);
+				}
+			}
+
+			// Triangulate.
+			triangulate::compute(&result, paths.size(), &paths[0]);
+
+			assert((result.size() % 6) == 0);
+
+			// Dump.
+			output_diagram(result, paths);
+			
+			return 0;
+		}
+		else
+		{
+			fprintf(stderr, "unknown arg.  -i means take loop input from stdin.\n");
+			exit(1);
+		}
+	}
 
 #if 0
 	// Make a square.
@@ -347,17 +428,17 @@ int	main()
 	offset_path(&paths.back(), 1200, 300);
 #endif
 
-#if 1
+#if 0
 	// Lots of circles.
 
 	// @@ set this to 100 for a good performance torture test of bridge-finding.
-	const int	TEST_DIM = 40;	// 20, 30
+	const int	TEST_DIM = 30;	// 20, 30
 	{for (int x = 0; x < TEST_DIM; x++)
 	{
 		for (int y = 0; y < TEST_DIM; y++)
 		{
 			paths.resize(paths.size() + 1);
-			make_star(&paths.back(), 9, 9, 10);	// (... 9, 9, 10)
+			make_star(&paths.back(), 10, 10, 10);	// (... 9, 9, 10)
 			offset_path(&paths.back(), float(x) * 20, float(y) * 20);
 		}
 	}}
@@ -370,7 +451,7 @@ int	main()
 
 #if 0
 	// Lots of concentric circles.
-	static int	CIRCLE_COUNT = 30;	// CIRCLE_COUNT >= 10 is a good performance test.
+	static int	CIRCLE_COUNT = 10;	// CIRCLE_COUNT >= 10 is a good performance test.
 	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
 	{
 		paths.resize(paths.size() + 1);
@@ -416,11 +497,8 @@ int	main()
 #endif
 
 #if 0
-	// @@ test & fix this, hits recovery mode
-
-	// This one has a tricky triple dupe vertex that puts us into
-	// the recovery mode.  See "Case A" in recovery_process() in
-	// triangulate_imp.h.
+	// This one has tricky coincident verts, good test case for
+	// some code paths.
 
 	// Stars with touching verts on different paths.
 	paths.resize(paths.size() + 1);
@@ -530,7 +608,7 @@ int	main()
 	// Set radians (3rd arg) to ~100 for a good performance test
 	// of poly clipping.
 	paths.resize(paths.size() + 1);
-	make_spiral(&paths.back(), 10, 120);
+	make_spiral(&paths.back(), 10, 20);
 
 	// 2004-12-31 radians = 120, time = 11.15 s
 	// 2004-12-31 radians = 120, time =  0.072 s (with grid index, and localized ear clipping)
@@ -543,6 +621,31 @@ int	main()
 	make_star(&paths.back(), 100, 1000, 256);
 #endif
 
+
+#if 1
+	// Holes wanting to join to main loop at the same point.
+	paths.resize(paths.size() + 1);
+	static const float	P[] =
+	{
+		0, 0,	3, 0,	0, 3
+	};
+	set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
+	
+	paths.resize(paths.size() + 1);
+	static const float	P1[] =
+	{
+		0.5f, 0.7f,	1.0f, 0.8f,	1.5f, 0.7f
+	};
+	set_to_array(&paths.back(), sizeof(P1)/sizeof(P1[0]), P1);
+	
+	paths.resize(paths.size() + 1);
+	static const float	P2[] =
+	{
+		0.5f, 0.5f,	1.0f, 0.6f,	1.5f, 0.5f
+	};
+	set_to_array(&paths.back(), sizeof(P2)/sizeof(P2[0]), P2);
+#endif
+
 	// Triangulate.
 	triangulate::compute(&result, paths.size(), &paths[0]);
 
@@ -550,6 +653,8 @@ int	main()
 
 	// Dump.
 	output_diagram(result, paths);
+
+	return 0;
 }
 
 
