@@ -119,6 +119,8 @@ namespace gameswf
 		movie*	original_target = env->get_target();
 		UNUSED(original_target);		// Avoid warnings.
 
+		array<const char*>	dictionary;
+
 		for (int pc = 0; pc < m_buffer.size(); )
 		{
 			int	action_id = m_buffer[pc];
@@ -166,7 +168,13 @@ namespace gameswf
 				case 0x14:	// string length
 				case 0x15:	// substring
 				case 0x18:	// int
+					break;
 				case 0x1C:	// get variable
+				{
+					as_value	varname = env->pop();
+					env->push(env->get_variable(varname.to_tu_string()));
+					break;
+				}
 				case 0x1D:	// set variable
 				{
 					as_value	val = env->pop();
@@ -188,10 +196,25 @@ namespace gameswf
 				case 0x31:	// mb length
 				case 0x32:	// ord
 				case 0x33:	// chr
+					break;
+
 				case 0x34:	// get timer
+					// Push milliseconds since we started playing.
+					env->push(floorf(env->m_target->get_timer() * 1000.0f));
+					break;
+
 				case 0x35:	// mb substring
 				case 0x37:	// mb chr
 					break;
+
+				case 0x3C:	// set local
+				{
+					as_value	value = env->pop();
+					as_value	varname = env->pop();
+					env->set_local(varname.to_tu_string(), value);
+					break;
+				}
+
 				}
 				pc++;	// advance to next action.
 			}
@@ -218,6 +241,36 @@ namespace gameswf
 				case 0x83:	// get url
 				{
 					// @@ TODO should call back into client app, probably...
+					break;
+				}
+
+				case 0x88:	// declare dictionary
+				{
+					int	i = pc;
+					int	count = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					i += 2;
+
+					dictionary.resize(count);
+
+					// Index the strings.
+					for (int ct = 0; ct < count; ct++)
+					{
+						// Point into the current action buffer.
+						dictionary[ct] = (const char*) &m_buffer[3 + i];
+
+						while (m_buffer[3 + i])
+						{
+							// safety check.
+							if (i >= length)
+							{
+								log_error("error: action buffer dict length exceeded>\n");
+								break;
+							}
+
+							i++;
+						}
+						i++;
+					}
 					break;
 				}
 
@@ -251,8 +304,8 @@ namespace gameswf
 
 				case 0x96:	// push_data
 				{
-					int i = 0;
-					while (i < length)
+					int i = pc;
+					while (i - pc < length)
 					{
 						int	type = m_buffer[3 + i];
 						i++;
@@ -263,7 +316,6 @@ namespace gameswf
 							i += strlen(str) + 1;
 							env->push(str);
 						}
-
 						else if (type == 1)
 						{
 							// float (little-endian)
@@ -339,15 +391,29 @@ namespace gameswf
 						{
 							int	id = m_buffer[3 + i];
 							i++;
-//							log_msg("dict_lookup[%d]\n", id);
-							env->push(0);	// @@ TODO
+							if (id < dictionary.size())
+							{
+								env->push(dictionary[id]);
+							}
+							else
+							{
+								log_error("error: dict_lookup(%d) is out of bounds!\n", id);
+								env->push(0);
+							}
 						}
 						else if (type == 9)
 						{
-							int	id = m_buffer[3 + i] | (m_buffer[3 + i + 1] << 8);
+							int	id = m_buffer[3 + i] | (m_buffer[4 + i] << 8);
 							i += 2;
-//							log_msg("dict_lookup_lg[%d]\n", id);
-							env->push(0);	// @@ TODO
+							if (id < dictionary.size())
+							{
+								env->push(dictionary[id]);
+							}
+							else
+							{
+								log_error("error: dict_lookup(%d) is out of bounds!\n", id);
+								env->push(0);
+							}
 						}
 					}
 					
@@ -377,27 +443,56 @@ namespace gameswf
 	const char*	as_value::to_string() const
 	// Conversion to string.
 	{
-		if (m_type == STRING) { return m_string_value; }
+		return to_tu_string().c_str();
+	}
+
+
+	const tu_string&	as_value::to_tu_string() const
+	// Conversion to const tu_string&.
+	{
+		if (m_type == STRING) { /* don't need to do anything */ }
 		else if (m_type == NUMBER)
 		{
 			char buffer[50];
 			snprintf(buffer, 50, "%g", m_number_value);
 			m_string_value = buffer;
-			return &m_string_value[0];
 		}
 		else if (m_type == UNDEFINED)
 		{
-			return "<undefined>";
+			m_string_value = "<undefined>";
+		}
+		else
+		{
+			m_string_value = "<error -- invalid type>";
+			assert(0);
 		}
 		
-		assert(0);
-		return "<unknown type>";
+		return m_string_value;
 	}
 
 
 	//
 	// as_environment
 	//
+
+
+	as_value	as_environment::get_variable(const tu_string& varname) const
+	// Return the value of the given var, if it's defined.
+	{
+		// Check locals.
+		as_value	local = NULL;
+		if (m_local_variables.get(varname, &local))
+		{
+			// Get existing.
+			return local;
+		}
+
+		// @@ TODO, ask m_target, globals, etc...
+
+		// Fallback.
+		// @@ log error?
+		return as_value(as_value::UNDEFINED);
+	}
 
 
 	void	as_environment::set_variable(const char* path, const as_value& val)
@@ -413,6 +508,13 @@ namespace gameswf
 		{
 			IF_VERBOSE_ACTION(log_msg("set_variable(%s, \"%s\") failed\n", path, val.to_string()));
 		}
+	}
+
+
+	void	as_environment::set_local(const tu_string& varname, const as_value& val)
+	// Set/initialize the value of the local variable.
+	{
+		m_local_variables.set(varname, val);
 	}
 
 

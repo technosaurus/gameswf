@@ -161,7 +161,6 @@ namespace gameswf
 		hash<int, bitmap_character*>	m_bitmap_characters;
 		hash<int, sound_sample*>	m_sound_samples;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
-		//array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 		display_list m_display_list; // active characters, ordered by depth.
 		array<action_buffer*>	m_action_list;	// pending actions.
 		string_hash<int>	m_named_frames;
@@ -183,6 +182,7 @@ namespace gameswf
 		int	m_next_frame;
 		int	m_total_display_count;
 		float	m_time_remainder;
+		float	m_timer;
 		bool	m_update_frame;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 		int	m_mouse_capture_id;
@@ -204,6 +204,7 @@ namespace gameswf
 			m_next_frame(0),
 			m_total_display_count(0),
 			m_time_remainder(0.0f),
+			m_timer(0.0f),
 			m_update_frame(true),
 			m_mouse_x(0),
 			m_mouse_y(0),
@@ -510,7 +511,10 @@ namespace gameswf
 			m_play_state = s;
 		}
 		play_state	get_play_state() const { return m_play_state; }
-		
+
+		float	get_timer() const { return m_timer; }
+
+
 		void	restart()
 		{
 		//	m_display_list.clear();
@@ -525,6 +529,8 @@ namespace gameswf
 
 		void	advance(float delta_time)
 		{
+			m_timer += delta_time;
+
 			m_time_remainder += delta_time;
 			const float	frame_time = 1.0f / m_frame_rate;
 
