@@ -17,7 +17,7 @@
 #include "gameswf.h"
 #include "base/container.h"
 
-#include <SDL/SDL_mixer.h>
+#include <SDL_mixer.h>
 
 #include <mad.h>
 #ifdef _MSC_VER
