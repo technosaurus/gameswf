@@ -1588,6 +1588,7 @@ namespace gameswf
 			sub_di.m_matrix.concatenate(m_matrix);
 
 			matrix	base_matrix = sub_di.m_matrix;
+			float	base_matrix_max_scale = base_matrix.get_max_scale();
 
 			float	scale = 1.0f;
 			float	x = 0.0f;
@@ -1600,6 +1601,14 @@ namespace gameswf
 				if (rec.m_style.m_font == NULL) continue;
 
 				scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+				float	text_screen_height = base_matrix_max_scale
+					* scale
+					* 1024.0f
+					/ 20.0f
+					* get_pixel_scale();
+				bool	use_shape_glyphs =
+					text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
+
 				if (rec.m_style.m_has_x_offset)
 				{
 					x = rec.m_style.m_x_offset;
@@ -1620,8 +1629,7 @@ namespace gameswf
 					sub_di.m_matrix.concatenate_translation( x, y );
 					sub_di.m_matrix.concatenate_scale( scale );
 
-
-					if (tg)
+					if (tg && ! use_shape_glyphs)
 					{
 						// Draw the glyph using the cached texture-map info.
 						gameswf::render::push_apply_matrix(sub_di.m_matrix);

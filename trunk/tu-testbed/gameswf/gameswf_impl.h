@@ -198,6 +198,11 @@ namespace gameswf
 
 		// For drawing a textured glyph w/ current render transforms.
 		void	draw_glyph(const texture_glyph* g, rgba color);
+
+		// Return the pixel height of text, such that the
+		// texture glyphs are sampled 1-to-1 texels-to-pixels.
+		// I.e. the height of the glyph box, in texels.
+		float	get_nominal_texture_glyph_height();
 	}
 
 

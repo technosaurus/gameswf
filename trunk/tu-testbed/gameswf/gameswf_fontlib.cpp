@@ -87,24 +87,24 @@ namespace fontlib
 			return;
 		}
 
-		//xxxxxx debug hack -- dump image data to a file
-		static int	s_seq = 0;
-		char buffer[100];
-		sprintf(buffer, "dump%02d.ppm", s_seq);
-		s_seq++;
-		FILE*	fp = fopen(buffer, "wb");
-		if (fp)
-		{
-			fprintf(fp, "P6\n%d %d\n255\n", GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE);
-			for (int i = 0; i < GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE; i++)
-			{
-				fputc(s_current_cache_image[i], fp);
-				fputc(s_current_cache_image[i], fp);
-				fputc(s_current_cache_image[i], fp);
-			}
-			fclose(fp);
-		}
-		//xxxxxx
+// 		//xxxxxx debug hack -- dump image data to a file
+// 		static int	s_seq = 0;
+// 		char buffer[100];
+// 		sprintf(buffer, "dump%02d.ppm", s_seq);
+// 		s_seq++;
+// 		FILE*	fp = fopen(buffer, "wb");
+// 		if (fp)
+// 		{
+// 			fprintf(fp, "P6\n%d %d\n255\n", GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE);
+// 			for (int i = 0; i < GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE; i++)
+// 			{
+// 				fputc(s_current_cache_image[i], fp);
+// 				fputc(s_current_cache_image[i], fp);
+// 				fputc(s_current_cache_image[i], fp);
+// 			}
+// 			fclose(fp);
+// 		}
+// 		//xxxxxx
 
 		if (s_saving)		// HACK!!!
 		{
@@ -480,6 +480,12 @@ namespace fontlib
 		}
 		
 		delete [] sorted_array;
+	}
+
+
+	float	get_nominal_texture_glyph_height()
+	{
+		return 1024.0f / s_rendering_box * GLYPH_FINAL_SIZE;
 	}
 
 
