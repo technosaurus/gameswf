@@ -53,6 +53,13 @@ static void	log_callback(bool error, const char* message)
 }
 
 
+static tu_file*	file_opener(const char* url)
+// Callback function.  This opens files for the gameswf library.
+{
+	return new tu_file(url, "rb");
+}
+
+
 #undef main	// SDL wackiness
 int	main(int argc, char *argv[])
 {
@@ -134,6 +141,7 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	gameswf::register_file_opener_callback(file_opener);
 	gameswf::set_log_callback(log_callback);
 	gameswf::set_pixel_scale(s_scale);
 	gameswf::set_antialiased(s_antialiased);

@@ -100,9 +100,10 @@ namespace gameswf
 		}
 
 		int	translate_nbits = in->read_uint(5);
-		if (translate_nbits > 0) {
-			m_[0][2] = in->read_sint(translate_nbits);
-			m_[1][2] = in->read_sint(translate_nbits);
+		if (translate_nbits > 0)
+		{
+			m_[0][2] = (float) in->read_sint(translate_nbits);
+			m_[1][2] = (float) in->read_sint(translate_nbits);
 		}
 
 		IF_DEBUG(log_msg("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
@@ -284,9 +285,9 @@ namespace gameswf
 			for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
 		}
 		if (has_add) {
-			m_[0][1] = in->read_sint(nbits);
-			m_[1][1] = in->read_sint(nbits);
-			m_[2][1] = in->read_sint(nbits);
+			m_[0][1] = (float) in->read_sint(nbits);
+			m_[1][1] = (float) in->read_sint(nbits);
+			m_[2][1] = (float) in->read_sint(nbits);
 			m_[3][1] = 1;
 		}
 		else {
@@ -312,10 +313,10 @@ namespace gameswf
 			for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
 		}
 		if (has_add) {
-			m_[0][1] = in->read_sint(nbits);
-			m_[1][1] = in->read_sint(nbits);
-			m_[2][1] = in->read_sint(nbits);
-			m_[3][1] = in->read_sint(nbits);
+			m_[0][1] = (float) in->read_sint(nbits);
+			m_[1][1] = (float) in->read_sint(nbits);
+			m_[2][1] = (float) in->read_sint(nbits);
+			m_[3][1] = (float) in->read_sint(nbits);
 		}
 		else {
 			for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
@@ -375,10 +376,10 @@ namespace gameswf
 	{
 		in->align();
 		int	nbits = in->read_uint(5);
-		m_x_min = in->read_sint(nbits);
-		m_x_max = in->read_sint(nbits);
-		m_y_min = in->read_sint(nbits);
-		m_y_max = in->read_sint(nbits);
+		m_x_min = (float) in->read_sint(nbits);
+		m_x_max = (float) in->read_sint(nbits);
+		m_y_min = (float) in->read_sint(nbits);
+		m_y_max = (float) in->read_sint(nbits);
 
 //		IF_DEBUG(log_msg("rect::read() nbits = %d\n", nbits));
 	}

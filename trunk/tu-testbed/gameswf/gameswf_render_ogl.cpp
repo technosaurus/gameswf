@@ -129,7 +129,7 @@ namespace render
 
 			image::rgb*	rescaled = image::create_rgb(w, h);
 			image::resample(rescaled, 0, 0, w - 1, h - 1,
-					im, 0, 0, im->m_width, im->m_height);
+					im, 0, 0, (float) im->m_width, (float) im->m_height);
 		
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 //			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_image->m_width, m_image->m_height, GL_RGB, GL_UNSIGNED_BYTE, m_image->m_data);
@@ -169,7 +169,7 @@ namespace render
 			{
 				image::rgba*	rescaled = image::create_rgba(w, h);
 				image::resample(rescaled, 0, 0, w - 1, h - 1,
-						im, 0, 0, im->m_width, im->m_height);
+						im, 0, 0, (float) im->m_width, (float) im->m_height);
 		
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
 
