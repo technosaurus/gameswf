@@ -75,6 +75,7 @@ namespace fontlib
 		if (pixel_size < MIN_SIZE)
 		{
 			log_error("set_nominal_glyph_pixel_size(%d) too small, clamping to %d\n",
+				  pixel_size,
 				  MIN_SIZE);
 			pixel_size = MIN_SIZE;
 		}
