@@ -235,9 +235,29 @@ int	main(int argc, char* argv[])
 		float	y0 = float(row) / tile_dim * j_in->get_height();
 		float	y1 = float(row + 1) / tile_dim * j_in->get_height();
 
+//		scroll_strip(strip, j_in, &strip_top, y1);
+
+		int	lines_to_read = imin(int(y1), j_in->get_height()) - (strip_top + strip->h);
+		if (lines_to_read > 0)
+		{
+			// Copy existing lines up...
+			int	lines_to_keep = strip->h - lines_to_read;
+			{for (int i = 0; i < lines_to_keep; i++) {
+				memcpy(image::scanline(strip, i), image::scanline(strip, i + lines_to_keep), strip->w * 3);
+			}}
+
+			// Read new lines
+			{for (int i = lines_to_keep; i < strip->h; i++) {
+				j_in->read_scanline(image::scanline(strip, i));
+			}}
+
+			strip_top += lines_to_read;
+		}
+
+#if 0
 		// read in enough more scanlines so the strip covers [y0, y1].
 		// @@ this implementation is very inefficient!
-		while (strip_top + strip->h -1 <= int(y1)
+		while (strip_top + strip->h - 1 <= int(y1)
 		       && strip_top + strip->h < j_in->get_height())
 		{
 			// Scroll up.
@@ -250,6 +270,7 @@ int	main(int argc, char* argv[])
 			j_in->read_scanline(image::scanline(strip, next_scanline - strip_top));
 			next_scanline++;
 		}
+#endif // 0
 
 		for (int col = 0; col < tile_dim; col++) {
 			float	x0 = float(col) / tile_dim * j_in->get_width();
