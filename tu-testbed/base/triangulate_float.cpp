@@ -16,7 +16,7 @@ namespace triangulate
 	void	compute(
 		array<float>* result,	// trilist
 		int path_count,
-		const array<float> **paths)
+		const array<float> paths[])
 	{
 		compute_triangulation<float>(result, path_count, paths);
 	}
@@ -29,7 +29,10 @@ namespace triangulate
 // Compile test with something like:
 //
 // gcc -o triangulate_test -I../ triangulate_float.cpp tu_random.cpp -DTEST_TRIANGULATE_FLOAT -lstdc++
-
+//
+// or
+//
+// cl -Od -Zi -o triangulate_test.exe -I../ triangulate_float.cpp tu_random.cpp -DTEST_TRIANGULATE_FLOAT
 
 int	main()
 {
@@ -47,7 +50,7 @@ int	main()
 	paths[0].push_back(0);
 	paths[0].push_back(1);
 
-	triangulate::compute(&result, 0, (const array<float>**) &(paths[0]));
+	triangulate::compute(&result, paths.size(), &paths[0]);
 
 	for (int i = 0; i < result.size(); i++)
 	{

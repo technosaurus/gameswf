@@ -385,10 +385,10 @@ void	poly<coord_t>::append_vert(array<vert_t>* sorted_verts, int vert_index)
 
 	m_vertex_count++;
 
-	if (vert_index == -1)
+	if (m_loop == -1)
 	{
 		// First vert.
-		assert(m_vertex_count == 0);
+		assert(m_vertex_count == 1);
 		m_loop = vert_index;
 		poly_vert<coord_t>*	v = &(*sorted_verts)[vert_index];
 		v->m_next = vert_index;
@@ -540,18 +540,19 @@ void	poly<coord_t>::emit_and_remove_ear(
 	assert(is_valid(*sorted_verts));
 	assert(m_vertex_count >= 3);
 
-	// emit the vertex list for the triangle.
-	result->push_back((*sorted_verts)[v0].m_v.x);
-	result->push_back((*sorted_verts)[v0].m_v.y);
-	result->push_back((*sorted_verts)[v1].m_v.x);
-	result->push_back((*sorted_verts)[v1].m_v.y);
-	result->push_back((*sorted_verts)[v2].m_v.x);
-	result->push_back((*sorted_verts)[v2].m_v.y);
-
-	// Unlink v1.
 	poly_vert<coord_t>*	pv0 = &(*sorted_verts)[v0];
 	poly_vert<coord_t>*	pv1 = &(*sorted_verts)[v1];
 	poly_vert<coord_t>*	pv2 = &(*sorted_verts)[v2];
+
+	// emit the vertex list for the triangle.
+	result->push_back(pv0->m_v.x);
+	result->push_back(pv0->m_v.y);
+	result->push_back(pv1->m_v.x);
+	result->push_back(pv1->m_v.y);
+	result->push_back(pv2->m_v.x);
+	result->push_back(pv2->m_v.y);
+
+	// Unlink v1.
 
 	assert(pv0->m_poly_owner == this);
 	assert(pv1->m_poly_owner == this);
@@ -594,6 +595,8 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 		vi = v_next;
 	}
 	while (vi != first_vert);
+
+	return false;
 }
 
 
@@ -610,7 +613,7 @@ bool	poly<coord_t>::triangle_contains_reflex_vertex(const array<vert_t>& sorted_
 
 	// Find index bounds for the triangle, for culling.
 	int	min_index = v0;
-	int	max_index = v2;
+	int	max_index = v0;
 	if (v1 < min_index)
 	{
 		min_index = v1;
@@ -627,6 +630,9 @@ bool	poly<coord_t>::triangle_contains_reflex_vertex(const array<vert_t>& sorted_
 	{
 		max_index = v2;
 	}
+	assert(min_index < max_index);
+	assert(min_index <= v0 && min_index <= v1 && min_index <= v2);
+	assert(max_index >= v0 && max_index >= v1 && max_index >= v2);
 
 	int	first_vert = m_loop;
 	int	vi = first_vert;
@@ -692,7 +698,7 @@ struct poly_env
 	array<poly_vert<coord_t> >	m_sorted_verts;
 	array<poly<coord_t>*>	m_polys;
 
-	void	init(int path_count, const array<coord_t> **paths);
+	void	init(int path_count, const array<coord_t> paths[]);
 	void	join_paths_into_one_poly();
 
 	~poly_env()
@@ -712,7 +718,7 @@ private:
 
 
 template<class coord_t>
-void	poly_env<coord_t>::init(int path_count, const array<coord_t> **paths)
+void	poly_env<coord_t>::init(int path_count, const array<coord_t> paths[])
 // Initialize our state, from the given set of paths.  Sort vertices
 // and component polys.
 {
@@ -724,17 +730,17 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> **paths)
 	int	vert_count = 0;
 	for (int i = 0; i < path_count; i++)
 	{
-		vert_count += (*paths)[i].size();
+		vert_count += paths[i].size();
 	}
 
 	// Collect the input verts and create polys for the input paths.
-	m_sorted_verts.reserve(vert_count);
+	m_sorted_verts.reserve(vert_count + (path_count - 1) * 2);	// verts, plus two duped verts for each path, for bridges
 	m_polys.reserve(path_count);
 
 	for (int i = 0; i < path_count; i++)
 	{
 		// Create a poly for this path.
-		const array<coord_t>&	path = ((*paths)[i]);
+		const array<coord_t>&	path = (paths[i]);
 
 		if (path.size() < 3)
 		{
@@ -760,6 +766,8 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> **paths)
 
 	// Sort the vertices.
 	qsort(&m_sorted_verts[0], m_sorted_verts.size(), sizeof(m_sorted_verts[0]), compare_vertices<coord_t>);
+	assert(m_sorted_verts.size() <= 1
+	       || compare_vertices<coord_t>((void*) &m_sorted_verts[0], (void*) &m_sorted_verts[1]) == -1);	// check order
 
 	// Remap the vertex indices, so that the polys and the
 	// sorted_verts have the correct, sorted, indices.  We can
@@ -773,13 +781,14 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> **paths)
 		int	original_index = m_sorted_verts[new_index].m_my_index;
 		vert_remap[original_index] = new_index;
 	}
-	for (int i = 0, n = m_sorted_verts.size(); i < n; i++)
+	{for (int i = 0, n = m_sorted_verts.size(); i < n; i++)
 	{
 		m_sorted_verts[i].remap(vert_remap);
-	}
+	}}
 	{for (int i = 0, n = m_polys.size(); i < n; i++)
 	{
 		m_polys[i]->remap(vert_remap);
+		assert(m_polys[i]->is_valid(m_sorted_verts));
 	}}
 }
 
@@ -797,6 +806,8 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 	{
 		// Sort polys in order of each poly's leftmost vert.
 		qsort(&m_polys[0], m_polys.size(), sizeof(m_polys[0]), compare_polys_by_leftmost_vert<coord_t>);
+		assert(m_polys.size() <= 1
+		       || compare_polys_by_leftmost_vert<coord_t>((void*) &m_polys[0], (void*) &m_polys[1]) == -1);
 
 		// assume that the enclosing boundary is the leftmost
 		// path; this is true if the regions are valid and
@@ -954,9 +965,15 @@ template<class coord_t>
 static void compute_triangulation(
 	array<coord_t>* result,
 	int path_count,
-	const array<coord_t> **paths)
+	const array<coord_t> paths[])
 // Compute triangulation.
 {
+	if (path_count <= 0)
+	{
+		// Empty paths --> no triangles to emit.
+		return;
+	}
+
 	poly_env<coord_t>	penv;
 
 	penv.init(path_count, paths);
@@ -1075,7 +1092,7 @@ void	recovery_process(
 	
 	// Case 1: two edges, e[i-1] and e[i+1], intersect; we insert
 	// the overlapping ears into Q and resume.
-	for (int vi = sorted_verts[P->m_loop].m_next; vi != P->m_loop; vi = sorted_verts[vi].m_next)
+	{for (int vi = sorted_verts[P->m_loop].m_next; vi != P->m_loop; vi = sorted_verts[vi].m_next)
 	{
 		int	ev0 = vi;
 		int	ev1 = sorted_verts[ev0].m_next;
@@ -1089,7 +1106,7 @@ void	recovery_process(
 			// Resume regular processing.
 			return;
 		}
-	}
+	}}
 
 // Because I'm lazy, I'm skipping this test for now...
 #if 0
@@ -1104,7 +1121,7 @@ void	recovery_process(
 	// 3. the winding number of the polygon w/r/t the midpoint of
 	// the diagonal is one
 	//
-	for (int vi = verts[0, end])
+	{for (int vi = verts[0, end])
 	{
 		for (int vj = verts[vi->m_next, end])
 		{
@@ -1118,7 +1135,7 @@ void	recovery_process(
 				return;
 			}
 		}
-	}
+	}}
 #endif // 0
 
 	// Case 3: P has any convex vert
