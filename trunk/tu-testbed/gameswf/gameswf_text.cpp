@@ -132,8 +132,13 @@ namespace gameswf
 				* 1024.0f
 				/ 20.0f
 				* pixel_scale;
-			bool	use_shape_glyphs =
-				text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
+
+#ifdef GAMESWF_ALWAYS_USE_TEXTURES_FOR_TEXT_WHEN_POSSIBLE
+			const bool	use_glyph_textures = true;
+#else
+			bool	use_glyph_textures =
+				text_screen_height <= fontlib::get_nominal_texture_glyph_height() * 1.0f;
+#endif
 
 			if (rec.m_style.m_has_x_offset)
 			{
@@ -157,7 +162,7 @@ namespace gameswf
 				mat.concatenate_translation(x, y);
 				mat.concatenate_scale(scale);
 
-				if (tg && ! use_shape_glyphs)
+				if (tg && use_glyph_textures)
 				{
 					fontlib::draw_glyph(mat, tg, transformed_color);
 				}
@@ -166,7 +171,10 @@ namespace gameswf
 					shape_character_def*	glyph = fnt->get_glyph(index);
 
 					// Draw the character using the filled outline.
-					if (glyph) glyph->display(mat, cx, pixel_scale, s_dummy_style, s_dummy_line_style);
+					if (glyph)
+					{
+						glyph->display(mat, cx, pixel_scale, s_dummy_style, s_dummy_line_style);
+					}
 				}
 
 				x += rec.m_glyphs[j].m_glyph_advance;

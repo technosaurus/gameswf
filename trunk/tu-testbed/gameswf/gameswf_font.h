@@ -26,7 +26,7 @@ namespace gameswf
 
 	
 	// Struct for holding (cached) textured glyph info.
-	struct texture_glyph
+	struct texture_glyph : public ref_counted
 	{
 		smart_ptr<bitmap_info>	m_bitmap_info;
 		rect	m_uv_bounds;
@@ -73,6 +73,8 @@ namespace gameswf
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
 
+		void	wipe_texture_glyphs();
+
 		const char*	get_name() const { return m_name; }
 		movie_definition_sub*	get_owning_movie() const { return m_owning_movie; }
 
@@ -89,7 +91,7 @@ namespace gameswf
 		void	read_code_table(stream* in);
 
 		array< smart_ptr<shape_character_def> >	m_glyphs;
-		array<const texture_glyph*>	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
+		array< smart_ptr<const texture_glyph> >	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
 		char*	m_name;
 		movie_definition_sub*	m_owning_movie;
 		bool	m_has_layout;

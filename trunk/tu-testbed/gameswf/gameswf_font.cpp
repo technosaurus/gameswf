@@ -36,12 +36,6 @@ namespace gameswf
 	{
 		m_glyphs.resize(0);
 
-		// Delete the texture glyphs.
-		{for (int i = 0, n = m_texture_glyphs.size(); i < n; i++)
-		{
-			delete m_texture_glyphs[i];
-		}}
-
 		// Delete the name string.
 		if (m_name)
 		{
@@ -72,7 +66,7 @@ namespace gameswf
 			return NULL;
 		}
 
-		return m_texture_glyphs[glyph_index];
+		return m_texture_glyphs[glyph_index].get_ptr();
 	}
 
 
@@ -84,13 +78,20 @@ namespace gameswf
 		assert(glyph_index >= 0 && glyph_index < m_glyphs.size());
 
 		// Expand m_texture_glyphs as necessary.
-		while (glyph_index >= m_texture_glyphs.size())
+		if (glyph_index >= m_texture_glyphs.size())
 		{
-			m_texture_glyphs.push_back(NULL);
+			m_texture_glyphs.resize(glyph_index + 1);
 		}
 
 		assert(m_texture_glyphs[glyph_index] == NULL);
 		m_texture_glyphs[glyph_index] = glyph;
+	}
+
+
+	void	font::wipe_texture_glyphs()
+	// Delete all our texture glyphs
+	{
+		m_texture_glyphs.resize(0);
 	}
 
 

@@ -63,6 +63,9 @@ namespace gameswf
 		virtual void	add_sound_sample(int character_id, sound_sample* sam) = 0;
 		virtual void	export_resource(const tu_string& symbol, resource* res) = 0;
 		virtual void	add_import(const char* source_url, int id, const char* symbol_name) = 0;
+		virtual void	add_bitmap_info(bitmap_info* ch) = 0;
+
+		virtual create_bitmaps_flag	get_create_bitmaps() const = 0;
 	};
 
 

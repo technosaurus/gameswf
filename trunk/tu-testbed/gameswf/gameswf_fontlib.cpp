@@ -27,7 +27,6 @@ namespace gameswf
 namespace fontlib
 {
 	array< smart_ptr<font> >	s_fonts;
-	array< smart_ptr<bitmap_info> >	s_bitmaps_used;	// keep these so we can delete them during shutdown.
 
 	// Size (in TWIPS) of the box that the glyph should
 	// stay within.
@@ -39,7 +38,15 @@ namespace fontlib
 	// considerably smaller.  This is also the parameter that
 	// controls the tradeoff between texture RAM usage and
 	// sharpness of large text.
-	static const int	GLYPH_FINAL_SIZE = 96;
+	static const int	GLYPH_FINAL_SIZE =
+// You can override the rendered glyph size in compatibility_include.h,
+// to trade off memory vs. niceness of large glyphs
+#ifndef GAMESWF_FONT_GLYPH_FINAL_SIZE
+	96
+#else
+	GAMESWF_FONT_GLYPH_FINAL_SIZE
+#endif
+	;
 
 	static const int	OVERSAMPLE_BITS = 2;
 	static const int	OVERSAMPLE_FACTOR = (1 << OVERSAMPLE_BITS);
@@ -64,7 +71,10 @@ namespace fontlib
 	static matrix	s_render_matrix;
 
 	static Uint8*	s_current_cache_image = NULL;
-	static smart_ptr<bitmap_info>	s_current_bitmap_info;
+
+	// for setting the bitmap_info after they're packed.
+	static array< smart_ptr<texture_glyph> >	s_pending_glyphs;
+
 
 	// Integer-bounded 2D rectangle.
 	struct recti
@@ -141,12 +151,9 @@ namespace fontlib
 
 	static void	ensure_cache_image_available()
 	{
-		if (s_current_bitmap_info == NULL)
+		if (s_pending_glyphs.size() == 0)
 		{
 			// Set up a cache.
-			s_current_bitmap_info = render::create_bitmap_info_blank();
-			s_bitmaps_used.push_back(s_current_bitmap_info);
-
 			if (s_current_cache_image == NULL)
 			{
 				s_current_cache_image = new Uint8[GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE];
@@ -161,9 +168,9 @@ namespace fontlib
 	}
 
 
-	void	finish_current_texture()
+	void	finish_current_texture(movie_definition_sub* owner)
 	{
-		if (s_current_bitmap_info == NULL)
+		if (s_pending_glyphs.size() == 0)
 		{
 			return;
 		}
@@ -201,15 +208,27 @@ namespace fontlib
 			// save bitmap contents
 			s_file->write_bytes(s_current_cache_image, w*h);
 		}
+
+		smart_ptr<bitmap_info>	bi;
+		if (owner->get_create_bitmaps() == DO_NOT_LOAD_BITMAPS)
+		{
+			bi = render::create_bitmap_info_empty();
+		}
 		else
 		{
-			render::set_alpha_image(s_current_bitmap_info.get_ptr(),
-						GLYPH_CACHE_TEXTURE_SIZE,
-						GLYPH_CACHE_TEXTURE_SIZE,
-						s_current_cache_image);
+			bi = render::create_bitmap_info_alpha(
+				GLYPH_CACHE_TEXTURE_SIZE,
+				GLYPH_CACHE_TEXTURE_SIZE,
+				s_current_cache_image);
 		}
+		owner->add_bitmap_info(bi.get_ptr());
 
-		s_current_bitmap_info = NULL;
+		// Fixup the glyphs.
+		for (int i = 0, n = s_pending_glyphs.size(); i < n; i++)
+		{
+			s_pending_glyphs[i]->set_bitmap_info(bi.get_ptr());
+		}
+		s_pending_glyphs.clear();
 	}
 
 
@@ -559,8 +578,11 @@ namespace fontlib
 					identical_image->m_glyph_index);
 				if (identical_tg)
 				{
-					texture_glyph*	tg = new texture_glyph;
-					*tg = *identical_tg;
+					smart_ptr<texture_glyph>	tg = new texture_glyph;
+					s_pending_glyphs.push_back(tg);
+
+					// copy the bitmap & uv data from identical_tg
+					*(tg.get_ptr()) = *identical_tg;
 
 					// Use our own offset, in case it's different.
 					tg->m_uv_origin.m_x = identical_tg->m_uv_bounds.m_x_min
@@ -568,7 +590,7 @@ namespace fontlib
 					tg->m_uv_origin.m_y = identical_tg->m_uv_bounds.m_y_min
 						+ rgi.m_offset_y / GLYPH_CACHE_TEXTURE_SIZE;
 
-					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg);
+					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg.get_ptr());
 
 					return true;
 				}
@@ -580,7 +602,7 @@ namespace fontlib
 	}
 
 
-	void	pack_and_assign_glyphs(array<rendered_glyph_info>* glyph_info)
+	void	pack_and_assign_glyphs(array<rendered_glyph_info>* glyph_info, movie_definition_sub* owner)
 	// Pack the given glyphs into textures, and push the
 	// texture_glyph info into the source fonts.
 	//
@@ -664,8 +686,8 @@ namespace fontlib
 					}
 
 					// Fill out the glyph info.
-					texture_glyph*	tg = new texture_glyph;
-					tg->set_bitmap_info(s_current_bitmap_info.get_ptr());
+					smart_ptr<texture_glyph>	tg = new texture_glyph;
+					s_pending_glyphs.push_back(tg);	// set the bitmap info later
 					tg->m_uv_origin.m_x = (pack_x + rgi.m_offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
 					tg->m_uv_origin.m_y = (pack_y + rgi.m_offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
 					tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
@@ -673,7 +695,7 @@ namespace fontlib
 					tg->m_uv_bounds.m_y_min = float(pack_y) / (GLYPH_CACHE_TEXTURE_SIZE);
 					tg->m_uv_bounds.m_y_max = float(pack_y + height) / (GLYPH_CACHE_TEXTURE_SIZE);
 
-					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg);
+					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg.get_ptr());
 
 					// Add this into the hash so it can possibly be reused.
 					if (image_hash.get(rgi.m_image_hash, NULL) == false)
@@ -694,7 +716,7 @@ namespace fontlib
 					if (index >= n)
 					{
 						// None of the glyphs will fit.  Finish off this texture.
-						finish_current_texture();
+						finish_current_texture(owner);
 
 						// And go around again.
 						index = i;
@@ -708,8 +730,7 @@ namespace fontlib
 	}
 
 
-
-	static void	generate_font_bitmaps(array<rendered_glyph_info>* glyph_info, font* f)
+	static void	generate_font_bitmaps(array<rendered_glyph_info>* glyph_info, font* f, movie_definition_sub* owner)
 	// Render images for each of the font's glyphs, and put the
 	// info about them in the given array.
 	{
@@ -753,12 +774,22 @@ namespace fontlib
 	}
 
 
+	static void	wipe_font_textures(const array<font*>& fonts)
+	{
+		for (int i = 0, n = fonts.size(); i < n; i++)
+		{
+			font*	f = fonts[i];
+			f->wipe_texture_glyphs();
+		}
+	}
+
+
 	//
 	// Public interface
 	//
 
 
-	void	generate_font_bitmaps(const array<font*>& fonts)
+	void	generate_font_bitmaps(const array<font*>& fonts, movie_definition_sub* owner)
 	// Build cached textures from glyph outlines.
 	{
 		assert(s_render_buffer == NULL);
@@ -768,11 +799,11 @@ namespace fontlib
 		array<rendered_glyph_info>	glyph_info;
 		for (int i = 0; i < fonts.size(); i++)
 		{
-			generate_font_bitmaps(&glyph_info, fonts[i]);
+			generate_font_bitmaps(&glyph_info, fonts[i], owner);
 		}
 
 		// Pack all the rendered glyphs and push the info into their fonts.
-		pack_and_assign_glyphs(&glyph_info);
+		pack_and_assign_glyphs(&glyph_info, owner);
 
 		// Delete glyph images.
 		{for (int i = 0, n = glyph_info.size(); i < n; i++)
@@ -782,7 +813,7 @@ namespace fontlib
 		glyph_info.clear();
 
 		// Finish off any pending cache texture.
-		finish_current_texture();
+		finish_current_texture(owner);
 
 		// Clean up our buffers.
 		if (s_current_cache_image)
@@ -801,31 +832,32 @@ namespace fontlib
 	}
 
 
-	void	output_cached_data(tu_file* out, const array<font*>& fonts)
-	// Save cached font data, includeing glyph textures, to a
+	void	output_cached_data(tu_file* out, const array<font*>& fonts, movie_definition_sub* owner)
+	// Save cached font data, including glyph textures, to a
 	// stream.  This is used by the movie caching code.
 	{
 		assert(out);
 
 		// skip number of bitmaps.
-		int	bitmaps_used_base = s_bitmaps_used.size();
+		int	bitmaps_used_base = owner->get_bitmap_info_count();
 		int	size_pos = out->get_position();
-		printf("size_pos = %d\n", size_pos);//xxxxxxxx
+		//log_msg("size_pos = %d\n", size_pos);//xxxxxxxx
 		out->write_le16(0);
 		
 		// save bitmaps
 		s_file = out;
 		s_saving = true;		// HACK!!!
-		generate_font_bitmaps(fonts);
+		wipe_font_textures(fonts);	// HACK -- eliminate the font textures, so generate_font_bitmaps() regen's them.
+		generate_font_bitmaps(fonts, owner);
 		s_saving = false;
 		s_file = NULL;
 		
-		printf("wrote bitmaps, pos = %d\n", out->get_position());//xxxxxxxx
+		//log_msg("wrote bitmaps, pos = %d\n", out->get_position());//xxxxxxxx
 
 		// save number of bitmaps.
 		out->set_position(size_pos);
-		out->write_le16(s_bitmaps_used.size() - bitmaps_used_base);
-		printf("bitmap count = %d\n", s_bitmaps_used.size() - bitmaps_used_base);//xxxxxx
+		out->write_le16(owner->get_bitmap_info_count() - bitmaps_used_base);
+		//log_msg("bitmap count = %d\n", s_bitmaps_used.size() - bitmaps_used_base);//xxxxxx
 		out->go_to_end();
 		
 		// save number of fonts.
@@ -844,23 +876,24 @@ namespace fontlib
 			// save glyphs:
 			for (int g = 0; g < ng; g++)
 			{
-				const texture_glyph * tg = fonts[f]->get_texture_glyph(g);
+				const texture_glyph* tg = fonts[f]->get_texture_glyph(g);
 				if (tg != NULL)
 				{
 					// save glyph index.
 					out->write_le32(g);
 
 					// save bitmap index.
+					// @@ blech
 					int bi;
-					for (bi = bitmaps_used_base; bi < s_bitmaps_used.size(); bi++)
+					for (bi = bitmaps_used_base; bi < owner->get_bitmap_info_count(); bi++)
 					{
-						if (tg->m_bitmap_info == s_bitmaps_used[bi])
+						if (tg->m_bitmap_info == owner->get_bitmap_info(bi))
 						{
 							break;
 						}
 					}
 					assert(bi >= bitmaps_used_base
-					       && bi < s_bitmaps_used.size());
+					       && bi < owner->get_bitmap_info_count());
 
 					out->write_le16((Uint16) (bi - bitmaps_used_base));
 
@@ -887,10 +920,14 @@ namespace fontlib
 		{
 			log_error("gameswf::fontlib::save_cached_font_data(): problem writing to output stream!");
 		}
+
+		// @@ NOTE: should drop any bitmap_info's in owner
+		// that have a ref count == 1, since they're orphaned
+		// now... or else use weak_ptr's in owner?
 	}
 	
 
-	void	input_cached_data(tu_file* in, const array<font*>& fonts)
+	void	input_cached_data(tu_file* in, const array<font*>& fonts, movie_definition_sub* owner)
 	// Load a stream containing previously-saved font glyph textures.
 	{
 		// load number of bitmaps.
@@ -899,35 +936,43 @@ namespace fontlib
 		int pw = 0, ph = 0;
 
 		// load bitmaps.
-		int	bitmaps_used_base = s_bitmaps_used.size();
+		int	bitmaps_used_base = owner->get_bitmap_info_count();
 		for (int b = 0; b < nb; b++)
 		{
-			s_current_bitmap_info = render::create_bitmap_info_blank();
-			s_bitmaps_used.push_back(s_current_bitmap_info);
-
-			// save bitmap size
+			// load bitmap size
 			int w = in->read_le16();
 			int h = in->read_le16();
 
-			if (s_current_cache_image == NULL || w != pw || h != ph)
+			smart_ptr<bitmap_info>	bi;
+			if (owner->get_create_bitmaps() == DO_NOT_LOAD_BITMAPS)
 			{
-				delete [] s_current_cache_image;
-				s_current_cache_image = new Uint8[w*h];
-				pw = w;
-				ph = h;
+				// Skip image data bytes.
+				in->set_position(in->get_position() + w * h);
+
+				// Make a placeholder bitmap.
+				bi = render::create_bitmap_info_empty();
 			}
+			else
+			{
+				// load bitmap contents
+				if (s_current_cache_image == NULL || w != pw || h != ph)
+				{
+					delete [] s_current_cache_image;
+					s_current_cache_image = new Uint8[w*h];
+					pw = w;
+					ph = h;
+				}
 
-			// load bitmap contents
-			in->read_bytes(s_current_cache_image, w * h);
+				in->read_bytes(s_current_cache_image, w * h);
 
-			render::set_alpha_image(
-				s_current_bitmap_info.get_ptr(),
-				w, h,
-				s_current_cache_image);
+				bi = render::create_bitmap_info_alpha(
+					w,
+					h,
+					s_current_cache_image);
+			}
+			owner->add_bitmap_info(bi.get_ptr());
+			assert(bi->get_ref_count() == 2);	// one ref for bi, one for the owner.
 		}
-
-		// reset pointers.
-		s_current_bitmap_info = NULL;
 
 		delete [] s_current_cache_image;
 		s_current_cache_image = NULL;
@@ -965,11 +1010,11 @@ namespace fontlib
 				// load glyph index.
 				int glyph_index = in->read_le32();
 
-				texture_glyph * tg = new texture_glyph;
+				smart_ptr<texture_glyph> tg = new texture_glyph;
 
 				// load bitmap index
 				int bi = in->read_le16();
-				if (bi + bitmaps_used_base >= s_bitmaps_used.size())
+				if (bi + bitmaps_used_base >= owner->get_bitmap_info_count())
 				{
 					// Bad data; give up.
 					log_error("error: invalid bitmap index %d in cached font data\n", bi);
@@ -977,7 +1022,7 @@ namespace fontlib
 					goto error_exit;
 				}
 
-				tg->set_bitmap_info(s_bitmaps_used[bi + bitmaps_used_base].get_ptr());
+				tg->set_bitmap_info(owner->get_bitmap_info(bi + bitmaps_used_base));
 
 				// load glyph bounds and origin.
 				tg->m_uv_bounds.m_x_min = in->read_float32();
@@ -987,7 +1032,7 @@ namespace fontlib
 				tg->m_uv_origin.m_x = in->read_float32();
 				tg->m_uv_origin.m_y = in->read_float32();
 
-				fonts[f]->add_texture_glyph(glyph_index, tg);
+				fonts[f]->add_texture_glyph(glyph_index, tg.get_ptr());
 			}
 
 			// Load cached shape data.
@@ -1004,7 +1049,6 @@ namespace fontlib
 	// Release all the fonts we know about.
 	{
 		s_fonts.clear();
-		s_bitmaps_used.clear();
 	}
 
 
@@ -1075,7 +1119,7 @@ namespace fontlib
 	// the given color.
 	{
 		assert(tg);
-//		assert(tg->m_bitmap_info);
+		assert(tg->m_bitmap_info != NULL);
 
 		// @@ worth it to precompute these bounds?
 
