@@ -165,24 +165,26 @@ namespace fontlib
 			return;
 		}
 
-// 		//xxxxxx debug hack -- dump image data to a file
-// 		static int	s_seq = 0;
-// 		char buffer[100];
-// 		sprintf(buffer, "dump%02d.ppm", s_seq);
-// 		s_seq++;
-// 		FILE*	fp = fopen(buffer, "wb");
-// 		if (fp)
-// 		{
-// 			fprintf(fp, "P6\n%d %d\n255\n", GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE);
-// 			for (int i = 0; i < GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE; i++)
-// 			{
-// 				fputc(s_current_cache_image[i], fp);
-// 				fputc(s_current_cache_image[i], fp);
-// 				fputc(s_current_cache_image[i], fp);
-// 			}
-// 			fclose(fp);
-// 		}
-// 		//xxxxxx
+#if 0
+		//xxxxxx debug hack -- dump image data to a file
+		static int	s_seq = 0;
+		char buffer[100];
+		sprintf(buffer, "dump%02d.ppm", s_seq);
+		s_seq++;
+		FILE*	fp = fopen(buffer, "wb");
+		if (fp)
+		{
+			fprintf(fp, "P6\n%d %d\n255\n", GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE);
+			for (int i = 0; i < GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE; i++)
+			{
+				fputc(s_current_cache_image[i], fp);
+				fputc(s_current_cache_image[i], fp);
+				fputc(s_current_cache_image[i], fp);
+			}
+			fclose(fp);
+		}
+		//xxxxxx
+#endif // 0
 
 		if (s_saving)		// HACK!!!
 		{
@@ -692,7 +694,7 @@ namespace fontlib
 					}
 					else
 					{
-						sorted_array[n].size = w > h ? w : h;
+						sorted_array[n].size = w + h;
 						sorted_array[n].i = i;
 						n++;
 					}
@@ -725,15 +727,15 @@ namespace fontlib
 	//
 
 
-	void	generate_font_bitmaps()
+	void	generate_font_bitmaps(const array<font*>& fonts)
 	// Build cached textures from glyph outlines.
 	{
 		assert(s_render_buffer == NULL);
 		s_render_buffer = new Uint8[GLYPH_RENDER_SIZE * GLYPH_RENDER_SIZE];
 
-		for (int i = 0; i < s_fonts.size(); i++)
+		for (int i = 0; i < fonts.size(); i++)
 		{
-			generate_font_bitmaps(s_fonts[i]);
+			generate_font_bitmaps(fonts[i]);
 		}
 
 		// Finish off any pending cache texture.
@@ -745,9 +747,6 @@ namespace fontlib
 			delete [] s_current_cache_image;
 			s_current_cache_image = NULL;
 
-//			assert(s_coverage_image);
-//			delete [] s_coverage_image;
-//			s_coverage_image = NULL;
 			s_covered_rects.resize(0);
 			s_anchor_points.resize(0);
 		}
@@ -759,200 +758,201 @@ namespace fontlib
 	}
 
 
-	void	save_cached_font_data(tu_file* out)
-	// Save cached glyph textures to a stream.  This might be used by an
-	// offline tool, which loads in all movies, calls
-	// generate_font_bitmaps(), and then calls save_cached_font_data()
-	// so that a run-time app can call load_cached_font_data().
+	void	output_cached_data(tu_file* out, const array<font*>& fonts)
+	// Save cached font data, includeing glyph textures, to a
+	// stream.  This is used by the movie caching code.
 	{
-		s_file = out;
+		assert(out);
 
-		// save header identifier.
-		s_file->write_bytes( "gswf", 4 );
-
-		// save version number.
-		s_file->write_le16( 0x0100 );
-			
 		// skip number of bitmaps.
-		s_file->write_le16( 0 );
-			
+		int	bitmaps_used_base = s_bitmaps_used.size();
+		int	size_pos = out->get_position();
+		printf("size_pos = %d\n", size_pos);//xxxxxxxx
+		out->write_le16(0);
+		
 		// save bitmaps
+		s_file = out;
 		s_saving = true;		// HACK!!!
-		generate_font_bitmaps();
+		generate_font_bitmaps(fonts);
 		s_saving = false;
-			
+		s_file = NULL;
+		
+		printf("wrote bitmaps, pos = %d\n", out->get_position());//xxxxxxxx
+
 		// save number of bitmaps.
-		int restore = s_file->get_position();
-		s_file->set_position(6);
-		s_file->write_le16( s_bitmaps_used.size() );
-		s_file->set_position(restore);
-			
+		out->set_position(size_pos);
+		out->write_le16(s_bitmaps_used.size() - bitmaps_used_base);
+		printf("bitmap count = %d\n", s_bitmaps_used.size() - bitmaps_used_base);//xxxxxx
+		out->go_to_end();
+		
 		// save number of fonts.
-		s_file->write_le16( s_fonts.size() );
-			
+		out->write_le16(fonts.size());
+		
 		// for each font:
-		for (int f=0; f < s_fonts.size(); f++)
+		for (int f = 0; f < fonts.size(); f++)
 		{
 			// skip number of glyphs.
-			int ng = s_fonts[f]->get_glyph_count();
-			int ng_position = s_file->get_position();
-			s_file->write_le32(0);
+			int ng = fonts[f]->get_glyph_count();
+			int ng_position = out->get_position();
+			out->write_le32(0);
 				
 			int n = 0;
 				
 			// save glyphs:
-			for (int g=0; g<ng; g++)
+			for (int g = 0; g < ng; g++)
 			{
-				const texture_glyph * tg = s_fonts[f]->get_texture_glyph(g);
-				if (tg!=NULL)
+				const texture_glyph * tg = fonts[f]->get_texture_glyph(g);
+				if (tg != NULL)
 				{
 					// save glyph index.
-					s_file->write_le32(g);
+					out->write_le32(g);
 
 					// save bitmap index.
 					int bi;
-					for (bi=0; bi<s_bitmaps_used.size(); bi++)
+					for (bi = bitmaps_used_base; bi < s_bitmaps_used.size(); bi++)
 					{
-						if (tg->m_bitmap_info==s_bitmaps_used[bi])
+						if (tg->m_bitmap_info == s_bitmaps_used[bi])
 						{
 							break;
 						}
 					}
-					assert(bi!=s_bitmaps_used.size());
-					s_file->write_le16((Uint16)bi);
+					assert(bi >= bitmaps_used_base
+					       && bi < s_bitmaps_used.size());
+
+					out->write_le16((Uint16) (bi - bitmaps_used_base));
 
 					// save rect, position.
-					s_file->write_le32((Uint32&)tg->m_uv_bounds.m_x_min);
-					s_file->write_le32((Uint32&)tg->m_uv_bounds.m_y_min);
-					s_file->write_le32((Uint32&)tg->m_uv_bounds.m_x_max);
-					s_file->write_le32((Uint32&)tg->m_uv_bounds.m_y_max);
-					s_file->write_le32((Uint32&)tg->m_uv_origin.m_x);
-					s_file->write_le32((Uint32&)tg->m_uv_origin.m_y);
+					out->write_float32(tg->m_uv_bounds.m_x_min);
+					out->write_float32(tg->m_uv_bounds.m_y_min);
+					out->write_float32(tg->m_uv_bounds.m_x_max);
+					out->write_float32(tg->m_uv_bounds.m_y_max);
+					out->write_float32(tg->m_uv_origin.m_x);
+					out->write_float32(tg->m_uv_origin.m_y);
 					n++;
 				}
 			}
-				
-			restore = s_file->get_position();
-			s_file->set_position(ng_position);
-			s_file->write_le32(n);
-			s_file->set_position(restore);
+
+			out->set_position(ng_position);
+			out->write_le32(n);
+			out->go_to_end();
+
+			// Output cached shape data.
+			fonts[f]->output_cached_data(out);
 		}
 
-		if (s_file->get_error() != TU_FILE_NO_ERROR)
+		if (out->get_error() != TU_FILE_NO_ERROR)
 		{
 			log_error("gameswf::fontlib::save_cached_font_data(): problem writing to output stream!");
 		}
-
-		s_file = NULL;
 	}
 	
 
-	bool	load_cached_font_data(tu_file* in)
+	void	input_cached_data(tu_file* in, const array<font*>& fonts)
 	// Load a stream containing previously-saved font glyph textures.
 	{
-		bool result = false;
-//		s_file = new tu_file(filename, "rb");
-		s_file = in;
-		assert(s_file);
+		// load number of bitmaps.
+		int nb = in->read_le16();
 
+		int pw = 0, ph = 0;
+
+		// load bitmaps.
+		int	bitmaps_used_base = s_bitmaps_used.size();
+		for (int b = 0; b < nb; b++)
 		{
-			// load header identifier.
-			char head[4];
-			s_file->read_bytes( head, 4 );
-			if (head[0] != 'g' || head[1] != 's' || head[2] != 'w' || head[3] != 'f')
+			s_current_bitmap_info = render::create_bitmap_info_blank();
+			s_bitmaps_used.push_back(s_current_bitmap_info);
+
+			// save bitmap size
+			int w = in->read_le16();
+			int h = in->read_le16();
+
+			if (s_current_cache_image == NULL || w != pw || h != ph)
 			{
-				// Header doesn't look like a gswf cache file.
-				assert(0);
-				goto error_exit;
+				delete [] s_current_cache_image;
+				s_current_cache_image = new Uint8[w*h];
+				pw = w;
+				ph = h;
 			}
 
-			// load version number.
-			Uint16 version	= s_file->read_le16();
-			if (version != 0x0100)
-			{
-				// Bad version number.
-				assert(0);
-				goto error_exit;
-			}
+			// load bitmap contents
+			in->read_bytes(s_current_cache_image, w * h);
 
-			// load number of bitmaps.
-			int nb = s_file->read_le16();
-			//s_bitmaps_used.resize(nb);
-
-			int pw=0, ph=0;
-
-			// load bitmaps.
-			for (int b=0; b<nb; b++)
-			{
-				s_current_bitmap_info = render::create_bitmap_info_blank();
-				s_bitmaps_used.push_back(s_current_bitmap_info);
-
-				// save bitmap size
-				int w = s_file->read_le16();
-				int h = s_file->read_le16();
-
-				if (s_current_cache_image == NULL || w!=pw || h!=ph)
-				{
-					delete [] s_current_cache_image;
-					s_current_cache_image = new Uint8[w*h];
-					pw = w;
-					ph = h;
-				}
-
-				// save bitmap contents
-				s_file->read_bytes(s_current_cache_image, w*h);
-
-				render::set_alpha_image(
-					s_current_bitmap_info,
-					w, h,
-					s_current_cache_image);
-			}
-
-			// reset pointers.
-			s_current_bitmap_info = NULL;
-			delete [] s_current_cache_image;
-			s_current_cache_image = NULL;
-
-			// load number of fonts.
-			int nf = s_file->read_le16();
-			assert(s_fonts.size()==nf);		// FIXME: doesn't have to.
-
-			// for each font:
-			for (int f=0; f<nf; f++)
-			{
-				// load number of glyphs.
-				int ng = s_file->read_le32();
-
-				// load glyphs:
-				for (int g=0; g<ng; g++)
-				{
-					// load glyph index.
-					int glyph_index = s_file->read_le32();
-
-					texture_glyph * tg = new texture_glyph;
-
-					// load bitmap index
-					int bi = s_file->read_le16();
-					assert(bi<s_bitmaps_used.size());
-					tg->m_bitmap_info = s_bitmaps_used[bi];
-
-					// load glyph bounds and origin.
-					(Uint32&)tg->m_uv_bounds.m_x_min = s_file->read_le32();
-					(Uint32&)tg->m_uv_bounds.m_y_min = s_file->read_le32();
-					(Uint32&)tg->m_uv_bounds.m_x_max = s_file->read_le32();
-					(Uint32&)tg->m_uv_bounds.m_y_max = s_file->read_le32();
-					(Uint32&)tg->m_uv_origin.m_x = s_file->read_le32();
-					(Uint32&)tg->m_uv_origin.m_y = s_file->read_le32();
-
-					s_fonts[f]->add_texture_glyph(glyph_index, tg);
-				}
-			}
-			result = true;
+			render::set_alpha_image(
+				s_current_bitmap_info,
+				w, h,
+				s_current_cache_image);
 		}
 
+		// reset pointers.
+		s_current_bitmap_info = NULL;
+		delete [] s_current_cache_image;
+		s_current_cache_image = NULL;
+
+		// load number of fonts.
+		int nf = in->read_le16();
+		if (nf != fonts.size())
+		{
+			// Font counts must match!
+			log_error("error: mismatched font count (read %d, expected %d) in cached font data\n", nf, fonts.size());
+			in->go_to_end();
+			goto error_exit;
+		}
+
+		// for each font:
+		{for (int f = 0; f < nf; f++)
+		{
+			if (in->get_error() != TU_FILE_NO_ERROR)
+			{
+				log_error("error reading cache file (fonts); skipping\n");
+				return;
+			}
+			if (in->get_eof())
+			{
+				log_error("unexpected eof reading cache file (fonts); skipping\n");
+				return;
+			}
+
+			// load number of texture glyphs.
+			int ng = in->read_le32();
+
+			// load glyphs:
+			for (int g=0; g<ng; g++)
+			{
+				// load glyph index.
+				int glyph_index = in->read_le32();
+
+				texture_glyph * tg = new texture_glyph;
+
+				// load bitmap index
+				int bi = in->read_le16();
+				if (bi + bitmaps_used_base >= s_bitmaps_used.size())
+				{
+					// Bad data; give up.
+					log_error("error: invalid bitmap index %d in cached font data\n", bi);
+					in->go_to_end();
+					goto error_exit;
+				}
+
+				tg->m_bitmap_info = s_bitmaps_used[bi + bitmaps_used_base];
+
+				// load glyph bounds and origin.
+				tg->m_uv_bounds.m_x_min = in->read_float32();
+				tg->m_uv_bounds.m_y_min = in->read_float32();
+				tg->m_uv_bounds.m_x_max = in->read_float32();
+				tg->m_uv_bounds.m_y_max = in->read_float32();
+				tg->m_uv_origin.m_x = in->read_float32();
+				tg->m_uv_origin.m_y = in->read_float32();
+
+				fonts[f]->add_texture_glyph(glyph_index, tg);
+			}
+
+			// Load cached shape data.
+			fonts[f]->input_cached_data(in);
+		}}
+
 	error_exit:
-		s_file = NULL;
-		return result;
+		;
+
 	}
 
 
@@ -1021,7 +1021,7 @@ namespace fontlib
 	// the given color.
 	{
 		assert(tg);
-		assert(tg->m_bitmap_info);
+//		assert(tg->m_bitmap_info);
 
 		// @@ worth it to precompute these bounds?
 

@@ -31,6 +31,9 @@ namespace gameswf
 	struct movie_interface
 	{
 		virtual ~movie_interface() {}
+
+		// If you use create_movie_with_cache(), you don't need to call this.
+		virtual void	generate_font_bitmaps() = 0;
 		
 		virtual int	get_width() = 0;
 		virtual int	get_height() = 0;
@@ -75,6 +78,20 @@ namespace gameswf
 		virtual void	output_cached_data(tu_file* out) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
 	};
+
+	// Try to grab movie info from the header of the given .swf
+	// file.
+	//
+	// Sets *version to 0 if info can't be extracted.
+	//
+	// You can pass NULL for any entries you're not interested in.
+	void	get_movie_info(
+		const char* filename,
+		int* version,
+		int* width,
+		int* height,
+		float* frames_per_second,
+		int* frame_count);
 	
 	// Create a gameswf::movie_interface from the given input
 	// file name.  DOES NOT look for ".gsc" cache files, so
@@ -151,18 +168,6 @@ namespace gameswf
 	struct font;
 	namespace fontlib
 	{
-		// Builds cached glyph textures from shape info.
-		void	generate_font_bitmaps();
-		
-		// Save cached glyph textures to a stream.  This might be used by an
-		// offline tool, which loads in all movies, calls
-		// generate_font_bitmaps(), and then calls save_cached_font_data()
-		// so that a run-time app can call load_cached_font_data().
-		void	save_cached_font_data(tu_file* out);
-		
-		// Load a stream containing previously-saved font glyph textures.
-		bool	load_cached_font_data(tu_file* in);
-		
 		// For accessing the fonts in the library.
 		int	get_font_count();
 		font*	get_font(int index);
@@ -172,9 +177,9 @@ namespace gameswf
 		// @@ also need to add color controls (or just set the diffuse color
 		// in the API?), perhaps matrix xform, and maybe spacing, etc.
 		//
-		//		// For direct text rendering from the host app.
+		// // For direct text rendering from the host app.
 		void	draw_string(const font* f, float x, float y, float size, const char* text);
-		//		void	draw_string(const font* f, float x, float y, float size, const wchar* text);	// wide-char version
+		// void	draw_string(const font* f, float x, float y, float size, const wchar* text);	// wide-char version
 	}
 	
 	

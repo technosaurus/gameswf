@@ -33,6 +33,8 @@ namespace gameswf
 
 	struct movie : public movie_interface
 	{
+		virtual void	generate_font_bitmaps() {}
+
 		virtual void	export_resource(const tu_string& symbol, resource* res) {}
 		virtual resource*	get_exported_resource(const tu_string& symbol)
 		{

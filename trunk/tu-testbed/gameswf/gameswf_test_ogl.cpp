@@ -36,9 +36,9 @@ void	print_usage()
 		"  -h          Print this info.\n"
 		"  -s <factor> Scale the movie up/down by the specified factor\n"
 		"  -a          Turn antialiasing on/off.  (obsolete)\n"
-		"  -c          Build a cache file (for prerendering fonts)\n"
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
+		"  -vp         Be verbose about parsing the movie\n"
 		"\n"
 		"keys:\n"
 		"  q or ESC    Quit/Exit\n"
@@ -58,7 +58,7 @@ void	print_usage()
 
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
-static bool	s_cache = false;
+//static bool	s_cache = false;
 static bool	s_verbose = false;
 static bool	s_background = true;
 
@@ -154,11 +154,11 @@ int	main(int argc, char *argv[])
 					exit(1);
 				}
 			}
-			else if (argv[arg][1] == 'c')
-			{
-				// Build cache file.
-				s_cache = true;
-			}
+// 			else if (argv[arg][1] == 'c')
+// 			{
+// 				// Build cache file.
+// 				s_cache = true;
+// 			}
 			else if (argv[arg][1] == 'v')
 			{
 				// Be verbose; i.e. print log messages to stdout.
@@ -200,9 +200,16 @@ int	main(int argc, char *argv[])
 	gameswf::render_handler*	render = create_render_handler_ogl();
 	gameswf::set_render_handler(render); 
 
-	// Load the movie.
-	gameswf::movie_interface*	m = gameswf::create_movie_with_cache(infile);
+	// Get info about the width & height of the movie.
+	int	movie_version = 0, movie_width = 0, movie_height = 0;
+	gameswf::get_movie_info(infile, &movie_version, &movie_width, &movie_height, NULL, NULL);
+	if (movie_version == 0)
+	{
+		fprintf(stderr, "error: can't get info about %s\n", infile);
+		exit(1);
+	}
 
+#if 0
 	tu_string	cache_name(infile);
 	cache_name += ".cache";
 
@@ -221,6 +228,7 @@ int	main(int argc, char *argv[])
 		delete cache_out;
 		exit(0);
 	}
+#endif // 0
 	
 	// Initialize the SDL subsystems we're using.
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM*/))
@@ -238,8 +246,8 @@ int	main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
 
-	int	width = int(m->get_width() * s_scale);
-	int	height = int(m->get_height() * s_scale);
+	int	width = int(movie_width * s_scale);
+	int	height = int(movie_height * s_scale);
 
 	// Set the video mode.
 	if (SDL_SetVideoMode(width, height, 16 /* 32 */, SDL_OPENGL) == 0)
@@ -250,6 +258,7 @@ int	main(int argc, char *argv[])
 
 	ogl::open();
 
+#if 0
 	// Try to open cached font textures
 	{
 		bool	loaded_cached_data = false;
@@ -268,6 +277,7 @@ int	main(int argc, char *argv[])
 			gameswf::fontlib::generate_font_bitmaps();
 		}
 	}
+#endif // 0
 
 	// Turn on alpha blending.
 	glEnable(GL_BLEND);
@@ -282,6 +292,14 @@ int	main(int argc, char *argv[])
 	glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	// Load the actual movie.
+	gameswf::movie_interface*	m = gameswf::create_movie_with_cache(infile);
+	if (m == NULL)
+	{
+		fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
+		exit(1);
+	}
 
 	// Mouse state.
 	int	mouse_x = 0;

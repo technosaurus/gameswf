@@ -27,22 +27,28 @@ namespace gameswf
 
 	namespace render
 	{
+		struct bogus_bi : public bitmap_info
+		{
+			void	set_alpha_image(int width, int height, Uint8* data) {}
+		};
+
+
 		bitmap_info*	create_bitmap_info(image::rgb* im)
 		{
 			if (s_render_handler) return s_render_handler->create_bitmap_info(im);
-			else return NULL;
+			else return new bogus_bi;
 		}
 
 		bitmap_info*	create_bitmap_info(image::rgba* im)
 		{
 			if (s_render_handler) return s_render_handler->create_bitmap_info(im);
-			else return NULL;
+			else return new bogus_bi;
 		}
 
 		bitmap_info*	create_bitmap_info_blank()
 		{
 			if (s_render_handler) return s_render_handler->create_bitmap_info_blank();
-			else return NULL;
+			else return new bogus_bi;
 		}
 
 		void	set_alpha_image(bitmap_info* bi, int w, int h, Uint8* data)
