@@ -1,6 +1,17 @@
 # make configuration for the tu-testbed engine library
 
 
+# If you haven't set TU_TESTBED_COMPILER, then take a guess at its value
+# based on the OSTYPE env variable.
+ifndef TU_TESTBED_COMPILER
+	ifeq ($(findstring linux,$(OSTYPE)), linux)
+		TU_TESTBED_COMPILER = gcc
+	else
+		TU_TESTBED_COMPILER = msvc
+	endif
+endif
+
+
 ifneq ($(TU_TESTBED_COMPILER), gcc)
 
 # MSVC
@@ -16,17 +27,18 @@ LIBS := opengl32.lib glu32.lib SDL_image.lib SDL.lib gdi32.lib oldnames.lib $(SD
 CFLAGS := $(CFLAGS) /MD -GX -DWIN32=1
 LDFLAGS := /link /NODEFAULTLIB:libc.lib /INCREMENTAL:NO
 
-ifdef DEBUG
-	# debug flags
-	CC_DEBUG_FLAGS := /Zi -Od
-	LDFLAGS := /Zi $(LDFLAGS) /DEBUG /DEBUGTYPE:BOTH
+ifeq ($(DEBUG),1)
+	# msvc debug flags
+	CC_DEBUG_FLAGS := -Zi -Od
+	LDFLAGS := -Zi $(LDFLAGS) -DEBUG -DEBUGTYPE:BOTH
 else
-	# non-debug flags
-	CC_DEBUG_FLAGS := -Ox /DNDEBUG=1
+	# msvc non-debug flags
+	CC_DEBUG_FLAGS := -Ox -DNDEBUG=1
 endif
 
 
 else
+
 # GCC
 CC := g++
 AR := ar -r
@@ -37,8 +49,18 @@ EXE_EXT :=
 LIBS := -lSDL_image -lSDL -lGL -lGLU 
 SDL_CFLAGS := $(shell sdl-config --cflags)
 SDL_LDFLAGS := $(shell sdl-config --libs)
-CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -O2 -I$(INCLUDE_DIRS) -g
-LDFLAGS := -lGL -lGLU -lSDL_image -g
+CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS)
+LDFLAGS := -lGL -lGLU -lSDL_image
+
+ifeq ($(DEBUG), 1)
+	# gcc debug flags
+	CC_DEBUG_FLAGS := -g
+	LDFLAGS := -g
+else
+	# gcc non-debug flags
+	CC_DEBUG_FLAGS := -O2 -DNDEBUG=1
+endif
+
 endif
 
 
