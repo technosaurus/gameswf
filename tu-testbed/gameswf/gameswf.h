@@ -28,6 +28,7 @@ namespace gameswf
 		virtual int	get_width() = 0;
 		virtual int	get_height() = 0;
 		virtual int	get_current_frame() const = 0;
+		virtual int	get_frame_count() const = 0;
 
 		// Play control.
 		virtual void	restart() = 0;

@@ -687,10 +687,11 @@ namespace render
 	void	output_current_segments()
 	// Draw our shapes and lines, then clear the segment list.
 	{
+#if 0
 		if (s_shape_has_line)
 		{
 			//
-			// Draw outlines.
+			// Draw lines.
 			//
 
 			glBegin(GL_LINES);
@@ -706,6 +707,7 @@ namespace render
 			}}
 			glEnd();
 		}
+#endif // 0
 
 		// wireframe, for debugging
 		if (s_wireframe)
@@ -861,6 +863,29 @@ namespace render
 		// Sort by x.
 		qsort(&slab[0], slab.size(), sizeof(slab[0]), compare_segment_x);
 
+#if 0
+// This antialiasing trick works rather well for vertical lines :), 
+// but works less and less well as edges get more horizontal :(
+//
+// + does not expand the shape, gives correct result on vert edges
+//
+// + fairly simple
+//
+// - not clear if there's any feasible way to extend it to more
+// horizontal edges.  Perhaps have a totally separate calc for the
+// horizontal edges?  Like, just classify each edge, and use one hack
+// (vert) or the other hack (horiz)?  So the worst case is 45-degree
+// lines, but actually they're not too terrible with this.
+//
+// Note that a trapezoid in general could have a side edge and a
+// top/bottom edge which both need blurring.  Could use a 2x2
+// antialiasing texture (instead of the 1x2), and calc both s and t
+// texture coords.  I think this would work dandy; there would be a
+// nice bilinear fringe at the corner; probably better than anything
+// else we could do.
+//
+// A good area for experiments.
+
 		// Render pairs.
 		if (s_multitexture_antialias)
 		{
@@ -959,6 +984,7 @@ namespace render
 			}
 		}
 		else
+#endif // 0 -- end half-assed antialiasing code
 		{
 			for (int i = 0; i < slab.size() - 1; i++)
 			{
@@ -1090,9 +1116,148 @@ namespace render
 	}
 
 
+	enum edge_amount { full_edge, start_only };
+
+	static void	emit_blurry_edge_segment(const point& p0, const point& p1, edge_amount amount = full_edge)
+	// Emit the four points that form a rectangle outside the
+	// given edge.
+	{
+		// Find the normal to the edge {p0,p1}
+		float	nx =   (p1.m_y - p0.m_y);
+		float	ny = - (p1.m_x - p0.m_x);
+		float	len = sqrtf(nx * nx + ny * ny);
+		float	scale = 1.0f;
+		if (len > 1e-6)
+		{
+			scale = (1.0f / len) * (20.f / s_pixel_scale);
+		}
+		nx *= scale;
+		ny *= scale;
+
+		ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 1.0f, 0.0f);
+		glVertex2f(p0.m_x, p0.m_y);
+
+		ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
+		glVertex2f(p0.m_x + nx, p0.m_y + ny);
+
+		if (amount == full_edge)
+		{
+			ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 1.0f, 0.0f);
+			glVertex2f(p1.m_x, p1.m_y);
+
+			ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
+			glVertex2f(p1.m_x + nx, p1.m_y + ny);
+		}
+	}
+
+
 	void	end_path()
 	// Mark the end of a set of edges that all use the same styles.
 	{
+		//
+		// Draw lines.
+		//
+		if (s_current_line_style.is_valid()
+		    && s_current_path.size() > 1)
+		{
+			s_current_line_style.apply(s_matrix_stack.back());
+			glBegin(GL_LINE_STRIP);
+			{for (int i = 0; i < s_current_path.size(); i++)
+			{
+				glVertex2f(s_current_path[i].m_x, s_current_path[i].m_y);
+			}}
+			glEnd();
+		}
+
+
+
+		// This is the current champion antialiasing code.
+		// Unfortunately it's pretty lame -- it's very similar
+		// to drawing lines around the perimeter with
+		// GL_LINE_SMOOTH.  The downside of GL_LINE_SMOOTH is
+		// that it's sensitive to driver/hardware quality.
+		// Basically we generate our own line strip, using
+		// long skinny rectangles that are joined together
+		// with wedges.
+		// 
+		// + works on any dual-texture hardware.
+		//
+		// + simple
+		//
+		// - does a reciprocal sqrt for each vert :( 
+		//
+		// - expands the shape by a pixel all around! :( :(
+		//
+		// - does not use the same exact edges as the
+		// tesselated poly filling code.  So, sometimes we get
+		// one-pixel sparkles or voids along the edge.  Could
+		// be fairly easily remedied by doing the trapezoid
+		// edges instead of the path edge, at some extra cost.
+		//
+		// - acute angles get over-filled due to simple edge
+		// tracing.  This shows up as little dark wedges in
+		// acute angles.
+
+		if (s_multitexture_antialias
+		    && s_current_right_style.is_valid()
+		    && s_current_path.size() > 1)
+		{
+			// Draw a pixel-wide blurry thing around the
+			// outside of the shape, for antialiasing.
+			// Not dissimilar to just drawing a blurry
+			// line around the outside.
+
+			s_current_right_style.apply(s_matrix_stack.back());
+
+			ogl::active_texture(GL_TEXTURE1_ARB);
+			glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
+			glEnable(GL_TEXTURE_2D);
+			ogl::active_texture(GL_TEXTURE0_ARB);
+
+			glBegin(GL_TRIANGLE_STRIP);
+			int	i;
+			for (i = 0; i < s_current_path.size() - 1; i++)
+			{
+				emit_blurry_edge_segment(s_current_path[i], s_current_path[i + 1], full_edge);
+			}
+			emit_blurry_edge_segment(s_current_path[0], s_current_path[1], start_only);
+			glEnd();
+
+			ogl::active_texture(GL_TEXTURE1_ARB);
+			glDisable(GL_TEXTURE_2D);
+			ogl::active_texture(GL_TEXTURE0_ARB);
+		}
+
+		if (1 && s_multitexture_antialias
+		    && s_current_left_style.is_valid()
+		    && s_current_path.size() > 1)
+		{
+			// Draw a pixel-wide blurry thing around the
+			// outside of the shape, for antialiasing.
+			// Not dissimilar to just drawing a blurry
+			// line around the outside.
+
+			s_current_left_style.apply(s_matrix_stack.back());
+
+			ogl::active_texture(GL_TEXTURE1_ARB);
+			glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
+			glEnable(GL_TEXTURE_2D);
+			ogl::active_texture(GL_TEXTURE0_ARB);
+
+			glBegin(GL_TRIANGLE_STRIP);
+			int	i;
+			for (i = s_current_path.size() - 1; i > 0; i--)
+			{
+				emit_blurry_edge_segment(s_current_path[i], s_current_path[i - 1], full_edge);
+			}
+			emit_blurry_edge_segment(s_current_path[0], s_current_path.back(), start_only);
+			glEnd();
+
+			ogl::active_texture(GL_TEXTURE1_ARB);
+			glDisable(GL_TEXTURE_2D);
+			ogl::active_texture(GL_TEXTURE0_ARB);
+		}
+
 		s_current_path.resize(0);
 	}
 

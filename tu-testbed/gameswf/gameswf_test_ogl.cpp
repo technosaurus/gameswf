@@ -20,6 +20,7 @@
 
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
+static bool	s_loop = true;
 
 
 #undef main	// SDL wackiness
@@ -59,6 +60,21 @@ int	main(int argc, char *argv[])
 				else
 				{
 					printf("-a arg must be followed by 0 or 1 to disable/enable antialiasing\n");
+					// print_usage();
+					exit(1);
+				}
+			}
+			else if (argv[arg][1] == 'l')
+			{
+				// Set loop mode on or off.
+				arg++;
+				if (arg < argc)
+				{
+					s_loop = atoi(argv[arg]) ? true : false;
+				}
+				else
+				{
+					printf("-l arg must be followed by 0 or 1 to disable/enable looping\n");
 					// print_usage();
 					exit(1);
 				}
@@ -201,6 +217,11 @@ int	main(int argc, char *argv[])
 					s_antialiased = !s_antialiased;
 					gameswf::set_antialiased(s_antialiased);
 				}
+				else if (key == SDLK_l)
+				{
+					// Toggle looping.
+					s_loop = !s_loop;
+				}
 
 				break;
 			}
@@ -243,6 +264,12 @@ int	main(int argc, char *argv[])
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		m->display();
+
+		if (s_loop
+		    && m->get_current_frame() >= m->get_frame_count() - 1)
+		{
+			m->restart();
+		}
 
 		SDL_GL_SwapBuffers();
 
