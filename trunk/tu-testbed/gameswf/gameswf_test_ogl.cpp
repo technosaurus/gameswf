@@ -201,16 +201,7 @@ int	main(int argc, char *argv[])
 	gameswf::set_render_handler(render); 
 
 	// Load the movie.
-	tu_file*	in = new tu_file(infile, "rb");
-	if (in->get_error())
-	{
-		printf("can't open '%s' for input\n", infile);
-		delete in;
-		exit(1);
-	}
-	gameswf::movie_interface*	m = gameswf::create_movie(in);
-	delete in;
-	in = NULL;
+	gameswf::movie_interface*	m = gameswf::create_movie_with_cache(infile);
 
 	tu_string	cache_name(infile);
 	cache_name += ".cache";

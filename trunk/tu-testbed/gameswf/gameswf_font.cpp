@@ -11,6 +11,7 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 #include "gameswf_shape.h"
+#include "base/tu_file.h"
 
 
 namespace gameswf
@@ -18,6 +19,7 @@ namespace gameswf
 	font::font()
 		:
 		m_name(NULL),
+		m_owning_movie(NULL),
 		m_unicode_chars(false),
 		m_shift_jis_chars(false),
 		m_ansi_chars(true),
@@ -94,6 +96,8 @@ namespace gameswf
 	void	font::read(stream* in, int tag_type, movie* m)
 	{
 		assert(tag_type == 10 || tag_type == 48);
+
+		m_owning_movie = m;
 
 		if (tag_type == 10)
 		{
@@ -343,7 +347,48 @@ namespace gameswf
 		}
 		return 0;
 	}
+
+
+	void	font::output_cached_data(tu_file* out)
+	// Dump our cached data into the given stream.
+	{
+		// Dump cached shape data for glyphs (i.e. this will
+		// be tesselations used to render larger glyph sizes).
+		int	 n = m_glyphs.size();
+		out->write_le32(n);
+		for (int i = 0; i < n; i++)
+		{
+			m_glyphs[i]->output_cached_data(out);
+		}
+
+		// Dump the cached texture info.
+		// @@ ... m_texture_glyphs, plus the actual texture(s)
+	}
+
 	
+	void	font::input_cached_data(tu_file* in)
+	// Read our cached data from the given stream.
+	{
+		// Read cached shape data for glyphs.
+		int	n = in->read_le32();
+		if (n != m_glyphs.size())
+		{
+			log_error("error reading cache file in font::input_cached_data() "
+				  "glyph count mismatch.\n");
+			in->go_to_end();	// ensure that no more data will be read from this stream.
+			return;
+		}
+
+		for (int i = 0; i < n; i++)
+		{
+			m_glyphs[i]->input_cached_data(in);
+		}
+
+		// Read the cached texture info.
+		// @@ ... m_texture_glyphs, plus the actual texture(s)
+	}
+
+
 };	// end namespace gameswf
 
 

@@ -563,6 +563,15 @@ public:
 		strcpy(&m_buffer[old_length], str);
 	}
 
+	tu_string	operator+(const char* str) const
+	// NOT EFFICIENT!  But convenient.
+	{
+		tu_string	new_string(*this);
+		new_string += str;
+		return new_string;
+	}
+
+
 	void	resize(int new_size)
 	{
 		assert(new_size >= 0);

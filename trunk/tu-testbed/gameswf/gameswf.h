@@ -76,8 +76,22 @@ namespace gameswf
 		virtual void	input_cached_data(tu_file* in) = 0;
 	};
 	
-	// Create a swf::movie_interface from the given input stream.
-	movie_interface*	create_movie(tu_file* input);
+	// Create a gameswf::movie_interface from the given input
+	// file name.  DOES NOT look for ".gsc" cache files, so
+	// you might prefer the create_movie_with_cache() API.
+	//
+	// Uses the register file-opener callback to read the files
+	// themselves.
+	movie_interface*	create_movie(const char* filename);
+
+	// Create a gameswf::movie_interface from the given file
+	// name, and also try to load any cached data file (".gsc")
+	// that corresponds to the given movie file.  This will still
+	// work even if there is no cache file.
+	//
+	// Uses the registered file-opener callback to read the files
+	// themselves.
+	movie_interface*	create_movie_with_cache(const char* filename);
 	
 	
 	//
@@ -88,12 +102,18 @@ namespace gameswf
 	// maximum cleanup.
 	void	clear_library();
 	
-	// Register a callback to the host, for providing a file, given a
-	// "URL" (i.e. a path name).  This is for supporting SWF
-	// "libraries", where movies can share resources (fonts and
-	// sprites) from a source movie.
+	// Register a callback to the host, for providing a file,
+	// given a "URL" (i.e. a path name).  This is for supporting
+	// SWF "libraries", where movies can share resources (fonts
+	// and sprites) from a source movie.  Also for supporting
+	// movie cache files for extra precomputed data (".gsc").
 	//
-	// gameswf will call this when it needs to create a library movie.
+	// gameswf will call this when it needs to open a file for
+	// those purposes.
+	//
+	// NOTE: the returned tu_file* will be delete'd by gameswf
+	// when it is done using it.  Your file_opener_function may
+	// return NULL in case the requested file can't be opened.
 	typedef tu_file* (*file_opener_function)(const char* url_or_path);
 	void	register_file_opener_callback(file_opener_function opener);
 	

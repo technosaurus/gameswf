@@ -649,19 +649,27 @@ namespace fontlib
 		return *(int *)b - *(int *)a;
 	}
 	
+
+	struct sorted_s {
+		int size;
+		int i;
+	};
+
+
 	static void	generate_font_bitmaps(font* f)
 	// Build cached textured versions of the font's glyphs, and
 	// store them in the font.
 	{
 		assert(f);
 
-		struct sorted_s {
-			int size;
-			int i;
-		} * sorted_array;
-
 		int	count = f->get_glyph_count();
-		sorted_array = new sorted_s[count];
+		if (count == 0)
+		{
+			return;
+		}
+
+		// Sort the glyphs by size.
+		array<sorted_s>	sorted_array(count);
 		
 		int i, n=0;
 		for (i = 0; i < count; i++)
@@ -684,7 +692,7 @@ namespace fontlib
 					}
 					else
 					{
-						sorted_array[n].size = w>h ? w : h;
+						sorted_array[n].size = w > h ? w : h;
 						sorted_array[n].i = i;
 						n++;
 					}
@@ -692,7 +700,7 @@ namespace fontlib
 			}
 		}
 		
-		qsort( sorted_array, n, sizeof(sorted_s), compare_glyphs );
+		qsort(&sorted_array[0], n, sizeof(sorted_s), compare_glyphs);
 		
 		for (i = 0; i < n; i++)
 		{
@@ -703,8 +711,6 @@ namespace fontlib
 				f->add_texture_glyph(sorted_array[i].i, tg);
 			}
 		}
-		
-		delete [] sorted_array;
 	}
 
 

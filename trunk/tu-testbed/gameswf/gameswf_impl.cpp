@@ -67,6 +67,25 @@ namespace gameswf
 	}
 
 
+	//
+	// file_opener callback stuff
+	//
+
+	static file_opener_function	s_opener_function = NULL;
+
+	void	register_file_opener_callback(file_opener_function opener)
+	// Host calls this to register a function for opening files
+	// for loading library movies.
+	{
+		s_opener_function = opener;
+	}
+
+
+	//
+	// some utility stuff
+	//
+
+
 	static bool	execute_actions(movie* m, const array<action_buffer*>& action_list)
 	// Execute the actions in the action list, on the given movie.
 	// Return true if the actions did something to change the
@@ -801,36 +820,106 @@ namespace gameswf
 		void	output_cached_data(tu_file* out)
 		// Dump our cached data into the given stream.
 		{
-			// out->printf("Hello from movie_impl::output_cached_data()!\n");	// xxx debug
+			// Write a little header.
+			char	header[5];
+			strcpy(header, "gscX");
+			header[3] = CACHE_FILE_VERSION;
+			compiler_assert(CACHE_FILE_VERSION < 256);
 
-			out->write_le32(CACHE_FILE_VERSION);
+			out->write_bytes(header, 4);
 
-			for (hash<int, character*>::iterator it = m_characters.begin();
+			// Write font data.
+			for (hash<int, font*>::iterator it = m_fonts.begin();
+			     it != m_fonts.end();
+			     ++it)
+			{
+				font*	f = it.get_value();
+				if (f->get_owning_movie() == this)
+				{
+					out->write_le16(it.get_key());
+					f->output_cached_data(out);
+				}
+			}
+			out->write_le16((Sint16) -1);	// end of fonts marker.
+			     
+			// Write character data.
+			{for (hash<int, character*>::iterator it = m_characters.begin();
 			     it != m_characters.end();
 			     ++it)
 			{
 				out->write_le16(it.get_key());
 				it.get_value()->output_cached_data(out);
-			}
+			}}
 
-			out->write_le16((Sint16) -1);	// end marker
+			out->write_le16((Sint16) -1);	// end of characters marker
 		}
 
 
 		void	input_cached_data(tu_file* in)
 		// Read in cached data and use it to prime our loaded characters.
 		{
-			int	version = in->read_le32();
-			if (version != CACHE_FILE_VERSION)
+			// Read the header & check version.
+			unsigned char	header[4];
+			in->read_bytes(header, 4);
+			if (header[0] != 'g' || header[1] != 's' || header[2] != 'c')
+			{
+				log_error("cache file does not have the correct format; skipping\n");
+				return;
+			}
+			else if (header[3] != CACHE_FILE_VERSION)
 			{
 				log_error(
 					"cached data is version %d, but we require version %d; skipping\n",
-					version, CACHE_FILE_VERSION);
+					int(header[3]), CACHE_FILE_VERSION);
 				return;
 			}
 
+			// Read the cached font data.
 			for (;;)
 			{
+				if (in->get_error() != TU_FILE_NO_ERROR)
+				{
+					log_error("error reading cache file (fonts); skipping\n");
+					return;
+				}
+				if (in->get_eof())
+				{
+					log_error("unexpected eof reading cache file (fonts); skipping\n");
+					return;
+				}
+
+				Sint16	id = in->read_le16();
+				if (id == (Sint16) -1) { break; }	// done
+
+				font*	f = NULL;
+				m_fonts.get(id, &f);
+				if (f)
+				{
+					f->input_cached_data(in);
+				}
+				else
+				{
+					log_error("sync error in cache file (reading fonts)!  "
+						  "Skipping rest of cache data.\n");
+					return;
+				}
+			}
+
+
+			// Read the cached character data.
+			for (;;)
+			{
+				if (in->get_error() != TU_FILE_NO_ERROR)
+				{
+					log_error("error reading cache file (characters); skipping\n");
+					return;
+				}
+				if (in->get_eof())
+				{
+					log_error("unexpected eof reading cache file (characters); skipping\n");
+					return;
+				}
+
 				Sint16	id = in->read_le16();
 				if (id == (Sint16) -1) { break; }	// done
 
@@ -842,8 +931,9 @@ namespace gameswf
 				}
 				else
 				{
-					log_error("sync error in cache file!  Skipping rest of cache data.\n");
-					break;
+					log_error("sync error in cache file (reading characters)!  "
+						  "Skipping rest of cache data.\n");
+					return;
 				}
 			}
 		}
@@ -892,14 +982,71 @@ namespace gameswf
 	}
 
 
-	movie_interface*	create_movie(tu_file* in)
+	movie_interface*	create_movie(const char* filename)
 	// External API.  Create a movie from the given stream, and
 	// return it.
 	{
+		if (s_opener_function == NULL)
+		{
+			// Don't even have a way to open the file.
+			log_error("error: no file opener function; can't create movie.  "
+				  "See gameswf::register_file_opener_callback\n");
+			return NULL;
+		}
+
+		tu_file* in = s_opener_function(filename);
+		if (in == NULL)
+		{
+			log_error("failed to open '%s'; can't create movie.\n", filename);
+			return NULL;
+		}
+		else if (in->get_error())
+		{
+			log_error("error: file opener can't open '%s'\n", filename);
+			return NULL;
+		}
+
 		ensure_loaders_registered();
 
 		movie_impl*	m = new movie_impl;
 		m->read(in);
+
+		delete in;
+
+		return m;
+	}
+
+
+	movie_interface*	create_movie_with_cache(const char* filename)
+	// Create the movie from the specified .swf file.  Look for
+	// and load any corresponding .gsc ("gameswf cache") file as
+	// well.
+	{
+		movie_interface*	m = create_movie(filename);
+
+		if (s_opener_function == NULL)
+		{
+			// No way to try to open the cache file.
+			return m;
+		}
+
+		// Try to load a .gsc file.
+		tu_string	cache_filename(filename);
+		cache_filename += ".gsc";
+		tu_file*	cache_in = s_opener_function(cache_filename.c_str());
+		if (cache_in == NULL
+		    || cache_in->get_error() != TU_FILE_NO_ERROR)
+		{
+			// Can't open cache file; don't sweat it.
+			IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
+		}
+		else
+		{
+			// Load the cached data.
+			m->input_cached_data(cache_in);
+		}
+
+		delete cache_in;
 
 		return m;
 	}
@@ -912,22 +1059,12 @@ namespace gameswf
 
 	static string_hash<movie*>	s_movie_library;
 
-	static file_opener_function	s_opener_function = NULL;
-
-	void	register_file_opener_callback(file_opener_function opener)
-	// Host calls this to register a function for opening files
-	// for loading library movies.
-	{
-		s_opener_function = opener;
-	}
-
-	
 	movie*	load_library_movie(const tu_string& url)
 	// Try to load a movie from the given url, if we haven't
 	// loaded it already.  Add it to our library on success, and
 	// return a pointer to it.
 	{
-		// Is the movie alread in the library?
+		// Is the movie already in the library?
 		{
 			movie*	m = NULL;
 			s_movie_library.get(url, &m);
@@ -939,30 +1076,13 @@ namespace gameswf
 		}
 
 		// Try to open a file under the url.
-		if (s_opener_function == NULL)
-		{
-			// Don't even have a way to open the file.
-			log_error("error: no file opener function; "
-				  "see gameswf::register_file_opener_callback\n");
-			return NULL;
-		}
-		tu_file*	in_file = s_opener_function(url.c_str());
-		if (in_file == NULL)
-		{
-			log_error("error: file opener function returned null\n");
-			return NULL;
-		}
-		else if (in_file->get_error())
-		{
-			log_error("error: file opener can't open '%s'\n", url.c_str());
-			return NULL;
-		}
+		movie_interface*	mov = create_movie_with_cache(url.c_str());
+		movie_impl*	m = static_cast<movie_impl*>(mov);
 
-		ensure_loaders_registered();
-
-		movie_impl*	m = new movie_impl;
-		m->read(in_file);
-		delete in_file;
+		if (m == NULL)
+		{
+			log_error("error: couldn't load library movie '%s'\n", url.c_str());
+		}
 
 		s_movie_library.add(url, m);
 
