@@ -3319,6 +3319,7 @@ namespace gameswf
 		}
 
 		
+		/*sprite_instance*/
 		void	display()
 		{
 			if (get_visible() == false)
@@ -3330,6 +3331,8 @@ namespace gameswf
 			m_display_list.display();
 		}
 
+
+		/*sprite_instance*/
 		character*	add_display_object(
 			Uint16 character_id,
 			const char* name,
@@ -3353,7 +3356,6 @@ namespace gameswf
 			// If we already have this object on this
 			// plane, then move it instead of replacing
 			// it.
-/*
 			character*	existing_char = m_display_list.get_character_at_depth(depth);
 			if (existing_char
 			    && existing_char->get_id() == character_id
@@ -3364,7 +3366,7 @@ namespace gameswf
 				move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
 				return NULL;
 			}
-*/
+
 			assert(cdef);
 			smart_ptr<character>	ch = cdef->create_character_instance(this, character_id);
 			assert(ch != NULL);
@@ -3386,6 +3388,7 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	move_display_object(
 			Uint16 depth,
 			bool use_cxform,
@@ -3401,6 +3404,7 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	replace_display_object(
 			Uint16 character_id,
 			const char* name,
@@ -3439,10 +3443,10 @@ namespace gameswf
 				mat,
 				ratio,
 				clip_depth);
-
 		}
 
 
+		/*sprite_instance*/
 		void	replace_display_object(
 			character* ch,
 			const char* name,
@@ -3475,6 +3479,7 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	remove_display_object(Uint16 depth)
 		// Remove the object at the specified depth.
 		{
@@ -3483,6 +3488,7 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	add_action_buffer(action_buffer* a)
 		// Add the given action buffer to the list of action
 		// buffers to be processed at the end of the next
@@ -3492,6 +3498,7 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		int	get_id_at_depth(int depth)
 		// For debugging -- return the id of the character at the specified depth.
 		// Return -1 if nobody's home.
