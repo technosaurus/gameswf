@@ -161,6 +161,12 @@ namespace gameswf
 			return false;
 		}
 
+		virtual bool	get_value(const char* var_name, as_value* val)
+		{
+			assert(0);
+			return false;
+		}
+
 
 		virtual float	get_timer() const { return 0.0f; }
 
@@ -225,6 +231,7 @@ namespace gameswf
 		// Interface for ActionScript variable support.
 		// E.g. for setting dynamic text values.
 		virtual bool	set_value(const as_value& val) { assert(0); return false; }
+		virtual bool	get_value(as_value* val) { assert(0); return false; }
 	};
 
 

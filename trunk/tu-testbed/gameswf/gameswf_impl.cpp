@@ -812,6 +812,27 @@ namespace gameswf
 		}
 
 
+		bool	get_value(const char* var_name, as_value* val)
+		// Find the named character in the movie, and put its
+		// text int the given value.  Return true if we have
+		// the named character; otherwise don't touch *val.
+		{
+			array<character*>*	ch_array = NULL;
+			m_named_characters.get(var_name, &ch_array);
+			if (ch_array)
+			{
+				for (int i = 0; i < ch_array->size(); i++)
+				{
+					if ((*ch_array)[i]->get_value(val))
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+
 		void	get_owned_fonts(array<font*>* fonts)
 		// Fill up *fonts with fonts that we own.
 		{

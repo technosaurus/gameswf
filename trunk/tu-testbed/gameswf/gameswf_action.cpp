@@ -260,9 +260,8 @@ namespace gameswf
 				}
 				case 0x1D:	// set variable
 				{
-					as_value	val = env->pop();
-					as_value	var_specifier = env->pop();
-					env->set_variable(var_specifier.to_string(), val);
+					env->set_variable(env->top(1).to_tu_string(), env->top(0));
+					env->drop(2);
 					break;
 				}
 				case 0x20:	// set target expression
@@ -401,12 +400,28 @@ namespace gameswf
 				}
 				case 0x47:	// add (typed)
 				{
-					// @@ TODO
+					if (env->top(1).get_type() == as_value::STRING)
+					{
+						env->top(1).string_concat(env->top(0).to_tu_string());
+					}
+					else
+					{
+						env->top(1) += env->top(0);
+					}
+					env->drop(1);
 					break;
 				}
 				case 0x48:	// less than (typed)
 				{
-					// @@ TODO
+					if (env->top(1).get_type() == as_value::STRING)
+					{
+						env->top(1).set(env->top(1).to_tu_string() < env->top(0).to_tu_string());
+					}
+					else
+					{
+						env->top(1).set(env->top(1) < env->top(0));
+					}
+					env->drop(1);
 					break;
 				}
 				case 0x49:	// equal (typed)
@@ -416,6 +431,10 @@ namespace gameswf
 					env->drop(1);
 					break;
 				}
+
+				case 0x4C:	// dup
+					env->push(env->top(0));
+					break;
 
 				}
 				pc++;	// advance to next action.
@@ -767,33 +786,47 @@ namespace gameswf
 	// Return the value of the given var, if it's defined.
 	{
 		// Check locals.
-		as_value	local = NULL;
-		if (m_local_variables.get(varname, &local))
+		as_value	val = NULL;
+		if (m_local_variables.get(varname, &val))
 		{
 			// Get existing.
-			return local;
+			return val;
 		}
 
-		// @@ TODO, ask m_target, globals, etc...
+		bool	success = m_target->get_value(varname.c_str(), &val);
+		if (success)
+		{
+			return val;
+		}
+
+		// @@ globals???
 
 		// Fallback.
-		// @@ log error?
+		log_error("error: get_variable(\"%s\") failed.\n", varname.c_str());
 		return as_value(as_value::UNDEFINED);
 	}
 
 
-	void	as_environment::set_variable(const char* path, const as_value& val)
+	void	as_environment::set_variable(const tu_string& path, const as_value& val)
 	// Given a path to variable, set its value.
 	{
+		// Check locals.
+		if (m_local_variables.get(path, NULL))
+		{
+			// Set existing local.
+			m_local_variables.set(path, val);
+			return;
+		}
+
 		// @@ Need to implement the whole path rigmarole.
 		// @@ For the moment, skip that and talk directly to the current target.
 
 		assert(m_target);
 
-		bool	success = m_target->set_value(path, val);
+		bool	success = m_target->set_value(path.c_str(), val);
 		if (success == false)
 		{
-			IF_VERBOSE_ACTION(log_msg("set_variable(%s, \"%s\") failed\n", path, val.to_string()));
+			IF_VERBOSE_ACTION(log_msg("set_variable(%s, \"%s\") failed\n", path.c_str(), val.to_string()));
 		}
 	}
 

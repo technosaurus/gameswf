@@ -396,6 +396,13 @@ namespace gameswf
 			return true;
 		}
 
+		virtual bool	get_value(as_value* val)
+		// Return our contents.
+		{
+			val->set(m_text);
+			return true;
+		}
+
 		void	set_text(const char* new_text)
 		{
 			if (m_text == new_text)

@@ -100,6 +100,7 @@ namespace gameswf
 		{
 		}
 
+		type	get_type() const { return m_type; }
 		bool	is_string() const { return m_type == STRING; }
 		const char*	to_string() const;
 		const tu_string&	to_tu_string() const;
@@ -165,7 +166,7 @@ namespace gameswf
 
 		as_value	get_variable(const tu_string& varname) const;
 
-		void	set_variable(const char* path, const as_value& val);
+		void	set_variable(const tu_string& path, const as_value& val);
 		void	set_local(const tu_string& varname, const as_value& val);
 	};
 
