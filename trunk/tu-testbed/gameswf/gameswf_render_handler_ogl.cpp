@@ -545,7 +545,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);	// don't change the stencil buffer    
 	}
 	
-	void end_mask()
+	void disable_mask()
 	{	       
 	    glDisable(GL_STENCIL_TEST); 
 	}

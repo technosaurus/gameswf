@@ -25,11 +25,11 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 
 LIB_OUT = $(LIB_PRE)gameswf.$(LIB_EXT)
 EXE_OUT = gameswf_test_ogl$(EXE_EXT)
+PARSER_OUT = gameswf_parser$(EXE_EXT)
 
 LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB)
 
-
-all: base_lib $(LIB_OUT) $(EXE_OUT)
+all: base_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT)
 
 
 OBJS = \
@@ -54,6 +54,9 @@ TEST_PROGRAM_OBJS = \
 	gameswf_render_handler_ogl.$(OBJ_EXT)	\
 	gameswf_sound_handler_sdl.$(OBJ_EXT)
 
+PARSER_OBJS = \
+	gameswf_parser.$(OBJ_EXT) 
+
 gameswf_impl.$(OBJ_EXT): gameswf.h gameswf_impl.h gameswf_types.h
 
 $(LIB_OUT): $(OBJS)
@@ -64,9 +67,12 @@ $(EXE_OUT): $(TEST_PROGRAM_OBJS) $(LIB_OUT) $(BASE_LIB)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 
+$(PARSER_OUT): $(PARSER_OBJS) $(LIB_OUT) $(BASE_LIB)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+
+
 base_lib:
 	make -C $(TOP)/base
-
 
 clean:
 	make -C $(TOP)/base clean
