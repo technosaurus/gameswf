@@ -75,3 +75,7 @@ bspdemo.zip:
 		tu-testbed/engine/TODO
 	# Include the lua stuff to make it easier to build the demo.
 	cd ..; zip tu-testbed/bspdemo.zip -r lua/*
+
+luaSDL.src.tar.gz:
+	make -C luaSDL clean
+	tar czvf $@ luaSDL
