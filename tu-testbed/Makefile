@@ -29,7 +29,7 @@ chunkdemo:
 		tu-testbed/demos/chunklod/crater/crater.chu	\
 		tu-testbed/demos/chunklod/crater/crater.jpg	\
 		tu-testbed/demos/chunklod/README-SDL.txt	\
-		tu-testbed/demos/chunklod/SDL.dll	\
+		tu-testbed/demos/chunklod/*.dll	\
 		tu-testbed/engine/Makefile \
 		tu-testbed/engine/*.cpp	\
 		tu-testbed/engine/*.h	\
