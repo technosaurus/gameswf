@@ -15,28 +15,17 @@
 
 namespace gameswf 
 {
-	class BaseString
+	// @@ tulrich: rename this!  Or, just put it in string_as_object.
+	class String
 	{
 	public:
-		BaseString();
-		BaseString(const char *name);
-		~BaseString();
-	
-		const tu_string& toString(void *);
-	protected:
-		tu_string _value;
-		tu_string _name;
-	};
-	
-	class String: public BaseString
-	{
-	public:
-		String(const char *str);
+		String(const char* str);
+		String(const tu_string& str);
 		~String();
 		void test(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 		// tulrich: Most/all of these should take const references.
-		// They should probably return void also.
+		// Some should probably return void also?
 		tu_string charAt(short index);
 		short charCodeAt(short index);
 		tu_string concat(tu_string str1, tu_string str2);
@@ -58,15 +47,18 @@ namespace gameswf
 		tu_string toUpperCase();
 
 		int length();
+	private:
+		tu_string m_value;
 	};
 
 	struct string_as_object : public gameswf::as_object
 	{
 		String str;
 
-		string_as_object(const char* s)
-			:
-			str(s)
+		string_as_object(const char* s) : str(s)
+		{
+		}
+		string_as_object(const tu_string& s) : str(s)
 		{
 		}
 	};

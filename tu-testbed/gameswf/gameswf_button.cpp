@@ -610,14 +610,14 @@ namespace gameswf
 			if (name == "_alpha")
 			{
 				// Alpha units are in percent.
-				val->set(get_cxform().m_[3][0] * 100.f);
+				val->set_double(get_cxform().m_[3][0] * 100.f);
 				return true;
 			}
 			else
 			{
 				if (name == "_visible")
 				{
-					val->set(m_visible);
+					val->set_bool(m_visible);
 				}
 				else
 				{

@@ -700,13 +700,13 @@ namespace gameswf
 			case M_TEXT:
 				//if (name == "text")
 			{
-				val->set(m_text);
+				val->set_tu_string(m_text);
 				return true;
 			}
 			case M_VISIBLE:
 				//else if (name == "_visible")
 			{
-				val->set(get_visible());
+				val->set_bool(get_visible());
 				return true;
 			}
 			case M_ALPHA:
@@ -714,7 +714,7 @@ namespace gameswf
 			{
 				// @@ TODO this should be generic to struct character!
 				const cxform&	cx = get_cxform();
-				val->set(cx.m_[3][0] * 100.f);
+				val->set_double(cx.m_[3][0] * 100.f);
 				return true;
 			}
 			case M_TEXTCOLOR:
@@ -725,21 +725,21 @@ namespace gameswf
 				int	r = iclamp(int(cx.m_[0][0] * 255), 0, 255);
 				int	g = iclamp(int(cx.m_[0][0] * 255), 0, 255);
 				int	b = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-				val->set((r << 16) + (g << 8) + b);
+				val->set_int((r << 16) + (g << 8) + b);
 				return true;
 			}
 			case M_X:
 				//else if (name == "_x")
 			{
 				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				val->set(TWIPS_TO_PIXELS(m.m_[0][2]));
+				val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
 				return true;
 			}
 			case M_Y:
 				//else if (name == "_y")
 			{
 				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				val->set(TWIPS_TO_PIXELS(m.m_[1][2]));
+				val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
 				return true;
 			}
 			case M_WIDTH:
@@ -749,7 +749,7 @@ namespace gameswf
 				// character and inherit into both here and sprite_instance
 				rect	transformed_rect;
 				transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
-				val->set(TWIPS_TO_PIXELS(transformed_rect.width()));
+				val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
 				return true;
 			}
 			case M_HEIGHT:
@@ -759,7 +759,7 @@ namespace gameswf
 				// character and inherit into both here and sprite_instance
 				rect	transformed_rect;
 				transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
-				val->set(TWIPS_TO_PIXELS(transformed_rect.height()));
+				val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
 				return true;
 			}
 			case M_TEXTWIDTH:
@@ -770,7 +770,7 @@ namespace gameswf
 				// bounding box.)
 				//
 				// In local coords.  Verified against Macromedia Flash.
-				val->set(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
+				val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
 
 				return true;
 			}

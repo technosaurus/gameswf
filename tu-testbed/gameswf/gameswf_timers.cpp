@@ -163,7 +163,7 @@ namespace gameswf
     //Ptr->obj.setInterval(val, ms);
     ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
     
-    result->set(mov->add_interval_timer(&ptr->obj));
+    result->set_int(mov->add_interval_timer(&ptr->obj));
   }
   
   void
@@ -193,6 +193,6 @@ namespace gameswf
 
     movie*	mov = env->get_target()->get_root_movie();
     mov->clear_interval_timer((int)id);
-    result->set(true); 
+    result->set_bool(true); 
   }
 }

@@ -73,7 +73,7 @@ textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr
     textformat_as_object*	text_obj = new textformat_as_object;
     //text_obj->set_member("underline", &textformat_underline);
 
-    result->set(text_obj);
+    result->set_as_object_interface(text_obj);
 }
 
 #if 0
@@ -84,7 +84,7 @@ textformat_underline(gameswf::as_value* result, gameswf::as_object_interface* th
     textformat_as_object*	ptr = (textformat_as_object*) (as_object*) this_ptr;
     assert(ptr);
     
-    result->set(ptr->text_obj.underlined());
+    result->set_bool(ptr->text_obj.underlined());
 }
 #endif
 

@@ -311,15 +311,33 @@ namespace gameswf
 		void	convert_to_number();
 		void	convert_to_string();
 
-		void	set(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
-		void	set(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
-		void	set(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
-		void	set(bool val) { drop_refs(); m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
-		void	set(int val) { drop_refs(); set(double(val)); }
-		void	set(as_object_interface* obj);
-		void	set(as_c_function_ptr func) { drop_refs(); m_type = C_FUNCTION; m_c_function_value = func; }
-		void	set(as_as_function* func);
+		// These set_*()'s are more type-safe; should be used
+		// in preference to generic overloaded set().  You are
+		// more likely to get a warning/error if misused.
+		void	set_tu_string(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
+		void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
+		void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
+		void	set_bool(bool val) { drop_refs(); m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
+		void	set_int(int val) { drop_refs(); set(double(val)); }
+		void	set_as_object_interface(as_object_interface* obj);
+		void	set_as_c_function_ptr(as_c_function_ptr func)
+		{
+			drop_refs(); m_type = C_FUNCTION; m_c_function_value = func;
+		}
+		void	set_as_as_function(as_as_function* func);
 		void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
+
+		// @@ tulrich: it's awfully dangerous to have so many
+		// overloads of set() -- should consider eliminating
+		// these completely.
+		void	set(const tu_string& str) { set_tu_string(str); }
+		void	set(const char* str) { set_string(str); }
+		void	set(double val) { set_double(val); }
+		void	set(bool val) { set_bool(val); }
+		void	set(int val) { set_int(val); }
+		void	set(as_object_interface* obj) { set_as_object_interface(obj); }
+		void	set(as_c_function_ptr func) { set_as_c_function_ptr(func); }
+		void	set(as_as_function* func) { set_as_as_function(func); }
 
 		void	operator=(const as_value& v)
 		{

@@ -185,7 +185,7 @@ moviecliploader_new(gameswf::as_value* result, gameswf::as_object_interface* thi
   //m->display();
 #endif
   
-  result->set(mov_obj);  
+  result->set_as_object_interface(mov_obj);
 }
 
 void
@@ -223,7 +223,7 @@ moviecliploader_getprogress(gameswf::as_value* result, gameswf::as_object_interf
   moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
   assert(ptr);
   as_object *obj = (as_object *)env->bottom(first_arg).to_object();
-  result->set(ptr->mov_obj.getProgress(obj));
+  result->set_as_object_interface(ptr->mov_obj.getProgress(obj));
 
 }
 
