@@ -142,13 +142,18 @@ float	vector::sqrmag() const
 }
 
 
+#ifdef WIN32
+#define isnan _isnan
+#endif // WIN32
+
+
 bool	vector::checknan() const
 // Returns true if any component is nan.
 {
 	if (fabs(x[0]) > 10000000 || fabs(x[1]) > 10000000 || fabs(x[2]) > 10000000) {
 		return true;//xxxxxxx
 	}
-	if (_isnan(x[0]) || _isnan(x[1]) || _isnan(x[2])) {
+	if (isnan(x[0]) || isnan(x[1]) || isnan(x[2])) {
 		return true;
 	}
 	else return false;

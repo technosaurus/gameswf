@@ -11,8 +11,11 @@
 #include "clip.hpp"
 #include "quadtree.hpp"
 
+#ifdef WIN32
 #include <windows.h>
-#include <gl/glut.h>
+#endif // WIN32
+
+#include <GL/glut.h>
 
 
 #define PI 3.141592654
@@ -178,7 +181,7 @@ void	LoadData()
 	printf("Loading height grids...\n");
 
 	// Big coarse data, at 128 meter sample spacing.
-	FILE*	fp = fopen("demdata\\gc16at128.raw", "rb");
+	FILE*	fp = fopen("demdata/gc16at128.raw", "rb");
 	fread(hm.Data, sizeof(uint16), hm.XSize * hm.ZSize, fp);
 	fclose(fp);
 	printf("Building quadtree data...\n");
@@ -188,7 +191,7 @@ void	LoadData()
 	hm.XOrigin = 16384;
 	hm.ZOrigin = 16384;
 	hm.Scale = 6;
-	fp = fopen("demdata\\gc16at64.raw", "rb");
+	fp = fopen("demdata/gc16at64.raw", "rb");
 	fread(hm.Data, sizeof(uint16), hm.XSize * hm.ZSize, fp);
 	fclose(fp);
 	printf("Adding quadtree data...\n");
@@ -198,7 +201,7 @@ void	LoadData()
 	hm.XOrigin = 24576;
 	hm.ZOrigin = 24576;
 	hm.Scale = 5;
-	fp = fopen("demdata\\gc16at32.raw", "rb");
+	fp = fopen("demdata/gc16at32.raw", "rb");
 	fread(hm.Data, sizeof(uint16), hm.XSize * hm.ZSize, fp);
 	fclose(fp);
 	printf("Adding quadtree data...\n");
@@ -477,7 +480,7 @@ void	KeyHandler(unsigned char key, int x, int y)
 				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 				
 				char*	data = new char[1024 * 1024 * 3];
-				FILE*	fp = fopen("demdata\\gctexcolored.raw", "rb");
+				FILE*	fp = fopen("demdata/gctexcolored.raw", "rb");
 				fread(data, 1, 1024 * 1024 * 3, fp);
 				fclose(fp);
 				

@@ -2,6 +2,10 @@ GENERAL
 
 * Try quantizing down to 8 bits/coordinate.
 
+  -- Tried it; it doesn't work well.  Creates intolerable quantization
+  error on the island_4k dataset, and probably others if you look
+  closely.
+
 * Streaming.  The fundamentals are in place.  The obstacles are the
   details.  It would be nice to memory-map the chunk file, and stream
   verts directly out of it; that should make best use of the OS (and
@@ -39,6 +43,8 @@ HEIGHTFIELD CHUNKER
 
 
 CHUNKDEMO
+
+* command-line switches for window dimensions.
 
 * Need a fence/sync for the vertex stream buffer!  Occasionally the
   stream will eat its own tail and render garbage.  I think this is

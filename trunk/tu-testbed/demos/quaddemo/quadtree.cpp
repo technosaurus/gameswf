@@ -5,8 +5,10 @@
 // Code for quadtree terrain manipulation, meshing, and display.
 
 
+#ifdef WIN32
 #include <windows.h>
-#include <gl/gl.h>
+#endif // WIN32
+#include <GL/gl.h>
 
 #include <stdio.h>
 #include <math.h>
