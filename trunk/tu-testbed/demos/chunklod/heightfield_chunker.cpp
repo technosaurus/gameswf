@@ -1245,13 +1245,19 @@ namespace mesh {
 	{
 		const heightfield_elem&	e = hf.get_elem(v.x, v.z);
 
-		SDL_WriteLE16(rw, frnd((v.x * hf.sample_spacing - box_center.get_x()) * compress_factor.get_x()));
-		SDL_WriteLE16(rw, frnd(e.y / vertical_scale));
-		SDL_WriteLE16(rw, frnd((v.z * hf.sample_spacing - box_center.get_z()) * compress_factor.get_z()));
+		Sint16	x, y, z;
+
+		x = (int) floor(((v.x * hf.sample_spacing - box_center.get_x()) * compress_factor.get_x()) + 0.5);
+		y = (int) floor(e.y / vertical_scale + 0.5);
+		z = (int) floor(((v.z * hf.sample_spacing - box_center.get_z()) * compress_factor.get_z()) + 0.5);
+
+		SDL_WriteLE16(rw, x);
+		SDL_WriteLE16(rw, y);
+		SDL_WriteLE16(rw, z);
 
 		// Morph info.  Should work out to 0 if the vert is not a morph vert.
 		float	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
-		int	morph_delta = frnd((lerped_height - e.y) / vertical_scale);
+		int	morph_delta = floor((lerped_height - e.y) / vertical_scale + 0.5);
 		SDL_WriteLE16(rw, (Sint16) morph_delta);
 		assert(morph_delta == (Sint16) morph_delta);	// Watch out for overflow.
 	}
