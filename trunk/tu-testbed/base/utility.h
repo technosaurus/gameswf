@@ -10,9 +10,8 @@
 #define UTILITY_H
 
 #include <assert.h>
-#include <math.h>
+#include "base/tu_math.h"
 #include "base/tu_types.h"
-
 
 #ifdef _WIN32
 #ifndef NDEBUG

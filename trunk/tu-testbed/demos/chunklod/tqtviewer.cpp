@@ -14,11 +14,10 @@
 #endif
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include "base/tu_opengl_include.h"
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
+#include "base/tu_math.h"
 
 #include "base/utility.h"
 #include "base/ogl.h"

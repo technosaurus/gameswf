@@ -13,7 +13,6 @@
 #include "base/utility.h"
 class tu_file;
 
-
 class	vec3
 // 3-element vector class, for 3D math.
 {

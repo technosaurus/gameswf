@@ -4,7 +4,7 @@
 
 
 #include "geometry/cull.h"
-#include <math.h>
+#include "base/tu_math.h"
 #include "base/utility.h"
 
 
