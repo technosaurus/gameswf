@@ -22,42 +22,34 @@ namespace gameswf
 	struct display_object_info
 	{
 		bool	m_ref;
-		character*	m_character;	// state is held in here
+		smart_ptr<character>	m_character;	// state is held in here
 
 		display_object_info()
 			:
-			m_ref(false),
-			m_character(NULL)
+			m_ref(false)
 		{
 		}
 
 		display_object_info(const display_object_info& di)
 			:
-			m_ref(false),
-			m_character(NULL)
+			m_ref(false)
 		{
 			*this = di;
 		}
 
 		~display_object_info()
 		{
-			if (m_character) m_character->drop_ref();
 		}
 
 		void	operator=(const display_object_info& di)
 		{
 			m_ref = di.m_ref;
-			set_character(di.m_character);
+			m_character = di.m_character;
 		}
 
 		void	set_character(character* ch)
 		{
-			if (m_character != ch)
-			{
-				if (m_character) m_character->drop_ref();
-				m_character = ch;
-				if (m_character) m_character->add_ref();
-			}
+			m_character = ch;
 		}
 
 		static int compare(const void* _a, const void* _b); // For qsort().
@@ -115,7 +107,7 @@ namespace gameswf
 		void	display(const display_info& di);
 
 		int	get_character_count() { return m_display_object_array.size(); }
-		character*	get_character(int index) { return m_display_object_array[index].m_character; }
+		character*	get_character(int index) { return m_display_object_array[index].m_character.get_ptr(); }
 
 		// May return NULL.
 		character*	get_character_at_depth(int depth);

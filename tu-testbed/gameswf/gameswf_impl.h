@@ -17,6 +17,7 @@
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
+#include "base/smart_ptr.h"
 
 
 namespace jpeg { struct input; }
@@ -41,7 +42,7 @@ namespace gameswf
 	struct movie_definition_sub : public movie_definition
 	{
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) = 0;
-		virtual resource*	get_exported_resource(const tu_string& symbol) = 0;
+		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol) = 0;
 		virtual character_def*	get_character_def(int id) = 0;
 
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;

@@ -105,7 +105,7 @@ namespace gameswf
 		int	index = get_display_index(depth);
 		if (index != -1)
 		{
-			character*	ch = m_display_object_array[index].m_character;
+			character*	ch = m_display_object_array[index].m_character.get_ptr();
 			if (ch->get_depth() == depth)
 			{
 				return ch;
@@ -211,7 +211,7 @@ namespace gameswf
 		}
 		
 		display_object_info&	di = m_display_object_array[index];
-		character*	ch = di.m_character;
+		character*	ch = di.m_character.get_ptr();
 		if (ch->get_depth() != depth)
 		{
 			// error
@@ -277,8 +277,7 @@ namespace gameswf
 			return;
 		}
 		
-		character*	old_ch = di.m_character;
-		old_ch->add_ref();
+		smart_ptr<character>	old_ch = di.m_character;
 
 		// Put the new character in its place.
 		assert(ch);
@@ -311,9 +310,6 @@ namespace gameswf
 
 		ch->set_ratio(ratio);
 		ch->set_clip_depth(clip_depth);
-
-		// Drop the old character.
-		old_ch->drop_ref();
 	}
 	
 	
@@ -407,7 +403,7 @@ namespace gameswf
 			
 			if (dobj.m_ref == true)
 			{
-				character*	ch = dobj.m_character;
+				character*	ch = dobj.m_character.get_ptr();
 				assert(ch);
 
 				if (ch->get_visible() == false)
@@ -435,7 +431,7 @@ namespace gameswf
 		{
 			display_object_info&	dobj = m_display_object_array[i];
 
-			character*	ch = dobj.m_character;
+			character*	ch = dobj.m_character.get_ptr();
 			assert(ch);
 
 			if (ch->get_visible() == false)

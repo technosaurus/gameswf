@@ -34,11 +34,6 @@ namespace gameswf
 
 	font::~font()
 	{
-		// Iterate over m_glyphs and free the shapes.
-		for (int i = 0; i < m_glyphs.size(); i++)
-		{
-			m_glyphs[i]->drop_ref();
-		}
 		m_glyphs.resize(0);
 
 		// Delete the texture glyphs.
@@ -59,7 +54,7 @@ namespace gameswf
 	{
 		if (index >= 0 && index < m_glyphs.size())
 		{
-			return m_glyphs[index];
+			return m_glyphs[index].get_ptr();
 		}
 		else
 		{
@@ -138,7 +133,6 @@ namespace gameswf
 				shape_character_def* s = new shape_character_def;
 				s->read(in, 2, false, m);
 
-				s->add_ref();
 				m_glyphs.push_back(s);
 			}}
 		}
@@ -210,7 +204,6 @@ namespace gameswf
 				shape_character_def* s = new shape_character_def;
 				s->read(in, 22, false, m);
 
-				s->add_ref();
 				m_glyphs.push_back(s);
 			}}
 
@@ -311,7 +304,6 @@ namespace gameswf
 			// Code table is made of Uint16's.
 			for (int i = 0; i < m_glyphs.size(); i++)
 			{
-			//	m_code_table.push_back(in->read_u16());
 				m_code_table.add(in->read_u16(), i);
 			}
 		}
@@ -320,7 +312,6 @@ namespace gameswf
 			// Code table is made of bytes.
 			for (int i = 0; i < m_glyphs.size(); i++)
 			{
-			//	m_code_table.push_back(in->read_u8());
 				m_code_table.add(in->read_u8(), i);
 			}
 		}

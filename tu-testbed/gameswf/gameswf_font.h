@@ -28,7 +28,7 @@ namespace gameswf
 	// Struct for holding (cached) textured glyph info.
 	struct texture_glyph
 	{
-		bitmap_info*	m_bitmap_info;
+		smart_ptr<bitmap_info>	m_bitmap_info;
 		rect	m_uv_bounds;
 		point	m_uv_origin;	// the origin of the glyph box, in uv coords
 
@@ -36,27 +36,17 @@ namespace gameswf
 
 		~texture_glyph()
 		{
-			if (m_bitmap_info)
-			{
-				m_bitmap_info->drop_ref();
-				m_bitmap_info = NULL;
-			}
 		}
 
 		void	set_bitmap_info(bitmap_info* bi)
 		{
-			if (m_bitmap_info != bi)
-			{
-				if (m_bitmap_info) m_bitmap_info->drop_ref();
-				m_bitmap_info = bi;
-				if (m_bitmap_info) m_bitmap_info->add_ref();
-			}
+			m_bitmap_info = bi;
 		}
 
 		void operator=(const texture_glyph& tg)
 		// Assignment; make sure to handle ref counts properly.
 		{
-			set_bitmap_info(tg.m_bitmap_info);
+			m_bitmap_info = tg.m_bitmap_info;
 			m_uv_bounds = tg.m_uv_bounds;
 			m_uv_origin = tg.m_uv_origin;
 		}
@@ -98,7 +88,7 @@ namespace gameswf
 	private:
 		void	read_code_table(stream* in);
 
-		array<shape_character_def*>	m_glyphs;
+		array< smart_ptr<shape_character_def> >	m_glyphs;
 		array<const texture_glyph*>	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
 		char*	m_name;
 		movie_definition_sub*	m_owning_movie;

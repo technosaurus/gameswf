@@ -26,8 +26,8 @@ namespace gameswf
 {
 namespace fontlib
 {
-	array<font*>	s_fonts;
-	array<bitmap_info*>	s_bitmaps_used;	// keep these so we can delete them during shutdown.
+	array< smart_ptr<font> >	s_fonts;
+	array< smart_ptr<bitmap_info> >	s_bitmaps_used;	// keep these so we can delete them during shutdown.
 
 	// Size (in TWIPS) of the box that the glyph should
 	// stay within.
@@ -64,7 +64,7 @@ namespace fontlib
 	static matrix	s_render_matrix;
 
 	static Uint8*	s_current_cache_image = NULL;
-	static bitmap_info*	s_current_bitmap_info = NULL;
+	static smart_ptr<bitmap_info>	s_current_bitmap_info;
 
 	// Integer-bounded 2D rectangle.
 	struct recti
@@ -145,8 +145,6 @@ namespace fontlib
 		{
 			// Set up a cache.
 			s_current_bitmap_info = render::create_bitmap_info_blank();
-			s_current_bitmap_info->add_ref();
-			s_current_bitmap_info->add_ref();
 			s_bitmaps_used.push_back(s_current_bitmap_info);
 
 			if (s_current_cache_image == NULL)
@@ -205,13 +203,12 @@ namespace fontlib
 		}
 		else
 		{
-			render::set_alpha_image(s_current_bitmap_info,
+			render::set_alpha_image(s_current_bitmap_info.get_ptr(),
 						GLYPH_CACHE_TEXTURE_SIZE,
 						GLYPH_CACHE_TEXTURE_SIZE,
 						s_current_cache_image);
 		}
 
-		if (s_current_bitmap_info) s_current_bitmap_info->drop_ref();
 		s_current_bitmap_info = NULL;
 	}
 
@@ -668,7 +665,7 @@ namespace fontlib
 
 					// Fill out the glyph info.
 					texture_glyph*	tg = new texture_glyph;
-					tg->set_bitmap_info(s_current_bitmap_info);
+					tg->set_bitmap_info(s_current_bitmap_info.get_ptr());
 					tg->m_uv_origin.m_x = (pack_x + rgi.m_offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
 					tg->m_uv_origin.m_y = (pack_y + rgi.m_offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
 					tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
@@ -906,8 +903,6 @@ namespace fontlib
 		for (int b = 0; b < nb; b++)
 		{
 			s_current_bitmap_info = render::create_bitmap_info_blank();
-			s_current_bitmap_info->add_ref();	// one for s_current_bitmap_info
-			s_current_bitmap_info->add_ref();	// one for s_bitmaps_used
 			s_bitmaps_used.push_back(s_current_bitmap_info);
 
 			// save bitmap size
@@ -926,13 +921,12 @@ namespace fontlib
 			in->read_bytes(s_current_cache_image, w * h);
 
 			render::set_alpha_image(
-				s_current_bitmap_info,
+				s_current_bitmap_info.get_ptr(),
 				w, h,
 				s_current_cache_image);
 		}
 
 		// reset pointers.
-		if (s_current_bitmap_info) s_current_bitmap_info->drop_ref();
 		s_current_bitmap_info = NULL;
 
 		delete [] s_current_cache_image;
@@ -983,7 +977,7 @@ namespace fontlib
 					goto error_exit;
 				}
 
-				tg->set_bitmap_info(s_bitmaps_used[bi + bitmaps_used_base]);
+				tg->set_bitmap_info(s_bitmaps_used[bi + bitmaps_used_base].get_ptr());
 
 				// load glyph bounds and origin.
 				tg->m_uv_bounds.m_x_min = in->read_float32();
@@ -1009,17 +1003,7 @@ namespace fontlib
 	void	clear()
 	// Release all the fonts we know about.
 	{
-		for (int i = 0, n = s_fonts.size(); i < n; i++)
-		{
-			s_fonts[i]->drop_ref();
-		}
 		s_fonts.clear();
-
-		// Release bitmaps.
-		{for (int i = 0, n = s_bitmaps_used.size(); i < n; i++)
-		{
-			s_bitmaps_used[i]->drop_ref();
-		}}
 		s_bitmaps_used.clear();
 	}
 
@@ -1039,7 +1023,7 @@ namespace fontlib
 			return NULL;
 		}
 
-		return s_fonts[index];
+		return s_fonts[index].get_ptr();
 	}
 
 
@@ -1051,7 +1035,7 @@ namespace fontlib
 		{
 			if (strcmp(s_fonts[i]->get_name(), name) == 0)
 			{
-				return s_fonts[i];
+				return s_fonts[i].get_ptr();
 			}
 		}
 		return NULL;
@@ -1082,7 +1066,6 @@ namespace fontlib
 		}
 #endif // not NDEBUG
 
-		f->add_ref();
 		s_fonts.push_back(f);
 	}
 
@@ -1110,7 +1093,7 @@ namespace fontlib
 		bounds.m_y_min *= s_scale;
 		bounds.m_y_max *= s_scale;
 		
-		render::draw_bitmap(mat, tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
+		render::draw_bitmap(mat, tg->m_bitmap_info.get_ptr(), bounds, tg->m_uv_bounds, color);
 	}
 
 

@@ -52,8 +52,8 @@ namespace gameswf
 		rgba	m_color;
 		matrix	m_gradient_matrix;
 		array<gradient_record>	m_gradients;
-		gameswf::bitmap_info*	m_gradient_bitmap_info;
-		bitmap_character_def*	m_bitmap_character;
+		smart_ptr<gameswf::bitmap_info>	m_gradient_bitmap_info;
+		smart_ptr<bitmap_character_def>	m_bitmap_character;
 		matrix	m_bitmap_matrix;
 	};
 
@@ -75,8 +75,8 @@ namespace gameswf
 		rgba m_color[2];
 		matrix m_gradient_matrix[2];
 		array<gradient_record> m_gradients[2];
-		bitmap_info* m_gradient_bitmap_info[2];
-		bitmap_character_def* m_bitmap_character;
+		smart_ptr<bitmap_info> m_gradient_bitmap_info[2];
+		smart_ptr<bitmap_character_def> m_bitmap_character;
 		matrix m_bitmap_matrix[2];
 	};
 

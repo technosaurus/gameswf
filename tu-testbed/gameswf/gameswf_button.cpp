@@ -17,7 +17,7 @@ namespace gameswf
 	struct button_character_instance : public character
 	{
 		button_character_definition*	m_def;
-		array<character*>	m_record_character;
+		array< smart_ptr<character> >	m_record_character;
 
 		enum mouse_flags
 		{
@@ -60,7 +60,6 @@ namespace gameswf
 				const cxform&	cx = m_def->m_button_records[r].m_button_cxform;
 
 				character*	ch = cdef->create_character_instance(this, id);
-				ch->add_ref();
 				m_record_character[r] = ch;
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
@@ -70,12 +69,6 @@ namespace gameswf
 
 		~button_character_instance()
 		{
-			int r, r_num =  m_record_character.size();
-
-			for (r = 0; r < r_num; r++)
-			{
-				m_record_character[r]->drop_ref();
-			}
 		}
 
 		movie_root*	get_root() { return get_parent()->get_root(); }
