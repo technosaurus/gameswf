@@ -198,6 +198,38 @@ void	offset_path(array<float>* path, float x, float y)
 }
 
 
+void	rotate_coord_order(array<float>* path, int rotate_count)
+// Reorder the verts, but preserve the exact same poly shape.
+//
+// rotate_count specifies how 
+{
+	assert(rotate_count >= 0);
+	assert((path->size() & 1) == 0);
+
+	if (path->size() == 0)
+	{
+		return;
+	}
+
+	// Stupid impl...
+	while (rotate_count-- > 0)
+	{
+		// shift coordinates down, rotate first coord to end of array.
+		float	tempx = (*path)[0];
+		float	tempy = (*path)[1];
+
+		int	i;
+		for (i = 0; i < path->size() - 2; i += 2)
+		{
+			(*path)[i] = (*path)[i + 2];
+			(*path)[i + 1] = (*path)[i + 3];
+		}
+		(*path)[i] = tempx;
+		(*path)[i + 1] = tempy;
+	}
+}
+
+
 int	main()
 {
 	array<float>	result;
@@ -214,21 +246,21 @@ int	main()
 	offset_path(&paths.back(), 1200, 100);
 #endif
 
-#if 1
+#if 0
 	// Make a square.
 	paths.resize(paths.size() + 1);
 	make_square(&paths.back(), 1100);
 
-// 	// Make a little square inside.
-// 	paths.resize(paths.size() + 1);
-// 	make_square(&paths.back(), 100);
-// 	reverse_path(&paths.back());
+	// Make a little square inside.
+	paths.resize(paths.size() + 1);
+	make_square(&paths.back(), 100);
+	reverse_path(&paths.back());
 
-// 	// Make a little star island.
-// 	paths.resize(paths.size() + 1);
-// 	make_star(&paths.back(), 50, 250, 3);
-// 	offset_path(&paths.back(), -300, -300);
-// 	reverse_path(&paths.back());
+	// Make a little star island.
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 50, 250, 3);
+	offset_path(&paths.back(), -300, -300);
+	reverse_path(&paths.back());
 
 	// Make a circle.
 	paths.resize(paths.size() + 1);
@@ -248,15 +280,62 @@ int	main()
 #endif
 
 #if 0
-	// Make a star.
- 	static const int	STAR_POINTS = 6;
- 	static const float	INNER_RADIUS = 1000;
- 	static const float	OUTER_RADIUS = 3000;
-//  	static const int	STAR_POINTS = 5;
-//  	static const float	INNER_RADIUS = 1000;
-//  	static const float	OUTER_RADIUS = 3000;
+	// Lots of circles.
+
+	// @@ set this to 100 for a good performance torture test of bridge-finding.
+	// @@ TODO we get "can't find bridge" errors for TEST_DIM=10
+	const int	TEST_DIM = 10;
+	{for (int x = 0; x < TEST_DIM; x++)
+	{
+		for (int y = 0; y < TEST_DIM; y++)
+		{
+			paths.resize(paths.size() + 1);
+			make_star(&paths.back(), 9, 9, 10);
+			offset_path(&paths.back(), float(x) * 20, float(y) * 20);
+		}
+	}}
+#endif
+
+#if 1
+	// Lots of concentric circles.
+	static int	CIRCLE_COUNT = 5;	// CIRCLE_COUNT >= 10 is a good performance test.
+	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
+	{
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 2 + float(i), 2 + float(i), 10 + i * 6);
+		if (i & 1) reverse_path(&paths.back());
+	}}
+#endif
+
+#if 0
+	// test some degenerates.
 	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), INNER_RADIUS, OUTER_RADIUS, STAR_POINTS);
+	paths.back().push_back(0);
+	paths.back().push_back(0);
+	paths.back().push_back(100);
+	paths.back().push_back(-50);
+	paths.back().push_back(120);
+	paths.back().push_back(0);
+	paths.back().push_back(100);
+	paths.back().push_back(50);
+	paths.back().push_back(0);
+	paths.back().push_back(0);
+	paths.back().push_back(-100);
+	paths.back().push_back(-100);
+	rotate_coord_order(&paths.back(), 5);
+#endif
+
+#if 0
+	// Make a star.
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 2300, 3000, 20);
+
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 1210 /* XXX */, 2000, 20);	// @@ a bug shows up when XXX gets below 1215!
+	reverse_path(&paths.back());
+
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(),  800, 1200, 20);
 
 	// Make a star island.
 	paths.resize(paths.size() + 1);
