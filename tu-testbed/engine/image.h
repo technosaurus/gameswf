@@ -82,6 +82,10 @@ namespace image
 	// headers stored in the given jpeg::input object.
 	rgb*	read_swf_jpeg2_with_tables(jpeg::input* loader);
 
+	// For reading SWF JPEG3-style image data, like ordinary JPEG, 
+	// but stores the data in rgba format.
+	rgba*	read_swf_jpeg3(SDL_RWops* in);
+
 	// Fast, in-place, DESTRUCTIVE resample.  For making mip-maps.
 	// Munges the input image to produce the output image.
 	void	make_next_miplevel(rgb* image);

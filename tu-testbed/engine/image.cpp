@@ -204,6 +204,41 @@ namespace image
 		return im;
 	}
 
+	rgba*	read_swf_jpeg3(SDL_RWops* in)
+	// For reading SWF JPEG3-style image data, like ordinary JPEG, 
+	// but stores the data in rgba format.
+	{
+		jpeg::input*	j_in = jpeg::input::create_swf_jpeg2_header_only(in);
+		if (j_in == NULL) return NULL;
+		
+		j_in->start_image();
+
+		rgba*	im = image::create_rgba(j_in->get_width(), j_in->get_height());
+
+		Uint8*	line = new Uint8[3*j_in->get_width()];
+
+		for (int y = 0; y < j_in->get_height(); y++) 
+		{
+			j_in->read_scanline(line);
+
+			Uint8*	data = scanline(im, y);
+			for (int x = 0; x < j_in->get_width(); x++) 
+			{
+				data[4*x+0] = line[3*x+0];
+				data[4*x+1] = line[3*x+1];
+				data[4*x+2] = line[3*x+2];
+				data[4*x+3] = 255;
+			}
+		}
+
+		delete [] line;
+
+		j_in->finish_image();
+		delete j_in;
+
+		return im;
+	}
+
 
 #if 0
 	SDL_Surface*	create_SDL_Surface(rgb* image)
