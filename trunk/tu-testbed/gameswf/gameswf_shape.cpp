@@ -406,7 +406,7 @@ namespace gameswf
 	{
 	}
 
-	mesh_set::mesh_set(const shape_character* sh, float error_tolerance)
+	mesh_set::mesh_set(const shape_character_def* sh, float error_tolerance)
 	// Tesselate the shape's paths into a different mesh for each fill style.
 		:
 //		m_last_frame_rendered(0),
@@ -477,7 +477,8 @@ namespace gameswf
 
 
 	void	mesh_set::display(
-		const display_info& di,
+		const matrix& mat,
+		const cxform& cx,
 		const array<fill_style>& fills,
 		const array<line_style>& line_styles) const
 	// Throw our meshes at the renderer.
@@ -485,8 +486,8 @@ namespace gameswf
 		assert(m_error_tolerance > 0);
 
 		// Setup transforms.
-		render::set_matrix(di.m_matrix);
-		render::set_cxform(di.m_color_transform);
+		render::set_matrix(mat);
+		render::set_cxform(cx);
 
 		// Dump meshes into renderer, one mesh per style.
 		{for (int i = 0; i < m_meshes.size(); i++)
@@ -579,7 +580,7 @@ namespace gameswf
 	//
 
 
-	static void	read_fill_styles(array<fill_style>* styles, stream* in, int tag_type, movie_definition* m)
+	static void	read_fill_styles(array<fill_style>* styles, stream* in, int tag_type, movie_definition_sub* m)
 	// Read fill styles, and push them onto the given style array.
 	{
 		assert(styles);
@@ -634,16 +635,16 @@ namespace gameswf
 
 
 	//
-	// shape_character
+	// shape_character_def
 	//
 
 
-	shape_character::shape_character()
+	shape_character_def::shape_character_def()
 	{
 	}
 
 
-	shape_character::~shape_character()
+	shape_character_def::~shape_character_def()
 	{
 		// Free our mesh_sets.
 		for (int i = 0; i < m_cached_meshes.size(); i++)
@@ -653,7 +654,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character::read(stream* in, int tag_type, bool with_style, movie_definition* m)
+	void	shape_character_def::read(stream* in, int tag_type, bool with_style, movie_definition_sub* m)
 	{
 		if (with_style)
 		{
@@ -869,25 +870,29 @@ namespace gameswf
 	}
 
 
-	void	shape_character::display(const display_info& di)
+	void	shape_character_def::display(character* inst)
 	// Draw the shape using our own inherent styles.
 	{
-		display(di, m_fill_styles, m_line_styles);
+		matrix	mat = inst->get_world_matrix();
+		cxform	cx = inst->get_world_cxform();
+
+		float	pixel_scale = inst->get_parent()->get_pixel_scale();
+		display(mat, cx, pixel_scale, m_fill_styles, m_line_styles);
 	}
 
 		
-	void	shape_character::display(
-		const display_info& di,
+	void	shape_character_def::display(
+		const matrix& mat,
+		const cxform& cx,
+		float pixel_scale,
 		const array<fill_style>& fill_styles,
 		const array<line_style>& line_styles) const
 	// Display our shape.  Use the fill_styles arg to
 	// override our default set of fill styles (e.g. when
 	// rendering text).
 	{
-		assert(di.m_movie);
-
 		// Compute the error tolerance in object-space.
-		float	object_space_max_error = 20.0f / di.m_matrix.get_max_scale() / di.m_movie->get_pixel_scale();
+		float	object_space_max_error = 20.0f / mat.get_max_scale() / pixel_scale;
 
 		// See if we have an acceptable mesh available; if so then render with it.
 		bool rendered = false;
@@ -903,8 +908,7 @@ namespace gameswf
 			if (object_space_max_error > m_cached_meshes[i]->get_error_tolerance())
 			{
 				// Do it.
-				m_cached_meshes[i]->display(di, fill_styles, line_styles);
-//				m_cached_meshes[i]->set_last_frame_rendered(di.m_display_number);
+				m_cached_meshes[i]->display(mat, cx, fill_styles, line_styles);
 				rendered = true;
 				break;
 			}
@@ -915,8 +919,7 @@ namespace gameswf
 			// Construct a new mesh to handle this error tolerance.
 			mesh_set*	m = new mesh_set(this, object_space_max_error * 0.75f);
 			m_cached_meshes.push_back(m);
-			m->display(di, fill_styles, line_styles);
-//			m->set_last_frame_rendered(di.m_display_number);
+			m->display(mat, cx, fill_styles, line_styles);
 
 			sort_and_clean_meshes();
 		}
@@ -943,7 +946,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character::sort_and_clean_meshes() const
+	void	shape_character_def::sort_and_clean_meshes() const
 	// Maintain cached meshes.  Clean out mesh_sets that haven't
 	// been used recently, and make sure they're sorted from high
 	// error to low error.
@@ -960,7 +963,7 @@ namespace gameswf
 	}
 
 		
-	void	shape_character::tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const
+	void	shape_character_def::tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const
 	// Push our shape data through the tesselator.
 	{
 		tesselate::begin_shape(accepter, error_tolerance);
@@ -981,8 +984,9 @@ namespace gameswf
 	}
 
 
-	bool	shape_character::point_test(float x, float y)
+	bool	shape_character_def::point_test_local(float x, float y)
 	// Return true if the specified point is on the interior of our shape.
+	// Incoming coords are local coords.
 	{
 		if (m_bound.point_test(x, y) == false)
 		{
@@ -1006,7 +1010,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character::compute_bound(rect* r) const
+	void	shape_character_def::compute_bound(rect* r) const
 	// Find the bounds of this shape, and store them in
 	// the given rectangle.
 	{
@@ -1028,7 +1032,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character::output_cached_data(tu_file* out)
+	void	shape_character_def::output_cached_data(tu_file* out)
 	// Dump our precomputed mesh data to the given stream.
 	{
 		int	n = m_cached_meshes.size();
@@ -1041,7 +1045,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character::input_cached_data(tu_file* in)
+	void	shape_character_def::input_cached_data(tu_file* in)
 	// Initialize our mesh data from the given stream.
 	{
 		int	n = in->read_le32();

@@ -139,7 +139,7 @@ namespace gameswf
 		}
 
 
-		void	read(stream* in, int tag_type, movie_definition* m, const sound_sample_impl* sam)
+		void	read(stream* in, int tag_type, movie_definition_sub* m, const sound_sample_impl* sam)
 		// Initialize this StartSound tag from the stream & given sample.
 		// Insert ourself into the movie.
 		{
@@ -216,7 +216,7 @@ namespace gameswf
 
 
 // @@ currently not implemented
-//	void	sound_stream_loader(stream* in, int tag_type, movie_definition* m)
+//	void	sound_stream_loader(stream* in, int tag_type, movie_definition_sub* m)
 //	// Load the various stream-related tags: SoundStreamHead,
 //	// SoundStreamHead2, SoundStreamBlock.
 //	{

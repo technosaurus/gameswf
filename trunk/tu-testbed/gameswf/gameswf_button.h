@@ -21,12 +21,12 @@ namespace gameswf
 		bool	m_down;
 		bool	m_over;
 		bool	m_up;
-		character*	m_character;
+		character_def*	m_character;
 		int	m_button_layer;
 		matrix	m_button_matrix;
 		cxform	m_button_cxform;
 
-		bool	read(stream* in, int tag_type, movie_definition* m);
+		bool	read(stream* in, int tag_type, movie_definition_sub* m);
 	};
 	
 
@@ -51,16 +51,16 @@ namespace gameswf
 	};
 
 
-	struct button_character_definition : public character
+	struct button_character_definition : public character_def
 	{
 		bool m_menu;
 		array<button_record>	m_button_records;
 		array<button_action>	m_button_actions;
 
 		button_character_definition();
-		bool	is_definition() const;
-		character*	create_character_instance(movie* m);
-		void	read(stream* in, int tag_type, movie_definition* m);
+//		bool	is_definition() const;
+		character*	create_character_instance(movie* parent);
+		void	read(stream* in, int tag_type, movie_definition_sub* m);
 	};
 
 };	// end namespace gameswf

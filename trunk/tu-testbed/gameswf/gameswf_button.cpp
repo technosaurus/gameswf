@@ -14,11 +14,29 @@
 
 namespace gameswf
 {
-	
+	// Dumb little proxy for holding button characters & applying transforms.
+	struct button_record_container : public character
+	{
+		int	m_id;
+
+		button_record_container(movie* parent, const matrix& mat, const cxform& cx, int id)
+			:
+			character(parent),
+			m_id(id)
+		{
+			set_matrix(mat);
+			set_cxform(cx);
+		}
+
+		virtual int	get_id() const { return m_id; }
+		virtual const char*	get_name() const { return ""; }
+	};
+
 	struct button_character_instance : public character
 	{
 		button_character_definition*	m_def;
-		array<character *>	m_record_character;
+		array<character*>	m_record_character;
+		array<button_record_container*>	m_container;
 
 		enum mouse_flags
 		{
@@ -43,45 +61,49 @@ namespace gameswf
 
 		button_character_instance(button_character_definition* def, movie* parent)
 			:
+			character(parent),
 			m_def(def),
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
 			m_mouse_state(UP)
 		{
 			assert(m_def);
-			set_id(def->get_id());
 
 			int r, r_num =  m_def->m_button_records.size();
 			m_record_character.resize(r_num);
+			m_container.resize(r_num);
 
 			for (r = 0; r < r_num; r++)
 			{
-				character * ch = m_def->m_button_records[r].m_character;
-				if (ch->is_definition())
-				{
-					m_record_character[r] = ch->create_character_instance(parent);
-					m_record_character[r]->restart();
-				}
-				else 
-				{
-					m_record_character[r] = ch;
-				}
+				character_def* cdef = m_def->m_button_records[r].m_character;
+				const matrix&	mat = m_def->m_button_records[r].m_button_matrix;
+				const cxform&	cx = m_def->m_button_records[r].m_button_cxform;
+				button_record_container*	container = new button_record_container(
+					this, mat, cx, get_id());
+				m_container[r] = container;
+
+				character*	ch = cdef->create_character_instance(container);
+				m_record_character[r] = ch;
+				ch->restart();
 			}
 		}
 
 		~button_character_instance()
 		{
 			int r, r_num =  m_record_character.size();
+			assert(m_container.size() == r_num);
+
 			for (r = 0; r < r_num; r++)
 			{
-				if (m_record_character[r]->is_instance())
-				{
-					delete m_record_character[r];
-				}
+				delete m_record_character[r];
+				delete m_container[r];
 			}
 		}
 
-		bool	is_instance() const { return true; }
+		movie_root*	get_movie_root() { return get_parent()->get_movie_root(); }
+
+		virtual int	get_id() const { return m_def->get_id(); }
+		virtual const char*	get_name() const { return m_def->get_name(); }
 
 		void	restart()
 		{
@@ -91,30 +113,24 @@ namespace gameswf
 			int r, r_num =  m_record_character.size();
 			for (r = 0; r < r_num; r++)
 			{
-				if (m_record_character[r]->is_instance())
-				{
-					m_record_character[r]->restart();
-				}
+				m_record_character[r]->restart();
 			}
 		}
 
 
-		void	advance(float delta_time, movie* m, const matrix& mat)
+		void	advance(float delta_time)
 		{
-			assert(m);
+			matrix	mat = get_world_matrix();
 
-// @@ fix this
-//			// Get current mouse capture.
-//			int id = m->get_mouse_capture();
-			int	id = -1;
+			// Get current mouse capture.
+			int id = get_parent()->get_mouse_capture();
 
 			// update state if no mouse capture or we have the capture.
 			//if (id == -1 || (!m_def->m_menu && id == get_id()))
 			if (id == -1 || id == get_id())
 			{
-				update_state(m, mat);
+				update_state(mat);
 			}
-
 
 			// Advance our relevant characters.
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
@@ -131,27 +147,27 @@ namespace gameswf
 				{
 					if (rec.m_up)
 					{
-						m_record_character[i]->advance(delta_time, m, sub_matrix);
+						m_record_character[i]->advance(delta_time);
 					}
 				}
 				else if (m_mouse_state == DOWN)
 				{
 					if (rec.m_down)
 					{
-						m_record_character[i]->advance(delta_time, m, sub_matrix);
+						m_record_character[i]->advance(delta_time);
 					}
 				}
 				else if (m_mouse_state == OVER)
 				{
 					if (rec.m_over)
 					{
-						m_record_character[i]->advance(delta_time, m, sub_matrix);
+						m_record_character[i]->advance(delta_time);
 					}
 				}
 			}}
 		}
 
-		void	display(const display_info& di)
+		void	display()
 		{
 			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
@@ -164,10 +180,11 @@ namespace gameswf
 				    || (m_mouse_state == DOWN && rec.m_down)
 				    || (m_mouse_state == OVER && rec.m_over))
 				{
-					display_info	sub_di = di;
-					sub_di.m_matrix.concatenate(rec.m_button_matrix);
-					sub_di.m_color_transform.concatenate(rec.m_button_cxform);
-					m_record_character[i]->display(sub_di);
+//					display_info	sub_di = di;
+//					sub_di.m_matrix.concatenate(rec.m_button_matrix);
+//					sub_di.m_color_transform.concatenate(rec.m_button_cxform);
+					// @@ Hm, do we need a proxy container here?
+					m_record_character[i]->display();
 				}
 			}
 		}
@@ -178,14 +195,14 @@ namespace gameswf
 			return (a << 2) | b;
 		}
 
-		void	update_state(movie* m, const matrix& mat) 
+		void	update_state(const matrix& mat)
 		// Update button state.
 		{
 
 			// Look at the mouse state, and figure out our button state.  We want to
 			// know if the mouse is hovering over us, and whether it's clicking on us.
 			int	mx, my, mbuttons;
-			m->get_mouse_state(&mx, &my, &mbuttons);
+			get_parent()->get_mouse_state(&mx, &my, &mbuttons);
 
 			m_last_mouse_flags = m_mouse_flags;
 			m_mouse_flags = 0;
@@ -204,10 +221,11 @@ namespace gameswf
 				}
 
 				// Find the mouse position in character-space.
+				// @@ suspicious!
 				point	sub_mouse_position;
 				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
 
-				if (rec.m_character->point_test(sub_mouse_position.m_x, sub_mouse_position.m_y))
+				if (rec.m_character->point_test_local(sub_mouse_position.m_x, sub_mouse_position.m_y))
 				{
 					// The mouse is inside the shape.
 					m_mouse_flags |= FLAG_OVER;
@@ -278,13 +296,13 @@ namespace gameswf
 				{
 					c = button_action::OVER_UP_TO_OVER_DOWN;
 					m_mouse_state = DOWN;
-					m->set_mouse_capture( get_id() );
+					get_parent()->set_mouse_capture( get_id() );
 				}
 				else if (t == transition(OVER_DOWN, OVER_UP))	// Release
 				{
 					c = button_action::OVER_DOWN_TO_OVER_UP;
 					m_mouse_state = OVER;
-					m->set_mouse_capture( -1 );
+					get_parent()->set_mouse_capture( -1 );
 				}
 				else if (t == transition(OUT_DOWN, OVER_DOWN))	// Drag Over
 				{
@@ -300,7 +318,7 @@ namespace gameswf
 				{
 					c = button_action::OUT_DOWN_TO_IDLE;
 					m_mouse_state = UP;
-					m->set_mouse_capture( -1 );
+					get_parent()->set_mouse_capture( -1 );
 				}
 			}
 
@@ -315,7 +333,7 @@ namespace gameswf
 					// Matching action.
 					for (int j = 0; j < m_def->m_button_actions[i].m_actions.size(); j++)
 					{
-						m->add_action_buffer(&(m_def->m_button_actions[i].m_actions[j]));
+						get_parent()->add_action_buffer(&(m_def->m_button_actions[i].m_actions[j]));
 					}
 				}
 			}}
@@ -363,7 +381,7 @@ namespace gameswf
 	// button_record
 	//
 
-	bool	button_record::read(stream* in, int tag_type, movie_definition* m)
+	bool	button_record::read(stream* in, int tag_type, movie_definition_sub* m)
 	// Return true if we read a record; false if this is a null record.
 	{
 		int	flags = in->read_u8();
@@ -377,7 +395,7 @@ namespace gameswf
 		m_up = flags & 1 ? true : false;
 
 		int	cid = in->read_u16();
-		m_character = m->get_character(cid);
+		m_character = m->get_character_def(cid);
 		m_button_layer = in->read_u16(); 
 		m_button_matrix.read(in);
 
@@ -425,16 +443,16 @@ namespace gameswf
 	}
 
 
-	bool	button_character_definition::is_definition() const
-	// Return true, so that a containing movie knows to create an instance
-	// for storing in its display list, instead of storing the definition
-	// directly.
-	{
-		return true;
-	}
+// 	bool	button_character_definition::is_definition() const
+// 	// Return true, so that a containing movie knows to create an instance
+// 	// for storing in its display list, instead of storing the definition
+// 	// directly.
+// 	{
+// 		return true;
+// 	}
 
 
-	void	button_character_definition::read(stream* in, int tag_type, movie_definition* m)
+	void	button_character_definition::read(stream* in, int tag_type, movie_definition_sub* m)
 	// Initialize from the given stream.
 	{
 		assert(tag_type == 7 || tag_type == 34);
@@ -507,12 +525,10 @@ namespace gameswf
 	}
 
 
-	character*	button_character_definition::create_character_instance(movie* m)
-	// Create a mutable instance of our definition.  The instance is
-	// designed to be put on the display list, possibly active at the same
-	// time as other instances of the same definition.
+	character*	button_character_definition::create_character_instance(movie* parent)
+	// Create a mutable instance of our definition.
 	{
-		return new button_character_instance(this, m);
+		return new button_character_instance(this, parent);
 	}
 };
 

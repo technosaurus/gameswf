@@ -220,6 +220,9 @@ namespace gameswf
 	//
 
 
+	cxform	cxform::identity;
+
+
 	cxform::cxform()
 	// Initialize to identity transform.
 	{
@@ -393,30 +396,6 @@ namespace gameswf
 			TWIPS_TO_PIXELS(m_x_max),
 			TWIPS_TO_PIXELS(m_y_max));
 	}
-
-#if 0
-	void	rect::debug_display(const display_info& di)
-	// Show the rectangle.
-	{
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-
-		di.m_matrix.apply();
-
-		glColor3f(1, 1, 0);
-		glBegin(GL_LINE_STRIP);
-		{
-			glVertex2f(m_x_min, m_y_min);
-			glVertex2f(m_x_min, m_y_max);
-			glVertex2f(m_x_max, m_y_max);
-			glVertex2f(m_x_max, m_y_min);
-			glVertex2f(m_x_min, m_y_min);
-		}
-		glEnd();
-
-		glPopMatrix();
-	}
-#endif // 0
 
 	
 	bool	rect::point_test(float x, float y) const

@@ -13,13 +13,14 @@
 #include "base/container.h"
 #include "gameswf.h"
 #include "gameswf_types.h"
+#include "gameswf_impl.h"
 class tu_file;
 
 
 namespace gameswf
 {
 	struct movie;
-	struct shape_character;
+	struct shape_character_def;
 	struct stream;
 	struct bitmap_info;
 
@@ -44,15 +45,15 @@ namespace gameswf
 		virtual font*	cast_to_font() { return this; }
 
 		int	get_glyph_count() const { return m_glyphs.size(); }
-		shape_character*	get_glyph(int glyph_index) const;
-		void	read(stream* in, int tag_type, movie_definition* m);
+		shape_character_def*	get_glyph(int glyph_index) const;
+		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	read_font_info(stream* in);
 
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
 
 		const char*	get_name() const { return m_name; }
-		movie_definition*	get_owning_movie() const { return m_owning_movie; }
+		movie_definition_sub*	get_owning_movie() const { return m_owning_movie; }
 
 		const texture_glyph*	get_texture_glyph(int glyph_index) const;
 		void	add_texture_glyph(int glyph_index, const texture_glyph* glyph);
@@ -66,10 +67,10 @@ namespace gameswf
 	private:
 		void	read_code_table(stream* in);
 
-		array<shape_character*>	m_glyphs;
+		array<shape_character_def*>	m_glyphs;
 		array<const texture_glyph*>	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
 		char*	m_name;
-		movie_definition*	m_owning_movie;
+		movie_definition_sub*	m_owning_movie;
 		bool	m_has_layout;
 		bool	m_unicode_chars;
 		bool	m_shift_jis_chars;

@@ -441,7 +441,7 @@ namespace fontlib
 	};
 
 
-	static void	render_glyph(rendered_glyph_info* rgi, const shape_character* sh)
+	static void	render_glyph(rendered_glyph_info* rgi, const shape_character_def* sh)
 	// Render the given outline shape into a cached font texture.
 	// 
 	// Return fill in the image and offset members of the given
@@ -725,7 +725,7 @@ namespace fontlib
 		{
 			if (f->get_texture_glyph(i) == NULL)
 			{
-				shape_character*	sh = f->get_glyph(i);
+				shape_character_def*	sh = f->get_glyph(i);
 				if (sh)
 				{
 					rect	glyph_bounds;
@@ -1084,6 +1084,7 @@ namespace fontlib
 	}
 
 
+#if 0
 	void	draw_string(const font* f, float x, float y, float size, const char* text)
 	// Host-driven text rendering function. This not-tested and unfinished.
 	{
@@ -1119,12 +1120,12 @@ namespace fontlib
 			}
 			else
 			{
-				shape_character*	glyph = f->get_glyph(g);
+				shape_character_def*	glyph = f->get_glyph(g);
 
 				// Draw the character using the filled outline.
 				if (glyph)
 				{
-					glyph->display(s_dummy_display_info, s_dummy_style, s_dummy_line_style);
+					glyph->display(dummy_inst, s_dummy_style, s_dummy_line_style);
 				}
 			}
 
@@ -1132,6 +1133,7 @@ namespace fontlib
 		}
 
 	}
+#endif // 0
 
 }	// end namespace fontlib
 }	// end namespace gameswf

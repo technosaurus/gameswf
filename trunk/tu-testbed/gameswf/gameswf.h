@@ -26,8 +26,6 @@ class tu_string;
 namespace gameswf
 {
 	struct action_buffer;
-	struct bitmap_character;
-	struct character;
 	struct execute_tag;
 	struct font;
 	struct movie_interface;
@@ -51,33 +49,12 @@ namespace gameswf
 
 		virtual movie_interface*	create_instance() = 0;
 
-		// For use during creation.
-		virtual int	get_loading_frame() const = 0;
-		virtual void	add_character(int id, character* ch) = 0;
-		virtual void	add_font(int id, font* ch) = 0;
-		virtual font*	get_font(int id) = 0;
-		virtual void	add_execute_tag(execute_tag* c) = 0;
-		virtual void	add_frame_name(const char* name) = 0;
-		virtual void	set_jpeg_loader(jpeg::input* j_in) = 0;
-		virtual jpeg::input*	get_jpeg_loader() = 0;
-		virtual bitmap_character*	get_bitmap_character(int character_id) = 0;
-		virtual void	add_bitmap_character(int character_id, bitmap_character* ch) = 0;
-		virtual sound_sample*	get_sound_sample(int character_id) = 0;
-		virtual void	add_sound_sample(int character_id, sound_sample* sam) = 0;
-		virtual void	export_resource(const tu_string& symbol, resource* res) = 0;
-
-		virtual resource*	get_exported_resource(const tu_string& symbol) = 0;
-		virtual character*	get_character(int id) = 0;
-
-		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
-
-		virtual void	generate_font_bitmaps() = 0;
-
 		// For caching precomputed stuff.  Generally of
 		// interest to gameswf_processor and programs like it.
 		virtual void	output_cached_data(tu_file* out) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
 	};
+
 
 	//
 	// This is the client program's interface to an instance of a
@@ -376,6 +353,8 @@ namespace gameswf
 		rgba	transform(const rgba in) const;
 		void	read_rgb(stream* in);
 		void	read_rgba(stream* in);
+
+		static cxform	identity;
 	};
 
 

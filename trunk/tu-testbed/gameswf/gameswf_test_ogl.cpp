@@ -200,27 +200,6 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
-#if 0
-	tu_string	cache_name(infile);
-	cache_name += ".cache";
-
-	if (s_cache)
-	{
-		tu_file*	cache_out = new tu_file(cache_name.c_str(), "wb");
-		if (cache_out->get_error() != TU_FILE_NO_ERROR)
-		{
-			printf("\nError: can't open %s for cache output!\n", cache_name.c_str());
-		}
-		else
-		{
-			printf("\nsaving %s...\n", cache_name.c_str());
-			gameswf::fontlib::save_cached_font_data(cache_out);
-		}
-		delete cache_out;
-		exit(0);
-	}
-#endif // 0
-	
 	// Initialize the SDL subsystems we're using.
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM*/))
 	{

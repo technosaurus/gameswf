@@ -17,6 +17,25 @@
 
 namespace gameswf
 {
+	/*static*/ int	display_object_info::compare(const void* _a, const void* _b)
+	{
+		display_object_info*	a = (display_object_info*) _a;
+		display_object_info*	b = (display_object_info*) _b;
+
+		if (a->m_character->get_depth() < b->m_character->get_depth())
+		{
+			return -1;
+		}
+		else if (a->m_character->get_depth() == b->m_character->get_depth())
+		{
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
+	}
+
 	
 	int	display_list::find_display_index(int depth)
 		// Find the index in the display list matching the given
@@ -37,7 +56,7 @@ namespace gameswf
 			jump >>= 1;
 			if (jump < 1) jump = 1;
 			
-			if (depth > m_display_object_array[index].m_depth) {
+			if (depth > m_display_object_array[index].m_character->get_depth()) {
 				if (index == size - 1)
 				{
 					index = size;
@@ -45,10 +64,10 @@ namespace gameswf
 				}
 				index += jump;
 			}
-			else if (depth < m_display_object_array[index].m_depth)
+			else if (depth < m_display_object_array[index].m_character->get_depth())
 			{
 				if (index == 0
-					|| depth > m_display_object_array[index - 1].m_depth)
+					|| depth > m_display_object_array[index - 1].m_character->get_depth())
 				{
 					break;
 				}
@@ -72,7 +91,7 @@ namespace gameswf
 	{
 		int	index = find_display_index(depth);
 		if (index >= m_display_object_array.size()
-			|| get_display_object(index).m_depth != depth)
+			|| get_display_object(index).m_character->get_depth() != depth)
 		{
 			// No object at that depth.
 			return -1;
@@ -82,7 +101,6 @@ namespace gameswf
 	
 	
 	void	display_list::add_display_object(
-		movie* parent_movie,
 		character* ch, 
 		Uint16 depth, 
 		const cxform& color_xform, 
@@ -94,41 +112,20 @@ namespace gameswf
 		
 		// Try to move an existing character before creating a new one.
 		int index = find_display_index(depth);
-		
-		if (index < m_display_object_array.size()
-			&& get_display_object(index).m_depth == depth
-			&& get_display_object(index).m_character->get_id() == ch->get_id())
-		{
-			display_object_info&	di = m_display_object_array[index];
-			di.m_ref = true;
-			di.m_color_transform = color_xform;
-			di.m_matrix = mat;
-			di.m_ratio = ratio;
-			di.m_clip_depth = clip_depth;
-			return;
-		}
-		
-		// If the character needs per-instance state, then
-		// create the instance here, and substitute it for the
-		// definition.
-		if (ch->is_definition())
-		{
-			ch = ch->create_character_instance(parent_movie);
-			ch->restart();
-		}
-		
+
+		ch->set_depth(depth);
+
 		display_object_info	di;
-		di.m_movie = parent_movie;
 		di.m_ref = true;
 		di.m_character = ch;
-		di.m_depth = depth;
-		di.m_color_transform = color_xform;
-		di.m_matrix = mat;
-		di.m_ratio = ratio;
-		di.m_clip_depth = clip_depth;
-		
+		di.m_character->set_depth(depth);
+		di.m_character->set_cxform(color_xform);
+		di.m_character->set_matrix(mat);
+		di.m_character->set_ratio(ratio);
+		di.m_character->set_clip_depth(clip_depth);
+
 		// Insert into the display list...
-		index = find_display_index(di.m_depth);
+		index = find_display_index(depth);
 		
 		m_display_object_array.insert(index, di);
 	}
@@ -164,7 +161,8 @@ namespace gameswf
 		}
 		
 		display_object_info&	di = m_display_object_array[index];
-		if (di.m_depth != depth)
+		character*	ch = di.m_character;
+		if (ch->get_depth() != depth)
 		{
 			// error
 			log_error("error: move_display_object() -- no object at depth %d\n", depth);
@@ -174,19 +172,18 @@ namespace gameswf
 		
 		if (use_cxform)
 		{
-			di.m_color_transform = color_xform;
+			ch->set_cxform(color_xform);
 		}
 		if (use_matrix)
 		{
-			di.m_matrix = mat;
+			ch->set_matrix(mat);
 		}
-		di.m_ratio = ratio;
-		di.m_clip_depth = clip_depth;
+		ch->set_ratio(ratio);
+		ch->set_clip_depth(clip_depth);
 	}
 	
 	
 	void	display_list::replace_display_object(
-		movie* parent_movie,
 		character* ch,
 		Uint16 depth,
 		bool use_cxform,
@@ -217,7 +214,7 @@ namespace gameswf
 		}
 		
 		display_object_info&	di = m_display_object_array[index];
-		if (di.m_depth != depth)
+		if (di.m_character->get_depth() != depth)
 		{
 			// error
 			IF_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
@@ -225,38 +222,42 @@ namespace gameswf
 			return;
 		}
 		
-		// If the old character is an instance, then delete it.
-		if (di.m_character->is_instance())
-		{
-			delete di.m_character;
-			di.m_character = 0;
-		}
-		
+		character*	old_ch = di.m_character;
+
 		// Put the new character in its place.
 		assert(ch);
-		
-		// If the character needs per-instance state, then
-		// create the instance here, and substitute it for the
-		// definition.
-		if (ch->is_definition())
-		{
-			ch = ch->create_character_instance(parent_movie);
-			ch->restart();
-		}
+		ch->set_depth(depth);
+		ch->restart();
 		
 		// Set the display properties.
 		di.m_ref = true;
 		di.m_character = ch;
+
 		if (use_cxform)
 		{
-			di.m_color_transform = color_xform;
+			ch->set_cxform(color_xform);
 		}
+		else
+		{
+			// Use the cxform from the old character.
+			ch->set_cxform(old_ch->get_cxform());
+		}
+
 		if (use_matrix)
 		{
-			di.m_matrix = mat;
+			ch->set_matrix(mat);
 		}
-		di.m_ratio = ratio;
-		di.m_clip_depth = clip_depth;
+		else
+		{
+			// Use the matrix from the old character.
+			ch->set_matrix(old_ch->get_matrix());
+		}
+
+		ch->set_ratio(ratio);
+		ch->set_clip_depth(clip_depth);
+
+		// Delete the old character.
+		delete old_ch;
 	}
 	
 	
@@ -294,10 +295,7 @@ namespace gameswf
 		for (i = 0; i < n; i++)
 		{
 			character*	ch = m_display_object_array[i].m_character;
-			if (ch->is_instance())
-			{
-				delete ch;
-			}
+			delete ch;
 		}
 		
 		m_display_object_array.clear();
@@ -329,11 +327,9 @@ namespace gameswf
 			
 			if (dobj.m_ref == false)
 			{
-				if (dobj.m_character->is_instance())
-				{
-					delete dobj.m_character;
-					dobj.m_character = NULL;
-				}
+				delete dobj.m_character;
+				dobj.m_character = NULL;
+
 				m_display_object_array.remove(i);
 				r++;
 			}
@@ -343,7 +339,7 @@ namespace gameswf
 	}
 	
 	
-	void	display_list::advance(float delta_time, movie* m)
+	void	display_list::advance(float delta_time)
 	// advance referenced characters.
 	{
 		int i, n = m_display_object_array.size();
@@ -353,28 +349,11 @@ namespace gameswf
 			
 			if (dobj.m_ref == true)
 			{
-				dobj.m_character->advance(delta_time, m, dobj.m_matrix);
+				dobj.m_character->advance(delta_time);
 			}
 		}
 	}
 	
-	
-	void	display_list::advance(float delta_time, movie* m, const matrix& mat)
-	// advance referenced characters.
-	{
-		int i, n = m_display_object_array.size();
-		for (i = 0; i < n; i++)
-		{
-			display_object_info & dobj = m_display_object_array[i];
-			
-			if (dobj.m_ref == true)
-			{
-				matrix	sub_matrix = mat;
-				sub_matrix.concatenate(dobj.m_matrix);
-				dobj.m_character->advance(delta_time, m, sub_matrix);
-			}
-		}
-	}
 	
 	void	display_list::display()
 	// Display the referenced characters. Lower depths
@@ -386,20 +365,22 @@ namespace gameswf
 		//log_msg("number of objects to be drawn %i\n", m_display_object_array.size());
 		
 		for (int i = 0; i < m_display_object_array.size(); i++)
-		{                        
+		{
 			display_object_info&	dobj = m_display_object_array[i];
+
+			character*	ch = dobj.m_character;
 			
-			if (dobj.m_clip_depth > 0)
+			if (ch->get_clip_depth() > 0)
 			{
-				log_msg("depth %i, clip_depth %i\n", dobj.m_depth, dobj.m_clip_depth);
+//				log_msg("depth %i, clip_depth %i\n", dobj.m_depth, dobj.m_clip_depth);
 			}
 
 			// check whether a previous mask should be disabled
 			if (masked)
 			{
-				if (dobj.m_depth > highest_masked_layer)
+				if (ch->get_depth() > highest_masked_layer)
 				{
-					log_msg("disabled mask before drawing depth %i\n", dobj.m_depth);
+					log_msg("disabled mask before drawing depth %i\n", ch->get_depth());
 					masked = false;
 					// turn off mask
 					render::disable_mask();
@@ -407,66 +388,40 @@ namespace gameswf
 			}
 
 			// check whether this object should become mask
-			if (dobj.m_clip_depth > 0)
+			if (ch->get_clip_depth() > 0)
 			{
 				log_msg("begin submit mask\n");
 				render::begin_submit_mask();
 			}
 			
-			dobj.m_character->display(dobj);
+			ch->display();
 
-			if (dobj.m_clip_depth > 0)
+			if (ch->get_clip_depth() > 0)
 			{
-				log_msg("object drawn\n");
+//				log_msg("object drawn\n");
 			}
 			
 			// if this object should have become a mask,
 			// inform the renderer that it now has all
 			// information about it
-			if (dobj.m_clip_depth > 0)
+			if (ch->get_clip_depth() > 0)
 			{
 				log_msg("end submit mask\n");
 				render::end_submit_mask();
-				highest_masked_layer = dobj.m_clip_depth;
+				highest_masked_layer = ch->get_clip_depth();
 				masked = true;
 			}
 		}
 		
 		if (masked)
 		{
-			// if a mask masks the scene all the way upto the highest layer, it will not be disabled at the end
-			// of drawing the display list, so disable it manually
+			// If a mask masks the scene all the way up to the highest
+			// layer, it will not be disabled at the end of drawing
+			// the display list, so disable it manually.
 			render::disable_mask();
 		}
 	}
-	
-	void	display_list::display(const display_info & di)
-		// Display the referenced characters.
-	{    
-		//log_msg("drawing object at depth %i\n", di.m_depth);
-		for (int i = 0; i < m_display_object_array.size(); i++)
-		{
-			display_object_info&	dobj = m_display_object_array[i];
-			display_info	sub_di = di;
-			sub_di.concatenate(dobj);
-			dobj.m_character->display(sub_di);
-		}
-	}
 
-
-	void	display_list::set_character_position(character* ch, float x, float y)
-	// Move the specified character.
-	{
-		for (int i = 0; i < m_display_object_array.size(); i++)
-		{
-			display_object_info&	dobj = m_display_object_array[i];
-			if (dobj.m_character == ch)
-			{
-				dobj.m_matrix.m_[0][2] = x;
-				dobj.m_matrix.m_[1][2] = y;
-			}
-		}
-	}
 }
 
 

@@ -49,7 +49,7 @@ namespace gameswf
 		}
 	}
 
-	shape_character*	font::get_glyph(int index) const
+	shape_character_def*	font::get_glyph(int index) const
 	{
 		if (index >= 0 && index < m_glyphs.size())
 		{
@@ -93,7 +93,7 @@ namespace gameswf
 	}
 
 
-	void	font::read(stream* in, int tag_type, movie_definition* m)
+	void	font::read(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		assert(tag_type == 10 || tag_type == 48);
 
@@ -128,7 +128,7 @@ namespace gameswf
 				in->set_position(new_pos);
 
 				// Create & read the shape.
-				shape_character* s = new shape_character;
+				shape_character_def* s = new shape_character_def;
 				s->read(in, 2, false, m);
 
 				m_glyphs.push_back(s);
@@ -199,7 +199,7 @@ namespace gameswf
 				in->set_position(new_pos);
 
 				// Create & read the shape.
-				shape_character* s = new shape_character;
+				shape_character_def* s = new shape_character_def;
 				s->read(in, 22, false, m);
 
 				m_glyphs.push_back(s);
