@@ -22,8 +22,8 @@ all: \
 	maketqt$(EXE_EXT)	\
 	decimate_texture$(EXE_EXT)
 
-heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(BASE_LIB) $(GEOMETRY_LIB)
-	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)
+heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(GEOMETRY_LIB) $(BASE_LIB)
+	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS) $(BASE_LIB)
 
 heightfield_shader$(EXE_EXT): heightfield_shader.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(BASE_LIB) $(GEOMETRY_LIB)
 	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)

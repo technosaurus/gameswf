@@ -548,8 +548,9 @@ void	print_usage()
 		);
 }
 
-
+#ifndef __MACH__
 #undef main	// SDL wackiness
+#endif
 int	main(int argc, char *argv[])
 {
 	print_usage();
