@@ -419,7 +419,7 @@ namespace gameswf
 			text_glyph_record	rec;	// one to work on
 			rec.m_style.m_font = m_font;
 			rec.m_style.m_color = m_color;
-			rec.m_style.m_x_offset = 0;
+			rec.m_style.m_x_offset = m_left_margin + m_indent;
 			rec.m_style.m_y_offset = m_text_height;
 			rec.m_style.m_text_height = m_text_height;
 			rec.m_style.m_has_x_offset = true;
@@ -429,9 +429,13 @@ namespace gameswf
 			float	y = rec.m_style.m_y_offset;
 			UNUSED(y);
 
-			float scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+			float	scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+
+			float	leading = m_leading;
+			leading += m_font->get_leading() * scale;
 
 			int	last_code = -1;
+			int	last_space_glyph = -1;
 
 			for (int j = 0; j < m_text.length(); j++)
 			{
@@ -439,6 +443,37 @@ namespace gameswf
 
 				x += m_font->get_kerning_adjustment(last_code, code) * scale;
 				last_code = code;
+
+				if (code == 13)
+				{
+					// newline.
+
+					// Close out this stretch of glyphs.
+					m_text_glyph_records.push_back(rec);
+
+					x = m_left_margin + m_indent;	// new paragraphs get the indent.
+					y += m_text_height + leading;
+
+					// Start a new record on the next line.
+					rec.m_glyphs.resize(0);
+					rec.m_style.m_font = m_font;
+					rec.m_style.m_color = m_color;
+					rec.m_style.m_x_offset = x;
+					rec.m_style.m_y_offset = y;
+					rec.m_style.m_text_height = m_text_height;
+					rec.m_style.m_has_x_offset = true;
+					rec.m_style.m_has_y_offset = true;
+
+					last_space_glyph = -1;
+
+					continue;
+				}
+
+				// Remember where word breaks occur.
+				if (code == 32)
+				{
+					last_space_glyph = rec.m_glyphs.size();
+				}
 
 				int	index = m_font->get_glyph_index(code);
 				if (index == -1)
@@ -451,22 +486,59 @@ namespace gameswf
 				ge.m_glyph_index = index;
 				ge.m_glyph_advance = scale * m_font->get_advance(index);
 
-// Really need to check this per-word, not per glyph
-#if 0
-				if (m_word_wrap && x > something)
-				{
-					// TODO: align the current line
-
-					// Add the line to our output records.
-					m_text_glyph_records.push_back(rec);
-
-					// start a new record
-				}
-#endif // 0
-
 				rec.m_glyphs.push_back(ge);
 
 				x += ge.m_glyph_advance;
+
+				if (x >= m_rect.width() - m_right_margin - 75.0f)	// xxx 75.0f is a total fudge to make it match the Flash player!  Maybe we have a bug.
+				{
+					// Whoops, we just exceeded the box width.  Do word-wrap.
+
+					// Insert newline.
+
+					// Close out this stretch of glyphs.
+					m_text_glyph_records.push_back(rec);
+
+					x = m_left_margin;
+					y += m_text_height + leading;
+
+					// Start a new record on the next line.
+					rec.m_glyphs.resize(0);
+					rec.m_style.m_font = m_font;
+					rec.m_style.m_color = m_color;
+					rec.m_style.m_x_offset = x;
+					rec.m_style.m_y_offset = y;
+					rec.m_style.m_text_height = m_text_height;
+					rec.m_style.m_has_x_offset = true;
+					rec.m_style.m_has_y_offset = true;
+					
+					text_glyph_record&	last_line = m_text_glyph_records.back();
+					if (last_space_glyph == -1)
+					{
+						// Pull the previous glyph down onto the
+						// new line.
+						if (last_line.m_glyphs.size() > 0)
+						{
+							rec.m_glyphs.push_back(last_line.m_glyphs.back());
+							x += last_line.m_glyphs.back().m_glyph_advance;
+							last_line.m_glyphs.resize(last_line.m_glyphs.size() - 1);
+						}
+					}
+					else
+					{
+						// Move the previous word down onto the next line.
+
+						for (int i = last_space_glyph + 1; i < last_line.m_glyphs.size(); i++)
+						{
+							rec.m_glyphs.push_back(last_line.m_glyphs[i]);
+							x += last_line.m_glyphs[i].m_glyph_advance;
+						}
+						last_line.m_glyphs.resize(last_space_glyph);
+					}
+
+					last_space_glyph = -1;
+				}
+
 
 				// TODO: alignment
 				// TODO: HTML markup
