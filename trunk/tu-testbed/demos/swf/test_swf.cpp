@@ -12,6 +12,9 @@
 #include "engine/ogl.h"
 
 
+#undef main	// SDL wackiness
+
+
 int	main(int argc, char *argv[])
 {
 	const char* infile = NULL;
@@ -59,7 +62,7 @@ int	main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	// Set the video mode.
-	if (SDL_SetVideoMode(m->get_width(), m->get_height(), 16, SDL_OPENGL) == 0)
+	if (SDL_SetVideoMode(m->get_width() * 4, m->get_height() * 4, 16, SDL_OPENGL) == 0)
 	{
 		fprintf(stderr, "SDL_SetVideoMode() failed.");
 		exit(1);

@@ -7,6 +7,7 @@
 
 
 #include "swf_impl.h"
+#include <string.h>
 
 
 namespace swf

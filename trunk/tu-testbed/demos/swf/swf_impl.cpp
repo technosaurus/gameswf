@@ -13,11 +13,11 @@
 // http://www-lehre.informatik.uni-osnabrueck.de/~fbstark/diplom/docs/swf/Shapes.htm
 
 
+#include "engine/ogl.h"
 #include "swf_impl.h"
 #include "engine/image.h"
 #include <string.h>	// for memset
 #include <zlib.h>
-#include <GL/gl.h>
 #include <typeinfo>
 
 
@@ -128,8 +128,8 @@ namespace swf
 
 			int	translate_nbits = in->read_uint(5);
 			if (translate_nbits > 0) {
-				m_[0][2] = in->read_sint(translate_nbits) / 65536.0f;
-				m_[1][2] = in->read_sint(translate_nbits) / 65536.0f;
+				m_[0][2] = in->read_sint(translate_nbits);
+				m_[1][2] = in->read_sint(translate_nbits);
 			}
 		}
 
@@ -239,6 +239,19 @@ namespace swf
 	struct cxform
 	{
 		float	m_[4][2];	// [RGBA][mult, add]
+
+		cxform()
+		// Initialize to identity transform.
+		{
+			m_[0][0] = 1;
+			m_[1][0] = 1;
+			m_[2][0] = 1;
+			m_[3][0] = 1;
+			m_[0][1] = 0;
+			m_[1][1] = 0;
+			m_[2][1] = 0;
+			m_[3][1] = 0;
+		}
 
 		void	read_rgb(stream* in)
 		{
@@ -395,6 +408,12 @@ namespace swf
 			m_characters.add(character_id, c);
 		}
 
+//		void	add_sprite(int character_id, movie* m)
+//		// A sprite is both a character, and a little sub-movie.
+//		{
+//			m_characters.add(character_id, 
+//		}
+
 		void	add_execute_tag(execute_tag* e)
 		{
 			m_playlist[m_current_frame].push_back(e);
@@ -489,14 +508,58 @@ namespace swf
 		}
 
 
-		void	remove_display_object(int depth)
+		void	move_display_object(Uint16 depth, const cxform& color_xform, const matrix& mat, float ratio)
+		// Updates the transform properties of the object at
+		// the specified depth.
+		{
+			int	size = m_display_list.size();
+			if (size <= 0)
+			{
+				// error.
+				assert(0);
+				return;
+			}
+
+			int	index = find_display_index(depth);
+			if (index < 0 || index >= size)
+			{
+				// error.
+				assert(0);
+				return;
+			}
+
+			display_object_info&	di = m_display_list[index];
+			if (di.m_depth != depth)
+			{
+				// error
+				assert(0);
+				return;
+			}
+
+			di.m_color_transform = color_xform;
+			di.m_matrix = mat;
+			di.m_ratio = ratio;
+		}
+
+
+		void	remove_display_object(Uint16 depth)
 		// Remove the object at the specified depth.
 		{
 			int	size = m_display_list.size();
-			assert(size > 0);
+			if (size <= 0)
+			{
+				// error.
+				assert(0);
+				return;
+			}
 
 			int	index = find_display_index(depth);
-			assert(index >= 0 && index < size);
+			if (index < 0 || index >= size)
+			{
+				// error.
+				assert(0);
+				return;
+			}
 
 			if (index < size - 1)
 			{
@@ -557,8 +620,8 @@ namespace swf
 
 			glMatrixMode(GL_MODELVIEW);
 			glPushMatrix();
-			glOrtho(m_frame_size.m_x_min, m_frame_size.m_x_max,
-				m_frame_size.m_y_min, m_frame_size.m_y_max,
+			glOrtho(-m_frame_size.m_x_max * 16, m_frame_size.m_x_max * 16,
+				-m_frame_size.m_y_max * 16, m_frame_size.m_y_max * 16,
 				-1, 1);
 			
 			// Display all display objects, starting at
@@ -1105,8 +1168,8 @@ namespace swf
 						int	move_x = in->read_sint(num_move_bits);
 						int	move_y = in->read_sint(num_move_bits);
 
-						x += move_x;
-						y += move_y;
+						x = move_x;
+						y = move_y;
 
 						// add *blank* edge
 						m_edges.push_back(edge(0, 0, x, y, -1, -1, -1));
@@ -1178,6 +1241,9 @@ namespace swf
 						m_edges.push_back(edge(x + dx/2, y + dy/2, x + dx, y + dy,
 								       fill_base + fill_0 - 1, fill_base + fill_1 - 1,
 								       line_base + line - 1));
+
+						x += dx;
+						y += dy;
 					}
 				}
 			}
@@ -1284,13 +1350,13 @@ namespace swf
 			in->align();
 
 			in->read_uint(1);	// reserved flag
-			bool	has_clip_bracket = in->read_uint(1);
-			bool	has_name = in->read_uint(1);
-			bool	has_ratio = in->read_uint(1);
-			bool	has_cxform = in->read_uint(1);
-			bool	has_matrix = in->read_uint(1);
-			bool	has_char = in->read_uint(1);
-			bool	flag_move = in->read_uint(1);
+			bool	has_clip_bracket = in->read_uint(1) ? true : false;
+			bool	has_name = in->read_uint(1) ? true : false;
+			bool	has_ratio = in->read_uint(1) ? true : false;
+			bool	has_cxform = in->read_uint(1) ? true : false
+;			bool	has_matrix = in->read_uint(1) ? true : false;
+			bool	has_char = in->read_uint(1) ? true : false;
+			bool	flag_move = in->read_uint(1) ? true : false;
 
 			m_depth = in->read_u16();
 
@@ -1352,11 +1418,19 @@ namespace swf
 				break;
 
 			case MOVE:
-				// TODO
+				m->move_display_object(m_depth,
+						       m_color_transform,
+						       m_matrix,
+						       m_ratio);
 				break;
 
 			case REPLACE:
-				// TODO
+				m->remove_display_object(m_depth);
+				m->add_display_object(m_character_id,
+						      m_depth,
+						      m_color_transform,
+						      m_matrix,
+						      m_ratio);
 				break;
 			}
 		}
@@ -1382,7 +1456,7 @@ namespace swf
 	// A sprite is a mini movie-within-a-movie.  It doesn't define
 	// its own characters; it uses the characters from the parent
 	// movie, but it has its own frame counter, display list, etc.
-	struct sprite : public movie
+	struct sprite : public movie, public character
 	{
 		movie_impl*	m_movie;		// parent movie.
 		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
@@ -1424,7 +1498,7 @@ namespace swf
 
 		void	display(const display_info& di)
 		{
-			printf("sprite display\n");
+//			printf("sprite display\n");
 		}
 
 		void	execute(movie* m)
@@ -1435,6 +1509,7 @@ namespace swf
 		void	add_character(int id, character* ch)
 		{
 			fprintf(stderr, "error: sprite::add_character() is illegal\n");
+			assert(0);
 		}
 
 		void	add_execute_tag(execute_tag* c)
@@ -1499,8 +1574,9 @@ namespace swf
 //		ch->m_movie = mi;
 		ch->read(in);
 
-//		m->add_character(character_id, ch);
-//		m->add_sprite(character_id, ch);
+		IF_DEBUG(printf("sprite: char id = %d\n", character_id));
+
+		m->add_character(character_id, ch);
 	}
 
 
@@ -1548,3 +1624,10 @@ namespace swf
 	}
 };
 
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
