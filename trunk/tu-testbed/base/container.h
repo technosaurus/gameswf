@@ -23,11 +23,161 @@
 #define CONTAINER_H
 
 
+// Use this in case your STL needs some unusual stuff to be
+// predefined.  For example, maybe you #define new/delete to be
+// something special.
+#ifdef _TU_USE_STL_COMPATIBILITY_INCLUDE
+#include _TU_USE_STL_COMPATIBILITY_INCLUDE
+#endif
+
+
 #include <stdlib.h>
 #include <string.h>
 #include <new>	// for placement new
 #include "base/utility.h"
 #include "base/dlmalloc.h"
+
+
+// If you prefer STL implementations instead of home cooking, then put
+// -D_TU_USE_STL=1 in your compiler flags, or just define it here:
+//#define _TU_USE_STL 1
+
+
+
+template<class T>
+class fixed_size_hash
+// Computes a hash of an object's representation.
+{
+public:
+	size_t	operator()(const T& data) const
+	{
+		unsigned char*	p = (unsigned char*) &data;
+		int	size = sizeof(T);
+
+		return bernstein_hash(p, size);
+	}
+};
+
+
+
+
+#if _TU_USE_STL == 1
+
+
+//
+// Thin wrappers around STL
+//
+
+
+//// @@@ crap compatibility crap
+//#define StlAlloc(size) malloc(size)
+//#define StlFree(ptr, size) free(ptr)
+
+
+#include <vector>
+#include <hash_map>
+#include <string>
+
+
+// array<> is much like std::vector<>
+//
+// @@ move this towards a strict subset of std::vector ?  Compatibility is good.
+template<class T> class array : public std::vector<T>
+{
+public:
+	int	size() const { return (int) std::vector<T>::size(); }
+
+	void	append(const array<T>& other)
+	// Append the given data to our array.
+	{
+		std::vector<T>::insert(end(), other.begin(), other.end());
+	}
+
+	void	append(const T other[], int count)
+	{
+		// This will probably work.  Depends on std::vector<T>::iterator being typedef'd as T*
+		std::vector<T>::insert(end(), &other[0], &other[count]);
+	}
+
+	void	remove(int index)
+	{
+		std::vector<T>::erase(begin() + index);
+	}
+
+	void	insert(int index, const T& val = T())
+	{
+		std::vector<T>::insert(begin() + index, val);
+	}
+};
+
+
+// hash<> is similar to std::hash_map<>
+//
+// @@ move this towards a strict subset of std::hash_map<> ?
+template<class T, class U, class hash_functor = fixed_size_hash<T> >
+class hash : public std::hash_map<T, U, hash_functor>
+{
+public:
+	// extra convenience interfaces
+	void	set(const T& key, const U& value)
+	// Set a new or existing value under the key, to the value.
+	{
+		(*this)[key] = value;
+	}
+
+	void	add(const T& key, const U& value)
+	{
+		assert(find(key) == end());
+		(*this)[key] = value;
+	}
+
+	bool	is_empty() const { return empty(); }
+
+	bool	get(const T& key, U* value) const
+	// Retrieve the value under the given key.
+	//
+	// If there's no value under the key, then return false and leave
+	// *value alone.
+	//
+	// If there is a value, return true, and set *value to the entry's
+	// value.
+	//
+	// If value == NULL, return true or false according to the
+	// presence of the key, but don't touch *value.
+	{
+		const_iterator	it = find(key);
+		if (it != end())
+		{
+			if (value) *value = it->second;
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+};
+
+
+// tu_string is a subset of std::string, for the most part
+class tu_string : public std::string
+{
+public:
+	tu_string(const char* str) : std::string(str) {}
+	tu_string() : std::string() {}
+	tu_string(const tu_string& str) : std::string(str) {}
+
+	int	length() const { return (int) std::string::length(); }
+};
+
+
+template<class U>
+class string_hash : public hash<tu_string, U, std::hash<std::string> >
+{
+};
+
+
+#else // not _TU_USE_STL
 
 
 #ifdef _WIN32
@@ -68,13 +218,11 @@ public:
 		(*this)[new_size-1] = val;
 	}
 
-	T	pop_back()
-	// Return the last element and remove it from the array.
+	void	pop_back()
+	// Remove the last element.
 	{
 		assert(m_size > 0);
-		T	t = (*this)[m_size - 1];
 		resize(m_size - 1);
-		return t;
 	}
 
 	// Access the first element.
@@ -90,8 +238,6 @@ public:
 	{
 		resize(0);
 	}
-
-	// void	remove(int index);
 
 	void	operator=(const array<T>& a)
 	// Array copy.  Copies the contents of a into this array.
@@ -115,7 +261,7 @@ public:
 		}
 		else
 		{
-			m_buffer[index].~T();
+			m_buffer[index].~T();	// destructor
 
 			memmove(m_buffer+index, m_buffer+index+1, sizeof(T) * (m_size - 1 - index));
 			m_size--;
@@ -155,7 +301,12 @@ public:
 		{
 			int	size0 = m_size;
 			resize(m_size + count);
-			memcpy(&m_buffer[size0], &other[0], count * sizeof(T));
+//			memcpy(&m_buffer[size0], &other[0], count * sizeof(T));
+			// Must use operator=() to copy elements, in case of side effects (e.g. ref-counting).
+			for (int i = 0; i < count; i++)
+			{
+				m_buffer[i + size0] = other[i];
+			}
 		}
 	}
 
@@ -232,41 +383,6 @@ private:
 };
 
 
-inline unsigned int	bernstein_hash(const void* data_in, int size, unsigned int seed = 5381)
-// Computes a hash of the given data buffer.
-// Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
-// Due to Dan Bernstein.  Allegedly very good on strings.
-{
-	const unsigned char*	data = (const unsigned char*) data_in;
-	unsigned int	h = seed;
-	while (size > 0) {
-		size--;
-		h = ((h << 5) + h) ^ (unsigned) data[size];
-	}
-
-	// Alternative: "sdbm" hash function, suggested at same web page above.
-	// h = 0;
-	// for bytes { h = (h << 16) + (h << 6) - hash + *p; }
-
-	return h;
-}
-
-
-template<class T>
-class fixed_size_hash
-// Computes a hash of an object's representation.
-{
-public:
-	static unsigned int	compute(const T& data)
-	{
-		unsigned char*	p = (unsigned char*) &data;
-		int	size = sizeof(T);
-
-		return bernstein_hash(p, size);
-	}
-};
-
-
 template<class T, class U, class hash_functor = fixed_size_hash<T> >
 class hash {
 // Fairly stupid hash table.  TODO: study Lua's hashes, use their
@@ -283,18 +399,18 @@ public:
 		clear();
 	}
 
-	// @@ need a "remove()" or "set()" function, to replace/remove existing key.
+	// @@ need a "remove()"
 
 	void	set(const T& key, const U& value)
 	// Set a new or existing value under the key, to the value.
 	{
 		if (m_table.size() > 0)
 		{
-			unsigned int	hash_value = hash_functor::compute(key);
+			unsigned int	hash_value = hash_functor()(key);
 			int	index = hash_value & m_size_mask;	// % m_table.size();
 			for (int i = 0; i < m_table[index].size(); i++) {
-				if (m_table[index][i].key == key) {
-					m_table[index][i].value = value;
+				if (m_table[index][i].first == key) {
+					m_table[index][i].second = value;
 					return;
 				}
 			}
@@ -312,10 +428,10 @@ public:
 		m_entry_count++;
 		check_expand();
 
-		unsigned int	hash_value = hash_functor::compute(key);
+		unsigned int	hash_value = hash_functor()(key);
 		entry	e;
-		e.key = key;
-		e.value = value;
+		e.first = key;
+		e.second = value;
 
 		int	index = hash_value & m_size_mask;	// % m_table.size();
 		m_table[index].push_back(e);
@@ -355,12 +471,12 @@ public:
 			return false;
 		}
 
-		unsigned int	hash_value = hash_functor::compute(key);
+		size_t	hash_value = hash_functor()(key);
 		int	index = hash_value & m_size_mask;	// % m_table.size();
 		for (int i = 0; i < m_table[index].size(); i++) {
-			if (m_table[index][i].key == key) {
+			if (m_table[index][i].first == key) {
 				if (value) {
-					*value = m_table[index][i].value;
+					*value = m_table[index][i].second;
 				}
 				return true;
 			}
@@ -412,7 +528,7 @@ public:
 		{for (int i = 0; i < m_table.size(); i++) {
 			for (int j = 0; j < m_table[i].size(); j++) {
 				entry&	e = m_table[i][j];
-				unsigned int	hash_value = hash_functor::compute(e.key);
+				unsigned int	hash_value = hash_functor()(e.first);
 				
 				int	index = hash_value & m_size_mask;	// % new_table.size();
 				new_table[index].push_back(e);
@@ -425,17 +541,22 @@ public:
 		m_table.transfer_members(&new_table);
 	}
 
-
+	// Behaves much like std::pair
+	struct entry
+	{
+		T	first;
+		U	second;
+	};
+	
 	// Iterator API.  @@ TODO fix the API so it's more STL-like.  No point in confusing clients.
 
-	struct iterator
+	struct const_iterator
 	{
-		// @@ in STL, operator* returns a pair<T,U>, right?
-		// We could return a struct entry, and rename the
-		// members of struct entry as {first,second}, no?
+		T	get_key() const { return m_hash->m_table[m_index0][m_index1].first; }
+		U	get_value() const { return m_hash->m_table[m_index0][m_index1].second; }
 
-		T	get_key() const { return m_hash->m_table[m_index0][m_index1].key; }
-		U	get_value() const { return m_hash->m_table[m_index0][m_index1].value; }
+		const entry&	operator*() const { return m_hash->m_table[m_index0][m_index1]; }
+		const entry*	operator->() const { return &(operator*()); }
 
 		void	operator++()
 		{
@@ -460,7 +581,7 @@ public:
 			}
 		}
 
-		bool	operator==(const iterator& it) const
+		bool	operator==(const const_iterator& it) const
 		{
 			if (is_end() && it.is_end())
 			{
@@ -475,7 +596,7 @@ public:
 			}
 		}
 
-		bool	operator!=(const iterator& it) const { return ! (*this == it); }
+		bool	operator!=(const const_iterator& it) const { return ! (*this == it); }
 
 
 		bool	is_end() const
@@ -485,10 +606,10 @@ public:
 				|| m_index0 >= m_hash->m_table.size();
 		}
 
-	private:
+	protected:
 		friend class hash<T,U,hash_functor>;
 
-		iterator(const hash* h, int i0, int i1)
+		const_iterator(const hash* h, int i0, int i1)
 			:
 			m_hash(h),
 			m_index0(i0),
@@ -499,9 +620,28 @@ public:
 		const hash*	m_hash;
 		int	m_index0, m_index1;
 	};
+	friend struct const_iterator;
+
+	// non-const iterator; get most of it from const_iterator.
+	struct iterator : public const_iterator
+	{
+		// Allow non-const access to entries.
+		entry&	operator*() const { return const_cast<hash*>(m_hash)->m_table[m_index0][m_index1]; }
+		entry*	operator->() const { return &(operator*()); }
+
+	private:
+		friend class hash<T,U,hash_functor>;
+
+		iterator(hash* h, int i0, int i1)
+			:
+			const_iterator(h, i0, i1)
+		{
+		}
+	};
 	friend struct iterator;
 
-	iterator	begin() const
+
+	iterator	begin()
 	{
 		// Scan til we hit the first valid entry.
 		int	i0 = 0;
@@ -512,15 +652,12 @@ public:
 		}
 		return iterator(this, i0, 0);
 	}
-	iterator	end() const { return iterator(this, m_table.size(), 0); }
+	iterator	end() { return iterator(this, m_table.size(), 0); }
+
+	const_iterator	begin() const { return const_cast<hash*>(this)->begin(); }
+	const_iterator	end() const { return const_cast<hash*>(this)->begin(); }
 
 private:
-
-	struct entry {
-		T	key;
-		U	value;
-	};
-	
 	int	m_entry_count;
 	int	m_size_mask;
 	array< array<entry> >	m_table;
@@ -643,7 +780,7 @@ class string_hash_functor
 // ::length() and ::[int]).
 {
 public:
-	static unsigned int	compute(const T& data)
+	size_t	operator()(const T& data) const
 	{
 		int	size = data.length();
 
@@ -656,6 +793,9 @@ template<class U>
 class string_hash : public hash<tu_string, U, string_hash_functor<tu_string> >
 {
 };
+
+
+#endif // not _TU_USE_STL
 
 
 #endif // CONTAINER_H

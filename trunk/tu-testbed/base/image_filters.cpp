@@ -24,6 +24,20 @@ namespace {
 // anonymous namespace to hold local stuff.
 
 
+inline void* my_calloc(int count, int size)
+{
+	void*	mem = (void*) new char[count * size];
+	memset(mem, 0, count * size);
+	return mem;
+}
+
+
+inline void	my_cfree(void* mem)
+{
+	delete [] mem;
+}
+
+
 void	get_row(Uint8* row, image::rgb* image, int x0, int xsize, int y)
 // Copy RGB data from the specified row into the given buffer.
 {
@@ -434,7 +448,7 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	}
 
 	/* apply filter to zoom horizontally from src to tmp */
-	raster = (Uint8*) calloc(in_window_w, 3);
+	raster = (Uint8*) my_calloc(in_window_w, 3);
 	for (k = 0; k < tmp->m_height; ++k) {
 		get_row(raster, in, int(floorf(in_x0)), in_window_w, k);
 		for (i = 0; i < tmp->m_width; ++i) {
@@ -450,7 +464,7 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			put_pixel(tmp, i, k, red, green, blue);
 		}
 	}
-	free(raster);
+	my_cfree(raster);
 
 	contrib.resize(out_height);
 
@@ -486,7 +500,7 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	}
 
 	/* apply filter to zoom vertically from tmp to dst */
-	raster = (Uint8*) calloc(tmp->m_height, 3);
+	raster = (Uint8*) my_calloc(tmp->m_height, 3);
 	for (k = 0; k < tmp->m_width; ++k) {
 		get_column(raster, tmp, k);
 		for (i = 0; i < out_height; ++i) {
@@ -502,7 +516,7 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			put_pixel(out, k + out_x0, i + out_y0, red, green, blue);
 		}
 	}
-	free(raster);
+	my_cfree(raster);
 
 	contrib.resize(0);
 
@@ -595,7 +609,7 @@ void	resample(image::rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	}
 
 	/* apply filter to zoom horizontally from src to tmp */
-	raster = (Uint8*) calloc(in_window_w, 4);
+	raster = (Uint8*) my_calloc(in_window_w, 4);
 	for (k = 0; k < tmp->m_height; ++k) {
 		get_row(raster, in, int(floorf(in_x0)), in_window_w, k);
 		for (i = 0; i < tmp->m_width; ++i) {
@@ -613,7 +627,7 @@ void	resample(image::rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			put_pixel(tmp, i, k, red, green, blue, alpha);
 		}
 	}
-	free(raster);
+	my_cfree(raster);
 
 	contrib.resize(out_height);
 
@@ -649,7 +663,7 @@ void	resample(image::rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	}
 
 	/* apply filter to zoom vertically from tmp to dst */
-	raster = (Uint8*) calloc(tmp->m_height, 4);
+	raster = (Uint8*) my_calloc(tmp->m_height, 4);
 	for (k = 0; k < tmp->m_width; ++k) {
 		get_column(raster, tmp, k);
 		for (i = 0; i < out_height; ++i) {
@@ -667,7 +681,7 @@ void	resample(image::rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			put_pixel(out, k + out_x0, i + out_y0, red, green, blue, alpha);
 		}
 	}
-	free(raster);
+	my_cfree(raster);
 
 	contrib.resize(0);
 
