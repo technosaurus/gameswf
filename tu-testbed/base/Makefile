@@ -23,6 +23,7 @@ SRCS := \
 	tu_file_SDL.cpp	\
 	tu_random.cpp	\
 	tu_types.cpp	\
+	utf8.cpp	\
 	utility.cpp	\
 	zlib_adapter.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))

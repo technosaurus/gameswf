@@ -1,4 +1,4 @@
-// tu_types.h	-- Ignacio Castaño, Thatcher Ulrich 2003
+// tu_types.cpp	-- Ignacio Castaño, Thatcher Ulrich 2003
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
