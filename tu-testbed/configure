@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE LIBPRE LIBEXT SDL_CONFIG SDL_CFLAGS SDL_LIBS CPP EGREP SDL_MIXER_CFLAGS SDL_MIXER_LIBS OPENGL_CFLAGS OPENGL_LIBS GLUT_LIBS GLU_LIBS HAVE_OPENGL_TRUE HAVE_OPENGL_FALSE ZLIB_CFLAGS ZLIB_LIBS JPEG_CFLAGS JPEG_LIBS PNG_CFLAGS PNG_LIBS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE LIBPRE LIBEXT SDL_CONFIG SDL_CFLAGS SDL_LIBS CPP EGREP SDL_MIXER_CFLAGS SDL_MIXER_LIBS OPENGL_CFLAGS OPENGL_LIBS GLUT_LIBS GLU_LIBS HAVE_OPENGL_TRUE HAVE_OPENGL_FALSE ZLIB_CFLAGS ZLIB_LIBS JPEG_CFLAGS JPEG_LIBS PNG_CFLAGS PNG_LIBS LIBXML_CFLAGS LIBXML_LIBS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -878,6 +878,9 @@ Optional Packages:
   --with-jpeg-lib         directory where jpeg library is
   --with-png-incl        directory where png header is
   --with-png-lib         directory where png library is
+  --with-libxml=PFX   Prefix where libxml++ is installed (optional)
+  --with-libxml-libraries=DIR   Directory where libxml++ library is installed (optional)
+  --with-libxml-includes=DIR   Directory where libxmlc++ header files are installed (optional)
 
 Some influential environment variables:
   CC          C compiler command
@@ -1719,7 +1722,7 @@ fi
 
 # Define the identity of the package.
  PACKAGE=gameswf
- VERSION=0.1
+ VERSION=0.2
 
 
 cat >>confdefs.h <<_ACEOF
@@ -4389,11 +4392,11 @@ fi
   if test x"${ac_cv_path_sdl_mixer_incl}" = x ; then
     echo "$as_me:$LINENO: checking for SDL_mixer header" >&5
 echo $ECHO_N "checking for SDL_mixer header... $ECHO_C" >&6
-    incllist="/sw/include /usr/local/include /home/latest/include /opt/include /usr/include .. ../.."
+    incllist="/sw/include /sw/include /usr/local/include /home/latest/include /opt/include /usr/include .. ../.."
 
     for i in $incllist; do
-      if test -f $i/SDL_mixer.h; then
-        ac_cv_path_sdl_mixer_incl=$i
+      if test -f $i/SDL/SDL_mixer.h; then
+        ac_cv_path_sdl_mixer_incl=$i/SDL
         break
       fi
     done
@@ -4598,7 +4601,7 @@ fi
     liblist="/sw/lib /usr/local/lib /home/latest/lib /opt/lib /usr/lib .. ../.."
 
     for i in $liblist; do
-    if test -f $i/libsdl_mixer.a -o -f $i/libsdl_mixer.so; then
+    if test -f $i/libSDL_mixer.a -o -f $i/libSDL_mixer.so -o -f $i/libSDL_mixer.dylib; then
        ac_cv_path_sdl_mixer_lib=$i
        break
     fi
@@ -6116,7 +6119,82 @@ echo "${ECHO_T}${ac_cv_path_png_lib}" >&6
 
 
 
-                                                  ac_config_files="$ac_config_files Makefile base/Makefile geometry/Makefile gameswf/Makefile config.mk"
+
+# Check whether --with-libxml or --without-libxml was given.
+if test "${with_libxml+set}" = set; then
+  withval="$with_libxml"
+  libxml_prefix="$withval"
+else
+  libxml_prefix=""
+fi;
+
+# Check whether --with-libxml-libraries or --without-libxml-libraries was given.
+if test "${with_libxml_libraries+set}" = set; then
+  withval="$with_libxml_libraries"
+  libxml_libraries="$withval"
+else
+  libxml_libraries=""
+fi;
+
+# Check whether --with-libxml-includes or --without-libxml-includes was given.
+if test "${with_libxml_includes+set}" = set; then
+  withval="$with_libxml_includes"
+  libxml_includes="$withval"
+else
+  libxml_includes=""
+fi;
+
+  if test "x$libxml_libraries" != "x" ; then
+    LIBXML_LIBS="-L$libxml_libraries"
+  elif test "x$libxml_prefix" != "x" ; then
+    LIBXML_LIBS="-L$libxml_prefix/lib"
+  elif test "x$prefix" != "xNONE" ; then
+    LIBXML_LIBS="-L$libdir"
+  fi
+
+  if test "x$libxml_includes" != "x" ; then
+    LIBXML_CFLAGS="-I$libxml_includes"
+  elif test "x$libxml_prefix" != "x" ; then
+    LIBXML_CFLAGS="-I$libxml_prefix/include"
+  elif test "$prefix" != "NONE"; then
+    LIBXML_CFLAGS="-I$prefix/include"
+  fi
+
+  echo "$as_me:$LINENO: checking for libxml" >&5
+echo $ECHO_N "checking for libxml... $ECHO_C" >&6
+  no_libxml=""
+
+  if test "x$LIBXML_CFLAGS" = "x" ; then
+    LIBXML_CFLAGS=`pkg-config --cflags libxml-2.0`
+  fi
+
+  if test "x$LIBXML_LIBS" = "x" ; then
+    LIBXML_LIBS=`pkg-config --libs libxml-2.0`
+  fi
+
+  if test "x$LIBXML_CFLAGS" != "x" -a  "x$LIBXML_LIBS" != "x"; then
+    echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6
+  else
+    echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6
+  fi
+
+
+
+
+
+ac_sources="gameswf/testsuite/ips.xml"
+ac_dests="gameswf/testsuite/ips.xml"
+while test -n "$ac_sources"; do
+  set $ac_dests; ac_dest=$1; shift; ac_dests=$*
+  set $ac_sources; ac_source=$1; shift; ac_sources=$*
+  ac_config_links_1="$ac_config_links_1 $ac_dest:$ac_source"
+done
+          ac_config_links="$ac_config_links $ac_config_links_1"
+
+
+                                                            ac_config_files="$ac_config_files Makefile base/Makefile geometry/Makefile gameswf/Makefile gameswf/testsuite/Makefile config.mk"
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -6595,6 +6673,9 @@ Usage: $0 [OPTIONS] [FILE]...
 Configuration files:
 $config_files
 
+Configuration links:
+$config_links
+
 Configuration commands:
 $config_commands
 
@@ -6717,7 +6798,9 @@ do
   "base/Makefile" ) CONFIG_FILES="$CONFIG_FILES base/Makefile" ;;
   "geometry/Makefile" ) CONFIG_FILES="$CONFIG_FILES geometry/Makefile" ;;
   "gameswf/Makefile" ) CONFIG_FILES="$CONFIG_FILES gameswf/Makefile" ;;
+  "gameswf/testsuite/Makefile" ) CONFIG_FILES="$CONFIG_FILES gameswf/testsuite/Makefile" ;;
   "config.mk" ) CONFIG_FILES="$CONFIG_FILES config.mk" ;;
+  "$ac_config_links_1" ) CONFIG_LINKS="$CONFIG_LINKS $ac_config_links_1" ;;
   "depfiles" ) CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -6731,6 +6814,7 @@ done
 # bizarre bug on SunOS 4.1.3.
 if $ac_need_defaults; then
   test "${CONFIG_FILES+set}" = set || CONFIG_FILES=$config_files
+  test "${CONFIG_LINKS+set}" = set || CONFIG_LINKS=$config_links
   test "${CONFIG_COMMANDS+set}" = set || CONFIG_COMMANDS=$config_commands
 fi
 
@@ -6883,6 +6967,8 @@ s,@JPEG_CFLAGS@,$JPEG_CFLAGS,;t t
 s,@JPEG_LIBS@,$JPEG_LIBS,;t t
 s,@PNG_CFLAGS@,$PNG_CFLAGS,;t t
 s,@PNG_LIBS@,$PNG_LIBS,;t t
+s,@LIBXML_CFLAGS@,$LIBXML_CFLAGS,;t t
+s,@LIBXML_LIBS@,$LIBXML_LIBS,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
@@ -7121,6 +7207,144 @@ s,@INSTALL@,$ac_INSTALL,;t t
     rm -f $tmp/out
   fi
 
+done
+_ACEOF
+cat >>$CONFIG_STATUS <<\_ACEOF
+
+#
+# CONFIG_LINKS section.
+#
+
+for ac_file in : $CONFIG_LINKS; do test "x$ac_file" = x: && continue
+  ac_dest=`echo "$ac_file" | sed 's,:.*,,'`
+  ac_source=`echo "$ac_file" | sed 's,[^:]*:,,'`
+
+  { echo "$as_me:$LINENO: linking $srcdir/$ac_source to $ac_dest" >&5
+echo "$as_me: linking $srcdir/$ac_source to $ac_dest" >&6;}
+
+  if test ! -r $srcdir/$ac_source; then
+    { { echo "$as_me:$LINENO: error: $srcdir/$ac_source: file not found" >&5
+echo "$as_me: error: $srcdir/$ac_source: file not found" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  rm -f $ac_dest
+
+  # Make relative symlinks.
+  ac_dest_dir=`(dirname "$ac_dest") 2>/dev/null ||
+$as_expr X"$ac_dest" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$ac_dest" : 'X\(//\)[^/]' \| \
+	 X"$ac_dest" : 'X\(//\)$' \| \
+	 X"$ac_dest" : 'X\(/\)' \| \
+	 .     : '\(.\)' 2>/dev/null ||
+echo X"$ac_dest" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{ s//\1/; q; }
+  	  /^X\(\/\/\)[^/].*/{ s//\1/; q; }
+  	  /^X\(\/\/\)$/{ s//\1/; q; }
+  	  /^X\(\/\).*/{ s//\1/; q; }
+  	  s/.*/./; q'`
+  { if $as_mkdir_p; then
+    mkdir -p "$ac_dest_dir"
+  else
+    as_dir="$ac_dest_dir"
+    as_dirs=
+    while test ! -d "$as_dir"; do
+      as_dirs="$as_dir $as_dirs"
+      as_dir=`(dirname "$as_dir") 2>/dev/null ||
+$as_expr X"$as_dir" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
+	 X"$as_dir" : 'X\(//\)[^/]' \| \
+	 X"$as_dir" : 'X\(//\)$' \| \
+	 X"$as_dir" : 'X\(/\)' \| \
+	 .     : '\(.\)' 2>/dev/null ||
+echo X"$as_dir" |
+    sed '/^X\(.*[^/]\)\/\/*[^/][^/]*\/*$/{ s//\1/; q; }
+  	  /^X\(\/\/\)[^/].*/{ s//\1/; q; }
+  	  /^X\(\/\/\)$/{ s//\1/; q; }
+  	  /^X\(\/\).*/{ s//\1/; q; }
+  	  s/.*/./; q'`
+    done
+    test ! -n "$as_dirs" || mkdir $as_dirs
+  fi || { { echo "$as_me:$LINENO: error: cannot create directory \"$ac_dest_dir\"" >&5
+echo "$as_me: error: cannot create directory \"$ac_dest_dir\"" >&2;}
+   { (exit 1); exit 1; }; }; }
+
+  ac_builddir=.
+
+if test "$ac_dest_dir" != .; then
+  ac_dir_suffix=/`echo "$ac_dest_dir" | sed 's,^\.[\\/],,'`
+  # A "../" for each directory in $ac_dir_suffix.
+  ac_top_builddir=`echo "$ac_dir_suffix" | sed 's,/[^\\/]*,../,g'`
+else
+  ac_dir_suffix= ac_top_builddir=
+fi
+
+case $srcdir in
+  .)  # No --srcdir option.  We are building in place.
+    ac_srcdir=.
+    if test -z "$ac_top_builddir"; then
+       ac_top_srcdir=.
+    else
+       ac_top_srcdir=`echo $ac_top_builddir | sed 's,/$,,'`
+    fi ;;
+  [\\/]* | ?:[\\/]* )  # Absolute path.
+    ac_srcdir=$srcdir$ac_dir_suffix;
+    ac_top_srcdir=$srcdir ;;
+  *) # Relative path.
+    ac_srcdir=$ac_top_builddir$srcdir$ac_dir_suffix
+    ac_top_srcdir=$ac_top_builddir$srcdir ;;
+esac
+
+# Do not use `cd foo && pwd` to compute absolute paths, because
+# the directories may not exist.
+case `pwd` in
+.) ac_abs_builddir="$ac_dest_dir";;
+*)
+  case "$ac_dest_dir" in
+  .) ac_abs_builddir=`pwd`;;
+  [\\/]* | ?:[\\/]* ) ac_abs_builddir="$ac_dest_dir";;
+  *) ac_abs_builddir=`pwd`/"$ac_dest_dir";;
+  esac;;
+esac
+case $ac_abs_builddir in
+.) ac_abs_top_builddir=${ac_top_builddir}.;;
+*)
+  case ${ac_top_builddir}. in
+  .) ac_abs_top_builddir=$ac_abs_builddir;;
+  [\\/]* | ?:[\\/]* ) ac_abs_top_builddir=${ac_top_builddir}.;;
+  *) ac_abs_top_builddir=$ac_abs_builddir/${ac_top_builddir}.;;
+  esac;;
+esac
+case $ac_abs_builddir in
+.) ac_abs_srcdir=$ac_srcdir;;
+*)
+  case $ac_srcdir in
+  .) ac_abs_srcdir=$ac_abs_builddir;;
+  [\\/]* | ?:[\\/]* ) ac_abs_srcdir=$ac_srcdir;;
+  *) ac_abs_srcdir=$ac_abs_builddir/$ac_srcdir;;
+  esac;;
+esac
+case $ac_abs_builddir in
+.) ac_abs_top_srcdir=$ac_top_srcdir;;
+*)
+  case $ac_top_srcdir in
+  .) ac_abs_top_srcdir=$ac_abs_builddir;;
+  [\\/]* | ?:[\\/]* ) ac_abs_top_srcdir=$ac_top_srcdir;;
+  *) ac_abs_top_srcdir=$ac_abs_builddir/$ac_top_srcdir;;
+  esac;;
+esac
+
+
+  case $srcdir in
+  [\\/$]* | ?:[\\/]* ) ac_rel_source=$srcdir/$ac_source ;;
+      *) ac_rel_source=$ac_top_builddir$srcdir/$ac_source ;;
+  esac
+
+  # Try a symlink, then a hard link, then a copy.
+  ln -s $ac_rel_source $ac_dest 2>/dev/null ||
+    ln $srcdir/$ac_source $ac_dest 2>/dev/null ||
+    cp -p $srcdir/$ac_source $ac_dest ||
+    { { echo "$as_me:$LINENO: error: cannot link or copy $srcdir/$ac_source to $ac_dest" >&5
+echo "$as_me: error: cannot link or copy $srcdir/$ac_source to $ac_dest" >&2;}
+   { (exit 1); exit 1; }; }
 done
 _ACEOF
 cat >>$CONFIG_STATUS <<\_ACEOF

@@ -1,4 +1,7 @@
-# Configure library prefix and suffix
+dnl Configure library prefix and suffix
+dnl FIXME: This should really do tests for this data, and not
+dnl just hardcode it based on the OS. This currently depends on
+dnl AC_EXEEXT being called first.
 
 AC_DEFUN([AM_COMPILER_LIB],
 [dnl 

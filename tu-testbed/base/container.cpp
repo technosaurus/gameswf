@@ -30,6 +30,7 @@ void	tu_string::resize(int new_size)
 			// round up.
 			capacity = (capacity + 15) & ~15;
 			char*	buf = (char*) tu_malloc(capacity);
+                        memset(buf, 0, capacity);
 
 			// Copy existing data.
 			strcpy(buf, m_local.m_buffer);

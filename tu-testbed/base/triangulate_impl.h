@@ -83,6 +83,7 @@ template<class coord_t>
 inline int	vertex_left_test(const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
 {
 	compiler_assert(0);	// must specialize
+	return -1;
 }
 
 
@@ -222,7 +223,8 @@ inline bool	edges_intersect_sub(const array<poly_vert<coord_t> >& sorted_verts, 
 {
 	// Need to specialize this on coord_t, in order to get it
 	// correct and avoid overflow.
-	COMPILER_ASSERT(0);
+	compiler_assert(0);
+	return -1;
 }
 
 

@@ -93,7 +93,6 @@ namespace gameswf
 
 	struct movie : public movie_interface, public as_object_interface
 	{
-	
 		virtual void set_extern_movie(movie_interface* m) { }
 		virtual movie_interface*	get_extern_movie() { return NULL; }
 
@@ -267,8 +266,27 @@ namespace gameswf
 		// ActionScript event handler.  Returns true if a handler was called.
 		virtual bool	on_event(event_id id) { return false; }
 
+		int    add_interval_timer(void *timer)
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+		}
+		
+		void    clear_interval_timer(int x)
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+		}
+		
+		virtual void    do_something(void *timer)
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+		}
+		
 		// Special event handler; sprites also execute their frame1 actions on this event.
 		virtual void	on_event_load() { on_event(event_id::LOAD); }
+		virtual void	on_event_xmlsocket_ondata() { on_event(event_id::SOCK_DATA); }
+		virtual void	on_event_xmlsocket_onxml() { on_event(event_id::SOCK_XML); }
+		virtual void	on_event_interval_timer() { on_event(event_id::TIMER); }
+		virtual void	on_event_load_progress() { on_event(event_id::LOAD_PROGRESS); }
 
 		// as_object_interface stuff
 		virtual void	set_member(const tu_stringi& name, const as_value& val) { assert(0); }
@@ -581,7 +599,7 @@ namespace gameswf
 		virtual void	execute_state_reverse(movie* m, int frame) { execute_state(m); }
 		virtual bool	is_remove_tag() const { return false; }
 		virtual bool	is_action_tag() const { return false; }
-		virtual uint32	get_depth_id_of_replace_or_add_tag() const { return (uint32) -1; }
+		virtual uint32	get_depth_id_of_replace_or_add_tag() const { return static_cast<uint32>(-1); }
 	};
 
 

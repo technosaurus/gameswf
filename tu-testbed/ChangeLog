@@ -1,0 +1,38 @@
+2005-03-17  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* macros/libXML.m4: New. Look for libxml2 directories.
+	* base/container.{cpp,h}: memset buffer so tu_string prints better in
+	GDB.
+	* base/triangulate_impl.h: Use  compiler_assert(0) rather than
+	COMPILER_ASSERT(0).
+	* base/tu_timer.cpp: Add Linux imnplementations of get_profile_ticks()
+	and profile_ticks_to_seconds().
+	* configure.ac: Look for XML2 directories. Configure a Makefile in
+	the testsuite directory.
+	* configure: regenerate.
+	* gameswf/Makefile: Add new files, gameswf_xml, gameswf_movie,
+	gameswf_xmlsocket, gameswf_string.
+	* gameswf/gameswf_xml.{cpp,h}: New files for XML ActionScript support.
+	* gameswf/gameswf_xmlsocket.{cpp,h}: New files for XMLSocket
+	ActionScript support.
+	* gameswf/gameswf_timers.{cpp,h}: New files for setInterval
+	ActionScript support.	
+	* gameswf/gameswf_movie.{cpp,h}: New files for MovieClipLoader
+	ActionScript support.
+	* gameswf/gameswf_string.{cpp,h}: New files for a more complete
+	String ActionScript implementation.
+	* gameswf/gameswf_textfield.{cpp,h}: New files for TextField
+	ActionScript support.
+	* gameswf/gameswf_textformat.{cpp,h}: New files for TextFormat
+	ActionScript support.
+	* gameswf.h: Add add_interval_timer() and void clear_interval_timer().
+	* gameswf/gameswf_action.cpp: Include gameswf_string.h,
+	gameswf_xml.h, gameswf_xmlsocket.h, gameswf_movie.h,
+	gameswf_timers.h, gameswf_textformat.h, gameswf_textfield.h. Add
+	support for new ActionScripts, XML, XMLSocket, TextField,
+	TextFormat, and MovieClipLoader.
+	* gameswf/gameswf_action.h: Move event_id to here. 
+	* gameswf/gameswf_impl.{cpp,h}: Include gameswf_timers.h. Add support
+	for setInterval. 
+
+

@@ -27,6 +27,7 @@
 #include "gameswf_stream.h"
 #include "gameswf_styles.h"
 #include "gameswf_dlist.h"
+#include "gameswf_timers.h"
 #include "base/image.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
@@ -967,6 +968,12 @@ namespace gameswf
 		mouse_button_state	m_mouse_button_state;
 		bool	m_on_event_load_called;
 
+		// Flags for event handlers
+		bool	m_on_event_xmlsocket_ondata_called;
+		bool	m_on_event_xmlsocket_onxml_called;
+		bool	m_on_event_load_progress_called;
+		array<Timer *>	m_interval_timers;
+
 		movie_root(movie_def_impl* def)
 			:
 			m_def(def),
@@ -982,7 +989,10 @@ namespace gameswf
 			m_mouse_y(0),
 			m_mouse_buttons(0),
 			m_userdata(NULL),
-			m_on_event_load_called(false)
+			m_on_event_load_called(false),
+			m_on_event_xmlsocket_ondata_called(false),
+			m_on_event_xmlsocket_onxml_called(false),
+			m_on_event_load_progress_called(false)
 		{
 			assert(m_def != NULL);
 
@@ -1054,6 +1064,26 @@ namespace gameswf
 			return m_def->get_file_bytes();
 		}
 
+		virtual int    add_interval_timer(void *timer)
+		{
+			Timer *ptr = static_cast<Timer *>(timer);
+			
+			// log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+			m_interval_timers.push_back(ptr);
+			return m_interval_timers.size();
+		}
+	
+		virtual void    clear_interval_timer(int x)
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+			m_interval_timers[x]->clearInterval();
+		}
+	
+		virtual void    do_something(void *timer)
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+		}
+		
 		// 0-based!!
 		int	get_current_frame() const { return m_movie->get_current_frame(); }
 		float	get_frame_rate() const { return m_def->get_frame_rate(); }
@@ -1090,9 +1120,10 @@ namespace gameswf
 		float	get_timer() const { return m_timer; }
 
 		void	restart() { m_movie->restart(); }
-
+		
 		void	advance(float delta_time)
 		{
+			int i;
 			if (m_on_event_load_called == false)
 			{
 				// Must do loading events.  For child sprites this is
@@ -1101,7 +1132,33 @@ namespace gameswf
 				m_on_event_load_called = true;
 				m_movie->on_event_load();
 			}
+			// Must check the socket connection for data
+			if (m_on_event_xmlsocket_ondata_called == true) {
+				m_movie->on_event_xmlsocket_ondata();
+			}
+			
+			if (m_on_event_xmlsocket_onxml_called == true) {
+				m_movie->on_event_xmlsocket_onxml();
+			}
 
+
+			// Must check the progress of the MovieClip being loaded
+			if (m_on_event_load_progress_called == true) {
+				m_movie->on_event_load_progress();				
+			}
+			if (m_interval_timers.size() > 0) {
+				for (i=0; i<m_interval_timers.size(); i++) {
+					//log_msg("FIXME: Checking Interval Timer !\n");
+					if (m_interval_timers[i]->expired()) {
+						log_msg("FIXME: Interval Timer Expired!\n");
+						//m_movie->on_event_interval_timer();
+						m_movie->do_something(m_interval_timers[i]);
+						// clear_interval_timer(m_interval_timers[i]->getIntervalID()); // FIXME: we shouldn't really disable the timer here
+					}
+				}
+			}
+			
+			
 			m_timer += delta_time;
 			// @@ TODO handle multi-frame catch-up stuff
 			// here, and make it optional.  Make
@@ -3067,6 +3124,50 @@ namespace gameswf
 // 			}
 		}
 
+		// sprite instance of add_interval_handler()
+		virtual int    add_interval_timer(void *timer)
+		{
+			// log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			return m_root->add_interval_timer(timer);
+		}
+
+		virtual void    clear_interval_timer(int x)
+		{
+			// log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			m_root->clear_interval_timer(x);
+		}
+	
+
+		// sprite instance of do_something()
+		virtual void    do_something(void *timer)
+		{
+			as_value	val;
+			as_value       *as_val;
+			as_object      *obj;
+
+			log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			Timer *ptr = (Timer *)timer;
+			log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
+
+			as_val = ptr->getASFunction();
+			obj = ptr->getObject();
+
+			as_c_function_ptr	cfunc = as_val->to_c_function();
+			if (cfunc) {
+				// It's a C function.  Call it.
+				log_msg("Calling C function for from interval timer\n");
+				(*cfunc)(&val, obj, &m_as_environment, 0, 0);
+				
+			} else if (as_as_function* as_func = as_val->to_as_function()) {
+				// It's an ActionScript function.  Call it.
+				as_value method;
+				log_msg("Calling ActionScript function from interval timer\n");
+				(*as_func)(&val, (as_object_interface *)this, &m_as_environment, 0, 0);
+			} else {
+				log_error("error in call_method(): method is not a function\n");
+			}    
+		}	
+
 		virtual ~sprite_instance()
 		{
 			m_display_list.clear();
@@ -3234,7 +3335,6 @@ namespace gameswf
 			}
 		}
 
-
 		/* sprite_instance */
 		virtual void	advance(float delta_time)
 		{
@@ -3287,7 +3387,6 @@ namespace gameswf
 			// with no dt.
 			m_time_remainder = fmod(m_time_remainder, frame_time);
 		}
-
 
 		/*sprite_instance*/
 		void	execute_frame_tags(int frame, bool state_only = false)
@@ -4356,8 +4455,38 @@ namespace gameswf
 			on_event(event_id::LOAD);
 		}
 
+#if 0
+		// Do the events that happen when there is data waiting
+		// on the XML socket connection.
+		virtual void	on_event_xmlsocket_ondata()
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+			on_event(event_id::SOCK_DATA);
+		}
+#endif
+		// Do the events that happen when there is XML data waiting
+		// on the XML socket connection.
+		virtual void	on_event_xmlsocket_onxml()
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+			on_event(event_id::SOCK_XML);
+		}
+		
+		// Do the events that (appear to) happen on a specified interval.
+		virtual void	on_event_interval_timer()
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+			on_event(event_id::TIMER);
+		}
 
-		/*sprite_instance*/
+		// Do the events that happen as a MovieClip (swf 7 only) loads.
+		virtual void	on_event_load_progress()
+		{
+			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+			on_event(event_id::LOAD_PROGRESS);
+		}
+
+	/*sprite_instance*/
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		{
 			// Keep m_as_environment alive during any method calls!

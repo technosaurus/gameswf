@@ -5,7 +5,7 @@ AC_INIT(gameswf/gameswf.h)
 AC_CANONICAL_TARGET
 
 dnl These are required by automake
-AM_INIT_AUTOMAKE(gameswf, 0.1)
+AM_INIT_AUTOMAKE(gameswf, 0.2)
 AM_MAINTAINER_MODE
 AC_PROG_MAKE_SET
 
@@ -22,9 +22,15 @@ AM_PATH_ZLIB
 AM_PATH_JPEG
 AM_PATH_PNG
 
+dnl AM_PATH_LIBXMLCPP
+AM_PATH_LIBXML2
+
+AC_LINK_FILES(gameswf/testsuite/ips.xml,gameswf/testsuite/ips.xml)
+
 AC_OUTPUT(Makefile
 base/Makefile
 geometry/Makefile
 gameswf/Makefile
+gameswf/testsuite/Makefile
 config.mk
 )
