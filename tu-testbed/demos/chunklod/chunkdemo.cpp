@@ -735,7 +735,12 @@ int	main(int argc, char *argv[])
 		}
 
 		delete model;
-		if (texture_quadtree) delete texture_quadtree;
+		model = NULL;
+		if (texture_quadtree)
+		{
+			delete texture_quadtree;
+			texture_quadtree = NULL;
+		}
 
 		SDL_RWclose(in);
 	}
