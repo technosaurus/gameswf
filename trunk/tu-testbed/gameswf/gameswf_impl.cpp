@@ -685,7 +685,7 @@ namespace gameswf
 		}
 
 
-		void	execute_frame_tags(int frame)
+		void	execute_frame_tags(int frame, bool state_only=false)
 		// Execute the tags associated with the specified frame.
 		{
 			assert(frame >= 0);
@@ -695,7 +695,14 @@ namespace gameswf
 			for (int i = 0; i < playlist.size(); i++)
 			{
 				execute_tag*	e = playlist[i];
-				e->execute(this);
+				if (state_only)
+				{
+					e->execute_state(this);
+				}
+				else
+				{
+					e->execute(this);
+				}
 			}
 		}
 
@@ -727,9 +734,8 @@ namespace gameswf
 				m_display_list.clear();
 				for (int f = 0; f < target_frame_number; f++)
 				{
-					execute_frame_tags(f);	// FIXME: don't execute actions, nor sounds.
+					execute_frame_tags(f, true);
 				}
-				m_action_list.clear();	// HACK!
 			}
 
 			m_update_frame = true;
@@ -893,6 +899,10 @@ namespace gameswf
 		void	execute(movie* m)
 		{
 			m->set_background_color(m_color);
+		}
+
+		void	execute_state(movie* m) {
+			execute(m);
 		}
 
 		void	read(stream* in)
@@ -1798,7 +1808,13 @@ namespace gameswf
 
 			}
 		}
+
+		void	execute_state(movie* m)
+		{
+			execute(m);
+		}
 	};
+
 
 	
 	void	place_object_2_loader(stream* in, int tag_type, movie* m)
@@ -2029,7 +2045,7 @@ namespace gameswf
 		}
 
 
-		void	execute_frame_tags(int frame)
+		void	execute_frame_tags(int frame, bool state_only=false)
 		// Execute the tags associated with the specified frame.
 		{
 			assert(frame >= 0);
@@ -2039,7 +2055,14 @@ namespace gameswf
 			for (int i = 0; i < playlist.size(); i++)
 			{
 				execute_tag*	e = playlist[i];
-				e->execute(this);
+				if (state_only)
+				{
+					e->execute_state(this);
+				}
+				else
+				{
+					e->execute(this);
+				}
 			}
 		}
 
@@ -2071,9 +2094,8 @@ namespace gameswf
 				m_display_list.clear();
 				for (int f = 0; f < target_frame_number; f++)
 				{
-					execute_frame_tags(f);	// FIXME: don't execute actions, nor sounds.
+					execute_frame_tags(f, true);
 				}
-				m_action_list.clear();	// HACK!
 			}
 
 			m_update_frame = true;
@@ -2270,6 +2292,11 @@ namespace gameswf
 //			IF_DEBUG(printf(" remove: depth %2d\n", m_depth));
 			m->remove_display_object(m_depth);
 		}
+
+		void	execute_state(movie* m)
+		{
+			execute(m);
+		}
 	};
 
 
@@ -2317,6 +2344,11 @@ namespace gameswf
 		void	execute(movie* m)
 		{
 			m->add_action_buffer(&m_buf);
+		}
+
+		void	execute_state(movie* m)
+		{
+			// left empty because actions don't have to be replayed when seeking the movie.
 		}
 	};
 
