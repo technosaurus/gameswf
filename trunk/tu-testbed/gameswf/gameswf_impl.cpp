@@ -2525,8 +2525,15 @@ namespace gameswf
 			assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
 
 			tu_string	n = name;
-			assert(m_named_frames.get(n, NULL) == false);	// frame should not already have a name (?)
-			m_named_frames.add(n, m_loading_frame);	// stores 0-based frame #
+			int	currently_assigned = 0;
+			if (m_named_frames.get(n, &currently_assigned) == true)
+			{
+				log_error("add_frame_name(%d, '%s') -- frame name already assigned to frame %d; overriding\n",
+					  m_loading_frame,
+					  name,
+					  currently_assigned);
+			}
+			m_named_frames.set(n, m_loading_frame);	// stores 0-based frame #
 		}
 
 		/* sprite_definition */

@@ -16,7 +16,7 @@
 #include "base/tu_config.h"
 #include "base/utility.h"
 #include <stdlib.h>
-#include <string.h>
+#include <string.h>	// for strcmp and friends
 #include <new>	// for placement new
 
 
@@ -820,6 +820,10 @@ public:
 
 	void	resize(int new_size);
 
+	// Utility: case-insensitive string compare.  stricmp() is not
+	// ANSI or POSIX, doesn't seem to appear in Linux.
+	static int	stricmp(const char* a, const char* b);
+
 private:
 //	array<char>	m_buffer;	// we do store the terminating \0
 
@@ -879,12 +883,6 @@ private:
 };
 
 
-#ifdef __GNUC__
-// stricmp is not ANSI???
-#define stricmp strcasecmp
-#endif // __GNUC__
-
-
 // String-like type; comparisons are CASE INSENSITIVE.
 // Uses tu_string for implementation.
 class tu_stringi
@@ -917,19 +915,23 @@ public:
 
 	bool	operator==(const char* str) const
 	{
-		return stricmp(*this, str) == 0;
+		return tu_string::stricmp(*this, str) == 0;
 	}
 	bool	operator==(const tu_stringi& str) const
 	{
-		return stricmp(*this, str) == 0;
+		return tu_string::stricmp(*this, str) == 0;
 	}
 	bool	operator<(const char* str) const
 	{
-		return stricmp(c_str(), str) < 0;
+		return tu_string::stricmp(c_str(), str) < 0;
+	}
+	bool	operator<(const tu_stringi& str) const
+	{
+		return *this < str.c_str();
 	}
 	bool	operator>(const char* str) const
 	{
-		return stricmp(c_str(), str) > 0;
+		return tu_string::stricmp(c_str(), str) > 0;
 	}
 	bool	operator>(const tu_stringi& str) const
 	{
