@@ -1202,13 +1202,55 @@ static void compute_triangulation(
 				int	v0 = penv.m_sorted_verts[v1].m_prev;
 				int	v2 = penv.m_sorted_verts[v1].m_next;
 
-//				emit_triangle(result, penv.m_sorted_verts, v0, v1, v2);
-//				P->remove_ear(&sorted_verts, v1);
 				P->emit_and_remove_ear(result, &penv.m_sorted_verts, v0, v1, v2);
 
 				ear_was_clipped = true;
 
-				// @@ is it true that Q always remains valid here?
+				// v0 and v2 must be removed from ear
+				// list, if they're in it.
+				//
+				// @@ sucks, must optimize (perhaps limit the size of Q?)
+				for (int i = 0, n = Q.size(); i < n; i++)
+				{
+					if (Q[i] == v0 || Q[i] == v2)
+					{
+						Q.remove(i);	// or erase_u() or something
+						i--;
+						n--;
+					}
+				}
+
+#if 0
+				// debug hack: emit current state of P
+				static int s_tricount = 0;
+				s_tricount++;
+				if (s_tricount >= 14)
+				{
+					result->resize(0);	// clear existing junk.
+
+					int	first_vert = P->m_loop;
+					int	vi = first_vert;
+					do
+					{
+						result->push_back(penv.m_sorted_verts[vi].m_v.x);
+						result->push_back(penv.m_sorted_verts[vi].m_v.y);
+						vi = penv.m_sorted_verts[vi].m_next;
+					}
+					while (vi != first_vert);
+
+					// Loop back to beginning, and pad to a multiple of 3 coords.
+					do
+					{
+						result->push_back(penv.m_sorted_verts[vi].m_v.x);
+						result->push_back(penv.m_sorted_verts[vi].m_v.y);
+					}
+					while (result->size() % 6);
+
+					return;
+				}
+#endif // HACK
+
+
 			}
 			else if (ear_was_clipped == true)
 			{

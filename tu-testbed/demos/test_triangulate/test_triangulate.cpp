@@ -72,6 +72,10 @@ void	output_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	int	tricount = trilist.size() / 6;
 	int	trilabel = 0;
 
+#define DRAW_AS_MESH
+//#define DRAW_AS_POLY
+
+#ifdef DRAW_AS_MESH
 	for (int i = 0; i < trilist.size(); )
 	{
 		float	x[3], y[3];
@@ -84,20 +88,24 @@ void	output_diagram(array<float>& trilist, const array<array<float> >& input_pat
 
 		#define TRANSFORM(x, y)  (((x) - x0) * scale) + OFFSET, (((y) - y0) * scale) + OFFSET
 
-// 		ps.line(TRANSFORM(x[0], y[0]), TRANSFORM(x[1], y[1]));
-// 		ps.line(TRANSFORM(x[1], y[1]), TRANSFORM(x[2], y[2]));
-// 		ps.line(TRANSFORM(x[2], y[2]), TRANSFORM(x[0], y[0]));
-
+//#define WIREFRAME
+#ifdef WIREFRAME
+		ps.gray(0);
+		ps.line(TRANSFORM(x[0], y[0]), TRANSFORM(x[1], y[1]));
+		ps.line(TRANSFORM(x[1], y[1]), TRANSFORM(x[2], y[2]));
+		ps.line(TRANSFORM(x[2], y[2]), TRANSFORM(x[0], y[0]));
+#else	// not WIREFRAME
 		ps.gray(((i/6) / float(tricount) + 0.25f) * 0.5f);
 		ps.moveto(TRANSFORM(x[0], y[0]));
 		ps.lineto(TRANSFORM(x[1], y[1]));
 		ps.lineto(TRANSFORM(x[2], y[2]));
 		ps.fill();
+#endif // not WIREFRAME
 
 		ps.disk(TRANSFORM(x[1], y[1]), 2);	// this should be the apex of the original ear
 
 		// Label the tri.
-		ps.gray(1);
+		ps.gray(0.9f);
 		float	cent_x = (x[0] + x[1] + x[2]) / 3;
 		float	cent_y = (y[0] + y[1] + y[2]) / 3;
 		ps.printf(TRANSFORM(cent_x, cent_y), "%d", trilabel);
@@ -105,17 +113,21 @@ void	output_diagram(array<float>& trilist, const array<array<float> >& input_pat
 
 		ps.line(TRANSFORM(cent_x, cent_y), TRANSFORM(x[1], y[1]));	// line to the ear
 	}
+#endif // DRAW_AS_MESH
 
-// 	// xxxx debug only, draw the coords as if they form a poly.
-// 	for (int i = 0; i < trilist.size() - 2; i += 2)
-// 	{
-// 		#define TRANSFORM(x, y)  (((x) - x0) * scale) + OFFSET, (((y) - y0) * scale) + OFFSET
-// 		float	xv0 = trilist[i];
-// 		float	yv0 = trilist[i + 1];
-// 		float	xv1 = trilist[i + 2];
-// 		float	yv1 = trilist[i + 3];
-// 		ps.line(TRANSFORM(xv0, yv0), TRANSFORM(xv1, yv1));
-// 	}
+#ifdef DRAW_AS_POLY
+	ps.gray(0);
+	// xxxx debug only, draw the coords as if they form a poly.
+	for (int i = 0; i < trilist.size() - 2; i += 2)
+	{
+		#define TRANSFORM(x, y)  (((x) - x0) * scale) + OFFSET, (((y) - y0) * scale) + OFFSET
+		float	xv0 = trilist[i];
+		float	yv0 = trilist[i + 1];
+		float	xv1 = trilist[i + 2];
+		float	yv1 = trilist[i + 3];
+		ps.line(TRANSFORM(xv0, yv0), TRANSFORM(xv1, yv1));
+	}
+#endif // DRAW_AS_POLY
 }
 
 
