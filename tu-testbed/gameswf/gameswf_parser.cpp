@@ -383,6 +383,16 @@ namespace parser
 		}
 	}
 
+	// tag 46
+	void parse_define_shape_morph(stream *input, int tag_type)
+	{
+		assert(tag_type == 46);
+		log_msg("define_shape_morph\n");
+		ident++;
+		log_msg("character ID: %i\n", input->read_u16());
+		ident--;
+	}
+
 	// tag 6
 	void parse_define_bits(stream* input, int tag_type)
 	{
@@ -492,6 +502,7 @@ namespace parser
 		register_tag_loader(32,parse_define_shape123);
 		register_tag_loader(39,parse_define_sprite);	
 		register_tag_loader(43,parse_set_framelabel);		
+                register_tag_loader(46,parse_define_shape_morph);
 
 		ident = 1;
 
@@ -594,3 +605,9 @@ int main(int argc, char *argv[])
 	return(0);
 }
 
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
