@@ -573,9 +573,9 @@ namespace swf
 			m_frame_rate(30.0f),
 			m_frame_count(0),
 			m_version(0),
+			m_background_color(0.0f, 0.0f, 0.0f, 1.0f),
 			m_current_frame(0),
-			m_time(0.0f),
-			m_background_color(0.0f, 0.0f, 0.0f, 1.0f)
+			m_time(0.0f)
 		{
 		}
 
@@ -1758,6 +1758,17 @@ namespace swf
 
 				char*	m_name = in->read_string_with_length();
 
+				// Avoid warnings.
+				m_name = m_name;
+				reserved = reserved;
+				unicode = unicode;
+				bold = bold;
+				italic = italic;
+				wide_codes = wide_codes;
+				ansi = ansi;
+				shift_jis = shift_jis;
+				has_layout = has_layout;
+
 				int	glyph_count = in->read_u16();
 				
 				int	table_base = in->get_position();
@@ -1870,13 +1881,17 @@ namespace swf
 		float	m_x_offset;
 		float	m_y_offset;
 		float	m_text_height;
+		bool	m_has_x_offset;
+		bool	m_has_y_offset;
 
 		text_style()
 			:
 			m_font(0),
 			m_x_offset(0),
 			m_y_offset(0),
-			m_text_height(1.0f)
+			m_text_height(1.0f),
+			m_has_x_offset(false),
+			m_has_y_offset(false)
 		{
 		}
 	};
@@ -1893,7 +1908,6 @@ namespace swf
 		text_style	m_style;
 		array<glyph_entry>	m_glyphs;
 
-		
 		void	read(stream* in, int glyph_count, int glyph_bits, int advance_bits)
 		{
 			m_glyphs.resize(glyph_count);
@@ -1929,6 +1943,8 @@ namespace swf
 			int	glyph_bits = in->read_u8();
 			int	advance_bits = in->read_u8();
 
+			IF_DEBUG(printf("begin text records\n"));
+
 			text_style	style;
 			for (;;)
 			{
@@ -1937,6 +1953,7 @@ namespace swf
 				if (first_byte == 0)
 				{
 					// This is the end of the text records.
+					IF_DEBUG(printf("end text records\n"));
 					break;
 				}
 
@@ -1944,10 +1961,13 @@ namespace swf
 				if (type == 1)
 				{
 					// This is a style change.
+
 					bool	has_font = (first_byte >> 3) & 1;
 					bool	has_color = (first_byte >> 2) & 1;
 					bool	has_y_offset = (first_byte >> 1) & 1;
 					bool	has_x_offset = (first_byte >> 0) & 1;
+
+					IF_DEBUG(printf("text style change\n"));
 
 					if (has_font)
 					{
@@ -1957,6 +1977,8 @@ namespace swf
 						{
 							printf("error: text style with undefined font; font_id = %d\n", font_id);
 						}
+
+						IF_DEBUG(printf("has_font: font id = %d\n", font_id));
 					}
 					if (has_color)
 					{
@@ -1969,18 +1991,34 @@ namespace swf
 							assert(tag_type == 33);
 							style.m_color.read_rgba(in);
 						}
+						IF_DEBUG(printf("has_color\n"));
 					}
 					if (has_x_offset)
 					{
+						style.m_has_x_offset = true;
 						style.m_x_offset = in->read_s16();
+						IF_DEBUG(printf("has_x_offset = %g\n", style.m_x_offset));
+					}
+					else
+					{
+						style.m_has_x_offset = false;
+						style.m_x_offset = 0.0f;
 					}
 					if (has_y_offset)
 					{
+						style.m_has_y_offset = true;
 						style.m_y_offset = in->read_s16();
+						IF_DEBUG(printf("has_y_offset = %g\n", style.m_y_offset));
+					}
+					else
+					{
+						style.m_has_y_offset = false;
+						style.m_y_offset = 0.0f;
 					}
 					if (has_font)
 					{
 						style.m_text_height = in->read_u16();
+						IF_DEBUG(printf("text_height = %g\n", style.m_text_height));
 					}
 				}
 				else
@@ -1990,6 +2028,8 @@ namespace swf
 					m_text_glyph_records.resize(m_text_glyph_records.size() + 1);
 					m_text_glyph_records.back().m_style = style;
 					m_text_glyph_records.back().read(in, glyph_count, glyph_bits, advance_bits);
+
+					IF_DEBUG(printf("glyph_records: count = %d\n", glyph_count));
 				}
 			}
 		}
@@ -1998,12 +2038,18 @@ namespace swf
 		void	display(const display_info& di)
 		// Draw the string.
 		{
-			// @@ draw bounding rect?
+			// @@ it would probably be nicer to just parse
+			// this tag from the original SWF data,
+			// on-the-fly as we render.
 
 			display_info	sub_di = di;
 			sub_di.m_matrix.concatenate(m_matrix);
 
 			matrix	base_matrix = sub_di.m_matrix;
+
+			float	scale = 1.0f;
+			float	x = 0.0f;
+			float	y = 0.0f;
 
 			for (int i = 0; i < m_text_glyph_records.size(); i++)
 			{
@@ -2012,14 +2058,19 @@ namespace swf
 				if (rec.m_style.m_font == NULL) continue;
 
 				sub_di.m_matrix = base_matrix;
-				
-				float	scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
-				sub_di.m_matrix.concatenate_translation(rec.m_style.m_x_offset /* + m_rect.m_x_min */,
-									rec.m_style.m_y_offset /* + m_rect.m_y_min */);
+
+				scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+				if (rec.m_style.m_has_x_offset)
+				{
+					x = rec.m_style.m_x_offset;
+				}
+				if (rec.m_style.m_has_y_offset)
+				{
+					y = rec.m_style.m_y_offset;
+				}
+				sub_di.m_matrix.concatenate_translation(x, y);
 				sub_di.m_matrix.m_[0][0] *= scale;
 				sub_di.m_matrix.m_[1][1] *= scale;
-//				sub_di.m_matrix.m_[0][2] += ;
-//				sub_di.m_matrix.m_[1][2] += ;
 
 				m_dummy_style[0].m_color = rec.m_style.m_color;
 
@@ -2031,8 +2082,9 @@ namespace swf
 					// Draw the character.
 					if (glyph) glyph->display(sub_di, m_dummy_style);
 
-//					sub_di.m_matrix.m_[0][2] += rec.m_glyphs[j].m_glyph_advance;
-					sub_di.m_matrix.concatenate_translation(rec.m_glyphs[j].m_glyph_advance / scale, 0);
+					float	dx = rec.m_glyphs[j].m_glyph_advance;
+					x += dx;
+					sub_di.m_matrix.concatenate_translation(dx / scale, 0);
 				}
 			}
 		}
@@ -2630,6 +2682,9 @@ namespace swf
 		assert(m);
 
 		movie*	original_movie = m;
+
+		// Avoid warnings.
+		original_movie = original_movie;
 
 		for (int pc = 0; pc < m_buffer.size(); )
 		{
