@@ -120,7 +120,7 @@ namespace jpeg
 		static void term_source(j_decompress_ptr cinfo)
 		// Terminate the source.  Make sure we get deleted.
 		{
-			rw_source*	src = (rw_source*) cinfo->src;
+			/*rw_source*	src = (rw_source*) cinfo->src;
 			assert(src);
 
 			// @@ it's kind of bogus to be deleting here
@@ -130,7 +130,7 @@ namespace jpeg
 			// many images, without reallocating our
 			// buffer.
 			delete src;
-			cinfo->src = NULL;
+			cinfo->src = NULL;*/
 		}
 
 
@@ -318,11 +318,11 @@ namespace jpeg
 		// Destructor.  Clean up our jpeg reader state.
 		{
 			finish_image();
-/*
+
 			rw_source* src = (rw_source*) m_cinfo.src;
 			delete src;
 			m_cinfo.src = NULL;
-*/
+
 
 			jpeg_destroy_decompress(&m_cinfo);
 		}
@@ -334,8 +334,12 @@ namespace jpeg
 		// data, to avoid screwing up future reads.
 		{
 			rw_source* src = (rw_source*) m_cinfo.src;
-			assert(src);
-			src->discard_partial_buffer();
+
+			// We only have to discard the input buffer after reading the tables.
+			if (src)
+			{
+				src->discard_partial_buffer();
+			}
 		}
 
 
