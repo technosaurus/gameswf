@@ -94,7 +94,7 @@ namespace tesselate
 	static void	peel_off_and_emit(int i0, int i1, float y0, float y1);
 
 
-	void	begin_shape(trapezoid_accepter* accepter, float curve_error_tolerance)
+	void	begin_shape(float curve_error_tolerance)
 	{
 		// ensure we're not already in a shape or path.
 		// make sure our shape state is cleared out.
@@ -103,9 +103,6 @@ namespace tesselate
 
 		assert(s_current_path.size() == 0);
 		s_current_path.resize(0);
-
-		assert(accepter);
-		s_accepter = accepter;
 
 		assert(curve_error_tolerance > 0);
 		if (curve_error_tolerance > 0)
@@ -204,7 +201,26 @@ namespace tesselate
 	void	output_current_segments()
 	// Draw our shapes and lines, then clear the segment list.
 	{
-		if (s_shape_has_fill == true)
+		if (s_shape_has_line)
+		{
+			//
+			// Emit our line segments.
+			//
+			{for (int i = 0; i < s_current_segments.size(); i++)
+			{
+				const fill_segment&	seg = s_current_segments[i];
+				if (seg.m_line_style != -1)
+				{
+					s_accepter->accept_line_segment(
+						seg.m_line_style,
+						seg.m_begin.m_x, seg.m_begin.m_y,
+						seg.m_end.m_x, seg.m_end.m_y);
+				}
+			}}
+		}
+
+
+		if (s_shape_has_fill)
 		{
 			//
 			// Output the trapezoids making up the filled shape.
@@ -354,13 +370,16 @@ namespace tesselate
 	}
 
 
-	void	end_shape()
+	void	end_shape(trapezoid_accepter* accepter)
 	{
+		assert(accepter);
+		s_accepter = accepter;
+
 		output_current_segments();
 	}
 
 
-	void	begin_path(int style_left, int style_right, float ax, float ay)
+	void	begin_path(int style_left, int style_right, int line_style, float ax, float ay)
 	// This call begins recording a sequence of segments, which
 	// all share the same fill & line styles.  Add segments to the
 	// shape using add_curve_segment() or add_line_segment(), and
@@ -371,7 +390,7 @@ namespace tesselate
 	{
 		s_current_left_style = style_left;
 		s_current_right_style = style_right;
-		s_current_line_style = -1;
+		s_current_line_style = line_style;
 
 		s_last_point.m_x = ax;
 		s_last_point.m_y = ay;
@@ -380,6 +399,16 @@ namespace tesselate
 		s_current_path.resize(0);
 
 		s_current_path.push_back(s_last_point);
+
+		if (style_left != -1 || style_right != -1)
+		{
+			s_shape_has_fill = true;
+		}
+
+		if (line_style != -1)
+		{
+			s_shape_has_line = true;
+		}
 	}
 
 

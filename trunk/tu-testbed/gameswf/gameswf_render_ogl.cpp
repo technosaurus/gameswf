@@ -10,11 +10,13 @@
 
 
 #include "gameswf_render.h"
-#include "gameswf_types.h"
+
 #include "engine/ogl.h"
 #include "engine/utility.h"
 #include "engine/container.h"
 #include "engine/geometry.h"
+#include "gameswf_types.h"
+#include "gameswf_tesselate.h"
 #include <stdlib.h>
 
 
@@ -342,7 +344,7 @@ namespace render
 					float	inv_height = 1.0f / m_bitmap_info->m_original_height;
 
 					matrix	screen_to_obj;
-					screen_to_obj.set_inverse(s_matrix_stack.back());
+					screen_to_obj.set_inverse(current_matrix);
 
 					matrix	m = m_bitmap_matrix;
 					m.concatenate(screen_to_obj);
@@ -378,70 +380,11 @@ namespace render
 	};
 
 
-	struct fill_segment
-	{
-		point	m_begin;
-		point	m_end;
-		fill_style	m_left_style, m_right_style, m_line_style;
-//		bool	m_down;	// true if the segment was initially pointing down (rather than up)
-
-		fill_segment() {}
-
-		fill_segment(
-			const point& a,
-			const point& b,
-			const fill_style& left_style,
-			const fill_style& right_style,
-			const fill_style& line_style)
-			:
-			m_begin(a),
-			m_end(b),
-			m_left_style(left_style),
-			m_right_style(right_style),
-			m_line_style(line_style)
-//			m_down(false),
-			
-		{
-			// For rasterization, we want to ensure that
-			// the segment always points towards positive
-			// y...
-			if (m_begin.m_y > m_end.m_y)
-			{
-				flip();
-			}
-		}
-
-		void	flip()
-		// Exchange end points, and reverse fill sides.
-		{
-			swap(m_begin, m_end);
-
-			// swap fill styles...
-			swap(m_left_style, m_right_style);
-
-//			m_down = ! m_down;
-		}
-
-		float	get_height() const
-		// Return segment height.
-		{
-			assert(m_end.m_y >= m_begin.m_y);
-
-			return m_end.m_y - m_begin.m_y;
-		}
-	};
-
-
 	// More Renderer state.
-	static array<fill_segment>	s_current_segments;
-	static array<point>	s_current_path;
-	static point	s_last_point;
-	static fill_style	s_current_left_style;
-	static fill_style	s_current_right_style;
-	static fill_style	s_current_line_style;
-	static bool	s_shape_has_line;	// flag to let us skip the line rendering if no line styles were set when defining the shape.
-	static bool	s_shape_has_fill;	// flag to let us skip the fill rendering if no fill styles were set when defining the shape.
-
+	static array<fill_style>	s_current_styles;
+	static int	s_left_style = -1;
+	static int	s_right_style = -1;
+	static int	s_line_style = -1;
 
 
 	static void	peel_off_and_render(int i0, int i1, float y0, float y1);
@@ -501,6 +444,8 @@ namespace render
 	// necessary transforms, to scale the movie to fit within the
 	// given dimensions (and fills the background...).  Call
 	// end_display() when you're done.
+	//
+	// The rectangel (x0, y0, x1, y1) is in pixel coordinates.
 	{
 		s_display_width = fabsf(x1 - x0);
 		s_display_height = fabsf(y1 - y0);
@@ -655,12 +600,12 @@ namespace render
 	{
 		if (fill_side == 0)
 		{
-			s_current_left_style.disable();
+			s_left_style = -1;
 		}
 		else
 		{
 			assert(fill_side == 1);
-			s_current_right_style.disable();
+			s_right_style = -1;
 		}
 	}
 
@@ -668,7 +613,7 @@ namespace render
 	void	line_style_disable()
 	// Don't draw a line on this path.
 	{
-		s_current_line_style.disable();
+		s_line_style = -1;
 	}
 
 
@@ -676,19 +621,17 @@ namespace render
 	// Set fill style for the left interior of the shape.  If
 	// enable is false, turn off fill for the left interior.
 	{
-		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
+		s_current_styles.push_back(fill_style());
+		s_current_styles.back().set_color(s_cxform_stack.back().transform(color));
 
 		if (fill_side == 0)
 		{
-			s_current_left_style.set_color(s_cxform_stack.back().transform(color));
-			s_shape_has_fill = true;
+			s_left_style = s_current_styles.size() - 1;
 		}
 		else
 		{
 			assert(fill_side == 1);
-
-			s_current_right_style.set_color(s_cxform_stack.back().transform(color));
-			s_shape_has_fill = true;
+			s_right_style = s_current_styles.size() - 1;
 		}
 	}
 
@@ -697,261 +640,38 @@ namespace render
 	// Set the line style of the shape.  If enable is false, turn
 	// off lines for following curve segments.
 	{
-		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
-
-		s_current_line_style.set_color(s_cxform_stack.back().transform(color));
-		s_shape_has_line = true;
+		s_current_styles.push_back(fill_style());
+		s_current_styles.back().set_color(s_cxform_stack.back().transform(color));
+		s_line_style = s_current_styles.size() - 1;
 	}
 
 
 	void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm)
 	{
+		s_current_styles.push_back(fill_style());
+		s_current_styles.back().set_bitmap(bi, m, wm, s_cxform_stack.back());
+
 		if (fill_side == 0)
 		{
-			s_current_left_style.set_bitmap(bi, m, wm, s_cxform_stack.back());
-			s_shape_has_fill = true;
+			s_left_style = s_current_styles.size() - 1;
 		}
 		else
 		{
 			assert(fill_side == 1);
-
-			s_current_right_style.set_bitmap(bi, m, wm, s_cxform_stack.back());
-			s_shape_has_fill = true;
+			s_right_style = s_current_styles.size() - 1;
 		}
 	}
 
 
 	void	begin_shape()
 	{
-		// ensure we're not already in a shape or path.
 		// make sure our shape state is cleared out.
-		assert(s_current_segments.size() == 0);
-		s_current_segments.resize(0);
+		s_current_styles.resize(0);
+		s_left_style = -1;
+		s_right_style = -1;
+		s_line_style = -1;
 
-		assert(s_current_path.size() == 0);
-		s_current_path.resize(0);
-
-		s_current_line_style.disable();
-		s_current_left_style.disable();
-		s_current_right_style.disable();
-		s_shape_has_fill = false;
-		s_shape_has_line = false;
-	}
-
-
-	static int	compare_segment_y(const void* a, const void* b)
-	// For sorting segments by m_begin.m_y, and then by height.
-	{
-		const fill_segment*	A = (const fill_segment*) a;
-		const fill_segment*	B = (const fill_segment*) b;
-
-		const float	ay0 = A->m_begin.m_y;
-		const float	by0 = B->m_begin.m_y;
-
-		if (ay0 < by0)
-		{
-			return -1;
-		}
-		else if (ay0 == by0)
-		{
-			const float	ah = A->get_height();
-			const float	bh = B->get_height();
-
-			if (ah < bh)
-			{
-				return -1;
-			}
-			else if (ah == bh)
-			{
-				return 0;
-			}
-			else
-			{
-				return 1;
-			}
-		}
-		else
-		{
-			return 1;
-		}
-	}
-
-
-	static int	compare_segment_x(const void* a, const void* b)
-	// For sorting segments by m_begin.m_x, and then by m_end.m_x.
-	{
-		const fill_segment*	A = (const fill_segment*) a;
-		const fill_segment*	B = (const fill_segment*) b;
-
-		const float	ax0 = A->m_begin.m_x;
-		const float	bx0 = B->m_begin.m_x;
-
-		if (ax0 < bx0)
-		{
-			return -1;
-		}
-		else if (ax0 == bx0)
-		{
-			const float	ax1 = A->m_end.m_x;
-			const float	bx1 = B->m_end.m_x;
-
-			if (ax1 < bx1)
-			{
-				return -1;
-			}
-			else if (ax1 == bx1)
-			{
-				return 0;
-			}
-			else
-			{
-				return 1;
-			}
-		}
-		else
-		{
-			return 1;
-		}
-	}
-
-
-	void	output_current_segments()
-	// Draw our shapes and lines, then clear the segment list.
-	{
-#if 0
-		if (s_shape_has_line)
-		{
-			//
-			// Draw lines.
-			//
-
-			glBegin(GL_LINES);
-			{for (int i = 0; i < s_current_segments.size(); i++)
-			{
-				const fill_segment&	seg = s_current_segments[i];
-				if (seg.m_line_style.is_valid())
-				{
-					seg.m_line_style.apply(s_matrix_stack.back());
-					glVertex2f(seg.m_begin.m_x, seg.m_begin.m_y);
-					glVertex2f(seg.m_end.m_x, seg.m_end.m_y);
-				}
-			}}
-			glEnd();
-		}
-#endif // 0
-
-		// wireframe, for debugging
-		if (s_wireframe)
-		{
-			glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
-			glBegin(GL_LINES);
-			{for (int i = 0; i < s_current_segments.size(); i++)
-			{
-				const fill_segment&	seg = s_current_segments[i];
-				glVertex2f(seg.m_begin.m_x, seg.m_begin.m_y);
-				glVertex2f(seg.m_end.m_x, seg.m_end.m_y);
-			}}
-			glEnd();
-		}
-
-		if (s_wireframe == false
-		    && s_shape_has_fill == true)
-		{
-			//
-			// Draw the filled shape.
-			//
-
-// 			// xxxxx
-// 			if (s_current_left_style.is_valid())
-// 			{
-// 				s_current_left_style.apply(s_matrix_stack.back());
-// 			}
-// 			if (s_current_right_style.is_valid())
-// 			{
-// 				s_current_right_style.apply(s_matrix_stack.back());
-// 			}
-// 			// xxxxx
-
-			// sort by begining y (smaller first), then by height (shorter first)
-			qsort(&s_current_segments[0], s_current_segments.size(), sizeof(s_current_segments[0]), compare_segment_y);
-		
-			int	base = 0;
-			while (base < s_current_segments.size())
-			{
-				float	ytop = s_current_segments[base].m_begin.m_y;
-				int	next_base = base + 1;
-				for (;;)
-				{
-					if (next_base == s_current_segments.size()
-					    || s_current_segments[next_base].m_begin.m_y > ytop)
-					{
-						break;
-					}
-					next_base++;
-				}
-
-				// sort this first part again by y
-				qsort(&s_current_segments[base], next_base - base, sizeof(s_current_segments[0]), compare_segment_y);
-
-				// s_current_segments[base] through s_current_segments[next_base - 1] is all the segs that start at ytop
-				if (next_base >= s_current_segments.size()
-				    || s_current_segments[base].m_end.m_y <= s_current_segments[next_base].m_begin.m_y)
-				{
-					// No segments start between ytop and
-					// [base].m_end.m_y, so we can peel
-					// off that whole interval and render
-					// it right away.
-					float	ybottom = s_current_segments[base].m_end.m_y;
-					peel_off_and_render(base, next_base, ytop, ybottom);
-
-					while (base < s_current_segments.size()
-					       && s_current_segments[base].m_end.m_y <= ybottom)
-					{
-						base++;
-					}
-				}
-				else
-				{
-					float	ybottom = s_current_segments[next_base].m_begin.m_y;
-					assert(ybottom > ytop);
-					peel_off_and_render(base, next_base, ytop, ybottom);
-
-					// don't update base; it's still active.
-				}
-			}
-		}
-		
-		s_current_segments.resize(0);
-	}
-
-
-	void	compute_antialias_s_coords(float* s0, float* s1, const point& a, const point& b, const point& c, const point& d)
-	// Given the quad {a,b,c,d}, compute texture coords s0,s1
-	// such that setting texture coords {0,0,s0,s1} for the quad
-	// will make a 1-pixel wide feathered antialised edge along
-	// {a,b}.
-	{
-#if 0
-		// Basically, find the normal to the edge {a,b} and then compute normal * {a,c} and normal*{a,d}
-
-		float	nx = (b.m_y - a.m_y);
-		float	ny = - (b.m_x - a.m_x);
-		float	scale = (1.0f / sqrtf(nx * nx + ny * ny)) * (0.5f * s_pixel_scale / 20.f);
-		nx *= scale;
-		ny *= scale;
-
-		*s0 = nx * (c.m_x - a.m_x) + ny * (c.m_y - a.m_y);
-		*s1 = nx * (d.m_x - a.m_x) + ny * (d.m_y - a.m_y);
-#else
-		*s0 = (c.m_x - b.m_x) * 0.5f * s_pixel_scale / 20.f;
-		*s1 = (d.m_x - a.m_x) * 0.5f * s_pixel_scale / 20.f;
-
-		if (*s0 < 0)
-		{
-			*s0 = -*s0;
-			*s1 = -*s1;
-		}
-#endif // 0
+		gameswf::tesselate::begin_shape(s_tolerance / 20.0f);
 	}
 
 
@@ -959,6 +679,7 @@ namespace render
 		float y0, float y1,
 		float xl0, float xl1,
 		float xr0, float xr1)
+	// Fill the specified trapezoid in the software output buffer.
 	{
 		int	iy0 = (int) ceilf(y0);
 		int	iy1 = (int) ceilf(y1);
@@ -986,271 +707,74 @@ namespace render
 	}
 
 
-	static void	draw_software_slab(const array<fill_segment>& slab)
+	struct software_accepter : public gameswf::tesselate::trapezoid_accepter
 	{
-		if (slab.size() > 0
-		    && slab[0].m_left_style.is_valid() == false
-		    && slab[0].m_right_style.is_valid() == true)
+		void	accept_trapezoid(int style, const gameswf::tesselate::trapezoid& tr)
+		// Render trapezoids into the software buffer, as they're
+		// emitted from the tesselator.
 		{
-			// Reverse sense of polygon fill!  Right fill style is in charge.
-			for (int i = 0; i < slab.size() - 1; i++)
-			{
-				if (slab[i].m_right_style.is_valid())
-				{
-					software_trapezoid(
-						slab[i].m_begin.m_y, slab[i].m_end.m_y,
-						slab[i].m_begin.m_x, slab[i].m_end.m_x,
-						slab[i + 1].m_begin.m_x, slab[i + 1].m_end.m_x);
-				}
-			}
+			software_trapezoid(tr.m_y0, tr.m_y1, tr.m_lx0, tr.m_lx1, tr.m_rx0, tr.m_rx1);
 		}
-		else
+
+		void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
+		// The software renderer doesn't care about lines;
+		// it's only used for rendering font glyphs which
+		// don't use lines.
 		{
-			for (int i = 0; i < slab.size() - 1; i++)
-			{
-				if (slab[i].m_left_style.is_valid())
-				{
-					software_trapezoid(
-						slab[i].m_begin.m_y, slab[i].m_end.m_y,
-						slab[i].m_begin.m_x, slab[i].m_end.m_x,
-						slab[i + 1].m_begin.m_x, slab[i + 1].m_end.m_x);
-				}
-			}
 		}
-	}
+	};
 
 
-	void	peel_off_and_render(int i0, int i1, float y0, float y1)
-	// Clip the interval [y0, y1] off of the segments from s_current_segments[i0 through (i1-1)]
-	// and render the clipped segments.  Modifies the values in s_current_segments.
+	// Render OpenGL trapezoids, as they're emitted from the
+	// tesselator.
+	struct opengl_accepter : public gameswf::tesselate::trapezoid_accepter
 	{
-		assert(i0 < i1);
-
-		if (y0 == y1)
+		void	accept_trapezoid(int style, const gameswf::tesselate::trapezoid& tr)
+		// The style arg tells us which style out of
+		// s_current_styles to activate.
 		{
-			// Don't bother doing any work...
-			return;
+			assert(style >= 0 && style < s_current_styles.size());
+			assert(s_current_styles[style].is_valid());
+
+			s_current_styles[style].apply(s_matrix_stack.back());
+
+			// Draw the trapezoid.
+			glBegin(GL_QUADS);
+			glVertex2f(tr.m_lx0, tr.m_y0);
+			glVertex2f(tr.m_lx1, tr.m_y1);
+			glVertex2f(tr.m_rx1, tr.m_y1);
+			glVertex2f(tr.m_rx0, tr.m_y0);
+			glEnd();
 		}
 
-		// Peel off first.
-		array<fill_segment>	slab;
-		for (int i = i0; i < i1; i++)
+		void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
+		// Draw the specified line segment.
 		{
-			fill_segment*	f = &s_current_segments[i];
-			assert(f->m_begin.m_y == y0);
-			assert(f->m_end.m_y >= y1);
+			assert(style >= 0 && style < s_current_styles.size());
+			assert(s_current_styles[style].is_valid());
 
-			float	dy = f->m_end.m_y - f->m_begin.m_y;
-			float	t = 1.0f;
-			if (dy > 0)
-			{
-				t = (y1 - f->m_begin.m_y) / dy;
-			}
-			point	intersection;
-			intersection.m_y = y1;
-			intersection.m_x = f->m_begin.m_x + (f->m_end.m_x - f->m_begin.m_x) * t;
+			s_current_styles[style].apply(s_matrix_stack.back());
 
-			// Peel off.
-			slab.push_back(*f);
-			slab.back().m_end = intersection;
-
-			// Modify segment.
-			s_current_segments[i].m_begin = intersection;
+			// Draw the line segment.
+			glBegin(GL_LINES);
+			glVertex2f(x0, y0);
+			glVertex2f(x1, y1);
+			glEnd();
 		}
-
-		// Sort by x.
-		qsort(&slab[0], slab.size(), sizeof(slab[0]), compare_segment_x);
-
-		if (s_software_mode_active == true)
-		{
-			draw_software_slab(slab);
-			return;
-		}
-
-#if 0
-// This antialiasing trick works rather well for vertical lines :), 
-// but works less and less well as edges get more horizontal :(
-//
-// + does not expand the shape, gives correct result on vert edges
-//
-// + fairly simple
-//
-// - not clear if there's any feasible way to extend it to more
-// horizontal edges.  Perhaps have a totally separate calc for the
-// horizontal edges?  Like, just classify each edge, and use one hack
-// (vert) or the other hack (horiz)?  So the worst case is 45-degree
-// lines, but actually they're not too terrible with this.
-//
-// Note that a trapezoid in general could have a side edge and a
-// top/bottom edge which both need blurring.  Could use a 2x2
-// antialiasing texture (instead of the 1x2), and calc both s and t
-// texture coords.  I think this would work dandy; there would be a
-// nice bilinear fringe at the corner; probably better than anything
-// else we could do.
-//
-// A good area for experiments.
-//
-// The big problem is what happens at joints; if you have a vertical
-// line going into a slanted line, the corner will have a little extra
-// spike, since the boundary is horizontal (due to trapezoid slicing).
-// What we really want is the boundary to be normal to the vertex,
-// i.e. the average of the two perpendiculars.  Which essentially
-// means we have to shrink the shape?!?!  Conundrum?  Or do-able?
-//
-// * What if we combined this one, drawing out to a half-pixel of
-// half-transparency without expanding the shape, and *also* did the
-// line-around-the-outside, of only a half-pixel, of 50% to 0%
-// transparency?  So the boundary is a bent shape...  Hm, smells
-// promising!
-
-		// Render pairs.
-		if (s_multitexture_antialias)
-		{
-			for (int i = 0; i < slab.size() - 1; i++)
-			{
-				if (slab[i].m_left_style.is_valid())
-				{
-					// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
-
-					slab[i].m_left_style.apply(s_matrix_stack.back());
-
-					ogl::active_texture(GL_TEXTURE1_ARB);
-					glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
-					glEnable(GL_TEXTURE_2D);	// @@ should we use a 1D texture???
-					ogl::active_texture(GL_TEXTURE0_ARB);
-
-					glBegin(GL_QUADS);
-
-					// Here's what we have:
-					//
-					//    a   +--------------+ c
-					//       /                \ 
-					//      /                  \ 
-					//   b +------------------- + d
-					//
-					// We'll turn it into:
-					//
-					//               e
-					//    a   +------+-------+ c
-					//       /       |        \ 
-					//      /         |        \ 
-					//   b +----------+-------- + d
-					//                f
-					//
-					// Where edges {a,b} and {c,d} will be antialiased.
-
-					point	a = slab[i].m_begin;
-					point	b = slab[i].m_end;
-					point	c = slab[i + 1].m_begin;
-					point	d = slab[i + 1].m_end;
-
-					// Expand the trapezoid by a pixel to make up for
-					// the reduced coverage due to antialiasing.
-//					float	expand = (1.0f + fabsf((b.m_x - a.m_x) / (b.m_y - a.m_y))) * 20.f;
-					float	expand = 20.f;
-					a.m_x -= expand / s_pixel_scale;
-					b.m_x -= expand / s_pixel_scale;
-					c.m_x += expand / s_pixel_scale;
-					d.m_x += expand / s_pixel_scale;
-
-					const point	e((a.m_x + c.m_x) * 0.5f, (a.m_y + c.m_y) * 0.5f);
-					const point	f((b.m_x + d.m_x) * 0.5f, (b.m_y + d.m_y) * 0.5f);
-
-					float	s0, s1;
-					compute_antialias_s_coords(&s0, &s1, a, b, f, e);
-
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(a.m_x, a.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(b.m_x, b.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s0, 0.0f);
-					glVertex2f(f.m_x, f.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1, 0.0f);
-					glVertex2f(e.m_x, e.m_y);
-
-					compute_antialias_s_coords(&s0, &s1, d, c, e, f);
-
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(d.m_x, d.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-					glVertex2f(c.m_x, c.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s0, 0.0f);
-					glVertex2f(e.m_x, e.m_y);
-					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1, 0.0f);
-					glVertex2f(f.m_x, f.m_y);
-
-					glEnd();
-
-					ogl::active_texture(GL_TEXTURE1_ARB);
-					glDisable(GL_TEXTURE_2D);
-					ogl::active_texture(GL_TEXTURE0_ARB);
-
-					//xxxxxx red trapezoid outlines
-					if (0) {
-						glColor4f(1, 0, 0, 1);
-						glBegin(GL_LINE_STRIP);
-						glVertex2f(a.m_x, a.m_y);
-						glVertex2f(b.m_x, b.m_y);
-						glVertex2f(f.m_x, f.m_y);
-						glVertex2f(e.m_x, e.m_y);
-						glVertex2f(a.m_x, a.m_y);
-						glEnd();
-						glColor4f(1, 1, 1, 1);
-					}
-				}
-			}
-		}
-		else
-#endif // 0 -- end half-assed antialiasing code
-		{
-			if (slab.size() > 0
-			    && slab[0].m_left_style.is_valid() == false
-			    && slab[0].m_right_style.is_valid() == true)
-			{
-				// Reverse sense of polygon fill!  Right fill style is in charge.
-				for (int i = 0; i < slab.size() - 1; i++)
-				{
-					if (slab[i].m_right_style.is_valid())
-					{
-						// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
-
-						slab[i].m_right_style.apply(s_matrix_stack.back());
-
-						glBegin(GL_QUADS);
-						glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
-						glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
-						glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
-						glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
-						glEnd();
-					}
-				}
-			}
-			else
-			{
-				for (int i = 0; i < slab.size() - 1; i++)
-				{
-					if (slab[i].m_left_style.is_valid())
-					{
-						// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
-
-						slab[i].m_left_style.apply(s_matrix_stack.back());
-
-						glBegin(GL_QUADS);
-						glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
-						glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
-						glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
-						glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
-						glEnd();
-					}
-				}
-			}
-		}
-	}
+	};
 
 
 	void	end_shape()
 	{
-		output_current_segments();
+		// Render the shape stored in the tesselator.
+		if (s_software_mode_active)
+		{
+			gameswf::tesselate::end_shape(&software_accepter());
+		}
+		else
+		{
+			gameswf::tesselate::end_shape(&opengl_accepter());
+		}
 	}
 
 
@@ -1260,34 +784,10 @@ namespace render
 	// shape using add_curve_segment() or add_line_segment(), and
 	// call end_path() when you're done with this sequence.
 	{
-		point	p(ax, ay);
-		s_matrix_stack.back().transform(&s_last_point, p);
+		point	p;
+		s_matrix_stack.back().transform(&p, point(ax, ay));
 
-		assert(s_current_path.size() == 0);
-		s_current_path.resize(0);
-
-		s_current_path.push_back(s_last_point);
-	}
-
-
-	static void	add_line_segment_raw(const point& p)
-	// INTERNAL: Add a line segment running from the previous
-	// anchor point to the given new anchor point -- (ax, ay) is
-	// already transformed.
-	{
-		// s_current_segments is used for filling shapes.
-		// if (either fill style is valid) { ...
-		s_current_segments.push_back(
-			fill_segment(
-				s_last_point,
-				p,
-				s_current_left_style,
-				s_current_right_style,
-				s_current_line_style));
-
-		s_last_point = p;
-
-		s_current_path.push_back(p);
+		gameswf::tesselate::begin_path(s_left_style, s_right_style, s_line_style, p.m_x, p.m_y);
 	}
 
 
@@ -1297,208 +797,29 @@ namespace render
 	{
 		point	p;
 		s_matrix_stack.back().transform(&p, point(ax, ay));
-		add_line_segment_raw(p);
+
+		gameswf::tesselate::add_line_segment(p.m_x, p.m_y);
 	}
 
 
-	static void	curve(float p0x, float p0y, float p1x, float p1y, float p2x, float p2y)
-	// Recursive routine to generate bezier curve within tolerance.
-	{
-#ifndef NDEBUG
-		static int	recursion_count = 0;
-		recursion_count++;
-		if (recursion_count > 500)
-		{
-			assert(0);	// probably a bug!
-		}
-#endif // not NDEBUG
-
-		// @@ use struct point in here?
-
-		// Midpoint on line between two endpoints.
-		float	midx = (p0x + p2x) * 0.5f;
-		float	midy = (p0y + p2y) * 0.5f;
-
-		// Midpoint on the curve.
-		float	qx = (midx + p1x) * 0.5f;
-		float	qy = (midy + p1y) * 0.5f;
-
-		float	dist = fabsf(midx - qx) + fabsf(midy - qy);
-
-		if (dist < s_tolerance)
-		{
-			// Emit edges.
-			add_line_segment_raw(point(qx, qy));
-			add_line_segment_raw(point(p2x, p2y));
-		}
-		else
-		{
-			// Subdivide.
-			curve(p0x, p0y, (p0x + p1x) * 0.5f, (p0y + p1y) * 0.5f, qx, qy);
-			curve(qx, qy, (p1x + p2x) * 0.5f, (p1y + p2y) * 0.5f, p2x, p2y);
-		}
-
-#ifndef NDEBUG
-		recursion_count--;
-#endif // not NDEBUG
-	}
-
-	
 	void	add_curve_segment(float cx, float cy, float ax, float ay)
 	// Add a curve segment to the shape.  The curve segment is a
 	// quadratic bezier, running from the previous anchor point to
 	// the given new anchor point (ax, ay), with (cx, cy) acting
 	// as the control point in between.
 	{
-		// Subdivide, and add line segments...
 		point	c, a;
 		s_matrix_stack.back().transform(&c, point(cx, cy));
 		s_matrix_stack.back().transform(&a, point(ax, ay));
-		curve(s_last_point.m_x, s_last_point.m_y, c.m_x, c.m_y, a.m_x, a.m_y);
-	}
 
-
-	enum edge_amount { full_edge, start_only };
-
-	static void	emit_blurry_edge_segment(const point& p0, const point& p1, edge_amount amount = full_edge)
-	// Emit the four points that form a rectangle outside the
-	// given edge.
-	{
-		// Find the normal to the edge {p0,p1}
-		float	nx =   (p1.m_y - p0.m_y);
-		float	ny = - (p1.m_x - p0.m_x);
-		float	len = sqrtf(nx * nx + ny * ny);
-		float	scale = 1.0f;
-		if (len > 1e-6)
-		{
-			scale = (1.0f / len) * (20.f / s_pixel_scale);
-		}
-		nx *= scale;
-		ny *= scale;
-
-		ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 1.0f, 0.0f);
-		glVertex2f(p0.m_x, p0.m_y);
-
-		ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-		glVertex2f(p0.m_x + nx, p0.m_y + ny);
-
-		if (amount == full_edge)
-		{
-			ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 1.0f, 0.0f);
-			glVertex2f(p1.m_x, p1.m_y);
-
-			ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
-			glVertex2f(p1.m_x + nx, p1.m_y + ny);
-		}
+		gameswf::tesselate::add_curve_segment(c.m_x, c.m_y, a.m_x, a.m_y);
 	}
 
 
 	void	end_path()
 	// Mark the end of a set of edges that all use the same styles.
 	{
-		//
-		// Draw lines.
-		//
-		if (s_current_line_style.is_valid()
-		    && s_current_path.size() > 1)
-		{
-			s_current_line_style.apply(s_matrix_stack.back());
-			glBegin(GL_LINE_STRIP);
-			{for (int i = 0; i < s_current_path.size(); i++)
-			{
-				glVertex2f(s_current_path[i].m_x, s_current_path[i].m_y);
-			}}
-			glEnd();
-		}
-
-		// This is the current champion antialiasing code.
-		// Unfortunately it's pretty lame -- it's very similar
-		// to drawing lines around the perimeter with
-		// GL_LINE_SMOOTH.  The downside of GL_LINE_SMOOTH is
-		// that it's sensitive to driver/hardware quality.
-		// Basically we generate our own line strip, using
-		// long skinny rectangles that are joined together
-		// with wedges.
-		// 
-		// + works on any dual-texture hardware.
-		//
-		// + simple
-		//
-		// - does a reciprocal sqrt for each vert :( 
-		//
-		// - expands the shape by a pixel all around! :( :(
-		//
-		// - does not use the same exact edges as the
-		// tesselated poly filling code.  So, sometimes we get
-		// one-pixel sparkles or voids along the edge.  Could
-		// be fairly easily remedied by doing the trapezoid
-		// edges instead of the path edge, at some extra cost.
-		//
-		// - acute angles get over-filled due to simple edge
-		// tracing.  This shows up as little dark wedges in
-		// acute angles.
-
-		if (s_multitexture_antialias
-		    && s_current_right_style.is_valid()
-		    && s_current_path.size() > 1)
-		{
-			// Draw a pixel-wide blurry thing around the
-			// outside of the shape, for antialiasing.
-			// Not dissimilar to just drawing a blurry
-			// line around the outside.
-
-			s_current_right_style.apply(s_matrix_stack.back());
-
-			ogl::active_texture(GL_TEXTURE1_ARB);
-			glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
-			glEnable(GL_TEXTURE_2D);
-			ogl::active_texture(GL_TEXTURE0_ARB);
-
-			glBegin(GL_TRIANGLE_STRIP);
-			int	i;
-			for (i = 0; i < s_current_path.size() - 1; i++)
-			{
-				emit_blurry_edge_segment(s_current_path[i], s_current_path[i + 1], full_edge);
-			}
-			emit_blurry_edge_segment(s_current_path[0], s_current_path[1], start_only);
-			glEnd();
-
-			ogl::active_texture(GL_TEXTURE1_ARB);
-			glDisable(GL_TEXTURE_2D);
-			ogl::active_texture(GL_TEXTURE0_ARB);
-		}
-
-		if (1 && s_multitexture_antialias
-		    && s_current_left_style.is_valid()
-		    && s_current_path.size() > 1)
-		{
-			// Draw a pixel-wide blurry thing around the
-			// outside of the shape, for antialiasing.
-			// Not dissimilar to just drawing a blurry
-			// line around the outside.
-
-			s_current_left_style.apply(s_matrix_stack.back());
-
-			ogl::active_texture(GL_TEXTURE1_ARB);
-			glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
-			glEnable(GL_TEXTURE_2D);
-			ogl::active_texture(GL_TEXTURE0_ARB);
-
-			glBegin(GL_TRIANGLE_STRIP);
-			int	i;
-			for (i = s_current_path.size() - 1; i > 0; i--)
-			{
-				emit_blurry_edge_segment(s_current_path[i], s_current_path[i - 1], full_edge);
-			}
-			emit_blurry_edge_segment(s_current_path[0], s_current_path.back(), start_only);
-			glEnd();
-
-			ogl::active_texture(GL_TEXTURE1_ARB);
-			glDisable(GL_TEXTURE_2D);
-			ogl::active_texture(GL_TEXTURE0_ARB);
-		}
-
-		s_current_path.resize(0);
+		gameswf::tesselate::end_path();
 	}
 
 

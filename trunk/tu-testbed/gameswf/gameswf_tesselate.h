@@ -29,7 +29,7 @@ namespace gameswf
 		struct trapezoid_accepter
 		{
 			virtual void	accept_trapezoid(int style, const trapezoid& tr) = 0;
-//			virtual void	accept_line_segment(int style, ...) = 0;
+			virtual void	accept_line_segment(int style, float x0, float y0, float x1, float y1) = 0;
 		};
 
 		// A shape has one or more paths.  The paths in a
@@ -38,15 +38,15 @@ namespace gameswf
 		//
 		// The error tolerance tells the tesselator how much
 		// geometric error is allowed along curve edges.
-		void	begin_shape(trapezoid_accepter* accepter, float curve_error_tolerance);
-		void	end_shape();
+		void	begin_shape(float curve_error_tolerance);
+		void	end_shape(trapezoid_accepter* accepter);
 
 		// A path is enclosed within a shape.  If fill styles
 		// are active, a path should be a closed shape
 		// (i.e. the last point should match the first point).
 		// Set your styles before rendering the path; all
 		// segments in a path must have the same styles.
-		void	begin_path(int style_left, int style_right, float ax, float ay);
+		void	begin_path(int style_left, int style_right, int line_style, float ax, float ay);
 		void	add_line_segment(float ax, float ay);
 		void	add_curve_segment(float cx, float cy, float ax, float ay);
 		void	end_path();
