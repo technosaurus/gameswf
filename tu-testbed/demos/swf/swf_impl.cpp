@@ -418,12 +418,6 @@ namespace swf
 	struct button : public character {
 	};
 
-	struct text : public character {
-	};
-
-	struct font : public character {
-	};
-
 	struct sound : public character {
 	};
 
@@ -636,6 +630,7 @@ namespace swf
 	struct movie_impl : public movie
 	{
 		hash<int, character*>	m_characters;
+		hash<int, font*>	m_fonts;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 
@@ -663,11 +658,19 @@ namespace swf
 
 		void	add_character(int character_id, character* c)
 		{
+			assert(c);
 			m_characters.add(character_id, c);
+		}
+
+		void	add_font(int font_id, font* f)
+		{
+			assert(f);
+			m_fonts.add(font_id, f);
 		}
 
 		void	add_execute_tag(execute_tag* e)
 		{
+			assert(e);
 			m_playlist[m_current_frame].push_back(e);
 		}
 
@@ -848,6 +851,7 @@ namespace swf
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(9, set_background_color_loader);
+			register_tag_loader(10, define_font_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
 			register_tag_loader(26, place_object_2_loader);
@@ -855,6 +859,7 @@ namespace swf
 			register_tag_loader(32, define_shape_loader);
 			register_tag_loader(36, define_bits_lossless_2_loader);
 			register_tag_loader(39, sprite_loader);
+			register_tag_loader(48, define_font_loader);
 		}
 	}
 
@@ -1278,12 +1283,14 @@ namespace swf
 
 		virtual ~shape_character() {}
 
-		void	read(stream* in, int tag_type)
+		void	read(stream* in, int tag_type, bool with_style)
 		{
-			m_bound.read(in);
-			
-			read_fill_styles(&m_fill_styles, in, tag_type);
-			read_line_styles(&m_line_styles, in, tag_type);
+			if (with_style)
+			{
+				m_bound.read(in);
+				read_fill_styles(&m_fill_styles, in, tag_type);
+				read_line_styles(&m_line_styles, in, tag_type);
+			}
 
 			//
 			// SHAPE
@@ -1463,7 +1470,7 @@ namespace swf
 		Uint16	character_id = in->read_u16();
 
 		shape_character*	ch = new shape_character;
-		ch->read(in, tag_type);
+		ch->read(in, tag_type, true);
 
 		IF_DEBUG(printf("shape_loader: id = %d, rect ", character_id);
 			 ch->m_bound.print(stdout));
@@ -1473,6 +1480,102 @@ namespace swf
 		m->add_character(character_id, ch);
 	}
 
+
+	//
+	// font
+	//
+	
+	struct font
+	{
+		array<shape_character*>	m_glyphs;
+		// etc
+
+		font()
+		{
+		}
+
+		~font()
+		{
+			// Iterate over m_glyphs and free the shapes.
+			for (int i = 0; i < m_glyphs.size(); i++)
+			{
+				delete m_glyphs[i];
+			}
+			m_glyphs.resize(0);
+		}
+
+		void	read(stream* in, int tag_type)
+		{
+			if (tag_type == 10)
+			{
+				IF_DEBUG(printf("reading define_font\n"));
+
+				int	table_base = in->get_position();
+
+				// Read the glyph offsets.  Offsets
+				// are measured from the start of the
+				// offset table.
+				array<int>	offsets;
+				offsets.push_back(in->read_u16());
+				IF_DEBUG(printf("offset[0] = %d\n", offsets[0]));
+				int	count = offsets[0] >> 1;
+				for (int i = 1; i < count; i++)
+				{
+					offsets.push_back(in->read_u16());
+					IF_DEBUG(printf("offset[%d] = %d\n", i, offsets[i]));
+				}
+
+				m_glyphs.reserve(count);
+
+				// Read the glyph shapes.
+				for (int i = 0; i < count; i++)
+				{
+					// Seek to the start of the shape data.
+					int	new_pos = table_base + offsets[i];
+//					assert(new_pos >= in->get_position());	// if we're seeking backwards, then that looks like a bug.
+					in->set_position(new_pos);
+
+					// Create & read the shape.
+					shape_character*	s = new shape_character;
+					s->read(in, 2, false);
+
+					m_glyphs.push_back(s);
+				}
+			}
+			else
+			{
+				IF_DEBUG(printf("*** define font tag type %d not implemented ***", tag_type));
+				assert(0);
+			}
+		}
+	};
+	
+
+	void	define_font_loader(stream* in, int tag_type, movie* m)
+	{
+		assert(tag_type == 10);
+
+		Uint16	font_id = in->read_u16();
+		
+		font*	f = new font;
+		f->read(in, tag_type);
+
+//		IF_DEBUG(0);
+
+		m->add_font(font_id, f);
+	}
+
+
+	//
+	// text_character
+	//
+
+	// @@ ...
+
+
+	//
+	// place_object_2
+	//
 	
 	struct place_object_2 : public execute_tag
 	{

@@ -143,6 +143,24 @@ namespace swf
 	}
 
 
+	void	stream::set_position(int pos)
+	// Set the file position to the given value.
+	{
+		align();
+
+		// If we're in a tag, make sure we're not seeking outside the tag.
+		if (m_tag_stack.size() > 0)
+		{
+			int	end_pos = m_tag_stack.back();
+			assert(pos < end_pos);
+			// @@ check start pos somehow???
+		}
+
+		// Do the seek.
+		SDL_RWseek(m_input, pos, SEEK_SET);
+	}
+
+
 	int	stream::get_tag_end_position()
 	// Return the file position of the end of the current tag.
 	{
