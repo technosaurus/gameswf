@@ -335,11 +335,11 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 {
 	// Do quantization decompression, output floats.
 
-	float	sx = box_extent.get_x() / ((1 << 15) - 1);
-	float	sz = box_extent.get_z() / ((1 << 15) - 1);
+	float	sx = box_extent.get_x() / (1 << 14);
+	float	sz = box_extent.get_z() / (1 << 14);
 
-	int	offsetx = box_center.get_x();
-	int	offsetz = box_center.get_z();
+	float	offsetx = box_center.get_x();
+	float	offsetz = box_center.get_z();
 
 	float	one_minus_f = 1.0 - f;
 
@@ -705,7 +705,7 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	}
 
 	int	format_version = SDL_ReadLE16(src);
-	assert_else(format_version == 4) {
+	assert_else(format_version == 5) {
 		throw "Input format has non-matching version number";
 	}
 
