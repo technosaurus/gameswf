@@ -184,7 +184,7 @@ private:
 
 
 inline void	tu_file::write_float32(float value)
-// Write a 32-bit little-endian double to this file.
+// Write a 32-bit little-endian float to this file.
 {
 	union alias {
 		float	f;
@@ -198,7 +198,7 @@ inline void	tu_file::write_float32(float value)
 
 
 inline float	tu_file::read_float32()
-// Read a 32-bit little-endian double from this file.
+// Read a 32-bit little-endian float from this file.
 {
 	union {
 		float	f;

@@ -794,10 +794,58 @@ namespace gameswf
 		}
 
 
+		// Increment this when the cache data format changes.
+		#define CACHE_FILE_VERSION 1
+
+
 		void	output_cached_data(tu_file* out)
 		// Dump our cached data into the given stream.
 		{
-			out->printf("Hello from movie_impl::output_cached_data()!\n");	// xxx debug
+			// out->printf("Hello from movie_impl::output_cached_data()!\n");	// xxx debug
+
+			out->write_le32(CACHE_FILE_VERSION);
+
+			for (hash<int, character*>::iterator it = m_characters.begin();
+			     it != m_characters.end();
+			     ++it)
+			{
+				out->write_le16(it.get_key());
+				it.get_value()->output_cached_data(out);
+			}
+
+			out->write_le16((Sint16) -1);	// end marker
+		}
+
+
+		void	input_cached_data(tu_file* in)
+		// Read in cached data and use it to prime our loaded characters.
+		{
+			int	version = in->read_le32();
+			if (version != CACHE_FILE_VERSION)
+			{
+				log_error(
+					"cached data is version %d, but we require version %d; skipping\n",
+					version, CACHE_FILE_VERSION);
+				return;
+			}
+
+			for (;;)
+			{
+				Sint16	id = in->read_le16();
+				if (id == (Sint16) -1) { break; }	// done
+
+				character* ch = NULL;
+				m_characters.get(id, &ch);
+				if (ch)
+				{
+					ch->input_cached_data(in);
+				}
+				else
+				{
+					log_error("sync error in cache file!  Skipping rest of cache data.\n");
+					break;
+				}
+			}
 		}
 	};
 
