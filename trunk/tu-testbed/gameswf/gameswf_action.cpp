@@ -398,7 +398,7 @@ namespace gameswf
 		{
 			sound_as_object*	so = (sound_as_object*) (as_object*) this_ptr;
 			assert(so);
-			s->play_sound(so->sound_id, 1);
+			s->play_sound(so->sound_id, 0);
 		}
 	}
 
