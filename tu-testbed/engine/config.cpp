@@ -49,7 +49,7 @@ static int	cfloat_set( lua_State* L )
 	// arg 3: new var value
 
 	cfloat*	cf = static_cast<cfloat*>( lua_touserdata( L, 2 ) );
-	*cf = lua_tonumber( L, 3 );
+	*cf = float(lua_tonumber( L, 3 ));
 
 	return 0;
 }
@@ -262,7 +262,7 @@ cvar::operator float() const
 {
 	push_table_and_key();
 	lua_gettable( config::L, -2 );	// get the value of our variable from the table.
-	float	f = lua_tonumber( config::L, -1 );
+	float	f = float(lua_tonumber( config::L, -1 ));
 	lua_pop( config::L, 2 );	// pop table & the number result.
 
 	return f;
@@ -413,7 +413,7 @@ cvalue::operator float() const
 // Converts this Lua value to a number, and returns it.
 {
 	lua_getref( config::L, m_lua_ref );
-	float	f = lua_tonumber( config::L, -1 );
+	float	f = float(lua_tonumber( config::L, -1 ));
 	lua_pop( config::L, 1 );
 	return f;
 }

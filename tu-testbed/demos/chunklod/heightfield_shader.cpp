@@ -22,6 +22,7 @@ extern "C" {
 #include <engine/utility.h>
 #include <engine/container.h>
 #include <engine/geometry.h>
+#include <engine/jpeg.h>
 
 #include "bt_array.h"
 
@@ -35,7 +36,7 @@ struct texture_tile {
 void	initialize_tileset(array<texture_tile>* tileset);
 const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b);
 void	heightfield_shader(const char* infile,
-			   FILE* out,
+			   SDL_RWops* out,
 			   SDL_Surface* tilemap,
 			   const array<texture_tile>& tileset,
 			   SDL_Surface* altitude_gradient,
@@ -152,9 +153,9 @@ int	wrapped_main(int argc, char* argv[])
 
 		} else {
 			// File argument.
-			if ( infile == NULL ) {
+			if (infile == NULL) {
 				infile = argv[arg];
-			} else if ( outfile == NULL ) {
+			} else if (outfile == NULL) {
 				outfile = argv[arg];
 			} else {
 				// This looks like extra noise on the command line; complain and exit.
@@ -166,16 +167,16 @@ int	wrapped_main(int argc, char* argv[])
 	}
 
 	// Make sure we have input and output filenames.
-	if ( infile == NULL || outfile == NULL ) {
+	if (infile == NULL || outfile == NULL) {
 		// No input or output -- can't run.
 		printf( "error: you must specify input and output filenames.\n" );
 		print_usage();
 		exit( 1 );
 	}
 	
-	FILE*	out = fopen(outfile, "wb");
+	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
 	if (out == 0) {
-		printf( "error: can't open %s for output.\n", outfile );
+		printf("error: can't open %s for output.\n", outfile);
 		exit(1);
 	}
 
@@ -204,7 +205,7 @@ int	wrapped_main(int argc, char* argv[])
 	// Process the data.
 	heightfield_shader(infile, out, tilemap_surface, tileset, altitude_gradient, resolution, input_vertical_scale);
 
-	fclose(out);
+	SDL_RWclose(out);
 
 	return 0;
 }
@@ -433,7 +434,7 @@ void	compute_lightmap(SDL_Surface* out, const heightfield& hf);
 
 
 void	heightfield_shader(const char* infile,
-			   FILE* out,
+			   SDL_RWops* out,
 			   SDL_Surface* tilemap,
 			   const array<texture_tile>& tileset,
 			   SDL_Surface* altitude_gradient,
@@ -468,7 +469,8 @@ void	heightfield_shader(const char* infile,
 	struct jpeg_error_mgr jerr;
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
-	jpeg_stdio_dest(&cinfo, out);
+//	jpeg_stdio_dest(&cinfo, out);
+	jpeg::setup_rw_dest(&cinfo, out);
 
 	cinfo.image_width = width;
 	cinfo.image_height = height;
@@ -555,7 +557,6 @@ void	heightfield_shader(const char* infile,
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
 
-//	SDL_SaveBMP_RW(texture, out, 0);
 	delete texture_pixels;
 	
 	printf("done\n");

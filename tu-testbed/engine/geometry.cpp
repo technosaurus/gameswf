@@ -135,7 +135,7 @@ vec3&	vec3::operator*=(float f)
 float	vec3::magnitude() const
 // Returns the length of *this.
 {
-	return sqrt(sqrmag());
+	return sqrtf(sqrmag());
 }
 
 
@@ -397,9 +397,9 @@ quaternion	matrix::GetOrientation() const
 	tr = m[0].get(0) + m[1].get(1) + m[2].get(2);	// trace
 
 	if (tr >= 0) {
-		s = sqrt(tr + 1);
-		q.SetS(0.5 * s);
-		s = 0.5 / s;
+		s = sqrtf(tr + 1);
+		q.SetS(0.5f * s);
+		s = 0.5f / s;
 		q.SetV(vec3(m[1].get(2) - m[2].get(1), m[2].get(0) - m[0].get(2), m[0].get(1) - m[1].get(0)) * s);
 	} else {
 		int	i = 0;
@@ -414,27 +414,27 @@ quaternion	matrix::GetOrientation() const
 		float	qr, qi, qj, qk;
 		switch (i) {
 		case 0:
-			s = sqrt((m[0].get(0) - (m[1].get(1) + m[2].get(2))) + 1);
-			qi = 0.5 * s;
-			s = 0.5 / s;
+			s = sqrtf((m[0].get(0) - (m[1].get(1) + m[2].get(2))) + 1);
+			qi = 0.5f * s;
+			s = 0.5f / s;
 			qj = (m[1].get(0) + m[0].get(1)) * s;
 			qk = (m[0].get(2) + m[2].get(0)) * s;
 			qr = (m[1].get(2) - m[2].get(1)) * s;
 			break;
 
 		case 1:
-			s = sqrt((m[1].get(1) - (m[2].get(2) + m[0].get(0))) + 1);
-			qj = 0.5 * s;
-			s = 0.5 / s;
+			s = sqrtf((m[1].get(1) - (m[2].get(2) + m[0].get(0))) + 1);
+			qj = 0.5f * s;
+			s = 0.5f / s;
 			qk = (m[2].get(1) + m[1].get(2)) * s;
 			qi = (m[1].get(0) + m[0].get(1)) * s;
 			qr = (m[2].get(0) - m[0].get(2)) * s;
 			break;
 
 		case 2:
-			s = sqrt((m[2].get(2) - (m[0].get(0) + m[1].get(1))) + 1);
-			qk = 0.5 * s;
-			s = 0.5 / s;
+			s = sqrtf((m[2].get(2) - (m[0].get(0) + m[1].get(1))) + 1);
+			qk = 0.5f * s;
+			s = 0.5f / s;
 			qi = (m[0].get(2) + m[2].get(0)) * s;
 			qj = (m[2].get(1) + m[1].get(2)) * s;
 			qr = (m[0].get(1) - m[1].get(0)) * s;
@@ -456,9 +456,9 @@ quaternion	matrix::GetOrientation() const
 quaternion::quaternion(const vec3& Axis, float Angle)
 // Constructs the quaternion defined by the rotation about the given axis of the given angle (in radians).
 {
-	S = cos(Angle / 2);
+	S = cosf(Angle / 2);
 	V = Axis;
-	V *= sin(Angle / 2);
+	V *= sinf(Angle / 2);
 }
 
 
@@ -473,9 +473,9 @@ quaternion	quaternion::operator*(const quaternion& q) const
 quaternion&	quaternion::normalize()
 // Ensures that the quaternion has magnitude 1.
 {
-	float	mag = sqrt(S * S + V * V);
+	float	mag = sqrtf(S * S + V * V);
 	if (mag > 0.0000001) {
-		float	inv = 1.0 / mag;
+		float	inv = 1.0f / mag;
 		S *= inv;
 		V *= inv;
 	} else {
@@ -527,10 +527,10 @@ quaternion	quaternion::lerp(const quaternion& q, float f) const
 
 	if (cos_omega < 0.99) {
 		// Do the spherical interp.
-		float	omega = acos(cos_omega);
-		float	sin_omega = sin(omega);
-		f0 = sin((1 - f) * omega) / sin_omega;
-		f1 = sin(f * omega) / sin_omega;
+		float	omega = acosf(cos_omega);
+		float	sin_omega = sinf(omega);
+		f0 = sinf((1 - f) * omega) / sin_omega;
+		f1 = sinf(f * omega) / sin_omega;
 	} else {
 		// Quaternions are close; just do straight lerp and avoid division by near-zero.
 		f0 = 1 - f;
@@ -626,7 +626,7 @@ vec3	Rotate(float Angle, const vec3& Axis, const vec3& Point)
 // Rotates the given point through the given angle (in radians) about the given
 // axis.
 {
-	quaternion	q(cos(Angle/2), Axis * sin(Angle/2));
+	quaternion	q(cosf(Angle/2), Axis * sinf(Angle/2));
 
 	vec3	result;
 	q.ApplyRotation(&result, Point);
