@@ -95,6 +95,8 @@ void	tu_string::resize(int new_size)
 
 int	main()
 {
+	printf("sizeof(tu_string) == %d\n", sizeof(tu_string));
+
 	tu_string	a("test1");
 
 	printf("%s\n", a.c_str());
@@ -107,6 +109,13 @@ int	main()
 
 	a += "this is some more text";
 	assert(a.length() == 28);
+
+	assert(a[2] == 's');
+	assert(a[3] == 't');
+	assert(a[4] == '1');
+	assert(a[5] == '2');
+	assert(a[7] == 'h');
+	assert(a[28] == 0);
 
 	tu_string	b;
 	assert(b.length() == 0);
