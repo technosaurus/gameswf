@@ -62,15 +62,15 @@ $(LIB_OUT): $(LIB_OBJS)
 
 
 $(EXE_OUT): $(TEST_PROGRAM_OBJS) $(LIB_OUT) $(BASE_LIB)
-	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+	$(CC) -o $@ $(TEST_PROGRAM_OBJS) $(LIBS) $(LDFLAGS)
 
 
 $(PARSER_OUT): $(PARSER_OBJS) $(LIB_OUT) $(BASE_LIB)
-	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+	$(CC) -o $@ $(PARSER_OBJS) $(LIBS) $(LDFLAGS)
 
 
 $(PROCESSOR_OUT): $(PROCESSOR_OBJS) $(LIB_OUT) $(BASE_LIB)
-	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+	$(CC) -o $@ $(PROCESSOR_OBJS) $(LIBS) $(LDFLAGS)
 
 
 base_lib:
@@ -78,6 +78,6 @@ base_lib:
 
 clean:
 	make -C $(TOP)/base clean
-	-rm $(OBJS) $(LIB_OUT) $(EXE_OUT)
+	-rm $(OBJS) $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 fresh: clean all

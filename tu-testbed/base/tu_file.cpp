@@ -119,9 +119,9 @@ struct membuf
 
 	membuf(int size, void* data)
 		:
-		m_position(0),
 		m_size(size),
 		m_data((unsigned char*) data),
+		m_position(0),
 		m_read_only(true)
 	{
 	}
