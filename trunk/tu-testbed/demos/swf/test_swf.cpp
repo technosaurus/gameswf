@@ -90,7 +90,7 @@ int	main(int argc, char *argv[])
 	// Turn on line smoothing.  Antialiased lines can be used to
 	// smooth the outsides of shapes.
 	glEnable(GL_LINE_SMOOTH);
-	glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);	// GL_NICEST, GL_FASTEST, GL_DONT_CARE
 
 	glMatrixMode(GL_PROJECTION);
 	glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);

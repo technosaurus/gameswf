@@ -563,17 +563,19 @@ namespace swf
 		float	m_frame_rate;
 		int	m_frame_count;
 		int	m_version;
+		rgba	m_background_color;
 
 		int	m_current_frame;
 		float	m_time;
 
 		movie_impl()
 			:
-			m_frame_rate(30),
+			m_frame_rate(30.0f),
 			m_frame_count(0),
 			m_version(0),
 			m_current_frame(0),
-			m_time(0)
+			m_time(0.0f),
+			m_background_color(0.0f, 0.0f, 0.0f, 1.0f)
 		{
 		}
 
@@ -671,6 +673,10 @@ namespace swf
 		int	get_width() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_x_max - m_frame_size.m_x_min)); }
 		int	get_height() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_y_max - m_frame_size.m_y_min)); }
 
+		void	set_background_color(const rgba& bg_color)
+		{
+			m_background_color = bg_color;
+		}
 		
 		void	restart()
 		{
@@ -747,10 +753,8 @@ namespace swf
 		void	display()
 		// Show our display list.
 		{
-			// @@ deal with background color...
-
 			swf::render::begin_display(
-//				background color???
+				m_background_color,
 				m_frame_size.m_x_min, m_frame_size.m_x_max,
 				m_frame_size.m_y_min, m_frame_size.m_y_max);
 
@@ -874,7 +878,10 @@ namespace swf
 	{
 		rgba	m_color;
 
-		void	execute(movie* m) {}
+		void	execute(movie* m)
+		{
+			m->set_background_color(m_color);
+		}
 
 		void	read(stream* in)
 		{

@@ -20,7 +20,8 @@ namespace swf
 		// Bracket the displaying of a frame from a movie.
 		// Fill the background color, and set up default
 		// transforms, etc.
-		void	begin_display(/*bg color??*/
+		void	begin_display(
+			rgba background_color,
 			float x0, float x1, float y0, float y1);
 		void	end_display();
 

@@ -18,6 +18,7 @@ namespace swf
 {
 	struct character;
 	struct execute_tag;
+	struct rgba;
 
 	// This the client program's interface to a movie.
 	struct movie_interface
@@ -30,6 +31,7 @@ namespace swf
 		virtual void	advance(float delta_time) = 0;
 		virtual void	goto_frame(int frame_number) = 0;
 		virtual void	display() = 0;
+		virtual void	set_background_color(const rgba& bg_color) = 0;
 	};
 
 	// Create a swf::movie_interface from the given input stream.

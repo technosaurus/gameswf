@@ -102,6 +102,7 @@ namespace render
 
 	// Renderer state.
 	static array<fill_segment>	s_current_segments;
+	static array<point>	s_current_path;
 	static point	s_last_point;
 	static fill_style	s_current_left_style;
 	static fill_style	s_current_right_style;
@@ -116,7 +117,8 @@ namespace render
 	static void	peel_off_and_render(int i0, int i1, float y0, float y1);
 
 
-	void	begin_display(/*background color???*/
+	void	begin_display(
+		rgba background_color,
 		float x0, float x1, float y0, float y1)
 	// Set up to render a full frame from a movie.  Sets up
 	// necessary transforms, to scale the movie to fit within the
@@ -126,6 +128,19 @@ namespace render
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 		glOrtho(x0, x1, y0, y1, -1, 1);
+
+		// Clear the background, if background color has alpha > 0.
+		if (background_color.m_a > 0.0f)
+		{
+			// Draw a big quad.
+			background_color.ogl_color();
+			glBegin(GL_QUADS);
+			glVertex2f(x0, y0);
+			glVertex2f(x1, y0);
+			glVertex2f(x1, y1);
+			glVertex2f(x0, y1);
+			glEnd();
+		}
 
 		// Prime the matrix stack with an identity transform.
 		assert(s_matrix_stack.size() == 0);
@@ -212,6 +227,8 @@ namespace render
 	// Set fill style for the left interior of the shape.  If
 	// enable is false, turn off fill for the left interior.
 	{
+		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
+
 		s_current_left_style.set_valid(enable);
 		s_current_left_style.m_color = s_cxform_stack.back().transform(color);
 		if (enable == true
@@ -226,6 +243,8 @@ namespace render
 	// Set fill style for the right interior of the shape.  If
 	// enable is false, turn off fill for the right interior.
 	{
+		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
+
 		s_current_right_style.set_valid(enable);
 		s_current_right_style.m_color = s_cxform_stack.back().transform(color);
 		if (enable == true
@@ -240,6 +259,8 @@ namespace render
 	// Set the line style of the shape.  If enable is false, turn
 	// off lines for following curve segments.
 	{
+		assert(s_current_path.size() == 0);	// you can't change styles within a begin_path()/end_path() pair.
+
 		s_current_line_style.set_valid(enable);
 		s_current_line_style.m_color = s_cxform_stack.back().transform(color);
 		if (enable == true
@@ -253,9 +274,12 @@ namespace render
 	void	begin_shape()
 	{
 		// ensure we're not already in a shape or path.
-		// make sure our path state is cleared out.
+		// make sure our shape state is cleared out.
 		assert(s_current_segments.size() == 0);
 		s_current_segments.resize(0);
+
+		assert(s_current_path.size() == 0);
+		s_current_path.resize(0);
 
 		s_current_line_style.set_valid(false);
 		s_current_left_style.set_valid(false);
@@ -384,36 +408,6 @@ namespace render
 			// Draw the filled shape.
 			//
 
-#if 1
-			// Draw outlines as antialiased lines, for
-			// antialiasing effect.  This actually works
-			// half-decently!  Needs a few tweaks: when
-			// the fill mode has fractional alpha, the
-			// line needs to be drawn with severely
-			// reduced alpha, to avoid a halo effect.
-			// Doesn't seem to work on some shapes
-			// (inside-out ones?)
-			glBegin(GL_LINES);
-			for (int i = 0; i < s_current_segments.size(); i++)
-			{
-				const fill_segment&	seg = s_current_segments[i];
-				if (seg.m_left_style.is_valid())
-				{
-					seg.m_left_style.apply();
-					glVertex2f(seg.m_begin.m_x, seg.m_begin.m_y);
-					glVertex2f(seg.m_end.m_x, seg.m_end.m_y);
-				}
-				else if (seg.m_right_style.is_valid())
-				{
-					seg.m_right_style.apply();
-					glVertex2f(seg.m_begin.m_x, seg.m_begin.m_y);
-					glVertex2f(seg.m_end.m_x, seg.m_end.m_y);
-				}
-			}
-			glEnd();
-#endif // 1		
-
-
 			// sort by begining y (smaller first), then by height (shorter first)
 			qsort(&s_current_segments[0], s_current_segments.size(), sizeof(s_current_segments[0]), compare_segment_y);
 		
@@ -469,7 +463,7 @@ namespace render
 
 	void	peel_off_and_render(int i0, int i1, float y0, float y1)
 	// Clip the interval [y0, y1] off of the segments from s_current_segments[i0 through (i1-1)]
-	// and the clipped segments.  Modifies the values in s_current_segments.
+	// and render the clipped segments.  Modifies the values in s_current_segments.
 	{
 		if (y0 == y1)
 		{
@@ -530,11 +524,18 @@ namespace render
 
 
 	void	begin_path(float ax, float ay)
-	// This call begins drawing a closed shape.  Add segments to
-	// the shape using add_curve_segment(), and call end_shape()
-	// when you want to close the shape and emit it.
+	// This call begins drawing a sequence of segments, which all
+	// share the same fill & line styles.  Add segments to the
+	// shape using add_curve_segment() or add_line_segment(), and
+	// call end_path() when you're done with this sequence.
 	{
-		s_matrix_stack.back().transform(&s_last_point, point(ax, ay));
+		point	p(ax, ay);
+		s_matrix_stack.back().transform(&s_last_point, p);
+
+		assert(s_current_path.size() == 0);
+		s_current_path.resize(0);
+
+		s_current_path.push_back(s_last_point);
 	}
 
 
@@ -543,6 +544,8 @@ namespace render
 	// anchor point to the given new anchor point -- (ax, ay) is
 	// already transformed.
 	{
+		// s_current_segments is used for filling shapes.
+		// if (either fill style is valid) { ...
 		s_current_segments.push_back(
 			fill_segment(
 				s_last_point,
@@ -550,7 +553,10 @@ namespace render
 				s_current_left_style,
 				s_current_right_style,
 				s_current_line_style));
+
 		s_last_point = p;
+
+		s_current_path.push_back(p);
 	}
 
 
@@ -622,10 +628,34 @@ namespace render
 
 
 	void	end_path()
-	// Mark the end of a closed shape.
+	// Mark the end of a set of edges that all use the same styles.
 	{
-	}
+		// Trace out the path outline, for antialiasing of filled shapes.
 
+		if (s_current_left_style.is_valid())
+		{
+			s_current_left_style.apply();
+			glBegin(GL_LINE_STRIP);
+			for (int i = 0; i < s_current_path.size(); i++)
+			{
+				glVertex2f(s_current_path[i].m_x, s_current_path[i].m_y);
+			}
+			glEnd();
+		}
+		
+		if (s_current_right_style.is_valid())
+		{
+			s_current_right_style.apply();
+			glBegin(GL_LINE_STRIP);
+			for (int i = 0; i < s_current_path.size(); i++)
+			{
+				glVertex2f(s_current_path[i].m_x, s_current_path[i].m_y);
+			}
+			glEnd();
+		}
+
+		s_current_path.resize(0);
+	}
 
 }};
 

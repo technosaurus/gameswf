@@ -65,7 +65,11 @@ namespace swf
 
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 
-		void	goto_frame(int target_frame_number) { assert(0); }
+		virtual void	set_background_color(const rgba& bg_color)
+		{
+		}
+
+		virtual void	goto_frame(int target_frame_number) { assert(0); }
 	};
 
 
