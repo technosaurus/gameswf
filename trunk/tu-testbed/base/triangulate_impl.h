@@ -32,6 +32,11 @@ struct vec2
 	vec2() : x(0), y(0) {}
 	vec2(coord_t _x, coord_t _y) : x(_x), y(_y) {}
 
+	bool	operator==(const vec2<coord_t>& v) const
+	{
+		return x == v.x && y == v.y;
+	}
+
 //data:
 	coord_t	x, y;
 };
@@ -54,14 +59,14 @@ inline sint64	determinant_sint32(const vec2<sint32>& a, const vec2<sint32>& b, c
 // Return true if c is to the left of the directed edge defined by
 // a->b.
 template<class coord_t>
-bool	vertex_left_test(const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
+inline bool	vertex_left_test(const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
 {
 	compiler_assert(0);	// must specialize
 }
 
 
 template<>
-bool	vertex_left_test(const vec2<float>& a, const vec2<float>& b, const vec2<float>& c)
+inline bool	vertex_left_test(const vec2<float>& a, const vec2<float>& b, const vec2<float>& c)
 // Specialize for vec2<float>
 {
 	return determinant_float(a, b, c) > 0;
@@ -69,7 +74,7 @@ bool	vertex_left_test(const vec2<float>& a, const vec2<float>& b, const vec2<flo
 
 
 template<>
-bool	vertex_left_test(const vec2<sint32>& a, const vec2<sint32>& b, const vec2<sint32>& c)
+inline bool	vertex_left_test(const vec2<sint32>& a, const vec2<sint32>& b, const vec2<sint32>& c)
 // Specialize for vec2<sint32>
 {
 	return determinant_sint32(a, b, c) > 0;
@@ -172,7 +177,7 @@ int	compare_vertices(const void* a, const void* b)
 
 
 template<class coord_t>
-bool	edges_intersect(const array<poly_vert<coord_t> >& sorted_verts, int e0v0, int e0v1, int e1v0, int e1v1)
+inline bool	edges_intersect_sub(const array<poly_vert<coord_t> >& sorted_verts, int e0v0, int e0v1, int e1v0, int e1v1)
 // Return true if edge (e0v0,e0v1) intersects (e1v0,e1v1).
 {
 	// Need to specialize this on coord_t, in order to get it
@@ -182,7 +187,7 @@ bool	edges_intersect(const array<poly_vert<coord_t> >& sorted_verts, int e0v0, i
 
 
 template<>
-bool	edges_intersect(const array<poly_vert<float> >& sorted_verts, int e0v0i, int e0v1i, int e1v0i, int e1v1i)
+inline bool	edges_intersect_sub(const array<poly_vert<float> >& sorted_verts, int e0v0i, int e0v1i, int e1v0i, int e1v1i)
 // Return true if edge (e0v0,e0v1) intersects (e1v0,e1v1).
 //
 // Specialized for float.
@@ -200,12 +205,6 @@ bool	edges_intersect(const array<poly_vert<float> >& sorted_verts, int e0v0i, in
 	const vec2<float>&	e0v1 = sorted_verts[e0v1i].m_v;
 	const vec2<float>&	e1v0 = sorted_verts[e1v0i].m_v;
 	const vec2<float>&	e1v1 = sorted_verts[e1v1i].m_v;
-
-	vec2<float>	e0(e0v1.x - e0v0.x, e0v1.y - e0v0.y);
-	vec2<float>	e1(e0v1.x - e0v0.x, e0v1.y - e0v0.y);
-
-	float	e0len2 = e0.x * e0.x + e0.y * e0.y;
-	float	e1len2 = e1.x * e1.x + e1.y * e1.y;
 
 	// @@ need epsilons here, or are zeros OK?  I think the issue
 	// is underflow in case of very small determinants.  Our
@@ -244,6 +243,92 @@ bool	edges_intersect(const array<poly_vert<float> >& sorted_verts, int e0v0i, in
 	// They both cross each other; the segments intersect.
 	return true;
 }
+
+
+template<>
+inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, int e0v0i, int e0v1i, int e1v0i, int e1v1i)
+// Return true if edge (e0v0,e0v1) intersects (e1v0,e1v1).
+//
+// Specialized for sint32
+{
+	// If e1v0,e1v1 are on opposite sides of e0, and e0v0,e0v1 are
+	// on opposite sides of e1, then the segments cross.  These
+	// are all determinant checks.
+
+	// The main degenerate case we need to watch out for is if
+	// both segments are zero-length.
+	//
+	// If only one is degenerate, our tests are still OK.
+
+	const vec2<sint32>&	e0v0 = sorted_verts[e0v0i].m_v;
+	const vec2<sint32>&	e0v1 = sorted_verts[e0v1i].m_v;
+	const vec2<sint32>&	e1v0 = sorted_verts[e1v0i].m_v;
+	const vec2<sint32>&	e1v1 = sorted_verts[e1v1i].m_v;
+
+	if (e0v0.x == e0v1.x && e0v0.y == e0v1.y)
+	{
+		// e0 is zero length.
+		if (e1v0.x == e1v1.x && e1v0.y == e1v1.y)
+		{
+			// Both edges are zero length.
+			// They intersect only if they're coincident.
+			return e0v0.x == e1v0.x && e0v0.y == e1v0.y;
+		}
+	}
+
+	// See if e1 crosses line of e0.
+	sint64	det10 = determinant_sint32(e0v0, e0v1, e1v0);
+	sint64	det11 = determinant_sint32(e0v0, e0v1, e1v1);
+
+	if (det10 * det11 > 0)
+	{
+		// e1 doesn't cross the line of e0.
+		return false;
+	}
+
+	// See if e0 crosses line of e1.
+	sint64	det00 = determinant_sint32(e1v0, e1v1, e0v0);
+	sint64	det01 = determinant_sint32(e1v0, e1v1, e0v1);
+
+	if (det00 * det01 > 0)
+	{
+		// e0 doesn't cross the line of e1.
+		return false;
+	}
+
+	// They both cross each other; the segments intersect.
+	return true;
+}
+
+
+template<class coord_t>
+bool	edges_intersect(const array<poly_vert<coord_t> >& sorted_verts, int e0v0, int e0v1, int e1v0, int e1v1)
+// Return true if edge (e0v0,e0v1) intersects (e1v0,e1v1).
+{
+	// Deal with special case: edges that share exactly one vert.
+	// We treat these as no intersection, even though technically
+	// they share one point.
+	//
+	// We're not just comparing indices, because duped verts (for
+	// bridges) might have different indices.
+	bool	coincident[2][2];
+	coincident[0][0] = (sorted_verts[e0v0].m_v == sorted_verts[e1v0].m_v);
+	coincident[0][1] = (sorted_verts[e0v0].m_v == sorted_verts[e1v1].m_v);
+	coincident[1][0] = (sorted_verts[e0v1].m_v == sorted_verts[e1v0].m_v);
+	coincident[1][1] = (sorted_verts[e0v1].m_v == sorted_verts[e1v1].m_v);
+	if (coincident[0][0] && !coincident[1][1]) return false;
+	if (coincident[1][0] && !coincident[0][1]) return false;
+	if (coincident[0][1] && !coincident[1][0]) return false;
+	if (coincident[1][1] && !coincident[0][0]) return false;
+
+	// Both verts identical: early out.
+	if (coincident[0][0] && coincident[1][1]) return true;
+	if (coincident[1][0] && coincident[0][1]) return true;
+
+	// Check for intersection.
+	return edges_intersect_sub(sorted_verts, e0v0, e0v1, e1v0, e1v1);
+}
+
 
 
 template<class coord_t>
@@ -288,6 +373,8 @@ struct poly
 
 	bool	is_valid(const array<vert_t>& sorted_verts) const;
 
+	void	invalidate(const array<vert_t>& sorted_verts);
+
 //data:
 	int	m_loop;	// index of first vert
 	int	m_leftmost_vert;
@@ -309,7 +396,7 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts) const
 		return true;
 	}
 
-	assert(sorted_verts[m_leftmost_vert].m_poly_owner == this);
+	assert(m_leftmost_vert == -1 || sorted_verts[m_leftmost_vert].m_poly_owner == this);
 
 	// Check vert count.
 	int	first_vert = m_loop;
@@ -322,10 +409,10 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts) const
 		assert(sorted_verts[vi].m_poly_owner == this);
 
 		// Check leftmost vert.
-		assert(
-			compare_vertices<coord_t>(
-				(const void*) &sorted_verts[m_leftmost_vert],
-				(const void*) &sorted_verts[vi]) <= 0);
+		assert(m_leftmost_vert == -1
+		       || compare_vertices<coord_t>(
+			       (const void*) &sorted_verts[m_leftmost_vert],
+			       (const void*) &sorted_verts[vi]) <= 0);
 
 		// Check link integrity.
 		int	v_next = sorted_verts[vi].m_next;
@@ -342,7 +429,7 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts) const
 	while (vi != first_vert);
 
 	assert(vert_count == m_vertex_count);
-	assert(found_leftmost);
+	assert(found_leftmost || m_leftmost_vert == -1);
 
 	// Might be nice to check that all verts with (m_poly_owner ==
 	// this) are in our loop.
@@ -354,10 +441,25 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts) const
 
 
 template<class coord_t>
+void	poly<coord_t>::invalidate(const array<vert_t>& sorted_verts)
+// Mark as invalid/empty.  Do this after linking into another poly,
+// for safety/debugging.
+{
+	assert(m_loop == -1 || sorted_verts[m_loop].m_poly_owner != this);	// make sure our verts have been stolen already.
+
+	m_loop = -1;
+	m_leftmost_vert = -1;
+	m_vertex_count = 0;
+
+	assert(is_valid(sorted_verts));
+}
+
+
+template<class coord_t>
 int	compare_polys_by_leftmost_vert(const void* a, const void* b)
 {
-	const poly<coord_t>*	poly_a = (const poly<coord_t>*) a;
-	const poly<coord_t>*	poly_b = (const poly<coord_t>*) b;
+	const poly<coord_t>*	poly_a = * (const poly<coord_t>**) a;
+	const poly<coord_t>*	poly_b = * (const poly<coord_t>**) b;
 
 	// Vert indices are sorted, so we just compare the indices,
 	// not the actual vert coords.
@@ -437,17 +539,21 @@ int	poly<coord_t>::find_valid_bridge_vert(const array<vert_t>& sorted_verts, int
 	{
 		const poly_vert<coord_t>*	pvi = &sorted_verts[vi];
 
-		if (compare_vertices<coord_t>((void*) pvi, (void*) pv1) <= 0
-		    && any_edge_intersection(sorted_verts, v1, vi) == false)
+		if (compare_vertices<coord_t>((void*) pvi, (void*) pv1) <= 0)
 		{
-			return vi;
+			if (any_edge_intersection(sorted_verts, v1, vi) == false)
+			{
+				return vi;
+			}
 		}
 		
 		vi = sorted_verts[vi].m_next;
 	}
 	while (vi != first_vert);
 
-	// Ugh!  No valid bridge vert.  Shouldn't happen.
+	// Ugh!  No valid bridge vert.  Shouldn't happen with valid
+	// data.  For invalid data, just pick something and live with
+	// the intersection.
 	assert(0);
 	return m_leftmost_vert;
 }
@@ -544,6 +650,12 @@ void	poly<coord_t>::emit_and_remove_ear(
 	poly_vert<coord_t>*	pv1 = &(*sorted_verts)[v1];
 	poly_vert<coord_t>*	pv2 = &(*sorted_verts)[v2];
 
+	if (m_loop == v1)
+	{
+		// Change m_loop, since we're about to lose it.
+		m_loop = v0;
+	}
+
 	// emit the vertex list for the triangle.
 	result->push_back(pv0->m_v.x);
 	result->push_back(pv0->m_v.y);
@@ -567,6 +679,13 @@ void	poly<coord_t>::emit_and_remove_ear(
 
 	// We lost v1.
 	m_vertex_count--;
+
+	if (m_leftmost_vert == v1)
+	{
+		// We shouldn't actually need m_leftmost_vert during
+		// this phase of the algo, so kill it!
+		m_leftmost_vert = -1;
+	}
 
 	assert(is_valid(*sorted_verts));
 }
@@ -640,7 +759,8 @@ bool	poly<coord_t>::triangle_contains_reflex_vertex(const array<vert_t>& sorted_
 	{
 		int	v_next = sorted_verts[vi].m_next;
 
-		if (v_next > min_index && v_next < max_index)
+		if (vi > min_index && vi < max_index
+		    && vi != v0 && vi != v1 && vi != v2)
 		{
 			int	v_prev = sorted_verts[vi].m_prev;
 
@@ -679,10 +799,28 @@ bool	poly<coord_t>::vert_in_cone(const array<vert_t>& sorted_verts, int vert, in
 //        \
 //         v2
 {
-	// Inverted tests, so that our cone includes the boundary.
-	return
-		vertex_left_test(sorted_verts[cone_v1].m_v, sorted_verts[cone_v0].m_v, sorted_verts[vert].m_v) == false
-		&& vertex_left_test(sorted_verts[cone_v2].m_v, sorted_verts[cone_v1].m_v, sorted_verts[vert].m_v) == false;
+	bool	acute_cone = vertex_left_test(sorted_verts[cone_v0].m_v, sorted_verts[cone_v1].m_v, sorted_verts[cone_v2].m_v);
+
+	if (acute_cone)
+	{
+		// Inverted tests, so that our cone includes the boundary.
+		bool	left_of_01 = 
+			vertex_left_test(sorted_verts[cone_v1].m_v, sorted_verts[cone_v0].m_v, sorted_verts[vert].m_v) == false;
+		bool	left_of_12 =
+			vertex_left_test(sorted_verts[cone_v2].m_v, sorted_verts[cone_v1].m_v, sorted_verts[vert].m_v) == false;
+
+		return left_of_01 && left_of_12;
+	}
+	else
+	{
+		// Obtuse cone.  Vert is outside cone if it's to the right of both edges.
+		bool	right_of_01 =
+			vertex_left_test(sorted_verts[cone_v1].m_v, sorted_verts[cone_v0].m_v, sorted_verts[vert].m_v);
+		bool	right_of_12 =
+			vertex_left_test(sorted_verts[cone_v2].m_v, sorted_verts[cone_v1].m_v, sorted_verts[vert].m_v);
+
+		return right_of_01 == false || right_of_12 == false;
+	}
 }
 
 
@@ -819,9 +957,9 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 		poly<coord_t>*	full_poly = m_polys[0];
 
 		// Iterate from left to right
-		for (int next_poly = 1; next_poly < m_polys.size(); next_poly++)
+		while (m_polys.size() > 1)
 		{
-			int	v1 = m_polys[next_poly]->m_leftmost_vert;
+			int	v1 = m_polys[1]->m_leftmost_vert;
 			
 			//     find v2 in full_poly, such that:
 			//       v2 is to the left of v1,
@@ -840,16 +978,14 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 			//     inserting p into full_poly
 			//
 			assert(m_sorted_verts[v2].m_poly_owner == m_polys[0]);
-			assert(m_sorted_verts[v1].m_poly_owner == m_polys[next_poly]);
+			assert(m_sorted_verts[v1].m_poly_owner == m_polys[1]);
 			join_paths_with_bridge(v2, v1);
 
-			delete m_polys[next_poly];
-			m_polys[next_poly] = NULL;
+			// Drop the joined poly.
+			delete m_polys[1];
+			m_polys.remove(1);
 		}
 
-		m_polys.resize(1);	// drop the polys that are now all incorporated into polys[0]
-
-		//   full_poly is now a fully connected vertex loop
 		//   that we can run ear-clipping on.
 	}
 
@@ -884,14 +1020,18 @@ void	poly_env<coord_t>::join_paths_with_bridge(int vert_on_main_poly, int vert_o
 	// Link the loops together.
 	pv_main2->m_next = pv_main->m_next;
 	pv_main2->m_prev = vert_on_sub_poly + 1;	// (pv_sub2)
+	m_sorted_verts[pv_main2->m_next].m_prev = pv_main2->m_my_index;
+
 	pv_sub2->m_prev = pv_sub->m_prev;
 	pv_sub2->m_next = vert_on_main_poly + 1;	// (pv_main2)
+	m_sorted_verts[pv_sub2->m_prev].m_next = pv_sub2->m_my_index;
 
 	pv_main->m_next = vert_on_sub_poly;		// (pv_sub)
 	pv_sub->m_prev = vert_on_main_poly;		// (pv_main)
 
 	// Fixup sub poly so it's now properly a part of the main poly.
 	poly<coord_t>*	main_poly = pv_main->m_poly_owner;
+	poly<coord_t>*	sub_poly = pv_sub->m_poly_owner;
 	poly_vert<coord_t>*	v = pv_sub;
 	do
 	{
@@ -906,6 +1046,10 @@ void	poly_env<coord_t>::join_paths_with_bridge(int vert_on_main_poly, int vert_o
 		v = &m_sorted_verts[v->m_next];
 	}
 	while (v != pv_main2);
+
+	main_poly->m_vertex_count += 2 + sub_poly->m_vertex_count;	// 2 for the duped verts, plus all the sub_poly's verts.
+
+	sub_poly->invalidate(m_sorted_verts);
 
 	assert(pv_main->m_poly_owner->is_valid(m_sorted_verts));
 }
@@ -979,6 +1123,32 @@ static void compute_triangulation(
 	penv.init(path_count, paths);
 
 	penv.join_paths_into_one_poly();
+
+// Debugging only: just emit our joined poly, without triangulating.
+//#define EMIT_JOINED_POLY
+#ifdef EMIT_JOINED_POLY
+	{
+		int	first_vert = penv.m_polys[0]->m_loop;
+		int	vi = first_vert;
+		do
+		{
+			result->push_back(penv.m_sorted_verts[vi].m_v.x);
+			result->push_back(penv.m_sorted_verts[vi].m_v.y);
+			vi = penv.m_sorted_verts[vi].m_next;
+		}
+		while (vi != first_vert);
+
+		// Loop back to beginning, and pad to a multiple of 3 coords.
+		do
+		{
+			result->push_back(penv.m_sorted_verts[vi].m_v.x);
+			result->push_back(penv.m_sorted_verts[vi].m_v.y);
+		}
+		while (result->size() % 6);
+	}
+
+	return;
+#endif // EMIT_JOINED_POLY
 
 	// classification of ear, CE2 from FIST paper:
 	//
@@ -1068,6 +1238,8 @@ static void compute_triangulation(
 
 	assert(penv.m_polys.size() == 0);
 	// assert(for all penv.m_sorted_verts: owning poly == NULL);
+
+	assert((result->size() % 6) == 0);
 }
 
 
