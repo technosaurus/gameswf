@@ -661,15 +661,22 @@ bool	lod_chunk::can_split()
 		}
 	}
 
-#if 0
-	// Make sure neighbors have data.
+	// Make sure neighbors have data at a close-enough level in the tree.
 	{for (int i = 0; i < 4; i++) {
 		lod_chunk*	n = m_neighbor[i].m_chunk;
-		if (n && n->m_parent && n->m_parent->can_split() == false) {
+
+		const int	MAXIMUM_ALLOWED_NEIGHBOR_DIFFERENCE = 2;	// allow up to two levels of difference between chunk neighbors.
+		{for (int count = 0;
+		     n && count < MAXIMUM_ALLOWED_NEIGHBOR_DIFFERENCE;
+		     count++)
+		{
+			n = n->m_parent;
+		}}
+
+		if (n && n->can_split() == false) {
 			can_split = false;
 		}
 	}}
-#endif // 0
 
 	return can_split;
 }

@@ -1229,30 +1229,20 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 			// detailed) "level of detail".  Should reverse this to be
 			// less confusing.
 
-			// Check height of lower LODs.
+			// Check height of lower LODs.  The rule is, the renderer
+			// allows a certain level of difference in LOD between
+			// neighboring chunks, so we want to ensure we can cover
+			// cracks that encompass gaps between our mesh and the
+			// minimum LOD of our neighbor.
 			//
-			// NOTE: This is not actually necessary, provided we
-			// consistently stick to a distance-based error metric.
-			// For any visible edge, the chunk on the side of the edge
-			// closer to the viewpoint must be at the same or higher
-			// LOD than the chunk on the far side of the edge.
-			// Therefore, the region below the skirt of a higher LOD
-			// chunk can never be exposed by a lower LOD chunk. :)
+			// The more levels of difference allowed, the less
+			// constrained the renderer can be about paging.  On the
+			// other hand, the more levels of difference allowed, the
+			// more conservative we have to be with our skirts.
 			//
-			// **However** paging limitations or other trickery, such
-			// as missing chunks (adaptive refinement) can cause this
-			// situation to happen.  Solution: conservatively check
-			// the minimum edge height of lower LODs.  Possibly do
-			// this to a limited extent -- for example include only up
-			// to say 3 lods lower than our current level.  Then at
-			// run-time, we can safely allow up to 2 levels of
-			// difference in the LOD of neighboring chunks (which is
-			// quite a bit).
-			//
-			// If we always check the minimum possible LOD at the
-			// edge, then we can handle totally unrestricted tree
-			// activations, but at the cost of excess fill rate for
-			// possibly big skirts below some chunks.
+			// Also, every edge is *interior* to some minimum LOD
+			// chunk.  So we don't have to look any higher than that
+			// LOD.
 
 			int	major_coord = x0;
 			if (dz == 0) {
@@ -1260,7 +1250,12 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 			}
 			int	minimum_edge_lod = hf.minimum_edge_lod(major_coord);	// lod of the least-detailed chunk bordering this edge.
 
-			for (int lod = level; lod <= minimum_edge_lod + 1 && lod <= hf.root_level; lod++)
+			const int MAXIMUM_ALLOWED_NEIGHBOR_DIFFERENCE = 2;	// A parameter in the renderer as well -- keep in sync.
+
+			int	level_diff = imin(minimum_edge_lod + 1, hf.root_level) - level;
+			level_diff = imin(level_diff, MAXIMUM_ALLOWED_NEIGHBOR_DIFFERENCE);
+
+			for (int lod = level; lod <= level + level_diff; lod++)
 			{
 				Sint16	lod_height = get_height_at_LOD(hf, lod, x, z);
 				current_min = imin(current_min, lod_height);
