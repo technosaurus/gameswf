@@ -347,6 +347,7 @@ public:
 		assert(m_size >= 0);
 
 		int	old_size = m_buffer_size;
+		old_size = old_size;	// don't warn that this is unused.
 		m_buffer_size = rsize;
 
 		// Resize the buffer.
