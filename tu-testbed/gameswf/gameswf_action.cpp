@@ -203,7 +203,7 @@ namespace gameswf
 		}
 	};
 
-	void	do_action_loader(stream* in, int tag_type, movie_definition* m)
+	void	do_action_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		IF_VERBOSE_PARSE(log_msg("tag %d: do_action_loader\n", tag_type));
 
@@ -429,13 +429,46 @@ namespace gameswf
 					break;
 				}
 				case 0x22:	// get property
+				{
+					movie*	target = env->find_target(env->top(1).to_tu_string());
+					if (target)
+					{
+						env->top(1) = target->get_property((int) env->top(0).to_number());
+					}
+					else
+					{
+						env->top(1) = as_value(as_value::UNDEFINED);
+					}
+					env->drop(1);
+					break;
+				}
+
 				case 0x23:	// set property
+				{
+					movie*	target = env->find_target(env->top(2).to_tu_string());
+					if (target)
+					{
+						target->set_property(env->top(1).to_number(), env->top(0));
+					}
+					env->drop(3);
+					break;
+				}
+
 				case 0x24:	// duplicate clip (sprite?)
 				case 0x25:	// remove clip
 				case 0x26:	// trace
-				case 0x27:	// start drag movie
-				case 0x28:	// stop drag movie
 					break;
+
+				case 0x27:	// start drag movie
+				{
+					break;
+				}
+
+				case 0x28:	// stop drag movie
+				{
+					break;
+				}
+
 				case 0x29:	// string less than
 				{
 					env->top(1).set(env->top(1).to_tu_string() < env->top(0).to_tu_string());
@@ -445,7 +478,7 @@ namespace gameswf
 				{
 					int	max = int(env->top(0).to_number());
 					if (max < 1) max = 1;
-					env->top(0).set(double(rand() % max));
+					env->top(0).set(double(tu_random::next_random() % max));
 					break;
 				}
 				case 0x31:	// mb length
@@ -793,8 +826,8 @@ namespace gameswf
 
 				case 0x8C:	// go to labeled frame
 				{
-					// char*	frame_label = (char*) &m_buffer[pc + 3];
-					// env->get_target()->goto_labeled_frame(frame_label);
+					char*	frame_label = (char*) &m_buffer[pc + 3];
+					env->get_target()->goto_labeled_frame(frame_label);
 					break;
 				}
 
@@ -1109,30 +1142,60 @@ namespace gameswf
 	as_value	as_environment::get_variable(const tu_string& varname) const
 	// Return the value of the given var, if it's defined.
 	{
+		// Path lookup rigamarole.
+		movie*	target = m_target;
+		tu_string	path;
+		tu_string	var;
+		if (parse_path(varname, &path, &var))
+		{
+			target = find_target(path);
+
+			as_value	val;
+			return target->get_value(var);
+		}
+		else
+		{
+			return this->get_variable_raw(varname);
+		}
+	}
+
+
+	as_value	as_environment::get_variable_raw(const tu_string& varname) const
+	// varname must be a plain variable name; no path parsing.
+	{
+		assert(strchr(varname.c_str(), ':') == NULL);
+		assert(strchr(varname.c_str(), '/') == NULL);
+
 		// Check locals.
+		int	local_index = find_local(varname);
+		if (local_index >= 0)
+		{
+			// Get local var.
+			return m_local_frames[local_index].m_value;
+		}
+
+		// Check vars in this environment.
 		as_value	val = NULL;
-		if (m_local_variables.get(varname, &val))
+		if (m_variables.get(varname, &val))
 		{
 			// Get existing.
 			return val;
 		}
 
-		bool	success = m_target->get_value(varname.c_str(), &val);
-		if (success)
+		// Check movie characters.
+		if (m_target->get_character_value(varname.c_str(), &val))
 		{
 			return val;
 		}
-
-		// @@ globals???
 
 		// Check built-in constants.
 		if (s_built_ins.get(varname, &val))
 		{
 			return val;
 		}
-
+	
 		// Fallback.
-		log_error("error: get_variable(\"%s\") failed.\n", varname.c_str());
+		log_error("error: get_variable_raw(\"%s\") failed.\n", varname.c_str());
 		return as_value(as_value::UNDEFINED);
 	}
 
@@ -1141,10 +1204,19 @@ namespace gameswf
 	// Given a path to variable, set its value.
 	{
 		// Check locals.
-		if (m_local_variables.get(path, NULL))
+		int	local_index = find_local(path);
+		if (local_index >= 0)
 		{
-			// Set existing local.
-			m_local_variables.set(path, val);
+			// Set local var.
+			m_local_frames[local_index].m_value = val;
+			return;
+		}
+
+		// Check current environment.
+		if (m_variables.get(path, NULL))
+		{
+			// Set existing var.
+			m_variables.set(path, val);
 			return;
 		}
 
@@ -1156,7 +1228,9 @@ namespace gameswf
 		bool	success = m_target->set_value(path.c_str(), val);
 		if (success == false)
 		{
-			IF_VERBOSE_ACTION(log_msg("set_variable(%s, \"%s\") failed\n", path.c_str(), val.to_string()));
+			// Unknown character.  Spawn a new variable local to this environment.
+			m_variables.add(path, val);
+//			IF_VERBOSE_ACTION(log_msg("set_variable(%s, \"%s\") failed\n", path.c_str(), val.to_string()));
 		}
 	}
 
@@ -1164,9 +1238,162 @@ namespace gameswf
 	void	as_environment::set_local(const tu_string& varname, const as_value& val)
 	// Set/initialize the value of the local variable.
 	{
-		m_local_variables.set(varname, val);
+		// Is it in the current frame already?
+		int	index = find_local(varname);
+		if (index < 0)
+		{
+			// Not in frame; create a new local var.
+
+			assert(varname.length() > 0);	// null varnames are invalid!
+			m_local_frames.push_back(frame_slot(varname, val));
+		}
+		else
+		{
+			// In frame already; modify existing var.
+			m_local_frames[index].m_value = val;
+		}
 	}
 
+
+	int	as_environment::find_local(const tu_string& varname) const
+	// Search the active frame for the named var; return its index
+	// in the m_local_frames stack if found.
+	// 
+	// Otherwise return -1.
+	{
+		// Linear search is probably fine for typical use of
+		// local vars in script.  There could be pathological
+		// breakdowns if a function has tons of locals though.
+		// The ActionScript bytecode does not help us much by
+		// using strings to index locals.
+
+		for (int i = m_local_frames.size() - 1; i >= 0; i--)
+		{
+			if (m_local_frames[i].m_name.length() == 0)
+			{
+				// End of local frame; stop looking.
+				return -1;
+			}
+			else if (m_local_frames[i].m_name == varname)
+			{
+				// Found it.
+				return i;
+			}
+		}
+		return -1;
+	}
+
+
+	bool	as_environment::parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const
+	// See if the given variable name is actually a sprite path
+	// followed by a variable name.  These come in the format:
+	//
+	// 	/path/to/some/sprite/:varname
+	//
+	// (or same thing, without the last '/')
+	//
+	// If that's the format, puts the path part (no colon or
+	// trailing slash) in *path, and the varname part (no color)
+	// in *var and returns true.
+	//
+	// If no colon, returns false and leaves *path & *var alone.
+	{
+		// Search for colon.
+		int	colon_index = 0;
+		int	var_path_length = var_path.length();
+		for ( ; colon_index < var_path_length; colon_index++)
+		{
+			if (var_path[colon_index] == ':')
+			{
+				// Found it.
+				break;
+			}
+		}
+
+		if (colon_index >= var_path_length)
+		{
+			// No colon.
+			return false;
+		}
+
+		// Make the subparts.
+
+		// Var.
+		*var = &var_path[colon_index + 1];
+
+		// Path.
+		if (colon_index > 0)
+		{
+			if (var_path[colon_index - 1] == '/')
+			{
+				// Trim off the extraneous trailing slash.
+				colon_index--;
+			}
+		}
+		// @@ could be better.  This whole usage of tu_string is very flabby...
+		*path = var_path;
+		path->resize(colon_index);
+
+		return true;
+	}
+
+
+	movie*	as_environment::find_target(const tu_string& path) const
+	// Find the sprite/movie referenced by the given path.
+	{
+		if (path.length() <= 0)
+		{
+			return m_target;
+		}
+
+		assert(path.length() > 0);
+
+		movie*	env = m_target;
+		assert(env);
+		
+		const char*	p = path.c_str();
+		tu_string	subpart;
+
+		if (*p == '/')
+		{
+			// Absolute path.  Start at the root.
+			env = env->get_relative_target("_level0");
+			p++;
+		}
+
+
+		for (;;)
+		{
+			const char*	next_slash = strchr(p, '/');
+			subpart = p;
+			if (next_slash == p)
+			{
+				log_error("error: invalid path '%s'\n", path.c_str());
+				break;
+			}
+			else if (next_slash)
+			{
+				// Cut off the slash and everything after it.
+				subpart.resize(next_slash - p);
+			}
+
+			env = env->get_relative_target(subpart);
+			//@@   _level0 --> root, .. --> parent, . --> this, other == character
+
+			if (env == NULL || next_slash == NULL)
+			{
+				break;
+			}
+
+			p = next_slash + 1;
+		}
+		return env;
+	}
+
+
+	//
+	// Disassembler
+	//
 
 
 #define COMPILE_DISASM 1

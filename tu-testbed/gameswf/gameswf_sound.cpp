@@ -53,7 +53,7 @@ namespace gameswf
 		bool stereo);
 
 
-	void	define_sound_loader(stream* in, int tag_type, movie_definition* m)
+	void	define_sound_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Load a DefineSound tag.
 	{
 		assert(tag_type == 14);
@@ -185,7 +185,7 @@ namespace gameswf
 	};
 
 
-	void	start_sound_loader(stream* in, int tag_type, movie_definition* m)
+	void	start_sound_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Load a StartSound tag.
 	{
 		assert(tag_type == 15);

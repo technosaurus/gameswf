@@ -24,17 +24,28 @@ namespace jpeg { struct input; }
 
 namespace gameswf
 {
-	struct stream;
-	struct display_info;
-	struct font;
 	struct action_buffer;
 	struct bitmap_character;
-	struct sound_sample { virtual ~sound_sample() {} };
         struct bitmap_info;
+	struct display_info;
+	struct execute_tag;
+	struct font;
+	struct movie_root;
+	struct sound_sample { virtual ~sound_sample() {} };
+	struct stream;
+
+
+	// Extra internal interfaces added to movie_definition
+	struct movie_definition_sub : public movie_definition
+	{
+		virtual const array<execute_tag*>&	get_playlist(int frame_number) = 0;
+	};
+
 
 	struct movie : public movie_interface
 	{
 		virtual movie_definition*	get_movie_definition() { return NULL; }
+		virtual movie_root*	get_movie_root() { return NULL; }
 
 		virtual float	get_pixel_scale() const { return 1.0f; }
 		virtual character*	get_character(int id) { return NULL; }
@@ -85,6 +96,7 @@ namespace gameswf
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 
 		virtual void	goto_frame(int target_frame_number) { assert(0); }
+		virtual void	goto_labeled_frame(const char* label) { assert(0); }
 
 		virtual void	set_play_state(play_state s) {}
 		virtual play_state	get_play_state() const { assert(0); return STOP; }
@@ -120,6 +132,12 @@ namespace gameswf
 			return set_value(var_name, new_text);
 		}
 
+		// x and y in root coords (TWIPs)
+		virtual void	set_character_position(character* ch, float x, float y)
+		{
+			assert(0);
+		}
+
 		//
 		// ActionScript.
 		//
@@ -131,12 +149,37 @@ namespace gameswf
 			return false;
 		}
 
-		virtual bool	get_value(const char* var_name, as_value* val)
+		virtual as_value	get_value(const char* var_name)
+		{
+			assert(0);
+			return as_value(as_value::UNDEFINED);
+		}
+
+		virtual bool	get_character_value(const char* var_name, as_value* val)
 		{
 			assert(0);
 			return false;
 		}
 
+		virtual movie*	get_relative_target(const tu_string& name)
+		{
+			assert(0);	
+			return NULL;
+		}
+
+		virtual as_value	get_property(int prop_number)
+		{
+			assert(0);
+			return as_value(as_value::UNDEFINED);
+		}
+
+		virtual void	set_property(int prop_number, const as_value& new_val)
+		{
+			assert(0);
+		}
+
+		virtual void	start_drag() { assert(0); }
+		virtual void	stop_drag() { assert(0); }
 
 		virtual float	get_timer() const { return 0.0f; }
 
@@ -223,30 +266,41 @@ namespace gameswf
 	};
 
 
+	//
+	// Loader callbacks.
+	//
+	
+	// Register a loader function for a certain tag type.  Most
+	// standard tags are handled within gameswf.  Host apps might want
+	// to call this in order to handle special tag types.
+	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
+	void	register_tag_loader(int tag_type, loader_function lf);
+	
+	
 	// Tag loader functions.
-	void	null_loader(stream* in, int tag_type, movie_definition* m);
-	void	set_background_color_loader(stream* in, int tag_type, movie_definition* m);
-	void	jpeg_tables_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_bits_jpeg_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_bits_jpeg3_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_shape_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_font_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_font_info_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_text_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_edit_text_loader(stream* in, int tag_type, movie_definition* m);
-	void	place_object_2_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie_definition* m);
-	void	sprite_loader(stream* in, int tag_type, movie_definition* m);
-	void	end_loader(stream* in, int tag_type, movie_definition* m);
-	void	remove_object_2_loader(stream* in, int tag_type, movie_definition* m);
-	void	do_action_loader(stream* in, int tag_type, movie_definition* m);
-	void	button_character_loader(stream* in, int tag_type, movie_definition* m);
-	void	frame_label_loader(stream* in, int tag_type, movie_definition* m);
-	void	export_loader(stream* in, int tag_type, movie_definition* m);
-	void	import_loader(stream* in, int tag_type, movie_definition* m);
-	void	define_sound_loader(stream* in, int tag_type, movie_definition* m);
-	void	start_sound_loader(stream* in, int tag_type, movie_definition* m);
+	void	null_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	set_background_color_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	jpeg_tables_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_bits_jpeg_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_bits_jpeg3_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_shape_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_font_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_font_info_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_text_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_edit_text_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	place_object_2_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	sprite_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	end_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	remove_object_2_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	do_action_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	button_character_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	frame_label_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	export_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	import_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	start_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	// sound_stream_loader();	// head, head2, block
 
 
@@ -274,7 +328,6 @@ namespace gameswf
 		cxform	m_color_transform;
 		matrix	m_matrix;
 		float	m_ratio;
-		int	m_display_number;
                 Uint16 	m_clip_depth;
 
 		display_info()
@@ -282,7 +335,6 @@ namespace gameswf
 			m_movie(NULL),
 			m_depth(0),
 			m_ratio(0.0f),
-			m_display_number(0),
                         m_clip_depth(0)
 		{
 		}
