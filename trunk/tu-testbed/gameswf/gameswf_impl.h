@@ -102,6 +102,11 @@ namespace gameswf
 		// display-list management.
 		//
 
+		virtual execute_tag*	find_previous_replace_or_add_tag(int current_frame, int depth)
+		{
+			return NULL;
+		}
+
 		virtual character*	add_display_object(
 			Uint16 character_id,
 			const char* name,
@@ -367,7 +372,11 @@ namespace gameswf
 		int	get_depth() const { return m_depth; }
 		void	set_depth(int d) { m_depth = d; }
 		const matrix&	get_matrix() const { return m_matrix; }
-		void	set_matrix(const matrix& m) { m_matrix = m; }
+		void	set_matrix(const matrix& m)
+		{
+			assert(m.is_valid());
+			m_matrix = m;
+		}
 		const cxform&	get_cxform() const { return m_color_transform; }
 		void	set_cxform(const cxform& cx) { m_color_transform = cx; }
 		void	concatenate_cxform(const cxform& cx) { m_color_transform.concatenate(cx); }
@@ -513,8 +522,10 @@ namespace gameswf
 		virtual ~execute_tag() {}
 		virtual void	execute(movie* m) {}
 		virtual void	execute_state(movie* m) {}
+		virtual void	execute_state_reverse(movie* m, int frame) { execute_state(m); }
 		virtual bool	is_remove_tag() const { return false; }
 		virtual bool	is_action_tag() const { return false; }
+		virtual int	get_depth_of_replace_or_add_tag() const { return -1; }
 	};
 
 

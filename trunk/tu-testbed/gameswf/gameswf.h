@@ -551,6 +551,7 @@ namespace gameswf
 		static matrix	identity;
 
 		matrix();
+		bool	is_valid() const;
 		void	set_identity();
 		void	concatenate(const matrix& m);
 		void	concatenate_translation(float tx, float ty);

@@ -10,6 +10,7 @@
 
 #include "base/tu_config.h"
 #include <math.h>
+#include <float.h>
 
 // OSX doesn't have single precision math functions defined in math.h
 #ifdef __MACH__
@@ -26,5 +27,14 @@
     #define fabsf fabs
     #define powf pow
 #endif
+
+
+// isfinite() comes with C99; fake version here in case compiler lacks it.
+#ifndef isfinite
+#define isfinite(x) (sizeof(x) == sizeof(float) ? isfinitef(x) : isfinited(x))
+#define isfinitef(x) ((x) >= -FLT_MAX && (x) <= FLT_MAX)	// NAN should fail this, yes?
+#define isfinited(x) ((x) >= -DBL_MAX && (x) <= DBL_MAX)
+#endif // not isfinite
+
 
 #endif // TU_MATH_H

@@ -1082,7 +1082,14 @@ namespace gameswf
 	// rendering text).
 	{
 		// Compute the error tolerance in object-space.
-		float	object_space_max_error = 20.0f / mat.get_max_scale() / pixel_scale;
+		float	max_scale = mat.get_max_scale();
+		if (fabsf(max_scale) < 1e-6f)
+		{
+			// Scale is essentially zero.
+			return;
+		}
+
+		float	object_space_max_error = 20.0f / max_scale / pixel_scale;
 
 #ifdef DEBUG_DISPLAY_SHAPE_PATHS
 		// Render a debug view of shape path outlines, instead

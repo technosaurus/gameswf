@@ -1050,15 +1050,13 @@ namespace gameswf
 			m_buf.read(in);
 		}
 
-		void	execute(movie* m)
+		virtual void	execute(movie* m)
 		{
 			m->add_action_buffer(&m_buf);
 		}
 
-		void	execute_state(movie* m)
-		{
-			// left empty because actions don't have to be replayed when seeking the movie.
-		}
+		// Don't override because actions should not be replayed when seeking the movie.
+		//void	execute_state(movie* m) {}
 
 		virtual bool	is_action_tag() const
 		// Tell the caller that we are an action tag.
@@ -1765,7 +1763,7 @@ namespace gameswf
 				}
 				case 0x47:	// add (typed)
 				{
-					if (env->top(1).get_type() == as_value::STRING)
+					if (env->top(0).get_type() == as_value::STRING)
 					{
 						env->top(1).string_concat(env->top(0).to_tu_string());
 					}
@@ -2085,8 +2083,10 @@ namespace gameswf
 
 				case 0x8A:	// wait for frame
 				{
-					// @@ TODO I think this has to deal with incremental loading
-					log_error("todo opcode: %02X\n", action_id);
+					// If we haven't loaded a specified frame yet, then we're supposed to skip
+					// some specified number of actions.
+					//
+					// Since we don't load incrementally, just ignore this opcode.
 					break;
 				}
 
@@ -2110,7 +2110,15 @@ namespace gameswf
 				}
 
 				case 0x8D:	// wait for frame expression (?)
+				{
+					// Pop the frame number to wait for; if it's not loaded skip the
+					// specified number of actions.
+					//
+					// Since we don't support incremental loading, pop our arg and
+					// don't do anything.
+					env->drop(1);
 					break;
+				}
 
 				case 0x94:	// with
 				{
@@ -2912,12 +2920,13 @@ namespace gameswf
 
 		for (int i = m_local_frames.size() - 1; i >= 0; i--)
 		{
-			if (m_local_frames[i].m_name.length() == 0)
+			const frame_slot&	slot = m_local_frames[i];
+			if (slot.m_name.length() == 0)
 			{
 				// End of local frame; stop looking.
 				return -1;
 			}
-			else if (m_local_frames[i].m_name == varname)
+			else if (slot.m_name == varname)
 			{
 				// Found it.
 				return i;
