@@ -470,7 +470,7 @@ namespace fontlib
 	// so that a run-time app can call load_cached_font_data().
 	{
 		s_file = new tu_file(filename, "wb");
-		if (s_file->get_error() == tu_file::NO_ERROR)
+		if (s_file->get_error() == TU_FILE_NO_ERROR)
 		{
 			// save header identifier.
 			s_file->write_bytes( "gswf", 4 );
@@ -557,7 +557,7 @@ namespace fontlib
 	{
 		bool result = false;
 		s_file = new tu_file(filename, "rb");
-		if (s_file->get_error() == tu_file::NO_ERROR)
+		if (s_file->get_error() == TU_FILE_NO_ERROR)
 		{
 			// load header identifier.
 			char head[4];
