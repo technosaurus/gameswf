@@ -89,7 +89,7 @@ namespace parser
 		static void write()
 		{
 			ident++;
-			log_msg("has_scale = %b, has_rotate = %b\n", has_scale, has_rotate);
+			log_msg("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate);
 			log_msg("| %4.4f %4.4f %4.4f |\n", m_[0][0], m_[0][1], TWIPS_TO_PIXELS(m_[0][2]));
 			log_msg("| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
 			ident--;
@@ -229,7 +229,7 @@ namespace parser
 		{
 			ident++;
 			log_msg("cxform:\n");
-			log_msg("has_add = %b, has_mult = %b\n", has_add, has_mult);
+			log_msg("has_add = %d, has_mult = %d\n", has_add, has_mult);
 			log_msg("| %4.4f %4.4f |\n", m_[0][0], m_[0][1]);
 			log_msg("| %4.4f %4.4f |\n", m_[1][0], m_[1][1]);
 			log_msg("| %4.4f %4.4f |\n", m_[2][0], m_[2][1]);
