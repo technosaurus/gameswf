@@ -12,6 +12,7 @@
 
 #include "engine/container.h"
 #include "engine/geometry.h"
+#include "engine/axial_box.h"
 
 
 struct kd_tree_dynamic
@@ -46,14 +47,31 @@ struct kd_tree_dynamic
 		int		m_axis;	// split axis: 0 = x, 1 = y, 2 = z
 		float	m_offset;	// where the split occurs
 
+		node();
+		~node();
 		bool	is_valid() const;
 	};
 
+	const array<vec3>&	get_verts() const { return m_verts; }
 	const node*	get_root() const { return m_root; }
+	const axial_box&	get_bound() const { return m_bound; }
 
 private:
+	void	compute_actual_bounds(axial_box* result, int face_count, face faces[]);
+	node*	build_tree(int face_count, face faces[], const axial_box& bounds);
+	void	do_split(
+		int* back_end,
+		int* cross_end,
+		int* front_end,
+		int face_count,
+		face faces[],
+		int axis,
+		float offset);
+	float	evaluate_split(int face_count, face faces[], const axial_box& bounds, int axis, float offset);
+
 	array<vec3>	m_verts;
 	node*	m_root;
+	axial_box	m_bound;
 };
 
 

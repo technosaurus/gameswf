@@ -9,10 +9,12 @@
 #include "engine/tu_file.h"
 
 
-const vec3	vec3::zero( 0, 0, 0 );
-const vec3	vec3::x_axis( 1, 0, 0 );
-const vec3	vec3::y_axis( 0, 1, 0 );
-const vec3	vec3::z_axis( 0, 0, 1 );
+const vec3	vec3::zero(0, 0, 0);
+const vec3	vec3::x_axis(1, 0, 0);
+const vec3	vec3::y_axis(0, 1, 0);
+const vec3	vec3::z_axis(0, 0, 1);
+const vec3	vec3::flt_max(FLT_MAX, FLT_MAX, FLT_MAX);
+const vec3	vec3::minus_flt_max(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 
 vec3	vec3::operator+(const vec3& v) const
