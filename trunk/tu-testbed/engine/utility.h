@@ -45,7 +45,7 @@ inline int	iabs(int i) { if (i < 0) return -i; else return i; }
 inline int	imax(int a, int b) { if (a < b) return b; else return a; }
 inline float	fmax(float a, float b) { if (a < b) return b; else return a; }
 inline int	imin(int a, int b) { if (a < b) return a; else return b; }
-inline float	fmin(float a, float b) { if (a < b) return b; else return a; }
+inline float	fmin(float a, float b) { if (a < b) return a; else return b; }
 
 inline int	iclamp(int i, int min, int max) {
 	assert( min <= max );
@@ -62,6 +62,23 @@ inline float	log2(float f) { return log(f) / LN_2; }
 
 inline int	fchop( float f ) { return (int) f; }	// replace w/ inline asm if desired
 inline int	frnd(float f) { return fchop(f + 0.5); }	// replace with inline asm if desired
+
+
+//
+// Read/write bytes to SDL_RWops streams.
+//
+
+
+inline void	WriteByte(SDL_RWops* dst, Uint8 b) {
+	dst->write(dst, &b, sizeof(b), 1);
+}
+
+
+inline Uint8	ReadByte(SDL_RWops* src) {
+	Uint8	b;
+	src->read(src, &b, sizeof(b), 1);	// @@ check for error
+	return b;
+}
 
 
 //
