@@ -832,8 +832,11 @@ namespace swf
 				{
 					m_display_list[i].m_character->advance(dt, this, m_display_list[i].m_matrix);
 				}
-			
-				goto_frame(next_frame);	// actions happen in here...
+
+				if (next_frame < m_frame_count)
+				{
+					goto_frame(next_frame);	// actions happen in here...
+				}
 			}
 		}
 
@@ -966,6 +969,7 @@ namespace swf
 			s_registered = true;
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
+			register_tag_loader(4, place_object_2_loader);
 			register_tag_loader(7, button_character_loader);
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
@@ -2295,64 +2299,81 @@ namespace swf
 		{
 		}
 
-		void	read(stream* in)
+		void	read(stream* in, int tag_type)
 		{
-			in->align();
+			assert(tag_type == 4 || tag_type == 26);
 
-			in->read_uint(1);	// reserved flag
-			bool	has_clip_bracket = in->read_uint(1) ? true : false;
-			bool	has_name = in->read_uint(1) ? true : false;
-			bool	has_ratio = in->read_uint(1) ? true : false;
-			bool	has_cxform = in->read_uint(1) ? true : false;
-			bool	has_matrix = in->read_uint(1) ? true : false;
-			bool	has_char = in->read_uint(1) ? true : false;
-			bool	flag_move = in->read_uint(1) ? true : false;
-
-			m_depth = in->read_u16();
-
-			if (has_char) {
+			if (tag_type == 4)
+			{
+				// Original place_object tag; very simple.
 				m_character_id = in->read_u16();
-			}
-			if (has_matrix) {
-				m_has_matrix = true;
+				m_depth = in->read_u16();
 				m_matrix.read(in);
-			}
-			if (has_cxform) {
-				m_has_cxform = true;
-				m_color_transform.read_rgba(in);
-			}
-			if (has_ratio) {
-				m_ratio = in->read_u16();
-			}
-			if (has_clip_bracket) {
-				int	clip_depth = in->read_u16();
-				UNUSED(clip_depth);
-				IF_DEBUG(printf("HAS CLIP BRACKET!\n"));
-			}
-			if (has_name) {
-				m_name = in->read_string();
-			}
 
-			if (has_char == true && flag_move == true)
+				if (in->get_position() < in->get_tag_end_position())
+				{
+					m_color_transform.read_rgb(in);
+				}
+			}
+			else if (tag_type == 26)
 			{
+				in->align();
+
+				in->read_uint(1);	// reserved flag
+				bool	has_clip_bracket = in->read_uint(1) ? true : false;
+				bool	has_name = in->read_uint(1) ? true : false;
+				bool	has_ratio = in->read_uint(1) ? true : false;
+				bool	has_cxform = in->read_uint(1) ? true : false;
+				bool	has_matrix = in->read_uint(1) ? true : false;
+				bool	has_char = in->read_uint(1) ? true : false;
+				bool	flag_move = in->read_uint(1) ? true : false;
+
+				m_depth = in->read_u16();
+
+				if (has_char) {
+					m_character_id = in->read_u16();
+				}
+				if (has_matrix) {
+					m_has_matrix = true;
+					m_matrix.read(in);
+				}
+				if (has_cxform) {
+					m_has_cxform = true;
+					m_color_transform.read_rgba(in);
+				}
+				if (has_ratio) {
+					m_ratio = in->read_u16();
+				}
+				if (has_clip_bracket) {
+					int	clip_depth = in->read_u16();
+					UNUSED(clip_depth);
+					IF_DEBUG(printf("HAS CLIP BRACKET!\n"));
+				}
+				if (has_name) {
+					m_name = in->read_string();
+				}
+
+				if (has_char == true && flag_move == true)
+				{
 				// Remove whatever's at m_depth, and put m_character there.
-				m_place_type = REPLACE;
-			}
-			else if (has_char == false && flag_move == true)
-			{
+					m_place_type = REPLACE;
+				}
+				else if (has_char == false && flag_move == true)
+				{
 				// Moves the object at m_depth to the new location.
-				m_place_type = MOVE;
-			}
-			else if (has_char == true && flag_move == false)
-			{
+					m_place_type = MOVE;
+				}
+				else if (has_char == true && flag_move == false)
+				{
 				// Put m_character at m_depth.
-				m_place_type = PLACE;
-			}
+					m_place_type = PLACE;
+				}
 
-			IF_DEBUG(printf("po2r: name = %s\n", m_name ? m_name : "<null>");
-				 printf("po2r: char id = %d, mat:\n", m_character_id);
-				 m_matrix.print(stdout);
-				);
+				IF_DEBUG(printf("po2r: name = %s\n", m_name ? m_name : "<null>");
+					 printf("po2r: char id = %d, mat:\n", m_character_id);
+					 m_matrix.print(stdout);
+					);
+			}
 		}
 
 		
@@ -2400,10 +2421,10 @@ namespace swf
 	
 	void	place_object_2_loader(stream* in, int tag_type, movie* m)
 	{
-		assert(tag_type == 26);
+		assert(tag_type == 4 || tag_type == 26);
 
 		place_object_2*	ch = new place_object_2;
-		ch->read(in);
+		ch->read(in, tag_type);
 
 		m->add_execute_tag(ch);
 	}
@@ -2827,10 +2848,15 @@ namespace swf
 			m_over = flags & 2 ? true : false;
 			m_up = flags & 1 ? true : false;
 
-			m_character = m->get_character(in->read_u16());
+			int	cid = in->read_u16();
+			m_character = m->get_character(cid);
 			m_button_layer = in->read_u16(); 
 			m_button_matrix.read(in);
-			m_button_cxform.read_rgba(in);
+
+			if (tag_type == 34)
+			{
+				m_button_cxform.read_rgba(in);
+			}
 
 			return true;
 		}
@@ -2860,7 +2886,21 @@ namespace swf
 
 			if (tag_type == 7)
 			{
-				assert(0);	// not implemented yet; tag type 7 may be deprecated...?
+				// Old button tag.
+				
+				// Read button character records.
+				for (;;)
+				{
+					button_record	r;
+					if (r.read(in, tag_type, m) == false)
+					{
+						// Null record; marks the end of button records.
+						break;
+					}
+					m_button_records.push_back(r);
+				}
+
+				// Read action records.
 			}
 			else if (tag_type == 34)
 			{
