@@ -1,5 +1,9 @@
 2005-04-02  Rob Savoye  <rob@bertha.welcomehome.org>
 
+	* configure.ac: Add --disable-xml option to not look for XML or
+	use the XML and XMLSocket AS objects. The default is to support
+	XML, since it's part of SWF v6.
+	* configure: Regenerated.
 	* gameswf/gameswf_test_ogl.cpp (main): Ad "-c" option to turn off
 	SDL Parachutes, because sometimes we want the core file for
 	debugging.
