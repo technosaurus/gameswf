@@ -14,12 +14,15 @@ namespace gameswf
 {
 	// Printf-style interfaces.
 
-// use the following to catch errors: (only with gcc)
-//	void	log_msg(const char* fmt, ...) __attribute__((format (printf, 1, 2)));
-//	void	log_error(const char* fmt, ...) __attribute__((format (printf, 1, 2)));
-	
+#ifdef __GCC__
+	// use the following to catch errors: (only with gcc)
+	void	log_msg(const char* fmt, ...) __attribute__((format (printf, 1, 2)));
+	void	log_error(const char* fmt, ...) __attribute__((format (printf, 1, 2)));
+#else	// not __GCC__
 	void	log_msg(const char* fmt, ...);
 	void	log_error(const char* fmt, ...);
+#endif	// not __GCC__
+
 }
 
 

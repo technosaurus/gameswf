@@ -473,8 +473,12 @@ namespace gameswf
 		const as_value& arg0, const as_value& arg1, const as_value& arg2);
 
 
-	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const char* method_call);
-	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const wchar_t* method_call);
+	const char*	call_method_parsed(
+		as_environment* env,
+		as_object_interface* this_ptr,
+		const char* method_name,
+		const char* method_arg_fmt,
+		va_list args);
 
 	//
 	// event_id

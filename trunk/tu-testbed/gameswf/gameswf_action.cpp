@@ -248,10 +248,17 @@ namespace gameswf
 		return call_method(method, env, this_ptr, 0, env->get_top_index() + 1);
 	}
 		
-	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const char* method_call)
-	// Big fat slow stringified interface for calling ActionScript.
+	const char*	call_method_parsed(
+		as_environment* env,
+		as_object_interface* this_ptr,
+		const char* method_name,
+		const char* method_arg_fmt,
+		va_list args)
+	// Printf-like vararg interface for calling ActionScript.
 	// Handy for external binding.
 	{
+
+#if 0
 		static const int	BUFSIZE = 1000;
 		char	buffer[BUFSIZE];
 		array<const char*>	tokens;
@@ -323,27 +330,98 @@ namespace gameswf
 				}
 			}
 		}
+#endif // 0
 
-		array<with_stack_entry>	dummy_with_stack;
-		as_value	method = env->get_variable(tokens[0], dummy_with_stack);
 
-		// check method
-
-		// Push args onto env stack (reverse order!).
-		int	nargs = tokens.size() - 1;
-		for (int i = nargs; i > 0; i--)
+		// Parse va_list args
+		int	starting_index = env->get_top_index();
+		const char* p = method_arg_fmt;
+		for (;; p++)
 		{
-			const char*	arg = tokens[i];
-			if (arg[0] == '\'')
+			char	c = *p;
+			if (c == 0)
 			{
-				// String arg.
-				env->push(arg + 1);
+				// End of args.
+				break;
+			}
+			else if (c == '%')
+			{
+				p++;
+				c = *p;
+				// Here's an arg.
+				if (c == 'd')
+				{
+					// Integer.
+					env->push(va_arg(args, int));
+				}
+				else if (c == 'f')
+				{
+					// Double
+					env->push(va_arg(args, double));
+				}
+				else if (c == 's')
+				{
+					// String
+					env->push(va_arg(args, const char *));
+				}
+				else if (c == 'l')
+				{
+					p++;
+					c = *p;
+					if (c == 's')
+					{
+						// Wide string.
+						env->push(va_arg(args, const wchar_t *));
+					}
+					else
+					{
+						log_error("call_method_parsed('%s','%s') -- invalid fmt '%%l%c'\n",
+							  method_name,
+							  method_arg_fmt,
+							  c);
+					}
+				}
+				else
+				{
+					// Invalid fmt, warn.
+					log_error("call_method_parsed('%s','%s') -- invalid fmt '%%%c'\n",
+						  method_name,
+						  method_arg_fmt,
+						  c);
+				}
 			}
 			else
 			{
-				// Arg must be numeric.
-				env->push(atof(arg));
+				// Ignore whitespace and commas.
+				if (c == ' ' || c == '\t' || c == ',')
+				{
+					// OK
+				}
+				else
+				{
+					// Invalid arg; warn.
+					log_error("call_method_parsed('%s','%s') -- invalid char '%c'\n",
+						  method_name,
+						  method_arg_fmt,
+						  c);
+				}
 			}
+		}
+
+		array<with_stack_entry>	dummy_with_stack;
+		as_value	method = env->get_variable(method_name, dummy_with_stack);
+
+		// check method
+
+		// Reverse the order of pushed args
+		int	nargs = env->get_top_index() - starting_index;
+		for (int i = 0; i < (nargs >> 1); i++)
+		{
+			int	i0 = starting_index + 1 + i;
+			int	i1 = starting_index + nargs - i;
+			assert(i0 < i1);
+
+			swap(&(env->bottom(i0)), &(env->bottom(i1)));
 		}
 
 		// Do the call.
@@ -356,16 +434,6 @@ namespace gameswf
 		return s_retval.c_str();
 	}
 
-
-	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const wchar_t* method_call)
-	// Big fat slow stringified interface for calling ActionScript.
-	// Handy for external binding.
-	{
-		tu_string	utf8_method_call;
-		tu_string::encode_utf8_from_wchar(&utf8_method_call, method_call);
-
-		return call_method_parsed(env, this_ptr, utf8_method_call.c_str());
-	}
 
 	//
 	// array object
@@ -1764,7 +1832,8 @@ namespace gameswf
 				}
 				case 0x47:	// add (typed)
 				{
-					if (env->top(0).get_type() == as_value::STRING)
+					if (env->top(0).get_type() == as_value::STRING
+					    || env->top(1).get_type() == as_value::STRING)
 					{
 						env->top(1).string_concat(env->top(0).to_tu_string());
 					}

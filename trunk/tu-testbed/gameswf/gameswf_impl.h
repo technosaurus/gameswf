@@ -18,6 +18,7 @@
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/smart_ptr.h"
+#include <stdarg.h>
 
 
 namespace jpeg { struct input; }
@@ -275,9 +276,25 @@ namespace gameswf
 		virtual void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth) { assert(0); }
 		virtual void	remove_display_object(const tu_string& name) { assert(0); }
 
-//v
-		virtual void	execute_frame_tags(int frame, bool state_only = false) {}
+		// Forward vararg call to version taking va_list.
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+		{
+			va_list	args;
+			va_start(args, method_arg_fmt);
+			const char*	result = call_method_args(method_name, method_arg_fmt, args);
+			va_end(args);
 
+			return result;
+		}
+
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
+		// Override this if you implement call_method.
+		{
+			assert(0);
+			return NULL;
+		}
+
+		virtual void	execute_frame_tags(int frame, bool state_only = false) {}
 	};
 
 
@@ -459,9 +476,6 @@ namespace gameswf
 		virtual bool	get_accept_anim_moves() const { return true; }
 
 		virtual void	get_drag_state(drag_state* st) { assert(m_parent); m_parent->get_drag_state(st); }
-
-		virtual const char*	call_method(const char* method_call) { assert(0); return NULL; }
-		virtual const char*	call_method(const wchar_t* method_call) { assert(0); return NULL; }
 
 		virtual void	set_visible(bool visible) { m_visible = visible; }
 		virtual bool	get_visible() const { return m_visible; }
