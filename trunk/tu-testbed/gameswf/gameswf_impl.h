@@ -162,6 +162,8 @@ namespace gameswf
 		}
 
 
+		virtual float	get_timer() const { return 0.0f; }
+
 		//
 		// Caching.
 		//

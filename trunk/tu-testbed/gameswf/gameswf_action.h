@@ -102,6 +102,7 @@ namespace gameswf
 
 		bool	is_string() const { return m_type == STRING; }
 		const char*	to_string() const;
+		const tu_string&	to_tu_string() const;
 	};
 
 
@@ -124,6 +125,7 @@ namespace gameswf
 	{
 		array<as_value>	m_stack;
 		movie*	m_target;
+		string_hash<as_value>	m_local_variables;
 
 		as_environment()
 			:
@@ -139,7 +141,10 @@ namespace gameswf
 
 		as_value	pop() { return m_stack.pop_back(); }
 
+		as_value	get_variable(const tu_string& varname) const;
+
 		void	set_variable(const char* path, const as_value& val);
+		void	set_local(const tu_string& varname, const as_value& val);
 	};
 
 

@@ -284,7 +284,26 @@ public:
 
 	// @@ need a "remove()" or "set()" function, to replace/remove existing key.
 
-	void	add(const T& key, U value)
+	void	set(const T& key, const U& value)
+	// Set a new or existing value under the key, to the value.
+	{
+		if (m_table.size() > 0)
+		{
+			unsigned int	hash_value = hash_functor::compute(key);
+			int	index = hash_value & m_size_mask;	// % m_table.size();
+			for (int i = 0; i < m_table[index].size(); i++) {
+				if (m_table[index][i].key == key) {
+					m_table[index][i].value = value;
+					return;
+				}
+			}
+		}
+
+		// Entry under key doesn't exist.
+		add(key, value);
+	}
+
+	void	add(const T& key, const U& value)
 	// Add a new value to the hash table, under the specified key.
 	{
 		assert(get(key, NULL) == false);
