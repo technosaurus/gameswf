@@ -205,6 +205,29 @@ namespace gameswf
 		void	draw_glyph(const texture_glyph* g, rgba color);
 	}
 
+
+	// Information about how to display an element.
+	//
+	// @@ this type might be useless... if not, it might belong
+	// @@ somewhere else.  Hm.
+	struct display_info
+	{
+		int	m_depth;
+		cxform	m_color_transform;
+		matrix	m_matrix;
+		float	m_ratio;
+
+		void	concatenate(const display_info& di)
+		// Concatenate the transforms from di into our
+		// transforms.
+		{
+			m_depth = di.m_depth;
+			m_color_transform.concatenate(di.m_color_transform);
+			m_matrix.concatenate(di.m_matrix);
+			m_ratio = di.m_ratio;
+		}
+	};
+
 }	// end namespace gameswf
 
 

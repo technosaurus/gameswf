@@ -10,10 +10,12 @@
 
 
 #include "engine/container.h"
-#include "gameswf_impl.h"
-#include "gameswf_font.h"
-#include "gameswf_render.h"
 #include "gameswf_file.h"
+#include "gameswf_font.h"
+#include "gameswf_impl.h"
+#include "gameswf_render.h"
+#include "gameswf_shape.h"
+#include "gameswf_styles.h"
 
 
 namespace gameswf
@@ -265,6 +267,19 @@ namespace fontlib
 	}
 
 
+	static void	display_shape_character_in_alpha(const shape_character* sh)
+	// For rendering character glyph outlines into a texture
+	// cache.
+	{
+		array<fill_style>	dummy_style;
+		dummy_style.push_back(fill_style());
+		dummy_style[0].set_color(rgba(0, 0, 0, 255));
+
+		display_info	di;
+		sh->display(di, dummy_style);
+	}
+
+
 	static texture_glyph*	make_texture_glyph(const shape_character* sh)
 	// Render the given outline shape into a cached font texture.
 	// Return a new texture_glyph struct that gives enough info to
@@ -285,7 +300,7 @@ namespace fontlib
 		float	offset_x = 0.f;
 		float	offset_y = s_rendering_box;
 		rect	glyph_bounds;
-		get_shape_bounds(&glyph_bounds, sh);
+		sh->get_bounds(&glyph_bounds);
 		if (glyph_bounds.m_x_min < 0)
 		{
 			offset_x = - glyph_bounds.m_x_min;
@@ -302,7 +317,7 @@ namespace fontlib
 
 		// Draw the shape.
 		render::push_apply_matrix(mat);
-		display_shape_character_in_white(sh);
+		display_shape_character_in_alpha(sh);
 		render::pop_matrix();
 
 		//
@@ -379,7 +394,7 @@ namespace fontlib
 				{
 					// get a rough estimation of glyph size
 					rect	glyph_bounds;
-					get_shape_bounds(&glyph_bounds, sh);
+					sh->get_bounds(&glyph_bounds);
 
 					int w = (int) glyph_bounds.width();
 					int h = (int) glyph_bounds.height();
