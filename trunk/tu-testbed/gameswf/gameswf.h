@@ -107,6 +107,20 @@ namespace gameswf
 	// Uses the registered file-opener callback to read the files
 	// themselves.
 	movie_interface*	create_movie(const char* filename);
+
+	// Create a gameswf::movie_interface from the given file name.
+	// This is just like create_movie(), except that it checks the
+	// "library" to see if a movie of this name has already been
+	// created, and returns that movie if so.  Also, if it creates
+	// a new movie, it adds it back into the library.
+	//
+	// The "library" is used when importing symbols from external
+	// movies, so this call might be useful if you want to
+	// explicitly load a movie that you know exports symbols to
+	// other movies as well.
+	//
+	// @@ this explanation/functionality could be clearer!
+	movie_interface*	create_library_movie(const char* filename);
 	
 	
 	//
