@@ -32,8 +32,14 @@
 
 static ogl::vertex_stream*	s_stream = NULL;
 
-
 static float	s_vertical_scale = 1.0;
+
+// Some performance stats.
+static int	s_chunks_in_use = 0;
+static int	s_chunks_with_data = 0;
+static int	s_chunks_with_texture = 0;
+static int	s_bytes_in_use = 0;
+static int	s_textures_bound = 0;
 
 
 namespace lod_tile_freelist
@@ -171,8 +177,6 @@ struct vertex_info {
 	{
 	}
 
-	void	read(SDL_RWops* in);
-
 	~vertex_info()
 	{
 		if (vertices) {
@@ -184,6 +188,14 @@ struct vertex_info {
 			indices = NULL;
 		}
 	}
+
+	void	read(SDL_RWops* in);
+
+	int	get_data_size() const
+	// Return the data bytes used by this object.
+	{
+		return sizeof(*this) + vertex_count * sizeof(vertices[0]) + index_count * sizeof(indices[0]);
+	}
 };
 
 
@@ -192,16 +204,14 @@ struct lod_chunk;
 
 // Vertex/mesh data for a chunk.  Can get paged in/out on demand.
 struct lod_chunk_data {
-	vertex_info	m_verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
-	unsigned int	m_texture_id;		// OpenGL texture id for this chunk's texture map.
+	vertex_info	m_verts;	// vertex and mesh info; vertex array w/ morph targets, indices
 
 	//	lod_chunk_data* m_next_data;
 	//	lod_chunk_data* m_prev_data;
 
 
-	lod_chunk_data(SDL_RWops* in, unsigned int texture_id)
+	lod_chunk_data(SDL_RWops* in)
 	// Constructor.  Read our data & set our texture id.
-		: m_texture_id(texture_id)
 	{
 		// Load the main chunk data.
 		m_verts.read(in);
@@ -209,18 +219,18 @@ struct lod_chunk_data {
 
 
 	~lod_chunk_data()
-	// Destructor.  Release our texture.
+	// Destructor.
 	{
-		// @@ should put this texture id on a free list, to be
-		// reused for a new texture via glCopyTexSubImage.
-		if (m_texture_id) {
-			lod_tile_freelist::free_texture(m_texture_id);
-			m_texture_id = 0;
-		}
 	}
 
 	int	render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
 		       const vec3& box_center, const vec3& box_extent);
+
+	int	get_data_size() const
+	// Return data bytes used by this object.
+	{
+		return sizeof(*this) + m_verts.get_data_size();
+	}
 };
 
 
@@ -246,6 +256,7 @@ struct lod_chunk {
 
 	long	m_data_file_position;
 	lod_chunk_data*	m_data;
+	unsigned int	m_texture_id;		// OpenGL texture id for this chunk's texture map.
 
 //methods:
 	~lod_chunk()
@@ -254,10 +265,21 @@ struct lod_chunk {
 			delete m_data;
 			m_data = 0;
 		}
+
+		release_texture();
+	}
+
+	void	release_texture()
+	{
+		if (m_texture_id) {
+			lod_tile_freelist::free_texture(m_texture_id);
+			m_texture_id = 0;
+		}
 	}
 
 	void	clear();
 	void	update(lod_chunk_tree* tree, const vec3& viewpoint);
+	void	update_texture(lod_chunk_tree* tree, const vec3& viewpoint);
 
 	void	do_split(lod_chunk_tree* tree, const vec3& viewpoint);
 	bool	can_split(lod_chunk_tree* tree);	// return true if this chunk can split.  Also, request the necessary data for future, if not.
@@ -265,6 +287,8 @@ struct lod_chunk {
 
 	void	warm_up_data(lod_chunk_tree* tree, float priority);
 	void	request_unload_subtree(lod_chunk_tree* tree);
+
+	void	request_unload_textures(lod_chunk_tree* tree);
 
 	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt, bool texture_bound);
 
@@ -321,11 +345,16 @@ public:
 	void	request_chunk_load(lod_chunk* chunk, float urgency);
 	void	request_chunk_unload(lod_chunk* chunk);
 
+	void	request_chunk_load_texture(lod_chunk* chunk);
+	void	request_chunk_unload_texture(lod_chunk* chunk);
+
 	SDL_RWops*	get_source() { return m_source_stream; }
 
-	int	loader_thread();	// thread function!
-private:
+	int	loader_thread();		// thread function!
+	bool	loader_service_data();		// in loader thread
+	bool	loader_service_texture();	// in loader thread
 
+private:
 	struct pending_load_request
 	{
 		lod_chunk*	m_chunk;
@@ -357,24 +386,39 @@ private:
 	{
 		lod_chunk*	m_chunk;
 		lod_chunk_data*	m_chunk_data;
+
+		retire_info() : m_chunk(0), m_chunk_data(0) {}
+	};
+
+	struct retire_texture_info
+	// Associates a chunk with its newly loaded texture data.
+	{
+		lod_chunk*	m_chunk;
 		SDL_Surface*	m_texture_image;
 
-		retire_info() : m_chunk(0), m_chunk_data(0), m_texture_image(0) {}
+		retire_texture_info() : m_chunk(0), m_texture_image(0) {}
 	};
 
 	lod_chunk_tree*	m_tree;
 	SDL_RWops*	m_source_stream;
 
-	// These two are for the main thread's use only.  For update()
-	// to communicate with sync_loader_thread().
+	// These two are for the main thread's use only.  For
+	// update()/update_texture() to communicate with
+	// sync_loader_thread().
 	array<lod_chunk*>	m_unload_queue;
 	array<pending_load_request>	m_load_queue;
 
+	array<lod_chunk*>	m_unload_texture_queue;
+	array<lod_chunk*>	m_load_texture_queue;
+
 	// These two are for the main thread to communicate with the
 	// loader thread & vice versa.
-#define REQUEST_BUFFER_SIZE 2
+#define REQUEST_BUFFER_SIZE 4
 	lod_chunk* volatile	m_request_buffer[REQUEST_BUFFER_SIZE];	// chunks waiting to be loaded; filled will NULLs otherwise.
 	retire_info volatile	m_retire_buffer[REQUEST_BUFFER_SIZE];	// chunks waiting to be united with their loaded data.
+
+	lod_chunk* volatile	m_request_texture_buffer[REQUEST_BUFFER_SIZE];		// chunks waiting for their textures to be loaded.
+	retire_texture_info volatile	m_retire_texture_buffer[REQUEST_BUFFER_SIZE];	// chunks waiting to be united with their loaded textures.
 
 	// Loader thread stuff.
 	SDL_Thread*	m_loader_thread;
@@ -393,6 +437,8 @@ chunk_tree_loader::chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src)
 	{
 		m_request_buffer[i] = NULL;
 		m_retire_buffer[i].m_chunk = NULL;
+		m_request_texture_buffer[i] = NULL;
+		m_retire_texture_buffer[i].m_chunk = NULL;
 	}
 
 	// Set up thread communication stuff.
@@ -431,27 +477,43 @@ void	chunk_tree_loader::sync_loader_thread()
 // The chunk_tree_loader is not allowed to make any changes to the
 // lod_chunk_tree, except in this call.
 {
-	// Unload data.
-	for (int i = 0; i < m_unload_queue.size(); i++) {
-		lod_chunk*	c = m_unload_queue[i];
-		// Only unload the chunk if it's not currently in use.
-		// Sometimes a chunk will be marked for unloading, but
-		// then is still being used due to a dependency in a
-		// neighboring part of the hierarchy.  We want to
-		// ignore the unload request in that case.
-		if (c->m_parent != NULL
-		    && c->m_parent->m_split == false)
-		{
-			m_unload_queue[i]->unload_data();
-		}
-	}
-	m_unload_queue.resize(0);
-
 	// mutex section
 	SDL_LockMutex(m_mutex);
 	{
+		// Unload data.
+		for (int i = 0; i < m_unload_queue.size(); i++) {
+			lod_chunk*	c = m_unload_queue[i];
+			// Only unload the chunk if it's not currently in use.
+			// Sometimes a chunk will be marked for unloading, but
+			// then is still being used due to a dependency in a
+			// neighboring part of the hierarchy.  We want to
+			// ignore the unload request in that case.
+			if (c->m_parent != NULL
+			    && c->m_parent->m_split == false)
+			{
+				c->unload_data();
+			}
+		}
+		m_unload_queue.resize(0);
+
+		// Unload textures.
+		{for (int i = 0; i < m_unload_texture_queue.size(); i++) {
+			lod_chunk*	c = m_unload_texture_queue[i];
+			if (c->m_parent != NULL) {
+				assert(c->m_parent->m_texture_id != 0);
+				assert(c->has_children() == false
+				       || (c->m_children[0]->m_texture_id == 0
+					   && c->m_children[1]->m_texture_id == 0
+					   && c->m_children[2]->m_texture_id == 0
+					   && c->m_children[3]->m_texture_id == 0));
+				
+				c->release_texture();
+			}
+		}}
+		m_unload_texture_queue.resize(0);
+
 		// Retire any serviced requests.
-		for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
+		{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
 		{
 			retire_info&	r = const_cast<retire_info&>(m_retire_buffer[i]);	// cast away 'volatile' (we're inside the mutex section)
 			if (r.m_chunk)
@@ -460,17 +522,34 @@ void	chunk_tree_loader::sync_loader_thread()
 				assert(r.m_chunk->m_parent == NULL || r.m_chunk->m_parent->m_data != NULL);
 
 				// Connect the chunk with its data!
-				r.m_chunk_data->m_texture_id = lod_tile_freelist::make_texture(r.m_texture_image);	// @@ this actually could cause some bad latency, because we build mipmaps...
 				r.m_chunk->m_data = r.m_chunk_data;
 			}
 			// Clear out this entry.
-			r.m_chunk = 0;
-			r.m_chunk_data = 0;
-			r.m_texture_image = NULL;
-		}
+			r.m_chunk = NULL;
+			r.m_chunk_data = NULL;
+		}}
 
-		// Pass new requests to the loader thread.  Go in
+		// Retire any serviced texture requests.
+		{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
+		{
+			retire_texture_info&	r = const_cast<retire_texture_info&>(m_retire_texture_buffer[i]);
+			if (r.m_chunk)
+			{
+				assert(r.m_chunk->m_texture_id == 0);
+				assert(r.m_chunk->m_parent == NULL || r.m_chunk->m_parent->m_texture_id != 0);
+
+				// Connect the chunk with its texture!
+				r.m_chunk->m_texture_id = lod_tile_freelist::make_texture(r.m_texture_image);	// @@ this actually could cause some bad latency, because we build mipmaps...
+			}
+			// Clear out this entry.
+			r.m_chunk = NULL;
+			r.m_texture_image = NULL;
+		}}
+
+		//
+		// Pass new data requests to the loader thread.  Go in
 		// order of priority, and only take a few.
+		//
 
 		// Wipe out stale requests.
 		{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++) {
@@ -502,6 +581,36 @@ void	chunk_tree_loader::sync_loader_thread()
 			m_load_queue.resize(0);	// forget this frame's requests; we'll generate a fresh list during the next update()
 		}
 
+		//
+		// Pass texture requests.
+		//
+
+		// Wipe out stale requests.
+		{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++) {
+			m_request_texture_buffer[i] = NULL;
+		}}
+
+		int	tqsize = m_load_texture_queue.size();
+		if (tqsize > 0)
+		{
+			int	req_count = 0;
+
+			{for (int i = 0; i < tqsize; i++)
+			{
+				lod_chunk*	c = m_load_texture_queue[i];
+				// Must make sure the chunk wasn't just retired.
+				if (c->m_texture_id == 0) {
+					// Request this chunk.
+					m_request_texture_buffer[req_count++] = c;
+					if (req_count >= REQUEST_BUFFER_SIZE) {
+						// We've queued up enough requests.
+						break;
+					}
+				}
+			}}
+		
+			m_load_texture_queue.resize(0);	// forget this frame's requests; we'll generate a fresh list during the next update()
+		}
 	}
 	SDL_UnlockMutex(m_mutex);
 }
@@ -546,101 +655,228 @@ void	chunk_tree_loader::request_chunk_unload(lod_chunk* chunk)
 }
 
 
+void	chunk_tree_loader::request_chunk_load_texture(lod_chunk* chunk)
+// Request that the specified chunk have its texture loaded.  May
+// take a while; data doesn't actually show up & get linked in
+// until some future call to sync_loader_thread().
+{
+	assert(chunk);
+	assert(chunk->m_texture_id == 0);
+	assert(m_tree->m_texture_quadtree->get_depth() >= chunk->m_level);
+
+	// Don't schedule for load unless our parent already has a texture.
+	if (chunk->m_parent == NULL
+	    || chunk->m_parent->m_texture_id != 0)
+	{
+		m_load_texture_queue.push_back(chunk);
+	}
+}
+
+
+void	chunk_tree_loader::request_chunk_unload_texture(lod_chunk* chunk)
+// Request that the specified chunk have its texture unloaded; happens
+// within short latency.
+{
+	assert(chunk->m_texture_id != 0);
+	assert(chunk->has_children() == false
+	       || (chunk->m_children[0]->m_texture_id == 0
+		   && chunk->m_children[1]->m_texture_id == 0
+		   && chunk->m_children[2]->m_texture_id == 0
+		   && chunk->m_children[3]->m_texture_id == 0));
+	
+	m_unload_texture_queue.push_back(chunk);
+}
+
+
 int	chunk_tree_loader::loader_thread()
 // Thread function for the loader thread.  Sit and load chunk data
 // from the request queue, until we get killed.
 {
 	while (m_kill_loader == false)
 	{
-		// Grab a request.
-		lod_chunk*	chunk_to_load = NULL;
-		SDL_LockMutex(m_mutex);
+		bool	loaded = false;
+		loaded = loader_service_data() || loaded;
+		loaded = loader_service_texture() || loaded;
+
+		if (loaded == false)
 		{
-			// Get first request that's not already in the
-			// retire buffer.
-			for (int req = 0; req < REQUEST_BUFFER_SIZE; req++)
-			{
-				chunk_to_load = m_request_buffer[0];	// (could be NULL)
-
-				// shift requests down.
-				int	i;
-				for (i = 0; i < REQUEST_BUFFER_SIZE - 1; i++)
-				{
-					m_request_buffer[i] = m_request_buffer[i + 1];
-				}
-				m_request_buffer[i] = NULL;	// fill empty slot with NULL
-
-				if (chunk_to_load == NULL) break;
-				
-				// Make sure the request is not in the retire buffer.
-				bool	in_retire_buffer = false;
-				{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++) {
-					if (m_retire_buffer[i].m_chunk == chunk_to_load) {
-						// This request has already been serviced.  Don't
-						// service it again.
-						chunk_to_load = NULL;
-						in_retire_buffer = true;
-						break;
-					}
-				}}
-				if (in_retire_buffer == false) break;
-			}
-		}
-		SDL_UnlockMutex(m_mutex);
-
-		if (chunk_to_load == NULL)
-		{
-			// There's no request to service right now.
-			// Go to sleep for a little while and check
-			// again later.
+			// We seem to be dormant; sleep for a while
+			// and then check again.
 			SDL_Delay(10);
-			continue;
 		}
-
-		assert(chunk_to_load->m_data == NULL);
-		assert(chunk_to_load->m_parent == NULL || chunk_to_load->m_parent->m_data != NULL);
-		
-		// Service the request by loading the chunk's data.
-		// This could take a while, and involves wating on IO,
-		// so we do it with the mutex unlocked so the main
-		// update/render thread can hopefully get some work
-		// done.
-		lod_chunk_data*	loaded_data = NULL;
-		SDL_Surface*	texture_image = NULL;
-
-		// Texture.
-		const tqt*	qt = m_tree->m_texture_quadtree;
-		if (qt && chunk_to_load->m_level < qt->get_depth()) {
-			texture_image = qt->load_image(chunk_to_load->m_level,
-						       chunk_to_load->m_x,
-						       chunk_to_load->m_z);
-		}
-
-		// Geometry.
-		SDL_RWseek(m_source_stream, chunk_to_load->m_data_file_position, SEEK_SET);
-		loaded_data = new lod_chunk_data(m_source_stream, 0);
-
-		// "Retire" the request.  Must do this with the mutex
-		// locked.  The main thread will do
-		// "chunk_to_load->m_data = loaded_data".
-		SDL_LockMutex(m_mutex);
-		{
-			for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
-			{
-				if (m_retire_buffer[i].m_chunk == 0)
-				{
-					// empty slot; put the info here.
-					m_retire_buffer[i].m_chunk = chunk_to_load;
-					m_retire_buffer[i].m_chunk_data = loaded_data;
-					m_retire_buffer[i].m_texture_image = texture_image;
-					break;
-				}
-			}
-		}
-		SDL_UnlockMutex(m_mutex);
 	}
 
 	return 0;
+}
+
+
+bool	chunk_tree_loader::loader_service_data()
+// Service a request for data.  Return true if we actually serviced
+// anything; false if there was nothing to service.
+{
+	// Grab a request.
+	lod_chunk*	chunk_to_load = NULL;
+	SDL_LockMutex(m_mutex);
+	{
+		// Get first request that's not already in the
+		// retire buffer.
+		for (int req = 0; req < REQUEST_BUFFER_SIZE; req++)
+		{
+			chunk_to_load = m_request_buffer[0];	// (could be NULL)
+
+			// shift requests down.
+			int	i;
+			for (i = 0; i < REQUEST_BUFFER_SIZE - 1; i++)
+			{
+				m_request_buffer[i] = m_request_buffer[i + 1];
+			}
+			m_request_buffer[i] = NULL;	// fill empty slot with NULL
+
+			if (chunk_to_load == NULL) break;
+			
+			// Make sure the request is not in the retire buffer.
+			bool	in_retire_buffer = false;
+			{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++) {
+				if (m_retire_buffer[i].m_chunk == chunk_to_load) {
+					// This request has already been serviced.  Don't
+					// service it again.
+					chunk_to_load = NULL;
+					in_retire_buffer = true;
+					break;
+				}
+			}}
+			if (in_retire_buffer == false) break;
+		}
+	}
+	SDL_UnlockMutex(m_mutex);
+
+	if (chunk_to_load == NULL)
+	{
+		// There's no request to service right now.
+		return false;
+	}
+
+	assert(chunk_to_load->m_data == NULL);
+	assert(chunk_to_load->m_parent == NULL || chunk_to_load->m_parent->m_data != NULL);
+	
+	// Service the request by loading the chunk's data.  This
+	// could take a while, and involves waiting on IO, so we do it
+	// with the mutex unlocked so the main update/render thread
+	// can hopefully get some work done.
+	lod_chunk_data*	loaded_data = NULL;
+
+	// Geometry.
+	SDL_RWseek(m_source_stream, chunk_to_load->m_data_file_position, SEEK_SET);
+	loaded_data = new lod_chunk_data(m_source_stream);
+
+	// "Retire" the request.  Must do this with the mutex locked.
+	// The main thread will do "chunk_to_load->m_data = loaded_data".
+	SDL_LockMutex(m_mutex);
+	{
+		for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
+		{
+			if (m_retire_buffer[i].m_chunk == 0)
+			{
+				// empty slot; put the info here.
+				m_retire_buffer[i].m_chunk = chunk_to_load;
+				m_retire_buffer[i].m_chunk_data = loaded_data;
+				break;
+			}
+		}
+		// TODO: assert if we didn't find a retire slot!
+		// (there should always be one, because it's as big as
+		// the request queue)
+	}
+	SDL_UnlockMutex(m_mutex);
+
+	return true;
+}
+
+
+bool	chunk_tree_loader::loader_service_texture()
+// Service a pending texture request.  Return true if we serviced
+// something.  Return false if there was nothing to service.
+{
+	// Grab a request.
+	lod_chunk*	chunk_to_load = NULL;
+	SDL_LockMutex(m_mutex);
+	{
+		// Get first request that's not already in the
+		// retire buffer.
+		for (int req = 0; req < REQUEST_BUFFER_SIZE; req++)
+		{
+			chunk_to_load = m_request_texture_buffer[0];	// (could be NULL)
+
+			// shift requests down.
+			int	i;
+			for (i = 0; i < REQUEST_BUFFER_SIZE - 1; i++)
+			{
+				m_request_texture_buffer[i] = m_request_texture_buffer[i + 1];
+			}
+			m_request_texture_buffer[i] = NULL;	// fill empty slot with NULL
+
+			if (chunk_to_load == NULL) break;
+			assert(chunk_to_load->m_texture_id == NULL);
+			
+			// Make sure the request is not in the retire buffer.
+			bool	in_retire_buffer = false;
+			{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++) {
+				if (m_retire_texture_buffer[i].m_chunk == chunk_to_load) {
+					// This request has already been serviced.  Don't
+					// service it again.
+					chunk_to_load = NULL;
+					in_retire_buffer = true;
+					break;
+				}
+			}}
+			if (in_retire_buffer == false) break;
+		}
+	}
+	SDL_UnlockMutex(m_mutex);
+
+	if (chunk_to_load == NULL)
+	{
+		// There's no request to service right now.
+		return false;
+	}
+
+	assert(chunk_to_load->m_texture_id == 0);
+	assert(chunk_to_load->m_parent == NULL || chunk_to_load->m_parent->m_texture_id != 0);
+	
+	// Service the request by loading the chunk's data.
+	// This could take a while, and involves wating on IO,
+	// so we do it with the mutex unlocked so the main
+	// update/render thread can hopefully get some work
+	// done.
+	SDL_Surface*	texture_image = NULL;
+
+	// Texture.
+	const tqt*	qt = m_tree->m_texture_quadtree;
+	assert(qt && chunk_to_load->m_level < qt->get_depth());
+
+	texture_image = qt->load_image(chunk_to_load->m_level,
+				       chunk_to_load->m_x,
+				       chunk_to_load->m_z);
+
+	// "Retire" the request.  Must do this with the mutex
+	// locked.  The main thread will do
+	// "chunk_to_load->m_data = loaded_data".
+	SDL_LockMutex(m_mutex);
+	{
+		for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
+		{
+			if (m_retire_texture_buffer[i].m_chunk == 0)
+			{
+				// empty slot; put the info here.
+				m_retire_texture_buffer[i].m_chunk = chunk_to_load;
+				m_retire_texture_buffer[i].m_texture_image = texture_image;
+				break;
+			}
+		}
+	}
+	SDL_UnlockMutex(m_mutex);
+
+	return true;
 }
 
 
@@ -688,6 +924,8 @@ static void	bind_texture_tile(unsigned int texid, const vec3& box_center, const 
 // Bind the given texture and set up texgen so that it stretches over
 // the x-z extent of the given box.
 {
+	s_textures_bound++;	// stats
+
 	glBindTexture(GL_TEXTURE_2D, texid);
 	glEnable(GL_TEXTURE_2D);
 		
@@ -799,13 +1037,39 @@ void	vertex_info::read(SDL_RWops* in)
 }
 
 
+static void	count_chunk_stats(lod_chunk* c)
+// Add up stats from c and its descendents.
+{
+	if (c->m_data)
+	{
+		s_chunks_with_data++;
+		s_bytes_in_use += c->m_data->get_data_size();
+
+		if (c->has_children()) {
+			for (int i = 0; i < 4; i++) {
+				count_chunk_stats(c->m_children[i]);
+			}
+		}
+	}
+	// else don't recurse; our descendents should not have any
+	// data.  TODO: assert on this.
+}
+
+
 void	lod_chunk::clear()
-// Clears the enabled values throughout the subtree.  If this node is
-// enabled, then the recursion does not continue to the child nodes,
-// since their enabled values should be false.
+// Clears the m_split values throughout the subtree.  If this node is
+// not split, then the recursion does not continue to the child nodes,
+// since their m_split values should be false.
 //
 // Do this before calling update().
 {
+	assert(m_data != NULL);
+
+	s_chunks_in_use++;
+	s_chunks_with_data++;
+	s_bytes_in_use += m_data->get_data_size();
+	if (m_texture_id) { s_chunks_with_texture++; }
+
 	if (m_split) {
 		m_split = false;
 
@@ -813,6 +1077,14 @@ void	lod_chunk::clear()
 		if (has_children()) {
 			for (int i = 0; i < 4; i++) {
 				m_children[i]->clear();
+			}
+		}
+	}
+	else
+	{
+		if (has_children()) {
+			for (int i = 0; i < 4; i++) {
+				count_chunk_stats(m_children[i]);
 			}
 		}
 	}
@@ -824,6 +1096,9 @@ void	lod_chunk::update(lod_chunk_tree* tree, const vec3& viewpoint)
 // based on the given camera parameters and the parameters stored in
 // 'base'.  Traverses the tree and forces neighbor chunks to a valid
 // LOD, and updates its contained edges to prevent cracks.
+//
+// Invariant: if a node has m_split == true, then all its ancestors
+// have m_split == true.
 //
 // !!!  For correct results, the tree must have been clear()ed before
 // calling update() !!!
@@ -872,6 +1147,91 @@ void	lod_chunk::update(lod_chunk_tree* tree, const vec3& viewpoint)
 				}
 			}
 		}
+	}
+}
+
+
+void	lod_chunk::update_texture(lod_chunk_tree* tree, const vec3& viewpoint)
+// Decides when to load & release textures for this node and its descendents.
+//
+// Invariant: if a node has a non-zero m_texture_id, then all its
+// ancestors have non-zero m_texture_id.
+//
+// !!! You must do things in this order: clear(), then update(), then texture_update(). !!!
+//
+// Note that we don't take the viewpoint direction into account when
+// loading textures, only the viewpoint distance & mag factor.  That's
+// intentional: it means we'll load a lot of textures that are beside
+// or behind the frustum, but the viewpoint can rotate rapidly, so we
+// really want them available.  The penalty is ~4x texture RAM, for a
+// 90-degree FOV, compared to only loading what's in the frustum.
+// Interestingly, this approach ceases to work as the view angle gets
+// smaller.  LOD in general has real problems as we approach an
+// isometric view.  For games this isn't a huge concern, (except for
+// sniper-scope views, where it's a real issue, but then there are
+// compensating factors there too...).
+{
+	assert(tree->m_texture_quadtree != NULL);
+
+	if (m_level >= tree->m_texture_quadtree->get_depth())
+	{
+		// No texture tiles at this level, so don't bother
+		// thinking about them.
+		assert(m_texture_id == 0);
+		return;
+	}
+
+	vec3	box_center, box_extent;
+	compute_bounding_box(*tree, &box_center, &box_extent);
+
+	int	desired_tex_level = tree->compute_texture_lod(box_center, box_extent, viewpoint);
+
+	if (m_texture_id != 0)
+	{
+		assert(m_parent == NULL || m_parent->m_texture_id != 0);
+
+		// Decide if we should release our texture.
+		if (m_data == NULL
+		    || desired_tex_level < m_level)
+		{
+			// Release our texture, and the texture of any
+			// descendents.  Really should go into a cache
+			// or something, in case we want to revive it
+			// soon.
+			request_unload_textures(tree);
+		}
+		else
+		{
+			// Keep status quo for this node, and recurse to children.
+			if (has_children()) {
+				for (int i = 0; i < 4; i++) {
+					m_children[i]->update_texture(tree, viewpoint);
+				}
+			}
+		}
+	}
+	else
+	{
+		// Decide if we should load our texture.
+		if (desired_tex_level >= m_level
+		    && m_data)
+		{
+			// Yes, we would like to load.
+			tree->m_loader->request_chunk_load_texture(this);
+		}
+		else
+		{
+			// No need to load anything, or to check children.
+		}
+
+#ifndef NDEBUG
+		// Check to make sure children don't have m_texture_id's.
+		if (has_children()) {
+			for (int i = 0; i < 4; i++) {
+				assert(m_children[i]->m_texture_id == 0);
+			}
+		}
+#endif // not NDEBUG
 	}
 }
 
@@ -1044,6 +1404,24 @@ void	lod_chunk::request_unload_subtree(lod_chunk_tree* tree)
 }
 
 
+void	lod_chunk::request_unload_textures(lod_chunk_tree* tree)
+// If we have a texture, request that it be unloaded.  Make the same
+// request of our descendants.
+{
+	if (m_texture_id) {
+		// Put descendents in the queue first, so they get
+		// unloaded first.
+		if (has_children()) {
+			for (int i = 0; i < 4; i++) {
+				m_children[i]->request_unload_textures(tree);
+			}
+		}
+
+		tree->m_loader->request_chunk_unload_texture(this);
+	}
+}
+
+
 int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt, bool texture_bound)
 // Draws the given lod tree.  Uses the current state stored in the
 // tree w/r/t split & LOD level.
@@ -1069,9 +1447,10 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 	if (texture_bound == false && opt.show_geometry == true) {
 		// Decide whether to bind a texture.
 		
-		if (m_data->m_texture_id == 0)
+		if (m_texture_id == 0)
 		{
 			// No texture id, so nothing to bind in any case.
+			assert(0);	// this should not happen!
 		}
 		else
 		{
@@ -1079,23 +1458,13 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 			// texture further down the tree, then bind
 			// now.
 			if (m_split == false
-			    || has_children() == false
-			    || m_children[0]->m_data == NULL
-			    || m_children[0]->m_data->m_texture_id == 0)
+			    || m_children[0]->m_texture_id == 0
+			    || m_children[1]->m_texture_id == 0
+			    || m_children[2]->m_texture_id == 0
+			    || m_children[3]->m_texture_id == 0)
 			{
-				bind_texture_tile(m_data->m_texture_id, box_center, box_extent);
+				bind_texture_tile(m_texture_id, box_center, box_extent);
 				texture_bound = true;
-			}
-			else
-			{
-				// Bind a texture if the viewpoint is
-				// close enough.
-				int	desired_tex_level = c.compute_texture_lod(box_center, box_extent, v.get_viewpoint());
-				if (desired_tex_level <= m_level)
-				{
-					bind_texture_tile(m_data->m_texture_id, box_center, box_extent);
-					texture_bound = true;
-				}
 			}
 		}
 	}
@@ -1163,6 +1532,7 @@ void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree)
 // Recursively loads child chunks for recurse_count > 0.
 {
 	m_split = false;
+	m_texture_id = 0;
 
 	// Get this chunk's label, and add it to the table.
 	int	chunk_label = SDL_ReadLE32(in);
@@ -1313,8 +1683,21 @@ void	lod_chunk_tree::update(const vec3& viewpoint)
 		m_loader->request_chunk_load(&m_chunks[0], 1.0f);
 	}
 
-	m_chunks[0].clear();
+	// Performance stats.  Count them up during clear().
+	s_chunks_in_use = 0;
+	s_chunks_with_data = 0;
+	s_chunks_with_texture = 0;
+	s_bytes_in_use = 0;
+
+	if (m_chunks[0].m_split) {
+		m_chunks[0].clear();
+	}
 	m_chunks[0].update(this, viewpoint);
+
+	if (m_texture_quadtree) {
+		m_chunks[0].update_texture(this, viewpoint);
+	}
+
 	m_loader->sync_loader_thread();
 }
 
@@ -1334,7 +1717,10 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 
 	s_vertical_scale = m_vertical_scale;
 
-	if (m_chunks[0].m_data == NULL)
+	s_textures_bound = 0;	// stats
+
+	if (m_chunks[0].m_data == NULL
+	    || (m_texture_quadtree != NULL && m_chunks[0].m_texture_id == 0))
 	{
 		// No data in the root node; we can't really do
 		// anything.  This should only happen briefly at the
@@ -1348,6 +1734,27 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 
 		// Render the chunked LOD tree.
 		triangle_count += m_chunks[0].render(*this, v, cull::result_info(), opt, m_texture_quadtree == NULL ? true : false);
+	}
+
+	// xxx every so often, print our data usage stats.
+	if (0) {
+		static int	counter = 0;
+		if (counter++ & 0x20)
+		{
+			int	estimated_texture_bytes = 0;
+			if (m_texture_quadtree) {
+				// guess 4 bytes per texel.
+				estimated_texture_bytes += s_chunks_with_texture * 4 * m_texture_quadtree->get_tile_size() * m_texture_quadtree->get_tile_size();
+			}
+
+			printf("c_en = %d, c_dat = %d, cB = %d, c_tx = %d, tex bound = %d, tB = %d\n",
+			       s_chunks_in_use,
+			       s_chunks_with_data,
+			       s_bytes_in_use,
+			       s_chunks_with_texture,
+			       s_textures_bound,
+			       estimated_texture_bytes);
+		}
 	}
 
 	return triangle_count;
@@ -1388,7 +1795,7 @@ void	lod_chunk_tree::set_parameters(float max_pixel_error, float max_texel_size,
 	// m_texture_distance_LODmax is the distance below which we
 	// need to be at the leaf texture resolution.  It's used in
 	// compute_texture_lod(), which is called by the chunks during
-	// render() to decide when to bind a texture.
+	// update_texture() to decide when to load textures.
 	m_texture_distance_LODmax = 1.0f;	// default doesn't matter; it doesn't get used if we don't have a texture quadtree.
 	if (m_texture_quadtree)
 	{
