@@ -218,8 +218,17 @@ int	main(int argc, char *argv[])
 
 	if (s_cache)
 	{
-		printf("\nsaving %s...\n", cache_name.c_str());
-		gameswf::fontlib::save_cached_font_data(cache_name);
+		tu_file*	cache_out = new tu_file(cache_name.c_str(), "wb");
+		if (cache_out->get_error() != TU_FILE_NO_ERROR)
+		{
+			printf("\nError: can't open %s for cache output!\n", cache_name.c_str());
+		}
+		else
+		{
+			printf("\nsaving %s...\n", cache_name.c_str());
+			gameswf::fontlib::save_cached_font_data(cache_out);
+		}
+		delete cache_out;
 		exit(0);
 	}
 	
@@ -252,10 +261,22 @@ int	main(int argc, char *argv[])
 	ogl::open();
 
 	// Try to open cached font textures
-	if (!gameswf::fontlib::load_cached_font_data(cache_name))
 	{
-		// Generate cached textured versions of fonts.
-		gameswf::fontlib::generate_font_bitmaps();
+		bool	loaded_cached_data = false;
+
+		tu_file	cache_in(cache_name.c_str(), "rb");
+		if (cache_in.get_error() == TU_FILE_NO_ERROR)
+		{
+			loaded_cached_data = gameswf::fontlib::load_cached_font_data(&cache_in);
+		}
+
+		if (loaded_cached_data == false)
+		{
+			// Couldn't load cached font data.
+			// Generate cached textured versions
+			// of fonts.
+			gameswf::fontlib::generate_font_bitmaps();
+		}
 	}
 
 	// Turn on alpha blending.

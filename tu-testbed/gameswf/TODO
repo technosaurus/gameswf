@@ -12,10 +12,6 @@ Tasks to make gameswf ready for including in real games.
 * remove filename and FILE for caching in fontlib, and replace with
   tu_file* abstraction.
 
-* abstract sound handler, that host apps can register.  Demonstrate
-  this in the test program using SDL_mixer.  Need to implement sound
-  tag parsing also.
-
 * abstract the renderer?  Probably it's OK to just compile the
   renderer you want; this seems lower priority.  Need an Xbox renderer
   anyway.
