@@ -224,9 +224,10 @@ void	print_usage()
 		"details.\n"
 		"\n"
 		"usage: chunkdemo [dataset.chu] [texture.jpg]\n"
-		"    [-w width] [-h height] [-b bits/pixel] [-f] [-2]\n"
+		"    [-w width] [-h height] [-b bits/pixel] [-f] [-t [0|1]] [-2]\n"
 		"\n"
 		"    '-f' means use a fullscreen window.\n"
+		"    '-t 0' means don't use loader thread, '-t 1' (default) means use a thread\n"
 		"    '-2' means use two-phase rendering, to improve z-buffer precision\n"
 		"    by default, looks for crater/crater.chu and crater/crater.jpg\n"
 		"\n"
@@ -479,6 +480,15 @@ int	main(int argc, char *argv[])
 			case 'f':	// fullscreen flag.
 				fullscreen = true;
 				break;
+			
+			case 't':	// background loader thread flag.
+				i++;
+				if (i >= argc) {
+					printf("error: -t switch must be followed by 0 or 1\n\n");
+					print_usage();
+					exit(1);
+				}
+				s_use_loader_thread = atoi(argv[i]) ? true : false;
 
 			case '2':	// two-pass flag
 				s_two_phase_render = true;
