@@ -1,3 +1,8 @@
+// quad_distance_test.cpp	-- by Thatcher Ulrich http://tulrich.com 2003
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
 // quickie visualization of circles vs. quadtree
 
 

@@ -1020,16 +1020,17 @@ namespace gameswf
 		{
 			// Pull a slice out of this_string.
 			int	start = 0;
-			int	end = this_string.length();
+			int	utf8_len = this_string.utf8_length();
+			int	end = utf8_len;
 			if (nargs >= 1)
 			{
 				start = (int) env->bottom(first_arg_bottom_index).to_number();
-				start = iclamp(start, 0, this_string.utf8_length());
+				start = iclamp(start, 0, utf8_len);
 			}
 			if (nargs >= 2)
 			{
 				end = (int) env->bottom(first_arg_bottom_index - 1).to_number();
-				end = iclamp(end, 0, this_string.utf8_length());
+				end = iclamp(end, 0, utf8_len);
 			}
 
 			if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
