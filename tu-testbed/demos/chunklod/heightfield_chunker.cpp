@@ -21,7 +21,7 @@
 #include <engine/geometry.h>
 
 
-void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out, int tree_depth, float base_max_error, float spacing);
+void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out, int tree_depth, float base_max_error, float spacing, float vertical_scale);
 
 
 void	error(const char* fmt)
@@ -75,7 +75,18 @@ struct stats {
 } stats;
 
 
-#undef main	// @@ some crazy SDL/WIN32 thing that I don't understand.
+// A default value, to determine quantization of vertical units.
+// TODO: set this value based on info from the .BT file header, or
+// scale it to the largest height in the data.
+const float MAX_HEIGHT = 32767.0;
+
+
+// @@ under Win32, SDL likes to define its own main(), to fix up arg
+// handling.  I still need to provide the right linker options to get
+// SDL's arg handler linked in; in the meantime, use normal Windows
+// arg handling.
+#undef main
+
 int	main(int argc, char* argv[])
 // Reads the given .BT terrain file or grayscale bitmap, and generates
 // a quadtree-chunked LOD data file, suitable for viewing by the
@@ -85,104 +96,106 @@ int	main(int argc, char* argv[])
 	int	tree_depth = 6;
 	float	max_geometric_error = 1.0f;
 	float	spacing = 4.0f;
+	float	vertical_scale = MAX_HEIGHT / 32767.0;
 
 	// Process command-line options.
 	char*	infile = NULL;
 	char*	outfile = NULL;
 
-	for ( int arg = 1; arg < argc; arg++ ) {
-		if ( argv[arg][0] == '-' ) {
+	for (int arg = 1; arg < argc; arg++) {
+		if (argv[arg][0] == '-') {
 			// command-line switch.
 			
-			switch ( argv[arg][1] ) {
+			switch (argv[arg][1]) {
 			case 'h':
 			case '?':
 				print_usage();
-				exit( 1 );
+				exit(1);
 				break;
 
 			case 'd':
 				// Set the tree depth.
 				arg++;
-				if ( arg < argc ) {
-					tree_depth = atoi( argv[ arg ] );
+				if (arg < argc) {
+					tree_depth = atoi(argv[ arg ]);
 
 				} else {
-					printf( "error: -d option must be followed by an integer for the tree depth\n" );
+					printf("error: -d option must be followed by an integer for the tree depth\n");
 					print_usage();
-					exit( 1 );
+					exit(1);
 				}
 				break;
 
 			case 'e':
 				// Set the max geometric error.
 				arg++;
-				if ( arg < argc ) {
-					max_geometric_error = atof( argv[ arg ] );
+				if (arg < argc) {
+					max_geometric_error = atof(argv[ arg ]);
 
 				} else {
-					printf( "error: -e option must be followed by a value for the maximum geometric error\n" );
+					printf("error: -e option must be followed by a value for the maximum geometric error\n");
 					print_usage();
-					exit( 1 );
+					exit(1);
 				}
 				break;
 
 			case 's':
 				// Set the horizontal spacing.
 				arg++;
-				if ( arg < argc ) {
-					spacing = atof( argv[ arg ] );
+				if (arg < argc) {
+					spacing = atof(argv[ arg ]);
 
 				} else {
-					printf( "error: -s option must be followed by a value for the horizontal grid spacing\n" );
+					printf("error: -s option must be followed by a value for the horizontal grid spacing\n");
 					print_usage();
-					exit( 1 );
+					exit(1);
 				}
 				break;
 			}
 
 		} else {
 			// File argument.
-			if ( infile == NULL ) {
+			if (infile == NULL) {
 				infile = argv[arg];
-			} else if ( outfile == NULL ) {
+			} else if (outfile == NULL) {
 				outfile = argv[arg];
 			} else {
 				// This looks like extra noise on the command line; complain and exit.
-				printf( "argument '%s' looks like extra noise; exiting.\n" );
+				printf("argument '%s' looks like extra noise; exiting.\n");
 				print_usage();
-				exit( 1 );
+				exit(1);
 			}
 		}
 	}
 
 	// Make sure we have input and output filenames.
-	if ( infile == NULL || outfile == NULL ) {
+	if (infile == NULL || outfile == NULL) {
 		// No input or output -- can't run.
-		printf( "error: you must specify input and output filenames.\n" );
+		printf("error: you must specify input and output filenames.\n");
 		print_usage();
-		exit( 1 );
+		exit(1);
 	}
 	
 	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
-	if ( in == 0 ) {
-		printf( "error: can't open %s for input.\n", infile );
-		exit( 1 );
+	if (in == 0) {
+		printf("error: can't open %s for input.\n", infile);
+		exit(1);
 	}
 
 	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
-	if ( out == 0 ) {
-		printf( "error: can't open %s for output.\n", outfile );
-		exit( 1 );
+	if (out == 0) {
+		printf("error: can't open %s for output.\n", outfile);
+		exit(1);
 	}
 
 	// Print the parameters.
 	printf("infile: %s\n", infile);
 	printf("outfile: %s\n", outfile);
-	printf( "depth = %d, max error = %f\n", tree_depth, max_geometric_error );
+	printf("depth = %d, max error = %f\n", tree_depth, max_geometric_error);
+	printf("vertical scale = %f\n", vertical_scale);
 
 	// Process the data.
-	heightfield_chunker( in, out, tree_depth, max_geometric_error, spacing);
+	heightfield_chunker(in, out, tree_depth, max_geometric_error, spacing, vertical_scale);
 
 	stats.output_size = SDL_RWtell(out);
 
@@ -528,10 +541,10 @@ struct heightfield {
 void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int rz, int lx, int lz);
 void	propagate_activation_level(heightfield& hf, int cx, int cz, int level, int target_level);
 int	check_propagation(heightfield& hf, int cx, int cz, int level);
-void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level);
+void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level, float vertical_scale);
 
 
-void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float base_max_error, float spacing)
+void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float base_max_error, float spacing, float vertical_scale)
 // Generate LOD chunks from the given heightfield.
 // 
 // tree_depth determines the depth of the chunk quadtree.
@@ -587,15 +600,16 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 
 	// Write a .chu header for the output file.
 	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
-	SDL_WriteLE16(out, 3);	// file format version.
+	SDL_WriteLE16(out, 4);	// file format version.
 	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
+	WriteFloat32(out, vertical_scale);	// meters / unit of vertical measurement.
 	SDL_WriteLE32(out, 0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
 
 	printf("meshing...");
 
 	// Write out the node data for the entire chunk tree.
-	generate_node_data(out, hf, 0, 0, hf.log_size, tree_depth-1);
+	generate_node_data(out, hf, 0, 0, hf.log_size, tree_depth-1, vertical_scale);
 
 	printf("done\n");
 }
@@ -636,19 +650,19 @@ void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int r
 }
 
 
-const float	SQRT_2 = sqrtf( 2 );
+const float	SQRT_2 = sqrtf(2);
 
 
-float	height_query( const heightfield& hf, int level, int x, int z, int ax, int az, int rx, int rz, int lx, int lz )
+float	height_query(const heightfield& hf, int level, int x, int z, int ax, int az, int rx, int rz, int lx, int lz)
 // Returns the height of the query point (x,z) within the triangle (a, r, l),
 // as tesselated to the specified LOD.
 {
 	// If the query is on one of our verts, return that vert's height.
-	if ( ( x == ax && z == az )
-		 || ( x == rx && z == rz )
-		 || ( x == lx && z == lz ) )
+	if ((x == ax && z == az)
+		 || (x == rx && z == rz)
+		 || (x == lx && z == lz))
 	{
-		return hf.get_elem( x, z ).y;
+		return hf.get_elem(x, z).y;
 	}
 
 	// Compute the coordinates of this triangle's base vertex.
@@ -659,9 +673,9 @@ float	height_query( const heightfield& hf, int level, int x, int z, int ax, int 
 		// have gotten a successful test earlier.
 
 		// assert(0);
-		printf( "Error: height_query hit base of heightfield.\n" );
+		printf("Error: height_query hit base of heightfield.\n");
 
-		return hf.get_elem( ax, az ).y;
+		return hf.get_elem(ax, az).y;
 	}
 
 	// base vert is midway between left and right verts.
@@ -669,27 +683,27 @@ float	height_query( const heightfield& hf, int level, int x, int z, int ax, int 
 	int	bz = rz + (dz >> 1);
 
 	// compute the length of a side edge.
-	float	edge_length_squared = ( dx * dx + dz * dz ) / 2.f;
+	float	edge_length_squared = (dx * dx + dz * dz) / 2.f;
 
 	float	sr, sl;	// barycentric coords w/r/t the right and left edges.
-	sr = ( ( x - ax ) * ( rx - ax ) + ( z - az ) * (rz - az ) ) / edge_length_squared;
-	sl = ( ( x - ax ) * ( lx - ax ) + ( z - az ) * (lz - az ) ) / edge_length_squared;
+	sr = ((x - ax) * (rx - ax) + (z - az) * (rz - az)) / edge_length_squared;
+	sl = ((x - ax) * (lx - ax) + (z - az) * (lz - az)) / edge_length_squared;
 
-	int	base_vert_level = hf.get_elem( bx, bz ).get_activation_level();
-	if ( base_vert_level >= level ){
+	int	base_vert_level = hf.get_elem(bx, bz).get_activation_level();
+	if (base_vert_level >= level){
 		// The mesh is more tesselated at the desired LOD.  Recurse.
-		if ( sr >= sl ) {
+		if (sr >= sl) {
 			// Query is in right child triangle.
-			return height_query( hf, level, x, z, bx, bz, ax, az, rx, rz);	// base, apex, right
+			return height_query(hf, level, x, z, bx, bz, ax, az, rx, rz);	// base, apex, right
 		} else {
 			// Query is in left child triangle.
-			return height_query( hf, level, x, z, bx, bz, lx, lz, ax, az);	// base, left, apex
+			return height_query(hf, level, x, z, bx, bz, lx, lz, ax, az);	// base, left, apex
 		}
 	}
 
-	float	ay = hf.get_elem( ax, az ).y;
-	float	dr = hf.get_elem( rx, rz ).y - ay;
-	float	dl = hf.get_elem( lx, lz ).y - ay;
+	float	ay = hf.get_elem(ax, az).y;
+	float	dr = hf.get_elem(rx, rz).y - ay;
+	float	dl = hf.get_elem(lx, lz).y - ay;
 
 	// This triangle is as far as the desired LOD goes.  Compute the
 	// query's height on the triangle.
@@ -697,16 +711,16 @@ float	height_query( const heightfield& hf, int level, int x, int z, int ax, int 
 }
 
 
-float	get_height_at_LOD( const heightfield& hf, int level, int x, int z )
+float	get_height_at_LOD(const heightfield& hf, int level, int x, int z)
 // Returns the height of the mesh as simplified to the specified level
 // of detail.
 {
-	if ( z > x ) {
+	if (z > x) {
 		// Query in SW quadrant.
-		return height_query( hf, level, x, z, 0, hf.size-1, hf.size-1, hf.size-1, 0, 0);	// sw half of the square
+		return height_query(hf, level, x, z, 0, hf.size-1, hf.size-1, hf.size-1, 0, 0);	// sw half of the square
 
 	} else {	// query in NW quadrant
-		return height_query( hf, level, x, z, hf.size-1, 0, 0, 0, hf.size-1, hf.size-1);	// ne half of the square
+		return height_query(hf, level, x, z, hf.size-1, 0, 0, 0, hf.size-1, hf.size-1);	// ne half of the square
 	}
 }
 
@@ -839,13 +853,17 @@ namespace mesh {
 	void	clear();
 	void	emit_vertex(const heightfield& hf, int ax, int az);	// call this in strip order.
 	int	lookup_index(int x, int z);
-	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level);
+	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level, float vertical_scale);
+
+	void	add_edge_strip_index(int edge_dir, int index);
+	void	add_edge_vertex_lo(int edge_dir, int x, int z);
+	void	add_edge_vertex_hi(int edge_dir, int hi_index, int x, int z);
 };
 
 
 void	gen_mesh(heightfield& hf, int level, int ax, int az, int rx, int rz, int lx, int lz);
 
-void	generate_edge_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int x1, int z1, int level, bool generate_ribbon);
+void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level, bool generate_ribbon);
 
 
 struct gen_state;
@@ -857,7 +875,7 @@ static const char*	spinner = "-\\|/";
 static int spin_count = 0;
 
 
-void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level)
+void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level, float vertical_scale)
 // Given a square of data, with northwest corner at (x0, z0) and
 // comprising ((1<<log_size)+1) verts along each axis, this function
 // generates the mesh using verts which are active at the given level.
@@ -902,22 +920,22 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	SDL_WriteLE32(out, hf.node_index(cx - size, cz));	// WEST
 	SDL_WriteLE32(out, hf.node_index(cx, cz + size));	// SOUTH
 
-	// write out the mesh data.
-	mesh::write(out, hf, level);
-
 	// Generate data for our edges.
-	generate_edge_data(out, hf, cx + half_size, cz - half_size, cx + half_size, cz + half_size, level, level > 0);	// east
-	generate_edge_data(out, hf, cx - half_size, cz - half_size, cx + half_size, cz - half_size, level, false);	// north
-	generate_edge_data(out, hf, cx - half_size, cz - half_size, cx - half_size, cz + half_size, level, false);	// west
-	generate_edge_data(out, hf, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level, level > 0);	// south
+	generate_edge_data(out, hf, 0, cx + half_size, cz - half_size, cx + half_size, cz + half_size, level, level > 0);	// east
+	generate_edge_data(out, hf, 1, cx - half_size, cz - half_size, cx + half_size, cz - half_size, level, level > 0);	// north
+	generate_edge_data(out, hf, 2, cx - half_size, cz - half_size, cx - half_size, cz + half_size, level, level > 0);	// west
+	generate_edge_data(out, hf, 3, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level, level > 0);	// south
+
+	// write out the mesh data.
+	mesh::write(out, hf, level, vertical_scale);
 
 	// recurse to child regions, to generate child chunks.
 	if (level > 0) {
 		int	half_size = (1 << (log_size-1));
-		generate_node_data(out, hf, x0, z0, log_size-1, level-1);	// nw
-		generate_node_data(out, hf, x0 + half_size, z0, log_size-1, level-1);	// ne
-		generate_node_data(out, hf, x0, z0 + half_size, log_size-1, level-1);	// sw
-		generate_node_data(out, hf, x0 + half_size, z0 + half_size, log_size-1, level-1);	// se
+		generate_node_data(out, hf, x0, z0, log_size-1, level-1, vertical_scale);	// nw
+		generate_node_data(out, hf, x0 + half_size, z0, log_size-1, level-1, vertical_scale);	// ne
+		generate_node_data(out, hf, x0, z0 + half_size, log_size-1, level-1, vertical_scale);	// sw
+		generate_node_data(out, hf, x0 + half_size, z0 + half_size, log_size-1, level-1, vertical_scale);	// se
 	}
 }
 
@@ -990,12 +1008,12 @@ void	generate_block(heightfield& hf, int activation_level, int log_size, int cx,
 		state.previous_level = 2 * log_size + 1;
 
 		generate_quadrant(hf,
-						  &state,
-						  q[i][0], q[i][1],	// q[i][l]
-						  cx, cz,	// q[i][t]
-						  q[(i+1)&3][0], q[(i+1)&3][1],	// q[i][r]
-						  2 * log_size
-						  );
+				  &state,
+				  q[i][0], q[i][1],	// q[i][l]
+				  cx, cz,	// q[i][t]
+				  q[(i+1)&3][0], q[(i+1)&3][1],	// q[i][r]
+				  2 * log_size
+			);
 	}}
 	if (state.in_my_buffer(q[0][0], q[0][1]) == false) {
 		// finish off the strip.  @@ may not be necessary?
@@ -1036,7 +1054,7 @@ void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, in
 }
 
 
-void	generate_edge_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int x1, int z1, int level, bool generate_ribbon)
+void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level, bool generate_ribbon)
 // Write out the data for an edge of the chunk that was just generated.
 // (x0,z0) - (x1,z1) defines the extent of the edge in the heightfield.
 // level determines which vertices in the mesh are active.
@@ -1048,9 +1066,8 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int x1,
 	assert(x0 <= x1);
 	assert(z0 <= z1);
 
-	// We're going to write a list of vertex indices that comprise the
-	// edge.  The indices reference the vertex array of the
-	// just-written chunk.
+	// We're going to write a list of vertices comprising the
+	// edge.
 	//
 	// We're also going to write the index (in this list) of the
 	// midpoint vertex of the edge, so the renderer can join
@@ -1080,8 +1097,9 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int x1,
 		}
 	}
 
-	SDL_WriteLE16(out, midpoint_index);
+//x	SDL_WriteLE16(out, midpoint_index);
 
+#if 0
 	// Write the active verts.
 	assert(verts < (1 << 16));
 	SDL_WriteLE16(out, verts);	// vertex count.
@@ -1095,54 +1113,71 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int x1,
 			SDL_WriteLE16(out, index);
 		}
 	}}
+#endif // 0
 
 	if (generate_ribbon) {
-		// if we're not at the base level, generate a triangle list which
-		// specifies how to stitch this edge with a matching edge composed
-		// of the facing edge of two higher-LOD neighbors.
-		array<Uint16>	triangle_list;
+		// if we're not at the base level, generate a triangle
+		// mesh which fills the gaps between this edge and a
+		// matching edge composed of the facing edge of two
+		// higher-LOD neighbors.
 		
 		// walk the edge, examining low-LOD and high-LOD vertices.
 		int	lo_index = 0;
 		int	hi_index = verts;
-		
+		int	hi_edge_part = 0;	// 0 for the first part of the high LOD edge, 1 for the second part.
+
+		mesh::add_edge_vertex_lo(dir, x0, z0);
+		mesh::add_edge_vertex_hi(dir, hi_edge_part, x0, z0);
+
 		{for (int i = 1, x = x0 + dx, z = z0 + dz; i < steps; i++, x += dx, z += dz) {
 			const heightfield_elem&	e = hf.get_elem(x, z);
 			if (e.activation_level >= level - 1) {
 				// high-lod vertex.
-				triangle_list.push_back(lo_index);
-				triangle_list.push_back(hi_index);
+				mesh::add_edge_strip_index(dir, lo_index);
+				mesh::add_edge_strip_index(dir, hi_index);
 				hi_index++;
-				triangle_list.push_back(hi_index);
+				mesh::add_edge_strip_index(dir, hi_index);
+
+				mesh::add_edge_vertex_hi(dir, hi_edge_part, x, z);
 
 				if (e.activation_level >= level) {
 					// also a low-lod vertex.
-					triangle_list.push_back(lo_index);
-					triangle_list.push_back(hi_index);
+					mesh::add_edge_strip_index(dir, lo_index);
+					mesh::add_edge_strip_index(dir, hi_index);
 					lo_index++;
-					triangle_list.push_back(lo_index);
+					mesh::add_edge_strip_index(dir, lo_index);
+
+					mesh::add_edge_vertex_lo(dir, x, z);
 
 					if (lo_index == midpoint_index) {
 						// Extra filler triangle, between the two hi-lod edges.
-						triangle_list.push_back(lo_index);
-						triangle_list.push_back(hi_index);
+						mesh::add_edge_strip_index(dir, lo_index);
+						mesh::add_edge_strip_index(dir, hi_index);
 						hi_index++;
-						triangle_list.push_back(hi_index);
+						mesh::add_edge_strip_index(dir, hi_index);
+
+						hi_edge_part = 1;
+						mesh::add_edge_vertex_hi(dir, hi_edge_part, x, z);
 					}
 				}
 			}
 		}}
 
+#if 0
 		assert(triangle_list.size() < (1 << 16));
 		SDL_WriteLE16(out, triangle_list.size());
 		{for (int i = 0; i < triangle_list.size(); i++) {
 			SDL_WriteLE16(out, triangle_list[i]);
 		}}
+#endif // 0
+
 	} else {
+#if 0
 		// zero-length triangle list.  This could be implicit, and
 		// save a couple bytes, at the expense of extra logic in the
 		// loader.
 		SDL_WriteLE16(out, 0);
+#endif // 0
 	}
 }
 
@@ -1163,6 +1198,10 @@ namespace mesh {
 	array<vert_info>	vertices;
 	array<int>	vertex_indices;
 	hash<vert_info, int>	index_table;	// to accelerate get_vertex_index()
+
+	array<int>	edge_strip[4];
+	array<vert_info>	edge_lo[4];
+	array<vert_info>	edge_hi[4][2];
 
 	vec3	min, max;	// for bounding box.
 
@@ -1210,12 +1249,37 @@ namespace mesh {
 		vertex_indices.clear();
 		index_table.clear();
 
+		for (int i = 0; i < 4; i++) {
+			edge_strip[i].clear();
+			edge_lo[i].clear();
+			edge_hi[i][0].clear();
+			edge_hi[i][1].clear();
+		}
+
 		min = vec3(1000000, 1000000, 1000000);
 		max = vec3(-1000000, -1000000, -1000000);
 	}
 
+	static void	write_vertex(SDL_RWops* rw, const heightfield& hf,
+				     int level, const vec3& box_center, const vec3& compress_factor,
+				     float vertical_scale,
+				     const vert_info& v)
+	// Utility function, to output the quantized data for a vertex.
+	{
+		const heightfield_elem&	e = hf.get_elem(v.x, v.z);
 
-	void	write(SDL_RWops* rw, const heightfield& hf, int level)
+		SDL_WriteLE16(rw, frnd((v.x * hf.sample_spacing - box_center.get_x()) * compress_factor.get_x()));
+		SDL_WriteLE16(rw, frnd(e.y / vertical_scale));
+		SDL_WriteLE16(rw, frnd((v.z * hf.sample_spacing - box_center.get_z()) * compress_factor.get_z()));
+
+		// Morph info.  Should work out to 0 if the vert is not a morph vert.
+		float	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
+		int	morph_delta = frnd((lerped_height - e.y) / vertical_scale);
+		SDL_WriteLE16(rw, (Sint16) morph_delta);
+		assert(morph_delta == (Sint16) morph_delta);	// Watch out for overflow.
+	}
+
+	void	write(SDL_RWops* rw, const heightfield& hf, int level, float vertical_scale)
 	// Write out the current chunk.
 	{
 		// Write bounding box.  Bounding box also determines the scale
@@ -1230,8 +1294,6 @@ namespace mesh {
 			compress_factor.set(i, ((1 << 15) - 1) / fmax(1.0, box_extent.get(i)));
 		}}
 
-		// WriteFloat32(rw, 1);	// morph scale -- could/should be implicit; just use the max geometric error for this tree level
-
 		// Make sure the vertex buffer is not too big.
 		if (vertices.size() >= (1 << 16)) {
 			printf("error: chunk contains > 64K vertices.  Try processing again, but use\n"
@@ -1242,16 +1304,8 @@ namespace mesh {
 		// Write vertices.  All verts contain morph info.
 		SDL_WriteLE16(rw, vertices.size());
 		for (int i = 0; i < vertices.size(); i++) {
-			const vert_info&	v = vertices[i];
-			const heightfield_elem&	e = hf.get_elem(v.x, v.z);
-
-			SDL_WriteLE16(rw, frnd((v.x * hf.sample_spacing - box_center.x()) * compress_factor.x()));
-			SDL_WriteLE16(rw, frnd((e.y - box_center.y()) * compress_factor.y()));
-			SDL_WriteLE16(rw, frnd((v.z * hf.sample_spacing - box_center.z()) * compress_factor.z()));
-
-			// Morph info.  Should work out to 0 if the vert is not a morph vert.
-			float	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
-			SDL_WriteLE16(rw, frnd((lerped_height - e.y) * compress_factor.y()));	// xxx should base the compress_factor on the max geometric error!
+			write_vertex(rw, hf, level, box_center, compress_factor, vertical_scale,
+				     vertices[i]);
 		}
 
 		{
@@ -1262,7 +1316,7 @@ namespace mesh {
 			}
 		}
 
-		// Count the real triangles.
+		// Count the real triangles in the main chunk.
 		{
 			int	tris = 0;
 			for (int i = 0; i < vertex_indices.size() - 2; i++) {
@@ -1283,6 +1337,38 @@ namespace mesh {
 
 //		// Print some stats.
 //		printf("\tverts = %d, tris = %d\n", vertices.size(), (vertex_indices.size() - 2));
+
+		//
+		// Output our edge data.
+		//
+		for (int edge_dir = 0; edge_dir < 4; edge_dir++) {
+			// Strip indices.
+			// @@ TODO: THIS IS ACTUALLY AN INDEXED MESH, NOT STRIP.  FIX!
+			assert(edge_strip[edge_dir].size() < (1 << 16));
+			SDL_WriteLE16(rw, edge_strip[edge_dir].size());
+			{for (int i = 0; i < edge_strip[edge_dir].size(); i++) {
+				SDL_WriteLE16(rw, edge_strip[edge_dir][i]);
+			}}
+
+			// Vertex counts.
+			assert(edge_lo[edge_dir].size() < (1 << 16));
+			SDL_WriteLE16(rw, edge_lo[edge_dir].size());
+			assert(edge_hi[edge_dir][0].size() < (1 << 16));
+			SDL_WriteLE16(rw, edge_hi[edge_dir][0].size());
+			assert(edge_hi[edge_dir][1].size() < (1 << 16));
+			SDL_WriteLE16(rw, edge_hi[edge_dir][1].size());
+
+			{for (int i = 0; i < edge_lo[edge_dir].size(); i++) {
+				write_vertex(rw, hf, level, box_center, compress_factor, vertical_scale,
+					     edge_lo[edge_dir][i]);
+			}}
+			{for (int j = 0; j < 2; j++) {
+				{for (int i = 0; i < edge_hi[edge_dir][j].size(); i++) {
+					write_vertex(rw, hf, level-1, box_center, compress_factor, vertical_scale,
+						     edge_hi[edge_dir][j][i]);
+				}}
+			}}
+		}
 	}
 
 
@@ -1312,6 +1398,30 @@ namespace mesh {
 		{
 			vertex_indices.resize(1);
 		}
+	}
+
+	void	add_edge_strip_index(int edge_dir, int index)
+	// Add a vertex to the edge strip which joins this chunk to
+	// two neighboring higher-LOD chunks.
+	{
+		assert(edge_dir >= 0 && edge_dir < 4);
+		edge_strip[edge_dir].push_back(index);
+	}
+
+	void	add_edge_vertex_lo(int edge_dir, int x, int z)
+	// Adds a low-LOD edge vertex to our list.
+	{
+		assert(edge_dir >= 0 && edge_dir < 4);
+		edge_lo[edge_dir].push_back(vert_info(x, z));
+	}
+
+	void	add_edge_vertex_hi(int edge_dir, int hi_index, int x, int z)
+	// Adds a high-LOD edge vertex to one of our lists.  Each edge
+	// has two high-LOD sub-edges.
+	{
+		assert(edge_dir >= 0 && edge_dir < 4);
+		assert(hi_index >= 0 && hi_index < 2);
+		edge_hi[edge_dir][hi_index].push_back(vert_info(x, z));
 	}
 };
 

@@ -45,12 +45,13 @@ public:
 	Uint16	compute_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
 
 //data:
-	lod_chunk*	root;
-	int	tree_depth;	// from chunk data.
-	float	error_LODmax;	// from chunk data.
-	float	distance_LODmax;	// computed from chunk data params and set_parameters() inputs.
-	int	chunk_count;
-	lod_chunk**	chunk_table;
+	lod_chunk*	m_root;
+	int	m_tree_depth;	// from chunk data.
+	float	m_error_LODmax;	// from chunk data.
+	float	m_distance_LODmax;	// computed from chunk data params and set_parameters() inputs.
+	float	m_vertical_scale;	// from chunk data; displayed_height = y_data * m_vertical_scale
+	int	m_chunk_count;
+	lod_chunk**	m_chunk_table;
 };
 
 
