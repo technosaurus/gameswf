@@ -135,15 +135,17 @@ XML::extractNode(xmlNodePtr node)
         //log_msg("Pushing childNode1 %s after extractNode()\n", child->_name.c_str());
         element->_children.push_back(child);
       } else {
-        ptr = childnode->content;
+        //ptr = childnode->content;
+        ptr = xmlNodeGetContent(childnode);
         if (ptr != NULL) {
           child = new XMLNode;
           memset(child, 0, sizeof (XMLNode));
-          // log_msg("extractChildNode from text for %s has contents %s\n", node->name, ptr);
           child->_name  = reinterpret_cast<const char *>(node->name);
           child->_value = reinterpret_cast<const char *>(ptr);
+          //log_msg("extractChildNode for %s has contents %s\n", node->name, ptr);
           //log_msg("Pushing childNode %s\n", child->_name.c_str());
           element->_children.push_back(child);
+          xmlFree(ptr);
         }
       }
     }
@@ -172,9 +174,13 @@ XML::extractNode(xmlNodePtr node)
             if (ptr != NULL) {
               child = new XMLNode;
               memset(child, 0, sizeof (XMLNode));
-              //log_msg("extractChildNode2 from text for %s has contents %s\n", childnode->name, ptr);
               child->_name  = reinterpret_cast<const char *>(childnode->name);
-              child->_value = reinterpret_cast<const char *>(ptr);
+              if ((ptr[0] != '\n') && (ptr[1] != ' ')) {
+                child->_value = reinterpret_cast<const char *>(ptr);
+              } else {
+                ptr[0] = 0;
+              }
+              //log_msg("extractChildNode2 from text for %s has contents %s\n", childnode->name, ptr);
               //log_msg("Pushing childNode4 %s\n", childnode->name);
               element->_children.push_back(child);
             }
@@ -209,14 +215,26 @@ XML::extractNode(xmlNodePtr node)
   //
   element->_name = reinterpret_cast<const char *>(node->name);
   if (node->children) {
-    ptr = node->children->content;
+    //ptr = node->children->content;
+    ptr = xmlNodeGetContent(node->children);
     if (ptr != NULL) {
-      element->_value = reinterpret_cast<const char *>(ptr);
+      if ((ptr[0] != '\n') && (ptr[1] != ' '))
+      {
+        //log_msg("extractChildNode3 from text for %s has contents %s\n", node->name, ptr);
+        element->_value = reinterpret_cast<const char *>(ptr);
+        xmlFree(ptr);
+      }
     }
   } else {
-    ptr = node->content;
+    //ptr = node->content;
+    ptr = xmlNodeGetContent(node);
     if (ptr != NULL) {
-      element->_value = reinterpret_cast<const char *>(ptr);
+      if ((ptr[0] != '\n') && (ptr[1] != ' '))
+      {          
+        //log_msg("extractChildNode4 from text for %s has contents %s\n", node->name, ptr);
+        element->_value = reinterpret_cast<const char *>(ptr);
+        xmlFree(ptr);
+      }
     }
   }
   
@@ -388,7 +406,7 @@ XML::parseXML(tu_string xml_in)
     log_error("Can't parse XML data!\n");
     return false;
   }
-
+  
   return parseDoc(_doc);
 }
 
@@ -546,6 +564,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
   
   // This is used when parsing from a text file
   nodename = xmlnodes->_name;
+
   xmlfirstnode_obj->set_member("nodeName", nodename.c_str());
   xmlfirstnode_obj->set_member("childNodes", xmlfirstnode_obj);
   xmlfirstnode_obj->set_member("length", xmlfirstnode_obj->obj.length());
@@ -564,15 +583,13 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     //log_msg("Created XMLNodeA %s at 0x%X\n", xmlnodes->nodeName().c_str(), xmlnodeA_obj );
 
     xmlnodeA_obj->obj = xmlnodes->_children[childa];
-
+    
     inum = childa;
-    nodename = xmlnodes->_children[childa]->nodeName().c_str();
+    nodename  = xmlnodes->_children[childa]->nodeName().c_str();
+    nodevalue = xmlnodes->_children[childa]->nodeValue();
     xmlfirstnode_obj->set_member(inum.to_string(), xmlnodeA_obj);
     
     xmlnodeA_obj->set_member("nodeName", nodename.c_str());
-    //if (xmlnodes->_children[childa]->nodeValue()->size()) {
-    //  xmlnodeA_obj->set_member("nodeValue", nodename.c_str());
-    //}
     xmlnodeA_obj->set_member("length", xmlnodeA_obj->obj.length());
     if (xmlnodes->_children[childa]->_attributes.size() > 0) {
       xmlattr_as_object*	attr_obj     = new xmlattr_as_object;
@@ -584,7 +601,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
       }
       xmlnodeA_obj->set_member("attributes", attr_obj);
     }
-    
+    if (nodevalue->to_string()) {
+      xmlnodeA_obj->set_member("nodeValue", nodevalue->to_string());
+    }
     xmlnodeB_obj = new xmlnode_as_object;
     //log_msg("Created XMLNodeB %s at 0x%X\n",
     //        xmlnodes->_children[childa]->nodeName().c_str(), xmlnodeB_obj );
@@ -592,6 +611,11 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     xmlnodeA_obj->set_member("firstChild", xmlnodeB_obj);
     //xmlnodeA_obj->set_member(inum.to_string(), xmlnodeB_obj);
     len =               xmlnodes->_children[childa]->length();
+    nodename =          xmlnodes->_children[childa]->nodeName().c_str();
+    nodevalue =         xmlnodes->_children[childa]->nodeValue();
+    if (nodevalue->to_string()) {
+      xmlnodeB_obj->set_member("nodeValue", nodevalue->to_string());
+    }
     xmlnodeB_obj->set_member("length", len);
     xmlnodeB_obj->set_member("firstChild", xmlnodeB_obj);
     if (xmlnodes->_children[childa]->_attributes.size() > 0) {
@@ -606,7 +630,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
     }
     for (childb=0; childb < xmlnodeA_obj->obj.length(); childb++) {
       xmlnodeC_obj = new xmlnode_as_object;
-      //og_msg("Created XMLNodeC %s at 0x%X\n", xmlnodes->_children[childa]->_children[childb]->nodeName().c_str(), xmlnodeC_obj);
+      //log_msg("Created XMLNodeC %s at 0x%X\n", xmlnodes->_children[childa]->_children[childb]->nodeName().c_str(), xmlnodeC_obj);
       xmlnodeC_obj->obj = xmlnodes->_children[childa]->_children[childb];
       nodename =          xmlnodes->_children[childa]->_children[childb]->nodeName().c_str();
       nodevalue =         xmlnodes->_children[childa]->_children[childb]->nodeValue();
@@ -780,8 +804,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
       }    
   } else {
     log_msg("Couldn't find onLoad event handler, setting up callback\n");
-    ptr->set_event_handler(event_id::XML_LOAD,
-                               (as_c_function_ptr)&xml_onload);
+    // ptr->set_event_handler(event_id::XML_LOAD, (as_c_function_ptr)&xml_onload);
   }
 #else
   ptr->set_event_handler(event_id::XML_LOAD,
@@ -893,7 +916,7 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
   as_value      inum;
   xml_as_object *xml_obj;
   
-  log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
+  //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   
   if (nargs > 0) {
     if (env->top(0).get_type() == as_value::STRING) {

@@ -710,11 +710,13 @@ namespace gameswf
 
 
 	// One-argument simple functions.
-	#define MATH_WRAP_FUNC1(funcname)											\
-	void	math_##funcname(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
-	{															\
-		double	arg = env->bottom(first_arg_bottom_index).to_number();							\
-		result->set(funcname(arg));											\
+	#define MATH_WRAP_FUNC1(funcname)						    \
+	void	math_##funcname(as_value* result, as_object_interface* this_ptr,            \
+				as_environment* env, int nargs, int first_arg_bottom_index) \
+	{										    \
+		double	arg = env->bottom(first_arg_bottom_index).to_number();		    \
+                as_value *ret = new as_value(funcname(arg));                                \
+                result->set(ret);  			                                    \
 	}
 
 	MATH_WRAP_FUNC1(fabs);
@@ -2371,8 +2373,15 @@ namespace gameswf
 					}
 					else
 					{
-						log_error("error: call_method '%s' on invalid object.\n",
-						    method_name.c_str());
+						// The Math object methods, like floor() all return
+						// an as_value which often gets converted to a string.
+						if ((env->top(1).get_type() == as_value::NUMBER)
+						    && (env->top(0) == "toString")) {
+							result = env->top(1);
+						} else {
+							log_error("error: call_method '%s' on invalid object.\n",
+								  method_name.c_str());
+						}
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;

@@ -427,9 +427,7 @@ int	main(int argc, char *argv[])
 
 	tu_string foo;
 	for (;;)
-	{
-		do_render = true; // FIXME: boolean hack!
-		
+	{		
 		Uint32	ticks;
 		if (do_render)
 		{
