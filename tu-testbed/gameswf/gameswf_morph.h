@@ -45,6 +45,9 @@ namespace gameswf
 		array<morph_fill_style> m_fill_styles;
 		array<morph_line_style> m_line_styles;
 		array<morph_path> m_paths;
+
+		float m_last_ratio;
+		mesh_set *m_last_mesh;
         };
 
 	struct morph_tesselating_shape : public tesselate::tesselating_shape

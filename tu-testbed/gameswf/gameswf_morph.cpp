@@ -21,24 +21,33 @@
 
 namespace gameswf {
 
-	shape_morph_def::shape_morph_def() { }
+	shape_morph_def::shape_morph_def() :
+		m_last_ratio(-1.0f), m_last_mesh(0)
+	{
+	}
 
-	shape_morph_def::~shape_morph_def() { }
+	shape_morph_def::~shape_morph_def()
+	{ 
+		delete m_last_mesh;
+	}
 
 	void shape_morph_def::display(character *inst)
 	{
+		float ratio = inst->m_ratio;
 		IF_VERBOSE_ACTION(log_msg("smd: displaying %d at ratio %g\n",
-					  inst->m_id, inst->m_ratio));
+					  inst->m_id, ratio));
 		matrix mat = inst->get_world_matrix();
 		cxform cx = inst->get_world_cxform();
-		
 
 		float max_error = 20.0f / mat.get_max_scale() /
 			inst->get_parent()->get_pixel_scale();
-		morph_tesselating_shape mts(this, inst->m_ratio);
-		mesh_set *m = new mesh_set(&mts, max_error * 0.75f);
-		m->display(mat, cx, m_fill_styles, m_line_styles, inst->m_ratio);
-		delete m;
+		if (ratio != m_last_ratio) {
+			delete m_last_mesh;
+			m_last_ratio = ratio;
+			morph_tesselating_shape mts(this, ratio);
+			m_last_mesh = new mesh_set(&mts, max_error * 0.75f);
+		}
+		m_last_mesh->display(mat, cx, m_fill_styles, m_line_styles, ratio);
 	}
 
 	/* virtual */ void shape_morph_def::tesselate(float error_tolerance,
@@ -182,8 +191,12 @@ namespace gameswf {
 				array<edge> &edges = m_paths[pathidx].m_edges[1];
 				edges[edgeidx] = e;
 				edgeidx++;
-				if (edgeidx == edges.size()) {
+				while (edgeidx == edges.size()) {
 					pathidx++;
+					if (pathidx < m_paths.size()) {
+						m_paths[pathidx].m_ax[1] = x;
+						m_paths[pathidx].m_ay[1] = y;
+					}
 					edgeidx = 0;
 				}
 									   
@@ -198,6 +211,10 @@ namespace gameswf {
 			} else {
 				if (edgeidx) {
 					pathidx++;
+					if (pathidx < m_paths.size()) {
+						m_paths[pathidx].m_ax[1] = x;
+						m_paths[pathidx].m_ay[1] = y;
+					}
 					edgeidx = 0;
 				}
 			}
@@ -423,6 +440,8 @@ namespace gameswf {
 		rgba color;
 		color.set_lerp(m_color[0], m_color[1], ratio);
 		gameswf::render::line_style_color(color);
+
+		gameswf::render::line_style_width(flerp(m_width[0], m_width[1], ratio));
 	}
 
 	morph_path::morph_path() :
