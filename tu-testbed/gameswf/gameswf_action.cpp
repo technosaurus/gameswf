@@ -508,15 +508,6 @@ namespace gameswf
 					}
 					else if (type == 6)
 					{
-						{
-							// xxx for debugging
-							for (int j = 0; j < 8; j++)
-							{
-								log_msg(" 0x%02X", instruction_data[3 + i + j]);
-							}
-							log_msg("\n");
-						}
-
 						// double
 						// wacky format: 45670123
 						union {
