@@ -18,6 +18,7 @@ namespace gameswf
 	struct button_character_instance : public character
 	{
 		button_character_definition*	m_def;
+		array<character *>	m_record_character;
 		enum mouse_state
 		{
 			OUT,		// when the mouse is not over the button, and mouse button is up.
@@ -34,6 +35,35 @@ namespace gameswf
 			assert(m_def);
 			m_id = def->m_id;
 			restart();
+
+			int r, r_num =  m_def->m_button_records.size();
+			m_record_character.resize(r_num);
+
+			for (r = 0; r < r_num; r++)
+			{
+				character * ch = m_def->m_button_records[r].m_character;
+				if (ch->is_definition())
+				{
+					m_record_character[r] = ch->create_instance();
+					m_record_character[r]->restart();
+				}
+				else 
+				{
+					m_record_character[r] = ch;
+				}
+			}
+		}
+
+		~button_character_instance()
+		{
+			int r, r_num =  m_record_character.size();
+			for (r = 0; r < r_num; r++)
+			{
+				if (m_record_character[r]->is_instance())
+				{
+					delete m_record_character[r];
+				}
+			}
 		}
 
 		bool	is_instance() const { return true; }
@@ -42,12 +72,23 @@ namespace gameswf
 		{
 			m_last_mouse_state = OUT;
 			m_mouse_state = OUT;
+			int r, r_num =  m_record_character.size();
+			for (r = 0; r < r_num; r++)
+			{
+				if (m_record_character[r]->is_instance())
+				{
+					m_record_character[r]->restart();
+				}
+			}
 		}
 
 
 		void	advance(float delta_time, movie* m, const matrix& mat)
 		{
 			assert(m);
+
+			// Stop the movie.
+		//	m->set_play_state( movie::STOP );
 
 			// Look at the mouse state, and figure out our button state.  We want to
 			// know if the mouse is hovering over us, and whether it's clicking on us.
@@ -176,21 +217,21 @@ namespace gameswf
 				{
 					if (rec.m_up)
 					{
-						rec.m_character->advance(delta_time, m, sub_matrix);
+						m_record_character[i]->advance(delta_time, m, sub_matrix);
 					}
 				}
 				else if (m_mouse_state == DOWN)
 				{
 					if (rec.m_down)
 					{
-						rec.m_character->advance(delta_time, m, sub_matrix);
+						m_record_character[i]->advance(delta_time, m, sub_matrix);
 					}
 				}
 				else if (m_mouse_state == OVER)
 				{
 					if (rec.m_over)
 					{
-						rec.m_character->advance(delta_time, m, sub_matrix);
+						m_record_character[i]->advance(delta_time, m, sub_matrix);
 					}
 				}
 			}}
