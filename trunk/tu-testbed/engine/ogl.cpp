@@ -54,6 +54,8 @@ namespace ogl {
 	bool	vertex_memory_from_malloc = false;	// tells us whether to wglFreeMemoryNV() or free() the buffer when we're done.
 
 
+	const int	STREAM_SUB_BUFFER_COUNT = 2;
+
 	class vertex_stream {
 	// Class to facilitate streaming verts to the video card.  Takes
 	// care of fencing, and buffer bookkeeping.
@@ -65,7 +67,7 @@ namespace ogl {
 		void	flush_combiners();
 	
 	private:
-		int	m_quarter_buffer_size;
+		int	m_sub_buffer_size;
 		int	m_buffer_top;
 		void*	m_buffer;
 		int	m_extra_bytes;	// extra bytes after last block; used to pad up to write-combiner alignment
@@ -241,9 +243,9 @@ namespace ogl {
 	vertex_stream::vertex_stream(int buffer_size)
 	// Construct a streaming buffer, with vertex RAM of the specified size.
 	{
-		assert(buffer_size >= 4);
+		assert(buffer_size >= STREAM_SUB_BUFFER_COUNT);
 	
-		m_quarter_buffer_size = buffer_size / 4;
+		m_sub_buffer_size = buffer_size / STREAM_SUB_BUFFER_COUNT;
 		m_buffer = ogl::allocate_vertex_memory(buffer_size);
 		m_buffer_top = 0;
 		m_extra_bytes = 0;
@@ -270,35 +272,36 @@ namespace ogl {
 	// returned buffer in a glDrawElements call before you call
 	// reserve_memory() to get the next chunk.
 	{
-		// @@ using quarter buffers instead of half buffers, because
-		// of a suspected driver or cache bug...
-		// @@ probably isn't the problem though.
-
-		assert(size <= m_quarter_buffer_size);
+		assert(size <= m_sub_buffer_size);
 
 		int	aligned_size = wc_align_up(size);
 		m_extra_bytes = aligned_size - size;
 	
-		for (int quarter = 1; quarter <= 4; quarter++)
+		for (int sub_buffer = 1; sub_buffer <= STREAM_SUB_BUFFER_COUNT; sub_buffer++)
 		{
-			int	border = m_quarter_buffer_size * quarter;
+			int	border = m_sub_buffer_size * sub_buffer;
 
 			if (m_buffer_top <= border
 			    && m_buffer_top + aligned_size > border)
 			{
-				// Crossing into the next quarter.
-				ogl::set_fence(m_fence[quarter - 1]);
-				ogl::finish_fence(m_fence[quarter & 3]);	// don't overwrite the next quarter-buffer while it's still active.
+				// Crossing into the next sub-buffer.
+
+				int	prev_buffer = sub_buffer - 1;
+				int	next_buffer = sub_buffer % STREAM_SUB_BUFFER_COUNT;
+
+				// Protect the previous sub-buffer.
+				ogl::set_fence(m_fence[prev_buffer]);
+
+				// Don't overwrite the next sub-buffer while it's still active.
+				ogl::finish_fence(m_fence[next_buffer]);
 	
 				// Start the next quarter-buffer.
-				m_buffer_top = m_quarter_buffer_size * (quarter & 3);
+				m_buffer_top = m_sub_buffer_size * next_buffer;
 			}
 		}
 	
 		void*	buf = ((char*) m_buffer) + m_buffer_top;
 		m_buffer_top += aligned_size;
-	
-		// @@ is it helpful/necessary to do alignment?
 	
 		return buf;
 	}
