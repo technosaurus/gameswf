@@ -14,15 +14,27 @@
 #include "SDL.h"
 
 
-namespace swf {
-
-	struct movie;
+namespace swf
+{
 	struct character;
-	struct tag;
-	struct stream;
+	struct execute_tag;
 
-	// Create a swf::movie from the given input stream.
-	movie*	create_movie(SDL_RWops* input);
+	// This the client program's interface to a movie.
+	struct movie_interface
+	{
+		virtual int	get_width() = 0;
+		virtual int	get_height() = 0;
+
+		virtual void	restart() = 0;
+		virtual void	advance(float delta_time) = 0;
+		virtual void	display() = 0;
+	};
+
+	// Create a swf::movie_interface from the given input stream.
+	movie_interface*	create_movie(SDL_RWops* input);
+
+	struct stream;
+	struct movie;
 
 	typedef void (*loader_function)(stream* input, int tag_type, movie* m);
 	// Register a loader function for a certain tag type.
