@@ -62,6 +62,7 @@ namespace gameswf
 		virtual sound_sample*	get_sound_sample(int character_id) = 0;
 		virtual void	add_sound_sample(int character_id, sound_sample* sam) = 0;
 		virtual void	export_resource(const tu_string& symbol, resource* res) = 0;
+		virtual void	add_import(const char* source_url, int id, const char* symbol_name) = 0;
 
 		virtual void	generate_font_bitmaps() = 0;
 	};
@@ -386,6 +387,7 @@ namespace gameswf
 		virtual void	display() {}
 		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
 
+		virtual movie*	get_root_movie() { return m_parent->get_root_movie(); }
 		virtual int	get_current_frame() const { assert(0); return 0; }
 		virtual bool	has_looped() const { assert(0); return false; }
 		virtual void	restart() { /*assert(0);*/ }

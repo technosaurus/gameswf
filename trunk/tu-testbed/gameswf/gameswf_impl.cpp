@@ -274,6 +274,32 @@ namespace gameswf
 
 
 	//
+	// Helper for movie_def_impl
+	//
+
+	struct import_info
+	{
+		tu_string	m_source_url;
+		int	m_character_id;
+		tu_string	m_symbol;
+
+		import_info()
+			:
+			m_character_id(-1)
+		{
+		}
+
+		import_info(const char* source, int id, const char* symbol)
+			:
+			m_source_url(source),
+			m_character_id(id),
+			m_symbol(symbol)
+		{
+		}
+	};
+
+
+	//
 	// movie_def_impl
 	//
 	// This class holds the immutable definition of a movie's
@@ -292,6 +318,7 @@ namespace gameswf
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		string_hash<int>	m_named_frames;	// 0-based frame #'s
 		string_hash< smart_ptr<resource> >	m_exports;
+		array<import_info>	m_imports;
 
 		rect	m_frame_size;
 		float	m_frame_rate;
@@ -346,7 +373,6 @@ namespace gameswf
 			m_exports.set(symbol, res);
 		}
 
-
 		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol)
 		// Get the named exported resource, if we expose it.
 		// Otherwise return NULL.
@@ -356,6 +382,98 @@ namespace gameswf
 			return res;
 		}
 
+		virtual void	add_import(const char* source_url, int id, const char* symbol)
+		// Adds an entry to a table of resources that need to
+		// be imported from other movies.  Client code must
+		// call resolve_import() later, when the source movie
+		// has been loaded, so that the actual resource can be
+		// used.
+		{
+			assert(in_import_table(id) == false);
+
+			m_imports.push_back(import_info(source_url, id, symbol));
+		}
+
+		bool	in_import_table(int character_id)
+		// Debug helper; returns true if the given
+		// character_id is listed in the import table.
+		{
+			for (int i = 0, n = m_imports.size(); i < n; i++)
+			{
+				if (m_imports[i].m_character_id == character_id)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		virtual void	visit_imported_movies(import_visitor* visitor)
+		// Calls back the visitor for each movie that we
+		// import symbols from.
+		{
+			string_hash<bool>	visited;	// ugh!
+
+			for (int i = 0, n = m_imports.size(); i < n; i++)
+			{
+				import_info&	inf = m_imports[i];
+				if (visited.find(inf.m_source_url) == visited.end())
+				{
+					// Call back the visitor.
+					visitor->visit(inf.m_source_url.c_str());
+					visited[inf.m_source_url] = true;
+				}
+			}
+		}
+
+		virtual void	resolve_import(const char* source_url, movie_definition* source_movie)
+		// Grabs the stuff we want from the source movie.
+		{
+			// @@ should be safe, but how can we verify
+			// it?  Compare a member function pointer, or
+			// something?
+			movie_definition_sub*	def = static_cast<movie_definition_sub*>(source_movie);
+
+			// Iterate in reverse, since we remove stuff along the way.
+			for (int i = m_imports.size() - 1; i >= 0; i--)
+			{
+				const import_info&	inf = m_imports[i];
+				if (inf.m_source_url == source_url)
+				{
+					// Do the import.
+					smart_ptr<resource> res = def->get_exported_resource(inf.m_symbol);
+					bool	 imported = true;
+
+					if (res == NULL)
+					{
+						log_error("import error: resource '%s' is not exported from movie '%s'\n",
+							  inf.m_symbol, source_url);
+					}
+					else if (font* f = res->cast_to_font())
+					{
+						// Add this shared font to our fonts.
+						add_font(inf.m_character_id, f);
+						imported = true;
+					}
+					else if (character_def* ch = res->cast_to_character_def())
+					{
+						// Add this character to our characters.
+						add_character(inf.m_character_id, ch);
+						imported = true;
+					}
+					else
+					{
+						log_error("import error: resource '%s' from movie '%s' has unknown type\n",
+							  inf.m_symbol, source_url);
+					}
+
+					if (imported)
+					{
+						m_imports.remove(i);
+					}
+				}
+			}
+		}
 
 		void	add_character(int character_id, character_def* c)
 		{
@@ -365,6 +483,8 @@ namespace gameswf
 
 		character_def*	get_character_def(int character_id)
 		{
+			assert(in_import_table(character_id) == false);	// make sure character_id is resolved
+
 			smart_ptr<character_def>	ch;
 			m_characters.get(character_id, &ch);
 			assert(ch == NULL || ch->get_ref_count() > 1);
@@ -385,6 +505,8 @@ namespace gameswf
 
 		font*	get_font(int font_id)
 		{
+			assert(in_import_table(font_id) == false);	// make sure font_id is resolved
+
 			smart_ptr<font>	f;
 			m_fonts.get(font_id, &f);
 			assert(f == NULL || f->get_ref_count() > 1);
@@ -1067,6 +1189,30 @@ namespace gameswf
 
 			delete cache_in;
 		}
+
+		m->add_ref();
+		return m;
+	}
+
+
+	static bool	s_no_recurse_while_loading = false;	// @@ TODO get rid of this; make it the normal mode.
+
+
+	movie_definition*	create_movie_no_recurse(tu_file* in)
+	{
+		ensure_loaders_registered();
+
+		// @@ TODO make no_recurse the standard way to load.
+		// In create_movie(), use the visit_ API to keep
+		// visiting dependent movies, until everything is
+		// loaded.  That way we only have one code path and
+		// the resource_proxy stuff gets tested.
+		s_no_recurse_while_loading = true;
+
+		movie_def_impl*	m = new movie_def_impl;
+		m->read(in);
+
+		s_no_recurse_while_loading = false;
 
 		m->add_ref();
 		return m;
@@ -2126,6 +2272,9 @@ namespace gameswf
 		virtual void	add_sound_sample(int id, sound_sample* sam) { log_error("add sam appears in sprite tags!\n"); }
 		virtual void	export_resource(const tu_string& symbol, resource* res) { log_error("can't export from sprite\n"); }
 		virtual smart_ptr<resource>	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
+		virtual void	add_import(const char* source_url, int id, const char* symbol) { assert(0); }
+		virtual void	visit_imported_movies(import_visitor* v) { assert(0); }
+		virtual void	resolve_import(const char* source_url, movie_definition* d) { assert(0); }
 		virtual character_def*	get_character_def(int id) { return m_movie_def->get_character_def(id); }
 		virtual void	generate_font_bitmaps() { assert(0); }
 		virtual void	output_cached_data(tu_file* out) { assert(0); }
@@ -3478,6 +3627,10 @@ namespace gameswf
 	//
 
 
+		// movie_definition_sub { hash<Uint16, tu_string> m_import_proxies; }
+		// get_font(id) { look-aside into m_import_proxies in case of match; else use m_fonts; }
+		// get_character(id) { look-aside into m_import_proxies; else use m_characters; }
+
 	void	import_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Load an import tag (for pulling in external resources)
 	{
@@ -3489,12 +3642,17 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("import: source_url = %s, count = %d\n", source_url, count));
 
 		// Try to load the source movie into the movie library.
-		movie_definition_sub*	source_movie = create_library_movie_sub(source_url);
-		if (source_movie == NULL)
+		movie_definition_sub*	source_movie = NULL;
+
+		if (s_no_recurse_while_loading == false)
 		{
-			// Give up on imports.
-			log_error("can't import movie from url %s\n", source_url);
-			return;
+			source_movie = create_library_movie_sub(source_url);
+			if (source_movie == NULL)
+			{
+				// Give up on imports.
+				log_error("can't import movie from url %s\n", source_url);
+				return;
+			}
 		}
 
 		// Get the imports.
@@ -3504,26 +3662,37 @@ namespace gameswf
 			char*	symbol_name = in->read_string();
 			IF_VERBOSE_PARSE(log_msg("import: id = %d, name = %s\n", id, symbol_name));
 
-			smart_ptr<resource> res = source_movie->get_exported_resource(symbol_name);
-			if (res == NULL)
+			if (s_no_recurse_while_loading)
 			{
-				log_error("import error: resource '%s' is not exported from movie '%s'\n",
-					  symbol_name, source_url);
-			}
-			else if (font* f = res->cast_to_font())
-			{
-				// Add this shared font to the currently-loading movie.
-				m->add_font(id, f);
-			}
-			else if (character_def* ch = res->cast_to_character_def())
-			{
-				// Add this character to the loading movie.
-				m->add_character(id, ch);
+				m->add_import(source_url, id, symbol_name);
 			}
 			else
 			{
-				log_error("import error: resource '%s' from movie '%s' has unknown type\n",
-					  symbol_name, source_url);
+				// @@ TODO get rid of this, always use
+				// s_no_recurse_while_loading, change
+				// create_movie_sub().
+
+				smart_ptr<resource> res = source_movie->get_exported_resource(symbol_name);
+				if (res == NULL)
+				{
+					log_error("import error: resource '%s' is not exported from movie '%s'\n",
+						  symbol_name, source_url);
+				}
+				else if (font* f = res->cast_to_font())
+				{
+					// Add this shared font to the currently-loading movie.
+					m->add_font(id, f);
+				}
+				else if (character_def* ch = res->cast_to_character_def())
+				{
+					// Add this character to the loading movie.
+					m->add_character(id, ch);
+				}
+				else
+				{
+					log_error("import error: resource '%s' from movie '%s' has unknown type\n",
+						  symbol_name, source_url);
+				}
 			}
 
 			delete [] symbol_name;

@@ -129,6 +129,25 @@ namespace gameswf
 		// interest to gameswf_processor and programs like it.
 		virtual void	output_cached_data(tu_file* out) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
+
+		//
+		// (optional) API to support gameswf::create_movie_no_recurse().
+		//
+
+		// Call visit_imported_movies() to retrieve a list of
+		// names of movies imported into this movie.
+		// visitor->visit() will be called back with the name
+		// of each imported movie.
+		struct import_visitor
+		{
+			virtual void	visit(const char* imported_movie_filename) = 0;
+		};
+		virtual void	visit_imported_movies(import_visitor* visitor) = 0;
+
+		// Call this to resolve an import of the given movie.
+		// Replaces the dummy placeholder with the real
+		// movie_definition* given.
+		virtual void	resolve_import(const char* name, movie_definition* def) = 0;
 	};
 
 
@@ -252,6 +271,16 @@ namespace gameswf
 	// drop_ref() when you're done with it.
 	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 	movie_definition*	create_movie(const char* filename);
+
+	// Creates the movie from the given input stream.  Only reads
+	// from the given stream; does not open files.  If the movie
+	// imports resources from other movies, the created movie
+	// inserts proxy stubs in place of those resources.  The list
+	// of imported movie filenames can be retrieved with
+	// movie_definition::visit_imported_movies().  The proxies can
+	// be replaced with actual movie_definition's via
+	// movie_definition::resolve_proxy(name,def).
+	movie_definition*	create_movie_no_recurse(tu_file* input_stream);
 
 	// Create a gameswf::movie_definition from the given file name.
 	// This is just like create_movie(), except that it checks the

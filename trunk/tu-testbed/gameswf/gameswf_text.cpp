@@ -24,7 +24,8 @@ namespace gameswf
 	// Helper struct.
 	struct text_style
 	{
-		font*	m_font;
+		int	m_font_id;
+		mutable font*	m_font;
 		rgba	m_color;
 		float	m_x_offset;
 		float	m_y_offset;
@@ -34,13 +35,28 @@ namespace gameswf
 
 		text_style()
 			:
-			m_font(0),
+			m_font_id(-1),
+			m_font(NULL),
 			m_x_offset(0),
 			m_y_offset(0),
 			m_text_height(1.0f),
 			m_has_x_offset(false),
 			m_has_y_offset(false)
 		{
+		}
+
+		void	resolve_font(movie_definition_sub* root_def) const
+		{
+			if (m_font == NULL)
+			{
+				assert(m_font_id >= 0);
+
+				m_font = root_def->get_font(m_font_id);
+				if (m_font == NULL)
+				{
+					log_error("error: text style with undefined font; font_id = %d\n", m_font_id);
+				}
+			}
 		}
 	};
 
@@ -72,7 +88,8 @@ namespace gameswf
 	static void	display_glyph_records(
 		const matrix& this_mat,
 		character* inst,
-		const array<text_glyph_record>& records)
+		const array<text_glyph_record>& records,
+		movie_definition_sub* root_def)
 	{
 		static array<fill_style>	s_dummy_style;	// used to pass a color on to shape_character::display()
 		static array<line_style>	s_dummy_line_style;
@@ -100,6 +117,8 @@ namespace gameswf
 			// Draw the characters within the current record; i.e. consecutive
 			// chars that share a particular style.
 			const text_glyph_record&	rec = records[i];
+
+			rec.m_style.resolve_font(root_def);
 
 			font*	fnt = rec.m_style.m_font;
 			if (fnt == NULL)
@@ -158,12 +177,16 @@ namespace gameswf
 
 	struct text_character_def : public character_def
 	{
+		movie_definition_sub*	m_root_def;
 		rect	m_rect;
 		matrix	m_matrix;
 		array<text_glyph_record>	m_text_glyph_records;
 
-		text_character_def()
+		text_character_def(movie_definition_sub* root_def)
+			:
+			m_root_def(root_def)
 		{
+			assert(m_root_def);
 		}
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m)
@@ -206,12 +229,7 @@ namespace gameswf
 					if (has_font)
 					{
 						Uint16	font_id = in->read_u16();
-						style.m_font = m->get_font(font_id);
-						if (style.m_font == NULL)
-						{
-							log_error("error: text style with undefined font; font_id = %d\n", font_id);
-						}
-
+						style.m_font_id = font_id;
 						IF_VERBOSE_PARSE(log_msg("  has_font: font id = %d\n", font_id));
 					}
 					if (has_color)
@@ -272,7 +290,7 @@ namespace gameswf
 		void	display(character* inst)
 		// Draw the string.
 		{
-			display_glyph_records(m_matrix, inst, m_text_glyph_records);
+			display_glyph_records(m_matrix, inst, m_text_glyph_records, m_root_def);
 		}
 	};
 
@@ -284,8 +302,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 		
-		text_character_def*	ch = new text_character_def;
-//		ch->set_id(character_id);
+		text_character_def*	ch = new text_character_def(m);
 		IF_VERBOSE_PARSE(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
@@ -304,6 +321,7 @@ namespace gameswf
 	// A definition for a text display character, whose text can
 	// be changed at runtime (by script or host).
 	{
+		movie_definition_sub*	m_root_def;
 		rect	m_rect;
 		tu_string	m_default_name;
 
@@ -343,6 +361,7 @@ namespace gameswf
 
 		bool	m_use_outlines;	// when true, use specified SWF internal font.  Otherwise, renderer picks a default font
 
+		int	m_font_id;
 		font*	m_font;
 		float	m_text_height;
 
@@ -366,8 +385,9 @@ namespace gameswf
 //		tu_string	m_text;
 
 
-		edit_text_character_def()
+		edit_text_character_def(movie_definition_sub* root_def)
 			:
+			m_root_def(root_def),
 			m_word_wrap(false),
 			m_multiline(false),
 			m_password(false),
@@ -377,6 +397,7 @@ namespace gameswf
 			m_border(false),
 			m_html(false),
 			m_use_outlines(false),
+			m_font_id(-1),
 			m_font(NULL),
 			m_text_height(1.0f),
 			m_max_length(0),
@@ -386,6 +407,8 @@ namespace gameswf
 			m_indent(0.0f),
 			m_leading(0.0f)
 		{
+			assert(m_root_def);
+
 			m_color.set(0, 0, 0, 255);
 		}
 
@@ -426,13 +449,7 @@ namespace gameswf
 
 			if (has_font)
 			{
-				Uint16	font_id = in->read_u16();
-				m_font = m->get_font(font_id);
-				if (m_font == NULL)
-				{
-					log_error("error: edit_text with undefined font; font_id = %d\n", font_id);
-				}
-
+				m_font_id = in->read_u16();
 				m_text_height = (float) in->read_u16();
 			}
 
@@ -614,7 +631,10 @@ namespace gameswf
 		{
 			m_text_glyph_records.resize(0);
 
-			if (m_def->m_font == NULL) return;
+			if (m_def->m_font == NULL)
+			{
+				return;
+			}
 
 			// @@ mostly for debugging
 			// Font substitution -- if the font has no
@@ -851,14 +871,23 @@ namespace gameswf
 			}
 
 			// Draw our actual text.
-			display_glyph_records(matrix::identity, this, m_text_glyph_records);
+			display_glyph_records(matrix::identity, this, m_text_glyph_records, m_def->m_root_def);
 		}
-		
 	};
 
 
 	character*	edit_text_character_def::create_character_instance(movie* parent, int id)
 	{
+		if (m_font == NULL)
+		{
+			// Resolve the font, if possible.
+			m_font = m_root_def->get_font(m_font_id);
+			if (m_font == NULL)
+			{
+				log_error("error: text style with undefined font; font_id = %d\n", m_font_id);
+			}
+		}
+
 		edit_text_character*	ch = new edit_text_character(parent, this, id);
 		ch->set_name(m_default_name.c_str());
 		return ch;
@@ -872,8 +901,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		edit_text_character_def*	ch = new edit_text_character_def;
-//		ch->set_id(character_id);
+		edit_text_character_def*	ch = new edit_text_character_def(m);
 		IF_VERBOSE_PARSE(log_msg("edit_text_char, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
