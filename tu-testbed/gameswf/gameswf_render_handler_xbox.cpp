@@ -11,6 +11,7 @@
 #include "gameswf.h"
 #include "base/image.h"
 #include "base/container.h"
+#include "gameswf/gameswf_log.h"
 
 #include <xtl.h>
 #include <d3d8.h>
@@ -21,6 +22,57 @@
 namespace
 {
 	array<IDirect3DBaseTexture8*>	s_d3d_textures;
+	DWORD	s_vshader_handle = 0;
+
+	// Our vertex coords consist of two signed 16-bit integers, for (x,y) position only.
+	DWORD	s_vshader_decl[] =
+	{
+		D3DVSD_STREAM(0),
+		D3DVSD_REG(0, D3DVSDT_SHORT2),
+		0xFFFFFFFF
+	};
+
+
+	void	init_vshader()
+	// Initialize the vshader we use for SWF mesh rendering.
+	{
+		if (s_vshader_handle == 0)
+		{
+			HRESULT	result;
+
+			/* Shader source:
+
+				xvs.1.1
+				dp4 oPos.x, v0, c[0]	// Transform position
+				dp4 oPos.y, v0, c[1]
+				dp4 oT0.x, v0, c[4]	// texgen
+				dp4 oT0.y, v0, c[5]
+
+			   Compile that with xsasm -h sometmp.vsh, and insert the contents of output.h below:
+			*/
+			static const DWORD	s_compiled_shader[] =
+			{
+				0x00062078,
+				0x00000000, 0x00ec001b, 0x08361800, 0x20b08800,
+				0x00000000, 0x00ec201b, 0x08363800, 0x20b04800,
+				0x00000000, 0x06ec801b, 0x08369bff, 0x10b88848,
+				0x00000000, 0x0047401a, 0xc4355800, 0x20a0e800,
+				0x00000000, 0x00eca01b, 0x0836b800, 0x20a04848,
+				0x00000000, 0x0087601a, 0xc400286a, 0xf0b0e801
+			};
+
+			result = IDirect3DDevice8::CreateVertexShader(
+				s_vshader_decl,
+				s_compiled_shader,
+				&s_vshader_handle,
+				D3DUSAGE_PERSISTENTDIFFUSE);
+			if (result != S_OK)
+			{
+				gameswf::log_error("error: can't create Xbox vshader; error code = %d\n", result);
+				return;
+			}
+		}
+	}
 };
 
 
@@ -129,7 +181,7 @@ struct render_handler_xbox : public gameswf::render_handler
 			if (m_mode == COLOR)
 			{
 				apply_color(m_color);
-				IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_DISABLE);	// @@ ?
+				IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_DISABLE);
 				//IDirect3DDevice8::SetRenderState(state, value);
 //				glDisable(GL_TEXTURE_2D);
 			}
@@ -142,7 +194,7 @@ struct render_handler_xbox : public gameswf::render_handler
 
 				if (m_bitmap_info == NULL)
 				{
-					IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_DISABLE);	// @@ ?
+					IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_DISABLE);
 					//glDisable(GL_TEXTURE_2D);
 				}
 				else
@@ -171,45 +223,45 @@ struct render_handler_xbox : public gameswf::render_handler
 //					glEnable(GL_TEXTURE_2D);
 //					glEnable(GL_TEXTURE_GEN_S);
 //					glEnable(GL_TEXTURE_GEN_T);
+					IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 					IDirect3DDevice8::SetTexture(0, s_d3d_textures[m_bitmap_info->m_texture_id]);
 				
 					if (m_mode == BITMAP_CLAMP)
 					{
 //						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 //						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);	// @@ ?
-						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);	// @@ ?
+						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_CLAMP);
+						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_CLAMP);
 					}
 					else
 					{
 						assert(m_mode == BITMAP_WRAP);
 //						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 //						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);	// @@ ?
-						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);	// @@ ?
+						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSU, D3DTADDRESS_WRAP);
+						IDirect3DDevice8::SetTextureStageState(0, D3DTSS_ADDRESSV, D3DTADDRESS_WRAP);
 					}
 
 					// Set up the bitmap matrix for texgen.
-
-// Hrm, do I need to use a vertex shader to get TexGen???
-#if 0
 					float	inv_width = 1.0f / m_bitmap_info->m_original_width;
 					float	inv_height = 1.0f / m_bitmap_info->m_original_height;
 
 					const gameswf::matrix&	m = m_bitmap_matrix;
-					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+//					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 					float	p[4] = { 0, 0, 0, 0 };
 					p[0] = m.m_[0][0] * inv_width;
 					p[1] = m.m_[0][1] * inv_width;
 					p[3] = m.m_[0][2] * inv_width;
-					glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+//					glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+					IDirect3DDevice8::SetVertexShaderConstant(4, p, 1);
 
-					glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+
+//					glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 					p[0] = m.m_[1][0] * inv_height;
 					p[1] = m.m_[1][1] * inv_height;
 					p[3] = m.m_[1][2] * inv_height;
-					glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
-#endif // 0
+//					glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+					IDirect3DDevice8::SetVertexShaderConstant(5, p, 1);
 				}
 			}
 		}
@@ -236,7 +288,18 @@ struct render_handler_xbox : public gameswf::render_handler
 		{
 			assert(needs_second_pass());
 
-// @@ TODO
+			// Additive color.
+			IDirect3DDevice8::SetVertexData4f(
+				D3DVSDE_DIFFUSE,
+				m_bitmap_color_transform.m_[0][1] / 255.0f,
+				m_bitmap_color_transform.m_[1][1] / 255.0f,
+				m_bitmap_color_transform.m_[2][1] / 255.0f,
+				m_bitmap_color_transform.m_[3][1] / 255.0f
+				);
+
+			IDirect3DDevice8::SetRenderState(D3DRS_SRCBLEND, D3DBLEND_ONE);
+			IDirect3DDevice8::SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+
 #if 0
 			glDisable(GL_TEXTURE_2D);
 			glColor4f(
@@ -252,7 +315,9 @@ struct render_handler_xbox : public gameswf::render_handler
 
 		void	cleanup_second_pass() const
 		{
-// @@ TODO
+			IDirect3DDevice8::SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+			IDirect3DDevice8::SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+
 #if 0
 			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif // 0
@@ -283,6 +348,13 @@ struct render_handler_xbox : public gameswf::render_handler
 		}
 		bool	is_valid() const { return m_mode != INVALID; }
 	};
+
+
+	render_handler_xbox()
+	// Constructor.
+	{
+		init_vshader();
+	}
 
 
 	// Style state.
@@ -365,6 +437,38 @@ struct render_handler_xbox : public gameswf::render_handler
 		m_display_width = fabsf(x1 - x0);
 		m_display_height = fabsf(y1 - y0);
 
+// 		// Matrix setup
+// 		D3DXMATRIX	ortho;
+// 		D3DXMatrixOrthoOffCenterRH(&ortho, x0, x1, y0, y1, 0.0f, 1.0f);
+// 		IDirect3DDevice8::SetTransform(D3DTS_PROJECTION, &ortho);
+
+// 		D3DXMATRIX	ident;
+// 		D3DXMatrixIdentity(&ident);
+// 		IDirect3DDevice8::SetTransform(D3DTS_VIEW, &ident);
+// 		// IDirect3DDevice8::SetTransform(D3DTS_WORLD, &ident);
+// 		// etc.?
+
+		// Viewport.
+		D3DVIEWPORT8	vp;
+		vp.X = viewport_x0;
+		vp.Y = viewport_y0;
+		vp.Width = viewport_width;
+		vp.Height = viewport_height;
+		vp.MinZ = 0.0f;
+		vp.MaxZ = 0.0f;
+		IDirect3DDevice8::SetViewport(&vp);
+
+		// Blending renderstates
+		IDirect3DDevice8::SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+		IDirect3DDevice8::SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+		IDirect3DDevice8::SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+
+		// Textures should modulate.
+		IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+
+		// Vertex format.
+		IDirect3DDevice8::SetVertexShader(s_vshader_handle);
+
 #if 0
 		glViewport(viewport_x0, viewport_y0, viewport_width, viewport_height);
 
@@ -378,20 +482,30 @@ struct render_handler_xbox : public gameswf::render_handler
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// GL_MODULATE
 
 		glDisable(GL_TEXTURE_2D);
+#endif // 0
 
 		// Clear the background, if background color has alpha > 0.
 		if (background_color.m_a > 0)
 		{
 			// Draw a big quad.
 			apply_color(background_color);
+
+			IDirect3DDevice8::Begin(D3DPT_TRIANGLESTRIP);
+			IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, x0, y0);
+			IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, x1, y0);
+			IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, x1, y1);
+			IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, x0, y1);
+			IDirect3DDevice8::End();
+
+#if 0
 			glBegin(GL_QUADS);
 			glVertex2f(x0, y0);
 			glVertex2f(x1, y0);
 			glVertex2f(x1, y1);
 			glVertex2f(x0, y1);
 			glEnd();
-		}
 #endif // 0
+		}
 	}
 
 
@@ -422,18 +536,22 @@ struct render_handler_xbox : public gameswf::render_handler
 	static void	apply_matrix(const gameswf::matrix& m)
 	// Set the given transformation matrix.
 	{
-		float	mat[16];
-		memset(&mat[0], 0, sizeof(mat));
-		mat[0] = m.m_[0][0];
-		mat[1] = m.m_[1][0];
-		mat[4] = m.m_[0][1];
-		mat[5] = m.m_[1][1];
-		mat[10] = 1;
-		mat[12] = m.m_[0][2];
-		mat[13] = m.m_[1][2];
-		mat[15] = 1;
-// @@ TODO
+		float	row0[4];
+		float	row1[4];
+		row0[0] = m.m_[0][0];
+		row0[1] = m.m_[0][1];
+		row0[2] = 0;
+		row0[3] = m.m_[0][2];
+
+		row1[0] = m.m_[1][0];
+		row1[1] = m.m_[1][1];
+		row1[2] = 0;
+		row1[3] = m.m_[1][2];
+
 //		glMultMatrixf(mat);
+//		IDirect3DDevice8::SetTransform(D3DTS_VIEW, (D3DMATRIX*) &mat[0]);
+		IDirect3DDevice8::SetVertexShaderConstant(0, row0, 1);
+		IDirect3DDevice8::SetVertexShaderConstant(1, row1, 1);
 	}
 
 	static void	apply_color(const gameswf::rgba& c)
@@ -498,7 +616,6 @@ struct render_handler_xbox : public gameswf::render_handler
 
 		// @@ we'd like to use a VB instead, and use DrawPrimitive().
 
-		// @@ set up vertex format, etc.
 		// Draw the mesh.
 		IDirect3DDevice8::DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, vertex_count - 2, coords, sizeof(Sint16) * 2);
 
@@ -510,7 +627,6 @@ struct render_handler_xbox : public gameswf::render_handler
 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
 		}
 
-// @@ TODO
 #if 0
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
@@ -541,15 +657,9 @@ struct render_handler_xbox : public gameswf::render_handler
 		// Set up current style.
 		m_current_styles[LINE_STYLE].apply();
 
-// @@ todo
-//		glMatrixMode(GL_MODELVIEW);
-//		glPushMatrix();
 		apply_matrix(m_current_matrix);
 
 		IDirect3DDevice8::DrawPrimitiveUP(D3DPT_LINESTRIP, vertex_count - 1, coords, sizeof(Sint16) * 2);
-
-// @@ todo
-//		glPopMatrix();
 	}
 
 
@@ -576,10 +686,17 @@ struct render_handler_xbox : public gameswf::render_handler
 		d.m_x = b.m_x + c.m_x - a.m_x;
 		d.m_y = b.m_y + c.m_y - a.m_y;
 
+		// Set texture.
+		IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		IDirect3DDevice8::SetTexture(0, s_d3d_textures[bi->m_texture_id]);
-		// @@ enable texturing
-		// @@ no texgen
 
+		// No texgen; just pass through.
+		float	row0[4] = { 1, 0, 0, 0 };
+		float	row1[4] = { 0, 1, 0, 0 };
+		IDirect3DDevice8::SetVertexShaderConstant(4, row0, 1);
+		IDirect3DDevice8::SetVertexShaderConstant(5, row1, 1);
+
+		// Draw the quad.
 		IDirect3DDevice8::Begin(D3DPT_TRIANGLESTRIP);
 		
 		IDirect3DDevice8::SetVertexData2f(D3DVSDE_TEXCOORD0, uv_coords.m_x_min, uv_coords.m_y_min);
@@ -656,16 +773,97 @@ struct render_handler_xbox : public gameswf::render_handler
 
 // bitmap_info_xbox implementation
 
+
 bitmap_info_xbox::bitmap_info_xbox(create_empty e)
 {
 	// A null texture.  Needs to be initialized later.
 }
 
+
 bitmap_info_xbox::bitmap_info_xbox(image::rgb* im)
+// Image with no alpha.
 {
 	assert(im);
 
+	// Rescale.
+	m_original_width = im->m_width;
+	m_original_height = im->m_height;
+
+	int	w = 1; while (w < im->m_width) { w <<= 1; }
+	int	h = 1; while (h < im->m_height) { h <<= 1; }
+
+	image::rgb*	rescaled = image::create_rgb(w, h);
+	image::resample(rescaled, 0, 0, w - 1, h - 1,
+			im, 0, 0, (float) im->m_width, (float) im->m_height);
+
+	// Need to insert a dummy alpha byte in the image data, for
+	// D3DXLoadSurfaceFromMemory.
+	// @@ this sucks :(
+	int	pixel_count = w * h;
+	Uint8*	expanded_data = new Uint8[pixel_count * 4];
+	for (int y = 0; y < h; y++)
+	{
+		Uint8*	scanline = image::scanline(rescaled, y);
+		for (int x = 0; x < w; x++)
+		{
+			expanded_data[((y * w) + x) * 4 + 0] = scanline[x * 3 + 0];	// red
+			expanded_data[((y * w) + x) * 4 + 1] = scanline[x * 3 + 1];	// green
+			expanded_data[((y * w) + x) * 4 + 2] = scanline[x * 3 + 2];	// blue
+			expanded_data[((y * w) + x) * 4 + 3] = 255;	// alpha
+		}
+	}
+
 	// Create the texture.
+	s_d3d_textures.push_back(NULL);
+	m_texture_id = s_d3d_textures.size() - 1;
+
+	IDirect3DTexture8*	tex;
+	HRESULT	result = IDirect3DDevice8::CreateTexture(
+		w,
+		h,
+		0,
+		D3DUSAGE_BORDERSOURCE_TEXTURE,
+		D3DFMT_DXT1,
+		NULL,
+		&tex);
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't create texture\n");
+		return;
+	}
+	s_d3d_textures.back() = tex;
+
+	IDirect3DSurface8*	surf = NULL;
+	result = tex->GetSurfaceLevel(0, &surf);
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't get surface\n");
+		return;
+	}
+	assert(surf);
+
+	RECT	source_rect;
+	source_rect.left = 0;
+	source_rect.top = 0;
+	source_rect.right = w;
+	source_rect.bottom = h;
+	result = D3DXLoadSurfaceFromMemory(
+		surf,
+		NULL,
+		NULL,
+		expanded_data,
+		D3DFMT_LIN_A8B8G8R8,
+		w * 4,
+		NULL,
+		&source_rect,
+		D3DX_FILTER_POINT,
+		0);
+	delete [] expanded_data;
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't load surface from memory, result = %d\n", result);
+		return;
+	}
 
 #if 0
 	glEnable(GL_TEXTURE_2D);
@@ -699,6 +897,97 @@ bitmap_info_xbox::bitmap_info_xbox(image::rgba* im)
 // Version of the constructor that takes an image with alpha.
 {
 	assert(im);
+
+	m_original_width = im->m_width;
+	m_original_height = im->m_height;
+
+	int	w = 1; while (w < im->m_width) { w <<= 1; }
+	int	h = 1; while (h < im->m_height) { h <<= 1; }
+
+	// Create the texture.
+	s_d3d_textures.push_back(NULL);
+	m_texture_id = s_d3d_textures.size() - 1;
+
+	IDirect3DTexture8*	tex;
+	HRESULT	result = IDirect3DDevice8::CreateTexture(
+		w,
+		h,
+		0,
+		D3DUSAGE_BORDERSOURCE_TEXTURE,
+		D3DFMT_DXT1,
+		NULL,
+		&tex);
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't create texture\n");
+		return;
+	}
+	s_d3d_textures.back() = tex;
+
+	IDirect3DSurface8*	surf = NULL;
+	result = tex->GetSurfaceLevel(0, &surf);
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't get surface\n");
+		return;
+	}
+	assert(surf);
+
+	RECT	source_rect;
+	source_rect.left = 0;
+	source_rect.top = 0;
+	source_rect.right = w;
+	source_rect.bottom = h;
+
+	// Set the actual data.
+	if (w != im->m_width
+	    || h != im->m_height)
+	{
+		image::rgba*	rescaled = image::create_rgba(w, h);
+		image::resample(rescaled, 0, 0, w - 1, h - 1,
+				im, 0, 0, (float) im->m_width, (float) im->m_height);
+
+		result = D3DXLoadSurfaceFromMemory(
+			surf,
+			NULL,
+			NULL,
+			rescaled->m_data,
+			D3DFMT_LIN_A8B8G8R8,
+			rescaled->m_pitch,
+			NULL,
+			&source_rect,
+			D3DX_FILTER_POINT,
+			0);
+		if (result != S_OK)
+		{
+			gameswf::log_error("error: can't load surface from memory, result = %d\n", result);
+			return;
+		}
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
+
+		delete rescaled;
+	}
+	else
+	{
+		// Use original image directly.
+		result = D3DXLoadSurfaceFromMemory(
+			surf,
+			NULL,
+			NULL,
+			im->m_data,
+			D3DFMT_LIN_A8B8G8R8,
+			im->m_pitch,
+			NULL,
+			&source_rect,
+			D3DX_FILTER_POINT,
+			0);
+		if (result != S_OK)
+		{
+			gameswf::log_error("error: can't load surface from memory, result = %d\n", result);
+			return;
+		}
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+	}
 
 #if 0
 	// Create the texture.
@@ -748,6 +1037,78 @@ void bitmap_info_xbox::set_alpha_image(int width, int height, Uint8* data)
 	assert(data);
 	
 	// Create the texture.
+	
+	m_original_width = width;
+	m_original_height = height;
+
+	#ifndef NDEBUG
+	// You must use power-of-two dimensions!!
+	int	w = 1; while (w < width) { w <<= 1; }
+	int	h = 1; while (h < height) { h <<= 1; }
+	assert(w == width);
+	assert(h == height);
+	#endif // not NDEBUG
+
+	s_d3d_textures.push_back(NULL);
+	m_texture_id = s_d3d_textures.size() - 1;
+
+	IDirect3DTexture8*	tex;
+	HRESULT	result = IDirect3DDevice8::CreateTexture(
+		width,
+		height,
+		0,
+		D3DUSAGE_BORDERSOURCE_TEXTURE,
+		D3DFMT_A8,
+		NULL,
+		&tex);
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't create texture\n");
+		return;
+	}
+	s_d3d_textures.back() = tex;
+
+	IDirect3DSurface8*	surf = NULL;
+	result = tex->GetSurfaceLevel(0, &surf);
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't get surface\n");
+		return;
+	}
+	assert(surf);
+
+	RECT	source_rect;
+	source_rect.left = 0;
+	source_rect.top = 0;
+	source_rect.right = width;
+	source_rect.bottom = height;
+	result = D3DXLoadSurfaceFromMemory(
+		surf,
+		NULL,
+		NULL,
+		data,
+		D3DFMT_LIN_A8,
+		width,
+		NULL,
+		&source_rect,
+		D3DX_FILTER_POINT,
+		0);
+	if (result != S_OK)
+	{
+		gameswf::log_error("error: can't load surface from memory, result = %d\n", result);
+		return;
+	}
+
+//	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+
+// 	// Build mips.
+// 	int	level = 1;
+// 	while (width > 1 || height > 1)
+// 	{
+// 		render_handler_xbox::make_next_miplevel(&width, &height, data);
+// 		glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+// 		level++;
+// 	}
 
 #if 0
 	glEnable(GL_TEXTURE_2D);
