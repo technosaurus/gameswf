@@ -703,12 +703,20 @@ namespace gameswf
 				coords[1] = m_rect.get_corner(1);
 				coords[3] = m_rect.get_corner(3);
 				coords[2] = m_rect.get_corner(2);
+
+				Sint16	icoords[8] = 
+				{
+					coords[0].m_x, coords[0].m_y,
+					coords[1].m_x, coords[1].m_y,
+					coords[2].m_x, coords[2].m_y,
+					coords[3].m_x, coords[3].m_y,
+				};
 				
 				render::fill_style_color(0, rgba(255, 255, 255, 255));
-				render::draw_mesh_strip(&coords[0].m_x, 4);
+				render::draw_mesh_strip(&icoords[0], 4);
 
 				render::line_style_color(rgba(0,0,0,255));
-				render::draw_line_strip(&coords[0].m_x, 5);
+				render::draw_line_strip(&icoords[0], 5);
 			}
 
 			// Draw our actual text.

@@ -14,8 +14,10 @@
 class tu_file;
 class render_handler;
 
+// @@ TODO must get rid of external includes!
 #include "gameswf_types.h"
 #include "base/image.h"
+
 
 namespace gameswf
 {
@@ -318,14 +320,14 @@ namespace gameswf
 		// coords is a list of (x,y) coordinate pairs, in
 		// triangle-strip order.  The type of the array should
 		// be float[vertex_count*2]
-		virtual void	draw_mesh_strip(const float coords[], int vertex_count) = 0;
+		virtual void	draw_mesh_strip(const Sint16 coords[], int vertex_count) = 0;
 		
 		// Draw a line-strip using the current line style.
 		// Clear the style list after rendering.
 		//
 		// Coords is a list of (x,y) coordinate pairs, in
 		// sequence.
-		virtual void	draw_line_strip(const float coords[], int vertex_count) = 0;
+		virtual void	draw_line_strip(const Sint16 coords[], int vertex_count) = 0;
 		
 		// Set line and fill styles for mesh & line_strip
 		// rendering.

@@ -70,7 +70,7 @@ namespace gameswf
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
 	private:
-		array<point>	m_triangle_strip;
+		array<Sint16>	m_triangle_strip;
 	};
 
 
@@ -87,7 +87,7 @@ namespace gameswf
 		void	input_cached_data(tu_file* in);
 	private:
 		int	m_style;
-		array<point>	m_coords;
+		array<Sint16>	m_coords;
 	};
 
 
