@@ -52,6 +52,7 @@ namespace swf
 		void	print(FILE* out) const;
 		void	ogl_multiply() const;
 		void	transform(point* result, const point& p);
+		void	set_inverse(const matrix& m);
 	};
 
 

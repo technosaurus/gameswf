@@ -28,19 +28,23 @@ namespace render
 	static float	s_display_width;
 	static float	s_display_height;
 
+	// Transform stacks.
+	static array<matrix>	s_matrix_stack;
+	static array<cxform>	s_cxform_stack;
+
 
 	// A struct used to hold info about an OpenGL texture.
 	struct bitmap_info
 	{
 		unsigned int	m_texture_id;	// OpenGL texture id
-		int	m_width;
-		int	m_height;
+		int	m_original_width;
+		int	m_original_height;
 
 		bitmap_info(image::rgb* im)
 			:
 			m_texture_id(0),
-			m_width(0),
-			m_height(0)
+			m_original_width(0),
+			m_original_height(0)
 		{
 			assert(im);
 
@@ -55,14 +59,17 @@ namespace render
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* LINEAR_MIPMAP_LINEAR */);
 		
-			m_width = 1; while (m_width < im->m_width) { m_width <<= 1; }
-			m_height = 1; while (m_height < im->m_height) { m_height <<= 1; }
+			m_original_width = im->m_width;
+			m_original_height = im->m_height;
 
-			image::rgb*	rescaled = image::create_rgb(m_width, m_height);
-			image::resample(rescaled, 0, 0, m_width - 1, m_height - 1,
+			int	w = 1; while (w < im->m_width) { w <<= 1; }
+			int	h = 1; while (h < im->m_height) { h <<= 1; }
+
+			image::rgb*	rescaled = image::create_rgb(w, h);
+			image::resample(rescaled, 0, 0, w - 1, h - 1,
 					im, 0, 0, im->m_width, im->m_height);
 		
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_width, m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 //			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_image->m_width, m_image->m_height, GL_RGB, GL_UNSIGNED_BYTE, m_image->m_data);
 
 			delete rescaled;
@@ -122,22 +129,34 @@ namespace render
 					glEnable(GL_TEXTURE_GEN_S);
 					glEnable(GL_TEXTURE_GEN_T);
 				
-					float	width = m_bitmap_info->m_width * 6.0f/*xxx*/;
-					float	height = m_bitmap_info->m_height * 6.0f/*xxx*/;
 
-					float	x_origin = current_matrix.m_[0][2];
-					float	y_origin = current_matrix.m_[1][2];
+					// It appears as though the bitmap matrix is the
+					// inverse of the matrix I want to apply to the TWIPs
+					// coords to get the texture pixel coords (I want to
+					// scale again by 1/w and 1/h, on top of that).
+
+					float	inv_width = 1.0f / m_bitmap_info->m_original_width;
+					float	inv_height = 1.0f / m_bitmap_info->m_original_height;
+
+					matrix	screen_to_obj;
+					screen_to_obj.set_inverse(s_matrix_stack.back());
+
+					matrix	m = m_bitmap_matrix;
+					m.concatenate(screen_to_obj);
+
 
 					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 					float	p[4] = { 0, 0, 0, 0 };
-					p[0] = 1.0f / width;
-					p[3] = -x_origin / width;
+					p[0] = m.m_[0][0] * inv_width;
+					p[1] = m.m_[0][1] * inv_width;
+					p[3] = m.m_[0][2] * inv_width;
 					glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
 					p[0] = 0.0f;
 
 					glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-					p[1] = 1.0f / height;
-					p[3] = -y_origin / height;
+					p[0] = m.m_[1][0] * inv_height;
+					p[1] = m.m_[1][1] * inv_height;
+					p[3] = m.m_[1][2] * inv_height;
 					glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
 				}
 			}
@@ -220,8 +239,6 @@ namespace render
 	static bool	s_shape_has_line;	// flag to let us skip the line rendering if no line styles were set when defining the shape.
 	static bool	s_shape_has_fill;	// flag to let us skip the fill rendering if no fill styles were set when defining the shape.
 
-	static array<matrix>	s_matrix_stack;
-	static array<cxform>	s_cxform_stack;
 
 
 	static void	peel_off_and_render(int i0, int i1, float y0, float y1);
