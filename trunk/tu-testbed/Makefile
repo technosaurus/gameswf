@@ -20,6 +20,7 @@ chunkdemo:
 		tu-testbed/docs/STYLE	\
 		tu-testbed/demos/chunklod/chunkdemo.exe \
 		tu-testbed/demos/chunklod/heightfield_chunker.exe \
+		tu-testbed/demos/chunklod/heightfield_shader.exe \
 		tu-testbed/demos/chunklod/Makefile \
 		tu-testbed/demos/chunklod/*.cpp \
 		tu-testbed/demos/chunklod/*.h \
@@ -28,6 +29,10 @@ chunkdemo:
 		tu-testbed/demos/chunklod/crater.bt	\
 		tu-testbed/demos/chunklod/crater/crater.chu	\
 		tu-testbed/demos/chunklod/crater/crater.jpg	\
+		tu-testbed/demos/chunklod/test.jpg \
+		tu-testbed/demos/chunklod/testmap.jpg \
+		tu-testbed/demos/chunklod/tile*.jpg \
+		tu-testbed/demos/chunklod/maketest.bat \
 		tu-testbed/demos/chunklod/README-SDL.txt	\
 		tu-testbed/demos/chunklod/*.dll	\
 		tu-testbed/engine/Makefile \
