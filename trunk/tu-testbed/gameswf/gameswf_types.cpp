@@ -169,7 +169,7 @@ namespace gameswf
 		if (det == 0.0f)
 		{
 			// Not invertible.
-			assert(0);
+			//assert(0);	// castano: this happens sometimes! (ie. sample6.swf)
 
 			// Arbitrary fallback.
 			set_identity();
