@@ -224,7 +224,7 @@ int	main(int argc, char* argv[])
 			// Copy existing lines up...
 			int	lines_to_keep = strip->h - lines_to_read;
 			{for (int i = 0; i < lines_to_keep; i++) {
-				memcpy(image::scanline(strip, i), image::scanline(strip, i + lines_to_keep), strip->w * 3);
+				memcpy(image::scanline(strip, i), image::scanline(strip, i + lines_to_read /*keep*/), strip->w * 3);
 			}}
 
 			// Read new lines
@@ -250,7 +250,7 @@ int	main(int argc, char* argv[])
 			toc[quadtree_index] = offset;
 
 			// Write the jpeg data.
-			image::write_jpeg(out, tile, 80);
+			image::write_jpeg(out, tile, 100);
 			printf("\b%c", spinner[(spin_count++)&3]);
 		}
 	}
@@ -259,6 +259,8 @@ int	main(int argc, char* argv[])
 	// Done reading the input file.
 	delete j_in;
 	SDL_RWclose(in);
+
+	SDL_FreeSurface(tile);	// done with the working tile surface.
 
 	printf("\n");
 
@@ -305,6 +307,9 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 		throw "bug";
 	}
 
+	// Make a workspace to temporarily hold child tile data in one big image.
+	SDL_Surface*	workspace = image::create_rgb(p->tile_size * 2 - 1, p->tile_size * 2 - 1);
+
 	// Resample the four child tiles to make this tile.
 	SDL_Surface*	tile = image::create_rgb(p->tile_size, p->tile_size);
 
@@ -314,6 +319,7 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 			int	crow = row * 2 + j;
 			SDL_Surface*	child_tile = generate_tiles(p, level + 1, ccol, crow);
 
+#if 0
 			int	half_tile = p->tile_size >> 1;
 			int	ox = i ? half_tile : 0;
 			int	oy = j ? half_tile : 0;
@@ -324,10 +330,26 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 					child_tile,
 					ix, iy,
 					ix + float(p->tile_size) - shave, iy + float(p->tile_size) - shave);
+#endif // 0
+
+			// Copy image data into workspace.
+			{
+				int	ox = i ? p->tile_size - 1 : 0;
+				int	oy = j ? p->tile_size - 1 : 0;
+				// should replace this with "blit", or just memcpy the scanlines...
+				image::resample(workspace, ox, oy, ox + p->tile_size - 1, oy + p->tile_size - 1,
+						child_tile, 0.f, 0.f, float(p->tile_size) - 1, float(p->tile_size) - 1);
+			}
 
 			SDL_FreeSurface(child_tile);
 		}
 	}
+
+	// Resample from the workspace into the output tile.
+	image::resample(tile, 0, 0, p->tile_size - 1, p->tile_size - 1,
+			workspace, 0.f, 0.f, float(p->tile_size * 2 - 1), float(p->tile_size * 2 - 1));
+
+	SDL_FreeSurface(workspace);
 
 	// Write out the generated tile.
 	{
