@@ -14,7 +14,7 @@
 #include "engine/geometry.h"
 
 
-struct tu_file;
+class tu_file;
 struct kd_tree_dynamic;
 
 
@@ -40,3 +40,11 @@ private:
 
 
 #endif // KD_TREE_PACKED_H
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

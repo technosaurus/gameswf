@@ -14,21 +14,23 @@ LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 
 # Source files.
 SRCS := \
+	bsp.cpp \
 	dlmalloc.c	\
-	utility.cpp	\
 	config.cpp \
 	geometry.cpp \
 	cull.cpp \
-	bsp.cpp \
 	ogl.cpp \
-	jpeg.cpp \
 	image.cpp \
 	image_filters.cpp \
+	jpeg.cpp \
+	kd_tree_dynamic.cpp	\
+	kd_tree_packed.cpp	\
 	tqt.cpp	\
 	tu_file.cpp	\
 	tu_file_SDL.cpp	\
 	tu_random.cpp	\
-	tu_types.cpp
+	tu_types.cpp	\
+	utility.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
 
