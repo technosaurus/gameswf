@@ -24,6 +24,8 @@ namespace render
 	// Curve subdivision error tolerance (in TWIPs)
 	static float	s_tolerance = 20.0f;
 
+	static bool	s_wireframe = false;
+
 	// Output size.
 	static float	s_display_width;
 	static float	s_display_height;
@@ -609,10 +611,10 @@ namespace render
 			glEnd();
 		}
 
-// wireframe, for debugging
-#if 0
+		// wireframe, for debugging
+		if (s_wireframe)
 		{
-			glColor4f(1.0f, 1.0f, 1.0f, 0.3f);
+			glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
 			glBegin(GL_LINES);
 			{for (int i = 0; i < s_current_segments.size(); i++)
 			{
@@ -622,9 +624,9 @@ namespace render
 			}}
 			glEnd();
 		}
-#endif 
 
-		if (s_shape_has_fill == true)
+		if (s_wireframe == false
+		    && s_shape_has_fill == true)
 		{
 			//
 			// Draw the filled shape.

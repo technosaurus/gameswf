@@ -13,10 +13,8 @@
 #include "engine/utility.h"
 
 
-#undef main	// SDL wackiness
 
 
-#define SCALE	4.0f
 #define OVERSIZE	1.0f
 
 
@@ -26,6 +24,10 @@ int	hilite_depth = -1;
 #endif // 0
 
 
+static float	s_scale = 1.0f;
+
+
+#undef main	// SDL wackiness
 int	main(int argc, char *argv[])
 {
 	const char* infile = NULL;
@@ -35,7 +37,22 @@ int	main(int argc, char *argv[])
 		if (argv[arg][0] == '-')
 		{
 			// Looks like an option.
-			// @@ TODO
+
+			if (argv[arg][1] == 's')
+			{
+				// Scale.
+				arg++;
+				if (arg < argc)
+				{
+					s_scale = fclamp((float) atof(argv[arg]), 0.01f, 100.f);
+				}
+				else
+				{
+					printf("-s arg must be followed by a scale value\n");
+					// print_usage();
+					exit(1);
+				}
+			}
 		}
 		else
 		{
@@ -73,8 +90,8 @@ int	main(int argc, char *argv[])
 //	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-	int	width = imin(int(m->get_width() * SCALE), 800);
-	int	height = imin(int(m->get_height() * SCALE), 600);
+	int	width = int(m->get_width() * s_scale);
+	int	height = int(m->get_height() * s_scale);
 
 	// Set the video mode.
 	if (SDL_SetVideoMode(width, height, 16 /* 32 */, SDL_OPENGL) == 0)
@@ -96,6 +113,9 @@ int	main(int argc, char *argv[])
 	glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	// Mouse state.
+	int	mouse_x, mouse_y, mouse_buttons;
 
 	bool	paused = false;
 	float	speed_scale = 1.0f;
@@ -158,6 +178,26 @@ int	main(int argc, char *argv[])
 				break;
 			}
 
+			case SDL_MOUSEMOTION:
+				mouse_x = (int) (event.motion.x / s_scale);
+				mouse_y = (int) (event.motion.y / s_scale);
+				break;
+
+			case SDL_MOUSEBUTTONDOWN:
+			case SDL_MOUSEBUTTONUP:
+			{
+				int	mask = 1 << (event.button.button);
+				if (event.button.state == SDL_PRESSED)
+				{
+					mouse_buttons |= mask;
+				}
+				else
+				{
+					mouse_buttons &= ~mask;
+				}
+				break;
+			}
+
 			case SDL_QUIT:
 				exit(0);
 				break;
@@ -167,23 +207,17 @@ int	main(int argc, char *argv[])
 			}
 		}
 
-		int	frame0 = m->get_current_frame();
-		{
-			m->advance(delta_t * speed_scale);
-		}
-		int	frame1 = m->get_current_frame();
-		if (frame0 != frame1)
-		{
-			// Movie frame has changed -- show the new frame.
+		m->notify_mouse_state(mouse_x, mouse_y, mouse_buttons);
 
-			glDisable(GL_DEPTH_TEST);	// Disable depth testing.
-			glDrawBuffer(GL_BACK);
-			glClear(GL_COLOR_BUFFER_BIT);
+		m->advance(delta_t * speed_scale);
 
-			m->display();
+		glDisable(GL_DEPTH_TEST);	// Disable depth testing.
+		glDrawBuffer(GL_BACK);
+		glClear(GL_COLOR_BUFFER_BIT);
 
-			SDL_GL_SwapBuffers();
-		}
+		m->display();
+
+		SDL_GL_SwapBuffers();
 
 		SDL_Delay(10);
 	}

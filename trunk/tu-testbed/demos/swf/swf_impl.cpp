@@ -90,6 +90,23 @@ namespace swf
 
 			glPopMatrix();
 		}
+
+		
+		bool	point_test(float x, float y)
+		// Return true if the specified point is inside this rect.
+		{
+			if (x < m_x_min
+			    || x > m_x_max
+			    || y < m_y_min
+			    || y > m_y_max)
+			{
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}
 	};
 
 
@@ -566,7 +583,7 @@ namespace swf
 	static bool	execute_actions(movie* m, const array<action_buffer*>& action_list)
 	// Execute the actions in the action list, on the given movie.
 	// Return true if the actions did something to change the
-	// current_frame of the movie.
+	// current_frame or play state of the movie.
 	{
 		{for (int i = 0; i < action_list.size(); i++)
 		{
@@ -616,7 +633,7 @@ namespace swf
 
 		play_state	m_play_state;
 		int	m_current_frame;
-		float	m_time;
+		float	m_time_remainder;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 
 		movie_impl()
@@ -627,7 +644,7 @@ namespace swf
 			m_background_color(0.0f, 0.0f, 0.0f, 1.0f),
 			m_play_state(PLAY),
 			m_current_frame(0),
-			m_time(0.0f),
+			m_time_remainder(0.0f),
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0)
@@ -649,7 +666,7 @@ namespace swf
 
 		virtual void	get_mouse_state(int* x, int* y, int* buttons)
 		// Use this to retrieve the last state of the mouse, as set via
-		// notify_mouse_state().
+		// notify_mouse_state().  Coordinates are in PIXELS, NOT TWIPS.
 		{
 			assert(x);
 			assert(y);
@@ -777,6 +794,11 @@ namespace swf
 		void	set_play_state(play_state s)
 		// Stop or play the movie.
 		{
+			if (m_play_state != s)
+			{
+				m_time_remainder = 0;
+			}
+
 			m_play_state = s;
 		}
 		
@@ -785,34 +807,34 @@ namespace swf
 			m_display_list.resize(0);
 			m_action_list.resize(0);
 			m_current_frame = -1;
-			m_time = 0;
+			m_time_remainder = 0;
 		}
 
 		void	advance(float delta_time)
 		{
-			// Call advance() on each object in our
-			// display list.  Takes care of sprites and
-			// buttons.
-			for (int i = 0; i < m_display_list.size(); i++)
-			{
-				m_display_list[i].m_character->advance(delta_time, this, m_display_list[i].m_matrix);
-			}
+			m_time_remainder += delta_time;
+			const float	frame_time = 1.0f / m_frame_rate;
 
-			if (m_play_state == PLAY)
+			while (m_time_remainder >= frame_time)
 			{
-				m_time += delta_time;
-			}
-			int	target_frame_number = (int) floorf(m_time * m_frame_rate);
+				m_time_remainder -= frame_time;
+			
+				float	dt = frame_time;
+				int	next_frame = m_current_frame + 1;
+				if (m_play_state == STOP)
+				{
+					dt = 0.0f;
+					next_frame = m_current_frame;
+				}
 
-			if (target_frame_number >= m_frame_count
-			    || target_frame_number < 0)
-			{
- 				// Loop.  Correct?  Or should we hang?
-  				target_frame_number = 0;
-  				restart();
+				// Advance everything in the display list.
+				for (int i = 0; i < m_display_list.size(); i++)
+				{
+					m_display_list[i].m_character->advance(dt, this, m_display_list[i].m_matrix);
+				}
+			
+				goto_frame(next_frame);	// actions happen in here...
 			}
-
-			goto_frame(target_frame_number);
 		}
 
 
@@ -822,6 +844,8 @@ namespace swf
 		// do this incrementally; otherwise we have to rewind
 		// and advance from the beginning.
 		{
+			IF_DEBUG(printf("goto_frame(%d)\n", target_frame_number));//xxxxx
+
 			if (target_frame_number < m_current_frame)
 			{
 				// Can't incrementally update, so start from the beginning.
@@ -873,7 +897,6 @@ namespace swf
 //				printf("display %s\n", typeid(*(di.m_character)).name());
 			}
 
-//			glPopMatrix();
 			swf::render::end_display();
 		}
 
@@ -1347,7 +1370,6 @@ namespace swf
 			if (m_fill0 > 0)
 			{
 				fill_styles[m_fill0 - 1].apply(0);
-//				swf::render::fill_style0_color(fill_styles[m_fill0 - 1].m_color);
 			}
 			else
 			{
@@ -1357,7 +1379,6 @@ namespace swf
 			if (m_fill1 > 0)
 			{
 				fill_styles[m_fill1 - 1].apply(1);
-//				swf::render::fill_style1_color(fill_styles[m_fill1 - 1].m_color);
 			}
 			else
 			{
@@ -1367,7 +1388,6 @@ namespace swf
 			if (m_line > 0)
 			{
 				line_styles[m_line - 1].apply();
-//				swf::render::line_style_color(line_styles[m_line - 1].m_color);
 			}
 			else
 			{
@@ -1380,6 +1400,37 @@ namespace swf
 				m_edges[i].emit_curve();
 			}
 			swf::render::end_path();
+		}
+
+		
+		bool	point_test(float x, float y)
+		// Point-in-shape test.  Return true if the query point is on the filled
+		// interior of this shape.
+		{
+			assert(0);	// this routine isn't finished
+
+			if (m_fill0 == -1 && m_fill1 == -1)
+			{
+				// Not a filled shape.
+				return false;
+			}
+
+			// Look for the nearest point on an edge,
+			// to the left of the query point.  If that
+			// edge is a fill edge, then the query point
+			// is inside the shape.
+			bool	inside = false;
+			float	closest_point = 1e6;
+
+			for (int i = 0; i < m_edges.size(); i++)
+			{
+				// edges[i].solve_at_y(hit?, x?, slope up/down?, y);
+				// if (hit && x - x? < closest_point) {
+				//   inside = up/down ? (m_fill0 > -1) : (m_fill1 > -1);
+				// }
+			}
+
+			return inside;
 		}
 	};
 
@@ -1712,6 +1763,31 @@ namespace swf
 			swf::render::pop_cxform();
 			swf::render::pop_matrix();
 //			glPopMatrix();
+		}
+
+		
+		bool	point_test(float x, float y)
+		// Return true if the specified point is on the interior of our shape.
+		{
+			if (m_bound.point_test(x, y) == false)
+			{
+				// Early out.
+				return false;
+			}
+
+#if 0
+			// Try each of the paths.
+			for (int i = 0; i < m_paths.size(); i++)
+			{
+				if (m_paths[i].point_test(x, y))
+				{
+					return true;
+				}
+			}
+
+			return false;
+#endif // 0
+			return true;
 		}
 	};
 
@@ -2828,29 +2904,26 @@ namespace swf
 		{
 			assert(m);
 
-			// Look at the mouse state, and figure out our state.
+			// Look at the mouse state, and figure out our button state.  We want to
+			// know if the mouse is hovering over us, and whether it's clicking on us.
 			int	mx, my, mbuttons;
 			m->get_mouse_state(&mx, &my, &mbuttons);
 			m_mouse_state = UP;
 
-			// @@ so what we need to do here is see if the
-			// mouse position is inside the relevant
-			// character.
-			//
-			// @@ do we only look in characters whose rec.m_hit_test is true?
-
 			// Find the mouse position in button-space.
 			point	mouse_position;
-			mat.transform_by_inverse(&mouse_position, point(mx, my));
+			mat.transform_by_inverse(&mouse_position, point(PIXELS_TO_TWIPS(mx), PIXELS_TO_TWIPS(my)));
 
 			{for (int i = 0; i < m_button_records.size(); i++)
 			{
 				button_record&	rec = m_button_records[i];
-				if (rec.m_character == NULL)
+				if (rec.m_character == NULL
+				    || rec.m_hit_test == false)
 				{
 					continue;
 				}
 
+				// Find the mouse position in character-space.
 				point	sub_mouse_position;
 				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
 
@@ -2870,7 +2943,7 @@ namespace swf
 			}
 
 			// Do any actions that are warranted.
-			// @@ look at previous state and current state...
+			// @@ look at previous state and current state and select corresponding actions...
 
 			// Advance our relevant characters.
 			{for (int i = 0; i < m_button_records.size(); i++)
