@@ -379,11 +379,15 @@ public:
 
 	SDL_RWops*	get_source() { return m_source_stream; }
 
+	// Call this to enable/disable the background loader thread.
+	void	set_use_loader_thread(bool use);
+
 	int	loader_thread();		// thread function!
+private:
+	void	start_loader_thread();
 	bool	loader_service_data();		// in loader thread
 	bool	loader_service_texture();	// in loader thread
-
-private:
+	
 	struct pending_load_request
 	{
 		lod_chunk*	m_chunk;
@@ -451,7 +455,7 @@ private:
 
 	// Loader thread stuff.
 	SDL_Thread*	m_loader_thread;
-	volatile bool	m_kill_loader;	// tell the loader to die.
+	volatile bool	m_run_loader_thread;	// loader thread watches for this to go false, then exits.
 	SDL_mutex*	m_mutex;
 };
 
@@ -473,9 +477,26 @@ chunk_tree_loader::chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src)
 	// Set up thread communication stuff.
 	m_mutex = SDL_CreateMutex();
 	assert(m_mutex);
-	m_kill_loader = false;
+	start_loader_thread();
+}
 
-	// start the background loader worker thread
+
+chunk_tree_loader::~chunk_tree_loader()
+// Destructor.  Make sure thread is done.
+{
+	// Make sure to kill the loader thread.
+	set_use_loader_thread(false);
+
+	SDL_DestroyMutex(m_mutex);
+}
+
+
+void	chunk_tree_loader::start_loader_thread()
+// Initiate the loader thread, then return.
+{
+	m_run_loader_thread = true;
+
+	// Thunk to wrap loader_thread(), which is a member fn.
 	struct wrapper {
 		static int	thread_wrapper(void* loader)
 		{
@@ -486,14 +507,33 @@ chunk_tree_loader::chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src)
 }
 
 
-chunk_tree_loader::~chunk_tree_loader()
-// Destructor.  Make sure thread is done.
+void	chunk_tree_loader::set_use_loader_thread(bool use)
+// Call this to enable/disable the use of a background loader thread.
+// May take a moment of latency to return, since if the background
+// thread is active, then this function has to signal it and wait for
+// it to terminate.
 {
-	// signal loader thread to quit.  Wait til it quits.
-	m_kill_loader = true;
-	SDL_WaitThread(m_loader_thread, NULL);
-
-	SDL_DestroyMutex(m_mutex);
+	if (m_run_loader_thread) {
+		if (use) {
+			// We're already using the thread; nothing to do.
+			return;
+		}
+		else {
+			// Thread is running -- kill it.
+			m_run_loader_thread = false;
+			SDL_WaitThread(m_loader_thread, NULL);
+			return;
+		}
+	}
+	else {
+		if (use == false) {
+			// We're already not using the loader thread; nothing to do.
+			return;
+		} else {
+			// Thread is not running -- start it up.
+			start_loader_thread();
+		}
+	}
 }
 
 
@@ -670,6 +710,23 @@ void	chunk_tree_loader::sync_loader_thread()
 		}
 	}
 	SDL_UnlockMutex(m_mutex);
+
+
+	if (m_run_loader_thread == false)
+	{
+		// Loader thread is not actually running (at client
+		// request, via set_use_loader_thread()), so instead,
+		// service any requests synchronously, right now.
+		int	count;
+		for (count = 0; count < 4; count++) {
+			bool	loaded = loader_service_data();
+			if (loaded == false) break;
+		}
+		for (count = 0; count < 4; count++) {
+			bool	loaded = loader_service_texture();
+			if (loaded == false) break;
+		}
+	}
 }
 
 
@@ -744,7 +801,7 @@ int	chunk_tree_loader::loader_thread()
 // Thread function for the loader thread.  Sit and load chunk data
 // from the request queue, until we get killed.
 {
-	while (m_kill_loader == false)
+	while (m_run_loader_thread == true)
 	{
 		bool	loaded = false;
 		loaded = loader_service_data() || loaded;
@@ -1812,6 +1869,13 @@ void	lod_chunk_tree::get_bounding_box(vec3* box_center, vec3* box_extent)
 	assert(m_chunks_allocated > 0);
 
 	m_chunks[0].compute_bounding_box(*this, box_center, box_extent);
+}
+
+
+void	lod_chunk_tree::set_use_loader_thread(bool use)
+// Enables or disables loading of chunk data in the background.
+{
+	m_loader->set_use_loader_thread(use);
 }
 
 

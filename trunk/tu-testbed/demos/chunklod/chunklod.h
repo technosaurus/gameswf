@@ -48,6 +48,9 @@ public:
 	Uint16	compute_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
 	int	compute_texture_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
 
+	// Call this to enable/disable loading in a background thread.
+	void	set_use_loader_thread(bool use);
+
 //data:
 	lod_chunk*	m_chunks;
 	int	m_chunks_allocated;
