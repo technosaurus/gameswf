@@ -26,6 +26,63 @@ namespace gameswf
 	//
 
 
+	// Statics.
+	bool	s_inited = false;
+	string_hash<as_value>	s_built_ins;
+
+
+	//
+	// as_object
+	//
+
+
+	// A generic bag of attributes.  Base-class for ActionScript
+	// script-defined objects.
+	struct as_object : public as_object_interface
+	{
+		string_hash<as_value>	m_members;
+
+		virtual void	set_member(const tu_string& name, const as_value& val)
+		{
+			m_members.set(name, val);
+		}
+
+		virtual as_value	get_member(const tu_string& name)
+		{
+			as_value	val;
+			m_members.get(name, &val);	// @@ do we need to emit an error if name has no value?
+			return val;
+		}
+	};
+
+
+	void	action_init()
+	// Create/hook built-ins.
+	{
+		if (s_inited == false)
+		{
+			s_inited = true;
+
+			// Create built-in math object.
+			as_object*	math_obj = new as_object;
+
+			// Math constants.
+			math_obj->set_member("e", 2.7182818284590452354);
+ 			math_obj->set_member("ln2", 0.69314718055994530942);
+ 			math_obj->set_member("log2e", 1.4426950408889634074);
+ 			math_obj->set_member("ln10", 2.30258509299404568402);
+ 			math_obj->set_member("log10e", 0.43429448190325182765);
+ 			math_obj->set_member("pi", 3.14159265358979323846);
+ 			math_obj->set_member("sqrt1_2", 0.7071067811865475244);
+ 			math_obj->set_member("sqrt2", 1.4142135623730950488);
+
+			// @@ todo math methods
+
+ 			s_built_ins.add("math", math_obj);
+		}
+	}
+
+
 	//
 	// do_action
 	//
@@ -114,6 +171,8 @@ namespace gameswf
 	// Interpret the actions in this action buffer, and evaluate them
 	// in the given environment.
 	{
+		action_init();	// @@ stick this somewhere else; need some global static init function
+
 		assert(env);
 
 		movie*	original_target = env->get_target();
@@ -453,8 +512,20 @@ namespace gameswf
 					break;
 				}
 				case 0x4E:	// get member
-					// @@ TODO
+				{
+					as_object_interface*	obj = env->top(1).to_object();
+					if (obj)
+					{
+						env->top(1) = obj->get_member(env->top(0).to_tu_string());
+					}
+					else
+					{
+						// @@ log error?
+						env->top(1) = as_value();	// UNDEFINED
+					}
+					env->drop(1);
 					break;
+				}
 				case 0x4F:	// set member
 					// @@ TODO
 					break;
@@ -841,6 +912,22 @@ namespace gameswf
 		}
 	}
 
+	
+	as_object_interface*	as_value::to_object() const
+	// Return value as an object.
+	{
+		if (m_type == OBJECT)
+		{
+			// OK.
+			return m_object_value;
+		}
+		else
+		{
+			return NULL;	// @@ or return a valid "null object"?
+		}
+	}
+
+
 	void	as_value::convert_to_number()
 	// Force to type to number.
 	{
@@ -906,6 +993,12 @@ namespace gameswf
 		}
 
 		// @@ globals???
+
+		// Check built-in constants.
+		if (s_built_ins.get(varname, &val))
+		{
+			return val;
+		}
 
 		// Fallback.
 		log_error("error: get_variable(\"%s\") failed.\n", varname.c_str());

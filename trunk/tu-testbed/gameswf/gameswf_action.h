@@ -19,6 +19,8 @@ namespace gameswf
 {
 	struct movie;
 	struct as_environment;
+	struct as_object_interface;
+
 
 	// Base class for actions.
 	struct action_buffer
@@ -43,12 +45,13 @@ namespace gameswf
 			UNDEFINED,
 			STRING,
 			NUMBER,
-//			OBJECT_PTR	// @@ ?
+			OBJECT,
 		};
 
 		type	m_type;
 		mutable	double	m_number_value;	// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
 		mutable tu_string	m_string_value;
+		as_object_interface*	m_object_value;
 
 		as_value()
 			:
@@ -100,12 +103,20 @@ namespace gameswf
 		{
 		}
 
+		as_value(as_object_interface* obj)
+			:
+			m_type(OBJECT),
+			m_object_value(obj)
+		{
+		}
+
 		type	get_type() const { return m_type; }
 
 		const char*	to_string() const;
 		const tu_string&	to_tu_string() const;
 		double	to_number() const;
 		bool	to_bool() const;
+		as_object_interface*	to_object() const;
 
 		void	convert_to_number();
 		void	convert_to_string();
@@ -144,6 +155,14 @@ namespace gameswf
 	struct as_property_interface
 	{
 		virtual bool	set_property(int index, const as_value& val) = 0;
+	};
+
+
+	struct as_object_interface
+	{
+		virtual ~as_object_interface() {}
+		virtual void	set_member(const tu_string& name, const as_value& val) = 0;
+		virtual as_value	get_member(const tu_string& name) = 0;
 	};
 
 
