@@ -72,9 +72,89 @@ LANGUAGE
 
 The code is written mostly in C++ at the moment.  For various reasons
 that I won't go into right now, I think it's high time to retire C++
-before it rots my brain any further.  I think Ocaml might be the best
-contender for a replacement, and I hope to do some experiments along
-those lines.
+before it rots my brain any further.  The big problem is, what to use
+instead?
+
+* OCaml?  The compiler is good, free and cross-platform.  The language
+  incorporates some fancy ideas.  On the downside, the syntax is
+  absolutely bizarre and very non-intuitive to this C++ coder.  Also,
+  it seems to me that a certain amount of practicality was sacrificed
+  in the name of type-system purity.  For example, structs don't
+  define their own namespaces, so member names have to be
+  disambiguated somehow, typically with an old-skool name prefix.
+  This lets types always be combined cleanly and without ambiguity,
+  but let's face it, that's not such a useful feature in workaday
+  coding, that it makes up for the namespace thing.  Tradeoffs that
+  sacrifice practicality for ideology are guilty until proven
+  innocent, in my book.
+
+* Common Lisp?  It's big and ugly like C++, so it probably has the
+  necessary features.  On the other hand, is it better enough to make
+  it worth all the pain of interfacing to a C/C++ world?  My guess is
+  probably not, but I don't really know.
+
+* Dylan?  It has a free implementation in Gwydion Dylan; not how
+  mature it is.  I'm absolutely not interested in any language which
+  doesn't have a good free implementation.  Dylan, to me, looks like
+  Common Lisp given a makeover by someone concerned with some mundane
+  issues like syntax friendliness, and interfacing to C.  So that's a
+  good sign.  May be worth a closer look.
+
+* Perl?  Great for quick prototyping.  I really love Perl, but it's
+  too messy and too idiosyncratic for code I want to see reused by
+  others, who might not share my subset of Perl fluency.  Also,
+  obviously, dynamically typed and interpreted, so it's probably too
+  slow for much of the stuff I'm interested in.
+
+* Python/Lua?  I consider these together, for the purposes of this
+  rant.  They both have many of the virtues of Lisp and Perl, but with
+  accessible syntax and less cruft.  The main drawbacks are
+  interfacing to C/C++, and being dynamically typed & interpreted.
+ 
+* Java/C#?  OK, but not enough better/different than C++ to inspire a
+  switch.
+
+* C++ subset du jour?  I have a wary respect/fear/infatuation with
+  templates.  Templates, awful as they are, may be the killer feature
+  that every language has to eventually emulate.
+
+  I think the "Right Way" to do templates is to provide hygenic
+  macros, with full compile-time type awareness, without deviating too
+  much from the basic syntax of the underlying language.  People are
+  struggling to use templates to implement compile-time
+  program-transforming programs.  The fact that they continue to do
+  this, despite how awkward it is, shows how valuable the basic
+  feature is.  So essentially I want to arbitrarily extend the
+  compiler, in the same language the compiler compiles.
+
+  This sounds very Lisp-y; I'm sure Lisp geeks will insist that Lisp
+  did all this circa 1985.  Maybe the pitfall here is a classic Lisp
+  achilles heel: once you have a compiler that can do all that, it
+  becomes so intertwined with the execution environment, that you
+  can't ship a product without also shipping the compiler/environment
+  somewhere inside it.  Maybe where Lisp goes wrong is by insisting on
+  so much dynamicness & interactivity; if all the fancy compiler work
+  can only happen at compile-time, it should be tractable to have
+  full-powered introspective macros.
+
+  I bet we'll see C++ extended to make templates much more powerful
+  and direct, before any other language gets this feature
+  substantially right.  Scary.
+
+* ANSI C?  I ponder this sometimes.  I think I'm too addicted to
+  structs and namespaces and // though.
+
+I really enjoy dynamic typing & interactive programming.  I think my
+dream language for all seasons would be Lua, extended with optional
+static typing, hygenic macros, and a good native-code compiler.  Does
+this roughly describe Dylan?  Hm.
+
+Or maybe, C++ with a really good seamless library for dynamic type
+support and painless GC.  And a more interactive programming
+environment.
+
+For the forseeable future, I'll probably just continue using C++ with
+Lua as an extension language.
 
 
 STABILITY
@@ -83,7 +163,7 @@ This is experimental code.  One of the things I will probably want to
 experiment with is engine APIs and organization.  As a result,
 stability of APIs is a low priority for me at this early stage of
 development; I may completely change the organization of the code at
-any time, run all the source through perl one-liners to change all the
+any time, run all the source through Perl one-liners to change all the
 module names, etc.  Old demos may not build or run.  Engine features
 may be completely broken, or incompletely working (or more likely,
 completely missing).
