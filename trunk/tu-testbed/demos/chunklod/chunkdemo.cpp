@@ -423,9 +423,6 @@ void	process_events()
 }
 
 
-#ifdef WIN32
-#undef main	// Under Win32 SDL redefines main, to insert its own arg preprocessing; but we don't really care about that...
-#endif // WIN32
 int	main(int argc, char *argv[])
 {
 	const char*	chunkfile = "crater/crater.chu";

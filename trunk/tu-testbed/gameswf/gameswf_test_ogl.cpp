@@ -173,8 +173,13 @@ struct SDL_sound_handler : gameswf::sound_handler
 			convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 2, sample_rate, stereo);
 			break;
 
+		case FORMAT_MP3:
+			message_log("mp3 format sound requested; this demo does not handle mp3\n");
+			break;
+
 		default:
 			// Unhandled format.
+			message_log("unknown format sound requested; this demo does not handle it\n");
 			break;
 		}
 
@@ -317,9 +322,9 @@ struct SDL_sound_handler : gameswf::sound_handler
 };
 
 
-#ifndef __MACH__
-#undef main	// SDL wackiness, but needed for macosx
-#endif
+//#ifndef __MACH__
+//#undef main	// SDL wackiness, but needed for macosx
+//#endif
 int	main(int argc, char *argv[])
 {
 	assert(tu_types_validate());
