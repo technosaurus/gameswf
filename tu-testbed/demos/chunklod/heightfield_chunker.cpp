@@ -14,6 +14,7 @@
 #include <SDL/SDL_image.h>
 
 #include <engine/utility.h>
+#include <engine/container.h>
 
 
 void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out, int tree_depth, float base_max_error);
@@ -45,6 +46,26 @@ void	print_usage()
 		   "\t'error' gives the maximum geometric error to allow at full LOD; default = 0.5\n"
 		);
 }
+
+
+// struct to hold statistics.
+struct stats {
+	int	input_vertices;
+	int	output_vertices;
+	int	output_real_triangles;
+	int	output_degenerate_triangles;
+	int	output_chunks;
+	int	output_size;
+
+	stats() {
+		input_vertices = 0;
+		output_vertices = 0;
+		output_real_triangles = 0;
+		output_degenerate_triangles = 0;
+		output_chunks = 0;
+		output_size = 0;
+	}
+} stats;
 
 
 #undef main	// @@ some crazy SDL/WIN32 thing that I don't understand.
@@ -142,8 +163,24 @@ int	main(int argc, char* argv[])
 	// Process the data.
 	heightfield_chunker( in, out, tree_depth, max_geometric_error );
 
+	stats.output_size = SDL_RWtell(out);
+
 	SDL_RWclose(in);
 	SDL_RWclose(out);
+
+	// Print some stats.
+	printf("========================================\n");
+	printf("                chunks: %10d\n", stats.output_chunks);
+	printf("           input verts: %10d\n", stats.input_vertices);
+	printf("          output verts: %10d\n", stats.output_vertices);
+
+	printf("          output bytes: %10d\n", stats.output_size);
+	printf("      bytes/input vert: %10.2f\n", stats.output_size / (float) stats.input_vertices);
+	printf("     bytes/output vert: %10.2f\n", stats.output_size / (float) stats.output_vertices);
+
+	printf("        real triangles: %10d\n", stats.output_real_triangles);
+	printf("  degenerate triangles: %10d\n", stats.output_degenerate_triangles);
+	printf("   degenerate overhead: %10.0f%%\n", stats.output_degenerate_triangles / (float) stats.output_real_triangles * 100);
 
 	return 0;
 }
@@ -226,11 +263,8 @@ struct heightfield_elem {
 	}
 
 	void	set_activation_level(int l) {
+		assert(l >= 0 && l < 128);
 		activation_level = l;
-
-		if (l < 0 || l > 127) {
-			printf("set_activation_level(%d)!!!\n", l);
-		}
 	}
 
 	int	get_activation_level() const { return activation_level; }
@@ -240,6 +274,9 @@ struct heightfield_elem {
 	// the vert's current activation level.
 	{
 		if (level > activation_level) {
+			if (activation_level == -1) {
+				stats.output_vertices++;
+			}
 			set_activation_level(level);//activation_level = level;
 		}
 	}
@@ -476,6 +513,8 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 			hf.elem(i, j).clear();
 		}
 	}
+
+	stats.input_vertices = hf.size * hf.size;
 
 	// Run a view-independent L-K style BTT update on the heightfield, to generate
 	// error and activation_level values for each element.
@@ -740,8 +779,7 @@ int	check_propagation(heightfield& hf, int cx, int cz, int level)
 
 namespace mesh {
 	void	clear();
-	void	add_triangle(int ax, int az, int bx, int bz, int cx, int cz);
-	void	add_morph_vertex(int x, int z);
+	void	emit_vertex(int ax, int az);	// call this in strip order.
 	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level, int chunk_label);
 };
 
@@ -749,6 +787,11 @@ namespace mesh {
 void	gen_mesh(heightfield& hf, int level, int ax, int az, int rx, int rz, int lx, int lz);
 
 void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, int bx, int bz);
+
+
+struct gen_state;
+void	generate_block(heightfield& hf, int level, int log_size, int cx, int cz);
+void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, int tz, int rx, int rz, int level);
 
 
 void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level)
@@ -777,32 +820,14 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	hf.elem(x0, z0 + size).activate(level);
 	hf.elem(x0 + size, z0 + size).activate(level);
 
-	// check for morphing of corner verts.
-	if (hf.elem(x0 + size, z0).get_activation_level() == level) {
-		mesh::add_morph_vertex(x0 + size, z0);
-	}
-	if (hf.elem(x0, z0).get_activation_level() == level) {
-		mesh::add_morph_vertex(x0, z0);
-	}
-	if (hf.elem(x0, z0 + size).get_activation_level() == level) {
-		mesh::add_morph_vertex(x0, z0 + size);
-	}
-	if (hf.elem(x0 + size, z0 + size).get_activation_level() == level) {
-		mesh::add_morph_vertex(x0 + size, z0 + size);
-	}
+	// Ensure our center vert is activated, too.
+	hf.elem(x0 + half_size, z0 + half_size).activate(level);
 
-	// Generate the mesh.  Decide what direction to go based on where we are -- the
-	// primary split direction alternates in a checkerboard pattern.
-	if (((cx ^ cz) & (1 << (log_size-1))) == 0) {
-		gen_mesh(hf, level, x0, z0 + size, x0 + size, z0 + size, x0, z0);	// sw half
-		gen_mesh(hf, level, x0 + size, z0, x0, z0, x0 + size, z0 + size);	// ne half
-	} else {
-		gen_mesh(hf, level, x0, z0, x0, z0 + size, x0 + size, z0);	// nw half
-		gen_mesh(hf, level, x0 + size, z0 + size, x0 + size, z0, x0, z0 + size);	// se half
-	}
+	// Generate the mesh.
+	generate_block(hf, level, log_size, x0 + half_size, z0 + half_size);
 
-	// Print some interesting info.
-	printf("chunk: (%d, %d) size = %d\n", x0, z0, size);
+//	// Print some interesting info.
+//	printf("chunk: (%d, %d) size = %d\n", x0, z0, size);
 
 	// write out the mesh data.
 	mesh::write(out, hf, level, chunk_label);
@@ -816,7 +841,6 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 		generate_node_data(out, hf, x0 + half_size, z0 + half_size, log_size-1, level-1);	// se
 	}
 
-#if 0
 	// Generate data for the four internal edges.
 	if (level > 0) {
 		// Four internal edges.  They connect the center with each of
@@ -838,46 +862,121 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 		// No subnodes --> no internal edges.
 		WriteByte(out, 0);	// edge count.
 	}
-#endif // 0
 }
 
 
-void	gen_mesh(heightfield& hf, int level, int ax, int az, int rx, int rz, int lx, int lz)
-// Takes vertex coordinates of a right triangle: apex (ax, az), right
-// (rx, rz), and left (lx, lz) verts.  Looks at the base vertex of the
-// triangle, which is midway between the left and right verts.  If the
-// base is active at this level, then subdivides; otherwise this
-// triangle is part of the desired mesh, so we generate the triangle.
-{
-	// Compute the coordinates of this triangle's base vertex.
-	int	dx = lx - rx;
-	int	dz = lz - rz;
-	if (iabs(dx) <= 1 && iabs(dz) <= 1) {
-		// We've reached the base level.  Generate the triangle;
-		// don't try to subdivide.
-		mesh::add_triangle(ax, az, rx, rz, lx, lz);	// apex, right, left
-		return;
+struct gen_state {
+	int	my_buffer[2][2];	// x,z coords of the last two vertices emitted by the generate_ functions.
+	int	activation_level;	// for determining whether a vertex is enabled in the block we're working on
+	int	ptr;	// indexes my_buffer.
+	int	previous_level;	// for keeping track of level changes during recursion.
+
+	bool	in_my_buffer(int x, int z)
+	// Returns true if the specified vertex is in my_buffer.
+	{
+		return ((x == my_buffer[0][0]) && (z == my_buffer[0][1]))
+			|| ((x == my_buffer[1][0]) && (z == my_buffer[1][1]));
 	}
 
-	// base vert is midway between left and right verts.
-	int	bx = rx + (dx >> 1);
-	int	bz = rz + (dz >> 1);
+	void	set_my_buffer(int x, int z)
+	// Sets the current my_buffer entry to (x,z)
+	{
+		my_buffer[ptr][0] = x;
+		my_buffer[ptr][1] = z;
+	}
+};
 
-	if (hf.elem(bx, bz).get_activation_level() >= level) {
-		if (hf.elem(bx, bz).get_activation_level() == level
-		    && hf.elem(bx, bz).error != 0.f)
-		{
-			// this is a morph vert.
-			mesh::add_morph_vertex(bx, bz);
+
+void	generate_block(heightfield& hf, int activation_level, int log_size, int cx, int cz)
+// Generate the mesh for the specified square with the given center.
+// This is paraphrased directly out of Lindstrom et al, SIGGRAPH '96.
+// It generates a square mesh by walking counterclockwise around four
+// triangular quadrants.  The resulting mesh is composed of a single
+// continuous triangle strip, with a few corners turned via degenerate
+// tris where necessary.
+{
+	// quadrant corner coordinates.
+	int	hs = 1 << (log_size - 1);
+	int	q[4][2] = {
+		{ cx + hs, cz + hs },	// se
+		{ cx + hs, cz - hs },	// ne
+		{ cx - hs, cz - hs },	// nw
+		{ cx - hs, cz + hs },	// sw
+	};
+
+	// Init state for generating mesh.
+	gen_state	state;
+	state.ptr = 0;
+	state.previous_level = 0;
+	state.activation_level = activation_level;
+	for (int i = 0; i < 4; i++) {
+		state.my_buffer[i>>1][i&1] = -1;
+	}
+
+	mesh::clear();
+
+	mesh::emit_vertex(q[0][0], q[0][1]);
+	state.set_my_buffer(q[0][0], q[0][1]);
+
+	{for (int i = 0; i < 4; i++) {
+		if ((state.previous_level & 1) == 0) {
+			// tulrich: turn a corner?
+			state.ptr ^= 1;
+		} else {
+			// tulrich: jump via degenerate?
+			int	x = state.my_buffer[1 - state.ptr][0];
+			int	z = state.my_buffer[1 - state.ptr][1];
+			mesh::emit_vertex(x, z);	// or, emit vertex(last - 1);
 		}
 
-		// recurse to generate submesh.
-		gen_mesh(hf, level, bx, bz, ax, az, rx, rz);	// base, apex, right
-		gen_mesh(hf, level, bx, bz, lx, lz, ax, az);	// base, left, apex
-	} else {
-		// base vert is not active in this level's mesh, so
-		// just generate the parent triangle.
-		mesh::add_triangle(ax, az, rx, rz, lx, lz);	// apex, right, left
+		// Initial vertex of quadrant.
+		mesh::emit_vertex(q[i][0], q[i][1]);
+		state.set_my_buffer(q[i][0], q[i][1]);
+		state.previous_level = 2 * log_size + 1;
+
+		generate_quadrant(hf,
+						  &state,
+						  q[i][0], q[i][1],	// q[i][l]
+						  cx, cz,	// q[i][t]
+						  q[(i+1)&3][0], q[(i+1)&3][1],	// q[i][r]
+						  2 * log_size
+						  );
+	}}
+	if (state.in_my_buffer(q[0][0], q[0][1]) == false) {
+		// finish off the strip.  @@ may not be necessary?
+		mesh::emit_vertex(q[0][0], q[0][1]);
+	}
+}
+
+
+void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, int tz, int rx, int rz, int recursion_level)
+// Auxiliary function for generate_block().  Generates a mesh from a
+// triangular quadrant of a square heightfield block.  Paraphrased
+// directly out of Lindstrom et al, SIGGRAPH '96.
+{
+	if (recursion_level <= 0) return;
+
+	if (hf.elem(tx, tz).get_activation_level() >= s->activation_level) {
+		// Find base vertex.
+		int	bx = (lx + rx) >> 1;
+		int	bz = (lz + rz) >> 1;
+
+		generate_quadrant(hf, s, lx, lz, bx, bz, tx, tz, recursion_level - 1);	// left half of quadrant
+
+		if (s->in_my_buffer(tx,tz) == false) {
+			if ((recursion_level + s->previous_level) & 1) {
+				s->ptr ^= 1;
+			} else {
+				int	x = s->my_buffer[1 - s->ptr][0];
+				int	z = s->my_buffer[1 - s->ptr][1];
+				mesh::emit_vertex(x, z);	// or, emit vertex(last - 1);
+			}
+			mesh::emit_vertex(tx, tz);
+			s->set_my_buffer(tx, tz);
+			s->previous_level = recursion_level;
+		}
+
+		generate_quadrant(hf, s, tx, tz, bx, bz, rx, rz, recursion_level - 1);
 	}
 }
 
@@ -928,9 +1027,8 @@ void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, i
 	// Vertices.
 	//
 	
-	// Count the active verts and morph verts, and find the index of the midpoint vert.
+	// Count the active verts, and find the index of the midpoint vert.
 	int	verts = 0;
-	int	morph_verts = 0;
 	int	midpoint_index = 0;
 
 	// Step along the edge.
@@ -945,44 +1043,41 @@ void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, i
 		const heightfield_elem&	e = hf.get_elem(x, z);
 		if (e.activation_level >= level) {
 			verts++;	// This is an active vert.
-			if (e.activation_level == level && e.error != 0.f) {
-				morph_verts++;	// This is also a morph vert.
-			}
 		}
 	}
-	
+
+	SDL_WriteLE16(out, midpoint_index);
+
+	// TODO: scale and offset, before quantizing...
+	// xxxx write dummy offset & scale for now.
+	WriteFloat32(out, 0);
+	WriteFloat32(out, 0);
+	WriteFloat32(out, 0);
+	WriteFloat32(out, 1);
+
 	// Write the active verts.
 	assert(verts < (1 << 16));
-	SDL_WriteLE16(out, midpoint_index);
 	SDL_WriteLE16(out, verts);	// vertex count.
 	{for (int i = 0, x = ax, z = az; i < steps; i++, x += dx, z += dz) {
 		const heightfield_elem&	e = hf.get_elem(x, z);
 		int	l = e.activation_level;
 		if (e.activation_level >= level) {
-			WriteFloat32(out, x * hf.sample_spacing);
-			WriteFloat32(out, e.y);
-			WriteFloat32(out, z * hf.sample_spacing);
+			SDL_WriteLE16(out, (int) (x * hf.sample_spacing));
+			SDL_WriteLE16(out, (int) (e.y));
+			SDL_WriteLE16(out, (int) (z * hf.sample_spacing));
+
+			// Morph info.  Works out to 0 for non-morphing verts.
+			float	lerped_height = get_height_at_LOD(hf, level + 1, x, z);
+			SDL_WriteLE16(out, lerped_height - e.y);	// delta, to get to y value of parent mesh.
 		}
 	}}
 
-	// Write the morph verts, w/ info.
-	assert(morph_verts < (1 << 16));
-	SDL_WriteLE16(out, morph_verts);
-	{for (int i = 0, x = ax, z = az, current_index = 0; i < steps; i++, x += dx, z += dz) {
-		const heightfield_elem&	e = hf.get_elem(x, z);
-		int	l = e.activation_level;
-		if (e.activation_level == level && e.error != 0.f) {
-			// This is a morph vert.
-			SDL_WriteLE16(out, current_index);
-			
-			float	lerped_height = get_height_at_LOD(hf, level + 1, x, z);
-			WriteFloat32(out, lerped_height);	// y value in parent mesh.
-			WriteFloat32(out, e.y - lerped_height);	// delta, to get to true y value.
-		}
-		if (e.activation_level >= level) {
-			current_index++;	// keep track of vertex indices.
-		}
-	}}
+	// TODO: compute the correct strips and write them out.  Currently
+	// they're generated on the fly in chunkdemo.
+	SDL_WriteLE32(out, 0);	// xxx for now, a zero-length strip...
+
+	// real triangle count == 0; will get recomputed by renderer.
+	SDL_WriteLE32(out, 0);
 
 //	// Print some stats.
 //	printf("\t\tedge, verts = %d, mverts = %d\n", verts, morph_verts);
@@ -998,10 +1093,6 @@ void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, i
 }
 
 
-#include <vector>
-//using namespace std;
-
-
 namespace mesh {
 // mini module for building up mesh data.
 
@@ -1011,9 +1102,8 @@ namespace mesh {
 		vert_info(int vx, int vz) : x(vx), z(vz) {}
 	};
 
-	std::vector<vert_info>	vertices;
-	std::vector<int>	morph_vertices;
-	std::vector<int>	vertex_indices;
+	array<vert_info>	vertices;
+	array<int>	vertex_indices;
 
 	int	get_vertex_index(int x, int z)
 	// Return the index of the specified vert.  If the vert isn't
@@ -1022,27 +1112,23 @@ namespace mesh {
 		// Look for the vert in our vertex list.  Should
 		// probably use a map or something instead of linear
 		// search.
-		int 	index = 0;
-		for (std::vector<vert_info>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
-			if ((*it).x == x && (*it).z == z) {
+		for (int i = 0; i < vertices.size(); i++) {
+			if (vertices[i].x == x && vertices[i].z == z) {
 				// Found our vert.  Return the index.
-				return index;
+				return i;
 			}
-
-			index++;
 		}
 
 		vertices.push_back(vert_info(x, z));
 
-		return index;
+		return vertices.size() - 1;
 	}
 
 	void	clear()
 	// Reset and empty all our containers, to start a fresh mesh.
 	{
-		vertices.clear();
-		morph_vertices.clear();
-		vertex_indices.clear();
+		vertices.resize(0);
+		vertex_indices.resize(0);
 	}
 
 
@@ -1051,76 +1137,76 @@ namespace mesh {
 		// Label the chunk, so edge datasets can specify the chunks they're associated with.
 		SDL_WriteLE32(rw, chunk_label);
 
+		// Write origin and scale.
+		// TODO: fix this.  should also write bounding box to the file.
+		WriteFloat32(rw, 0);
+		WriteFloat32(rw, 0);
+		WriteFloat32(rw, 0);
+		WriteFloat32(rw, 1);
+
+		// TODO: scale and offset, before quantizing...
+
 		// Write vertices.  All verts contain morph info.
 		SDL_WriteLE16(rw, vertices.size());
-		for (std::vector<vert_info>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
-			const heightfield_elem&	e = hf.get_elem((*it).x, (*it).z);
-			WriteFloat32(rw, (*it).x * hf.sample_spacing);
-			WriteFloat32(rw, e.y);	// true y value
-			WriteFloat32(rw, (*it).z * hf.sample_spacing);
+		for (int i = 0; i < vertices.size(); i++) {
+			const vert_info&	v = vertices[i];
+			const heightfield_elem&	e = hf.get_elem(v.x, v.z);
+			SDL_WriteLE16(rw, (int) (v.x * hf.sample_spacing));
+			SDL_WriteLE16(rw, (int) e.y);	// true y value
+			SDL_WriteLE16(rw, (int) (v.z * hf.sample_spacing));
 
 			// Morph info.  Should work out to 0 if the vert is not a morph vert.
-			float	lerped_height = get_height_at_LOD(hf, level + 1, (*it).x, (*it).z);
-			WriteFloat32(rw, lerped_height - e.y);	// delta, to get to y value of parent mesh.
+			float	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
+			SDL_WriteLE16(rw, (int) (lerped_height - e.y));	// delta, to get to y value of parent mesh.
 		}
 
 		{
-			// Write triangle vertex indices.  TODO: Strip this suckah!
+			// Write triangle-strip vertex indices.
 			SDL_WriteLE32(rw, vertex_indices.size());
-			for (std::vector<int>::iterator it = vertex_indices.begin(); it != vertex_indices.end(); ++it) {
-				SDL_WriteLE16(rw, (*it));
+			for (int i = 0; i < vertex_indices.size(); i++) {
+				SDL_WriteLE16(rw, vertex_indices[i]);
 			}
 		}
 
-#if 0
+		// Count the real triangles.
 		{
-			// Write morph verts.
-			SDL_WriteLE16(rw, morph_vertices.size());
-			for (std::vector<int>::iterator it = morph_vertices.begin(); it != morph_vertices.end(); ++it) {
-				int	index = *it;
-				SDL_WriteLE16(rw, index);	// vert index.
-
-				// Write out the morphing info for this vert.
-				const heightfield_elem&	e = hf.get_elem(vertices[index].x, vertices[index].z);
-				float	lerped_height = get_height_at_LOD( hf, level + 1, vertices[index].x, vertices[index].z );
-				WriteFloat32(rw, lerped_height /* e.y - e.error */);	// y value of parent mesh.
-				WriteFloat32(rw, e.y - lerped_height /* e.error */);	// delta, to get to true y value.
+			int	tris = 0;
+			for (int i = 0; i < vertex_indices.size() - 2; i++) {
+				if (vertex_indices[i] != vertex_indices[i+1]
+					&& vertex_indices[i] != vertex_indices[i+2])
+				{
+					// Real triangle.
+					tris++;
+				}
 			}
-		}
-#endif // 0
 
-		// Print some stats.
-		printf("\tverts = %d, tris = %d, mverts = %d\n", vertices.size(), vertex_indices.size() / 3, morph_vertices.size());
+			stats.output_real_triangles += tris;
+			stats.output_degenerate_triangles += (vertex_indices.size() - 2) - tris;
+
+			// Write real triangle count.
+			SDL_WriteLE32(rw, tris);
+		}
+
+//		// Print some stats.
+//		printf("\tverts = %d, tris = %d\n", vertices.size(), (vertex_indices.size() - 2));
 	}
 
 
-	void	add_morph_vertex(int x, int z)
-	// Add the specified vertex to our list of morph vertices.
+	void	emit_vertex(int x, int z)
+	// Call this in strip order.  Inserts the given vert into the current strip.
 	{
 		int	index = get_vertex_index(x, z);
+		vertex_indices.push_back(index);
 
-		for (std::vector<int>::iterator it = morph_vertices.begin(); it != morph_vertices.end(); ++it) {
-			if (*it == index) {
-				// This vert is already listed as a morph vert.
-				return;
-			}
+		// Peephole optimization: if the strip begins with three of
+		// the same vert in a row, as generate_block() often causes,
+		// then the first two are a no-op, so strip them away.
+		if (vertex_indices.size() == 3
+			&& vertex_indices[0] == vertex_indices[1]
+			&& vertex_indices[0] == vertex_indices[2])
+		{
+			vertex_indices.resize(1);
 		}
-
-		// Add to our list of morph verts.
-		morph_vertices.push_back(index);
-	}
-
-
-	void	add_triangle(int ax, int az, int bx, int bz, int cx, int cz)
-	// Inserts the three specified verts into our triangle list.
-	{
-		int	index_a = get_vertex_index(ax, az);
-		int	index_b = get_vertex_index(bx, bz);
-		int	index_c = get_vertex_index(cx, cz);
-
-		vertex_indices.push_back(index_a);
-		vertex_indices.push_back(index_b);
-		vertex_indices.push_back(index_c);
 	}
 };
 
