@@ -116,6 +116,11 @@ inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 
 // Computes a hash of the given data buffer.
 // Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
 // Due to Dan Bernstein.  Allegedly very good on strings.
+//
+// One problem with this hash function is that e.g. if you take a
+// bunch of 32-bit ints and hash them, their hash values will be
+// concentrated toward zero, instead of randomly distributed in
+// [0,2^32-1], because of shifting up on 5 bits per byte.
 {
 	const unsigned char*	data = (const unsigned char*) data_in;
 	unsigned int	h = seed;
@@ -123,10 +128,22 @@ inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 
 		size--;
 		h = ((h << 5) + h) ^ (unsigned) data[size];
 	}
+}
 
-	// Alternative: "sdbm" hash function, suggested at same web page above.
-	// h = 0;
-	// for bytes { h = (h << 16) + (h << 6) - hash + *p; }
+
+inline size_t	sdbm_hash(const void* data_in, int size, unsigned int seed = 5381)
+// Alternative: "sdbm" hash function, suggested at same web page
+// above, http::/www.cs.yorku.ca/~oz/hash.html
+//
+// This is somewhat slower, but it works way better than the above
+// hash function for hashing large numbers of 32-bit ints.
+{
+	const unsigned char*	data = (const unsigned char*) data_in;
+	unsigned int	h = seed;
+	while (size > 0) {
+		size--;
+		h = (h << 16) + (h << 6) - h + (unsigned) data[size];
+	}
 
 	return h;
 }

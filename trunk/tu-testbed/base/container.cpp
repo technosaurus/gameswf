@@ -219,6 +219,64 @@ void	test_hash()
 }
 
 
+//#include <hash_map>
+//#include <map>
+
+void	test_hash_speed()
+// Test function for hash performance of adding keys and doing lookup.
+{
+
+// Hash type, for doing comparative tests.
+
+// tu's hash
+#define HASH hash<uint32, uint32 >
+#define HASH_ADD(h, k, v) h.add(k, v)
+
+// STL's hash
+//#define HASH std::hash_map<uint32, uint32>
+//#define HASH_ADD(h, k, v) h[k] = v
+
+// STL's map
+//#define HASH std::map<uint32, uint32>
+//#define HASH_ADD(h, k, v) h[k] = v
+
+	const int	SIZE = 10000000;
+
+	// Make an array of random numbers.
+	array<uint32>	numbers;
+	numbers.resize(SIZE);
+
+	for (int i = 0, n = numbers.size(); i < n; i++)
+	{
+		numbers[i] = tu_random::next_random();
+	}
+
+	// Uniquify the array.
+	HASH	new_index;
+	int	next_new_index = 0;
+	{for (int i = 0, n = numbers.size(); i < n; i++)
+	{
+		HASH::iterator	it = new_index.find(numbers[i]);
+		if (it == new_index.end())
+		{
+			// First time this number has been seen.
+			HASH_ADD(new_index, numbers[i], next_new_index);
+			next_new_index++;
+		}
+		else
+		{
+			// This number already appears in the list.
+// 			printf("duplicate entry %x, prev new index %d, current array index %d\n",
+// 				   numbers[i],
+// 				   it->second,
+// 				   i);
+		}
+	}}
+
+	printf("next_new_index = %d\n", next_new_index);
+}
+
+
 void	test_stringi()
 {
 	tu_stringi	a, b;
@@ -319,6 +377,8 @@ void	test_stringi_hash()
 
 int	main()
 {
+
+#if 0
 	printf("sizeof(tu_string) == %d\n", sizeof(tu_string));
 
 	array<tu_string>	storage;
@@ -412,6 +472,9 @@ int	main()
 	test_stringi_hash();
 
 	// TODO: unit tests for array<>, tu_string, string_hash<>
+#endif
+
+	test_hash_speed();
 
 	return 0;
 }

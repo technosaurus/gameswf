@@ -38,7 +38,19 @@ public:
 		unsigned char*	p = (unsigned char*) &data;
 		int	size = sizeof(T);
 
-		return bernstein_hash(p, size);
+		return sdbm_hash(p, size);
+	}
+};
+
+
+template<class T>
+class identity_hash
+// Hash is just the input value; can use this for integer-indexed hash tables.
+{
+public:
+	size_t	operator()(const T& data) const
+	{
+		return (size_t) data;
 	}
 };
 
