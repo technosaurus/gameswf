@@ -18,6 +18,7 @@
 #include "gameswf_button.h"
 #include "gameswf_impl.h"
 #include "gameswf_font.h"
+#include "gameswf_fontlib.h"
 #include "gameswf_log.h"
 #include "gameswf_render.h"
 #include "gameswf_shape.h"
@@ -813,6 +814,32 @@ namespace gameswf
 		}
 
 
+		void	get_owned_fonts(array<font*>* fonts)
+		// Fill up *fonts with fonts that we own.
+		{
+			for (hash<int, font*>::iterator it = m_fonts.begin();
+			     it != m_fonts.end();
+			     ++it)
+			{
+				font*	f = it.get_value();
+				if (f->get_owning_movie() == this)
+				{
+					fonts->push_back(f);
+				}
+			}
+		}
+
+
+		void	generate_font_bitmaps()
+		// Generate bitmaps for our fonts, if necessary.
+		{
+			// Collect list of fonts.
+			array<font*>	fonts;
+			get_owned_fonts(&fonts);
+			fontlib::generate_font_bitmaps(fonts);
+		}
+
+
 		// Increment this when the cache data format changes.
 		#define CACHE_FILE_VERSION 1
 
@@ -829,6 +856,11 @@ namespace gameswf
 			out->write_bytes(header, 4);
 
 			// Write font data.
+			array<font*>	fonts;
+			get_owned_fonts(&fonts);
+			fontlib::output_cached_data(out, fonts);
+
+#if 0
 			for (hash<int, font*>::iterator it = m_fonts.begin();
 			     it != m_fonts.end();
 			     ++it)
@@ -838,9 +870,12 @@ namespace gameswf
 				{
 					out->write_le16(it.get_key());
 					f->output_cached_data(out);
+
+					fonts.push_back(f);
 				}
 			}
 			out->write_le16((Sint16) -1);	// end of fonts marker.
+#endif // 0
 			     
 			// Write character data.
 			{for (hash<int, character*>::iterator it = m_characters.begin();
@@ -875,6 +910,11 @@ namespace gameswf
 			}
 
 			// Read the cached font data.
+			array<font*>	fonts;
+			get_owned_fonts(&fonts);
+			fontlib::input_cached_data(in, fonts);
+
+#if 0
 			for (;;)
 			{
 				if (in->get_error() != TU_FILE_NO_ERROR)
@@ -896,6 +936,8 @@ namespace gameswf
 				if (f)
 				{
 					f->input_cached_data(in);
+					
+					fonts.push_back(f);
 				}
 				else
 				{
@@ -904,7 +946,7 @@ namespace gameswf
 					return;
 				}
 			}
-
+#endif // 0
 
 			// Read the cached character data.
 			for (;;)
@@ -982,6 +1024,84 @@ namespace gameswf
 	}
 
 
+
+	void	get_movie_info(
+		const char* filename,
+		int* version,
+		int* width,
+		int* height,
+		float* frames_per_second,
+		int* frame_count
+		)
+	// Attempt to read the header of the given .swf movie file.
+	// Put extracted info in the given vars.
+	// Sets *version to 0 if info can't be extracted.
+	{
+		if (s_opener_function == NULL)
+		{
+			log_error("error: get_movie_info(): no file opener function registered\n");
+			if (version) *version = 0;
+			return;
+		}
+
+		tu_file*	in = s_opener_function(filename);
+		if (in == NULL || in->get_error() != TU_FILE_NO_ERROR)
+		{
+			log_error("error: get_movie_info(): can't open '%s'\n", filename);
+			if (version) *version = 0;
+			delete in;
+			return;
+		}
+
+		Uint32	header = in->read_le32();
+		Uint32	file_length = in->read_le32();
+
+		int	local_version = (header >> 24) & 255;
+		if ((header & 0x0FFFFFF) != 0x00535746
+		    && (header & 0x0FFFFFF) != 0x00535743)
+		{
+			// ERROR
+			log_error("error: get_movie_info(): file '%s' does not start with a SWF header!\n", filename);
+			if (version) *version = 0;
+			delete in;
+			return;
+		}
+		bool	compressed = (header & 255) == 'C';
+
+		tu_file*	original_in = NULL;
+		if (compressed)
+		{
+			original_in = in;
+
+			// Uncompress the input as we read it.
+			in = zlib_adapter::make_inflater(original_in);
+
+			// Subtract the size of the 8-byte header, since
+			// it's not included in the compressed
+			// stream length.
+			file_length -= 8;
+		}
+
+		stream	str(in);
+
+		rect	frame_size;
+		frame_size.read(&str);
+
+		float	local_frame_rate = str.read_u16() / 256.0f;
+		int	local_frame_count = str.read_u16();
+
+		if (version) *version = local_version;
+		if (width) *width = int(frame_size.width() / 20.0f + 0.5f);
+		if (height) *height = int(frame_size.height() / 20.0f + 0.5f);
+		if (frames_per_second) *frames_per_second = local_frame_rate;
+		if (frame_count) *frame_count = local_frame_count;
+
+		delete in;
+		delete original_in;
+	}
+
+
+
 	movie_interface*	create_movie(const char* filename)
 	// External API.  Create a movie from the given stream, and
 	// return it.
@@ -1023,6 +1143,10 @@ namespace gameswf
 	// well.
 	{
 		movie_interface*	m = create_movie(filename);
+		if (m == NULL)
+		{
+			return m;
+		}
 
 		if (s_opener_function == NULL)
 		{
@@ -1039,6 +1163,8 @@ namespace gameswf
 		{
 			// Can't open cache file; don't sweat it.
 			IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
+
+			m->generate_font_bitmaps();	// can't read cache, so generate font texture data.
 		}
 		else
 		{
@@ -1083,8 +1209,10 @@ namespace gameswf
 		{
 			log_error("error: couldn't load library movie '%s'\n", url.c_str());
 		}
-
-		s_movie_library.add(url, m);
+		else
+		{
+			s_movie_library.add(url, m);
+		}
 
 		return m;
 	}
