@@ -191,6 +191,12 @@ namespace gameswf
 		}
 
 		// External
+		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value)
+		{
+			assert(0);
+		}
+
+		// External
 		virtual const char*	get_variable(const char* path_to_var) const
 		{
 			assert(0);
@@ -405,6 +411,7 @@ namespace gameswf
 		virtual void	get_drag_state(drag_state* st) { assert(m_parent); m_parent->get_drag_state(st); }
 
 		virtual const char*	call_method(const char* method_call) { assert(0); return NULL; }
+		virtual const char*	call_method(const wchar_t* method_call) { assert(0); return NULL; }
 
 		virtual void	set_visible(bool visible) { m_visible = visible; }
 		virtual bool	get_visible() const { return m_visible; }

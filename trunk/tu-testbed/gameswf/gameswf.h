@@ -11,6 +11,9 @@
 #define GAMESWF_H
 
 
+#include <ctype.h>	// for poxy wchar_t
+
+
 class tu_file;
 class render_handler;
 class weak_proxy;	// forward decl; defined in base/smart_ptr.h
@@ -242,13 +245,19 @@ namespace gameswf
 		// You can use this to set the value of text fields,
 		// ordinary variables, or properties of characters
 		// within the script.
+		//
+		// This version accepts UTF-8
 		virtual void	set_variable(const char* path_to_var, const char* new_value) = 0;
-		// @@ do we want a version that takes a number?
+		// This version accepts UCS-2 or UCS-4, depending on sizeof(wchar_t)
+		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value) = 0;
+		// @@ do we want versions that take a number?
 
 		// Get the value of an ActionScript variable.
 		//
 		// Value is ephemeral & not thread safe!!!  Use it or
 		// copy it immediately.
+		//
+		// Returns UTF-8
 		virtual const char*	get_variable(const char* path_to_var) const = 0;
 		// @@ do we want a version that returns a number?
 
@@ -278,7 +287,11 @@ namespace gameswf
 		// or anything tricky.
 		//
 		// Needless to say, this is not blazingly fast.
+
+		// This version accepts UTF-8
 		virtual const char*	call_method(const char* method_call) = 0;
+		// This version accepts UCS-2 or UCS-4, depending on sizeof(wchar_t)
+		virtual const char*	call_method(const wchar_t* method_call) = 0;
 
 		// Make the movie visible/invisible.  An invisible
 		// movie does not advance and does not render.
@@ -417,7 +430,7 @@ namespace gameswf
 		//
 		// // For direct text rendering from the host app.
 		void	draw_string(const font* f, float x, float y, float size, const char* text);
-		// void	draw_string(const font* f, float x, float y, float size, const wchar* text);	// wide-char version
+		// void	draw_string(const font* f, float x, float y, float size, const wchar_t* text);	// wide-char version
 	}
 	
 	

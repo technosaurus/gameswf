@@ -186,6 +186,32 @@ namespace gameswf
 		{
 		}
 
+		as_value(const wchar_t* wstr)
+			:
+			m_type(STRING),
+			m_string_value(""),
+			m_number_value(0.0)
+		{
+			// Encode the string value as UTF-8.
+			//
+			// Is this dumb?  Alternatives:
+			//
+			// 1. store a tu_wstring instead of tu_string?
+			// Bloats typical ASCII strings, needs a
+			// tu_wstring type, and conversion back the
+			// other way to interface with char[].
+			// 
+			// 2. store a tu_wstring as a union with
+			// tu_string?  Extra complexity.
+			//
+			// 3. ??
+			//
+			// Storing UTF-8 seems like a pretty decent
+			// way to do it.  Everything else just
+			// continues to work.
+			tu_string::encode_utf8_from_wchar(&m_string_value, wstr);
+		}
+
 		as_value(bool val)
 			:
 			m_type(NUMBER),
@@ -446,6 +472,7 @@ namespace gameswf
 
 
 	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const char* method_call);
+	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const wchar_t* method_call);
 
 	//
 	// event_id

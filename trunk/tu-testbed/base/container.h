@@ -820,6 +820,12 @@ public:
 
 	void	resize(int new_size);
 
+	// Set *result to the UTF-8 encoded version of wstr[].
+	//
+	// Could add operator= overloads, but maybe it's better to
+	// keep this very explicit.
+	static void	encode_utf8_from_wchar(tu_string* result, const wchar_t* wstr);
+
 	// Utility: case-insensitive string compare.  stricmp() is not
 	// ANSI or POSIX, doesn't seem to appear in Linux.
 	static int	stricmp(const char* a, const char* b);

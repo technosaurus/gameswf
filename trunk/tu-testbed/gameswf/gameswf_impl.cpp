@@ -379,7 +379,7 @@ namespace gameswf
 
 		virtual int	get_loading_frame() const { return m_loading_frame; }
 
-		/*movie_def_impl*/
+		/* movie_def_impl */
 		virtual create_bitmaps_flag	get_create_bitmaps() const
 		// Returns DO_CREATE_BITMAPS if we're supposed to
 		// initialize our bitmap infos, or DO_NOT_INIT_BITMAPS
@@ -637,7 +637,7 @@ namespace gameswf
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) { return m_playlist[frame_number]; }
 
 		
-		/*movie_def_impl*/
+		/* movie_def_impl */
 		void	read(tu_file* in)
 		// Read a .SWF movie.
 		{
@@ -735,7 +735,7 @@ namespace gameswf
 		}
 
 
-		/*movie_def_impl*/
+		/* movie_def_impl */
 		void	get_owned_fonts(array<font*>* fonts)
 		// Fill up *fonts with fonts that we own.
 		{
@@ -752,7 +752,7 @@ namespace gameswf
 		}
 
 
-		/*movie_def_impl*/
+		/* movie_def_impl */
 		void	generate_font_bitmaps()
 		// Generate bitmaps for our fonts, if necessary.
 		{
@@ -767,7 +767,7 @@ namespace gameswf
 		#define CACHE_FILE_VERSION 1
 
 
-		/*movie_def_impl*/
+		/* movie_def_impl */
 		void	output_cached_data(tu_file* out)
 		// Dump our cached data into the given stream.
 		{
@@ -797,7 +797,7 @@ namespace gameswf
 		}
 
 
-		/*movie_def_impl*/
+		/* movie_def_impl */
 		void	input_cached_data(tu_file* in)
 		// Read in cached data and use it to prime our loaded characters.
 		{
@@ -1054,7 +1054,14 @@ namespace gameswf
 		virtual void	set_play_state(play_state s) { m_movie->set_play_state(s); }
 		virtual play_state	get_play_state() const { return m_movie->get_play_state(); }
 
+		/* movie_root */
 		virtual void	set_variable(const char* path_to_var, const char* new_value)
+		{
+			m_movie->set_variable(path_to_var, new_value);
+		}
+
+		/* movie_root */
+		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value)
 		{
 			m_movie->set_variable(path_to_var, new_value);
 		}
@@ -1066,6 +1073,13 @@ namespace gameswf
 
 		// For ActionScript interfacing convenience.
 		virtual const char*	call_method(const char* method_call)
+		{
+			assert(m_movie != NULL);
+			return m_movie->call_method(method_call);
+		}
+
+		// For ActionScript interfacing convenience.
+		virtual const char*	call_method(const wchar_t* method_call)
 		{
 			assert(m_movie != NULL);
 			return m_movie->call_method(method_call);
@@ -3126,6 +3140,18 @@ namespace gameswf
 		}
 
 		/* sprite_instance */
+		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value)
+		{
+			assert(m_parent == NULL);	// should only be called on the root movie.
+
+			array<with_stack_entry>	empty_with_stack;
+			tu_string	path(path_to_var);
+			as_value	val(new_value);
+
+			m_as_environment.set_variable(path, val, empty_with_stack);
+		}
+
+		/* sprite_instance */
 		virtual const char*	get_variable(const char* path_to_var) const
 		{
 			assert(m_parent == NULL);	// should only be called on the root movie.
@@ -3652,6 +3678,15 @@ namespace gameswf
 
 		/*sprite_instance*/
 		virtual const char*	call_method(const char* method_call)
+		{
+			// Keep m_as_environment alive during any method calls!
+			smart_ptr<as_object_interface>	this_ptr(this);
+
+			return call_method_parsed(&m_as_environment, this, method_call);
+		}
+
+		/*sprite_instance*/
+		virtual const char*	call_method(const wchar_t* method_call)
 		{
 			// Keep m_as_environment alive during any method calls!
 			smart_ptr<as_object_interface>	this_ptr(this);
