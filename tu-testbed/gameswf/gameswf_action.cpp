@@ -390,7 +390,7 @@ namespace gameswf
 			int	bit_index = code - (byte_index << 3);
 			int	mask = 1 << bit_index;
 
-			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
+			assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 
 			if (m_keymap[byte_index] & mask)
 			{
@@ -412,7 +412,7 @@ namespace gameswf
 			int	bit_index = code - (byte_index << 3);
 			int	mask = 1 << bit_index;
 
-			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
+			assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 
 			m_keymap[byte_index] |= mask;
 
@@ -436,7 +436,7 @@ namespace gameswf
 			int	bit_index = code - (byte_index << 3);
 			int	mask = 1 << bit_index;
 
-			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
+			assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 
 			m_keymap[byte_index] &= ~mask;
 
@@ -720,7 +720,7 @@ namespace gameswf
 	static as_value	get_property(as_object_interface* obj, int prop_number)
 	{
 		as_value	val;
-		if (prop_number >= 0 && prop_number < sizeof(s_property_names)/sizeof(s_property_names[0]))
+		if (prop_number >= 0 && prop_number < int(sizeof(s_property_names)/sizeof(s_property_names[0])))
 		{
 			obj->get_member(s_property_names[prop_number], &val);
 		}
@@ -733,7 +733,7 @@ namespace gameswf
 
 	static void	set_property(as_object_interface* obj, int prop_number, const as_value& val)
 	{
-		if (prop_number >= 0 && prop_number < sizeof(s_property_names)/sizeof(s_property_names[0]))
+		if (prop_number >= 0 && prop_number < int(sizeof(s_property_names)/sizeof(s_property_names[0])))
 		{
 			obj->set_member(s_property_names[prop_number], val);
 		}
@@ -1130,7 +1130,7 @@ namespace gameswf
 					if (st.m_character == NULL)
 					{
 						log_error("error: start_drag of invalid target '%s'.\n",
-							  env->top(0).to_tu_string());
+							  env->top(0).to_string());
 					}
 
 					st.m_lock_center = env->top(1).to_bool();
@@ -1636,7 +1636,7 @@ namespace gameswf
 						else if (type == 2)
 						{
 							// NULL
-							env->push(NULL);	// @@???
+							env->push(as_value());	// @@???
 						}
 						else if (type == 3)
 						{
@@ -1646,6 +1646,7 @@ namespace gameswf
 						{
 							// contents of register
 							int	reg = m_buffer[3 + i];
+							UNUSED(reg);
 							i++;
 //							log_msg("reg[%d]\n", reg);
 							env->push(/* contents of register[reg] */ false);	// @@ TODO
@@ -1874,20 +1875,20 @@ namespace gameswf
 			{
 				// @@ actually, we need to return our full path.
 				char buffer[50];
-				snprintf(buffer, 50, "<object 0x%X>", m_object_value);
+				snprintf(buffer, 50, "<object 0x%X>", (unsigned) m_object_value);
 				m_string_value = buffer;
 			}
 		}
 		else if (m_type == C_FUNCTION)
 		{
 			char buffer[50];
-			snprintf(buffer, 50, "<c_function 0x%X>", m_c_function_value);
+			snprintf(buffer, 50, "<c_function 0x%X>", (unsigned) m_c_function_value);
 			m_string_value = buffer;
 		}
 		else if (m_type == AS_FUNCTION)
 		{
 			char buffer[50];
-			snprintf(buffer, 50, "<as_function 0x%X>", m_as_function_value);
+			snprintf(buffer, 50, "<as_function 0x%X>", (unsigned) m_as_function_value);
 			m_string_value = buffer;
 		}
 		else

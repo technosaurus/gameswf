@@ -34,7 +34,7 @@ inline void* my_calloc(int count, int size)
 
 inline void	my_cfree(void* mem)
 {
-	delete [] mem;
+	delete [] (char*) mem;
 }
 
 

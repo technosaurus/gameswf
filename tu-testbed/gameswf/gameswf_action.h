@@ -163,8 +163,8 @@ namespace gameswf
 		as_value(const char* str)
 			:
 			m_type(STRING),
-			m_number_value(0.0),
-			m_string_value(str)
+			m_string_value(str),
+			m_number_value(0.0)
 		{
 		}
 
