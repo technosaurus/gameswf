@@ -606,7 +606,7 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 
 	// Write a .chu header for the output file.
 	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
-	SDL_WriteLE16(out, 4);	// file format version.
+	SDL_WriteLE16(out, 5);	// file format version.
 	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
 	WriteFloat32(out, vertical_scale);	// meters / unit of vertical measurement.
@@ -1281,9 +1281,15 @@ namespace mesh {
 		box_center.write(rw);
 		box_extent.write(rw);
 
+		// Use (1 << 14) values in both positive and negative
+		// directions.  Wastes just under 1 bit, but the total range
+		// is [-2^14, 2^14], which is 2^15+1 values.  This is good --
+		// fits nicely w/ 2^N+1 dimensions of binary-triangle-tree
+		// vertex locations.
+
 		vec3	compress_factor;
 		{for (int i = 0; i < 3; i++) {
-			compress_factor.set(i, ((1 << 15) - 1) / fmax(1.0, box_extent.get(i)));
+			compress_factor.set(i, (1 << 14) / fmax(1.0, box_extent.get(i)));
 		}}
 
 		// Make sure the vertex buffer is not too big.
