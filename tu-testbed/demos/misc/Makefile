@@ -16,12 +16,15 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 LIBS := $(LIB_OUT) $(GEOMETRY_LIB) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB)
 
 
-all: engine_libs quad_distance_test$(EXE_EXT)
+all: engine_libs quad_distance_test$(EXE_EXT) calendar$(EXE_EXT)
 
 
 quad_distance_test$(EXE_EXT): quad_distance_test.$(OBJ_EXT) $(GEOMETRY_LIB) $(BASE_LIB)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
+
+calendar$(EXE_EXT): calendar.$(OBJ_EXT) $(BASE_LIB)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 engine_libs:
 	$(MAKE) -C $(TOP)/base
