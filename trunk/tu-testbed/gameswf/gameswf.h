@@ -40,6 +40,14 @@ namespace gameswf
 		virtual void	advance(float delta_time) = 0;
 		virtual void	goto_frame(int frame_number) = 0;
 		virtual void	display() = 0;
+
+		enum play_state
+		{
+			PLAY,
+			STOP
+		};
+		virtual void	set_play_state(play_state s) = 0;
+		virtual play_state	get_play_state() const = 0;
 		
 		virtual void	set_background_color(const rgba& bg_color) = 0;
 		
@@ -59,6 +67,11 @@ namespace gameswf
 		// Push replacement text into an edit-text field.  Returns
 		// true if the field was found and could accept text.
 		virtual bool	set_edit_text(const char* var_name, const char* new_text) = 0;
+
+		// For caching precomputed stuff.  Generally of
+		// interest to gameswf_processor and programs like it.
+		virtual void	output_cached_data(tu_file* out) = 0;
+		virtual void	input_cached_data(tu_file* in) = 0;
 	};
 	
 	// Create a swf::movie_interface from the given input stream.

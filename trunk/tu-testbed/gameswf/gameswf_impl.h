@@ -111,14 +111,10 @@ namespace gameswf
 
 		virtual void	goto_frame(int target_frame_number) { assert(0); }
 
-		enum play_state
-		{
-			PLAY,
-			STOP
-		};
 		virtual void	set_play_state(play_state s)
 		{
 		}
+		virtual play_state	get_play_state() const { assert(0); return STOP; }
 
 		virtual void	notify_mouse_state(int x, int y, int buttons)
 		// The host app uses this to tell the movie where the
@@ -151,6 +147,9 @@ namespace gameswf
 			assert(0);
 			return false;
 		}
+
+		virtual void	output_cached_data(tu_file* out) {}
+		virtual void	input_cached_data(tu_file* in) {}
 	};
 
 

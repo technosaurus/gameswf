@@ -131,6 +131,9 @@ namespace gameswf
 		const rect&	get_bound() const { return m_bound; }
 		void	compute_bound(rect* r) const;
 
+		// void	output_cached_data(tu_file* out);
+		// void	input_cached_data(tu_file* in);
+
 	private:
 		void	sort_and_clean_meshes(int display_number) const;
 		
