@@ -119,14 +119,14 @@ namespace gameswf
 		// Builds cached glyph textures from shape info.
 		void	generate_font_bitmaps();
 
-		// Save cached glyph textures to a file.  This might be used by an
+		// Save cached glyph textures to a stream.  This might be used by an
 		// offline tool, which loads in all movies, calls
 		// generate_font_bitmaps(), and then calls save_cached_font_data()
 		// so that a run-time app can call load_cached_font_data().
-		void	save_cached_font_data(const char* filename);
+		void	save_cached_font_data(tu_file* out);
 
-		// Load a file containing previously-saved font glyph textures.
-		bool	load_cached_font_data(const char* filename);
+		// Load a stream containing previously-saved font glyph textures.
+		bool	load_cached_font_data(tu_file* in);
 
 		// For accessing the fonts in the library.
 		int	get_font_count();
