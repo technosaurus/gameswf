@@ -20,9 +20,10 @@
 #include <new>	// for placement new
 
 
-// If you prefer STL implementations instead of home cooking, then put
-// -D_TU_USE_STL=1 in your compiler flags, or do it in config.h, or
-// do it right here:
+// If you prefer STL implementations of array<> (i.e. std::vector) and
+// hash<> (i.e. std::hash_map) instead of home cooking, then put
+// -D_TU_USE_STL=1 in your compiler flags, or do it in tu_config.h, or do
+// it right here:
 //#define _TU_USE_STL 1
 
 
@@ -40,8 +41,6 @@ public:
 		return bernstein_hash(p, size);
 	}
 };
-
-
 
 
 #if _TU_USE_STL == 1
@@ -142,22 +141,22 @@ public:
 };
 
 
-// tu_string is a subset of std::string, for the most part
-class tu_string : public std::string
-{
-public:
-	tu_string(const char* str) : std::string(str) {}
-	tu_string() : std::string() {}
-	tu_string(const tu_string& str) : std::string(str) {}
+// // tu_string is a subset of std::string, for the most part
+// class tu_string : public std::string
+// {
+// public:
+// 	tu_string(const char* str) : std::string(str) {}
+// 	tu_string() : std::string() {}
+// 	tu_string(const tu_string& str) : std::string(str) {}
 
-	int	length() const { return (int) std::string::length(); }
-};
+// 	int	length() const { return (int) std::string::length(); }
+// };
 
 
-template<class U>
-class string_hash : public hash<tu_string, U, std::hash<std::string> >
-{
-};
+// template<class U>
+// class string_hash : public hash<tu_string, U, std::hash<std::string> >
+// {
+// };
 
 
 #else // not _TU_USE_STL
@@ -671,6 +670,9 @@ private:
 };
 
 
+#endif // not _TU_USE_STL
+
+
 // String-like type.  Attempt to be memory-efficient with small strings.
 class tu_string
 {
@@ -698,7 +700,7 @@ public:
 	{
 		if (using_heap())
 		{
-			dlfree(m_heap.m_buffer);
+			tu_free(m_heap.m_buffer, m_heap.m_capacity);
 		}
 	}
 
@@ -828,7 +830,7 @@ private:
 
 	bool	using_heap() const
 	{
-		bool	heap = m_heap.m_all_ones == (char) 0xFF;
+		bool	heap = (m_heap.m_all_ones == (char) ~0);
 		return heap;
 	}
 
@@ -884,8 +886,6 @@ class string_hash : public hash<tu_string, U, string_hash_functor<tu_string> >
 {
 };
 
-
-#endif // not _TU_USE_STL
 
 
 #endif // CONTAINER_H

@@ -16,10 +16,10 @@ void	tu_string::resize(int new_size)
 
 		if (using_heap() == false)
 		{
-			if (new_size < 16)
+			if (new_size < 15)
 			{
 				// Stay with internal storage.
-				m_local.m_size = new_size + 1;
+				m_local.m_size = (char) (new_size + 1);
 				m_local.m_buffer[new_size] = 0;	// terminate
 			}
 			else
@@ -35,7 +35,7 @@ void	tu_string::resize(int new_size)
 
 				// Set the heap state.
 				m_heap.m_buffer = buf;
-				m_heap.m_all_ones = (char) 0xFF;
+				m_heap.m_all_ones = char(~0);
 				m_heap.m_size = new_size + 1;
 				m_heap.m_capacity = capacity;
 			}
@@ -43,16 +43,17 @@ void	tu_string::resize(int new_size)
 		else
 		{
 			// Currently using heap storage.
-			if (new_size < 16)
+			if (new_size < 15)
 			{
 				// Switch to local storage.
 
 				// Be sure to get stack copies of m_heap info, before we overwrite it.
 				char*	old_buffer = m_heap.m_buffer;
 				int	old_capacity = m_heap.m_capacity;
+				UNUSED(old_capacity);
 
 				// Copy existing string info.
-				m_local.m_size = new_size + 1;
+				m_local.m_size = (char) (new_size + 1);
 				strncpy(m_local.m_buffer, old_buffer, 16);
 				m_local.m_buffer[new_size] = 0;	// ensure termination.
 
