@@ -13,7 +13,9 @@
 
 
 #include "engine/image_filters.h"
-#include "engine/util.h"
+#include "engine/utility.h"
+#include "engine/container.h"
+#include "engine/image.h"
 #include <stdio.h>
 #include <string.h>
 #include <malloc.h>
@@ -42,20 +44,17 @@ Uint8*	get_pixel(SDL_Surface* image, int x, int y)
 	if ((im != image) || (yy != y)) {
 		im = image;
 		yy = y;
-		row = image->pixels + (y * image->pitch);
+		row = ((Uint8*) image->pixels) + (y * image->pitch);
 	}
 	return(&row[x * 3]);
 }
 
 
-void	get_row(Uint8* row, SDL_Surface* image, int y)
+void	get_row(Uint8* row, SDL_Surface* image, int x0, int xsize, int y)
 // Copy RGB data from the specified row into the given buffer.
 {
-	if ((y < 0) || (y >= image->h)) {
-		assert(0);
-		return;
-	}
-	memcpy(row, image->pixels + (y * image->span), (3 * image->w));
+	y = iclamp(y, 0, image->h - 1);
+	memcpy(row, ((Uint8*) image->pixels) + (y * image->pitch) + x0 * 3, (3 * xsize));
 }
 
 
@@ -70,8 +69,8 @@ void	get_column(Uint8* column, SDL_Surface* image, int x)
 		return;
 	}
 
-	d = image->pitch * 3;
-	for (i = image->h, p = image->pixels + x * 3; i-- > 0; p += d) {
+	d = image->pitch;
+	for (i = image->h, p = ((Uint8*) image->pixels) + x * 3; i-- > 0; p += d) {
 		*column++ = *p;
 		*column++ = *(p + 1);
 		*column++ = *(p + 1);
@@ -89,12 +88,12 @@ void	put_pixel(SDL_Surface* image, int x, int y, float r, float g, float b)
 
 	if ((x < 0) || (x >= image->w) || (y < 0) || (y >= image->h)) {
 		assert(0);
-		return(0);
+		return;
 	}
 	if ((im != image) || (yy != y)) {
 		im = image;
 		yy = y;
-		p = image->pixels + (y * image->pitch);
+		p = ((Uint8*) image->pixels) + (y * image->pitch);
 	}
 	p[x * 3 + 0] = iclamp(frnd(r), 0, 255);
 	p[x * 3 + 1] = iclamp(frnd(g), 0, 255);
@@ -109,9 +108,9 @@ void	put_pixel(SDL_Surface* image, int x, int y, float r, float g, float b)
 
 // SOME_CUBIC
 
-#define	filter_support		(1.0)
+#define	cubic_filter_support		(1.0f)
 
-float	filter(float t)
+float	cubic_filter(float t)
 // Cubix approximation to the central hump of Sinc.
 {
 	/* f(t) = 2|t|^3 - 3|t|^2 + 1, -1 <= t <= 1 */
@@ -123,7 +122,7 @@ float	filter(float t)
 
 // BOX
 
-#define	box_support		(0.5)
+#define	box_support		(0.5f)
 
 float	box_filter(float t)
 {
@@ -138,9 +137,9 @@ float	box_filter(float t)
 
 float	triangle_filter(float t)
 {
-	if(t < 0.0) t = -t;
-	if(t < 1.0) return(1.0 - t);
-	return(0.0);
+	if(t < 0.0f) t = -t;
+	if(t < 1.0f) return(1.0f - t);
+	return(0.0f);
 }
 
 
@@ -152,12 +151,12 @@ float	bell_filter(float t)
 /* box (*) box (*) box */
 {
 	if(t < 0) t = -t;
-	if(t < .5) return(.75 - (t * t));
-	if(t < 1.5) {
-		t = (t - 1.5);
-		return(.5 * (t * t));
+	if(t < 0.5f) return(0.75f - (t * t));
+	if(t < 1.5f) {
+		t = (t - 1.5f);
+		return(0.5f * (t * t));
 	}
-	return(0.0);
+	return(0.0f);
 }
 
 
@@ -168,17 +167,17 @@ float	bell_filter(float t)
 float	B_spline_filter(float t)
 /* box (*) box (*) box (*) box */
 {
-	double tt;
+	float	tt;
 
-	if(t < 0) t = -t;
-	if(t < 1) {
+	if(t < 0.0f) t = -t;
+	if(t < 1.0f) {
 		tt = t * t;
-		return((.5f * tt * t) - tt + (2.0f / 3.0f));
-	} else if(t < 2) {
-		t = 2 - t;
+		return((0.5f * tt * t) - tt + (2.0f / 3.0f));
+	} else if (t < 2.0f) {
+		t = 2.0f - t;
 		return((1.0f / 6.0f) * (t * t * t));
 	}
-	return(0.0);
+	return(0.0f);
 }
 
 
@@ -186,8 +185,8 @@ float	B_spline_filter(float t)
 
 float	sinc(float x)
 {
-	x *= M_PI;
-	if(x != 0) return(sinf(x) / x);
+	x *= (float) M_PI;
+	if (x != 0.0f) return(sinf(x) / x);
 	return(1.0f);
 }
 
@@ -195,29 +194,29 @@ float	sinc(float x)
 
 float	Lanczos3_filter(float t)
 {
-	if(t < 0) t = -t;
-	if(t < 3.0f) return(sinc(t) * sinc(t/3.0f));
+	if (t < 0.0f) t = -t;
+	if (t < 3.0f) return(sinc(t) * sinc(t/3.0f));
 	return(0.0f);
 }
 
 
 // MITCHELL
 
-#define	Mitchell_support	(2.0)
+#define	Mitchell_support	(2.0f)
 
-#define	B	(1.0 / 3.0)
-#define	C	(1.0 / 3.0)
+#define	B	(1.0f / 3.0f)
+#define	C	(1.0f / 3.0f)
 
 float	Mitchell_filter(float t)
 {
 	float tt;
 
 	tt = t * t;
-	if(t < 0) t = -t;
-	if(t < 1.0f) {
+	if (t < 0.0f) t = -t;
+	if (t < 1.0f) {
 		t = (((12.0f - 9.0f * B - 6.0f * C) * (t * tt))
 		   + ((-18.0f + 12.0f * B + 6.0f * C) * tt)
-		   + (6.0f - 2 * B));
+		   + (6.0f - 2.0f * B));
 		return(t / 6.0f);
 	} else if(t < 2.0f) {
 		t = (((-1.0f * B - 6.0f * C) * (t * tt))
@@ -229,10 +228,6 @@ float	Mitchell_filter(float t)
 	return(0.0f);
 }
 
-
-/*
- *	image rescaling routine
- */
 
 struct CONTRIB {
 	int	pixel;
@@ -249,22 +244,67 @@ struct CONTRIB {
 	}
 };
 
-//struct CLIST {
-//	int	n;		/* number of contributors */
-//	CONTRIB	*p;		/* pointer to list of contributions */
-//};
+
+};	// end anonymous namespace
 
 
-//CLIST	*contrib;		/* array of contribution lists */
-array< array<CONTRIB> >	contrib;
+namespace image {
 
-void	zoom(SDL_Surface* dst, SDL_Surface* src, float (*filterf)(float t), float fwidth)
-/* dst --> destination image structure */
-/* src --> source image structure */
-/* filterf --> filter function */
-/* fwidth --> filter width (support) */
+
+enum filter_type {
+	FILTER0 = 0,
+	BOX = FILTER0,
+	TRIANGLE,
+	BELL,
+	B_SPLINE,
+	SOME_CUBIC,	// Cubic approximation of Sinc's hump (but no tails).
+	LANCZOS3,
+	MITCHELL,	// This one is alleged to be pretty nice.
+
+	FILTER_COUNT
+};
+
+struct {
+	float	(*filter_function)(float);
+	float	support;
+} filter_table[] =
 {
-	Image *tmp;			/* intermediate image */
+	{ box_filter, box_support },
+	{ triangle_filter, triangle_support },
+	{ bell_filter, bell_support },
+	{ B_spline_filter, B_spline_support },
+	{ cubic_filter, cubic_filter_support },
+	{ Lanczos3_filter, Lanczos3_support },
+	{ Mitchell_filter, Mitchell_support },
+};
+
+
+// TODO: experiment with different filter functions.
+filter_type	default_type = MITCHELL;
+
+
+void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
+		 SDL_Surface* in, float in_x0, float in_y0, float in_x1, float in_y1)
+// Rescale the specified portion of the input image into the specified
+// portion of the output image.  Coordinates are *inclusive*.
+{
+	assert(out_x0 <= out_x1);
+	assert(out_y0 <= out_y1);
+	assert(out_x0 >= 0 && out_x0 < out->w);
+	assert(out_x1 >= 0 && out_x1 < out->w);
+	assert(out_y0 >= 0 && out_y0 < out->h);
+	assert(out_y1 >= 0 && out_y1 < out->h);
+
+	float	(*filter_function)(float);
+	float	support;
+
+	// Pick a filter function & support.
+	assert(default_type >= FILTER0 && default_type < FILTER_COUNT);
+	filter_function = filter_table[default_type].filter_function;
+	support = filter_table[default_type].support;
+
+
+	SDL_Surface*	tmp;		/* intermediate image */
 	float	xscale, yscale;		/* zoom scale factors */
 	int i, j, k;			/* loop variables */
 	int n;				/* pixel number */
@@ -272,22 +312,32 @@ void	zoom(SDL_Surface* dst, SDL_Surface* src, float (*filterf)(float t), float f
 	float width, fscale, weight;	/* filter calculation variables */
 	Uint8*	raster;			/* a row or column of pixels */
 
+	array< array<CONTRIB> >	contrib;
+
+	int	out_width = out_x1 - out_x0 + 1;
+	int	out_height = out_y1 - out_y0 + 1;
+	assert(out_width > 0);
+	assert(out_height > 0);
+
+	float	in_width = in_x1 - in_x0;
+	float	in_height = in_y1 - in_y0;
+	assert(in_width > 0);
+	assert(in_height > 0);
+
+	int	in_window_w = ceilf(in_x1) - floorf(in_x0) + 1;
+	int	in_window_h = ceilf(in_y1) - floorf(in_y0) + 1;
+
 	/* create intermediate image to hold horizontal zoom */
-//	tmp = new_image(dst->xsize, src->ysize);
-	tmp = image::create_rgb(dst->w, dst->h);
-	xscale = (float) dst->w / (float) src->w;
-	yscale = (float) dst->h / (float) src->h;
+	tmp = image::create_rgb(out_width, in_window_h);
+	xscale = (float) (out_width - 1) / in_width;
+	yscale = (float) (out_height - 1) / in_height;
 
 	/* pre-calculate filter contributions for a row */
-//	contrib = (CLIST *)calloc(dst->xsize, sizeof(CLIST));
-	contrib.resize(dst->w);
+	contrib.resize(tmp->w);
 	if(xscale < 1.0f) {
-		width = fwidth / xscale;
+		width = support / xscale;
 		fscale = 1.0f / xscale;
-		for (i = 0; i < dst->w; ++i) {
-//			contrib[i].n = 0;
-//			contrib[i].p = (CONTRIB *)calloc((int) (width * 2 + 1),
-//					sizeof(CONTRIB));
+		for (i = 0; i < tmp->w; ++i) {
 			contrib[i].resize(0);
 
 			center = (float) i / xscale;
@@ -295,84 +345,53 @@ void	zoom(SDL_Surface* dst, SDL_Surface* src, float (*filterf)(float t), float f
 			right = floorf(center + width);
 			for (j = left; j <= right; ++j) {
 				weight = center - (float) j;
-				weight = (*filterf)(weight / fscale) / fscale;
-				if(j < 0) {
-					n = -j;
-				} else if(j >= src->w) {
-					n = (src->w - j) + src->w - 1;
-				} else {
-					n = j;
-				}
-//				k = contrib[i].n++;
-//				contrib[i].p[k].pixel = n;
-//				contrib[i].p[k].weight = weight;
+				weight = (*filter_function)(weight / fscale) / fscale;
+				n = iclamp(j, 0, in_window_w - 1);
 				contrib[i].push_back(CONTRIB(n, weight));
 			}
 		}
 	} else {
-		for (i = 0; i < dst->xsize; ++i) {
-//			contrib[i].n = 0;
-//			contrib[i].p = (CONTRIB *)calloc((int) (fwidth * 2 + 1),
-//					sizeof(CONTRIB));
+		for (i = 0; i < tmp->w; ++i) {
 			contrib[i].resize(0);
 			center = (float) i / xscale;
-			left = ceilf(center - fwidth);
-			right = floorf(center + fwidth);
+			left = ceilf(center - support);
+			right = floorf(center + support);
 			for(j = left; j <= right; ++j) {
 				weight = center - (float) j;
-				weight = (*filterf)(weight);
-				if(j < 0) {
-					n = -j;
-				} else if(j >= src->xsize) {
-					n = (src->xsize - j) + src->xsize - 1;
-				} else {
-					n = j;
-				}
-//				k = contrib[i].n++;
-//				contrib[i].p[k].pixel = n;
-//				contrib[i].p[k].weight = weight;
+				weight = (*filter_function)(weight);
+				n = iclamp(j, 0, in_window_w - 1);
 				contrib[i].push_back(CONTRIB(n, weight));
 			}
 		}
 	}
 
 	/* apply filter to zoom horizontally from src to tmp */
-	raster = (Uint8*) calloc(src->w, 3);
+	raster = (Uint8*) calloc(in_window_w, 3);
 	for (k = 0; k < tmp->h; ++k) {
-		get_row(raster, src, k);
+		get_row(raster, in, floorf(in_x0), in_window_w, k);
 		for (i = 0; i < tmp->w; ++i) {
 			float	red = 0.0f;
 			float	green = 0.0f;
 			float	blue = 0.0f;
 			for(j = 0; j < contrib[i].size(); ++j) {
-				red += raster[contrib[i].p[j].pixel * 3 + 0]
-					* contrib[i].p[j].weight;
-				green += raster[contrib[i].p[j].pixel * 3 + 1].g
-					* contrib[i].p[j].weight;
-				blue += raster[contrib[i].p[j].pixel * 3 + 2].b
-					* contrib[i].p[j].weight;
+				red += raster[contrib[i][j].pixel * 3 + 0]
+					* contrib[i][j].weight;
+				green += raster[contrib[i][j].pixel * 3 + 1]
+					* contrib[i][j].weight;
+				blue += raster[contrib[i][j].pixel * 3 + 2]
+					* contrib[i][j].weight;
 			}
 			put_pixel(tmp, i, k, red, green, blue);
 		}
 	}
 	free(raster);
 
-//	/* free the memory allocated for horizontal filter weights */
-//	for(i = 0; i < tmp->xsize; ++i) {
-//		free(contrib[i].p);
-//	}
-//	free(contrib);
+	contrib.resize(out_height);
 
-	/* pre-calculate filter contributions for a column */
-//	contrib = (CLIST *)calloc(dst->ysize, sizeof(CLIST));
-	contrib.resize(dst->h);
-	if(yscale < 1.0) {
-		width = fwidth / yscale;
+	if (yscale < 1.0f) {
+		width = support / yscale;
 		fscale = 1.0f / yscale;
-		for (i = 0; i < dst->w; ++i) {
-//			contrib[i].n = 0;
-//			contrib[i].p = (CONTRIB *)calloc((int) (width * 2 + 1),
-//					sizeof(CONTRIB));
+		for (i = 0; i < out_height; ++i) {
 			contrib[i].resize(0);
 
 			center = (float) i / yscale;
@@ -380,42 +399,21 @@ void	zoom(SDL_Surface* dst, SDL_Surface* src, float (*filterf)(float t), float f
 			right = floorf(center + width);
 			for (j = left; j <= right; ++j) {
 				weight = center - (float) j;
-				weight = (*filterf)(weight / fscale) / fscale;
-				if(j < 0) {
-					n = -j;
-				} else if(j >= tmp->h) {
-					n = (tmp->h - j) + tmp->h - 1;
-				} else {
-					n = j;
-				}
-//				k = contrib[i].n++;
-//				contrib[i].p[k].pixel = n;
-//				contrib[i].p[k].weight = weight;
+				weight = (*filter_function)(weight / fscale) / fscale;
+				n = iclamp(j, 0, tmp->h - 1);
 				contrib[i].push_back(CONTRIB(n, weight));
 			}
 		}
 	} else {
-		for (i = 0; i < dst->ysize; ++i) {
-//			contrib[i].n = 0;
-//			contrib[i].p = (CONTRIB *)calloc((int) (fwidth * 2 + 1),
-//					sizeof(CONTRIB));
+		for (i = 0; i < out_height; ++i) {
 			contrib[i].resize(0);
 			center = (float) i / yscale;
-			left = ceilf(center - fwidth);
-			right = floorf(center + fwidth);
+			left = ceilf(center - support);
+			right = floorf(center + support);
 			for(j = left; j <= right; ++j) {
 				weight = center - (float) j;
-				weight = (*filterf)(weight);
-				if(j < 0) {
-					n = -j;
-				} else if(j >= tmp->h) {
-					n = (tmp-> - j) + tmp->h - 1;
-				} else {
-					n = j;
-				}
-//				k = contrib[i].n++;
-//				contrib[i].p[k].pixel = n;
-//				contrib[i].p[k].weight = weight;
+				weight = (*filter_function)(weight);
+				n = iclamp(j, 0, tmp->h - 1);
 				contrib[i].push_back(CONTRIB(n, weight));
 			}
 		}
@@ -423,126 +421,33 @@ void	zoom(SDL_Surface* dst, SDL_Surface* src, float (*filterf)(float t), float f
 
 	/* apply filter to zoom vertically from tmp to dst */
 	raster = (Uint8*) calloc(tmp->h, 3);
-	for (k = 0; k < dst->xsize; ++k) {
+	for (k = 0; k < tmp->w; ++k) {
 		get_column(raster, tmp, k);
-		for (i = 0; i < dst->h; ++i) {
+		for (i = 0; i < out_height; ++i) {
 			float	red = 0.0f;
 			float	green = 0.0f;
 			float	blue = 0.0f;
-			for(j = 0; j < contrib[i].size(); ++j) {
-//				weight += raster[contrib[i].p[j].pixel]
-//					* contrib[i].p[j].weight;
-				red += raster[contrib[i].p[j].pixel * 3 + 0]
-					* contrib[i].p[j].weight;
-				green += raster[contrib[i].p[j].pixel * 3 + 1]
-					* contrib[i].p[j].weight;
-				blue += raster[contrib[i].p[j].pixel * 3 + 2]
-					* contrib[i].p[j].weight;
+			for (j = 0; j < contrib[i].size(); ++j) {
+				red += raster[contrib[i][j].pixel * 3 + 0]
+					* contrib[i][j].weight;
+				green += raster[contrib[i][j].pixel * 3 + 1]
+					* contrib[i][j].weight;
+				blue += raster[contrib[i][j].pixel * 3 + 2]
+					* contrib[i][j].weight;
 			}
-			put_pixel(tmp, i, k, red, green, blue);
+			put_pixel(out, k + out_x0, i + out_y0, red, green, blue);
 		}
 	}
 	free(raster);
 
-//	/* free the memory allocated for vertical filter weights */
-//	for(i = 0; i < dst->ysize; ++i) {
-//		free(contrib[i].p);
-//	}
-//	free(contrib);
 	contrib.resize(0);
 
-//	free_image(tmp);
-	SDL_ImageFree(tmp);
+	SDL_FreeSurface(tmp);
 }
 
 
 
-#if 0
-
-/*
- *	command line interface
- */
-
-void usage()
-{
-	fprintf(stderr, "usage: %s [-options] input.bm output.bm\n", _Program);
-	fprintf(stderr, "\
-options:\n\
-	-x xsize		output x size\n\
-	-y ysize		output y size\n\
-	-f filter		filter type\n\
-{b=box, t=triangle, q=bell, B=B-spline, h=hermite, l=Lanczos3, m=Mitchell}\n\
-");
-	exit(1);
-}
-
-void
-banner()
-{
-	printf("%s v%s -- %s\n", _Program, _Version, _Copyright);
-}
-
-main(argc, argv)
-int argc;
-char *argv[];
-{
-	register int c;
-	extern int optind;
-	extern char *optarg;
-	int xsize = 0, ysize = 0;
-	double (*f)() = filter;
-	double s = filter_support;
-	char *dstfile, *srcfile;
-	Image *dst, *src;
-	FILE *fp;
-
-	while((c = getopt(argc, argv, "x:y:f:V")) != EOF) {
-		switch(c) {
-		case 'x': xsize = atoi(optarg); break;
-		case 'y': ysize = atoi(optarg); break;
-		case 'f':
-			switch(*optarg) {
-			case 'b': f=box_filter; s=box_support; break;
-			case 't': f=triangle_filter; s=triangle_support; break;
-			case 'q': f=bell_filter; s=bell_support; break;
-			case 'B': f=B_spline_filter; s=B_spline_support; break;
-			case 'h': f=filter; s=filter_support; break;
-			case 'l': f=Lanczos3_filter; s=Lanczos3_support; break;
-			case 'm': f=Mitchell_filter; s=Mitchell_support; break;
-			default: usage();
-			}
-			break;
-		case 'V': banner(); exit(EXIT_SUCCESS);
-		case '?': usage();
-		default:  usage();
-		}
-	}
-	if((argc - optind) != 2) usage();
-	srcfile = argv[optind];
-	dstfile = argv[optind + 1];
-	if(((fp = fopen(srcfile, "r")) == NULL)
-	|| ((src = load_image(fp)) == NULL)) {
-		fprintf(stderr, "%s: can't load source image '%s'\n",
-			_Program, srcfile);
-		exit(EXIT_FAILURE);
-	}
-	fclose(fp);
-	if(xsize <= 0) xsize = src->xsize;
-	if(ysize <= 0) ysize = src->ysize;
-	dst = new_image(xsize, ysize);
-	zoom(dst, src, f, s);
-	if(((fp = fopen(dstfile, "w")) == NULL)
-	|| (save_image(fp, dst) != 0)) {
-		fprintf(stderr, "%s: can't save destination image '%s'\n",
-			_Program, dstfile);
-		exit(EXIT_FAILURE);
-	}
-	fclose(fp);
-	exit(EXIT_SUCCESS);
-}
-#endif // 0
-
-
+} // end namespace image_filter
 
 
 
@@ -552,3 +457,4 @@ char *argv[];
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
+
