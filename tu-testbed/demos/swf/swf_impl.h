@@ -11,24 +11,17 @@
 
 
 #include "swf.h"
+#include "swf_types.h"
 #include "SDL.h"
 #include <assert.h>
 #include "engine/container.h"
 #include "engine/utility.h"
 
 
-// ifdef this out to get rid of debug spew.
-#define IF_DEBUG(exp) exp
-
-
-#define TWIPS_TO_PIXELS(x)	((x) / 20.f)
-
-
 namespace swf
 {
+	struct stream;
 	struct display_info;
-	struct cxform;
-	struct matrix;
 	struct font;
 	struct action_buffer;
 
@@ -120,36 +113,6 @@ namespace swf
 	{
 		virtual ~execute_tag() {}
 		virtual void	execute(movie* m) {}
-	};
-
-
-	// stream is used to encapsulate bit-packed file reads.
-	struct stream
-	{
-		SDL_RWops*	m_input;
-		Uint8	m_current_byte;
-		Uint8	m_unused_bits;
-
-		array<int>	m_tag_stack;	// position of end of tag
-
-
-		stream(SDL_RWops* input);
-		int	read_uint(int bitcount);
-		int	read_sint(int bitcount);
-		float	read_fixed();
-		void	align();
-
-		Uint8	read_u8();
-		Sint8	read_s8();
-		Uint16	read_u16();
-		Sint16	read_s16();
-		char*	read_string();	// reads *and new[]'s* the string -- ownership passes to caller!
-
-		int	get_position();
-		void	set_position(int pos);
-		int	get_tag_end_position();
-		int	open_tag();
-		void	close_tag();
 	};
 
 

@@ -16,6 +16,7 @@
 #include "engine/ogl.h"
 #include "swf_impl.h"
 #include "swf_render.h"
+#include "swf_stream.h"
 #include "engine/image.h"
 #include <string.h>	// for memset
 #include <zlib.h>
@@ -24,267 +25,6 @@
 
 namespace swf
 {
-	struct matrix
-	{
-		float	m_[2][3];
-
-		matrix()
-		{
-			// Default to identity.
-			set_identity();
-		}
-
-
-		void	set_identity()
-		// Set the matrix to identity.
-		{
-			memset(&m_[0], 0, sizeof(m_));
-			m_[0][0] = 1;
-			m_[1][1] = 1;
-		}
-
-
-		void	concatenate(const matrix& m)
-		// Concatenate m's transform onto ours.  When
-		// transforming points, m happens first, then our
-		// original xform.
-		{
-			matrix	t;
-			t.m_[0][0] = m_[0][0] * m.m_[0][0] + m_[0][1] * m.m_[1][0];
-			t.m_[1][0] = m_[1][0] * m.m_[0][0] + m_[1][1] * m.m_[1][0];
-			t.m_[0][1] = m_[0][0] * m.m_[0][1] + m_[0][1] * m.m_[1][1];
-			t.m_[1][1] = m_[1][0] * m.m_[0][1] + m_[1][1] * m.m_[1][1];
-			t.m_[0][2] = m_[0][0] * m.m_[0][2] + m_[0][1] * m.m_[1][2] + m_[0][2];
-			t.m_[1][2] = m_[1][0] * m.m_[0][2] + m_[1][1] * m.m_[1][2] + m_[1][2];
-
-			*this = t;
-		}
-
-
-		void	concatenate_translation(float tx, float ty)
-		// Concatenate a translation onto the front of our
-		// matrix.  When transforming points, the translation
-		// happens first, then our original xform.
-		{
-			m_[0][2] += m_[0][0] * tx + m_[0][1] * ty;
-			m_[1][2] += m_[1][0] * tx + m_[1][1] * ty;
-		}
-
-
-		void	read(stream* in)
-		{
-			in->align();
-
-			set_identity();
-
-			int	has_scale = in->read_uint(1);
-			if (has_scale)
-			{
-				int	scale_nbits = in->read_uint(5);
-				m_[0][0] = in->read_sint(scale_nbits) / 65536.0f;
-				m_[1][1] = in->read_sint(scale_nbits) / 65536.0f;
-			}
-			int	has_rotate = in->read_uint(1);
-			if (has_rotate)
-			{
-				int	rotate_nbits = in->read_uint(5);
-				m_[1][0] = in->read_sint(rotate_nbits) / 65536.0f;
-				m_[0][1] = in->read_sint(rotate_nbits) / 65536.0f;
-			}
-
-			int	translate_nbits = in->read_uint(5);
-			if (translate_nbits > 0) {
-				m_[0][2] = in->read_sint(translate_nbits);
-				m_[1][2] = in->read_sint(translate_nbits);
-			}
-
-			IF_DEBUG(printf("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
-		}
-
-
-		void	print(FILE* out) const
-		{
-			fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[0][0], m_[0][1], TWIPS_TO_PIXELS(m_[0][2]));
-			fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
-		}
-
-		void	ogl_multiply() const
-		// Apply this matrix onto the top of the currently
-		// selected OpenGL matrix stack.
-		{
-			float	m[16];
-			memset(&m[0], 0, sizeof(m));
-			m[0] = m_[0][0];
-			m[1] = m_[1][0];
-			m[4] = m_[0][1];
-			m[5] = m_[1][1];
-			m[10] = 1;
-			m[12] = m_[0][2];
-			m[13] = m_[1][2];
-			m[15] = 1;
-			glMultMatrixf(m);
-		}
-	};
-
-
-	// RGB --> 24 bit color
-
-	// RGBA
-	struct rgba
-	{
-		Uint8	m_r, m_g, m_b, m_a;
-
-		rgba() : m_r(255), m_g(255), m_b(255), m_a(255) {}
-
-		rgba(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
-			:
-			m_r(r), m_g(g), m_b(b), m_a(a)
-		{
-		}
-
-		void	ogl_color() const
-		// Set the glColor to our state.
-		{
-			glColor4ub(m_r, m_g, m_b, m_a);
-		}
-
-		void	read(stream* in, int tag_type)
-		{
-			if (tag_type <= 22)
-			{
-				read_rgb(in);
-			}
-			else
-			{
-				read_rgba(in);
-			}
-		}
-
-		void	read_rgba(stream* in)
-		{
-			read_rgb(in);
-			m_a = in->read_u8();
-		}
-
-		void	read_rgb(stream* in)
-		{
-			m_r = in->read_u8();
-			m_g = in->read_u8();
-			m_b = in->read_u8();
-			m_a = 0x0FF;
-		}
-
-		void	print(FILE* out)
-		{
-			fprintf(out, "rgba: %d %d %d %d\n", m_r, m_g, m_b, m_a);
-		}
-	};
-
-
-	struct cxform
-	{
-		float	m_[4][2];	// [RGBA][mult, add]
-
-		cxform()
-		// Initialize to identity transform.
-		{
-			m_[0][0] = 1;
-			m_[1][0] = 1;
-			m_[2][0] = 1;
-			m_[3][0] = 1;
-			m_[0][1] = 0;
-			m_[1][1] = 0;
-			m_[2][1] = 0;
-			m_[3][1] = 0;
-		}
-
-		void	concatenate(const cxform& c)
-		// Concatenate c's transform onto ours.  When
-		// transforming colors, c's transform is applied
-		// first, then ours.
-		{
-			m_[0][1] += m_[0][0] * c.m_[0][1];
-			m_[1][1] += m_[1][0] * c.m_[1][1];
-			m_[2][1] += m_[2][0] * c.m_[2][1];
-			m_[3][1] += m_[3][0] * c.m_[3][1];
-
-			m_[0][0] *= c.m_[0][0];
-			m_[1][0] *= c.m_[1][0];
-			m_[2][0] *= c.m_[2][0];
-			m_[3][0] *= c.m_[3][0];
-		}
-
-		
-		rgba	transform(const rgba in) const
-		// Apply our transform to the given color; return the result.
-		{
-			rgba	result;
-
-			result.m_r = fclamp(in.m_r * m_[0][0] + m_[0][1], 0, 255);
-			result.m_g = fclamp(in.m_g * m_[1][0] + m_[1][1], 0, 255);
-			result.m_b = fclamp(in.m_b * m_[2][0] + m_[2][1], 0, 255);
-			result.m_a = fclamp(in.m_a * m_[3][0] + m_[3][1], 0, 255);
-
-			return result;
-		}
-
-
-		void	read_rgb(stream* in)
-		{
-			in->align();
-
-			int	has_add = in->read_uint(1);
-			int	has_mult = in->read_uint(1);
-			int	nbits = in->read_uint(4);
-
-			if (has_mult) {
-				m_[0][0] = in->read_sint(nbits) / 255.0f;
-				m_[1][0] = in->read_sint(nbits) / 255.0f;
-				m_[2][0] = in->read_sint(nbits) / 255.0f;
-				m_[3][0] = 1;
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
-			}
-			if (has_add) {
-				m_[0][1] = in->read_sint(nbits);
-				m_[1][1] = in->read_sint(nbits);
-				m_[2][1] = in->read_sint(nbits);
-				m_[3][1] = 1;
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
-			}
-		}
-
-		void	read_rgba(stream* in)
-		{
-			int	has_add = in->read_uint(1);
-			int	has_mult = in->read_uint(1);
-			int	nbits = in->read_uint(4);
-
-			if (has_mult) {
-				m_[0][0] = in->read_sint(nbits) / 255.0f;
-				m_[1][0] = in->read_sint(nbits) / 255.0f;
-				m_[2][0] = in->read_sint(nbits) / 255.0f;
-				m_[3][0] = in->read_sint(nbits) / 255.0f;
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
-			}
-			if (has_add) {
-				m_[0][1] = in->read_sint(nbits);
-				m_[1][1] = in->read_sint(nbits);
-				m_[2][1] = in->read_sint(nbits);
-				m_[3][1] = in->read_sint(nbits);
-			}
-			else {
-				for (int i = 0; i < 4; i++) { m_[i][1] = 0; }
-			}
-		}
-	};
-
-
 	// Information about how to display an element.
 	struct display_info
 	{
@@ -415,11 +155,18 @@ namespace swf
 				int	num_gradients = in->read_u8();
 				assert(num_gradients >= 1 && num_gradients <= 8);
 				m_gradients.resize(num_gradients);
-				for (int i = 0; i < num_gradients; i++) {
+				for (int i = 0; i < num_gradients; i++)
+				{
 					m_gradients[i].read(in, tag_type);
 				}
 
 				IF_DEBUG(printf("fsr: num_gradients = %d\n", num_gradients));
+
+				// @@ hack.
+				if (num_gradients > 0)
+				{
+					m_color = m_gradients[0].m_color;
+				}
 			}
 			else if (m_type == 0x40 || m_type == 0x41)
 			{
@@ -431,39 +178,6 @@ namespace swf
 
 				m_bitmap_matrix.read(in);
 				IF_DEBUG(m_bitmap_matrix.print(stdout));
-			}
-		}
-
-		void	apply(const display_info& di) const
-		// Apply our style to the renderer.
-		{
-			switch (m_type)
-			{
-			case 0x00:	// solid fill
-				di.m_color_transform.transform(m_color).ogl_color();
-				break;
-
-			case 0x10:	// linear gradient fill
-			case 0x12:	// radial gradient fill
-				// @@ these will need to be passed to the renderer, so it can do glColor per-vertex
-				// m_gradient_matrix
-				// m_gradients...
-				di.m_color_transform.transform(m_gradients[0].m_color).ogl_color();	// @@ stand-in
-				break;
-
-			case 0x40:	// tiled bitmap fill
-				// glBindTexture(...);
-				// gl edge mode == repeat
-				// @@ what about color?
-				di.m_color_transform.transform(rgba()).ogl_color();
-				break;
-
-			case 0x41:	// clipped bitmap fill
-				// glBindTexture(...);
-				// gl edge mode == clamp
-				// @@ what about color?
-				di.m_color_transform.transform(rgba()).ogl_color();
-				break;
 			}
 		}
 	};
@@ -480,14 +194,6 @@ namespace swf
 		{
 			m_width = in->read_u16();
 			m_color.read(in, tag_type);
-		}
-
-
-		void	apply(const display_info& di) const
-		// Apply our style to the renderer.
-		{
-			// m_width...
-			di.m_color_transform.transform(m_color).ogl_color();
 		}
 	};
 
@@ -1041,16 +747,13 @@ namespace swf
 		void	display()
 		// Show our display list.
 		{
-			// renderer->reset();
-
 			// @@ deal with background color...
 
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glOrtho(m_frame_size.m_x_min, m_frame_size.m_x_max,
-				m_frame_size.m_y_min, m_frame_size.m_y_max,
-				-1, 1);
-			
+			swf::render::begin_display(
+//				background color???
+				m_frame_size.m_x_min, m_frame_size.m_x_max,
+				m_frame_size.m_y_min, m_frame_size.m_y_max);
+
 			// Display all display objects.  Lower depths
 			// are obscured by higher depths.
 			for (int i = 0; i < m_display_list.size(); i++)
@@ -1084,7 +787,8 @@ namespace swf
 //				printf("display %s\n", typeid(*(di.m_character)).name());
 			}
 
-			glPopMatrix();
+//			glPopMatrix();
+			swf::render::end_display();
 		}
 
 
@@ -1539,8 +1243,11 @@ namespace swf
 		int	m_fill0, m_fill1, m_line;
 		float	m_ax, m_ay;	// starting point
 		array<edge>	m_edges;
+		bool	m_new_shape;
 
 		path()
+			:
+			m_new_shape(false)
 		{
 			reset(0, 0, -1, -1, -1);
 		}
@@ -1581,21 +1288,29 @@ namespace swf
 		{
 			if (m_fill0 > 0)
 			{
-				fill_styles[m_fill0 - 1].apply(di);	//xxxx
-				swf::render::fill_style0(/*...*/);
+				swf::render::fill_style0(true, fill_styles[m_fill0 - 1].m_color);
 			}
-			// else { swf::render::fill_style0(/* ... null ... */); }
+			else
+			{
+				swf::render::fill_style0(false, rgba());
+			}
 
 			if (m_fill1 > 0)
 			{
-				fill_styles[m_fill1 - 1].apply(di);
-				swf::render::fill_style1(/*...*/);
+				swf::render::fill_style1(true, fill_styles[m_fill1 - 1].m_color);
+			}
+			else
+			{
+				swf::render::fill_style1(false, rgba());
 			}
 
 			if (m_line > 0)
 			{
-				line_styles[m_line - 1].apply(di);	// actually need to pass this to swf::render
-				swf::render::line_style(/*...*/);
+				swf::render::line_style(true, line_styles[m_line - 1].m_color);
+			}
+			else
+			{
+				swf::render::line_style(false, rgba());
 			}
 
 			swf::render::begin_path(m_ax, m_ay);
@@ -1707,6 +1422,7 @@ namespace swf
 			float	x = 0, y = 0;
 			path	current_path;
 
+#define SHAPE_LOG 0
 			// SHAPERECORDS
 			for (;;) {
 				int	type_flag = in->read_uint(1);
@@ -1747,26 +1463,86 @@ namespace swf
 						// Set the beginning of the path.
 						current_path.m_ax = x;
 						current_path.m_ay = y;
+
+						if (SHAPE_LOG) IF_DEBUG(printf("scr: moveto %4g %4g\n", x, y));
 					}
 					if ((flags & 0x02)
 					    && num_fill_bits > 0)
 					{
 						// fill_style_0_change = 1;
-						current_path.m_fill0 = in->read_uint(num_fill_bits);
+						if (! current_path.is_empty())
+						{
+							m_paths.push_back(current_path);
+							current_path.m_edges.resize(0);
+							current_path.m_ax = x;
+							current_path.m_ay = y;
+						}
+						int	style = in->read_uint(num_fill_bits);
+						if (style > 0)
+						{
+							style += fill_base;
+						}
+						current_path.m_fill0 = style;
+						if (SHAPE_LOG) IF_DEBUG(printf("scr: fill0 = %d\n", current_path.m_fill0));
 					}
 					if ((flags & 0x04)
 					    && num_fill_bits) {
 						// fill_style_1_change = 1;
-						current_path.m_fill1 = in->read_uint(num_fill_bits);
+						if (! current_path.is_empty())
+						{
+							m_paths.push_back(current_path);
+							current_path.m_edges.resize(0);
+							current_path.m_ax = x;
+							current_path.m_ay = y;
+						}
+						int	style = in->read_uint(num_fill_bits);
+						if (style > 0)
+						{
+							style += fill_base;
+						}
+						current_path.m_fill1 = style;
+						if (SHAPE_LOG) IF_DEBUG(printf("scr: fill1 = %d\n", current_path.m_fill1));
 					}
 					if ((flags & 0x08)
 					    && num_line_bits > 0)
 					{
 						// line_style_change = 1;
-						current_path.m_line = in->read_uint(num_line_bits);
+						if (! current_path.is_empty())
+						{
+							m_paths.push_back(current_path);
+							current_path.m_edges.resize(0);
+							current_path.m_ax = x;
+							current_path.m_ay = y;
+						}
+						int	style = in->read_uint(num_line_bits);
+						if (style > 0)
+						{
+							style += line_base;
+						}
+						current_path.m_line = style;
+						if (SHAPE_LOG) IF_DEBUG(printf("scr: line = %d\n", current_path.m_line));
 					}
 					if (flags & 0x10) {
 						assert(tag_type >= 22);
+
+						IF_DEBUG(printf("scr: more fill styles\n"));
+
+						// Store the current path if any.
+						if (! current_path.is_empty())
+						{
+							m_paths.push_back(current_path);
+							current_path.m_edges.resize(0);
+
+							// Clear styles.
+							current_path.m_fill0 = -1;
+							current_path.m_fill1 = -1;
+							current_path.m_line = -1;
+						}
+						// Tack on an empty path signalling a new shape.
+						// @@ need better understanding of whether this is correct??!?!!
+						// @@ i.e., we should just start a whole new shape here, right?
+						m_paths.push_back(path());
+						m_paths.back().m_new_shape = true;
 
 						fill_base = m_fill_styles.size();
 						line_base = m_line_styles.size();
@@ -1788,6 +1564,8 @@ namespace swf
 						float	cy = y + in->read_sint(num_bits);
 						float	ax = cx + in->read_sint(num_bits);
 						float	ay = cy + in->read_sint(num_bits);
+
+						if (SHAPE_LOG) IF_DEBUG(printf("scr: curved edge   = %4g %4g - %4g %4g - %4g %4g\n", x, y, cx, cy, ax, ay));
 
 						current_path.m_edges.push_back(edge(cx, cy, ax, ay));	
 
@@ -1818,6 +1596,8 @@ namespace swf
 							}
 						}
 
+						if (SHAPE_LOG) IF_DEBUG(printf("scr: straight edge = %4g %4g - %4g %4g\n", x, y, x + dx, y + dy));
+
 						current_path.m_edges.push_back(edge(x + dx/2, y + dy/2, x + dx, y + dy));
 
 						x += dx;
@@ -1840,30 +1620,37 @@ namespace swf
 		// override our default set of fill styles (e.g. when
 		// rendering text).
 		{
-//			IF_DEBUG(printf("sc::d() rect = "); m_bound.print(stdout));
-//			IF_DEBUG(printf("sc::d() matr = "); di.m_matrix.print(stdout));
-
-//			IF_DEBUG(m_bound.debug_display(di));
-//			return;
-
 			// @@ set color transform into the renderer...
 			// @@ set matrix into the renderer...
 
 			// @@ emit edges to the renderer...
 
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
+//			glMatrixMode(GL_MODELVIEW);
+//			glPushMatrix();
 
-			di.m_matrix.ogl_multiply();
+//			di.m_matrix.ogl_multiply();
+			swf::render::push_apply_matrix(di.m_matrix);
+			swf::render::push_apply_cxform(di.m_color_transform);
 
 			swf::render::begin_shape();
 			for (int i = 0; i < m_paths.size(); i++)
 			{
-				m_paths[i].display(di, fill_styles, m_line_styles);
+				if (m_paths[i].m_new_shape == true)
+				{
+					// @@ this is awful -- need a better shape loader!!!
+					swf::render::end_shape();
+					swf::render::begin_shape();
+				}
+				else
+				{
+					m_paths[i].display(di, fill_styles, m_line_styles);
+				}
 			}
 			swf::render::end_shape();
 
-			glPopMatrix();
+			swf::render::pop_cxform();
+			swf::render::pop_matrix();
+//			glPopMatrix();
 		}
 	};
 
