@@ -18,7 +18,7 @@ EXE_OUT = gameswf_test_ogl$(EXE_EXT)
 PARSER_OUT = gameswf_parser$(EXE_EXT)
 PROCESSOR_OUT = gameswf_processor$(EXE_EXT)
 
-LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB)
+LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB) $(LIBMAD_LIB)
 
 all: base_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
@@ -44,7 +44,8 @@ LIB_OBJS = \
 TEST_PROGRAM_OBJS = \
 	gameswf_test_ogl.$(OBJ_EXT) \
 	gameswf_render_handler_ogl.$(OBJ_EXT)	\
-	gameswf_sound_handler_sdl.$(OBJ_EXT)
+	gameswf_sound_handler_sdl.$(OBJ_EXT)	\
+	gameswf_sound_handler_mp3.$(OBJ_EXT)
 
 PARSER_OBJS = \
 	gameswf_parser.$(OBJ_EXT) 

@@ -88,7 +88,12 @@ struct SDL_sound_handler : gameswf::sound_handler
 			break;
 
 		case FORMAT_MP3:
+#ifdef GAMESWF_MP3_SUPPORT
+			extern void convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const int sample_count, const int sample_size, const int sample_rate, const bool stereo);
+			convert_mp3_data(&adjusted_data, &adjusted_size, data, sample_count, 0, sample_rate, stereo);
+#else
 			printf("mp3 format sound requested; this demo does not handle mp3\n");
+#endif
 			break;
 
 		default:
