@@ -4,9 +4,9 @@
 #include "SDL.h"
 #include <stdlib.h>
 #include <string.h>
-#include "engine/ogl.h"
-#include "engine/utility.h"
-#include "engine/container.h"
+#include "base/ogl.h"
+#include "base/utility.h"
+#include "base/container.h"
 
 
 
