@@ -69,6 +69,8 @@ namespace gameswf
 		virtual resource*	get_exported_resource(const tu_string& symbol) = 0;
 		virtual character*	get_character(int id) = 0;
 
+		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
+
 		virtual void	generate_font_bitmaps() = 0;
 
 		// For caching precomputed stuff.  Generally of
@@ -92,6 +94,7 @@ namespace gameswf
 		virtual void	restart() = 0;
 		virtual void	advance(float delta_time) = 0;
 		virtual void	goto_frame(int frame_number) = 0;
+		virtual void	goto_labeled_frame(const char* label) = 0;
 		virtual void	display() = 0;
 
 		enum play_state
@@ -188,18 +191,6 @@ namespace gameswf
 	// return NULL in case the requested file can't be opened.
 	typedef tu_file* (*file_opener_function)(const char* url_or_path);
 	void	register_file_opener_callback(file_opener_function opener);
-	
-	
-	//
-	// Loader callbacks.
-	//
-	
-	// @@ move this into a more private header
-	// Register a loader function for a certain tag type.  Most
-	// standard tags are handled within gameswf.  Host apps might want
-	// to call this in order to handle special tag types.
-	typedef void (*loader_function)(stream* input, int tag_type, movie_definition* m);
-	void	register_tag_loader(int tag_type, loader_function lf);
 	
 	
 	//

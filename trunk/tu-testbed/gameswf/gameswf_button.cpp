@@ -41,7 +41,7 @@ namespace gameswf
 		};
 		mouse_state m_mouse_state;
 
-		button_character_instance(button_character_definition* def, movie* m)
+		button_character_instance(button_character_definition* def, movie* parent)
 			:
 			m_def(def),
 			m_last_mouse_flags(IDLE),
@@ -59,7 +59,7 @@ namespace gameswf
 				character * ch = m_def->m_button_records[r].m_character;
 				if (ch->is_definition())
 				{
-					m_record_character[r] = ch->create_character_instance(m);
+					m_record_character[r] = ch->create_character_instance(parent);
 					m_record_character[r]->restart();
 				}
 				else 
@@ -103,8 +103,10 @@ namespace gameswf
 		{
 			assert(m);
 
-			// Get current mouse capture.
-			int id = m->get_mouse_capture();
+// @@ fix this
+//			// Get current mouse capture.
+//			int id = m->get_mouse_capture();
+			int	id = -1;
 
 			// update state if no mouse capture or we have the capture.
 			//if (id == -1 || (!m_def->m_menu && id == get_id()))

@@ -142,7 +142,7 @@ namespace gameswf
 		void	input_cached_data(tu_file* in);
 
 	private:
-		void	sort_and_clean_meshes(int display_number) const;
+		void	sort_and_clean_meshes() const;
 		
 		rect	m_bound;
 		array<fill_style>	m_fill_styles;

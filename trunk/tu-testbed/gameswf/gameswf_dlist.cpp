@@ -82,7 +82,7 @@ namespace gameswf
 	
 	
 	void	display_list::add_display_object(
-		movie* root_movie,
+		movie* parent_movie,
 		character* ch, 
 		Uint16 depth, 
 		const cxform& color_xform, 
@@ -113,12 +113,12 @@ namespace gameswf
 		// definition.
 		if (ch->is_definition())
 		{
-			ch = ch->create_character_instance(root_movie);
+			ch = ch->create_character_instance(parent_movie);
 			ch->restart();
 		}
 		
 		display_object_info	di;
-		di.m_movie = root_movie;
+		di.m_movie = parent_movie;
 		di.m_ref = true;
 		di.m_character = ch;
 		di.m_depth = depth;
@@ -186,7 +186,7 @@ namespace gameswf
 	
 	
 	void	display_list::replace_display_object(
-		movie* root_movie,
+		movie* parent_movie,
 		character* ch,
 		Uint16 depth,
 		bool use_cxform,
@@ -240,7 +240,7 @@ namespace gameswf
 		// definition.
 		if (ch->is_definition())
 		{
-			ch = ch->create_character_instance(root_movie);
+			ch = ch->create_character_instance(parent_movie);
 			ch->restart();
 		}
 		
@@ -261,7 +261,7 @@ namespace gameswf
 	
 	
 	void	display_list::remove_display_object(Uint16 depth)
-		// Removes the object at the specified depth.
+	// Removes the object at the specified depth.
 	{
 		int	size = m_display_object_array.size();
 		if (size <= 0)
@@ -288,7 +288,7 @@ namespace gameswf
 	
 	
 	void	display_list::clear()
-		// clear the display list.
+	// clear the display list.
 	{
 		int i, n = m_display_object_array.size();
 		for (i = 0; i < n; i++)
@@ -305,7 +305,7 @@ namespace gameswf
 	
 	
 	void	display_list::reset()
-		// reset the references to the display list.
+	// reset the references to the display list.
 	{
 		//printf("### reset the display list!\n");
 		int i, n = m_display_object_array.size();
@@ -317,7 +317,7 @@ namespace gameswf
 	
 	
 	void	display_list::update()
-		// remove unreferenced objects.
+	// remove unreferenced objects.
 	{
 		//printf("### update the display list!\n");
 		
@@ -344,7 +344,7 @@ namespace gameswf
 	
 	
 	void	display_list::advance(float delta_time, movie* m)
-		// advance referenced characters.
+	// advance referenced characters.
 	{
 		int i, n = m_display_object_array.size();
 		for (i = 0; i < n; i++)
@@ -360,7 +360,7 @@ namespace gameswf
 	
 	
 	void	display_list::advance(float delta_time, movie* m, const matrix& mat)
-		// advance referenced characters.
+	// advance referenced characters.
 	{
 		int i, n = m_display_object_array.size();
 		for (i = 0; i < n; i++)
@@ -376,9 +376,9 @@ namespace gameswf
 		}
 	}
 	
-	void	display_list::display(int m_total_display_count)
-		// Display the referenced characters. Lower depths
-		// are obscured by higher depths.
+	void	display_list::display()
+	// Display the referenced characters. Lower depths
+	// are obscured by higher depths.
 	{
 		bool masked = false;
 		int highest_masked_layer = 0;
@@ -413,7 +413,6 @@ namespace gameswf
 				render::begin_submit_mask();
 			}
 			
-			dobj.m_display_number = m_total_display_count;                             
 			dobj.m_character->display(dobj);
 
 			if (dobj.m_clip_depth > 0)
@@ -447,10 +446,25 @@ namespace gameswf
 		//log_msg("drawing object at depth %i\n", di.m_depth);
 		for (int i = 0; i < m_display_object_array.size(); i++)
 		{
-			display_object_info&	dobj = m_display_object_array[i];                                       
+			display_object_info&	dobj = m_display_object_array[i];
 			display_info	sub_di = di;
 			sub_di.concatenate(dobj);
 			dobj.m_character->display(sub_di);
+		}
+	}
+
+
+	void	display_list::set_character_position(character* ch, float x, float y)
+	// Move the specified character.
+	{
+		for (int i = 0; i < m_display_object_array.size(); i++)
+		{
+			display_object_info&	dobj = m_display_object_array[i];
+			if (dobj.m_character == ch)
+			{
+				dobj.m_matrix.m_[0][2] = x;
+				dobj.m_matrix.m_[1][2] = y;
+			}
 		}
 	}
 }

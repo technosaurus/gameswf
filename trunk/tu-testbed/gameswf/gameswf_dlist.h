@@ -56,7 +56,7 @@ namespace gameswf
 		int	get_display_index(int depth);
 		
 		void	add_display_object(
-			movie* root_movie,
+			movie* parent_movie,
 			character* ch,
 			Uint16 depth,
 			const cxform& color_xform,
@@ -72,7 +72,7 @@ namespace gameswf
 			float ratio,
 			Uint16 clip_depth);
 		void	replace_display_object(
-			movie* root_movie,
+			movie* parent_movie,
 			character* ch,
 			Uint16 depth,
 			bool use_cxform,
@@ -97,7 +97,7 @@ namespace gameswf
 		void	advance(float delta_time, movie* m, const matrix& mat);
 
 		// display the referenced characters.
-		void	display(int m_total_display_count);
+		void	display();
 		void	display(const display_info & di);
 
 		inline const display_object_info&	get_display_object(int idx) const
@@ -106,6 +106,8 @@ namespace gameswf
 			return m_display_object_array[idx];
 		}
 
+
+		void	set_character_position(character* ch, float x, float y);
 
 	private:
 

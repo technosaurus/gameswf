@@ -918,7 +918,7 @@ namespace gameswf
 			m->display(di, fill_styles, line_styles);
 //			m->set_last_frame_rendered(di.m_display_number);
 
-			sort_and_clean_meshes(di.m_display_number);
+			sort_and_clean_meshes();
 		}
 	}
 
@@ -943,30 +943,11 @@ namespace gameswf
 	}
 
 
-	void	shape_character::sort_and_clean_meshes(int display_number) const
+	void	shape_character::sort_and_clean_meshes() const
 	// Maintain cached meshes.  Clean out mesh_sets that haven't
 	// been used recently, and make sure they're sorted from high
 	// error to low error.
 	{
-// @@ I think it's bad policy to dump cached meshes.  Maybe I'm wrong,
-// so keep the code around for now...
-#if 0
-		// Remove meshes that haven't been used in a long
-		// time.
-		for (int i = 0; i < m_cached_meshes.size(); i++)
-		{
-			mesh_set*	m = m_cached_meshes[i];
-			if (display_number - m->get_last_frame_rendered() > 60)
-			{
-				// We haven't used this mesh in a while, so toss it.
-				m_cached_meshes[i] = m_cached_meshes.back();
-				m_cached_meshes.resize(m_cached_meshes.size() - 1);
-				delete m;
-				i--;
-			}
-		}
-#endif // 0
-
 		// Re-sort.
 		if (m_cached_meshes.size() > 0)
 		{

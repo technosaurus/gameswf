@@ -213,7 +213,19 @@ namespace gameswf
 	{
 		array<as_value>	m_stack;
 		movie*	m_target;
-		string_hash<as_value>	m_local_variables;
+		string_hash<as_value>	m_variables;
+
+		// For local vars.  Use empty names to separate frames.
+		struct frame_slot
+		{
+			tu_string	m_name;
+			as_value	m_value;
+
+			frame_slot() {}
+			frame_slot(const tu_string& name, const as_value& val) : m_name(name), m_value(val) {}
+		};
+		array<frame_slot>	m_local_frames;
+
 
 		as_environment()
 			:
@@ -236,9 +248,15 @@ namespace gameswf
 		int	get_top_index() const { return m_stack.size() - 1; }
 
 		as_value	get_variable(const tu_string& varname) const;
+		as_value	get_variable_raw(const tu_string& varname) const;	// no path stuff
 
 		void	set_variable(const tu_string& path, const as_value& val);
 		void	set_local(const tu_string& varname, const as_value& val);
+
+		// Internal.
+		int	find_local(const tu_string& varname) const;
+		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
+		movie*	find_target(const tu_string& path) const;
 	};
 
 

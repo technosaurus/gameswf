@@ -96,7 +96,11 @@ namespace gameswf
 			// chars that share a particular style.
 			const text_glyph_record&	rec = records[i];
 
-			if (rec.m_style.m_font == NULL) continue;
+			font*	fnt = rec.m_style.m_font;
+			if (fnt == NULL)
+			{
+				continue;
+			}
 
 			scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
 			float	text_screen_height = base_matrix_max_scale
@@ -123,7 +127,7 @@ namespace gameswf
 			for (int j = 0; j < rec.m_glyphs.size(); j++)
 			{
 				int	index = rec.m_glyphs[j].m_glyph_index;
-				const texture_glyph*	tg = rec.m_style.m_font->get_texture_glyph(index);
+				const texture_glyph*	tg = fnt->get_texture_glyph(index);
 					
 				sub_di.m_matrix = base_matrix;
 				sub_di.m_matrix.concatenate_translation(x, y);
@@ -135,7 +139,7 @@ namespace gameswf
 				}
 				else
 				{
-					shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
+					shape_character*	glyph = fnt->get_glyph(index);
 
 					// Draw the character using the filled outline.
 					if (glyph) glyph->display(sub_di, s_dummy_style, s_dummy_line_style);
@@ -268,7 +272,7 @@ namespace gameswf
 	};
 
 
-	void	define_text_loader(stream* in, int tag_type, movie_definition* m)
+	void	define_text_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Read a DefineText tag.
 	{
 		assert(tag_type == 11 || tag_type == 33);
@@ -473,6 +477,37 @@ namespace gameswf
 			m_text_glyph_records.resize(0);
 
 			if (m_font == NULL) return;
+
+			// @@ mostly for debugging
+			// Font substitution -- if the font has no
+			// glyphs, try some other defined font!
+			if (m_font->get_glyph_count() == 0)
+			{
+				// Find a better font.
+				font*	newfont = m_font;
+				for (int i = 0, n = fontlib::get_font_count(); i < n; i++)
+				{
+					font*	f = fontlib::get_font(i);
+					assert(f);
+
+					if (f->get_glyph_count() > 0)
+					{
+						// This one looks good.
+						newfont = f;
+						break;
+					}
+				}
+
+				if (m_font != newfont)
+				{
+					log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
+						  fontlib::get_font_name(m_font),
+						  fontlib::get_font_name(newfont));
+
+					m_font = newfont;
+				}
+			}
+
 
 			float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
 
@@ -744,7 +779,7 @@ namespace gameswf
 	};
 
 
-	void	define_edit_text_loader(stream* in, int tag_type, movie_definition* m)
+	void	define_edit_text_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Read a DefineText tag.
 	{
 		assert(tag_type == 37);
