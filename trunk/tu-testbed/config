@@ -30,7 +30,7 @@ LDFLAGS := /link /NODEFAULTLIB:libc.lib /INCREMENTAL:NO
 ifeq ($(DEBUG),1)
 	# msvc debug flags
 	CC_DEBUG_FLAGS := -Zi -Od
-	LDFLAGS := -Zi $(LDFLAGS) -DEBUG -DEBUGTYPE:BOTH
+	LDFLAGS := -Zi $(LDFLAGS) -DEBUG -DEBUGTYPE:BOTH /NODEFAULTLIB:msvcrt.lib msvcrtd.lib
 else
 	# msvc non-debug flags
 	CC_DEBUG_FLAGS := -Ox -DNDEBUG=1
