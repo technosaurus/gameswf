@@ -1,3 +1,9 @@
+Bugs
+====
+
+* "r" to restart a movie seems to hang the movie instead
+
+
 General
 =======
 
@@ -31,6 +37,8 @@ General
 
   * collect a canonical set of test movies and check them into CVS
 
+  * generate or collect some game-gui-like movies
+
 * host-app to gameswf communication
 
   * some mechanism for gamepad-like control of SWF UI's.  SWF is
@@ -60,6 +68,11 @@ General
 
   * pick a version number, post a release
 
+  * Better control over log spew; make it a callback mechanism, and have
+    options for how much to spew.
+
+  * some method for reporting errors to the host app
+
 * text entry?  No keyboard on consoles, text input is very platform
   specific; low priority for now.
 
@@ -71,39 +84,30 @@ General
 
 * ActionScript needs to basically work
 
+* A mechanism to dump out cached tesselations to disk, similar to how
+  we can dump out cached font renderings.
+
+* Would be good if one of the log options produced a nice usable
+  human-readable parsing of the file.
+
 
 Renderer
 ========
 
-It's horribly slow right now, and has some glitches :(
+* optimize tesselator (not super-high priority, caching works pretty
+  well)
 
-* antialiasing (probably just give up; textured text glyphs are pretty
-  nice and address the major requirement of smooth text)
+  * improve naive (mis)use of array<>; use a more statically-allocated
+    array to hold intermediate results.
 
-  * in a "good enough for now" condition; currently using a half-pixel
-    half-transparent line around the outside of shapes, and textured
-    rendering for text.  Text looks good up to a certain size; maybe
-    do some scale analysis to switch to outline rendering when text
-    size goes above some threshold.
-
-    Drawback of blurry-outline is that it expands the shape.  Keep
-    thinking about the problem; no immediate good solution is
-    currently known.
-
-* optimizations
-
-  * treat line segments as true line segments, instead of a flat curve.
-
-  * get rid of naive (mis)use of array<>; use a more
-    statically-allocated array to hold intermediate results.
+  * examine use of qsort; should probably use pointers to stuff in
+    some situations, instead of raw copies
 
   * coarse clip/cull
 
-  * tulrich: DOING THIS: precompute shape tesselation.  Re-gen on the
-    fly based on scale as necessary, cache the results in each shape
-    character.  Cache has a list of fill styles plus a list of
-    vertices & triangles per fill style (i.e. a mesh), for the
-    renderer to just rip through in a hurry.
+  * better tesselation; look at Shewchuck's constrained delaunay stuff
+    or the improved trapezoid tesselator that doesn't cut across the
+    whole shape
 
 * real lines (low priority)
 
