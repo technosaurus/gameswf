@@ -1,4 +1,7 @@
-// gui_console.cpp
+// gui_console.cpp	-- by Thatcher Ulrich <tu@tulrich.com> Oct 2001
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
 
 // Simple Lua GUI console.  Type Lua code into a text widget, and see
 // the output in another text widget.

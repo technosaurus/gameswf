@@ -189,7 +189,7 @@ _ = [[
 			numsprites = atoi(argv[argc]);
 ]]; _ = nil;
 		else
-			print("Usage: main_program [-bpp N] [-hw] [-flip] [-fast] [-fullscreen] [numsprites]\n");
+			print("Usage: main_program [-bpp N] [-hw] [-flip] [-fast] [-fullscreen] [numsprites]");
 			exit(1);
 		end
 	end
@@ -237,19 +237,19 @@ _ = [[
 	background = SDL_MapRGB(screen.format, 0, 0, 0);
 
 	-- /* Print out information about our surfaces */
-	print("Screen is at ", screen.format.BitsPerPixel, " bits per pixel\n");
+	print("Screen is at ", screen.format.BitsPerPixel, " bits per pixel");
 	if bit_and(screen.flags, SDL_HWSURFACE) == SDL_HWSURFACE then
-		print("Screen is in video memory\n");
+		print("Screen is in video memory");
 	else
-		print("Screen is in system memory\n");
+		print("Screen is in system memory");
 	end
 	if bit_and(screen.flags, SDL_DOUBLEBUF) == SDL_DOUBLEBUF then
-		print("Screen has double-buffering enabled\n");
+		print("Screen has double-buffering enabled");
 	end
 	if bit_and(sprite.flags, SDL_HWSURFACE) == SDL_HWSURFACE then
-		print("Sprite is in video memory\n");
+		print("Sprite is in video memory");
 	else
-		print("Sprite is in system memory\n");
+		print("Sprite is in system memory");
 	end
 	-- /* Run a sample blit to trigger blit acceleration */
 _ = [[
@@ -295,7 +295,7 @@ _ = [[
 	-- /* Print out some timing information */
 	current_time = SDL_GetTicks();
 	if current_time > begin_time then
-		print((frames * 1000) / (current_time - begin_time), " frames per second\n");
+		print((frames * 1000) / (current_time - begin_time), " frames per second");
 	end
 
 	SDL_Quit();
@@ -303,3 +303,6 @@ _ = [[
 	return(0);
 end
 
+
+-- run the main program.
+main_program()
