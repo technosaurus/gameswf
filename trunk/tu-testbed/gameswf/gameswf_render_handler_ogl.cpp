@@ -514,6 +514,10 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	void	draw_mesh_strip(const void* coords, int vertex_count)
 	{
+#define NORMAL_RENDERING
+//#define MULTIPASS_ANTIALIASING
+
+#ifdef NORMAL_RENDERING
 		// Set up current style.
 		m_current_styles[LEFT_STYLE].apply();
 
@@ -536,6 +540,91 @@ struct render_handler_ogl : public gameswf::render_handler
 		glDisableClientState(GL_VERTEX_ARRAY);
 
 		glPopMatrix();
+#endif // NORMAL_RENDERING
+
+#ifdef MULTIPASS_ANTIALIASING
+		// So this approach basically works.  This
+		// implementation is not totally finished; two pass
+		// materials (i.e. w/ additive color) aren't correct,
+		// and there are some texture etc issues because I'm
+		// just hosing state uncarefully here.  It needs the
+		// optimization of only filling the bounding box of
+		// the shape.  You must have destination alpha.
+		//
+		// It doesn't look quite perfect on my GF4.  For one
+		// thing, you kinda want to crank down the max curve
+		// subdivision error, because suddenly you can see
+		// sub-pixel shape much better.  For another thing,
+		// the antialiasing isn't quite perfect, to my eye.
+		// It could be limited alpha precision, imperfections
+		// GL_POLYGON_SMOOTH, and/or my imagination.
+
+		glDisable(GL_TEXTURE_2D);
+
+		glEnable(GL_POLYGON_SMOOTH);
+		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);	// GL_NICEST, GL_FASTEST, GL_DONT_CARE
+
+		// Clear destination alpha.
+		//
+		// @@ TODO Instead of drawing this huge screen-filling
+		// quad, we should take a bounding-box param from the
+		// caller, and draw the box (after apply_matrix;
+		// i.e. the box is in object space).  The point being,
+		// to only fill the part of the screen that the shape
+		// is in.
+		glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+		glColor4f(1, 1, 1, 0);
+		glBegin(GL_QUADS);
+		glVertex2f(0, 0);
+		glVertex2f(100000, 0);
+		glVertex2f(100000, 100000);
+		glVertex2f(0, 100000);
+		glEnd();
+
+		// Set mode for drawing alpha mask.
+		glBlendFunc(GL_ONE, GL_ONE);	// additive blending
+		glColor4f(0, 0, 0, m_current_styles[LEFT_STYLE].m_color.m_a / 255.0f);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		apply_matrix(m_current_matrix);
+
+		// Send the tris to OpenGL.  This produces an
+		// antialiased alpha mask of the mesh shape, in the
+		// destination alpha channel.
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glPopMatrix();
+		
+		// Set up desired fill style.
+		m_current_styles[LEFT_STYLE].apply();
+
+		// Apply fill, modulated with alpha mask.
+		//
+		// @@ TODO see note above about filling bounding box only.
+		glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+		glBegin(GL_QUADS);
+		glVertex2f(0, 0);
+		glVertex2f(100000, 0);
+		glVertex2f(100000, 100000);
+		glVertex2f(0, 100000);
+		glEnd();
+
+// xxxxx ??? Hm, is our mask still intact, or did we just erase it?
+// 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
+// 		{
+// 			m_current_styles[LEFT_STYLE].apply_second_pass();
+// 			glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
+// 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
+// 		}
+
+		// @@ hm, there is perhaps more state that needs
+		// fixing here, or setting elsewhere.
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+#endif // MULTIPASS_ANTIALIASING
 	}
 
 
@@ -670,11 +759,11 @@ void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8
 			glTexCoord2f(0, (float) src_height / dst_height);
 			glVertex3f(0, 0, -1);
 			glTexCoord2f( (float) src_width / dst_width, (float) src_height / dst_height);
-			glVertex3f(dst_width, 0, -1);
+			glVertex3f((float) dst_width, 0, -1);
 			glTexCoord2f( (float) src_width / dst_width, 0);
-			glVertex3f(dst_width, dst_height, -1);
+			glVertex3f((float) dst_width, (float) dst_height, -1);
 			glTexCoord2f(0, 0);
-			glVertex3f(0, dst_height, -1);
+			glVertex3f(0, (float) dst_height, -1);
 		}
 		glEnd();
 		glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0,0, dst_width, dst_height, 0);
