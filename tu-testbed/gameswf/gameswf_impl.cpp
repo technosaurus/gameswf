@@ -20,6 +20,7 @@
 #include "gameswf_font.h"
 #include "gameswf_fontlib.h"
 #include "gameswf_log.h"
+#include "gameswf_morph.h"
 #include "gameswf_render.h"
 #include "gameswf_shape.h"
 #include "gameswf_stream.h"
@@ -943,6 +944,7 @@ namespace gameswf
 			register_tag_loader(36, define_bits_lossless_2_loader);
 			register_tag_loader(39, sprite_loader);
 			register_tag_loader(43, frame_label_loader);
+			register_tag_loader(46, define_shape_morph_loader);
 			register_tag_loader(48, define_font_loader);
 			register_tag_loader(56, export_loader);
 			register_tag_loader(57, import_loader);
@@ -1677,6 +1679,18 @@ namespace gameswf
 		m->add_character(character_id, ch);
 	}
 
+	void define_shape_morph_loader(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 46);
+		Uint16 character_id = in->read_u16();
+		IF_VERBOSE_PARSE(log_msg("shape_morph_loader: id = %d\n",
+					 character_id));
+#if MORPH
+		shape_morph_def* morph = new shape_morph_def;
+		morph->read(in, tag_type, true, m);
+		m->add_character(character_id, morph);
+#endif
+	}
 
 	//
 	// font loaders
@@ -1893,7 +1907,7 @@ namespace gameswf
 				}
                                 
 				if (has_ratio) {
-					m_ratio = in->read_u16();
+					m_ratio = (float)in->read_u16() / (float)65535;
 				}
                                 
                                 if (has_name) {
