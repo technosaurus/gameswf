@@ -33,6 +33,9 @@ extern "C" {
 #include <malloc.h>	/* tulrich */
 
 
+#ifdef USE_DL_MALLOC
+
+
 #define USE_DL_PREFIX
 
 
@@ -676,6 +679,8 @@ int  dlmallopt(int, int);
 #ifndef _ALLOCA_H
 extern void* alloca(size_t);
 #endif
+
+#endif /* USE_DL_MALLOC */
 
 
 #ifdef __cplusplus
