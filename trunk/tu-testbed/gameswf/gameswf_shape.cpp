@@ -19,8 +19,16 @@
 #include <float.h>
 
 
+#define DEBUG_DISPLAY_SHAPE_PATHS
+#ifdef DEBUG_DISPLAY_SHAPE_PATHS
+	// For debugging only!
+	bool	gameswf_debug_show_paths = false;
+#endif // DEBUG_DISPLAY_SHAPE_PATHS
+
+
 namespace gameswf
 {
+
 	//
 	// edge
 	//
@@ -907,6 +915,116 @@ namespace gameswf
 		display(mat, cx, pixel_scale, m_fill_styles, m_line_styles);
 	}
 
+
+#ifdef DEBUG_DISPLAY_SHAPE_PATHS
+
+#include "base/ogl.h"
+
+
+	static void	point_normalize(point* p)
+	{
+		float	mag2 = p->m_x * p->m_x + p->m_y * p->m_y;
+		if (mag2 < 1e-9f)
+		{
+			// Very short vector.
+			// @@ log error
+
+			// Arbitrary unit vector.
+			p->m_x = 1;
+			p->m_y = 0;
+		}
+
+		float	inv_mag = 1.0f / sqrtf(mag2);
+		p->m_x *= inv_mag;
+		p->m_y *= inv_mag;
+	}
+
+
+	static void	debug_display_shape_paths(
+		const matrix& mat,
+		float object_space_max_error,
+		const array<path>& paths,
+		const array<fill_style>& fill_styles,
+		const array<line_style>& line_styles)
+	{
+		for (int i = 0; i < paths.size(); i++)
+		{
+//			if (i > 0) break;//xxxxxxxx
+			const path&	p = paths[i];
+
+			if (p.m_fill0 == 0 && p.m_fill1 == 0)
+			{
+				continue;
+			}
+
+			gameswf::render::set_matrix(mat);
+
+			// Color the line according to which side has
+			// fills.
+			if (p.m_fill0 == 0) glColor4f(1, 0, 0, 0.5);
+			else if (p.m_fill1 == 0) glColor4f(0, 1, 0, 0.5);
+			else glColor4f(0, 0, 1, 0.5);
+
+			// Offset according to which loop we are.
+			float	offset_x = (i & 1) * 80.0f;
+			float	offset_y = ((i & 2) >> 1) * 80.0f;
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glTranslatef(offset_x, offset_y, 0.f);
+
+			point	pt;
+
+			glBegin(GL_LINE_STRIP);
+
+			mat.transform(&pt, point(p.m_ax, p.m_ay));
+			glVertex2f(pt.m_x, pt.m_y);
+
+			for (int j = 0; j < p.m_edges.size(); j++)
+			{
+				mat.transform(&pt, point(p.m_edges[j].m_cx, p.m_edges[j].m_cy));
+				glVertex2f(pt.m_x, pt.m_y);
+				mat.transform(&pt, point(p.m_edges[j].m_ax, p.m_edges[j].m_ay));
+				glVertex2f(pt.m_x, pt.m_y);
+			}
+
+			glEnd();
+
+			// Draw arrowheads.
+			point	dir, right, p0, p1;
+			glBegin(GL_LINES);
+			{for (int j = 0; j < p.m_edges.size(); j++)
+			{
+				mat.transform(&p0, point(p.m_edges[j].m_cx, p.m_edges[j].m_cy));
+				mat.transform(&p1, point(p.m_edges[j].m_ax, p.m_edges[j].m_ay));
+				dir = point(p1.m_x - p0.m_x, p1.m_y - p0.m_y);
+				point_normalize(&dir);
+				right = point(-dir.m_y, dir.m_x);	// perpendicular
+
+				const float	ARROW_MAG = 60.f;	// TWIPS?
+				if (p.m_fill0 != 0)
+				{
+					glColor4f(0, 1, 0, 0.5);
+					glVertex2f(p0.m_x,
+						   p0.m_y);
+					glVertex2f(p0.m_x - dir.m_x * ARROW_MAG - right.m_x * ARROW_MAG,
+						   p0.m_y - dir.m_y * ARROW_MAG - right.m_y * ARROW_MAG);
+				}
+				if (p.m_fill1 != 0)
+				{
+					glColor4f(1, 0, 0, 0.5);
+					glVertex2f(p0.m_x,
+						   p0.m_y);
+					glVertex2f(p0.m_x - dir.m_x * ARROW_MAG + right.m_x * ARROW_MAG,
+						   p0.m_y - dir.m_y * ARROW_MAG + right.m_y * ARROW_MAG);
+				}
+			}}
+			glEnd();
+
+			glPopMatrix();
+		}
+	}
+#endif // DEBUG_DISPLAY_SHAPE_PATHS
+
 		
 	void	shape_character_def::display(
 		const matrix& mat,
@@ -920,6 +1038,17 @@ namespace gameswf
 	{
 		// Compute the error tolerance in object-space.
 		float	object_space_max_error = 20.0f / mat.get_max_scale() / pixel_scale;
+
+#ifdef DEBUG_DISPLAY_SHAPE_PATHS
+		// Render a debug view of shape path outlines, instead
+		// of the tesselated shapes themselves.
+		if (gameswf_debug_show_paths)
+		{
+			debug_display_shape_paths(mat, object_space_max_error, m_paths, fill_styles, line_styles);
+
+			return;
+		}
+#endif // DEBUG_DISPLAY_SHAPE_PATHS
 
 		// See if we have an acceptable mesh available; if so then render with it.
 		for (int i = 0, n = m_cached_meshes.size(); i < n; i++)

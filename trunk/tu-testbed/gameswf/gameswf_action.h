@@ -348,8 +348,8 @@ namespace gameswf
 		// So that text_character's can return something reasonable.
 		virtual const char*	get_text_value() const = 0;
 
-		virtual void	set_member(const tu_string& name, const as_value& val) = 0;
-		virtual bool	get_member(const tu_string& name, as_value* val) = 0;
+		virtual void	set_member(const tu_stringi& name, const as_value& val) = 0;
+		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 
 		virtual movie*	to_movie() = 0;
 	};
@@ -408,8 +408,8 @@ namespace gameswf
 		void	add_local(const tu_string& varname, const as_value& val);	// when you know it doesn't exist.
 		void	declare_local(const tu_string& varname);	// Declare varname; undefined unless it already exists.
 
-		bool	get_member(const tu_string& varname, as_value* val) const;
-		void	set_member(const tu_string& varname, const as_value& val);
+		bool	get_member(const tu_stringi& varname, as_value* val) const;
+		void	set_member(const tu_stringi& varname, const as_value& val);
 
 		// Parameter/local stack frame management.
 		int	get_local_frame_top() const { return m_local_frames.size(); }
@@ -435,12 +435,12 @@ namespace gameswf
 
 		virtual const char*	get_text_value() const { return NULL; }
 
-		virtual void	set_member(const tu_string& name, const as_value& val)
+		virtual void	set_member(const tu_stringi& name, const as_value& val)
 		{
 			m_members.set(name, val);
 		}
 
-		virtual bool	get_member(const tu_string& name, as_value* val)
+		virtual bool	get_member(const tu_stringi& name, as_value* val)
 		{
 			return m_members.get(name, val);
 		}

@@ -410,6 +410,11 @@ int	main(int argc, char *argv[])
 					// toggle background color.
 					s_background = !s_background;
 				}
+				else if (ctrl && key == SDLK_f)	//xxxxxx
+				{
+					extern bool gameswf_debug_show_paths;
+					gameswf_debug_show_paths = !gameswf_debug_show_paths;
+				}
 
 				key_event(key, true);
 

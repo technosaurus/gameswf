@@ -250,8 +250,8 @@ namespace gameswf
 		virtual void	on_event_load() { on_event(event_id::LOAD); }
 
 		// as_object_interface stuff
-		virtual void	set_member(const tu_string& name, const as_value& val) { assert(0); }
-		virtual bool	get_member(const tu_string& name, as_value* val) { assert(0); return false; }
+		virtual void	set_member(const tu_stringi& name, const as_value& val) { assert(0); }
+		virtual bool	get_member(const tu_stringi& name, as_value* val) { assert(0); return false; }
 		virtual const char*	get_text_value() const { return NULL; }	// edit_text_character overrides this
 
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
