@@ -207,6 +207,9 @@ namespace gameswf
 			return NULL;
 		}
 
+		// ActionScript event handler.
+		virtual void	on_event(event_id id) {}
+
 		// as_object_interface stuff
 		virtual void	set_member(const tu_string& name, const as_value& val) { assert(0); }
 		virtual bool	get_member(const tu_string& name, as_value* val) { assert(0); return false; }

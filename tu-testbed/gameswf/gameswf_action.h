@@ -359,6 +359,7 @@ namespace gameswf
 
 	struct event_id
 	{
+		// These must match the function names in event_id::get_function_name()
 		enum id_code
 		{
 			INVALID,
@@ -405,6 +406,9 @@ namespace gameswf
 		}
 
 		bool	operator==(const event_id& id) const { return m_id == id.m_id && m_key_code == id.m_key_code; }
+
+		// Return the name of a method-handler function corresponding to this event.
+		const tu_string&	get_function_name() const;
 	};
 
 

@@ -2229,6 +2229,40 @@ namespace gameswf
 
 
 	//
+	// event_id
+	//
+
+	const tu_string&	event_id::get_function_name() const
+	{
+		static tu_string	s_function_names[EVENT_COUNT] =
+		{
+			"",		// INVALID
+			"",		// PRESS
+			"",		// RELEASE
+			"",		// RELEASE_OUTSIDE
+			"", 		// ROLL_OVER
+			"",		// ROLL_OUT
+			"",		// DRAG_OVER
+			"",		// DRAG_OUT
+			"",		// KEY_PRESS
+			"",		// INITIALIZE
+			"onLoad",	// LOAD
+			"onUnload",	// UNLOAD
+			"onEnterFrame",	// ENTER_FRAME
+			"onMouseDown",	// MOUSE_DOWN
+			"onMouseUp",	// MOUSE_UP
+			"onMouseMove",	// MOUSE_MOVE
+			"onKeyDown",	// KEY_DOWN
+			"onKeyUp",	// KEY_UP
+			"onData",	// DATA
+		};
+
+		assert(m_id > INVALID && m_id < EVENT_COUNT);
+		return s_function_names[m_id];
+	}
+
+
+	//
 	// Disassembler
 	//
 
