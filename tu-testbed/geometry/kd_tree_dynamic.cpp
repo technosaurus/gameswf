@@ -14,10 +14,21 @@
 
 static const float	EPSILON = 1e-4f;
 static const int	LEAF_FACE_COUNT = 4;
+static const int	MAX_SPLIT_PLANES_TESTED = 10;
 
 //#define CARVE_OFF_SPACE
 //#define ADHOC_METRIC
 #define MACDONALD_AND_BOOTH_METRIC
+//#define SORT_VERTICES
+
+// A higher value for MAX_SPLIT_PLANES_TESTED gives faster trees;
+// e.g. on one dataset, MSPT=100 gives 10% faster queries than
+// MSPT=10.  But the tree building is much slower.
+
+// On one dataset I checked, SORT_VERTICES makes queries ~10% faster.
+// On some others, it seemed to make no difference.  It's slow to
+// create though, which probably means I have a performance bug in
+// hash<>.
 
 
 float	kd_tree_dynamic::face::get_min_coord(int axis, const array<vec3>& verts) const
@@ -118,6 +129,45 @@ void split_mesh(
 }
 
 
+static void	remap_vertex_order(kd_tree_dynamic::node* node, hash<int,int>* map_indices_old_to_new, int* new_vertex_count)
+// Traverse this tree in depth-first order, and remap the vertex
+// indices to go in order.
+{
+	if (node == NULL) return;
+
+	if (node->m_leaf)
+	{
+		for (int i = 0, n = node->m_leaf->m_faces.size(); i < n; i++)
+		{
+			kd_tree_dynamic::face*	f = &node->m_leaf->m_faces[i];
+			for (int vi = 0; vi < 3; vi++)
+			{
+				int	old_index = f->m_vi[vi];
+				int	new_index = *new_vertex_count;
+				if (map_indices_old_to_new->get(old_index, &new_index))
+				{
+					// vert is already remapped; use existing mapping.
+				}
+				else
+				{
+					// vert is not remapped yet; remap it.
+					map_indices_old_to_new->add(old_index, new_index);
+					(*new_vertex_count) += 1;
+				}
+
+				// Remap.
+				f->m_vi[vi] = new_index;
+			}
+		}
+	}
+	else
+	{
+		remap_vertex_order(node->m_neg, map_indices_old_to_new, new_vertex_count);
+		remap_vertex_order(node->m_pos, map_indices_old_to_new, new_vertex_count);
+	}
+}
+
+
 /*static*/ void	kd_tree_dynamic::build_trees(
 	array<kd_tree_dynamic*>* treelist,
 	int vert_count,
@@ -206,9 +256,34 @@ kd_tree_dynamic::kd_tree_dynamic(
 
 	m_root = build_tree(1, faces.size(), &faces[0], bounds);
 
-	// @@ TODO: idea to profile: sort vertices in the order they
-	// first appear in a depth-first traversal of the tree.  Idea
-	// is to exploit cache coherency when traversing tree.
+#ifdef SORT_VERTICES
+	// Sort vertices in the order they first appear in a
+	// depth-first traversal of the tree.  Idea is to exploit
+	// cache coherency when traversing tree.
+
+	hash<int, int>	map_indices_old_to_new;
+	int	new_vertex_count = 0;
+	remap_vertex_order(m_root, &map_indices_old_to_new, &new_vertex_count);
+
+	assert(new_vertex_count == m_verts.size());
+
+	// Make the re-ordered vertex buffer.
+	array<vec3>	new_verts;
+	new_verts.resize(new_vertex_count);
+	for (int i = 0; i < m_verts.size(); i++)
+	{
+		int	new_index = 0;
+		bool	found = map_indices_old_to_new.get(i, &new_index);
+		assert(found);
+		if (found)
+		{
+			new_verts[new_index] = m_verts[i];
+		}
+	}
+
+	// Use the new verts.
+	m_verts = new_verts;
+#endif // SORT_VERTICES
 }
 
 
@@ -258,11 +333,11 @@ kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int depth, int face_count, fa
 
 		// Try offsets that correspond to existing face boundaries.
 		int	step_size = 1;
-		if (face_count > 20)
+		if (face_count > MAX_SPLIT_PLANES_TESTED)
 		{
 			// For the sake of speed & sanity, only try the bounds
 			// of every N faces.
-			step_size = face_count / 20;
+			step_size = face_count / MAX_SPLIT_PLANES_TESTED;
 		}
 		assert(step_size > 0);
 
@@ -444,10 +519,44 @@ void	kd_tree_dynamic::do_split(
 // pos_offset must be placed so that it catches everything not on the
 // negative side; this routine asserts against that.
 {
-	// @@ eh, should do this by sweeping through and swapping face
-	// to either the end of the array or the start of the array.
+	// We do an in-place sort.  During sorting, faces[] is divided
+	// into three segments: at the beginning are the front faces,
+	// in the middle are the unsorted faces, and at the end are
+	// the back faces.  when we sort a face, we swap it into the
+	// next position for either the back or front face segment.
+	int	back_faces_end = 0;
+	int	front_faces_start = face_count;
+	int	next_face = 0;
+	
+	while (back_faces_end < front_faces_start)
+	{
+		const face&	f = faces[back_faces_end];
 
+		int	result = classify_face(f, axis, neg_offset);
+		if (result == -1)
+		{
+			// Behind.  Leave this face where it is, and
+			// bump back_faces_end so it's now in the back
+			// faces segment.
+			back_faces_end++;
+		}
+		else
+		{
+			// In front.
+			assert(f.get_min_coord(axis, m_verts) >= pos_offset);	// should not have any crossing faces!
 
+			// Swap this face up to the beginning of the front faces.
+			front_faces_start--;
+			swap(&faces[back_faces_end], &faces[front_faces_start]);
+		}
+	}
+
+	*back_end = back_faces_end;
+	*front_end = face_count;
+	assert(*back_end <= *front_end);
+	assert(*front_end == face_count);
+
+#if 0
 	array<face>	back_faces;
 	array<face>	front_faces;
 
@@ -485,6 +594,7 @@ void	kd_tree_dynamic::do_split(
 
 	assert(*back_end <= *front_end);
 	assert(*front_end == face_count);
+#endif // 0
 }
 
 
