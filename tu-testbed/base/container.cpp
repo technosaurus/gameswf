@@ -11,76 +11,71 @@
 
 void	tu_string::resize(int new_size)
 {
+	assert(new_size >= 0);
+
+	if (using_heap() == false)
 	{
-		assert(new_size >= 0);
-
-		if (using_heap() == false)
+		if (new_size < 15)
 		{
-			if (new_size < 15)
-			{
-				// Stay with internal storage.
-				m_local.m_size = (char) (new_size + 1);
-				m_local.m_buffer[new_size] = 0;	// terminate
-			}
-			else
-			{
-				// need to allocate heap buffer.
-				int	capacity = new_size + 1;
-				// round up.
-				capacity = (capacity + 15) & ~15;
-				char*	buf = (char*) tu_malloc(capacity);
-
-				// Copy existing data.
-				strcpy(buf, m_local.m_buffer);
-
-				// Set the heap state.
-				m_heap.m_buffer = buf;
-				m_heap.m_all_ones = char(~0);
-				m_heap.m_size = new_size + 1;
-				m_heap.m_capacity = capacity;
-			}
+			// Stay with internal storage.
+			m_local.m_size = (char) (new_size + 1);
+			m_local.m_buffer[new_size] = 0;	// terminate
 		}
 		else
 		{
-			// Currently using heap storage.
-			if (new_size < 15)
-			{
-				// Switch to local storage.
+			// need to allocate heap buffer.
+			int	capacity = new_size + 1;
+			// round up.
+			capacity = (capacity + 15) & ~15;
+			char*	buf = (char*) tu_malloc(capacity);
 
-				// Be sure to get stack copies of m_heap info, before we overwrite it.
-				char*	old_buffer = m_heap.m_buffer;
-				int	old_capacity = m_heap.m_capacity;
-				UNUSED(old_capacity);
+			// Copy existing data.
+			strcpy(buf, m_local.m_buffer);
 
-				// Copy existing string info.
-				m_local.m_size = (char) (new_size + 1);
-				strncpy(m_local.m_buffer, old_buffer, 16);
-				m_local.m_buffer[new_size] = 0;	// ensure termination.
-
-				tu_free(old_buffer, old_capacity);
-			}
-			else
-			{
-				// Changing size of heap buffer.
-				int	capacity = new_size + 1;
-				// Round up.
-				capacity = (capacity + 15) & ~15;
-				if (capacity != m_heap.m_capacity)
-				{
-					m_heap.m_buffer = (char*) tu_realloc(m_heap.m_buffer, capacity, m_heap.m_capacity);
-					m_heap.m_capacity = capacity;
-				}
-				// else we're OK with existing buffer.
-
-				m_heap.m_size = new_size + 1;
-
-				// Ensure termination.
-				m_heap.m_buffer[new_size] = 0;
-			}
+			// Set the heap state.
+			m_heap.m_buffer = buf;
+			m_heap.m_all_ones = char(~0);
+			m_heap.m_size = new_size + 1;
+			m_heap.m_capacity = capacity;
 		}
+	}
+	else
+	{
+		// Currently using heap storage.
+		if (new_size < 15)
+		{
+			// Switch to local storage.
 
-		//m_buffer.resize(new_size + 1);
-		//m_buffer.back() = 0;	// terminate with \0
+			// Be sure to get stack copies of m_heap info, before we overwrite it.
+			char*	old_buffer = m_heap.m_buffer;
+			int	old_capacity = m_heap.m_capacity;
+			UNUSED(old_capacity);
+
+			// Copy existing string info.
+			m_local.m_size = (char) (new_size + 1);
+			strncpy(m_local.m_buffer, old_buffer, 16);
+			m_local.m_buffer[new_size] = 0;	// ensure termination.
+
+			tu_free(old_buffer, old_capacity);
+		}
+		else
+		{
+			// Changing size of heap buffer.
+			int	capacity = new_size + 1;
+			// Round up.
+			capacity = (capacity + 15) & ~15;
+			if (capacity != m_heap.m_capacity)	// @@ TODO should use hysteresis when resizing
+			{
+				m_heap.m_buffer = (char*) tu_realloc(m_heap.m_buffer, capacity, m_heap.m_capacity);
+				m_heap.m_capacity = capacity;
+			}
+			// else we're OK with existing buffer.
+
+			m_heap.m_size = new_size + 1;
+
+			// Ensure termination.
+			m_heap.m_buffer[new_size] = 0;
+		}
 	}
 }
 
@@ -165,6 +160,8 @@ int	main()
 			assert(a == "012345678901234567890123456");
 		}
 	}}
+
+	// TODO: unit tests for array<>, hash<>, string_hash<>
 
 	return 0;
 }
