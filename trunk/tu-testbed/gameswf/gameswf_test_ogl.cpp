@@ -291,7 +291,7 @@ int	main(int argc, char *argv[])
 				else if (key == SDLK_t)
 				{
 					// test text replacement:
-					m->set_edit_text("test_text", "AVAWAKC kerning test...");
+					m->set_edit_text("test_text", "set_edit_text was here...");
 				}
 
 				break;

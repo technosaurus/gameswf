@@ -49,6 +49,7 @@ namespace gameswf
 		int	get_glyph_index(Uint16 code) const;
 		float	get_advance(int glyph_index) const;
 		float	get_kerning_adjustment(int last_code, int this_code) const;
+		float	get_leading() const { return m_leading; }
 
 	private:
 		void	read_code_table(stream* in);
