@@ -117,7 +117,7 @@ namespace swf
 		glMultMatrixf(m);
 	}
 
-	void	matrix::transform(point* result, const point& p)
+	void	matrix::transform(point* result, const point& p) const
 	// Transform point 'p' by our matrix.  Put the result in
 	// *result.
 	{
@@ -128,9 +128,21 @@ namespace swf
 	}
 
 
+	void	matrix::transform_by_inverse(point* result, const point& p) const
+	// Transform point 'p' by the inverse of our matrix.  Put result in *result.
+	{
+		// @@ TODO optimize this!
+		matrix	m;
+		m.set_inverse(*this);
+		m.transform(result, p);
+	}
+
+
 	void	matrix::set_inverse(const matrix& m)
 	// Set this matrix to the inverse of the given matrix.
 	{
+		assert(this != &m);
+
 		// Invert the rotation part.
 		float	det = m.m_[0][0] * m.m_[1][1] - m.m_[0][1] * m.m_[1][0];
 		if (det == 0.0f)

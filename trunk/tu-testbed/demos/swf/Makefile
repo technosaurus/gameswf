@@ -19,7 +19,7 @@ EXE_OUT = test_swf$(EXE_EXT)
 LIBS := $(LIB_OUT) $(ENGINE) $(LIBS) $(JPEGLIB) $(ZLIB)
 
 
-all: $(LIB_OUT) $(EXE_OUT) engine
+all: engine $(LIB_OUT) $(EXE_OUT)
 
 
 OBJS = \

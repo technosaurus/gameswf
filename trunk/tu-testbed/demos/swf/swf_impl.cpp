@@ -617,6 +617,7 @@ namespace swf
 		play_state	m_play_state;
 		int	m_current_frame;
 		float	m_time;
+		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 
 		movie_impl()
 			:
@@ -626,7 +627,10 @@ namespace swf
 			m_background_color(0.0f, 0.0f, 0.0f, 1.0f),
 			m_play_state(PLAY),
 			m_current_frame(0),
-			m_time(0.0f)
+			m_time(0.0f),
+			m_mouse_x(0),
+			m_mouse_y(0),
+			m_mouse_buttons(0)
 		{
 		}
 
@@ -634,11 +638,40 @@ namespace swf
 
 		int	get_current_frame() const { return m_current_frame; }
 
+		void	notify_mouse_state(int x, int y, int buttons)
+		// The host app uses this to tell the movie where the
+		// user's mouse pointer is.
+		{
+			m_mouse_x = x;
+			m_mouse_y = y;
+			m_mouse_buttons = buttons;
+		}
+
+		virtual void	get_mouse_state(int* x, int* y, int* buttons)
+		// Use this to retrieve the last state of the mouse, as set via
+		// notify_mouse_state().
+		{
+			assert(x);
+			assert(y);
+			assert(buttons);
+
+			*x = m_mouse_x;
+			*y = m_mouse_y;
+			*buttons = m_mouse_buttons;
+		}
+
 		void	add_character(int character_id, character* c)
 		{
 			assert(c);
 			assert(c->m_id == character_id);
 			m_characters.add(character_id, c);
+		}
+
+		character*	get_character(int character_id)
+		{
+			character*	ch = NULL;
+			m_characters.get(character_id, &ch);
+			return ch;
 		}
 
 		void	add_font(int font_id, font* f)
@@ -762,7 +795,7 @@ namespace swf
 			// buttons.
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
-				m_display_list[i].m_character->advance(delta_time, this);
+				m_display_list[i].m_character->advance(delta_time, this, m_display_list[i].m_matrix);
 			}
 
 			if (m_play_state == PLAY)
@@ -2422,15 +2455,17 @@ namespace swf
 		}
 
 
-		void	advance(float delta_time, movie* m)
+		void	advance(float delta_time, movie* m, const matrix& mat)
 		{
 			assert(m_def && m_def->m_movie);
 
 			// Call advance() on each object in our
-			// display list.  Takes care of sprites.
+			// display list.  Takes care of sub-sprites & buttons.
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
-				m_display_list[i].m_character->advance(delta_time, m /* @@ or 'this'???*/);
+				matrix	sub_matrix = mat;
+				sub_matrix.concatenate(m_display_list[i].m_matrix);
+				m_display_list[i].m_character->advance(delta_time, m, sub_matrix);
 			}
 
 			m_time += delta_time;
@@ -2694,7 +2729,10 @@ namespace swf
 
 	struct button_record
 	{
-		int	m_flags;
+		bool	m_hit_test;
+		bool	m_down;
+		bool	m_over;
+		bool	m_up;
 		character*	m_character;
 		int	m_button_layer;
 		matrix	m_button_matrix;
@@ -2703,11 +2741,16 @@ namespace swf
 		bool	read(stream* in, int tag_type, movie* m)
 		// Return true if we read a record; false if this is a null record.
 		{
-			m_flags = in->read_u8();
-			if (m_flags == 0)
+			int	flags = in->read_u8();
+			if (flags == 0)
 			{
 				return false;
 			}
+			m_hit_test = flags & 8 ? true : false;
+			m_down = flags & 4 ? true : false;
+			m_over = flags & 2 ? true : false;
+			m_up = flags & 1 ? true : false;
+
 			m_character = m->get_character(in->read_u16());
 			m_button_layer = in->read_u16(); 
 			m_button_matrix.read(in);
@@ -2721,11 +2764,17 @@ namespace swf
 	struct button_character : public character
 	{
 		array<button_record>	m_button_records;
-		int	m_current_record;
+		enum mouse_state
+		{
+			UP,	// when the mouse is not over the button.
+			DOWN,	// when the mouse is over us, and mouse button is down.
+			OVER	// when the mouse is over us, and mouse button is not pressed.
+		};
+		mouse_state	m_mouse_state;
 
 		button_character()
 			:
-			m_current_record(-1)
+			m_mouse_state(UP)
 		{
 		}
 
@@ -2735,7 +2784,7 @@ namespace swf
 
 			if (tag_type == 7)
 			{
-				assert(0);	// not implemented yet; tag type 7 may be deprecated...
+				assert(0);	// not implemented yet; tag type 7 may be deprecated...?
 			}
 			else if (tag_type == 34)
 			{
@@ -2775,30 +2824,101 @@ namespace swf
 			}
 		}
 
-		void	advance(float delta_time, movie* m)
+		void	advance(float delta_time, movie* m, const matrix& mat)
 		{
 			assert(m);
 
-			// Look at the mouse state, and select our currently active button record.
+			// Look at the mouse state, and figure out our state.
 			int	mx, my, mbuttons;
-//			m->get_mouse_state(&mx, &my, &mbuttons);
+			m->get_mouse_state(&mx, &my, &mbuttons);
+			m_mouse_state = UP;
 
-			m_current_record = 0;
+			// @@ so what we need to do here is see if the
+			// mouse position is inside the relevant
+			// character.
+			//
+			// @@ do we only look in characters whose rec.m_hit_test is true?
+
+			// Find the mouse position in button-space.
+			point	mouse_position;
+			mat.transform_by_inverse(&mouse_position, point(mx, my));
+
+			{for (int i = 0; i < m_button_records.size(); i++)
+			{
+				button_record&	rec = m_button_records[i];
+				if (rec.m_character == NULL)
+				{
+					continue;
+				}
+
+				point	sub_mouse_position;
+				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
+
+				if (rec.m_character->point_test(sub_mouse_position.m_x, sub_mouse_position.m_y))
+				{
+					// The mouse is inside the shape.
+					m_mouse_state = OVER;
+					break;
+				}
+			}}
+
+			if (mbuttons
+			    && m_mouse_state == OVER)
+			{
+				// Button is pressed.
+				m_mouse_state = DOWN;
+			}
 
 			// Do any actions that are warranted.
+			// @@ look at previous state and current state...
 
-			// Advance our currently active character.
-			m_button_records[m_current_record].m_character->advance(delta_time, m);
+			// Advance our relevant characters.
+			{for (int i = 0; i < m_button_records.size(); i++)
+			{
+				button_record&	rec = m_button_records[i];
+				if (rec.m_character == NULL)
+				{
+					continue;
+				}
+
+				matrix	sub_matrix = mat;
+				sub_matrix.concatenate(rec.m_button_matrix);
+				if (m_mouse_state == UP)
+				{
+					if (rec.m_up)
+					{
+						rec.m_character->advance(delta_time, m, sub_matrix);
+					}
+				}
+				else if (m_mouse_state == DOWN)
+				{
+					if (rec.m_down)
+					{
+						rec.m_character->advance(delta_time, m, sub_matrix);
+					}
+				}
+				else if (m_mouse_state == OVER)
+				{
+					if (rec.m_over)
+					{
+						rec.m_character->advance(delta_time, m, sub_matrix);
+					}
+				}
+			}}
 		}
 
 		void	display(const display_info& di)
 		{
-			if (m_current_record >= 0)
+			for (int i = 0; i < m_button_records.size(); i++)
 			{
-				assert(m_current_record < m_button_records.size());
-
-				button_record&	rec = m_button_records[0];
-				if (rec.m_character)
+				button_record&	rec = m_button_records[i];
+				if (rec.m_character == NULL)
+				{
+					continue;
+				}
+				if ((m_mouse_state == UP && rec.m_up)
+				    || (m_mouse_state == DOWN && rec.m_down)
+				    || (m_mouse_state == OVER && rec.m_over))
 				{
 					swf::render::push_apply_matrix(rec.m_button_matrix);
 					swf::render::push_apply_cxform(rec.m_button_cxform);
