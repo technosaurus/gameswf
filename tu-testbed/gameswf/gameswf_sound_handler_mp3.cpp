@@ -13,9 +13,18 @@
 
 #ifdef GAMESWF_MP3_SUPPORT
 
-
 #include "gameswf.h"
 #include "base/container.h"
+
+// @@ These macros are internal to gameswf; maybe should expose them for
+// use by external handler code like this...
+#ifndef IF_VERBOSE_PARSE
+#define IF_VERBOSE_PARSE(x)
+#endif
+
+#ifndef log_error
+#define log_error(x,y) /* ? */
+#endif
 
 #include <SDL_mixer.h>
 
