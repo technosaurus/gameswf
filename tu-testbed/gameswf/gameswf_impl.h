@@ -474,6 +474,11 @@ namespace gameswf
 			return m_def->point_test_local(p.m_x, p.m_y);
 		}
 
+
+		// @@ tulrich: these are used for finding bounds; TODO
+		// need to do this using enclose_transformed_rect(),
+		// not by scaling the local height/width!
+
 //vb
 		virtual float	get_height()
 		{

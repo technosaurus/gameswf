@@ -377,7 +377,7 @@ namespace gameswf
 
 	void	array_not_impl(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
-		printf("array methods not implemented yet\n");
+		log_error("array methods not implemented yet\n");
 	}
 
 	//
@@ -1408,7 +1408,7 @@ namespace gameswf
 				case 0x20:	// set target expression
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x21:	// string concat
@@ -1526,7 +1526,7 @@ namespace gameswf
 				case 0x31:	// mb length
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x32:	// ord
@@ -1552,19 +1552,19 @@ namespace gameswf
 				case 0x35:	// mb substring
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x37:	// mb chr
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x3A:	// delete
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x3B:	// delete2
@@ -1575,7 +1575,7 @@ namespace gameswf
 //					as_value	obj_name = env->pop();
 					as_value obj_ptr = env->get_variable_raw(env->top(0).to_tu_string(), with_stack);
 					delete obj_ptr.to_object();
-//  				printf("%08X\n", obj_ptr.to_object());
+//  				log_error("%08X\n", obj_ptr.to_object());
 					break;
 				}
 
@@ -1640,16 +1640,16 @@ namespace gameswf
 //						env->drop(1);
 						result = fmod(x, y);
 					}
-//					printf("modulo x=%f, y=%f, z=%f\n",x,y,result.to_number());
+//					log_error("modulo x=%f, y=%f, z=%f\n",x,y,result.to_number());
 					env->push(result);
 					break;
 				}
 				case 0x40:	// new
 				{
 					as_value	objname = env->pop();
-//					printf("---new object: %s\n", objname.to_tu_string().c_str());
+//					log_error("---new object: %s\n", objname.to_tu_string().c_str());
 					int	nargs = (int) env->pop().to_number();
-//					printf("---new nargs: %d\n", nargs);
+//					log_error("---new nargs: %d\n", nargs);
 
 					as_c_function_ptr handler;
 					as_value new_obj;
@@ -1689,7 +1689,7 @@ namespace gameswf
 
 					env->drop(nargs);
 					env->push(new_obj);
-//  				printf("%08X\n", new_obj.to_object());
+//  				log_error("%08X\n", new_obj.to_object());
 					break;
 				}
 				case 0x41:	// declare local
@@ -1717,7 +1717,7 @@ namespace gameswf
 //					ao->set_member("toString", &array_not_impl);
 
 					int	array_size = (int) env->pop().to_number();
-//					printf("\n---init_array size: %d\n", array_size);
+//					log_error("\n---init_array size: %d\n", array_size);
 					if (array_size > 0)
 					{
 						char s[20];
@@ -1728,7 +1728,7 @@ namespace gameswf
 							ao->set_member(s, env->pop());
 //							as_value x;
 //							ao->get_member(s, &x);
-//							printf("---init_array args: %s\n", x.to_tu_string().c_str());
+//							log_error("---init_array args: %s\n", x.to_tu_string().c_str());
 						}
 					}
 					as_value new_array = ao;
@@ -1738,25 +1738,25 @@ namespace gameswf
 				case 0x43:	// declare object
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x44:	// type of
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x45:	// get target
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x46:	// enumerate
 				{
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x47:	// add (typed)
@@ -1917,15 +1917,15 @@ namespace gameswf
 				}
 				case 0x53:	// new method
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				case 0x54:	// instance of
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				case 0x55:	// enumerate object
 					// @@ TODO
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				case 0x60:	// bitwise and
 					env->top(1) &= env->top(0);
@@ -2028,7 +2028,7 @@ namespace gameswf
 					else
 					{
 #ifdef EXTERN_MOVIE
-//						printf("get url: target=%s, url=%s\n", target, url);
+//						log_error("get url: target=%s, url=%s\n", target, url);
             
 						tu_string tu_target = target;
 						movie* target_movie = env->find_target(tu_target);
@@ -2082,7 +2082,7 @@ namespace gameswf
 				case 0x8A:	// wait for frame
 				{
 					// @@ TODO I think this has to deal with incremental loading
-					printf("todo opcode: %02X\n", action_id);
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 
@@ -2298,7 +2298,7 @@ namespace gameswf
 					else
 					{
 #ifdef EXTERN_MOVIE
-//            printf("get url2: target=%s, url=%s\n", target, url);
+//            log_error("get url2: target=%s, url=%s\n", target, url);
 
 						movie* target_movie = env->find_target(env->top(0));
 						if (target_movie != NULL)
