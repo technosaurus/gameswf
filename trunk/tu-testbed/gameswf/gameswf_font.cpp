@@ -338,7 +338,28 @@ namespace gameswf
 
 	float	font::get_advance(int glyph_index) const
 	{
-		return m_advance_table[glyph_index];
+		if (m_advance_table.size() == 0)
+		{
+			// No layout info for this font!!!
+			bool	s_logged = false;
+			if (s_logged == false)
+			{
+				s_logged = true;
+				log_error("error: empty advance table in font\n");
+			}
+			return 0;
+		}
+
+		if (glyph_index < m_advance_table.size())
+		{
+			return m_advance_table[glyph_index];
+		}
+		else
+		{
+			// Bad glyph index.  Due to bad data file?
+			assert(0);
+			return 0;
+		}
 	}
 
 
