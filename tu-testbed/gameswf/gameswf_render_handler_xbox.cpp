@@ -515,9 +515,7 @@ struct render_handler_xbox : public gameswf::render_handler
 
 			// Draw a big quad.
 			apply_color(background_color);
-			gameswf::matrix	ident;
-			ident.set_identity();
-			set_matrix(ident);
+			set_matrix(gameswf::matrix::identity);
 			apply_matrix(m_current_matrix);
 
 			IDirect3DDevice8::Begin(D3DPT_TRIANGLESTRIP);

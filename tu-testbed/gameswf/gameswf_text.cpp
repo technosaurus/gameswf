@@ -70,20 +70,25 @@ namespace gameswf
 
 	// Render the given glyph records.
 	static void	display_glyph_records(
-		const display_info& di,
-		const matrix& mat,
+		const matrix& this_mat,
+		character* inst,
 		const array<text_glyph_record>& records)
 	{
-		assert(di.m_movie);
-
 		static array<fill_style>	s_dummy_style;	// used to pass a color on to shape_character::display()
 		static array<line_style>	s_dummy_line_style;
 		s_dummy_style.resize(1);
 
-		display_info	sub_di = di;
-		sub_di.m_matrix.concatenate(mat);
+		matrix	mat = inst->get_world_matrix();
+		mat.concatenate(this_mat);
 
-		matrix	base_matrix = sub_di.m_matrix;
+		cxform	cx = inst->get_world_cxform();
+		float	pixel_scale = inst->get_pixel_scale();
+
+//		display_info	sub_di = di;
+//		sub_di.m_matrix.concatenate(mat);
+
+//		matrix	base_matrix = sub_di.m_matrix;
+		matrix	base_matrix = mat;
 		float	base_matrix_max_scale = base_matrix.get_max_scale();
 
 		float	scale = 1.0f;
@@ -107,7 +112,7 @@ namespace gameswf
 				* scale
 				* 1024.0f
 				/ 20.0f
-				* di.m_movie->get_pixel_scale();
+				* pixel_scale;
 			bool	use_shape_glyphs =
 				text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
 
@@ -122,27 +127,27 @@ namespace gameswf
 
 			s_dummy_style[0].set_color(rec.m_style.m_color);
 
-			rgba	transformed_color = sub_di.m_color_transform.transform(rec.m_style.m_color);
+			rgba	transformed_color = cx.transform(rec.m_style.m_color);
 
 			for (int j = 0; j < rec.m_glyphs.size(); j++)
 			{
 				int	index = rec.m_glyphs[j].m_glyph_index;
 				const texture_glyph*	tg = fnt->get_texture_glyph(index);
 					
-				sub_di.m_matrix = base_matrix;
-				sub_di.m_matrix.concatenate_translation(x, y);
-				sub_di.m_matrix.concatenate_scale(scale);
+				mat = base_matrix;
+				mat.concatenate_translation(x, y);
+				mat.concatenate_scale(scale);
 
 				if (tg && ! use_shape_glyphs)
 				{
-					fontlib::draw_glyph(sub_di.m_matrix, tg, transformed_color);
+					fontlib::draw_glyph(mat, tg, transformed_color);
 				}
 				else
 				{
-					shape_character*	glyph = fnt->get_glyph(index);
+					shape_character_def*	glyph = fnt->get_glyph(index);
 
 					// Draw the character using the filled outline.
-					if (glyph) glyph->display(sub_di, s_dummy_style, s_dummy_line_style);
+					if (glyph) glyph->display(mat, cx, pixel_scale, s_dummy_style, s_dummy_line_style);
 				}
 
 				x += rec.m_glyphs[j].m_glyph_advance;
@@ -151,17 +156,17 @@ namespace gameswf
 	}
 
 
-	struct text_character : public character
+	struct text_character_def : public character_def
 	{
 		rect	m_rect;
 		matrix	m_matrix;
 		array<text_glyph_record>	m_text_glyph_records;
 
-		text_character()
+		text_character_def()
 		{
 		}
 
-		void	read(stream* in, int tag_type, movie_definition* m)
+		void	read(stream* in, int tag_type, movie_definition_sub* m)
 		{
 			assert(m != NULL);
 			assert(tag_type == 11 || tag_type == 33);
@@ -196,7 +201,7 @@ namespace gameswf
 					bool	has_y_offset = (first_byte >> 1) & 1;
 					bool	has_x_offset = (first_byte >> 0) & 1;
 
-					IF_VERBOSE_PARSE(log_msg("text style change\n"));
+					IF_VERBOSE_PARSE(log_msg("  text style change\n"));
 
 					if (has_font)
 					{
@@ -207,7 +212,7 @@ namespace gameswf
 							log_error("error: text style with undefined font; font_id = %d\n", font_id);
 						}
 
-						IF_VERBOSE_PARSE(log_msg("has_font: font id = %d\n", font_id));
+						IF_VERBOSE_PARSE(log_msg("  has_font: font id = %d\n", font_id));
 					}
 					if (has_color)
 					{
@@ -220,13 +225,13 @@ namespace gameswf
 							assert(tag_type == 33);
 							style.m_color.read_rgba(in);
 						}
-						IF_VERBOSE_PARSE(log_msg("has_color\n"));
+						IF_VERBOSE_PARSE(log_msg("  has_color\n"));
 					}
 					if (has_x_offset)
 					{
 						style.m_has_x_offset = true;
 						style.m_x_offset = in->read_s16();
-						IF_VERBOSE_PARSE(log_msg("has_x_offset = %g\n", style.m_x_offset));
+						IF_VERBOSE_PARSE(log_msg("  has_x_offset = %g\n", style.m_x_offset));
 					}
 					else
 					{
@@ -237,7 +242,7 @@ namespace gameswf
 					{
 						style.m_has_y_offset = true;
 						style.m_y_offset = in->read_s16();
-						IF_VERBOSE_PARSE(log_msg("has_y_offset = %g\n", style.m_y_offset));
+						IF_VERBOSE_PARSE(log_msg("  has_y_offset = %g\n", style.m_y_offset));
 					}
 					else
 					{
@@ -247,7 +252,7 @@ namespace gameswf
 					if (has_font)
 					{
 						style.m_text_height = in->read_u16();
-						IF_VERBOSE_PARSE(log_msg("text_height = %g\n", style.m_text_height));
+						IF_VERBOSE_PARSE(log_msg("  text_height = %g\n", style.m_text_height));
 					}
 				}
 				else
@@ -258,16 +263,16 @@ namespace gameswf
 					m_text_glyph_records.back().m_style = style;
 					m_text_glyph_records.back().read(in, glyph_count, glyph_bits, advance_bits);
 
-					IF_VERBOSE_PARSE(log_msg("glyph_records: count = %d\n", glyph_count));
+					IF_VERBOSE_PARSE(log_msg("  glyph_records: count = %d\n", glyph_count));
 				}
 			}
 		}
 
 
-		void	display(const display_info& di)
+		void	display(character* inst)
 		// Draw the string.
 		{
-			display_glyph_records(di, m_matrix, m_text_glyph_records);
+			display_glyph_records(m_matrix, inst, m_text_glyph_records);
 		}
 	};
 
@@ -279,7 +284,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 		
-		text_character*	ch = new text_character;
+		text_character_def*	ch = new text_character_def;
 		ch->set_id(character_id);
 		IF_VERBOSE_PARSE(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
@@ -291,18 +296,18 @@ namespace gameswf
 
 
 	//
-	// edit_text_character
+	// edit_text_character_def
 	//
 
 
-	struct edit_text_character : public character
-	// A text display character, whose text can be changed at
-	// runtime (by script or host).
+	struct edit_text_character_def : public character_def
+	// A definition for a text display character, whose text can
+	// be changed at runtime (by script or host).
 	{
 		rect	m_rect;
-		array<text_glyph_record>	m_text_glyph_records;
-		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
-		array<line_style>	m_dummy_line_style;
+//		array<text_glyph_record>	m_text_glyph_records;
+//		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
+//		array<line_style>	m_dummy_line_style;
 
 		bool	m_word_wrap;
 		bool	m_multiline;
@@ -310,7 +315,7 @@ namespace gameswf
 		bool	m_readonly;
 		bool	m_auto_size;	// resize our bound to fit the text
 		bool	m_no_select;
-		bool	m_border;	// forces white background and black border -- perhaps useless?
+		bool	m_border;	// forces white background and black border -- silly, but sometimes used
 		bool	m_html;
 
 		// Allowed HTML (from Alexi's SWF Reference):
@@ -359,10 +364,11 @@ namespace gameswf
 		float	m_right_margin;
 		float	m_indent;	// how much to indent the first line of multiline text
 		float	m_leading;	// extra space between lines (in addition to default font line spacing)
-		tu_string	m_text;
+		tu_string	m_default_text;
+//		tu_string	m_text;
 
 
-		edit_text_character()
+		edit_text_character_def()
 			:
 			m_word_wrap(false),
 			m_multiline(false),
@@ -383,290 +389,18 @@ namespace gameswf
 			m_leading(0.0f)
 		{
 			m_color.set(0, 0, 0, 255);
-			m_dummy_style.push_back(fill_style());
 		}
 
 		
-		~edit_text_character()
+		~edit_text_character_def()
 		{
 		}
 
 
-		virtual bool	set_value(const as_value& new_val)
-		// Overload from class character.
-		// Set our text to the given string.
-		{
-			set_text(new_val.to_string());
-			return true;
-		}
-
-		virtual bool	get_value(as_value* val)
-		// Return our contents.
-		{
-			val->set(m_text);
-			return true;
-		}
-
-		void	set_text(const char* new_text)
-		{
-			if (m_text == new_text)
-			{
-				return;
-			}
-
-			m_text = new_text;
-			if (m_max_length > 0
-			    && m_text.length() > m_max_length)
-			{
-				m_text.resize(m_max_length);
-			}
-
-			format_text();
-		}
-
-		
-		// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
-		// we have a bug?
-		#define WIDTH_FUDGE 80.0f
+		character*	create_character_instance(movie* parent);
 
 
-		void	align_line(alignment align, int last_line_start_record, float x)
-		// Does LEFT/CENTER/RIGHT alignment on the records in
-		// m_text_glyph_records[], starting with
-		// last_line_start_record and going through the end of
-		// m_text_glyph_records.
-		{
-			float	extra_space = (m_rect.width() - m_right_margin) - x - WIDTH_FUDGE;
-			assert(extra_space >= 0.0f);
-
-			float	shift_right = 0.0f;
-
-			if (align == ALIGN_LEFT)
-			{
-				// Nothing to do; already aligned left.
-				return;
-			}
-			else if (align == ALIGN_CENTER)
-			{
-				// Distribute the space evenly on both sides.
-				shift_right = extra_space / 2;
-			}
-			else if (align == ALIGN_RIGHT)
-			{
-				// Shift all the way to the right.
-				shift_right = extra_space;
-			}
-
-			// Shift the beginnings of the records on this line.
-			for (int i = last_line_start_record; i < m_text_glyph_records.size(); i++)
-			{
-				text_glyph_record&	rec = m_text_glyph_records[i];
-
-				if (rec.m_style.m_has_x_offset)
-				{
-					rec.m_style.m_x_offset += shift_right;
-				}
-			}
-		}
-		
-
-		// Convert the characters in m_text into a series of
-		// text_glyph_records to be rendered.
-		void	format_text()
-		{
-			m_text_glyph_records.resize(0);
-
-			if (m_font == NULL) return;
-
-			// @@ mostly for debugging
-			// Font substitution -- if the font has no
-			// glyphs, try some other defined font!
-			if (m_font->get_glyph_count() == 0)
-			{
-				// Find a better font.
-				font*	newfont = m_font;
-				for (int i = 0, n = fontlib::get_font_count(); i < n; i++)
-				{
-					font*	f = fontlib::get_font(i);
-					assert(f);
-
-					if (f->get_glyph_count() > 0)
-					{
-						// This one looks good.
-						newfont = f;
-						break;
-					}
-				}
-
-				if (m_font != newfont)
-				{
-					log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
-						  fontlib::get_font_name(m_font),
-						  fontlib::get_font_name(newfont));
-
-					m_font = newfont;
-				}
-			}
-
-
-			float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
-
-			text_glyph_record	rec;	// one to work on
-			rec.m_style.m_font = m_font;
-			rec.m_style.m_color = m_color;
-			rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
-			rec.m_style.m_y_offset = m_text_height + (m_font->get_leading() - m_font->get_descent()) * scale;
-			rec.m_style.m_text_height = m_text_height;
-			rec.m_style.m_has_x_offset = true;
-			rec.m_style.m_has_y_offset = true;
-
-			float	x = rec.m_style.m_x_offset;
-			float	y = rec.m_style.m_y_offset;
-			UNUSED(y);
-
-			float	leading = m_leading;
-			leading += m_font->get_leading() * scale;
-
-			int	last_code = -1;
-			int	last_space_glyph = -1;
-			int	last_line_start_record = 0;
-
-			for (int j = 0; j < m_text.length(); j++)
-			{
-				if (y + m_font->get_descent() * scale > m_rect.height())
-				{
-					// Text goes below the bottom of our bounding box.
-					rec.m_glyphs.resize(0);
-					break;
-				}
-
-				Uint16	code = m_text[j];
-
-				x += m_font->get_kerning_adjustment(last_code, code) * scale;
-				last_code = code;
-
-				if (code == 13 || code == 10)
-				{
-					// newline.
-
-					// Frigging Flash seems to use '\r' (13) as its
-					// default newline character.  If we get DOS-style \r\n
-					// sequences, it'll show up as double newlines, so maybe we
-					// need to detect \r\n and treat it as one newline.
-
-					// Close out this stretch of glyphs.
-					m_text_glyph_records.push_back(rec);
-					align_line(m_alignment, last_line_start_record, x);
-
-					x = fmax(0, m_left_margin + m_indent);	// new paragraphs get the indent.
-					y += m_text_height + leading;
-
-					// Start a new record on the next line.
-					rec.m_glyphs.resize(0);
-					rec.m_style.m_font = m_font;
-					rec.m_style.m_color = m_color;
-					rec.m_style.m_x_offset = x;
-					rec.m_style.m_y_offset = y;
-					rec.m_style.m_text_height = m_text_height;
-					rec.m_style.m_has_x_offset = true;
-					rec.m_style.m_has_y_offset = true;
-
-					last_space_glyph = -1;
-					last_line_start_record = m_text_glyph_records.size();
-
-					continue;
-				}
-
-				// Remember where word breaks occur.
-				if (code == 32)
-				{
-					last_space_glyph = rec.m_glyphs.size();
-				}
-
-				int	index = m_font->get_glyph_index(code);
-				if (index == -1)
-				{
-					// error -- missing glyph!
-					log_error("edit_text_character::display() -- missing glyph for char %d\n", code);
-					continue;
-				}
-				text_glyph_record::glyph_entry	ge;
-				ge.m_glyph_index = index;
-				ge.m_glyph_advance = scale * m_font->get_advance(index);
-
-				rec.m_glyphs.push_back(ge);
-
-				x += ge.m_glyph_advance;
-
-				if (x >= m_rect.width() - m_right_margin - WIDTH_FUDGE)
-				{
-					// Whoops, we just exceeded the box width.  Do word-wrap.
-
-					// Insert newline.
-
-					// Close out this stretch of glyphs.
-					m_text_glyph_records.push_back(rec);
-					float	previous_x = x;
-
-					x = m_left_margin;
-					y += m_text_height + leading;
-
-					// Start a new record on the next line.
-					rec.m_glyphs.resize(0);
-					rec.m_style.m_font = m_font;
-					rec.m_style.m_color = m_color;
-					rec.m_style.m_x_offset = x;
-					rec.m_style.m_y_offset = y;
-					rec.m_style.m_text_height = m_text_height;
-					rec.m_style.m_has_x_offset = true;
-					rec.m_style.m_has_y_offset = true;
-					
-					text_glyph_record&	last_line = m_text_glyph_records.back();
-					if (last_space_glyph == -1)
-					{
-						// Pull the previous glyph down onto the
-						// new line.
-						if (last_line.m_glyphs.size() > 0)
-						{
-							rec.m_glyphs.push_back(last_line.m_glyphs.back());
-							x += last_line.m_glyphs.back().m_glyph_advance;
-							previous_x -= last_line.m_glyphs.back().m_glyph_advance;
-							last_line.m_glyphs.resize(last_line.m_glyphs.size() - 1);
-						}
-					}
-					else
-					{
-						// Move the previous word down onto the next line.
-
-						previous_x -= last_line.m_glyphs[last_space_glyph].m_glyph_advance;
-
-						for (int i = last_space_glyph + 1; i < last_line.m_glyphs.size(); i++)
-						{
-							rec.m_glyphs.push_back(last_line.m_glyphs[i]);
-							x += last_line.m_glyphs[i].m_glyph_advance;
-							previous_x -= last_line.m_glyphs[i].m_glyph_advance;
-						}
-						last_line.m_glyphs.resize(last_space_glyph);
-					}
-
-					align_line(m_alignment, last_line_start_record, previous_x);
-
-					last_space_glyph = -1;
-					last_line_start_record = m_text_glyph_records.size();
-				}
-
-
-				// TODO: alignment
-				// TODO: HTML markup
-			}
-
-			// Add this line to our output.
-			m_text_glyph_records.push_back(rec);
-			align_line(m_alignment, last_line_start_record, x);
-		}
-
-
-		void	read(stream* in, int tag_type, movie_definition* m)
+		void	read(stream* in, int tag_type, movie_definition_sub* m)
 		{
 			assert(m != NULL);
 			assert(tag_type == 37);
@@ -730,25 +464,343 @@ namespace gameswf
 			if (has_text)
 			{
 				char*	str = in->read_string();
-				set_text(str);
+				m_default_text = str;
 				delete [] str;
 			}
 		}
 
 
-		void	display(const display_info& di)
+	};
+
+
+	//
+	// edit_text_character
+	//
+
+
+	struct edit_text_character : public character
+	{
+		edit_text_character_def*	m_def;
+		array<text_glyph_record>	m_text_glyph_records;
+		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
+		array<line_style>	m_dummy_line_style;
+
+		tu_string	m_text;
+
+		edit_text_character(movie* parent, edit_text_character_def* def)
+			:
+			character(parent),
+			m_def(def)
+		{
+			assert(parent);
+			assert(m_def);
+
+			set_text(m_def->m_default_text);
+
+			m_dummy_style.push_back(fill_style());
+		}
+
+		~edit_text_character()
+		{
+		}
+
+		virtual int	get_id() const { return m_def->get_id(); }
+		virtual const char*	get_name() const { return m_def->get_name(); }
+
+
+		virtual bool	set_value(const as_value& new_val)
+		// Overload from class character.
+		// Set our text to the given string.
+		{
+			set_text(new_val.to_string());
+			return true;
+		}
+
+		virtual bool	get_value(as_value* val)
+		// Return our contents.
+		{
+			val->set(m_text);
+			return true;
+		}
+
+		void	set_text(const char* new_text)
+		{
+			if (m_text == new_text)
+			{
+				return;
+			}
+
+			m_text = new_text;
+			if (m_def->m_max_length > 0
+			    && m_text.length() > m_def->m_max_length)
+			{
+				m_text.resize(m_def->m_max_length);
+			}
+
+			format_text();
+		}
+
+		
+		// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
+		// we have a bug?
+		#define WIDTH_FUDGE 80.0f
+
+
+		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x)
+		// Does LEFT/CENTER/RIGHT alignment on the records in
+		// m_text_glyph_records[], starting with
+		// last_line_start_record and going through the end of
+		// m_text_glyph_records.
+		{
+			float	extra_space = (m_def->m_rect.width() - m_def->m_right_margin) - x - WIDTH_FUDGE;
+			assert(extra_space >= 0.0f);
+
+			float	shift_right = 0.0f;
+
+			if (align == edit_text_character_def::ALIGN_LEFT)
+			{
+				// Nothing to do; already aligned left.
+				return;
+			}
+			else if (align == edit_text_character_def::ALIGN_CENTER)
+			{
+				// Distribute the space evenly on both sides.
+				shift_right = extra_space / 2;
+			}
+			else if (align == edit_text_character_def::ALIGN_RIGHT)
+			{
+				// Shift all the way to the right.
+				shift_right = extra_space;
+			}
+
+			// Shift the beginnings of the records on this line.
+			for (int i = last_line_start_record; i < m_text_glyph_records.size(); i++)
+			{
+				text_glyph_record&	rec = m_text_glyph_records[i];
+
+				if (rec.m_style.m_has_x_offset)
+				{
+					rec.m_style.m_x_offset += shift_right;
+				}
+			}
+		}
+		
+
+		// Convert the characters in m_text into a series of
+		// text_glyph_records to be rendered.
+		void	format_text()
+		{
+			m_text_glyph_records.resize(0);
+
+			if (m_def->m_font == NULL) return;
+
+			// @@ mostly for debugging
+			// Font substitution -- if the font has no
+			// glyphs, try some other defined font!
+			if (m_def->m_font->get_glyph_count() == 0)
+			{
+				// Find a better font.
+				font*	newfont = m_def->m_font;
+				for (int i = 0, n = fontlib::get_font_count(); i < n; i++)
+				{
+					font*	f = fontlib::get_font(i);
+					assert(f);
+
+					if (f->get_glyph_count() > 0)
+					{
+						// This one looks good.
+						newfont = f;
+						break;
+					}
+				}
+
+				if (m_def->m_font != newfont)
+				{
+					log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
+						  fontlib::get_font_name(m_def->m_font),
+						  fontlib::get_font_name(newfont));
+
+					m_def->m_font = newfont;
+				}
+			}
+
+
+			float	scale = m_def->m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+
+			text_glyph_record	rec;	// one to work on
+			rec.m_style.m_font = m_def->m_font;
+			rec.m_style.m_color = m_def->m_color;
+			rec.m_style.m_x_offset = fmax(0, m_def->m_left_margin + m_def->m_indent);
+			rec.m_style.m_y_offset = m_def->m_text_height
+				+ (m_def->m_font->get_leading() - m_def->m_font->get_descent()) * scale;
+			rec.m_style.m_text_height = m_def->m_text_height;
+			rec.m_style.m_has_x_offset = true;
+			rec.m_style.m_has_y_offset = true;
+
+			float	x = rec.m_style.m_x_offset;
+			float	y = rec.m_style.m_y_offset;
+			UNUSED(y);
+
+			float	leading = m_def->m_leading;
+			leading += m_def->m_font->get_leading() * scale;
+
+			int	last_code = -1;
+			int	last_space_glyph = -1;
+			int	last_line_start_record = 0;
+
+			for (int j = 0; j < m_text.length(); j++)
+			{
+				if (y + m_def->m_font->get_descent() * scale > m_def->m_rect.height())
+				{
+					// Text goes below the bottom of our bounding box.
+					rec.m_glyphs.resize(0);
+					break;
+				}
+
+				Uint16	code = m_text[j];
+
+				x += m_def->m_font->get_kerning_adjustment(last_code, code) * scale;
+				last_code = code;
+
+				if (code == 13 || code == 10)
+				{
+					// newline.
+
+					// Frigging Flash seems to use '\r' (13) as its
+					// default newline character.  If we get DOS-style \r\n
+					// sequences, it'll show up as double newlines, so maybe we
+					// need to detect \r\n and treat it as one newline.
+
+					// Close out this stretch of glyphs.
+					m_text_glyph_records.push_back(rec);
+					align_line(m_def->m_alignment, last_line_start_record, x);
+
+					x = fmax(0, m_def->m_left_margin + m_def->m_indent);	// new paragraphs get the indent.
+					y += m_def->m_text_height + leading;
+
+					// Start a new record on the next line.
+					rec.m_glyphs.resize(0);
+					rec.m_style.m_font = m_def->m_font;
+					rec.m_style.m_color = m_def->m_color;
+					rec.m_style.m_x_offset = x;
+					rec.m_style.m_y_offset = y;
+					rec.m_style.m_text_height = m_def->m_text_height;
+					rec.m_style.m_has_x_offset = true;
+					rec.m_style.m_has_y_offset = true;
+
+					last_space_glyph = -1;
+					last_line_start_record = m_text_glyph_records.size();
+
+					continue;
+				}
+
+				// Remember where word breaks occur.
+				if (code == 32)
+				{
+					last_space_glyph = rec.m_glyphs.size();
+				}
+
+				int	index = m_def->m_font->get_glyph_index(code);
+				if (index == -1)
+				{
+					// error -- missing glyph!
+					log_error("edit_text_character::display() -- missing glyph for char %d\n", code);
+					continue;
+				}
+				text_glyph_record::glyph_entry	ge;
+				ge.m_glyph_index = index;
+				ge.m_glyph_advance = scale * m_def->m_font->get_advance(index);
+
+				rec.m_glyphs.push_back(ge);
+
+				x += ge.m_glyph_advance;
+
+				if (x >= m_def->m_rect.width() - m_def->m_right_margin - WIDTH_FUDGE)
+				{
+					// Whoops, we just exceeded the box width.  Do word-wrap.
+
+					// Insert newline.
+
+					// Close out this stretch of glyphs.
+					m_text_glyph_records.push_back(rec);
+					float	previous_x = x;
+
+					x = m_def->m_left_margin;
+					y += m_def->m_text_height + leading;
+
+					// Start a new record on the next line.
+					rec.m_glyphs.resize(0);
+					rec.m_style.m_font = m_def->m_font;
+					rec.m_style.m_color = m_def->m_color;
+					rec.m_style.m_x_offset = x;
+					rec.m_style.m_y_offset = y;
+					rec.m_style.m_text_height = m_def->m_text_height;
+					rec.m_style.m_has_x_offset = true;
+					rec.m_style.m_has_y_offset = true;
+					
+					text_glyph_record&	last_line = m_text_glyph_records.back();
+					if (last_space_glyph == -1)
+					{
+						// Pull the previous glyph down onto the
+						// new line.
+						if (last_line.m_glyphs.size() > 0)
+						{
+							rec.m_glyphs.push_back(last_line.m_glyphs.back());
+							x += last_line.m_glyphs.back().m_glyph_advance;
+							previous_x -= last_line.m_glyphs.back().m_glyph_advance;
+							last_line.m_glyphs.resize(last_line.m_glyphs.size() - 1);
+						}
+					}
+					else
+					{
+						// Move the previous word down onto the next line.
+
+						previous_x -= last_line.m_glyphs[last_space_glyph].m_glyph_advance;
+
+						for (int i = last_space_glyph + 1; i < last_line.m_glyphs.size(); i++)
+						{
+							rec.m_glyphs.push_back(last_line.m_glyphs[i]);
+							x += last_line.m_glyphs[i].m_glyph_advance;
+							previous_x -= last_line.m_glyphs[i].m_glyph_advance;
+						}
+						last_line.m_glyphs.resize(last_space_glyph);
+					}
+
+					align_line(m_def->m_alignment, last_line_start_record, previous_x);
+
+					last_space_glyph = -1;
+					last_line_start_record = m_text_glyph_records.size();
+				}
+
+
+				// TODO: alignment
+				// TODO: HTML markup
+			}
+
+			// Add this line to our output.
+			m_text_glyph_records.push_back(rec);
+			align_line(m_def->m_alignment, last_line_start_record, x);
+		}
+
+
+		void	display()
 		// Draw the dynamic string.
 		{
-			if (m_border)
+			if (m_def->m_border)
 			{
+				matrix	mat = get_world_matrix();
+				
+				// @@ hm, should we apply the color xform?  It seems logical; need to test.
+				// cxform	cx = get_world_cxform();
+
 				// Show white background + black bounding box.
-				render::set_matrix(di.m_matrix);
+				render::set_matrix(mat);
 
 				point	coords[4];
-				coords[0] = m_rect.get_corner(0);
-				coords[1] = m_rect.get_corner(1);
-				coords[2] = m_rect.get_corner(3);
-				coords[3] = m_rect.get_corner(2);
+				coords[0] = m_def->m_rect.get_corner(0);
+				coords[1] = m_def->m_rect.get_corner(1);
+				coords[2] = m_def->m_rect.get_corner(3);
+				coords[3] = m_def->m_rect.get_corner(2);
 
 				Sint16	icoords[18] = 
 				{
@@ -774,9 +826,17 @@ namespace gameswf
 			}
 
 			// Draw our actual text.
-			display_glyph_records(di, matrix::identity, m_text_glyph_records);
+			display_glyph_records(matrix::identity, this, m_text_glyph_records);
 		}
+		
 	};
+
+
+	character*	edit_text_character_def::create_character_instance(movie* parent)
+	{
+		edit_text_character*	ch = new edit_text_character(parent, this);
+		return ch;
+	}
 
 
 	void	define_edit_text_loader(stream* in, int tag_type, movie_definition_sub* m)
@@ -786,13 +846,14 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		edit_text_character*	ch = new edit_text_character;
+		edit_text_character_def*	ch = new edit_text_character_def;
 		ch->set_id(character_id);
 		IF_VERBOSE_PARSE(log_msg("edit_text_char, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);
 	}
+
 }	// end namespace gameswf
 
 

@@ -77,3 +77,5 @@ base_lib:
 clean:
 	make -C $(TOP)/base clean
 	-rm $(OBJS) $(LIB_OUT) $(EXE_OUT)
+
+fresh: clean all

@@ -19,31 +19,19 @@ namespace gameswf
 {
 
 	// A struct to serve as an entry in the display list.
-	struct display_object_info : display_info	// private inheritance? WK: no, structs have 
-                                                        // default public inheritance
+	struct display_object_info
 	{
 		bool	m_ref;
-		character*	m_character;
+		character*	m_character;	// state is held in here
 
-		static int compare(const void* _a, const void* _b)
-		// For qsort().
+		display_object_info()
+			:
+			m_ref(false),
+			m_character(NULL)
 		{
-			display_object_info*	a = (display_object_info*) _a;
-			display_object_info*	b = (display_object_info*) _b;
-
-			if (a->m_depth < b->m_depth)
-			{
-				return -1;
-			}
-			else if (a->m_depth == b->m_depth)
-			{
-				return 0;
-			}
-			else
-			{
-				return 1;
-			}
 		}
+
+		static int compare(const void* _a, const void* _b); // For qsort().
 	};
 
 
@@ -56,7 +44,6 @@ namespace gameswf
 		int	get_display_index(int depth);
 		
 		void	add_display_object(
-			movie* parent_movie,
 			character* ch,
 			Uint16 depth,
 			const cxform& color_xform,
@@ -72,7 +59,6 @@ namespace gameswf
 			float ratio,
 			Uint16 clip_depth);
 		void	replace_display_object(
-			movie* parent_movie,
 			character* ch,
 			Uint16 depth,
 			bool use_cxform,
@@ -93,12 +79,14 @@ namespace gameswf
 		void	update();
 
 		// advance referenced characters.
-		void	advance(float delta_time, movie* m);
-		void	advance(float delta_time, movie* m, const matrix& mat);
+		void	advance(float delta_time);
 
 		// display the referenced characters.
 		void	display();
-		void	display(const display_info & di);
+		void	display(const display_info& di);
+
+		int	get_character_count() { return m_display_object_array.size(); }
+		character*	get_character(int index) { return m_display_object_array[index].m_character; }
 
 		inline const display_object_info&	get_display_object(int idx) const
 		// get the display object at the given position.
@@ -107,7 +95,7 @@ namespace gameswf
 		}
 
 
-		void	set_character_position(character* ch, float x, float y);
+//		void	set_character_position(character* ch, float x, float y);
 
 	private:
 

@@ -25,8 +25,10 @@ namespace jpeg { struct input; }
 namespace gameswf
 {
 	struct action_buffer;
-	struct bitmap_character;
+	struct bitmap_character_def;
         struct bitmap_info;
+	struct character;
+	struct character_def;
 	struct display_info;
 	struct execute_tag;
 	struct font;
@@ -39,7 +41,34 @@ namespace gameswf
 	struct movie_definition_sub : public movie_definition
 	{
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) = 0;
+		virtual resource*	get_exported_resource(const tu_string& symbol) = 0;
+		virtual character_def*	get_character_def(int id) = 0;
+
+		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
+
+
+		// For use during creation.
+		virtual int	get_loading_frame() const = 0;
+		virtual void	add_character(int id, character_def* ch) = 0;
+		virtual void	add_font(int id, font* ch) = 0;
+		virtual font*	get_font(int id) = 0;
+		virtual void	add_execute_tag(execute_tag* c) = 0;
+		virtual void	add_frame_name(const char* name) = 0;
+		virtual void	set_jpeg_loader(jpeg::input* j_in) = 0;
+		virtual jpeg::input*	get_jpeg_loader() = 0;
+		virtual bitmap_character_def*	get_bitmap_character(int character_id) = 0;
+		virtual void	add_bitmap_character(int character_id, bitmap_character_def* ch) = 0;
+		virtual sound_sample*	get_sound_sample(int character_id) = 0;
+		virtual void	add_sound_sample(int character_id, sound_sample* sam) = 0;
+		virtual void	export_resource(const tu_string& symbol, resource* res) = 0;
+
+		virtual void	generate_font_bitmaps() = 0;
 	};
+
+
+	// For internal use.
+	movie_definition_sub*	create_movie_sub(const char* filename);
+	movie_definition_sub*	create_library_movie_sub(const char* filename);
 
 
 	struct movie : public movie_interface
@@ -49,6 +78,9 @@ namespace gameswf
 
 		virtual float	get_pixel_scale() const { return 1.0f; }
 		virtual character*	get_character(int id) { return NULL; }
+
+		virtual matrix	get_world_matrix() const { return matrix::identity; }
+		virtual cxform	get_world_cxform() const { return cxform::identity; }
 
 		//
 		// display-list management.
@@ -114,28 +146,12 @@ namespace gameswf
 			assert(0);
 		}
 
-		virtual int	get_mouse_capture()
-		// Use this to retrieve the character that has the mouse focus.
-		{
-			assert(0);
-			return -1;
-		}
-
-		virtual void	set_mouse_capture(int cid)
-		// Set the focus to the given character.
-		{
-			assert(0);
-		}
+		virtual int	get_mouse_capture() { assert(0); return -1; }
+		virtual void	set_mouse_capture(int id) { assert(0); }
 
 		virtual bool	set_edit_text(const char* var_name, const char* new_text)
 		{
 			return set_value(var_name, new_text);
-		}
-
-		// x and y in root coords (TWIPs)
-		virtual void	set_character_position(character* ch, float x, float y)
-		{
-			assert(0);
 		}
 
 		virtual bool	has_looped() const { return true; }
@@ -188,57 +204,32 @@ namespace gameswf
 	};
 
 
-	// SWF movies contain "characters" to represent the various elements.
-	struct character : public movie, public as_variable_interface
+	// A character_def is the immutable data representing the template of a
+	// movie element.
+	struct character_def
 	{
 	private:
 		int	m_id;
 		tu_string	m_name;
 		
 	public:
-		character()
+		character_def()
 			:
 			m_id(-1)
 		{
 		}
 
-		virtual ~character() {}
+		virtual ~character_def() {}
 
 		void	set_id(int id) { m_id = id; }
 		int	get_id() const { return m_id; }
-
 		void	set_name(const char* name) { m_name = name; }
 		const char*	get_name() const { return m_name.c_str(); }
 
-		virtual void	display(const display_info& di) {}	// renderer state contains context
-		virtual void	advance(float delta_time, movie* m, const matrix& mat) {}	// for buttons and sprites
-		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
+		virtual void	display(character* instance_info) {}
+		virtual bool	point_test_local(float x, float y) { return false; }
 
-		// Movie interfaces.  By default do nothing.  sprite will override these.
-		virtual int	get_current_frame() const { assert(0); return 0; }
-		virtual bool	has_looped() const { assert(0); return false; }
-		virtual void	restart() { /*assert(0);*/ }
-		virtual void	advance(float delta_time) { assert(0); }	// should only be called on movie_impl's.
-		virtual void	goto_frame(int target_frame) {}
-		virtual void	display() {}
-
-		// Instance/definition interface; useful for things
-		// like sprites, which have an immutable definition
-		// which lives in the character table, and possibly
-		// more than one mutable instance which contain
-		// individual state and live in the display list.
-		//
-		// Ordinary characters are totally immutable, so don't
-		// need the extra instance/def logic.
-		virtual bool	is_definition() const { return false; }
-		virtual bool	is_instance() const { return false; }
-		virtual character*	create_character_instance(movie* m) { assert(0); return 0; }
-		virtual character*	get_definition() { return this; }
-
-		// Interface for ActionScript variable support.
-		// E.g. for setting dynamic text values.
-		virtual bool	set_value(const as_value& val) { assert(0); return false; }
-		virtual bool	get_value(as_value* val) { assert(0); return false; }
+		virtual character*	create_character_instance(movie* parent);	// default is to make a generic_character
 
 		//
 		// Caching.
@@ -249,7 +240,152 @@ namespace gameswf
 	};
 
 
-	struct bitmap_character : public character
+	// Information about how to display a character.
+	struct display_info
+	{
+		movie*	m_parent;
+		int	m_depth;
+		cxform	m_color_transform;
+		matrix	m_matrix;
+		float	m_ratio;
+                Uint16 	m_clip_depth;
+
+		display_info()
+			:
+			m_parent(NULL),
+			m_depth(0),
+			m_ratio(0.0f),
+                        m_clip_depth(0)
+		{
+		}
+
+		void	concatenate(const display_info& di)
+		// Concatenate the transforms from di into our
+		// transforms.
+		{
+			m_depth = di.m_depth;
+			m_color_transform.concatenate(di.m_color_transform);
+			m_matrix.concatenate(di.m_matrix);
+			m_ratio = di.m_ratio;
+                        m_clip_depth = di.m_clip_depth;
+		}
+	};
+
+
+	// character is a live, stateful instance of a character_def.
+	// It represents a single active element in a movie.
+	struct character : public movie, public as_variable_interface
+	{
+		// @@ stuff from display_info
+		movie*	m_parent;
+		int	m_depth;
+		cxform	m_color_transform;
+		matrix	m_matrix;
+		float	m_ratio;
+                Uint16 	m_clip_depth;
+
+		character(movie* parent)
+			:
+			m_parent(parent),
+			m_depth(-1),
+			m_ratio(0.0f),
+			m_clip_depth(0)
+		{
+		}
+
+		// Accessors for basic display info.
+		movie*	get_parent() const { return m_parent; }
+		int	get_depth() const { return m_depth; }
+		void	set_depth(int d) { m_depth = d; }
+		const matrix&	get_matrix() const { return m_matrix; }
+		void	set_matrix(const matrix& m) { m_matrix = m; }
+		const cxform&	get_cxform() const { return m_color_transform; }
+		void	set_cxform(const cxform& cx) { m_color_transform = cx; }
+		void	concatenate_cxform(const cxform& cx) { m_color_transform.concatenate(cx); }
+		void	concatenate_matrix(const matrix& m) { m_matrix.concatenate(m); }
+		float	get_ratio() const { return m_ratio; }
+		void	set_ratio(float f) { m_ratio = f; }
+		Uint16	get_clip_depth() const { return m_clip_depth; }
+		void	set_clip_depth(Uint16 d) { m_clip_depth = d; }
+
+		virtual int	get_id() const = 0;
+		virtual const char*	get_name() const = 0;
+
+		virtual matrix	get_world_matrix() const
+		// Get our concatenated matrix (all our ancestor transforms, times our matrix).  Maps
+		// from our local space into "world" space (i.e. root movie space).
+		{
+			matrix	m;
+			if (m_parent)
+			{
+				m = m_parent->get_world_matrix();
+			}
+			m.concatenate(get_matrix());
+
+			return m;
+		}
+
+		virtual cxform	get_world_cxform() const
+		// Get our concatenated color transform (all our ancestor transforms,
+		// times our cxform).  Maps from our local space into normal color space.
+		{
+			cxform	m;
+			if (m_parent)
+			{
+				m = m_parent->get_world_cxform();
+			}
+			m.concatenate(get_cxform());
+
+			return m;
+		}
+
+		// Movie interfaces.  By default do nothing.  sprite_instance and some others override these.
+		virtual void	display() {}
+		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
+
+		virtual int	get_current_frame() const { assert(0); return 0; }
+		virtual bool	has_looped() const { assert(0); return false; }
+		virtual void	restart() { /*assert(0);*/ }
+		virtual void	advance(float delta_time) {}	// for buttons and sprites
+		virtual void	goto_frame(int target_frame) {}
+
+		// Interface for ActionScript variable support.
+		// E.g. for setting dynamic text values.
+		virtual bool	set_value(const as_value& val) { assert(0); return false; }
+		virtual bool	get_value(as_value* val) { assert(0); return false; }
+
+	};
+
+
+	// For characters that don't store unusual state in their instances.
+	struct generic_character : public character
+	{
+		character_def*	m_def;
+
+		generic_character(character_def* def, movie* parent)
+			:
+			character(parent),
+			m_def(def)
+		{
+			assert(m_def);
+		}
+
+		virtual int	get_id() const { return m_def->get_id(); }
+		virtual const char*	get_name() const { return m_def->get_name(); }
+		virtual void	display() { m_def->display(this); }	// pass in transform info
+		virtual bool	point_test(float x, float y)
+		{
+			matrix	m = get_world_matrix();
+			point	p;
+			m.transform_by_inverse(&p, point(x, y));
+
+			return m_def->point_test_local(p.m_x, p.m_y);
+		}
+	};
+
+
+
+	struct bitmap_character_def : public character_def
 	{
 		virtual gameswf::bitmap_info*	get_bitmap_info() = 0;
 	};
@@ -319,37 +455,6 @@ namespace gameswf
 		float	get_nominal_texture_glyph_height();
 	}
 
-
-	// Information about how to display an element.
-	struct display_info
-	{
-		movie*	m_movie;
-		int	m_depth;
-		cxform	m_color_transform;
-		matrix	m_matrix;
-		float	m_ratio;
-                Uint16 	m_clip_depth;
-
-		display_info()
-			:
-			m_movie(NULL),
-			m_depth(0),
-			m_ratio(0.0f),
-                        m_clip_depth(0)
-		{
-		}
-
-		void	concatenate(const display_info& di)
-		// Concatenate the transforms from di into our
-		// transforms.
-		{
-			m_depth = di.m_depth;
-			m_color_transform.concatenate(di.m_color_transform);
-			m_matrix.concatenate(di.m_matrix);
-			m_ratio = di.m_ratio;
-                        m_clip_depth = di.m_clip_depth;
-		}
-	};
 
 }	// end namespace gameswf
 

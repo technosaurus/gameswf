@@ -15,8 +15,9 @@
 
 namespace gameswf
 {
+	struct character;
 	struct stream;
-	struct shape_character;
+	struct shape_character_def;
 	namespace tesselate { struct trapezoid_accepter; }
 
 
@@ -95,14 +96,15 @@ namespace gameswf
 	// A whole shape, tesselated to a certain error tolerance.
 	{
 		mesh_set();
-		mesh_set(const shape_character* sh, float error_tolerance);
+		mesh_set(const shape_character_def* sh, float error_tolerance);
 
 //		int	get_last_frame_rendered() const;
 //		void	set_last_frame_rendered(int frame_counter);
 		float	get_error_tolerance() const { return m_error_tolerance; }
 
 		void display(
-			const display_info& di,
+			const matrix& m,
+			const cxform& cx,
 			const array<fill_style>& fills,
 			const array<line_style>& line_styles) const;
 
@@ -120,23 +122,26 @@ namespace gameswf
 	};
 
 
-	struct shape_character : public character
+	struct shape_character_def : public character_def
 	// Represents the outline of one or more shapes, along with
 	// information on fill and line styles.
 	{
-		shape_character();
-		virtual ~shape_character();
+		shape_character_def();
+		virtual ~shape_character_def();
 
-		void	read(stream* in, int tag_type, bool with_style, movie_definition* m);
-		void	display(const display_info& di);
+		virtual void	display(character* inst);
+		bool	point_test_local(float x, float y);
+
+		void	read(stream* in, int tag_type, bool with_style, movie_definition_sub* m);
 		void	display(
-			const display_info& di,
+			const matrix& mat,
+			const cxform& cx,
+			float pixel_scale,
 			const array<fill_style>& fill_styles,
 			const array<line_style>& line_styles) const;
 		void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
-		bool	point_test(float x, float y);
 		const rect&	get_bound() const { return m_bound; }
-		void	compute_bound(rect* r) const;
+		void	compute_bound(rect* r) const;	// @@ what's the difference between this and get_bound?
 
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
