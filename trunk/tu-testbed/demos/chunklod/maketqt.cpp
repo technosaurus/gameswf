@@ -53,6 +53,33 @@ static int	quadtree_node_count(int depth)
 }
 
 
+static int	quadtree_node_index(int level, int col, int row)
+// Given a tree level and the indices of a node within that tree
+// depth, this function returns a node index.
+{
+	return quadtree_node_count(level) + (row << level) + col;
+}
+
+
+struct tqt_info {
+	SDL_RWops* out;
+	array<Uint32>&	toc;
+	int	tree_depth;
+	int	tile_size;
+
+	tqt_info(SDL_RWops* o, array<Uint32>* tocptr, int d, int ts)
+		: out(o),
+		  toc(*tocptr),
+		  tree_depth(d),
+		  tile_size(ts)
+	{
+	}
+};
+
+
+SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row);
+
+
 #undef main	// @@ Under Win32, SDL wants to put in its own main(), to process args.  We don't need that.
 int	main(int argc, char* argv[])
 {
@@ -152,7 +179,7 @@ int	main(int argc, char* argv[])
 	}
 
 	// Open output file.
-	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
+	SDL_RWops*	out = SDL_RWFromFile(outfile, "w+b");
 	if (out == NULL) {
 		printf("Can't open output file '%s'!\n", outfile);
 		SDL_RWclose(in);
@@ -203,7 +230,7 @@ int	main(int argc, char* argv[])
 
 	SDL_Surface*	tile = image::create_rgb(tile_size, tile_size);
 
-	printf("making base tiles....");
+	printf("making leaf tiles....");
 
 	// generate base level tiles.
 	for (int row = 0; row < tile_dim; row++) {
@@ -237,10 +264,8 @@ int	main(int argc, char* argv[])
 			// Update the table of contents with an offset
 			// to the data we're about to write.
 			int	offset = SDL_RWtell(out);
-			int	prior_depth = tree_depth - 1;
-			int	quadtree_index = quadtree_node_count(prior_depth) + (row << prior_depth) + col;
+			int	quadtree_index = quadtree_node_index(tree_depth - 1, col, row);
 			toc[quadtree_index] = offset;
-
 
 			// Write the jpeg data.
 			image::write_jpeg(out, tile, 80);
@@ -255,30 +280,83 @@ int	main(int argc, char* argv[])
 
 	printf("\n");
 
-#if 0
-//	tile_cache*	cache = new tile_cache();
+	printf("making interior tiles....");
 
 	// Now generate the upper levels of the tree by resampling the
 	// lower levels.
 	// 
 	// The output file is both input and output at this point.
-	for (int level = depth - 1; level >= 0; level--) {
-		generate_tiles(out, &toc, level, 0, 0);
-	}
+	tqt_info	inf(out, &toc, tree_depth, tile_size);
+	SDL_Surface*	root_tile = generate_tiles(&inf, 0, 0, 0);
+
+	SDL_FreeSurface(root_tile);	// dispose of root tile.
 
 	// Write the TOC back into the head of the file.
-	SDL_RWseek(out, toc_start);
-	for (int i = 0; i < toc.size(); i++) {
+	SDL_RWseek(out, toc_start, SEEK_SET);
+	{for (int i = 0; i < toc.size(); i++) {
 		SDL_WriteLE32(out, toc[i]);
-	}
-
-#endif // 0
+	}}
 
 	SDL_RWclose(out);
 
 	return 0;
 }
 
+
+SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
+// (Recursively) generate quadtree tiles by resampling child tiles.
+// Returns the tile for the specified node.  As tiles are generated,
+// write offsets into the table of contents.
+{
+	int	qindex = quadtree_node_index(level, col, row);
+	int	offset = p->toc[qindex];
+	if (offset) {
+		// Tile already built.  Read it from the file.
+		SDL_RWseek(p->out, offset, SEEK_SET);
+		SDL_Surface*	tile = image::read_jpeg(p->out);
+		return tile;
+	}
+
+	if (level >= p->tree_depth - 1) {
+		// We're at the bottom of the tree.  Don't recurse.
+		assert(0);	// should not happen, if we generated tiles for all leaf nodes.
+		throw "bug";
+	}
+
+	// Resample the four child tiles to make this tile.
+	SDL_Surface*	tile = image::create_rgb(p->tile_size, p->tile_size);
+
+	for (int j = 0; j < 2; j++) {
+		for (int i = 0; i < 2; i++) {
+			int	ccol = col * 2 + i;
+			int	crow = row * 2 + j;
+			SDL_Surface*	child_tile = generate_tiles(p, level + 1, ccol, crow);
+
+			int	half_tile = p->tile_size >> 1;
+			int	ox = i ? half_tile : 0;
+			int	oy = j ? half_tile : 0;
+			image::resample(tile, ox, oy, ox + half_tile - 1, oy + half_tile - 1,
+					child_tile, 0.f, 0.f, (float) p->tile_size, (float) p->tile_size);	// @@ need to shave off a half pixel on the inside edges
+
+			SDL_FreeSurface(child_tile);
+		}
+	}
+
+	// Write out the generated tile.
+	{
+		SDL_RWseek(p->out, 0, SEEK_END);
+		int	offset = SDL_RWtell(p->out);
+		
+		// Update table of contents.
+		p->toc[quadtree_node_index(level, col, row)] = offset;
+		
+		image::write_jpeg(p->out, tile, 80);
+	}
+
+	printf("\b%c", spinner[(spin_count++)&3]);
+
+	return tile;	// return to caller, so it can use it.
+}
 
 
 // Local Variables:

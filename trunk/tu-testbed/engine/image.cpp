@@ -90,6 +90,24 @@ namespace image
 		delete j_out;
 	}
 
+
+	SDL_Surface*	read_jpeg(SDL_RWops* in)
+	// Create and read a new image from the stream.
+	{
+		jpeg::input*	j_in = jpeg::input::create(in);
+		if (j_in == NULL) return NULL;
+		
+		SDL_Surface*	im = image::create_rgb(j_in->get_width(), j_in->get_height());
+
+		for (int y = 0; y < j_in->get_height(); y++) {
+			j_in->read_scanline(scanline(im, y));
+		}
+
+		delete j_in;
+
+		return im;
+	}
+
 };
 
 
