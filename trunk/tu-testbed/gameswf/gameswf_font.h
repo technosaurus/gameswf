@@ -85,7 +85,7 @@ namespace gameswf
 		struct simple_code_hash
 		// Dummy hash functor.
 		{
-			static unsigned int	compute(const T& data) { return data; }
+			size_t	operator()(const T& data) const { return data; }
 		};
 
 		hash<Uint16, int, simple_code_hash<Uint16> > m_code_table;

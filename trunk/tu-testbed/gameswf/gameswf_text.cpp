@@ -496,7 +496,7 @@ namespace gameswf
 			assert(parent);
 			assert(m_def);
 
-			set_text_value(m_def->m_default_text);
+			set_text_value(m_def->m_default_text.c_str());
 
 			m_dummy_style.push_back(fill_style());
 		}
@@ -860,7 +860,7 @@ namespace gameswf
 	character*	edit_text_character_def::create_character_instance(movie* parent, int id)
 	{
 		edit_text_character*	ch = new edit_text_character(parent, this, id);
-		ch->set_name(m_default_name);
+		ch->set_name(m_default_name.c_str());
 		return ch;
 	}
 

@@ -516,7 +516,7 @@ namespace gameswf
 			     it != m_fonts.end();
 			     ++it)
 			{
-				font*	f = it.get_value();
+				font*	f = it->second;
 				if (f->get_owning_movie() == this)
 				{
 					fonts->push_back(f);
@@ -560,8 +560,8 @@ namespace gameswf
 			     it != m_characters.end();
 			     ++it)
 			{
-				out->write_le16(it.get_key());
-				it.get_value()->output_cached_data(out);
+				out->write_le16(it->first);
+				it->second->output_cached_data(out);
 			}}
 
 			out->write_le16((Sint16) -1);	// end of characters marker
@@ -3019,7 +3019,7 @@ namespace gameswf
 			{
 				add_display_object(
 					ch->get_id(),
-					newname,
+					newname.c_str(),
 					depth,
 					ch->get_cxform(),
 					ch->get_matrix(),

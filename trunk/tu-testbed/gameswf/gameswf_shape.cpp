@@ -451,13 +451,13 @@ namespace gameswf
 			void	flush() const
 			// Push our strips into the mesh set.
 			{
-				for (hash<int, tri_stripper*>::iterator it = m_strips.begin();
+				for (hash<int, tri_stripper*>::const_iterator it = m_strips.begin();
 				     it != m_strips.end();
 				     ++it)
 				{
 					// Push strip into m.
-					tri_stripper*	s = it.get_value();
-					s->flush(m, it.get_key());
+					tri_stripper*	s = it->second;
+					s->flush(m, it->first);
 					
 					delete s;
 				}
