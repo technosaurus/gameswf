@@ -727,7 +727,7 @@ void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, flo
 
 	// Write a .chu header for the output file.
 	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
-	SDL_WriteLE16(out, 7);	// file format version.
+	SDL_WriteLE16(out, 8);	// file format version.
 	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
 	WriteFloat32(out, vertical_scale);	// meters / unit of vertical measurement.
@@ -1054,8 +1054,9 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	generate_edge_data(out, hf, 3, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level);	// south
 
 	// Chunk address.
-	assert(level < 256);
-	WriteByte(out, level);
+	int	LOD_level = hf.root_level - level;
+	assert(LOD_level >= 0 && LOD_level < 256);
+	WriteByte(out, LOD_level);
 	SDL_WriteLE16(out, x0 >> log_size);
 	SDL_WriteLE16(out, z0 >> log_size);
 

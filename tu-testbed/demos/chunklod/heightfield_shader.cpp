@@ -27,22 +27,11 @@ extern "C" {
 #include "bt_array.h"
 
 
-#if 0
-
-struct texture_tile {
-	Uint8	r, g, b;	// identifier
-	SDL_Surface*	image;
-};
-
-#endif // 0
-
-
 //void	initialize_tileset(array<texture_tile>* tileset);
 //const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b);
 void	heightfield_shader(const char* infile,
 			   SDL_RWops* out,
-//			   SDL_Surface* tilemap,
-//			   const array<texture_tile>& tileset,
+			   SDL_RWops* diffuse_input,
 			   SDL_Surface* altitude_gradient,
 			   int dimension,
 			   float input_vertical_scale
@@ -69,8 +58,8 @@ void	print_usage()
 	       "This program has been donated to the Public Domain by Thatcher Ulrich http://tulrich.com\n"
 	       "Incorporates software from the Independent JPEG Group\n\n"
 	       "usage: heightfield_shader <input.bt> <output.jpg>\n"
-	       "\t[-t <tilemap_bitmap>]\n"
-	       "\t[-g <altitude_gradient_bitmap>]\n"
+	       "\t[-t <diffuse_texture_filename>]\t-- should match the output size\n"
+	       "\t[-g <altitude_gradient_bitmap>]\t-- assigns diffuse color using altitude\n"
 	       "\t[-r <dimension of output texture>]\n"
 	       "\t[-v <bt_input_vertical_scale>]\n"
 	       "\n"
@@ -86,9 +75,8 @@ int	wrapped_main(int argc, char* argv[])
 	// Process command-line options.
 	char*	infile = NULL;
 	char*	outfile = NULL;
-//	char*	tilemap = NULL;
 	char*	gradient_file = NULL;
-//	array<texture_tile>	tileset;
+	char*	diffuse_texture_filename = NULL;
 	int	dimension = 1024;
 	float	input_vertical_scale = 1.0f;
 
@@ -103,18 +91,17 @@ int	wrapped_main(int argc, char* argv[])
 				exit( 1 );
 				break;
 
-#if 0
 			case 't':
-				// Get tilemap filename.
+				// Get diffuse texture filename.
 				if (arg + 1 >= argc) {
 					printf("error: -t option requires a filename\n");
 					print_usage();
 					exit(1);
 				}
 				arg++;
-				tilemap = argv[arg];
+				diffuse_texture_filename = argv[arg];
 				break;
-#endif // 0
+
 			case 'g':
 				// Get gradient filename.
 				if (arg + 1 >= argc) {
@@ -189,19 +176,17 @@ int	wrapped_main(int argc, char* argv[])
 		exit(1);
 	}
 
-#if 0
-	// Initialize the tilemap and tileset.
-	SDL_Surface*	tilemap_surface = NULL;
-	if (tilemap && tilemap[0]) {
-		// The tilemap is a bitmap, where the color of each pixel
-		// chooses a tile from the tilemap.
-		tilemap_surface = IMG_Load(tilemap);
+	// Try to open diffuse texture file.
+	SDL_RWops*	diffuse_input = NULL;
+	if (diffuse_texture_filename)
+	{
+		diffuse_input = SDL_RWFromFile(diffuse_texture_filename, "rb");
+		if (diffuse_input == NULL)
+		{
+			printf("error: can't open %s for input.\n", diffuse_texture_filename);
+			exit(1);
+		}
 	}
-	
-	// Tileset is a set of textures, associated with a particular
-	// color in the tilemap.
-	initialize_tileset(&tileset);
-#endif // 0
 
 	// Altitude gradient bitmap.
 	SDL_Surface*	altitude_gradient = NULL;
@@ -214,7 +199,8 @@ int	wrapped_main(int argc, char* argv[])
 	printf("outfile: %s\n", outfile);
 
 	// Process the data.
-	heightfield_shader(infile, out, /* tilemap_surface, tileset, */ altitude_gradient, dimension, input_vertical_scale);
+	heightfield_shader(infile, out, diffuse_input, altitude_gradient,
+			   dimension, input_vertical_scale);
 
 	SDL_RWclose(out);
 
@@ -249,7 +235,7 @@ void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8
 	// Location and size depends on surface format.
 	Uint32	color = 0;
 
-    switch (s->format->BytesPerPixel) {
+	switch (s->format->BytesPerPixel) {
 	case 1: { /* Assuming 8-bpp */
 		Uint8 *bufp;
 		bufp = (Uint8*) s->pixels + y * s->pitch + x;
@@ -282,7 +268,7 @@ void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8
 		color = *bufp;
 	}
 	break;
-    }
+	}
 
 	// Extract the components.
 	SDL_GetRGBA(color, s->format, R, G, B, A);
@@ -446,8 +432,7 @@ void	compute_lightmap(SDL_Surface* out, const heightfield& hf);
 
 void	heightfield_shader(const char* infile,
 			   SDL_RWops* out,
-//			   SDL_Surface* tilemap,
-//			   const array<texture_tile>& tileset,
+			   SDL_RWops* diffuse_input,
 			   SDL_Surface* altitude_gradient,
 			   int dimension,
 			   float input_vertical_scale
@@ -463,13 +448,30 @@ void	heightfield_shader(const char* infile,
 	}
 	hf.m_input_vertical_scale = input_vertical_scale;
 
+	// Open the diffuse texture, if any.
+	jpeg::input*	diffuse_jpeg = NULL;
+	if (diffuse_input)
+	{
+		diffuse_jpeg = jpeg::input::create(diffuse_input);
+		if (diffuse_jpeg == NULL)
+		{
+			printf("Diffuse texture can't be read as jpeg.\n");
+			exit(1);
+		}
+		if (diffuse_jpeg->get_height() != dimension
+		    || diffuse_jpeg->get_width() != dimension)
+		{
+			printf("Diffuse texture (size %d x %d) must match output dimension (%d)\n",
+			       diffuse_jpeg->get_width(), diffuse_jpeg->get_height(), dimension);
+			exit(1);
+		}
+	}
+
 	// Compute and write the lightmap, if any.
 	printf("Shading...      ");
 
 	const char*	spinner = "-\\|/";
 
-//	int	width = (int) ((1 << hf.m_log_size) * resolution);
-//	int	height = (int) ((1 << hf.m_log_size) * resolution);
 	int	width = dimension;
 	int	height = dimension;
 	float	resolution = float(dimension) / (hf.m_size);
@@ -477,13 +479,13 @@ void	heightfield_shader(const char* infile,
 	// create a buffer to hold a 1-pixel high RGB buffer.  We're
 	// going to create our texture one scanline at a time.
 	Uint8*	texture_pixels = new Uint8[width * 3];
+	Uint8*	diffuse_pixels = new Uint8[width * 3];
 
 	// Create our JPEG compression object, and initialize compression settings.
 	struct jpeg_compress_struct cinfo;
 	struct jpeg_error_mgr jerr;
 	cinfo.err = jpeg_std_error(&jerr);
 	jpeg_create_compress(&cinfo);
-//	jpeg_stdio_dest(&cinfo, out);
 	jpeg::setup_rw_dest(&cinfo, out);
 
 	cinfo.image_width = width;
@@ -498,12 +500,23 @@ void	heightfield_shader(const char* infile,
 
 		Uint8*	p = texture_pixels;
 
+		if (diffuse_jpeg)
+		{
+			diffuse_jpeg->read_scanline(diffuse_pixels);
+		}
+
 		{for (int i = 0; i < width; i++) {
 
 			// Pick a color for this texel.
 			// TODO: break this out into a more sophisticated function.
 			Uint8	r, g, b, a;
-			if (altitude_gradient) {
+			if (diffuse_jpeg) {
+				r = diffuse_pixels[i * 3 + 0];
+				g = diffuse_pixels[i * 3 + 1];
+				b = diffuse_pixels[i * 3 + 2];
+				a = 255;
+			}
+			else if (altitude_gradient) {
 				// Shade the terrain using an altitude gradient.
 				float	y = hf.height_interp(i / resolution, j / resolution);
 				int	h = altitude_gradient->h;
@@ -525,7 +538,7 @@ void	heightfield_shader(const char* infile,
 				}
 			}
 			else {
-				r = g = b = 255;
+				r = g = b = a = 255;
 			}
 #if 0
 			else {
@@ -578,82 +591,11 @@ void	heightfield_shader(const char* infile,
 	jpeg_finish_compress(&cinfo);
 	jpeg_destroy_compress(&cinfo);
 
+	delete diffuse_pixels;
 	delete texture_pixels;
 	
 	printf("done\n");
 }
-
-
-#if 0
-
-void	initialize_tileset(array<texture_tile>* tileset)
-// Adds a few standard tiles to the given tileset.
-{
-	texture_tile	t;
-
-	t.r = 0xFF;
-	t.g = 0x00;
-	t.b = 0x00;
-	t.image = IMG_Load("tileFF0000.jpg");
-	assert_else(t.image) {
-		error("can't load tileFF0000.jpg");
-	}
-	tileset->push_back(t);
-
-	t.r = 0x00;
-	t.g = 0xFF;
-	t.b = 0x00;
-	t.image = IMG_Load("tile00FF00.jpg");
-	assert_else(t.image) {
-		error("can't load tile00FF00.jpg");
-	}
-	tileset->push_back(t);
-
-	t.r = 0x00;
-	t.g = 0x00;
-	t.b = 0xFF;
-	t.image = IMG_Load("tile0000FF.jpg");
-	assert_else(t.image) {
-		error("can't load tile0000FF.jpg");
-	}
-	tileset->push_back(t);
-
-	t.r = 0xFF;
-	t.g = 0xFF;
-	t.b = 0xFF;
-	t.image = IMG_Load("tileFFFFFF.jpg");
-	assert_else(t.image) {
-		error("can't load tileFFFFFF.jpg");
-	}
-	tileset->push_back(t);
-}
-
-
-const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b)
-// Returns a reference to the tile within the given tileset whose
-// r,g,b tag is closest to the specified r,g,b triple.
-{
-	const texture_tile*	result = &tileset[0];
-	int	min_distance = 255 * 255 * 3;
-	
-	// Linear search for closest color in RGB space.
-	for (int i = 0; i < tileset.size(); i++) {
-		int	dr = (r - tileset[i].r);
-		int	dg = (g - tileset[i].g);
-		int	db = (b - tileset[i].b);
-
-		int	dist = dr * dr + dg * dg + db * db;
-		if (dist < min_distance) {
-			min_distance = dist;
-			result = &tileset[i];
-		}
-	}
-
-	return result;
-}
-
-
-#endif // 0
 
 
 // Local Variables:
