@@ -562,11 +562,21 @@ namespace fontlib
 			// load header identifier.
 			char head[4];
 			s_file->read_bytes( head, 4 );
-			assert(head[0]=='g' || head[1]=='s' || head[2]=='w' || head[3]=='f');
+			if (head[0] != 'g' || head[1] != 's' || head[2] != 'w' || head[3] != 'f')
+			{
+				// Header doesn't look like a gswf cache file.
+				assert(0);
+				goto error_exit;
+			}
 
 			// load version number.
 			Uint16 version	= s_file->read_le16();
-			assert(version==0x0100);
+			if (version != 0x0100)
+			{
+				// Bad version number.
+				assert(0);
+				goto error_exit;
+			}
 
 			// load number of bitmaps.
 			int nb = s_file->read_le16();
@@ -641,6 +651,7 @@ namespace fontlib
 			}
 			result = true;
 		}
+	error_exit:
 		delete s_file;
 		s_file = NULL;
 		return result;
@@ -734,6 +745,16 @@ namespace fontlib
 	void	draw_string(const font* f, float x, float y, float size, const char* text)
 	// Host-driven text rendering function. This not-tested and unfinished.
 	{
+		// A dummy array with a white fill style.  For passing to shape_character::display().
+		static array<fill_style>	s_dummy_style;
+		static display_info	s_dummy_display_info;
+		if (s_dummy_style.size() < 1)
+		{
+			s_dummy_style.resize(1);
+			s_dummy_style.back().set_color(rgba(255, 255, 255, 255));
+		}
+
+		// Render each glyph in the string.
 		for (int i = 0; text[i]; i++)
 		{
 			int g = f->get_glyph_index(text[i]);
@@ -762,7 +783,10 @@ namespace fontlib
 				shape_character*	glyph = f->get_glyph(g);
 
 				// Draw the character using the filled outline.
-				//if (glyph) glyph->display(sub_di, m_dummy_style); // TODO: fill display_info
+				if (glyph)
+				{
+					glyph->display(s_dummy_display_info, s_dummy_style);
+				}
 			}
 
 			x += f->get_advance(g);
