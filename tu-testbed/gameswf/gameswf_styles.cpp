@@ -33,7 +33,7 @@ namespace gameswf
 
 
 	//
-	// file_style
+	// fill_style
 	//
 
 
@@ -165,6 +165,7 @@ namespace gameswf
 
 		if (m_type == 0x10)
 		{
+			// Linear gradient.
 			im = image::create_rgba(256, 1);
 
 			for (int i = 0; i < im->m_width; i++)
@@ -175,16 +176,21 @@ namespace gameswf
 		}
 		else if (m_type == 0x12)
 		{
+			// Radial gradient.
 			im = image::create_rgba(64, 64);
 
 			for (int j = 0; j < im->m_height; j++)
 			{
 				for (int i = 0; i < im->m_width; i++)
 				{
-					float	y = j - im->m_height / 2;
-					float	x = i - im->m_width / 2;
-					int	ratio = 2 * 256/im->m_width * sqrt(x * x + y * y);
-					if (ratio>255) ratio = 255;
+					float	radius = (im->m_height - 1) / 2.0f;
+					float	y = (j - radius) / radius;
+					float	x = (i - radius) / radius;
+					int	ratio = (int) floorf(255.5f * sqrt(x * x + y * y));
+					if (ratio > 255)
+					{
+						ratio = 255;
+					}
 					rgba	sample = sample_gradient( ratio );
 					im->set_pixel(i, j, sample.m_r, sample.m_g, sample.m_b, sample.m_a);
 				}
