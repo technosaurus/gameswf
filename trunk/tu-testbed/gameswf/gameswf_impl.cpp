@@ -764,6 +764,11 @@ namespace gameswf
 		void	get_owned_fonts(array<font*>* fonts)
 		// Fill up *fonts with fonts that we own.
 		{
+			assert(fonts);
+			fonts->resize(0);
+
+			array<int>	font_ids;
+
 			for (hash<int, smart_ptr<font> >::iterator it = m_fonts.begin();
 			     it != m_fonts.end();
 			     ++it)
@@ -771,7 +776,22 @@ namespace gameswf
 				font*	f = it->second.get_ptr();
 				if (f->get_owning_movie() == this)
 				{
-					fonts->push_back(f);
+					// Sort by character id, so the ordering is
+					// consistent for cache read/write.
+					int	id = it->first;
+
+					// Insert in correct place.
+					int	insert;
+					for (insert = 0; insert < font_ids.size(); insert++)
+					{
+						if (font_ids[insert] > id)
+						{
+							// We want to insert here.
+							break;
+						}
+					}
+					fonts->insert(insert, f);
+					font_ids.insert(insert, id);
 				}
 			}
 		}
@@ -789,7 +809,7 @@ namespace gameswf
 
 
 		// Increment this when the cache data format changes.
-		#define CACHE_FILE_VERSION 3
+		#define CACHE_FILE_VERSION 4
 
 
 		/* movie_def_impl */
@@ -901,7 +921,7 @@ namespace gameswf
 		int	m_mouse_capture_id;
 		void * m_userdata;
 		movie::drag_state	m_drag_state;
-//v		bool	m_on_event_load_called;
+		bool	m_on_event_load_called;
 
 		movie_root(movie_def_impl* def)
 			:
@@ -918,8 +938,8 @@ namespace gameswf
 			m_mouse_y(0),
 			m_mouse_buttons(0),
 			m_mouse_capture_id(-1),
-			m_userdata(NULL)
-//v			m_on_event_load_called(false)
+			m_userdata(NULL),
+			m_on_event_load_called(false)
 		{
 			assert(m_def != NULL);
 
@@ -1041,18 +1061,14 @@ namespace gameswf
 		void	restart() { m_movie->restart(); }
 		void	advance(float delta_time)
 		{
-
-//v			
-//			if (m_on_event_load_called == false)
-//			{
+			if (m_on_event_load_called == false)
+			{
 				// Must do loading events.  For child sprites this is
 				// done by the dlist, but root movies don't get added
 				// to a dlist, so we do it here.
-
-//				m_movie->execute_frame_tags(0);
-//				m_movie->on_event_load();
-//				m_on_event_load_called = true;
-//			}
+				m_on_event_load_called = true;
+				m_movie->on_event_load();
+			}
 
 			m_timer += delta_time;
 			m_movie->advance(delta_time);
@@ -1141,6 +1157,11 @@ namespace gameswf
 
 		virtual void * get_userdata() { return m_userdata; }
 		virtual void set_userdata(void * ud ) { m_userdata = ud;  }
+
+		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr)
+		{
+			m_movie->attach_display_callback(path_to_object, callback, user_ptr);
+		}
 	};
 
 
@@ -2876,7 +2897,6 @@ namespace gameswf
 		bool	m_update_frame;
 		bool	m_has_looped;
 		bool	m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
-		bool	m_on_event_load_called;
 
 		as_environment	m_as_environment;
 
@@ -2914,7 +2934,6 @@ namespace gameswf
 			m_update_frame(true),
 			m_has_looped(false),
 			m_accept_anim_moves(true),
-			m_on_event_load_called(false),
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
 			m_mouse_state(UP)
@@ -3011,8 +3030,6 @@ namespace gameswf
 				m_next_frame = m_current_frame + 1;
 				if (m_next_frame >= m_def->get_frame_count())
 				{
-
-
  					m_next_frame = 0;
 				}
 			}
@@ -3170,22 +3187,6 @@ namespace gameswf
 			// Keep this (particularly m_as_environment) alive during execution!
 			smart_ptr<as_object_interface>	this_ptr(this);
 
-			if (m_on_event_load_called == false)
-			{
-				if (this == get_root_movie())
-				{
-					execute_frame_tags(0);
-					do_actions();
-					on_event(event_id::LOAD);
-				}
-				else
-				{
-					on_event(event_id::LOAD);
-					do_actions();
-				}
-				m_on_event_load_called = true;
-				return;
-			}
 //v   is not valid: invisible do not means deaded
 //			if (get_visible() == false)
 //			{
@@ -3448,8 +3449,9 @@ namespace gameswf
 			}
 
 			m_display_list.display();
-		}
 
+			do_display_callback();
+		}
 
 		/*sprite_instance*/
 		character*	add_display_object(
@@ -3694,7 +3696,14 @@ namespace gameswf
 		// Set the named member to the value.  Return true if we have
 		// that member; false otherwise.
 		{
-			if (name == "_x")
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
+			{
+			default:
+			case M_INVALID_MEMBER:
+				break;
+			case M_X:
+				//if (name == "_x")
 			{
 				matrix	m = get_matrix();
 				m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
@@ -3704,7 +3713,8 @@ namespace gameswf
 
 				return;
 			}
-			else if (name == "_y")
+			case M_Y:
+				//else if (name == "_y")
 			{
 				matrix	m = get_matrix();
 				m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
@@ -3714,7 +3724,8 @@ namespace gameswf
 
 				return;
 			}
-			else if (name == "_xscale")
+			case M_XSCALE:
+				//else if (name == "_xscale")
 			{
 				matrix	m = get_matrix();
 
@@ -3728,7 +3739,8 @@ namespace gameswf
 				m_accept_anim_moves = false;
 				return;
 			}
-			else if (name == "_yscale")
+			case M_YSCALE:
+				//else if (name == "_yscale")
 			{
 				matrix	m = get_matrix();
 
@@ -3742,7 +3754,45 @@ namespace gameswf
 				m_accept_anim_moves = false;
 				return;
 			}
-			else if (name == "_rotation")
+			case M_ALPHA:
+				//else if (name == "_alpha")
+			{
+				// Set alpha modulate, in percent.
+				cxform	cx = get_cxform();
+				cx.m_[3][0] = float(val.to_number()) / 100.f;
+				set_cxform(cx);
+				m_accept_anim_moves = false;
+				return;
+			}
+			case M_VISIBLE:
+				//else if (name == "_visible")
+			{
+				set_visible(val.to_bool());
+				m_accept_anim_moves = false;
+				return;
+			}
+			case M_WIDTH:
+				//else if (name == "_width")
+			{
+				// @@ tulrich: is parameter in world-coords or local-coords?
+				matrix	m = get_matrix();
+				m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number())) / get_width();
+				set_matrix(m);
+				m_accept_anim_moves = false;
+				return;
+			}
+			case M_HEIGHT:
+				//else if (name == "_height")
+			{
+				// @@ tulrich: is parameter in world-coords or local-coords?
+				matrix	m = get_matrix();
+				m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number())) / get_height();
+				set_matrix(m);
+				m_accept_anim_moves = false;
+				return;
+			}
+			case M_ROTATION:
+				//else if (name == "_rotation")
 			{
 				matrix	m = get_matrix();
 
@@ -3756,59 +3806,30 @@ namespace gameswf
 				m_accept_anim_moves = false;
 				return;
 			}
-			else if (name == "_alpha")
-			{
-				// Set alpha modulate, in percent.
-				cxform	cx = get_cxform();
-				cx.m_[3][0] = float(val.to_number()) / 100.f;
-				set_cxform(cx);
-				m_accept_anim_moves = false;
-				return;
-			}
-			else if (name == "_visible")
-			{
-				set_visible(val.to_bool());
-				m_accept_anim_moves = false;
-				return;
-			}
-			else if (name == "_width")
-			{
-				// @@ tulrich: is parameter in world-coords or local-coords?
-				matrix	m = get_matrix();
-				m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number())) / get_width();
-				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
-			else if (name == "_height")
-			{
-				// @@ tulrich: is parameter in world-coords or local-coords?
-				matrix	m = get_matrix();
-				m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number())) / get_height();
-				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
-			else if (name == "_highquality")
+			case M_HIGHQUALITY:
+				//else if (name == "_highquality")
 			{
 				// @@ global { 0, 1, 2 }
 //				// Whether we're in high quality mode or not.
 //				val->set(true);
 				return;
 			}
-			else if (name == "_focusrect")
+			case M_FOCUSRECT:
+				//else if (name == "_focusrect")
 			{
 //				// Is a yellow rectangle visible around a focused movie clip (?)
 //				val->set(false);
 				return;
 			}
-			else if (name == "_soundbuftime")
+			case M_SOUNDBUFTIME:
+				//else if (name == "_soundbuftime")
 			{
 				// @@ global
 //				// Number of seconds before sound starts to stream.
 //				val->set(0.0);
 				return;
 			}
+			}	// end switch
 
 			// Not a built-in property.  See if we have a
 			// matching edit_text character in our display
@@ -3844,55 +3865,70 @@ namespace gameswf
 		// return true, if we have the named member.
 		// Otherwise leave *val alone and return false.
 		{
-			if (name == "_x")
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
+			{
+			default:
+			case M_INVALID_MEMBER:
+				break;
+			case M_X:
+				//if (name == "_x")
 			{
 				matrix	m = get_matrix();
 				val->set(TWIPS_TO_PIXELS(m.m_[0][2]));
 				return true;
 			}
-			else if (name == "_y")
+			case M_Y:
+				//else if (name == "_y")
 			{
 				matrix	m = get_matrix();
 				val->set(TWIPS_TO_PIXELS(m.m_[1][2]));
 				return true;
 			}
-			else if (name == "_xscale")
+			case M_XSCALE:
+				//else if (name == "_xscale")
 			{
 				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
 				float xscale = m.get_x_scale();
 				val->set(xscale * 100);		// result in percent
 				return true;
 			}
-			else if (name == "_yscale")
+			case M_YSCALE:
+				//else if (name == "_yscale")
 			{
 				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
 				float yscale = m.get_y_scale();
 				val->set(yscale * 100);		// result in percent
 				return true;
 			}
-			else if (name == "_currentframe")
+			case M_CURRENTFRAME:
+				//else if (name == "_currentframe")
 			{
 				val->set(m_current_frame + 1);
 				return true;
 			}
-			else if (name == "_totalframes")
+			case M_TOTALFRAMES:
+				//else if (name == "_totalframes")
 			{
 				// number of frames.  Read only.
 				val->set(m_def->get_frame_count());
 				return true;
 			}
-			else if (name == "_alpha")
+			case M_ALPHA:
+				//else if (name == "_alpha")
 			{
 				// Alpha units are in percent.
 				val->set(get_cxform().m_[3][0] * 100.f);
 				return true;
 			}
-			else if (name == "_visible")
+			case M_VISIBLE:
+				//else if (name == "_visible")
 			{
 				val->set(get_visible());
 				return true;
 			}
-			else if (name == "_width")
+			case M_WIDTH:
+				//else if (name == "_width")
 			{
 				matrix	m = get_world_matrix();
 				rect	transformed_rect;
@@ -3908,7 +3944,8 @@ namespace gameswf
 				val->set(TWIPS_TO_PIXELS(transformed_rect.width()));
 				return true;
 			}
-			else if (name == "_height")
+			case M_HEIGHT:
+				//else if (name == "_height")
 			{
 				rect	transformed_rect;
 
@@ -3923,7 +3960,8 @@ namespace gameswf
 				val->set(TWIPS_TO_PIXELS(transformed_rect.height()));
 				return true;
 			}
-			else if (name == "_rotation")
+			case M_ROTATION:
+				//else if (name == "_rotation")
 			{
 				// Verified against Macromedia player using samples/test_rotation.swf
 				float	angle = get_matrix().get_rotation();
@@ -3934,54 +3972,63 @@ namespace gameswf
 				val->set(angle);
 				return true;
 			}
-			else if (name == "_target")
+			case M_TARGET:
+				//else if (name == "_target")
 			{
 				// Full path to this object; e.g. "/_level0/sprite1/sprite2/ourSprite"
 				val->set("/_root");
 				return true;
 			}
-			else if (name == "_framesloaded")
+			case M_FRAMESLOADED:
+				//else if (name == "_framesloaded")
 			{
 				val->set(m_def->get_frame_count());
 				return true;
 			}
-			else if (name == "_name")
+			case M_NAME:
+				//else if (name == "_name")
 			{
 				val->set(get_name());
 				return true;
 			}
-			else if (name == "_droptarget")
+			case M_DROPTARGET:
+				//else if (name == "_droptarget")
 			{
 				// Absolute path in slash syntax where we were last dropped (?)
 				// @@ TODO
 				val->set("/_root");
 				return true;
 			}
-			else if (name == "_url")
+			case M_URL:
+				//else if (name == "_url")
 			{
 				// our URL.
 				val->set("gameswf");
 				return true;
 			}
-			else if (name == "_highquality")
+			case M_HIGHQUALITY:
+				//else if (name == "_highquality")
 			{
 				// Whether we're in high quality mode or not.
 				val->set(true);
 				return true;
 			}
-			else if (name == "_focusrect")
+			case M_FOCUSRECT:
+				//else if (name == "_focusrect")
 			{
 				// Is a yellow rectangle visible around a focused movie clip (?)
 				val->set(false);
 				return true;
 			}
-			else if (name == "_soundbuftime")
+			case M_SOUNDBUFTIME:
+				//else if (name == "_soundbuftime")
 			{
 				// Number of seconds before sound starts to stream.
 				val->set(0.0);
 				return true;
 			}
-			else if (name == "_xmouse")
+			case M_XMOUSE:
+				//else if (name == "_xmouse")
 			{
 				// Local coord of mouse IN PIXELS.
 				int	x, y, buttons;
@@ -3998,7 +4045,8 @@ namespace gameswf
 				val->set(TWIPS_TO_PIXELS(b.m_x));
 				return true;
 			}
-			else if (name == "_ymouse")
+			case M_YMOUSE:
+				//else if (name == "_ymouse")
 			{
 				// Local coord of mouse IN PIXELS.
 				int	x, y, buttons;
@@ -4015,31 +4063,35 @@ namespace gameswf
 				val->set(TWIPS_TO_PIXELS(b.m_y));
 				return true;
 			}
-
-			if (name == "_parent")
+			case M_PARENT:
 			{
 				val->set(static_cast<as_object_interface*>(m_parent));
 				return true;
 			}
-
-			// Not a built-in property.  Check items on our 
-			// display list.
-			for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
+			case M_ONLOAD:
 			{
-				character*	ch = m_display_list.get_character(i);
-				// CASE INSENSITIVE compare.  In ActionScript 2.0, this
-				// changes to CASE SENSITIVE!!!
-				if (name == ch->get_name().c_str())
+				if (m_as_environment.get_member(name, val))
 				{
-					// Found object.
-					val->set(static_cast<as_object_interface*>(ch));
 					return true;
 				}
+				// Optimization: if no hit, don't bother looking in the display list, etc.
+				return false;
 			}
+			}	// end switch
 
-			// Not a built-in or a character.  Try variables.
+			// Try variables.
 			if (m_as_environment.get_member(name, val))
 			{
+				return true;
+			}
+
+			// Not a built-in property.  Check items on our
+			// display list.
+			character*	ch = m_display_list.get_character_by_name_i(name);
+			if (ch)
+			{
+				// Found object.
+				val->set(static_cast<as_object_interface*>(ch));
 				return true;
 			}
 
@@ -4235,20 +4287,19 @@ namespace gameswf
 			return false;
 		}
 
-//v
+
 		/*sprite_instance*/
-/*		
 		virtual void	on_event_load()
 		// Do the events that (appear to) happen as the movie
 		// loads.  frame1 tags and actions are executed (even
 		// before advance() is called).  Then the onLoad event
 		// is triggered.
 		{
-//			execute_frame_tags(0);
-//			do_actions();
-//    	on_event(event_id::LOAD);
+			execute_frame_tags(0);
+			do_actions();
+			on_event(event_id::LOAD);
 		}
-*/
+
 
 		/*sprite_instance*/
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
@@ -4257,6 +4308,24 @@ namespace gameswf
 			smart_ptr<as_object_interface>	this_ptr(this);
 
 			return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
+		}
+
+		/* sprite_instance */
+		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr)
+		{
+			assert(m_parent == NULL);	// should only be called on the root movie.
+
+			array<with_stack_entry>	dummy;
+			as_value	obj = m_as_environment.get_variable(tu_string(path_to_object), dummy);
+			as_object_interface*	as_obj = obj.to_object();
+			if (as_obj)
+			{
+				movie*	m = as_obj->to_movie();
+				if (m)
+				{
+					m->set_display_callback(callback, user_ptr);
+				}
+			}
 		}
 	};
 

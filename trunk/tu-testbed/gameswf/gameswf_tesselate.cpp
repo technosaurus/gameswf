@@ -323,7 +323,7 @@ namespace tesselate
 			}
 		}
 		
-		s_current_segments.resize(0);
+		s_current_segments.release();
 	}
 
 
@@ -415,6 +415,8 @@ namespace tesselate
 		output_current_segments();
 
 		s_accepter = NULL;
+
+		s_current_path.release();
 	}
 
 

@@ -131,7 +131,24 @@ namespace gameswf
 		return NULL;
 	}
 
-	
+	character*	display_list::get_character_by_name_i(const tu_stringi& name)
+	// Return first character with matching (case insensitive) name, if any.
+	{
+		// Search through dlist for a match.
+		for (int i = 0, n = get_character_count(); i < n; i++)
+		{
+			character*	ch = get_character(i);
+			if (name == ch->get_name().c_str())
+			{
+				// Found it.
+				return ch;
+			}
+		}
+
+		return NULL;
+	}
+
+
 	void	display_list::add_display_object(
 		character* ch, 
 		Uint16 depth, 
@@ -174,8 +191,8 @@ namespace gameswf
 		
 		m_display_object_array.insert(index, di);
 
-		// From vitaly:
-		ch->execute_frame_tags(0);
+		// do the frame1 actions (if applicable) and the "onClipEvent (load)" event.
+		ch->on_event_load();
 	}
 	
 	
@@ -516,7 +533,6 @@ namespace gameswf
 			render::disable_mask();
 		}
 	}
-
 }
 
 

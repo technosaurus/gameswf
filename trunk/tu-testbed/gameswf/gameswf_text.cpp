@@ -537,6 +537,7 @@ namespace gameswf
 		array<text_glyph_record>	m_text_glyph_records;
 		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
 		array<line_style>	m_dummy_line_style;
+		rect	m_text_bounding_box;	// bounds of dynamic text, as laid out
 
 		tu_string	m_text;
 
@@ -551,6 +552,8 @@ namespace gameswf
 			set_text_value(m_def->m_default_text.c_str());
 
 			m_dummy_style.push_back(fill_style());
+
+			reset_bounding_box(0, 0);
 		}
 
 		~edit_text_character()
@@ -558,6 +561,16 @@ namespace gameswf
 		}
 
 		virtual const char*	get_text_name() const { return m_def->m_default_name.c_str(); }
+
+
+		void	reset_bounding_box(float x, float y)
+		// Reset our text bounding box to the given point.
+		{
+			m_text_bounding_box.m_x_min = x;
+			m_text_bounding_box.m_x_max = x;
+			m_text_bounding_box.m_y_min = y;
+			m_text_bounding_box.m_y_max = y;
+		}
 
 
 		virtual void	set_text_value(const char* new_text)
@@ -587,24 +600,60 @@ namespace gameswf
 		void	set_member(const tu_stringi& name, const as_value& val)
 		// We have a "text" member.
 		{
-			if (name == "text")
+			// @@ TODO need to inherit basic stuff like _x, _y, _xscale, _yscale etc
+
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
+			{
+			default:
+			case M_INVALID_MEMBER:
+				break;
+			case M_TEXT:
+				//if (name == "text")
 			{
 				set_text_value(val.to_string());
 				return;
 			}
-			else if (name == "_visible")
+			case M_X:
+				//else if (name == "_x")
+			{
+				matrix	m = get_matrix();
+				m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+				set_matrix(m);
+
+				// m_accept_anim_moves = false;
+				
+				return;
+			}
+			case M_Y:
+				//else if (name == "_y")
+			{
+				matrix	m = get_matrix();
+				m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+				set_matrix(m);
+
+				// m_accept_anim_moves = false;
+				
+				return;
+			}
+			case M_VISIBLE:
+				//else if (name == "_visible")
 			{
 				set_visible(val.to_bool());
+				return;
 			}
-			else if (name == "_alpha")
+			case M_ALPHA:
+				//else if (name == "_alpha")
 			{
 				// @@ TODO this should be generic to struct character!
 				// Arg is in percent.
 				cxform	cx = get_cxform();
 				cx.m_[3][0] = fclamp(float(val.to_number()) / 100.f, 0, 1);
 				set_cxform(cx);
+				return;
 			}
-			else if (name == "textColor")
+			case M_TEXTCOLOR:
+				//else if (name == "textColor")
 			{	
 				// The arg is 0xRRGGBB format.
 				Uint32	rgb = (Uint32) val.to_number();
@@ -614,31 +663,44 @@ namespace gameswf
 				cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
 				cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
 				set_cxform(cx);
+
+				return;
 			}
 			// @@ TODO see TextField members in Flash MX docs
+			}	// end switch
 		}
 
 
 		bool	get_member(const tu_stringi& name, as_value* val)
 		{
-			if (name == "text")
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
+			{
+			default:
+			case M_INVALID_MEMBER:
+				break;
+			case M_TEXT:
+				//if (name == "text")
 			{
 				val->set(m_text);
 				return true;
 			}
-			else if (name == "_visible")
+			case M_VISIBLE:
+				//else if (name == "_visible")
 			{
 				val->set(get_visible());
 				return true;
 			}
-			else if (name == "_alpha")
+			case M_ALPHA:
+				//else if (name == "_alpha")
 			{
 				// @@ TODO this should be generic to struct character!
 				const cxform&	cx = get_cxform();
 				val->set(cx.m_[3][0] * 100.f);
 				return true;
 			}
-			else if (name == "textColor")
+			case M_TEXTCOLOR:
+				//else if (name == "textColor")
 			{
 				// Return color in 0xRRGGBB format
 				const cxform&	cx = get_cxform();
@@ -648,19 +710,22 @@ namespace gameswf
 				val->set((r << 16) + (g << 8) + b);
 				return true;
 			}
-			else if (name == "_x")
+			case M_X:
+				//else if (name == "_x")
 			{
 				matrix	m = get_matrix();	// @@ get_world_matrix()???
 				val->set(TWIPS_TO_PIXELS(m.m_[0][2]));
 				return true;
 			}
-			else if (name == "_y")
+			case M_Y:
+				//else if (name == "_y")
 			{
 				matrix	m = get_matrix();	// @@ get_world_matrix()???
 				val->set(TWIPS_TO_PIXELS(m.m_[1][2]));
 				return true;
 			}
-			else if (name == "_width")
+			case M_WIDTH:
+				//else if (name == "_width")
 			{
 				// @@ TODO should implement this in
 				// character and inherit into both here and sprite_instance
@@ -669,7 +734,8 @@ namespace gameswf
 				val->set(TWIPS_TO_PIXELS(transformed_rect.width()));
 				return true;
 			}
-			else if (name == "_height")
+			case M_HEIGHT:
+				//else if (name == "_height")
 			{
 				// @@ TODO should implement this in
 				// character and inherit into both here and sprite_instance
@@ -678,6 +744,19 @@ namespace gameswf
 				val->set(TWIPS_TO_PIXELS(transformed_rect.height()));
 				return true;
 			}
+			case M_TEXTWIDTH:
+				//else if (name == "textWidth")
+			{
+				// Return the width, in pixels, of the text as laid out.
+				// (I.e. the actual text content, not our defined
+				// bounding box.)
+				//
+				// In local coords.  Verified against Macromedia Flash.
+				val->set(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
+
+				return true;
+			}
+			}	// end switch
 
 			return false;
 		}
@@ -785,6 +864,9 @@ namespace gameswf
 			float	x = rec.m_style.m_x_offset;
 			float	y = rec.m_style.m_y_offset;
 
+			// Start the bbox at the upper-left corner of the first glyph.
+ 			reset_bounding_box(x, y - m_def->m_font->get_descent() * scale + m_def->m_text_height);
+
 			float	leading = m_def->m_leading;
 			leading += m_def->m_font->get_leading() * scale;
 
@@ -809,6 +891,10 @@ namespace gameswf
 
 				x += m_def->m_font->get_kerning_adjustment(last_code, (int) code) * scale;
 				last_code = (int) code;
+
+				// Expand the bounding-box to the lower-right corner of each glyph as
+				// we generate it.
+				m_text_bounding_box.expand_to_point(x, y + m_def->m_font->get_descent() * scale);
 
 				if (code == 13 || code == 10)
 				{
@@ -1012,6 +1098,8 @@ namespace gameswf
 
 			// Draw our actual text.
 			display_glyph_records(matrix::identity, this, m_text_glyph_records, m_def->m_root_def);
+
+			do_display_callback();
 		}
 	};
 

@@ -113,8 +113,12 @@ namespace gameswf
 		character*	get_character_at_depth(int depth);
 
 		// May return NULL.
+		// If there are multiples, returns the *first* match only!
 		character*	get_character_by_name(const tu_string& name);
 
+		// May return NULL.
+		// If there are multiples, returns the *first* match only!
+		character*	get_character_by_name_i(const tu_stringi& name);
 
 		inline const display_object_info&	get_display_object(int idx) const
 		// get the display object at the given position.
@@ -126,9 +130,7 @@ namespace gameswf
 //		void	set_character_position(character* ch, float x, float y);
 
 	private:
-
 		array<display_object_info> m_display_object_array;
-
 	};
 
 

@@ -102,6 +102,13 @@ public:
 	{
 		std::vector<T>::insert(begin() + index, val);
 	}
+
+	void	release()
+	{
+		// Drop all storage.
+		std::vector<T>	temp;
+		this->swap(temp);
+	}
 };
 
 
@@ -248,6 +255,8 @@ public:
 		resize(0);
 	}
 
+	void	release() { clear(); }
+
 	void	operator=(const array<T>& a)
 	// Array copy.  Copies the contents of a into this array.
 	{
@@ -344,7 +353,7 @@ public:
 			// don't compact yet.
 			assert(m_buffer != 0);
 		} else {
-			int new_buffer_size = m_size + (m_size >> 2);
+			int	new_buffer_size = m_size + (m_size >> 2);
 			reserve(new_buffer_size);
 		}
 
@@ -414,6 +423,27 @@ public:
 	hash() : m_table(NULL) { }
 	hash(int size_hint) : m_table(NULL) { set_capacity(size_hint); }
 	~hash() { clear(); }
+
+	hash(const hash<T,U,hash_functor>& src)
+		:
+		m_table(NULL)
+	{
+		*this = src;
+	}
+
+	void	operator=(const hash<T,U,hash_functor>& src)
+	{
+		clear();
+		if (src.is_empty() == false)
+		{
+			set_capacity(src.size());
+
+			for (iterator it = src.begin(); it != src.end(); it++)
+			{
+				add(it->first, it->second);
+			}
+		}
+	}
 
 	// @@ need a "remove()"
 
@@ -750,8 +780,6 @@ public:
 	const_iterator	find(const T& key) const { return const_cast<hash*>(this)->find(key); }
 
 private:
-	hash(const hash& h) { assert(0); } // @@ TODO
-	void	operator=(const hash& h) { assert(0); }	// @@ TODO
 
 	int	find_index(const T& key) const
 	// Find the index of the matching entry.  If no match, then return -1.
@@ -821,6 +849,13 @@ private:
 
 		new_size = 1 << bits;
 
+		// Minimum size; don't incur rehashing cost when
+		// expanding very small tables.
+		if (new_size < 16)
+		{
+			new_size = 16;
+		}
+
 		hash<T, U, hash_functor>	new_hash;
 		new_hash.m_table = (table*) tu_malloc(sizeof(table) + sizeof(entry) * new_size);
 		assert(new_hash.m_table);	// @@ need to throw (or something) on malloc failure!
@@ -866,6 +901,8 @@ private:
 
 
 #endif // not _TU_USE_STL
+
+class tu_stringi;
 
 
 // String-like type.  Attempt to be memory-efficient with small strings.
@@ -918,6 +955,10 @@ public:
 	{
 		return (const char*) (*this);
 	}
+
+	// If you need a const tu_stringi, don't create a new object;
+	// these things have the same internal representation.
+	const tu_stringi&	to_tu_stringi() const { return *(tu_stringi*) this; }
 
 	// operator= returns void; if you want to know why, ask Charles Bloom :)
 	// (executive summary: a = b = c is an invitation to bad code)

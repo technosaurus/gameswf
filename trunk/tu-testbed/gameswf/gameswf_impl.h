@@ -260,8 +260,7 @@ namespace gameswf
 		virtual bool	on_event(event_id id) { return false; }
 
 		// Special event handler; sprites also execute their frame1 actions on this event.
-//v		
-//		virtual void	on_event_load() { on_event(event_id::LOAD); }
+		virtual void	on_event_load() { on_event(event_id::LOAD); }
 
 		// as_object_interface stuff
 		virtual void	set_member(const tu_stringi& name, const as_value& val) { assert(0); }
@@ -295,6 +294,17 @@ namespace gameswf
 		}
 
 		virtual void	execute_frame_tags(int frame, bool state_only = false) {}
+
+		// External.
+		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr)
+		{
+			assert(0);
+		}
+
+		virtual void	set_display_callback(void (*callback)(void*), void* user_ptr)
+		// Override me to provide this functionality.
+		{
+		}
 	};
 
 
@@ -379,6 +389,8 @@ namespace gameswf
                 Uint16 	m_clip_depth;
 		bool	m_visible;
 		hash<event_id, as_value>	m_event_handlers;
+		void	(*m_display_callback)(void*);
+		void*	m_display_callback_user_ptr;
 
 		character(movie* parent, int id)
 			:
@@ -387,7 +399,10 @@ namespace gameswf
 			m_depth(-1),
 			m_ratio(0.0f),
 			m_clip_depth(0),
-			m_visible(true)
+			m_visible(true),
+			m_display_callback(NULL),
+			m_display_callback_user_ptr(NULL)
+			
 		{
 			assert((parent == NULL && m_id == -1)
 			       || (parent != NULL && m_id >= 0));
@@ -480,6 +495,20 @@ namespace gameswf
 		virtual void	set_visible(bool visible) { m_visible = visible; }
 		virtual bool	get_visible() const { return m_visible; }
 
+		virtual void	set_display_callback(void (*callback)(void*), void* user_ptr)
+		{
+			m_display_callback = callback;
+			m_display_callback_user_ptr = user_ptr;
+		}
+
+		virtual void	do_display_callback()
+		{
+			if (m_display_callback)
+			{
+				(*m_display_callback)(m_display_callback_user_ptr);
+			}
+		}
+
 		// Utility.
 		void	do_mouse_drag();
 	};
@@ -498,7 +527,11 @@ namespace gameswf
 			assert(m_def);
 		}
 
-		virtual void	display() { m_def->display(this); }	// pass in transform info
+		virtual void	display()
+		{
+			m_def->display(this);	// pass in transform info
+			do_display_callback();
+		}
 		virtual bool	point_test(float x, float y)
 		{
 			matrix	m = get_world_matrix();

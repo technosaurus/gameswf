@@ -1202,7 +1202,18 @@ namespace fontlib
 				tg.m_uv_origin.m_x = in->read_float32();
 				tg.m_uv_origin.m_y = in->read_float32();
 
-				fnt->add_texture_glyph(glyph_index, tg);
+				if (glyph_index < 0 || glyph_index >= fnt->get_glyph_count())
+				{
+					// Cached data doesn't match this font!
+					log_error("error: invalid glyph index %d in cached font data, limit is %d, font is '%s'\n",
+						  glyph_index,
+						  fnt->get_glyph_count(),
+						  fnt->get_name());
+				}
+				else
+				{
+					fnt->add_texture_glyph(glyph_index, tg);
+				}
 			}
 
 			// Load cached shape data.

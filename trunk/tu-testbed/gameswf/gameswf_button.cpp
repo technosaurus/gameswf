@@ -170,6 +170,8 @@ namespace gameswf
 					m_record_character[i]->display();
 				}
 			}
+
+			do_display_callback();
 		}
 
 		inline int	transition(int a, int b) const
@@ -603,28 +605,7 @@ namespace gameswf
 	{
 		assert(tag_type == 7 || tag_type == 17 || tag_type == 34);
 
-		if (tag_type == 17)
-		{
-			assert(m_sound == NULL);
-			m_sound = new button_sound_def();
-			IF_VERBOSE_PARSE(log_msg("button sound options:\n"));
-			for (int i=0; i<4; i++)
-			{
-				button_sound_info& bs = m_sound->m_button_sounds[i];
-				bs.m_sound_id = in->read_u16();
-				if (bs.m_sound_id > 0)
-				{
-					bs.m_sam = (sound_sample_impl*) m->get_sound_sample(bs.m_sound_id);
-					if (bs.m_sam == NULL)
-					{
-//						printf("sound tag not found, sound_id=%d, button state #=%i", bs.m_sound_id, i);
-					}
-					IF_VERBOSE_PARSE(log_msg("\n	sound_id = %d\n", bs.m_sound_id));
-					bs.m_sound_style.read(in);
-				}
-			}
-		}
-		else if (tag_type == 7)
+		if (tag_type == 7)
 		{
 			// Old button tag.
 				

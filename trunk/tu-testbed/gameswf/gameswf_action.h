@@ -541,6 +541,44 @@ namespace gameswf
 
 	void register_as_object(const char* object_name, as_c_function_ptr handler);
 
+	// Numerical indices for standard member names.  Can use this
+	// to help speed up get/set member calls, by using a switch()
+	// instead of nasty string compares.
+	enum as_standard_member
+	{
+		M_INVALID_MEMBER = -1,
+		M_X,
+		M_Y,
+		M_XSCALE,
+		M_YSCALE,
+		M_CURRENTFRAME,
+		M_TOTALFRAMES,
+		M_ALPHA,
+		M_VISIBLE,
+		M_WIDTH,
+		M_HEIGHT,
+		M_ROTATION,
+		M_TARGET,
+		M_FRAMESLOADED,
+		M_NAME,
+		M_DROPTARGET,
+		M_URL,
+		M_HIGHQUALITY,
+		M_FOCUSRECT,
+		M_SOUNDBUFTIME,
+		M_XMOUSE,
+		M_YMOUSE,
+		M_PARENT,
+		M_TEXT,
+		M_TEXTWIDTH,
+		M_TEXTCOLOR,
+		M_ONLOAD,
+
+		AS_STANDARD_MEMBER_COUNT
+	};
+	// Return the standard enum, if the arg names a standard member.
+	// Returns M_INVALID_MEMBER if there's no match.
+	as_standard_member	get_standard_member(const tu_stringi& name);
 
 }	// end namespace gameswf
 
