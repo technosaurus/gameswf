@@ -101,12 +101,27 @@ namespace gameswf
 		m_close = NULL; 
 	}
 
-	void 	file::write_string(const char* src)
+	void file::write_string(const char* src)
 	{
 		do {
 			write8(*src);
 			src++;
-		} while(*src!=NULL);
+		} while(*src!='\0');
+	}
+	
+	int file::read_string(char* dst, int max_length) 
+	{
+		int i=0;
+		while(i<max_length)
+		{
+			dst[i] = read8();
+			if (dst[i]=='\0')
+			{
+				return i;
+			}
+			i++;
+		}
+		return -1;
 	}
 	
 };	// end namespace gameswf

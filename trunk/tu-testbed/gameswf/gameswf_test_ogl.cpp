@@ -9,6 +9,7 @@
 #include "SDL.h"
 #include "gameswf.h"
 #include <stdlib.h>
+#include <string.h>
 #include "engine/ogl.h"
 #include "engine/utility.h"
 
@@ -21,6 +22,7 @@
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
 static bool	s_loop = true;
+static bool	s_cache = false;
 
 
 #undef main	// SDL wackiness
@@ -79,6 +81,11 @@ int	main(int argc, char *argv[])
 					exit(1);
 				}
 			}
+			else if (argv[arg][1] == 'c')
+			{
+				// Build cache file.
+				s_cache = true;
+			}
 		}
 		else
 		{
@@ -105,6 +112,17 @@ int	main(int argc, char *argv[])
 	gameswf::movie_interface*	m = gameswf::create_movie(in);
 	SDL_RWclose(in);
 
+	char cache_name[_MAX_FNAME];
+	strcpy(cache_name, infile);
+	strcat(cache_name, ".cache");
+
+	if (s_cache)
+	{
+		printf("\nsaving %s...\n", cache_name);
+		gameswf::fontlib::save_cached_font_data(cache_name);
+		exit(0);
+	}
+	
 	// Initialize the SDL subsystems we're using.
 	if (SDL_Init(SDL_INIT_VIDEO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM | SDL_INIT_AUDIO*/))
 	{
@@ -132,8 +150,12 @@ int	main(int argc, char *argv[])
 
 	ogl::open();
 
-	// Generate cached textured versions of fonts.
-	gameswf::fontlib::generate_font_bitmaps();
+	// Try to open cached font textures
+	if (!gameswf::fontlib::load_cached_font_data(cache_name))
+	{
+		// Generate cached textured versions of fonts.
+		gameswf::fontlib::generate_font_bitmaps();
+	}
 
 	// Turn on alpha blending.
 	glEnable(GL_BLEND);

@@ -91,11 +91,16 @@ namespace gameswf
 		void 	read_bytes(void* dst, int num) { m_read(dst, num, m_data); }
 		void 	write_bytes(const void* src, int num) { m_write(src, num, m_data); }
 		
+		// write a 0-terminated string.
 		void 	write_string(const char* src);
+		
+		// read up to max_length characters, returns the number of characters 
+		// read, or -1 if the string length is longer than max_length.
+		int	read_string(char* dst, int max_length);
 		
 		// get/set pos
 		int 	get_position() { return m_tell(m_data); }
-		void 	set_position( int p ) const { m_seek(p, m_data); }
+		void 	set_position(int p) const { m_seek(p, m_data); }
 
 		int	error() { return m_error; }
 		
@@ -112,19 +117,19 @@ namespace gameswf
 
 		void	close();
 
-		Uint16 swap16( Uint16 u ) 
+		Uint16 swap16(Uint16 u) 
 		{ 
 			return ((u & 0x00FF) << 8) | 
 				((u & 0xFF00) >> 8);
 		}
-		Uint32 swap32( Uint32 u ) 
+		Uint32 swap32(Uint32 u) 
 		{ 
 			return ((u & 0x000000FF) << 24) | 
 				((u & 0x0000FF00) << 8)  |
 				((u & 0x00FF0000) >> 8)  |
 				((u & 0xFF000000) >> 24);
 		}
-		Uint64 swap64( Uint64 u ) 
+		Uint64 swap64(Uint64 u) 
 		{ 
 			return ((u & 0x00000000000000FF) << 56) | 
 				((u & 0x000000000000FF00) << 40)  |
