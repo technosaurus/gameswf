@@ -11,6 +11,7 @@ LDFLAGS := -lGL -lGLU $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 
 # Source files.
 SRCS := \
+	container.cpp	\
 	dlmalloc.c	\
 	config.cpp \
 	ogl.cpp \

@@ -89,6 +89,10 @@ void	tu_string::resize(int new_size)
 #ifdef CONTAINER_UNIT_TEST
 
 
+// Compile this test case with something like:
+//
+// gcc container.cpp -g -I.. -DCONTAINER_UNIT_TEST -lstdc++ -o container_test
+
 int	main()
 {
 	tu_string	a("test1");
@@ -118,6 +122,40 @@ int	main()
 	assert(c == tu_string("te"));
 
 	assert(tu_string("fourscore and sevent") == "fourscore and sevent");
+
+	// Test growing & shrinking.
+	a = "";
+	for (int i = 0; i < 1000; i++)
+	{
+		assert(a.length() == i);
+
+		if (i == 8)
+		{
+			assert(a == "01234567");
+		}
+		else if (i == 27)
+		{
+			assert(a == "012345678901234567890123456");
+		}
+
+		a.resize(a.length() + 1);
+		a[a.length() - 1] = '0' + (i % 10);
+	}
+
+	{for (int i = 999; i >= 0; i--)
+	{
+		a.resize(a.length() - 1);
+		assert(a.length() == i);
+
+		if (i == 8)
+		{
+			assert(a == "01234567");
+		}
+		else if (i == 27)
+		{
+			assert(a == "012345678901234567890123456");
+		}
+	}}
 
 	return 0;
 }
