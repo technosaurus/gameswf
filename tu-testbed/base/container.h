@@ -319,7 +319,6 @@ public:
 		{
 			int	size0 = m_size;
 			resize(m_size + count);
-//			memcpy(&m_buffer[size0], &other[0], count * sizeof(T));
 			// Must use operator=() to copy elements, in case of side effects (e.g. ref-counting).
 			for (int i = 0; i < count; i++)
 			{
@@ -380,6 +379,7 @@ public:
 		} else {
 			if (m_buffer) {
 				m_buffer = (T*) tu_realloc(m_buffer, sizeof(T) * m_buffer_size, sizeof(T) * old_size);
+				memset(m_buffer, 0, sizeof(T) * m_buffer_size);
 			} else {
 				m_buffer = (T*) tu_malloc(sizeof(T) * m_buffer_size);
 			}
@@ -732,8 +732,8 @@ public:
 		// Allow non-const access to entries.
 		entry&	operator*() const
 		{
-			assert(is_end() == false);
-			return const_cast<hash*>(m_hash)->E(m_index);
+			assert(const_iterator::is_end() == false);
+			return const_cast<hash*>(const_iterator::m_hash)->E(const_iterator::m_index);
 		}
 		entry*	operator->() const { return &(operator*()); }
 
@@ -909,7 +909,7 @@ class tu_stringi;
 class tu_string
 {
 public:
-	tu_string() { m_local.m_size = 1; m_local.m_buffer[0] = 0; }
+	tu_string() { m_local.m_size = 1; memset(m_local.m_buffer, 0, 15); }
 	tu_string(const char* str)
 	{
 		m_local.m_size = 1;
@@ -1083,8 +1083,6 @@ public:
 	tu_string	utf8_substring(int start, int end) const;
 
 private:
-//	array<char>	m_buffer;	// we do store the terminating \0
-
 	char*	get_buffer()
 	{
 		if (using_heap() == false)
