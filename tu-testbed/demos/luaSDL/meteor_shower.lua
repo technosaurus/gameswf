@@ -13,6 +13,9 @@ dofile("luaSDL.lua")	-- wrappers for structure access.
 function SDL_LoadBMP(file)
 	return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
 end
+function SDL_SaveBMP(surface, file)
+	return SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1)
+end
 SDL_BlitSurface = SDL_UpperBlit;
 
 
@@ -164,6 +167,9 @@ function handle_event(event)
 		local	sym = event.key.keysym.sym
 		if sym == SDLK_q or sym == SDLK_ESCAPE then
 			gamestate.active = nil
+		elseif sym == SDLK_s then
+			-- take a screenshot...
+			SDL_SaveBMP(gamestate.screen, "screenshot.bmp")
 		end
 	elseif event.type == SDL_QUIT then
 		gamestate.active = nil
@@ -505,69 +511,8 @@ function particle_spray(position, velocity, count, spray_speed, average_life)
 end
 
 
---
--- gravitational actor type
---
-
-
 GRAVITY_CONSTANT = 100000
 
-
-comment = [[
-function grav_actor_update(self, gs)
--- update this grav_actor.  Compute an acceleration due to attraction to other
--- grav_actors, update the velocity, and then do a regular actor update.
-	
-	local	dt = gamestate.update_period / 1000
-
-	local	accel = vec2()
-	for i = 1, getn(gs.actors) do
-		local	a = gs.actors[i]
-
-		if a.type == 'asteroid' then
-			-- don't be attracted towards the player.
-			print("gau: " .. a.type) --xxxxxx
-		else
-
-			-- if the actor has mass, then compute an acceleration towards it
-			if a.mass then
-				local r = a.position - self.position
-				local d2 = r * r
-				local d = sqrt(d2)
-
-				if d > 20 then
-					accel = accel + r * ((GRAVITY_CONSTANT * a.mass) / (d2 * d))
---				else
---					-- repulsion?
---					accel = accel - r * ((GRAVITY_CONSTANT * a.mass) / (20 ^ 3))
-				end
-			end
-		end
-	end
-
-	self.velocity = self.velocity + accel * dt
-
-	-- apply the velocity
-	actor_update(self, gs)
-end
-
-
-function grav_actor(t)
--- constructor
-
-	-- start with a regular actor
-	a = actor(t)
-	a.type = "grav_actor"
-
-	-- add in the grav_actor attributes
-	a.mass = tonumber(t.mass) or 1
-
-	a.update = grav_actor_update
-
-	return a
-end
-
-]]
 
 --
 -- asteroid actor type
