@@ -55,6 +55,15 @@ public:
 		(*this)[new_size-1] = val;
 	}
 
+	T	pop_back()
+	// Return the last element and remove it from the array.
+	{
+		assert(m_size > 0);
+		T	t = (*this)[m_size - 1];
+		resize(m_size - 1);
+		return t;
+	}
+
 	// Access the first element.
 	T&	front() { return (*this)[0]; }
 	const T&	front() const { return (*this)[0]; }

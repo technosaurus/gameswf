@@ -159,4 +159,7 @@ inline double	ReadDouble64(SDL_RWops* src) {
 }
 
 
+// Handy macro to quiet compiler warnings about unused parameters/variables.
+#define UNUSED(x) (x) = (x)
+
 #endif // UTILITY_H
