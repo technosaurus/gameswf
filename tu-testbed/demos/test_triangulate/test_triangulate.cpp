@@ -102,7 +102,10 @@ void	output_diagram(array<float>& trilist, const array<array<float> >& input_pat
 		ps.fill();
 #endif // not WIREFRAME
 
-		ps.disk(TRANSFORM(x[1], y[1]), 2);	// this should be the apex of the original ear
+#if 0
+		// Show verts: this should be the apex of the original ear
+		ps.disk(TRANSFORM(x[1], y[1]), 2);
+#endif // 0
 
 #if 0
 		// Label the tri.
@@ -344,20 +347,25 @@ int	main()
 	offset_path(&paths.back(), 1200, 300);
 #endif
 
-#if 0
+#if 1
 	// Lots of circles.
 
 	// @@ set this to 100 for a good performance torture test of bridge-finding.
-	const int	TEST_DIM = 30;	// 20, 30
+	const int	TEST_DIM = 40;	// 20, 30
 	{for (int x = 0; x < TEST_DIM; x++)
 	{
 		for (int y = 0; y < TEST_DIM; y++)
 		{
 			paths.resize(paths.size() + 1);
-			make_star(&paths.back(), 9, 9, 10);
+			make_star(&paths.back(), 9, 9, 10);	// (... 9, 9, 10)
 			offset_path(&paths.back(), float(x) * 20, float(y) * 20);
 		}
 	}}
+
+	// 2005-1-1 TEST_DIM=40, join poly = 4.9  s (ouch!)
+	// 2005-1-2                        = 6.3  s (with grid_index_box) (double ouch!  index makes things slower!  what's wrong?)
+	//                                          (what's wrong is that the vert remap on the whole edge index gets expensive!)
+	// 2005-1-2                        = 2.94 s (optimize dupe_verts!  cull grid update (big win), more efficient vert insertion (win))
 #endif
 
 #if 0
@@ -408,6 +416,8 @@ int	main()
 #endif
 
 #if 0
+	// @@ test & fix this, hits recovery mode
+
 	// This one has a tricky triple dupe vertex that puts us into
 	// the recovery mode.  See "Case A" in recovery_process() in
 	// triangulate_imp.h.
@@ -514,7 +524,7 @@ int	main()
 	set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
 #endif
 
-#if 1
+#if 0
 	// Spiral.
 	//
 	// Set radians (3rd arg) to ~100 for a good performance test
@@ -525,6 +535,12 @@ int	main()
 	// 2004-12-31 radians = 120, time = 11.15 s
 	// 2004-12-31 radians = 120, time =  0.072 s (with grid index, and localized ear clipping)
 	// 2004-12-31 radians = 120, time =  0.115 s (as above, with rotate_coord_order(,20) -- speed is quite sensitive to initial m_loop!)
+#endif
+
+#if 0
+	// Big star.
+	paths.resize(paths.size() + 1);
+	make_star(&paths.back(), 100, 1000, 256);
 #endif
 
 	// Triangulate.

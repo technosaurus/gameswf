@@ -176,6 +176,8 @@ struct poly_vert
 		m_prev = remap_table[m_prev];
 	}
 
+	index_point<coord_t>	get_index_point() const { return index_point<coord_t>(m_v.x, m_v.y); }
+
 //data:
 	vec2<coord_t>	m_v;
 	int	m_my_index;	// my index into sorted_verts array
@@ -401,60 +403,75 @@ struct poly
 {
 	typedef poly_vert<coord_t> vert_t;
 
-	poly()
+	poly(/*@@ TODO array<vert_t>* sorted_verts*/)
 		:
+		// @@ TODO m_sorted_verts(sorted_verts),
 		m_loop(-1),
 		m_leftmost_vert(-1),
 		m_vertex_count(0),
 		m_ear_count(0),
+		m_edge_index(NULL),
 		m_reflex_point_index(NULL)
 	{
 	}
 
+	~poly()
+	{
+		delete m_edge_index;
+		m_edge_index = NULL;
+
+		delete m_reflex_point_index;
+		m_reflex_point_index = NULL;
+	}
+
+	bool	is_valid(const array<vert_t>& sorted_verts, bool check_consecutive_dupes = true) const;
+
+	// init/prep
 	void	append_vert(array<vert_t>* sorted_verts, int vert_index);
 	void	remap(const array<int>& remap_table);
+	void	remap_for_duped_verts(const array<vert_t>& sorted_verts, int v0, int v1);
 
-	void	remap_for_duped_verts(int v0, int v1);
+	void	init_edge_index(const array<vert_t>& sorted_verts, index_box<coord_t>& bound_of_all_verts);
+	int	find_valid_bridge_vert(const array<vert_t>& sorted_verts, int v1);
+	void	update_connected_sub_poly(array<vert_t>* sorted_verts, int v_start, int v_stop);
+	void	init_for_ear_clipping(array<vert_t>* sorted_verts);
 
-	int	find_valid_bridge_vert(const array<poly_vert<coord_t> >& sorted_verts, int v1);
+	// Edges are indexed using their first vert (i.e. edge (v1,v2) is indexed using v1)
+	void	add_edge(const array<vert_t>& sorted_verts, int vi);
+	void	remove_edge(const array<vert_t>& sorted_verts, int vi);
 
-	bool	build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg);
+	// tests/queries
+	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int v2);
+	bool	vert_in_cone(const array<vert_t>& sorted_verts, int vert, int cone_v0, int cone_v1, int cone_v2);
+	bool	vert_is_duplicated(const array<vert_t>& sorted_verts, int v0);
+	bool	ear_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2);
 
 	void	classify_vert(array<vert_t>* sorted_verts, int vi);
 	void	dirty_vert(array<vert_t>* sorted_verts, int vi);
 
+	int	get_vertex_count() const { return m_vertex_count; }
+	int	get_ear_count() const { return m_ear_count; }
+	int	get_next_ear(const array<vert_t>& sorted_verts, tu_random::generator* rg);
+	int	remove_degenerate_chain(array<vert_t>* sorted_verts, int vi);
 	void	emit_and_remove_ear(array<coord_t>* result, array<vert_t>* sorted_verts, int v0, int v1, int v2);
-	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int v2);
-
-	bool	ear_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2);
-	bool	vert_in_cone(const array<vert_t>& sorted_verts, int vert, int cone_v0, int cone_v1, int cone_v2);
-	bool	vert_is_duplicated(const array<vert_t>& sorted_verts, int v0);
-
-	bool	is_valid(const array<vert_t>& sorted_verts, bool check_consecutive_dupes = true) const;
+	bool	build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg);
 
 	void	invalidate(const array<vert_t>& sorted_verts);
-
-	int	remove_degenerate_chain(array<vert_t>* sorted_verts, int vi);
 
 	bool	find_and_fix_tangled_triple(array<vert_t>* sorted_verts, tu_random::generator* rg);
 	void	flip_triple_configuration(array<vert_t>* sorted_verts, int v0, int v1, int v2);
 
-	void	update_connected_sub_poly(array<vert_t>* sorted_verts, int v_start, int v_stop);
-
-	void	init_for_ear_clipping(array<vert_t>* sorted_verts);
-
-	int	get_vertex_count() const { return m_vertex_count; }
-	int	get_ear_count() const { return m_ear_count; }
-
-	int	get_next_ear(const array<vert_t>& sorted_verts, tu_random::generator* rg);
-
 //data:
+//@@ TODO	array<vert_t>*	m_sorted_verts;
 	int	m_loop;	// index of first vert
 	int	m_leftmost_vert;
 	int	m_vertex_count;
 	int	m_ear_count;
 
-	// edge search_index;
+	// edge search_index (for finding possibly intersecting edges during bridge finding)
+	//
+	// The payload stored is the index of the first vert in the edge.
+	grid_index_box<coord_t, int>*	m_edge_index;
 
 	// point search index (for finding reflex verts within a potential ear)
 	grid_index_point<coord_t, int>*	m_reflex_point_index;
@@ -541,6 +558,20 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 		}
 
 		assert(check_count == reflex_vert_count);
+	}
+
+	// Count edges in the edge index.  There should be exactly one edge per vert.
+	if (m_edge_index)
+	{
+		int	check_count = 0;
+		for (grid_index_box<coord_t,int>::iterator it = m_edge_index->begin(m_edge_index->get_bound());
+		     ! it.at_end();
+		     ++it)
+		{
+			check_count++;
+		}
+
+		assert(check_count == vert_count);
 	}
 
 	// Might be nice to check that all verts with (m_poly_owner ==
@@ -650,6 +681,9 @@ int	poly<coord_t>::find_valid_bridge_vert(const array<vert_t>& sorted_verts, int
 	// A fast & easy way to implement this is to walk backwards in
 	// our vert array, starting with v1-1.
 
+	// @@ eh, we need to first walk forward to include all
+	// coincident but later verts!
+
 	for (int vi = v1 - 1; vi >= 0; vi--)
 	{
 		const poly_vert<coord_t>*	pvi = &sorted_verts[vi];
@@ -703,7 +737,7 @@ void	poly<coord_t>::remap(const array<int>& remap_table)
 
 
 template<class coord_t>
-void	poly<coord_t>::remap_for_duped_verts(int v0, int v1)
+void	poly<coord_t>::remap_for_duped_verts(const array<vert_t>& sorted_verts, int v0, int v1)
 // Remap for the case of v0 and v1 being duplicated, and subsequent
 // verts being shifted up.
 {
@@ -712,6 +746,28 @@ void	poly<coord_t>::remap_for_duped_verts(int v0, int v1)
 
 	m_loop = remap_index_for_duped_verts(m_loop, v0, v1);
 	m_leftmost_vert = remap_index_for_duped_verts(m_leftmost_vert, v0, v1);
+
+	// Remap the vert indices stored in the edge index.
+	if (m_edge_index)
+	{
+		// Optimization: we don't need to remap anything
+		// that's wholly to the left of v0.  Towards the end
+		// of bridge building, this could be the vast majority
+		// of edges.
+		assert(v0 < v1);
+		index_box<coord_t>	bound = m_edge_index->get_bound();
+		bound.min.x = sorted_verts[v0].m_v.x;
+
+		for (grid_index_box<coord_t,int>::iterator it = m_edge_index->begin(bound);
+		     ! it.at_end();
+		     ++it)
+		{
+			it->value = remap_index_for_duped_verts(it->value, v0, v1);
+		}
+	}
+
+	// We shouldn't have a point index right now.
+	assert(m_reflex_point_index == NULL);
 }
 
 
@@ -1140,6 +1196,9 @@ void	poly<coord_t>::update_connected_sub_poly(array<vert_t>* sorted_verts, int v
 			m_leftmost_vert = pv->m_my_index;
 		}
 
+		// Insert new edge into the edge index.
+		add_edge(*sorted_verts, vi);
+
 		vi = pv->m_next;
 	}
 	while (vi != v_first_after_subloop);
@@ -1147,6 +1206,66 @@ void	poly<coord_t>::update_connected_sub_poly(array<vert_t>* sorted_verts, int v
 	assert(is_valid(*sorted_verts));
 }
 
+
+
+template<class coord_t>
+void	poly<coord_t>::init_edge_index(const array<vert_t>& sorted_verts, index_box<coord_t>& bound_of_all_verts)
+// Initialize our edge-search structure, for quickly finding possible
+// intersecting edges (when constructing bridges to join polys).
+{
+	assert(is_valid(sorted_verts));
+	assert(m_edge_index == NULL);
+
+	// Compute grid density.
+	int	x_cells = 1;
+	int	y_cells = 1;
+	if (sorted_verts.size() > 0)
+	{
+		const float	GRID_SCALE = sqrtf(0.5f);
+		coord_t	width = bound_of_all_verts.get_width();
+		coord_t	height = bound_of_all_verts.get_height();
+		float	area = float(width) * float(height);
+		if (area > 0)
+		{
+			float	sqrt_n = sqrt((float) sorted_verts.size());
+			float	w = width * width / area * GRID_SCALE;
+			float	h = height * height / area * GRID_SCALE;
+			x_cells = int(w * sqrt_n);
+			y_cells = int(h * sqrt_n);
+		}
+		else
+		{
+			// Zero area.
+			if (width > 0)
+			{
+				x_cells = int(GRID_SCALE * GRID_SCALE * sorted_verts.size());
+			}
+			else
+			{
+				y_cells = int(GRID_SCALE * GRID_SCALE * sorted_verts.size());
+			}
+		}
+		x_cells = iclamp(x_cells, 1, 256);
+		y_cells = iclamp(y_cells, 1, 256);
+	}
+	
+	m_edge_index = new grid_index_box<coord_t, int>(bound_of_all_verts, x_cells, y_cells);
+
+	// Insert current edges into the index.
+	int	vi = m_loop;
+	for (;;)
+	{
+		add_edge(sorted_verts, vi);
+
+		vi = sorted_verts[vi].m_next;
+		if (vi == m_loop)
+		{
+			break;
+		}
+	}
+
+	assert(is_valid(sorted_verts));
+}
 
 
 template<class coord_t>
@@ -1161,6 +1280,10 @@ void	poly<coord_t>::init_for_ear_clipping(array<vert_t>* sorted_verts)
 	// Kill m_leftmost_vert; don't need it once all the polys are
 	// joined together into one loop.
 	m_leftmost_vert = -1;
+
+	// Kill edge index; we don't need it for ear clipping.
+	delete m_edge_index;
+	m_edge_index = NULL;
 
 	int	reflex_vert_count = 0;
 
@@ -1257,6 +1380,34 @@ void	poly<coord_t>::init_for_ear_clipping(array<vert_t>* sorted_verts)
 	assert(is_valid(*sorted_verts));
 }
 
+
+template<class coord_t>
+void	poly<coord_t>::add_edge(const array<vert_t>& sorted_verts, int vi)
+// Insert the edge (vi, vi->m_next) into the index.
+{
+	index_box<coord_t>	ib(sorted_verts[vi].get_index_point());
+	ib.expand_to_enclose(sorted_verts[sorted_verts[vi].m_next].get_index_point());
+
+	assert(m_edge_index);
+
+	// Make sure edge isn't already in the index.
+	assert(m_edge_index->find_payload_from_point(sorted_verts[vi].get_index_point(), vi) == NULL);
+
+	m_edge_index->add(ib, vi);
+}
+
+
+template<class coord_t>
+void	poly<coord_t>::remove_edge(const array<vert_t>& sorted_verts, int vi)
+// Remove the edge (vi, vi->m_next) from the index.
+{
+	assert(m_edge_index);
+
+ 	grid_entry_box<coord_t, int>*	entry = m_edge_index->find_payload_from_point(sorted_verts[vi].get_index_point(), vi);
+ 	assert(entry);
+
+ 	m_edge_index->remove(entry);
+}
 
 
 #if 0
@@ -1421,20 +1572,55 @@ template<class coord_t>
 bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int my_vert)
 // Return true if edge (external_vert,my_vert) intersects any edge in our poly.
 {
-	// @@ TODO implement spatial search structure to accelerate this!
+#if 1
+// new code
+	// Check the edge index for potentially overlapping edges.
 
-// 	query	q(min_x, max_x, min_y, max_y);
-// 	for (spatial_index::iterator it = m_edge_index.begin(q); ! it.at_end(); it++)
-// 	{
-// 		it.first ---> box (yes?);
-// 		it.second ---> payload (yes?);
+	const vert_t*	pmv = &sorted_verts[my_vert];
+	const vert_t*	pev = &sorted_verts[external_vert];
 
-// 		int	vi = it.second.v0;
-// 		int	v_next = it.second.v1;
+	assert(m_edge_index);
 
-// 		// @@ stuff
-// 	}
+ 	index_box<coord_t>	query_box(pmv->get_index_point());
+	query_box.expand_to_enclose(pev->get_index_point());
 
+	for (grid_index_box<coord_t,int>::iterator it = m_edge_index->begin(query_box);
+	     ! it.at_end();
+	     ++it)
+	{
+		int	vi = it->value;
+		int	v_next = sorted_verts[vi].m_next;
+
+		if (vi != my_vert)
+		{
+			if (sorted_verts[vi].m_v == sorted_verts[my_vert].m_v)
+			{
+				// Coincident verts; need to be a bit careful
+				// with this test.  Consider the cone formed
+				// at my_vert.  If v_next and external vert
+				// are on the same side of the cone, then it
+				// looks like the edge (external_vert,my_vert)
+				// effectively crosses the path through vi.
+
+				bool	v_next_in_cone = vert_in_cone(sorted_verts, v_next, pmv->m_prev, my_vert, pmv->m_next);
+				bool	ex_vert_in_cone = vert_in_cone(sorted_verts, external_vert, pmv->m_prev, my_vert, pmv->m_next);
+
+				if (v_next_in_cone == ex_vert_in_cone)
+				{
+					// Logical edge crossing.
+					return true;
+				}
+			}
+			else if (edges_intersect(sorted_verts, vi, v_next, external_vert, my_vert))
+			{
+				return true;
+			}
+		}
+	}
+#endif
+
+#if 0
+// old code
 	// For now, brute force O(N) :^o
 
 	assert(sorted_verts[external_vert].m_poly_owner != this);
@@ -1477,6 +1663,7 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 		vi = v_next;
 	}
 	while (vi != first_vert);
+#endif // 0
 
 	return false;
 }
@@ -1677,6 +1864,7 @@ struct poly_env
 	array<poly_vert<coord_t> >	m_sorted_verts;
 	array<poly<coord_t>*>	m_polys;
 
+	index_box<coord_t>	m_bound;
 	int	m_estimated_triangle_count;
 
 //code:
@@ -1687,7 +1875,8 @@ struct poly_env
 
 	poly_env()
 		:
-		m_estimated_triangle_count(0)
+		m_estimated_triangle_count(0),
+		m_bound(index_point<coord_t>(0, 0), index_point<coord_t>(0, 0))
 	{
 	}
 
@@ -1776,6 +1965,20 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> paths[])
 			m_sorted_verts.push_back(vert);
 
 			p->append_vert(&m_sorted_verts, vert_index);
+
+			index_point<coord_t>	ip(vert.m_v.x, vert.m_v.y);
+			if (vert_index == 0)
+			{
+				// Initialize the bounding box.
+				m_bound.min = ip;
+				m_bound.max = ip;
+			}
+			else
+			{
+				// Expand the bounding box.
+				m_bound.expand_to_enclose(ip);
+			}
+			assert(m_bound.contains_point(ip));
 		}
 		assert(p->is_valid(m_sorted_verts));
 
@@ -1836,6 +2039,8 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 		// path; this is true if the regions are valid and
 		// don't intersect.
 		poly<coord_t>*	full_poly = m_polys[0];
+
+		full_poly->init_edge_index(m_sorted_verts, m_bound);
 
 		// Iterate from left to right
 		while (m_polys.size() > 1)
@@ -1901,21 +2106,26 @@ void	poly_env<coord_t>::join_paths_with_bridge(
 		int	main_next = pv_main->m_next;
 		int	sub_prev = pv_sub->m_prev;
 
+		// Remove the edge we're about to break.
+		main_poly->remove_edge(m_sorted_verts, vert_on_main_poly);
+
 		pv_main->m_next = pv_sub->m_next;
 		m_sorted_verts[pv_main->m_next].m_prev = vert_on_main_poly;
 
 		pv_sub->m_next = main_next;
 		m_sorted_verts[main_next].m_prev = vert_on_sub_poly;
 
+		// Add edge that connects to sub poly.
+		main_poly->add_edge(m_sorted_verts, vert_on_main_poly);
+
 		// Fixup sub poly so it's now properly a part of the main poly.
-		main_poly->update_connected_sub_poly(&m_sorted_verts, pv_sub->m_my_index, main_next);
+		main_poly->update_connected_sub_poly(&m_sorted_verts, pv_main->m_next, main_next);
 		sub_poly->invalidate(m_sorted_verts);
 
 		return;
 	}
 
 	// Normal case, need to dupe verts and create zero-area bridge.
-
 	dupe_two_verts(vert_on_main_poly, vert_on_sub_poly);
 
 	// Fixup the old indices to account for the new dupes.
@@ -1933,6 +2143,9 @@ void	poly_env<coord_t>::join_paths_with_bridge(
 	poly_vert<coord_t>*	pv_main2 = &m_sorted_verts[vert_on_main_poly + 1];
 	poly_vert<coord_t>*	pv_sub2 = &m_sorted_verts[vert_on_sub_poly + 1];
 
+	// Remove the edge we're about to break.
+	main_poly->remove_edge(m_sorted_verts, vert_on_main_poly);
+
 	// Link the loops together.
 	pv_main2->m_next = pv_main->m_next;
 	pv_main2->m_prev = vert_on_sub_poly + 1;	// (pv_sub2)
@@ -1944,6 +2157,9 @@ void	poly_env<coord_t>::join_paths_with_bridge(
 
 	pv_main->m_next = vert_on_sub_poly;		// (pv_sub)
 	pv_sub->m_prev = vert_on_main_poly;		// (pv_main)
+
+	// Add edge that connects to sub poly.
+	main_poly->add_edge(m_sorted_verts, vert_on_main_poly);
 
 	// Fixup sub poly so it's now properly a part of the main poly.
 	main_poly->update_connected_sub_poly(&m_sorted_verts, vert_on_sub_poly, pv_main2->m_next);
@@ -1968,9 +2184,34 @@ void	poly_env<coord_t>::dupe_two_verts(int v0, int v1)
 	poly_vert<coord_t>	v0_copy = m_sorted_verts[v0];
 	poly_vert<coord_t>	v1_copy = m_sorted_verts[v1];
 
-	// Insert v1 first, so v0 doesn't get moved.
-	m_sorted_verts.insert(v1 + 1, v1_copy);
-	m_sorted_verts.insert(v0 + 1, v0_copy);
+	// @@ This stuff can be costly!  E.g. lots of separate little
+	// polys that need bridges, with a high total vert count.
+
+	// Slower, clearer code to insert the two new verts.  This
+	// ends up moving the data between ((v1+1), end) twice.
+	if (0) {
+		// Insert v1 first, so v0 doesn't get moved.
+		m_sorted_verts.insert(v1 + 1, v1_copy);
+		m_sorted_verts.insert(v0 + 1, v0_copy);
+	}
+	else
+	// Faster, more obfuscated code to insert the two new verts.
+	//
+	// NOTE: I tried doing this in one pass, with a complicated
+	// explicit move & remap in the same pass.  It was much
+	// slower!  (VC7, Win2K.)  memmove() must be magical?
+	{
+		// Make room.
+		m_sorted_verts.resize(m_sorted_verts.size() + 2);
+
+		// Move the two subsegments.
+		memmove(&m_sorted_verts[v1 + 3], &m_sorted_verts[v1 + 1], sizeof(m_sorted_verts[0]) * (m_sorted_verts.size() - 3 - v1));
+		memmove(&m_sorted_verts[v0 + 2], &m_sorted_verts[v0 + 1], sizeof(m_sorted_verts[0]) * (v1 - v0));
+
+		// Insert the new duplicate verts.
+		m_sorted_verts[v0 + 1] = v0_copy;
+		m_sorted_verts[v1 + 2] = v1_copy;
+	}
 
 	// Remap the indices within the verts.
 	for (int i = 0, n = m_sorted_verts.size(); i < n; i++)
@@ -1983,7 +2224,7 @@ void	poly_env<coord_t>::dupe_two_verts(int v0, int v1)
 	// Remap the polys.
 	{for (int i = 0, n = m_polys.size(); i < n; i++)
 	{
-		m_polys[i]->remap_for_duped_verts(v0, v1);
+		m_polys[i]->remap_for_duped_verts(m_sorted_verts, v0, v1);
 
 		assert(m_polys[i]->is_valid(m_sorted_verts));
 	}}
