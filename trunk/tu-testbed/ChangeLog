@@ -5,6 +5,8 @@
 	fscommand('trapallkeys', true) somehow.
 	* gameswf/gameswf_xml.cpp (xml_load): Don't try to open an XML
 	disk file that doesn't exist, or the path is wrong.
+	* gameswf/gameswf_xml.cpp: Fix attribute parsing so it works for
+	all levels of the XML data.
 
 2005-03-28  Rob Savoye  <rob@bertha.welcomehome.org>
 
