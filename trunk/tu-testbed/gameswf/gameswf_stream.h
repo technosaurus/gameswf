@@ -33,6 +33,13 @@ namespace gameswf
 		Sint16	read_s16();
 		Uint32	read_u32();
 		Sint32	read_s32();
+		int     read_variable_count()
+		{
+			int count = read_u8();
+			if (count == 0xFF)
+				count = read_u16();
+			return count;
+		};
 
 		// For null-terminated string.
 		char*	read_string();	// reads *and new[]'s* the string -- ownership passes to caller!
