@@ -493,8 +493,8 @@ int	main(int argc, char *argv[])
 	}
 
 done:
-	if (m) m->drop_ref();
 	if (md) md->drop_ref();
+	if (m) m->drop_ref();
 	delete sound;
 	delete render;
 
