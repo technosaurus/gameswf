@@ -1053,6 +1053,7 @@ namespace gameswf
 
 		movie_impl*	m = new movie_impl;
 		m->read(in_file);
+		delete in_file;
 
 		s_movie_library.add(url, m);
 
