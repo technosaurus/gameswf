@@ -737,6 +737,8 @@ namespace gameswf
 		}
 		void	goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
 
+		virtual bool	has_looped() const { return m_movie->has_looped(); }
+
 		void	display()
 		{
 			gameswf::render::begin_display(
@@ -2612,6 +2614,7 @@ namespace gameswf
 		movie_definition_sub*	m_def;
 		movie_root*	m_root;
 		movie*	m_parent;
+		bool	m_has_looped;
 
 		display_list	m_display_list;
 		array<action_buffer*>	m_action_list;
@@ -2640,7 +2643,8 @@ namespace gameswf
 			m_next_frame(0),
 			m_time_remainder(0),
 			m_update_frame(true),
-			m_drag_on(false)
+			m_drag_on(false),
+			m_has_looped(false)
 		{
 			assert(m_def);
 			assert(m_root);
@@ -2711,8 +2715,10 @@ namespace gameswf
 			m_next_frame = 0;
 			m_time_remainder = 0;
 			m_update_frame = true;
+			m_has_looped = false;
 		}
 
+		virtual bool	has_looped() const { return m_has_looped; }
 
 		virtual void	advance(float delta_time)
 		{
@@ -2784,6 +2790,8 @@ namespace gameswf
 				else if (m_next_frame >= m_def->get_frame_count())	// && m_play_state == PLAY
 				{
   					m_next_frame = 0;
+					m_has_looped = true;
+
 					/*if (m_def->m_frame_count > 1)
 					{
 						// Avoid infinite loop on single frame sprites?
