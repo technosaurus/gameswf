@@ -13,7 +13,7 @@
 
 
 static const float	EPSILON = 1e-4f;
-static const int	LEAF_FACE_COUNT = 4;
+static const int	LEAF_FACE_COUNT = 6;
 static const int	MAX_SPLIT_PLANES_TESTED = 10;
 
 //#define CARVE_OFF_SPACE
