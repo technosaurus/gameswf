@@ -285,7 +285,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 		
 		text_character_def*	ch = new text_character_def;
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 		IF_VERBOSE_PARSE(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
@@ -395,7 +395,7 @@ namespace gameswf
 		}
 
 
-		character*	create_character_instance(movie* parent);
+		character*	create_character_instance(movie* parent, int id);
 
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m)
@@ -488,9 +488,9 @@ namespace gameswf
 
 		tu_string	m_text;
 
-		edit_text_character(movie* parent, edit_text_character_def* def)
+		edit_text_character(movie* parent, edit_text_character_def* def, int id)
 			:
-			character(parent),
+			character(parent, id),
 			m_def(def)
 		{
 			assert(parent);
@@ -505,7 +505,7 @@ namespace gameswf
 		{
 		}
 
-		virtual int	get_id() const { return m_def->get_id(); }
+//		virtual int	get_id() const { return m_def->get_id(); }
 
 
 		virtual const char*	get_text_name() const { return m_def->m_default_name.c_str(); }
@@ -857,9 +857,9 @@ namespace gameswf
 	};
 
 
-	character*	edit_text_character_def::create_character_instance(movie* parent)
+	character*	edit_text_character_def::create_character_instance(movie* parent, int id)
 	{
-		edit_text_character*	ch = new edit_text_character(parent, this);
+		edit_text_character*	ch = new edit_text_character(parent, this, id);
 		ch->set_name(m_default_name);
 		return ch;
 	}
@@ -873,7 +873,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		edit_text_character_def*	ch = new edit_text_character_def;
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 		IF_VERBOSE_PARSE(log_msg("edit_text_char, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 

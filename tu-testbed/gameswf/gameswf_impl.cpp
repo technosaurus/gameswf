@@ -155,10 +155,10 @@ namespace gameswf
 	}
 
 
-	character*	character_def::create_character_instance(movie* parent)
+	character*	character_def::create_character_instance(movie* parent, int id)
 	// Default.  Make a generic_character.
 	{
-		return new generic_character(this, parent);
+		return new generic_character(this, parent, id);
 	}
 
 
@@ -231,7 +231,6 @@ namespace gameswf
 	struct movie_def_impl : public movie_definition_sub
 	{
 		hash<int, character_def*>	m_characters;
-//		string_hash< array<int>* >	m_named_characters;
 		hash<int, font*>	m_fonts;
 		hash<int, bitmap_character_def*>	m_bitmap_characters;
 		hash<int, sound_sample*>	m_sound_samples;
@@ -294,7 +293,7 @@ namespace gameswf
 		void	add_character(int character_id, character_def* c)
 		{
 			assert(c);
-			assert(c->get_id() == character_id);
+//			assert(c->get_id() == character_id);
 			m_characters.add(character_id, c);
 		}
 
@@ -713,10 +712,10 @@ namespace gameswf
 			return m_pixel_scale;
 		}
 
-		character_def*	get_character_def(int character_id)
-		{
-			return m_def->get_character_def(character_id);
-		}
+//		character_def*	get_character_def(int character_id)
+//		{
+//			return m_def->get_character_def(character_id);
+//		}
 
 		// @@ Is this one necessary?
 		character*	get_character(int character_id)
@@ -1154,7 +1153,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1177,7 +1176,7 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1254,7 +1253,7 @@ namespace gameswf
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
 		bitmap_character_rgba*	ch = new bitmap_character_rgba();
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1300,7 +1299,7 @@ namespace gameswf
 		{
 			// RGB image data.
 			bitmap_character_rgb*	ch = new bitmap_character_rgb();
-			ch->set_id(character_id);
+//			ch->set_id(character_id);
 			ch->m_image = image::create_rgb(width, height);
 
 			if (bitmap_format == 3)
@@ -1407,7 +1406,7 @@ namespace gameswf
 			assert(tag_type == 36);
 
 			bitmap_character_rgba*	ch = new bitmap_character_rgba();
-			ch->set_id(character_id);
+//			ch->set_id(character_id);
 			ch->m_image = image::create_rgba(width, height);
 
 			if (bitmap_format == 3)
@@ -1514,7 +1513,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		shape_character_def*	ch = new shape_character_def;
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 		ch->read(in, tag_type, true, m);
 
 		IF_VERBOSE_PARSE(log_msg("shape_loader: id = %d, rect ", character_id);
@@ -1963,7 +1962,7 @@ namespace gameswf
 		movie_interface*	create_instance() { return NULL; }
 
 		// overloads from character_def
-		virtual character*	create_character_instance(movie* parent);
+		virtual character*	create_character_instance(movie* parent, int id);
 
 
 		/* sprite_definition */
@@ -2035,15 +2034,15 @@ namespace gameswf
 	};
 
 
+	//
+	// sprite_instance
+	//
+
+
 	struct sprite_instance : public character
 	{
 		movie_definition_sub*	m_def;
 		movie_root*	m_root;
-
-		// @@ Ack, really I want to refer to the data in
-		// sprite_definition, if m_def is one.  But it may not
-		// be.
-		int	m_id;
 
 		display_list	m_display_list;
 		array<action_buffer*>	m_action_list;
@@ -2055,6 +2054,7 @@ namespace gameswf
 		bool	m_update_frame;
 		bool	m_has_looped;
 		bool	m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
+		bool	m_init_handler_called;
 
 		as_environment	m_as_environment;
 
@@ -2065,17 +2065,17 @@ namespace gameswf
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
 			:
-			character(parent),
+			character(parent, id),
 			m_def(def),
 			m_root(r),
-			m_id(id),
 			m_play_state(PLAY),
 			m_current_frame(0),
 			m_next_frame(0),
 			m_time_remainder(0),
 			m_update_frame(true),
 			m_has_looped(false),
-			m_accept_anim_moves(true)
+			m_accept_anim_moves(true),
+			m_init_handler_called(false)
 		{
 			assert(m_def);
 			assert(m_root);
@@ -2085,8 +2085,6 @@ namespace gameswf
 		movie_interface*	get_root_interface() { return m_root; }
 		movie_root*	get_root() { return m_root; }
 		movie*	get_root_movie() { return m_root->get_root_movie(); }
-
-		virtual int	get_id() const { return m_id; }
 
 		movie_definition*	get_movie_definition() { return m_def; }
 
@@ -2170,6 +2168,15 @@ namespace gameswf
 			}
 
 			assert(m_def && m_root);
+
+			// check for init event; make sure handler gets called once.
+			if (m_init_handler_called == false)
+			{
+				if (on_event(event_id::LOAD))
+				{
+					m_init_handler_called = true;
+				}
+			}
 
 			// mouse drag.
 			character::do_mouse_drag();
@@ -2381,9 +2388,9 @@ namespace gameswf
 			Uint16 clip_depth)
 		// Add an object to the display list.
 		{
-			assert(m_def && m_root);
+			assert(m_def);
 
-			character_def*	cdef = m_root->get_character_def(character_id);
+			character_def*	cdef = m_def->get_character_def(character_id);
 			if (cdef == NULL)
 			{
 				log_error("sprite::add_display_object(): unknown cid = %d\n", character_id);
@@ -2405,7 +2412,7 @@ namespace gameswf
 			}
 
 			assert(cdef);
-			character*	ch = cdef->create_character_instance(this);
+			character*	ch = cdef->create_character_instance(this, character_id);
 			assert(ch);
 			if (name != NULL && name[0] != 0)
 			{
@@ -2443,9 +2450,9 @@ namespace gameswf
 			float ratio,
 			Uint16 clip_depth)
 		{
-			assert(m_def && m_root);
+			assert(m_def);
 
-			character_def*	cdef = m_root->get_character_def(character_id);
+			character_def*	cdef = m_def->get_character_def(character_id);
 			if (cdef == NULL)
 			{
 				log_error("sprite::replace_display_object(): unknown cid = %d\n", character_id);
@@ -2453,7 +2460,7 @@ namespace gameswf
 			}
 			assert(cdef);
 
-			character*	ch = cdef->create_character_instance(this);
+			character*	ch = cdef->create_character_instance(this, character_id);
 			assert(ch);
 
 			if (name != NULL && name[0] != 0)
@@ -2604,7 +2611,7 @@ namespace gameswf
 			}
 			else if (name == "_visible")
 			{
-//				val->set(true);	// @@
+				set_visible(val.to_bool());
 				m_accept_anim_moves = false;
 				return;
 			}
@@ -2730,7 +2737,7 @@ namespace gameswf
 			}
 			else if (name == "_visible")
 			{
-				val->set(true);	// @@
+				val->set(get_visible());
 				return true;
 			}
 			else if (name == "_width")
@@ -2996,7 +3003,7 @@ namespace gameswf
 		}
 
 		/* sprite_instance */
-		virtual void	on_event(event_id id)
+		virtual bool	on_event(event_id id)
 		// Dispatch event handler(s), if any.
 		{
 			// First, check for built-in event handler.
@@ -3006,30 +3013,36 @@ namespace gameswf
 				{
 					// Dispatch.
 					call_method0(method, &m_as_environment, this);
+					return true;
 				}
 			}
 
 			// Check for member function.
 			{
 				const tu_string&	method_name = id.get_function_name();
-
-				as_value	method;
-				if (get_member(method_name, &method))
+				if (method_name.length() > 0)
 				{
-					call_method0(method, &m_as_environment, this);
+					as_value	method;
+					if (get_member(method_name, &method))
+					{
+						call_method0(method, &m_as_environment, this);
+						return true;
+					}
 				}
 			}
+
+			return false;
 		}
 
 	};
 
 
-	character*	sprite_definition::create_character_instance(movie* parent)
+	character*	sprite_definition::create_character_instance(movie* parent, int id)
 	// Create a (mutable) instance of our definition.  The
 	// instance is created to live (temporarily) on some level on
 	// the parent movie's display list.
 	{
-		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, get_id());
+		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
 
 		return si;
 	}
@@ -3057,7 +3070,7 @@ namespace gameswf
 		int	character_id = in->read_u16();
 
 		sprite_definition*	ch = new sprite_definition(m);	// @@ combine sprite_definition with movie_def_impl
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 		ch->read(in);
 
 		IF_VERBOSE_PARSE(log_msg("sprite: char id = %d\n", character_id));
@@ -3131,7 +3144,7 @@ namespace gameswf
 		int	character_id = in->read_u16();
 
 		button_character_definition*	ch = new button_character_definition;
-		ch->set_id(character_id);
+//		ch->set_id(character_id);
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);
@@ -3163,6 +3176,11 @@ namespace gameswf
 			{
 				// Expose this font for export.
 				m->export_resource(tu_string(symbol_name), f);
+			}
+			else if (character_def* ch = m->get_character_def(id))
+			{
+				// Expose this movie/button/whatever for export.
+				m->export_resource(tu_string(symbol_name), ch);
 			}
 			else
 			{
@@ -3216,6 +3234,11 @@ namespace gameswf
 			{
 				// Add this shared font to the currently-loading movie.
 				m->add_font(id, f);
+			}
+			else if (character_def* ch = res->cast_to_character_def())
+			{
+				// Add this character to the loading movie.
+				m->add_character(id, ch);
 			}
 			else
 			{

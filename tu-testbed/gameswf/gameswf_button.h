@@ -59,7 +59,7 @@ namespace gameswf
 
 		button_character_definition();
 //		bool	is_definition() const;
-		character*	create_character_instance(movie* parent);
+		character*	create_character_instance(movie* parent, int id);
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 	};
 

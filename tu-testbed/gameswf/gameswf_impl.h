@@ -207,8 +207,8 @@ namespace gameswf
 			return NULL;
 		}
 
-		// ActionScript event handler.
-		virtual void	on_event(event_id id) {}
+		// ActionScript event handler.  Returns true if a handler was called.
+		virtual bool	on_event(event_id id) { return false; }
 
 		// as_object_interface stuff
 		virtual void	set_member(const tu_string& name, const as_value& val) { assert(0); }
@@ -227,7 +227,7 @@ namespace gameswf
 
 	// A character_def is the immutable data representing the template of a
 	// movie element.
-	struct character_def
+	struct character_def : public resource
 	{
 	private:
 		int	m_id;
@@ -241,13 +241,16 @@ namespace gameswf
 
 		virtual ~character_def() {}
 
-		void	set_id(int id) { m_id = id; }
-		int	get_id() const { return m_id; }
+//		void	set_id(int id) { m_id = id; }
+//		int	get_id() const { return m_id; }
 
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
 
-		virtual character*	create_character_instance(movie* parent);	// default is to make a generic_character
+		virtual character*	create_character_instance(movie* parent, int id);	// default is to make a generic_character
+
+		// From resource interface.
+		virtual character_def*	cast_to_character_def() { return this; }
 
 		//
 		// Caching.
@@ -294,6 +297,7 @@ namespace gameswf
 	// It represents a single active element in a movie.
 	struct character : public movie
 	{
+		int	m_id;
 		movie*	m_parent;
 		tu_string	m_name;
 		int	m_depth;
@@ -304,17 +308,22 @@ namespace gameswf
 		bool	m_visible;
 		hash<event_id, as_value>	m_event_handlers;
 
-		character(movie* parent)
+		character(movie* parent, int id)
 			:
+			m_id(id),
 			m_parent(parent),
 			m_depth(-1),
 			m_ratio(0.0f),
 			m_clip_depth(0),
 			m_visible(true)
 		{
+			assert((parent == NULL && m_id == -1)
+			       || (parent != NULL && m_id >= 0));
 		}
 
 		// Accessors for basic display info.
+		int	get_id() const { return m_id; }
+//		void	set_id(int id) { m_id = id; }
 		movie*	get_parent() const { return m_parent; }
 		int	get_depth() const { return m_depth; }
 		void	set_depth(int d) { m_depth = d; }
@@ -328,8 +337,6 @@ namespace gameswf
 		void	set_ratio(float f) { m_ratio = f; }
 		Uint16	get_clip_depth() const { return m_clip_depth; }
 		void	set_clip_depth(Uint16 d) { m_clip_depth = d; }
-
-		virtual int	get_id() const = 0;
 
 		void	set_name(const char* name) { m_name = name; }
 		const tu_string&	get_name() const { return m_name; }
@@ -404,16 +411,14 @@ namespace gameswf
 	{
 		character_def*	m_def;
 
-		generic_character(character_def* def, movie* parent)
+		generic_character(character_def* def, movie* parent, int id)
 			:
-			character(parent),
+			character(parent, id),
 			m_def(def)
 		{
 			assert(m_def);
 		}
 
-		virtual int	get_id() const { return m_def->get_id(); }
-//		virtual const char*	get_name() const { return m_def->get_name(); }
 		virtual void	display() { m_def->display(this); }	// pass in transform info
 		virtual bool	point_test(float x, float y)
 		{

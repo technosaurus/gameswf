@@ -306,7 +306,15 @@ namespace gameswf
 			m_keymap[byte_index] |= mask;
 
 			// Notify listeners.
-			// @@ TODO need to figure out what environment to use...
+			for (int i = 0, n = m_listeners.size(); i < n; i++)
+			{
+				as_object_interface*	listener = m_listeners[i];
+				as_value	method;
+				if (listener && listener->get_member(event_id(event_id::KEY_DOWN).get_function_name(), &method))
+				{
+					call_method(method, NULL /* or root? */, listener, 0, 0);
+				}
+			}
 		}
 
 		void	set_key_up(int code)
@@ -458,7 +466,7 @@ namespace gameswf
 
 	void key_init()
 	{
-		// Create built-in math object.
+		// Create built-in key object.
 		as_object*	key_obj = new key_as_object;
 
 		// constants
@@ -530,7 +538,10 @@ namespace gameswf
 		{
 			s_inited = true;
 
+			// @@ hm, should this be per movie_interface
+			// instead of truly global?
 			s_built_ins.add("_global", new as_object);
+
 			math_init();
 			key_init();
 		}
@@ -1304,16 +1315,16 @@ namespace gameswf
 				case 0x67:	// gt (typed)
 					if (env->top(1).get_type() == as_value::STRING)
 					{
-						env->top(1).set(! (env->top(1).to_tu_string() < env->top(0).to_tu_string()));
+						env->top(1).set(env->top(1).to_tu_string() > env->top(0).to_tu_string());
 					}
 					else
 					{
-						env->top(1).set(! (env->top(1) < env->top(0)));
+						env->top(1).set(env->top(1).to_number() > env->top(0).to_number());
 					}
 					env->drop(1);
 					break;
 				case 0x68:	// string gt
-					env->top(1).set(! (env->top(1).to_tu_string() < env->top(0).to_tu_string()));
+					env->top(1).set(env->top(1).to_tu_string() > env->top(0).to_tu_string());
 					env->drop(1);
 					break;
 				}
@@ -1911,6 +1922,13 @@ namespace gameswf
 		{
 			// Get local var.
 			return m_local_frames[local_index].m_value;
+		}
+
+		// Looking for "this"?
+		if (varname == "this")
+		{
+			val.set(m_target);
+			return val;
 		}
 
 		// Check movie members.
