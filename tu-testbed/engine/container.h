@@ -99,21 +99,20 @@ public:
 		int	old_size = m_size;
 		m_size = new_size;
 
-		// Destruct old elements.
+		// Destruct old elements (if we're shrinking).
 		{for (int i = new_size; i < old_size; i++) {
 			(m_buffer + i)->~T();
 		}}
 
 		if (new_size == 0) {
 			m_buffer_size = 0;
+			reserve(m_buffer_size);
 		} else if (m_size <= m_buffer_size && m_size > m_buffer_size >> 1) {
 			// don't compact yet.
-			return;
 		} else {
 			m_buffer_size = m_size + (m_size >> 2);
+			reserve(m_buffer_size);
 		}
-
-		reserve(m_buffer_size);
 
 		// Copy default T into new elements.
 		{for (int i = old_size; i < new_size; i++) {

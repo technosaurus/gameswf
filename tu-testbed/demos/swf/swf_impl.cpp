@@ -341,8 +341,10 @@ namespace swf
 
 		fill_style()
 			:
-			m_type(0)
+			m_type(0),
+			m_bitmap_id(0)
 		{
+			assert(m_gradients.size() == 0);
 		}
 
 		void	read(stream* in, int tag_type)
@@ -591,7 +593,8 @@ namespace swf
 		if (di.m_depth != depth)
 		{
 			// error
-			assert(0);
+			IF_DEBUG(printf("error: move_display_object() -- no object at depth %d\n", depth));
+//			assert(0);
 			return;
 		}
 
@@ -1269,6 +1272,10 @@ namespace swf
 		array<line_style>	m_line_styles;
 		array<edge>	m_edges;
 
+		shape_character()
+		{
+		}
+
 		virtual ~shape_character() {}
 
 		void	read(stream* in, int tag_type)
@@ -1329,12 +1336,15 @@ namespace swf
 						// fill_style_1_change = 1;
 						fill_1 = in->read_uint(num_fill_bits);
 					}
-					if (flags & 0x08) {
+					if ((flags & 0x08)
+					    && num_line_bits > 0)
+					{
 						// line_style_change = 1;
 						line = in->read_uint(num_line_bits);
 					}
 					if (flags & 0x10) {
-						// assert(tag_type >= 22); new_styles = 1;
+						assert(tag_type >= 22);
+
 						fill_base = m_fill_styles.size();
 						line_base = m_line_styles.size();
 						read_fill_styles(&m_fill_styles, in, tag_type);
@@ -1400,8 +1410,8 @@ namespace swf
 		void	display(const display_info& di)
 		// Draw the shape using the given environment.
 		{
-			IF_DEBUG(printf("sc::d() rect = "); m_bound.print(stdout));
-			IF_DEBUG(printf("sc::d() matr = "); di.m_matrix.print(stdout));
+//			IF_DEBUG(printf("sc::d() rect = "); m_bound.print(stdout));
+//			IF_DEBUG(printf("sc::d() matr = "); di.m_matrix.print(stdout));
 
 //			IF_DEBUG(m_bound.debug_display(di));
 //			return;
@@ -1497,8 +1507,8 @@ namespace swf
 			bool	has_clip_bracket = in->read_uint(1) ? true : false;
 			bool	has_name = in->read_uint(1) ? true : false;
 			bool	has_ratio = in->read_uint(1) ? true : false;
-			bool	has_cxform = in->read_uint(1) ? true : false
-;			bool	has_matrix = in->read_uint(1) ? true : false;
+			bool	has_cxform = in->read_uint(1) ? true : false;
+			bool	has_matrix = in->read_uint(1) ? true : false;
 			bool	has_char = in->read_uint(1) ? true : false;
 			bool	flag_move = in->read_uint(1) ? true : false;
 
