@@ -68,8 +68,7 @@ General
 
   * pick a version number, post a release
 
-  * Better control over log spew; make it a callback mechanism, and have
-    options for how much to spew.
+  * host-settable options for how much, and what, to log.
 
   * some method for reporting errors to the host app
 
