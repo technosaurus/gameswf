@@ -187,7 +187,7 @@ namespace swf
 		if (m_tag_stack.size() > 0)
 		{
 			int	end_pos = m_tag_stack.back();
-			assert(pos < end_pos);
+			assert(pos <= end_pos);
 			// @@ check start pos somehow???
 		}
 

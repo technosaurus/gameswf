@@ -907,7 +907,8 @@ namespace swf
 					dt = 0.0f;
 					next_frame = m_current_frame;
 				}
-				if (next_frame >= m_frame_count)
+				if (next_frame >= m_frame_count
+				    && m_frame_count > 1)
 				{
 					// End of movie.  Loop to beginning.
 					m_current_frame = -1;
@@ -3142,25 +3143,23 @@ namespace swf
 	};
 
 
-	struct button_character : public character
+	struct button_character_definition : public character
 	{
 		array<button_record>	m_button_records;
 		array<button_action>	m_button_actions;
-		enum mouse_state
-		{
-			OUT,		// when the mouse is not over the button, and mouse button is up.
-			OUT_DOWN,	// when the mouse is not over the button, and mouse button is down.
-			DOWN,		// when the mouse is over us, and mouse button is down.
-			OVER		// when the mouse is over us, and mouse button is not pressed.
-		};
-		mouse_state	m_last_mouse_state, m_mouse_state;
 
-		button_character()
-			:
-			m_last_mouse_state(OUT),
-			m_mouse_state(OUT)
+		button_character_definition()
 		{
 		}
+
+		bool	is_definition() const
+		// Return true, so that a containing movie knows to create an instance
+		// for storing in its display list, instead of storing the definition
+		// directly.
+		{
+			return true;
+		}
+		character*	create_instance();
 
 		void	read(stream* in, int tag_type, movie* m)
 		{
@@ -3191,7 +3190,7 @@ namespace swf
 				int	flags = in->read_u8();
 
 				int	button_2_action_offset = in->read_u16();
-				int	next_action_pos = in->get_position() + button_2_action_offset - 2;
+				int	next_action_pos = in->get_position() + button_2_action_offset;
 
 				// Read button records.
 				for (;;)
@@ -3205,28 +3204,62 @@ namespace swf
 					m_button_records.push_back(r);
 				}
 
-				in->set_position(next_action_pos);
-
-				// Read Button2ActionConditions
-				for (;;)
+				if (button_2_action_offset > 0)
 				{
-					int	next_action_offset = in->read_u16();
-					next_action_pos = in->get_position() + next_action_offset - 2;
-
-					m_button_actions.resize(m_button_actions.size() + 1);
-					m_button_actions.back().read(in, tag_type);
-
-					if (next_action_offset == 0
-					    || in->get_position() >= in->get_tag_end_position())
-					{
-						// done.
-						break;
-					}
-
-					// seek to next action.
 					in->set_position(next_action_pos);
+
+					// Read Button2ActionConditions
+					for (;;)
+					{
+						int	next_action_offset = in->read_u16();
+						next_action_pos = in->get_position() + next_action_offset - 2;
+
+						m_button_actions.resize(m_button_actions.size() + 1);
+						m_button_actions.back().read(in, tag_type);
+
+						if (next_action_offset == 0
+						    || in->get_position() >= in->get_tag_end_position())
+						{
+							// done.
+							break;
+						}
+
+						// seek to next action.
+						in->set_position(next_action_pos);
+					}
 				}
 			}
+		}
+	};
+
+	
+	struct button_character_instance : public character
+	{
+		button_character_definition*	m_def;
+		enum mouse_state
+		{
+			OUT,		// when the mouse is not over the button, and mouse button is up.
+			OUT_DOWN,	// when the mouse is not over the button, and mouse button is down.
+			DOWN,		// when the mouse is over us, and mouse button is down.
+			OVER		// when the mouse is over us, and mouse button is not pressed.
+		};
+		mouse_state	m_last_mouse_state, m_mouse_state;
+
+		button_character_instance(button_character_definition* def)
+			:
+			m_def(def)
+		{
+			assert(m_def);
+			m_id = def->m_id;
+			restart();
+		}
+
+		bool	is_instance() const { return true; }
+
+		void	restart()
+		{
+			m_last_mouse_state = OUT;
+			m_mouse_state = OUT;
 		}
 
 
@@ -3245,9 +3278,9 @@ namespace swf
 			point	mouse_position;
 			mat.transform_by_inverse(&mouse_position, point(PIXELS_TO_TWIPS(mx), PIXELS_TO_TWIPS(my)));
 
-			{for (int i = 0; i < m_button_records.size(); i++)
+			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
-				button_record&	rec = m_button_records[i];
+				button_record&	rec = m_def->m_button_records[i];
 				if (rec.m_character == NULL
 				    || rec.m_hit_test == false)
 				{
@@ -3333,22 +3366,22 @@ namespace swf
 			}
 
 			// Add appropriate actions to the movie's execute list...
-			{for (int i = 0; i < m_button_actions.size(); i++)
+			{for (int i = 0; i < m_def->m_button_actions.size(); i++)
 			{
-				if (m_button_actions[i].m_conditions & c)
+				if (m_def->m_button_actions[i].m_conditions & c)
 				{
 					// Matching action.
-					for (int j = 0; j < m_button_actions[i].m_actions.size(); j++)
+					for (int j = 0; j < m_def->m_button_actions[i].m_actions.size(); j++)
 					{
-						m->add_action_buffer(&(m_button_actions[i].m_actions[j]));
+						m->add_action_buffer(&(m_def->m_button_actions[i].m_actions[j]));
 					}
 				}
 			}}
 
 			// Advance our relevant characters.
-			{for (int i = 0; i < m_button_records.size(); i++)
+			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
-				button_record&	rec = m_button_records[i];
+				button_record&	rec = m_def->m_button_records[i];
 				if (rec.m_character == NULL)
 				{
 					continue;
@@ -3383,9 +3416,9 @@ namespace swf
 
 		void	display(const display_info& di)
 		{
-			for (int i = 0; i < m_button_records.size(); i++)
+			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
-				button_record&	rec = m_button_records[i];
+				button_record&	rec = m_def->m_button_records[i];
 				if (rec.m_character == NULL)
 				{
 					continue;
@@ -3405,13 +3438,22 @@ namespace swf
 	};
 
 
+	character*	button_character_definition::create_instance()
+	// Create a mutable instance of our definition.  The instance is
+	// designed to be put on the display list, possibly active at the same
+	// time as other instances of the same definition.
+	{
+		return new button_character_instance(this);
+	}
+
+
 	void	button_character_loader(stream* in, int tag_type, movie* m)
 	{
 		assert(tag_type == 7 || tag_type == 34);
 
 		int	character_id = in->read_u16();
 
-		button_character*	ch = new button_character;
+		button_character_definition*	ch = new button_character_definition;
 		ch->m_id = character_id;
 		ch->read(in, tag_type, m);
 
