@@ -53,7 +53,7 @@ void	tu_string::resize(int new_size)
 
 			// Copy existing string info.
 			m_local.m_size = (char) (new_size + 1);
-			strncpy(m_local.m_buffer, old_buffer, 16);
+			strncpy(m_local.m_buffer, old_buffer, 15);
 			m_local.m_buffer[new_size] = 0;	// ensure termination.
 
 			tu_free(old_buffer, old_capacity);
@@ -87,12 +87,23 @@ void	tu_string::resize(int new_size)
 // Compile this test case with something like:
 //
 // gcc container.cpp -g -I.. -DCONTAINER_UNIT_TEST -lstdc++ -o container_test
+//
+//    or
+//
+// cl container.cpp -Zi -Od -DCONTAINER_UNIT_TEST -I..
 
 int	main()
 {
 	printf("sizeof(tu_string) == %d\n", sizeof(tu_string));
 
-	tu_string	a("test1");
+	array<tu_string>	storage;
+	storage.resize(2);
+
+	tu_string&	a = storage[0];
+	tu_string&	b = storage[1];
+	a = "test1";
+	
+	printf("&a = 0x%X, &b = 0x%X\n", int(&a), int(&b));
 
 	printf("%s\n", a.c_str());
 
@@ -112,7 +123,6 @@ int	main()
 	assert(a[7] == 'h');
 	assert(a[28] == 0);
 
-	tu_string	b;
 	assert(b.length() == 0);
 	assert(b[0] == 0);
 	assert(b.c_str()[0] == 0);
@@ -126,6 +136,8 @@ int	main()
 	assert(c == tu_string("te"));
 
 	assert(tu_string("fourscore and sevent") == "fourscore and sevent");
+
+	b = "#sacrificial lamb";
 
 	// Test growing & shrinking.
 	a = "";
@@ -160,6 +172,15 @@ int	main()
 			assert(a == "012345678901234567890123456");
 		}
 	}}
+
+	// Test larger shrinking across heap/local boundary.
+	a = "this is a string longer than 16 characters";
+	a = "short";
+
+	// Test larger expand across heap/local boundary.
+	a = "another longer string...";
+
+	assert(b == "#sacrificial lamb");
 
 	// TODO: unit tests for array<>, hash<>, string_hash<>
 
