@@ -48,6 +48,7 @@ struct SDL_sound_handler : gameswf::sound_handler
 			// get and print the audio format in use
 			int channels;
 			int num_times_opened = Mix_QuerySpec(&m_sample_rate, &m_format, &channels);
+			UNUSED(num_times_opened);
 			m_stereo = channels == 2 ? true : false;
 			
 			const char *format_str = "Unknown";

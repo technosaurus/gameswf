@@ -579,7 +579,7 @@ namespace gameswf
 		virtual void	execute_state_reverse(movie* m, int frame) { execute_state(m); }
 		virtual bool	is_remove_tag() const { return false; }
 		virtual bool	is_action_tag() const { return false; }
-		virtual uint32	get_depth_id_of_replace_or_add_tag() const { return -1; }
+		virtual uint32	get_depth_id_of_replace_or_add_tag() const { return (uint32) -1; }
 	};
 
 

@@ -2710,7 +2710,7 @@ namespace gameswf
 			}
 			else
 			{
-				return -1;
+				return (uint32) -1;
 			}
 		}
 	};
@@ -3170,8 +3170,6 @@ namespace gameswf
 			m_time_remainder += delta_time;
 
 			const float	frame_time = 1.0f / m_root->get_frame_rate();	// @@ cache this
-
-			bool	single_frame_movie = (m_def->get_frame_count() == 1);
 
 			// Check for the end of frame
 			if (m_time_remainder >= frame_time)

@@ -20,7 +20,7 @@
 #include FT_GLYPH_H
 
 
-static const int LITTLE_WIDTH = 200;
+static const int LITTLE_WIDTH = 500;
 static const int LITTLE_HEIGHT = 60;
 
 static const int BIG_WIDTH = 600;
