@@ -961,17 +961,18 @@ namespace render
 		float xl0, float xl1,
 		float xr0, float xr1)
 	{
-		int	iy0 = (int) floorf(y0);
-		int	iy1 = (int) floorf(y1);
+		int	iy0 = (int) ceilf(y0);
+		int	iy1 = (int) ceilf(y1);
+		float	dy = y1 - y0;
 
 		for (int y = iy0; y < iy1; y++)
 		{
 			if (y < 0) continue;
 			if (y >= s_software_mode_height) return;
 
-			float	f = (y - y0) / (y1 - y0);
-			int	xl = (int) floorf(flerp(xl0, xl1, f));
-			int	xr = (int) floorf(flerp(xr0, xr1, f));
+			float	f = (y - y0) / dy;
+			int	xl = (int) ceilf(flerp(xl0, xl1, f));
+			int	xr = (int) ceilf(flerp(xr0, xr1, f));
 			
 			xl = iclamp(xl, 0, s_software_mode_width - 1);
 			xr = iclamp(xr, 0, s_software_mode_width - 1);
@@ -1410,8 +1411,6 @@ namespace render
 			}}
 			glEnd();
 		}
-
-
 
 		// This is the current champion antialiasing code.
 		// Unfortunately it's pretty lame -- it's very similar
