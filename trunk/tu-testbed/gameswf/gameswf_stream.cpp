@@ -190,6 +190,7 @@ namespace gameswf
 		{
 			int	end_pos = m_tag_stack.back();
 			assert(pos <= end_pos);
+			end_pos = end_pos;	// inhibit warning
 			// @@ check start pos somehow???
 		}
 

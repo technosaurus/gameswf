@@ -1397,6 +1397,7 @@ namespace gameswf
 						image_row[i * 3 + 0] = r;
 						image_row[i * 3 + 1] = g;
 						image_row[i * 3 + 2] = b;
+						a = a;	// Inhibit warning.
 					}
 				}
 			}
@@ -1666,7 +1667,7 @@ namespace gameswf
 			// edge is a fill edge, then the query point
 			// is inside the shape.
 			bool	inside = false;
-			float	closest_point = 1e6;
+			//float	closest_point = 1e6;
 
 			for (int i = 0; i < m_edges.size(); i++)
 			{
@@ -3141,6 +3142,7 @@ namespace gameswf
 			else if (tag_type == 34)
 			{
 				int	flags = in->read_u8();
+				flags = flags;	// inhibit warning
 
 				int	button_2_action_offset = in->read_u16();
 				int	next_action_pos = in->get_position() + button_2_action_offset - 2;
