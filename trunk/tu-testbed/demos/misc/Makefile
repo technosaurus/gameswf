@@ -26,6 +26,12 @@ quad_distance_test$(EXE_EXT): quad_distance_test.$(OBJ_EXT) $(GEOMETRY_LIB) $(BA
 calendar$(EXE_EXT): calendar.$(OBJ_EXT) $(BASE_LIB)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
+lattice_resistance$(EXE_EXT): lattice_resistance.$(OBJ_EXT) $(BASE_LIB)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+
+count_ones$(EXE_EXT): count_ones.$(OBJ_EXT) $(BASE_LIB)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+
 engine_libs:
 	$(MAKE) -C $(TOP)/base
 	$(MAKE) -C $(TOP)/geometry

@@ -470,10 +470,15 @@ int	tu_file::copy_bytes(tu_file* src, int byte_count)
 
 void tu_file::write_string(const char* src)
 {
-	do {
+	for (;;)
+	{
 		write8(*src);
+		if (*src == 0)
+		{
+			break;
+		}
 		src++;
-	} while (*src!='\0');
+	}
 }
 
 

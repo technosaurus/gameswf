@@ -784,7 +784,6 @@ namespace gameswf
 
 			float	x = rec.m_style.m_x_offset;
 			float	y = rec.m_style.m_y_offset;
-			UNUSED(y);
 
 			float	leading = m_def->m_leading;
 			leading += m_def->m_font->get_leading() * scale;
@@ -840,6 +839,32 @@ namespace gameswf
 					last_space_glyph = -1;
 					last_line_start_record = m_text_glyph_records.size();
 
+					continue;
+				}
+
+				if (code == 8)
+				{
+					// backspace (ASCII BS).
+
+					// This is a limited hack to enable overstrike effects.
+					// It backs the cursor up by one character and then continues
+					// the layout.  E.g. you can use this to display an underline
+					// cursor inside a simulated text-entry box.
+					//
+					// ActionScript understands the '\b' escape sequence
+					// for inserting a BS character.
+					//
+					// ONLY WORKS FOR BACKSPACING OVER ONE CHARACTER, WON'T BS
+					// OVER NEWLINES, ETC.
+
+					if (rec.m_glyphs.size() > 0)
+					{
+						// Peek at the previous glyph, and zero out its advance
+						// value, so the next char overwrites it.
+						float	advance = rec.m_glyphs.back().m_glyph_advance;
+						x -= advance;	// maintain formatting
+						rec.m_glyphs.back().m_glyph_advance = 0;	// do the BS effect
+					}
 					continue;
 				}
 
@@ -934,8 +959,6 @@ namespace gameswf
 					last_line_start_record = m_text_glyph_records.size();
 				}
 
-
-				// TODO: alignment
 				// TODO: HTML markup
 			}
 
