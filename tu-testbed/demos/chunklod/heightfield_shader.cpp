@@ -61,7 +61,7 @@ void	print_usage()
 	// no args, or -h or -?.  print usage.
 	printf("heightfield_shader: program for generating a .jpg texture for a heightfield\n"
 	       "terrain.\n\n"
-	       "This program has been donated to the Public Domain by Thatcher Ulrich <tu@tulrich.com>\n"
+	       "This program has been donated to the Public Domain by Thatcher Ulrich http://tulrich.com\n"
 	       "Incorporates software from the Independent JPEG Group\n\n"
 	       "usage: heightfield_shader <input_filename> <output_filename> [-t <tilemap_bitmap>]\n"
 	       "\t[-g <altitude_gradient_bitmap>] [-r <texels per heixel>] [-v <bt_input_vertical_scale>]\n"
