@@ -28,12 +28,12 @@ OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
 
 
-BASE = base.$(LIB_EXT)
+BASE_LIB = base.$(LIB_EXT)
 
-all: $(BASE)
+all: $(BASE_LIB)
 
-$(BASE): $(OBJS)
-	$(AR) $(LIB_OUT_FLAG)$(ENGINE) $(OBJS)
+$(BASE_LIB): $(OBJS)
+	$(AR) $(LIB_OUT_FLAG)$(BASE_LIB) $(OBJS)
 
 clean:
 	-@rm -f $(BASE) $(OBJS)

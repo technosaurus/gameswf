@@ -16,10 +16,10 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 LIB_OUT = $(LIB_PRE)gameswf.$(LIB_EXT)
 EXE_OUT = gameswf_test_ogl$(EXE_EXT)
 
-LIBS := $(LIB_OUT) $(ENGINE) $(LIBS) $(JPEGLIB) $(ZLIB)
+LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB)
 
 
-all: engine $(LIB_OUT) $(EXE_OUT)
+all: base_lib $(LIB_OUT) $(EXE_OUT)
 
 
 OBJS = \
@@ -44,14 +44,14 @@ $(LIB_OUT): $(OBJS)
 	$(AR) $(LIB_OUT_FLAG)$@ $^
 
 
-$(EXE_OUT): gameswf_test_ogl.$(OBJ_EXT) $(LIB_OUT) $(ENGINE)
+$(EXE_OUT): gameswf_test_ogl.$(OBJ_EXT) $(LIB_OUT) $(BASE_LIB)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 
-engine:
-	make -C $(TOP)/engine
+base_lib:
+	make -C $(TOP)/base
 
 
 clean:
-	make -C $(TOP)/engine clean
-	rm gameswf_test_ogl.$(OBJ_EXT) $(OBJS) $(LIB_OUT) $(EXE_OUT)
+	make -C $(TOP)/base clean
+	-rm gameswf_test_ogl.$(OBJ_EXT) $(OBJS) $(LIB_OUT) $(EXE_OUT)

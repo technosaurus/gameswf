@@ -11,7 +11,7 @@
 
 
 #include "SDL.h"
-#include "engine/utility.h"
+#include "base/utility.h"
 
 
 #ifndef NDEBUG

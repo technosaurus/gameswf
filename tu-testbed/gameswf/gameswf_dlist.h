@@ -10,7 +10,7 @@
 #define GAMESWF_DLIST_H
 
 
-#include "engine/container.h"
+#include "base/container.h"
 #include "gameswf_types.h"
 #include "gameswf_impl.h"
 

@@ -9,8 +9,8 @@
 #ifndef GAMESWF_FONTLIB_CPP
 
 
-#include "engine/container.h"
-#include "engine/tu_file.h"
+#include "base/container.h"
+#include "base/tu_file.h"
 #include "gameswf_font.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"

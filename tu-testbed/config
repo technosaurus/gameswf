@@ -127,7 +127,7 @@ endif # GCC
 	$(CC) -c $< $(CFLAGS)
 
 
-ENGINE := $(TOP)/engine/engine.$(LIB_EXT)
+BASE_LIB := $(TOP)/base/base.$(LIB_EXT)
 ENGINE_INCLUDE := -I$(TOP)
 
 # Local Variables:

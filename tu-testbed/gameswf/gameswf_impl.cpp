@@ -12,8 +12,8 @@
 // @@ Need to break this file into pieces
 
 
-#include "engine/tu_file.h"
-#include "engine/utility.h"
+#include "base/tu_file.h"
+#include "base/utility.h"
 #include "gameswf_action.h"
 #include "gameswf_button.h"
 #include "gameswf_impl.h"
@@ -24,9 +24,9 @@
 #include "gameswf_stream.h"
 #include "gameswf_styles.h"
 #include "gameswf_dlist.h"
-#include "engine/image.h"
-#include "engine/jpeg.h"
-#include "engine/zlib_adapter.h"
+#include "base/image.h"
+#include "base/jpeg.h"
+#include "base/zlib_adapter.h"
 #include <string.h>	// for memset
 #include <zlib.h>
 #include <typeinfo>
