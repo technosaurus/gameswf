@@ -1,47 +1,10 @@
-Renderer
-========
-
-* optimizations
-
-  * treat line segments as true line segments, instead of a flat curve.
-
-  * coarse clip/cull
-
-  * maybe we can pre-digest shapes, to make a rough segmentation into
-    fans/strips?  I.e. don't determine the curve tesselation, but do
-    get the basic sequence of verts to emit, so that rendering can be
-    very fast and direct with no sorting or edge clipping, etc.
-
-  * turn outline fonts into textures, render glyphs using textured
-    quads.
-
-* handle gradients
-
-  linear gradients could be done w/ a 1-D texture and texgen or
-  explicit UV calcs.  Problem: potential banding.
-
-  radial gradients need a 2D texture, or a pixel shader + 1D texture,
-  or lots of subdivision w/ vertex coloring.  Not sure what the best
-  policy is.
-
-* antialiasing
-
-  Do it using alpha channel in font textures.  For general vector
-  shapes, probably just punt.  Provide sample setup for hardware
-  assist (multisample or whatever).  Leave the decision up to the app.
-
-* real lines
-
-  Approach: within a path that has a line style, save the coords that
-  come in and keep them in line-strip order.  Then, at the end of
-  end_shape(), trace them out directly, including rounded edges.
-  Should be pretty straightforward.
-
-  Better (?): generate an outline from the line definition.
-
-
 General
 =======
+
+* test basic action stuff with a sample UI movie
+
+* implement an event queue so the host app can get UI & animation
+  events out of the player
 
 * bitmapped fonts; not a native part of swf, but should be a good win
   in rendering speed on most hardware.  Perhaps render the font glyphs
@@ -53,8 +16,60 @@ General
   sounds pretty good to me; reduces the amount of work at playback
   time.
 
-* buttons
+* text entry?  No keyboard on consoles, text input is very platform
+  specific; low priority for now.
 
-* text entry
+* dynamic text fields -- necessary for most games, console or not.
+  Given dynamic text, host app can hack in text entry.
 
-* action stuff
+* test multiple movies
+
+* some way to hook up SWF buttons to logical app buttons (for gamepad
+  UI).
+
+* expose text rendering to host app
+
+* named elements, for easier UI programming in the host app
+
+* more action stuff
+
+
+Renderer
+========
+
+It's horribly slow right now, and has some glitches :(
+
+* radial gradients (just use a 16x16 texture or something)
+
+* antialiasing
+
+  Do it using alpha channel in font textures.  For general vector
+  shapes, probably just punt.  Provide sample setup for hardware
+  assist (multisample or whatever).  Leave the decision up to the app.
+
+* optimizations
+
+  * treat line segments as true line segments, instead of a flat curve.
+
+  * get rid of naive (mis)use of array<>
+
+  * coarse clip/cull
+
+  * pre-cache shape tesselation?  Re-gen on the fly based on scale;
+	with hysteresis.  Or is there some nice precomputation we can do
+	without evaluating specific curve points, and then just rip
+	through making strips & fans?
+
+  * turn outline fonts into textures, render glyphs using textured
+    quads.
+
+* real lines
+
+  Approach: within a path that has a line style, save the coords that
+  come in and keep them in line-strip order.  Then, at the end of
+  end_shape(), trace them out directly, including rounded edges.
+
+  Better (?): generate an outline from the line definition.
+
+  Real rounded lines actually seem trickier the more I think about
+  them.
