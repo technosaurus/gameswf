@@ -1,3 +1,25 @@
+2005-04-02  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_test_ogl.cpp (main): Ad "-c" option to turn off
+	SDL Parachutes, because sometimes we want the core file for
+	debugging.
+	* gameswf/gameswf_action.cpp: Remove object creation code for new
+	AS objects.
+	* gameswf/gameswf_xml.cpp (xml_new): Move code from
+	gameswf_action.cpp to here so we create new objects correctly using
+	constructors.
+	* gameswf/gameswf_string.cpp (string_new): Move code from
+	gameswf_action.cpp to here so we create new objects correctly using
+	constructors.
+	* gameswf/gameswf_movie.cpp (moviecliploader_new): Move code from
+	gameswf_action.cpp to here so we create new objects correctly using
+	constructors.
+	* gameswf/gameswf_xmlsocket.cpp (xmlsocket_new):  Move code from
+	gameswf_action.cpp to here so we create new objects correctly using
+	constructors.
+	* gameswf/gameswf_*: Don't use __PRETTY_FUNCTION__, it's GCC
+	specific. Instead use __FUNCTION__, which supported with VC++..
+
 2005-04-01  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_test_ogl.cpp (key_event): Add trapping ENTER and

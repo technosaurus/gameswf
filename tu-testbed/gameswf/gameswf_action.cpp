@@ -438,9 +438,7 @@ namespace gameswf
 	// Printf-like vararg interface for calling ActionScript.
 	// Handy for external binding.
 	{
-#ifdef __PRETTY_FUNCTION__
-		log_msg("FIXME(%d): %s\n", __LINE__, __PRETTY_FUNCTION__);
-#endif
+		log_msg("FIXME(%d): %s\n", __LINE__, __FUNCTION__);
 
 #if 0
 		static const int	BUFSIZE = 1000;
@@ -799,9 +797,7 @@ namespace gameswf
 		
 	void event_test(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg) 
 	{
-#ifdef __PRETTY_FUNCTION__
-		log_msg("FIXME: %s\n", __PRETTY_FUNCTION__);
-#endif
+		log_msg("FIXME: %s\n", __FUNCTION__);
 	}
 	
 	//
@@ -1199,6 +1195,12 @@ namespace gameswf
 			s_global->set_member("Object", as_value(as_global_Object));
 			s_global->set_member("Sound", as_value(as_global_Sound));
 			s_global->set_member("Array", as_value(as_global_Array));
+
+			s_global->set_member("TextFormat", as_value(textformat_new));
+			s_global->set_member("XML", as_value(xml_new));
+			s_global->set_member("XMLSocket", as_value(xmlsocket_new));
+			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
+			s_global->set_member("String", as_value(string_new));
 
 			math_init();
 			key_init();
@@ -2063,7 +2065,6 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_error("---new object: %s\n",
 								     classname.to_tu_string().c_str()));
 					int	nargs = (int) env->pop().to_number();
-//					log_msg("---new nargs: %d\n", nargs);
 					as_value constructor = env->get_variable(classname.to_tu_string(), with_stack);
 					as_value new_obj;
 					if (constructor.get_type() == as_value::C_FUNCTION)
@@ -2098,215 +2099,8 @@ namespace gameswf
 					}
 					else
 					{
-						//
-						// tulrich FIXME: this should all happen via constructor functions.
-						//
-
-#if 0
-						movie*	current_movie = env->get_target()->get_root_movie();
-						assert(current_movie);
-						//movie *current_movie_root = env->m_target->get_root_movie();
-						//assert(current_movie_root);
-						if (classname.to_tu_string()=="TextFormat")
-						{
-							log_msg("New TextFormat Object!!!\n");
-							as_value handler = (as_c_function_ptr)&textformat_new;
-							current_movie->set_member("TextFormat", handler);
-							
-							textformat_as_object*	text_obj = new textformat_as_object;
-							//log_msg("\tCreated New TextFormat object at 0x%X\n", (unsigned int)text_obj);
-							
-							new_obj = text_obj;
-						} else		
-						// This is where ActionScript objects go
-					        if (classname.to_tu_string()=="XML")
-						{
-#ifdef HAVE_LIBXML
-							//log_msg("New XML Object!!!, nargs is %d\n", nargs);
-							current_movie->set_member("XML", as_value(xml_new));
-							if (nargs > 0) {
-								if (env->top(0).get_type() == as_value::STRING) {
-									xml_as_object*	xml_obj = new xml_as_object;
-									//log_msg("\tCreated New XML object at 0x%X\n", (unsigned int)xml_obj);
-									tu_string datain = env->top(0).to_tu_string();
-									xml_obj->obj.parseXML(datain);
-									xml_obj->obj.setupStackFrames(xml_obj, env);
-									new_obj = xml_obj;
-								} else {
-									xmlnode_as_object*	xml_obj =
-										(xmlnode_as_object*)env->top(0).to_object();
-									
-									//log_msg("\tCloned the XMLNode object at 0x%X\n", (unsigned int)xml_obj);
-									new_obj = xml_obj;
-								}
-							} else {
-								xml_as_object*	xml_obj = new xml_as_object;
-								//log_msg("Created New XML object at 0x%X\n", (unsigned int)xml_obj);
-								xml_obj->set_member("load", &xml_load);
-								xml_obj->set_member("loaded", &xml_loaded);
-								new_obj = xml_obj;
-							}
-						} else
-						if (classname.to_tu_string()=="XMLSocket")
-						{
-							log_msg("New XMLSocket Object!!!\n");
-							current_movie->set_member("XMLSocket", as_value(xmlsocket_new));
-							
-							as_object*	xmlsock_obj = new xmlsocket_as_object;
-							//log_msg("\tCreated New XMLSocket object at 0x%X\n", (unsigned int)xmlsock_obj);
-							xmlsock_obj->set_member("connect", &xmlsocket_connect);
-							xmlsock_obj->set_member("send", &xmlsocket_send);
-							xmlsock_obj->set_member("close", &xmlsocket_close);
-							xmlsock_obj->set_member("Connected", true);
-							// swf_event*	ev = new swf_event;
-							// m_event_handlers.push_back(ev);
-							// Setup event handlers
-#if 0
-							xmlsock_obj->set_event_handler(event_id::SOCK_DATA,
-									       (as_c_function_ptr)&xmlsocket_event_ondata);
-							xmlsock_obj->set_event_handler(event_id::SOCK_CLOSE,
-									       (as_c_function_ptr)&xmlsocket_event_close);
-// 							xmlsock_obj->set_event_handler(event_id::SOCK_CONNECT,
-// 									       (as_c_function_ptr)&xmlsocket_event_connect);
-							xmlsock_obj->set_event_handler(event_id::SOCK_XML,
-									       (as_c_function_ptr)&xmlsocket_event_xml);
-#endif
-							//periodic_events.set_event_handler(xmlsock_obj);
-
-
-#if 1
-							as_c_function_ptr int_handler =
-								(as_c_function_ptr)&timer_setinterval;
-
-							env->set_member("setInterval", int_handler);
-							as_c_function_ptr clr_handler =
-								(as_c_function_ptr)&timer_clearinterval;
-
-							env->set_member("clearInterval", clr_handler);
-							//env->set_variable("setInterval", int_handler, 0);
-							//xmlsock_obj->set_event_handler(event_id::TIMER,
-							//       (as_c_function_ptr)&timer_expire);
-#if 0
-							Timer *timer = new Timer;
-							as_c_function_ptr ondata_handler =
-								(as_c_function_ptr)&xmlsocket_event_ondata;
-							timer->setInterval(ondata_handler, 10);
-							timer->setObject(xmlsock_obj);
-							current_movie->add_interval_timer(timer);
-#endif
-							
-							new_obj = xmlsock_obj;
-#endif
-// HAVE_LIBXML
-#endif
-						} else
-						if (classname.to_tu_string()=="MovieClipLoader")
-						{
-							log_error("New MovieClipLoader Object!!!, %d\n", nargs);
-							current_movie->set_member("MovieClipLoader", as_value(moviecliploader_new));
-#if 1
-							as_object*	mov_obj = new moviecliploader_as_object;
-							//log_msg("\tCreated New MovieClipLoader object at 0x%X\n", (unsigned int)mov_obj);
-
-							mov_obj->set_member("loadClip",
-									    &moviecliploader_loadclip);
-							mov_obj->set_member("loadMovie",
-									    &event_test);
-							mov_obj->set_member("unloadClip",
-									    &moviecliploader_unloadclip);
-							mov_obj->set_member("getProgress",
-									    &moviecliploader_getprogress);
-							// Load the default event handlers. These should really never
-							// be called directly, as to be useful they are redefined
-							// within the SWF script. These get called if there is a problem
-							// Setup the event handlers
-							mov_obj->set_event_handler(event_id::LOAD_INIT,
-									   (as_c_function_ptr)&event_test);
-							mov_obj->set_event_handler(event_id::LOAD_START,
-									   (as_c_function_ptr)&event_test);
-							mov_obj->set_event_handler(event_id::LOAD_PROGRESS,
-									   (as_c_function_ptr)&event_test);
-							mov_obj->set_event_handler(event_id::LOAD_ERROR,
-									   (as_c_function_ptr)&event_test);
-
-#if 0
-							// with the user defined definitions.
-							mov_obj->set_member("onLoadStart",
-									    &moviecliploader_default);
-							mov_obj->set_member("onLoadComplete",
-									    &moviecliploader_default);
-							mov_obj->set_member("onLoadError",
-									    &moviecliploader_default);
-							mov_obj->set_member("onLoadProgress",
-									    &moviecliploader_default);
-							mov_obj->set_member("onLoadInit",
-									    &moviecliploader_default);
-#endif
-#else
-							// New sprite based implementation
-							//env->get_target()->clone_display_object(
-							//	"_root",
-							//			"MovieClipLoader",
-							//			env->top(0).to_tu_string());
-#endif
-							// Load the actual movie.
-							//gameswf::movie_definition*	md = gameswf::create_movie("/home/rob/projects/request/alpha/tu-testbed/tests/test2.swf");
-							gameswf::movie_definition*	md = current_movie->get_movie_definition();
-							if (md == NULL)	{
-								fprintf(stderr, "error: can't create a movie from\n");
-								exit(1);
-							}
-							gameswf::movie_interface*	m = md->create_instance();
-							if (m == NULL) {
-								fprintf(stderr, "error: can't create movie instance\n");
-								exit(1);
-							}
-							//current_movie->add_display_object();
-							//env->get_target()->clone_display_object("_root",
-							//				"MovieClipLoader", 1);
-							//m->set_visible(true);
-							//m->display();
-							
-							new_obj = mov_obj;
-
-						} else
-						if (classname.to_tu_string()=="String")
-						{
-							// log_msg("New String Object!!!\n");
-							as_value handler = (as_c_function_ptr)&string_new;
-							current_movie->set_member("String", as_value(string_new));
-							
-							as_object*	str_obj = new as_object;
-							//log_msg("\tCreated New String object at 0x%X\n", (unsigned int)str_obj);
-
-							// str_obj->set_member("lastIndexOf", &(str_obj->str.test));
-							str_obj->set_member("lastIndexOf", &string_lastIndexOf);
-							new_obj = str_obj;
-						} else
-#endif // 0
-
-// @@ KILL
-#if 0
-						// @@ tulrich: this is garbage -- these need to be
-						// registered as C function constructors.
-
-						if (classname.to_tu_string() == "Sound")
-						{
-						}
-						else if (classname.to_tu_string() == "Object")
-						{
-							new_obj.set(new as_object);
-						}
-						else if (classname.to_tu_string() == "Array")
-						{
-							new_obj.set(new as_array_object);
-						}
-						else
-#endif // 0
-						{
-							log_error("can't create object with unknown class '%s'\n",
-								  classname.to_tu_string().c_str());
-						}
+						log_error("can't create object with unknown class '%s'\n",
+							  classname.to_tu_string().c_str());
 					}
 
 					env->drop(nargs);

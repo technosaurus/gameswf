@@ -7,23 +7,23 @@ namespace gameswf
 
 MovieClipLoader::MovieClipLoader()
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
 MovieClipLoader::~MovieClipLoader()
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
 void
 MovieClipLoader::load(const tu_string& filespec)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
@@ -31,8 +31,8 @@ MovieClipLoader::load(const tu_string& filespec)
 as_object *
 MovieClipLoader::getProgress(as_object *ao)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
   return NULL;
 }
@@ -41,8 +41,8 @@ MovieClipLoader::getProgress(as_object *ao)
 bool
 MovieClipLoader::loadClip(const tu_string& str, void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
   return false;
 }
@@ -50,8 +50,8 @@ MovieClipLoader::loadClip(const tu_string& str, void *)
 void
 MovieClipLoader::unloadClip(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
@@ -59,8 +59,8 @@ MovieClipLoader::unloadClip(void *)
 void
 MovieClipLoader::addListener(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
@@ -68,8 +68,8 @@ MovieClipLoader::addListener(void *)
 void
 MovieClipLoader::removeListener(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
@@ -79,49 +79,49 @@ MovieClipLoader::removeListener(void *)
 void
 MovieClipLoader::onLoadStart(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
 void
 MovieClipLoader::onLoadProgress(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
 void
 MovieClipLoader::onLoadInit(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
 void
 MovieClipLoader::onLoadComplete(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
 void
 MovieClipLoader::onLoadError(void *)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: \n", __FUNCTION__);
 #endif
 }
 
 void
 moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
+#ifdef __FUNCTION__
   // const tu_string filespec = env->bottom(first_arg).to_string();
-  log_msg("%s: FIXME: nargs = %d\n", __PRETTY_FUNCTION__, nargs);
+  log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, nargs);
 #endif  
 }
 
@@ -129,39 +129,70 @@ void
 moviecliploader_unloadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
   const tu_string filespec = env->bottom(first_arg).to_string();
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: FIXME: Load Movie Clip: %s\n", __PRETTY_FUNCTION__, filespec.c_str());
+#ifdef __FUNCTION__
+  log_msg("%s: FIXME: Load Movie Clip: %s\n", __FUNCTION__, filespec.c_str());
 #endif  
 }
 
 void
 moviecliploader_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
-    log_msg("%s: args=%d\n", __PRETTY_FUNCTION__, nargs);
-#endif    
-    const tu_string filespec = env->bottom(first_arg).to_string();
-    
-    // Load the actual movie.
-    gameswf::movie_definition*	md = gameswf::create_movie(filespec);
-    if (md == NULL)
-      {
-        fprintf(stderr, "error: can't create a movie from '%s'\n", filespec.c_str());
-        exit(1);
-      }
-    gameswf::movie_interface*	m = md->create_instance();
-    if (m == NULL)
-      {
-        fprintf(stderr, "error: can't create movie instance\n");
-        exit(1);
-      }
+
+  log_msg("%s: args=%d\n", __FUNCTION__, nargs);
+  
+  const tu_string filespec = env->bottom(first_arg).to_string();
+  
+  as_object*	mov_obj = new moviecliploader_as_object;
+  //log_msg("\tCreated New MovieClipLoader object at 0x%X\n", (unsigned int)mov_obj);
+  
+  mov_obj->set_member("loadClip",
+                      &moviecliploader_loadclip);
+  mov_obj->set_member("unloadClip",
+                      &moviecliploader_unloadclip);
+  mov_obj->set_member("getProgress",
+                      &moviecliploader_getprogress);
+
+#if 0
+  // Load the default event handlers. These should really never
+  // be called directly, as to be useful they are redefined
+  // within the SWF script. These get called if there is a problem
+  // Setup the event handlers
+  mov_obj->set_event_handler(event_id::LOAD_INIT,
+                             (as_c_function_ptr)&event_test);
+  mov_obj->set_event_handler(event_id::LOAD_START,
+                             (as_c_function_ptr)&event_test);
+  mov_obj->set_event_handler(event_id::LOAD_PROGRESS,
+                             (as_c_function_ptr)&event_test);
+  mov_obj->set_event_handler(event_id::LOAD_ERROR,
+                             (as_c_function_ptr)&event_test);
+
+  // Load the actual movie.
+  //gameswf::movie_definition*	md = gameswf::create_movie("/home/rob/projects/request/alpha/tu-testbed/tests/test2.swf");
+  gameswf::movie_definition*	md = current_movie->get_movie_definition();
+  if (md == NULL)	{
+    fprintf(stderr, "error: can't create a movie from\n");
+    exit(1);
+  }
+  gameswf::movie_interface*	m = md->create_instance();
+  if (m == NULL) {
+    fprintf(stderr, "error: can't create movie instance\n");
+    exit(1);
+  }
+  //current_movie->add_display_object();
+  //env->get_target()->clone_display_object("_root",
+  //				"MovieClipLoader", 1);
+  //m->set_visible(true);
+  //m->display();
+#endif
+  
+  result->set(mov_obj);  
 }
 
 void
 moviecliploader_onload_init(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
 #endif
 }
 
@@ -170,8 +201,8 @@ moviecliploader_onload_init(gameswf::as_value* result, gameswf::as_object_interf
 void
 moviecliploader_onload_start(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
 #endif
 }
 
@@ -180,13 +211,13 @@ moviecliploader_onload_start(gameswf::as_value* result, gameswf::as_object_inter
 void
 moviecliploader_getprogress(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
 #endif
   as_value	method;
 
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s:\n", __FUNCTION__);
 #endif
     
   moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
@@ -201,8 +232,8 @@ moviecliploader_getprogress(gameswf::as_value* result, gameswf::as_object_interf
 void
 moviecliploader_onload_complete(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
 #endif
 }
 
@@ -210,8 +241,8 @@ moviecliploader_onload_complete(gameswf::as_value* result, gameswf::as_object_in
 void
 moviecliploader_onload_error(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
 #endif
 }
 
@@ -219,8 +250,8 @@ moviecliploader_onload_error(gameswf::as_value* result, gameswf::as_object_inter
 void
 moviecliploader_default(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __PRETTY_FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
 #endif
 }
 

@@ -14,7 +14,7 @@
 #include "gameswf_font.h"
 #include "gameswf_fontlib.h"
 #include "gameswf_render.h"
-
+#include "gameswf_textformat.h"
 
 namespace gameswf
 {
@@ -373,17 +373,17 @@ namespace gameswf
 	// be changed at runtime (by script or host).
 	{
 		movie_definition_sub*	m_root_def;
-		rect	m_rect;
-		tu_string	m_default_name;
-
-		bool	m_word_wrap;
-		bool	m_multiline;
-		bool	m_password;	// show asterisks instead of actual characters
-		bool	m_readonly;
-		bool	m_auto_size;	// resize our bound to fit the text
-		bool	m_no_select;
-		bool	m_border;	// forces white background and black border -- silly, but sometimes used
-		bool	m_html;
+		rect			m_rect;
+		tu_string		m_default_name;
+		text_format		m_format;
+		bool			m_word_wrap;
+		bool			m_multiline;
+		bool			m_password;	// show asterisks instead of actual characters
+		bool			m_readonly;
+		bool			m_auto_size;	// resize our bound to fit the text
+		bool			m_no_select;
+		bool			m_border;	// forces white background and black border -- silly, but sometimes used
+		bool			m_html;
 
 		// Allowed HTML (from Alexi's SWF Reference):
 		//
@@ -462,6 +462,11 @@ namespace gameswf
 			m_color.set(0, 0, 0, 255);
 		}
 
+		// Set the format of the text
+		void	set_format(text_format &format)
+		{
+			m_format = format;
+		}
 		
 		~edit_text_character_def()
 		{
@@ -818,7 +823,6 @@ namespace gameswf
 				}
 			}
 		}
-		
 
 		// Convert the characters in m_text into a series of
 		// text_glyph_records to be rendered.
@@ -1001,6 +1005,7 @@ namespace gameswf
 
 				x += ge.m_glyph_advance;
 
+				
 				if (x >= m_def->m_rect.width() - m_def->m_right_margin - WIDTH_FUDGE)
 				{
 					// Whoops, we just exceeded the box width.  Do word-wrap.

@@ -14,12 +14,6 @@
 
 #include "base/tu_timer.h"
 
-
-#ifndef __PRETTY_FUNCTION__
-#define __PRETTY_FUNCTION__ "__PRETTY_FUNCTION__"
-#endif
-
-
 namespace gameswf 
 {
   

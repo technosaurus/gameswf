@@ -33,7 +33,7 @@ namespace gameswf
   
   Timer::~Timer()
   {
-    log_msg("%s: \n", __PRETTY_FUNCTION__);
+    log_msg("%s: \n", __FUNCTION__);
   }
   
   int
@@ -120,7 +120,7 @@ namespace gameswf
   {
     int i;
     as_value	method;
-    log_msg("%s: args=%d\n", __PRETTY_FUNCTION__, nargs);
+    log_msg("%s: args=%d\n", __FUNCTION__, nargs);
     
     timer_as_object *ptr = new timer_as_object;
     
@@ -169,7 +169,7 @@ namespace gameswf
   void
   timer_expire(as_value* result, as_object_interface* this_ptr, as_environment* env)
   {
-    //log_msg("%s:\n", __PRETTY_FUNCTION__);
+    //log_msg("%s:\n", __FUNCTION__);
     as_value	*val;
 
     timer_as_object*	ptr = (timer_as_object*) (as_object*) this_ptr;
@@ -190,7 +190,7 @@ namespace gameswf
   void
   timer_clearinterval(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
   {
-    //log_msg("%s: nargs = %d\n", __PRETTY_FUNCTION__, nargs);
+    //log_msg("%s: nargs = %d\n", __FUNCTION__, nargs);
     as_value	*val;
 
     double id = env->bottom(first_arg).to_number();

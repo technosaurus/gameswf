@@ -1080,9 +1080,7 @@ namespace gameswf
 	
 		virtual void    do_something(void *timer)
 		{
-#ifdef __PRETTY_FUNCTION__
-			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
-#endif
+			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 		}
 		
 		// 0-based!!
@@ -3127,13 +3125,13 @@ namespace gameswf
 		// sprite instance of add_interval_handler()
 		virtual int    add_interval_timer(void *timer)
 		{
-			// log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			// log_msg("FIXME: %s:\n", __FUNCTION__);
 			return m_root->add_interval_timer(timer);
 		}
 
 		virtual void    clear_interval_timer(int x)
 		{
-			// log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			// log_msg("FIXME: %s:\n", __FUNCTION__);
 			m_root->clear_interval_timer(x);
 		}
 	
@@ -3147,7 +3145,7 @@ namespace gameswf
 			as_object      *obj, *this_ptr;
 			as_environment *as_env;
 
-			//printf("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			//printf("FIXME: %s:\n", __FUNCTION__);
 			Timer *ptr = (Timer *)timer;
 			//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
 
@@ -4466,8 +4464,8 @@ namespace gameswf
 		// on the XML socket connection.
 		virtual void	on_event_xmlsocket_onxml()
 		{
-#ifdef __PRETTY_FUNCTION__
-			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 #endif
 			on_event(event_id::SOCK_XML);
 		}
@@ -4475,8 +4473,8 @@ namespace gameswf
 		// Do the events that (appear to) happen on a specified interval.
 		virtual void	on_event_interval_timer()
 		{
-#ifdef __PRETTY_FUNCTION__
-			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 #endif
 			on_event(event_id::TIMER);
 		}
@@ -4484,8 +4482,8 @@ namespace gameswf
 		// Do the events that happen as a MovieClip (swf 7 only) loads.
 		virtual void	on_event_load_progress()
 		{
-#ifdef __PRETTY_FUNCTION__
-			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#ifdef __FUNCTION__
+			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 #endif
 			on_event(event_id::LOAD_PROGRESS);
 		}
