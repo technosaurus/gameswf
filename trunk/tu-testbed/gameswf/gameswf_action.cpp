@@ -17,6 +17,7 @@ namespace gameswf
 	// action stuff
 	//
 
+
 	void	action_buffer::read(stream* in)
 	{
 		// Read action bytes.
