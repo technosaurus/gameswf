@@ -3707,16 +3707,16 @@ namespace gameswf
 			}
 			else if (name == "_xscale")
 			{
-				matrix	m = get_world_matrix();
-				// @@ quick and dirty; test/fix this
-				val->set(m.m_[0][0] * 100);	// percent!
+				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
+				float xscale = m.get_x_scale();
+				val->set(xscale * 100);		// result in percent
 				return true;
 			}
 			else if (name == "_yscale")
 			{
-				matrix	m = get_world_matrix();
-				// @@ quick and dirty; test/fix this
-				val->set(m.m_[1][1] * 100);	// percent!
+				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
+				float yscale = m.get_y_scale();
+				val->set(yscale * 100);		// result in percent
 				return true;
 			}
 			else if (name == "_currentframe")
@@ -3774,10 +3774,16 @@ namespace gameswf
 			}
 			else if (name == "_rotation")
 			{
-				// Rotation angle in DEGREES.
-				matrix	m = get_world_matrix();
-				// @@ TODO some trig in here...
-				val->set(0.0);
+				// Verified against Macromedia player using samples/test_rotation.swf
+
+				matrix m = get_matrix();
+
+				float	angle = atan2f(m.m_[1][0], m.m_[0][0]);
+
+				// Result is CLOCKWISE DEGREES, [-180,180]
+				angle *= 180.0f / float(M_PI);
+
+				val->set(angle);
 				return true;
 			}
 			else if (name == "_target")
