@@ -554,7 +554,7 @@ namespace gameswf
 	//
 
 
-	struct array_as_object : public as_object
+	struct as_array_object : public as_object
 	{
 	};
 
@@ -1054,6 +1054,79 @@ namespace gameswf
 	}
 
 
+	void	as_global_Sound(
+		as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	// Constructor for ActionScript class Sound.
+	{
+		smart_ptr<as_object>	sound_obj(new sound_as_object);
+
+		// methods
+		sound_obj->set_member("attachSound", &sound_attach);
+		sound_obj->set_member("start", &sound_start);
+		sound_obj->set_member("stop", &sound_stop);
+
+		result->set(sound_obj.get_ptr());
+	}
+
+
+	void	as_global_Object(
+		as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	// Constructor for ActionScript class Object.
+	{
+		result->set(new as_object);
+	}
+
+	void	as_global_Array(
+		as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	// Constructor for ActionScript class Array.
+	{
+		smart_ptr<as_array_object>	ao = new as_array_object;
+
+// @@ TODO
+//		ao->set_member("length", &array_not_impl);
+//		ao->set_member("join", &array_not_impl);
+//		ao->set_member("concat", &array_not_impl);
+//		ao->set_member("slice", &array_not_impl);
+//		ao->set_member("push", &array_not_impl);
+//		ao->set_member("unshift", &array_not_impl);
+//		ao->set_member("pop", &array_not_impl);
+//		ao->set_member("shift", &array_not_impl);
+//		ao->set_member("splice", &array_not_impl);
+//		ao->set_member("sort", &array_not_impl);
+//		ao->set_member("sortOn", &array_not_impl);
+//		ao->set_member("reverse", &array_not_impl);
+//		ao->set_member("toString", &array_not_impl);
+
+		if (nargs == 0)
+		{
+			// Empty array.
+		}
+		else if (nargs == 1
+			 && env->bottom(first_arg_bottom_index).get_type() == as_value::NUMBER)
+		{
+			// Create an empty array with the given number of undefined elements.
+			//
+			// @@ TODO set length property; no need to
+			// actually create the elements now, since
+			// they're undefined.
+		}
+		else
+		{
+			// Use the arguments as initializers.
+			as_value	index_number;
+			for (int i = 0; i < nargs; i++)
+			{
+				index_number.set(i);
+				ao->set_member(index_number.to_string(), env->bottom(first_arg_bottom_index - i));
+			}
+
+			// @@ TODO set length property
+		}
+
+		result->set(ao.get_ptr());
+	}
+
+
 	void	action_init()
 	// Create/hook built-ins.
 	{
@@ -1068,9 +1141,10 @@ namespace gameswf
 			// in as an app-global mutable object :(
 			assert(s_global == NULL);
 			s_global = new as_object;
-
-			smart_ptr<as_object>	global(new as_object);
 			s_global->set_member("trace", as_value(as_global_trace));
+			s_global->set_member("Object", as_value(as_global_Object));
+			s_global->set_member("Sound", as_value(as_global_Sound));
+			s_global->set_member("Array", as_value(as_global_Array));
 
 			math_init();
 			key_init();
@@ -1936,7 +2010,7 @@ namespace gameswf
 					as_value new_obj;
 					if (constructor.get_type() == as_value::C_FUNCTION)
 					{
-						// C function creates the new object and sets members.
+						// C function is responsible for creating the new object and setting members.
 						(constructor.to_c_function())(&new_obj, NULL, env, nargs, env->get_top_index());
 					}
 					else if (as_as_function* ctor_as_func = constructor.to_as_function())
@@ -1966,30 +2040,26 @@ namespace gameswf
 					}
 					else
 					{
+// @@ KILL
+#if 0
 						// @@ tulrich: this is garbage -- these need to be
 						// registered as C function constructors.
 
 						if (classname.to_tu_string() == "Sound")
 						{
-							as_object*	sound_obj = new sound_as_object;
-
-							// methods
-							sound_obj->set_member("attachSound", &sound_attach);
-							sound_obj->set_member("start", &sound_start);
-							sound_obj->set_member("stop", &sound_stop);
-							new_obj = sound_obj;
 						}
 						else if (classname.to_tu_string() == "Object")
 						{
-							new_obj.set(new as_object);//@@ KILL = as_value(env->get_target()->get_root_movie());
+							new_obj.set(new as_object);
 						}
 						else if (classname.to_tu_string() == "Array")
 						{
-							new_obj.set(new array_as_object);
+							new_obj.set(new as_array_object);
 						}
 						else
+#endif // 0
 						{
-							log_error("can't create object with unknown class  '%s'\n",
+							log_error("can't create object with unknown class '%s'\n",
 								  classname.to_tu_string().c_str());
 						}
 					}
@@ -2008,7 +2078,39 @@ namespace gameswf
 				}
 				case 0x42:	// init array
 				{
-					array_as_object*	ao = new array_as_object;
+					int	array_size = (int) env->pop().to_number();
+
+					log_msg("xxx init array: size = %d, top of stack = %d\n",
+						array_size, env->get_top_index());//xxxxx
+
+					// Call the array constructor, to create an empty array.
+					as_value	result;
+					as_global_Array(&result, NULL, env, 0, env->get_top_index());
+
+					as_object_interface*	ao = result.to_object();
+					assert(ao);
+
+					// @@ TODO Set array size.
+					// ao->set_length(whatever); or something
+
+					// Fill the elements with the initial values from the stack.
+					as_value	index_number;
+					for (int i = 0; i < array_size; i++)
+					{
+						// @@ TODO a set_member that takes an int or as_value?
+						index_number.set(i);
+						ao->set_member(index_number.to_string(), env->pop());
+					}
+
+					env->push(result);
+
+					log_msg("xxx init array end: top of stack = %d, trace(top(0)) =",
+						env->get_top_index());//xxxxxxx
+					as_global_trace(NULL, NULL, env, 1, env->get_top_index());	//xxxx
+
+
+#if 0
+					as_array_object*	ao = new array_as_object;
 //					ao->set_member("length", &array_not_impl);
 //					ao->set_member("join", &array_not_impl);
 //					ao->set_member("concat", &array_not_impl);
@@ -2033,6 +2135,8 @@ namespace gameswf
 					}
 					as_value new_array = ao;
 					env->push(new_array);
+#endif // 0
+
 					break;
 				}
 				case 0x43:	// declare object
