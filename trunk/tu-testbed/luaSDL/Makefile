@@ -7,7 +7,7 @@ include config.mak
 
 LUA := ../../lua-4.0.1-loadmodule
 LUA_INCLUDE := $(LUA)/include
-LUA_LIBS := $(LUA)/lib/$(LIB_PRE)lua.$(LIB_EXT)
+LUA_LIBS := -L$(LUA)/lib -llua-4.0
 
 TOLUA := ../../tolua
 TOLUA_INCLUDE := $(TOLUA)/include
