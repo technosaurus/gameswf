@@ -213,10 +213,8 @@ namespace gameswf
 		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
 
 		// Movie interfaces.  By default do nothing.  sprite will override these.
-//		virtual int	get_width() { return 0; }
-//		virtual int	get_height() { return 0; }
 		virtual int	get_current_frame() const { assert(0); return 0; }
-//		virtual int	get_frame_count() const { assert(0); return 0; }
+		virtual bool	has_looped() const { assert(0); return false; }
 		virtual void	restart() { /*assert(0);*/ }
 		virtual void	advance(float delta_time) { assert(0); }	// should only be called on movie_impl's.
 		virtual void	goto_frame(int target_frame) {}
