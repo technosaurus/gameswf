@@ -104,13 +104,12 @@ inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm 
 
 
 template<class T>
-void	swap(T& a, T& b)
-// Convenient swap function.  Normally I don't approve of non-const
-// references, but I think this is a special case.
+void	swap(T* a, T* b)
+// Convenient swap function.
 {
-	T	temp(a);
-	a = b;
-	b = temp;
+	T	temp(*a);
+	*a = *b;
+	*b = temp;
 }
 
 

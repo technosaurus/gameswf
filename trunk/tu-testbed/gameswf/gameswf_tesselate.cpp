@@ -63,10 +63,10 @@ namespace tesselate
 		void	flip()
 		// Exchange end points, and reverse fill sides.
 		{
-			swap(m_begin, m_end);
+			swap(&m_begin, &m_end);
 
 			// swap fill styles...
-			swap(m_left_style, m_right_style);
+			swap(&m_left_style, &m_right_style);
 		}
 
 		float	get_height() const

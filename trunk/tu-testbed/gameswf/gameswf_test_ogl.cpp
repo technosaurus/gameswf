@@ -104,13 +104,14 @@ struct SDL_sound_handler : gameswf::sound_handler
 	array<Mix_Chunk*>	m_samples;
 
 	#define	SAMPLE_RATE 22050
-	#define CHANNELS 8
+	#define MIX_CHANNELS 8
+	#define STEREO_MONO_CHANNELS 1
 
 	SDL_sound_handler()
 		:
 		m_opened(false)
 	{
-		if (Mix_OpenAudio(SAMPLE_RATE, AUDIO_S16SYS, 2, 2048) != 0)
+		if (Mix_OpenAudio(SAMPLE_RATE, AUDIO_S16SYS, STEREO_MONO_CHANNELS, 1024) != 0)
 		{
 			log_callback(true, "can't open SDL_mixer!");
 			log_callback(true, Mix_GetError());
@@ -119,7 +120,7 @@ struct SDL_sound_handler : gameswf::sound_handler
 		{
 			m_opened = true;
 
-			Mix_AllocateChannels(CHANNELS);
+			Mix_AllocateChannels(MIX_CHANNELS);
 		}
 	}
 
@@ -168,18 +169,8 @@ struct SDL_sound_handler : gameswf::sound_handler
 			convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 1, sample_rate, stereo);
 			break;
 
-		case FORMAT_ADPCM:
-		{
-			Sint16*	uncompressed_data = new Sint16[sample_count * (stereo ? 2 : 1)];
-			gameswf::adpcm_expand(uncompressed_data, data, sample_count, stereo);
-			convert_raw_data(&adjusted_data, &adjusted_size, uncompressed_data, sample_count, 2, sample_rate, stereo);
-			delete [] uncompressed_data;
-
-			break;
-		}
-
-		case FORMAT_UNCOMPRESSED:	// 16 bits/sample, little-endian
-			// convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 2, sample_rate, stereo);
+		case FORMAT_NATIVE16:
+			convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 2, sample_rate, stereo);
 			break;
 
 		default:
@@ -190,33 +181,44 @@ struct SDL_sound_handler : gameswf::sound_handler
 		if (adjusted_data)
 		{
 			sample = Mix_QuickLoad_RAW((unsigned char*) adjusted_data, adjusted_size);
-			delete [] adjusted_data;
+			Mix_VolumeChunk(sample, 128);	// full volume by default
 		}
 
-		// @@ WHO OWNS adjusted_data??  I think we still own
-		// it... need to store it in m_samples and delete it on delete_sound().
-
 		m_samples.push_back(sample);
-		return m_samples.size();
+		return m_samples.size() - 1;
 	}
 
 
-	virtual void	play_sound(int sound_handle /* other params */)
+	virtual void	play_sound(int sound_handle, int loop_count /* other params */)
 	// Play the index'd sample.
 	{
 		if (sound_handle >= 0 && sound_handle < m_samples.size())
 		{
 			if (m_samples[sound_handle])
 			{
-				// Play this sample.
-				for (int i = 0; i < CHANNELS; i++)
-				{
-					if (Mix_Playing(i) == 0)
-					{
-						// Channel is available.  Play sample.
-						Mix_PlayChannel(i, m_samples[sound_handle], 0);
-					}
-				}
+				// Play this sample on the first available channel.
+				Mix_PlayChannel(-1, m_samples[sound_handle], loop_count);
+			}
+		}
+	}
+
+	
+	virtual void	stop_sound(int sound_handle)
+	{
+		if (sound_handle < 0 || sound_handle >= m_samples.size())
+		{
+			// Invalid handle.
+			return;
+		}
+
+		for (int i = 0; i < MIX_CHANNELS; i++)
+		{
+			Mix_Chunk*	playing_chunk = Mix_GetChunk(i);
+			if (Mix_Playing(i)
+			    && playing_chunk == m_samples[sound_handle])
+			{
+				// Stop this channel.
+				Mix_HaltChannel(i);
 			}
 		}
 	}
@@ -227,9 +229,11 @@ struct SDL_sound_handler : gameswf::sound_handler
 	{
 		if (sound_handle >= 0 && sound_handle < m_samples.size())
 		{
-			if (m_samples[sound_handle])
+			Mix_Chunk*	chunk = m_samples[sound_handle];
+			if (chunk)
 			{
-				Mix_FreeChunk(m_samples[sound_handle]);
+				delete [] (chunk->abuf);
+				Mix_FreeChunk(chunk);
 				m_samples[sound_handle] = 0;
 			}
 		}
@@ -248,7 +252,19 @@ struct SDL_sound_handler : gameswf::sound_handler
 	// input data to the SDL_mixer output format (SAMPLE_RATE,
 	// stereo, 16-bit native endianness)
 	{
-		if (stereo == false) { sample_rate >>= 1; }	// simple hack to handle dup'ing mono to stereo
+// 		// xxxxx debug pass-thru
+// 		{
+// 			int	output_sample_count = sample_count * (stereo ? 2 : 1);
+// 			Sint16*	out_data = new Sint16[output_sample_count];
+// 			*adjusted_data = out_data;
+// 			*adjusted_size = output_sample_count * 2;	// 2 bytes per sample
+// 			memcpy(out_data, data, *adjusted_size);
+// 			return;
+// 		}
+// 		// xxxxx
+
+//		if (stereo == false) { sample_rate >>= 1; }	// simple hack to handle dup'ing mono to stereo
+		if (stereo == true) { sample_rate <<= 1; }	// simple hack to lose half the samples to get mono from stereo
 
 		// Brain-dead sample-rate conversion: duplicate or
 		// skip input samples an integral number of times.
@@ -418,7 +434,7 @@ int	main(int argc, char *argv[])
 	}
 	
 	// Initialize the SDL subsystems we're using.
-	if (SDL_Init(SDL_INIT_VIDEO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM | SDL_INIT_AUDIO*/))
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM*/))
 	{
 		fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 		exit(1);

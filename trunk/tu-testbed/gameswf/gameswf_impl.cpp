@@ -151,6 +151,7 @@ namespace gameswf
 		string_hash< array<character*>* >	m_named_characters;
 		hash<int, font*>	m_fonts;
 		hash<int, bitmap_character*>	m_bitmap_characters;
+		hash<int, sound_sample*>	m_sound_samples;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		//array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 		display_list m_display_list; // active characters, ordered by depth.
@@ -209,6 +210,9 @@ namespace gameswf
 			{
 				delete m_jpeg_in;
 			}
+
+			// @@ for each character, delete it
+			// @@ for each sample in m_sound_sample, delete it
 		}
 
 		int	get_current_frame() const { return m_current_frame; }
@@ -337,6 +341,18 @@ namespace gameswf
 		void	add_bitmap_character(int character_id, bitmap_character* ch)
 		{
 			m_bitmap_characters.add(character_id, ch);
+		}
+
+		sound_sample*	get_sound_sample(int character_id)
+		{
+			sound_sample*	ch = 0;
+			m_sound_samples.get(character_id, &ch);
+			return ch;
+		}
+
+		virtual void	add_sound_sample(int character_id, sound_sample* sam)
+		{
+			m_sound_samples.add(character_id, sam);
 		}
 
 		void	add_execute_tag(execute_tag* e)
@@ -796,6 +812,7 @@ namespace gameswf
 			register_tag_loader(12, do_action_loader);
 			register_tag_loader(13, define_font_info_loader);
 			register_tag_loader(14, define_sound_loader);
+			register_tag_loader(15, start_sound_loader);
 			register_tag_loader(20, define_bits_lossless_2_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
