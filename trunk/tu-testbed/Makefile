@@ -25,6 +25,7 @@ basic_files = \
 engine_files = \
 		tu-testbed/engine/Makefile \
 		tu-testbed/engine/*.cpp	\
+		tu-testbed/engine/*.c	\
 		tu-testbed/engine/*.h	\
 		tu-testbed/engine/TODO
 
