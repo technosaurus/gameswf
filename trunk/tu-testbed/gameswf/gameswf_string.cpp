@@ -17,204 +17,174 @@ using namespace std;
 
 namespace gameswf
 {  
+	String::String(const char* str) : m_value(str)
+	{
+	}
 
-BaseString::BaseString()
-{
-  log_msg("%s: \n", __FUNCTION__);  
-}
+	String::String(const tu_string& str) : m_value(str)
+	{
+	}
 
-BaseString::BaseString(const char *str)
-{
-  log_msg("new string \"%s\"\n", str);
-  _name = str;
-}
+	String::~String()
+	{
+	}
 
-BaseString::~BaseString()
-{
-  _name = "";
-  _value = "";
-  //log_msg("%s: \n", __FUNCTION__);
-}
+	tu_string
+	String::charAt(short index)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-const tu_string& 
-BaseString::toString(void *)
-{
-  log_msg("%s: \n", __FUNCTION__);
+	short
+	String::charCodeAt(short index)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return -1;                    // FIXME: this is just to shut up G++ for now
+	}
 
-  return _value;
-}
+	tu_string
+	String::concat(tu_string str1, tu_string str2)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-String::String(const char *str) : BaseString(str)
-{
-  //  log_msg("%s: \n", __FUNCTION__);
-}
+	tu_string
+	String::fromCharCode(short code)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-String::~String()
-{
-  _name = "";
-  _value = "";
-  //log_msg("%s: \n", __FUNCTION__);
-}
+	short
+	String::indexOf(tu_string str, int short)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return -1;                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::charAt(short index)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	short
+	String::indexOf(tu_string str)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return -1;                    // FIXME: this is just to shut up G++ for now
+	}
 
-short
-String::charCodeAt(short index)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return -1;                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::lastIndexOf(tu_string, int index)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::concat(tu_string str1, tu_string str2)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::lastIndexOf(tu_string)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::fromCharCode(short code)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::slice(int start) 
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-short
-String::indexOf(tu_string str, int short)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return -1;                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::slice(int start, int end)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-short
-String::indexOf(tu_string str)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return -1;                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::split(tu_string str)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::lastIndexOf(tu_string, int index)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::split(tu_string, int limit)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::lastIndexOf(tu_string)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::substr(int start)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::slice(int start) 
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::substr(int start, int end)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::slice(int start, int end)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::substring(int start)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::split(tu_string str)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::substring(int start, int end)
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::split(tu_string, int limit)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string 
+	String::toLowerCase()
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::substr(int start)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	tu_string
+	String::toUpperCase()
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return "";                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::substr(int start, int end)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
+	int
+	String::length()
+	{
+		log_msg("%s: \n", __FUNCTION__);
+		return -1;                    // FIXME: this is just to shut up G++ for now
+	}
 
-tu_string
-String::substring(int start)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
-
-tu_string
-String::substring(int start, int end)
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
-
-tu_string 
-String::toLowerCase()
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
-
-tu_string
-String::toUpperCase()
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return "";                    // FIXME: this is just to shut up G++ for now
-}
-
-int
-String::length()
-{
-  log_msg("%s: \n", __FUNCTION__);
-  return -1;                    // FIXME: this is just to shut up G++ for now
-}
-
-void
-String::test(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
-{
-  log_msg("%s: args=%d\n", __FUNCTION__, nargs);
-}
+	void
+	String::test(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+	{
+		log_msg("%s: args=%d\n", __FUNCTION__, nargs);
+	}
 
 
 
-void
-string_lastIndexOf(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
-{
-    tu_string filespec = env->bottom(first_arg).to_string();
-    log_msg("%s: args=%d\n", __FUNCTION__, nargs);
-    //    xsockobj.connect(filespec, 8000);
-}
+	void
+	string_lastIndexOf(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+	{
+		tu_string filespec = env->bottom(first_arg).to_string();
+		log_msg("%s: args=%d\n", __FUNCTION__, nargs);
+		//    xsockobj.connect(filespec, 8000);
+	}
 
-void
-string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
-{
-  //  log_msg("%s: args=%d\n", __FUNCTION__, nargs);
-  tu_string filespec = env->bottom(first_arg).to_string();
-  string_as_object* str = new string_as_object(filespec.c_str());
-  //  double value = env->bottom(first_arg - 1).to_number();
-  //  log_msg("%s: New string name is:  %s = %g\n", __FUNCTION__, filespec.c_str(), value);
-  // log_msg("%s: New string name is:  %s\n", __FUNCTION__, filespec.c_str());
-  result->set(str);
-}
+	void
+	string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+	{
+		//  log_msg("%s: args=%d\n", __FUNCTION__, nargs);
+		const tu_string& initial_value = env->bottom(first_arg).to_string();
+		string_as_object* str = new string_as_object(initial_value);
+		result->set_as_object_interface(str);
+	}
 
 } // end of gameswf namespace

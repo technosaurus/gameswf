@@ -283,7 +283,7 @@ namespace gameswf
 			if (m_function2_flags & 0x01)
 			{
 				// preload 'this' into a register.
-				(*(our_env->local_register_ptr(current_reg))).set(our_env->m_target);
+				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(our_env->m_target);
 				current_reg++;
 			}
 
@@ -306,7 +306,7 @@ namespace gameswf
 				as_value	index_number;
 				for (int i = 0; i < nargs; i++)
 				{
-					index_number.set(i);
+					index_number.set_int(i);
 					arg_array->set_member(index_number.to_string(), our_env->bottom(first_arg - i));
 				}
 			}
@@ -314,7 +314,7 @@ namespace gameswf
 			if (m_function2_flags & 0x04)
 			{
 				// preload 'arguments' into a register.
-				(*(our_env->local_register_ptr(current_reg))).set(arg_array.get_ptr());
+				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(arg_array.get_ptr());
 				current_reg++;
 			}
 
@@ -349,7 +349,8 @@ namespace gameswf
 			if (m_function2_flags & 0x40)
 			{
 				// Put '_root' in a register.
-				(*(our_env->local_register_ptr(current_reg))).set(our_env->m_target->get_root_movie());
+				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(
+					our_env->m_target->get_root_movie());
 				current_reg++;
 			}
 
@@ -365,7 +366,7 @@ namespace gameswf
 			if (m_function2_flags & 0x100)
 			{
 				// Put '_global' in a register.
-				(*(our_env->local_register_ptr(current_reg))).set(s_global.get_ptr());
+				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(s_global.get_ptr());
 				current_reg++;
 			}
 		}
@@ -715,7 +716,7 @@ namespace gameswf
 				as_environment* env, int nargs, int first_arg_bottom_index)	\
 	{											\
 		double	arg = env->bottom(first_arg_bottom_index).to_number();			\
-		result->set(funcname(arg));							\
+		result->set_double(funcname(arg));						\
 	}
 
 	MATH_WRAP_FUNC1(fabs);
@@ -737,7 +738,7 @@ namespace gameswf
 	{															\
 		double	arg0 = env->bottom(first_arg_bottom_index).to_number();							\
 		double	arg1 = env->bottom(first_arg_bottom_index - 1).to_number();						\
-		result->set(expr);												\
+		result->set_double(expr);											\
 	}
 	MATH_WRAP_FUNC2_EXP(atan2, (atan2(arg0, arg1)));
 	MATH_WRAP_FUNC2_EXP(max, (arg0 > arg1 ? arg0 : arg1));
@@ -748,13 +749,13 @@ namespace gameswf
 	void	math_random(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
 	{
 		// Random number between 0 and 1.
-		result->set(tu_random::next_random() / double(Uint32(0x0FFFFFFFF)));
+		result->set_double(tu_random::next_random() / double(Uint32(0x0FFFFFFFF)));
 	}
 	void	math_round(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
 	{
 		// round argument to nearest int.
 		double	arg0 = env->bottom(first_arg_bottom_index).to_number();
-		result->set(floor(arg0 + 0.5));
+		result->set_double(floor(arg0 + 0.5));
 	}
 	
 	void math_init()
@@ -980,7 +981,7 @@ namespace gameswf
 			buf[0] = (char) code;
 			buf[1] = 0;
 
-			result->set(buf);
+			result->set_string(buf);
 		}
 	}
 
@@ -990,7 +991,7 @@ namespace gameswf
 		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
 		assert(ko);
 
-		result->set(ko->get_last_key_pressed());
+		result->set_int(ko->get_last_key_pressed());
 	}
 
 	void	key_is_down(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
@@ -1007,7 +1008,7 @@ namespace gameswf
 		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
 		assert(ko);
 
-		result->set(ko->is_key_down(code));
+		result->set_bool(ko->is_key_down(code));
 	}
 
 	void	key_is_toggled(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
@@ -1015,7 +1016,7 @@ namespace gameswf
 	// the associated state is on.
 	{
 		// @@ TODO
-		result->set(false);
+		result->set_bool(false);
 	}
 
 	void	key_remove_listener(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
@@ -1131,7 +1132,7 @@ namespace gameswf
 		sound_obj->set_member("start", &sound_start);
 		sound_obj->set_member("stop", &sound_stop);
 
-		result->set(sound_obj.get_ptr());
+		result->set_as_object_interface(sound_obj.get_ptr());
 	}
 
 
@@ -1139,7 +1140,7 @@ namespace gameswf
 		as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
 	// Constructor for ActionScript class Object.
 	{
-		result->set(new as_object);
+		result->set_as_object_interface(new as_object);
 	}
 
 	void	as_global_Array(
@@ -1167,14 +1168,14 @@ namespace gameswf
 			as_value	index_number;
 			for (int i = 0; i < nargs; i++)
 			{
-				index_number.set(i);
+				index_number.set_int(i);
 				ao->set_member(index_number.to_string(), env->bottom(first_arg_bottom_index - i));
 			}
 
 			// @@ TODO set length property
 		}
 
-		result->set(ao.get_ptr());
+		result->set_as_object_interface(ao.get_ptr());
 	}
 
 
@@ -1687,42 +1688,42 @@ namespace gameswf
 				}
 				case 0x0E:	// equal
 				{
-					env->top(1).set(env->top(1) == env->top(0));
+					env->top(1).set_bool(env->top(1) == env->top(0));
 					env->drop(1);
 					break;
 				}
 				case 0x0F:	// less than
 				{
-					env->top(1).set(env->top(1) < env->top(0));
+					env->top(1).set_bool(env->top(1) < env->top(0));
 					env->drop(1);
 					break;
 				}
 				case 0x10:	// logical and
 				{
-					env->top(1).set(env->top(1).to_bool() && env->top(0).to_bool());
+					env->top(1).set_bool(env->top(1).to_bool() && env->top(0).to_bool());
 					env->drop(1);
 					break;
 				}
 				case 0x11:	// logical or
 				{
-					env->top(1).set(env->top(1).to_bool() && env->top(0).to_bool());
+					env->top(1).set_bool(env->top(1).to_bool() && env->top(0).to_bool());
 					env->drop(1);
 					break;
 				}
 				case 0x12:	// logical not
 				{
-					env->top(0).set(! env->top(0).to_bool());
+					env->top(0).set_bool(! env->top(0).to_bool());
 					break;
 				}
 				case 0x13:	// string equal
 				{
-					env->top(1).set(env->top(1).to_tu_string() == env->top(0).to_tu_string());
+					env->top(1).set_bool(env->top(1).to_tu_string() == env->top(0).to_tu_string());
 					env->drop(1);
 					break;
 				}
 				case 0x14:	// string length
 				{
-					env->top(0).set(env->top(0).to_tu_string().length());
+					env->top(0).set_int(env->top(0).to_tu_string().utf8_length());
 					break;
 				}
 				case 0x15:	// substring
@@ -1753,7 +1754,7 @@ namespace gameswf
 				}
 				case 0x18:	// int
 				{
-					env->top(0).set(int(floor(env->top(0).to_number())));
+					env->top(0).set_int(int(floor(env->top(0).to_number())));
 					break;
 				}
 				case 0x1C:	// get variable
@@ -1896,7 +1897,7 @@ namespace gameswf
 
 				case 0x29:	// string less than
 				{
-					env->top(1).set(env->top(1).to_tu_string() < env->top(0).to_tu_string());
+					env->top(1).set_bool(env->top(1).to_tu_string() < env->top(0).to_tu_string());
 					break;
 				}
 
@@ -1933,7 +1934,7 @@ namespace gameswf
 				{
 					int	max = int(env->top(0).to_number());
 					if (max < 1) max = 1;
-					env->top(0).set(double(tu_random::next_random() % max));
+					env->top(0).set_int(tu_random::next_random() % max);
 					break;
 				}
 				case 0x31:	// mb length
@@ -1945,7 +1946,7 @@ namespace gameswf
 				case 0x32:	// ord
 				{
 					// ASCII code of first character
-					env->top(0).set(env->top(0).to_string()[0]);
+					env->top(0).set_int(env->top(0).to_string()[0]);
 					break;
 				}
 				case 0x33:	// chr
@@ -1953,7 +1954,7 @@ namespace gameswf
 					char	buf[2];
 					buf[0] = int(env->top(0).to_number());
 					buf[1] = 0;
-					env->top(0).set(buf);
+					env->top(0).set_string(buf);
 					break;
 				}
 
@@ -2054,7 +2055,7 @@ namespace gameswf
 					double	x = env->pop().to_number();
 					if (y != 0)
 					{
-//						env->top(1).set(fmod(env->top(1).to_bool() && env->top(0).to_bool());
+//						env->top(1).set_double(fmod(env->top(1).to_bool() && env->top(0).to_bool());
 //						env->drop(1);
 						result = fmod(x, y);
 					}
@@ -2094,7 +2095,7 @@ namespace gameswf
 						// Set up the constructor member.
 						new_obj_ptr->set_member("constructor", constructor);
 						
-						new_obj.set(new_obj_ptr.get_ptr());
+						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
 
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
@@ -2143,7 +2144,7 @@ namespace gameswf
 					for (int i = 0; i < array_size; i++)
 					{
 						// @@ TODO a set_member that takes an int or as_value?
-						index_number.set(i);
+						index_number.set_int(i);
 						ao->set_member(index_number.to_string(), env->pop());
 					}
 
@@ -2226,11 +2227,11 @@ namespace gameswf
 				{
 					if (env->top(1).get_type() == as_value::STRING)
 					{
-						env->top(1).set(env->top(1).to_tu_string() < env->top(0).to_tu_string());
+						env->top(1).set_bool(env->top(1).to_tu_string() < env->top(0).to_tu_string());
 					}
 					else
 					{
-						env->top(1).set(env->top(1) < env->top(0));
+						env->top(1).set_bool(env->top(1) < env->top(0));
 					}
 					env->drop(1);
 					break;
@@ -2238,7 +2239,7 @@ namespace gameswf
 				case 0x49:	// equal (typed)
 				{
 					// @@ identical to untyped equal, as far as I can tell...
-					env->top(1).set(env->top(1) == env->top(0));
+					env->top(1).set_bool(env->top(1) == env->top(0));
 					env->drop(1);
 					break;
 				}
@@ -2273,7 +2274,7 @@ namespace gameswf
                                             && env->top(0).to_tu_stringi() == "length")
 					{
 						int     len = env->top(1).to_tu_string().utf8_length();
-                                                env->top(1).set(len);
+                                                env->top(1).set_int(len);
 					}
                                         else
 					{
@@ -2376,7 +2377,7 @@ namespace gameswf
 						    && method_name == "toString")
 						{
 							// Numbers have a .toString() method.
-							result.set(env->top(1).to_tu_string());
+							result.set_tu_string(env->top(1).to_tu_string());
 						}
 						else
 						{
@@ -2428,28 +2429,28 @@ namespace gameswf
 					if (env->top(1).get_type() != env->top(0).get_type())
 					{
 						// Types don't match.
-						env->top(1).set(false);
+						env->top(1).set_bool(false);
 						env->drop(1);
 					}
 					else
 					{
-						env->top(1).set(env->top(1) == env->top(0));
+						env->top(1).set_bool(env->top(1) == env->top(0));
 						env->drop(1);
 					}
 					break;
 				case 0x67:	// gt (typed)
 					if (env->top(1).get_type() == as_value::STRING)
 					{
-						env->top(1).set(env->top(1).to_tu_string() > env->top(0).to_tu_string());
+						env->top(1).set_bool(env->top(1).to_tu_string() > env->top(0).to_tu_string());
 					}
 					else
 					{
-						env->top(1).set(env->top(1).to_number() > env->top(0).to_number());
+						env->top(1).set_bool(env->top(1).to_number() > env->top(0).to_number());
 					}
 					env->drop(1);
 					break;
 				case 0x68:	// string gt
-					env->top(1).set(env->top(1).to_tu_string() > env->top(0).to_tu_string());
+					env->top(1).set_bool(env->top(1).to_tu_string() > env->top(0).to_tu_string());
 					env->drop(1);
 					break;
 
@@ -3267,7 +3268,7 @@ namespace gameswf
 	void	as_value::convert_to_number()
 	// Force type to number.
 	{
-		set(to_number());
+		set_double(to_number());
 	}
 
 
@@ -3279,7 +3280,7 @@ namespace gameswf
 	}
 
 
-	void	as_value::set(as_object_interface* obj)
+	void	as_value::set_as_object_interface(as_object_interface* obj)
 	{
 		if (m_type != OBJECT || m_object_value != obj)
 		{
@@ -3293,7 +3294,7 @@ namespace gameswf
 		}
 	}
 
-	void	as_value::set(as_as_function* func)
+	void	as_value::set_as_as_function(as_as_function* func)
 	{
 		if (m_type != AS_FUNCTION || m_as_function_value != func)
 		{
@@ -3421,7 +3422,7 @@ namespace gameswf
 		// Looking for "this"?
 		if (varname == "this")
 		{
-			val.set(m_target);
+			val.set_as_object_interface(m_target);
 			return val;
 		}
 
