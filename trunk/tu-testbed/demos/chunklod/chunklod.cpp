@@ -322,7 +322,7 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 {
 	Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
 
-	if (child_count && desired_lod > (lod | 0x0FF))
+	if (child_count > 0 && desired_lod > (lod | 0x0FF))
 	{
 		do_split(base, viewpoint);
 
@@ -332,6 +332,10 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 		}
 	} else {
 		// We're good... this chunk can represent its region within the max error tolerance.
+		if ((lod & 0xFF00) == 0) {
+			// Root chunk -- make sure we have valid morph value.
+			lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
+		}
 	}
 }
 
@@ -365,36 +369,39 @@ void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 	}
 }
 
-// Unfortunately, it seems that using Sint16 for this is a performance
-// fiasco on NVidia's driver.  Unfortunate because, if the hardware
-// can digest GL_SHORT directly, it would take half the
-// vertex-streaming bandwidth.
-typedef float vcoord_t;	// Sint16
-const int VCOORD_GL_TYPE = GL_FLOAT;	// GL_SHORT
 
-
-
-static void	morph_vertices(vcoord_t* verts, const vertex_info& morph_verts, float f)
+static void	morph_vertices(float* verts, const vertex_info& morph_verts, const vec3& box_center, const vec3& box_extent, float f)
 // Adjust the positions of our morph vertices according to f, the
 // given morph parameter.  verts is the output buffer for processed
 // verts.
 //
-// The output, like the input, is in chunk-local 16-bit signed
-// coordinates.  The caller applies translation/scaling in the OpenGL
-// modelview matrix in order to put the verts in the proper output
-// location.  The quantizing to 16 bits is a form of compression, and
-// the modelview matrix decompresses the verts.
+// The input is in chunk-local 16-bit signed coordinates.  The given
+// box_center/box_extent parameters are used to produce the correct
+// world-space coordinates.  The quantizing to 16 bits is a way to
+// compress the input data.
 //
-// @@ The morphing functionality could be shifted into a vertex
-// program for the GPU.
+// @@ This morphing/decompression functionality should be shifted into
+// a vertex program for the GPU where possible.
 {
+	// Do quantization decompression, output floats.
+
+	float	sx = box_extent.get_x() / ((1 << 15) - 1);
+	float	sz = box_extent.get_z() / ((1 << 15) - 1);
+
+	int	offsetx = box_center.get_x();
+	int	offsetz = box_center.get_z();
+
 	float	one_minus_f = 1.0 - f;
+
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
 		const vertex_info::vertex&	v = morph_verts.vertices[i];
-		verts[i*3 + 0] = v.x[0];
-		verts[i*3 + 1] = frnd(v.x[1] + v.y_delta * one_minus_f);	// lerp the y value of the vert.
-		verts[i*3 + 2] = v.x[2];
+		verts[i*3 + 0] = offsetx + v.x[0] * sx;
+		verts[i*3 + 1] = v.x[1] + v.y_delta * one_minus_f;	// lerp the y value of the vert.
+		verts[i*3 + 2] = offsetz + v.x[2] * sz;
 	}
+#if 0
+	// With a vshader, this routine would be replaced by an initial agp_alloc() & memcpy()/memmap().
+#endif // 0
 }
 
 
@@ -424,58 +431,49 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 		if (opt.show_box) {
 			// draw bounding box.
 			glDisable(GL_TEXTURE_2D);
-			glColor3f(0, 1, 0);
+			float	f = (lod & 255) / 255.0;	//xxx
+			glColor3f(f, 1 - f, 0);
 			draw_box(box_center - box_extent, box_center + box_extent);
 		}
 
 		if (opt.show_geometry || opt.show_edges) {
-			// Center and scale the object coordinates
-			// using the chunk bounding box.  This lets us
-			// pass chunk-local quantized coordinates
-			// directly to OpenGL.
-
 			glEnable(GL_TEXTURE_2D);
-			glPushMatrix();
-			glTranslatef(box_center.x(), 0 /*box_center.y()*/, box_center.z());
-			glScalef(box_extent.x() / 32767.0,
-				 c.m_vertical_scale,
-				 box_extent.z() / 32767.0);
 
 			float	xsize = c.m_root->box_extent.get_x() * 2;
 			float	zsize = c.m_root->box_extent.get_x() * 2;
 
+#if 0
 			// Set up texgen for this tile.
 			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 			float	p[4] = { 0, 0, 0, 0 };
-			p[0] = (box_extent.get_x() / 32767.0) / xsize;
-			p[3] = box_center.get_x() / xsize;
+			p[0] = 1.0f / xsize;
 			glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
 			p[0] = 0;
 			
 			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			p[2] = (box_extent.get_z() / 32767.0) / zsize;
-			p[3] = box_center.get_z() / zsize;
+			p[2] = 1.0f / zsize;
 			glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
-
+			
 			glEnable(GL_TEXTURE_GEN_S);
 			glEnable(GL_TEXTURE_GEN_T);
+#endif // 0
 		}
 
 		// Grab some space to put processed verts.
 		assert(s_stream);
-		vcoord_t*	output_verts = (vcoord_t*) s_stream->reserve_memory(sizeof(vcoord_t) * 3 * verts.vertex_count);
+		float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * verts.vertex_count);
 
 		// Process our vertices into the output buffer.
 		float	f = morph_curve((lod & 255) / 255.0f);
 		if (opt.morph == false) {
 			f = 0;
 		}
-		morph_vertices(output_verts, verts, f);
+		morph_vertices(output_verts, verts, box_center, box_extent, f);
 
 		if (opt.show_geometry) {
 			// draw this chunk.
 			glColor3f(1, 1, 1);
-			glVertexPointer(3, VCOORD_GL_TYPE, 0, output_verts);
+			glVertexPointer(3, GL_FLOAT, 0, output_verts);
 			glDrawElements(GL_TRIANGLE_STRIP, verts.index_count, GL_UNSIGNED_SHORT, verts.indices);
 			triangle_count += verts.triangle_count;
 		}
@@ -484,10 +482,6 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 			for (int i = 0; i < 4; i++) {
 				triangle_count += render_edge((direction) i, opt);
 			}
-		}
-
-		if (opt.show_geometry || opt.show_edges) {
-			glPopMatrix();
 		}
 	}
 
@@ -557,17 +551,17 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 				f0 = f1 = 0;
 			}
 			int	c0 = edge[dir].lo_vertex_count;
-			vcoord_t*	output_verts = (vcoord_t*) s_stream->reserve_memory(sizeof(vcoord_t) * 3 * c0 * 2);
+			float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * c0 * 2);
 			vertex_info	vi;
 			vi.vertex_count = c0;
 			vi.vertices = edge[dir].edge_verts;
-			morph_vertices(output_verts, vi, f0);
+			morph_vertices(output_verts, vi, box_center, box_extent, f0);
 			// Same verts, different morph value.
-			morph_vertices(output_verts + c0 * 3, vi, f1);
+			morph_vertices(output_verts + c0 * 3, vi, box_center, box_extent, f1);
 
 			// Draw the connecting ribbon.  Just a zig-zag strip between
 			// the two edges.
-			glVertexPointer(3, VCOORD_GL_TYPE, 0, output_verts);
+			glVertexPointer(3, GL_FLOAT, 0, output_verts);
 			glBegin(GL_TRIANGLE_STRIP);
 			for (int i = 0; i < c0; i++) {
 				glArrayElement(i);
@@ -605,24 +599,24 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 
 		const lod_edge&	e = edge[dir];
 
-		vcoord_t*	output_verts = (vcoord_t*) s_stream->reserve_memory(
-			sizeof(vcoord_t) * 3 * (e.lo_vertex_count + e.hi_vertex_count[0] + e.hi_vertex_count[1]));
+		float*	output_verts = (float*) s_stream->reserve_memory(
+			sizeof(float) * 3 * (e.lo_vertex_count + e.hi_vertex_count[0] + e.hi_vertex_count[1]));
 
 		vertex_info	vi;
 		vi.vertices = e.edge_verts;
 		vi.vertex_count = e.lo_vertex_count;
-		morph_vertices(output_verts, vi, f);
+		morph_vertices(output_verts, vi, box_center, box_extent, f);
 		vi.vertices = e.edge_verts + e.lo_vertex_count;
 		vi.vertex_count = e.hi_vertex_count[0];
-		morph_vertices(output_verts + 3 * e.lo_vertex_count, vi, f0);
+		morph_vertices(output_verts + 3 * e.lo_vertex_count, vi, box_center, box_extent, f0);
 		vi.vertices = e.edge_verts + e.lo_vertex_count + e.hi_vertex_count[0];
 		vi.vertex_count = e.hi_vertex_count[1];
-		morph_vertices(output_verts + 3 * (e.lo_vertex_count + e.hi_vertex_count[0]), vi, f1);
+		morph_vertices(output_verts + 3 * (e.lo_vertex_count + e.hi_vertex_count[0]), vi, box_center, box_extent, f1);
 
 		// Draw the connecting ribbon.
 
 		assert(e.ribbon_index_count);
-		glVertexPointer(3, VCOORD_GL_TYPE, 0, output_verts);
+		glVertexPointer(3, GL_FLOAT, 0, output_verts);
 		glDrawElements(GL_TRIANGLES, e.ribbon_index_count, GL_UNSIGNED_SHORT, e.ribbon_indices);
 		triangle_count += e.ribbon_index_count / 3;
 
@@ -810,7 +804,12 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 
 	int	triangle_count = 0;
 
-	triangle_count = m_root->render(*this, v, cull::result_info(), opt);
+	glPushMatrix();
+	glScalef(1.0, m_vertical_scale, 1.0);	// scale the vertical axis.  Input is 16-bit integers; transform to world coords.
+	{
+		triangle_count = m_root->render(*this, v, cull::result_info(), opt);
+	}
+	glPopMatrix();
 
 	return triangle_count;
 }
