@@ -1514,9 +1514,38 @@ namespace render
 		color = s_cxform_stack.back().transform(color);
 		color.ogl_color();
 
-		point	pmin, pmax;	// transformed box coords.
-		s_matrix_stack.back().transform(&pmin, point(coords.m_x_min, coords.m_y_min));
-		s_matrix_stack.back().transform(&pmax, point(coords.m_x_max, coords.m_y_max));
+	//	point	pmin, pmax;	// transformed box coords.
+	//	s_matrix_stack.back().transform(&pmin, point(coords.m_x_min, coords.m_y_min));
+	//	s_matrix_stack.back().transform(&pmax, point(coords.m_x_max, coords.m_y_max));
+
+	//*
+		point a, b, c, d;
+		s_matrix_stack.back().transform(&a, point(coords.m_x_min, coords.m_y_min));
+		s_matrix_stack.back().transform(&b, point(coords.m_x_max, coords.m_y_min));
+		s_matrix_stack.back().transform(&c, point(coords.m_x_min, coords.m_y_max));
+		d.m_x = b.m_x + c.m_x - a.m_x;
+		d.m_y = b.m_y + c.m_y - a.m_y;
+	/*/
+		
+		point center( 0.5*(coords.m_x_min+coords.m_x_max), 0.5*(coords.m_y_min+coords.m_y_max) );
+		point hor( 0.5*(coords.m_x_max-coords.m_x_min), 0 );
+		point ver( 0, 0.5*(coords.m_y_max-coords.m_y_min) );
+		
+		point C, h, v;
+		s_matrix_stack.back().transform(&C, center);
+		s_matrix_stack.back().transform_vector(&h, hor);
+		s_matrix_stack.back().transform_vector(&v, ver);
+
+		point a, b, c, d;
+		a.m_x = C.m_x - h.m_x - v.m_x;
+		a.m_y = C.m_y - h.m_y - v.m_y;
+		b.m_x = C.m_x + h.m_x - v.m_x;
+		b.m_y = C.m_y + h.m_y - v.m_y;
+		c.m_x = C.m_x - h.m_x + v.m_x;
+		c.m_y = C.m_y - h.m_y + v.m_y;
+		d.m_x = C.m_x + h.m_x + v.m_x;
+		d.m_y = C.m_y + h.m_y + v.m_y;
+	//*/
 
 		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
 		glEnable(GL_TEXTURE_2D);
@@ -1526,16 +1555,16 @@ namespace render
 		glBegin(GL_TRIANGLE_STRIP);
 
 		glTexCoord2f(uv_coords.m_x_min, uv_coords.m_y_min);
-		glVertex2f(pmin.m_x, pmin.m_y);
+		glVertex2f(a.m_x, a.m_y);
 
 		glTexCoord2f(uv_coords.m_x_max, uv_coords.m_y_min);
-		glVertex2f(pmax.m_x, pmin.m_y);
+		glVertex2f(b.m_x, b.m_y);
 
 		glTexCoord2f(uv_coords.m_x_min, uv_coords.m_y_max);
-		glVertex2f(pmin.m_x, pmax.m_y);
+		glVertex2f(c.m_x, c.m_y);
 
 		glTexCoord2f(uv_coords.m_x_max, uv_coords.m_y_max);
-		glVertex2f(pmax.m_x, pmax.m_y);
+		glVertex2f(d.m_x, d.m_y);
 
 		glEnd();
 	}

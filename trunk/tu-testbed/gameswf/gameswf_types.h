@@ -55,6 +55,7 @@ namespace gameswf
 		void	print(FILE* out) const;
 		void	ogl_multiply() const;
 		void	transform(point* result, const point& p) const;
+		void	transform_vector(point* result, const point& p) const;
 		void	transform_by_inverse(point* result, const point& p) const;
 		void	set_inverse(const matrix& m);
 		bool	does_flip() const;	// return true if we flip handedness
@@ -118,6 +119,8 @@ namespace gameswf
 		void	print(FILE* out);
 		bool	point_test(float x, float y);
 		void	expand_to_point(float x, float y);
+		float width() const { return m_x_max-m_x_min; }
+		float height() const { return m_y_max-m_y_min; }
 	};
 	
 

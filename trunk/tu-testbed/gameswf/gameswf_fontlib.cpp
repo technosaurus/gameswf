@@ -325,28 +325,54 @@ namespace fontlib
 				    offset_y / 1024.0f * GLYPH_FINAL_SIZE);
 	}
 
-
+	static int compare_glyphs( const void * a, const void * b ) {
+		return *(int *)b - *(int *)a;
+	}
+	
 	static void	generate_font_bitmaps(font* f)
 	// Build cached textured versions of the font's glyphs, and
 	// store them in the font.
 	{
 		assert(f);
 
+		struct sorted_s {
+			int size;
+			int i;
+		} * sorted_array;
+
 		int	count = f->get_glyph_count();
-		for (int i = 0; i < count; i++)
+		sorted_array = new sorted_s[count];
+		
+		int i, n=0;
+		for (i = 0; i < count; i++)
 		{
 			if (f->get_texture_glyph(i) == NULL)
 			{
-				// Create a texture for this glyph.
-
 				shape_character*	sh = f->get_glyph(i);
 				if (sh)
 				{
-					texture_glyph*	tg = make_texture_glyph(sh);
-					f->add_texture_glyph(i, tg);
+					// get a rough estimation of glyph size
+					rect	glyph_bounds;
+					get_shape_bounds(&glyph_bounds, sh);
+					int w = (int) glyph_bounds.width();
+					int h = (int) glyph_bounds.height();
+					sorted_array[n].size = w>h ? w : h;
+					sorted_array[n].i = i;
+					n++;
 				}
 			}
 		}
+		
+		qsort( sorted_array, n, sizeof(sorted_s), compare_glyphs );
+		
+		for (i = 0; i < n; i++)
+		{
+			shape_character*	sh = f->get_glyph(sorted_array[i].i);
+			texture_glyph*	tg = make_texture_glyph(sh);
+			f->add_texture_glyph(sorted_array[i].i, tg);
+		}
+		
+		delete [] sorted_array;
 	}
 
 

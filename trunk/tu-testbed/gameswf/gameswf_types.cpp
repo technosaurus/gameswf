@@ -138,7 +138,16 @@ namespace gameswf
 		result->m_x = m_[0][0] * p.m_x + m_[0][1] * p.m_y + m_[0][2];
 		result->m_y = m_[1][0] * p.m_x + m_[1][1] * p.m_y + m_[1][2];
 	}
+	
+	void	matrix::transform_vector(point* result, const point& v) const
+	// Transform vector 'v' by our matrix. Doesn't apply translation.
+	// Put the result in *result.
+	{
+		assert(result);
 
+		result->m_x = m_[0][0] * v.m_x + m_[0][1] * v.m_y;
+		result->m_y = m_[1][0] * v.m_x + m_[1][1] * v.m_y;
+	}
 
 	void	matrix::transform_by_inverse(point* result, const point& p) const
 	// Transform point 'p' by the inverse of our matrix.  Put result in *result.
