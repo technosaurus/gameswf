@@ -21,6 +21,7 @@ struct kd_diagram_dump_info;
 
 struct kd_tree_dynamic
 {
+	// vert count must be under 64K
 	kd_tree_dynamic(
 		int vert_count,
 		const vec3 verts[],
@@ -91,6 +92,7 @@ struct kd_tree_dynamic
 	// For debugging/evaluating.
 	void	dump(tu_file* out) const;
 	void	diagram_dump(tu_file* out) const;	// make a Postscript diagram.
+	void	mesh_diagram_dump(tu_file* out, int axis) const;	// make a Postscript diagram of the mesh data.
 
 private:
 	void	compute_actual_bounds(axial_box* result, int face_count, face faces[]);

@@ -326,6 +326,7 @@ static void	write_packed_data(tu_file* out, const kd_tree_dynamic::node* source)
 
 	// Copy vert data.
 	kd->m_vert_count = source->get_verts().size();
+	assert(kd->m_vert_count < 65536);	// we use 16-bit indices for verts
 	kd->m_verts = (vec3*) tu_malloc(kd->m_vert_count * sizeof(vec3));
 	memcpy(kd->m_verts, &source->get_verts()[0], sizeof(vec3) * kd->m_vert_count);
 
@@ -493,7 +494,7 @@ static bool	ray_test_node(const kd_ray_query_info& qi, float t_min, float t_max,
 	{
 		// Query is effectively parallel to splitting plane.
 
-		// Does query possibly touch the neg node?
+		// Does query possibly touch the neg child?
 		kd_node*	neg_child = node->get_neg_child();
 		if (neg_child
 		    && qi.m_query.m_start[axis] <= node->m_neg_offset)
