@@ -1308,67 +1308,6 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 			vert_index++;
 		}
 	}}
-	
-
-#if 0
-	if (generate_ribbon) {
-		// if we're not at the base level, generate a triangle
-		// mesh which fills the gaps between this edge and a
-		// matching edge composed of the facing edge of two
-		// higher-LOD neighbors.
-		
-		// walk the edge, examining low-LOD and high-LOD vertices.
-		int	lo_index = 0;
-		int	hi_index = verts;
-		int	hi_edge_part = 0;	// 0 for the first part of the high LOD edge, 1 for the second part.
-
-		mesh::add_edge_vertex_lo(dir, x0, z0);
-		mesh::add_edge_vertex_hi(dir, hi_edge_part, x0, z0);
-
-		{for (int i = 1, x = x0 + dx, z = z0 + dz; i < steps; i++, x += dx, z += dz) {
-			if (hf.get_level(x, z) >= level - 1) {
-				// high-lod vertex.
-				mesh::add_edge_strip_index(dir, lo_index);
-				mesh::add_edge_strip_index(dir, hi_index);
-				hi_index++;
-				mesh::add_edge_strip_index(dir, hi_index);
-
-				mesh::add_edge_vertex_hi(dir, hi_edge_part, x, z);
-
-				if (hf.get_level(x, z) >= level) {
-					// also a low-lod vertex.
-					mesh::add_edge_strip_index(dir, lo_index);
-					mesh::add_edge_strip_index(dir, hi_index);
-					lo_index++;
-					mesh::add_edge_strip_index(dir, lo_index);
-
-					mesh::add_edge_vertex_lo(dir, x, z);
-
-					if (lo_index == midpoint_index) {
-						// Extra filler triangle, between the two hi-lod edges.
-						mesh::add_edge_strip_index(dir, lo_index);
-						mesh::add_edge_strip_index(dir, hi_index);
-						hi_index++;
-						mesh::add_edge_strip_index(dir, hi_index);
-
-						hi_edge_part = 1;
-						mesh::add_edge_vertex_hi(dir, hi_edge_part, x, z);
-					}
-				}
-			}
-		}}
-	}
-	else
-	{
-		// We're at the highest LOD level -- just generate a list of
-		// our edge verts, for meshing with chunks at our same level.
-		{for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz) {
-			if (hf.get_level(x, z) >= level) {
-				mesh::add_edge_vertex_lo(dir, x, z);
-			}
-		}}
-	}
-#endif // 0
 }
 
 
@@ -1543,7 +1482,7 @@ namespace mesh {
 
 		vec3	compress_factor;
 		{for (int i = 0; i < 3; i++) {
-			compress_factor.set(i, (1 << 14) / fmax(1.0, box_extent.get(i)));
+			compress_factor.set(i, (1 << 14) / fmax(1.0, box_extent.get(i) + 1e-6f));	// the 1e-6 expands the box very slightly, so adjacent chunks overlap a tiny bit.
 		}}
 
 		// Make sure the vertex buffer is not too big.
@@ -1585,40 +1524,6 @@ namespace mesh {
 			// Write real triangle count.
 			SDL_WriteLE32(rw, tris);
 		}
-
-#if 0
-		//
-		// Output our edge data.
-		//
-		for (int edge_dir = 0; edge_dir < 4; edge_dir++) {
-			// Strip indices.
-			// @@ TODO: THIS IS ACTUALLY AN INDEXED MESH, NOT STRIP.  FIX!
-			assert(edge_strip[edge_dir].size() < (1 << 16));
-			SDL_WriteLE16(rw, edge_strip[edge_dir].size());
-			{for (int i = 0; i < edge_strip[edge_dir].size(); i++) {
-				SDL_WriteLE16(rw, edge_strip[edge_dir][i]);
-			}}
-
-			// Vertex counts.
-			assert(edge_lo[edge_dir].size() < (1 << 16));
-			SDL_WriteLE16(rw, edge_lo[edge_dir].size());
-			assert(edge_hi[edge_dir][0].size() < (1 << 16));
-			SDL_WriteLE16(rw, edge_hi[edge_dir][0].size());
-			assert(edge_hi[edge_dir][1].size() < (1 << 16));
-			SDL_WriteLE16(rw, edge_hi[edge_dir][1].size());
-
-			{for (int i = 0; i < edge_lo[edge_dir].size(); i++) {
-				write_vertex(rw, hf, level, box_center, compress_factor,
-					     edge_lo[edge_dir][i]);
-			}}
-			{for (int j = 0; j < 2; j++) {
-				{for (int i = 0; i < edge_hi[edge_dir][j].size(); i++) {
-					write_vertex(rw, hf, level-1, box_center, compress_factor,
-						     edge_hi[edge_dir][j][i]);
-				}}
-			}}
-		}
-#endif // 0
 
 		// Go back and write the size of the chunk we just wrote.
 		int	current_filepos = SDL_RWtell(rw);
@@ -1704,31 +1609,5 @@ namespace mesh {
 	{
 		return vertex_indices.size();
 	}
-
-#if 0
-	void	add_edge_strip_index(int edge_dir, int index)
-	// Add a vertex to the edge strip which joins this chunk to
-	// two neighboring higher-LOD chunks.
-	{
-		assert(edge_dir >= 0 && edge_dir < 4);
-		edge_strip[edge_dir].push_back(index);
-	}
-
-	void	add_edge_vertex_lo(int edge_dir, int x, int z)
-	// Adds a low-LOD edge vertex to our list.
-	{
-		assert(edge_dir >= 0 && edge_dir < 4);
-		edge_lo[edge_dir].push_back(vert_info(x, z));
-	}
-
-	void	add_edge_vertex_hi(int edge_dir, int hi_index, int x, int z)
-	// Adds a high-LOD edge vertex to one of our lists.  Each edge
-	// has two high-LOD sub-edges.
-	{
-		assert(edge_dir >= 0 && edge_dir < 4);
-		assert(hi_index >= 0 && hi_index < 2);
-		edge_hi[edge_dir][hi_index].push_back(vert_info(x, z));
-	}
-#endif // 0
 };
 

@@ -69,6 +69,11 @@ struct vertex_info {
 			x[1] = SDL_ReadLE16(in);
 			x[2] = SDL_ReadLE16(in);
 			y_delta = SDL_ReadLE16(in);
+
+//			// xxxxxx TEST QUANTIZATION xxxxxxx
+//			// lose the bottom 8 bits by rounding
+//			y_delta = (Sint16) iclamp((y_delta + 128) & ~0x0FF, -32768, 32767);
+//			// xxxxxx TEST QUANTIZATION xxxxxxx
 		}
 	};
 	vertex*	vertices;
@@ -137,7 +142,6 @@ struct lod_chunk;
 
 // Vertex/mesh data for a chunk.  Can get paged in/out on demand.
 struct lod_chunk_data {
-//	lod_edge	m_edge[4];	// edge mesh info.
 	vertex_info	m_verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
 
 	//	lod_chunk_data* m_next_data;
@@ -148,16 +152,10 @@ struct lod_chunk_data {
 	{
 		// Load the main chunk data.
 		m_verts.read(in);
-
-//		// Read the edge data.
-//		{for (int i = 0; i < 4; i++) {
-//			m_edge[i].read(in);
-//		}}
 	}
 
 	int	render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
 				   const vec3& box_center, const vec3& box_extent);
-//	int	render_edge(const lod_chunk& chunk, direction dir, render_options opt, const vec3& box_center, const vec3& box_extent);
 };
 
 
@@ -183,20 +181,6 @@ struct lod_chunk {
 
 	long	m_data_file_position;
 	lod_chunk_data*	m_data;
-
-#if 0
-	// struct lod_chunk_data {
-	// @@ put this stuff in struct lod_chunk_data.
-	lod_edge	edge[4];	// edge mesh info.
-	vertex_info	verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
-	//	render();
-	//	render_edge();
-	//	read();
-
-	//	lod_chunk_data* m_next_data;
-	//	lod_chunk_data* m_prev_data;
-	// };
-#endif // 0
 
 //methods:
 	// needs a destructor!
@@ -255,7 +239,7 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 	const float	offsetx = box_center.get_x();
 	const float	offsetz = box_center.get_z();
 
-	const float	one_minus_f = 1.0f - f;
+	const float	one_minus_f = (1.0f - f);
 
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
 		const vertex_info::vertex&	v = morph_verts.vertices[i];
@@ -270,7 +254,8 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 
 
 int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
-							   const vec3& box_center, const vec3& box_extent)
+			       const vec3& box_center, const vec3& box_extent)
+// Render a chunk.
 {
 	if (opt.show_geometry || opt.show_edges) {
 		glEnable(GL_TEXTURE_2D);
@@ -320,154 +305,8 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 		triangle_count += m_verts.triangle_count;
 	}
 
-#if 0
-	if (opt.show_edges) {
-		for (int i = 0; i < 4; i++) {
-			triangle_count += render_edge(chunk, (direction) i, opt, box_center, box_extent);
-		}
-	}
-#endif // 0
-
 	return triangle_count;
 }
-
-
-#if 0
-int	lod_chunk_data::render_edge(const lod_chunk& chunk, direction dir, render_options opt, const vec3& box_center, const vec3& box_extent)
-// Draw the ribbon connecting the edge of this chunk to the edge(s) of
-// the neighboring chunk(s) in the specified direction.  Returns the
-// number of triangles rendered.
-{
-	int	triangle_count = 0;
-
-	//
-	// Figure out which of the three cases we have:
-	//
-	// 1) our neighbor is a chunk at our same LOD (but probably has a
-	// different morph value).  We only handle this if this is the
-	// EAST or SOUTH edge of our chunk.  Otherwise, the other chunk is
-	// responsible for rendering (this prevents double-rendering of
-	// the edge.)
-	//
-	// To render, all we have to do is zip up the corresponding verts.
-	//
-	//  |           |
-	//  |    us     |
-	//  +-*-*-*-*-*-+
-	//  |/|/|/|/|/|/|  <-- simple zig-zag tri strip
-	//  +-*-*-*-*-*-+
-	//  |  neighbor |
-	//  |           |
-	//
-	//
-	// 2) our neighbors are actually two chunks, at the next higher
-	// LOD.  We have to stitch together our verts with the verts of
-	// the two neighbors.
-	//
-	//  |           |
-	//  |    us     |
-	//  +-*-*-*-*-*-+
-	//  |/|\|\|\|/|\|  <-- more complex connecting ribbon
-	//  +***********+
-	//  |  n0 |  n1 |
-	//  |     |     |
-	//
-	// 3) same as 2, but we're one of the high LOD chunks.  In this
-	// case we don't render anything; the lower-LOD chunk is
-	// responsible for rendering the edge.
-
-	lod_chunk*	n = chunk.m_neighbor[(int) dir].m_chunk;
-	if (n == NULL) {
-		// No neighbor, so no edge to worry about.
-		return triangle_count;
-	}
-	if (n->m_split == false && n->m_parent && n->m_parent->m_split == true) {
-		// two matching edges.
-		if (dir == EAST || dir == SOUTH) {
-			float	f0 = morph_curve((chunk.lod & 255) / 255.0f);
-			float	f1 = morph_curve((n->lod & 255) / 255.0f);
-			if (opt.morph == false) {
-				f0 = f1 = 0;
-			}
-			int	c0 = m_edge[dir].lo_vertex_count;
-			float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * c0 * 2);
-			vertex_info	vi;
-			vi.vertex_count = c0;
-			vi.vertices = m_edge[dir].edge_verts;
-			morph_vertices(output_verts, vi, box_center, box_extent, f0);
-			// Same verts, different morph value.
-			morph_vertices(output_verts + c0 * 3, vi, box_center, box_extent, f1);
-
-			// Draw the connecting ribbon.  Just a zig-zag strip between
-			// the two edges.
-			glVertexPointer(3, GL_FLOAT, 0, output_verts);
-			glBegin(GL_TRIANGLE_STRIP);
-			for (int i = 0; i < c0; i++) {
-				glArrayElement(i);
-				glArrayElement(i + c0);
-			}
-			glEnd();
-		
-			triangle_count += c0 * 2 - 2;
-		}
-
-	} else if (n->m_split) {
-		// we have the low LOD edge; children of our neighbor have the high LOD edges.
-
-		// Find the neighbors we need to mesh with.
-
-		// table indexed by the direction of our big low-LOD edge.
-		int	child_index[4][2] = {
-			{ 0, 2 },	// EAST
-			{ 2, 3 },	// NORTH
-			{ 1, 3 },	// WEST
-			{ 0, 1 }	// SOUTH
-		};
-		assert(n->has_children());
-		lod_chunk*	n0 = n->m_children[child_index[dir][0]];
-		lod_chunk*	n1 = n->m_children[child_index[dir][1]];
-
-		assert(n0);
-		assert(n1);
-
-		float	f = morph_curve((chunk.lod & 255) / 255.0f);
-		float	f0 = morph_curve((n0->lod & 255) / 255.0f);
-		float	f1 = morph_curve((n1->lod & 255) / 255.0f);
-		if (opt.morph == false) {
-			f = f0 = f1 = 0;
-		}
-
-		const lod_edge&	e = m_edge[dir];
-
-		float*	output_verts = (float*) s_stream->reserve_memory(
-			sizeof(float) * 3 * (e.lo_vertex_count + e.hi_vertex_count[0] + e.hi_vertex_count[1]));
-
-		vertex_info	vi;
-		vi.vertices = e.edge_verts;
-		vi.vertex_count = e.lo_vertex_count;
-		morph_vertices(output_verts, vi, box_center, box_extent, f);
-		vi.vertices = e.edge_verts + e.lo_vertex_count;
-		vi.vertex_count = e.hi_vertex_count[0];
-		morph_vertices(output_verts + 3 * e.lo_vertex_count, vi, box_center, box_extent, f0);
-		vi.vertices = e.edge_verts + e.lo_vertex_count + e.hi_vertex_count[0];
-		vi.vertex_count = e.hi_vertex_count[1];
-		morph_vertices(output_verts + 3 * (e.lo_vertex_count + e.hi_vertex_count[0]), vi, box_center, box_extent, f1);
-
-		// Draw the connecting ribbon.
-
-		assert(e.ribbon_index_count);
-		glVertexPointer(3, GL_FLOAT, 0, output_verts);
-		glDrawElements(GL_TRIANGLES, e.ribbon_index_count, GL_UNSIGNED_SHORT, e.ribbon_indices);
-		triangle_count += e.ribbon_index_count / 3;
-
-	} else {
-		// Our neighbor is responsible for this case.
-	}
-
-	return triangle_count;
-}
-
-#endif // 0
 
 
 static void	draw_box(const vec3& min, const vec3& max)
@@ -687,6 +526,8 @@ bool	lod_chunk::request_data()
 // otherwise.
 {
 	if (m_data == NULL) {
+		// @@ todo: do the work in a background thread.
+		
 		// Load the data.
 		m_data = new lod_chunk_data;
 		SDL_RWseek(s_datafile, m_data_file_position, SEEK_SET);
@@ -722,7 +563,38 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 
 		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
 		for (int i = 0; i < 4; i++) {
+			const bool	explode = false;
+			// EXPLODE
+			if (explode) {
+				int	level = c.m_tree_depth - ((this->lod) >> 8);
+				float	offset = 30.f * ((1 << level) / float(1 << c.m_tree_depth));
+
+				glMatrixMode(GL_MODELVIEW);
+				glPushMatrix();
+				switch (i) {
+				default:
+				case 0:
+					glTranslatef(-offset, 0, -offset);
+					break;
+				case 1:
+					glTranslatef(offset, 0, -offset);
+					break;
+				case 2:
+					glTranslatef(-offset, 0, offset);
+					break;
+				case 3:
+					glTranslatef(offset, 0, offset);
+					break;
+				}
+			}
+
 			triangle_count += m_children[i]->render(c, v, cull_info, opt);
+
+			// EXPLODE
+			if (explode) {
+				glMatrixMode(GL_MODELVIEW);
+				glPopMatrix();
+			}
 		}
 	} else {
 		if (opt.show_box) {
