@@ -247,6 +247,9 @@ namespace gameswf
 	void	frame_label_loader(stream* in, int tag_type, movie* m);
 	void	export_loader(stream* in, int tag_type, movie* m);
 	void	import_loader(stream* in, int tag_type, movie* m);
+	void	define_sound_loader(stream* in, int tag_type, movie* m);
+	void	start_sound_loader(stream* in, int tag_type, movie* m);
+	// sound_stream_loader();	// head, head2, block
 
 
 	struct texture_glyph;
