@@ -31,9 +31,12 @@
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
 #include <string.h>	// for memset
-#include <zlib.h>
 #include <typeinfo>
 #include <float.h>
+
+#if TU_CONFIG_LINK_TO_ZLIB
+#include <zlib.h>
+#endif // TU_CONFIG_LINK_TO_ZLIB
 
 
 namespace gameswf
@@ -674,6 +677,11 @@ namespace gameswf
 			tu_file*	original_in = NULL;
 			if (compressed)
 			{
+#if TU_CONFIG_LINK_TO_ZLIB == 0
+				log_error("movie_def_impl::read(): unable to read zipped SWF data; TU_CONFIG_LINK_TO_ZLIB is 0\n");
+				return;
+#endif
+
 				IF_VERBOSE_PARSE(log_msg("file is compressed.\n"));
 				original_in = in;
 
@@ -1196,6 +1204,10 @@ namespace gameswf
 		tu_file*	original_in = NULL;
 		if (compressed)
 		{
+#if TU_CONFIG_LINK_TO_ZLIB == 0
+			log_error("get_movie_info(): can't read zipped SWF data; TU_CONFIG_LINK_TO_ZLIB is 0!\n");
+			return;
+#endif
 			original_in = in;
 
 			// Uncompress the input as we read it.
@@ -1676,6 +1688,7 @@ namespace gameswf
 	}
 
 
+#if TU_CONFIG_LINK_TO_ZLIB
 	void	inflate_wrapper(tu_file* in, void* buffer, int buffer_bytes)
 	// Wrapper function -- uses Zlib to uncompress in_bytes worth
 	// of data from the input file into buffer_bytes worth of data
@@ -1726,6 +1739,7 @@ namespace gameswf
 			log_error("error: inflate_wrapper() inflateEnd() return %d\n", err);
 		}
 	}
+#endif // TU_CONFIG_LINK_TO_ZLIB
 
 
 	void	define_bits_jpeg3_loader(stream* in, int tag_type, movie_definition_sub* m)
@@ -1745,7 +1759,10 @@ namespace gameswf
 
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
-#if TU_CONFIG_LINK_TO_JPEGLIB
+#if TU_CONFIG_LINK_TO_JPEGLIB == 0 || TU_CONFIG_LINK_TO_ZLIB == 0
+			log_error("gameswf is not linked to jpeglib/zlib -- can't load jpeg/zipped image data!\n");
+			bi = render::create_bitmap_info_empty();
+#else
 			//
 			// Read the image data.
 			//
@@ -1771,9 +1788,6 @@ namespace gameswf
 			bi = render::create_bitmap_info_rgba(im);
 
 			delete im;
-#else
-			log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
-			bi = render::create_bitmap_info_empty();
 #endif
 
 		}
@@ -1808,6 +1822,10 @@ namespace gameswf
 		bitmap_info*	bi = NULL;
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
+#if TU_CONFIG_LINK_TO_ZLIB == 0
+			log_error("gameswf is not linked to zlib -- can't load zipped image data!\n");
+			return;
+#else
 			if (tag_type == 20)
 			{
 				// RGB image data.
@@ -2018,6 +2036,7 @@ namespace gameswf
 //	 			// add image to movie, under character id.
 //	 			m->add_bitmap_character(character_id, ch);
 			}
+#endif // TU_CONFIG_LINK_TO_ZLIB
 		}
 		else
 		{
@@ -3162,6 +3181,13 @@ namespace gameswf
 		/* sprite_instance */
 		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value)
 		{
+			assert(path_to_var);
+			if (new_value == NULL)
+			{
+				log_error("error: NULL passed to set_variable('%s', NULL)\n", path_to_var);
+				return;
+			}
+
 			assert(m_parent == NULL);	// should only be called on the root movie.
 
 			array<with_stack_entry>	empty_with_stack;

@@ -1348,6 +1348,13 @@ namespace gameswf
 						// Function is a string; lookup the function.
 						const tu_string&	function_name = env->top(0).to_tu_string();
 						function = env->get_variable(function_name, with_stack);
+
+						if (function.get_type() != as_value::C_FUNCTION
+						    && function.get_type() != as_value::AS_FUNCTION)
+						{
+							log_error("error in call_function: '%s' is not a function\n",
+								  function_name.c_str());
+						}
 					}
 					else
 					{
@@ -1517,12 +1524,21 @@ namespace gameswf
 						const tu_string&	method_name = env->top(0).to_tu_string();
 						if (obj->get_member(method_name, &method))
 						{
-							result = call_method(
-								method,
-								env,
-								obj,
-								nargs,
-								env->get_top_index() - 3);
+							if (method.get_type() != as_value::C_FUNCTION
+							    && method.get_type() != as_value::AS_FUNCTION)
+							{
+								log_error("error: call_method: '%s' is not a method\n",
+									  method_name.c_str());
+							}
+							else
+							{
+								result = call_method(
+									method,
+									env,
+									obj,
+									nargs,
+									env->get_top_index() - 3);
+							}
 						}
 						else
 						{
