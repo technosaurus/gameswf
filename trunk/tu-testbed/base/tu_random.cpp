@@ -26,7 +26,7 @@ namespace tu_random
 
 	float	get_unit_float()
 	{
-		s_generator.get_unit_float();
+		return s_generator.get_unit_float();
 	}
 
 
