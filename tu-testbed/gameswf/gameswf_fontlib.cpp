@@ -23,7 +23,7 @@ namespace fontlib
 	array<render::bitmap_info*>	s_bitmaps_used;	// keep these so we can delete them during shutdown.
 
 	// The nominal size of the final antialiased glyphs stored in the texture.
-	static const int	GLYPH_FINAL_SIZE = 32;
+	static const int	GLYPH_FINAL_SIZE = 64;
 
 	static const int	OVERSAMPLE_BITS = 2;
 	static const int	OVERSAMPLE_FACTOR = (1 << OVERSAMPLE_BITS);
@@ -101,7 +101,7 @@ namespace fontlib
 		// Really dumb implementation.  Just search for a fit.
 
 		// Width/height coords, scaled down to the coverage map.
-		int	round_up_add = (1 << GLYPH_PACK_ROUNDING_BITS) - 1;
+		int	round_up_add = (1 << GLYPH_PACK_ROUNDING_BITS);
 		int	cw = (width + round_up_add) >> GLYPH_PACK_ROUNDING_BITS;
 		int	ch = (height + round_up_add) >> GLYPH_PACK_ROUNDING_BITS;
 
@@ -195,11 +195,11 @@ namespace fontlib
 			if (pack_rectangle(&pack_x, &pack_y, width, height))
 			{
 				// Blit the output image into its new spot.
-				for (int j = 0; j < height; j++)
+				for (int j = 0; j < raw_height; j++)
 				{
 					memcpy(s_current_cache_image + (pack_y + j) * GLYPH_CACHE_TEXTURE_SIZE + pack_x,
 					       image_data + (min_y + j) * GLYPH_FINAL_SIZE + min_x,
-					       width);
+					       raw_width);
 				}
 
 				// Fill out the glyph info.
