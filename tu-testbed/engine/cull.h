@@ -14,17 +14,6 @@
 #include "geometry.h"
 
 
-struct plane_info {
-	vec3	normal;
-	float	d;
-
-	void	set(float nx, float ny, float nz, float dist) {
-		normal.set_xyz(nx, ny, nz);
-		d = dist;
-	}
-};
-
-
 namespace cull {
 
 	struct result_info {
