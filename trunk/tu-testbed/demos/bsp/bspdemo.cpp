@@ -10,11 +10,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
+#include <SDL.h>
 
-#include <engine/bsp.h>
-#include <engine/utility.h>
+#include "base/utility.h"
+#include "geometry/bsp.h"
 
 
 void	get_ply_data( const char* filename );
