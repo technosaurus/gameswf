@@ -50,7 +50,6 @@ namespace gameswf
 
 	fill_style::~fill_style()
 	{
-		if (m_gradient_bitmap_info) m_gradient_bitmap_info->drop_ref();
 	}
 
 	void	fill_style::read(stream* in, int tag_type, movie_definition_sub* m)
@@ -124,9 +123,6 @@ namespace gameswf
 
 			// Look up the bitmap character.
 			m_bitmap_character = m->get_bitmap_character(bitmap_char_id);
-			// @@ no ref count here; m is held by our
-			// owner so m_bitmap_character shouldn't go
-			// away on us.
 
 			matrix	m;
 			m.read(in);
@@ -230,15 +226,14 @@ namespace gameswf
 			if (m_gradient_bitmap_info == NULL)
 			{
 				bitmap_info*	bi = create_gradient_bitmap();
-				bi->add_ref();
 				(const_cast<fill_style*>(this))->m_gradient_bitmap_info = bi;
 			}
 
-			if (m_gradient_bitmap_info)
+			if (m_gradient_bitmap_info != NULL)
 			{
 				gameswf::render::fill_style_bitmap(
 					fill_side,
-					m_gradient_bitmap_info,
+					m_gradient_bitmap_info.get_ptr(),
 					m_gradient_matrix,
 					gameswf::render_handler::WRAP_CLAMP);
 			}

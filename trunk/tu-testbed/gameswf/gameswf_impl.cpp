@@ -265,13 +265,13 @@ namespace gameswf
 
 	struct movie_def_impl : public movie_definition_sub
 	{
-		hash<int, character_def*>	m_characters;
-		hash<int, font*>	m_fonts;
-		hash<int, bitmap_character_def*>	m_bitmap_characters;
-		hash<int, sound_sample*>	m_sound_samples;
+		hash<int, smart_ptr<character_def> >	m_characters;
+		hash<int, smart_ptr<font> >	m_fonts;
+		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
+		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		string_hash<int>	m_named_frames;
-		string_hash<resource*>	m_exports;
+		string_hash< smart_ptr<resource> >	m_exports;
 
 		rect	m_frame_size;
 		float	m_frame_rate;
@@ -293,38 +293,6 @@ namespace gameswf
 
 		~movie_def_impl()
 		{
-			// Release our characters.
-			{for (hash<int, character_def*>::iterator it = m_characters.begin();
-			     it != m_characters.end();
-			     ++it)
-			{
-				it->second->drop_ref();
-			}}
-
-			// Release our fonts
-			{for (hash<int, font*>::iterator it = m_fonts.begin();
-			      it != m_fonts.end();
-			      ++it)
-			{
-				it->second->drop_ref();
-			}}
-
-			// Release our bitmap characters
-			{for (hash<int, bitmap_character_def*>::iterator it = m_bitmap_characters.begin();
-			     it != m_bitmap_characters.end();
-			     ++it)
-			{
-				it->second->drop_ref();
-			}}
-
-			// Release our sound samples.
-			{for (hash<int, sound_sample*>::iterator it = m_sound_samples.begin();
-			     it != m_sound_samples.end();
-			     ++it)
-			{
-				it->second->drop_ref();
-			}}
-
 			// Release our playlist data.
 			{for (int i = 0, n = m_playlist.size(); i < n; i++)
 			{
@@ -332,14 +300,6 @@ namespace gameswf
 				{
 					delete m_playlist[i][j];
 				}
-			}}
-
-			// Release our resources.
-			{for (string_hash<resource*>::iterator it = m_exports.begin();
-			      it != m_exports.end();
-			      ++it)
-			{
-				it->second->drop_ref();
 			}}
 
 			assert(m_jpeg_in == NULL);	// It's supposed to be cleaned up in read()
@@ -363,18 +323,15 @@ namespace gameswf
 		// for export.  Other movies can import it.
 		{
 			// SWF sometimes exports the same thing more than once!
-			if (m_exports.get(symbol, NULL) == false)
-			{
-				m_exports.add(symbol, res);
-			}
+			m_exports.set(symbol, res);
 		}
 
 
-		virtual resource*	get_exported_resource(const tu_string& symbol)
+		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol)
 		// Get the named exported resource, if we expose it.
 		// Otherwise return NULL.
 		{
-			resource*	res = NULL;
+			smart_ptr<resource>	res;
 			m_exports.get(symbol, &res);
 			return res;
 		}
@@ -383,15 +340,14 @@ namespace gameswf
 		void	add_character(int character_id, character_def* c)
 		{
 			assert(c);
-			c->add_ref();
 			m_characters.add(character_id, c);
 		}
 
 		character_def*	get_character_def(int character_id)
 		{
-			character_def*	ch = NULL;
+			smart_ptr<character_def>	ch;
 			m_characters.get(character_id, &ch);
-			return ch;
+			return ch.get_ptr();
 		}
 
 		bool	get_labeled_frame(const char* label, int* frame_number)
@@ -402,42 +358,39 @@ namespace gameswf
 		void	add_font(int font_id, font* f)
 		{
 			assert(f);
-			f->add_ref();
 			m_fonts.add(font_id, f);
 		}
 
 		font*	get_font(int font_id)
 		{
-			font*	f = NULL;
+			smart_ptr<font>	f;
 			m_fonts.get(font_id, &f);
-			return f;
+			return f.get_ptr();
 		}
 
 		bitmap_character_def*	get_bitmap_character(int character_id)
 		{
-			bitmap_character_def*	ch = 0;
+			smart_ptr<bitmap_character_def>	ch;
 			m_bitmap_characters.get(character_id, &ch);
-			return ch;
+			return ch.get_ptr();
 		}
 
 		void	add_bitmap_character(int character_id, bitmap_character_def* ch)
 		{
 			assert(ch);
-			ch->add_ref();
 			m_bitmap_characters.add(character_id, ch);
 		}
 
 		sound_sample*	get_sound_sample(int character_id)
 		{
-			sound_sample*	ch = 0;
+			smart_ptr<sound_sample>	ch;
 			m_sound_samples.get(character_id, &ch);
-			return ch;
+			return ch.get_ptr();
 		}
 
 		virtual void	add_sound_sample(int character_id, sound_sample* sam)
 		{
 			assert(sam);
-			sam->add_ref();
 			m_sound_samples.add(character_id, sam);
 		}
 
@@ -576,11 +529,11 @@ namespace gameswf
 		void	get_owned_fonts(array<font*>* fonts)
 		// Fill up *fonts with fonts that we own.
 		{
-			for (hash<int, font*>::iterator it = m_fonts.begin();
+			for (hash<int, smart_ptr<font> >::iterator it = m_fonts.begin();
 			     it != m_fonts.end();
 			     ++it)
 			{
-				font*	f = it->second;
+				font*	f = it->second.get_ptr();
 				if (f->get_owning_movie() == this)
 				{
 					fonts->push_back(f);
@@ -620,7 +573,7 @@ namespace gameswf
 			fontlib::output_cached_data(out, fonts);
 
 			// Write character data.
-			{for (hash<int, character_def*>::iterator it = m_characters.begin();
+			{for (hash<int, smart_ptr<character_def> >::iterator it = m_characters.begin();
 			     it != m_characters.end();
 			     ++it)
 			{
@@ -673,9 +626,9 @@ namespace gameswf
 				Sint16	id = in->read_le16();
 				if (id == (Sint16) -1) { break; }	// done
 
-				character_def* ch = NULL;
+				smart_ptr<character_def> ch;
 				m_characters.get(id, &ch);
-				if (ch)
+				if (ch != NULL)
 				{
 					ch->input_cached_data(in);
 				}
@@ -699,8 +652,8 @@ namespace gameswf
 
 	struct movie_root : public movie_interface
 	{
-		movie_def_impl*	m_def;
-		movie*	m_movie;
+		smart_ptr<movie_def_impl>	m_def;
+		smart_ptr<movie>	m_movie;
 		int	m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
 		float	m_pixel_scale;
 
@@ -727,24 +680,22 @@ namespace gameswf
 			m_mouse_buttons(0),
 			m_mouse_capture_id(-1)
 		{
-			assert(m_def);
-			m_def->add_ref();
+			assert(m_def != NULL);
 
 			set_display_viewport(0, 0, m_def->get_width(), m_def->get_height());
 		}
 
 		~movie_root()
 		{
-			assert(m_def);
-			if (m_movie) m_movie->drop_ref();
-			m_def->drop_ref();
+			assert(m_def != NULL);
+			m_movie = NULL;
+			m_def = NULL;
 		}
 
 		void	set_root_movie(movie* root_movie)
 		{
 			m_movie = root_movie;
-			assert(m_movie);
-			m_movie->add_ref();
+			assert(m_movie != NULL);
 
 			m_movie->on_event(event_id::LOAD);
 		}
@@ -785,7 +736,7 @@ namespace gameswf
 			*buttons = m_mouse_buttons;
 		}
 
-		movie*	get_root_movie() { return m_movie; }
+		movie*	get_root_movie() { return m_movie.get_ptr(); }
 
 		int	get_mouse_capture()
 		// Use this to retrive the character that has captured the mouse.
@@ -901,7 +852,7 @@ namespace gameswf
 		// For ActionScript interfacing convenience.
 		virtual const char*	call_method(const char* method_call)
 		{
-			assert(m_movie);
+			assert(m_movie != NULL);
 			return m_movie->call_method(method_call);
 		}
 
@@ -1114,19 +1065,12 @@ namespace gameswf
 	//
 
 
-	static string_hash<movie_definition_sub*>	s_movie_library;
+	static string_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
 
 	void	clear_library()
 	// Drop all library references to movie_definitions, so they
 	// can be cleaned up.
 	{
-		// @@ TODO make a smart_ptr class to deal with this automatically
-		for (string_hash<movie_definition_sub*>::iterator it = s_movie_library.begin();
-		     it != s_movie_library.end();
-		     ++it)
-		{
-			it->second->drop_ref();
-		}
 		s_movie_library.clear();
 	}
 
@@ -1145,13 +1089,13 @@ namespace gameswf
 
 		// Is the movie already in the library?
 		{
-			movie_definition_sub*	m = NULL;
+			smart_ptr<movie_definition_sub>	m;
 			s_movie_library.get(fn, &m);
-			if (m)
+			if (m != NULL)
 			{
 				// Return cached movie.
 				m->add_ref();
-				return m;
+				return m.get_ptr();
 			}
 		}
 
@@ -1161,10 +1105,10 @@ namespace gameswf
 		if (mov == NULL)
 		{
 			log_error("error: couldn't load library movie '%s'\n", filename);
+			return NULL;
 		}
 		else
 		{
-			mov->add_ref();
 			s_movie_library.add(fn, mov);
 		}
 
@@ -1229,23 +1173,17 @@ namespace gameswf
 	struct bitmap_character_rgb : public bitmap_character_def
 	{
 		image::rgb*	m_image;
-		gameswf::bitmap_info*	m_bitmap_info;
+		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
 
 		bitmap_character_rgb()
 			:
-			m_image(0),
-			m_bitmap_info(0)
+			m_image(0)
 		{
 		}
 
 		~bitmap_character_rgb()
 		{
 			if (m_image) { delete m_image; }
-			if (m_bitmap_info)
-			{
-				m_bitmap_info->drop_ref();
-				m_bitmap_info = NULL;
-			}
 		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
@@ -1254,11 +1192,10 @@ namespace gameswf
 			{
 				// Create our bitmap info, from our image.
 				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
-				m_bitmap_info->add_ref();
 				delete m_image;
 				m_image = 0;
 			}
-			return m_bitmap_info;
+			return m_bitmap_info.get_ptr();
 		}
 	};
 
@@ -1266,18 +1203,13 @@ namespace gameswf
 	struct bitmap_character_rgba : public bitmap_character_def
 	{
 		image::rgba*	m_image;
-		gameswf::bitmap_info*	m_bitmap_info;
+		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
 
-		bitmap_character_rgba() : m_image(0), m_bitmap_info(0) {}
+		bitmap_character_rgba() : m_image(0) {}
 
 		~bitmap_character_rgba()
 		{
 			if (m_image) { delete m_image; }
-			if (m_bitmap_info)
-			{
-				m_bitmap_info->drop_ref();
-				m_bitmap_info = NULL;
-			}
 		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
@@ -1286,11 +1218,10 @@ namespace gameswf
 			{
 				// Create our bitmap info, from our image.
 				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
-				m_bitmap_info->add_ref();
 				delete m_image;
 				m_image = 0;
 			}
-			return m_bitmap_info;
+			return m_bitmap_info.get_ptr();
 		}
 	};
 
@@ -2008,7 +1939,6 @@ namespace gameswf
 				if (ch)
 				{
 					attach_events(ch);
-					ch->drop_ref();
 				}
 
 				break;
@@ -2135,7 +2065,7 @@ namespace gameswf
 		virtual sound_sample*	get_sound_sample(int id) { return m_movie_def->get_sound_sample(id); }
 		virtual void	add_sound_sample(int id, sound_sample* sam) { log_error("add sam appears in sprite tags!\n"); }
 		virtual void	export_resource(const tu_string& symbol, resource* res) { log_error("can't export from sprite\n"); }
-		virtual resource*	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
+		virtual smart_ptr<resource>	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
 		virtual character_def*	get_character_def(int id) { return m_movie_def->get_character_def(id); }
 		virtual void	generate_font_bitmaps() { assert(0); }
 		virtual void	output_cached_data(tu_file* out) { assert(0); }
@@ -2223,7 +2153,7 @@ namespace gameswf
 
 	struct sprite_instance : public character
 	{
-		movie_definition_sub*	m_def;
+		smart_ptr<movie_definition_sub>	m_def;
 		movie_root*	m_root;
 
 		display_list	m_display_list;
@@ -2254,10 +2184,9 @@ namespace gameswf
 			m_accept_anim_moves(true),
 			m_init_handler_called(false)
 		{
-			assert(m_def);
-			assert(m_root);
+			assert(m_def != NULL);
+			assert(m_root != NULL);
 			
-			m_def->add_ref();
 			//m_root->add_ref();	// @@ circular!
 			m_as_environment.set_target(this);
 		}
@@ -2265,7 +2194,6 @@ namespace gameswf
 		virtual ~sprite_instance()
 		{
 			m_display_list.clear();
-			m_def->drop_ref();
 			//m_root->drop_ref();
 		}
 
@@ -2273,7 +2201,7 @@ namespace gameswf
 		movie_root*	get_root() { return m_root; }
 		movie*	get_root_movie() { return m_root->get_root_movie(); }
 
-		movie_definition*	get_movie_definition() { return m_def; }
+		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
 
 		int	get_width() { assert(0); return 0; }
 		int	get_height() { assert(0); return 0; }
@@ -2354,7 +2282,7 @@ namespace gameswf
 				return;
 			}
 
-			assert(m_def && m_root);
+			assert(m_def != NULL && m_root != NULL);
 
 			// check for init event; make sure handler gets called once.
 			if (m_init_handler_called == false)
@@ -2565,7 +2493,6 @@ namespace gameswf
 			m_display_list.display();
 		}
 
-		// Caller must call drop_ref() on the returned object, if it's not NULL!!
 		character*	add_display_object(
 			Uint16 character_id,
 			const char* name,
@@ -2576,7 +2503,7 @@ namespace gameswf
 			Uint16 clip_depth)
 		// Add an object to the display list.
 		{
-			assert(m_def);
+			assert(m_def != NULL);
 
 			character_def*	cdef = m_def->get_character_def(character_id);
 			if (cdef == NULL)
@@ -2600,16 +2527,15 @@ namespace gameswf
 			}
 
 			assert(cdef);
-			character*	ch = cdef->create_character_instance(this, character_id);
-			assert(ch);
-			ch->add_ref();
+			smart_ptr<character>	ch = cdef->create_character_instance(this, character_id);
+			assert(ch != NULL);
 			if (name != NULL && name[0] != 0)
 			{
 				ch->set_name(name);
 			}
-			m_display_list.add_display_object(ch, depth, color_transform, matrix, ratio, clip_depth);
+			m_display_list.add_display_object(ch.get_ptr(), depth, color_transform, matrix, ratio, clip_depth);
 
-			return ch;
+			return ch.get_ptr();
 		}
 
 
@@ -2639,7 +2565,7 @@ namespace gameswf
 			float ratio,
 			Uint16 clip_depth)
 		{
-			assert(m_def);
+			assert(m_def != NULL);
 
 			character_def*	cdef = m_def->get_character_def(character_id);
 			if (cdef == NULL)
@@ -2649,9 +2575,8 @@ namespace gameswf
 			}
 			assert(cdef);
 
-			character*	ch = cdef->create_character_instance(this, character_id);
-			assert(ch);
-			ch->add_ref();
+			smart_ptr<character>	ch = cdef->create_character_instance(this, character_id);
+			assert(ch != NULL);
 
 			if (name != NULL && name[0] != 0)
 			{
@@ -2659,7 +2584,7 @@ namespace gameswf
 			}
 
 			m_display_list.replace_display_object(
-				ch,
+				ch.get_ptr(),
 				depth,
 				use_cxform,
 				color_transform,
@@ -2667,8 +2592,6 @@ namespace gameswf
 				mat,
 				ratio,
 				clip_depth);
-
-			ch->drop_ref();
 		}
 
 
@@ -2699,7 +2622,7 @@ namespace gameswf
 				return -1;
 			}
 
-			character*	ch = m_display_list.get_display_object(index).m_character;
+			character*	ch = m_display_list.get_display_object(index).m_character.get_ptr();
 
 			return ch->get_id();
 		}
@@ -3079,7 +3002,7 @@ namespace gameswf
 			else if (name == "_level0"
 				 || name == "_root")
 			{
-				return m_root->m_movie;
+				return m_root->m_movie.get_ptr();
 			}
 
 			// See if we have a match on the display list.
@@ -3161,7 +3084,7 @@ namespace gameswf
 			character* ch = m_display_list.get_character_by_name(name);
 			if (ch)
 			{
-				character*	new_ch = add_display_object(
+				add_display_object(
 					ch->get_id(),
 					newname.c_str(),
 					depth,
@@ -3171,8 +3094,6 @@ namespace gameswf
 					ch->get_clip_depth());
 				// @@ TODO need to duplicate ch's event handlers, and presumably other members?
 				// Probably should make a character::clone() function to handle this.
-
-				if (new_ch) new_ch->drop_ref();
 			}
 		}
 
@@ -3244,7 +3165,11 @@ namespace gameswf
 	// Create a playable movie instance from a def.
 	{
 		movie_root*	m = new movie_root(this);
+		assert(m);
+
 		character*	root_movie = new sprite_instance(this, m, NULL, -1);
+		assert(root_movie);
+
 		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
 
@@ -3415,7 +3340,7 @@ namespace gameswf
 			char*	symbol_name = in->read_string();
 			IF_VERBOSE_PARSE(log_msg("import: id = %d, name = %s\n", id, symbol_name));
 
-			resource* res = source_movie->get_exported_resource(symbol_name);
+			smart_ptr<resource> res = source_movie->get_exported_resource(symbol_name);
 			if (res == NULL)
 			{
 				log_error("import error: resource '%s' is not exported from movie '%s'\n",

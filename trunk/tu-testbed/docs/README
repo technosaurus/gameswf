@@ -156,6 +156,9 @@ environment.
 For the forseeable future, I'll probably just continue using C++ with
 Lua as an extension language.
 
+[I think I've finally decided to stop worrying and love C++: like
+democracy, it's terrible but the alternatives are much worse.]
+
 
 STABILITY
 

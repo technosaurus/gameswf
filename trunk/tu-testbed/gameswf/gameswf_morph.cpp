@@ -299,29 +299,21 @@ namespace gameswf {
 	}
 
 	morph_fill_style::morph_fill_style()
-	:
-	m_type(0),
-	m_bitmap_character(0)
+		:
+		m_type(0),
+		m_bitmap_character(0)
 	{
-		m_gradient_bitmap_info[0] = m_gradient_bitmap_info[1] = 0;
 	}
 
 	morph_fill_style::morph_fill_style(stream* in, movie_definition_sub *m)
-	:
-	m_bitmap_character(0)
+		:
+		m_bitmap_character(0)
 	{
-		m_gradient_bitmap_info[0] = m_gradient_bitmap_info[1] = 0;
 		read(in, m);
 	}
 
 	morph_fill_style::~morph_fill_style()
 	{
-		if (m_gradient_bitmap_info[0]) {
-			m_gradient_bitmap_info[0]->drop_ref();
-		}
-		if (m_gradient_bitmap_info[1]) {
-			m_gradient_bitmap_info[1]->drop_ref();
-		}
 	}
 
 	void morph_fill_style::read(stream* in, movie_definition_sub* m)

@@ -117,6 +117,7 @@ namespace gameswf
 
 		// This calls add_ref() on the movie_interface internally.
 		// Call drop_ref() on the movie_interface when you're done with it.
+		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 		virtual movie_interface*	create_instance() = 0;
 
 		// For caching precomputed stuff.  Generally of
@@ -244,6 +245,7 @@ namespace gameswf
 	//
 	// This calls add_ref() on the newly created definition; call
 	// drop_ref() when you're done with it.
+	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 	movie_definition*	create_movie(const char* filename);
 
 	// Create a gameswf::movie_definition from the given file name.
@@ -261,6 +263,7 @@ namespace gameswf
 	//
 	// This calls add_ref() on the newly created definition; call
 	// drop_ref() when you're done with it.
+	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 	movie_definition*	create_library_movie(const char* filename);
 	
 

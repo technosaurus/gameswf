@@ -11,6 +11,7 @@
 
 
 #ifndef SMART_PTR_H
+#define SMART_PTR_H
 
 
 #include "base/tu_config.h"
@@ -29,9 +30,9 @@ struct smart_ptr
 		:
 		m_ptr(ptr)
 	{
-		if (ptr)
+		if (m_ptr)
 		{
-			ptr->add_ref();
+			m_ptr->add_ref();
 		}
 	}
 
@@ -54,13 +55,15 @@ struct smart_ptr
 		}
 	}
 
-	operator bool() const { return m_ptr != NULL; }
+//	operator bool() const { return m_ptr != NULL; }
 	void	operator=(const smart_ptr<T>& s) { set_ref(s.m_ptr); }
+	void	operator=(T* ptr) { set_ref(ptr); }
 //	void	operator=(const weak_ptr<T>& w);
-	T*	operator->() { assert(m_ptr); return m_ptr; }
-	T*	get_ptr() { return m_ptr; }
-	bool	operator==(T* p) { return m_ptr == p; }
-	bool	operator!=(T* p) { return m_ptr != p; }
+	T*	operator->() const { assert(m_ptr); return m_ptr; }
+	T*	get_ptr() const { return m_ptr; }
+	bool	operator==(const smart_ptr<T>& p) const { return m_ptr == p.m_ptr; }
+	bool	operator==(T* p) const { return m_ptr == p; }
+	bool	operator!=(T* p) const { return m_ptr != p; }
 
 	// Provide work-alikes for static_cast, dynamic_cast, implicit up-cast?  ("gentle_cast" a la ajb?)
 
