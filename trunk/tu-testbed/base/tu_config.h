@@ -29,8 +29,12 @@
 #endif
 
 // tu_error_exit() is for fatal errors; it should not return!
+// You can #define it to something else in compatibility_include.h; e.g. you could
+// throw an exception, halt, whatever.
 #ifndef tu_error_exit
+#include <stdlib.h>	// for exit()
 #define tu_error_exit(error_code, error_message) { fprintf(stderr, error_message); exit(error_code); }
 #endif
+
 
 #endif // TU_CONFIG_H

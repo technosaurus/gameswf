@@ -1900,8 +1900,42 @@ namespace gameswf
 
 				case 0x9F:	// goto frame expression (?)
 				{
-					assert(0);
-					log_error("error: unimplemented opcode 0x9F, goto_frame_exp\n");
+					//assert(0);
+					//log_error("error: unimplemented opcode 0x9F, goto_frame_exp\n");
+
+					// From Alexi's SWF ref:
+					//
+					// Pop a value or a string and jump to the specified
+					// frame. When a string is specified, it can include a
+					// path to a sprite as in:
+					// 
+					//   /Test:55
+					// 
+					// When f_play is ON, the action is to play as soon as
+					// that frame is reached. Otherwise, the
+					// frame is shown in stop mode.
+					unsigned char	play_flag = m_buffer[pc + 3];
+					movie::play_state	state = play_flag ? movie::PLAY : movie::STOP;
+
+					if (env->top(0).get_type() == as_value::STRING)
+					{
+						// @@ TODO: parse possible sprite path...
+						
+						// Also, if the frame spec is actually a number (not a label), then
+						// we need to do the conversion...
+
+						env->get_target()->goto_labeled_frame(env->top(0).to_string());
+					}
+					else
+					{
+						// @@ are frame numbers here 1-based or 0-based???
+						// @@ guessing 0-based for now.
+						env->get_target()->goto_frame(env->top(0).to_number());
+					}
+					env->get_target()->set_play_state(state);
+					
+					env->drop(1);
+
 					break;
 				}
 				
