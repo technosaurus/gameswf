@@ -31,13 +31,13 @@ namespace triangulate
 	void	compute(
 		array<float>* results,
 		int path_count,
-		const array<float> (**paths));
+		const array<float> paths[]);
 
 	// Version using short coords
 	void	compute(
 		array<sint16>* results,	// indexed trilist
 		int path_count,
-		const array<sint16> (**paths));
+		const array<sint16> paths[]);
 }
 
 
