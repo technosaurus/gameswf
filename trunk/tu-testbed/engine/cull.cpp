@@ -5,6 +5,7 @@
 
 #include <math.h>
 #include "cull.h"
+#include "utility.h"
 
 
 namespace cull {
