@@ -49,13 +49,18 @@ OBJS = \
 	gameswf_text.$(OBJ_EXT)		\
 	gameswf_types.$(OBJ_EXT)
 
+TEST_PROGRAM_OBJS = \
+	gameswf_test_ogl.$(OBJ_EXT) \
+	gameswf_render_handler_ogl.$(OBJ_EXT)	\
+	gameswf_sound_handler_sdl.$(OBJ_EXT)
+
 gameswf_impl.$(OBJ_EXT): gameswf.h gameswf_impl.h gameswf_types.h
 
 $(LIB_OUT): $(OBJS)
 	$(AR) $(LIB_OUT_FLAG)$@ $^
 
 
-$(EXE_OUT): gameswf_test_ogl.$(OBJ_EXT) $(LIB_OUT) $(BASE_LIB)
+$(EXE_OUT): $(TEST_PROGRAM_OBJS) $(LIB_OUT) $(BASE_LIB)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 
@@ -65,4 +70,4 @@ base_lib:
 
 clean:
 	make -C $(TOP)/base clean
-	-rm gameswf_test_ogl.$(OBJ_EXT) $(OBJS) $(LIB_OUT) $(EXE_OUT)
+	-rm $(TEST_PROGRAM_OBJS) $(OBJS) $(LIB_OUT) $(EXE_OUT)
