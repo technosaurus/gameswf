@@ -336,7 +336,6 @@ public:
 	void	reserve(int rsize)
 	{
 		assert(m_size >= 0);
-		int	old_size = m_size;
 		m_buffer_size = rsize;
 
 		// Resize the buffer.

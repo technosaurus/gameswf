@@ -29,7 +29,6 @@ namespace gameswf
 	struct action_buffer;
 	struct execute_tag;
 	struct font;
-	namespace key { enum code; }
 	struct movie_interface;
 	struct render_handler;
 	struct resource;

@@ -1727,26 +1727,26 @@ namespace gameswf
 
 			static const event_id	s_code_bits[18] =
 			{
-				event_id::id_code::LOAD,
-				event_id::id_code::ENTER_FRAME,
-				event_id::id_code::UNLOAD,
-				event_id::id_code::MOUSE_MOVE,
-				event_id::id_code::MOUSE_DOWN,
-				event_id::id_code::MOUSE_UP,
-				event_id::id_code::KEY_DOWN,
-				event_id::id_code::KEY_UP,
-				event_id::id_code::DATA,
-				event_id::id_code::INITIALIZE,
-				event_id::id_code::PRESS,
-				event_id::id_code::RELEASE,
-				event_id::id_code::RELEASE_OUTSIDE,
-				event_id::id_code::ROLL_OVER,
-				event_id::id_code::ROLL_OUT,
-				event_id::id_code::DRAG_OVER,
-				event_id::id_code::DRAG_OUT,
+				event_id::LOAD,
+				event_id::ENTER_FRAME,
+				event_id::UNLOAD,
+				event_id::MOUSE_MOVE,
+				event_id::MOUSE_DOWN,
+				event_id::MOUSE_UP,
+				event_id::KEY_DOWN,
+				event_id::KEY_UP,
+				event_id::DATA,
+				event_id::INITIALIZE,
+				event_id::PRESS,
+				event_id::RELEASE,
+				event_id::RELEASE_OUTSIDE,
+				event_id::ROLL_OVER,
+				event_id::ROLL_OUT,
+				event_id::DRAG_OVER,
+				event_id::DRAG_OUT,
 			};
 
-			for (int i = 0, mask = 1; i < sizeof(s_code_bits)/sizeof(s_code_bits[0]); i++, mask <<= 1)
+			for (int i = 0, mask = 1; i < int(sizeof(s_code_bits)/sizeof(s_code_bits[0])); i++, mask <<= 1)
 			{
 				if (flags & mask)
 				{
@@ -1876,6 +1876,7 @@ namespace gameswf
 				if (has_actions)
 				{
 					Uint16	reserved = in->read_u16();
+					UNUSED(reserved);
 
 					// The logical 'or' of all the following handlers.
 					// I don't think we care about this...
