@@ -38,21 +38,20 @@ namespace fontlib
 	// considerably smaller.  This is also the parameter that
 	// controls the tradeoff between texture RAM usage and
 	// sharpness of large text.
-	static const int	GLYPH_FINAL_SIZE =
-// You can override the rendered glyph size in compatibility_include.h,
-// to trade off memory vs. niceness of large glyphs
-#ifndef GAMESWF_FONT_GLYPH_FINAL_SIZE
+	static int	s_glyph_nominal_size =
+// You can override the default rendered glyph size in
+// compatibility_include.h, to trade off memory vs. niceness of large
+// glyphs.  You can also override this at run-time via
+// gameswf::fontlib::set_nominal_glyph_pixel_size()
+#ifndef GAMESWF_FONT_NOMINAL_GLYPH_SIZE_DEFAULT
 	96
 #else
-	GAMESWF_FONT_GLYPH_FINAL_SIZE
+	GAMESWF_FONT_NOMINAL_GLYPH_SIZE_DEFAULT
 #endif
 	;
 
 	static const int	OVERSAMPLE_BITS = 2;
 	static const int	OVERSAMPLE_FACTOR = (1 << OVERSAMPLE_BITS);
-
-	// The raw non-antialiased render size for glyphs.
-	static const int	GLYPH_RENDER_SIZE = (GLYPH_FINAL_SIZE << OVERSAMPLE_BITS);
 
 	// The dimensions of the textures that the glyphs get packed into.
 	static const int	GLYPH_CACHE_TEXTURE_SIZE = 256;
@@ -62,6 +61,34 @@ namespace fontlib
 	// the boundaries of minified text will be, but the more
 	// texture space is wasted.
 	const int PAD_PIXELS = 3;
+
+
+	// The raw non-antialiased render size for glyphs.
+	static int	s_glyph_render_size = s_glyph_nominal_size << OVERSAMPLE_BITS;
+
+	
+	void	set_nominal_glyph_pixel_size(int pixel_size)
+	{
+		static const int	MIN_SIZE = 4;
+		static const int	MAX_SIZE = GLYPH_CACHE_TEXTURE_SIZE / 2;
+
+		if (pixel_size < MIN_SIZE)
+		{
+			log_error("set_nominal_glyph_pixel_size(%d) too small, clamping to %d\n",
+				  MIN_SIZE);
+			pixel_size = MIN_SIZE;
+		}
+		else if (pixel_size > MAX_SIZE)
+		{
+			log_error("set_nominal_glyph_pixel_size(%d) too large, clamping to %d\n",
+				  pixel_size,
+				  MAX_SIZE);
+			pixel_size = MAX_SIZE;
+		}
+
+		s_glyph_nominal_size = pixel_size;
+		s_glyph_render_size = s_glyph_nominal_size << OVERSAMPLE_BITS;
+	}
 
 
 	//
@@ -168,6 +195,7 @@ namespace fontlib
 
 
 	static bool	s_saving = false;
+	static bool	s_save_dummy_bitmaps = false;
 	static tu_file*	s_file = NULL;
 
 
@@ -220,15 +248,25 @@ namespace fontlib
 
 		if (s_saving)		// HACK!!!
 		{
-			int w = GLYPH_CACHE_TEXTURE_SIZE;
-			int h = GLYPH_CACHE_TEXTURE_SIZE;
+			if (s_save_dummy_bitmaps)
+			{
+				// Save a mini placeholder bitmap.
+				s_file->write_le16(1);
+				s_file->write_le16(1);
+				s_file->write_byte(0);
+			}
+			else
+			{
+				int w = GLYPH_CACHE_TEXTURE_SIZE;
+				int h = GLYPH_CACHE_TEXTURE_SIZE;
 
-			// save bitmap size
-			s_file->write_le16(w);
-			s_file->write_le16(h);
+				// save bitmap size
+				s_file->write_le16(w);
+				s_file->write_le16(h);
 
-			// save bitmap contents
-			s_file->write_bytes(s_current_cache_image, w*h);
+				// save bitmap contents
+				s_file->write_bytes(s_current_cache_image, w*h);
+			}
 		}
 
 		smart_ptr<bitmap_info>	bi;
@@ -433,18 +471,18 @@ namespace fontlib
 		for (int y = iy0; y < iy1; y++)
 		{
 			if (y < 0) continue;
-			if (y >= GLYPH_RENDER_SIZE) return;
+			if (y >= s_glyph_render_size) return;
 
 			float	f = (y - y0) / dy;
 			int	xl = (int) ceilf(flerp(xl0, xl1, f));
 			int	xr = (int) ceilf(flerp(xr0, xr1, f));
 			
-			xl = iclamp(xl, 0, GLYPH_RENDER_SIZE - 1);
-			xr = iclamp(xr, 0, GLYPH_RENDER_SIZE - 1);
+			xl = iclamp(xl, 0, s_glyph_render_size - 1);
+			xr = iclamp(xr, 0, s_glyph_render_size - 1);
 
 			if (xr > xl)
 			{
-				memset(s_render_buffer + y * GLYPH_RENDER_SIZE + xl,
+				memset(s_render_buffer + y * s_glyph_render_size + xl,
 				       255,
 				       xr - xl);
 			}
@@ -498,7 +536,7 @@ namespace fontlib
 		//
 
 		// Clear the render output to 0.
-		memset(s_render_buffer, 0, GLYPH_RENDER_SIZE * GLYPH_RENDER_SIZE);
+		memset(s_render_buffer, 0, s_glyph_render_size * s_glyph_render_size);
 
 		// Look at glyph bounds; adjust origin to make sure
 		// the shape will fit in our output.
@@ -516,12 +554,12 @@ namespace fontlib
 		}
 
 		s_render_matrix.set_identity();
-		s_render_matrix.concatenate_scale(GLYPH_RENDER_SIZE / s_rendering_box);
+		s_render_matrix.concatenate_scale(s_glyph_render_size / s_rendering_box);
 		s_render_matrix.concatenate_translation(offset_x, offset_y);
 
 		// Tesselate & draw the shape.
 		draw_into_software_buffer	accepter;
-		sh->tesselate(s_rendering_box / GLYPH_RENDER_SIZE * 0.5f, &accepter);
+		sh->tesselate(s_rendering_box / s_glyph_render_size * 0.5f, &accepter);
 
 		//
 		// Process the results of rendering.
@@ -529,14 +567,14 @@ namespace fontlib
 
 		// Shrink the results down by a factor of 4x, to get
 		// antialiasing.  Also, analyze the data boundaries.
-		int	min_x = GLYPH_FINAL_SIZE;
+		int	min_x = s_glyph_nominal_size;
 		int	max_x = 0;
-		int	min_y = GLYPH_FINAL_SIZE;
+		int	min_y = s_glyph_nominal_size;
 		int	max_y = 0;
-		Uint8	output[GLYPH_FINAL_SIZE * GLYPH_FINAL_SIZE];
-		for (int j = 0; j < GLYPH_FINAL_SIZE; j++)
+		Uint8*	output = new uint8[s_glyph_nominal_size * s_glyph_nominal_size];
+		for (int j = 0; j < s_glyph_nominal_size; j++)
 		{
-			for (int i = 0; i < GLYPH_FINAL_SIZE; i++)
+			for (int i = 0; i < s_glyph_nominal_size; i++)
 			{
 				// Sum up the contribution to this output texel.
 				int	sum = 0;
@@ -545,7 +583,7 @@ namespace fontlib
 					for (int ii = 0; ii < OVERSAMPLE_FACTOR; ii++)
 					{
 						Uint8	texel = s_render_buffer[
-							((j << OVERSAMPLE_BITS) + jj) * GLYPH_RENDER_SIZE
+							((j << OVERSAMPLE_BITS) + jj) * s_glyph_render_size
 							+ ((i << OVERSAMPLE_BITS) + ii)];
 						sum += texel;
 					}
@@ -559,23 +597,25 @@ namespace fontlib
 					min_y = imin(min_y, j);
 					max_y = imax(max_y, j);
 				}
-				output[j * GLYPH_FINAL_SIZE + i] = (Uint8) sum;
+				output[j * s_glyph_nominal_size + i] = (Uint8) sum;
 			}
 		}
 
 		// Fill in rendered_glyph_info.
 		rgi->m_image = new image::alpha(max_x - min_x + 1, max_y - min_y + 1);
-		rgi->m_offset_x = offset_x / s_rendering_box * GLYPH_FINAL_SIZE - min_x;
-		rgi->m_offset_y = offset_y / s_rendering_box * GLYPH_FINAL_SIZE - min_y;
+		rgi->m_offset_x = offset_x / s_rendering_box * s_glyph_nominal_size - min_x;
+		rgi->m_offset_y = offset_y / s_rendering_box * s_glyph_nominal_size - min_y;
 
 		// Copy the rendered glyph into the new image.
 		{for (int j = 0, n = rgi->m_image->m_height; j < n; j++)
 		{
 			memcpy(
 				image::scanline(rgi->m_image, j),
-				output + (min_y + j) * GLYPH_FINAL_SIZE + min_x,
+				output + (min_y + j) * s_glyph_nominal_size + min_x,
 				rgi->m_image->m_width);
 		}}
+
+		delete [] output;	// @@ TODO should keep this around longer, instead of new/delete for each glyph
 
 		rgi->m_image_hash = rgi->m_image->compute_hash();
 	}
@@ -830,6 +870,8 @@ namespace fontlib
 		assert(glyph_info);
 		assert(f);
 
+		f->set_texture_glyph_nominal_size(s_glyph_nominal_size);
+
 		for (int i = 0, n = f->get_glyph_count(); i < n; i++)
 		{
 			if (f->get_texture_glyph(i).is_renderable() == false)
@@ -861,9 +903,9 @@ namespace fontlib
 	}
 
 
-	float	get_nominal_texture_glyph_height()
+	float	get_texture_glyph_max_height(const font* f)
 	{
-		return 1024.0f / s_rendering_box * GLYPH_FINAL_SIZE;
+		return 1024.0f / s_rendering_box * f->get_texture_glyph_nominal_size(); //  s_glyph_nominal_size;
 	}
 
 
@@ -886,7 +928,7 @@ namespace fontlib
 	// Build cached textures from glyph outlines.
 	{
 		assert(s_render_buffer == NULL);
-		s_render_buffer = new Uint8[GLYPH_RENDER_SIZE * GLYPH_RENDER_SIZE];
+		s_render_buffer = new Uint8[s_glyph_render_size * s_glyph_render_size];
 
 		// Build the glyph images.
 		array<rendered_glyph_info>	glyph_info;
@@ -925,7 +967,11 @@ namespace fontlib
 	}
 
 
-	void	output_cached_data(tu_file* out, const array<font*>& fonts, movie_definition_sub* owner)
+	void	output_cached_data(
+		tu_file* out,
+		const array<font*>& fonts,
+		movie_definition_sub* owner,
+		const movie_definition::cache_options& options)
 	// Save cached font data, including glyph textures, to a
 	// stream.  This is used by the movie caching code.
 	{
@@ -937,7 +983,12 @@ namespace fontlib
 		out->write_le16(0);
 		
 		// save bitmaps
-		s_file = out;
+		s_save_dummy_bitmaps = false;
+		if (options.m_include_font_bitmaps == false)
+		{
+			s_save_dummy_bitmaps = true;	// HACK!!!
+		}
+		s_file = out;			// HACK!!!
 		s_saving = true;		// HACK!!!
 		wipe_font_textures(fonts);	// HACK -- eliminate the font textures, so generate_font_bitmaps() regen's them.
 		generate_font_bitmaps(fonts, owner);
@@ -955,13 +1006,19 @@ namespace fontlib
 		// for each font:
 		for (int f = 0; f < fonts.size(); f++)
 		{
+			font*	fnt = fonts[f];
+
+			// Write out the nominal glyph size for this font (for calibrating scaling).
+			int	nominal_glyph_size = fnt->get_texture_glyph_nominal_size();
+			out->write_le16(nominal_glyph_size);
+
 			// skip number of glyphs.
 			int ng = fonts[f]->get_glyph_count();
 			int ng_position = out->get_position();
 			out->write_le32(0);
-				
+			
 			int n = 0;
-				
+			
 			// save texture glyphs:
 			for (int g = 0; g < ng; g++)
 			{
@@ -1002,7 +1059,7 @@ namespace fontlib
 			out->go_to_end();
 
 			// Output cached shape data.
-			fonts[f]->output_cached_data(out);
+			fonts[f]->output_cached_data(out, options);
 		}
 
 		if (out->get_error() != TU_FILE_NO_ERROR)
@@ -1079,6 +1136,8 @@ namespace fontlib
 		// for each font:
 		{for (int f = 0; f < nf; f++)
 		{
+			font*	fnt = fonts[f];
+
 			if (in->get_error() != TU_FILE_NO_ERROR)
 			{
 				log_error("error reading cache file (fonts); skipping\n");
@@ -1089,6 +1148,10 @@ namespace fontlib
 				log_error("unexpected eof reading cache file (fonts); skipping\n");
 				return;
 			}
+
+			// Get nominal glyph size for this font (for calibrating scaling).
+			int	nominal_glyph_size = in->read_le16();
+			fnt->set_texture_glyph_nominal_size(nominal_glyph_size);
 
 			// load number of texture glyphs.
 			int ng = in->read_le32();
@@ -1121,11 +1184,11 @@ namespace fontlib
 				tg.m_uv_origin.m_x = in->read_float32();
 				tg.m_uv_origin.m_y = in->read_float32();
 
-				fonts[f]->add_texture_glyph(glyph_index, tg);
+				fnt->add_texture_glyph(glyph_index, tg);
 			}
 
 			// Load cached shape data.
-			fonts[f]->input_cached_data(in);
+			fnt->input_cached_data(in);
 		}}
 
 	error_exit:
@@ -1208,7 +1271,7 @@ namespace fontlib
 	}
 
 
-	void	draw_glyph(const matrix& mat, const texture_glyph& tg, rgba color)
+	void	draw_glyph(const matrix& mat, const texture_glyph& tg, rgba color, int nominal_glyph_height)
 	// Draw the given texture glyph using the given transform, in
 	// the given color.
 	{
@@ -1223,7 +1286,8 @@ namespace fontlib
 		bounds.m_y_max -= tg.m_uv_origin.m_y;
 
 		// Scale from uv coords to the 1024x1024 glyph square.
-		static float	s_scale = GLYPH_CACHE_TEXTURE_SIZE * s_rendering_box / GLYPH_FINAL_SIZE;
+		// @@ need to factor this out!
+		static float	s_scale = GLYPH_CACHE_TEXTURE_SIZE * s_rendering_box / nominal_glyph_height;
 
 		bounds.m_x_min *= s_scale;
 		bounds.m_x_max *= s_scale;

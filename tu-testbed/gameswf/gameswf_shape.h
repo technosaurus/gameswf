@@ -156,7 +156,7 @@ namespace gameswf
 		const rect&	get_bound() const { return m_bound; }
 		void	compute_bound(rect* r) const;	// @@ what's the difference between this and get_bound?
 
-		void	output_cached_data(tu_file* out);
+		void	output_cached_data(tu_file* out, const movie_definition::cache_options& options);
 		void	input_cached_data(tu_file* in);
 
 	private:

@@ -1067,7 +1067,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character_def::output_cached_data(tu_file* out)
+	void	shape_character_def::output_cached_data(tu_file* out, const movie_definition::cache_options& options)
 	// Dump our precomputed mesh data to the given stream.
 	{
 		int	n = m_cached_meshes.size();

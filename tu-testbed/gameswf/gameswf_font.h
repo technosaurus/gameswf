@@ -64,7 +64,7 @@ namespace gameswf
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	read_font_info(stream* in);
 
-		void	output_cached_data(tu_file* out);
+		void	output_cached_data(tu_file* out, const movie_definition::cache_options& options);
 		void	input_cached_data(tu_file* in);
 
 		void	wipe_texture_glyphs();
@@ -74,6 +74,9 @@ namespace gameswf
 
 		const texture_glyph&	get_texture_glyph(int glyph_index) const;
 		void	add_texture_glyph(int glyph_index, const texture_glyph& glyph);
+
+		void	set_texture_glyph_nominal_size(int size) { m_texture_glyph_nominal_size = imax(1, size); }
+		int	get_texture_glyph_nominal_size() const { return m_texture_glyph_nominal_size; }
 
 		int	get_glyph_index(Uint16 code) const;
 		float	get_advance(int glyph_index) const;
@@ -86,6 +89,7 @@ namespace gameswf
 
 		array< smart_ptr<shape_character_def> >	m_glyphs;
 		array< texture_glyph >	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
+		int	m_texture_glyph_nominal_size;
 
 		char*	m_name;
 		movie_definition_sub*	m_owning_movie;

@@ -134,7 +134,17 @@ namespace gameswf
 
 		// For caching precomputed stuff.  Generally of
 		// interest to gameswf_processor and programs like it.
-		virtual void	output_cached_data(tu_file* out) = 0;
+		struct cache_options
+		{
+			bool	m_include_font_bitmaps;
+		
+			cache_options()
+				:
+				m_include_font_bitmaps(true)
+			{
+			}
+		};
+		virtual void	output_cached_data(tu_file* out, const cache_options& options) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
 
 		// Causes this movie def to generate texture-mapped
@@ -451,6 +461,12 @@ namespace gameswf
 	struct font;
 	namespace fontlib
 	{
+		// Controls how large to render textured glyphs.
+		// Applies to fonts processed *after* this call only.
+		// The "nominal" size is perhaps around twice the
+		// average glyph height.
+		void	set_nominal_glyph_pixel_size(int pixel_size);
+
 		// For accessing the fonts in the library.
 		void	clear();
 		int	get_font_count();
@@ -829,8 +845,8 @@ namespace gameswf
 	{
 		struct process_options
 		{
-			bool	m_zip_whole_file;
-			bool	m_remove_image_data;
+			bool	m_zip_whole_file;	// @@ not implemented yet (low priority?)
+			bool	m_remove_image_data;	// removes existing image data; leaves minimal placeholder tags
 			bool	m_remove_font_glyph_shapes;
 
 			process_options()
@@ -848,7 +864,7 @@ namespace gameswf
 		//
 		// Returns 0 on success, or a non-zero error-code on
 		// failure.
-		int	process_swf(tu_file* swf_in, tu_file* swf_out, const process_options& options);
+		int	process_swf(tu_file* swf_out, tu_file* swf_in, const process_options& options);
 	}
 
 }	// namespace gameswf

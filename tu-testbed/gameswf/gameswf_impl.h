@@ -269,7 +269,7 @@ namespace gameswf
 		// Caching.
 		//
 
-		virtual void	output_cached_data(tu_file* out) {}
+		virtual void	output_cached_data(tu_file* out, const movie_definition::cache_options& options) {}
 		virtual void	input_cached_data(tu_file* in) {}
 	};
 

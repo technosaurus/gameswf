@@ -777,11 +777,11 @@ namespace gameswf
 
 
 		// Increment this when the cache data format changes.
-		#define CACHE_FILE_VERSION 2
+		#define CACHE_FILE_VERSION 3
 
 
 		/* movie_def_impl */
-		void	output_cached_data(tu_file* out)
+		void	output_cached_data(tu_file* out, const cache_options& options)
 		// Dump our cached data into the given stream.
 		{
 			// Write a little header.
@@ -795,7 +795,7 @@ namespace gameswf
 			// Write font data.
 			array<font*>	fonts;
 			get_owned_fonts(&fonts);
-			fontlib::output_cached_data(out, fonts, this);
+			fontlib::output_cached_data(out, fonts, this, options);
 
 			// Write character data.
 			{for (hash<int, smart_ptr<character_def> >::iterator it = m_characters.begin();
@@ -803,7 +803,7 @@ namespace gameswf
 			     ++it)
 			{
 				out->write_le16(it->first);
-				it->second->output_cached_data(out);
+				it->second->output_cached_data(out, options);
 			}}
 
 			out->write_le16((Sint16) -1);	// end of characters marker
@@ -2530,7 +2530,7 @@ namespace gameswf
 		virtual void	generate_font_bitmaps() { assert(0); }
 
 
-		virtual void	output_cached_data(tu_file* out)
+		virtual void	output_cached_data(tu_file* out, const cache_options& options)
 		{
 			// Nothing to do.
 			return;

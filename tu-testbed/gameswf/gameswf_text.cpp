@@ -135,11 +135,13 @@ namespace gameswf
 				/ 20.0f
 				* pixel_scale;
 
+			int	nominal_glyph_height = fnt->get_texture_glyph_nominal_size();
+			int	max_glyph_height = fontlib::get_texture_glyph_max_height(fnt);
 #ifdef GAMESWF_ALWAYS_USE_TEXTURES_FOR_TEXT_WHEN_POSSIBLE
 			const bool	use_glyph_textures = true;
 #else
 			bool	use_glyph_textures =
-				text_screen_height <= fontlib::get_nominal_texture_glyph_height() * 1.0f;
+				text_screen_height <= max_glyph_height * 1.0f;
 #endif
 
 			if (rec.m_style.m_has_x_offset)
@@ -169,7 +171,7 @@ namespace gameswf
 				if (tg.is_renderable()
 				    && (use_glyph_textures || glyph == NULL))
 				{
-					fontlib::draw_glyph(mat, tg, transformed_color);
+					fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
 				}
 				else
 				{
