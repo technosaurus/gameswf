@@ -640,9 +640,16 @@ extern "C" int	main(int argc, char *argv[])
 				frame_triangle_count = 0;
 			}
 		}
+
+		SDL_RWclose(in);
 	}
 	catch (const char* message) {
 		printf("run-time exception: %s\n", message);
+		exit(1);
+	}
+	catch (...)
+	{
+		printf("run-time exception: unknown type\n");
 		exit(1);
 	}
 

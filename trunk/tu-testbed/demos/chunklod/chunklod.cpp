@@ -50,6 +50,7 @@ float	morph_curve(float f)
 
 
 static ogl::vertex_stream*	s_stream = NULL;
+static SDL_RWops*	s_datafile = NULL;
 
 
 static float	s_vertical_scale = 1.0;
@@ -96,10 +97,6 @@ enum direction {
 
 
 struct lod_edge {
-//	int	vertex_count;
-//	int	midpoint_index;
-//	Uint16*	indices;
-
 	int	ribbon_index_count;
 	Uint16*	ribbon_indices;
 
@@ -116,18 +113,6 @@ struct lod_edge {
 void	lod_edge::read(SDL_RWops* in)
 // Initialize this edge structure from the specified stream.
 {
-#if 0
-	midpoint_index = SDL_ReadLE16(in);
-	vertex_count = SDL_ReadLE16(in);
-	indices = new Uint16[vertex_count];
-
-	for (int i = 0; i < vertex_count; i++) {
-		indices[i] = SDL_ReadLE16(in);
-	}
-
-	// @@ hm, might be nice to have array<>::read()/write()...
-#endif // 0
-
 	ribbon_index_count = SDL_ReadLE16(in);
 	assert(ribbon_index_count % 3 == 0);	// this is a triangle list; should be 3n indices.
 	ribbon_indices = new Uint16[ribbon_index_count];
@@ -147,28 +132,71 @@ void	lod_edge::read(SDL_RWops* in)
 }
 
 
+struct lod_chunk;
+
+
+// Vertex/mesh data for a chunk.  Can get paged in/out on demand.
+struct lod_chunk_data {
+	lod_edge	m_edge[4];	// edge mesh info.
+	vertex_info	m_verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
+
+	//	lod_chunk_data* m_next_data;
+	//	lod_chunk_data* m_prev_data;
+
+
+	void	read(SDL_RWops* in)
+	{
+		// Load the main chunk data.
+		m_verts.read(in);
+
+		// Read the edge data.
+		{for (int i = 0; i < 4; i++) {
+			m_edge[i].read(in);
+		}}
+	}
+
+	int	render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
+				   const vec3& box_center, const vec3& box_extent);
+	int	render_edge(const lod_chunk& chunk, direction dir, render_options opt, const vec3& box_center, const vec3& box_extent);
+};
+
+
 struct lod_chunk {
 //data:
-	lod_chunk*	parent;
-	Uint16	lod;	// LOD of this chunk.  high byte never changes; low byte is the morph parameter.
-	bool	split;	// true if this node should be rendered by descendents.
-
-	// Our edges.
-	lod_edge	edge[4];
-
-	int	child_count;
-	lod_chunk**	children;
+	lod_chunk*	m_parent;
+	lod_chunk*	m_children[4];
 
 	union {
-		int	label;
-		lod_chunk*	chunk;
-	} neighbor[4];
+		int	m_label;
+		lod_chunk*	m_chunk;
+	} m_neighbor[4];
 
-	// AABB, used for deciding when to enable.
-	vec3	box_center;
-	vec3	box_extent;
-	
+	// Chunk "address" (its position in the quadtree).
+	Uint16	m_x, m_z;
+	Uint8	m_level;
+
+	bool	m_split;	// true if this node should be rendered by descendents.  @@ pack this somewhere as a bitflag.  LSB of lod?
+	Uint16	lod;	// LOD of this chunk.  high byte never changes; low byte is the morph parameter.
+
+	// Vertical bounds, for constructing bounding box.
+	Sint16	m_min_y, m_max_y;
+
+	long	m_data_file_position;
+	lod_chunk_data*	m_data;
+
+#if 0
+	// struct lod_chunk_data {
+	// @@ put this stuff in struct lod_chunk_data.
+	lod_edge	edge[4];	// edge mesh info.
 	vertex_info	verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
+	//	render();
+	//	render_edge();
+	//	read();
+
+	//	lod_chunk_data* m_next_data;
+	//	lod_chunk_data* m_prev_data;
+	// };
+#endif // 0
 
 //methods:
 	// needs a destructor!
@@ -176,12 +204,267 @@ struct lod_chunk {
 	void	clear();
 	void	update(const lod_chunk_tree& c, const vec3& viewpoint);
 	void	do_split(const lod_chunk_tree& base, const vec3& viewpoint);
+	bool	can_split();	// return true if this chunk can split.  Also, request the necessary data.
+	bool	request_data();
+
 	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt);
-	int	render_edge(direction dir, render_options opt);
 
 	void	read(SDL_RWops* in, int level, lod_chunk_tree* tree);
 	void	lookup_neighbors(lod_chunk_tree* tree);
+
+	// Utilities.
+
+	bool	has_children() const
+	{
+		return m_children[0] != NULL;
+	}
+
+	void	compute_bounding_box(const lod_chunk_tree& tree, vec3* box_center, vec3* box_extent)
+	{
+		box_center->y() = (m_max_y + m_min_y) * 0.5 * tree.m_vertical_scale;
+		box_extent->y() = (m_max_y - m_min_y) * 0.5 * tree.m_vertical_scale;
+
+		box_center->x() = (m_x + 0.5) * (1 << m_level) * tree.m_base_chunk_dimension;
+		box_center->z() = (m_z + 0.5) * (1 << m_level) * tree.m_base_chunk_dimension;
+
+		box_extent->x() = (1 << m_level) * tree.m_base_chunk_dimension * 0.5;
+		box_extent->z() = box_extent->get_x();
+	}
 };
+
+
+
+static void	morph_vertices(float* verts, const vertex_info& morph_verts, const vec3& box_center, const vec3& box_extent, float f)
+// Adjust the positions of our morph vertices according to f, the
+// given morph parameter.  verts is the output buffer for processed
+// verts.
+//
+// The input is in chunk-local 16-bit signed coordinates.  The given
+// box_center/box_extent parameters are used to produce the correct
+// world-space coordinates.  The quantizing to 16 bits is a way to
+// compress the input data.
+//
+// @@ This morphing/decompression functionality should be shifted into
+// a vertex program for the GPU where possible.
+{
+	// Do quantization decompression, output floats.
+
+	float	sx = box_extent.get_x() / (1 << 14);
+	float	sz = box_extent.get_z() / (1 << 14);
+
+	float	offsetx = box_center.get_x();
+	float	offsetz = box_center.get_z();
+
+	float	one_minus_f = 1.0 - f;
+
+	for (int i = 0; i < morph_verts.vertex_count; i++) {
+		const vertex_info::vertex&	v = morph_verts.vertices[i];
+		verts[i*3 + 0] = offsetx + v.x[0] * sx;
+		verts[i*3 + 1] = (v.x[1] + v.y_delta * one_minus_f) * s_vertical_scale;	// lerp the y value of the vert.
+		verts[i*3 + 2] = offsetz + v.x[2] * sz;
+	}
+#if 0
+	// With a vshader, this routine would be replaced by an initial agp_alloc() & memcpy()/memmap().
+#endif // 0
+}
+
+
+int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
+							   const vec3& box_center, const vec3& box_extent)
+{
+	if (opt.show_geometry || opt.show_edges) {
+		glEnable(GL_TEXTURE_2D);
+
+#if 0
+		glBindTexture(m_data->m_texture_id);
+		...;
+		
+		float	xsize = c.m_root->box_extent.get_x() * 2;
+		float	zsize = c.m_root->box_extent.get_z() * 2;
+
+		// Set up texgen for this tile.
+		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+		float	p[4] = { 0, 0, 0, 0 };
+		p[0] = 1.0f / xsize;
+		glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+		p[0] = 0;
+		
+		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+		p[2] = 1.0f / zsize;
+		glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+		
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
+#endif // 0
+	}
+
+
+	int	triangle_count = 0;
+
+	// Grab some space to put processed verts.
+	assert(s_stream);
+	float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * m_verts.vertex_count);
+
+	// Process our vertices into the output buffer.
+	float	f = morph_curve((chunk.lod & 255) / 255.0f);
+	if (opt.morph == false) {
+		f = 0;
+	}
+	morph_vertices(output_verts, m_verts, box_center, box_extent, f);
+
+	if (opt.show_geometry) {
+		// draw this chunk.
+		glColor3f(1, 1, 1);
+		glVertexPointer(3, GL_FLOAT, 0, output_verts);
+		glDrawElements(GL_TRIANGLE_STRIP, m_verts.index_count, GL_UNSIGNED_SHORT, m_verts.indices);
+		triangle_count += m_verts.triangle_count;
+	}
+
+	if (opt.show_edges) {
+		for (int i = 0; i < 4; i++) {
+			triangle_count += render_edge(chunk, (direction) i, opt, box_center, box_extent);
+		}
+	}
+
+	return triangle_count;
+}
+
+
+int	lod_chunk_data::render_edge(const lod_chunk& chunk, direction dir, render_options opt, const vec3& box_center, const vec3& box_extent)
+// Draw the ribbon connecting the edge of this chunk to the edge(s) of
+// the neighboring chunk(s) in the specified direction.  Returns the
+// number of triangles rendered.
+{
+	int	facing_dir = direction((int(dir) + 2) & 3);
+
+	int	triangle_count = 0;
+
+	//
+	// Figure out which of the three cases we have:
+	//
+	// 1) our neighbor is a chunk at our same LOD (but probably has a
+	// different morph value).  We only handle this if this is the
+	// EAST or SOUTH edge of our chunk.  Otherwise, the other chunk is
+	// responsible for rendering (this prevents double-rendering of
+	// the edge.)
+	//
+	// To render, all we have to do is zip up the corresponding verts.
+	//
+	//  |           |
+	//  |    us     |
+	//  +-*-*-*-*-*-+
+	//  |/|/|/|/|/|/|  <-- simple zig-zag tri strip
+	//  +-*-*-*-*-*-+
+	//  |  neighbor |
+	//  |           |
+	//
+	//
+	// 2) our neighbors are actually two chunks, at the next higher
+	// LOD.  We have to stitch together our verts with the verts of
+	// the two neighbors.
+	//
+	//  |           |
+	//  |    us     |
+	//  +-*-*-*-*-*-+
+	//  |/|\|\|\|/|\|  <-- more complex connecting ribbon
+	//  +***********+
+	//  |  n0 |  n1 |
+	//  |     |     |
+	//
+	// 3) same as 2, but we're one of the high LOD chunks.  In this
+	// case we don't render anything; the lower-LOD chunk is
+	// responsible for rendering the edge.
+
+	lod_chunk*	n = chunk.m_neighbor[(int) dir].m_chunk;
+	if (n == NULL) {
+		// No neighbor, so no edge to worry about.
+		return triangle_count;
+	}
+	if (n->m_split == false && n->m_parent && n->m_parent->m_split == true) {
+		// two matching edges.
+		if (dir == EAST || dir == SOUTH) {
+			float	f0 = morph_curve((chunk.lod & 255) / 255.0f);
+			float	f1 = morph_curve((n->lod & 255) / 255.0f);
+			if (opt.morph == false) {
+				f0 = f1 = 0;
+			}
+			int	c0 = m_edge[dir].lo_vertex_count;
+			float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * c0 * 2);
+			vertex_info	vi;
+			vi.vertex_count = c0;
+			vi.vertices = m_edge[dir].edge_verts;
+			morph_vertices(output_verts, vi, box_center, box_extent, f0);
+			// Same verts, different morph value.
+			morph_vertices(output_verts + c0 * 3, vi, box_center, box_extent, f1);
+
+			// Draw the connecting ribbon.  Just a zig-zag strip between
+			// the two edges.
+			glVertexPointer(3, GL_FLOAT, 0, output_verts);
+			glBegin(GL_TRIANGLE_STRIP);
+			for (int i = 0; i < c0; i++) {
+				glArrayElement(i);
+				glArrayElement(i + c0);
+			}
+			glEnd();
+		
+			triangle_count += c0 * 2 - 2;
+		}
+
+	} else if (n->m_split) {
+		// we have the low LOD edge; children of our neighbor have the high LOD edges.
+
+		// Find the neighbors we need to mesh with.
+
+		// table indexed by the direction of our big low-LOD edge.
+		int	child_index[4][2] = {
+			{ 0, 2 },	// EAST
+			{ 2, 3 },	// NORTH
+			{ 1, 3 },	// WEST
+			{ 0, 1 }	// SOUTH
+		};
+		assert(n->has_children());
+		lod_chunk*	n0 = n->m_children[child_index[dir][0]];
+		lod_chunk*	n1 = n->m_children[child_index[dir][1]];
+
+		assert(n0);
+		assert(n1);
+
+		float	f = morph_curve((chunk.lod & 255) / 255.0f);
+		float	f0 = morph_curve((n0->lod & 255) / 255.0f);
+		float	f1 = morph_curve((n1->lod & 255) / 255.0f);
+		if (opt.morph == false) {
+			f = f0 = f1 = 0;
+		}
+
+		const lod_edge&	e = m_edge[dir];
+
+		float*	output_verts = (float*) s_stream->reserve_memory(
+			sizeof(float) * 3 * (e.lo_vertex_count + e.hi_vertex_count[0] + e.hi_vertex_count[1]));
+
+		vertex_info	vi;
+		vi.vertices = e.edge_verts;
+		vi.vertex_count = e.lo_vertex_count;
+		morph_vertices(output_verts, vi, box_center, box_extent, f);
+		vi.vertices = e.edge_verts + e.lo_vertex_count;
+		vi.vertex_count = e.hi_vertex_count[0];
+		morph_vertices(output_verts + 3 * e.lo_vertex_count, vi, box_center, box_extent, f0);
+		vi.vertices = e.edge_verts + e.lo_vertex_count + e.hi_vertex_count[0];
+		vi.vertex_count = e.hi_vertex_count[1];
+		morph_vertices(output_verts + 3 * (e.lo_vertex_count + e.hi_vertex_count[0]), vi, box_center, box_extent, f1);
+
+		// Draw the connecting ribbon.
+
+		assert(e.ribbon_index_count);
+		glVertexPointer(3, GL_FLOAT, 0, output_verts);
+		glDrawElements(GL_TRIANGLES, e.ribbon_index_count, GL_UNSIGNED_SHORT, e.ribbon_indices);
+		triangle_count += e.ribbon_index_count / 3;
+
+	} else {
+		// Our neighbor is responsible for this case.
+	}
+
+	return triangle_count;
+}
 
 
 static void	draw_box(const vec3& min, const vec3& max)
@@ -250,12 +533,14 @@ void	lod_chunk::clear()
 //
 // Do this before calling update().
 {
-	if (split) {
-		split = false;
+	if (m_split) {
+		m_split = false;
 
 		// Recurse to children.
-		for (int i = 0; i < child_count; i++) {
-			children[i]->clear();
+		if (has_children()) {
+			for (int i = 0; i < 4; i++) {
+				m_children[i]->clear();
+			}
 		}
 	}
 }
@@ -270,15 +555,20 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 // !!!  For correct results, the tree must have been clear()ed before
 // calling update() !!!
 {
+	vec3	box_center, box_extent;
+	compute_bounding_box(base, &box_center, &box_extent);
+
 	Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
 
-	if (child_count > 0 && desired_lod > (lod | 0x0FF))
+	if (has_children()
+		&& desired_lod > (lod | 0x0FF)
+		&& can_split())
 	{
 		do_split(base, viewpoint);
 
 		// Recurse to children.
-		for (int i = 0; i < child_count; i++) {
-			children[i]->update(base, viewpoint);
+		for (int i = 0; i < 4; i++) {
+			m_children[i]->update(base, viewpoint);
 		}
 	} else {
 		// We're good... this chunk can represent its region within the max error tolerance.
@@ -293,65 +583,101 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 // Enable this chunk.  Use the given viewpoint to decide what morph
 // level to use.
+//
+// If able to split this chunk, then the function returns true.  If
+// unable to split this chunk, then the function doesn't change the
+// tree, and returns false.
 {
-	if (split == false) {
-		split = true;
+	if (m_split == false) {
 
-		// Make sure children have a valid lod value.
-		{for (int i = 0; i < child_count; i++) {
-			lod_chunk*	c = children[i];
-			Uint16	desired_lod = base.compute_lod(c->box_center, c->box_extent, viewpoint);
-			c->lod = iclamp(desired_lod, c->lod & 0xFF00, c->lod | 0x0FF);
-		}}
+		m_split = true;
+
+		if (has_children()) {
+			// Make sure children have a valid lod value.
+			{for (int i = 0; i < 4; i++) {
+				lod_chunk*	c = m_children[i];
+				vec3	box_center, box_extent;
+				c->compute_bounding_box(base, &box_center, &box_extent);
+				Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
+				c->lod = iclamp(desired_lod, c->lod & 0xFF00, c->lod | 0x0FF);
+			}}
+		}
 
 		// make sure ancestors are split...
-		for (lod_chunk* p = parent; p && p->split == false; p = p->parent) {
+		for (lod_chunk* p = m_parent; p && p->m_split == false; p = p->m_parent) {
 			p->do_split(base, viewpoint);
 		}
 
 		// make sure neighbors are subdivided enough.
 		{for (int i = 0; i < 4; i++) {
-			lod_chunk*	n = neighbor[i].chunk;
-			if (n && n->parent && n->parent->split == false) {
-				n->parent->do_split(base, viewpoint);
+			lod_chunk*	n = m_neighbor[i].m_chunk;
+			if (n && n->m_parent && n->m_parent->m_split == false) {
+				n->m_parent->do_split(base, viewpoint);
 			}
 		}}
 	}
 }
 
 
-static void	morph_vertices(float* verts, const vertex_info& morph_verts, const vec3& box_center, const vec3& box_extent, float f)
-// Adjust the positions of our morph vertices according to f, the
-// given morph parameter.  verts is the output buffer for processed
-// verts.
+bool	lod_chunk::can_split()
+// Return true if this chunk can be split.  Also, requests the
+// necessary data for the chunk children and its dependents.
 //
-// The input is in chunk-local 16-bit signed coordinates.  The given
-// box_center/box_extent parameters are used to produce the correct
-// world-space coordinates.  The quantizing to 16 bits is a way to
-// compress the input data.
-//
-// @@ This morphing/decompression functionality should be shifted into
-// a vertex program for the GPU where possible.
+// A chunk won't be able to be split if it doesn't have vertex data,
+// or if any of the dependent chunks don't have vertex data.
 {
-	// Do quantization decompression, output floats.
-
-	float	sx = box_extent.get_x() / (1 << 14);
-	float	sz = box_extent.get_z() / (1 << 14);
-
-	float	offsetx = box_center.get_x();
-	float	offsetz = box_center.get_z();
-
-	float	one_minus_f = 1.0 - f;
-
-	for (int i = 0; i < morph_verts.vertex_count; i++) {
-		const vertex_info::vertex&	v = morph_verts.vertices[i];
-		verts[i*3 + 0] = offsetx + v.x[0] * sx;
-		verts[i*3 + 1] = (v.x[1] + v.y_delta * one_minus_f) * s_vertical_scale;	// lerp the y value of the vert.
-		verts[i*3 + 2] = offsetz + v.x[2] * sz;
+	if (m_split) {
+		// Already split.  Also our data & dependents' data is already
+		// freshened, so no need to request it again.
+		return true;
 	}
-#if 0
-	// With a vshader, this routine would be replaced by an initial agp_alloc() & memcpy()/memmap().
-#endif // 0
+
+	if (has_children() == false) {
+		// Can't ever split.  No data to request.
+		return false;
+	}
+
+	bool	can_split = true;
+
+	// Check the data of the children.
+	{for (int i = 0; i < 4; i++) {
+		lod_chunk*	c = m_children[i];
+		if (c->request_data() == false) {
+			can_split = false;
+		}
+	}}
+
+	// Make sure ancestors have data...
+	for (lod_chunk* p = m_parent; p && p->m_split == false; p = p->m_parent) {
+		if (p->can_split() == false) {
+			can_split = false;
+		}
+	}
+
+	// Make sure neighbors have data.
+	{for (int i = 0; i < 4; i++) {
+		lod_chunk*	n = m_neighbor[i].m_chunk;
+		if (n && n->m_parent && n->m_parent->can_split() == false) {
+			can_split = false;
+		}
+	}}
+
+	return can_split;
+}
+
+
+bool	lod_chunk::request_data()
+// Request rendering data; return true if we currently have it, false
+// otherwise.
+{
+	if (m_data == NULL) {
+		// Load the data.
+		m_data = new lod_chunk_data;
+		SDL_RWseek(s_datafile, m_data_file_position, SEEK_SET);
+		m_data->read(s_datafile);
+	}
+
+	return true;
 }
 
 
@@ -361,6 +687,9 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 //
 // Returns the number of triangles rendered.
 {
+	vec3	box_center, box_extent;
+	compute_bounding_box(c, &box_center, &box_extent);
+
 	// Frustum culling.
 	if (cull_info.active_planes) {
 		cull_info = cull::compute_box_visibility(box_center, box_extent, v.m_frustum, cull_info);
@@ -372,10 +701,12 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 
 	int	triangle_count = 0;
 
-	if (split) {
+	if (m_split) {
+		assert(has_children());
+
 		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
-		for (int i = 0; i < child_count; i++) {
-			triangle_count += children[i]->render(c, v, cull_info, opt);
+		for (int i = 0; i < 4; i++) {
+			triangle_count += m_children[i]->render(c, v, cull_info, opt);
 		}
 	} else {
 		if (opt.show_box) {
@@ -386,232 +717,10 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 			draw_box(box_center - box_extent, box_center + box_extent);
 		}
 
-		if (opt.show_geometry || opt.show_edges) {
-			glEnable(GL_TEXTURE_2D);
-
-			float	xsize = c.m_root->box_extent.get_x() * 2;
-			float	zsize = c.m_root->box_extent.get_x() * 2;
-
-#if 0
-			// Set up texgen for this tile.
-			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			float	p[4] = { 0, 0, 0, 0 };
-			p[0] = 1.0f / xsize;
-			glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
-			p[0] = 0;
-			
-			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			p[2] = 1.0f / zsize;
-			glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
-			
-			glEnable(GL_TEXTURE_GEN_S);
-			glEnable(GL_TEXTURE_GEN_T);
-#endif // 0
-		}
-
-		// Grab some space to put processed verts.
-		assert(s_stream);
-		float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * verts.vertex_count);
-
-		// Process our vertices into the output buffer.
-		float	f = morph_curve((lod & 255) / 255.0f);
-		if (opt.morph == false) {
-			f = 0;
-		}
-		morph_vertices(output_verts, verts, box_center, box_extent, f);
-
-		if (opt.show_geometry) {
-			// draw this chunk.
-			glColor3f(1, 1, 1);
-			glVertexPointer(3, GL_FLOAT, 0, output_verts);
-			glDrawElements(GL_TRIANGLE_STRIP, verts.index_count, GL_UNSIGNED_SHORT, verts.indices);
-			triangle_count += verts.triangle_count;
-		}
-
-		if (opt.show_edges) {
-			for (int i = 0; i < 4; i++) {
-				triangle_count += render_edge((direction) i, opt);
-			}
-		}
+		triangle_count += m_data->render(c, *this, v, cull_info, opt, box_center, box_extent);
 	}
 
 	return triangle_count;
-}
-
-
-static int	join_rows(vec3* v0, int count0, vec3* v1, int count1);
-
-
-int	lod_chunk::render_edge(direction dir, render_options opt)
-// Draw the ribbon connecting the edge of this chunk to the edge(s) of
-// the neighboring chunk(s) in the specified direction.  Returns the
-// number of triangles rendered.
-{
-	int	facing_dir = direction((int(dir) + 2) & 3);
-
-	int	triangle_count = 0;
-
-	//
-	// Figure out which of the three cases we have:
-	//
-	// 1) our neighbor is a chunk at our same LOD (but probably has a
-	// different morph value).  We only handle this if this is the
-	// EAST or SOUTH edge of our chunk.  Otherwise, the other chunk is
-	// responsible for rendering (this prevents double-rendering of
-	// the edge.)
-	//
-	// To render, all we have to do is zip up the corresponding verts.
-	//
-	//  |           |
-	//  |    us     |
-	//  +-*-*-*-*-*-+
-	//  |/|/|/|/|/|/|  <-- simple zig-zag tri strip
-	//  +-*-*-*-*-*-+
-	//  |  neighbor |
-	//  |           |
-	//
-	//
-	// 2) our neighbors are actually two chunks, at the next higher
-	// LOD.  We have to stitch together our verts with the verts of
-	// the two neighbors.
-	//
-	//  |           |
-	//  |    us     |
-	//  +-*-*-*-*-*-+
-	//  |/|\|\|\|/|\|  <-- more complex connecting ribbon
-	//  +***********+
-	//  |  n0 |  n1 |
-	//  |     |     |
-	//
-	// 3) same as 2, but we're one of the high LOD chunks.  In this
-	// case we don't render anything; the lower-LOD chunk is
-	// responsible for rendering the edge.
-
-	lod_chunk*	n = neighbor[(int) dir].chunk;
-	if (n == NULL) {
-		// No neighbor, so no edge to worry about.
-		return triangle_count;
-	}
-	if (n->split == false && n->parent && n->parent->split == true) {
-		// two matching edges.
-		if (dir == EAST || dir == SOUTH) {
-			float	f0 = morph_curve((lod & 255) / 255.0f);
-			float	f1 = morph_curve((n->lod & 255) / 255.0f);
-			if (opt.morph == false) {
-				f0 = f1 = 0;
-			}
-			int	c0 = edge[dir].lo_vertex_count;
-			float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * c0 * 2);
-			vertex_info	vi;
-			vi.vertex_count = c0;
-			vi.vertices = edge[dir].edge_verts;
-			morph_vertices(output_verts, vi, box_center, box_extent, f0);
-			// Same verts, different morph value.
-			morph_vertices(output_verts + c0 * 3, vi, box_center, box_extent, f1);
-
-			// Draw the connecting ribbon.  Just a zig-zag strip between
-			// the two edges.
-			glVertexPointer(3, GL_FLOAT, 0, output_verts);
-			glBegin(GL_TRIANGLE_STRIP);
-			for (int i = 0; i < c0; i++) {
-				glArrayElement(i);
-				glArrayElement(i + c0);
-			}
-			glEnd();
-		
-			triangle_count += c0 * 2 - 2;
-		}
-
-	} else if (n->split) {
-		// we have the low LOD edge; children of our neighbor have the high LOD edges.
-
-		// Find the neighbors we need to mesh with.
-
-		// table indexed by the direction of our big low-LOD edge.
-		int	child_index[4][2] = {
-			{ 0, 2 },	// EAST
-			{ 2, 3 },	// NORTH
-			{ 1, 3 },	// WEST
-			{ 0, 1 }	// SOUTH
-		};
-		lod_chunk*	n0 = n->children[child_index[dir][0]];
-		lod_chunk*	n1 = n->children[child_index[dir][1]];
-
-		assert(n0);
-		assert(n1);
-
-		float	f = morph_curve((lod & 255) / 255.0f);
-		float	f0 = morph_curve((n0->lod & 255) / 255.0f);
-		float	f1 = morph_curve((n1->lod & 255) / 255.0f);
-		if (opt.morph == false) {
-			f = f0 = f1 = 0;
-		}
-
-		const lod_edge&	e = edge[dir];
-
-		float*	output_verts = (float*) s_stream->reserve_memory(
-			sizeof(float) * 3 * (e.lo_vertex_count + e.hi_vertex_count[0] + e.hi_vertex_count[1]));
-
-		vertex_info	vi;
-		vi.vertices = e.edge_verts;
-		vi.vertex_count = e.lo_vertex_count;
-		morph_vertices(output_verts, vi, box_center, box_extent, f);
-		vi.vertices = e.edge_verts + e.lo_vertex_count;
-		vi.vertex_count = e.hi_vertex_count[0];
-		morph_vertices(output_verts + 3 * e.lo_vertex_count, vi, box_center, box_extent, f0);
-		vi.vertices = e.edge_verts + e.lo_vertex_count + e.hi_vertex_count[0];
-		vi.vertex_count = e.hi_vertex_count[1];
-		morph_vertices(output_verts + 3 * (e.lo_vertex_count + e.hi_vertex_count[0]), vi, box_center, box_extent, f1);
-
-		// Draw the connecting ribbon.
-
-		assert(e.ribbon_index_count);
-		glVertexPointer(3, GL_FLOAT, 0, output_verts);
-		glDrawElements(GL_TRIANGLES, e.ribbon_index_count, GL_UNSIGNED_SHORT, e.ribbon_indices);
-		triangle_count += e.ribbon_index_count / 3;
-
-	} else {
-		// Our neighbor is responsible for this case.
-	}
-
-	return triangle_count;
-}
-
-
-static int	join_rows(vec3* v0, int count0, vec3* v1, int count1)
-// Join two rows of vertices with a mesh.  Assumption is that the two
-// rows have different numbers of verts, but approximate the same
-// curve in space.  They also are assumed to share start & end points.
-//
-// Return the number of triangles generated.
-{
-	// @@ is there a reasonable way to strip this, using degenerates?
-	int	i0 = 1;
-	int	i1 = 1;
-
-	glBegin(GL_TRIANGLES);
-
-	// Beginning triangle.
-	glVertex3fv(v0[0]);
-	glVertex3fv(v0[1]);
-	glVertex3fv(v1[1]);
-
-	while (i0 < count0 - 1 && i1 < count1 - 1) {
-		glVertex3fv(v0[i0]);
-		glVertex3fv(v1[i1]);
-		if (i0 * count1 < i1 * count0) {	// @@ There's probably a slick DDA-ish way to do this.
-			// row 0 is behind, so use one of its verts.
-			i0++;
-			glVertex3fv(v0[i0]);
-		} else {
-			// row 1 is behind, so use one of its verts.
-			i1++;
-			glVertex3fv(v1[i1]);
-		}
-	}
-	glEnd();
-
-	return count0 + count1 - 4;
 }
 
 
@@ -619,7 +728,7 @@ void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 // Read chunk data from the given file and initialize this chunk with it.
 // Recursively loads child chunks for level > 0.
 {
-	split = false;
+	m_split = false;
 
 	// Get this chunk's label, and add it to the table.
 	int	chunk_label = SDL_ReadLE32(in);
@@ -632,36 +741,41 @@ void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 
 	// Initialize neighbor links.
 	{for (int i = 0; i < 4; i++) {
-		neighbor[i].label = SDL_ReadLE32(in);
+		m_neighbor[i].m_label = SDL_ReadLE32(in);
 	}}
 
-	// Initialize our bounding box.
-	box_center.read(in);
-	box_extent.read(in);
+	// Read our chunk address.  We can reconstruct our bounding box
+	// from this info, along with the root tree info.
+	m_level = ReadByte(in);
+	m_x = SDL_ReadLE16(in);
+	m_z = SDL_ReadLE16(in);
 
-	// Load the main chunk data.
-	verts.read(in);
+	m_min_y = SDL_ReadLE16(in);
+	m_max_y = SDL_ReadLE16(in);
 
-	// Read the edge data.
-	{for (int i = 0; i < 4; i++) {
-		edge[i].read(in);
-	}}
+	// Skip the chunk data but remember our filepos, so we can load it
+	// when it's demanded.
+	int	chunk_size = SDL_ReadLE32(in);
+	m_data_file_position = SDL_RWtell(in);
+	SDL_RWseek(in, chunk_size, SEEK_CUR);
+	m_data = NULL;
+//	m_data = new lod_chunk_data;
+//	m_data->read(in);
 
-	child_count = 0;
+	assert(m_data_file_position + chunk_size == SDL_RWtell(in));
 
 	// Recurse to child chunks.
 	if (level > 0) {
-		child_count = 4;
-		children = new lod_chunk*[4];
 		for (int i = 0; i < 4; i++) {
-			children[i] = new lod_chunk;
-			children[i]->lod = lod + 0x100;
-			children[i]->parent = this;
-			children[i]->read(in, level-1, tree);
+			m_children[i] = &tree->m_chunks[tree->m_chunks_allocated++];
+			m_children[i]->lod = lod + 0x100;
+			m_children[i]->m_parent = this;
+			m_children[i]->read(in, level-1, tree);
 		}
 	} else {
-		child_count = 0;
-		children = NULL;
+		for (int i = 0; i < 4; i++) {
+			m_children[i] = NULL;
+		}
 	}
 }
 
@@ -670,19 +784,21 @@ void	lod_chunk::lookup_neighbors(lod_chunk_tree* tree)
 // Convert our neighbor labels to neighbor pointers.  Recurse to child chunks.
 {
 	for (int i = 0; i < 4; i++) {
-		assert_else(neighbor[i].label >= -1 && neighbor[i].label < tree->m_chunk_count) {
-			neighbor[i].label = -1;
+		assert_else(m_neighbor[i].m_label >= -1 && m_neighbor[i].m_label < tree->m_chunk_count) {
+			m_neighbor[i].m_label = -1;
 		}
-		if (neighbor[i].label == -1) {
-			neighbor[i].chunk = NULL;
+		if (m_neighbor[i].m_label == -1) {
+			m_neighbor[i].m_chunk = NULL;
 		} else {
-			neighbor[i].chunk = tree->m_chunk_table[neighbor[i].label];
+			m_neighbor[i].m_chunk = tree->m_chunk_table[m_neighbor[i].m_label];
 		}
 	}
 
-	{for (int i = 0; i < child_count; i++) {
-		children[i]->lookup_neighbors(tree);
-	}}
+	if (has_children()) {
+		{for (int i = 0; i < 4; i++) {
+			m_children[i]->lookup_neighbors(tree);
+		}}
+	}
 }
 
 
@@ -705,13 +821,14 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	}
 
 	int	format_version = SDL_ReadLE16(src);
-	assert_else(format_version == 5) {
+	assert_else(format_version == 6) {
 		throw "Input format has non-matching version number";
 	}
 
 	m_tree_depth = SDL_ReadLE16(src);
 	m_error_LODmax = ReadFloat32(src);
 	m_vertical_scale = ReadFloat32(src);
+	m_base_chunk_dimension = ReadFloat32(src);
 	m_chunk_count = SDL_ReadLE32(src);
 
 	// Create a lookup table of chunk labels.
@@ -723,11 +840,16 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	set_parameters(5.0f, 640.0f, 90.0f);
 
 	// Load the chunk tree.
-	m_root = new lod_chunk;
-	m_root->lod = 0;
-	m_root->parent = 0;
-	m_root->read(src, m_tree_depth-1, this);
-	m_root->lookup_neighbors(this);
+	m_chunks_allocated = 0;
+	m_chunks = new lod_chunk[m_chunk_count];
+
+	m_chunks_allocated++;
+	m_chunks[0].lod = 0;
+	m_chunks[0].m_parent = 0;
+	m_chunks[0].read(src, m_tree_depth-1, this);
+	m_chunks[0].lookup_neighbors(this);
+
+	s_datafile = src;
 }
 
 
@@ -735,8 +857,8 @@ void	lod_chunk_tree::update(const vec3& viewpoint)
 // Initializes tree state, so it can be rendered.  The given viewpoint
 // is used to do distance-based LOD switching on our contained chunks.
 {
-	m_root->clear();
-	m_root->update(*this, viewpoint);
+	m_chunks[0].clear();
+	m_chunks[0].update(*this, viewpoint);
 }
 
 
@@ -753,13 +875,9 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 
 	int	triangle_count = 0;
 
-//	glPushMatrix();
-//	glScalef(1.0, m_vertical_scale, 1.0);	// scale the vertical axis.  Input is 16-bit integers; transform to world coords.
 	s_vertical_scale = m_vertical_scale;
-	{
-		triangle_count = m_root->render(*this, v, cull::result_info(), opt);
-	}
-//	glPopMatrix();
+
+	triangle_count += m_chunks[0].render(*this, v, cull::result_info(), opt);
 
 	return triangle_count;
 }
@@ -768,9 +886,9 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 void	lod_chunk_tree::get_bounding_box(vec3* box_center, vec3* box_extent)
 // Returns the bounding box of the data in this chunk tree.
 {
-	assert(m_root);
-	*box_center = m_root->box_center;
-	*box_extent = m_root->box_extent;
+	assert(m_chunks_allocated > 0);
+
+	m_chunks[0].compute_bounding_box(*this, box_center, box_extent);
 }
 
 
