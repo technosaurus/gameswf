@@ -53,12 +53,6 @@ namespace gameswf
 		// sequence.
 		void	draw_line_strip(const float coords[], int vertex_count);
 
-		// A shape has one or more paths.  The paths in a
-		// shape are rasterized together using a typical
-		// polygon odd-even rule.
-		void	begin_shape();
-		void	end_shape();
-
 		// Set line and fill styles for mesh & line_strip
 		// rendering.
 		enum bitmap_wrap_mode
