@@ -10,6 +10,7 @@
 #define GAMESWF_ACTION_H
 
 
+#include "gameswf.h"
 #include "gameswf_types.h"
 
 #include "base/container.h"
@@ -68,6 +69,8 @@ namespace gameswf
 		{
 			return m_buffer.size() < 1 || m_buffer[0] == 0;
 		}
+
+		int	get_length() const { return m_buffer.size(); }
 	};
 
 
@@ -194,6 +197,8 @@ namespace gameswf
 		void	set(bool val) { m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
 		void	set(int val) { set(double(val)); }
 		void	set(as_object_interface* obj) { m_type = OBJECT; m_object_value = obj; }
+		void	set(as_c_function_ptr func) { m_type = C_FUNCTION; m_c_function_value = func; }
+		void	set(as_as_function* func) { m_type = AS_FUNCTION, m_as_function_value = func; }
 		void	set_undefined() { m_type = UNDEFINED; }
 
 		bool	operator==(const as_value& v) const;
@@ -344,6 +349,104 @@ namespace gameswf
 	as_value	call_method3(
 		const as_value& method, as_environment* env, as_object_interface* this_ptr,
 		const as_value& arg0, const as_value& arg1, const as_value& arg2);
+
+
+
+	//
+	// event_id
+	//
+	// For keyDown and stuff like that.
+
+	struct event_id
+	{
+		enum id_code
+		{
+			INVALID,
+
+			// These are for buttons & sprites.
+			PRESS,
+			RELEASE,
+			RELEASE_OUTSIDE,
+			ROLL_OVER,
+			ROLL_OUT,
+			DRAG_OVER,
+			DRAG_OUT,
+			KEY_PRESS,
+
+			// These are for sprites only.
+			INITIALIZE,
+			LOAD,
+			UNLOAD,
+			ENTER_FRAME,
+			MOUSE_DOWN,
+			MOUSE_UP,
+			MOUSE_MOVE,
+			KEY_DOWN,
+			KEY_UP,
+			DATA,
+
+			EVENT_COUNT
+		};
+
+		unsigned char	m_id;
+		unsigned char	m_key_code;
+
+		event_id() : m_id(INVALID), m_key_code(key::INVALID) {}
+
+		event_id(id_code id, key::code c = key::INVALID)
+			:
+			m_id((unsigned char) id),
+			m_key_code((unsigned char) c)
+		{
+			// For the button key events, you must supply a keycode.
+			// Otherwise, don't.
+			assert((m_key_code == key::INVALID && (m_id != KEY_PRESS))
+				|| (m_key_code != key::INVALID && (m_id == KEY_PRESS)));
+		}
+
+		bool	operator==(const event_id& id) const { return m_id == id.m_id && m_key_code == id.m_key_code; }
+	};
+
+
+	//
+	// as_as_function
+	//
+	// ActionScript function.
+
+	struct as_as_function
+	{
+		action_buffer*	m_action_buffer;
+		as_environment*	m_env;	// @@ need ref-counting here!!!
+		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
+		int	m_start_pc;
+		int	m_length;
+		array<tu_string>	m_args;
+
+		// NULL environment is allowed -- if so, then
+		// functions will be executed in the caller's
+		// environment, rather than the environment where they
+		// were defined.
+		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
+			:
+			m_action_buffer(ab),
+			m_env(env),
+			m_with_stack(with_stack),
+			m_start_pc(start),
+			m_length(0)
+		{
+			assert(m_action_buffer);
+		}
+
+		void	add_arg(const char* name)
+		{
+			m_args.push_back(name);
+		}
+
+		void	set_length(int len) { assert(len >= 0); m_length = len; }
+
+		// Dispatch.
+		void	operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg);
+	};
 
 
 }	// end namespace gameswf

@@ -59,19 +59,6 @@
 // Number()
 // String()
 
-//
-// Global scope called "_global", I think this is just a generic empty
-// mutable object.
-
-// Basically, for host/gameswf communication, we want to have:
-//
-// movie_interface::set_variable(var, value);	// with full path parsing
-//
-// and, for data coming back the other way:
-//
-// gameswf::register_fscommand_handler(void (*handler_func)(movie_interface* movie, const char* command, const char* arg));
-// const char* movie_interface::get_variable(var);
-
 
 namespace gameswf
 {
@@ -96,61 +83,38 @@ namespace gameswf
 	}
 
 
+
 	//
 	// as_as_function
 	//
-	// ActionScript function.
 
-	struct as_as_function
+	void	as_as_function::operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg)
+	// Dispatch.
 	{
-		action_buffer*	m_action_buffer;
-		as_environment*	m_env;	// @@ need ref-counting here!!!
-		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
-		int	m_start_pc;
-		int	m_length;
-		array<tu_string>	m_args;
-
-		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
-			:
-			m_action_buffer(ab),
-			m_env(env),
-			m_start_pc(start),
-			m_length(0)
+		as_environment*	our_env = m_env;
+		if (our_env == NULL)
 		{
-			assert(m_action_buffer);
-			assert(m_env);
+			our_env = caller_env;
+		}
+		assert(our_env);
+
+		// Set up local stack frame, for parameters and locals.
+		int	local_stack_top = our_env->get_local_frame_top();
+		our_env->add_frame_barrier();
+
+		// Push the arguments onto the local frame.
+		int	args_to_pass = imin(nargs, m_args.size());
+		for (int i = 0; i < args_to_pass; i++)
+		{
+			our_env->add_local(m_args[i], caller_env->bottom(first_arg + i));
 		}
 
-		void	add_arg(const char* name)
-		{
-			m_args.push_back(name);
-		}
+		// Execute the actions.
+		m_action_buffer->execute(our_env, m_start_pc, m_length, result, m_with_stack);
 
-		void	set_length(int len) { assert(len >= 0); m_length = len; }
-
-		void	operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg)
-		// Dispatch.
-		{
-			assert(m_env);
-
-			// Set up local stack frame, for parameters and locals.
-			int	local_stack_top = m_env->get_local_frame_top();
-			m_env->add_frame_barrier();
-
-			// Push the arguments onto the local frame.
-			int	args_to_pass = imin(nargs, m_args.size());
-			for (int i = 0; i < args_to_pass; i++)
-			{
-				m_env->add_local(m_args[i], caller_env->bottom(first_arg + i));
-			}
-
-			// Execute the actions.
-			m_action_buffer->execute(m_env, m_start_pc, m_length, result, m_with_stack);
-
-			// Clean up stack frame.
-			m_env->set_local_frame_top(local_stack_top);
-		}
-	};
+		// Clean up stack frame.
+		our_env->set_local_frame_top(local_stack_top);
+	}
 
 
 	//
