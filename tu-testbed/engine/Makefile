@@ -1,7 +1,7 @@
 # Makefile for tu-testbed/engine library
 
 
-include config
+include ../config
 
 SDL_CFLAGS := $(shell sdl-config --cflags)
 SDL_LDFLAGS := $(shell sdl-config --libs)
@@ -30,7 +30,7 @@ ENGINE = engine.$(LIB_EXT)
 all: $(ENGINE)
 
 $(ENGINE): $(OBJS)
-	$(LIB) $(LIB_OUT_FLAG)$(ENGINE) $(OBJS)
+	$(AR) $(LIB_OUT_FLAG)$(ENGINE) $(OBJS)
 
 clean:
 	rm $(ENGINE) $(OBJS)
