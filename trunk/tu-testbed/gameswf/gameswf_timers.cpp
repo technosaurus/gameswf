@@ -10,6 +10,7 @@
 #include "base/smart_ptr.h"
 
 #include "gameswf_timers.h"
+#include "gameswf_xml.h"
 
 using namespace std;
 
@@ -18,7 +19,9 @@ namespace gameswf
   Timer::Timer() :
       _which(0),
       _interval(0.0),
-      _start(0.0)
+      _start(0.0),
+      _object(0),
+      _env(0)
   {
   }
   
@@ -37,6 +40,36 @@ namespace gameswf
   {
     _function = obj;
     _interval = ms * 0.01;
+    // _interval = ms * 0.000001;
+    start();
+  }
+
+  int
+  Timer::setInterval(as_value obj, int ms, as_environment *en)
+  {
+    _function = obj;
+    _interval = ms * 0.01;
+    _env = en;
+    // _interval = ms * 0.000001;
+    start();
+  }
+  int
+  Timer::setInterval(as_value obj, int ms, array<struct variable *> *locals)
+  {
+    _function = obj;
+    _interval = ms * 0.01;
+    _locals = locals;
+    // _interval = ms * 0.000001;
+    start();
+  }
+
+  int
+  Timer::setInterval(as_value obj, int ms, as_object *this_ptr, as_environment *en)
+  {
+    _function = obj;
+    _interval = ms * 0.01;
+    _env = en;
+    _object = this_ptr;
     // _interval = ms * 0.000001;
     start();
   }
@@ -65,7 +98,7 @@ namespace gameswf
       // log_msg("%s: now is %f, start time is %f, interval is %f\n", __PRETTY_FUNCTION__, now, _start, _interval);
       if (now > _start + _interval) {
         _start = now;               // reset the timer
-        // log_msg("Timer expired! \n");
+        log_msg("Timer expired! \n");
         return true;
       }
     }
@@ -76,7 +109,7 @@ namespace gameswf
   void
   timer_setinterval(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
   {
-    int ret;
+    int ret, i;
     as_value	method;
     log_msg("%s: args=%d\n", __PRETTY_FUNCTION__, nargs);
     
@@ -91,7 +124,51 @@ namespace gameswf
     as_value val(as_func);
     int ms = (int)env->bottom(first_arg-1).to_number();
 
-    ptr->obj.setInterval(val, ms);
+    tu_string local_name;
+    as_value local_val;
+    array<with_stack_entry>	dummy_with_stack;
+
+    env->add_frame_barrier();
+    //method = env->get_variable("loopvar", dummy_with_stack);
+
+    // FIXME: This is pretty gross, but something is broke elsewhere and it doesn't
+    // seem to effect anything else. When a function is called from a executing
+    // function, like calling setInterval() from within the callback to
+    // XMLSOcket::onConnect(), the local variables of the parent function need to
+    // be propogated to the local stack as regular variables (not locals) or
+    // they can't be found in the scope of the executing chld function. There is
+    // probably a better way to do this... but at least this works.
+    for (i=0; i< env->get_local_frame_top(); i++) {
+      if (env->m_local_frames[i].m_name.size()) {
+        //method = env->get_variable(env->m_local_frames[i].m_name, dummy_with_stack);
+        //if (method.get_type() != as_value::UNDEFINED)
+        {
+          local_name  = env->m_local_frames[i].m_name;
+          local_val = env->m_local_frames[i].m_value;
+          env->set_variable(local_name, local_val, 0);
+        }
+      }
+    }
+    //    ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
+    
+// #if 0
+//     array<struct variable *> *locals = new array<struct variable *>;
+//     for (i=0; i< env->get_local_frame_top(); i++) {
+//       if (env->m_local_frames[i].m_name.size()) {
+//         method = env->get_variable(env->m_local_frames[i].m_name, dummy_with_stack);
+//         if (method.get_type() != as_value::UNDEFINED) {
+//           struct variable *var = new struct variable;
+//           var->name = env->m_local_frames[i].m_name;
+//           var->value = env->m_local_frames[i].m_value;
+//           locals->push_back(var);
+//         }
+//       }
+//     }
+//     ptr->obj.setInterval(val, ms, locals);
+// #endif
+
+    //Ptr->obj.setInterval(val, ms);
+    ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
     
     result->set(mov->add_interval_timer(&ptr->obj));
   }
@@ -126,10 +203,7 @@ namespace gameswf
     double id = env->bottom(first_arg).to_number();
 
     movie*	mov = env->get_target()->get_root_movie();
-    //mov->clear_interval_timer((int)id);
+    mov->clear_interval_timer((int)id);
     result->set(val); 
   }
 }
-
-
-

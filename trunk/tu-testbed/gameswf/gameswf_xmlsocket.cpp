@@ -20,6 +20,8 @@ using namespace std;
 
 #include "gameswf_log.h"
 #include "gameswf_xmlsocket.h"
+#include "gameswf_timers.h"
+
 using namespace gameswf;
 
 XMLSocket::XMLSocket()
@@ -280,53 +282,60 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
   as_value	val;
   static bool first = true;     // This event handler should only be executed once.
   bool          ret;
+  const array<with_stack_entry> with_stack;
 
   if (!first) {
     result->set(true);
     return;
   }
   
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s: nargs=%d\n", __PRETTY_FUNCTION__, nargs);
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
   assert(ptr);
   const tu_string host = env->bottom(first_arg).to_string();
   double port = env->bottom(first_arg-1).to_number();
   ret = ptr->obj.connect(host, static_cast<int>(port));
 
-#if 1
+#if 0
+  // Push result onto stack for onConnect
   if (ret) {
-    env->set_variable("success", true, 0);
+    env->push(as_value(true));
   }
   else {
-    env->set_variable("success", false, 0);
+    env->push(as_value(false));
   }
 #endif
-
-#if 1
+  
   if (this_ptr->get_member("onConnect", &method)) {
     //    log_msg("FIXME: Found onConnect!\n");
     as_c_function_ptr	func = method.to_c_function();
     first = false;
     //env->set_variable("success", true, 0);
-    env->bottom(0) = true;
 
     if (func) {
       // It's a C function.  Call it.
       log_msg("Calling C function for onConnect\n");
-      (*func)(&val, this_ptr, env, nargs, first_arg);
+      (*func)(&val, this_ptr, env, 0, 0);
     }
     else if (as_as_function* as_func = method.to_as_function()) {
       // It's an ActionScript function.  Call it.
       log_msg("Calling ActionScript function for onConnect\n");
-      (*as_func)(&val, this_ptr, env, nargs, first_arg);
+      (*as_func)(&val, this_ptr, env, 0, 0);
     } else {
       log_error("error in call_method(): method is not a function\n");
     }    
   } else {
     ptr->set_event_handler(event_id::SOCK_CONNECT, (as_c_function_ptr)&xmlsocket_event_connect);
   }
-#else
-   ptr->set_event_handler(event_id::SOCK_CONNECT, (as_c_function_ptr)&xmlsocket_event_connect);
+
+#if 1
+  movie*	mov = env->get_target()->get_root_movie();
+  Timer *timer = new Timer;
+  as_c_function_ptr ondata_handler =
+    (as_c_function_ptr)&xmlsocket_event_ondata;
+  timer->setInterval(ondata_handler, 500, ptr, env);
+  timer->setObject(ptr);
+  mov->add_interval_timer(timer);
 #endif
   
   result->set(true);
@@ -440,13 +449,13 @@ xmlsocket_event_connect(as_value* result, as_object_interface* this_ptr, as_envi
       if (func)
         {
           // It's a C function.  Call it.
-          log_msg("Calling C function for onConnect\n");
+          //log_msg("Calling C function for onConnect\n");
           (*func)(&val, this_ptr, env, 0, 0);
       }
       else if (as_as_function* as_func = method.to_as_function())
         {
           // It's an ActionScript function.  Call it.
-          log_msg("Calling ActionScript function for onConnect\n");
+          //log_msg("Calling ActionScript function for onConnect\n");
           (*as_func)(&val, this_ptr, env, 0, 0);
         }
       else
@@ -457,7 +466,7 @@ xmlsocket_event_connect(as_value* result, as_object_interface* this_ptr, as_envi
       log_msg("FIXME: Couldn't find onConnect!\n");
     }
   }
-  
+
   result->set(&val); 
 }
 void

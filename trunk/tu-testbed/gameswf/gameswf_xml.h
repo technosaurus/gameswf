@@ -14,14 +14,6 @@
 
 #include "gameswf_xmlsocket.h"
 
-#if 0
-struct node {
-  std::string name;
-  std::string value;
-  std::vector<struct node *> children;
-};
-#endif
-
 class XMLAttr
 {
 public:
