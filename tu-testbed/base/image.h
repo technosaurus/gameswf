@@ -49,6 +49,12 @@ namespace image
 		~alpha();
 
 		void	set_pixel(int x, int y, Uint8 a);
+
+		// Bitwise content comparison.
+		bool	operator==(const alpha& a) const;
+
+		// Return a hash code based on the image contents.
+		unsigned int	compute_hash() const;
 	};
 
 
@@ -72,6 +78,14 @@ namespace image
 		assert(y >= 0 && y < surf->m_height);
 		return ((Uint8*) surf->m_data) + surf->m_pitch * y;
 	}
+
+	inline const Uint8*	scanline(const image_base* surf, int y)
+	{
+		assert(surf);
+		assert(y >= 0 && y < surf->m_height);
+		return ((const Uint8*) surf->m_data) + surf->m_pitch * y;
+	}
+
 
 	void	resample(rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			 rgb* in, float in_x0, float in_y0, float in_x1, float in_y1);

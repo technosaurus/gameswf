@@ -231,6 +231,26 @@ private:
 };
 
 
+inline unsigned int	bernstein_hash(const void* data_in, int size, unsigned int seed = 5381)
+// Computes a hash of the given data buffer.
+// Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
+// Due to Dan Bernstein.  Allegedly very good on strings.
+{
+	const unsigned char*	data = (const unsigned char*) data_in;
+	unsigned int	h = seed;
+	while (size > 0) {
+		size--;
+		h = ((h << 5) + h) ^ (unsigned) data[size];
+	}
+
+	// Alternative: "sdbm" hash function, suggested at same web page above.
+	// h = 0;
+	// for bytes { h = (h << 16) + (h << 6) - hash + *p; }
+
+	return h;
+}
+
+
 template<class T>
 class fixed_size_hash
 // Computes a hash of an object's representation.
@@ -241,20 +261,7 @@ public:
 		unsigned char*	p = (unsigned char*) &data;
 		int	size = sizeof(T);
 
-		// Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
-		// Due to Dan Bernstein.  Allegedly very good on strings.
-		unsigned int	h = 5381;
-		while (size > 0) {
-			h = ((h << 5) + h) ^ *p;
-			p++;
-			size--;
-		}
-
-		// Alternative: "sdbm" hash function, suggested at same web page above.
-		// h = 0;
-		// for bytes { h = (h << 16) + (h << 6) - hash + *p; }
-
-		return h;
+		return bernstein_hash(p, size);
 	}
 };
 
@@ -595,19 +602,7 @@ public:
 	{
 		int	size = data.length();
 
-		// Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
-		// Due to Dan Bernstein.  Allegedly very good on strings.
-		unsigned int	h = 5381;
-		while (size > 0) {
-			size--;
-			h = ((h << 5) + h) ^ (unsigned) data[size];
-		}
-
-		// Alternative: "sdbm" hash function, suggested at same web page above.
-		// h = 0;
-		// for bytes { h = (h << 16) + (h << 6) - hash + *p; }
-
-		return h;
+		return bernstein_hash((const char*) data, size);
 	}
 };
 
