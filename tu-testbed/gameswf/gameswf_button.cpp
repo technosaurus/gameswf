@@ -406,17 +406,10 @@ namespace gameswf
 		}
 
 		// Read actions.
-//			for (;;)
-		{
-			action_buffer	a;
-			a.read(in);
-			if (a.is_null())
-			{
-				// End marker; no more action records.
-//					break;
-			}
-			m_actions.push_back(a);
-		}
+		IF_VERBOSE_ACTION(log_msg("-- actions in button\n")); // @@ need more info about which actions
+		action_buffer	a;
+		a.read(in);
+		m_actions.push_back(a);
 	}
 
 

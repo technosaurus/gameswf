@@ -367,19 +367,21 @@ namespace gameswf
 		bool masked = false;
 		int highest_masked_layer = 0;
 		
-		log_msg("number of objects to be drawn %i\n", m_display_object_array.size());
+		//log_msg("number of objects to be drawn %i\n", m_display_object_array.size());
 		
 		for (int i = 0; i < m_display_object_array.size(); i++)
 		{                        
 			display_object_info&	dobj = m_display_object_array[i];
 			
-			log_msg("depth %i, clip_depth %i\n", dobj.m_depth, dobj.m_clip_depth);
-			
-
-			// check whether a previous mask should be disables
-			if(masked)
+			if (dobj.m_clip_depth > 0)
 			{
-				if(dobj.m_depth > highest_masked_layer)
+				log_msg("depth %i, clip_depth %i\n", dobj.m_depth, dobj.m_clip_depth);
+			}
+
+			// check whether a previous mask should be disabled
+			if (masked)
+			{
+				if (dobj.m_depth > highest_masked_layer)
 				{
 					log_msg("disabled mask before drawing depth %i\n", dobj.m_depth);
 					masked = false;
@@ -393,23 +395,29 @@ namespace gameswf
 			{
 				log_msg("begin submit mask\n");
 				render::begin_submit_mask();
-			}     
+			}
 			
 			dobj.m_display_number = m_total_display_count;                             
 			dobj.m_character->display(dobj);
-			log_msg("object drawn\n");
+
+			if (dobj.m_clip_depth > 0)
+			{
+				log_msg("object drawn\n");
+			}
 			
-			// if this object should have become a mask, inform the renderer that it now has all information about it
-			if(dobj.m_clip_depth > 0)
+			// if this object should have become a mask,
+			// inform the renderer that it now has all
+			// information about it
+			if (dobj.m_clip_depth > 0)
 			{
 				log_msg("end submit mask\n");
-				render::end_submit_mask();                            
+				render::end_submit_mask();
 				highest_masked_layer = dobj.m_clip_depth;
-				masked = true;                                                    
+				masked = true;
 			}
 		}
 		
-		if(masked)
+		if (masked)
 		{
 			// if a mask masks the scene all the way upto the highest layer, it will not be disabled at the end
 			// of drawing the display list, so disable it manually
@@ -420,7 +428,7 @@ namespace gameswf
 	void	display_list::display(const display_info & di)
 		// Display the referenced characters.
 	{    
-		log_msg("drawing object at depth %i\n",di.m_depth);
+		//log_msg("drawing object at depth %i\n", di.m_depth);
 		for (int i = 0; i < m_display_object_array.size(); i++)
 		{
 			display_object_info&	dobj = m_display_object_array[i];                                       

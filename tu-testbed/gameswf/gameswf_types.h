@@ -54,28 +54,6 @@ namespace gameswf
 	};
 
 
-	struct matrix
-	{
-		float	m_[2][3];
-
-		static matrix	identity;
-
-		matrix();
-		void	set_identity();
-		void	concatenate(const matrix& m);
-		void	concatenate_translation(float tx, float ty);
-		void	concatenate_scale(float s);
-		void	read(stream* in);
-		void	print() const;
-		void	transform(point* result, const point& p) const;
-		void	transform_vector(point* result, const point& p) const;
-		void	transform_by_inverse(point* result, const point& p) const;
-		void	set_inverse(const matrix& m);
-		bool	does_flip() const;	// return true if we flip handedness
-		float	get_max_scale() const;	// return the maximum scale factor that this transform applies
-	};
-
-
 	struct rgba
 	{
 		Uint8	m_r, m_g, m_b, m_a;
@@ -109,18 +87,6 @@ namespace gameswf
 		}
 
 		void	print();
-	};
-
-
-	struct cxform
-	{
-		float	m_[4][2];	// [RGBA][mult, add]
-
-		cxform();
-		void	concatenate(const cxform& c);
-		rgba	transform(const rgba in) const;
-		void	read_rgb(stream* in);
-		void	read_rgba(stream* in);
 	};
 
 
