@@ -13,6 +13,7 @@
 #include "gameswf_types.h"
 #include "engine/tu_file.h"
 #include <string.h>
+#include <zlib.h>
 
 
 namespace gameswf
@@ -27,6 +28,11 @@ namespace gameswf
 	}
 
 
+	stream::~stream()
+	{
+	}
+
+	
 	int	stream::read_uint(int bitcount)
 	// Reads a bit-packed unsigned integer from the stream
 	// and returns it.  The given bitcount determines the

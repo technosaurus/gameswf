@@ -14,38 +14,61 @@
 
 
 // TODO: add error detection and reporting!!!
+
 static int sdl_read_func(void* dst, int bytes, void* appdata) 
 {
 	assert(dst);
 	assert(appdata);
-	return SDL_RWread((SDL_RWops*) appdata, dst, 1, bytes);
+	int	result = SDL_RWread((SDL_RWops*) appdata, dst, 1, bytes);
+	if (result == -1)
+	{
+		// @@ set appdata->m_error?
+		return 0;
+	}
+	return result;
 }
+
 static int sdl_write_func(const void* src, int bytes, void* appdata)
 {
 	assert(src);
 	assert(appdata);
-	return SDL_RWwrite((SDL_RWops*) appdata, src, 1, bytes);
+	int	result = SDL_RWwrite((SDL_RWops*) appdata, src, 1, bytes);
+	if (result == -1)
+	{
+		// @@ set m_errer?
+		return 0;
+	}
+	return result;
 }
+
 static int sdl_seek_func(int pos, void *appdata)
 {
 	assert(pos >= 0);
 	assert(appdata);
 	return SDL_RWseek((SDL_RWops*) appdata, pos, SEEK_SET);
 }
+
 static int sdl_seek_to_end_func(void *appdata)
 {
 	assert(appdata);
 	return SDL_RWseek((SDL_RWops*) appdata, 0, SEEK_END);
 }
+
 static int sdl_tell_func(const void *appdata)
 {
 	assert(appdata);
 	return SDL_RWtell((SDL_RWops*) appdata);
 }
-static int sdl_close_func(const void *appdata)
+
+static int sdl_close_func(void *appdata)
 {
 	assert(appdata);
-	return SDL_RWclose((SDL_RWops*) appdata);
+	int	result = SDL_RWclose((SDL_RWops*) appdata);
+	if (result != 0)
+	{
+		return TU_FILE_CLOSE_ERROR;
+	}
+	return 0;
 }
 
 	
