@@ -309,9 +309,11 @@ public:
 
 
 	void	resize(int new_size)
-	// Preserve existing elements.  Newly created elements are
-	// initialized with default element of T.  Removed elements
-	// are destructed.
+	// Preserve existing elements via realloc. @@ TODO change this
+	// to use ctor, dtor, and operator= instead!!!
+	// 
+	// Newly created elements are initialized with default element
+	// of T.  Removed elements are destructed.
 	{
 		assert(new_size >= 0);
 
@@ -343,6 +345,8 @@ public:
 	void	reserve(int rsize)
 	{
 		assert(m_size >= 0);
+
+		int	old_size = m_buffer_size;
 		m_buffer_size = rsize;
 
 		// Resize the buffer.

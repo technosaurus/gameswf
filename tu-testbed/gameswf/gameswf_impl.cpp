@@ -270,7 +270,7 @@ namespace gameswf
 		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
 		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
-		string_hash<int>	m_named_frames;
+		string_hash<int>	m_named_frames;	// 0-based frame #'s
 		string_hash< smart_ptr<resource> >	m_exports;
 
 		rect	m_frame_size;
@@ -352,6 +352,7 @@ namespace gameswf
 		}
 
 		bool	get_labeled_frame(const char* label, int* frame_number)
+		// Returns 0-based frame #
 		{
 			return m_named_frames.get(label, frame_number);
 		}
@@ -413,7 +414,7 @@ namespace gameswf
 
 			tu_string	n = name;
 			assert(m_named_frames.get(n, NULL) == false);	// frame should not already have a name (?)
-			m_named_frames.add(n, m_loading_frame);
+			m_named_frames.add(n, m_loading_frame);	// stores 0-based frame #
 		}
 
 		void	set_jpeg_loader(jpeg::input* j_in)
@@ -763,6 +764,7 @@ namespace gameswf
 
 		movie_definition*	get_movie_definition() { return m_movie->get_movie_definition(); }
 
+		// 0-based!!
 		int	get_current_frame() const { return m_movie->get_current_frame(); }
 		float	get_frame_rate() const { return m_def->get_frame_rate(); }
 
@@ -803,6 +805,7 @@ namespace gameswf
 			m_timer += delta_time;
 			m_movie->advance(delta_time);
 		}
+		// 0-based!!
 		void	goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
 
 		virtual bool	has_looped() const { return m_movie->has_looped(); }
@@ -1055,9 +1058,16 @@ namespace gameswf
 	//
 
 
+	// For built-in sprite ActionScript methods.
+	as_object*	s_sprite_builtins;	// shared among all sprites.
+	static void	sprite_builtins_init();
+	static void	sprite_builtins_clear();
+
+
 	void	clear()
 	// Maximum release of resources.
 	{
+		sprite_builtins_clear();
 		clear_library();
 		fontlib::clear();
 		action_clear();
@@ -1675,7 +1685,16 @@ namespace gameswf
 
 	struct swf_event
 	{
+		// NOTE: DO NOT USE THESE AS VALUE TYPES IN AN
+		// array<>!  They cannot be moved!  The private
+		// operator=(const swf_event&) should help guard
+		// against that.
+
 		event_id	m_event;
+		// We must allocate this manually, since we hold a
+		// pointer to it in m_method, and therefore we can't
+		// allow it to move if/when we get moved (since we're
+		// a value type and can be stored in an array<>).
 		action_buffer	m_action_buffer;
 		as_value	m_method;
 
@@ -1745,6 +1764,14 @@ namespace gameswf
 			// Read the actions.
 			m_action_buffer.read(in);
 
+			if (m_action_buffer.get_length() != event_length)
+			{
+				log_error("error -- swf_event::read(), event_length = %d, but read %d\n",
+					  event_length,
+					  m_action_buffer.get_length());
+				// @@ discard this event handler??
+			}
+
 			// Create a function to execute the actions.
 			array<with_stack_entry>	empty_with_stack;
 			as_as_function*	func = new as_as_function(&m_action_buffer, NULL, 0, empty_with_stack);
@@ -1752,6 +1779,11 @@ namespace gameswf
 
 			m_method.set(func);
 		}
+
+	private:
+		// DON'T USE THESE
+		swf_event(const swf_event& s) { assert(0); }
+		void	operator=(const swf_event& s) { assert(0); }
 	};
 
 
@@ -1775,7 +1807,7 @@ namespace gameswf
 			MOVE,
 			REPLACE,
 		} m_place_type;
-		array<swf_event>	m_event_handlers;
+		array<swf_event*>	m_event_handlers;
 
 
 		place_object_2()
@@ -1786,7 +1818,7 @@ namespace gameswf
 			m_has_cxform(false),
 			m_depth(0),
 			m_character_id(0),
-                        m_clip_depth(0),                        
+                        m_clip_depth(0),
 			m_place_type(PLACE)
 		{
 		}
@@ -1795,6 +1827,12 @@ namespace gameswf
 		{
 			delete [] m_name;
 			m_name = NULL;
+
+			for (int i = 0, n = m_event_handlers.size(); i < n; i++)
+			{
+				delete m_event_handlers[i];
+			}
+			m_event_handlers.resize(0);
 		}
 
 		void	read(stream* in, int tag_type, int movie_version)
@@ -1839,12 +1877,12 @@ namespace gameswf
 					m_has_cxform = true;
 					m_color_transform.read_rgba(in);
 				}
-                                
+				
 				if (has_ratio) {
 					m_ratio = (float)in->read_u16() / (float)65535;
 				}
-                                
-                                if (has_name) {
+				
+				if (has_name) {
 					m_name = in->read_string();
 				}
 				if (has_clip_bracket) {
@@ -1891,8 +1929,10 @@ namespace gameswf
 							break;
 						}
 
-						m_event_handlers.resize(m_event_handlers.size() + 1);
-						m_event_handlers.back().read(in, this_flags);
+						swf_event*	ev = new swf_event;
+						ev->read(in, this_flags);
+
+						m_event_handlers.push_back(ev);
 					}
 				}
 
@@ -1989,7 +2029,7 @@ namespace gameswf
 
 			for (int i = 0, n = m_event_handlers.size(); i < n; i++)
 			{
-				m_event_handlers[i].attach_to(ch);
+				m_event_handlers[i]->attach_to(ch);
 			}
 		}
 	};
@@ -2027,7 +2067,7 @@ namespace gameswf
 	{
 		movie_definition_sub*	m_movie_def;		// parent movie.
 		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
-		string_hash<int>	m_named_frames;
+		string_hash<int>	m_named_frames;	// stores 0-based frame #'s
 		int	m_frame_count;
 		int	m_loading_frame;
 
@@ -2098,16 +2138,21 @@ namespace gameswf
 
 			tu_string	n = name;
 			assert(m_named_frames.get(n, NULL) == false);	// frame should not already have a name (?)
-			m_named_frames.add(n, m_loading_frame);
+			m_named_frames.add(n, m_loading_frame);	// stores 0-based frame #
 		}
 
 		/* sprite_definition */
 		bool	get_labeled_frame(const char* label, int* frame_number)
+		// Returns 0-based frame #
 		{
 			return m_named_frames.get(label, frame_number);
 		}
 
-		const array<execute_tag*>&	get_playlist(int frame_number) { return m_playlist[frame_number]; }
+		const array<execute_tag*>&	get_playlist(int frame_number)
+		// frame_number is 0-based
+		{
+			return m_playlist[frame_number];
+		}
 
 
 		/* sprite_definition */
@@ -2193,6 +2238,8 @@ namespace gameswf
 			
 			//m_root->add_ref();	// @@ circular!
 			m_as_environment.set_target(this);
+
+			sprite_builtins_init();
 		}
 
 		virtual ~sprite_instance()
@@ -2374,6 +2421,7 @@ namespace gameswf
 
 		void	execute_frame_tags(int frame, bool state_only = false)
 		// Execute the tags associated with the specified frame.
+		// frame is 0-based
 		{
 			assert(frame >= 0);
 			assert(frame < m_def->get_frame_count());
@@ -2396,6 +2444,7 @@ namespace gameswf
 
 		void	execute_remove_tags(int frame)
 		// Execute any remove-object tags associated with the specified frame.
+		// frame is 0-based
 		{
 			assert(frame >= 0);
 			assert(frame < m_def->get_frame_count());
@@ -2422,8 +2471,11 @@ namespace gameswf
 
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
+		// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
 		{
 //			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
+
+			target_frame_number = iclamp(target_frame_number, 0, m_def->get_frame_count() - 1);
 
 			/* does STOP need a special case?
 			if (m_play_state == STOP)
@@ -2975,6 +3027,13 @@ namespace gameswf
 				return true;
 			}
 
+			// Try static builtin functions.
+			assert(s_sprite_builtins);
+			if (s_sprite_builtins->get_member(name, val))
+			{
+				return true;
+			}
+
 			return false;
 		}
 
@@ -3033,7 +3092,8 @@ namespace gameswf
 			}
 			else
 			{
-				frame_number = (int) frame_spec.to_number();
+				// convert from 1-based to 0-based
+				frame_number = (int) frame_spec.to_number() - 1;
 			}
 
 			if (frame_number < 0 || frame_number >= m_def->get_frame_count())
@@ -3199,6 +3259,89 @@ namespace gameswf
 
 		m->add_character(character_id, ch);
 	}
+
+
+	//
+	// sprite built-in ActionScript methods
+	//
+
+	void	sprite_play(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		assert(sprite);
+		sprite->set_play_state(movie_interface::PLAY);
+	}
+
+	void	sprite_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		assert(sprite);
+		sprite->set_play_state(movie_interface::STOP);
+	}
+
+	void	sprite_goto_and_play(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		assert(sprite);
+
+		if (nargs < 1)
+		{
+			log_error("error: sprite_goto_and_play needs one arg\n");
+			return;
+		}
+
+		int	target_frame = env->bottom(first_arg).to_number() - 1;	// Convert to 0-based
+
+		sprite->goto_frame(target_frame);
+		sprite->set_play_state(movie_interface::PLAY);
+	}
+
+	void	sprite_goto_and_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		assert(sprite);
+
+		if (nargs < 1)
+		{
+			log_error("error: sprite_goto_and_stop needs one arg\n");
+			return;
+		}
+
+		int	target_frame = env->bottom(first_arg).to_number() - 1;	// Convert to 0-based
+
+		sprite->goto_frame(target_frame);
+		sprite->set_play_state(movie_interface::STOP);
+	}
+
+	static void	sprite_builtins_init()
+	{
+		if (s_sprite_builtins)
+		{
+			return;
+		}
+
+		s_sprite_builtins = new as_object;
+		s_sprite_builtins->set_member("play", &sprite_play);
+		s_sprite_builtins->set_member("stop", &sprite_stop);
+		s_sprite_builtins->set_member("gotoAndStop", &sprite_goto_and_stop);
+		s_sprite_builtins->set_member("gotoAndPlay", &sprite_goto_and_play);
+//		s_sprite_builtins->set_member("nextFrame", &sprite_next_frame);
+//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
+//		s_sprite_builtins->set_member("getURL", &sprite_get_url);
+//		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
+//		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
+	}
+
+	static void	sprite_builtins_clear()
+	{
+		if (s_sprite_builtins)
+		{
+			delete s_sprite_builtins;
+			s_sprite_builtins = 0;
+		}
+	}
+
+
 
 
 

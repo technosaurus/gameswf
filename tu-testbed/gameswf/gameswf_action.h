@@ -76,7 +76,7 @@ namespace gameswf
 
 	typedef void (*as_c_function_ptr)(
 		as_value* result,
-		void* this_ptr,
+		as_object_interface* this_ptr,
 		as_environment* env,
 		int nargs,
 		int first_arg_bottom_index);
@@ -118,7 +118,12 @@ namespace gameswf
 		void	set_length(int len) { assert(len >= 0); m_length = len; }
 
 		// Dispatch.
-		void	operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg);
+		void	operator()(
+			as_value* result,
+			as_object_interface* this_ptr,
+			as_environment* caller_env,
+			int nargs,
+			int first_arg);
 	};
 
 
