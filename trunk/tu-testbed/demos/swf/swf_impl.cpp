@@ -246,14 +246,14 @@ namespace swf
 	};
 
 
-	struct bitmap : public character {
-	};
+//	struct bitmap : public character {
+//	};
 
-	struct button : public character {
-	};
+//	struct button : public character {
+//	};
 
-	struct sound : public character {
-	};
+//	struct sound : public character {
+//	};
 
 	// Keep a table of loader functions for the different tag types.
 	static hash<int, loader_function>	s_tag_loaders;
@@ -526,8 +526,8 @@ namespace swf
 		int	index = find_display_index(*display_list, depth);
 		if (index < 0 || index >= size)
 		{
-			// error.
-			assert(0);
+			// error -- no character at the given depth.
+			IF_DEBUG(printf("remove_display_object: no character at depth %d\n", depth));
 			return;
 		}
 
@@ -614,6 +614,7 @@ namespace swf
 		int	m_version;
 		rgba	m_background_color;
 
+		play_state	m_play_state;
 		int	m_current_frame;
 		float	m_time;
 
@@ -623,6 +624,7 @@ namespace swf
 			m_frame_count(0),
 			m_version(0),
 			m_background_color(0.0f, 0.0f, 0.0f, 1.0f),
+			m_play_state(PLAY),
 			m_current_frame(0),
 			m_time(0.0f)
 		{
@@ -738,6 +740,12 @@ namespace swf
 		{
 			m_background_color = bg_color;
 		}
+
+		void	set_play_state(play_state s)
+		// Stop or play the movie.
+		{
+			m_play_state = s;
+		}
 		
 		void	restart()
 		{
@@ -747,17 +755,20 @@ namespace swf
 			m_time = 0;
 		}
 
-
 		void	advance(float delta_time)
 		{
 			// Call advance() on each object in our
-			// display list.  Takes care of sprites.
+			// display list.  Takes care of sprites and
+			// buttons.
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
-				m_display_list[i].m_character->advance(delta_time);
+				m_display_list[i].m_character->advance(delta_time, this);
 			}
 
-			m_time += delta_time;
+			if (m_play_state == PLAY)
+			{
+				m_time += delta_time;
+			}
 			int	target_frame_number = (int) floorf(m_time * m_frame_rate);
 
 			if (target_frame_number >= m_frame_count
@@ -899,6 +910,7 @@ namespace swf
 			s_registered = true;
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
+			register_tag_loader(7, button_character_loader);
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
 			register_tag_loader(11, define_text_loader);
@@ -909,6 +921,7 @@ namespace swf
 			register_tag_loader(28, remove_object_2_loader);
 			register_tag_loader(32, define_shape_loader);
 			register_tag_loader(33, define_text_loader);
+			register_tag_loader(34, button_character_loader);
 			register_tag_loader(36, define_bits_lossless_2_loader);
 			register_tag_loader(39, sprite_loader);
 			register_tag_loader(48, define_font_loader);
@@ -2409,7 +2422,7 @@ namespace swf
 		}
 
 
-		void	advance(float delta_time)
+		void	advance(float delta_time, movie* m)
 		{
 			assert(m_def && m_def->m_movie);
 
@@ -2417,7 +2430,7 @@ namespace swf
 			// display list.  Takes care of sprites.
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
-				m_display_list[i].m_character->advance(delta_time);
+				m_display_list[i].m_character->advance(delta_time, m /* @@ or 'this'???*/);
 			}
 
 			m_time += delta_time;
@@ -2612,7 +2625,6 @@ namespace swf
 		assert(tag_type == 39);
 
 		int	character_id = in->read_u16();
-		UNUSED(character_id);
 
 		movie_impl*	mi = dynamic_cast<movie_impl*>(m);
 		assert(mi);
@@ -2673,6 +2685,145 @@ namespace swf
 
 		m->add_execute_tag(t);
 	}
+
+
+	//
+	// button stuff
+	//
+
+
+	struct button_record
+	{
+		int	m_flags;
+		character*	m_character;
+		int	m_button_layer;
+		matrix	m_button_matrix;
+		cxform	m_button_cxform;
+		
+		bool	read(stream* in, int tag_type, movie* m)
+		// Return true if we read a record; false if this is a null record.
+		{
+			m_flags = in->read_u8();
+			if (m_flags == 0)
+			{
+				return false;
+			}
+			m_character = m->get_character(in->read_u16());
+			m_button_layer = in->read_u16(); 
+			m_button_matrix.read(in);
+			m_button_cxform.read_rgba(in);
+
+			return true;
+		}
+	};
+
+
+	struct button_character : public character
+	{
+		array<button_record>	m_button_records;
+		int	m_current_record;
+
+		button_character()
+			:
+			m_current_record(-1)
+		{
+		}
+
+		void	read(stream* in, int tag_type, movie* m)
+		{
+			assert(tag_type == 7 || tag_type == 34);
+
+			if (tag_type == 7)
+			{
+				assert(0);	// not implemented yet; tag type 7 may be deprecated...
+			}
+			else if (tag_type == 34)
+			{
+				int	flags = in->read_u8();
+
+				int	button_2_action_offset = in->read_u16();
+				// int	button_record_start_pos = in->get_position(); ???
+
+				// Read button records.
+				for (;;)
+				{
+					button_record	r;
+					if (r.read(in, tag_type, m) == false)
+					{
+						// Null record; marks the end of button records.
+						break;
+					}
+					m_button_records.push_back(r);
+				}
+
+				// Read Button2ActionConditions
+				for (;;)
+				{
+					int	next_action_offset = in->read_u16();
+					int	this_action_position = in->get_position();
+
+					int	condition_flags = in->read_u16();//xxxx
+
+					// read action records
+
+					if (next_action_offset == 0)
+					{
+						// done.
+						break;
+					}
+				}
+			}
+		}
+
+		void	advance(float delta_time, movie* m)
+		{
+			assert(m);
+
+			// Look at the mouse state, and select our currently active button record.
+			int	mx, my, mbuttons;
+//			m->get_mouse_state(&mx, &my, &mbuttons);
+
+			m_current_record = 0;
+
+			// Do any actions that are warranted.
+
+			// Advance our currently active character.
+			m_button_records[m_current_record].m_character->advance(delta_time, m);
+		}
+
+		void	display(const display_info& di)
+		{
+			if (m_current_record >= 0)
+			{
+				assert(m_current_record < m_button_records.size());
+
+				button_record&	rec = m_button_records[0];
+				if (rec.m_character)
+				{
+					swf::render::push_apply_matrix(rec.m_button_matrix);
+					swf::render::push_apply_cxform(rec.m_button_cxform);
+					rec.m_character->display(di);
+					swf::render::pop_matrix();
+					swf::render::pop_cxform();
+				}
+			}
+		}
+	};
+
+
+	void	button_character_loader(stream* in, int tag_type, movie* m)
+	{
+		assert(tag_type == 7 || tag_type == 34);
+
+		int	character_id = in->read_u16();
+
+		button_character*	ch = new button_character;
+		ch->m_id = character_id;
+		ch->read(in, tag_type, m);
+
+		m->add_character(character_id, ch);
+	}
+	
 
 
 	//
@@ -2748,7 +2899,7 @@ namespace swf
 					break;
 
 				case 0x07:	// action stop
-//					m->set_playing(false);
+					m->set_play_state(movie::STOP);
 					break;
 				}
 				pc++;	// advance to next action.
