@@ -91,6 +91,10 @@ namespace gameswf
 		// May return NULL.
 		character*	get_character_at_depth(int depth);
 
+		// May return NULL.
+		character*	get_character_by_name(const tu_string& name);
+
+
 		inline const display_object_info&	get_display_object(int idx) const
 		// get the display object at the given position.
 		{

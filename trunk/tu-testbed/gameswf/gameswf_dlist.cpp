@@ -114,6 +114,23 @@ namespace gameswf
 
 		return NULL;
 	}
+
+
+	character*	display_list::get_character_by_name(const tu_string& name)
+	{
+		// See if we have a match on the display list.
+		for (int i = 0, n = get_character_count(); i < n; i++)
+		{
+			character*	ch = get_character(i);
+			if (strcmp(ch->get_name(), name) == 0)
+			{
+				// Found it.
+				return ch;
+			}
+		}
+		return NULL;
+	}
+
 	
 	void	display_list::add_display_object(
 		character* ch, 

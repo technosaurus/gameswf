@@ -987,7 +987,15 @@ namespace gameswf
 				}
 
 				case 0x24:	// duplicate clip (sprite?)
+				{
+					env->get_target()->clone_display_object(env->top(2).to_tu_string(), env->top(1).to_tu_string(), env->top(0).to_number());
+					env->drop(3);
+					break;
+				}
+
 				case 0x25:	// remove clip
+					env->get_target()->remove_display_object(env->top(0).to_tu_string());
+					env->drop(1);
 					break;
 
 				case 0x26:	// trace

@@ -214,6 +214,9 @@ namespace gameswf
 
 		virtual float	get_timer() const { return 0.0f; }
 		virtual movie*	to_movie() { return this; }
+
+		virtual void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth) { assert(0); }
+		virtual void	remove_display_object(const tu_string& name) { assert(0); }
 	};
 
 
