@@ -188,8 +188,9 @@ BUILDING
 Windows and Linux users
 -----------------------
 
-1. Get the source for the tu-testbed project, using CVS, or from a
-   tarball, from the SourceForge project page.
+1. You should have gotten source code along with the demo, of the same
+   version used to build the demo.  For up-to-date code, see
+   http://tulrich.com/geekstuff/chunklod.html
 
 Linux Users
 -----------
