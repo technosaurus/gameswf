@@ -21,8 +21,11 @@
 	typedef unsigned char	Uint8;
 	typedef unsigned short	Uint16;
 	typedef unsigned int	Uint32;
+#ifdef __GNUC__
+	typedef unsigned long long	Uint64;
+#else
 	typedef unsigned __int64	Uint64;
-	//typedef unsigned long long	Uint64;
+#endif
 
 
 
@@ -131,14 +134,14 @@ namespace gameswf
 		}
 		Uint64 swap64(Uint64 u) 
 		{ 
-			return ((u & 0x00000000000000FF) << 56) | 
-				((u & 0x000000000000FF00) << 40)  |
-				((u & 0x0000000000FF0000) << 24)  |
-				((u & 0x00000000FF000000) << 8) |
-				((u & 0x000000FF00000000) >> 8) |
-				((u & 0x0000FF0000000000) >> 24) |
-				((u & 0x00FF000000000000) >> 40) |
-				((u & 0xFF00000000000000) >> 56);
+			return ((u & 0x00000000000000FFLL) << 56) | 
+				((u & 0x000000000000FF00LL) << 40)  |
+				((u & 0x0000000000FF0000LL) << 24)  |
+				((u & 0x00000000FF000000LL) << 8) |
+				((u & 0x000000FF00000000LL) >> 8) |
+				((u & 0x0000FF0000000000LL) >> 24) |
+				((u & 0x00FF000000000000LL) >> 40) |
+				((u & 0xFF00000000000000LL) >> 56);
 		}
 
 		void * 	m_data;

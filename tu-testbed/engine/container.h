@@ -364,6 +364,11 @@ public:
 		return &m_buffer[0];
 	}
 
+	const char*	c_str() const
+	{
+		return (const char*) (*this);
+	}
+
 	// operator= returns void; if you want to know why, ask Charles Bloom :)
 	// (executive summary: a = b = c is an invitation to bad code)
 	void	operator=(const char* str)
@@ -391,6 +396,15 @@ public:
 
 	char&	operator[](int index) { return m_buffer[index]; }
 	const char&	operator[](int index) const { return m_buffer[index]; }
+
+	void	operator+=(const char* str)
+	{
+		int	str_length = strlen(str);
+		int	old_length = length();
+		assert(old_length >= 0);
+		m_buffer.resize(old_length + str_length + 1);
+		strcpy(&m_buffer[old_length], str);
+	}
 
 private:
 	array<char>	m_buffer;	// we do store the terminating \0
