@@ -281,8 +281,8 @@ struct heightfield {
 		x = fclamp(x, 0, size-3);
 		z = fclamp(z, 0, size-3);
 
-		int	i = floor(x);
-		int	j = floor(z);
+		int	i = (int) floor(x);
+		int	j = (int) floor(z);
 
 		float	wx = x - i;
 		float	wz = z - j;
@@ -294,10 +294,10 @@ struct heightfield {
 		Uint8	s01 = compute_light_int(i, j+1);
 		Uint8	s11 = compute_light_int(i+1, j+1);
 		
-		return s00 * (1 - wx) * (1 - wz)
-			+ s10 * (wx) * (1 - wz)
-			+ s01 * (1 - wx) * (wz)
-			+ s11 * (wx) * (wz);
+		return (Uint8) (s00 * (1 - wx) * (1 - wz)
+				+ s10 * (wx) * (1 - wz)
+				+ s01 * (1 - wx) * (wz)
+				+ s11 * (wx) * (wz));
 	}
 
 
@@ -314,7 +314,7 @@ struct heightfield {
 		float	slopex = (((y00 - y10) + (y01 - y11)) * 0.5) / sample_spacing;
 		float	slopez = (((y00 - y01) + (y10 - y11)) * 0.5) / sample_spacing;
 
-		return iclamp((slopex * 0.25 + slopez * 0.15 + 0.5) * 255, 0, 255);	// xxx arbitrary params
+		return iclamp((int) ((slopex * 0.25 + slopez * 0.15 + 0.5) * 255), 0, 255);	// xxx arbitrary params
 	}
 
 
@@ -473,8 +473,8 @@ void	heightfield_shader(SDL_RWops* in, SDL_RWops* out, SDL_Surface* tilemap, con
 
 	const char*	spinner = "-\\|/";
 
-	int	width = (hf.size - 1) * resolution;
-	int	height = (hf.size - 1) * resolution;
+	int	width = (int) ((hf.size - 1) * resolution);
+	int	height = (int) ((hf.size - 1) * resolution);
 	
 	SDL_Surface*	texture = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 24, 0xFF0000, 0xFF00, 0xFF, 0);
 	Uint8*	p = (Uint8*) texture->pixels;
@@ -485,7 +485,7 @@ void	heightfield_shader(SDL_RWops* in, SDL_RWops* out, SDL_Surface* tilemap, con
 				// Get the corresponding pixel from the tilemap, and
 				// get the tile that it corresponds to.
 				Uint8	r, g, b, a;
-				ReadPixel(tilemap, imin(i / resolution, tilemap->w-1), imin(j / resolution, tilemap->h-1), &r, &g, &b, &a);
+				ReadPixel(tilemap, imin((int) (i / resolution), tilemap->w-1), imin((int) (j / resolution), tilemap->h-1), &r, &g, &b, &a);
 				t = choose_tile(tileset, r, g, b);
 			} else {
 				// In the absense of a tilemap, use the first tile for
