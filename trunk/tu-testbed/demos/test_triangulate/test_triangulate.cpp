@@ -280,6 +280,21 @@ void	rotate_coord_order(array<float>* path, int rotate_count)
 }
 
 
+void	set_to_array(array<float>* path, int array_size, const float array_data[])
+{
+	assert(path->size() == 0);
+	assert((array_size & 1) == 0);
+
+	path->reserve(array_size);
+
+	for (int i = 0; i < array_size; i++)
+	{
+		path->push_back(array_data[i]);
+	}
+}
+
+
+
 int	main()
 {
 	array<float>	result;
@@ -392,7 +407,7 @@ int	main()
 	reverse_path(&paths.back());
 #endif
 
-#if 0
+#if 1
 	// This one has a tricky triple dupe vertex that puts us into
 	// the recovery mode.  See "Case A" in recovery_process() in
 	// triangulate_imp.h.
@@ -463,7 +478,43 @@ int	main()
 	paths.back().push_back(2);
 #endif // 0
 
-#if 1
+#if 0
+	// Another direct expression of the "tricky triple dupe".  The
+	// actual triple dupe occurs when P2 is attached with a bridge
+	// to P (so it depends on the bridge-finding code).
+	//
+	// The tricky duped vert is at (2,2).
+	paths.resize(paths.size() + 1);
+	static const float	P[] =
+	{
+		0,0,  3,0,  3,2,  2,2,  1.5f,1.5f,  1.5f,2.5f,  2,2,  2,3,  0,3
+	};
+	set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
+
+	paths.resize(paths.size() + 1);
+	static const float	P2[] =
+	{
+		2.1f,1,  2.3f,1.5f, 2.5f,1
+	};
+	set_to_array(&paths.back(), sizeof(P2)/sizeof(P2[0]), P2);
+#endif
+
+#if 0
+	// As above, pre-combined into one path with a zero-area bridge.
+	//
+	// The tricky duped vert is at (2,2).
+	//
+	// Note: this path contains a twist!  So in a sense, it is
+	// invalid input.
+	paths.resize(paths.size() + 1);
+	static const float	P[] =
+	{
+		0,0,  3,0,  3,2,  2,2,  1.5f,1.5f,  1.5f,2.5f,  2,2,  2.1f,1,  2.3f,1.5f,  2.5f,1,  2.1f,1,  2,2,  2,3,  0,3
+	};
+	set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
+#endif
+
+#if 0
 	// Spiral.
 	paths.resize(paths.size() + 1);
 	make_spiral(&paths.back(), 10, 20);
