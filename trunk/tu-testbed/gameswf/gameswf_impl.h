@@ -33,7 +33,7 @@ namespace gameswf
 	struct execute_tag;
 	struct font;
 	struct movie_root;
-	struct sound_sample { virtual ~sound_sample() {} };
+	struct sound_sample : virtual public ref_counted {};
 	struct stream;
 
 

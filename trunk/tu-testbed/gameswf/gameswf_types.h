@@ -10,6 +10,7 @@
 #define GAMESWF_TYPES_H
 
 
+#include "gameswf/gameswf.h"
 #include "base/tu_types.h"
 
 
@@ -68,7 +69,7 @@ namespace gameswf
 	
 	// A polymorphic class for handling different types of
 	// resources.
-	struct resource
+	struct resource : virtual public ref_counted
 	{
 		virtual ~resource() {}
 

@@ -454,8 +454,8 @@ int	main(int argc, char *argv[])
 	}
 
 done:
-	delete m;
-	delete md;
+	if (m) m->drop_ref();
+	if (md) md->drop_ref();
 	delete sound;
 	delete render;
 	return 0;
