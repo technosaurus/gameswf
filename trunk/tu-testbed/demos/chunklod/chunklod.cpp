@@ -613,6 +613,7 @@ void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 			p->do_split(base, viewpoint);
 		}
 
+#if 0
 		// make sure neighbors are subdivided enough.
 		{for (int i = 0; i < 4; i++) {
 			lod_chunk*	n = m_neighbor[i].m_chunk;
@@ -620,6 +621,7 @@ void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 				n->m_parent->do_split(base, viewpoint);
 			}
 		}}
+#endif // 0
 	}
 }
 
@@ -659,6 +661,7 @@ bool	lod_chunk::can_split()
 		}
 	}
 
+#if 0
 	// Make sure neighbors have data.
 	{for (int i = 0; i < 4; i++) {
 		lod_chunk*	n = m_neighbor[i].m_chunk;
@@ -666,6 +669,7 @@ bool	lod_chunk::can_split()
 			can_split = false;
 		}
 	}}
+#endif // 0
 
 	return can_split;
 }

@@ -342,6 +342,7 @@ void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8
 struct heightfield {
 	int	size;
 	int	log_size;	// size == (1 << log_size) + 1
+	int	root_level;	// level of the root chunk (TODO: reverse the meaning of 'level' to be more intuitive).
 	float	sample_spacing;
 	float	vertical_scale;	// scales the units stored in heightfield_elem's.  meters == stored_Sint16 * vertical_scale
 	mmap_array<Sint16>*	m_height;
@@ -458,11 +459,14 @@ struct heightfield {
 	// with edge skirts.)
 	{
 		int	l1 = lowest_one(coord);
-		int	depth = log_size - l1 - 1;
+		int	depth = (log_size - l1 - 1);
 
-		if (depth < 0) depth = 0;
+		return iclamp(root_level - depth, 0, root_level);	// TODO: reverse direction of level
 
-		return depth;
+//		depth = iclamp(depth, 0, root_level);
+//		if (depth < 0) depth = 0;
+//
+//		return depth;
 	}
 
 
@@ -672,6 +676,8 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 		hf.sample_spacing = spacing;
 	}
 
+	hf.root_level = tree_depth - 1;
+
 	stats.input_vertices = hf.size * hf.size;
 
 	printf("updating...");
@@ -709,7 +715,7 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 	printf("meshing...");
 
 	// Write out the node data for the entire chunk tree.
-	generate_node_data(out, hf, 0, 0, hf.log_size, tree_depth-1);
+	generate_node_data(out, hf, 0, 0, hf.log_size, hf.root_level);
 
 	printf("done\n");
 }
@@ -964,8 +970,6 @@ namespace mesh {
 };
 
 
-void	gen_mesh(heightfield& hf, int level, int ax, int az, int rx, int rz, int lx, int lz);
-
 void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level);
 
 
@@ -1219,6 +1223,12 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 		if (hf.get_level(x, z) >= level) {
 			// This is an active vert at this level of detail.
 
+			// TODO: activation level & chunk level are consistent
+			// with each other, but they go in the unintuitive
+			// direction: level 0 is the *highest* (i.e. most
+			// detailed) "level of detail".  Should reverse this to be
+			// less confusing.
+
 			// Check height of lower LODs.
 			//
 			// NOTE: This is not actually necessary, provided we
@@ -1250,7 +1260,7 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 			}
 			int	minimum_edge_lod = hf.minimum_edge_lod(major_coord);	// lod of the least-detailed chunk bordering this edge.
 
-			for (int lod = level; lod >= minimum_edge_lod - 1 && lod >= 0; lod--)
+			for (int lod = level; lod <= minimum_edge_lod + 1 && lod <= hf.root_level; lod++)
 			{
 				Sint16	lod_height = get_height_at_LOD(hf, lod, x, z);
 				current_min = imin(current_min, lod_height);
