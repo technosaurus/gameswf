@@ -2865,13 +2865,6 @@ namespace gameswf
 				{
 					log_msg("\t\t");	// indent
 
-					//xxxxxxx debug
-					if (count == 8 && strcmp((const char*) &instruction_data[3 + i], "runThrough") == 0)
-					{
-						count = count; // break here!
-					}
-					//xxxxxxxx
-
 					log_msg("\"");
 					while (instruction_data[3 + i])
 					{

@@ -1691,10 +1691,6 @@ namespace gameswf
 		// against that.
 
 		event_id	m_event;
-		// We must allocate this manually, since we hold a
-		// pointer to it in m_method, and therefore we can't
-		// allow it to move if/when we get moved (since we're
-		// a value type and can be stored in an array<>).
 		action_buffer	m_action_buffer;
 		as_value	m_method;
 
