@@ -1,3 +1,9 @@
+2005-03-23  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* configure.ac: Don't try to configure the empty testsuite
+	directory.
+	* configure: Regenerated.
+
 2005-03-20  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_movie.{cpp,h}: Add gameswf namespace. 

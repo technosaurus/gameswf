@@ -30,6 +30,5 @@ AC_OUTPUT(Makefile
 base/Makefile
 geometry/Makefile
 gameswf/Makefile
-gameswf/testsuite/Makefile
 config.mk
 )
