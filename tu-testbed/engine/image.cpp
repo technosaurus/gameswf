@@ -17,11 +17,30 @@
 
 namespace image
 {
+	//
+	// image_base
+	//
+	image_base::image_base(Uint8* data, int width, int height, int pitch)
+		:
+		m_data(data),
+		m_width(width),
+		m_height(height),
+		m_pitch(pitch)
+	{
+	}
+
+
+	//
+	// rgb
+	//
+
 	rgb::rgb(int width, int height)
-		: m_data(0),
-		  m_width(width),
-		  m_height(height),
-		  m_pitch((m_width * 3 + 3) & ~3)	// round pitch up to nearest 4-byte boundary
+		:
+		image_base(
+			0,
+			width,
+			height,
+			(width * 3 + 3) & ~3)	// round pitch up to nearest 4-byte boundary
 	{
 		assert(width > 0);
 		assert(height > 0);
@@ -46,6 +65,43 @@ namespace image
 	// the CPU.
 	{
 		rgb*	s = new rgb(width, height);
+
+		return s;
+	}
+
+
+	//
+	// rgba
+	//
+
+
+	rgba::rgba(int width, int height)
+		:
+		image_base(0, width, height, width * 4)
+	{
+		assert(width > 0);
+		assert(height > 0);
+		assert(m_pitch >= m_width * 4);
+		assert((m_pitch & 3) == 0);
+
+		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
+	}
+
+	rgba::~rgba()
+	{
+		if (m_data) {
+			dlfree(m_data);
+			m_data = 0;
+		}
+	}
+
+
+	rgba*	create_rgba(int width, int height)
+	// Create an system-memory rgb surface.  The data order is
+	// packed 32-bit, RGBARGBA..., regardless of the endian-ness
+	// of the CPU.
+	{
+		rgba*	s = new rgba(width, height);
 
 		return s;
 	}

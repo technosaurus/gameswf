@@ -16,27 +16,45 @@ struct SDL_RWops;
 
 namespace image
 {
+	struct image_base
+	{
+		Uint8*	m_data;
+		int	m_width;
+		int	m_height;
+		int	m_pitch;	// byte offset from one row to the next
+
+		image_base(Uint8* data, int width, int height, int pitch);
+	};
+
 	// 24-bit RGB image.  Packed data, red byte first (RGBRGB...)
 	//
 	// We need this class because SDL_Surface chokes on any image
 	// that has more than 64KB per row, due to a Uint16 pitch
 	// member.
-	struct rgb {
+	struct rgb : public image_base
+	{
 		rgb(int width, int height);
 		~rgb();
+	};
 
-		Uint8*	m_data;
-		int	m_width;
-		int	m_height;
-		int	m_pitch;	// byte offset from one row to the next
+	// 32-bit RGBA image.  Packed data, red byte first (RGBARGBA...)
+	struct rgba : public image_base
+	{
+		rgba(int width, int height);
+		~rgba();
 	};
 
 
 	// Make a system-memory 24-bit bitmap surface.  24-bit packed
 	// data, red byte first.
 	rgb*	create_rgb(int width, int height);
+
+
+	// Make a system-memory 32-bit bitmap surface.  Packed data,
+	// red byte first.
+	rgba*	create_rgba(int width, int height);
 	
-	inline Uint8*	scanline(rgb* surf, int y)
+	inline Uint8*	scanline(image_base* surf, int y)
 	{
 		assert(surf);
 		assert(y < surf->m_height);

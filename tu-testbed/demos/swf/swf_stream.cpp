@@ -108,10 +108,46 @@ namespace swf
 	}
 	Sint16	stream::read_s16() { align(); return SDL_ReadLE16(m_input); }
 
+
+	char*	stream::read_string()
+	// Reads *and new[]'s* the string from the given file.
+	// Ownership passes to the caller; caller must delete[] the
+	// string when it is done with it.
+	{
+		align();
+
+		array<char>	buffer;
+		char	c;
+		while ((c = read_u8()) != 0)
+		{
+			buffer.push_back(c);
+		}
+
+		if (buffer.size() == 0)
+		{
+			return NULL;
+		}
+
+		char*	retval = new char[buffer.size() + 1];
+		strcpy(retval, &buffer[0]);
+
+		return retval;
+	}
+
+
 	int	stream::get_position()
 	// Return our current (byte) position in the input stream.
 	{
 		return SDL_RWtell(m_input);
+	}
+
+
+	int	stream::get_tag_end_position()
+	// Return the file position of the end of the current tag.
+	{
+		assert(m_tag_stack.size() > 0);
+
+		return m_tag_stack.back();
 	}
 
 

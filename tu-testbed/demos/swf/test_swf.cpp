@@ -41,6 +41,7 @@ int	main(int argc, char *argv[])
 	}
 
 	swf::movie*	m = swf::create_movie(in);
+	m = m;
 
 	SDL_RWclose(in);
 
