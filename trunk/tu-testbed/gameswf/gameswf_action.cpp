@@ -379,7 +379,7 @@ namespace gameswf
 	struct key_as_object : public as_object
 	{
 		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
-		array<as_object_interface*>	m_listeners;	// should use weak ptr's for this!
+		array<weak_ptr<as_object_interface> >	m_listeners;
 		int	m_last_key_pressed;
 
 		key_as_object()
@@ -426,11 +426,12 @@ namespace gameswf
 			// Notify listeners.
 			for (int i = 0, n = m_listeners.size(); i < n; i++)
 			{
-				as_object_interface*	listener = m_listeners[i];
+				smart_ptr<as_object_interface>	listener = m_listeners[i];
 				as_value	method;
-				if (listener && listener->get_member(event_id(event_id::KEY_DOWN).get_function_name(), &method))
+				if (listener != NULL
+				    && listener->get_member(event_id(event_id::KEY_DOWN).get_function_name(), &method))
 				{
-					call_method(method, NULL /* or root? */, listener, 0, 0);
+					call_method(method, NULL /* or root? */, listener.get_ptr(), 0, 0);
 				}
 			}
 		}
@@ -451,8 +452,24 @@ namespace gameswf
 			// @@ TODO need to figure out what environment to use...
 		}
 
+		void	cleanup_listeners()
+		// Remove dead entries in the listeners list.  (Since
+		// we use weak_ptr's, listeners can disappear without
+		// notice.)
+		{
+			for (int i = m_listeners.size() - 1; i >= 0; i--)
+			{
+				if (m_listeners[i] == NULL)
+				{
+					m_listeners.remove(i);
+				}
+			}
+		}
+
 		void	add_listener(as_object_interface* listener)
 		{
+			cleanup_listeners();
+
 			for (int i = 0, n = m_listeners.size(); i < n; i++)
 			{
 				if (m_listeners[i] == listener)
@@ -467,6 +484,8 @@ namespace gameswf
 
 		void	remove_listener(as_object_interface* listener)
 		{
+			cleanup_listeners();
+
 			for (int i = m_listeners.size() - 1; i >= 0; i--)
 			{
 				if (m_listeners[i] == listener)

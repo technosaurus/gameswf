@@ -13,6 +13,7 @@
 
 class tu_file;
 class render_handler;
+class weak_proxy;	// forward decl; defined in base/smart_ptr.h
 
 // @@ forward decl to avoid including base/image.h; TODO change the
 // render_handler interface to not depend on these structs at all.
@@ -95,12 +96,16 @@ namespace gameswf
 	// For stuff that's tricky to keep track of w/r/t ownership & cleanup.
 	struct ref_counted
 	{
-		int	m_ref_count;
-
 		ref_counted();
 		virtual ~ref_counted();
-		void	add_ref();
-		void	drop_ref();
+		void	add_ref() const;
+		void	drop_ref() const;
+		int	get_ref_count() const { return m_ref_count; }
+		weak_proxy*	get_weak_proxy() const;
+
+	private:
+		mutable int	m_ref_count;
+		mutable weak_proxy*	m_weak_proxy;
 	};
 
 

@@ -170,22 +170,29 @@ namespace gameswf
 
 	ref_counted::ref_counted()
 		:
-		m_ref_count(0)
+		m_ref_count(0),
+		m_weak_proxy(0)
 	{
 	}
 
 	ref_counted::~ref_counted()
 	{
 		assert(m_ref_count == 0);
+
+		if (m_weak_proxy)
+		{
+			m_weak_proxy->notify_object_died();
+			m_weak_proxy->drop_ref();
+		}
 	}
 
-	void	ref_counted::add_ref()
+	void	ref_counted::add_ref() const
 	{
 		assert(m_ref_count >= 0);
 		m_ref_count++;
 	}
 
-	void	ref_counted::drop_ref()
+	void	ref_counted::drop_ref() const
 	{
 		assert(m_ref_count > 0);
 		m_ref_count--;
@@ -194,6 +201,19 @@ namespace gameswf
 			// Delete me!
 			delete this;
 		}
+	}
+
+	weak_proxy* ref_counted::get_weak_proxy() const
+	{
+		assert(m_ref_count > 0);	// By rights, somebody should be holding a ref to us.
+
+		if (m_weak_proxy == NULL)
+		{
+			m_weak_proxy = new weak_proxy;
+			m_weak_proxy->add_ref();
+		}
+
+		return m_weak_proxy;
 	}
 
 
@@ -347,7 +367,7 @@ namespace gameswf
 		{
 			smart_ptr<character_def>	ch;
 			m_characters.get(character_id, &ch);
-			assert(ch == NULL || ch->m_ref_count > 1);
+			assert(ch == NULL || ch->get_ref_count() > 1);
 			return ch.get_ptr();
 		}
 
@@ -367,7 +387,7 @@ namespace gameswf
 		{
 			smart_ptr<font>	f;
 			m_fonts.get(font_id, &f);
-			assert(f == NULL || f->m_ref_count > 1);
+			assert(f == NULL || f->get_ref_count() > 1);
 			return f.get_ptr();
 		}
 
@@ -375,7 +395,7 @@ namespace gameswf
 		{
 			smart_ptr<bitmap_character_def>	ch;
 			m_bitmap_characters.get(character_id, &ch);
-			assert(ch == NULL || ch->m_ref_count > 1);
+			assert(ch == NULL || ch->get_ref_count() > 1);
 			return ch.get_ptr();
 		}
 
@@ -389,7 +409,7 @@ namespace gameswf
 		{
 			smart_ptr<sound_sample>	ch;
 			m_sound_samples.get(character_id, &ch);
-			assert(ch == NULL || ch->m_ref_count > 1);
+			assert(ch == NULL || ch->get_ref_count() > 1);
 			return ch.get_ptr();
 		}
 
@@ -2587,7 +2607,7 @@ namespace gameswf
 			}
 			m_display_list.add_display_object(ch.get_ptr(), depth, color_transform, matrix, ratio, clip_depth);
 
-			assert(ch == NULL || ch->m_ref_count > 1);
+			assert(ch == NULL || ch->get_ref_count() > 1);
 			return ch.get_ptr();
 		}
 
