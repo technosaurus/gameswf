@@ -442,7 +442,10 @@ namespace render
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, edge_data);
 
 				glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// @@ should we use a 1D texture???
+
+				glDisable(GL_TEXTURE_2D);
 				ogl::active_texture(GL_TEXTURE0_ARB);
+				glDisable(GL_TEXTURE_2D);
 			}
 		}
 	}
@@ -707,7 +710,7 @@ namespace render
 		// wireframe, for debugging
 		if (s_wireframe)
 		{
-			glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+			glColor4f(0.5f, 0.5f, 0.5f, 0.5f);
 			glBegin(GL_LINES);
 			{for (int i = 0; i < s_current_segments.size(); i++)
 			{
@@ -807,10 +810,10 @@ namespace render
 		*s0 = nx * (c.m_x - a.m_x) + ny * (c.m_y - a.m_y);
 		*s1 = nx * (d.m_x - a.m_x) + ny * (d.m_y - a.m_y);
 #else
-		*s0 = (c.m_x - a.m_x) * 0.5f * s_pixel_scale / 20.f;
+		*s0 = (c.m_x - b.m_x) * 0.5f * s_pixel_scale / 20.f;
 		*s1 = (d.m_x - a.m_x) * 0.5f * s_pixel_scale / 20.f;
 
-		if (a.m_y > b.m_y)
+		if (*s0 < 0)
 		{
 			*s0 = -*s0;
 			*s1 = -*s1;
@@ -901,10 +904,12 @@ namespace render
 
 					// Expand the trapezoid by a pixel to make up for
 					// the reduced coverage due to antialiasing.
-					a.m_x -= 20.f / s_pixel_scale;
-					b.m_x -= 20.f / s_pixel_scale;
-					c.m_x += 20.f / s_pixel_scale;
-					d.m_x += 20.f / s_pixel_scale;
+//					float	expand = (1.0f + fabsf((b.m_x - a.m_x) / (b.m_y - a.m_y))) * 20.f;
+					float	expand = 20.f;
+					a.m_x -= expand / s_pixel_scale;
+					b.m_x -= expand / s_pixel_scale;
+					c.m_x += expand / s_pixel_scale;
+					d.m_x += expand / s_pixel_scale;
 
 					const point	e((a.m_x + c.m_x) * 0.5f, (a.m_y + c.m_y) * 0.5f);
 					const point	f((b.m_x + d.m_x) * 0.5f, (b.m_y + d.m_y) * 0.5f);
@@ -937,6 +942,19 @@ namespace render
 					ogl::active_texture(GL_TEXTURE1_ARB);
 					glDisable(GL_TEXTURE_2D);
 					ogl::active_texture(GL_TEXTURE0_ARB);
+
+					//xxxxxx red trapezoid outlines
+					if (0) {
+						glColor4f(1, 0, 0, 1);
+						glBegin(GL_LINE_STRIP);
+						glVertex2f(a.m_x, a.m_y);
+						glVertex2f(b.m_x, b.m_y);
+						glVertex2f(f.m_x, f.m_y);
+						glVertex2f(e.m_x, e.m_y);
+						glVertex2f(a.m_x, a.m_y);
+						glEnd();
+						glColor4f(1, 1, 1, 1);
+					}
 				}
 			}
 		}

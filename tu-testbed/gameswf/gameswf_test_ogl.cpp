@@ -195,6 +195,12 @@ int	main(int argc, char *argv[])
 					paused = true;
 					delta_t = +0.1f;
 				}
+				else if (key == SDLK_a)
+				{
+					// Toggle antialiasing.
+					s_antialiased = !s_antialiased;
+					gameswf::set_antialiased(s_antialiased);
+				}
 
 				break;
 			}
