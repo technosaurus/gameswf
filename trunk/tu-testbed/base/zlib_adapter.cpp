@@ -10,6 +10,22 @@
 #include "base/zlib_adapter.h"
 #include "base/tu_file.h"
 #include "base/utility.h"
+
+
+#if !TU_CONFIG_LINK_TO_ZLIB
+
+
+// Stubs, in case client doesn't want to link to zlib.
+namespace zlib_adapter
+{
+	tu_file*	make_inflater(tu_file* in) { return NULL; }
+	tu_file*	make_deflater(tu_file* out) { return NULL; }
+}
+
+
+#else // TU_CONFIG_LINK_TO_ZLIB
+
+
 #include <zlib.h>
 
 
@@ -298,6 +314,9 @@ namespace zlib_adapter
 	// @@ TODO
 	// tu_file*	make_deflater(tu_file* out) { ... }
 }
+
+#endif // TU_CONFIG_LINK_TO_ZLIB
+
 
 // Local Variables:
 // mode: C++
