@@ -49,60 +49,7 @@ float	morph_curve(float f)
 }
 
 
-class vertex_streaming_buffer {
-// Object to facilitate streaming verts to the video card.
-// The idea is that it will take care of fencing.
-//
-// TODO: implement fencing.
-// TODO: migrate to engine.  Probably just attach to the view_state.
-public:
-	vertex_streaming_buffer(int buffer_size)
-	// Construct a streaming buffer, with vertex RAM of the specified size.
-	{
-		m_buffer_size = buffer_size;
-		m_buffer = ogl::allocate_vertex_memory(buffer_size);
-		m_buffer_top = 0;
-	}
-
-	~vertex_streaming_buffer()
-	{
-		ogl::free_vertex_memory(m_buffer);
-	}
-
-	void*	reserve_memory(int size)
-	// Clients should call this to get a temporary chunk of fast
-	// vertex memory.  Fill it with mesh info and call
-	// glVertexPointer()/glDrawElements().  The memory won't get
-	// stomped until the drawing is finished.
-	//
-	// (TODO: fencing not implemented yet!  figure it out)
-	{
-		assert(size <= m_buffer_size);
-
-		if (m_buffer_top + size > m_buffer_size) {
-			// Desired chunk is bigger than what we've got left; flush
-			// the buffer and start again at the beginning.
-
-			// TODO: something involving a fence, to make sure old data has been drawn.
-			//glFinish();	// @@ We don't want to have to do this!
-
-			m_buffer_top = 0;
-		}
-
-		void*	buf = ((char*) m_buffer) + m_buffer_top;
-		m_buffer_top += size;
-
-		// @@ is it helpful/necessary to do alignment?
-
-		return buf;
-	}
-
-private:
-	int	m_buffer_size;
-	int	m_buffer_top;
-	void*	m_buffer;
-};
-static vertex_streaming_buffer*	s_stream = NULL;
+static ogl::vertex_stream*	s_stream = NULL;
 
 
 static float	s_vertical_scale = 1.0;
@@ -754,7 +701,6 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	// Read and verify a "CHU\0" header tag.
 	Uint32	tag = SDL_ReadLE32(src);
 	if (tag != (('C') | ('H' << 8) | ('U' << 16))) {
-		assert(0);
 		throw "Input file is not in .CHU format";
 	}
 
@@ -802,7 +748,7 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 {
 	// Make sure we have a vertex stream.
 	if (s_stream == NULL) {
-		s_stream = new vertex_streaming_buffer(2 << 20);
+		s_stream = new ogl::vertex_stream(2 << 20);
 	}
 
 	int	triangle_count = 0;
