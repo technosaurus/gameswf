@@ -1165,7 +1165,8 @@ namespace gameswf
 				case 0x26:	// trace
 				{
 					// Log the stack val.
-					log_msg("%s\n", env->top(0).to_string());
+					const char*	message = env->top(0).to_string();
+					log_msg("%s\n", message);
 					env->drop(1);
 					break;
 				}
@@ -1568,7 +1569,8 @@ namespace gameswf
 				case 0x81:	// goto frame
 				{
 					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
-					// frame number arg is 0-based already !?
+					// 0-based already?
+					//// Convert from 1-based to 0-based
 					//frame--;
 					env->get_target()->goto_frame(frame);
 					break;
@@ -1986,17 +1988,22 @@ namespace gameswf
 		if (m_type == STRING)
 		{
 			m_number_value = atof(m_string_value.c_str());
+			return m_number_value;
 		}
 		else if (m_type == NUMBER)
 		{
-			// don't need to do anything.
+			return m_number_value;
+		}
+		else if (m_type == OBJECT && m_object_value != NULL)
+		{
+			// Text characters with var names could get in
+			// here.
+			return atof(m_object_value->get_text_value());
 		}
 		else
 		{
-			m_number_value = 0;
+			return 0.0;
 		}
-		
-		return m_number_value;
 	}
 
 
@@ -2156,10 +2163,17 @@ namespace gameswf
 		if (parse_path(varname, &path, &var))
 		{
 			target = find_target(path);	// @@ Use with_stack here too???  Need to test.
-
-			as_value	val;
-			target->get_member(var, &val);
-			return val;
+			if (target)
+			{
+				as_value	val;
+				target->get_member(var, &val);
+				return val;
+			}
+			else
+			{
+				log_error("find_target(\"%s\") failed\n", path.c_str());
+				return as_value(as_value::UNDEFINED);
+			}
 		}
 		else
 		{
@@ -2222,7 +2236,7 @@ namespace gameswf
 		}
 	
 		// Fallback.
-		log_error("error: get_variable_raw(\"%s\") failed.\n", varname.c_str());
+		IF_VERBOSE_ACTION(log_msg("get_variable_raw(\"%s\") failed, returning UNDEFINED.\n", varname.c_str()));
 		return as_value(as_value::UNDEFINED);
 	}
 

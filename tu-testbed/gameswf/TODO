@@ -10,52 +10,88 @@ Productizing
 
 Tasks to make gameswf ready for including in real games.
 
-* ActionScript is not case sensitive (for variable and character
-  names)!  But gameswf is!  Fix gameswf.
-
 * hooks so that preprocessor and loader can deal with special,
   host-specific data like vertex buffers and textures in a custom way
   if desired.
 
-  Textures are higher priority than meshes.  Approach: defer texture
-  creation until after the load is finished.  Provide an API for the
-  host to grab all images used in the movie, create bitmap_info's, and
-  push them back in.  Also provide a load-time option to skip
-  textures, so the host can push in pre-generated textures of its own.
-
-* when prebuilding textures, it should be possible to down-sample the
-  textures based on the scale they are actually displayed at.  This is
-  so that res-happy artists can author with high-quality assets, but
-  not penalize the game at run-time so much.
+* fix memory leaks, need reference counting
 
 * pick a version number, post a release
-
-* for data binding, we have:
-
-  gameswf-push (fscommand)
-  host-push (call_method, set_variable)
-  host-pull (call_method, get_variable)
-  
-  we are missing gameswf-pull.  This would be useful for things like
-  looking up localized text in the game engine's translation table,
-  among other things.
 
 
 General
 =======
 
-* implement host-app driven text rendering functions (maybe handy, but
-  not essential)
+* implement host-app driven text rendering functions
 
 * sprites as button characters are not working.  (Maybe they are
   now??)
 
+* host-to-gameswf data transfer:
+
+  * DONE set_variable
+
+  * maybe augment this with array element parsing, and more data types?
+
+  * ability to call ActionScript functions?  Might be the most
+    flexible way to support arbitrary communication needs.
+    Data-binding issues; would this mean exposing as_value in
+    gameswf.h?  Probably.
+
+	Should the whole ActionScript API be available to the host?
+	I.e. let C++ host code and ActionScript code call back and forth?
+	Might be really hot for translating slow prototype ActionScripts
+	into C++.  Prototype in Flash on a fast machine, convert the
+	scripts and deliver a blazing fast executable.
+
+* DONE gameswf-to-host data transfer:
+
+  * via host-pull, using get_variable()
+
+  * via gameswf-push, using fscommand()
+
 * Would be good if one of the log options produced a nice usable
   human-readable parsing of the file.  Or even a SSWF equivalent?
 
+* write GAMESWF_FONT_GLYPH_FINAL_SIZE into the font cache data, and
+  check it on read to make sure it matches.  If no match, log error
+  (and ignore data???)  If these mismatch, then glyphs get rendered
+  with the wrong size, and it's non-obvious why.
+
+* User request: implement SWF files recursively calling other SWF
+  files.
 
 ActionScript
 ============
+
+* bug:
+
+	// e.g. declared inside main movie frame 1,
+	// and we have a movie clip w/ instance named "instance"
+	function instance.some_method()
+	{
+		// "this" must refer to "instance", not the main movie!
+		// currently gameswf refers to the main movie.
+		this._visible = false;
+	}
+
+* bug:
+
+	// In single-frame movies, the frame 1 actions should execute only once.
+	// The same actions in a two-frame movie should execute continuously.
+
+* bug:
+
+	// If we have a dynamic text instance "inst" that contains a string,
+	// doing to_string() or to_tu_string() on it should return its string
+	// contents, not "<object xxx>" or whatever we do now.
+
+* bug:
+
+	// In Flash, _visible property returns "true" or "false" when
+	// converted to string.  gameswf returns "0" or "1".  In general,
+	// gameswf probably needs a specific as_value::BOOL type, instead
+	// of using as_value::NUMBER for booleans.
 
 * all event hooks
 
@@ -73,9 +109,7 @@ ActionScript
 * generate or collect some game-gui-like movies
 
 * will need some good test programs to make sure VM is doing the right
-  thing.  SET UP AUTOMATED REGRESSION TESTS -- can be a shell script
-  that runs test movies in verbose mode and compares ActionScript
-  logging against expected output.
+  thing.
 
 * implement remaining opcodes and library functions
 
@@ -106,6 +140,33 @@ Renderer
   Not a super high priority; doesn't seem to be a critical feature for
   most movies.
 
+  Update: designers do use lines.  The circle texture, connected by
+  polys seems like the way to go.  The interior of acute angles is
+  still tricky though.  But it can definitely be done.  Something like
+  this:
+
+                      -----
+                    -/     \-  <--- edge of circle texture
+                   /   use   \
+                  /\  circle /\
+                 /  \  tex  /  \
+                /    \ here/    \
+               /      \   /      \
+              /        \ /        \
+             /          o          \
+            /           |           \                                                                      o
+           /            |            \
+          /   use       |     use     \
+         /  tris for   /\    tris for  \
+        /     this    /  \     this     \
+       /             /    \              \
+      /             /      \              \
+     /             /        \              \
+                  /          \              \
+                 /            \              \
+                /              \              \
+
+
 * Idea for antialiasing.  I really miss antialiasing; it sure would be
   nice to have it.  (But this is low priority for productizing; it
   should be easy enough for designers to work around gameswf's
@@ -135,14 +196,3 @@ Renderer
 
   Self-intersection of the expanded/shrunk mesh is a bitch.
   E.g. concave vertices, and tiny holes (like in minified text).
-
-  Reasons not to mess with this:
-
-  * sounds like a bunch of work
-
-  * non-antialiased rendering on Xbox does not look that bad.
-
-  * hardware keeps getting better; could just turn on multisample
-    rendering
-
-  * artists can work around it

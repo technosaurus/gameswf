@@ -426,7 +426,7 @@ namespace gameswf
 		}
 
 
-		smart_ptr<character>	create_character_instance(movie* parent, int id);
+		character*	create_character_instance(movie* parent, int id);
 
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m)
@@ -526,13 +526,8 @@ namespace gameswf
 			m_dummy_style.push_back(fill_style());
 		}
 
-		virtual ~edit_text_character()
+		~edit_text_character()
 		{
-			//xxxxxxxx debugging
-			if (m_name == "info_name")
-			{
-				m_name = m_name;	// break here
-			}
 		}
 
 //		virtual int	get_id() const { return m_def->get_id(); }
@@ -889,7 +884,7 @@ namespace gameswf
 	};
 
 
-	smart_ptr<character>	edit_text_character_def::create_character_instance(movie* parent, int id)
+	character*	edit_text_character_def::create_character_instance(movie* parent, int id)
 	{
 		if (m_font == NULL)
 		{
@@ -901,9 +896,9 @@ namespace gameswf
 			}
 		}
 
-		smart_ptr<edit_text_character>	ch = new edit_text_character(parent, this, id);
+		edit_text_character*	ch = new edit_text_character(parent, this, id);
 		ch->set_name(m_default_name.c_str());
-		return ch.get_ptr();
+		return ch;
 	}
 
 

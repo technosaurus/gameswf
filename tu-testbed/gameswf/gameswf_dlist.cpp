@@ -238,7 +238,8 @@ namespace gameswf
 			ch->set_matrix(mat);
 		}
 		ch->set_ratio(ratio);
-		ch->set_clip_depth(clip_depth);
+		// move_display_object apparently does not change clip depth!  Thanks to Alexeev Vitaly.
+		// ch->set_clip_depth(clip_depth);
 	}
 	
 	

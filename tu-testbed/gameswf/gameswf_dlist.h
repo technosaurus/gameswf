@@ -39,11 +39,6 @@ namespace gameswf
 
 		~display_object_info()
 		{
-			//xxxxxx debugging
-			if (m_character != NULL && m_character->get_name() == "info_name")
-			{
-				m_character = m_character; // break here
-			}
 		}
 
 		void	operator=(const display_object_info& di)
