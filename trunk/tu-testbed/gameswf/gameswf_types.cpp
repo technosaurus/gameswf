@@ -5,12 +5,12 @@
 
 // Some basic types for gameswf.
 
-
-#include "base/ogl.h"
 #include "gameswf_types.h"
 
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
+#include "gameswf_render.h"
+#include "gameswf.h"
 #include <string.h>
 
 
@@ -117,21 +117,11 @@ namespace gameswf
 		log_msg("| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
 	}
 
-	void	matrix::ogl_multiply() const
+	void	matrix::apply() const
 	// Apply this matrix onto the top of the currently
 	// selected OpenGL matrix stack.
 	{
-		float	m[16];
-		memset(&m[0], 0, sizeof(m));
-		m[0] = m_[0][0];
-		m[1] = m_[1][0];
-		m[4] = m_[0][1];
-		m[5] = m_[1][1];
-		m[10] = 1;
-		m[12] = m_[0][2];
-		m[13] = m_[1][2];
-		m[15] = 1;
-		glMultMatrixf(m);
+                get_render_handler()->apply_matrix(*this);
 	}
 
 	void	matrix::transform(point* result, const point& p) const
@@ -328,10 +318,10 @@ namespace gameswf
 	// rgba
 	//
 
-	void	rgba::ogl_color() const
+	void	rgba::apply() const
 	// Set the glColor to our state.
 	{
-		glColor4ub(m_r, m_g, m_b, m_a);
+                get_render_handler()->apply_color(*this);
 	}
 
 	void	rgba::read(stream* in, int tag_type)
@@ -401,7 +391,7 @@ namespace gameswf
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 
-		di.m_matrix.ogl_multiply();
+		di.m_matrix.apply();
 
 		glColor3f(1, 1, 0);
 		glBegin(GL_LINE_STRIP);

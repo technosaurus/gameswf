@@ -9,6 +9,9 @@
 
 #include "gameswf_dlist.h"
 #include "gameswf_log.h"
+#include "gameswf_render.h"
+#include "gameswf.h"
+#include <typeinfo>
 
 
 
@@ -84,7 +87,8 @@ namespace gameswf
 		Uint16 depth, 
 		const cxform& color_xform, 
 		const matrix& mat, 
-		float ratio)
+		float ratio,
+                Uint16 clip_depth)
 	{
 		assert(ch);
 
@@ -100,6 +104,7 @@ namespace gameswf
 			di.m_color_transform = color_xform;
 			di.m_matrix = mat;
 			di.m_ratio = ratio;
+                        di.m_clip_depth = clip_depth;
 			return;
 		}
 
@@ -120,6 +125,7 @@ namespace gameswf
 		di.m_color_transform = color_xform;
 		di.m_matrix = mat;
 		di.m_ratio = ratio;
+                di.m_clip_depth = clip_depth;
 
 		// Insert into the display list...
 		index = find_display_index(di.m_depth);
@@ -128,7 +134,7 @@ namespace gameswf
 	}
 
 
-	void	display_list::move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio)
+	void	display_list::move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth)
 	// Updates the transform properties of the object at
 	// the specified depth.
 	{
@@ -168,10 +174,11 @@ namespace gameswf
 			di.m_matrix = mat;
 		}
 		di.m_ratio = ratio;
+                di.m_clip_depth = clip_depth;
 	}
 
 
-	void	display_list::replace_display_object(character* ch, Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio)
+	void	display_list::replace_display_object(character* ch, Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth)
 	// Puts a new character at the specified depth, replacing any
 	// existing character.  If use_cxform or use_matrix are false,
 	// then keep those respective properties from the existing
@@ -233,6 +240,7 @@ namespace gameswf
 			di.m_matrix = mat;
 		}
 		di.m_ratio = ratio;
+                di.m_clip_depth = clip_depth;
 	}
 
 
@@ -352,36 +360,71 @@ namespace gameswf
 		}
 	}
 
-
 	void	display_list::display(int m_total_display_count)
 	// Display the referenced characters. Lower depths
 	// are obscured by higher depths.
 	{
+                bool masked = false;
+                int highest_masked_layer = 0;
+                
+                log_msg("number of objects to be drawn %i\n", m_display_object_array.size());
+                
 		for (int i = 0; i < m_display_object_array.size(); i++)
-		{
+		{                        
 			display_object_info&	dobj = m_display_object_array[i];
-			dobj.m_display_number = m_total_display_count;
+                        
+                        log_msg("depth %i, clip_depth %i\n", dobj.m_depth, dobj.m_clip_depth);
+                        
+                        if (dobj.m_clip_depth > 0) // check whether this object should mask
+                        {
+                            log_msg("begin submit mask\n");
+                            get_render_handler()->begin_submit_mask();
+                        }               
+                        
+                        dobj.m_display_number = m_total_display_count;                             
 			dobj.m_character->display(dobj);
-
-		//	printf("display %s\n", typeid(*(di.m_character)).name());
+                        log_msg("object drawn\n");
+                        
+                        if(dobj.m_clip_depth > 0)
+                        {
+                            log_msg("end submit mask\n");
+                            get_render_handler()->end_submit_mask();                            
+                            highest_masked_layer = dobj.m_clip_depth;
+                            masked = true;                                                    
+                        }
+                        
+                        if(masked)
+                        {
+                            if(dobj.m_depth == highest_masked_layer)
+                            {
+                                log_msg("disabled mask at depth %i", highest_masked_layer);
+                                masked = false;
+                                // turn of mask
+                                get_render_handler()->end_mask();
+                            }
+                        }
 		}
+                
+                if(masked)
+                {
+                    // if masking is still enabled after we drew the entire list, disable it anyway
+                    // need to get the semantics better defined
+                    get_render_handler()->end_mask();
+                }
 	}
-
 
 	void	display_list::display(const display_info & di)
 	// Display the referenced characters.
-	{
+	{    
+                log_msg("drawing object at depth %i\n",di.m_depth);
 		for (int i = 0; i < m_display_object_array.size(); i++)
 		{
-			display_object_info&	dobj = m_display_object_array[i];
-
+			display_object_info&	dobj = m_display_object_array[i];                                       
 			display_info	sub_di = di;
 			sub_di.concatenate(dobj);
 			dobj.m_character->display(sub_di);
 		}
 	}
-
-
 }
 
 

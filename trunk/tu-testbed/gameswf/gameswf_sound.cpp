@@ -153,6 +153,9 @@ namespace gameswf
 			bool	has_out_point = in->read_uint(1) ? true : false;
 			bool	has_in_point = in->read_uint(1) ? true : false;
 
+                        UNUSED(no_multiple);
+                        UNUSED(has_envelope);
+                        
 			Uint32	in_point = 0;
 			Uint32	out_point = 0;
 			if (has_in_point) { in_point = in->read_u32(); }

@@ -154,7 +154,7 @@ namespace gameswf
 		if (m_triangle_list.size() > 0)
 		{
 			style.apply(0);
-			render::draw_mesh(&m_triangle_list[0].m_x, m_triangle_list.size());
+			get_render_handler()->draw_mesh(&m_triangle_list[0].m_x, m_triangle_list.size());
 		}
 	}
 
@@ -191,7 +191,7 @@ namespace gameswf
 		assert(m_coords.size() > 1);
 
 		style.apply();
-		render::draw_line_strip(&m_coords[0].m_x, m_coords.size());
+		get_render_handler()->draw_line_strip(&m_coords[0].m_x, m_coords.size());
 	}
 
 
@@ -265,10 +265,10 @@ namespace gameswf
 		assert(m_error_tolerance > 0);
 
 		// Setup transforms.
-//		render::push_apply_matrix(di.m_matrix);
-//		render::push_apply_cxform(di.m_color_transform);
-		render::set_matrix(di.m_matrix);
-		render::set_cxform(di.m_color_transform);
+//		get_render_handler()->push_apply_matrix(di.m_matrix);
+//		get_render_handler()->push_apply_cxform(di.m_color_transform);
+		get_render_handler()->set_matrix(di.m_matrix);
+		get_render_handler()->set_cxform(di.m_color_transform);
 
 		// Dump meshes into renderer, one mesh per style.
 		{for (int i = 0; i < m_meshes.size(); i++)
@@ -283,8 +283,8 @@ namespace gameswf
 			m_line_strips[i].display(line_styles[style]);
 		}
 
-//		render::pop_cxform();
-//		render::pop_matrix();
+//		get_render_handler()->pop_cxform();
+//		get_render_handler()->pop_matrix();
 	}
 
 

@@ -19,13 +19,13 @@ namespace gameswf
 	struct movie;
 	struct shape_character;
 	struct stream;
-	namespace render { struct bitmap_info; }
+	struct bitmap_info;
 
 	
 	// Struct for holding (cached) textured glyph info.
 	struct texture_glyph
 	{
-		render::bitmap_info*	m_bitmap_info;
+		bitmap_info*	m_bitmap_info;
 		rect	m_uv_bounds;
 		point	m_uv_origin;	// the origin of the glyph box, in uv coords
 

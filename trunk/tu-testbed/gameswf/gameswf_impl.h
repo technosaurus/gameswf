@@ -12,7 +12,7 @@
 
 #include "gameswf.h"
 #include "gameswf_types.h"
-#include "SDL.h"
+#include "gameswf_log.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -29,8 +29,7 @@ namespace gameswf
 	struct action_buffer;
 	struct bitmap_character;
 	struct sound_sample { virtual ~sound_sample() {} };
-	namespace render { struct bitmap_info; }
-
+        struct bitmap_info;
 
 	struct movie : public movie_interface
 	{
@@ -61,7 +60,8 @@ namespace gameswf
 						   Uint16 depth,
 						   const cxform& color_transform,
 						   const matrix& mat,
-						   float ratio)
+						   float ratio,
+                                                   Uint16 clip_depth)
 		{
 		}
 
@@ -70,7 +70,8 @@ namespace gameswf
 						    const cxform& color_transform,
 						    bool use_matrix,
 						    const matrix& mat,
-						    float ratio)
+						    float ratio,
+                                                    Uint16 clip_depth)
 		{
 		}
 
@@ -80,7 +81,8 @@ namespace gameswf
 						       const cxform& color_transform,
 						       bool use_matrix,
 						       const matrix& mat,
-						       float ratio)
+						       float ratio,
+                                                       Uint16 clip_depth)
 		{
 		}
 
@@ -211,7 +213,7 @@ namespace gameswf
 
 	struct bitmap_character : public character
 	{
-		virtual gameswf::render::bitmap_info*	get_bitmap_info() = 0;
+		virtual gameswf::bitmap_info*	get_bitmap_info() = 0;
 	};
 
 
@@ -281,13 +283,15 @@ namespace gameswf
 		matrix	m_matrix;
 		float	m_ratio;
 		int	m_display_number;
+                Uint16 	m_clip_depth;
 
 		display_info()
 			:
 			m_movie(NULL),
 			m_depth(0),
 			m_ratio(0.0f),
-			m_display_number(0)
+			m_display_number(0),
+                        m_clip_depth(0)
 		{
 		}
 
@@ -299,6 +303,7 @@ namespace gameswf
 			m_color_transform.concatenate(di.m_color_transform);
 			m_matrix.concatenate(di.m_matrix);
 			m_ratio = di.m_ratio;
+                        m_clip_depth = di.m_clip_depth;
 		}
 	};
 

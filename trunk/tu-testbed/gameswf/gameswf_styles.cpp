@@ -156,7 +156,7 @@ namespace gameswf
 		return m_gradients.back().m_color;
 	}
 
-	gameswf::render::bitmap_info*	fill_style::create_gradient_bitmap() const
+	gameswf::bitmap_info*	fill_style::create_gradient_bitmap() const
 	// Make a bitmap_info* corresponding to our gradient.
 	// We can use this to set the gradient fill style.
 	{
@@ -198,7 +198,7 @@ namespace gameswf
 			}
 		}
 
-		gameswf::render::bitmap_info*	bi = gameswf::render::create_bitmap_info(im);
+		gameswf::bitmap_info*	bi = gameswf::get_render_handler()->create_bitmap_info(im);
 		delete im;
 
 		return bi;
@@ -211,7 +211,7 @@ namespace gameswf
 		if (m_type == 0x00)
 		{
 			// 0x00: solid fill
-			gameswf::render::fill_style_color(fill_side, m_color);
+			gameswf::get_render_handler()->fill_style_color(fill_side, m_color);
 		}
 		else if (m_type == 0x10 || m_type == 0x12)
 		{
@@ -225,16 +225,16 @@ namespace gameswf
 
 			if (m_gradient_bitmap_info)
 			{
-				gameswf::render::fill_style_bitmap(
+				gameswf::get_render_handler()->fill_style_bitmap(
 					fill_side,
 					m_gradient_bitmap_info,
 					m_gradient_matrix,
-					gameswf::render::WRAP_CLAMP);
+					gameswf::render_handler::WRAP_CLAMP);
 			}
 			else
 			{
 				// Hack.
-				gameswf::render::fill_style_color(
+				gameswf::get_render_handler()->fill_style_color(
 					fill_side,
 					m_color);
 			}
@@ -243,18 +243,18 @@ namespace gameswf
 				 || m_type == 0x41)
 		{
 			// bitmap fill (either tiled or clipped)
-			gameswf::render::bitmap_info*	bi = NULL;
+			gameswf::bitmap_info*	bi = NULL;
 			if (m_bitmap_character != NULL)
 			{
 				bi = m_bitmap_character->get_bitmap_info();
 				if (bi != NULL)
 				{
-					gameswf::render::bitmap_wrap_mode	wmode = gameswf::render::WRAP_REPEAT;
+					gameswf::render_handler::bitmap_wrap_mode	wmode = gameswf::render_handler::WRAP_REPEAT;
 					if (m_type == 0x41)
 					{
-						wmode = gameswf::render::WRAP_CLAMP;
+						wmode = gameswf::render_handler::WRAP_CLAMP;
 					}
-					gameswf::render::fill_style_bitmap(
+					gameswf::get_render_handler()->fill_style_bitmap(
 						fill_side,
 						bi,
 						m_bitmap_matrix,
@@ -286,7 +286,7 @@ namespace gameswf
 
 	void	line_style::apply() const
 	{
-		gameswf::render::line_style_color(m_color);
+		gameswf::get_render_handler()->line_style_color(m_color);
 	}
 
 }

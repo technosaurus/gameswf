@@ -96,7 +96,7 @@ namespace lod_tile_freelist
 			{
 				// We've already got too many free
 				// textures; just delete this one.
-				glDeleteTextures(1, &texture_id);
+				glDeleteTextures(1, (GLuint*)&texture_id);
 			}
 		}
 	}
@@ -144,7 +144,7 @@ namespace lod_tile_freelist
 		
 			// Bind a texture id and set up this image as a texture.
 			glEnable(GL_TEXTURE_2D);
-			glGenTextures(1, &texture_id);
+			glGenTextures(1, (GLuint*)&texture_id);
 			glBindTexture(GL_TEXTURE_2D, texture_id);
 			
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ogl::get_clamp_mode());

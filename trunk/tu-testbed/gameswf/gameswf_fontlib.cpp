@@ -18,6 +18,7 @@
 #include "gameswf_shape.h"
 #include "gameswf_styles.h"
 #include "gameswf_tesselate.h"
+#include "gameswf_render.h"
 
 
 namespace gameswf
@@ -25,7 +26,7 @@ namespace gameswf
 namespace fontlib
 {
 	array<font*>	s_fonts;
-	array<render::bitmap_info*>	s_bitmaps_used;	// keep these so we can delete them during shutdown.
+	array<bitmap_info*>	s_bitmaps_used;	// keep these so we can delete them during shutdown.
 
 	// Size (in TWIPS) of the box that the glyph should
 	// stay within.
@@ -82,7 +83,7 @@ namespace fontlib
 	static matrix	s_render_matrix;
 
 	static Uint8*	s_current_cache_image = NULL;
-	static render::bitmap_info*	s_current_bitmap_info = NULL;
+	static bitmap_info*	s_current_bitmap_info = NULL;
 	static Uint8*	s_coverage_image = NULL;
 
 	static bool	s_saving = false;
@@ -128,7 +129,7 @@ namespace fontlib
 		}
 		else
 		{
-			render::set_alpha_image(s_current_bitmap_info,
+			get_render_handler()->set_alpha_image(s_current_bitmap_info,
 						GLYPH_CACHE_TEXTURE_SIZE,
 						GLYPH_CACHE_TEXTURE_SIZE,
 						s_current_cache_image);
@@ -243,7 +244,7 @@ namespace fontlib
 			if (s_current_bitmap_info == NULL)
 			{
 				// Set up a cache.
-				s_current_bitmap_info = render::create_bitmap_info_blank();
+				s_current_bitmap_info = get_render_handler()->create_bitmap_info_blank();
 				s_bitmaps_used.push_back(s_current_bitmap_info);
 
 				if (s_current_cache_image == NULL)
@@ -679,7 +680,7 @@ namespace fontlib
 			// load bitmaps.
 			for (int b=0; b<nb; b++)
 			{
-				s_current_bitmap_info = render::create_bitmap_info_blank();
+				s_current_bitmap_info = get_render_handler()->create_bitmap_info_blank();
 				s_bitmaps_used.push_back(s_current_bitmap_info);
 
 				// save bitmap size
@@ -697,7 +698,7 @@ namespace fontlib
 				// save bitmap contents
 				s_file->read_bytes(s_current_cache_image, w*h);
 
-				render::set_alpha_image(
+				get_render_handler()->set_alpha_image(
 					s_current_bitmap_info,
 					w, h,
 					s_current_cache_image);
@@ -834,7 +835,7 @@ namespace fontlib
 		bounds.m_y_min *= s_scale;
 		bounds.m_y_max *= s_scale;
 		
-		render::draw_bitmap(mat, tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
+		get_render_handler()->draw_bitmap(mat, tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
 	}
 
 
