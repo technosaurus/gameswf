@@ -1,0 +1,32 @@
+# Makefile	-- Thatcher Ulrich <tu@tulrich.com> 2003
+
+# This source code has been donated to the Public Domain.  Do
+# whatever you want with it.
+
+# Makefile for little test programs
+
+TOP = ../..
+include $(TOP)/config
+
+INCLUDE_PATHS := $(ENGINE_INCLUDE) $(ZLIB_INCLUDE)
+
+CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
+LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
+
+LIBS := $(LIB_OUT) $(ENGINE) $(LIBS) $(JPEGLIB) $(ZLIB)
+
+
+all: engine quad_distance_test$(EXE_EXT)
+
+
+quad_distance_test$(EXE_EXT): quad_distance_test.$(OBJ_EXT) $(ENGINE)
+	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+
+
+engine:
+	make -C $(TOP)/engine
+
+
+clean:
+	make -C $(TOP)/engine clean
+	rm quad_distance_test.$(OBJ_EXT) quad_distance_test$(EXE_EXT)
