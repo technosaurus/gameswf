@@ -243,8 +243,14 @@ public:
 		m_size_mask = 0;
 	}
 
+	bool	is_empty() const
+	// Returns true if the hash is empty.
+	{
+		return m_entry_count==0;
+	}
 
-	bool	get(const T& key, U* value)
+
+	bool	get(const T& key, U* value) const
 	// Retrieve the value under the given key.
 	//
 	// If there's no value under the key, then return false and leave
