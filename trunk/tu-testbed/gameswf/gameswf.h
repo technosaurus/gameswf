@@ -14,7 +14,6 @@
 #include <ctype.h>	// for poxy wchar_t
 #include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
 
-
 class tu_file;
 class render_handler;
 class weak_proxy;	// forward decl; defined in base/smart_ptr.h
@@ -337,6 +336,9 @@ namespace gameswf
 		//
 		// Attach NULL to disable the callback.
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr) = 0;
+
+		virtual int add_interval_timer(void *timer) = 0;
+		virtual void clear_interval_timer(int x) = 0;
 	};
 
 	// Try to grab movie info from the header of the given .swf

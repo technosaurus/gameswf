@@ -710,7 +710,6 @@ namespace gameswf
 	{
 	}
 
-
 	button_character_definition::~button_character_definition()
 	{
 		delete m_sound;

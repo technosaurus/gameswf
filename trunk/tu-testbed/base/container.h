@@ -381,6 +381,7 @@ public:
 				m_buffer = (T*) tu_realloc(m_buffer, sizeof(T) * m_buffer_size, sizeof(T) * old_size);
 			} else {
 				m_buffer = (T*) tu_malloc(sizeof(T) * m_buffer_size);
+				memset(m_buffer, 0, (sizeof(T) * m_buffer_size));
 			}
 			assert(m_buffer);	// need to throw (or something) on malloc failure!
 		}			
@@ -721,7 +722,7 @@ public:
 		}
 
 		const hash*	m_hash;
-		int	m_index;
+		int	        m_index;
 	};
 	friend struct const_iterator;
 
@@ -902,7 +903,6 @@ private:
 #endif // not _TU_USE_STL
 
 class tu_stringi;
-
 
 // String-like type.  Attempt to be memory-efficient with small strings.
 class tu_string

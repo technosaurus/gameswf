@@ -15,7 +15,6 @@
 
 #include "base/container.h"
 
-
 namespace gameswf
 {
 	struct movie;
@@ -24,6 +23,84 @@ namespace gameswf
 	struct as_value;
 	struct as_as_function;
 
+
+	//
+	// event_id
+	//
+	// For keyDown and stuff like that.
+
+	struct event_id
+	{
+		// These must match the function names in event_id::get_function_name()
+		enum id_code
+		{
+			INVALID,
+
+			// These are for buttons & sprites.
+			PRESS,
+			RELEASE,
+			RELEASE_OUTSIDE,
+			ROLL_OVER,
+			ROLL_OUT,
+			DRAG_OVER,
+			DRAG_OUT,
+			KEY_PRESS,
+
+			// These are for sprites only.
+			INITIALIZE,
+			LOAD,
+			UNLOAD,
+			ENTER_FRAME,
+			MOUSE_DOWN,
+			MOUSE_UP,
+			MOUSE_MOVE,
+			KEY_DOWN,
+			KEY_UP,
+			DATA,
+			
+                        // These are for the MoveClipLoader ActionScript only
+                        LOAD_START,
+                        LOAD_ERROR,
+                        LOAD_PROGRESS,
+                        LOAD_INIT,
+			
+                        // These are for the XMLSocket ActionScript only
+                        SOCK_CLOSE,
+                        SOCK_CONNECT,
+                        SOCK_DATA,
+                        SOCK_XML,
+			
+                        // These are for the XML ActionScript only
+                        XML_LOAD,
+                        XML_DATA,
+			
+                        // This is for setInterval
+                        TIMER,
+			
+			EVENT_COUNT
+		};
+
+		unsigned char	m_id;
+		unsigned char	m_key_code;
+
+		event_id() : m_id(INVALID), m_key_code(key::INVALID) {}
+
+		event_id(id_code id, key::code c = key::INVALID)
+			:
+			m_id((unsigned char) id),
+			m_key_code((unsigned char) c)
+		{
+			// For the button key events, you must supply a keycode.
+			// Otherwise, don't.
+			assert((m_key_code == key::INVALID && (m_id != KEY_PRESS))
+				|| (m_key_code != key::INVALID && (m_id == KEY_PRESS)));
+		}
+
+		bool	operator==(const event_id& id) const { return m_id == id.m_id && m_key_code == id.m_key_code; }
+
+		// Return the name of a method-handler function corresponding to this event.
+		const tu_string&	get_function_name() const;
+	};
 
 	//
 	// with_stack_entry
@@ -283,6 +360,22 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 
 		virtual movie*	to_movie() = 0;
+#if 1
+                // ActionScript event handler.
+                // array<as_value *>    m_event_handlers;
+                hash<event_id, gameswf::as_value>        m_event_handlers;
+                // ActionScript event handler. These currently work on a period\ic basis,
+                // so as to avoid the use of threads.
+                void    set_event_handler(event_id id, const as_value& method)
+                {
+                        // m_event_handlers.push_back(as);
+                        //m_event_handlers.set(id, method);
+                }
+                bool    get_event_handler(event_id id, gameswf::as_value* result)
+                {
+                        //return m_event_handlers.get(id, result);
+                }
+#endif
 	};
 
 
@@ -560,65 +653,6 @@ namespace gameswf
 		const char* method_name,
 		const char* method_arg_fmt,
 		va_list args);
-
-	//
-	// event_id
-	//
-	// For keyDown and stuff like that.
-
-	struct event_id
-	{
-		// These must match the function names in event_id::get_function_name()
-		enum id_code
-		{
-			INVALID,
-
-			// These are for buttons & sprites.
-			PRESS,
-			RELEASE,
-			RELEASE_OUTSIDE,
-			ROLL_OVER,
-			ROLL_OUT,
-			DRAG_OVER,
-			DRAG_OUT,
-			KEY_PRESS,
-
-			// These are for sprites only.
-			INITIALIZE,
-			LOAD,
-			UNLOAD,
-			ENTER_FRAME,
-			MOUSE_DOWN,
-			MOUSE_UP,
-			MOUSE_MOVE,
-			KEY_DOWN,
-			KEY_UP,
-			DATA,
-
-			EVENT_COUNT
-		};
-
-		unsigned char	m_id;
-		unsigned char	m_key_code;
-
-		event_id() : m_id(INVALID), m_key_code(key::INVALID) {}
-
-		event_id(id_code id, key::code c = key::INVALID)
-			:
-			m_id((unsigned char) id),
-			m_key_code((unsigned char) c)
-		{
-			// For the button key events, you must supply a keycode.
-			// Otherwise, don't.
-			assert((m_key_code == key::INVALID && (m_id != KEY_PRESS))
-				|| (m_key_code != key::INVALID && (m_id == KEY_PRESS)));
-		}
-
-		bool	operator==(const event_id& id) const { return m_id == id.m_id && m_key_code == id.m_key_code; }
-
-		// Return the name of a method-handler function corresponding to this event.
-		const tu_string&	get_function_name() const;
-	};
 
 	// tulrich: don't use this!  To register a class constructor,
 	// just assign the classname to the constructor function.  E.g.:
