@@ -1017,13 +1017,7 @@ namespace gameswf
 		movie*	original_target = env->get_target();
 		UNUSED(original_target);		// Avoid warnings.
 
-		// If caller didn't specify a number of exec_bytes,
-		// then execute all remaining bytes.
 		int	stop_pc = start_pc + exec_bytes;
-		if (exec_bytes == 0)
-		{
-			stop_pc = m_buffer.size();
-		}
 
 		for (int pc = start_pc; pc < stop_pc; )
 		{
@@ -1376,7 +1370,8 @@ namespace gameswf
 					}
 					env->drop(1);
 
-					// @@ xxxx not done yet!!!! need to actually return....
+					// Skip the rest of this buffer (return from this action_buffer).
+					pc = stop_pc;
 
 					break;
 				}
