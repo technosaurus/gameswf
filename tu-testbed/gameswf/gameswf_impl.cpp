@@ -342,6 +342,7 @@ namespace gameswf
 		int	m_frame_count;
 		int	m_version;
 		int	m_loading_frame;
+		uint32	m_file_length;
 
 		jpeg::input*	m_jpeg_in;
 
@@ -384,6 +385,8 @@ namespace gameswf
 		virtual int	get_version() const { return m_version; }
 
 		virtual int	get_loading_frame() const { return m_loading_frame; }
+
+		uint32	get_file_bytes() const { return m_file_length; }
 
 		/* movie_def_impl */
 		virtual create_bitmaps_flag	get_create_bitmaps() const
@@ -660,8 +663,8 @@ namespace gameswf
 		{
 			Uint32	file_start_pos = in->get_position();
 			Uint32	header = in->read_le32();
-			Uint32	file_length = in->read_le32();
-			Uint32	file_end_pos = file_start_pos + file_length;
+			m_file_length = in->read_le32();
+			Uint32	file_end_pos = file_start_pos + m_file_length;
 
 			m_version = (header >> 24) & 255;
 			if ((header & 0x0FFFFFF) != 0x00535746
@@ -673,7 +676,7 @@ namespace gameswf
 			}
 			bool	compressed = (header & 255) == 'C';
 
-			IF_VERBOSE_PARSE(log_msg("version = %d, file_length = %d\n", m_version, file_length));
+			IF_VERBOSE_PARSE(log_msg("version = %d, file_length = %d\n", m_version, m_file_length));
 
 			tu_file*	original_in = NULL;
 			if (compressed)
@@ -692,7 +695,7 @@ namespace gameswf
 				// Subtract the size of the 8-byte header, since
 				// it's not included in the compressed
 				// stream length.
-				file_end_pos = file_length - 8;
+				file_end_pos = m_file_length - 8;
 			}
 
 			stream	str(in);
@@ -996,6 +999,11 @@ namespace gameswf
 
 
 		movie_definition*	get_movie_definition() { return m_movie->get_movie_definition(); }
+
+		uint32	get_file_bytes() const
+		{
+			return m_def->get_file_bytes();
+		}
 
 		// 0-based!!
 		int	get_current_frame() const { return m_movie->get_current_frame(); }
@@ -1648,7 +1656,8 @@ namespace gameswf
 			m->set_background_color(m_color);
 		}
 
-		void	execute_state(movie* m) {
+		void	execute_state(movie* m)
+		{
 			execute(m);
 		}
 
@@ -2580,6 +2589,58 @@ namespace gameswf
 		{
 			execute(m);
 		}
+
+		void	execute_state_reverse(movie* m, int frame)
+		{
+			switch (m_place_type)
+			{
+			case PLACE:
+				// reverse of add is remove
+				m->remove_display_object(m_depth);
+				break;
+
+			case MOVE:
+				// reverse of move is move
+				m->move_display_object(
+					m_depth,
+					m_has_cxform,
+					m_color_transform,
+					m_has_matrix,
+					m_matrix,
+					m_ratio,
+					m_clip_depth);
+				break;
+
+			case REPLACE:
+			{
+				// reverse of replace is to re-add the previous object.
+				execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth);
+				if (last_add)
+				{
+					last_add->execute_state(m);
+				}
+				else
+				{
+					log_error("reverse REPLACE can't find previous replace or add tag(%d, %d)\n",
+						  frame, m_depth);
+					
+				}
+				break;
+			}
+			}
+		}
+
+		virtual int	get_depth_of_replace_or_add_tag() const
+		{
+			if (m_place_type == PLACE || m_place_type == REPLACE)
+			{
+				return m_depth;
+			}
+			else
+			{
+				return -1;
+			}
+		}
 	};
 
 
@@ -2830,6 +2891,7 @@ namespace gameswf
 			OVER
 		};
 		mouse_state m_mouse_state;
+
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
 			:
 			character(parent, id),
@@ -2845,7 +2907,6 @@ namespace gameswf
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
 			m_mouse_state(UP)
-//ve
 		{
 			assert(m_def != NULL);
 			assert(m_root != NULL);
@@ -2968,7 +3029,8 @@ namespace gameswf
 			m_root->get_mouse_state(x, y, buttons);
 		}
 
-		virtual int	get_mouse_capture(void)
+		/*sprite_instance*/
+		virtual int	get_mouse_capture()
 		// Use this to retrive the character that has captured the mouse.
 		{
 			return m_root->get_mouse_capture();
@@ -3107,6 +3169,9 @@ namespace gameswf
 
 			assert(m_def != NULL && m_root != NULL);
 
+			// Advance everything in the display list.
+			m_display_list.advance(delta_time);
+
 			// mouse drag.
 			character::do_mouse_drag();
 
@@ -3126,7 +3191,12 @@ namespace gameswf
 				m_update_frame = true;
 			}
 
-			if (m_update_frame)
+			if (m_play_state == STOP)
+			{
+				// Do button actions, if any.
+				do_actions();
+			}
+			else if (m_update_frame)
 //			while (m_update_frame)
 			{
 				m_update_frame = false;
@@ -3148,19 +3218,12 @@ namespace gameswf
 
 					// Dispatch onEnterFrame event.
 					on_event(event_id::ENTER_FRAME);
-
-					// Perform frame actions
-					do_actions();
 				}
 
 				m_display_list.update();
 
 				do_mouse_events();     //!!!!!!!! todo optimize
 
-				// Advance everything in the display list.
-				m_display_list.advance(frame_time);
-
-				// Perform button actions (????)
 				do_actions();
 
 				if (m_next_frame >= m_def->get_frame_count())	// && m_play_state == PLAY
@@ -3218,6 +3281,49 @@ namespace gameswf
 
 
 		/*sprite_instance*/
+		void	execute_frame_tags_reverse(int frame)
+		// Execute the tags associated with the specified frame, IN REVERSE.
+		// I.e. if it's an "add" tag, then we do a "remove" instead.
+		// Only relevant to the display-list manipulation tags: add, move, remove, replace.
+		//
+		// frame is 0-based
+		{
+			// Keep this (particularly m_as_environment) alive during execution!
+			smart_ptr<as_object_interface>	this_ptr(this);
+
+			assert(frame >= 0);
+			assert(frame < m_def->get_frame_count());
+
+			const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
+			for (int i = 0; i < playlist.size(); i++)
+			{
+				execute_tag*	e = playlist[i];
+				e->execute_state_reverse(this, frame);
+			}
+		}
+
+		
+		/*sprite_instance*/
+		execute_tag*	find_previous_replace_or_add_tag(int frame, int depth)
+		{
+			for (int f = frame - 1; f >= 0; f--)
+			{
+				const array<execute_tag*>&	playlist = m_def->get_playlist(f);
+				for (int i = playlist.size() - 1; i >= 0; i--)
+				{
+					execute_tag*	e = playlist[i];
+					if (e->get_depth_of_replace_or_add_tag() == depth)
+					{
+						return e;
+					}
+				}
+			}
+
+			return NULL;
+		}
+
+
+		/*sprite_instance*/
 		void	execute_remove_tags(int frame)
 		// Execute any remove-object tags associated with the specified frame.
 		// frame is 0-based
@@ -3267,22 +3373,14 @@ namespace gameswf
 
 			if (target_frame_number < m_current_frame)
 			{
-				// Apply any intervening remove-object tags, to clean out undesired
-				// objects.
-				for (int f = m_current_frame - 1; f > target_frame_number; f--)
+				for (int f = m_current_frame; f > target_frame_number; f--)
 				{
-					execute_remove_tags(f);
+					execute_frame_tags_reverse(f);
+					m_display_list.update();//xxx can we just get rid of dlist m_ref stuff completely?
 				}
-				m_display_list.update();
-
-				// Advance the display list to the target frame.
-				m_display_list.reset();
-				{for (int f = 0; f < target_frame_number; f++)
-				{
-					execute_frame_tags(f, true);
-				}}
 				execute_frame_tags(target_frame_number, false);
 				m_display_list.update();
+
 			}
 			else if (target_frame_number > m_current_frame)
 			{
@@ -3472,7 +3570,6 @@ namespace gameswf
 				use_cxform,
 				color_transform,
 				use_matrix,
-
 				mat,
 				ratio,
 				clip_depth);
@@ -4203,6 +4300,10 @@ namespace gameswf
 	void	sprite_play(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) env->get_target();
+		}
 		assert(sprite);
 		sprite->set_play_state(movie_interface::PLAY);
 	}
@@ -4210,6 +4311,10 @@ namespace gameswf
 	void	sprite_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) env->get_target();
+		}
 		assert(sprite);
 		sprite->set_play_state(movie_interface::STOP);
 	}
@@ -4217,6 +4322,10 @@ namespace gameswf
 	void	sprite_goto_and_play(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) env->get_target();
+		}
 		assert(sprite);
 
 		if (nargs < 1)
@@ -4234,6 +4343,10 @@ namespace gameswf
 	void	sprite_goto_and_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) env->get_target();
+		}
 		assert(sprite);
 
 		if (nargs < 1)
@@ -4251,6 +4364,10 @@ namespace gameswf
 	void	sprite_next_frame(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) env->get_target();
+		}
 		assert(sprite);
 
 		int frame_count = sprite->get_frame_count();
@@ -4260,6 +4377,31 @@ namespace gameswf
 			sprite->goto_frame(current_frame + 1);
 		}
 		sprite->set_play_state(movie_interface::STOP);
+	}
+
+
+	void	sprite_get_bytes_loaded(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) env->get_target();
+		}
+		assert(sprite);
+
+		result->set((double) sprite->get_root()->get_file_bytes());
+	}
+
+	void	sprite_get_bytes_total(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) env->get_target();
+		}
+		assert(sprite);
+
+		result->set((double) sprite->get_root()->get_file_bytes());
 	}
 
 
@@ -4276,10 +4418,14 @@ namespace gameswf
 		s_sprite_builtins->set_member("gotoAndStop", &sprite_goto_and_stop);
 		s_sprite_builtins->set_member("gotoAndPlay", &sprite_goto_and_play);
 		s_sprite_builtins->set_member("nextFrame", &sprite_next_frame);
+		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
+		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
+
+		// @TODO
 //		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
+//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
 //		s_sprite_builtins->set_member("getURL", &sprite_get_url);
-//		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
-//		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
+//		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
 	}
 
 	static void	sprite_builtins_clear()
@@ -4335,6 +4481,22 @@ namespace gameswf
 			execute(m);
 		}
 
+		virtual void	execute_state_reverse(movie* m, int frame)
+		{
+			// reverse of remove is to re-add the previous object.
+			execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth);
+			if (last_add)
+			{
+				last_add->execute_state(m);
+			}
+			else
+			{
+				log_error("reverse REMOVE can't find previous replace or add tag(%d, %d)\n",
+					  frame, m_depth);
+					
+			}
+		}
+
 		virtual bool	is_remove_tag() const { return true; }
 	};
 
@@ -4369,6 +4531,8 @@ namespace gameswf
 		assert(tag_type == 7 || tag_type == 34);
 
 		int	character_id = in->read_u16();
+
+		IF_VERBOSE_PARSE(log_msg("  button character loader: char_id = %d\n", character_id));
 
 		button_character_definition*	ch = new button_character_definition;
 		ch->read(in, tag_type, m);

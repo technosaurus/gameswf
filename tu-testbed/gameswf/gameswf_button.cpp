@@ -399,6 +399,23 @@ namespace gameswf
 		}
 
 
+		virtual int	get_mouse_capture()
+		// Use this to retrive the character that has captured the mouse.
+		{
+			return get_parent()->get_mouse_capture();
+		}
+
+		virtual void	set_mouse_capture(int cid)
+		// Set the mouse capture to the given character.
+		{
+			get_parent()->set_mouse_capture(cid);
+		}
+
+		virtual void	get_mouse_state(int* x, int* y, int* buttons)
+		{
+			get_parent()->get_mouse_state(x, y, buttons);
+		}
+
 		//
 		// ActionScript overrides
 		//

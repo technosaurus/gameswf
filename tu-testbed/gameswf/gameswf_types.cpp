@@ -43,6 +43,17 @@ namespace gameswf
 	}
 
 
+	bool	matrix::is_valid() const
+	{
+		return isfinite(m_[0][0])
+			&& isfinite(m_[0][1])
+			&& isfinite(m_[0][2])
+			&& isfinite(m_[1][0])
+			&& isfinite(m_[1][1])
+			&& isfinite(m_[1][2]);
+	}
+
+
 	void	matrix::set_identity()
 	// Set the matrix to identity.
 	{
