@@ -488,6 +488,7 @@ chunk_tree_loader::~chunk_tree_loader()
 	set_use_loader_thread(false);
 
 	SDL_DestroyMutex(m_mutex);
+	m_mutex = NULL;
 }
 
 
@@ -514,6 +515,7 @@ void	chunk_tree_loader::set_use_loader_thread(bool use)
 // it to terminate.
 {
 	if (m_run_loader_thread) {
+		assert(m_loader_thread);
 		if (use) {
 			// We're already using the thread; nothing to do.
 			return;
@@ -522,16 +524,19 @@ void	chunk_tree_loader::set_use_loader_thread(bool use)
 			// Thread is running -- kill it.
 			m_run_loader_thread = false;
 			SDL_WaitThread(m_loader_thread, NULL);
+			m_loader_thread = NULL;
 			return;
 		}
 	}
 	else {
+		assert(m_loader_thread == NULL);
 		if (use == false) {
 			// We're already not using the loader thread; nothing to do.
 			return;
 		} else {
 			// Thread is not running -- start it up.
 			start_loader_thread();
+			assert(m_loader_thread);
 		}
 	}
 }
@@ -925,7 +930,7 @@ bool	chunk_tree_loader::loader_service_texture()
 			m_request_texture_buffer[i] = NULL;	// fill empty slot with NULL
 
 			if (chunk_to_load == NULL) break;
-			assert(chunk_to_load->m_texture_id == NULL);
+			assert(chunk_to_load->m_texture_id == 0);
 			
 			// Make sure the request is not in the retire buffer.
 			bool	in_retire_buffer = false;
@@ -1770,9 +1775,13 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 lod_chunk_tree::~lod_chunk_tree()
 // Destructor.
 {
-	delete [] m_chunks;
 	delete [] m_chunk_table;
+	delete [] m_chunks;
 	delete m_loader;
+
+	m_chunk_table = NULL;
+	m_chunks = NULL;
+	m_loader = NULL;
 }
 
 
@@ -1811,11 +1820,6 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 //
 // Returns the number of triangles rendered.
 {
-//	// Make sure we have a vertex stream.
-//	if (s_stream == NULL) {
-//		s_stream = new ogl::vertex_stream(4 << 20);
-//	}
-
 	int	triangle_count = 0;
 
 	s_vertical_scale = m_vertical_scale;
@@ -1857,7 +1861,7 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 			       s_chunks_with_texture,
 			       s_textures_bound,
 			       estimated_texture_bytes);
-//			dlmalloc_stats();
+			dlmalloc_stats();
 		}
 	}
 
