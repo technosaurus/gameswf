@@ -104,6 +104,7 @@ void	output_diagram(array<float>& trilist, const array<array<float> >& input_pat
 
 		ps.disk(TRANSFORM(x[1], y[1]), 2);	// this should be the apex of the original ear
 
+#if 0
 		// Label the tri.
 		ps.gray(0.9f);
 		float	cent_x = (x[0] + x[1] + x[2]) / 3;
@@ -112,6 +113,8 @@ void	output_diagram(array<float>& trilist, const array<array<float> >& input_pat
 		trilabel++;
 
 		ps.line(TRANSFORM(cent_x, cent_y), TRANSFORM(x[1], y[1]));	// line to the ear
+#endif // 0
+
 	}
 #endif // DRAW_AS_MESH
 
@@ -165,6 +168,53 @@ void	make_square(array<float>* out, float size)
 	out->push_back( radius);
 	out->push_back(-radius);
 	out->push_back( radius);
+}
+
+
+void	make_spiral(array<float>* out, float width, float radians)
+// Generate a spiral.
+{
+	assert(out);
+
+	float	angle = 1;
+	
+	while (angle < radians)
+	{
+		float	radius = width * angle / 2 / float(M_PI);
+
+		out->push_back(radius * cosf(angle));
+		out->push_back(radius * sinf(angle));
+
+		if (radius < 6)
+		{
+			angle += 0.2f;
+		}
+		else
+		{
+			float	step = 1.0f / radius;
+			angle += step;
+		}
+	}
+
+	// spiral back in towards the center.
+	for (int i = 0, n = out->size(); i < n; i += 2)
+	{
+		float	x = (*out)[(n - 2) - i];
+		float	y = (*out)[(n - 2) - i + 1];
+
+		float	dist = sqrt(x * x + y * y);
+		float	thickness = width / 5;
+		if (dist > thickness)
+		{
+			out->push_back(x * (dist - width / 5) / dist);
+			out->push_back(y * (dist - width / 5) / dist);
+		}
+		else
+		{
+			out->push_back(x * 0.8f);
+			out->push_back(y * 0.8f);
+		}
+	}
 }
 
 
@@ -279,13 +329,11 @@ int	main()
 	offset_path(&paths.back(), 1200, 300);
 #endif
 
-#if 0
+#if 1
 	// Lots of circles.
 
 	// @@ set this to 100 for a good performance torture test of bridge-finding.
-	// @@ TODO we start to get "can't find bridge" errors for TEST_DIM=4
-	// @@ TODO we start to hit the recovery process for TEST_DIM=5
-	const int	TEST_DIM = 4;
+	const int	TEST_DIM = 20;
 	{for (int x = 0; x < TEST_DIM; x++)
 	{
 		for (int y = 0; y < TEST_DIM; y++)
@@ -297,9 +345,9 @@ int	main()
 	}}
 #endif
 
-#if 1
+#if 0
 	// Lots of concentric circles.
-	static int	CIRCLE_COUNT = 10;	// CIRCLE_COUNT >= 10 is a good performance test.
+	static int	CIRCLE_COUNT = 20;	// CIRCLE_COUNT >= 10 is a good performance test.
 	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
 	{
 		paths.resize(paths.size() + 1);
@@ -342,6 +390,12 @@ int	main()
 	paths.resize(paths.size() + 1);
 	make_star(&paths.back(), 100, 500, 3);
 	reverse_path(&paths.back());
+#endif
+
+#if 0
+	// Spiral.
+	paths.resize(paths.size() + 1);
+	make_spiral(&paths.back(), 10, 20);
 #endif
 
 	// Triangulate.
