@@ -31,6 +31,8 @@ namespace gameswf
 		// transforms, etc.
 		void	begin_display(
 			rgba background_color,
+			int viewport_x0, int viewport_y0,
+			int viewport_width, int viewport_height,
 			float x0, float x1, float y0, float y1);
 		void	end_display();
 

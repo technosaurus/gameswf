@@ -39,6 +39,7 @@ namespace gameswf
 			return NULL;
 		}
 
+		virtual float	get_pixel_scale() const { return 1.0f; }
 		virtual void	add_character(int id, character* ch) {}
 		virtual character*	get_character(int id) { return NULL; }
 		virtual void	add_font(int id, font* ch) {}
@@ -85,7 +86,20 @@ namespace gameswf
 
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 
-		virtual void	set_background_color(const rgba& bg_color)
+		virtual void	set_background_color(const rgba& color)
+		{
+		}
+
+		virtual void	set_background_alpha(float alpha)
+		{
+		}
+
+		virtual float	get_background_alpha() const
+		{
+			return 1.0f;
+		}
+
+		virtual void	set_display_viewport(int x0, int y0, int width, int height)
 		{
 		}
 
@@ -238,11 +252,9 @@ namespace gameswf
 
 
 	// Information about how to display an element.
-	//
-	// @@ this type might be useless... if not, it might belong
-	// @@ somewhere else.  Hm.
 	struct display_info
 	{
+		movie*	m_movie;
 		int	m_depth;
 		cxform	m_color_transform;
 		matrix	m_matrix;
@@ -251,6 +263,7 @@ namespace gameswf
 
 		display_info()
 			:
+			m_movie(NULL),
 			m_depth(0),
 			m_ratio(0.0f),
 			m_display_number(0)

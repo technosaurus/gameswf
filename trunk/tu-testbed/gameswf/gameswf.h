@@ -40,6 +40,14 @@ namespace gameswf
 
 		virtual void	set_background_color(const rgba& bg_color) = 0;
 
+		// Set to 0 if you don't want the movie to render its
+		// background at all.  1 == full opacity.
+		virtual void	set_background_alpha(float alpha) = 0;
+		virtual float	get_background_alpha() const = 0;
+
+		// move/scale the movie...
+		virtual void	set_display_viewport(int x0, int y0, int w, int h) = 0;
+
 		virtual void	notify_mouse_state(int x, int y, int buttons) = 0;
 
 		// Need an event queue API here, for extracting user and movie events.
@@ -99,8 +107,6 @@ namespace gameswf
 	//
 
 	void	set_antialiased(bool enable);
-	void	set_pixel_scale(float scale);
-	float	get_pixel_scale();
 
 
 	//

@@ -74,6 +74,8 @@ namespace gameswf
 		const matrix& mat,
 		const array<text_glyph_record>& records)
 	{
+		assert(di.m_movie);
+
 		static array<fill_style>	s_dummy_style;	// used to pass a color on to shape_character::display()
 		static array<line_style>	s_dummy_line_style;
 		s_dummy_style.resize(1);
@@ -101,7 +103,7 @@ namespace gameswf
 				* scale
 				* 1024.0f
 				/ 20.0f
-				* get_pixel_scale();
+				* di.m_movie->get_pixel_scale();
 			bool	use_shape_glyphs =
 				text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
 

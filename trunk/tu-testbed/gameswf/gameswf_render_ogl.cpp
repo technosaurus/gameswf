@@ -404,16 +404,26 @@ namespace render
 
 	void	begin_display(
 		rgba background_color,
+		int viewport_x0, int viewport_y0,
+		int viewport_width, int viewport_height,
 		float x0, float x1, float y0, float y1)
-	// Set up to render a full frame from a movie.  Sets up
-	// necessary transforms, to scale the movie to fit within the
-	// given dimensions (and fills the background...).  Call
+	// Set up to render a full frame from a movie and fills the
+	// background.  Sets up necessary transforms, to scale the
+	// movie to fit within the given dimensions.  Call
 	// end_display() when you're done.
 	//
-	// The rectangel (x0, y0, x1, y1) is in pixel coordinates.
+	// The rectangle (viewport_x0, viewport_y0, viewport_x0 +
+	// viewport_width, viewport_y0 + viewport_height) defines the
+	// window coordinates taken up by the movie.
+	//
+	// The rectangle (x0, y0, x1, y1) defines the pixel
+	// coordinates of the movie that correspond to the viewport
+	// bounds.
 	{
 		s_display_width = fabsf(x1 - x0);
 		s_display_height = fabsf(y1 - y0);
+
+		glViewport(viewport_x0, viewport_y0, viewport_width, viewport_height);
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
@@ -427,7 +437,7 @@ namespace render
 		glDisable(GL_TEXTURE_2D);
 
 		// Clear the background, if background color has alpha > 0.
-		if (background_color.m_a > 0.0f)
+		if (background_color.m_a > 0)
 		{
 			// Draw a big quad.
 			background_color.ogl_color();
@@ -643,6 +653,7 @@ namespace gameswf
 	}
 
 
+#if 0
 	// Hint that tells us how the physical output is zoomed.  This
 	// is important for getting the antialiasing and curve
 	// subdivision right.
@@ -665,6 +676,7 @@ namespace gameswf
 	{
 		return s_pixel_scale;
 	}
+#endif // 0
 
 }	// end namespace gameswf
 

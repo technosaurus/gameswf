@@ -131,6 +131,7 @@ namespace gameswf
 
 
 	static void	add_display_object(array<display_object_info>* display_list,
+					   movie* root_movie,
 					   character* ch,
 					   Uint16 depth,
 					   const cxform& color_transform,
@@ -149,6 +150,7 @@ namespace gameswf
 		}
 
 		display_object_info	di;
+		di.m_movie = root_movie;
 		di.m_character = ch;
 		di.m_depth = depth;
 		di.m_color_transform = color_transform;
@@ -420,6 +422,9 @@ namespace gameswf
 		string_hash<int>	m_named_frames;
 		string_hash<resource*>	m_exports;
 
+		int	m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
+		float	m_pixel_scale;
+
 		// array<int>	m_frame_start;	// tag indices of frame starts. ?
 
 		rect	m_frame_size;
@@ -514,6 +519,15 @@ namespace gameswf
 		}
 
 
+		virtual float	get_pixel_scale() const
+		// Return the size of a logical movie pixel as
+		// displayed on-screen, with the current device
+		// coordinates.
+		{
+			return m_pixel_scale;
+		}
+
+
 		void	add_character(int character_id, character* c)
 		{
 			assert(c);
@@ -591,7 +605,6 @@ namespace gameswf
 			m_named_frames.add(n, m_current_frame);
 		}
 
-		
 		void	set_jpeg_loader(jpeg::input* j_in)
 		// Set an input object for later loading DefineBits
 		// images (JPEG images without the table info).
@@ -622,7 +635,7 @@ namespace gameswf
 			}
 			assert(ch);
 
-			gameswf::add_display_object(&m_display_list, ch, depth, color_transform, matrix, ratio);
+			gameswf::add_display_object(&m_display_list, this, ch, depth, color_transform, matrix, ratio);
 		}
 
 
@@ -645,7 +658,7 @@ namespace gameswf
 			character*	ch = NULL;
 			if (m_characters.get(character_id, &ch) == false)
 			{
-				log_error("movie_impl::add_display_object(): unknown cid = %d\n", character_id);
+				log_error("movie_impl::replace_display_object(): unknown cid = %d\n", character_id);
 				return;
 			}
 			assert(ch);
@@ -672,9 +685,32 @@ namespace gameswf
 		int	get_width() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_x_max - m_frame_size.m_x_min)); }
 		int	get_height() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_y_max - m_frame_size.m_y_min)); }
 
-		void	set_background_color(const rgba& bg_color)
+		void	set_background_color(const rgba& color)
 		{
-			m_background_color = bg_color;
+			m_background_color = color;
+		}
+
+		void	set_background_alpha(float alpha)
+		{
+			m_background_color.m_a = iclamp(frnd(alpha * 255.0f), 0, 255);
+		}
+
+		float	get_background_alpha() const
+		{
+			return m_background_color.m_a / 255.0f;
+		}
+
+		void	set_display_viewport(int x0, int y0, int w, int h)
+		{
+			m_viewport_x0 = x0;
+			m_viewport_y0 = y0;
+			m_viewport_width = w;
+			m_viewport_height = h;
+
+			// Recompute pixel scale.
+			float	scale_x = m_viewport_width / TWIPS_TO_PIXELS(m_frame_size.width());
+			float	scale_y = m_viewport_height / TWIPS_TO_PIXELS(m_frame_size.height());
+			m_pixel_scale = fmax(scale_x, scale_y);
 		}
 
 		void	set_play_state(play_state s)
@@ -840,6 +876,8 @@ namespace gameswf
 		{
 			gameswf::render::begin_display(
 				m_background_color,
+				m_viewport_x0, m_viewport_y0,
+				m_viewport_width, m_viewport_height,
 				m_frame_size.m_x_min, m_frame_size.m_x_max,
 				m_frame_size.m_y_min, m_frame_size.m_y_max);
 
@@ -881,6 +919,12 @@ namespace gameswf
 			m_frame_size.read(&str);
 			m_frame_rate = str.read_u16() / 256.0f;
 			m_frame_count = str.read_u16();
+
+			// Default viewport.
+			set_display_viewport(
+				0, 0,
+				(int) ceilf(TWIPS_TO_PIXELS(m_frame_size.width())),
+				(int) ceilf(TWIPS_TO_PIXELS(m_frame_size.height())));
 
 			m_playlist.resize(m_frame_count);
 
@@ -1085,6 +1129,8 @@ namespace gameswf
 
 		void	execute(movie* m)
 		{
+			float	current_alpha = m->get_background_alpha();
+			m_color.m_a = frnd(current_alpha * 255.0f);
 			m->set_background_color(m_color);
 		}
 
@@ -2097,7 +2143,7 @@ namespace gameswf
 			}
 			assert(ch);
 
-			gameswf::add_display_object(&m_display_list, ch, depth, color_transform, matrix, ratio);
+			gameswf::add_display_object(&m_display_list, m_def->m_movie, ch, depth, color_transform, matrix, ratio);
 		}
 
 
