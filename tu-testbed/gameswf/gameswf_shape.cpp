@@ -922,19 +922,21 @@ namespace gameswf
 		float	object_space_max_error = 20.0f / mat.get_max_scale() / pixel_scale;
 
 		// See if we have an acceptable mesh available; if so then render with it.
-		for (int i = 0; i < m_cached_meshes.size(); i++)
+		for (int i = 0, n = m_cached_meshes.size(); i < n; i++)
 		{
-			if (object_space_max_error > m_cached_meshes[i]->get_error_tolerance() * 3.0f)
+			const mesh_set*	candidate = m_cached_meshes[i];
+
+			if (object_space_max_error > candidate->get_error_tolerance() * 3.0f)
 			{
-				// Mesh is too high-res; the remaining
-				// meshes are higher res, so give up.
+				// Mesh is too high-res; the remaining meshes are higher res,
+				// so stop searching and build an appropriately scaled mesh.
 				break;
 			}
 
-			if (object_space_max_error > m_cached_meshes[i]->get_error_tolerance())
+			if (object_space_max_error > candidate->get_error_tolerance())
 			{
 				// Do it.
-				m_cached_meshes[i]->display(mat, cx, fill_styles, line_styles);
+				candidate->display(mat, cx, fill_styles, line_styles);
 				return;
 			}
 		}
@@ -950,14 +952,14 @@ namespace gameswf
 
 	static int	sort_by_decreasing_error(const void* A, const void* B)
 	{
-		const mesh_set*	a = (const mesh_set*) A;
-		const mesh_set*	b = (const mesh_set*) B;
+		const mesh_set*	a = *(const mesh_set**) A;
+		const mesh_set*	b = *(const mesh_set**) B;
 
-		if (a->get_error_tolerance() > b->get_error_tolerance())
+		if (a->get_error_tolerance() < b->get_error_tolerance())
 		{
 			return 1;
 		}
-		else if (a->get_error_tolerance() < b->get_error_tolerance())
+		else if (a->get_error_tolerance() > b->get_error_tolerance())
 		{
 			return -1;
 		}
@@ -981,6 +983,17 @@ namespace gameswf
 				m_cached_meshes.size(),
 				sizeof(m_cached_meshes[0]),
 				sort_by_decreasing_error);
+
+			// Check to make sure the sort worked as intended.
+			#ifndef NDEBUG
+			for (int i = 0, n = m_cached_meshes.size() - 1; i < n; i++)
+			{
+				const mesh_set*	a = m_cached_meshes[i];
+				const mesh_set*	b = m_cached_meshes[i + 1];
+
+				assert(a->get_error_tolerance() > b->get_error_tolerance());
+			}
+			#endif // not NDEBUG
 		}
 	}
 
