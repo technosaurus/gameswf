@@ -154,6 +154,27 @@ namespace gameswf
 		virtual int	get_mouse_capture() { assert(0); return -1; }
 		virtual void	set_mouse_capture(int id) { assert(0); }
 
+		struct drag_state
+		{
+			movie*	m_character;
+			bool	m_lock_center;
+			bool	m_bound;
+			float	m_bound_x0;
+			float	m_bound_y0;
+			float	m_bound_x1;
+			float	m_bound_y1;
+
+			drag_state()
+				:
+				m_character(0), m_lock_center(0), m_bound(0),
+				m_bound_x0(0), m_bound_y0(0), m_bound_x1(1), m_bound_y1(1)
+			{
+			}
+		};
+		virtual void	get_drag_state(drag_state* st) { assert(0); *st = drag_state(); }
+		virtual void	set_drag_state(const drag_state& st) { assert(0); }
+		virtual void	stop_drag() { assert(0); }
+
 		virtual bool	set_edit_text(const char* var_name, const char* new_text)
 		{
 			// @@ this should be implemented more directly, to return
@@ -164,64 +185,17 @@ namespace gameswf
 
 		virtual bool	has_looped() const { return true; }
 
-		virtual void	start_drag(
-			movie* target,
-			bool lock_center,
-			bool rect_bound,
-			float x0,
-			float y0,
-			float x1,
-			float y1)
-		{
-			assert(0);
-		}
-		virtual void	stop_drag() { assert(0); }
-
 
 		//
 		// ActionScript.
 		//
 
 
-// use get/set_member...
-#if 0
-		virtual bool	set_value(const char* var_name, const as_value& val)
-		{
-			assert(0);
-			return false;
-		}
-
-		virtual as_value	get_value(const char* var_name)
-		{
-			assert(0);
-			return as_value(as_value::UNDEFINED);
-		}
-
-		virtual bool	get_character_value(const char* var_name, as_value* val)
-		{
-			assert(0);
-			return false;
-		}
-#endif // 0
-
 		virtual movie*	get_relative_target(const tu_string& name)
 		{
 			assert(0);	
 			return NULL;
 		}
-
-#if 0
-		virtual as_value	get_property(int prop_number)
-		{
-			assert(0);
-			return as_value(as_value::UNDEFINED);
-		}
-
-		virtual void	set_property(int prop_number, const as_value& new_val)
-		{
-			assert(0);
-		}
-#endif // 0
 
 		// as_object_interface stuff
 		virtual bool	set_self_value(const as_value& val) { assert(0); return false; }
@@ -233,6 +207,8 @@ namespace gameswf
 			assert(0);
 			return as_value();
 		}
+
+		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
 
 		virtual float	get_timer() const { return 0.0f; }
 		virtual movie*	to_movie() { return this; }
@@ -385,6 +361,12 @@ namespace gameswf
 		virtual void	restart() { /*assert(0);*/ }
 		virtual void	advance(float delta_time) {}	// for buttons and sprites
 		virtual void	goto_frame(int target_frame) {}
+		virtual bool	get_accept_anim_moves() const { return true; }
+
+		virtual void	get_drag_state(drag_state* st) { assert(m_parent); m_parent->get_drag_state(st); }
+
+		// Utility.
+		void	do_mouse_drag();
 	};
 
 
@@ -430,6 +412,8 @@ namespace gameswf
 		virtual ~execute_tag() {}
 		virtual void	execute(movie* m) {}
 		virtual void	execute_state(movie* m) {}
+		virtual bool	is_remove_tag() const { return false; }
+		virtual bool	is_action_tag() const { return false; }
 	};
 
 

@@ -465,6 +465,9 @@ namespace gameswf
 				m_default_text = str;
 				delete [] str;
 			}
+
+			IF_VERBOSE_PARSE(log_msg("edit_text_char, varname = %s, text = %s\n",
+						 m_default_name.c_str(), m_default_text.c_str()));
 		}
 
 

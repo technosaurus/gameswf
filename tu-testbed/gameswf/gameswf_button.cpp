@@ -97,6 +97,9 @@ namespace gameswf
 
 		void	advance(float delta_time)
 		{
+			// Implement mouse-drag.
+			character::do_mouse_drag();
+
 			matrix	mat = get_world_matrix();
 
 			// Get current mouse capture.
@@ -194,7 +197,6 @@ namespace gameswf
 				}
 
 				// Find the mouse position in character-space.
-				// @@ suspicious!
 				point	sub_mouse_position;
 				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
 
