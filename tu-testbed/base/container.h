@@ -26,8 +26,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <new>	// for placement new
-#include "engine/utility.h"
-#include "engine/dlmalloc.h"
+#include "base/utility.h"
+#include "base/dlmalloc.h"
 
 
 #ifdef _WIN32

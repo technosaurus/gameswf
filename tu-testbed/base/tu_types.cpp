@@ -7,8 +7,8 @@
 // platform isn't obvious.
 
 
-#include "engine/tu_types.h"
-#include "engine/utility.h"
+#include "base/tu_types.h"
+#include "base/utility.h"
 
 
 bool	tu_types_validate()

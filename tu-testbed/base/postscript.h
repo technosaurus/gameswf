@@ -30,14 +30,14 @@ struct postscript
 
 	void	clear();	// New page
 	void	comment(const char* s);
-	void	rgbcolor(int r, int g, int b);
+	void	rgbcolor(float r, float g, float b);
 	void	black();
 	void	gray(float amount);	// 0 == black, 1 == white
 
-	void	line(int x0, int y0, int x1, int y1);
-	void	moveto(int x0, int y0);
-	void	lineto(int x0, int y0);
-	void	linewidth(int w);
+	void	line(float x0, float y0, float x1, float y1);
+	void	moveto(float x0, float y0);
+	void	lineto(float x0, float y0);
+	void	linewidth(float w);
 	// linestyle ?
 	
 	void	font(const char* name, float size);
@@ -47,15 +47,15 @@ struct postscript
 	void	disk(float x, float y, float radius);
 	void	dot(float x, float y);
 
-	void	rectangle(int x0, int x1, int y0, int y1);
-	void	box(int x0, int x1, int y0, int y1);
+	void	rectangle(float x0, float x1, float y0, float y1);
+	void	box(float x0, float x1, float y0, float y1);
 
 private:
 	void	update(float x0, float y0);	// enlarge the bounding box if necessary.
 
 	tu_file*	m_out;
 	int	m_page;
-	int	m_x0, m_x1, m_y0, m_y1;	// bounding box
+	float	m_x0, m_x1, m_y0, m_y1;	// bounding box
 	bool	m_empty;
 };
 

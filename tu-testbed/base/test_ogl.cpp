@@ -7,7 +7,7 @@
 
 
 #include <stdlib.h>
-#include <engine/ogl.h>
+#include "base/ogl.h"
 #include <SDL.h>
 
 
