@@ -440,6 +440,11 @@ namespace gameswf
 			//
 			// Need to test to see what Flash does.
 			assert(n == m_display_object_array.size());
+			if (n != m_display_object_array.size())
+			{
+				log_error("gameswf bug: dlist size changed due to character actions, bailing on update!\n");
+				break;
+			}
 
 			display_object_info & dobj = m_display_object_array[i];
 			

@@ -520,7 +520,7 @@ namespace gameswf
 		}
 
 		// sanity check
-		assert( si>=0 && si< 1000);
+		assert(si >= 0 && si < 1000);
 		so->sound_id = si;
 	}
 
@@ -1759,7 +1759,7 @@ namespace gameswf
 
 					env->drop(nargs);
 					env->push(new_obj);
-//  				log_error("%08X\n", new_obj.to_object());
+//	  				log_error("%08X\n", new_obj.to_object());
 					break;
 				}
 				case 0x41:	// declare local
@@ -1786,20 +1786,13 @@ namespace gameswf
 //					ao->set_member("reverse", &array_not_impl);
 //					ao->set_member("toString", &array_not_impl);
 
+					// @@ TODO a set_member that takes an int or as_value?
 					int	array_size = (int) env->pop().to_number();
-//					log_error("\n---init_array size: %d\n", array_size);
-					if (array_size > 0)
+					char s[20];
+					for (int i = 0; i < array_size; i++)
 					{
-						char s[20];
-						for (int i=0; i < array_size; i++)
-//						for (int i=array_size-1; i >= 0; i--)
-						{
-							sprintf(s,"%d",i);
-							ao->set_member(s, env->pop());
-//							as_value x;
-//							ao->get_member(s, &x);
-//							log_error("---init_array args: %s\n", x.to_tu_string().c_str());
-						}
+						sprintf(s,"%d",i);
+						ao->set_member(s, env->pop());
 					}
 					as_value new_array = ao;
 					env->push(new_array);
@@ -1902,6 +1895,10 @@ namespace gameswf
 						if (obj)
 						{
 							obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
+							IF_VERBOSE_ACTION(
+								log_msg("-- get_member %s=%s\n",
+									env->top(0).to_tu_string().c_str(),
+									env->top(1).to_tu_string().c_str()));
 						}
 						else
 						{
@@ -1917,6 +1914,10 @@ namespace gameswf
 					if (obj)
 					{
 						obj->set_member(env->top(1).to_tu_string(), env->top(0));
+						IF_VERBOSE_ACTION(
+							log_msg("-- set_member %s=%s\n",
+								env->top(1).to_tu_string().c_str(),
+								env->top(0).to_tu_string().c_str()));
 					}
 					else
 					{
@@ -3132,7 +3133,6 @@ namespace gameswf
 			env = env->get_relative_target("_level0");
 			p++;
 		}
-
 
 		for (;;)
 		{

@@ -261,7 +261,7 @@ int	main(int argc, char *argv[])
 
 	// Get info about the width & height of the movie.
 	int	movie_version = 0, movie_width = 0, movie_height = 0;
-	gameswf::get_movie_info(infile, &movie_version, &movie_width, &movie_height, NULL, NULL);
+	gameswf::get_movie_info(infile, &movie_version, &movie_width, &movie_height, NULL, NULL, NULL);
 	if (movie_version == 0)
 	{
 		fprintf(stderr, "error: can't get info about %s\n", infile);
