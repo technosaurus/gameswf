@@ -3213,7 +3213,7 @@ namespace gameswf
 	// Standard member lookup.
 	as_standard_member	get_standard_member(const tu_stringi& name)
 	{
-		static s_inited = false;
+		static bool	s_inited = false;
 		static stringi_hash<as_standard_member>	s_standard_member_map;
 		if (!s_inited)
 		{
