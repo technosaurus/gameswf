@@ -106,19 +106,20 @@ vec3	vec3::cross(const vec3& v) const
 }
 
 
-vec3&	vec3::normalize()
-// Scales the vec3 to unit length.  Preserves its direction.
+float	vec3::normalize(const vec3& fallback /* = vec3::x_axis */)
+// Scales the vec3 to unit length.  Preserves its direction.  Returns
+// the original length of the vector.  If the length was (effectively)
+// zero, then returns 0.0f and sets our value to fallback.
 {
 	float	f = magnitude();
 	if (f < 0.0000001) {
 		// Punt.
-		x = 1;
-		y = 0;
-		z = 0;
+		*this = fallback;
+		return 0.0f;
 	} else {
 		this->operator/=(f);
 	}
-	return *this;
+	return f;
 }
 
 
@@ -142,7 +143,7 @@ float	vec3::magnitude() const
 float	vec3::sqrmag() const
 // Returns the square of the length of *this.
 {
-	return x * x + y * y * z * z;
+	return x * x + y * y + z * z;
 }
 
 

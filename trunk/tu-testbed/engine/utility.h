@@ -19,9 +19,9 @@
 
 // On windows, replace ANSI assert with our own, for a less annoying
 // debugging experience.
-int	tu_testbed_assert_break(const char* filename, int linenum, const char* expression);
+//int	tu_testbed_assert_break(const char* filename, int linenum, const char* expression);
 #undef assert
-#define assert(x)	((x) || tu_testbed_assert_break(__FILE__, __LINE__, #x))
+#define assert(x)	if (!(x)) { __asm { int 3 } }	// tu_testbed_assert_break(__FILE__, __LINE__, #x))
 
 #endif // not NDEBUG
 #endif // _WIN32
@@ -95,6 +95,17 @@ inline float	log2(float f) { return logf(f) / LN_2; }
 
 inline int	fchop( float f ) { return (int) f; }	// replace w/ inline asm if desired
 inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm if desired
+
+
+template<class T>
+void	swap(T& a, T& b)
+// Convenient swap function.  Normally I don't approve of non-const
+// references, but I think this is a special case.
+{
+	T	temp(a);
+	a = b;
+	b = temp;
+}
 
 
 //
