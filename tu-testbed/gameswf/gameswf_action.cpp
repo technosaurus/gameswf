@@ -438,15 +438,13 @@ namespace gameswf
 			}
 			else if (fmt == ARG_U16)
 			{
-				int	val = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
-				i += 2;
+				int	val = instruction_data[3] | (instruction_data[4] << 8);
 				log_msg(" %d\n", val);
 			}
 			else if (fmt == ARG_S16)
 			{
-				int	val = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
+				int	val = instruction_data[3] | (instruction_data[4] << 8);
 				if (val & 0x8000) val |= ~0x7FFF;	// sign-extend
-				i += 2;
 				log_msg(" %d\n", val);
 			}
 			else if (fmt == ARG_PUSH_DATA)
