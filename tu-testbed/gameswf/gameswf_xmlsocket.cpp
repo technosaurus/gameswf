@@ -1,3 +1,8 @@
+// gameswf_xml.h      -- Rob Savoye <rob@welcomehome.org> 2005
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
 #include <string>
 #include <sys/types.h>
 #include <sys/time.h>
