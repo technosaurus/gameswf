@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <new>	// for placement new
 #include "engine/utility.h"
+#include "engine/dlmalloc.h"
 
 
 template<class T>
@@ -119,14 +120,14 @@ public:
 		// Resize the buffer.
 		if (m_buffer_size == 0) {
 			if (m_buffer) {
-				free(m_buffer);
+				dlfree(m_buffer);
 			}
 			m_buffer = 0;
 		} else {
 			if (m_buffer) {
-				m_buffer = (T*) realloc(m_buffer, sizeof(T) * m_buffer_size);
+				m_buffer = (T*) dlrealloc(m_buffer, sizeof(T) * m_buffer_size);
 			} else {
-				m_buffer = (T*) malloc(sizeof(T) * m_buffer_size);
+				m_buffer = (T*) dlmalloc(sizeof(T) * m_buffer_size);
 			}
 		}			
 	}

@@ -9,6 +9,7 @@
 #include "engine/image.h"
 #include "engine/utility.h"
 #include "engine/jpeg.h"
+#include "engine/dlmalloc.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_endian.h>
 #include <stdlib.h>
@@ -20,21 +21,20 @@ namespace image
 		: m_data(0),
 		  m_width(width),
 		  m_height(height),
-		  m_pitch((m_width * 3 + 3) & ~3)		// Round up to next 4-byte boundary.
+		  m_pitch((m_width * 3 + 3) & ~3)	// round pitch up to nearest 4-byte boundary
 	{
 		assert(width > 0);
 		assert(height > 0);
 		assert(m_pitch >= m_width * 3);
 		assert((m_pitch & 3) == 0);
 
-		// Allocate data.  Use malloc(), since we share this data with SDL.
-		m_data = (Uint8*) malloc(m_pitch * m_height);
+		m_data = (Uint8*) dlmalloc(m_pitch * m_height);
 	}
 
 	rgb::~rgb()
 	{
 		if (m_data) {
-			free(m_data);
+			dlfree(m_data);
 			m_data = 0;
 		}
 	}
@@ -111,6 +111,22 @@ namespace image
 	}
 
 
+	rgb*	read_jpeg(const char* filename)
+	// Create and read a new image from the given filename, if possible.
+	{
+		SDL_RWops*	in = SDL_RWFromFile(filename, "rb");
+		if (in)
+		{
+			rgb*	im = read_jpeg(in);
+			SDL_RWclose(in);
+			return im;
+		}
+		else {
+			return NULL;
+		}
+	}
+
+
 	rgb*	read_jpeg(SDL_RWops* in)
 	// Create and read a new image from the stream.
 	{
@@ -158,20 +174,22 @@ namespace image
 	}
 
 
-	void	make_next_miplevel(SDL_Surface* image)
+	void	make_next_miplevel(rgb* image)
 	// Fast, in-place resample.  For making mip-maps.  Munges the
 	// input image to produce the output image.
 	{
-		assert(image->pixels);
-		assert(image->format->BytesPerPixel == 3);
-		assert(image->format->BitsPerPixel == 24);
+		assert(image->m_data);
 
-		int	new_w = image->w >> 1;
-		int	new_h = image->h >> 1;
+		int	new_w = image->m_width >> 1;
+		int	new_h = image->m_height >> 1;
 		if (new_w < 1) new_w = 1;
 		if (new_h < 1) new_h = 1;
 
-		if (new_w * 2 != image->w  || new_h * 2 != image->h)
+		int	new_pitch = new_w * 3;
+		// Round pitch up to the nearest 4-byte boundary.
+		new_pitch = (new_pitch + 3) & ~3;
+
+		if (new_w * 2 != image->m_width  || new_h * 2 != image->m_height)
 		{
 			// Image can't be shrunk along (at least) one
 			// of its dimensions, so don't bother
@@ -183,10 +201,10 @@ namespace image
 		else
 		{
 			// Resample.  Simple average 2x2 --> 1, in-place.
-			int	pitch = image->pitch;
+			int	pitch = image->m_pitch;
 			for (int j = 0; j < new_h; j++) {
-				Uint8*	out = ((Uint8*) image->pixels) + j * (new_w * 3);
-				Uint8*	in = ((Uint8*) image->pixels) + (j << 1) * pitch;
+				Uint8*	out = ((Uint8*) image->m_data) + j * new_pitch;
+				Uint8*	in = ((Uint8*) image->m_data) + (j << 1) * pitch;
 				for (int i = 0; i < new_w; i++) {
 					int	r, g, b;
 					r = (*(in + 0) + *(in + 3) + *(in + 0 + pitch) + *(in + 3 + pitch));
@@ -202,9 +220,9 @@ namespace image
 		}
 
 		// Munge image's members to reflect the shrunken image.
-		image->w = new_w;
-		image->h = new_h;
-		image->pitch = new_w * 3;
+		image->m_width = new_w;
+		image->m_height = new_h;
+		image->m_pitch = new_pitch;
 	}
 };
 

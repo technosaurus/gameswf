@@ -48,16 +48,17 @@ namespace image
 
 	void	write_jpeg(SDL_RWops* out, rgb* image, int quality);
 
+	rgb*	read_jpeg(const char* filename);
 	rgb*	read_jpeg(SDL_RWops* in);
 
-	// Makes an SDL_Surface from the given image data.
-	//
-	// DELETES image!!!
-	SDL_Surface*	create_SDL_Surface(rgb* image);
+//	// Makes an SDL_Surface from the given image data.
+//	//
+//	// DELETES image!!!
+//	SDL_Surface*	create_SDL_Surface(rgb* image);
 
-	// Fast, in-place resample.  For making mip-maps.  Munges the
-	// input image to produce the output image.
-	void	make_next_miplevel(SDL_Surface* image);
+	// Fast, in-place, DESTRUCTIVE resample.  For making mip-maps.
+	// Munges the input image to produce the output image.
+	void	make_next_miplevel(rgb* image);
 };
 
 

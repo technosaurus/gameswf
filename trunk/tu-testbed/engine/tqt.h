@@ -10,8 +10,8 @@
 
 
 #include "engine/container.h"
+#include "engine/image.h"
 struct SDL_RWops;
-struct SDL_Surface;
 
 
 class tqt
@@ -25,14 +25,7 @@ public:
 	int	get_tile_size() const { return m_tile_size; }
 
 	unsigned int	get_texture_id(int level, int col, int row) const;
-	SDL_Surface*	load_image(int level, int col, int row) const;
-
-	// Utility, to make a mip-mapped, clamped texture.
-	// get_texture_id() is a shortcut for
-	// make_texture_id(get_image(...)).
-	//
-	// DELETES THE GIVEN SURFACE!
-	static unsigned int	make_texture_id(SDL_Surface* surf);
+	image::rgb*	load_image(int level, int col, int row) const;
 
 	// Static utility functions.
 	static bool	tqt::is_tqt_file(const char* filename);

@@ -1,4 +1,4 @@
-// chunkdemo.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2001
+// chunkdemo.cpp	-- Thatcher Ulrich <tu@tulrich.com>
 
 // This program is in the public domain.
 
@@ -568,7 +568,8 @@ int	main(int argc, char *argv[])
 		//
 		// No texture quadtree; try to load the texture arg as an ordinary texture.
 		//
-		SDL_Surface*	texture = IMG_Load(texturefile);
+		//SDL_Surface*	texture = IMG_Load(texturefile);
+		image::rgb*	texture = image::read_jpeg(texturefile);
 		if (texture) {
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, 1);
@@ -581,17 +582,18 @@ int	main(int argc, char *argv[])
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 //			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->w, texture->h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->m_width, texture->m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->m_data);
 
 			// Build mips.
 			int	level = 1;
-			while (texture->w > 1 || texture->h > 1) {
+			while (texture->m_width > 1 || texture->m_height > 1) {
 				image::make_next_miplevel(texture);
-				glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, texture->w, texture->h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
+				glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, texture->m_width, texture->m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->m_data);
 				level++;
 			}
 
-			SDL_FreeSurface(texture);
+//			SDL_FreeSurface(texture);
+			delete texture;
 
 			glBindTexture(GL_TEXTURE_2D, 1);
 		}
