@@ -421,6 +421,7 @@ void tu_file::close()
 void	tu_file::copy_from(tu_file* src)
 // Copy remaining contents of *src into *this.
 {
+	// @@ bah, should buffer this!
 	while (src->get_eof() == false)
 	{
 		Uint8	b = src->read8();
@@ -431,6 +432,39 @@ void	tu_file::copy_from(tu_file* src)
 
 		write8(b);
 	}
+}
+
+
+int	tu_file::copy_bytes(tu_file* src, int byte_count)
+// Copy a fixed number of bytes from *src into *this.  Return the
+// number of bytes copied.
+{
+	static const int	BUFSIZE = 4096;
+	char	buffer[BUFSIZE];
+
+	int	bytes_left = byte_count;
+	while (bytes_left)
+	{
+		int	to_copy = imin(bytes_left, BUFSIZE);
+
+		int	read_count = src->read_bytes(buffer, to_copy);
+		int	write_count = write_bytes(buffer, read_count);
+
+		assert(write_count <= read_count);
+		assert(read_count <= to_copy);
+		assert(to_copy <= bytes_left);
+
+		bytes_left -= write_count;
+		if (write_count < to_copy)
+		{
+			// Some kind of error; abort.
+			return byte_count - bytes_left;
+		}
+	}
+
+	assert(bytes_left == 0);
+
+	return byte_count;
 }
 
 

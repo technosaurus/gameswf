@@ -83,6 +83,10 @@ public:
 	// Copy remaining contents of *in into *this.
 	void	copy_from(tu_file* in);
 
+	// Copy a fixed number of bytes from *in to *this.
+	// Returns number of bytes copied.
+	int	copy_bytes(tu_file* in, int bytes);
+
 	Uint64	read_le64();
 	Uint32 	read_le32();
 	Uint16 	read_le16();
