@@ -56,6 +56,16 @@ namespace swf
 		{
 		}
 
+		virtual void	replace_display_object(Uint16 character_id,
+						       Uint16 depth,
+						       bool use_cxform,
+						       const cxform& color_transform,
+						       bool use_matrix,
+						       const matrix& mat,
+						       float ratio)
+		{
+		}
+
 		virtual void	remove_display_object(Uint16 depth)
 		{
 		}
