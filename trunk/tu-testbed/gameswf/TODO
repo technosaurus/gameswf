@@ -10,36 +10,12 @@ Productizing
 
 Tasks to make gameswf ready for including in real games.
 
-* a good way to pre-compute tesselations of shapes.  Also, it would be
-  very nice to be able to restrict the size of font textures for
-  particular fonts that don't need to be scaled up.  RAM is precious.
-
-  Here's what I'm doing:
-
-  * auxiliary program gameswf_processor for generating cache data.
-    Specify any number of .swf movies.
-
-  * the program loads all the movies and executes all the frames.
-    This causes all the shapes to be tesselated to necessary levels,
-    and the fonts to be precomputed, etc.  With the fonts, we should
-    probably record the maximum size any font was displayed at; if
-    it's small, then we can store smaller versions of the font
-    textures.
-
-  * append all the cached info as EXTRA CUSTOM TAGS right onto the
-    ends of the associated .swf files.  So the .swf's are still valid,
-    they just have a bunch of extra precompiled data on the end for
-    the use of gameswf.
-
-  * at load time, when we see these extra tags, we jam the data right
-    into the corresponding characters without having to compute it.
+* hooks so that preprocessor and loader can deal with special,
+  host-specific data like vertex buffers and textures in a custom way.
 
 * fix memory leaks
 
 * pick a version number, post a release
-
-* try to keep external #includes out of gameswf.h -- currently the
-  render_handler has the bulk of the external dependencies.
 
 * use Sint16 TWIP coordinates in all reasonable places to cut down on
   memory and processing.
@@ -80,7 +56,11 @@ General
 * text entry?  No keyboard on consoles, text input is very platform
   specific; low priority for now.
 
-* named elements APIs, for easier UI programming in the host app
+* named elements APIs, for easier UI programming in the host app.
+  Should the whole ActionScript API be available to the host?  Might
+  be really hot for translating slow prototype ActionScripts into C++.
+  Prototype in Flash on a fast machine, convert the scripts and
+  deliver a blazing fast executable.
 
 * Would be good if one of the log options produced a nice usable
   human-readable parsing of the file.  Or even a SSWF equivalent?
@@ -89,23 +69,12 @@ General
 ActionScript
 ============
 
-* figure out what virtual-machine state is involved in ActionScript,
-  and where to hang it.
-
-  Each "thread" has a stack, and a target environment (?)
-
-  What's in the environment?  Locals, etc?  Is there an environment in
-  every sprite, basically?
+* sprites can receive button events!  Like mouse down/up, etc.  So
+  need the appropriate machinery for watching the mouse.
 
 * make sure the frame semantics are correct.  I'm not 100% clear on
   the semantics of frame transitions.  I think that "being on frame N"
-  means that N's tags and actions have been executed.  "goto N" is
-  still unclear to me: does it mean that N's tags and actions should
-  be executed, or do we start with N+1?  Does the display list need to
-  be cleared, left as-is, or set to some pristine condition for frame
-  N?  But the display list is built incrementally.  So this needs
-  experimentation.  I haven't looked at flashsource's GPL code for
-  this; maybe that will clear things up.
+  means that N's tags and actions have been executed.
 
 * collect a canonical set of test movies and check them into CVS
 
@@ -169,3 +138,6 @@ Renderer
   tesselations switch, although I don't think it would be any worse
   than existing pops, and I haven't noticed any objectionable popping
   with our existing shape rendering.
+
+  Self-intersection of the expanded/shrunk mesh is a bitch.
+  E.g. concave vertices, and tiny holes (like in minified text).

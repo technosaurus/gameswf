@@ -475,6 +475,7 @@ namespace gameswf
 	namespace key {
 		enum code
 		{
+			INVALID = 0,
 			A = 65,
 			B,
 			C,

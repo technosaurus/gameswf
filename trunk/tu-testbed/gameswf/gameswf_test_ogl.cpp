@@ -97,6 +97,57 @@ static tu_file*	file_opener(const char* url)
 }
 
 
+static void	key_event(SDLKey key, bool down)
+// For forwarding SDL key events to gameswf.
+{
+	gameswf::key::code	c(gameswf::key::INVALID);
+
+	if (key >= SDLK_a && key <= SDLK_z)
+	{
+		c = (gameswf::key::code) ((key - SDLK_a) + gameswf::key::A);
+	}
+	else if (key >= SDLK_F1 && key <= SDLK_F15)
+	{
+		c = (gameswf::key::code) ((key - SDLK_F1) + gameswf::key::F1);
+	}
+	else if (key >= SDLK_KP0 && key <= SDLK_KP9)
+	{
+		c = (gameswf::key::code) ((key - SDLK_KP0) + gameswf::key::KP_0);
+	}
+	else
+	{
+		// many keys don't correlate, so just use a look-up table.
+		struct
+		{
+			SDLKey	sdlk;
+			gameswf::key::code	gs;
+		} table[] =
+		{
+			{ SDLK_LEFT, gameswf::key::LEFT },
+			{ SDLK_UP, gameswf::key::UP },
+			{ SDLK_RIGHT, gameswf::key::RIGHT },
+			{ SDLK_DOWN, gameswf::key::DOWN },
+			// @@ TODO fill this out some more
+			{ SDLK_UNKNOWN, gameswf::key::INVALID }
+		};
+
+		for (int i = 0; table[i].sdlk != SDLK_UNKNOWN; i++)
+		{
+			if (key == table[i].sdlk)
+			{
+				c = table[i].gs;
+				break;
+			}
+		}
+	}
+
+	if (c != gameswf::key::INVALID)
+	{
+		gameswf::notify_key_event(c, down);
+	}
+}
+
+
 int	main(int argc, char *argv[])
 {
 	assert(tu_types_validate());
@@ -305,7 +356,7 @@ int	main(int argc, char *argv[])
 			{
 			case SDL_KEYDOWN:
 			{
-				int	key = event.key.keysym.sym;
+				SDLKey	key = event.key.keysym.sym;
 
 				if (key == SDLK_q || key == SDLK_ESCAPE)
 				{
@@ -363,6 +414,15 @@ int	main(int argc, char *argv[])
 					s_background = !s_background;
 				}
 
+				key_event(key, true);
+
+				break;
+			}
+
+			case SDL_KEYUP:
+			{
+				SDLKey	key = event.key.keysym.sym;
+				key_event(key, false);
 				break;
 			}
 
