@@ -18,7 +18,13 @@ namespace gameswf
 	struct character;
 	struct stream;
 	struct shape_character_def;
-	namespace tesselate { struct trapezoid_accepter; }
+	namespace tesselate {
+		struct trapezoid_accepter;
+		struct tesselating_shape {
+			virtual void tesselate(float error_tolerance, 
+					       trapezoid_accepter *accepter) const = 0;
+		};
+	}
 
 
 	struct edge
@@ -58,7 +64,6 @@ namespace gameswf
 		bool	m_new_shape;
 	};
 
-
 	struct mesh
 	// For holding a pre-tesselated shape.
 	{
@@ -96,7 +101,8 @@ namespace gameswf
 	// A whole shape, tesselated to a certain error tolerance.
 	{
 		mesh_set();
-		mesh_set(const shape_character_def* sh, float error_tolerance);
+		mesh_set(const tesselate::tesselating_shape* sh,
+			 float error_tolerance);
 
 //		int	get_last_frame_rendered() const;
 //		void	set_last_frame_rendered(int frame_counter);
@@ -122,7 +128,7 @@ namespace gameswf
 	};
 
 
-	struct shape_character_def : public character_def
+	struct shape_character_def : public character_def, public tesselate::tesselating_shape
 	// Represents the outline of one or more shapes, along with
 	// information on fill and line styles.
 	{
@@ -139,7 +145,7 @@ namespace gameswf
 			float pixel_scale,
 			const array<fill_style>& fill_styles,
 			const array<line_style>& line_styles) const;
-		void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
+		virtual void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
 		const rect&	get_bound() const { return m_bound; }
 		void	compute_bound(rect* r) const;	// @@ what's the difference between this and get_bound?
 
