@@ -145,6 +145,28 @@ namespace image
 	}
 
 
+	rgb*	read_swf_jpeg2(SDL_RWops* in)
+	// Create and read a new image from the stream.  Image is in
+	// SWF JPEG2-style format (the encoding tables come first in a
+	// separate "stream" -- otherwise it's just normal JPEG).  The
+	// IJG documentation describes this as "abbreviated" format.
+	{
+		jpeg::input*	j_in = jpeg::input::create_swf_jpeg2(in);
+		if (j_in == NULL) return NULL;
+		
+		rgb*	im = image::create_rgb(j_in->get_width(), j_in->get_height());
+
+		for (int y = 0; y < j_in->get_height(); y++) {
+			j_in->read_scanline(scanline(im, y));
+		}
+
+		delete j_in;
+
+		return im;
+	}
+
+
+#if 0
 	SDL_Surface*	create_SDL_Surface(rgb* image)
 	// Steal *image's data to create an SDL_Surface.
 	//
@@ -172,7 +194,7 @@ namespace image
 
 		return s;
 	}
-
+#endif // 0
 
 	void	make_next_miplevel(rgb* image)
 	// Fast, in-place resample.  For making mip-maps.  Munges the

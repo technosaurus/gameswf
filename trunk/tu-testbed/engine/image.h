@@ -51,10 +51,9 @@ namespace image
 	rgb*	read_jpeg(const char* filename);
 	rgb*	read_jpeg(SDL_RWops* in);
 
-//	// Makes an SDL_Surface from the given image data.
-//	//
-//	// DELETES image!!!
-//	SDL_Surface*	create_SDL_Surface(rgb* image);
+	// For reading SWF JPEG2-style image data (slight variation on
+	// ordinary JPEG).
+	rgb*	read_swf_jpeg2(SDL_RWops* in);
 
 	// Fast, in-place, DESTRUCTIVE resample.  For making mip-maps.
 	// Munges the input image to produce the output image.
