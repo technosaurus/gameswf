@@ -267,7 +267,14 @@ namespace gameswf
 	void	log_disasm(const unsigned char* instruction_data)
 	// Disassemble one instruction to the log.
 	{
-		enum arg_format { ARG_NONE = 0, ARG_STR, ARG_HEX, ARG_PUSH_DATA, ARG_DECL_DICT };
+		enum arg_format {
+			ARG_NONE = 0,
+			ARG_STR,
+			ARG_HEX,	// default hex dump, in case the format is unknown or unsupported
+			ARG_U16,
+			ARG_S16,
+			ARG_PUSH_DATA,
+			ARG_DECL_DICT };
 		struct inst_info
 		{
 			int	m_action_id;
@@ -281,7 +288,7 @@ namespace gameswf
 			{ 0x05, "prev_frame", ARG_NONE },
 			{ 0x06, "play", ARG_NONE },
 			{ 0x07, "stop", ARG_NONE },
-			{ 0x08, "toggle qlt", ARG_NONE },
+			{ 0x08, "toggle_qlty", ARG_NONE },
 			{ 0x09, "stop_sounds", ARG_NONE },
 			{ 0x0A, "add", ARG_NONE },
 			{ 0x0B, "sub", ARG_NONE },
@@ -295,26 +302,28 @@ namespace gameswf
 			{ 0x13, "str_eq", ARG_NONE },
 			{ 0x14, "str_len", ARG_NONE },
 			{ 0x15, "substr", ARG_NONE },
-			{ 0x18, "int", ARG_NONE },
+			{ 0x17, "pop", ARG_NONE },
+			{ 0x18, "floor", ARG_NONE },
 			{ 0x1C, "get_var", ARG_NONE },
 			{ 0x1D, "set_var", ARG_NONE },
-			{ 0x20, "set_tgt_exp", ARG_NONE },
+			{ 0x20, "set_target_exp", ARG_NONE },
 			{ 0x21, "str_cat", ARG_NONE },
 			{ 0x22, "get_prop", ARG_NONE },
 			{ 0x23, "set_prop", ARG_NONE },
-			{ 0x24, "dup_clip", ARG_NONE },
-			{ 0x25, "rem_clip", ARG_NONE },
+			{ 0x24, "dup_sprite", ARG_NONE },
+			{ 0x25, "rem_sprite", ARG_NONE },
 			{ 0x26, "trace", ARG_NONE },
-			{ 0x27, "start_drag_movie", ARG_NONE },
-			{ 0x28, "stop_drag_movie", ARG_NONE },
+			{ 0x27, "start_drag", ARG_NONE },
+			{ 0x28, "stop_drag", ARG_NONE },
 			{ 0x29, "str_lt", ARG_NONE },
 			{ 0x30, "random", ARG_NONE },
 			{ 0x31, "mb_length", ARG_NONE },
 			{ 0x32, "ord", ARG_NONE },
 			{ 0x33, "chr", ARG_NONE },
 			{ 0x34, "get_timer", ARG_NONE },
-			{ 0x35, "mb_substr", ARG_NONE },
-			{ 0x37, "mb_chr", ARG_NONE },
+			{ 0x35, "substr_mb", ARG_NONE },
+			{ 0x36, "ord_mb", ARG_NONE },
+			{ 0x37, "chr_mb", ARG_NONE },
 			{ 0x3A, "delete", ARG_NONE },
 			{ 0x3B, "delete_all", ARG_NONE },
 			{ 0x3C, "set_local", ARG_NONE },
@@ -353,19 +362,21 @@ namespace gameswf
 			{ 0x67, "gt_t", ARG_NONE },
 			{ 0x68, "gt_str", ARG_NONE },
 			
-			{ 0x81, "goto_frame", ARG_HEX },
+			{ 0x81, "goto_frame", ARG_U16 },
 			{ 0x83, "get_url", ARG_STR },
 			{ 0x88, "decl_dict", ARG_DECL_DICT },
 			{ 0x8A, "wait_for_frame", ARG_HEX },
 			{ 0x8B, "set_target", ARG_STR },
 			{ 0x8C, "goto_frame_lbl", ARG_STR },
 			{ 0x8D, "wait_for_fr_exp", ARG_HEX },
+			{ 0x94, "with", ARG_U16 },
 			{ 0x96, "push_data", ARG_PUSH_DATA },
-			{ 0x99, "goto", ARG_HEX },
+			{ 0x99, "goto", ARG_S16 },
 			{ 0x9A, "get_url2", ARG_HEX },
-			{ 0x9D, "branch_if_true", ARG_HEX },
+			{ 0x9B, "func", ARG_HEX },
+			{ 0x9D, "branch_if_true", ARG_S16 },
 			{ 0x9E, "call_frame", ARG_HEX },
-			{ 0x9F, "goto_exp", ARG_HEX },
+			{ 0x9F, "goto_frame_exp", ARG_HEX },
 			{ 0x00, "<end>", ARG_NONE }
 		};
 
@@ -425,6 +436,19 @@ namespace gameswf
 				}
 				log_msg("\"\n");
 			}
+			else if (fmt == ARG_U16)
+			{
+				int	val = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
+				i += 2;
+				log_msg(" %d\n", val);
+			}
+			else if (fmt == ARG_S16)
+			{
+				int	val = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
+				if (val & 0x8000) val |= ~0x7FFF;	// sign-extend
+				i += 2;
+				log_msg(" %d\n", val);
+			}
 			else if (fmt == ARG_PUSH_DATA)
 			{
 				log_msg("\n");
@@ -448,11 +472,18 @@ namespace gameswf
 					}
 					else if (type == 1)
 					{
-						// float
-						// pull LE32 float
-						// log_msg("%f\n", f);
+						// float (little-endian)
+						union {
+							float	f;
+							Uint32	i;
+						} u;
+						compiler_assert(sizeof(u) == sizeof(u.i));
+
+						memcpy(&u.i, instruction_data + 3 + i, 4);
+						u.i = swap_le32(u.i);
 						i += 4;
-						log_msg("<float> @@TODO\n");
+
+						log_msg("(float) %f\n", u.f);
 					}
 					else if (type == 2)
 					{
@@ -477,10 +508,33 @@ namespace gameswf
 					}
 					else if (type == 6)
 					{
+						{
+							// xxx for debugging
+							for (int j = 0; j < 8; j++)
+							{
+								log_msg(" 0x%02X", instruction_data[3 + i + j]);
+							}
+							log_msg("\n");
+						}
+
 						// double
 						// wacky format: 45670123
+						union {
+							double	d;
+							Uint64	i;
+							struct {
+								Uint32	lo;
+								Uint32	hi;
+							} sub;
+						} u;
+						compiler_assert(sizeof(u) == sizeof(u.i));
+
+						memcpy(&u.sub.hi, instruction_data + 3 + i, 4);
+						memcpy(&u.sub.lo, instruction_data + 3 + i + 4, 4);
+						u.i = swap_le64(u.i);
 						i += 8;
-						log_msg("<double> @@TODO\n");
+
+						log_msg("(double) %f\n", u.d);
 					}
 					else if (type == 7)
 					{
