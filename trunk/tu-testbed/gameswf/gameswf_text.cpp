@@ -68,17 +68,93 @@ namespace gameswf
 	};
 
 
+	// Render the given glyph records.
+	static void	display_glyph_records(
+		const display_info& di,
+		const matrix& mat,
+		const array<text_glyph_record>& records)
+	{
+		static array<fill_style>	s_dummy_style;	// used to pass a color on to shape_character::display()
+		static array<line_style>	s_dummy_line_style;
+
+		s_dummy_style.resize(1);
+
+
+		display_info	sub_di = di;
+		sub_di.m_matrix.concatenate(mat);
+
+		matrix	base_matrix = sub_di.m_matrix;
+		float	base_matrix_max_scale = base_matrix.get_max_scale();
+
+		float	scale = 1.0f;
+		float	x = 0.0f;
+		float	y = 0.0f;
+
+		for (int i = 0; i < records.size(); i++)
+		{
+			// Draw the characters within the current record; i.e. consecutive
+			// chars that share a particular style.
+			const text_glyph_record&	rec = records[i];
+
+			if (rec.m_style.m_font == NULL) continue;
+
+			scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+			float	text_screen_height = base_matrix_max_scale
+				* scale
+				* 1024.0f
+				/ 20.0f
+				* get_pixel_scale();
+			bool	use_shape_glyphs =
+				text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
+
+			if (rec.m_style.m_has_x_offset)
+			{
+				x = rec.m_style.m_x_offset;
+			}
+			if (rec.m_style.m_has_y_offset)
+			{
+				y = rec.m_style.m_y_offset;
+			}
+
+			s_dummy_style[0].set_color(rec.m_style.m_color);
+
+			rgba	transformed_color = sub_di.m_color_transform.transform(rec.m_style.m_color);
+
+			for (int j = 0; j < rec.m_glyphs.size(); j++)
+			{
+				int	index = rec.m_glyphs[j].m_glyph_index;
+				const texture_glyph*	tg = rec.m_style.m_font->get_texture_glyph(index);
+					
+				sub_di.m_matrix = base_matrix;
+				sub_di.m_matrix.concatenate_translation(x, y);
+				sub_di.m_matrix.concatenate_scale(scale);
+
+				if (tg && ! use_shape_glyphs)
+				{
+					fontlib::draw_glyph(sub_di.m_matrix, tg, transformed_color);
+				}
+				else
+				{
+					shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
+
+					// Draw the character using the filled outline.
+					if (glyph) glyph->display(sub_di, s_dummy_style, s_dummy_line_style);
+				}
+
+				x += rec.m_glyphs[j].m_glyph_advance;
+			}
+		}
+	}
+
+
 	struct text_character : public character
 	{
 		rect	m_rect;
 		matrix	m_matrix;
 		array<text_glyph_record>	m_text_glyph_records;
-		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
-		array<line_style>	m_dummy_line_style;
 
 		text_character()
 		{
-			m_dummy_style.push_back(fill_style());
 		}
 
 		void	read(stream* in, int tag_type, movie* m)
@@ -187,74 +263,7 @@ namespace gameswf
 		void	display(const display_info& di)
 		// Draw the string.
 		{
-			// @@ it would probably be nicer to just parse
-			// this tag from the original SWF data,
-			// on-the-fly as we render.
-
-			display_info	sub_di = di;
-			sub_di.m_matrix.concatenate(m_matrix);
-
-			matrix	base_matrix = sub_di.m_matrix;
-			float	base_matrix_max_scale = base_matrix.get_max_scale();
-
-			float	scale = 1.0f;
-			float	x = 0.0f;
-			float	y = 0.0f;
-
-			for (int i = 0; i < m_text_glyph_records.size(); i++)
-			{
-				// Draw the characters within the current record; i.e. consectutive
-				// chars that share a particular style.
-				text_glyph_record&	rec = m_text_glyph_records[i];
-
-				if (rec.m_style.m_font == NULL) continue;
-
-				scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
-				float	text_screen_height = base_matrix_max_scale
-					* scale
-					* 1024.0f
-					/ 20.0f
-					* get_pixel_scale();
-				bool	use_shape_glyphs =
-					text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
-
-				if (rec.m_style.m_has_x_offset)
-				{
-					x = rec.m_style.m_x_offset;
-				}
-				if (rec.m_style.m_has_y_offset)
-				{
-					y = rec.m_style.m_y_offset;
-				}
-
-				m_dummy_style[0].set_color(rec.m_style.m_color);
-
-				rgba	transformed_color = sub_di.m_color_transform.transform(rec.m_style.m_color);
-
-				for (int j = 0; j < rec.m_glyphs.size(); j++)
-				{
-					int	index = rec.m_glyphs[j].m_glyph_index;
-					const texture_glyph*	tg = rec.m_style.m_font->get_texture_glyph(index);
-					
-					sub_di.m_matrix = base_matrix;
-					sub_di.m_matrix.concatenate_translation( x, y );
-					sub_di.m_matrix.concatenate_scale( scale );
-
-					if (tg && ! use_shape_glyphs)
-					{
-						fontlib::draw_glyph(sub_di.m_matrix, tg, transformed_color);
-					}
-					else
-					{
-						shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
-
-						// Draw the character using the filled outline.
-						if (glyph) glyph->display(sub_di, m_dummy_style, m_dummy_line_style);
-					}
-
-					x += rec.m_glyphs[j].m_glyph_advance;
-				}
-			}
+			display_glyph_records(di, m_matrix, m_text_glyph_records);
 		}
 	};
 
