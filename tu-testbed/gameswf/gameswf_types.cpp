@@ -220,9 +220,20 @@ namespace gameswf
 		// @@ not 100% sure what the heck I'm doing here.  I
 		// think this is roughly what I want; take the max
 		// length of the two basis vectors.
-		float	basis0_length = sqrtf(m_[0][0] * m_[0][0] + m_[0][1] * m_[0][1]);
-		float	basis1_length = sqrtf(m_[1][0] * m_[1][0] + m_[1][1] * m_[1][1]);
-		return fmax(basis0_length, basis1_length);
+		float	basis0_length2 = m_[0][0] * m_[0][0] + m_[0][1] * m_[0][1];
+		float	basis1_length2 = m_[1][0] * m_[1][0] + m_[1][1] * m_[1][1];
+		float	max_length2 = fmax(basis0_length2, basis1_length2);
+		return sqrtf(max_length2);
+	}
+
+	float	matrix::get_x_scale() const
+	{
+		return sqrtf(m_[0][0] * m_[0][0] + m_[0][1] * m_[0][1]);
+	}
+
+	float	matrix::get_y_scale() const
+	{
+		return sqrtf(m_[1][1] * m_[1][1] + m_[1][0] * m_[1][0]);
 	}
 
 
