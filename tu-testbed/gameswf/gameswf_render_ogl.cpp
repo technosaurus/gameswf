@@ -46,8 +46,6 @@ namespace render
 	static bool	s_multitexture_antialias = false;
 	static unsigned int	s_edge_texture_id = 0;
 
-	static bool	s_wireframe = false;
-
 	// Output size.
 	static float	s_display_width;
 	static float	s_display_height;
@@ -310,7 +308,8 @@ namespace render
 						// For the moment we can only handle the modulate part of the
 						// color transform...
 						// How would we handle any additive part?  Realistically we
-						// need to use a pixel shader.
+						// need to use a pixel shader.  Although there is a GL_COLOR_SUM
+						// extension that can set an offset for R,G,B (but apparently not A).
 						glColor4f(m_bitmap_color_transform.m_[0][0],
 							  m_bitmap_color_transform.m_[1][0],
 							  m_bitmap_color_transform.m_[2][0],
@@ -344,7 +343,7 @@ namespace render
 					float	inv_height = 1.0f / m_bitmap_info->m_original_height;
 
 					matrix	screen_to_obj;
-					screen_to_obj.set_inverse(current_matrix);
+					screen_to_obj.set_inverse(current_matrix);	// @@ should cache the inverse
 
 					matrix	m = m_bitmap_matrix;
 					m.concatenate(screen_to_obj);
@@ -385,9 +384,6 @@ namespace render
 	static int	s_left_style = -1;
 	static int	s_right_style = -1;
 	static int	s_line_style = -1;
-
-
-	static void	peel_off_and_render(int i0, int i1, float y0, float y1);
 
 
 	bitmap_info*	create_bitmap_info(image::rgb* im)
@@ -769,11 +765,13 @@ namespace render
 		// Render the shape stored in the tesselator.
 		if (s_software_mode_active)
 		{
-			gameswf::tesselate::end_shape(&software_accepter());
+			software_accepter	s;
+			gameswf::tesselate::end_shape(&s);
 		}
 		else
 		{
-			gameswf::tesselate::end_shape(&opengl_accepter());
+			opengl_accepter	o;
+			gameswf::tesselate::end_shape(&o);
 		}
 	}
 
