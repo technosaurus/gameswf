@@ -36,11 +36,6 @@ namespace gameswf
 			restart();
 		}
 
-		~button_character_instance()
-		{
-			printf("button bye bye\n");
-		}
-
 		bool	is_instance() const { return true; }
 
 		void	restart()
