@@ -27,9 +27,11 @@ ifeq ($(TU_TESTBED_COMPILER), msvc)
 # MSVC/Windows options
 #
 
-# Use Doug Lea's malloc; it's *way* better (at least 3x) than the
-# MSVCRT malloc in chunkdemo.
-USE_DL_MALLOC_FLAG := -DUSE_DL_MALLOC
+
+# Uncomment this option if you're saddled with an old version of
+# MSVCRT.  Newer versions of MSVCRT's malloc perform about the same as
+# dlmalloc.
+#USE_DL_MALLOC_FLAG := -DUSE_DL_MALLOC
 
 # MSVC
 CC := cl /nologo

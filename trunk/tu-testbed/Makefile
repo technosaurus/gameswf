@@ -42,51 +42,16 @@ chunklod_files = \
 		tu-testbed/demos/chunklod/README	\
 		tu-testbed/demos/chunklod/TODO	\
 		tu-testbed/demos/chunklod/README-SDL.txt	\
-		tu-testbed/demos/chunklod/*.dll
-
-copperwine_data_files = \
-		tu-testbed/go_copperwine.bat	\
-		tu-testbed/demos/chunklod/copperwine_e1_d8.chu	\
-		tu-testbed/demos/chunklod/copperwine_8k_d7.tqt
-
-
-# Need a better way to do this.
-chunkdemo:
-	cd ..; zip tu-testbed/chunkdemo.zip \
-		tu-testbed/README	\
-		tu-testbed/Makefile \
-		tu-testbed/config \
-		tu-testbed/docs/LICENSE	\
-		tu-testbed/docs/MANIFESTO	\
-		tu-testbed/docs/README	\
-		tu-testbed/docs/STYLE	\
-		tu-testbed/demos/chunklod/chunkdemo.exe \
-		tu-testbed/demos/chunklod/heightfield_chunker.exe \
-		tu-testbed/demos/chunklod/heightfield_shader.exe \
-		tu-testbed/demos/chunklod/Makefile \
-		tu-testbed/demos/chunklod/*.cpp \
-		tu-testbed/demos/chunklod/*.h \
-		tu-testbed/demos/chunklod/README	\
-		tu-testbed/demos/chunklod/TODO	\
-		tu-testbed/demos/chunklod/crater.bt	\
-		tu-testbed/demos/chunklod/crater/crater.chu	\
-		tu-testbed/demos/chunklod/crater/crater.jpg	\
-		tu-testbed/demos/chunklod/test.jpg \
-		tu-testbed/demos/chunklod/testmap.jpg \
-		tu-testbed/demos/chunklod/tile*.jpg \
-		tu-testbed/demos/chunklod/maketest.bat \
-		tu-testbed/demos/chunklod/README-SDL.txt	\
 		tu-testbed/demos/chunklod/*.dll	\
-		tu-testbed/engine/Makefile \
-		tu-testbed/engine/*.cpp	\
-		tu-testbed/engine/*.h	\
-		tu-testbed/engine/TODO
+		tu-testbed/demos/chunklod/lua.exe
 
+crater_data_files = \
+		tu-testbed/demos/chunklod/crater/crater.chu	\
+		tu-testbed/demos/chunklod/crater/crater.jpg
 
-copperwine_demo.zip:
-	cd ..; zip tu-testbed/copperwine_demo.zip	\
-		$(basic_files) $(engine_files) $(chunklod_files) $(copperwine_data_files)
-
+chunkdemo.zip:
+	cd ..; zip tu-testbed/chunkdemo.zip \
+		$(basic_files) $(engine_files) $(chunklod_files) $(crater_data_files)
 
 bspdemo.zip:
 	cd ..; zip tu-testbed/bspdemo.zip \
