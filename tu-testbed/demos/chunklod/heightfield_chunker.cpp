@@ -5,13 +5,14 @@
 
 // Program to take heightfield input and generate a chunked-lod
 // structure as output.  Uses quadtree decomposition, with a
-// Lindstrom-Koller-esque decimation algorithm used to decimate
+// Lindstrom-Koller-ROAM-esque decimation algorithm used to decimate
 // the individual chunks.
 
 
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits.h>
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
@@ -140,7 +141,7 @@ int	wrapped_main(int argc, char* argv[])
 				// Set the max geometric error.
 				arg++;
 				if (arg < argc) {
-					max_geometric_error = atof(argv[ arg ]);
+					max_geometric_error = (float) atof(argv[ arg ]);
 
 				} else {
 					printf("error: -e option must be followed by a value for the maximum geometric error\n");
@@ -153,7 +154,7 @@ int	wrapped_main(int argc, char* argv[])
 				// Set the horizontal spacing.
 				arg++;
 				if (arg < argc) {
-					spacing = atof(argv[ arg ]);
+					spacing = (float) atof(argv[ arg ]);
 
 				} else {
 					printf("error: -s option must be followed by a value for the horizontal grid spacing\n");
@@ -166,7 +167,7 @@ int	wrapped_main(int argc, char* argv[])
 				// Set the input vertical scale.
 				arg++;
 				if (arg < argc) {
-					input_vertical_scale = atof(argv[arg]);
+					input_vertical_scale = (float) atof(argv[arg]);
 				}
 				else {
 					printf("error: -v option must be followed by a value for the input vertical scale\n");
@@ -449,6 +450,22 @@ struct heightfield {
 	}
 
 
+	int	minimum_edge_lod(int coord)
+	// Given an x or z coordinate, along which an edge runs, this
+	// function returns the lowest LOD level that the edge divides.
+	//
+	// (This is useful for determining how conservative we need to be
+	// with edge skirts.)
+	{
+		int	l1 = lowest_one(coord);
+		int	depth = log_size - l1 - 1;
+
+		if (depth < 0) depth = 0;
+
+		return depth;
+	}
+
+
 	int	load_bt(SDL_RWops* in, float input_vertical_scale)
 	// Load .BT format heightfield data from the given file and
 	// initialize heightfield.
@@ -514,7 +531,7 @@ struct heightfield {
 			printf("Warning: non-square data; will extend to make it square\n");
 		}
 
-		size = fmax(wsize, hsize);
+		size = imax(wsize, hsize);
 
 		// Compute the log_size and make sure the size is 2^N + 1
 		log_size = (int) (log2((float)size - 1) + 0.5);
@@ -532,7 +549,7 @@ struct heightfield {
 			size = (1 << log_size) + 1;
 		}
 
-		sample_spacing = fabs(right - left) / (size - 1);
+		sample_spacing = (float) (fabs(right - left) / (double) (size - 1));
 		printf("sample_spacing = %f\n", sample_spacing);//xxxxxxx
 
 		// Allocate the storage.
@@ -552,7 +569,7 @@ struct heightfield {
 				} else if (sample_size == 2) {
 					y = SDL_ReadLE16(in);
 				} else if (sample_size == 4) {
-					y = SDL_ReadLE32(in);
+					y = (float) SDL_ReadLE32(in);
 				}
 				height(i, size - 1 - j) = frnd(y * input_vertical_scale / vertical_scale);
 				m_level->get(size - 1 - j, i >> 1) = 255;	// swap height/width
@@ -682,7 +699,7 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 
 	// Write a .chu header for the output file.
 	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
-	SDL_WriteLE16(out, 6);	// file format version.
+	SDL_WriteLE16(out, 7);	// file format version.
 	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
 	WriteFloat32(out, vertical_scale);	// meters / unit of vertical measurement.
@@ -720,7 +737,7 @@ void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int r
 	if (error >= base_max_error) {
 		// Compute the mesh level above which this vertex
 		// needs to be included in LOD meshes.
-		int	activation_level = (int) floor(log2(fabs(error) / base_max_error) + 0.5);
+		int	activation_level = (int) floor(log2(fabsf(error) / base_max_error) + 0.5f);
 
 		// Force the base vert to at least this activation level.
 		hf.activate(bx, bz, activation_level);
@@ -930,18 +947,26 @@ int	check_propagation(heightfield& hf, int cx, int cz, int level)
 namespace mesh {
 	void	clear();
 	void	emit_vertex(heightfield& hf, int ax, int az);	// call this in strip order.
+	void	emit_previous_vertex();	// for ending a strip and starting another.
+	int	get_index_count();	// helpful for determining whether we need an extra degenerate for correct winding order.
+
+	// used for edge "skirt" vertices, which (can be) displaced below
+	// the corresponding heightfield verts.
+	void	emit_special_vertex(heightfield& hf, int ax, Sint16 y, int az);
+
 	int	lookup_index(int x, int z);
+
 	void	write(SDL_RWops* rw, heightfield& hf, int activation_level);
 
-	void	add_edge_strip_index(int edge_dir, int index);
-	void	add_edge_vertex_lo(int edge_dir, int x, int z);
-	void	add_edge_vertex_hi(int edge_dir, int hi_index, int x, int z);
+//	void	add_edge_strip_index(int edge_dir, int index);
+//	void	add_edge_vertex_lo(int edge_dir, int x, int z);
+//	void	add_edge_vertex_hi(int edge_dir, int hi_index, int x, int z);
 };
 
 
 void	gen_mesh(heightfield& hf, int level, int ax, int az, int rx, int rz, int lx, int lz);
 
-void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level, bool generate_ribbon);
+void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level);
 
 
 struct gen_state;
@@ -994,11 +1019,12 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	SDL_WriteLE32(out, hf.node_index(cx - size, cz));	// WEST
 	SDL_WriteLE32(out, hf.node_index(cx, cz + size));	// SOUTH
 
-	// Generate data for our edges.
-	generate_edge_data(out, hf, 0, cx + half_size, cz - half_size, cx + half_size, cz + half_size, level, level > 0);	// east
-	generate_edge_data(out, hf, 1, cx - half_size, cz - half_size, cx + half_size, cz - half_size, level, level > 0);	// north
-	generate_edge_data(out, hf, 2, cx - half_size, cz - half_size, cx - half_size, cz + half_size, level, level > 0);	// west
-	generate_edge_data(out, hf, 3, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level, level > 0);	// south
+	// Generate data for our edge skirts.  Go counterclockwise around
+	// the outside (ensures correct winding).
+	generate_edge_data(out, hf, 0, cx + half_size, cz + half_size, cx + half_size, cz - half_size, level);	// east
+	generate_edge_data(out, hf, 1, cx + half_size, cz - half_size, cx - half_size, cz - half_size, level);	// north
+	generate_edge_data(out, hf, 2, cx - half_size, cz - half_size, cx - half_size, cz + half_size, level);	// west
+	generate_edge_data(out, hf, 3, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level);	// south
 
 	// Chunk address.
 	assert(level < 256);
@@ -1134,14 +1160,13 @@ void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, in
 }
 
 
-void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level, bool generate_ribbon)
+void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level)
 // Write out the data for an edge of the chunk that was just generated.
 // (x0,z0) - (x1,z1) defines the extent of the edge in the heightfield.
 // level determines which vertices in the mesh are active.
 //
-// If generate_ribbon is true, then write a triangle list for the
-// ribbon which will stitch this edge with two matching higher-lod
-// neighbors.
+// Generates a "skirt" mesh which ensures that this mesh always covers
+// the space between our simplified edge and the full-LOD edge.
 {
 	assert(x0 <= x1);
 	assert(z0 <= z1);
@@ -1157,25 +1182,130 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 	// Vertices.
 	//
 	
-	// Count the active verts, and find the index of the midpoint vert.
-	int	verts = 0;
-	int	midpoint_index = 0;
+	// Scan the edge, looking for the minimum height at each vert,
+	// taking into account the full LOD mesh, plus all meshes up to
+	// two levels above our own.
+
+
+	array<int>	vert_minimums;
 
 	// Step along the edge.
-	int	dx = (x0 < x1) ? 1 : 0;
-	int	dz = (z0 < z1) ? 1 : 0;
-	int steps = imax(x1 - x0, z1 - z0) + 1;
-	int	halfway = steps >> 1;
-	for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz) {
-		if (i == halfway) {
-			midpoint_index = verts;
-		}
+	int	dx, dz, steps;
+	if (x0 < x1) {
+		dx = 1;
+		dz = 0;
+		steps = x1 - x0 + 1;
+	} else if (x0 > x1) {
+		dx = -1;
+		dz = 0;
+		steps = x0 - x1 + 1;
+	} else if (z0 < z1) {
+		dx = 0;
+		dz = 1;
+		steps = z1 - z0 + 1;
+	} else if (z0 > z1) {
+		dx = 0;
+		dz = -1;
+		steps = z0 - z1 + 1;
+	} else {
+		assert(0);	// edge must have non-zero length...
+	}
+
+	int	current_min = hf.height(x0, z0);
+	for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz)
+	{
+		current_min = imin(current_min, hf.height(x, z));
 
 		if (hf.get_level(x, z) >= level) {
-			verts++;	// This is an active vert.
+			// This is an active vert at this level of detail.
+
+			// Check height of lower LODs.
+			//
+			// NOTE: This is not actually necessary, provided we
+			// consistently stick to a distance-based error metric.
+			// For any visible edge, the chunk on the side of the edge
+			// closer to the viewpoint must be at the same or higher
+			// LOD than the chunk on the far side of the edge.
+			// Therefore, the region below the skirt of a higher LOD
+			// chunk can never be exposed by a lower LOD chunk. :)
+			//
+			// **However** paging limitations or other trickery, such
+			// as missing chunks (adaptive refinement) can cause this
+			// situation to happen.  Solution: conservatively check
+			// the minimum edge height of lower LODs.  Possibly do
+			// this to a limited extent -- for example include only up
+			// to say 3 lods lower than our current level.  Then at
+			// run-time, we can safely allow up to 2 levels of
+			// difference in the LOD of neighboring chunks (which is
+			// quite a bit).
+			//
+			// If we always check the minimum possible LOD at the
+			// edge, then we can handle totally unrestricted tree
+			// activations, but at the cost of excess fill rate for
+			// possibly big skirts below some chunks.
+
+			int	major_coord = x0;
+			if (dz == 0) {
+				major_coord = z0;
+			}
+			int	minimum_edge_lod = hf.minimum_edge_lod(major_coord);	// lod of the least-detailed chunk bordering this edge.
+
+			for (int lod = level; lod >= minimum_edge_lod - 1 && lod >= 0; lod--)
+			{
+				Sint16	lod_height = get_height_at_LOD(hf, lod, x, z);
+				current_min = imin(current_min, lod_height);
+			}
+
+			// Remember the minimum height of the edge for this
+			// segment.
+			
+			if (current_min > -32768) {
+				current_min -= 1;	// be slightly conservative here.
+			}
+			vert_minimums.push_back(current_min);
+			current_min = hf.height(x, z);
 		}
 	}
 
+	// Generate a "skirt" which runs around our outside edges and
+	// makes sure we don't leave any visible cracks between our
+	// (simplified) edges and the true shape of the mesh along our
+	// edges.
+
+	mesh::emit_previous_vertex();	// end the previous strip; starting a new one.
+	if ((mesh::get_index_count() & 1) == 0) {
+		// even number of verts, which means current winding order
+		// will be backwards, after we add the degenerate to start the
+		// strip.  Emit an extra degenerate vert to restore the normal
+		// winding order.
+		mesh::emit_previous_vertex();
+	}
+
+	int	vert_index = 0;
+	{for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz)
+	{
+		if (hf.get_level(x, z) >= level)
+		{
+			// Put down a vertex which is at the minimum of our
+			// previous and next segments.
+			int	min_height = vert_minimums[vert_index];
+			if (vert_minimums.size() > vert_index + 1)
+			{
+				min_height = imin(min_height, vert_minimums[vert_index + 1]);
+			}
+
+			mesh::emit_vertex(hf, x, z);
+			if (i == 0) {
+				mesh::emit_previous_vertex();	// starting a new strip.
+			}
+			mesh::emit_special_vertex(hf, x, min_height, z);
+
+			vert_index++;
+		}
+	}}
+	
+
+#if 0
 	if (generate_ribbon) {
 		// if we're not at the base level, generate a triangle
 		// mesh which fills the gaps between this edge and a
@@ -1233,6 +1363,7 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 			}
 		}}
 	}
+#endif // 0
 }
 
 
@@ -1243,15 +1374,33 @@ namespace mesh {
 //data:
 	struct vert_info {
 		Sint16	x, z;
+		Sint16	y;
+		bool	special;
 
-		vert_info() : x(-1), z(-1) {}
-		vert_info(int vx, int vz) : x(vx), z(vz) {}
+		// hash function, for hash<>.
+		static int	compute(const vert_info& data)
+		{
+			return data.x + (data.y << 5) * 101 + (data.z << 10) * 101 + data.special;
+		}
+
+
+		vert_info() : x(-1), z(-1), special(false), y(0) {}
+		vert_info(int vx, int vz) : x(vx), z(vz), special(false), y(0) {}
+
+		// A "special" vert is not on the heightfield, but has its own Y value.
+		vert_info(int vx, int vy, int vz)
+			: x(vx),
+			  z(vz),
+			  special(true),
+			  y(vy)
+		{}
+
 		bool	operator==(const vert_info& v) { return x == v.x && z == v.z; }
 	};
 
 	array<vert_info>	vertices;
 	array<int>	vertex_indices;
-	hash<vert_info, int>	index_table;	// to accelerate get_vertex_index()
+	hash<vert_info, int, vert_info>	index_table;	// to accelerate get_vertex_index()
 
 	array<int>	edge_strip[4];
 	array<vert_info>	edge_lo[4];
@@ -1278,6 +1427,18 @@ namespace mesh {
 		vert_info	v(x, z);
 		vertices.push_back(v);
 		index_table.add(v, index);
+
+		return index;
+	}
+
+	
+	int	special_vertex_index(int x, Sint16 y, int z)
+	// Add a "special" vertex; i.e. a vert that is not on the
+	// heightfield.
+	{
+		int	index = vertices.size();
+		vert_info	v(x, y, z);
+		vertices.push_back(v);
 
 		return index;
 	}
@@ -1328,7 +1489,11 @@ namespace mesh {
 		Sint16	x, y, z;
 
 		x = (int) floor(((v.x * hf.sample_spacing - box_center.get_x()) * compress_factor.get_x()) + 0.5);
-		y = hf.height(v.x, v.z);
+		if (v.special) {
+			y = v.y;
+		} else {
+			y = hf.height(v.x, v.z);
+		}
 		z = (int) floor(((v.z * hf.sample_spacing - box_center.get_z()) * compress_factor.get_z()) + 0.5);
 
 		SDL_WriteLE16(rw, x);
@@ -1336,7 +1501,12 @@ namespace mesh {
 		SDL_WriteLE16(rw, z);
 
 		// Morph info.  Should work out to 0 if the vert is not a morph vert.
-		Sint16	lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
+		Sint16	lerped_height;
+		if (v.special) {
+			lerped_height = y;	// special verts don't morph.
+		} else {
+			lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
+		}
 		int	morph_delta = (lerped_height - hf.height(v.x, v.z));
 		SDL_WriteLE16(rw, (Sint16) morph_delta);
 		assert(morph_delta == (Sint16) morph_delta);	// Watch out for overflow.
@@ -1411,6 +1581,7 @@ namespace mesh {
 			SDL_WriteLE32(rw, tris);
 		}
 
+#if 0
 		//
 		// Output our edge data.
 		//
@@ -1442,6 +1613,7 @@ namespace mesh {
 				}}
 			}}
 		}
+#endif // 0
 
 		// Go back and write the size of the chunk we just wrote.
 		int	current_filepos = SDL_RWtell(rw);
@@ -1452,14 +1624,9 @@ namespace mesh {
 	}
 
 
-	void	emit_vertex(heightfield& hf, int x, int z)
-	// Call this in strip order.  Inserts the given vert into the current strip.
+	void	update_bounds(heightfield& hf, const vec3& v, Sint16 y)
+	// Update our bounding box given the specified newly added vertex.
 	{
-		int	index = get_vertex_index(x, z);
-		vertex_indices.push_back(index);
-
-		// Check coordinates and update bounding box.
-		vec3	v(x * hf.sample_spacing, hf.height(x, z) * hf.vertical_scale, z * hf.sample_spacing);
 		for (int i = 0; i < 3; i++) {
 			if (v.get(i) < min.get(i)) {
 				min.set(i, v.get(i));
@@ -1470,7 +1637,6 @@ namespace mesh {
 		}
 
 		// Update min/max y.
-		Sint16	y = hf.height(x, z);
 		if (y < min_y) {
 			min_y = y;
 		}
@@ -1489,6 +1655,52 @@ namespace mesh {
 		}
 	}
 
+
+	void	emit_vertex(heightfield& hf, int x, int z)
+	// Call this in strip order.  Inserts the given vert into the current strip.
+	{
+		int	index = get_vertex_index(x, z);
+		vertex_indices.push_back(index);
+
+		// Check coordinates and update bounding box.
+		Sint16	y = hf.height(x, z);
+		vec3	v(x * hf.sample_spacing, y * hf.vertical_scale, z * hf.sample_spacing);
+		update_bounds(hf, v, y);
+	}
+
+
+	void	emit_special_vertex(heightfield& hf, int x, Sint16 y, int z)
+	// Emit a vertex that's not on the heightfield (and doesn't have vertex sharing).
+	{
+		int	index = special_vertex_index(x, y, z);
+		vertex_indices.push_back(index);
+
+		// Check coordinates and update bounding box.
+		vec3	v(x * hf.sample_spacing, y * hf.vertical_scale, z * hf.sample_spacing);
+		update_bounds(hf, v, y);
+	}
+
+
+	void	emit_previous_vertex()
+	// Emit the last vertex index again.  This creates a degenerate
+	// triangle, useful for ending a strip and starting a new strip
+	// elsewhere.
+	{
+		assert(vertex_indices.size() > 0);
+		int	last_index = vertex_indices[vertex_indices.size() - 1];
+		vertex_indices.push_back(last_index);
+	}
+
+
+	int	get_index_count()
+	// Return the current count of strip indices.  This is helpful for
+	// determining whether we need an extra degenerate triangle to get
+	// the correct winding order for a new strip.
+	{
+		return vertex_indices.size();
+	}
+
+#if 0
 	void	add_edge_strip_index(int edge_dir, int index)
 	// Add a vertex to the edge strip which joins this chunk to
 	// two neighboring higher-LOD chunks.
@@ -1512,5 +1724,6 @@ namespace mesh {
 		assert(hi_index >= 0 && hi_index < 2);
 		edge_hi[edge_dir][hi_index].push_back(vert_info(x, z));
 	}
+#endif // 0
 };
 

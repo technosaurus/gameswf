@@ -137,7 +137,7 @@ struct lod_chunk;
 
 // Vertex/mesh data for a chunk.  Can get paged in/out on demand.
 struct lod_chunk_data {
-	lod_edge	m_edge[4];	// edge mesh info.
+//	lod_edge	m_edge[4];	// edge mesh info.
 	vertex_info	m_verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
 
 	//	lod_chunk_data* m_next_data;
@@ -149,15 +149,15 @@ struct lod_chunk_data {
 		// Load the main chunk data.
 		m_verts.read(in);
 
-		// Read the edge data.
-		{for (int i = 0; i < 4; i++) {
-			m_edge[i].read(in);
-		}}
+//		// Read the edge data.
+//		{for (int i = 0; i < 4; i++) {
+//			m_edge[i].read(in);
+//		}}
 	}
 
 	int	render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
 				   const vec3& box_center, const vec3& box_extent);
-	int	render_edge(const lod_chunk& chunk, direction dir, render_options opt, const vec3& box_center, const vec3& box_extent);
+//	int	render_edge(const lod_chunk& chunk, direction dir, render_options opt, const vec3& box_center, const vec3& box_extent);
 };
 
 
@@ -221,13 +221,13 @@ struct lod_chunk {
 
 	void	compute_bounding_box(const lod_chunk_tree& tree, vec3* box_center, vec3* box_extent)
 	{
-		box_center->y() = (m_max_y + m_min_y) * 0.5 * tree.m_vertical_scale;
-		box_extent->y() = (m_max_y - m_min_y) * 0.5 * tree.m_vertical_scale;
+		box_center->y() = (m_max_y + m_min_y) * 0.5f * tree.m_vertical_scale;
+		box_extent->y() = (m_max_y - m_min_y) * 0.5f * tree.m_vertical_scale;
 
-		box_center->x() = (m_x + 0.5) * (1 << m_level) * tree.m_base_chunk_dimension;
-		box_center->z() = (m_z + 0.5) * (1 << m_level) * tree.m_base_chunk_dimension;
+		box_center->x() = (m_x + 0.5f) * (1 << m_level) * tree.m_base_chunk_dimension;
+		box_center->z() = (m_z + 0.5f) * (1 << m_level) * tree.m_base_chunk_dimension;
 
-		box_extent->x() = (1 << m_level) * tree.m_base_chunk_dimension * 0.5;
+		box_extent->x() = (1 << m_level) * tree.m_base_chunk_dimension * 0.5f;
 		box_extent->z() = box_extent->get_x();
 	}
 };
@@ -255,7 +255,7 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 	const float	offsetx = box_center.get_x();
 	const float	offsetz = box_center.get_z();
 
-	const float	one_minus_f = 1.0 - f;
+	const float	one_minus_f = 1.0f - f;
 
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
 		const vertex_info::vertex&	v = morph_verts.vertices[i];
@@ -320,16 +320,19 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 		triangle_count += m_verts.triangle_count;
 	}
 
+#if 0
 	if (opt.show_edges) {
 		for (int i = 0; i < 4; i++) {
 			triangle_count += render_edge(chunk, (direction) i, opt, box_center, box_extent);
 		}
 	}
+#endif // 0
 
 	return triangle_count;
 }
 
 
+#if 0
 int	lod_chunk_data::render_edge(const lod_chunk& chunk, direction dir, render_options opt, const vec3& box_center, const vec3& box_extent)
 // Draw the ribbon connecting the edge of this chunk to the edge(s) of
 // the neighboring chunk(s) in the specified direction.  Returns the
@@ -464,6 +467,8 @@ int	lod_chunk_data::render_edge(const lod_chunk& chunk, direction dir, render_op
 	return triangle_count;
 }
 
+#endif // 0
+
 
 static void	draw_box(const vec3& min, const vec3& max)
 // Draw the specified axis-aligned box.
@@ -573,6 +578,8 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 		if ((lod & 0xFF00) == 0) {
 			// Root chunk -- make sure we have valid morph value.
 			lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
+			// tbp: and that we also have something to display :)
+			request_data();
 		}
 	}
 }
@@ -710,7 +717,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 		if (opt.show_box) {
 			// draw bounding box.
 			glDisable(GL_TEXTURE_2D);
-			float	f = (lod & 255) / 255.0;	//xxx
+			float	f = (lod & 255) / 255.0f;	//xxx
 			glColor3f(f, 1 - f, 0);
 			draw_box(box_center - box_extent, box_center + box_extent);
 		}
@@ -819,7 +826,7 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	}
 
 	int	format_version = SDL_ReadLE16(src);
-	assert_else(format_version == 6) {
+	assert_else(format_version == 7) {
 		throw "Input format has non-matching version number";
 	}
 
@@ -899,7 +906,7 @@ void	lod_chunk_tree::set_parameters(float max_pixel_error, float screen_width_pi
 // vertex error of no more than max_pixel_error (at the center of the
 // viewport) when rendered.
 {
-	const float	tan_half_FOV = tan(0.5 * horizontal_FOV_degrees * M_PI / 180.0f);
+	const float	tan_half_FOV = tanf(0.5f * horizontal_FOV_degrees * (float) M_PI / 180.0f);
 
 	// distance_LODmax is the distance below which we need to be
 	// at the maximum LOD.  It's used in compute_lod(), which is
@@ -915,14 +922,14 @@ Uint16	lod_chunk_tree::compute_lod(const vec3& center, const vec3& extent, const
 // distance and the chunk tree parameters.
 {
 	vec3	disp = viewpoint - center;
-	disp.set(0, fmax(0, fabs(disp.get(0)) - extent.get(0)));
-	disp.set(1, fmax(0, fabs(disp.get(1)) - extent.get(1)));
-	disp.set(2, fmax(0, fabs(disp.get(2)) - extent.get(2)));
+	disp.set(0, fmax(0, fabsf(disp.get(0)) - extent.get(0)));
+	disp.set(1, fmax(0, fabsf(disp.get(1)) - extent.get(1)));
+	disp.set(2, fmax(0, fabsf(disp.get(2)) - extent.get(2)));
 
 //	disp.set(1, 0);	//xxxxxxx just do calc in 2D, for debugging
 
 	float	d = 0;
-	d = sqrt(disp * disp);
+	d = sqrtf(disp * disp);
 
 	return iclamp(((m_tree_depth << 8) - 1) - int(log2(fmax(1, d / m_distance_LODmax)) * 256), 0, 0x0FFFF);
 }
