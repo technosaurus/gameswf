@@ -185,6 +185,14 @@ class array {
 public:
 	array() : m_buffer(0), m_size(0), m_buffer_size(0) {}
 	array(int size_hint) : m_buffer(0), m_size(0), m_buffer_size(0) { resize(size_hint); }
+	array(const array<T>& a)
+		:
+		m_buffer(0),
+		m_size(0),
+		m_buffer_size(0)
+	{
+		operator=(a);
+	}
 	~array() {
 		clear();
 	}

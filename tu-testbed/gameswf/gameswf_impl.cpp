@@ -562,6 +562,7 @@ namespace gameswf
 			if (m_jpeg_in)
 			{
 				delete m_jpeg_in;
+				m_jpeg_in = NULL;
 			}
 
 			if (original_in)
