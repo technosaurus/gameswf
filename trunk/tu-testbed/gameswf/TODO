@@ -75,10 +75,6 @@ General
 * text entry?  No keyboard on consoles, text input is very platform
   specific; low priority for now.
 
-* dynamic text fields -- necessary for most games, console or not.
-  Given direct text-rendering calls, host app can hack in text entry,
-  so don't prioritize this yet.
-
 * named elements APIs, for easier UI programming in the host app
 
 * ActionScript needs to basically work

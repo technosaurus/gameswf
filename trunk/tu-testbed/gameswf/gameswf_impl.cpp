@@ -1589,6 +1589,10 @@ namespace gameswf
 		{
 			f->read_font_info(in);
 		}
+		else
+		{
+			log_error("define_font_info_loader: can't find font w/ id %d\n", font_id);
+		}
 	}
 
 
