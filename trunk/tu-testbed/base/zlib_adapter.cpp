@@ -139,6 +139,23 @@ namespace zlib_adapter
 
 			return bytes_read;
 		}
+
+		void	rewind_unused_bytes()
+		// If we have unused bytes in our input buffer, rewind
+		// to before they started.
+		{
+			if (m_zstream.avail_in > 0)
+			{
+				int	pos = m_in->get_position();
+				int	rewound_pos = pos - m_zstream.avail_in;
+				assert(pos >= 0);
+				assert(pos >= m_initial_stream_pos);
+				assert(rewound_pos >= 0);
+				assert(rewound_pos >= m_initial_stream_pos);
+
+				m_in->set_position(rewound_pos);
+			}
+		}
 	};
 
 
@@ -247,6 +264,7 @@ namespace zlib_adapter
 	{
 		inflater_impl*	inf = (inflater_impl*) appdata;
 
+		inf->rewind_unused_bytes();
 		int	err = inflateEnd(&(inf->m_zstream));
 
 		delete inf;
