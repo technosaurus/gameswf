@@ -182,6 +182,7 @@ namespace gameswf
 		virtual bool	is_definition() const { return false; }
 		virtual bool	is_instance() const { return false; }
 		virtual character*	create_instance() { assert(0); return 0; }
+		virtual character*	get_definition() { return this; }
 
 		// An interface designed to be used by
 		// edit_text_character, or any other character that

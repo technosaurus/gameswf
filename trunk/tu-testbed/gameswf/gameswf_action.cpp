@@ -37,18 +37,18 @@ namespace gameswf
 				int	length = in->read_u16();
 				m_buffer.push_back(length & 0x0FF);
 				m_buffer.push_back((length >> 8) & 0x0FF);
-				IF_DEBUG(log_msg("action: 0x%02X[%d]", action_id, length));
+				IF_VERBOSE_ACTION(log_msg("action: 0x%02X[%d]", action_id, length));
 				for (int i = 0; i < length; i++)
 				{
 					unsigned char	b = in->read_u8();
 					m_buffer.push_back(b);
-					IF_DEBUG(log_msg(" 0x%02X", b));
+					IF_VERBOSE_ACTION(log_msg(" 0x%02X", b));
 				}
-				IF_DEBUG(log_msg("\n"));
+				IF_VERBOSE_ACTION(log_msg("\n"));
 			}
 			else
 			{
-				IF_DEBUG(log_msg("action: 0x%02X\n", action_id));
+				IF_VERBOSE_ACTION(log_msg("action: 0x%02X\n", action_id));
 			}
 		}
 	}
@@ -70,7 +70,7 @@ namespace gameswf
 			int	action_id = m_buffer[pc];
 			if ((action_id & 0x80) == 0)
 			{
-				IF_DEBUG(log_msg("aid = 0x%02x\n", action_id));
+				IF_VERBOSE_ACTION(log_msg("aid = 0x%02x\n", action_id));
 
 				// Simple action; no extra data.
 				switch (action_id)
@@ -137,13 +137,13 @@ namespace gameswf
 			}
 			else
 			{
-				IF_DEBUG(log_msg("aid = 0x%02x ", action_id));
+				IF_VERBOSE_ACTION(log_msg("aid = 0x%02x ", action_id));
 
 				// Action containing extra data.
 				int	length = m_buffer[pc + 1] | (m_buffer[pc + 2] << 8);
 				int	next_pc = pc + length + 3;
 
-				IF_DEBUG({for (int i = 0; i < imin(length, 8); i++) { log_msg("0x%02x ", m_buffer[pc + 3 + i]); } log_msg("\n"); });
+				IF_VERBOSE_ACTION({for (int i = 0; i < imin(length, 8); i++) { log_msg("0x%02x ", m_buffer[pc + 3 + i]); } log_msg("\n"); });
 				
 				switch (action_id)
 				{
@@ -162,7 +162,7 @@ namespace gameswf
 					// @@ TODO should call back into client app, probably...
 
 					// Print as text.
-					IF_DEBUG({
+					IF_VERBOSE_ACTION({
 						for (int i = 0; i < length; i++) { log_msg("%c", m_buffer[pc + 3 + i]); } log_msg("\n");
 					});
 

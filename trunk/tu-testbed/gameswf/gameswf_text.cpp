@@ -168,7 +168,7 @@ namespace gameswf
 			int	glyph_bits = in->read_u8();
 			int	advance_bits = in->read_u8();
 
-			IF_DEBUG(log_msg("begin text records\n"));
+			IF_VERBOSE_PARSE(log_msg("begin text records\n"));
 
 			text_style	style;
 			for (;;)
@@ -178,7 +178,7 @@ namespace gameswf
 				if (first_byte == 0)
 				{
 					// This is the end of the text records.
-					IF_DEBUG(log_msg("end text records\n"));
+					IF_VERBOSE_PARSE(log_msg("end text records\n"));
 					break;
 				}
 
@@ -192,7 +192,7 @@ namespace gameswf
 					bool	has_y_offset = (first_byte >> 1) & 1;
 					bool	has_x_offset = (first_byte >> 0) & 1;
 
-					IF_DEBUG(log_msg("text style change\n"));
+					IF_VERBOSE_PARSE(log_msg("text style change\n"));
 
 					if (has_font)
 					{
@@ -203,7 +203,7 @@ namespace gameswf
 							log_error("error: text style with undefined font; font_id = %d\n", font_id);
 						}
 
-						IF_DEBUG(log_msg("has_font: font id = %d\n", font_id));
+						IF_VERBOSE_PARSE(log_msg("has_font: font id = %d\n", font_id));
 					}
 					if (has_color)
 					{
@@ -216,13 +216,13 @@ namespace gameswf
 							assert(tag_type == 33);
 							style.m_color.read_rgba(in);
 						}
-						IF_DEBUG(log_msg("has_color\n"));
+						IF_VERBOSE_PARSE(log_msg("has_color\n"));
 					}
 					if (has_x_offset)
 					{
 						style.m_has_x_offset = true;
 						style.m_x_offset = in->read_s16();
-						IF_DEBUG(log_msg("has_x_offset = %g\n", style.m_x_offset));
+						IF_VERBOSE_PARSE(log_msg("has_x_offset = %g\n", style.m_x_offset));
 					}
 					else
 					{
@@ -233,7 +233,7 @@ namespace gameswf
 					{
 						style.m_has_y_offset = true;
 						style.m_y_offset = in->read_s16();
-						IF_DEBUG(log_msg("has_y_offset = %g\n", style.m_y_offset));
+						IF_VERBOSE_PARSE(log_msg("has_y_offset = %g\n", style.m_y_offset));
 					}
 					else
 					{
@@ -243,7 +243,7 @@ namespace gameswf
 					if (has_font)
 					{
 						style.m_text_height = in->read_u16();
-						IF_DEBUG(log_msg("text_height = %g\n", style.m_text_height));
+						IF_VERBOSE_PARSE(log_msg("text_height = %g\n", style.m_text_height));
 					}
 				}
 				else
@@ -254,7 +254,7 @@ namespace gameswf
 					m_text_glyph_records.back().m_style = style;
 					m_text_glyph_records.back().read(in, glyph_count, glyph_bits, advance_bits);
 
-					IF_DEBUG(log_msg("glyph_records: count = %d\n", glyph_count));
+					IF_VERBOSE_PARSE(log_msg("glyph_records: count = %d\n", glyph_count));
 				}
 			}
 		}
@@ -277,10 +277,10 @@ namespace gameswf
 		
 		text_character*	ch = new text_character;
 		ch->set_id(character_id);
-		IF_DEBUG(log_msg("text_character, id = %d\n", character_id));
+		IF_VERBOSE_PARSE(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
-		// IF_DEBUG(print some stuff);
+		// IF_VERBOSE_PARSE(print some stuff);
 
 		m->add_character(character_id, ch);
 	}
@@ -728,7 +728,7 @@ namespace gameswf
 
 		edit_text_character*	ch = new edit_text_character;
 		ch->set_id(character_id);
-		IF_DEBUG(log_msg("edit_text_char, id = %d\n", character_id));
+		IF_VERBOSE_PARSE(log_msg("edit_text_char, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);

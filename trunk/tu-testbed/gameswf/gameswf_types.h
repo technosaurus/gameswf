@@ -21,11 +21,14 @@
 #endif // not NDEBUG
 
 
-#define GAMESWF_VERBOSE
+namespace gameswf
+{
+	extern bool	s_verbose_action;
+	extern bool	s_verbose_parse;
+};
 
-#ifdef GAMESWF_VERBOSE
-#define IF_VERBOSE(exp) exp
-#endif // GAMESWF_VERBOSE
+#define IF_VERBOSE_ACTION(exp) if (gameswf::s_verbose_action) { exp; }
+#define IF_VERBOSE_PARSE(exp) if (gameswf::s_verbose_parse) { exp; }
 
 
 #define TWIPS_TO_PIXELS(x)	((x) / 20.f)

@@ -32,6 +32,22 @@
 
 namespace gameswf
 {
+	bool	s_verbose_action = false;
+	bool	s_verbose_parse = false;
+
+
+	void	set_verbose_action(bool verbose)
+	// Enable/disable log messages re: actions.
+	{
+		s_verbose_action = verbose;
+	}
+
+
+	void	set_verbose_parse(bool verbose)
+	// Enable/disable log messages re: parsing the movie.
+	{
+		s_verbose_parse = verbose;
+	}
 
 
 	// Keep a table of loader functions for the different tag types.
@@ -52,6 +68,14 @@ namespace gameswf
 	struct display_object_info : display_info
 	{
 		character*	m_character;
+		bool	m_dead;	// retain dead objects in the display list for a while; they may get revived.
+
+		display_object_info()
+			:
+			m_character(0),
+			m_dead(false)
+		{
+		}
 
 		static int compare(const void* _a, const void* _b)
 		// For qsort().
@@ -129,6 +153,33 @@ namespace gameswf
 	}
 
 
+	static void	kill_display_list(array<display_object_info>* display_list)
+	// Empty out the display list (by marking characters as dead).
+	// Dead characters may be revived later...
+	{
+		for (int i = 0; i < display_list->size(); i++)
+		{
+			(*display_list)[i].m_dead = true;
+		}
+	}
+
+
+	static void	clear_display_list(array<display_object_info>* display_list)
+	// Empty out the display list for real -- delete any dangling
+	// instances.
+	{
+		for (int i = 0; i < display_list->size(); i++)
+		{
+			character*	ch = (*display_list)[i].m_character;
+			if (ch->is_instance())
+			{
+				delete ch;
+			}
+		}
+
+		display_list->resize(0);
+	}
+
 
 	static void	add_display_object(array<display_object_info>* display_list,
 					   movie* root_movie,
@@ -140,18 +191,10 @@ namespace gameswf
 	{
 		assert(ch);
 
-		// If the character needs per-instance state, then
-		// create the instance here, and substitute it for the
-		// definition.
-		if (ch->is_definition())
-		{
-			ch = ch->create_instance();
-			ch->restart();
-		}
-
 		display_object_info	di;
 		di.m_movie = root_movie;
 		di.m_character = ch;
+		di.m_dead = false;
 		di.m_depth = depth;
 		di.m_color_transform = color_transform;
 		di.m_matrix = matrix;
@@ -161,13 +204,60 @@ namespace gameswf
 
 		int	index = find_display_index(*display_list, di.m_depth);
 
-		// Shift existing objects up.
-		display_list->resize(display_list->size() + 1);
-		if (display_list->size() - 1 > index)
+		if (index < display_list->size()
+		    && (*display_list)[index].m_depth == di.m_depth)
 		{
-			memmove(&(*display_list)[index + 1],
-				&(*display_list)[index],
-				sizeof((*display_list)[0]) * (display_list->size() - 1 - index));
+			// Reuse existing slot.
+			if ((*display_list)[index].m_dead == false)
+			{
+				IF_DEBUG(log_msg("warning: add_display_object is displacing a live object at depth %d\n", depth));
+			}
+			
+			// If we're replacing an instance of the same
+			// definition, then revive the existing
+			// instance instead of creating a new one.
+			if (ch->is_definition()
+			    && (*display_list)[index].m_character->is_instance()
+			    && ch == (*display_list)[index].m_character->get_definition())
+			{
+				// Reuse!  And don't restart.
+				di.m_character = (*display_list)[index].m_character;
+			}
+			else
+			{
+				// Delete the old instance.
+				if ((*display_list)[index].m_character->is_instance())
+				{
+					delete (*display_list)[index].m_character;
+				}
+
+				// need to create a new instance.
+				if (ch->is_definition())
+				{
+					di.m_character = ch->create_instance();
+					di.m_character->restart();
+				}
+			}
+		}
+		else
+		{
+			if (ch->is_definition())
+			{
+				// need to create a new instance.
+				di.m_character = ch->create_instance();
+				di.m_character->restart();
+			}
+
+			// Create a new slot.
+
+			// Shift existing objects up.
+			display_list->resize(display_list->size() + 1);
+			if (display_list->size() - 1 > index)
+			{
+				memmove(&(*display_list)[index + 1],
+					&(*display_list)[index],
+					sizeof((*display_list)[0]) * (display_list->size() - 1 - index));
+			}
 		}
 
 		// Put new info in the opened slot.
@@ -270,6 +360,7 @@ namespace gameswf
 		}
 
 		// Put the new character in its place.
+
 		assert(ch);
 
 		// If the character needs per-instance state, then
@@ -317,6 +408,7 @@ namespace gameswf
 		// Removing the character at (*display_list)[index].
 		display_object_info&	di = (*display_list)[index];
 
+#if 0
 		// If the character is an instance, then delete it.
 		if (di.m_character->is_instance())
 		{
@@ -332,6 +424,10 @@ namespace gameswf
 				sizeof((*display_list)[0]) * (size - 1 - index));
 		}
 		display_list->resize(size - 1);
+#endif // 0
+
+		// Mark the object as dead.
+		di.m_dead = true;
 	}
 
 
@@ -465,6 +561,8 @@ namespace gameswf
 
 		virtual ~movie_impl()
 		{
+			clear_display_list(&m_display_list);
+
 			if (m_jpeg_in)
 			{
 				delete m_jpeg_in;
@@ -758,7 +856,7 @@ namespace gameswf
 
 				if (m_current_frame == 0)
 				{
-					m_display_list.clear();
+					gameswf::kill_display_list(&m_display_list);
 					m_action_list.clear();
 				}
 
@@ -776,7 +874,11 @@ namespace gameswf
 				// Advance everything in the display list.
 				for (int i = 0; i < m_display_list.size(); i++)
 				{
-					m_display_list[i].m_character->advance(frame_time, this, m_display_list[i].m_matrix);
+					if (m_display_list[i].m_dead == false)
+					{
+						m_display_list[i].m_character->
+							advance(frame_time, this, m_display_list[i].m_matrix);
+					}
 				}
 
 				// Perform button actions
@@ -847,7 +949,7 @@ namespace gameswf
 		void	goto_frame(int target_frame_number)
 		// Set the movie state at the specified frame number.
 		{
-			IF_DEBUG(log_msg("goto_frame(%d)\n", target_frame_number));//xxxxx
+			IF_DEBUG(log_msg("movie_impl::goto_frame(%d)\n", target_frame_number));//xxxxx
 
 			if (target_frame_number != m_current_frame
 			    && target_frame_number >= 0
@@ -860,7 +962,7 @@ namespace gameswf
 				}
 				m_next_frame = target_frame_number;
 
-				m_display_list.clear();
+				gameswf::kill_display_list(&m_display_list);
 				for (int f = 0; f < target_frame_number; f++)
 				{
 					execute_frame_tags(f, true);
@@ -886,10 +988,13 @@ namespace gameswf
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	di = m_display_list[i];
-				di.m_display_number = m_total_display_count;
-				di.m_character->display(di);
+				if (di.m_dead == false)
+				{
+					di.m_display_number = m_total_display_count;
+					di.m_character->display(di);
 
-//				printf("display %s\n", typeid(*(di.m_character)).name());
+//					printf("display %s\n", typeid(*(di.m_character)).name());
+				}
 			}
 
 			gameswf::render::end_display();
@@ -912,7 +1017,7 @@ namespace gameswf
 				return;
 			}
 
-			IF_DEBUG(log_msg("version = %d, file_length = %d\n", m_version, file_length));
+			IF_VERBOSE_PARSE(log_msg("version = %d, file_length = %d\n", m_version, file_length));
 
 			stream	str(in);
 
@@ -928,14 +1033,14 @@ namespace gameswf
 
 			m_playlist.resize(m_frame_count);
 
-			IF_DEBUG(m_frame_size.print());
-			IF_DEBUG(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
+			IF_VERBOSE_PARSE(m_frame_size.print());
+			IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
 
 			while ((Uint32) str.get_position() < file_length)
 			{
 				int	tag_type = str.open_tag();
 				loader_function	lf = NULL;
-				log_msg("tag_type = %d\n", tag_type);//xxxxxx
+				IF_VERBOSE_PARSE(log_msg("tag_type = %d\n", tag_type));
 				if (tag_type == 1)
 				{
 					// show frame tag -- advance to the next frame.
@@ -949,8 +1054,8 @@ namespace gameswf
 
 				} else {
 					// no tag loader for this tag type.
-					IF_DEBUG(log_msg("*** no tag loader for type %d\n", tag_type));
-					IF_DEBUG(dump_tag_bytes(&str));
+					IF_VERBOSE_PARSE(log_msg("*** no tag loader for type %d\n", tag_type));
+					IF_VERBOSE_PARSE(dump_tag_bytes(&str));
 				}
 
 				str.close_tag();
@@ -1247,7 +1352,7 @@ namespace gameswf
 		
 		Uint16	character_id = in->read_u16();
 
-		IF_DEBUG(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+		IF_VERBOSE_PARSE(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
 		ch->set_id(character_id);
@@ -1321,7 +1426,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		IF_DEBUG(log_msg("define_bits_jpeg3_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+		IF_VERBOSE_PARSE(log_msg("define_bits_jpeg3_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		Uint32	jpeg_size = in->read_u32();
 		Uint32	alpha_position = in->get_position() + jpeg_size;
@@ -1362,7 +1467,7 @@ namespace gameswf
 		Uint16	width = in->read_u16();
 		Uint16	height = in->read_u16();
 
-		IF_DEBUG(log_msg("dbl2l: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
+		IF_VERBOSE_PARSE(log_msg("dbl2l: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
 				tag_type,
 				character_id,
 				bitmap_format,
@@ -1590,10 +1695,8 @@ namespace gameswf
 		ch->set_id(character_id);
 		ch->read(in, tag_type, true, m);
 
-		IF_DEBUG(log_msg("shape_loader: id = %d, rect ", character_id);
-			 ch->get_bound().print());
-//		IF_DEBUG(printf("shape_loader: fill style ct = %d, line style ct = %d, path ct = %d\n",
-//				ch->m_fill_styles.size(), ch->m_line_styles.size(), ch->m_paths.size()));
+		IF_VERBOSE_PARSE(log_msg("shape_loader: id = %d, rect ", character_id);
+				 ch->get_bound().print());
 
 		m->add_character(character_id, ch);
 	}
@@ -1613,8 +1716,6 @@ namespace gameswf
 		
 		font*	f = new font;
 		f->read(in, tag_type, m);
-
-//		IF_DEBUG(0);
 
 		m->add_font(font_id, f);
 
@@ -1729,7 +1830,7 @@ namespace gameswf
 				if (has_clip_bracket) {
 					int	clip_depth = in->read_u16();
 					UNUSED(clip_depth);
-					IF_DEBUG(log_msg("HAS CLIP BRACKET!\n"));
+					IF_VERBOSE_PARSE(log_msg("HAS CLIP BRACKET!\n"));
 				}
 				if (has_name) {
 					m_name = in->read_string();
@@ -1751,9 +1852,9 @@ namespace gameswf
 					m_place_type = PLACE;
 				}
 
-				IF_DEBUG(log_msg("po2r: name = %s\n", m_name ? m_name : "<null>");
+				IF_VERBOSE_PARSE({log_msg("po2r: name = %s\n", m_name ? m_name : "<null>");
 					 log_msg("po2r: char id = %d, mat:\n", m_character_id);
-					 m_matrix.print();
+					 m_matrix.print();}
 					);
 			}
 		}
@@ -1872,7 +1973,7 @@ namespace gameswf
 			m_frame_count = in->read_u16();
 			m_playlist.resize(m_frame_count);	// need a playlist for each frame
 
-			IF_DEBUG(log_msg("sprite: frames = %d\n", m_frame_count));
+			IF_VERBOSE_PARSE(log_msg("sprite: frames = %d\n", m_frame_count));
 
 			m_current_frame = 0;
 
@@ -1894,7 +1995,7 @@ namespace gameswf
 				else
 				{
 					// no tag loader for this tag type.
-					IF_DEBUG(log_msg("*** no tag loader for type %d\n", tag_type));
+					IF_VERBOSE_PARSE(log_msg("*** no tag loader for type %d\n", tag_type));
 				}
 
 				in->close_tag();
@@ -1915,7 +2016,10 @@ namespace gameswf
 		float	m_time_remainder;
 		bool	m_update_frame;
 
-		virtual ~sprite_instance() {}
+		virtual ~sprite_instance()
+		{
+			clear_display_list(&m_display_list);
+		}
 
 		sprite_instance(sprite_definition* def)
 			:
@@ -1931,6 +2035,7 @@ namespace gameswf
 		}
 
 		bool	is_instance() const { return true; }
+		character*	get_definition() { return m_def; }
 
 		int	get_width() { assert(0); return 0; }
 		int	get_height() { assert(0); return 0; }
@@ -1939,7 +2044,7 @@ namespace gameswf
 		int	get_frame_count() const { return m_def->m_frame_count; }
 
 		void	set_play_state(play_state s)
-		// Stop or play the movie.
+		// Stop or play the sprite.
 		{
 			if (m_play_state != s)
 			{
@@ -1980,7 +2085,7 @@ namespace gameswf
 
 				if (m_current_frame == 0)
 				{
-					m_display_list.clear();
+					gameswf::kill_display_list(&m_display_list);
 					m_action_list.clear();
 				}
 
@@ -1997,9 +2102,12 @@ namespace gameswf
 				// Advance everything in the display list.
 				for (int i = 0; i < m_display_list.size(); i++)
 				{
-					matrix	sub_matrix = mat;
-					sub_matrix.concatenate(m_display_list[i].m_matrix);
-					m_display_list[i].m_character->advance(frame_time, this, sub_matrix);
+					if (m_display_list[i].m_dead == false)
+					{
+						matrix	sub_matrix = mat;
+						sub_matrix.concatenate(m_display_list[i].m_matrix);
+						m_display_list[i].m_character->advance(frame_time, this, sub_matrix);
+					}
 				}
 
 				// Perform button actions
@@ -2068,7 +2176,7 @@ namespace gameswf
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
 		{
-			IF_DEBUG(log_msg("goto_frame(%d)\n", target_frame_number));//xxxxx
+			IF_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
 
 			if (target_frame_number != m_current_frame
 			    && target_frame_number >= 0
@@ -2081,7 +2189,7 @@ namespace gameswf
 				}
 				m_next_frame = target_frame_number;
 
-				m_display_list.clear();
+				gameswf::kill_display_list(&m_display_list);
 				for (int f = 0; f < target_frame_number; f++)
 				{
 					execute_frame_tags(f, true);
@@ -2101,27 +2209,17 @@ namespace gameswf
 
 		void	display(const display_info& di)
 		{
-			// Show the character id at each depth.
-			IF_DEBUG(
-			{
-				log_msg("s %2d | ", get_id());
-				for (int i = 1; i < 10; i++)
-				{
-					int	id = get_id_at_depth(i);
-					if (id == -1) { log_msg("%d:     ", i); }
-					else { log_msg("%d: %2d  ", i, id); }
-				}
-				log_msg("\n");
-			});
-
 			// Show the display list.
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	dobj = m_display_list[i];
 
-				display_info	sub_di = di;
-				sub_di.concatenate(dobj);
-				dobj.m_character->display(sub_di);
+				if (dobj.m_dead == false)
+				{
+					display_info	sub_di = di;
+					sub_di.concatenate(dobj);
+					dobj.m_character->display(sub_di);
+				}
 			}
 		}
 
@@ -2242,7 +2340,7 @@ namespace gameswf
 		ch->set_id(character_id);
 		ch->read(in);
 
-		IF_DEBUG(log_msg("sprite: char id = %d\n", character_id));
+		IF_VERBOSE_PARSE(log_msg("sprite: char id = %d\n", character_id));
 
 		m->add_character(character_id, ch);
 	}
@@ -2344,7 +2442,7 @@ namespace gameswf
 
 	void	do_action_loader(stream* in, int tag_type, movie* m)
 	{
-		IF_DEBUG(log_msg("tag %d: do_action_loader\n", tag_type));
+		IF_VERBOSE_PARSE(log_msg("tag %d: do_action_loader\n", tag_type));
 
 		assert(in);
 		assert(tag_type == 12);
@@ -2369,14 +2467,14 @@ namespace gameswf
 
 		int	count = in->read_u16();
 
-		IF_DEBUG(log_msg("export: count = %d\n", count));
+		IF_VERBOSE_PARSE(log_msg("export: count = %d\n", count));
 
 		// Read the exports.
 		for (int i = 0; i < count; i++)
 		{
 			Uint16	id = in->read_u16();
 			char*	symbol_name = in->read_string();
-			IF_DEBUG(log_msg("export: id = %d, name = %s\n", id, symbol_name));
+			IF_VERBOSE_PARSE(log_msg("export: id = %d, name = %s\n", id, symbol_name));
 
 			if (font* f = m->get_font(id))
 			{

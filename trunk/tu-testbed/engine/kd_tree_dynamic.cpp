@@ -16,9 +16,9 @@ static const float	EPSILON = 1e-6f;
 static const int	LEAF_FACE_COUNT = 6;
 
 #define TRINARY_KD_TREE
-// #define CARVE_OFF_SPACE
-// #define ADHOC_METRIC
-#define MACDONALD_AND_BOOTH_METRIC
+//#define CARVE_OFF_SPACE
+#define ADHOC_METRIC
+//#define MACDONALD_AND_BOOTH_METRIC
 
 
 kd_tree_dynamic::kd_tree_dynamic(

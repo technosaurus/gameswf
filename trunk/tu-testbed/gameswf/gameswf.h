@@ -101,6 +101,10 @@ namespace gameswf
 	// Supply a function pointer to receive log & error messages.
 	void	set_log_callback(void (*callback)(bool error, const char* message));
 
+	// Control verbosity of specific categories.
+	void	set_verbose_action(bool verbose);
+	void	set_verbose_parse(bool verbose);
+
 
 	//
 	// Render control.
