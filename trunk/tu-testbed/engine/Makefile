@@ -12,13 +12,21 @@ endif
 SDL_INCLUDE := SDL
 LUA_INCLUDE := $(TOP)/../lua-4.0/include
 
-INCLUDE_PATHS := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I$(ENGINE_INCLUDE)
+INCLUDE_PATHS := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I$(ENGINE_INCLUDE) -I$(LIBPNG_INCLUDE) -I$(ZLIB_INCLUDE) -I$(JPEGLIB_INCLUDE)
 
 CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 # -lstdc++
 
-SRCS := config.cpp geometry.cpp cull.cpp bsp.cpp ogl.cpp
+# Source files.
+SRCS := \
+	config.cpp \
+	geometry.cpp \
+	cull.cpp \
+	bsp.cpp \
+	ogl.cpp \
+	jpeg.cpp \
+	image.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 
 
