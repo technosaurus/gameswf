@@ -15,6 +15,7 @@
 
 #include "engine/ogl.h"
 #include "swf_impl.h"
+#include "swf_render.h"
 #include "engine/image.h"
 #include <string.h>	// for memset
 #include <zlib.h>
@@ -1475,46 +1476,10 @@ namespace swf
 		}
 
 
-		void	emit_curve_segments(float x, float y, float tolerance) const
-		// Emit the verts for a curve segment, joining the
-		// given point with (m_ax, m_ay), using intermediate
-		// control point (m_cx, m_cy).  Quadratic bezier.
+		void	emit_curve() const
+		// Send this segment to the renderer.
 		{
-			// Based on de Casteljau: recursive subdivision until tolerance is reached.
-			curve(x, y, m_cx, m_cy, m_ax, m_ay, tolerance);
-
-//			glVertex2f(x, y);
-//			glVertex2f(m_ax, m_ay);
-		}
-
-
-		static void	curve(float p0x, float p0y, float p1x, float p1y, float p2x, float p2y, float tolerance)
-		// Recursive routine to generate bezier curve within tolerance.
-		{
-			// Midpoint on line between two endpoints.
-			float	midx = (p0x + p2x) * 0.5f;
-			float	midy = (p0y + p2y) * 0.5f;
-
-			// Midpoint on the curve.
-			float	qx = (midx + p1x) * 0.5f;
-			float	qy = (midy + p1y) * 0.5f;
-
-			float	dist = fabs(midx - qx) + fabs(midy - qy);
-
-			if (dist < tolerance)
-			{
-				// Emit points.
-				glVertex2f(p0x, p0y);
-				glVertex2f(qx, qy);
-				glVertex2f(qx, qy);
-				glVertex2f(p2x, p2y);
-			}
-			else
-			{
-				// Subdivide.
-				curve(p0x, p0y, (p0x + p1x) * 0.5f, (p0y + p1y) * 0.5f, qx, qy, tolerance);
-				curve(qx, qy, (p1x + p2x) * 0.5f, (p1y + p2y) * 0.5f, p2x, p2y, tolerance);
-			}
+			swf::render::add_curve_segment(m_cx, m_cy, m_ax, m_ay);
 		}
 	};
 
@@ -1748,22 +1713,35 @@ namespace swf
 			rgba	c(255, 255, 255, 255);
 			di.m_color_transform.transform(c).ogl_color();
 
-			glBegin(GL_LINES);
+			bool	in_shape = false;
 			for (int i = 0; i < m_edges.size(); i++)
 			{
 				const edge&	e = m_edges[i];
 				if (e.is_blank())
 				{
+					if (in_shape)
+					{
+						swf::render::end_shape();
+						in_shape = false;
+					}
 				}
 				else
 				{
-					// @@ di needs an "error tolerance" parameter -- should be based on scale & desired curve fidelity
-					e.emit_curve_segments(x, y, /* tolerance */ 20.0f);
+					if (! in_shape)
+					{
+						in_shape = true;
+						swf::render::begin_shape(x, y);
+					}
+					e.emit_curve();
 				}
 				x = e.m_ax;
 				y = e.m_ay;
 			}
-			glEnd();
+			if (in_shape)
+			{
+				swf::render::end_shape();
+				//glEnd();
+			}
 			glPopMatrix();
 		}
 	};
