@@ -7,6 +7,18 @@
 //
 // Use the basic robust ear-clipping algorithm from "FIST: Fast
 // Industrial-Strength Triangulation of Polygons" by Martin Held.
+//
+// NOTE: This code is based on the algorithm described in the FIST
+// paper, but this is NOT the official FIST code written by Martin
+// Held!  This code may not be as robust or as fast as FIST, and is
+// certainly not as well tested.  Also, it deviates in some places
+// from the algorithm as described in the FIST paper; I have tried to
+// document those places in the code, along with my reasoning, but
+// this code is not warranted in any way.
+//
+// For information on obtaining the offical industrial-strength FIST
+// code, see the FIST web page at:
+// http://www.cosy.sbg.ac.at/~held/projects/triang/triang.html
 
 
 #include "base/utility.h"
@@ -1238,6 +1250,9 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 				// Note: I'm explicitly considering convex vk in here, unlike FIST.
 				// This is to handle the triple dupe case, where a loop validly comes
 				// straight through our cone.
+				//
+				// Note: the triple-dupe case is technically not a valid poly, since
+				// it contains a twist.
 
 				int	v_prev_left01 = vertex_left_test(
 					sorted_verts[v0].m_v,
@@ -1970,28 +1985,31 @@ void	recovery_process(
 
 	// Case A: self-bridge
 	//
-	// Not mentioned in FIST, unless this is somehow a variation
-	// on Case 2.  Can happen when multiple loops bridge into the
-	// same vert.
+	// Not mentioned in FIST.  This situation can happen when
+	// multiple loops bridge into the same vert, if the bridge
+	// code is not careful enough.  I believe I have fixed my
+	// bridge code to avoid generating this, but it's also
+	// possible that the input data contains this problem.
 	//
 	// E.g., point A is a coincident vert that got bridged into,
-	// and now it's tangled, and preventing progress.
+	// and now it contains a crossing/twist, which is preventing
+	// progress.
 	//
-        //      +---<---\/--->---+     <---- envision this double loop
-        //      |+-->---/\---<--+|            as having zero width
-        //      ||              ||
-        //      ||              ^v
-        //      ||              ||A
-        //      |+------<-------)(----<----+
-        //      |              /  \        |
-        //      |             /    \       |
-        //      |            /      \      |
-        //      |           -----<----     |
-        //      v                          ^
-        //      |                          |
-        //      |                          |
-        //      |                          |
-        //      +------------->------------+
+        //      +---<--------<-------       <---- envision this double loop
+        //      |+-->--------       /              as having zero width
+        //      ||           \     /
+        //      ||            \   /
+        //      ||             \ /A
+        //      |+------<-------X-----<---+
+        //      |              / \        |
+        //      |             /   \       |
+        //      |            /     \      |
+        //      |           ----<----     |
+        //      v                         ^
+        //      |                         |
+        //      |                         |
+        //      |                         |
+        //      +------------->-----------+
 	//
 	// Alternative diagram, a bit more symmetrical:
 	//
@@ -2016,8 +2034,8 @@ void	recovery_process(
 		return;
 	}
 
-
-// Because I'm lazy, I'm skipping this test for now...
+// Deviation from FIST: Because I'm lazy, I'm skipping this test for
+// now...
 #if 0
 	// Case 2: P can be split with a valid diagonal.
 	//
