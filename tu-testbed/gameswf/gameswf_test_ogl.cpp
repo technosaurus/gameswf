@@ -17,12 +17,47 @@
 #include "engine/tu_types.h"
 
 
+void	print_usage()
+// Brief instructions.
+{
+	printf(
+		"gameswf_test_ogl -- a test player for the gameswf library.\n"
+		"\n"
+		"This program has been donated to the Public Domain.\n"
+		"See http://tulrich.com/geekstuff/gameswf.html for more info.\n"
+		"\n"
+		"usage: gameswf_test_ogl [options] movie_file.swf\n"
+		"\n"
+		"Plays a SWF (Shockwave Flash) movie, using OpenGL and the\n"
+		"gameswf library.\n"
+		"\n"
+		"options:\n"
+		"\n"
+		"  -h          Print this info.\n"
+		"  -s <factor> Scale the movie up/down by the specified factor\n"
+		"  -a          Turn antialiasing on/off.  (obsolete)\n"
+		"  -c          Build a cache file (for prerendering fonts)\n"
+		"  -v          Be verbose; i.e. print log messages to stdout\n"
+		"  -va         Be verbose about movie Actions\n"
+		"\n"
+		"keys:\n"
+		"  q or ESC    Quit/Exit\n"
+		"  p           Toggle Pause\n"
+		"  r           Restart the movie\n"
+		"  [ or -      Step back one frame\n"
+		"  ] or +      Step forward one frame\n"
+		"  a           Toggle antialiasing (doesn't work)\n"
+		"  t           Debug.  Put some text in a dynamic text field\n"
+		"  b           Toggle background color\n"
+		);
+}
+
+
 #define OVERSIZE	1.0f
 
 
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
-static bool	s_loop = true;
 static bool	s_cache = false;
 static bool	s_verbose = false;
 static bool	s_background = true;
@@ -74,7 +109,13 @@ int	main(int argc, char *argv[])
 		{
 			// Looks like an option.
 
-			if (argv[arg][1] == 's')
+			if (argv[arg][1] == 'h')
+			{
+				// Help.
+				print_usage();
+				exit(1);
+			}
+			else if (argv[arg][1] == 's')
 			{
 				// Scale.
 				arg++;
@@ -85,7 +126,7 @@ int	main(int argc, char *argv[])
 				else
 				{
 					printf("-s arg must be followed by a scale value\n");
-					// print_usage();
+					print_usage();
 					exit(1);
 				}
 			}
@@ -100,22 +141,7 @@ int	main(int argc, char *argv[])
 				else
 				{
 					printf("-a arg must be followed by 0 or 1 to disable/enable antialiasing\n");
-					// print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 'l')
-			{
-				// Set loop mode on or off.
-				arg++;
-				if (arg < argc)
-				{
-					s_loop = atoi(argv[arg]) ? true : false;
-				}
-				else
-				{
-					printf("-l arg must be followed by 0 or 1 to disable/enable looping\n");
-					// print_usage();
+					print_usage();
 					exit(1);
 				}
 			}
@@ -128,6 +154,18 @@ int	main(int argc, char *argv[])
 			{
 				// Be verbose; i.e. print log messages to stdout.
 				s_verbose = true;
+
+				if (argv[arg][2] == 'a')
+				{
+					// Enable spew re: action.
+					gameswf::set_verbose_action(true);
+				}
+				else if (argv[arg][2] == 'p')
+				{
+					// Enable parse spew.
+					gameswf::set_verbose_parse(true);
+				}
+				// ...
 			}
 		}
 		else
@@ -139,6 +177,7 @@ int	main(int argc, char *argv[])
 	if (infile == NULL)
 	{
 		printf("no input file\n");
+		print_usage();
 		exit(1);
 	}
 
@@ -290,11 +329,6 @@ int	main(int argc, char *argv[])
 					// Toggle antialiasing.
 					s_antialiased = !s_antialiased;
 					gameswf::set_antialiased(s_antialiased);
-				}
-				else if (key == SDLK_l)
-				{
-					// Toggle looping.
-					s_loop = !s_loop;
 				}
 				else if (key == SDLK_t)
 				{

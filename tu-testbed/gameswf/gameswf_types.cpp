@@ -106,7 +106,7 @@ namespace gameswf
 			m_[1][2] = (float) in->read_sint(translate_nbits);
 		}
 
-		IF_DEBUG(log_msg("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
+		IF_VERBOSE_PARSE(log_msg("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
 	}
 
 

@@ -97,7 +97,7 @@ namespace gameswf
 
 		if (tag_type == 10)
 		{
-			IF_DEBUG(log_msg("reading DefineFont\n"));
+			IF_VERBOSE_PARSE(log_msg("reading DefineFont\n"));
 
 			int	table_base = in->get_position();
 
@@ -106,12 +106,12 @@ namespace gameswf
 			// offset table.
 			array<int>	offsets;
 			offsets.push_back(in->read_u16());
-			IF_DEBUG(log_msg("offset[0] = %d\n", offsets[0]));
+			IF_VERBOSE_PARSE(log_msg("offset[0] = %d\n", offsets[0]));
 			int	count = offsets[0] >> 1;
 			for (int i = 1; i < count; i++)
 			{
 				offsets.push_back(in->read_u16());
-				IF_DEBUG(log_msg("offset[%d] = %d\n", i, offsets[i]));
+				IF_VERBOSE_PARSE(log_msg("offset[%d] = %d\n", i, offsets[i]));
 			}
 
 			m_glyphs.reserve(count);
@@ -132,7 +132,7 @@ namespace gameswf
 		}
 		else if (tag_type == 48)
 		{
-			IF_DEBUG(log_msg("reading DefineFont2\n"));
+			IF_VERBOSE_PARSE(log_msg("reading DefineFont2\n"));
 
 			bool	has_layout = (in->read_uint(1) != 0);
 			m_shift_jis_chars = (in->read_uint(1) != 0);
@@ -289,7 +289,7 @@ namespace gameswf
 	// Read the table that maps from glyph indices to character
 	// codes.
 	{
-		IF_DEBUG(log_msg("reading code table at offset %d\n", in->get_position()));
+		IF_VERBOSE_PARSE(log_msg("reading code table at offset %d\n", in->get_position()));
 
 		assert(m_code_table.is_empty());
 
