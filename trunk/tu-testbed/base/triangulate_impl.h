@@ -16,6 +16,10 @@
 // document those places in the code, along with my reasoning, but
 // this code is not warranted in any way.
 //
+// In particular, the recovery_process is currently not as good as
+// official FIST or even what's in the FIST paper.  This routine may
+// do some ugly stuff with self-intersecting input.
+//
 // For information on obtaining the offical industrial-strength FIST
 // code, see the FIST web page at:
 // http://www.cosy.sbg.ac.at/~held/projects/triang/triang.html
@@ -261,14 +265,13 @@ inline bool	edges_intersect_sub(const array<poly_vert<float> >& sorted_verts, in
 	double	det10 = determinant_float(e0v0, e0v1, e1v0);
 	double	det11 = determinant_float(e0v0, e0v1, e1v1);
 
-	// Note: we do >= 0 checks here, instead of > 0.  We are
-	// intentionally not considering it an intersection if an
-	// endpoint is coincident with one edge, or if the edges
-	// overlap perfectly.  The overlap case is common with
-	// perfectly vertical edges at the same coordinate; it doesn't
-	// hurt us any to treat them as non-crossing.
+	// Note: we do > 0, which means a vertex on a line counts as
+	// intersecting.  In general, if one vert is on the other
+	// segment, we have to go searching along the path in either
+	// direction to see if it crosses or not, and it gets
+	// complicated.  Better to treat it as intersection.
 
-	if (det10 * det11 >= 0)
+	if (det10 * det11 > 0)
 	{
 		// e1 doesn't cross the line of e0.
 		return false;
@@ -278,7 +281,7 @@ inline bool	edges_intersect_sub(const array<poly_vert<float> >& sorted_verts, in
 	double	det00 = determinant_float(e1v0, e1v1, e0v0);
 	double	det01 = determinant_float(e1v0, e1v1, e0v1);
 
-	if (det00 * det01 >= 0)
+	if (det00 * det01 > 0)
 	{
 		// e0 doesn't cross the line of e1.
 		return false;
@@ -325,14 +328,13 @@ inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, i
 	sint64	det10 = determinant_sint32(e0v0, e0v1, e1v0);
 	sint64	det11 = determinant_sint32(e0v0, e0v1, e1v1);
 
-	// Note: we do >= 0 checks here, instead of > 0.  We are
-	// intentionally not considering it an intersection if an
-	// endpoint is coincident with one edge, or if the edges
-	// overlap perfectly.  The overlap case is common with
-	// perfectly vertical edges at the same coordinate; it doesn't
-	// hurt us any to treat them as non-crossing.
+	// Note: we do > 0, which means a vertex on a line counts as
+	// intersecting.  In general, if one vert is on the other
+	// segment, we have to go searching along the path in either
+	// direction to see if it crosses or not, and it gets
+	// complicated.  Better to treat it as intersection.
 
-	if (det10 * det11 >= 0)
+	if (det10 * det11 > 0)
 	{
 		// e1 doesn't cross the line of e0.
 		return false;
@@ -342,7 +344,7 @@ inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, i
 	sint64	det00 = determinant_sint32(e1v0, e1v1, e0v0);
 	sint64	det01 = determinant_sint32(e1v0, e1v1, e0v1);
 
-	if (det00 * det01 >= 0)
+	if (det00 * det01 > 0)
 	{
 		// e0 doesn't cross the line of e1.
 		return false;
@@ -363,6 +365,8 @@ bool	edges_intersect(const array<poly_vert<coord_t> >& sorted_verts, int e0v0, i
 	//
 	// We're not just comparing indices, because duped verts (for
 	// bridges) might have different indices.
+	//
+	// @@ this needs review -- might be wrong.
 	bool	coincident[2][2];
 	coincident[0][0] = (sorted_verts[e0v0].m_v == sorted_verts[e1v0].m_v);
 	coincident[0][1] = (sorted_verts[e0v0].m_v == sorted_verts[e1v1].m_v);
@@ -373,12 +377,15 @@ bool	edges_intersect(const array<poly_vert<coord_t> >& sorted_verts, int e0v0, i
 	if (coincident[0][1] && !coincident[1][0]) return false;
 	if (coincident[1][1] && !coincident[0][0]) return false;
 
+// @@ eh, I think we really want this to be an intersection
+#if 0
 	// Both verts identical: early out.
 	//
 	// Note: treat this as no intersection!  This is mainly useful
 	// for things like coincident vertical bridge edges.
 	if (coincident[0][0] && coincident[1][1]) return false;
 	if (coincident[1][0] && coincident[0][1]) return false;
+#endif // 0
 
 	// Check for intersection.
 	return edges_intersect_sub(sorted_verts, e0v0, e0v1, e1v0, e1v1);
@@ -442,6 +449,7 @@ struct poly
 
 	// tests/queries
 	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int v2);
+	bool	vert_can_see_cone_a(const array<vert_t>& sorted_verts, int v, int cone_a_vert, int cone_b_vert);
 	bool	vert_in_cone(const array<vert_t>& sorted_verts, int vert, int cone_v0, int cone_v1, int cone_v2);
 	bool	vert_is_duplicated(const array<vert_t>& sorted_verts, int v0);
 	bool	ear_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2);
@@ -457,9 +465,6 @@ struct poly
 	bool	build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg);
 
 	void	invalidate(const array<vert_t>& sorted_verts);
-
-	bool	find_and_fix_tangled_triple(array<vert_t>* sorted_verts, tu_random::generator* rg);
-	void	flip_triple_configuration(array<vert_t>* sorted_verts, int v0, int v1, int v2);
 
 //data:
 //@@ TODO	array<vert_t>*	m_sorted_verts;
@@ -679,16 +684,22 @@ int	poly<coord_t>::find_valid_bridge_vert(const array<vert_t>& sorted_verts, int
 	assert(is_valid(sorted_verts));
 
 	const poly_vert<coord_t>*	pv1 = &(sorted_verts[v1]);
+	assert(pv1->m_poly_owner != this);	// v1 must not be part of this poly already
 
 	// Held recommends searching verts near v1 first.  And for
 	// correctness, we may only consider verts to the left of v1.
 	// A fast & easy way to implement this is to walk backwards in
 	// our vert array, starting with v1-1.
 
-	// @@ eh, we need to first walk forward to include all
-	// coincident but later verts!
+	// Walk forward to include all coincident but later verts!
+	int	vi = v1;
+	while ((vi + 1) < sorted_verts.size() && sorted_verts[vi + 1].m_v == pv1->m_v)
+	{
+		vi++;
+	}
 
-	for (int vi = v1 - 1; vi >= 0; vi--)
+	// Now scan backwards for the vert to bridge onto.
+	for ( ; vi >= 0; vi--)
 	{
 		const poly_vert<coord_t>*	pvi = &sorted_verts[vi];
 
@@ -707,16 +718,6 @@ int	poly<coord_t>::find_valid_bridge_vert(const array<vert_t>& sorted_verts, int
 			{
 				return vi;
 			}
-		}
-		else
-		{
-			// pvi is owned by some other poly, which I
-			// believe signifies bad input, or possibly
-			// bad poly sorting?
-			//
-			// Assert for now; maybe later this gets
-			// demoted to a log message, or even ignored.
-			assert(0);
 		}
 	}
 
@@ -1408,170 +1409,148 @@ void	poly<coord_t>::remove_edge(const array<vert_t>& sorted_verts, int vi)
 }
 
 
-#if 0
-
 template<class coord_t>
-bool	poly<coord_t>::find_and_fix_tangled_triple(array<vert_t>* sorted_verts, tu_random::generator* rg)
-// Search for a triple of coincident verts, whose configuration can be
-// flipped, to allow finding more polygon ears.
-//
-// A triple coincident vert has two possible valid configurations in a
-// continuous loop poly.
-//
-// Return true if we found a triple to flip, that let us find more
-// ears.  ear_list will have the new ears.
+bool	poly<coord_t>::vert_can_see_cone_a(const array<vert_t>& sorted_verts, int v, int cone_a_vert, int cone_b_vert)
+// Return true if v can see cone_a_vert, without logically crossing cone_b.
+// cone_a_vert and cone_b_vert are coincident.
 {
-	assert(is_valid(*sorted_verts));
-	assert(get_ear_count() == 0);
+	assert(sorted_verts[cone_a_vert].m_v == sorted_verts[cone_b_vert].m_v);
+	
+	// @@ Thought: Would it be more robust to know whether v is
+	// part of a ccw or cw loop, and then decide based on the
+	// relative insideness/outsideness of v w/r/t the cones?
 
-	// Find all coincident triple combos (lexicographic order).
-	for (int v0 = 0, n = sorted_verts->size(); v0 < n - 2; v0++)
+	// Analyze the two cones, to see if the segment
+	// (v,cone_a_vert) is blocked by cone_b_vert.  Since
+	// cone_a_vert and cone_b_vert are coincident, we need to
+	// figure out the relationship among v and the cones.
+
+	// Sort the cones so that they're in convex order.
+	const vert_t*	pa = &sorted_verts[cone_a_vert];
+	vec2<coord_t>	cone_a[3] = { sorted_verts[pa->m_prev].m_v, pa->m_v, sorted_verts[pa->m_next].m_v };
+	if (vertex_left_test(cone_a[0], cone_a[1], cone_a[2]) < 0)
 	{
-		vert_t*	pv0 = &(*sorted_verts)[v0];
-
-		if (pv0->m_poly_owner != this)
-		{
-			continue;
-		}
-
-		for (int v1 = v0 + 1; v1 < n - 1; v1++)
-		{
-			vert_t*	pv1 = &(*sorted_verts)[v1];
-
-			if ((pv0->m_v == pv1->m_v) == false)
-			{
-				// End of coincident verts; no possible triples left.
-				break;
-			}
-			// else we have a double; continue the search for a third coincident vert.
-
-			if (pv1->m_poly_owner != this)
-			{
-				continue;
-			}
-
-			for (int v2 = v1 + 1; v2 < n; v2++)
-			{
-				vert_t*	pv2 = &(*sorted_verts)[v2];
-
-				if ((pv0->m_v == pv2->m_v) == false)
-				{
-					// End of coincident verts; no possible triples left.
-					break;
-				}
-				// else here's a triple.
-
-				if (pv2->m_poly_owner != this)
-				{
-					continue;
-				}
-
-				// Coincident triple.
-
-				// Try flipping it.
-				flip_triple_configuration(sorted_verts, v0, v1, v2);
-
-				// New ears?
-				build_ear_list(sorted_verts, rg);
-
-				if (get_ear_count() > 0)
-				{
-					// The flip worked!
-					return true;
-				}
-
-				// The flip didn't work.  Put it back.
-				flip_triple_configuration(sorted_verts, v0, v1, v2);
-			}
-		}
+		swap(&cone_a[0], &cone_a[2]);
 	}
 
-	// Didn't succeed in getting new ears by flipping triples.
-	return false;
-}
-
-
-template<class coord_t>
-void	poly<coord_t>::flip_triple_configuration(array<vert_t>* sorted_verts, int v0, int v1, int v2)
-// A triple coincident vert has two possible valid configurations in a
-// continuous loop poly.
-//
-// Given the three coincident verts, v0, v1, v2, this function flips
-// the current configuration to the other valid one.  This flip is
-// reversible; just call this function again with the same verts.
-{
-	assert(is_valid(*sorted_verts));
-
-	poly_vert<coord_t>*	pv0 = &(*sorted_verts)[v0];
-	poly_vert<coord_t>*	pv1 = &(*sorted_verts)[v1];
-	poly_vert<coord_t>*	pv2 = &(*sorted_verts)[v2];
-
-	// First, we need to find out where the sub-path starting at
-	// v0 re-enters the coincident triple.
-	int	v0probe = pv0->m_next;
-	for (;;)
+	const vert_t*	pb = &sorted_verts[cone_b_vert];
+	vec2<coord_t>	cone_b[3] = { sorted_verts[pb->m_prev].m_v, pb->m_v, sorted_verts[pb->m_next].m_v };
+	if (vertex_left_test(cone_b[0], cone_b[1], cone_b[2]) < 0)
 	{
-		if (v0probe == v1 || v0probe == v2)
-		{
-			break;
-		}
-
-		if (v0probe == v0)
-		{
-			// Not a valid continuous poly configuration!
-			// v0 forms a separate sub-loop without going
-			// through v1 and v2!
-			assert(0);
-
-			// Give up on this flip.  Don't loop forever.
-			return;
-		}
-
-		v0probe = (*sorted_verts)[v0probe].m_next;
+		swap(&cone_b[0], &cone_b[2]);
 	}
 
-	if (v0probe == v1)
+	// Characterize the cones w/r/t each other.
+	int	a_in_b_sum = 0;
+	a_in_b_sum += vertex_left_test(cone_b[0], cone_b[1], cone_a[0]);
+	a_in_b_sum += vertex_left_test(cone_b[1], cone_b[2], cone_a[0]);
+	a_in_b_sum += vertex_left_test(cone_b[0], cone_b[1], cone_a[2]);
+	a_in_b_sum += vertex_left_test(cone_b[1], cone_b[2], cone_a[2]);
+
+	int	b_in_a_sum = 0;
+	b_in_a_sum += vertex_left_test(cone_a[0], cone_a[1], cone_b[0]);
+	b_in_a_sum += vertex_left_test(cone_a[1], cone_a[2], cone_b[0]);
+	b_in_a_sum += vertex_left_test(cone_a[0], cone_a[1], cone_b[2]);
+	b_in_a_sum += vertex_left_test(cone_a[1], cone_a[2], cone_b[2]);
+
+	// Eeek!  Need a better way of doing this...
+	bool	a_in_b = false;
+	if (a_in_b_sum >= 4)
 	{
-		int	v0_next = pv0->m_next;
+		assert(b_in_a_sum <= -2);
+		a_in_b = true;
+	}
+	else if (a_in_b_sum == 3)
+	{
+		assert(b_in_a_sum <= 3);
 
-		pv0->m_next = pv1->m_next;
-		(*sorted_verts)[pv0->m_next].m_prev = v0;
+		if (b_in_a_sum >= 3)
+		{
+			// Inconsistent (crossing cones).  No good.
+			return false;
+		}
+		a_in_b = true;
+	}
+	else if (a_in_b_sum <= -4)
+	{
+		assert(b_in_a_sum >= 2);
+		a_in_b = false;
+	}
+	else if (a_in_b_sum == -3)
+	{
+		assert(b_in_a_sum >= -3);
 
-		pv1->m_next = pv2->m_next;
-		(*sorted_verts)[pv1->m_next].m_prev = v1;
-
-		pv2->m_next = v0_next;
-		(*sorted_verts)[pv2->m_next].m_prev = v2;
-
-		assert(is_valid(*sorted_verts));
+		if (b_in_a_sum <= -3)
+		{
+			// Inconsistent (crossing cones).  No good.
+			return false;
+		}
+		a_in_b = false;
 	}
 	else
 	{
-		int	v0_next = pv0->m_next;
+		if (b_in_a_sum >= 4)
+		{
+			assert(a_in_b_sum <= -2);
+			a_in_b = false;
+		}
+		else if (b_in_a_sum == 3)
+		{
+			a_in_b = false;
+		}
+		else if (b_in_a_sum <= -4)
+		{
+			assert(a_in_b_sum >= 2);
+			a_in_b = true;
+		}
+		else if (b_in_a_sum == -3)
+		{
+			a_in_b = true;
+		}
+		else
+		{
+			// Inconsistent or coincident.  No good.
+			return false;
+		}
+	}
 
-		pv0->m_next = pv2->m_next;
-		(*sorted_verts)[pv0->m_next].m_prev = v0;
+	if (a_in_b)
+	{
+		assert(a_in_b);
 
-		pv2->m_next = pv1->m_next;
-		(*sorted_verts)[pv2->m_next].m_prev = v2;
-
-		pv1->m_next = v0_next;
-		(*sorted_verts)[pv1->m_next].m_prev = v1;
-
-		assert(is_valid(*sorted_verts));
+		bool	v_in_a =
+			(vertex_left_test(cone_a[0], cone_a[1], sorted_verts[v].m_v) > 0)
+			&& (vertex_left_test(cone_a[1], cone_a[2], sorted_verts[v].m_v) > 0);
+		if (v_in_a)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		bool	v_in_b =
+			(vertex_left_test(cone_b[0], cone_b[1], sorted_verts[v].m_v) > 0)
+			&& (vertex_left_test(cone_b[1], cone_b[2], sorted_verts[v].m_v) > 0);
+		if (v_in_b)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
 	}
 }
-
-
-#endif // 0
 
 
 template<class coord_t>
 bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int my_vert)
 // Return true if edge (external_vert,my_vert) intersects any edge in our poly.
 {
-#if 1
-// new code
 	// Check the edge index for potentially overlapping edges.
 
 	const vert_t*	pmv = &sorted_verts[my_vert];
@@ -1593,17 +1572,8 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 		{
 			if (sorted_verts[vi].m_v == sorted_verts[my_vert].m_v)
 			{
-				// Coincident verts; need to be a bit careful
-				// with this test.  Consider the cone formed
-				// at my_vert.  If v_next and external vert
-				// are on the same side of the cone, then it
-				// looks like the edge (external_vert,my_vert)
-				// effectively crosses the path through vi.
-
-				bool	v_next_in_cone = vert_in_cone(sorted_verts, v_next, pmv->m_prev, my_vert, pmv->m_next);
-				bool	ex_vert_in_cone = vert_in_cone(sorted_verts, external_vert, pmv->m_prev, my_vert, pmv->m_next);
-
-				if (v_next_in_cone == ex_vert_in_cone)
+				// Coincident verts.
+				if (vert_can_see_cone_a(sorted_verts, external_vert, my_vert, vi) == false)
 				{
 					// Logical edge crossing.
 					return true;
@@ -1615,53 +1585,6 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 			}
 		}
 	}
-#endif
-
-#if 0
-// old code
-	// For now, brute force O(N) :^o
-
-	assert(sorted_verts[external_vert].m_poly_owner != this);
-	assert(sorted_verts[my_vert].m_poly_owner == this);
-	assert(is_valid(sorted_verts));
-
-	int	first_vert = m_loop;
-	int	vi = first_vert;
-	do
-	{
-		int	v_next = sorted_verts[vi].m_next;
-		if (vi != my_vert)
-		{
-			if (sorted_verts[vi].m_v == sorted_verts[my_vert].m_v)
-			{
-				// Coincident verts; need to be a bit careful
-				// with this test.  Consider the cone formed
-				// at my_vert.  If v_next and external vert
-				// are on the same side of the cone, then it
-				// looks like the edge (external_vert,my_vert)
-				// effectively crosses the path through vi.
-
-				const vert_t*	pmv = &sorted_verts[my_vert];
-
-				bool	v_next_in_cone = vert_in_cone(sorted_verts, v_next, pmv->m_prev, my_vert, pmv->m_next);
-				bool	ex_vert_in_cone = vert_in_cone(sorted_verts, external_vert, pmv->m_prev, my_vert, pmv->m_next);
-
-				if (v_next_in_cone == ex_vert_in_cone)
-				{
-					// Logical edge crossing.
-					return true;
-				}
-			}
-			else if (edges_intersect(sorted_verts, vi, v_next, external_vert, my_vert))
-			{
-				return true;
-			}
-		}
-
-		vi = v_next;
-	}
-	while (vi != first_vert);
-#endif // 0
 
 	return false;
 }
@@ -1716,6 +1639,8 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 				//
 				// Note: the triple-dupe case is technically not a valid poly, since
 				// it contains a twist.
+				//
+				// @@ Fix this back to the FIST way?
 
 				int	v_prev_left01 = vertex_left_test(
 					sorted_verts[v0].m_v,
@@ -2311,6 +2236,21 @@ static void compute_triangulation(
 	fprintf(stderr, "join poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(join_ticks - start_ticks));
 #endif // PROFILE_TRIANGULATE
 
+// Debugging only: dump coords of joined poly.
+//#define DUMP_JOINED_POLY
+#ifdef DUMP_JOINED_POLY
+	{
+		int	first_vert = penv.m_polys[0]->m_loop;
+		int	vi = first_vert;
+		do
+		{
+			printf("%f, %f\n", penv.m_sorted_verts[vi].m_v.x, penv.m_sorted_verts[vi].m_v.y);
+			vi = penv.m_sorted_verts[vi].m_next;
+		}
+		while (vi != first_vert);
+	}
+#endif
+
 // Debugging only: just emit our joined poly, without triangulating.
 //#define EMIT_JOINED_POLY
 #ifdef EMIT_JOINED_POLY
@@ -2396,7 +2336,7 @@ static void compute_triangulation(
 			{
 				// No valid ears; we're in trouble so try some fallbacks.
 
-#if 0
+#if 1
 				// xxx hack for debugging: show the state of P when we hit the recovery process.
 				debug_emit_poly_loop(result, penv.m_sorted_verts, P);
 				return;
@@ -2481,62 +2421,13 @@ void	recovery_process(
 		}
 	}}
 
-// This junk is not necessary, if bridge code is correct.
-#if 0
-	// Case A: self-bridge
-	//
-	// Not mentioned in FIST.  This situation can happen when
-	// multiple loops bridge into the same vert, if the bridge
-	// code is not careful enough.  I believe I have fixed my
-	// bridge code to avoid generating this, but it's also
-	// possible that the input data contains this problem.
-	//
-	// E.g., point A is a coincident vert that got bridged into,
-	// and now it contains a crossing/twist, which is preventing
-	// progress.
-	//
-        //      +---<--------<-------       <---- envision this double loop
-        //      |+-->--------       /              as having zero width
-        //      ||           \     /
-        //      ||            \   /
-        //      ||             \ /A
-        //      |+------<-------X-----<---+
-        //      |              / \        |
-        //      |             /   \       |
-        //      |            /     \      |
-        //      |           ----<----     |
-        //      v                         ^
-        //      |                         |
-        //      |                         |
-        //      |                         |
-        //      +------------->-----------+
-	//
-	// Alternative diagram, a bit more symmetrical:
-	//
-        //             -----<---
-        //            / /\     /
-        //           / /  \   /
-        //          / /    \ /
-        //         |  ---<--*----<--
-        //          \      / \     /
-        //           \    /   \   /
-        //            \   ---<-  /
-        //             ----->----
-	//
-	// Attempted fix: find a triple dupe like A and untangle it.
-	// Convert the three crossing paths into three coincident
-	// corners that can be clipped separately.
-
-	if (P->find_and_fix_tangled_triple(sorted_verts, rg))
-	{
-		fprintf(stderr, "recovery_process: tangled triple\n");//xxxx
-		assert(P->get_ear_count() > 0);
-		return;
-	}
-#endif // 0
-
 // Deviation from FIST: Because I'm lazy, I'm skipping this test for
 // now...
+//
+// @@ This seems to be helpful for doing reasonable things in case the
+// input is a little bit self-intersecting.  Otherwise, clipping any
+// old convex or random vert can create crazy junk in the
+// triangulation.  It's probably worth implementing at some point.
 #if 0
 	// Case 2: P can be split with a valid diagonal.
 	//

@@ -329,7 +329,7 @@ month_grid	year_2005[12] = {
 
 const float	WIDTH = 6.875f * 72;
 const float HEIGHT = 6.5f * 72;
-const float	X0 = (612 - WIDTH) / 2 + 4;
+const float	X0 = (612 - WIDTH) / 2;
 const float	Y0 = 72;
 const float	TOP = Y0 + HEIGHT;
 const float	RIGHT = X0 + WIDTH;
