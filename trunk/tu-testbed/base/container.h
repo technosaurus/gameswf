@@ -867,6 +867,16 @@ public:
 		resize(new_size);
 		strcpy(get_buffer(), str);
 	}
+	tu_string(const char* buf, int buflen)
+	{
+		m_local.m_size = 1;
+		m_local.m_buffer[0] = 0;
+
+		int	new_size = buflen;
+		resize(new_size);
+		memcpy(get_buffer(), buf, buflen);
+		get_buffer()[buflen] = 0;	// terminate.
+	}
 	tu_string(const tu_string& str)
 	{
 		m_local.m_size = 1;
@@ -996,6 +1006,25 @@ public:
 	// Utility: case-insensitive string compare.  stricmp() is not
 	// ANSI or POSIX, doesn't seem to appear in Linux.
 	static int	stricmp(const char* a, const char* b);
+
+	// Return the Unicode char at the specified character
+	// position.  index is in UTF-8 chars, NOT bytes.
+	uint32	utf8_char_at(int index) const;
+
+	// Return the number of UTF-8 characters in the given
+	// substring buffer.  You must pass in a valid buffer length;
+	// this routine does not look for a terminating \0.
+	static int	utf8_char_count(const char* buf, int buflen);
+
+	int	utf8_length() const { return utf8_char_count(get_buffer(), length()); }
+
+	// Returns a tu_string that's a substring of this.  start and
+	// end are in UTF-8 character positions (NOT bytes).
+	//
+	// start is the index of the first character you want to include.
+	//
+	// end is the index one past the last character you want to include.
+	tu_string	utf8_substring(int start, int end) const;
 
 private:
 //	array<char>	m_buffer;	// we do store the terminating \0
