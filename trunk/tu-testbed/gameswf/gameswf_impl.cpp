@@ -607,6 +607,8 @@ namespace gameswf
 			m_next_frame = 0;
 			m_time_remainder = 0;
 			m_update_frame = true;
+
+			set_play_state(PLAY);
 		}
 
 		void	advance(float delta_time)
