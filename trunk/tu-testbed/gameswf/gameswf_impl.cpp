@@ -1618,7 +1618,7 @@ namespace gameswf
 			else if (m->get_current_frame() < last_frame)
 			{
 				// Hm, apparently we looped back.  Skip ahead...
-				printf("loop back; jumping to frame %d\n", last_frame);
+				log_error("loop back; jumping to frame %d\n", last_frame);
 				m->goto_frame(last_frame + 1);
 			}
 			else
@@ -2852,7 +2852,7 @@ namespace gameswf
 			sprite_definition* sd = (sprite_definition*) def;
 			if (sd->m_do_init_actions)
 			{
-				printf("do_init_actions\n");
+				//printf("do_init_actions\n");
 				sd->m_do_init_actions = false;
 				sd->m_init_actions->execute(&m_as_environment);
 			}
