@@ -926,7 +926,7 @@ bitmap_info_xbox::bitmap_info_xbox(image::rgb* im)
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rescaled->m_width, rescaled->m_height, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 
-	delete rescaled;
+	delete [] rescaled;
 #endif // 0
 }
 
@@ -1003,7 +1003,7 @@ bitmap_info_xbox::bitmap_info_xbox(image::rgba* im)
 		}
 //		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
 
-		delete rescaled;
+		delete [] rescaled;
 	}
 	else
 	{
@@ -1056,7 +1056,7 @@ bitmap_info_xbox::bitmap_info_xbox(image::rgba* im)
 
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
 
-		delete rescaled;
+		delete [] rescaled;
 	}
 	else
 	{
