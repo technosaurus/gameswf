@@ -104,7 +104,7 @@ struct membuf
 {
 	int	m_size;
 	unsigned char*	m_data;
-//	array<unsigned char>	m_data;
+	// @@ TODO need to do m_capacity with slack as well; otherwise the reallocs will kill us when writing bytes!
 	int	m_position;
 	bool	m_read_only;
 
@@ -150,7 +150,8 @@ struct membuf
 		m_data = new_data;
 		m_size = new_size;
 
-		// Hm, does this make sense?
+		// Hm, does this make sense?  We're truncating the file, so clamping the cursor.
+		// Alternative would be to disallow resize, but that doesn't seem good either.
 		if (m_position > m_size)
 		{
 			m_position = m_size;
