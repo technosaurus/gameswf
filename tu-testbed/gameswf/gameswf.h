@@ -81,7 +81,11 @@ namespace gameswf
 	// return NULL in case the requested file can't be opened.
 	typedef tu_file* (*file_opener_callback)(const char* url_or_path);
 	void	register_file_opener_callback(file_opener_callback opener);
-	
+
+	// Register a callback for displaying SWF load progress.
+	typedef void (*progress_callback)(unsigned int loaded_bytes, unsigned int total_bytes);
+	void	register_progress_callback(progress_callback progress_handle);
+
 	// ActionScripts embedded in a movie can use the built-in
 	// fscommand() function to send data back to the host
 	// application.  If you are interested in this data, register
@@ -346,7 +350,9 @@ namespace gameswf
 		int* width,
 		int* height,
 		float* frames_per_second,
-		int* frame_count);
+		int* frame_count,
+		int* tag_count
+		);
 
 	// Enable/disable attempts to read cache files (.gsc) when
 	// loading movies.

@@ -7,7 +7,7 @@
 
 
 // choose the resampling method:
-// 1 = hardware (experimental, should be fast, makes garbage in various circumstances)
+// 1 = hardware (experimental, should be fast, somewhat buggy)
 // 2 = fast software bilinear (default)
 // 3 = use image::resample(), slow software resampling
 #define RESAMPLE_METHOD 2
@@ -29,6 +29,14 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 	bitmap_info_ogl(int width, int height, Uint8* data);
 	bitmap_info_ogl(image::rgb* im);
 	bitmap_info_ogl(image::rgba* im);
+
+	~bitmap_info_ogl()
+	{
+		if (m_texture_id > 0)
+		{
+			glDeleteTextures(1, (GLuint*) &m_texture_id);
+		}
+	}
 };
 
 
@@ -747,7 +755,7 @@ void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8
 		char* temp = new char[dst_width * dst_height * bytes_per_pixel];
 		//memset(temp,255,w*h*3);
 		glTexImage2D(GL_TEXTURE_2D, 0, in_format, dst_width, dst_height, 0, out_format, GL_UNSIGNED_BYTE, temp);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, src_width, src_height, GL_RGB, GL_UNSIGNED_BYTE, src_data);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, src_width, src_height, out_format, GL_UNSIGNED_BYTE, src_data);
 
 		glLoadIdentity();
 		glViewport(0, 0, dst_width, dst_height);
@@ -766,7 +774,7 @@ void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8
 			glVertex3f(0, (float) dst_height, -1);
 		}
 		glEnd();
-		glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0,0, dst_width, dst_height, 0);
+		glCopyTexImage2D(GL_TEXTURE_2D, 0, out_format, 0,0, dst_width, dst_height, 0);
 		delete temp;
 	}
 	glPopAttrib();
@@ -974,21 +982,45 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 	int	w = 1; while (w < im->m_width) { w <<= 1; }
 	int	h = 1; while (h < im->m_height) { h <<= 1; }
 
+	if (w != im->m_width
+	    || h != im->m_height)
+	{
 #if (RESAMPLE_METHOD == 1)
-	assert(im->m_width * 3 == im->m_pitch);
-	hardware_resample(3, im->m_width, im->m_height, im->m_data, w, h);
+		int	viewport_dim[2] = { 0, 0 };
+		glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &viewport_dim[0]);
+		if (w > viewport_dim[0]
+		    || h > viewport_dim[1]
+		    || im->m_width * 3 != im->m_pitch)
+		{
+			// Can't use hardware resample.  Either frame
+			// buffer isn't big enough to fit the source
+			// texture, or the source data isn't padded
+			// quite right.
+			software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+		}
+		else
+		{
+			hardware_resample(3, im->m_width, im->m_height, im->m_data, w, h);
+		}
 #elif (RESAMPLE_METHOD == 2)
-	software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+		software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
 #else
-	image::rgb*	rescaled = image::create_rgb(w, h);
-	image::resample(rescaled, 0, 0, w - 1, h - 1,
-			im, 0, 0, (float) im->m_width, (float) im->m_height);
+		image::rgb*	rescaled = image::create_rgb(w, h);
+		image::resample(rescaled, 0, 0, w - 1, h - 1,
+				im, 0, 0, (float) im->m_width, (float) im->m_height);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rescaled->m_width, rescaled->m_height, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rescaled->m_width, rescaled->m_height,
+				GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 
-	delete rescaled;
+		delete rescaled;
 #endif
+	}
+	else
+	{
+		// Use original image directly.
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+	}
 }
 
 
@@ -1018,8 +1050,22 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 	    || h != im->m_height)
 	{
 #if (RESAMPLE_METHOD == 1)
-		assert(im->m_width * 4 == im->m_pitch);
-		hardware_resample(4, im->m_width, im->m_height, im->m_data, w, h);
+		int	viewport_dim[2] = { 0, 0 };
+		glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &viewport_dim[0]);
+		if (w > viewport_dim[0]
+		    || h > viewport_dim[1]
+		    || im->m_width * 4 != im->m_pitch)
+		{
+			// Can't use hardware resample.  Either frame
+			// buffer isn't big enough to fit the source
+			// texture, or the source data isn't padded
+			// quite right.
+			software_resample(4, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+		}
+		else
+		{
+			hardware_resample(4, im->m_width, im->m_height, im->m_data, w, h);
+		}
 #elif (RESAMPLE_METHOD == 2)
 		software_resample(4, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
 #else

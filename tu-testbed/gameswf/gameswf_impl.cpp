@@ -102,7 +102,19 @@ namespace gameswf
 		s_opener_function = opener;
 	}
 
+	//
+	// progress callback stuff (from Vitaly)
+	//
 
+	static progress_callback	s_progress_function = NULL;
+
+	void	register_progress_callback(progress_callback progress_handle)
+	// Host calls this to register a function for progress bar handling
+	// during loading movies.
+	{
+		s_progress_function = progress_handle;
+	}
+	
 	//
 	// some utility stuff
 	//
@@ -711,6 +723,12 @@ namespace gameswf
 			while ((Uint32) str.get_position() < file_end_pos)
 			{
 				int	tag_type = str.open_tag();
+
+				if (s_progress_function != NULL)
+				{
+					s_progress_function((Uint32) str.get_position(), file_end_pos);
+				}
+
 				loader_function	lf = NULL;
 				//IF_VERBOSE_PARSE(log_msg("tag_type = %d\n", tag_type));
 				if (tag_type == 1)
@@ -1217,7 +1235,8 @@ namespace gameswf
 		int* width,
 		int* height,
 		float* frames_per_second,
-		int* frame_count
+		int* frame_count,
+		int* tag_count
 		)
 	// Attempt to read the header of the given .swf movie file.
 	// Put extracted info in the given vars.
@@ -1239,8 +1258,10 @@ namespace gameswf
 			return;
 		}
 
+		Uint32	file_start_pos = in->get_position();
 		Uint32	header = in->read_le32();
 		Uint32	file_length = in->read_le32();
+		Uint32	file_end_pos = file_start_pos + file_length;
 
 		int	local_version = (header >> 24) & 255;
 		if ((header & 0x0FFFFFF) != 0x00535746
@@ -1285,6 +1306,19 @@ namespace gameswf
 		if (height) *height = int(frame_size.height() / 20.0f + 0.5f);
 		if (frames_per_second) *frames_per_second = local_frame_rate;
 		if (frame_count) *frame_count = local_frame_count;
+
+		if (tag_count)
+		{
+			// Count tags.
+			int local_tag_count = 0;
+			while ((Uint32) str.get_position() < file_end_pos)
+			{
+				str.open_tag();
+				str.close_tag();
+				local_tag_count++;
+			}
+			*tag_count = local_tag_count;
+		}
 
 		delete in;
 		delete original_in;
