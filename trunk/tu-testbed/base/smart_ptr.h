@@ -92,24 +92,52 @@ private:
 
 
 
-// @@ TODO
-#if 0
 // A weak pointer points at an object, but the object may be deleted
 // at any time, in which case the weak pointer automatically becomes
 // NULL.  The only way to use a weak pointer is by converting it to a
 // strong pointer (i.e. for temporary use).
 //
+// The class pointed to must have add_weak_ptr(weak_ptr_void* p),
+// remove_weak_ptr(weak_ptr_void* p), and also set the weak ptr's to
+// null when the object is destroyed.
+//
 // Usage idiom:
 //
 // if (smart_ptr<my_type> ptr = m_weak_ptr_to_my_type) { ... use ptr->whatever() safely in here ... }
 //
-template<class T>
-struct weak_ptr
+struct weak_ptr_void
 {
-	// @@ implement similar to smart_ptr<>, but with link(s) to other weak_ptr's.
-	// type T must have some methods for adding/deleting associated weak_ptr's.
+
+protected:
+	weak_ptr_void*	m_next_ptr;
+	weak_ptr_void*	m_prev_ptr;
+	T*	m_ptr;
 };
-#endif // 0
+
+
+template<class T>
+struct weak_ptr<T> : public weak_ptr_void
+{
+	weak_ptr()
+		:
+		m_next_ptr(0),
+		m_prev_ptr(0),
+		m_ptr(0)
+	{
+	}
+
+	weak_ptr(T* ptr)
+		:
+		m_next_ptr(0),
+		m_prev_ptr(0),
+		m_ptr(ptr)
+	{
+		if (ptr)
+		{
+			ptr->add_weak_ptr(this);
+		}
+	}
+};
 
 
 #endif // SMART_PTR_H
