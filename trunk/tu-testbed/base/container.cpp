@@ -106,7 +106,7 @@ void	tu_string::resize(int new_size)
 	}
 
 	// Second pass: transfer the data.
-	result->resize(bytes_needed);
+	result->resize(bytes_needed - 1);	// resize() adds 1 for the \0 terminator
 	in = wstr;
 	char*	out = &((*result)[0]);
 	offset = 0;
@@ -127,6 +127,7 @@ void	tu_string::resize(int new_size)
 
 	assert(offset == bytes_needed);
 	assert((*result)[offset - 1] == 0);
+	assert(result->length() == (int) strlen(result->c_str()));
 }
 
 
