@@ -92,16 +92,18 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	gameswf::set_pixel_scale(s_scale);
+	gameswf::set_antialiased(s_antialiased);
+
+	// Load the movie.
 	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
 	if (in == NULL)
 	{
 		printf("can't open '%s' for input\n", infile);
 		exit(1);
 	}
-
-	gameswf::set_pixel_scale(s_scale);
-	gameswf::set_antialiased(s_antialiased);
 	gameswf::movie_interface*	m = gameswf::create_movie(in);
+	SDL_RWclose(in);
 
 	// Initialize the SDL subsystems we're using.
 	if (SDL_Init(SDL_INIT_VIDEO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM | SDL_INIT_AUDIO*/))
@@ -111,11 +113,11 @@ int	main(int argc, char *argv[])
 	}
 	atexit(SDL_Quit);
 
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-//	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 5);
-//	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+//	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+//	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+//	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+////	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 5);
+////	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	int	width = int(m->get_width() * s_scale);
@@ -278,8 +280,6 @@ int	main(int argc, char *argv[])
 
 		SDL_Delay(10);
 	}
-
-	SDL_RWclose(in);
 
 	return 0;
 }

@@ -454,7 +454,7 @@ namespace fontlib
 	// generate_font_bitmaps(), and then calls save_cached_font_data()
 	// so that a run-time app can call load_cached_font_data().
 	{
-		s_file = new file("filename", "wb" );
+		s_file = new file(filename, "wb" );
 		if (s_file->error()==NO_ERROR)
 		{
 			// save header identifier.
@@ -472,16 +472,16 @@ namespace fontlib
 			s_saving = false;
 			
 			// save number of bitmaps.
-			int restore = s_file->get_pos();
-			s_file->set_pos(6);
+			int restore = s_file->get_position();
+			s_file->set_position(6);
 			s_file->write_le16( s_bitmaps_used.size() );
-			s_file->set_pos(restore);
+			s_file->set_position(restore);
 			
 			// save number of fonts.
 			s_file->write_le16( s_fonts.size() );
 			
 			// for each font:
-			for (int f=0; f<s_fonts.size(); f++)
+			for (int f=0; f < s_fonts.size(); f++)
 			{
 				// save font name.
 				s_file->write_string(s_fonts[f]->get_name());
@@ -504,7 +504,12 @@ namespace fontlib
 						// save bitmap index.
 						int bi;
 						for (bi=0; bi<s_bitmaps_used.size(); bi++)
-							if (tg->m_bitmap_info==s_bitmaps_used[bi]) break;
+						{
+							if (tg->m_bitmap_info==s_bitmaps_used[bi])
+							{
+								break;
+							}
+						}
 						s_file->write_le16((Uint16)bi);
 
 						// save rect, position.

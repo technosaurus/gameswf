@@ -1,4 +1,4 @@
-// gameswf_file.h	-- Thatcher Ulrich <tu@tulrich.com> 2003
+// gameswf_file.h	-- Ignacio Castaño, Thatcher Ulrich 2003
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-// System dependant definitions, move this elswhere!
+// System dependent definitions, move this elswhere!
 	#ifndef _GAMESWF_LITTLE_ENDIAN_
 	#define _GAMESWF_LITTLE_ENDIAN_	1
 	#endif
@@ -94,13 +94,12 @@ namespace gameswf
 		void 	write_string(const char* src);
 		
 		// get/set pos
-		int 	get_pos() { return m_tell(m_data); }
-		void 	set_pos( int p ) const { m_seek(p, m_data); }
+		int 	get_position() { return m_tell(m_data); }
+		void 	set_position( int p ) const { m_seek(p, m_data); }
 
 		int	error() { return m_error; }
 		
-	protected:
-
+	private:
 		Uint64	read64() { Uint64 u; m_read(&u, 8, m_data); return u; }
 		Uint32	read32() { Uint32 u; m_read(&u, 4, m_data); return u; }
 		Uint16	read16() { Uint16 u; m_read(&u, 2, m_data); return u; }
