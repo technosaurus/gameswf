@@ -23,6 +23,13 @@ date, depending on which one I've been using lately.
 
 I'm depending on:
 
+* The Independent JPEG Group's jpeglib, for jpeg image handling.  This
+  software is based in part on the work of the Independent JPEG Group.
+  See http://www.ijg.org for details.
+
+* zlib and libpng, for .png bitmap support.  See http://www.zlib.org
+  and http://www.libpng.org .  Nice stuff!
+
 * SDL (see http://www.libsdl.org) for the base set of media APIs and
   helper libraries.  SDL is the greatest thing since sliced bread.
   It's covers the non-3D functionality of DirectX, but much prettier
@@ -41,15 +48,13 @@ I'm depending on:
   dealing with it.  I also have some helpers in the engine to make it
   easier to use extensions.
 
-* GNU Make as a build tool on all platforms.  I might experiment with
-  other build tools in the future.  MSVC .dsp's are happily accepted
-  and I'll throw them in the repository, but I'm not going to try to
-  maintain those.  I'm not just using Make (rather than .dsp) because
-  it's cross-platform, although that's a necessity for this project.
-  I'm continually amazed that any real project would use .dsp's.  I
-  have a whole long rant about why you really want a real programming
-  language for build configuration (we're all programmers here,
-  right?), but I'll save it for some other venue.
+* GNU Make as a build tool on all platforms.  I despise the mess that
+  is MSVC's .dsp, and avoid it if I can help it.  I did some
+  experimenting with Jam/MR, and decided it was too hard to use, and
+  mostly a solution to a non-problem.  There's an interesting article
+  here: http://www.pcug.org.au/~millerp/rmch/recu-make-cons-harm.html
+  about how to make efficient makefiles without recursively calling
+  make, although I haven't applied its advice yet in this project.
 
 * Cygwin under Win32 for a sane development environment.  I don't
   really want to become too Cygwin-dependent for building under Win32,

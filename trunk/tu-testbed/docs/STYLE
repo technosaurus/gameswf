@@ -53,8 +53,7 @@ or
 	    do stuff;
 	  }
 
-  is just horrible.  I can't imagine who would do such a thing.
-  Didn't your momma read K&R to you?
+  is just horrible.
 
 * Function comments are required for anything more than a one-liner,
   and they belong between the function header and the body.  Like
