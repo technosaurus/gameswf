@@ -213,9 +213,10 @@ namespace gameswf
 	}
 
 
-	void	fill_style::apply(int fill_side) const
+	void	fill_style::apply(int fill_side, float ratio) const
 	// Push our style parameters into the renderer.
 	{
+		UNUSED(ratio);
 		if (m_type == 0x00)
 		{
 			// 0x00: solid fill
@@ -294,8 +295,9 @@ namespace gameswf
 	}
 
 
-	void	line_style::apply() const
+	void	line_style::apply(float ratio) const
 	{
+		UNUSED(ratio);
 		gameswf::render::line_style_color(m_color);
 	}
 

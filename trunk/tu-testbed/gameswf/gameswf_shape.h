@@ -71,7 +71,7 @@ namespace gameswf
 
 		void	set_tri_strip(const point pts[], int count);
 
-		void	display(const fill_style& style) const;
+		void	display(const base_fill_style& style, float ratio) const;
 
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
@@ -86,7 +86,7 @@ namespace gameswf
 		line_strip();
 		line_strip(int style, const point coords[], int coord_count);
 
-		void	display(const line_style& style) const;
+		void	display(const base_line_style& style, float ratio) const;
 
 		int	get_style() const { return m_style; }
 		void	output_cached_data(tu_file* out);
@@ -113,6 +113,13 @@ namespace gameswf
 			const cxform& cx,
 			const array<fill_style>& fills,
 			const array<line_style>& line_styles) const;
+
+		void display(
+			const matrix& m,
+			const cxform& cx,
+			const array<morph_fill_style>& fills,
+			const array<morph_line_style>& line_styles,
+			float ratio) const;
 
 		void	set_tri_strip(int style, const point pts[], int count);
 		void	add_line_strip(int style, const point coords[], int coord_count);

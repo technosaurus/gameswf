@@ -28,17 +28,21 @@ namespace gameswf
 		rgba	m_color;
 	};
 
+	struct base_fill_style
+	{
+		virtual void apply(int fill_side, float ratio) const = 0;
+	};
 
-	struct fill_style
+	struct fill_style : public base_fill_style
 	// For the interior of outline shapes.
 	{
 		fill_style();
-		~fill_style();
+		virtual ~fill_style();
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		rgba	sample_gradient(int ratio) const;
 		gameswf::bitmap_info*	create_gradient_bitmap() const;
-		void	apply(int fill_side) const;
+		virtual void	apply(int fill_side, float ratio) const;
 
 		rgba	get_color() const { return m_color; }
 		void	set_color(rgba new_color) { m_color = new_color; }
@@ -54,18 +58,57 @@ namespace gameswf
 	};
 
 
-	struct line_style
+	struct morph_fill_style : public base_fill_style
+	{
+		morph_fill_style();
+		morph_fill_style(stream* in, movie_definition_sub* m);
+		virtual ~morph_fill_style();
+		
+		void read(stream* in, movie_definition_sub* m);
+		rgba sample_gradient(int ratio, float morph);
+		bitmap_info* create_gradient_bitmap(float morph) const;
+		virtual void apply(int fill_side, float morph) const;
+		rgba get_color(float morph) const;
+		void set_colors(rgba new_color_orig, rgba new_color_target);
+	private:
+		int m_type;
+		rgba m_color[2];
+		matrix m_gradient_matrix[2];
+		array<gradient_record> m_gradients[2];
+		bitmap_info* m_gradient_bitmap_info[2];
+		bitmap_character_def* m_bitmap_character;
+		matrix m_bitmap_matrix[2];
+	};
+
+	struct base_line_style
+	{
+		virtual void apply(float ratio) const = 0;
+	};
+
+	struct line_style : public base_line_style
 	// For the outside of outline shapes, or just bare lines.
 	{
 		line_style();
 		void	read(stream* in, int tag_type);
-		void	apply() const;
+		virtual void	apply(float ratio) const;
 
 	private:
 		Uint16	m_width;	// in TWIPS
 		rgba	m_color;
 	};
 
+	struct morph_line_style : public base_line_style
+	{
+		morph_line_style();
+		morph_line_style(stream* in);
+
+		void read(stream* in);
+		virtual void apply(float morph) const;
+		
+	private:
+		Uint16 m_width[2];
+		rgba   m_color[2];
+	};
 }
 
 

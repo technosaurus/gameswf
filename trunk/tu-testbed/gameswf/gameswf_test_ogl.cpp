@@ -69,7 +69,7 @@ static void	message_log(const char* message)
 	if (s_verbose)
 	{
 		fputs(message, stdout);
-                //flush(stdout); // needed on osx for some reason
+                fflush(stdout); // needed on osx for some reason
 	}
 }
 

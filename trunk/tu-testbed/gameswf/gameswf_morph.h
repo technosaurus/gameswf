@@ -10,49 +10,16 @@
 
 #include "gameswf_shape.h"
 #include "gameswf_styles.h"
+#include "gameswf_tesselate.h"
 
 namespace gameswf
 {
-	struct morph_fill_style
-	{
-		morph_fill_style();
-		morph_fill_style(stream* in, movie_definition_sub* m);
-		~morph_fill_style();
-		
-		void read(stream* in, movie_definition_sub* m);
-		rgba sample_gradient(int ratio, float morph);
-		bitmap_info* create_gradient_bitmap(float morph) const;
-		void apply(int fill_side, float morph);
-		rgba get_color(float morph) const;
-		void set_colors(rgba new_color_orig, rgba new_color_target);
-	private:
-		int m_type;
-		rgba m_color[2];
-		matrix m_gradient_matrix[2];
-		array<gradient_record> m_gradients[2];
-		bitmap_info* m_gradient_bitmap_info[2];
-		bitmap_character_def* m_bitmap_character;
-		matrix m_bitmap_matrix[2];
-	};
-
-	struct morph_line_style
-	{
-		morph_line_style();
-		morph_line_style(stream* in);
-
-		void read(stream* in);
-		void apply(float morph);
-		
-	private:
-		Uint16 m_width[2];
-		rgba   m_color[2];
-	};
-
 	struct morph_path
 	{
 		morph_path();
 		morph_path(float ax, float ay, int fill0, int fill1, int line);
 		bool is_empty() const { return m_edges[0].size() == 0; }
+		void tesselate(float ratio) const;
 
 		int m_fill0, m_fill1, m_line;
 		float m_ax[2], m_ay[2];
@@ -67,6 +34,7 @@ namespace gameswf
                 virtual void display(character *instance_info);
                 void read(stream* in, int tag_type, bool with_style,
 			  movie_definition_sub* m);
+		virtual void tesselate(float error_tolerance, tesselate::trapezoid_accepter *accepter, float ratio) const;
 
         private:
 		void read_edge(stream* in, edge& e, float& x, float& y);
@@ -78,6 +46,23 @@ namespace gameswf
 		array<morph_line_style> m_line_styles;
 		array<morph_path> m_paths;
         };
+
+	struct morph_tesselating_shape : public tesselate::tesselating_shape
+	{
+		morph_tesselating_shape(shape_morph_def *sh, float ratio) :
+			m_sh(sh), m_ratio(ratio) { }
+		virtual void tesselate(float error_tolerance, tesselate::trapezoid_accepter *accepter) const
+		{
+			m_sh->tesselate(error_tolerance, accepter, m_ratio);
+		}
+
+		
+	private:
+		shape_morph_def *m_sh;
+		float            m_ratio;
+	};
+		
+
 }
 
 #endif /* GAMESWF_MORPH_H */
