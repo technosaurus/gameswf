@@ -1333,7 +1333,7 @@ namespace swf
 	// curve segment.
 	struct edge
 	{
-		// *quadratic* bezier: point = ... * previous_a + ... * c + ... * a
+		// *quadratic* bezier: point = p0 * t^2 + p1 * 2t(1-t) + p2 * (1-t)^2
 		float	m_cx, m_cy;		// "control" point
 		float	m_ax, m_ay;		// "anchor" point
 		int	m_fill0, m_fill1, m_line;
@@ -1370,6 +1370,49 @@ namespace swf
 				return true;
 			}
 			return false;
+		}
+
+
+		void	emit_curve_segments(float x, float y, float tolerance) const
+		// Emit the verts for a curve segment, joining the
+		// given point with (m_ax, m_ay), using intermediate
+		// control point (m_cx, m_cy).  Quadratic bezier.
+		{
+			// Based on de Casteljau: recursive subdivision until tolerance is reached.
+			curve(x, y, m_cx, m_cy, m_ax, m_ay, tolerance);
+
+//			glVertex2f(x, y);
+//			glVertex2f(m_ax, m_ay);
+		}
+
+
+		static void	curve(float p0x, float p0y, float p1x, float p1y, float p2x, float p2y, float tolerance)
+		// Recursive routine to generate bezier curve within tolerance.
+		{
+			// Midpoint on line between two endpoints.
+			float	midx = (p0x + p2x) * 0.5f;
+			float	midy = (p0y + p2y) * 0.5f;
+
+			// Midpoint on the curve.
+			float	qx = (midx + p1x) * 0.5f;
+			float	qy = (midy + p1y) * 0.5f;
+
+			float	dist = fabs(midx - qx) + fabs(midy - qy);
+
+			if (dist < tolerance)
+			{
+				// Emit points.
+				glVertex2f(p0x, p0y);
+				glVertex2f(qx, qy);
+				glVertex2f(qx, qy);
+				glVertex2f(p2x, p2y);
+			}
+			else
+			{
+				// Subdivide.
+				curve(p0x, p0y, (p0x + p1x) * 0.5f, (p0y + p1y) * 0.5f, qx, qy, tolerance);
+				curve(qx, qy, (p1x + p2x) * 0.5f, (p1y + p2y) * 0.5f, p2x, p2y, tolerance);
+			}
 		}
 	};
 
@@ -1609,16 +1652,14 @@ namespace swf
 				const edge&	e = m_edges[i];
 				if (e.is_blank())
 				{
-					x = e.m_ax;
-					y = e.m_ay;
 				}
 				else
 				{
-					glVertex2f(x, y);
-					glVertex2f(e.m_ax, e.m_ay);
-					x = e.m_ax;	
-					y = e.m_ay;
+					// @@ di needs an "error tolerance" parameter -- should be based on scale & desired curve fidelity
+					e.emit_curve_segments(x, y, /* tolerance */ 20.0f);
 				}
+				x = e.m_ax;
+				y = e.m_ay;
 			}
 			glEnd();
 			glPopMatrix();
