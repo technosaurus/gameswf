@@ -345,8 +345,8 @@ struct kd_ray_query_info
 	kd_ray_query_info(const ray_query& query, const vec3* verts, int vert_count)
 		:
 		m_query(query),
-		m_verts(verts),
-		m_vert_count(vert_count)
+		m_vert_count(vert_count),
+		m_verts(verts)
 	{
 	}
 

@@ -1389,7 +1389,7 @@ namespace mesh {
 		bool	special;
 
 		// hash function, for hash<>.
-		static int	compute(const vert_info& data)
+		size_t	operator()(const vert_info& data)
 		{
 			return data.x + (data.y << 5) * 101 + (data.z << 10) * 101 + data.special;
 		}

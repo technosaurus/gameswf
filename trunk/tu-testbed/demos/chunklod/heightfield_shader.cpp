@@ -493,20 +493,22 @@ void	heightfield_shader(const char* infile,
 	Uint8*	texture_pixels = new Uint8[width * 3];
 	Uint8*	diffuse_pixels = new Uint8[width * 3];
 
-	// Create our JPEG compression object, and initialize compression settings.
-	struct jpeg_compress_struct cinfo;
-	struct jpeg_error_mgr jerr;
-	cinfo.err = jpeg_std_error(&jerr);
-	jpeg_create_compress(&cinfo);
-	jpeg::setup_rw_dest(&cinfo, out);
+// 	// Create our JPEG compression object, and initialize compression settings.
+// 	struct jpeg_compress_struct cinfo;
+// 	struct jpeg_error_mgr jerr;
+// 	cinfo.err = jpeg_std_error(&jerr);
+// 	jpeg_create_compress(&cinfo);
+// 	jpeg::setup_rw_dest(&cinfo, out);
 
-	cinfo.image_width = width;
-	cinfo.image_height = height;
-	cinfo.input_components = 3;
-	cinfo.in_color_space = JCS_RGB;
-	jpeg_set_defaults(&cinfo);
-	jpeg_set_quality(&cinfo, 80 /* 0..100 */, TRUE);
-	jpeg_start_compress(&cinfo, TRUE);
+// 	cinfo.image_width = width;
+// 	cinfo.image_height = height;
+// 	cinfo.input_components = 3;
+// 	cinfo.in_color_space = JCS_RGB;
+// 	jpeg_set_defaults(&cinfo);
+// 	jpeg_set_quality(&cinfo, 80 /* 0..100 */, TRUE);
+// 	jpeg_start_compress(&cinfo, TRUE);
+
+	jpeg::output*	jout = jpeg::output::create(out, width, height, 80 /* quality, 0..100 */);
 
 	{for (int j = 0; j < height; j++) {
 
@@ -590,18 +592,20 @@ void	heightfield_shader(const char* infile,
 			*p++ = b;
 		}}
 
-		// Write out the scanline.
-		JSAMPROW	row_pointer[1];
-		row_pointer[0] = texture_pixels;
-		jpeg_write_scanlines(&cinfo, row_pointer, 1);
+ 		// Write out the scanline.
+// 		JSAMPROW	row_pointer[1];
+// 		row_pointer[0] = texture_pixels;
+// 		jpeg_write_scanlines(&cinfo, row_pointer, 1);
+		jout->write_scanline(texture_pixels);
 
 		int	percent_done = int(100.0f * float(j) / (height - 1));
 
 		printf("\b\b\b\b\b\b%3d%% %c", percent_done, spinner[j&3]);
 	}}
 	
-	jpeg_finish_compress(&cinfo);
-	jpeg_destroy_compress(&cinfo);
+// 	jpeg_finish_compress(&cinfo);
+// 	jpeg_destroy_compress(&cinfo);
+	delete jout;
 
 	delete diffuse_pixels;
 	delete texture_pixels;
