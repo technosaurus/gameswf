@@ -8,6 +8,7 @@
 
 #include "base/container.h"
 #include "base/utf8.h"
+#include "base/tu_random.h"
 
 
 void	tu_string::resize(int new_size)
@@ -145,12 +146,76 @@ void	tu_string::resize(int new_size)
 
 // Compile this test case with something like:
 //
-// gcc container.cpp -g -I.. -DCONTAINER_UNIT_TEST -lstdc++ -o container_test
+// gcc container.cpp utf8.cpp tu_random.cpp -g -I.. -DCONTAINER_UNIT_TEST -lstdc++ -o container_test
 //
 //    or
 //
-// cl container.cpp -Zi -Od -DCONTAINER_UNIT_TEST -I..
+// cl container.cpp utf8.cpp tu_random.cpp -Zi -Od -DCONTAINER_UNIT_TEST -I..
 
+
+void	test_hash()
+{
+	// Collect a bunch of random key/value pairs.
+	array<Uint32>	data;
+	for (int i = 0; i < 1000; i++)
+	{
+		data.push_back(tu_random::next_random());
+	}
+
+	// Push into hash.
+	hash<Uint32, Uint32>	h;
+	{for (int i = 0; i < data.size() / 2; i++)
+	{
+		h.add(data[i*2], data[i*2 + 1]);
+
+		// Verify the contents of the hash so far.
+		for (int j = 0; j < i; j++)
+		{
+			Uint32	key = data[j*2];
+			Uint32	val;
+			bool	got = h.get(key, &val);
+			assert(got);
+			assert(val == data[j*2 + 1]);
+		}
+	}}
+
+	// Manually copy stuff over to h2, using iterator interface.
+	hash<Uint32, Uint32>	h2;
+	{for (hash<Uint32, Uint32>::iterator it = h.begin(); it != h.end(); ++it)
+	{
+		//printf("first = 0x%X, second = 0x%X\n", it->first, it->second);//xxxxx
+		assert(h.get(it->first, NULL) == true);
+
+		h2.add(it->first, it->second);
+
+		Uint32	val;
+		bool	got = h2.get(it->first, &val);
+		assert(got);
+		assert(val == it->second);
+	}}
+
+	// Verify the contents of h2.
+	{for (int i = 0; i < data.size() / 2; i++)
+	{
+		Uint32	key = data[i*2];
+		Uint32	val;
+		bool	got = h.get(key, &val);
+		assert(got);
+		assert(val == data[i*2 + 1]);
+	}}
+
+	h.clear();
+	assert(h.size() == 0);
+
+	// Verify that h really is missing the stuff it had before, and h2 really has it.
+	{for (hash<Uint32, Uint32>::iterator it = h2.begin(); it != h2.end(); ++it)
+	{
+		assert(h.get(it->first, NULL) == false);
+		assert(h2.get(it->first, NULL) == true);
+		assert(h.find(it->first) == h.end());
+		assert(h2.find(it->first) != h2.end());
+	}}
+}
 
 
 void	test_stringi()
@@ -341,10 +406,11 @@ int	main()
 
 	assert(b == "#sacrificial lamb");
 
-	// TODO: unit tests for array<>, hash<>, string_hash<>
-
+	test_hash();
 	test_stringi();
 	test_stringi_hash();
+
+	// TODO: unit tests for array<>, tu_string, string_hash<>
 
 	return 0;
 }
