@@ -20,8 +20,7 @@ namespace swf
 namespace render
 {
 	// Curve subdivision error tolerance (in TWIPs)
-//	static float	s_tolerance = 20.0f;
-	static float	s_tolerance = 100.0f;
+	static float	s_tolerance = 20.0f;
 
 
 	struct fill_style
@@ -384,6 +383,36 @@ namespace render
 			//
 			// Draw the filled shape.
 			//
+
+#if 1
+			// Draw outlines as antialiased lines, for
+			// antialiasing effect.  This actually works
+			// half-decently!  Needs a few tweaks: when
+			// the fill mode has fractional alpha, the
+			// line needs to be drawn with severely
+			// reduced alpha, to avoid a halo effect.
+			// Doesn't seem to work on some shapes
+			// (inside-out ones?)
+			glBegin(GL_LINES);
+			for (int i = 0; i < s_current_segments.size(); i++)
+			{
+				const fill_segment&	seg = s_current_segments[i];
+				if (seg.m_left_style.is_valid())
+				{
+					seg.m_left_style.apply();
+					glVertex2f(seg.m_begin.m_x, seg.m_begin.m_y);
+					glVertex2f(seg.m_end.m_x, seg.m_end.m_y);
+				}
+				else if (seg.m_right_style.is_valid())
+				{
+					seg.m_right_style.apply();
+					glVertex2f(seg.m_begin.m_x, seg.m_begin.m_y);
+					glVertex2f(seg.m_end.m_x, seg.m_end.m_y);
+				}
+			}
+			glEnd();
+#endif // 1		
+
 
 			// sort by begining y (smaller first), then by height (shorter first)
 			qsort(&s_current_segments[0], s_current_segments.size(), sizeof(s_current_segments[0]), compare_segment_y);

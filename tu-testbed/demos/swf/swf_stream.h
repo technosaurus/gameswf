@@ -36,7 +36,14 @@ namespace swf
 		Sint8	read_s8();
 		Uint16	read_u16();
 		Sint16	read_s16();
+		Uint32	read_u32();
+		Sint32	read_s32();
+
+		// For null-terminated string.
 		char*	read_string();	// reads *and new[]'s* the string -- ownership passes to caller!
+
+		// For string that begins with an 8-bit length code.
+		char*	read_string_with_length();	// reads *and new[]'s* the string -- ownership passes to caller!
 
 		int	get_position();
 		void	set_position(int pos);
