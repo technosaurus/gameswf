@@ -13,12 +13,7 @@
 #define MMAP_ARRAY_H
 
 
-// Some (platform-specific) helper functions used by mmap_array<> to
-// do the actual memory mapping.
-namespace mmap_array_helper {
-	void*	map(int size, bool writable, const char* filename);
-	void	unmap(void* buffer, int size);
-};
+#include "mmap_util.h"
 
 
 template<class data_type>
@@ -30,7 +25,7 @@ public:
 		m_height(height),
 		m_writeable(writeable)
 	{
-		m_data = mmap_array_helper::map(total_bytes(), m_writeable, filename);
+		m_data = mmap_util::map(total_bytes(), m_writeable, filename);
 		if (m_data == NULL) {
 			throw "mmap_array: can't map memory!";
 		}
@@ -38,7 +33,7 @@ public:
 
 	~mmap_array()
 	{
-		mmap_array_helper::unmap(m_data, total_bytes());
+		mmap_util::unmap(m_data, total_bytes());
 	}
 
 

@@ -1,15 +1,13 @@
-// mmap_array.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2002
+// mmap_util.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2002
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// Datatype for making a memory-mapped 2D array.  The data is stored
-// on disk, and mapped into memory using mmap (Posix) or MapViewOfFile
-// (Win32).  Use this for processing giant heightfield or texture
-// datasets "out-of-core".
+// Utility wrappers for memory-mapping functionality on Posix and
+// Windows.
 
 
-#include "mmap_array.h"
+#include "mmap_util.h"
 
 
 #ifdef WIN32
@@ -20,7 +18,7 @@
 #include "engine/container.h"
 
 
-namespace mmap_array_helper {
+namespace mmap_util {
 
 	hash<void*, char*>	s_temp_filenames;
 
@@ -116,6 +114,9 @@ namespace mmap_array_helper {
 #else // not WIN32
 
 
+// (implementation & debugging from tbp)
+
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
@@ -133,7 +134,7 @@ namespace mmap_array_helper {
 
 
 // wrappers for mmap/munmap
-namespace mmap_array_helper {
+namespace mmap_util {
 	hash<void*, char*>	s_temp_filenames;
 
 	// Create a memory-mapped window into a file.  If filename is
@@ -197,7 +198,7 @@ namespace mmap_array_helper {
 		return data;
 
 	UNWIND: // No execeptions => gotos ;)
-		perror("mmap_array_helper::map() -- ");
+		perror("mmap_util::map() -- ");
 		// At least opened at this point
 		close(fildes);
 		if (created) {
