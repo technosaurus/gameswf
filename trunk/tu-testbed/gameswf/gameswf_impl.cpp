@@ -422,7 +422,7 @@ namespace gameswf
 				{
 					// Call back the visitor.
 					visitor->visit(inf.m_source_url.c_str());
-					visited[inf.m_source_url] = true;
+					visited.set(inf.m_source_url, true);
 				}
 			}
 		}

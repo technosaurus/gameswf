@@ -498,6 +498,13 @@ done:
 	delete sound;
 	delete render;
 
+	// For testing purposes, throw some keypresses into gameswf,
+	// to make sure the key handler is properly using weak
+	// references to listeners.
+	gameswf::notify_key_event(gameswf::key::A, true);
+	gameswf::notify_key_event(gameswf::key::B, true);
+	gameswf::notify_key_event(gameswf::key::C, true);
+
 	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 	gameswf::clear();
 
