@@ -1164,26 +1164,34 @@ namespace gameswf
 			else if (bitmap_format == 5)
 			{
 				// 32 bits / pixel, input is ARGB format (???)
+				const int	bytes_per_pixel = 4;
+				int	pitch = width * bytes_per_pixel;
 
-				inflate_wrapper(in->m_input, ch->m_image->m_data, width * height * 3);
+				int	buffer_bytes = pitch * height;
+				Uint8*	buffer = new Uint8[buffer_bytes];
+
+				inflate_wrapper(in->m_input, buffer, buffer_bytes);
 				assert(in->get_tag_end_position() == in->get_position());
 			
 				// Need to re-arrange ARGB into RGB.
 				for (int j = 0; j < height; j++)
 				{
-					Uint8*	image_row = image::scanline(ch->m_image, j);
+					Uint8*	image_in_row = buffer + j * pitch;
+					Uint8*	image_out_row = image::scanline(ch->m_image, j);
 					for (int i = 0; i < width; i++)
 					{
-						Uint8	a = image_row[i * 4 + 0];
-						Uint8	r = image_row[i * 4 + 1];
-						Uint8	g = image_row[i * 4 + 2];
-						Uint8	b = image_row[i * 4 + 3];
-						image_row[i * 3 + 0] = r;
-						image_row[i * 3 + 1] = g;
-						image_row[i * 3 + 2] = b;
+						Uint8	a = image_in_row[i * 4 + 0];
+						Uint8	r = image_in_row[i * 4 + 1];
+						Uint8	g = image_in_row[i * 4 + 2];
+						Uint8	b = image_in_row[i * 4 + 3];
+						image_out_row[i * 3 + 0] = r;
+						image_out_row[i * 3 + 1] = g;
+						image_out_row[i * 3 + 2] = b;
 						a = a;	// Inhibit warning.
 					}
 				}
+
+				delete [] buffer;
 			}
 
 			// add image to movie, under character id.
