@@ -22,6 +22,20 @@ template<class coord_t>
 struct index_point
 // Simple point class for spatial index.
 {
+	index_point() {}
+	index_point(coord_t x_in, coord_t y_in)
+		:
+		x(x_in),
+		y(y_in)
+	{
+	}
+
+	bool	operator==(const index_point<coord_t>& pt) const
+	{
+		return x == pt.x && y == pt.y;
+	}
+
+//data:
 	coord_t	x, y;
 };
 
@@ -30,19 +44,57 @@ template<class coord_t>
 struct index_box
 // Simple bounding box class.
 {
+	index_box() {}
+	index_box(const index_point<coord_t>& min_max_in)
+		:
+		min(min_max_in),
+		max(min_max_in)
+	{
+	}
+	index_box(const index_point<coord_t>& min_in, const index_point<coord_t>& max_in)
+		:
+		min(min_in),
+		max(max_in)
+	{
+	}
+
+	coord_t	get_width() const { return max.x - min.x; }
+	coord_t	get_height() const { return max.y - min.y; }
+
+	void	expand_to_enclose(const index_point<coord_t>& loc)
+	{
+		if (loc.x < min.x) min.x = loc.x;
+		if (loc.y < min.y) min.y = loc.y;
+		if (loc.x > max.x) max.x = loc.x;
+		if (loc.y > max.y) max.y = loc.y;
+	}
+
+	bool	contains_point(const index_point<coord_t>& loc) const
+	{
+		if (loc.x >= min.x && loc.x <= max.x && loc.y >= min.y && loc.y <= max.y)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+//data:
 	index_point<coord_t>	min;
 	index_point<coord_t>	max;
 };
 
 
-template<class coord_t, class payload>
+template<class coord_t, class payload_t>
 struct grid_entry_point
 // Holds one entry for a grid point cell.
 {
 	index_point<coord_t>	location;
-	payload	value;
+	payload_t	value;
 
-	grid_entry_point<coord_t, payload>*	m_next;
+	grid_entry_point<coord_t, payload_t>*	m_next;
 };
 
 
@@ -66,12 +118,15 @@ struct grid_index_point
 
 		// Allocate the grid.
 		m_array = new grid_entry_t*[x_cells * y_cells];
+		memset(&m_array[0], 0, sizeof(grid_entry_t*) * x_cells * y_cells);
 	}
 
 	~grid_index_point()
 	{
 		delete [] m_array;
 	}
+
+	const box_t&	get_bound() const { return m_bound; }
 
 	struct iterator
 	{
@@ -80,6 +135,17 @@ struct grid_index_point
 		index_box<int>	m_query_cells;
 		int	m_current_cell_x, m_current_cell_y;
 		grid_entry_t*	m_current_entry;
+
+		iterator()
+			:
+			m_index(NULL),
+			m_query(point_t(0, 0), point_t(0, 0)),
+			m_query_cells(index_point<int>(0, 0), index_point<int>(0, 0)),
+			m_current_cell_x(0),
+			m_current_cell_y(0),
+			m_current_entry(NULL)
+		{
+		}
 
 		bool	at_end() const { return m_current_entry == NULL; }
 
@@ -107,33 +173,60 @@ struct grid_index_point
 			assert(m_current_entry == NULL);
 
 			// Done with current cell; go to next cell.
-			while (m_current_entry_y <= m_query_cells.max.y)
+			m_current_cell_x++;
+			while (m_current_cell_y <= m_query_cells.max.y)
 			{
 				for (;;)
 				{
-					m_current_entry_x++;
-					if (m_current_entry_x > m_query_cells.max.x)
+					if (m_current_cell_x > m_query_cells.max.x)
 					{
 						break;
 					}
 
-					m_current_entry = m_index->get_cell(m_current_entry_x, m_current_entry_y);
+					m_current_entry = m_index->get_cell(m_current_cell_x, m_current_cell_y);
 					if (m_current_entry)
 					{
 						// Found a valid cell.
 						return;
 					}
+
+					m_current_cell_x++;
 				}
-				m_current_entry_x = m_query_cells.min.x;
-				m_current_entry_y++;
+				m_current_cell_x = m_query_cells.min.x;
+				m_current_cell_y++;
 			}
 
-			assert(m_current_entry_x == m_query_cells.max.x + 1);
-			assert(m_current_entry_y == m_query_cells.max.y + 1);
+			assert(m_current_cell_x == m_query_cells.min.x);
+			assert(m_current_cell_y == m_query_cells.max.y + 1);
 
 			// No more valid cells.
 			assert(at_end());
 		}
+
+		grid_entry_t&	operator*()
+		{
+			assert(at_end() == false && m_current_entry != NULL);
+			return *m_current_entry;
+		}
+		grid_entry_t*	operator->() { return &(operator*()); }
+
+		// @@ TODO Finish
+		//
+		//bool	operator==(const const_iterator& it) const
+		//{
+		//	if (at_end() && it.at_end())
+		//	{
+		//		return true;
+		//	}
+		//	else
+		//	{
+		//		return
+		//			m_hash == it.m_hash
+		//			&& m_index == it.m_index;
+		//	}
+		//}
+		//
+		//bool	operator!=(const const_iterator& it) const { return ! (*this == it); }
 	};
 
 	iterator	begin(const box_t& q)
@@ -156,6 +249,17 @@ struct grid_index_point
 		{
 			it.advance();
 		}
+
+		return it;
+	}
+
+	iterator	end() const
+	{
+		iterator	it;
+		it.m_index = this;
+		it.m_current_entry = NULL;
+
+		return it;
 	}
 
 	void	add(const point_t& location, payload p)
@@ -206,6 +310,23 @@ struct grid_index_point
 		assert(0);
 	}
 
+	iterator	find(const point_t& location, payload p)
+	// Helper.  Search for matching entry.
+	{
+		for (iterator it = begin(box_t(location, location)); ! it.at_end(); ++it)
+		{
+			if (it->location == location && it->value == p)
+			{
+				// Found it.
+				return it;
+			}
+		}
+
+		// Didn't find it.
+		assert(it.at_end());
+		return it;
+	}
+
 private:
 	
 	grid_entry_t*	get_cell(int x, int y)
@@ -230,8 +351,8 @@ private:
 	// Get the indices of the cell that contains the given point.
 	{
 		index_point<int>	ip;
-		ip.x = ((p.x - m_bound.min.x) * m_x_cells) / (m_bound.max.x - m_bound.min.x);
-		ip.y = ((p.y - m_bound.min.y) * m_y_cells) / (m_bound.max.y - m_bound.min.y);
+		ip.x = int(((p.x - m_bound.min.x) * coord_t(m_x_cells)) / (m_bound.max.x - m_bound.min.x));
+		ip.y = int(((p.y - m_bound.min.y) * coord_t(m_y_cells)) / (m_bound.max.y - m_bound.min.y));
 
 		// Clamp.
 		if (ip.x < 0) ip.x = 0;
@@ -246,7 +367,7 @@ private:
 	box_t	m_bound;
 	int	m_x_cells;
 	int	m_y_cells;
-	grid_entry_t*	m_array;
+	grid_entry_t**	m_array;
 };
 
 
