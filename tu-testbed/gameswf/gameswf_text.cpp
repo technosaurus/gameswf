@@ -543,6 +543,10 @@ namespace gameswf
 				set_text_value(val.to_string());
 				return;
 			}
+			else if (name == "_visible")
+			{
+				set_visible(val.to_bool());
+			}
 			// do we have other members?  Can outsiders set properties on us?
 		}
 
