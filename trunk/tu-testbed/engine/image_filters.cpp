@@ -328,7 +328,7 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	float	xscale, yscale;		/* zoom scale factors */
 	int i, j, k;			/* loop variables */
 	int n;				/* pixel number */
-	float center, left, right;	/* filter calculation variables */
+	float center; int left, right;	/* filter calculation variables */
 	float width, fscale, weight;	/* filter calculation variables */
 	Uint8*	raster;			/* a row or column of pixels */
 
@@ -344,8 +344,8 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	assert(in_width > 0);
 	assert(in_height > 0);
 
-	int	in_window_w = ceilf(in_x1) - floorf(in_x0) + 1;
-	int	in_window_h = ceilf(in_y1) - floorf(in_y0) + 1;
+	int	in_window_w = int(ceilf(in_x1) - floorf(in_x0) + 1);
+	int	in_window_h = int(ceilf(in_y1) - floorf(in_y0) + 1);
 
 	/* create intermediate image to hold horizontal zoom */
 	tmp = image::create_rgb(out_width, in_window_h);
@@ -361,8 +361,8 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			contrib[i].resize(0);
 
 			center = (float) i / xscale;
-			left = ceilf(center - width);
-			right = floorf(center + width);
+			left = int(ceilf(center - width));
+			right = int(floorf(center + width));
 			for (j = left; j <= right; ++j) {
 				weight = center - (float) j;
 				weight = (*filter_function)(weight / fscale) / fscale;
@@ -374,8 +374,8 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 		for (i = 0; i < tmp->m_width; ++i) {
 			contrib[i].resize(0);
 			center = (float) i / xscale;
-			left = ceilf(center - support);
-			right = floorf(center + support);
+			left = int(ceilf(center - support));
+			right = int(floorf(center + support));
 			for(j = left; j <= right; ++j) {
 				weight = center - (float) j;
 				weight = (*filter_function)(weight);
@@ -388,7 +388,7 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	/* apply filter to zoom horizontally from src to tmp */
 	raster = (Uint8*) calloc(in_window_w, 3);
 	for (k = 0; k < tmp->m_height; ++k) {
-		get_row(raster, in, floorf(in_x0), in_window_w, k);
+		get_row(raster, in, int(floorf(in_x0)), in_window_w, k);
 		for (i = 0; i < tmp->m_width; ++i) {
 			float	red = 0.0f;
 			float	green = 0.0f;
@@ -413,8 +413,8 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			contrib[i].resize(0);
 
 			center = (float) i / yscale;
-			left = ceilf(center - width);
-			right = floorf(center + width);
+			left = int(ceilf(center - width));
+			right = int(floorf(center + width));
 			for (j = left; j <= right; ++j) {
 				weight = center - (float) j;
 				weight = (*filter_function)(weight / fscale) / fscale;
@@ -426,8 +426,8 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 		for (i = 0; i < out_height; ++i) {
 			contrib[i].resize(0);
 			center = (float) i / yscale;
-			left = ceilf(center - support);
-			right = floorf(center + support);
+			left = int(ceilf(center - support));
+			right = int(floorf(center + support));
 			for(j = left; j <= right; ++j) {
 				weight = center - (float) j;
 				weight = (*filter_function)(weight);

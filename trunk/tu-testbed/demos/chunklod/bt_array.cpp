@@ -23,7 +23,9 @@ const int TOTAL_CACHE_BYTES = 16 << 20; // a number of bytes that we're pretty s
 bt_array::bt_array()
 // Constructor.  Invalidate everything.  Client use bt_array::create()
 // to make an instance.
-	: m_float_data(false),
+	: m_cache_height(0),
+	  m_sizeof_element(2),
+	  m_float_data(false),
 	  m_width(0),
 	  m_height(0),
 	  m_utm_flag(false),
@@ -34,8 +36,7 @@ bt_array::bt_array()
 	  m_bottom(0),
 	  m_top(0),
 	  m_data(0),
-	  m_data_size(0),
-	  m_sizeof_element(2)
+	  m_data_size(0)
 {
 }
 

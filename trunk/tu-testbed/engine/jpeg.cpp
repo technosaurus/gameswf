@@ -281,6 +281,7 @@ namespace jpeg
 			assert(m_cinfo.output_scanline < m_cinfo.output_height);
 			int	lines_read = jpeg_read_scanlines(&m_cinfo, &rgb_data, 1);
 			assert(lines_read == 1);
+			lines_read = lines_read;	// avoid warning in NDEBUG
 		}
 	};
 

@@ -152,13 +152,6 @@ struct lod_chunk {
 //methods:
 	~lod_chunk()
 	{
-		if (has_children()) {
-			for (int i = 0; i < 4; i++) {
-				delete m_children[i];
-				m_children[i] = 0;
-			}
-		}
-
 		if (m_data) {
 			delete m_data;
 			m_data = 0;
@@ -451,7 +444,8 @@ int	chunk_tree_loader::loader_thread()
 				chunk_to_load = m_request_buffer[0];	// (could be NULL)
 
 				// shift requests down.
-				for (int i = 0; i < REQUEST_BUFFER_SIZE - 1; i++)
+				int	i;
+				for (i = 0; i < REQUEST_BUFFER_SIZE - 1; i++)
 				{
 					m_request_buffer[i] = m_request_buffer[i + 1];
 				}
@@ -1152,6 +1146,15 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 
 	// Set up our loader.
 	m_loader = new chunk_tree_loader(this, src);
+}
+
+
+lod_chunk_tree::~lod_chunk_tree()
+// Destructor.
+{
+	delete [] m_chunks;
+	delete [] m_chunk_table;
+	delete m_loader;
 }
 
 
