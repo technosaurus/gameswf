@@ -97,14 +97,13 @@ namespace gameswf
 				if (format == sound_handler::FORMAT_UNCOMPRESSED
 				    && sample_16bit)
 				{
-					// Swap sample bytes and fix sign bit.
+					#ifndef _TU_LITTLE_ENDIAN_
+					// Swap sample bytes to get big-endian format.
 					for (int i = 0; i < data_bytes - 1; i += 2)
 					{
-					#ifndef _TU_LITTLE_ENDIAN_
-						swap(data[i], data[i+1]);
-					#endif // not _TU_LITTLE_ENDIAN_
-//						*(Sint16*)(&data[i]) ^= 0x0000;	// @@ ?
+						swap(&data[i], &data[i+1]);
 					}
+					#endif // not _TU_LITTLE_ENDIAN_
 
 					format = sound_handler::FORMAT_NATIVE16;
 				}
