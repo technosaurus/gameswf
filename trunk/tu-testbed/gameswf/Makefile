@@ -8,16 +8,6 @@
 TOP = ..
 include $(TOP)/config
 
-# temporary hack...
-ifeq ($(TU_TESTBED_COMPILER), msvc)
-	SDL_MIXER_INCLUDE := -I../../SDL_mixer-1.2.5
-	SDL_MIXER_LIB := ../../SDL_mixer-1.2.5/VisualC/Release/SDL_mixer.lib
-else
-	SDL_MIXER_INCLUDE := 
-	SDL_MIXER_LIB := -lSDL_mixer
-endif
-
-
 INCLUDE_PATHS := $(ENGINE_INCLUDE) $(ZLIB_INCLUDE) $(SDL_MIXER_INCLUDE)
 
 CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
