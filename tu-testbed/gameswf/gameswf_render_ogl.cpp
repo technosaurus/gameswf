@@ -828,6 +828,8 @@ namespace render
 	// Clip the interval [y0, y1] off of the segments from s_current_segments[i0 through (i1-1)]
 	// and render the clipped segments.  Modifies the values in s_current_segments.
 	{
+		assert(i0 < i1);
+
 		if (y0 == y1)
 		{
 			// Don't bother doing any work...
@@ -885,6 +887,19 @@ namespace render
 // else we could do.
 //
 // A good area for experiments.
+//
+// The big problem is what happens at joints; if you have a vertical
+// line going into a slanted line, the corner will have a little extra
+// spike, since the boundary is horizontal (due to trapezoid slicing).
+// What we really want is the boundary to be normal to the vertex,
+// i.e. the average of the two perpendiculars.  Which essentially
+// means we have to shrink the shape?!?!  Conundrum?  Or do-able?
+//
+// * What if we combined this one, drawing out to a half-pixel of
+// half-transparency without expanding the shape, and *also* did the
+// line-around-the-outside, of only a half-pixel, of 50% to 0%
+// transparency?  So the boundary is a bent shape...  Hm, smells
+// promising!
 
 		// Render pairs.
 		if (s_multitexture_antialias)
@@ -986,20 +1001,45 @@ namespace render
 		else
 #endif // 0 -- end half-assed antialiasing code
 		{
-			for (int i = 0; i < slab.size() - 1; i++)
+			if (slab.size() > 0
+			    && slab[0].m_left_style.is_valid() == false
+			    && slab[0].m_right_style.is_valid() == true)
 			{
-				if (slab[i].m_left_style.is_valid())
+				// Reverse sense of polygon fill!  Right fill style is in charge.
+				for (int i = 0; i < slab.size() - 1; i++)
 				{
-					// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
+					if (slab[i].m_right_style.is_valid())
+					{
+						// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
 
-					slab[i].m_left_style.apply(s_matrix_stack.back());
+						slab[i].m_right_style.apply(s_matrix_stack.back());
 
-					glBegin(GL_QUADS);
-					glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
-					glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
-					glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
-					glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
-					glEnd();
+						glBegin(GL_QUADS);
+						glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
+						glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
+						glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
+						glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
+						glEnd();
+					}
+				}
+			}
+			else
+			{
+				for (int i = 0; i < slab.size() - 1; i++)
+				{
+					if (slab[i].m_left_style.is_valid())
+					{
+						// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
+
+						slab[i].m_left_style.apply(s_matrix_stack.back());
+
+						glBegin(GL_QUADS);
+						glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
+						glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
+						glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
+						glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
+						glEnd();
+					}
 				}
 			}
 		}

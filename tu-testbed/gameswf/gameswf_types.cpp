@@ -181,6 +181,15 @@ namespace gameswf
 	}
 
 
+	bool	matrix::does_flip() const
+	// Return true if this matrix reverses handedness.
+	{
+		float	det = m_[0][0] * m_[1][1] - m_[0][1] * m_[1][0];
+
+		return det < 0.f;
+	}
+
+
 	//
 	// cxform
 	//

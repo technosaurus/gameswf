@@ -1682,7 +1682,7 @@ namespace gameswf
 			{
 				fill_styles[m_fill0 - 1].apply(0);
 			}
-			else
+			else 
 			{
 				gameswf::render::fill_style_disable(0);
 			}
@@ -1909,7 +1909,8 @@ namespace gameswf
 						if (SHAPE_LOG) IF_DEBUG(printf("scr: fill0 = %d\n", current_path.m_fill0));
 					}
 					if ((flags & 0x04)
-					    && num_fill_bits) {
+					    && num_fill_bits > 0)
+					{
 						// fill_style_1_change = 1;
 						if (! current_path.is_empty())
 						{
@@ -2399,7 +2400,7 @@ namespace gameswf
 		void	read(stream* in, int tag_type, movie* m)
 		{
 			assert(m != NULL);
-			assert(tag_type == 11);
+			assert(tag_type == 11 || tag_type == 33);
 
 			m_rect.read(in);
 			m_matrix.read(in);
