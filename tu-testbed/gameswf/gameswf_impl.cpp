@@ -39,6 +39,12 @@ namespace gameswf
 	bool	s_verbose_action = false;
 	bool	s_verbose_parse = false;
 
+#ifndef NDEBUG
+	bool	s_verbose_debug = true;
+#else
+	bool	s_verbose_debug = false;
+#endif
+
 
 	void	set_verbose_action(bool verbose)
 	// Enable/disable log messages re: actions.
@@ -2135,7 +2141,7 @@ namespace gameswf
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
 		{
-			IF_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
+			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
 
 			/* does STOP need a special case?
 			if (m_play_state == STOP)
@@ -2480,36 +2486,42 @@ namespace gameswf
 			}
 			else if (name == "_xmouse")
 			{
-				// Local coord of mouse.
+				// Local coord of mouse IN PIXELS.
 				int	x, y, buttons;
 				assert(m_root);
 				m_root->get_mouse_state(&x, &y, &buttons);
 
 				matrix	m = get_world_matrix();
 
-				point	a(x, y);
+				point	a(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
 				point	b;
 				
 				m.transform_by_inverse(&b, a);
 
-				val->set(b.m_x);
+				val->set(TWIPS_TO_PIXELS(b.m_x));
 				return true;
 			}
 			else if (name == "_ymouse")
 			{
-				// Local coord of mouse.
+				// Local coord of mouse IN PIXELS.
 				int	x, y, buttons;
 				assert(m_root);
 				m_root->get_mouse_state(&x, &y, &buttons);
 
 				matrix	m = get_world_matrix();
 
-				point	a(x, y);
+				point	a(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
 				point	b;
 				
 				m.transform_by_inverse(&b, a);
 
-				val->set(b.m_y);
+				val->set(TWIPS_TO_PIXELS(b.m_y));
+				return true;
+			}
+
+			if (name == "_parent")
+			{
+				val->set(static_cast<as_object_interface*>(m_parent));
 				return true;
 			}
 

@@ -110,8 +110,17 @@ namespace gameswf
 	{
 		assert(ch);
 		
-		// Try to move an existing character before creating a new one.
+		// Eliminate an existing object if it's in the way.
+		int	size = m_display_object_array.size();
 		int index = find_display_index(depth);
+		if (index >= 0 && index < size)
+		{
+			display_object_info & dobj = m_display_object_array[index];
+
+			delete dobj.m_character;
+			dobj.m_character = NULL;
+			m_display_object_array.remove(index);
+		}
 
 		ch->set_depth(depth);
 
@@ -198,18 +207,13 @@ namespace gameswf
 	// character.
 	{
 		int	size = m_display_object_array.size();
-		if (size <= 0)
-		{
-			// error.
-			assert(0);
-			return;
-		}
-		
 		int	index = find_display_index(depth);
 		if (index < 0 || index >= size)
 		{
-			// error.
-			assert(0);
+			// Error.
+			IF_VERBOSE_DEBUG(log_msg("dl::replace_display_object() no obj at depth %d\n", depth));
+			// Fallback -- add the object.
+			add_display_object(ch, depth, color_xform, mat, ratio, clip_depth);
 			return;
 		}
 		
@@ -217,8 +221,7 @@ namespace gameswf
 		if (di.m_character->get_depth() != depth)
 		{
 			// error
-			IF_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
-			//			assert(0);
+			IF_VERBOSE_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
 			return;
 		}
 		

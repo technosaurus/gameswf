@@ -748,8 +748,19 @@ namespace gameswf
 					break;
 				}
 				case 0x4F:	// set member
-					// @@ TODO
+				{
+					as_object_interface*	obj = env->top(2).to_object();
+					if (obj)
+					{
+						obj->set_member(env->top(1).to_tu_string(), env->top(0));
+					}
+					else
+					{
+						// @@ invalid object: log error?
+					}
+					env->drop(3);
 					break;
+				}
 				case 0x50:	// increment
 					env->top(0) += 1;
 					break;
