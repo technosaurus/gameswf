@@ -7,6 +7,10 @@ all:
 	make -C engine
 	make -C demos/chunklod
 
+clean:
+	make -C engine clean
+	make -C demos/chunklod clean
+
 
 # Need a better way to do this.
 chunkdemo:

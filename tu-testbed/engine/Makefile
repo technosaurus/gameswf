@@ -20,6 +20,7 @@ LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 
 # Source files.
 SRCS := \
+	utility.cpp	\
 	config.cpp \
 	geometry.cpp \
 	cull.cpp \
@@ -40,4 +41,4 @@ $(ENGINE): $(OBJS)
 	$(AR) $(LIB_OUT_FLAG)$(ENGINE) $(OBJS)
 
 clean:
-	-@rm $(ENGINE) $(OBJS)
+	-@rm -f $(ENGINE) $(OBJS)

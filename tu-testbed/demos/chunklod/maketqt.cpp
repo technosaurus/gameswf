@@ -250,7 +250,7 @@ int	main(int argc, char* argv[])
 			toc[quadtree_index] = offset;
 
 			// Write the jpeg data.
-			image::write_jpeg(out, tile, 100);
+			image::write_jpeg(out, tile, 90);
 
 			int	percent_done = int(100.f * float(col + row * tile_dim) / (tile_dim * tile_dim));
 			printf("\b\b\b\b\b\b%3d%% %c", percent_done, spinner[(spin_count++)&3]);

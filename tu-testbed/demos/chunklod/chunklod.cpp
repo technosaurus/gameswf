@@ -51,7 +51,7 @@ float	morph_curve(float f)
 
 
 static ogl::vertex_stream*	s_stream = NULL;
-static SDL_RWops*	s_datafile = NULL;
+//static SDL_RWops*	s_datafile = NULL;
 
 
 static float	s_vertical_scale = 1.0;
@@ -82,16 +82,35 @@ struct vertex_info {
 	int	index_count;
 	Uint16*	indices;
 
-	int	triangle_count;
+	int	triangle_count;	// for statistics.
 
-	// mesh type (GL_TRIANGLE_STRIP vs GL_TRIANGLES)
-	// texture id
-	// other?
+//code:
+	vertex_info()
+		: vertex_count(0),
+		  vertices(0),
+		  index_count(0),
+		  indices(0),
+		  triangle_count(0)
+	{
+	}
 
 	void	read(SDL_RWops* in);
 
-	// TODO: destructor.
+	~vertex_info()
+	{
+		if (vertices) {
+			delete [] vertices;
+			vertices = NULL;
+		}
+		if (indices) {
+			delete [] indices;
+			indices = NULL;
+		}
+	}
 };
+
+
+#if 0
 
 
 enum direction {
@@ -100,6 +119,7 @@ enum direction {
 	WEST,
 	SOUTH
 };
+
 
 
 struct lod_edge {
@@ -137,6 +157,8 @@ void	lod_edge::read(SDL_RWops* in)
 	}}
 }
 
+#endif // 0
+
 
 struct lod_chunk;
 
@@ -144,18 +166,30 @@ struct lod_chunk;
 // Vertex/mesh data for a chunk.  Can get paged in/out on demand.
 struct lod_chunk_data {
 	vertex_info	m_verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
-	int	m_texture_id;		// OpenGL texture id for this chunk's texture map.
+	unsigned int	m_texture_id;		// OpenGL texture id for this chunk's texture map.
 
 	//	lod_chunk_data* m_next_data;
 	//	lod_chunk_data* m_prev_data;
 
 
-	lod_chunk_data(SDL_RWops* in, int texture_id)
+	lod_chunk_data(SDL_RWops* in, unsigned int texture_id)
 	// Constructor.  Read our data & set our texture id.
 		: m_texture_id(texture_id)
 	{
 		// Load the main chunk data.
 		m_verts.read(in);
+	}
+
+
+	~lod_chunk_data()
+	// Destructor.  Release our texture.
+	{
+		// @@ should put this texture id on a free list, to be
+		// reused for a new texture via glCopyTexSubImage.
+		if (m_texture_id) {
+			glDeleteTextures(1, &m_texture_id);
+			m_texture_id = 0;
+		}
 	}
 
 	int	render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
@@ -187,13 +221,31 @@ struct lod_chunk {
 	lod_chunk_data*	m_data;
 
 //methods:
-	// needs a destructor!
+	~lod_chunk()
+	{
+		if (has_children()) {
+			for (int i = 0; i < 4; i++) {
+				delete m_children[i];
+				m_children[i] = 0;
+			}
+		}
+
+		if (m_data) {
+			delete m_data;
+			m_data = 0;
+		}
+	}
 
 	void	clear();
-	void	update(const lod_chunk_tree& c, const tqt* texture_quadtree, const vec3& viewpoint);
-	void	do_split(const lod_chunk_tree& base, const vec3& viewpoint);
-	bool	can_split(const tqt* texture_quadtree);	// return true if this chunk can split.  Also, request the necessary data.
-	bool	request_data(const tqt* texture_quadtree);
+	void	update(lod_chunk_tree* tree, const tqt* texture_quadtree, const vec3& viewpoint);
+
+	void	do_split(lod_chunk_tree* tree, const vec3& viewpoint);
+	bool	can_split(lod_chunk_tree* tree);	// return true if this chunk can split.  Also, request the necessary data for future, if not.
+	void	load_data(SDL_RWops* src, const tqt* texture_quadtree);
+	void	unload_data();
+
+	void	warm_up_data(lod_chunk_tree* tree, float priority);
+	void	request_unload_subtree(lod_chunk_tree* tree);
 
 	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt);
 
@@ -201,6 +253,11 @@ struct lod_chunk {
 	void	lookup_neighbors(lod_chunk_tree* tree);
 
 	// Utilities.
+
+	bool	has_resident_data()
+	{
+		return m_data != NULL;
+	}
 
 	bool	has_children() const
 	{
@@ -221,6 +278,144 @@ struct lod_chunk {
 	}
 };
 
+
+//
+// chunk_tree_loader -- helper for lod_chunk_tree that handles the
+// background loader thread.
+//
+
+
+class chunk_tree_loader
+{
+public:
+	chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src);	// @@ should make tqt* a parameter.
+	~chunk_tree_loader();
+
+	void	sync_loader_thread(const tqt* texture_quadtree);	// called by lod_chunk_tree::update(), to implement any changes that are ready.
+	void	request_chunk_load(lod_chunk* chunk, float urgency);
+	void	request_chunk_unload(lod_chunk* chunk);
+
+	SDL_RWops*	get_source() { return m_source_stream; }
+
+private:
+	lod_chunk_tree*	m_tree;
+	SDL_RWops*	m_source_stream;
+
+	struct pending_load_request
+	{
+		lod_chunk*	m_chunk;
+		float	m_priority;
+
+		pending_load_request() : m_chunk(NULL), m_priority(0.0f) {}
+		
+		pending_load_request(lod_chunk* chunk, float priority)
+			: m_chunk(chunk), m_priority(priority)
+		{
+		}
+
+		static int	compare(const void* r1, const void* r2)
+		// Comparison function for qsort.  Sort based on priority.
+		{
+			float	p1 = ((pending_load_request*) r1)->m_priority;
+			float	p2 = ((pending_load_request*) r2)->m_priority;
+			
+			if (p1 < p2) { return -1; }
+			else if (p1 > p2) { return 1; }
+			else { return 0; }
+		}
+	};
+
+	array<pending_load_request>	m_load_queue;
+	// retire_queue;	// chunks waiting to be united with their loaded data.
+	array<lod_chunk*>	m_unload_queue;
+};
+
+
+chunk_tree_loader::chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src)
+// Constructor.  Retains internal copies of the given pointers.
+{
+	m_tree = tree;
+	m_source_stream = src;
+
+	// init retire queue
+
+	// create sync primitives
+	// start the thread function
+}
+
+
+chunk_tree_loader::~chunk_tree_loader()
+// Destructor.  Make sure thread is done.
+{
+	// signal thread to quit.  Wait til it quits.
+}
+
+
+void	chunk_tree_loader::sync_loader_thread(const tqt* texture_quadtree)
+// Call this periodically, to implement previously requested changes
+// to the lod_chunk_tree.  Most of the work in preparing changes is
+// done in a background thread, so this call is intended to be
+// low-latency.
+//
+// The loader is not allowed to make any changes to the
+// lod_chunk_tree, except in this call.
+{
+	// Unload data.
+	for (int i = 0; i < m_unload_queue.size(); i++) {
+		lod_chunk*	c = m_unload_queue[i];
+		// Only unload the chunk if it's not currently in use.
+		// Sometimes a chunk will be marked for unloading, but
+		// then is still being used due to a dependency in a
+		// neighboring part of the hierarchy.  We want to
+		// ignore the unload request in that case.
+		if (c->m_parent != NULL
+		    && c->m_parent->m_split == false)
+		{
+			m_unload_queue[i]->unload_data();
+		}
+	}
+	m_unload_queue.resize(0);
+
+	// Load data.
+	// xxx load the first few highest-priority requests.
+	int	qsize = m_load_queue.size();
+	if (qsize > 0)
+	{
+		qsort(&m_load_queue[0], qsize, sizeof(m_load_queue[0]), pending_load_request::compare);
+		int	count = imin(qsize, 4);
+		{for (int i = 0; i < count; i++)
+		{
+			m_load_queue[qsize - 1 - i].m_chunk->load_data(m_source_stream, texture_quadtree);
+		}}
+		
+		m_load_queue.resize(0);
+	}
+}
+
+
+void	chunk_tree_loader::request_chunk_load(lod_chunk* chunk, float urgency)
+// Request that the specified chunk have its data loaded.  May
+// take a while; data doesn't actually show up & get linked in
+// until some future call to sync_loader_thread().
+{
+	assert(chunk);
+	assert(chunk->m_data == NULL);
+
+	// Don't schedule for load unless our parent already has data.
+	if (chunk->m_parent == NULL
+	    || chunk->m_parent->m_data != NULL)
+	{
+		m_load_queue.push_back(pending_load_request(chunk, urgency));
+	}
+}
+
+
+void	chunk_tree_loader::request_chunk_unload(lod_chunk* chunk)
+// Request that the specified chunk have its data unloaded;
+// happens within short latency.
+{
+	m_unload_queue.push_back(chunk);
+}
 
 
 static void	morph_vertices(float* verts, const vertex_info& morph_verts, const vec3& box_center, const vec3& box_extent, float f)
@@ -403,7 +598,7 @@ void	lod_chunk::clear()
 }
 
 
-void	lod_chunk::update(const lod_chunk_tree& base, const tqt* texture_quadtree, const vec3& viewpoint)
+void	lod_chunk::update(lod_chunk_tree* tree, const tqt* texture_quadtree, const vec3& viewpoint)
 // Computes 'lod' and split values for this chunk and its subtree,
 // based on the given camera parameters and the parameters stored in
 // 'base'.  Traverses the tree and forces neighbor chunks to a valid
@@ -413,19 +608,19 @@ void	lod_chunk::update(const lod_chunk_tree& base, const tqt* texture_quadtree, 
 // calling update() !!!
 {
 	vec3	box_center, box_extent;
-	compute_bounding_box(base, &box_center, &box_extent);
+	compute_bounding_box(*tree, &box_center, &box_extent);
 
-	Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
+	Uint16	desired_lod = tree->compute_lod(box_center, box_extent, viewpoint);
 
 	if (has_children()
 		&& desired_lod > (lod | 0x0FF)
-		&& can_split(texture_quadtree))
+		&& can_split(tree))
 	{
-		do_split(base, viewpoint);
+		do_split(tree, viewpoint);
 
 		// Recurse to children.
 		for (int i = 0; i < 4; i++) {
-			m_children[i]->update(base, texture_quadtree, viewpoint);
+			m_children[i]->update(tree, texture_quadtree, viewpoint);
 		}
 	} else {
 		// We're good... this chunk can represent its region within the max error tolerance.
@@ -433,13 +628,26 @@ void	lod_chunk::update(const lod_chunk_tree& base, const tqt* texture_quadtree, 
 			// Root chunk -- make sure we have valid morph value.
 			lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
 			// tbp: and that we also have something to display :)
-			request_data(texture_quadtree);
+			load_data(tree->m_loader->get_source(), texture_quadtree);
+		}
+
+		// Request residency for our children, and request our
+		// grandchildren and further descendents be unloaded.
+		if (has_children()) {
+			float	priority = 0;
+			if (desired_lod > (lod & 0xFF00)) {
+				priority = (lod & 0x0FF) / 255.0f;
+			}
+
+			for (int i = 0; i < 4; i++) {
+				m_children[i]->warm_up_data(tree, priority);
+			}
 		}
 	}
 }
 
 
-void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
+void	lod_chunk::do_split(lod_chunk_tree* tree, const vec3& viewpoint)
 // Enable this chunk.  Use the given viewpoint to decide what morph
 // level to use.
 //
@@ -448,6 +656,8 @@ void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 // tree, and returns false.
 {
 	if (m_split == false) {
+		assert(this->can_split(tree));
+		assert(has_resident_data());
 
 		m_split = true;
 
@@ -456,31 +666,21 @@ void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 			{for (int i = 0; i < 4; i++) {
 				lod_chunk*	c = m_children[i];
 				vec3	box_center, box_extent;
-				c->compute_bounding_box(base, &box_center, &box_extent);
-				Uint16	desired_lod = base.compute_lod(box_center, box_extent, viewpoint);
+				c->compute_bounding_box(*tree, &box_center, &box_extent);
+				Uint16	desired_lod = tree->compute_lod(box_center, box_extent, viewpoint);
 				c->lod = iclamp(desired_lod, c->lod & 0xFF00, c->lod | 0x0FF);
 			}}
 		}
 
 		// make sure ancestors are split...
 		for (lod_chunk* p = m_parent; p && p->m_split == false; p = p->m_parent) {
-			p->do_split(base, viewpoint);
+			p->do_split(tree, viewpoint);
 		}
-
-#if 0
-		// make sure neighbors are subdivided enough.
-		{for (int i = 0; i < 4; i++) {
-			lod_chunk*	n = m_neighbor[i].m_chunk;
-			if (n && n->m_parent && n->m_parent->m_split == false) {
-				n->m_parent->do_split(base, viewpoint);
-			}
-		}}
-#endif // 0
 	}
 }
 
 
-bool	lod_chunk::can_split(const tqt* texture_quadtree)
+bool	lod_chunk::can_split(lod_chunk_tree* tree)
 // Return true if this chunk can be split.  Also, requests the
 // necessary data for the chunk children and its dependents.
 //
@@ -503,14 +703,15 @@ bool	lod_chunk::can_split(const tqt* texture_quadtree)
 	// Check the data of the children.
 	{for (int i = 0; i < 4; i++) {
 		lod_chunk*	c = m_children[i];
-		if (c->request_data(texture_quadtree) == false) {
+		if (c->has_resident_data() == false) {
+			tree->m_loader->request_chunk_load(c, 1.0f);
 			can_split = false;
 		}
 	}}
 
 	// Make sure ancestors have data...
 	for (lod_chunk* p = m_parent; p && p->m_split == false; p = p->m_parent) {
-		if (p->can_split(texture_quadtree) == false) {
+		if (p->can_split(tree) == false) {
 			can_split = false;
 		}
 	}
@@ -527,7 +728,7 @@ bool	lod_chunk::can_split(const tqt* texture_quadtree)
 			n = n->m_parent;
 		}}
 
-		if (n && n->can_split(texture_quadtree) == false) {
+		if (n && n->can_split(tree) == false) {
 			can_split = false;
 		}
 	}}
@@ -536,13 +737,13 @@ bool	lod_chunk::can_split(const tqt* texture_quadtree)
 }
 
 
-bool	lod_chunk::request_data(const tqt* texture_quadtree)
-// Request rendering data; return true if we currently have it, false
-// otherwise.
+void	lod_chunk::load_data(SDL_RWops* src, const tqt* texture_quadtree)
+// Immediately load our data.  Use loader->request_chunk_load() to
+// schedule this in the background.
 {
 	if (m_data == NULL) {
-		// @@ todo: do the work in a background thread.
-		
+		assert(m_parent == NULL || m_parent->m_data != NULL);
+
 		// Load the data.
 		
 		// Texture.
@@ -552,11 +753,75 @@ bool	lod_chunk::request_data(const tqt* texture_quadtree)
 		}
 
 		// Geometry.
-		SDL_RWseek(s_datafile, m_data_file_position, SEEK_SET);
-		m_data = new lod_chunk_data(s_datafile, texture_id);
+		SDL_RWseek(src, m_data_file_position, SEEK_SET);
+		m_data = new lod_chunk_data(src, texture_id);
+	}
+}
+
+
+void	lod_chunk::unload_data()
+// Immediately unload our data.
+{
+	assert(m_parent != NULL && m_parent->m_split == false);
+	assert(m_split == false);
+
+	// debug check -- we should only unload data from the leaves
+	// upward.
+	if (has_children()) {
+		for (int i = 0; i < 4; i++) {
+			assert(m_children[i]->m_data == NULL);
+		}
 	}
 
-	return true;
+	// Do the unloading.
+	if (m_data) {
+		delete m_data;
+		m_data = NULL;
+	}
+}
+
+
+void	lod_chunk::warm_up_data(lod_chunk_tree* tree, float priority)
+// Schedule this node's data for loading at the given priority.  Also,
+// schedule our child/descendent nodes for unloading.
+{
+	assert(tree);
+
+	if (m_data == NULL)
+	{
+		// Request our data.
+		tree->m_loader->request_chunk_load(this, priority);
+	}
+
+	// Request unload.  Skip a generation.
+	if (has_children()) {
+		for (int i = 0; i < 4; i++) {
+			lod_chunk*	c = m_children[i];
+			if (c->has_children()) {
+				for (int j = 0; j < 4; j++) {
+					c->m_children[j]->request_unload_subtree(tree);
+				}
+			}
+		}
+	}
+}
+
+
+void	lod_chunk::request_unload_subtree(lod_chunk_tree* tree)
+// If we have any data, request that it be unloaded.  Make the same
+// request of our descendants.
+{
+	if (m_data) {
+		// Put descendents in the queue first, so they get
+		// unloaded first.
+		if (has_children()) {
+			for (int i = 0; i < 4; i++) {
+				m_children[i]->request_unload_subtree(tree);
+			}
+		}
+
+		tree->m_loader->request_chunk_unload(this);
+	}
 }
 
 
@@ -643,7 +908,9 @@ void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 
 	// Get this chunk's label, and add it to the table.
 	int	chunk_label = SDL_ReadLE32(in);
-	assert_else(chunk_label < tree->m_chunk_count) {
+	if (chunk_label > tree->m_chunk_count)
+	{
+		assert(0);
 		printf("invalid chunk_label: %d, level = %d\n", chunk_label, level);
 		exit(1);
 	}
@@ -695,7 +962,9 @@ void	lod_chunk::lookup_neighbors(lod_chunk_tree* tree)
 // Convert our neighbor labels to neighbor pointers.  Recurse to child chunks.
 {
 	for (int i = 0; i < 4; i++) {
-		assert_else(m_neighbor[i].m_label >= -1 && m_neighbor[i].m_label < tree->m_chunk_count) {
+		if (m_neighbor[i].m_label < -1 || m_neighbor[i].m_label >= tree->m_chunk_count)
+		{
+			assert(0);
 			m_neighbor[i].m_label = -1;
 		}
 		if (m_neighbor[i].m_label == -1) {
@@ -711,7 +980,6 @@ void	lod_chunk::lookup_neighbors(lod_chunk_tree* tree)
 		}}
 	}
 }
-
 
 
 //
@@ -732,7 +1000,9 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	}
 
 	int	format_version = SDL_ReadLE16(src);
-	assert_else(format_version == 7) {
+	if (format_version != 7)
+	{
+		assert(0);
 		throw "Input format has non-matching version number";
 	}
 
@@ -750,7 +1020,7 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	// neglects to call set_parameters().
 	set_parameters(5.0f, 640.0f, 90.0f);
 
-	// Load the chunk tree.
+	// Load the chunk tree (not the actual data).
 	m_chunks_allocated = 0;
 	m_chunks = new lod_chunk[m_chunk_count];
 
@@ -760,7 +1030,10 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	m_chunks[0].read(src, m_tree_depth-1, this);
 	m_chunks[0].lookup_neighbors(this);
 
-	s_datafile = src;
+//	s_datafile = src;
+
+	// Set up our loader.
+	m_loader = new chunk_tree_loader(this, src);
 }
 
 
@@ -769,7 +1042,8 @@ void	lod_chunk_tree::update(const vec3& viewpoint, const tqt* texture_quadtree)
 // is used to do distance-based LOD switching on our contained chunks.
 {
 	m_chunks[0].clear();
-	m_chunks[0].update(*this, texture_quadtree, viewpoint);
+	m_chunks[0].update(this, texture_quadtree, viewpoint);
+	m_loader->sync_loader_thread(texture_quadtree);
 }
 
 
