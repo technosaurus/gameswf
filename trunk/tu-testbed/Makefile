@@ -48,6 +48,17 @@ chunklod_files = \
 		tu-testbed/demos/chunklod/lua.exe	\
 		tu-testbed/demos/chunklod/*.lua
 
+gameswf_source = \
+		tu-testbed/gameswf/Makefile	\
+		tu-testbed/gameswf/*.cpp	\
+		tu-testbed/gameswf/*.c	\
+		tu-testbed/gameswf/*.h	\
+		tu-testbed/gameswf/TODO
+
+gameswf_exe = \
+		tu-testbed/gameswf/gameswf_test_ogl.exe
+
+gameswf_files = $(gameswf_source) $(gameswf_exe)
 
 crater_data_files = \
 		tu-testbed/demos/chunklod/crater/crater.chu	\
@@ -56,6 +67,10 @@ crater_data_files = \
 chunkdemo.zip:
 	cd ..; zip tu-testbed/chunkdemo.zip \
 		$(basic_files) $(engine_files) $(chunklod_files) $(crater_data_files)
+
+gameswf.zip:
+	cd ..; zip tu-testbed/gameswf.zip	\
+		$(basic_files) $(engine_files) $(gameswf_files)
 
 bspdemo.zip:
 	cd ..; zip tu-testbed/bspdemo.zip \
