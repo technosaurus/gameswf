@@ -11,56 +11,45 @@ Productizing
 Tasks to make gameswf ready for including in real games.
 
 * hooks so that preprocessor and loader can deal with special,
-  host-specific data like vertex buffers and textures in a custom way.
+  host-specific data like vertex buffers and textures in a custom way
+  if desired.
 
-* fix memory leaks
+* fix memory leaks, need reference counting
 
 * pick a version number, post a release
-
-* use Sint16 TWIP coordinates in all reasonable places to cut down on
-  memory and processing.
 
 
 General
 =======
 
-* text rendering is almost production-ready, so finishing touches here
-  are a high priority.  In particular:
-
-  * implement host-app driven text rendering functions
-
-  * try it out; maybe add a little text output to chunklod or
-    something
+* implement host-app driven text rendering functions (maybe handy, but
+  not essential)
 
 * sprites as button characters are not working.  (Maybe they are
   now??)
 
-* host-app to gameswf communication
+* host-to-gameswf data transfer:
 
-  * some mechanism for gamepad-like control of SWF UI's.  SWF is
-    oriented around a mouse & keyboard model, which is not a good fit
-    for consoles (and console-like) UI's.  Not sure exactly what to do
-    about this.  One element would be associating SWF buttons with
-    specific gamepad/keyboard buttons, which could be done by tagging
-    the buttons in the SWF with special names, and adding an API for
-    the host to report gamepad button presses.  Another element is
-    dealing with dpad selections, where the user uses
-    up/down/left/right buttons to highlight different options on the
-    screen, and then another button to accept.  Not sure of the best
-    way to shoehorn this into SWF.
+  * DONE set_variable
 
-    Current best idea: map gamepad buttons to keyboard keys, and use
-    ActionScript to interpret keypresses.  Need enough ActionScript
-    support so that this works.
+  * maybe augment this with array element parsing, and more data types?
 
-* text entry?  No keyboard on consoles, text input is very platform
-  specific; low priority for now.
+  * ability to call ActionScript functions?  Might be the most
+    flexible way to support arbitrary communication needs.
+    Data-binding issues; would this mean exposing as_value in
+    gameswf.h?  Probably.
 
-* named elements APIs, for easier UI programming in the host app.
-  Should the whole ActionScript API be available to the host?  Might
-  be really hot for translating slow prototype ActionScripts into C++.
-  Prototype in Flash on a fast machine, convert the scripts and
-  deliver a blazing fast executable.
+	Should the whole ActionScript API be available to the host?
+	I.e. let C++ host code and ActionScript code call back and forth?
+	Might be really hot for translating slow prototype ActionScripts
+	into C++.  Prototype in Flash on a fast machine, convert the
+	scripts and deliver a blazing fast executable.
+
+* DONE gameswf-to-host data transfer:
+
+  * via host-pull, using get_variable()
+
+  * via gameswf-push, using fscommand()
 
 * Would be good if one of the log options produced a nice usable
   human-readable parsing of the file.  Or even a SSWF equivalent?
@@ -68,6 +57,10 @@ General
 
 ActionScript
 ============
+
+* all event hooks
+
+* arrays, object constructors
 
 * sprites can receive button events!  Like mouse down/up, etc.  So
   need the appropriate machinery for watching the mouse.
@@ -83,7 +76,7 @@ ActionScript
 * will need some good test programs to make sure VM is doing the right
   thing.
 
-* implement each opcode and library function
+* implement remaining opcodes and library functions
 
 
 Renderer

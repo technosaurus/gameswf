@@ -434,7 +434,7 @@ namespace gameswf
 			{
 				if (ch->get_depth() > highest_masked_layer)
 				{
-					log_msg("disabled mask before drawing depth %i\n", ch->get_depth());
+//					log_msg("disabled mask before drawing depth %i\n", ch->get_depth());
 					masked = false;
 					// turn off mask
 					render::disable_mask();

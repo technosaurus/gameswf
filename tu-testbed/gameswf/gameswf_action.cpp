@@ -63,6 +63,15 @@
 // Global scope called "_global", I think this is just a generic empty
 // mutable object.
 
+// Basically, for host/gameswf communication, we want to have:
+//
+// movie_interface::set_variable(var, value);	// with full path parsing
+//
+// and, for data coming back the other way:
+//
+// gameswf::register_fscommand_handler(void (*handler_func)(movie_interface* movie, const char* command, const char* arg));
+// const char* movie_interface::get_variable(var);
+
 
 namespace gameswf
 {
@@ -76,6 +85,15 @@ namespace gameswf
 	// Statics.
 	bool	s_inited = false;
 	string_hash<as_value>	s_built_ins;
+
+	fscommand_callback	s_fscommand_handler = NULL;
+
+
+	void	register_fscommand_callback(fscommand_callback handler)
+	// External interface.
+	{
+		s_fscommand_handler = handler;
+	}
 
 
 	//
@@ -1351,7 +1369,26 @@ namespace gameswf
 
 				case 0x83:	// get url
 				{
-					// @@ TODO should call back into client app, probably...
+					// If this is an FSCommand, then call the callback
+					// handler, if any.
+
+					// Two strings as args.
+					const char*	url = (const char*) &(m_buffer[pc + 3]);
+					int	url_len = strlen(url);
+					const char*	target = (const char*) &(m_buffer[pc + 3 + url_len + 1]);
+
+					// If the url starts with "FSCommand:", then this is
+					// a message for the host app.
+					if (strncmp(url, "FSCommand:", 10) == 0)
+					{
+						if (s_fscommand_handler)
+						{
+							// Call into the app.
+							(*s_fscommand_handler)(env->get_target()->get_root_interface(), url + 10, target);
+						}
+					}
+					// else just ignore this.  Maybe log it?
+
 					break;
 				}
 
@@ -1538,7 +1575,27 @@ namespace gameswf
 					break;
 				}
 				case 0x9A:	// get url 2
+				{
+					int	method = m_buffer[pc + 3];
+					UNUSED(method);
+
+					const char*	target = env->top(0).to_string();
+					const char*	url = env->top(1).to_string();
+
+					// If the url starts with "FSCommand:", then this is
+					// a message for the host app.
+					if (strncmp(url, "FSCommand:", 10) == 0)
+					{
+						if (s_fscommand_handler)
+						{
+							// Call into the app.
+							(*s_fscommand_handler)(env->get_target()->get_root_interface(), url + 10, target);
+						}
+					}
+					// else nothing.  Maybe log it?
+
 					break;
+				}
 
 				case 0x9B:	// declare function
 				{
@@ -1646,13 +1703,27 @@ namespace gameswf
 		}
 		else if (m_type == UNDEFINED)
 		{
-			m_string_value = "<undefined>";
+			m_string_value = "undefined";
 		}
 		else if (m_type == OBJECT)
 		{
-			char buffer[50];
-			snprintf(buffer, 50, "<object 0x%X>", m_object_value);
-			m_string_value = buffer;
+			const char*	val = NULL;
+			if (m_object_value)
+			{
+				val = m_object_value->get_text_value();
+			}
+
+			if (val)
+			{
+				m_string_value = val;
+			}
+			else
+			{
+				// @@ actually, we need to return our full path.
+				char buffer[50];
+				snprintf(buffer, 50, "<object 0x%X>", m_object_value);
+				m_string_value = buffer;
+			}
 		}
 		else if (m_type == C_FUNCTION)
 		{
@@ -1888,7 +1959,7 @@ namespace gameswf
 		const array<with_stack_entry>& with_stack)
 	// Given a path to variable, set its value.
 	{
-		IF_VERBOSE_DEBUG(log_msg("-------------- %s = %s\n", varname.c_str(), val.to_string()));//xxxxxxxxxx
+		IF_VERBOSE_ACTION(log_msg("-------------- %s = %s\n", varname.c_str(), val.to_string()));//xxxxxxxxxx
 
 		// Path lookup rigamarole.
 		movie*	target = m_target;
@@ -2023,6 +2094,9 @@ namespace gameswf
 	//
 	// (or same thing, without the last '/')
 	//
+	// or
+	//	path.to.some.var
+	//
 	// If that's the format, puts the path part (no colon or
 	// trailing slash) in *path, and the varname part (no color)
 	// in *var and returns true.
@@ -2043,8 +2117,17 @@ namespace gameswf
 
 		if (colon_index >= var_path_length)
 		{
-			// No colon.
-			return false;
+			// No colon.  Is there a '.'?  Find the last
+			// one, if any.
+			for (colon_index = var_path_length - 1; colon_index >= 0; colon_index--)
+			{
+				if (var_path[colon_index] == '.')
+				{
+					// Found it.
+					break;
+				}
+			}
+			if (colon_index < 0) return false;
 		}
 
 		// Make the subparts.
@@ -2090,6 +2173,22 @@ namespace gameswf
 	}
 
 
+	static const char*	next_slash_or_dot(const char* word)
+	// Search for next '.' or '/' character in this word.  Return
+	// a pointer to it, or to NULL if it wasn't found.
+	{
+		for (const char* p = word; *p; p++)
+		{
+			if (*p == '.' || *p == '/')
+			{
+				return p;
+			}
+		}
+
+		return NULL;
+	}
+
+
 	movie*	as_environment::find_target(const tu_string& path) const
 	// Find the sprite/movie referenced by the given path.
 	{
@@ -2116,7 +2215,7 @@ namespace gameswf
 
 		for (;;)
 		{
-			const char*	next_slash = strchr(p, '/');
+			const char*	next_slash = next_slash_or_dot(p);
 			subpart = p;
 			if (next_slash == p)
 			{

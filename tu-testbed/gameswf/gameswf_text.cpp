@@ -496,7 +496,7 @@ namespace gameswf
 			assert(parent);
 			assert(m_def);
 
-			set_text(m_def->m_default_text);
+			set_text_value(m_def->m_default_text);
 
 			m_dummy_style.push_back(fill_style());
 		}
@@ -508,24 +508,11 @@ namespace gameswf
 		virtual int	get_id() const { return m_def->get_id(); }
 
 
-		virtual const char*	get_variable_name() const { return m_def->m_default_name.c_str(); }
+		virtual const char*	get_text_name() const { return m_def->m_default_name.c_str(); }
 
-		virtual bool	set_self_value(const as_value& new_val)
-		// Overload from class character.
+
+		virtual void	set_text_value(const char* new_text)
 		// Set our text to the given string.
-		{
-			set_text(new_val.to_string());
-			return true;
-		}
-
-		virtual bool	get_self_value(as_value* val)
-		// Return our contents.
-		{
-			val->set(m_text);
-			return true;
-		}
-
-		void	set_text(const char* new_text)
 		{
 			if (m_text == new_text)
 			{
@@ -540,6 +527,35 @@ namespace gameswf
 			}
 
 			format_text();
+		}
+
+		virtual const char*	get_text_value() const
+		{
+			return m_text.c_str();
+		}
+
+
+		void	set_member(const tu_string& name, const as_value& val)
+		// We have a "text" member.
+		{
+			if (name == "text")
+			{
+				set_text_value(val.to_string());
+				return;
+			}
+			// do we have other members?  Can outsiders set properties on us?
+		}
+
+
+		bool	get_member(const tu_string& name, as_value* val)
+		{
+			if (name == "text")
+			{
+				val->set(m_text);
+				return true;
+			}
+
+			return false;
 		}
 
 		

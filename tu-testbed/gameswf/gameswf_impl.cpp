@@ -88,9 +88,9 @@ namespace gameswf
 	// file_opener callback stuff
 	//
 
-	static file_opener_function	s_opener_function = NULL;
+	static file_opener_callback	s_opener_function = NULL;
 
-	void	register_file_opener_callback(file_opener_function opener)
+	void	register_file_opener_callback(file_opener_callback opener)
 	// Host calls this to register a function for opening files,
 	// for loading movies.
 	{
@@ -774,9 +774,15 @@ namespace gameswf
 
 		virtual void	set_play_state(play_state s) { m_movie->set_play_state(s); }
 		virtual play_state	get_play_state() const { return m_movie->get_play_state(); }
-		virtual bool	set_edit_text(const char* varname, const char* text)
+
+		virtual void	set_variable(const char* path_to_var, const char* new_value)
 		{
-			return m_movie->set_edit_text(varname, text);
+			m_movie->set_variable(path_to_var, new_value);
+		}
+
+		virtual const char*	get_variable(const char* path_to_var) const
+		{
+			return m_movie->get_variable(path_to_var);
 		}
 
 		virtual void	set_visible(bool visible) { m_movie->set_visible(visible); }
@@ -1911,6 +1917,7 @@ namespace gameswf
 			m_as_environment.set_target(this);
 		}
 
+		movie_interface*	get_root_interface() { return m_root; }
 		movie_root*	get_root() { return m_root; }
 		movie*	get_root_movie() { return m_root->get_root_movie(); }
 
@@ -2354,13 +2361,45 @@ namespace gameswf
 
 		// don't override set_self_value; it's nonsensical for sprite_instance.
 
-
+// @@ nuke
+#if 0
 		/* sprite_instance */
 		virtual bool	get_self_value(as_value* val)
 		// Return a reference to ourself.
 		{
 			val->set(static_cast<as_object_interface*>(this));
 			return true;
+		}
+#endif // 0
+
+
+		/* sprite_instance */
+		virtual void	set_variable(const char* path_to_var, const char* new_value)
+		{
+			assert(m_parent == NULL);	// should only be called on the root movie.
+
+			array<with_stack_entry>	empty_with_stack;
+			tu_string	path(path_to_var);
+			as_value	val(new_value);
+
+			m_as_environment.set_variable(path, val, empty_with_stack);
+		}
+
+		/* sprite_instance */
+		virtual const char*	get_variable(const char* path_to_var) const
+		{
+			assert(m_parent == NULL);	// should only be called on the root movie.
+
+			array<with_stack_entry>	empty_with_stack;
+			tu_string	path(path_to_var);
+
+			// NOTE: this is static so that the string
+			// value won't go away after we return!!!
+			// It'll go away during the next call to this
+			// function though!!!  NOT THREAD SAFE!
+			static as_value	val = m_as_environment.get_variable(path, empty_with_stack);
+
+			return val.to_string();	// ack!
 		}
 
 		
@@ -2463,15 +2502,22 @@ namespace gameswf
 				return;
 			}
 
-			// Not a built-in property.  Is it a named character in the display list?
+			// Not a built-in property.  See if we have a
+			// matching edit_text character in our display
+			// list.
+			bool	text_val = val.get_type() == as_value::STRING
+				|| val.get_type() == as_value::NUMBER;
+			if (text_val)
 			{
 				bool	success = false;
+				const char*	text = val.to_string();
 				for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 				{
 					character*	ch = m_display_list.get_character(i);
-					if (name == ch->get_variable_name())
+					if (name == ch->get_text_name())
 					{
-						success = ch->set_self_value(val) || success;
+						ch->set_text_value(text);
+						success = true;
 					}
 				}
 				if (success) return;
@@ -2645,18 +2691,16 @@ namespace gameswf
 				return true;
 			}
 
-			// Not a built-in property.  Try named characters in the display list.
-			bool	success = false;
+			// Not a built-in property.  Check items on our 
+			// display list.
 			for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 			{
 				character*	ch = m_display_list.get_character(i);
 				if (name == ch->get_name())
 				{
-					// Found one.
-					if (ch->get_self_value(val))
-					{
-						return true;
-					}
+					// Found object.
+					val->set(static_cast<as_object_interface*>(ch));
+					return true;
 				}
 			}
 
