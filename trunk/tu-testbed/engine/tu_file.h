@@ -17,6 +17,17 @@
 struct SDL_RWops;
 
 
+enum
+{
+	TU_FILE_NO_ERROR = 0,
+	TU_FILE_OPEN_ERROR,
+	TU_FILE_READ_ERROR,
+	TU_FILE_WRITE_ERROR,
+	TU_FILE_SEEK_ERROR,
+	TU_FILE_CLOSE_ERROR
+};
+
+
 // a file abstraction that can be customized with callbacks.
 // Designed to be easy to hook up to FILE*, SDL_RWops*, or
 // whatever stream type(s) you might use in your game or
@@ -30,17 +41,6 @@ public:
 	typedef int (* seek_to_end_func)(void *appdata);
 	typedef int (* tell_func)(const void *appdata);
 	typedef int (* close_func)(const void *appdata);
-
-	enum 
-	{
-		TU_FILE_NO_ERROR = 0,
-		TU_FILE_OPEN_ERROR,
-		TU_FILE_READ_ERROR,
-		TU_FILE_WRITE_ERROR,
-		TU_FILE_SEEK_ERROR,
-		TU_FILE_CLOSE_ERROR
-	};
-
 
 	// The generic constructor; supply functions for the implementation.
 	tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, seek_to_end_func ef, tell_func tf, close_func cf=NULL);

@@ -65,7 +65,7 @@ tu_file::tu_file(SDL_RWops* sdl_stream, bool autoclose)
 	m_seek_to_end = sdl_seek_to_end_func;
 	m_tell = sdl_tell_func;
 	m_close = autoclose ? sdl_close_func : NULL;
-	m_error = NO_ERROR;
+	m_error = TU_FILE_NO_ERROR;
 }
 
 

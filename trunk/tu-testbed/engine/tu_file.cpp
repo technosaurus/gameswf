@@ -55,7 +55,7 @@ tu_file::tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, seek
 	m_seek_to_end = ef;
 	m_tell = tf;
 	m_close = cf;
-	m_error = NO_ERROR;
+	m_error = TU_FILE_NO_ERROR;
 }
 
 
@@ -69,7 +69,7 @@ tu_file::tu_file(FILE* fp, bool autoclose=false)
 	m_seek_to_end = std_seek_to_end_func;
 	m_tell = std_tell_func;
 	m_close = autoclose ? std_close_func : NULL;
-	m_error = NO_ERROR;
+	m_error = TU_FILE_NO_ERROR;
 }
 
 
@@ -85,7 +85,7 @@ tu_file::tu_file(const char * name, const char * mode)
 		m_seek_to_end = std_seek_to_end_func;
 		m_tell = std_tell_func;
 		m_close = std_close_func;
-		m_error = NO_ERROR;
+		m_error = TU_FILE_NO_ERROR;
 	}
 	else 
 	{
@@ -94,7 +94,7 @@ tu_file::tu_file(const char * name, const char * mode)
 		m_seek = NULL;
 		m_tell = NULL;
 		m_close = NULL;
-		m_error = OPEN_ERROR;
+		m_error = TU_FILE_OPEN_ERROR;
 	}
 }
 

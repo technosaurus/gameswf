@@ -27,8 +27,9 @@
 #endif // _WIN32
 
 
-// Compile-time assert.
-#define compiler_assert(x)	extern char _dummy_array[(x) ? 1 : -1]
+// Compile-time assert.  Thanks to Jon Jagger
+// (http://www.jaggersoft.com) for this trick.
+#define compiler_assert(x)	switch(0){case 0: case x:;}
 
 
 //
