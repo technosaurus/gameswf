@@ -39,44 +39,32 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 
 #else	// not _WIN32
 
+
 #include <sys/time.h>
 
-// On Linux all data is in seconds and milliseconds, so this is useless. We do it
-// anyway to stay Windows compatible. Since the result is always passed to
-// profile_ticks_to_seconds, we don't really need to do anything here.
+
 uint64	tu_timer::get_profile_ticks()
 {
+	// @@ TODO prefer rdtsc when available?
+
+	// Return microseconds.
 	struct timeval tv;
 	struct timezone tz;
-	double result;
+	uint64 result;
 	
 	gettimeofday(&tv, &tz);
 
-	result = tv.tv_sec * 1.0;
-	result += tv.tv_usec * 0.000001;
-	// printf("%s: %ld + %ld %f\n", __PRETTY_FUNCTION__, tv.tv_sec, tv.tv_usec, result);
+	result = tv.tv_sec * 1000000;
+	result += tv.tv_usec;
 	
 	return result;
 }
 
-// On Linux there is no conversion required, as all data is in seconds and milliseconds
+
 double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 {
-#if 1
-	struct timeval tv;
-	struct timezone tz;
-	double result;
-	
-	gettimeofday(&tv, &tz);
-
-	result = tv.tv_sec * 1.0;
-	result += tv.tv_usec * 0.000001;
-	// printf("%s: %ld + %ld %f\n", __PRETTY_FUNCTION__, tv.tv_sec, tv.tv_usec, result);
-	
-	return result;
-#else
-	return ticks;
-#endif
+	// ticks is microseconds.  Convert to seconds.
+	return ticks / 1000000.0;
 }
 
 #endif	// not _WIN32

@@ -2097,6 +2097,10 @@ namespace gameswf
 					}
 					else
 					{
+						//
+						// tulrich FIXME: this should all happen via constructor functions.
+						//
+
 						movie*	current_movie = env->get_target()->get_root_movie();
 						assert(current_movie);
 						//movie *current_movie_root = env->m_target->get_root_movie();
@@ -2129,6 +2133,7 @@ namespace gameswf
 						// This is where ActionScript objects go
 					        if (classname.to_tu_string()=="XML")
 						{
+#if TU_CONFIG_LINK_TO_LIBXML
 							//log_msg("New XML Object!!!, nargs is %d\n", nargs);
 							current_movie->set_member("XML", as_value(xml_new));
 							if (nargs > 0) {
@@ -2153,9 +2158,11 @@ namespace gameswf
 								xml_obj->set_member("loaded", as_value(xml_loaded));
 								new_obj = xml_obj;
 							}
+#endif	// TU_CONFIG_LINK_TO_LIBXML
 						} else
 						if (classname.to_tu_string()=="XMLSocket")
 						{
+#if TU_CONFIG_LINK_TO_LIBXML
 							log_msg("New XMLSocket Object!!!\n");
 							current_movie->set_member("XMLSocket", as_value(xmlsocket_new));
 							
@@ -2204,7 +2211,7 @@ namespace gameswf
 							
 							new_obj = xmlsock_obj;
 #endif
-							
+#endif	// TU_CONFIG_LINK_TO_LIBXML
 						} else
 						if (classname.to_tu_string()=="MovieClipLoader")
 						{
@@ -2867,6 +2874,7 @@ namespace gameswf
 				case 0x94:	// with
 				{
 					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					UNUSED(frame);
 					IF_VERBOSE_ACTION(log_msg("-------------- with block start: stack size is %d\n", with_stack.size()));
 					if (with_stack.size() < 8)
 					{

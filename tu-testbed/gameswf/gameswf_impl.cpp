@@ -3136,7 +3136,7 @@ namespace gameswf
 		}
 	
 
-		// sprite instance of do_something()
+		/* sprite_instance */
 		virtual void    do_something(void *timer)
 		{
 			as_value	val;
@@ -3144,6 +3144,8 @@ namespace gameswf
 			as_value	method;
 			as_object      *obj, *this_ptr;
 			as_environment *as_env;
+
+			UNUSED(locals);
 
 			log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
 			Timer *ptr = (Timer *)timer;

@@ -3,12 +3,6 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include <vector>
-#include <string>
-
-#include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
-
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
@@ -18,6 +12,12 @@
 #include "gameswf_string.h"
 #include "gameswf_xml.h"
 
+#if TU_CONFIG_LINK_TO_LIBXML
+
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+
+// @@ evil: kill
 using namespace gameswf;
 using namespace std;
 
@@ -846,3 +846,4 @@ void xml_next_stack_depth(gameswf::as_value* result, gameswf::as_object_interfac
 }
 
 
+#endif // TU_CONFIG_LINK_TO_LIBXML

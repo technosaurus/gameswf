@@ -16,13 +16,19 @@
 #include <sys/param.h>
 #include <sys/select.h>
 
+// FIXME
 using namespace std;
 
 #include "gameswf_log.h"
 #include "gameswf_xmlsocket.h"
 #include "gameswf_timers.h"
 
+// FIXME
 using namespace gameswf;
+
+
+#if TU_CONFIG_LINK_TO_LIBXML
+
 
 XMLSocket::XMLSocket()
 {
@@ -252,25 +258,25 @@ XMLSocket::send(tu_string str)
 // Callbacks
 
 void
-XMLSocket::onClose(string str)
+XMLSocket::onClose(tu_string str)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
 void
-XMLSocket::onConnect(string str)
+XMLSocket::onConnect(tu_string str)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
 void
-XMLSocket::onData(string str)
+XMLSocket::onData(tu_string str)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
 void
-XMLSocket::onXML(string str)
+XMLSocket::onXML(tu_string str)
 {
   log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
@@ -477,3 +483,6 @@ xmlsocket_event_xml(as_value* result, as_object_interface* this_ptr, as_environm
 {
   
 }
+
+
+#endif // TU_CONFIG_LINK_TO_LIBXML

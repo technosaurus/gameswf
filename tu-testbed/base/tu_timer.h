@@ -14,8 +14,16 @@
 
 namespace tu_timer
 {
+	// Hi-res timer for CPU profiling.
+
+	// Return a hi-res timer value.  Time 0 is arbitrary, so
+	// generally you want to call this at the start and end of an
+	// operation, and pass the difference to
+	// profile_ticks_to_seconds() to find out how long the
+	// operation took.
 	uint64	get_profile_ticks();
 
+	// Convert a hi-res ticks value into seconds.
 	double	profile_ticks_to_seconds(uint64 profile_ticks);
 };
 
