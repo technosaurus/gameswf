@@ -20,7 +20,7 @@
 #define OVERSIZE	1.0f
 
 
-#if 0
+#if 1
 // xxxx HACK FOR DEBUGGING
 int	hilite_depth = -1;
 #endif // 0
@@ -116,7 +116,7 @@ int	main(int argc, char *argv[])
 					paused = ! paused;
 					printf("paused = %d\n", int(paused));
 				}
-#if 0
+#if 1
 				else if (key == SDLK_MINUS)
 				{
 					hilite_depth--;

@@ -220,10 +220,10 @@ namespace swf
 		{
 			rgba	result;
 
-			result.m_r = fclamp(in.m_r * m_[0][0] + m_[0][1] * 255.0f, 0, 255);
-			result.m_g = fclamp(in.m_g * m_[1][0] + m_[1][1] * 255.0f, 0, 255);
-			result.m_b = fclamp(in.m_b * m_[2][0] + m_[2][1] * 255.0f, 0, 255);
-			result.m_a = fclamp(in.m_a * m_[3][0] + m_[3][1] * 255.0f, 0, 255);
+			result.m_r = fclamp(in.m_r * m_[0][0] + m_[0][1], 0, 255);
+			result.m_g = fclamp(in.m_g * m_[1][0] + m_[1][1], 0, 255);
+			result.m_b = fclamp(in.m_b * m_[2][0] + m_[2][1], 0, 255);
+			result.m_a = fclamp(in.m_a * m_[3][0] + m_[3][1], 0, 255);
 
 			return result;
 		}
@@ -238,9 +238,9 @@ namespace swf
 			int	nbits = in->read_uint(4);
 
 			if (has_mult) {
-				m_[0][0] = in->read_sint(nbits);
-				m_[1][0] = in->read_sint(nbits);
-				m_[2][0] = in->read_sint(nbits);
+				m_[0][0] = in->read_sint(nbits) / 255.0f;
+				m_[1][0] = in->read_sint(nbits) / 255.0f;
+				m_[2][0] = in->read_sint(nbits) / 255.0f;
 				m_[3][0] = 1;
 			}
 			else {
@@ -264,10 +264,10 @@ namespace swf
 			int	nbits = in->read_uint(4);
 
 			if (has_mult) {
-				m_[0][0] = in->read_sint(nbits);
-				m_[1][0] = in->read_sint(nbits);
-				m_[2][0] = in->read_sint(nbits);
-				m_[3][0] = in->read_sint(nbits);
+				m_[0][0] = in->read_sint(nbits) / 255.0f;
+				m_[1][0] = in->read_sint(nbits) / 255.0f;
+				m_[2][0] = in->read_sint(nbits) / 255.0f;
+				m_[3][0] = in->read_sint(nbits) / 255.0f;
 			}
 			else {
 				for (int i = 0; i < 4; i++) { m_[i][0] = 1; }
@@ -433,6 +433,39 @@ namespace swf
 				IF_DEBUG(m_bitmap_matrix.print(stdout));
 			}
 		}
+
+		void	apply(const display_info& di) const
+		// Apply our style to the renderer.
+		{
+			switch (m_type)
+			{
+			case 0x00:	// solid fill
+				di.m_color_transform.transform(m_color).ogl_color();
+				break;
+
+			case 0x10:	// linear gradient fill
+			case 0x12:	// radial gradient fill
+				// @@ these will need to be passed to the renderer, so it can do glColor per-vertex
+				// m_gradient_matrix
+				// m_gradients...
+				di.m_color_transform.transform(m_gradients[0].m_color).ogl_color();	// @@ stand-in
+				break;
+
+			case 0x40:	// tiled bitmap fill
+				// glBindTexture(...);
+				// gl edge mode == repeat
+				// @@ what about color?
+				di.m_color_transform.transform(rgba()).ogl_color();
+				break;
+
+			case 0x41:	// clipped bitmap fill
+				// glBindTexture(...);
+				// gl edge mode == clamp
+				// @@ what about color?
+				di.m_color_transform.transform(rgba()).ogl_color();
+				break;
+			}
+		}
 	};
 
 
@@ -447,6 +480,14 @@ namespace swf
 		{
 			m_width = in->read_u16();
 			m_color.read(in, tag_type);
+		}
+
+
+		void	apply(const display_info& di) const
+		// Apply our style to the renderer.
+		{
+			// m_width...
+			di.m_color_transform.transform(m_color).ogl_color();
 		}
 	};
 
@@ -1432,6 +1473,11 @@ namespace swf
 	}
 
 
+	//
+	// shape stuff
+	//
+
+
 	// Together with the previous anchor, defines a quadratic
 	// curve segment.
 	struct edge
@@ -1439,28 +1485,28 @@ namespace swf
 		// *quadratic* bezier: point = p0 * t^2 + p1 * 2t(1-t) + p2 * (1-t)^2
 		float	m_cx, m_cy;		// "control" point
 		float	m_ax, m_ay;		// "anchor" point
-		int	m_fill0, m_fill1, m_line;
+//		int	m_fill0, m_fill1, m_line;
 
 		// An edge with m_fill0 == m_fill1 == m_line == -1 means "move to".
 
 		edge()
 			:
 			m_cx(0), m_cy(0),
-			m_ax(0), m_ay(0),
-			m_fill0(-1), m_fill1(-1), m_line(-1)
+			m_ax(0), m_ay(0)
+//			m_fill0(-1), m_fill1(-1), m_line(-1)
 		{}
 
-		edge(float cx, float cy, float ax, float ay,
-		     int fill0, int fill1, int line)
+		edge(float cx, float cy, float ax, float ay)
 			:
 			m_cx(cx), m_cy(cy),
-			m_ax(ax), m_ay(ay),
-			m_fill0(fill0),
-			m_fill1(fill1),
-			m_line(line)
+			m_ax(ax), m_ay(ay)
+//			m_fill0(fill0),
+//			m_fill1(fill1),
+//			m_line(line)
 		{
 		}
 
+#if 0
 		bool	is_blank() const
 		// Returns true if this is a "blank" edge; i.e. it
 		// functions as a move-to and doesn't render anything
@@ -1474,12 +1520,108 @@ namespace swf
 			}
 			return false;
 		}
-
+#endif // 0
 
 		void	emit_curve() const
 		// Send this segment to the renderer.
 		{
 			swf::render::add_curve_segment(m_cx, m_cy, m_ax, m_ay);
+		}
+	};
+
+
+	struct path
+	{
+		int	m_fill0, m_fill1, m_line;
+		float	m_ax, m_ay;	// starting point
+		array<edge>	m_edges;
+
+		path()
+		{
+			reset(0, 0, -1, -1, -1);
+		}
+
+		path(float ax, float ay, int fill0, int fill1, int line)
+		{
+			reset(ax, ay, fill0, fill1, line);
+		}
+
+
+		void	reset(float ax, float ay, int fill0, int fill1, int line)
+		// Reset all our members to the given values, and clear our edge list.
+		{
+			m_ax = ax;
+			m_ay = ay,
+			m_fill0 = fill0;
+			m_fill1 = fill1;
+			m_line = line;
+
+			m_edges.resize(0);
+
+			assert(is_empty());
+		}
+
+
+		bool	is_empty() const
+		// Return true if we have no edges.
+		{
+			return m_edges.size() == 0;
+		}
+
+		
+		void	display(
+			const display_info& di,
+			const array<fill_style>& fill_styles,
+			const array<line_style>& line_styles) const
+		// Render this path.
+		{
+			if (m_fill0 > 0)
+			{
+				fill_styles[m_fill0 - 1].apply(di);
+
+				// @@ really we need to pass these styles to
+				// the renderer, since a self-intersecting
+				// shape needs to select between fill0 and
+				// fill1 depending on what the shape turns out
+				// to be.
+
+				swf::render::begin_shape(m_ax, m_ay);
+				for (int i = 0; i < m_edges.size(); i++)
+				{
+					m_edges[i].emit_curve();
+				}
+				swf::render::end_shape();
+			}
+
+			if (m_fill1 > 0)
+			{
+				fill_styles[m_fill1 - 1].apply(di);
+
+				// @@ really we need to pass these styles to
+				// the renderer, since a self-intersecting
+				// shape needs to select between fill0 and
+				// fill1 depending on what the shape turns out
+				// to be.
+
+				swf::render::begin_shape(m_ax, m_ay);
+				for (int i = 0; i < m_edges.size(); i++)
+				{
+					m_edges[i].emit_curve();
+				}
+				swf::render::end_shape();
+			}
+
+			if (m_line > 0)
+			{
+				line_styles[m_line - 1].apply(di);	// actually need to pass this to swf::render
+
+				swf::render::begin_shape(m_ax, m_ay);
+				for (int i = 0; i < m_edges.size(); i++)
+				{
+					m_edges[i].emit_curve();
+				}
+				swf::render::end_shape();
+			}
 		}
 	};
 
@@ -1545,7 +1687,8 @@ namespace swf
 		rect	m_bound;
 		array<fill_style>	m_fill_styles;
 		array<line_style>	m_line_styles;
-		array<edge>	m_edges;
+		array<path>	m_paths;
+//		array<edge>	m_edges;
 
 		shape_character()
 		{
@@ -1580,21 +1723,38 @@ namespace swf
 			int	fill_base = 0;
 			int	line_base = 0;
 			float	x = 0, y = 0;
-			int	fill_0 = 0, fill_1 = 0, line = 0;
+			path	current_path;
 
 			// SHAPERECORDS
 			for (;;) {
 				int	type_flag = in->read_uint(1);
 				if (type_flag == 0)
 				{
+					// Parse the record.
 					int	flags = in->read_uint(5);
 					if (flags == 0) {
 						// End of shape records.
+
+						// Store the current path if any.
+						if (! current_path.is_empty())
+						{
+							m_paths.push_back(current_path);
+							current_path.m_edges.resize(0);
+						}
+
 						break;
 					}
 					if (flags & 0x01)
 					{
 						// move_to = 1;
+
+						// Store the current path if any, and prepare a fresh one.
+						if (! current_path.is_empty())
+						{
+							m_paths.push_back(current_path);
+							current_path.m_edges.resize(0);
+						}
+
 						int	num_move_bits = in->read_uint(5);
 						int	move_x = in->read_sint(num_move_bits);
 						int	move_y = in->read_sint(num_move_bits);
@@ -1602,25 +1762,26 @@ namespace swf
 						x = move_x;
 						y = move_y;
 
-						// add *blank* edge
-						m_edges.push_back(edge(0, 0, x, y, -1, -1, -1));
+						// Set the beginning of the path.
+						current_path.m_ax = x;
+						current_path.m_ay = y;
 					}
 					if ((flags & 0x02)
 					    && num_fill_bits > 0)
 					{
 						// fill_style_0_change = 1;
-						fill_0 = in->read_uint(num_fill_bits);
+						current_path.m_fill0 = in->read_uint(num_fill_bits);
 					}
 					if ((flags & 0x04)
 					    && num_fill_bits) {
 						// fill_style_1_change = 1;
-						fill_1 = in->read_uint(num_fill_bits);
+						current_path.m_fill1 = in->read_uint(num_fill_bits);
 					}
 					if ((flags & 0x08)
 					    && num_line_bits > 0)
 					{
 						// line_style_change = 1;
-						line = in->read_uint(num_line_bits);
+						current_path.m_line = in->read_uint(num_line_bits);
 					}
 					if (flags & 0x10) {
 						assert(tag_type >= 22);
@@ -1646,12 +1807,10 @@ namespace swf
 						float	ax = cx + in->read_sint(num_bits);
 						float	ay = cy + in->read_sint(num_bits);
 
+						current_path.m_edges.push_back(edge(cx, cy, ax, ay));	
+
 						x = ax;
 						y = ay;
-
-						m_edges.push_back(edge(cx, cy, ax, ay,
-								       fill_base + fill_0 - 1, fill_base + fill_1,
-								       line_base + line));
 					}
 					else
 					{
@@ -1661,7 +1820,7 @@ namespace swf
 						float	dx = 0, dy = 0;
 						if (line_flag)
 						{
-							// general line
+							// General line.
 							dx = in->read_sint(num_bits);
 							dy = in->read_sint(num_bits);
 						}
@@ -1669,15 +1828,15 @@ namespace swf
 						{
 							int	vert_flag = in->read_uint(1);
 							if (vert_flag == 0) {
+								// Horizontal line.
 								dx = in->read_sint(num_bits);
 							} else {
+								// Vertical line.
 								dy = in->read_sint(num_bits);
 							}
 						}
 
-						m_edges.push_back(edge(x + dx/2, y + dy/2, x + dx, y + dy,
-								       fill_base + fill_0 - 1, fill_base + fill_1 - 1,
-								       line_base + line - 1));
+						current_path.m_edges.push_back(edge(x + dx/2, y + dy/2, x + dx, y + dy));
 
 						x += dx;
 						y += dy;
@@ -1689,6 +1848,15 @@ namespace swf
 
 		void	display(const display_info& di)
 		// Draw the shape using the given environment.
+		{
+			display(di, m_fill_styles);
+		}
+
+		
+		void	display(const display_info& di, const array<fill_style>& fill_styles)
+		// Display our shape.  Use the fill_styles arg to
+		// override our default set of fill styles (e.g. when
+		// rendering text).
 		{
 //			IF_DEBUG(printf("sc::d() rect = "); m_bound.print(stdout));
 //			IF_DEBUG(printf("sc::d() matr = "); di.m_matrix.print(stdout));
@@ -1710,38 +1878,14 @@ namespace swf
 
 			di.m_matrix.ogl_multiply();
 
-			rgba	c(255, 255, 255, 255);
-			di.m_color_transform.transform(c).ogl_color();
+//			rgba	c(255, 255, 255, 255);
+//			di.m_color_transform.transform(c).ogl_color();
 
-			bool	in_shape = false;
-			for (int i = 0; i < m_edges.size(); i++)
+			for (int i = 0; i < m_paths.size(); i++)
 			{
-				const edge&	e = m_edges[i];
-				if (e.is_blank())
-				{
-					if (in_shape)
-					{
-						swf::render::end_shape();
-						in_shape = false;
-					}
-				}
-				else
-				{
-					if (! in_shape)
-					{
-						in_shape = true;
-						swf::render::begin_shape(x, y);
-					}
-					e.emit_curve();
-				}
-				x = e.m_ax;
-				y = e.m_ay;
+				m_paths[i].display(di, fill_styles, m_line_styles);
 			}
-			if (in_shape)
-			{
-				swf::render::end_shape();
-				//glEnd();
-			}
+
 			glPopMatrix();
 		}
 	};
@@ -1761,8 +1905,8 @@ namespace swf
 
 		IF_DEBUG(printf("shape_loader: id = %d, rect ", character_id);
 			 ch->m_bound.print(stdout));
-		IF_DEBUG(printf("shape_loader: fill style ct = %d, line style ct = %d, edge ct = %d\n",
-				ch->m_fill_styles.size(), ch->m_line_styles.size(), ch->m_edges.size()));
+		IF_DEBUG(printf("shape_loader: fill style ct = %d, line style ct = %d, path ct = %d\n",
+				ch->m_fill_styles.size(), ch->m_line_styles.size(), ch->m_paths.size()));
 
 		m->add_character(character_id, ch);
 	}
@@ -1920,9 +2064,11 @@ namespace swf
 		rect	m_rect;
 		matrix	m_matrix;
 		array<text_glyph_record>	m_text_glyph_records;
+		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
 
 		text_character()
 		{
+			m_dummy_style.push_back(fill_style());
 		}
 
 		void	read(stream* in, int tag_type, movie* m)
@@ -2028,7 +2174,7 @@ namespace swf
 //				sub_di.m_matrix.m_[0][2] += ;
 //				sub_di.m_matrix.m_[1][2] += ;
 
-				// set rec.m_style.m_color // @@ what exactly does this mean?
+				m_dummy_style[0].m_color = rec.m_style.m_color;
 
 				for (int j = 0; j < rec.m_glyphs.size(); j++)
 				{
@@ -2036,7 +2182,7 @@ namespace swf
 					shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
 
 					// Draw the character.
-					if (glyph) glyph->display(sub_di);
+					if (glyph) glyph->display(sub_di, m_dummy_style);
 
 //					sub_di.m_matrix.m_[0][2] += rec.m_glyphs[j].m_glyph_advance;
 					sub_di.m_matrix.concatenate_translation(rec.m_glyphs[j].m_glyph_advance / scale, 0);
@@ -2429,10 +2575,10 @@ namespace swf
 
 				display_info	sub_di = di;
 				sub_di.concatenate(dobj);
-				/* xxx */
-				sub_di.m_color_transform.m_[0][0] = 1;
-				sub_di.m_color_transform.m_[1][0] = 1;
-				sub_di.m_color_transform.m_[2][0] = 0;
+//				/* xxx */
+//				sub_di.m_color_transform.m_[0][0] = 1;
+//				sub_di.m_color_transform.m_[1][0] = 1;
+//				sub_di.m_color_transform.m_[2][0] = 0;
 				dobj.m_character->display(sub_di);
 			}
 		}
