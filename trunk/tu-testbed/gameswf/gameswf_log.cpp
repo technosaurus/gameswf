@@ -23,7 +23,7 @@ namespace gameswf
 	static char	s_buffer[BUFFER_SIZE];
 
 
-	void	set_log_callback(void (*callback)(bool error, const char* message))
+	void	register_log_callback(void (*callback)(bool error, const char* message))
 	// The host app can use this to install a function to receive log
 	// & error messages from gameswf.
 	//

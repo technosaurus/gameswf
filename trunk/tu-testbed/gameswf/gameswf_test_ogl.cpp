@@ -47,7 +47,8 @@ void	print_usage()
 		"  [ or -      Step back one frame\n"
 		"  ] or +      Step forward one frame\n"
 		"  a           Toggle antialiasing (doesn't work)\n"
-		"  t           Debug.  Put some text in a dynamic text field\n"
+		"  t           Debug.  Test the set_variable() function\n"
+		"  g           Debug.  Test the get_variable() function\n"
 		"  b           Toggle background color\n"
 		);
 }
@@ -58,7 +59,6 @@ void	print_usage()
 
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
-//static bool	s_cache = false;
 static bool	s_verbose = false;
 static bool	s_background = true;
 
@@ -94,6 +94,17 @@ static tu_file*	file_opener(const char* url)
 // Callback function.  This opens files for the gameswf library.
 {
 	return new tu_file(url, "rb");
+}
+
+
+static void	fs_callback(gameswf::movie_interface* movie, const char* command, const char* args)
+// For handling notification callbacks from ActionScript.
+{
+	message_log("fs_callback: '");
+	message_log(command);
+	message_log("' '");
+	message_log(args);
+	message_log("'\n");
 }
 
 
@@ -196,11 +207,6 @@ int	main(int argc, char *argv[])
 					exit(1);
 				}
 			}
-// 			else if (argv[arg][1] == 'c')
-// 			{
-// 				// Build cache file.
-// 				s_cache = true;
-// 			}
 			else if (argv[arg][1] == 'v')
 			{
 				// Be verbose; i.e. print log messages to stdout.
@@ -233,7 +239,8 @@ int	main(int argc, char *argv[])
 	}
 
 	gameswf::register_file_opener_callback(file_opener);
-	gameswf::set_log_callback(log_callback);
+	gameswf::register_fscommand_callback(fs_callback);
+	gameswf::register_log_callback(log_callback);
 	//gameswf::set_antialiased(s_antialiased);
         
 	gameswf::sound_handler*	sound = gameswf::create_sound_handler_sdl();
@@ -278,27 +285,6 @@ int	main(int argc, char *argv[])
 	}
 
 	ogl::open();
-
-#if 0
-	// Try to open cached font textures
-	{
-		bool	loaded_cached_data = false;
-
-		tu_file	cache_in(cache_name.c_str(), "rb");
-		if (cache_in.get_error() == TU_FILE_NO_ERROR)
-		{
-			loaded_cached_data = gameswf::fontlib::load_cached_font_data(&cache_in);
-		}
-
-		if (loaded_cached_data == false)
-		{
-			// Couldn't load cached font data.
-			// Generate cached textured versions
-			// of fonts.
-			gameswf::fontlib::generate_font_bitmaps();
-		}
-	}
-#endif // 0
 
 	// Turn on alpha blending.
 	glEnable(GL_BLEND);
@@ -373,18 +359,6 @@ int	main(int argc, char *argv[])
 					// Restart the movie.
 					m->restart();
 				}
-#if 0
-				else if (key == SDLK_MINUS)
-				{
-					hilite_depth--;
-					printf("hilite depth = %d\n", hilite_depth);
-				}
-				else if (key == SDLK_EQUALS)
-				{
-					hilite_depth++;
-					printf("hilite depth = %d\n", hilite_depth);
-				}
-#endif // 0
 				else if (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS)
 				{
 					paused = true;
@@ -405,8 +379,15 @@ int	main(int argc, char *argv[])
 				}
 				else if (key == SDLK_t)
 				{
-					// test text replacement:
-					m->set_edit_text("test_text", "set_edit_text was here...\nanother line of text for you to see in the text box");
+					// test text replacement / variable setting:
+					m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box");
+				}
+				else if (key == SDLK_g)
+				{
+					// test get_variable.
+					message_log("testing get_variable: '");
+					message_log(m->get_variable("test.text"));
+					message_log("'\n");
 				}
 				else if (key == SDLK_b)
 				{

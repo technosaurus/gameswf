@@ -147,7 +147,7 @@ int	main(int argc, char *argv[])
 	}
 
 	gameswf::register_file_opener_callback(file_opener);
-	gameswf::set_log_callback(log_callback);
+	gameswf::register_log_callback(log_callback);
 	gameswf::set_use_cache_files(false);	// don't load old cache files!
         
 	array<movie_data>	data;

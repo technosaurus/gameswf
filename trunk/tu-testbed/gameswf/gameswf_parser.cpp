@@ -575,7 +575,7 @@ namespace parser
 int main(int argc, char *argv[])
 {
 	const char* infile = argv[1];
-	gameswf::set_log_callback(parser::log_callback);
+	gameswf::register_log_callback(parser::log_callback);
 
 	if (infile == NULL)
 	{

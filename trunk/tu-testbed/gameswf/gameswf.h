@@ -25,16 +25,75 @@ class tu_string;
 
 namespace gameswf
 {
+	// Forward declarations.
 	struct action_buffer;
 	struct execute_tag;
 	struct font;
 	namespace key { enum code; }
 	struct movie_interface;
+	struct render_handler;
 	struct resource;
 	struct rgba;
+	struct sound_handler;
 	struct sound_sample;
 	struct stream;
 	
+	//
+	// Log & error reporting control.
+	//
+	
+	// Supply a function pointer to receive log & error messages.
+	void	register_log_callback(void (*callback)(bool error, const char* message));
+	
+	// Control verbosity of specific categories.
+	void	set_verbose_action(bool verbose);
+	void	set_verbose_parse(bool verbose);
+	
+	// Get and set the render handler.  This is one of the first
+	// things you should do to initialise the player (assuming you
+	// want to display anything).
+	void set_render_handler(render_handler* s);
+
+	// Pass in a sound handler, so you can handle audio on behalf of
+	// gameswf.  This is optional; if you don't set a handler, or set
+	// NULL, then sounds won't be played.
+	//
+	// If you want sound support, you should set this at startup,
+	// before loading or playing any movies!
+	void	set_sound_handler(sound_handler* s);
+
+	// Register a callback to the host, for providing a file,
+	// given a "URL" (i.e. a path name).  This is the only means
+	// by which the gameswf library accesses file data, for
+	// loading movies, cache files, and so on.
+	//
+	// gameswf will call this when it needs to open a file.
+	//
+	// NOTE: the returned tu_file* will be delete'd by gameswf
+	// when it is done using it.  Your file_opener_function may
+	// return NULL in case the requested file can't be opened.
+	typedef tu_file* (*file_opener_callback)(const char* url_or_path);
+	void	register_file_opener_callback(file_opener_callback opener);
+	
+	// ActionScripts embedded in a movie can use the built-in
+	// fscommand() function to send data back to the host
+	// application.  If you are interested in this data, register
+	// a handler, which will be called when the embedded scripts
+	// call fscommand().
+	//
+	// The handler gets the movie_interface* that the script is
+	// embedded in, and the two string arguments passed by the
+	// script to fscommand().
+	typedef void (*fscommand_callback)(movie_interface* movie, const char* command, const char* arg);
+	void	register_fscommand_callback(fscommand_callback handler);
+	
+	// Some helpers that may or may not be compiled into your
+	// version of the library, depending on platform etc.
+	render_handler*	create_render_handler_xbox();
+	render_handler*	create_render_handler_ogl();
+	sound_handler*	create_sound_handler_sdl();
+
+
 	//
 	// This is the client program's interface to the definition of
 	// a movie (i.e. the shared constant source info).
@@ -97,12 +156,19 @@ namespace gameswf
 		// Input.
 		virtual void	notify_mouse_state(int x, int y, int buttons) = 0;
 		
-		// Need an event queue API here, for extracting user and movie events.
-		// ...
-		
-		// Push replacement text into an edit-text field.  Returns
-		// true if the field was found and could accept text.
-		virtual bool	set_edit_text(const char* var_name, const char* new_text) = 0;
+		// Set an ActionScript variable within this movie.
+		// You can use this to set the value of text fields,
+		// ordinary variables, or properties of characters
+		// within the script.
+		virtual void	set_variable(const char* path_to_var, const char* new_value) = 0;
+		// @@ do we want a version that takes a number?
+
+		// Get the value of an ActionScript variable.
+		//
+		// Value is ephemeral & not thread safe!!!  Use it or
+		// copy it immediately.
+		virtual const char*	get_variable(const char* path_to_var) const = 0;
+		// @@ do we want a version that returns a number?
 
 		// Make the movie visible/invisible.  An invisible
 		// movie does not advance and does not render.
@@ -149,8 +215,8 @@ namespace gameswf
 	//
 	// The "library" is used when importing symbols from external
 	// movies, so this call might be useful if you want to
-	// explicitly load a movie that you know exports symbols to
-	// other movies as well.
+	// explicitly load a movie that you know exports symbols
+	// (e.g. fonts) to other movies as well.
 	//
 	// @@ this explanation/functionality could be clearer!
 	movie_definition*	create_library_movie(const char* filename);
@@ -163,33 +229,6 @@ namespace gameswf
 	// Release any library movies we've cached.  Do this when you want
 	// maximum cleanup.
 	void	clear_library();
-	
-	// Register a callback to the host, for providing a file,
-	// given a "URL" (i.e. a path name).  This is for supporting
-	// SWF "libraries", where movies can share resources (fonts
-	// and sprites) from a source movie.  Also for supporting
-	// movie cache files for extra precomputed data (".gsc").
-	//
-	// gameswf will call this when it needs to open a file for
-	// those purposes.
-	//
-	// NOTE: the returned tu_file* will be delete'd by gameswf
-	// when it is done using it.  Your file_opener_function may
-	// return NULL in case the requested file can't be opened.
-	typedef tu_file* (*file_opener_function)(const char* url_or_path);
-	void	register_file_opener_callback(file_opener_function opener);
-	
-	
-	//
-	// Log & error reporting control.
-	//
-	
-	// Supply a function pointer to receive log & error messages.
-	void	set_log_callback(void (*callback)(bool error, const char* message));
-	
-	// Control verbosity of specific categories.
-	void	set_verbose_action(bool verbose);
-	void	set_verbose_parse(bool verbose);
 	
 	//
 	// Font library control; gameswf shares its fonts among all loaded
@@ -269,14 +308,6 @@ namespace gameswf
 		virtual ~sound_handler() {};
 	};
 	
-	// Pass in a sound handler, so you can handle audio on behalf of
-	// gameswf.  This is optional; if you don't set a handler, or set
-	// NULL, then sounds will be ignored.
-	//
-	// If you want sound support, you should set this at startup,
-	// before loading or playing any movies!
-	void	set_sound_handler(sound_handler* s);
-	
 
 	//
 	// matrix type, used by render handler
@@ -343,8 +374,8 @@ namespace gameswf
 		void	print() const;
 		bool	point_test(float x, float y) const;
 		void	expand_to_point(float x, float y);
-		float width() const { return m_x_max-m_x_min; }
-		float height() const { return m_y_max-m_y_min; }
+		float	width() const { return m_x_max-m_x_min; }
+		float	height() const { return m_y_max-m_y_min; }
 
 		point	get_corner(int i) const;
 	};
@@ -467,17 +498,6 @@ namespace gameswf
 		virtual void disable_mask() = 0;
 	};
 	
-	// Get and set the render handler. this is one of the first things you should do to initialise
-	// the player.
-	extern void set_render_handler(render_handler* s);
-
-	// Some helpers that may or may not be compiled into your
-	// version of the library, depending on platform etc.
-	render_handler*	create_render_handler_xbox();
-	render_handler*	create_render_handler_ogl();
-	sound_handler*	create_sound_handler_sdl();
-
-
 	// Keyboard handling
 	namespace key {
 		enum code

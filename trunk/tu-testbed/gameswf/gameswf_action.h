@@ -223,16 +223,11 @@ namespace gameswf
 	{
 		virtual ~as_object_interface() {}
 
-		virtual bool	set_self_value(const as_value& val) = 0;
-		virtual bool	get_self_value(as_value* val) = 0;
+		// So that text_character's can return something reasonable.
+		virtual const char*	get_text_value() const = 0;
 
 		virtual void	set_member(const tu_string& name, const as_value& val) = 0;
 		virtual bool	get_member(const tu_string& name, as_value* val) = 0;
-//		virtual as_value	call_method(
-//			const tu_string& name,
-//			as_environment* env,
-//			int nargs,
-//			int first_arg_bottom_index) = 0;
 
 		virtual movie*	to_movie() = 0;
 	};
@@ -314,8 +309,7 @@ namespace gameswf
 	{
 		string_hash<as_value>	m_members;
 
-		virtual bool	set_self_value(const as_value& val) { return false; }
-		virtual bool	get_self_value(as_value* val) { val->set(static_cast<as_object_interface*>(this)); return true; }
+		virtual const char*	get_text_value() const { return NULL; }
 
 		virtual void	set_member(const tu_string& name, const as_value& val)
 		{
@@ -326,12 +320,6 @@ namespace gameswf
 		{
 			return m_members.get(name, val);
 		}
-
-// 		virtual as_value	call_method(
-// 			const tu_string& name,
-// 			as_environment* env,
-// 			int nargs,
-// 			int first_arg_bottom_index);
 
 		virtual movie*	to_movie()
 		// This object is not a movie; no conversion.

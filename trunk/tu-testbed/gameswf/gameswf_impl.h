@@ -75,6 +75,7 @@ namespace gameswf
 	{
 		virtual movie_definition*	get_movie_definition() { return NULL; }
 		virtual movie_root*	get_root() { return NULL; }
+		virtual movie_interface*	get_root_interface() { return NULL; }
 		virtual movie*	get_root_movie() { return NULL; }
 
 		virtual float	get_pixel_scale() const { return 1.0f; }
@@ -175,14 +176,21 @@ namespace gameswf
 		virtual void	set_drag_state(const drag_state& st) { assert(0); }
 		virtual void	stop_drag() { assert(0); }
 
-		virtual bool	set_edit_text(const char* var_name, const char* new_text)
+
+		// External
+		virtual void	set_variable(const char* path_to_var, const char* new_value)
 		{
-			// @@ this should be implemented more directly, to return
-			// a proper true/false result on success/failure.
-			set_member(var_name, new_text);
-			return true;
+			assert(0);
 		}
 
+		// External
+		virtual const char*	get_variable(const char* path_to_var) const
+		{
+			assert(0);
+			return "";
+		}
+		
+		// External
 		virtual bool	has_looped() const { return true; }
 
 
@@ -198,15 +206,9 @@ namespace gameswf
 		}
 
 		// as_object_interface stuff
-		virtual bool	set_self_value(const as_value& val) { assert(0); return false; }
-		virtual bool	get_self_value(as_value* val) { assert(0); return false; }
 		virtual void	set_member(const tu_string& name, const as_value& val) { assert(0); }
 		virtual bool	get_member(const tu_string& name, as_value* val) { assert(0); return false; }
-//		virtual as_value	call_method(const tu_string& name, as_environment* env, int nargs, int arg0)
-//		{
-//			assert(0);
-//			return as_value();
-//		}
+		virtual const char*	get_text_value() const { return NULL; }	// edit_text_character overrides this
 
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
 
@@ -324,7 +326,11 @@ namespace gameswf
 		void	set_name(const char* name) { m_name = name; }
 		const tu_string&	get_name() const { return m_name; }
 
-		virtual const char*	get_variable_name() const { return get_name().c_str(); }
+		// For edit_text support (Flash 5).  More correct way
+		// is to do "text_character.text = whatever", via
+		// set_member().
+		virtual const char*	get_text_name() const { return ""; }
+		virtual void	set_text_value(const char* new_text) { assert(0); }
 
 		virtual matrix	get_world_matrix() const
 		// Get our concatenated matrix (all our ancestor transforms, times our matrix).  Maps
