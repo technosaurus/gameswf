@@ -2409,7 +2409,7 @@ namespace gameswf
 			if (name == "_x")
 			{
 				matrix	m = get_matrix();
-				m.m_[0][2] = PIXELS_TO_TWIPS(val.to_number());
+				m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
 				set_matrix(m);
 
 				m_accept_anim_moves = false;
@@ -2419,7 +2419,7 @@ namespace gameswf
 			else if (name == "_y")
 			{
 				matrix	m = get_matrix();
-				m.m_[1][2] = PIXELS_TO_TWIPS(val.to_number());
+				m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
 				set_matrix(m);
 
 				m_accept_anim_moves = false;
@@ -2444,7 +2444,7 @@ namespace gameswf
 			}
 			else if (name == "_alpha")
 			{
-				set_background_alpha(val.to_number());
+				set_background_alpha((float) val.to_number());
 				m_accept_anim_moves = false;
 				return;
 			}
