@@ -13,13 +13,6 @@
 #include "engine/utility.h"
 
 
-#ifndef WIN32
-//FIX: sounds like some WIN32 specifics...
-#define png_voidp_NULL NULL
-#define png_infopp_NULL NULL
-#define int_p_NULL NULL
-#endif
-
 bool	check_if_png(char *file_name);
 
 

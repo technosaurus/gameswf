@@ -191,7 +191,8 @@ int	wrapped_main(int argc, char* argv[])
 	// Altitude gradient bitmap.
 	SDL_Surface*	altitude_gradient = NULL;
 	if (gradient_file && gradient_file[0]) {
-		altitude_gradient = IMG_Load(gradient_file);
+// @@ replace this with image::read_png() or something...
+//		altitude_gradient = IMG_Load(gradient_file);
 	}
 
 	// Print the parameters.

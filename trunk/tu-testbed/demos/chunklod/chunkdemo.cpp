@@ -76,7 +76,7 @@ void	apply_matrix(const matrix& m)
 	// Copy to the 4x4 layout.
 	for (int col = 0; col < 4; col++) {
 		for (int row = 0; row < 3; row++) {
-			mat[col * 4 + row] = m.GetColumn(col).get(row);
+			mat[col * 4 + row] = m.get_column(col).get(row);
 		}
 		if (col < 3) {
 			mat[col * 4 + 3] = 0;
@@ -165,7 +165,7 @@ void	setup_view(float nearz, float farz)
 	// View matrix.
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	s_view.m_matrix.View(viewer_dir, viewer_up, viewer_pos);
+	s_view.m_matrix.set_view(viewer_dir, viewer_up, viewer_pos);
 	apply_matrix(s_view.m_matrix);
 
 	// Transform the frustum planes from view coords into world coords.
@@ -175,9 +175,9 @@ void	setup_view(float nearz, float farz)
 		// way to do this :)
 		plane_info&	tp = s_view.m_frustum[i];
 		plane_info&	p = frustum_plane[i];
-		s_view.m_matrix.ApplyInverseRotation(&tp.normal, p.normal);
+		s_view.m_matrix.apply_inverse_rotation(&tp.normal, p.normal);
 		vec3	v;
-		s_view.m_matrix.ApplyInverse(&v, p.normal * p.d);
+		s_view.m_matrix.apply_inverse(&v, p.normal * p.d);
 		tp.d = v * tp.normal;
 	}
 
