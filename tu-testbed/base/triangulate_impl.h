@@ -398,7 +398,7 @@ struct poly
 	void	build_ear_list(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg);
 
 	void	emit_and_remove_ear(array<coord_t>* result, array<vert_t>* sorted_verts, int v0, int v1, int v2);
-	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int v1, int v2);
+	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int v2);
 
 	bool	ear_contains_reflex_vertex(const array<vert_t>& sorted_verts, int v0, int v1, int v2);
 	bool	vert_in_cone(const array<vert_t>& sorted_verts, int vert, int cone_v0, int cone_v1, int cone_v2);
@@ -1095,12 +1095,15 @@ void	poly<coord_t>::flip_triple_configuration(array<vert_t>* sorted_verts, int v
 
 
 template<class coord_t>
-bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int v1, int v2)
-// Return true if edge (v1,v2) intersects any edge in our poly.
+bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int my_vert)
+// Return true if edge (external_vert,my_vert) intersects any edge in our poly.
 {
 	// @@ TODO implement spatial search structure to accelerate this!
 
 	// For now, brute force O(N) :^o
+
+	assert(sorted_verts[external_vert].m_poly_owner != this);
+	assert(sorted_verts[my_vert].m_poly_owner == this);
 	assert(is_valid(sorted_verts));
 
 	int	first_vert = m_loop;
@@ -1108,10 +1111,32 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 	do
 	{
 		int	v_next = sorted_verts[vi].m_next;
-
-		if (edges_intersect(sorted_verts, vi, v_next, v1, v2))
+		if (vi != my_vert)
 		{
-			return true;
+			if (sorted_verts[vi].m_v == sorted_verts[my_vert].m_v)
+			{
+				// Coincident verts; need to be a bit careful
+				// with this test.  Consider the cone formed
+				// at my_vert.  If v_next and external vert
+				// are on the same side of the cone, then it
+				// looks like the edge (external_vert,my_vert)
+				// effectively crosses the path through vi.
+
+				const vert_t*	pmv = &sorted_verts[my_vert];
+
+				bool	v_next_in_cone = vert_in_cone(sorted_verts, v_next, pmv->m_prev, my_vert, pmv->m_next);
+				bool	ex_vert_in_cone = vert_in_cone(sorted_verts, external_vert, pmv->m_prev, my_vert, pmv->m_next);
+
+				if (v_next_in_cone == ex_vert_in_cone)
+				{
+					// Logical edge crossing.
+					return true;
+				}
+			}
+			else if (edges_intersect(sorted_verts, vi, v_next, external_vert, my_vert))
+			{
+				return true;
+			}
 		}
 
 		vi = v_next;
