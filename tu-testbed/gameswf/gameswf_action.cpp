@@ -2108,23 +2108,28 @@ namespace gameswf
 							current_movie->set_member("TextFormat", handler);
 							
 							textformat_as_object*	text_obj = new textformat_as_object;
+							log_msg("\tCreated New TextFormat object at 0x%X\n", text_obj);
+							
 							text_obj->set_member("underline", &textformat_underline);
 							new_obj = text_obj;
 						} else		
 						if (classname.to_tu_string()=="TextField")
 						{
-							log_msg("New TextField Object!!!\n");
 							as_value handler = (as_c_function_ptr)&textfield_new;
 							current_movie->set_member("TextField", handler);
 							
 							textfield_as_object*	text_obj = new textfield_as_object;
-							// text_obj->set_member("underline", &string_lastIndexOf);
+							log_msg("\tCreated New TextField object at 0x%X\n", text_obj);
+							//text_obj->set_member("_visible", &textfield_visible);
+							//text_obj->set_member("_width", &textfield_width);
+							text_obj->set_member("_visible", true);
+							text_obj->set_member("_width", "10");
 							new_obj = text_obj;
-						} else		
+						} else
 						// This is where ActionScript objects go
 					        if (classname.to_tu_string()=="XML")
 						{
-							log_msg("New XML Object!!!, nargs is %d\n", nargs);
+							//log_msg("New XML Object!!!, nargs is %d\n", nargs);
 							current_movie->set_member("XML", as_value(xml_new));
 							if (nargs > 0) {
 								if (env->top(0).get_type() == as_value::STRING) {
@@ -2145,79 +2150,9 @@ namespace gameswf
 								xml_as_object*	xml_obj = new xml_as_object;
 								log_msg("Created New XML object at 0x%X\n", xml_obj);
 								xml_obj->set_member("load", &xml_load);
+								xml_obj->set_member("loaded", &xml_loaded);
 								new_obj = xml_obj;
 							}
-							
-							//new_obj = xml_obj;
-// #if 0
-// #if 1
-// 							if (nargs > 0) {
-// 								tu_string datain = env->top(0).to_tu_string();	
-// 								xmlnode_as_object *xmlfirstnode_obj
-// 										= new xmlnode_as_object;
-// 								xmlnode_as_object *xmlchildnode_obj
-// 										= new xmlnode_as_object;
-// 								XMLNode *xmlnodes = xml_obj->obj.firstChild();
-// 								// log_msg("DATAIN is %s\n", datain.c_str());
-// 								xml_obj->obj.parseXML(datain);
-// 								xmlfirstnode_obj->obj = *xmlnodes;
-// 								xmlchildnode_obj->obj = *xmlnodes;
-// #if 0
-// 								xml_obj->set_member("firstChild",
-// 										    xml_obj);
-// #else
-// 								env->set_variable("firstChild", xml_obj, 0);
-// #endif
-// 								//xmlfirstnode_obj);
-// 								xml_obj->set_member("childNodes",
-// 										    xml_obj);
-// 								//xmlchildnode_obj);
-// 								xml_obj->set_member("length",
-// 										    xml_obj->obj.length());
-								
-// 								xml_obj->set_member("nodeName",  "REQUEST1");
-// 								env->set_variable("nodeName",  "REQUEST2", 0);
-// 								xmlfirstnode_obj->set_member("nodeName",  "REQUEST3");
-// 								// xmlchildnode_obj->set_member("nodeName",  xmlnodes->_name.c_str());
-// 								xmlchildnode_obj->set_member("nodeName",  "REQUEST4");
-// 								//  xml_obj->obj.nodeNameGet(), 0);
-// 								int i;
-// 								as_value inum;
-// 								for (i=0; i < xmlnodes->_children.size(); i++) {
-// 									inum = i;
-// 									xml_obj->set_member(inum.to_string(),
-// 											    xmlnodes->_children[i]->nodeName().c_str());
-// 								}
-// #if 1
-// 								// Get all the attributes
-// 								xmlattr_as_object *attr_obj = new xmlattr_as_object;
-// 								for (i=0; i<xmlnodes->_attributes.size(); i++) {
-// 									attr_obj->set_member(xmlnodes->_attributes[i]->_name, xmlnodes->_attributes[i]->_value);
-// 								}
-// 								env->set_variable("attributes", attr_obj, 0);
-// #endif
-
-
-// 								// xml_obj->obj.change_stack_frame(0, xml_obj, env);
-// 							}
-// #endif
-							
-// 							xml_obj->set_member("load", &xml_load);
-// 							// Setup event handlers
-// #if 0
-// 							xml_obj->set_event_handler(event_id::XML_LOAD,
-// 										   (as_c_function_ptr)&xml_onload);
-// 							xml_obj->set_event_handler(event_id::XML_DATA,
-// 										   (as_c_function_ptr)&xml_ondata);
-// #endif
-// 							//xml_obj->obj.change_stack_frame(0, xml_obj, env);
-// 							// movie*	mov2 = env->get_target();
-// 							// struct movie_root* root_movie = mov2->get_root();
-// 							// periodic_events.set_event_handler(&val);
-// 							// env->m_target->get_root_movie()->set_event_handler(&val);
-// 							// env->m_target->get_current_root()->poll_event_handlers();
-// 							// xml_obj->poll_event_handlers();
-// #endif
 						} else
 						if (classname.to_tu_string()=="XMLSocket")
 						{
@@ -2225,6 +2160,7 @@ namespace gameswf
 							current_movie->set_member("XMLSocket", as_value(xmlsocket_new));
 							
 							as_object*	xmlsock_obj = new xmlsocket_as_object;
+							log_msg("\tCreated New XMLSocket object at 0x%X\n", xmlsock_obj);
 							xmlsock_obj->set_member("connect", &xmlsocket_connect);
 							xmlsock_obj->set_member("send", &xmlsocket_send);
 							xmlsock_obj->set_member("close", &xmlsocket_close);
@@ -2257,12 +2193,14 @@ namespace gameswf
 							//env->set_variable("setInterval", int_handler, 0);
 							//xmlsock_obj->set_event_handler(event_id::TIMER,
 							//       (as_c_function_ptr)&timer_expire);
+#if 0
 							Timer *timer = new Timer;
 							as_c_function_ptr ondata_handler =
 								(as_c_function_ptr)&xmlsocket_event_ondata;
 							timer->setInterval(ondata_handler, 500);
 							timer->setObject(xmlsock_obj);
 							current_movie->add_interval_timer(timer);
+#endif
 							
 							new_obj = xmlsock_obj;
 #endif
@@ -2274,13 +2212,14 @@ namespace gameswf
 							current_movie->set_member("MovieClipLoader", as_value(moviecliploader_new));
 #if 1
 							as_object*	mov_obj = new moviecliploader_as_object;
+							log_msg("\tCreated New MovieClipLoader object at 0x%X\n", mov_obj);
+
 							mov_obj->set_member("loadClip",
 									    &moviecliploader_loadclip);
 							mov_obj->set_member("unloadClip",
 									    &moviecliploader_unloadclip);
 							mov_obj->set_member("getProgress",
 									    &moviecliploader_getprogress);
-							mov_obj->set_member("mv_Progress_Bar", (as_c_function_ptr)&event_test);
 							// Load the default event handlers. These should really never
 							// be called directly, as to be useful they are redefined
 							// within the SWF script. These get called if there is a problem
@@ -2307,7 +2246,6 @@ namespace gameswf
 							mov_obj->set_member("onLoadInit",
 									    &moviecliploader_default);
 #endif
-							new_obj = mov_obj;
 #else
 							// New sprite based implementation
 							//env->get_target()->clone_display_object(
@@ -2319,7 +2257,7 @@ namespace gameswf
 							//gameswf::movie_definition*	md = gameswf::create_movie("/home/rob/projects/request/alpha/tu-testbed/tests/test2.swf");
 							gameswf::movie_definition*	md = current_movie->get_movie_definition();
 							if (md == NULL)	{
-								fprintf(stderr, "error: can't create a movie from '%s'\n", "/home/rob/projects/request/alpha/tu-testbed/tests/test2.swf");
+								fprintf(stderr, "error: can't create a movie from\n");
 								exit(1);
 							}
 							gameswf::movie_interface*	m = md->create_instance();
@@ -2327,6 +2265,8 @@ namespace gameswf
 								fprintf(stderr, "error: can't create movie instance\n");
 								exit(1);
 							}
+							new_obj = mov_obj;
+
 						} else
 						if (classname.to_tu_string()=="String")
 						{
@@ -2335,6 +2275,8 @@ namespace gameswf
 							current_movie->set_member("String", as_value(string_new));
 							
 							as_object*	str_obj = new as_object;
+							log_msg("\tCreated New String object at 0x%X\n", str_obj);
+
 							// str_obj->set_member("lastIndexOf", &(str_obj->str.test));
 							str_obj->set_member("lastIndexOf", &string_lastIndexOf);
 							new_obj = str_obj;
