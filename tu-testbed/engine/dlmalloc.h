@@ -30,6 +30,7 @@ extern "C" {
 #endif
 
 #include <stddef.h>   /* for size_t */
+#include <malloc.h>	/* tulrich */
 
 
 #define USE_DL_PREFIX

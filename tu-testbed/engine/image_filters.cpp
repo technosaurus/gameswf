@@ -18,7 +18,6 @@
 #include "engine/image.h"
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
 #include <math.h>
 #include <SDL/SDL.h>
 
