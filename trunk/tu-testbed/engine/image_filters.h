@@ -17,7 +17,7 @@ namespace image_filters
 		TRIANGLE,
 		BELL,
 		B_SPLINE,
-		SOME_RANDOM_CUBIC,
+		SOME_CUBIC,	// Cubic approximation of Sinc's hump (but no tails).
 		LANCZOS3,
 		MITCHELL	// This one is alleged to be pretty nice.
 	};

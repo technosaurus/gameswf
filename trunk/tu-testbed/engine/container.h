@@ -9,6 +9,12 @@
 //
 // These are not as comprehensive or general, but I think might be
 // more usable for day-to-day coding.
+//
+// Basic approach: array<> acts like a stripped-down version of
+// std::vector<>, or a slightly beefed up native array.
+//
+// hash<> is a very simple take on std::hash_map, without the awful
+// iterator-oriented interface.
 
 
 #ifndef CONTAINER_H
@@ -16,44 +22,72 @@
 
 
 #include <stdlib.h>
+#include <new>	// for placement new
 #include "engine/utility.h"
 
 
 template<class T>
 class array {
-// Resizable array.  Don't put anything in here that needs a
-// destructor called on it when the array is destructed.  Don't keep
-// the address of an element; the array contents may move around as it
-// gets resized.
+// Resizable array.  Don't put anything in here that can't be moved
+// around by bitwise copy.  Don't keep the address of an element; the
+// array contents will move around as it gets resized.
+//
+// Default constructor and destructor get called on the elements as
+// they are added or removed from the active part of the array.
 public:
 	array() : m_buffer(0), m_size(0), m_buffer_size(0) {}
 	array(int size_hint) : m_buffer(0), m_size(0), m_buffer_size(0) { resize(size_hint); }
 	~array() {
 		clear();
 	}
-	
+
+	// Basic array access.
 	T&	operator[](int index) { assert(index >= 0 && index < m_size); return m_buffer[index]; }
 	const T&	operator[](int index) const { assert(index >= 0 && index < m_size); return m_buffer[index]; }
-
 	int	size() const { return m_size; }
+
 	void	push_back(const T& val)
+	// Insert the given element at the end of the array.
 	{
 		int	new_size = m_size + 1;
 		resize(new_size);
 		(*this)[new_size-1] = val;
 	}
 
+	void	clear()
+	// Empty and destruct all elements.
+	{
+		resize(0);
+	}
+
+	// void	remove(int index);
+
+	void	operator=(const array<T>& a)
+	// Array copy.  Copies the contents of a into this array.
+	{
+		resize(a.size());
+		for (int i = 0; i < m_size; i++) {
+			*(m_buffer + i) = a[i];
+		}
+	}
+
 	void	resize(int new_size)
-	// Preserve existing elements.  Newly created elements are unintialized.
-	// TODO: should not be inline!  No reason to bloat the code.
+	// Preserve existing elements.  Newly created elements are
+	// initialized with default element of T.  Removed elements
+	// are destructed.
 	{
 		assert(new_size >= 0);
 
+		int	old_size = m_size;
 		m_size = new_size;
+
+		// Destruct old elements.
+		{for (int i = new_size; i < old_size; i++) {
+			(m_buffer + i)->~T();
+		}}
 
 		if (new_size == 0) {
 			m_buffer_size = 0;
-
 		} else if (m_size <= m_buffer_size && m_size > m_buffer_size >> 1) {
 			// don't compact yet.
 			return;
@@ -62,6 +96,11 @@ public:
 		}
 
 		reserve(m_buffer_size);
+
+		// Copy default T into new elements.
+		{for (int i = old_size; i < new_size; i++) {
+			new (m_buffer + i) T();	// placement new
+		}}
 	}
 
 	void	reserve(int rsize)
@@ -83,12 +122,6 @@ public:
 			}
 		}			
 	}
-
-	void	clear() {
-		resize(0);
-	}
-
-	// void	remove(int index);
 
 	void	transfer_members(array<T>* a)
 	// UNSAFE!  Low-level utility function: replace this array's
@@ -245,12 +278,6 @@ public:
 		m_size_mask = new_size - 1;
 
 		array< array<entry> >	new_table(new_size);
-		// Init entries in new_table, since constructors aren't
-		// called.
-		for (int i = 0; i < new_size; i++) {
-			array<entry> nullentry(0);
-			new_table[i].transfer_members(&nullentry);
-		}
 
 		// Copy all entries to the new table.
 		{for (int i = 0; i < m_table.size(); i++) {
