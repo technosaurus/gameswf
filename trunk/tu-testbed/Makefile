@@ -29,6 +29,7 @@ engine_files = \
 		tu-testbed/engine/TODO
 
 chunklod_files = \
+		tu-testbed/go_chunklod.bat	\
 		tu-testbed/demos/chunklod/chunkdemo.exe \
 		tu-testbed/demos/chunklod/heightfield_chunker.exe \
 		tu-testbed/demos/chunklod/heightfield_shader.exe \
@@ -43,7 +44,9 @@ chunklod_files = \
 		tu-testbed/demos/chunklod/TODO	\
 		tu-testbed/demos/chunklod/README-SDL.txt	\
 		tu-testbed/demos/chunklod/*.dll	\
-		tu-testbed/demos/chunklod/lua.exe
+		tu-testbed/demos/chunklod/lua.exe	\
+		tu-testbed/demos/chunklod/*.lua
+
 
 crater_data_files = \
 		tu-testbed/demos/chunklod/crater/crater.chu	\
