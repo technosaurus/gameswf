@@ -374,6 +374,7 @@ public:
 			} else {
 				m_buffer = (T*) tu_malloc(sizeof(T) * m_buffer_size);
 			}
+			assert(m_buffer);	// need to throw (or something) on malloc failure!
 		}			
 	}
 
@@ -822,6 +823,8 @@ private:
 
 		hash<T, U, hash_functor>	new_hash;
 		new_hash.m_table = (table*) tu_malloc(sizeof(table) + sizeof(entry) * new_size);
+		assert(new_hash.m_table);	// @@ need to throw (or something) on malloc failure!
+
 		new_hash.m_table->m_entry_count = 0;
 		new_hash.m_table->m_size_mask = new_size - 1;
 		{for (int i = 0; i < new_size; i++)
