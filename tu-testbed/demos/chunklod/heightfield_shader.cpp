@@ -4,6 +4,9 @@
 // whatever you want with it.
 
 // Program to take heightfield input and generate texture for it.
+//
+// This is very hacky; I just need something quick that makes vaguely
+// interesting textures for demoing the chunk renderer.
 
 
 #include <stdlib.h>
@@ -18,7 +21,15 @@
 #include <engine/geometry.h>
 
 
-void	heightfield_shader(SDL_RWops* rwin, SDL_RWops* out);
+struct texture_tile {
+	Uint8	r, g, b;	// identifier
+	SDL_Surface*	image;
+};
+
+
+void	initialize_tileset(array<texture_tile>* tileset);
+const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b);
+void	heightfield_shader(SDL_RWops* rwin, SDL_RWops* out, SDL_Surface* tilemap, const array<texture_tile>& tileset, float resolution);
 
 
 void	error(const char* fmt)
@@ -39,7 +50,8 @@ void	print_usage()
 	printf("heightfield_shader: program for generating a texture for a heightfield\n"
 		   "terrain.\n\n"
 		   "This program has been donated to the Public Domain by Thatcher Ulrich <tu@tulrich.com>\n\n"
-		   "usage: heightfield_shader <input_filename> <output_filename>\n"
+		   "usage: heightfield_shader <input_filename> <output_filename> [-t <tilemap_bitmap>]\n"
+		   "\t[-r <texels per heixel>]\n"
 		   "\n"
 		   "\tThe input filename should either be a .BT format terrain file with\n"
 		   "\t(2^N+1) x (2^N+1) datapoints, or a grayscale bitmap.\n"
@@ -56,6 +68,9 @@ int	main(int argc, char* argv[])
 	char*	infile = NULL;
 	char*	outfile = NULL;
 	char*	lightmap_filename = NULL;
+	char*	tilemap = NULL;
+	array<texture_tile>	tileset;
+	float	resolution = 1.0;
 
 	for ( int arg = 1; arg < argc; arg++ ) {
 		if ( argv[arg][0] == '-' ) {
@@ -67,6 +82,33 @@ int	main(int argc, char* argv[])
 				print_usage();
 				exit( 1 );
 				break;
+
+			case 't':
+				// Get tilemap filename.
+				if (arg + 1 >= argc) {
+					printf("error: -t option requires a filename\n");
+					print_usage();
+					exit(1);
+				}
+				arg++;
+				tilemap = argv[arg];
+				break;
+			case 'r':
+				// Get output resolution.
+				if (arg + 1 >= argc) {
+					printf("error: -r option requires a resolution (floating point value for texels/heixel)\n");
+					print_usage();
+					exit(1);
+				}
+				arg++;
+				resolution = atoi(argv[arg]);
+				if (resolution <= 0.001) {
+					printf("error: resolution must be greater than 0\n");
+					print_usage();
+					exit(1);
+				}
+				break;
+
 			default:
 				printf("error: unknown command-line switch -%c\n", argv[arg][1]);
 				exit(1);
@@ -108,12 +150,24 @@ int	main(int argc, char* argv[])
 		exit( 1 );
 	}
 
+	// Initialize the tilemap and tileset.
+	SDL_Surface*	tilemap_surface = NULL;
+	if (tilemap && tilemap[0]) {
+		// The tilemap is a bitmap, where the color of each pixel
+		// chooses a tile from the tilemap.
+		tilemap_surface = IMG_Load(tilemap);
+	}
+		
+	// Tileset is a set of textures, associated with a particular
+	// color in the tilemap.
+	initialize_tileset(&tileset);
+
 	// Print the parameters.
 	printf("infile: %s\n", infile);
 	printf("outfile: %s\n", outfile);
 
 	// Process the data.
-	heightfield_shader(in, out);
+	heightfield_shader(in, out, tilemap_surface, tileset, resolution);
 
 	SDL_RWclose(in);
 	SDL_RWclose(out);
@@ -126,6 +180,9 @@ void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8
 // Utility function to read a pixel from an SDL surface.
 // TODO: Should go in the engine utilities somewhere.
 {
+	assert(x >= 0 && x < s->w);
+	assert(y >= 0 && y < s->h);
+
 	// Get the raw color data for this pixel out of the surface.
 	// Location and size depends on surface format.
 	Uint32	color = 0;
@@ -202,6 +259,7 @@ struct heightfield {
 	// Return a reference to the element at (x, z).
 	{
 		assert_else(data && x >= 0 && x < size && z >= 0 && z < size) {
+			printf("%d %d\n", x, z);//xxxxxx
 			error("heightfield::elem() -- array access out of bounds.");
 		}
 
@@ -212,6 +270,53 @@ struct heightfield {
 	{
 		return (const_cast<heightfield*>(this))->elem(x, z);
 	}
+
+
+	Uint8	compute_light(float x, float z) const
+	// Compute a lighting value at a location in heightfield-space.
+	// Result is 0-255.  Input is in heightfield index coordinates,
+	// but is interpolated between the nearest samples.  Uses an
+	// arbitrary hard-coded sun direction & lighting parameters.
+	{
+		x = fclamp(x, 0, size-3);
+		z = fclamp(z, 0, size-3);
+
+		int	i = floor(x);
+		int	j = floor(z);
+
+		float	wx = x - i;
+		float	wz = z - j;
+
+		// Compute lighting at nearest grid points, and bilinear blend
+		// the results.
+		Uint8	s00 = compute_light_int(i, j);
+		Uint8	s10 = compute_light_int(i+1, j);
+		Uint8	s01 = compute_light_int(i, j+1);
+		Uint8	s11 = compute_light_int(i+1, j+1);
+		
+		return s00 * (1 - wx) * (1 - wz)
+			+ s10 * (wx) * (1 - wz)
+			+ s01 * (1 - wx) * (wz)
+			+ s11 * (wx) * (wz);
+	}
+
+
+	Uint8	compute_light_int(int i, int j) const
+	// Aux function for compute_light().  Computes lighting at a
+	// discrete heightfield spot.
+	{
+
+		float	y00 = get_elem(i, j);
+		float	y10 = get_elem(i+1, j);
+		float	y01 = get_elem(i, j+1);
+		float	y11 = get_elem(i+1, j+1);
+				
+		float	slopex = (((y00 - y10) + (y01 - y11)) * 0.5) / sample_spacing;
+		float	slopez = (((y00 - y01) + (y10 - y11)) * 0.5) / sample_spacing;
+
+		return iclamp((slopex * 0.25 + slopez * 0.15 + 0.5) * 255, 0, 255);	// xxx arbitrary params
+	}
+
 
 	int	load_bt(SDL_RWops* in)
 	// Load .BT format heightfield data from the given file and
@@ -231,7 +336,7 @@ struct heightfield {
 		buf[10] = 0;
 		if (strcmp(buf, "binterr1.1") != 0) {
 			// Bad input file format.  Must not be BT 1.1.
-			
+		
 			// Rewind to where we started.
 			SDL_RWseek(in, start, SEEK_SET);
 
@@ -255,7 +360,7 @@ struct heightfield {
 
 		//xxxxxx
 		printf("width = %d, height = %d, sample_size = %d, left = %lf, right = %lf, bottom = %lf, top = %lf\n",
-		       width, height, sample_size, left, right, bottom, top);
+			   width, height, sample_size, left, right, bottom, top);
 		//xxxxxx
 
 		// If float_flag is set, make sure datasize is 4 bytes.
@@ -314,37 +419,37 @@ struct heightfield {
 		if (s == NULL) {
 			error("heightfield::load_bitmap() -- could not load bitmap file.");
 		}
-		
+	
 		// Compute the dimension (width & height) for the heightfield.
 		size = imax(s->w, s->h);
 		log_size = (int) (log2(size - 1) + 0.5f);
-
+	
 		// Expand the heightfield dimension to contain the bitmap.
 		while (((1 << log_size) + 1) < size) {
 			log_size++;
 		}
 		size = (1 << log_size) + 1;
-
+	
 		sample_spacing = 1.0;	// TODO: parameterize this
-
+	
 		// Allocate storage.
 		int	sample_count = size * size;
 		data = new float[sample_count];
-
+	
 		// Initialize the data.
 		for (int i = 0; i < size; i++) {
 			for (int j = 0; j < size; j++) {
 				float	y = 0;
-
+	
 				// Extract a height value from the pixel data.
 				Uint8	r, g, b, a;
 				ReadPixel(s, imin(i, s->w - 1), imin(j, s->h - 1), &r, &g, &b, &a);
 				y = r * 1.0f;	// just using red component for now.
-
+	
 				data[i + (size - 1 - j) * size] = y;
 			}
 		}
-
+	
 		SDL_FreeSurface(s);
 	}
 };
@@ -353,7 +458,7 @@ struct heightfield {
 void	compute_lightmap(SDL_Surface* out, const heightfield& hf);
 
 
-void	heightfield_shader(SDL_RWops* in, SDL_RWops* out)
+void	heightfield_shader(SDL_RWops* in, SDL_RWops* out, SDL_Surface* tilemap, const array<texture_tile>& tileset, float resolution)
 // Generate texture for heightfield.
 {
 	heightfield	hf;
@@ -364,45 +469,122 @@ void	heightfield_shader(SDL_RWops* in, SDL_RWops* out)
 	}
 
 	// Compute and write the lightmap, if any.
-	printf("Computing lightmap...");
+	printf("Shading... ");
 
-	SDL_Surface*	lightmap = SDL_CreateRGBSurface(SDL_SWSURFACE, hf.size - 1, hf.size - 1, 24, 0xFF0000, 0xFF00, 0xFF, 0);
-	compute_lightmap(lightmap, hf);
+	const char*	spinner = "-\\|/";
+
+	int	width = (hf.size - 1) * resolution;
+	int	height = (hf.size - 1) * resolution;
 	
-	SDL_SaveBMP_RW(lightmap, out, 0);
-	SDL_FreeSurface(lightmap);
+	SDL_Surface*	texture = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 24, 0xFF0000, 0xFF00, 0xFF, 0);
+	Uint8*	p = (Uint8*) texture->pixels;
+	{for (int j = 0; j < height; j++) {
+		{for (int i = 0; i < width; i++) {
+			const texture_tile*	t;
+			if (tilemap) {
+				// Get the corresponding pixel from the tilemap, and
+				// get the tile that it corresponds to.
+				Uint8	r, g, b, a;
+				ReadPixel(tilemap, imin(i / resolution, tilemap->w-1), imin(j / resolution, tilemap->h-1), &r, &g, &b, &a);
+				t = choose_tile(tileset, r, g, b);
+			} else {
+				// In the absense of a tilemap, use the first tile for
+				// everything.
+				t = &tileset[0];
+			}
+			assert(t);
+
+			// get tile pixel
+			int	tx, ty;
+			tx = (i % t->image->w);
+			ty = (j % t->image->h);
+			Uint8	r, g, b, a;
+			ReadPixel(t->image, tx, ty, &r, &g, &b, &a);
+
+			// apply light to it
+			Uint8	light = hf.compute_light(i / resolution, j / resolution);
+
+			r = (r * light) >> 8;
+			g = (g * light) >> 8;
+			b = (b * light) >> 8;
+
+			*p++ = r;
+			*p++ = g;
+			*p++ = b;
+		}}
+		printf("\b%c", spinner[j&3]);
+	}}
+	
+	SDL_SaveBMP_RW(texture, out, 0);
+	SDL_FreeSurface(texture);
 	
 	printf("done\n");
 }
 
 
-//
-// Quickie lightmap generation
-//
-
-
-void	compute_lightmap(SDL_Surface* out, const heightfield& hf)
-// Computes a lightmap into the given surface.
+void	initialize_tileset(array<texture_tile>* tileset)
+// Adds a few standard tiles to the given tileset.
 {
-	assert(out->w == hf.size - 1);
-	assert(out->h == hf.size - 1);
+	texture_tile	t;
 
-	Uint8*	p = (Uint8*) out->pixels;
-	for (int j = 0; j < out->h; j++) {
-		for (int i = 0; i < out->w; i++) {
-			float	y00 = hf.get_elem(i, j);
-			float	y10 = hf.get_elem(i+1, j);
-			float	y01 = hf.get_elem(i, j+1);
-			float	y11 = hf.get_elem(i+1, j+1);
-				
-			float	slopex = (((y00 - y10) + (y01 - y11)) * 0.5) / hf.sample_spacing;
-			float	slopez = (((y00 - y01) + (y10 - y11)) * 0.5) / hf.sample_spacing;
+	t.r = 0xFF;
+	t.g = 0x00;
+	t.b = 0x00;
+	t.image = IMG_Load("tileFF0000.jpg");
+	assert_else(t.image) {
+		error("can't load tileFF0000.jpg");
+	}
+	tileset->push_back(t);
 
-			Uint8	light = iclamp((slopex * 0.25 + slopez * 0.15 + 0.5) * 255, 0, 255);	// xxx arbitrary params
+	t.r = 0x00;
+	t.g = 0xFF;
+	t.b = 0x00;
+	t.image = IMG_Load("tile00FF00.jpg");
+	assert_else(t.image) {
+		error("can't load tile00FF00.jpg");
+	}
+	tileset->push_back(t);
 
-			*p++ = light;
-			*p++ = light;
-			*p++ = light;
+	t.r = 0x00;
+	t.g = 0x00;
+	t.b = 0xFF;
+	t.image = IMG_Load("tile0000FF.jpg");
+	assert_else(t.image) {
+		error("can't load tile0000FF.jpg");
+	}
+	tileset->push_back(t);
+
+	t.r = 0xFF;
+	t.g = 0xFF;
+	t.b = 0xFF;
+	t.image = IMG_Load("tileFFFFFF.jpg");
+	assert_else(t.image) {
+		error("can't load tileFFFFFF.jpg");
+	}
+	tileset->push_back(t);
+}
+
+
+const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b)
+// Returns a reference to the tile within the given tileset whose
+// r,g,b tag is closest to the specified r,g,b triple.
+{
+	const texture_tile*	result = &tileset[0];
+	int	min_distance = 255 * 255 * 3;
+	
+	// Linear search for closest color in RGB space.
+	for (int i = 0; i < tileset.size(); i++) {
+		int	dr = (r - tileset[i].r);
+		int	dg = (g - tileset[i].g);
+		int	db = (b - tileset[i].b);
+
+		int	dist = dr * dr + dg * dg + db * db;
+		if (dist < min_distance) {
+			min_distance = dist;
+			result = &tileset[i];
 		}
 	}
+
+	return result;
 }
+
