@@ -879,6 +879,64 @@ private:
 };
 
 
+// String-like type; comparisons are CASE INSENSITIVE.
+// Uses tu_string for implementation.
+class tu_stringi
+{
+public:
+	tu_stringi() {}
+	tu_stringi(const char* str) : m_string(str) {}
+	tu_stringi(const tu_string& str) : m_string(str) {}
+	tu_stringi(const tu_stringi& stri) : m_string(stri.c_str()) {}
+
+	~tu_stringi() {}
+
+	operator const char*() const { return (const char*) m_string; }
+	const char*	c_str() const { return m_string.c_str(); }
+	void	operator=(const char* str) { m_string = str; }
+	void	operator=(const tu_string& str) { m_string = str; }
+	void	operator=(const tu_stringi& str) { m_string = str.m_string; }
+	int	length() const { return m_string.length(); }
+	int	size() const { return length(); }
+	char&	operator[](int index) { return m_string[index]; }
+	const char&	operator[](int index) const { return m_string[index]; }
+	void	operator+=(const char* str) { m_string += str; }
+	void	operator+=(const tu_string& str) { m_string += str; }
+	void	operator+=(const tu_stringi& str) { m_string += str.m_string; }
+	tu_stringi	operator+(const char* str) const { return tu_stringi(m_string + str); }
+
+	// The special stuff.
+	tu_string& to_tu_string() { return m_string; }
+	const tu_string& to_tu_string() const { return m_string; }
+
+	bool	operator==(const char* str) const
+	{
+		return stricmp(*this, str) == 0;
+	}
+	bool	operator==(const tu_stringi& str) const
+	{
+		return stricmp(*this, str) == 0;
+	}
+	bool	operator<(const char* str) const
+	{
+		return stricmp(c_str(), str) < 0;
+	}
+	bool	operator>(const char* str) const
+	{
+		return stricmp(c_str(), str) > 0;
+	}
+	bool	operator>(const tu_stringi& str) const
+	{
+		return *this > str.c_str();
+	}
+
+	void	resize(int new_size) { m_string.resize(new_size); }
+
+private:
+	tu_string	m_string;
+};
+
+
 template<class T>
 class string_hash_functor
 // Computes a hash of a string-like object (something that has
@@ -899,6 +957,27 @@ class string_hash : public hash<tu_string, U, string_hash_functor<tu_string> >
 {
 };
 
+
+template<class T>
+class stringi_hash_functor
+// Computes a case-insensitive hash of a string-like object (something that has
+// ::length() and ::[int] and tolower(::[])).
+{
+public:
+	size_t	operator()(const T& data) const
+	{
+		int	size = data.length();
+
+		return bernstein_hash_case_insensitive((const char*) data, size);
+	}
+};
+
+
+// Case-insensitive string hash.
+template<class U>
+class stringi_hash : public hash<tu_stringi, U, stringi_hash_functor<tu_stringi> >
+{
+};
 
 
 #endif // CONTAINER_H

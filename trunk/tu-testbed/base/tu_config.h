@@ -30,7 +30,6 @@
 
 // tu_error_exit() is for fatal errors; it should not return!
 #ifndef tu_error_exit
-#include <stdlib.h>
 #define tu_error_exit(error_code, error_message) { fprintf(stderr, error_message); exit(error_code); }
 #endif
 

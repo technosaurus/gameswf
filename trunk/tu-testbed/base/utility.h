@@ -15,6 +15,8 @@
 #include "base/tu_math.h"
 #include "base/tu_types.h"
 #include "base/tu_swap.h"
+#include <ctype.h>
+
 
 #ifdef _WIN32
 #ifndef NDEBUG
@@ -120,6 +122,27 @@ inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 
 	while (size > 0) {
 		size--;
 		h = ((h << 5) + h) ^ (unsigned) data[size];
+	}
+
+	// Alternative: "sdbm" hash function, suggested at same web page above.
+	// h = 0;
+	// for bytes { h = (h << 16) + (h << 6) - hash + *p; }
+
+	return h;
+}
+
+
+inline size_t	bernstein_hash_case_insensitive(const void* data_in, int size, unsigned int seed = 5381)
+// Computes a hash of the given data buffer; does tolower() on each
+// byte.  Hash function suggested by
+// http://www.cs.yorku.ca/~oz/hash.html Due to Dan Bernstein.
+// Allegedly very good on strings.
+{
+	const unsigned char*	data = (const unsigned char*) data_in;
+	unsigned int	h = seed;
+	while (size > 0) {
+		size--;
+		h = ((h << 5) + h) ^ (unsigned) tolower(data[size]);
 	}
 
 	// Alternative: "sdbm" hash function, suggested at same web page above.

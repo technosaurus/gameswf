@@ -92,6 +92,106 @@ void	tu_string::resize(int new_size)
 //
 // cl container.cpp -Zi -Od -DCONTAINER_UNIT_TEST -I..
 
+
+
+void	test_stringi()
+{
+	tu_stringi	a, b;
+
+	// Equality.
+	a = "this is a test";
+	b = "This is a test";
+	assert(a == b);
+
+	b = "tHiS Is a tEsT";
+	assert(a == b);
+
+	a += "Hello";
+	b += "hellO";
+	assert(a == b);
+
+	tu_string	c(b);
+	assert(a.to_tu_string() != c);
+
+	// Ordering.
+	a = "a";
+	b = "B";
+	assert(a < b);
+
+	a = "b";
+	b = "A";
+	assert(a > b);
+}
+
+
+void	test_stringi_hash()
+{
+	stringi_hash<int>	a;
+
+	assert(a.is_empty());
+
+	a.add("bobo", 1);
+
+	assert(a.is_empty() == false);
+
+	a.add("hello", 2);
+	a.add("it's", 3);
+	a.add("a", 4);
+	a.add("beautiful day!", 5);
+
+	int	result = 0;
+	a.get("boBO", &result);
+	assert(result == 1);
+
+	a.set("BObo", 2);
+	a.get("bObO", &result);
+	assert(result == 2);
+
+	assert(a.is_empty() == false);
+	a.clear();
+	assert(a.is_empty() == true);
+
+	// Hammer on one key that differs only by case.
+	tu_stringi	original_key("thisisatest");
+	tu_stringi	key(original_key);
+	a.add(key, 1234567);
+
+	int	variations = 1 << key.length();
+	for (int i = 0; i < variations; i++)
+	{
+		// Twiddle the case of the key.
+		for (int c = 0; c < key.length(); c++)
+		{
+			if (i & (1 << c))
+			{
+				key[c] = toupper(key[c]);
+			}
+			else
+			{
+				key[c] = tolower(key[c]);
+			}
+		}
+
+		a.set(key, 7654321);
+
+		// Make sure original entry was modified.
+		int	value = 0;
+		a.get(original_key, &value);
+		assert(value == 7654321);
+
+		// Make sure hash keys are preserving case.
+		assert(a.find(key)->first.to_tu_string() == original_key.to_tu_string());
+
+		// Make sure they're actually the same entry.
+		assert(a.find(original_key) == a.find(key));
+		
+		a.set(original_key, 1234567);
+		assert(a.find(key)->second == 1234567);
+	}
+}
+
+
+
 int	main()
 {
 	printf("sizeof(tu_string) == %d\n", sizeof(tu_string));
@@ -183,6 +283,9 @@ int	main()
 	assert(b == "#sacrificial lamb");
 
 	// TODO: unit tests for array<>, hash<>, string_hash<>
+
+	test_stringi();
+	test_stringi_hash();
 
 	return 0;
 }
