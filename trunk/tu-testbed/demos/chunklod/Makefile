@@ -13,7 +13,14 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 	$(CC) -c $^ $(CFLAGS)
 
 
-all: make_engine heightfield_chunker$(EXE_EXT) heightfield_shader$(EXE_EXT) chunkdemo$(EXE_EXT) makebt$(EXE_EXT) maketqt$(EXE_EXT)
+all: \
+	make_engine	\
+	heightfield_chunker$(EXE_EXT)	\
+	heightfield_shader$(EXE_EXT)	\
+	chunkdemo$(EXE_EXT)	\
+	makebt$(EXE_EXT)	\
+	maketqt$(EXE_EXT)	\
+	decimate_texture$(EXE_EXT)
 
 heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(ENGINE)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
@@ -25,6 +32,9 @@ makebt$(EXE_EXT): makebt.$(OBJ_EXT) $(ENGINE)
 	$(CC) -o $@ $^ $(LIBPNG) $(ZLIB) $(LIBS) $(LDFLAGS)
 
 maketqt$(EXE_EXT): maketqt.$(OBJ_EXT) $(ENGINE)
+	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)
+
+decimate_texture$(EXE_EXT): decimate_texture.$(OBJ_EXT) $(ENGINE)
 	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)
 
 chunkdemo$(EXE_EXT): chunkdemo.$(OBJ_EXT) chunklod.$(OBJ_EXT) $(ENGINE)

@@ -36,6 +36,90 @@ static ogl::vertex_stream*	s_stream = NULL;
 static float	s_vertical_scale = 1.0;
 
 
+namespace lod_tile_freelist
+// A little module to hold onto unused textures, for later reuse.
+// Cuts down on needless texture creation/destruction.
+{
+	array<unsigned int>	s_free_textures;
+	const int	FREELIST_SIZE_LIMIT = 20;
+
+	void	free_texture(unsigned int texture_id)
+	// Dispose of the given texture object.  May be recycled.
+	{
+		if (texture_id)
+		{
+			if (s_free_textures.size() < FREELIST_SIZE_LIMIT)
+			{
+				s_free_textures.push_back(texture_id);
+			}
+			else
+			{
+				// We've already got too many free
+				// textures; just delete this one.
+				glDeleteTextures(1, &texture_id);
+			}
+		}
+	}
+
+	
+	unsigned int	make_texture(SDL_Surface* surf)
+	// Return a texture id, using the given surface info.  FREES
+	// THE GIVEN SURFACE!
+	//
+	// The actual texture object may be recycled.
+	{
+		if (surf == NULL) {
+			return 0;
+		}
+
+		assert(surf->pixels);
+		assert(surf->format->BytesPerPixel == 3);
+		assert(surf->format->BitsPerPixel == 24);
+
+		unsigned int	texture_id = 0;
+
+		// Do we have a texture on the freelist?
+		if (s_free_textures.size() > 0)
+		{
+			// Recycle.
+
+			// Grab a texture from the end of the list.
+			texture_id = s_free_textures[s_free_textures.size() - 1];
+			s_free_textures.resize(s_free_textures.size() - 1);
+
+			glBindTexture(GL_TEXTURE_2D, texture_id);
+
+			// Put the new data in the old texture.
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+		}
+		else
+		{
+			// Allocate a new texture object.
+		
+			// Bind a texture id and set up this image as a texture.
+			glEnable(GL_TEXTURE_2D);
+			glGenTextures(1, &texture_id);
+			glBindTexture(GL_TEXTURE_2D, texture_id);
+			
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surf->w, surf->h, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+		}
+			
+		// @@ we could probably improve on this -- subsample in-place and do the glTexSubImage stuff.
+		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+
+		SDL_FreeSurface(surf);
+
+		return texture_id;
+		
+	}
+};
+
+
+
 struct vertex_info {
 // Structure for storing morphable vertex mesh info.
 	int	vertex_count;
@@ -116,7 +200,7 @@ struct lod_chunk_data {
 		// @@ should put this texture id on a free list, to be
 		// reused for a new texture via glCopyTexSubImage.
 		if (m_texture_id) {
-			glDeleteTextures(1, &m_texture_id);
+			lod_tile_freelist::free_texture(m_texture_id);
 			m_texture_id = 0;
 		}
 	}
@@ -188,14 +272,16 @@ struct lod_chunk {
 
 	void	compute_bounding_box(const lod_chunk_tree& tree, vec3* box_center, vec3* box_extent)
 	{
+		float	level_factor = (1 << (tree.m_tree_depth - 1 - m_level));
+
 		box_center->y() = (m_max_y + m_min_y) * 0.5f * tree.m_vertical_scale;
 		box_extent->y() = (m_max_y - m_min_y) * 0.5f * tree.m_vertical_scale;
 
-		box_center->x() = (m_x + 0.5f) * (1 << m_level) * tree.m_base_chunk_dimension;
-		box_center->z() = (m_z + 0.5f) * (1 << m_level) * tree.m_base_chunk_dimension;
+		box_center->x() = (m_x + 0.5f) * level_factor * tree.m_base_chunk_dimension;
+		box_center->z() = (m_z + 0.5f) * level_factor * tree.m_base_chunk_dimension;
 
 		const float	EXTRA_BOX_SIZE = 1e-3f;	// this is to make chunks overlap by about a millimeter, to avoid cracks.
-		box_extent->x() = (1 << m_level) * tree.m_base_chunk_dimension * 0.5f + EXTRA_BOX_SIZE;
+		box_extent->x() = level_factor * tree.m_base_chunk_dimension * 0.5f + EXTRA_BOX_SIZE;
 		box_extent->z() = box_extent->get_x();
 	}
 };
@@ -356,7 +442,7 @@ void	chunk_tree_loader::sync_loader_thread()
 				assert(r.m_chunk->m_parent == NULL || r.m_chunk->m_parent->m_data != NULL);
 
 				// Connect the chunk with its data!
-				r.m_chunk_data->m_texture_id = tqt::make_texture_id(r.m_texture_image);	// @@ this actually could cause some bad latency, because we build mipmaps...
+				r.m_chunk_data->m_texture_id = lod_tile_freelist::make_texture(r.m_texture_image);	// @@ this actually could cause some bad latency, because we build mipmaps...
 				r.m_chunk->m_data = r.m_chunk_data;
 			}
 			// Clear out this entry.
@@ -379,16 +465,17 @@ void	chunk_tree_loader::sync_loader_thread()
 		{
 			int	req_count = 0;
 
+			// Sort by priority.
 			qsort(&m_load_queue[0], qsize, sizeof(m_load_queue[0]), pending_load_request::compare);
 			{for (int i = 0; i < qsize; i++)
 			{
-//				m_load_queue[qsize - 1 - i].m_chunk->load_data(m_source_stream, texture_quadtree);
 				lod_chunk*	c = m_load_queue[qsize - 1 - i].m_chunk;	// Do the higher priority requests first.
 				// Must make sure the chunk wasn't just retired.
 				if (c->m_data == NULL) {
 					// Request this chunk.
 					m_request_buffer[req_count++] = c;
 					if (req_count >= REQUEST_BUFFER_SIZE) {
+						// We've queued up enough requests.
 						break;
 					}
 				}
@@ -414,6 +501,17 @@ void	chunk_tree_loader::request_chunk_load(lod_chunk* chunk, float urgency)
 	if (chunk->m_parent == NULL
 	    || chunk->m_parent->m_data != NULL)
 	{
+		// See if we're in the request queue already.
+		// Ugh, N^2.  TODO use a hash to do this lookup.
+		for (int i = 0; i < m_load_queue.size(); i++) {
+			if (m_load_queue[i].m_chunk == chunk) {
+				// Already listed; use the max priority.
+				m_load_queue[i].m_priority = fmax(urgency, m_load_queue[i].m_priority);
+				return;
+			}
+		}
+
+		// Not listed already.
 		m_load_queue.push_back(pending_load_request(chunk, urgency));
 	}
 }
@@ -459,7 +557,9 @@ int	chunk_tree_loader::loader_thread()
 					if (m_retire_buffer[i].m_chunk == chunk_to_load) {
 						// This request has already been serviced.  Don't
 						// service it again.
+						chunk_to_load = NULL;
 						in_retire_buffer = true;
+						break;
 					}
 				}}
 				if (in_retire_buffer == false) break;
@@ -489,8 +589,8 @@ int	chunk_tree_loader::loader_thread()
 
 		// Texture.
 		const tqt*	qt = m_tree->m_texture_quadtree;
-		if (qt) {
-			texture_image = qt->load_image(qt->get_depth() - 1 - chunk_to_load->m_level,
+		if (qt && chunk_to_load->m_level < qt->get_depth()) {
+			texture_image = qt->load_image(chunk_to_load->m_level,
 						       chunk_to_load->m_x,
 						       chunk_to_load->m_z);
 		}
@@ -563,43 +663,40 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 }
 
 
+static void	bind_texture_tile(unsigned int texid, const vec3& box_center, const vec3& box_extent)
+// Bind the given texture and set up texgen so that it stretches over
+// the x-z extent of the given box.
+{
+	glBindTexture(GL_TEXTURE_2D, texid);
+	glEnable(GL_TEXTURE_2D);
+		
+	float	xsize = box_extent.get_x() * 2 * (257.0f / 256.0f);
+	float	zsize = box_extent.get_z() * 2 * (257.0f / 256.0f);
+	float	x0 = box_center.get_x() - box_extent.get_x() - (xsize / 256.0f) * 0.5f;
+	float	z0 = box_center.get_z() - box_extent.get_z() - (xsize / 256.0f) * 0.5f;
+
+	// Set up texgen for this tile.
+	glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	float	p[4] = { 0, 0, 0, 0 };
+	p[0] = 1.0f / xsize;
+	p[3] = -x0 / xsize;
+	glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+	p[0] = 0;
+			
+	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+	p[2] = 1.0f / zsize;
+	p[3] = -z0 / zsize;
+	glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+}
+
+
 int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
 			       const vec3& box_center, const vec3& box_extent)
 // Render a chunk.
 {
 	if (opt.show_geometry || opt.show_edges) {
-		glEnable(GL_TEXTURE_2D);
-
 		if (m_texture_id) {
-			glBindTexture(GL_TEXTURE_2D, m_texture_id);
-		
-			float	xsize = box_extent.get_x() * 2 * (257.0f / 256.0f);
-			float	zsize = box_extent.get_z() * 2 * (257.0f / 256.0f);
-			float	x0 = box_center.get_x() - box_extent.get_x() - (xsize / 256.0f) * 0.5f;
-			float	z0 = box_center.get_z() - box_extent.get_z() - (xsize / 256.0f) * 0.5f;
-
-//			//xxxxx
-//			xsize = box_extent.get_x() * 2 - 10.0f;
-//			zsize = box_extent.get_z() * 2 - 10.0f;
-//			x0 = box_center.get_x() - box_extent.get_x() + 5.0f;
-//			z0 = box_center.get_z() - box_extent.get_z() + 5.0f;
-//			//xxxxx
-
-			// Set up texgen for this tile.
-			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			float	p[4] = { 0, 0, 0, 0 };
-			p[0] = 1.0f / xsize;
-			p[3] = -x0 / xsize;
-			glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
-			p[0] = 0;
-			
-			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-			p[2] = 1.0f / zsize;
-			p[3] = -z0 / zsize;
-			glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
-			
-			glEnable(GL_TEXTURE_GEN_S);
-			glEnable(GL_TEXTURE_GEN_T);
+			bind_texture_tile(m_texture_id, box_center, box_extent);
 		}
 	}
 
@@ -860,7 +957,7 @@ void	lod_chunk::load_data(SDL_RWops* src, const tqt* texture_quadtree)
 		// Texture.
 		int	texture_id = 0;
 		if (texture_quadtree) {
-			texture_id = texture_quadtree->get_texture_id(texture_quadtree->get_depth() - 1 - m_level, m_x, m_z);
+			texture_id = texture_quadtree->get_texture_id(/*texture_quadtree->get_depth() - 1 - */ m_level, m_x, m_z);
 		}
 
 		// Geometry.
@@ -962,10 +1059,18 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 	if (m_split) {
 		assert(has_children());
 
+		// If we have a texture but our children don't have
+		// textures, then bind our texture to stretch over
+		// them as well.
+		if (m_data->m_texture_id && m_children[0]->m_data->m_texture_id == 0) {
+			bind_texture_tile(m_data->m_texture_id, box_center, box_extent);
+		}
+
 		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
 		for (int i = 0; i < 4; i++) {
 			static const bool	explode = false;
-			// EXPLODE
+			// EXPLODE (for showing the chunks very
+			// explicitly)
 			if (explode) {
 				int	level = c.m_tree_depth - ((this->lod) >> 8);
 				float	offset = 30.f * ((1 << level) / float(1 << c.m_tree_depth));
@@ -1114,7 +1219,7 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 	}
 
 	int	format_version = SDL_ReadLE16(src);
-	if (format_version != 7)
+	if (format_version != 8)
 	{
 		assert(0);
 		throw "Input format has non-matching version number";
@@ -1198,6 +1303,9 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 	}
 	else
 	{
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
+
 		// Render the chunked LOD tree.
 		triangle_count += m_chunks[0].render(*this, v, cull::result_info(), opt);
 	}
