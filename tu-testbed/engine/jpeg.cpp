@@ -279,7 +279,8 @@ namespace jpeg
 		// get_width() * get_components().
 		{
 			assert(m_cinfo.output_scanline < m_cinfo.output_height);
-			jpeg_read_scanlines(&m_cinfo, &rgb_data, 1);
+			int	lines_read = jpeg_read_scanlines(&m_cinfo, &rgb_data, 1);
+			assert(lines_read == 1);
 		}
 	};
 

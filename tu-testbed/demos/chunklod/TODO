@@ -1,22 +1,11 @@
 GENERAL
 
-* Try quantizing down to 8 bits/coordinate.
+* Rough percent-done reporting for the batch tools
 
-  -- Tried it; it doesn't work well.  Creates intolerable quantization
-  error on the island_4k dataset, and probably others if you look
-  closely.
+* Streaming.  Have a worker thread.
 
-* Streaming.  The fundamentals are in place.  The obstacles are the
-  details.  It would be nice to memory-map the chunk file, and stream
-  verts directly out of it; that should make best use of the OS (and
-  give a quicker startup time).  Unfortunately that means the
-  streaming will have to take care of endian-ness of the data, so
-  big-endian platforms may require custom code in order to get full
-  performance.  Also the chunk linking will need some work; the
-  chunker will probably need to write a "table of contents", with file
-  offsets for all the chunks.  For truly big datasets I'll need to
-  deal more carefully with the chunk nodes themselves; possibly
-  allocating only on demand, like in the adaptive quadtree stuff.
+  * main annoyance is what to do when data isn't ready.  Can result in
+    pops when data becomes available.
 
 * Selective LOD.  This is a compression approach where less detail is
   used in areas that it's known that the viewpoint will stay far away
@@ -24,9 +13,9 @@ GENERAL
   mostly be a matter of describing the desired LOD info to the
   chunker.
 
-* Texture LOD (straightforward implementation is trivial; the problem
-  is dealing with massive data, so a good demo depends on streaming,
-  or selective LOD).
+* demonstrate putting several chunks next to each other -- most
+  big-terrain games want this kind of functionality for paging
+  purposes.
 
 
 HEIGHTFIELD CHUNKER
@@ -44,11 +33,8 @@ HEIGHTFIELD CHUNKER
 
 CHUNKDEMO
 
-* command-line switches for window dimensions.
-
-* Need a fence/sync for the vertex stream buffer!  Occasionally the
-  stream will eat its own tail and render garbage.  I think this is
-  just a matter of digging through OpenGL API docs.
+* deal with .tqt of a different depth than the .chu (just truncate
+  .tqt queries)
 
 * try a vertex shader for lerping.  (NOTE: The demo can someimes
   achieve near-maximum triangle throughput on my 1GHz machine, even
@@ -56,7 +42,7 @@ CHUNKDEMO
   streaming, so the vertex shader may not be worth it for apps that
   aren't CPU limited.)
 
-* paging/streaming off disk.
+* background loader thread
 
 * No collision-detection right now!  The chunk data is render-friendly
   but collision-query unfriendly.  The options as I see it are:

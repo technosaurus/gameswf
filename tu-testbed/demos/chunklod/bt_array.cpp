@@ -17,6 +17,9 @@
 const int	BT_HEADER_SIZE = 256;	// offset from the start of the .bt file, before the data starts.
 
 
+const int TOTAL_CACHE_BYTES = 16 << 20; // a number of bytes that we're pretty sure will fit in physical RAM.
+
+
 bt_array::bt_array()
 // Constructor.  Invalidate everything.  Client use bt_array::create()
 // to make an instance.
@@ -31,7 +34,8 @@ bt_array::bt_array()
 	  m_bottom(0),
 	  m_top(0),
 	  m_data(0),
-	  m_data_size(0)
+	  m_data_size(0),
+	  m_sizeof_element(2)
 {
 }
 
@@ -39,6 +43,7 @@ bt_array::bt_array()
 bt_array::~bt_array()
 // Destructor.  Free buffers, close files, etc.
 {
+	m_cache.resize(0);
 	if (m_data) {
 		assert(m_data_size);
 		mmap_util::unmap(m_data, m_data_size);
@@ -109,7 +114,8 @@ bt_array::~bt_array()
 		SDL_RWclose(in);
 		return NULL;
 	}
-
+	
+	bt->m_sizeof_element = bt->m_float_data ? 4 : 2;
 	bt->m_utm_flag = SDL_ReadLE16(in) ? true : false;
 	bt->m_utm_zone = SDL_ReadLE16(in);
 	bt->m_datum = SDL_ReadLE16(in);
@@ -132,6 +138,19 @@ bt_array::~bt_array()
 		return NULL;
 	}
 
+	// Initialize the (empty) cache.
+	if (bt->m_width * 4096 < TOTAL_CACHE_BYTES) {
+		// No point in caching -- the dataset isn't big enough
+		// to stress mmap.
+		bt->m_cache_height = 0;
+	} else {
+		// Figure out how big our cache lines should be.
+		bt->m_cache_height = TOTAL_CACHE_BYTES / bt->m_width / bt->m_sizeof_element;
+	}
+	if (bt->m_cache_height) {
+		bt->m_cache.resize(bt->m_width);
+	}
+
 	return bt;
 }
 
@@ -147,9 +166,39 @@ float	bt_array::get_sample(int x, int z) const
 	x = iclamp(x, 0, m_width - 1);
 	z = iclamp(z, 0, m_height - 1);
 
-	int	index = (m_height - 1 - z) + m_height * x;
-	char*	data = (char*) m_data;
-	data += BT_HEADER_SIZE;
+	int	index = 0;
+	char*	data = NULL;
+	if (m_cache_height) {
+		// Cache is active.
+		
+		// 'v' coordinate is (m_height - 1 - z) -- the issue
+		// is that BT scans south-to-north, which our z
+		// coordinates run north-to-south.  It's easier to
+		// compute cache info using the natural .bt data
+		// order.
+		int	v = (m_height - 1 - z);
+
+		cache_line*	cl = &m_cache[x];
+		if (cl->m_data == NULL || v < cl->m_v0 || v >= cl->m_v0 + m_cache_height) {
+			// Cache line must be refreshed.
+			cl->m_v0 = (v / m_cache_height) * m_cache_height;
+			if (cl->m_data == NULL) {
+				cl->m_data = new Uint8[m_cache_height * m_sizeof_element];
+			}
+			int	fillsize = imin(m_cache_height, m_height - cl->m_v0) * m_sizeof_element;
+			memcpy(cl->m_data,
+			       ((Uint8*)m_data) + BT_HEADER_SIZE + (cl->m_v0 + m_height * x) * m_sizeof_element,
+			       fillsize);
+		}
+
+		index = v - cl->m_v0;
+		data = (char*) cl->m_data;
+	} else {
+		// Cache is inactive.  Index straight into the raw data.
+		data = (char*) m_data;
+		data += BT_HEADER_SIZE;
+		index = (m_height - 1 - z) + m_height * x;
+	}
 
 	if (m_float_data) {
 		// raw data is floats.
