@@ -307,21 +307,12 @@ namespace render
 						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 					}
 
-					// It appears as though the bitmap matrix is the
-					// inverse of the matrix I want to apply to the TWIPs
-					// coords to get the texture pixel coords (I want to
-					// scale again by 1/w and 1/h, on top of that).
+					// Set up the bitmap matrix for texgen.
 
 					float	inv_width = 1.0f / m_bitmap_info->m_original_width;
 					float	inv_height = 1.0f / m_bitmap_info->m_original_height;
 
-//					matrix	screen_to_obj;
-//					screen_to_obj.set_inverse(current_matrix);	// @@ should cache the inverse
-
 					const matrix&	m = m_bitmap_matrix;
-//					m.concatenate(screen_to_obj);
-
-
 					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 					float	p[4] = { 0, 0, 0, 0 };
 					p[0] = m.m_[0][0] * inv_width;
@@ -562,7 +553,7 @@ namespace render
 		// Set up current style.
 		matrix	ident;
 		ident.set_identity();
-		s_current_styles[LEFT_STYLE].apply(/* ident /*s_matrix_stack.back()*/);
+		s_current_styles[LEFT_STYLE].apply();
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
@@ -584,7 +575,7 @@ namespace render
 		// Set up current style.
 		matrix	ident;
 		ident.set_identity();
-		s_current_styles[LINE_STYLE].apply(/*ident*/);
+		s_current_styles[LINE_STYLE].apply();
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
