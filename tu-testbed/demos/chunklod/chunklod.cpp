@@ -249,13 +249,13 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 {
 	// Do quantization decompression, output floats.
 
-	float	sx = box_extent.get_x() / (1 << 14);
-	float	sz = box_extent.get_z() / (1 << 14);
+	const float	sx = box_extent.get_x() / (1 << 14);
+	const float	sz = box_extent.get_z() / (1 << 14);
 
-	float	offsetx = box_center.get_x();
-	float	offsetz = box_center.get_z();
+	const float	offsetx = box_center.get_x();
+	const float	offsetz = box_center.get_z();
 
-	float	one_minus_f = 1.0 - f;
+	const float	one_minus_f = 1.0 - f;
 
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
 		const vertex_info::vertex&	v = morph_verts.vertices[i];
