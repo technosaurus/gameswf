@@ -112,6 +112,8 @@ namespace gameswf
 			{
 				m_color = m_gradients[0].m_color;
 			}
+
+			m_gradient_bitmap_info = create_gradient_bitmap();
 		}
 		else if (m_type == 0x40 || m_type == 0x41)
 		{
@@ -223,11 +225,7 @@ namespace gameswf
 			// 0x10: linear gradient fill
 			// 0x12: radial gradient fill
 
-			if (m_gradient_bitmap_info == NULL)
-			{
-				bitmap_info*	bi = create_gradient_bitmap();
-				(const_cast<fill_style*>(this))->m_gradient_bitmap_info = bi;
-			}
+			assert(m_gradient_bitmap_info != NULL);
 
 			if (m_gradient_bitmap_info != NULL)
 			{

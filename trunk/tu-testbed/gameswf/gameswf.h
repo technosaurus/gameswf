@@ -130,6 +130,14 @@ namespace gameswf
 		virtual void	output_cached_data(tu_file* out) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
 
+		// Causes this movie def to generate texture-mapped
+		// versions of all the fonts it owns.  This improves
+		// speed and quality of text rendering.  The
+		// texture-map data is serialized in the
+		// output/input_cached_data() calls, so you can
+		// preprocess this if you load cached data.
+		virtual void	generate_font_bitmaps() = 0;
+
 		//
 		// (optional) API to support gameswf::create_movie_no_recurse().
 		//

@@ -536,7 +536,7 @@ namespace gameswf
 	// specified triangle strip.
 	{
 		assert(style >= 0);
-		assert(style < 1000);	// sanity check
+		assert(style < 10000);	// sanity check
 
 		// Expand our mesh list if necessary.
 		if (style >= m_meshes.size())

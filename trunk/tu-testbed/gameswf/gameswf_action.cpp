@@ -1308,6 +1308,9 @@ namespace gameswf
 						*retval = env->top(0);
 					}
 					env->drop(1);
+
+					// @@ xxxx not done yet!!!! need to actually return....
+
 					break;
 				}
 				case 0x3F:	// modulo
