@@ -435,8 +435,6 @@ namespace swf
 	}
 
 
-
-
 	// A struct to serve as an entry in the display list.
 	struct display_object_info : display_info
 	{
@@ -528,6 +526,15 @@ namespace swf
 	{
 		assert(ch);
 
+		// If the character needs per-instance state, then
+		// create the instance here, and substitute it for the
+		// definition.
+		if (ch->is_definition())
+		{
+			ch = ch->create_instance();
+			ch->restart();
+		}
+
 		display_object_info	di;
 		di.m_character = ch;
 		di.m_depth = depth;
@@ -550,12 +557,6 @@ namespace swf
 
 		// Put new info in the opened slot.
 		(*display_list)[index] = di;
-
-		// Restart the character (e.g. if it's a sprite).
-		//
-		// @@ does a sprite actually want to create a new
-		// instance here??
-		di.m_character->restart();
 	}
 
 
@@ -617,6 +618,17 @@ namespace swf
 			return;
 		}
 
+		// Removing the character at (*display_list)[index].
+		display_object_info&	di = (*display_list)[index];
+
+		// If the character is an instance, then delete it.
+		if (di.m_character->is_instance())
+		{
+			delete di.m_character;
+			di.m_character = 0;
+		}
+
+		// Remove the display list entry.
 		if (index < size - 1)
 		{
 			memmove(&(*display_list)[index],
@@ -627,12 +639,27 @@ namespace swf
 	}
 
 
+	// Base class for actions.
+	struct action_buffer
+	{
+		array<unsigned char>	m_buffer;
+
+		void	read(stream* in);
+		void	execute(movie* m);
+	};
+
+
+	//
+	// movie_impl
+	//
+
 	struct movie_impl : public movie
 	{
 		hash<int, character*>	m_characters;
 		hash<int, font*>	m_fonts;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
+		array<action_buffer*>	m_action_list;	// pending actions.
 
 		// array<int>	m_frame_start;	// tag indices of frame starts. ?
 
@@ -714,6 +741,13 @@ namespace swf
 			swf::remove_display_object(&m_display_list, depth);
 		}
 
+		void	add_action(action_buffer* a)
+		// Add the given action buffer to the list of action
+		// buffers to be processed at the end of the next
+		// frame advance.
+		{
+			m_action_list.push_back(a);
+		}
 
 		int	get_width() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_x_max - m_frame_size.m_x_min)); }
 		int	get_height() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_y_max - m_frame_size.m_y_min)); }
@@ -722,6 +756,7 @@ namespace swf
 		void	restart()
 		{
 			m_display_list.resize(0);
+			m_action_list.resize(0);
 			m_current_frame = -1;
 			m_time = 0;
 		}
@@ -750,6 +785,21 @@ namespace swf
 					execute_tag*	e = playlist[i];
 					e->execute(this);
 				}
+
+				// Take care of this frame's actions.
+				for (int i = 0; i < m_action_list.size(); i++)
+				{
+					m_action_list[i]->execute(this);
+
+					// @@ the action could possibly have changed the size of
+					// m_action_list... do we have to do anything special to
+					// make sure m_action_list.m_size is re-read from RAM, and
+					// not cached in a register???
+
+					// @@ also, deal w/ frame stuff; frame state could have changed!
+				}
+				m_action_list.resize(0);
+
 				m_current_frame = frame;
 			}
 
@@ -860,6 +910,7 @@ namespace swf
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
 			register_tag_loader(11, define_text_loader);
+			register_tag_loader(12, do_action_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
 			register_tag_loader(26, place_object_2_loader);
@@ -1913,28 +1964,103 @@ namespace swf
 	// A sprite is a mini movie-within-a-movie.  It doesn't define
 	// its own characters; it uses the characters from the parent
 	// movie, but it has its own frame counter, display list, etc.
-	struct sprite : public character
+	//
+	// The sprite implementation is divided into a
+	// sprite_definition and a sprite_instance.  The _definition
+	// holds the immutable data for a sprite, while the _instance
+	// contains the state for a specific instance being updated
+	// and displayed in the parent movie's display list.
+
+
+	struct sprite_definition : public character
 	{
 		movie_impl*	m_movie;		// parent movie.
 		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
-
-		int	m_current_frame;
-		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
-
 		int	m_frame_count;
-		float	m_time;
+		int	m_current_frame;
 
-		virtual ~sprite();
-
-		sprite(movie_impl* movie)
+		sprite_definition(movie_impl* m)
 			:
-			m_movie(movie),
-			m_current_frame(0),
+			m_movie(m),
 			m_frame_count(0),
-			m_time(0)
+			m_current_frame(0)
 		{
 			assert(m_movie);
 		}
+
+		bool	is_definition() const { return true; }
+		character*	create_instance();
+
+		void	add_character(int id, character* ch)
+		{
+			fprintf(stderr, "error: sprite::add_character() is illegal\n");
+			assert(0);
+		}
+
+		void	add_execute_tag(execute_tag* c)
+		{
+			m_playlist[m_current_frame].push_back(c);
+		}
+
+		void	read(stream* in)
+		// Read the sprite info.  Consists of a series of tags.
+		{
+			int	tag_end = in->get_tag_end_position();
+
+			m_frame_count = in->read_u16();
+			m_playlist.resize(m_frame_count);	// need a playlist for each frame
+
+			IF_DEBUG(printf("sprite: frames = %d\n", m_frame_count));
+
+			m_current_frame = 0;
+
+			while ((Uint32) in->get_position() < (Uint32) tag_end)
+			{
+				int	tag_type = in->open_tag();
+				loader_function lf = NULL;
+				if (tag_type == 1)
+				{
+					// show frame tag -- advance to the next frame.
+					m_current_frame++;
+				}
+				else if (s_tag_loaders.get(tag_type, &lf))
+				{
+					// call the tag loader.  The tag loader should add
+					// characters or tags to the movie data structure.
+					(*lf)(in, tag_type, this);
+				}
+				else
+				{
+					// no tag loader for this tag type.
+					IF_DEBUG(printf("*** no tag loader for type %d\n", tag_type));
+				}
+
+				in->close_tag();
+			}
+		}
+	};
+
+
+	struct sprite_instance : public character
+	{
+		sprite_definition*	m_def;
+		int	m_current_frame;
+		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
+
+		float	m_time;
+
+		virtual ~sprite_instance() {}
+
+		sprite_instance(sprite_definition* def)
+			:
+			m_def(def),
+			m_current_frame(-1),
+			m_time(0)
+		{
+			assert(m_def);
+		}
+
+		bool	is_instance() const { return true; }
 
 		int	get_width() { assert(0); return 0; }
 		int	get_height() { assert(0); return 0; }
@@ -1950,13 +2076,13 @@ namespace swf
 
 		void	advance(float delta_time)
 		{
-			assert(m_movie);
+			assert(m_def && m_def->m_movie);
 
 			m_time += delta_time;
-			int	target_frame_number = (int) floorf(m_time * m_movie->m_frame_rate);
+			int	target_frame_number = (int) floorf(m_time * m_def->m_movie->m_frame_rate);
 			assert(target_frame_number >= m_current_frame);
 
-			if (target_frame_number >= m_frame_count)
+			if (target_frame_number >= m_def->m_frame_count)
 			{
 				// Either clamp, or loop here...
 
@@ -1967,7 +2093,7 @@ namespace swf
 
 			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
 			{
-				array<execute_tag*>&	playlist = m_playlist[frame];
+				array<execute_tag*>&	playlist = m_def->m_playlist[frame];
 				for (int i = 0; i < playlist.size(); i++)
 				{
 					execute_tag*	e = playlist[i];
@@ -2006,18 +2132,6 @@ namespace swf
 			}
 		}
 
-		void	add_character(int id, character* ch)
-		{
-			fprintf(stderr, "error: sprite::add_character() is illegal\n");
-			assert(0);
-		}
-
-		void	add_execute_tag(execute_tag* c)
-		{
-			m_playlist[m_current_frame].push_back(c);
-		}
-
-
 		void	add_display_object(Uint16 character_id,
 					   Uint16 depth,
 					   const cxform& color_transform,
@@ -2025,10 +2139,10 @@ namespace swf
 					   float ratio)
 		// Add an object to the display list.
 		{
-			assert(m_movie);
+			assert(m_def && m_def->m_movie);
 
 			character*	ch = NULL;
-			if (m_movie->m_characters.get(character_id, &ch) == false)
+			if (m_def->m_movie->m_characters.get(character_id, &ch) == false)
 			{
 				fprintf(stderr, "sprite::add_display_object(): unknown cid = %d\n", character_id);
 				return;
@@ -2052,48 +2166,18 @@ namespace swf
 		{
 			swf::remove_display_object(&m_display_list, depth);
 		}
-
-
-		void	read(stream* in)
-		// Read the sprite info.  Consists of a series of tags.
-		{
-			int	tag_end = in->get_tag_end_position();
-
-			m_frame_count = in->read_u16();
-			m_playlist.resize(m_frame_count);	// need a playlist for each frame
-
-			IF_DEBUG(printf("sprite: frames = %d\n", m_frame_count));
-
-			while ((Uint32) in->get_position() < (Uint32) tag_end)
-			{
-				int	tag_type = in->open_tag();
-				loader_function lf = NULL;
-				if (tag_type == 1)
-				{
-					// show frame tag -- advance to the next frame.
-					m_current_frame++;
-				}
-				else if (s_tag_loaders.get(tag_type, &lf))
-				{
-					// call the tag loader.  The tag loader should add
-					// characters or tags to the movie data structure.
-					(*lf)(in, tag_type, this);
-				}
-				else
-				{
-					// no tag loader for this tag type.
-					IF_DEBUG(printf("*** no tag loader for type %d\n", tag_type));
-				}
-
-				in->close_tag();
-			}
-		}
 	};
 
 
-	sprite::~sprite() {}
+	character*	sprite_definition::create_instance()
+	// Create a (mutable) instance of our definition.  The
+	// instance is created so live (temporarily) on some level on
+	// the parent movie's display list.
+	{
+		return new sprite_instance(this);
+	}
 
-	
+
 	void	sprite_loader(stream* in, int tag_type, movie* m)
 	// Create and initialize a sprite, and add it to the movie.
 	{
@@ -2105,9 +2189,7 @@ namespace swf
 		movie_impl*	mi = dynamic_cast<movie_impl*>(m);
 		assert(mi);
 
-		sprite*	ch = new sprite(mi);
-//		sprite*	ch = new sprite;
-//		ch->m_movie = mi;
+		sprite_definition*	ch = new sprite_definition(mi);
 		ch->read(in);
 
 		IF_DEBUG(printf("sprite: char id = %d\n", character_id));
@@ -2157,6 +2239,169 @@ namespace swf
 		t->read(in);
 
 		m->add_execute_tag(t);
+	}
+
+
+	//
+	// action stuff
+	//
+
+	void	action_buffer::read(stream* in)
+	{
+		// Read action bytes.
+		for (;;)
+		{
+			int	action_id = in->read_u8();
+			m_buffer.push_back(action_id);
+			if (action_id == 0)
+			{
+				// end of action buffer.
+				return;
+			}
+			if (action_id & 0x80)
+			{
+				// Action contains extra data.  Read it.
+				int	length = in->read_u16();
+				m_buffer.push_back(length & 0x0FF);
+				m_buffer.push_back((length >> 8) & 0x0FF);
+				for (int i = 0; i < length; i++)
+				{
+					m_buffer.push_back(in->read_u8());
+				}
+			}
+		}
+	}
+
+
+	void	action_buffer::execute(movie* m)
+	// Interpret the actions in this action buffer, and apply them
+	// to the given movie.
+	{
+		assert(m);
+
+		movie*	original_movie = m;
+
+		for (int pc = 0; pc < m_buffer.size(); )
+		{
+			int	action_id = m_buffer[pc];
+			if ((action_id & 0x80) == 0)
+			{
+				// Simple action; no extra data.
+				switch (action_id)
+				{
+				default:
+				case 0x08:	// toggle quality
+				case 0x09:	// stop sounds
+					break;
+
+				case 0x00:	// end of actions.
+					return;
+
+				case 0x04:	// next frame.
+//					m->set_current_frame(m->get_current_frame() + 1);
+					break;
+
+				case 0x05:	// prev frame.
+//					m->set_current_frame(m->get_current_frame() - 1);
+					break;
+
+				case 0x06:	// action play
+//					m->set_playing(true);
+					break;
+
+				case 0x07:	// action stop
+//					m->set_playing(false);
+					break;
+				}
+				pc++;	// advance to next action.
+			}
+			else
+			{
+				// Action containing extra data.
+				int	length = m_buffer[pc + 1] | (m_buffer[pc + 2] << 8);
+				int	next_pc = pc + length + 3;
+				switch (action_id)
+				{
+				default:
+					break;
+
+				case 0x81:	// goto frame
+				{
+//					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+//					m->set_current_frame(frame);
+					break;
+				}
+
+				case 0x83:	// get url
+				{
+					// @@ TODO should call back into client app, probably...
+					break;
+				}
+
+				case 0x8A:	// wait for frame
+				{
+					// @@ TODO I think this has to deal with incremental loading;
+					// i.e. we don't really care about it.
+					break;
+				}
+
+				case 0x8B:	// set target
+				{
+					// Change the movie we're working on.
+					// @@ TODO
+					// char* target_name = &m_buffer[pc + 3];
+					// if (target_name[0] == 0) { m = original_movie; }
+					// else {
+					//	m = m->find_labeled_target(target_name);
+					//	if (m == NULL) m = original_movie;
+					// }
+					break;
+				}
+
+				case 0x8C:	// go to labeled frame
+				{
+					// char*	frame_label = (char*) &m_buffer[pc + 3];
+					// m->goto_labeled_frame(frame_label);
+					break;
+				}
+				
+				}
+				pc = next_pc;
+			}
+		}
+	}
+
+
+	//
+	// do_action
+	//
+
+	// Thin wrapper around action_buffer.
+	struct do_action : public execute_tag
+	{
+		action_buffer	m_buf;
+
+		void	read(stream* in)
+		{
+			m_buf.read(in);
+		}
+
+		void	execute_tag(movie* m)
+		{
+			m_buf.execute(m);
+		}
+	};
+
+	void	do_action_loader(stream* in, int tag_type, movie* m)
+	{
+		assert(in);
+		assert(tag_type == 12);
+		assert(m);
+		
+		do_action*	da = new do_action;
+		da->read(in);
+
+		m->add_execute_tag(da);
 	}
 };
 

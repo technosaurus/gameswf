@@ -30,6 +30,7 @@ namespace swf
 	struct cxform;
 	struct matrix;
 	struct font;
+	struct action_buffer;
 
 	struct movie : public movie_interface
 	{
@@ -56,6 +57,8 @@ namespace swf
 		virtual void	remove_display_object(Uint16 depth)
 		{
 		}
+
+		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 	};
 
 
@@ -68,9 +71,21 @@ namespace swf
 		// Movie interfaces.  By default do nothing.  sprite will override these.
 		int	get_width() { return 0; }
 		int	get_height() { return 0; }
-		virtual void	restart() {}
+		virtual void	restart() { assert(0); }
 		virtual void	advance(float delta_time) {}
 		virtual void	display() {}
+
+		// Instance/definition interface; useful for things
+		// like sprites, which have an immutable definition
+		// which lives in the character table, and possibly
+		// more than one mutable instance which contain
+		// individual state and live in the display list.
+		//
+		// Ordinary characters are totally immutable, so don't
+		// need the extra instance/def logic.
+		virtual bool	is_definition() const { return false; }
+		virtual bool	is_instance() const { return false; }
+		virtual character*	create_instance() { assert(0); return 0; }
 	};
 
 
@@ -79,6 +94,7 @@ namespace swf
 	// with a frame.
 	struct execute_tag
 	{
+		virtual ~execute_tag() {}
 		virtual void	execute(movie* m) {}
 	};
 
@@ -125,6 +141,7 @@ namespace swf
 	void	sprite_loader(stream* in, int tag_type, movie* m);
 	void	end_loader(stream* in, int tag_type, movie* m);
 	void	remove_object_2_loader(stream* in, int tag_type, movie* m);
+	void	do_action_loader(stream* in, int tag_type, movie* m);
 };
 
 
