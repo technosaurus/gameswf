@@ -85,8 +85,8 @@ namespace gameswf
 	static file_opener_function	s_opener_function = NULL;
 
 	void	register_file_opener_callback(file_opener_function opener)
-	// Host calls this to register a function for opening files
-	// for loading library movies.
+	// Host calls this to register a function for opening files,
+	// for loading movies.
 	{
 		s_opener_function = opener;
 	}
@@ -1176,15 +1176,17 @@ namespace gameswf
 
 	static string_hash<movie*>	s_movie_library;
 
-	movie*	load_library_movie(const tu_string& url)
+	movie_interface*	create_library_movie(const char* filename)
 	// Try to load a movie from the given url, if we haven't
 	// loaded it already.  Add it to our library on success, and
 	// return a pointer to it.
 	{
+		tu_string	fn(filename);
+
 		// Is the movie already in the library?
 		{
 			movie*	m = NULL;
-			s_movie_library.get(url, &m);
+			s_movie_library.get(fn, &m);
 			if (m)
 			{
 				// Return cached movie.
@@ -1192,20 +1194,20 @@ namespace gameswf
 			}
 		}
 
-		// Try to open a file under the url.
-		movie_interface*	mov = create_movie(url.c_str());
-		movie_impl*	m = static_cast<movie_impl*>(mov);
+		// Try to open a file under the filename.
+		movie_interface*	mov = create_movie(filename);
+		movie*	m = static_cast<movie*>(mov);
 
 		if (m == NULL)
 		{
-			log_error("error: couldn't load library movie '%s'\n", url.c_str());
+			log_error("error: couldn't load library movie '%s'\n", filename);
 		}
 		else
 		{
-			s_movie_library.add(url, m);
+			s_movie_library.add(fn, m);
 		}
 
-		return m;
+		return mov;
 	}
 	
 
@@ -2490,7 +2492,7 @@ namespace gameswf
 		log_msg("import: source_url = %s, count = %d\n", source_url, count);
 
 		// Try to load the source movie into the movie library.
-		movie*	source_movie = load_library_movie(source_url);
+		movie*	source_movie = static_cast<movie*>(create_library_movie(source_url));
 		if (source_movie == NULL)
 		{
 			// Give up on imports.

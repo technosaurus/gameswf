@@ -205,7 +205,7 @@ gameswf::movie_interface*	play_movie(const char* filename)
 //
 // Return the movie.
 {
-	gameswf::movie_interface*	m = gameswf::create_movie(filename);
+	gameswf::movie_interface*	m = gameswf::create_library_movie(filename);
 	if (m == NULL)
 	{
 		fprintf(stderr, "error: can't play movie '%s'\n", filename);
