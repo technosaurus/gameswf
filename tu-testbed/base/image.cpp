@@ -32,6 +32,22 @@ namespace image
 	}
 
 
+	Uint8*	scanline(image_base* surf, int y)
+	{
+		assert(surf);
+		assert(y >= 0 && y < surf->m_height);
+		return ((Uint8*) surf->m_data) + surf->m_pitch * y;
+	}
+
+
+	const Uint8*	scanline(const image_base* surf, int y)
+	{
+		assert(surf);
+		assert(y >= 0 && y < surf->m_height);
+		return ((const Uint8*) surf->m_data) + surf->m_pitch * y;
+	}
+
+
 	//
 	// rgb
 	//
