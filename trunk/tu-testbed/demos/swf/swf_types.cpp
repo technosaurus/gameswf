@@ -61,6 +61,18 @@ namespace swf
 	}
 
 
+	void	matrix::concatenate_scale(float scale)
+	// Concatenate a uniform scale onto the front of our
+	// matrix.  When transforming points, the scale
+	// happens first, then our original xform.
+	{
+		m_[0][0] *= scale;
+		m_[0][1] *= scale;
+		m_[1][0] *= scale;
+		m_[1][1] *= scale;
+	}
+
+
 	void	matrix::read(stream* in)
 	// Initialize from the stream.
 	{

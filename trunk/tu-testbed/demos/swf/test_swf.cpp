@@ -154,6 +154,11 @@ int	main(int argc, char *argv[])
 					paused = ! paused;
 					printf("paused = %d\n", int(paused));
 				}
+				else if (key == SDLK_r)
+				{
+					// Restart the movie.
+					m->restart();
+				}
 #if 1
 				else if (key == SDLK_MINUS)
 				{

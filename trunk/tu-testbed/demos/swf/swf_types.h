@@ -11,6 +11,7 @@
 
 
 #include "SDL.h"
+#include "engine/utility.h"
 
 
 // ifdef this out to get rid of debug spew.
@@ -49,6 +50,7 @@ namespace swf
 		void	set_identity();
 		void	concatenate(const matrix& m);
 		void	concatenate_translation(float tx, float ty);
+		void	concatenate_scale(float s);
 		void	read(stream* in);
 		void	print(FILE* out) const;
 		void	ogl_multiply() const;
@@ -74,6 +76,14 @@ namespace swf
 		void	read(stream* in, int tag_type);
 		void	read_rgba(stream* in);
 		void	read_rgb(stream* in);
+
+		void	set_lerp(const rgba& a, const rgba& b, float f)
+		{
+			m_r = (Uint8) frnd(flerp(a.m_r, b.m_r, f));
+			m_g = (Uint8) frnd(flerp(a.m_g, b.m_g, f));
+			m_b = (Uint8) frnd(flerp(a.m_b, b.m_b, f));
+			m_a = (Uint8) frnd(flerp(a.m_a, b.m_a, f));
+		}
 
 		void	print(FILE* out);
 	};
