@@ -574,6 +574,18 @@ public:
 	}
 
 
+	void	resize(size_t n)
+	// Hint the bucket count to >= n.
+	{
+		// Not really sure what this means in relation to
+		// STLport's hash_map... they say they "increase the
+		// bucket count to at least n" -- but does that mean
+		// their real capacity after resize(n) is more like
+		// n*2 (since they do linked-list chaining within
+		// buckets?).
+		set_capacity(n);
+	}
+
 	void	set_capacity(int new_size)
 	// Size the hash so that it can comfortably contain the given
 	// number of elements.  If the hash already contains more
