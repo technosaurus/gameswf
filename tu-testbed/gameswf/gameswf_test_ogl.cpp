@@ -144,6 +144,8 @@ static void	key_event(SDLKey key, bool down)
 			gameswf::key::code	gs;
 		} table[] =
 			{
+				{ SDLK_RETURN, gameswf::key::ENTER },
+				{ SDLK_ESCAPE, gameswf::key::ESCAPE },
 				{ SDLK_LEFT, gameswf::key::LEFT },
 				{ SDLK_UP, gameswf::key::UP },
 				{ SDLK_RIGHT, gameswf::key::RIGHT },
@@ -412,6 +414,8 @@ int	main(int argc, char *argv[])
 	tu_string foo;
 	for (;;)
 	{
+		do_render = true; // FIXME: boolean hack!
+		
 		Uint32	ticks;
 		//xmls.anydata(8, foo);
 		if (do_render)
@@ -434,7 +438,7 @@ int	main(int argc, char *argv[])
 			// Auto exit now.
 			break;
 		}
-
+		
 		if (do_render)
 		{
 			// Handle input.
@@ -608,7 +612,7 @@ int	main(int argc, char *argv[])
 			if (s_measure_performance == false)
 			{
 				// Don't hog the CPU.
-				SDL_Delay(10);
+				SDL_Delay(30);
 			}
 			else
 			{
