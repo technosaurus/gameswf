@@ -1,3 +1,21 @@
+2005-03-19  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/Makefile.in: Update dependencies for new files.
+
+	* gameswf/gameswf_action.cpp: Add a few debugging statements so we
+	can track Text objects by their address. Add initial support for
+	the TextField::_visible and TextField::_width properties. Add
+	callback for XML::loaded().
+	* gameswf/gameswf_impl.cpp: Remove interval timer from array on a
+	clearInterval() command. Use our own stack when calling AS
+	functions from do_something() so they have the local variables
+	propogated into this call frame.
+	* gameswf/gameswf_timers.cpp: Propogate local variables into the
+	child function's stack frame since it's supposed to inherit these
+	values. There has got to be a better way to do this...
+	* gameswf/gameswf_xmlsocket.cpp: Don't pass additional arguments
+	to onConnect().
+
 2005-03-17  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* macros/libXML.m4: New. Look for libxml2 directories.
@@ -34,5 +52,4 @@
 	* gameswf/gameswf_action.h: Move event_id to here. 
 	* gameswf/gameswf_impl.{cpp,h}: Include gameswf_timers.h. Add support
 	for setInterval. 
-
 

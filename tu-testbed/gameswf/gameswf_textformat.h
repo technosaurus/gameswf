@@ -25,9 +25,18 @@ public:
   TextFormat(tu_string font, int size, int color);
   ~TextFormat();
   
-  bool underlined() { return _underline; }
-  bool italiced()   { return _italic; }
-  bool bold()       { return _bold; }
+  bool underlined()  { return _underline; }
+  bool italiced()    { return _italic; }
+  bool bold()        { return _bold; }
+  bool bullet()      { return _bullet; }
+  bool color()       { return _color; }
+  bool indent()      { return _indent; }
+  bool align()       { return _align; }
+  bool blockIndent() { return _block_indent; }
+  bool leading()     { return _leading; }
+  bool leftMargin()  { return _left_margin; }
+  bool RightMargin() { return _right_margin; }
+  bool size()        { return _point_size; }
 
   int getTextExtant();
 

@@ -33,6 +33,7 @@ namespace gameswf
   
   Timer::~Timer()
   {
+    log_msg("%s: \n", __PRETTY_FUNCTION__);
   }
   
   int
@@ -134,7 +135,7 @@ namespace gameswf
     // FIXME: This is pretty gross, but something is broke elsewhere and it doesn't
     // seem to effect anything else. When a function is called from a executing
     // function, like calling setInterval() from within the callback to
-    // XMLSOcket::onConnect(), the local variables of the parent function need to
+    // XMLSocket::onConnect(), the local variables of the parent function need to
     // be propogated to the local stack as regular variables (not locals) or
     // they can't be found in the scope of the executing chld function. There is
     // probably a better way to do this... but at least this works.
@@ -151,22 +152,6 @@ namespace gameswf
     }
     //    ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
     
-// #if 0
-//     array<struct variable *> *locals = new array<struct variable *>;
-//     for (i=0; i< env->get_local_frame_top(); i++) {
-//       if (env->m_local_frames[i].m_name.size()) {
-//         method = env->get_variable(env->m_local_frames[i].m_name, dummy_with_stack);
-//         if (method.get_type() != as_value::UNDEFINED) {
-//           struct variable *var = new struct variable;
-//           var->name = env->m_local_frames[i].m_name;
-//           var->value = env->m_local_frames[i].m_value;
-//           locals->push_back(var);
-//         }
-//       }
-//     }
-//     ptr->obj.setInterval(val, ms, locals);
-// #endif
-
     //Ptr->obj.setInterval(val, ms);
     ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
     

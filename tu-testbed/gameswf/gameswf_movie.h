@@ -8,7 +8,7 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 
-class MovieClipLoader 
+class MovieClipLoader : public gameswf::character_def
 {
  public:
   MovieClipLoader();

@@ -3143,12 +3143,11 @@ namespace gameswf
 			as_value       *as_val;
 			as_value	method;
 			as_object      *obj, *this_ptr;
-			array<struct variable *> *locals;
 			as_environment *as_env;
 
 			log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
 			Timer *ptr = (Timer *)timer;
-			log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
+			//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
 
 			as_val = ptr->getASFunction();
 			as_env = ptr->getASEnvironment();

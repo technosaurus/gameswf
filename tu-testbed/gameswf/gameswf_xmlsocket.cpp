@@ -282,6 +282,7 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
   as_value	val;
   static bool first = true;     // This event handler should only be executed once.
   bool          ret;
+  int           i;
   const array<with_stack_entry> with_stack;
 
   if (!first) {
@@ -305,7 +306,7 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
     env->push(as_value(false));
   }
 #endif
-  
+  env->push(as_value(true));
   if (this_ptr->get_member("onConnect", &method)) {
     //    log_msg("FIXME: Found onConnect!\n");
     as_c_function_ptr	func = method.to_c_function();
@@ -320,7 +321,7 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
     else if (as_as_function* as_func = method.to_as_function()) {
       // It's an ActionScript function.  Call it.
       log_msg("Calling ActionScript function for onConnect\n");
-      (*as_func)(&val, this_ptr, env, 0, 0);
+      (*as_func)(&val, this_ptr, env, 2, 2);
     } else {
       log_error("error in call_method(): method is not a function\n");
     }    
@@ -333,10 +334,12 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
   Timer *timer = new Timer;
   as_c_function_ptr ondata_handler =
     (as_c_function_ptr)&xmlsocket_event_ondata;
-  timer->setInterval(ondata_handler, 500, ptr, env);
+  timer->setInterval(ondata_handler, 300, ptr, env);
   timer->setObject(ptr);
   mov->add_interval_timer(timer);
 #endif
+
+  env->pop();
   
   result->set(true);
 }
