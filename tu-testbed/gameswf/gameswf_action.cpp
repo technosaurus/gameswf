@@ -1887,6 +1887,9 @@ namespace gameswf
 					}
 					// else nothing.  Maybe log it?
 
+					// Drop the args.
+					env->drop(2);
+
 					break;
 				}
 
