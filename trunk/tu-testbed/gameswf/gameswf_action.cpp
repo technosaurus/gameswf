@@ -2150,7 +2150,7 @@ namespace gameswf
 								xml_as_object*	xml_obj = new xml_as_object;
 								log_msg("Created New XML object at 0x%X\n", xml_obj);
 								xml_obj->set_member("load", &xml_load);
-								xml_obj->set_member("loaded", &xml_loaded);
+								xml_obj->set_member("loaded", as_value(xml_loaded));
 								new_obj = xml_obj;
 							}
 						} else
@@ -2216,6 +2216,8 @@ namespace gameswf
 
 							mov_obj->set_member("loadClip",
 									    &moviecliploader_loadclip);
+							mov_obj->set_member("loadMovie",
+									    &event_test);
 							mov_obj->set_member("unloadClip",
 									    &moviecliploader_unloadclip);
 							mov_obj->set_member("getProgress",
@@ -2265,6 +2267,12 @@ namespace gameswf
 								fprintf(stderr, "error: can't create movie instance\n");
 								exit(1);
 							}
+							//current_movie->add_display_object();
+							//env->get_target()->clone_display_object("_root",
+							//				"MovieClipLoader", 1);
+							//m->set_visible(true);
+							//m->display();
+							
 							new_obj = mov_obj;
 
 						} else

@@ -28,7 +28,7 @@ XMLNode::XMLNode()
 
 XMLNode::~XMLNode()
 {
-  
+  log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
 
@@ -55,6 +55,7 @@ XML::XML(struct node *childNode)
 
 XML::~XML()
 {
+  log_msg("%s: \n", __PRETTY_FUNCTION__);
 }
 
 // Dispatch event handler(s), if any.
