@@ -102,6 +102,45 @@ public:
 		}
 	}
 
+
+	void	remove(int index)
+	// Removing an element from the array is an expensive operation!
+	// It compacts only after removing the last element.
+	{
+		assert(index >= 0 && index < m_size);
+
+		if (m_size == 1)
+		{
+			clear();
+		}
+		else
+		{
+			m_buffer[index].~T();
+
+			memmove(m_buffer+index, m_buffer+index+1, sizeof(T) * (m_size - 1 - index));
+			m_size--;
+		}
+	}
+
+
+	void	insert(int index, const T& val = T())
+	// Insert the given object at the given index shifting all the elements up.
+	{
+		assert(index >= 0 && index <= m_size);
+
+		resize(m_size + 1);
+
+		if (index < m_size - 1)
+		{
+			// is it safe to use memmove?
+			memmove(m_buffer+index+1, m_buffer+index, sizeof(T) * (m_size - 1 - index));
+		}
+
+		m_buffer[index] = val;
+	}
+
+
+
 	void	resize(int new_size)
 	// Preserve existing elements.  Newly created elements are
 	// initialized with default element of T.  Removed elements
