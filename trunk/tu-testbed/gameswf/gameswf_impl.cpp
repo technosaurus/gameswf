@@ -3091,9 +3091,6 @@ namespace gameswf
 		void	do_mouse_events()
 		// Check mouse state.
 		{
-
-			matrix	mat = get_world_matrix();
-
 			// Get current mouse capture.
 
 			movie* parent = get_parent();
@@ -3107,6 +3104,8 @@ namespace gameswf
 				return;
 			}
 
+			matrix	mat = get_world_matrix();
+
 			int	mx, my, mbuttons;
 			parent->get_mouse_state(&mx, &my, &mbuttons);
 
@@ -3116,7 +3115,6 @@ namespace gameswf
 			if (mbuttons)
 			{
 				// Mouse button is pressed.
-
 				m_mouse_flags |= FLAG_DOWN;
 			}
 
@@ -3175,12 +3173,20 @@ namespace gameswf
 			// mouse drag.
 			character::do_mouse_drag();
 
-			if (m_play_state != STOP)
+			if (m_play_state == STOP)
 			{
-				m_time_remainder += delta_time;
+				// Do button actions, if any.
+				do_actions();
+				return;
 			}
 
-			const float	frame_time = 1.0f / m_root->get_frame_rate();
+			//
+			// m_play_state == PLAY
+			//
+
+			m_time_remainder += delta_time;
+
+			const float	frame_time = 1.0f / m_root->get_frame_rate();	// @@ cache this
 
 			bool	single_frame_movie = (m_def->get_frame_count() == 1);
 
@@ -3191,13 +3197,7 @@ namespace gameswf
 				m_update_frame = true;
 			}
 
-			if (m_play_state == STOP)
-			{
-				// Do button actions, if any.
-				do_actions();
-			}
-			else if (m_update_frame)
-//			while (m_update_frame)
+			if (m_update_frame)
 			{
 				m_update_frame = false;
 
@@ -3206,48 +3206,34 @@ namespace gameswf
 				m_next_frame = m_current_frame + 1;
 
 				// Execute the current frame's tags.
-				if (m_play_state == PLAY)
-				{
-					// frame 1 tags don't seem to
-					// be re-executed in one-frame
-					// movies...
-					if (single_frame_movie == false)
-					{
-						execute_frame_tags(m_current_frame);
-					}
 
-					// Dispatch onEnterFrame event.
-					on_event(event_id::ENTER_FRAME);
+				// frame 1 tags don't seem to
+				// be re-executed in one-frame
+				// movies...
+				if (single_frame_movie == false)
+				{
+					execute_frame_tags(m_current_frame);
 				}
 
-				m_display_list.update();
+				// Dispatch onEnterFrame event.
+				on_event(event_id::ENTER_FRAME);
 
-				do_mouse_events();     //!!!!!!!! todo optimize
-
+				do_mouse_events();
 				do_actions();
 
-				if (m_next_frame >= m_def->get_frame_count())	// && m_play_state == PLAY
+				// Clean up display list (remove dead objects).
+				m_display_list.update();
+
+				// Watch for the end of the movie.
+				if (m_next_frame >= m_def->get_frame_count())
 				{
+					// Loop.
   					m_next_frame = 0;
 					m_has_looped = true;
-
-					/*if (m_def->m_frame_count > 1)
-					{
-						// Avoid infinite loop on single frame sprites?
-						m_update_frame = true;
-					}*/
-
-					if (single_frame_movie == false && m_play_state == PLAY)
+					if (single_frame_movie == false)
 					{
 						m_display_list.reset();
 					}
-				}
-
-				// Check again for the end of frame
-				if (m_time_remainder >= frame_time)
-				{
-					m_time_remainder -= frame_time;
-					m_update_frame = true;
 				}
 			}
 		}
