@@ -8,6 +8,12 @@
 #include "geometry.h"
 
 
+const vec3	vec3::zero( 0, 0, 0 );
+const vec3	vec3::x_axis( 1, 0, 0 );
+const vec3	vec3::y_axis( 0, 1, 0 );
+const vec3	vec3::z_axis( 0, 0, 1 );
+
+
 vec3	vec3::operator+(const vec3& v) const
 // Adds two vec3s.  Creates a temporary for the return value.
 {

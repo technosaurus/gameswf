@@ -53,6 +53,10 @@ public:
 //	float	maxabs() const;
 
 	bool	checknan() const;	// Returns true if any component is nan.
+
+	// Some handy vector constants.
+	const static vec3	zero, x_axis, y_axis, z_axis;
+
 private:
 	float	m[3];
 };
@@ -173,6 +177,35 @@ public:
 private:
 	float	S;
 	vec3	V;
+};
+
+
+struct plane_info {
+	vec3	normal;
+	float	d;
+
+	plane_info() { }
+
+	plane_info( const vec3& n, float dist ) {
+		set( n, dist );
+	}
+
+	void	set( const vec3& n, float dist ) {
+		normal = n;
+		d = dist;
+	}
+
+	void	set(float nx, float ny, float nz, float dist) {
+		normal.set_xyz(nx, ny, nz);
+		d = dist;
+	}
+};
+
+
+struct collision_info {
+	vec3	point;
+	vec3	normal;
+	// float	distance, or ray_parameter;
 };
 
 
