@@ -18,11 +18,11 @@ LDFLAGS := /link /NODEFAULTLIB:libc.lib /INCREMENTAL:NO
 
 ifdef DEBUG
 	# debug flags
-	CC_DEBUG_FLAGS := /Zi /DNDEBUG=1 -Od
+	CC_DEBUG_FLAGS := /Zi -Od
 	LDFLAGS := /Zi $(LDFLAGS) /DEBUG /DEBUGTYPE:BOTH
 else
 	# non-debug flags
-	CC_DEBUG_FLAGS := -Ox
+	CC_DEBUG_FLAGS := -Ox /DNDEBUG=1
 endif
 
 
