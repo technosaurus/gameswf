@@ -18,6 +18,7 @@ namespace gameswf
 {
 	font::font()
 		:
+		m_texture_glyph_nominal_size(96),	// Default is not important; gets overridden during glyph generation
 		m_name(NULL),
 		m_owning_movie(NULL),
 		m_unicode_chars(false),
@@ -393,7 +394,7 @@ namespace gameswf
 	}
 
 
-	void	font::output_cached_data(tu_file* out)
+	void	font::output_cached_data(tu_file* out, const movie_definition::cache_options& options)
 	// Dump our cached data into the given stream.
 	{
 // @@ Disabled.  Need to fix input_cached_data, so that it has a
@@ -408,7 +409,7 @@ namespace gameswf
 			shape_character_def*	s = m_glyphs[i].get_ptr();
 			if (s)
 			{
-				s->output_cached_data(out);
+				s->output_cached_data(out, options);
 			}
 		}
 #endif // 0
