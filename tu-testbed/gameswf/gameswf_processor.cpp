@@ -79,12 +79,12 @@ static void	print_usage()
 
 struct movie_data
 {
-	gameswf::movie_interface*	m_movie;
+	gameswf::movie_definition*	m_movie;
 	tu_string	m_filename;
 };
 
 
-static gameswf::movie_interface*	play_movie(const char* filename);
+static gameswf::movie_definition*	play_movie(const char* filename);
 static int	write_cache_file(const movie_data& md);
 
 
@@ -155,7 +155,7 @@ int	main(int argc, char *argv[])
 	// Play through all the movies.
 	for (int i = 0, n = infiles.size(); i < n; i++)
 	{
-		gameswf::movie_interface*	m = play_movie(infiles[i]);
+		gameswf::movie_definition*	m = play_movie(infiles[i]);
 		if (m == NULL)
 		{
 			if (s_stop_on_errors)
@@ -194,21 +194,27 @@ int	main(int argc, char *argv[])
 }
 
 
-gameswf::movie_interface*	play_movie(const char* filename)
-// Load the named movie, and play it, virtually.  I.e. run through and
-// render all the frames, even though we are not actually doing any
-// output (our output handlers are disabled).
+gameswf::movie_definition*	play_movie(const char* filename)
+// Load the named movie, make an instance, and play it, virtually.
+// I.e. run through and render all the frames, even though we are not
+// actually doing any output (our output handlers are disabled).
 //
 // What this does is warm up all the cached data in the movie, so that
 // if we save that data for later, we won't have to tesselate shapes
 // or build font textures again.
 //
-// Return the movie.
+// Return the movie definition.
 {
-	gameswf::movie_interface*	m = gameswf::create_library_movie(filename);
-	if (m == NULL)
+	gameswf::movie_definition*	md = gameswf::create_library_movie(filename);
+	if (md == NULL)
 	{
 		fprintf(stderr, "error: can't play movie '%s'\n", filename);
+		exit(1);
+	}
+	gameswf::movie_interface*	m = md->create_instance();
+	if (m == NULL)
+	{
+		fprintf(stderr, "error: can't create instance of movie '%s'\n", filename);
 		exit(1);
 	}
 
@@ -231,7 +237,7 @@ gameswf::movie_interface*	play_movie(const char* filename)
 		m->advance(0.010f);
 		m->display();
 
-		if (m->get_current_frame() == m->get_frame_count() - 1)
+		if (m->get_current_frame() == md->get_frame_count() - 1)
 		{
 			// Done.
 			break;
@@ -263,7 +269,7 @@ gameswf::movie_interface*	play_movie(const char* filename)
 		}
 	}
 
-	return m;
+	return md;
 }
 
 

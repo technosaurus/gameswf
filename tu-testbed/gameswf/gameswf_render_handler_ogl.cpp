@@ -10,6 +10,7 @@
 #include "gameswf_types.h"
 #include "base/image.h"
 #include "base/ogl.h"
+#include "base/utility.h"
 
 #include <string.h>
 
