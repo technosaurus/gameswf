@@ -16,22 +16,18 @@
 #include "swf_impl.h"
 #include "engine/image.h"
 #include <string.h>	// for memset
-#include "zlib.h"
+#include <zlib.h>
+#include <GL/gl.h>
+#include <typeinfo>
 
 
 namespace swf
 {
-	struct movie : public character
-	{
-		virtual void	add_character(int id, character* ch) {}
-		virtual void	add_execute_tag(execute_tag* c) {}
-	};
-
-
 	// RGB --> 24 bit color
 
 	// RGBA
-	struct rgba {
+	struct rgba
+	{
 		Uint8	m_r, m_g, m_b, m_a;
 
 		rgba() : m_r(255), m_g(255), m_b(255), m_a(255) {}
@@ -69,7 +65,8 @@ namespace swf
 	};
 
 
-	struct rect {
+	struct rect
+	{
 		float	m_x_min, m_x_max, m_y_min, m_y_max;
 
 		void	read(stream* in)
@@ -96,10 +93,17 @@ namespace swf
 	};
 
 
-	struct matrix {
+	struct matrix
+	{
 		float	m_[2][3];
 
-		matrix() { memset(&m_[0], 0, sizeof(m_)); }
+		matrix()
+		{
+			// Default to identity.
+			memset(&m_[0], 0, sizeof(m_));
+			m_[0][0] = 1;
+			m_[1][1] = 1;
+		}
 
 		void	read(stream* in)
 		{
@@ -232,7 +236,8 @@ namespace swf
 	};
 
 
-	struct cxform {
+	struct cxform
+	{
 		float	m_[4][2];	// [RGBA][mult, add]
 
 		void	read_rgb(stream* in)
@@ -320,11 +325,48 @@ namespace swf
 	}
 
 
+	// Information about how to display an element.
+	struct display_info
+	{
+		int	m_depth;
+		cxform	m_color_transform;
+		matrix	m_matrix;
+		float	m_ratio;
+	};
+
+
+	// A struct to serve as an entry in the display list.
+	struct display_object_info : display_info
+	{
+		character*	m_character;
+
+		static int compare(const void* _a, const void* _b)
+		// For qsort().
+		{
+			display_object_info*	a = (display_object_info*) _a;
+			display_object_info*	b = (display_object_info*) _b;
+
+			if (a->m_depth < b->m_depth)
+			{
+				return -1;
+			}
+			else if (a->m_depth == b->m_depth)
+			{
+				return 0;
+			}
+			else
+			{
+				return 1;
+			}
+		}
+	};
+
+
 	struct movie_impl : public movie
 	{
 		hash<int, character*>	m_characters;
-		array<execute_tag*>	m_playlist;	// movie control events.
-		array<character*>	m_display_list;	// active characters, ordered by depth.
+		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
+		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 
 		// array<int>	m_frame_start;	// tag indices of frame starts. ?
 
@@ -333,15 +375,206 @@ namespace swf
 		int	m_frame_count;
 		int	m_version;
 
+		int	m_current_frame;
+		float	m_time;
+
 		movie_impl()
 			:
 			m_frame_rate(30),
 			m_frame_count(0),
-			m_version(0)
+			m_version(0),
+			m_current_frame(0),
+			m_time(0)
 		{
 		}
 
 		virtual ~movie_impl() {}
+
+		void	add_character(int character_id, character* c)
+		{
+			m_characters.add(character_id, c);
+		}
+
+		void	add_execute_tag(execute_tag* e)
+		{
+			m_playlist[m_current_frame].push_back(e);
+		}
+
+		
+		int	find_display_index(int depth)
+		// Find the index in the display list matching the
+		// given depth.  Failing that, return the index of the
+		// first object with a larger depth.
+		{
+			int	size = m_display_list.size();
+			if (size == 0)
+			{
+				return 0;
+			}
+
+			// Binary search.
+			int	jump = size >> 1;
+			int	index = jump;
+			for (;;)
+			{
+				jump >>= 1;
+				if (jump < 1) jump = 1;
+
+				if (depth > m_display_list[index].m_depth) {
+					if (index == size - 1)
+					{
+						index = size;
+						break;
+					}
+					index += jump;
+				}
+				else if (depth < m_display_list[index].m_depth)
+				{
+					if (index == 0
+					    || depth > m_display_list[index - 1].m_depth)
+					{
+						break;
+					}
+					index -= jump;
+				}
+				else
+				{
+					// match -- return this index.
+					break;
+				}
+			}
+
+			assert(index >= 0 && index <= size);
+
+			return index;
+		}
+
+		
+		void	add_display_object(Uint16 character_id,
+					   Uint16 depth,
+					   const cxform& color_transform,
+					   const matrix& matrix,
+					   float ratio)
+		{
+			character*	ch = NULL;
+			if (m_characters.get(character_id, &ch) == false)
+			{
+				fprintf(stderr, "movie_impl::add_display_object(): unknown cid = %d\n", character_id);
+				return;
+			}
+			assert(ch);
+
+			display_object_info	di;
+			di.m_character = ch;
+			di.m_depth = depth;
+			di.m_color_transform = color_transform;
+			di.m_matrix = matrix;
+			di.m_ratio = ratio;
+
+			// Insert into the display list...
+
+			int	index = find_display_index(di.m_depth);
+
+			// Shift existing objects up.
+			m_display_list.resize(m_display_list.size() + 1);
+			if (m_display_list.size() - 1 > index)
+			{
+				memmove(&m_display_list[index + 1],
+					&m_display_list[index],
+					sizeof(m_display_list[0]) * (m_display_list.size() - 1 - index));
+			}
+
+			// Put new info in the opened slot.
+			m_display_list[index] = di;
+		}
+
+
+		void	remove_display_object(int depth)
+		// Remove the object at the specified depth.
+		{
+			int	size = m_display_list.size();
+			assert(size > 0);
+
+			int	index = find_display_index(depth);
+			assert(index >= 0 && index < size);
+
+			if (index < size - 1)
+			{
+				memmove(&m_display_list[index],
+					&m_display_list[index + 1],
+					sizeof(m_display_list[0]) * (size - 1 - index));
+			}
+			m_display_list.resize(size - 1);
+		}
+
+
+		int	get_width() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_x_max - m_frame_size.m_x_min)); }
+		int	get_height() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_y_max - m_frame_size.m_y_min)); }
+
+		
+		void	restart()
+		{
+			m_display_list.resize(0);
+			m_current_frame = -1;
+			m_time = 0;
+		}
+
+
+		void	advance(float delta_time)
+		{
+			m_time += delta_time;
+			int	target_frame_number = (int) floorf(m_time * m_frame_rate);
+			assert(target_frame_number >= m_current_frame);
+
+			if (target_frame_number >= m_frame_count)
+			{
+				// Either clamp, or loop here...
+
+				// Loop.
+				restart();
+				target_frame_number = 0;
+			}
+
+			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
+			{
+				array<execute_tag*>&	playlist = m_playlist[frame];
+				for (int i = 0; i < playlist.size(); i++)
+				{
+					execute_tag*	e = playlist[i];
+					e->execute(this);
+				}
+				m_current_frame = frame;
+			}
+
+//			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
+		}
+
+		void	display()
+		{
+			// renderer->reset();
+
+			// @@ deal with background color...
+
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glOrtho(m_frame_size.m_x_min, m_frame_size.m_x_max,
+				m_frame_size.m_y_min, m_frame_size.m_y_max,
+				-1, 1);
+			
+			// Display all display objects, starting at
+			// max depth and moving up.
+			for (int i = m_display_list.size() - 1; i >= 0; i--)
+			{
+				display_object_info&	di = m_display_list[i];
+
+				di.m_character->display(di);
+
+//				printf("display %s\n", typeid(*(di.m_character)).name());
+			}
+
+			glPopMatrix();
+		}
+
 
 		void	read(SDL_RWops* in)
 		// Read a .SWF movie.
@@ -365,13 +598,22 @@ namespace swf
 			m_frame_rate = str.read_u16() / 256.0f;
 			m_frame_count = str.read_u16();
 
+			m_playlist.resize(m_frame_count);
+
 			IF_DEBUG(m_frame_size.print(stdout));
 			IF_DEBUG(printf("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
 
-			while ((Uint32) str.get_position() < file_length) {
+			while ((Uint32) str.get_position() < file_length)
+			{
 				int	tag_type = str.open_tag();
 				loader_function	lf = NULL;
-				if (s_tag_loaders.get(tag_type, &lf)) {
+				if (tag_type == 1)
+				{
+					// show frame tag -- advance to the next frame.
+					m_current_frame++;
+				}
+				else if (s_tag_loaders.get(tag_type, &lf))
+				{
 					// call the tag loader.  The tag loader should add
 					// characters or tags to the movie data structure.
 					(*lf)(&str, tag_type, this);
@@ -383,6 +625,8 @@ namespace swf
 
 				str.close_tag();
 			}
+
+			restart();
 		}
 	};
 
@@ -396,7 +640,6 @@ namespace swf
 			// Register the standard loaders.
 			s_registered = true;
 			register_tag_loader(0, end_loader);
-			register_tag_loader(1, show_frame_loader);
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
@@ -410,7 +653,7 @@ namespace swf
 	}
 
 
-	movie*	create_movie(SDL_RWops* in)
+	movie_interface*	create_movie(SDL_RWops* in)
 	// External API.  Create a movie from the given stream, and
 	// return it.
 	{
@@ -433,7 +676,7 @@ namespace swf
 	{
 		rgba	m_color;
 
-		void	execute() {}
+		void	execute(movie* m) {}
 
 		void	read(stream* in)
 		{
@@ -458,10 +701,58 @@ namespace swf
 	struct bitmap_character_rgb : public character
 	{
 		image::rgb*	m_image;
+		unsigned int	m_texture;
 
-		bitmap_character_rgb() : m_image(0) {}
+		bitmap_character_rgb()
+			:
+			m_image(0),
+			m_texture(0)
+		{
+		}
 
-		void	execute() { /* do we display here? */ }
+		void	display(const display_info& di)
+		{
+			if (m_texture == 0)
+			{
+				// Create texture.
+				glEnable(GL_TEXTURE_2D);
+				glGenTextures(1, &m_texture);
+				glBindTexture(GL_TEXTURE_2D, m_texture);
+				
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* LINEAR_MIPMAP_LINEAR */);
+
+				int	w = 1; while (w < m_image->m_width) { w <<= 1; }
+				int	h = 1; while (h < m_image->m_height) { h <<= 1; }
+
+				char*	temp = new char[w * h * 3];
+				memset(temp, 0, w * h * 3);
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, temp);
+				delete [] temp;
+
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_image->m_width, m_image->m_height, GL_RGB, GL_UNSIGNED_BYTE, m_image->m_data);
+			}
+
+			printf("showing texture...\n");
+
+			glBegin(GL_QUADS);
+
+			glTexCoord2f(0, 0);
+			glVertex2f(0, 0);
+
+			glTexCoord2f(1, 0);
+			glVertex2f(1, 0);
+
+			glTexCoord2f(1, 1);
+			glVertex2f(1, 1);
+
+			glTexCoord2f(0, 1);
+			glVertex2f(0, 1);
+
+			glEnd();
+		}
 	};
 
 	struct bitmap_character_rgba : public character
@@ -470,7 +761,11 @@ namespace swf
 
 		bitmap_character_rgba() : m_image(0) {}
 
-		void	execute() { /* do some display... */ }
+		void	display(const display_info& di)
+		{
+			printf("bitmap_character_rgba display\n");
+			/* TODO */
+		}
 	};
 
 
@@ -660,9 +955,12 @@ namespace swf
 	// curve segment.
 	struct edge
 	{
-		float	m_cx, m_cy;	// *quadratic* bezier: point = ... * previous_a + ... * c + ... * a
-		float	m_ax, m_ay;
+		// *quadratic* bezier: point = ... * previous_a + ... * c + ... * a
+		float	m_cx, m_cy;		// "control" point
+		float	m_ax, m_ay;		// "anchor" point
 		int	m_fill0, m_fill1, m_line;
+
+		// An edge with m_fill0 == m_fill1 == m_line == -1 means "move to".
 
 		edge()
 			:
@@ -680,6 +978,20 @@ namespace swf
 			m_fill1(fill1),
 			m_line(line)
 		{
+		}
+
+		bool	is_blank() const
+		// Returns true if this is a "blank" edge; i.e. it
+		// functions as a move-to and doesn't render anything
+		// itself.
+		{
+			if (m_fill0 == -1 && m_fill1 == -1 && m_line == -1)
+			{
+				assert(m_cx == 0);
+				assert(m_cy == 0);
+				return true;
+			}
+			return false;
 		}
 	};
 
@@ -738,6 +1050,8 @@ namespace swf
 	}
 
 
+	// Represents the outline of one or more shapes, along with
+	// information on fill and line styles.
 	struct shape_character : public character
 	{
 		rect	m_bound;
@@ -762,6 +1076,13 @@ namespace swf
 
 			IF_DEBUG(printf("scr: nfb = %d, nlb = %d\n", num_fill_bits, num_line_bits));
 
+			// These are state variables that keep the
+			// current position & style of the shape
+			// outline, and vary as we read the edge data.
+			//
+			// At the moment we just store each edge with
+			// the full necessary info to render it, which
+			// is simple but not optimally efficient.
 			int	fill_base = 0;
 			int	line_base = 0;
 			float	x = 0, y = 0;
@@ -787,7 +1108,8 @@ namespace swf
 						x += move_x;
 						y += move_y;
 
-						// add *blank* edge(x, y, -1, -1, -1, -1);
+						// add *blank* edge
+						m_edges.push_back(edge(0, 0, x, y, -1, -1, -1));
 					}
 					if (flags & 0x02) {
 						// fill_style_0_change = 1;
@@ -859,6 +1181,55 @@ namespace swf
 					}
 				}
 			}
+		}
+
+
+		void	display(const display_info& di)
+		// Draw the shape using the given environment.
+		{
+			// @@ set color transform into the renderer...
+			// @@ set matrix into the renderer...
+
+			// @@ emit edges to the renderer...
+
+			// xx For now, just spam the screen with a
+			// wireframe of our shape...
+			float	x = 0, y = 0;
+
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			float	m[16];
+			memset(&m[0], 0, sizeof(m));
+			m[0] = di.m_matrix.m_[0][0];
+			m[1] = di.m_matrix.m_[1][0];
+			m[4] = di.m_matrix.m_[0][1];
+			m[5] = di.m_matrix.m_[1][1];
+			m[10] = 1;
+			m[12] = di.m_matrix.m_[0][2];
+			m[13] = di.m_matrix.m_[0][3];
+			m[15] = 1;
+			glMultMatrixf(m);
+
+			glBegin(GL_LINES);
+			glColor3f(1, 1, 1);
+			for (int i = 0; i < m_edges.size(); i++)
+			{
+				const edge&	e = m_edges[i];
+				if (e.is_blank())
+				{
+					x = e.m_ax;
+					y = e.m_ay;
+				}
+				else
+				{
+					glVertex2f(x, y);
+					glVertex2f(e.m_ax, e.m_ay);
+					x = e.m_ax;	
+					y = e.m_ay;
+				}
+			}
+			glEnd();
+			glPopMatrix();
 		}
 	};
 
@@ -965,6 +1336,30 @@ namespace swf
 				 m_matrix.print(stdout);
 				);
 		}
+
+		
+		void	execute(movie* m)
+		// Place/move/whatever our object in the given movie.
+		{
+			switch (m_place_type)
+			{
+			case PLACE:
+				m->add_display_object(m_character_id,
+						      m_depth,
+						      m_color_transform,
+						      m_matrix,
+						      m_ratio);
+				break;
+
+			case MOVE:
+				// TODO
+				break;
+
+			case REPLACE:
+				// TODO
+				break;
+			}
+		}
 	};
 
 	
@@ -990,27 +1385,51 @@ namespace swf
 	struct sprite : public movie
 	{
 		movie_impl*	m_movie;		// parent movie.
-		array<execute_tag*>	m_playlist;	// movie control events.
+		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
+
+		int	m_current_frame;
 		array<character*>	m_display_list;	// active characters, ordered by depth.
 
-		// array<int>	m_frame_start;	// tag indices of frame starts. ?
-
 		int	m_frame_count;
+		float	m_time;
 
-		sprite();
-		~sprite();
+		virtual ~sprite();
 
 		sprite(movie_impl* movie)
 			:
 			m_movie(movie),
-			m_frame_count(0)
+			m_current_frame(0),
+			m_frame_count(0),
+			m_time(0)
 		{
 			assert(m_movie);
 		}
 
-		void	execute(float time)
+		int	get_width() { assert(0); return 0; }
+		int	get_height() { assert(0); return 0; }
+
+		void	restart()
 		{
-			/* do stuff here! */
+			m_current_frame = 0;
+		}
+
+		void	advance(float delta_time)
+		{
+			assert(0);
+		}
+
+		void	display()
+		{
+		}
+
+		void	display(const display_info& di)
+		{
+			printf("sprite display\n");
+		}
+
+		void	execute(movie* m)
+		{
+			/* TODO */
 		}
 
 		void	add_character(int id, character* ch)
@@ -1020,7 +1439,7 @@ namespace swf
 
 		void	add_execute_tag(execute_tag* c)
 		{
-			m_playlist.push_back(c);
+			m_playlist[m_current_frame].push_back(c);
 		}
 
 
@@ -1030,30 +1449,21 @@ namespace swf
 			int	tag_end = in->get_tag_end_position();
 
 			m_frame_count = in->read_u16();
+			m_playlist.resize(m_frame_count);	// need a playlist for each frame
 
 			IF_DEBUG(printf("sprite: frames = %d\n", m_frame_count));
 
 			while ((Uint32) in->get_position() < (Uint32) tag_end)
 			{
 				int	tag_type = in->open_tag();
-				loader_function	lf = NULL;
-				if (s_tag_loaders.get(tag_type, &lf))
+				loader_function lf = NULL;
+				if (tag_type == 1)
 				{
-//  					if (tag_type != show frame
-//  					    && tag_type != place object
-//  					    && tag_type != place object 2
-//  					    && tag_type != remove object
-//  					    && tag_type != remove object 2
-//  					    && tag_type != do action
-//  					    && tag_type != start sound
-//  					    && tag_type != frame label
-//  					    && tag_type != sound stream head
-//  					    && tag_type != sound stream block
-//  					    && tag_type != end)
-//  					{
-//  						// error, invalid tag for a sprite.
-//  					}
-
+					// show frame tag -- advance to the next frame.
+					m_current_frame++;
+				}
+				else if (s_tag_loaders.get(tag_type, &lf))
+				{
 					// call the tag loader.  The tag loader should add
 					// characters or tags to the movie data structure.
 					(*lf)(in, tag_type, this);
@@ -1069,7 +1479,7 @@ namespace swf
 		}
 	};
 
-	sprite::sprite() : m_movie(0), m_frame_count(0) {}
+
 	sprite::~sprite() {}
 
 	
@@ -1079,34 +1489,18 @@ namespace swf
 		assert(tag_type == 39);
 
 		int	character_id = in->read_u16();
+		UNUSED(character_id);
 
 		movie_impl*	mi = dynamic_cast<movie_impl*>(m);
 		assert(mi);
 
-//		sprite*	ch = new sprite(mi);
-		sprite*	ch = new sprite;
-		ch->m_movie = mi;
+		sprite*	ch = new sprite(mi);
+//		sprite*	ch = new sprite;
+//		ch->m_movie = mi;
 		ch->read(in);
 
-		m->add_character(character_id, ch);
-	}
-
-
-	//
-	// show_frame
-	//
-
-	
-	struct show_frame : public execute_tag
-	{
-	};
-
-	void	show_frame_loader(stream* in, int tag_type, movie* m)
-	{
-		assert(tag_type == 1);
-		assert(in->get_position() == in->get_tag_end_position());
-
-		m->add_execute_tag(new show_frame);
+//		m->add_character(character_id, ch);
+//		m->add_sprite(character_id, ch);
 	}
 
 
@@ -1139,7 +1533,7 @@ namespace swf
 			m_depth = in->read_u16();
 		}
 
-		void	execute(float time) { /* do something here! */ }
+		void	execute(movie* m) { /* TODO */ }
 	};
 
 

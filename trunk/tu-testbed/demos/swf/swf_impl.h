@@ -26,19 +26,39 @@
 
 namespace swf
 {
+	struct display_info;
+	struct cxform;
+	struct matrix;
+
 	// SWF movies contain "characters" to represent the various elements.
 	struct character
 	{
 		virtual ~character() {}
-		virtual void	execute(float time) {}	// OpenGL state contains viewport, transforms, etc.
+		virtual void	display(const display_info& di) {}	// renderer state contains context
 	};
+
+
+	struct movie : public movie_interface
+	{
+		virtual void	add_character(int id, character* ch) = 0;
+		virtual void	add_execute_tag(execute_tag* c) = 0;
+
+		virtual void	add_display_object(Uint16 character_id,
+						   Uint16 depth,
+						   const cxform& color_transform,
+						   const matrix& mat,
+						   float ratio)
+		{
+		}
+	};
+
 
 	// Execute tags include things that control the operation of
 	// the movie.  Essentially, these are the events associated
 	// with a frame.
 	struct execute_tag
 	{
-		virtual void	execute(float time) {}
+		virtual void	execute(movie* m) {}
 	};
 
 
@@ -71,15 +91,17 @@ namespace swf
 	};
 
 
+	struct movie_container;
+
 	void	set_background_color_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie* m);
 	void	define_shape_loader(stream* in, int tag_type, movie* m);
 	void	place_object_2_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie* m);
 	void	sprite_loader(stream* in, int tag_type, movie* m);
-	void	show_frame_loader(stream* in, int tag_type, movie* m);
 	void	end_loader(stream* in, int tag_type, movie* m);
 	void	remove_object_2_loader(stream* in, int tag_type, movie* m);
 };
+
 
 #endif // SWF_IMPL_H
