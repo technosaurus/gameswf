@@ -14,7 +14,6 @@
 
 namespace zlib_adapter
 {
-
 	const int	ZBUF_SIZE = 4096;
 
 	struct inflater_impl
@@ -23,6 +22,7 @@ namespace zlib_adapter
 		z_stream	m_zstream;
 		int	m_initial_stream_pos;	// position of the input stream where we started inflating.
 		int	m_logical_stream_pos;	// current stream position of uncompressed data.
+		bool	m_at_eof;
 
 		unsigned char	m_rawdata[ZBUF_SIZE];
 
@@ -35,7 +35,8 @@ namespace zlib_adapter
 			m_in(in),
 			m_initial_stream_pos(in->get_position()),
 			m_logical_stream_pos(0),
-			m_error(0)
+			m_error(0),
+			m_at_eof(false)
 		{
 			assert(m_in);
 
@@ -65,6 +66,7 @@ namespace zlib_adapter
 		// Necessary in order to seek backwards.
 		{
 			m_error = 0;
+			m_at_eof = 0;
 			int	err = inflateReset(&m_zstream);
 			if (err != Z_OK) {
 				m_error = 1;
@@ -115,6 +117,7 @@ namespace zlib_adapter
 				int	err = inflate(&m_zstream, Z_SYNC_FLUSH);
 				if (err == Z_STREAM_END)
 				{
+					m_at_eof = true;
 					break;
 				}
 				if (err != Z_OK)
@@ -232,6 +235,13 @@ namespace zlib_adapter
 		return inf->m_logical_stream_pos;
 	}
 
+	bool	inflate_get_eof(void* appdata)
+	{
+		inflater_impl*	inf = (inflater_impl*) appdata;
+
+		return inf->m_at_eof;
+	}
+
 	int	inflate_close(void* appdata)
 	{
 		inflater_impl*	inf = (inflater_impl*) appdata;
@@ -254,10 +264,25 @@ namespace zlib_adapter
 		assert(in);
 
 		inflater_impl*	inflater = new inflater_impl(in);
-		return new tu_file(inflater, inflate_read, inflate_write, inflate_seek, inflate_seek_to_end, inflate_tell, inflate_close);
+		return new tu_file(
+			inflater,
+			inflate_read,
+			inflate_write,
+			inflate_seek,
+			inflate_seek_to_end,
+			inflate_tell,
+			inflate_get_eof,
+			inflate_close);
 	}
 
 
 	// @@ TODO
 	// tu_file*	make_deflater(tu_file* out) { ... }
 }
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

@@ -60,6 +60,24 @@ static int sdl_tell_func(const void *appdata)
 	return SDL_RWtell((SDL_RWops*) appdata);
 }
 
+static bool sdl_get_eof_func(void* appdata)
+{
+	assert(appdata);
+
+	int	cur_pos = sdl_tell_func(appdata);
+	sdl_seek_to_end_func(appdata);
+	int	end_pos = sdl_tell_func(appdata);
+	if (end_pos <= cur_pos)
+	{
+		return true;
+	}
+	else
+	{
+		sdl_seek_func(cur_pos, appdata);
+		return false;
+	}
+}
+
 static int sdl_close_func(void *appdata)
 {
 	assert(appdata);
@@ -87,6 +105,7 @@ tu_file::tu_file(SDL_RWops* sdl_stream, bool autoclose)
 	m_seek = sdl_seek_func;
 	m_seek_to_end = sdl_seek_to_end_func;
 	m_tell = sdl_tell_func;
+	m_get_eof = sdl_get_eof_func;
 	m_close = autoclose ? sdl_close_func : NULL;
 	m_error = TU_FILE_NO_ERROR;
 }

@@ -33,7 +33,7 @@ LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB)
 all: base_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 
-OBJS = \
+LIB_OBJS = \
 	gameswf_action.$(OBJ_EXT)	\
 	gameswf_button.$(OBJ_EXT)	\
 	gameswf_dlist.$(OBJ_EXT)	\
@@ -61,9 +61,11 @@ PARSER_OBJS = \
 PROCESSOR_OBJS = \
 	gameswf_processor.$(OBJ_EXT)
 
+OBJS = $(LIB_OBJS) $(TEST_PROGRAM_OBJS) $(PARSER_OBJS) $(PROCESSOR_OBJS)
+
 gameswf_impl.$(OBJ_EXT): gameswf.h gameswf_impl.h gameswf_types.h
 
-$(LIB_OUT): $(OBJS)
+$(LIB_OUT): $(LIB_OBJS)
 	$(AR) $(LIB_OUT_FLAG)$@ $^
 
 
@@ -84,4 +86,4 @@ base_lib:
 
 clean:
 	make -C $(TOP)/base clean
-	-rm $(TEST_PROGRAM_OBJS) $(OBJS) $(LIB_OUT) $(EXE_OUT)
+	-rm $(OBJS) $(LIB_OUT) $(EXE_OUT)
