@@ -67,7 +67,6 @@ namespace gameswf
 		void	concatenate_scale(float s);
 		void	read(stream* in);
 		void	print() const;
-		void	apply() const;
 		void	transform(point* result, const point& p) const;
 		void	transform_vector(point* result, const point& p) const;
 		void	transform_by_inverse(point* result, const point& p) const;
@@ -89,7 +88,6 @@ namespace gameswf
 		{
 		}
 
-		void	apply() const;
 		void	read(stream* in, int tag_type);
 		void	read_rgba(stream* in);
 		void	read_rgb(stream* in);

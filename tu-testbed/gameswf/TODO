@@ -51,6 +51,9 @@ Tasks to make gameswf ready for including in real games.
 
 * pick a version number, post a release
 
+* try to keep external #includes out of gameswf.h -- currently the
+  render_handler has the bulk of the external dependencies.
+
 
 General
 =======

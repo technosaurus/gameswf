@@ -117,13 +117,6 @@ namespace gameswf
 		log_msg("| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
 	}
 
-	void	matrix::apply() const
-	// Apply this matrix onto the top of the currently
-	// selected OpenGL matrix stack.
-	{
-                get_render_handler()->apply_matrix(*this);
-	}
-
 	void	matrix::transform(point* result, const point& p) const
 	// Transform point 'p' by our matrix.  Put the result in
 	// *result.
@@ -317,12 +310,6 @@ namespace gameswf
 	//
 	// rgba
 	//
-
-	void	rgba::apply() const
-	// Set the glColor to our state.
-	{
-                get_render_handler()->apply_color(*this);
-	}
 
 	void	rgba::read(stream* in, int tag_type)
 	{

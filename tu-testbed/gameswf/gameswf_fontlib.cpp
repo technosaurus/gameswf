@@ -129,7 +129,7 @@ namespace fontlib
 		}
 		else
 		{
-			get_render_handler()->set_alpha_image(s_current_bitmap_info,
+			render::set_alpha_image(s_current_bitmap_info,
 						GLYPH_CACHE_TEXTURE_SIZE,
 						GLYPH_CACHE_TEXTURE_SIZE,
 						s_current_cache_image);
@@ -244,7 +244,7 @@ namespace fontlib
 			if (s_current_bitmap_info == NULL)
 			{
 				// Set up a cache.
-				s_current_bitmap_info = get_render_handler()->create_bitmap_info_blank();
+				s_current_bitmap_info = render::create_bitmap_info_blank();
 				s_bitmaps_used.push_back(s_current_bitmap_info);
 
 				if (s_current_cache_image == NULL)
@@ -680,7 +680,7 @@ namespace fontlib
 			// load bitmaps.
 			for (int b=0; b<nb; b++)
 			{
-				s_current_bitmap_info = get_render_handler()->create_bitmap_info_blank();
+				s_current_bitmap_info = render::create_bitmap_info_blank();
 				s_bitmaps_used.push_back(s_current_bitmap_info);
 
 				// save bitmap size
@@ -698,7 +698,7 @@ namespace fontlib
 				// save bitmap contents
 				s_file->read_bytes(s_current_cache_image, w*h);
 
-				get_render_handler()->set_alpha_image(
+				render::set_alpha_image(
 					s_current_bitmap_info,
 					w, h,
 					s_current_cache_image);
@@ -835,7 +835,7 @@ namespace fontlib
 		bounds.m_y_min *= s_scale;
 		bounds.m_y_max *= s_scale;
 		
-		get_render_handler()->draw_bitmap(mat, tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
+		render::draw_bitmap(mat, tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
 	}
 
 

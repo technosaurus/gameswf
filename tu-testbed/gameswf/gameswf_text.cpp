@@ -696,7 +696,7 @@ namespace gameswf
 			if (m_border)
 			{
 				// Show white background + black bounding box.
-				get_render_handler()->set_matrix(di.m_matrix);
+				render::set_matrix(di.m_matrix);
 
 				point	coords[6];
 				coords[0] = m_rect.get_corner(0);
@@ -706,11 +706,11 @@ namespace gameswf
 				coords[4] = m_rect.get_corner(0);
 				coords[5] = m_rect.get_corner(2);
 				
-				get_render_handler()->fill_style_color(0, rgba(255, 255, 255, 255));
-				get_render_handler()->draw_mesh(&coords[0].m_x, 6);
+				render::fill_style_color(0, rgba(255, 255, 255, 255));
+				render::draw_mesh(&coords[0].m_x, 6);
 
-				get_render_handler()->line_style_color(rgba(0,0,0,255));
-				get_render_handler()->draw_line_strip(&coords[0].m_x, 5);
+				render::line_style_color(rgba(0,0,0,255));
+				render::draw_line_strip(&coords[0].m_x, 5);
 			}
 
 			// Draw our actual text.
