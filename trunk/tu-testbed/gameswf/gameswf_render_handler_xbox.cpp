@@ -9,9 +9,10 @@
 #ifdef _XBOX
 
 #include "gameswf.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf_types.h"
 #include "base/image.h"
 #include "base/container.h"
-#include "gameswf/gameswf_log.h"
 
 #include <xtl.h>
 #include <d3d8.h>
@@ -607,7 +608,7 @@ struct render_handler_xbox : public gameswf::render_handler
 	}
 
 
-	void	draw_mesh_strip(const Sint16 coords[], int vertex_count)
+	void	draw_mesh_strip(const void* coords, int vertex_count)
 	{
 		// Set up current style.
 		m_current_styles[LEFT_STYLE].apply();
@@ -651,7 +652,7 @@ struct render_handler_xbox : public gameswf::render_handler
 	}
 
 
-	void	draw_line_strip(const Sint16 coords[], int vertex_count)
+	void	draw_line_strip(const void* coords, int vertex_count)
 	// Draw the line strip formed by the sequence of points.
 	{
 		// Set up current style.

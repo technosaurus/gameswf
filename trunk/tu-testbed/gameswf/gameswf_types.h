@@ -11,7 +11,6 @@
 
 
 #include "base/utility.h"
-#include <string.h>
 
 
 #ifndef NDEBUG
@@ -38,31 +37,6 @@ namespace gameswf
 namespace gameswf
 {
 	struct stream;	// forward declaration
-
-	struct point
-	{
-		float	m_x, m_y;
-
-		point() : m_x(0), m_y(0) {}
-		point(float x, float y) : m_x(x), m_y(y) {}
-
-		void	set_lerp(const point& a, const point& b, float t)
-		// Set to a + (b - a) * t
-		{
-			m_x = a.m_x + (b.m_x - a.m_x) * t;
-			m_y = a.m_y + (b.m_y - a.m_y) * t;
-		}
-
-		bool operator==(const point& p) const { return m_x == p.m_x && m_y == p.m_y; }
-
-		bool	bitwise_equal(const point& p) const
-		// Bitwise comparison; return true if *this is bitwise
-		// identical to p.
-		{
-			return memcmp(this, &p, sizeof(p)) == 0;
-		}
-	};
-
 
 	struct rgba
 	{
@@ -97,28 +71,6 @@ namespace gameswf
 		}
 
 		void	print();
-	};
-
-
-	struct rect
-	{
-		float	m_x_min, m_x_max, m_y_min, m_y_max;
-
-		void	read(stream* in);
-		void	print() const;
-		bool	point_test(float x, float y) const;
-		void	expand_to_point(float x, float y);
-		float width() const { return m_x_max-m_x_min; }
-		float height() const { return m_y_max-m_y_min; }
-
-		point	get_corner(int i)
-		// Get one of the rect verts.
-		{
-			assert(i >= 0 && i < 4);
-			return point(
-				(i == 0 || i == 3) ? m_x_min : m_x_max,
-				(i < 2) ? m_y_min : m_y_max);
-		}
 	};
 
 
