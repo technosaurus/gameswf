@@ -23,7 +23,7 @@ OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
 
 
-GEOMETRY_LIB = geometry.$(LIB_EXT)
+GEOMETRY_LIB = $(LIB_PRE)geometry.$(LIB_EXT)
 
 all: $(GEOMETRY_LIB)
 

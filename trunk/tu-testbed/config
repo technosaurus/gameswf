@@ -97,7 +97,7 @@ ifeq ($(TU_TESTBED_COMPILER), gcc)
 
 # GCC
 CC := $(TU_TESTBED_COMPILER)
-AR := ar -r
+AR := ar -rcus
 LIB_OUT_FLAG :=
 LIB_PRE := lib
 LIB_EXT := a
@@ -193,8 +193,8 @@ endif
 	$(CC) -c $< $(CFLAGS)
 
 
-BASE_LIB := $(TOP)/base/base.$(LIB_EXT)
-GEOMETRY_LIB := $(TOP)/geometry/geometry.$(LIB_EXT)
+BASE_LIB := $(TOP)/base/$(LIB_PRE)base.$(LIB_EXT)
+GEOMETRY_LIB := $(TOP)/geometry/$(LIB_PRE)geometry.$(LIB_EXT)
 ENGINE_INCLUDE := -I$(TOP)
 
 # Local Variables:
