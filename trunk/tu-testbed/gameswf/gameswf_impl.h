@@ -36,6 +36,7 @@ namespace gameswf
 	struct movie_root;
 	struct sound_sample : virtual public ref_counted {};
 	struct stream;
+	struct swf_event;
 
 
 	// Extra internal interfaces added to movie_definition
@@ -94,6 +95,7 @@ namespace gameswf
 		virtual character*	add_display_object(
 			Uint16 character_id,
 			const char* name,
+			const array<swf_event*>& event_handlers,
 			Uint16 depth,
 			const cxform& color_transform,
 			const matrix& mat,

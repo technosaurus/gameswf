@@ -53,10 +53,7 @@ namespace gameswf
 	// Base class for actions.
 	struct action_buffer
 	{
-		array<unsigned char>	m_buffer;
-		array<const char*>	m_dictionary;
-
-		action_buffer() {}
+		action_buffer();
 		void	read(stream* in);
 		void	execute(as_environment* env);
 		void	execute(
@@ -80,6 +77,13 @@ namespace gameswf
 		// to new'd instances.
 		action_buffer(const action_buffer& a) { assert(0); }
 		void operator=(const action_buffer& a) { assert(0); }
+
+		void	process_decl_dict(int start_pc, int stop_pc);
+
+		// data:
+		array<unsigned char>	m_buffer;
+		array<const char*>	m_dictionary;
+		int	m_decl_dict_processed_at;
 	};
 
 
@@ -329,7 +333,7 @@ namespace gameswf
 	{
 		array<as_value>	m_stack;
 		movie*	m_target;
-		string_hash<as_value>	m_variables;
+		stringi_hash<as_value>	m_variables;
 
 		// For local vars.  Use empty names to separate frames.
 		struct frame_slot
@@ -399,7 +403,7 @@ namespace gameswf
 	// script-defined objects.
 	struct as_object : public as_object_interface
 	{
-		string_hash<as_value>	m_members;
+		stringi_hash<as_value>	m_members;
 
 		virtual const char*	get_text_value() const { return NULL; }
 

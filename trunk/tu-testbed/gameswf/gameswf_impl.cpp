@@ -7,6 +7,7 @@
 
 // Useful links:
 //
+// http://sswf.sourceforge.net/SWFalexref.html
 // http://www.openswf.org
 
 // @@ Need to break this file into pieces
@@ -316,8 +317,8 @@ namespace gameswf
 		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
 		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
-		string_hash<int>	m_named_frames;	// 0-based frame #'s
-		string_hash<smart_ptr<resource> >	m_exports;
+		stringi_hash<int>	m_named_frames;	// 0-based frame #'s
+		stringi_hash<smart_ptr<resource> >	m_exports;
 
 		// Items we import.
 		array<import_info>	m_imports;
@@ -450,7 +451,7 @@ namespace gameswf
 		// Calls back the visitor for each movie that we
 		// import symbols from.
 		{
-			string_hash<bool>	visited;	// ugh!
+			stringi_hash<bool>	visited;	// ugh!
 
 			for (int i = 0, n = m_imports.size(); i < n; i++)
 			{
@@ -1313,7 +1314,7 @@ namespace gameswf
 	//
 
 
-	static string_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
+	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
 
 	void	clear_library()
 	// Drop all library references to movie_definitions, so they
@@ -2129,6 +2130,7 @@ namespace gameswf
 			UNUSED(event_length);
 
 			// Read the actions.
+			IF_VERBOSE_ACTION(log_msg("---- actions for event %s\n", m_event.get_function_name().c_str()));
 			m_action_buffer.read(in);
 
 			if (m_action_buffer.get_length() != (int) event_length)
@@ -2340,17 +2342,12 @@ namespace gameswf
 				character*	ch = m->add_display_object(
 					m_character_id,
 					m_name,
+					m_event_handlers,
 					m_depth,
 					m_color_transform,
 					m_matrix,
 					m_ratio,
 					m_clip_depth);
-
-				// Add event handlers to ch.
-				if (ch)
-				{
-					attach_events(ch);
-				}
 
 				break;
 			}
@@ -2388,17 +2385,6 @@ namespace gameswf
 		{
 			execute(m);
 		}
-
-		void	attach_events(character* ch)
-		// Push our swf_event handlers into ch.
-		{
-			assert(ch);
-
-			for (int i = 0, n = m_event_handlers.size(); i < n; i++)
-			{
-				m_event_handlers[i]->attach_to(ch);
-			}
-		}
 	};
 
 
@@ -2434,7 +2420,7 @@ namespace gameswf
 	{
 		movie_definition_sub*	m_movie_def;		// parent movie.
 		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
-		string_hash<int>	m_named_frames;	// stores 0-based frame #'s
+		stringi_hash<int>	m_named_frames;	// stores 0-based frame #'s
 		int	m_frame_count;
 		int	m_loading_frame;
 
@@ -2742,6 +2728,8 @@ namespace gameswf
 			m_time_remainder += delta_time;
 			const float	frame_time = 1.0f / m_root->get_frame_rate();
 
+			bool	single_frame_movie = (m_def->get_frame_count() == 1);
+
 			// Check for the end of frame
 			if (m_time_remainder >= frame_time)
 			{
@@ -2758,9 +2746,15 @@ namespace gameswf
 				m_next_frame = m_current_frame + 1;
 
 				// Execute the current frame's tags.
-				if (m_play_state == PLAY) 
+				if (m_play_state == PLAY)
 				{
-					execute_frame_tags(m_current_frame);
+					// frame 1 tags don't seem to
+					// be re-executed in one-frame
+					// movies...
+					if (single_frame_movie == false)
+					{
+						execute_frame_tags(m_current_frame);
+					}
 
 					// Dispatch onEnterFrame event.
 					on_event(event_id::ENTER_FRAME);
@@ -2798,7 +2792,11 @@ namespace gameswf
 						// Avoid infinite loop on single frame sprites?
 						m_update_frame = true;
 					}*/
-					m_display_list.reset();
+
+					if (single_frame_movie == false)
+					{
+						m_display_list.reset();
+					}
 				}
 
 				// Check again for the end of frame
@@ -2953,6 +2951,7 @@ namespace gameswf
 		character*	add_display_object(
 			Uint16 character_id,
 			const char* name,
+			const array<swf_event*>& event_handlers,
 			Uint16 depth,
 			const cxform& color_transform,
 			const matrix& matrix,
@@ -2990,6 +2989,13 @@ namespace gameswf
 			{
 				ch->set_name(name);
 			}
+
+			// Attach event handlers (if any).
+			{for (int i = 0, n = event_handlers.size(); i < n; i++)
+			{
+				event_handlers[i]->attach_to(ch.get_ptr());
+			}}
+
 			m_display_list.add_display_object(ch.get_ptr(), depth, color_transform, matrix, ratio, clip_depth);
 
 			assert(ch == NULL || ch->get_ref_count() > 1);
@@ -3550,9 +3556,12 @@ namespace gameswf
 			character* ch = m_display_list.get_character_by_name(name);
 			if (ch)
 			{
+				array<swf_event*>	dummy_event_handlers;
+
 				add_display_object(
 					ch->get_id(),
 					newname.c_str(),
+					dummy_event_handlers,
 					depth,
 					ch->get_cxform(),
 					ch->get_matrix(),
