@@ -378,8 +378,8 @@ namespace gameswf
 		// ...
 		int	get_frame_count() const { return m_frame_count; }
 		float	get_frame_rate() const { return m_frame_rate; }
-		float	get_width() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.width())); }
-		float	get_height() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
+		float	get_width_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.width())); }
+		float	get_height_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
 
 		virtual int	get_version() const { return m_version; }
 
@@ -923,7 +923,7 @@ namespace gameswf
 		{
 			assert(m_def != NULL);
 
-			set_display_viewport(0, 0, (int) m_def->get_width(), (int) m_def->get_height());
+			set_display_viewport(0, 0, (int) m_def->get_width_pixels(), (int) m_def->get_height_pixels());
 		}
 
 		~movie_root()
@@ -2711,8 +2711,8 @@ namespace gameswf
 		}
 
 		// overloads from movie_definition
-		virtual float	get_width() const { return 1; }
-		virtual float	get_height() const { return 1; }
+		virtual float	get_width_pixels() const { return 1; }
+		virtual float	get_height_pixels() const { return 1; }
 		virtual int	get_frame_count() const { return m_frame_count; }
 		virtual float	get_frame_rate() const { return m_movie_def->get_frame_rate(); }
 		virtual int	get_loading_frame() const { return m_loading_frame; }
@@ -3769,7 +3769,7 @@ namespace gameswf
 			{
 				// @@ tulrich: is parameter in world-coords or local-coords?
 				matrix	m = get_matrix();
-				m.m_[0][0] = float(val.to_number()) / get_width();
+				m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number())) / get_width();
 				set_matrix(m);
 				m_accept_anim_moves = false;
 				return;
@@ -3778,7 +3778,7 @@ namespace gameswf
 			{
 				// @@ tulrich: is parameter in world-coords or local-coords?
 				matrix	m = get_matrix();
-				m.m_[1][1] = float(val.to_number()) / get_height();
+				m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number())) / get_height();
 				set_matrix(m);
 				m_accept_anim_moves = false;
 				return;
