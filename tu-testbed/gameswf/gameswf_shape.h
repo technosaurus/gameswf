@@ -145,6 +145,10 @@ namespace gameswf
 		virtual void	display(character* inst);
 		bool	point_test_local(float x, float y);
 
+//vb
+		float	get_height_local();
+		float	get_width_local();
+
 		void	read(stream* in, int tag_type, bool with_style, movie_definition_sub* m);
 		void	display(
 			const matrix& mat,
@@ -159,13 +163,25 @@ namespace gameswf
 		void	output_cached_data(tu_file* out, const movie_definition::cache_options& options);
 		void	input_cached_data(tu_file* in);
 
+		const array<fill_style>&	get_fill_styles() const { return m_fill_styles; }
+		const array<line_style>&	get_line_styles() const { return m_line_styles; }
+		const array<path>&	get_paths() const { return m_paths; }
+
+		// morph uses this
+		void	set_bound(const rect& r) { m_bound = r; /* should do some verifying */ }
+
+	protected:
+		friend struct morph2_character_def;
+
+		// derived morph classes changes these
+		array<fill_style>	m_fill_styles;
+		array<line_style>	m_line_styles;
+		array<path>	m_paths;
+
 	private:
 		void	sort_and_clean_meshes() const;
 		
 		rect	m_bound;
-		array<fill_style>	m_fill_styles;
-		array<line_style>	m_line_styles;
-		array<path>	m_paths;
 
 		// Cached pre-tesselated meshes.
 		mutable array<mesh_set*>	m_cached_meshes;

@@ -34,10 +34,14 @@ namespace gameswf
 	struct execute_tag;
 	struct font;
 	struct movie_root;
-	struct sound_sample : virtual public ref_counted {};
+	struct sound_sample : public resource //virtual public ref_counted
+	{
+		virtual sound_sample*	cast_to_sound_sample() { return this; }
+	};
 	struct stream;
 	struct swf_event;
 
+	void save_extern_movie(const movie_interface* m);
 
 	// Extra internal interfaces added to movie_definition
 	struct movie_definition_sub : public movie_definition
@@ -74,10 +78,15 @@ namespace gameswf
 	// For internal use.
 	movie_definition_sub*	create_movie_sub(const char* filename);
 	movie_definition_sub*	create_library_movie_sub(const char* filename);
+	movie_interface*	create_library_movie_inst_sub(movie_definition_sub* md);
 
 
 	struct movie : public movie_interface, public as_object_interface
 	{
+	
+		virtual void set_extern_movie(movie_interface* m) { }
+		virtual movie_interface*	get_extern_movie() { return NULL; }
+
 		virtual movie_definition*	get_movie_definition() { return NULL; }
 		virtual movie_root*	get_root() { return NULL; }
 		virtual movie_interface*	get_root_interface() { return NULL; }
@@ -130,9 +139,21 @@ namespace gameswf
 		{
 		}
 
-		virtual void	remove_display_object(Uint16 depth)
+		virtual void	replace_display_object(
+			character* ch,
+			const char* name,
+
+			Uint16 depth,
+			bool use_cxform,
+			const cxform& color_transform,
+			bool use_matrix,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth)
 		{
 		}
+
+		virtual void	remove_display_object(Uint16 depth)	{}
 
 		virtual void	set_background_color(const rgba& color) {}
 		virtual void	set_background_alpha(float alpha) {}
@@ -262,6 +283,8 @@ namespace gameswf
 
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
+		virtual float	get_height_local() { return 0.0f; }
+		virtual float	get_width_local() { return 0.0f; }
 
 		virtual smart_ptr<character>	create_character_instance(movie* parent, int id);	// default is to make a generic_character
 
@@ -340,6 +363,7 @@ namespace gameswf
 		// Accessors for basic display info.
 		int	get_id() const { return m_id; }
 		movie*	get_parent() const { return m_parent; }
+		void set_parent(movie* parent) { m_parent = parent; }  // for extern movie
 		int	get_depth() const { return m_depth; }
 		void	set_depth(int d) { m_depth = d; }
 		const matrix&	get_matrix() const { return m_matrix; }
@@ -403,6 +427,8 @@ namespace gameswf
 		// Movie interfaces.  By default do nothing.  sprite_instance and some others override these.
 		virtual void	display() {}
 		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
+		virtual float	get_height() { return 0; }
+		virtual float	get_width() { return 0; }
 
 		virtual movie*	get_root_movie() { return m_parent->get_root_movie(); }
 		virtual int	get_current_frame() const { assert(0); return 0; }
@@ -447,6 +473,23 @@ namespace gameswf
 
 			return m_def->point_test_local(p.m_x, p.m_y);
 		}
+
+//vb
+		virtual float	get_height()
+		{
+			matrix	m = get_world_matrix();
+			float	h = m_def->get_height_local() * m.m_[1][1];
+			return TWIPS_TO_PIXELS(h);
+		}
+
+		virtual float	get_width()
+		{
+			matrix	m = get_world_matrix();
+			float	w = m_def->get_width_local() * m.m_[0][0];
+			return TWIPS_TO_PIXELS(w);
+		}
+//ve
+		
 	};
 
 
@@ -507,6 +550,7 @@ namespace gameswf
 	void	define_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	start_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	button_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	do_init_action_loader(stream* in, int tag_type, movie_definition_sub* m);    //v
 	// sound_stream_loader();	// head, head2, block
 
 

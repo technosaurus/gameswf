@@ -122,8 +122,8 @@ namespace gameswf
 	//
 	struct movie_definition : virtual public ref_counted
 	{
-		virtual int	get_width() const = 0;
-		virtual int	get_height() const = 0;
+		virtual float	get_width() const = 0;
+		virtual float	get_height() const = 0;
 		virtual int	get_frame_count() const = 0;
 		virtual float	get_frame_rate() const = 0;
 
@@ -555,6 +555,7 @@ namespace gameswf
 		void	concatenate(const matrix& m);
 		void	concatenate_translation(float tx, float ty);
 		void	concatenate_scale(float s);
+		void	set_lerp(const matrix& m1, const matrix& m2, float t);
 		void	read(stream* in);
 		void	print() const;
 		void	transform(point* result, const point& p) const;
@@ -608,6 +609,10 @@ namespace gameswf
 		float	height() const { return m_y_max-m_y_min; }
 
 		point	get_corner(int i) const;
+
+		void	enclose_transformed_rect(const matrix& m, const rect& r);
+
+		void	set_lerp(const rect& a, const rect& b, float t);
 	};
 
 

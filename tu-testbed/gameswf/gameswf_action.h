@@ -535,6 +535,9 @@ namespace gameswf
 		const tu_string&	get_function_name() const;
 	};
 
+//v
+	void register_as_object(const char* object_name, as_c_function_ptr handler);
+
 
 }	// end namespace gameswf
 

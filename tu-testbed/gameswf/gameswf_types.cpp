@@ -91,6 +91,17 @@ namespace gameswf
 	}
 
 
+	void	matrix::set_lerp(const matrix& m1, const matrix& m2, float t)
+	// Set this matrix to a blend of m1 and m2, parameterized by t.
+	{
+		m_[0][0] = flerp(m1.m_[0][0], m2.m_[0][0], t);
+		m_[1][0] = flerp(m1.m_[1][0], m2.m_[1][0], t);
+		m_[0][1] = flerp(m1.m_[0][1], m2.m_[0][1], t);
+		m_[1][1] = flerp(m1.m_[1][1], m2.m_[1][1], t);
+		m_[0][2] = flerp(m1.m_[0][2], m2.m_[0][2], t);
+		m_[1][2] = flerp(m1.m_[1][2], m2.m_[1][2], t);
+	}
+
 	void	matrix::read(stream* in)
 	// Initialize from the stream.
 	{
@@ -433,6 +444,37 @@ namespace gameswf
 			(i == 0 || i == 3) ? m_x_min : m_x_max,
 			(i < 2) ? m_y_min : m_y_max);
 	}
+
+
+	void	rect::enclose_transformed_rect(const matrix& m, const rect& r)
+	// Set ourself to bound a rectangle that has been transformed
+	// by m.  This is an axial bound of an oriented (and/or
+	// sheared, scaled, etc) box.
+	{
+		// Get the transformed bounding box.
+		point	p0, p1, p2, p3;
+		m.transform(&p0, r.get_corner(0));
+		m.transform(&p1, r.get_corner(1));
+		m.transform(&p2, r.get_corner(2));
+		m.transform(&p3, r.get_corner(3));
+
+		m_x_min = m_x_max = p0.m_x;
+		m_y_min = m_y_max = p0.m_y;
+		expand_to_point(p1.m_x, p1.m_y);
+		expand_to_point(p2.m_x, p2.m_y);
+		expand_to_point(p3.m_x, p3.m_y);
+	}
+
+
+	void	rect::set_lerp(const rect& a, const rect& b, float t)
+	// Set this to the lerp of a and b.
+	{
+		m_x_min = flerp(a.m_x_min, b.m_x_min, t);
+		m_y_min = flerp(a.m_y_min, b.m_y_min, t);
+		m_x_max = flerp(a.m_x_max, b.m_x_max, t);
+		m_y_max = flerp(a.m_y_max, b.m_y_max, t);
+	}
+
 
 };	// end namespace gameswf
 

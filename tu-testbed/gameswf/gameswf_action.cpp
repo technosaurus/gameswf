@@ -11,6 +11,7 @@
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
 #include "base/tu_random.h"
+#include "gameswf_sound.h"	//v
 
 #include <stdio.h>
 
@@ -74,9 +75,86 @@ namespace gameswf
 	// Statics.
 	bool	s_inited = false;
 	stringi_hash<as_value>	s_built_ins;
+	stringi_hash<as_c_function_ptr>	s_objects_interface;		//v
 
 	fscommand_callback	s_fscommand_handler = NULL;
 
+//vb
+	void register_as_object(const char* object_name, as_c_function_ptr handler)
+	{
+		s_objects_interface.add(object_name, handler);
+	}
+
+#ifdef EXTERN_MOVIE
+	void attach_extern_movie(const char* url, const movie* target, const movie* root_movie)
+	{
+		tu_string infile = get_workdir();
+		infile = infile + url;
+
+		movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
+		if (md == NULL)
+		{
+			log_error("can't create movie_definition_sub for %s\n", infile.c_str());
+			return;
+		}
+
+		gameswf::movie_interface* extern_movie;
+
+		if (target == root_movie)
+		{
+			extern_movie = create_library_movie_inst_sub(md);
+			if (extern_movie == NULL)
+			{
+				log_error("can't create extern root movie_interface for %s\n", infile.c_str());
+				return;
+			}
+			set_current_root(extern_movie);
+		}
+		else
+		{
+			extern_movie = md->create_instance();
+			if (extern_movie == NULL)
+			{
+				log_error("can't create extern movie_interface for %s\n", infile.c_str());
+				return;
+			}
+      
+			save_extern_movie(extern_movie);
+      
+			character* tar = (character*)target;
+			const char* name = tar->get_name();
+			Uint16 depth = tar->get_depth();
+			bool use_cxform = false;
+			cxform color_transform =  tar->get_cxform();
+			bool use_matrix = false;
+			matrix mat = tar->get_matrix();
+			float ratio = tar->get_ratio();
+			Uint16 clip_depth = tar->get_clip_depth();
+
+			movie* parent = tar->get_parent();
+			movie* new_movie = extern_movie->get_root_movie();
+
+			new_movie->on_event_load();
+
+//			extern_movie->set_display_viewport(0, 0, 100, 100);
+
+			assert(parent != NULL);
+
+       ((character*)new_movie)->set_parent(parent);
+       
+			parent->replace_display_object(
+				(character*) new_movie,
+				name,
+				depth,
+				use_cxform,
+				color_transform,
+				use_matrix,
+				mat,
+				ratio,
+				clip_depth);
+		}
+	}
+#endif // EXTERN_MOVIE
 
 	void	register_fscommand_callback(fscommand_callback handler)
 	// External interface.
@@ -288,6 +366,96 @@ namespace gameswf
 		return call_method_parsed(env, this_ptr, utf8_method_call.c_str());
 	}
 
+	//
+	// array object	//v
+	//
+
+
+	struct array_as_object : public as_object
+	{
+	};
+
+	void	array_not_impl(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		printf("array methods not implemented yet\n");
+	}
+
+	//
+	// sound object	//v
+	//
+
+	struct sound_as_object : public as_object
+	{
+		tu_string sound;
+		int sound_id;
+	};
+
+	void	sound_start(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		IF_VERBOSE_ACTION(log_msg("-- start sound \n"));
+		sound_handler* s = get_sound_handler();
+		if (s != NULL)
+		{
+			sound_as_object*	so = (sound_as_object*) (as_object*) this_ptr;
+			assert(so);
+			s->play_sound(so->sound_id, 1);
+		}
+	}
+
+
+	void	sound_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		IF_VERBOSE_ACTION(log_msg("-- stop sound \n"));
+		sound_handler* s = get_sound_handler();
+		if (s != NULL)
+		{
+			sound_as_object*	so = (sound_as_object*) (as_object*) this_ptr;
+			assert(so);
+			s->stop_sound(so->sound_id);
+		}
+	}
+
+	void	sound_attach(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		IF_VERBOSE_ACTION(log_msg("-- attach sound \n"));
+		if (nargs < 1)
+		{
+			log_error("attach sound needs one argument\n");
+			return;
+		}
+
+		sound_as_object*	so = (sound_as_object*) (as_object*) this_ptr;
+		assert(so);
+
+		so->sound = env->bottom(first_arg).to_tu_string();
+
+		// check the import.
+		movie_definition_sub*	def = (movie_definition_sub*) env->get_target()->get_root_movie()->get_movie_definition();
+		assert(def);
+		smart_ptr<resource> res = def->get_exported_resource(so->sound);
+    if (res == NULL)
+		{
+			log_error("import error: resource '%s' is not exported\n", so->sound.c_str());
+      return;  
+		}
+
+		int si = 0;
+    sound_sample_impl* ss = (sound_sample_impl*) res->cast_to_sound_sample();
+
+    if (ss != NULL)
+		{
+			si = ss->m_sound_handler_id;
+		}
+    else
+		{
+			log_error("sound sample is NULL\n");
+      return;
+		}
+
+    // sanity check
+    assert( si>=0 && si< 1000);
+		so->sound_id = si;
+	}
 
 	//
 	// Built-in objects
@@ -372,7 +540,8 @@ namespace gameswf
 		math_obj->set_member("floor", &math_floor);
 		math_obj->set_member("log", &math_log);
 		math_obj->set_member("random", &math_random);
-		math_obj->set_member("round", &math_log);
+//v
+    math_obj->set_member("round", &math_round);
 		math_obj->set_member("sin", &math_sin);
 		math_obj->set_member("sqrt", &math_sqrt);
 		math_obj->set_member("tan", &math_tan);
@@ -464,7 +633,17 @@ namespace gameswf
 			m_keymap[byte_index] &= ~mask;
 
 			// Notify listeners.
-			// @@ TODO need to figure out what environment to use...
+			for (int i = 0, n = m_listeners.size(); i < n; i++)
+			{
+				smart_ptr<as_object_interface>	listener = m_listeners[i];
+
+				as_value	method;
+				if (listener != NULL
+				    && listener->get_member(event_id(event_id::KEY_UP).get_function_name(), &method))
+				{
+					call_method(method, NULL /* or root? */, listener.get_ptr(), 0, 0);
+				}
+			}
 		}
 
 		void	cleanup_listeners()
@@ -1216,6 +1395,8 @@ namespace gameswf
 				{
 					as_value	varname = env->pop();
 					env->push(env->get_variable(varname.to_tu_string(), with_stack));
+					IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s \n", varname.to_tu_string().c_str(), env->top(0).to_tu_string().c_str()));
+
 					break;
 				}
 				case 0x1D:	// set variable
@@ -1227,6 +1408,7 @@ namespace gameswf
 				case 0x20:	// set target expression
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x21:	// string concat
@@ -1344,6 +1526,7 @@ namespace gameswf
 				case 0x31:	// mb length
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x32:	// ord
@@ -1369,20 +1552,30 @@ namespace gameswf
 				case 0x35:	// mb substring
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
+					break;
 				}
 				case 0x37:	// mb chr
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x3A:	// delete
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
-				case 0x3B:	// delete all
+				case 0x3B:	// delete2
 				{
-					// @@ TODO
+					// @@ tulrich: delete is scary here!  Do we actually just want to 
+					// NULL out the object pointer in the environment (to drop the ref)?
+					// Should at least check the ref count before deleting anything!!!
+//					as_value	obj_name = env->pop();
+					as_value obj_ptr = env->get_variable_raw(env->top(0).to_tu_string(), with_stack);
+					delete obj_ptr.to_object();
+//  				printf("%08X\n", obj_ptr.to_object());
 					break;
 				}
 
@@ -1438,12 +1631,65 @@ namespace gameswf
 				}
 				case 0x3F:	// modulo
 				{
-					// @@ TODO
+					as_value	result;
+					double	y = env->pop().to_number();
+					double	x = env->pop().to_number();
+					if (y != 0)
+					{
+//						env->top(1).set(fmod(env->top(1).to_bool() && env->top(0).to_bool());
+//						env->drop(1);
+						result = fmod(x, y);
+					}
+//					printf("modulo x=%f, y=%f, z=%f\n",x,y,result.to_number());
+					env->push(result);
 					break;
 				}
 				case 0x40:	// new
 				{
-					// @@ TODO
+					as_value	objname = env->pop();
+//					printf("---new object: %s\n", objname.to_tu_string().c_str());
+					int	nargs = (int) env->pop().to_number();
+//					printf("---new nargs: %d\n", nargs);
+
+					as_c_function_ptr handler;
+					as_value new_obj;
+					if (s_objects_interface.get(objname.to_tu_string(), &handler))
+					{
+						// create new object and set members
+						(*handler)(&new_obj, NULL, env, nargs, env->get_top_index());
+					}
+					else
+					{
+						if (objname.to_tu_string()=="Sound")
+						{
+							as_object*	sound_obj = new sound_as_object;
+
+							// methods
+							sound_obj->set_member("attachSound", &sound_attach);
+							sound_obj->set_member("start", &sound_start);
+							sound_obj->set_member("stop", &sound_stop);
+							new_obj = sound_obj;
+						}
+						else
+						if (objname.to_tu_string()=="Object")
+						{
+							new_obj = as_value(env->get_target()->get_root_movie());
+						}
+						else
+							if (objname.to_tu_string()=="Array")
+							{
+								as_object*	ao = new array_as_object;
+								new_obj = ao;
+							}
+							else
+							{
+								log_error("can't create unregistered object '%s'\n", objname.to_tu_string().c_str());
+							}
+					}
+
+					env->drop(nargs);
+					env->push(new_obj);
+//  				printf("%08X\n", new_obj.to_object());
 					break;
 				}
 				case 0x41:	// declare local
@@ -1453,29 +1699,64 @@ namespace gameswf
 					env->drop(1);
 					break;
 				}
-				case 0x42:	// declare array
+				case 0x42:	// init array
 				{
-					// @@ TODO
+					array_as_object*	ao = new array_as_object;
+//					ao->set_member("length", &array_not_impl);
+//					ao->set_member("join", &array_not_impl);
+//					ao->set_member("concat", &array_not_impl);
+//					ao->set_member("slice", &array_not_impl);
+//					ao->set_member("push", &array_not_impl);
+//					ao->set_member("unshift", &array_not_impl);
+//					ao->set_member("pop", &array_not_impl);
+//					ao->set_member("shift", &array_not_impl);
+//					ao->set_member("splice", &array_not_impl);
+//					ao->set_member("sort", &array_not_impl);
+//					ao->set_member("sortOn", &array_not_impl);
+//					ao->set_member("reverse", &array_not_impl);
+//					ao->set_member("toString", &array_not_impl);
+
+					int	array_size = (int) env->pop().to_number();
+//					printf("\n---init_array size: %d\n", array_size);
+					if (array_size > 0)
+					{
+						char s[20];
+						for (int i=0; i < array_size; i++)
+//						for (int i=array_size-1; i >= 0; i--)
+						{
+							sprintf(s,"%d",i);
+							ao->set_member(s, env->pop());
+//							as_value x;
+//							ao->get_member(s, &x);
+//							printf("---init_array args: %s\n", x.to_tu_string().c_str());
+						}
+					}
+					as_value new_array = ao;
+					env->push(new_array);
 					break;
 				}
 				case 0x43:	// declare object
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x44:	// type of
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x45:	// get target
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x46:	// enumerate
 				{
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 				case 0x47:	// add (typed)
@@ -1584,10 +1865,11 @@ namespace gameswf
 					as_object_interface*	obj = env->top(1).to_object();
 					int	nargs = (int) env->top(2).to_number();
 					as_value	result;
+//v
+					const tu_string&	method_name = env->top(0).to_tu_string();
 					if (obj)
 					{
 						as_value	method;
-						const tu_string&	method_name = env->top(0).to_tu_string();
 						if (obj->get_member(method_name, &method))
 						{
 							if (method.get_type() != as_value::C_FUNCTION
@@ -1626,7 +1908,8 @@ namespace gameswf
 					}
 					else
 					{
-						log_error("error: call_method op on invalid object.\n");
+//v
+						log_error("error: call_method '%s'op on invalid object.\n", method_name.c_str());
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;
@@ -1634,12 +1917,15 @@ namespace gameswf
 				}
 				case 0x53:	// new method
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				case 0x54:	// instance of
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				case 0x55:	// enumerate object
 					// @@ TODO
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				case 0x60:	// bitwise and
 					env->top(1) &= env->top(0);
@@ -1739,7 +2025,24 @@ namespace gameswf
 							(*s_fscommand_handler)(env->get_target()->get_root_interface(), url + 10, target);
 						}
 					}
-					// else just ignore this.  Maybe log it?
+					else
+					{
+#ifdef EXTERN_MOVIE
+//						printf("get url: target=%s, url=%s\n", target, url);
+            
+						tu_string tu_target = target;
+						movie* target_movie = env->find_target(tu_target);
+						if (target_movie != NULL)
+						{
+							movie*	root_movie = env->get_target()->get_root_movie();
+							attach_extern_movie(url, target_movie, root_movie);
+						}
+						else
+						{
+							log_error("get url: target %s not found\n", target);
+						}
+#endif // EXTERN_MOVIE
+					}
 
 					break;
 				}
@@ -1779,6 +2082,7 @@ namespace gameswf
 				case 0x8A:	// wait for frame
 				{
 					// @@ TODO I think this has to deal with incremental loading
+					printf("todo opcode: %02X\n", action_id);
 					break;
 				}
 
@@ -1991,11 +2295,24 @@ namespace gameswf
 							(*s_fscommand_handler)(env->get_target()->get_root_interface(), url + 10, target);
 						}
 					}
-					// else nothing.  Maybe log it?
+					else
+					{
+#ifdef EXTERN_MOVIE
+//            printf("get url2: target=%s, url=%s\n", target, url);
 
-					// Drop the args.
+						movie* target_movie = env->find_target(env->top(0));
+						if (target_movie != NULL)
+						{
+							movie*	root_movie = env->get_target()->get_root_movie();
+							attach_extern_movie(url, target_movie, root_movie);
+						}
+						else
+						{
+							log_error("get url2: target %s not found\n", target);
+						}
+#endif // EXTERN_MOVIE
+					}
 					env->drop(2);
-
 					break;
 				}
 
@@ -2774,16 +3091,17 @@ namespace gameswf
 	{
 		static tu_string	s_function_names[EVENT_COUNT] =
 		{
-			"",		// INVALID
-			"",		// PRESS
-			"",		// RELEASE
-			"",		// RELEASE_OUTSIDE
-			"", 		// ROLL_OVER
-			"",		// ROLL_OUT
-			"",		// DRAG_OVER
-			"",		// DRAG_OUT
-			"",		// KEY_PRESS
-			"",		// INITIALIZE
+			"INVALID",		// INVALID
+			"onPress",		// PRESS
+			"onRelease",		// RELEASE
+			"onRelease_Outside",		// RELEASE_OUTSIDE
+			"onRoll_Over", 		// ROLL_OVER
+			"onRoll_Out",		// ROLL_OUT
+			"onDrag_Over",		// DRAG_OVER
+			"onDrag_Out",		// DRAG_OUT
+			"onKeyPress",		// KEY_PRESS
+			"onInitialize",		// INITIALIZE
+
 			"onLoad",	// LOAD
 			"onUnload",	// UNLOAD
 			"onEnterFrame",	// ENTER_FRAME

@@ -108,7 +108,7 @@ struct pcm_buff_t {
 // there's quite some (useless) copying around since there's no infrastructure for streaming and we need to decode it all at once
 void 
 convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const int sample_count, const int sample_size, const int sample_rate, const bool stereo) {
-	printf("convert_mp3_data sample count %d rate %d stereo %s\n", sample_count, sample_rate, stereo?"yes":"no");
+	log_msg("convert_mp3_data sample count %d rate %d stereo %s\n", sample_count, sample_rate, stereo?"yes":"no");
 
 	mad_stream	stream;
 	mad_frame	frame;
@@ -144,10 +144,14 @@ convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const i
 			}
 		}
 
-		if (fc == 0) { // verbose
-			char buf[1024];
-			mad_helpers::parse_frame_info(buf, sizeof(buf), &frame.header);
-			printf("%s\n",buf);
+		if (fc == 0)
+		{
+			// verbose
+			IF_VERBOSE_PARSE(
+				char buf[1024];
+				mad_helpers::parse_frame_info(buf, sizeof(buf), &frame.header);
+				printf("%s\n",buf);
+				);
 		}
 
 		++fc;
@@ -161,7 +165,7 @@ convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const i
 
 	if (total == 0) goto cleanup; // yay
 
-	printf("decoded frames %d bytes %d(diff %d) -- original rate %d\n\n", fc, total, total - sample_count, sample_rate);
+	IF_VERBOSE_PARSE(log_msg("decoded frames %d bytes %d(diff %d) -- original rate %d\n\n", fc, total, total - sample_count, sample_rate));
 
 	// assemble together all decoded frames. another round of memcpy.
 	{

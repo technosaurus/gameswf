@@ -288,6 +288,20 @@ namespace gameswf
 		
 		// Set the display properties.
 		di.m_ref = true;
+
+		//vb
+/*
+		di.set_character(NULL);
+		movie_interface* old_root = old_ch.get_ptr()->get_root_interface();
+		movie_interface* new_root = ch->get_root_interface();
+		if (new_root != old_root && old_root != get_current_root())
+		{
+			old_root->drop_ref();
+//			printf("extern movie deleted\n");
+		}
+*/    
+		//ve
+		
 		di.set_character(ch);
 
 		if (use_cxform)
@@ -398,9 +412,14 @@ namespace gameswf
 	void	display_list::advance(float delta_time)
 	// advance referenced characters.
 	{
-		int i, n = m_display_object_array.size();
-		for (i = 0; i < n; i++)
+		int n = m_display_object_array.size();
+		for (int i = 0; i < n; i++)
 		{
+			// @@@@ TODO FIX: If array changes size due to
+			// character actions, the iteration may not be
+			// correct!
+			assert(n == m_display_object_array.size());
+
 			display_object_info & dobj = m_display_object_array[i];
 			
 			if (dobj.m_ref == true)
