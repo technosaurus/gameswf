@@ -22,6 +22,7 @@ OBJS := \
 	config.$(OBJ_EXT)	\
 	geometry.$(OBJ_EXT) \
 	cull.$(OBJ_EXT)	\
+	bsp.$(OBJ_EXT)	\
 	ogl.$(OBJ_EXT)
 
 
