@@ -73,7 +73,7 @@ private:
 };
 
 
-inline	compute_hash(const char* data, int size)
+inline int	compute_hash(const char* data, int size)
 // Computes a hash of the given buffer.
 {
 	int	h = 0;
