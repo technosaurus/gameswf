@@ -1861,7 +1861,7 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 			       s_chunks_with_texture,
 			       s_textures_bound,
 			       estimated_texture_bytes);
-			dlmalloc_stats();
+//			dlmalloc_stats();
 		}
 	}
 
