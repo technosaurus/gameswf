@@ -128,6 +128,7 @@ endif # GCC
 
 
 BASE_LIB := $(TOP)/base/base.$(LIB_EXT)
+GEOMETRY_LIB := $(TOP)/geometry/geometry.$(LIB_EXT)
 ENGINE_INCLUDE := -I$(TOP)
 
 # Local Variables:

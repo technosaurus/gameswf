@@ -10,8 +10,8 @@
 #define KD_TREE_PACKED_H
 
 
-#include "engine/container.h"
-#include "engine/geometry.h"
+#include "base/container.h"
+#include "geometry/geometry.h"
 
 
 class tu_file;

@@ -10,9 +10,9 @@
 #define KD_TREE_DYNAMIC_H
 
 
-#include "engine/container.h"
-#include "engine/geometry.h"
-#include "engine/axial_box.h"
+#include "base/container.h"
+#include "geometry/geometry.h"
+#include "geometry/axial_box.h"
 
 
 class tu_file;

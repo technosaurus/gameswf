@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <engine/utility.h>
-#include <engine/bsp.h>
+#include "base/utility.h"
+#include "geometry/bsp.h"
 
 
 const bool	print_debug = 0;

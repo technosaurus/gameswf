@@ -10,7 +10,7 @@
 #define SPATIAL_CONTAINER_H
 
 
-#include <engine/geometry.h>
+#include "geometry/geometry.h"
 
 
 // sp_tag is used as a link node for the spatial_container.

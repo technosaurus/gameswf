@@ -18,11 +18,11 @@ extern "C" {
 #include <jpeglib.h>
 }
 
-#include "engine/utility.h"
-#include "engine/container.h"
-#include "engine/geometry.h"
-#include "engine/jpeg.h"
-#include "engine/tu_file.h"
+#include "base/utility.h"
+#include "base/container.h"
+#include "base/jpeg.h"
+#include "base/tu_file.h"
+#include "geometry/geometry.h"
 
 #include "bt_array.h"
 

@@ -6,10 +6,10 @@
 // Texture quadtree utility class.
 
 
-#include "engine/ogl.h"
-#include "engine/tqt.h"
-#include "engine/image.h"
-#include "engine/tu_file.h"
+//#include "base/ogl.h"
+#include "geometry/tqt.h"
+#include "base/image.h"
+#include "base/tu_file.h"
 
 
 static const int	TQT_VERSION = 1;

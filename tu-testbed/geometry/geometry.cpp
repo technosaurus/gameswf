@@ -5,8 +5,8 @@
 
 #include <math.h>
 #include <float.h>
-#include "engine/geometry.h"
-#include "engine/tu_file.h"
+#include "geometry/geometry.h"
+#include "base/tu_file.h"
 
 
 const vec3	vec3::zero(0, 0, 0);

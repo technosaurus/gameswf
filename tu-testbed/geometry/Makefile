@@ -18,7 +18,6 @@ SRCS := \
 	geometry.cpp		\
 	kd_tree_dynamic.cpp	\
 	kd_tree_packed.cpp	\
-	loose_octree.cpp	\
 	tqt.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))

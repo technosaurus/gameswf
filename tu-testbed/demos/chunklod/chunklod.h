@@ -6,9 +6,9 @@
 #define CHUNKLOD_H
 
 
-#include "engine/geometry.h"
-#include "engine/view_state.h"
-#include "engine/container.h"
+#include "base/container.h"
+#include "geometry/geometry.h"
+#include "geometry/view_state.h"
 
 class tqt;
 struct lod_chunk;

@@ -16,10 +16,10 @@ extern "C" {
 #include <jpeglib.h>
 }
 
-#include "engine/container.h"
-#include "engine/jpeg.h"
-#include "engine/tu_file.h"
-#include "engine/utility.h"
+#include "base/container.h"
+#include "base/jpeg.h"
+#include "base/tu_file.h"
+#include "base/utility.h"
 
 
 void	decimate(tu_file* out, tu_file* in, int factor);
