@@ -102,20 +102,68 @@ static int std_close_func(void *appdata)
 
 struct membuf
 {
-	array<unsigned char>	m_data;
+	int	m_size;
+	unsigned char*	m_data;
+//	array<unsigned char>	m_data;
 	int	m_position;
+	bool	m_read_only;
 
 	membuf()
 		:
-		m_position(0)
+		m_position(0),
+		m_size(0),
+		m_data(0),
+		m_read_only(false)
 	{
+	}
+
+	membuf(int size, void* data)
+		:
+		m_position(0),
+		m_size(size),
+		m_data((unsigned char*) data),
+		m_read_only(true)
+	{
+	}
+
+	~membuf()
+	{
+		if (m_read_only == false
+		    && m_data)
+		{
+			tu_free(m_data, m_size);
+		}
+	}
+
+	bool	resize(int new_size)
+	// Return false if we couldn't resize.
+	{
+		if (m_read_only) return false;
+
+		unsigned char* new_data = (unsigned char*) tu_realloc(m_data, new_size, m_size);
+		if (new_size > 0 && new_data == NULL)
+		{
+			// Can't alloc.
+			return false;
+		}
+
+		m_data = new_data;
+		m_size = new_size;
+
+		// Hm, does this make sense?
+		if (m_position > m_size)
+		{
+			m_position = m_size;
+		}
+
+		return true;
 	}
 
 	bool	is_valid()
 	{
 		return
 			m_position >= 0
-			&& m_position <= m_data.size();
+			&& m_position <= m_size;
 	}
 
 	unsigned char*	get_cursor() { return &(m_data[m_position]); }
@@ -132,7 +180,7 @@ static int mem_read_func(void* dst, int bytes, void* appdata)
 	membuf*	buf = (membuf*) appdata;
 	assert(buf->is_valid());
 
-	int	bytes_to_read = imin(bytes, buf->m_data.size() - buf->m_position);
+	int	bytes_to_read = imin(bytes, buf->m_size - buf->m_position);
 	if (bytes_to_read)
 	{
 		memcpy(dst, buf->get_cursor(), bytes_to_read);
@@ -153,10 +201,14 @@ static int mem_write_func(const void* src, int bytes, void* appdata)
 	assert(buf->is_valid());
 
 	// Expand buffer if necessary.
-	int	bytes_to_expand = imax(0, buf->m_position + bytes - buf->m_data.size());
+	int	bytes_to_expand = imax(0, buf->m_position + bytes - buf->m_size);
 	if (bytes_to_expand)
 	{
-		buf->m_data.resize(buf->m_data.size() + bytes_to_expand);
+		if (buf->resize(buf->m_size + bytes_to_expand) == false)
+		{
+			// Couldn't expand!
+			return 0;
+		}
 	}
 
 	memcpy(buf->get_cursor(), src, bytes);
@@ -180,9 +232,9 @@ static int mem_seek_func(int pos, void *appdata)
 		return TU_FILE_SEEK_ERROR;
 	}
 
-	if (pos > buf->m_data.size())
+	if (pos > buf->m_size)
 	{
-		buf->m_position = buf->m_data.size();
+		buf->m_position = buf->m_size;
 		return TU_FILE_SEEK_ERROR;
 	}
 
@@ -198,7 +250,7 @@ static int mem_seek_to_end_func(void* appdata)
 	membuf*	buf = (membuf*) appdata;
 	assert(buf->is_valid());
 
-	buf->m_position = buf->m_data.size();
+	buf->m_position = buf->m_size;
 	return 0;
 }
 
@@ -221,7 +273,7 @@ static bool	mem_get_eof_func(void* appdata)
 	membuf*	buf = (membuf*) appdata;
 	assert(buf->is_valid());
 
-	return buf->m_position >= buf->m_data.size();
+	return buf->m_position >= buf->m_size;
 }
 
 static int mem_close_func(void* appdata)
@@ -314,6 +366,22 @@ tu_file::tu_file(memory_buffer_enum m)
 // Create a read/write memory buffer.
 {
 	m_data = new membuf;
+
+	m_read = mem_read_func;
+	m_write = mem_write_func;
+	m_seek = mem_seek_func;
+	m_seek_to_end = mem_seek_to_end_func;
+	m_tell = mem_tell_func;
+	m_get_eof = mem_get_eof_func;
+	m_close = mem_close_func;
+	m_error = TU_FILE_NO_ERROR;
+}
+
+
+tu_file::tu_file(memory_buffer_enum m, int size, void* data)
+// Create a read-only memory buffer, using the given data.
+{
+	m_data = new membuf(size, data);
 
 	m_read = mem_read_func;
 	m_write = mem_write_func;
