@@ -23,7 +23,7 @@
 
 
 
-postscript::postscript(tu_file* out, const char* title)
+postscript::postscript(tu_file* out, const char* title, bool encapsulated)
 	:
 	m_out(out),
 	m_page(0),
@@ -31,7 +31,7 @@ postscript::postscript(tu_file* out, const char* title)
 	m_x1(0),
 	m_y0(1000),
 	m_y1(0),
-	m_empty(true)
+	m_empty(true)	
 // Initialize the file & this struct, etc.
 {
 	assert(m_out != NULL);
@@ -40,10 +40,16 @@ postscript::postscript(tu_file* out, const char* title)
 	{
 		title = "no title";
 	}
-	
-	m_out->printf(
-		"%%!PS-Adobe-2.0 EPSF-1.2\n"
-		"%%%%Title: %s\n", title);
+
+	if (encapsulated)
+	{
+		m_out->printf("%%!PS-Adobe-2.0 EPSF-1.2\n");
+	}
+	else
+	{
+		m_out->printf("%%!PS-Adobe 3.0\n");
+	}
+	m_out->printf("%%%%Title: %s\n", title);
 	m_out->printf(
 		"%%%%Creator: postscript.cpp from tu-testbed\n"
 		"%%%%CreationDate: 1 1 2001\n"
@@ -83,10 +89,10 @@ postscript::~postscript()
 		"showpage\n"
 		"%%%%Trailer\n"
 		"%%%%Pages: %d %d\n"
-		"%%%%BoundingBox: %f %f %f %f\n"
+		"%%%%BoundingBox: %d %d %d %d\n"
 		"%%%%EOF\n",
 		m_page + 1, m_page + 1,
-		m_x0, m_y0, m_x1, m_y1
+		int(m_x0), int(m_y0), int(m_x1), int(m_y1)
 		);
 	
 }
@@ -112,8 +118,7 @@ void	postscript::comment(const char* s)
 
 
 void	postscript::rgbcolor(float r, float g, float b)
-// Set the pen color.
-// @@ need to look up the units for this!
+// Set the pen color.  Components range from 0 to 1.
 {
 	m_out->printf("%f %f %f setrgbcolor\n", r, g, b);
 }
@@ -122,7 +127,13 @@ void	postscript::rgbcolor(float r, float g, float b)
 void	postscript::gray(float amount)
 // 0 == black, 1 == white
 {
-	m_out->printf("%d setgray\n", int(amount * 255.0f));	// @@ need to look up the units for this!
+	m_out->printf("%f setgray\n", amount);
+}
+
+
+void	postscript::black()
+{
+	rgbcolor(0, 0, 0);
 }
 
 
@@ -189,6 +200,8 @@ void	postscript::printf(float x, float y, const char* fmt, ...)
 	va_end(ap);
 
 	m_out->printf("%f %f m (%s) t\n", x, y, buffer);
+	update(x, y);
+	update(x + 100, y + 10);	// @@ should get bounds of text and update properly!
 }
 
 
@@ -221,11 +234,13 @@ void	postscript::rectangle(float x0, float x1, float y0, float y1)
 		"%f %f m "
 		"%f %f l "
 		"%f %f l "
+		"%f %f l "
 		"%f %f l s\n",
 		x0, y0,
 		x1, y0,
 		x1, y1,
-		x0, y1);
+		x0, y1,
+		x0, y0);
 	update(x0, y0);
 	update(x1, y1);
 }

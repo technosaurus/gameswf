@@ -21,11 +21,13 @@
 class tu_file;
 
 
+// Postscript units are 72 per inch.
+
 // @@ TODO all these functions need to take floats, not ints...
 
 struct postscript
 {
-	postscript(tu_file* out, const char* title);
+	postscript(tu_file* out, const char* title, bool encapsulated = true);
 	~postscript();
 
 	void	clear();	// New page
