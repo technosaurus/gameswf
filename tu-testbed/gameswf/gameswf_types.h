@@ -56,6 +56,8 @@ namespace gameswf
 	{
 		float	m_[2][3];
 
+		static matrix	identity;
+
 		matrix();
 		void	set_identity();
 		void	concatenate(const matrix& m);
