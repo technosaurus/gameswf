@@ -1,0 +1,79 @@
+TU-TESTBED README
+Thatcher Ulrich <tu@tulrich.com> http://tulrich.com
+
+The tu-testbed is a collection of my game engine experiments.  At some
+times it may resemble an engine with demo programs; at other times it
+may resemble a code junkyard.  Most of the time it will probably
+resemble both.
+
+
+LICENSE
+
+This code is Public Domain; have a look at LICENSE and MANIFESTO for
+details.
+
+
+PLATFORMS
+
+My goal is to have this code work on Linux and Win32.  Linux because I
+like it, and Win32 because it's so ubiquitous in game development.
+I'm depending on:
+
+* SDL (see http://www.libsdl.org) for the base set of media
+  APIs and helper libraries.  SDL is the greatest thing since sliced
+  bread.
+
+* Lua (see http://www.lua.org) for the configuration/scripting
+  language.  Lua *is* sliced bread.
+
+* OpenGL for 3D graphics.  OpenGL was the greatest thing before sliced
+  bread.  SDL wraps much of the system-specific OpenGL stuff.
+
+* GNU make as a build tool on all platforms.  I might experiment with
+  other build tools in the future.  MSVC .dsp's are happily accepted
+  and I'll throw them in the repository, but I'm not going to maintain
+  or even test that crap.
+
+* Cygwin under Win32 for a sane development environment.  I don't
+  really want to become too Cygwin-dependent for building under Win32,
+  since most Win32 people probably don't use it.  But then again, I
+  don't want to struggle too much with incomplete or unfamiliar tools.
+
+* gcc as the main compiler, and MSVC under Windows.  I would like to try
+  gcc/mingwin under Windows at some point.
+
+
+STABILITY
+
+This is experimental code.  One of the things I will probably want to
+experiment with is engine APIs and organization.  As a result,
+stability of APIs is a low priority for me at this early stage of
+development; I may completely change the organization of the code at
+any time, run all the source through perl one-liners to change all the
+module names, etc.  Old demos may not build or run.  Engine features
+may be completely broken, or incompletely working (or more likely,
+completely missing).
+
+If you use this code, it may be most helpful to take a snapshot and
+have your own private fork of the code, or just cut-n-paste the bits
+you want.  I'll see about the feasibility of releasing semi-stable
+snapshots from time to time.
+
+
+CONTRIBUTIONS
+
+I would love to get contributions, provided the author is willing and
+able to place them in the Public Domain.  I'll put your name on the
+contributors list unless you don't want that.  Bug fixes & reports are
+always appreciated; likewise with ports.  However, I reserve the right
+to not use your contribution, to break ports etc.  It's important to
+me to be able to experiment at whim as much as possible so if
+something gets in the way I'm liable to remove it.
+
+
+CODING STYLE
+
+Another thing I'm experimenting with is coding style.  So it's
+probably inconsistent.  It would be good if contributions attempted to
+conform to nearby code, or the style du jour.  Don't sweat it too much
+though.  See the STYLE doc for more info.

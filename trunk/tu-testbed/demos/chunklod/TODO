@@ -1,0 +1,24 @@
+HEIGHTFIELD CHUNKER
+
+* fix lerping bugs.  Morph verts should lerp towards the surface of
+  the parent mesh (not necessarily the same as the height of the mesh
+  without that single vert, since nearby verts may also be morphing).
+
+* implement crack-filling
+
+* support multiple input datasets at different resolutions
+
+* localized, bottom up processing?
+
+* more VM friendly; try a swizzled format?
+
+
+CHUNKDEMO
+
+* use NVFence etc
+
+* try a vertex shader for lerping
+
+* implement crack filling
+
+
