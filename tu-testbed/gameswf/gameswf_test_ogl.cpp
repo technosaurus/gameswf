@@ -52,6 +52,7 @@ void	print_usage()
 		"  CTRL-A          Toggle antialiasing (doesn't work)\n"
 		"  CTRL-T          Debug.  Test the set_variable() function\n"
 		"  CTRL-G          Debug.  Test the get_variable() function\n"
+		"  CTRL-M          Debug.  Test the call_method() function\n"
 		"  CTRL-B          Toggle background color\n"
 		);
 }
@@ -404,6 +405,28 @@ int	main(int argc, char *argv[])
 					message_log("testing get_variable: '");
 					message_log(m->get_variable("test.text"));
 					message_log("'\n");
+				}
+				else if (ctrl && key == SDLK_m)
+				{
+					// Test call_method.
+					const char* result = m->call_method(
+						"test_call",
+						"%d, %f, %s, %ls",
+						200,
+						1.0f,
+						"Test string",
+						L"Test long string");
+
+					if (result)
+					{
+						message_log("call_method: result = ");
+						message_log(result);
+						message_log("\n");
+					}
+					else
+					{
+						message_log("call_method: null result\n");
+					}
 				}
 				else if (ctrl && key == SDLK_b)
 				{

@@ -12,6 +12,7 @@
 
 
 #include <ctype.h>	// for poxy wchar_t
+#include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
 
 
 class tu_file;
@@ -277,37 +278,42 @@ namespace gameswf
 		virtual const char*	get_variable(const char* path_to_var) const = 0;
 		// @@ do we want a version that returns a number?
 
-		// ActionScript method call.  Caller can set result
-		// to NULL if they're not interested in a return
-		// value.  On return, *result points to a static
-		// string buffer with the result; caller should use
-		// the value immediately before making more calls to
-		// gameswf.  NOT THREAD SAFE!!!
+		// ActionScript method call.  Return value points to a
+		// static string buffer with the result; caller should
+		// use the value immediately before making more calls
+		// to gameswf.  NOT THREAD SAFE!!!
 		// 
-		// This function does some very basic parsing on
-		// method_call.  method_call should be a string of the
-		// form:
+		// method_name is the name of the method (possibly namespaced).
 		//
-		// "path.to.method_name(arg0, arg1, arg2)"
+		// method_arg_fmt is a printf-style declaration of
+		// the method call, where the arguments are
+		// represented by { %d, %s, %f, %ls }, followed by the
+		// vararg list of actual arguments.
+		// 
+		// E.g.
 		//
-		// where argN can be a string or numerical literal.
-		// String literals must be single- or double-quote
-		// delimited.  Numeric literals are parsed with
-		// atof().  Examples:
+		// m->call_method("path.to.method_name", "%d, %s, %f", i, "hello", 2.7f);
 		//
-		//    _root.my_clip.init_stuff(10, 47.5, 'Hello')
-		//    set_ball_speed(1.25, -78.3)
+		// The format args are a small subset of printf, namely:
 		//
-		// Don't be fooled; this is not an ActionScript
-		// language parser, it doesn't recognize expressions
-		// or anything tricky.
+		// %d -- integer arg
+		// %s -- 0-terminated char* string arg
+		// %ls -- 0-terminated wchar_t* string arg
+		// %f -- float/double arg
 		//
-		// Needless to say, this is not blazingly fast.
+		// Whitespace and commas in the format string are ignored.
+		//
+		// This is not an ActionScript language parser, it
+		// doesn't recognize expressions or anything tricky.
+#ifdef __GCC__
+		// use the following to catch errors: (only with gcc)
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+			__attribute__((format (printf, 2, 3))) = 0;
+#else	// not __GCC__
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
+#endif	// not __GCC__
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args) = 0;
 
-		// This version accepts UTF-8
-		virtual const char*	call_method(const char* method_call) = 0;
-		// This version accepts UCS-2 or UCS-4, depending on sizeof(wchar_t)
-		virtual const char*	call_method(const wchar_t* method_call) = 0;
 
 		// Make the movie visible/invisible.  An invisible
 		// movie does not advance and does not render.

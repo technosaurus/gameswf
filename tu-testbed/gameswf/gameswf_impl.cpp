@@ -1115,18 +1115,25 @@ namespace gameswf
 			return m_movie->get_variable(path_to_var);
 		}
 
+		/*movie_root*/
 		// For ActionScript interfacing convenience.
-		virtual const char*	call_method(const char* method_call)
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
 		{
 			assert(m_movie != NULL);
-			return m_movie->call_method(method_call);
+
+			va_list	args;
+			va_start(args, method_arg_fmt);
+			const char*	result = m_movie->call_method_args(method_name, method_arg_fmt, args);
+			va_end(args);
+
+			return result;
 		}
 
-		// For ActionScript interfacing convenience.
-		virtual const char*	call_method(const wchar_t* method_call)
+		/*movie_root*/
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		{
 			assert(m_movie != NULL);
-			return m_movie->call_method(method_call);
+			return m_movie->call_method_args(method_name, method_arg_fmt, args);
 		}
 
 		virtual void	set_visible(bool visible) { m_movie->set_visible(visible); }
@@ -4238,21 +4245,12 @@ namespace gameswf
 */
 
 		/*sprite_instance*/
-		virtual const char*	call_method(const char* method_call)
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		{
 			// Keep m_as_environment alive during any method calls!
 			smart_ptr<as_object_interface>	this_ptr(this);
 
-			return call_method_parsed(&m_as_environment, this, method_call);
-		}
-
-		/*sprite_instance*/
-		virtual const char*	call_method(const wchar_t* method_call)
-		{
-			// Keep m_as_environment alive during any method calls!
-			smart_ptr<as_object_interface>	this_ptr(this);
-
-			return call_method_parsed(&m_as_environment, this, method_call);
+			return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
 		}
 	};
 
