@@ -410,6 +410,7 @@ namespace gameswf
 	struct movie_impl : public movie
 	{
 		hash<int, character*>	m_characters;
+		string_hash< array<character*>* >	m_named_characters;
 		hash<int, font*>	m_fonts;
 		hash<int, bitmap_character*>	m_bitmap_characters;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
@@ -491,8 +492,28 @@ namespace gameswf
 		void	add_character(int character_id, character* c)
 		{
 			assert(c);
-			assert(c->m_id == character_id);
+			assert(c->get_id() == character_id);
 			m_characters.add(character_id, c);
+
+			if (c->get_name()[0])
+			{
+				// Character has a name; put it in our
+				// table of named characters for later
+				// lookup.
+				tu_string	char_name(c->get_name());
+
+				// SWF seems to allow multiple
+				// characters with the same name!
+
+				array<character*>*	ch_array = NULL;
+				m_named_characters.get(char_name, &ch_array);
+				if (ch_array == NULL)
+				{
+					ch_array = new array<character*>;
+					m_named_characters.add(char_name, ch_array);
+				}
+				ch_array->push_back(c);
+			}
 		}
 
 		character*	get_character(int character_id)
@@ -621,6 +642,7 @@ namespace gameswf
 		{
 			m_action_list.push_back(a);
 		}
+
 
 		int	get_width() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_x_max - m_frame_size.m_x_min)); }
 		int	get_height() { return (int) ceilf(TWIPS_TO_PIXELS(m_frame_size.m_y_max - m_frame_size.m_y_min)); }
@@ -871,6 +893,28 @@ namespace gameswf
 
 			restart();
 		}
+
+
+		bool	set_edit_text(const char* var_name, const char* new_text)
+		// Find the named character in the movie, and set its
+		// text to the given string.  Return true on success.
+		{
+			array<character*>*	ch_array = NULL;
+			m_named_characters.get(var_name, &ch_array);
+			if (ch_array)
+			{
+				bool	success = false;
+				for (int i = 0; i < ch_array->size(); i++)
+				{
+					success = (*ch_array)[i]->set_edit_text(new_text) || success;
+				}
+				return success;
+			}
+			else
+			{
+				return false;
+			}
+		}
 	};
 
 
@@ -1045,7 +1089,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1068,7 +1112,7 @@ namespace gameswf
 		IF_DEBUG(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1145,7 +1189,7 @@ namespace gameswf
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
 		bitmap_character_rgba*	ch = new bitmap_character_rgba();
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 
 		//
 		// Read the image data.
@@ -1191,7 +1235,7 @@ namespace gameswf
 		{
 			// RGB image data.
 			bitmap_character_rgb*	ch = new bitmap_character_rgb();
-			ch->m_id = character_id;
+			ch->set_id(character_id);
 			ch->m_image = image::create_rgb(width, height);
 
 			if (bitmap_format == 3)
@@ -1298,7 +1342,7 @@ namespace gameswf
 			assert(tag_type == 36);
 
 			bitmap_character_rgba*	ch = new bitmap_character_rgba();
-			ch->m_id = character_id;
+			ch->set_id(character_id);
 			ch->m_image = image::create_rgba(width, height);
 
 			if (bitmap_format == 3)
@@ -1405,7 +1449,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		shape_character*	ch = new shape_character;
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 		ch->read(in, tag_type, true, m);
 
 		IF_DEBUG(log_msg("shape_loader: id = %d, rect ", character_id);
@@ -1707,7 +1751,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 		
 		text_character*	ch = new text_character;
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 		IF_DEBUG(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
@@ -1786,7 +1830,6 @@ namespace gameswf
 		float	m_right_margin;
 		float	m_indent;	// how much to indent the first line of multiline text
 		float	m_leading;	// extra space between lines (in addition to default font line spacing)
-		char*	m_name;		// variable name, for script/host access...
 		tu_string	m_text;
 
 
@@ -1808,8 +1851,7 @@ namespace gameswf
 			m_left_margin(0.0f),
 			m_right_margin(0.0f),
 			m_indent(0.0f),
-			m_leading(0.0f),
-			m_name(NULL)
+			m_leading(0.0f)
 		{
 			m_color.set(0, 0, 0, 255);
 			m_dummy_style.push_back(fill_style());
@@ -1818,9 +1860,23 @@ namespace gameswf
 		
 		~edit_text_character()
 		{
-			delete [] m_name;
 		}
 
+
+		virtual bool	set_edit_text(const char* new_text)
+		// Overload from class character.
+		// Set our text to the given string.
+		{
+			m_text = new_text;
+			if (m_max_length > 0
+			    && m_text.length() > m_max_length)
+			{
+				m_text.resize(m_max_length);
+			}
+
+			return true;
+		}
+		
 
 		void	read(stream* in, int tag_type, movie* m)
 		{
@@ -1879,7 +1935,9 @@ namespace gameswf
 				m_leading = (float) in->read_u16();
 			}
 
-			m_name = in->read_string();
+			char*	name = in->read_string();
+			set_name(name);
+			delete [] name;
 
 			if (has_text)
 			{
@@ -1963,7 +2021,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 
 		edit_text_character*	ch = new edit_text_character;
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 		IF_DEBUG(log_msg("edit_text_char, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
@@ -2256,7 +2314,7 @@ namespace gameswf
 			m_update_frame(true)
 		{
 			assert(m_def);
-			m_id = def->m_id;
+			set_id(def->get_id());
 		}
 
 		bool	is_instance() const { return true; }
@@ -2433,7 +2491,7 @@ namespace gameswf
 			// Show the character id at each depth.
 			IF_DEBUG(
 			{
-				log_msg("s %2d | ", m_id);
+				log_msg("s %2d | ", get_id());
 				for (int i = 1; i < 10; i++)
 				{
 					int	id = get_id_at_depth(i);
@@ -2536,7 +2594,7 @@ namespace gameswf
 
 			character*	ch = m_display_list[index].m_character;
 
-			return ch->m_id;
+			return ch->get_id();
 		}
 
 		void	get_mouse_state(int* x, int* y, int* buttons)
@@ -2568,7 +2626,7 @@ namespace gameswf
 		assert(mi);
 
 		sprite_definition*	ch = new sprite_definition(mi);
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 		ch->read(in);
 
 		IF_DEBUG(log_msg("sprite: char id = %d\n", character_id));
@@ -2637,7 +2695,7 @@ namespace gameswf
 		int	character_id = in->read_u16();
 
 		button_character_definition*	ch = new button_character_definition;
-		ch->m_id = character_id;
+		ch->set_id(character_id);
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);

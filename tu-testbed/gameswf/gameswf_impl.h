@@ -106,14 +106,23 @@ namespace gameswf
 		{
 			assert(0);
 		}
+
+		virtual bool	set_edit_text(const char* var_name, const char* new_text)
+		{
+			assert(0);
+			return false;
+		}
 	};
 
 
 	// SWF movies contain "characters" to represent the various elements.
 	struct character : public movie
 	{
+	private:
 		int	m_id;
+		tu_string	m_name;
 		
+	public:
 		character()
 			:
 			m_id(-1)
@@ -121,6 +130,13 @@ namespace gameswf
 		}
 
 		virtual ~character() {}
+
+		void	set_id(int id) { m_id = id; }
+		int	get_id() const { return m_id; }
+
+		void	set_name(const char* name) { m_name = name; }
+		const char*	get_name() const { return m_name.c_str(); }
+
 		virtual void	display(const display_info& di) {}	// renderer state contains context
 		virtual void	advance(float delta_time, movie* m, const matrix& mat) {}	// for buttons and sprites
 		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
@@ -146,6 +162,12 @@ namespace gameswf
 		virtual bool	is_definition() const { return false; }
 		virtual bool	is_instance() const { return false; }
 		virtual character*	create_instance() { assert(0); return 0; }
+
+		// An interface designed to be used by
+		// edit_text_character, or any other character that
+		// can reasonably accept a text value.
+		// Return true on success.
+		virtual bool	set_edit_text(const char* new_text) { assert(0); return false; }
 	};
 
 

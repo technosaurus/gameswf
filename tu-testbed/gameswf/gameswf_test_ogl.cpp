@@ -288,6 +288,11 @@ int	main(int argc, char *argv[])
 					// Toggle looping.
 					s_loop = !s_loop;
 				}
+				else if (key == SDLK_t)
+				{
+					// test text replacement:
+					m->set_edit_text("test_text", "set_edit_text was here...");
+				}
 
 				break;
 			}

@@ -25,6 +25,8 @@ namespace gameswf
 	//
 	struct movie_interface
 	{
+		virtual ~movie_interface() {}
+
 		virtual int	get_width() = 0;
 		virtual int	get_height() = 0;
 		virtual int	get_current_frame() const = 0;
@@ -41,6 +43,11 @@ namespace gameswf
 		virtual void	notify_mouse_state(int x, int y, int buttons) = 0;
 
 		// Need an event queue API here, for extracting user and movie events.
+		// ...
+
+		// Push replacement text into an edit-text field.  Returns
+		// true if the field was found and could accept text.
+		virtual bool	set_edit_text(const char* var_name, const char* new_text) = 0;
 	};
 
 	// Create a swf::movie_interface from the given input stream.

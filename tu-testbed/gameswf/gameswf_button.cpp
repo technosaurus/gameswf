@@ -33,7 +33,7 @@ namespace gameswf
 			m_def(def)
 		{
 			assert(m_def);
-			m_id = def->m_id;
+			set_id(def->get_id());
 			restart();
 
 			int r, r_num =  m_def->m_button_records.size();
