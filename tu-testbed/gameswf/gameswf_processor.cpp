@@ -170,15 +170,55 @@ int	process_movie(const char* filename)
 	delete in;
 	in = NULL;
 
+	int	kick_count = 0;
+
 	// Run through the movie.
 	for (;;)
 	{
-		int	delta_ticks = 10;
-		float	delta_t = delta_ticks / 1000.f;
-		m->advance(delta_t);
+		// @@ do we also have to run through all sprite frames
+		// as well?
+		//
+		// @@ also, ActionScript can rescale things
+		// dynamically -- we can't really do much about that I
+		// guess?
+		//
+		// @@ Maybe we should allow the user to specify some
+		// safety margin on scaled shapes.
+
+		int	last_frame = m->get_current_frame();
+		m->advance(0.010f);
 		m->display();
 
-		// if (movie at end) { break; }
+		if (m->get_current_frame() == m->get_frame_count() - 1)
+		{
+			// Done.
+			break;
+		}
+
+		if (m->get_play_state() == gameswf::movie_interface::STOP)
+		{
+			// Kick the movie.
+			printf("kicking movie, kick ct = %d\n", kick_count);
+			m->goto_frame(last_frame + 1);
+			m->set_play_state(gameswf::movie_interface::PLAY);
+			kick_count++;
+
+			if (kick_count > 10)
+			{
+				printf("movie is stalled; giving up on playing it through.\n");
+				break;
+			}
+		}
+		else if (m->get_current_frame() < last_frame)
+		{
+			// Hm, apparently we looped back.  Skip ahead...
+			printf("loop back; jumping to frame %d\n", last_frame);
+			m->goto_frame(last_frame + 1);
+		}
+		else
+		{
+			kick_count = 0;
+		}
 	}
 
 	if (s_append)

@@ -497,6 +497,7 @@ namespace gameswf
 
 			m_play_state = s;
 		}
+		play_state	get_play_state() const { return m_play_state; }
 		
 		void	restart()
 		{
@@ -1769,6 +1770,7 @@ namespace gameswf
 
 			m_play_state = s;
 		}
+		play_state	get_play_state() const { return m_play_state; }
 
 		void	restart()
 		{

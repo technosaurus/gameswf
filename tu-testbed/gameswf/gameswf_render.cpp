@@ -72,10 +72,10 @@ namespace gameswf
 					viewport_width, viewport_height,
 					x0, x1, y0, y1);
 			}
-			else
-			{
-				log_error("begin_display called, but no render_handler was registered by the app!\n");
-			}
+// 			else
+// 			{
+// 				log_error("begin_display called, but no render_handler was registered by the app!\n");
+// 			}
 		}
 
 
