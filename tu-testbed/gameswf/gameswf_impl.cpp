@@ -462,9 +462,6 @@ namespace gameswf
 						// Add this character to our characters.
 						add_character(inf.m_character_id, ch);
 						imported = true;
-
-						// Hold a ref, to keep this source movie_definition alive.
-						m_import_source_movies.push_back(source_movie);
 					}
 					else
 					{
@@ -475,6 +472,9 @@ namespace gameswf
 					if (imported)
 					{
 						m_imports.remove(i);
+
+						// Hold a ref, to keep this source movie_definition alive.
+						m_import_source_movies.push_back(source_movie);
 					}
 				}
 			}
@@ -862,8 +862,6 @@ namespace gameswf
 		{
 			m_movie = root_movie;
 			assert(m_movie != NULL);
-
-			m_movie->on_event(event_id::LOAD);
 		}
 
 		void	set_display_viewport(int x0, int y0, int w, int h)
@@ -1369,59 +1367,31 @@ namespace gameswf
 
 
 	// Bitmap character
-	struct bitmap_character_rgb : public bitmap_character_def
+	struct bitmap_character : public bitmap_character_def
 	{
-		image::rgb*	m_image;
-		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
-
-		bitmap_character_rgb()
-			:
-			m_image(0)
+		bitmap_character(image::rgb* image)
 		{
+			assert(image != 0);
+
+			// Create our bitmap info, from our image.
+			m_bitmap_info = gameswf::render::create_bitmap_info(image);
 		}
 
-		~bitmap_character_rgb()
+		bitmap_character(image::rgba* image)
 		{
-			if (m_image) { delete m_image; }
+			assert(image != 0);
+
+			// Create our bitmap info, from our image.
+			m_bitmap_info = gameswf::render::create_bitmap_info(image);
 		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{
-			if (m_image != 0)
-			{
-				// Create our bitmap info, from our image.
-				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
-				delete m_image;
-				m_image = 0;
-			}
 			return m_bitmap_info.get_ptr();
 		}
-	};
 
-
-	struct bitmap_character_rgba : public bitmap_character_def
-	{
-		image::rgba*	m_image;
+	private:
 		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
-
-		bitmap_character_rgba() : m_image(0) {}
-
-		~bitmap_character_rgba()
-		{
-			if (m_image) { delete m_image; }
-		}
-
-		gameswf::bitmap_info*	get_bitmap_info()
-		{
-			if (m_image != 0)
-			{
-				// Create our bitmap info, from our image.
-				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
-				delete m_image;
-				m_image = 0;
-			}
-			return m_bitmap_info.get_ptr();
-		}
 	};
 
 
@@ -1446,8 +1416,6 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-
 		//
 		// Read the image data.
 		//
@@ -1455,7 +1423,11 @@ namespace gameswf
 		jpeg::input*	j_in = m->get_jpeg_loader();
 		assert(j_in);
 		j_in->discard_partial_buffer();
-		ch->m_image = image::read_swf_jpeg2_with_tables(j_in);
+
+		image::rgb*	im = image::read_swf_jpeg2_with_tables(j_in);
+		bitmap_character*	ch = new bitmap_character(im);
+		delete im;
+
 		m->add_bitmap_character(character_id, ch);
 	}
 
@@ -1468,13 +1440,14 @@ namespace gameswf
 
 		IF_VERBOSE_PARSE(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
-		bitmap_character_rgb*	ch = new bitmap_character_rgb();
-
 		//
 		// Read the image data.
 		//
 		
-		ch->m_image = image::read_swf_jpeg2(in->get_underlying_stream());
+		image::rgb* im = image::read_swf_jpeg2(in->get_underlying_stream());
+		bitmap_character*	ch = new bitmap_character(im);
+		delete im;
+
 		m->add_bitmap_character(character_id, ch);
 	}
 
@@ -1544,27 +1517,31 @@ namespace gameswf
 		Uint32	jpeg_size = in->read_u32();
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
-		bitmap_character_rgba*	ch = new bitmap_character_rgba();
-
 		//
 		// Read the image data.
 		//
 		
-		ch->m_image = image::read_swf_jpeg3(in->get_underlying_stream());
+		// Read rgb data.
+		image::rgba*	im = image::read_swf_jpeg3(in->get_underlying_stream());
 
+		// Read alpha channel.
 		in->set_position(alpha_position);
-		
-		int	buffer_bytes = ch->m_image->m_width * ch->m_image->m_height;
+
+		int	buffer_bytes = im->m_width * im->m_height;
 		Uint8*	buffer = new Uint8[buffer_bytes];
 
 		inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 
 		for (int i = 0; i < buffer_bytes; i++)
 		{
-			ch->m_image->m_data[4*i+3] = buffer[i];
+			im->m_data[4*i+3] = buffer[i];
 		}
 
 		delete [] buffer;
+
+		// Create bitmap character.
+		bitmap_character*	ch = new bitmap_character(im);
+		delete im;
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -1589,8 +1566,7 @@ namespace gameswf
 		if (tag_type == 20)
 		{
 			// RGB image data.
-			bitmap_character_rgb*	ch = new bitmap_character_rgb();
-			ch->m_image = image::create_rgb(width, height);
+			image::rgb*	image = image::create_rgb(width, height);
 
 			if (bitmap_format == 3)
 			{
@@ -1613,7 +1589,7 @@ namespace gameswf
 				for (int j = 0; j < height; j++)
 				{
 					Uint8*	image_in_row = buffer + color_table_size * 3 + j * pitch;
-					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					Uint8*	image_out_row = image::scanline(image, j);
 					for (int i = 0; i < width; i++)
 					{
 						Uint8	pixel = image_in_row[i * bytes_per_pixel];
@@ -1640,7 +1616,7 @@ namespace gameswf
 				for (int j = 0; j < height; j++)
 				{
 					Uint8*	image_in_row = buffer + j * pitch;
-					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					Uint8*	image_out_row = image::scanline(image, j);
 					for (int i = 0; i < width; i++)
 					{
 						Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
@@ -1670,7 +1646,7 @@ namespace gameswf
 				for (int j = 0; j < height; j++)
 				{
 					Uint8*	image_in_row = buffer + j * pitch;
-					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					Uint8*	image_out_row = image::scanline(image, j);
 					for (int i = 0; i < width; i++)
 					{
 						Uint8	a = image_in_row[i * 4 + 0];
@@ -1687,6 +1663,9 @@ namespace gameswf
 				delete [] buffer;
 			}
 
+			bitmap_character*	ch = new bitmap_character(image);
+			delete image;
+
 			// add image to movie, under character id.
 			m->add_bitmap_character(character_id, ch);
 		}
@@ -1695,8 +1674,7 @@ namespace gameswf
 			// RGBA image data.
 			assert(tag_type == 36);
 
-			bitmap_character_rgba*	ch = new bitmap_character_rgba();
-			ch->m_image = image::create_rgba(width, height);
+			image::rgba*	image = image::create_rgba(width, height);
 
 			if (bitmap_format == 3)
 			{
@@ -1719,7 +1697,7 @@ namespace gameswf
 				for (int j = 0; j < height; j++)
 				{
 					Uint8*	image_in_row = buffer + color_table_size * 4 + j * pitch;
-					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					Uint8*	image_out_row = image::scanline(image, j);
 					for (int i = 0; i < width; i++)
 					{
 						Uint8	pixel = image_in_row[i * bytes_per_pixel];
@@ -1747,7 +1725,7 @@ namespace gameswf
 				for (int j = 0; j < height; j++)
 				{
 					Uint8*	image_in_row = buffer + j * pitch;
-					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					Uint8*	image_out_row = image::scanline(image, j);
 					for (int i = 0; i < width; i++)
 					{
 						Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
@@ -1766,13 +1744,13 @@ namespace gameswf
 			{
 				// 32 bits / pixel, input is ARGB format
 
-				inflate_wrapper(in->get_underlying_stream(), ch->m_image->m_data, width * height * 4);
+				inflate_wrapper(in->get_underlying_stream(), image->m_data, width * height * 4);
 				assert(in->get_position() <= in->get_tag_end_position());
 			
 				// Need to re-arrange ARGB into RGBA.
 				for (int j = 0; j < height; j++)
 				{
-					Uint8*	image_row = image::scanline(ch->m_image, j);
+					Uint8*	image_row = image::scanline(image, j);
 					for (int i = 0; i < width; i++)
 					{
 						Uint8	a = image_row[i * 4 + 0];
@@ -1786,6 +1764,9 @@ namespace gameswf
 					}
 				}
 			}
+
+			bitmap_character*	ch = new bitmap_character(image);
+			delete image;
 
 			// add image to movie, under character id.
 			m->add_bitmap_character(character_id, ch);
@@ -2405,7 +2386,6 @@ namespace gameswf
 		bool	m_update_frame;
 		bool	m_has_looped;
 		bool	m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
-		bool	m_init_handler_called;
 
 		as_environment	m_as_environment;
 
@@ -2420,8 +2400,7 @@ namespace gameswf
 			m_time_remainder(0),
 			m_update_frame(true),
 			m_has_looped(false),
-			m_accept_anim_moves(true),
-			m_init_handler_called(false)
+			m_accept_anim_moves(true)
 		{
 			assert(m_def != NULL);
 			assert(m_root != NULL);
@@ -2524,15 +2503,6 @@ namespace gameswf
 			}
 
 			assert(m_def != NULL && m_root != NULL);
-
-			// check for init event; make sure handler gets called once.
-			if (m_init_handler_called == false)
-			{
-				if (on_event(event_id::LOAD))
-				{
-					m_init_handler_called = true;
-				}
-			}
 
 			// mouse drag.
 			character::do_mouse_drag();
@@ -3398,6 +3368,19 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
+		void	do_load_events()
+		// Do the events that (appear to) happen as the movie
+		// loads.  frame1 tags and actions are executed (even
+		// before advance() is called).  Then the onLoad event
+		// is triggered.
+		{
+			execute_frame_tags(0);
+			do_actions();
+			on_event(event_id::LOAD);
+		}
+
+
 		virtual const char*	call_method(const char* method_call)
 		{
 			return call_method_parsed(&m_as_environment, this, method_call);
@@ -3412,6 +3395,8 @@ namespace gameswf
 	{
 		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
 
+		si->do_load_events();
+
 		return si;
 	}
 
@@ -3422,11 +3407,13 @@ namespace gameswf
 		movie_root*	m = new movie_root(this);
 		assert(m);
 
-		character*	root_movie = new sprite_instance(this, m, NULL, -1);
+		sprite_instance*	root_movie = new sprite_instance(this, m, NULL, -1);
 		assert(root_movie);
 
 		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
+
+		root_movie->do_load_events();
 
 		m->add_ref();
 		return m;
@@ -3651,10 +3638,6 @@ namespace gameswf
 	// import
 	//
 
-
-		// movie_definition_sub { hash<Uint16, tu_string> m_import_proxies; }
-		// get_font(id) { look-aside into m_import_proxies in case of match; else use m_fonts; }
-		// get_character(id) { look-aside into m_import_proxies; else use m_characters; }
 
 	void	import_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Load an import tag (for pulling in external resources)
