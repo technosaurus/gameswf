@@ -24,6 +24,9 @@ public:
 	vec3(const vec3& v) { x = v.x; y = v.y; z = v.z; }
 
 	operator	const float*() const { return &x; }
+
+	const float&	operator[](int index) const { assert(index >= 0 && index < 3); return (&x)[index]; }
+	float&	operator[](int index) { assert(index >= 0 && index < 3); return (&x)[index]; }
 			
 	float	get(int element) const { return (&x)[element]; }
 	void	set(int element, float NewValue) { (&x)[element] = NewValue; }
@@ -42,6 +45,7 @@ public:
 	vec3	operator*(float f) const;
 	vec3	operator/(float f) const { return this->operator*(1.0f / f); }
 	vec3	cross(const vec3& v) const;
+	void	set_cross(const vec3& a, const vec3& b);
 
 	// returns original length; if length is zero, sets our value to fallback.
 	float	normalize(const vec3& fallback = vec3::x_axis);
@@ -103,6 +107,18 @@ inline vec3&	vec3::operator-=(const vec3& v)
 	y -= v.y;
 	z -= v.z;
 	return *this;
+}
+
+
+inline void	vec3::set_cross(const vec3& a, const vec3& b)
+// Cross product.
+{
+	assert(this != &a);
+	assert(this != &b);
+
+	x = a.y * b.z - a.z * b.y;
+	y = a.z * b.x - a.x * b.z;
+	z = a.x * b.y - a.y * b.x;
 }
 
 

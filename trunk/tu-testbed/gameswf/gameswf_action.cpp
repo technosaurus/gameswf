@@ -377,6 +377,11 @@ namespace gameswf
 		math_obj->set_member("sqrt", &math_sqrt);
 		math_obj->set_member("tan", &math_tan);
 
+		math_obj->set_member("atan2", &math_atan2);
+		math_obj->set_member("max", &math_max);
+		math_obj->set_member("min", &math_min);
+		math_obj->set_member("pow", &math_pow);
+
 		s_built_ins.add("math", math_obj);
 	}
 

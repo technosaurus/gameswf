@@ -10,22 +10,24 @@ CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := -lGL -lGLU $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 
 # Source files.
-SRCS := \
-	container.cpp	\
-	dlmalloc.c	\
-	config.cpp \
-	ogl.cpp \
-	image.cpp \
-	image_filters.cpp \
-	jpeg.cpp \
-	postscript.cpp	\
-	tu_file.cpp	\
-	tu_file_SDL.cpp	\
-	tu_random.cpp	\
-	tu_types.cpp	\
-	utf8.cpp	\
-	utility.cpp	\
+SRCS :=						\
+	container.cpp				\
+	dlmalloc.c				\
+	config.cpp				\
+	ogl.cpp					\
+	image.cpp				\
+	image_filters.cpp			\
+	jpeg.cpp				\
+	postscript.cpp				\
+	tu_file.cpp				\
+	tu_file_SDL.cpp				\
+	tu_random.cpp				\
+	tu_timer.cpp				\
+	tu_types.cpp				\
+	utf8.cpp				\
+	utility.cpp				\
 	zlib_adapter.cpp
+
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
 

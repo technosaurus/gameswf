@@ -13,7 +13,9 @@ LDFLAGS := -lGL -lGLU $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 
 # Source files.
 SRCS := \
+	axial_box.cpp		\
 	bsp.cpp			\
+	collision.cpp		\
 	cull.cpp		\
 	geometry.cpp		\
 	kd_tree_dynamic.cpp	\

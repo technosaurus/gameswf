@@ -8,17 +8,34 @@
 
 
 #include "geometry/kd_tree_dynamic.h"
-
 #include "base/tu_file.h"
+#include <float.h>
 
 
-static const float	EPSILON = 1e-6f;
+static const float	EPSILON = 1e-4f;
 static const int	LEAF_FACE_COUNT = 6;
 
-#define TRINARY_KD_TREE
 //#define CARVE_OFF_SPACE
-#define ADHOC_METRIC
-//#define MACDONALD_AND_BOOTH_METRIC
+//#define ADHOC_METRIC
+#define MACDONALD_AND_BOOTH_METRIC
+
+
+float	kd_tree_dynamic::face::get_min_coord(int axis, const array<vec3>& verts) const
+{
+	float	minval = verts[m_vi[0]][axis];
+	minval = fmin(minval, verts[m_vi[1]][axis]);
+	minval = fmin(minval, verts[m_vi[2]][axis]);
+	return minval;
+}
+
+
+float	kd_tree_dynamic::face::get_max_coord(int axis, const array<vec3>& verts) const
+{
+	float	maxval = verts[m_vi[0]][axis];
+	maxval = fmax(maxval, verts[m_vi[1]][axis]);
+	maxval = fmax(maxval, verts[m_vi[2]][axis]);
+	return maxval;
+}
 
 
 kd_tree_dynamic::kd_tree_dynamic(
@@ -54,9 +71,13 @@ kd_tree_dynamic::kd_tree_dynamic(
 		bounds.set_enclosing(m_verts[f.m_vi[2]]);
 	}
 
-	// @@ round the node bounds up, to account for the low bits we're going to munge.
+	m_bound = bounds;
 
-	m_root = build_tree(faces.size(), &faces[0], bounds);
+	m_root = build_tree(1, faces.size(), &faces[0], bounds);
+
+	// @@ TODO: idea to profile: sort vertices in the order they
+	// first appear in a depth-first traversal of the tree.  Idea
+	// is to exploit cache coherency when traversing tree.
 }
 
 
@@ -67,7 +88,7 @@ kd_tree_dynamic::~kd_tree_dynamic()
 }
 
 
-kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int face_count, face faces[], const axial_box& bounds)
+kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int depth, int face_count, face faces[], const axial_box& bounds)
 // Recursively build a kd-tree from the given set of faces.  Return
 // the root of the tree.
 {
@@ -90,52 +111,53 @@ kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int face_count, face faces[],
 		return n;
 	}
 
-	axial_box	actual_bounds;
-	compute_actual_bounds(&actual_bounds, face_count, faces);
-
-	assert(bounds.encloses(actual_bounds, 1e-3f));
-
-	actual_bounds.set_intersection(bounds);
-
 	// Find a good splitting plane.
 	float	best_split_quality = 0.0f;
 	int	best_split_axis = -1;
-	float	best_split_offset = 0.0f;
+	float	best_split_neg_offset = 0.0f;
+	float	best_split_pos_offset = 0.0f;
 
 	for (int axis = 0; axis < 3; axis++)
 	{
-		if (actual_bounds.get_extent()[axis] < EPSILON)
+		if (bounds.get_extent()[axis] < EPSILON)
 		{
 			// Don't try to divide 
 			continue;
 		}
 
-		// @@ perhaps make the # of tries dependent on # of faces?
-		// Try to align the offset with existing face boundaries?
-		// Many opportunities for more smartness here.
-
-		const int	c_divisions = 11;	// odd, so that we always test the bisecting plane.
-		for (int i = 0; i < c_divisions; i++)
+		// Try offsets that correspond to existing face boundaries.
+		int	step_size = 1;
+		if (face_count > 20)
 		{
-			float	f = /* some_curve( */ i / float(c_divisions - 1) /* ) */;
-			float	offset = flerp(actual_bounds.get_min()[axis], actual_bounds.get_max()[axis], f);
-			// @@ force the offset LSBits to something appropriate, based on later munging?
+			// For the sake of speed & sanity, only try the bounds
+			// of every N faces.
+			step_size = face_count / 20;
+		}
+		assert(step_size > 0);
 
-			if (fabsf(offset - bounds.get_min().get(axis)) < EPSILON
-				|| fabsf(offset - bounds.get_max().get(axis)) < EPSILON)
+		float	last_offset_tried = -FLT_MAX;
+		float	pos_offset = 0;
+		for (int i = 0; i < face_count; i += step_size)
+		{
+			float	neg_offset = faces[i].get_max_coord(axis, m_verts);
+
+			if (fabsf(neg_offset - last_offset_tried) < EPSILON)
 			{
-				// This plane doesn't actually split the node.
+				// Already tried this.
 				continue;
 			}
+			
+			last_offset_tried = neg_offset;
 
 			// How good is this split?
-			float	quality = evaluate_split(face_count, faces, bounds, axis, offset);
+			float	quality = evaluate_split(depth, face_count, faces, bounds, axis, neg_offset, &pos_offset);
 			if (quality > best_split_quality)
 			{
 				// Best so far.
 				best_split_quality = quality;
 				best_split_axis = axis;
-				best_split_offset = offset;
+				best_split_neg_offset = neg_offset;
+				best_split_pos_offset = pos_offset;
 			}
 		}
 	}
@@ -155,7 +177,6 @@ kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int face_count, face faces[],
 	{
 		// Make the split.
 		int	back_end = 0;
-		int	cross_end = 0;
 		int	front_end = 0;
 
 		// We use the implicit node bounds, not the actual bounds of
@@ -164,70 +185,21 @@ kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int face_count, face faces[],
 		// computing query results.
 
 		axial_box	back_bounds(bounds);
-		back_bounds.set_axis_max(best_split_axis, best_split_offset);
+		back_bounds.set_axis_max(best_split_axis, best_split_neg_offset);
 
 		axial_box	front_bounds(bounds);
-		front_bounds.set_axis_min(best_split_axis, best_split_offset);
+		front_bounds.set_axis_min(best_split_axis, best_split_pos_offset);
 
 		node*	n = new node;
 		n->m_axis = best_split_axis;
-		n->m_offset = best_split_offset;
+		n->m_neg_offset = best_split_neg_offset;
+		n->m_pos_offset = best_split_pos_offset;
 
 		// Recursively build sub-trees.
+		do_split(&back_end, &front_end, face_count, faces, best_split_axis, best_split_neg_offset, best_split_pos_offset);
 
-#ifndef TRINARY_KD_TREE
-
-		// For a binary kd-tree, we duplicate the crossing
-		// faces and then clip them, instead of using a third
-		// branch.
-
-		array<face>	faces_copy;
-		faces_copy.resize(face_count);
-		memcpy(&faces_copy[0], faces, sizeof(faces[0]) * face_count);
-
-		clip_faces(&faces_copy, n->m_axis, n->m_offset);
-
-		do_split(&back_end, &cross_end, &front_end, faces_copy.size(), &faces_copy[0], n->m_axis, n->m_offset);
-
-		int	back_count = cross_end;
-		int	cross_count = cross_end - back_end;
-		int	front_count = faces_copy.size() - back_end;
-
-		assert(cross_count == 0);	// make sure our clipping worked.
-
-		// Sanity check here, to keep clipping from getting out of control...
-		if (/*face_count < LEAF_FACE_COUNT * 3 &&*/
-		    (back_count > face_count
-			|| front_count > face_count))
-		{
-			// Faces are proliferating!  Just make a leaf.
-			n->m_leaf = new leaf;
-			n->m_leaf->m_faces = faces_copy;
-
-			return n;
-		}
-
-		if (back_count)
-		{
-			n->m_back = build_tree(back_count, &faces_copy[0], back_bounds);
-		}
-		n->m_cross = NULL;
-		if (front_count)
-		{
-			n->m_front = build_tree(front_count, &faces_copy[back_count], front_bounds);
-		}
-
-#else // TRINARY_KD_TREE
-
-		do_split(&back_end, &cross_end, &front_end, face_count, faces, best_split_axis, best_split_offset);
-
-		n->m_back = build_tree(back_end, faces + 0, back_bounds);
-
-		n->m_cross = build_tree(cross_end - back_end, faces + back_end, bounds);
-
-		n->m_front = build_tree(front_end - cross_end, faces + cross_end, front_bounds);
-
-#endif // TRINARY_KD_TREE
+		n->m_neg = build_tree(depth + 1, back_end, faces + 0, back_bounds);
+		n->m_pos = build_tree(depth + 1, front_end - back_end, faces + back_end, front_bounds);
 
 		return n;
 	}
@@ -237,12 +209,12 @@ kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int face_count, face faces[],
 kd_tree_dynamic::node::node()
 // Default constructor, null everything out.
 	:
-	m_back(0),
-	m_cross(0),
-	m_front(0),
+	m_neg(0),
+	m_pos(0),
 	m_leaf(0),
 	m_axis(0),
-	m_offset(0.0f)
+	m_neg_offset(0.0f),
+	m_pos_offset(0.0f)
 {
 }
 
@@ -250,9 +222,8 @@ kd_tree_dynamic::node::node()
 kd_tree_dynamic::node::~node()
 // Destructor, delete children if any.
 {
-	delete m_back;
-	delete m_cross;
-	delete m_front;
+	delete m_neg;
+	delete m_pos;
 	delete m_leaf;
 }
 
@@ -267,9 +238,8 @@ bool	kd_tree_dynamic::node::is_valid() const
 		||
 		// leaf node
 		(m_leaf != 0
-		 && m_back == 0
-		 && m_cross == 0
-		 && m_front == 0)
+		 && m_neg == 0
+		 && m_pos == 0)
 		;
 }
 
@@ -312,74 +282,48 @@ static int	classify_coord(float coord, float offset)
 
 void	kd_tree_dynamic::do_split(
 	int* back_end,
-	int* cross_end,
 	int* front_end,
 	int face_count,
 	face faces[],
 	int axis,
-	float offset)
-// Sort the given faces into three segments within the faces[] array.
-// The faces within faces[] are shuffled.  On exit, the faces[] array has the following segments:
+	float neg_offset,
+	float pos_offset)
+// Classify the given faces as either negative or positive.  The faces
+// within faces[] are shuffled.  On exit, the faces[] array has the
+// following segments:
 //
-// [0, *back_end-1]             -- the faces behind the plane axis=offset
-// [back_end, cross_end]        -- the faces that cross axis=offset
-// [cross_end, face_count-1]    -- the faces in front of axis=offset
+// [0, *neg_end-1]              -- the faces behind the plane axis=neg_offset
+// [neg_end, face_count-1]      -- the faces in front of axis=pos_offset (i.e. everything else)
+//
+// pos_offset must be placed so that it catches everything not on the
+// negative side; this routine asserts against that.
 {
+	// @@ eh, should do this by sweeping through and swapping face
+	// to either the end of the array or the start of the array.
+
+
 	array<face>	back_faces;
 	array<face>	front_faces;
-	array<face>	cross_faces;
 
 	for (int i = 0; i < face_count; i++)
 	{
 		const face&	f = faces[i];
 
-		int	result = classify_face(f, axis, offset);
+		int	result = classify_face(f, axis, neg_offset);
 		if (result == -1)
 		{
 			// Behind.
 			back_faces.push_back(f);
 		}
-		else if (result == 0)
-		{
-#ifdef TRINARY_KD_TREE
-			// Crossing.
-			cross_faces.push_back(f);
-#else	// not TRINARY_KD_TREE
-			// This must be an "on" or marginal face;
-			// i.e. some verts are on the crossing plane.
-			// Push it to one side or the other.
-			float	coord[3];
-			coord[0] = m_verts[f.m_vi[0]].get(axis);
-			coord[1] = m_verts[f.m_vi[1]].get(axis);
-			coord[2] = m_verts[f.m_vi[2]].get(axis);
-			int	side =
-				classify_coord(coord[0], offset)
-				+ classify_coord(coord[1], offset)
-				+ classify_coord(coord[2], offset);
-			if (side < 0)
-			{
-				back_faces.push_back(f);
-			}
-			else if (side == 0)
-			{
-				// Arbitrarily put in back.
-				back_faces.push_back(f);
-			}
-			else
-			{
-				front_faces.push_back(f);
-			}
-#endif	// not TRINARY_KD_TREE
-		}
 		else
 		{
-			// Front.
-			assert(result == 1);
+			assert(f.get_min_coord(axis, m_verts) >= pos_offset);	// should not have any crossing faces!
+
 			front_faces.push_back(f);
 		}
 	}
 
-	assert(back_faces.size() + cross_faces.size() + front_faces.size() == face_count);
+	assert(back_faces.size() + front_faces.size() == face_count);
 
 	*back_end = back_faces.size();
 	if (back_faces.size() > 0)
@@ -387,70 +331,74 @@ void	kd_tree_dynamic::do_split(
 		memcpy(&(faces[0]), &(back_faces[0]), back_faces.size() * sizeof(faces[0]));
 	}
 
-	*cross_end = *back_end + cross_faces.size();
-	if (cross_faces.size() > 0)
-	{
-		memcpy(&faces[*back_end], &cross_faces[0], cross_faces.size() * sizeof(faces[0]));
-	}
-
-	*front_end = *cross_end + front_faces.size();
+	*front_end = *back_end + front_faces.size();
 	if (front_faces.size() > 0)
 	{
-		memcpy(&faces[*cross_end], &front_faces[0], front_faces.size() * sizeof(faces[0]));
+		memcpy(&faces[*back_end], &front_faces[0], front_faces.size() * sizeof(faces[0]));
 	}
 
-	assert(*back_end <= *cross_end);
-	assert(*cross_end <= *front_end);
+	assert(*back_end <= *front_end);
 	assert(*front_end == face_count);
 }
 
 
-float	kd_tree_dynamic::evaluate_split(int face_count, face faces[], const axial_box& bounds, int axis, float offset)
+float	kd_tree_dynamic::evaluate_split(
+	int depth,
+	int face_count,
+	face faces[],
+	const axial_box& bounds,
+	int axis,
+	float neg_offset,
+	float* pos_offset)
 // Compute the "value" of splitting the given set of faces, bounded by
 // the given box, along the plane [axis]=offset.  A value of 0 means
 // that a split is possible, but has no value.  A negative value means
 // that the split is not valid at all.  Positive values indicate
 // increasing goodness.
 //
+// *pos_offset is computed based on the minimum coord of the faces
+// that don't fit behind the neg_offset.  Could be greater or less
+// than neg_offset.
+//
 // This is kinda heuristicy -- it's where the "special sauce" comes
 // in.
 {
 	// Count the faces that will end up in the groups
-	// back,cross,front.
+	// back,front.
 	int	back_count = 0;
-	int	cross_count = 0;
 	int	front_count = 0;
+
+	*pos_offset = bounds.get_max()[axis];
 
 	for (int i = 0; i < face_count; i++)
 	{
 		const face&	f = faces[i];
 
-		int	result = classify_face(f, axis, offset);
+		int	result = classify_face(f, axis, neg_offset);
 		if (result == -1)
 		{
-			// Behind.
+			// Neg.
 			back_count++;
-		}
-		else if (result == 0)
-		{
-			// Crossing.
-			cross_count++;
 		}
 		else
 		{
-			// Front.
-			assert(result == 1);
+			// Pos.
 			front_count++;
+
+			// Update *pos_offset so it contains this face.
+			float	mincoord = f.get_min_coord(axis, m_verts);
+			if (mincoord < *pos_offset)
+			{
+				*pos_offset = mincoord;
+				assert(mincoord >= bounds.get_min()[axis]);
+			}
 		}
 	}
 
-
-	if (cross_count == face_count)
+	if ((back_count == 0 && *pos_offset - EPSILON <= bounds.get_min()[axis])
+	    || (front_count == 0 && neg_offset + EPSILON >= bounds.get_max()[axis]))
 	{
-		assert(back_count == 0);
-		assert(front_count == 0);
-
-		// No faces are separated by this plane; this split is
+		// No faces are separated by this split; this split is
 		// entirely useless.
 		return -1;
 	}
@@ -459,21 +407,22 @@ float	kd_tree_dynamic::evaluate_split(int face_count, face faces[], const axial_
 	float	extent = bounds.get_extent().get(axis);
 
 	axial_box	back_bounds(bounds);
-	back_bounds.set_axis_max(axis, offset);
+	back_bounds.set_axis_max(axis, neg_offset);
 	axial_box	front_bounds(bounds);
-	front_bounds.set_axis_min(axis, offset);
+	front_bounds.set_axis_min(axis, *pos_offset);
 
+// Probably not a win.
 #ifdef CARVE_OFF_SPACE
 	// Special case: if the plane carves off space at one side or the
 	// other, without orphaning any faces, then we reward a large
 	// empty space.
 	float	space_quality = 0.0f;
-	if (front_count == 0 && cross_count == 0)
+	if (front_count == 0)
 	{
 		// All the faces are in back -- reward a bigger empty front volume.
 		return space_quality = back_count * front_bounds.get_surface_area();
 	}
-	else if (back_count == 0 && cross_count == 0)
+	else if (back_count == 0)
 	{
 		// All the faces are in front.
 		return space_quality = front_count * back_bounds.get_surface_area();
@@ -485,11 +434,11 @@ float	kd_tree_dynamic::evaluate_split(int face_count, face faces[], const axial_
 #ifdef ADHOC_METRIC
 	// compute a figure for how close to the center this splitting
 	// plane is.  Normalize in [0,1].
-	float	volume_balance = 1.0f - fabsf(center - offset) / extent;
+	float	volume_balance = 1.0f - fabsf(center - (neg_offset + *pos_offset) / 2) / extent;
 
 	// Compute a figure for how well we balance the faces.  0 == bad,
 	// 1 == good.
-	float	face_balance = 1.0f - (fabsf(front_count - back_count) + float(cross_count)) / face_count;
+	float	face_balance = 1.0f - (fabsf(float(front_count - back_count))) / face_count;
 
 	float	split_quality = bounds.get_surface_area() * volume_balance * face_balance;
 
@@ -501,15 +450,17 @@ float	kd_tree_dynamic::evaluate_split(int face_count, face faces[], const axial_
 	// MacDonald and Booth's metric, as quoted by Havran, endorsed by
 	// Ville Miettinen and Atman Binstock:
 
-	float	cost_back = back_bounds.get_surface_area() * back_count;
-	float	cost_front = front_bounds.get_surface_area() * front_count;
-	float	cost_cross = bounds.get_surface_area() * cross_count;
+	float	cost_back = back_bounds.get_surface_area() * (back_count);
+	float	cost_front = front_bounds.get_surface_area() * (front_count);
 
-	float	havran_cost = cost_back + cost_front + cost_cross;
+	float	havran_cost = cost_back + cost_front;
+
+	float	parent_cost = bounds.get_surface_area() * face_count;
 
 	// We need to turn the cost into a quality, so subtract it from a
 	// big number.
-	return bounds.get_surface_area() * face_count - havran_cost;
+	return  parent_cost - havran_cost;
+
 #endif // MACDONALD_AND_BOOTH_METRIC
 }
 
@@ -750,19 +701,13 @@ void	kd_tree_dynamic::node::dump(tu_file* out, int depth) const
 	{
 		out->write_byte('+');
 		out->write_byte('\n');
-		if (m_back)
+		if (m_neg)
 		{
-			m_back->dump(out, depth + 1);
+			m_neg->dump(out, depth + 1);
 		}
-#ifdef TRINARY_KD_TREE
-		if (m_cross)
+		if (m_pos)
 		{
-			m_cross->dump(out, depth + 1);
-		}
-#endif // TRINARY_KD_TREE
-		if (m_front)
-		{
-			m_front->dump(out, depth + 1);
+			m_pos->dump(out, depth + 1);
 		}
 	}
 }
@@ -847,11 +792,7 @@ struct kd_diagram_dump_info
 		float	x = MARGIN;
 		float	y = Y_SIZE - MARGIN;
 		const float	LINE = 10;
-#ifdef TRINARY_KD_TREE
-		y -= LINE; m_ps->printf(x, y, "Trinary KD-Tree");
-#else	// not TRINARY_KD_TREE
-		y -= LINE; m_ps->printf(x, y, "Binary KD-Tree");
-#endif	// not TRINARY_KD_TREE
+		y -= LINE; m_ps->printf(x, y, "Loose KD-Tree");
 #ifdef MACDONALD_AND_BOOTH_METRIC
 		y -= LINE; m_ps->printf(x, y, "using MacDonald and Booth metric");
 #endif
@@ -895,11 +836,8 @@ static void	node_traverse(kd_diagram_dump_info* inf, kd_tree_dynamic::node* n)
 	{
 		// Count children.
 		inf->m_depth++;
-		node_traverse(inf, n->m_back);
-#ifdef TRINARY_KD_TREE
-		node_traverse(inf, n->m_cross);
-#endif // TRINARY_KD_TREE
-		node_traverse(inf, n->m_front);
+		node_traverse(inf, n->m_neg);
+		node_traverse(inf, n->m_pos);
 		inf->m_depth--;
 
 		assert(inf->m_depth >= 0);
@@ -915,13 +853,13 @@ static void	node_diagram(kd_diagram_dump_info* inf, kd_tree_dynamic::node* n, in
 	inf->get_node_coords(&x, &y);
 
 	// Line to parent.
-	inf->m_ps->line(x, y, parent_x, parent_y);
+	inf->m_ps->line((float) x, (float) y, (float) parent_x, (float) parent_y);
 
 	if (n == 0)
 	{
 		// NULL --> show a circle w/ slash
-		inf->m_ps->circle(x, y, 1);
-		inf->m_ps->line(x + 1, y + 1, x - 1, y - 1);
+		inf->m_ps->circle((float) x, (float) y, 1);
+		inf->m_ps->line((float) x + 1, (float) y + 1, (float) x - 1, (float) y - 1);
 	}
 	else if (n->m_leaf)
 	{
@@ -929,7 +867,7 @@ static void	node_diagram(kd_diagram_dump_info* inf, kd_tree_dynamic::node* n, in
 		int	face_count = n->m_leaf->m_faces.size();
 		for (int i = 0; i < face_count + 1; i++)
 		{
-			inf->m_ps->circle(x, y, 2 + i * 1.0f);
+			inf->m_ps->circle((float) x, (float) y, 2 + i * 1.0f);
 		}
 	}
 	else
@@ -937,15 +875,12 @@ static void	node_diagram(kd_diagram_dump_info* inf, kd_tree_dynamic::node* n, in
 		// Internal node.
 
 		// draw disk
-		inf->m_ps->disk(x, y, 1);
+		inf->m_ps->disk((float) x, (float) y, 1);
 
 		// draw children.
 		inf->m_depth++;
-		node_diagram(inf, n->m_back, x, y);
-#ifdef TRINARY_KD_TREE
-		node_diagram(inf, n->m_cross, x, y);
-#endif // TRINARY_KD_TREE
-		node_diagram(inf, n->m_front, x, y);
+		node_diagram(inf, n->m_neg, x, y);
+		node_diagram(inf, n->m_pos, x, y);
 		inf->m_depth--;
 
 		assert(inf->m_depth >= 0);

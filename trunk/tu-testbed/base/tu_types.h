@@ -49,6 +49,17 @@
 #endif	// not __I366__ and not _WIN32
 
 
+typedef Uint8 uint8;
+typedef Sint8 sint8;
+typedef Uint16 uint16;
+typedef Sint16 sint16;
+typedef Uint32 uint32;
+typedef Sint32 sint32;
+typedef Uint64 uint64;
+typedef Sint64 sint64;
+
+
+
 // A function to run some validation checks.
 bool	tu_types_validate();
 

@@ -18,6 +18,13 @@ namespace tu_random
 {
 	Uint32	next_random();
 
+	inline float	get_unit_float()
+	{
+		Uint32	r = next_random();
+
+		// 24 bits of precision.
+		return float(r >> 8) / (16777216.0f - 1.0f);
+	}
 }	// end namespace tu_random
 
 
