@@ -53,7 +53,7 @@ namespace gameswf
 		bool stereo);
 
 
-	void	define_sound_loader(stream* in, int tag_type, movie* m)
+	void	define_sound_loader(stream* in, int tag_type, movie_definition* m)
 	// Load a DefineSound tag.
 	{
 		assert(tag_type == 14);
@@ -139,7 +139,7 @@ namespace gameswf
 		}
 
 
-		void	read(stream* in, int tag_type, movie* m, const sound_sample_impl* sam)
+		void	read(stream* in, int tag_type, movie_definition* m, const sound_sample_impl* sam)
 		// Initialize this StartSound tag from the stream & given sample.
 		// Insert ourself into the movie.
 		{
@@ -185,7 +185,7 @@ namespace gameswf
 	};
 
 
-	void	start_sound_loader(stream* in, int tag_type, movie* m)
+	void	start_sound_loader(stream* in, int tag_type, movie_definition* m)
 	// Load a StartSound tag.
 	{
 		assert(tag_type == 15);
@@ -216,7 +216,7 @@ namespace gameswf
 
 
 // @@ currently not implemented
-//	void	sound_stream_loader(stream* in, int tag_type, movie* m)
+//	void	sound_stream_loader(stream* in, int tag_type, movie_definition* m)
 //	// Load the various stream-related tags: SoundStreamHead,
 //	// SoundStreamHead2, SoundStreamBlock.
 //	{

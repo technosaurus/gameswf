@@ -113,7 +113,7 @@ namespace gameswf
 		// definition.
 		if (ch->is_definition())
 		{
-			ch = ch->create_instance();
+			ch = ch->create_character_instance(root_movie);
 			ch->restart();
 		}
 		
@@ -134,9 +134,16 @@ namespace gameswf
 	}
 	
 	
-	void	display_list::move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth)
-		// Updates the transform properties of the object at
-		// the specified depth.
+	void	display_list::move_display_object(
+		Uint16 depth,
+		bool use_cxform,
+		const cxform& color_xform,
+		bool use_matrix,
+		const matrix& mat,
+		float ratio,
+		Uint16 clip_depth)
+	// Updates the transform properties of the object at
+	// the specified depth.
 	{
 		int	size = m_display_object_array.size();
 		if (size <= 0)
@@ -178,11 +185,20 @@ namespace gameswf
 	}
 	
 	
-	void	display_list::replace_display_object(character* ch, Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth)
-		// Puts a new character at the specified depth, replacing any
-		// existing character.  If use_cxform or use_matrix are false,
-		// then keep those respective properties from the existing
-		// character.
+	void	display_list::replace_display_object(
+		movie* root_movie,
+		character* ch,
+		Uint16 depth,
+		bool use_cxform,
+		const cxform& color_xform,
+		bool use_matrix,
+		const matrix& mat,
+		float ratio,
+		Uint16 clip_depth)
+	// Puts a new character at the specified depth, replacing any
+	// existing character.  If use_cxform or use_matrix are false,
+	// then keep those respective properties from the existing
+	// character.
 	{
 		int	size = m_display_object_array.size();
 		if (size <= 0)
@@ -224,7 +240,7 @@ namespace gameswf
 		// definition.
 		if (ch->is_definition())
 		{
-			ch = ch->create_instance();
+			ch = ch->create_character_instance(root_movie);
 			ch->restart();
 		}
 		
@@ -440,3 +456,9 @@ namespace gameswf
 }
 
 
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

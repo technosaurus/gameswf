@@ -48,7 +48,7 @@ namespace gameswf
 	}
 
 
-	void	fill_style::read(stream* in, int tag_type, movie* m)
+	void	fill_style::read(stream* in, int tag_type, movie_definition* m)
 	{
 		m_type = in->read_u8();
 

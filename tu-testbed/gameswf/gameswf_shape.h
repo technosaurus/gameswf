@@ -127,7 +127,7 @@ namespace gameswf
 		shape_character();
 		virtual ~shape_character();
 
-		void	read(stream* in, int tag_type, bool with_style, movie* m);
+		void	read(stream* in, int tag_type, bool with_style, movie_definition* m);
 		void	display(const display_info& di);
 		void	display(
 			const display_info& di,

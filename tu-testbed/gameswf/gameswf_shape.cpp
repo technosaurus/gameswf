@@ -579,7 +579,7 @@ namespace gameswf
 	//
 
 
-	static void	read_fill_styles(array<fill_style>* styles, stream* in, int tag_type, movie* m)
+	static void	read_fill_styles(array<fill_style>* styles, stream* in, int tag_type, movie_definition* m)
 	// Read fill styles, and push them onto the given style array.
 	{
 		assert(styles);
@@ -653,7 +653,7 @@ namespace gameswf
 	}
 
 
-	void	shape_character::read(stream* in, int tag_type, bool with_style, movie* m)
+	void	shape_character::read(stream* in, int tag_type, bool with_style, movie_definition* m)
 	{
 		if (with_style)
 		{
