@@ -1,3 +1,35 @@
+2005-03-20  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* macros/libXML.m4: Define HAVE_LIBXML if libxml2 is found.
+	* configure.ac: Add AM_CONFIG_HEADER. Don't both to link to my
+	test XML file.
+	* config.h.in: Add autoheader generated config file.
+	* config.mk: Add DEFS to CFLAGS so HAVE_CONFIG_H gets passed to
+	G++.
+	* base/Makefile.in: Add dependencies.
+	* aclocal.m4: Regenerated using aclocal
+	* autogen.sh: Regenerate aclocal.m4, config.h.in, and configure
+	without having to understand the GNU auto tools.
+	* tu_opengl_includes.h: Don't redefine APIENTRY if it exists.
+	* gameswf_action.cpp: Include config.h if HAVE_CONFIG_H is
+	defined. Only include gameswf_xml.h and gameswf_xmlsocket.h if
+	HAVE_LIBXML is defined in config.h. Eliminate compiler
+	warnings. Use HAVE_LIBXML instead of TU_CONFIG_LINK_TO_LIBXML.
+	* gameswf_xml.cpp: Include config.h if HAVE_CONFIG_H is
+	defined. Don't use any of this code unless HAVE_LIBXML is defined
+	in config.h. Add gameswf namespace. Use HAVE_LIBXML instead of
+	TU_CONFIG_LINK_TO_LIBXML.
+	* gameswf_xml.h: Include config.h if HAVE_CONFIG_H is
+	defined. Don't use any of this code unless HAVE_LIBXML is defined
+	in config.h. Use HAVE_LIBXML instead of TU_CONFIG_LINK_TO_LIBXML.
+	* gameswf_xmlsocket.cpp: Include config.h if HAVE_CONFIG_H is
+	defined. Don't use any of this code unless HAVE_LIBXML is defined
+	in config.h. Add gameswf namespace. Use HAVE_LIBXML instead of
+	TU_CONFIG_LINK_TO_LIBXML. 
+	* gameswf_xmlsocket.h: Include config.h if HAVE_CONFIG_H is
+	defined. Don't use any of this code unless HAVE_LIBXML is defined
+	in config.h. Use HAVE_LIBXML instead of TU_CONFIG_LINK_TO_LIBXML.
+	
 2005-03-19  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/Makefile.in: Update dependencies for new files.

@@ -1,6 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ(2.50)
 AC_INIT(gameswf/gameswf.h)
+AM_CONFIG_HEADER(config.h)
 
 AC_CANONICAL_TARGET
 
@@ -24,8 +25,6 @@ AM_PATH_PNG
 
 dnl AM_PATH_LIBXMLCPP
 AM_PATH_LIBXML2
-
-AC_LINK_FILES(gameswf/testsuite/ips.xml,gameswf/testsuite/ips.xml)
 
 AC_OUTPUT(Makefile
 base/Makefile

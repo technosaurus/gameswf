@@ -42,6 +42,7 @@ dnl AC_ARG_ENABLE(libxmltest, [  --disable-libxmltest       Do not try to compil
 
   if test "x$LIBXML_CFLAGS" != "x" -a  "x$LIBXML_LIBS" != "x"; then
     AC_MSG_RESULT(yes)
+    AC_DEFINE(HAVE_LIBXML,1,[Define this if you have libxml2 support available])
   else
     AC_MSG_RESULT(no)
   fi

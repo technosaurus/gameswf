@@ -1,6 +1,10 @@
 #ifndef __XML_H__
 #define __XML_H__
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
@@ -9,15 +13,14 @@
 #include "gameswf_xmlsocket.h"
 
 
-#if TU_CONFIG_LINK_TO_LIBXML
-
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
+#ifdef HAVE_LIBXML
 
 namespace gameswf
 {
-
+  
 class XMLAttr
 {
 public:
@@ -76,6 +79,7 @@ public:
     _value = node._value;
     _children = node._children;
     _attributes = node._attributes;
+    return this;
   }
 
   XMLNode *operator = (XMLNode *node)
@@ -84,6 +88,7 @@ public:
     _value = node->_value;
     _children = node->_children;
     _attributes = node->_attributes;
+    return this;
   }
 
   void appendChild(XMLNode *node)
@@ -297,7 +302,7 @@ void xml_load(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
 
 void xml_set_current(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
-void xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg_bottom_index);
+void xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 void xml_firstchild(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
@@ -306,6 +311,7 @@ void xml_childnodes(gameswf::as_value* result, gameswf::as_object_interface* thi
 void xml_nodename(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 void xml_next_stack_depth(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+
 
 // These are the event handlers called for this object
 void xml_onload(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
@@ -317,7 +323,7 @@ void xml_loaded(gameswf::as_value* result, gameswf::as_object_interface* this_pt
 }	// end namespace gameswf
 
 
-#endif // TU_CONFIG_LINK_TO_LIBXML
+#endif // HAVE_LIBXML
 
 #endif	// __XML_H__
 

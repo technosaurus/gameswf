@@ -6,14 +6,20 @@
 #ifndef __XMLSOCKET_H__
 #define __XMLSOCKET_H__
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 
 
-#if TU_CONFIG_LINK_TO_LIBXML
+#ifdef HAVE_LIBXML
 
+namespace gameswf
+{  
 
 class XMLSocket {
 public:
@@ -72,9 +78,12 @@ void xmlsocket_event_close(gameswf::as_value* result, gameswf::as_object_interfa
 void xmlsocket_event_connect(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
 
 void xmlsocket_event_xml(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
+ 
+} // end of gameswf namespace
 
+// HAVE_LIBXML
+#endif
 
-#endif // TU_CONFIG_LINK_TO_LIBXML
-
-#endif	// __XMLSOCKETSOCKET_H__
+// __XMLSOCKETSOCKET_H__
+#endif
 
