@@ -9,9 +9,6 @@ General
   * try it out; maybe add a little text output to chunklod or
     something
 
-  * switch to shape rendering at larger scales (when the textures will
-    be stretched)
-
 * sprites as button characters are not working.
 
 * the half-implemented action stuff is an obstacle to progress; many
