@@ -16,26 +16,9 @@
 
 namespace swf {
 
+	struct movie;
 	struct character;
-
-	struct movie
-	{
-		virtual void	execute(float time);
-		virtual void	add_character(int id, character* ch);
-	};
-
-
-	struct character
-	{
-		virtual void	execute(float time);	// OpenGL state contains viewport, transforms, etc.
-	};
-
-
-	struct tag
-	{
-		virtual void	execute(float time);
-	};
-
+	struct tag;
 	struct stream;
 
 	// Create a swf::movie from the given input stream.

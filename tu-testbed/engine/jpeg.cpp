@@ -223,6 +223,8 @@ namespace jpeg
 		struct jpeg_decompress_struct	m_cinfo;
 		struct jpeg_error_mgr m_jerr;
 
+		enum SWF_DEFINE_BITS_JPEG2 { SWF_JPEG2 };
+
 		input_impl(SDL_RWops* in)
 		// Constructor.  Read the header data from in, and
 		// prepare to read data.
@@ -237,6 +239,29 @@ namespace jpeg
 			jpeg_read_header(&m_cinfo, TRUE);
 			jpeg_start_decompress(&m_cinfo);
 		}
+
+
+		input_impl(SWF_DEFINE_BITS_JPEG2 e, SDL_RWops* in)
+		// The SWF file format stores JPEG images with the
+		// encoding tables separate from the image data.  This
+		// constructor reads the encoding tables, and then
+		// prepares to read the image data.
+		{
+			m_cinfo.err = jpeg_std_error(&m_jerr);
+
+			// Initialize decompression object.
+			jpeg_create_decompress(&m_cinfo);
+
+			setup_rw_source(&m_cinfo, in);
+
+			// Read the encoding tables.
+			jpeg_read_header(&m_cinfo, FALSE);
+
+			// Now, read the image header.
+			jpeg_read_header(&m_cinfo, TRUE);
+			jpeg_start_decompress(&m_cinfo);
+		}
+
 
 		~input_impl()
 		// Destructor.  Clean up our jpeg reader state.
@@ -293,8 +318,16 @@ namespace jpeg
 		return new input_impl(in);
 	}
 
+	/*static*/ input*	input::create_swf_jpeg2(SDL_RWops* in)
+	// Read SWF JPEG2-style header (separate encoding
+	// table followed by image data), and create jpeg
+	// input object.
+	{
+		return new input_impl(input_impl::SWF_JPEG2, in);
+	}
 
-	// Default constructor.
+
+	// Default destructor.
 	input::~input() {}
 
 

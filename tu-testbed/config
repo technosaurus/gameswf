@@ -119,10 +119,10 @@ endif # GCC
 
 
 %.$(OBJ_EXT): %.cpp
-	$(CC) -c $^ $(CFLAGS)
+	$(CC) -c $< $(CFLAGS)
 
 %.$(OBJ_EXT): %.c
-	$(CC) -c $^ $(CFLAGS)
+	$(CC) -c $< $(CFLAGS)
 
 
 ENGINE := $(TOP)/engine/engine.$(LIB_EXT)
