@@ -1,0 +1,36 @@
+# make configuration for the tu-testbed engine library
+
+# TODO: conditionalize on MSVC vs. GCC etc
+
+
+# MSVC
+CC := cl /nologo
+AR := lib /NOLOGO
+LIB_OUT_FLAG := /OUT:
+LIB_EXT := lib
+OBJ_EXT := obj
+EXE_EXT := .exe
+LIBS := opengl32.lib glu32.lib SDL_image.lib SDL.lib
+CFLAGS := $(CFLAGS) -I$(INCLUDE_DIRS) -Zi -GX
+LDFLAGS := $(LIBS) /MD
+
+# GCC
+# CC := g++
+# AR := ar -r
+# LIB_OUT_FLAG :=
+# LIB_EXT := a
+# OBJ_EXT := o
+# EXE_EXT :=
+# LIBS := -lSDL_image -lSDL -lGL -lGLU 
+# SDL_CFLAGS := $(shell sdl-config --cflags)
+# SDL_LDFLAGS := $(shell sdl-config --libs)
+# CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS) -g
+# LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
+
+
+%.$(OBJ_EXT): %.cpp
+	$(CC) -c $^ $(CFLAGS)
+
+# TODO: figure out how to get rid of the ../..
+ENGINE := ../../engine/engine.$(LIB_EXT)
+ENGINE_INCLUDE := ../../engine
