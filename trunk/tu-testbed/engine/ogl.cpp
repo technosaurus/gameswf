@@ -10,6 +10,7 @@
 #include <engine/ogl.h>
 #include <engine/utility.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 #ifdef WIN32
