@@ -46,6 +46,10 @@ ZLIB_DIR := $(TOP)/../zlib
 ZLIB_INCLUDE := $(ZLIB_DIR)
 ZLIB := $(ZLIB_DIR)/zlib.$(LIB_EXT)
 
+JPEGLIB_DIR := $(TOP)/../jpeg-6b
+JPEGLIB_INCLUDE := $(JPEGLIB_DIR)
+JPEGLIB := $(JPEGLIB_DIR)/libjpeg.$(LIB_EXT)
+
 ifeq ($(DEBUG),1)
 	# msvc debug flags
 	CC_DEBUG_FLAGS := -Zi -Od
@@ -77,6 +81,9 @@ CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS) -fpic -Wall
 LDFLAGS := -lGL -lGLU -lSDL_image
 MAKE_DLL := gcc -shared
 
+# On Unix-like machines, these libraries are usually installed in
+# standard locations.
+
 #LIBPNG_DIR := $(TOP)/../libpng
 #LIBPNG_INCLUDE := $(LIBPNG_DIR)
 LIBPNG := -lpng
@@ -84,6 +91,10 @@ LIBPNG := -lpng
 #ZLIB_DIR := $(TOP)/../zlib
 #ZLIB_INCLUDE := $(ZLIB_DIR)
 ZLIB := -lz
+
+#JPEGLIB_DIR := $(TOP)/../jpeg-6b
+#JPEGLIB_INCLUDE := $(JPEGLIB_DIR)
+JPEGLIB := -ljpeg
 
 ifeq ($(DEBUG), 1)
 	# gcc debug flags
@@ -94,7 +105,7 @@ else
 	CC_DEBUG_FLAGS := -O2 -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
 endif
 
-endif
+endif # GCC
 
 
 %.$(OBJ_EXT): %.cpp

@@ -15,10 +15,15 @@
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
+extern "C" {
+#include <jpeglib.h>
+}
 
 #include <engine/utility.h>
 #include <engine/container.h>
 #include <engine/geometry.h>
+
+#include "bt_array.h"
 
 
 struct texture_tile {
@@ -29,7 +34,12 @@ struct texture_tile {
 
 void	initialize_tileset(array<texture_tile>* tileset);
 const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b);
-void	heightfield_shader(SDL_RWops* rwin, SDL_RWops* out, SDL_Surface* tilemap, const array<texture_tile>& tileset, float resolution);
+void	heightfield_shader(const char* infile,
+			   FILE* out,
+			   SDL_Surface* tilemap,
+			   const array<texture_tile>& tileset,
+			   SDL_Surface* altitude_gradient,
+			   float resolution);
 
 
 void	error(const char* fmt)
@@ -47,14 +57,14 @@ void	print_usage()
 // Print usage info for this program.
 {
 	// no args, or -h or -?.  print usage.
-	printf("heightfield_shader: program for generating a texture for a heightfield\n"
-		   "terrain.\n\n"
-		   "This program has been donated to the Public Domain by Thatcher Ulrich <tu@tulrich.com>\n\n"
-		   "usage: heightfield_shader <input_filename> <output_filename> [-t <tilemap_bitmap>]\n"
-		   "\t[-r <texels per heixel>]\n"
-		   "\n"
-		   "\tThe input filename should either be a .BT format terrain file with\n"
-		   "\t(2^N+1) x (2^N+1) datapoints, or a grayscale bitmap.\n"
+	printf("heightfield_shader: program for generating a .jpg texture for a heightfield\n"
+	       "terrain.\n\n"
+	       "This program has been donated to the Public Domain by Thatcher Ulrich <tu@tulrich.com>\n"
+	       "Incorporates software from the Independent JPEG Group\n\n"
+	       "usage: heightfield_shader <input_filename> <output_filename> [-t <tilemap_bitmap>]\n"
+	       "\t[-g <altitude_gradient_bitmap>] [-r <texels per heixel>]\n"
+	       "\n"
+	       "\tThe input file should be a .BT format terrain file with (2^N+1) x (2^N+1) datapoints.\n"
 		);
 }
 
@@ -67,6 +77,7 @@ int	wrapped_main(int argc, char* argv[])
 	char*	infile = NULL;
 	char*	outfile = NULL;
 	char*	tilemap = NULL;
+	char*	gradient_file = NULL;
 	array<texture_tile>	tileset;
 	float	resolution = 1.0;
 
@@ -91,6 +102,16 @@ int	wrapped_main(int argc, char* argv[])
 				arg++;
 				tilemap = argv[arg];
 				break;
+			case 'g':
+				// Get gradient filename.
+				if (arg + 1 >= argc) {
+					printf("error: -g option requires a filename\n");
+					print_usage();
+					exit(1);
+				}
+				arg++;
+				gradient_file = argv[arg];
+				break;
 			case 'r':
 				// Get output resolution.
 				if (arg + 1 >= argc) {
@@ -99,7 +120,7 @@ int	wrapped_main(int argc, char* argv[])
 					exit(1);
 				}
 				arg++;
-				resolution = atof(argv[arg]);
+				resolution = (float) atof(argv[arg]);
 				if (resolution <= 0.001) {
 					printf("error: resolution must be greater than 0\n");
 					print_usage();
@@ -136,16 +157,10 @@ int	wrapped_main(int argc, char* argv[])
 		exit( 1 );
 	}
 	
-	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
-	if ( in == 0 ) {
-		printf( "error: can't open %s for input.\n", infile );
-		exit( 1 );
-	}
-
-	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
-	if ( out == 0 ) {
+	FILE*	out = fopen(outfile, "wb");
+	if (out == 0) {
 		printf( "error: can't open %s for output.\n", outfile );
-		exit( 1 );
+		exit(1);
 	}
 
 	// Initialize the tilemap and tileset.
@@ -155,20 +170,25 @@ int	wrapped_main(int argc, char* argv[])
 		// chooses a tile from the tilemap.
 		tilemap_surface = IMG_Load(tilemap);
 	}
-		
+	
 	// Tileset is a set of textures, associated with a particular
 	// color in the tilemap.
 	initialize_tileset(&tileset);
+
+	// Altitude gradient bitmap.
+	SDL_Surface*	altitude_gradient = NULL;
+	if (gradient_file && gradient_file[0]) {
+		altitude_gradient = IMG_Load(gradient_file);
+	}
 
 	// Print the parameters.
 	printf("infile: %s\n", infile);
 	printf("outfile: %s\n", outfile);
 
 	// Process the data.
-	heightfield_shader(in, out, tilemap_surface, tileset, resolution);
+	heightfield_shader(infile, out, tilemap_surface, tileset, altitude_gradient, resolution);
 
-	SDL_RWclose(in);
-	SDL_RWclose(out);
+	fclose(out);
 
 	return 0;
 }
@@ -242,16 +262,19 @@ void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8
 
 
 struct heightfield {
-	int	size;
-	int	log_size;
-	float	sample_spacing;
-	float*	data;
+	int	m_size;
+	int	m_log_size;
+	float	m_sample_spacing;
+	float	m_input_vertical_scale;
+
+	bt_array*	m_bt;
 
 	heightfield() {
-		size = 0;
-		log_size = 0;
-		sample_spacing = 1.0f;
-		data = 0;
+		m_size = 0;
+		m_log_size = 0;
+		m_sample_spacing = 1.0f;
+		m_input_vertical_scale = 1.0f;
+		m_bt = NULL;
 	}
 
 	~heightfield() {
@@ -261,28 +284,47 @@ struct heightfield {
 	void	clear()
 	// Frees any allocated data and resets our members.
 	{
-		if (data) {
-			delete [] data;
-			data = 0;
+		if (m_bt) {
+			delete m_bt;
+			m_bt = NULL;
 		}
-		size = 0;
-		log_size = 0;
+		m_size = 0;
+		m_log_size = 0;
 	}
 
-	float&	elem(int x, int z)
-	// Return a reference to the element at (x, z).
-	{
-		assert_else(data && x >= 0 && x < size && z >= 0 && z < size) {
-			printf("%d %d\n", x, z);//xxxxxx
-			error("heightfield::elem() -- array access out of bounds.");
-		}
 
-		return data[x + z * size];
+	float	height(int x, int z) const
+	// Return the height at (x, z).
+	{
+		assert(m_bt);
+		return m_bt->get_sample(x, z) * m_input_vertical_scale;
 	}
 
-	float	get_elem(int x, int z) const
+
+	float	height_interp(float x, float z) const
+	// Return the height at any point within the grid.  Bilinearly
+	// interpolates between samples.
 	{
-		return (const_cast<heightfield*>(this))->elem(x, z);
+		x = fclamp(x, 0.f, float(m_size - 3));
+		z = fclamp(z, 0.f, float(m_size - 3));
+
+		int	i = (int) floor(x);
+		int	j = (int) floor(z);
+
+		float	wx = x - i;
+		float	wz = z - j;
+
+		// Compute lighting at nearest grid points, and bilinear blend
+		// the results.
+		float	y00 = height(i, j);
+		float	y10 = height(i+1, j);
+		float	y01 = height(i, j+1);
+		float	y11 = height(i+1, j+1);
+		
+		return (y00 * (1 - wx) * (1 - wz)
+			+ y10 * (wx) * (1 - wz)
+			+ y01 * (1 - wx) * (wz)
+			+ y11 * (wx) * (wz));
 	}
 
 
@@ -292,8 +334,8 @@ struct heightfield {
 	// but is interpolated between the nearest samples.  Uses an
 	// arbitrary hard-coded sun direction & lighting parameters.
 	{
-		x = fclamp(x, 0, size-3);
-		z = fclamp(z, 0, size-3);
+		x = fclamp(x, 0.f, float(m_size - 3));
+		z = fclamp(z, 0.f, float(m_size - 3));
 
 		int	i = (int) floor(x);
 		int	j = (int) floor(z);
@@ -319,176 +361,54 @@ struct heightfield {
 	// Aux function for compute_light().  Computes lighting at a
 	// discrete heightfield spot.
 	{
-
-		float	y00 = get_elem(i, j);
-		float	y10 = get_elem(i+1, j);
-		float	y01 = get_elem(i, j+1);
-		float	y11 = get_elem(i+1, j+1);
+		float	y00 = height(i, j);
+		float	y10 = height(i+1, j);
+		float	y01 = height(i, j+1);
+		float	y11 = height(i+1, j+1);
 				
-		float	slopex = (((y00 - y10) + (y01 - y11)) * 0.5) / sample_spacing;
-		float	slopez = (((y00 - y01) + (y10 - y11)) * 0.5) / sample_spacing;
+		float	slopex = (((y00 - y10) + (y01 - y11)) * 0.5f) / m_sample_spacing;
+		float	slopez = (((y00 - y01) + (y10 - y11)) * 0.5f) / m_sample_spacing;
 
 		return iclamp((int) ((slopex * 0.25 + slopez * 0.15 + 0.5) * 255), 0, 255);	// xxx arbitrary params
 	}
 
 
-	int	load_bt(SDL_RWops* in)
-	// Load .BT format heightfield data from the given file and
-	// initialize heightfield.
+	bool	init_bt(const char* bt_filename)
+	// Use the specified .BT format heightfield data file as our height input.
 	//
-	// Return -1, and rewind the source file, if the data is not in .BT format.
+	// Return true on success, false on failure.
 	{
 		clear();
 
-		int	start = SDL_RWtell(in);
-
-		// Read .BT header.
-
-		// File-type marker.
-		char	buf[11];
-		SDL_RWread(in, buf, 1, 10);
-		buf[10] = 0;
-		if (strcmp(buf, "binterr1.1") != 0) {
-			// Bad input file format.  Must not be BT 1.1.
-		
-			// Rewind to where we started.
-			SDL_RWseek(in, start, SEEK_SET);
-
-			return -1;
+		m_bt = bt_array::create(bt_filename);
+		if (m_bt == NULL) {
+			// failure.
+			return false;
 		}
 
-		int	width = SDL_ReadLE32(in);
-		int	height = SDL_ReadLE32(in);
-		int	sample_size = SDL_ReadLE16(in);
-		bool	float_flag = SDL_ReadLE16(in) == 1 ? true : false;
-		bool	utm_flag = SDL_ReadLE16(in) ? true : false;
-		int	utm_zone = SDL_ReadLE16(in);
-		int	datum = SDL_ReadLE16(in);
-		double	left = ReadDouble64(in);
-		double	right = ReadDouble64(in);
-		double	bottom = ReadDouble64(in);
-		double	top = ReadDouble64(in);
-
-		// Skip to the start of the data.
-		SDL_RWseek(in, start + 256, SEEK_SET);
-
-		//xxxxxx
-		printf("width = %d, height = %d, sample_size = %d, left = %lf, right = %lf, bottom = %lf, top = %lf\n",
-			   width, height, sample_size, left, right, bottom, top);
-		//xxxxxx
-
-		// If float_flag is set, make sure datasize is 4 bytes.
-		if (float_flag == true && sample_size != 4) {
-			throw "heightfield::load() -- for float data, sample_size must be 4 bytes!";
-		}
-
-		if (sample_size != 2 && sample_size != 4) {
-			throw "heightfield::load() -- sample_size must be 2 or 4 bytes!";
-		}
-
-		// Set and validate the size.
-		size = width;
-		if (height != size) {
-			// Data must be square!
-			printf("Warning: non-square data; will extend to make it square\n");
-		}
-
-		size = fmax(width, height);
+		m_size = imax(m_bt->get_width(), m_bt->get_height());
 
 		// Compute the log_size and make sure the size is 2^N + 1
-		log_size = (int) (log2((float)(size - 1)) + 0.5);
-		if (size != (1 << log_size) + 1) {
-			if (size < 0 || size > (1 << 20)) {
-				throw "invalid heightfield dimensions";
+		m_log_size = (int) (log2((float) m_size - 1) + 0.5);
+		if (m_size != (1 << m_log_size) + 1) {
+			if (m_size < 0 || m_size > (1 << 20)) {
+				printf("invalid heightfield dimensions -- size from file = %d\n", m_size);
+				return false;
 			}
 
 			printf("Warning: data is not (2^N + 1) x (2^N + 1); will extend to make it the correct size.\n");
 
 			// Expand log_size until it contains size.
-			while (size > (1 << log_size) + 1) {
-				log_size++;
+			while (m_size > (1 << m_log_size) + 1) {
+				m_log_size++;
 			}
-			size = (1 << log_size) + 1;
+			m_size = (1 << m_log_size) + 1;
 		}
 
-		sample_spacing = fabs(right - left) / (size - 1);
-		printf("sample_spacing = %f\n", sample_spacing);//xxxxxxx
+		m_sample_spacing = (float) (fabs(m_bt->get_right() - m_bt->get_left()) / (double) (m_size - 1));
+		printf("sample_spacing = %f\n", m_sample_spacing);//xxxxxxx
 
-		// Allocate the storage.
-		int	sample_count = size * size;
-		data = new float[sample_count];
-
-		// Load the data.  BT data is goes in columns, bottom-to-top, left-to-right.
-		for (int i = 0; i < width; i++) {
-			for (int j = 0; j < height; j++) {
-				float	y = 0.f;
-				if (float_flag) {
-					y = ReadFloat32(in);
-				} else if (sample_size == 2) {
-					y = SDL_ReadLE16(in);
-				} else if (sample_size == 4) {
-					y = SDL_ReadLE32(in);
-				}
-				data[i + (size - 1 - j) * size] = y;
-			}
-		}
-
-		// Extend data to fill out any unused space.
-		{for (int i = 0; i < width; i++) {
-			for (int j = height; j < size; j++) {
-				data[i + (size - 1 - j) * size] = data[i + (size - 1 - (height-1)) * size];
-			}
-		}}
-		{for (int i = width; i < size; i++) {
-			for (int j = 0; j < size; j++) {
-				data[i + (size - 1 - j) * size] = data[width - 1 + (size - 1 - j) * size];
-			}
-		}}
-
-		return 0;
-	}
-
-
-	void	load_bitmap(SDL_RWops* in /* float vertical_scale */)
-	// Load a bitmap from the given file, and use it to initialize our
-	// heightfield data.
-	{
-		SDL_Surface* s = IMG_Load_RW(in, 0);
-		if (s == NULL) {
-			error("heightfield::load_bitmap() -- could not load bitmap file.");
-		}
-	
-		// Compute the dimension (width & height) for the heightfield.
-		size = imax(s->w, s->h);
-		log_size = (int) (log2((float)(size - 1)) + 0.5f);
-	
-		// Expand the heightfield dimension to contain the bitmap.
-		while (((1 << log_size) + 1) < size) {
-			log_size++;
-		}
-		size = (1 << log_size) + 1;
-	
-		sample_spacing = 1.0;	// TODO: parameterize this
-	
-		// Allocate storage.
-		int	sample_count = size * size;
-		data = new float[sample_count];
-	
-		// Initialize the data.
-		for (int i = 0; i < size; i++) {
-			for (int j = 0; j < size; j++) {
-				float	y = 0;
-	
-				// Extract a height value from the pixel data.
-				Uint8	r, g, b, a;
-				ReadPixel(s, imin(i, s->w - 1), imin(j, s->h - 1), &r, &g, &b, &a);
-				y = r * 1.0f;	// just using red component for now.
-	
-				data[i + (size - 1 - j) * size] = y;
-			}
-		}
-	
-		SDL_FreeSurface(s);
+		return true;
 	}
 };
 
@@ -496,14 +416,20 @@ struct heightfield {
 void	compute_lightmap(SDL_Surface* out, const heightfield& hf);
 
 
-void	heightfield_shader(SDL_RWops* in, SDL_RWops* out, SDL_Surface* tilemap, const array<texture_tile>& tileset, float resolution)
+void	heightfield_shader(const char* infile,
+			   FILE* out,
+			   SDL_Surface* tilemap,
+			   const array<texture_tile>& tileset,
+			   SDL_Surface* altitude_gradient,
+			   float resolution)
 // Generate texture for heightfield.
 {
 	heightfield	hf;
 
 	// Load the heightfield data.
-	if (hf.load_bt(in) < 0) {
-		hf.load_bitmap(in);
+	if (hf.init_bt(infile) == false) {
+		printf("Can't load %s as a .BT file\n", infile);
+		exit(1);
 	}
 
 	// Compute and write the lightmap, if any.
@@ -511,35 +437,83 @@ void	heightfield_shader(SDL_RWops* in, SDL_RWops* out, SDL_Surface* tilemap, con
 
 	const char*	spinner = "-\\|/";
 
-	int	width = (int) ((hf.size - 1) * resolution);
-	int	height = (int) ((hf.size - 1) * resolution);
+	int	width = (int) ((1 << hf.m_log_size) * resolution);
+	int	height = (int) ((1 << hf.m_log_size) * resolution);
 	
-	SDL_Surface*	texture = SDL_CreateRGBSurface(SDL_SWSURFACE, width, height, 24, 0xFF0000, 0xFF00, 0xFF, 0);
-	Uint8*	p = (Uint8*) texture->pixels;
+	// create a buffer to hold a 1-pixel high RGB buffer.  We're
+	// going to create our texture one scanline at a time.
+	Uint8*	texture_pixels = new Uint8[width * 3];
+
+	// Create our JPEG compression object, and initialize compression settings.
+	struct jpeg_compress_struct cinfo;
+	struct jpeg_error_mgr jerr;
+	cinfo.err = jpeg_std_error(&jerr);
+	jpeg_create_compress(&cinfo);
+	jpeg_stdio_dest(&cinfo, out);
+
+	cinfo.image_width = width;
+	cinfo.image_height = height;
+	cinfo.input_components = 3;
+	cinfo.in_color_space = JCS_RGB;
+	jpeg_set_defaults(&cinfo);
+	jpeg_set_quality(&cinfo, 80 /* 0..100 */, TRUE);
+	jpeg_start_compress(&cinfo, TRUE);
+
 	{for (int j = 0; j < height; j++) {
+
+		Uint8*	p = texture_pixels;
+
 		{for (int i = 0; i < width; i++) {
-			const texture_tile*	t;
-			if (tilemap) {
+
+			// Pick a color for this texel.
+			// TODO: break this out into a more sophisticated function.
+			Uint8	r, g, b, a;
+			if (altitude_gradient) {
+				// Shade the terrain using an altitude gradient.
+				float	y = hf.height_interp(i / resolution, j / resolution);
+				int	h = altitude_gradient->h;
+				if (y < 0.1f)
+				{
+					// Sea level.
+					ReadPixel(altitude_gradient, 0, h - 1, &r, &g, &b, &a);
+				}
+				else {
+					// Above sea level.
+					int	hpix = (int) floor(((y - 0.1f) / 4500.f) * h);
+					if (hpix >= h) {
+						hpix = h - 1;
+					}
+					if (hpix < 1) {
+						hpix = 1;
+					}
+					ReadPixel(altitude_gradient, 0, (h - 1) - hpix, &r, &g, &b, &a);	// TODO: smooth interpolation, or jittered sampling, or something.
+				}
+			}
+			else {
+				// Select a tile.
+				const texture_tile*	t;
+				if (tilemap) {
 				// Get the corresponding pixel from the tilemap, and
 				// get the tile that it corresponds to.
-				Uint8	r, g, b, a;
-				ReadPixel(tilemap, imin((int) (i / resolution), tilemap->w-1), imin((int) (j / resolution), tilemap->h-1), &r, &g, &b, &a);
-				t = choose_tile(tileset, r, g, b);
-			} else {
-				// In the absense of a tilemap, use the first tile for
+					Uint8	r, g, b, a;
+					ReadPixel(tilemap, imin((int) (i / resolution), tilemap->w-1), imin((int) (j / resolution), tilemap->h-1), &r, &g, &b, &a);
+					t = choose_tile(tileset, r, g, b);
+				} else {
+				// In the absence of a tilemap, use the first tile for
 				// everything.
-				t = &tileset[0];
+					t = &tileset[0];
+				}
+				assert(t);
+
+				// get tile pixel
+				int	tx, ty;
+				tx = (i % t->image->w);
+				ty = (j % t->image->h);
+				Uint8	r, g, b, a;
+				ReadPixel(t->image, tx, ty, &r, &g, &b, &a);
 			}
-			assert(t);
 
-			// get tile pixel
-			int	tx, ty;
-			tx = (i % t->image->w);
-			ty = (j % t->image->h);
-			Uint8	r, g, b, a;
-			ReadPixel(t->image, tx, ty, &r, &g, &b, &a);
-
-			// apply light to it
+			// apply light to the color
 			Uint8	light = hf.compute_light(i / resolution, j / resolution);
 
 			r = (r * light) >> 8;
@@ -550,11 +524,20 @@ void	heightfield_shader(SDL_RWops* in, SDL_RWops* out, SDL_Surface* tilemap, con
 			*p++ = g;
 			*p++ = b;
 		}}
+
+		// Write out the scanline.
+		JSAMPROW	row_pointer[1];
+		row_pointer[0] = texture_pixels;
+		jpeg_write_scanlines(&cinfo, row_pointer, 1);
+
 		printf("\b%c", spinner[j&3]);
 	}}
 	
-	SDL_SaveBMP_RW(texture, out, 0);
-	SDL_FreeSurface(texture);
+	jpeg_finish_compress(&cinfo);
+	jpeg_destroy_compress(&cinfo);
+
+//	SDL_SaveBMP_RW(texture, out, 0);
+	delete texture_pixels;
 	
 	printf("done\n");
 }
