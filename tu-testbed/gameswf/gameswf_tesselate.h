@@ -11,6 +11,7 @@
 #define GAMESWF_TESSELATE_H
 
 
+#include "gameswf.h"
 #include "gameswf_types.h"
 
 

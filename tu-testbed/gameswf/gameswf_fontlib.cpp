@@ -11,6 +11,7 @@
 
 #include "base/container.h"
 #include "base/tu_file.h"
+#include "gameswf.h"
 #include "gameswf_font.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"

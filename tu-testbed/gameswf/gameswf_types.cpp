@@ -16,6 +16,20 @@
 
 namespace gameswf
 {
+
+	//
+	// point
+	//
+
+
+	bool	point::bitwise_equal(const point& p) const
+	// Bitwise comparison; return true if *this is bitwise
+	// identical to p.
+	{
+		return memcmp(this, &p, sizeof(p)) == 0;
+	}
+
+
 	//
 	// matrix
 	//
@@ -420,6 +434,16 @@ namespace gameswf
 		m_y_min = fmin(m_y_min, y);
 		m_x_max = fmax(m_x_max, x);
 		m_y_max = fmax(m_y_max, y);
+	}
+
+
+	point	rect::get_corner(int i) const
+	// Get one of the rect verts.
+	{
+		assert(i >= 0 && i < 4);
+		return point(
+			(i == 0 || i == 3) ? m_x_min : m_x_max,
+			(i < 2) ? m_y_min : m_y_max);
 	}
 
 };	// end namespace gameswf

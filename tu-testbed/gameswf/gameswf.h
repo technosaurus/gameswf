@@ -15,8 +15,11 @@ class tu_file;
 class render_handler;
 
 // @@ TODO must get rid of external includes!
-#include "gameswf_types.h"
-#include "base/image.h"
+//#include "gameswf_types.h"
+
+// @@ forward decl to avoid including base/image.h; TODO change the
+// render_handler interface to not depend on these structs at all.
+namespace image { struct rgb; struct rgba; }
 
 
 namespace gameswf
@@ -284,7 +287,52 @@ namespace gameswf
 		bool	does_flip() const;	// return true if we flip handedness
 		float	get_max_scale() const;	// return the maximum scale factor that this transform applies
 	};
-	
+
+
+	//
+	// point: used by rect which is used by render_handler (otherwise would be in internal gameswf_types.h)
+	//
+
+
+	struct point
+	{
+		float	m_x, m_y;
+
+		point() : m_x(0), m_y(0) {}
+		point(float x, float y) : m_x(x), m_y(y) {}
+
+		void	set_lerp(const point& a, const point& b, float t)
+		// Set to a + (b - a) * t
+		{
+			m_x = a.m_x + (b.m_x - a.m_x) * t;
+			m_y = a.m_y + (b.m_y - a.m_y) * t;
+		}
+
+		bool operator==(const point& p) const { return m_x == p.m_x && m_y == p.m_y; }
+
+		bool	bitwise_equal(const point& p) const;
+	};
+
+
+	//
+	// rect: rectangle type, used by render handler
+	//
+
+
+	struct rect
+	{
+		float	m_x_min, m_x_max, m_y_min, m_y_max;
+
+		void	read(stream* in);
+		void	print() const;
+		bool	point_test(float x, float y) const;
+		void	expand_to_point(float x, float y);
+		float width() const { return m_x_max-m_x_min; }
+		float height() const { return m_y_max-m_y_min; }
+
+		point	get_corner(int i) const;
+	};
+
 
 	//
 	// cxform: color transform type, used by render handler
@@ -319,7 +367,7 @@ namespace gameswf
 			m_original_width(0),
 			m_original_height(0){}
 		
-		virtual void	set_alpha_image(int width, int height, Uint8* data) = 0;
+		virtual void	set_alpha_image(int width, int height, unsigned char* data) = 0;
 		
 		enum create_empty
 		{
@@ -336,7 +384,7 @@ namespace gameswf
 		virtual bitmap_info*	create_bitmap_info(image::rgb* im) = 0;
 		virtual bitmap_info*	create_bitmap_info(image::rgba* im) = 0;
 		virtual bitmap_info*	create_bitmap_info_blank() = 0;
-		virtual void	set_alpha_image(bitmap_info* bi, int w, int h, Uint8* data) = 0;	// @@ munges *data!!!
+		virtual void	set_alpha_image(bitmap_info* bi, int w, int h, unsigned char* data) = 0;	// @@ munges *data!!!
 		virtual void	delete_bitmap_info(bitmap_info* bi) = 0;
 		
 		// Bracket the displaying of a frame from a movie.
@@ -358,15 +406,15 @@ namespace gameswf
 		//
 		// coords is a list of (x,y) coordinate pairs, in
 		// triangle-strip order.  The type of the array should
-		// be float[vertex_count*2]
-		virtual void	draw_mesh_strip(const Sint16 coords[], int vertex_count) = 0;
+		// be Sint16[vertex_count*2]
+		virtual void	draw_mesh_strip(const void* coords, int vertex_count) = 0;
 		
 		// Draw a line-strip using the current line style.
 		// Clear the style list after rendering.
 		//
 		// Coords is a list of (x,y) coordinate pairs, in
-		// sequence.
-		virtual void	draw_line_strip(const Sint16 coords[], int vertex_count) = 0;
+		// sequence.  Each coord is a 16-bit signed integer.
+		virtual void	draw_line_strip(const void* coords, int vertex_count) = 0;
 		
 		// Set line and fill styles for mesh & line_strip
 		// rendering.
@@ -386,7 +434,12 @@ namespace gameswf
 		// Special function to draw a rectangular bitmap;
 		// intended for textured glyph rendering.  Ignores
 		// current transforms.
-		virtual void	draw_bitmap(const matrix& m, const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color) = 0;
+		virtual void	draw_bitmap(
+			const matrix& m,
+			const bitmap_info* bi,
+			const rect& coords,
+			const rect& uv_coords,
+			rgba color) = 0;
 		
 		virtual void	set_antialiased(bool enable) = 0;
 		
