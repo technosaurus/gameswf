@@ -393,7 +393,8 @@ namespace gameswf
 					   Uint16 depth,
 					   const cxform& color_transform,
 					   const matrix& matrix,
-					   float ratio)
+					   float ratio,
+                                           Uint16 clip_depth)
 		{
 			character*	ch = NULL;
 			if (m_characters.get(character_id, &ch) == false)
@@ -404,16 +405,16 @@ namespace gameswf
 			assert(ch);
 
 			//gameswf::add_display_object(&m_display_list, ch, depth, color_transform, matrix, ratio);
-			m_display_list.add_display_object(this, ch, depth, color_transform, matrix, ratio);
+			m_display_list.add_display_object(this, ch, depth, color_transform, matrix, ratio, clip_depth);
 		}
 
 
-		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio)
+		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth)
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
 			//gameswf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
-			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio);
+			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio, clip_depth);
 		}
 
 
@@ -423,7 +424,8 @@ namespace gameswf
 					       const cxform& color_transform,
 					       bool use_matrix,
 					       const matrix& mat,
-					       float ratio)
+					       float ratio,
+                                               Uint16 clip_depth)
 		{
 			character*	ch = NULL;
 			if (m_characters.get(character_id, &ch) == false)
@@ -434,7 +436,7 @@ namespace gameswf
 			assert(ch);
 
 			//gameswf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
-			m_display_list.replace_display_object(ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
+			m_display_list.replace_display_object(ch, depth, use_cxform, color_transform, use_matrix, mat, ratio, clip_depth);
 		}
 
 
@@ -652,7 +654,7 @@ namespace gameswf
 		void	display()
 		// Show our display list.
 		{
-			gameswf::render::begin_display(
+			gameswf::get_render_handler()->begin_display(
 				m_background_color,
 				m_viewport_x0, m_viewport_y0,
 				m_viewport_width, m_viewport_height,
@@ -661,7 +663,7 @@ namespace gameswf
 
 			m_display_list.display(m_total_display_count);
 
-			gameswf::render::end_display();
+			gameswf::get_render_handler()->end_display();
 
 			m_total_display_count++;
 		}
@@ -743,7 +745,7 @@ namespace gameswf
 
 				if (tag_type == 0)
 				{
-					if (str.get_position() != file_length)
+					if ((unsigned int)str.get_position() != file_length)
 					{
 						// Safety break, so we don't read past the end of the
 						// movie.
@@ -968,7 +970,7 @@ namespace gameswf
 	struct bitmap_character_rgb : public bitmap_character
 	{
 		image::rgb*	m_image;
-		gameswf::render::bitmap_info*	m_bitmap_info;
+		gameswf::bitmap_info*	m_bitmap_info;
 
 		bitmap_character_rgb()
 			:
@@ -977,12 +979,12 @@ namespace gameswf
 		{
 		}
 
-		gameswf::render::bitmap_info*	get_bitmap_info()
+		gameswf::bitmap_info*	get_bitmap_info()
 		{
 			if (m_image != 0)
 			{
 				// Create our bitmap info, from our image.
-				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
+				m_bitmap_info = gameswf::get_render_handler()->create_bitmap_info(m_image);
 				delete m_image;
 				m_image = 0;
 			}
@@ -994,16 +996,16 @@ namespace gameswf
 	struct bitmap_character_rgba : public bitmap_character
 	{
 		image::rgba*	m_image;
-		gameswf::render::bitmap_info*	m_bitmap_info;
+		gameswf::bitmap_info*	m_bitmap_info;
 
 		bitmap_character_rgba() : m_image(0) {}
 
-		gameswf::render::bitmap_info*	get_bitmap_info()
+		gameswf::bitmap_info*	get_bitmap_info()
 		{
 			if (m_image != 0)
 			{
 				// Create our bitmap info, from our image.
-				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
+				m_bitmap_info = gameswf::get_render_handler()->create_bitmap_info(m_image);
 				delete m_image;
 				m_image = 0;
 			}
@@ -1459,6 +1461,7 @@ namespace gameswf
 		bool	m_has_cxform;
 		Uint16	m_depth;
 		Uint16	m_character_id;
+                Uint16 	m_clip_depth;
 		enum place_type {
 			PLACE,
 			MOVE,
@@ -1474,6 +1477,7 @@ namespace gameswf
 			m_has_cxform(false),
 			m_depth(0),
 			m_character_id(0),
+                        m_clip_depth(0),                        
 			m_place_type(PLACE)
 		{
 		}
@@ -1526,16 +1530,18 @@ namespace gameswf
 					m_has_cxform = true;
 					m_color_transform.read_rgba(in);
 				}
+                                
 				if (has_ratio) {
 					m_ratio = in->read_u16();
 				}
-				if (has_clip_bracket) {
-					int	clip_depth = in->read_u16();
-					UNUSED(clip_depth);
-					IF_VERBOSE_PARSE(log_msg("HAS CLIP BRACKET!\n"));
-				}
-				if (has_name) {
+                                
+                                if (has_name) {
 					m_name = in->read_string();
+				}
+                                  
+				if (has_clip_bracket) {
+					m_clip_depth = in->read_u16(); 
+					IF_VERBOSE_PARSE(log_msg("HAS CLIP BRACKET!\n"));
 				}
 
 				if (has_char == true && flag_move == true)
@@ -1553,6 +1559,8 @@ namespace gameswf
 					// Put m_character at m_depth.
 					m_place_type = PLACE;
 				}
+                                
+                                log_msg("place object at depth %i\n", m_depth);
 
 				IF_VERBOSE_PARSE({log_msg("po2r: name = %s\n", m_name ? m_name : "<null>");
 					 log_msg("po2r: char id = %d, mat:\n", m_character_id);
@@ -1573,7 +1581,8 @@ namespace gameswf
 						      m_depth,
 						      m_color_transform,
 						      m_matrix,
-						      m_ratio);
+						      m_ratio,
+                                                      m_clip_depth);
 				break;
 
 			case MOVE:
@@ -1583,7 +1592,8 @@ namespace gameswf
 						       m_color_transform,
 						       m_has_matrix,
 						       m_matrix,
-						       m_ratio);
+						       m_ratio,
+                                                       m_clip_depth);
 				break;
 
 			case REPLACE:
@@ -1595,7 +1605,8 @@ namespace gameswf
 							  m_color_transform,
 							  m_has_matrix,
 							  m_matrix,
-							  m_ratio);
+							  m_ratio,
+                                                          m_clip_depth);
 				break;
 			}
 
@@ -1927,7 +1938,8 @@ namespace gameswf
 					   Uint16 depth,
 					   const cxform& color_transform,
 					   const matrix& matrix,
-					   float ratio)
+					   float ratio,
+                                           Uint16 clip_depth)
 		// Add an object to the display list.
 		{
 			assert(m_def && m_def->m_movie);
@@ -1939,17 +1951,16 @@ namespace gameswf
 				return;
 			}
 			assert(ch);
-
-			m_display_list.add_display_object(this, ch, depth, color_transform, matrix, ratio);
+			m_display_list.add_display_object(this, ch, depth, color_transform, matrix, ratio, clip_depth);
 		}
 
 
-		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio)
+		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth)
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
 			//gameswf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
-			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio);
+			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio, clip_depth);
 		}
 
 
@@ -1959,7 +1970,8 @@ namespace gameswf
 					       const cxform& color_transform,
 					       bool use_matrix,
 					       const matrix& mat,
-					       float ratio)
+					       float ratio,
+                                               Uint16 clip_depth)
 		{
 			assert(m_def && m_def->m_movie);
 
@@ -1972,7 +1984,7 @@ namespace gameswf
 			assert(ch);
 
 			//gameswf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
-			m_display_list.replace_display_object(ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
+			m_display_list.replace_display_object(ch, depth, use_cxform, color_transform, use_matrix, mat, ratio, clip_depth);
 		}
 
 
@@ -2042,6 +2054,8 @@ namespace gameswf
 	// Create and initialize a sprite, and add it to the movie.
 	{
 		assert(tag_type == 39);
+                
+                log_msg("sprite\n");
 
 		int	character_id = in->read_u16();
 
@@ -2257,7 +2271,6 @@ namespace gameswf
 
 		delete [] source_url;
 	}
-
 }
 
 

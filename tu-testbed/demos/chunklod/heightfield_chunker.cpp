@@ -1256,6 +1256,7 @@ void	generate_edge_data(tu_file* out, heightfield& hf, int dir, int x0, int z0, 
 
 	// Step along the edge.
 	int	dx, dz, steps;
+        dx=dz=steps=0;
 	if (x0 < x1) {
 		assert(z0 == z1);
 		dx = 1;

@@ -12,7 +12,10 @@
 
 
 class tu_file;
+class render_handler;
 
+#include "gameswf_types.h"
+#include "base/image.h"
 
 namespace gameswf
 {
@@ -105,14 +108,6 @@ namespace gameswf
 	void	set_verbose_action(bool verbose);
 	void	set_verbose_parse(bool verbose);
 
-
-	//
-	// Render control.
-	//
-
-	void	set_antialiased(bool enable);
-
-
 	//
 	// Font library control; gameswf shares its fonts among all loaded
 	// movies!
@@ -200,6 +195,7 @@ namespace gameswf
 		// gameswf calls this when it's done with a particular sound.
 		virtual void	delete_sound(int sound_handle) = 0;
 
+                virtual ~sound_handler(){};
 	};
 
 	// Pass in a sound handler, so you can handle audio on behalf of
@@ -209,7 +205,131 @@ namespace gameswf
 	// If you want sound support, you should set this at startup,
 	// before loading or playing any movies!
 	void	set_sound_handler(sound_handler* s);
+        
+        
+        
+        //
+	// texture and render callback handler.
+	//
 
+	// You must define a subclass of bitmap info and render_handler, and pass an instance to
+	// set_render_handler().
+        struct bitmap_info
+	{
+		unsigned int	m_texture_id;
+		int	m_original_width;
+		int	m_original_height;
+
+		bitmap_info() 
+			:
+			m_texture_id(0),
+			m_original_width(0),
+			m_original_height(0){}
+		
+		virtual void	set_alpha_image(int width, int height, Uint8* data) = 0;
+
+		enum create_empty
+		{
+			empty
+		};
+
+		virtual ~bitmap_info(){};
+	};
+
+	struct render_handler
+	{
+		virtual bitmap_info*	create_bitmap_info(image::rgb* im) = 0;
+		virtual bitmap_info*	create_bitmap_info(image::rgba* im) = 0;
+		virtual bitmap_info*	create_bitmap_info_blank() = 0;
+		virtual void	set_alpha_image(bitmap_info* bi, int w, int h, Uint8* data) = 0;	// @@ munges *data!!!
+		virtual void	delete_bitmap_info(bitmap_info* bi) = 0;
+
+		// Bracket the displaying of a frame from a movie.
+		// Fill the background color, and set up default
+		// transforms, etc.
+		virtual void	begin_display(
+			rgba background_color,
+			int viewport_x0, int viewport_y0,
+			int viewport_width, int viewport_height,
+			float x0, float x1, float y0, float y1) = 0;
+		virtual void	end_display() = 0;
+
+		// Geometric and color transforms for mesh and line_strip rendering.
+		virtual void	set_matrix(const matrix& m) = 0;
+		virtual void	set_cxform(const cxform& cx) = 0;
+                
+                virtual void apply_matrix(const matrix& m) = 0;
+                virtual void apply_color(const rgba& c) = 0;
+
+		// Draw triangles using the current fill-style 0.
+		// Clears the style list after rendering.
+		//
+		// coords is a list of (x,y) coordinate pairs, in
+		// triangle-list order.  The type of the array should
+		// be float[vertex_count*2]
+		virtual void	draw_mesh(const float coords[], int vertex_count) = 0;
+
+		// Draw a line-strip using the current line style.
+		// Clear the style list after rendering.
+		//
+		// Coords is a list of (x,y) coordinate pairs, in
+		// sequence.
+		virtual void	draw_line_strip(const float coords[], int vertex_count) = 0;
+
+		// Set line and fill styles for mesh & line_strip
+		// rendering.
+		enum bitmap_wrap_mode
+		{
+			WRAP_REPEAT,
+			WRAP_CLAMP
+		};
+		virtual void	fill_style_disable(int fill_side) = 0;
+		virtual void	fill_style_color(int fill_side, rgba color) = 0;
+		virtual void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm) = 0;
+
+		virtual void	line_style_disable() = 0;
+		virtual void	line_style_color(rgba color) = 0;
+		virtual void	line_style_width(float width) = 0;
+
+		// Special function to draw a rectangular bitmap;
+		// intended for textured glyph rendering.  Ignores
+		// current transforms.
+		virtual void	draw_bitmap(const matrix& m, const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color) = 0;
+
+		virtual void	set_antialiased(bool enable) = 0;
+
+
+		// WK: Add support for clipping layers
+		// 
+		// virtual int draw_mesh_as_mask(const float coords[], int vertex_count)
+		// virtual void disable_mask(int mask_id);
+		//
+		// Gameswf allows meshes to be used as a mask. only where a mask is drawn first, meshes drawn above will be shown.
+		// a mask is valid for n number of objects drawn after that
+		//
+		// you can have several masks at the same time
+		// > draw a mask that masks the next 5 meshes drawn
+		// > draw a mask that masks the next 4 meshes drawn (life time of both mask end at the sime time now)
+		// since masks can have a different lifetime, they should get an id 
+		// if we implement this with a 8 bit stencil buffer, we could only have 8 masks running at a time
+		//
+		// TODO:
+		// Confirm that it works this way.
+		// Can lines be usd as a mask?
+		// Can we cheat and treat the masks as additive? the idea here is that although each mask has a 
+		// lifetime, they still all end at the same time, so seperate tracking is not nessecary. this also 
+		// would allow more ways of implementing it then with a stencil buffer		
+                
+                virtual void begin_submit_mask() = 0;
+                virtual void end_submit_mask() = 0;
+                virtual void end_mask() = 0;
+	};
+        
+        // Get and set the render handler. this is one of the first things you should do to initialise
+        // the player.
+	extern void set_render_handler(render_handler* s);
+        extern render_handler*	get_sound_handler();
+        
 }	// namespace gameswf
 
 

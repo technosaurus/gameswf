@@ -36,7 +36,7 @@ namespace gameswf
 
 		void	read(stream* in, int tag_type, movie* m);
 		rgba	sample_gradient(int ratio) const;
-		gameswf::render::bitmap_info*	create_gradient_bitmap() const;
+		gameswf::bitmap_info*	create_gradient_bitmap() const;
 		void	apply(int fill_side) const;
 
 		rgba	get_color() const { return m_color; }
@@ -47,7 +47,7 @@ namespace gameswf
 		rgba	m_color;
 		matrix	m_gradient_matrix;
 		array<gradient_record>	m_gradients;
-		gameswf::render::bitmap_info*	m_gradient_bitmap_info;
+		gameswf::bitmap_info*	m_gradient_bitmap_info;
 		bitmap_character*	m_bitmap_character;
 		matrix	m_bitmap_matrix;
 	};
