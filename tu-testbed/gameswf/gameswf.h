@@ -250,7 +250,7 @@ namespace gameswf
 		// gameswf calls this when it's done with a particular sound.
 		virtual void	delete_sound(int sound_handle) = 0;
 		
-		virtual ~sound_handler(){};
+		virtual ~sound_handler() {};
 	};
 	
 	// Pass in a sound handler, so you can handle audio on behalf of
@@ -452,7 +452,13 @@ namespace gameswf
 	// Get and set the render handler. this is one of the first things you should do to initialise
 	// the player.
 	extern void set_render_handler(render_handler* s);
-	
+
+	// Some helpers that may or may not be compiled into your
+	// version of the library, depending on platform etc.
+	render_handler*	create_render_handler_xbox();
+	render_handler*	create_render_handler_ogl();
+	sound_handler*	create_sound_handler_sdl();
+
 }	// namespace gameswf
 
 

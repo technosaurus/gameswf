@@ -743,17 +743,10 @@ void bitmap_info_ogl::set_alpha_image(int width, int height, Uint8* data)
 }
 
 
-gameswf::render_handler*	create_render_handler_ogl()
+gameswf::render_handler*	gameswf::create_render_handler_ogl()
 // Factory.
 {
 	return new render_handler_ogl;
-}
-
-
-void	delete_render_handler_ogl(gameswf::render_handler* h)
-// Destructor.
-{
-	delete (render_handler_ogl*) h;
 }
 
 

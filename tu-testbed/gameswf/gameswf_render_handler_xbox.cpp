@@ -1146,7 +1146,7 @@ void bitmap_info_xbox::set_alpha_image(int width, int height, Uint8* data)
 }
 
 
-gameswf::render_handler*	create_render_handler_xbox()
+gameswf::render_handler*	gameswf::create_render_handler_xbox()
 // Factory.
 {
 	return new render_handler_xbox;
