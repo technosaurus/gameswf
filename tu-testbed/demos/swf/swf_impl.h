@@ -31,6 +31,7 @@ namespace swf
 	struct movie : public movie_interface
 	{
 		virtual void	add_character(int id, character* ch) {}
+		virtual character*	get_character(int id) { return NULL; }
 		virtual void	add_font(int id, font* ch) {}
 		virtual font*	get_font(int id) { return NULL; }
 		virtual void	add_execute_tag(execute_tag* c) {}
@@ -76,6 +77,28 @@ namespace swf
 		}
 
 		virtual void	goto_frame(int target_frame_number) { assert(0); }
+
+		enum play_state
+		{
+			PLAY,
+			STOP
+		};
+		virtual void	set_play_state(play_state s)
+		{
+		}
+
+		virtual void	notify_mouse_state(int x, int y, int buttons)
+		// The host app uses this to tell the movie where the
+		// user's mouse pointer is.
+		{
+		}
+
+		virtual void	get_mouse_state(int* x, int* y, int* buttons)
+		// Use this to retrieve the last state of the mouse, as set via
+		// notify_mouse_state().
+		{
+			assert(0);
+		}
 	};
 
 
@@ -98,7 +121,8 @@ namespace swf
 		int	get_height() { return 0; }
 		int	get_current_frame() const { assert(0); return 0; }
 		void	restart() { assert(0); }
-		void	advance(float delta_time) {}
+		void	advance(float delta_time) { assert(0); }	// should only be called on movie_impl's.
+		void	advance(float delta_time, movie* m) {}	// can be called on any character.
 		void	goto_frame(int target_frame) {}
 		void	display() {}
 
@@ -145,6 +169,7 @@ namespace swf
 	void	end_loader(stream* in, int tag_type, movie* m);
 	void	remove_object_2_loader(stream* in, int tag_type, movie* m);
 	void	do_action_loader(stream* in, int tag_type, movie* m);
+	void	button_character_loader(stream* in, int tag_type, movie* m);
 };
 
 

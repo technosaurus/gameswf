@@ -32,6 +32,7 @@ namespace swf
 		virtual void	goto_frame(int frame_number) = 0;
 		virtual void	display() = 0;
 		virtual void	set_background_color(const rgba& bg_color) = 0;
+		virtual void	notify_mouse_state(int x, int y, int buttons) = 0;
 	};
 
 	// Create a swf::movie_interface from the given input stream.

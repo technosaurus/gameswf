@@ -7,6 +7,14 @@ Renderer
 
   * coarse clip/cull
 
+  * maybe we can pre-digest shapes, to make a rough segmentation into
+    fans/strips?  I.e. don't determine the curve tesselation, but do
+    get the basic sequence of verts to emit, so that rendering can be
+    very fast and direct with no sorting or edge clipping, etc.
+
+  * turn outline fonts into textures, render glyphs using textured
+    quads.
+
 * handle gradients
 
   linear gradients could be done w/ a 1-D texture and texgen or
@@ -18,9 +26,9 @@ Renderer
 
 * antialiasing
 
-  desirable thing here would be a hardware mode that generates alpha
-  values according to coverage.  Since we always render back to front,
-  I think this would work nicely, just using plain alpha blending.
+  Do it using alpha channel in font textures.  For general vector
+  shapes, probably just punt.  Provide sample setup for hardware
+  assist (multisample or whatever).  Leave the decision up to the app.
 
 * real lines
 
@@ -29,12 +37,7 @@ Renderer
   end_shape(), trace them out directly, including rounded edges.
   Should be pretty straightforward.
 
-* bitmap fills
-
-  initialize the bitmap; probably just resample the input image into a
-  power-of-two texture.  Some hardware can handle non-power-of-two
-  textures.  Flash probably assumings no mip-mapping and no bilinear
-  magnifying, althougth maybe those would be good options
+  Better (?): generate an outline from the line definition.
 
 
 General
