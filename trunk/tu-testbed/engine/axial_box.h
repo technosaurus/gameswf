@@ -43,6 +43,9 @@ struct axial_box
 	void	set_axis_min(int axis, float new_min);
 	void	set_axis_max(int axis, float new_max);
 
+	// Expand the box.
+	void	set_enclosing(const vec3& v);
+
 private:
 	vec3	m_min, m_max;
 };
@@ -129,6 +132,21 @@ inline void	axial_box::set_axis_max(int axis, float new_max)
 	assert(is_valid());
 
 	m_max.set(axis, new_max);
+
+	assert(is_valid());
+}
+
+
+// @@ should probably un-inline this...
+inline void	axial_box::set_enclosing(const vec3& v)
+// Ensure that the box encloses the point.
+{
+	m_min.x = fmin(m_min.x, v.x);
+	m_min.y = fmin(m_min.y, v.y);
+	m_min.z = fmin(m_min.z, v.z);
+	m_max.x = fmax(m_max.x, v.x);
+	m_max.y = fmax(m_max.y, v.y);
+	m_max.z = fmax(m_max.z, v.z);
 
 	assert(is_valid());
 }
