@@ -60,6 +60,14 @@ public:
 			m_buffer_size = m_size + (m_size >> 2);
 		}
 
+		reserve(m_buffer_size);
+	}
+
+	void	reserve(int rsize)
+	{
+		assert(m_size >= 0);
+		m_buffer_size = rsize;
+
 		// Resize the buffer.
 		if (m_buffer_size == 0) {
 			if (m_buffer) {
@@ -136,6 +144,8 @@ public:
 	~hash() {
 		clear();
 	}
+
+	// @@ need a "remove()" or "set()" function, to replace/remove existing key.
 
 	void	add(T key, U value)
 	// Add a new value to the hash table, under the specified key.
