@@ -10,6 +10,7 @@
 
 
 #include "engine/container.h"
+#include "engine/tu_file.h"
 #include "gameswf_file.h"
 #include "gameswf_font.h"
 #include "gameswf_impl.h"
@@ -73,8 +74,8 @@ namespace fontlib
 	static render::bitmap_info*	s_current_bitmap_info = NULL;
 	static Uint8*	s_coverage_image = NULL;
 
-	static bool s_saving = false;
-	static file * s_file = NULL;
+	static bool	s_saving = false;
+	static tu_file*	s_file = NULL;
 
 	void	finish_current_texture()
 	{
@@ -469,8 +470,8 @@ namespace fontlib
 	// generate_font_bitmaps(), and then calls save_cached_font_data()
 	// so that a run-time app can call load_cached_font_data().
 	{
-		s_file = new file(filename, "wb" );
-		if (s_file->error()==NO_ERROR)
+		s_file = new tu_file(filename, "wb");
+		if (s_file->get_error() == tu_file::NO_ERROR)
 		{
 			// save header identifier.
 			s_file->write_bytes( "gswf", 4 );
@@ -556,8 +557,8 @@ namespace fontlib
 	// Load a file containing previously-saved font glyph textures.
 	{
 		bool result = false;
-		s_file = new file(filename, "rb" );
-		if (s_file->error()==NO_ERROR)
+		s_file = new tu_file(filename, "rb");
+		if (s_file->get_error() == tu_file::NO_ERROR)
 		{
 			// load header identifier.
 			char head[4];

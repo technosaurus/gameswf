@@ -13,6 +13,7 @@
 
 
 #include "engine/ogl.h"
+#include "engine/tu_file.h"
 #include "gameswf_action.h"
 #include "gameswf_button.h"
 #include "gameswf_impl.h"
@@ -710,11 +711,11 @@ namespace gameswf
 		}
 
 
-		void	read(SDL_RWops* in)
+		void	read(tu_file* in)
 		// Read a .SWF movie.
 		{
-			Uint32	header = SDL_ReadLE32(in);
-			Uint32	file_length = SDL_ReadLE32(in);
+			Uint32	header = in->read_le32();
+			Uint32	file_length = in->read_le32();
 
 			int	m_version = (header >> 24) & 255;
 			if ((header & 0x0FFFFFF) != 0x00535746)
@@ -806,7 +807,7 @@ namespace gameswf
 	}
 
 
-	movie_interface*	create_movie(SDL_RWops* in)
+	movie_interface*	create_movie(tu_file* in)
 	// External API.  Create a movie from the given stream, and
 	// return it.
 	{
@@ -970,7 +971,7 @@ namespace gameswf
 	}
 
 
-	void	inflate_wrapper(SDL_RWops* in, void* buffer, int buffer_bytes)
+	void	inflate_wrapper(tu_file* in, void* buffer, int buffer_bytes)
 	// Wrapper function -- uses Zlib to uncompress in_bytes worth
 	// of data from the input file into buffer_bytes worth of data
 	// into *buffer.
@@ -1002,7 +1003,7 @@ namespace gameswf
 
 		for (;;) {
 			// Fill a one-byte (!) buffer.
-			buf[0] = ReadByte(in);
+			buf[0] = in->read_byte();
 			d_stream.next_in = &buf[0];
 			d_stream.avail_in = 1;
 

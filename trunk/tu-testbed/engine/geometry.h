@@ -10,7 +10,8 @@
 #define GEOMETRY_H
 
 
-#include <engine/utility.h>
+#include "engine/utility.h"
+class tu_file;
 
 
 class	vec3
@@ -57,9 +58,8 @@ public:
 //	float	minabs() const;
 //	float	maxabs() const;
 
-	// Serialize(archive* a);	// archive contains a flag that indicates whether we're reading or writing.
-	void	read(SDL_RWops* in);
-	void	write(SDL_RWops* out);
+	void	read(tu_file* in);
+	void	write(tu_file* out);
 
 	bool	checknan() const;	// Returns true if any component is nan.
 

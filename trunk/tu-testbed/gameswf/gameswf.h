@@ -11,7 +11,7 @@
 #define GAMESWF_H
 
 
-#include "SDL.h"
+class tu_file;
 
 
 namespace gameswf
@@ -44,7 +44,7 @@ namespace gameswf
 	};
 
 	// Create a swf::movie_interface from the given input stream.
-	movie_interface*	create_movie(SDL_RWops* input);
+	movie_interface*	create_movie(tu_file* input);
 
 	//
 	// Loader callbacks.

@@ -10,8 +10,7 @@
 #include "engine/utility.h"
 #include "engine/jpeg.h"
 #include "engine/dlmalloc.h"
-#include <SDL/SDL.h>
-#include <SDL/SDL_endian.h>
+#include "engine/tu_file.h"
 #include <stdlib.h>
 
 
@@ -122,7 +121,7 @@ namespace image
 	}
 
 
-	void	write_jpeg(SDL_RWops* out, rgb* image, int quality)
+	void	write_jpeg(tu_file* out, rgb* image, int quality)
 	// Write the given image to the given out stream, in jpeg format.
 	{
 		jpeg::output*	j_out = jpeg::output::create(out, image->m_width, image->m_height, quality);
@@ -138,20 +137,20 @@ namespace image
 	rgb*	read_jpeg(const char* filename)
 	// Create and read a new image from the given filename, if possible.
 	{
-		SDL_RWops*	in = SDL_RWFromFile(filename, "rb");
-		if (in)
+		tu_file	in(filename, "rb");	// file automatically closes when 'in' goes out of scope.
+		if (! in.get_error())
 		{
-			rgb*	im = read_jpeg(in);
-			SDL_RWclose(in);
+			rgb*	im = read_jpeg(&in);
 			return im;
 		}
-		else {
+		else
+		{
 			return NULL;
 		}
 	}
 
 
-	rgb*	read_jpeg(SDL_RWops* in)
+	rgb*	read_jpeg(tu_file* in)
 	// Create and read a new image from the stream.
 	{
 		jpeg::input*	j_in = jpeg::input::create(in);
@@ -159,7 +158,8 @@ namespace image
 		
 		rgb*	im = image::create_rgb(j_in->get_width(), j_in->get_height());
 
-		for (int y = 0; y < j_in->get_height(); y++) {
+		for (int y = 0; y < j_in->get_height(); y++)
+		{
 			j_in->read_scanline(scanline(im, y));
 		}
 
@@ -169,7 +169,7 @@ namespace image
 	}
 
 
-	rgb*	read_swf_jpeg2(SDL_RWops* in)
+	rgb*	read_swf_jpeg2(tu_file* in)
 	// Create and read a new image from the stream.  Image is in
 	// SWF JPEG2-style format (the encoding tables come first in a
 	// separate "stream" -- otherwise it's just normal JPEG).  The
@@ -184,6 +184,7 @@ namespace image
 
 		return im;
 	}
+
 
 	rgb*	read_swf_jpeg2_with_tables(jpeg::input* j_in)
 	// Create and read a new image, using a input object that
@@ -204,7 +205,8 @@ namespace image
 		return im;
 	}
 
-	rgba*	read_swf_jpeg3(SDL_RWops* in)
+
+	rgba*	read_swf_jpeg3(tu_file* in)
 	// For reading SWF JPEG3-style image data, like ordinary JPEG, 
 	// but stores the data in rgba format.
 	{

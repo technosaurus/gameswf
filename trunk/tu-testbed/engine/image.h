@@ -10,9 +10,9 @@
 
 
 #include "engine/utility.h"
-#include <SDL/SDL.h>
-struct SDL_RWops;
+class tu_file;
 namespace jpeg { struct input; };
+
 
 namespace image
 {
@@ -27,10 +27,6 @@ namespace image
 	};
 
 	// 24-bit RGB image.  Packed data, red byte first (RGBRGB...)
-	//
-	// We need this class because SDL_Surface chokes on any image
-	// that has more than 64KB per row, due to a Uint16 pitch
-	// member.
 	struct rgb : public image_base
 	{
 		rgb(int width, int height);
@@ -69,14 +65,14 @@ namespace image
 	void	resample(rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			 rgba* in, float in_x0, float in_y0, float in_x1, float in_y1);
 
-	void	write_jpeg(SDL_RWops* out, rgb* image, int quality);
+	void	write_jpeg(tu_file* out, rgb* image, int quality);
 
 	rgb*	read_jpeg(const char* filename);
-	rgb*	read_jpeg(SDL_RWops* in);
+	rgb*	read_jpeg(tu_file* in);
 
 	// For reading SWF JPEG2-style image data (slight variation on
 	// ordinary JPEG).
-	rgb*	read_swf_jpeg2(SDL_RWops* in);
+	rgb*	read_swf_jpeg2(tu_file* in);
 
 	// For reading SWF JPEG2-style image data, using pre-loaded
 	// headers stored in the given jpeg::input object.
@@ -84,7 +80,7 @@ namespace image
 
 	// For reading SWF JPEG3-style image data, like ordinary JPEG, 
 	// but stores the data in rgba format.
-	rgba*	read_swf_jpeg3(SDL_RWops* in);
+	rgba*	read_swf_jpeg3(tu_file* in);
 
 	// Fast, in-place, DESTRUCTIVE resample.  For making mip-maps.
 	// Munges the input image to produce the output image.

@@ -13,6 +13,8 @@
 #include "engine/ogl.h"
 #include "engine/utility.h"
 #include "engine/container.h"
+#include "engine/tu_file.h"
+#include "engine/tu_types.h"
 
 
 #define OVERSIZE	1.0f
@@ -27,6 +29,8 @@ static bool	s_cache = false;
 #undef main	// SDL wackiness
 int	main(int argc, char *argv[])
 {
+	assert(tu_types_validate());
+
 	const char* infile = NULL;
 
 	for (int arg = 1; arg < argc; arg++)
@@ -102,14 +106,15 @@ int	main(int argc, char *argv[])
 	gameswf::set_antialiased(s_antialiased);
 
 	// Load the movie.
-	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
-	if (in == NULL)
+	tu_file*	in = new tu_file(infile, "rb");
+	if (in->get_error())
 	{
 		printf("can't open '%s' for input\n", infile);
 		exit(1);
 	}
 	gameswf::movie_interface*	m = gameswf::create_movie(in);
-	SDL_RWclose(in);
+	delete in;
+	in = NULL;
 
 	tu_string	cache_name(infile);
 	cache_name += ".cache";
