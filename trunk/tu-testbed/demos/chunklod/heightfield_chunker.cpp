@@ -14,8 +14,8 @@
 #include <stdio.h>
 #include <limits.h>
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
+#include <SDL.h>
+#include <SDL_image.h>
 
 #include "engine/utility.h"
 #include "engine/container.h"
@@ -1105,6 +1105,7 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 
 	int	header_bytes_written = SDL_RWtell(out) - start_pos;
 	assert(header_bytes_written == CHUNK_HEADER_BYTES);
+	header_bytes_written = header_bytes_written;	// don't warn about unused var
 
 	// recurse to child regions, to generate child chunks.
 	if (level > 0) {
