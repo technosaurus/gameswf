@@ -116,7 +116,7 @@ XML::extractNode(xmlNodePtr node)
   element = new XMLNode;
   memset(element, 0, sizeof (XMLNode));
 
-  log_msg("%s: extracting node %s\n", __FUNCTION__, node->name);
+  //log_msg("%s: extracting node %s\n", __FUNCTION__, node->name);
   if (xmlStrcmp(node->name, (const xmlChar *)"text") == 0) {
     //  node = node->next;
   }
@@ -130,17 +130,17 @@ XML::extractNode(xmlNodePtr node)
       next = childnode->next;
       if (next != 0) {
         child = extractNode(next);
-        log_msg("Pushing childNode after extractNode()\n");
+        //log_msg("Pushing childNode after extractNode()\n");
         element->_children.push_back(child);
       } else {
         ptr = childnode->content;
         if (ptr != NULL) {
           child = new XMLNode;
           memset(child, 0, sizeof (XMLNode));
-          log_msg("extractChildNode from text for %s has contents %s\n", node->name, ptr);
+          //log_msg("extractChildNode from text for %s has contents %s\n", node->name, ptr);
           child->_name  = reinterpret_cast<const char *>(node->name);
           child->_value = reinterpret_cast<const char *>(ptr);
-          log_msg("Pushing childNode1 %s\n", node->name);
+          //log_msg("Pushing childNode1 %s\n", node->name);
           element->_children.push_back(child);
         }
       }
@@ -154,32 +154,31 @@ XML::extractNode(xmlNodePtr node)
       }
       if (next != 0) {
         child = extractNode(next);
-        log_msg("Pushing childNode2 %s\n", childnode->name);
+        //log_msg("Pushing childNode2 %s\n", childnode->name);
         element->_children.push_back(child);
       } else {
         next = childnode->children;
         if (next != 0) {
           if (xmlStrcmp(next->name, (const xmlChar *)"text") != 0) {
             child = extractNode(next);
-            log_msg("Pushing childNode3 %s\n", childnode->name);
+            //log_msg("Pushing childNode3 %s\n", childnode->name);
             element->_children.push_back(child);
           } else {
             ptr = next->content;
             if (ptr != NULL) {
               child = new XMLNode;
               memset(child, 0, sizeof (XMLNode));
-              log_msg("extractChildNode from text for %s has contents %s\n", childnode->name, ptr);
+              //log_msg("extractChildNode from text for %s has contents %s\n", childnode->name, ptr);
               child->_name  = reinterpret_cast<const char *>(childnode->name);
               child->_value = reinterpret_cast<const char *>(ptr);
-              log_msg("Pushing childNode4 %s\n", childnode->name);
+              //log_msg("Pushing childNode4 %s\n", childnode->name);
               element->_children.push_back(child);
             }
           }
         } else {
           attr = node->properties;
           while (attr != NULL) {
-            log_msg("extractNode %s has property %s, value is %s\n",
-                    node->name, attr->name, attr->children->content);
+            //log_msg("extractNode %s has property %s, value is %s\n", node->name, attr->name, attr->children->content);
             XMLAttr *attrib = new XMLAttr;
             attrib->_name = reinterpret_cast<const char *>(attr->name);
             attrib->_value = reinterpret_cast<const char *>(attr->children->content);
@@ -195,8 +194,7 @@ XML::extractNode(xmlNodePtr node)
   // See if we have any Attributes (properties)
   attr = node->properties;
   while (attr != NULL) {
-    log_msg("extractNode %s has property %s, value is %s\n",
-            node->name, attr->name, attr->children->content);
+    // log_msg("extractNode %s has property %s, value is %s\n", node->name, attr->name, attr->children->content);
     XMLAttr *attrib = new XMLAttr;
     attrib->_name = reinterpret_cast<const char *>(attr->name);
     attrib->_value = reinterpret_cast<const char *>(attr->children->content);
@@ -371,7 +369,7 @@ XML::parseDoc(xmlDocPtr document)
 bool
 XML::parseXML(tu_string xml_in)
 {
-  log_msg("Parse XML from memory: %s\n", xml_in.c_str());
+  //log_msg("Parse XML from memory: %s\n", xml_in.c_str());
 
   if (xml_in.size() == 0) {
     log_error("XML data is empty!\n");
@@ -547,7 +545,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
   xmlnode_as_object *xmlnodeC_obj;
   xmlnode_as_object *xmlnodeD_obj;
   
-  log_msg("%s:\n",  __PRETTY_FUNCTION__);
+  //log_msg("%s:\n",  __PRETTY_FUNCTION__);
   
   if (xml == 0) {
     log_error("No XML object!\n");

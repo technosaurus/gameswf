@@ -14,7 +14,7 @@
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
-
+#include "base/container.h"
 
 #ifdef HAVE_LIBXML
 
@@ -30,18 +30,27 @@ public:
   bool send(tu_string str);
   void close();
 
+  
   bool anydata(tu_string &data);
+  bool anydata(int sockfd, tu_string &data);
   bool connected() { return _connect; };
   bool fdclosed() { return _closed; }
   bool xmlmsg() { return _xmldata; }
   
+  void messagesClear()      { _messages.clear(); }
+  void messageRemove(int x) { _messages.remove(x); }
+  int messagesCount()       { return _messages.size(); }
+  tu_string operator [] (int x)  { return _messages[x]; }
   
+  bool processingData();
+  void processing(bool x);
+ 
   // Event Handlers
   void onClose(tu_string);
   void onConnect(tu_string);
   void onData(tu_string);
   void onXML(tu_string);
-private:
+ private:
   tu_string     _host;
   short         _port;
   int           _sockfd;
@@ -49,6 +58,8 @@ private:
   bool          _xmldata;
   bool          _closed;
   bool          _connect;
+  bool          _processing;
+  array<tu_string> _messages;
 };
 
 
@@ -78,6 +89,9 @@ void xmlsocket_event_close(gameswf::as_value* result, gameswf::as_object_interfa
 void xmlsocket_event_connect(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
 
 void xmlsocket_event_xml(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
+
+void *main_read_thread(void *arg);
+
  
 } // end of gameswf namespace
 

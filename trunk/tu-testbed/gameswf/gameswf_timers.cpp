@@ -107,7 +107,7 @@ namespace gameswf
       //printf("FIXME: %s: now is %f, start time is %f, interval is %f\n", __FUNCTION__, now, _start, _interval);
       if (now > _start + _interval) {
         _start = now;               // reset the timer
-        log_msg("Timer expired! \n");
+        //log_msg("Timer expired! \n");
         return true;
       }
     }
@@ -169,7 +169,7 @@ namespace gameswf
   void
   timer_expire(as_value* result, as_object_interface* this_ptr, as_environment* env)
   {
-    log_msg("%s:\n", __PRETTY_FUNCTION__);
+    //log_msg("%s:\n", __PRETTY_FUNCTION__);
     as_value	*val;
 
     timer_as_object*	ptr = (timer_as_object*) (as_object*) this_ptr;
@@ -190,7 +190,7 @@ namespace gameswf
   void
   timer_clearinterval(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
   {
-    log_msg("%s: nargs = %d\n", __PRETTY_FUNCTION__, nargs);
+    //log_msg("%s: nargs = %d\n", __PRETTY_FUNCTION__, nargs);
     as_value	*val;
 
     double id = env->bottom(first_arg).to_number();

@@ -17,6 +17,8 @@
 #include "base/tu_file.h"
 #include "base/tu_types.h"
 
+#include "gameswf_xmlsocket.h"
+
 void	print_usage()
 // Brief instructions.
 {
@@ -405,9 +407,13 @@ int	main(int argc, char *argv[])
 	Uint32	last_ticks = start_ticks;
 	int	frame_counter = 0;
 	int	last_logged_fps = last_ticks;
+
+	gameswf::XMLSocket xmls;
+	tu_string foo;
 	for (;;)
 	{
 		Uint32	ticks;
+		//xmls.anydata(8, foo);
 		if (do_render)
 		{
 			ticks = SDL_GetTicks();

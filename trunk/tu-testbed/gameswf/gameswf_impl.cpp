@@ -3158,14 +3158,14 @@ namespace gameswf
 			as_c_function_ptr	cfunc = as_val->to_c_function();
 			if (cfunc) {
 				// It's a C function. Call it.
-				log_msg("Calling C function for interval timer\n");
+				//log_msg("Calling C function for interval timer\n");
 				//(*cfunc)(&val, obj, as_env, 0, 0);
 				(*cfunc)(&val, obj, &m_as_environment, 0, 0);
 				
 			} else if (as_as_function* as_func = as_val->to_as_function()) {
 				// It's an ActionScript function. Call it.
 				as_value method;
-				log_msg("Calling ActionScript function for interval timer\n");
+				//log_msg("Calling ActionScript function for interval timer\n");
 				(*as_func)(&val, (as_object_interface *)this_ptr, as_env, 0, 0);
 				//(*as_func)(&val, (as_object_interface *)this_ptr, &m_as_environment, 1, 1);
 			} else {

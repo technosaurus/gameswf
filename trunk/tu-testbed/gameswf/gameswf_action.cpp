@@ -2107,7 +2107,7 @@ namespace gameswf
 							current_movie->set_member("TextFormat", handler);
 							
 							textformat_as_object*	text_obj = new textformat_as_object;
-							log_msg("\tCreated New TextFormat object at 0x%X\n", (unsigned int)text_obj);
+							//log_msg("\tCreated New TextFormat object at 0x%X\n", (unsigned int)text_obj);
 							
 							new_obj = text_obj;
 						} else		
@@ -2120,7 +2120,7 @@ namespace gameswf
 							if (nargs > 0) {
 								if (env->top(0).get_type() == as_value::STRING) {
 									xml_as_object*	xml_obj = new xml_as_object;
-									log_msg("\tCreated New XML object at 0x%X\n", (unsigned int)xml_obj);
+									//log_msg("\tCreated New XML object at 0x%X\n", (unsigned int)xml_obj);
 									tu_string datain = env->top(0).to_tu_string();
 									xml_obj->obj.parseXML(datain);
 									xml_obj->obj.setupStackFrames(xml_obj, env);
@@ -2129,12 +2129,12 @@ namespace gameswf
 									xmlnode_as_object*	xml_obj =
 										(xmlnode_as_object*)env->top(0).to_object();
 									
-									log_msg("\tCloned the XMLNode object at 0x%X\n", (unsigned int)xml_obj);
+									//log_msg("\tCloned the XMLNode object at 0x%X\n", (unsigned int)xml_obj);
 									new_obj = xml_obj;
 								}
 							} else {
 								xml_as_object*	xml_obj = new xml_as_object;
-								log_msg("Created New XML object at 0x%X\n", (unsigned int)xml_obj);
+								//log_msg("Created New XML object at 0x%X\n", (unsigned int)xml_obj);
 								xml_obj->set_member("load", &xml_load);
 								xml_obj->set_member("loaded", &xml_loaded);
 								new_obj = xml_obj;
@@ -2146,7 +2146,7 @@ namespace gameswf
 							current_movie->set_member("XMLSocket", as_value(xmlsocket_new));
 							
 							as_object*	xmlsock_obj = new xmlsocket_as_object;
-							log_msg("\tCreated New XMLSocket object at 0x%X\n", (unsigned int)xmlsock_obj);
+							//log_msg("\tCreated New XMLSocket object at 0x%X\n", (unsigned int)xmlsock_obj);
 							xmlsock_obj->set_member("connect", &xmlsocket_connect);
 							xmlsock_obj->set_member("send", &xmlsocket_send);
 							xmlsock_obj->set_member("close", &xmlsocket_close);
@@ -2199,7 +2199,7 @@ namespace gameswf
 							current_movie->set_member("MovieClipLoader", as_value(moviecliploader_new));
 #if 1
 							as_object*	mov_obj = new moviecliploader_as_object;
-							log_msg("\tCreated New MovieClipLoader object at 0x%X\n", (unsigned int)mov_obj);
+							//log_msg("\tCreated New MovieClipLoader object at 0x%X\n", (unsigned int)mov_obj);
 
 							mov_obj->set_member("loadClip",
 									    &moviecliploader_loadclip);
@@ -2270,8 +2270,7 @@ namespace gameswf
 							current_movie->set_member("String", as_value(string_new));
 							
 							as_object*	str_obj = new as_object;
-							log_msg("\tCreated New String object at 0x%X\n",
-								(unsigned int)str_obj);
+							//log_msg("\tCreated New String object at 0x%X\n", (unsigned int)str_obj);
 
 							// str_obj->set_member("lastIndexOf", &(str_obj->str.test));
 							str_obj->set_member("lastIndexOf", &string_lastIndexOf);
