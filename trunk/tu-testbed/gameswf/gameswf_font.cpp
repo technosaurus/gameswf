@@ -57,41 +57,46 @@ namespace gameswf
 	}
 
 
-	const texture_glyph*	font::get_texture_glyph(int glyph_index) const
+	const texture_glyph&	font::get_texture_glyph(int glyph_index) const
 	// Return a pointer to a texture_glyph struct corresponding to
 	// the given glyph_index, if we have one.  Otherwise return NULL.
 	{
 		if (glyph_index < 0 || glyph_index >= m_texture_glyphs.size())
 		{
-			return NULL;
+			static const texture_glyph	s_dummy_texture_glyph;
+			return s_dummy_texture_glyph;
 		}
 
-		return m_texture_glyphs[glyph_index].get_ptr();
+		return m_texture_glyphs[glyph_index];
 	}
 
 
-	void	font::add_texture_glyph(int glyph_index, const texture_glyph* glyph)
+	void	font::add_texture_glyph(int glyph_index, const texture_glyph& glyph)
 	// Register some texture info for the glyph at the specified
 	// index.  The texture_glyph can be used later to render the
 	// glyph.
 	{
 		assert(glyph_index >= 0 && glyph_index < m_glyphs.size());
+		assert(m_texture_glyphs.size() == m_glyphs.size());
+		assert(glyph.is_renderable());
 
-		// Expand m_texture_glyphs as necessary.
-		if (glyph_index >= m_texture_glyphs.size())
-		{
-			m_texture_glyphs.resize(glyph_index + 1);
-		}
+		assert(m_texture_glyphs[glyph_index].is_renderable() == false);
 
-		assert(m_texture_glyphs[glyph_index] == NULL);
 		m_texture_glyphs[glyph_index] = glyph;
 	}
 
 
 	void	font::wipe_texture_glyphs()
-	// Delete all our texture glyphs
+	// Delete all our texture glyph info.
 	{
-		m_texture_glyphs.resize(0);
+		assert(m_texture_glyphs.size() == m_glyphs.size());
+
+		// Replace with default (empty) glyph info.
+		texture_glyph	default_tg;
+		for (int i = 0, n = m_texture_glyphs.size(); i < n; i++)
+		{
+			m_texture_glyphs[i] = default_tg;
+		}
 	}
 
 
@@ -121,21 +126,25 @@ namespace gameswf
 				IF_VERBOSE_PARSE(log_msg("offset[%d] = %d\n", i, offsets[i]));
 			}
 
-			m_glyphs.reserve(count);
+			m_glyphs.resize(count);
+			m_texture_glyphs.resize(m_glyphs.size());
 
-			// Read the glyph shapes.
-			{for (int i = 0; i < count; i++)
+			if (m->get_create_font_shapes() == DO_LOAD_FONT_SHAPES)
 			{
-				// Seek to the start of the shape data.
-				int	new_pos = table_base + offsets[i];
-				in->set_position(new_pos);
+				// Read the glyph shapes.
+				{for (int i = 0; i < count; i++)
+				{
+					// Seek to the start of the shape data.
+					int	new_pos = table_base + offsets[i];
+					in->set_position(new_pos);
 
-				// Create & read the shape.
-				shape_character_def* s = new shape_character_def;
-				s->read(in, 2, false, m);
+					// Create & read the shape.
+					shape_character_def* s = new shape_character_def;
+					s->read(in, 2, false, m);
 
-				m_glyphs.push_back(s);
-			}}
+					m_glyphs[i] = s;
+				}}
+			}
 		}
 		else if (tag_type == 48)
 		{
@@ -164,6 +173,7 @@ namespace gameswf
 			// are measured from the start of the
 			// offset table.
 			array<int>	offsets;
+			int	font_code_offset;
 			if (wide_offsets)
 			{
 				// 32-bit offsets.
@@ -171,6 +181,7 @@ namespace gameswf
 				{
 					offsets.push_back(in->read_u32());
 				}
+				font_code_offset = in->read_u32();
 			}
 			else
 			{
@@ -179,40 +190,48 @@ namespace gameswf
 				{
 					offsets.push_back(in->read_u16());
 				}
-			}
-
-			int	font_code_offset;
-			if (wide_offsets)
-			{
-				font_code_offset = in->read_u32();
-			}
-			else
-			{
 				font_code_offset = in->read_u16();
 			}
 
-			m_glyphs.reserve(glyph_count);
+			m_glyphs.resize(glyph_count);
+			m_texture_glyphs.resize(m_glyphs.size());
 
-			// Read the glyph shapes.
-			{for (int i = 0; i < glyph_count; i++)
+			if (m->get_create_font_shapes() == DO_LOAD_FONT_SHAPES)
 			{
-				// Seek to the start of the shape data.
-				int	new_pos = table_base + offsets[i];
-				assert(new_pos >= in->get_position());	// if we're seeking backwards, then that looks like a bug.
+				// Read the glyph shapes.
+				{for (int i = 0; i < glyph_count; i++)
+				{
+					// Seek to the start of the shape data.
+					int	new_pos = table_base + offsets[i];
+					// if we're seeking backwards, then that looks like a bug.
+					assert(new_pos >= in->get_position());
+					in->set_position(new_pos);
+
+					// Create & read the shape.
+					shape_character_def* s = new shape_character_def;
+					s->read(in, 22, false, m);
+
+					m_glyphs[i] = s;
+				}}
+
+				int	current_position = in->get_position();
+				if (font_code_offset + table_base != current_position)
+				{
+					// Bad offset!  Don't try to read any more.
+					return;
+				}
+			}
+			else
+			{
+				// Skip the shape data.
+				int	new_pos = table_base + font_code_offset;
+				if (new_pos >= in->get_tag_end_position())
+				{
+					// No layout data!
+					return;
+				}
+
 				in->set_position(new_pos);
-
-				// Create & read the shape.
-				shape_character_def* s = new shape_character_def;
-				s->read(in, 22, false, m);
-
-				m_glyphs.push_back(s);
-			}}
-
-
-			if (font_code_offset + table_base != in->get_position())
-			{
-				// Bad offset!  Don't try to read any more.
-				return;
 			}
 
 			read_code_table(in);
@@ -225,16 +244,19 @@ namespace gameswf
 				m_leading = (float) in->read_s16();
 				
 				// Advance table; i.e. how wide each character is.
-				for (int i = 0; i < m_glyphs.size(); i++)
+				m_advance_table.resize(m_glyphs.size());
+				for (int i = 0, n = m_advance_table.size(); i < n; i++)
 				{
-					m_advance_table.push_back((float) in->read_s16());
+					m_advance_table[i] = (float) in->read_s16();
 				}
 
 				// Bounds table.
-				m_bounds_table.resize(m_glyphs.size());
-				{for (int i = 0; i < m_bounds_table.size(); i++)
+				//m_bounds_table.resize(m_glyphs.size());	// kill
+				rect	dummy_rect;
+				{for (int i = 0, n = m_glyphs.size(); i < n; i++)
 				{
-					m_bounds_table[i].read(in);
+					//m_bounds_table[i].read(in);	// kill
+					dummy_rect.read(in);
 				}}
 
 				// Kerning pairs.
@@ -374,23 +396,30 @@ namespace gameswf
 	void	font::output_cached_data(tu_file* out)
 	// Dump our cached data into the given stream.
 	{
+// @@ Disabled.  Need to fix input_cached_data, so that it has a
+// reliable and cheap way to skip over data for NULL glyphs.
+#if 0
 		// Dump cached shape data for glyphs (i.e. this will
 		// be tesselations used to render larger glyph sizes).
 		int	 n = m_glyphs.size();
 		out->write_le32(n);
 		for (int i = 0; i < n; i++)
 		{
-			m_glyphs[i]->output_cached_data(out);
+			shape_character_def*	s = m_glyphs[i].get_ptr();
+			if (s)
+			{
+				s->output_cached_data(out);
+			}
 		}
-
-		// Dump the cached texture info.
-		// @@ ... m_texture_glyphs, plus the actual texture(s)
+#endif // 0
 	}
 
 	
 	void	font::input_cached_data(tu_file* in)
 	// Read our cached data from the given stream.
 	{
+// @@ Disable.  See comment in output_cached_data().
+#if 0
 		// Read cached shape data for glyphs.
 		int	n = in->read_le32();
 		if (n != m_glyphs.size())
@@ -405,9 +434,7 @@ namespace gameswf
 		{
 			m_glyphs[i]->input_cached_data(in);
 		}
-
-		// Read the cached texture info.
-		// @@ ... m_texture_glyphs, plus the actual texture(s)
+#endif // 0
 	}
 
 

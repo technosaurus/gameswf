@@ -26,7 +26,7 @@ namespace gameswf
 		void	add_font(font* f);
 
 		// For drawing a textured glyph w/ current render transforms.
-		void	draw_glyph(const matrix& m, const texture_glyph* g, rgba color);
+		void	draw_glyph(const matrix& m, const texture_glyph& g, rgba color);
 
 		// Return the pixel height of text, such that the
 		// texture glyphs are sampled 1-to-1 texels-to-pixels.

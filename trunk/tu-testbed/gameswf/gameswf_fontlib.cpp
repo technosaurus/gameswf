@@ -63,6 +63,7 @@ namespace fontlib
 	// texture space is wasted.
 	const int PAD_PIXELS = 3;
 
+
 	//
 	// State for the glyph packer.
 	//
@@ -73,7 +74,28 @@ namespace fontlib
 	static Uint8*	s_current_cache_image = NULL;
 
 	// for setting the bitmap_info after they're packed.
-	static array< smart_ptr<texture_glyph> >	s_pending_glyphs;
+	struct pending_glyph_info
+	{
+		font*	m_source_font;
+		int	m_glyph_index;
+		texture_glyph	m_texture_glyph;
+
+		pending_glyph_info()
+			:
+			m_source_font(NULL),
+			m_glyph_index(-1)
+		{
+		}
+
+		pending_glyph_info(font* f, int gi, const texture_glyph& tg)
+			:
+			m_source_font(f),
+			m_glyph_index(gi),
+			m_texture_glyph(tg)
+		{
+		}
+	};
+	static array< pending_glyph_info >	s_pending_glyphs;
 
 
 	// Integer-bounded 2D rectangle.
@@ -223,10 +245,16 @@ namespace fontlib
 		}
 		owner->add_bitmap_info(bi.get_ptr());
 
-		// Fixup the glyphs.
+		// Push finished glyphs into their respective fonts.
 		for (int i = 0, n = s_pending_glyphs.size(); i < n; i++)
 		{
-			s_pending_glyphs[i]->set_bitmap_info(bi.get_ptr());
+			pending_glyph_info*	pgi = &s_pending_glyphs[i];
+			assert(pgi->m_glyph_index != -1);
+			assert(pgi->m_source_font != NULL);
+
+			pgi->m_texture_glyph.set_bitmap_info(bi.get_ptr());
+			pgi->m_source_font->add_texture_glyph(pgi->m_glyph_index, pgi->m_texture_glyph);
+			//s_pending_glyphs[i]->set_bitmap_info(bi.get_ptr());
 		}
 		s_pending_glyphs.clear();
 	}
@@ -574,23 +602,22 @@ namespace fontlib
 			{
 				// Yes, a real bitwise match.  Use the previous
 				// image's texture data.
-				const texture_glyph*	identical_tg = identical_image->m_source_font->get_texture_glyph(
+				const texture_glyph&	identical_tg = identical_image->m_source_font->get_texture_glyph(
 					identical_image->m_glyph_index);
-				if (identical_tg)
+				if (identical_tg.is_renderable())
 				{
-					smart_ptr<texture_glyph>	tg = new texture_glyph;
-					s_pending_glyphs.push_back(tg);
+					texture_glyph	tg;
 
 					// copy the bitmap & uv data from identical_tg
-					*(tg.get_ptr()) = *identical_tg;
+					tg = identical_tg;
 
 					// Use our own offset, in case it's different.
-					tg->m_uv_origin.m_x = identical_tg->m_uv_bounds.m_x_min
+					tg.m_uv_origin.m_x = tg.m_uv_bounds.m_x_min
 						+ rgi.m_offset_x / GLYPH_CACHE_TEXTURE_SIZE;
-					tg->m_uv_origin.m_y = identical_tg->m_uv_bounds.m_y_min
+					tg.m_uv_origin.m_y = tg.m_uv_bounds.m_y_min
 						+ rgi.m_offset_y / GLYPH_CACHE_TEXTURE_SIZE;
 
-					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg.get_ptr());
+					s_pending_glyphs.push_back(pending_glyph_info(rgi.m_source_font, rgi.m_glyph_index, tg));
 
 					return true;
 				}
@@ -686,16 +713,21 @@ namespace fontlib
 					}
 
 					// Fill out the glyph info.
-					smart_ptr<texture_glyph>	tg = new texture_glyph;
-					s_pending_glyphs.push_back(tg);	// set the bitmap info later
-					tg->m_uv_origin.m_x = (pack_x + rgi.m_offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
-					tg->m_uv_origin.m_y = (pack_y + rgi.m_offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
-					tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
-					tg->m_uv_bounds.m_x_max = float(pack_x + width) / (GLYPH_CACHE_TEXTURE_SIZE);
-					tg->m_uv_bounds.m_y_min = float(pack_y) / (GLYPH_CACHE_TEXTURE_SIZE);
-					tg->m_uv_bounds.m_y_max = float(pack_y + height) / (GLYPH_CACHE_TEXTURE_SIZE);
+					texture_glyph	tg;
+					tg.m_uv_origin.m_x = (pack_x + rgi.m_offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg.m_uv_origin.m_y = (pack_y + rgi.m_offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg.m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg.m_uv_bounds.m_x_max = float(pack_x + width) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg.m_uv_bounds.m_y_min = float(pack_y) / (GLYPH_CACHE_TEXTURE_SIZE);
+					tg.m_uv_bounds.m_y_max = float(pack_y + height) / (GLYPH_CACHE_TEXTURE_SIZE);
 
-					rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg.get_ptr());
+					// Fill in bitmap info and push into the source font later.
+					s_pending_glyphs.push_back(
+						pending_glyph_info(
+							rgi.m_source_font,
+							rgi.m_glyph_index,
+							tg));
+					//rgi.m_source_font->add_texture_glyph(rgi.m_glyph_index, tg.get_ptr());
 
 					// Add this into the hash so it can possibly be reused.
 					if (image_hash.get(rgi.m_image_hash, NULL) == false)
@@ -739,7 +771,7 @@ namespace fontlib
 
 		for (int i = 0, n = f->get_glyph_count(); i < n; i++)
 		{
-			if (f->get_texture_glyph(i) == NULL)
+			if (f->get_texture_glyph(i).is_renderable() == false)
 			{
 				shape_character_def*	sh = f->get_glyph(i);
 				if (sh)
@@ -873,11 +905,11 @@ namespace fontlib
 				
 			int n = 0;
 				
-			// save glyphs:
+			// save texture glyphs:
 			for (int g = 0; g < ng; g++)
 			{
-				const texture_glyph* tg = fonts[f]->get_texture_glyph(g);
-				if (tg != NULL)
+				const texture_glyph& tg = fonts[f]->get_texture_glyph(g);
+				if (tg.is_renderable())
 				{
 					// save glyph index.
 					out->write_le32(g);
@@ -887,7 +919,7 @@ namespace fontlib
 					int bi;
 					for (bi = bitmaps_used_base; bi < owner->get_bitmap_info_count(); bi++)
 					{
-						if (tg->m_bitmap_info == owner->get_bitmap_info(bi))
+						if (tg.m_bitmap_info == owner->get_bitmap_info(bi))
 						{
 							break;
 						}
@@ -898,12 +930,12 @@ namespace fontlib
 					out->write_le16((Uint16) (bi - bitmaps_used_base));
 
 					// save rect, position.
-					out->write_float32(tg->m_uv_bounds.m_x_min);
-					out->write_float32(tg->m_uv_bounds.m_y_min);
-					out->write_float32(tg->m_uv_bounds.m_x_max);
-					out->write_float32(tg->m_uv_bounds.m_y_max);
-					out->write_float32(tg->m_uv_origin.m_x);
-					out->write_float32(tg->m_uv_origin.m_y);
+					out->write_float32(tg.m_uv_bounds.m_x_min);
+					out->write_float32(tg.m_uv_bounds.m_y_min);
+					out->write_float32(tg.m_uv_bounds.m_x_max);
+					out->write_float32(tg.m_uv_bounds.m_y_max);
+					out->write_float32(tg.m_uv_origin.m_x);
+					out->write_float32(tg.m_uv_origin.m_y);
 					n++;
 				}
 			}
@@ -1010,7 +1042,7 @@ namespace fontlib
 				// load glyph index.
 				int glyph_index = in->read_le32();
 
-				smart_ptr<texture_glyph> tg = new texture_glyph;
+				texture_glyph	tg;
 
 				// load bitmap index
 				int bi = in->read_le16();
@@ -1022,17 +1054,17 @@ namespace fontlib
 					goto error_exit;
 				}
 
-				tg->set_bitmap_info(owner->get_bitmap_info(bi + bitmaps_used_base));
+				tg.set_bitmap_info(owner->get_bitmap_info(bi + bitmaps_used_base));
 
 				// load glyph bounds and origin.
-				tg->m_uv_bounds.m_x_min = in->read_float32();
-				tg->m_uv_bounds.m_y_min = in->read_float32();
-				tg->m_uv_bounds.m_x_max = in->read_float32();
-				tg->m_uv_bounds.m_y_max = in->read_float32();
-				tg->m_uv_origin.m_x = in->read_float32();
-				tg->m_uv_origin.m_y = in->read_float32();
+				tg.m_uv_bounds.m_x_min = in->read_float32();
+				tg.m_uv_bounds.m_y_min = in->read_float32();
+				tg.m_uv_bounds.m_x_max = in->read_float32();
+				tg.m_uv_bounds.m_y_max = in->read_float32();
+				tg.m_uv_origin.m_x = in->read_float32();
+				tg.m_uv_origin.m_y = in->read_float32();
 
-				fonts[f]->add_texture_glyph(glyph_index, tg.get_ptr());
+				fonts[f]->add_texture_glyph(glyph_index, tg);
 			}
 
 			// Load cached shape data.
@@ -1119,20 +1151,19 @@ namespace fontlib
 	}
 
 
-	void	draw_glyph(const matrix& mat, const texture_glyph* tg, rgba color)
+	void	draw_glyph(const matrix& mat, const texture_glyph& tg, rgba color)
 	// Draw the given texture glyph using the given transform, in
 	// the given color.
 	{
-		assert(tg);
-		assert(tg->m_bitmap_info != NULL);
+		assert(tg.is_renderable());
 
 		// @@ worth it to precompute these bounds?
 
-		rect	bounds = tg->m_uv_bounds;
-		bounds.m_x_min -= tg->m_uv_origin.m_x;
-		bounds.m_x_max -= tg->m_uv_origin.m_x;
-		bounds.m_y_min -= tg->m_uv_origin.m_y;
-		bounds.m_y_max -= tg->m_uv_origin.m_y;
+		rect	bounds = tg.m_uv_bounds;
+		bounds.m_x_min -= tg.m_uv_origin.m_x;
+		bounds.m_x_max -= tg.m_uv_origin.m_x;
+		bounds.m_y_min -= tg.m_uv_origin.m_y;
+		bounds.m_y_max -= tg.m_uv_origin.m_y;
 
 		// Scale from uv coords to the 1024x1024 glyph square.
 		static float	s_scale = GLYPH_CACHE_TEXTURE_SIZE * s_rendering_box / GLYPH_FINAL_SIZE;
@@ -1142,7 +1173,7 @@ namespace fontlib
 		bounds.m_y_min *= s_scale;
 		bounds.m_y_max *= s_scale;
 		
-		render::draw_bitmap(mat, tg->m_bitmap_info.get_ptr(), bounds, tg->m_uv_bounds, color);
+		render::draw_bitmap(mat, tg.m_bitmap_info.get_ptr(), bounds, tg.m_uv_bounds, color);
 	}
 
 
@@ -1169,13 +1200,13 @@ namespace fontlib
 				continue;	// FIXME: advance?
 			}
 
-			const texture_glyph*	tg = f->get_texture_glyph(g);
+			const texture_glyph&	tg = f->get_texture_glyph(g);
 			
 			matrix m;
 			m.concatenate_translation(x, y);
 			m.concatenate_scale(size / 1024.0f);
 
-			if (tg)
+			if (tg.is_renderable())
 			{
 				// Draw the glyph using the cached texture-map info.
 				fontlib::draw_glyph(m, tg, rgba());
