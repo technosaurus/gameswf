@@ -331,6 +331,7 @@ namespace gameswf
 		array<smart_ptr<bitmap_info> >	m_bitmap_list;
 
 		create_bitmaps_flag	m_create_bitmaps;
+		create_font_shapes_flag	m_create_font_shapes;
 
 		rect	m_frame_size;
 		float	m_frame_rate;
@@ -341,9 +342,10 @@ namespace gameswf
 		jpeg::input*	m_jpeg_in;
 
 
-		movie_def_impl(create_bitmaps_flag cbf)
+		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs)
 			:
 			m_create_bitmaps(cbf),
+			m_create_font_shapes(cfs),
 			m_frame_rate(30.0f),
 			m_frame_count(0),
 			m_version(0),
@@ -388,6 +390,17 @@ namespace gameswf
 		// program).
 		{
 			return m_create_bitmaps;
+		}
+
+		/* movie_def_impl */
+		virtual create_font_shapes_flag	get_create_font_shapes() const
+		// Returns DO_LOAD_FONT_SHAPES if we're supposed to
+		// initialize our font shape info, or
+		// DO_NOT_LOAD_FONT_SHAPES if we're supposed to not
+		// create any (vector) font glyph shapes, and instead
+		// rely on precached textured fonts glyphs.
+		{
+			return m_create_font_shapes;
 		}
 
 		virtual void	add_bitmap_info(bitmap_info* bi)
@@ -764,7 +777,7 @@ namespace gameswf
 
 
 		// Increment this when the cache data format changes.
-		#define CACHE_FILE_VERSION 1
+		#define CACHE_FILE_VERSION 2
 
 
 		/* movie_def_impl */
@@ -1245,7 +1258,7 @@ namespace gameswf
 
 		ensure_loaders_registered();
 
-		movie_def_impl*	m = new movie_def_impl(DO_LOAD_BITMAPS);
+		movie_def_impl*	m = new movie_def_impl(DO_LOAD_BITMAPS, DO_LOAD_FONT_SHAPES);
 		m->read(in);
 
 		delete in;
@@ -1281,7 +1294,10 @@ namespace gameswf
 	static bool	s_no_recurse_while_loading = false;	// @@ TODO get rid of this; make it the normal mode.
 
 
-	movie_definition*	create_movie_no_recurse(tu_file* in, create_bitmaps_flag cbf)
+	movie_definition*	create_movie_no_recurse(
+		tu_file* in,
+		create_bitmaps_flag cbf,
+		create_font_shapes_flag cfs)
 	{
 		ensure_loaders_registered();
 
@@ -1292,7 +1308,7 @@ namespace gameswf
 		// the resource_proxy stuff gets tested.
 		s_no_recurse_while_loading = true;
 
-		movie_def_impl*	m = new movie_def_impl(cbf);
+		movie_def_impl*	m = new movie_def_impl(cbf, cfs);
 		m->read(in);
 
 		s_no_recurse_while_loading = false;
@@ -2497,6 +2513,7 @@ namespace gameswf
 
 		// @@ would be nicer to not inherit these...
 		virtual create_bitmaps_flag	get_create_bitmaps() const { assert(0); return DO_LOAD_BITMAPS; }
+		virtual create_font_shapes_flag	get_create_font_shapes() const { assert(0); return DO_LOAD_FONT_SHAPES; }
 		virtual int	get_bitmap_info_count() const { assert(0); return 0; }
 		virtual bitmap_info*	get_bitmap_info(int i) const { assert(0); return NULL; }
 		virtual void	add_bitmap_info(bitmap_info* bi) { assert(0); }

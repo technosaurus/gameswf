@@ -38,22 +38,16 @@ namespace gameswf
 		{
 		}
 
+		bool	is_renderable() const
+		// Return true if this can be used for rendering.
+		{
+			return m_bitmap_info != NULL;
+		}
+
 		void	set_bitmap_info(bitmap_info* bi)
 		{
 			m_bitmap_info = bi;
 		}
-
-		void operator=(const texture_glyph& tg)
-		// Assignment; make sure to handle ref counts properly.
-		{
-			m_bitmap_info = tg.m_bitmap_info;
-			m_uv_bounds = tg.m_uv_bounds;
-			m_uv_origin = tg.m_uv_origin;
-		}
-
-	private:
-		// Don't allow copy-constructor.
-		texture_glyph(const texture_glyph& tg) { assert(0); }
 	};
 
 
@@ -78,8 +72,8 @@ namespace gameswf
 		const char*	get_name() const { return m_name; }
 		movie_definition_sub*	get_owning_movie() const { return m_owning_movie; }
 
-		const texture_glyph*	get_texture_glyph(int glyph_index) const;
-		void	add_texture_glyph(int glyph_index, const texture_glyph* glyph);
+		const texture_glyph&	get_texture_glyph(int glyph_index) const;
+		void	add_texture_glyph(int glyph_index, const texture_glyph& glyph);
 
 		int	get_glyph_index(Uint16 code) const;
 		float	get_advance(int glyph_index) const;
@@ -91,7 +85,8 @@ namespace gameswf
 		void	read_code_table(stream* in);
 
 		array< smart_ptr<shape_character_def> >	m_glyphs;
-		array< smart_ptr<const texture_glyph> >	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
+		array< texture_glyph >	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
+
 		char*	m_name;
 		movie_definition_sub*	m_owning_movie;
 		bool	m_has_layout;
@@ -101,16 +96,17 @@ namespace gameswf
 		bool	m_is_italic;
 		bool	m_is_bold;
 		bool	m_wide_codes;
-		//array<Uint16>	m_code_table;	// m_code_table[glyph_index] = character code
 
+		// This table maps from Unicode character number to glyph index.
 		// m_code_table[character_code] = glyph_index
+		//
+		// @@ TODO: avoid little allocs; replace this with a flat hash, or else a sorted array (binary search)
 		template<class T>
 		struct simple_code_hash
 		// Dummy hash functor.
 		{
 			size_t	operator()(const T& data) const { return data; }
 		};
-
 		hash<Uint16, int, simple_code_hash<Uint16> > m_code_table;
 
 		// Layout stuff.
@@ -118,8 +114,10 @@ namespace gameswf
 		float	m_descent;
 		float	m_leading;
 		array<float>	m_advance_table;
-		array<rect>	m_bounds_table;
+		// @@ we don't seem to use this thing at all, so don't bother keeping it.
+		// array<rect>	m_bounds_table;	// @@ this thing should be optional.
 
+		// @@ replace this with a flat hash, or else a sorted array (binary search)
 		struct kerning_pair
 		{
 			Uint16	m_char0, m_char1;

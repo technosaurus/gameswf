@@ -352,12 +352,27 @@ namespace gameswf
 	// movie_definition::visit_imported_movies().  The proxies can
 	// be replaced with actual movie_definition's via
 	// movie_definition::resolve_proxy(name,def).
+	//
+	// Use DO_NOT_LOAD_BITMAPS if you have pre-processed bitmaps
+	// stored externally somewhere, and you plan to install them
+	// via get_bitmap_info()->...
 	enum create_bitmaps_flag
 	{
 		DO_LOAD_BITMAPS,
 		DO_NOT_LOAD_BITMAPS
 	};
-	movie_definition*	create_movie_no_recurse(tu_file* input_stream, create_bitmaps_flag cbf);
+	// Use DO_NOT_LOAD_FONT_SHAPES if you know you have
+	// precomputed texture glyphs (in cached data) and you know
+	// you always want to render text using texture glyphs.
+	enum create_font_shapes_flag
+	{
+		DO_LOAD_FONT_SHAPES,
+		DO_NOT_LOAD_FONT_SHAPES
+	};
+	movie_definition*	create_movie_no_recurse(
+		tu_file* input_stream,
+		create_bitmaps_flag cbf,
+		create_font_shapes_flag cfs);
 
 	// Create a gameswf::movie_definition from the given file name.
 	// This is just like create_movie(), except that it checks the

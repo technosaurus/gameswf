@@ -67,6 +67,7 @@ namespace gameswf
 		virtual void	add_bitmap_info(bitmap_info* ch) = 0;
 
 		virtual create_bitmaps_flag	get_create_bitmaps() const = 0;
+		virtual create_font_shapes_flag	get_create_font_shapes() const = 0;
 	};
 
 

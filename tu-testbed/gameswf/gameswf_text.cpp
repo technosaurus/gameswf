@@ -158,19 +158,21 @@ namespace gameswf
 			for (int j = 0; j < rec.m_glyphs.size(); j++)
 			{
 				int	index = rec.m_glyphs[j].m_glyph_index;
-				const texture_glyph*	tg = fnt->get_texture_glyph(index);
+				const texture_glyph&	tg = fnt->get_texture_glyph(index);
 					
 				mat = base_matrix;
 				mat.concatenate_translation(x, y);
 				mat.concatenate_scale(scale);
 
-				if (tg && use_glyph_textures)
+				shape_character_def*	glyph = fnt->get_glyph(index);
+
+				if (tg.is_renderable()
+				    && (use_glyph_textures || glyph == NULL))
 				{
 					fontlib::draw_glyph(mat, tg, transformed_color);
 				}
 				else
 				{
-					shape_character_def*	glyph = fnt->get_glyph(index);
 
 					// Draw the character using the filled outline.
 					if (glyph)
