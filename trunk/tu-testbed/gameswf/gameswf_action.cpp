@@ -431,11 +431,103 @@ namespace gameswf
 					env->drop(1);
 					break;
 				}
-
+				case 0x4A:	// to number
+				{
+					env->top(0).convert_to_number();
+					break;
+				}
+				case 0x4B:	// to string
+				{
+					env->top(0).convert_to_string();
+					break;
+				}
 				case 0x4C:	// dup
 					env->push(env->top(0));
 					break;
-
+				
+				case 0x4D:	// swap
+				{
+					as_value	temp = env->top(1);
+					env->top(1) = env->top(0);
+					env->top(0) = temp;
+					break;
+				}
+				case 0x4E:	// get member
+					// @@ TODO
+					break;
+				case 0x4F:	// set member
+					// @@ TODO
+					break;
+				case 0x50:	// increment
+					env->top(0) += 1;
+					break;
+				case 0x51:	// decrement
+					env->top(0) -= 1;
+					break;
+				case 0x52:	// call method
+					// @@ TODO
+					break;
+				case 0x53:	// new method
+					// @@ TODO
+					break;
+				case 0x54:	// instance of
+					// @@ TODO
+					break;
+				case 0x55:	// enumerate object
+					// @@ TODO
+					break;
+				case 0x60:	// bitwise and
+					env->top(1) &= env->top(0);
+					env->drop(1);
+					break;
+				case 0x61:	// bitwise or
+					env->top(1) |= env->top(0);
+					env->drop(1);
+					break;
+				case 0x62:	// bitwise xor
+					env->top(1) ^= env->top(0);
+					env->drop(1);
+					break;
+				case 0x63:	// shift left
+					env->top(1).shl(env->top(0));
+					env->drop(1);
+					break;
+				case 0x64:	// shift right (signed)
+					env->top(1).asr(env->top(0));
+					env->drop(1);
+					break;
+				case 0x65:	// shift right (unsigned)
+					env->top(1).lsr(env->top(0));
+					env->drop(1);
+					break;
+				case 0x66:	// strict equal
+					if (env->top(1).get_type() != env->top(0).get_type())
+					{
+						// Types don't match.
+						env->top(1).set(false);
+						env->drop(1);
+					}
+					else
+					{
+						env->top(1).set(env->top(1) == env->top(0));
+						env->drop(1);
+					}
+					break;
+				case 0x67:	// gt (typed)
+					if (env->top(1).get_type() == as_value::STRING)
+					{
+						env->top(1).set(! (env->top(1).to_tu_string() < env->top(0).to_tu_string()));
+					}
+					else
+					{
+						env->top(1).set(! (env->top(1) < env->top(0)));
+					}
+					env->drop(1);
+					break;
+				case 0x68:	// string gt
+					env->top(1).set(! (env->top(1).to_tu_string() < env->top(0).to_tu_string()));
+					env->drop(1);
+					break;
 				}
 				pc++;	// advance to next action.
 			}
@@ -747,6 +839,20 @@ namespace gameswf
 		{
 			return false;
 		}
+	}
+
+	void	as_value::convert_to_number()
+	// Force to type to number.
+	{
+		set(to_number());
+	}
+
+
+	void	as_value::convert_to_string()
+	// Force type to string.
+	{
+		to_tu_string();	// init our string data.
+		m_type = STRING;	// force type.
 	}
 
 

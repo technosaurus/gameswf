@@ -101,12 +101,14 @@ namespace gameswf
 		}
 
 		type	get_type() const { return m_type; }
-		bool	is_string() const { return m_type == STRING; }
+
 		const char*	to_string() const;
 		const tu_string&	to_tu_string() const;
-
 		double	to_number() const;
 		bool	to_bool() const;
+
+		void	convert_to_number();
+		void	convert_to_string();
 
 		void	set(const tu_string& str) { m_type = STRING; m_string_value = str; }
 		void	set(const char* str) { m_type = STRING; m_string_value = str; }
@@ -120,7 +122,12 @@ namespace gameswf
 		void	operator-=(const as_value& v) { set(this->to_number() - v.to_number()); }
 		void	operator*=(const as_value& v) { set(this->to_number() * v.to_number()); }
 		void	operator/=(const as_value& v) { set(this->to_number() / v.to_number()); }	// @@ check for div/0
-		void	operator&(const as_value& v) { set(int(this->to_number()) & int(v.to_number())); }
+		void	operator&=(const as_value& v) { set(int(this->to_number()) & int(v.to_number())); }
+		void	operator|=(const as_value& v) { set(int(this->to_number()) | int(v.to_number())); }
+		void	operator^=(const as_value& v) { set(int(this->to_number()) ^ int(v.to_number())); }
+		void	shl(const as_value& v) { set(int(this->to_number()) << int(v.to_number())); }
+		void	asr(const as_value& v) { set(int(this->to_number()) >> int(v.to_number())); }
+		void	lsr(const as_value& v) { set(double(Uint32(this->to_number()) >> int(v.to_number()))); }
 
 		void	string_concat(const tu_string& str);
 	};
