@@ -787,13 +787,15 @@ namespace gameswf
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(4, place_object_2_loader);
-			register_tag_loader(6, define_bits_jpeg_loader);	// turn this off; needs debugging
+			register_tag_loader(6, define_bits_jpeg_loader);
 			register_tag_loader(7, button_character_loader);
-			register_tag_loader(8, jpeg_tables_loader);		// turn this off; needs debugging
+			register_tag_loader(8, jpeg_tables_loader);
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
 			register_tag_loader(11, define_text_loader);
 			register_tag_loader(12, do_action_loader);
+			register_tag_loader(13, define_font_info_loader);
+			register_tag_loader(14, define_sound_loader);
 			register_tag_loader(20, define_bits_lossless_2_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);

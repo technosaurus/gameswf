@@ -4,6 +4,54 @@ Bugs
 * are sprite animations skipping slightly at the end?
 
 
+Productizing
+============
+
+Tasks to make gameswf ready for including in real games.
+
+* remove filename and FILE for caching in fontlib, and replace with
+  tu_file* abstraction.
+
+* abstract sound handler, that host apps can register.  Demonstrate
+  this in the test program using SDL_mixer.  Need to implement sound
+  tag parsing also.
+
+* abstract the renderer?  Probably it's OK to just compile the
+  renderer you want; this seems lower priority.  Need an Xbox renderer
+  anyway.
+
+* a good way to pre-compute tesselations of shapes.  Also, it would be
+  very nice to be able to restrict the size of font textures for
+  particular fonts that don't need to be scaled up.  RAM is precious.
+
+  Here's what I'm thinking:
+
+  * pass a flag to gameswf_test_ogl, like we do now for font caching.
+    Specify any number of .swf movies.
+
+  * the program loads all the movies and executes all the frames.
+    This causes all the shapes to be tesselated to necessary levels,
+    and the fonts to be precomputed, etc.  With the fonts, we should
+    probably record the maximum size any font was displayed at; if
+    it's small, then we can store smaller versions of the font
+    textures.
+
+  * append all the cached info as EXTRA CUSTOM TAGS right onto the
+    ends of the associated .swf files.  So the .swf's are still valid,
+    they just have a bunch of extra precompiled data on the end for
+    the use of gameswf.
+
+  * at load time, when we see these extra tags, we jam the data right
+    into the corresponding characters without having to compute it.
+
+* verify that library itself doesn't require SDL; avoid gratuitous
+  c-library dependencies (I think we're mostly OK there)
+
+* fix memory leaks
+
+* pick a version number, post a release
+
+
 General
 =======
 
@@ -15,7 +63,12 @@ General
   * try it out; maybe add a little text output to chunklod or
     something
 
-* sprites as button characters are not working.
+  * there's a pop when transitioning from textured to mesh-rendered
+    glyphs; probably the texture fonts aren't registered exactly
+    right?
+
+* sprites as button characters are not working.  (Maybe they are
+  now??)
 
 * the half-implemented action stuff is an obstacle to progress; many
   of my test movies don't work because "goto frame" and/or some other
@@ -57,21 +110,6 @@ General
     ActionScript to interpret keypresses.  Need enough ActionScript
     support so that this works.
 
-* packaging
-
-  * verify that library itself doesn't require SDL
-
-  * libjpeg and libz dependencies are necessary, so leave as-is
-
-  * Xbox port (important to me personally; maybe not a high priority
-    for others)
-
-  * pick a version number, post a release
-
-  * host-settable options for how much, and what, to log.
-
-  * some method for reporting errors to the host app
-
 * text entry?  No keyboard on consoles, text input is very platform
   specific; low priority for now.
 
@@ -79,11 +117,8 @@ General
 
 * ActionScript needs to basically work
 
-* A mechanism to dump out cached tesselations to disk, similar to how
-  we can dump out cached font renderings.
-
 * Would be good if one of the log options produced a nice usable
-  human-readable parsing of the file.
+  human-readable parsing of the file.  Or even a SSWF equivalent?
 
 
 Renderer
@@ -111,3 +146,30 @@ Renderer
   it still doesn't seem too easy to get right.  Needs more thinking.
   Not a super high priority; doesn't seem to be a critical feature for
   most movies.
+
+* Idea for antialiasing.  I really miss antialiasing; it sure would be
+  nice to have it.  (But this is low priority for productizing; it
+  should be easy enough for designers to work around gameswf's
+  limitations.)  So here's the idea:
+
+  * do full-blown expensive cached tesselation, to generate a "fringe
+    mesh" around the outside edges of shapes.  We know the range of
+    desired rendering sizes (in pixels), so we can make a fringe mesh
+    that will range from 1 to 2 pixels in width when rendered.  I
+    believe this involves shrinking the interior of the mesh by the
+    equivalent of a half-pixel.
+
+  * render the mesh using the dual-textured modulate thing, to fade
+    the edge.  Adjust the U coordinates of the outer edge of the
+    fringe according to the actual size in pixels of the fringe;
+    i.e. if the fringe is being rendered at 1.27 pixels in size,
+    adjust U so that the alpha fades to exactly 0 when the fringe is
+    1.0 pixel from the interior; the excess fringe has alpha == 0 so
+    doesn't render.
+
+  This sounds pretty foolproof to me.  It's expensive in terms of
+  precomputation, but then we have all this precomputation machinery
+  anyway, so no big deal.  There could possibly be a pop when
+  tesselations switch, although I don't think it would be any worse
+  than existing pops, and I haven't noticed any objectionable popping
+  with our existing shape rendering.

@@ -147,8 +147,74 @@ namespace gameswf
 //		void	draw_string(const font* f, float x, float y, float size, const wchar* text);	// wide-char version
 	}
 
+
+	//
+	// Sound callback handler.
+	//
+
+	// You may define a subclass of this, and pass an instance to
+	// set_sound_handler().
+	struct sound_handler
+	{
+		enum format_type
+		{
+			FORMAT_RAW = 0,		// unspecified format.  Useful for 8-bit sounds???
+			FORMAT_ADPCM = 1,
+			FORMAT_MP3 = 2,
+			FORMAT_UNCOMPRESSED = 3,	// 16 bits/sample, little-endian
+			FORMAT_NELLYMOSER = 6,	// Mystery proprietary format; see nellymoser.com
+		};
+		// If stereo is true, samples are interleaved w/ left sample first.
+
+		// gameswf calls at load-time with sound data, to be
+		// played later.  You should create a sample with the
+		// data, and return a handle that can be used to play
+		// it later.  If the data is in a format you can't
+		// deal with, then you can return 0 (for example), and
+		// then ignore 0's in play_sound() and delete_sound().
+		//
+		// Assign handles however you like.
+		virtual int	create_sound(
+			void* data,
+			int data_bytes,
+			int sample_count,
+			format_type format,
+			bool stereo
+			) = 0;
+
+		// gameswf calls this when it wants you to play the defined sound.
+		virtual int	play_sound(int sound_handle /* , volume, pan, etc? */) = 0;
+
+		// gameswf calls this when it's done with a particular sound.
+		virtual void	delete_sound(int sound_handle) = 0;
+
+	};
+
+	// Pass in a sound handler, so you can handle audio on behalf of
+	// gameswf.  This is optional; if you don't set a handler, or set
+	// NULL, then sounds will be ignored.
+	//
+	// If you want sound support, you should set this at startup,
+	// before loading or playing any movies!
+	void	set_sound_handler(sound_handler* s);
+
+	// Utility function to uncompress ADPCM.
+	// Output data is actually SIGNED 16-BIT INTEGER, native endianness.
+	void	adpcm_expand(
+		void* data_out,
+		const unsigned char* data_in,
+		int sample_count,	// in stereo, this is number of *pairs* of samples
+		bool stereo);
+
 }	// namespace gameswf
 
 
 #endif // GAMESWF_H
 
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
