@@ -414,6 +414,10 @@ void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	xscale = (float) (out_width - 1) / in_width;
 	yscale = (float) (out_height - 1) / in_height;
 
+	// xxxx protect against division by 0
+	if (yscale == 0) { yscale = 1.0f; }
+	if (xscale == 0) { xscale = 1.0f; }
+
 	/* pre-calculate filter contributions for a row */
 	contrib.resize(tmp->m_width);
 	if(xscale < 1.0f) {
@@ -574,6 +578,10 @@ void	resample(image::rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	tmp = image::create_rgba(out_width, in_window_h);
 	xscale = (float) (out_width - 1) / in_width;
 	yscale = (float) (out_height - 1) / in_height;
+
+	// xxxx protect against division by 0
+	if (yscale == 0) { yscale = 1.0f; }
+	if (xscale == 0) { xscale = 1.0f; }
 
 	/* pre-calculate filter contributions for a row */
 	contrib.resize(tmp->m_width);
