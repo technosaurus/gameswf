@@ -160,12 +160,12 @@ struct poly_vert
 	poly_vert(coord_t x, coord_t y, poly<coord_t>* owner, int my_index)
 		:
 		m_v(x, y),
+		m_my_index(my_index),
 		m_next(-1),
 		m_prev(-1),
 		m_convex_result(0),	// 1 (convex), 0 (colinear), -1 (reflex)
 		m_is_ear(false),
-		m_poly_owner(owner),
-		m_my_index(my_index)
+		m_poly_owner(owner)
 	{
 	}
 
@@ -471,10 +471,14 @@ struct poly
 	// edge search_index (for finding possibly intersecting edges during bridge finding)
 	//
 	// The payload stored is the index of the first vert in the edge.
+	typedef grid_index_box<coord_t, int>	box_index_t;
+	typedef typename box_index_t::iterator ib_iterator;
 	grid_index_box<coord_t, int>*	m_edge_index;
 
 	// point search index (for finding reflex verts within a potential ear)
-	grid_index_point<coord_t, int>*	m_reflex_point_index;
+	typedef grid_index_point<coord_t, int>	point_index_t;
+	typedef typename point_index_t::iterator ip_iterator;
+	point_index_t*	m_reflex_point_index;
 };
 
 
@@ -550,7 +554,7 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 	if (m_reflex_point_index)
 	{
 		int	check_count = 0;
-		for (grid_index_point<coord_t,int>::iterator it = m_reflex_point_index->begin(m_reflex_point_index->get_bound());
+		for (ip_iterator it = m_reflex_point_index->begin(m_reflex_point_index->get_bound());
 		     ! it.at_end();
 		     ++it)
 		{
@@ -564,7 +568,7 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 	if (m_edge_index)
 	{
 		int	check_count = 0;
-		for (grid_index_box<coord_t,int>::iterator it = m_edge_index->begin(m_edge_index->get_bound());
+		for (ib_iterator it = m_edge_index->begin(m_edge_index->get_bound());
 		     ! it.at_end();
 		     ++it)
 		{
@@ -758,7 +762,7 @@ void	poly<coord_t>::remap_for_duped_verts(const array<vert_t>& sorted_verts, int
 		index_box<coord_t>	bound = m_edge_index->get_bound();
 		bound.min.x = sorted_verts[v0].m_v.x;
 
-		for (grid_index_box<coord_t,int>::iterator it = m_edge_index->begin(bound);
+		for (ib_iterator it = m_edge_index->begin(bound);
 		     ! it.at_end();
 		     ++it)
 		{
@@ -778,8 +782,6 @@ void	poly<coord_t>::classify_vert(array<vert_t>* sorted_verts, int vi)
 	poly_vert<coord_t>*	pvi = &((*sorted_verts)[vi]);
 	const poly_vert<coord_t>*	pv_prev = &((*sorted_verts)[pvi->m_prev]);
 	const poly_vert<coord_t>*	pv_next = &((*sorted_verts)[pvi->m_next]);
-
-	bool	is_ear = false;
 
 	if (pvi->m_convex_result > 0)
 	{
@@ -819,8 +821,7 @@ void	poly<coord_t>::dirty_vert(array<vert_t>* sorted_verts, int vi)
 		// Vert is newly convex/colinear.
 		// Remove from reflex vert index.
 		assert(m_reflex_point_index);
-		grid_index_point<coord_t,int>::iterator	it =
-			m_reflex_point_index->find(index_point<coord_t>(pvi->m_v.x, pvi->m_v.y), vi);
+		ip_iterator	it = m_reflex_point_index->find(index_point<coord_t>(pvi->m_v.x, pvi->m_v.y), vi);
 		assert(it.at_end() == false);
 
 		m_reflex_point_index->remove(&(*it));
@@ -875,8 +876,6 @@ bool	poly<coord_t>::build_ear_list(array<vert_t>* sorted_verts, tu_random::gener
 		// 3. v[i-1] is in the cone(v[i],v[i+1],v[i+2]) and v[i+1] is
 		// in the cone(v[i-2],v[i-1],v[i]) (not strictly necessary,
 		// but used for efficiency and robustness)
-
-		bool	is_ear = false;
 
 		if ((pvi->m_v == pv_next->m_v)
 		    || (pvi->m_v == pv_prev->m_v)
@@ -1031,8 +1030,7 @@ void	poly<coord_t>::emit_and_remove_ear(
 		// Vert was reflex (can happen due to e.g. recovery).
 		// Remove from reflex vert index.
 		assert(m_reflex_point_index);
-		grid_index_point<coord_t,int>::iterator	it =
-			m_reflex_point_index->find(index_point<coord_t>(pv1->m_v.x, pv1->m_v.y), v1);
+		ip_iterator it = m_reflex_point_index->find(index_point<coord_t>(pv1->m_v.x, pv1->m_v.y), v1);
 		assert(it.at_end() == false);
 
 		m_reflex_point_index->remove(&(*it));
@@ -1117,7 +1115,7 @@ int	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 		{
 			// vi was reflex, remove it from index
 			assert(m_reflex_point_index);
-			grid_index_point<coord_t,int>::iterator	it =
+			ip_iterator	it =
 				m_reflex_point_index->find(index_point<coord_t>(pv1->m_v.x, pv1->m_v.y), vi);
 			assert(it.at_end() == false);
 
@@ -1584,7 +1582,7 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
  	index_box<coord_t>	query_box(pmv->get_index_point());
 	query_box.expand_to_enclose(pev->get_index_point());
 
-	for (grid_index_box<coord_t,int>::iterator it = m_edge_index->begin(query_box);
+	for (ib_iterator it = m_edge_index->begin(query_box);
 	     ! it.at_end();
 	     ++it)
 	{
@@ -1677,11 +1675,11 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 // [v1,v2).
 {
 	// Compute the bounding box of reflex verts we want to check.
-	index_box<coord_t>	query_bound(index_point<coord_t>(sorted_verts[v0].m_v.x, sorted_verts[v0].m_v.y));
+	index_box<coord_t>	query_bound(sorted_verts[v0].get_index_point());
 	query_bound.expand_to_enclose(index_point<coord_t>(sorted_verts[v1].m_v.x, sorted_verts[v1].m_v.y));
 	query_bound.expand_to_enclose(index_point<coord_t>(sorted_verts[v2].m_v.x, sorted_verts[v2].m_v.y));
 
-	for (grid_index_point<coord_t,int>::iterator it = m_reflex_point_index->begin(query_bound);
+	for (ip_iterator it = m_reflex_point_index->begin(query_bound);
 	     ! it.at_end();
 	     ++it)
 	{
@@ -1784,12 +1782,13 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 template<class coord_t>
 bool	poly<coord_t>::vert_in_cone(const array<vert_t>& sorted_verts, int vert, int cone_v0, int cone_v1, int cone_v2)
 // Returns true if vert is within the cone defined by [v0,v1,v2].
-//
+/*
 //  (out)  v0
 //        /
 //    v1 <   (in)
 //        \
 //         v2
+*/
 {
 	bool	acute_cone = vertex_left_test(sorted_verts[cone_v0].m_v, sorted_verts[cone_v1].m_v, sorted_verts[cone_v2].m_v) > 0;
 
@@ -1875,8 +1874,8 @@ struct poly_env
 
 	poly_env()
 		:
-		m_estimated_triangle_count(0),
-		m_bound(index_point<coord_t>(0, 0), index_point<coord_t>(0, 0))
+		m_bound(index_point<coord_t>(0, 0), index_point<coord_t>(0, 0)),
+		m_estimated_triangle_count(0)
 	{
 	}
 
@@ -2104,7 +2103,6 @@ void	poly_env<coord_t>::join_paths_with_bridge(
 		poly_vert<coord_t>*	pv_sub = &m_sorted_verts[vert_on_sub_poly];
 
 		int	main_next = pv_main->m_next;
-		int	sub_prev = pv_sub->m_prev;
 
 		// Remove the edge we're about to break.
 		main_poly->remove_edge(m_sorted_verts, vert_on_main_poly);
@@ -2416,7 +2414,6 @@ static void compute_triangulation(
 				// Force an arbitrary vert to be an ear.
 				penv.m_sorted_verts[P->m_loop].m_is_ear = true;
 				P->m_ear_count++;
-				true;
 			}
 			P->emit_and_remove_ear(
 				result,
