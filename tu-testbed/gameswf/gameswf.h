@@ -179,11 +179,12 @@ namespace gameswf
 			int data_bytes,
 			int sample_count,
 			format_type format,
+			int sample_rate,	/* one of 5512, 11025, 22050, 44100 */
 			bool stereo
 			) = 0;
 
 		// gameswf calls this when it wants you to play the defined sound.
-		virtual int	play_sound(int sound_handle /* , volume, pan, etc? */) = 0;
+		virtual void	play_sound(int sound_handle /* , volume, pan, etc? */) = 0;
 
 		// gameswf calls this when it's done with a particular sound.
 		virtual void	delete_sound(int sound_handle) = 0;
@@ -198,11 +199,13 @@ namespace gameswf
 	// before loading or playing any movies!
 	void	set_sound_handler(sound_handler* s);
 
-	// Utility function to uncompress ADPCM.
-	// Output data is actually SIGNED 16-BIT INTEGER, native endianness.
+	// Utility function to uncompress ADPCM.  Output data is
+	// actually SIGNED 16-BIT INTEGER, native endianness.
+	// data_out must have enough room for sample_count*2 bytes in
+	// mono, or sample_count*4 bytes in stereo.
 	void	adpcm_expand(
 		void* data_out,
-		const unsigned char* data_in,
+		const void* data_in,
 		int sample_count,	// in stereo, this is number of *pairs* of samples
 		bool stereo);
 

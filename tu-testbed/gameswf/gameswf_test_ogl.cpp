@@ -7,6 +7,7 @@
 
 
 #include "SDL.h"
+#include "SDL_mixer.h"
 #include "gameswf.h"
 #include <stdlib.h>
 #include <string.h>
@@ -94,6 +95,211 @@ static tu_file*	file_opener(const char* url)
 {
 	return new tu_file(url, "rb");
 }
+
+
+// Use SDL_mixer to handle gameswf sounds.
+struct SDL_sound_handler : gameswf::sound_handler
+{
+	bool	m_opened;
+	array<Mix_Chunk*>	m_samples;
+
+	#define	SAMPLE_RATE 22050
+	#define CHANNELS 8
+
+	SDL_sound_handler()
+		:
+		m_opened(false)
+	{
+		if (Mix_OpenAudio(SAMPLE_RATE, AUDIO_S16SYS, 2, 2048) != 0)
+		{
+			log_callback(true, "can't open SDL_mixer!");
+			log_callback(true, Mix_GetError());
+		}
+		else
+		{
+			m_opened = true;
+
+			Mix_AllocateChannels(CHANNELS);
+		}
+	}
+
+	~SDL_sound_handler()
+	{
+		if (m_opened)
+		{
+			Mix_CloseAudio();
+			for (int i = 0, n = m_samples.size(); i < n; i++)
+			{
+				if (m_samples[i])
+				{
+					Mix_FreeChunk(m_samples[i]);
+				}
+			}
+		}
+		else
+		{
+			assert(m_samples.size() == 0);
+		}
+	}
+
+
+	virtual int	create_sound(
+		void* data,
+		int data_bytes,
+		int sample_count,
+		format_type format,
+		int sample_rate,
+		bool stereo)
+	// Called by gameswf to create a sample.  We'll return a sample ID that gameswf
+	// can use for playing it.
+	{
+		if (m_opened == false)
+		{
+			return 0;
+		}
+
+		Sint16*	adjusted_data = 0;
+		int	adjusted_size = 0;
+		Mix_Chunk*	sample = 0;
+
+		switch (format)
+		{
+		case FORMAT_RAW:
+			convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 1, sample_rate, stereo);
+			break;
+
+		case FORMAT_ADPCM:
+		{
+			Sint16*	uncompressed_data = new Sint16[sample_count * (stereo ? 2 : 1)];
+			gameswf::adpcm_expand(uncompressed_data, data, sample_count, stereo);
+			convert_raw_data(&adjusted_data, &adjusted_size, uncompressed_data, sample_count, 2, sample_rate, stereo);
+			delete [] uncompressed_data;
+
+			break;
+		}
+
+		case FORMAT_UNCOMPRESSED:	// 16 bits/sample, little-endian
+			// convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 2, sample_rate, stereo);
+			break;
+
+		default:
+			// Unhandled format.
+			break;
+		}
+
+		if (adjusted_data)
+		{
+			sample = Mix_QuickLoad_RAW((unsigned char*) adjusted_data, adjusted_size);
+			delete [] adjusted_data;
+		}
+
+		// @@ WHO OWNS adjusted_data??  I think we still own
+		// it... need to store it in m_samples and delete it on delete_sound().
+
+		m_samples.push_back(sample);
+		return m_samples.size();
+	}
+
+
+	virtual void	play_sound(int sound_handle /* other params */)
+	// Play the index'd sample.
+	{
+		if (sound_handle >= 0 && sound_handle < m_samples.size())
+		{
+			if (m_samples[sound_handle])
+			{
+				// Play this sample.
+				for (int i = 0; i < CHANNELS; i++)
+				{
+					if (Mix_Playing(i) == 0)
+					{
+						// Channel is available.  Play sample.
+						Mix_PlayChannel(i, m_samples[sound_handle], 0);
+					}
+				}
+			}
+		}
+	}
+
+
+	virtual void	delete_sound(int sound_handle)
+	// gameswf calls this when it's done with a sample.
+	{
+		if (sound_handle >= 0 && sound_handle < m_samples.size())
+		{
+			if (m_samples[sound_handle])
+			{
+				Mix_FreeChunk(m_samples[sound_handle]);
+				m_samples[sound_handle] = 0;
+			}
+		}
+	}
+
+
+	static void convert_raw_data(
+		Sint16** adjusted_data,
+		int* adjusted_size,
+		void* data,
+		int sample_count,
+		int sample_size,
+		int sample_rate,
+		bool stereo)
+	// VERY crude sample-rate & sample-size conversion.  Converts
+	// input data to the SDL_mixer output format (SAMPLE_RATE,
+	// stereo, 16-bit native endianness)
+	{
+		if (stereo == false) { sample_rate >>= 1; }	// simple hack to handle dup'ing mono to stereo
+
+		// Brain-dead sample-rate conversion: duplicate or
+		// skip input samples an integral number of times.
+		int	inc = 1;	// increment
+		int	dup = 1;	// duplicate
+		if (sample_rate > SAMPLE_RATE)
+		{
+			inc = sample_rate / SAMPLE_RATE;
+		}
+		else if (sample_rate < SAMPLE_RATE)
+		{
+			dup = SAMPLE_RATE / sample_rate;
+		}
+
+		int	output_sample_count = (sample_count * dup) / inc;
+		Sint16*	out_data = new Sint16[output_sample_count];
+		*adjusted_data = out_data;
+		*adjusted_size = output_sample_count * 2;	// 2 bytes per sample
+
+		if (sample_size == 1)
+		{
+			// Expand from 8 bit to 16 bit.
+			Uint8*	in = (Uint8*) data;
+			for (int i = 0; i < output_sample_count; i++)
+			{
+				Uint8	val = *in;
+				for (int j = 0; j < dup; j++)
+				{
+					*out_data++ = (int(val) - 128);
+				}
+				in += inc;
+			}
+		}
+		else
+		{
+			// 16-bit to 16-bit conversion.
+			Sint16*	in = (Sint16*) data;
+			for (int i = 0; i < output_sample_count; i += dup)
+			{
+				Sint16	val = *in;
+				for (int j = 0; j < dup; j++)
+				{
+					*out_data++ = val;
+				}
+				in += inc;
+			}
+		}
+	}
+
+};
+
 
 #ifndef __MACH__
 #undef main	// SDL wackiness, but needed for macosx
@@ -185,6 +391,9 @@ int	main(int argc, char *argv[])
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::set_log_callback(log_callback);
 	gameswf::set_antialiased(s_antialiased);
+
+	SDL_sound_handler*	sound = new SDL_sound_handler;
+	gameswf::set_sound_handler(sound);
 
 	// Load the movie.
 	tu_file*	in = new tu_file(infile, "rb");
@@ -288,7 +497,7 @@ int	main(int argc, char *argv[])
 
 				if (key == SDLK_q || key == SDLK_ESCAPE)
 				{
-					exit(0);
+					goto done;
 				}
 				else if (key == SDLK_p)
 				{
@@ -366,7 +575,7 @@ int	main(int argc, char *argv[])
 			}
 
 			case SDL_QUIT:
-				exit(0);
+				goto done;
 				break;
 
 			default:
@@ -391,6 +600,8 @@ int	main(int argc, char *argv[])
 		SDL_Delay(10);
 	}
 
+done:
+	delete sound;
 	return 0;
 }
 

@@ -8,7 +8,17 @@
 TOP = ..
 include $(TOP)/config
 
-INCLUDE_PATHS := $(ENGINE_INCLUDE) $(ZLIB_INCLUDE)
+# temporary hack...
+ifeq ($(TU_TESTBED_COMPILER), msvc)
+	SDL_MIXER_INCLUDE := -I../../SDL_mixer-1.2.5
+	SDL_MIXER_LIB := ../../SDL_mixer-1.2.5/VisualC/Release/SDL_mixer.lib
+else
+	SDL_MIXER_INCLUDE := 
+	SDL_MIXER_LIB := -lSDL_mixer
+endif
+
+
+INCLUDE_PATHS := $(ENGINE_INCLUDE) $(ZLIB_INCLUDE) $(SDL_MIXER_INCLUDE)
 
 CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
@@ -16,7 +26,7 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 LIB_OUT = $(LIB_PRE)gameswf.$(LIB_EXT)
 EXE_OUT = gameswf_test_ogl$(EXE_EXT)
 
-LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB)
+LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB)
 
 
 all: base_lib $(LIB_OUT) $(EXE_OUT)
