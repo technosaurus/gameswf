@@ -39,7 +39,9 @@ void	heightfield_shader(const char* infile,
 			   SDL_Surface* tilemap,
 			   const array<texture_tile>& tileset,
 			   SDL_Surface* altitude_gradient,
-			   float resolution);
+			   float resolution,
+			   float input_vertical_scale
+			   );
 
 
 void	error(const char* fmt)
@@ -62,7 +64,7 @@ void	print_usage()
 	       "This program has been donated to the Public Domain by Thatcher Ulrich <tu@tulrich.com>\n"
 	       "Incorporates software from the Independent JPEG Group\n\n"
 	       "usage: heightfield_shader <input_filename> <output_filename> [-t <tilemap_bitmap>]\n"
-	       "\t[-g <altitude_gradient_bitmap>] [-r <texels per heixel>]\n"
+	       "\t[-g <altitude_gradient_bitmap>] [-r <texels per heixel>] [-v <bt_input_vertical_scale>]\n"
 	       "\n"
 	       "\tThe input file should be a .BT format terrain file with (2^N+1) x (2^N+1) datapoints.\n"
 		);
@@ -80,6 +82,7 @@ int	wrapped_main(int argc, char* argv[])
 	char*	gradient_file = NULL;
 	array<texture_tile>	tileset;
 	float	resolution = 1.0;
+	float	input_vertical_scale = 1.0f;
 
 	for ( int arg = 1; arg < argc; arg++ ) {
 		if ( argv[arg][0] == '-' ) {
@@ -123,6 +126,19 @@ int	wrapped_main(int argc, char* argv[])
 				resolution = (float) atof(argv[arg]);
 				if (resolution <= 0.001) {
 					printf("error: resolution must be greater than 0\n");
+					print_usage();
+					exit(1);
+				}
+				break;
+				
+			case 'v':
+				// Set the input vertical scale.
+				arg++;
+				if (arg < argc) {
+					input_vertical_scale = (float) atof(argv[arg]);
+				}
+				else {
+					printf("error: -v option must be followed by a value for the input vertical scale\n");
 					print_usage();
 					exit(1);
 				}
@@ -186,7 +202,7 @@ int	wrapped_main(int argc, char* argv[])
 	printf("outfile: %s\n", outfile);
 
 	// Process the data.
-	heightfield_shader(infile, out, tilemap_surface, tileset, altitude_gradient, resolution);
+	heightfield_shader(infile, out, tilemap_surface, tileset, altitude_gradient, resolution, input_vertical_scale);
 
 	fclose(out);
 
@@ -421,7 +437,9 @@ void	heightfield_shader(const char* infile,
 			   SDL_Surface* tilemap,
 			   const array<texture_tile>& tileset,
 			   SDL_Surface* altitude_gradient,
-			   float resolution)
+			   float resolution,
+			   float input_vertical_scale
+			   )
 // Generate texture for heightfield.
 {
 	heightfield	hf;
@@ -431,6 +449,7 @@ void	heightfield_shader(const char* infile,
 		printf("Can't load %s as a .BT file\n", infile);
 		exit(1);
 	}
+	hf.m_input_vertical_scale = input_vertical_scale;
 
 	// Compute and write the lightmap, if any.
 	printf("Shading... ");
