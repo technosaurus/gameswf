@@ -13,6 +13,7 @@
 #include "gameswf_stream.h"
 
 #include "base/tu_file.h"
+#include "gameswf_render.h"
 
 #include <float.h>
 
@@ -24,10 +25,41 @@ namespace gameswf {
 
 	shape_morph_def::~shape_morph_def() { }
 
-	void shape_morph_def::display(character *info)
+	void shape_morph_def::display(character *inst)
 	{
 		IF_VERBOSE_ACTION(log_msg("smd: displaying %d at ratio %g\n",
-					  info->m_id, info->m_ratio));
+					  inst->m_id, inst->m_ratio));
+		matrix mat = inst->get_world_matrix();
+		cxform cx = inst->get_world_cxform();
+		
+
+		float max_error = 20.0f / mat.get_max_scale() /
+			inst->get_parent()->get_pixel_scale();
+		morph_tesselating_shape mts(this, inst->m_ratio);
+		mesh_set *m = new mesh_set(&mts, max_error * 0.75f);
+		m->display(mat, cx, m_fill_styles, m_line_styles, inst->m_ratio);
+		delete m;
+	}
+
+	/* virtual */ void shape_morph_def::tesselate(float error_tolerance,
+						      tesselate::trapezoid_accepter *accepter,
+						      float ratio)
+		const
+	{
+		IF_VERBOSE_ACTION(log_msg("smd: tesselating at ratio %g\n",
+					  ratio));
+		
+		// XXX sharing
+		tesselate::begin_shape(accepter, error_tolerance);
+		for (int i = 0; i < m_paths.size(); i++) {
+			if (m_paths[i].m_new_shape) {
+				tesselate::end_shape();
+				tesselate::begin_shape(accepter, error_tolerance);
+			} else {
+				m_paths[i].tesselate(ratio);
+			}
+		}
+		tesselate::end_shape();
 	}
 
 	void shape_morph_def::read(stream *in, int tag_type, bool with_style,
@@ -67,10 +99,11 @@ namespace gameswf {
 
 		int pos2 = in->get_underlying_stream()->get_position();
 		assert(pos + offset == pos2);
-		UNUSED(offset); // XXX check against current pos
+
 		int edges2 = read_shape_record(in, m, false);
 		IF_VERBOSE_PARSE(log_msg("morph: read %d edges for shape 2\n",
 					 edges2));
+
 		assert(edges1 == edges2);
 		pos2 = in->get_underlying_stream()->get_position();
 		IF_VERBOSE_PARSE(log_msg("smd: final pos %d\n", pos2));
@@ -99,9 +132,9 @@ namespace gameswf {
 		} else {
 			int vert_flag = in->read_uint(1);
 			if (vert_flag) { // vertical line
-				dx = float(in->read_sint(bits));
-			} else {
 				dy = float(in->read_sint(bits));
+			} else {
+				dx = float(in->read_sint(bits));
 			}
 		}
 
@@ -109,12 +142,12 @@ namespace gameswf {
 		e.m_cy = y + dy / 2;
 		x = e.m_ax = x + dx;
 		y = e.m_ay = y + dy;
-		if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("smd::re: straight edge = %4g %4g - %4g %4g\n", x, y, x + dx, y + dy));
+		if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("smd::re: straight edge = %4g %4g - %4g %4g\n", x - dx, y - dy, x, y));
 	}
 
 	int shape_morph_def::read_shape_record(stream* in,
-						movie_definition_sub* m,
-						bool start)
+					       movie_definition_sub* m,
+					       bool start)
 	{
 		morph_path current_path;
 		edge e;
@@ -195,6 +228,7 @@ namespace gameswf {
 				int style = in->read_uint(fill_bits);
 				if (style > 0) style += fill_base;
 				current_path.m_fill0 = style;
+				if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("morph: fill0 = %d\n", current_path.m_fill0));
 			}
 
 			if ((flags & 0x04) && fill_bits) { // FILL1
@@ -202,6 +236,7 @@ namespace gameswf {
 				int style = in->read_uint(fill_bits);
 				if (style > 0) style += fill_base;
 				current_path.m_fill1 = style;
+				if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("morph: fill1 = %d\n", current_path.m_fill1));
 			}
 			
 			if ((flags & 0x08) && line_bits) { // LINE
@@ -209,6 +244,7 @@ namespace gameswf {
 				int style = in->read_uint(line_bits);
 				if (style > 0) style += line_base;
 				current_path.m_line = style;
+				if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("scr: line = %d\n", current_path.m_line));
 			}
 
 			if (flags & 0x10) { // NEWSTYLES
@@ -350,6 +386,14 @@ namespace gameswf {
 		}
 	}
 
+	void morph_fill_style::apply(int fill_side, float ratio) const
+	{
+		assert(m_type == 0x00);
+		rgba color;
+		color.set_lerp(m_color[0], m_color[1], ratio);
+		gameswf::render::fill_style_color(fill_side, color);
+	}
+
 	morph_line_style::morph_line_style()
 	{
 		m_width[0] = m_width[1] = 0;
@@ -374,7 +418,32 @@ namespace gameswf {
 				 m_color[1].print());
 	}
 
-	morph_path::morph_path() { }
+	void morph_line_style::apply(float ratio) const
+	{
+		rgba color;
+		color.set_lerp(m_color[0], m_color[1], ratio);
+		gameswf::render::line_style_color(color);
+	}
+
+	morph_path::morph_path() :
+		m_fill0(0), m_fill1(0), m_line(0), m_new_shape(false)
+	{ }
+
+	void morph_path::tesselate(float ratio) const
+	{
+		tesselate::begin_path(m_fill0 - 1, m_fill1 - 1, m_line - 1,
+				      flerp(m_ax[0], m_ax[1], ratio),
+				      flerp(m_ay[0], m_ay[1], ratio));
+		assert(m_edges[0].size() == m_edges[1].size());
+		for (int i = 0; i < m_edges[0].size(); i++) {
+			const edge &e0 = m_edges[0][i], &e1 = m_edges[1][i];
+			tesselate::add_curve_segment(flerp(e0.m_cx, e1.m_cx, ratio),
+						     flerp(e0.m_cy, e1.m_cy, ratio),
+						     flerp(e0.m_ax, e1.m_ax, ratio),
+						     flerp(e0.m_ay, e1.m_ay, ratio));
+		}
+		tesselate::end_path();
+	}
 	
 }
 // Local Variables:
