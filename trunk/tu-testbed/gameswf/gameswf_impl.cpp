@@ -156,10 +156,10 @@ namespace gameswf
 	}
 
 
-	smart_ptr<character>	character_def::create_character_instance(movie* parent, int id)
+	character*	character_def::create_character_instance(movie* parent, int id)
 	// Default.  Make a generic_character.
 	{
-		return smart_ptr<character>(new generic_character(this, parent, id));
+		return new generic_character(this, parent, id);
 	}
 
 
@@ -731,6 +731,9 @@ namespace gameswf
 				// Done with the zlib_adapter.
 				delete in;
 			}
+
+			int	current_position = original_in->get_position();
+			UNUSED(current_position);
 		}
 
 
@@ -1358,104 +1361,6 @@ namespace gameswf
 		mov->add_ref();
 		return mov;
 	}
-
-
-	void	precompute_cached_data(movie_definition* movie_def)
-	// Fill in cached data in movie_def.
-	{
-		assert(movie_def != NULL);
-
-		// Temporarily install null render and sound handlers,
-		// so we don't get output during preprocessing.
-		//
-		// Use automatic struct var to make sure we restore
-		// when exiting the function.
-		struct save_stuff
-		{
-			render_handler*	m_original_rh;
-			sound_handler*	m_original_sh;
-
-			save_stuff()
-			{
-				// Save.
-				m_original_rh = get_render_handler();
-				m_original_sh = get_sound_handler();
-				set_render_handler(NULL);
-				set_sound_handler(NULL);
-			}
-
-			~save_stuff()
-			{
-				// Restore.
-				set_render_handler(m_original_rh);
-				set_sound_handler(m_original_sh);
-			}
-		} save_stuff_instance;
-
-		// Need an instance.
-		gameswf::movie_interface*	m = movie_def->create_instance();
-		if (m == NULL)
-		{
-			log_error("error: precompute_cached_data can't create instance of movie\n");
-			return;
-		}
-		
-		// Run through the movie's frames.
-		//
-		// @@ there might be cleaner ways to do this; e.g. do
-		// execute_frame_tags(i, true) on movie and all child
-		// sprites.
-		int	kick_count = 0;
-		for (;;)
-		{
-			// @@ do we also have to run through all sprite frames
-			// as well?
-			//
-			// @@ also, ActionScript can rescale things
-			// dynamically -- we can't really do much about that I
-			// guess?
-			//
-			// @@ Maybe we should allow the user to specify some
-			// safety margin on scaled shapes.
-
-			int	last_frame = m->get_current_frame();
-			m->advance(0.010f);
-			m->display();
-
-			if (m->get_current_frame() == movie_def->get_frame_count() - 1)
-			{
-				// Done.
-				break;
-			}
-
-			if (m->get_play_state() == gameswf::movie_interface::STOP)
-			{
-				// Kick the movie.
-				//printf("kicking movie, kick ct = %d\n", kick_count);
-				m->goto_frame(last_frame + 1);
-				m->set_play_state(gameswf::movie_interface::PLAY);
-				kick_count++;
-
-				if (kick_count > 10)
-				{
-					//printf("movie is stalled; giving up on playing it through.\n");
-					break;
-				}
-			}
-			else if (m->get_current_frame() < last_frame)
-			{
-				// Hm, apparently we looped back.  Skip ahead...
-				printf("loop back; jumping to frame %d\n", last_frame);
-				m->goto_frame(last_frame + 1);
-			}
-			else
-			{
-				kick_count = 0;
-			}
-		}
-
-		m->drop_ref();
-	}
 	
 
 	//
@@ -1574,7 +1479,7 @@ namespace gameswf
 		assert(j_in);
 		j_in->discard_partial_buffer();
 
-		bitmap_info*	bi = NULL;
+		bitmap_info*	bi(NULL);
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			image::rgb*	im = image::read_swf_jpeg2_with_tables(j_in);
@@ -1605,7 +1510,7 @@ namespace gameswf
 		// Read the image data.
 		//
 		
-		bitmap_info*	bi = NULL;
+		bitmap_info*	bi(NULL);
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			image::rgb* im = image::read_swf_jpeg2(in->get_underlying_stream());
@@ -1689,7 +1594,7 @@ namespace gameswf
 		Uint32	jpeg_size = in->read_u32();
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
-		bitmap_info*	bi = NULL;
+		bitmap_info*	bi(NULL);
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			//
@@ -1746,7 +1651,7 @@ namespace gameswf
 				width,
 				height));
 
-		bitmap_info*	bi = NULL;
+		bitmap_info*	bi(NULL);
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
 			if (tag_type == 20)
@@ -2505,7 +2410,7 @@ namespace gameswf
 		}
 
 		// overloads from character_def
-		virtual smart_ptr<character>	create_character_instance(movie* parent, int id);
+		virtual character*	create_character_instance(movie* parent, int id);
 
 
 		/* sprite_definition */
@@ -2712,9 +2617,6 @@ namespace gameswf
 		/* sprite_instance */
 		virtual void	advance(float delta_time)
 		{
-			// Keep this (particularly m_as_environment) alive during execution!
-			smart_ptr<as_object_interface>	this_ptr(this);
-
 			if (get_visible() == false)
 			{
 				// We're invisible, and therefore frozen.
@@ -2798,14 +2700,10 @@ namespace gameswf
 		}
 
 
-		/*sprite_instance*/
 		void	execute_frame_tags(int frame, bool state_only = false)
 		// Execute the tags associated with the specified frame.
 		// frame is 0-based
 		{
-			// Keep this (particularly m_as_environment) alive during execution!
-			smart_ptr<as_object_interface>	this_ptr(this);
-
 			assert(frame >= 0);
 			assert(frame < m_def->get_frame_count());
 
@@ -2825,7 +2723,6 @@ namespace gameswf
 		}
 
 
-		/*sprite_instance*/
 		void	execute_remove_tags(int frame)
 		// Execute any remove-object tags associated with the specified frame.
 		// frame is 0-based
@@ -2845,13 +2742,9 @@ namespace gameswf
 		}
 
 
-		/*sprite_instance*/
 		void	do_actions()
 		// Take care of this frame's actions.
 		{
-			// Keep m_as_environment alive during any method calls!
-			smart_ptr<as_object_interface>	this_ptr(this);
-
 			execute_actions(&m_as_environment, m_action_list);
 			m_action_list.resize(0);
 		}
@@ -2859,7 +2752,7 @@ namespace gameswf
 
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
-		// 0-based frame numbers!!  (in contrast to Flash MX)
+		// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
 		{
 //			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
 
@@ -2904,7 +2797,7 @@ namespace gameswf
 
 			// Set current and next frames.
 			m_current_frame = target_frame_number;
-			m_next_frame = target_frame_number + 1;
+			m_next_frame = iclamp(target_frame_number + 1, 0, m_def->get_frame_count() - 1);
 
 			// goto_frame stops by default.
 			m_play_state = STOP;
@@ -3443,7 +3336,7 @@ namespace gameswf
 		// distinguish between multiple instances of the same
 		// sprite???
 		{
-			if (name == ".")
+			if (name == "." || name == "this")
 			{
 				return this;
 			}
@@ -3567,9 +3460,6 @@ namespace gameswf
 		virtual bool	on_event(event_id id)
 		// Dispatch event handler(s), if any.
 		{
-			// Keep m_as_environment alive during any method calls!
-			smart_ptr<as_object_interface>	this_ptr(this);
-
 			// First, check for built-in event handler.
 			{
 				as_value	method;
@@ -3612,27 +3502,23 @@ namespace gameswf
 		}
 
 
-		/*sprite_instance*/
 		virtual const char*	call_method(const char* method_call)
 		{
-			// Keep m_as_environment alive during any method calls!
-			smart_ptr<as_object_interface>	this_ptr(this);
-
 			return call_method_parsed(&m_as_environment, this, method_call);
 		}
 	};
 
 
-	smart_ptr<character>	sprite_definition::create_character_instance(movie* parent, int id)
+	character*	sprite_definition::create_character_instance(movie* parent, int id)
 	// Create a (mutable) instance of our definition.  The
 	// instance is created to live (temporarily) on some level on
 	// the parent movie's display list.
 	{
-		smart_ptr<sprite_instance>	si = new sprite_instance(this, parent->get_root(), parent, id);
+		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
 
 		si->do_load_events();
 
-		return si.get_ptr();
+		return si;
 	}
 
 

@@ -62,9 +62,6 @@ namespace gameswf
 	// before loading or playing any movies!
 	void	set_sound_handler(sound_handler* s);
 
-	// You probably don't need this. (@@ make it private?)
-	sound_handler*	get_sound_handler();
-
 	// Register a callback to the host, for providing a file,
 	// given a "URL" (i.e. a path name).  This is the only means
 	// by which the gameswf library accesses file data, for
@@ -336,12 +333,6 @@ namespace gameswf
 	};
 	movie_definition*	create_movie_no_recurse(tu_file* input_stream, create_bitmaps_flag cbf);
 
-	// @@ Hm, need to think about these creation API's.  Perhaps
-	// divide it into "low level" and "high level" calls.  Also,
-	// perhaps we need a "context" object that contains all
-	// global-ish flags, libraries, callback pointers, font
-	// library, etc.
-	//
 	// Create a gameswf::movie_definition from the given file name.
 	// This is just like create_movie(), except that it checks the
 	// "library" to see if a movie of this name has already been
@@ -360,19 +351,6 @@ namespace gameswf
 	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 	movie_definition*	create_library_movie(const char* filename);
 	
-	// Helper to pregenerate cached data (basically, shape
-	// tesselations).  Does this by running through each frame of
-	// the movie and displaying the shapes with a null renderer.
-	// The pregenerated data is stored in the movie_definition
-	// object itself, and is included with the cached data written
-	// by movie_definition::output_cached_data().
-	//
-	// Note that this tesselates shapes to the resolution they
-	// explicitly appear in the linear frames of the movie.  Does
-	// not try very hard to run your ActionScript to account for
-	// dynamic scaling (that's more or less futile anyway due to
-	// the halting problem).
-	void	precompute_cached_data(movie_definition* movie_def);
 
 	// Maximum release of resources.  Calls clear_library() and
 	// fontlib::clear(), and also clears some extra internal stuff
