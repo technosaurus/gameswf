@@ -82,8 +82,8 @@ namespace gameswf
 			else 
 			{
 				m_gradient_matrix.set_identity();
-				m_gradient_matrix.concatenate_translation(8.f, 8.f);
-				m_gradient_matrix.concatenate_scale(1.0f / 2048.0f);
+				m_gradient_matrix.concatenate_translation(32.f, 32.f);
+				m_gradient_matrix.concatenate_scale(1.0f / 512.0f);
 			}
 
 
@@ -175,7 +175,7 @@ namespace gameswf
 		}
 		else if (m_type == 0x12)
 		{
-			im = image::create_rgba(16, 16);
+			im = image::create_rgba(64, 64);
 
 			for (int j = 0; j < im->m_height; j++)
 			{
