@@ -51,5 +51,13 @@
 #define TU_CONFIG_LINK_TO_ZLIB 1
 #endif
 
+// define TU_CONFIG_LINK_TO_LIBPNG to 0 to exclude libpng code from
+// your build.  Be aware of what you're doing -- it may break
+// features!
+#ifndef TU_CONFIG_LINK_TO_LIBPNG
+#define TU_CONFIG_LINK_TO_LIBPNG 1
+#endif
+
+
 
 #endif // TU_CONFIG_H
