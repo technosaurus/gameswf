@@ -71,10 +71,11 @@ namespace gameswf
 	movie_definition_sub*	create_library_movie_sub(const char* filename);
 
 
-	struct movie : public movie_interface
+	struct movie : public movie_interface, public as_object_interface
 	{
 		virtual movie_definition*	get_movie_definition() { return NULL; }
-		virtual movie_root*	get_movie_root() { return NULL; }
+		virtual movie_root*	get_root() { return NULL; }
+		virtual movie*	get_root_movie() { return NULL; }
 
 		virtual float	get_pixel_scale() const { return 1.0f; }
 		virtual character*	get_character(int id) { return NULL; }
@@ -87,6 +88,7 @@ namespace gameswf
 		//
 
 		virtual void	add_display_object(Uint16 character_id,
+						   const char* name,
 						   Uint16 depth,
 						   const cxform& color_transform,
 						   const matrix& mat,
@@ -95,24 +97,27 @@ namespace gameswf
 		{
 		}
 
-		virtual void	move_display_object(Uint16 depth,
-						    bool use_cxform,
-						    const cxform& color_transform,
-						    bool use_matrix,
-						    const matrix& mat,
-						    float ratio,
-                                                    Uint16 clip_depth)
+		virtual void	move_display_object(
+			Uint16 depth,
+			bool use_cxform,
+			const cxform& color_transform,
+			bool use_matrix,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth)
 		{
 		}
 
-		virtual void	replace_display_object(Uint16 character_id,
-						       Uint16 depth,
-						       bool use_cxform,
-						       const cxform& color_transform,
-						       bool use_matrix,
-						       const matrix& mat,
-						       float ratio,
-                                                       Uint16 clip_depth)
+		virtual void	replace_display_object(
+			Uint16 character_id,
+			const char* name,
+			Uint16 depth,
+			bool use_cxform,
+			const cxform& color_transform,
+			bool use_matrix,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth)
 		{
 		}
 
@@ -151,16 +156,35 @@ namespace gameswf
 
 		virtual bool	set_edit_text(const char* var_name, const char* new_text)
 		{
-			return set_value(var_name, new_text);
+			// @@ this should be implemented more directly, to return
+			// a proper true/false result on success/failure.
+			set_member(var_name, new_text);
+			return true;
 		}
 
 		virtual bool	has_looped() const { return true; }
+
+		virtual void	start_drag(
+			movie* target,
+			bool lock_center,
+			bool rect_bound,
+			float x0,
+			float y0,
+			float x1,
+			float y1)
+		{
+			assert(0);
+		}
+		virtual void	stop_drag() { assert(0); }
+
 
 		//
 		// ActionScript.
 		//
 
 
+// use get/set_member...
+#if 0
 		virtual bool	set_value(const char* var_name, const as_value& val)
 		{
 			assert(0);
@@ -178,6 +202,7 @@ namespace gameswf
 			assert(0);
 			return false;
 		}
+#endif // 0
 
 		virtual movie*	get_relative_target(const tu_string& name)
 		{
@@ -185,6 +210,7 @@ namespace gameswf
 			return NULL;
 		}
 
+#if 0
 		virtual as_value	get_property(int prop_number)
 		{
 			assert(0);
@@ -195,12 +221,21 @@ namespace gameswf
 		{
 			assert(0);
 		}
+#endif // 0
 
-		virtual void	start_drag() { assert(0); }
-		virtual void	stop_drag() { assert(0); }
+		// as_object_interface stuff
+		virtual bool	set_self_value(const as_value& val) { assert(0); return false; }
+		virtual bool	get_self_value(as_value* val) { assert(0); return false; }
+		virtual void	set_member(const tu_string& name, const as_value& val) { assert(0); }
+		virtual bool	get_member(const tu_string& name, as_value* val) { assert(0); return false; }
+		virtual as_value	call_method(const tu_string& name, as_environment* env, int nargs, int arg0)
+		{
+			assert(0);
+			return as_value();
+		}
 
 		virtual float	get_timer() const { return 0.0f; }
-
+		virtual movie*	to_movie() { return this; }
 	};
 
 
@@ -210,7 +245,6 @@ namespace gameswf
 	{
 	private:
 		int	m_id;
-		tu_string	m_name;
 		
 	public:
 		character_def()
@@ -223,8 +257,6 @@ namespace gameswf
 
 		void	set_id(int id) { m_id = id; }
 		int	get_id() const { return m_id; }
-		void	set_name(const char* name) { m_name = name; }
-		const char*	get_name() const { return m_name.c_str(); }
 
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
@@ -274,10 +306,11 @@ namespace gameswf
 
 	// character is a live, stateful instance of a character_def.
 	// It represents a single active element in a movie.
-	struct character : public movie, public as_variable_interface
+	struct character : public movie
 	{
 		// @@ stuff from display_info
 		movie*	m_parent;
+		tu_string	m_name;
 		int	m_depth;
 		cxform	m_color_transform;
 		matrix	m_matrix;
@@ -309,7 +342,11 @@ namespace gameswf
 		void	set_clip_depth(Uint16 d) { m_clip_depth = d; }
 
 		virtual int	get_id() const = 0;
-		virtual const char*	get_name() const = 0;
+
+		void	set_name(const char* name) { m_name = name; }
+		const tu_string&	get_name() const { return m_name; }
+
+		virtual const char*	get_variable_name() const { return get_name().c_str(); }
 
 		virtual matrix	get_world_matrix() const
 		// Get our concatenated matrix (all our ancestor transforms, times our matrix).  Maps
@@ -348,12 +385,6 @@ namespace gameswf
 		virtual void	restart() { /*assert(0);*/ }
 		virtual void	advance(float delta_time) {}	// for buttons and sprites
 		virtual void	goto_frame(int target_frame) {}
-
-		// Interface for ActionScript variable support.
-		// E.g. for setting dynamic text values.
-		virtual bool	set_value(const as_value& val) { assert(0); return false; }
-		virtual bool	get_value(as_value* val) { assert(0); return false; }
-
 	};
 
 
@@ -371,7 +402,7 @@ namespace gameswf
 		}
 
 		virtual int	get_id() const { return m_def->get_id(); }
-		virtual const char*	get_name() const { return m_def->get_name(); }
+//		virtual const char*	get_name() const { return m_def->get_name(); }
 		virtual void	display() { m_def->display(this); }	// pass in transform info
 		virtual bool	point_test(float x, float y)
 		{

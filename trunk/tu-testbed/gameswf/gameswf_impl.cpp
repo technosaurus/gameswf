@@ -170,7 +170,7 @@ namespace gameswf
 	struct movie_def_impl : public movie_definition_sub
 	{
 		hash<int, character_def*>	m_characters;
-		string_hash< array<int>* >	m_named_characters;
+//		string_hash< array<int>* >	m_named_characters;
 		hash<int, font*>	m_fonts;
 		hash<int, bitmap_character_def*>	m_bitmap_characters;
 		hash<int, sound_sample*>	m_sound_samples;
@@ -234,6 +234,7 @@ namespace gameswf
 			assert(c->get_id() == character_id);
 			m_characters.add(character_id, c);
 
+#if 0
 			if (c->get_name()[0])
 			{
 				// Character has a name; put it in our
@@ -253,6 +254,7 @@ namespace gameswf
 				}
 				ch_array->push_back(character_id);
 			}
+#endif // 0
 		}
 
 		character_def*	get_character_def(int character_id)
@@ -571,6 +573,14 @@ namespace gameswf
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 		int	m_mouse_capture_id;
 
+		movie*	m_drag_character;
+		bool	m_drag_lock_center;
+		bool	m_drag_bound;
+		float	m_drag_bound_x0;
+		float	m_drag_bound_y0;
+		float	m_drag_bound_x1;
+		float	m_drag_bound_y1;
+
 		movie_root(movie_def_impl* def)
 			:
 			m_def(def),
@@ -585,7 +595,14 @@ namespace gameswf
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
-			m_mouse_capture_id(-1)
+			m_mouse_capture_id(-1),
+			m_drag_character(NULL),
+			m_drag_lock_center(false),
+			m_drag_bound(false),
+			m_drag_bound_x0(0),
+			m_drag_bound_y0(0),
+			m_drag_bound_x1(1),
+			m_drag_bound_y1(1)
 		{
 			set_display_viewport(0, 0, m_def->get_width(), m_def->get_height());
 		}
@@ -629,6 +646,8 @@ namespace gameswf
 			*buttons = m_mouse_buttons;
 		}
 
+		movie*	get_root_movie() { return m_movie; }
+
 		int	get_mouse_capture()
 		// Use this to retrive the character that has captured the mouse.
 		{
@@ -640,6 +659,36 @@ namespace gameswf
 		{
 			m_mouse_capture_id = cid;
 		}
+
+		
+		void	set_drag_parameters(
+			movie* target,
+			bool lock_center,
+			bool rect_bound,
+			float x0,
+			float y0,
+			float x1,
+			float y1)
+		// Set the information about mouse-drags.  Sprites
+		// query this info to implement mouse-dragging.
+		{
+			assert(target);
+
+			m_drag_character = target;
+			m_drag_lock_center = lock_center;
+			m_drag_bound = rect_bound;
+			m_drag_bound_x0 = x0;
+			m_drag_bound_y0 = y0;
+			m_drag_bound_x1 = x1;
+			m_drag_bound_y1 = y1;
+		}
+
+
+		void	stop_drag()
+		{
+			m_drag_character = NULL;
+		}
+
 
 		movie_definition*	get_movie_definition() { return m_movie->get_movie_definition(); }
 
@@ -665,10 +714,12 @@ namespace gameswf
 			return m_movie->get_character(character_id);
 		}
 
+#if 0
 		void	get_named_characters(const char* name, array<int>** characters)
 		{
 			m_def->m_named_characters.get(name, characters);
 		}
+#endif // 0
 
 		void	set_background_color(const rgba& color)
 		{
@@ -1625,9 +1676,9 @@ namespace gameswf
 			switch (m_place_type)
 			{
 			case PLACE:
-//				IF_DEBUG(log_msg("  place: cid %2d depth %2d\n", m_character_id, m_depth));
 				m->add_display_object(
 					m_character_id,
+					m_name,
 					m_depth,
 					m_color_transform,
 					m_matrix,
@@ -1636,7 +1687,6 @@ namespace gameswf
 				break;
 
 			case MOVE:
-//				IF_DEBUG(log_msg("   move: depth %2d\n", m_depth));
 				m->move_display_object(
 					m_depth,
 					m_has_cxform,
@@ -1649,9 +1699,9 @@ namespace gameswf
 
 			case REPLACE:
 			{
-//				IF_DEBUG(log_msg("replace: cid %d depth %d\n", m_character_id, m_depth));
 				m->replace_display_object(
 					m_character_id,
+					m_name,
 					m_depth,
 					m_has_cxform,
 					m_color_transform,
@@ -1811,8 +1861,6 @@ namespace gameswf
 				in->close_tag();
 			}
 		}
-
-
 	};
 
 
@@ -1825,7 +1873,6 @@ namespace gameswf
 		// sprite_definition, if m_def is one.  But it may not
 		// be.
 		int	m_id;
-		tu_string	m_name;
 
 		display_list	m_display_list;
 		array<action_buffer*>	m_action_list;
@@ -1838,26 +1885,23 @@ namespace gameswf
 		bool	m_has_looped;
 
 		as_environment	m_as_environment;
-		bool	m_drag_on;
 
 		virtual ~sprite_instance()
 		{
 			m_display_list.clear();
 		}
 
-		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id, const char* name)
+		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
 			:
 			character(parent),
 			m_def(def),
 			m_root(r),
 			m_id(id),
-			m_name(name),
 			m_play_state(PLAY),
 			m_current_frame(0),
 			m_next_frame(0),
 			m_time_remainder(0),
 			m_update_frame(true),
-			m_drag_on(false),
 			m_has_looped(false)
 		{
 			assert(m_def);
@@ -1865,10 +1909,10 @@ namespace gameswf
 			m_as_environment.set_target(this);
 		}
 
-		movie_root*	get_movie_root() { return m_root; }
+		movie_root*	get_root() { return m_root; }
+		movie*	get_root_movie() { return m_root->get_root_movie(); }
 
 		virtual int	get_id() const { return m_id; }
-		virtual const char*	get_name() const { return m_name.c_str(); }
 
 		movie_definition*	get_movie_definition() { return m_def; }
 
@@ -1945,12 +1989,48 @@ namespace gameswf
 			assert(m_def && m_root);
 
 			// mouse drag.
-			if (m_drag_on)
+			if (this == m_root->m_drag_character)
 			{
+				// We're being dragged!
 				int	x, y, buttons;
 				m_root->get_mouse_state(&x, &y, &buttons);
-// @@
-//				m_movie->set_character_position(this, PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
+
+				point	world_mouse(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
+				if (m_root->m_drag_bound)
+				{
+					// Clamp mouse coords within a defined rect.
+					world_mouse.m_x =
+						fclamp(world_mouse.m_x, m_root->m_drag_bound_x0, m_root->m_drag_bound_x1);
+					world_mouse.m_y =
+						fclamp(world_mouse.m_y, m_root->m_drag_bound_y0, m_root->m_drag_bound_y1);
+				}
+
+				if (m_root->m_drag_lock_center)
+				{
+					matrix	world_mat = get_world_matrix();
+					point	local_mouse;
+					world_mat.transform_by_inverse(&local_mouse, world_mouse);
+
+					matrix	parent_world_mat;
+					if (m_parent)
+					{
+						parent_world_mat = m_parent->get_world_matrix();
+					}
+
+					point	parent_mouse;
+					parent_world_mat.transform_by_inverse(&parent_mouse, world_mouse);
+					
+					// Place our origin so that it coincides with the mouse coords
+					// in our parent frame.
+					matrix	local = get_matrix();
+					local.m_[0][2] = parent_mouse.m_x;
+					local.m_[1][2] = parent_mouse.m_y;
+					set_matrix(local);
+				}
+				else
+				{
+					// Implement relative drag...
+				}
 			}
 
 			m_time_remainder += delta_time;
@@ -2114,12 +2194,14 @@ namespace gameswf
 			m_display_list.display();
 		}
 
-		void	add_display_object(Uint16 character_id,
-					   Uint16 depth,
-					   const cxform& color_transform,
-					   const matrix& matrix,
-					   float ratio,
-                                           Uint16 clip_depth)
+		void	add_display_object(
+			Uint16 character_id,
+			const char* name,
+			Uint16 depth,
+			const cxform& color_transform,
+			const matrix& matrix,
+			float ratio,
+			Uint16 clip_depth)
 		// Add an object to the display list.
 		{
 			assert(m_def && m_root);
@@ -2133,11 +2215,22 @@ namespace gameswf
 			assert(cdef);
 			character*	ch = cdef->create_character_instance(this);
 			assert(ch);
+			if (name != NULL && name[0] != 0)
+			{
+				ch->set_name(name);
+			}
 			m_display_list.add_display_object(ch, depth, color_transform, matrix, ratio, clip_depth);
 		}
 
 
-		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth)
+		void	move_display_object(
+			Uint16 depth,
+			bool use_cxform,
+			const cxform& color_xform,
+			bool use_matrix,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth)
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
@@ -2146,14 +2239,16 @@ namespace gameswf
 		}
 
 
-		void	replace_display_object(Uint16 character_id,
-					       Uint16 depth,
-					       bool use_cxform,
-					       const cxform& color_transform,
-					       bool use_matrix,
-					       const matrix& mat,
-					       float ratio,
-                                               Uint16 clip_depth)
+		void	replace_display_object(
+			Uint16 character_id,
+			const char* name,
+			Uint16 depth,
+			bool use_cxform,
+			const cxform& color_transform,
+			bool use_matrix,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth)
 		{
 			assert(m_def && m_root);
 
@@ -2167,6 +2262,11 @@ namespace gameswf
 
 			character*	ch = cdef->create_character_instance(this);
 			assert(ch);
+
+			if (name != NULL && name[0] != 0)
+			{
+				ch->set_name(name);
+			}
 
 			m_display_list.replace_display_object(
 				ch,
@@ -2218,49 +2318,227 @@ namespace gameswf
 		//
 
 
+		// don't override set_self_value; it's nonsensical for sprite_instance.
+
+
 		/* sprite_instance */
-		virtual bool	set_value(const char* var_name, const as_value& val)
-		// Find the named character in the movie, and set its
-		// text to the given string.  Return true on success.
+		virtual bool	get_self_value(as_value* val)
+		// Return a reference to ourself.
 		{
-			// Search through the display list for matching names.
-			bool	success = false;
-			for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
+			val->set(static_cast<as_object_interface*>(this));
+			return true;
+		}
+
+		
+		/* sprite_instance */
+		virtual void	set_member(const tu_string& name, const as_value& val)
+		// Set the named member to the value.  Return true if we have
+		// that member; false otherwise.
+		{
+			// @@ TODO check special properties...
+			// else
 			{
-				character*	ch = m_display_list.get_character(i);
-				if (strcmp(ch->get_name(), var_name) == 0)
+				// First, check for matching named characters in the display list.
+				bool	success = false;
+				for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 				{
-					success = ch->set_value(val) || success;
+					character*	ch = m_display_list.get_character(i);
+					if (name == ch->get_variable_name())
+					{
+						success = ch->set_self_value(val) || success;
+					}
 				}
+				if (success) return;
+
+				// If that didn't work, set a var within this environment.
+				m_as_environment.set_member(name, val);
 			}
-			return success;
 		}
 
 
 		/* sprite_instance */
-		virtual bool	get_character_value(const char* var_name, as_value* val)
-		// Find the named character in the sprite, and put its
-		// text int the given value.  Return true if we have
-		// the named character; otherwise don't touch *val.
+		virtual bool	get_member(const tu_string& name, as_value* val)
+		// Set *val to the value of the named member and
+		// return true, if we have the named member.
+		// Otherwise leave *val alone and return false.
 		{
-			// Search through the display list for matching names.
+			if (name == "_x")
+			{
+				matrix	m = get_world_matrix();
+				val->set(m.m_[0][2]);
+				return true;
+			}
+			else if (name == "_y")
+			{
+				matrix	m = get_world_matrix();
+				val->set(m.m_[1][2]);
+				return true;
+			}
+			else if (name == "_xscale")
+			{
+				matrix	m = get_world_matrix();
+				// @@ quick and dirty; test/fix this
+				val->set(m.m_[0][0] * 100);	// percent!
+				return true;
+			}
+			else if (name == "_yscale")
+			{
+				matrix	m = get_world_matrix();
+				// @@ quick and dirty; test/fix this
+				val->set(m.m_[1][1] * 100);	// percent!
+				return true;
+			}
+			else if (name == "_currentframe")
+			{
+				val->set(m_current_frame);
+				return true;
+			}
+			else if (name == "_totalframes")
+			{
+				// number of frames.  Read only.
+				val->set(m_def->get_frame_count());
+				return true;
+			}
+			else if (name == "_alpha")
+			{
+				val->set(get_background_alpha());
+				return true;
+			}
+			else if (name == "_visible")
+			{
+				val->set(true);	// @@
+				return true;
+			}
+			else if (name == "_width")
+			{
+				matrix	m = get_world_matrix();
+				// @@ run our bounding box through m and return transformed bound...
+				val->set(1.0);
+				return true;
+			}
+			else if (name == "_height")
+			{
+				matrix	m = get_world_matrix();
+				// @@ run our bounding box through m and return transformed bound...
+				val->set(1.0);
+				return true;
+			}
+			else if (name == "_rotation")
+			{
+				// Rotation angle in DEGREES.
+				matrix	m = get_world_matrix();
+				// @@ TODO some trig in here...
+				val->set(0.0);
+				return true;
+			}
+			else if (name == "_target")
+			{
+				// Full path to this object; e.g. "/_level0/sprite1/sprite2/ourSprite"
+				val->set("/_root");
+				return true;
+			}
+			else if (name == "_framesloaded")
+			{
+				val->set(m_def->get_frame_count());
+				return true;
+			}
+			else if (name == "_name")
+			{
+				val->set(get_name());
+				return true;
+			}
+			else if (name == "_droptarget")
+			{
+				// Absolute path in slash syntax where we were last dropped (?)
+				// @@ TODO
+				val->set("/_root");
+				return true;
+			}
+			else if (name == "_url")
+			{
+				// our URL.
+				val->set("gameswf");
+				return true;
+			}
+			else if (name == "_highquality")
+			{
+				// Whether we're in high quality mode or not.
+				val->set(true);
+				return true;
+			}
+			else if (name == "_focusrect")
+			{
+				// Is a yellow rectangle visible around a focused movie clip (?)
+				val->set(false);
+				return true;
+			}
+			else if (name == "_soundbuftime")
+			{
+				// Number of seconds before sound starts to stream.
+				val->set(0.0);
+				return true;
+			}
+			else if (name == "_xmouse")
+			{
+				// Local coord of mouse.
+				int	x, y, buttons;
+				assert(m_root);
+				m_root->get_mouse_state(&x, &y, &buttons);
+
+				matrix	m = get_world_matrix();
+
+				point	a(x, y);
+				point	b;
+				
+				m.transform_by_inverse(&b, a);
+
+				val->set(b.m_x);
+				return true;
+			}
+			else if (name == "_ymouse")
+			{
+				// Local coord of mouse.
+				int	x, y, buttons;
+				assert(m_root);
+				m_root->get_mouse_state(&x, &y, &buttons);
+
+				matrix	m = get_world_matrix();
+
+				point	a(x, y);
+				point	b;
+				
+				m.transform_by_inverse(&b, a);
+
+				val->set(b.m_y);
+				return true;
+			}
+
+			// Not a built-in property.  Try named characters in the display list.
 			bool	success = false;
 			for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 			{
 				character*	ch = m_display_list.get_character(i);
-				if (strcmp(ch->get_name(), var_name) == 0)
+				if (strcmp(ch->get_name(), name) == 0)
 				{
 					// Found one.
-					if (ch->get_value(val))
+					if (ch->get_self_value(val))
 					{
 						return true;
 					}
 				}
 			}
+
+			// Not a built-in or a character.  Try variables.
+			if (m_as_environment.get_member(name, val))
+			{
+				return true;
+			}
+
 			return false;
 		}
 
 
+#if 0
 		/* sprite_instance */
 		virtual as_value	get_value(const char* var_name)
 		// Return the value of the given variable in this environment.
@@ -2308,12 +2586,12 @@ namespace gameswf
 			}
 			else if (prop_number == 8)
 			{
-				// max width of the object (@@ i.e. bounding box width?)  TWIPS or pixels?
+				// max width of the object (@@ i.e. bounding box width?)  in pixels
 //@@				return as_value(m_def->m_frame_size.height());	// @@ Must apply our display-list scale!
 			}
 			else if (prop_number == 9)
 			{
-				// max height (i.e. bounding box height)  @@ TWIPs or pixels?
+				// max height (i.e. bounding box height)  in pixels
 //@@				return as_value(m_def->m_frame_size.height());	// @@ Must apply our display-list scale!
 			}
 			else if (prop_number == 10)
@@ -2472,6 +2750,8 @@ namespace gameswf
 			}
 			// else if (prop_number == 16384) { ...?; }
 		}
+#endif // 0
+
 
 
 		/* sprite_instance */
@@ -2481,8 +2761,8 @@ namespace gameswf
 		//
 		// If the pathname is "..", then return our parent.
 		// If the pathname is ".", then return ourself.  If
-		// the pathname is "_level0", then return the root
-		// movie.
+		// the pathname is "_level0" or "_root", then return
+		// the root movie.
 		//
 		// Otherwise, the name should refer to one our our
 		// named characters, so we return it.
@@ -2499,20 +2779,22 @@ namespace gameswf
 			{
 				return get_parent();
 			}
-			else if (name == "_level0")
+			else if (name == "_level0"
+				 || name == "_root")
 			{
 				return m_root->m_movie;
 			}
 			else
 			{
-				// @@ this array stuff can't be right,
-				// can it?  Probably we need to search
-				// the active display list instead?
-				array<int>*	ch_array = NULL;
-				m_root->get_named_characters(name, &ch_array);
-				if (ch_array && ch_array->size() > 0)
+				// See if we have a match on the display list.
+				for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 				{
-					return get_character((*ch_array)[0]);
+					character*	ch = m_display_list.get_character(i);
+					if (strcmp(ch->get_name(), name) == 0)
+					{
+						// Found it.
+						return ch;
+					}
 				}
 			}
 
@@ -2520,15 +2802,26 @@ namespace gameswf
 		}
 
 		/* sprite_instance */
-		virtual void	start_drag()
+		virtual void	start_drag(
+			movie* target,
+			bool lock_center,
+			bool rect_bound,
+			float x0,
+			float y0,
+			float x1,
+			float y1)
 		{
-			m_drag_on = true;
+			assert(m_parent == NULL);	// we must be the root movie!!!
+			
+			m_root->set_drag_parameters(target, lock_center, rect_bound, x0, y0, x1, y1);
 		}
 
 		/* sprite_instance */
 		virtual void	stop_drag()
 		{
-			m_drag_on = false;
+			assert(m_parent == NULL);	// we must be the root movie!!!
+			
+			m_root->stop_drag();
 		}
 
 	};
@@ -2539,13 +2832,7 @@ namespace gameswf
 	// instance is created to live (temporarily) on some level on
 	// the parent movie's display list.
 	{
-#ifndef NDEBUG
-		movie_definition*	mdef = parent->get_movie_definition();
-		assert(mdef == this
-		       || mdef == m_movie_def);
-#endif // NDEBUG
-
-		sprite_instance*	si = new sprite_instance(this, parent->get_movie_root(), parent, get_id(), get_name());
+		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, get_id());
 
 		return si;
 	}
@@ -2555,7 +2842,8 @@ namespace gameswf
 	// Create a playable movie instance from a def.
 	{
 		movie_root*	m = new movie_root(this);
-		movie*	root_movie = new sprite_instance(this, m, NULL, -1, "_root");
+		character*	root_movie = new sprite_instance(this, m, NULL, -1);
+		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
 
 		return m;

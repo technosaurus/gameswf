@@ -77,10 +77,10 @@ namespace gameswf
 			}
 		}
 
-		movie_root*	get_movie_root() { return get_parent()->get_movie_root(); }
+		movie_root*	get_root() { return get_parent()->get_root(); }
+		movie*	get_root_movie() { return get_parent()->get_root_movie(); }
 
 		virtual int	get_id() const { return m_def->get_id(); }
-		virtual const char*	get_name() const { return m_def->get_name(); }
 
 		void	restart()
 		{
@@ -492,7 +492,8 @@ namespace gameswf
 	character*	button_character_definition::create_character_instance(movie* parent)
 	// Create a mutable instance of our definition.
 	{
-		return new button_character_instance(this, parent);
+		character*	ch = new button_character_instance(this, parent);
+		return ch;
 	}
 };
 
