@@ -86,27 +86,43 @@ inline Uint8	ReadByte(SDL_RWops* src) {
 //
 
 
-inline void	WriteFloat32(SDL_RWops* dst, float f) {
-	SDL_WriteLE32(dst, *((Uint32*) &f));
+inline void	WriteFloat32(SDL_RWops* dst, float value) {
+	union {
+		float	f;
+		int	i;
+	} u;
+	u.f = value;
+	SDL_WriteLE32(dst, u.i);
 }
 
 
 inline float	ReadFloat32(SDL_RWops* src) {
-	float	f;
-	*((Uint32*) &f) = SDL_ReadLE32(src);
-	return f;
+	union {
+		float	f;
+		int	i;
+	} u;
+	u.i = SDL_ReadLE32(src);
+	return u.f;
 }
 
 
-inline void	WriteDouble64(SDL_RWops* dst, double d) {
-	SDL_WriteLE64(dst, *((Uint64*) &d));
+inline void	WriteDouble64(SDL_RWops* dst, double value) {
+	union {
+		double	d;
+		Uint64	l;
+	} u;
+	u.d = value;
+	SDL_WriteLE64(dst, u.l);
 }
 
 
 inline double	ReadDouble64(SDL_RWops* src) {
-	double	d;
-	*((Uint64*) &d) = SDL_ReadLE64(src);
-	return d;
+	union {
+		double	d;
+		Uint64	l;
+	} u;
+	u.l = SDL_ReadLE64(src);
+	return u.d;
 }
 
 
