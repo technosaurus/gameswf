@@ -136,7 +136,7 @@ namespace gameswf
 				* pixel_scale;
 
 			int	nominal_glyph_height = fnt->get_texture_glyph_nominal_size();
-			int	max_glyph_height = fontlib::get_texture_glyph_max_height(fnt);
+			float	max_glyph_height = fontlib::get_texture_glyph_max_height(fnt);
 #ifdef GAMESWF_ALWAYS_USE_TEXTURES_FOR_TEXT_WHEN_POSSIBLE
 			const bool	use_glyph_textures = true;
 #else

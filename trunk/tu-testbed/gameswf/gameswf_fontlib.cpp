@@ -521,8 +521,10 @@ namespace fontlib
 	};
 
 
-	static void	render_glyph(rendered_glyph_info* rgi, const shape_character_def* sh)
+	static bool	render_glyph(rendered_glyph_info* rgi, const shape_character_def* sh)
 	// Render the given outline shape into a cached font texture.
+	// Return true if the glyph is not empty; false if it's
+	// totally empty.
 	// 
 	// Return fill in the image and offset members of the given
 	// rgi.
@@ -567,6 +569,7 @@ namespace fontlib
 
 		// Shrink the results down by a factor of 4x, to get
 		// antialiasing.  Also, analyze the data boundaries.
+		bool	any_nonzero_pixels = false;
 		int	min_x = s_glyph_nominal_size;
 		int	max_x = 0;
 		int	min_y = s_glyph_nominal_size;
@@ -592,6 +595,7 @@ namespace fontlib
 				sum >>= OVERSAMPLE_BITS;
 				if (sum > 0)
 				{
+					any_nonzero_pixels = true;
 					min_x = imin(min_x, i);
 					max_x = imax(max_x, i);
 					min_y = imin(min_y, j);
@@ -601,23 +605,33 @@ namespace fontlib
 			}
 		}
 
-		// Fill in rendered_glyph_info.
-		rgi->m_image = new image::alpha(max_x - min_x + 1, max_y - min_y + 1);
-		rgi->m_offset_x = offset_x / s_rendering_box * s_glyph_nominal_size - min_x;
-		rgi->m_offset_y = offset_y / s_rendering_box * s_glyph_nominal_size - min_y;
-
-		// Copy the rendered glyph into the new image.
-		{for (int j = 0, n = rgi->m_image->m_height; j < n; j++)
+		if (any_nonzero_pixels)
 		{
-			memcpy(
-				image::scanline(rgi->m_image, j),
-				output + (min_y + j) * s_glyph_nominal_size + min_x,
-				rgi->m_image->m_width);
-		}}
+			// Fill in rendered_glyph_info.
+			rgi->m_image = new image::alpha(max_x - min_x + 1, max_y - min_y + 1);
+			rgi->m_offset_x = offset_x / s_rendering_box * s_glyph_nominal_size - min_x;
+			rgi->m_offset_y = offset_y / s_rendering_box * s_glyph_nominal_size - min_y;
+
+			// Copy the rendered glyph into the new image.
+			{for (int j = 0, n = rgi->m_image->m_height; j < n; j++)
+			{
+				memcpy(
+					image::scanline(rgi->m_image, j),
+					output + (min_y + j) * s_glyph_nominal_size + min_x,
+					rgi->m_image->m_width);
+			}}
+		}
+		else
+		{
+			// Glyph is empty; don't create an image for it.
+			return false;
+		}
 
 		delete [] output;	// @@ TODO should keep this around longer, instead of new/delete for each glyph
 
 		rgi->m_image_hash = rgi->m_image->compute_hash();
+
+		return true;
 	}
 
 
@@ -890,12 +904,15 @@ namespace fontlib
 					else
 					{
 						// Add a glyph.
-						glyph_info->resize(glyph_info->size() + 1);
-						rendered_glyph_info&	rgi = glyph_info->back();
+						rendered_glyph_info	rgi;
 						rgi.m_source_font = f;
 						rgi.m_glyph_index = i;
 
-						render_glyph(&rgi, sh);
+						if (render_glyph(&rgi, sh) == true)
+						{
+							glyph_info->push_back(rgi);
+						}
+						// else glyph is empty
 					}
 				}
 			}
