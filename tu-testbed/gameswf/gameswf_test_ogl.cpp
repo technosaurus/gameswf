@@ -294,7 +294,7 @@ int	main(int argc, char *argv[])
 	glLoadIdentity();
 
 	// Load the actual movie.
-	gameswf::movie_interface*	m = gameswf::create_movie_with_cache(infile);
+	gameswf::movie_interface*	m = gameswf::create_movie(infile);
 	if (m == NULL)
 	{
 		fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
