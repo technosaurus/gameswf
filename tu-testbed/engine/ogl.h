@@ -94,6 +94,7 @@ namespace ogl {
 #define GL_TEXTURE1_ARB                   0x84C1
 #define GL_MAX_TEXTURE_UNITS_ARB          0x84E2
 
+#define GL_CLAMP_TO_EDGE                  0x812F
 
 
 #endif // OGL_H
