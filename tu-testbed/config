@@ -1,12 +1,12 @@
 # make configuration for the tu-testbed engine library
 
 
-#ifeq ($(TU_TESTBED_COMPILER), "MSVC")
+ifneq ($(TU_TESTBED_COMPILER), gcc)
 
 # MSVC
 CC := cl /nologo
 AR := lib /NOLOGO
-LINK := link /nologo
+#LINK := link /nologo
 LIB_OUT_FLAG := /OUT:
 LIB_EXT := lib
 OBJ_EXT := obj
@@ -26,24 +26,20 @@ else
 endif
 
 
-#else
-
-
-## GCC
-#CC := g++
-#AR := ar -r
-#LIB_OUT_FLAG :=
-#LIB_EXT := a
-#OBJ_EXT := o
-#EXE_EXT :=
-#LIBS := -lSDL_image -lSDL -lGL -lGLU 
-#SDL_CFLAGS := $(shell sdl-config --cflags)
-#SDL_LDFLAGS := $(shell sdl-config --libs)
-#CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -O2 -I$(INCLUDE_DIRS) -g
-#LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
-
-
-#endif
+else
+# GCC
+CC := g++
+AR := ar -r
+LIB_OUT_FLAG :=
+LIB_EXT := a
+OBJ_EXT := o
+EXE_EXT :=
+LIBS := -lSDL_image -lSDL -lGL -lGLU 
+SDL_CFLAGS := $(shell sdl-config --cflags)
+SDL_LDFLAGS := $(shell sdl-config --libs)
+CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -O2 -I$(INCLUDE_DIRS) -g
+LDFLAGS := -lGL -lGLU -lSDL_image -g
+endif
 
 
 %.$(OBJ_EXT): %.cpp

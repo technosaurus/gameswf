@@ -9,13 +9,17 @@
 #include <SDL/SDL.h>
 #include <engine/ogl.h>
 #include <engine/utility.h>
+#include <stdlib.h>
 
 
 #ifdef WIN32
 #include <windows.h>	// for wglGetProcAddress
-#endif // WIN32
+#define PROC_NAME_PREFIX "wgl"
+#else // !WIN32
+#define PROC_NAME_PREFIX "glX"
+#endif // !WIN32
 
-#include <gl/gl.h>
+#include <GL/gl.h>
 
 
 namespace ogl {
@@ -42,8 +46,8 @@ namespace ogl {
 	void	open()
 	// Scan for extensions.
 	{
-		wglAllocateMemoryNV = (PFNWGLALLOCATEMEMORYNVPROC) wglGetProcAddress( "wglAllocateMemoryNV" );
-		wglFreeMemoryNV = (PFNWGLFREEMEMORYNVPROC) wglGetProcAddress( "wglFreeMemoryNV" );
+		wglAllocateMemoryNV = (PFNWGLALLOCATEMEMORYNVPROC) SDL_GL_GetProcAddress( PROC_NAME_PREFIX "AllocateMemoryNV" );
+		wglFreeMemoryNV = (PFNWGLFREEMEMORYNVPROC) SDL_GL_GetProcAddress( PROC_NAME_PREFIX "FreeMemoryNV" );
 		glVertexArrayRangeNV = (PFNGLVERTEXARRAYRANGENVPROC) SDL_GL_GetProcAddress( "glVertexArrayRangeNV" );
 	}
 

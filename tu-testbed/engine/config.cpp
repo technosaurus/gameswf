@@ -174,7 +174,8 @@ void	cvar::push_table_and_key() const
 	lua_getglobals(config::L);	// Start with the global table.
 
 	// Chain through additional tables.
-	for (int i = 0; i < m_lua_key_count - 1; i++) {
+	int	i;
+	for (i = 0; i < m_lua_key_count - 1; i++) {
 		lua_getref(config::L, m_lua_key_reference[i]);
 		lua_gettable(config::L, -2);
 
