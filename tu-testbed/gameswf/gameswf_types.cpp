@@ -102,6 +102,20 @@ namespace gameswf
 		m_[1][2] = flerp(m1.m_[1][2], m2.m_[1][2], t);
 	}
 
+	
+	void	matrix::set_scale_rotation(float x_scale, float y_scale, float angle)
+	// Set the scale & rotation part of the matrix.
+	// angle in radians.
+	{
+		float	cos_angle = cosf(angle);
+		float	sin_angle = sinf(angle);
+		m_[0][0] = x_scale * cos_angle;
+		m_[0][1] = y_scale * -sin_angle;
+		m_[1][0] = x_scale * sin_angle;
+		m_[1][1] = y_scale * cos_angle;
+	}
+
+
 	void	matrix::read(stream* in)
 	// Initialize from the stream.
 	{
@@ -212,6 +226,13 @@ namespace gameswf
 	}
 
 
+	float	matrix::get_determinant() const
+	// Return the determinant of the 2x2 rotation/scale part only.
+	{
+		return m_[0][0] * m_[1][1] - m_[1][0] * m_[0][1];
+	}
+
+
 	float	matrix::get_max_scale() const
 	// Return the maximum scale factor that this transform
 	// applies.  For assessing scale, when determining acceptable
@@ -228,12 +249,38 @@ namespace gameswf
 
 	float	matrix::get_x_scale() const
 	{
-		return sqrtf(m_[0][0] * m_[0][0] + m_[0][1] * m_[0][1]);
+		float	scale = sqrtf(m_[0][0] * m_[0][0] + m_[0][1] * m_[0][1]);
+
+		// Are we turned inside out?
+		if (get_determinant() < 0.f)
+		{
+			scale = -scale;
+		}
+
+		return scale;
 	}
 
 	float	matrix::get_y_scale() const
 	{
 		return sqrtf(m_[1][1] * m_[1][1] + m_[1][0] * m_[1][0]);
+	}
+
+	float	matrix::get_rotation() const
+	{
+		if (get_determinant() < 0.f)
+		{
+			// We're turned inside out; negate the
+			// x-component used to compute rotation.
+			//
+			// Matches get_x_scale().
+			//
+			// @@ this may not be how Macromedia does it!  Test this!
+			return atan2f(m_[1][0], -m_[0][0]);
+		}
+		else
+		{
+			return atan2f(m_[1][0], m_[0][0]);
+		}
 	}
 
 

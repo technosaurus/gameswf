@@ -9,32 +9,61 @@
 #include "gameswf.h"
 #include "base/container.h"
 #include "SDL_mixer.h"
+#include "gameswf_log.h"
 
 
 // Use SDL_mixer to handle gameswf sounds.
 struct SDL_sound_handler : gameswf::sound_handler
 {
 	bool	m_opened;
+	bool	m_stereo;
+	int	m_sample_rate;
+	Uint16 m_format;
 	array<Mix_Chunk*>	m_samples;
 
-	#define	SAMPLE_RATE 22050
+	#define	SAMPLE_RATE 44100
 	#define MIX_CHANNELS 8
-	#define STEREO_MONO_CHANNELS 1
+	#define CHANNELS 2		//stereo - 2, mono - 1
+	#define BUFSIZE 4096		// for 44100 bufsize 1024 is small
 
 	SDL_sound_handler()
 		:
-		m_opened(false)
+	m_opened(false),
+	m_stereo(false),
+	m_sample_rate(0),
+	m_format(0)
 	{
-		if (Mix_OpenAudio(SAMPLE_RATE, AUDIO_S16SYS, STEREO_MONO_CHANNELS, 1024) != 0)
+		// !!! some drivers on Linux always open audio with channels=2
+		if (Mix_OpenAudio(SAMPLE_RATE, AUDIO_S16SYS, CHANNELS, BUFSIZE) != 0)
 		{
-			printf("can't open SDL_mixer!");
-			printf(Mix_GetError());
+			gameswf::log_error("can't open SDL_mixer: %s\n", Mix_GetError());
 		}
 		else
 		{
-			m_opened = true;
-
+			m_opened = true;     
 			Mix_AllocateChannels(MIX_CHANNELS);
+			Mix_Volume(-1, MIX_MAX_VOLUME);
+
+			// get and print the audio format in use
+			int channels;
+			int num_times_opened = Mix_QuerySpec(&m_sample_rate, &m_format, &channels);
+			m_stereo = channels == 2 ? true : false;
+			
+			const char *format_str = "Unknown";
+			switch (m_format)
+			{
+			case AUDIO_U8: format_str = "U8"; break;
+			case AUDIO_S8: format_str = "S8"; break;
+			case AUDIO_U16LSB: format_str = "U16LSB"; break;
+			case AUDIO_S16LSB: format_str = "S16LSB"; break;
+			case AUDIO_U16MSB: format_str = "U16MSB"; break;
+			case AUDIO_S16MSB: format_str = "S16MSB"; break;
+			}
+	    
+			printf("SDL_mixer: opened %d times, frequency=%dHz, format=%s, stereo=%s\n",
+				num_times_opened,	m_sample_rate, format_str, m_stereo ? "yes" : "no");
+			char name[32];
+			printf("Using audio driver: %s\n", SDL_AudioDriverName(name, 32));
 		}
 	}
 
@@ -90,6 +119,7 @@ struct SDL_sound_handler : gameswf::sound_handler
 		case FORMAT_MP3:
 #ifdef GAMESWF_MP3_SUPPORT
 			extern void convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const int sample_count, const int sample_size, const int sample_rate, const bool stereo);
+
 			convert_mp3_data(&adjusted_data, &adjusted_size, data, sample_count, 0, sample_rate, stereo);
 #else
 			printf("mp3 format sound requested; this demo does not handle mp3\n");
@@ -105,7 +135,7 @@ struct SDL_sound_handler : gameswf::sound_handler
 		if (adjusted_data)
 		{
 			sample = Mix_QuickLoad_RAW((unsigned char*) adjusted_data, adjusted_size);
-			Mix_VolumeChunk(sample, 128);	// full volume by default
+			Mix_VolumeChunk(sample, MIX_MAX_VOLUME);	// full volume by default
 		}
 
 		m_samples.push_back(sample);
@@ -163,8 +193,7 @@ struct SDL_sound_handler : gameswf::sound_handler
 		}
 	}
 
-
-	static void convert_raw_data(
+	virtual void convert_raw_data(
 		Sint16** adjusted_data,
 		int* adjusted_size,
 		void* data,
@@ -187,20 +216,29 @@ struct SDL_sound_handler : gameswf::sound_handler
 // 		}
 // 		// xxxxx
 
-//		if (stereo == false) { sample_rate >>= 1; }	// simple hack to handle dup'ing mono to stereo
-		if (stereo == true) { sample_rate <<= 1; }	// simple hack to lose half the samples to get mono from stereo
+		// simple hack to handle dup'ing mono to stereo
+		if ( !stereo && m_stereo)
+		{
+			sample_rate >>= 1;
+		}
+
+		 // simple hack to lose half the samples to get mono from stereo
+		if ( stereo && !m_stereo)
+		{
+			sample_rate <<= 1; 
+		}
 
 		// Brain-dead sample-rate conversion: duplicate or
 		// skip input samples an integral number of times.
 		int	inc = 1;	// increment
 		int	dup = 1;	// duplicate
-		if (sample_rate > SAMPLE_RATE)
+		if (sample_rate > m_sample_rate)
 		{
-			inc = sample_rate / SAMPLE_RATE;
+			inc = sample_rate / m_sample_rate;
 		}
-		else if (sample_rate < SAMPLE_RATE)
+		else if (sample_rate < m_sample_rate)
 		{
-			dup = SAMPLE_RATE / sample_rate;
+			dup = m_sample_rate / sample_rate;
 		}
 
 		int	output_sample_count = (sample_count * dup) / inc;

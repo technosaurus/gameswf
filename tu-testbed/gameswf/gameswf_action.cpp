@@ -1163,6 +1163,7 @@ namespace gameswf
 			// We've already processed this decl_dict.
 			int	count = m_buffer[start_pc + 3] | (m_buffer[start_pc + 4] << 8);
 			assert(m_dictionary.size() == count);
+			UNUSED(count);
 			return;
 		}
 
@@ -1182,6 +1183,8 @@ namespace gameswf
 		int	length = m_buffer[i + 1] | (m_buffer[i + 2] << 8);
 		int	count = m_buffer[i + 3] | (m_buffer[i + 4] << 8);
 		i += 2;
+
+		UNUSED(length);
 
 		assert(start_pc + 3 + length == stop_pc);
 

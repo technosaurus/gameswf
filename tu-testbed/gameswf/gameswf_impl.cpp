@@ -1373,46 +1373,35 @@ namespace gameswf
 	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
 //vb
 	static hash< movie_definition_sub*, smart_ptr<movie_interface> >	s_movie_library_inst;
-	static array<const movie_interface*> s_extern_sprites;
+	static array<movie_interface*> s_extern_sprites;
 	static movie_interface* s_current_root;
 
 //	static movie_interface* s_old_root;
 	static char s_workdir[255];
 
-	void save_extern_movie(const movie_interface* m)
+	void save_extern_movie(movie_interface* m)
 	{
 		s_extern_sprites.push_back(m);
 	}
 
-#if 0
+//#if 0
 	void delete_unused_root()
 	{
-//    return;
-/*
-  if ( != s_current_root)
-  {
-  if (s_old_root != NULL)
-  {
-  s_old_root->drop_ref();
-  printf("extern root movie deleted\n");
-  }
-  s_old_root = s_current_root;
-  }
-*/
-		for (int i=0; i < s_extern_sprites.size(); i++)
+		for (int i = 0; i < s_extern_sprites.size(); i++)
 		{
-			movie_interface* root_m = (movie_interface*) s_extern_sprites[i];
-			movie* m = root_m->get_root_movie();
+			movie_interface* root_m = s_extern_sprites[i];
+			movie* m = static_cast<movie*>(root_m)->get_root_movie();
       
 			if (m->get_ref_count() < 2)
 			{
 				IF_VERBOSE_ACTION(log_msg("extern movie deleted\n"));
 				s_extern_sprites.remove(i);
+				i--;
 				root_m->drop_ref();
 			}
 		}
 	}
-#endif // 0
+//#endif // 0
 
 	movie_interface* get_current_root()
 	{
@@ -1492,14 +1481,12 @@ namespace gameswf
 	}
 	
 	movie_interface*	create_library_movie_inst(movie_definition* md)
-//v
 	{
-    return create_library_movie_inst_sub((movie_definition_sub*)md);
-  }
+		return create_library_movie_inst_sub((movie_definition_sub*)md);
+	}
 
 
-  movie_interface*	create_library_movie_inst_sub(movie_definition_sub* md)
-//v
+	movie_interface*	create_library_movie_inst_sub(movie_definition_sub* md)
 	{
 		// Is the movie instance already in the library?
 		{
@@ -2614,15 +2601,15 @@ namespace gameswf
 		stringi_hash<int>	m_named_frames;	// stores 0-based frame #'s
 		int	m_frame_count;
 		int	m_loading_frame;
-		action_buffer* m_init_actions;         //v
+		action_buffer* m_init_actions;         
 		bool m_do_init_actions;
 		sprite_definition(movie_definition_sub* m)
 			:
 			m_movie_def(m),
 			m_frame_count(0),
 			m_loading_frame(0),
-			m_init_actions(NULL),                    //v
-			m_do_init_actions(false)									//v
+			m_init_actions(NULL),                    
+			m_do_init_actions(false)									
 
 		{
 			assert(m_movie_def);
@@ -2800,7 +2787,6 @@ namespace gameswf
 
 		as_environment	m_as_environment;
 
-//vb		
 		enum mouse_flags
 		{
 			IDLE = 0,
@@ -2822,7 +2808,6 @@ namespace gameswf
 			OVER
 		};
 		mouse_state m_mouse_state;
-//ve		
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
 			:
 			character(parent, id),
@@ -2835,7 +2820,6 @@ namespace gameswf
 			m_update_frame(true),
 			m_has_looped(false),
 			m_accept_anim_moves(true),
-//vb			
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
 			m_mouse_state(UP)
@@ -2869,7 +2853,7 @@ namespace gameswf
 		movie*	get_root_movie() { return m_root->get_root_movie(); }
 
 		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
-//vb
+
 		float	get_width()
 		{
 			float	w = 0;
@@ -3021,7 +3005,7 @@ namespace gameswf
 		}
 
 		void	do_mouse_events()
-//v		// Check mouse state.
+		// Check mouse state.
 		{
 
 			matrix	mat = get_world_matrix();
@@ -3120,7 +3104,8 @@ namespace gameswf
 				m_update_frame = true;
 			}
 
-			while (m_update_frame)
+			if (m_update_frame)
+//			while (m_update_frame)
 			{
 				m_update_frame = false;
 
@@ -3583,17 +3568,43 @@ namespace gameswf
 			}
 			else if (name == "_xscale")
 			{
-//				matrix	m = get_world_matrix();
-//				// @@ quick and dirty; test/fix this
-//				val->set(m.m_[0][0] * 100);	// percent!
+				matrix	m = get_matrix();
+
+				// Decompose matrix and insert the desired value.
+				float	x_scale = (float) val.to_number() / 100.f;	// input is in percent
+				float	y_scale = m.get_y_scale();
+				float	rotation = m.get_rotation();
+				m.set_scale_rotation(x_scale, y_scale, rotation);
+
+				set_matrix(m);
 				m_accept_anim_moves = false;
 				return;
 			}
 			else if (name == "_yscale")
 			{
-//				matrix	m = get_world_matrix();
-//				// @@ quick and dirty; test/fix this
-//				val->set(m.m_[1][1] * 100);	// percent!
+				matrix	m = get_matrix();
+
+				// Decompose matrix and insert the desired value.
+				float	x_scale = m.get_x_scale();
+				float	y_scale = (float) val.to_number() / 100.f;	// input is in percent
+				float	rotation = m.get_rotation();
+				m.set_scale_rotation(x_scale, y_scale, rotation);
+
+				set_matrix(m);
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_rotation")
+			{
+				matrix	m = get_matrix();
+
+				// Decompose matrix and insert the desired value.
+				float	x_scale = m.get_x_scale();
+				float	y_scale = m.get_y_scale();
+				float	rotation = (float) val.to_number() * float(M_PI) / 180.f;	// input is in degrees
+				m.set_scale_rotation(x_scale, y_scale, rotation);
+
+				set_matrix(m);
 				m_accept_anim_moves = false;
 				return;
 			}
@@ -3628,15 +3639,6 @@ namespace gameswf
 				matrix	m = get_matrix();
 				m.m_[1][1] = float(val.to_number()) / get_height();
 				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
-			else if (name == "_rotation")
-			{
-//				// Rotation angle in DEGREES.
-//				matrix	m = get_world_matrix();
-//				// @@ TODO some trig in here...
-//				val->set(0.0);
 				m_accept_anim_moves = false;
 				return;
 			}
@@ -3777,10 +3779,7 @@ namespace gameswf
 			else if (name == "_rotation")
 			{
 				// Verified against Macromedia player using samples/test_rotation.swf
-
-				matrix m = get_matrix();
-
-				float	angle = atan2f(m.m_[1][0], m.m_[0][0]);
+				float	angle = get_matrix().get_rotation();
 
 				// Result is CLOCKWISE DEGREES, [-180,180]
 				angle *= 180.0f / float(M_PI);
@@ -4221,6 +4220,21 @@ namespace gameswf
 		sprite->set_play_state(movie_interface::STOP);
 	}
 
+	void	sprite_next_frame(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	{
+		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		assert(sprite);
+
+		int frame_count = sprite->get_frame_count();
+		int current_frame = sprite->get_current_frame();
+		if (current_frame < frame_count)
+		{
+			sprite->goto_frame(current_frame + 1);
+		}
+		sprite->set_play_state(movie_interface::STOP);
+	}
+
+
 	static void	sprite_builtins_init()
 	{
 		if (s_sprite_builtins)
@@ -4233,7 +4247,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("stop", &sprite_stop);
 		s_sprite_builtins->set_member("gotoAndStop", &sprite_goto_and_stop);
 		s_sprite_builtins->set_member("gotoAndPlay", &sprite_goto_and_play);
-//		s_sprite_builtins->set_member("nextFrame", &sprite_next_frame);
+		s_sprite_builtins->set_member("nextFrame", &sprite_next_frame);
 //		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
 //		s_sprite_builtins->set_member("getURL", &sprite_get_url);
 //		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
@@ -4334,7 +4348,7 @@ namespace gameswf
 		m->add_character(character_id, ch);
 	}
 
-//vb
+
 	void	do_init_action_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		assert(tag_type == 59);
@@ -4350,7 +4364,7 @@ namespace gameswf
 		ch->m_init_actions->read(in);
 		ch->m_do_init_actions = true;
 	}
-//ve
+
 
 	//
 	// export
@@ -4383,12 +4397,10 @@ namespace gameswf
 				// Expose this movie/button/whatever for export.
 				m->export_resource(tu_string(symbol_name), ch);
 			}
-//vb
 			else if (sound_sample* ch = m->get_sound_sample(id))
 			{
 				m->export_resource(tu_string(symbol_name), ch);
 			}
-//ve
 			else
 			{
 				log_error("export error: don't know how to export resource '%s'\n",
