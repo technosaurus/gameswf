@@ -156,4 +156,53 @@ compiled C++ datatype.
 
 ...
 
+
+A Totally Different Approach
+============================
+
+Another approach to this problem is to "fix" C++'s data model.  What I
+have in mind is replacing C++'s heap and static variables with
+something that is SQL-like, and then bind the SQL data structures to
+some fancy DB back-end.
+
+Half-baked sketch:
+
+table entities {
+        // table layout; roughly equivalent to 'struct' or 'class'
+        int id = 0 (primary key autoincrement);
+        string name = "";
+        bool updatable = true;
+        vec3 position = vec3::zero;
+        float health = 100;
+        ...
+
+        // allow member functions in here too?  I guess so.
+} = {
+        // some static initialization
+        { , "world", false, 0, ... },
+        { , "player0", true, vec3(100, 0, 100), 100, ... },
+        ...
+};
+
+void    update_entities()
+{
+        // SQL-like iteration through a subset of the rows; maybe there is a better
+        // way to express this using "views" or something.
+        for (entities.iterator e = entities.where("updatable = true"); e != entities.end(); ++e)
+        {
+                e.row.update(); // or update_entity(e) or entities.update_row(e.id) or ???
+        }
+}
+
+So the idea is that persistence can happen easily via something like
+"database.dump(filename)", and the SQL key crud automatically deals
+with pointer fixup and GC, and under the hood the back-end can do lots
+of intelligent stuff to optimize your queries, with minimal hinting
+from the programmer.
+
+To implement this, I guess the reasonable thing would be to preprocess
+the augmented language and output C++ code.  Hm, unfortunate.  Or,
+perhaps there is some insane template trickery that could do it
+(although not necessarily with all the syntax amenities)?
+
 */
