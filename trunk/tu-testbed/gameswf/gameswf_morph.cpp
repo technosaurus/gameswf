@@ -86,6 +86,7 @@ namespace gameswf {
 				 m_bound_target.print());
 
 		int offset = in->read_u32();
+		UNUSED(offset);
 		pos = in->get_underlying_stream()->get_position();
 
 		int fill_style_count = in->read_variable_count();
