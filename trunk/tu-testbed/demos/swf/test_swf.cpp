@@ -115,7 +115,9 @@ int	main(int argc, char *argv[])
 	glLoadIdentity();
 
 	// Mouse state.
-	int	mouse_x, mouse_y, mouse_buttons;
+	int	mouse_x = 0;
+	int	mouse_y = 0;
+	int	mouse_buttons = 0;
 
 	bool	paused = false;
 	float	speed_scale = 1.0f;
