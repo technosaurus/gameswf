@@ -410,6 +410,10 @@ struct poly
 
 	void	remove_degenerate_chain(array<vert_t>* sorted_verts, int vi);
 
+	bool	find_and_fix_tangled_triple(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg);
+
+	void	flip_triple_configuration(array<vert_t>* sorted_verts, int v0, int v1, int v2);
+
 //data:
 	int	m_loop;	// index of first vert
 	int	m_leftmost_vert;
@@ -535,10 +539,10 @@ void	poly<coord_t>::append_vert(array<vert_t>* sorted_verts, int vert_index)
 		// First vert.
 		assert(m_vertex_count == 1);
 		m_loop = vert_index;
-		poly_vert<coord_t>*	v = &(*sorted_verts)[vert_index];
-		v->m_next = vert_index;
-		v->m_prev = vert_index;
-		v->m_poly_owner = this;
+		poly_vert<coord_t>*	pv = &(*sorted_verts)[vert_index];
+		pv->m_next = vert_index;
+		pv->m_prev = vert_index;
+		pv->m_poly_owner = this;
 
 		m_leftmost_vert = vert_index;
 	}
@@ -550,6 +554,7 @@ void	poly<coord_t>::append_vert(array<vert_t>* sorted_verts, int vert_index)
 		poly_vert<coord_t>*	pv = &(*sorted_verts)[vert_index];
 		pv->m_next = m_loop;
 		pv->m_prev = pv0->m_prev;
+		pv->m_poly_owner = this;
 		(*sorted_verts)[pv0->m_prev].m_next = vert_index;
 		pv0->m_prev = vert_index;
 
@@ -653,6 +658,12 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, array<vert_t>* sorted_v
 
 restart_build_ear_list:
 
+	if (m_vertex_count < 3)
+	{
+		// Not even a real poly --> no ears.
+		return;
+	}
+
 	// Optimization: limit the size of the ear list to some
 	// smallish number.  After scanning, move m_loop to after the
 	// last ear, so the next scan will pick up in fresh territory.
@@ -724,7 +735,8 @@ restart_build_ear_list:
 
 		if ((pvi->m_v == pv_next->m_v)
 		    || (pvi->m_v == pv_prev->m_v)
-		    || vertex_left_test(pv_prev->m_v, pvi->m_v, pv_next->m_v) == 0)	// @@ correct?
+		    || (vertex_left_test(pv_prev->m_v, pvi->m_v, pv_next->m_v) == 0
+			&& vert_is_duplicated(*sorted_verts, vi) == false))
 		{
 			// Degenerate case: zero-area triangle.
 			//
@@ -862,6 +874,9 @@ void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 // Remove the degenerate ear at vi, and any degenerate ear formed as
 // we remove the previous one.
 {
+	// Make sure m_leftmost_vert is dead; we don't need it now.
+	m_leftmost_vert = -1;
+
 	for (;;)
 	{
 		assert(is_valid(*sorted_verts, false /* don't check for dupes yet */));
@@ -875,9 +890,6 @@ void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 			// Change m_loop, since we're about to lose it.
 			m_loop = pv0->m_my_index;
 		}
-
-		// Make sure m_leftmost_vert is dead; we don't need it now.
-		m_leftmost_vert = -1;
 
 		// Unlink vi.
 
@@ -926,6 +938,160 @@ void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 
 	assert(is_valid(*sorted_verts, true /* do check for dupes; there shouldn't be any! */));
 }
+
+
+template<class coord_t>
+bool	poly<coord_t>::find_and_fix_tangled_triple(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg)
+// Search for a triple of coincident verts, whose configuration can be
+// flipped, to allow finding more polygon ears.
+//
+// A triple coincident vert has two possible valid configurations in a
+// continuous loop poly.
+//
+// Return true if we found a triple to flip, that let us find more
+// ears.  ear_list will have the new ears.
+{
+	assert(is_valid(*sorted_verts));
+	assert(ear_list && ear_list->size() == 0);
+
+	// Find all coincident triple combos (lexicographic order).
+	for (int v0 = 0, n = sorted_verts->size(); v0 < n - 2; v0++)
+	{
+		vert_t*	pv0 = &(*sorted_verts)[v0];
+
+		if (pv0->m_poly_owner != this)
+		{
+			continue;
+		}
+
+		for (int v1 = v0 + 1; v1 < n - 1; v1++)
+		{
+			vert_t*	pv1 = &(*sorted_verts)[v1];
+
+			if ((pv0->m_v == pv1->m_v) == false)
+			{
+				// End of coincident verts; no possible triples left.
+				break;
+			}
+			// else we have a double; continue the search for a third coincident vert.
+
+			if (pv1->m_poly_owner != this)
+			{
+				continue;
+			}
+
+			for (int v2 = v1 + 1; v2 < n; v2++)
+			{
+				vert_t*	pv2 = &(*sorted_verts)[v2];
+
+				if ((pv0->m_v == pv2->m_v) == false)
+				{
+					// End of coincident verts; no possible triples left.
+					break;
+				}
+				// else here's a triple.
+
+				if (pv2->m_poly_owner != this)
+				{
+					continue;
+				}
+
+				// Coincident triple.
+
+				// Try flipping it.
+				flip_triple_configuration(sorted_verts, v0, v1, v2);
+
+				// New ears?
+				build_ear_list(ear_list, sorted_verts, rg);
+
+				if (ear_list->size())
+				{
+					// The flip worked!
+					return true;
+				}
+
+				// The flip didn't work.  Put it back.
+				flip_triple_configuration(sorted_verts, v0, v1, v2);
+			}
+		}
+	}
+
+	// Didn't succeed in getting new ears by flipping triples.
+	return false;
+}
+
+
+template<class coord_t>
+void	poly<coord_t>::flip_triple_configuration(array<vert_t>* sorted_verts, int v0, int v1, int v2)
+// A triple coincident vert has two possible valid configurations in a
+// continuous loop poly.
+//
+// Given the three coincident verts, v0, v1, v2, this function flips
+// the current configuration to the other valid one.  This flip is
+// reversible; just call this function again with the same verts.
+{
+	assert(is_valid(*sorted_verts));
+
+	poly_vert<coord_t>*	pv0 = &(*sorted_verts)[v0];
+	poly_vert<coord_t>*	pv1 = &(*sorted_verts)[v1];
+	poly_vert<coord_t>*	pv2 = &(*sorted_verts)[v2];
+
+	// First, we need to find out where the sub-path starting at
+	// v0 re-enters the coincident triple.
+	int	v0probe = pv0->m_next;
+	for (;;)
+	{
+		if (v0probe == v1 || v0probe == v2)
+		{
+			break;
+		}
+
+		if (v0probe == v0)
+		{
+			// Not a valid continuous poly configuration!
+			// v0 forms a separate sub-loop without going
+			// through v1 and v2!
+			assert(0);
+
+			// Give up on this flip.  Don't loop forever.
+			return;
+		}
+
+		v0probe = (*sorted_verts)[v0probe].m_next;
+	}
+
+	if (v0probe == v1)
+	{
+		int	v0_next = pv0->m_next;
+
+		pv0->m_next = pv1->m_next;
+		(*sorted_verts)[pv0->m_next].m_prev = v0;
+
+		pv1->m_next = pv2->m_next;
+		(*sorted_verts)[pv1->m_next].m_prev = v1;
+
+		pv2->m_next = v0_next;
+		(*sorted_verts)[pv2->m_next].m_prev = v2;
+
+		assert(is_valid(*sorted_verts));
+	}
+	else
+	{
+		int	v0_next = pv0->m_next;
+
+		pv0->m_next = pv2->m_next;
+		(*sorted_verts)[pv0->m_next].m_prev = v0;
+
+		pv2->m_next = pv1->m_next;
+		(*sorted_verts)[pv2->m_next].m_prev = v2;
+
+		pv1->m_next = v0_next;
+		(*sorted_verts)[pv1->m_next].m_prev = v1;
+
+		assert(is_valid(*sorted_verts));
+	}
+}
+
 
 
 template<class coord_t>
@@ -1040,52 +1206,68 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 			int	v_next = pvk->m_next;
 			int	v_prev = pvk->m_prev;
 
-			// @@ cache this in vert?  Must refresh when
-			// ear is clipped, polys are joined, etc.
-			bool	reflex = vertex_left_test(sorted_verts[v_next].m_v, pvk->m_v, sorted_verts[v_prev].m_v) > 0;
-
-			if (reflex)
+			if (pvk->m_v == sorted_verts[v1].m_v)
 			{
-				if (pvk->m_v == sorted_verts[v1].m_v)
+				// Tricky case.  See section 4.3 in FIST paper.
+
+				// Note: I'm explicitly considering convex vk in here, unlike FIST.
+				// This is to handle the triple dupe case, where a loop validly comes
+				// straight through our cone.
+
+				int	v_prev_left01 = vertex_left_test(
+					sorted_verts[v0].m_v,
+					sorted_verts[v1].m_v,
+					sorted_verts[v_prev].m_v);
+				int	v_next_left01 = vertex_left_test(
+					sorted_verts[v0].m_v,
+					sorted_verts[v1].m_v,
+					sorted_verts[v_next].m_v);
+				int	v_prev_left12 = vertex_left_test(
+					sorted_verts[v1].m_v,
+					sorted_verts[v2].m_v,
+					sorted_verts[v_prev].m_v);
+				int	v_next_left12 = vertex_left_test(
+					sorted_verts[v1].m_v,
+					sorted_verts[v2].m_v,
+					sorted_verts[v_next].m_v);
+
+				if ((v_prev_left01 > 0 && v_prev_left12 > 0)
+				    || (v_next_left01 > 0 && v_next_left12 > 0))
 				{
-					// Tricky case.  See section 4.3 in FIST paper.
-
-					int	v_prev_left = vertex_left_test(
-						sorted_verts[v1].m_v,
-						sorted_verts[v2].m_v,
-						sorted_verts[v_prev].m_v);
-					int	v_next_left = vertex_left_test(
-						sorted_verts[v0].m_v,
-						sorted_verts[v1].m_v,
-						sorted_verts[v_next].m_v);
-
-					if (v_prev_left > 0 || v_next_left > 0)
-					{
-						// Local interior near vk intersects this
-						// ear; ear is clearly not valid.
-						return true;
-					}
-
-					// Check colinear case, where cones of vk and v1 overlap exactly.
-					if (v_prev_left == 0 && v_next_left == 0)
-					{
-						// @@ TODO: there's a somewhat complex non-local area test that tells us
-						// whether vk qualifies as a contained reflex vert.
-						//
-						// For the moment, deny the ear.
-						//
-						// The question is, is this test required for correctness?  Because it
-						// seems pretty expensive to compute.  If it's not required, I think it's
-						// better to always assume the ear is invalidated.
-
-						//xxx
-						//fprintf(stderr, "colinear case in ear_contains_reflex_vertex; returning true\n");
-
-						return true;
-					}
+					// Local interior near vk intersects this
+					// ear; ear is clearly not valid.
+					return true;
 				}
-				else if (vertex_in_ear(
-						 pvk->m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
+
+				// Check colinear case, where cones of vk and v1 overlap exactly.
+				if ((v_prev_left01 == 0 && v_next_left12 == 0)
+				    || (v_prev_left12 == 0 && v_next_left01 == 0))
+				{
+					// @@ TODO: there's a somewhat complex non-local area test that tells us
+					// whether vk qualifies as a contained reflex vert.
+					//
+					// For the moment, deny the ear.
+					//
+					// The question is, is this test required for correctness?  Because it
+					// seems pretty expensive to compute.  If it's not required, I think it's
+					// better to always assume the ear is invalidated.
+
+					//xxx
+					//fprintf(stderr, "colinear case in ear_contains_reflex_vertex; returning true\n");
+
+					return true;
+				}
+			}
+			else
+			{
+				// @@ cache this in vert?  Must refresh when
+				// ear is clipped, polys are joined, etc.
+				bool	reflex = vertex_left_test(
+					sorted_verts[v_next].m_v, pvk->m_v, sorted_verts[v_prev].m_v) > 0;
+
+				if (reflex
+				    && vertex_in_ear(
+					    pvk->m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
 				{
 					// Found one.
 					return true;
@@ -1516,7 +1698,7 @@ static void	recovery_process(
 	array<poly<coord_t>*>* polys,	// polys waiting to be processed
 	poly<coord_t>* P,	// current poly
 	array<int>* Q,	// ears
-	const array<poly_vert<coord_t> >& sorted_verts,
+	array<poly_vert<coord_t> >* sorted_verts,
 	tu_random::generator* rg);
 
 
@@ -1672,10 +1854,10 @@ static void compute_triangulation(
 				// debug hack: emit current state of P
 				static int s_tricount = 0;
 				s_tricount++;
-				if (s_tricount >= 78)	// 79
+				if (s_tricount >= 1)	// 79
 				{
-//					debug_emit_poly_loop(result, penv.m_sorted_verts, P);
-//					return;
+					debug_emit_poly_loop(result, penv.m_sorted_verts, P);
+					return;
 				}
 #endif // HACK
 
@@ -1697,7 +1879,7 @@ static void compute_triangulation(
 				return;
 #endif
 
-				recovery_process(&penv.m_polys, P, &Q, penv.m_sorted_verts, &rand_gen);
+				recovery_process(&penv.m_polys, P, &Q, &penv.m_sorted_verts, &rand_gen);
 				ear_was_clipped = false;
 			}
 		}
@@ -1726,7 +1908,7 @@ void	recovery_process(
 	array<poly<coord_t>*>* polys,
 	poly<coord_t>* P,
 	array<int>* Q,
-	const array<poly_vert<coord_t> >& sorted_verts,
+	array<poly_vert<coord_t> >* sorted_verts,
 	tu_random::generator* rg)
 {
 	// recovery_process:
@@ -1743,13 +1925,13 @@ void	recovery_process(
 
 	// Case 1: two edges, e[i-1] and e[i+1], intersect; we insert
 	// the overlapping ears into Q and resume.
-	{for (int vi = sorted_verts[P->m_loop].m_next; vi != P->m_loop; vi = sorted_verts[vi].m_next)
+	{for (int vi = (*sorted_verts)[P->m_loop].m_next; vi != P->m_loop; vi = (*sorted_verts)[vi].m_next)
 	{
 		int	ev0 = vi;
-		int	ev1 = sorted_verts[ev0].m_next;
-		int	ev2 = sorted_verts[ev1].m_next;
-		int	ev3 = sorted_verts[ev2].m_next;
-		if (edges_intersect(sorted_verts, ev0, ev1, ev2, ev3))
+		int	ev1 = (*sorted_verts)[ev0].m_next;
+		int	ev2 = (*sorted_verts)[ev1].m_next;
+		int	ev3 = (*sorted_verts)[ev2].m_next;
+		if (edges_intersect(*sorted_verts, ev0, ev1, ev2, ev3))
 		{
 			// Insert (1,2,3) as an ear.
 			Q->push_back(ev2);
@@ -1786,12 +1968,28 @@ void	recovery_process(
         //      |                          |
         //      +------------->------------+
 	//
+	// Alternative diagram, a bit more symmetrical:
+	//
+        //             -----<---
+        //            / /\     /
+        //           / /  \   /
+        //          / /    \ /
+        //         |  ---<--*----<--
+        //          \      / \     /
+        //           \    /   \   /
+        //            \   ---<-  /
+        //             ----->----
+	//
 	// Attempted fix: find a triple dupe like A and untangle it.
 	// Convert the three crossing paths into three coincident
-	// corners that can be clipped separately.  Need to check that
-	// the untangling keeps the poly intact as a single loop.
+	// corners that can be clipped separately.
 
-	// TODO implement.
+	if (P->find_and_fix_tangled_triple(Q, sorted_verts, rg))
+	{
+		fprintf(stderr, "recovery_process: tangled triple\n");//xxxx
+		assert(Q->size() > 0);
+		return;
+	}
 
 
 // Because I'm lazy, I'm skipping this test for now...
@@ -1830,7 +2028,7 @@ void	recovery_process(
 	int	vert_count = 0;
 	do
 	{
-		if (is_convex_vert(sorted_verts, vi))
+		if (is_convex_vert(*sorted_verts, vi))
 		{
 			// vi is convex; treat it as an ear,
 			// regardless of other problems it may have.
@@ -1843,7 +2041,7 @@ void	recovery_process(
 		}
 
 		vert_count++;
-		vi = sorted_verts[vi].m_next;
+		vi = (*sorted_verts)[vi].m_next;
 	}
 	while (vi != first_vert);
 
@@ -1851,7 +2049,7 @@ void	recovery_process(
 	int	random_vert = rg->next_random() % vert_count;
 	for (vi = first_vert; random_vert > 0; random_vert--)
 	{
-		vi = sorted_verts[vi].m_next;
+		vi = (*sorted_verts)[vi].m_next;
 	}
 	Q->push_back(vi);
 
