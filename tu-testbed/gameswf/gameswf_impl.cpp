@@ -1898,6 +1898,11 @@ namespace gameswf
 			return NULL;
 		}
 
+		float	get_background_alpha() const
+		{
+			return m_root->get_background_alpha();
+		}
+
 		float	get_pixel_scale() const { return m_root->get_pixel_scale(); }
 
 		virtual void	get_mouse_state(int* x, int* y, int* buttons)
