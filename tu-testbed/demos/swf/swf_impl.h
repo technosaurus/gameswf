@@ -115,6 +115,8 @@ namespace swf
 
 		virtual ~character() {}
 		virtual void	display(const display_info& di) {}	// renderer state contains context
+		virtual void	advance(float delta_time, movie* m, const matrix& mat) {}	// for buttons and sprites
+		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
 
 		// Movie interfaces.  By default do nothing.  sprite will override these.
 		int	get_width() { return 0; }
@@ -122,7 +124,6 @@ namespace swf
 		int	get_current_frame() const { assert(0); return 0; }
 		void	restart() { assert(0); }
 		void	advance(float delta_time) { assert(0); }	// should only be called on movie_impl's.
-		void	advance(float delta_time, movie* m) {}	// can be called on any character.
 		void	goto_frame(int target_frame) {}
 		void	display() {}
 
