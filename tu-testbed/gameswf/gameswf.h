@@ -331,6 +331,8 @@ namespace gameswf
 	
 	struct render_handler
 	{
+		virtual ~render_handler() {}
+
 		virtual bitmap_info*	create_bitmap_info(image::rgb* im) = 0;
 		virtual bitmap_info*	create_bitmap_info(image::rgba* im) = 0;
 		virtual bitmap_info*	create_bitmap_info_blank() = 0;
