@@ -7,6 +7,7 @@
 
 
 #include "gameswf.h"
+#include "gameswf_types.h"
 #include "base/image.h"
 #include "base/ogl.h"
 
@@ -311,6 +312,11 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
+	~render_handler_ogl()
+	{
+	}
+
+
 	void	begin_display(
 		gameswf::rgba background_color,
 		int viewport_x0, int viewport_y0,
@@ -493,7 +499,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	draw_mesh_strip(const Sint16 coords[], int vertex_count)
+	void	draw_mesh_strip(const void* coords, int vertex_count)
 	{
 		// Set up current style.
 		m_current_styles[LEFT_STYLE].apply();
@@ -520,7 +526,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	draw_line_strip(const Sint16 coords[], int vertex_count)
+	void	draw_line_strip(const void* coords, int vertex_count)
 	// Draw the line strip formed by the sequence of points.
 	{
 		// Set up current style.
