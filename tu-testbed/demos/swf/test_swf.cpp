@@ -10,6 +10,7 @@
 #include "swf.h"
 #include <stdlib.h>
 #include "engine/ogl.h"
+#include "engine/utility.h"
 
 
 #undef main	// SDL wackiness
@@ -71,8 +72,11 @@ int	main(int argc, char *argv[])
 //	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
+	int	width = imin(int(m->get_width() * SCALE), 800);
+	int	height = imin(int(m->get_height() * SCALE), 600);
+
 	// Set the video mode.
-	if (SDL_SetVideoMode(int(m->get_width() * SCALE), int(m->get_height() * SCALE), 16, SDL_OPENGL) == 0)
+	if (SDL_SetVideoMode(width, height, 16, SDL_OPENGL) == 0)
 	{
 		fprintf(stderr, "SDL_SetVideoMode() failed.");
 		exit(1);
