@@ -198,7 +198,7 @@ void	print_usage()
 // Prints controls summary.
 {
 	printf(
-		"chunkdemo, by Thatcher Ulrich <tu@tulrich.com> May-July 2001\n"
+		"chunkdemo, by Thatcher Ulrich <tu@tulrich.com>\n"
 		"This program and associated source code is in the public domain.\n"
 		"Commercial and non-commercial use encouraged.  I make no warrantees;\n"
 		"use at your own risk.\n"
@@ -317,8 +317,8 @@ void	process_events()
 					}
 				}
 				printf("geo %s, box %s\n",
-					   render_opt.show_geometry ? "on" : "off",
-					   render_opt.show_box ? "on" : "off");
+				       render_opt.show_geometry ? "on" : "off",
+				       render_opt.show_box ? "on" : "off");
 			}
 			if (key == SDLK_e) {
 				// Toggle edge rendering.
