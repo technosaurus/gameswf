@@ -21,19 +21,3 @@ int	tu_testbed_assert_break(const char* filename, int linenum, const char* expre
 
 #endif // not NDEBUG
 #endif // _WIN32
-
-
-#ifdef TEST_UTILITY
-
-
-
-
-int	main()
-{
-	assert_else( 0 ) printf( "recovery code...\n" );
-
-	return 0;
-}
-
-
-#endif // TEST_UTILITY

@@ -141,7 +141,7 @@ void	cvar::init( const char* name )
 	p = name;
 	while (*p) {
 		if (*p == '.') {
-			assert_else(varname != p) {
+			if (varname == p) {
 				// null string for a key.
 				// warning("something or other");
 				assert(0);	// TODO: recover somehow.
