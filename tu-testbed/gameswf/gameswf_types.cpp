@@ -357,6 +357,15 @@ namespace gameswf
 		log_msg("rgba: %d %d %d %d\n", m_r, m_g, m_b, m_a);
 	}
 
+	
+	void	rgba::set_lerp(const rgba& a, const rgba& b, float f)
+	{
+		m_r = (Uint8) frnd(flerp(a.m_r, b.m_r, f));
+		m_g = (Uint8) frnd(flerp(a.m_g, b.m_g, f));
+		m_b = (Uint8) frnd(flerp(a.m_b, b.m_b, f));
+		m_a = (Uint8) frnd(flerp(a.m_a, b.m_a, f));
+	}
+
 
 	//
 	// rect

@@ -82,7 +82,7 @@ namespace gameswf
 
 					m_unused_bits -= bits_needed;
 
-						// We're done.
+					// We're done.
 					bits_needed = 0;
 				}
 			} else {

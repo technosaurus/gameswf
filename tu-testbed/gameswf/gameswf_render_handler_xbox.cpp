@@ -44,22 +44,27 @@ namespace
 			/* Shader source:
 
 				xvs.1.1
+				#pragma screenspace
+				mov	oD0, v3
 				dp4 oPos.x, v0, c[0]	// Transform position
 				dp4 oPos.y, v0, c[1]
+				dp4 oPos.z, v0, c[2]
+				dp4 oPos.w, v0, c[3]
 				dp4 oT0.x, v0, c[4]	// texgen
 				dp4 oT0.y, v0, c[5]
 
-			   Compile that with xsasm -h sometmp.vsh, and insert the contents of output.h below:
+			   Compile that with xsasm -h sometmp.vsh, and insert the contents of sometmp.h below:
 			*/
 			static const DWORD	s_compiled_shader[] =
 			{
-				0x00062078,
-				0x00000000, 0x00ec001b, 0x08361800, 0x20b08800,
-				0x00000000, 0x00ec201b, 0x08363800, 0x20b04800,
-				0x00000000, 0x06ec801b, 0x08369bff, 0x10b88848,
-				0x00000000, 0x0047401a, 0xc4355800, 0x20a0e800,
-				0x00000000, 0x00eca01b, 0x0836b800, 0x20a04848,
-				0x00000000, 0x0087601a, 0xc400286a, 0xf0b0e801
+				0x00072078,
+				0x00000000, 0x0020061b, 0x0836106c, 0x2070f818,
+				0x00000000, 0x00ec001b, 0x0836186c, 0x20708800,
+				0x00000000, 0x00ec201b, 0x0836186c, 0x20704800,
+				0x00000000, 0x00ec401b, 0x0836186c, 0x20702800,
+				0x00000000, 0x00ec601b, 0x0836186c, 0x20701800,
+				0x00000000, 0x00ec801b, 0x0836186c, 0x20708848,
+				0x00000000, 0x00eca01b, 0x0836186c, 0x20704849
 			};
 
 			result = IDirect3DDevice8::CreateVertexShader(
@@ -91,19 +96,13 @@ struct render_handler_xbox : public gameswf::render_handler
 {
 	// Some renderer state.
 
-	// Enable/disable antialiasing.
-	bool	m_enable_antialias;
-
-	// Output size.
-	float	m_display_width;
-	float	m_display_height;
-
+	gameswf::matrix	m_viewport_matrix;
 	gameswf::matrix	m_current_matrix;
 	gameswf::cxform	m_current_cxform;
 	
 	void set_antialiased(bool enable)
 	{
-		m_enable_antialias = enable;
+		// not supported
 	}
 
 	static void make_next_miplevel(int* width, int* height, Uint8* data)
@@ -435,9 +434,6 @@ struct render_handler_xbox : public gameswf::render_handler
 	// coordinates of the movie that correspond to the viewport
 	// bounds.
 	{
-		m_display_width = fabsf(x1 - x0);
-		m_display_height = fabsf(y1 - y0);
-
 // 		// Matrix setup
 // 		D3DXMATRIX	ortho;
 // 		D3DXMatrixOrthoOffCenterRH(&ortho, x0, x1, y0, y1, 0.0f, 1.0f);
@@ -459,16 +455,35 @@ struct render_handler_xbox : public gameswf::render_handler
 		vp.MaxZ = 0.0f;
 		IDirect3DDevice8::SetViewport(&vp);
 
+		// Matrix to map from SWF movie (TWIPs) coords to
+		// viewport coordinates.
+		float	dx = x1 - x0;
+		float	dy = y1 - y0;
+		if (dx < 1) { dx = 1; }
+		if (dy < 1) { dy = 1; }
+		m_viewport_matrix.set_identity();
+		m_viewport_matrix.m_[0][0] = viewport_width / dx;
+		m_viewport_matrix.m_[1][1] = viewport_height / dy;
+		m_viewport_matrix.m_[0][2] = viewport_x0 - m_viewport_matrix.m_[0][0] * x0;
+		m_viewport_matrix.m_[1][2] = viewport_y0 - m_viewport_matrix.m_[1][1] * y0;
+
 		// Blending renderstates
 		IDirect3DDevice8::SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
 		IDirect3DDevice8::SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
 		IDirect3DDevice8::SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
 
-		// Textures should modulate.
-		IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+		// Textures off by default.
+		IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_DISABLE);
+
+		// @@ for sanity's sake, let's turn of backface culling...
+		IDirect3DDevice8::SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);//xxxxx
+		IDirect3DDevice8::SetRenderState(D3DRS_ZFUNC, D3DCMP_ALWAYS);	//xxxxx
 
 		// Vertex format.
 		IDirect3DDevice8::SetVertexShader(s_vshader_handle);
+
+		// No pixel shader.
+		IDirect3DDevice8::SetPixelShaderProgram(NULL);
 
 #if 0
 		glViewport(viewport_x0, viewport_y0, viewport_width, viewport_height);
@@ -488,8 +503,22 @@ struct render_handler_xbox : public gameswf::render_handler
 		// Clear the background, if background color has alpha > 0.
 		if (background_color.m_a > 0)
 		{
+			// @@ for testing
+			static int	bobo = 0;
+			IDirect3DDevice8::Clear(
+				0,
+				NULL,
+				D3DCLEAR_TARGET | D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL,
+				bobo += 5,
+				0.0f,
+				0);
+
 			// Draw a big quad.
 			apply_color(background_color);
+			gameswf::matrix	ident;
+			ident.set_identity();
+			set_matrix(ident);
+			apply_matrix(m_current_matrix);
 
 			IDirect3DDevice8::Begin(D3DPT_TRIANGLESTRIP);
 			IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, x0, y0);
@@ -534,9 +563,12 @@ struct render_handler_xbox : public gameswf::render_handler
 		m_current_cxform = cx;
 	}
 	
-	static void	apply_matrix(const gameswf::matrix& m)
+	void	apply_matrix(const gameswf::matrix& mat_in)
 	// Set the given transformation matrix.
 	{
+		gameswf::matrix	m(m_viewport_matrix);
+		m.concatenate(mat_in);
+
 		float	row0[4];
 		float	row1[4];
 		row0[0] = m.m_[0][0];
@@ -691,6 +723,12 @@ struct render_handler_xbox : public gameswf::render_handler
 		IDirect3DDevice8::SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
 		IDirect3DDevice8::SetTexture(0, s_d3d_textures[bi->m_texture_id]);
 
+		// @@ TODO this is wrong; needs fixing!  Options:
+		//
+		// * compute texgen parameters for the bitmap
+		//
+		// * change to a vshader which passes the texcoords through
+
 		// No texgen; just pass through.
 		float	row0[4] = { 1, 0, 0, 0 };
 		float	row1[4] = { 0, 1, 0, 0 };
@@ -701,16 +739,16 @@ struct render_handler_xbox : public gameswf::render_handler
 		IDirect3DDevice8::Begin(D3DPT_TRIANGLESTRIP);
 		
 		IDirect3DDevice8::SetVertexData2f(D3DVSDE_TEXCOORD0, uv_coords.m_x_min, uv_coords.m_y_min);
-		IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, a.m_x, a.m_y);
+		IDirect3DDevice8::SetVertexData4f(D3DVSDE_VERTEX, a.m_x, a.m_y, 0, 1);
 
 		IDirect3DDevice8::SetVertexData2f(D3DVSDE_TEXCOORD0, uv_coords.m_x_max, uv_coords.m_y_min);
-		IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, b.m_x, b.m_y);
+		IDirect3DDevice8::SetVertexData4f(D3DVSDE_VERTEX, b.m_x, b.m_y, 0, 1);
 
 		IDirect3DDevice8::SetVertexData2f(D3DVSDE_TEXCOORD0, uv_coords.m_x_min, uv_coords.m_y_max);
-		IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, c.m_x, c.m_y);
+		IDirect3DDevice8::SetVertexData4f(D3DVSDE_VERTEX, c.m_x, c.m_y, 0, 1);
 
 		IDirect3DDevice8::SetVertexData2f(D3DVSDE_TEXCOORD0, uv_coords.m_x_max, uv_coords.m_y_max);
-		IDirect3DDevice8::SetVertexData2f(D3DVSDE_POSITION, d.m_x, d.m_y);
+		IDirect3DDevice8::SetVertexData4f(D3DVSDE_VERTEX, d.m_x, d.m_y, 0, 1);
 
 		IDirect3DDevice8::End();
 
