@@ -67,6 +67,7 @@ struct axial_box
 
 	// Expand the box.
 	void	set_enclosing(const vec3& v);
+	void	set_enclosing(const axial_box& a);
 
 	//
 	// Etc
@@ -77,6 +78,8 @@ struct axial_box
 
 	// this = intersection(this, b)
 	void	set_intersection(const axial_box& b);
+
+	int	get_longest_axis() const;
 
 private:
 	vec3	m_min, m_max;

@@ -13,7 +13,7 @@
 
 
 static const float	EPSILON = 1e-4f;
-static const int	LEAF_FACE_COUNT = 6;
+static const int	LEAF_FACE_COUNT = 4;
 
 //#define CARVE_OFF_SPACE
 //#define ADHOC_METRIC
@@ -35,6 +35,137 @@ float	kd_tree_dynamic::face::get_max_coord(int axis, const array<vec3>& verts) c
 	maxval = fmax(maxval, verts[m_vi[1]][axis]);
 	maxval = fmax(maxval, verts[m_vi[2]][axis]);
 	return maxval;
+}
+
+
+void split_mesh(
+	array<vec3>* verts0,
+	array<int>* tris0,
+	array<vec3>* verts1,
+	array<int>* tris1,
+	int vert_count,
+	const vec3 verts[],
+	int triangle_count,
+	const int indices[],
+	int axis,
+	float offset)
+// Divide a mesh into two pieces, roughly along the plane [axis]=offset.
+// Assign faces to one side or the other based on centroid.
+{
+	assert(verts0 && tris0 && verts1 && tris1);
+	assert(verts0->size() == 0);
+	assert(tris0->size() == 0);
+	assert(verts1->size() == 0);
+	assert(tris1->size() == 0);
+
+	// Remap table from verts array to new verts0/1 arrays.
+	hash<int, int>	verts_to_verts0;
+	hash<int, int>	verts_to_verts1;
+
+	// Divide the faces.
+	for (int i = 0; i < triangle_count; i++)
+	{
+		int	index = i * 3;
+		int	v[3] = {
+			indices[index],
+			indices[index + 1],
+			indices[index + 2]
+		};
+
+		float centroid = (verts[v[0]][axis] + verts[v[1]][axis] + verts[v[2]][axis]) / 3.0f;
+
+		if (centroid < offset)
+		{
+			// Put this face into verts0/tris0
+			for (int ax = 0; ax < 3; ax++)
+			{
+				int	new_index;
+				if (verts_to_verts0.get(v[ax], &new_index))
+				{
+					// OK.
+				}
+				else
+				{
+					// Must add.
+					new_index = verts0->size();
+					verts_to_verts0.add(v[ax], new_index);
+					verts0->push_back(verts[v[ax]]);
+				}
+				tris0->push_back(new_index);
+			}
+		}
+		else
+		{
+			// Put this face into verts1/tris1
+			for (int ax = 0; ax < 3; ax++)
+			{
+				int	new_index;
+				if (verts_to_verts1.get(v[ax], &new_index))
+				{
+					// OK.
+				}
+				else
+				{
+					// Must add.
+					new_index = verts1->size();
+					verts_to_verts1.add(v[ax], new_index);
+					verts1->push_back(verts[v[ax]]);
+				}
+				tris1->push_back(new_index);
+			}
+		}
+	}
+}
+
+
+/*static*/ void	kd_tree_dynamic::build_trees(
+	array<kd_tree_dynamic*>* treelist,
+	int vert_count,
+	const vec3 verts[],
+	int triangle_count,
+	const int indices[]
+	)
+// Build one or more kd trees to represent the given mesh.
+{
+	if (vert_count >= 65536)
+	{
+		// Too many verts for one tree; subdivide.
+		axial_box	bound;
+		compute_actual_bounds(&bound, vert_count, verts);
+
+		int	longest_axis = bound.get_longest_axis();
+		float	offset = bound.get_center()[longest_axis];
+
+		array<vec3>	verts0, verts1;
+		array<int>	tris0, tris1;
+		split_mesh(
+			&verts0,
+			&tris0,
+			&verts1,
+			&tris1,
+			vert_count,
+			verts,
+			triangle_count,
+			indices,
+			longest_axis,
+			offset);
+
+		if (verts0.size() >= vert_count || verts1.size() >= vert_count)
+		{
+			// Trouble: couldn't reduce vert count by
+			// splitting.
+			assert(0);
+			// log error
+			return;
+		}
+
+		build_trees(treelist, verts0.size(), &verts0[0], tris0.size() / 3, &tris0[0]);
+		build_trees(treelist, verts1.size(), &verts1[0], tris1.size() / 3, &tris1[0]);
+
+		return;
+	}
+
+	treelist->push_back(new kd_tree_dynamic(vert_count, verts, triangle_count, indices));
 }
 
 
@@ -259,6 +390,21 @@ void	kd_tree_dynamic::compute_actual_bounds(axial_box* result, int face_count, f
 		result->set_enclosing(m_verts[f.m_vi[0]]);
 		result->set_enclosing(m_verts[f.m_vi[1]]);
 		result->set_enclosing(m_verts[f.m_vi[2]]);
+	}
+}
+
+
+/*static*/ void	kd_tree_dynamic::compute_actual_bounds(axial_box* result, int vert_count, const vec3 verts[])
+// Compute the actual bounding box around the given list of faces.
+{
+	assert(vert_count > 0);
+
+	result->set_min_max_invalid(vec3::flt_max, vec3::minus_flt_max);
+	
+	for (int i = 0; i < vert_count; i++)
+	{
+		// Update bounds.
+		result->set_enclosing(verts[i]);
 	}
 }
 

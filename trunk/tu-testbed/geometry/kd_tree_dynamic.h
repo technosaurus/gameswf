@@ -21,6 +21,15 @@ struct kd_diagram_dump_info;
 
 struct kd_tree_dynamic
 {
+	// Build tree(s) from the given mesh.
+	static void	build_trees(
+		array<kd_tree_dynamic*>* treelist,
+		int vert_count,
+		const vec3 verts[],
+		int triangle_count,
+		const int indices[]
+		);
+
 	// vert count must be under 64K
 	kd_tree_dynamic(
 		int vert_count,
@@ -95,6 +104,8 @@ struct kd_tree_dynamic
 	void	mesh_diagram_dump(tu_file* out, int axis) const;	// make a Postscript diagram of the mesh data.
 
 private:
+	static void	compute_actual_bounds(axial_box* result, int vert_count, const vec3 verts[]);
+
 	void	compute_actual_bounds(axial_box* result, int face_count, face faces[]);
 	node*	build_tree(int depth, int face_count, face faces[], const axial_box& bounds);
 

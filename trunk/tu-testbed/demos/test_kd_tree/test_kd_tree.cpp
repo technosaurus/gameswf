@@ -30,8 +30,8 @@ void	print_usage()
 }
 
 
-static kd_tree_dynamic*	make_kd_tree(const char* filename);
-static void	test_cast_against_tree(const kd_tree_dynamic* tree);
+static void	make_kd_trees(array<kd_tree_dynamic*>* treelist, const char* filename);
+static void	test_cast_against_tree(const array<kd_tree_dynamic*>& treelist);
 
 
 int main(int argc, const char** argv)
@@ -116,7 +116,8 @@ int main(int argc, const char** argv)
 	}
 
 	uint64	start_ticks = tu_timer::get_profile_ticks();
-	kd_tree_dynamic*	tree = make_kd_tree(infile);
+	array<kd_tree_dynamic*>	treelist;
+	make_kd_trees(&treelist, infile);
 	uint64	end_ticks = tu_timer::get_profile_ticks();
 	if (do_ray_test)
 	{
@@ -125,30 +126,32 @@ int main(int argc, const char** argv)
 		       tu_timer::profile_ticks_to_seconds(end_ticks - start_ticks));
 	}
 
-	if (do_dump && tree)
+	if (do_dump && treelist.size())
 	{
-		tree->diagram_dump(&tu_file(stdout, false));
+		treelist[0]->diagram_dump(&tu_file(stdout, false));
 	}
 
-	if (do_mesh_dump && tree)
+	if (do_mesh_dump && treelist.size())
 	{
-		tree->mesh_diagram_dump(&tu_file(stdout, false), mesh_axis);
+		treelist[0]->mesh_diagram_dump(&tu_file(stdout, false), mesh_axis);
 	}
 
-	if (do_ray_test && tree)
+	if (do_ray_test && treelist.size())
 	{
-		test_cast_against_tree(tree);
+		test_cast_against_tree(treelist);
 	}
 
-	delete tree;
+	{for (int i = 0; i < treelist.size(); i++)
+	{
+		delete treelist[i];
+	}}
 
 	return 0;
 }
 
 
-kd_tree_dynamic*	make_kd_tree(const char* filename)
-// Build a kd-tree from the specified text file.
-// Format is:
+void	make_kd_trees(array<kd_tree_dynamic*>* treelist, const char* filename)
+// Build a list of kd-trees from the specified text file.  Format is:
 //
 // tridata
 // verts: 1136
@@ -168,7 +171,6 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 	if (in == NULL)
 	{
 		printf("can't open '%s'\n", filename);
-		return NULL;
 	}
 
 	static const int LINE_MAX = 1000;
@@ -178,7 +180,6 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 	if (strncmp(line, "tridata", strlen("tridata")) != 0)
 	{
 		printf("file '%s' does not appear to be tridata\n");
-		return NULL;
 	}
 
 	int	vert_count = 0;
@@ -188,28 +189,25 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 	if (sscanf(line, "verts: %d", &vert_count) != 1)
 	{
 		printf("can't read vert count\n");
-		return NULL;
 	}
 
-	// Can't handle big meshes; TODO split the meshes and make a
-	// forest of kd_trees in this case.
-	if (vert_count >= 65536)
-	{
-		printf("too many verts; must be <64K\n");
-		return NULL;
-	}
+// 	// Can't handle big meshes; TODO split the meshes and make a
+// 	// forest of kd_trees in this case.
+// 	if (vert_count >= 65536)
+// 	{
+// 		printf("too many verts; must be <64K\n");
+// 		return NULL;
+// 	}
 	
 	fgets(line, LINE_MAX, in);
 	if (sscanf(line, "tris: %d", &tri_count) != 1)
 	{
 		printf("can't read tri count\n");
-		return NULL;
 	}
 
 	if (vert_count <= 0)
 	{
 		printf("invalid number of verts: %d\n", vert_count);
-		return NULL;
 	}
 
 	// Read verts.
@@ -221,7 +219,6 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 		if (sscanf(line, "%f %f %f", &v.x, &v.y, &v.z) != 3)
 		{
 			printf("error reading vert at vertex index %d\n", i);
-			return NULL;
 		}
 		
 		verts.push_back(v);
@@ -230,13 +227,12 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 	// Read triangles.
 	{for (int i = 0; i < tri_count; i++)
 	{
-		int	vi0, vi1, vi2, surface_id, flags;
+		int	vi0, vi1, vi2;
 
 		fgets(line, LINE_MAX, in);
-		if (sscanf(line, "%d %d %d %d %d", &vi0, &vi1, &vi2, &surface_id, &flags) != 5)
+		if (sscanf(line, "%d %d %d", &vi0, &vi1, &vi2) != 3)
 		{
-			printf("error reading triangle verts & flags at triangle index %d\n", i);
-			return NULL;
+			printf("error reading triangle verts at triangle index %d\n", i);
 		}
 		
 		if (vi0 < 0 || vi0 >= vert_count
@@ -245,7 +241,6 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 		{
 			printf("invalid triangle verts at triangle %d, verts are %d %d %d\n",
 				   i, vi0, vi1, vi2);
-			return NULL;
 		}
 
 		indices.push_back(vi0);
@@ -259,29 +254,39 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 	fclose(in);
 
 	// Make the kd-tree.
-	kd_tree_dynamic*	tree = new kd_tree_dynamic(vert_count, &verts[0], tri_count, &indices[0]);
-
-	return tree;
+	kd_tree_dynamic::build_trees(treelist, vert_count, &verts[0], tri_count, &indices[0]);
+//	kd_tree_dynamic*	tree = new kd_tree_dynamic(vert_count, &verts[0], tri_count, &indices[0]);
+//	return tree;
 }
 
 
-void	test_cast_against_tree(const kd_tree_dynamic* tree)
-// Shoot a ton of random rays against the kdtree.
+void	test_cast_against_tree(const array<kd_tree_dynamic*>& treelist)
+// Shoot a ton of random rays against the kdtrees.
 {
+	assert(treelist.size() > 0);
+
 	static const int	RAY_COUNT = 100000;
 
 	printf("building kd_tree_packed...\n");
 
 	uint64	start_build_ticks = tu_timer::get_profile_ticks();
 
-	// Make a packed tree.
-	kd_tree_packed*	kd = kd_tree_packed::build(tree);
+	// Make a list of packed trees, and get an overall bound.
+	array<kd_tree_packed*>	kds;
+	axial_box	bound(axial_box::INVALID, vec3::flt_max, vec3::minus_flt_max);
+	for (int i = 0; i < treelist.size(); i++)
+	{
+		kd_tree_packed*	kd = kd_tree_packed::build(treelist[i]);
+		kds.push_back(kd);
+
+		bound.set_enclosing(kd->get_bound());
+	}
 
 	uint64	end_build_ticks = tu_timer::get_profile_ticks();
 
-	printf("built in %3.3f seconds\n", tu_timer::profile_ticks_to_seconds(end_build_ticks - start_build_ticks));
-
-	const axial_box&	bound = kd->get_bound();
+	printf("built %d trees in %3.3f seconds\n",
+	       kds.size(),
+	       tu_timer::profile_ticks_to_seconds(end_build_ticks - start_build_ticks));
 
 	printf("starting to cast...\n");
 
@@ -298,19 +303,14 @@ void	test_cast_against_tree(const kd_tree_dynamic* tree)
 			end = bound.get_random_point();
 		}
 
-		// xxx debugging: force all rays parallel to some axis...
-		do
-		{
-			end = bound.get_random_point();
-			start.y = end.y;
-			start.z = end.z;
-		}
-		while ((start - end).sqrmag() < 1e-3f);
-		// xxx
-
 		ray_query	ray(ray_query::start_end, start, end);
 
-		bool	result = kd->ray_test(ray);
+		bool	result = false;
+		for (int ti = 0, tn = kds.size(); ti < tn; ti++)
+		{
+			result = kds[ti]->ray_test(ray);
+			if (result) break;	// early out on hit
+		}
 	}
 
 	uint64	end_ticks = tu_timer::get_profile_ticks();
