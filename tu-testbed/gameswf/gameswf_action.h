@@ -23,6 +23,32 @@ namespace gameswf
 	struct as_value;
 
 
+	//
+	// with_stack_entry
+	//
+	// The "with" stack is for Pascal-like with-scoping.
+
+	struct with_stack_entry
+	{
+		as_object_interface*	m_object;
+		int	m_block_end_pc;
+
+		with_stack_entry()
+			:
+			m_object(NULL),
+			m_block_end_pc(0)
+		{
+		}
+
+		with_stack_entry(as_object_interface* obj, int end)
+			:
+			m_object(obj),
+			m_block_end_pc(end)
+		{
+		}
+	};
+
+
 	// Base class for actions.
 	struct action_buffer
 	{
@@ -31,7 +57,12 @@ namespace gameswf
 
 		void	read(stream* in);
 		void	execute(as_environment* env);
-		void	execute(as_environment* env, int start_pc, int exec_bytes, as_value* retval);
+		void	execute(
+			as_environment* env,
+			int start_pc,
+			int exec_bytes,
+			as_value* retval,
+			const array<with_stack_entry>& initial_with_stack);
 
 		bool	is_null()
 		{
@@ -283,11 +314,14 @@ namespace gameswf
 
 		int	get_top_index() const { return m_stack.size() - 1; }
 
-		as_value	get_variable(const tu_string& varname) const;
-		as_value	get_variable_raw(const tu_string& varname) const;	// no path stuff
+		as_value	get_variable(const tu_string& varname, const array<with_stack_entry>& with_stack) const;
+		// no path stuff:
+		as_value	get_variable_raw(const tu_string& varname, const array<with_stack_entry>& with_stack) const;
 
-		void	set_variable(const tu_string& path, const as_value& val);
-		void	set_variable_raw(const tu_string& path, const as_value& val);	// no path stuff
+		void	set_variable(const tu_string& path, const as_value& val, const array<with_stack_entry>& with_stack);
+		// no path stuff:
+		void	set_variable_raw(const tu_string& path, const as_value& val, const array<with_stack_entry>& with_stack);
+
 		void	set_local(const tu_string& varname, const as_value& val);
 		void	add_local(const tu_string& varname, const as_value& val);	// when you know it doesn't exist.
 
@@ -341,6 +375,24 @@ namespace gameswf
 			return NULL;
 		}
 	};
+
+
+	//
+	// Some handy helpers
+	//
+
+	// Dispatching methods from C++.
+	as_value	call_method0(const as_value& method, as_environment* env, as_object_interface* this_ptr);
+	as_value	call_method1(
+		const as_value& method, as_environment* env, as_object_interface* this_ptr,
+		const as_value& arg0);
+	as_value	call_method2(
+		const as_value& method, as_environment* env, as_object_interface* this_ptr,
+		const as_value& arg0, const as_value& arg1);
+	as_value	call_method3(
+		const as_value& method, as_environment* env, as_object_interface* this_ptr,
+		const as_value& arg0, const as_value& arg1, const as_value& arg2);
+
 
 }	// end namespace gameswf
 

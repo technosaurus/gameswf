@@ -289,28 +289,6 @@ namespace gameswf
 			assert(c);
 			assert(c->get_id() == character_id);
 			m_characters.add(character_id, c);
-
-#if 0
-			if (c->get_name()[0])
-			{
-				// Character has a name; put it in our
-				// table of named characters for later
-				// lookup.
-				tu_string	char_name(c->get_name());
-
-				// SWF seems to allow multiple
-				// characters with the same name!
-
-				array<int>*	ch_array = NULL;
-				m_named_characters.get(char_name, &ch_array);
-				if (ch_array == NULL)
-				{
-					ch_array = new array<int>;
-					m_named_characters.add(char_name, ch_array);
-				}
-				ch_array->push_back(character_id);
-			}
-#endif // 0
 		}
 
 		character_def*	get_character_def(int character_id)
@@ -733,13 +711,6 @@ namespace gameswf
 		{
 			return m_movie->get_character(character_id);
 		}
-
-#if 0
-		void	get_named_characters(const char* name, array<int>** characters)
-		{
-			m_def->m_named_characters.get(name, characters);
-		}
-#endif // 0
 
 		void	set_background_color(const rgba& color)
 		{
@@ -2008,59 +1979,13 @@ namespace gameswf
 
 		virtual bool	get_accept_anim_moves() const { return m_accept_anim_moves; }
 
+		/* sprite_instance */
 		virtual void	advance(float delta_time)
 		{
 			assert(m_def && m_root);
 
 			// mouse drag.
 			character::do_mouse_drag();
-#if 0
-			drag_state	st;
-			get_drag_state(&st);
-			if (this == st.m_character)
-			{
-				// We're being dragged!
-				int	x, y, buttons;
-				m_root->get_mouse_state(&x, &y, &buttons);
-
-				point	world_mouse(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
-				if (st.m_bound)
-				{
-					// Clamp mouse coords within a defined rect.
-					world_mouse.m_x =
-						fclamp(world_mouse.m_x, st.m_bound_x0, st.m_bound_x1);
-					world_mouse.m_y =
-						fclamp(world_mouse.m_y, st.m_bound_y0, st.m_bound_y1);
-				}
-
-				if (st.m_lock_center)
-				{
-					matrix	world_mat = get_world_matrix();
-					point	local_mouse;
-					world_mat.transform_by_inverse(&local_mouse, world_mouse);
-
-					matrix	parent_world_mat;
-					if (m_parent)
-					{
-						parent_world_mat = m_parent->get_world_matrix();
-					}
-
-					point	parent_mouse;
-					parent_world_mat.transform_by_inverse(&parent_mouse, world_mouse);
-					
-					// Place our origin so that it coincides with the mouse coords
-					// in our parent frame.
-					matrix	local = get_matrix();
-					local.m_[0][2] = parent_mouse.m_x;
-					local.m_[1][2] = parent_mouse.m_y;
-					set_matrix(local);
-				}
-				else
-				{
-					// Implement relative drag...
-				}
-			}
-#endif // 0
 
 			m_time_remainder += delta_time;
 			const float	frame_time = 1.0f / m_root->get_frame_rate();
@@ -2085,6 +2010,9 @@ namespace gameswf
 				{
 					execute_frame_tags(m_current_frame);
 
+					// Dispatch onEnterFrame event.
+					on_enter_frame();
+
 					// Perform frame actions
 					do_actions();
 				}
@@ -2095,7 +2023,7 @@ namespace gameswf
 				// Advance everything in the display list.
 				m_display_list.advance(frame_time);
 
-				// Perform button actions
+				// Perform button actions (????)
 				do_actions();
 
 
@@ -2241,6 +2169,20 @@ namespace gameswf
 			else
 			{
 				log_error("error: movie_impl::goto_labeled_frame('%s') unknown label\n", label);
+			}
+		}
+
+		
+		/* sprite_instance */
+		void	on_enter_frame()
+		// Dispatch onEnterFrame handler, if any.
+		{
+			static tu_string	s_enter_frame_method_name("onEnterFrame");
+
+			as_value	method;
+			if (get_member(s_enter_frame_method_name, &method))
+			{
+				call_method0(method, &m_as_environment, this);
 			}
 		}
 
@@ -2553,7 +2495,7 @@ namespace gameswf
 			}
 			else if (name == "_currentframe")
 			{
-				val->set(m_current_frame);
+				val->set(m_current_frame + 1);
 				return true;
 			}
 			else if (name == "_totalframes")
@@ -2687,7 +2629,7 @@ namespace gameswf
 			for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 			{
 				character*	ch = m_display_list.get_character(i);
-				if (strcmp(ch->get_name(), name) == 0)
+				if (name == ch->get_name())
 				{
 					// Found one.
 					if (ch->get_self_value(val))

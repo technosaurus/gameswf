@@ -20,6 +20,50 @@
 #endif // _WIN32
 
 
+
+// NOTES:
+//
+// Buttons
+// on (press)                 onPress
+// on (release)               onRelease
+// on (releaseOutside)        onReleaseOutside
+// on (rollOver)              onRollOver
+// on (rollOut)               onRollOut
+// on (dragOver)              onDragOver
+// on (dragOut)               onDragOut
+// on (keyPress"...")         onKeyDown, onKeyUp      <----- IMPORTANT
+//
+// Sprites
+// onClipEvent (load)         onLoad
+// onClipEvent (unload)       onUnload                Hm.
+// onClipEvent (enterFrame)   onEnterFrame
+// onClipEvent (mouseDown)    onMouseDown
+// onClipEvent (mouseUp)      onMouseUp
+// onClipEvent (mouseMove)    onMouseMove
+// onClipEvent (keyDown)      onKeyDown
+// onClipEvent (keyUp)        onKeyUp
+// onClipEvent (data)         onData
+
+// Text fields have event handlers too!
+
+// Sprite built in methods:
+// play()
+// stop()
+// nextFrame()
+// startDrag()
+// getURL()
+// getBytesLoaded()
+// getBytesTotal()
+
+// Built-in functions: (do these actually exist in the VM, or are they just opcodes?)
+// Number()
+// String()
+
+//
+// Global scope called "_global", I think this is just a generic empty
+// mutable object.
+
+
 namespace gameswf
 {
 	//
@@ -41,18 +85,22 @@ namespace gameswf
 
 	struct as_as_function
 	{
-		array<tu_string>	m_args;
 		action_buffer*	m_action_buffer;
+		as_environment*	m_env;	// @@ need ref-counting here!!!
+		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
 		int	m_start_pc;
 		int	m_length;
+		array<tu_string>	m_args;
 
-		as_as_function(action_buffer* ab, int start)
+		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
 			:
 			m_action_buffer(ab),
+			m_env(env),
 			m_start_pc(start),
 			m_length(0)
 		{
 			assert(m_action_buffer);
+			assert(m_env);
 		}
 
 		void	add_arg(const char* name)
@@ -60,29 +108,29 @@ namespace gameswf
 			m_args.push_back(name);
 		}
 
-		void	set_length(int len) { assert(len > 0); m_length = len; }
+		void	set_length(int len) { assert(len >= 0); m_length = len; }
 
-		void	operator()(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+		void	operator()(as_value* result, void* this_ptr, as_environment* caller_env, int nargs, int first_arg)
 		// Dispatch.
 		{
-			assert(env);
+			assert(m_env);
 
 			// Set up local stack frame, for parameters and locals.
-			int	local_stack_top = env->get_local_frame_top();
-			env->add_frame_barrier();
+			int	local_stack_top = m_env->get_local_frame_top();
+			m_env->add_frame_barrier();
 
 			// Push the arguments onto the local frame.
 			int	args_to_pass = imin(nargs, m_args.size());
 			for (int i = 0; i < args_to_pass; i++)
 			{
-				env->add_local(m_args[i], env->bottom(first_arg + i));
+				m_env->add_local(m_args[i], caller_env->bottom(first_arg + i));
 			}
 
 			// Execute the actions.
-			m_action_buffer->execute(env, m_start_pc, m_length, result);
+			m_action_buffer->execute(m_env, m_start_pc, m_length, result, m_with_stack);
 
 			// Clean up stack frame.
-			env->set_local_frame_top(local_stack_top);
+			m_env->set_local_frame_top(local_stack_top);
 		}
 	};
 
@@ -92,8 +140,8 @@ namespace gameswf
 	//
 
 
-	as_value call_method(
-		const as_value& method, // const tu_string& name,
+	as_value	call_method(
+		const as_value& method,
 		as_environment* env,
 		as_object_interface* this_ptr,
 		int nargs,
@@ -119,6 +167,16 @@ namespace gameswf
 
 		return val;
 	}
+
+
+	as_value	call_method0(
+		const as_value& method,
+		as_environment* env,
+		as_object_interface* this_ptr)
+	{
+		return call_method(method, env, this_ptr, 0, env->get_top_index());
+	}
+		
 
 
 	//
@@ -235,8 +293,8 @@ namespace gameswf
 		{
 			if (code < 0 || code >= key::KEYCOUNT) return false;
 
-			int	byte_index = code / 8;
-			int	bit_index = code - byte_index * 8;
+			int	byte_index = code >> 3;
+			int	bit_index = code - (byte_index << 3);
 			int	mask = 1 << bit_index;
 
 			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
@@ -257,8 +315,8 @@ namespace gameswf
 
 			m_last_key_pressed = code;
 
-			int	byte_index = code / 8;
-			int	bit_index = code - byte_index * 8;
+			int	byte_index = code >> 3;
+			int	bit_index = code - (byte_index << 3);
 			int	mask = 1 << bit_index;
 
 			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
@@ -273,8 +331,8 @@ namespace gameswf
 		{
 			if (code < 0 || code >= key::KEYCOUNT) return;
 
-			int	byte_index = code / 8;
-			int	bit_index = code - byte_index * 8;
+			int	byte_index = code >> 3;
+			int	bit_index = code - (byte_index << 3);
 			int	mask = 1 << bit_index;
 
 			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
@@ -490,6 +548,7 @@ namespace gameswf
 		{
 			s_inited = true;
 
+			s_built_ins.add("_global", new as_object);
 			math_init();
 			key_init();
 		}
@@ -686,13 +745,19 @@ namespace gameswf
 		int	local_stack_top = env->get_local_frame_top();
 		env->add_frame_barrier();
 
-		execute(env, 0, m_buffer.size(), NULL);
+		array<with_stack_entry>	empty_with_stack;
+		execute(env, 0, m_buffer.size(), NULL, empty_with_stack);
 
 		env->set_local_frame_top(local_stack_top);
 	}
 
 
-	void	action_buffer::execute(as_environment* env, int start_pc, int exec_bytes, as_value* retval)
+	void	action_buffer::execute(
+		as_environment* env,
+		int start_pc,
+		int exec_bytes,
+		as_value* retval,
+		const array<with_stack_entry>& initial_with_stack)
 	// Interpret the specified subset of the actions in our
 	// buffer.  Caller is responsible for cleaning up our local
 	// stack frame (it may have passed its arguments in via the
@@ -701,6 +766,8 @@ namespace gameswf
 		action_init();	// @@ stick this somewhere else; need some global static init function
 
 		assert(env);
+
+		array<with_stack_entry>	with_stack(initial_with_stack);
 
 		movie*	original_target = env->get_target();
 		UNUSED(original_target);		// Avoid warnings.
@@ -715,6 +782,14 @@ namespace gameswf
 
 		for (int pc = start_pc; pc < stop_pc; )
 		{
+			// Cleanup any expired "with" blocks.
+			while (with_stack.size() > 0
+			       && pc >= with_stack.back().m_block_end_pc)
+			{
+				with_stack.resize(with_stack.size() - 1);
+			}
+
+			// Get the opcode.
 			int	action_id = m_buffer[pc];
 			if ((action_id & 0x80) == 0)
 			{
@@ -847,12 +922,12 @@ namespace gameswf
 				case 0x1C:	// get variable
 				{
 					as_value	varname = env->pop();
-					env->push(env->get_variable(varname.to_tu_string()));
+					env->push(env->get_variable(varname.to_tu_string(), with_stack));
 					break;
 				}
 				case 0x1D:	// set variable
 				{
-					env->set_variable(env->top(1).to_tu_string(), env->top(0));
+					env->set_variable(env->top(1).to_tu_string(), env->top(0), with_stack);
 					env->drop(2);
 					break;
 				}
@@ -1326,6 +1401,18 @@ namespace gameswf
 				case 0x8D:	// wait for frame expression (?)
 					break;
 
+				case 0x94:	// with
+				{
+					if (with_stack.size() < 8)
+					{
+ 						int	block_length = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+ 						int	block_end = next_pc + length;
+ 						as_object_interface*	with_obj = env->top(0).to_object();
+ 						with_stack.push_back(with_stack_entry(with_obj, block_end));
+					}
+					env->drop(1);
+					break;
+				}
 				case 0x96:	// push_data
 				{
 					int i = pc;
@@ -1455,7 +1542,8 @@ namespace gameswf
 
 				case 0x9B:	// declare function
 				{
-					as_as_function*	func = new as_as_function(this, next_pc);	// @@ need ref count
+					// @@ need ref count on this and env!  On objects entries in with_stack too!
+					as_as_function*	func = new as_as_function(this, env, next_pc, with_stack);
 
 					int	i = pc;
 					i += 3;
@@ -1560,9 +1648,27 @@ namespace gameswf
 		{
 			m_string_value = "<undefined>";
 		}
+		else if (m_type == OBJECT)
+		{
+			char buffer[50];
+			snprintf(buffer, 50, "<object 0x%X>", m_object_value);
+			m_string_value = buffer;
+		}
+		else if (m_type == C_FUNCTION)
+		{
+			char buffer[50];
+			snprintf(buffer, 50, "<c_function 0x%X>", m_c_function_value);
+			m_string_value = buffer;
+		}
+		else if (m_type == AS_FUNCTION)
+		{
+			char buffer[50];
+			snprintf(buffer, 50, "<as_function 0x%X>", m_as_function_value);
+			m_string_value = buffer;
+		}
 		else
 		{
-			m_string_value = "<error -- invalid type>";
+			m_string_value = "<bad type>";
 			assert(0);
 		}
 		
@@ -1702,7 +1808,7 @@ namespace gameswf
 	//
 
 
-	as_value	as_environment::get_variable(const tu_string& varname) const
+	as_value	as_environment::get_variable(const tu_string& varname, const array<with_stack_entry>& with_stack) const
 	// Return the value of the given var, if it's defined.
 	{
 		// Path lookup rigamarole.
@@ -1711,7 +1817,7 @@ namespace gameswf
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
 		{
-			target = find_target(path);
+			target = find_target(path);	// @@ Use with_stack here too???  Need to test.
 
 			as_value	val;
 			target->get_member(var, &val);
@@ -1719,17 +1825,32 @@ namespace gameswf
 		}
 		else
 		{
-			return this->get_variable_raw(varname);
+			return this->get_variable_raw(varname, with_stack);
 		}
 	}
 
 
-	as_value	as_environment::get_variable_raw(const tu_string& varname) const
+	as_value	as_environment::get_variable_raw(
+		const tu_string& varname,
+		const array<with_stack_entry>& with_stack) const
 	// varname must be a plain variable name; no path parsing.
 	{
 		assert(strchr(varname.c_str(), ':') == NULL);
 		assert(strchr(varname.c_str(), '/') == NULL);
 		assert(strchr(varname.c_str(), '.') == NULL);
+
+		as_value	val;
+
+		// Check the with-stack.
+		for (int i = with_stack.size() - 1; i >= 0; i--)
+		{
+			as_object_interface*	obj = with_stack[i].m_object;
+			if (obj && obj->get_member(varname, &val))
+			{
+				// Found the var in this context.
+				return val;
+			}
+		}
 
 		// Check locals.
 		int	local_index = find_local(varname);
@@ -1739,10 +1860,8 @@ namespace gameswf
 			return m_local_frames[local_index].m_value;
 		}
 
-		as_value	val;
-
 		// Check movie members.
-		if (m_target->get_member(varname.c_str(), &val))
+		if (m_target->get_member(varname, &val))
 		{
 			return val;
 		}
@@ -1763,7 +1882,10 @@ namespace gameswf
 	}
 
 
-	void	as_environment::set_variable(const tu_string& varname, const as_value& val)
+	void	as_environment::set_variable(
+		const tu_string& varname,
+		const as_value& val,
+		const array<with_stack_entry>& with_stack)
 	// Given a path to variable, set its value.
 	{
 		IF_VERBOSE_DEBUG(log_msg("-------------- %s = %s\n", varname.c_str(), val.to_string()));//xxxxxxxxxx
@@ -1782,14 +1904,30 @@ namespace gameswf
 		}
 		else
 		{
-			this->set_variable_raw(varname, val);
+			this->set_variable_raw(varname, val, with_stack);
 		}
 	}
 
 
-	void	as_environment::set_variable_raw(const tu_string& varname, const as_value& val)
+	void	as_environment::set_variable_raw(
+		const tu_string& varname,
+		const as_value& val,
+		const array<with_stack_entry>& with_stack)
 	// No path rigamarole.
 	{
+		// Check the with-stack.
+		for (int i = with_stack.size() - 1; i >= 0; i--)
+		{
+			as_object_interface*	obj = with_stack[i].m_object;
+			as_value	dummy;
+			if (obj && obj->get_member(varname, &dummy))
+			{
+				// This object has the member; so set it here.
+				obj->set_member(varname, val);
+				return;
+			}
+		}
+
 		// Check locals.
 		int	local_index = find_local(varname);
 		if (local_index >= 0)

@@ -7,3 +7,26 @@ legalities before putting them in a game:
 
 http://moorstation.org/typoasis/typoasis1.htm
 
+
+ActionScript Notes
+==================
+
+* As far as I can determine, "goto N" means the play/move/remove tags
+  have been executed as if we played them from frame 1 through frame
+  N.  No actions or other things get executed.  So it's just a way of
+  updating the display list according to the standard timeline.  But
+  there is persistent state for objects currently on the display list
+  -- if a object has been modified via ActionScript (edit_text
+  contents, or the matrix of a movie clip), and that object is not
+  removed in any frame between the current frame and the target frame,
+  then that object's state is unchanged when we goto N.
+
+  Also, once an object's matrix is touched by ActionScript, it ignores
+  subsequent move_object tags from the timeline.
+
+
+* ActionScript identifiers are NOT CASE SENSITIVE???
+
+* null and undefined are distinct???  Flash help says null is for
+  missing parameters or return values, while undefined is for things
+  that haven't been assigned yet.
