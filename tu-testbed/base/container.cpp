@@ -7,6 +7,7 @@
 
 
 #include "base/container.h"
+#include "base/utf8.h"
 
 
 void	tu_string::resize(int new_size)
@@ -77,6 +78,54 @@ void	tu_string::resize(int new_size)
 			m_heap.m_buffer[new_size] = 0;
 		}
 	}
+}
+
+
+/*static*/ void	tu_string::encode_utf8_from_wchar(tu_string* result, const wchar_t* wstr)
+{
+	const wchar_t*	in = wstr;
+
+	// First pass: compute the necessary string length.
+	int	bytes_needed = 0;
+	char	dummy[10];
+	int	offset;
+	for (;;)
+	{
+		Uint32	uc = *in++;
+		offset = 0;
+		utf8::encode_unicode_character(dummy, &offset, uc);
+		bytes_needed += offset;
+
+		assert(offset <= 6);
+
+		if (uc == 0)
+		{
+			break;
+		}
+	}
+
+	// Second pass: transfer the data.
+	result->resize(bytes_needed);
+	in = wstr;
+	char*	out = &((*result)[0]);
+	offset = 0;
+	for (;;)
+	{
+		assert(offset < bytes_needed);
+
+		Uint32	uc = *in++;
+		utf8::encode_unicode_character(out, &offset, uc);
+
+		assert(offset <= bytes_needed);
+
+		if (uc == 0)
+		{
+			break;
+		}
+	}
+
+	assert(offset == bytes_needed);
+	assert((*result)[offset - 1] == 0);
 }
 
 

@@ -278,6 +278,16 @@ namespace gameswf
 	}
 
 
+	const char*	call_method_parsed(as_environment* env, as_object_interface* this_ptr, const wchar_t* method_call)
+	// Big fat slow stringified interface for calling ActionScript.
+	// Handy for external binding.
+	{
+		tu_string	utf8_method_call;
+		tu_string::encode_utf8_from_wchar(&utf8_method_call, method_call);
+
+		return call_method_parsed(env, this_ptr, utf8_method_call.c_str());
+	}
+
 
 	//
 	// Built-in objects
