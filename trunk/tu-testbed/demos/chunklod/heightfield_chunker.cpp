@@ -1444,14 +1444,16 @@ namespace mesh {
 		SDL_WriteLE16(rw, y);
 		SDL_WriteLE16(rw, z);
 
-		// Morph info.  Should work out to 0 if the vert is not a morph vert.
+		// Morph info.  Calculate the difference between the
+		// vert height, and the height of the same spot in the
+		// next lower-LOD mesh.
 		Sint16	lerped_height;
 		if (v.special) {
 			lerped_height = y;	// special verts don't morph.
 		} else {
 			lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
 		}
-		int	morph_delta = (lerped_height - hf.height(v.x, v.z));
+		int	morph_delta = (lerped_height - y);
 		SDL_WriteLE16(rw, (Sint16) morph_delta);
 		assert(morph_delta == (Sint16) morph_delta);	// Watch out for overflow.
 	}
@@ -1482,7 +1484,7 @@ namespace mesh {
 
 		vec3	compress_factor;
 		{for (int i = 0; i < 3; i++) {
-			compress_factor.set(i, (1 << 14) / fmax(1.0, box_extent.get(i) + 1e-6f));	// the 1e-6 expands the box very slightly, so adjacent chunks overlap a tiny bit.
+			compress_factor.set(i, (1 << 14) / fmax(1.0, box_extent.get(i)));
 		}}
 
 		// Make sure the vertex buffer is not too big.
@@ -1611,3 +1613,10 @@ namespace mesh {
 	}
 };
 
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

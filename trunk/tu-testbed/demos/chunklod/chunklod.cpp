@@ -211,7 +211,8 @@ struct lod_chunk {
 		box_center->x() = (m_x + 0.5f) * (1 << m_level) * tree.m_base_chunk_dimension;
 		box_center->z() = (m_z + 0.5f) * (1 << m_level) * tree.m_base_chunk_dimension;
 
-		box_extent->x() = (1 << m_level) * tree.m_base_chunk_dimension * 0.5f;
+		const float	EXTRA_BOX_SIZE = 1e-3f;	// this is to make chunks overlap by about a millimeter, to avoid cracks.
+		box_extent->x() = (1 << m_level) * tree.m_base_chunk_dimension * 0.5f + EXTRA_BOX_SIZE;
 		box_extent->z() = box_extent->get_x();
 	}
 };
