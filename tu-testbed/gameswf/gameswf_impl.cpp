@@ -2539,8 +2539,8 @@ namespace gameswf
 	// instance is created to live (temporarily) on some level on
 	// the parent movie's display list.
 	{
-#ifdef NDEBUG
-		movie_definition*	mdef = m->get_movie_definition();
+#ifndef NDEBUG
+		movie_definition*	mdef = parent->get_movie_definition();
 		assert(mdef == this
 		       || mdef == m_movie_def);
 #endif // NDEBUG
