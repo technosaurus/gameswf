@@ -24,6 +24,8 @@ HEIGHTFIELD CHUNKER
 
 * automatically determine a good tree depth.
 
+* percentage done estimate
+
 * support multiple input datasets at different resolutions, and be
   able to specify variable LOD.
 
@@ -35,6 +37,11 @@ HEIGHTFIELD CHUNKER
 
 CHUNKDEMO
 
+* Command-line args for the starting viewpoint & direction
+
+* Delve into the window bit depth some more -- I don't think we're
+  always actually getting 32 bits when it claims we are.
+
 * IMPORTANT OPTIMIZATION TARGET:
   wglShareLists/whatever-the-X-equivalent is, so that the textures can
   be built by the loader thread.  Short of that, maybe a homemade
@@ -42,13 +49,8 @@ CHUNKDEMO
   As it is, even with threading, there are still some annoying
   framerate hitches that are not entirely necessary.
 
-* Really simple free-list for reusing texture objects!
-
 * Investigate the growing heap -- Bug?  Fragmentation?
   Win32-specific?
-
-* deal with .tqt of a different depth than the .chu (just truncate
-  .tqt queries)
 
 * try a vertex shader for lerping.  (NOTE: The demo can someimes
   achieve near-maximum triangle throughput on my 1GHz machine, even
@@ -93,3 +95,7 @@ HEIGHTFIELD SHADER
 
 * Better lighting, with shadows, and possibly some crude secondary
   lighting.
+
+MAKETQT
+
+* Try higher fidelity base-level tiles

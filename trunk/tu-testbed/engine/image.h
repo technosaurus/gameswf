@@ -17,6 +17,10 @@ struct SDL_RWops;
 namespace image
 {
 	// 24-bit RGB image.  Packed data, red byte first (RGBRGB...)
+	//
+	// We need this class because SDL_Surface chokes on any image
+	// that has more than 64KB per row, due to a Uint16 pitch
+	// member.
 	struct rgb {
 		rgb(int width, int height);
 		~rgb();
@@ -46,9 +50,14 @@ namespace image
 
 	rgb*	read_jpeg(SDL_RWops* in);
 
-	// Makes an SDL_Surface from the given image data.  DOES NOT
-	// COPY image's DATA -- INSTEAD, INVALIDATES image!!!
+	// Makes an SDL_Surface from the given image data.
+	//
+	// DELETES image!!!
 	SDL_Surface*	create_SDL_Surface(rgb* image);
+
+	// Fast, in-place resample.  For making mip-maps.  Munges the
+	// input image to produce the output image.
+	void	make_next_miplevel(SDL_Surface* image);
 };
 
 

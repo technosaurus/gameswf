@@ -18,20 +18,20 @@ class	vec3
 {
 public:
 	vec3() {}
-	vec3(float X, float Y, float Z) { m[0] = X; m[1] = Y; m[2] = Z; }
-	vec3(const vec3& v) { m[0] = v.m[0]; m[1] = v.m[1]; m[2] = v.m[2]; }
+	vec3(float _X, float _Y, float _Z) { x = _X; y = _Y; z = _Z; }
+	vec3(const vec3& v) { x = v.x; y = v.y; z = v.z; }
 
-	operator	const float*() const { return &m[0]; }
+	operator	const float*() const { return &x; }
 			
-	float	get(int element) const { return m[element]; }
-	void	set(int element, float NewValue) { m[element] = NewValue; }
-	float	get_x() const { return m[0]; }
-	float	get_y() const { return m[1]; }
-	float	get_z() const { return m[2]; }
-	float&	x() { return m[0]; }
-	float&	y() { return m[1]; }
-	float&	z() { return m[2]; }
-	void	set_xyz(float newx, float newy, float newz) { m[0] = newx; m[1] = newy; m[2] = newz; }
+	float	get(int element) const { return (&x)[element]; }
+	void	set(int element, float NewValue) { (&x)[element] = NewValue; }
+	float	get_x() const { return x; }
+	float	get_y() const { return y; }
+	float	get_z() const { return z; }
+//	float&	x() { return m[0]; }
+//	float&	y() { return m[1]; }
+//	float&	z() { return m[2]; }
+	void	set_xyz(float newx, float newy, float newz) { x = newx; y = newy; z = newz; }
 	
 	vec3	operator+(const vec3& v) const;
 	vec3	operator-(const vec3& v) const;
@@ -42,7 +42,7 @@ public:
 	vec3	cross(const vec3& v) const;
 
 	vec3&	normalize();
-	vec3&	operator=(const vec3& v) { m[0] = v.m[0]; m[1] = v.m[1]; m[2] = v.m[2]; return *this; }
+	vec3&	operator=(const vec3& v) { x = v.x; y = v.y; z = v.z; return *this; }
 	vec3&	operator+=(const vec3& v);
 	vec3& operator-=(const vec3& v);
 	vec3&	operator*=(float f);
@@ -64,8 +64,9 @@ public:
 	// Some handy vector constants.
 	const static vec3	zero, x_axis, y_axis, z_axis;
 
-private:
-	float	m[3];
+	float	x, y, z;
+//private:
+//	float	m[3];
 };
 
 
@@ -79,9 +80,9 @@ inline float	vec3::operator*(const vec3& v) const
 // Dot product.
 {
 	float	result;
-	result = m[0] * v.m[0];
-	result += m[1] * v.m[1];
-	result += m[2] * v.m[2];
+	result = x * v.x;
+	result += y * v.y;
+	result += z * v.z;
 	return result;
 }
 
@@ -89,9 +90,9 @@ inline float	vec3::operator*(const vec3& v) const
 inline vec3&	vec3::operator+=(const vec3& v)
 // Adds a vec3 to *this.
 {
-	m[0] += v.m[0];
-	m[1] += v.m[1];
-	m[2] += v.m[2];
+	x += v.x;
+	y += v.y;
+	z += v.z;
 	return *this;
 }
 
@@ -99,9 +100,9 @@ inline vec3&	vec3::operator+=(const vec3& v)
 inline vec3&	vec3::operator-=(const vec3& v)
 // Subtracts a vec3 from *this.
 {
-	m[0] -= v.m[0];
-	m[1] -= v.m[1];
-	m[2] -= v.m[2];
+	x -= v.x;
+	y -= v.y;
+	z -= v.z;
 	return *this;
 }
 
@@ -110,8 +111,6 @@ inline vec3&	vec3::operator-=(const vec3& v)
 
 
 
-
-extern vec3	ZeroVector, XAxis, YAxis, ZAxis;
 
 
 class	quaternion;
@@ -157,7 +156,7 @@ private:
 
 class quaternion {
 public:
-	quaternion() : S(1), V(ZeroVector) {}
+	quaternion() : S(1), V(vec3::zero) {}
 	quaternion(const quaternion& q) : S(q.S), V(q.V) {}
 	quaternion(float s, const vec3& v) : S(s), V(v) {}
 

@@ -1515,7 +1515,8 @@ namespace mesh {
 		// Make sure the vertex buffer is not too big.
 		if (vertices.size() >= (1 << 16)) {
 			printf("error: chunk contains > 64K vertices.  Try processing again, but use\n"
-				   "the -d <depth> option to make a deeper chunk tree.\n");
+			       "the -d <depth> option to make a deeper chunk tree.\n"
+			       "Or, maybe the height scale is too big; use the -v option to scale it down.\n");
 			exit(1);
 		}
 

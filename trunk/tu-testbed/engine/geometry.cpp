@@ -18,9 +18,9 @@ vec3	vec3::operator+(const vec3& v) const
 // Adds two vec3s.  Creates a temporary for the return value.
 {
 	vec3	result;
-	result.m[0] = m[0] + v.m[0];
-	result.m[1] = m[1] + v.m[1];
-	result.m[2] = m[2] + v.m[2];
+	result.x = x + v.x;
+	result.y = y + v.y;
+	result.z = z + v.z;
 	return result;
 }
 
@@ -29,9 +29,9 @@ vec3	vec3::operator-(const vec3& v) const
 // Subtracts two vectors.  Creates a temporary for the return value.
 {
 	vec3	result;
-	result.m[0] = m[0] - v.m[0];
-	result.m[1] = m[1] - v.m[1];
-	result.m[2] = m[2] - v.m[2];
+	result.x = x - v.x;
+	result.y = y - v.y;
+	result.z = z - v.z;
 	return result;
 }
 
@@ -40,9 +40,9 @@ vec3	vec3::operator-() const
 // Returns the negative of *this.  Creates a temporary for the return value.
 {
 	vec3	result;
-	result.m[0] = -m[0];
-	result.m[1] = -m[1];
-	result.m[2] = -m[2];
+	result.x = -x;
+	result.y = -y;
+	result.z = -z;
 	return result;
 }
 
@@ -54,9 +54,9 @@ float	vec3::operator*(const vec3& v) const
 // Dot product.
 {
 	float	result;
-	result = m[0] * v.m[0];
-	result += m[1] * v.m[1];
-	result += m[2] * v.m[2];
+	result = x * v.x;
+	result += y * v.y;
+	result += z * v.z;
 	return result;
 }
 
@@ -64,9 +64,9 @@ float	vec3::operator*(const vec3& v) const
 vec3&	vec3::operator+=(const vec3& v)
 // Adds a vec3 to *this.
 {
-	m[0] += v.m[0];
-	m[1] += v.m[1];
-	m[2] += v.m[2];
+	x += v.x;
+	y += v.y;
+	z += v.z;
 	return *this;
 }
 
@@ -74,9 +74,9 @@ vec3&	vec3::operator+=(const vec3& v)
 vec3&	vec3::operator-=(const vec3& v)
 // Subtracts a vec3 from *this.
 {
-	m[0] -= v.m[0];
-	m[1] -= v.m[1];
-	m[2] -= v.m[2];
+	x -= v.x;
+	y -= v.y;
+	z -= v.z;
 	return *this;
 }
 
@@ -88,9 +88,9 @@ vec3	vec3::operator*(float f) const
 // Scale a vec3 by a scalar.  Creates a temporary for the return value.
 {
 	vec3	result;
-	result.m[0] = m[0] * f;
-	result.m[1] = m[1] * f;
-	result.m[2] = m[2] * f;
+	result.x = x * f;
+	result.y = y * f;
+	result.z = z * f;
 	return result;
 }
 
@@ -99,9 +99,9 @@ vec3	vec3::cross(const vec3& v) const
 // Cross product.  Creates a temporary for the return value.
 {
 	vec3	result;
-	result.m[0] = m[1] * v.m[2] - m[2] * v.m[1];
-	result.m[1] = m[2] * v.m[0] - m[0] * v.m[2];
-	result.m[2] = m[0] * v.m[1] - m[1] * v.m[0];
+	result.x = y * v.z - z * v.y;
+	result.y = z * v.x - x * v.z;
+	result.z = x * v.y - y * v.x;
 	return result;
 }
 
@@ -112,9 +112,9 @@ vec3&	vec3::normalize()
 	float	f = magnitude();
 	if (f < 0.0000001) {
 		// Punt.
-		m[0] = 1;
-		m[1] = 0;
-		m[2] = 0;
+		x = 1;
+		y = 0;
+		z = 0;
 	} else {
 		this->operator/=(f);
 	}
@@ -125,9 +125,9 @@ vec3&	vec3::normalize()
 vec3&	vec3::operator*=(float f)
 // Scales *this by the given scalar.
 {
-	m[0] *= f;
-	m[1] *= f;
-	m[2] *= f;
+	x *= f;
+	y *= f;
+	z *= f;
 	return *this;
 }
 
@@ -142,32 +142,33 @@ float	vec3::magnitude() const
 float	vec3::sqrmag() const
 // Returns the square of the length of *this.
 {
-	return m[0]*m[0] + m[1]*m[1] + m[2]*m[2];
+	return x * x + y * y * z * z;
 }
 
 
 void	vec3::read(SDL_RWops* in)
 // Read our values from the given stream.
 {
-	m[0] = ReadFloat32(in);
-	m[1] = ReadFloat32(in);
-	m[2] = ReadFloat32(in);
+	x = ReadFloat32(in);
+	y = ReadFloat32(in);
+	z = ReadFloat32(in);
 }
 
 
 void	vec3::write(SDL_RWops* out)
 // Write our contents to the given stream.
 {
-	WriteFloat32(out, m[0]);
-	WriteFloat32(out, m[1]);
-	WriteFloat32(out, m[2]);
+	WriteFloat32(out, x);
+	WriteFloat32(out, y);
+	WriteFloat32(out, z);
 }
 
 
 bool	vec3::checknan() const
 // Returns true if any component is nan.
 {
-	if (fabs(m[0]) > 10000000 || fabs(m[1]) > 10000000 || fabs(m[2]) > 10000000) {
+	if (x != x || y != y || z != z) {
+//	if (fabs(x) > 10000000 || fabs(y) > 10000000 || fabs(z) > 10000000) {
 		return true;//xxxxxxx
 	}
 //	if (_isnan(m[0]) || _isnan(m[1]) || _isnan(m[2])) {
@@ -177,22 +178,16 @@ bool	vec3::checknan() const
 }
 
 
-vec3	ZeroVector(0, 0, 0);
-vec3	XAxis(1, 0, 0);
-vec3	YAxis(0, 1, 0);
-vec3	ZAxis(0, 0, 1);
-
-
 // class matrix
 
 
 void	matrix::Identity()
 // Sets *this to be an identity matrix.
 {
-	SetColumn(0, XAxis);
-	SetColumn(1, YAxis);
-	SetColumn(2, ZAxis);
-	SetColumn(3, ZeroVector);
+	SetColumn(0, vec3::x_axis);
+	SetColumn(1, vec3::y_axis);
+	SetColumn(2, vec3::z_axis);
+	SetColumn(3, vec3::zero);
 }
 
 
@@ -482,7 +477,7 @@ quaternion&	quaternion::normalize()
 	} else {
 		// Quaternion is messed up.  Turn it into a null rotation.
 		S = 1;
-		V = ZeroVector;
+		V = vec3::zero;
 	}
 
 	return *this;

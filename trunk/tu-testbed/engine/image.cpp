@@ -130,8 +130,9 @@ namespace image
 
 
 	SDL_Surface*	create_SDL_Surface(rgb* image)
-	// Steal *image's data to create an SDL_Surface.  *image is
-	// invalidated.
+	// Steal *image's data to create an SDL_Surface.
+	//
+	// DELETES image!!!
 	{
 		assert(image->m_pitch < 65536);	// SDL_Surface only uses Uint16 for pitch!!!
 
@@ -147,6 +148,7 @@ namespace image
 		image->m_height = 0;
 		image->m_width = 0;
 		image->m_pitch = 0;
+		delete image;
 
 		assert(s->pixels);
 		assert(s->format->BytesPerPixel == 3);
@@ -155,6 +157,55 @@ namespace image
 		return s;
 	}
 
+
+	void	make_next_miplevel(SDL_Surface* image)
+	// Fast, in-place resample.  For making mip-maps.  Munges the
+	// input image to produce the output image.
+	{
+		assert(image->pixels);
+		assert(image->format->BytesPerPixel == 3);
+		assert(image->format->BitsPerPixel == 24);
+
+		int	new_w = image->w >> 1;
+		int	new_h = image->h >> 1;
+		if (new_w < 1) new_w = 1;
+		if (new_h < 1) new_h = 1;
+
+		if (new_w * 2 != image->w  || new_h * 2 != image->h)
+		{
+			// Image can't be shrunk along (at least) one
+			// of its dimensions, so don't bother
+			// resampling.  Technically we should, but
+			// it's pretty useless at this point.  Just
+			// change the image dimensions and leave the
+			// existing pixels.
+		}
+		else
+		{
+			// Resample.  Simple average 2x2 --> 1, in-place.
+			int	pitch = image->pitch;
+			for (int j = 0; j < new_h; j++) {
+				Uint8*	out = ((Uint8*) image->pixels) + j * (new_w * 3);
+				Uint8*	in = ((Uint8*) image->pixels) + (j << 1) * pitch;
+				for (int i = 0; i < new_w; i++) {
+					int	r, g, b;
+					r = (*(in + 0) + *(in + 3) + *(in + 0 + pitch) + *(in + 3 + pitch));
+					g = (*(in + 1) + *(in + 4) + *(in + 1 + pitch) + *(in + 4 + pitch));
+					b = (*(in + 2) + *(in + 5) + *(in + 2 + pitch) + *(in + 5 + pitch));
+					*(out + 0) = r >> 2;
+					*(out + 1) = g >> 2;
+					*(out + 2) = b >> 2;
+					out += 3;
+					in += 6;
+				}
+			}
+		}
+
+		// Munge image's members to reflect the shrunken image.
+		image->w = new_w;
+		image->h = new_h;
+		image->pitch = new_w * 3;
+	}
 };
 
 
