@@ -229,3 +229,9 @@ Renderer
     rendering
 
   * artists can work around it
+
+* Instead of using textured lines we could compute the antialiasing
+  gradients analitically, although it requires a simple fragment 
+  program and some per-edge computations:
+  
+  http://graphics.csail.mit.edu/~ericchan/articles/prefilter/
