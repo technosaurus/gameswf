@@ -485,7 +485,7 @@ int	main(int argc, char *argv[])
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
 			{
-				int	mask = 1 << (event.button.button);
+				int	mask = 1 << (event.button.button - 1);
 				if (event.button.state == SDL_PRESSED)
 				{
 					mouse_buttons |= mask;

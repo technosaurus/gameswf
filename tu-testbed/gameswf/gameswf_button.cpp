@@ -14,8 +14,256 @@
 #include "gameswf_stream.h"
 
 
+/*
+
+Observations about button & mouse behavior
+
+Entities that receive mouse events: only buttons and sprites, AFAIK
+
+When the mouse button goes down, it becomes "captured" by whatever
+element is topmost, directly below the mouse at that moment.  While
+the mouse is captured, no other entity receives mouse events,
+regardless of how the mouse or other elements move.
+
+The mouse remains captured until the mouse button goes up.  The mouse
+remains captured even if the element that captured it is removed from
+the display list.
+
+If the mouse isn't above a button or sprite when the mouse button goes
+down, then the mouse is captured by the background (i.e. mouse events
+just don't get sent, until the mouse button goes up again).
+
+Mouse events:
+
++------------------+---------------+-------------------------------------+
+| Event            | Mouse Button  | description                         |
+=========================================================================
+| onRollOver       |     up        | sent to topmost entity when mouse   |
+|                  |               | cursor initially goes over it       |
++------------------+---------------+-------------------------------------+
+| onRollOut        |     up        | when mouse leaves entity, after     |
+|                  |               | onRollOver                          |
++------------------+---------------+-------------------------------------+
+| onPress          |  up -> down   | sent to topmost entity when mouse   |
+|                  |               | button goes down.  onRollOver       |
+|                  |               | always precedes onPress.  Initiates |
+|                  |               | mouse capture.                      |
++------------------+---------------+-------------------------------------+
+| onRelease        |  down -> up   | sent to active entity if mouse goes |
+|                  |               | up while over the element           |
++------------------+---------------+-------------------------------------+
+| onDragOut        |     down      | sent to active entity if mouse      |
+|                  |               | is no longer over the entity        |
++------------------+---------------+-------------------------------------+
+| onReleaseOutside |  down -> up   | sent to active entity if mouse goes |
+|                  |               | up while not over the entity.       |
+|                  |               | onDragOut always precedes           |
+|                  |               | onReleaseOutside                    |
++------------------+---------------+-------------------------------------+
+| onDragOver       |     down      | sent to active entity if mouse is   |
+|                  |               | dragged back over it after          |
+|                  |               | onDragOut                           |
++------------------+---------------+-------------------------------------+
+
+There is always one active entity at any given time (considering NULL to
+be an active entity, representing the background, and other objects that
+don't receive mouse events).
+
+When the mouse button is up, the active entity is the topmost element
+directly under the mouse pointer.
+
+When the mouse button is down, the active entity remains whatever it
+was when the button last went down.
+
+The active entity is the only object that receives mouse events.
+
+!!! The "trackAsMenu" property alters this behavior!  If trackAsMenu
+is set on the active entity, then onReleaseOutside is filtered out,
+and onDragOver from another entity is allowed (from the background, or
+another trackAsMenu entity). !!!
+
+
+Pseudocode:
+
+active_entity = NULL
+mouse_button_state = UP
+mouse_inside_entity_state = false
+frame loop:
+  if mouse_button_state == DOWN
+
+    // Handle trackAsMenu
+    if (active_entity->trackAsMenu)
+      possible_entity = topmost entity below mouse
+      if (possible_entity != active_entity && possible_entity->trackAsMenu)
+        // Transfer to possible entity
+	active_entity = possible_entity
+	active_entity->onDragOver()
+	mouse_inside_entity_state = true;
+
+    // Handle onDragOut, onDragOver
+    if (mouse_inside_entity_state == false)
+      if (mouse is actually inside the active_entity)
+        // onDragOver
+	active_entity->onDragOver()
+        mouse_inside_entity_state = true;
+
+    else // mouse_inside_entity_state == true
+      if (mouse is actually outside the active_entity)
+        // onDragOut
+	active_entity->onDragOut()
+	mouse_inside_entity_state = false;
+
+    // Handle onRelease, onReleaseOutside
+    if (mouse button is up)
+      if (mouse_inside_entity_state)
+        // onRelease
+        active_entity->onRelease()
+      else
+        // onReleaseOutside
+	if (active_entity->trackAsMenu == false)
+          active_entity->onReleaseOutside()
+      mouse_button_state = UP
+    
+  if mouse_button_state == UP
+    new_active_entity = topmost entity below the mouse
+    if (new_active_entity != active_entity)
+      // onRollOut, onRollOver
+      active_entity->onRollOut()
+      active_entity = new_active_entity
+      active_entity->onRollOver()
+    
+    // Handle press
+    if (mouse button is down)
+      // onPress
+      active_entity->onPress()
+      mouse_inside_entity_state = true
+      mouse_button_state = DOWN
+
+*/
+
+
 namespace gameswf
 {
+	void	generate_mouse_button_events(mouse_button_state* ms)
+	{
+		smart_ptr<movie>	active_entity = ms->m_active_entity;
+		smart_ptr<movie>	topmost_entity = ms->m_topmost_entity;
+
+		if (ms->m_mouse_button_state_last == 1)
+		{
+			// Mouse button was down.
+
+			// Handle trackAsMenu dragOver
+			if (active_entity == NULL
+			    || active_entity->get_track_as_menu())
+			{
+				if (topmost_entity != NULL
+				    && topmost_entity != active_entity
+				    && topmost_entity->get_track_as_menu() == true)
+				{
+					// Transfer to topmost entity, dragOver
+					active_entity = topmost_entity;
+					active_entity->on_button_event(event_id::DRAG_OVER);
+					ms->m_mouse_inside_entity_last = true;
+				}
+			}
+
+			// Handle onDragOut, onDragOver
+			if (ms->m_mouse_inside_entity_last == false)
+			{
+				if (topmost_entity == active_entity)
+				{
+					// onDragOver
+					if (active_entity != NULL)
+					{
+						active_entity->on_button_event(event_id::DRAG_OVER);
+					}
+					ms->m_mouse_inside_entity_last = true;
+				}
+			}
+			else
+			{
+				// mouse_inside_entity_last == true
+				if (topmost_entity != active_entity)
+				{
+					// onDragOut
+					if (active_entity != NULL)
+					{
+						active_entity->on_button_event(event_id::DRAG_OUT);
+					}
+					ms->m_mouse_inside_entity_last = false;
+				}
+			}
+
+			// Handle onRelease, onReleaseOutside
+			if (ms->m_mouse_button_state_current == 0)
+			{
+				// Mouse button just went up.
+				ms->m_mouse_button_state_last = 0;
+
+				if (active_entity != NULL)
+				{
+					if (ms->m_mouse_inside_entity_last)
+					{
+						// onRelease
+						active_entity->on_button_event(event_id::RELEASE);
+					}
+					else
+					{
+						// onReleaseOutside
+						if (active_entity->get_track_as_menu() == false)
+						{
+							active_entity->on_button_event(event_id::RELEASE_OUTSIDE);
+						}
+					}
+				}
+			}
+		}
+    
+		if (ms->m_mouse_button_state_last == 0)
+		{
+			// Mouse button was up.
+
+			// New active entity is whatever is below the mouse right now.
+			if (topmost_entity != active_entity)
+			{
+				// onRollOut
+				if (active_entity != NULL)
+				{
+					active_entity->on_button_event(event_id::ROLL_OUT);
+				}
+
+				active_entity = topmost_entity;
+
+				// onRollOver
+				if (active_entity != NULL)
+				{
+					active_entity->on_button_event(event_id::ROLL_OVER);
+				}
+
+				ms->m_mouse_inside_entity_last = true;
+			}
+    
+			// mouse button press
+			if (ms->m_mouse_button_state_current == 1)
+			{
+				// onPress
+				if (active_entity != NULL)
+				{
+					active_entity->on_button_event(event_id::PRESS);
+				}
+				ms->m_mouse_inside_entity_last = true;
+				ms->m_mouse_button_state_last = 1;
+			}
+		}
+
+		// Write the (possibly modified) smart_ptr copies back
+		// into the state struct.
+		ms->m_active_entity = active_entity;
+		ms->m_topmost_entity = topmost_entity;
+	}
+
+
 	struct button_character_instance : public character
 	{
 		button_character_definition*	m_def;
@@ -87,8 +335,6 @@ namespace gameswf
 		movie_root*	get_root() { return get_parent()->get_root(); }
 		movie*	get_root_movie() { return get_parent()->get_root_movie(); }
 
-//		virtual int	get_id() const { return m_def->get_id(); }
-
 		void	restart()
 		{
 			m_last_mouse_flags = IDLE;
@@ -102,22 +348,12 @@ namespace gameswf
 		}
 
 
-		void	advance(float delta_time)
+		virtual void	advance(float delta_time)
 		{
 			// Implement mouse-drag.
 			character::do_mouse_drag();
 
 			matrix	mat = get_world_matrix();
-
-			// Get current mouse capture.
-			int id = get_parent()->get_mouse_capture();
-
-			// update state if no mouse capture or we have the capture.
-			//if (id == -1 || (!m_def->m_menu && id == get_id()))
-			if (id == -1 || id == get_id())
-			{
-				update_state(mat);
-			}
 
 			// Advance our relevant characters.
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
@@ -128,31 +364,20 @@ namespace gameswf
 					continue;
 				}
 
-				matrix	sub_matrix = mat;
+				// Matrix
+				matrix sub_matrix = mat;
 				sub_matrix.concatenate(rec.m_button_matrix);
-				if (m_mouse_state == UP)
+
+				// Advance characters that are activated by the new mouse state
+				if (((m_mouse_state == UP) && (rec.m_up)) ||
+				    ((m_mouse_state == DOWN) && (rec.m_down)) ||
+				    ((m_mouse_state == OVER) && (rec.m_over)))
 				{
-					if (rec.m_up)
-					{
-						m_record_character[i]->advance(delta_time);
-					}
-				}
-				else if (m_mouse_state == DOWN)
-				{
-					if (rec.m_down)
-					{
-						m_record_character[i]->advance(delta_time);
-					}
-				}
-				else if (m_mouse_state == OVER)
-				{
-					if (rec.m_over)
-					{
-						m_record_character[i]->advance(delta_time);
-					}
+					m_record_character[i]->advance(delta_time);
 				}
 			}}
 		}
+
 
 		void	display()
 		{
@@ -180,21 +405,14 @@ namespace gameswf
 			return (a << 2) | b;
 		}
 
-		void	update_state(const matrix& mat)
-		// Update button state.
+
+		virtual character*	get_topmost_mouse_entity(float x, float y)
+		// Return the topmost entity that the given point covers.  NULL if none.
+		// I.e. check against ourself.
 		{
-
-			// Look at the mouse state, and figure out our button state.  We want to
-			// know if the mouse is hovering over us, and whether it's clicking on us.
-			int	mx, my, mbuttons;
-			get_parent()->get_mouse_state(&mx, &my, &mbuttons);
-
-			m_last_mouse_flags = m_mouse_flags;
-			m_mouse_flags = 0;
-
-			// Find the mouse position in button-space.
-			point	mouse_position;
-			mat.transform_by_inverse(&mouse_position, point(PIXELS_TO_TWIPS(mx), PIXELS_TO_TWIPS(my)));
+			matrix	m = get_matrix();
+			point	p;
+			m.transform_by_inverse(&p, point(x, y));
 
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
@@ -205,124 +423,64 @@ namespace gameswf
 					continue;
 				}
 
-				// Find the mouse position in character-space.
-				point	sub_mouse_position;
-				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
+				// Find the mouse position in button-record space.
+				point	sub_p;
+				rec.m_button_matrix.transform_by_inverse(&sub_p, p);
 
-				if (rec.m_character_def->point_test_local(sub_mouse_position.m_x, sub_mouse_position.m_y))
+				if (rec.m_character_def->point_test_local(sub_p.m_x, sub_p.m_y))
 				{
 					// The mouse is inside the shape.
-					m_mouse_flags |= FLAG_OVER;
-					break;
+					return this;
 				}
 			}}
 
-			if (mbuttons)
+			return NULL;
+		}
+
+
+		virtual void	on_button_event(event_id event)
+		{
+			// Set our mouse state (so we know how to render).
+			switch (event.m_id)
 			{
-				// Mouse button is pressed.
-				m_mouse_flags |= FLAG_DOWN;
-			}
-
-
-			if (m_mouse_flags == m_last_mouse_flags)
-			{
-				// No state change
-				return;
-			}
-
-
-			// Figure out what button_action::condition these states signify.
-			button_action::condition	c = (button_action::condition) 0;
-			
-			int t = transition(m_last_mouse_flags, m_mouse_flags);
-
-			// Common transitions.
-			if (t == transition(IDLE, OVER_UP))	// Roll Over
-			{
-				c = button_action::IDLE_TO_OVER_UP;
-				m_mouse_state = OVER;
-			}
-			else if (t == transition(OVER_UP, IDLE))	// Roll Out
-			{
-				c = button_action::OVER_UP_TO_IDLE;
+			case event_id::ROLL_OUT:
+			case event_id::RELEASE_OUTSIDE:
 				m_mouse_state = UP;
-			}
-			else if (m_def->m_menu)
-			{
-				// Menu button transitions.
+				break;
 
-				if (t == transition(OVER_UP, OVER_DOWN))	// Press
-				{
-					c = button_action::OVER_UP_TO_OVER_DOWN;
-					m_mouse_state = DOWN;
-				}
-				else if (t == transition(OVER_DOWN, OVER_UP))	// Release
-				{
-					c = button_action::OVER_DOWN_TO_OVER_UP;
-					m_mouse_state = OVER;
-				}
-				else if (t == transition(IDLE, OVER_DOWN))	// Drag Over
-				{
-					c = button_action::IDLE_TO_OVER_DOWN;
-					m_mouse_state = DOWN;
-				}
-				else if (t == transition(OVER_DOWN, IDLE))	// Drag Out
-				{
-					c = button_action::OVER_DOWN_TO_IDLE;
-					m_mouse_state = UP;
-				}
-			}
-			else
-			{
-				// Push button transitions.
+			case event_id::RELEASE:
+			case event_id::ROLL_OVER:
+			case event_id::DRAG_OUT:
+				m_mouse_state = OVER;
+				break;
 
-				if (t == transition(OVER_UP, OVER_DOWN))	// Press
-				{
-					c = button_action::OVER_UP_TO_OVER_DOWN;
-					m_mouse_state = DOWN;
-					get_parent()->set_mouse_capture( get_id() );
-				}
-				else if (t == transition(OVER_DOWN, OVER_UP))	// Release
-				{
-					c = button_action::OVER_DOWN_TO_OVER_UP;
-					m_mouse_state = OVER;
-					get_parent()->set_mouse_capture( -1 );
-				}
-				else if (t == transition(OUT_DOWN, OVER_DOWN))	// Drag Over
-				{
-					c = button_action::OUT_DOWN_TO_OVER_DOWN;
-					m_mouse_state = DOWN;
-				}
-				else if (t == transition(OVER_DOWN, OUT_DOWN))	// Drag Out
-				{
-					c = button_action::OVER_DOWN_TO_OUT_DOWN;
-					m_mouse_state = UP;
-				}
-				else if (t == transition(OUT_DOWN, IDLE))	// Release Outside
-				{
-					c = button_action::OUT_DOWN_TO_IDLE;
-					m_mouse_state = UP;
-					get_parent()->set_mouse_capture( -1 );
-				}
-			}
+			case event_id::PRESS:
+			case event_id::DRAG_OVER:
+				m_mouse_state = DOWN;
+				break;
 
-			// is defined button sound?
-			if (m_def->m_sound !=NULL)
+			default:
+				assert(0);	// missed a case?
+				break;
+			};
+
+			// Button transition sounds.
+			if (m_def->m_sound != NULL)
 			{
 				int bi; // button sound array index [0..3]
 				sound_handler* s = get_sound_handler();
-				switch (c)
+				switch (event.m_id)
 				{
-				case button_action::OVER_UP_TO_IDLE:
+				case event_id::ROLL_OUT:
 					bi = 0;
 					break;
-				case button_action::IDLE_TO_OVER_UP:
+				case event_id::ROLL_OVER:
 					bi = 1;
 					break;
-				case button_action::OVER_UP_TO_OVER_DOWN:
+				case event_id::PRESS:
 					bi = 2;
 					break;
-				case button_action::OVER_DOWN_TO_OVER_UP:
+				case event_id::RELEASE:
 					bi = 3;
 					break;
 				default:
@@ -348,8 +506,20 @@ namespace gameswf
 				}
 			}
 
+			// @@ eh, should just be a lookup table.
+			int	c = 0;
+			if (event.m_id == event_id::ROLL_OVER) c |= (button_action::IDLE_TO_OVER_UP);
+			else if (event.m_id == event_id::ROLL_OUT) c |= (button_action::OVER_UP_TO_IDLE);
+			else if (event.m_id == event_id::PRESS) c |= (button_action::OVER_UP_TO_OVER_DOWN);
+			else if (event.m_id == event_id::RELEASE) c |= (button_action::OVER_DOWN_TO_OVER_UP);
+			else if (event.m_id == event_id::DRAG_OUT) c |= (button_action::OVER_DOWN_TO_OUT_DOWN);
+			else if (event.m_id == event_id::DRAG_OVER) c |= (button_action::OUT_DOWN_TO_OVER_DOWN);
+			else if (event.m_id == event_id::RELEASE_OUTSIDE) c |= (button_action::OUT_DOWN_TO_IDLE);
+		        //IDLE_TO_OVER_DOWN = 1 << 7,
+			//OVER_DOWN_TO_IDLE = 1 << 8,
+
 			// restart the characters of the new state.
-			restart_characters();
+			restart_characters(c);
 
 			// Add appropriate actions to the movie's execute list...
 			{for (int i = 0; i < m_def->m_button_actions.size(); i++)
@@ -363,60 +533,50 @@ namespace gameswf
 					}
 				}
 			}}
+
+			// Call conventional attached method.
+			// @@ TODO
 		}
 
-		void restart_characters()
+
+		void restart_characters(int condition)
 		{
-			// Restart our relevant characters.
-			{for (int i = 0; i < m_def->m_button_records.size(); i++)
+			// Restart our relevant characters
+			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
-				//button_record&	rec = m_def->m_button_records[i];
-				if (m_record_character[i] != NULL)
+				bool	restart = false;
+				button_record* rec = &m_def->m_button_records[i];
+
+				switch (m_mouse_state)
+				{
+				case OVER:
+				{
+					if ((rec->m_over) && (condition & button_action::IDLE_TO_OVER_UP))
+					{
+						restart = true;
+					}
+					break;
+				}
+				// @@ Hm, are there other cases where we restart stuff?
+				default:
+				{
+					break;
+				}
+				}
+
+				if (restart == true)
 				{
 					m_record_character[i]->restart();
 				}
-
-				/*if (m_mouse_state == UP)
-				{
-					if (rec.m_up)
-					{
-						m_record_character[i]->restart();
-					}
-				}
-				else if (m_mouse_state == DOWN)
-				{
-					if (rec.m_down)
-					{
-						m_record_character[i]->restart();
-					}
-				}
-				else if (m_mouse_state == OVER)
-				{
-					if (rec.m_over)
-					{
-						m_record_character[i]->restart();
-					}
-				}*/
-			}}
+			}
 		}
 
-
-		virtual int	get_mouse_capture()
-		// Use this to retrive the character that has captured the mouse.
-		{
-			return get_parent()->get_mouse_capture();
-		}
-
-		virtual void	set_mouse_capture(int cid)
-		// Set the mouse capture to the given character.
-		{
-			get_parent()->set_mouse_capture(cid);
-		}
 
 		virtual void	get_mouse_state(int* x, int* y, int* buttons)
 		{
 			get_parent()->get_mouse_state(x, y, buttons);
 		}
+
 
 		//
 		// ActionScript overrides

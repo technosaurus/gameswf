@@ -1462,9 +1462,15 @@ namespace gameswf
 				}
 				case 0x1C:	// get variable
 				{
-					as_value	varname = env->pop();
-					env->push(env->get_variable(varname.to_tu_string(), with_stack));
-					IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s \n", varname.to_tu_string().c_str(), env->top(0).to_tu_string().c_str()));
+					as_value var_name = env->pop();
+					tu_string var_string = var_name.to_tu_string();
+
+					as_value variable = env->get_variable(var_string, with_stack);
+					env->push(variable);
+
+					IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s \n",
+								  var_string.c_str(),
+								  variable.to_tu_string().c_str()));
 
 					break;
 				}
@@ -1476,8 +1482,14 @@ namespace gameswf
 				}
 				case 0x20:	// set target expression
 				{
-					// @@ TODO
-					log_error("todo opcode: %02X\n", action_id);
+					as_object_interface* target_object = env->top(0).to_object();
+
+					IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s (%d)",
+								  ((character *) target_object)->m_name.c_str(),
+								  ((character *) target_object)->m_id));
+
+					movie* target = env->find_target(target_object);
+					env->set_target (target);
 					break;
 				}
 				case 0x21:	// string concat

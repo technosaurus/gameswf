@@ -110,7 +110,7 @@ namespace gameswf
 		// display-list management.
 		//
 
-		virtual execute_tag*	find_previous_replace_or_add_tag(int current_frame, int depth)
+		virtual execute_tag*	find_previous_replace_or_add_tag(int current_frame, int depth, int id)
 		{
 			return NULL;
 		}
@@ -120,6 +120,7 @@ namespace gameswf
 			const char* name,
 			const array<swf_event*>& event_handlers,
 			Uint16 depth,
+			bool replace_if_depth_is_occupied,
 			const cxform& color_transform,
 			const matrix& mat,
 			float ratio,
@@ -155,7 +156,6 @@ namespace gameswf
 		virtual void	replace_display_object(
 			character* ch,
 			const char* name,
-
 			Uint16 depth,
 			bool use_cxform,
 			const cxform& color_transform,
@@ -166,7 +166,7 @@ namespace gameswf
 		{
 		}
 
-		virtual void	remove_display_object(Uint16 depth)	{}
+		virtual void	remove_display_object(Uint16 depth, int id)	{}
 
 		virtual void	set_background_color(const rgba& color) {}
 		virtual void	set_background_alpha(float alpha) {}
@@ -193,9 +193,6 @@ namespace gameswf
 		{
 			assert(0);
 		}
-
-		virtual int	get_mouse_capture() { assert(0); return -1; }
-		virtual void	set_mouse_capture(int id) { assert(0); }
 
 		struct drag_state
 		{
@@ -243,6 +240,15 @@ namespace gameswf
 
 		// External
 		virtual bool	has_looped() const { return true; }
+
+
+		//
+		// Mouse/Button interface.
+		//
+
+		virtual character*	get_topmost_mouse_entity(float x, float y) { return NULL; }
+		virtual bool	get_track_as_menu() const { return false; }
+		virtual void	on_button_event(event_id id) { on_event(id); }
 
 
 		//
@@ -478,7 +484,6 @@ namespace gameswf
 
 		// Movie interfaces.  By default do nothing.  sprite_instance and some others override these.
 		virtual void	display() {}
-		virtual bool	point_test(float x, float y) { return false; }	// return true if the point is inside our shape.
 		virtual float	get_height() { return 0; }
 		virtual float	get_width() { return 0; }
 
@@ -509,6 +514,8 @@ namespace gameswf
 			}
 		}
 
+		virtual void	get_mouse_state(int* x, int* y, int* buttons) { get_parent()->get_mouse_state(x, y, buttons); }
+
 		// Utility.
 		void	do_mouse_drag();
 	};
@@ -532,15 +539,6 @@ namespace gameswf
 			m_def->display(this);	// pass in transform info
 			do_display_callback();
 		}
-		virtual bool	point_test(float x, float y)
-		{
-			matrix	m = get_world_matrix();
-			point	p;
-			m.transform_by_inverse(&p, point(x, y));
-
-			return m_def->point_test_local(p.m_x, p.m_y);
-		}
-
 
 		// @@ tulrich: these are used for finding bounds; TODO
 		// need to do this using enclose_transformed_rect(),
@@ -581,7 +579,7 @@ namespace gameswf
 		virtual void	execute_state_reverse(movie* m, int frame) { execute_state(m); }
 		virtual bool	is_remove_tag() const { return false; }
 		virtual bool	is_action_tag() const { return false; }
-		virtual int	get_depth_of_replace_or_add_tag() const { return -1; }
+		virtual uint32	get_depth_id_of_replace_or_add_tag() const { return -1; }
 	};
 
 
