@@ -22,6 +22,7 @@
 #include "gameswf_shape.h"
 #include "gameswf_stream.h"
 #include "gameswf_styles.h"
+#include "gameswf_dlist.h"
 #include "engine/image.h"
 #include "engine/jpeg.h"
 #include <string.h>	// for memset
@@ -64,373 +65,6 @@ namespace gameswf
 	}
 
 
-	// A struct to serve as an entry in the display list.
-	struct display_object_info : display_info
-	{
-		character*	m_character;
-		bool	m_dead;	// retain dead objects in the display list for a while; they may get revived.
-
-		display_object_info()
-			:
-			m_character(0),
-			m_dead(false)
-		{
-		}
-
-		static int compare(const void* _a, const void* _b)
-		// For qsort().
-		{
-			display_object_info*	a = (display_object_info*) _a;
-			display_object_info*	b = (display_object_info*) _b;
-
-			if (a->m_depth < b->m_depth)
-			{
-				return -1;
-			}
-			else if (a->m_depth == b->m_depth)
-			{
-				return 0;
-			}
-			else
-			{
-				return 1;
-			}
-		}
-	};
-
-
-	//
-	// some display list management functions
-	//
-
-
-	static int	find_display_index(const array<display_object_info>& display_list, int depth)
-	// Find the index in the display list matching the given
-	// depth.  Failing that, return the index of the first object
-	// with a larger depth.
-	{
-		int	size = display_list.size();
-		if (size == 0)
-		{
-			return 0;
-		}
-
-		// Binary search.
-		int	jump = size >> 1;
-		int	index = jump;
-		for (;;)
-		{
-			jump >>= 1;
-			if (jump < 1) jump = 1;
-
-			if (depth > display_list[index].m_depth) {
-				if (index == size - 1)
-				{
-					index = size;
-					break;
-				}
-				index += jump;
-			}
-			else if (depth < display_list[index].m_depth)
-			{
-				if (index == 0
-				    || depth > display_list[index - 1].m_depth)
-				{
-					break;
-				}
-				index -= jump;
-			}
-			else
-			{
-				// match -- return this index.
-				break;
-			}
-		}
-
-		assert(index >= 0 && index <= size);
-
-		return index;
-	}
-
-
-	static void	kill_display_list(array<display_object_info>* display_list)
-	// Empty out the display list (by marking characters as dead).
-	// Dead characters may be revived later...
-	{
-		for (int i = 0; i < display_list->size(); i++)
-		{
-			(*display_list)[i].m_dead = true;
-		}
-	}
-
-
-	static void	clear_display_list(array<display_object_info>* display_list)
-	// Empty out the display list for real -- delete any dangling
-	// instances.
-	{
-		for (int i = 0; i < display_list->size(); i++)
-		{
-			character*	ch = (*display_list)[i].m_character;
-			if (ch->is_instance())
-			{
-				delete ch;
-			}
-		}
-
-		display_list->resize(0);
-	}
-
-
-	static void	add_display_object(array<display_object_info>* display_list,
-					   movie* root_movie,
-					   character* ch,
-					   Uint16 depth,
-					   const cxform& color_transform,
-					   const matrix& matrix,
-					   float ratio)
-	{
-		assert(ch);
-
-		display_object_info	di;
-		di.m_movie = root_movie;
-		di.m_character = ch;
-		di.m_dead = false;
-		di.m_depth = depth;
-		di.m_color_transform = color_transform;
-		di.m_matrix = matrix;
-		di.m_ratio = ratio;
-
-		// Insert into the display list...
-
-		int	index = find_display_index(*display_list, di.m_depth);
-
-		if (index < display_list->size()
-		    && (*display_list)[index].m_depth == di.m_depth)
-		{
-			// Reuse existing slot.
-			if ((*display_list)[index].m_dead == false)
-			{
-				IF_DEBUG(log_msg("warning: add_display_object is displacing a live object at depth %d\n", depth));
-			}
-			
-			// If we're replacing an instance of the same
-			// definition, then revive the existing
-			// instance instead of creating a new one.
-			if (ch->is_definition()
-			    && (*display_list)[index].m_character->is_instance()
-			    && ch == (*display_list)[index].m_character->get_definition())
-			{
-				// Reuse!  And don't restart.
-				di.m_character = (*display_list)[index].m_character;
-			}
-			else
-			{
-				// Delete the old instance.
-				if ((*display_list)[index].m_character->is_instance())
-				{
-					delete (*display_list)[index].m_character;
-				}
-
-				// need to create a new instance.
-				if (ch->is_definition())
-				{
-					di.m_character = ch->create_instance();
-					di.m_character->restart();
-				}
-			}
-		}
-		else
-		{
-			if (ch->is_definition())
-			{
-				// need to create a new instance.
-				di.m_character = ch->create_instance();
-				di.m_character->restart();
-			}
-
-			// Create a new slot.
-
-			// Shift existing objects up.
-			display_list->resize(display_list->size() + 1);
-			if (display_list->size() - 1 > index)
-			{
-				memmove(&(*display_list)[index + 1],
-					&(*display_list)[index],
-					sizeof((*display_list)[0]) * (display_list->size() - 1 - index));
-			}
-		}
-
-		// Put new info in the opened slot.
-		(*display_list)[index] = di;
-	}
-
-
-	static void	move_display_object(array<display_object_info>* display_list,
-					    Uint16 depth,
-					    bool use_cxform,
-					    const cxform& color_xform,
-					    bool use_matrix,
-					    const matrix& mat,
-					    float ratio)
-	// Updates the transform properties of the object at
-	// the specified depth.
-	{
-		int	size = display_list->size();
-		if (size <= 0)
-		{
-			// error.
-			log_error("error: move_display_object() -- no objects on display list\n");
-//			assert(0);
-			return;
-		}
-
-		int	index = find_display_index(*display_list, depth);
-		if (index < 0 || index >= size)
-		{
-			// error.
-			log_error("error: move_display_object() -- can't find object at depth %d\n", depth);
-//			assert(0);
-			return;
-		}
-
-		display_object_info&	di = (*display_list)[index];
-		if (di.m_depth != depth)
-		{
-			// error
-			log_error("error: move_display_object() -- no object at depth %d\n", depth);
-//			assert(0);
-			return;
-		}
-
-		if (use_cxform)
-		{
-			di.m_color_transform = color_xform;
-		}
-		if (use_matrix)
-		{
-			di.m_matrix = mat;
-		}
-		di.m_ratio = ratio;
-	}
-		
-
-	static void	replace_display_object(array<display_object_info>* display_list,
-					       character* ch,
-					       Uint16 depth,
-					       bool use_cxform,
-					       const cxform& color_xform,
-					       bool use_matrix,
-					       const matrix& mat,
-					       float ratio)
-	// Puts a new character at the specified depth, replacing any
-	// existing character.  If use_cxform or use_matrix are false,
-	// then keep those respective properties from the existing
-	// character.
-	{
-		int	size = display_list->size();
-		if (size <= 0)
-		{
-			// error.
-			assert(0);
-			return;
-		}
-
-		int	index = find_display_index(*display_list, depth);
-		if (index < 0 || index >= size)
-		{
-			// error.
-			assert(0);
-			return;
-		}
-
-		display_object_info&	di = (*display_list)[index];
-		if (di.m_depth != depth)
-		{
-			// error
-			IF_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
-//			assert(0);
-			return;
-		}
-
-		// If the old character is an instance, then delete it.
-		if (di.m_character->is_instance())
-		{
-			delete di.m_character;
-			di.m_character = 0;
-		}
-
-		// Put the new character in its place.
-
-		assert(ch);
-
-		// If the character needs per-instance state, then
-		// create the instance here, and substitute it for the
-		// definition.
-		if (ch->is_definition())
-		{
-			ch = ch->create_instance();
-			ch->restart();
-		}
-
-		// Set the display properties.
-		di.m_character = ch;
-		if (use_cxform)
-		{
-			di.m_color_transform = color_xform;
-		}
-		if (use_matrix)
-		{
-			di.m_matrix = mat;
-		}
-		di.m_ratio = ratio;
-	}
-		
-
-	static void remove_display_object(array<display_object_info>* display_list, Uint16 depth)
-	// Removes the object at the specified depth.
-	{
-		int	size = display_list->size();
-		if (size <= 0)
-		{
-			// error.
-			log_error("remove_display_object: no characters in display list");
-			return;
-		}
-
-		int	index = find_display_index(*display_list, depth);
-		if (index < 0 || index >= size)
-		{
-			// error -- no character at the given depth.
-			log_error("remove_display_object: no character at depth %d\n", depth);
-			return;
-		}
-
-		// Removing the character at (*display_list)[index].
-		display_object_info&	di = (*display_list)[index];
-
-#if 0
-		// If the character is an instance, then delete it.
-		if (di.m_character->is_instance())
-		{
-			delete di.m_character;
-			di.m_character = 0;
-		}
-
-		// Remove the display list entry.
-		if (index < size - 1)
-		{
-			memmove(&(*display_list)[index],
-				&(*display_list)[index + 1],
-				sizeof((*display_list)[0]) * (size - 1 - index));
-		}
-		display_list->resize(size - 1);
-#endif // 0
-
-		// Mark the object as dead.
-		di.m_dead = true;
-	}
-
-
 	static bool	execute_actions(movie* m, const array<action_buffer*>& action_list)
 	// Execute the actions in the action list, on the given movie.
 	// Return true if the actions did something to change the
@@ -438,7 +72,7 @@ namespace gameswf
 	{
 		{for (int i = 0; i < action_list.size(); i++)
 		{
-			int	local_current_frame = m->get_current_frame();
+			//int	local_current_frame = m->get_current_frame();
 
 			action_list[i]->execute(m);
 
@@ -449,12 +83,15 @@ namespace gameswf
 			// and not cached in a register???  Declare it
 			// volatile, or something like that?
 
+			/* Ignacio: What is this for? 
+			- Goto actions may add new actions to the action list!
+			- you are never using the return value...
 			// Frame state could have changed!
 			if (m->get_current_frame() != local_current_frame)
 			{
 				// @@ would this be more elegant if we passed back a "early-out" flag from execute?
 				return true;
-			}
+			}*/
 		}}
 
 		return false;
@@ -513,7 +150,8 @@ namespace gameswf
 		hash<int, font*>	m_fonts;
 		hash<int, bitmap_character*>	m_bitmap_characters;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
-		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
+		//array<display_object_info>	m_display_list;	// active characters, ordered by depth.
+		display_list m_display_list; // active characters, ordered by depth.
 		array<action_buffer*>	m_action_list;	// pending actions.
 		string_hash<int>	m_named_frames;
 		string_hash<resource*>	m_exports;
@@ -536,6 +174,7 @@ namespace gameswf
 		float	m_time_remainder;
 		bool	m_update_frame;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
+		int m_mouse_capture_id;
 
 		jpeg::input*	m_jpeg_in;
 
@@ -555,13 +194,14 @@ namespace gameswf
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
+			m_mouse_capture_id(-1),
 			m_jpeg_in(0)
 		{
 		}
 
 		virtual ~movie_impl()
 		{
-			clear_display_list(&m_display_list);
+			m_display_list.clear();
 
 			if (m_jpeg_in)
 			{
@@ -592,6 +232,18 @@ namespace gameswf
 			*x = m_mouse_x;
 			*y = m_mouse_y;
 			*buttons = m_mouse_buttons;
+		}
+
+		virtual int	get_mouse_capture(void)
+		// Use this to retrive the character that has captured the mouse.
+		{
+			return m_mouse_capture_id;
+		}
+
+		virtual void	set_mouse_capture(int cid)
+		// The given character captures the mouse.
+		{
+			m_mouse_capture_id = cid;
 		}
 
 
@@ -733,7 +385,8 @@ namespace gameswf
 			}
 			assert(ch);
 
-			gameswf::add_display_object(&m_display_list, this, ch, depth, color_transform, matrix, ratio);
+			//gameswf::add_display_object(&m_display_list, ch, depth, color_transform, matrix, ratio);
+			m_display_list.add_display_object(this, ch, depth, color_transform, matrix, ratio);
 		}
 
 
@@ -741,7 +394,8 @@ namespace gameswf
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
-			gameswf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
+			//gameswf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
+			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio);
 		}
 
 
@@ -761,14 +415,16 @@ namespace gameswf
 			}
 			assert(ch);
 
-			gameswf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
+			//gameswf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
+			m_display_list.replace_display_object(ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
 		}
 
 
 		void	remove_display_object(Uint16 depth)
 		// Remove the object at the specified depth.
 		{
-			gameswf::remove_display_object(&m_display_list, depth);
+			//gameswf::remove_display_object(&m_display_list, depth);
+			m_display_list.remove_display_object(depth);
 		}
 
 		void	add_action_buffer(action_buffer* a)
@@ -824,8 +480,8 @@ namespace gameswf
 		
 		void	restart()
 		{
-		//	m_display_list.resize(0);
-		//	m_action_list.resize(0);
+		//	m_display_list.clear();
+		//	m_action_list.clear();
 			m_current_frame = 0;
 			m_next_frame = 0;
 			m_time_remainder = 0;
@@ -849,17 +505,10 @@ namespace gameswf
 			while (m_update_frame)
 			{
 				m_update_frame = false;
+
+				// Update current and next frames.
 				m_current_frame = m_next_frame;
 				m_next_frame = m_current_frame + 1;
-
-			//	IF_DEBUG(printf("### frame updated: current_frame=%d\n", m_current_frame));
-
-				if (m_current_frame == 0)
-				{
-					gameswf::kill_display_list(&m_display_list);
-					m_action_list.clear();
-				}
-
 
 				// Execute the current frame's tags.
 				if (m_play_state == PLAY) 
@@ -870,18 +519,13 @@ namespace gameswf
 					do_actions();
 				}
 
+				m_display_list.update();
+
 
 				// Advance everything in the display list.
-				for (int i = 0; i < m_display_list.size(); i++)
-				{
-					if (m_display_list[i].m_dead == false)
-					{
-						m_display_list[i].m_character->
-							advance(frame_time, this, m_display_list[i].m_matrix);
-					}
-				}
+				m_display_list.advance(frame_time, this);
 
-				// Perform button actions
+				// Perform button actions.
 				do_actions();
 
 
@@ -897,14 +541,14 @@ namespace gameswf
 				else if (m_next_frame >= m_frame_count)	// && m_play_state == PLAY
 				{
   					m_next_frame = 0;
+					/* Is this still necessary?
 					if (m_frame_count > 1)
 					{
 						// Avoid infinite loop on single frame movies
 						m_update_frame = true;
-					}
+					}*/
+					m_display_list.reset();
 				}
-
-			//	printf( "### display list size = %d\n", m_display_list.size() );
 
 				// Check again for the end of frame
 				if (m_time_remainder >= frame_time)
@@ -951,26 +595,40 @@ namespace gameswf
 		{
 			IF_DEBUG(log_msg("movie_impl::goto_frame(%d)\n", target_frame_number));//xxxxx
 
-			if (target_frame_number != m_current_frame
-			    && target_frame_number >= 0
-			    && target_frame_number < m_frame_count)
+			/* does STOP need a special case?
+			if (m_play_state == STOP)
 			{
-				if (m_play_state == STOP)
-				{
-					target_frame_number++;	// if stopped, update_frame won't increase it
-					m_current_frame = target_frame_number;
-				}
-				m_next_frame = target_frame_number;
+				target_frame_number++;	// if stopped, update_frame won't increase it
+				m_current_frame = target_frame_number;
+			}*/
 
-				gameswf::kill_display_list(&m_display_list);
+			if (target_frame_number < m_current_frame)
+			{
+				m_display_list.reset();
 				for (int f = 0; f < target_frame_number; f++)
 				{
 					execute_frame_tags(f, true);
+					m_display_list.update();
 				}
+				execute_frame_tags(target_frame_number, false);
+			}
+			else if(target_frame_number > m_current_frame)
+			{
+				for (int f = m_current_frame+1; f < target_frame_number; f++)
+				{
+					execute_frame_tags(f, true);
+					m_display_list.update();
+				}
+				execute_frame_tags(target_frame_number, false);
 			}
 
-			m_update_frame = true;
-			m_time_remainder = 0 /* @@ frame time */;
+
+			// Set current and next frames.
+			m_current_frame = target_frame_number;
+			m_next_frame = target_frame_number + 1;
+
+			// I think that buttons stop by default.
+			m_play_state = STOP;
 		}
 
 		void	display()
@@ -983,19 +641,7 @@ namespace gameswf
 				m_frame_size.m_x_min, m_frame_size.m_x_max,
 				m_frame_size.m_y_min, m_frame_size.m_y_max);
 
-			// Display all display objects.  Lower depths
-			// are obscured by higher depths.
-			for (int i = 0; i < m_display_list.size(); i++)
-			{
-				display_object_info&	di = m_display_list[i];
-				if (di.m_dead == false)
-				{
-					di.m_display_number = m_total_display_count;
-					di.m_character->display(di);
-
-//					printf("display %s\n", typeid(*(di.m_character)).name());
-				}
-			}
+			m_display_list.display(m_total_display_count);
 
 			gameswf::render::end_display();
 
@@ -2007,7 +1653,8 @@ namespace gameswf
 	struct sprite_instance : public character
 	{
 		sprite_definition*	m_def;
-		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
+		//array<display_object_info>	m_display_list;	// active characters, ordered by depth.
+		display_list	m_display_list;
 		array<action_buffer*>	m_action_list;
 
 		play_state	m_play_state;
@@ -2018,7 +1665,7 @@ namespace gameswf
 
 		virtual ~sprite_instance()
 		{
-			clear_display_list(&m_display_list);
+			m_display_list.clear();
 		}
 
 		sprite_instance(sprite_definition* def)
@@ -2056,6 +1703,8 @@ namespace gameswf
 
 		void	restart()
 		{
+		//	m_display_list.clear();
+		//	m_action_list.clear();
 			m_current_frame = 0;
 			m_next_frame = 0;
 			m_time_remainder = 0;
@@ -2080,14 +1729,10 @@ namespace gameswf
 			while (m_update_frame)
 			{
 				m_update_frame = false;
+
+				// Update current and next frames.
 				m_current_frame = m_next_frame;
 				m_next_frame = m_current_frame + 1;
-
-				if (m_current_frame == 0)
-				{
-					gameswf::kill_display_list(&m_display_list);
-					m_action_list.clear();
-				}
 
 				// Execute the current frame's tags.
 				if (m_play_state == PLAY) 
@@ -2098,17 +1743,11 @@ namespace gameswf
 					do_actions();
 				}
 
+				m_display_list.update();
+
 
 				// Advance everything in the display list.
-				for (int i = 0; i < m_display_list.size(); i++)
-				{
-					if (m_display_list[i].m_dead == false)
-					{
-						matrix	sub_matrix = mat;
-						sub_matrix.concatenate(m_display_list[i].m_matrix);
-						m_display_list[i].m_character->advance(frame_time, this, sub_matrix);
-					}
-				}
+				m_display_list.advance(frame_time, this, mat);
 
 				// Perform button actions
 				do_actions();
@@ -2126,11 +1765,12 @@ namespace gameswf
 				else if (m_next_frame >= m_def->m_frame_count)	// && m_play_state == PLAY
 				{
   					m_next_frame = 0;
-					if (m_def->m_frame_count > 1)
+					/*if (m_def->m_frame_count > 1)
 					{
 						// Avoid infinite loop on single frame sprites?
 						m_update_frame = true;
-					}
+					}*/
+					m_display_list.reset();
 				}
 
 				// Check again for the end of frame
@@ -2178,26 +1818,40 @@ namespace gameswf
 		{
 			IF_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
 
-			if (target_frame_number != m_current_frame
-			    && target_frame_number >= 0
-			    && target_frame_number < m_def->m_frame_count)
+			/* does STOP need a special case?
+			if (m_play_state == STOP)
 			{
-				if (m_play_state == STOP)
-				{
-					target_frame_number++;	// if stopped, update_frame won't increase it
-					m_current_frame = target_frame_number;
-				}
-				m_next_frame = target_frame_number;
+				target_frame_number++;	// if stopped, update_frame won't increase it
+				m_current_frame = target_frame_number;
+			}*/
 
-				gameswf::kill_display_list(&m_display_list);
+			if (target_frame_number < m_current_frame)
+			{
+				m_display_list.reset();
 				for (int f = 0; f < target_frame_number; f++)
 				{
 					execute_frame_tags(f, true);
+					m_display_list.update();
 				}
+				execute_frame_tags(target_frame_number, false);
+			}
+			else if(target_frame_number > m_current_frame)
+			{
+				for (int f = m_current_frame; f < target_frame_number; f++)
+				{
+					execute_frame_tags(f, true);
+					m_display_list.update();
+				}
+				execute_frame_tags(target_frame_number, false);
 			}
 
-			m_update_frame = true;
-			m_time_remainder = 0 /* @@ frame time */;
+
+			// Set current and next frames.
+			m_current_frame = target_frame_number;
+			m_next_frame = target_frame_number + 1;
+
+			// I think that buttons stop by default.
+			m_play_state = STOP;
 		}
 
 
@@ -2209,18 +1863,7 @@ namespace gameswf
 
 		void	display(const display_info& di)
 		{
-			// Show the display list.
-			for (int i = 0; i < m_display_list.size(); i++)
-			{
-				display_object_info&	dobj = m_display_list[i];
-
-				if (dobj.m_dead == false)
-				{
-					display_info	sub_di = di;
-					sub_di.concatenate(dobj);
-					dobj.m_character->display(sub_di);
-				}
-			}
+			m_display_list.display(di);
 		}
 
 
@@ -2241,7 +1884,7 @@ namespace gameswf
 			}
 			assert(ch);
 
-			gameswf::add_display_object(&m_display_list, m_def->m_movie, ch, depth, color_transform, matrix, ratio);
+			m_display_list.add_display_object(this, ch, depth, color_transform, matrix, ratio);
 		}
 
 
@@ -2249,7 +1892,8 @@ namespace gameswf
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
-			gameswf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
+			//gameswf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
+			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio);
 		}
 
 
@@ -2271,14 +1915,16 @@ namespace gameswf
 			}
 			assert(ch);
 
-			gameswf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
+			//gameswf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
+			m_display_list.replace_display_object(ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
 		}
 
 
 		void	remove_display_object(Uint16 depth)
 		// Remove the object at the specified depth.
 		{
-			gameswf::remove_display_object(&m_display_list, depth);
+			//gameswf::remove_display_object(&m_display_list, depth);
+			m_display_list.remove_display_object(depth);
 		}
 
 
@@ -2295,15 +1941,13 @@ namespace gameswf
 		// For debugging -- return the id of the character at the specified depth.
 		// Return -1 if nobody's home.
 		{
-			int	index = find_display_index(m_display_list, depth);
-			if (index >= m_display_list.size()
-			    || m_display_list[index].m_depth != depth)
+			int	index = m_display_list.get_display_index(depth);
+			if (index == -1)
 			{
-				// No object at that depth.
 				return -1;
 			}
 
-			character*	ch = m_display_list[index].m_character;
+			character*	ch = m_display_list.get_display_object(index).m_character;
 
 			return ch->get_id();
 		}
@@ -2313,6 +1957,18 @@ namespace gameswf
 		// notify_mouse_state().
 		{
 			m_def->m_movie->get_mouse_state(x, y, buttons);
+		}
+
+		virtual int	get_mouse_capture(void)
+		// Use this to retrive the character that has captured the mouse.
+		{
+			return m_def->m_movie->get_mouse_capture();
+		}
+
+		virtual void	set_mouse_capture(int cid)
+		// Set the mouse capture to the given character.
+		{
+			m_def->m_movie->set_mouse_capture(cid);
 		}
 	};
 

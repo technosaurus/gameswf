@@ -127,6 +127,19 @@ namespace gameswf
 			assert(0);
 		}
 
+		virtual int	get_mouse_capture(void)
+		// Use this to retrive the character that has the mouse focus.
+		{
+			assert(0);
+			return -1;
+		}
+
+		virtual void	set_mouse_capture(int cid)
+		// Set the focus to the given character.
+		{
+			assert(0);
+		}
+
 		virtual bool	set_edit_text(const char* var_name, const char* new_text)
 		{
 			assert(0);
@@ -166,7 +179,7 @@ namespace gameswf
 		int	get_height() { return 0; }
 		int	get_current_frame() const { assert(0); return 0; }
 		int	get_frame_count() const { assert(0); return 0; }
-		void	restart() { assert(0); }
+		void	restart() { /*assert(0);*/ }
 		void	advance(float delta_time) { assert(0); }	// should only be called on movie_impl's.
 		void	goto_frame(int target_frame) {}
 		void	display() {}
