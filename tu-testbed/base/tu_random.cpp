@@ -11,6 +11,25 @@
 
 namespace tu_random
 {
+	// Global generator.
+	static generator	s_generator;
+
+	Uint32	next_random()
+	{
+		return s_generator.next_random();
+	}
+
+	void	seed_random(Uint32 seed)
+	{
+		s_generator.seed_random(seed);
+	}
+
+	float	get_unit_float()
+	{
+		s_generator.get_unit_float();
+	}
+
+
 	// PRNG code adapted from the complimentary-multiply-with-carry
 	// code in the article: George Marsaglia, "Seeds for Random Number
 	// Generators", Communications of the ACM, May 2003, Vol 46 No 5,
@@ -30,7 +49,6 @@ namespace tu_random
 	// random number generator.  _Statistics and Probability Letters
 	// 8_ (1990), 35-39.
 
-	const int	SEED_COUNT = 8;
 //	const Uint64	a = 123471786;	// for SEED_COUNT=1024
 //	const Uint64	a = 123554632;	// for SEED_COUNT=512
 //	const Uint64	a = 8001634;	// for SEED_COUNT=255
@@ -40,42 +58,39 @@ namespace tu_random
 //	const Uint64	a = 487198574;	// for SEED_COUNT=16
 	const Uint64	a = 716514398;	// for SEED_COUNT=8
 
-	// Seeds.  These could be re-initialized from a random source.
-	// These particular seeds came out of this perl script, translated
-	// from C code in the above article:
-	//
-	// $j=987654321;
-	// for($i=0;$i<8;$i++) {
-	//   $j = $j ^ ($j << 13);
-	//   $j = $j ^ ($j >> 17);
-	//   $j = $j ^ ($j << 5);
-	//   print "$j\n";
-	// }
-        
-        // WK: why does this produce warnings under gcc 3.1 / OSX like:
-        // tu_random.cpp:58: warning: decimal constant is so large that it is unsigned
-        
-	static Uint32	Q[8] =
+
+	generator::generator()
+		:
+		c(362436),
+		i(SEED_COUNT - 1)
 	{
-		0x0ECE59F5, //  248404469,
-		0x7BE3FAAD, // 2078538413, 
-                0x927D4636, // 2457683510,  -1837283786 
-		0x6DC8F60B, // 1841886731, 
-		0x123C5E6F, //  305946223, 
-		0xA7CFA077, // 2815402103, 
-		0x2BEC5B77, //  736910199, 
-		0xB0DF8DF6, // 2967440886,
-	};
+		seed_random(987654321);
+	}
 
 
-	Uint32	next_random()
+	void	generator::seed_random(Uint32 seed)
+	{
+		// Simple pseudo-random to reseed the seeds.
+		// Suggested by the above article.
+		Uint32	j = seed;
+		for (int i = 0; i < SEED_COUNT; i++)
+		{
+			j = j ^ (j << 13);
+			j = j ^ (j >> 17);
+			j = j ^ (j << 5);
+			Q[i] = j;
+		}
+	}
+
+
+	Uint32	generator::next_random()
 	// Return the next pseudo-random number in the sequence.
 	{
 		Uint64	t;
 		Uint32	x;
 
-		static Uint32	c = 362436;
-		static Uint32	i = SEED_COUNT - 1;
+		//static Uint32	c = 362436;
+		//static Uint32	i = SEED_COUNT - 1;
 		const Uint32	r = 0xFFFFFFFE;
 
 		i = (i+1) & (SEED_COUNT - 1);
@@ -93,7 +108,38 @@ namespace tu_random
 		return val;
 	}
 
+	
+	float	generator::get_unit_float()
+	{
+		Uint32	r = next_random();
+
+		// 24 bits of precision.
+		return float(r >> 8) / (16777216.0f - 1.0f);
+	}
+
 }	// end namespace tu_random
+
+
+#ifdef TEST_TU_RANDOM
+
+// Compile with e.g.:
+//
+//  gcc -o tu_random_test tu_random.cpp -I.. -g -DTEST_TU_RANDOM -lstdc++
+//
+// Generate a test file of random numbers for DIEHARD.
+int	main()
+{
+	const int	COUNT = 15000000 / 4;	// number of 4-byte words; DIEHARD needs ~80M bits
+
+	for (int i = 0; i < COUNT; i++)
+	{
+		Uint32	val = tu_random::next_random();
+		fwrite(&val, sizeof(val), 1, stdout);
+	}
+}
+
+
+#endif // TEST_TU_RANDOM
 
 
 // Local Variables:

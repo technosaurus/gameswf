@@ -16,15 +16,27 @@
 
 namespace tu_random
 {
+	// Global generator.
 	Uint32	next_random();
+	void	seed_random(Uint32 seed);
+	float	get_unit_float();
 
-	inline float	get_unit_float()
+	// In case you need independent generators.  The global
+	// generator is just an instance of this.
+	const int	SEED_COUNT = 8;
+	struct generator
 	{
-		Uint32	r = next_random();
+		generator();
+		void	seed_random(Uint32 seed);	// not necessary
+		Uint32	next_random();
+		float	get_unit_float();
 
-		// 24 bits of precision.
-		return float(r >> 8) / (16777216.0f - 1.0f);
-	}
+	private:
+		Uint32	Q[SEED_COUNT];
+		Uint32	c;
+		Uint32	i;
+	};
+
 }	// end namespace tu_random
 
 

@@ -312,6 +312,7 @@ void	test_hash()
 }
 
 
+//#include <ext/hash_map>
 //#include <hash_map>
 //#include <map>
 
@@ -320,12 +321,18 @@ void	test_hash_speed()
 {
 
 // Hash type, for doing comparative tests.
+//
+// tu_hash tests faster than the map and hash_map included with GCC
+// 3.3 as well as map and hash_map from MSVC7.  In some cases, several
+// times faster.  GCC's hash_map is the closest to tu_hash, but is
+// still 33% slower in my tests.
 
-// tu's hash
+// // tu's hash
 #define HASH hash<uint32, uint32 >
 #define HASH_ADD(h, k, v) h.add(k, v)
 
 // STL's hash
+//#define HASH __gnu_cxx::hash_map<uint32, uint32>
 //#define HASH std::hash_map<uint32, uint32>
 //#define HASH_ADD(h, k, v) h[k] = v
 
@@ -333,7 +340,8 @@ void	test_hash_speed()
 //#define HASH std::map<uint32, uint32>
 //#define HASH_ADD(h, k, v) h[k] = v
 
-	const int	SIZE = 10000000;
+//	const int	SIZE = 10000000;
+	const int	SIZE = 1000000;
 
 	// Make an array of random numbers.
 	array<uint32>	numbers;
