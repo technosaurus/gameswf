@@ -136,7 +136,8 @@ public:
 			memmove(m_buffer+index+1, m_buffer+index, sizeof(T) * (m_size - 1 - index));
 		}
 
-		m_buffer[index] = val;
+		// Copy-construct into the newly opened slot.
+		new (m_buffer + index) T(val);
 	}
 
 
