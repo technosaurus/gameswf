@@ -56,6 +56,7 @@ namespace gameswf
 		array<unsigned char>	m_buffer;
 		array<const char*>	m_dictionary;
 
+		action_buffer() {}
 		void	read(stream* in);
 		void	execute(as_environment* env);
 		void	execute(
@@ -71,6 +72,14 @@ namespace gameswf
 		}
 
 		int	get_length() const { return m_buffer.size(); }
+
+	private:
+		// Don't put these as values in array<>!  They contain
+		// internal pointers and cannot be moved or copied.
+		// If you need to keep an array of them, keep pointers
+		// to new'd instances.
+		action_buffer(const action_buffer& a) { assert(0); }
+		void operator=(const action_buffer& a) { assert(0); }
 	};
 
 

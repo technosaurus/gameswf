@@ -45,8 +45,9 @@ namespace gameswf
 			OVER_DOWN_TO_IDLE = 1 << 8,
 		};
 		int	m_conditions;
-		array<action_buffer>	m_actions;
+		array<action_buffer*>	m_actions;
 
+		~button_action();
 		void	read(stream* in, int tag_type);
 	};
 

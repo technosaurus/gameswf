@@ -302,7 +302,7 @@ namespace gameswf
 					// Matching action.
 					for (int j = 0; j < m_def->m_button_actions[i].m_actions.size(); j++)
 					{
-						get_parent()->add_action_buffer(&(m_def->m_button_actions[i].m_actions[j]));
+						get_parent()->add_action_buffer(m_def->m_button_actions[i].m_actions[j]);
 					}
 				}
 			}}
@@ -310,7 +310,7 @@ namespace gameswf
 
 		void restart_characters()
 		{
-			// Advance our relevant characters.
+			// Restart our relevant characters.
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				//button_record&	rec = m_def->m_button_records[i];
@@ -343,6 +343,26 @@ namespace gameswf
 			}}
 		}
 
+
+		//
+		// ActionScript overrides
+		//
+
+		virtual void	set_member(const tu_string& name, const as_value& val)
+		{
+			log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
+				  name.c_str(),
+				  val.to_string());
+		}
+
+		virtual bool	get_member(const tu_string& name, as_value* val)
+		{
+			log_error("error: button_character_instance::get_member('%s') not implemented yet\n", name.c_str());
+			return false;
+		}
+
+		// not sure if we need to override this one.
+		//virtual const char*	get_text_value() const { return NULL; }	// edit_text_character overrides this
 	};
 
 
@@ -381,6 +401,16 @@ namespace gameswf
 	// button_action
 	//
 
+
+	button_action::~button_action()
+	{
+		for (int i = 0, n = m_actions.size(); i < n; i++)
+		{
+			delete m_actions[i];
+		}
+		m_actions.resize(0);
+	}
+
 	void	button_action::read(stream* in, int tag_type)
 	{
 		// Read condition flags.
@@ -396,8 +426,8 @@ namespace gameswf
 
 		// Read actions.
 		IF_VERBOSE_ACTION(log_msg("-- actions in button\n")); // @@ need more info about which actions
-		action_buffer	a;
-		a.read(in);
+		action_buffer*	a = new action_buffer;
+		a->read(in);
 		m_actions.push_back(a);
 	}
 
