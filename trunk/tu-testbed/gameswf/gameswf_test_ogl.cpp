@@ -12,8 +12,7 @@
 #include <string.h>
 #include "engine/ogl.h"
 #include "engine/utility.h"
-
-
+#include "engine/container.h"
 
 
 #define OVERSIZE	1.0f
@@ -112,13 +111,12 @@ int	main(int argc, char *argv[])
 	gameswf::movie_interface*	m = gameswf::create_movie(in);
 	SDL_RWclose(in);
 
-	char cache_name[_MAX_FNAME];
-	strcpy(cache_name, infile);
-	strcat(cache_name, ".cache");
+	tu_string	cache_name(infile);
+	cache_name += ".cache";
 
 	if (s_cache)
 	{
-		printf("\nsaving %s...\n", cache_name);
+		printf("\nsaving %s...\n", cache_name.c_str());
 		gameswf::fontlib::save_cached_font_data(cache_name);
 		exit(0);
 	}
