@@ -1,22 +1,116 @@
 Chunk LOD demo
-19 Aug 2001
+29 Sep 2001
 Thatcher Ulrich <tu@tulrich.com> http://tulrich.com
 
-Unfinished demo of chunked LOD scheme.  Uses static meshes with
-lerping and crack-filling meshes (not implemented) to give an
-adjustable guaranteed max pixel error, no vertex popping and hopefully
-low CPU overhead.
+Demo of chunked LOD scheme.  Uses static meshes with lerping and
+crack-filling meshes to give an adjustable guaranteed max pixel error,
+no vertex popping and hopefully low CPU overhead.
+
+"chunkdemo" is the renderer.  "heightfield_chunker" is the tool that
+precomputes the chunk data.  Both programs print usage info when you
+run them.
 
 With vertex_array_range extension, the demo puts out between 5 and 7
 million tris/sec on my laptop (1GHz CPU, GeForce2 Go video).  NVIDIA's
 VAR demo does ~11 Mtris/s on this machine, so improvement is certainly
-possible.  Still, that's pretty good for a morphing view-dependent LOD
-scheme.
-
-Please do not distribute!  It's not done yet.  I don't want this to
-get widely distributed until I implement crack filling.
+possible.  Still, that's pretty darn good for a morphing
+view-dependent LOD scheme.  I think stripifying my chunks would boost
+the throughput; shouldn't be too hard.
 
 Crater dataset thanks to John Ratcliff, http://ratcliff.flipcode.com
 
-Thanks to Ben Discoe & http://www.vterrain.org for the .bt terrain file format
-and for providing some sample .bt data.
+Thanks to Ben Discoe & http://www.vterrain.org for the .bt terrain
+file format and for providing some sample .bt data.
+
+
+ALGORITHM NOTES
+
+The basic idea is to take a single object, and make a tree of chunks
+out of it.  Each chunk is just a static, precomputed mesh that can be
+rendered with a single glDrawElements() call.  The chunk at the root
+of the tree is a low-detail representation of the entire object.  The
+child chunks of the root node split the object into several pieces,
+and each piece independently represents its portion of the object,
+with a higher level of detail than the parent.  This splitting happens
+recursively down to some arbitrary depth.  Each chunk has a bounding
+volume associated with it, and each level of the tree has a maximum
+geometric error associated with the chunks at that level.  The max
+geometric error represents maximum deviation of a chunk mesh from the
+underlying object geometry it represents.  In my scheme the max
+geometric error reduces by a factor of 2 at every additional level in
+the tree.  For example, if the root node of the tree is a single mesh
+that represents the object with at most 16 units of deviation from the
+full-detail mesh, at the fifth level down the tree, the chunks each
+represent a small piece of the object, with only 1 unit of deviation.
+
+The renderer simply chooses which chunks of the tree to draw, by
+looking at the viewpoint location in relation to the field-of-view,
+max allowed pixel error, and max geometric error of the chunks.  This
+tree is very similar in concept to Hoppe's Progressive Meshes; just
+using whole meshes instead of individual vertices.
+
+There are two main problems with the above algorithm:
+
+1) When switching LODs, the meshes will pop suddenly.
+
+2) The chunks at different LODs will have cracks where they meet.
+
+I've solved both problems.  1) is taken care of by lerping the meshes.
+Given a chunk A, and one of its child chunks B, I require that A
+contain some subset of the vertices of B (no sweat), call them L.
+These vertices not lerped when rendering B.  Let L' be the verts in B
+which *are not* contained in A.  The L' verts *are* lerped; when A
+first transitions to B, the L' verts are positioned so that they are
+coincident with points on the A mesh.  These positions can be on a
+vertex, edge or face; it doesn't matter much as long as they're on the
+A mesh, somewhere close to their final position.  The L' verts are
+gradually lerped towards the final position as B gets closer to the
+viewpoint.  By the time B is subdivided further, all the vertices in B
+are in their final positions.
+
+This causes an LOD transition to be a complete visual no-op.  The
+artifacts of adding vertices are displaced on the morphing of
+vertices, which tends to be unobtrusive.
+
+Problem 2), cracks between chunks, is made even worse by the lerping
+scheme.  Adjacent chunks at the same level are not guaranteed to match
+up exactly at the edge, because the chunks may be in different stages
+of lerping.  However, in both this case, and in the case where chunks
+at different LODs meet, the cracks can be filled with special edge
+meshes.  These are just simple meshes that form a "ribbon" of
+geometry, stitching together the two edges.  These ribbons are subject
+to lerping just like the chunks, although there are two or three lerp
+parameters per edge ribbon, rather than just one as in the chunks.
+However, the total number of triangles in edge ribbons is small
+compared to the whole mesh, and it's very effective at filling edge
+cracks.  This crack-filling scheme means that there are no T-junctions
+anywhere in the mesh.
+
+Texturing for this LOD scheme is actually extremely simple, given an
+additional contraint: if the maximum pixel error is fixed at
+preprocessing time, the chunk preprocessor can straightforwardly
+generate a unique static texture for each chunk.  The necessary
+resolution of the texture can be pre-computed using the LOD math, so
+that the precomputed texture provides maximum visible detail without
+wasting RAM.  Because the chunks are localized, it should also be
+possible to compute a decent per-chunk texgen mapping so that no
+vertex u,v's need to be stored in most cases.  There are some
+interesting open questions about texture popping though, if the
+mappings change significantly between chunks.  My sense is that if
+enough texture resolution is available, which should be easy to
+guarantee, that the popping would be minimal, but I haven't tried it
+yet.
+
+In this demo, though, I'm just using a simple large projected texture
+over the whole model.
+
+This demo also only works with heightfields.  I did that because
+heightfields are a little easier to deal with, and I knew how to do
+the mesh reduction.  The chunker is very specific to heightfields,
+while the renderer is only partly specific to heightfields and can
+easily be made generic.  This whole chunked-LOD scheme should be
+applicable to general meshes.  You'd just need to chunk up the meshes
+in some spatially-coherent way; clipping a general mesh with a octree
+would be one straightforward approach, or taking a Progressive Mesh
+split tree and picking out certain subtrees to be the chunks would
+probably work even better.
