@@ -8,7 +8,9 @@
 // in the foot.  In general I don't like it very much.
 //
 // These are not as comprehensive or general, but I think might be
-// more usable for day-to-day coding.
+// more usable for day-to-day coding.  Someday when STL compiles with
+// lightning speed, these can go away or (where the interface
+// diverges) turn into tiny wrappers.
 //
 // Basic approach: array<> acts like a stripped-down version of
 // std::vector<>, or a slightly beefed up native array.
@@ -197,7 +199,8 @@ public:
 
 template<class T, class U, class hash_functor = fixed_size_hash<T> >
 class hash {
-// Fairly stupid hash table.
+// Fairly stupid hash table.  TODO: study Lua's hashes, use their
+// tricks.
 //
 // Never shrinks, unless you explicitly clear() or resize() it.
 // Expands on demand, though.  For best results, if you know roughly

@@ -75,7 +75,7 @@ namespace gameswf
 	// from the stream.  The given bitcount determines the
 	// number of bits to read.
 	{
-		assert(bitcount <= 32 && bitcount > 0);
+		assert(bitcount <= 32 && bitcount >= 0);
 
 		Sint32	value = (Sint32) read_uint(bitcount);
 

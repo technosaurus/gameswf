@@ -15,7 +15,16 @@ namespace gameswf
 {
 	font::font()
 		:
-		m_name(NULL)
+		m_name(NULL),
+		m_unicode_chars(false),
+		m_shift_jis_chars(false),
+		m_ansi_chars(true),
+		m_is_italic(false),
+		m_is_bold(false),
+		m_wide_codes(false),
+		m_ascent(0.0f),
+		m_descent(0.0f),
+		m_leading(0.0f)
 	{
 	}
 
@@ -50,6 +59,8 @@ namespace gameswf
 
 	void	font::read(stream* in, int tag_type, movie* m)
 	{
+		assert(tag_type == 10 || tag_type == 48);
+
 		if (tag_type == 10)
 		{
 			IF_DEBUG(printf("reading DefineFont\n"));
@@ -87,27 +98,17 @@ namespace gameswf
 		{
 			IF_DEBUG(printf("reading DefineFont2\n"));
 
-			int	has_layout = in->read_uint(1);
-			int	shift_jis = in->read_uint(1);
-			int	unicode = in->read_uint(1);
-			int	ansi = in->read_uint(1);
-			int	wide_offsets = in->read_uint(1);
-			int	wide_codes = in->read_uint(1);
-			int	italic = in->read_uint(1);
-			int	bold = in->read_uint(1);
+			bool	has_layout = (in->read_uint(1) != 0);
+			m_shift_jis_chars = (in->read_uint(1) != 0);
+			m_unicode_chars = (in->read_uint(1) != 0);
+			m_ansi_chars = (in->read_uint(1) != 0);
+			bool	wide_offsets = (in->read_uint(1) != 0);
+			m_wide_codes = (in->read_uint(1) != 0);
+			m_is_italic = (in->read_uint(1) != 0);
+			m_is_bold = (in->read_uint(1) != 0);
 			Uint8	reserved = in->read_u8();
 
 			m_name = in->read_string_with_length();
-
-			// Avoid warnings.
-			reserved = reserved;
-			unicode = unicode;
-			bold = bold;
-			italic = italic;
-			wide_codes = wide_codes;
-			ansi = ansi;
-			shift_jis = shift_jis;
-			has_layout = has_layout;
 
 			int	glyph_count = in->read_u16();
 			
@@ -159,35 +160,115 @@ namespace gameswf
 				m_glyphs.push_back(s);
 			}}
 
-			// Read code table...
-			// in->set_position(table_base + font_code_offset);
-			// if (wide_codes) { read glyph_count * u16(); }
-			// else { read glyph_count * u8(); }
-			// put codes in a hash table
 
-			// if (has_layout)
-			// {
-			//    ascender height = s16();
-			//    descender height = s16();
-			//    leading height = s16();
-			//    advance table = glyph_count * s16();
-			//    bounds table = glyph_count * rect();
-			//    font kerning count = u16();
-			//    kerning info = font kerning count * kerning_record;
-			// }
+			if (font_code_offset + table_base != in->get_position())
+			{
+				// Bad offset!  Don't try to read any more.
+				return;
+			}
 
-			// kerning record:
-			// if (wide_codes) { code1 = u16(); } else { code1 = u8(); }
-			// if (wide_codes) { code2 = u16(); } else { code2 = u8(); }
-			// adjustment = s16(); // relative to advance values
+			read_code_table(in);
+
+			// Read layout info for the glyphs.
+			if (has_layout)
+			{
+				m_ascent = (float) in->read_s16();
+				m_descent = (float) in->read_s16();
+				m_leading = (float) in->read_s16();
+				
+				// Advance table; i.e. how wide each character is.
+				for (int i = 0; i < m_glyphs.size(); i++)
+				{
+					m_advance_table.push_back((float) in->read_s16());
+				}
+
+				// Bounds table.
+				m_bounds_table.resize(m_glyphs.size());
+				{for (int i = 0; i < m_bounds_table.size(); i++)
+				{
+					m_bounds_table[i].read(in);
+				}}
+
+				// Kerning pairs.
+				int	kerning_count = in->read_u16();
+				{for (int i = 0; i < kerning_count; i++)
+				{
+					Uint16	char0, char1;
+					if (m_wide_codes)
+					{
+						char0 = in->read_u16();
+						char1 = in->read_u16();
+					}
+					else
+					{
+						char0 = in->read_u8();
+						char1 = in->read_u8();
+					}
+					float	adjustment = (float) in->read_s16();
+
+					kerning_pair	k;
+					k.m_char0 = char0;
+					k.m_char1 = char1;
+
+					// Remember this adjustment; we can look it up quickly
+					// later using the character pair as the key.
+					m_kerning_pairs.add(k, adjustment);
+				}}
+			}
+		}
+	}
+
+
+	void	font::read_font_info(stream* in)
+	// Read additional information about this font, from a
+	// DefineFontInfo tag.  The caller has already read the tag
+	// type and font id.
+	{
+		if (m_name)
+		{
+			delete m_name;
+			m_name = NULL;
+		}
+
+		m_name = in->read_string_with_length();
+
+		unsigned char	flags = in->read_u8();
+		m_unicode_chars = (flags & 0x20) != 0;
+		m_shift_jis_chars = (flags & 0x10) != 0;
+		m_ansi_chars = (flags & 0x08) != 0;
+		m_is_italic = (flags & 0x04) != 0;
+		m_is_bold = (flags & 0x02) != 0;
+		m_wide_codes = (flags & 0x01) != 0;
+
+		read_code_table(in);
+	}
+
+
+	void	font::read_code_table(stream* in)
+	// Read the table that maps from glyph indices to character
+	// codes.
+	{
+		assert(m_code_table.size() == 0);
+
+		if (m_wide_codes)
+		{
+			// Code table is made of Uint16's.
+			for (int i = 0; i < m_glyphs.size(); i++)
+			{
+				m_code_table.push_back(in->read_u16());
+			}
 		}
 		else
 		{
-			IF_DEBUG(printf("*** define font tag type %d not implemented ***", tag_type));
-			assert(0);
+			// Code table is made of bytes.
+			for (int i = 0; i < m_glyphs.size(); i++)
+			{
+				m_code_table.push_back(in->read_u8());
+			}
 		}
 	}
-};
+
+};	// end namespace gameswf
 
 
 // Local Variables:

@@ -46,73 +46,6 @@ namespace gameswf
 	};
 
 
-	struct rect
-	{
-		float	m_x_min, m_x_max, m_y_min, m_y_max;
-
-		void	read(stream* in)
-		{
-			int	nbits = in->read_uint(5);
-			m_x_min = in->read_sint(nbits);
-			m_x_max = in->read_sint(nbits);
-			m_y_min = in->read_sint(nbits);
-			m_y_max = in->read_sint(nbits);
-
-//			IF_DEBUG(printf("rect::read() nbits = %d\n", nbits));
-//			IF_DEBUG(print(stdout));
-		}
-
-		void	print(FILE* out)
-		// Debug spew.
-		{
-			fprintf(out, "xmin = %g, ymin = %g, xmax = %g, ymax = %g\n",
-				TWIPS_TO_PIXELS(m_x_min),
-				TWIPS_TO_PIXELS(m_y_min),
-				TWIPS_TO_PIXELS(m_x_max),
-				TWIPS_TO_PIXELS(m_y_max));
-		}
-
-		void	debug_display(const display_info& di)
-		// Show the rectangle.
-		{
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-
-			di.m_matrix.ogl_multiply();
-
-			glColor3f(1, 1, 0);
-			glBegin(GL_LINE_STRIP);
-			{
-				glVertex2f(m_x_min, m_y_min);
-				glVertex2f(m_x_min, m_y_max);
-				glVertex2f(m_x_max, m_y_max);
-				glVertex2f(m_x_max, m_y_min);
-				glVertex2f(m_x_min, m_y_min);
-			}
-			glEnd();
-
-			glPopMatrix();
-		}
-
-		
-		bool	point_test(float x, float y)
-		// Return true if the specified point is inside this rect.
-		{
-			if (x < m_x_min
-			    || x > m_x_max
-			    || y < m_y_min
-			    || y > m_y_max)
-			{
-				return false;
-			}
-			else
-			{
-				return true;
-			}
-		}
-	};
-
-
 	struct gradient_record
 	{
 		Uint8	m_ratio;
@@ -2141,199 +2074,10 @@ namespace gameswf
 	}
 
 
-#if 0
 	//
-	// font
+	// font loaders
 	//
-	
-	struct font
-	{
-		array<shape_character*>	m_glyphs;
-		char*	m_name;
-		// etc
 
-		font()
-			:
-			m_name(NULL)
-		{
-		}
-
-		~font()
-		{
-			// Iterate over m_glyphs and free the shapes.
-			for (int i = 0; i < m_glyphs.size(); i++)
-			{
-				delete m_glyphs[i];
-			}
-			m_glyphs.resize(0);
-
-			// Delete the name string.
-			if (m_name)
-			{
-				delete [] m_name;
-			}
-		}
-
-		shape_character*	get_glyph(int index)
-		{
-			if (index >= 0 && index < m_glyphs.size())
-			{
-				return m_glyphs[index];
-			}
-			else
-			{
-				return NULL;
-			}
-		}
-
-		void	read(stream* in, int tag_type, movie* m)
-		{
-			if (tag_type == 10)
-			{
-				IF_DEBUG(printf("reading DefineFont\n"));
-
-				int	table_base = in->get_position();
-
-				// Read the glyph offsets.  Offsets
-				// are measured from the start of the
-				// offset table.
-				array<int>	offsets;
-				offsets.push_back(in->read_u16());
-				IF_DEBUG(printf("offset[0] = %d\n", offsets[0]));
-				int	count = offsets[0] >> 1;
-				for (int i = 1; i < count; i++)
-				{
-					offsets.push_back(in->read_u16());
-					IF_DEBUG(printf("offset[%d] = %d\n", i, offsets[i]));
-				}
-
-				m_glyphs.reserve(count);
-
-				// Read the glyph shapes.
-				{for (int i = 0; i < count; i++)
-				{
-					// Seek to the start of the shape data.
-					int	new_pos = table_base + offsets[i];
-//					assert(new_pos >= in->get_position());	// if we're seeking backwards, then that looks like a bug.
-					in->set_position(new_pos);
-
-					// Create & read the shape.
-					shape_character*	s = new shape_character;
-					s->read(in, 2, false, m);
-
-					m_glyphs.push_back(s);
-				}}
-			}
-			else if (tag_type == 48)
-			{
-				IF_DEBUG(printf("reading DefineFont2\n"));
-
-				int	has_layout = in->read_uint(1);
-				int	shift_jis = in->read_uint(1);
-				int	unicode = in->read_uint(1);
-				int	ansi = in->read_uint(1);
-				int	wide_offsets = in->read_uint(1);
-				int	wide_codes = in->read_uint(1);
-				int	italic = in->read_uint(1);
-				int	bold = in->read_uint(1);
-				Uint8	reserved = in->read_u8();
-
-				char*	m_name = in->read_string_with_length();
-
-				// Avoid warnings.
-				m_name = m_name;
-				reserved = reserved;
-				unicode = unicode;
-				bold = bold;
-				italic = italic;
-				wide_codes = wide_codes;
-				ansi = ansi;
-				shift_jis = shift_jis;
-				has_layout = has_layout;
-
-				int	glyph_count = in->read_u16();
-				
-				int	table_base = in->get_position();
-
-				// Read the glyph offsets.  Offsets
-				// are measured from the start of the
-				// offset table.
-				array<int>	offsets;
-				if (wide_offsets)
-				{
-					// 32-bit offsets.
-					for (int i = 0; i < glyph_count; i++)
-					{
-						offsets.push_back(in->read_u32());
-					}
-				}
-				else
-				{
-					// 16-bit offsets.
-					for (int i = 0; i < glyph_count; i++)
-					{
-						offsets.push_back(in->read_u16());
-					}
-				}
-
-				int	font_code_offset;
-				if (wide_offsets)
-				{
-					font_code_offset = in->read_u32();
-				}
-				else
-				{
-					font_code_offset = in->read_u16();
-				}
-
-				m_glyphs.reserve(glyph_count);
-
-				// Read the glyph shapes.
-				{for (int i = 0; i < glyph_count; i++)
-				{
-					// Seek to the start of the shape data.
-					int	new_pos = table_base + offsets[i];
-					assert(new_pos >= in->get_position());	// if we're seeking backwards, then that looks like a bug.
-					in->set_position(new_pos);
-
-					// Create & read the shape.
-					shape_character*	s = new shape_character;
-					s->read(in, 22, false, m);
-
-					m_glyphs.push_back(s);
-				}}
-
-				// Read code table...
-				// in->set_position(table_base + font_code_offset);
-				// if (wide_codes) { read glyph_count * u16(); }
-				// else { read glyph_count * u8(); }
-				// put codes in a hash table
-
-				// if (has_layout)
-				// {
-				//    ascender height = s16();
-				//    descender height = s16();
-				//    leading height = s16();
-				//    advance table = glyph_count * s16();
-				//    bounds table = glyph_count * rect();
-				//    font kerning count = u16();
-				//    kerning info = font kerning count * kerning_record;
-				// }
-
-				// kerning record:
-				// if (wide_codes) { code1 = u16(); } else { code1 = u8(); }
-				// if (wide_codes) { code2 = u16(); } else { code2 = u8(); }
-				// adjustment = s16(); // relative to advance values
-			}
-			else
-			{
-				IF_DEBUG(printf("*** define font tag type %d not implemented ***", tag_type));
-				assert(0);
-			}
-		}
-	};
-#endif // 0
-	
 
 	void	define_font_loader(stream* in, int tag_type, movie* m)
 	// Load a DefineFont or DefineFont2 tag.
@@ -2348,6 +2092,22 @@ namespace gameswf
 //		IF_DEBUG(0);
 
 		m->add_font(font_id, f);
+	}
+
+
+	void	define_font_info_loader(stream* in, int tag_type, movie* m)
+	// Load a DefineFontInfo tag.  This adds information to an
+	// existing font.
+	{
+		assert(tag_type == 13);
+
+		Uint16	font_id = in->read_u16();
+		
+		font*	f = m->get_font(font_id);
+		if (f)
+		{
+			f->read_font_info(in);
+		}
 	}
 
 

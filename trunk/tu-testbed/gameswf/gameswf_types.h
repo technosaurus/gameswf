@@ -110,6 +110,16 @@ namespace gameswf
 	};
 
 
+	struct rect
+	{
+		float	m_x_min, m_x_max, m_y_min, m_y_max;
+
+		void	read(stream* in);
+		void	print(FILE* out);
+		bool	point_test(float x, float y);
+	};
+	
+
 };	// end namespace gameswf
 
 
