@@ -40,7 +40,7 @@ public:
 	typedef int (* seek_func)(int pos, void *appdata);
 	typedef int (* seek_to_end_func)(void *appdata);
 	typedef int (* tell_func)(const void *appdata);
-	typedef int (* close_func)(const void *appdata);
+	typedef int (* close_func)(void *appdata);
 
 	// The generic constructor; supply functions for the implementation.
 	tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, seek_to_end_func ef, tell_func tf, close_func cf=NULL);

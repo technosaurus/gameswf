@@ -25,6 +25,7 @@ all: engine $(LIB_OUT) $(EXE_OUT)
 OBJS = \
 	gameswf_action.$(OBJ_EXT)	\
 	gameswf_button.$(OBJ_EXT)	\
+	gameswf_dlist.$(OBJ_EXT)	\
 	gameswf_font.$(OBJ_EXT)	\
 	gameswf_fontlib.$(OBJ_EXT)	\
 	gameswf_impl.$(OBJ_EXT)	\

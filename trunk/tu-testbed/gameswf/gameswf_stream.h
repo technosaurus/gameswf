@@ -19,14 +19,9 @@ namespace gameswf
 	// stream is used to encapsulate bit-packed file reads.
 	struct stream
 	{
-		tu_file*	m_input;
-		Uint8	m_current_byte;
-		Uint8	m_unused_bits;
-
-		array<int>	m_tag_stack;	// position of end of tag
-
-
 		stream(tu_file* input);
+		~stream();
+
 		int	read_uint(int bitcount);
 		int	read_sint(int bitcount);
 		float	read_fixed();
@@ -50,6 +45,15 @@ namespace gameswf
 		int	get_tag_end_position();
 		int	open_tag();
 		void	close_tag();
+
+		tu_file*	get_underlying_stream() { return m_input; }
+
+	private:
+		tu_file*	m_input;
+		Uint8	m_current_byte;
+		Uint8	m_unused_bits;
+
+		array<int>	m_tag_stack;	// position of end of tag
 	};
 
 

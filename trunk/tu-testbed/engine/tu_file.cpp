@@ -10,38 +10,70 @@
 #include "engine/utility.h"
 
 
-// TODO: add error detection and report!!!
+// TODO: add error detection and reporting!!!
+
+
 static int std_read_func(void* dst, int bytes, void* appdata) 
+// Return the number of bytes actually read.  EOF or an error would
+// cause that to not be equal to "bytes".
 {
 	assert(appdata);
 	assert(dst);
 	return fread( dst, 1, bytes, (FILE *)appdata );
 }
+
 static int std_write_func(const void* src, int bytes, void* appdata)
+// Return the number of bytes actually written.
 {
 	assert(appdata);
 	assert(src);
 	return fwrite( src, 1, bytes, (FILE *)appdata );
 }
+
 static int std_seek_func(int pos, void *appdata)
+// Return 0 on success, or TU_FILE_SEEK_ERROR on failure.
 {
 	assert(appdata);
-	return fseek((FILE*)appdata, pos, SEEK_SET);
+	int	result = fseek((FILE*)appdata, pos, SEEK_SET);
+	if (result == EOF)
+	{
+		// @@ TODO should set m_error to something relevant based on errno.
+		return TU_FILE_SEEK_ERROR;
+	}
+	return 0;
 }
+
 static int std_seek_to_end_func(void *appdata)
+// Return 0 on success, TU_FILE_SEEK_ERROR on failure.
 {
 	assert(appdata);
-	return fseek((FILE*)appdata, 0, SEEK_END);
+	int	result = fseek((FILE*)appdata, 0, SEEK_END);
+	if (result == EOF)
+	{
+		// @@ TODO should set m_error to something relevant based on errno.
+		return TU_FILE_SEEK_ERROR;
+	}
+	return 0;
 }
+
 static int std_tell_func(const void *appdata)
+// Return the file position, or -1 on failure.
 {
 	assert(appdata);
 	return ftell((FILE*)appdata);
 }
-static int std_close_func(const void *appdata)
+
+static int std_close_func(void *appdata)
+// Return 0 on success, or TU_FILE_CLOSE_ERROR on failure.
 {
 	assert(appdata);
-	return fclose((FILE*)appdata);
+	int	result = fclose((FILE*)appdata);
+	if (result == EOF)
+	{
+		// @@ TODO should set m_error to something relevant based on errno.
+		return TU_FILE_CLOSE_ERROR;
+	}
+	return 0;
 }
 
 	

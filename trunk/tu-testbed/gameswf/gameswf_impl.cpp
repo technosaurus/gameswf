@@ -25,6 +25,7 @@
 #include "gameswf_dlist.h"
 #include "engine/image.h"
 #include "engine/jpeg.h"
+#include "engine/zlib_adapter.h"
 #include <string.h>	// for memset
 #include <zlib.h>
 #include <typeinfo>
@@ -656,14 +657,31 @@ namespace gameswf
 			Uint32	file_length = in->read_le32();
 
 			m_version = (header >> 24) & 255;
-			if ((header & 0x0FFFFFF) != 0x00535746)
+			if ((header & 0x0FFFFFF) != 0x00535746
+			    && (header & 0x0FFFFFF) != 0x00535743)
 			{
 				// ERROR
 				log_error("gameswf::movie_impl::read() -- file does not start with a SWF header!\n");
 				return;
 			}
+			bool	compressed = (header & 255) == 'C';
 
 			IF_VERBOSE_PARSE(log_msg("version = %d, file_length = %d\n", m_version, file_length));
+
+			tu_file*	original_in = NULL;
+			if (compressed)
+			{
+				IF_VERBOSE_PARSE(log_msg("file is compressed.\n"));
+				original_in = in;
+
+				// Uncompress the input as we read it.
+				in = zlib_adapter::make_inflater(original_in);
+
+				// Subtract the size of the 8-byte header, since
+				// it's not included in the compressed
+				// stream length.
+				file_length -= 8;
+			}
 
 			stream	str(in);
 
@@ -705,6 +723,18 @@ namespace gameswf
 				}
 
 				str.close_tag();
+
+				if (tag_type == 0)
+				{
+					if (str.get_position() != file_length)
+					{
+						// Safety break, so we don't read past the end of the
+						// movie.
+						log_msg("warning: hit stream-end tag, but not at the "
+							"end of the file yet; stopping for safety\n");
+						break;
+					}
+				}
 			}
 
 			if (m_jpeg_in)
@@ -713,6 +743,12 @@ namespace gameswf
 			}
 
 			restart();
+
+			if (original_in)
+			{
+				// Done with the zlib_adapter.
+				delete in;
+			}
 		}
 
 
@@ -962,7 +998,7 @@ namespace gameswf
 	{
 		assert(tag_type == 8);
 
-		jpeg::input*	j_in = jpeg::input::create_swf_jpeg2_header_only(in->m_input);
+		jpeg::input*	j_in = jpeg::input::create_swf_jpeg2_header_only(in->get_underlying_stream());
 		assert(j_in);
 
 		m->set_jpeg_loader(j_in);
@@ -1007,7 +1043,7 @@ namespace gameswf
 		// Read the image data.
 		//
 		
-		ch->m_image = image::read_swf_jpeg2(in->m_input);
+		ch->m_image = image::read_swf_jpeg2(in->get_underlying_stream());
 		m->add_bitmap_character(character_id, ch);
 	}
 
@@ -1084,14 +1120,14 @@ namespace gameswf
 		// Read the image data.
 		//
 		
-		ch->m_image = image::read_swf_jpeg3(in->m_input);
+		ch->m_image = image::read_swf_jpeg3(in->get_underlying_stream());
 
 		in->set_position(alpha_position);
 		
 		int	buffer_bytes = ch->m_image->m_width * ch->m_image->m_height;
 		Uint8*	buffer = new Uint8[buffer_bytes];
 
-		inflate_wrapper(in->m_input, buffer, buffer_bytes);
+		inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 
 		for (int i = 0; i < buffer_bytes; i++)
 		{
@@ -1140,7 +1176,7 @@ namespace gameswf
 				int	buffer_bytes = color_table_size * 3 + pitch * height;
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
-				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 				assert(in->get_tag_end_position() == in->get_position());
 
 				Uint8*	color_table = buffer;
@@ -1169,7 +1205,7 @@ namespace gameswf
 				int	buffer_bytes = pitch * height;
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
-				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 				assert(in->get_tag_end_position() == in->get_position());
 			
 				for (int j = 0; j < height; j++)
@@ -1198,7 +1234,7 @@ namespace gameswf
 				int	buffer_bytes = pitch * height;
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
-				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 				assert(in->get_tag_end_position() == in->get_position());
 			
 				// Need to re-arrange ARGB into RGB.
@@ -1247,7 +1283,7 @@ namespace gameswf
 				int	buffer_bytes = color_table_size * 4 + pitch * height;
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
-				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 				assert(in->get_tag_end_position() == in->get_position());
 
 				Uint8*	color_table = buffer;
@@ -1277,7 +1313,7 @@ namespace gameswf
 				int	buffer_bytes = pitch * height;
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
-				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 				assert(in->get_tag_end_position() == in->get_position());
 			
 				for (int j = 0; j < height; j++)
@@ -1302,7 +1338,7 @@ namespace gameswf
 			{
 				// 32 bits / pixel, input is ARGB format
 
-				inflate_wrapper(in->m_input, ch->m_image->m_data, width * height * 4);
+				inflate_wrapper(in->get_underlying_stream(), ch->m_image->m_data, width * height * 4);
 				assert(in->get_tag_end_position() == in->get_position());
 			
 				// Need to re-arrange ARGB into RGBA.

@@ -31,7 +31,8 @@ SRCS := \
 	tu_file_SDL.cpp	\
 	tu_random.cpp	\
 	tu_types.cpp	\
-	utility.cpp
+	utility.cpp	\
+	zlib_adapter.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
 
