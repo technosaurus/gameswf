@@ -406,7 +406,7 @@ namespace gameswf
 	{
 	}
 
-	mesh_set::mesh_set(const shape_character_def* sh, float error_tolerance)
+	mesh_set::mesh_set(const tesselate::tesselating_shape* sh, float error_tolerance)
 	// Tesselate the shape's paths into a different mesh for each fill style.
 		:
 //		m_last_frame_rendered(0),
@@ -895,7 +895,6 @@ namespace gameswf
 		float	object_space_max_error = 20.0f / mat.get_max_scale() / pixel_scale;
 
 		// See if we have an acceptable mesh available; if so then render with it.
-		bool rendered = false;
 		for (int i = 0; i < m_cached_meshes.size(); i++)
 		{
 			if (object_space_max_error > m_cached_meshes[i]->get_error_tolerance() * 3.0f)
@@ -909,20 +908,16 @@ namespace gameswf
 			{
 				// Do it.
 				m_cached_meshes[i]->display(mat, cx, fill_styles, line_styles);
-				rendered = true;
-				break;
+				return;
 			}
 		}
 
-		if (rendered == false)
-		{
-			// Construct a new mesh to handle this error tolerance.
-			mesh_set*	m = new mesh_set(this, object_space_max_error * 0.75f);
-			m_cached_meshes.push_back(m);
-			m->display(mat, cx, fill_styles, line_styles);
-
-			sort_and_clean_meshes();
-		}
+		// Construct a new mesh to handle this error tolerance.
+		mesh_set*	m = new mesh_set(this, object_space_max_error * 0.75f);
+		m_cached_meshes.push_back(m);
+		m->display(mat, cx, fill_styles, line_styles);
+		
+		sort_and_clean_meshes();
 	}
 
 
