@@ -1,6 +1,7 @@
 This stuff is all available as part of the tu-testbed project on
 SourceForge; http://sourceforge.net/projects/tu-testbed
 
-See the text files in docs/ for more info.
+If you're looking for demos, there should be .bat files or scripts in
+this dir, to start them.
 
-Look in demos/ for fun demo programs.
+See the text files in docs/ for more info about the project.
