@@ -74,6 +74,43 @@ namespace render
 
 			delete rescaled;
 		}
+
+
+		bitmap_info(image::rgba* im)
+			:
+			m_texture_id(0),
+			m_original_width(0),
+			m_original_height(0)
+		// Version of the constructor that takes an image with alpha.
+		{
+			assert(im);
+
+			// Create the texture.
+
+			glEnable(GL_TEXTURE_2D);
+			glGenTextures(1, &m_texture_id);
+			glBindTexture(GL_TEXTURE_2D, m_texture_id);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* LINEAR_MIPMAP_LINEAR */);
+		
+			m_original_width = im->m_width;
+			m_original_height = im->m_height;
+
+			int	w = 1; while (w < im->m_width) { w <<= 1; }
+			int	h = 1; while (h < im->m_height) { h <<= 1; }
+
+			image::rgba*	rescaled = image::create_rgba(w, h);
+			image::resample(rescaled, 0, 0, w - 1, h - 1,
+					im, 0, 0, im->m_width, im->m_height);
+		
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
+//			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_image->m_width, m_image->m_height, GL_RGB, GL_UNSIGNED_BYTE, m_image->m_data);
+
+			delete rescaled;
+		}
 	};
 
 
@@ -253,6 +290,17 @@ namespace render
 	}
 
 
+	bitmap_info*	create_bitmap_info(image::rgba* im)
+	// Given an image, returns a pointer to a bitmap_info struct
+	// that can later be passed to fill_styleX_bitmap(), to set a
+	// bitmap fill style.
+	//
+	// This version takes an image with an alpha channel.
+	{
+		return new bitmap_info(im);
+	}
+
+
 	void	delete_bitmap_info(bitmap_info* bi)
 	// Delete the given bitmap info struct.
 	{
@@ -274,6 +322,9 @@ namespace render
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 		glOrtho(x0, x1, y0, y1, -1, 1);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// GL_MODULATE
 
@@ -875,6 +926,7 @@ namespace render
 		}
 #endif // 0
 
+#if 1
 		// Trace out the path outline, for antialiasing of filled shapes.
 
 		if (s_current_left_style.is_valid())
@@ -898,6 +950,7 @@ namespace render
 			}
 			glEnd();
 		}
+#endif // 0
 
 		s_current_path.resize(0);
 	}

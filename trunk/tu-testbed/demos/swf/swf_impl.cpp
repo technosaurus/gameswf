@@ -987,64 +987,26 @@ namespace swf
 			}
 			return m_bitmap_info;
 		}
-#if 0
-		void	display(const display_info& di)
-		{
-			if (m_texture == 0)
-			{
-				// Create texture.
-				glEnable(GL_TEXTURE_2D);
-				glGenTextures(1, &m_texture);
-				glBindTexture(GL_TEXTURE_2D, m_texture);
-				
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* LINEAR_MIPMAP_LINEAR */);
-
-				int	w = 1; while (w < m_image->m_width) { w <<= 1; }
-				int	h = 1; while (h < m_image->m_height) { h <<= 1; }
-
-				char*	temp = new char[w * h * 3];
-				memset(temp, 0, w * h * 3);
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, temp);
-				delete [] temp;
-
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_image->m_width, m_image->m_height, GL_RGB, GL_UNSIGNED_BYTE, m_image->m_data);
-			}
-
-			printf("showing texture...\n");
-
-			glBegin(GL_QUADS);
-
-			glTexCoord2f(0, 0);
-			glVertex2f(0, 0);
-
-			glTexCoord2f(1, 0);
-			glVertex2f(1, 0);
-
-			glTexCoord2f(1, 1);
-			glVertex2f(1, 1);
-
-			glTexCoord2f(0, 1);
-			glVertex2f(0, 1);
-
-			glEnd();
-		}
-#endif // 0
 	};
 
 
-	struct bitmap_character_rgba : public character
+	struct bitmap_character_rgba : public bitmap_character
 	{
 		image::rgba*	m_image;
+		swf::render::bitmap_info*	m_bitmap_info;
 
 		bitmap_character_rgba() : m_image(0) {}
 
-		void	display(const display_info& di)
+		swf::render::bitmap_info*	get_bitmap_info()
 		{
-			printf("bitmap_character_rgba display\n");
-			/* TODO */
+			if (m_image != 0)
+			{
+				// Create our bitmap info, from our image.
+				m_bitmap_info = swf::render::create_bitmap_info(m_image);
+				delete m_image;
+				m_image = 0;
+			}
+			return m_bitmap_info;
 		}
 	};
 
@@ -1066,20 +1028,7 @@ namespace swf
 		//
 		
 		ch->m_image = image::read_swf_jpeg2(in->m_input);
-//		unsigned int	bitmap_id = swf::render::create_bitmap_id(image);
-//		delete image;
-
 		m->add_bitmap_character(character_id, ch);
-
-//		IF_DEBUG(printf("id = %d, bm = 0x%X, width = %d, height = %d, pitch = %d\n",
-//				character_id,
-//				(unsigned) ch->m_image,
-//				ch->m_image->m_width,
-//				ch->m_image->m_height,
-//				ch->m_image->m_pitch));
-
-//		// add image to movie, under character id.
-//		m->add_character(character_id, ch);
 	}
 
 
@@ -1240,7 +1189,7 @@ namespace swf
 		}
 
 		// add image to movie, under character id.
-		m->add_character(character_id, ch);
+		m->add_bitmap_character(character_id, ch);
 	}
 
 

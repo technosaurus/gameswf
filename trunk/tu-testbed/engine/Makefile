@@ -10,7 +10,7 @@ SDL_LDFLAGS := $(shell sdl-config --libs)
 endif
 
 SDL_INCLUDE := -ISDL
-LUA_INCLUDE := -I$(TOP)/../lua-4.0/include
+LUA_INCLUDE := -I$(TOP)/../lua-4.0.1/include
 
 INCLUDE_PATHS := $(SDL_INCLUDE) $(LUA_INCLUDE) $(ENGINE_INCLUDE) $(LIBPNG_INCLUDE) $(ZLIB_INCLUDE) $(JPEGLIB_INCLUDE)
 

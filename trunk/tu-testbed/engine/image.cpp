@@ -107,52 +107,20 @@ namespace image
 	}
 
 
-#if 0
-	void	resample(SDL_Surface* dest, int out_x0, int out_y0, int out_x1, int out_y1,
-			 SDL_Surface* src, float in_x0, float in_y0, float in_x1, float in_y1)
-	// Resample the specified rectangle of the src surface into the
-	// specified rectangle of the destination surface.  Output coords
-	// are inclusive.
+	void	rgba::set_pixel(int x, int y, Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+	// Set the pixel at the given position.
 	{
-		// Make sure output is within bounds.
-		assert(out_x0 >= 0 && out_x0 < dest->w);
-		assert(out_x1 > out_x0 && out_x1 < dest->w);
-		assert(out_y0 >= 0 && out_y0 < dest->h);
-		assert(out_y1 > out_y0 && out_y1 < dest->h);
+		assert(x >= 0 && x < m_width);
+		assert(y >= 0 && y < m_height);
 
-		int	dxo = (out_x1 - out_x0);
-		int	dyo = (out_y1 - out_y0);
+		Uint8*	data = scanline(this, y) + 4 * x;
 
-		// @@ check input...
-
-		float	dxi = in_x1 - in_x0;
-		float	dyi = in_y1 - in_y0;
-		assert(dxi > 0.001f);
-		assert(dyi > 0.001f);
-
-		float	x_factor = dxi / dxo;
-		float	y_factor = dyi / dyo;
-
-		// @@ not optimized.
-
-		for (int j = 0; j <= dyo; j++) {
-			for (int i = 0; i <= dxo; i++) {
-				// @@ simple nearest-neighbor point-sample.
-				float	x = i * x_factor + in_x0;
-				float	y = j * y_factor + in_y0;
-				x = fclamp(x, 0.f, float(src->w - 1));
-				y = fclamp(y, 0.f, float(src->h - 1));
-
-				Uint8*	p = scanline(src, frnd(y)) + 3 * frnd(x);
-				Uint8*	q = scanline(dest, out_y0 + j) + 3 * (out_x0 + i);
-
-				*q++ = *p++;	// red
-				*q++ = *p++;	// green
-				*q++ = *p++;	// blue
-			}
-		}
+		data[0] = r;
+		data[1] = g;
+		data[2] = b;
+		data[3] = a;
 	}
-#endif // 0
+
 
 	void	write_jpeg(SDL_RWops* out, rgb* image, int quality)
 	// Write the given image to the given out stream, in jpeg format.

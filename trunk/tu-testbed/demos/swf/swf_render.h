@@ -21,6 +21,7 @@ namespace swf
 		struct bitmap_info;
 
 		bitmap_info*	create_bitmap_info(image::rgb* im);
+		bitmap_info*	create_bitmap_info(image::rgba* im);
 		void	delete_bitmap_info(bitmap_info* bi);
 
 		// Bracket the displaying of a frame from a movie.
