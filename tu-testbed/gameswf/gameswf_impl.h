@@ -506,6 +506,7 @@ namespace gameswf
 	void	import_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	start_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	button_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	// sound_stream_loader();	// head, head2, block
 
 

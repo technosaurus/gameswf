@@ -1146,6 +1146,7 @@ namespace gameswf
 			register_tag_loader(13, define_font_info_loader);
 			register_tag_loader(14, define_sound_loader);
 			register_tag_loader(15, start_sound_loader);
+			register_tag_loader(17, button_sound_loader);
 			register_tag_loader(20, define_bits_lossless_2_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
@@ -2853,16 +2854,17 @@ namespace gameswf
 				do_actions();
 
 
-				// Update next frame according to actions
-				if (m_play_state == STOP)
-				{
-					m_next_frame = m_current_frame;
-					if (m_next_frame >= m_def->get_frame_count())
-					{
-						m_next_frame = m_def->get_frame_count();
-					}
-				}
-				else if (m_next_frame >= m_def->get_frame_count())	// && m_play_state == PLAY
+// 				// Update next frame according to actions
+// 				if (m_play_state == STOP)
+// 				{
+// 					m_next_frame = m_current_frame;
+// 					if (m_next_frame >= m_def->get_frame_count())
+// 					{
+// 						m_next_frame = m_def->get_frame_count();
+// 					}
+// 				}
+// 				else
+				if (m_next_frame >= m_def->get_frame_count())	// && m_play_state == PLAY
 				{
   					m_next_frame = 0;
 					m_has_looped = true;
@@ -2873,7 +2875,7 @@ namespace gameswf
 						m_update_frame = true;
 					}*/
 
-					if (single_frame_movie == false)
+					if (single_frame_movie == false && m_play_state == PLAY)
 					{
 						m_display_list.reset();
 					}
@@ -3939,6 +3941,18 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("remove_object_2(%d)\n", t->m_depth));
 
 		m->add_execute_tag(t);
+	}
+
+
+	void	button_sound_loader(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 17);
+
+		int	button_character_id = in->read_u16();
+		button_character_definition* ch = (button_character_definition*) m->get_character_def(button_character_id);
+		assert(ch != NULL);
+
+		ch->read(in, tag_type, m);
 	}
 
 

@@ -11,6 +11,7 @@
 
 
 #include "gameswf_impl.h"
+#include "gameswf_sound.h"
 
 
 namespace gameswf
@@ -55,11 +56,51 @@ namespace gameswf
 
 	struct button_character_definition : public character_def
 	{
+		struct sound_envelope
+		{
+			Uint32 m_mark44;
+			Uint16 m_level0;
+			Uint16 m_level1;
+		};
+
+		struct sound_info
+		{
+			void read(stream* in);
+
+			bool m_no_multiple;
+			bool m_stop_playback;
+			bool m_has_envelope;
+			bool m_has_loops;
+			bool m_has_out_point;
+			bool m_has_in_point;
+			Uint32 m_in_point;
+			Uint32 m_out_point;
+			Uint16 m_loop_count;
+			array<sound_envelope> m_envelopes;
+		};
+
+		struct button_sound_info
+		{
+			Uint16 m_sound_id;
+			sound_sample_impl*	m_sam;
+			sound_info m_sound_style;
+		};
+
+		struct button_sound_def
+		{
+			void	read(stream* in, movie_definition_sub* m);
+			button_sound_info m_button_sounds[4];
+		};
+
+
 		bool m_menu;
 		array<button_record>	m_button_records;
 		array<button_action>	m_button_actions;
+		button_sound_def*	m_sound;
 
 		button_character_definition();
+		virtual ~button_character_definition();
+
 		smart_ptr<character>	create_character_instance(movie* parent, int id);
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 	};

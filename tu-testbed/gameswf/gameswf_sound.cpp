@@ -6,6 +6,7 @@
 // Code to handle SWF sound-related tags.
 
 
+#include "gameswf_sound.h"
 #include "gameswf_stream.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
@@ -32,24 +33,14 @@ namespace gameswf
 	}
 
 
-	struct sound_sample_impl : public sound_sample
+	sound_sample_impl::~sound_sample_impl()
 	{
-		int	m_sound_handler_id;
-
-		sound_sample_impl(int id)
-			:
-			m_sound_handler_id(id)
+		if (s_sound_handler)
 		{
+			s_sound_handler->delete_sound(m_sound_handler_id);
 		}
+	}
 
-		~sound_sample_impl()
-		{
-			if (s_sound_handler)
-			{
-				s_sound_handler->delete_sound(m_sound_handler_id);
-			}
-		}
-	};
 
 	// Utility function to uncompress ADPCM.
 	static void	adpcm_expand(
