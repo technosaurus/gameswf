@@ -63,6 +63,12 @@ namespace gameswf
 	struct string_as_object : public gameswf::as_object
 	{
 		String str;
+
+		string_as_object(const char* s)
+			:
+			str(s)
+		{
+		}
 	};
 
 

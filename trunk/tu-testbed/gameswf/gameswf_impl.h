@@ -284,6 +284,11 @@ namespace gameswf
 		
 		// Special event handler; sprites also execute their frame1 actions on this event.
 		virtual void	on_event_load() { on_event(event_id::LOAD); }
+
+		// tulrich: @@ is there a good reason these are in the
+		// vtable?  I.e. can the caller just call
+		// on_event(event_id::SOCK_DATA) instead of
+		// on_event_xmlsocket_ondata()?
 		virtual void	on_event_xmlsocket_ondata() { on_event(event_id::SOCK_DATA); }
 		virtual void	on_event_xmlsocket_onxml() { on_event(event_id::SOCK_XML); }
 		virtual void	on_event_interval_timer() { on_event(event_id::TIMER); }

@@ -27,7 +27,7 @@ namespace gameswf
   
   Timer::Timer(as_value *obj, int ms)
   {
-    setInterval(obj, ms);
+    setInterval(*obj, ms);
     start();
   }
   
@@ -170,33 +170,29 @@ namespace gameswf
   timer_expire(as_value* result, as_object_interface* this_ptr, as_environment* env)
   {
     //log_msg("%s:\n", __FUNCTION__);
-    as_value	*val;
 
     timer_as_object*	ptr = (timer_as_object*) (as_object*) this_ptr;
     assert(ptr);
-    val = ptr->obj.getASFunction();
+    const as_value&	val = ptr->obj.getASFunction();
     
-    if (as_as_function* as_func = val->to_as_function()) {
+    if (as_as_function* as_func = val.to_as_function()) {
       // It's an ActionScript function.  Call it.
       log_msg("Calling ActionScript function for setInterval Timer\n");
-      (*as_func)(val, this_ptr, env, 0, 0);
+      (*as_func)(result, this_ptr, env, 0, 0);
     } else {
       log_error("FIXME: Couldn't find setInterval Timer!\n");
     }
-    
-    result->set(val); 
   }
   
   void
   timer_clearinterval(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
   {
     //log_msg("%s: nargs = %d\n", __FUNCTION__, nargs);
-    as_value	*val;
 
     double id = env->bottom(first_arg).to_number();
 
     movie*	mov = env->get_target()->get_root_movie();
     mov->clear_interval_timer((int)id);
-    result->set(val); 
+    result->set(true); 
   }
 }

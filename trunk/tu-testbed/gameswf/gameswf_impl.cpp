@@ -3140,8 +3140,6 @@ namespace gameswf
 		virtual void    do_something(void *timer)
 		{
 			as_value	val;
-			as_value       *as_val;
-			as_value	method;
 			as_object      *obj, *this_ptr;
 			as_environment *as_env;
 
@@ -3149,20 +3147,20 @@ namespace gameswf
 			Timer *ptr = (Timer *)timer;
 			//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
 
-			as_val = ptr->getASFunction();
+			const as_value&	timer_method = ptr->getASFunction();
 			as_env = ptr->getASEnvironment();
 			this_ptr = ptr->getASObject();
 			obj = ptr->getObject();
 			//m_as_environment.push(obj);
 			
-			as_c_function_ptr	cfunc = as_val->to_c_function();
+			as_c_function_ptr	cfunc = timer_method.to_c_function();
 			if (cfunc) {
 				// It's a C function. Call it.
 				//log_msg("Calling C function for interval timer\n");
 				//(*cfunc)(&val, obj, as_env, 0, 0);
 				(*cfunc)(&val, obj, &m_as_environment, 0, 0);
 				
-			} else if (as_as_function* as_func = as_val->to_as_function()) {
+			} else if (as_as_function* as_func = timer_method.to_as_function()) {
 				// It's an ActionScript function. Call it.
 				as_value method;
 				//log_msg("Calling ActionScript function for interval timer\n");

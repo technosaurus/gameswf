@@ -45,7 +45,7 @@ namespace gameswf
       as_object *getObject() { return _object; }
       
       // Accessors
-      as_value *getASFunction() { return &_function;  }
+      const as_value& getASFunction() { return _function;  }
       as_environment *getASEnvironment() { return _env;  }
       as_object *getASObject() { return _object;  }
       array<struct variable *> *getLocals() { return _locals;  }

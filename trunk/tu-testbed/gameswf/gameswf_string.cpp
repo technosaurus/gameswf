@@ -41,7 +41,7 @@ BaseString::toString(void *)
 {
   log_msg("%s: \n", __FUNCTION__);
 
-  return tu_string("");                    // FIXME: this is just to shut up G++ for now
+  return _value;
 }
 
 String::String(const char *str) : BaseString(str)
@@ -210,11 +210,11 @@ string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, ga
 {
   //  log_msg("%s: args=%d\n", __FUNCTION__, nargs);
   tu_string filespec = env->bottom(first_arg).to_string();
-  String *str = new String(filespec.c_str());
+  string_as_object* str = new string_as_object(filespec.c_str());
   //  double value = env->bottom(first_arg - 1).to_number();
   //  log_msg("%s: New string name is:  %s = %g\n", __FUNCTION__, filespec.c_str(), value);
   // log_msg("%s: New string name is:  %s\n", __FUNCTION__, filespec.c_str());
-  result->set(str);	// tulrich: LEAK -- fixme -- String is not an as_object_interface*
+  result->set(str);
 }
 
 } // end of gameswf namespace
