@@ -221,12 +221,11 @@ void	draw_frustum()
 }
 
 
-vec3	frustum_max_projection(const vec3& axis)
-// Return the point in the frustum whose projection onto the given
-// axis is maximum.
+float	frustum_max_projection(const vec3& axis)
+// Return the maximum projection of any frustum point onto the given
+// axis.
 {
 	float	max = -1000000.f;
-	vec3	max_point(vec3::zero);
 	for (int i = 0; i < 4; i++)
 	{
 		vec3	v = frustum_point(i);
@@ -234,11 +233,10 @@ vec3	frustum_max_projection(const vec3& axis)
 		if (proj > max)
 		{
 			max = proj;
-			max_point = v;
 		}
 	}
 
-	return max_point;
+	return max;
 }
 
 
@@ -252,12 +250,11 @@ void	draw_occluders()
 }
 
 
-vec3	occluders_max_projection(const vec3& axis)
-// Returns the point on all occluders whose projection onto the given
-// axis is maximum.
+float	occluders_max_projection(const vec3& axis)
+// Returns the maximum projection of any occluder point onto the given
+// axis.
 {
 	float	max = -1000000.f;
-	vec3	max_point(vec3::zero);
 	for (int i = 0; i < s_occluders.size(); i++)
 	{
 		vec3	v = s_occluders[i].m_position;
@@ -265,11 +262,35 @@ vec3	occluders_max_projection(const vec3& axis)
 		if (proj > max)
 		{
 			max = proj;
-			max_point = v + axis * s_occluders[i].m_radius;
 		}
 	}
 
-	return max_point;
+	return max;
+}
+
+
+void	find_projection_bounds(float* min_proj, float* max_proj, const vec3& axis)
+// Find the maximum projection onto the axis, of any possible shadow
+// that can intersect the view frustum.
+{
+	vec3	my_axis = axis;
+
+	float	fp0 = -frustum_max_projection(-axis);
+	float	fp1 = frustum_max_projection(axis);
+
+	if (fp0 > fp1)
+	{
+		my_axis = -axis;
+		swap(fp0, fp1);
+	}
+
+	// Check occluders.
+	float	op0 = -occluders_max_projection(-my_axis);
+	float	op1 = occluders_max_projection(my_axis);
+	assert(op0 <= op1);
+
+	*min_proj = fmax(op0, fp0);
+	*max_proj = fmin(op1, fp1);
 }
 
 
@@ -315,9 +336,11 @@ void	draw_light_rays(float density)
 	// Direction perpendicular to the light.
 	vec3	light_right(s_light_direction.y, -s_light_direction.x, 0);
 
-	// Find the boundary of our light ray projections.
-	vec3	extreme_0 = occluders_max_projection(light_right);
-	vec3	extreme_1 = occluders_max_projection(-light_right);
+	// Find the max necessary boundary of our light ray projections.
+	float	proj0, proj1;
+	find_projection_bounds(&proj0, &proj1, light_right);
+	vec3	extreme_0 = light_right * proj0;
+	vec3	extreme_1 = light_right * proj1;
 
 	vec3	extreme_0_prime = to_persp(extreme_0);
 	vec3	extreme_1_prime = to_persp(extreme_1);
