@@ -1,5 +1,7 @@
 2005-03-20  Rob Savoye  <rob@bertha.welcomehome.org>
 
+	* gameswf/gameswf_timers.cpp (Timer::start): Don't cast the double
+	to a time_t.
 	* macros/libXML.m4: Define HAVE_LIBXML if libxml2 is found.
 	* configure.ac: Add AM_CONFIG_HEADER. Don't both to link to my
 	test XML file.
