@@ -14,6 +14,7 @@
 
 #include "engine/ogl.h"
 #include "gameswf_impl.h"
+#include "gameswf_font.h"
 #include "gameswf_render.h"
 #include "gameswf_stream.h"
 #include "engine/image.h"
@@ -1117,9 +1118,9 @@ namespace gameswf
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(4, place_object_2_loader);
-			register_tag_loader(6, define_bits_jpeg_loader);
+//			register_tag_loader(6, define_bits_jpeg_loader);	// turn this off; needs debugging
 			register_tag_loader(7, button_character_loader);
-			register_tag_loader(8, jpeg_tables_loader);
+//			register_tag_loader(8, jpeg_tables_loader);		// turn this off; needs debugging
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
 			register_tag_loader(11, define_text_loader);
@@ -2031,7 +2032,6 @@ namespace gameswf
 			}
 		}
 
-
 		void	display(const display_info& di)
 		// Draw the shape using the given environment.
 		{
@@ -2104,6 +2104,22 @@ namespace gameswf
 	};
 
 	
+	shape_character*	create_shape_character(stream* in, int tag_type, bool with_style, movie* m)
+	// Factory; create and initialize a shape from the given
+	// stream.
+	{
+		shape_character* ch = new shape_character;
+		ch->read(in, tag_type, with_style, m);
+		return ch;
+	}
+
+	void	delete_shape_character(shape_character* ch)
+	// Opaque wrapper for "delete shape".
+	{
+		delete ch;
+	}
+
+	
 	void	define_shape_loader(stream* in, int tag_type, movie* m)
 	{
 		assert(tag_type == 2
@@ -2125,6 +2141,7 @@ namespace gameswf
 	}
 
 
+#if 0
 	//
 	// font
 	//
@@ -2315,6 +2332,7 @@ namespace gameswf
 			}
 		}
 	};
+#endif // 0
 	
 
 	void	define_font_loader(stream* in, int tag_type, movie* m)

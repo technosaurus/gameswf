@@ -24,6 +24,7 @@ all: engine $(LIB_OUT) $(EXE_OUT)
 
 OBJS = \
 	gameswf_impl.$(OBJ_EXT)	\
+	gameswf_font.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)	\
 	gameswf_stream.$(OBJ_EXT)	\
 	gameswf_render_ogl.$(OBJ_EXT)
