@@ -5,7 +5,7 @@
 // Code to make a collision-bsp tree out of triangle soup.
 
 
-#include <math.h>
+#include "base/tu_math.h"
 #include <stdio.h>
 #include <stdlib.h>
 

@@ -5,56 +5,10 @@
 
 // Some OpenGL helpers; mainly to generically deal with extensions.
 
-
 #ifndef OGL_H
 #define OGL_H
 
-
-#ifdef WIN32
-//
-// WIN32 includes.  We don't want to have to include windows.h because
-// it's such a pig, so #define a couple things that are required to
-// make the gl.h stuff work.
-//
-
-#	ifndef _INC_WINDOWS
-
-#		define WINAPI	__stdcall
-#		define APIENTRY WINAPI
-#		define CALLBACK __stdcall
-#		define DECLSPEC_IMPORT __declspec(dllimport)
-
-#		if !defined(_GDI32_)
-#			define WINGDIAPI DECLSPEC_IMPORT
-#		else
-#			define WINGDIAPI
-#		endif
-
-#	endif
-
-#	ifndef _WCHAR_T_DEFINED
-		typedef unsigned short wchar_t;
-#		define _WCHAR_T_DEFINED
-#	endif // _WCHAR_T_DEFINED
-
-#	include <GL/gl.h>
-#	include <GL/glu.h>
-
-
-#else // not WIN32
-
-	//
-	// not WIN32
-	//
-
-#	include <GL/gl.h>
-#	include <GL/glu.h>
-
-#	define APIENTRY
-
-
-#endif // not LINUX
-
+#include "base/tu_opengl_includes.h"
 
 namespace ogl {
 	void	open();
@@ -89,23 +43,6 @@ namespace ogl {
 	void	multi_tex_coord_2f(int stage, float s, float t);
 	void	multi_tex_coord_2fv(int stage, float* st);
 };
-
-
-// GL extension constants...
-#define GL_VERTEX_ARRAY_RANGE_NV          0x851D
-#define GL_VERTEX_ARRAY_RANGE_LENGTH_NV   0x851E
-#define GL_VERTEX_ARRAY_RANGE_VALID_NV    0x851F
-#define GL_MAX_VERTEX_ARRAY_RANGE_ELEMENT_NV 0x8520
-#define GL_VERTEX_ARRAY_RANGE_POINTER_NV  0x8521
-
-#define GL_VERTEX_ARRAY_RANGE_WITHOUT_FLUSH_NV	0x8533
-
-#define GL_TEXTURE0_ARB                   0x84C0
-#define GL_TEXTURE1_ARB                   0x84C1
-#define GL_MAX_TEXTURE_UNITS_ARB          0x84E2
-
-#define GL_CLAMP_TO_EDGE                  0x812F
-
 
 #endif // OGL_H
 

@@ -3,7 +3,7 @@
 // Implementations for the basic geometric types.
 
 
-#include <math.h>
+#include "base/tu_math.h"
 #include <float.h>
 #include "geometry/geometry.h"
 #include "base/tu_file.h"

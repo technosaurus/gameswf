@@ -1,0 +1,34 @@
+# Makefile for tu-testbed/geometry library
+
+# Library containing mostly 3d and geometric utility code
+
+TOP = ..
+include $(TOP)/config.osx
+
+INCLUDE_PATHS := $(SDL_INCLUDE) $(ENGINE_INCLUDE) -I$(LIBPNG_INCLUDE) -I$(ZLIB_INCLUDE) -I$(JPEGLIB_INCLUDE)
+
+CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
+LDFLAGS := -lGL -lGLU $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
+
+# Source files.
+SRCS := \
+	bsp.cpp			\
+	cull.cpp		\
+	geometry.cpp		\
+	kd_tree_dynamic.cpp	\
+	kd_tree_packed.cpp	\
+	tqt.cpp
+OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
+OBJS := $(OBJS:.c=.$(OBJ_EXT))
+
+
+GEOMETRY_LIB = geometry.$(LIB_EXT)
+
+all: $(GEOMETRY_LIB)
+
+$(GEOMETRY_LIB): $(OBJS)
+	$(AR) $(LIB_OUT_FLAG)$(GEOMETRY_LIB) $(OBJS)
+	ranlib -s $(GEOMETRY_LIB)
+
+clean:
+	-@rm -f $(GEOMETRY_LIB) $(OBJS)

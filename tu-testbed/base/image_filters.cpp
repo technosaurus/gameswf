@@ -15,9 +15,9 @@
 #include "base/image.h"
 #include "base/utility.h"
 #include "base/container.h"
+#include "base/tu_math.h"
 #include <stdio.h>
 #include <string.h>
-#include <math.h>
 #include <SDL.h>
 
 

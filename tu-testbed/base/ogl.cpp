@@ -5,31 +5,15 @@
 
 // Some OpenGL helpers; mainly to generically deal with extensions.
 
-
 #include <SDL.h>
 #include "base/ogl.h"
 #include "base/utility.h"
 #include <stdlib.h>
 #include <string.h>
 
-
-#ifdef WIN32
-#include <windows.h>	// for wglGetProcAddress
-#define PROC_NAME_PREFIX "wgl"
-#else // !WIN32
-#define PROC_NAME_PREFIX "glX"
-#endif // !WIN32
-
-#include <GL/gl.h>
-
-
-#define GL_ALL_COMPLETED_NV               0x84F2
-
-
 namespace ogl {
 
 	bool	is_open = false;
-
 
 	// Pointers to extension functions.
 	typedef void * (APIENTRY * PFNWGLALLOCATEMEMORYNVPROC) (int size, float readfreq, float writefreq, float priority);
@@ -237,7 +221,7 @@ namespace ogl {
 	// Wrapper for glGenFencesNV.
 	{
 		if (glGenFencesNV) {
-			glGenFencesNV(count, fence_array);
+			glGenFencesNV(count, (GLuint*)fence_array);
 		}
 		else
 		{

@@ -1,0 +1,40 @@
+# Makefile for tu-testbed/base library
+
+
+TOP = ..
+include $(TOP)/config.osx
+
+INCLUDE_PATHS := -I$(JPEGLIB_INCLUDE) $(ENGINE_INCLUDE) -I$(LIBPNG_INCLUDE) -I$(ZLIB_INCLUDE) 
+
+CFLAGS := $(INCLUDE_PATHS) $(CFLAGS) $(CC_DEBUG_FLAGS)
+LDFLAGS := -lGL -lGLU $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
+
+# Source files.
+SRCS := \
+	dlmalloc.c	\
+	config.cpp \
+	ogl.cpp \
+	image.cpp \
+	image_filters.cpp \
+	jpeg.cpp \
+	postscript.cpp	\
+	tu_file.cpp	\
+	tu_file_SDL.cpp	\
+	tu_random.cpp	\
+	tu_types.cpp	\
+	utility.cpp	\
+	zlib_adapter.cpp
+OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
+OBJS := $(OBJS:.c=.$(OBJ_EXT))
+
+
+BASE_LIB = base.$(LIB_EXT)
+
+all: $(BASE_LIB)
+
+$(BASE_LIB): $(OBJS)
+	$(AR) $(LIB_OUT_FLAG)$(BASE_LIB) $(OBJS)
+	ranlib -s $(BASE_LIB)
+
+clean:
+	-@rm -f $(BASE) $(OBJS)

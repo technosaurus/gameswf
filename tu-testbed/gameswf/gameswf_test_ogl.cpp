@@ -95,8 +95,9 @@ static tu_file*	file_opener(const char* url)
 	return new tu_file(url, "rb");
 }
 
-
-#undef main	// SDL wackiness
+#ifndef __MACH__
+#undef main	// SDL wackiness, but needed for macosx
+#endif
 int	main(int argc, char *argv[])
 {
 	assert(tu_types_validate());

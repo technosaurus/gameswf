@@ -9,11 +9,10 @@
 #include <windows.h>
 #endif
 #include <SDL.h>
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include "base/tu_opengl_includes.h"
 #include <string.h>
 #include <stdlib.h>
-#include <math.h>
+#include "base/tu_math.h"
 
 #include "base/image.h"
 #include "base/ogl.h"

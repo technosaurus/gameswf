@@ -51,6 +51,10 @@ namespace tu_random
 	//   $j = $j ^ ($j << 5);
 	//   print "$j\n";
 	// }
+        
+        // WK: why does this produce warnings under gcc 3.1 / OSX like:
+        // tu_random.cpp:58: warning: decimal constant is so large that it is unsigned
+        
 	static Uint32	Q[8] =
 	{
 		248404469,

@@ -28,6 +28,10 @@
 #define lseek64 _lseeki64
 #endif // _WIN32
 
+#ifdef __MACH__
+#define lseek64 lseek
+#endif // __MACH__
+
 
 const int	BT_HEADER_SIZE = 256;	// offset from the start of the .bt file, before the data starts.
 
@@ -174,13 +178,20 @@ bt_array::~bt_array()
 		bt->m_data = NULL;
 		bt->m_data_size = 0;
 
-		// ... and open the file using low level I/O
+// WK OSX uses large files by default, so it doesn't require O_LARGEFILE, and has no lseek64
+
+                int flags = 0;
 #ifdef WIN32
-		if ((bt->m_file_handle = open(filename, O_BINARY | O_RDWR | O_RANDOM)) == -1)
-#else // not WIN32
-		if ((bt->m_file_handle = open(filename, O_LARGEFILE | O_RDWR)) == -1)
-#endif	// not WIN32
-		{
+                flags = O_BINARY | O_RDWR | O_RANDOM;
+#elif defined(__MACH__)
+                flags = O_RDWR;
+#else
+                flags = O_LARGEFILE | O_RDWR;
+#endif
+
+                // ... and open the file using low level I/O
+		if ((bt->m_file_handle = open(filename, flags)) == -1)
+                {
 			// Failed to re-open file w/ low level I/O
 			printf("_open failed on %s\n", filename);
 			delete bt;
@@ -251,8 +262,7 @@ float	bt_array::get_sample(int x, int z) const
 					(Uint64) BT_HEADER_SIZE
 					+ ((Uint64) cl->m_v0 + (Uint64) m_height * (Uint64) x)
 					* (Uint64) m_sizeof_element;
-
-				lseek64(m_file_handle, offset_i64, SEEK_SET);
+                                lseek64(m_file_handle, offset_i64, SEEK_SET);
 				read(m_file_handle, cl->m_data, fillsize);
 			}
 		}
