@@ -1148,7 +1148,7 @@ namespace gameswf
 			if (m_interval_timers.size() > 0) {
 				for (i=0; i<m_interval_timers.size(); i++) {
 					if (m_interval_timers[i]->expired()) {
-						log_msg("FIXME: Interval Timer Expired!\n");
+						// printf("FIXME: Interval Timer Expired!\n");
 						//m_movie->on_event_interval_timer();
 						m_movie->do_something(m_interval_timers[i]);
 						// clear_interval_timer(m_interval_timers[i]->getIntervalID()); // FIXME: we shouldn't really disable the timer here
@@ -3145,7 +3145,7 @@ namespace gameswf
 			as_object      *obj, *this_ptr;
 			as_environment *as_env;
 
-			log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			//printf("FIXME: %s:\n", __PRETTY_FUNCTION__);
 			Timer *ptr = (Timer *)timer;
 			//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
 

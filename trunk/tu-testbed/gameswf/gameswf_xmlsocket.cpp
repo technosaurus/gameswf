@@ -187,7 +187,7 @@ XMLSocket::anydata(tu_string &data)
 
   memset(buf, 0, 512);
   
-  //log_msg("%s: \n", __PRETTY_FUNCTION__);
+  //printf("%s: \n", __PRETTY_FUNCTION__);
 
   if (_sockfd <= 0) {
     return false;
@@ -199,8 +199,8 @@ XMLSocket::anydata(tu_string &data)
       FD_ZERO(&fdset);
       FD_SET(_sockfd, &fdset);
       
-      tval.tv_sec = 1;
-      tval.tv_usec = 0;
+      tval.tv_sec = 0;
+      tval.tv_usec = 10;
       
       ret = ::select(_sockfd+1, &fdset, NULL, NULL, &tval);
       
@@ -247,7 +247,7 @@ XMLSocket::anydata(tu_string &data)
         break;
       }
     }
-    //log_msg("%s: read %d bytes, data was %s\n", __FUNCTION__, ret, buf);
+    //printf("%s: read %d bytes, data was %s\n", __FUNCTION__, strlen(buf), buf);
     data = buf;
     return true;
   }
