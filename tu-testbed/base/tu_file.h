@@ -99,8 +99,12 @@ public:
 	// write a 0-terminated string.
 	void 	write_string(const char* src);
 	
-	// read up to max_length characters, returns the number of characters 
+	// Read up to max_length characters, returns the number of characters 
 	// read, or -1 if the string length is longer than max_length.
+	//
+	// Stops at the first \0 character if it comes before max_length.
+	//
+	// Guarantees termination of the string.
 	int	read_string(char* dst, int max_length);
 
 	// float/double IO

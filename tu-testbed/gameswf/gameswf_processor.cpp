@@ -28,6 +28,7 @@ static void	message_log(const char* message)
 	}
 }
 
+
 static void	log_callback(bool error, const char* message)
 // Error callback for handling gameswf messages.
 {
@@ -76,7 +77,15 @@ static void	print_usage()
 }
 
 
-static int	process_movie(const char* filename);
+struct movie_data
+{
+	gameswf::movie_interface*	m_movie;
+	tu_string	m_filename;
+};
+
+
+static gameswf::movie_interface*	play_movie(const char* filename);
+static int	write_cache_file(const movie_data& md);
 
 
 static bool	s_append = false;
@@ -140,17 +149,42 @@ int	main(int argc, char *argv[])
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::set_log_callback(log_callback);
         
-	// Process the movies.
+	array<movie_data>	data;
+
+	// Play through all the movies.
 	for (int i = 0, n = infiles.size(); i < n; i++)
 	{
-		int	error = process_movie(infiles[i]);
-		if (error)
+		gameswf::movie_interface*	m = play_movie(infiles[i]);
+		if (m == NULL)
 		{
 			if (s_stop_on_errors)
 			{
 				// Fail.
-				fprintf(stderr, "error processing movie '%s', quitting\n", infiles[i]);
+				fprintf(stderr, "error playing through movie '%s', quitting\n", infiles[i]);
 				exit(1);
+			}
+		}
+		
+		movie_data	md;
+		md.m_movie = m;
+		md.m_filename = infiles[i];
+		data.push_back(md);
+	}
+
+	// Now append processed data.
+	if (s_append)
+	{
+		for (int i = 0, n = data.size(); i < n; i++)
+		{
+			int	error = write_cache_file(data[i]);
+			if (error)
+			{
+				if (s_stop_on_errors)
+				{
+					// Fail.
+					fprintf(stderr, "error processing movie '%s', quitting\n", data[i].m_filename.c_str());
+					exit(1);
+				}
 			}
 		}
 	}
@@ -159,20 +193,23 @@ int	main(int argc, char *argv[])
 }
 
 
-int	process_movie(const char* filename)
-// Process the given SWF file.  If s_append is true, then append
-// cached precomputed data to the original file.
+gameswf::movie_interface*	play_movie(const char* filename)
+// Load the named movie, and play it, virtually.  I.e. run through and
+// render all the frames, even though we are not actually doing any
+// output (our output handlers are disabled).
+//
+// What this does is warm up all the cached data in the movie, so that
+// if we save that data for later, we won't have to tesselate shapes
+// or build font textures again.
+//
+// Return the movie.
 {
-	tu_file*	in = new tu_file(filename, "rb");
-	if (in->get_error())
+	gameswf::movie_interface*	m = gameswf::create_movie(filename);
+	if (m == NULL)
 	{
-		printf("can't open '%s' for input\n", filename);
-		delete in;
-		return 1;
+		fprintf(stderr, "error: can't play movie '%s'\n", filename);
+		exit(1);
 	}
-	gameswf::movie_interface*	m = gameswf::create_movie(in);
-	delete in;
-	in = NULL;
 
 	int	kick_count = 0;
 
@@ -225,29 +262,42 @@ int	process_movie(const char* filename)
 		}
 	}
 
-	if (s_append)
+	return m;
+}
+
+
+int	write_cache_file(const movie_data& md)
+// Write a cache file for the given movie.
+{
+	// Open cache file.
+	tu_string	cache_filename(md.m_filename);
+	cache_filename += ".gsc";
+	tu_file	out(cache_filename.c_str(), "wb");	// "gsc" == "gameswf cache"
+	if (out.get_error() == TU_FILE_NO_ERROR)
 	{
-		// grab computed data for this movie, dump it into a buffer
-		tu_file	cached_data(tu_file::memory_buffer);
-		m->output_cached_data(&cached_data);
-
-		printf("generated %d bytes of cached data\n", cached_data.get_position());
-
-		cached_data.set_position(0);	// rewind
-
-		// // xxx temp debug code: dump cached data to stdout
-		// tu_file	tu_stdout(stdout, false);
-		// tu_stdout.copy_from(&cached_data);
-
-		// if (s_append)
-		// {
-		//	open file for i/o;
-		//	remove any existing cache tags;
-		// 	append our cache tag;
-		//	write out the file;
-		// }
+		// Write out the data.
+		md.m_movie->output_cached_data(&out);
+		if (out.get_error() == TU_FILE_NO_ERROR)
+		{
+			printf(
+				"wrote '%s'\n",
+				cache_filename.c_str());
+		}
+		else
+		{
+			fprintf(stderr, "error: write failure to '%s'\n", cache_filename.c_str());
+		}
 	}
-	
+	else
+	{
+		fprintf(stderr, "error: can't open '%s' for cache file output\n", cache_filename.c_str());
+		return 1;
+	}
+
+	// // xxx temp debug code: dump cached data to stdout
+	// tu_file	tu_stdout(stdout, false);
+	// tu_stdout.copy_from(&cached_data);
+
 	return 0;
 }
 
