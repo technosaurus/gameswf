@@ -761,11 +761,12 @@ void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int r
 	int	bx = rx + (dx >> 1);
 	int	bz = rz + (dz >> 1);
 
-	float	error = (hf.height(bx, bz) - (hf.height(lx, lz) + hf.height(rx, rz)) / 2.f) * hf.vertical_scale;
+	float	error = fabsf((hf.height(bx, bz) - (hf.height(lx, lz) + hf.height(rx, rz)) / 2.f) * hf.vertical_scale);
+	assert(error >= 0);
 	if (error >= base_max_error) {
 		// Compute the mesh level above which this vertex
 		// needs to be included in LOD meshes.
-		int	activation_level = (int) floor(log2(fabsf(error) / base_max_error) + 0.5f);
+		int	activation_level = (int) floor(log2(error / base_max_error) + 0.5f);
 
 		// Force the base vert to at least this activation level.
 		hf.activate(bx, bz, activation_level);
