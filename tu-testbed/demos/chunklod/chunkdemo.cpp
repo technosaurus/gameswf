@@ -619,9 +619,9 @@ int	main(int argc, char *argv[])
 		model->get_bounding_box(&center, &extent);
 
 		// Initialize viewpoint: middle of the bounding box in
-		// the x-z plane, top of the box in the y axis.
+		// the x-z plane, top of the box plus a little in the y axis.
 		viewer_pos = center;
-		viewer_pos.y += extent.y;
+		viewer_pos.y += extent.y + 10.f;
 
 		// Enable vertex array, and just leave it on.
 		glEnableClientState(GL_VERTEX_ARRAY);

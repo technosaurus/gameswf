@@ -292,7 +292,7 @@ struct lod_chunk {
 
 	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt, bool texture_bound);
 
-	void	read(SDL_RWops* in, int recursion_count, lod_chunk_tree* tree);
+	void	read(SDL_RWops* in, int recursion_count, lod_chunk_tree* tree, bool vert_data_at_end);
 	void	lookup_neighbors(lod_chunk_tree* tree);
 
 	// Utilities.
@@ -519,10 +519,21 @@ void	chunk_tree_loader::sync_loader_thread()
 			if (r.m_chunk)
 			{
 				assert(r.m_chunk->m_data == NULL);
-				assert(r.m_chunk->m_parent == NULL || r.m_chunk->m_parent->m_data != NULL);
 
-				// Connect the chunk with its data!
-				r.m_chunk->m_data = r.m_chunk_data;
+				if (r.m_chunk->m_parent != NULL
+				    && r.m_chunk->m_parent->m_data == NULL)
+				{
+					// Drat!  Our parent data was unloaded, while we were
+					// being loaded.  Only thing to do is discard the newly loaded
+					// data, to avoid breaking an invariant.
+					// (No big deal; this situation is rare.)
+					delete r.m_chunk_data;
+				}
+				else
+				{
+					// Connect the chunk with its data!
+					r.m_chunk->m_data = r.m_chunk_data;
+				}
 			}
 			// Clear out this entry.
 			r.m_chunk = NULL;
@@ -536,10 +547,21 @@ void	chunk_tree_loader::sync_loader_thread()
 			if (r.m_chunk)
 			{
 				assert(r.m_chunk->m_texture_id == 0);
-				assert(r.m_chunk->m_parent == NULL || r.m_chunk->m_parent->m_texture_id != 0);
 
-				// Connect the chunk with its texture!
-				r.m_chunk->m_texture_id = lod_tile_freelist::make_texture(r.m_texture_image);	// @@ this actually could cause some bad latency, because we build mipmaps...
+				if (r.m_chunk->m_parent != NULL
+				    && r.m_chunk->m_parent->m_texture_id == 0)
+				{
+					// Drat!  Our parent texture was unloaded, while we were
+					// being loaded.  Only thing to do is to discard the
+					// newly loaded image, to avoid breaking the invariant.
+					// (No big deal; this situation is rare.)
+					SDL_FreeSurface(r.m_texture_image);
+				}
+				else
+				{
+					// Connect the chunk with its texture!
+					r.m_chunk->m_texture_id = lod_tile_freelist::make_texture(r.m_texture_image);	// @@ this actually could cause some bad latency, because we build mipmaps...
+				}
 			}
 			// Clear out this entry.
 			r.m_chunk = NULL;
@@ -568,7 +590,9 @@ void	chunk_tree_loader::sync_loader_thread()
 			{
 				lod_chunk*	c = m_load_queue[qsize - 1 - i].m_chunk;	// Do the higher priority requests first.
 				// Must make sure the chunk wasn't just retired.
-				if (c->m_data == NULL) {
+				if (c->m_data == NULL
+				    && (c->m_parent == NULL || c->m_parent->m_data != NULL))
+				{
 					// Request this chunk.
 					m_request_buffer[req_count++] = c;
 					if (req_count >= REQUEST_BUFFER_SIZE) {
@@ -598,8 +622,12 @@ void	chunk_tree_loader::sync_loader_thread()
 			{for (int i = 0; i < tqsize; i++)
 			{
 				lod_chunk*	c = m_load_texture_queue[i];
-				// Must make sure the chunk wasn't just retired.
-				if (c->m_texture_id == 0) {
+				// Must make sure the chunk wasn't
+				// just retired, and also that its
+				// parent wasn't just unloaded.
+				if (c->m_texture_id == 0
+				    && (c->m_parent == NULL || c->m_parent->m_texture_id != 0))
+				{
 					// Request this chunk.
 					m_request_texture_buffer[req_count++] = c;
 					if (req_count >= REQUEST_BUFFER_SIZE) {
@@ -678,11 +706,6 @@ void	chunk_tree_loader::request_chunk_unload_texture(lod_chunk* chunk)
 // within short latency.
 {
 	assert(chunk->m_texture_id != 0);
-	assert(chunk->has_children() == false
-	       || (chunk->m_children[0]->m_texture_id == 0
-		   && chunk->m_children[1]->m_texture_id == 0
-		   && chunk->m_children[2]->m_texture_id == 0
-		   && chunk->m_children[3]->m_texture_id == 0));
 	
 	m_unload_texture_queue.push_back(chunk);
 }
@@ -1099,6 +1122,9 @@ void	lod_chunk::update(lod_chunk_tree* tree, const vec3& viewpoint)
 //
 // Invariant: if a node has m_split == true, then all its ancestors
 // have m_split == true.
+//
+// Invariant: if a node has m_data != NULL, then all its ancestors
+// have m_data != NULL.
 //
 // !!!  For correct results, the tree must have been clear()ed before
 // calling update() !!!
@@ -1527,12 +1553,13 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 }
 
 
-void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree)
+void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree, bool vert_data_at_end)
 // Read chunk data from the given file and initialize this chunk with it.
 // Recursively loads child chunks for recurse_count > 0.
 {
 	m_split = false;
 	m_texture_id = 0;
+	m_data = NULL;
 
 	// Get this chunk's label, and add it to the table.
 	int	chunk_label = SDL_ReadLE32(in);
@@ -1561,12 +1588,22 @@ void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree)
 
 	// Skip the chunk data but remember our filepos, so we can load it
 	// when it's demanded.
-	int	chunk_size = SDL_ReadLE32(in);
-	m_data_file_position = SDL_RWtell(in);
-	SDL_RWseek(in, chunk_size, SEEK_CUR);
-	m_data = NULL;
+	if (vert_data_at_end)
+	{
+		// Format version 9 and later.  Vert data file offset
+		// is just stored directly in the header.
+		m_data_file_position = SDL_ReadLE32(in);
+	}
+	else
+	{
+		// Format version 8: vert data is in-line w/ chunk headers.
+		// @@ Remove this code once I get rid of all my version 8 data.
+		int	chunk_size = SDL_ReadLE32(in);
+		m_data_file_position = SDL_RWtell(in);
+		SDL_RWseek(in, chunk_size, SEEK_CUR);
 
-	assert(m_data_file_position + chunk_size == SDL_RWtell(in));
+		assert(m_data_file_position + chunk_size == SDL_RWtell(in));
+	}
 
 	// Recurse to child chunks.
 	if (recurse_count > 0) {
@@ -1574,7 +1611,7 @@ void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree)
 			m_children[i] = &tree->m_chunks[tree->m_chunks_allocated++];
 			m_children[i]->m_lod = m_lod + 0x100;
 			m_children[i]->m_parent = this;
-			m_children[i]->read(in, recurse_count - 1, tree);
+			m_children[i]->read(in, recurse_count - 1, tree, vert_data_at_end);
 		}
 	} else {
 		for (int i = 0; i < 4; i++) {
@@ -1629,12 +1666,17 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 	}
 
 	int	format_version = SDL_ReadLE16(src);
-	if (format_version != 8)
+	if (format_version != 8 && format_version != 9)
 	{
 		printf("Input format has non-matching version number");
 		exit(1);
 	}
 
+	bool	vert_data_at_end = false;
+	if (format_version >= 9) {
+		vert_data_at_end = true;
+	}
+	
 	m_tree_depth = SDL_ReadLE16(src);
 	m_error_LODmax = ReadFloat32(src);
 	m_vertical_scale = ReadFloat32(src);
@@ -1656,7 +1698,7 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 	m_chunks_allocated++;
 	m_chunks[0].m_lod = 0;
 	m_chunks[0].m_parent = 0;
-	m_chunks[0].read(src, m_tree_depth-1, this);
+	m_chunks[0].read(src, m_tree_depth-1, this, vert_data_at_end);
 	m_chunks[0].lookup_neighbors(this);
 
 	// Set up our loader.
