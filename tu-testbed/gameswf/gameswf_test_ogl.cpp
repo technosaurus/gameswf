@@ -278,19 +278,31 @@ int	main(int argc, char *argv[])
 
 	SDL_EnableKeyRepeat(250, 33);
 
-//	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-//	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-//	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-//	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 5);
-//	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	int	bpp = 16;
+
+	// 16-bit color, surface creation is likely to succeed.
+	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+
+//	// 32-bit color etc, for getting dest alpha, for MULTIPASS_ANTIALIASING (see gameswf_render_handler_ogl.cpp).
+// 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+// 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+// 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+// 	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+// 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+// 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+// 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+// 	bpp = 32;
 
 	int	width = int(movie_width * s_scale);
 	int	height = int(movie_height * s_scale);
 
 	// Set the video mode.
-	if (SDL_SetVideoMode(width, height, 16 /* 32 */, SDL_OPENGL) == 0)
+	if (SDL_SetVideoMode(width, height, bpp, SDL_OPENGL) == 0)
 	{
 		fprintf(stderr, "SDL_SetVideoMode() failed.");
 		exit(1);

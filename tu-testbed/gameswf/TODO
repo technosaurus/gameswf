@@ -235,3 +235,89 @@ Renderer
   program and some per-edge computations:
   
   http://graphics.csail.mit.edu/~ericchan/articles/prefilter/
+
+* Antialiasing using destination alpha and the edge-coverage alpha
+  feature that's commonly available:
+
+  * turn on edge antialiasing; basically this causes the rasterizer to
+    generate a source alpha value corresponding to the coverage of the
+    primitive on each pixel.  So, edge pixels get a fractional alpha
+    value.
+
+	(This feature has been around for a long time on various different
+    hardware, under GL_POLYGON_SMOOTH; the big problem with it is that
+    the obvious blend mode (SRC_ALPHA, ONE_MINUS_SRC_ALPHA) doesn't
+    work right.  Internal edges are slightly transparent, and that
+    just looks like crap.  A common hack is to draw an opaque version
+    of the mesh over the antialiased version; the problem with that
+    trick is it overdraws the darker 50% of the antialiasing, so it
+    only looks somewhat better -- still fairly jaggy.  The Red book
+    mentions (GL_SRC_ALPHA_SATURATE, GL_ONE) which works correctly if
+    you're drawing opaque, sorted front-to-back.  But for transparency
+    effects, we must draw back-to-front, so this is incompatible.)
+
+  * Clear destination alpha, then draw into destination alpha only,
+    using an additive blend.  This makes a nice antialiased mask of
+    our shape.
+
+  * Draw a quad over the shape bounding box, with the desired fill
+    mode, using (DST_ALPHA, ONE_MINUS_DST_ALPA).  The parts with
+    non-zero alpha will get filled/blended with the shape fill.
+
+  This works; there's a proof-of-concept (but artifacty) implemention,
+  #ifdef'd out in gameswf_render_handler_ogl.cpp
+
+  NOTE: this makes thick/thin line drawing much easier, since overdraw
+  can be tolerated -- just draw quads for the edges, and circles (or
+  semicircles) for the verts, all into the alpha buffer.  Overdraw of
+  the quads on the interior of angles is no problem, since things
+  drawn multiple times just saturate.  Then fill the bounding box,
+  modulating with dest alpha, as usual.
+
+* Idea: alternative polygon rendering method, without requiring any
+  true poly triangulation: use two-sided lighting to repeatedly
+  add/subtract signed-area triangles into the stencil buffer.
+
+  OK, in more words: the idea is a procedure similar to the polygon
+  signed-area test, where you pick an arbitrary reference point in the
+  plane, and for each edge in the polygon, compute the signed area of
+  the triangle formed by the reference point and the edge.  Total up
+  the signed areas, and that gives you the polygon area.  For a
+  general polygon, some of the edges are "back-facing" with respect to
+  the reference point; those triangles subtract out the extra area
+  added by the triangles that are "front-facing" with respect to the
+  reference point.
+
+  So anyway, we exploit that same idea, but render the triangles
+  instead of computing their area.  Front-facing triangles add into
+  the stencil buffer, while back-facing triangles subtract from the
+  stencil buffer.  The result should be 1's in the stencil buffer
+  where the poly should be filled, and 0's where is shouldn't.
+
+  NOTES:
+
+  * Stencil overflow, for very convoluted polys, should not matter.
+    You can overflow as much as you want, but the final result will
+    always be in the range [0,1].  So as long as you have modulo
+    arithmetic, and at least one bit of stencil, you're OK.  Correct?
+
+  * Those very convoluted polys mentioned above could create excessive
+    overdraw.  E.g. let's say you have a very thin line that spirals
+    around dozens of times, surrounding a big empty area.  Could be
+    murderous on fill rate.  One possibility here would be to somehow
+    recognize bad cases, and subdivide the poly, and render each piece
+    independently with a local reference point.  Recognizing the bad
+    case could be difficult.  Maybe do some kind of
+    cheap/partial/sloppy convex decomposition of the poly, to get the
+    parts.
+
+  * In theory, this would work fantastically great in combination with
+    the edge-antialiasing thing mentioned above, IF there were a way
+    to do the alpha blending using values in the stencil buffer (could
+    always copy stencil to alpha, but that starts to sound
+    expensive!), OR some way to enable modulo arithmetic in
+    destination alpha, and a way to pass a negative alpha values (for
+    the negative-area triangles).
+
+  * I'm sure someone has mentioned this idea somewhere, need to look
+    for more info.
