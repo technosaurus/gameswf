@@ -11,6 +11,11 @@ clean:
 	make -C engine clean
 	make -C demos/chunklod clean
 
+TAGS:
+	-rm -rf TAGS
+	touch TAGS
+	find . -name '*.h' -o -name '*.cpp' -o -name '*.c' | xargs etags -a -f TAGS -e
+
 
 basic_files =					\
 	tu-testbed/README			\
