@@ -751,6 +751,7 @@ namespace gameswf
 		}
 
 		int	get_current_frame() const { return m_current_frame; }
+		int	get_frame_count() const { return m_frame_count; }
 
 		void	notify_mouse_state(int x, int y, int buttons)
 		// The host app uses this to tell the movie where the
@@ -954,11 +955,14 @@ namespace gameswf
 				if (next_frame >= m_frame_count
 				    && m_frame_count > 1)
 				{
-					// End of movie.  Loop to beginning.
-					m_current_frame = -1;
-					m_display_list.resize(0);
-					m_action_list.resize(0);
-					next_frame = 0;
+					// End of movie.  Hang.
+					next_frame = m_frame_count - 1;
+
+// 					// Loop to beginning.
+// 					m_current_frame = -1;
+// 					m_display_list.resize(0);
+// 					m_action_list.resize(0);
+//  					next_frame = 0;
 				}
 
 				// Advance everything in the display list.
@@ -2847,6 +2851,7 @@ namespace gameswf
 		int	get_height() { assert(0); return 0; }
 
 		int	get_current_frame() const { return m_current_frame; }
+		int	get_frame_count() const { return m_def->m_frame_count; }
 
 		void	set_play_state(play_state s)
 		// Stop or play the movie.
