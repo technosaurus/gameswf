@@ -46,7 +46,7 @@ namespace fontlib
 	// Note that this is much better than just padding all around
 	// the outside of an arbitrarily sized glyph, since
 	// mip-mapping naturally observes power-of-two boundaries.
-	static const int	GLYPH_PACK_ROUNDING_BITS = 2;
+	static const int	GLYPH_PACK_ROUNDING_BITS = 3;
 
 	// We make a little bitmap coverage thingy, to help pack our
 	// glyphs into the cache texture.  Basically we play Tetris
@@ -69,20 +69,24 @@ namespace fontlib
 			return;
 		}
 
-			//xxxxxx debug hack -- dump image data to a file
-			FILE*	fp = fopen("dump.ppm", "wb");
-			if (fp)
+		//xxxxxx debug hack -- dump image data to a file
+		static int	s_seq = 0;
+		char buffer[100];
+		sprintf(buffer, "dump%02d.ppm", s_seq);
+		s_seq++;
+		FILE*	fp = fopen(buffer, "wb");
+		if (fp)
+		{
+			fprintf(fp, "P6\n%d %d\n255\n", GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE);
+			for (int i = 0; i < GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE; i++)
 			{
-				fprintf(fp, "P6\n%d %d\n255\n", GLYPH_CACHE_TEXTURE_SIZE, GLYPH_CACHE_TEXTURE_SIZE);
-				for (int i = 0; i < GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE; i++)
-				{
-					fputc(s_current_cache_image[i], fp);
-					fputc(s_current_cache_image[i], fp);
-					fputc(s_current_cache_image[i], fp);
-				}
-				fclose(fp);
+				fputc(s_current_cache_image[i], fp);
+				fputc(s_current_cache_image[i], fp);
+				fputc(s_current_cache_image[i], fp);
 			}
-			//xxxxxx
+			fclose(fp);
+		}
+		//xxxxxx
 
 
 		render::set_alpha_image(s_current_bitmap_info,
@@ -162,10 +166,12 @@ namespace fontlib
 		int	raw_width = (max_x - min_x + 1);
 		int	raw_height = (max_y - min_y + 1);
 
-		// Round up to nearest rounding boundary.
+		// Round up to nearest rounding boundary.  We also
+		// need to leave 1 texel worth of blank space all
+		// around the glyph image.
 		static const int	mask = (1 << GLYPH_PACK_ROUNDING_BITS) - 1;
-		int	width = (raw_width + mask) & ~mask;
-		int	height = (raw_height + mask) & ~mask;
+		int	width = (raw_width + 2 + mask) & ~mask;
+		int	height = (raw_height + 2 + mask) & ~mask;
 
 		assert(width < GLYPH_CACHE_TEXTURE_SIZE);
 		assert(height < GLYPH_CACHE_TEXTURE_SIZE);
@@ -197,7 +203,9 @@ namespace fontlib
 				// Blit the output image into its new spot.
 				for (int j = 0; j < raw_height; j++)
 				{
-					memcpy(s_current_cache_image + (pack_y + j) * GLYPH_CACHE_TEXTURE_SIZE + pack_x,
+					memcpy(s_current_cache_image
+					       + (pack_y + 1 + j) * GLYPH_CACHE_TEXTURE_SIZE
+					       + pack_x + 1,
 					       image_data + (min_y + j) * GLYPH_FINAL_SIZE + min_x,
 					       raw_width);
 				}
@@ -205,12 +213,12 @@ namespace fontlib
 				// Fill out the glyph info.
 				texture_glyph*	tg = new texture_glyph;
 				tg->m_bitmap_info = s_current_bitmap_info;
-				tg->m_uv_origin.m_x = (float(pack_x) - min_x + offset_x) / (GLYPH_CACHE_TEXTURE_SIZE - 1);
-				tg->m_uv_origin.m_y = (float(pack_y) - min_y + offset_y) / (GLYPH_CACHE_TEXTURE_SIZE - 1);
-				tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE - 1);
-				tg->m_uv_bounds.m_x_max = float(pack_x + raw_width - 1) / (GLYPH_CACHE_TEXTURE_SIZE - 1);
-				tg->m_uv_bounds.m_y_min = float(pack_y) / (GLYPH_CACHE_TEXTURE_SIZE - 1);
-				tg->m_uv_bounds.m_y_max = float(pack_y + raw_height - 1) / (GLYPH_CACHE_TEXTURE_SIZE - 1);
+				tg->m_uv_origin.m_x = (float(pack_x) - min_x + offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_origin.m_y = (float(pack_y) - min_y + offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_x_min = float(pack_x + 0.5f) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_x_max = float(pack_x + 1.5f + raw_width) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_y_min = float(pack_y + 0.5f) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_y_max = float(pack_y + 1.5f + raw_height) / (GLYPH_CACHE_TEXTURE_SIZE);
 
 				return tg;
 			}
