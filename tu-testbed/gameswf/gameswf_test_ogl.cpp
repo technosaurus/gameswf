@@ -110,6 +110,7 @@ int	main(int argc, char *argv[])
 	if (in->get_error())
 	{
 		printf("can't open '%s' for input\n", infile);
+		delete in;
 		exit(1);
 	}
 	gameswf::movie_interface*	m = gameswf::create_movie(in);
@@ -234,12 +235,14 @@ int	main(int argc, char *argv[])
 				else if (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS)
 				{
 					paused = true;
-					delta_t = -0.1f;
+					//delta_t = -0.1f;
+					m->goto_frame(m->get_current_frame()-1);
 				}
 				else if (key == SDLK_RIGHTBRACKET || key == SDLK_KP_PLUS)
 				{
 					paused = true;
-					delta_t = +0.1f;
+					//delta_t = +0.1f;
+					m->goto_frame(m->get_current_frame()+1);
 				}
 				else if (key == SDLK_a)
 				{
@@ -295,11 +298,11 @@ int	main(int argc, char *argv[])
 
 		m->display();
 
-		if (s_loop
-		    && m->get_current_frame() >= m->get_frame_count() - 1)
+	/*	if (s_loop
+		    && m->get_current_frame() >= m->get_frame_count() )
 		{
 			m->restart();
-		}
+		}*/
 
 		SDL_GL_SwapBuffers();
 

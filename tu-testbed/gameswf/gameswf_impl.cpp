@@ -385,7 +385,9 @@ namespace gameswf
 
 		play_state	m_play_state;
 		int	m_current_frame;
+		int	m_next_frame;
 		float	m_time_remainder;
+		bool	m_update_frame;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 
 		jpeg::input*	m_jpeg_in;
@@ -399,7 +401,9 @@ namespace gameswf
 			m_background_color(0.0f, 0.0f, 0.0f, 1.0f),
 			m_play_state(PLAY),
 			m_current_frame(0),
+			m_next_frame(0),
 			m_time_remainder(0.0f),
+			m_update_frame(true),
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
@@ -595,10 +599,12 @@ namespace gameswf
 		
 		void	restart()
 		{
-			m_display_list.resize(0);
-			m_action_list.resize(0);
-			m_current_frame = -1;
+		//	m_display_list.resize(0);
+		//	m_action_list.resize(0);
+			m_current_frame = 0;
+			m_next_frame = 0;
 			m_time_remainder = 0;
+			m_update_frame = true;
 		}
 
 		void	advance(float delta_time)
@@ -606,46 +612,75 @@ namespace gameswf
 			m_time_remainder += delta_time;
 			const float	frame_time = 1.0f / m_frame_rate;
 
-			while (m_time_remainder >= frame_time)
+			// Check for the end of frame
+			if (m_time_remainder >= frame_time)
 			{
 				m_time_remainder -= frame_time;
-			
-				float	dt = frame_time;
-				int	next_frame = m_current_frame + 1;
-				if (m_play_state == STOP)
-				{
-					dt = 0.0f;
-					next_frame = m_current_frame;
-				}
-				if (next_frame >= m_frame_count
-				    && m_frame_count > 1)
-				{
-					// End of movie.  Hang.
-					next_frame = m_frame_count - 1;
+				m_update_frame = true;
+			}
 
-// 					// Loop to beginning.
-// 					m_current_frame = -1;
-// 					m_display_list.resize(0);
-// 					m_action_list.resize(0);
-//  					next_frame = 0;
+			while (m_update_frame)
+			{
+				m_update_frame = false;
+				m_current_frame = m_next_frame;
+				m_next_frame = m_current_frame + 1;
+
+			//	IF_DEBUG(printf("### frame updated: current_frame=%d\n", m_current_frame));
+
+				if (m_current_frame == 0)
+				{
+					m_display_list.clear();
+					m_action_list.clear();
 				}
+
+
+				// Execute the current frame's tags.
+				if (m_play_state == PLAY) 
+				{
+					execute_frame_tags(m_current_frame);
+
+					// Perform frame actions
+					do_actions();
+				}
+
 
 				// Advance everything in the display list.
 				for (int i = 0; i < m_display_list.size(); i++)
 				{
-					m_display_list[i].m_character->advance(dt, this, m_display_list[i].m_matrix);
+					m_display_list[i].m_character->advance(frame_time, this, m_display_list[i].m_matrix);
 				}
 
-				// Execute the next frame's tags.
-				if (next_frame != m_current_frame
-				    && next_frame >= 0
-				    && next_frame < m_frame_count)
-				{
-					execute_frame_tags(next_frame);
-					m_current_frame = next_frame;
-				}
-
+				// Perform button actions
 				do_actions();
+
+
+				// Update next frame according to actions
+				if (m_play_state == STOP)
+				{
+					m_next_frame = m_current_frame;
+					if (m_next_frame >= m_frame_count)
+					{
+						m_next_frame = m_frame_count;
+					}
+				}
+				else if (m_next_frame >= m_frame_count)	// && m_play_state == PLAY
+				{
+  					m_next_frame = 0;
+					if (m_frame_count > 1)
+					{
+						// Avoid infinite loop on single frame movies
+						m_update_frame = true;
+					}
+				}
+
+			//	printf( "### display list size = %d\n", m_display_list.size() );
+
+				// Check again for the end of frame
+				if (m_time_remainder >= frame_time)
+				{
+					m_time_remainder -= frame_time;
+					m_update_frame = true;
+				}
 			}
 		}
 
@@ -682,10 +717,22 @@ namespace gameswf
 			    && target_frame_number >= 0
 			    && target_frame_number < m_frame_count)
 			{
-				execute_frame_tags(target_frame_number);
-				m_current_frame = target_frame_number;
+				if (m_play_state == STOP)
+				{
+					target_frame_number++;	// if stopped, update_frame won't increase it
+					m_current_frame = target_frame_number;
+				}
+				m_next_frame = target_frame_number;
+
+				m_display_list.clear();
+				for (int f = 0; f < target_frame_number; f++)
+				{
+					execute_frame_tags(f);	// FIXME: don't execute actions, nor sounds.
+				}
+				m_action_list.clear();	// HACK!
 			}
 
+			m_update_frame = true;
 			m_time_remainder = 0 /* @@ frame time */;
 		}
 
@@ -1858,7 +1905,9 @@ namespace gameswf
 
 		play_state	m_play_state;
 		int	m_current_frame;
+		int	m_next_frame;
 		float	m_time_remainder;
+		bool	m_update_frame;
 
 		virtual ~sprite_instance() {}
 
@@ -1866,8 +1915,10 @@ namespace gameswf
 			:
 			m_def(def),
 			m_play_state(PLAY),
-			m_current_frame(-1),
-			m_time_remainder(0)
+			m_current_frame(0),
+			m_next_frame(0),
+			m_time_remainder(0),
+			m_update_frame(true)
 		{
 			assert(m_def);
 			m_id = def->m_id;
@@ -1894,10 +1945,10 @@ namespace gameswf
 
 		void	restart()
 		{
-			m_display_list.resize(0);
-			m_action_list.resize(0);
-			m_current_frame = -1;
+			m_current_frame = 0;
+			m_next_frame = 0;
 			m_time_remainder = 0;
+			m_update_frame = true;
 		}
 
 
@@ -1908,45 +1959,72 @@ namespace gameswf
 			m_time_remainder += delta_time;
 			const float	frame_time = 1.0f / m_def->m_movie->m_frame_rate;
 
-			while (m_time_remainder >= frame_time)
+			// Check for the end of frame
+			if (m_time_remainder >= frame_time)
 			{
 				m_time_remainder -= frame_time;
-			
-				float	dt = frame_time;
-				int	next_frame = m_current_frame + 1;
-				if (m_play_state == STOP)
+				m_update_frame = true;
+			}
+
+			while (m_update_frame)
+			{
+				m_update_frame = false;
+				m_current_frame = m_next_frame;
+				m_next_frame = m_current_frame + 1;
+
+				if (m_current_frame == 0)
 				{
-					dt = 0.0f;
-					next_frame = m_current_frame;
+					m_display_list.clear();
+					m_action_list.clear();
 				}
-				if (next_frame >= m_def->m_frame_count)
+
+				// Execute the current frame's tags.
+				if (m_play_state == PLAY) 
 				{
-					// End of movie.  Loop to beginning.
-					m_current_frame = -1;
-					m_display_list.resize(0);
-					m_action_list.resize(0);
-					next_frame = 0;
+					execute_frame_tags(m_current_frame);
+
+					// Perform frame actions
+					do_actions();
 				}
+
 
 				// Advance everything in the display list.
 				for (int i = 0; i < m_display_list.size(); i++)
 				{
 					matrix	sub_matrix = mat;
 					sub_matrix.concatenate(m_display_list[i].m_matrix);
-					m_display_list[i].m_character->advance(dt, m, sub_matrix);
+					m_display_list[i].m_character->advance(frame_time, this, sub_matrix);
 				}
 
-				// Execute the next frame's tags.
-				if (next_frame != m_current_frame
-				    && next_frame >= 0
-				    && next_frame < m_def->m_frame_count)
-				{
-					execute_frame_tags(next_frame);
-					m_current_frame = next_frame;
-				}
-
-				// Perform any pending actions.
+				// Perform button actions
 				do_actions();
+
+
+				// Update next frame according to actions
+				if (m_play_state == STOP)
+				{
+					m_next_frame = m_current_frame;
+					if (m_next_frame >= m_def->m_frame_count)
+					{
+						m_next_frame = m_def->m_frame_count;
+					}
+				}
+				else if (m_next_frame >= m_def->m_frame_count)	// && m_play_state == PLAY
+				{
+  					m_next_frame = 0;
+					if (m_def->m_frame_count > 1)
+					{
+						// Avoid infinite loop on single frame sprites?
+						m_update_frame = true;
+					}
+				}
+
+				// Check again for the end of frame
+				if (m_time_remainder >= frame_time)
+				{
+					m_time_remainder -= frame_time;
+					m_update_frame = true;
+				}
 			}
 		}
 
@@ -1983,10 +2061,22 @@ namespace gameswf
 			    && target_frame_number >= 0
 			    && target_frame_number < m_def->m_frame_count)
 			{
-				execute_frame_tags(target_frame_number);
-				m_current_frame = target_frame_number;
+				if (m_play_state == STOP)
+				{
+					target_frame_number++;	// if stopped, update_frame won't increase it
+					m_current_frame = target_frame_number;
+				}
+				m_next_frame = target_frame_number;
+
+				m_display_list.clear();
+				for (int f = 0; f < target_frame_number; f++)
+				{
+					execute_frame_tags(f);	// FIXME: don't execute actions, nor sounds.
+				}
+				m_action_list.clear();	// HACK!
 			}
 
+			m_update_frame = true;
 			m_time_remainder = 0 /* @@ frame time */;
 		}
 
@@ -2106,6 +2196,13 @@ namespace gameswf
 			character*	ch = m_display_list[index].m_character;
 
 			return ch->m_id;
+		}
+
+		void	get_mouse_state(int* x, int* y, int* buttons)
+		// Use this to retrieve the last state of the mouse, as set via
+		// notify_mouse_state().
+		{
+			m_def->m_movie->get_mouse_state(x, y, buttons);
 		}
 	};
 
