@@ -7,11 +7,14 @@
 
 
 #include "base/image.h"
+
+#include "base/container.h"
 #include "base/utility.h"
 #include "base/jpeg.h"
 #include "base/dlmalloc.h"
 #include "base/tu_file.h"
 #include <stdlib.h>
+#include <string.h>
 
 
 namespace image
@@ -166,6 +169,44 @@ namespace image
 		data[0] = a;
 	}
 
+
+	bool	alpha::operator==(const alpha& a) const
+	// Bitwise content comparison.
+	{
+		if (m_width != a.m_width
+		    || m_height != a.m_height)
+		{
+			return false;
+		}
+
+		for (int j = 0, n = m_height; j < n; j++)
+		{
+			if (memcmp(scanline(this, j), scanline(&a, j), m_width))
+			{
+				// Mismatch.
+				return false;
+			}
+		}
+
+		// Images are identical.
+		return true;
+	}
+
+
+	unsigned int	alpha::compute_hash() const
+	// Compute a hash code based on image contents.  Can be useful
+	// for comparing images.
+	{
+		unsigned int	h = bernstein_hash(&m_width, sizeof(m_width));
+		h = bernstein_hash(&m_height, sizeof(m_height), h);
+
+		for (int i = 0, n = m_height; i < n; i++)
+		{
+			h = bernstein_hash(scanline(this, i), m_width, h);
+		}
+
+		return h;
+	}
 
 
 	//
