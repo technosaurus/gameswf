@@ -192,8 +192,6 @@ namespace gameswf
 				int	length = m_buffer[pc + 1] | (m_buffer[pc + 2] << 8);
 				int	next_pc = pc + length + 3;
 
-				IF_VERBOSE_ACTION({for (int i = 0; i < imin(length, 8); i++) { log_msg("0x%02x ", m_buffer[pc + 3 + i]); } log_msg("\n"); });
-				
 				switch (action_id)
 				{
 				default:
@@ -209,12 +207,6 @@ namespace gameswf
 				case 0x83:	// get url
 				{
 					// @@ TODO should call back into client app, probably...
-
-					// Print as text.
-					IF_VERBOSE_ACTION({
-						for (int i = 0; i < length; i++) { log_msg("%c", m_buffer[pc + 3 + i]); } log_msg("\n");
-					});
-
 					break;
 				}
 
@@ -410,6 +402,8 @@ namespace gameswf
 		// Show instruction argument(s).
 		if (action_id & 0x80)
 		{
+			assert(fmt != ARG_NONE);
+
 			int	length = instruction_data[1] | (instruction_data[2] << 8);
 
 			// log_msg(" [%d]", length);
