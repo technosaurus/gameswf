@@ -23,7 +23,7 @@ all: \
 	decimate_texture$(EXE_EXT)
 
 heightfield_chunker$(EXE_EXT): heightfield_chunker.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(ENGINE)
-	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)
 
 heightfield_shader$(EXE_EXT): heightfield_shader.$(OBJ_EXT) mmap_util.$(OBJ_EXT) bt_array.$(OBJ_EXT) $(ENGINE)
 	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)

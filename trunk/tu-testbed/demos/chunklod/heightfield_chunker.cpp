@@ -17,9 +17,10 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
 
-#include <engine/utility.h>
-#include <engine/container.h>
-#include <engine/geometry.h>
+#include "engine/utility.h"
+#include "engine/container.h"
+#include "engine/geometry.h"
+#include "engine/tqt.h"
 
 #include "mmap_array.h"
 #include "bt_array.h"
@@ -668,6 +669,7 @@ struct heightfield {
 void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int rz, int lx, int lz);
 void	propagate_activation_level(heightfield& hf, int cx, int cz, int level, int target_level);
 int	check_propagation(heightfield& hf, int cx, int cz, int level);
+void	generate_empty_TOC(SDL_RWops* rw, int level);
 void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level);
 
 
@@ -727,7 +729,7 @@ void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, flo
 
 	// Write a .chu header for the output file.
 	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
-	SDL_WriteLE16(out, 8);	// file format version.
+	SDL_WriteLE16(out, 9);	// file format version.
 	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
 	WriteFloat32(out, vertical_scale);	// meters / unit of vertical measurement.
@@ -735,6 +737,11 @@ void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, flo
 	SDL_WriteLE32(out, 0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
 
 	printf("meshing....");
+
+	// Make space for our chunk table-of-contents.  Fixed-size
+	// chunk headers will go in this space; the vertex/index data
+	// for chunks gets appended to the end of the stream.
+	generate_empty_TOC(out, hf.root_level);
 
 	// Write out the node data for the entire chunk tree.
 	generate_node_data(out, hf, 0, 0, hf.m_log_size, hf.root_level);
@@ -996,6 +1003,36 @@ namespace mesh {
 void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level);
 
 
+// Manually synced!!!  (@@ should use a fixed-size struct, to be
+// safer, although that ruins endian safety.)  If you change the chunk
+// header contents, you must keep this constant in sync.  In DEBUG
+// builds, there's an assert that should catch discrepancies, but be
+// careful.
+const int	CHUNK_HEADER_BYTES = 4 + 4*4 + 1 + 2 + 2 + 2*2 + 4;
+
+
+void	generate_empty_TOC(SDL_RWops* rw, int root_level)
+// Append an empty table-of-contents for a fully-populated quadtree,
+// and rewind the stream to the start of the contents.  Use this to
+// make room for TOC at the beginning of the file, while bulk
+// vert/index data gets appended after the TOC.
+{
+	Uint8	buf[CHUNK_HEADER_BYTES];	// dummy chunk header.
+	memset(buf, 0, sizeof(buf));
+
+	int	start_pos = SDL_RWtell(rw);
+
+	int	chunk_count = tqt::node_count(root_level + 1);	// tqt has a handy function to compute # of nodes in a quadtree
+	for (int i = 0; i < chunk_count; i++)
+	{
+		SDL_RWwrite(rw, buf, sizeof(buf), 1);
+	}
+
+	// Rewind, so caller can start writing real TOC data.
+	SDL_RWseek(rw, start_pos, SEEK_SET);
+}
+
+
 struct gen_state;
 void	generate_block(heightfield& hf, int level, int log_size, int cx, int cz);
 void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, int tz, int rx, int rz, int level);
@@ -1009,6 +1046,8 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 // If we're not at the base level (level > 0), then also recurses to
 // quadtree child nodes and generates their data.
 {
+	int	start_pos = SDL_RWtell(out);	// use this to verify the value of CHUNK_HEADER_BYTES
+
 	stats.output_chunks++;
 
 	int	size = (1 << log_size);
@@ -1020,6 +1059,23 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	int	chunk_label = hf.node_index(cx, cz);
 //	printf("chunk_label(%d,%d) = %d\n", cx, cz, chunk_label);//xxxx
 
+	// Write our label.
+	SDL_WriteLE32(out, chunk_label);
+
+	// Write the labels of our neighbors.
+	SDL_WriteLE32(out, hf.node_index(cx + size, cz));	// EAST
+	SDL_WriteLE32(out, hf.node_index(cx, cz - size));	// NORTH
+	SDL_WriteLE32(out, hf.node_index(cx - size, cz));	// WEST
+	SDL_WriteLE32(out, hf.node_index(cx, cz + size));	// SOUTH
+
+	// Chunk address.
+	int	LOD_level = hf.root_level - level;
+	assert(LOD_level >= 0 && LOD_level < 256);
+	WriteByte(out, LOD_level);
+	SDL_WriteLE16(out, x0 >> log_size);
+	SDL_WriteLE16(out, z0 >> log_size);
+
+	// Start making the mesh.
 	mesh::clear();
 
 	// !!! This needs to be done in propagate, or something (too late now) !!!
@@ -1037,15 +1093,6 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 //	// Print some interesting info.
 //	printf("chunk: (%d, %d) size = %d\n", x0, z0, size);
 
-	// Write our label.
-	SDL_WriteLE32(out, chunk_label);
-
-	// Write the labels of our neighbors.
-	SDL_WriteLE32(out, hf.node_index(cx + size, cz));	// EAST
-	SDL_WriteLE32(out, hf.node_index(cx, cz - size));	// NORTH
-	SDL_WriteLE32(out, hf.node_index(cx - size, cz));	// WEST
-	SDL_WriteLE32(out, hf.node_index(cx, cz + size));	// SOUTH
-
 	// Generate data for our edge skirts.  Go counterclockwise around
 	// the outside (ensures correct winding).
 	generate_edge_data(out, hf, 0, cx + half_size, cz + half_size, cx + half_size, cz - half_size, level);	// east
@@ -1053,15 +1100,11 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	generate_edge_data(out, hf, 2, cx - half_size, cz - half_size, cx - half_size, cz + half_size, level);	// west
 	generate_edge_data(out, hf, 3, cx - half_size, cz + half_size, cx + half_size, cz + half_size, level);	// south
 
-	// Chunk address.
-	int	LOD_level = hf.root_level - level;
-	assert(LOD_level >= 0 && LOD_level < 256);
-	WriteByte(out, LOD_level);
-	SDL_WriteLE16(out, x0 >> log_size);
-	SDL_WriteLE16(out, z0 >> log_size);
-
-	// write out the mesh data.
+	// Finish writing our data.
 	mesh::write(out, hf, level);
+
+	int	header_bytes_written = SDL_RWtell(out) - start_pos;
+	assert(header_bytes_written == CHUNK_HEADER_BYTES);
 
 	// recurse to child regions, to generate child chunks.
 	if (level > 0) {
@@ -1492,9 +1535,17 @@ namespace mesh {
 		SDL_WriteLE16(rw, min_y);
 		SDL_WriteLE16(rw, max_y);
 
-		// Make a placeholder for this data chunk's data size.
-		int	size_filepos = SDL_RWtell(rw);
+//		// Make a placeholder for this data chunk's data size.
+//		int	size_filepos = SDL_RWtell(rw);
+//		SDL_WriteLE32(rw, 0);
+
+		// Write a placeholder for the mesh data file pos.
+		int	current_pos = SDL_RWtell(rw);
 		SDL_WriteLE32(rw, 0);
+		
+		// write out the vertex data at the *end* of the file.
+		SDL_RWseek(rw, 0, SEEK_END);
+		int	mesh_pos = SDL_RWtell(rw);
 
 		// Compute bounding box.  Determines the scale and offset for
 		// quantizing the verts.
@@ -1553,12 +1604,16 @@ namespace mesh {
 			SDL_WriteLE32(rw, tris);
 		}
 
-		// Go back and write the size of the chunk we just wrote.
-		int	current_filepos = SDL_RWtell(rw);
-		int	data_size = current_filepos - size_filepos - 4;
-		SDL_RWseek(rw, size_filepos, SEEK_SET);
-		SDL_WriteLE32(rw, data_size);
-		SDL_RWseek(rw, current_filepos, SEEK_SET);
+		// Rewind, and fill in the mesh data file pos.
+		SDL_RWseek(rw, current_pos, SEEK_SET);
+		SDL_WriteLE32(rw, mesh_pos);
+
+//		// Go back and write the size of the chunk we just wrote.
+//		int	current_filepos = SDL_RWtell(rw);
+//		int	data_size = current_filepos - size_filepos - 4;
+//		SDL_RWseek(rw, size_filepos, SEEK_SET);
+//		SDL_WriteLE32(rw, data_size);
+//		SDL_RWseek(rw, current_filepos, SEEK_SET);
 	}
 
 
