@@ -31,6 +31,14 @@ namespace gameswf
 		{
 		}
 
+		display_object_info(const display_object_info& di)
+			:
+			m_ref(false),
+			m_character(NULL)
+		{
+			*this = di;
+		}
+
 		~display_object_info()
 		{
 			if (m_character) m_character->drop_ref();

@@ -153,8 +153,7 @@ namespace gameswf
 
 			if (dobj.m_character->get_depth() == depth)
 			{
-				delete dobj.m_character;
-				dobj.m_character = NULL;
+				dobj.set_character(NULL);
 				m_display_object_array.remove(index);
 			}
 		}
@@ -313,7 +312,7 @@ namespace gameswf
 		ch->set_ratio(ratio);
 		ch->set_clip_depth(clip_depth);
 
-		// Delete the old character.
+		// Drop the old character.
 		old_ch->drop_ref();
 	}
 	
@@ -356,7 +355,6 @@ namespace gameswf
 			display_object_info&	di = m_display_object_array[i];
 			//character*	ch = m_display_object_array[i].m_character;
 			di.m_character->on_event(event_id::UNLOAD);
-//			delete ch;
 		}
 		
 		m_display_object_array.clear();
@@ -388,8 +386,6 @@ namespace gameswf
 			
 			if (dobj.m_ref == false)
 			{
-//				delete dobj.m_character;
-//				dobj.m_character = NULL;
 				dobj.set_character(NULL);
 
 				m_display_object_array.remove(i);
