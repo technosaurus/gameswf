@@ -3,6 +3,10 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -27,8 +31,10 @@ using namespace std;
 using namespace gameswf;
 
 
-#if TU_CONFIG_LINK_TO_LIBXML
+#ifdef HAVE_LIBXML
 
+namespace gameswf
+{  
 
 XMLSocket::XMLSocket()
 {
@@ -239,6 +245,7 @@ XMLSocket::anydata(tu_string &data)
     data = buf;
     return true;
   }
+  return false;
 }
 
 bool
@@ -288,7 +295,6 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
   as_value	val;
   static bool first = true;     // This event handler should only be executed once.
   bool          ret;
-  int           i;
   const array<with_stack_entry> with_stack;
 
   if (!first) {
@@ -484,5 +490,7 @@ xmlsocket_event_xml(as_value* result, as_object_interface* this_ptr, as_environm
   
 }
 
+} // end of gameswf namespace
 
-#endif // TU_CONFIG_LINK_TO_LIBXML
+// HAVE_LIBXML
+#endif

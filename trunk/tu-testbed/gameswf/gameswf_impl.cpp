@@ -3145,8 +3145,6 @@ namespace gameswf
 			as_object      *obj, *this_ptr;
 			as_environment *as_env;
 
-			UNUSED(locals);
-
 			log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
 			Timer *ptr = (Timer *)timer;
 			//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());

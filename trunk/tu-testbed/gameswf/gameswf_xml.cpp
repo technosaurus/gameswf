@@ -3,24 +3,28 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 #include "base/smart_ptr.h"
-
 #include "gameswf_string.h"
+
+#ifdef HAVE_LIBXML
+
 #include "gameswf_xml.h"
-
-#if TU_CONFIG_LINK_TO_LIBXML
-
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
 // @@ evil: kill
-using namespace gameswf;
 using namespace std;
 
+namespace gameswf
+{
 
 XMLNode::XMLNode()
 {
@@ -388,9 +392,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
 {
   
   xml_as_object *xobj = (xml_as_object *)xml;
-  xmlnode_as_object *xmlnode_obj      = new xmlnode_as_object;
+  //xmlnode_as_object *xmlnode_obj      = new xmlnode_as_object;
   xmlnode_as_object *xmlfirstnode_obj = new xmlnode_as_object;
-  xmlnode_as_object *xmlchildnode_obj = new xmlnode_as_object;
+  //xmlnode_as_object *xmlchildnode_obj = new xmlnode_as_object;
   xmlattr_as_object*	nattr_obj     = new xmlattr_as_object;
 
   int childa, childb, childc, i, j, k;
@@ -556,7 +560,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   array<with_stack_entry> dummy_stack;
   //  struct node *first_node = ptr->obj.firstChildGet();
   
-  const char *name = ptr->obj.nodeNameGet();
+  //const char *name = ptr->obj.nodeNameGet();
   result->set(true);
 
   if (ptr->obj.hasChildNodes() == false) {
@@ -707,7 +711,7 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
   xml_as_object*	xml_obj = new xml_as_object;
   xmlnode_as_object*	xmlfirstnode_obj = new xmlnode_as_object;
   xmlnode_as_object*	xmlchildnode_obj = new xmlnode_as_object;
-  xml_as_object*	ptr = (xml_as_object *)this_ptr;
+  //xml_as_object*	ptr = (xml_as_object *)this_ptr;
   
   tu_string datain = env->bottom(first_arg).to_string();
 
@@ -724,7 +728,7 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
   XMLNode *xmlnodes = xml_obj->obj.firstChild();  
   
   xml_obj->obj.reset_stack_depth();
-  xml_obj->set_member("load", &xml_load);
+  //xml_obj->set_member("load", xml_load);
   // env->set_variable("childNodes", xml_obj, 0);
   xml_obj->set_member("firstChild", xmlfirstnode_obj);
   xml_obj->set_member("childNodes", xmlchildnode_obj);
@@ -845,5 +849,7 @@ void xml_next_stack_depth(gameswf::as_value* result, gameswf::as_object_interfac
   //  env->set_variable("nodeName", ptr->obj.nodeNameGet(), with_stack);
 }
 
+} // end of gameswf namespace
 
-#endif // TU_CONFIG_LINK_TO_LIBXML
+// HAVE_LIBXML
+#endif

@@ -5,6 +5,9 @@
 
 // Implementation and helpers for SWF actions.
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
@@ -12,28 +15,21 @@
 #include "gameswf_stream.h"
 #include "base/tu_random.h"
 #include "gameswf_string.h"
-#include "gameswf_xml.h"
-#include "gameswf_xmlsocket.h"
 #include "gameswf_movie.h"
 #include "gameswf_timers.h"
 #include "gameswf_textformat.h"
 #include "gameswf_textfield.h"
 #include "gameswf_sound.h"
+#ifdef HAVE_LIBXML
+#include "gameswf_xml.h"
+#include "gameswf_xmlsocket.h"
+#endif
 
 #include <stdio.h>
 
 #ifdef _WIN32
 #define snprintf _snprintf
 #endif // _WIN32
-
-#if 0
-static const char *types[] = { "UNDEFINED",
-			       "STRING",
-			       "NUMBER",
-			       "OBJECT",
-			       "C_FUNCTION",
-			       "AS_FUNCTION" };
-#endif
 
 
 // NOTES:
@@ -2112,7 +2108,7 @@ namespace gameswf
 							current_movie->set_member("TextFormat", handler);
 							
 							textformat_as_object*	text_obj = new textformat_as_object;
-							log_msg("\tCreated New TextFormat object at 0x%X\n", text_obj);
+							log_msg("\tCreated New TextFormat object at 0x%X\n", (unsigned int)text_obj);
 							
 							text_obj->set_member("underline", &textformat_underline);
 							new_obj = text_obj;
@@ -2123,7 +2119,7 @@ namespace gameswf
 							current_movie->set_member("TextField", handler);
 							
 							textfield_as_object*	text_obj = new textfield_as_object;
-							log_msg("\tCreated New TextField object at 0x%X\n", text_obj);
+							log_msg("\tCreated New TextField object at 0x%X\n", (unsigned int)text_obj);
 							//text_obj->set_member("_visible", &textfield_visible);
 							//text_obj->set_member("_width", &textfield_width);
 							text_obj->set_member("_visible", true);
@@ -2133,13 +2129,13 @@ namespace gameswf
 						// This is where ActionScript objects go
 					        if (classname.to_tu_string()=="XML")
 						{
-#if TU_CONFIG_LINK_TO_LIBXML
+#ifdef HAVE_LIBXML
 							//log_msg("New XML Object!!!, nargs is %d\n", nargs);
 							current_movie->set_member("XML", as_value(xml_new));
 							if (nargs > 0) {
 								if (env->top(0).get_type() == as_value::STRING) {
 									xml_as_object*	xml_obj = new xml_as_object;
-									log_msg("\tCreated New XML object at 0x%X\n", xml_obj);
+									log_msg("\tCreated New XML object at 0x%X\n", (unsigned int)xml_obj);
 									tu_string datain = env->top(0).to_tu_string();
 									xml_obj->obj.parseXML(datain);
 									xml_obj->obj.setupStackFrames(xml_obj, env);
@@ -2148,26 +2144,24 @@ namespace gameswf
 									xmlnode_as_object*	xml_obj =
 										(xmlnode_as_object*)env->top(0).to_object();
 									
-									log_msg("\tCloned the XMLNode object at 0x%X\n", xml_obj);
+									log_msg("\tCloned the XMLNode object at 0x%X\n", (unsigned int)xml_obj);
 									new_obj = xml_obj;
 								}
 							} else {
 								xml_as_object*	xml_obj = new xml_as_object;
-								log_msg("Created New XML object at 0x%X\n", xml_obj);
+								log_msg("Created New XML object at 0x%X\n", (unsigned int)xml_obj);
 								xml_obj->set_member("load", &xml_load);
-								xml_obj->set_member("loaded", as_value(xml_loaded));
+								xml_obj->set_member("loaded", &xml_loaded);
 								new_obj = xml_obj;
 							}
-#endif	// TU_CONFIG_LINK_TO_LIBXML
 						} else
 						if (classname.to_tu_string()=="XMLSocket")
 						{
-#if TU_CONFIG_LINK_TO_LIBXML
 							log_msg("New XMLSocket Object!!!\n");
 							current_movie->set_member("XMLSocket", as_value(xmlsocket_new));
 							
 							as_object*	xmlsock_obj = new xmlsocket_as_object;
-							log_msg("\tCreated New XMLSocket object at 0x%X\n", xmlsock_obj);
+							log_msg("\tCreated New XMLSocket object at 0x%X\n", (unsigned int)xmlsock_obj);
 							xmlsock_obj->set_member("connect", &xmlsocket_connect);
 							xmlsock_obj->set_member("send", &xmlsocket_send);
 							xmlsock_obj->set_member("close", &xmlsocket_close);
@@ -2211,7 +2205,8 @@ namespace gameswf
 							
 							new_obj = xmlsock_obj;
 #endif
-#endif	// TU_CONFIG_LINK_TO_LIBXML
+// HAVE_LIBXML
+#endif
 						} else
 						if (classname.to_tu_string()=="MovieClipLoader")
 						{
@@ -2219,7 +2214,7 @@ namespace gameswf
 							current_movie->set_member("MovieClipLoader", as_value(moviecliploader_new));
 #if 1
 							as_object*	mov_obj = new moviecliploader_as_object;
-							log_msg("\tCreated New MovieClipLoader object at 0x%X\n", mov_obj);
+							log_msg("\tCreated New MovieClipLoader object at 0x%X\n", (unsigned int)mov_obj);
 
 							mov_obj->set_member("loadClip",
 									    &moviecliploader_loadclip);
@@ -2290,7 +2285,8 @@ namespace gameswf
 							current_movie->set_member("String", as_value(string_new));
 							
 							as_object*	str_obj = new as_object;
-							log_msg("\tCreated New String object at 0x%X\n", str_obj);
+							log_msg("\tCreated New String object at 0x%X\n",
+								(unsigned int)str_obj);
 
 							// str_obj->set_member("lastIndexOf", &(str_obj->str.test));
 							str_obj->set_member("lastIndexOf", &string_lastIndexOf);

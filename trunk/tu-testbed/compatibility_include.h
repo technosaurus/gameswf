@@ -1,7 +1,6 @@
 // Dummy header; should get included first into tu-testbed headers.
 // This is for manual project-specific configuration.
 
-
 //
 // Some optional general configuration.
 //
