@@ -23,6 +23,10 @@
 // expands the apparent size of the shape by a pixel or two :(
 #define SOFT_LINE_OUTLINE	0
 
+// On any multitexture card, we should be able to modulate in an edge
+// texture for nice edge antialiasing.
+#define USE_MULTITEXTURE_ANTIALIASING	0
+
 
 namespace gameswf
 {
@@ -32,6 +36,10 @@ namespace render
 
 	// Curve subdivision error tolerance (in TWIPs)
 	static float	s_tolerance = 20.0f;
+
+	// Controls whether we do antialiasing by modulating in a special edge texture.
+	static bool	s_multitextureAntialias = false;
+	static unsigned int	s_edgeTextureID = 0;
 
 	static bool	s_wireframe = false;
 
@@ -397,6 +405,41 @@ namespace render
 		assert(s_cxform_stack.size() == 0);
 		cxform	cx_identity;
 		s_cxform_stack.push_back(cx_identity);
+
+		// See if we can use multitexture antialiasing.
+		s_multitextureAntialias = false;
+#if USE_MULTITEXTURE_ANTIALIASING
+		int	tex_units = 0;
+		glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &tex_units);
+		if (tex_units >= 2)
+		{
+			s_multitextureAntialias = true;
+		}
+
+		// Make sure we have an edge texture available.
+		if (s_multitextureAntialias == true
+		    && s_edgeTextureID == 0)
+		{
+			// Very simple texture: 2 texels wide, 1 texel high.
+			// Both texels are white; left texel is all clear, right texel is all opaque.
+			unsigned char	edge_data[8] = { 255, 255, 255, 0, 255, 255, 255, 255 };
+
+			ogl::active_texture(GL_TEXTURE1_ARB);
+			glEnable(GL_TEXTURE_2D);
+			glGenTextures(1, &s_edgeTextureID);
+			glBindTexture(GL_TEXTURE_2D, s_edgeTextureID);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, edge_data);
+
+			glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// @@ should we use a 1D texture???
+			ogl::active_texture(GL_TEXTURE0_ARB);
+		}
+#endif	// USE_MULTITEXTURE_ANTIALIASING
 	}
 
 
@@ -779,26 +822,76 @@ namespace render
 		// Sort by x.
 		qsort(&slab[0], slab.size(), sizeof(slab[0]), compare_segment_x);
 
-//		glBegin(GL_LINE_STRIP);	//xxxxxxxx
-//		glBegin(GL_LINES);	//xxxxxxxx
 		// Render pairs.
-		// @@ need to deal with self-intersection?
-		{for (int i = 0; i < slab.size() - 1; i++)
+#if USE_MULTITEXTURE_ANTIALIASING
+		if (s_multitextureAntialias)
 		{
-			if (slab[i].m_left_style.is_valid())
+			for (int i = 0; i < slab.size() - 1; i++)
 			{
-				// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
+				if (slab[i].m_left_style.is_valid())
+				{
+					// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
 
-				slab[i].m_left_style.apply(s_matrix_stack.back());
+					slab[i].m_left_style.apply(s_matrix_stack.back());
 
-				glBegin(GL_QUADS);
-				glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
-				glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
-				glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
-				glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
-				glEnd();
+					ogl::active_texture(GL_TEXTURE1_ARB);
+					glBindTexture(GL_TEXTURE_2D, s_edgeTextureID);
+					glEnable(GL_TEXTURE_2D);	// @@ should we use a 1D texture???
+					ogl::active_texture(GL_TEXTURE0_ARB);
+
+					glBegin(GL_TRIANGLES);
+
+					float	e1 = sqrtf(
+						(slab[i].m_begin.m_x - slab[i].m_end.m_x) * (slab[i].m_begin.m_x - slab[i].m_end.m_x)
+						+ (slab[i].m_begin.m_y - slab[i].m_end.m_y) * (slab[i].m_begin.m_y - slab[i].m_end.m_y));
+					float	s1 = (((slab[i + 1].m_end.m_x - slab[i].m_end.m_x) * (slab[i].m_begin.m_y - slab[i].m_end.m_y))
+						      - ((slab[i + 1].m_end.m_y - slab[i].m_end.m_y) * (slab[i].m_begin.m_x - slab[i].m_end.m_x)))
+						      / e1;
+
+					s1 = 200.f;//xxxx
+
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
+					glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
+					glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1 * 0.5f, 0.0f);	// todo: s = fn(verts)
+					glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
+
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
+					glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, 0.0f, 0.0f);
+					glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
+					ogl::multi_tex_coord_2f(GL_TEXTURE1_ARB, s1 * 0.5f, 0.0f);	// xxx compute s2
+					glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
+
+					glEnd();
+
+					ogl::active_texture(GL_TEXTURE1_ARB);
+					glDisable(GL_TEXTURE_2D);
+					ogl::active_texture(GL_TEXTURE0_ARB);
+				}
 			}
-		}}
+		}
+		else
+#endif // USE_MULTITEXTURE_ANTIALIASING
+		{
+			for (int i = 0; i < slab.size() - 1; i++)
+			{
+				if (slab[i].m_left_style.is_valid())
+				{
+					// assert(slab[i + 1].m_right_style == slab[i].m_left_style);	//????
+
+					slab[i].m_left_style.apply(s_matrix_stack.back());
+
+					glBegin(GL_QUADS);
+					glVertex2f(slab[i].m_begin.m_x, slab[i].m_begin.m_y);
+					glVertex2f(slab[i].m_end.m_x, slab[i].m_end.m_y);
+					glVertex2f(slab[i + 1].m_end.m_x, slab[i + 1].m_end.m_y);
+					glVertex2f(slab[i + 1].m_begin.m_x, slab[i + 1].m_begin.m_y);
+					glEnd();
+				}
+			}
+		}
 	}
 
 
