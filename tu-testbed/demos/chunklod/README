@@ -10,3 +10,6 @@ buggy right now) and hopefully low CPU overhead.
 Please do not distribute!  It's not done yet.
 
 Crater dataset thanks to John Ratcliff, http://ratcliff.flipcode.com
+
+Thanks to Ben Discoe & http://www.vterrain.org for the .bt terrain file format
+and for providing some sample .bt data.
