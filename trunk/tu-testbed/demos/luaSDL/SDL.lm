@@ -10,9 +10,9 @@
 --
 
 if use == nil then
-	error("This module requires the 'use' function to load dynamic libraries."
+	error("This module requires the 'use' function to load dynamic libraries.")
 end
-use("luaSDL")	-- dynamically load the library libluaSDL.so/luaSDL.dll
+use("SDL")	-- dynamically load the library libluaSDL.so/luaSDL.dll
 
 -- dofile("shadow40.lua")	-- inline this for SDL.lm
 -- 
