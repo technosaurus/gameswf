@@ -28,10 +28,75 @@
 #endif // M_PI
 
 
+class vertex_streaming_buffer {
+// Object to facilitate streaming verts to the video card.
+// The idea is that it will take care of fencing.
+//
+// TODO: migrate to engine.  Probably just attach to the view_state.
+public:
+	vertex_streaming_buffer(int buffer_size)
+	// Construct a streaming buffer, with vertex RAM of the specified size.
+	{
+		m_buffer_size = buffer_size;
+		m_buffer = ogl::allocate_vertex_memory(buffer_size);
+		m_buffer_top = 0;
+	}
+
+	~vertex_streaming_buffer()
+	{
+		ogl::free_vertex_memory(m_buffer);
+	}
+
+	void*	reserve_memory(int size)
+	// Clients should call this to get a temporary chunk of fast
+	// vertex memory.  Fill it with mesh info and call
+	// glVertexPointer()/glDrawElements().  The memory won't get
+	// stomped until the drawing is finished.
+	//
+	// (TODO: fencing not implemented yet!  figure it out)
+	{
+		assert(size <= m_buffer_size);
+
+		if (m_buffer_top + size > m_buffer_size) {
+			// Desired chunk is bigger than what we've got left; flush
+			// the buffer and start again at the beginning.
+
+			// TODO: something involving a fence, to make sure old data has been drawn.
+			//glFinish();	// @@ We don't want to have to do this!
+
+			m_buffer_top = 0;
+		}
+
+		void*	buf = ((char*) m_buffer) + m_buffer_top;
+		m_buffer_top += size;
+
+		// @@ is it helpful/necessary to do alignment?
+
+		return buf;
+	}
+
+private:
+	int	m_buffer_size;
+	int	m_buffer_top;
+	void*	m_buffer;
+};
+static vertex_streaming_buffer*	s_stream = NULL;
+
+
 struct vertex_info {
-// Structure for storing vertex-buffer mesh info.
+// Structure for storing morphable vertex mesh info.
+
+	vec3	m_origin;
+	float	m_scale;
+
 	int	vertex_count;
-	vec3*	vertices;
+	struct vertex {
+		float	x, y, z;
+		float	y_delta;	// delta, to get to morphed y
+
+		float	get(int i) { return (i == 0 ? x : (i == 1 ? y : z)); }	// @@ for convenience in computing min/max.  Clean that up!
+	};
+	vertex*	vertices;
 
 	int	index_count;
 	Uint16*	indices;
@@ -42,6 +107,8 @@ struct vertex_info {
 
 	void	load(SDL_RWops* in);
 	void	render();
+
+	// TODO: destructor.
 };
 
 
@@ -52,7 +119,8 @@ struct morph_info {
 	int	vertex_count;
 	struct vertex {
 		Uint16	index;
-		float	y0, delta;
+		float	y;
+		float	y_delta;	// delta, to get to morphed y
 	};
 	vertex*	vertices;
 
@@ -79,17 +147,12 @@ struct lod_chunk {
 	int	neighbor_count;
 	lod_chunk**	neighbors;
 
-//	// child edges are the edges *internal* to this chunk;
-//	// i.e. the edges between our child chunks.
-//	int	child_edge_count;
-//	lod_edge**	child_edges;
-
 	// AABB, used for deciding when to enable.
 	vec3	box_center;
 	vec3	box_extent;
 	
-	vertex_info	verts;	// actual rendering info; vertex array, indices, texture id
-	morph_info	morph_verts;	// extra info for CPU morphing of verts
+	vertex_info	verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
+//	morph_info	morph_verts;	// extra info for CPU morphing of verts
 
 //methods:
 	// needs a destructor!
@@ -125,7 +188,6 @@ static void	draw_box(const vec3& min, const vec3& max)
 // Draw the specified axis-aligned box.
 {
 	glBegin(GL_LINES);
-	
 	glVertex3f(min.get_x(), min.get_y(), min.get_z());
 	glVertex3f(min.get_x(), max.get_y(), min.get_z());
 	glVertex3f(min.get_x(), min.get_y(), max.get_z());
@@ -134,7 +196,6 @@ static void	draw_box(const vec3& min, const vec3& max)
 	glVertex3f(max.get_x(), max.get_y(), min.get_z());
 	glVertex3f(max.get_x(), min.get_y(), max.get_z());
 	glVertex3f(max.get_x(), max.get_y(), max.get_z());
-
 	glEnd();
 
 	glBegin(GL_LINE_STRIP);
@@ -155,17 +216,48 @@ static void	draw_box(const vec3& min, const vec3& max)
 }
 
 
+void	morph_info::load(SDL_RWops* in)
+// Load info about a set of morph vertices.
+{
+#if 0
+	vertex_count = SDL_ReadLE16(in);
+	vertices = new vertex[ vertex_count ];
+	for (int i = 0; i < vertex_count; i++) {
+		vertex&	v = vertices[i];
+//		vertices[i].index = SDL_ReadLE16(in);
+		v.x = ReadFloat32(in);
+		v.y = ReadFloat32(in);
+		v.z = ReadFloat32(in);
+		v.y_delta = ReadFloat32(in);
+	}
+
+//	printf("morph_info::load() -- vertex_count = %d\n", vertex_count);//xxxxxxxx
+#endif // 0
+}
+
+
 void	vertex_info::load(SDL_RWops* in)
 // Read vert info from the given file.
 {
+	vertex_count = SDL_ReadLE16(in);
+	vertices = new vertex[ vertex_count ];
+	for (int i = 0; i < vertex_count; i++) {
+		vertex&	v = vertices[i];
+		v.x = ReadFloat32(in);
+		v.y = ReadFloat32(in);
+		v.z = ReadFloat32(in);
+		v.y_delta = ReadFloat32(in);
+	}
+#if 0
 	// Load verts.
 	vertex_count = SDL_ReadLE16(in);
-	vertices = (vec3*) ogl::allocate_vertex_memory( vertex_count * sizeof(vec3) );
+	vertices = new vec3[vertex_count * sizeof(vec3)]; //ogl::allocate_vertex_memory( vertex_count * sizeof(vec3) );
 	for (int i = 0; i < vertex_count; i++) {
 		vertices[i].set(0, ReadFloat32(in));
 		vertices[i].set(1, ReadFloat32(in));
 		vertices[i].set(2, ReadFloat32(in));
 	}
+#endif // 0
 		
 	// Load indices.
 	index_count = SDL_ReadLE32(in);
@@ -175,21 +267,6 @@ void	vertex_info::load(SDL_RWops* in)
 	}}
 
 //	printf("vertex_info::load() -- vertex_count = %d, index_count = %d\n", vertex_count, index_count);//xxxxxxxx
-}
-
-
-void	morph_info::load(SDL_RWops* in)
-// Load info about a set of morph vertices.
-{
-	vertex_count = SDL_ReadLE16(in);
-	vertices = new vertex[ vertex_count ];
-	for (int i = 0; i < vertex_count; i++) {
-		vertices[i].index = SDL_ReadLE16(in);
-		vertices[i].y0 = ReadFloat32(in);
-		vertices[i].delta = ReadFloat32(in);
-	}
-
-//	printf("morph_info::load() -- vertex_count = %d\n", vertex_count);//xxxxxxxx
 }
 
 
@@ -310,15 +387,21 @@ void	lod_chunk::force_parent_enabled(const vec3& viewpoint)
 }
 
 
-static void	morph_vertices(vec3* verts, const morph_info& morph_verts, float f)
+static void	morph_vertices(vec3* verts, const vertex_info& morph_verts, float f)
 // Adjust the positions of our morph vertices according to f, the
-// given morph parameter.  verts contains the vertex buffer info to be
-// adjusted.  morph_verts contains the information about which verts
-// to adjust, and their deltas.
+// given morph parameter.  verts is the output buffer for processed
+// verts.
+//
+// @@ This functionality could be shifted into a vertex program for
+// the GPU.
 {
+	float	one_minus_f = 1.0f - f;
+
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
-		const morph_info::vertex&	v = morph_verts.vertices[i];
-		verts[v.index].set(1, v.y0 + v.delta * f);	// lerp the y value of the vert.
+		const vertex_info::vertex&	v = morph_verts.vertices[i];
+		verts[i].set(0, v.x);
+		verts[i].set(1, v.y + v.y_delta * one_minus_f);	// lerp the y value of the vert.
+		verts[i].set(2, v.z);
 	}
 }
 
@@ -341,22 +424,28 @@ int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_o
 	int	triangle_count = 0;
 
 	if (enabled) {
-		if (opt.morph) {
-			// morph our morph verts.
-			float	f = (lod & 255) / 255.0f;
-			morph_vertices(verts.vertices, morph_verts, f);
-		}
-
 		if (opt.show_box) {
 			// draw bounding box.
 			glColor3f(0, 1, 0);
 			draw_box(box_center - box_extent, box_center + box_extent);
 		}
 
+		// Grab some space to put processed verts.
+		assert(s_stream);
+		vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * verts.vertex_count);
+
+		// Process our vertices into the output buffer.
+		float	f = (lod & 255) / 255.0f;
+		if (opt.morph == false) {
+			f = 0;
+		}
+		morph_vertices(output_verts, verts, f);
+
 		if (opt.show_geometry) {
 			// draw this chunk.
 			glColor3f(1, 1, 1);
-			verts.render();
+			glVertexPointer(3, GL_FLOAT, 0, (float*) output_verts);
+			glDrawElements(GL_TRIANGLES, verts.index_count, GL_UNSIGNED_SHORT, verts.indices);
 			triangle_count += verts.index_count / 3;
 		}
 
@@ -429,6 +518,7 @@ int	lod_edge::render(const view_state& v, render_options opt)
 	rendered_frame = v.m_frame_number;
 
 	int	triangle_count = 0;
+#if 0
 	if (neighbor[0]->enabled && neighbor[1]->enabled) {
 		// joining two chunks at the same level.
 		if (opt.morph) {
@@ -487,6 +577,7 @@ int	lod_edge::render(const view_state& v, render_options opt)
 		triangle_count += join_rows(&verts[midpoint_index], vertex_count - midpoint_index, &(child[1]->verts[0]), child[1]->vertex_count);
 	}
 
+#endif // 0
 	return triangle_count;
 }
 
@@ -505,7 +596,7 @@ void	lod_chunk::load(SDL_RWops* in, int level, lod_chunk_tree* tree)
 
 	// Load the data.
 	verts.load(in);
-	morph_verts.load(in);
+//	morph_verts.load(in);
 
 	neighbor_count = 0;
 	child_count = 0;
@@ -525,12 +616,14 @@ void	lod_chunk::load(SDL_RWops* in, int level, lod_chunk_tree* tree)
 		}
 	}
 
+#if 0
 	// Load data for internal edges.
 	int	ct = ReadByte(in);
 	for (int i = 0; i < ct; i++) {
 		lod_edge*	e = new lod_edge;
 		e->load(in, tree);
 	}
+#endif // 0
 }
 
 
@@ -545,6 +638,7 @@ void	lod_edge::load(SDL_RWops* in, lod_chunk_tree* tree)
 {
 	rendered_frame = 0;
 
+#if 0
 	// Get pointers to the two neighbor chunks.
 	for (int i = 0; i < 2; i++) {
 		int	label = SDL_ReadLE32(in);
@@ -593,6 +687,7 @@ void	lod_edge::load(SDL_RWops* in, lod_chunk_tree* tree)
 			child[i] = NULL;
 		}
 	}
+#endif // 0
 }
 
 	
@@ -613,6 +708,7 @@ void	lod_chunk::compute_bounding_box()
 		}
 	}
 
+#if 0
 	// Check morph verts for additional y Min/Max.
 	{for (int i = 0; i < morph_verts.vertex_count; i++) {
 		float	f = morph_verts.vertices[i].y0;
@@ -623,6 +719,7 @@ void	lod_chunk::compute_bounding_box()
 		if (f < Min.get(1)) Min.set(1, f);
 		if (f > Max.get(1)) Max.set(1, f);
 	}}
+#endif // 0
 
 	// Compute, and check, bounds of child chunks.
 	{for (int i = 0; i < child_count; i++) {
@@ -664,7 +761,7 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	}
 
 	int	format_version = SDL_ReadLE16(src);
-	assert_else(format_version == 2) {
+	assert_else(format_version == 3) {
 		throw "Input format has non-matching version number";
 	}
 
@@ -705,6 +802,11 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 //
 // Returns the number of triangles rendered.
 {
+	// Make sure we have a vertex stream.
+	if (s_stream == NULL) {
+		s_stream = new vertex_streaming_buffer(2 << 20);
+	}
+
 	int	triangle_count = 0;
 
 //	glEnableClientState(GL_VERTEX_ARRAY);

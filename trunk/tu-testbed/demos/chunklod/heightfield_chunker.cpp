@@ -10,10 +10,24 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+
 #include <engine/utility.h>
 
 
 void	heightfield_chunker(SDL_RWops* rwin, SDL_RWops* out, int tree_depth, float base_max_error);
+
+
+void	error(const char* fmt)
+// Generic bail function.
+//
+// TODO: This should go in the engine library, with an
+// API to register a callback instead of exit()ing.
+{
+	printf(fmt);
+	exit(1);
+}
 
 
 void	print_usage()
@@ -23,17 +37,21 @@ void	print_usage()
 	printf("heightfield_chunker: program for processing terrain data and generating\n"
 		   "a chunked LOD data file suitable for viewing by 'chunklod'.\n\n"
 		   "usage: heightfield_chunker [-d depth] [-e error] <input_filename> <output_filename>\n"
-		   "\tThe input filename should be a .BT format terrain file, and must be\n"
-		   "\tsquare with (2^N+1) x (2^N+1) datapoints.\n"
+		   "\n"
+		   "\tThe input filename should either be a .BT format terrain file with\n"
+		   "\t(2^N+1) x (2^N+1) datapoints, or a grayscale bitmap.\n"
+		   "\n"
 		   "\t'depth' gives the depth of the quadtree of chunks to generate; default = 6\n"
 		   "\t'error' gives the maximum geometric error to allow at full LOD; default = 0.5\n"
 		);
 }
 
 
+#undef main	// @@ some crazy SDL/WIN32 thing that I don't understand.
 int	main(int argc, char* argv[])
-// Reads the given .BT terrain file, and generate a quadtree-chunked LOD data file,
-// suitable for viewing by the 'chunklod' program.
+// Reads the given .BT terrain file or grayscale bitmap, and generates
+// a quadtree-chunked LOD data file, suitable for viewing by the
+// 'chunklod' program.
 {
 	// Default processing parameters.
 	int	tree_depth = 6;
@@ -146,6 +164,53 @@ static int	lowest_one(int x)
 }
 
 
+void	ReadPixel(SDL_Surface *s, int x, int y, Uint8* R, Uint8* G, Uint8* B, Uint8* A)
+// Utility function to read a pixel from an SDL surface.
+// TODO: Should go in the engine utilities somewhere.
+{
+	// Get the raw color data for this pixel out of the surface.
+	// Location and size depends on surface format.
+	Uint32	color = 0;
+
+    switch (s->format->BytesPerPixel) {
+	case 1: { /* Assuming 8-bpp */
+		Uint8 *bufp;
+		bufp = (Uint8*) s->pixels + y * s->pitch + x;
+		color = *bufp;
+	}
+	break;
+	case 2: { /* Probably 15-bpp or 16-bpp */
+		Uint16 *bufp;
+		bufp = (Uint16 *)s->pixels + y*s->pitch/2 + x;
+		color = *bufp;
+	}
+	break;
+	case 3: { /* Slow 24-bpp mode, usually not used */
+		Uint8 *bufp;
+		bufp = (Uint8 *)s->pixels + y*s->pitch + x * 3;
+		if (SDL_BYTEORDER == SDL_LIL_ENDIAN) {
+			color = bufp[0];
+			color |= bufp[1] <<  8;
+			color |= bufp[2] << 16;
+		} else {
+			color = bufp[2];
+			color |= bufp[1] <<  8;
+			color |= bufp[0] << 16;
+		}
+	}
+	break;
+	case 4: { /* Probably 32-bpp */
+		Uint32 *bufp;
+		bufp = (Uint32 *)s->pixels + y*s->pitch/4 + x;
+		color = *bufp;
+	}
+	break;
+    }
+
+	// Extract the components.
+	SDL_GetRGBA(color, s->format, R, G, B, A);
+}
+
 
 struct heightfield_elem {
 	float	y;
@@ -245,11 +310,16 @@ struct heightfield {
 		return base + (row << depth) + col;
 	}
 
-	void	load(SDL_RWops* in)
+
+	int	load_bt(SDL_RWops* in)
 	// Load .BT format heightfield data from the given file and
 	// initialize heightfield.
+	//
+	// Return -1, and rewind the source file, if the data is not in .BT format.
 	{
 		clear();
+
+		int	start = SDL_RWtell(in);
 
 		// Read .BT header.
 
@@ -258,8 +328,13 @@ struct heightfield {
 		SDL_RWread(in, buf, 1, 10);
 		buf[10] = 0;
 		if (strcmp(buf, "binterr1.1") != 0) {
-			// Bad input file format.  Must be BT 1.1.
-			throw "heightfield::load() -- file format is not BT 1.1 (see vterrain.org for format details)";
+			// Bad input file format.  Must not be BT 1.1.
+			
+			// Rewind to where we started.
+			SDL_RWseek(in, start, SEEK_SET);
+
+			return -1;
+//			throw "heightfield::load() -- file format is not BT 1.1 (see vterrain.org for format details)";
 		}
 
 		int	width = SDL_ReadLE32(in);
@@ -275,7 +350,7 @@ struct heightfield {
 		double	top = ReadDouble64(in);
 
 		// Skip to the start of the data.
-		SDL_RWseek(in, 256, SEEK_SET);
+		SDL_RWseek(in, start + 256, SEEK_SET);
 
 		//xxxxxx
 		printf("width = %d, height = %d, sample_size = %d, left = %lf, right = %lf, bottom = %lf, top = %lf\n",
@@ -325,6 +400,51 @@ struct heightfield {
 				data[i + (size - 1 - j) * size].y = y;
 			}
 		}
+
+		return 0;
+	}
+
+
+	void	load_bitmap(SDL_RWops* in /* float vertical_scale */)
+	// Load a bitmap from the given file, and use it to initialize our
+	// heightfield data.
+	{
+		SDL_Surface* s = IMG_Load_RW(in, 0);
+		if (s == NULL) {
+			error("heightfield::load_bitmap() -- could not load bitmap file.");
+		}
+		
+		// Compute the dimension (width & height) for the heightfield.
+		size = imax(s->w, s->h);
+		log_size = (int) (log2(size - 1) + 0.5f);
+
+		// Expand the heightfield dimension to contain the bitmap.
+		while (((1 << log_size) + 1) < size) {
+			log_size++;
+		}
+		size = (1 << log_size) + 1;
+
+		sample_spacing = 1.0;	// TODO: parameterize this
+
+		// Allocate storage.
+		int	sample_count = size * size;
+		data = new heightfield_elem[sample_count];
+
+		// Initialize the data.
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				float	y = 0;
+
+				// Extract a height value from the pixel data.
+				Uint8	r, g, b, a;
+				ReadPixel(s, imin(i, s->w - 1), imin(j, s->h - 1), &r, &g, &b, &a);
+				y = r * 1.0f;	// just using red component for now.
+
+				data[i + (size - 1 - j) * size].y = y;
+			}
+		}
+
+		SDL_FreeSurface(s);
 	}
 };
 
@@ -346,7 +466,9 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 	heightfield	hf;
 
 	// Load the heightfield data.
-	hf.load(in);
+	if (hf.load_bt(in) < 0) {
+		hf.load_bitmap(in);
+	}
 
 	// Initialize the mesh info -- clear the meshing 
 	for (int j = 0; j < hf.size; j++) {
@@ -372,7 +494,7 @@ void	heightfield_chunker(SDL_RWops* in, SDL_RWops* out, int tree_depth, float ba
 
 	// Write a .chu header for the output file.
 	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
-	SDL_WriteLE16(out, 2);	// file format version.
+	SDL_WriteLE16(out, 3);	// file format version.
 	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
 	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
 	SDL_WriteLE32(out, 0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
@@ -694,6 +816,7 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 		generate_node_data(out, hf, x0 + half_size, z0 + half_size, log_size-1, level-1);	// se
 	}
 
+#if 0
 	// Generate data for the four internal edges.
 	if (level > 0) {
 		// Four internal edges.  They connect the center with each of
@@ -715,6 +838,7 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 		// No subnodes --> no internal edges.
 		WriteByte(out, 0);	// edge count.
 	}
+#endif // 0
 }
 
 
@@ -860,8 +984,8 @@ void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, i
 		}
 	}}
 
-	// Print some stats.
-	printf("\t\tedge, verts = %d, mverts = %d\n", verts, morph_verts);
+//	// Print some stats.
+//	printf("\t\tedge, verts = %d, mverts = %d\n", verts, morph_verts);
 	
 	// Write out child edges, if we have them.
 	if (level > 0) {
@@ -875,7 +999,7 @@ void	generate_edge(SDL_RWops* out, heightfield& hf, int level, int ax, int az, i
 
 
 #include <vector>
-using namespace std;
+//using namespace std;
 
 
 namespace mesh {
@@ -887,9 +1011,9 @@ namespace mesh {
 		vert_info(int vx, int vz) : x(vx), z(vz) {}
 	};
 
-	vector<vert_info>	vertices;
-	vector<int>	morph_vertices;
-	vector<int>	vertex_indices;
+	std::vector<vert_info>	vertices;
+	std::vector<int>	morph_vertices;
+	std::vector<int>	vertex_indices;
 
 	int	get_vertex_index(int x, int z)
 	// Return the index of the specified vert.  If the vert isn't
@@ -899,7 +1023,7 @@ namespace mesh {
 		// probably use a map or something instead of linear
 		// search.
 		int 	index = 0;
-		for (vector<vert_info>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
+		for (std::vector<vert_info>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
 			if ((*it).x == x && (*it).z == z) {
 				// Found our vert.  Return the index.
 				return index;
@@ -927,26 +1051,32 @@ namespace mesh {
 		// Label the chunk, so edge datasets can specify the chunks they're associated with.
 		SDL_WriteLE32(rw, chunk_label);
 
-		// Write vertices.
+		// Write vertices.  All verts contain morph info.
 		SDL_WriteLE16(rw, vertices.size());
-		for (vector<vert_info>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
+		for (std::vector<vert_info>::iterator it = vertices.begin(); it != vertices.end(); ++it) {
+			const heightfield_elem&	e = hf.get_elem((*it).x, (*it).z);
 			WriteFloat32(rw, (*it).x * hf.sample_spacing);
-			WriteFloat32(rw, hf.get_elem((*it).x, (*it).z).y);
+			WriteFloat32(rw, e.y);	// true y value
 			WriteFloat32(rw, (*it).z * hf.sample_spacing);
+
+			// Morph info.  Should work out to 0 if the vert is not a morph vert.
+			float	lerped_height = get_height_at_LOD(hf, level + 1, (*it).x, (*it).z);
+			WriteFloat32(rw, lerped_height - e.y);	// delta, to get to y value of parent mesh.
 		}
 
 		{
-			// Write triangle vertex indices.
+			// Write triangle vertex indices.  TODO: Strip this suckah!
 			SDL_WriteLE32(rw, vertex_indices.size());
-			for (vector<int>::iterator it = vertex_indices.begin(); it != vertex_indices.end(); ++it) {
+			for (std::vector<int>::iterator it = vertex_indices.begin(); it != vertex_indices.end(); ++it) {
 				SDL_WriteLE16(rw, (*it));
 			}
 		}
 
+#if 0
 		{
 			// Write morph verts.
 			SDL_WriteLE16(rw, morph_vertices.size());
-			for (vector<int>::iterator it = morph_vertices.begin(); it != morph_vertices.end(); ++it) {
+			for (std::vector<int>::iterator it = morph_vertices.begin(); it != morph_vertices.end(); ++it) {
 				int	index = *it;
 				SDL_WriteLE16(rw, index);	// vert index.
 
@@ -957,6 +1087,7 @@ namespace mesh {
 				WriteFloat32(rw, e.y - lerped_height /* e.error */);	// delta, to get to true y value.
 			}
 		}
+#endif // 0
 
 		// Print some stats.
 		printf("\tverts = %d, tris = %d, mverts = %d\n", vertices.size(), vertex_indices.size() / 3, morph_vertices.size());
@@ -968,7 +1099,7 @@ namespace mesh {
 	{
 		int	index = get_vertex_index(x, z);
 
-		for (vector<int>::iterator it = morph_vertices.begin(); it != morph_vertices.end(); ++it) {
+		for (std::vector<int>::iterator it = morph_vertices.begin(); it != morph_vertices.end(); ++it) {
 			if (*it == index) {
 				// This vert is already listed as a morph vert.
 				return;
