@@ -1,7 +1,7 @@
 # make configuration for the tu-testbed engine library
 
-# TODO: conditionalize on MSVC vs. GCC etc
 
+#if $(TU_TESTBED_COMPILER) == "MSVC"
 
 # MSVC
 CC := cl /nologo
@@ -14,18 +14,22 @@ LIBS := opengl32.lib glu32.lib SDL_image.lib SDL.lib
 CFLAGS := $(CFLAGS) -I$(INCLUDE_DIRS) -Zi -GX
 LDFLAGS := $(LIBS) /MD
 
-# GCC
-# CC := g++
-# AR := ar -r
-# LIB_OUT_FLAG :=
-# LIB_EXT := a
-# OBJ_EXT := o
-# EXE_EXT :=
-# LIBS := -lSDL_image -lSDL -lGL -lGLU 
-# SDL_CFLAGS := $(shell sdl-config --cflags)
-# SDL_LDFLAGS := $(shell sdl-config --libs)
-# CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS) -g
-# LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
+#else
+#
+## GCC
+#CC := g++
+#AR := ar -r
+#LIB_OUT_FLAG :=
+#LIB_EXT := a
+#OBJ_EXT := o
+#EXE_EXT :=
+#LIBS := -lSDL_image -lSDL -lGL -lGLU 
+#SDL_CFLAGS := $(shell sdl-config --cflags)
+#SDL_LDFLAGS := $(shell sdl-config --libs)
+#CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS) -g
+#LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
+#
+#endif
 
 
 %.$(OBJ_EXT): %.cpp
