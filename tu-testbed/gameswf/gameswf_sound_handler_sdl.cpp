@@ -29,10 +29,10 @@ struct SDL_sound_handler : gameswf::sound_handler
 
 	SDL_sound_handler()
 		:
-	m_opened(false),
-	m_stereo(false),
-	m_sample_rate(0),
-	m_format(0)
+		m_opened(false),
+		m_stereo(false),
+		m_sample_rate(0),
+		m_format(0)
 	{
 		// !!! some drivers on Linux always open audio with channels=2
 		if (Mix_OpenAudio(SAMPLE_RATE, AUDIO_S16SYS, CHANNELS, BUFSIZE) != 0)

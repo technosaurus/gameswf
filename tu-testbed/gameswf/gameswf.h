@@ -325,6 +325,13 @@ namespace gameswf
 		// Set and get userdata, that's useful for the fs_command handler.
 		virtual void * get_userdata() = 0;
 		virtual void set_userdata(void *) = 0;
+
+		// Display callbacks, for client rendering.  Callback
+		// is called after rendering the object it's attached
+		// to.
+		//
+		// Attach NULL to disable the callback.
+		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr) = 0;
 	};
 
 	// Try to grab movie info from the header of the given .swf

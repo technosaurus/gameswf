@@ -137,8 +137,6 @@ namespace gameswf
 			movie* parent = tar->get_parent();
 			movie* new_movie = static_cast<movie*>(extern_movie)->get_root_movie();
 
-//v			new_movie->on_event_load(); will be called in advance
-
 			assert(parent != NULL);
 
 			((character*)new_movie)->set_parent(parent);
@@ -3197,6 +3195,52 @@ namespace gameswf
 
 		assert(m_id > INVALID && m_id < EVENT_COUNT);
 		return s_function_names[m_id];
+	}
+
+
+	// Standard member lookup.
+	as_standard_member	get_standard_member(const tu_stringi& name)
+	{
+		static s_inited = false;
+		static stringi_hash<as_standard_member>	s_standard_member_map;
+		if (!s_inited)
+		{
+			s_inited = true;
+
+			s_standard_member_map.set_capacity(int(AS_STANDARD_MEMBER_COUNT));
+
+			s_standard_member_map.add("_x", M_X);
+			s_standard_member_map.add("_y", M_Y);
+			s_standard_member_map.add("_xscale", M_XSCALE);
+			s_standard_member_map.add("_yscale", M_YSCALE);
+			s_standard_member_map.add("_currentframe", M_CURRENTFRAME);
+			s_standard_member_map.add("_totalframes", M_TOTALFRAMES);
+			s_standard_member_map.add("_alpha", M_ALPHA);
+			s_standard_member_map.add("_visible", M_VISIBLE);
+			s_standard_member_map.add("_width", M_WIDTH);
+			s_standard_member_map.add("_height", M_HEIGHT);
+			s_standard_member_map.add("_rotation", M_ROTATION);
+			s_standard_member_map.add("_target", M_TARGET);
+			s_standard_member_map.add("_framesloaded", M_FRAMESLOADED);
+			s_standard_member_map.add("_name", M_NAME);
+			s_standard_member_map.add("_droptarget", M_DROPTARGET);
+			s_standard_member_map.add("_url", M_URL);
+			s_standard_member_map.add("_highquality", M_HIGHQUALITY);
+			s_standard_member_map.add("_focusrect", M_FOCUSRECT);
+			s_standard_member_map.add("_soundbuftime", M_SOUNDBUFTIME);
+			s_standard_member_map.add("_xmouse", M_XMOUSE);
+			s_standard_member_map.add("_ymouse", M_YMOUSE);
+			s_standard_member_map.add("_parent", M_PARENT);
+			s_standard_member_map.add("text", M_TEXT);
+			s_standard_member_map.add("textWidth", M_TEXTWIDTH);
+			s_standard_member_map.add("textColor", M_TEXTCOLOR);
+			s_standard_member_map.add("onLoad", M_ONLOAD);
+		}
+
+		as_standard_member	result = M_INVALID_MEMBER;
+		s_standard_member_map.get(name, &result);
+
+		return result;
 	}
 
 

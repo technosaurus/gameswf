@@ -1041,7 +1041,6 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 }
 
 
-
 gameswf::render_handler*	gameswf::create_render_handler_ogl()
 // Factory.
 {
