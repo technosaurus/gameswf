@@ -8,6 +8,7 @@
 
 #include <engine/geometry.h>
 #include <engine/view_state.h>
+#include <engine/container.h>
 
 
 struct lod_chunk;
@@ -45,11 +46,13 @@ public:
 	Uint16	compute_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
 
 //data:
-	lod_chunk*	m_root;
+	lod_chunk*	m_chunks;
+	int	m_chunks_allocated;
 	int	m_tree_depth;	// from chunk data.
 	float	m_error_LODmax;	// from chunk data.
-	float	m_distance_LODmax;	// computed from chunk data params and set_parameters() inputs.
-	float	m_vertical_scale;	// from chunk data; displayed_height = y_data * m_vertical_scale
+	float	m_distance_LODmax;	// computed from chunk data params and set_parameters() inputs --> controls displayed LOD level.
+	float	m_vertical_scale;	// from chunk data; displayed_height = y_data * m_vertical_scale.
+	float	m_base_chunk_dimension;	// x/z size of highest LOD chunks.
 	int	m_chunk_count;
 	lod_chunk**	m_chunk_table;
 };
