@@ -14,7 +14,10 @@
 #include "gameswf_stream.h"
 #include "gameswf_types.h"
 
+
+#if TU_CONFIG_LINK_TO_ZLIB
 //#include <zlib.h>	// for compress()
+#endif // TU_CONFIG_LINK_TO_ZLIB
 
 
 namespace gameswf { namespace tools
@@ -117,6 +120,7 @@ namespace gameswf { namespace tools
 
 // Here's some code to compute that at run-time.
 #if 0
+#ifdef TU_CONFIG_LINK_TO_ZLIB
 		int	buffer_bytes = 4;	// width * height * bytes/pix
 		unsigned char	buffer[4] = { 0, 0, 0, 0 };
 
@@ -136,6 +140,7 @@ namespace gameswf { namespace tools
 			// Dump the compressed data into the output.
 			out->write_bytes(compressed_buffer, compressed_size);
 		}
+#endif // TU_CONFIG_LINK_TO_ZLIB
 #endif // 0
 
 		// Write the actual tag size in the slot at the beginning.
@@ -177,6 +182,11 @@ int	gameswf::tools::process_swf(tu_file* swf_out, tu_file* in, const process_opt
 	tu_file*	original_in = NULL;
 	if (compressed)
 	{
+#if TU_CONFIG_LINK_TO_ZLIB == 0
+		log_error("gameswf can't read zipped SWF data; TU_CONFIG_LINK_TO_ZLIB is 0!\n");
+		return -1;
+#endif
+
 		IF_VERBOSE_PARSE(log_msg("file is compressed.\n"));
 		original_in = in;
 

@@ -574,7 +574,26 @@ namespace gameswf
 			{
 				set_visible(val.to_bool());
 			}
-			// do we have other members?  Can outsiders set properties on us?
+			else if (name == "_alpha")
+			{
+				// @@ TODO this should be generic to struct character!
+				// Arg is in percent.
+				cxform	cx = get_cxform();
+				cx.m_[3][0] = fclamp(float(val.to_number()) / 100.f, 0, 1);
+				set_cxform(cx);
+			}
+			else if (name == "textColor")
+			{	
+				// The arg is 0xRRGGBB format.
+				Uint32	rgb = (Uint32) val.to_number();
+
+				cxform	cx = get_cxform();
+				cx.m_[0][0] = fclamp(((rgb >> 16) & 255) / 255.0f, 0, 1);
+				cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
+				cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
+				set_cxform(cx);
+			}
+			// @@ TODO see TextField members in Flash MX docs
 		}
 
 
@@ -583,6 +602,28 @@ namespace gameswf
 			if (name == "text")
 			{
 				val->set(m_text);
+				return true;
+			}
+			else if (name == "_visible")
+			{
+				val->set(get_visible());
+				return true;
+			}
+			else if (name == "_alpha")
+			{
+				// @@ TODO this should be generic to struct character!
+				const cxform&	cx = get_cxform();
+				val->set(cx.m_[3][0] * 100.f);
+				return true;
+			}
+			else if (name == "textColor")
+			{
+				// Return color in 0xRRGGBB format
+				const cxform&	cx = get_cxform();
+				int	r = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+				int	g = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+				int	b = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+				val->set((r << 16) + (g << 8) + b);
 				return true;
 			}
 
@@ -760,7 +801,11 @@ namespace gameswf
 				if (index == -1)
 				{
 					// error -- missing glyph!
-					log_error("edit_text_character::display() -- missing glyph for char %d\n", code);
+					log_error("edit_text_character::display() -- missing glyph for char %d "
+						  "-- make sure character shapes for font %s are being exported "
+						  "into your SWF file!\n",
+						  code,
+						  m_def->m_font->get_name());
 					continue;
 				}
 				text_glyph_record::glyph_entry	ge;
