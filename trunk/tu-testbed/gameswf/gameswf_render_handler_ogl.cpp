@@ -18,10 +18,10 @@
 // bitmap_info_ogl declaration
 struct bitmap_info_ogl : public gameswf::bitmap_info
 {
-	bitmap_info_ogl(create_empty e);
+	bitmap_info_ogl();
+	bitmap_info_ogl(int width, int height, Uint8* alpha_data);
 	bitmap_info_ogl(image::rgb* im);
 	bitmap_info_ogl(image::rgba* im);
-	virtual void set_alpha_image(int width, int height, Uint8* data);
 };
 
 
@@ -271,7 +271,15 @@ struct render_handler_ogl : public gameswf::render_handler
 	fill_style	m_current_styles[STYLE_COUNT];
 
 
-	gameswf::bitmap_info*	create_bitmap_info(image::rgb* im)
+	gameswf::bitmap_info*	create_bitmap_info_empty()
+	// Create an empty bitmap_info_ogl, that is used as a
+	// placeholder when DO_NOT_LOAD_BITMAPS is turned on.
+	{
+		return new bitmap_info_ogl;
+	}
+
+
+	gameswf::bitmap_info*	create_bitmap_info_rgb(image::rgb* im)
 	// Given an image, returns a pointer to a bitmap_info struct
 	// that can later be passed to fill_styleX_bitmap(), to set a
 	// bitmap fill style.
@@ -280,7 +288,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	gameswf::bitmap_info*	create_bitmap_info(image::rgba* im)
+	gameswf::bitmap_info*	create_bitmap_info_rgba(image::rgba* im)
 	// Given an image, returns a pointer to a bitmap_info struct
 	// that can later be passed to fill_style_bitmap(), to set a
 	// bitmap fill style.
@@ -291,23 +299,10 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	gameswf::bitmap_info*	create_bitmap_info_blank()
-	// Creates and returns an empty bitmap_info structure.	Image data
-	// can be bound to this info later, via set_alpha_image().
+	gameswf::bitmap_info*	create_bitmap_info_alpha(int width, int height, Uint8* alpha_data)
+	// Creates and returns an alpha image (used for text rendering).
 	{
-		return new bitmap_info_ogl(gameswf::bitmap_info::empty);
-	}
-
-
-	void	set_alpha_image(gameswf::bitmap_info* bi, int w, int h, Uint8* data)
-	// Set the specified bitmap_info so that it contains an alpha
-	// texture with the given data (1 byte per texel).
-	//
-	// Munges *data (in order to make mipmaps)!!
-	{
-		assert(bi);
-
-		bi->set_alpha_image(w, h, data);
+		return new bitmap_info_ogl(width, height, alpha_data);
 	}
 
 
@@ -627,9 +622,53 @@ struct render_handler_ogl : public gameswf::render_handler
 
 // bitmap_info_ogl implementation
 
-bitmap_info_ogl::bitmap_info_ogl(create_empty e)
+
+bitmap_info_ogl::bitmap_info_ogl()
+// Make an empty placeholder bitmap_info, for later fill-in.
 {
-	// A null texture.  Needs to be initialized later.
+}
+
+
+bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* alpha_data)
+// Builds an alpha image.
+//
+// NOTE: munges alpha_data in-place in order to create MIPs!!
+{
+	m_texture_id = 0;
+	m_original_width = width;
+	m_original_height = height;
+
+	assert(alpha_data);
+	
+	// Create the texture.
+
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(1, (GLuint*)&m_texture_id);
+	glBindTexture(GL_TEXTURE_2D, m_texture_id);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+	#ifndef NDEBUG
+	// You must use power-of-two dimensions!!
+	int	w = 1; while (w < width) { w <<= 1; }
+	int	h = 1; while (h < height) { h <<= 1; }
+	assert(w == width);
+	assert(h == height);
+	#endif // not NDEBUG
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, alpha_data);
+
+	// Build mips.
+	int	level = 1;
+	while (width > 1 || height > 1)
+	{
+		render_handler_ogl::make_next_miplevel(&width, &height, alpha_data);
+		glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, alpha_data);
+		level++;
+	}
 }
 
 bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
@@ -701,50 +740,6 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 	{
 		// Use original image directly.
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
-	}
-}
-
-
-void bitmap_info_ogl::set_alpha_image(int width, int height, Uint8* data)
-// Initialize this bitmap_info to an alpha image
-// containing the specified data (1 byte per texel).
-//
-// !! Munges *data in order to create mipmaps !!
-{
-	assert(m_texture_id == 0);	// only call this on an empty bitmap_info
-	assert(data);
-	
-	// Create the texture.
-
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, (GLuint*)&m_texture_id);
-	glBindTexture(GL_TEXTURE_2D, m_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	m_original_width = width;
-	m_original_height = height;
-
-	#ifndef NDEBUG
-	// You must use power-of-two dimensions!!
-	int	w = 1; while (w < width) { w <<= 1; }
-	int	h = 1; while (h < height) { h <<= 1; }
-	assert(w == width);
-	assert(h == height);
-	#endif // not NDEBUG
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
-
-	// Build mips.
-	int	level = 1;
-	while (width > 1 || height > 1)
-	{
-		render_handler_ogl::make_next_miplevel(&width, &height, data);
-		glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
-		level++;
 	}
 }
 

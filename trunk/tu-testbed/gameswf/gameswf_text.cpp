@@ -526,8 +526,13 @@ namespace gameswf
 			m_dummy_style.push_back(fill_style());
 		}
 
-		~edit_text_character()
+		virtual ~edit_text_character()
 		{
+			//xxxxxxxx debugging
+			if (m_name == "info_name")
+			{
+				m_name = m_name;	// break here
+			}
 		}
 
 //		virtual int	get_id() const { return m_def->get_id(); }
