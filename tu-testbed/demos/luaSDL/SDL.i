@@ -32,6 +32,29 @@
 %}
 
 
+/* some utility bitwise operations */
+%inline %{
+	int	bit_or(int a, int b)
+	{
+		return a | b;
+	}
+
+	int	bit_and(int a, int b)
+	{
+		return a & b;
+	}
+
+	int	bit_not(int a)
+	{
+		return ~a;
+	}
+
+	int	bit_xor(int a, int b)
+	{
+		return a ^ b;
+	}
+%}
+
 
 /* Main include header for the SDL library */
 
