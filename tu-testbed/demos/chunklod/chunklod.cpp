@@ -423,6 +423,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 	} else {
 		if (opt.show_box) {
 			// draw bounding box.
+			glDisable(GL_TEXTURE_2D);
 			glColor3f(0, 1, 0);
 			draw_box(box_center - box_extent, box_center + box_extent);
 		}
@@ -433,6 +434,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 			// pass chunk-local quantized coordinates
 			// directly to OpenGL.
 
+			glEnable(GL_TEXTURE_2D);
 			glPushMatrix();
 			glTranslatef(box_center.x(), 0 /*box_center.y()*/, box_center.z());
 			glScalef(box_extent.x() / 32767.0,
