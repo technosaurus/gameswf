@@ -70,7 +70,7 @@ namespace gameswf
 				const matrix&	mat = m_def->m_button_records[r].m_button_matrix;
 				const cxform&	cx = m_def->m_button_records[r].m_button_cxform;
 
-				character*	ch = bdef->m_character_def->create_character_instance(this, id);
+				smart_ptr<character>	ch = bdef->m_character_def->create_character_instance(this, id);
 				m_record_character[r] = ch;
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
@@ -526,10 +526,10 @@ namespace gameswf
 	}
 
 
-	character*	button_character_definition::create_character_instance(movie* parent, int id)
+	smart_ptr<character>	button_character_definition::create_character_instance(movie* parent, int id)
 	// Create a mutable instance of our definition.
 	{
-		character*	ch = new button_character_instance(this, parent, id);
+		smart_ptr<character>	ch = new button_character_instance(this, parent, id);
 		return ch;
 	}
 };

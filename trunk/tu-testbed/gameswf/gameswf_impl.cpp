@@ -156,10 +156,10 @@ namespace gameswf
 	}
 
 
-	character*	character_def::create_character_instance(movie* parent, int id)
+	smart_ptr<character>	character_def::create_character_instance(movie* parent, int id)
 	// Default.  Make a generic_character.
 	{
-		return new generic_character(this, parent, id);
+		return smart_ptr<character>(new generic_character(this, parent, id));
 	}
 
 
@@ -2407,7 +2407,7 @@ namespace gameswf
 		}
 
 		// overloads from character_def
-		virtual character*	create_character_instance(movie* parent, int id);
+		virtual smart_ptr<character>	create_character_instance(movie* parent, int id);
 
 
 		/* sprite_definition */
@@ -2614,6 +2614,9 @@ namespace gameswf
 		/* sprite_instance */
 		virtual void	advance(float delta_time)
 		{
+			// Keep this (particularly m_as_environment) alive during execution!
+			smart_ptr<as_object_interface>	this_ptr(this);
+
 			if (get_visible() == false)
 			{
 				// We're invisible, and therefore frozen.
@@ -2697,10 +2700,14 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	execute_frame_tags(int frame, bool state_only = false)
 		// Execute the tags associated with the specified frame.
 		// frame is 0-based
 		{
+			// Keep this (particularly m_as_environment) alive during execution!
+			smart_ptr<as_object_interface>	this_ptr(this);
+
 			assert(frame >= 0);
 			assert(frame < m_def->get_frame_count());
 
@@ -2720,6 +2727,7 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	execute_remove_tags(int frame)
 		// Execute any remove-object tags associated with the specified frame.
 		// frame is 0-based
@@ -2739,9 +2747,13 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		void	do_actions()
 		// Take care of this frame's actions.
 		{
+			// Keep m_as_environment alive during any method calls!
+			smart_ptr<as_object_interface>	this_ptr(this);
+
 			execute_actions(&m_as_environment, m_action_list);
 			m_action_list.resize(0);
 		}
@@ -3457,6 +3469,9 @@ namespace gameswf
 		virtual bool	on_event(event_id id)
 		// Dispatch event handler(s), if any.
 		{
+			// Keep m_as_environment alive during any method calls!
+			smart_ptr<as_object_interface>	this_ptr(this);
+
 			// First, check for built-in event handler.
 			{
 				as_value	method;
@@ -3499,23 +3514,27 @@ namespace gameswf
 		}
 
 
+		/*sprite_instance*/
 		virtual const char*	call_method(const char* method_call)
 		{
+			// Keep m_as_environment alive during any method calls!
+			smart_ptr<as_object_interface>	this_ptr(this);
+
 			return call_method_parsed(&m_as_environment, this, method_call);
 		}
 	};
 
 
-	character*	sprite_definition::create_character_instance(movie* parent, int id)
+	smart_ptr<character>	sprite_definition::create_character_instance(movie* parent, int id)
 	// Create a (mutable) instance of our definition.  The
 	// instance is created to live (temporarily) on some level on
 	// the parent movie's display list.
 	{
-		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
+		smart_ptr<sprite_instance>	si = new sprite_instance(this, parent->get_root(), parent, id);
 
 		si->do_load_events();
 
-		return si;
+		return si.get_ptr();
 	}
 
 
