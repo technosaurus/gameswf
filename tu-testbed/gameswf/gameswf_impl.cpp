@@ -3304,7 +3304,7 @@ namespace gameswf
 			if (m_init_actions_executed[frame] == false)
 			{
 				const array<execute_tag*>*	init_actions = m_def->get_init_actions(frame);
-				if (init_actions->size() > 0)
+				if (init_actions && init_actions->size() > 0)
 				{
 					// Need to execute these actions.
 					for (int i= 0; i < init_actions->size(); i++)
