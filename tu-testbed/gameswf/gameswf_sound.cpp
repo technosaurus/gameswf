@@ -128,7 +128,7 @@ namespace gameswf
 
 		// Core of ADPCM.
 
-		int	code_mag = raw_code & ~(HI_BIT);
+		int	code_mag = raw_code & (HI_BIT - 1);
 		bool	code_sign_bit = (raw_code & HI_BIT) ? 1 : 0;
 		int	mag = (code_mag << 1) + 1;	// shift in an LSB (they do this so that pos & neg zero are different)
 
@@ -145,7 +145,7 @@ namespace gameswf
 		sample = iclamp(sample, -32768, 32767);
 
 		// Update our stepsize index.  Use a lookup table.
-		stepsize_index = index_update_table[raw_code];
+		stepsize_index += index_update_table[raw_code];
 		stepsize_index = iclamp(stepsize_index, 0, STEPSIZE_CT - 1);
 	}
 
