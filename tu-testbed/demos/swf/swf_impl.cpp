@@ -3190,7 +3190,7 @@ namespace swf
 				int	flags = in->read_u8();
 
 				int	button_2_action_offset = in->read_u16();
-				int	next_action_pos = in->get_position() + button_2_action_offset;
+				int	next_action_pos = in->get_position() + button_2_action_offset - 2;
 
 				// Read button records.
 				for (;;)
