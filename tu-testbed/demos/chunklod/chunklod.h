@@ -7,7 +7,7 @@
 
 
 #include <engine/geometry.h>
-#include <engine/cull.h>	// Hm.  Put cull stuff in geometry?
+#include <engine/view_state.h>
 
 
 struct lod_chunk;
@@ -16,9 +16,14 @@ struct render_options {
 	bool	show_box;
 	bool	show_geometry;
 	bool	morph;
+	bool	show_edges;
 
 	render_options()
-		: show_box(false), show_geometry(true), morph(true)
+		:
+		show_box(false),
+		show_geometry(true),
+		morph(true),
+		show_edges(true)
 	{
 	}
 };
@@ -32,7 +37,7 @@ public:
 	lod_chunk_tree(SDL_RWops* src);
 	void	set_parameters(float max_pixel_error, float screen_width, float horizontal_FOV_degrees);
 	void	update(const vec3& viewpoint);
-	int	render(const plane_info frustum[6], render_options opt);
+	int	render(const view_state& v, render_options opt);
 
 	// Used by our contained chunks.
 	Uint16	compute_lod(const vec3& center, const vec3& extent, const vec3& viewpoint) const;
@@ -41,6 +46,8 @@ public:
 	int	tree_depth;	// from chunk data.
 	float	error_LODmax;	// from chunk data.
 	float	distance_LODmax;	// computed from chunk data params and set_parameters() inputs.
+	int	chunk_count;
+	lod_chunk**	chunk_table;
 };
 
 

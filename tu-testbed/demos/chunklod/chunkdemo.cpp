@@ -1,4 +1,6 @@
-// chunkdemo.cpp	-- tu@tulrich.com Copyright 2001 by Thatcher Ulrich
+// chunkdemo.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2001
+
+// This program is in the public domain.
 
 // Demo program to show chunked LOD rendering.
 
@@ -29,17 +31,19 @@ vec3	viewer_up(0, 1, 0);
 float	viewer_theta = 0;
 float	viewer_phi = 0;
 float	viewer_height = 0;
-vec3	viewer_pos(512, 100, 512);
+vec3	viewer_pos(512, 300, 512);
 
 
 static plane_info	frustum_plane[6];
-static plane_info	transformed_frustum_plane[6];
+//static plane_info	transformed_frustum_plane[6];
+static view_state	view;
 
 
 int	speed = 5;
 //bool	pin_to_ground = false;
 bool	move_forward = false;
 bool	wireframe_mode = false;
+bool	enable_update = true;
 render_options	render_opt;
 
 float	max_pixel_error = 5.0f;
@@ -146,20 +150,19 @@ void	clear()
 	// View matrix.
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	matrix	view_matrix;
-	view_matrix.View(viewer_dir, viewer_up, viewer_pos);
-	apply_matrix(view_matrix);
+	view.m_matrix.View(viewer_dir, viewer_up, viewer_pos);
+	apply_matrix(view.m_matrix);
 
 	// Transform the frustum planes from view coords into world coords.
 	int	i;
 	for (i = 0; i < 6; i++) {
 		// Rotate the plane from view coords into world coords.  I'm pretty sure this is not a slick
 		// way to do this :)
-		plane_info&	tp = transformed_frustum_plane[i];
+		plane_info&	tp = view.m_frustum[i];
 		plane_info&	p = frustum_plane[i];
-		view_matrix.ApplyInverseRotation(&tp.normal, p.normal);
+		view.m_matrix.ApplyInverseRotation(&tp.normal, p.normal);
 		vec3	v;
-		view_matrix.ApplyInverse(&v, p.normal * p.d);
+		view.m_matrix.ApplyInverse(&v, p.normal * p.d);
 		tp.d = v * tp.normal;
 	}
 
@@ -215,14 +218,24 @@ void	print_usage()
 		"use at your own risk.\n"
 		"\n"
 		"The 'crater' sample data courtesy John Ratcliff is not in the public\n"
-		"domain!  See http://ratcliff.flipcode.com for details.\n"
+		"domain, as far as I know!  See http://jratcliff.flipcode.com for\n"
+		"details.\n"
+		"\n"
+		"usage: chunkdemo [dataset.chu] [texture.jpg]\n"
+		"    by default, looks for crater/crater.chu and crater/crater.jpg\n"
 		"\n"
 		"Controls:\n"
+		"  mouse + left - rotate the view\n"
+		"  mouse + right - slide the view forward/backward/left/right\n"
+		"  mouse + both buttons - slide the view up/down/left/right\n"
+		"  '?' - print this message\n"
 		"  'q' - quit\n"
 		"  'p' - toggle performance reporting\n"
 		"  'w' - toggle wireframe\n"
 		"  'b' - toggle rendering of geometry & bounding boxes\n"
 		"  'm' - toggle vertex morphing\n"
+		"  'e' - toggle edge rendering\n"
+		"  'u' - toggle LOD updating (turn off to freeze LOD changes)\n"
 		"  'f' - toggle viewpoint forward motion\n"
 		"  '[' - decrease max pixel error\n"
 		"  ']' - increase max pixel error\n"
@@ -252,7 +265,7 @@ void	mouse_motion_handler(float dx, float dy, int state)
 		vec3	right = viewer_dir.cross(viewer_up);
 		viewer_pos += right * dx / 3 * speed + viewer_up * -dy / 3 * speed;
 		
-	} else if (right_button) {
+	} else if (left_button) {
 		// Rotate the viewer.
 		viewer_theta += -dx / 100;
 		while (viewer_theta < 0) viewer_theta += 2 * M_PI;
@@ -271,7 +284,7 @@ void	mouse_motion_handler(float dx, float dy, int state)
 		viewer_dir = Geometry::Rotate(viewer_phi, right, viewer_dir);
 		viewer_up = Geometry::Rotate(viewer_phi, right, viewer_up);
 
-	} else if (left_button) {
+	} else if (right_button) {
 		// Translate the viewer.
 		vec3	right = viewer_dir.cross(viewer_up);
 		viewer_pos += right * dx / 3 * speed + viewer_dir * -dy / 3 * speed;
@@ -286,19 +299,22 @@ void	process_events()
 	while (SDL_PollEvent(&event)) {
 		switch (event.type) {
 		case SDL_KEYDOWN: {
-			char*	keyname = SDL_GetKeyName(event.key.keysym.sym);
+//			char*	keyname = SDL_GetKeyName(event.key.keysym.sym);
 //			printf("The %s key was pressed!\n", keyname);
+
+			int	key = event.key.keysym.sym;
 			
-			if (strcmp(keyname, "q") == 0) {
+			if (key == SDLK_q) {
 				// Quit on 'q'.
 				exit(0);
 			}
-			if (strcmp(keyname, "w") == 0) {
+			if (key == SDLK_w) {
 				// Toggle wireframe mode.
 				wireframe_mode = !wireframe_mode;
+				printf("wireframe %s\n", wireframe_mode ? "on" : "off");
 			}
-			if (strcmp(keyname, "b") == 0) {
-				// Cycle through rendering of "geo", "geo + boxes", "boxes"
+			if (key == SDLK_b) {
+				// Cycle through rendering of { geo, geo + boxes, boxes, nothing }
 				if ( render_opt.show_geometry ) {
 					if ( render_opt.show_box ) {
 						render_opt.show_geometry = false;
@@ -306,20 +322,37 @@ void	process_events()
 						render_opt.show_box = true;
 					}
 				} else {
-					render_opt.show_box = false;
-					render_opt.show_geometry = true;
+					if ( render_opt.show_box ) {
+						render_opt.show_box = false;
+					} else {
+						render_opt.show_geometry = true;
+					}
 				}
+				printf("geo %s, box %s\n",
+					   render_opt.show_geometry ? "on" : "off",
+					   render_opt.show_box ? "on" : "off");
 			}
-			if (strcmp(keyname, "m") == 0) {
+			if (key == SDLK_e) {
+				// Toggle edge rendering.
+				render_opt.show_edges = !render_opt.show_edges;
+				printf("render edges %s\n", render_opt.show_edges ? "on" : "off");
+			}
+			if (key == SDLK_m) {
 				// Toggle rendering of vertex morphing.
 				render_opt.morph = !render_opt.morph;
-				printf( "morphing = %d\n", render_opt.morph );
+				printf("morphing %s\n", render_opt.morph ? "on" : "off");
 			}
-			if (strcmp(keyname, "f") == 0) {
+			if (key == SDLK_u) {
+				// Toggle LOD update.  Useful for inspecting low LOD meshes up close.
+				enable_update = ! enable_update;
+				printf("LOD update %s\n", enable_update ? "on" : "off");
+			}
+			if (key == SDLK_f) {
 				// Toggle viewpoint motion.
 				move_forward = ! move_forward;
+				printf("forward motion %s\n", move_forward ? "on" : "off");
 			}
-			if (strcmp(keyname, "[") == 0) {
+			if (key == SDLK_LEFTBRACKET) {
 				// Decrease max pixel error.
 				max_pixel_error -= 0.5;
 				if (max_pixel_error < 0.5) {
@@ -327,22 +360,24 @@ void	process_events()
 				}
 				printf("new max_pixel_error = %f\n", max_pixel_error);
 			}
-			if (strcmp(keyname, "]") == 0) {
+			if (key == SDLK_RIGHTBRACKET) {
 				// Decrease max pixel error.
 				max_pixel_error += 0.5;
 				printf("new max_pixel_error = %f\n", max_pixel_error);
 			}
-			if (strcmp(keyname, ".") == 0) {
+			if (key == SDLK_PERIOD) {
 				// Speed up.
 				speed++;
 				if (speed > 10) speed = 10;
+				printf( "move speed = %d\n", speed );
 			}
-			if (strcmp(keyname, ",") == 0) {
+			if (key == SDLK_COMMA) {
 				// Slow down.
 				speed--;
 				if (speed < 1) speed = 1;
+				printf( "move speed = %d\n", speed );
 			}
-			if (strcmp(keyname, "p") == 0) {
+			if (key == SDLK_p) {
 				// Toggle performance monitor.
 				measure_performance = ! measure_performance;
 				if ( measure_performance ) {
@@ -351,6 +386,10 @@ void	process_events()
 					total_triangle_count = frame_triangle_count = 0;
 					performance_timer = 0;
 				}
+				printf("perf monitor %s\n", measure_performance ? "on" : "off");
+			}
+			if (key == SDLK_QUESTION || key == SDLK_F1 || key == SDLK_h) {
+				print_usage();
 			}
 			break;
 		}
@@ -373,9 +412,20 @@ void	process_events()
 }
 
 
-#undef main
+#undef main	// @@ some crazy SDL/WIN32 thing that I don't understand.
 extern "C" int	main(int argc, char *argv[])
 {
+	const char*	chunkfile = "crater/crater.chu";
+	const char*	texturefile = "crater/crater.jpg";
+
+	// Override the default args, if any are supplied.
+	if (argc > 1) {
+		chunkfile = argv[1];
+	}
+	if (argc > 2) {
+		texturefile = argv[2];
+	}
+
 	// Print out program info.
 	print_usage();
 
@@ -413,7 +463,7 @@ extern "C" int	main(int argc, char *argv[])
 	ogl::open();
 
 	// Load a texture.
-	SDL_Surface*	texture = IMG_Load("crater/crater.jpg");
+	SDL_Surface*	texture = IMG_Load(texturefile);
 	if (texture) {
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 1);
@@ -435,15 +485,19 @@ extern "C" int	main(int argc, char *argv[])
 	}
 
 	// Load our chunked model.
-	SDL_RWops*	in = SDL_RWFromFile("crater/crater.chu", "rb");
+	SDL_RWops*	in = SDL_RWFromFile(chunkfile, "rb");
 	if (in == NULL) {
-		printf("Can't open 'crater/crater.chu'\n");
+		printf("Can't open '%s'\n", chunkfile);
 		exit(1);
 	}
 	lod_chunk_tree*	model = new lod_chunk_tree(in);
 
 	// try setting this once and for all...
 	glEnableClientState(GL_VERTEX_ARRAY);
+
+	view.m_frame_number = 1;
+//	v.m_matrix = ...;
+//	v.m_frustum = ...;
 
 	// Main loop.
 	Uint32	last_ticks = SDL_GetTicks();
@@ -461,13 +515,16 @@ extern "C" int	main(int argc, char *argv[])
 		}
 
 		model->set_parameters(max_pixel_error, window_width, horizontal_fov_degrees);
-		model->update(viewer_pos);
+		if (enable_update) {
+			model->update(viewer_pos);
+		}
 
 		clear();
 
-		frame_triangle_count += model->render(transformed_frustum_plane, render_opt);
+		frame_triangle_count += model->render(view, render_opt);
 
 		SDL_GL_SwapBuffers();
+		view.m_frame_number++;
 
 		// Performance counting.
 		if ( measure_performance ) {
