@@ -100,7 +100,7 @@ int	wrapped_main(int argc, char* argv[])
 					exit(1);
 				}
 				arg++;
-				resolution = atoi(argv[arg]);
+				resolution = atof(argv[arg]);
 				if (resolution <= 0.001) {
 					printf("error: resolution must be greater than 0\n");
 					print_usage();
