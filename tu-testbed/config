@@ -46,11 +46,13 @@ LIB_OUT_FLAG :=
 LIB_EXT := a
 OBJ_EXT := o
 EXE_EXT :=
+DLL_EXT := so
 LIBS := -lSDL_image -lSDL -lGL -lGLU 
 SDL_CFLAGS := $(shell sdl-config --cflags)
 SDL_LDFLAGS := $(shell sdl-config --libs)
-CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS)
+CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -I$(INCLUDE_DIRS) -fpic
 LDFLAGS := -lGL -lGLU -lSDL_image
+MAKE_DLL := gcc -shared
 
 ifeq ($(DEBUG), 1)
 	# gcc debug flags
