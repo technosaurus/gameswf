@@ -21,12 +21,15 @@ namespace gameswf
 		bool	m_down;
 		bool	m_over;
 		bool	m_up;
-		character_def*	m_character;
+		int	m_character_id;
+		character_def*	m_character_def;
 		int	m_button_layer;
 		matrix	m_button_matrix;
 		cxform	m_button_cxform;
 
 		bool	read(stream* in, int tag_type, movie_definition_sub* m);
+		
+		void	resolve_character(character* inst);
 	};
 	
 

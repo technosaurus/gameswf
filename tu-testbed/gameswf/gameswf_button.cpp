@@ -53,13 +53,24 @@ namespace gameswf
 			int r, r_num =  m_def->m_button_records.size();
 			m_record_character.resize(r_num);
 
+			movie_definition_sub*	movie_def = static_cast<movie_definition_sub*>(
+				parent->get_root_movie()->get_movie_definition());
+
 			for (r = 0; r < r_num; r++)
 			{
-				character_def* cdef = m_def->m_button_records[r].m_character;
+				button_record*	bdef = &m_def->m_button_records[r];
+
+				if (bdef->m_character_def == NULL)
+				{
+					// Resolve the character id.
+					bdef->m_character_def = movie_def->get_character_def(bdef->m_character_id);
+				}
+				assert(bdef->m_character_def != NULL);
+
 				const matrix&	mat = m_def->m_button_records[r].m_button_matrix;
 				const cxform&	cx = m_def->m_button_records[r].m_button_cxform;
 
-				character*	ch = cdef->create_character_instance(this, id);
+				character*	ch = bdef->m_character_def->create_character_instance(this, id);
 				m_record_character[r] = ch;
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
@@ -184,7 +195,7 @@ namespace gameswf
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
-				if (rec.m_character == NULL
+				if (rec.m_character_id < 0
 				    || rec.m_hit_test == false)
 				{
 					continue;
@@ -194,7 +205,7 @@ namespace gameswf
 				point	sub_mouse_position;
 				rec.m_button_matrix.transform_by_inverse(&sub_mouse_position, mouse_position);
 
-				if (rec.m_character->point_test_local(sub_mouse_position.m_x, sub_mouse_position.m_y))
+				if (rec.m_character_def->point_test_local(sub_mouse_position.m_x, sub_mouse_position.m_y))
 				{
 					// The mouse is inside the shape.
 					m_mouse_flags |= FLAG_OVER;
@@ -383,8 +394,8 @@ namespace gameswf
 		m_over = flags & 2 ? true : false;
 		m_up = flags & 1 ? true : false;
 
-		int	cid = in->read_u16();
-		m_character = m->get_character_def(cid);
+		m_character_id = in->read_u16();
+		m_character_def = NULL;
 		m_button_layer = in->read_u16(); 
 		m_button_matrix.read(in);
 
