@@ -283,8 +283,9 @@ int	main()
 	// Lots of circles.
 
 	// @@ set this to 100 for a good performance torture test of bridge-finding.
-	// @@ TODO we get "can't find bridge" errors for TEST_DIM=10
-	const int	TEST_DIM = 10;
+	// @@ TODO we start to get "can't find bridge" errors for TEST_DIM=4
+	// @@ TODO we start to hit the recovery process for TEST_DIM=5
+	const int	TEST_DIM = 4;
 	{for (int x = 0; x < TEST_DIM; x++)
 	{
 		for (int y = 0; y < TEST_DIM; y++)
@@ -298,7 +299,7 @@ int	main()
 
 #if 1
 	// Lots of concentric circles.
-	static int	CIRCLE_COUNT = 5;	// CIRCLE_COUNT >= 10 is a good performance test.
+	static int	CIRCLE_COUNT = 10;	// CIRCLE_COUNT >= 10 is a good performance test.
 	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
 	{
 		paths.resize(paths.size() + 1);
@@ -331,11 +332,11 @@ int	main()
 	make_star(&paths.back(), 2300, 3000, 20);
 
 	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 1210 /* XXX */, 2000, 20);	// @@ a bug shows up when XXX gets below 1215!
+	make_star(&paths.back(), 1100, 2200, 20);
 	reverse_path(&paths.back());
 
 	paths.resize(paths.size() + 1);
-	make_star(&paths.back(),  800, 1200, 20);
+	make_star(&paths.back(),  800, 1800, 20);
 
 	// Make a star island.
 	paths.resize(paths.size() + 1);

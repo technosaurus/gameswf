@@ -56,46 +56,54 @@ inline sint64	determinant_sint32(const vec2<sint32>& a, const vec2<sint32>& b, c
 }
 
 
-// Return true if c is to the left of the directed edge defined by
-// a->b.
+// Return {-1,0,1} if c is {to the right, on, to the left} of the
+// directed edge defined by a->b.
 template<class coord_t>
-inline bool	vertex_left_test(const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
+inline int	vertex_left_test(const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
 {
 	compiler_assert(0);	// must specialize
 }
 
 
 template<>
-inline bool	vertex_left_test(const vec2<float>& a, const vec2<float>& b, const vec2<float>& c)
+inline int	vertex_left_test(const vec2<float>& a, const vec2<float>& b, const vec2<float>& c)
 // Specialize for vec2<float>
 {
-	return determinant_float(a, b, c) > 0;
+	double	det = determinant_float(a, b, c);
+	if (det > 0) return 1;
+	else if (det < 0) return -1;
+	else return 0;
 }
 
 
 template<>
-inline bool	vertex_left_test(const vec2<sint32>& a, const vec2<sint32>& b, const vec2<sint32>& c)
+inline int	vertex_left_test(const vec2<sint32>& a, const vec2<sint32>& b, const vec2<sint32>& c)
 // Specialize for vec2<sint32>
 {
-	return determinant_sint32(a, b, c) > 0;
+	sint64	det = determinant_sint32(a, b, c);
+	if (det > 0) return 1;
+	else if (det < 0) return -1;
+	else return 0;
 }
 
 
 template<class coord_t>
 bool	vertex_in_ear(const vec2<coord_t>& v, const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
-// Return true if v is inside (a,b,c) or on the edges [b,a) or [b,c).
+// Return true if v is on or inside the ear (a,b,c).
 // (a,b,c) must be in ccw order!
 {
-	assert(vertex_left_test(b, a, c) == false);	// check ccw order
+	assert(vertex_left_test(b, a, c) <= 0);	// check ccw order
 
-	// Inverted tests, so that our triangle includes the boundary.
-	bool	ab_in = vertex_left_test(b, a, v) == false;	// inverted test includes boundary
-	bool	bc_in = vertex_left_test(c, b, v) == false;	// inverted test includes boundary
-	bool	ca_in = vertex_left_test(c, a, v);		// non-inverted test excludes boundary
+	if (v == a || v == c)
+	{
+		// Special case; we don't care if v is coincident with a or c.
+		return false;
+	}
 
-	// ensure v==a and v==c cases are being handled correctly.
-	assert(ca_in == false || (a == v) == false);
-	assert(ca_in == false || (c == v) == false);
+	// Include the triangle boundary in our test.
+	bool	ab_in = vertex_left_test(a, b, v) >= 0;
+	bool	bc_in = vertex_left_test(b, c, v) >= 0;
+	bool	ca_in = vertex_left_test(c, a, v) >= 0;
 
 	return ab_in && bc_in && ca_in;
 }
@@ -356,7 +364,7 @@ bool	is_convex_vert(const array<poly_vert<coord_t> >& sorted_verts, int vi)
 	const poly_vert<coord_t>*	pv_prev = &(sorted_verts[pvi->m_prev]);
 	const poly_vert<coord_t>*	pv_next = &(sorted_verts[pvi->m_next]);
 
-	return vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v);
+	return vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v) > 0;
 }
 
 
@@ -680,7 +688,6 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 
 	int	first_vert = m_loop;
 	int	vi = first_vert;
-//x	int	vert_count = 0;
 	do
 	{
 		const poly_vert<coord_t>*	pvi = &(sorted_verts[vi]);
@@ -703,17 +710,19 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 
 		bool	is_ear = false;
 
-		if ((pv_prev->m_v == pv_next->m_v)
-		    || (pvi->m_v == pv_next->m_v)
-		    || (pvi->m_v == pv_prev->m_v))
+		if ((pvi->m_v == pv_next->m_v)
+		    || (pvi->m_v == pv_prev->m_v)
+		    || vertex_left_test(pv_prev->m_v, pvi->m_v, pv_next->m_v) == 0)	// @@ correct?
 		{
 			// Degenerate case: zero-area triangle.
 			//
-			// Treat this as an ear; we definitely want to
-			// get rid of it.
-			is_ear = true;
+			// Clip it first.  (Clipper pops from the back.)
+			ear_list->push_back(vi);
+
+			// Clip it right away.
+			break;
 		}
-		else if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v))
+		else if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v) > 0)
 		{
 			if (vert_in_cone(sorted_verts, pvi->m_prev, vi, pvi->m_next, pv_next->m_next)
 			    && vert_in_cone(sorted_verts, pvi->m_next, pv_prev->m_prev, pvi->m_prev, vi))
@@ -721,6 +730,7 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 				if (! ear_contains_reflex_vertex(sorted_verts, pvi->m_prev, vi, pvi->m_next))
 				{
 					// Valid ear.
+					ear_list->push_back(vi);
 					is_ear = true;
 				}
 			}
@@ -729,8 +739,6 @@ void	poly<coord_t>::build_ear_list(array<int>* ear_list, const array<vert_t>& so
 		if (is_ear)
 		{
 			// Add to the ear list.
-			ear_list->push_back(vi);
-
 			if (ear_list->size() >= MAX_EAR_COUNT)
 			{
 				// Don't add any more ears.
@@ -775,9 +783,7 @@ void	poly<coord_t>::emit_and_remove_ear(
 		m_loop = v0;
 	}
 
-	if (pv0->m_v == pv1->m_v
-	    || pv1->m_v == pv2->m_v
-	    || pv2->m_v == pv0->m_v)
+	if (vertex_left_test(pv0->m_v, pv1->m_v, pv2->m_v) == 0)
 	{
 		// Degenerate triangle!  Don't emit it.
 	}
@@ -926,43 +932,76 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 	// considering verts with m_poly_owner==this.  This cheaply
 	// considers only verts within the horizontal bounds of the
 	// triangle.
-	for (int vi = min_index; vi <= max_index; vi++)
+	for (int vk = min_index; vk <= max_index; vk++)
 	{
-		const vert_t*	pvi = &sorted_verts[vi];
-		if (pvi->m_poly_owner != this)
+		const vert_t*	pvk = &sorted_verts[vk];
+		if (pvk->m_poly_owner != this)
 		{
 			// Not part of this poly; ignore it.
 			continue;
 		}
 
-		if (vi != v0 && vi != v1 && vi != v2
-		    && pvi->m_v.y >= min_y
-		    && pvi->m_v.y <= max_y)
+		if (vk != v0 && vk != v1 && vk != v2
+		    && pvk->m_v.y >= min_y
+		    && pvk->m_v.y <= max_y)
 		{
-			// vi is within the triangle's bounding box.
+			// vk is within the triangle's bounding box.
 
 			//xxxxxx
-			if (v1 == 131 && vi == 132)
+			if (v1 == 131 && vk == 132)
 			{
-				vi = vi;//xxxxx
+				vk = vk;//xxxxx
 			}
 
-			int	v_next = pvi->m_next;
-			int	v_prev = pvi->m_prev;
+			int	v_next = pvk->m_next;
+			int	v_prev = pvk->m_prev;
 
 			// @@ cache this in vert?  Must refresh when
 			// ear is clipped, polys are joined, etc.
-			bool	reflex = vertex_left_test(
-				sorted_verts[v_next].m_v,
-				pvi->m_v,
-				sorted_verts[v_prev].m_v);
+			bool	reflex = vertex_left_test(sorted_verts[v_next].m_v, pvk->m_v, sorted_verts[v_prev].m_v) > 0;
 
-			if (reflex
-			    && vertex_in_ear(
-				    pvi->m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
+			if (reflex)
 			{
-				// Found one.
-				return true;
+				if (pvk->m_v == sorted_verts[v1].m_v)
+				{
+					// Tricky case.  See section 4.3 in FIST paper.
+
+					int	v_prev_left = vertex_left_test(
+						sorted_verts[v1].m_v,
+						sorted_verts[v2].m_v,
+						sorted_verts[v_prev].m_v);
+					int	v_next_left = vertex_left_test(
+						sorted_verts[v0].m_v,
+						sorted_verts[v1].m_v,
+						sorted_verts[v_next].m_v);
+
+					if (v_prev_left > 0 || v_next_left > 0)
+					{
+						// Local interior near vk intersects this
+						// ear; ear is clearly not valid.
+						return true;
+					}
+
+					// Check collinear case, where cones of vk and v1 overlap exactly.
+					if (v_prev_left == 0 && v_next_left == 0)
+					{
+						// @@ TODO: there's a somewhat complex non-local area test that tells us
+						// whether vk qualifies as a contained reflex vert.
+						//
+						// For the moment, deny the ear.
+
+						//xxx
+						fprintf(stderr, "collinear case in ear_contains_reflex_vertex; returning true\n");
+
+						return true;
+					}
+				}
+				else if (vertex_in_ear(
+						 pvk->m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
+				{
+					// Found one.
+					return true;
+				}
 			}
 		}
 	}
@@ -982,27 +1021,23 @@ bool	poly<coord_t>::vert_in_cone(const array<vert_t>& sorted_verts, int vert, in
 //        \
 //         v2
 {
-	bool	acute_cone = vertex_left_test(sorted_verts[cone_v0].m_v, sorted_verts[cone_v1].m_v, sorted_verts[cone_v2].m_v);
+	bool	acute_cone = vertex_left_test(sorted_verts[cone_v0].m_v, sorted_verts[cone_v1].m_v, sorted_verts[cone_v2].m_v) > 0;
+
+	// Include boundary in our tests.
+	bool	left_of_01 = 
+		vertex_left_test(sorted_verts[cone_v0].m_v, sorted_verts[cone_v1].m_v, sorted_verts[vert].m_v) >= 0;
+	bool	left_of_12 =
+		vertex_left_test(sorted_verts[cone_v1].m_v, sorted_verts[cone_v2].m_v, sorted_verts[vert].m_v) >= 0;
 
 	if (acute_cone)
 	{
-		// Inverted tests, so that our cone includes the boundary.
-		bool	left_of_01 = 
-			vertex_left_test(sorted_verts[cone_v1].m_v, sorted_verts[cone_v0].m_v, sorted_verts[vert].m_v) == false;
-		bool	left_of_12 =
-			vertex_left_test(sorted_verts[cone_v2].m_v, sorted_verts[cone_v1].m_v, sorted_verts[vert].m_v) == false;
-
+		// Acute cone.  Cone is intersection of half-planes.
 		return left_of_01 && left_of_12;
 	}
 	else
 	{
-		// Obtuse cone.  Vert is outside cone if it's to the right of both edges.
-		bool	right_of_01 =
-			vertex_left_test(sorted_verts[cone_v1].m_v, sorted_verts[cone_v0].m_v, sorted_verts[vert].m_v);
-		bool	right_of_12 =
-			vertex_left_test(sorted_verts[cone_v2].m_v, sorted_verts[cone_v1].m_v, sorted_verts[vert].m_v);
-
-		return right_of_01 == false || right_of_12 == false;
+		// Obtuse cone.  Cone is union of half-planes.
+		return left_of_01 || left_of_12;
 	}
 }
 
@@ -1464,7 +1499,7 @@ static void compute_triangulation(
 				// debug hack: emit current state of P
 				static int s_tricount = 0;
 				s_tricount++;
-				if (s_tricount >= 174)	// 174
+				if (s_tricount >= 100)	// 87
 				{
 					debug_emit_poly_loop(result, penv.m_sorted_verts, P);
 					return;
@@ -1483,7 +1518,7 @@ static void compute_triangulation(
 			{
 				// No valid ears; we're in trouble so try some fallbacks.
 
-#if 1
+#if 0
 				// xxx for debugging: show the state of P when we hit the recovery process.
 				debug_emit_poly_loop(result, penv.m_sorted_verts, P);
 				return;
