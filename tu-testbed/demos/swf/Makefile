@@ -19,7 +19,7 @@ EXE_OUT = test_swf$(EXE_EXT)
 LIBS := $(LIB_OUT) $(ENGINE) $(LIBS) $(JPEGLIB) $(ZLIB)
 
 
-all: $(LIB_OUT) $(EXE_OUT)
+all: $(LIB_OUT) $(EXE_OUT) engine
 
 
 OBJS = \
@@ -38,5 +38,10 @@ $(EXE_OUT): test_swf.$(OBJ_EXT) $(LIB_OUT) $(ENGINE)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 
+engine:
+	make -C ../../engine
+
+
 clean:
+	make -C ../../engine clean
 	rm test_swf.$(OBJ_EXT) $(OBJS) $(LIB_OUT) $(EXE_OUT)

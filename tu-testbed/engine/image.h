@@ -42,6 +42,8 @@ namespace image
 	{
 		rgba(int width, int height);
 		~rgba();
+
+		void	set_pixel(int x, int y, Uint8 r, Uint8 g, Uint8 b, Uint8 a);
 	};
 
 
@@ -57,12 +59,15 @@ namespace image
 	inline Uint8*	scanline(image_base* surf, int y)
 	{
 		assert(surf);
-		assert(y < surf->m_height);
+		assert(y >= 0 && y < surf->m_height);
 		return ((Uint8*) surf->m_data) + surf->m_pitch * y;
 	}
 
 	void	resample(rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			 rgb* in, float in_x0, float in_y0, float in_x1, float in_y1);
+
+	void	resample(rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
+			 rgba* in, float in_x0, float in_y0, float in_x1, float in_y1);
 
 	void	write_jpeg(SDL_RWops* out, rgb* image, int quality);
 

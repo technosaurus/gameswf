@@ -182,17 +182,17 @@ bool	vec3::checknan() const
 // class matrix
 
 
-void	matrix::Identity()
+void	matrix::set_identity()
 // Sets *this to be an identity matrix.
 {
-	SetColumn(0, vec3::x_axis);
-	SetColumn(1, vec3::y_axis);
-	SetColumn(2, vec3::z_axis);
-	SetColumn(3, vec3::zero);
+	set_column(0, vec3::x_axis);
+	set_column(1, vec3::y_axis);
+	set_column(2, vec3::z_axis);
+	set_column(3, vec3::zero);
 }
 
 
-void	matrix::View(const vec3& ViewNormal, const vec3& ViewUp, const vec3& ViewLocation)
+void	matrix::set_view(const vec3& ViewNormal, const vec3& ViewUp, const vec3& ViewLocation)
 // Turns *this into a view matrix, given the direction the camera is
 // looking (ViewNormal) and the camera's up vec3 (ViewUp), and its
 // location (ViewLocation) (all vec3s in world-coordinates).  The
@@ -203,24 +203,24 @@ void	matrix::View(const vec3& ViewNormal, const vec3& ViewUp, const vec3& ViewLo
 	vec3	ViewX = ViewUp.cross(ViewNormal);
 
 	// Construct the view-to-world matrix.
-	Orient(ViewX, ViewUp, ViewLocation);
+	set_orient(ViewX, ViewUp, ViewLocation);
 
 	// Turn it around, to make it world-to-view.
-	Invert();
+	invert();
 }
 
 
-void	matrix::Orient(const vec3& Direction, const vec3& Up, const vec3& Location)
+void	matrix::set_orient(const vec3& Direction, const vec3& Up, const vec3& Location)
 // Turns *this into a transformation matrix, that transforms vec3s
 // from object coordinates to world coordinates, given the object's Direction, Up,
 // and Location in world coordinates.
 {
 	vec3	ZAxis = Direction.cross(Up);
 
-	SetColumn(0, Direction);
-	SetColumn(1, Up);
-	SetColumn(2, ZAxis);
-	SetColumn(3, Location);
+	set_column(0, Direction);
+	set_column(1, Up);
+	set_column(2, ZAxis);
+	set_column(3, Location);
 }
 
 
@@ -228,7 +228,7 @@ vec3	matrix::operator*(const vec3& v) const
 // Applies *this to the given vec3, and returns the transformed vec3.
 {
 	vec3	result;
-	Apply(&result, v);
+	apply(&result, v);
 	return result;
 }
 
@@ -239,19 +239,19 @@ matrix	matrix::operator*(const matrix& a) const
 {
 	matrix result;
 
-	Compose(&result, *this, a);
+	compose(&result, *this, a);
 
 	return result;
 }
 
 
-void	matrix::Compose(matrix* dest, const matrix& left, const matrix& right)
+void	matrix::compose(matrix* dest, const matrix& left, const matrix& right)
 // Multiplies left * right, and puts the result in *dest.
 {
-	left.ApplyRotation(&const_cast<vec3&>(dest->GetColumn(0)), right.GetColumn(0));
-	left.ApplyRotation(&const_cast<vec3&>(dest->GetColumn(1)), right.GetColumn(1));
-	left.ApplyRotation(&const_cast<vec3&>(dest->GetColumn(2)), right.GetColumn(2));
-	left.Apply(&const_cast<vec3&>(dest->GetColumn(3)), right.GetColumn(3));
+	left.apply_rotation(&const_cast<vec3&>(dest->get_column(0)), right.get_column(0));
+	left.apply_rotation(&const_cast<vec3&>(dest->get_column(1)), right.get_column(1));
+	left.apply_rotation(&const_cast<vec3&>(dest->get_column(2)), right.get_column(2));
+	left.apply(&const_cast<vec3&>(dest->get_column(3)), right.get_column(3));
 }
 
 
@@ -273,21 +273,21 @@ matrix&	matrix::operator+=(const matrix& mat)
 }
 
 
-void	matrix::Invert()
+void	matrix::invert()
 // Inverts *this.  Uses transpose property of rotation matrices.
 {
-	InvertRotation();
+	invert_rotation();
 
 	// Compute the translation part of the inverted matrix, by applying
 	// the inverse rotation to the original translation.
 	vec3	TransPrime;
-	ApplyRotation(&TransPrime, GetColumn(3));
+	apply_rotation(&TransPrime, get_column(3));
 
-	SetColumn(3, -TransPrime);	// Could optimize the negation by doing it in-place.
+	set_column(3, -TransPrime);	// Could optimize the negation by doing it in-place.
 }
 
 
-void	matrix::InvertRotation()
+void	matrix::invert_rotation()
 // Inverts the rotation part of *this.  Ignores the translation.
 // Uses the transpose property of rotation matrices.
 {
@@ -308,7 +308,7 @@ void	matrix::InvertRotation()
 }
 
 
-void	matrix::NormalizeRotation()
+void	matrix::normalize_rotation()
 // Normalizes the rotation part of the matrix.
 {
 	m[0].normalize();
@@ -318,17 +318,17 @@ void	matrix::NormalizeRotation()
 }
 
 
-void	matrix::Apply(vec3* result, const vec3& v) const
+void	matrix::apply(vec3* result, const vec3& v) const
 // Applies v to *this, and puts the transformed result in *result.
 {
 	// Do the rotation.
-	ApplyRotation(result, v);
+	apply_rotation(result, v);
 	// Do the translation.
 	*result += m[3];
 }
 
 
-void	matrix::ApplyRotation(vec3* result, const vec3& v) const
+void	matrix::apply_rotation(vec3* result, const vec3& v) const
 // Applies the rotation portion of *this, and puts the transformed result in *result.
 {
 	result->set(0, m[0].get(0) * v.get(0) + m[1].get(0) * v.get(1) + m[2].get(0) * v.get(2));
@@ -337,14 +337,14 @@ void	matrix::ApplyRotation(vec3* result, const vec3& v) const
 }
 
 
-void	matrix::ApplyInverse(vec3* result, const vec3& v) const
+void	matrix::apply_inverse(vec3* result, const vec3& v) const
 // Applies v to the inverse of *this, and puts the transformed result in *result.
 {
-	ApplyInverseRotation(result, v - m[3]);
+	apply_inverse_rotation(result, v - m[3]);
 }
 
 
-void	matrix::ApplyInverseRotation(vec3* result, const vec3& v) const
+void	matrix::apply_inverse_rotation(vec3* result, const vec3& v) const
 // Applies v to the inverse rotation part of *this, and puts the result in *result.
 {
 	result->set(0, m[0] * v);
@@ -353,16 +353,16 @@ void	matrix::ApplyInverseRotation(vec3* result, const vec3& v) const
 }
 
 
-void	matrix::Translate(const vec3& v)
+void	matrix::translate(const vec3& v)
 // Composes a translation on the right of *this.
 {
 	vec3	newtrans;
-	Apply(&newtrans, v);
-	SetColumn(3, newtrans);
+	apply(&newtrans, v);
+	set_column(3, newtrans);
 }
 
 
-void	matrix::SetOrientation(const quaternion& q)
+void	matrix::set_orientation(const quaternion& q)
 // Sets the rotation part of the matrix to the values which correspond to the given
 // quaternion orientation.
 {
@@ -383,7 +383,7 @@ void	matrix::SetOrientation(const quaternion& q)
 }
 
 
-quaternion	matrix::GetOrientation() const
+quaternion	matrix::get_orientation() const
 // Converts the rotation part of *this into a quaternion, and returns it.
 {
 	// Code adapted from Baraff, "Rigid Body Simulation", from SIGGRAPH 95 course notes for Physically Based Modeling.

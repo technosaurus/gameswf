@@ -120,13 +120,13 @@ class	matrix
 // 3x4 matrix class, for 3D transformations.
 {
 public:
-	matrix() { Identity(); }
+	matrix() { set_identity(); }
 
-	void	Identity();
-	void	View(const vec3& ViewNormal, const vec3& ViewUp, const vec3& ViewLocation);
-	void	Orient(const vec3& ObjectDirection, const vec3& ObjectUp, const vec3& ObjectLocation);
+	void	set_identity();
+	void	set_view(const vec3& ViewNormal, const vec3& ViewUp, const vec3& ViewLocation);
+	void	set_orient(const vec3& ObjectDirection, const vec3& ObjectUp, const vec3& ObjectLocation);
 
-	static void	Compose(matrix* dest, const matrix& left, const matrix& right);
+	static void	compose(matrix* dest, const matrix& left, const matrix& right);
 	vec3	operator*(const vec3& v) const;
 	matrix	operator*(const matrix& m) const;
 //	operator*=(const quaternion& q);
@@ -134,19 +134,19 @@ public:
 	matrix&	operator*=(float f);
 	matrix&	operator+=(const matrix& m);
 	
-	void	Invert();
-	void	InvertRotation();
-	void	NormalizeRotation();
-	void	Apply(vec3* result, const vec3& v) const;
-	void	ApplyRotation(vec3* result, const vec3& v) const;
-	void	ApplyInverse(vec3* result, const vec3& v) const;
-	void	ApplyInverseRotation(vec3* result, const vec3& v) const;
-	void	Translate(const vec3& v);
-	void	SetOrientation(const quaternion& q);
-	quaternion	GetOrientation() const;
+	void	invert();
+	void	invert_rotation();
+	void	normalize_rotation();
+	void	apply(vec3* result, const vec3& v) const;
+	void	apply_rotation(vec3* result, const vec3& v) const;
+	void	apply_inverse(vec3* result, const vec3& v) const;
+	void	apply_inverse_rotation(vec3* result, const vec3& v) const;
+	void	translate(const vec3& v);
+	void	set_orientation(const quaternion& q);
+	quaternion	get_orientation() const;
 	
-	void	SetColumn(int column, const vec3& v) { m[column] = v; }
-	const vec3&	GetColumn(int column) const { return m[column]; }
+	void	set_column(int column, const vec3& v) { m[column] = v; }
+	const vec3&	get_column(int column) const { return m[column]; }
 private:
 	vec3	m[4];
 };

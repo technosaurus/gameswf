@@ -26,7 +26,7 @@ struct view_state
 	vec3	get_viewpoint() const
 	{
 		vec3 v;
-		m_matrix.ApplyInverseRotation(&v, -m_matrix.GetColumn(3));
+		m_matrix.apply_inverse_rotation(&v, -m_matrix.get_column(3));
 		return v;
 	}
 

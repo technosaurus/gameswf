@@ -59,9 +59,12 @@ endif
 
 
 else
+ifeq ($(TU_TESTBED_COMPILER), gcc)
 
+#
+# GCC options
+#
 
-# GCC
 CC := $(TU_TESTBED_COMPILER)
 AR := ar -r
 LIB_OUT_FLAG :=
@@ -87,7 +90,34 @@ else
 	CC_DEBUG_FLAGS := -O2 -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
 endif
 
-endif # GCC
+else # not gcc
+
+
+#
+# mingw32 options (mingw32 is a native port of GCC to Windows)
+#
+
+CC := $(TU_TESTBED_COMPILER)
+AR := ar -r
+LIB_OUT_FLAG :=
+LIB_PRE := lib
+LIB_EXT := a
+OBJ_EXT := o
+EXE_EXT :=
+DLL_EXT := so
+LIBS := -lSDL_image -lSDL -lGL -lGLU -lm
+DLL_LIBS := -ldl
+SDL_CFLAGS := $(shell sdl-config --cflags)
+SDL_LDFLAGS := $(shell sdl-config --libs)
+CFLAGS := --mno-cygwin $(CFLAGS) $(SDL_CFLAGS) -fpic -Wall
+LDFLAGS := -lGL -lGLU -lSDL_image
+MAKE_DLL := dllwrap --no-export-all-symbols --add-stdcall-alias
+
+
+
+
+endif # mingw32
+
 
 
 %.$(OBJ_EXT): %.cpp
