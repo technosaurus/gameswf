@@ -1097,24 +1097,6 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 		}
 	}
 
-//x	SDL_WriteLE16(out, midpoint_index);
-
-#if 0
-	// Write the active verts.
-	assert(verts < (1 << 16));
-	SDL_WriteLE16(out, verts);	// vertex count.
-	{for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz) {
-		const heightfield_elem&	e = hf.get_elem(x, z);
-		if (e.activation_level >= level) {
-			// Find the index of this vertex in the mesh vertex array.
-			int	index = mesh::lookup_index(x, z);
-			assert(index >= 0);	// vertex is active, so it must be in the mesh vertices!
-
-			SDL_WriteLE16(out, index);
-		}
-	}}
-#endif // 0
-
 	if (generate_ribbon) {
 		// if we're not at the base level, generate a triangle
 		// mesh which fills the gaps between this edge and a
@@ -1162,22 +1144,17 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 				}
 			}
 		}}
-
-#if 0
-		assert(triangle_list.size() < (1 << 16));
-		SDL_WriteLE16(out, triangle_list.size());
-		{for (int i = 0; i < triangle_list.size(); i++) {
-			SDL_WriteLE16(out, triangle_list[i]);
+	}
+	else
+	{
+		// We're at the highest LOD level -- just generate a list of
+		// our edge verts, for meshing with chunks at our same level.
+		{for (int i = 0, x = x0, z = z0; i < steps; i++, x += dx, z += dz) {
+			const heightfield_elem&	e = hf.get_elem(x, z);
+			if (e.activation_level >= level) {
+				mesh::add_edge_vertex_lo(dir, x, z);
+			}
 		}}
-#endif // 0
-
-	} else {
-#if 0
-		// zero-length triangle list.  This could be implicit, and
-		// save a couple bytes, at the expense of extra logic in the
-		// loader.
-		SDL_WriteLE16(out, 0);
-#endif // 0
 	}
 }
 
