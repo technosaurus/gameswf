@@ -1,5 +1,5 @@
 Chunk LOD demo
-29 July 2001
+19 Aug 2001
 Thatcher Ulrich <tu@tulrich.com> http://tulrich.com
 
 Unfinished demo of chunked LOD scheme.  Uses static meshes with
@@ -7,7 +7,14 @@ lerping and crack-filling meshes (not implemented) to give an
 adjustable guaranteed max pixel error, no vertex popping and hopefully
 low CPU overhead.
 
-Please do not distribute!  It's not done yet.
+With vertex_array_range extension, the demo puts out between 5 and 7
+million tris/sec on my laptop (1GHz CPU, GeForce2 Go video).  NVIDIA's
+VAR demo does ~11 Mtris/s on this machine, so improvement is certainly
+possible.  Still, that's pretty good for a morphing view-dependent LOD
+scheme.
+
+Please do not distribute!  It's not done yet.  I don't want this to
+get widely distributed until I implement crack filling.
 
 Crater dataset thanks to John Ratcliff, http://ratcliff.flipcode.com
 
