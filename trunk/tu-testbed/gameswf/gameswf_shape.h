@@ -16,6 +16,8 @@
 namespace gameswf
 {
 	struct stream;
+	struct shape_character;
+	namespace tesselate { struct trapezoid_accepter; }
 
 
 	struct edge
@@ -69,7 +71,7 @@ namespace gameswf
 //		void	add_vertex(...);
 		void	add_triangle(const point& a, const point& b, const point& c);
 
-		void	display(const display_info& di, const fill_style& style) const;
+		void	display(const fill_style& style) const;
 
 	private:
 		array<point>	m_triangle_list;	// 3 points per tri
@@ -80,19 +82,17 @@ namespace gameswf
 	// A whole shape, tesselated to a certain error tolerance.
 	{
 		mesh_set();
-		mesh_set(const array<path>& paths,
-			 float error_tolerance
-			 );
+		mesh_set(const shape_character* sh, float error_tolerance);
 
 		int	get_last_frame_rendered() const;
 		void	set_last_frame_rendered(int frame_counter);
-		bool	can_render_within_tolerance(const display_info& di, float error_tolerance) const;
+		float	get_error_tolerance() const { return m_error_tolerance; }
 
 		void display(const display_info& di, const array<fill_style>& fills) const;
 
 		void	add_triangle(int style, const point& a, const point& b, const point& c);
-	private:
 
+	private:
 		int	m_last_frame_rendered;
 		float	m_error_tolerance;
 		array<mesh>	m_meshes;	// One mesh per style.
@@ -109,6 +109,7 @@ namespace gameswf
 		void	read(stream* in, int tag_type, bool with_style, movie* m);
 		void	display(const display_info& di);
 		void	display(const display_info& di, const array<fill_style>& fill_styles) const;
+		void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
 		bool	point_test(float x, float y);
 		void	get_bounds(rect* r) const;
 
@@ -119,7 +120,7 @@ namespace gameswf
 		array<path>	m_paths;
 
 		// Cached pre-tesselated meshes.
-		array<mesh_set>	m_cached_meshes;
+		mutable array<mesh_set>	m_cached_meshes;
 	};
 
 }	// end namespace gameswf

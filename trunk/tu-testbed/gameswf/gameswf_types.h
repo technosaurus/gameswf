@@ -59,6 +59,7 @@ namespace gameswf
 		void	transform_by_inverse(point* result, const point& p) const;
 		void	set_inverse(const matrix& m);
 		bool	does_flip() const;	// return true if we flip handedness
+		float	get_max_scale() const;	// return the maximum scale factor that this transform applies
 	};
 
 

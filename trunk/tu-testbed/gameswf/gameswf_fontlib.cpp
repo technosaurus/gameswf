@@ -16,6 +16,7 @@
 #include "gameswf_render.h"
 #include "gameswf_shape.h"
 #include "gameswf_styles.h"
+#include "gameswf_tesselate.h"
 
 
 namespace gameswf
@@ -68,6 +69,9 @@ namespace fontlib
 	//
 	// State for the glyph packer.
 	//
+
+	static Uint8*	s_render_buffer = NULL;
+	static matrix	s_render_matrix;
 
 	static Uint8*	s_current_cache_image = NULL;
 	static render::bitmap_info*	s_current_bitmap_info = NULL;
@@ -267,17 +271,69 @@ namespace fontlib
 	}
 
 
-	static void	display_shape_character_in_alpha(const shape_character* sh)
-	// For rendering character glyph outlines into a texture
-	// cache.
+	static void	software_trapezoid(
+		float y0, float y1,
+		float xl0, float xl1,
+		float xr0, float xr1)
+	// Fill the specified trapezoid in the software output buffer.
 	{
-		array<fill_style>	dummy_style;
-		dummy_style.push_back(fill_style());
-		dummy_style[0].set_color(rgba(0, 0, 0, 255));
+		assert(s_render_buffer);
 
-		display_info	di;
-		sh->display(di, dummy_style);
+		int	iy0 = (int) ceilf(y0);
+		int	iy1 = (int) ceilf(y1);
+		float	dy = y1 - y0;
+
+		for (int y = iy0; y < iy1; y++)
+		{
+			if (y < 0) continue;
+			if (y >= GLYPH_RENDER_SIZE) return;
+
+			float	f = (y - y0) / dy;
+			int	xl = (int) ceilf(flerp(xl0, xl1, f));
+			int	xr = (int) ceilf(flerp(xr0, xr1, f));
+			
+			xl = iclamp(xl, 0, GLYPH_RENDER_SIZE - 1);
+			xr = iclamp(xr, 0, GLYPH_RENDER_SIZE - 1);
+
+			if (xr > xl)
+			{
+				memset(s_render_buffer + y * GLYPH_RENDER_SIZE + xl,
+				       255,
+				       xr - xl);
+			}
+		}
 	}
+
+
+	struct draw_into_software_buffer : tesselate::trapezoid_accepter
+	// A trapezoid accepter that does B&W rendering into our
+	// software buffer.
+	{
+		// Overrides from trapezoid_accepter
+		virtual void	accept_trapezoid(int style, const tesselate::trapezoid& tr)
+		{
+			// Transform the coords.
+			float	x_scale = s_render_matrix.m_[0][0];
+			float	y_scale = s_render_matrix.m_[1][1];
+			float	x_offset = s_render_matrix.m_[0][2];
+			float	y_offset = s_render_matrix.m_[1][2];
+
+			float	y0 = tr.m_y0 * y_scale + y_offset;
+			float	y1 = tr.m_y1 * y_scale + y_offset;
+			float	lx0 = tr.m_lx0 * x_scale + x_offset;
+			float	lx1 = tr.m_lx1 * x_scale + x_offset;
+			float	rx0 = tr.m_rx0 * x_scale + x_offset;
+			float	rx1 = tr.m_rx1 * x_scale + x_offset;
+
+			// Draw into the software buffer.
+			software_trapezoid(y0, y1, lx0, lx1, rx0, rx1);
+		}
+
+		virtual void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
+		{
+			assert(0);	// Shape glyphs should not contain lines.
+		}
+	};
 
 
 	static texture_glyph*	make_texture_glyph(const shape_character* sh)
@@ -286,14 +342,14 @@ namespace fontlib
 	// render the cached glyph as a textured quad.
 	{
 		assert(sh);
+		assert(s_render_buffer);
 
 		//
-		// Render the shape.
+		// Tesselate and render the shape into a software buffer.
 		//
 
 		// Clear the render output to 0.
-		Uint8*	render_buffer = gameswf::render::get_software_mode_buffer();
-		memset(render_buffer, 0, GLYPH_RENDER_SIZE * GLYPH_RENDER_SIZE);
+		memset(s_render_buffer, 0, GLYPH_RENDER_SIZE * GLYPH_RENDER_SIZE);
 
 		// Look at glyph bounds; adjust origin to make sure
 		// the shape will fit in our output.
@@ -310,15 +366,13 @@ namespace fontlib
 			offset_y = s_rendering_box - glyph_bounds.m_y_max;
 		}
 
-		matrix	mat;
-		mat.set_identity();
-		mat.concatenate_scale(GLYPH_RENDER_SIZE / s_rendering_box);
-		mat.concatenate_translation(offset_x, offset_y);
+		s_render_matrix.set_identity();
+		s_render_matrix.concatenate_scale(GLYPH_RENDER_SIZE / s_rendering_box);
+		s_render_matrix.concatenate_translation(offset_x, offset_y);
 
-		// Draw the shape.
-		render::push_apply_matrix(mat);
-		display_shape_character_in_alpha(sh);
-		render::pop_matrix();
+		// Tesselate & draw the shape.
+		draw_into_software_buffer	accepter;
+		sh->tesselate(s_rendering_box / GLYPH_RENDER_SIZE * 0.5f, &accepter);
 
 		//
 		// Process the results of rendering.
@@ -341,7 +395,7 @@ namespace fontlib
 				{
 					for (int ii = 0; ii < OVERSAMPLE_FACTOR; ii++)
 					{
-						Uint8	texel = render_buffer[
+						Uint8	texel = s_render_buffer[
 							((j << OVERSAMPLE_BITS) + jj) * GLYPH_RENDER_SIZE
 							+ ((i << OVERSAMPLE_BITS) + ii)];
 						sum += texel;
@@ -437,7 +491,8 @@ namespace fontlib
 	void	generate_font_bitmaps()
 	// Build cached textures from glyph outlines.
 	{
-		gameswf::render::software_mode_enable(GLYPH_RENDER_SIZE, GLYPH_RENDER_SIZE);
+		assert(s_render_buffer == NULL);
+		s_render_buffer = new Uint8[GLYPH_RENDER_SIZE * GLYPH_RENDER_SIZE];
 
 		for (int i = 0; i < s_fonts.size(); i++)
 		{
@@ -458,8 +513,10 @@ namespace fontlib
 			s_coverage_image = NULL;
 		}
 
-		// Clean up the rendering context that we just used.
-		gameswf::render::software_mode_disable();
+		// Clean up the render buffer that we just used.
+		assert(s_render_buffer);
+		delete [] s_render_buffer;
+		s_render_buffer = NULL;
 	}
 
 
@@ -605,9 +662,10 @@ namespace fontlib
 				// save bitmap contents
 				s_file->read_bytes(s_current_cache_image, w*h);
 
-				render::set_alpha_image(s_current_bitmap_info,
-						w, h,
-						s_current_cache_image);
+				render::set_alpha_image(
+					s_current_bitmap_info,
+					w, h,
+					s_current_cache_image);
 			}
 
 			// reset pointers.

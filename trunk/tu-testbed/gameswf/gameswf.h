@@ -65,6 +65,7 @@ namespace gameswf
 
 	void	set_antialiased(bool enable);
 	void	set_pixel_scale(float scale);
+	float	get_pixel_scale();
 
 
 	//
