@@ -46,6 +46,7 @@ namespace gameswf
 	// Create a swf::movie_interface from the given input stream.
 	movie_interface*	create_movie(tu_file* input);
 
+
 	//
 	// Loader callbacks.
 	//
@@ -58,6 +59,15 @@ namespace gameswf
 	// standard tags are handled within gameswf.  Host apps might want
 	// to call this in order to handle special tag types.
 	void	register_tag_loader(int tag_type, loader_function lf);
+
+
+	//
+	// Log & error reporting control.
+	//
+
+	// Supply a function pointer to receive log & error messages.
+	void	set_log_callback(void (*callback)(bool error, const char* message));
+
 
 	//
 	// Render control.

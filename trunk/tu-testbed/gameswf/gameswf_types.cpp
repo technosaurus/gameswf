@@ -8,6 +8,8 @@
 
 #include "engine/ogl.h"
 #include "gameswf_types.h"
+
+#include "gameswf_log.h"
 #include "gameswf_stream.h"
 #include <string.h>
 
@@ -101,15 +103,15 @@ namespace gameswf
 			m_[1][2] = in->read_sint(translate_nbits);
 		}
 
-		IF_DEBUG(printf("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
+		IF_DEBUG(log_msg("has_scale = %d, has_rotate = %d\n", has_scale, has_rotate));
 	}
 
 
-	void	matrix::print(FILE* out) const
-	// Debug print.
+	void	matrix::print() const
+	// Debug log.
 	{
-		fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[0][0], m_[0][1], TWIPS_TO_PIXELS(m_[0][2]));
-		fprintf(out, "| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
+		log_msg("| %4.4f %4.4f %4.4f |\n", m_[0][0], m_[0][1], TWIPS_TO_PIXELS(m_[0][2]));
+		log_msg("| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
 	}
 
 	void	matrix::ogl_multiply() const
@@ -355,10 +357,10 @@ namespace gameswf
 		m_a = 0x0FF;
 	}
 
-	void	rgba::print(FILE* out)
+	void	rgba::print()
 	// For debugging.
 	{
-		fprintf(out, "rgba: %d %d %d %d\n", m_r, m_g, m_b, m_a);
+		log_msg("rgba: %d %d %d %d\n", m_r, m_g, m_b, m_a);
 	}
 
 
@@ -376,14 +378,13 @@ namespace gameswf
 		m_y_min = in->read_sint(nbits);
 		m_y_max = in->read_sint(nbits);
 
-//		IF_DEBUG(printf("rect::read() nbits = %d\n", nbits));
-//		IF_DEBUG(print(stdout));
+//		IF_DEBUG(log_msg("rect::read() nbits = %d\n", nbits));
 	}
 
-	void	rect::print(FILE* out) const
+	void	rect::print() const
 	// Debug spew.
 	{
-		fprintf(out, "xmin = %g, ymin = %g, xmax = %g, ymax = %g\n",
+		log_msg("xmin = %g, ymin = %g, xmax = %g, ymax = %g\n",
 			TWIPS_TO_PIXELS(m_x_min),
 			TWIPS_TO_PIXELS(m_y_min),
 			TWIPS_TO_PIXELS(m_x_max),

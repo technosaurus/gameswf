@@ -24,6 +24,33 @@ static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
 static bool	s_loop = true;
 static bool	s_cache = false;
+static bool	s_verbose = false;
+
+
+static void	message_log(const char* message)
+// Process a log message.
+{
+	if (s_verbose)
+	{
+		fputs(message, stdout);
+	}
+}
+
+
+static void	log_callback(bool error, const char* message)
+// Error callback for handling gameswf messages.
+{
+	if (error)
+	{
+		// Log, and also print to stderr.
+		message_log(message);
+		fputs(message, stderr);
+	}
+	else
+	{
+		message_log(message);
+	}
+}
 
 
 #undef main	// SDL wackiness
@@ -89,6 +116,11 @@ int	main(int argc, char *argv[])
 				// Build cache file.
 				s_cache = true;
 			}
+			else if (argv[arg][1] == 'v')
+			{
+				// Be verbose; i.e. print log messages to stdout.
+				s_verbose = true;
+			}
 		}
 		else
 		{
@@ -102,6 +134,7 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	gameswf::set_log_callback(log_callback);
 	gameswf::set_pixel_scale(s_scale);
 	gameswf::set_antialiased(s_antialiased);
 

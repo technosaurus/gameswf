@@ -8,6 +8,7 @@
 
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
+#include "gameswf_log.h"
 #include "gameswf_stream.h"
 
 
@@ -36,18 +37,18 @@ namespace gameswf
 				int	length = in->read_u16();
 				m_buffer.push_back(length & 0x0FF);
 				m_buffer.push_back((length >> 8) & 0x0FF);
-				IF_DEBUG(printf("action: 0x%02X[%d]", action_id, length));
+				IF_DEBUG(log_msg("action: 0x%02X[%d]", action_id, length));
 				for (int i = 0; i < length; i++)
 				{
 					unsigned char	b = in->read_u8();
 					m_buffer.push_back(b);
-					IF_DEBUG(printf(" 0x%02X", b));
+					IF_DEBUG(log_msg(" 0x%02X", b));
 				}
-				IF_DEBUG(printf("\n"));
+				IF_DEBUG(log_msg("\n"));
 			}
 			else
 			{
-				IF_DEBUG(printf("action: 0x%02X\n", action_id));
+				IF_DEBUG(log_msg("action: 0x%02X\n", action_id));
 			}
 		}
 	}
@@ -69,7 +70,7 @@ namespace gameswf
 			int	action_id = m_buffer[pc];
 			if ((action_id & 0x80) == 0)
 			{
-				IF_DEBUG(printf("aid = 0x%02x\n", action_id));
+				IF_DEBUG(log_msg("aid = 0x%02x\n", action_id));
 
 				// Simple action; no extra data.
 				switch (action_id)
@@ -136,13 +137,13 @@ namespace gameswf
 			}
 			else
 			{
-				IF_DEBUG(printf("aid = 0x%02x ", action_id));
+				IF_DEBUG(log_msg("aid = 0x%02x ", action_id));
 
 				// Action containing extra data.
 				int	length = m_buffer[pc + 1] | (m_buffer[pc + 2] << 8);
 				int	next_pc = pc + length + 3;
 
-				IF_DEBUG({for (int i = 0; i < imin(length, 8); i++) { printf("0x%02x ", m_buffer[pc + 3 + i]); } printf("\n"); });
+				IF_DEBUG({for (int i = 0; i < imin(length, 8); i++) { log_msg("0x%02x ", m_buffer[pc + 3 + i]); } log_msg("\n"); });
 				
 				switch (action_id)
 				{
@@ -162,7 +163,7 @@ namespace gameswf
 
 					// Print as text.
 					IF_DEBUG({
-						for (int i = 0; i < length; i++) { printf("%c", m_buffer[pc + 3 + i]); } printf("\n");
+						for (int i = 0; i < length; i++) { log_msg("%c", m_buffer[pc + 3 + i]); } log_msg("\n");
 					});
 
 					break;
