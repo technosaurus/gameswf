@@ -879,6 +879,12 @@ private:
 };
 
 
+#ifdef __GNUC__
+// stricmp is not ANSI???
+#define stricmp strcasecmp
+#endif // __GNUC__
+
+
 // String-like type; comparisons are CASE INSENSITIVE.
 // Uses tu_string for implementation.
 class tu_stringi

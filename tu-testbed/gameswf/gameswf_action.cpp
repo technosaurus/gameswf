@@ -1930,7 +1930,7 @@ namespace gameswf
 					{
 						// @@ are frame numbers here 1-based or 0-based???
 						// @@ guessing 0-based for now.
-						env->get_target()->goto_frame(env->top(0).to_number());
+						env->get_target()->goto_frame(int(env->top(0).to_number()));
 					}
 					env->get_target()->set_play_state(state);
 					

@@ -7,8 +7,8 @@ Thierry Berger-Perrin -- fixes, fixes for Linux, Linux version of memory mapping
 Ignacio Castaño -- fixes in chunklod, lots of code and fixes for gameswf
 Willem Kokke -- gameswf_parser, clip shapes, other misc gameswf code & test cases
 
-Bug reports & testing
-=====================
+Bug reports, small patches & testing
+====================================
 
 Julien Cayzac
 Aaron Pfeiffer
@@ -17,3 +17,4 @@ Daniel Phillips
 Mark Hodson
 Zousar Shaker
 Kostas Pataridis
+Alexeev Vitaly
