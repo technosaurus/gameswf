@@ -167,6 +167,13 @@ namespace gameswf
 
 	struct movie_container;
 
+
+	// Factory functions for opaque-ish types.
+	struct shape_character;
+	shape_character*	create_shape_character(stream* in, int tag_type, bool with_style, movie* m);
+	void	delete_shape_character(shape_character* sh);
+
+	// Tag loader functions.
 	void	null_loader(stream* in, int tag_type, movie* m);
 	void	set_background_color_loader(stream* in, int tag_type, movie* m);
 	void	jpeg_tables_loader(stream* in, int tag_type, movie* m);
