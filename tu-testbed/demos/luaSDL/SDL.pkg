@@ -24,36 +24,6 @@
 $#include <SDL/SDL.h>
 
 
-
-/* some utility bitwise operations */
-	int	bit_or(int a, int b);
-	int	bit_and(int a, int b);
-	int	bit_not(int a);
-	int	bit_xor(int a, int b);
-
-$	 int	bit_or(int a, int b)
-$	 {
-$		 return a | b;
-$	 }
-$
-$	 int	bit_and(int a, int b)
-$	 {
-$		 return a & b;
-$	 }
-$
-$	 int	bit_not(int a)
-$	 {
-$		 return ~a;
-$	 }
-$
-$	 int	bit_xor(int a, int b)
-$	 {
-$		 return a ^ b;
-$	 }
-
-
-//#undef __declspec
-// DLL entry point
 $	extern int tolua_SDL_open(lua_State *L);
 $	#ifdef _WIN32
 $	__declspec(dllexport) int  lua_import(lua_State* L)
@@ -63,7 +33,7 @@ $	#endif
 $	{
 $		return tolua_SDL_open(L);
 $	}
-// Lua version.
+/* Lua version. */
 $	#ifdef _WIN32
 $	__declspec(dllexport) const char*  lua_version(void)
 $	#else
@@ -74,6 +44,14 @@ $		return LUA_VERSION;
 $	}
 
 
+module SDL
+{
+
+/* some utility bitwise operations */
+	int	bit_or(int a, int b);
+	int	bit_and(int a, int b);
+	int	bit_not(int a);
+	int	bit_xor(int a, int b);
 
 /* Main include header for the SDL library */
 
@@ -95,7 +73,7 @@ enum { SDL_PRESSED = 0x01, SDL_RELEASED = 0x00 };
 
 
 /* Public functions */
-// not for luaswig:  extern void SDL_SetError(const char *fmt);
+/* not for luaswig:  extern void SDL_SetError(const char *fmt); */
 extern char * SDL_GetError(void);
 extern void SDL_ClearError(void);
 
@@ -590,9 +568,7 @@ extern int SDL_EnableKeyRepeat(int delay, int interval);
  * 	Uint8 *keystate = SDL_GetKeyState(NULL);
  *	if ( keystate[SDLK_RETURN] ) ... <RETURN> is pressed.
  */
-//  #ifdef NOT_FOR_LUASWIG
-//  extern Uint8 * SDL_GetKeyState(int *numkeys);
-//  #endif // NOT_FOR_LUASWIG
+/* not for tolua: extern Uint8 * SDL_GetKeyState(int *numkeys); */
 
 
 /*
@@ -918,8 +894,6 @@ typedef struct {
 SDL_Event*	SDL_Event_new();
 void	SDL_Event_delete(SDL_Event* e);
 
-$SDL_Event*	SDL_Event_new() { return (SDL_Event*) malloc(sizeof(SDL_Event)); }
-$void	SDL_Event_delete(SDL_Event* e) { free(e); }
 
 
 
@@ -1038,7 +1012,6 @@ typedef struct {
 
 
 SDL_Rect*	SDL_Rect_new();
-$SDL_Rect*	SDL_Rect_new() { return (SDL_Rect*) malloc(sizeof(SDL_Rect)); }
 
 
 typedef struct {
@@ -1555,8 +1528,6 @@ extern SDL_Surface * SDL_LoadBMP_RW(SDL_RWops *src, int freesrc);
 //  /* Convenience macro -- load a surface from a file */
 //  #define SDL_LoadBMP(file)	SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
 extern SDL_Surface* SDL_LoadBMP(const char* file);
-$	#undef SDL_LoadBMP
-$	SDL_Surface* SDL_LoadBMP(const char* file) { return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1); }
 
 /*
  * Save a surface to a seekable SDL data source (memory or file.)
@@ -1573,11 +1544,6 @@ extern int SDL_SaveBMP_RW(SDL_Surface *surface, SDL_RWops *dst, int freedst);
 //  #else	// not NOT_FOR_TOLUA
 
 extern int SDL_SaveBMP(SDL_Surface* surface, const char* file);
-$#undef SDL_SaveBMP
-$	int SDL_SaveBMP(SDL_Surface* surface, const char* file)
-$	{
-$		return SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1);
-$	}
 
 //  #endif // not NOT_FOR_TOLUA
 
@@ -1991,3 +1957,43 @@ extern Uint32 SDL_WasInit(Uint32 flags);
 extern void SDL_Quit(void);
 
 /* Ends C function definitions when using C++ */
+
+
+} /* end tolua module SDL */
+
+
+/* Some code to be included in the generated .c file */
+
+$	 int	bit_or(int a, int b)
+$	 {
+$		 return a | b;
+$	 }
+$
+$	 int	bit_and(int a, int b)
+$	 {
+$		 return a & b;
+$	 }
+$
+$	 int	bit_not(int a)
+$	 {
+$		 return ~a;
+$	 }
+$
+$	 int	bit_xor(int a, int b)
+$	 {
+$		 return a ^ b;
+$	 }
+
+$SDL_Event*	SDL_Event_new() { return (SDL_Event*) malloc(sizeof(SDL_Event)); }
+$void	SDL_Event_delete(SDL_Event* e) { free(e); }
+
+$#undef SDL_SaveBMP
+$	int SDL_SaveBMP(SDL_Surface* surface, const char* file)
+$	{
+$		return SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1);
+$	}
+
+$	#undef SDL_LoadBMP
+$	SDL_Surface* SDL_LoadBMP(const char* file) { return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1); }
+
+$SDL_Rect*	SDL_Rect_new() { return (SDL_Rect*) malloc(sizeof(SDL_Rect)); }

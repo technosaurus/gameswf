@@ -6,17 +6,18 @@
 -- Sample SDL game written in Lua.
 
 
-use("SDL")
+--use("SDL")
 
 
--- emulate a couple of SDL #define's
+_ = [[-- emulate a couple of SDL #define's
 function SDL_LoadBMP(file)
 	return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
 end
 function SDL_SaveBMP(surface, file)
 	return SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1)
 end
-SDL_BlitSurface = SDL_UpperBlit;
+]]
+SDL.SDL_BlitSurface = SDL.SDL_UpperBlit;
 
 
 -- keep a table of previously-loaded sprites, to maximize sharing.
@@ -34,20 +35,20 @@ function sprite(file)
 	local temp, s;
 
 	-- Load the sprite image
-	s = SDL_LoadBMP(file);
+	s = SDL.SDL_LoadBMP(file);
 	if s == nil then
-		print("Couldn't load " ..  file .. ": " .. SDL_GetError());
+		print("Couldn't load " ..  file .. ": " .. SDL.SDL_GetError());
 		return nil
 	end
 
 	-- Set transparent color to black (?)
-	SDL_SetColorKey(s, bit_or(SDL_SRCCOLORKEY, SDL_RLEACCEL), 0)
+	SDL.SDL_SetColorKey(s, SDL.bit_or(SDL.SDL_SRCCOLORKEY, SDL.SDL_RLEACCEL), 0)
 
 	-- Convert sprite to video format
-	temp = SDL_DisplayFormat(s);
-	SDL_FreeSurface(s);
+	temp = SDL.SDL_DisplayFormat(s);
+	SDL.SDL_FreeSurface(s);
 	if temp == nil then
-		print("Couldn't convert background: " .. SDL_GetError());
+		print("Couldn't convert background: " .. SDL.SDL_GetError());
 		return nil
 	end
 	s = temp;
@@ -61,7 +62,7 @@ end
 function show_sprite(screen, sprite, x, y)
 	-- make sure we have a temporary rect structure
 	if not temp_rect then
-		temp_rect = SDL_Rect_new()
+		temp_rect = SDL.SDL_Rect_new()
 	end
 
 	temp_rect.x = x - sprite.w / 2
@@ -69,7 +70,7 @@ function show_sprite(screen, sprite, x, y)
 	temp_rect.w = sprite.w
 	temp_rect.h = sprite.h
 
-	SDL_BlitSurface(sprite, NULL, screen, temp_rect)
+	SDL.SDL_BlitSurface(sprite, NULL, screen, temp_rect)
 end
 
 
@@ -163,15 +164,15 @@ gamestate = {
 
 function handle_event(event)
 -- called by main loop when it detects an SDL event.
-	if event.type == SDL_KEYDOWN then
+	if event.type == SDL.SDL_KEYDOWN then
 		local	sym = event.key.keysym.sym
 		if sym == SDLK_q or sym == SDLK_ESCAPE then
 			gamestate.active = nil
 		elseif sym == SDLK_s then
 			-- take a screenshot...
-			SDL_SaveBMP(gamestate.screen, "screenshot.bmp")
+			SDL.SDL_SaveBMP(gamestate.screen, "screenshot.bmp")
 		end
-	elseif event.type == SDL_QUIT then
+	elseif event.type == SDL.SDL_QUIT then
 		gamestate.active = nil
 	end
 end
@@ -201,7 +202,7 @@ function render_frame(screen, background)
 -- called to render a new frame.
 
 	-- clear screen
-	SDL_FillRect(screen, NULL, background);
+	SDL.SDL_FillRect(screen, NULL, background);
 
 	-- draw the actors
 	for i = 1, getn(gamestate.actors) do
@@ -209,7 +210,7 @@ function render_frame(screen, background)
 	end
 
 	-- flip
-	SDL_UpdateRect(screen, 0, 0, 0, 0)
+	SDL.SDL_UpdateRect(screen, 0, 0, 0, 0)
 end
 
 
@@ -218,16 +219,16 @@ function gameloop_iteration()
 -- according to elapsed time.
 
 	if gamestate.event_buffer == nil then
-		gamestate.event_buffer = SDL_Event_new()
+		gamestate.event_buffer = SDL.SDL_Event_new()
 	end
 	
 	-- consume any pending events 
-	while SDL_PollEvent(gamestate.event_buffer) ~= 0 do
+	while SDL.SDL_PollEvent(gamestate.event_buffer) ~= 0 do
 		handle_event(gamestate.event_buffer)
 	end
 	
 	-- run any necessary updates
-	local time = SDL_GetTicks();
+	local time = SDL.SDL_GetTicks();
 	local delta_ticks = time - gamestate.last_update_ticks
 	local update_count = 0
 	while delta_ticks > gamestate.update_period do
@@ -259,12 +260,12 @@ function engine_init(argv)
 	local i
 
 	-- Initialize SDL 
-	if SDL_Init(SDL_INIT_VIDEO) < 0 then
-		print("Couldn't initialize SDL: ",SDL_GetError());
+	if SDL.SDL_Init(SDL.SDL_INIT_VIDEO) < 0 then
+		print("Couldn't initialize SDL: ",SDL.SDL_GetError());
 		exit(1);
 	end
 
-	videoflags = bit_or(SDL_HWSURFACE, SDL_ANYFORMAT)	-- SDL_HWSURFACE was SDL_SWSURFACE; any benefit to that?
+	videoflags = SDL.bit_or(SDL.SDL_HWSURFACE, SDL.SDL_ANYFORMAT)	-- SDL.SDL_HWSURFACE was SDL.SDL_SWSURFACE; any benefit to that?
 	width = 800
 	height = 600
 	video_bpp = 16
@@ -277,22 +278,22 @@ function engine_init(argv)
 			height = tonumber(argv[i+1]);
 			i = i + 1
 		elseif argv[i] == "-fullscreen" then
-			videoflags = bit_or(videoflags, SDL_FULLSCREEN)
+			videoflags = SDL.bit_or(videoflags, SDL.SDL_FULLSCREEN)
 _ = [[
 		elseif
 		if ( strcmp(argv[argc-1], "-bpp") == 0 ) {
 			video_bpp = atoi(argv[argc]);
-			videoflags = bit_and(videoflags, ~SDL_ANYFORMAT);
+			videoflags = SDL.bit_and(videoflags, ~SDL.SDL_ANYFORMAT);
 			--argc;
 		} else
 		if ( strcmp(argv[argc], "-fast") == 0 ) {
 			videoflags = FastestFlags(videoflags, width, height, video_bpp);
 		} else
 		if ( strcmp(argv[argc], "-hw") == 0 ) {
-			videoflags ^= SDL_HWSURFACE;
+			videoflags ^= SDL.SDL_HWSURFACE;
 		} else
 		if ( strcmp(argv[argc], "-flip") == 0 ) {
-			videoflags ^= SDL_DOUBLEBUF;
+			videoflags ^= SDL.SDL_DOUBLEBUF;
 		} else
 		if ( isdigit(argv[argc][0]) ) {
 			numsprites = atoi(argv[argc]);
@@ -304,29 +305,29 @@ _ = [[
 	end
 
 	-- Set video mode 
-	gamestate.screen = SDL_SetVideoMode(width, height, video_bpp, videoflags);
+	gamestate.screen = SDL.SDL_SetVideoMode(width, height, video_bpp, videoflags);
 	if gamestate.screen == nil then
-		print("Couldn't set ", width, "x", height, " video mode: ", SDL_GetError());
+		print("Couldn't set ", width, "x", height, " video mode: ", SDL.SDL_GetError());
 		exit(2);
 	end
 
-	gamestate.background = SDL_MapRGB(gamestate.screen.format, 0, 0, 0);
+	gamestate.background = SDL.SDL_MapRGB(gamestate.screen.format, 0, 0, 0);
 
-	SDL_ShowCursor(0)
+	SDL.SDL_ShowCursor(0)
 
 	-- Print out information about our surfaces 
 	print("Screen is at ", gamestate.screen.format.BitsPerPixel, " bits per pixel\n");
-	if bit_and(gamestate.screen.flags, SDL_HWSURFACE) == SDL_HWSURFACE then
+	if SDL.bit_and(gamestate.screen.flags, SDL.SDL_HWSURFACE) == SDL.SDL_HWSURFACE then
 		print("Screen is in video memory");
 	else
 		print("Screen is in system memory");
 	end
-	if bit_and(gamestate.screen.flags, SDL_DOUBLEBUF) == SDL_DOUBLEBUF then
+	if SDL.bit_and(gamestate.screen.flags, SDL.SDL_DOUBLEBUF) == SDL.SDL_DOUBLEBUF then
 		print("Screen has double-buffering enabled");
 	end
 
 	-- init timer
-	gamestate.begin_time = SDL_GetTicks();
+	gamestate.begin_time = SDL.SDL_GetTicks();
 	gamestate.last_update_ticks = gamestate.begin_time;
 end
 
@@ -340,16 +341,16 @@ function engine_loop()
 
 	-- clean up
 	if event_buffer then
-		SDL_Event_delete(event)
+		SDL.SDL_Event_delete(event)
 	end
 
 	-- Print out some timing information
-	local	current_time = SDL_GetTicks();
+	local	current_time = SDL.SDL_GetTicks();
 	if current_time > gamestate.begin_time then
 		print((gamestate.frames * 1000) / (current_time - gamestate.begin_time), " frames per second\n");
 	end
 
-	SDL_Quit();
+	SDL.SDL_Quit();
 end
 
 
@@ -786,7 +787,7 @@ function player_update(self, gs)
 
 	-- get the mouse position, and move the player position towards the mouse position
 	local	m = {}
-	m.buttons, m.x, m.y = SDL_GetMouseState(0, 0)
+	m.buttons, m.x, m.y = SDL.SDL_GetMouseState(0, 0)
 	local	mpos = vec2{ m.x, m.y }
 
 	local	delta = mpos - self.position
@@ -890,7 +891,7 @@ function cursor_update(self, gs)
 -- update the cursor.  follow the mouse.
 
 	local	m = {}
-	m.buttons, m.x, m.y = SDL_GetMouseState(0, 0)
+	m.buttons, m.x, m.y = SDL.SDL_GetMouseState(0, 0)
 	self.position.x = m.x
 	self.position.y = m.y
 
@@ -981,7 +982,7 @@ function player_manager_update(self, gs)
 
 	elseif self.state == "attract" then		
 		local m = {}
-		m.buttons, m.x, m.y = SDL_GetMouseState(0, 0)
+		m.buttons, m.x, m.y = SDL.SDL_GetMouseState(0, 0)
 		if m.buttons > 0 then
 			-- start a new game.
 			self.state = "pre-setup"
