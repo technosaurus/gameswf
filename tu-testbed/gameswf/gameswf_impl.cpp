@@ -2182,7 +2182,7 @@ namespace gameswf
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
 		{
-			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
+//			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
 
 			/* does STOP need a special case?
 			if (m_play_state == STOP)
@@ -2278,7 +2278,7 @@ namespace gameswf
 			    && ((name == NULL && existing_char->get_name().length() == 0)
 				|| (name && existing_char->get_name() == name)))
 			{
-				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
+//				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
 				move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
 				return;
 			}

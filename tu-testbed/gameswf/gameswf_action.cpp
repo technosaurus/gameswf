@@ -27,71 +27,107 @@ namespace gameswf
 	//
 
 
+	void	action_init();
+
 	// Statics.
 	bool	s_inited = false;
 	string_hash<as_value>	s_built_ins;
 
 
 	//
-	// as_object
+	// as_as_function
 	//
+	// ActionScript function.
 
-
-	// A generic bag of attributes.  Base-class for ActionScript
-	// script-defined objects.
-	struct as_object : public as_object_interface
+	struct as_as_function
 	{
-		string_hash<as_value>	m_members;
+		array<tu_string>	m_args;
+		action_buffer*	m_action_buffer;
+		int	m_start_pc;
+		int	m_length;
 
-		virtual bool	set_self_value(const as_value& val) { return false; }
-		virtual bool	get_self_value(as_value* val) { val->set(static_cast<as_object_interface*>(this)); return true; }
-
-		virtual void	set_member(const tu_string& name, const as_value& val)
+		as_as_function(action_buffer* ab, int start)
+			:
+			m_action_buffer(ab),
+			m_start_pc(start),
+			m_length(0)
 		{
-			m_members.set(name, val);
+			assert(m_action_buffer);
 		}
 
-		virtual bool	get_member(const tu_string& name, as_value* val)
+		void	add_arg(const char* name)
 		{
-			return m_members.get(name, val);
+			m_args.push_back(name);
 		}
 
-		virtual as_value	call_method(
-			const tu_string& name,
-			as_environment* env,
-			int nargs,
-			int first_arg_bottom_index)
+		void	set_length(int len) { assert(len > 0); m_length = len; }
+
+		void	operator()(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+		// Dispatch.
 		{
-			as_value	val;
-			as_value	method;
+			assert(env);
 
-			// Look up method.
-			get_member(name, &method);
+			// Set up local stack frame, for parameters and locals.
+			int	local_stack_top = env->get_local_frame_top();
+			env->add_frame_barrier();
 
-			// Is it a function?  If so, call it.
-			as_function_ptr	func = method.to_function();
-			if (func)
+			// Push the arguments onto the local frame.
+			int	args_to_pass = imin(nargs, m_args.size());
+			for (int i = 0; i < args_to_pass; i++)
 			{
-				(*func)(&val, this, env, nargs, first_arg_bottom_index);
-			}
-			else
-			{
-				log_error("error: call_method '%s' is not a function\n", name.c_str());
+				env->add_local(m_args[i], env->bottom(first_arg + i));
 			}
 
-			return val;
-		}
+			// Execute the actions.
+			m_action_buffer->execute(env, m_start_pc, m_length, result);
 
-		virtual movie*	to_movie()
-		// This object is not a movie; no conversion.
-		{
-			return NULL;
+			// Clean up stack frame.
+			env->set_local_frame_top(local_stack_top);
 		}
 	};
 
 
 	//
-	// Built-in methods
+	// Function/method dispatch.
+	//
+
+
+	as_value call_method(
+		const as_value& method, // const tu_string& name,
+		as_environment* env,
+		as_object_interface* this_ptr,
+		int nargs,
+		int first_arg_bottom_index)
+	{
+		as_value	val;
+
+		as_c_function_ptr	func = method.to_c_function();
+		if (func)
+		{
+			// It's a C function.  Call it.
+			(*func)(&val, this_ptr, env, nargs, first_arg_bottom_index);
+		}
+		else if (as_as_function* as_func = method.to_as_function())
+		{
+			// It's an ActionScript function.  Call it.
+			(*as_func)(&val, this_ptr, env, nargs, first_arg_bottom_index);
+		}
+		else
+		{
+			log_error("error in call_method(): method is not a function\n");
+		}
+
+		return val;
+	}
+
+
+	//
+	// Built-in objects
+	//
+
+
+	//
+	// math object
 	//
 
 
@@ -142,6 +178,310 @@ namespace gameswf
 		result->set(floor(arg0 + 0.5));
 	}
 
+	void math_init()
+	{
+		// Create built-in math object.
+		as_object*	math_obj = new as_object;
+
+		// constants
+		math_obj->set_member("e", 2.7182818284590452354);
+		math_obj->set_member("ln2", 0.69314718055994530942);
+		math_obj->set_member("log2e", 1.4426950408889634074);
+		math_obj->set_member("ln10", 2.30258509299404568402);
+		math_obj->set_member("log10e", 0.43429448190325182765);
+		math_obj->set_member("pi", 3.14159265358979323846);
+		math_obj->set_member("sqrt1_2", 0.7071067811865475244);
+		math_obj->set_member("sqrt2", 1.4142135623730950488);
+
+		// math methods
+		math_obj->set_member("abs", &math_fabs);
+		math_obj->set_member("acos", &math_acos);
+		math_obj->set_member("asin", &math_asin);
+		math_obj->set_member("atan", &math_atan);
+		math_obj->set_member("ceil", &math_ceil);
+		math_obj->set_member("cos", &math_cos);
+		math_obj->set_member("exp", &math_exp);
+		math_obj->set_member("floor", &math_floor);
+		math_obj->set_member("log", &math_log);
+		math_obj->set_member("random", &math_random);
+		math_obj->set_member("round", &math_log);
+		math_obj->set_member("sin", &math_sin);
+		math_obj->set_member("sqrt", &math_sqrt);
+		math_obj->set_member("tan", &math_tan);
+
+		s_built_ins.add("math", math_obj);
+	}
+
+
+	//
+	// key object
+	//
+
+
+	struct key_as_object : public as_object
+	{
+		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
+		array<as_object_interface*>	m_listeners;
+		int	m_last_key_pressed;
+
+		key_as_object()
+			:
+			m_last_key_pressed(0)
+		{
+			memset(m_keymap, 0, sizeof(m_keymap));
+		}
+
+		bool	is_key_down(int code)
+		{
+			if (code < 0 || code >= key::KEYCOUNT) return false;
+
+			int	byte_index = code / 8;
+			int	bit_index = code - byte_index * 8;
+			int	mask = 1 << bit_index;
+
+			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
+
+			if (m_keymap[byte_index] & mask)
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		void	set_key_down(int code)
+		{
+			if (code < 0 || code >= key::KEYCOUNT) return;
+
+			m_last_key_pressed = code;
+
+			int	byte_index = code / 8;
+			int	bit_index = code - byte_index * 8;
+			int	mask = 1 << bit_index;
+
+			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
+
+			m_keymap[byte_index] |= mask;
+
+			// Notify listeners.
+			// @@ TODO need to figure out what environment to use...
+		}
+
+		void	set_key_up(int code)
+		{
+			if (code < 0 || code >= key::KEYCOUNT) return;
+
+			int	byte_index = code / 8;
+			int	bit_index = code - byte_index * 8;
+			int	mask = 1 << bit_index;
+
+			assert(byte_index >= 0 && byte_index < sizeof(m_keymap)/sizeof(m_keymap[0]));
+
+			m_keymap[byte_index] &= ~mask;
+
+			// Notify listeners.
+			// @@ TODO need to figure out what environment to use...
+		}
+
+		void	add_listener(as_object_interface* listener)
+		{
+			for (int i = 0, n = m_listeners.size(); i < n; i++)
+			{
+				if (m_listeners[i] == listener)
+				{
+					// Already in the list.
+					return;
+				}
+			}
+
+			m_listeners.push_back(listener);
+		}
+
+		void	remove_listener(as_object_interface* listener)
+		{
+			for (int i = m_listeners.size() - 1; i >= 0; i--)
+			{
+				if (m_listeners[i] == listener)
+				{
+					m_listeners.remove(i);
+				}
+			}
+		}
+
+		int	get_last_key_pressed() const { return m_last_key_pressed; }
+	};
+
+
+	void	key_add_listener(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	// Add a listener (first arg is object reference) to our list.
+	// Listeners will have "onKeyDown" and "onKeyUp" methods
+	// called on them when a key changes state.
+	{
+		if (nargs < 1)
+		{
+			log_error("key_add_listener needs one argument (the listener object)\n");
+			return;
+		}
+
+		as_object_interface*	listener = env->bottom(first_arg).to_object();
+		if (listener == NULL)
+		{
+			log_error("key_add_listener passed a NULL object; ignored\n");
+			return;
+		}
+
+		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		assert(ko);
+
+		ko->add_listener(listener);
+	}
+
+	void	key_get_ascii(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	// Return the ascii value of the last key pressed.
+	{
+		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		assert(ko);
+
+		result->set_undefined();
+
+		int	code = ko->get_last_key_pressed();
+		if (code > 0)
+		{
+			// @@ Crude for now; just jamming the key code in a string, as a character.
+			// Need to apply shift/capslock/numlock, etc...
+			char	buf[2];
+			buf[0] = (char) code;
+			buf[1] = 0;
+
+			result->set(buf);
+		}
+	}
+
+	void	key_get_code(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	// Returns the keycode of the last key pressed.
+	{
+		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		assert(ko);
+
+		result->set(ko->get_last_key_pressed());
+	}
+
+	void	key_is_down(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	// Return true if the specified (first arg keycode) key is pressed.
+	{
+		if (nargs < 1)
+		{
+			log_error("key_is_down needs one argument (the key code)\n");
+			return;
+		}
+
+		int	code = (int) env->bottom(first_arg).to_number();
+
+		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		assert(ko);
+
+		result->set(ko->is_key_down(code));
+	}
+
+	void	key_is_toggled(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	// Given the keycode of NUM_LOCK or CAPSLOCK, returns true if
+	// the associated state is on.
+	{
+		// @@ TODO
+		result->set(false);
+	}
+
+	void	key_remove_listener(as_value* result, void* this_ptr, as_environment* env, int nargs, int first_arg)
+	// Remove a previously-added listener.
+	{
+		if (nargs < 1)
+		{
+			log_error("key_remove_listener needs one argument (the listener object)\n");
+			return;
+		}
+
+		as_object_interface*	listener = env->bottom(first_arg).to_object();
+		if (listener == NULL)
+		{
+			log_error("key_remove_listener passed a NULL object; ignored\n");
+			return;
+		}
+
+		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		assert(ko);
+
+		ko->remove_listener(listener);
+	}
+
+
+	void key_init()
+	{
+		// Create built-in math object.
+		as_object*	key_obj = new key_as_object;
+
+		// constants
+#define KEY_CONST(k) key_obj->set_member(#k, key::k)
+		KEY_CONST(BACKSPACE);
+		KEY_CONST(CAPSLOCK);
+		KEY_CONST(CONTROL);
+		KEY_CONST(DELETEKEY);
+		KEY_CONST(DOWN);
+		KEY_CONST(END);
+		KEY_CONST(ENTER);
+		KEY_CONST(ESCAPE);
+		KEY_CONST(HOME);
+		KEY_CONST(INSERT);
+		KEY_CONST(LEFT);
+		KEY_CONST(PGDN);
+		KEY_CONST(PGUP);
+		KEY_CONST(RIGHT);
+		KEY_CONST(SHIFT);
+		KEY_CONST(SPACE);
+		KEY_CONST(TAB);
+		KEY_CONST(UP);
+
+		// methods
+		key_obj->set_member("addListener", &key_add_listener);
+		key_obj->set_member("getAscii", &key_get_ascii);
+		key_obj->set_member("getCode", &key_get_code);
+		key_obj->set_member("isDown", &key_is_down);
+		key_obj->set_member("isToggled", &key_is_toggled);
+		key_obj->set_member("removeListener", &key_remove_listener);
+
+		s_built_ins.add("Key", key_obj);
+	}
+
+
+	void	notify_key_event(key::code k, bool down)
+	// External interface for the host to report key events.
+	{
+		action_init();	// @@ put this in some global init somewhere else...
+
+		static tu_string	key_obj_name("Key");
+
+		as_value	kval;
+		s_built_ins.get(key_obj_name, &kval);
+		if (kval.get_type() == as_value::OBJECT)
+		{
+			key_as_object*	ko = (key_as_object*) kval.to_object();
+			assert(ko);
+
+			if (down) ko->set_key_down(k);
+			else ko->set_key_up(k);
+		}
+		else
+		{
+			log_error("gameswf::notify_key_event(): no Key built-in\n");
+		}
+	}
+	
+
+	//
+	// global init
+	//
+
 
 	void	action_init()
 	// Create/hook built-ins.
@@ -150,39 +490,15 @@ namespace gameswf
 		{
 			s_inited = true;
 
-			// Create built-in math object.
-			as_object*	math_obj = new as_object;
-
-			// constants
-			math_obj->set_member("e", 2.7182818284590452354);
- 			math_obj->set_member("ln2", 0.69314718055994530942);
- 			math_obj->set_member("log2e", 1.4426950408889634074);
- 			math_obj->set_member("ln10", 2.30258509299404568402);
- 			math_obj->set_member("log10e", 0.43429448190325182765);
- 			math_obj->set_member("pi", 3.14159265358979323846);
- 			math_obj->set_member("sqrt1_2", 0.7071067811865475244);
- 			math_obj->set_member("sqrt2", 1.4142135623730950488);
-
-			// math methods
-			math_obj->set_member("abs", &math_fabs);
-			math_obj->set_member("acos", &math_acos);
-			math_obj->set_member("asin", &math_asin);
-			math_obj->set_member("atan", &math_atan);
-			math_obj->set_member("ceil", &math_ceil);
-			math_obj->set_member("cos", &math_cos);
-			math_obj->set_member("exp", &math_exp);
-			math_obj->set_member("floor", &math_floor);
-			math_obj->set_member("log", &math_log);
-			math_obj->set_member("random", &math_random);
-			math_obj->set_member("round", &math_log);
-			math_obj->set_member("sin", &math_sin);
-			math_obj->set_member("sqrt", &math_sqrt);
-			math_obj->set_member("tan", &math_tan);
-
- 			s_built_ins.add("math", math_obj);
+			math_init();
+			key_init();
 		}
 	}
 
+
+	//
+	// properties by number
+	//
 
 	static const tu_string	s_property_names[] =
 	{
@@ -322,15 +638,65 @@ namespace gameswf
 			if (action_id == 0)
 			{
 				// end of action buffer.
-				return;
+				break;
+			}
+		}
+
+		// Interpret decl_dict, to initialize m_dictionary, if
+		// it appears at the head of this action buffer.
+		int	first_id = m_buffer[0];
+		if (first_id == 0x88)
+		{
+			// decl_dict is first opcode.
+			int	i = 0;
+			int	length = m_buffer[i + 1] | (m_buffer[i + 2] << 8);
+			int	count = m_buffer[i + 3] | (m_buffer[i + 4] << 8);
+			i += 2;
+
+			m_dictionary.resize(count);
+
+			// Index the strings.
+			for (int ct = 0; ct < count; ct++)
+			{
+				// Point into the current action buffer.
+				m_dictionary[ct] = (const char*) &m_buffer[3 + i];
+
+				while (m_buffer[3 + i])
+				{
+					// safety check.
+					if (i >= length)
+					{
+						log_error("error: action buffer dict length exceeded>\n");
+						break;
+					}
+					
+					i++;
+				}
+				i++;
 			}
 		}
 	}
 
 
 	void	action_buffer::execute(as_environment* env)
-	// Interpret the actions in this action buffer, and evaluate them
-	// in the given environment.
+	// Interpret the actions in this action buffer, and evaluate
+	// them in the given environment.  Execute our whole buffer,
+	// without any arguments passed in.
+	{
+		int	local_stack_top = env->get_local_frame_top();
+		env->add_frame_barrier();
+
+		execute(env, 0, m_buffer.size(), NULL);
+
+		env->set_local_frame_top(local_stack_top);
+	}
+
+
+	void	action_buffer::execute(as_environment* env, int start_pc, int exec_bytes, as_value* retval)
+	// Interpret the specified subset of the actions in our
+	// buffer.  Caller is responsible for cleaning up our local
+	// stack frame (it may have passed its arguments in via the
+	// local stack frame).
 	{
 		action_init();	// @@ stick this somewhere else; need some global static init function
 
@@ -339,9 +705,15 @@ namespace gameswf
 		movie*	original_target = env->get_target();
 		UNUSED(original_target);		// Avoid warnings.
 
-		array<const char*>	dictionary;
+		// If caller didn't specify a number of exec_bytes,
+		// then execute all remaining bytes.
+		int	stop_pc = start_pc + exec_bytes;
+		if (exec_bytes == 0)
+		{
+			stop_pc = m_buffer.size();
+		}
 
-		for (int pc = 0; pc < m_buffer.size(); )
+		for (int pc = start_pc; pc < stop_pc; )
 		{
 			int	action_id = m_buffer[pc];
 			if ((action_id & 0x80) == 0)
@@ -523,8 +895,15 @@ namespace gameswf
 
 				case 0x24:	// duplicate clip (sprite?)
 				case 0x25:	// remove clip
-				case 0x26:	// trace
 					break;
+
+				case 0x26:	// trace
+				{
+					// Log the stack val.
+					log_msg("%s\n", env->top(0).to_string());
+					env->drop(1);
+					break;
+				}
 
 				case 0x27:	// start drag movie
 				{
@@ -555,7 +934,6 @@ namespace gameswf
 					if (root_movie && st.m_character)
 					{
 						root_movie->set_drag_state(st);
-//						root_movie->start_drag(target, lock_center, rect_bound, x0, y0, x1, y1);
 					}
 					
 					break;
@@ -643,7 +1021,13 @@ namespace gameswf
 				}
 				case 0x3E:	// return
 				{
-					// @@ TODO
+					// Put top of stack in the provided return slot, if
+					// it's not NULL.
+					if (retval)
+					{
+						*retval = env->top(0);
+					}
+					env->drop(1);
 					break;
 				}
 				case 0x3F:	// modulo
@@ -780,20 +1164,27 @@ namespace gameswf
 					as_object_interface*	obj = env->top(1).to_object();
 					int	nargs = (int) env->top(2).to_number();
 					as_value	result;
-
 					if (obj)
 					{
-						result = obj->call_method(
-							env->top(0).to_tu_string(),
-							env,
-							nargs,
-							env->get_top_index() - 3);
+						as_value	method;
+						const tu_string&	method_name = env->top(0).to_tu_string();
+						if (obj->get_member(method_name, &method))
+						{
+							result = call_method(
+								method,
+								env,
+								obj,
+								nargs,
+								env->get_top_index() - 3);
+						}
+						else
+						{
+							log_error("error: call_method can't find method %s\n", method_name.c_str());
+						}
 					}
 					else
 					{
-						// @@ log error?
 						log_error("error: call_method op on invalid object.\n");
-						result = as_value();	// UNDEFINED
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;
@@ -891,30 +1282,18 @@ namespace gameswf
 
 				case 0x88:	// declare dictionary
 				{
+					if (pc != 0)
+					{
+						log_error("encountered decl_dict at offset %d into actionbuffer.  Expected it at offset 0 only.\n", pc);
+					}
+
 					int	i = pc;
 					int	count = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
 					i += 2;
 
-					dictionary.resize(count);
-
-					// Index the strings.
-					for (int ct = 0; ct < count; ct++)
+					if (count != m_dictionary.size())
 					{
-						// Point into the current action buffer.
-						dictionary[ct] = (const char*) &m_buffer[3 + i];
-
-						while (m_buffer[3 + i])
-						{
-							// safety check.
-							if (i >= length)
-							{
-								log_error("error: action buffer dict length exceeded>\n");
-								break;
-							}
-
-							i++;
-						}
-						i++;
+						log_error("encountered decl_dict that does not match m_dictionary!\n");
 					}
 					break;
 				}
@@ -1036,9 +1415,9 @@ namespace gameswf
 						{
 							int	id = m_buffer[3 + i];
 							i++;
-							if (id < dictionary.size())
+							if (id < m_dictionary.size())
 							{
-								env->push(dictionary[id]);
+								env->push(m_dictionary[id]);
 							}
 							else
 							{
@@ -1050,9 +1429,9 @@ namespace gameswf
 						{
 							int	id = m_buffer[3 + i] | (m_buffer[4 + i] << 8);
 							i += 2;
-							if (id < dictionary.size())
+							if (id < m_dictionary.size())
 							{
-								env->push(dictionary[id]);
+								env->push(m_dictionary[id]);
 							}
 							else
 							{
@@ -1073,6 +1452,51 @@ namespace gameswf
 				}
 				case 0x9A:	// get url 2
 					break;
+
+				case 0x9B:	// declare function
+				{
+					as_as_function*	func = new as_as_function(this, next_pc);	// @@ need ref count
+
+					int	i = pc;
+					i += 3;
+
+					// Extract name.
+					tu_string	name = (const char*) &m_buffer[i];
+					i += name.length() + 1;
+
+					// Get number of arguments.
+					int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+					i += 2;
+
+					// Get the names of the arguments.
+					for (int n = 0; n < nargs; n++)
+					{
+						func->add_arg((const char*) &m_buffer[i]);
+						i += func->m_args.back().length() + 1;
+					}
+
+					// Get the length of the actual function code.
+					int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+					i += 2;
+					func->set_length(length);
+
+					// Skip the function body (don't interpret it now).
+					next_pc += length;
+
+					// If we have a name, then save the function in this
+					// environment under that name.
+					as_value	function_value(func);
+					if (name.length() > 0)
+					{
+						// @@ NOTE: should this be m_target->set_variable()???
+						env->set_member(name, function_value);
+					}
+
+					// Also leave it on the stack.
+					env->push_val(function_value);
+
+					break;
+				}
 				case 0x9D:	// branch if true
 				{
 					Sint16	offset = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
@@ -1200,14 +1624,14 @@ namespace gameswf
 	}
 
 
-	as_function_ptr	as_value::to_function() const
-	// Return value as a function ptr.  Returns NULL if value is
-	// not a function.
+	as_c_function_ptr	as_value::to_c_function() const
+	// Return value as a C function ptr.  Returns NULL if value is
+	// not a C function.
 	{
-		if (m_type == FUNCTION)
+		if (m_type == C_FUNCTION)
 		{
 			// OK.
-			return m_function_value;
+			return m_c_function_value;
 		}
 		else
 		{
@@ -1215,9 +1639,24 @@ namespace gameswf
 		}
 	}
 
+	as_as_function*	as_value::to_as_function() const
+	// Return value as an ActionScript function.  Returns NULL if value is
+	// not an ActionScript function.
+	{
+		if (m_type == AS_FUNCTION)
+		{
+			// OK.
+			return m_as_function_value;
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+
 
 	void	as_value::convert_to_number()
-	// Force to type to number.
+	// Force type to number.
 	{
 		set(to_number());
 	}
@@ -1360,16 +1799,6 @@ namespace gameswf
 			return;
 		}
 
-#if 0
-		// Check current environment.
-		if (m_variables.get(path, NULL))
-		{
-			// Set existing var.
-			m_variables.set(path, val);
-			return;
-		}
-#endif // 0
-
 		assert(m_target);
 
 		m_target->set_member(varname, val);
@@ -1386,7 +1815,7 @@ namespace gameswf
 			// Not in frame; create a new local var.
 
 			assert(varname.length() > 0);	// null varnames are invalid!
-			m_local_frames.push_back(frame_slot(varname, val));
+    			m_local_frames.push_back(frame_slot(varname, val));
 		}
 		else
 		{
@@ -1394,6 +1823,18 @@ namespace gameswf
 			m_local_frames[index].m_value = val;
 		}
 	}
+
+	
+	void	as_environment::add_local(const tu_string& varname, const as_value& val)
+	// Add a local var with the given name and value to our
+	// current local frame.  Use this when you know the var
+	// doesn't exist yet, since it's faster than set_local();
+	// e.g. when setting up args for a function.
+	{
+		assert(varname.length() > 0);
+		m_local_frames.push_back(frame_slot(varname, val));
+	}
+
 
 	bool	as_environment::get_member(const tu_string& varname, as_value* val) const
 	{
@@ -1413,11 +1854,11 @@ namespace gameswf
 	// 
 	// Otherwise return -1.
 	{
-		// Linear search is probably fine for typical use of
-		// local vars in script.  There could be pathological
-		// breakdowns if a function has tons of locals though.
-		// The ActionScript bytecode does not help us much by
-		// using strings to index locals.
+		// Linear search sucks, but is probably fine for
+		// typical use of local vars in script.  There could
+		// be pathological breakdowns if a function has tons
+		// of locals though.  The ActionScript bytecode does
+		// not help us much by using strings to index locals.
 
 		for (int i = m_local_frames.size() - 1; i >= 0; i--)
 		{
