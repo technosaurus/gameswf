@@ -902,6 +902,7 @@ bitmap_info_xbox::bitmap_info_xbox(image::rgb* im)
 		return;
 	}
 
+	if (surf) { surf->Release(); }
 #if 0
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, (GLuint*)&m_texture_id);
@@ -1026,6 +1027,8 @@ bitmap_info_xbox::bitmap_info_xbox(image::rgba* im)
 //		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
 	}
 
+	if (surf) { surf->Release(); }
+
 #if 0
 	// Create the texture.
 
@@ -1135,6 +1138,8 @@ void bitmap_info_xbox::set_alpha_image(int width, int height, Uint8* data)
 		gameswf::log_error("error: can't load surface from memory, result = %d\n", result);
 		return;
 	}
+
+	if (surf) { surf->Release(); }
 
 //	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
 
