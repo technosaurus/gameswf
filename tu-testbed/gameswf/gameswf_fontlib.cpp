@@ -13,6 +13,7 @@
 #include "engine/tu_file.h"
 #include "gameswf_font.h"
 #include "gameswf_impl.h"
+#include "gameswf_log.h"
 #include "gameswf_render.h"
 #include "gameswf_shape.h"
 #include "gameswf_styles.h"
@@ -608,7 +609,7 @@ namespace fontlib
 		}
 		else
 		{
-			printf("cannot open '%s'\n", filename);
+			log_error("cannot open '%s'\n", filename);
 		}
 		delete s_file;
 		s_file = NULL;

@@ -14,8 +14,16 @@
 #include "engine/utility.h"
 
 
-// ifdef this out to get rid of debug spew.
+#ifndef NDEBUG
 #define IF_DEBUG(exp) exp
+#endif // NDEBUG
+
+
+#define GAMESWF_VERBOSE
+
+#ifdef GAMESWF_VERBOSE
+#define IF_VERBOSE(exp) exp
+#endif // GAMESWF_VERBOSE
 
 
 #define TWIPS_TO_PIXELS(x)	((x) / 20.f)
@@ -52,7 +60,7 @@ namespace gameswf
 		void	concatenate_translation(float tx, float ty);
 		void	concatenate_scale(float s);
 		void	read(stream* in);
-		void	print(FILE* out) const;
+		void	print() const;
 		void	ogl_multiply() const;
 		void	transform(point* result, const point& p) const;
 		void	transform_vector(point* result, const point& p) const;
@@ -96,7 +104,7 @@ namespace gameswf
 			m_a = (Uint8) frnd(flerp(a.m_a, b.m_a, f));
 		}
 
-		void	print(FILE* out);
+		void	print();
 	};
 
 
@@ -117,7 +125,7 @@ namespace gameswf
 		float	m_x_min, m_x_max, m_y_min, m_y_max;
 
 		void	read(stream* in);
-		void	print(FILE* out) const;
+		void	print() const;
 		bool	point_test(float x, float y) const;
 		void	expand_to_point(float x, float y);
 		float width() const { return m_x_max-m_x_min; }

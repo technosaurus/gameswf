@@ -18,6 +18,7 @@
 #include "gameswf_button.h"
 #include "gameswf_impl.h"
 #include "gameswf_font.h"
+#include "gameswf_log.h"
 #include "gameswf_render.h"
 #include "gameswf_shape.h"
 #include "gameswf_stream.h"
@@ -185,7 +186,7 @@ namespace gameswf
 		if (size <= 0)
 		{
 			// error.
-			IF_DEBUG(printf("error: move_display_object() -- no objects on display list\n"));
+			log_error("error: move_display_object() -- no objects on display list\n");
 //			assert(0);
 			return;
 		}
@@ -194,7 +195,7 @@ namespace gameswf
 		if (index < 0 || index >= size)
 		{
 			// error.
-			IF_DEBUG(printf("error: move_display_object() -- can't find object at depth %d\n", depth));
+			log_error("error: move_display_object() -- can't find object at depth %d\n", depth);
 //			assert(0);
 			return;
 		}
@@ -203,7 +204,7 @@ namespace gameswf
 		if (di.m_depth != depth)
 		{
 			// error
-			IF_DEBUG(printf("error: move_display_object() -- no object at depth %d\n", depth));
+			log_error("error: move_display_object() -- no object at depth %d\n", depth);
 //			assert(0);
 			return;
 		}
@@ -253,7 +254,7 @@ namespace gameswf
 		if (di.m_depth != depth)
 		{
 			// error
-			IF_DEBUG(printf("error: replace_display_object() -- no object at depth %d\n", depth));
+			IF_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
 //			assert(0);
 			return;
 		}
@@ -298,7 +299,7 @@ namespace gameswf
 		if (size <= 0)
 		{
 			// error.
-			IF_DEBUG(printf("remove_display_object: no characters in display list"));
+			log_error("remove_display_object: no characters in display list");
 			return;
 		}
 
@@ -306,7 +307,7 @@ namespace gameswf
 		if (index < 0 || index >= size)
 		{
 			// error -- no character at the given depth.
-			IF_DEBUG(printf("remove_display_object: no character at depth %d\n", depth));
+			log_error("remove_display_object: no character at depth %d\n", depth);
 			return;
 		}
 
@@ -529,7 +530,7 @@ namespace gameswf
 			character*	ch = NULL;
 			if (m_characters.get(character_id, &ch) == false)
 			{
-				fprintf(stderr, "movie_impl::add_display_object(): unknown cid = %d\n", character_id);
+				log_error("movie_impl::add_display_object(): unknown cid = %d\n", character_id);
 				return;
 			}
 			assert(ch);
@@ -557,7 +558,7 @@ namespace gameswf
 			character*	ch = NULL;
 			if (m_characters.get(character_id, &ch) == false)
 			{
-				fprintf(stderr, "movie_impl::add_display_object(): unknown cid = %d\n", character_id);
+				log_error("movie_impl::add_display_object(): unknown cid = %d\n", character_id);
 				return;
 			}
 			assert(ch);
@@ -722,7 +723,7 @@ namespace gameswf
 		void	goto_frame(int target_frame_number)
 		// Set the movie state at the specified frame number.
 		{
-			IF_DEBUG(printf("goto_frame(%d)\n", target_frame_number));//xxxxx
+			IF_DEBUG(log_msg("goto_frame(%d)\n", target_frame_number));//xxxxx
 
 			if (target_frame_number != m_current_frame
 			    && target_frame_number >= 0
@@ -781,11 +782,11 @@ namespace gameswf
 			if ((header & 0x0FFFFFF) != 0x00535746)
 			{
 				// ERROR
-				IF_DEBUG(printf("gameswf::movie_impl::read() -- file does not start with a SWF header!\n"));
+				log_error("gameswf::movie_impl::read() -- file does not start with a SWF header!\n");
 				return;
 			}
 
-			IF_DEBUG(printf("version = %d, file_length = %d\n", m_version, file_length));
+			IF_DEBUG(log_msg("version = %d, file_length = %d\n", m_version, file_length));
 
 			stream	str(in);
 
@@ -795,8 +796,8 @@ namespace gameswf
 
 			m_playlist.resize(m_frame_count);
 
-			IF_DEBUG(m_frame_size.print(stdout));
-			IF_DEBUG(printf("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
+			IF_DEBUG(m_frame_size.print());
+			IF_DEBUG(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
 
 			while ((Uint32) str.get_position() < file_length)
 			{
@@ -815,7 +816,7 @@ namespace gameswf
 
 				} else {
 					// no tag loader for this tag type.
-					IF_DEBUG(printf("*** no tag loader for type %d\n", tag_type));
+					IF_DEBUG(log_msg("*** no tag loader for type %d\n", tag_type));
 				}
 
 				str.close_tag();
@@ -1021,7 +1022,7 @@ namespace gameswf
 		
 		Uint16	character_id = in->read_u16();
 
-		IF_DEBUG(printf("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+		IF_DEBUG(log_msg("define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		bitmap_character_rgb*	ch = new bitmap_character_rgb();
 		ch->m_id = character_id;
@@ -1059,7 +1060,7 @@ namespace gameswf
 
 		err = inflateInit(&d_stream);
 		if (err != Z_OK) {
-			fprintf(stderr, "error: inflate_wrapper() inflateInit() returned %d\n", err);
+			log_error("error: inflate_wrapper() inflateInit() returned %d\n", err);
 			return;
 		}
 
@@ -1075,14 +1076,14 @@ namespace gameswf
 			if (err == Z_STREAM_END) break;
 			if (err != Z_OK)
 			{
-				fprintf(stderr, "error: inflate_wrapper() inflate() returned %d\n", err);
+				log_error("error: inflate_wrapper() inflate() returned %d\n", err);
 			}
 		}
 
 		err = inflateEnd(&d_stream);
 		if (err != Z_OK)
 		{
-			fprintf(stderr, "error: inflate_wrapper() inflateEnd() return %d\n", err);
+			log_error("error: inflate_wrapper() inflateEnd() return %d\n", err);
 		}
 	}
 
@@ -1095,7 +1096,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		IF_DEBUG(printf("define_bits_jpeg3_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+		IF_DEBUG(log_msg("define_bits_jpeg3_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
 
 		Uint32	jpeg_size = in->read_u32();
 		Uint32	alpha_position = in->get_position() + jpeg_size;
@@ -1136,7 +1137,7 @@ namespace gameswf
 		Uint16	width = in->read_u16();
 		Uint16	height = in->read_u16();
 
-		IF_DEBUG(printf("dbl2l: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
+		IF_DEBUG(log_msg("dbl2l: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
 				tag_type,
 				character_id,
 				bitmap_format,
@@ -1364,8 +1365,8 @@ namespace gameswf
 		ch->m_id = character_id;
 		ch->read(in, tag_type, true, m);
 
-		IF_DEBUG(printf("shape_loader: id = %d, rect ", character_id);
-			 ch->get_bound().print(stdout));
+		IF_DEBUG(log_msg("shape_loader: id = %d, rect ", character_id);
+			 ch->get_bound().print());
 //		IF_DEBUG(printf("shape_loader: fill style ct = %d, line style ct = %d, path ct = %d\n",
 //				ch->m_fill_styles.size(), ch->m_line_styles.size(), ch->m_paths.size()));
 
@@ -1488,7 +1489,7 @@ namespace gameswf
 			int	glyph_bits = in->read_u8();
 			int	advance_bits = in->read_u8();
 
-			IF_DEBUG(printf("begin text records\n"));
+			IF_DEBUG(log_msg("begin text records\n"));
 
 			text_style	style;
 			for (;;)
@@ -1498,7 +1499,7 @@ namespace gameswf
 				if (first_byte == 0)
 				{
 					// This is the end of the text records.
-					IF_DEBUG(printf("end text records\n"));
+					IF_DEBUG(log_msg("end text records\n"));
 					break;
 				}
 
@@ -1512,7 +1513,7 @@ namespace gameswf
 					bool	has_y_offset = (first_byte >> 1) & 1;
 					bool	has_x_offset = (first_byte >> 0) & 1;
 
-					IF_DEBUG(printf("text style change\n"));
+					IF_DEBUG(log_msg("text style change\n"));
 
 					if (has_font)
 					{
@@ -1520,10 +1521,10 @@ namespace gameswf
 						style.m_font = m->get_font(font_id);
 						if (style.m_font == NULL)
 						{
-							printf("error: text style with undefined font; font_id = %d\n", font_id);
+							log_error("error: text style with undefined font; font_id = %d\n", font_id);
 						}
 
-						IF_DEBUG(printf("has_font: font id = %d\n", font_id));
+						IF_DEBUG(log_msg("has_font: font id = %d\n", font_id));
 					}
 					if (has_color)
 					{
@@ -1536,13 +1537,13 @@ namespace gameswf
 							assert(tag_type == 33);
 							style.m_color.read_rgba(in);
 						}
-						IF_DEBUG(printf("has_color\n"));
+						IF_DEBUG(log_msg("has_color\n"));
 					}
 					if (has_x_offset)
 					{
 						style.m_has_x_offset = true;
 						style.m_x_offset = in->read_s16();
-						IF_DEBUG(printf("has_x_offset = %g\n", style.m_x_offset));
+						IF_DEBUG(log_msg("has_x_offset = %g\n", style.m_x_offset));
 					}
 					else
 					{
@@ -1553,7 +1554,7 @@ namespace gameswf
 					{
 						style.m_has_y_offset = true;
 						style.m_y_offset = in->read_s16();
-						IF_DEBUG(printf("has_y_offset = %g\n", style.m_y_offset));
+						IF_DEBUG(log_msg("has_y_offset = %g\n", style.m_y_offset));
 					}
 					else
 					{
@@ -1563,7 +1564,7 @@ namespace gameswf
 					if (has_font)
 					{
 						style.m_text_height = in->read_u16();
-						IF_DEBUG(printf("text_height = %g\n", style.m_text_height));
+						IF_DEBUG(log_msg("text_height = %g\n", style.m_text_height));
 					}
 				}
 				else
@@ -1574,7 +1575,7 @@ namespace gameswf
 					m_text_glyph_records.back().m_style = style;
 					m_text_glyph_records.back().read(in, glyph_count, glyph_bits, advance_bits);
 
-					IF_DEBUG(printf("glyph_records: count = %d\n", glyph_count));
+					IF_DEBUG(log_msg("glyph_records: count = %d\n", glyph_count));
 				}
 			}
 		}
@@ -1664,7 +1665,7 @@ namespace gameswf
 		
 		text_character*	ch = new text_character;
 		ch->m_id = character_id;
-		IF_DEBUG(printf("text_character, id = %d\n", character_id));
+		IF_DEBUG(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
 		// IF_DEBUG(print some stuff);
@@ -1754,7 +1755,7 @@ namespace gameswf
 				if (has_clip_bracket) {
 					int	clip_depth = in->read_u16();
 					UNUSED(clip_depth);
-					IF_DEBUG(printf("HAS CLIP BRACKET!\n"));
+					IF_DEBUG(log_msg("HAS CLIP BRACKET!\n"));
 				}
 				if (has_name) {
 					m_name = in->read_string();
@@ -1776,9 +1777,9 @@ namespace gameswf
 					m_place_type = PLACE;
 				}
 
-				IF_DEBUG(printf("po2r: name = %s\n", m_name ? m_name : "<null>");
-					 printf("po2r: char id = %d, mat:\n", m_character_id);
-					 m_matrix.print(stdout);
+				IF_DEBUG(log_msg("po2r: name = %s\n", m_name ? m_name : "<null>");
+					 log_msg("po2r: char id = %d, mat:\n", m_character_id);
+					 m_matrix.print();
 					);
 			}
 		}
@@ -1790,7 +1791,7 @@ namespace gameswf
 			switch (m_place_type)
 			{
 			case PLACE:
-//				IF_DEBUG(printf("  place: cid %2d depth %2d\n", m_character_id, m_depth));
+//				IF_DEBUG(log_msg("  place: cid %2d depth %2d\n", m_character_id, m_depth));
 				m->add_display_object(m_character_id,
 						      m_depth,
 						      m_color_transform,
@@ -1799,7 +1800,7 @@ namespace gameswf
 				break;
 
 			case MOVE:
-//				IF_DEBUG(printf("   move: depth %2d\n", m_depth));
+//				IF_DEBUG(log_msg("   move: depth %2d\n", m_depth));
 				m->move_display_object(m_depth,
 						       m_has_cxform,
 						       m_color_transform,
@@ -1810,7 +1811,7 @@ namespace gameswf
 
 			case REPLACE:
 			{
-//				IF_DEBUG(printf("replace: cid %d depth %d\n", m_character_id, m_depth));
+//				IF_DEBUG(log_msg("replace: cid %d depth %d\n", m_character_id, m_depth));
 				m->replace_display_object(m_character_id,
 							  m_depth,
 							  m_has_cxform,
@@ -1880,7 +1881,7 @@ namespace gameswf
 
 		void	add_character(int id, character* ch)
 		{
-			fprintf(stderr, "error: sprite::add_character() is illegal\n");
+			log_error("error: sprite::add_character() is illegal\n");
 			assert(0);
 		}
 
@@ -1897,7 +1898,7 @@ namespace gameswf
 			m_frame_count = in->read_u16();
 			m_playlist.resize(m_frame_count);	// need a playlist for each frame
 
-			IF_DEBUG(printf("sprite: frames = %d\n", m_frame_count));
+			IF_DEBUG(log_msg("sprite: frames = %d\n", m_frame_count));
 
 			m_current_frame = 0;
 
@@ -1919,7 +1920,7 @@ namespace gameswf
 				else
 				{
 					// no tag loader for this tag type.
-					IF_DEBUG(printf("*** no tag loader for type %d\n", tag_type));
+					IF_DEBUG(log_msg("*** no tag loader for type %d\n", tag_type));
 				}
 
 				in->close_tag();
@@ -2093,7 +2094,7 @@ namespace gameswf
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
 		{
-			IF_DEBUG(printf("goto_frame(%d)\n", target_frame_number));//xxxxx
+			IF_DEBUG(log_msg("goto_frame(%d)\n", target_frame_number));//xxxxx
 
 			if (target_frame_number != m_current_frame
 			    && target_frame_number >= 0
@@ -2129,14 +2130,14 @@ namespace gameswf
 			// Show the character id at each depth.
 			IF_DEBUG(
 			{
-				printf("s %2d | ", m_id);
+				log_msg("s %2d | ", m_id);
 				for (int i = 1; i < 10; i++)
 				{
 					int	id = get_id_at_depth(i);
-					if (id == -1) { printf("%d:     ", i); }
-					else { printf("%d: %2d  ", i, id); }
+					if (id == -1) { log_msg("%d:     ", i); }
+					else { log_msg("%d: %2d  ", i, id); }
 				}
-				printf("\n");
+				log_msg("\n");
 			});
 
 			// Show the display list.
@@ -2163,7 +2164,7 @@ namespace gameswf
 			character*	ch = NULL;
 			if (m_def->m_movie->m_characters.get(character_id, &ch) == false)
 			{
-				fprintf(stderr, "sprite::add_display_object(): unknown cid = %d\n", character_id);
+				log_error("sprite::add_display_object(): unknown cid = %d\n", character_id);
 				return;
 			}
 			assert(ch);
@@ -2193,7 +2194,7 @@ namespace gameswf
 			character*	ch = NULL;
 			if (m_def->m_movie->m_characters.get(character_id, &ch) == false)
 			{
-				fprintf(stderr, "sprite::add_display_object(): unknown cid = %d\n", character_id);
+				log_error("sprite::add_display_object(): unknown cid = %d\n", character_id);
 				return;
 			}
 			assert(ch);
@@ -2267,7 +2268,7 @@ namespace gameswf
 		ch->m_id = character_id;
 		ch->read(in);
 
-		IF_DEBUG(printf("sprite: char id = %d\n", character_id));
+		IF_DEBUG(log_msg("sprite: char id = %d\n", character_id));
 
 		m->add_character(character_id, ch);
 	}
@@ -2304,7 +2305,7 @@ namespace gameswf
 
 		void	execute(movie* m)
 		{
-//			IF_DEBUG(printf(" remove: depth %2d\n", m_depth));
+//			IF_DEBUG(log_msg(" remove: depth %2d\n", m_depth));
 			m->remove_display_object(m_depth);
 		}
 
@@ -2369,7 +2370,7 @@ namespace gameswf
 
 	void	do_action_loader(stream* in, int tag_type, movie* m)
 	{
-		IF_DEBUG(printf("tag %d: do_action_loader\n", tag_type));
+		IF_DEBUG(log_msg("tag %d: do_action_loader\n", tag_type));
 
 		assert(in);
 		assert(tag_type == 12);

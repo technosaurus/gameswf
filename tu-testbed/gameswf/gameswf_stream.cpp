@@ -8,6 +8,8 @@
 
 
 #include "gameswf_stream.h"
+
+#include "gameswf_log.h"
 #include "gameswf_types.h"
 #include "engine/tu_file.h"
 #include <string.h>
@@ -85,7 +87,7 @@ namespace gameswf
 			value |= -1 << bitcount;
 		}
 
-//		IF_DEBUG(printf("stream::read_sint(%d) == %d\n", bitcount, value));
+//		IF_DEBUG(log_msg("stream::read_sint(%d) == %d\n", bitcount, value));
 
 		return value;
 	}
@@ -107,7 +109,7 @@ namespace gameswf
 		align();
 //		IF_DEBUG(printf("filepos = %d ", SDL_RWtell(m_input)));
 		int	val = m_input->read_le16();
-//		IF_DEBUG(printf("val = 0x%X\n", val));
+//		IF_DEBUG(log_msg("val = 0x%X\n", val));
 		return val;
 	}
 	Sint16	stream::read_s16() { align(); return m_input->read_le16(); }
@@ -221,7 +223,7 @@ namespace gameswf
 			tag_length = m_input->read_le32();
 		}
 
-		IF_DEBUG(printf("tag type = %d, tag length = %d\n", tag_type, tag_length));
+		IF_DEBUG(log_msg("tag type = %d, tag length = %d\n", tag_type, tag_length));
 			
 		// Remember where the end of the tag is, so we can
 		// fast-forward past it when we're done reading it.
