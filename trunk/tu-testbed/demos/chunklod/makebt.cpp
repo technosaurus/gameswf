@@ -189,7 +189,7 @@ int	main(int argc, char* argv[])
 	// Write the .bt
 	//
 
-	printf("PNG width = %d, height = %d\n", width, height);
+	printf("PNG width = %ld, height = %ld\n", width, height);
 
 	SDL_RWwrite(out, "binterr1.1", 1, 10);
 

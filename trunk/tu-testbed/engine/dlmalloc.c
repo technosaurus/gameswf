@@ -4519,7 +4519,7 @@ struct mallinfo mALLINFo()
   nfastblocks = 0;
   fastavail = 0;
 
-  for (i = 0; i < NFASTBINS; ++i) {
+  for (i = 0; i < (int) NFASTBINS; ++i) {
     for (p = av->fastbins[i]; p != 0; p = p->fd) {
       ++nfastblocks;
       fastavail += chunksize(p);
