@@ -10,6 +10,9 @@
 #define GEOMETRY_H
 
 
+#include <engine/utility.h>
+
+
 class	vec3
 // 3-element vector class, for 3D math.
 {
@@ -51,6 +54,10 @@ public:
 //	float	max() const;
 //	float	minabs() const;
 //	float	maxabs() const;
+
+	// Serialize(archive* a);	// archive contains a flag that indicates whether we're reading or writing.
+	void	read(SDL_RWops* in);
+	void	write(SDL_RWops* out);
 
 	bool	checknan() const;	// Returns true if any component is nan.
 
