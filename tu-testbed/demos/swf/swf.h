@@ -16,6 +16,8 @@
 
 namespace swf {
 
+	struct character;
+
 	struct movie
 	{
 		virtual void	execute(float time);
@@ -32,11 +34,12 @@ namespace swf {
 	struct tag
 	{
 		virtual void	execute(float time);
-	}
+	};
 
+	struct stream;
 
 	// Create a swf::movie from the given input stream.
-	static movie*	create_movie(SDL_RWops* input);
+	movie*	create_movie(SDL_RWops* input);
 
 	typedef void (*loader_function)(stream* input, int tag_type, movie* m);
 	// Register a loader function for a certain tag type.

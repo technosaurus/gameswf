@@ -4,7 +4,7 @@
 # If you haven't set TU_TESTBED_COMPILER, then take a guess at its value
 # based on the OSTYPE env variable.
 #
-# If you want to use a particular compiler; for example g++-3.0, then
+# If you want to use a particular compiler; for example gcc-3.0, then
 # set the environment variable TU_TESTBED_COMPILER to the compiler
 # name.
 ifndef TU_TESTBED_COMPILER
@@ -14,7 +14,7 @@ ifndef TU_TESTBED_COMPILER
 	OSTYPE := $(patsubst Linux, linux, $(OSTYPE))
 
 	ifneq (,$(findstring linux, $(OSTYPE)))
-		TU_TESTBED_COMPILER = g++
+		TU_TESTBED_COMPILER = gcc
 	else
 		TU_TESTBED_COMPILER = msvc
 	endif
