@@ -19,6 +19,7 @@
 
 #include <engine/ogl.h>
 #include <engine/utility.h>
+#include <engine/tqt.h>
 
 #include "chunklod.h"
 
@@ -143,19 +144,22 @@ struct lod_chunk;
 // Vertex/mesh data for a chunk.  Can get paged in/out on demand.
 struct lod_chunk_data {
 	vertex_info	m_verts;	// vertex and mesh info; vertex array w/ morph targets, indices, texture id
+	int	m_texture_id;		// OpenGL texture id for this chunk's texture map.
 
 	//	lod_chunk_data* m_next_data;
 	//	lod_chunk_data* m_prev_data;
 
 
-	void	read(SDL_RWops* in)
+	lod_chunk_data(SDL_RWops* in, int texture_id)
+	// Constructor.  Read our data & set our texture id.
+		: m_texture_id(texture_id)
 	{
 		// Load the main chunk data.
 		m_verts.read(in);
 	}
 
 	int	render(const lod_chunk_tree& c, const lod_chunk& chunk, const view_state& v, cull::result_info cull_info, render_options opt,
-				   const vec3& box_center, const vec3& box_extent);
+		       const vec3& box_center, const vec3& box_extent);
 };
 
 
@@ -186,10 +190,10 @@ struct lod_chunk {
 	// needs a destructor!
 
 	void	clear();
-	void	update(const lod_chunk_tree& c, const vec3& viewpoint);
+	void	update(const lod_chunk_tree& c, const tqt* texture_quadtree, const vec3& viewpoint);
 	void	do_split(const lod_chunk_tree& base, const vec3& viewpoint);
-	bool	can_split();	// return true if this chunk can split.  Also, request the necessary data.
-	bool	request_data();
+	bool	can_split(const tqt* texture_quadtree);	// return true if this chunk can split.  Also, request the necessary data.
+	bool	request_data(const tqt* texture_quadtree);
 
 	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt);
 
@@ -261,27 +265,30 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 	if (opt.show_geometry || opt.show_edges) {
 		glEnable(GL_TEXTURE_2D);
 
-#if 0
-		glBindTexture(m_data->m_texture_id);
-		...;
+		if (m_texture_id) {
+			glBindTexture(GL_TEXTURE_2D, m_texture_id);
 		
-		float	xsize = c.m_root->box_extent.get_x() * 2;
-		float	zsize = c.m_root->box_extent.get_z() * 2;
+			float	xsize = box_extent.get_x() * 2 * (257.0f / 256.0f);
+			float	zsize = box_extent.get_z() * 2 * (257.0f / 256.0f);
+			float	x0 = box_center.get_x() - box_extent.get_x() - (xsize / 256.0f) * 0.5f;
+			float	z0 = box_center.get_z() - box_extent.get_z() - (xsize / 256.0f) * 0.5f;
 
-		// Set up texgen for this tile.
-		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-		float	p[4] = { 0, 0, 0, 0 };
-		p[0] = 1.0f / xsize;
-		glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
-		p[0] = 0;
-		
-		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-		p[2] = 1.0f / zsize;
-		glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
-		
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-#endif // 0
+			// Set up texgen for this tile.
+			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+			float	p[4] = { 0, 0, 0, 0 };
+			p[0] = 1.0f / xsize;
+			p[3] = -x0 / xsize;
+			glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+			p[0] = 0;
+			
+			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+			p[2] = 1.0f / zsize;
+			p[3] = -z0 / zsize;
+			glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+			
+			glEnable(GL_TEXTURE_GEN_S);
+			glEnable(GL_TEXTURE_GEN_T);
+		}
 	}
 
 
@@ -389,7 +396,7 @@ void	lod_chunk::clear()
 }
 
 
-void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
+void	lod_chunk::update(const lod_chunk_tree& base, const tqt* texture_quadtree, const vec3& viewpoint)
 // Computes 'lod' and split values for this chunk and its subtree,
 // based on the given camera parameters and the parameters stored in
 // 'base'.  Traverses the tree and forces neighbor chunks to a valid
@@ -405,13 +412,13 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 
 	if (has_children()
 		&& desired_lod > (lod | 0x0FF)
-		&& can_split())
+		&& can_split(texture_quadtree))
 	{
 		do_split(base, viewpoint);
 
 		// Recurse to children.
 		for (int i = 0; i < 4; i++) {
-			m_children[i]->update(base, viewpoint);
+			m_children[i]->update(base, texture_quadtree, viewpoint);
 		}
 	} else {
 		// We're good... this chunk can represent its region within the max error tolerance.
@@ -419,7 +426,7 @@ void	lod_chunk::update(const lod_chunk_tree& base, const vec3& viewpoint)
 			// Root chunk -- make sure we have valid morph value.
 			lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
 			// tbp: and that we also have something to display :)
-			request_data();
+			request_data(texture_quadtree);
 		}
 	}
 }
@@ -466,7 +473,7 @@ void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 }
 
 
-bool	lod_chunk::can_split()
+bool	lod_chunk::can_split(const tqt* texture_quadtree)
 // Return true if this chunk can be split.  Also, requests the
 // necessary data for the chunk children and its dependents.
 //
@@ -489,14 +496,14 @@ bool	lod_chunk::can_split()
 	// Check the data of the children.
 	{for (int i = 0; i < 4; i++) {
 		lod_chunk*	c = m_children[i];
-		if (c->request_data() == false) {
+		if (c->request_data(texture_quadtree) == false) {
 			can_split = false;
 		}
 	}}
 
 	// Make sure ancestors have data...
 	for (lod_chunk* p = m_parent; p && p->m_split == false; p = p->m_parent) {
-		if (p->can_split() == false) {
+		if (p->can_split(texture_quadtree) == false) {
 			can_split = false;
 		}
 	}
@@ -513,7 +520,7 @@ bool	lod_chunk::can_split()
 			n = n->m_parent;
 		}}
 
-		if (n && n->can_split() == false) {
+		if (n && n->can_split(texture_quadtree) == false) {
 			can_split = false;
 		}
 	}}
@@ -522,7 +529,7 @@ bool	lod_chunk::can_split()
 }
 
 
-bool	lod_chunk::request_data()
+bool	lod_chunk::request_data(const tqt* texture_quadtree)
 // Request rendering data; return true if we currently have it, false
 // otherwise.
 {
@@ -530,9 +537,16 @@ bool	lod_chunk::request_data()
 		// @@ todo: do the work in a background thread.
 		
 		// Load the data.
-		m_data = new lod_chunk_data;
+		
+		// Texture.
+		int	texture_id = 0;
+		if (texture_quadtree) {
+			texture_id = texture_quadtree->get_texture_id(texture_quadtree->get_depth() - 1 - m_level, m_x, m_z);
+		}
+
+		// Geometry.
 		SDL_RWseek(s_datafile, m_data_file_position, SEEK_SET);
-		m_data->read(s_datafile);
+		m_data = new lod_chunk_data(s_datafile, texture_id);
 	}
 
 	return true;
@@ -564,7 +578,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 
 		// Recurse to children.  Some subset of our descendants will be rendered in our stead.
 		for (int i = 0; i < 4; i++) {
-			const bool	explode = false;
+			static const bool	explode = false;
 			// EXPLODE
 			if (explode) {
 				int	level = c.m_tree_depth - ((this->lod) >> 8);
@@ -606,6 +620,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 			draw_box(box_center - box_extent, box_center + box_extent);
 		}
 
+		// Display our data.
 		triangle_count += m_data->render(c, *this, v, cull_info, opt, box_center, box_extent);
 	}
 
@@ -742,12 +757,12 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 }
 
 
-void	lod_chunk_tree::update(const vec3& viewpoint)
+void	lod_chunk_tree::update(const vec3& viewpoint, const tqt* texture_quadtree)
 // Initializes tree state, so it can be rendered.  The given viewpoint
 // is used to do distance-based LOD switching on our contained chunks.
 {
 	m_chunks[0].clear();
-	m_chunks[0].update(*this, viewpoint);
+	m_chunks[0].update(*this, texture_quadtree, viewpoint);
 }
 
 

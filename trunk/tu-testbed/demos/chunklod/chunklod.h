@@ -10,8 +10,9 @@
 #include <engine/view_state.h>
 #include <engine/container.h>
 
-
+class tqt;
 struct lod_chunk;
+
 
 struct render_options {
 	bool	show_box;
@@ -37,7 +38,7 @@ public:
 	// External interface.
 	lod_chunk_tree(SDL_RWops* src);
 	void	set_parameters(float max_pixel_error, float screen_width, float horizontal_FOV_degrees);
-	void	update(const vec3& viewpoint);
+	void	update(const vec3& viewpoint, const tqt* texture_quadtree);
 	int	render(const view_state& v, render_options opt);
 
 	void	get_bounding_box(vec3* box_center, vec3* box_extent);
@@ -59,3 +60,10 @@ public:
 
 
 #endif // CHUNKLOD_H
+
+
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

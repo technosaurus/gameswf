@@ -16,9 +16,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <engine/cull.h>
-#include <engine/utility.h>
-#include <engine/ogl.h>
+#include "engine/cull.h"
+#include "engine/utility.h"
+#include "engine/ogl.h"
+#include "engine/tqt.h"
 
 #include "chunklod.h"
 
@@ -538,30 +539,41 @@ int	main(int argc, char *argv[])
 
 	printf("Window: %d x %d x %d\n", window_width, window_height, bits_per_pixel);
 
-	// Load a texture.
-	SDL_Surface*	texture = IMG_Load(texturefile);
-	if (texture) {
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, 1);
+	// Load a texture or a texture-quadtree object.
+	tqt*	texture_quadtree = NULL;
 
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-//		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->w, texture->h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
-		gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, texture->w, texture->h, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
-
-		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// GL_MODULATE
-
-		SDL_FreeSurface(texture);
-
-		glBindTexture(GL_TEXTURE_2D, 1);
-		glEnable(GL_TEXTURE_2D);
+	// Does it look like a .tqt file?
+	if (tqt::is_tqt_file(texturefile)) {
+		texture_quadtree = new tqt(texturefile);
 	}
+
+	if (texture_quadtree == NULL) {
+		//
+		// No texture quadtree; try to load the texture arg as an ordinary texture.
+		//
+		SDL_Surface*	texture = IMG_Load(texturefile);
+		if (texture) {
+			glEnable(GL_TEXTURE_2D);
+			glBindTexture(GL_TEXTURE_2D, 1);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+//			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texture->w, texture->h, 0, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
+			gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, texture->w, texture->h, GL_RGB, GL_UNSIGNED_BYTE, texture->pixels);
+
+			SDL_FreeSurface(texture);
+
+			glBindTexture(GL_TEXTURE_2D, 1);
+		}
+	}
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// GL_MODULATE
 
 // Sometimes (under Win32) for debugging it's better to not catch
 // exceptions.
@@ -584,26 +596,29 @@ int	main(int argc, char *argv[])
 
 		view.m_frame_number = 1;
 
-		// Set up automatic texture-coordinate generation.
-		// Basically we're just stretching the current texture
-		// over the entire model.
-		vec3	center, extent;
-		model->get_bounding_box(&center, &extent);
-		float	xsize = extent.get_x() * 2;
-		float	zsize = extent.get_z() * 2;
+		if (texture_quadtree == NULL)
+		{
+			// Set up automatic texture-coordinate generation.
+			// Basically we're just stretching the current texture
+			// over the entire model.
+			vec3	center, extent;
+			model->get_bounding_box(&center, &extent);
+			float	xsize = extent.get_x() * 2;
+			float	zsize = extent.get_z() * 2;
 
-		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-		float	p[4] = { 0, 0, 0, 0 };
-		p[0] = 1.0f / xsize;
-		glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
-		p[0] = 0;
+			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+			float	p[4] = { 0, 0, 0, 0 };
+			p[0] = 1.0f / xsize;
+			glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+			p[0] = 0;
 
-		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-		p[2] = 1.0f / zsize;
-		glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+			glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+			p[2] = 1.0f / zsize;
+			glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
 
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
+			glEnable(GL_TEXTURE_GEN_S);
+			glEnable(GL_TEXTURE_GEN_T);
+		}
 
 		// Main loop.
 		Uint32	last_ticks = SDL_GetTicks();
@@ -622,7 +637,7 @@ int	main(int argc, char *argv[])
 
 			model->set_parameters(max_pixel_error, (float) window_width, horizontal_fov_degrees);
 			if (enable_update) {
-				model->update(viewer_pos);
+				model->update(viewer_pos, texture_quadtree);
 			}
 
 			clear();
@@ -671,3 +686,8 @@ int	main(int argc, char *argv[])
 	return 0;
 }
 
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

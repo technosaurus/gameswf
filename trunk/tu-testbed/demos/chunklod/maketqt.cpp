@@ -5,9 +5,7 @@
 
 // Program to take a large image and turn it into a quadtree of image
 // tiles, a "texture quadtree".  Texture quadtree (".tqt") files can
-// be fed into the heightfield_chunker to make an integrated texture
-// and geometry .chu data file, for viewing with chunkdemo.  Or maybe
-// fed into chunkdemo directly; I haven't decided yet.
+// be fed into the chunkdemo for hi-res textured terrain.
 
 
 #include <stdlib.h>
@@ -23,9 +21,7 @@ extern "C" {
 #include "engine/geometry.h"
 #include "engine/jpeg.h"
 #include "engine/image.h"
-
-
-// #include "jpeg_util.h"
+#include "engine/tqt.h"
 
 
 static const char*	spinner = "-\\|/";
@@ -46,6 +42,7 @@ void	print_usage()
 }
 
 
+#if 0
 static int	quadtree_node_count(int depth)
 // Return the number of nodes in a fully populated quadtree of the specified depth.
 {
@@ -59,6 +56,7 @@ static int	quadtree_node_index(int level, int col, int row)
 {
 	return quadtree_node_count(level) + (row << level) + col;
 }
+#endif // 0
 
 
 struct tqt_info {
@@ -206,7 +204,7 @@ int	main(int argc, char* argv[])
 
 	// Make a null table of contents, and write it to the file.
 	array<Uint32>	toc;
-	toc.resize(quadtree_node_count(tree_depth));
+	toc.resize(tqt::node_count(tree_depth));
 
 	int	toc_start = SDL_RWtell(out);
 	for (int i = 0; i < toc.size(); i++) {
@@ -264,7 +262,7 @@ int	main(int argc, char* argv[])
 			// Update the table of contents with an offset
 			// to the data we're about to write.
 			int	offset = SDL_RWtell(out);
-			int	quadtree_index = quadtree_node_index(tree_depth - 1, col, row);
+			int	quadtree_index = tqt::node_index(tree_depth - 1, col, row);
 			toc[quadtree_index] = offset;
 
 			// Write the jpeg data.
@@ -308,7 +306,7 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 // Returns the tile for the specified node.  As tiles are generated,
 // write offsets into the table of contents.
 {
-	int	qindex = quadtree_node_index(level, col, row);
+	int	qindex = tqt::node_index(level, col, row);
 	int	offset = p->toc[qindex];
 	if (offset) {
 		// Tile already built.  Read it from the file.
@@ -348,7 +346,7 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 		int	offset = SDL_RWtell(p->out);
 		
 		// Update table of contents.
-		p->toc[quadtree_node_index(level, col, row)] = offset;
+		p->toc[qindex] = offset;
 		
 		image::write_jpeg(p->out, tile, 80);
 	}

@@ -28,7 +28,7 @@ maketqt$(EXE_EXT): maketqt.$(OBJ_EXT) $(ENGINE)
 	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)
 
 chunkdemo$(EXE_EXT): chunkdemo.$(OBJ_EXT) chunklod.$(OBJ_EXT) $(ENGINE)
-	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
+	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)
 
 make_engine:
 	cd ../../engine; make
