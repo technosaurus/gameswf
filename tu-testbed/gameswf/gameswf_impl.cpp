@@ -2806,7 +2806,11 @@ namespace gameswf
 			// mouse drag.
 			character::do_mouse_drag();
 
-			m_time_remainder += delta_time;
+			if (m_play_state == PLAY)
+			{
+				m_time_remainder += delta_time;
+			}
+
 			const float	frame_time = 1.0f / m_root->get_frame_rate();
 
 			bool	single_frame_movie = (m_def->get_frame_count() == 1);
@@ -2853,17 +2857,6 @@ namespace gameswf
 				// Perform button actions (????)
 				do_actions();
 
-
-// 				// Update next frame according to actions
-// 				if (m_play_state == STOP)
-// 				{
-// 					m_next_frame = m_current_frame;
-// 					if (m_next_frame >= m_def->get_frame_count())
-// 					{
-// 						m_next_frame = m_def->get_frame_count();
-// 					}
-// 				}
-// 				else
 				if (m_next_frame >= m_def->get_frame_count())	// && m_play_state == PLAY
 				{
   					m_next_frame = 0;

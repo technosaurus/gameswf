@@ -573,7 +573,6 @@ public:
 		set_raw_capacity(new_raw_size);
 	}
 
-
 	// Behaves much like std::pair
 	struct entry
 	{

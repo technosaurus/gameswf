@@ -10,16 +10,9 @@ Productizing
 
 Tasks to make gameswf ready for including in real games.
 
-* ActionScript is not case sensitive (for variable and character
-  names)!  But gameswf is!  Fix gameswf.
-  
-* hooks so that preprocessor and loader can deal with special,
-  host-specific data like vertex buffers and textures in a custom way
-  if desired.
-
-* fix memory leaks, need reference counting
-
 * pick a version number, post a release
+
+* reduce small allocs, flatten data structures
 
 * for data binding, we have:
 
@@ -31,11 +24,27 @@ Tasks to make gameswf ready for including in real games.
   looking up localized text in the game engine's translation table,
   among other things.
 
+* fix/finish precompute_cached_data()
+
+* flags to strip extraneous stuff from a SWF source stream.
+  I.e. remove all bitmap data, font shape outlines, etc.  This is
+  useful for apps that precompile the bitmaps into native formats and
+  hook them up at runtime via get_bitmap_info()->... .  Lets the
+  stripped stream be used for parsing the rest of the movie info,
+  without taking up extra space/bandwidth.
+
+* fontlib support, for explicitly letting the host define global fonts
+  that all SWF's can use
+
+* put a FAQ on the web
 
 General
 =======
 
 * implement host-app driven text rendering functions
+
+* implement some or all of the HTML-like layout tags in dynamic text
+  fields
 
 * sprites as button characters are not working.  (Maybe they are
   now??)
@@ -46,22 +55,13 @@ General
 
   * maybe augment this with array element parsing, and more data types?
 
-  * ability to call ActionScript functions?  Might be the most
-    flexible way to support arbitrary communication needs.
-    Data-binding issues; would this mean exposing as_value in
-    gameswf.h?  Probably.
+  * Should the whole ActionScript API be available to the host?
+    I.e. let C++ host code and ActionScript code call back and forth?
+    Might be really hot for translating slow prototype ActionScripts
+    into C++.  Prototype in Flash on a fast machine, convert the
+    scripts and deliver a blazing fast executable.
 
-	Should the whole ActionScript API be available to the host?
-	I.e. let C++ host code and ActionScript code call back and forth?
-	Might be really hot for translating slow prototype ActionScripts
-	into C++.  Prototype in Flash on a fast machine, convert the
-	scripts and deliver a blazing fast executable.
-
-* DONE gameswf-to-host data transfer:
-
-  * via host-pull, using get_variable()
-
-  * via gameswf-push, using fscommand()
+* Helpers for arbitrary tag-processing 
 
 * Would be good if one of the log options produced a nice usable
   human-readable parsing of the file.  Or even a SSWF equivalent?
@@ -72,7 +72,7 @@ General
   with the wrong size, and it's non-obvious why.
 
 * User request: implement SWF files recursively calling other SWF
-  files.
+  files.  Low priority; there are workarounds.
 
 ActionScript
 ============
@@ -132,6 +132,8 @@ ActionScript
 Renderer
 ========
 
+* fix the few tesselator glitches
+
 * optimize tesselator (not super-high priority, caching works pretty
   well)
 
@@ -155,7 +157,8 @@ Renderer
   Not a super high priority; doesn't seem to be a critical feature for
   most movies.
 
-  Update: designers do use lines.  The circle texture, connected by
+  Update: designers do use lines.  (But Flash MX does have a feature
+  that turns lines into shapes.)  The circle texture, connected by
   polys seems like the way to go.  The interior of acute angles is
   still tricky though.  But it can definitely be done.  Something like
   this:
