@@ -24,7 +24,8 @@ namespace gameswf
 	{
 		edge();
 		edge(float cx, float cy, float ax, float ay);
-		void	emit_curve() const;
+		void	render_curve() const;
+		void	tesselate_curve() const;
 
 	//private:
 		// *quadratic* bezier: point = p0 * t^2 + p1 * 2t(1-t) + p2 * (1-t)^2
@@ -48,6 +49,9 @@ namespace gameswf
 			const array<fill_style>& fill_styles,
 			const array<line_style>& line_styles) const;
 		bool	point_test(float x, float y);
+
+		// Push the path into the tesselator.
+		void	tesselate() const;
 
 	//private:
 		int	m_fill0, m_fill1, m_line;
@@ -86,16 +90,12 @@ namespace gameswf
 
 		void display(const display_info& di, const array<fill_style>& fills) const;
 
+		void	add_triangle(int style, const point& a, const point& b, const point& c);
 	private:
-		struct mesh_info
-		{
-			int	m_fill_index;
-			mesh	m_mesh;
-		};
 
 		int	m_last_frame_rendered;
 		float	m_error_tolerance;
-		array<mesh_info>	m_meshes;
+		array<mesh>	m_meshes;	// One mesh per style.
 	};
 
 

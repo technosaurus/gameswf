@@ -459,8 +459,8 @@ namespace tesselate
 
 		if (dist < s_tolerance)
 		{
-			// Emit edges.
-			add_line_segment(qx, qy);
+			// Emit edge.
+//			add_line_segment(qx, qy);
 			add_line_segment(p2x, p2y);
 		}
 		else

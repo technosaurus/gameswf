@@ -7,9 +7,11 @@
 
 
 #include "gameswf_shape.h"
+
 #include "gameswf_impl.h"
 #include "gameswf_render.h"
 #include "gameswf_stream.h"
+#include "gameswf_tesselate.h"
 
 #include <float.h>
 
@@ -33,10 +35,17 @@ namespace gameswf
 	{
 	}
 
-	void	edge::emit_curve() const
+	void	edge::render_curve() const
 	// Send this segment to the renderer.
 	{
 		gameswf::render::add_curve_segment(m_cx, m_cy, m_ax, m_ay);
+	}
+
+
+	void	edge::tesselate_curve() const
+	// Send this segment to the tesselator.
+	{
+		tesselate::add_curve_segment(m_cx, m_cy, m_ax, m_ay);
 	}
 
 
@@ -116,7 +125,7 @@ namespace gameswf
 		gameswf::render::begin_path(m_ax, m_ay);
 		for (int i = 0; i < m_edges.size(); i++)
 		{
-			m_edges[i].emit_curve();
+			m_edges[i].render_curve();
 		}
 		gameswf::render::end_path();
 	}
@@ -153,6 +162,18 @@ namespace gameswf
 	}
 
 
+	void	path::tesselate() const
+	// Push this path into the tesselator.
+	{
+		tesselate::begin_path(m_fill0, m_fill1, m_line, m_ax, m_ay);
+		for (int i = 0; i < m_edges.size(); i++)
+		{
+			m_edges[i].tesselate_curve();
+		}
+		tesselate::end_path();
+	}
+
+		
 	//
 	// mesh
 	//
@@ -197,7 +218,46 @@ namespace gameswf
 		m_last_frame_rendered(0),
 		m_error_tolerance(error_tolerance)
 	{
-		// ... tesselate
+		struct collect_traps : public tesselate::trapezoid_accepter
+		{
+			mesh_set*	m;	// the mesh_set that receives trapezoids.
+
+			collect_traps(mesh_set* set) : m(set) {}
+
+			// Overrides from trapezoid_accepter
+			virtual void	accept_trapezoid(int style, const tesselate::trapezoid& tr)
+			{
+				// Add the trapezoid to our mesh set.
+				m->add_triangle(
+					style,
+					point(tr.m_lx0, tr.m_y0),
+					point(tr.m_lx1, tr.m_y1),
+					point(tr.m_rx1, tr.m_y1));
+				m->add_triangle(
+					style,
+					point(tr.m_lx0, tr.m_y0),
+					point(tr.m_rx0, tr.m_y0),
+					point(tr.m_rx1, tr.m_y1));
+			}
+
+			virtual void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
+			{
+				// @@ discard for now!  TODO save these as well.
+			}
+		};
+		collect_traps	accepter(this);
+
+		// Push the shape through the tesselator.
+		tesselate::begin_shape(error_tolerance);
+		{
+			{for (int i = 0; i < paths.size(); i++)
+			{
+				paths[i].tesselate();
+			}}
+		}
+		tesselate::end_shape(&accepter);
+
+		// triangles should be collected now into the meshes for each fill style.
 	}
 
 
@@ -223,6 +283,23 @@ namespace gameswf
 		assert(m_error_tolerance > 0);
 
 		// ...
+	}
+
+
+	void	mesh_set::add_triangle(int style, const point& a, const point& b, const point& c)
+	// Add the specified triangle to the mesh associated with the
+	// given fill style.
+	{
+		assert(style >= 0);
+		assert(style < 1000);	// sanity check
+
+		// Expand our mesh list if necessary.
+		if (style >= m_meshes.size())
+		{
+			m_meshes.resize(style + 1);
+		}
+
+		m_meshes[style].add_triangle(a, b, c);
 	}
 
 
