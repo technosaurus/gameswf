@@ -379,7 +379,6 @@ public:
 		} else {
 			if (m_buffer) {
 				m_buffer = (T*) tu_realloc(m_buffer, sizeof(T) * m_buffer_size, sizeof(T) * old_size);
-				memset(m_buffer, 0, sizeof(T) * m_buffer_size);
 			} else {
 				m_buffer = (T*) tu_malloc(sizeof(T) * m_buffer_size);
 			}
