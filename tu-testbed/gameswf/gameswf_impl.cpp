@@ -709,6 +709,11 @@ namespace gameswf
 			return m_movie->get_character(character_id);	// @@ m_def->get_character ??
 		}
 
+		void	get_named_characters(const char* name, array<int>** characters)
+		{
+			m_def->m_named_characters.get(name, characters);
+		}
+
 		void	set_background_color(const rgba& color)
 		{
 			m_background_color = color;
@@ -727,7 +732,11 @@ namespace gameswf
 		float	get_timer() const { return m_timer; }
 
 		void	restart() { m_movie->restart(); }
-		void	advance(float delta_time) { m_movie->advance(delta_time); }
+		void	advance(float delta_time)
+		{
+			m_timer += delta_time;
+			m_movie->advance(delta_time);
+		}
 		void	goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
 
 		void	display()
@@ -2545,6 +2554,14 @@ namespace gameswf
 
 		const array<execute_tag*>&	get_playlist(int frame_number) { return m_playlist[frame_number]; }
 
+// 		/* sprite_definition */
+// 		virtual void	get_named_characters(const char* name, array<int>** characters)
+// 		// This points *characters to an array of character
+// 		// id's, or to NULL.
+// 		{
+// 			m_root->get_named_characters(name, characters);
+// 		}
+
 
 		/* sprite_definition */
 		void	read(stream* in)
@@ -2625,8 +2642,6 @@ namespace gameswf
 		{
 			assert(m_def);
 			assert(m_root);
-
-//			set_id(def->get_id());
 			m_as_environment.set_target(this);
 		}
 
@@ -2685,6 +2700,8 @@ namespace gameswf
 			assert(m_parent == NULL);
 			m_root->set_background_color(color);
 		}
+
+		float	get_timer() const { return m_root->get_timer(); }
 
 		void	restart()
 		{
@@ -3014,11 +3031,8 @@ namespace gameswf
 		// Find the named character in the sprite, and set its
 		// text to the given string.  Return true on success.
 		{
-			return false;
-// @@ TODO
-#if 0
 			array<int>*	ch_array = NULL;
-			m_def->m_movie_def->m_named_characters.get(var_name, &ch_array);
+			m_root->get_named_characters(var_name, &ch_array);
 			if (ch_array)
 			{
 				bool	success = false;
@@ -3040,11 +3054,8 @@ namespace gameswf
 				}
 				return success;
 			}
-			else
-			{
-				return false;
-			}
-#endif // 0
+
+			return false;
 		}
 
 
@@ -3054,7 +3065,32 @@ namespace gameswf
 		// text int the given value.  Return true if we have
 		// the named character; otherwise don't touch *val.
 		{
-			// @@ TODO
+			// @@ I think this is kinda wrong; we should
+			// maybe only search the active display list
+			// for matching character instances?
+
+			array<int>*	ch_array = NULL;
+			m_root->get_named_characters(var_name, &ch_array);
+			if (ch_array)
+			{
+				for (int i = 0; i < ch_array->size(); i++)
+				{
+					int	id = (*ch_array)[i];
+
+					// @@ ACK!  bad inst/def problem here.  movie_impl's need *instances* of text chars...
+					// But then, sprite instances are different!
+					// Need to separate the notion of sprite instance from other instance I guess...
+					character*	ch = m_def->get_character(id);
+					if (ch)
+					{
+						if (ch->get_value(val))
+						{
+							return true;
+						}
+					}
+				}
+			}
+
 			return false;
 		}
 
@@ -3063,6 +3099,211 @@ namespace gameswf
 		// Return the value of the given variable in this environment.
 		{
 			return m_as_environment.get_variable_raw(var_name);
+		}
+
+
+		/* sprite_instance */
+		as_value	get_property(int prop_number)
+		{
+			if (prop_number == 0)
+			{
+				// x coordinate in pixels (not TWIPS!)
+			}
+			else if (prop_number == 1)
+			{
+				// y coord
+			}
+			else if (prop_number == 2)
+			{
+				// x scale in PERCENT!  @@ settable!
+			}
+			else if (prop_number == 3)
+			{
+				// y scale in PERCENT!  @@ settable!
+			}
+			else if (prop_number == 4)
+			{
+				// current frame.  Read only.
+				return as_value(m_current_frame);
+			}
+			else if (prop_number == 5)
+			{
+				// number of frames.  Read only.
+				return as_value(m_def->get_frame_count());
+			}
+			else if (prop_number == 6)
+			{
+				// alpha value in percent.  @@ settable
+			}
+			else if (prop_number == 7)
+			{
+				// visibility; whether object is visible.
+			}
+			else if (prop_number == 8)
+			{
+				// max width of the object (@@ i.e. bounding box width?)  TWIPS or pixels?
+//@@				return as_value(m_def->m_frame_size.height());	// @@ Must apply our display-list scale!
+			}
+			else if (prop_number == 9)
+			{
+				// max height (i.e. bounding box height)  @@ TWIPs or pixels?
+//@@				return as_value(m_def->m_frame_size.height());	// @@ Must apply our display-list scale!
+			}
+			else if (prop_number == 10)
+			{
+				// rotation angle in degrees
+			}
+			else if (prop_number == 11)
+			{
+				// full path to this object!
+//				return as_value("_level0");
+			}
+			else if (prop_number == 12)
+			{
+				// number of frames already loaded.
+				// We don't do incremental streaming.
+				return as_value(m_def->get_frame_count());
+			}
+			else if (prop_number == 13)
+			{
+				// the name of this object
+			}
+			else if (prop_number == 14)
+			{
+				// most recent drop target (!)  Read only.
+			}
+			else if (prop_number == 15)
+			{
+				// the URL linked to this object  Read only.
+				return as_value("gameswf");	// @@ should use file name or something?
+			}
+			else if (prop_number == 16)
+			{
+				// whether we're in high-quality mode
+				return as_value(1);
+			}
+			else if (prop_number == 17)
+			{
+				// whether focus rectangle is visible.
+			}
+			else if (prop_number == 18)
+			{
+				// sound buffer time (?)
+			}
+			else if (prop_number == 19)
+			{
+				// what the quality is (0-2)
+				return as_value(2);
+			}
+			else if (prop_number == 20)
+			{
+				// mouse x.  Read only.
+				return as_value(m_root->m_mouse_x);
+			}
+			else if (prop_number == 21)
+			{
+				// mouse y.  Read only.
+				return as_value(m_root->m_mouse_y);
+			}
+			// else if (prop_number == 16384) { ...?; }
+
+			return as_value(as_value::UNDEFINED);
+		}
+
+
+		/* sprite_instance */
+		virtual void	set_property(int prop_number, const as_value& new_val)
+		{
+			if (prop_number == 0)
+			{
+				// x coordinate in pixels (not TWIPS!)
+			}
+			else if (prop_number == 1)
+			{
+				// y coord
+			}
+			else if (prop_number == 2)
+			{
+				// x scale in PERCENT!  @@ settable!
+			}
+			else if (prop_number == 3)
+			{
+				// y scale in PERCENT!
+			}
+			else if (prop_number == 4)
+			{
+				// current frame.  Read only.
+			}
+			else if (prop_number == 5)
+			{
+				// number of frames.  Read only.
+			}
+			else if (prop_number == 6)
+			{
+				// alpha value in percent.
+			}
+			else if (prop_number == 7)
+			{
+				// visibility; whether object is visible.
+			}
+			else if (prop_number == 8)
+			{
+				// max width of the object (@@ i.e. bounding box width?)  TWIPS or pixels?
+			}
+			else if (prop_number == 9)
+			{
+				// max height (i.e. bounding box height)  @@ TWIPs or pixels?
+			}
+			else if (prop_number == 10)
+			{
+				// rotation angle in degrees
+			}
+			else if (prop_number == 11)
+			{
+				// full path to this object!
+			}
+			else if (prop_number == 12)
+			{
+				// number of frames already loaded.
+				// We don't do incremental streaming.
+			}
+			else if (prop_number == 13)
+			{
+				// the name of this object
+			}
+			else if (prop_number == 14)
+			{
+				// most recent drop target (!)  Read only.
+			}
+			else if (prop_number == 15)
+			{
+				// the URL linked to this object  Read only.
+			}
+			else if (prop_number == 16)
+			{
+				// whether we're in high-quality mode
+			}
+			else if (prop_number == 17)
+			{
+				// whether focus rectangle is visible.
+			}
+			else if (prop_number == 18)
+			{
+				// sound buffer time (?)
+			}
+			else if (prop_number == 19)
+			{
+				// what the quality is (0-2)
+			}
+			else if (prop_number == 20)
+			{
+				// mouse x.  Read only.
+			}
+			else if (prop_number == 21)
+			{
+				// mouse y.  Read only.
+			}
+			// else if (prop_number == 16384) { ...?; }
 		}
 
 
@@ -3097,14 +3338,15 @@ namespace gameswf
 			}
 			else
 			{
-// @@ fix this!
-// 				// @@ this array stuff can't be right, can it?
-// 				array<int>*	ch_array = NULL;
-// 				m_def->m_movie_def->m_named_characters.get(var_name, &ch_array);
-// 				if (ch_array && ch_array->size() > 0)
-// 				{
-// 					return (*ch_array)[0];
-// 				}
+				// @@ this array stuff can't be right,
+				// can it?  Probably we need to search
+				// the active display list instead?
+				array<int>*	ch_array = NULL;
+				m_root->get_named_characters(name, &ch_array);
+				if (ch_array && ch_array->size() > 0)
+				{
+					return get_character((*ch_array)[0]);
+				}
 			}
 
 			return NULL;
@@ -3166,7 +3408,7 @@ namespace gameswf
 //		movie_impl*	mi = static_cast<movie_impl*>(m);
 //		assert(mi);
 
-		sprite_definition*	ch = new sprite_definition(m);
+		sprite_definition*	ch = new sprite_definition(m);	// @@ combine sprite_definition with movie_def_impl
 		ch->set_id(character_id);
 		ch->read(in);
 
