@@ -35,6 +35,7 @@ void	print_usage()
 		"\n"
 		"  -h          Print this info.\n"
 		"  -s <factor> Scale the movie up/down by the specified factor\n"
+		"  -c          Turn SDL SEGFAULT trapping off\n"
 		"  -a          Turn antialiasing on/off.  (obsolete)\n"
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
@@ -178,6 +179,7 @@ int	main(int argc, char *argv[])
 	float	exit_timeout = 0;
 	bool	do_render = true;
 	bool	do_loop = true;
+	bool	sdl_abort = true;
 
 	for (int arg = 1; arg < argc; arg++)
 	{
@@ -190,6 +192,10 @@ int	main(int argc, char *argv[])
 				// Help.
 				print_usage();
 				exit(1);
+			}
+			if (argv[arg][1] == 'c')
+			{
+				sdl_abort = false;
 			}
 			else if (argv[arg][1] == 's')
 			{
@@ -326,11 +332,22 @@ int	main(int argc, char *argv[])
 	if (do_render)
 	{
 		// Initialize the SDL subsystems we're using.
-		if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM*/))
-		{
-			fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
-			exit(1);
+		if (sdl_abort) {
+			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM*/))
+			{
+				fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
+					exit(1);
+			}
+		} else {
+			fprintf(stderr, "warning: SDL won't trap core dumps \n");
+			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE ))
+			{
+				fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
+					exit(1);
+			}
 		}
+		
+		
 		atexit(SDL_Quit);
 
 		SDL_EnableKeyRepeat(250, 33);

@@ -32,7 +32,7 @@ XMLNode::XMLNode()
 
 XMLNode::~XMLNode()
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
 }
 
 
@@ -52,13 +52,13 @@ XML::XML(tu_string xml_in)
 
 XML::XML(struct node *childNode)
 {
-  log_msg("FIXME: %s\n", __PRETTY_FUNCTION__);  
+  log_msg("FIXME: %s\n", __FUNCTION__);  
 }
 
 
 XML::~XML()
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
 }
 
 // Dispatch event handler(s), if any.
@@ -413,14 +413,14 @@ XML::load(const char *filespec)
 bool
 XML::onLoad()
 {
-  log_msg("%s: FIXME: onLoad Default event handler\n", __PRETTY_FUNCTION__);
+  log_msg("%s: FIXME: onLoad Default event handler\n", __FUNCTION__);
 
   return(_loaded);
 }
 
 XMLNode *
 XML::operator [] (int x) {
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
 
   return _nodes->_children[x];
 }
@@ -507,7 +507,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
   xmlnode_as_object *xmlnodeE_obj;
   xmlnode_as_object *xmlnodeF_obj;
   
-  //log_msg("%s:\n",  __PRETTY_FUNCTION__);
+  //log_msg("%s:\n",  __FUNCTION__);
   
   if (xml == 0) {
     log_error("No XML object!\n");
@@ -708,7 +708,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   struct stat   stats;
 
 
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
   
   xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
   xmlnode_as_object*	node = new xmlnode_as_object;
@@ -740,7 +740,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   //const char *name = ptr->obj.nodeNameGet();
 
   if (ptr->obj.hasChildNodes() == false) {
-    log_error("%s: No child nodes!\n", __PRETTY_FUNCTION__);
+    log_error("%s: No child nodes!\n", __FUNCTION__);
   }
   
   array<XMLNode *> childnodes = ptr->obj.childNodes();
@@ -797,7 +797,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
 void
 xml_onload(as_value* result, as_object_interface* this_ptr, as_environment* env)
 {
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
     
   as_value	method;
   as_value      val;
@@ -848,7 +848,7 @@ xml_onload(as_value* result, as_object_interface* this_ptr, as_environment* env)
 void
 xml_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env)
 {
-  // log_msg("%s:\n", __PRETTY_FUNCTION__);
+  // log_msg("%s:\n", __FUNCTION__);
     
   as_value	method;
   as_value	val;
@@ -889,64 +889,32 @@ xml_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env)
 void
 xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 {
-  int i;
-  as_value inum;
-  xml_as_object*	xml_obj = new xml_as_object;
-  xmlnode_as_object*	xmlfirstnode_obj = new xmlnode_as_object;
-  xmlnode_as_object*	xmlchildnode_obj = new xmlnode_as_object;
-  //xml_as_object*	ptr = (xml_as_object *)this_ptr;
+  int           i;
+  as_value      inum;
+  xml_as_object *xml_obj;
   
-  tu_string datain = env->bottom(first_arg).to_string();
-
-  log_msg("%s: args=%d, %s\n", __PRETTY_FUNCTION__, nargs, datain.c_str());
-  //env->set_variable("datain", datain.c_str(), 0);
-  if (datain.size() > 0) {
-    xml_obj->obj.parseXML(datain);
-    // log_msg("Parsed %d children\n", xml_obj->obj.length());
+  log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
+  
+  if (nargs > 0) {
+    if (env->top(0).get_type() == as_value::STRING) {
+      xml_obj = new xml_as_object;
+      //log_msg("\tCreated New XML object at 0x%X\n", (unsigned int)xml_obj);
+      tu_string datain = env->top(0).to_tu_string();
+      xml_obj->obj.parseXML(datain);
+      xml_obj->obj.setupStackFrames(xml_obj, env);
+    } else {
+      xmlnode_as_object*	xmlnode_obj = (xmlnode_as_object*)env->top(0).to_object();      
+      //log_msg("\tCloned the XMLNode object at 0x%X\n", (unsigned int)xml_obj);
+      result->set(xmlnode_obj);
+      return;
+    }
   } else {
-    log_error("No data to parse!\n");
-    return;
-  }
-
-  XMLNode *xmlnodes = xml_obj->obj.firstChild();  
-  
-  //xml_obj->obj.reset_stack_depth();
-  //xml_obj->set_member("load", xml_load);
-  // env->set_variable("childNodes", xml_obj, 0);
-  xml_obj->set_member("firstChild", xmlfirstnode_obj);
-  xml_obj->set_member("childNodes", xmlchildnode_obj);
-  xmlchildnode_obj->set_member("length", xml_obj->obj.length());
-
-  // env->push(xml_obj);
-  
-  //xmlnode_obj->set_member("0", xmlnodes->_children[0]->nodeName().c_str());
-  for (i=0; i < xmlnodes->_children.size(); i++) {
-    inum = i;
-    xmlchildnode_obj->set_member(inum.to_string(),  xmlnodes->_children[i]->_attributes[0]->_name.c_str());
-    // xmlchildnode_obj->set_member(inum.to_string(), &ascript_test);
-  }
-
-  //periodic_events.set_event_handler(xml_obj);
-
-  // Specify the name for the top node
-  env->set_variable("nodeName", xml_obj->obj.nodeNameGet(), 0);
-#if 1
-  xmlattr_as_object*	attr_obj = new xmlattr_as_object;
-  for (i=0; i<xmlnodes->_attributes.size(); i++) {
-    attr_obj->set_member(xmlnodes->_attributes[i]->_name, xmlnodes->_attributes[i]->_value);
+    xml_obj = new xml_as_object;
+    xml_obj->set_member("load", &xml_load);
+    xml_obj->set_member("loaded", &xml_loaded);
   }
   
-  //env->set_variable("attributes", "PRODUCT='arq'", 0);
-  env->set_variable("attributes", attr_obj, 0);
-#endif
-
-  // xmlnodes->set_member("0", xmlnodes->obj.nodeName().c_str());
-  
-  //xml_obj->set_member("0", xmlnodes.nodeNameGet());
-  //xml_obj->obj.reset_stack_depth();
-  //xml_obj->obj.change_stack_frame(0, xml_obj, env);
-
-  result->set(xml_obj); 
+  result->set(xml_obj);  
 }
 
 //
@@ -963,7 +931,7 @@ xml_loaded(as_value* result, as_object_interface* this_ptr, as_environment* env,
   as_value	method;
   as_value	val;
 
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
     
   xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
   assert(ptr);
@@ -980,7 +948,7 @@ xml_firstchild(as_value* result, as_object_interface* this_ptr, as_environment* 
   as_value	method;
   as_value	val;
 
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
     
   xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
   assert(ptr);
@@ -996,7 +964,7 @@ xml_childnodes(as_value* result, as_object_interface* this_ptr, as_environment* 
   as_value	method;
   as_value	val;
 
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
     
   // xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
   // assert(ptr);
@@ -1009,7 +977,7 @@ xml_nodename(as_value* result, as_object_interface* this_ptr, as_environment* en
 {
   as_value	method;
 
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
     
   // xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
   // assert(ptr);
@@ -1022,7 +990,7 @@ void xml_next_stack_depth(gameswf::as_value* result, gameswf::as_object_interfac
   as_value	method;
   as_value	val;
 
-  log_msg("%s:\n", __PRETTY_FUNCTION__);
+  log_msg("%s:\n", __FUNCTION__);
   array<with_stack_entry> with_stack;
     
   // xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;

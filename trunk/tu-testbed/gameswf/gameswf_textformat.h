@@ -47,7 +47,8 @@ public:
   void setTextFormat (int start, int end, text_format &format);
 
   int getTextExtant();
-
+  text_format *operator = (text_format &format);
+  
  private:
   bool	_underline;		// A Boolean value that indicates whether the text is underlined.
   bool	_bold;			// A Boolean value that indicates whether the text is boldface.

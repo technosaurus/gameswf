@@ -41,7 +41,7 @@ const int INBUF = 7000;
 
 XMLSocket::XMLSocket()
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
   _data = false;
   _xmldata = false;
   _closed = false;
@@ -53,7 +53,7 @@ XMLSocket::XMLSocket()
 
 XMLSocket::~XMLSocket()
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
 }
 
 bool
@@ -73,7 +73,7 @@ XMLSocket::connect(const char *host, int port)
     return false;
   }
 
-  log_msg("%s: to host %s at port %d\n", __PRETTY_FUNCTION__, host, port);
+  log_msg("%s: to host %s at port %d\n", __FUNCTION__, host, port);
   
   memset(&sock_in, 0, sizeof(struct sockaddr_in));
   memset(&thishostname, 0, MAXHOSTNAMELEN);
@@ -175,7 +175,7 @@ XMLSocket::connect(const char *host, int port)
 void
 XMLSocket::close()
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
   // Since the return code from close() doesn't get used by Shockwave,
   // we don't care either.
   if (_sockfd > 0) {
@@ -187,19 +187,19 @@ XMLSocket::close()
 bool
 XMLSocket::anydata(tu_string &data)
 {
-  //printf("%s: \n", __PRETTY_FUNCTION__);
+  //printf("%s: \n", __FUNCTION__);
   anydata(_sockfd, data);
 }
 
 bool XMLSocket::processingData()
 {
-  //printf("%s: processing flags is is %d\n", __PRETTY_FUNCTION__, _processing);
+  //printf("%s: processing flags is is %d\n", __FUNCTION__, _processing);
   return _processing;
 }
 
 void XMLSocket::processing(bool x)
 {
-  //printf("%s: set processing flag to %d\n", __PRETTY_FUNCTION__, x);
+  //printf("%s: set processing flag to %d\n", __FUNCTION__, x);
   _processing = x;
 }
 
@@ -216,7 +216,7 @@ XMLSocket::anydata(int fd, tu_string &data)
   bool                  ifdata = false;
   static tu_string             remainder;
 
-  //log_msg("%s: \n", __PRETTY_FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
 
   if (fd <= 0) {
     return false;
@@ -310,7 +310,7 @@ XMLSocket::anydata(int fd, tu_string &data)
 bool
 XMLSocket::send(tu_string str)
 {
-  //log_msg("%s: \n", __PRETTY_FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
   str += tu_string( "\0", 1);
   int ret = write(_sockfd, str.c_str(), str.size());
 
@@ -328,25 +328,25 @@ XMLSocket::send(tu_string str)
 void
 XMLSocket::onClose(tu_string str)
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
 }
 
 void
 XMLSocket::onConnect(tu_string str)
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
 }
 
 void
 XMLSocket::onData(tu_string str)
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
 }
 
 void
 XMLSocket::onXML(tu_string str)
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: \n", __FUNCTION__);
 }
 
 void
@@ -363,7 +363,7 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
     return;
   }
   
-  log_msg("%s: nargs=%d\n", __PRETTY_FUNCTION__, nargs);
+  log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
   assert(ptr);
   const tu_string host = env->bottom(first_arg).to_string();
@@ -427,7 +427,7 @@ xmlsocket_send(gameswf::as_value* result, gameswf::as_object_interface* this_ptr
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
   assert(ptr);
   const tu_string object = env->bottom(first_arg).to_string();
-  //  log_msg("%s: host=%s, port=%g\n", __PRETTY_FUNCTION__, host, port);
+  //  log_msg("%s: host=%s, port=%g\n", __FUNCTION__, host, port);
   result->set(ptr->obj.send(object));
 }
 
@@ -448,14 +448,61 @@ void
 xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
   // round argument to nearest int.
-  log_msg("%s: args=%d\n", __PRETTY_FUNCTION__, nargs);
+  log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
+  
+  as_object*	xmlsock_obj = new xmlsocket_as_object;
+  //log_msg("\tCreated New XMLSocket object at 0x%X\n", (unsigned int)xmlsock_obj);
+  xmlsock_obj->set_member("connect", &xmlsocket_connect);
+  xmlsock_obj->set_member("send", &xmlsocket_send);
+  xmlsock_obj->set_member("close", &xmlsocket_close);
+  xmlsock_obj->set_member("Connected", true);
+  // swf_event*	ev = new swf_event;
+  // m_event_handlers.push_back(ev);
+  // Setup event handlers
+#if 0
+  xmlsock_obj->set_event_handler(event_id::SOCK_DATA,
+                                 (as_c_function_ptr)&xmlsocket_event_ondata);
+  xmlsock_obj->set_event_handler(event_id::SOCK_CLOSE,
+                                 (as_c_function_ptr)&xmlsocket_event_close);
+  // 							xmlsock_obj->set_event_handler(event_id::SOCK_CONNECT,
+  // 									       (as_c_function_ptr)&xmlsocket_event_connect);
+  xmlsock_obj->set_event_handler(event_id::SOCK_XML,
+                                 (as_c_function_ptr)&xmlsocket_event_xml);
+#endif
+  //periodic_events.set_event_handler(xmlsock_obj);
+  
+  
+#if 1
+  as_c_function_ptr int_handler =
+    (as_c_function_ptr)&timer_setinterval;
+  
+  env->set_member("setInterval", int_handler);
+  as_c_function_ptr clr_handler =
+    (as_c_function_ptr)&timer_clearinterval;
+  
+  env->set_member("clearInterval", clr_handler);
+  //env->set_variable("setInterval", int_handler, 0);
+  //xmlsock_obj->set_event_handler(event_id::TIMER,
+  //       (as_c_function_ptr)&timer_expire);
+#if 0
+  Timer *timer = new Timer;
+  as_c_function_ptr ondata_handler =
+    (as_c_function_ptr)&xmlsocket_event_ondata;
+  timer->setInterval(ondata_handler, 10);
+  timer->setObject(xmlsock_obj);
+  current_movie->add_interval_timer(timer);
+#endif
+  
+  result->set(xmlsock_obj);
+  
+#endif
 }
 
 
 void
 xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 {
-  //log_msg("%s: nargs is %d\n", __PRETTY_FUNCTION__, nargs);
+  //log_msg("%s: nargs is %d\n", __FUNCTION__, nargs);
     
   as_value	method;
   as_value	val;
@@ -542,7 +589,7 @@ xmlsocket_event_connect(as_value* result, as_object_interface* this_ptr, as_envi
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
   assert(ptr);
 
-  log_msg("%s: connected = %d\n", __PRETTY_FUNCTION__, ptr->obj.connected());
+  log_msg("%s: connected = %d\n", __FUNCTION__, ptr->obj.connected());
   if ((ptr->obj.connected()) && (first)) {
     first = false;
     //env->set_variable("success", true, 0);

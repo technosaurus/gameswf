@@ -76,7 +76,7 @@ public:
 
   XMLNode *operator [] (int x)
   {
-    gameswf::log_msg("%s: get element %d\n", __PRETTY_FUNCTION__, x);
+    gameswf::log_msg("%s: get element %d\n", __FUNCTION__, x);
     
     return _children[x];
   }
@@ -221,7 +221,7 @@ class XML
 #if 0
   XMLNode *operator = (XMLNode &node)
   {
-    gameswf::log_msg("%s: copy element %s\n", __PRETTY_FUNCTION__, node._name.c_str());
+    gameswf::log_msg("%s: copy element %s\n", __FUNCTION__, node._name.c_str());
     _nodes = node;
   }
 
