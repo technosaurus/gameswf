@@ -53,7 +53,7 @@ int	main(int argc, char* argv[])
 struct heightfield_elem {
 	float	y;
 	float	error;
-private:	Sint8	activation_level;
+	Sint8	activation_level;
 public:
 
 	heightfield_elem() { y = 0; clear(); }
@@ -300,6 +300,81 @@ void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int r
 }
 
 
+const float	SQRT_2 = sqrtf( 2 );
+
+
+float	height_query( const heightfield& hf, int level, int x, int z, int ax, int az, int rx, int rz, int lx, int lz )
+// Returns the height of the query point (x,z) within the triangle (a, r, l),
+// as tesselated to the specified LOD.
+{
+	// If the query is on one of our verts, return that vert's height.
+	if ( ( x == ax && z == az )
+		 || ( x == rx && z == rz )
+		 || ( x == lx && z == lz ) )
+	{
+		return hf.get_elem( x, z ).y;
+	}
+
+	// Compute the coordinates of this triangle's base vertex.
+	int	dx = lx - rx;
+	int	dz = lz - rz;
+	if (iabs(dx) <= 1 && iabs(dz) <= 1) {
+		// We've reached the base level.  This is an error condition; we should
+		// have gotten a successful test earlier.
+
+		// assert(0);
+		printf( "Error: height_query hit base of heightfield.\n" );
+
+		return hf.get_elem( ax, az ).y;
+	}
+
+	// base vert is midway between left and right verts.
+	int	bx = rx + (dx >> 1);
+	int	bz = rz + (dz >> 1);
+
+	// compute the length of a side edge.
+	float	edge_length_squared = ( dx * dx + dz * dz ) / 2.f;
+
+	float	sr, sl;	// barycentric coords w/r/t the right and left edges.
+	sr = ( ( x - ax ) * ( rx - ax ) + ( z - az ) * (rz - az ) ) / edge_length_squared;
+	sl = ( ( x - ax ) * ( lx - ax ) + ( z - az ) * (lz - az ) ) / edge_length_squared;
+
+	int	base_vert_level = hf.get_elem( bx, bz ).get_activation_level();
+	if ( base_vert_level >= level ){
+		// The mesh is more tesselated at the desired LOD.  Recurse.
+		if ( sr >= sl ) {
+			// Query is in right child triangle.
+			return height_query( hf, level, x, z, bx, bz, ax, az, rx, rz);	// base, apex, right
+		} else {
+			// Query is in left child triangle.
+			return height_query( hf, level, x, z, bx, bz, lx, lz, ax, az);	// base, left, apex
+		}
+	}
+
+	float	ay = hf.get_elem( ax, az ).y;
+	float	dr = hf.get_elem( rx, rz ).y - ay;
+	float	dl = hf.get_elem( lx, lz ).y - ay;
+
+	// This triangle is as far as the desired LOD goes.  Compute the
+	// query's height on the triangle.
+	return ay + sl * dl + sr * dr;
+}
+
+
+float	get_height_at_LOD( const heightfield& hf, int level, int x, int z )
+// Returns the height of the mesh as simplified to the specified level
+// of detail.
+{
+	if ( z > x ) {
+		// Query in SW quadrant.
+		return height_query( hf, level, x, z, 0, hf.size-1, hf.size-1, hf.size-1, 0, 0);	// sw half of the square
+
+	} else {	// query in NW quadrant
+		return height_query( hf, level, x, z, hf.size-1, 0, 0, 0, hf.size-1, hf.size-1);	// ne half of the square
+	}
+}
+
+
 void	propagate_activation_level(heightfield& hf, int cx, int cz, int level, int target_level)
 // Does a quadtree descent through the heightfield, in the square with
 // center at (cx, cz) and size of (2 ^ (level + 1) + 1).  Descends
@@ -428,7 +503,7 @@ namespace mesh {
 	void	clear();
 	void	add_triangle(int ax, int az, int bx, int bz, int cx, int cz);
 	void	add_morph_vertex(int x, int z);
-	void	write(SDL_RWops* rw, const heightfield& hf);
+	void	write(SDL_RWops* rw, const heightfield& hf, int activation_level);
 };
 
 
@@ -485,7 +560,7 @@ void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_
 	printf("chunk: (%d, %d) size = %d\n", x0, z0, size);
 
 	// write out the mesh data.
-	mesh::write(rw, hf);
+	mesh::write(rw, hf, level);
 
 	// recurse to child regions, to generate child chunks.
 	if (level > 0) {
@@ -588,7 +663,7 @@ namespace mesh {
 	}
 
 
-	void	write(SDL_RWops* rw, const heightfield& hf)
+	void	write(SDL_RWops* rw, const heightfield& hf, int level)
 	{
 		// Write vertices.
 		SDL_WriteLE16(rw, vertices.size());
@@ -612,11 +687,14 @@ namespace mesh {
 			for (vector<int>::iterator it = morph_vertices.begin(); it != morph_vertices.end(); ++it) {
 				int	index = *it;
 				SDL_WriteLE16(rw, index);	// vert index.
+
+				// TODO: this query needs to return the real height of the vert, and
+				// the height as represented at a specific LOD level.
+				// Could query parent mesh, instead of querying heightfield?
 				const heightfield_elem&	e = hf.get_elem(vertices[index].x, vertices[index].z);
-				WriteFloat32(rw, e.y - e.error);	// y value of bare mesh.
-				WriteFloat32(rw, e.error);	// delta, to get to true y value.
-				// !!! above should actually be y value of lower LOD parent mesh at this x,z !!!
-				// !!! should query parent chunk for this height !!!
+				float	lerped_height = get_height_at_LOD( hf, level + 1, vertices[index].x, vertices[index].z );
+				WriteFloat32(rw, lerped_height /* e.y - e.error */);	// y value of parent mesh.
+				WriteFloat32(rw, e.y - lerped_height /* e.error */);	// delta, to get to true y value.
 			}
 		}
 

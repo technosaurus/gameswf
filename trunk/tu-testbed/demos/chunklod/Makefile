@@ -1,21 +1,17 @@
 # Makefile for chunklod programs
 
-SDL_CFLAGS := $(shell sdl-config --cflags)
-SDL_LDFLAGS := $(shell sdl-config --libs)
 
-CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -g
-LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) -g
-# -lstdc++
+include ../../config
 
-.cpp.o :
-	g++ -c $^ $(CFLAGS)
+INCLUDE_DIRS := $(ENGINE_INCLUDE) -ISDL
 
-all: heightfield_chunker chunkdemo
 
-heightfield_chunker: heightfield_chunker.o
-	g++ -o $@ $@.o $(LDFLAGS)
+all: heightfield_chunker.exe chunkdemo.exe
 
-CHUNKDEMO_OBJS = chunkdemo.o chunklod.o geometry.o cull.o
+heightfield_chunker.exe: heightfield_chunker.obj
+	$(CC) -o $@ heightfield_chunker.obj SDL.lib
 
-chunkdemo: $(CHUNKDEMO_OBJS)
-	g++ -o $@ $(CHUNKDEMO_OBJS) $(LDFLAGS)
+CHUNKDEMO_OBJS = chunkdemo.obj chunklod.obj
+
+chunkdemo.exe: $(CHUNKDEMO_OBJS) $(ENGINE)
+	$(CC) -o $@ $(CHUNKDEMO_OBJS) $(ENGINE) $(LDFLAGS) SDL.lib $(ENGINE)
