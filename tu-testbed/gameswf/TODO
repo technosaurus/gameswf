@@ -89,11 +89,5 @@ It's horribly slow right now, and has some glitches :(
 
 * real lines
 
-  Approach: within a path that has a line style, save the coords that
-  come in and keep them in line-strip order.  Then, at the end of
-  end_shape(), trace them out directly, including rounded edges.
-
-  Better (?): generate an outline from the line definition.
-
-  Real rounded lines actually seem trickier the more I think about
-  them.
+  I think the way to handle this is to take advantage of a (mipmapped)
+  circle texture, say 16x16, and actually draw rectangles.

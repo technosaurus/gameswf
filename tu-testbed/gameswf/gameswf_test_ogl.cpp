@@ -19,6 +19,7 @@
 
 
 static float	s_scale = 1.0f;
+static bool	s_antialiased = false;
 
 
 #undef main	// SDL wackiness
@@ -47,6 +48,21 @@ int	main(int argc, char *argv[])
 					exit(1);
 				}
 			}
+			else if (argv[arg][1] == 'a')
+			{
+				// Set antialiasing on or off.
+				arg++;
+				if (arg < argc)
+				{
+					s_antialiased = atoi(argv[arg]) ? true : false;
+				}
+				else
+				{
+					printf("-a arg must be followed by 0 or 1 to disable/enable antialiasing\n");
+					// print_usage();
+					exit(1);
+				}
+			}
 		}
 		else
 		{
@@ -67,6 +83,8 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	gameswf::set_pixel_scale(s_scale);
+	gameswf::set_antialiased(s_antialiased);
 	gameswf::movie_interface*	m = gameswf::create_movie(in);
 
 	// Initialize the SDL subsystems we're using.
