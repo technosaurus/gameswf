@@ -1558,10 +1558,12 @@ namespace gameswf
 	{
 		assert(tag_type == 8);
 
+#if TU_CONFIG_LINK_TO_JPEGLIB
 		jpeg::input*	j_in = jpeg::input::create_swf_jpeg2_header_only(in->get_underlying_stream());
 		assert(j_in);
 
 		m->set_jpeg_loader(j_in);
+#endif // TU_CONFIG_LINK_TO_JPEGLIB
 	}
 
 
@@ -1576,22 +1578,28 @@ namespace gameswf
 		//
 		// Read the image data.
 		//
-		
-		jpeg::input*	j_in = m->get_jpeg_loader();
-		assert(j_in);
-		j_in->discard_partial_buffer();
-
 		bitmap_info*	bi = NULL;
+
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
+#if TU_CONFIG_LINK_TO_JPEGLIB
+			jpeg::input*	j_in = m->get_jpeg_loader();
+			assert(j_in);
+			j_in->discard_partial_buffer();
+
 			image::rgb*	im = image::read_swf_jpeg2_with_tables(j_in);
 			bi = render::create_bitmap_info_rgb(im);
 			delete im;
+#else
+			log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
+			bi = render::create_bitmap_info_empty();
+#endif
 		}
 		else
 		{
 			bi = render::create_bitmap_info_empty();
 		}
+
 		assert(bi->get_ref_count() == 0);
 
 		bitmap_character*	ch = new bitmap_character(bi);
@@ -1613,16 +1621,23 @@ namespace gameswf
 		//
 		
 		bitmap_info*	bi = NULL;
+
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
+#if TU_CONFIG_LINK_TO_JPEGLIB
 			image::rgb* im = image::read_swf_jpeg2(in->get_underlying_stream());
 			bi = render::create_bitmap_info_rgb(im);
 			delete im;
+#else
+			log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
+			bi = render::create_bitmap_info_empty();
+#endif
 		}
 		else
 		{
 			bi = render::create_bitmap_info_empty();
 		}
+
 		assert(bi->get_ref_count() == 0);
 
 		bitmap_character*	ch = new bitmap_character(bi);
@@ -1697,8 +1712,10 @@ namespace gameswf
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
 		bitmap_info*	bi = NULL;
+
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
+#if TU_CONFIG_LINK_TO_JPEGLIB
 			//
 			// Read the image data.
 			//
@@ -1724,6 +1741,11 @@ namespace gameswf
 			bi = render::create_bitmap_info_rgba(im);
 
 			delete im;
+#else
+			log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
+			bi = render::create_bitmap_info_empty();
+#endif
+
 		}
 		else
 		{
