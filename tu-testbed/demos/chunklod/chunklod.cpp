@@ -20,6 +20,7 @@
 #include <engine/ogl.h>
 #include <engine/utility.h>
 #include <engine/tqt.h>
+#include "SDL/SDL_thread.h"
 
 #include "chunklod.h"
 
@@ -29,29 +30,7 @@
 #endif // M_PI
 
 
-float	morph_curve(float f)
-// Given a value from 0 to 1 that represents the progress of a chunk
-// from its minimum view distance to its maximum view distance, return
-// a morph value from 0 to 1 that determines how much to morph the
-// verts.
-//
-// A function with flat sections near 0 and 1 may help avoid popping
-// when chunks switch LODs.  Such popping is only an issue under some
-// more extreme parameters of allowed pixel error and chunk size.
-// Need to analyze this further to understand the conditions better.
-//
-// Alternatively, a time-based morph might work.  Or a morph
-// computation that looks around in the tree to make sure it
-// distributes the morph range properly around splits.  Needs some
-// thought...
-{
-//	return fclamp((f - 0.5f) * 2 + 0.5f, 0, 1);
-	return f;
-}
-
-
 static ogl::vertex_stream*	s_stream = NULL;
-//static SDL_RWops*	s_datafile = NULL;
 
 
 static float	s_vertical_scale = 1.0;
@@ -108,56 +87,6 @@ struct vertex_info {
 		}
 	}
 };
-
-
-#if 0
-
-
-enum direction {
-	EAST = 0,
-	NORTH,
-	WEST,
-	SOUTH
-};
-
-
-
-struct lod_edge {
-	int	ribbon_index_count;
-	Uint16*	ribbon_indices;
-
-	int	lo_vertex_count;
-	int	hi_vertex_count[2];
-	vertex_info::vertex*	edge_verts;
-
-	void	read(SDL_RWops* in);
-
-	// @@ constructor, destructor
-};
-
-
-void	lod_edge::read(SDL_RWops* in)
-// Initialize this edge structure from the specified stream.
-{
-	ribbon_index_count = SDL_ReadLE16(in);
-	assert(ribbon_index_count % 3 == 0);	// this is a triangle list; should be 3n indices.
-	ribbon_indices = new Uint16[ribbon_index_count];
-	{for (int i = 0; i < ribbon_index_count; i++) {
-		ribbon_indices[i] = SDL_ReadLE16(in);
-	}}
-
-	// Read the vertex info.
-	lo_vertex_count = SDL_ReadLE16(in);
-	hi_vertex_count[0] = SDL_ReadLE16(in);
-	hi_vertex_count[1] = SDL_ReadLE16(in);
-	int	total_verts = lo_vertex_count + hi_vertex_count[0] + hi_vertex_count[1];
-	edge_verts = new vertex_info::vertex[total_verts];
-	{for (int i = 0; i < total_verts; i++) {
-		edge_verts[i].read(in);
-	}}
-}
-
-#endif // 0
 
 
 struct lod_chunk;
@@ -237,11 +166,11 @@ struct lod_chunk {
 	}
 
 	void	clear();
-	void	update(lod_chunk_tree* tree, const tqt* texture_quadtree, const vec3& viewpoint);
+	void	update(lod_chunk_tree* tree, const vec3& viewpoint);
 
 	void	do_split(lod_chunk_tree* tree, const vec3& viewpoint);
 	bool	can_split(lod_chunk_tree* tree);	// return true if this chunk can split.  Also, request the necessary data for future, if not.
-	void	load_data(SDL_RWops* src, const tqt* texture_quadtree);
+//	void	load_data(SDL_RWops* src, const tqt* texture_quadtree);
 	void	unload_data();
 
 	void	warm_up_data(lod_chunk_tree* tree, float priority);
@@ -291,15 +220,14 @@ public:
 	chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src);	// @@ should make tqt* a parameter.
 	~chunk_tree_loader();
 
-	void	sync_loader_thread(const tqt* texture_quadtree);	// called by lod_chunk_tree::update(), to implement any changes that are ready.
+	void	sync_loader_thread();	// called by lod_chunk_tree::update(), to implement any changes that are ready.
 	void	request_chunk_load(lod_chunk* chunk, float urgency);
 	void	request_chunk_unload(lod_chunk* chunk);
 
 	SDL_RWops*	get_source() { return m_source_stream; }
 
+	int	loader_thread();	// thread function!
 private:
-	lod_chunk_tree*	m_tree;
-	SDL_RWops*	m_source_stream;
 
 	struct pending_load_request
 	{
@@ -325,9 +253,36 @@ private:
 		}
 	};
 
-	array<pending_load_request>	m_load_queue;
-	// retire_queue;	// chunks waiting to be united with their loaded data.
+	struct retire_info
+	// A struct that associates a chunk with its newly loaded
+	// data.  For communicating between m_loader_thread and the
+	// main thread.
+	{
+		lod_chunk*	m_chunk;
+		lod_chunk_data*	m_chunk_data;
+		SDL_Surface*	m_texture_image;
+
+		retire_info() : m_chunk(0), m_chunk_data(0), m_texture_image(0) {}
+	};
+
+	lod_chunk_tree*	m_tree;
+	SDL_RWops*	m_source_stream;
+
+	// These two are for the main thread's use only.  For update()
+	// to communicate with sync_loader_thread().
 	array<lod_chunk*>	m_unload_queue;
+	array<pending_load_request>	m_load_queue;
+
+	// These two are for the main thread to communicate with the
+	// loader thread & vice versa.
+#define REQUEST_BUFFER_SIZE 2
+	lod_chunk* volatile	m_request_buffer[REQUEST_BUFFER_SIZE];	// chunks waiting to be loaded; filled will NULLs otherwise.
+	retire_info volatile	m_retire_buffer[REQUEST_BUFFER_SIZE];	// chunks waiting to be united with their loaded data.
+
+	// Loader thread stuff.
+	SDL_Thread*	m_loader_thread;
+	volatile bool	m_kill_loader;	// tell the loader to die.
+	SDL_mutex*	m_mutex;
 };
 
 
@@ -337,27 +292,46 @@ chunk_tree_loader::chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src)
 	m_tree = tree;
 	m_source_stream = src;
 
-	// init retire queue
+	for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
+	{
+		m_request_buffer[i] = NULL;
+		m_retire_buffer[i].m_chunk = NULL;
+	}
 
-	// create sync primitives
-	// start the thread function
+	// Set up thread communication stuff.
+	m_mutex = SDL_CreateMutex();
+	assert(m_mutex);
+	m_kill_loader = false;
+
+	// start the background loader worker thread
+	struct wrapper {
+		static int	thread_wrapper(void* loader)
+		{
+			return ((chunk_tree_loader*) loader)->loader_thread();
+		}
+	};
+	m_loader_thread = SDL_CreateThread(wrapper::thread_wrapper, this);
 }
 
 
 chunk_tree_loader::~chunk_tree_loader()
 // Destructor.  Make sure thread is done.
 {
-	// signal thread to quit.  Wait til it quits.
+	// signal loader thread to quit.  Wait til it quits.
+	m_kill_loader = true;
+	SDL_WaitThread(m_loader_thread, NULL);
+
+	SDL_DestroyMutex(m_mutex);
 }
 
 
-void	chunk_tree_loader::sync_loader_thread(const tqt* texture_quadtree)
+void	chunk_tree_loader::sync_loader_thread()
 // Call this periodically, to implement previously requested changes
 // to the lod_chunk_tree.  Most of the work in preparing changes is
 // done in a background thread, so this call is intended to be
 // low-latency.
 //
-// The loader is not allowed to make any changes to the
+// The chunk_tree_loader is not allowed to make any changes to the
 // lod_chunk_tree, except in this call.
 {
 	// Unload data.
@@ -376,20 +350,62 @@ void	chunk_tree_loader::sync_loader_thread(const tqt* texture_quadtree)
 	}
 	m_unload_queue.resize(0);
 
-	// Load data.
-	// xxx load the first few highest-priority requests.
-	int	qsize = m_load_queue.size();
-	if (qsize > 0)
+	// mutex section
+	SDL_LockMutex(m_mutex);
 	{
-		qsort(&m_load_queue[0], qsize, sizeof(m_load_queue[0]), pending_load_request::compare);
-		int	count = imin(qsize, 4);
-		{for (int i = 0; i < count; i++)
+		// Retire any serviced requests.
+		for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
 		{
-			m_load_queue[qsize - 1 - i].m_chunk->load_data(m_source_stream, texture_quadtree);
+			retire_info&	r = const_cast<retire_info&>(m_retire_buffer[i]);	// cast away 'volatile' (we're inside the mutex section)
+			if (r.m_chunk)
+			{
+				assert(r.m_chunk->m_data == NULL);
+				assert(r.m_chunk->m_parent == NULL || r.m_chunk->m_parent->m_data != NULL);
+
+				// Connect the chunk with its data!
+				r.m_chunk_data->m_texture_id = tqt::make_texture_id(r.m_texture_image);	// @@ this actually could cause some bad latency, because we build mipmaps...
+				r.m_chunk->m_data = r.m_chunk_data;
+			}
+			// Clear out this entry.
+			r.m_chunk = 0;
+			r.m_chunk_data = 0;
+			r.m_texture_image = NULL;
+		}
+
+		// Pass new requests to the loader thread.  Go in
+		// order of priority, and only take a few.
+
+		// Wipe out stale requests.
+		{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++) {
+			m_request_buffer[i] = NULL;
 		}}
+
+		// Fill in new requests.
+		int	qsize = m_load_queue.size();
+		if (qsize > 0)
+		{
+			int	req_count = 0;
+
+			qsort(&m_load_queue[0], qsize, sizeof(m_load_queue[0]), pending_load_request::compare);
+			{for (int i = 0; i < qsize; i++)
+			{
+//				m_load_queue[qsize - 1 - i].m_chunk->load_data(m_source_stream, texture_quadtree);
+				lod_chunk*	c = m_load_queue[qsize - 1 - i].m_chunk;	// Do the higher priority requests first.
+				// Must make sure the chunk wasn't just retired.
+				if (c->m_data == NULL) {
+					// Request this chunk.
+					m_request_buffer[req_count++] = c;
+					if (req_count >= REQUEST_BUFFER_SIZE) {
+						break;
+					}
+				}
+			}}
 		
-		m_load_queue.resize(0);
+			m_load_queue.resize(0);	// forget this frame's requests; we'll generate a fresh list during the next update()
+		}
+
 	}
+	SDL_UnlockMutex(m_mutex);
 }
 
 
@@ -416,6 +432,106 @@ void	chunk_tree_loader::request_chunk_unload(lod_chunk* chunk)
 {
 	m_unload_queue.push_back(chunk);
 }
+
+
+int	chunk_tree_loader::loader_thread()
+// Thread function for the loader thread.  Sit and load chunk data
+// from the request queue, until we get killed.
+{
+	while (m_kill_loader == false)
+	{
+		// Grab a request.
+		lod_chunk*	chunk_to_load = NULL;
+		SDL_LockMutex(m_mutex);
+		{
+			// Get first request that's not already in the
+			// retire buffer.
+			for (int req = 0; req < REQUEST_BUFFER_SIZE; req++)
+			{
+				chunk_to_load = m_request_buffer[0];	// (could be NULL)
+
+				// shift requests down.
+				for (int i = 0; i < REQUEST_BUFFER_SIZE - 1; i++)
+				{
+					m_request_buffer[i] = m_request_buffer[i + 1];
+				}
+				m_request_buffer[i] = NULL;	// fill empty slot with NULL
+
+				if (chunk_to_load == NULL) break;
+				
+				// Make sure the request is not in the retire buffer.
+				bool	in_retire_buffer = false;
+				{for (int i = 0; i < REQUEST_BUFFER_SIZE; i++) {
+					if (m_retire_buffer[i].m_chunk == chunk_to_load) {
+						// This request has already been serviced.  Don't
+						// service it again.
+						in_retire_buffer = true;
+					}
+				}}
+				if (in_retire_buffer == false) break;
+			}
+		}
+		SDL_UnlockMutex(m_mutex);
+
+		if (chunk_to_load == NULL)
+		{
+			// There's no request to service right now.
+			// Go to sleep for a little while and check
+			// again later.
+			SDL_Delay(10);
+			continue;
+		}
+
+		assert(chunk_to_load->m_data == NULL);
+		assert(chunk_to_load->m_parent == NULL || chunk_to_load->m_parent->m_data != NULL);
+		
+		// Service the request by loading the chunk's data.
+		// This could take a while, and involves wating on IO,
+		// so we do it with the mutex unlocked so the main
+		// update/render thread can hopefully get some work
+		// done.
+		lod_chunk_data*	loaded_data = NULL;
+		SDL_Surface*	texture_image = NULL;
+
+		// Texture.
+		const tqt*	qt = m_tree->m_texture_quadtree;
+		if (qt) {
+			texture_image = qt->load_image(qt->get_depth() - 1 - chunk_to_load->m_level,
+						       chunk_to_load->m_x,
+						       chunk_to_load->m_z);
+		}
+
+		// Geometry.
+		SDL_RWseek(m_source_stream, chunk_to_load->m_data_file_position, SEEK_SET);
+		loaded_data = new lod_chunk_data(m_source_stream, 0);
+
+		// "Retire" the request.  Must do this with the mutex
+		// locked.  The main thread will do
+		// "chunk_to_load->m_data = loaded_data".
+		SDL_LockMutex(m_mutex);
+		{
+			for (int i = 0; i < REQUEST_BUFFER_SIZE; i++)
+			{
+				if (m_retire_buffer[i].m_chunk == 0)
+				{
+					// empty slot; put the info here.
+					m_retire_buffer[i].m_chunk = chunk_to_load;
+					m_retire_buffer[i].m_chunk_data = loaded_data;
+					m_retire_buffer[i].m_texture_image = texture_image;
+					break;
+				}
+			}
+		}
+		SDL_UnlockMutex(m_mutex);
+	}
+
+	return 0;
+}
+
+
+//
+// lod_chunk stuff
+//
 
 
 static void	morph_vertices(float* verts, const vertex_info& morph_verts, const vec3& box_center, const vec3& box_extent, float f)
@@ -501,7 +617,7 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 	float*	output_verts = (float*) s_stream->reserve_memory(sizeof(float) * 3 * m_verts.vertex_count);
 
 	// Process our vertices into the output buffer.
-	float	f = morph_curve((chunk.lod & 255) / 255.0f);
+	float	f = (chunk.lod & 255) / 255.0f;
 	if (opt.morph == false) {
 		f = 0;
 	}
@@ -598,7 +714,7 @@ void	lod_chunk::clear()
 }
 
 
-void	lod_chunk::update(lod_chunk_tree* tree, const tqt* texture_quadtree, const vec3& viewpoint)
+void	lod_chunk::update(lod_chunk_tree* tree, const vec3& viewpoint)
 // Computes 'lod' and split values for this chunk and its subtree,
 // based on the given camera parameters and the parameters stored in
 // 'base'.  Traverses the tree and forces neighbor chunks to a valid
@@ -620,15 +736,15 @@ void	lod_chunk::update(lod_chunk_tree* tree, const tqt* texture_quadtree, const 
 
 		// Recurse to children.
 		for (int i = 0; i < 4; i++) {
-			m_children[i]->update(tree, texture_quadtree, viewpoint);
+			m_children[i]->update(tree, viewpoint);
 		}
 	} else {
 		// We're good... this chunk can represent its region within the max error tolerance.
 		if ((lod & 0xFF00) == 0) {
 			// Root chunk -- make sure we have valid morph value.
 			lod = iclamp(desired_lod, lod & 0xFF00, lod | 0x0FF);
-			// tbp: and that we also have something to display :)
-			load_data(tree->m_loader->get_source(), texture_quadtree);
+//			// tbp: and that we also have something to display :)
+//			load_data(tree->m_loader->get_source(), texture_quadtree);
 		}
 
 		// Request residency for our children, and request our
@@ -737,9 +853,10 @@ bool	lod_chunk::can_split(lod_chunk_tree* tree)
 }
 
 
+#if 0
 void	lod_chunk::load_data(SDL_RWops* src, const tqt* texture_quadtree)
 // Immediately load our data.  Use loader->request_chunk_load() to
-// schedule this in the background.
+// schedule a similar operation in the background.
 {
 	if (m_data == NULL) {
 		assert(m_parent == NULL || m_parent->m_data != NULL);
@@ -757,6 +874,7 @@ void	lod_chunk::load_data(SDL_RWops* src, const tqt* texture_quadtree)
 		m_data = new lod_chunk_data(src, texture_id);
 	}
 }
+#endif // 0
 
 
 void	lod_chunk::unload_data()
@@ -831,6 +949,8 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 //
 // Returns the number of triangles rendered.
 {
+	assert(m_data != NULL);
+
 	vec3	box_center, box_extent;
 	compute_bounding_box(c, &box_center, &box_extent);
 
@@ -937,8 +1057,6 @@ void	lod_chunk::read(SDL_RWops* in, int level, lod_chunk_tree* tree)
 	m_data_file_position = SDL_RWtell(in);
 	SDL_RWseek(in, chunk_size, SEEK_CUR);
 	m_data = NULL;
-//	m_data = new lod_chunk_data;
-//	m_data->read(in);
 
 	assert(m_data_file_position + chunk_size == SDL_RWtell(in));
 
@@ -988,11 +1106,13 @@ void	lod_chunk::lookup_neighbors(lod_chunk_tree* tree)
 //
 
 
-lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
+lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 // Construct and initialize a tree of LOD chunks, using data from the given
 // source.  Uses a special .chu file format which is a pretty direct
 // encoding of the chunk data.
 {
+	m_texture_quadtree = texture_quadtree;
+
 	// Read and verify a "CHU\0" header tag.
 	Uint32	tag = SDL_ReadLE32(src);
 	if (tag != (('C') | ('H' << 8) | ('U' << 16))) {
@@ -1030,20 +1150,24 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src)
 	m_chunks[0].read(src, m_tree_depth-1, this);
 	m_chunks[0].lookup_neighbors(this);
 
-//	s_datafile = src;
-
 	// Set up our loader.
 	m_loader = new chunk_tree_loader(this, src);
 }
 
 
-void	lod_chunk_tree::update(const vec3& viewpoint, const tqt* texture_quadtree)
+void	lod_chunk_tree::update(const vec3& viewpoint)
 // Initializes tree state, so it can be rendered.  The given viewpoint
 // is used to do distance-based LOD switching on our contained chunks.
 {
+	if (m_chunks[0].m_data == NULL)
+	{
+		// Get root-node data!
+		m_loader->request_chunk_load(&m_chunks[0], 1.0f);
+	}
+
 	m_chunks[0].clear();
-	m_chunks[0].update(this, texture_quadtree, viewpoint);
-	m_loader->sync_loader_thread(texture_quadtree);
+	m_chunks[0].update(this, viewpoint);
+	m_loader->sync_loader_thread();
 }
 
 
@@ -1062,7 +1186,18 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 
 	s_vertical_scale = m_vertical_scale;
 
-	triangle_count += m_chunks[0].render(*this, v, cull::result_info(), opt);
+	if (m_chunks[0].m_data == NULL)
+	{
+		// No data in the root node; we can't really do
+		// anything.  This should only happen briefly at the
+		// very start of the program, until the loader thread
+		// kicks in.
+	}
+	else
+	{
+		// Render the chunked LOD tree.
+		triangle_count += m_chunks[0].render(*this, v, cull::result_info(), opt);
+	}
 
 	return triangle_count;
 }
