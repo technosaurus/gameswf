@@ -10,14 +10,12 @@
 #include "gameswf.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
 #include "base/ogl.h"
 #include "base/utility.h"
 #include "base/container.h"
 #include "base/tu_file.h"
 #include "base/tu_types.h"
 
-#include "gameswf_xmlsocket.h"
 
 void	print_usage()
 // Brief instructions.
@@ -410,14 +408,12 @@ int	main(int argc, char *argv[])
 	int	frame_counter = 0;
 	int	last_logged_fps = last_ticks;
 
-	gameswf::XMLSocket xmls;
 	tu_string foo;
 	for (;;)
 	{
 		do_render = true; // FIXME: boolean hack!
 		
 		Uint32	ticks;
-		//xmls.anydata(8, foo);
 		if (do_render)
 		{
 			ticks = SDL_GetTicks();

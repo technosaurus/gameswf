@@ -6,7 +6,6 @@
 #ifndef __TIMERS_H__
 #define __TIMERS_H_
 
-#include <sys/time.h>
 
 #include "gameswf_log.h"
 #include "gameswf_action.h"
@@ -14,7 +13,12 @@
 #include "gameswf_log.h"
 
 #include "base/tu_timer.h"
-#include <sys/time.h>
+
+
+#ifndef __PRETTY_FUNCTION__
+#define __PRETTY_FUNCTION__ "__PRETTY_FUNCTION__"
+#endif
+
 
 namespace gameswf 
 {

@@ -10,7 +10,7 @@ include $(TOP)/config
 
 INCLUDE_PATHS := $(ENGINE_INCLUDE) $(ZLIB_INCLUDE) $(SDL_MIXER_INCLUDE) $(LIBMAD_INCLUDE)
 
-CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS) -g
+CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 
 LIB_OUT = $(LIB_PRE)gameswf.$(LIB_EXT)
@@ -41,7 +41,6 @@ LIB_OBJS = \
 	gameswf_styles.$(OBJ_EXT)	\
 	gameswf_tesselate.$(OBJ_EXT)	\
 	gameswf_text.$(OBJ_EXT)		\
-	gameswf_textfield.$(OBJ_EXT)	\
 	gameswf_textformat.$(OBJ_EXT)	\
 	gameswf_timers.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)	\

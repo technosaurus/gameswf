@@ -268,18 +268,24 @@ namespace gameswf
 
 		int    add_interval_timer(void *timer)
 		{
+#ifdef __PRETTY_FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#endif
 			return -1;	// ???
 		}
 		
 		void    clear_interval_timer(int x)
 		{
+#ifdef __PRETTY_FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#endif
 		}
 		
 		virtual void    do_something(void *timer)
 		{
+#ifdef __PRETTY_FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
+#endif
 		}
 		
 		// Special event handler; sprites also execute their frame1 actions on this event.

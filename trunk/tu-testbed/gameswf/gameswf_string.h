@@ -1,4 +1,4 @@
-// gameswf_xml.h			-- Rob Savoye <rob@welcomehome.org> 2005
+// gameswf_string.h	-- Rob Savoye <rob@welcomehome.org> 2005
 
 // This source code has been donated to the Public Domain. Do whatever
 // you want with it.
@@ -6,73 +6,82 @@
 #ifndef __STRING_H__
 #define __STRING_H__
 
-#include <iostream>
+// tulrich: NO <iostream> ALLOWED IN GAMESWF
+//#include <iostream>
 
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
-#include "gameswf_log.h"
 
 namespace gameswf 
 {
-  
-class BaseString
-{
-public:
-	BaseString();
-	BaseString(const char *name);
-	~BaseString();
+	class BaseString
+	{
+	public:
+		BaseString();
+		BaseString(const char *name);
+		~BaseString();
 	
-	std::string toString(void *);
- protected:
-	std::string _value;
-	std::string _name;
-};
+		const tu_string& toString(void *);
+	protected:
+		tu_string _value;
+		tu_string _name;
+	};
 	
-class String: public BaseString
-{
-public:
-	String(const char *str);
-	~String();
-	void test(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+	class String: public BaseString
+	{
+	public:
+		String(const char *str);
+		~String();
+		void test(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
-	std::string charAt(short index);
-	short charCodeAt(short index);
-	std::string concat(std::string str1, std::string str2);
-	std::string fromCharCode(short code);
-	short indexOf(std::string str, int short);
-	short indexOf(std::string str);
-	std::string lastIndexOf(std::string, int index);
-	std::string lastIndexOf(std::string);
-	std::string slice(int start);
-	std::string slice(int start, int end);
+		// tulrich: Most/all of these should take const references.
+		// They should probably return void also.
+		tu_string charAt(short index);
+		short charCodeAt(short index);
+		tu_string concat(tu_string str1, tu_string str2);
+		tu_string fromCharCode(short code);
+		short indexOf(tu_string str, int short);
+		short indexOf(tu_string str);
+		tu_string lastIndexOf(tu_string, int index);
+		tu_string lastIndexOf(tu_string);
+		tu_string slice(int start);
+		tu_string slice(int start, int end);
 
-	std::string split(std::string str);
-	std::string split(std::string, int limit);
-	std::string substr(int start);
-	std::string substr(int start, int end);
-	std::string substring(int start);
-	std::string substring(int start, int end);
-	std::string toLowerCase();
-	std::string toUpperCase();
+		tu_string split(tu_string str);
+		tu_string split(tu_string, int limit);
+		tu_string substr(int start);
+		tu_string substr(int start, int end);
+		tu_string substring(int start);
+		tu_string substring(int start, int end);
+		tu_string toLowerCase();
+		tu_string toUpperCase();
 
-	int length();
-};
+		int length();
+	};
 
-struct string_as_object : public gameswf::as_object
-{
-	String str;
-};
-
-
-void
-string_lastIndexOf(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+	struct string_as_object : public gameswf::as_object
+	{
+		String str;
+	};
 
 
-void
-string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+	void string_lastIndexOf(
+		gameswf::as_value* result,
+		gameswf::as_object_interface* this_ptr,
+		gameswf::as_environment* env,
+		int nargs,
+		int first_arg);
+
+
+	void string_new(
+		gameswf::as_value* result,
+		gameswf::as_object_interface* this_ptr,
+		gameswf::as_environment* env,
+		int nargs,
+		int first_arg);
+
  
 } // end of gameswf namespace
 
-// __STRING_H__
-#endif
+#endif // __STRING_H__

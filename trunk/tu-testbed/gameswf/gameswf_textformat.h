@@ -6,12 +6,11 @@
 #ifndef __TEXTFORMAT_H__
 #define __TEXTFORMAT_H__
 
-#include <string>
 
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
-#include "gameswf_log.h"
+
 
 namespace gameswf
 {  
@@ -23,6 +22,7 @@ public:
   //                [leftMargin, [rightMargin, [indent, [leading]]]]]]]]]]]]])
   
   text_format();
+  // tulrich: TODO need to take const ref!
   text_format(tu_string font);
   text_format(tu_string font, int size);
   text_format(tu_string font, int size, int color);
@@ -32,14 +32,14 @@ public:
   bool italiced()    { return _italic; }
   bool bold()        { return _bold; }
   bool bullet()      { return _bullet; }
-  bool color()       { return _color; }
-  bool indent()      { return _indent; }
-  bool align()       { return _align; }
-  bool blockIndent() { return _block_indent; }
-  bool leading()     { return _leading; }
-  bool leftMargin()  { return _left_margin; }
-  bool RightMargin() { return _right_margin; }
-  bool size()        { return _point_size; }
+  uint32 color() const { return _color; }
+  int indent() const { return _indent; }
+  const tu_string& align() const { return _align; }
+  int blockIndent() { return _block_indent; }
+  int leading()     { return _leading; }
+  int leftMargin()  { return _left_margin; }
+  int RightMargin() { return _right_margin; }
+  int size()        { return _point_size; }
 
   // In a paragraph, change the format of a range of characters.
   void setTextFormat (text_format &format);
@@ -59,7 +59,7 @@ public:
                                 // paragraph is centered. If "right", the paragraph is
                                 // right-aligned.
   int		_block_indent;	// 
-  int		_color;		// The color of text using this text format. A number
+  uint32	_color;		// The color of text using this text format. A number
                                 // containing three 8-bit RGB components; for example,
                                 // 0xFF0000 is red, 0x00FF00 is green.
   tu_string _font;		// The name of a font for text as a string.

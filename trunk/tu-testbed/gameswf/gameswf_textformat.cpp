@@ -3,9 +3,13 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include <string>
 #include "gameswf_textformat.h"
 #include "gameswf_log.h"
+
+
+#ifndef __PRETTY_FUNCTION__
+#define __PRETTY_FUNCTION__ "__PRETTY_FUNCTION__"
+#endif
 
 namespace gameswf
 {  

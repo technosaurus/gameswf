@@ -5,6 +5,7 @@
 
 // Implementation and helpers for SWF actions.
 
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -14,17 +15,18 @@
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
 #include "base/tu_random.h"
+
 #include "gameswf_string.h"
 #include "gameswf_movie.h"
 #include "gameswf_timers.h"
 #include "gameswf_textformat.h"
 #include "gameswf_sound.h"
+
 #ifdef HAVE_LIBXML
 #include "gameswf_xml.h"
 #include "gameswf_xmlsocket.h"
 #endif
 
-#include <stdio.h>
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -436,8 +438,10 @@ namespace gameswf
 	// Printf-like vararg interface for calling ActionScript.
 	// Handy for external binding.
 	{
-
+#ifdef __PRETTY_FUNCTION__
 		log_msg("FIXME(%d): %s\n", __LINE__, __PRETTY_FUNCTION__);
+#endif
+
 #if 0
 		static const int	BUFSIZE = 1000;
 		char	buffer[BUFSIZE];
@@ -793,9 +797,11 @@ namespace gameswf
 		s_global->set_member("math", math_obj);
 	}
 		
-	void event_test(as_value* result, as_object_interface* this_ptr, as_environment* env) 
+	void event_test(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg) 
 	{
+#ifdef __PRETTY_FUNCTION__
 		log_msg("FIXME: %s\n", __PRETTY_FUNCTION__);
+#endif
 	}
 	
 	//
@@ -2096,6 +2102,7 @@ namespace gameswf
 						// tulrich FIXME: this should all happen via constructor functions.
 						//
 
+#if 0
 						movie*	current_movie = env->get_target()->get_root_movie();
 						assert(current_movie);
 						//movie *current_movie_root = env->m_target->get_root_movie();
@@ -2276,6 +2283,8 @@ namespace gameswf
 							str_obj->set_member("lastIndexOf", &string_lastIndexOf);
 							new_obj = str_obj;
 						} else
+#endif // 0
+
 // @@ KILL
 #if 0
 						// @@ tulrich: this is garbage -- these need to be
