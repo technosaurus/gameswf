@@ -399,6 +399,7 @@ public:
 	}
 
 	int	length() const { return m_buffer.size() - 1; }
+	int	size() const { return length(); }
 
 	char&	operator[](int index) { return m_buffer[index]; }
 	const char&	operator[](int index) const { return m_buffer[index]; }
@@ -410,6 +411,14 @@ public:
 		assert(old_length >= 0);
 		m_buffer.resize(old_length + str_length + 1);
 		strcpy(&m_buffer[old_length], str);
+	}
+
+	void	resize(int new_size)
+	{
+		assert(new_size >= 0);
+
+		m_buffer.resize(new_size + 1);
+		m_buffer.back() = 0;	// terminate with \0
 	}
 
 private:

@@ -16,7 +16,9 @@
 
 #ifndef NDEBUG
 #define IF_DEBUG(exp) exp
-#endif // NDEBUG
+#else	// not NDEBUG
+#define IF_DEBUG(exp)
+#endif // not NDEBUG
 
 
 #define GAMESWF_VERBOSE
