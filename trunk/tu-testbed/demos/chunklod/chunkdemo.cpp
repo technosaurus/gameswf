@@ -8,8 +8,7 @@
 #ifdef WIN32
 #include <windows.h>
 #endif
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
+#include <SDL.h>
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <string.h>
@@ -17,10 +16,11 @@
 #include <math.h>
 
 #include "engine/cull.h"
-#include "engine/utility.h"
+#include "engine/image.h"
 #include "engine/ogl.h"
 #include "engine/tqt.h"
-#include "engine/image.h"
+#include "engine/tu_file.h"
+#include "engine/utility.h"
 
 #include "chunklod.h"
 
@@ -591,8 +591,8 @@ int	main(int argc, char *argv[])
 			glEnable(GL_TEXTURE_2D);
 			glBindTexture(GL_TEXTURE_2D, 1);
 
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ogl::get_clamp_mode());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ogl::get_clamp_mode());
 //			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 //			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -627,8 +627,8 @@ int	main(int argc, char *argv[])
 	{
 
 		// Load our chunked model.
-		SDL_RWops*	in = SDL_RWFromFile(chunkfile, "rb");
-		if (in == NULL) {
+		tu_file*	in = new tu_file(chunkfile, "rb");
+		if (in->get_error()) {
 			printf("Can't open '%s'\n", chunkfile);
 			exit(1);
 		}
@@ -742,7 +742,8 @@ int	main(int argc, char *argv[])
 			texture_quadtree = NULL;
 		}
 
-		SDL_RWclose(in);
+		delete in;
+		in = NULL;
 	}
 #ifdef CATCH_EXCEPTIONS
 	catch (const char* message) {

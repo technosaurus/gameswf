@@ -11,7 +11,6 @@
 
 #include <assert.h>
 #include <math.h>
-//#include <SDL/SDL_endian.h>
 #include "engine/tu_types.h"
 
 
@@ -115,72 +114,110 @@ void	swap(T& a, T& b)
 }
 
 
-#if 0
 //
-// Read/write bytes to SDL_RWops streams.
-//
-
-
-inline void	WriteByte(SDL_RWops* dst, Uint8 b) {
-	dst->write(dst, &b, sizeof(b), 1);
-}
-
-
-inline Uint8	ReadByte(SDL_RWops* src) {
-	Uint8	b;
-	src->read(src, &b, sizeof(b), 1);	// @@ check for error
-	return b;
-}
-
-
-//
-// Read/write 32-bit little-endian floats, and 64-bit little-endian doubles.
+// endian conversions
 //
 
 
-inline void	WriteFloat32(SDL_RWops* dst, float value) {
-	union {
-		float	f;
-		int	i;
-	} u;
-	u.f = value;
-	SDL_WriteLE32(dst, u.i);
+inline Uint16 swap16(Uint16 u)
+{ 
+	return ((u & 0x00FF) << 8) | 
+		((u & 0xFF00) >> 8);
+}
+
+inline Uint32 swap32(Uint32 u)
+{ 
+	return ((u & 0x000000FF) << 24) | 
+		((u & 0x0000FF00) << 8)  |
+		((u & 0x00FF0000) >> 8)  |
+		((u & 0xFF000000) >> 24);
+}
+
+inline Uint64 swap64(Uint64 u)
+{
+#ifdef __GNUC__
+	return ((u & 0x00000000000000FFLL) << 56) |
+		((u & 0x000000000000FF00LL) << 40)  |
+		((u & 0x0000000000FF0000LL) << 24)  |
+		((u & 0x00000000FF000000LL) << 8) |
+		((u & 0x000000FF00000000LL) >> 8) |
+		((u & 0x0000FF0000000000LL) >> 24) |
+		((u & 0x00FF000000000000LL) >> 40) |
+		((u & 0xFF00000000000000LL) >> 56);
+#else
+	return ((u & 0x00000000000000FF) << 56) | 
+		((u & 0x000000000000FF00) << 40)  |
+		((u & 0x0000000000FF0000) << 24)  |
+		((u & 0x00000000FF000000) << 8) |
+		((u & 0x000000FF00000000) >> 8) |
+		((u & 0x0000FF0000000000) >> 24) |
+		((u & 0x00FF000000000000) >> 40) |
+		((u & 0xFF00000000000000) >> 56);
+#endif
 }
 
 
-inline float	ReadFloat32(SDL_RWops* src) {
-	union {
-		float	f;
-		int	i;
-	} u;
-	u.i = SDL_ReadLE32(src);
-	return u.f;
+inline Uint32	swap_le32(Uint32 le_32)
+// Given a 32-bit little-endian piece of data, return it as a 32-bit
+// integer in native endian-ness.  I.e. on a little-endian machine,
+// this just returns the input; on a big-endian machine, this swaps
+// the bytes around first.
+{
+#ifdef _TU_LITTLE_ENDIAN_
+	return le_32;
+#else	// not _TU_LITTLE_ENDIAN_
+	return swap32(le_32);	// convert to big-endian.
+#endif	// not _TU_LITTLE_ENDIAN_
 }
 
 
-inline void	WriteDouble64(SDL_RWops* dst, double value) {
-	union {
-		double	d;
-		Uint64	l;
-	} u;
-	u.d = value;
-	SDL_WriteLE64(dst, u.l);
+inline Uint16	swap_le16(Uint16 le_16)
+// Given a 16-bit little-endian piece of data, return it as a 16-bit
+// integer in native endianness.
+{
+#ifdef _TU_LITTLE_ENDIAN_
+	return le_16;
+#else	// not _TU_LITTLE_ENDIAN_
+	return swap16(le_16);	// convert to big-endian.
+#endif	// not _TU_LITTLE_ENDIAN_
 }
 
 
-inline double	ReadDouble64(SDL_RWops* src) {
-	union {
-		double	d;
-		Uint64	l;
-	} u;
-	u.l = SDL_ReadLE64(src);
-	return u.d;
+inline Uint32	swap_be32(Uint32 le_32)
+// Given a 32-bit big-endian piece of data, return it as a 32-bit
+// integer in native endian-ness.  I.e. on a little-endian machine,
+// this swaps the bytes around; on a big-endian machine, it just
+// returns the input.
+{
+#ifdef _TU_LITTLE_ENDIAN_
+	return swap32(le_32);	// convert to little-endian.
+#else	// not _TU_LITTLE_ENDIAN_
+	return le_32;
+#endif	// not _TU_LITTLE_ENDIAN_
 }
 
-#endif // 0
+
+inline Uint16	swap_be16(Uint16 le_16)
+// Given a 16-bit big-endian piece of data, return it as a 16-bit
+// integer in native endianness.
+{
+#ifdef _TU_LITTLE_ENDIAN_
+	return swap16(le_16);	// convert to little-endian.
+#else	// not _TU_LITTLE_ENDIAN_
+	return le_16;
+#endif	// not _TU_LITTLE_ENDIAN_
+}
 
 
 // Handy macro to quiet compiler warnings about unused parameters/variables.
 #define UNUSED(x) (x) = (x)
 
 #endif // UTILITY_H
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

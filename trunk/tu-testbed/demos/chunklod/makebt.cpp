@@ -11,6 +11,7 @@
 #include <png.h>
 #include <SDL/SDL.h>
 #include "engine/utility.h"
+#include "engine/tu_file.h"
 
 
 bool	check_if_png(char *file_name);
@@ -87,7 +88,7 @@ int	main(int argc, char* argv[])
 	printf("in = '%s', out = '%s', h_scale = %g, v_scale = %g, thresh = %d\n", input_file, output_file, h_scale, v_scale, min_threshold);
 
 	FILE*	in;
-	SDL_RWops*	out;
+	tu_file*	out;
 
 	bool	is_png = check_if_png(input_file);
 	if (is_png == false) {
@@ -100,8 +101,9 @@ int	main(int argc, char* argv[])
 		exit(1);
 	}
 
-	out = SDL_RWFromFile(output_file, "wb");
-	if (out == NULL) {
+	out = new tu_file(output_file, "wb");
+	if (out->get_error())
+	{
 		printf("Can't open output file!\n");
 		fclose(in);
 		exit(1);
@@ -158,7 +160,7 @@ int	main(int argc, char* argv[])
 	if (color_type != PNG_COLOR_TYPE_GRAY) {
 		printf("input file is not grayscale!\n");
 		fclose(in);
-		SDL_RWclose(out);
+		delete out;
 		return 1;
 	}
 
@@ -166,7 +168,7 @@ int	main(int argc, char* argv[])
 	if (bit_depth != 8 && bit_depth != 16) {
 		printf("input file's bit depth is not 8 or 16!\n");
 		fclose(in);
-		SDL_RWclose(out);
+		delete out;
 		return 1;
 	}
 
@@ -184,24 +186,24 @@ int	main(int argc, char* argv[])
 
 	printf("PNG width = %ld, height = %ld\n", width, height);
 
-	SDL_RWwrite(out, "binterr1.1", 1, 10);
+	out->write_bytes("binterr1.1", 10);
 
-	SDL_WriteLE32(out, width);
-	SDL_WriteLE32(out, height);
-	SDL_WriteLE16(out, 2);	// sample size --> 2 bytes
-	SDL_WriteLE16(out, 0);	// float flag --> false (we're writing short int's)
-	SDL_WriteLE16(out, 0);	// utm flag --> false
-	SDL_WriteLE16(out, 0);	// utm zone
-	SDL_WriteLE16(out, 0);	// datum
+	out->write_le32(width);
+	out->write_le32(height);
+	out->write_le16(2);	// sample size --> 2 bytes
+	out->write_le16(0);	// float flag --> false (we're writing short int's)
+	out->write_le16(0);	// utm flag --> false
+	out->write_le16(0);	// utm zone
+	out->write_le16(0);	// datum
 
-	WriteDouble64(out, width * h_scale);	// left
-	WriteDouble64(out, 0);	// right
-	WriteDouble64(out, 0);	// bottom
-	WriteDouble64(out, height * h_scale);	// top
+	out->write_double64(width * h_scale);	// left
+	out->write_double64(0);	// right
+	out->write_double64(0);	// bottom
+	out->write_double64(height * h_scale);	// top
 
 	// Pad out with 0's to make a 256-byte header.
 	for (int i = 60; i < 256; i++) {
-		SDL_RWwrite(out, "\0", 1, 1);
+		out->write_byte(0);
 	}
 
 	int	min = 65535;
@@ -216,18 +218,19 @@ int	main(int argc, char* argv[])
 				data = ((Uint8*) (row_pointers[height - 1 - j]))[i];
 			}
 			else {
-				data = SDL_SwapBE16(((Uint16*) (row_pointers[height - 1 - j]))[i]);
+				data = swap_be16(((Uint16*) (row_pointers[height - 1 - j]))[i]);
 			}
 			data = iclamp((int) ((data - min_threshold) * thresh_scale * v_scale), 0, 0x0FFFF);
 
 			if (data > max) { max = data; }
 			if (data < min) { min = data; }
 
-			SDL_WriteLE16(out, data);
+			out->write_le16(data);
 		}
 	}}
 
-	SDL_RWclose(out);
+	delete out;
+	out = NULL;
 	
 	/* clean up after the read, and free any memory allocated - REQUIRED */
 	png_destroy_read_struct(&png_ptr, &info_ptr, png_infopp_NULL);

@@ -32,6 +32,11 @@ static int sdl_seek_func(int pos, void *appdata)
 	assert(appdata);
 	return SDL_RWseek((SDL_RWops*) appdata, pos, SEEK_SET);
 }
+static int sdl_seek_to_end_func(void *appdata)
+{
+	assert(appdata);
+	return SDL_RWseek((SDL_RWops*) appdata, 0, SEEK_END);
+}
 static int sdl_tell_func(const void *appdata)
 {
 	assert(appdata);
@@ -57,6 +62,7 @@ tu_file::tu_file(SDL_RWops* sdl_stream, bool autoclose)
 	m_read = sdl_read_func;
 	m_write = sdl_write_func;
 	m_seek = sdl_seek_func;
+	m_seek_to_end = sdl_seek_to_end_func;
 	m_tell = sdl_tell_func;
 	m_close = autoclose ? sdl_close_func : NULL;
 	m_error = NO_ERROR;

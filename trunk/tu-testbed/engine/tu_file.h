@@ -27,22 +27,23 @@ public:
 	typedef int (* read_func)(void* dst, int bytes, void* appdata);
 	typedef int (* write_func)(const void* src, int bytes, void* appdata);
 	typedef int (* seek_func)(int pos, void *appdata);
+	typedef int (* seek_to_end_func)(void *appdata);
 	typedef int (* tell_func)(const void *appdata);
 	typedef int (* close_func)(const void *appdata);
 
 	enum 
 	{
-		NO_ERROR = 0,
-		OPEN_ERROR,
-		READ_ERROR,
-		WRITE_ERROR,
-		SEEK_ERROR,
-		CLOSE_ERROR
+		TU_FILE_NO_ERROR = 0,
+		TU_FILE_OPEN_ERROR,
+		TU_FILE_READ_ERROR,
+		TU_FILE_WRITE_ERROR,
+		TU_FILE_SEEK_ERROR,
+		TU_FILE_CLOSE_ERROR
 	};
 
 
 	// The generic constructor; supply functions for the implementation.
-	tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, tell_func tf, close_func cf=NULL);
+	tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, seek_to_end_func ef, tell_func tf, close_func cf=NULL);
 
 	// Make a file from an ordinary FILE*.
 	tu_file(FILE* fp, bool autoclose);
@@ -95,6 +96,7 @@ public:
 	// get/set pos
 	int	get_position() const { return m_tell(m_data); }
 	void 	set_position(int p) { m_seek(p, m_data); }
+	void	go_to_end() { m_seek_to_end(m_data); }
 
 	int	get_error() { return m_error; }
 
@@ -115,14 +117,15 @@ private:
 
 	void	close();
 
-	Uint16	swap16(Uint16 u);
-	Uint32	swap32(Uint32 u);
-	Uint64	swap64(Uint64 u);
+//	Uint16	swap16(Uint16 u);
+//	Uint32	swap32(Uint32 u);
+//	Uint64	swap64(Uint64 u);
 
 	void * 	m_data;
 	read_func 	m_read;
 	write_func 	m_write;
 	seek_func 	m_seek;
+	seek_to_end_func 	m_seek_to_end;
 	tell_func 	m_tell;
 	close_func 	m_close;
 	int	m_error;
@@ -133,42 +136,6 @@ private:
 // Some inline stuff.
 //
 
-inline Uint16 tu_file::swap16(Uint16 u)
-{ 
-	return ((u & 0x00FF) << 8) | 
-		((u & 0xFF00) >> 8);
-}
-
-inline Uint32 tu_file::swap32(Uint32 u)
-{ 
-	return ((u & 0x000000FF) << 24) | 
-		((u & 0x0000FF00) << 8)  |
-		((u & 0x00FF0000) >> 8)  |
-		((u & 0xFF000000) >> 24);
-}
-
-inline Uint64 tu_file::swap64(Uint64 u)
-{
-#ifdef __GNUC__
-	return ((u & 0x00000000000000FFLL) << 56) |
-		((u & 0x000000000000FF00LL) << 40)  |
-		((u & 0x0000000000FF0000LL) << 24)  |
-		((u & 0x00000000FF000000LL) << 8) |
-		((u & 0x000000FF00000000LL) >> 8) |
-		((u & 0x0000FF0000000000LL) >> 24) |
-		((u & 0x00FF000000000000LL) >> 40) |
-		((u & 0xFF00000000000000LL) >> 56);
-#else
-	return ((u & 0x00000000000000FF) << 56) | 
-		((u & 0x000000000000FF00) << 40)  |
-		((u & 0x0000000000FF0000) << 24)  |
-		((u & 0x00000000FF000000) << 8) |
-		((u & 0x000000FF00000000) >> 8) |
-		((u & 0x0000FF0000000000) >> 24) |
-		((u & 0x00FF000000000000) >> 40) |
-		((u & 0xFF00000000000000) >> 56);
-#endif
-}
 
 #if _TU_LITTLE_ENDIAN_
 	inline Uint64	tu_file::read_le64() { return read64(); }

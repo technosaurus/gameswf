@@ -60,6 +60,16 @@ namespace ogl {
 	void	open();
 	void	close();
 
+	// Return true if the specified extension is available.
+	bool	check_extension(const char* extension);
+
+	// Return GL_CLAMP, or GL_CLAMP_TO_EDGE_EXT, depending on
+	// which is available.  I pretty much always want the
+	// GL_CLAMP_TO_EDGE_EXT behavior, but it's not in the OpenGL
+	// 1.1 standard, so in those cases I must fall back to
+	// GL_CLAMP.
+	int	get_clamp_mode();
+
 	// For allocating DMA or video memory, for holding vertex arrays.
 	void*	allocate_vertex_memory( int size );	// @@ add a flag for selecting AGP vs. video mem?
 	void	free_vertex_memory( void* buffer );
