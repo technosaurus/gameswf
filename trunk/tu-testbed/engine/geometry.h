@@ -38,7 +38,7 @@ public:
 	vec3	operator-() const;
 	float	operator*(const vec3& v) const;
 	vec3	operator*(float f) const;
-	vec3	operator/(float f) const { return this->operator*(1.0 / f); }
+	vec3	operator/(float f) const { return this->operator*(1.0f / f); }
 	vec3	cross(const vec3& v) const;
 
 	vec3&	normalize();
@@ -46,7 +46,7 @@ public:
 	vec3&	operator+=(const vec3& v);
 	vec3& operator-=(const vec3& v);
 	vec3&	operator*=(float f);
-	vec3&	operator/=(float f) { return this->operator*=(1.0 / f); }
+	vec3&	operator/=(float f) { return this->operator*=(1.0f / f); }
 
 	float	magnitude() const;
 	float	sqrmag() const;

@@ -67,11 +67,11 @@ inline float	fclamp(float f, float min, float max) {
 	return fmax(min, fmin(f, max));
 }
 
-const float LN_2 = 0.693147180559945;
-inline float	log2(float f) { return log(f) / LN_2; }
+const float LN_2 = 0.693147180559945f;
+inline float	log2(float f) { return logf(f) / LN_2; }
 
 inline int	fchop( float f ) { return (int) f; }	// replace w/ inline asm if desired
-inline int	frnd(float f) { return fchop(f + 0.5); }	// replace with inline asm if desired
+inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm if desired
 
 
 //
