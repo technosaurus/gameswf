@@ -344,8 +344,8 @@ public:
 			// don't compact yet.
 			assert(m_buffer != 0);
 		} else {
-			m_buffer_size = m_size + (m_size >> 2);
-			reserve(m_buffer_size);
+			int new_buffer_size = m_size + (m_size >> 2);
+			reserve(new_buffer_size);
 		}
 
 		// Copy default T into new elements.
