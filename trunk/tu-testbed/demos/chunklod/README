@@ -1,11 +1,11 @@
 Chunk LOD demo
-24 July 2001
+29 July 2001
 Thatcher Ulrich <tu@tulrich.com> http://tulrich.com
 
 Unfinished demo of chunked LOD scheme.  Uses static meshes with
 lerping and crack-filling meshes (not implemented) to give an
-adjustable guaranteed max pixel error, no vertex popping (but it's
-buggy right now) and hopefully low CPU overhead.
+adjustable guaranteed max pixel error, no vertex popping and hopefully
+low CPU overhead.
 
 Please do not distribute!  It's not done yet.
 
