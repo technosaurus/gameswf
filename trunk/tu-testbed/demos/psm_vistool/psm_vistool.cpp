@@ -452,7 +452,7 @@ void	draw_light_rays(float density)
 	// Draw a bunch of rays.  Light-buffer ray sampling is linear
 	// in *perspective* space, which means it'll be something else
 	// in world-space.
- 	int	ray_count = fclamp(30 * density, 0, 1000);
+ 	int	ray_count = iclamp(int(30 * density), 0, 1000);
 	ray_count = ray_count * 2 + 1;	// make it odd
  	for (int i = 0; i < ray_count; i++)
  	{
