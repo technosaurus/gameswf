@@ -174,6 +174,9 @@ namespace gameswf
 		index = find_display_index(depth);
 		
 		m_display_object_array.insert(index, di);
+
+		// do the "onClipEvent (load)" event.
+		ch->on_event(event_id::LOAD);
 	}
 	
 	
@@ -350,6 +353,7 @@ namespace gameswf
 		for (i = 0; i < n; i++)
 		{
 			character*	ch = m_display_object_array[i].m_character;
+			ch->on_event(event_id::UNLOAD);
 			delete ch;
 		}
 		

@@ -162,6 +162,11 @@ namespace gameswf
 	}
 
 
+	//
+	// character
+	//
+
+
 	void	character::do_mouse_drag()
 	// Implement mouse-dragging for this movie.
 	{
@@ -631,7 +636,12 @@ namespace gameswf
 		}
 
 
-		void	set_root_movie(movie* root_movie) { m_movie = root_movie; assert(m_movie); }
+		void	set_root_movie(movie* root_movie)
+		{
+			m_movie = root_movie; assert(m_movie);
+
+			m_movie->on_event(event_id::LOAD);
+		}
 
 		void	set_display_viewport(int x0, int y0, int w, int h)
 		{
@@ -2188,7 +2198,7 @@ namespace gameswf
 					execute_frame_tags(m_current_frame);
 
 					// Dispatch onEnterFrame event.
-					on_enter_frame();
+					on_event(event_id::ENTER_FRAME);
 
 					// Perform frame actions
 					do_actions();
@@ -2350,33 +2360,6 @@ namespace gameswf
 		}
 
 		
-		/* sprite_instance */
-		void	on_enter_frame()
-		// Dispatch onEnterFrame handler, if any.
-		{
-			// First, check for built-in event handler.
-			{
-				as_value	method;
-				if (get_event_handler(event_id(event_id::ENTER_FRAME), &method))
-				{
-					// Dispatch.
-					call_method0(method, &m_as_environment, this);
-				}
-			}
-
-			// Check for member function.
-			{
-				static tu_string	s_enter_frame_method_name("onEnterFrame");
-
-				as_value	method;
-				if (get_member(s_enter_frame_method_name, &method))
-				{
-					call_method0(method, &m_as_environment, this);
-				}
-			}
-		}
-
-
 		void	display()
 		{
 			if (get_visible() == false)
@@ -3011,6 +2994,33 @@ namespace gameswf
 				remove_display_object(ch->get_depth());
 			}
 		}
+
+		/* sprite_instance */
+		virtual void	on_event(event_id id)
+		// Dispatch event handler(s), if any.
+		{
+			// First, check for built-in event handler.
+			{
+				as_value	method;
+				if (get_event_handler(event_id(id), &method))
+				{
+					// Dispatch.
+					call_method0(method, &m_as_environment, this);
+				}
+			}
+
+			// Check for member function.
+			{
+				const tu_string&	method_name = id.get_function_name();
+
+				as_value	method;
+				if (get_member(method_name, &method))
+				{
+					call_method0(method, &m_as_environment, this);
+				}
+			}
+		}
+
 	};
 
 
