@@ -101,7 +101,8 @@ namespace gameswf
 		matrix mat = inst->get_world_matrix();
 		cxform cx = inst->get_world_cxform();
 		float max_error = 20.0f / mat.get_max_scale() /	inst->get_parent()->get_pixel_scale();
-		if (ratio != m_last_ratio) {
+		if (ratio != m_last_ratio)
+		{
 			delete m_mesh;
 			m_last_ratio = ratio;
 			m_mesh = new mesh_set(this, max_error * 0.75f);

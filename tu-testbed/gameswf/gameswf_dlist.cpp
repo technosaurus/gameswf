@@ -174,9 +174,8 @@ namespace gameswf
 		
 		m_display_object_array.insert(index, di);
 
-		// do the frame1 actions (if applicable) and the "onClipEvent (load)" event.
-		//ch->on_event(event_id::LOAD);
-		ch->on_event_load();
+		// From vitaly:
+		ch->execute_frame_tags(0);
 	}
 	
 	
@@ -288,20 +287,6 @@ namespace gameswf
 		
 		// Set the display properties.
 		di.m_ref = true;
-
-		//vb
-/*
-		di.set_character(NULL);
-		movie_interface* old_root = old_ch.get_ptr()->get_root_interface();
-		movie_interface* new_root = ch->get_root_interface();
-		if (new_root != old_root && old_root != get_current_root())
-		{
-			old_root->drop_ref();
-//			printf("extern movie deleted\n");
-		}
-*/    
-		//ve
-		
 		di.set_character(ch);
 
 		if (use_cxform)
@@ -418,6 +403,25 @@ namespace gameswf
 			// @@@@ TODO FIX: If array changes size due to
 			// character actions, the iteration may not be
 			// correct!
+			//
+			// What's the correct thing to do here?  Options:
+			//
+			// * copy the display list at the beginning,
+			// iterate through the copy
+			//
+			// * use (or emulate) a linked list instead of
+			// an array (still had problems; e.g. what
+			// happens if the next or current object gets
+			// removed from the dlist?)
+			//
+			// * iterate through current array in depth
+			// order.  Always find the next object using a
+			// search of current array (but optimize the
+			// common case where nothing has changed).
+			//
+			// * ???
+			//
+			// Need to test to see what Flash does.
 			assert(n == m_display_object_array.size());
 
 			display_object_info & dobj = m_display_object_array[i];
@@ -427,11 +431,11 @@ namespace gameswf
 				character*	ch = dobj.m_character.get_ptr();
 				assert(ch);
 
-				if (ch->get_visible() == false)
-				{
-					// Don't advance.
-					continue;
-				}
+// 				if (ch->get_visible() == false)
+// 				{
+// 					// Don't advance.
+// 					continue;
+// 				}
 
 				ch->advance(delta_time);
 			}

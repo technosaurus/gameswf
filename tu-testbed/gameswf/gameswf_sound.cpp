@@ -87,7 +87,10 @@ namespace gameswf
 				// @@ This is pretty awful -- lots of copying, slow reading.
 				data_bytes = in->get_tag_end_position() - in->get_position();
 				data = new unsigned char[data_bytes];
-				for (int i = 0; i < data_bytes; i++) { data[i] = in->read_u8(); }
+				for (int i = 0; i < data_bytes; i++)
+				{
+					data[i] = in->read_u8();
+				}
 
 				// Swap bytes on behalf of the host, to make it easier for the handler.
 				// @@ I'm assuming this is a good idea?	 Most sound handlers will prefer native endianness?

@@ -1237,7 +1237,7 @@ namespace gameswf
 		return true;
 	}
 
-//vb	
+
 	float shape_character_def::get_height_local()
 	{
 		return m_bound.height();

@@ -80,6 +80,13 @@ namespace gameswf
 	movie_definition_sub*	create_library_movie_sub(const char* filename);
 	movie_interface*	create_library_movie_inst_sub(movie_definition_sub* md);
 
+//v for extern movies
+	movie_interface*	create_library_movie_inst(movie_definition* md);
+	movie_interface* get_current_root();
+	void set_current_root(movie_interface* m);
+	const char* get_workdir();
+	void set_workdir(const char* dir);
+	void delete_unused_root();
 
 	struct movie : public movie_interface, public as_object_interface
 	{
@@ -252,7 +259,8 @@ namespace gameswf
 		virtual bool	on_event(event_id id) { return false; }
 
 		// Special event handler; sprites also execute their frame1 actions on this event.
-		virtual void	on_event_load() { on_event(event_id::LOAD); }
+//v		
+//		virtual void	on_event_load() { on_event(event_id::LOAD); }
 
 		// as_object_interface stuff
 		virtual void	set_member(const tu_stringi& name, const as_value& val) { assert(0); }
@@ -266,6 +274,9 @@ namespace gameswf
 
 		virtual void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth) { assert(0); }
 		virtual void	remove_display_object(const tu_string& name) { assert(0); }
+
+//v
+		virtual void	execute_frame_tags(int frame, bool state_only = false) {}
 
 	};
 
@@ -488,7 +499,6 @@ namespace gameswf
 		// need to do this using enclose_transformed_rect(),
 		// not by scaling the local height/width!
 
-//vb
 		virtual float	get_height()
 		{
 			matrix	m = get_world_matrix();
@@ -502,7 +512,6 @@ namespace gameswf
 			float	w = m_def->get_width_local() * m.m_[0][0];
 			return TWIPS_TO_PIXELS(w);
 		}
-//ve
 		
 	};
 
@@ -566,7 +575,7 @@ namespace gameswf
 	void	define_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	start_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	button_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
-	void	do_init_action_loader(stream* in, int tag_type, movie_definition_sub* m);    //v
+	void	do_init_action_loader(stream* in, int tag_type, movie_definition_sub* m);
 	// sound_stream_loader();	// head, head2, block
 
 
