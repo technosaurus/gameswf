@@ -1,3 +1,11 @@
+-- Root-finder for non-linear equations w/ one variable -- Thatcher Ulrich <tu@tulrich.com>
+--
+-- This program has been donated to the Public Domain.
+--
+-- Written in Lua version 5, see http://www.lua.org
+--
+
+
 
 solver = {}
 
