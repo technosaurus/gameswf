@@ -725,7 +725,7 @@ namespace gameswf
 	as_value	string_method(
 		as_environment* env,
 		const tu_string& this_string,
-		const tu_string& method_name,
+		const tu_stringi& method_name,
 		int nargs,
 		int first_arg_bottom_index)
 	{
@@ -738,6 +738,55 @@ namespace gameswf
 			}
 
 			return as_value(0);
+		}
+		else if (method_name == "indexOf")
+		{
+			if (nargs < 1)
+			{
+				return as_value(-1);
+			}
+			else
+			{
+				int	start_index = 0;
+				if (nargs > 1)
+				{
+					start_index = (int) env->bottom(first_arg_bottom_index - 1).to_number();
+				}
+				const char*	str = this_string.c_str();
+				const char*	p = strstr(
+					str + start_index,
+					env->bottom(first_arg_bottom_index).to_string());
+				if (str == NULL)
+				{
+					return -1;
+				}
+
+				return p - str;
+			}
+		}
+		else if (method_name == "substring")
+		{
+			// Pull a slice out of this_string.
+			int	start = 0;
+			int	end = this_string.length();
+			if (nargs >= 1)
+			{
+				start = (int) env->bottom(first_arg_bottom_index).to_number();
+				start = iclamp(start, 0, this_string.length());
+			}
+			if (nargs >= 2)
+			{
+				end = (int) env->bottom(first_arg_bottom_index - 1).to_number();
+				end = iclamp(end, 0, this_string.length());
+			}
+
+			if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
+			assert(end >= start);
+
+			tu_string	result(this_string.c_str() + start);
+			result.resize(end - start);	// @@ check this!
+
+			return as_value(result);
 		}
 
 		return as_value();
@@ -1481,14 +1530,26 @@ namespace gameswf
 				case 0x4E:	// get member
 				{
 					as_object_interface*	obj = env->top(1).to_object();
-					env->top(1).set_undefined();
-					if (obj)
+
+					// Special case: String has a member "length"
+					if (obj == NULL
+					    && env->top(1).get_type() == as_value::STRING
+					    && env->top(0).to_tu_stringi() == "length")
 					{
-						obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
+						int	len = env->top(1).to_tu_string().length();
+						env->top(1).set(len);
 					}
 					else
 					{
-						// @@ log error?
+						env->top(1).set_undefined();
+						if (obj)
+						{
+							obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
+						}
+						else
+						{
+							// @@ log error?
+						}
 					}
 					env->drop(1);
 					break;
@@ -1554,7 +1615,7 @@ namespace gameswf
 						result = string_method(
 							env,
 							env->top(1).to_tu_string(),
-							env->top(0).to_tu_string(),
+							env->top(0).to_tu_stringi(),
 							nargs,
 							env->get_top_index() - 3);
 					}
@@ -1678,6 +1739,27 @@ namespace gameswf
 					break;
 				}
 
+				case 0x87:	// store_register
+				{
+					int	reg = m_buffer[pc + 3];
+					if (reg >= 0 && reg < 4)
+					{
+						// Save top of stack in specified register.
+						env->m_register[reg] = env->top(0);
+						
+						IF_VERBOSE_ACTION(
+							log_msg("-------------- reg[%d] = '%s'\n",
+								reg,
+								env->top(0).to_string()));
+					}
+					else
+					{
+						log_error("store_register[%d] -- register out of bounds!", reg);
+					}
+
+					break;
+				}
+
 				case 0x88:	// decl_dict: declare dictionary
 				{
 					int	i = pc;
@@ -1781,12 +1863,20 @@ namespace gameswf
 							int	reg = m_buffer[3 + i];
 							UNUSED(reg);
 							i++;
-//							log_msg("reg[%d]\n", reg);
-							env->push(/* contents of register[reg] */ false);	// @@ TODO
+							if (reg < 0 || reg >= 4)
+							{
+								env->push(as_value(as_value::UNDEFINED));
+								log_error("push register[%d] -- register out of bounds!\n", reg);
+							}
+							else
+							{
+								env->push(env->m_register[reg]);
+								IF_VERBOSE_ACTION(
+									log_msg("-------------- pushed register[%d] = '%s'\n",
+										reg,
+										env->top(0).to_string()));
+							}
 
-							log_error("error: push register not defined\n");
-
-							IF_VERBOSE_ACTION(log_msg("-------------- pushed register[%d] (@@ TODO)\n", reg));
 						}
 						else if (type == 5)
 						{
@@ -2036,6 +2126,12 @@ namespace gameswf
 	// Conversion to string.
 	{
 		return to_tu_string().c_str();
+	}
+
+
+	const tu_stringi&	as_value::to_tu_stringi() const
+	{
+		return reinterpret_cast<const tu_stringi&>(to_tu_string());
 	}
 
 
@@ -2723,6 +2819,7 @@ namespace gameswf
 			ARG_NONE = 0,
 			ARG_STR,
 			ARG_HEX,	// default hex dump, in case the format is unknown or unsupported
+			ARG_U8,
 			ARG_U16,
 			ARG_S16,
 			ARG_PUSH_DATA,
@@ -2816,6 +2913,7 @@ namespace gameswf
 			
 			{ 0x81, "goto_frame", ARG_U16 },
 			{ 0x83, "get_url", ARG_STR },
+			{ 0x87, "store_register", ARG_U8 },
 			{ 0x88, "decl_dict", ARG_DECL_DICT },
 			{ 0x8A, "wait_for_frame", ARG_HEX },
 			{ 0x8B, "set_target", ARG_STR },
@@ -2887,6 +2985,11 @@ namespace gameswf
 					log_msg("%c", instruction_data[3 + i]);
 				}
 				log_msg("\"\n");
+			}
+			else if (fmt == ARG_U8)
+			{
+				int	val = instruction_data[3];
+				log_msg(" %d\n", val);
 			}
 			else if (fmt == ARG_U16)
 			{
