@@ -106,10 +106,7 @@ namespace gameswf
 		as_value()
 			:
 			m_type(UNDEFINED),
-			m_number_value(0.0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_number_value(0.0)
 		{
 		}
 
@@ -117,85 +114,56 @@ namespace gameswf
 			:
 			m_type(STRING),
 			m_number_value(0.0),
-			m_string_value(str),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_string_value(str)
 		{
 		}
 
 		as_value(type e)
 			:
 			m_type(e),
-			m_number_value(0.0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_number_value(0.0)
 		{
 		}
 
 		as_value(bool val)
 			:
 			m_type(NUMBER),
-			m_number_value(0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_number_value(double(val))
 		{
-			m_number_value = double(val);
 		}
 
 		as_value(int val)
 			:
 			m_type(NUMBER),
-			m_number_value(0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_number_value(double(val))
 		{
-			m_number_value = double(val);
 		}
 
 		as_value(float val)
 			:
 			m_type(NUMBER),
-			m_number_value(0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_number_value(double(val))
 		{
-			m_number_value = double(val);
 		}
 
 		as_value(double val)
 			:
 			m_type(NUMBER),
-			m_number_value(0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_number_value(val)
 		{
-			m_number_value = val;
 		}
 
 		as_value(as_object_interface* obj)
 			:
 			m_type(OBJECT),
-			m_number_value(0.0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_object_value(obj)
 		{
-			m_object_value = obj;
 		}
 
 		as_value(as_c_function_ptr func)
 			:
 			m_type(C_FUNCTION),
-			m_number_value(0.0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_c_function_value(func)
 		{
 			m_c_function_value = func;
 		}
@@ -203,12 +171,8 @@ namespace gameswf
 		as_value(as_as_function* func)
 			:
 			m_type(AS_FUNCTION),
-			m_number_value(0.0),
-			m_object_value(0),
-			m_c_function_value(0),
-			m_as_function_value(0)
+			m_as_function_value(func)
 		{
-			m_as_function_value = func;
 		}
 
 		type	get_type() const { return m_type; }

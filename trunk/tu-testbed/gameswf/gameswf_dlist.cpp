@@ -387,6 +387,15 @@ namespace gameswf
 			
 			if (dobj.m_ref == true)
 			{
+				character*	ch = dobj.m_character;
+				assert(ch);
+
+				if (ch->get_visible() == false)
+				{
+					// Don't advance.
+					continue;
+				}
+
 				dobj.m_character->advance(delta_time);
 			}
 		}
@@ -407,7 +416,14 @@ namespace gameswf
 			display_object_info&	dobj = m_display_object_array[i];
 
 			character*	ch = dobj.m_character;
-			
+			assert(ch);
+
+			if (ch->get_visible() == false)
+			{
+				// Don't display.
+				continue;
+			}
+
 			if (ch->get_clip_depth() > 0)
 			{
 //				log_msg("depth %i, clip_depth %i\n", dobj.m_depth, dobj.m_clip_depth);

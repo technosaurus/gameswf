@@ -741,6 +741,12 @@ namespace gameswf
 
 		void	display()
 		{
+			if (m_movie->get_visible() == false)
+			{
+				// Don't display.
+				return;
+			}
+
 			gameswf::render::begin_display(
 				m_background_color,
 				m_viewport_x0, m_viewport_y0,
@@ -772,6 +778,9 @@ namespace gameswf
 		{
 			return m_movie->set_edit_text(varname, text);
 		}
+
+		virtual void	set_visible(bool visible) { m_movie->set_visible(visible); }
+		virtual bool	get_visible() const { return m_movie->get_visible(); }
 	};
 
 
@@ -1982,6 +1991,12 @@ namespace gameswf
 		/* sprite_instance */
 		virtual void	advance(float delta_time)
 		{
+			if (get_visible() == false)
+			{
+				// We're invisible, and therefore frozen.
+				return;
+			}
+
 			assert(m_def && m_root);
 
 			// mouse drag.
@@ -2189,6 +2204,12 @@ namespace gameswf
 
 		void	display()
 		{
+			if (get_visible() == false)
+			{
+				// We're invisible, so don't display!
+				return;
+			}
+
 			m_display_list.display();
 		}
 
