@@ -413,6 +413,7 @@ quaternion	matrix::GetOrientation() const
 
 		float	qr, qi, qj, qk;
 		switch (i) {
+		default:
 		case 0:
 			s = sqrtf((m[0].get(0) - (m[1].get(1) + m[2].get(2))) + 1);
 			qi = 0.5f * s;
