@@ -86,15 +86,15 @@ tqt::~tqt()
 }
 
 
-unsigned int	tqt::get_texture_id(int level, int col, int row) const
-// Returns the OpenGL texture id for a texture tile corresponding to
-// the specified node in the quadtree.
-{
-	return make_texture_id(load_image(level, col, row));
-}
+//unsigned int	tqt::get_texture_id(int level, int col, int row) const
+//// Returns the OpenGL texture id for a texture tile corresponding to
+//// the specified node in the quadtree.
+//{
+//	return make_texture_id(load_image(level, col, row));
+//}
 
 
-SDL_Surface*	tqt::load_image(int level, int col, int row) const
+image::rgb*	tqt::load_image(int level, int col, int row) const
 // Create a new image with data from the specified texture tile.
 // Caller becomes the owner of the returned object.
 {
@@ -109,41 +109,8 @@ SDL_Surface*	tqt::load_image(int level, int col, int row) const
 	// Load the .jpg and make a texture from it.
 	SDL_RWseek(m_source, m_toc[index], SEEK_SET);
 	image::rgb*	im = image::read_jpeg(m_source);
-	SDL_Surface*	surf = image::create_SDL_Surface(im);	// deletes im!
-	im = NULL;
 
-	return surf;
-}
-
-
-/*static*/ unsigned int	tqt::make_texture_id(SDL_Surface* surf)
-// Use the typical GL parameters to make an OpenGL texture from the
-// given surface.  DELETES THE GIVEN SURFACE!
-{
-	if (surf == NULL) {
-		return 0;
-	}
-
-	assert(surf->pixels);
-	assert(surf->format->BytesPerPixel == 3);
-	assert(surf->format->BitsPerPixel == 24);
-
-	// Bind a texture id and set up this image as a texture.
-	unsigned int	texture_id = 0;
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, &texture_id);
-	glBindTexture(GL_TEXTURE_2D, texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surf->w, surf->h, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
-	gluBuild2DMipmaps(GL_TEXTURE_2D, GL_RGB, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);	// @@ perhaps we could improve on this??
-
-	SDL_FreeSurface(surf);
-
-	return texture_id;
+	return im;
 }
 
 

@@ -20,6 +20,7 @@ LDFLAGS := -lGL -lGLU -lSDL_image $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS)
 
 # Source files.
 SRCS := \
+	dlmalloc.c	\
 	utility.cpp	\
 	config.cpp \
 	geometry.cpp \
@@ -31,6 +32,7 @@ SRCS := \
 	image_filters.cpp \
 	tqt.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
+OBJS := $(OBJS:.c=.$(OBJ_EXT))
 
 
 ENGINE = engine.$(LIB_EXT)

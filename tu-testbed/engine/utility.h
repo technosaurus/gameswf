@@ -27,31 +27,39 @@ int	tu_testbed_assert_break(const char* filename, int linenum, const char* expre
 #endif // _WIN32
 
 
-#if 0
-// assert_else, for asserting with associated recovery code.  Follow
-// "assert_else( predicate )" with a block of code to execute when the
-// predicate is false.  In debug builds this code will be executed if
-// you step past the assert.  In release builds this code there's no
-// assert, but the recovery block will be executed when predicate is
-// false.
 //
-// usage:
-//	assert_else( p ) {
-//		block of recovery code for when p is false;
-//	}
+// new/delete wackiness -- if USE_DL_MALLOC is defined, we're going to
+// try to use Doug Lea's malloc as much as possible by overriding the
+// default operator new/delete.
 //
-//	assert_else( p );	// no recovery code.
-//
-//	assert_else( p ) return;	// recovery code doesn't need to be a block.
-//
-#define assert_else(p)	\
-	if ( !(p) && (assert(0), 1) )
-#endif // 0
+#ifdef USE_DL_MALLOC
+
+void*	operator new(size_t size);
+void	operator delete(void* ptr);
+void*	operator new[](size_t size);
+void	operator delete[](void* ptr);
+
+#else	// not USE_DL_MALLOC
+
+// If we're not using DL_MALLOC, then *really* don't use it: #define
+// away dlmalloc(), dlfree(), etc, back to the platform defaults.
+#define dlmalloc	malloc
+#define dlfree	free
+#define dlrealloc	realloc
+#define dlcalloc	calloc
+#define dlmemalign	memalign
+#define dlvalloc	valloc
+#define dlpvalloc	pvalloc
+#define dlmalloc_trim	malloc_trim
+#define dlmalloc_stats	malloc_stats
+
+#endif	// not USE_DL_MALLOC
 
 
 #ifndef M_PI
 #define M_PI 3.141592654
 #endif // M_PI
+
 
 //
 // some misc handy math functions

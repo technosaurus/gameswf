@@ -19,6 +19,7 @@
 #include "engine/utility.h"
 #include "engine/tqt.h"
 #include "engine/image.h"
+#include "engine/dlmalloc.h"
 
 #include "SDL/SDL_thread.h"
 
@@ -68,7 +69,7 @@ namespace lod_tile_freelist
 	}
 
 	
-	unsigned int	make_texture(SDL_Surface* surf)
+	unsigned int	make_texture(image::rgb* surf)
 	// Return a texture id, using the given surface info.  FREES
 	// THE GIVEN SURFACE!
 	//
@@ -78,9 +79,7 @@ namespace lod_tile_freelist
 			return 0;
 		}
 
-		assert(surf->pixels);
-		assert(surf->format->BytesPerPixel == 3);
-		assert(surf->format->BitsPerPixel == 24);
+		assert(surf->m_data);
 
 		unsigned int	texture_id = 0;
 
@@ -96,16 +95,15 @@ namespace lod_tile_freelist
 			glBindTexture(GL_TEXTURE_2D, texture_id);
 
 			// Put the new data in the old texture.
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, surf->m_width, surf->m_height, GL_RGB, GL_UNSIGNED_BYTE, surf->m_data);
 
 			// Build mips.
 			int	level = 1;
-			while (surf->w > 1 || surf->h > 1) {
+			while (surf->m_width > 1 || surf->m_height > 1) {
 				image::make_next_miplevel(surf);
-				glTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, surf->w, surf->h, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+				glTexSubImage2D(GL_TEXTURE_2D, level, 0, 0, surf->m_width, surf->m_height, GL_RGB, GL_UNSIGNED_BYTE, surf->m_data);
 				level++;
 			}
-
 		}
 		else
 		{
@@ -120,18 +118,18 @@ namespace lod_tile_freelist
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surf->w, surf->h, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surf->m_width, surf->m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->m_data);
 
 			// Build mips.
 			int	level = 1;
-			while (surf->w > 1 || surf->h > 1) {
+			while (surf->m_width > 1 || surf->m_height > 1) {
 				image::make_next_miplevel(surf);
-				glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, surf->w, surf->h, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->pixels);
+				glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, surf->m_width, surf->m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->m_data);
 				level++;
 			}
 		}
 	
-		SDL_FreeSurface(surf);
+		delete surf;
 
 		return texture_id;
 		
@@ -180,11 +178,13 @@ struct vertex_info {
 	~vertex_info()
 	{
 		if (vertices) {
-			delete [] vertices;
+//			delete [] vertices;
+			dlfree(vertices);
 			vertices = NULL;
 		}
 		if (indices) {
-			delete [] indices;
+//			delete [] indices;
+			dlfree(indices);
 			indices = NULL;
 		}
 	}
@@ -197,6 +197,35 @@ struct vertex_info {
 		return sizeof(*this) + vertex_count * sizeof(vertices[0]) + index_count * sizeof(indices[0]);
 	}
 };
+
+
+void	vertex_info::read(SDL_RWops* in)
+// Read vert info from the given file.
+{
+	vertex_count = SDL_ReadLE16(in);
+//	vertices = new vertex[vertex_count];
+	vertices = (vertex*) dlmalloc(vertex_count * sizeof(vertex));
+	for (int i = 0; i < vertex_count; i++) {
+		vertices[i].read(in);
+	}
+		
+	// Load indices.
+	index_count = SDL_ReadLE32(in);
+	if (index_count > 0) {
+//		indices = new Uint16[ index_count ];
+		indices = (Uint16*) dlmalloc(index_count * sizeof(Uint16));
+	} else {
+		indices = NULL;
+	}
+	{for (int i = 0; i < index_count; i++) {
+		indices[i] = SDL_ReadLE16(in);
+	}}
+
+	// Load the real triangle count, for computing statistics.
+	triangle_count = SDL_ReadLE32(in);
+
+//	printf("vertex_info::read() -- vertex_count = %d, index_count = %d\n", vertex_count, index_count);//xxxxxxxx
+}
 
 
 struct lod_chunk;
@@ -394,7 +423,7 @@ private:
 	// Associates a chunk with its newly loaded texture data.
 	{
 		lod_chunk*	m_chunk;
-		SDL_Surface*	m_texture_image;
+		image::rgb*	m_texture_image;
 
 		retire_texture_info() : m_chunk(0), m_texture_image(0) {}
 	};
@@ -555,7 +584,7 @@ void	chunk_tree_loader::sync_loader_thread()
 					// being loaded.  Only thing to do is to discard the
 					// newly loaded image, to avoid breaking the invariant.
 					// (No big deal; this situation is rare.)
-					SDL_FreeSurface(r.m_texture_image);
+					delete r.m_texture_image;
 				}
 				else
 				{
@@ -871,7 +900,7 @@ bool	chunk_tree_loader::loader_service_texture()
 	// so we do it with the mutex unlocked so the main
 	// update/render thread can hopefully get some work
 	// done.
-	SDL_Surface*	texture_image = NULL;
+	image::rgb*	texture_image = NULL;
 
 	// Texture.
 	const tqt*	qt = m_tree->m_texture_quadtree;
@@ -1030,33 +1059,6 @@ static void	draw_box(const vec3& min, const vec3& max)
 	glVertex3f(max.get_x(), max.get_y(), min.get_z());
 	glVertex3f(min.get_x(), max.get_y(), min.get_z());
 	glEnd();
-}
-
-
-void	vertex_info::read(SDL_RWops* in)
-// Read vert info from the given file.
-{
-	vertex_count = SDL_ReadLE16(in);
-	vertices = new vertex[vertex_count];
-	for (int i = 0; i < vertex_count; i++) {
-		vertices[i].read(in);
-	}
-		
-	// Load indices.
-	index_count = SDL_ReadLE32(in);
-	if (index_count > 0) {
-		indices = new Uint16[ index_count ];
-	} else {
-		indices = NULL;
-	}
-	{for (int i = 0; i < index_count; i++) {
-		indices[i] = SDL_ReadLE16(in);
-	}}
-
-	// Load the real triangle count, for computing statistics.
-	triangle_count = SDL_ReadLE32(in);
-
-//	printf("vertex_info::read() -- vertex_count = %d, index_count = %d\n", vertex_count, index_count);//xxxxxxxx
 }
 
 
@@ -1796,6 +1798,7 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 			       s_chunks_with_texture,
 			       s_textures_bound,
 			       estimated_texture_bytes);
+			dlmalloc_stats();
 		}
 	}
 
