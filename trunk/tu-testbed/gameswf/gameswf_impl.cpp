@@ -21,7 +21,7 @@
 #include "gameswf_font.h"
 #include "gameswf_fontlib.h"
 #include "gameswf_log.h"
-#include "gameswf_morph.h"
+#include "gameswf_morph2.h"
 #include "gameswf_render.h"
 #include "gameswf_shape.h"
 #include "gameswf_stream.h"
@@ -33,7 +33,6 @@
 #include <string.h>	// for memset
 #include <typeinfo>
 #include <float.h>
-#include "gameswf_morph2.h"	//v
 
 #if TU_CONFIG_LINK_TO_ZLIB
 #include <zlib.h>
@@ -902,8 +901,7 @@ namespace gameswf
 		int	m_mouse_capture_id;
 		void * m_userdata;
 		movie::drag_state	m_drag_state;
-		bool	m_on_event_load_called;
-
+//v		bool	m_on_event_load_called;
 
 		movie_root(movie_def_impl* def)
 			:
@@ -920,8 +918,8 @@ namespace gameswf
 			m_mouse_y(0),
 			m_mouse_buttons(0),
 			m_mouse_capture_id(-1),
-			m_userdata(NULL),
-			m_on_event_load_called(false)
+			m_userdata(NULL)
+//v			m_on_event_load_called(false)
 		{
 			assert(m_def != NULL);
 
@@ -1043,14 +1041,18 @@ namespace gameswf
 		void	restart() { m_movie->restart(); }
 		void	advance(float delta_time)
 		{
-			if (m_on_event_load_called == false)
-			{
+
+//v			
+//			if (m_on_event_load_called == false)
+//			{
 				// Must do loading events.  For child sprites this is
 				// done by the dlist, but root movies don't get added
 				// to a dlist, so we do it here.
-				m_on_event_load_called = true;
-				m_movie->on_event_load();
-			}
+
+//				m_movie->execute_frame_tags(0);
+//				m_movie->on_event_load();
+//				m_on_event_load_called = true;
+//			}
 
 			m_timer += delta_time;
 			m_movie->advance(delta_time);
@@ -1175,7 +1177,7 @@ namespace gameswf
 			register_tag_loader(48, define_font_loader);
 			register_tag_loader(56, export_loader);
 			register_tag_loader(57, import_loader);
-			register_tag_loader(59, do_init_action_loader);    //v
+			register_tag_loader(59, do_init_action_loader);   
 		}
 	}
 
@@ -1380,13 +1382,11 @@ namespace gameswf
 
 
 	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
-//vb
 	static hash< movie_definition_sub*, smart_ptr<movie_interface> >	s_movie_library_inst;
 	static array<movie_interface*> s_extern_sprites;
 	static movie_interface* s_current_root;
 
-//	static movie_interface* s_old_root;
-	static char s_workdir[255];
+	static tu_string s_workdir;
 
 	void save_extern_movie(movie_interface* m)
 	{
@@ -1420,23 +1420,19 @@ namespace gameswf
 
 	void set_current_root(movie_interface* m)
 	{
-
 		assert(m != NULL);
-//		s_old_root = s_current_root;
 		s_current_root = m;
 	}
 
 	const char* get_workdir()
 	{
-		return s_workdir;
+		return s_workdir.c_str();
 	}
 
 	void set_workdir(const char* dir)
 	{
-
-
 		assert(dir != NULL);
-		strcpy(s_workdir, dir);
+		s_workdir = dir;
 	}
 
 	void	clear_library()
@@ -2867,6 +2863,7 @@ namespace gameswf
 		bool	m_update_frame;
 		bool	m_has_looped;
 		bool	m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
+		bool	m_on_event_load_called;
 
 		as_environment	m_as_environment;
 
@@ -2904,6 +2901,7 @@ namespace gameswf
 			m_update_frame(true),
 			m_has_looped(false),
 			m_accept_anim_moves(true),
+			m_on_event_load_called(false),
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
 			m_mouse_state(UP)
@@ -3159,11 +3157,29 @@ namespace gameswf
 			// Keep this (particularly m_as_environment) alive during execution!
 			smart_ptr<as_object_interface>	this_ptr(this);
 
-			if (get_visible() == false)
+			if (m_on_event_load_called == false)
 			{
-				// We're invisible, and therefore frozen.
+				if (this == get_root_movie())
+				{
+					execute_frame_tags(0);
+					do_actions();
+					on_event(event_id::LOAD);
+				}
+				else
+				{
+					on_event(event_id::LOAD);
+					do_actions();
+				}
+				m_on_event_load_called = true;
 				return;
 			}
+//v   is not valid: invisible do not means deaded
+//			if (get_visible() == false)
+//			{
+	
+				// We're invisible, and therefore frozen.
+//				return;
+//			}
 
 			assert(m_def != NULL && m_root != NULL);
 
@@ -3194,12 +3210,6 @@ namespace gameswf
 			if (m_time_remainder >= frame_time)
 			{
 				m_time_remainder -= frame_time;
-				m_update_frame = true;
-			}
-
-			if (m_update_frame)
-			{
-				m_update_frame = false;
 
 				// Update current and next frames.
 				m_current_frame = m_next_frame;
@@ -3236,6 +3246,13 @@ namespace gameswf
 					}
 				}
 			}
+
+			// Skip excess time.  TODO root caller should
+			// loop to prevent this happening; probably
+			// only root should keep m_time_remainder, and
+			// advance(dt) should be a discrete tick()
+			// with no dt.
+			m_time_remainder = fmod(m_time_remainder, frame_time);
 		}
 
 
@@ -3380,8 +3397,13 @@ namespace gameswf
 
 
 			// Set current and next frames.
-			m_current_frame = target_frame_number;
-			m_next_frame = iclamp(target_frame_number + 1, 0, m_def->get_frame_count() - 1);
+
+			//v in advance current=next; next++;
+			// test file "goto_play.swf"
+
+			m_current_frame = target_frame_number;      
+			m_next_frame = target_frame_number;
+//			m_next_frame = iclamp(target_frame_number + 1, 0, m_def->get_frame_count() - 1);
 
 			// goto_frame stops by default.
 			m_play_state = STOP;
@@ -3739,7 +3761,6 @@ namespace gameswf
 			else if (name == "_width")
 			{
 				// @@ tulrich: is parameter in world-coords or local-coords?
-				//v  tested       
 				matrix	m = get_matrix();
 				m.m_[0][0] = float(val.to_number()) / get_width();
 				set_matrix(m);
@@ -4201,19 +4222,20 @@ namespace gameswf
 			return false;
 		}
 
-
+//v
 		/*sprite_instance*/
+/*		
 		virtual void	on_event_load()
 		// Do the events that (appear to) happen as the movie
 		// loads.  frame1 tags and actions are executed (even
 		// before advance() is called).  Then the onLoad event
 		// is triggered.
 		{
-			execute_frame_tags(0);
-			do_actions();
-			on_event(event_id::LOAD);
+//			execute_frame_tags(0);
+//			do_actions();
+//    	on_event(event_id::LOAD);
 		}
-
+*/
 
 		/*sprite_instance*/
 		virtual const char*	call_method(const char* method_call)

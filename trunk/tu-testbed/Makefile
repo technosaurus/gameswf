@@ -11,11 +11,12 @@ clean:
 	make -C engine clean
 	make -C demos/chunklod clean
 
-TAGS:
+TAGS: .PHONY
 	-rm -rf TAGS
 	touch TAGS
 	find . -name '*.h' -o -name '*.cpp' -o -name '*.c' | xargs etags -a -f TAGS -e
 
+.PHONY:
 
 basic_files =					\
 	tu-testbed/README			\

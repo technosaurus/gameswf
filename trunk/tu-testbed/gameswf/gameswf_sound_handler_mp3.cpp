@@ -98,17 +98,18 @@ struct pcm_buff_t {
 		}
 	}
 
-	void *collate(void *p, const bool stereo) const {
-		const unsigned int bytes = count * (stereo?2:1) * sizeof(Sint16);
+	void *collate(void *p, const bool stereo) const
+	{
+		const unsigned int bytes = count * (stereo ? 2 : 1) * sizeof(Sint16);
 		memcpy(p, samples, bytes);
 		return (void *) (((char *)p) + bytes); // geez
 	}
 };
 
 // there's quite some (useless) copying around since there's no infrastructure for streaming and we need to decode it all at once
-void 
-convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const int sample_count, const int sample_size, const int sample_rate, const bool stereo) {
-	log_msg("convert_mp3_data sample count %d rate %d stereo %s\n", sample_count, sample_rate, stereo?"yes":"no");
+void convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const int sample_count, const int sample_size, const int sample_rate, const bool stereo)
+{
+	//log_msg("convert_mp3_data sample count %d rate %d stereo %s\n", sample_count, sample_rate, stereo?"yes":"no");
 
 	mad_stream	stream;
 	mad_frame	frame;
@@ -125,21 +126,25 @@ convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const i
 	stream.error = MAD_ERROR_NONE;
 
 	// decode frames
-	unsigned int
-		fc = 0,
-		total = 0;
+	unsigned int fc = 0, total = 0;
 	array<pcm_buff_t *> out; // holds decoded frames
-	while (1) {
+
+	while (true)
+	{
 		if (mad_frame_decode(&frame, &stream)) {
 			// there's always some garbage in front of the buffer
 			// so i guess, it's not so garbagish. anyway, skip.
-			if (fc == 0 && stream.error == MAD_ERROR_LOSTSYNC) 
+			if (fc == 0 && stream.error == MAD_ERROR_LOSTSYNC)
+			{
 				continue;
-			else {
+			}
+			else
+			{
 				// kludge as we stop decoding on LOSTSYNC.
 				if (stream.error != MAD_ERROR_LOSTSYNC)
-					printf("** frame error: %s\n", mad_stream_errorstr(&stream));
-
+				{
+					log_error("** MP3 frame error: %s\n", mad_stream_errorstr(&stream));
+				}
 				break;
 			}
 		}
@@ -170,7 +175,7 @@ convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const i
 	// assemble together all decoded frames. another round of memcpy.
 	{
 		void *p = new Sint16[total];
-		*adjusted_data = (Sint16 *)p;
+		*adjusted_data = (Sint16*) p;
 		*adjusted_size = total * sizeof(Sint16);
 		// stuff all that crap together
 		{for (int i=0; i<out.size(); ++i)

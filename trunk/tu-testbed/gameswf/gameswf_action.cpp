@@ -75,7 +75,7 @@ namespace gameswf
 	// Statics.
 	bool	s_inited = false;
 	stringi_hash<as_value>	s_built_ins;
-	stringi_hash<as_c_function_ptr>	s_objects_interface;		//v
+	stringi_hash<as_c_function_ptr>	s_objects_interface;
 
 	fscommand_callback	s_fscommand_handler = NULL;
 
@@ -85,11 +85,12 @@ namespace gameswf
 		s_objects_interface.add(object_name, handler);
 	}
 
+#define EXTERN_MOVIE
 #ifdef EXTERN_MOVIE
 	void attach_extern_movie(const char* url, const movie* target, const movie* root_movie)
 	{
 		tu_string infile = get_workdir();
-		infile = infile + url;
+		infile += url;
 
 		movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
 		if (md == NULL)
@@ -109,6 +110,8 @@ namespace gameswf
 				return;
 			}
 			set_current_root(extern_movie);
+			movie* m = static_cast<movie*>(extern_movie)->get_root_movie();
+			m->on_event(event_id::LOAD);
 		}
 		else
 		{
@@ -132,15 +135,13 @@ namespace gameswf
 			Uint16 clip_depth = tar->get_clip_depth();
 
 			movie* parent = tar->get_parent();
-			movie* new_movie = extern_movie->get_root_movie();
+			movie* new_movie = static_cast<movie*>(extern_movie)->get_root_movie();
 
-			new_movie->on_event_load();
-
-//			extern_movie->set_display_viewport(0, 0, 100, 100);
+//v			new_movie->on_event_load(); will be called in advance
 
 			assert(parent != NULL);
 
-       ((character*)new_movie)->set_parent(parent);
+			((character*)new_movie)->set_parent(parent);
        
 			parent->replace_display_object(
 				(character*) new_movie,
@@ -367,7 +368,7 @@ namespace gameswf
 	}
 
 	//
-	// array object	//v
+	// array object
 	//
 
 
@@ -381,7 +382,7 @@ namespace gameswf
 	}
 
 	//
-	// sound object	//v
+	// sound object
 	//
 
 	struct sound_as_object : public as_object
@@ -433,27 +434,27 @@ namespace gameswf
 		movie_definition_sub*	def = (movie_definition_sub*) env->get_target()->get_root_movie()->get_movie_definition();
 		assert(def);
 		smart_ptr<resource> res = def->get_exported_resource(so->sound);
-    if (res == NULL)
+		if (res == NULL)
 		{
 			log_error("import error: resource '%s' is not exported\n", so->sound.c_str());
-      return;  
+			return;  
 		}
 
 		int si = 0;
-    sound_sample_impl* ss = (sound_sample_impl*) res->cast_to_sound_sample();
+		sound_sample_impl* ss = (sound_sample_impl*) res->cast_to_sound_sample();
 
-    if (ss != NULL)
+		if (ss != NULL)
 		{
 			si = ss->m_sound_handler_id;
 		}
-    else
+		else
 		{
 			log_error("sound sample is NULL\n");
-      return;
+			return;
 		}
 
-    // sanity check
-    assert( si>=0 && si< 1000);
+		// sanity check
+		assert( si>=0 && si< 1000);
 		so->sound_id = si;
 	}
 

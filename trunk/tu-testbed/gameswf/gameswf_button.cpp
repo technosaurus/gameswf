@@ -445,7 +445,6 @@ namespace gameswf
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val)
 		{
-			//v not tested
 			if (name == "_alpha")
 			{
 				// Alpha units are in percent.
@@ -454,7 +453,6 @@ namespace gameswf
 			}
 			else
 			{
-				//v tested
 				if (name == "_visible")
 				{
 					val->set(m_visible);
