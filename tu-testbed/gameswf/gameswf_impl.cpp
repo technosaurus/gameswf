@@ -2744,21 +2744,9 @@ namespace gameswf
 			{
 				return m_root->m_movie;
 			}
-			else
-			{
-				// See if we have a match on the display list.
-				for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
-				{
-					character*	ch = m_display_list.get_character(i);
-					if (strcmp(ch->get_name(), name) == 0)
-					{
-						// Found it.
-						return ch;
-					}
-				}
-			}
 
-			return NULL;
+			// See if we have a match on the display list.
+			return m_display_list.get_character_by_name(name);
 		}
 
 
@@ -2826,6 +2814,29 @@ namespace gameswf
 		virtual void	get_drag_state(drag_state* st)
 		{
 			*st = m_root->m_drag_state;
+		}
+
+
+		void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth)
+		// Duplicate the object with the specified name and add it with a new name 
+		// at a new depth.
+		{
+			character* ch = m_display_list.get_character_by_name(name);
+			if( ch ) 
+			{
+				add_display_object(ch->get_id(), newname, depth, ch->get_cxform(), ch->get_matrix(), ch->get_ratio(), ch->get_clip_depth());
+			}
+		}
+
+
+		void	remove_display_object(const tu_string& name)
+		// Remove the object with the specified name.
+		{
+			character* ch = m_display_list.get_character_by_name(name);
+			if( ch ) 
+			{
+				remove_display_object(ch->get_depth());
+			}
 		}
 	};
 
