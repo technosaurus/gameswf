@@ -576,6 +576,11 @@ namespace swf
 
 		void	read(stream* in);
 		void	execute(movie* m);
+
+		bool	is_null()
+		{
+			return m_buffer.size() < 1 || m_buffer[0] == 0;
+		}
 	};
 
 
@@ -855,11 +860,14 @@ namespace swf
 				restart();
 			}
 
-			assert(target_frame_number >= m_current_frame);
+			assert(target_frame_number == m_current_frame
+			       || target_frame_number == m_current_frame + 1);
 			assert(target_frame_number < m_frame_count);
 
 			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
 			{
+				if (frame < 0) continue;
+
 				array<execute_tag*>&	playlist = m_playlist[frame];
 				for (int i = 0; i < playlist.size(); i++)
 				{
@@ -868,16 +876,17 @@ namespace swf
 				}
 
 				m_current_frame = frame;
-
-				// Take care of this frame's actions.
-				if (execute_actions(this, m_action_list))
-				{
-					// Some action called goto_frame() or restart() or something like that.
-					// Exit this function immediately before undoing desired changes.
-					return;
-				}
-				m_action_list.resize(0);
 			}
+
+
+			// Take care of this frame's actions.
+			if (execute_actions(this, m_action_list))
+			{
+				// Some action called goto_frame() or restart() or something like that.
+				// Exit this function immediately before undoing desired changes.
+				return;
+			}
+			m_action_list.resize(0);
 
 //			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
 		}
@@ -2598,7 +2607,7 @@ namespace swf
 			assert(target_frame_number >= m_current_frame);
 			assert(target_frame_number < m_def->m_frame_count);
 
-			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
+			for (int frame = m_current_frame; frame <= target_frame_number; frame++)
 			{
 				// Handle the normal frame updates.
 				array<execute_tag*>&	playlist = m_def->m_playlist[frame];
@@ -2863,20 +2872,69 @@ namespace swf
 	};
 
 
+	struct button_action
+	{
+		enum condition
+		{
+			IDLE_TO_OVER_UP = 1 << 0,
+			OVER_UP_TO_IDLE = 1 << 1,
+			OVER_UP_TO_OVER_DOWN = 1 << 2,
+			OVER_DOWN_TO_OVER_UP = 1 << 3,
+			OVER_DOWN_TO_OUT_DOWN = 1 << 4,
+			OUT_DOWN_TO_OVER_DOWN = 1 << 5,
+			OUT_DOWN_TO_IDLE = 1 << 6,
+			IDLE_TO_OVER_DOWN = 1 << 7,
+			OVER_DOWN_TO_IDLE = 1 << 8,
+		};
+		int	m_conditions;
+		array<action_buffer>	m_actions;
+
+		void	read(stream* in, int tag_type)
+		{
+			// Read condition flags.
+			if (tag_type == 7)
+			{
+				m_conditions = OVER_DOWN_TO_OVER_UP;
+			}
+			else
+			{
+				assert(tag_type == 34);
+				m_conditions = in->read_u16();
+			}
+
+			// Read actions.
+			for (;;)
+			{
+				action_buffer	a;
+				a.read(in);
+				if (a.is_null())
+				{
+					// End marker; no more action records.
+					break;
+				}
+				m_actions.push_back(a);
+			}
+		}
+	};
+
+
 	struct button_character : public character
 	{
 		array<button_record>	m_button_records;
+		array<button_action>	m_button_actions;
 		enum mouse_state
 		{
-			UP,	// when the mouse is not over the button.
-			DOWN,	// when the mouse is over us, and mouse button is down.
-			OVER	// when the mouse is over us, and mouse button is not pressed.
+			OUT,		// when the mouse is not over the button, and mouse button is up.
+			OUT_DOWN,	// when the mouse is not over the button, and mouse button is down.
+			DOWN,		// when the mouse is over us, and mouse button is down.
+			OVER		// when the mouse is over us, and mouse button is not pressed.
 		};
-		mouse_state	m_mouse_state;
+		mouse_state	m_last_mouse_state, m_mouse_state;
 
 		button_character()
 			:
-			m_mouse_state(UP)
+			m_last_mouse_state(OUT),
+			m_mouse_state(OUT)
 		{
 		}
 
@@ -2900,7 +2958,9 @@ namespace swf
 					m_button_records.push_back(r);
 				}
 
-				// Read action records.
+				// Read actions.
+				m_button_actions.resize(m_button_actions.size() + 1);
+				m_button_actions.back().read(in, tag_type);
 			}
 			else if (tag_type == 34)
 			{
@@ -2927,18 +2987,20 @@ namespace swf
 					int	next_action_offset = in->read_u16();
 					int	this_action_position = in->get_position();
 
-					int	condition_flags = in->read_u16();//xxxx
-
-					// read action records
+					m_button_actions.resize(m_button_actions.size() + 1);
+					m_button_actions.back().read(in, tag_type);
 
 					if (next_action_offset == 0)
 					{
 						// done.
 						break;
 					}
+
+					// do we need to seek?
 				}
 			}
 		}
+
 
 		void	advance(float delta_time, movie* m, const matrix& mat)
 		{
@@ -2946,9 +3008,10 @@ namespace swf
 
 			// Look at the mouse state, and figure out our button state.  We want to
 			// know if the mouse is hovering over us, and whether it's clicking on us.
+			m_last_mouse_state = m_mouse_state;
 			int	mx, my, mbuttons;
 			m->get_mouse_state(&mx, &my, &mbuttons);
-			m_mouse_state = UP;
+			m_mouse_state = OUT;
 
 			// Find the mouse position in button-space.
 			point	mouse_position;
@@ -2975,15 +3038,84 @@ namespace swf
 				}
 			}}
 
-			if (mbuttons
-			    && m_mouse_state == OVER)
+			if (mbuttons)
 			{
-				// Button is pressed.
-				m_mouse_state = DOWN;
+				// Mouse button is pressed.
+				if (m_mouse_state == OVER)
+				{
+					// Flash button is pressed.
+					m_mouse_state = DOWN;
+				}
+				else
+				{
+					m_mouse_state = OUT_DOWN;
+				}
 			}
 
-			// Do any actions that are warranted.
-			// @@ look at previous state and current state and select corresponding actions...
+			// OUT/OUT_DOWN/DOWN/OVER
+			// Figure out what button_action::condition these states signify.
+			button_action::condition	c = (button_action::condition) 0;
+			if (m_mouse_state == OVER)
+			{
+				if (m_last_mouse_state == OUT)
+				{
+					c = button_action::IDLE_TO_OVER_UP;
+				}
+				else if (m_last_mouse_state == DOWN)
+				{
+					c = button_action::OVER_DOWN_TO_OVER_UP;
+				}
+			}
+			else if (m_mouse_state == OUT)
+			{
+				if (m_last_mouse_state == OVER)
+				{
+					c = button_action::OVER_UP_TO_IDLE;
+				}
+				else if (m_last_mouse_state == OUT_DOWN)
+				{
+					c = button_action::OUT_DOWN_TO_IDLE;
+				}
+				else if (m_last_mouse_state == DOWN)
+				{
+					c = button_action::OVER_DOWN_TO_IDLE;
+				}
+			}
+			else if (m_mouse_state == OUT_DOWN)
+			{
+				if (m_last_mouse_state == DOWN)
+				{
+					c = button_action::OVER_DOWN_TO_OUT_DOWN;
+				}
+			}
+			else if (m_mouse_state == DOWN)
+			{
+				if (m_last_mouse_state == OVER)
+				{
+					c = button_action::OVER_UP_TO_OVER_DOWN;
+				}
+				else if (m_last_mouse_state == OUT_DOWN)
+				{
+					c = button_action::OUT_DOWN_TO_OVER_DOWN;
+				}
+				else if (m_last_mouse_state == OUT)
+				{
+					c = button_action::IDLE_TO_OVER_DOWN;
+				}
+			}
+
+			// Add appropriate actions to the movie's execute list...
+			{for (int i = 0; i < m_button_actions.size(); i++)
+			{
+				if (m_button_actions[i].m_conditions & c)
+				{
+					// Matching action.
+					for (int j = 0; j < m_button_actions[i].m_actions.size(); j++)
+					{
+						m->add_action_buffer(&(m_button_actions[i].m_actions[j]));
+					}
+				}
+			}}
 
 			// Advance our relevant characters.
 			{for (int i = 0; i < m_button_records.size(); i++)
@@ -2996,7 +3128,8 @@ namespace swf
 
 				matrix	sub_matrix = mat;
 				sub_matrix.concatenate(rec.m_button_matrix);
-				if (m_mouse_state == UP)
+				if (m_mouse_state == OUT
+				    || m_mouse_state == OUT_DOWN)
 				{
 					if (rec.m_up)
 					{
@@ -3029,7 +3162,7 @@ namespace swf
 				{
 					continue;
 				}
-				if ((m_mouse_state == UP && rec.m_up)
+				if (((m_mouse_state == OUT || m_mouse_state == OUT_DOWN) && rec.m_up)
 				    || (m_mouse_state == DOWN && rec.m_down)
 				    || (m_mouse_state == OVER && rec.m_over))
 				{
