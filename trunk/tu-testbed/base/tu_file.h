@@ -75,6 +75,9 @@ public:
 	enum memory_buffer_enum { memory_buffer };
 	tu_file(memory_buffer_enum m);
 
+	// A read-only memory-buffer with predefined data.
+	tu_file(memory_buffer_enum m, int size, void* data);
+
 	~tu_file();
 
 	// Copy remaining contents of *in into *this.
