@@ -243,11 +243,10 @@ namespace gameswf
 				c = button_action::OVER_UP_TO_IDLE;
 				m_mouse_state = UP;
 			}
-			else 
-
-			// Menu button transitions.
-			if (m_def->m_menu)
+			else if (m_def->m_menu)
 			{
+				// Menu button transitions.
+
 				if (t == transition(OVER_UP, OVER_DOWN))	// Press
 				{
 					c = button_action::OVER_UP_TO_OVER_DOWN;
@@ -269,10 +268,10 @@ namespace gameswf
 					m_mouse_state = UP;
 				}
 			}
-
-			// Push button transitions.
 			else
 			{
+				// Push button transitions.
+
 				if (t == transition(OVER_UP, OVER_DOWN))	// Press
 				{
 					c = button_action::OVER_UP_TO_OVER_DOWN;
