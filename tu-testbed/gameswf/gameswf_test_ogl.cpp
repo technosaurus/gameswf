@@ -39,17 +39,20 @@ void	print_usage()
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
 		"  -vp         Be verbose about parsing the movie\n"
+		"  -p          Run full speed (no sleep) and log frame rate\n"
 		"\n"
 		"keys:\n"
-		"  q or ESC    Quit/Exit\n"
-		"  p           Toggle Pause\n"
-		"  r           Restart the movie\n"
-		"  [ or -      Step back one frame\n"
-		"  ] or +      Step forward one frame\n"
-		"  a           Toggle antialiasing (doesn't work)\n"
-		"  t           Debug.  Test the set_variable() function\n"
-		"  g           Debug.  Test the get_variable() function\n"
-		"  b           Toggle background color\n"
+		"  CTRL-Q          Quit/Exit\n"
+		"  CTRL-W          Quit/Exit\n"
+		"  ESC             Quit/Exit\n"
+		"  CTRL-P          Toggle Pause\n"
+		"  CTRL-R          Restart the movie\n"
+		"  CTRL-[ or -     Step back one frame\n"
+		"  CTRL-] or +     Step forward one frame\n"
+		"  CTRL-A          Toggle antialiasing (doesn't work)\n"
+		"  CTRL-T          Debug.  Test the set_variable() function\n"
+		"  CTRL-G          Debug.  Test the get_variable() function\n"
+		"  CTRL-B          Toggle background color\n"
 		);
 }
 
@@ -61,6 +64,7 @@ static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
 static bool	s_verbose = false;
 static bool	s_background = true;
+static bool	s_measure_performance = false;
 
 
 static void	message_log(const char* message)
@@ -207,6 +211,11 @@ int	main(int argc, char *argv[])
 					exit(1);
 				}
 			}
+			else if (argv[arg][1] == 'p')
+			{
+				// Enable frame-rate/performance logging.
+				s_measure_performance = true;
+			}
 			else if (argv[arg][1] == 'v')
 			{
 				// Be verbose; i.e. print log messages to stdout.
@@ -322,6 +331,8 @@ int	main(int argc, char *argv[])
 	bool	paused = false;
 	float	speed_scale = 1.0f;
 	Uint32	last_ticks = SDL_GetTicks();
+	int	frame_counter = 0;
+	int	last_logged_fps = last_ticks;
 	for (;;)
 	{
 		Uint32	ticks = SDL_GetTicks();
@@ -343,53 +354,56 @@ int	main(int argc, char *argv[])
 			case SDL_KEYDOWN:
 			{
 				SDLKey	key = event.key.keysym.sym;
+				bool	ctrl = (event.key.keysym.mod & KMOD_CTRL) != 0;
 
-				if (key == SDLK_q || key == SDLK_ESCAPE)
+				if (key == SDLK_ESCAPE
+				    || (ctrl && key == SDLK_q)
+				    || (ctrl && key == SDLK_w))
 				{
 					goto done;
 				}
-				else if (key == SDLK_p)
+				else if (ctrl && key == SDLK_p)
 				{
 					// Toggle paused state.
 					paused = ! paused;
 					printf("paused = %d\n", int(paused));
 				}
-				else if (key == SDLK_r)
+				else if (ctrl && key == SDLK_r)
 				{
 					// Restart the movie.
 					m->restart();
 				}
-				else if (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS)
+				else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))
 				{
 					paused = true;
 					//delta_t = -0.1f;
 					m->goto_frame(m->get_current_frame()-1);
 				}
-				else if (key == SDLK_RIGHTBRACKET || key == SDLK_KP_PLUS)
+				else if (ctrl && (key == SDLK_RIGHTBRACKET || key == SDLK_KP_PLUS))
 				{
 					paused = true;
 					//delta_t = +0.1f;
 					m->goto_frame(m->get_current_frame()+1);
 				}
-				else if (key == SDLK_a)
+				else if (ctrl && key == SDLK_a)
 				{
 					// Toggle antialiasing.
 					s_antialiased = !s_antialiased;
 					//gameswf::set_antialiased(s_antialiased);
 				}
-				else if (key == SDLK_t)
+				else if (ctrl && key == SDLK_t)
 				{
 					// test text replacement / variable setting:
 					m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box");
 				}
-				else if (key == SDLK_g)
+				else if (ctrl && key == SDLK_g)
 				{
 					// test get_variable.
 					message_log("testing get_variable: '");
 					message_log(m->get_variable("test.text"));
 					message_log("'\n");
 				}
-				else if (key == SDLK_b)
+				else if (ctrl && key == SDLK_b)
 				{
 					// toggle background color.
 					s_background = !s_background;
@@ -447,10 +461,35 @@ int	main(int argc, char *argv[])
 		glDrawBuffer(GL_BACK);
 
 		m->display();
+		frame_counter++;
 
 		SDL_GL_SwapBuffers();
 
-		SDL_Delay(10);
+		if (s_measure_performance == false)
+		{
+			// Don't hog the CPU.
+			SDL_Delay(10);
+		}
+		else
+		{
+			// Log the frame rate every second or so.
+			if (last_ticks - last_logged_fps > 1000)
+			{
+				float	delta = (last_ticks - last_logged_fps) / 1000.f;
+
+				if (delta > 0)
+				{
+					printf("fps = %3.1f\n", frame_counter / delta);
+				}
+				else
+				{
+					printf("fps = *inf*\n");
+				}
+
+				last_logged_fps = last_ticks;
+				frame_counter = 0;
+			}
+		}
 	}
 
 done:
