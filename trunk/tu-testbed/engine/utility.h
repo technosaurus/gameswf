@@ -14,6 +14,20 @@
 #include <SDL/SDL_endian.h>
 
 
+#ifdef _WIN32
+#ifndef NDEBUG
+
+// On windows, replace ANSI assert with our own, for a less annoying
+// debugging experience.
+int	tu_testbed_assert_break(const char* filename, int linenum, const char* expression);
+#undef assert
+#define assert(x)	((x) || tu_testbed_assert_break(__FILE__, __LINE__, #x))
+
+#endif // not NDEBUG
+#endif // _WIN32
+
+
+#if 0
 // assert_else, for asserting with associated recovery code.  Follow
 // "assert_else( predicate )" with a block of code to execute when the
 // predicate is false.  In debug builds this code will be executed if
@@ -32,6 +46,7 @@
 //
 #define assert_else(p)	\
 	if ( !(p) && (assert(0), 1) )
+#endif // 0
 
 
 #ifndef M_PI

@@ -25,6 +25,7 @@ public:
 	int	get_tile_size() const { return m_tile_size; }
 	
 	unsigned int	get_texture_id(int level, int col, int row) const;
+	void	delete_texture_id(int level, int col, int row, unsigned int id);
 
 	// Static utility functions.
 	static bool	tqt::is_tqt_file(const char* filename);

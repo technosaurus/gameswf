@@ -31,9 +31,9 @@ chunkdemo$(EXE_EXT): chunkdemo.$(OBJ_EXT) chunklod.$(OBJ_EXT) $(ENGINE)
 	$(CC) -o $@ $^ $(JPEGLIB) $(LIBS) $(LDFLAGS)
 
 make_engine:
-	cd ../../engine; make
+	make -C ../../engine
 
 clean:
-	cd ../../engine; make clean
-	-@rm *.$(OBJ_EXT)
-	-@rm chunkdemo$(EXE_EXT) heightfield_chunker$(EXE_EXT) heightfield_shader$(EXE_EXT) makebt$(EXE_EXT)
+	make -C ../../engine clean
+	-@rm -f *.$(OBJ_EXT)
+	-@rm -f chunkdemo$(EXE_EXT) heightfield_chunker$(EXE_EXT) heightfield_shader$(EXE_EXT) makebt$(EXE_EXT)

@@ -86,7 +86,7 @@ void	get_column(Uint8* column, image::rgb* image, int x)
 
 	if ((x < 0) || (x >= image->m_width)) {
 		assert(0);
-		return;
+		x = iclamp(x, 0, image->m_width - 1);
 	}
 
 	d = image->m_pitch;
@@ -300,7 +300,7 @@ struct {
 
 
 // TODO: experiment with different filter functions.
-filter_type	default_type = MITCHELL;
+filter_type	default_type = TRIANGLE;
 
 
 void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
