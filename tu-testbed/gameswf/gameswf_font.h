@@ -46,6 +46,9 @@ namespace gameswf
 		const texture_glyph*	get_texture_glyph(int glyph_index) const;
 		void	add_texture_glyph(int glyph_index, const texture_glyph* glyph);
 
+		int	get_glyph_index(Uint16 code) const;
+		float	get_advance(int glyph_index) const;
+
 	private:
 		void	read_code_table(stream* in);
 
@@ -59,7 +62,17 @@ namespace gameswf
 		bool	m_is_italic;
 		bool	m_is_bold;
 		bool	m_wide_codes;
-		array<Uint16>	m_code_table;	// m_code_table[glyph_index] = character code
+		//array<Uint16>	m_code_table;	// m_code_table[glyph_index] = character code
+
+		// m_code_table[character_code] = glyph_index
+		template<class T>
+		struct simple_code_hash
+		// Dummy hash functor.
+		{
+			static unsigned int	compute(const T& data) { return data; }
+		};
+
+		hash<Uint16, int, simple_code_hash<Uint16> > m_code_table;
 
 		// Layout stuff.
 		float	m_ascent;
@@ -85,7 +98,6 @@ namespace gameswf
 
 
 #endif // GAMESWF_FONT_H
-
 
 // Local Variables:
 // mode: C++

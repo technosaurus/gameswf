@@ -73,9 +73,19 @@ namespace gameswf
 			matrix	input_matrix;
 			input_matrix.read(in);
 
-			m_gradient_matrix.set_identity();
-			m_gradient_matrix.concatenate_translation(128.f, 0.f);
-			m_gradient_matrix.concatenate_scale(1.0f / 128.0f);
+			if (m_type == 0x10)
+			{
+				m_gradient_matrix.set_identity();
+				m_gradient_matrix.concatenate_translation(128.f, 0.f);
+				m_gradient_matrix.concatenate_scale(1.0f / 128.0f);
+			}
+			else 
+			{
+				m_gradient_matrix.set_identity();
+				m_gradient_matrix.concatenate_translation(8.f, 8.f);
+				m_gradient_matrix.concatenate_scale(1.0f / 2048.0f);
+			}
+
 
 			matrix	m;
 			m.set_inverse(input_matrix);
@@ -128,14 +138,13 @@ namespace gameswf
 		assert(m_type == 0x10 || m_type == 0x12);
 		assert(m_gradients.size() > 0);
 
-		for (int i = 0; i < m_gradients.size(); i++)
+		if (ratio < m_gradients[0].m_ratio)
+			return m_gradients[0].m_color;		
+		
+		for (int i = 1; i < m_gradients.size(); i++)
 		{
 			if (m_gradients[i].m_ratio >= ratio)
 			{
-				if (i == 0)
-				{
-					return m_gradients[i].m_color;
-				}
 				float	f = (ratio - m_gradients[i - 1].m_ratio) / float(m_gradients[i].m_ratio - m_gradients[i - 1].m_ratio);
 
 				rgba	result;
@@ -150,25 +159,42 @@ namespace gameswf
 	// Make a bitmap_info* corresponding to our gradient.
 	// We can use this to set the gradient fill style.
 	{
-		assert(m_type == 0x10);	// linear only, for the moment.  TODO radial fill.
+		assert(m_type == 0x10 || m_type == 0x12);
+
+		image::rgba*	im = NULL;
 
 		if (m_type == 0x10)
 		{
-			image::rgba*	im = image::create_rgba(256, 1);
+			im = image::create_rgba(256, 1);
 
 			for (int i = 0; i < im->m_width; i++)
 			{
 				rgba	sample = sample_gradient(i);
 				im->set_pixel(i, 0, sample.m_r, sample.m_g, sample.m_b, sample.m_a);
 			}
+		}
+		else if (m_type == 0x12)
+		{
+			im = image::create_rgba(16, 16);
 
-			gameswf::render::bitmap_info*	bi = gameswf::render::create_bitmap_info(im);
-			delete im;
-
-			return bi;
+			for (int j = 0; j < im->m_height; j++)
+			{
+				for (int i = 0; i < im->m_width; i++)
+				{
+					float	y = j - im->m_height / 2;
+					float	x = i - im->m_width / 2;
+					int	ratio = 2 * 256/im->m_width * sqrt(x * x + y * y);
+					if (ratio>255) ratio = 255;
+					rgba	sample = sample_gradient( ratio );
+					im->set_pixel(i, j, sample.m_r, sample.m_g, sample.m_b, sample.m_a);
+				}
+			}
 		}
 
-		return NULL;
+		gameswf::render::bitmap_info*	bi = gameswf::render::create_bitmap_info(im);
+		delete im;
+
+		return bi;
 	}
 
 
@@ -185,7 +211,7 @@ namespace gameswf
 			// 0x10: linear gradient fill
 			// 0x12: radial gradient fill
 
-			if (m_type == 0x10 && m_gradient_bitmap_info == NULL)
+			if (m_gradient_bitmap_info == NULL)
 			{
 				(const_cast<fill_style*>(this))->m_gradient_bitmap_info = create_gradient_bitmap();
 			}

@@ -97,7 +97,7 @@ namespace gameswf
 // in the API?), perhaps matrix xform, and maybe spacing, etc.
 //
 //		// For direct text rendering from the host app.
-//		void	draw_string(const font* f, float x, float y, float size, const char* text);
+		void	draw_string(const font* f, float x, float y, float size, const char* text);
 //		void	draw_string(const font* f, float x, float y, float size, const wchar* text);	// wide-char version
 	}
 

@@ -498,19 +498,6 @@ namespace fontlib
 			// for each font:
 			for (int f=0; f < s_fonts.size(); f++)
 			{
-				// save font name.
-				const char * font_name = s_fonts[f]->get_name();
-				if (font_name!=NULL)
-				{
-					int font_name_len = strlen(s_fonts[f]->get_name());
-					s_file->write_le16(font_name_len);
-					s_file->write_bytes(s_fonts[f]->get_name(), font_name_len);
-				}
-				else
-				{
-					s_file->write_le16(0);
-				}
-				
 				// skip number of glyphs.
 				int ng = s_fonts[f]->get_glyph_count();
 				int ng_position = s_file->get_position();
@@ -625,25 +612,6 @@ namespace fontlib
 			// for each font:
 			for (int f=0; f<nf; f++)
 			{
-
-				// read font name.
-				if (s_fonts[f]->get_name()!=NULL) 
-				{
-					int font_name_lenght;
-					font_name_lenght = s_file->read_le16();
-					char * font_name = new char[font_name_lenght];
-					s_file->read_bytes(font_name, font_name_lenght);
-					assert(0==strcmp(font_name, s_fonts[f]->get_name()));
-					delete font_name;
-				}
-				else
-				{
-					int dummy = s_file->read_le16();
-					assert(0==dummy);
-				}
-					
-
-				
 				// load number of glyphs.
 				int ng = s_file->read_le32();
 
@@ -763,6 +731,44 @@ namespace fontlib
 		render::draw_bitmap(tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
 	}
 
+	void	draw_string(const font* f, float x, float y, float size, const char* text)
+	// Host-driven text rendering function. This not-tested and unfinished.
+	{
+		for (int i = 0; text[i]; i++)
+		{
+			int g = f->get_glyph_index(text[i]);
+			if (g == -1) 
+			{
+				continue;	// FIXME: advance?
+			}
+
+			const texture_glyph*	tg = f->get_texture_glyph(g);
+			
+			matrix m;
+			m.concatenate_translation(x, y);
+			m.concatenate_scale(size / 1024.0f);
+
+			if (tg)
+			{
+				// Draw the glyph using the cached texture-map info.
+				gameswf::render::push_apply_matrix(m);
+		//		gameswf::render::push_apply_cxform(sub_di.m_color_transform);
+				fontlib::draw_glyph(tg, rgba());
+		//		gameswf::render::pop_cxform();
+				gameswf::render::pop_matrix();
+			}
+			else
+			{
+				shape_character*	glyph = f->get_glyph(g);
+
+				// Draw the character using the filled outline.
+				//if (glyph) glyph->display(sub_di, m_dummy_style); // TODO: fill display_info
+			}
+
+			x += f->get_advance(g);
+		}
+
+	}
 
 }	// end namespace fontlib
 }	// end namespace gameswf

@@ -290,14 +290,15 @@ namespace gameswf
 	{
 		IF_DEBUG(printf("reading code table at offset %d\n", in->get_position()));
 
-		assert(m_code_table.size() == 0);
+		assert(m_code_table.is_empty());
 
 		if (m_wide_codes)
 		{
 			// Code table is made of Uint16's.
 			for (int i = 0; i < m_glyphs.size(); i++)
 			{
-				m_code_table.push_back(in->read_u16());
+			//	m_code_table.push_back(in->read_u16());
+				m_code_table.add(in->read_u16(), i);
 			}
 		}
 		else
@@ -305,11 +306,26 @@ namespace gameswf
 			// Code table is made of bytes.
 			for (int i = 0; i < m_glyphs.size(); i++)
 			{
-				m_code_table.push_back(in->read_u8());
+			//	m_code_table.push_back(in->read_u8());
+				m_code_table.add(in->read_u8(), i);
 			}
 		}
 	}
 
+	int	font::get_glyph_index(Uint16 code) const
+	{
+		int glyph_index;
+		if (m_code_table.get(code, &glyph_index))
+		{
+			return glyph_index;
+		}
+		return -1;
+	}
+
+	float	font::get_advance(int glyph_index) const
+	{
+		return m_advance_table[glyph_index];
+	}
 };	// end namespace gameswf
 
 
