@@ -21,7 +21,7 @@
 #include "engine/image.h"
 #include "engine/dlmalloc.h"
 
-#include "SDL/SDL_thread.h"
+#include "SDL_thread.h"
 
 #include "chunklod.h"
 

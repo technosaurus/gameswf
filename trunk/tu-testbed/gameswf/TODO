@@ -4,13 +4,23 @@ General
 * text rendering is almost production-ready, so finishing touches here
   are a high priority.  In particular:
 
-  * implement the caching functions so that font textures can be
-    precomputed and stored on disk, to avoid load-time delays.
-
   * implement host-app driven text rendering functions
 
   * try it out; maybe add a little text output to chunklod or
     something
+
+  * switch to shape rendering at larger scales (when the textures will
+    be stretched)
+
+  * text rendering is slightly blurrier than a scanline renderer would
+    do it, due to mip-mapping.  Probably not fixable in a good way --
+    *can* be fixed by not allowing scaling and by always pinning glyph
+    origin to a pixel center; maybe that could be a host-driven
+    rendering option or something, for specialized body text.  But,
+    results are still nice for scalable, smoothly animating display
+    text.
+
+* sprites as button characters are not working.
 
 * the half-implemented action stuff is an obstacle to progress; many
   of my test movies don't work because "goto frame" and/or some other
@@ -66,10 +76,10 @@ General
   specific; low priority for now.
 
 * dynamic text fields -- necessary for most games, console or not.
-  Given dynamic text, host app can hack in text entry, so don't
-  prioritize this yet.
+  Given direct text-rendering calls, host app can hack in text entry,
+  so don't prioritize this yet.
 
-* named elements, for easier UI programming in the host app
+* named elements APIs, for easier UI programming in the host app
 
 * more action stuff
 
@@ -79,7 +89,11 @@ Renderer
 
 It's horribly slow right now, and has some glitches :(
 
-* radial gradients (just use a 16x16 texture or something)
+* examine the sorting, improve:
+
+  * don't sort more than necessary
+
+  * don't allocate willy-nilly (examine use of array<>)
 
 * antialiasing
 
