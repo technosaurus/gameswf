@@ -13,7 +13,6 @@
 #include "gameswf_types.h"
 #include "engine/tu_file.h"
 #include <string.h>
-#include <zlib.h>
 
 
 namespace gameswf

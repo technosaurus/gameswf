@@ -13,6 +13,7 @@
 
 
 #include "engine/tu_file.h"
+#include "engine/utility.h"
 #include "gameswf_action.h"
 #include "gameswf_button.h"
 #include "gameswf_impl.h"
@@ -1084,7 +1085,7 @@ namespace gameswf
 			d_stream.next_in = &buf[0];
 			d_stream.avail_in = 1;
 
-			err = inflate(&d_stream, Z_NO_FLUSH);
+			err = inflate(&d_stream, Z_SYNC_FLUSH);
 			if (err == Z_STREAM_END) break;
 			if (err != Z_OK)
 			{
@@ -1177,7 +1178,7 @@ namespace gameswf
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
 				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_tag_end_position() == in->get_position());
+				assert(in->get_position() <= in->get_tag_end_position());
 
 				Uint8*	color_table = buffer;
 
@@ -1206,7 +1207,7 @@ namespace gameswf
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
 				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_tag_end_position() == in->get_position());
+				assert(in->get_position() <= in->get_tag_end_position());
 			
 				for (int j = 0; j < height; j++)
 				{
@@ -1235,7 +1236,7 @@ namespace gameswf
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
 				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_tag_end_position() == in->get_position());
+				assert(in->get_position() <= in->get_tag_end_position());
 			
 				// Need to re-arrange ARGB into RGB.
 				for (int j = 0; j < height; j++)
@@ -1284,7 +1285,7 @@ namespace gameswf
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
 				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_tag_end_position() == in->get_position());
+				assert(in->get_position() <= in->get_tag_end_position());
 
 				Uint8*	color_table = buffer;
 
@@ -1314,7 +1315,7 @@ namespace gameswf
 				Uint8*	buffer = new Uint8[buffer_bytes];
 
 				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_tag_end_position() == in->get_position());
+				assert(in->get_position() <= in->get_tag_end_position());
 			
 				for (int j = 0; j < height; j++)
 				{
@@ -1339,7 +1340,7 @@ namespace gameswf
 				// 32 bits / pixel, input is ARGB format
 
 				inflate_wrapper(in->get_underlying_stream(), ch->m_image->m_data, width * height * 4);
-				assert(in->get_tag_end_position() == in->get_position());
+				assert(in->get_position() <= in->get_tag_end_position());
 			
 				// Need to re-arrange ARGB into RGBA.
 				for (int j = 0; j < height; j++)
