@@ -29,32 +29,31 @@ namespace gameswf
 	{
 		struct bogus_bi : public bitmap_info
 		{
-			void	set_alpha_image(int width, int height, Uint8* data) {}
 		};
 
 
-		bitmap_info*	create_bitmap_info(image::rgb* im)
+		bitmap_info*	create_bitmap_info_empty()
 		{
-			if (s_render_handler) return s_render_handler->create_bitmap_info(im);
+			if (s_render_handler) return s_render_handler->create_bitmap_info_empty();
 			else return new bogus_bi;
 		}
 
-		bitmap_info*	create_bitmap_info(image::rgba* im)
+		bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data)
 		{
-			if (s_render_handler) return s_render_handler->create_bitmap_info(im);
+			if (s_render_handler) return s_render_handler->create_bitmap_info_alpha(w, h, data);
 			else return new bogus_bi;
 		}
 
-		bitmap_info*	create_bitmap_info_blank()
+		bitmap_info*	create_bitmap_info_rgb(image::rgb* im)
 		{
-			if (s_render_handler) return s_render_handler->create_bitmap_info_blank();
+			if (s_render_handler) return s_render_handler->create_bitmap_info_rgb(im);
 			else return new bogus_bi;
 		}
 
-		void	set_alpha_image(bitmap_info* bi, int w, int h, Uint8* data)
-		// @@ munges *data!!!
+		bitmap_info*	create_bitmap_info_rgba(image::rgba* im)
 		{
-			if (s_render_handler) s_render_handler->set_alpha_image(bi, w, h, data);
+			if (s_render_handler) return s_render_handler->create_bitmap_info_rgba(im);
+			else return new bogus_bi;
 		}
 
 		void	delete_bitmap_info(bitmap_info* bi)

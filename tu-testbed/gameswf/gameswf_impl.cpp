@@ -317,9 +317,19 @@ namespace gameswf
 		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
 		string_hash<int>	m_named_frames;	// 0-based frame #'s
-		string_hash< smart_ptr<resource> >	m_exports;
+		string_hash<smart_ptr<resource> >	m_exports;
+
+		// Items we import.
 		array<import_info>	m_imports;
-		array< smart_ptr<movie_definition> >	m_import_source_movies;	// hold a ref on these, to keep them alive
+
+		// Movies we import from; hold a ref on these, to keep them alive
+		array<smart_ptr<movie_definition> >	m_import_source_movies;
+
+		// Bitmaps used in this movie; collected in one place to make
+		// it possible for the host to manage them as textures.
+		array<smart_ptr<bitmap_info> >	m_bitmap_list;
+
+		create_bitmaps_flag	m_create_bitmaps;
 
 		rect	m_frame_size;
 		float	m_frame_rate;
@@ -329,8 +339,10 @@ namespace gameswf
 
 		jpeg::input*	m_jpeg_in;
 
-		movie_def_impl()
+
+		movie_def_impl(create_bitmaps_flag cbf)
 			:
+			m_create_bitmaps(cbf),
 			m_frame_rate(30.0f),
 			m_frame_count(0),
 			m_version(0),
@@ -365,6 +377,31 @@ namespace gameswf
 		virtual int	get_version() const { return m_version; }
 
 		virtual int	get_loading_frame() const { return m_loading_frame; }
+
+		/*movie_def_impl*/
+		virtual create_bitmaps_flag	get_create_bitmaps() const
+		// Returns DO_CREATE_BITMAPS if we're supposed to
+		// initialize our bitmap infos, or DO_NOT_INIT_BITMAPS
+		// if we're supposed to create blank placeholder
+		// bitmaps (to be init'd later explicitly by the host
+		// program).
+		{
+			return m_create_bitmaps;
+		}
+
+		virtual void	add_bitmap_info(bitmap_info* bi)
+		// All bitmap_info's used by this movie should be
+		// registered with this API.
+		{
+			m_bitmap_list.push_back(bi);
+		}
+
+
+		virtual int	get_bitmap_info_count() const { return m_bitmap_list.size(); }
+		virtual bitmap_info*	get_bitmap_info(int i) const
+		{
+			return m_bitmap_list[i].get_ptr();
+		}
 
 		virtual void	export_resource(const tu_string& symbol, resource* res)
 		// Expose one of our resources under the given symbol,
@@ -544,6 +581,8 @@ namespace gameswf
 		{
 			assert(ch);
 			m_bitmap_characters.add(character_id, ch);
+
+			add_bitmap_info(ch->get_bitmap_info());
 		}
 
 		sound_sample*	get_sound_sample(int character_id)
@@ -596,12 +635,15 @@ namespace gameswf
 
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) { return m_playlist[frame_number]; }
 
-
+		
+		/*movie_def_impl*/
 		void	read(tu_file* in)
 		// Read a .SWF movie.
 		{
+			Uint32	file_start_pos = in->get_position();
 			Uint32	header = in->read_le32();
 			Uint32	file_length = in->read_le32();
+			Uint32	file_end_pos = file_start_pos + file_length;
 
 			m_version = (header >> 24) & 255;
 			if ((header & 0x0FFFFFF) != 0x00535746
@@ -627,7 +669,7 @@ namespace gameswf
 				// Subtract the size of the 8-byte header, since
 				// it's not included in the compressed
 				// stream length.
-				file_length -= 8;
+				file_end_pos = file_length - 8;
 			}
 
 			stream	str(in);
@@ -641,7 +683,7 @@ namespace gameswf
 			IF_VERBOSE_PARSE(m_frame_size.print());
 			IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
 
-			while ((Uint32) str.get_position() < file_length)
+			while ((Uint32) str.get_position() < file_end_pos)
 			{
 				int	tag_type = str.open_tag();
 				loader_function	lf = NULL;
@@ -667,7 +709,7 @@ namespace gameswf
 
 				if (tag_type == 0)
 				{
-					if ((unsigned int)str.get_position() != file_length)
+					if ((unsigned int) str.get_position() != file_end_pos)
 					{
 						// Safety break, so we don't read past the end of the
 						// movie.
@@ -689,9 +731,13 @@ namespace gameswf
 				// Done with the zlib_adapter.
 				delete in;
 			}
+
+			int	current_position = original_in->get_position();
+			UNUSED(current_position);
 		}
 
 
+		/*movie_def_impl*/
 		void	get_owned_fonts(array<font*>* fonts)
 		// Fill up *fonts with fonts that we own.
 		{
@@ -708,13 +754,14 @@ namespace gameswf
 		}
 
 
+		/*movie_def_impl*/
 		void	generate_font_bitmaps()
 		// Generate bitmaps for our fonts, if necessary.
 		{
 			// Collect list of fonts.
 			array<font*>	fonts;
 			get_owned_fonts(&fonts);
-			fontlib::generate_font_bitmaps(fonts);
+			fontlib::generate_font_bitmaps(fonts, this);
 		}
 
 
@@ -722,6 +769,7 @@ namespace gameswf
 		#define CACHE_FILE_VERSION 1
 
 
+		/*movie_def_impl*/
 		void	output_cached_data(tu_file* out)
 		// Dump our cached data into the given stream.
 		{
@@ -736,7 +784,7 @@ namespace gameswf
 			// Write font data.
 			array<font*>	fonts;
 			get_owned_fonts(&fonts);
-			fontlib::output_cached_data(out, fonts);
+			fontlib::output_cached_data(out, fonts, this);
 
 			// Write character data.
 			{for (hash<int, smart_ptr<character_def> >::iterator it = m_characters.begin();
@@ -751,6 +799,7 @@ namespace gameswf
 		}
 
 
+		/*movie_def_impl*/
 		void	input_cached_data(tu_file* in)
 		// Read in cached data and use it to prime our loaded characters.
 		{
@@ -773,7 +822,7 @@ namespace gameswf
 			// Read the cached font data.
 			array<font*>	fonts;
 			get_owned_fonts(&fonts);
-			fontlib::input_cached_data(in, fonts);
+			fontlib::input_cached_data(in, fonts, this);
 
 			// Read the cached character data.
 			for (;;)
@@ -1179,7 +1228,7 @@ namespace gameswf
 
 		ensure_loaders_registered();
 
-		movie_def_impl*	m = new movie_def_impl;
+		movie_def_impl*	m = new movie_def_impl(DO_LOAD_BITMAPS);
 		m->read(in);
 
 		delete in;
@@ -1215,7 +1264,7 @@ namespace gameswf
 	static bool	s_no_recurse_while_loading = false;	// @@ TODO get rid of this; make it the normal mode.
 
 
-	movie_definition*	create_movie_no_recurse(tu_file* in)
+	movie_definition*	create_movie_no_recurse(tu_file* in, create_bitmaps_flag cbf)
 	{
 		ensure_loaders_registered();
 
@@ -1226,7 +1275,7 @@ namespace gameswf
 		// the resource_proxy stuff gets tested.
 		s_no_recurse_while_loading = true;
 
-		movie_def_impl*	m = new movie_def_impl;
+		movie_def_impl*	m = new movie_def_impl(cbf);
 		m->read(in);
 
 		s_no_recurse_while_loading = false;
@@ -1369,21 +1418,27 @@ namespace gameswf
 	// Bitmap character
 	struct bitmap_character : public bitmap_character_def
 	{
-		bitmap_character(image::rgb* image)
+		bitmap_character(bitmap_info* bi)
+			:
+			m_bitmap_info(bi)
 		{
-			assert(image != 0);
-
-			// Create our bitmap info, from our image.
-			m_bitmap_info = gameswf::render::create_bitmap_info(image);
 		}
 
-		bitmap_character(image::rgba* image)
-		{
-			assert(image != 0);
+// 		bitmap_character(image::rgb* image)
+// 		{
+// 			assert(image != 0);
 
-			// Create our bitmap info, from our image.
-			m_bitmap_info = gameswf::render::create_bitmap_info(image);
-		}
+// 			// Create our bitmap info, from our image.
+// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
+// 		}
+
+// 		bitmap_character(image::rgba* image)
+// 		{
+// 			assert(image != 0);
+
+// 			// Create our bitmap info, from our image.
+// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
+// 		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{
@@ -1424,9 +1479,20 @@ namespace gameswf
 		assert(j_in);
 		j_in->discard_partial_buffer();
 
-		image::rgb*	im = image::read_swf_jpeg2_with_tables(j_in);
-		bitmap_character*	ch = new bitmap_character(im);
-		delete im;
+		bitmap_info*	bi(NULL);
+		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
+		{
+			image::rgb*	im = image::read_swf_jpeg2_with_tables(j_in);
+			bi = render::create_bitmap_info_rgb(im);
+			delete im;
+		}
+		else
+		{
+			bi = render::create_bitmap_info_empty();
+		}
+		assert(bi->get_ref_count() == 0);
+
+		bitmap_character*	ch = new bitmap_character(bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -1444,9 +1510,20 @@ namespace gameswf
 		// Read the image data.
 		//
 		
-		image::rgb* im = image::read_swf_jpeg2(in->get_underlying_stream());
-		bitmap_character*	ch = new bitmap_character(im);
-		delete im;
+		bitmap_info*	bi(NULL);
+		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
+		{
+			image::rgb* im = image::read_swf_jpeg2(in->get_underlying_stream());
+			bi = render::create_bitmap_info_rgb(im);
+			delete im;
+		}
+		else
+		{
+			bi = render::create_bitmap_info_empty();
+		}
+		assert(bi->get_ref_count() == 0);
+
+		bitmap_character*	ch = new bitmap_character(bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -1517,31 +1594,42 @@ namespace gameswf
 		Uint32	jpeg_size = in->read_u32();
 		Uint32	alpha_position = in->get_position() + jpeg_size;
 
-		//
-		// Read the image data.
-		//
-		
-		// Read rgb data.
-		image::rgba*	im = image::read_swf_jpeg3(in->get_underlying_stream());
-
-		// Read alpha channel.
-		in->set_position(alpha_position);
-
-		int	buffer_bytes = im->m_width * im->m_height;
-		Uint8*	buffer = new Uint8[buffer_bytes];
-
-		inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-
-		for (int i = 0; i < buffer_bytes; i++)
+		bitmap_info*	bi(NULL);
+		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
-			im->m_data[4*i+3] = buffer[i];
+			//
+			// Read the image data.
+			//
+		
+			// Read rgb data.
+			image::rgba*	im = image::read_swf_jpeg3(in->get_underlying_stream());
+
+			// Read alpha channel.
+			in->set_position(alpha_position);
+
+			int	buffer_bytes = im->m_width * im->m_height;
+			Uint8*	buffer = new Uint8[buffer_bytes];
+
+			inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
+
+			for (int i = 0; i < buffer_bytes; i++)
+			{
+				im->m_data[4*i+3] = buffer[i];
+			}
+
+			delete [] buffer;
+
+			bi = render::create_bitmap_info_rgba(im);
+
+			delete im;
+		}
+		else
+		{
+			bi = render::create_bitmap_info_empty();
 		}
 
-		delete [] buffer;
-
 		// Create bitmap character.
-		bitmap_character*	ch = new bitmap_character(im);
-		delete im;
+		bitmap_character*	ch = new bitmap_character(bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -1563,214 +1651,230 @@ namespace gameswf
 				width,
 				height));
 
-		if (tag_type == 20)
+		bitmap_info*	bi(NULL);
+		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
-			// RGB image data.
-			image::rgb*	image = image::create_rgb(width, height);
-
-			if (bitmap_format == 3)
+			if (tag_type == 20)
 			{
-				// 8-bit data, preceded by a palette.
+				// RGB image data.
+				image::rgb*	image = image::create_rgb(width, height);
 
-				const int	bytes_per_pixel = 1;
-				int	color_table_size = in->read_u8();
-				color_table_size += 1;	// !! SWF stores one less than the actual size
-
-				int	pitch = (width * bytes_per_pixel + 3) & ~3;
-
-				int	buffer_bytes = color_table_size * 3 + pitch * height;
-				Uint8*	buffer = new Uint8[buffer_bytes];
-
-				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_position() <= in->get_tag_end_position());
-
-				Uint8*	color_table = buffer;
-
-				for (int j = 0; j < height; j++)
+				if (bitmap_format == 3)
 				{
-					Uint8*	image_in_row = buffer + color_table_size * 3 + j * pitch;
-					Uint8*	image_out_row = image::scanline(image, j);
-					for (int i = 0; i < width; i++)
+					// 8-bit data, preceded by a palette.
+
+					const int	bytes_per_pixel = 1;
+					int	color_table_size = in->read_u8();
+					color_table_size += 1;	// !! SWF stores one less than the actual size
+
+					int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+					int	buffer_bytes = color_table_size * 3 + pitch * height;
+					Uint8*	buffer = new Uint8[buffer_bytes];
+
+					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
+					assert(in->get_position() <= in->get_tag_end_position());
+
+					Uint8*	color_table = buffer;
+
+					for (int j = 0; j < height; j++)
 					{
-						Uint8	pixel = image_in_row[i * bytes_per_pixel];
-						image_out_row[i * 3 + 0] = color_table[pixel * 3 + 0];
-						image_out_row[i * 3 + 1] = color_table[pixel * 3 + 1];
-						image_out_row[i * 3 + 2] = color_table[pixel * 3 + 2];
+						Uint8*	image_in_row = buffer + color_table_size * 3 + j * pitch;
+						Uint8*	image_out_row = image::scanline(image, j);
+						for (int i = 0; i < width; i++)
+						{
+							Uint8	pixel = image_in_row[i * bytes_per_pixel];
+							image_out_row[i * 3 + 0] = color_table[pixel * 3 + 0];
+							image_out_row[i * 3 + 1] = color_table[pixel * 3 + 1];
+							image_out_row[i * 3 + 2] = color_table[pixel * 3 + 2];
+						}
 					}
+
+					delete [] buffer;
 				}
-
-				delete [] buffer;
-			}
-			else if (bitmap_format == 4)
-			{
-				// 16 bits / pixel
-				const int	bytes_per_pixel = 2;
-				int	pitch = (width * bytes_per_pixel + 3) & ~3;
-
-				int	buffer_bytes = pitch * height;
-				Uint8*	buffer = new Uint8[buffer_bytes];
-
-				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_position() <= in->get_tag_end_position());
-			
-				for (int j = 0; j < height; j++)
+				else if (bitmap_format == 4)
 				{
-					Uint8*	image_in_row = buffer + j * pitch;
-					Uint8*	image_out_row = image::scanline(image, j);
-					for (int i = 0; i < width; i++)
+					// 16 bits / pixel
+					const int	bytes_per_pixel = 2;
+					int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+					int	buffer_bytes = pitch * height;
+					Uint8*	buffer = new Uint8[buffer_bytes];
+
+					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
+					assert(in->get_position() <= in->get_tag_end_position());
+			
+					for (int j = 0; j < height; j++)
 					{
-						Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
+						Uint8*	image_in_row = buffer + j * pitch;
+						Uint8*	image_out_row = image::scanline(image, j);
+						for (int i = 0; i < width; i++)
+						{
+							Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
 					
-						// @@ How is the data packed???  I'm just guessing here that it's 565!
-						image_out_row[i * 3 + 0] = (pixel >> 8) & 0xF8;	// red
-						image_out_row[i * 3 + 1] = (pixel >> 3) & 0xFC;	// green
-						image_out_row[i * 3 + 2] = (pixel << 3) & 0xF8;	// blue
+							// @@ How is the data packed???  I'm just guessing here that it's 565!
+							image_out_row[i * 3 + 0] = (pixel >> 8) & 0xF8;	// red
+							image_out_row[i * 3 + 1] = (pixel >> 3) & 0xFC;	// green
+							image_out_row[i * 3 + 2] = (pixel << 3) & 0xF8;	// blue
+						}
 					}
+			
+					delete [] buffer;
 				}
-			
-				delete [] buffer;
-			}
-			else if (bitmap_format == 5)
-			{
-				// 32 bits / pixel, input is ARGB format (???)
-				const int	bytes_per_pixel = 4;
-				int	pitch = width * bytes_per_pixel;
-
-				int	buffer_bytes = pitch * height;
-				Uint8*	buffer = new Uint8[buffer_bytes];
-
-				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_position() <= in->get_tag_end_position());
-			
-				// Need to re-arrange ARGB into RGB.
-				for (int j = 0; j < height; j++)
+				else if (bitmap_format == 5)
 				{
-					Uint8*	image_in_row = buffer + j * pitch;
-					Uint8*	image_out_row = image::scanline(image, j);
-					for (int i = 0; i < width; i++)
+					// 32 bits / pixel, input is ARGB format (???)
+					const int	bytes_per_pixel = 4;
+					int	pitch = width * bytes_per_pixel;
+
+					int	buffer_bytes = pitch * height;
+					Uint8*	buffer = new Uint8[buffer_bytes];
+
+					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
+					assert(in->get_position() <= in->get_tag_end_position());
+			
+					// Need to re-arrange ARGB into RGB.
+					for (int j = 0; j < height; j++)
 					{
-						Uint8	a = image_in_row[i * 4 + 0];
-						Uint8	r = image_in_row[i * 4 + 1];
-						Uint8	g = image_in_row[i * 4 + 2];
-						Uint8	b = image_in_row[i * 4 + 3];
-						image_out_row[i * 3 + 0] = r;
-						image_out_row[i * 3 + 1] = g;
-						image_out_row[i * 3 + 2] = b;
-						a = a;	// Inhibit warning.
+						Uint8*	image_in_row = buffer + j * pitch;
+						Uint8*	image_out_row = image::scanline(image, j);
+						for (int i = 0; i < width; i++)
+						{
+							Uint8	a = image_in_row[i * 4 + 0];
+							Uint8	r = image_in_row[i * 4 + 1];
+							Uint8	g = image_in_row[i * 4 + 2];
+							Uint8	b = image_in_row[i * 4 + 3];
+							image_out_row[i * 3 + 0] = r;
+							image_out_row[i * 3 + 1] = g;
+							image_out_row[i * 3 + 2] = b;
+							a = a;	// Inhibit warning.
+						}
+					}
+
+					delete [] buffer;
+				}
+
+//				bitmap_character*	ch = new bitmap_character(image);
+				bi = render::create_bitmap_info_rgb(image);
+				delete image;
+
+// 				// add image to movie, under character id.
+// 				m->add_bitmap_character(character_id, ch);
+			}
+			else
+			{
+				// RGBA image data.
+				assert(tag_type == 36);
+
+				image::rgba*	image = image::create_rgba(width, height);
+
+				if (bitmap_format == 3)
+				{
+					// 8-bit data, preceded by a palette.
+
+					const int	bytes_per_pixel = 1;
+					int	color_table_size = in->read_u8();
+					color_table_size += 1;	// !! SWF stores one less than the actual size
+
+					int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+					int	buffer_bytes = color_table_size * 4 + pitch * height;
+					Uint8*	buffer = new Uint8[buffer_bytes];
+
+					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
+					assert(in->get_position() <= in->get_tag_end_position());
+
+					Uint8*	color_table = buffer;
+
+					for (int j = 0; j < height; j++)
+					{
+						Uint8*	image_in_row = buffer + color_table_size * 4 + j * pitch;
+						Uint8*	image_out_row = image::scanline(image, j);
+						for (int i = 0; i < width; i++)
+						{
+							Uint8	pixel = image_in_row[i * bytes_per_pixel];
+							image_out_row[i * 4 + 0] = color_table[pixel * 4 + 0];
+							image_out_row[i * 4 + 1] = color_table[pixel * 4 + 1];
+							image_out_row[i * 4 + 2] = color_table[pixel * 4 + 2];
+							image_out_row[i * 4 + 3] = color_table[pixel * 4 + 3];
+						}
+					}
+
+					delete [] buffer;
+				}
+				else if (bitmap_format == 4)
+				{
+					// 16 bits / pixel
+					const int	bytes_per_pixel = 2;
+					int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+					int	buffer_bytes = pitch * height;
+					Uint8*	buffer = new Uint8[buffer_bytes];
+
+					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
+					assert(in->get_position() <= in->get_tag_end_position());
+			
+					for (int j = 0; j < height; j++)
+					{
+						Uint8*	image_in_row = buffer + j * pitch;
+						Uint8*	image_out_row = image::scanline(image, j);
+						for (int i = 0; i < width; i++)
+						{
+							Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
+					
+							// @@ How is the data packed???  I'm just guessing here that it's 565!
+							image_out_row[i * 4 + 0] = 255;			// alpha
+							image_out_row[i * 4 + 1] = (pixel >> 8) & 0xF8;	// red
+							image_out_row[i * 4 + 2] = (pixel >> 3) & 0xFC;	// green
+							image_out_row[i * 4 + 3] = (pixel << 3) & 0xF8;	// blue
+						}
+					}
+			
+					delete [] buffer;
+				}
+				else if (bitmap_format == 5)
+				{
+					// 32 bits / pixel, input is ARGB format
+
+					inflate_wrapper(in->get_underlying_stream(), image->m_data, width * height * 4);
+					assert(in->get_position() <= in->get_tag_end_position());
+			
+					// Need to re-arrange ARGB into RGBA.
+					for (int j = 0; j < height; j++)
+					{
+						Uint8*	image_row = image::scanline(image, j);
+						for (int i = 0; i < width; i++)
+						{
+							Uint8	a = image_row[i * 4 + 0];
+							Uint8	r = image_row[i * 4 + 1];
+							Uint8	g = image_row[i * 4 + 2];
+							Uint8	b = image_row[i * 4 + 3];
+							image_row[i * 4 + 0] = r;
+							image_row[i * 4 + 1] = g;
+							image_row[i * 4 + 2] = b;
+							image_row[i * 4 + 3] = a;
+						}
 					}
 				}
 
-				delete [] buffer;
+				bi = render::create_bitmap_info_rgba(image);
+//				bitmap_character*	ch = new bitmap_character(image);
+				delete image;
+
+//	 			// add image to movie, under character id.
+//	 			m->add_bitmap_character(character_id, ch);
 			}
-
-			bitmap_character*	ch = new bitmap_character(image);
-			delete image;
-
-			// add image to movie, under character id.
-			m->add_bitmap_character(character_id, ch);
 		}
 		else
 		{
-			// RGBA image data.
-			assert(tag_type == 36);
-
-			image::rgba*	image = image::create_rgba(width, height);
-
-			if (bitmap_format == 3)
-			{
-				// 8-bit data, preceded by a palette.
-
-				const int	bytes_per_pixel = 1;
-				int	color_table_size = in->read_u8();
-				color_table_size += 1;	// !! SWF stores one less than the actual size
-
-				int	pitch = (width * bytes_per_pixel + 3) & ~3;
-
-				int	buffer_bytes = color_table_size * 4 + pitch * height;
-				Uint8*	buffer = new Uint8[buffer_bytes];
-
-				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_position() <= in->get_tag_end_position());
-
-				Uint8*	color_table = buffer;
-
-				for (int j = 0; j < height; j++)
-				{
-					Uint8*	image_in_row = buffer + color_table_size * 4 + j * pitch;
-					Uint8*	image_out_row = image::scanline(image, j);
-					for (int i = 0; i < width; i++)
-					{
-						Uint8	pixel = image_in_row[i * bytes_per_pixel];
-						image_out_row[i * 4 + 0] = color_table[pixel * 4 + 0];
-						image_out_row[i * 4 + 1] = color_table[pixel * 4 + 1];
-						image_out_row[i * 4 + 2] = color_table[pixel * 4 + 2];
-						image_out_row[i * 4 + 3] = color_table[pixel * 4 + 3];
-					}
-				}
-
-				delete [] buffer;
-			}
-			else if (bitmap_format == 4)
-			{
-				// 16 bits / pixel
-				const int	bytes_per_pixel = 2;
-				int	pitch = (width * bytes_per_pixel + 3) & ~3;
-
-				int	buffer_bytes = pitch * height;
-				Uint8*	buffer = new Uint8[buffer_bytes];
-
-				inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
-				assert(in->get_position() <= in->get_tag_end_position());
-			
-				for (int j = 0; j < height; j++)
-				{
-					Uint8*	image_in_row = buffer + j * pitch;
-					Uint8*	image_out_row = image::scanline(image, j);
-					for (int i = 0; i < width; i++)
-					{
-						Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
-					
-						// @@ How is the data packed???  I'm just guessing here that it's 565!
-						image_out_row[i * 4 + 0] = 255;			// alpha
-						image_out_row[i * 4 + 1] = (pixel >> 8) & 0xF8;	// red
-						image_out_row[i * 4 + 2] = (pixel >> 3) & 0xFC;	// green
-						image_out_row[i * 4 + 3] = (pixel << 3) & 0xF8;	// blue
-					}
-				}
-			
-				delete [] buffer;
-			}
-			else if (bitmap_format == 5)
-			{
-				// 32 bits / pixel, input is ARGB format
-
-				inflate_wrapper(in->get_underlying_stream(), image->m_data, width * height * 4);
-				assert(in->get_position() <= in->get_tag_end_position());
-			
-				// Need to re-arrange ARGB into RGBA.
-				for (int j = 0; j < height; j++)
-				{
-					Uint8*	image_row = image::scanline(image, j);
-					for (int i = 0; i < width; i++)
-					{
-						Uint8	a = image_row[i * 4 + 0];
-						Uint8	r = image_row[i * 4 + 1];
-						Uint8	g = image_row[i * 4 + 2];
-						Uint8	b = image_row[i * 4 + 3];
-						image_row[i * 4 + 0] = r;
-						image_row[i * 4 + 1] = g;
-						image_row[i * 4 + 2] = b;
-						image_row[i * 4 + 3] = a;
-					}
-				}
-			}
-
-			bitmap_character*	ch = new bitmap_character(image);
-			delete image;
-
-			// add image to movie, under character id.
-			m->add_bitmap_character(character_id, ch);
+			bi = render::create_bitmap_info_empty();
 		}
+		assert(bi->get_ref_count() == 0);
+
+		bitmap_character*	ch = new bitmap_character(bi);
+
+		// add image to movie, under character id.
+		m->add_bitmap_character(character_id, ch);
 	}
 
 
@@ -2270,6 +2374,13 @@ namespace gameswf
 		virtual void	add_bitmap_character(int id, bitmap_character_def* ch) { log_error("add_bc appears in sprite tags!\n"); }
 		virtual sound_sample*	get_sound_sample(int id) { return m_movie_def->get_sound_sample(id); }
 		virtual void	add_sound_sample(int id, sound_sample* sam) { log_error("add sam appears in sprite tags!\n"); }
+
+		// @@ would be nicer to not inherit these...
+		virtual create_bitmaps_flag	get_create_bitmaps() const { assert(0); return DO_LOAD_BITMAPS; }
+		virtual int	get_bitmap_info_count() const { assert(0); return 0; }
+		virtual bitmap_info*	get_bitmap_info(int i) const { assert(0); return NULL; }
+		virtual void	add_bitmap_info(bitmap_info* bi) { assert(0); }
+
 		virtual void	export_resource(const tu_string& symbol, resource* res) { log_error("can't export from sprite\n"); }
 		virtual smart_ptr<resource>	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
 		virtual void	add_import(const char* source_url, int id, const char* symbol) { assert(0); }
@@ -2280,8 +2391,18 @@ namespace gameswf
 			return m_movie_def->get_character_def(id);
 		}
 		virtual void	generate_font_bitmaps() { assert(0); }
-		virtual void	output_cached_data(tu_file* out) { assert(0); }
-		virtual void	input_cached_data(tu_file* in) { assert(0); }
+
+
+		virtual void	output_cached_data(tu_file* out)
+		{
+			// Nothing to do.
+			return;
+		}
+		virtual void	input_cached_data(tu_file* in)
+		{
+			// Nothing to do.
+			return;
+		}
 
 		virtual movie_interface*	create_instance()
 		{

@@ -28,6 +28,7 @@ namespace gameswf
 {
 	// Forward declarations.
 	struct action_buffer;
+	struct bitmap_info;
 	struct execute_tag;
 	struct font;
 	struct movie_interface;
@@ -156,6 +157,43 @@ namespace gameswf
 		// Replaces the dummy placeholder with the real
 		// movie_definition* given.
 		virtual void	resolve_import(const char* name, movie_definition* def) = 0;
+
+		//
+		// (optional) API to support host-driven creation of textures.
+		//
+		// Create the movie using gameswf::create_movie_no_recurse(..., DO_NOT_LOAD_BITMAPS),
+		// and then initialize each bitmap info via get_bitmap_info_count(), get_bitmap_info(),
+		// and bitmap_info::init_*_image() or your own subclassed API.
+		//
+		// E.g.:
+		//
+		// // During preprocessing:
+		// // This will create bitmap_info's using the rgba, rgb, alpha contructors.
+		// my_def = gameswf::create_movie_no_recurse("myfile.swf", DO_LOAD_BITMAPS);
+		// int ct = my_def->get_bitmap_info_count();
+		// for (int i = 0; i < ct; i++)
+		// {
+		//	my_bitmap_info_subclass*	bi = NULL;
+		//	my_def->get_bitmap_info(i, (bitmap_info**) &bi);
+		//	my_precomputed_textures.push_back(bi->m_my_internal_texture_reference);
+		// }
+		// // Save out my internal data.
+		// my_precomputed_textures->write_into_some_cache_stream(...);
+		//
+		// // Later, during run-time loading:
+		// my_precomputed_textures->read_from_some_cache_stream(...);
+		// // This will create blank bitmap_info's.
+		// my_def = gameswf::create_movie_no_recurse("myfile.swf", DO_NOT_LOAD_BITMAPS);
+		// 
+		// // Push cached texture info into the movie's bitmap_info structs.
+		// int	ct = my_def->get_bitmap_info_count();
+		// for (int i = 0; i < ct; i++)
+		// {
+		//	my_bitmap_info_subclass*	bi = (my_bitmap_info_subclass*) my_def->get_bitmap_info(i);
+		//	bi->set_internal_texture_reference(my_precomputed_textures[i]);
+		// }
+		virtual int	get_bitmap_info_count() const = 0;
+		virtual bitmap_info*	get_bitmap_info(int i) const = 0;
 	};
 
 
@@ -288,7 +326,12 @@ namespace gameswf
 	// movie_definition::visit_imported_movies().  The proxies can
 	// be replaced with actual movie_definition's via
 	// movie_definition::resolve_proxy(name,def).
-	movie_definition*	create_movie_no_recurse(tu_file* input_stream);
+	enum create_bitmaps_flag
+	{
+		DO_LOAD_BITMAPS,
+		DO_NOT_LOAD_BITMAPS
+	};
+	movie_definition*	create_movie_no_recurse(tu_file* input_stream, create_bitmaps_flag cbf);
 
 	// Create a gameswf::movie_definition from the given file name.
 	// This is just like create_movie(), except that it checks the
@@ -362,13 +405,13 @@ namespace gameswf
 		enum format_type
 		{
 			FORMAT_RAW = 0,		// unspecified format.  Useful for 8-bit sounds???
-				FORMAT_ADPCM = 1,	// gameswf doesn't pass this through; it uncompresses and sends FORMAT_NATIVE16
-				FORMAT_MP3 = 2,
-				FORMAT_UNCOMPRESSED = 3,	// 16 bits/sample, little-endian
-				FORMAT_NELLYMOSER = 6,	// Mystery proprietary format; see nellymoser.com
+			FORMAT_ADPCM = 1,	// gameswf doesn't pass this through; it uncompresses and sends FORMAT_NATIVE16
+			FORMAT_MP3 = 2,
+			FORMAT_UNCOMPRESSED = 3,	// 16 bits/sample, little-endian
+			FORMAT_NELLYMOSER = 6,	// Mystery proprietary format; see nellymoser.com
 				
-				// gameswf tries to convert data to this format when possible:
-				FORMAT_NATIVE16 = 7	// gameswf extension: 16 bits/sample, native-endian
+			// gameswf tries to convert data to this format when possible:
+			FORMAT_NATIVE16 = 7	// gameswf extension: 16 bits/sample, native-endian
 		};
 		// If stereo is true, samples are interleaved w/ left sample first.
 		
@@ -499,39 +542,38 @@ namespace gameswf
 	//
 	// texture and render callback handler.
 	//
-	
-	// You must define a subclass of bitmap info and render_handler, and pass an instance to
-	// set_render_handler().
+
+	// Your render_handler creates bitmap_info's for gameswf.  You
+	// need to subclass bitmap_info in order to add the
+	// information and functionality your app needs to render
+	// using textures.
 	struct bitmap_info : virtual public ref_counted
 	{
-		unsigned int	m_texture_id;
-		int	m_original_width;
-		int	m_original_height;
+		unsigned int	m_texture_id;	// nuke?
+		int	m_original_width;	// nuke?
+		int	m_original_height;	// nuke?
 		
-		bitmap_info() 
+		bitmap_info()
 			:
 			m_texture_id(0),
 			m_original_width(0),
-			m_original_height(0){}
-		
-		virtual void	set_alpha_image(int width, int height, unsigned char* data) = 0;
-		
-		enum create_empty
+			m_original_height(0)
 		{
-			empty
-		};
-		
-		virtual ~bitmap_info(){};
+		}
 	};
 	
+	// You must define a subclass of render_handler, and pass an
+	// instance to set_render_handler().
 	struct render_handler
 	{
 		virtual ~render_handler() {}
 
-		virtual bitmap_info*	create_bitmap_info(image::rgb* im) = 0;
-		virtual bitmap_info*	create_bitmap_info(image::rgba* im) = 0;
-		virtual bitmap_info*	create_bitmap_info_blank() = 0;
-		virtual void	set_alpha_image(bitmap_info* bi, int w, int h, unsigned char* data) = 0;	// @@ munges *data!!!
+		// Your handler should return these with a ref-count of 0.  (@@ is that the right policy?)
+		virtual bitmap_info*	create_bitmap_info_empty() = 0;	// used when DO_NOT_LOAD_BITMAPS is set
+		virtual bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data) = 0;
+		virtual bitmap_info*	create_bitmap_info_rgb(image::rgb* im) = 0;
+		virtual bitmap_info*	create_bitmap_info_rgba(image::rgba* im) = 0;
+
 		virtual void	delete_bitmap_info(bitmap_info* bi) = 0;
 		
 		// Bracket the displaying of a frame from a movie.
@@ -568,7 +610,7 @@ namespace gameswf
 		enum bitmap_wrap_mode
 		{
 			WRAP_REPEAT,
-				WRAP_CLAMP
+			WRAP_CLAMP
 		};
 		virtual void	fill_style_disable(int fill_side) = 0;
 		virtual void	fill_style_color(int fill_side, rgba color) = 0;

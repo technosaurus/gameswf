@@ -52,7 +52,7 @@ namespace gameswf
 	{
 	}
 
-	void	fill_style::read(stream* in, int tag_type, movie_definition_sub* m)
+	void	fill_style::read(stream* in, int tag_type, movie_definition_sub* md)
 	{
 		m_type = in->read_u8();
 
@@ -114,6 +114,9 @@ namespace gameswf
 			}
 
 			m_gradient_bitmap_info = create_gradient_bitmap();
+
+			// Make sure our movie_def_impl knows about this bitmap.
+			md->add_bitmap_info(m_gradient_bitmap_info.get_ptr());
 		}
 		else if (m_type == 0x40 || m_type == 0x41)
 		{
@@ -124,7 +127,7 @@ namespace gameswf
 			IF_VERBOSE_PARSE(log_msg("fsr: bitmap_char = %d\n", bitmap_char_id));
 
 			// Look up the bitmap character.
-			m_bitmap_character = m->get_bitmap_character(bitmap_char_id);
+			m_bitmap_character = md->get_bitmap_character(bitmap_char_id);
 
 			matrix	m;
 			m.read(in);
@@ -152,7 +155,13 @@ namespace gameswf
 		{
 			if (m_gradients[i].m_ratio >= ratio)
 			{
-				float	f = (ratio - m_gradients[i - 1].m_ratio) / float(m_gradients[i].m_ratio - m_gradients[i - 1].m_ratio);
+				const gradient_record& gr0 = m_gradients[i - 1];
+				const gradient_record& gr1 = m_gradients[i];
+				float	f = 0.0f;
+				if (gr0.m_ratio != gr1.m_ratio)
+				{
+					f = (ratio - gr0.m_ratio) / float(gr1.m_ratio - gr0.m_ratio);
+				}
 
 				rgba	result;
 				result.set_lerp(m_gradients[i - 1].m_color, m_gradients[i].m_color, f);
@@ -204,7 +213,7 @@ namespace gameswf
 			}
 		}
 
-		gameswf::bitmap_info*	bi = gameswf::render::create_bitmap_info(im);
+		gameswf::bitmap_info*	bi = gameswf::render::create_bitmap_info_rgba(im);
 		delete im;
 
 		return bi;

@@ -21,10 +21,10 @@ namespace gameswf
 
 	namespace render
 	{
-		bitmap_info*	create_bitmap_info(image::rgb* im);
-		bitmap_info*	create_bitmap_info(image::rgba* im);
-		bitmap_info*	create_bitmap_info_blank();
-		void	set_alpha_image(bitmap_info* bi, int w, int h, Uint8* data);	// @@ munges *data!!!
+		bitmap_info*	create_bitmap_info_empty();
+		bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data);
+		bitmap_info*	create_bitmap_info_rgb(image::rgb* im);
+		bitmap_info*	create_bitmap_info_rgba(image::rgba* im);
 		void	delete_bitmap_info(bitmap_info* bi);
 
 		// Bracket the displaying of a frame from a movie.
