@@ -9,6 +9,7 @@
 #include "gameswf_font.h"
 #include "gameswf_stream.h"
 #include "gameswf_impl.h"
+#include "gameswf_shape.h"
 
 
 namespace gameswf
@@ -33,7 +34,7 @@ namespace gameswf
 		// Iterate over m_glyphs and free the shapes.
 		for (int i = 0; i < m_glyphs.size(); i++)
 		{
-			delete_shape_character(m_glyphs[i]);
+			delete m_glyphs[i];
 		}
 		m_glyphs.resize(0);
 
@@ -122,7 +123,9 @@ namespace gameswf
 				in->set_position(new_pos);
 
 				// Create & read the shape.
-				shape_character*	s = create_shape_character(in, 2, false, m);
+				shape_character* s = new shape_character;
+				s->read(in, 2, false, m);
+
 				m_glyphs.push_back(s);
 			}}
 		}
@@ -191,7 +194,9 @@ namespace gameswf
 				in->set_position(new_pos);
 
 				// Create & read the shape.
-				shape_character*	s = create_shape_character(in, 22, false, m);
+				shape_character* s = new shape_character;
+				s->read(in, 22, false, m);
+
 				m_glyphs.push_back(s);
 			}}
 

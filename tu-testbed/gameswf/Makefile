@@ -28,6 +28,7 @@ OBJS = \
 	gameswf_fontlib.$(OBJ_EXT)	\
 	gameswf_impl.$(OBJ_EXT)	\
 	gameswf_render_ogl.$(OBJ_EXT)	\
+	gameswf_shape.$(OBJ_EXT)	\
 	gameswf_stream.$(OBJ_EXT)	\
 	gameswf_styles.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)
