@@ -441,7 +441,7 @@ namespace gameswf
 			m_frame_rate(30.0f),
 			m_frame_count(0),
 			m_version(0),
-			m_background_color(0.0f, 0.0f, 0.0f, 1.0f),
+			m_background_color(0, 0, 0, 255),
 			m_play_state(PLAY),
 			m_current_frame(0),
 			m_next_frame(0),
