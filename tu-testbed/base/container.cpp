@@ -80,6 +80,16 @@ void	tu_string::resize(int new_size)
 }
 
 
+/*static*/ int	tu_string::stricmp(const char* a, const char* b)
+{
+#ifdef _WIN32
+	return ::stricmp(a, b);
+#else
+	return strcasecmp(a, b);
+#endif
+}
+
+
 
 #ifdef CONTAINER_UNIT_TEST
 
