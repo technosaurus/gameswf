@@ -1937,7 +1937,6 @@ namespace gameswf
 					as_object_interface*	obj = env->top(1).to_object();
 					int	nargs = (int) env->top(2).to_number();
 					as_value	result;
-//v
 					const tu_string&	method_name = env->top(0).to_tu_string();
 					if (obj)
 					{
@@ -1980,8 +1979,7 @@ namespace gameswf
 					}
 					else
 					{
-//v
-						log_error("error: call_method '%s'op on invalid object.\n", method_name.c_str());
+						log_error("error: call_method '%s' on invalid object.\n", method_name.c_str());
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;
