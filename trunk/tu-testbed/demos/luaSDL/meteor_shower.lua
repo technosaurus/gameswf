@@ -6,7 +6,8 @@
 -- Sample SDL game written in Lua.
 
 
--- dofile("SDL.lm")		-- SDL module.
+use("SDL")
+
 
 -- emulate a couple of SDL #define's
 function SDL_LoadBMP(file)

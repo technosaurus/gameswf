@@ -52,6 +52,29 @@ $		 return a ^ b;
 $	 }
 
 
+//#undef __declspec
+// DLL entry point
+$	extern int tolua_SDL_open(lua_State *L);
+$	#ifdef _WIN32
+$	__declspec(dllexport) int  lua_import(lua_State* L)
+$	#else
+$	int	lua_import(lua_State* L)
+$	#endif
+$	{
+$		return tolua_SDL_open(L);
+$	}
+// Lua version.
+$	#ifdef _WIN32
+$	__declspec(dllexport) const char*  lua_version(void)
+$	#else
+$	const char* lua_version(void)
+$	#endif
+$	{
+$		return LUA_VERSION;
+$	}
+
+
+
 /* Main include header for the SDL library */
 
 /* Basic data types */
@@ -567,9 +590,9 @@ extern int SDL_EnableKeyRepeat(int delay, int interval);
  * 	Uint8 *keystate = SDL_GetKeyState(NULL);
  *	if ( keystate[SDLK_RETURN] ) ... <RETURN> is pressed.
  */
-#ifdef NOT_FOR_LUASWIG
-extern Uint8 * SDL_GetKeyState(int *numkeys);
-#endif // NOT_FOR_LUASWIG
+//  #ifdef NOT_FOR_LUASWIG
+//  extern Uint8 * SDL_GetKeyState(int *numkeys);
+//  #endif // NOT_FOR_LUASWIG
 
 
 /*
@@ -601,14 +624,14 @@ extern char * SDL_GetKeyName(SDLKey key);
 typedef struct WMcursor {
 } WMcursor;	/* Implementation dependent */
 typedef struct {
-#ifdef NOT_FOR_LUASWIG
-	SDL_Rect area;			/* The area of the mouse cursor */
-	Sint16 hot_x, hot_y;		/* The "tip" of the cursor */
-	Uint8 *data;			/* B/W cursor data */
-	Uint8 *mask;			/* B/W cursor mask */
-	Uint8 *save[2];			/* Place to save cursor area */
-	WMcursor *wm_cursor;		/* Window-manager cursor */
-#endif // NOT_FOR_LUASWIG
+//  #ifdef NOT_FOR_LUASWIG
+//  	SDL_Rect area;			/* The area of the mouse cursor */
+//  	Sint16 hot_x, hot_y;		/* The "tip" of the cursor */
+//  	Uint8 *data;			/* B/W cursor data */
+//  	Uint8 *mask;			/* B/W cursor mask */
+//  	Uint8 *save[2];			/* Place to save cursor area */
+//  	WMcursor *wm_cursor;		/* Window-manager cursor */
+//  #endif // NOT_FOR_LUASWIG
 } SDL_Cursor;
 
 
@@ -682,7 +705,7 @@ extern int SDL_ShowCursor(int toggle);
    Button 2:	Middle mouse button
    Button 3:	Right mouse button
  */
-#define SDL_BUTTON(X)		(SDL_PRESSED<<(X-1))
+//  #define SDL_BUTTON(X)		(SDL_PRESSED<<(X-1))
 #define SDL_BUTTON_LEFT		1
 #define SDL_BUTTON_MIDDLE	2
 #define SDL_BUTTON_RIGHT	3
@@ -726,7 +749,7 @@ enum { SDL_NOEVENT = 0,			/* Unused (do not remove) */
 };
 
 /* Predefined event masks */
-#define SDL_EVENTMASK(X)	(1<<(X))
+//  #define SDL_EVENTMASK(X)	(1<<(X))
 enum {
 	SDL_ACTIVEEVENTMASK	= (1<<(SDL_ACTIVEEVENT)),
 	SDL_KEYDOWNMASK		= (1<<(SDL_KEYDOWN)),
@@ -856,25 +879,25 @@ typedef struct {
 	void *data2;	/* User defined data pointer */
 } SDL_UserEvent;
 
-#ifdef NOT_FOR_LUASWIG
-/* If you want to use this event, you should include SDL_syswm.h */
-struct SDL_SysWMmsg;
-typedef struct SDL_SysWMmsg SDL_SysWMmsg;
-#endif // NOT_FOR_LUASWIG
+//  #ifdef NOT_FOR_LUASWIG
+//  /* If you want to use this event, you should include SDL_syswm.h */
+//  struct SDL_SysWMmsg;
+//  typedef struct SDL_SysWMmsg SDL_SysWMmsg;
+//  #endif // NOT_FOR_LUASWIG
 typedef struct {
-#ifdef NOT_FOR_LUASWIG
-	Uint8 type;
-	SDL_SysWMmsg *msg;
-#endif // NOT_FOR_LUASWIG
+//  #ifdef NOT_FOR_LUASWIG
+//  	Uint8 type;
+//  	SDL_SysWMmsg *msg;
+//  #endif // NOT_FOR_LUASWIG
 } SDL_SysWMEvent;
 
 
 /* General event structure */
-#ifdef NOT_FOR_TOLUA
-typedef union {
-#else
+//  #ifdef NOT_FOR_TOLUA
+//  typedef union {
+//  #else
 typedef struct {
-#endif
+//  #endif
 	Uint8 type;
 	SDL_ActiveEvent active;
 	SDL_KeyboardEvent key;
@@ -948,39 +971,39 @@ extern int SDL_WaitEvent(SDL_Event *event);
 extern int SDL_PushEvent(SDL_Event *event);
 
 
-#ifdef NOT_FOR_LUASWIG
-/*
-  This function sets up a filter to process all events before they
-  change internal state and are posted to the internal event queue.
+//  #ifdef NOT_FOR_LUASWIG
+//  /*
+//    This function sets up a filter to process all events before they
+//    change internal state and are posted to the internal event queue.
 
-  The filter is protypted as:
-*/
-typedef int (*SDL_EventFilter)(const SDL_Event *event);
-/*
-  If the filter returns 1, then the event will be added to the internal queue.
-  If it returns 0, then the event will be dropped from the queue, but the 
-  internal state will still be updated.  This allows selective filtering of
-  dynamically arriving events.
+//    The filter is protypted as:
+//  */
+//  typedef int (*SDL_EventFilter)(const SDL_Event *event);
+//  /*
+//    If the filter returns 1, then the event will be added to the internal queue.
+//    If it returns 0, then the event will be dropped from the queue, but the 
+//    internal state will still be updated.  This allows selective filtering of
+//    dynamically arriving events.
 
-  WARNING:  Be very careful of what you do in the event filter function, as 
-            it may run in a different thread!
+//    WARNING:  Be very careful of what you do in the event filter function, as 
+//              it may run in a different thread!
 
-  There is one caveat when dealing with the SDL_QUITEVENT event type.  The
-  event filter is only called when the window manager desires to close the
-  application window.  If the event filter returns 1, then the window will
-  be closed, otherwise the window will remain open if possible.
-  If the quit event is generated by an interrupt signal, it will bypass the
-  internal queue and be delivered to the application at the next event poll.
-*/
-extern void SDL_SetEventFilter(SDL_EventFilter filter);
+//    There is one caveat when dealing with the SDL_QUITEVENT event type.  The
+//    event filter is only called when the window manager desires to close the
+//    application window.  If the event filter returns 1, then the window will
+//    be closed, otherwise the window will remain open if possible.
+//    If the quit event is generated by an interrupt signal, it will bypass the
+//    internal queue and be delivered to the application at the next event poll.
+//  */
+//  extern void SDL_SetEventFilter(SDL_EventFilter filter);
 
-/*
-  Return the current event filter - can be used to "chain" filters.
-  If there is no event filter set, this function returns NULL.
-*/
-extern SDL_EventFilter SDL_GetEventFilter(void);
+//  /*
+//    Return the current event filter - can be used to "chain" filters.
+//    If there is no event filter set, this function returns NULL.
+//  */
+//  extern SDL_EventFilter SDL_GetEventFilter(void);
 
-#endif // NOT_FOR_LUASWIG
+//  #endif // NOT_FOR_LUASWIG
 
 
 /*
@@ -1055,11 +1078,11 @@ typedef struct SDL_PixelFormat {
 } SDL_PixelFormat;
 
 /* typedef for private surface blitting functions */
-#ifdef NOT_FOR_TOLUA
-typedef struct SDL_Surface;
-typedef int (*SDL_blit)(struct SDL_Surface *src, SDL_Rect *srcrect,
-			struct SDL_Surface *dst, SDL_Rect *dstrect);
-#endif // NOT_FOR_TOLUA
+//  #ifdef NOT_FOR_TOLUA
+//  typedef struct SDL_Surface;
+//  typedef int (*SDL_blit)(struct SDL_Surface *src, SDL_Rect *srcrect,
+//  			struct SDL_Surface *dst, SDL_Rect *dstrect);
+//  #endif // NOT_FOR_TOLUA
 
 /* This structure should be treated as read-only, except for 'pixels',
    which, if not NULL, contains the raw pixel data for the surface.
@@ -1071,32 +1094,31 @@ typedef struct SDL_Surface {
 	int	h;				/* Read-only */
 	Uint16 pitch;				/* Read-only */
 	void *pixels;				/* Read-write */
-#ifdef NOT_FOR_LUASWIG
-	int offset;				/* Private */
+//  #ifdef NOT_FOR_LUASWIG
+//  	int offset;				/* Private */
 
-	/* Hardware-specific surface info */
-	struct private_hwdata *hwdata;
+//  	/* Hardware-specific surface info */
+//  	struct private_hwdata *hwdata;
 
-	/* clipping information */
-	SDL_Rect clip_rect;			/* Read-only */
-	Uint32 unused1;				/* for binary compatibility */
+//  	/* clipping information */
+//  	SDL_Rect clip_rect;			/* Read-only */
+//  	Uint32 unused1;				/* for binary compatibility */
 
-	/* Allow recursive locks */
-	Uint32 locked;				/* Private */
+//  	/* Allow recursive locks */
+//  	Uint32 locked;				/* Private */
 
-	/* info for fast blit mapping to other surfaces */
-	struct SDL_BlitMap *map;		/* Private */
+//  	/* info for fast blit mapping to other surfaces */
+//  	struct SDL_BlitMap *map;		/* Private */
 
-	/* format version, bumped at every change to invalidate blit maps */
-	unsigned int format_version;		/* Private */
+//  	/* format version, bumped at every change to invalidate blit maps */
+//  	unsigned int format_version;		/* Private */
 
-	/* Reference count -- used when freeing surface */
-	int refcount;				/* Read-mostly */
-#endif // NOT_FOR_LUASWIG
+//  	/* Reference count -- used when freeing surface */
+//  	int refcount;				/* Read-mostly */
+//  #endif // NOT_FOR_LUASWIG
 } SDL_Surface;
 
 
-#ifdef NOT_FOR_TOLUA
 /* These are the currently supported flags for the SDL_surface */
 /* Available for SDL_CreateRGBSurface() or SDL_SetVideoMode() */
 #define SDL_SWSURFACE	0x00000000	/* Surface is in system memory */
@@ -1118,61 +1140,38 @@ typedef struct SDL_Surface {
 #define SDL_RLEACCEL	0x00004000	/* Surface is RLE encoded */
 #define SDL_SRCALPHA	0x00010000	/* Blit uses source alpha blending */
 #define SDL_PREALLOC	0x01000000	/* Surface uses preallocated memory */
-#else
-
-enum {
-SDL_SWSURFACE	=0x00000000,
-SDL_HWSURFACE	=0x00000001,
-SDL_ASYNCBLIT	=0x00000004,
-SDL_ANYFORMAT	=0x10000000,
-SDL_HWPALETTE	=0x20000000,
-SDL_DOUBLEBUF	=0x40000000,
-SDL_FULLSCREEN	=0x80000000,
-SDL_OPENGL      =0x00000002,
-SDL_OPENGLBLIT	=0x0000000A,
-SDL_RESIZABLE	=0x00000010,
-SDL_NOFRAME	=0x00000020,
-SDL_HWACCEL	=0x00000100,
-SDL_SRCCOLORKEY	=0x00001000,
-SDL_RLEACCELOK	=0x00002000,
-SDL_RLEACCEL	=0x00004000,
-SDL_SRCALPHA	=0x00010000,
-SDL_PREALLOC	=0x01000000
-};
-
-#endif
 
 
 
-#ifdef NOT_FOR_TOLUA
+//  #ifdef NOT_FOR_TOLUA
 
-/* Evaluates to true if the surface needs to be locked before access */
-#define SDL_MUSTLOCK(surface)	\
-  (surface->offset ||		\
-  ((surface->flags & (SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_RLEACCEL)) != 0))
+//  /* Evaluates to true if the surface needs to be locked before access */
+//  #define SDL_MUSTLOCK(surface)	\
+//    (surface->offset ||		\
+//    ((surface->flags & (SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_RLEACCEL)) != 0))
 
-#endif // NOT_FOR_TOLUA
+//  #endif // NOT_FOR_TOLUA
 
 
 /* Useful for determining the video hardware capabilities */
 // tulrich: luaswig doesn't like the bitfields -- will need to wrap manually ...
 typedef struct {
-#ifdef NOT_FOR_LUASWIG
-//	Uint32 hw_available :1;	/* Flag: Can you create hardware surfaces? */
-//	Uint32 wm_available :1;	/* Flag: Can you talk to a window manager? */
-//	Uint32 UnusedBits1  :6;
-//	Uint32 UnusedBits2  :1;
-//	Uint32 blit_hw      :1;	/* Flag: Accelerated blits HW --> HW */
-//	Uint32 blit_hw_CC   :1;	/* Flag: Accelerated blits with Colorkey */
-//	Uint32 blit_hw_A    :1;	/* Flag: Accelerated blits with Alpha */
-//	Uint32 blit_sw      :1;	/* Flag: Accelerated blits SW --> HW */
-//	Uint32 blit_sw_CC   :1;	/* Flag: Accelerated blits with Colorkey */
-//	Uint32 blit_sw_A    :1;	/* Flag: Accelerated blits with Alpha */
-//	Uint32 blit_fill    :1;	/* Flag: Accelerated color fill */
-//	Uint32 UnusedBits3  :16;
-#else // for luaswig
+//  #ifdef NOT_FOR_LUASWIG
+//  //	Uint32 hw_available :1;	/* Flag: Can you create hardware surfaces? */
+//  //	Uint32 wm_available :1;	/* Flag: Can you talk to a window manager? */
+//  //	Uint32 UnusedBits1  :6;
+//  //	Uint32 UnusedBits2  :1;
+//  //	Uint32 blit_hw      :1;	/* Flag: Accelerated blits HW --> HW */
+//  //	Uint32 blit_hw_CC   :1;	/* Flag: Accelerated blits with Colorkey */
+//  //	Uint32 blit_hw_A    :1;	/* Flag: Accelerated blits with Alpha */
+//  //	Uint32 blit_sw      :1;	/* Flag: Accelerated blits SW --> HW */
+//  //	Uint32 blit_sw_CC   :1;	/* Flag: Accelerated blits with Colorkey */
+//  //	Uint32 blit_sw_A    :1;	/* Flag: Accelerated blits with Alpha */
+//  //	Uint32 blit_fill    :1;	/* Flag: Accelerated color fill */
+//  //	Uint32 UnusedBits3  :16;
+//  #else // for luaswig
 	Uint32	hw_available;
-#endif // for luaswig
+//  #endif // for luaswig
 	Uint32 video_mem;	/* The total amount of video memory (in K) */
 	SDL_PixelFormat *vfmt;	/* Value: The format of the video surface */
 } SDL_VideoInfo;
@@ -1195,22 +1194,22 @@ typedef struct {
 /* The YUV hardware video overlay */
 // tulrich: luaswig doesn't like bitfields...
 typedef struct SDL_Overlay {
-#ifdef NOT_FOR_LUASWIG
-	Uint32 format;				/* Read-only */
-	int w, h;				/* Read-only */
-	int planes;				/* Read-only */
-	Uint16 *pitches;			/* Read-only */
-	Uint8 **pixels;				/* Read-write */
+//  #ifdef NOT_FOR_LUASWIG
+//  	Uint32 format;				/* Read-only */
+//  	int w, h;				/* Read-only */
+//  	int planes;				/* Read-only */
+//  	Uint16 *pitches;			/* Read-only */
+//  	Uint8 **pixels;				/* Read-write */
 
-	/* Hardware-specific surface info */
-	struct private_yuvhwfuncs *hwfuncs;
-	struct private_yuvhwdata *hwdata;
+//  	/* Hardware-specific surface info */
+//  	struct private_yuvhwfuncs *hwfuncs;
+//  	struct private_yuvhwdata *hwdata;
 
-	/* Special flags */
-	Uint32 hw_overlay :1;	/* Flag: This overlay hardware accelerated? */
-	Uint32 UnusedBits :31;
-	Uint32 hw_overlay;
-#endif // NOT_FOR_LUASWIG
+//  	/* Special flags */
+//  	Uint32 hw_overlay :1;	/* Flag: This overlay hardware accelerated? */
+//  	Uint32 UnusedBits :31;
+//  	Uint32 hw_overlay;
+//  #endif // NOT_FOR_LUASWIG
 } SDL_Overlay;
 
 
@@ -1296,9 +1295,9 @@ extern int SDL_VideoModeOK(int width, int height, int bpp, Uint32 flags);
  * If 'format' is NULL, the mode list will be for the format given 
  * by SDL_GetVideoInfo()->vfmt
  */
-#ifdef NOT_FOR_TOLUA
-extern SDL_Rect ** SDL_ListModes(SDL_PixelFormat *format, Uint32 flags);
-#endif // NOT_FOR_TOLUA
+//  #ifdef NOT_FOR_TOLUA
+//  extern SDL_Rect ** SDL_ListModes(SDL_PixelFormat *format, Uint32 flags);
+//  #endif // NOT_FOR_TOLUA
 
 
 /*
@@ -1516,9 +1515,8 @@ extern void SDL_GetRGBA(Uint32 pixel, SDL_PixelFormat *fmt,
  * reason the surface could not be placed in video memory, it will not have
  * the SDL_HWSURFACE flag set, and will be created in system memory instead.
  */
-#define SDL_AllocSurface    SDL_CreateRGBSurface
-extern SDL_Surface *SDL_CreateRGBSurface
-			(Uint32 flags, int width, int height, int depth, 
+//  #define SDL_AllocSurface    SDL_CreateRGBSurface
+extern SDL_Surface *SDL_CreateRGBSurface(Uint32 flags, int width, int height, int depth, 
 			Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask);
 extern SDL_Surface *SDL_CreateRGBSurfaceFrom(void *pixels,
 			int width, int height, int depth, int pitch,
@@ -1554,8 +1552,11 @@ extern void SDL_UnlockSurface(SDL_Surface *surface);
  */
 extern SDL_Surface * SDL_LoadBMP_RW(SDL_RWops *src, int freesrc);
 
-/* Convenience macro -- load a surface from a file */
-#define SDL_LoadBMP(file)	SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
+//  /* Convenience macro -- load a surface from a file */
+//  #define SDL_LoadBMP(file)	SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
+extern SDL_Surface* SDL_LoadBMP(const char* file);
+$	#undef SDL_LoadBMP
+$	SDL_Surface* SDL_LoadBMP(const char* file) { return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1); }
 
 /*
  * Save a surface to a seekable SDL data source (memory or file.)
@@ -1565,11 +1566,11 @@ extern SDL_Surface * SDL_LoadBMP_RW(SDL_RWops *src, int freesrc);
 extern int SDL_SaveBMP_RW(SDL_Surface *surface, SDL_RWops *dst, int freedst);
 
 
-#ifdef NOT_FOR_TOLUA
-/* Convenience macro -- save a surface to a file */
-#define SDL_SaveBMP(surface, file) \
-		SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1)
-#else	// not NOT_FOR_TOLUA
+//  #ifdef NOT_FOR_TOLUA
+//  /* Convenience macro -- save a surface to a file */
+//  #define SDL_SaveBMP(surface, file) \
+//  		SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1)
+//  #else	// not NOT_FOR_TOLUA
 
 extern int SDL_SaveBMP(SDL_Surface* surface, const char* file);
 $#undef SDL_SaveBMP
@@ -1578,7 +1579,7 @@ $	{
 $		return SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1);
 $	}
 
-#endif // not NOT_FOR_TOLUA
+//  #endif // not NOT_FOR_TOLUA
 
 /*
  * Sets the color key (transparent pixel) in a blittable surface.
@@ -1935,13 +1936,11 @@ extern SDL_RWops * SDL_AllocRW(void);
 extern void SDL_FreeRW(SDL_RWops *area);
 
 /* Macros to easily read and write from an SDL_RWops structure */
-#define SDL_RWseek(ctx, offset, whence)	(ctx)->seek(ctx, offset, whence)
-#define SDL_RWtell(ctx)			(ctx)->seek(ctx, 0, SEEK_CUR)
-#define SDL_RWread(ctx, ptr, size, n)	(ctx)->read(ctx, ptr, size, n)
-#define SDL_RWwrite(ctx, ptr, size, n)	(ctx)->write(ctx, ptr, size, n)
-#define SDL_RWclose(ctx)		(ctx)->close(ctx)
-
-
+//  #define SDL_RWseek(ctx, offset, whence)	(ctx)->seek(ctx, offset, whence)
+//  #define SDL_RWtell(ctx)			(ctx)->seek(ctx, 0, SEEK_CUR)
+//  #define SDL_RWread(ctx, ptr, size, n)	(ctx)->read(ctx, ptr, size, n)
+//  #define SDL_RWwrite(ctx, ptr, size, n)	(ctx)->write(ctx, ptr, size, n)
+//  #define SDL_RWclose(ctx)		(ctx)->close(ctx)
 
 
 
@@ -1957,7 +1956,6 @@ extern void SDL_FreeRW(SDL_RWops *area);
 /* These are the flags which may be passed to SDL_Init() -- you should
    specify the subsystems which you will be using in your application.
 */
-#if 0
 #define	SDL_INIT_TIMER		0x00000001
 #define SDL_INIT_AUDIO		0x00000010
 #define SDL_INIT_VIDEO		0x00000020
@@ -1966,18 +1964,7 @@ extern void SDL_FreeRW(SDL_RWops *area);
 #define SDL_INIT_NOPARACHUTE	0x00100000	/* Don't catch fatal signals */
 #define SDL_INIT_EVENTTHREAD	0x01000000	/* Not supported on all OS's */
 #define SDL_INIT_EVERYTHING	0x0000FFFF
-#else
-enum {
-SDL_INIT_TIMER	=	0x00000001,
-SDL_INIT_AUDIO	=	0x00000010,
-SDL_INIT_VIDEO	=	0x00000020,
-SDL_INIT_CDROM	=	0x00000100,
-SDL_INIT_JOYSTICK =	0x00000200,
-SDL_INIT_NOPARACHUTE=	0x00100000,
-SDL_INIT_EVENTTHREAD=	0x01000000,
-SDL_INIT_EVERYTHING=	0x0000FFFF
-};
-#endif
+
 
 /* This function loads the SDL dynamically linked library and initializes 
  * the subsystems specified by 'flags' (and those satisfying dependencies)
