@@ -72,6 +72,12 @@ namespace ogl {
 	// Stream operations; for pushing dynamic vertex data.
 	void*	stream_get_vertex_memory(int size);
 	void	stream_flush_combiners();	// do this after filling your buffer, and before calling glDrawElements()
+
+	// Rudimentary multitexture stuff.
+	void	active_texture(int stage);
+	void	client_active_texture(int stage);
+	void	multi_tex_coord_2f(int stage, float s, float t);
+	void	multi_tex_coord_2fv(int stage, float* st);
 };
 
 
@@ -83,6 +89,11 @@ namespace ogl {
 #define GL_VERTEX_ARRAY_RANGE_POINTER_NV  0x8521
 
 #define GL_VERTEX_ARRAY_RANGE_WITHOUT_FLUSH_NV	0x8533
+
+#define GL_TEXTURE0_ARB                   0x84C0
+#define GL_TEXTURE1_ARB                   0x84C1
+#define GL_MAX_TEXTURE_UNITS_ARB          0x84E2
+
 
 
 #endif // OGL_H

@@ -39,12 +39,22 @@ namespace ogl {
 	typedef void (APIENTRY * PFNGLSETFENCENVPROC) (GLuint fence_id, GLenum condition);
 	typedef void (APIENTRY * PFNGLFINISHFENCENVPROC) (GLuint fence_id);
 
+	typedef void (APIENTRY * PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
+	typedef void (APIENTRY * PFNGLCLIENTACTIVETEXTUREARBPROC) (GLenum texture);
+	typedef void (APIENTRY * PFNGLMULTITEXCOORD2FARBPROC) (GLenum target, GLfloat s, GLfloat t);
+	typedef void (APIENTRY * PFNGLMULTITEXCOORD2FVARBPROC) (GLenum target, const GLfloat *v);
+
 	PFNWGLALLOCATEMEMORYNVPROC	wglAllocateMemoryNV = 0;
 	PFNWGLFREEMEMORYNVPROC	wglFreeMemoryNV = 0;
 	PFNGLVERTEXARRAYRANGENVPROC	glVertexArrayRangeNV = 0;
 	PFNGLGENFENCESNVPROC glGenFencesNV = 0;
 	PFNGLSETFENCENVPROC glSetFenceNV = 0;
 	PFNGLFINISHFENCENVPROC glFinishFenceNV = 0;
+
+	PFNGLACTIVETEXTUREARBPROC	glActiveTextureARB = 0;
+	PFNGLCLIENTACTIVETEXTUREARBPROC	glClientActiveTextureARB = 0;
+	PFNGLMULTITEXCOORD2FARBPROC	glMultiTexCoord2fARB = 0;
+	PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB = 0;
 
 
 	// Big, fast vertex-memory buffer.
@@ -89,6 +99,11 @@ namespace ogl {
 		glGenFencesNV = (PFNGLGENFENCESNVPROC) SDL_GL_GetProcAddress( "glGenFencesNV" );
 		glSetFenceNV = (PFNGLSETFENCENVPROC) SDL_GL_GetProcAddress( "glSetFenceNV" );
 		glFinishFenceNV = (PFNGLFINISHFENCENVPROC) SDL_GL_GetProcAddress( "glFinishFenceNV" );
+
+		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glActiveTextureARB");
+		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
+		glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
+		glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
 	}
 
 
@@ -322,6 +337,48 @@ namespace ogl {
 			memset(((char*) m_buffer) + m_buffer_top - m_extra_bytes, 0, m_extra_bytes);
 		}
 	}
+
+
+	// Wrappers for multitexture extensions; no-op if the extension doesn't exist.
+
+	void	active_texture(int stage)
+	// Set the currently active texture stage; use GL_TEXTUREx_ARB.
+	{
+		if (glActiveTextureARB)
+		{
+			glActiveTextureARB(stage);
+		}
+	}
+
+	void	client_active_texture(int stage)
+	// Set the currently active texture stage for vertex array
+	// setup; use GL_TEXTUREx_ARB.
+	{
+		if (glClientActiveTextureARB)
+		{
+			glClientActiveTextureARB(stage);
+		}
+	}
+
+	void	multi_tex_coord_2f(int stage, float s, float t)
+	// Texture coords for the current vertex, in the specified
+	// stage.
+	{
+		if (glMultiTexCoord2fARB)
+		{
+			glMultiTexCoord2fARB(stage, s, t);
+		}
+	}
+
+	void	multi_tex_coord_2fv(int stage, float* st)
+	// Texture coords for the current vertex, in the specified
+	// stage.
+	{
+		if (glMultiTexCoord2fvARB)
+		{
+			glMultiTexCoord2fvARB(stage, st);
+		}
+	}
 };
 
 
@@ -329,5 +386,6 @@ namespace ogl {
 // mode: C++
 // c-basic-offset: 8 
 // tab-width: 8
+
 // indent-tabs-mode: t
 // End:

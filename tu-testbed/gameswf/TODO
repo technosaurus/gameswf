@@ -1,8 +1,6 @@
 General
 =======
 
-* test basic action stuff with a sample UI movie
-
 * implement an event queue so the host app can get UI & animation
   events out of the player
 
@@ -15,6 +13,10 @@ General
   substitutes conventional text with bitmap shapes.  This actually
   sounds pretty good to me; reduces the amount of work at playback
   time.
+
+* host API for rendering text
+
+* test basic action stuff with a sample UI movie
 
 * text entry?  No keyboard on consoles, text input is very platform
   specific; low priority for now.
@@ -43,9 +45,31 @@ It's horribly slow right now, and has some glitches :(
 
 * antialiasing
 
-  Do it using alpha channel in font textures.  For general vector
-  shapes, probably just punt.  Provide sample setup for hardware
-  assist (multisample or whatever).  Leave the decision up to the app.
+  * Do it using alpha channel in font textures.  For general vector
+    shapes, probably just punt.  Provide sample setup for hardware
+    assist (multisample or whatever).  Leave the decision up to the
+    app.
+
+  * Another idea: use dual texturing, with modulate.  In one stage,
+    set a 2x1 texture which is (0,0,0,0) in one texel and (1,1,1,1) in
+    the other texel.  The other stage works as usual (texture or just
+    a color).  For each trapezoid rendered, set up the tex coords in
+    this stage so that there's a ~1-pixel wide transition between the
+    texels, and then the rest of the trapezoid is clamped to the
+    (1,1,1,1) pixel border.  So basically it makes a feathered edge.
+    This sounds like a pretty solid way to do it...
+
+    * note: requires a separate triangle for each trapezoid, because
+      the tex coords have to be set independently for both left and
+      right edges.
+
+    * how to antialias horizontal edges?  (We know where they are,
+      since we have the perimeter as a polyline; so something simple
+      would probably work.)
+
+    I think this method is the winner.  Caching font glyphs is still
+    desirable for performance, but this should take care of really big
+    text and general shapes.
 
 * optimizations
 
@@ -56,9 +80,9 @@ It's horribly slow right now, and has some glitches :(
   * coarse clip/cull
 
   * pre-cache shape tesselation?  Re-gen on the fly based on scale;
-	with hysteresis.  Or is there some nice precomputation we can do
-	without evaluating specific curve points, and then just rip
-	through making strips & fans?
+    with hysteresis.  Or is there some nice precomputation we can do
+    without evaluating specific curve points, and then just rip
+    through making strips & fans?
 
   * turn outline fonts into textures, render glyphs using textured
     quads.
