@@ -6,7 +6,8 @@
 // SWF stream wrapper class.
 
 
-#include "swf_impl.h"
+#include "swf_stream.h"
+#include "swf_types.h"
 #include <string.h>
 
 
