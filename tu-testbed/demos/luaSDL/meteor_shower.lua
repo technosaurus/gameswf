@@ -6,7 +6,7 @@
 -- Sample SDL game written in Lua.
 
 
-dofile("SDL.lm")		-- SDL module.
+-- dofile("SDL.lm")		-- SDL module.
 
 -- emulate a couple of SDL #define's
 function SDL_LoadBMP(file)
@@ -60,7 +60,7 @@ end
 function show_sprite(screen, sprite, x, y)
 	-- make sure we have a temporary rect structure
 	if not temp_rect then
-		temp_rect = new_SDL_Rect()
+		temp_rect = SDL_Rect_new()
 	end
 
 	temp_rect.x = x - sprite.w / 2
@@ -217,7 +217,7 @@ function gameloop_iteration()
 -- according to elapsed time.
 
 	if gamestate.event_buffer == nil then
-		gamestate.event_buffer = new_SDL_Event()
+		gamestate.event_buffer = SDL_Event_new()
 	end
 	
 	-- consume any pending events 
@@ -339,7 +339,7 @@ function engine_loop()
 
 	-- clean up
 	if event_buffer then
-		delete_SDL_Event(event)
+		SDL_Event_delete(event)
 	end
 
 	-- Print out some timing information
@@ -784,7 +784,8 @@ function player_update(self, gs)
 	local	dt = gamestate.update_period / 1000
 
 	-- get the mouse position, and move the player position towards the mouse position
-	local	m = luaSDL_GetMouseState()
+	local	m = {}
+	m.buttons, m.x, m.y = SDL_GetMouseState(0, 0)
 	local	mpos = vec2{ m.x, m.y }
 
 	local	delta = mpos - self.position
@@ -887,7 +888,8 @@ end
 function cursor_update(self, gs)
 -- update the cursor.  follow the mouse.
 
-	local	m = luaSDL_GetMouseState()
+	local	m = {}
+	m.buttons, m.x, m.y = SDL_GetMouseState(0, 0)
 	self.position.x = m.x
 	self.position.y = m.y
 
@@ -977,7 +979,8 @@ function player_manager_update(self, gs)
 		end
 
 	elseif self.state == "attract" then		
-		local m = luaSDL_GetMouseState()
+		local m = {}
+		m.buttons, m.x, m.y = SDL_GetMouseState(0, 0)
 		if m.buttons > 0 then
 			-- start a new game.
 			self.state = "pre-setup"
