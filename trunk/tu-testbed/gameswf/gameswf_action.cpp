@@ -1406,7 +1406,7 @@ namespace gameswf
 					if (with_stack.size() < 8)
 					{
  						int	block_length = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
- 						int	block_end = next_pc + length;
+ 						int	block_end = next_pc + block_length;
  						as_object_interface*	with_obj = env->top(0).to_object();
  						with_stack.push_back(with_stack_entry(with_obj, block_end));
 					}
