@@ -787,7 +787,7 @@ namespace gameswf
 	static void	ensure_loaders_registered()
 	{
 		static bool	s_registered = false;
-		
+	
 		if (s_registered == false)
 		{
 			// Register the standard loaders.
@@ -795,9 +795,9 @@ namespace gameswf
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(4, place_object_2_loader);
-//			register_tag_loader(6, define_bits_jpeg_loader);	// turn this off; needs debugging
+			register_tag_loader(6, define_bits_jpeg_loader);	// turn this off; needs debugging
 			register_tag_loader(7, button_character_loader);
-//			register_tag_loader(8, jpeg_tables_loader);		// turn this off; needs debugging
+			register_tag_loader(8, jpeg_tables_loader);		// turn this off; needs debugging
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
 			register_tag_loader(11, define_text_loader);
@@ -811,6 +811,7 @@ namespace gameswf
 			register_tag_loader(32, define_shape_loader);
 			register_tag_loader(33, define_text_loader);
 			register_tag_loader(34, button_character_loader);
+			register_tag_loader(35, define_bits_jpeg3_loader);
 			register_tag_loader(36, define_bits_lossless_2_loader);
 			register_tag_loader(39, sprite_loader);
 			register_tag_loader(43, frame_label_loader);
@@ -1032,6 +1033,46 @@ namespace gameswf
 		{
 			fprintf(stderr, "error: inflate_wrapper() inflateEnd() return %d\n", err);
 		}
+	}
+
+
+	void	define_bits_jpeg3_loader(stream* in, int tag_type, movie* m)
+	// loads a define_bits_jpeg3 tag. This is a jpeg file with an alpha
+	// channel using zlib compression.
+	{
+		assert(tag_type == 35);
+
+		Uint16	character_id = in->read_u16();
+
+		IF_DEBUG(printf("define_bits_jpeg3_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
+
+		Uint32	jpeg_size = in->read_u32();
+		Uint32	alpha_position = in->get_position() + jpeg_size;
+
+		bitmap_character_rgba*	ch = new bitmap_character_rgba();
+		ch->m_id = character_id;
+
+		//
+		// Read the image data.
+		//
+		
+		ch->m_image = image::read_swf_jpeg3(in->m_input);
+
+		in->set_position(alpha_position);
+		
+		int	buffer_bytes = ch->m_image->m_width * ch->m_image->m_height;
+		Uint8*	buffer = new Uint8[buffer_bytes];
+
+		inflate_wrapper(in->m_input, buffer, buffer_bytes);
+
+		for (int i = 0; i < buffer_bytes; i++)
+		{
+			ch->m_image->m_data[4*i+3] = buffer[i];
+		}
+
+		delete [] buffer;
+
+		m->add_bitmap_character(character_id, ch);
 	}
 
 
