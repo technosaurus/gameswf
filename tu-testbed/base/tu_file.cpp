@@ -397,9 +397,9 @@ int tu_file::read_string(char* dst, int max_length)
 #include <stdarg.h>
 #include <string.h>
 
-#ifdef WIN32
+#ifdef _WIN32
 #define vsnprintf	_vsnprintf
-#endif // WIN32
+#endif // _WIN32
 
 
 int	tu_file::printf(const char* fmt, ...)
