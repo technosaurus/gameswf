@@ -10,6 +10,9 @@
 #include <string.h>
 
 #include <engine/config.h>
+extern "C" {
+#include "luselib.h"	// TODO: move lua_uselibopen() to engine/config.cpp
+}
 
 //#define USE_GUI	1
 
@@ -25,6 +28,7 @@ extern "C" int luaSDL_initialize(lua_State *L);
 int	main(int argc, char *argv[])
 {
 	config::open();
+	lua_uselibopen(config::L);
 
 	luaSDL_initialize(config::L);
 

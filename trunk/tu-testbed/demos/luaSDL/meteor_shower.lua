@@ -6,8 +6,7 @@
 -- Sample SDL game written in Lua.
 
 
-dofile("shadow40.lua")	-- helpers for structure access of luaswig'd wrappers.
-dofile("luaSDL.lua")	-- wrappers for structure access.
+dofile("SDL.lm")		-- SDL module.
 
 -- emulate a couple of SDL #define's
 function SDL_LoadBMP(file)
