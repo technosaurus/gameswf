@@ -25,6 +25,7 @@ SRCS := \
 	jpeg.cpp \
 	kd_tree_dynamic.cpp	\
 	kd_tree_packed.cpp	\
+	postscript.cpp	\
 	tqt.cpp	\
 	tu_file.cpp	\
 	tu_file_SDL.cpp	\

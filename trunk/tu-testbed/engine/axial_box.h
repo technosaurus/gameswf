@@ -69,8 +69,11 @@ struct axial_box
 	// Etc
 	//
 
-	bool	encloses(const vec3& v) const;
-	bool	encloses(const axial_box& b) const;
+	bool	encloses(const vec3& v, float tolerance = 1e-6f) const;
+	bool	encloses(const axial_box& b, float tolerance = 1e-6f) const;
+
+	// this = intersection(this, b)
+	void	set_intersection(const axial_box& b);
 
 private:
 	vec3	m_min, m_max;
@@ -207,27 +210,40 @@ inline void	axial_box::set_enclosing(const vec3& v)
 }
 
 
-inline bool	axial_box::encloses(const vec3& v) const
+inline bool	axial_box::encloses(const vec3& v, float tolerance) const
 // Return true if the given point is inside this box.
 {
 	assert(is_valid());
 
 	return
-		m_min.x <= v.x
-		&& m_min.y <= v.y
-		&& m_min.z <= v.z
-		&& m_max.x >= v.x
-		&& m_max.y >= v.y
-		&& m_max.z >= v.z;
+		m_min.x <= v.x + tolerance
+		&& m_min.y <= v.y + tolerance
+		&& m_min.z <= v.z + tolerance
+		&& m_max.x >= v.x - tolerance
+		&& m_max.y >= v.y - tolerance
+		&& m_max.z >= v.z - tolerance;
 }
 
 
-inline bool	axial_box::encloses(const axial_box& b) const
+inline bool	axial_box::encloses(const axial_box& b, float tolerance) const
 // Return true if this box encloses the given box.
 {
 	assert(is_valid());
 
-	return encloses(b.m_min) && encloses(b.m_max);
+	return encloses(b.m_min, tolerance) && encloses(b.m_max, tolerance);
+}
+
+
+inline void	axial_box::set_intersection(const axial_box& b)
+// Set this to intersection(this, b)
+{
+	if (b.m_min.x > m_min.x) m_min.x = b.m_min.x;
+	if (b.m_min.y > m_min.y) m_min.y = b.m_min.y;
+	if (b.m_min.z > m_min.z) m_min.z = b.m_min.z;
+
+	if (b.m_max.x < m_max.x) m_max.x = b.m_max.x;
+	if (b.m_max.y < m_max.y) m_max.y = b.m_max.y;
+	if (b.m_max.z < m_max.z) m_max.z = b.m_max.z;
 }
 
 

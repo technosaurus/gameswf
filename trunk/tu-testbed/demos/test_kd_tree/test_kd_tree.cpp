@@ -9,6 +9,7 @@
 #include "engine/kd_tree_packed.h"
 #include "engine/kd_tree_dynamic.h"
 #include "engine/axial_box.h"
+#include "engine/tu_file.h"
 
 
 void	print_usage()
@@ -71,6 +72,11 @@ int main(int argc, const char** argv)
 	}
 
 	kd_tree_dynamic*	tree = make_kd_tree(infile);
+
+	if (tree)
+	{
+		tree->diagram_dump(&tu_file(stdout, false));
+	}
 
 	delete tree;
 

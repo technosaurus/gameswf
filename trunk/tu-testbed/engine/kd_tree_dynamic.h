@@ -15,6 +15,10 @@
 #include "engine/axial_box.h"
 
 
+class tu_file;
+struct kd_diagram_dump_info;
+
+
 struct kd_tree_dynamic
 {
 	kd_tree_dynamic(
@@ -36,6 +40,7 @@ struct kd_tree_dynamic
 		array<face>	m_faces;
 	};
 
+
 	// Internal node.  Not too tidy; would use unions etc. if it were
 	// important.
 	struct node
@@ -50,11 +55,16 @@ struct kd_tree_dynamic
 		node();
 		~node();
 		bool	is_valid() const;
+		void	dump(tu_file* out, int depth) const;
 	};
 
 	const array<vec3>&	get_verts() const { return m_verts; }
 	const node*	get_root() const { return m_root; }
 	const axial_box&	get_bound() const { return m_bound; }
+
+	// For debugging/evaluating.
+	void	dump(tu_file* out) const;
+	void	diagram_dump(tu_file* out) const;	// make a Postscript diagram.
 
 private:
 	void	compute_actual_bounds(axial_box* result, int face_count, face faces[]);
@@ -66,14 +76,10 @@ private:
 		int face_count,
 		face faces[],
 		int axis,
-		float offset
-		// for debugging
-		, const axial_box& back_bounds
-		, const axial_box& bounds
-		, const axial_box& front_bounds
-		);
+		float offset);
 	float	evaluate_split(int face_count, face faces[], const axial_box& bounds, int axis, float offset);
 	int	classify_face(const face& f, int axis, float offset);
+	void	clip_faces(array<face>* faces, int axis, float offset);
 
 	array<vec3>	m_verts;
 	node*	m_root;

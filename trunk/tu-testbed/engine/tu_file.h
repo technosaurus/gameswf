@@ -100,6 +100,9 @@ public:
 
 	int	get_error() { return m_error; }
 
+	// printf-style convenience function.
+	int	printf(const char* fmt, ...);
+
 	// UNSAFE back door, for testing only.
 	void*	get_app_data_DEBUG() { return m_data; }
 

@@ -150,6 +150,31 @@ int tu_file::read_string(char* dst, int max_length)
 }
 
 
+
+#include <stdarg.h>
+#include <string.h>
+
+#ifdef WIN32
+#define vsnprintf	_vsnprintf
+#endif // WIN32
+
+
+int	tu_file::printf(const char* fmt, ...)
+// Use printf-like semantics to send output to this stream.
+{
+	// Workspace for vsnprintf formatting.
+	static const int	BUFFER_SIZE = 1000;
+	char	buffer[BUFFER_SIZE];
+
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(buffer, BUFFER_SIZE, fmt, ap);
+	va_end(ap);
+
+	return write_bytes(buffer, strlen(buffer));
+}
+
+
 // Local Variables:
 // mode: C++
 // c-basic-offset: 8 
