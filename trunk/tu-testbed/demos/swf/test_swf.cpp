@@ -15,6 +15,10 @@
 #undef main	// SDL wackiness
 
 
+#define SCALE	2.0f
+#define OVERSIZE	1.0f
+
+
 int	main(int argc, char *argv[])
 {
 	const char* infile = NULL;
@@ -62,12 +66,16 @@ int	main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
 	// Set the video mode.
-	if (SDL_SetVideoMode(m->get_width() * 4, m->get_height() * 4, 16, SDL_OPENGL) == 0)
+	if (SDL_SetVideoMode(int(m->get_width() * SCALE), int(m->get_height() * SCALE), 16, SDL_OPENGL) == 0)
 	{
 		fprintf(stderr, "SDL_SetVideoMode() failed.");
 		exit(1);
 	}
 
+	glMatrixMode(GL_PROJECTION);
+	glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
 
 	Uint32	last_ticks = SDL_GetTicks();
 	for (;;)
