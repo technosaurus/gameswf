@@ -35,6 +35,7 @@ namespace swf
 	{
 		virtual void	add_character(int id, character* ch) {}
 		virtual void	add_font(int id, font* ch) {}
+		virtual font*	get_font(int id) { return NULL; }
 		virtual void	add_execute_tag(execute_tag* c) {}
 
 		virtual void	add_display_object(Uint16 character_id,
@@ -118,6 +119,7 @@ namespace swf
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie* m);
 	void	define_shape_loader(stream* in, int tag_type, movie* m);
 	void	define_font_loader(stream* in, int tag_type, movie* m);
+	void	define_text_loader(stream* in, int tag_type, movie* m);
 	void	place_object_2_loader(stream* in, int tag_type, movie* m);
 	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie* m);
 	void	sprite_loader(stream* in, int tag_type, movie* m);

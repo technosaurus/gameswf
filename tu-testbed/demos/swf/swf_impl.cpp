@@ -668,6 +668,13 @@ namespace swf
 			m_fonts.add(font_id, f);
 		}
 
+		font*	get_font(int font_id)
+		{
+			font*	f = NULL;
+			m_fonts.get(font_id, &f);
+			return f;
+		}
+
 		void	add_execute_tag(execute_tag* e)
 		{
 			assert(e);
@@ -852,6 +859,7 @@ namespace swf
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(9, set_background_color_loader);
 			register_tag_loader(10, define_font_loader);
+			register_tag_loader(11, define_text_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
 			register_tag_loader(26, place_object_2_loader);
@@ -1504,6 +1512,18 @@ namespace swf
 			m_glyphs.resize(0);
 		}
 
+		shape_character*	get_glyph(int index)
+		{
+			if (index >= 0 && index < m_glyphs.size())
+			{
+				return m_glyphs[index];
+			}
+			else
+			{
+				return NULL;
+			}
+		}
+
 		void	read(stream* in, int tag_type)
 		{
 			if (tag_type == 10)
@@ -1552,6 +1572,7 @@ namespace swf
 	
 
 	void	define_font_loader(stream* in, int tag_type, movie* m)
+	// Load a DefineFont or DefineFont2 tag.
 	{
 		assert(tag_type == 10);
 
@@ -1570,7 +1591,186 @@ namespace swf
 	// text_character
 	//
 
-	// @@ ...
+
+	// Helper struct.
+	struct text_style
+	{
+		font*	m_font;
+		rgba	m_color;
+		float	m_x_offset;
+		float	m_y_offset;
+		float	m_text_height;
+
+		text_style()
+			:
+			m_font(0),
+			m_x_offset(0),
+			m_y_offset(0),
+			m_text_height(1.0f)
+		{
+		}
+	};
+
+
+	// Helper struct.
+	struct text_glyph_record
+	{
+		struct glyph_entry
+		{
+			int	m_glyph_index;
+			float	m_glyph_advance;
+		};
+		text_style	m_style;
+		array<glyph_entry>	m_glyphs;
+
+		
+		void	read(stream* in, int glyph_count, int glyph_bits, int advance_bits)
+		{
+			m_glyphs.resize(glyph_count);
+			for (int i = 0; i < glyph_count; i++)
+			{
+				m_glyphs[i].m_glyph_index = in->read_uint(glyph_bits);
+				m_glyphs[i].m_glyph_advance = in->read_sint(advance_bits);
+			}
+		}
+	};
+
+
+	struct text_character : public character
+	{
+		rect	m_rect;
+		matrix	m_matrix;
+		array<text_glyph_record>	m_text_glyph_records;
+
+		text_character()
+		{
+		}
+
+		void	read(stream* in, int tag_type, movie* m)
+		{
+			assert(m != NULL);
+			assert(tag_type == 11);
+
+			m_rect.read(in);
+			m_matrix.read(in);
+
+			int	glyph_bits = in->read_u8();
+			int	advance_bits = in->read_u8();
+
+			text_style	style;
+			for (;;)
+			{
+				int	first_byte = in->read_u8();
+				
+				if (first_byte == 0)
+				{
+					// This is the end of the text records.
+					break;
+				}
+
+				int	type = (first_byte >> 7) & 1;
+				if (type == 1)
+				{
+					// This is a style change.
+					bool	has_font = (first_byte >> 3) & 1;
+					bool	has_color = (first_byte >> 2) & 1;
+					bool	has_y_offset = (first_byte >> 1) & 1;
+					bool	has_x_offset = (first_byte >> 0) & 1;
+
+					if (has_font)
+					{
+						Uint16	font_id = in->read_u16();
+						style.m_font = m->get_font(font_id);
+						if (style.m_font == NULL)
+						{
+							printf("error: text style with undefined font; font_id = %d\n", font_id);
+						}
+					}
+					if (has_color)
+					{
+						style.m_color.read_rgb(in);
+					}
+					if (has_x_offset)
+					{
+						style.m_x_offset = in->read_s16();
+					}
+					if (has_y_offset)
+					{
+						style.m_y_offset = in->read_s16();
+					}
+					if (has_font)
+					{
+						style.m_text_height = in->read_u16();
+					}
+				}
+				else
+				{
+					// Read the glyph record.
+					int	glyph_count = first_byte & 0x7F;
+					m_text_glyph_records.resize(m_text_glyph_records.size() + 1);
+					m_text_glyph_records.back().m_style = style;
+					m_text_glyph_records.back().read(in, glyph_count, glyph_bits, advance_bits);
+				}
+			}
+		}
+
+
+		void	display(const display_info& di)
+		// Draw the string.
+		{
+			// @@ draw bounding rect?
+
+			display_info	sub_di = di;
+			sub_di.m_matrix.concatenate(m_matrix);
+
+			matrix	base_matrix = sub_di.m_matrix;
+
+			for (int i = 0; i < m_text_glyph_records.size(); i++)
+			{
+				text_glyph_record&	rec = m_text_glyph_records[i];
+
+				if (rec.m_style.m_font == NULL) continue;
+
+				sub_di.m_matrix = base_matrix;
+				
+				float	scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+				sub_di.m_matrix.m_[0][0] *= scale;
+				sub_di.m_matrix.m_[1][1] *= scale;
+				sub_di.m_matrix.m_[0][2] += rec.m_style.m_x_offset;
+				sub_di.m_matrix.m_[1][2] += rec.m_style.m_y_offset;
+
+				// set rec.m_style.m_color // @@ what exactly does this mean?
+
+				for (int j = 0; j < rec.m_glyphs.size(); j++)
+				{
+					int	index = rec.m_glyphs[j].m_glyph_index;
+					shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
+
+					// Draw the character.
+					if (glyph) glyph->display(sub_di);
+
+					sub_di.m_matrix.m_[0][2] += rec.m_glyphs[j].m_glyph_advance;
+				}
+			}
+		}
+	};
+
+
+	void	define_text_loader(stream* in, int tag_type, movie* m)
+	// Read a DefineText tag.
+	{
+		assert(tag_type == 11);
+
+		Uint16	character_id = in->read_u16();
+		
+		text_character*	ch = new text_character;
+		IF_DEBUG(printf("text_character, id = %d\n", character_id));
+		ch->read(in, tag_type, m);
+
+		// IF_DEBUG(print some stuff);
+
+		m->add_character(character_id, ch);
+	}
 
 
 	//
