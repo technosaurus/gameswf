@@ -12,14 +12,6 @@ if loadmodule then
 end
 
 
-_ = [[-- emulate a couple of SDL #define's
-function SDL_LoadBMP(file)
-	return SDL_LoadBMP_RW(SDL_RWFromFile(file, "rb"), 1)
-end
-function SDL_SaveBMP(surface, file)
-	return SDL_SaveBMP_RW(surface, SDL_RWFromFile(file, "wb"), 1)
-end
-]]
 SDL.SDL_BlitSurface = SDL.SDL_UpperBlit;
 
 
