@@ -1195,9 +1195,6 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 // Generates a "skirt" mesh which ensures that this mesh always covers
 // the space between our simplified edge and the full-LOD edge.
 {
-	assert(x0 <= x1);
-	assert(z0 <= z1);
-
 	// We're going to write a list of vertices comprising the
 	// edge.
 	//
@@ -1219,18 +1216,22 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 	// Step along the edge.
 	int	dx, dz, steps;
 	if (x0 < x1) {
+		assert(z0 == z1);
 		dx = 1;
 		dz = 0;
 		steps = x1 - x0 + 1;
 	} else if (x0 > x1) {
+		assert(z0 == z1);
 		dx = -1;
 		dz = 0;
 		steps = x0 - x1 + 1;
 	} else if (z0 < z1) {
+		assert(x0 == x1);
 		dx = 0;
 		dz = 1;
 		steps = z1 - z0 + 1;
 	} else if (z0 > z1) {
+		assert(x0 == x1);
 		dx = 0;
 		dz = -1;
 		steps = z0 - z1 + 1;
