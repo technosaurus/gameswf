@@ -365,8 +365,16 @@ void	lod_chunk::do_split(const lod_chunk_tree& base, const vec3& viewpoint)
 	}
 }
 
+// Unfortunately, it seems that using Sint16 for this is a performance
+// fiasco on NVidia's driver.  Unfortunate because, if the hardware
+// can digest GL_SHORT directly, it would take half the
+// vertex-streaming bandwidth.
+typedef float vcoord_t;	// Sint16
+const int VCOORD_GL_TYPE = GL_FLOAT;	// GL_SHORT
 
-static void	morph_vertices(Sint16* verts, const vertex_info& morph_verts, float f)
+
+
+static void	morph_vertices(vcoord_t* verts, const vertex_info& morph_verts, float f)
 // Adjust the positions of our morph vertices according to f, the
 // given morph parameter.  verts is the output buffer for processed
 // verts.
@@ -386,32 +394,6 @@ static void	morph_vertices(Sint16* verts, const vertex_info& morph_verts, float 
 		verts[i*3 + 0] = v.x[0];
 		verts[i*3 + 1] = frnd(v.x[1] + v.y_delta * one_minus_f);	// lerp the y value of the vert.
 		verts[i*3 + 2] = v.x[2];
-	}
-}
-
-
-static void	morph_indexed_vertices(Sint16* verts, const vertex_info& morph_verts, float f,
-				       const vec3& box_center, const vec3& box_extent,
-				       int count, Uint16* indices)
-// Similar to morph_vertices, except instead of ripping straight through morph_verts,
-// we pick particular verts specified by indices[0..count-1]
-{
-	Sint16	offsetx = frnd(box_center.get_x() / box_extent.get_x());
-	Sint16	offsetz = frnd(box_center.get_z() / box_extent.get_z());
-
-	// Make sure the box edges are on exactly representable
-	// boundaries.  This ensures (or at least make more likely)
-	// that cracks will be filled exactly.
-//	assert(offsetx * box_extent.get_x() == box_center.get_x());
-//	assert(offsetz * box_extent.get_z() == box_center.get_z());
-
-	float	one_minus_f = (1.0f - f);
-
-	for (int i = 0; i < count; i++) {
-		const vertex_info::vertex&	v = morph_verts.vertices[indices[i]];
-		verts[i*3 + 0] = offsetx + v.x[0];
-		verts[i*3 + 1] = frnd(v.x[1] + v.y_delta * one_minus_f);	// lerp the y value of the vert.
-		verts[i*3 + 2] = offsetz + v.x[2];
 	}
 }
 
@@ -479,7 +461,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 
 		// Grab some space to put processed verts.
 		assert(s_stream);
-		Sint16*	output_verts = (Sint16*) s_stream->reserve_memory(sizeof(Sint16) * 3 * verts.vertex_count);
+		vcoord_t*	output_verts = (vcoord_t*) s_stream->reserve_memory(sizeof(vcoord_t) * 3 * verts.vertex_count);
 
 		// Process our vertices into the output buffer.
 		float	f = morph_curve((lod & 255) / 255.0f);
@@ -491,7 +473,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 		if (opt.show_geometry) {
 			// draw this chunk.
 			glColor3f(1, 1, 1);
-			glVertexPointer(3, GL_SHORT, 0, output_verts);
+			glVertexPointer(3, VCOORD_GL_TYPE, 0, output_verts);
 			glDrawElements(GL_TRIANGLE_STRIP, verts.index_count, GL_UNSIGNED_SHORT, verts.indices);
 			triangle_count += verts.triangle_count;
 		}
@@ -573,7 +555,7 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 				f0 = f1 = 0;
 			}
 			int	c0 = edge[dir].lo_vertex_count;
-			Sint16*	output_verts = (Sint16*) s_stream->reserve_memory(sizeof(Sint16) * 3 * c0 * 2);
+			vcoord_t*	output_verts = (vcoord_t*) s_stream->reserve_memory(sizeof(vcoord_t) * 3 * c0 * 2);
 			vertex_info	vi;
 			vi.vertex_count = c0;
 			vi.vertices = edge[dir].edge_verts;
@@ -583,7 +565,7 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 
 			// Draw the connecting ribbon.  Just a zig-zag strip between
 			// the two edges.
-			glVertexPointer(3, GL_SHORT, 0, output_verts);
+			glVertexPointer(3, VCOORD_GL_TYPE, 0, output_verts);
 			glBegin(GL_TRIANGLE_STRIP);
 			for (int i = 0; i < c0; i++) {
 				glArrayElement(i);
@@ -621,8 +603,8 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 
 		const lod_edge&	e = edge[dir];
 
-		Sint16*	output_verts = (Sint16*) s_stream->reserve_memory(
-			sizeof(Sint16) * 3 * (e.lo_vertex_count + e.hi_vertex_count[0] + e.hi_vertex_count[1]));
+		vcoord_t*	output_verts = (vcoord_t*) s_stream->reserve_memory(
+			sizeof(vcoord_t) * 3 * (e.lo_vertex_count + e.hi_vertex_count[0] + e.hi_vertex_count[1]));
 
 		vertex_info	vi;
 		vi.vertices = e.edge_verts;
@@ -638,7 +620,7 @@ int	lod_chunk::render_edge(direction dir, render_options opt)
 		// Draw the connecting ribbon.
 
 		assert(e.ribbon_index_count);
-		glVertexPointer(3, GL_SHORT, 0, output_verts);
+		glVertexPointer(3, VCOORD_GL_TYPE, 0, output_verts);
 		glDrawElements(GL_TRIANGLES, e.ribbon_index_count, GL_UNSIGNED_SHORT, e.ribbon_indices);
 		triangle_count += e.ribbon_index_count / 3;
 
