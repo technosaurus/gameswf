@@ -406,6 +406,51 @@ namespace gameswf
 
 			return true;
 		}
+
+		
+		// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
+		// we have a bug?
+		#define WIDTH_FUDGE 80.0f
+
+
+		void	align_line(alignment align, int last_line_start_record, float x)
+		// Does LEFT/CENTER/RIGHT alignment on the records in
+		// m_text_glyph_records[], starting with
+		// last_line_start_record and going through the end of
+		// m_text_glyph_records.
+		{
+			float	extra_space = (m_rect.width() - m_right_margin) - x - WIDTH_FUDGE;
+			assert(extra_space >= 0.0f);
+
+			float	shift_right = 0.0f;
+
+			if (align == ALIGN_LEFT)
+			{
+				// Nothing to do; already aligned left.
+				return;
+			}
+			else if (align == ALIGN_CENTER)
+			{
+				// Distribute the space evenly on both sides.
+				shift_right = extra_space / 2;
+			}
+			else if (align == ALIGN_RIGHT)
+			{
+				// Shift all the way to the right.
+				shift_right = extra_space;
+			}
+
+			// Shift the beginnings of the records on this line.
+			for (int i = last_line_start_record; i < m_text_glyph_records.size(); i++)
+			{
+				text_glyph_record&	rec = m_text_glyph_records[i];
+
+				if (rec.m_style.m_has_x_offset)
+				{
+					rec.m_style.m_x_offset += shift_right;
+				}
+			}
+		}
 		
 
 		// Convert the characters in m_text into a series of
@@ -416,11 +461,13 @@ namespace gameswf
 
 			if (m_font == NULL) return;
 
+			float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+
 			text_glyph_record	rec;	// one to work on
 			rec.m_style.m_font = m_font;
 			rec.m_style.m_color = m_color;
-			rec.m_style.m_x_offset = m_left_margin + m_indent;
-			rec.m_style.m_y_offset = m_text_height;
+			rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
+			rec.m_style.m_y_offset = m_text_height + (m_font->get_leading() - m_font->get_descent()) * scale;
 			rec.m_style.m_text_height = m_text_height;
 			rec.m_style.m_has_x_offset = true;
 			rec.m_style.m_has_y_offset = true;
@@ -429,29 +476,41 @@ namespace gameswf
 			float	y = rec.m_style.m_y_offset;
 			UNUSED(y);
 
-			float	scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
-
 			float	leading = m_leading;
 			leading += m_font->get_leading() * scale;
 
 			int	last_code = -1;
 			int	last_space_glyph = -1;
+			int	last_line_start_record = 0;
 
 			for (int j = 0; j < m_text.length(); j++)
 			{
+				if (y + m_font->get_descent() * scale > m_rect.height())
+				{
+					// Text goes below the bottom of our bounding box.
+					rec.m_glyphs.resize(0);
+					break;
+				}
+
 				Uint16	code = m_text[j];
 
 				x += m_font->get_kerning_adjustment(last_code, code) * scale;
 				last_code = code;
 
-				if (code == 13)
+				if (code == 13 || code == 10)
 				{
 					// newline.
 
+					// Frigging Flash seems to use '\r' (13) as its
+					// default newline character.  If we get DOS-style \r\n
+					// sequences, it'll show up as double newlines, so maybe we
+					// need to detect \r\n and treat it as one newline.
+
 					// Close out this stretch of glyphs.
 					m_text_glyph_records.push_back(rec);
+					align_line(m_alignment, last_line_start_record, x);
 
-					x = m_left_margin + m_indent;	// new paragraphs get the indent.
+					x = fmax(0, m_left_margin + m_indent);	// new paragraphs get the indent.
 					y += m_text_height + leading;
 
 					// Start a new record on the next line.
@@ -465,6 +524,7 @@ namespace gameswf
 					rec.m_style.m_has_y_offset = true;
 
 					last_space_glyph = -1;
+					last_line_start_record = m_text_glyph_records.size();
 
 					continue;
 				}
@@ -490,7 +550,7 @@ namespace gameswf
 
 				x += ge.m_glyph_advance;
 
-				if (x >= m_rect.width() - m_right_margin - 75.0f)	// xxx 75.0f is a total fudge to make it match the Flash player!  Maybe we have a bug.
+				if (x >= m_rect.width() - m_right_margin - WIDTH_FUDGE)
 				{
 					// Whoops, we just exceeded the box width.  Do word-wrap.
 
@@ -498,6 +558,7 @@ namespace gameswf
 
 					// Close out this stretch of glyphs.
 					m_text_glyph_records.push_back(rec);
+					float	previous_x = x;
 
 					x = m_left_margin;
 					y += m_text_height + leading;
@@ -521,6 +582,7 @@ namespace gameswf
 						{
 							rec.m_glyphs.push_back(last_line.m_glyphs.back());
 							x += last_line.m_glyphs.back().m_glyph_advance;
+							previous_x -= last_line.m_glyphs.back().m_glyph_advance;
 							last_line.m_glyphs.resize(last_line.m_glyphs.size() - 1);
 						}
 					}
@@ -528,15 +590,21 @@ namespace gameswf
 					{
 						// Move the previous word down onto the next line.
 
+						previous_x -= last_line.m_glyphs[last_space_glyph].m_glyph_advance;
+
 						for (int i = last_space_glyph + 1; i < last_line.m_glyphs.size(); i++)
 						{
 							rec.m_glyphs.push_back(last_line.m_glyphs[i]);
 							x += last_line.m_glyphs[i].m_glyph_advance;
+							previous_x -= last_line.m_glyphs[i].m_glyph_advance;
 						}
 						last_line.m_glyphs.resize(last_space_glyph);
 					}
 
+					align_line(m_alignment, last_line_start_record, previous_x);
+
 					last_space_glyph = -1;
+					last_line_start_record = m_text_glyph_records.size();
 				}
 
 
@@ -546,6 +614,7 @@ namespace gameswf
 
 			// Add this line to our output.
 			m_text_glyph_records.push_back(rec);
+			align_line(m_alignment, last_line_start_record, x);
 		}
 
 
@@ -602,8 +671,8 @@ namespace gameswf
 				m_alignment = (alignment) in->read_u8();
 				m_left_margin = (float) in->read_u16();
 				m_right_margin = (float) in->read_u16();
-				m_indent = (float) in->read_u16();
-				m_leading = (float) in->read_u16();
+				m_indent = (float) in->read_s16();
+				m_leading = (float) in->read_s16();
 			}
 
 			char*	name = in->read_string();
