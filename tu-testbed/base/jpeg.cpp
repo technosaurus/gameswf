@@ -11,6 +11,9 @@
 #include "base/jpeg.h"
 #include "base/tu_file.h"
 #include <stdio.h>
+
+#if TU_CONFIG_LINK_TO_JPEGLIB
+
 extern "C" {
 #include <jpeglib.h>
 }
@@ -18,6 +21,13 @@ extern "C" {
 
 namespace jpeg
 {
+	// jpeglib data source constructors, for using tu_file* instead
+	// of stdio for jpeg IO.
+	void	setup_rw_source(jpeg_decompress_struct* cinfo, tu_file* instream);
+	void	setup_rw_dest(jpeg_compress_struct* cinfo, tu_file* outstream);
+
+
+	// Helper object for reading jpeg image data.  Basically a thin
 	static const int	IO_BUF_SIZE = 4096;
 
 	// A jpeglib source manager that reads from a tu_file.  Paraphrased
@@ -495,7 +505,33 @@ namespace jpeg
 
 	// Default constructor.
 	output::~output() {}
-};
+}
+
+
+#else // not TU_CONFIG_LINK_TO_JPEGLIB
+
+
+namespace jpeg
+{
+	/*static*/ input* input::create(tu_file* in)
+	{
+		return NULL;
+	}
+
+	/*static*/ input* input::create_swf_jpeg2_header_only(tu_file* in)
+	{
+		return NULL;
+	}
+
+	/*static*/ output* output::create(tu_file* out, int width, int height, int quality)
+	{
+		return NULL;
+	}
+
+}
+
+
+#endif // not TU_CONFIG_LINK_TO_JPEGLIB
 
 
 // Local Variables:
