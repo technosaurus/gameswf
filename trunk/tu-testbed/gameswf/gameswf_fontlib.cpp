@@ -53,14 +53,21 @@ namespace fontlib
 	// GLYPH_PACK_ROUNDING_BITS == 2, then align the packed glyphs
 	// on 4-pixel boundaries.  The idea here is to avoid bleeding
 	// of packed glyphs into their neighbors, when drawing scaled
-	// glyphs with mip-mapping.  Some bleed is inevitable, but we
-	// can cover a pretty decent range of scales using modest pack
-	// rounding.
+	// glyphs with mip-mapping.
 	//
-	// Note that this is much better than just padding all around
-	// the outside of an arbitrarily sized glyph, since
-	// mip-mapping naturally observes power-of-two boundaries.
-	static const int	GLYPH_PACK_ROUNDING_BITS = 3;
+	// @@ based on my experiments, PAD_PIXELS is *much* more
+	// visually effective than ROUNDING_BITS.  ROUNDING_BITS may
+	// still be helpful since it reduces the amount of work our
+	// brute-force rectangle packer does.  Should just fix the
+	// packer to use a horizon or some better data structure than
+	// a coverage bitmap.
+	static const int	GLYPH_PACK_ROUNDING_BITS = 0;
+
+	// How much space to leave around the individual glyph image.
+	// This should be at least 1.  The bigger it is, the smoother
+	// the boundaries of minified text will be, but the more
+	// texture space is wasted.
+	const int PAD_PIXELS = 3;
 
 	// We make a little bitmap coverage thingy, to help pack our
 	// glyphs into the cache texture.  Basically we play Tetris
@@ -200,11 +207,11 @@ namespace fontlib
 		int	raw_height = (max_y - min_y + 1);
 
 		// Round up to nearest rounding boundary.  We also
-		// need to leave 1 texel worth of blank space all
-		// around the glyph image.
+		// need to leave at least 1 texel worth of blank space
+		// all around the glyph image.
 		static const int	mask = (1 << GLYPH_PACK_ROUNDING_BITS) - 1;
-		int	width = (raw_width + 2 + mask) & ~mask;
-		int	height = (raw_height + 2 + mask) & ~mask;
+		int	width = (raw_width + (PAD_PIXELS * 2) + mask) & ~mask;
+		int	height = (raw_height + (PAD_PIXELS * 2) + mask) & ~mask;
 
 		assert(width < GLYPH_CACHE_TEXTURE_SIZE);
 		assert(height < GLYPH_CACHE_TEXTURE_SIZE);
@@ -237,8 +244,8 @@ namespace fontlib
 				for (int j = 0; j < raw_height; j++)
 				{
 					memcpy(s_current_cache_image
-					       + (pack_y + 1 + j) * GLYPH_CACHE_TEXTURE_SIZE
-					       + pack_x + 1,
+					       + (pack_y + PAD_PIXELS + j) * GLYPH_CACHE_TEXTURE_SIZE
+					       + pack_x + PAD_PIXELS,
 					       image_data + (min_y + j) * GLYPH_FINAL_SIZE + min_x,
 					       raw_width);
 				}
@@ -248,10 +255,10 @@ namespace fontlib
 				tg->m_bitmap_info = s_current_bitmap_info;
 				tg->m_uv_origin.m_x = (float(pack_x) - min_x + offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
 				tg->m_uv_origin.m_y = (float(pack_y) - min_y + offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
-				tg->m_uv_bounds.m_x_min = float(pack_x + 0.5f) / (GLYPH_CACHE_TEXTURE_SIZE);
-				tg->m_uv_bounds.m_x_max = float(pack_x + 1.5f + raw_width) / (GLYPH_CACHE_TEXTURE_SIZE);
-				tg->m_uv_bounds.m_y_min = float(pack_y + 0.5f) / (GLYPH_CACHE_TEXTURE_SIZE);
-				tg->m_uv_bounds.m_y_max = float(pack_y + 1.5f + raw_height) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_x_max = float(pack_x + width) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_y_min = float(pack_y) / (GLYPH_CACHE_TEXTURE_SIZE);
+				tg->m_uv_bounds.m_y_max = float(pack_y + height) / (GLYPH_CACHE_TEXTURE_SIZE);
 
 				return tg;
 			}
