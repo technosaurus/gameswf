@@ -103,6 +103,13 @@ namespace gameswf
 		// Push replacement text into an edit-text field.  Returns
 		// true if the field was found and could accept text.
 		virtual bool	set_edit_text(const char* var_name, const char* new_text) = 0;
+
+		// Make the movie visible/invisible.  An invisible
+		// movie does not advance and does not render.
+		virtual void	set_visible(bool visible) = 0;
+
+		// Return visibility status.
+		virtual bool	get_visible() const = 0;
 	};
 
 	// Try to grab movie info from the header of the given .swf

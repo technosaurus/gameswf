@@ -292,13 +292,15 @@ namespace gameswf
 		matrix	m_matrix;
 		float	m_ratio;
                 Uint16 	m_clip_depth;
+		bool	m_visible;
 
 		character(movie* parent)
 			:
 			m_parent(parent),
 			m_depth(-1),
 			m_ratio(0.0f),
-			m_clip_depth(0)
+			m_clip_depth(0),
+			m_visible(true)
 		{
 		}
 
@@ -364,6 +366,9 @@ namespace gameswf
 		virtual bool	get_accept_anim_moves() const { return true; }
 
 		virtual void	get_drag_state(drag_state* st) { assert(m_parent); m_parent->get_drag_state(st); }
+
+		virtual void	set_visible(bool visible) { m_visible = visible; }
+		virtual bool	get_visible() const { return m_visible; }
 
 		// Utility.
 		void	do_mouse_drag();
