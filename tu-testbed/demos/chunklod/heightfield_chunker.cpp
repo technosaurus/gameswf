@@ -639,7 +639,7 @@ void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int r
 	int	bx = rx + (dx >> 1);
 	int	bz = rz + (dz >> 1);
 
-	float	error = hf.elem(bx, bz).y - (hf.elem(lx, lz).y + hf.elem(rx, rz).y) / 2.f;
+	float	error = (hf.elem(bx, bz).y - (hf.elem(lx, lz).y + hf.elem(rx, rz).y) / 2.f) * hf.vertical_scale;
 	hf.elem(bx, bz).error = floor(error / hf.vertical_scale + 0.5);	// Set this vert's error value.
 	if (error >= base_max_error) {
 		// Compute the mesh level above which this vertex
@@ -1234,6 +1234,7 @@ namespace mesh {
 		vertices.clear();
 		vertex_indices.clear();
 		index_table.clear();
+		index_table.resize(4096);
 
 		for (int i = 0; i < 4; i++) {
 			edge_strip[i].clear();
