@@ -256,7 +256,7 @@ namespace jpeg
 	// Called when jpeglib has a fatal error.
 	{
 		assert(0);
-
+		(*cinfo->err->output_message) (cinfo);
 		tu_error_exit(1, "internal error in jpeglib");
 	}
 
