@@ -775,10 +775,10 @@ namespace fontlib
 		pack_and_assign_glyphs(&glyph_info);
 
 		// Delete glyph images.
-		for (int i = 0, n = glyph_info.size(); i < n; i++)
+		{for (int i = 0, n = glyph_info.size(); i < n; i++)
 		{
 			delete glyph_info[i].m_image;
-		}
+		}}
 		glyph_info.clear();
 
 		// Finish off any pending cache texture.
