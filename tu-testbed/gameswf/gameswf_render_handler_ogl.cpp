@@ -211,7 +211,12 @@ struct render_handler_ogl : public gameswf::render_handler
 		{
 			assert(needs_second_pass());
 
-			glDisable(GL_TEXTURE_2D);
+			// The additive color also seems to be modulated by the texture. So,
+			// maybe we can fake this in one pass using using the mean value of 
+			// the colors: c0*t+c1*t = ((c0+c1)/2) * t*2
+			// I don't know what the alpha component of the color is for.
+			//glDisable(GL_TEXTURE_2D);
+
 			glColor4f(
 				m_bitmap_color_transform.m_[0][1] / 255.0f,
 				m_bitmap_color_transform.m_[1][1] / 255.0f,
