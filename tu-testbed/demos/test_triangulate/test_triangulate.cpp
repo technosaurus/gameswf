@@ -393,8 +393,8 @@ int	main()
 #endif
 
 #if 0
-	// @@ TODO this one has a gnarly twist that puts us into the
-	// recovery mode.  See "Case A" in recovery_process() in
+	// This one has a tricky triple dupe vertex that puts us into
+	// the recovery mode.  See "Case A" in recovery_process() in
 	// triangulate_imp.h.
 
 	// Stars with touching verts on different paths.
@@ -414,8 +414,10 @@ int	main()
 	reverse_path(&paths.back());
 #endif
 
-#if 1
-	// A direct, simplified expression of the "gnarly twist".
+#if 0
+	// A direct, simplified expression of the "tricky triple dupe".
+	//
+	// The tricky duped vert is at (2,2).
 	paths.resize(paths.size() + 1);
 
 	paths.back().push_back(0);
@@ -427,13 +429,16 @@ int	main()
 	paths.back().push_back(3);
 	paths.back().push_back(2);
 
+	paths.back().push_back(2);
+	paths.back().push_back(2);
+
 	paths.back().push_back(0);
 	paths.back().push_back(2);
 
 	paths.back().push_back(0);
 	paths.back().push_back(3);
 
-	paths.back().push_back(2);
+	paths.back().push_back(1);
 	paths.back().push_back(3);
 
 	paths.back().push_back(2);
@@ -448,7 +453,7 @@ int	main()
 	paths.back().push_back(2);
 	paths.back().push_back(2);
 
-	paths.back().push_back(2);
+	paths.back().push_back(1);
 	paths.back().push_back(3);
 
 	paths.back().push_back(0);
@@ -458,7 +463,7 @@ int	main()
 	paths.back().push_back(2);
 #endif // 0
 
-#if 0
+#if 1
 	// Spiral.
 	paths.resize(paths.size() + 1);
 	make_spiral(&paths.back(), 10, 20);
