@@ -283,7 +283,7 @@ int	write_cache_file(const movie_data& md)
 	if (out.get_error() == TU_FILE_NO_ERROR)
 	{
 		// Write out the data.
-		movie_definition::cache_options	opt;
+		gameswf::movie_definition::cache_options	opt;
 		md.m_movie->output_cached_data(&out, opt);
 		if (out.get_error() == TU_FILE_NO_ERROR)
 		{

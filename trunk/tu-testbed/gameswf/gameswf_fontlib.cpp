@@ -574,7 +574,7 @@ namespace fontlib
 		int	max_x = 0;
 		int	min_y = s_glyph_nominal_size;
 		int	max_y = 0;
-		Uint8*	output = new uint8[s_glyph_nominal_size * s_glyph_nominal_size];
+		Uint8*	output = new Uint8[s_glyph_nominal_size * s_glyph_nominal_size];
 		for (int j = 0; j < s_glyph_nominal_size; j++)
 		{
 			for (int i = 0; i < s_glyph_nominal_size; i++)

@@ -58,22 +58,22 @@ LIB_PRE :=
 OBJ_EXT := obj
 EXE_EXT := .exe
 DLL_EXT := dll
-SDL_DIR := $(TOP)/../SDL-1.2.5
+SDL_DIR := $(TOP)/../SDL-1.2.7
 SDL_INCLUDE := -I "$(SDL_DIR)/include"
 SDL_LIBS := winmm.lib dxguid.lib kernel32.lib user32.lib gdi32.lib # winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib
-SDL_MIXER_INCLUDE := -I$(TOP)/../SDL_mixer-1.2.5
-SDL_MIXER_LIB := $(TOP)/../SDL_mixer-1.2.5/VisualC/Release/SDL_mixer.lib
+SDL_MIXER_INCLUDE := -I$(TOP)/../SDL_mixer-1.2.5/include
+SDL_MIXER_LIB := $(TOP)/../SDL_mixer-1.2.5/lib/SDL_mixer.lib
 
 
 LIBS := opengl32.lib glu32.lib $(SDL_DIR)/lib/SDLmain.lib $(SDL_DIR)/lib/SDL.lib gdi32.lib oldnames.lib $(SDL_LIBS)
 CFLAGS := $(CFLAGS) /MD -GR -GX -DWIN32=1 -D_WIN32=1 $(USE_DL_MALLOC_FLAG) -W3 $(SDL_INCLUDE) $(GAMESWF_MP3_SUPPORT)
-LDFLAGS := /link /NODEFAULTLIB:libc.lib /INCREMENTAL:NO /subsystem:console
+LDFLAGS := /link /NODEFAULTLIB:libc.lib /NODEFAULTLIB:libcd.lib /INCREMENTAL:NO /subsystem:console
 
 LIBPNG_DIR := $(TOP)/../libpng
 LIBPNG_INCLUDE := -I$(LIBPNG_DIR)
 LIBPNG := $(LIBPNG_DIR)/libpng.$(LIB_EXT)
 
-ZLIB_DIR := $(TOP)/../zlib
+ZLIB_DIR := $(TOP)/../zlib-1.2.1
 ZLIB_INCLUDE := -I$(ZLIB_DIR)
 ZLIB := $(ZLIB_DIR)/zlib.$(LIB_EXT)
 
