@@ -28,6 +28,25 @@
 #endif // M_PI
 
 
+float	morph_curve(float f)
+// Given a value from 0 to 1 that represents the progress of a chunk
+// from its minimum view distance to its maximum view distance, return
+// a morph value from 0 to 1 that determines how much to morph the
+// verts.
+//
+// A function with flat sections near 0 and 1 may help avoid popping
+// when chunks switch LODs.
+//
+// Alternatively, a time-based morph might work.  Or a morph
+// computation that looks around in the tree to make sure it
+// distributes the morph range properly around splits.  Needs some
+// thought...
+{
+//	return fclamp((f - 0.5f) * 2 + 0.5f, 0, 1);
+	return f;
+}
+
+
 class vertex_streaming_buffer {
 // Object to facilitate streaming verts to the video card.
 // The idea is that it will take care of fencing.
@@ -91,40 +110,23 @@ struct vertex_info {
 
 	int	vertex_count;
 	struct vertex {
-		float	x, y, z;
-		float	y_delta;	// delta, to get to morphed y
-
-		float	get(int i) { return (i == 0 ? x : (i == 1 ? y : z)); }	// @@ for convenience in computing min/max.  Clean that up!
+		Sint16	x[3];
+		Sint16	y_delta;	// delta, to get to morphed y
 	};
 	vertex*	vertices;
 
 	int	index_count;
 	Uint16*	indices;
 
+	int	triangle_count;
+
 	// mesh type (GL_TRIANGLE_STRIP vs GL_TRIANGLES)
 	// texture id
 	// other?
 
 	void	load(SDL_RWops* in);
-	void	render();
 
 	// TODO: destructor.
-};
-
-
-struct morph_info {
-// Structure for storing info about vertices which need to be morphed.
-// This info includes vertex indices that refer to an external
-// vertex_info struct.
-	int	vertex_count;
-	struct vertex {
-		Uint16	index;
-		float	y;
-		float	y_delta;	// delta, to get to morphed y
-	};
-	vertex*	vertices;
-
-	void	load(SDL_RWops* in);
 };
 
 
@@ -216,71 +218,39 @@ static void	draw_box(const vec3& min, const vec3& max)
 }
 
 
-void	morph_info::load(SDL_RWops* in)
-// Load info about a set of morph vertices.
-{
-#if 0
-	vertex_count = SDL_ReadLE16(in);
-	vertices = new vertex[ vertex_count ];
-	for (int i = 0; i < vertex_count; i++) {
-		vertex&	v = vertices[i];
-//		vertices[i].index = SDL_ReadLE16(in);
-		v.x = ReadFloat32(in);
-		v.y = ReadFloat32(in);
-		v.z = ReadFloat32(in);
-		v.y_delta = ReadFloat32(in);
-	}
-
-//	printf("morph_info::load() -- vertex_count = %d\n", vertex_count);//xxxxxxxx
-#endif // 0
-}
-
-
 void	vertex_info::load(SDL_RWops* in)
 // Read vert info from the given file.
 {
+	m_origin.set(0, ReadFloat32(in));
+	m_origin.set(1, ReadFloat32(in));
+	m_origin.set(2, ReadFloat32(in));
+	m_scale = ReadFloat32(in);
+
 	vertex_count = SDL_ReadLE16(in);
 	vertices = new vertex[ vertex_count ];
 	for (int i = 0; i < vertex_count; i++) {
 		vertex&	v = vertices[i];
-		v.x = ReadFloat32(in);
-		v.y = ReadFloat32(in);
-		v.z = ReadFloat32(in);
-		v.y_delta = ReadFloat32(in);
+		v.x[0] = SDL_ReadLE16(in);
+		v.x[1] = SDL_ReadLE16(in);
+		v.x[2] = SDL_ReadLE16(in);
+		v.y_delta = SDL_ReadLE16(in);
 	}
-#if 0
-	// Load verts.
-	vertex_count = SDL_ReadLE16(in);
-	vertices = new vec3[vertex_count * sizeof(vec3)]; //ogl::allocate_vertex_memory( vertex_count * sizeof(vec3) );
-	for (int i = 0; i < vertex_count; i++) {
-		vertices[i].set(0, ReadFloat32(in));
-		vertices[i].set(1, ReadFloat32(in));
-		vertices[i].set(2, ReadFloat32(in));
-	}
-#endif // 0
 		
 	// Load indices.
 	index_count = SDL_ReadLE32(in);
-	indices = new Uint16[ index_count ];
+	if (index_count > 0) {
+		indices = new Uint16[ index_count ];
+	} else {
+		indices = NULL;
+	}
 	{for (int i = 0; i < index_count; i++) {
 		indices[i] = SDL_ReadLE16(in);
 	}}
 
+	// Load the real triangle count, for computing statistics.
+	triangle_count = SDL_ReadLE32(in);
+
 //	printf("vertex_info::load() -- vertex_count = %d, index_count = %d\n", vertex_count, index_count);//xxxxxxxx
-}
-
-
-void	vertex_info::render()
-// Render this vertex buffer.
-{
-	glVertexPointer(3, GL_FLOAT, 0, (float*) &(vertices[0]));
-	glDrawElements(GL_TRIANGLES, index_count, GL_UNSIGNED_SHORT, indices);
-
-//	glBegin(GL_TRIANGLES);
-//	for (int i = 0; i < index_count; i++) {
-//		glVertex3fv((float*) &(vertices[indices[i]]));
-//	}
-//	glEnd();
 }
 
 
@@ -290,9 +260,8 @@ struct lod_edge {
 	lod_chunk*	neighbor[2];	// pointers to neighboring chunks.
 
 	int	midpoint_index;	// Index of the vert which is the midpoint of the edge.
-	int	vertex_count;	// Number of verts along this edge.
-	vec3*	verts;	// Two copies of the verts along this edge.  array size == vertex_count * 2
-	morph_info	morph_verts;
+	vertex_info	verts;
+
 	Uint16*	connecting_strip;	// Simple strip for connecting two copies of the edge (which are morphed differently).
 	int	rendered_frame;
 
@@ -326,15 +295,6 @@ void	lod_edge::clear()
 // Reset, before rendering.
 {
 	rendered_frame = 0;
-
-#if 0
-	// recurse to children.
-	for (int i = 0; i < 2; i++) {
-		if (child[i]) {
-			child[i]->clear();
-		}
-	}
-#endif // 0
 }
 
 
@@ -392,16 +352,25 @@ static void	morph_vertices(vec3* verts, const vertex_info& morph_verts, float f)
 // given morph parameter.  verts is the output buffer for processed
 // verts.
 //
+// The morph verts are in a compressed format.  An output vert is
+// origin + scale*v[i] (and then gets morphed).  The origin and scale
+// allow the vertex coords to be quantized down.
+//
 // @@ This functionality could be shifted into a vertex program for
 // the GPU.
 {
-	float	one_minus_f = 1.0f - f;
+	float	ox = morph_verts.m_origin.get_x();
+	float	oy = morph_verts.m_origin.get_y();
+	float	oz = morph_verts.m_origin.get_z();
+	float	scale = morph_verts.m_scale;
+
+	float	one_minus_f = (1.0f - f) * scale;
 
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
 		const vertex_info::vertex&	v = morph_verts.vertices[i];
-		verts[i].set(0, v.x);
-		verts[i].set(1, v.y + v.y_delta * one_minus_f);	// lerp the y value of the vert.
-		verts[i].set(2, v.z);
+		verts[i].set(0, ox + scale * v.x[0]);
+		verts[i].set(1, oy + scale * v.x[1] + v.y_delta * one_minus_f);	// lerp the y value of the vert.
+		verts[i].set(2, oz + scale * v.x[2]);
 	}
 }
 
@@ -435,7 +404,7 @@ int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_o
 		vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * verts.vertex_count);
 
 		// Process our vertices into the output buffer.
-		float	f = (lod & 255) / 255.0f;
+		float	f = morph_curve((lod & 255) / 255.0f);
 		if (opt.morph == false) {
 			f = 0;
 		}
@@ -445,8 +414,8 @@ int	lod_chunk::render(const view_state& v, cull::result_info cull_info, render_o
 			// draw this chunk.
 			glColor3f(1, 1, 1);
 			glVertexPointer(3, GL_FLOAT, 0, (float*) output_verts);
-			glDrawElements(GL_TRIANGLES, verts.index_count, GL_UNSIGNED_SHORT, verts.indices);
-			triangle_count += verts.index_count / 3;
+			glDrawElements(GL_TRIANGLE_STRIP, verts.index_count, GL_UNSIGNED_SHORT, verts.indices);
+			triangle_count += verts.triangle_count;
 		}
 
 		if (opt.show_edges) {
@@ -518,66 +487,89 @@ int	lod_edge::render(const view_state& v, render_options opt)
 	rendered_frame = v.m_frame_number;
 
 	int	triangle_count = 0;
-#if 0
 	if (neighbor[0]->enabled && neighbor[1]->enabled) {
 		// joining two chunks at the same level.
-		if (opt.morph) {
-			morph_vertices(&verts[0], morph_verts, (neighbor[0]->lod & 255) / 255.0f);	// First copy of verts gets neighbor[0]'s morph.
-			morph_vertices(&verts[vertex_count], morph_verts, (neighbor[1]->lod & 255) / 255.0f);	// Second copy of verts gets neighbor[1]'s morph.
+		float	f0 = morph_curve((neighbor[0]->lod & 255) / 255.0f);
+		float	f1 = morph_curve((neighbor[1]->lod & 255) / 255.0f);
+		if (opt.morph == false) {
+			f0 = f1 = 0;
 		}
+
+		assert(s_stream);
+		vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * verts.vertex_count * 2);
+		morph_vertices(output_verts, verts, f0);	// First copy of verts gets neighbor[0]'s morph.
+		morph_vertices(&output_verts[verts.vertex_count], verts, f1);	// Second copy of verts gets neighbor[1]'s morph.
 
 		// Use a precomputed strip to zip these edges together.
-		glVertexPointer(3, GL_FLOAT, 0, verts[0]);
-		glDrawElements(GL_TRIANGLE_STRIP, (vertex_count - 1) * 2, GL_UNSIGNED_SHORT, connecting_strip);
+		glVertexPointer(3, GL_FLOAT, 0, output_verts);
+		glDrawElements(GL_TRIANGLE_STRIP, (verts.vertex_count - 1) * 2, GL_UNSIGNED_SHORT, connecting_strip);
 
-#if 0
-		// Make a strip that joins the two rows of matched verts.
-		glBegin(GL_TRIANGLE_STRIP);
-		for (int i = 0; i < vertex_count - 1; i++) {
-			glVertex3fv(verts[i]);
-			glVertex3fv(verts[vertex_count + i + 1]);
-		}
-		glEnd();
-#endif // 0
-
-		triangle_count += 2 * (vertex_count - 1) - 2;
+		triangle_count += 2 * (verts.vertex_count - 1) - 2;
 	}
 	else if (neighbor[0]->enabled && child[0] && child[1] && child[0]->neighbor[1]->enabled)
 	{
 		// This is a t-junction.  neighbor[0] has the low LOD, while child[0]->neighbor[1] and
 		// child[1]->neighbor[1] have the matching high LOD edges.
-		if (opt.morph) {
-			morph_vertices(&verts[0], morph_verts, (neighbor[0]->lod & 255) / 255.0f);
-			morph_vertices(&(child[0]->verts[0]), child[0]->morph_verts, (child[0]->neighbor[1]->lod & 255) / 255.0f);
-			morph_vertices(&(child[1]->verts[0]), child[1]->morph_verts, (child[1]->neighbor[1]->lod & 255) / 255.0f);
+		float	f0 = morph_curve((neighbor[0]->lod & 255) / 255.0f);
+		float	fc0 = morph_curve((child[0]->neighbor[1]->lod & 255) / 255.0f);
+		float	fc1 = morph_curve((child[1]->neighbor[1]->lod & 255) / 255.0f);
+		if (opt.morph == false) {
+			f0 = fc0 = fc1 = 0;
 		}
+
+		assert(s_stream);
+		vec3*	output_verts = (vec3*) s_stream->reserve_memory(
+			sizeof(vec3) *
+			(verts.vertex_count
+			 + child[0]->verts.vertex_count
+			 + child[1]->verts.vertex_count));
+
+		vec3*	out_c0 = output_verts + verts.vertex_count;
+		vec3*	out_c1 = out_c0 + child[0]->verts.vertex_count;
+
+		morph_vertices(output_verts, verts, f0);
+		morph_vertices(out_c0, child[0]->verts, fc0);
+		morph_vertices(out_c1, child[1]->verts, fc1);
 
 		// generate weirdo mesh to join this stuff.  Would be nicer
 		// to precompute this strip and make sure it makes some sense.
 
-//		int	midway_index = vertex_count / 2;	// should precompute this for real.
-		triangle_count += join_rows(&verts[0], midpoint_index + 1, &(child[0]->verts[0]), child[0]->vertex_count);
-		triangle_count += join_rows(&verts[midpoint_index], vertex_count - midpoint_index, &(child[1]->verts[0]), child[1]->vertex_count);
+		triangle_count += join_rows(output_verts, midpoint_index + 1,
+									out_c0, child[0]->verts.vertex_count);
+		triangle_count += join_rows(output_verts + midpoint_index, verts.vertex_count - midpoint_index,
+									out_c1, child[1]->verts.vertex_count);
 	}
 	else if (neighbor[1]->enabled && child[0] && child[1] && child[0]->neighbor[0]->enabled)
 	{
-		// This is a t-junction.  neighbor[0] has the low LOD, while child[0]->neighbor[1] and
-		// child[1]->neighbor[1] have the matching high LOD edges.
-		if (opt.morph) {
-			morph_vertices(&verts[0], morph_verts, (neighbor[1]->lod & 255) / 255.0f);
-			morph_vertices(&(child[0]->verts[0]), child[0]->morph_verts, (child[0]->neighbor[0]->lod & 255) / 255.0f);
-			morph_vertices(&(child[1]->verts[0]), child[1]->morph_verts, (child[1]->neighbor[0]->lod & 255) / 255.0f);
+		// This is a t-junction.  neighbor[1] has the low LOD, while child[0]->neighbor[0] and
+		// child[1]->neighbor[0] have the matching high LOD edges.
+		float	f1 = morph_curve((neighbor[1]->lod & 255) / 255.0f);
+		float	fc0 = morph_curve((child[0]->neighbor[0]->lod & 255) / 255.0f);
+		float	fc1 = morph_curve((child[1]->neighbor[0]->lod & 255) / 255.0f);
+		if (opt.morph == false) {
+			f1 = fc0 = fc1 = 0;
 		}
+
+		assert(s_stream);
+		int	vert_count = verts.vertex_count + child[0]->verts.vertex_count + child[1]->verts.vertex_count;
+		vec3*	output_verts = (vec3*) s_stream->reserve_memory(sizeof(vec3) * vert_count);
+
+		vec3*	out_c0 = output_verts + verts.vertex_count;
+		vec3*	out_c1 = out_c0 + child[0]->verts.vertex_count;
+
+		morph_vertices(output_verts, verts, f1);
+		morph_vertices(out_c0, child[0]->verts, fc0);
+		morph_vertices(out_c1, child[1]->verts, fc1);
 
 		// generate weirdo mesh to join this stuff.  Would be nicer
 		// to precompute this strip and make sure it makes some sense.
 
-//		int	midway_index = vertex_count / 2;	// should precompute this for real.
-		triangle_count += join_rows(&verts[0], midpoint_index + 1, &(child[0]->verts[0]), child[0]->vertex_count);
-		triangle_count += join_rows(&verts[midpoint_index], vertex_count - midpoint_index, &(child[1]->verts[0]), child[1]->vertex_count);
+		triangle_count += join_rows(output_verts, midpoint_index + 1,
+									out_c0, child[0]->verts.vertex_count);
+		triangle_count += join_rows(output_verts + midpoint_index, verts.vertex_count - midpoint_index,
+									out_c1, child[1]->verts.vertex_count);
 	}
 
-#endif // 0
 	return triangle_count;
 }
 
@@ -596,13 +588,11 @@ void	lod_chunk::load(SDL_RWops* in, int level, lod_chunk_tree* tree)
 
 	// Load the data.
 	verts.load(in);
-//	morph_verts.load(in);
 
 	neighbor_count = 0;
 	child_count = 0;
 	edge_count = 0;
 	edges = 0;
-//	child_edge_count = 0;
 
 	// Recurse to child chunks.
 	if (level > 0) {
@@ -616,14 +606,12 @@ void	lod_chunk::load(SDL_RWops* in, int level, lod_chunk_tree* tree)
 		}
 	}
 
-#if 0
 	// Load data for internal edges.
 	int	ct = ReadByte(in);
 	for (int i = 0; i < ct; i++) {
 		lod_edge*	e = new lod_edge;
 		e->load(in, tree);
 	}
-#endif // 0
 }
 
 
@@ -638,7 +626,6 @@ void	lod_edge::load(SDL_RWops* in, lod_chunk_tree* tree)
 {
 	rendered_frame = 0;
 
-#if 0
 	// Get pointers to the two neighbor chunks.
 	for (int i = 0; i < 2; i++) {
 		int	label = SDL_ReadLE32(in);
@@ -653,26 +640,16 @@ void	lod_edge::load(SDL_RWops* in, lod_chunk_tree* tree)
 
 	// Load vertices.
 	midpoint_index = SDL_ReadLE16(in);
-	vertex_count = SDL_ReadLE16(in);
-	verts = (vec3*) ogl::allocate_vertex_memory(vertex_count * sizeof(vec3) * 2);	// 2 copies of the vert data!!
-	{for (int i = 0; i < vertex_count; i++) {
-		verts[i].set(0, ReadFloat32(in));
-		verts[i].set(1, ReadFloat32(in));
-		verts[i].set(2, ReadFloat32(in));
 
-		// Copy this data to the second set of verts.
-		verts[vertex_count + i] = verts[i];
-	}}
-
-	morph_verts.load(in);
+	verts.load(in);
 
 	// Initialize the indices of a connecting strip, to use when
 	// connecting the two differently-morphed versions of this edge.
 	// It's just a plain zig-zag.
-	connecting_strip = new Uint16[(vertex_count - 1) * 2];
-	{for (int i = 0, index = 0; i < vertex_count - 1; i++) {
+	connecting_strip = new Uint16[(verts.vertex_count - 1) * 2];
+	{for (int i = 0, index = 0; i < verts.vertex_count - 1; i++) {
 		connecting_strip[index++] = i;
-		connecting_strip[index++] = vertex_count + i + 1;
+		connecting_strip[index++] = verts.vertex_count + i + 1;
 	}}
 
 	// Initialize & load child edges.
@@ -687,7 +664,6 @@ void	lod_edge::load(SDL_RWops* in, lod_chunk_tree* tree)
 			child[i] = NULL;
 		}
 	}
-#endif // 0
 }
 
 	
@@ -702,7 +678,7 @@ void	lod_chunk::compute_bounding_box()
 	// Check vertices for Min/Max coords.
 	for (int i = 0; i < verts.vertex_count; i++) {
 		for (int j = 0; j < 3; j++) {
-			float	f = verts.vertices[i].get(j);
+			float	f = verts.m_origin.get(j) + verts.m_scale * verts.vertices[i].x[j];
 			if (f < Min.get(j)) Min.set(j, f);
 			if (f > Max.get(j)) Max.set(j, f);
 		}
