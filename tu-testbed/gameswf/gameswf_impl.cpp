@@ -362,6 +362,47 @@ namespace gameswf
 	}
 
 
+	static void	dump_tag_bytes(stream* in)
+	// Log the contents of the current tag, in hex.
+	{
+		static const int	ROW_BYTES = 16;
+		char	row_buf[ROW_BYTES];
+		int	row_count = 0;
+
+		while(in->get_position() < in->get_tag_end_position())
+		{
+			int	c = in->read_u8();
+			log_msg("%02X", c);
+
+			if (c < 32) c = '.';
+			if (c > 127) c = '.';
+			row_buf[row_count] = c;
+			
+			row_count++;
+			if (row_count >= ROW_BYTES)
+			{
+				log_msg("    ");
+				for (int i = 0; i < ROW_BYTES; i++)
+				{
+					log_msg("%c", row_buf[i]);
+				}
+
+				log_msg("\n");
+				row_count = 0;
+			}
+			else
+			{
+				log_msg(" ");
+			}
+		}
+
+		if (row_count > 0)
+		{
+			log_msg("\n");
+		}
+	}
+
+
 	//
 	// movie_impl
 	//
@@ -817,6 +858,7 @@ namespace gameswf
 				} else {
 					// no tag loader for this tag type.
 					IF_DEBUG(log_msg("*** no tag loader for type %d\n", tag_type));
+					IF_DEBUG(dump_tag_bytes(&str));
 				}
 
 				str.close_tag();
@@ -858,6 +900,7 @@ namespace gameswf
 			register_tag_loader(28, remove_object_2_loader);
 			register_tag_loader(32, define_shape_loader);
 			register_tag_loader(33, define_text_loader);
+			register_tag_loader(37, define_edit_text_loader);
 			register_tag_loader(34, button_character_loader);
 			register_tag_loader(35, define_bits_jpeg3_loader);
 			register_tag_loader(36, define_bits_lossless_2_loader);
@@ -1675,6 +1718,260 @@ namespace gameswf
 
 
 	//
+	// edit_text_character
+	//
+
+
+	struct edit_text_character : public character
+	// A text display character, whose text can be changed at
+	// runtime (by script or host).
+	{
+		rect	m_rect;
+//		array<text_glyph_record>	m_text_glyph_records;
+		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
+		array<line_style>	m_dummy_line_style;
+
+		bool	m_word_wrap;
+		bool	m_multiline;
+		bool	m_password;	// show asterisks instead of actual characters
+		bool	m_readonly;
+		bool	m_auto_size;	// resize our bound to fit the text
+		bool	m_no_select;
+		bool	m_border;	// forces white background and black border -- perhaps useless?
+		bool	m_html;
+
+		// Allowed HTML (from Alexi's SWF Reference):
+		//
+		// <a href=url target=targ>...</a> -- hyperlink
+		// <b>...</b> -- bold
+		// <br> -- line break
+		// <font face=name size=[+|-][0-9]+ color=#RRGGBB>...</font>  -- font change; size in TWIPS
+		// <i>...</i> -- italic
+		// <li>...</li> -- list item
+		// <p>...</p> -- paragraph
+		// <tab> -- insert tab
+		// <TEXTFORMAT>  </TEXTFORMAT>
+		//   [ BLOCKINDENT=[0-9]+ ]
+		//   [ INDENT=[0-9]+ ]
+		//   [ LEADING=[0-9]+ ]
+		//   [ LEFTMARGIN=[0-9]+ ]
+		//   [ RIGHTMARGIN=[0-9]+ ]
+		//   [ TABSTOPS=[0-9]+{,[0-9]+} ]
+		//
+		// Change the different parameters as indicated. The
+		// sizes are all in TWIPs. There can be multiple
+		// positions for the tab stops. These are seperated by
+		// commas.
+		// <U>...</U> -- underline
+
+
+		bool	m_use_outlines;	// when true, use specified SWF internal font.  Otherwise, renderer picks a default font
+
+		font*	m_font;
+		float	m_text_height;
+
+		rgba	m_color;
+		int	m_max_length;
+
+		enum alignment
+		{
+			ALIGN_LEFT = 0,
+			ALIGN_RIGHT,
+			ALIGN_CENTER,
+			ALIGN_JUSTIFY	// probably don't need to implement...
+		};
+		alignment	m_alignment;
+		
+		float	m_left_margin;	// extra space between box border and text
+		float	m_right_margin;
+		float	m_indent;	// how much to indent the first line of multiline text
+		float	m_leading;	// extra space between lines (in addition to default font line spacing)
+		char*	m_name;		// variable name, for script/host access...
+		tu_string	m_text;
+
+
+		edit_text_character()
+			:
+			m_word_wrap(false),
+			m_multiline(false),
+			m_password(false),
+			m_readonly(false),
+			m_auto_size(false),
+			m_no_select(false),
+			m_border(false),
+			m_html(false),
+			m_use_outlines(false),
+			m_font(NULL),
+			m_text_height(1.0f),
+			m_max_length(0),
+			m_alignment(ALIGN_LEFT),
+			m_left_margin(0.0f),
+			m_right_margin(0.0f),
+			m_indent(0.0f),
+			m_leading(0.0f),
+			m_name(NULL)
+		{
+			m_color.set(0, 0, 0, 255);
+			m_dummy_style.push_back(fill_style());
+		}
+
+		
+		~edit_text_character()
+		{
+			delete [] m_name;
+		}
+
+
+		void	read(stream* in, int tag_type, movie* m)
+		{
+			assert(m != NULL);
+			assert(tag_type == 37);
+
+			m_rect.read(in);
+
+			in->align();
+			bool	has_text = in->read_uint(1) ? true : false;
+			m_word_wrap = in->read_uint(1) ? true : false;
+			m_multiline = in->read_uint(1) ? true : false;
+			m_password = in->read_uint(1) ? true : false;
+			m_readonly = in->read_uint(1) ? true : false;
+			bool	has_color = in->read_uint(1) ? true : false;
+			bool	has_max_length = in->read_uint(1) ? true : false;
+			bool	has_font = in->read_uint(1) ? true : false;
+
+			in->read_uint(1);	// reserved
+			m_auto_size = in->read_uint(1) ? true : false;
+			bool	has_layout = in->read_uint(1) ? true : false;
+			m_no_select = in->read_uint(1) ? true : false;
+			m_border = in->read_uint(1) ? true : false;
+			in->read_uint(1);	// reserved
+			m_html = in->read_uint(1) ? true : false;
+			m_use_outlines = in->read_uint(1) ? true : false;
+
+			if (has_font)
+			{
+				Uint16	font_id = in->read_u16();
+				m_font = m->get_font(font_id);
+				if (m_font == NULL)
+				{
+					log_error("error: edit_text with undefined font; font_id = %d\n", font_id);
+				}
+
+				m_text_height = (float) in->read_u16();
+			}
+
+			if (has_color)
+			{
+				m_color.read_rgba(in);
+			}
+
+			if (has_max_length)
+			{
+				m_max_length = in->read_u16();
+			}
+
+			if (has_layout)
+			{
+				m_alignment = (alignment) in->read_u8();
+				m_left_margin = (float) in->read_u16();
+				m_right_margin = (float) in->read_u16();
+				m_indent = (float) in->read_u16();
+				m_leading = (float) in->read_u16();
+			}
+
+			m_name = in->read_string();
+
+			if (has_text)
+			{
+				char*	str = in->read_string();
+				m_text = str;
+				delete [] str;
+			}
+		}
+
+
+		void	display(const display_info& di)
+		// Draw the dynamic string.
+		{
+			display_info	sub_di = di;
+
+			matrix	base_matrix = sub_di.m_matrix;
+			float	base_matrix_max_scale = base_matrix.get_max_scale();
+
+			float	scale = 1.0f;
+			float	x = 0.0f;
+			float	y = 0.0f;
+
+			if (m_font == NULL) return;
+
+			scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+			float	text_screen_height = base_matrix_max_scale
+				* scale
+				* 1024.0f
+				/ 20.0f
+				* get_pixel_scale();
+			bool	use_shape_glyphs =
+				text_screen_height > fontlib::get_nominal_texture_glyph_height() * 1.0f;
+			
+			m_dummy_style[0].set_color(m_color);
+
+			rgba	transformed_color = sub_di.m_color_transform.transform(m_color);
+
+			for (int j = 0; j < m_text.length(); j++)
+			{
+				Uint16	code = m_text[j];
+				int	index = m_font->get_glyph_index(code);
+				if (index == -1)
+				{
+					// error -- missing glyph!
+					log_error("edit_text_character::display() -- missing glyph for char %d\n", code);
+					continue;
+				}
+				const texture_glyph*	tg = m_font->get_texture_glyph(index);
+					
+				sub_di.m_matrix = base_matrix;
+				sub_di.m_matrix.concatenate_translation( x, y );
+				sub_di.m_matrix.concatenate_scale( scale );
+
+				if (tg && ! use_shape_glyphs)
+				{
+					fontlib::draw_glyph(sub_di.m_matrix, tg, transformed_color);
+				}
+				else
+				{
+					shape_character*	glyph = m_font->get_glyph(index);
+					
+					// Draw the character using the filled outline.
+					if (glyph) glyph->display(sub_di, m_dummy_style, m_dummy_line_style);
+				}
+
+				x += m_font->get_advance(index) * scale;
+
+				// TODO: word-wrap
+				// TODO: alignment
+				// TODO: HTML markup
+			}
+		}
+	};
+
+
+	void	define_edit_text_loader(stream* in, int tag_type, movie* m)
+	// Read a DefineText tag.
+	{
+		assert(tag_type == 37);
+
+		Uint16	character_id = in->read_u16();
+
+		edit_text_character*	ch = new edit_text_character;
+		ch->m_id = character_id;
+		IF_DEBUG(log_msg("edit_text_char, id = %d\n", character_id));
+		ch->read(in, tag_type, m);
+
+		m->add_character(character_id, ch);
+	}
+
+
+	//
 	// place_object_2
 	//
 	
@@ -1707,6 +2004,12 @@ namespace gameswf
 		{
 		}
 
+		~place_object_2()
+		{
+			delete [] m_name;
+			m_name = NULL;
+		}
+
 		void	read(stream* in, int tag_type)
 		{
 			assert(tag_type == 4 || tag_type == 26);
@@ -1727,7 +2030,7 @@ namespace gameswf
 			{
 				in->align();
 
-				in->read_uint(1);	// reserved flag
+				in->read_uint(1);	// reserved flag -- "has actions" in versions >= 5
 				bool	has_clip_bracket = in->read_uint(1) ? true : false;
 				bool	has_name = in->read_uint(1) ? true : false;
 				bool	has_ratio = in->read_uint(1) ? true : false;
