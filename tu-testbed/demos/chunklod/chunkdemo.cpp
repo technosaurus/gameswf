@@ -92,7 +92,7 @@ void	setup_projection_matrix(int w, int h, float horizontal_fov_degrees)
 	// Set up projection matrix.
 	//
 	float	nearz = 4.0;
-	float	farz = 80000;
+	float	farz = 160000;
 
 	float	aspect_ratio = float(h) / float(w);
 	float	horizontal_fov = (float) (horizontal_fov_degrees * M_PI / 180.f);

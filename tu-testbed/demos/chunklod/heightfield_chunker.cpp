@@ -217,7 +217,8 @@ int	wrapped_main(int argc, char* argv[])
 	printf("infile: %s\n", infile);
 	printf("outfile: %s\n", outfile);
 	printf("depth = %d, max error = %f\n", tree_depth, max_geometric_error);
-	printf("vertical scale = %f\n", vertical_scale);
+	printf("output vertical scale = %f\n", vertical_scale);
+	printf("input vertical scale = %f\n", input_vertical_scale);
 
 	// Process the data.
 	heightfield_chunker(infile, out, tree_depth, max_geometric_error, spacing, vertical_scale, input_vertical_scale);
@@ -357,7 +358,6 @@ struct heightfield {
 		sample_spacing = 1.0f;
 		vertical_scale = initial_vertical_scale;
 		input_vertical_scale = input_scale;
-//		m_height = NULL;
 		m_bt = NULL;
 		m_level = NULL;
 	}
@@ -369,10 +369,6 @@ struct heightfield {
 	void	clear()
 	// Frees any allocated data and resets our members.
 	{
-//		if (m_height) {
-//			delete m_height;
-//			m_height = 0;
-//		}
 		if (m_level) {
 			delete m_level;
 			m_level = 0;
@@ -385,8 +381,6 @@ struct heightfield {
 	Sint16	height(int x, int z)
 	// Return a (writable) reference to the height element at (x, z).
 	{
-//		assert(m_height);
-//		return m_height->get(z, x);	// swap indices -- since .bt is column major, this is cheaper.  Should be less impact w/ clever indexing.
 		assert(m_bt);
 		return Sint16(m_bt->get_sample(x, z) * input_vertical_scale / vertical_scale);
 	}
@@ -716,7 +710,7 @@ void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, flo
 
 	printf("done.\n");
 
-	printf("propagating...");
+	printf("propagating....");
 
 	// Propagate the activation_level values of verts to their
 	// parent verts, quadtree LOD style.  Gives same result as
@@ -724,6 +718,7 @@ void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, flo
 	for (int i = 0; i < hf.m_log_size; i++) {
 		propagate_activation_level(hf, hf.m_size >> 1, hf.m_size >> 1, hf.m_log_size - 1, i);
 		propagate_activation_level(hf, hf.m_size >> 1, hf.m_size >> 1, hf.m_log_size - 1, i);
+		printf("\b%c", spinner[(spin_count++)&3]);
 	}
 
 //	check_propagation(hf, hf.size >> 1, hf.size >> 1, hf.log_size - 1);//xxxxx
@@ -739,7 +734,7 @@ void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, flo
 	WriteFloat32(out, (1 << (hf.m_log_size - (tree_depth - 1))) * hf.sample_spacing);	// x/z dimension, in meters, of highest LOD chunks.
 	SDL_WriteLE32(out, 0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
 
-	printf("meshing...");
+	printf("meshing....");
 
 	// Write out the node data for the entire chunk tree.
 	generate_node_data(out, hf, 0, 0, hf.m_log_size, hf.root_level);
