@@ -710,13 +710,12 @@ namespace gameswf
 
 
 	// One-argument simple functions.
-	#define MATH_WRAP_FUNC1(funcname)						    \
-	void	math_##funcname(as_value* result, as_object_interface* this_ptr,            \
-				as_environment* env, int nargs, int first_arg_bottom_index) \
-	{										    \
-		double	arg = env->bottom(first_arg_bottom_index).to_number();		    \
-                as_value *ret = new as_value(funcname(arg));                                \
-                result->set(ret);  			                                    \
+	#define MATH_WRAP_FUNC1(funcname)							\
+	void	math_##funcname(as_value* result, as_object_interface* this_ptr,		\
+				as_environment* env, int nargs, int first_arg_bottom_index)	\
+	{											\
+		double	arg = env->bottom(first_arg_bottom_index).to_number();			\
+		result->set(funcname(arg));							\
 	}
 
 	MATH_WRAP_FUNC1(fabs);
@@ -2272,25 +2271,25 @@ namespace gameswf
                                         if (obj == NULL
                                             && env->top(1).get_type() == as_value::STRING
                                             && env->top(0).to_tu_stringi() == "length")
-						{
-							int     len = env->top(1).to_tu_string().utf8_length();
+					{
+						int     len = env->top(1).to_tu_string().utf8_length();
                                                 env->top(1).set(len);
-						}
+					}
                                         else
-						{
-							env->top(1).set_undefined();
-							// int	nargs = (int) env->top(1).to_number();
-							if (obj) {
-								obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
-								IF_VERBOSE_ACTION(log_msg("-- get_member %s=%s\n",
-											  env->top(0).to_tu_string().c_str(),
-											  env->top(1).to_tu_string().c_str()));
-							}
-							else
-							{
-								// @@ log error?
-							}
+					{
+						env->top(1).set_undefined();
+						// int	nargs = (int) env->top(1).to_number();
+						if (obj) {
+							obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
+							IF_VERBOSE_ACTION(log_msg("-- get_member %s=%s\n",
+										  env->top(0).to_tu_string().c_str(),
+										  env->top(1).to_tu_string().c_str()));
 						}
+						else
+						{
+							// @@ log error?
+						}
+					}
                                         env->drop(1);
                                         break;
 					
@@ -2360,12 +2359,12 @@ namespace gameswf
 					}
 					else if (env->top(1).get_type() == as_value::STRING)
 					{
-					// Hack to call String methods.  as_value
-					// should maybe be subclassed from as_object_interface
-					// instead, or have as_value::to_object() make a proxy
-					// or something.
-					result = string_method(
-							       env,
+						// Hack to call String methods.  as_value
+						// should maybe be subclassed from as_object_interface
+						// instead, or have as_value::to_object() make a proxy
+						// or something.
+						result = string_method(
+							env,
 							env->top(1).to_tu_string(),
 							env->top(0).to_tu_stringi(),
 							nargs,
@@ -2373,12 +2372,14 @@ namespace gameswf
 					}
 					else
 					{
-						// The Math object methods, like floor() all return
-						// an as_value which often gets converted to a string.
-						if ((env->top(1).get_type() == as_value::NUMBER)
-						    && (env->top(0) == "toString")) {
-							result = env->top(1);
-						} else {
+						if (env->top(1).get_type() == as_value::NUMBER
+						    && method_name == "toString")
+						{
+							// Numbers have a .toString() method.
+							result.set(env->top(1).to_tu_string());
+						}
+						else
+						{
 							log_error("error: call_method '%s' on invalid object.\n",
 								  method_name.c_str());
 						}
