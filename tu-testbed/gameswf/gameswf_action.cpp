@@ -11,6 +11,13 @@
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
 
+#include <stdio.h>
+
+
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif // _WIN32
+
 
 namespace gameswf
 {
@@ -103,16 +110,14 @@ namespace gameswf
 	}
 
 
-	void	action_buffer::execute(movie* m)
-	// Interpret the actions in this action buffer, and apply them
-	// to the given movie.
+	void	action_buffer::execute(as_environment* env)
+	// Interpret the actions in this action buffer, and evaluate them
+	// in the given environment.
 	{
-		assert(m);
+		assert(env);
 
-		movie*	original_movie = m;
-
-		// Avoid warnings.
-		original_movie = original_movie;
+		movie*	original_target = env->get_target();
+		UNUSED(original_target);		// Avoid warnings.
 
 		for (int pc = 0; pc < m_buffer.size(); )
 		{
@@ -131,19 +136,19 @@ namespace gameswf
 					return;
 
 				case 0x04:	// next frame.
-					m->goto_frame(m->get_current_frame() + 1);
+					env->get_target()->goto_frame(env->get_target()->get_current_frame() + 1);
 					break;
 
 				case 0x05:	// prev frame.
-					m->goto_frame(m->get_current_frame() - 1);
+					env->get_target()->goto_frame(env->get_target()->get_current_frame() - 1);
 					break;
 
 				case 0x06:	// action play
-					m->set_play_state(movie::PLAY);
+					env->get_target()->set_play_state(movie::PLAY);
 					break;
 
 				case 0x07:	// action stop
-					m->set_play_state(movie::STOP);
+					env->get_target()->set_play_state(movie::STOP);
 					break;
 
 				case 0x08:	// toggle quality
@@ -163,6 +168,12 @@ namespace gameswf
 				case 0x18:	// int
 				case 0x1C:	// get variable
 				case 0x1D:	// set variable
+				{
+					as_value	val = env->pop();
+					as_value	var_specifier = env->pop();
+					env->set_variable(var_specifier.to_string(), val);
+					break;
+				}
 				case 0x20:	// set target expression
 				case 0x21:	// string concat
 				case 0x22:	// get property
@@ -200,7 +211,7 @@ namespace gameswf
 				case 0x81:	// goto frame
 				{
 					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
-					m->goto_frame(frame);
+					env->get_target()->goto_frame(frame);
 					break;
 				}
 
@@ -219,25 +230,129 @@ namespace gameswf
 				case 0x8B:	// set target
 				{
 					// Change the movie we're working on.
-					// @@ TODO
-					// char* target_name = &m_buffer[pc + 3];
-					// if (target_name[0] == 0) { m = original_movie; }
-					// else {
-					//	m = m->find_labeled_target(target_name);
-					//	if (m == NULL) m = original_movie;
-					// }
+					const char* target_name = (const char*) &m_buffer[pc + 3];
+					if (target_name[0] == 0) { env->set_target(original_target); }
+					else {
+//						env->set_target(env->get_target()->find_labeled_target(target_name));
+//						if (env->get_target() == NULL) env->set_target(original_target);
+					}
 					break;
 				}
 
 				case 0x8C:	// go to labeled frame
 				{
 					// char*	frame_label = (char*) &m_buffer[pc + 3];
-					// m->goto_labeled_frame(frame_label);
+					// env->get_target()->goto_labeled_frame(frame_label);
 					break;
 				}
 
 				case 0x8D:	// wait for frame expression (?)
-				case 0x96:	// push data
+					break;
+
+				case 0x96:	// push_data
+				{
+					int i = 0;
+					while (i < length)
+					{
+						int	type = m_buffer[3 + i];
+						i++;
+						if (type == 0)
+						{
+							// string
+							const char*	str = (const char*) &m_buffer[3 + i];
+							i += strlen(str) + 1;
+							env->push(str);
+						}
+
+						else if (type == 1)
+						{
+							// float (little-endian)
+							union {
+								float	f;
+								Uint32	i;
+							} u;
+							compiler_assert(sizeof(u) == sizeof(u.i));
+
+							memcpy(&u.i, &m_buffer[3 + i], 4);
+							u.i = swap_le32(u.i);
+							i += 4;
+
+							env->push(u.f);
+						}
+						else if (type == 2)
+						{
+							// NULL
+							env->push(NULL);	// @@???
+						}
+						else if (type == 3)
+						{
+							env->push(as_value(as_value::UNDEFINED));
+						}
+						else if (type == 4)
+						{
+							// contents of register
+							int	reg = m_buffer[3 + i];
+							i++;
+//							log_msg("reg[%d]\n", reg);
+							env->push(/* contents of register[reg] */ false);	// @@ TODO
+						}
+						else if (type == 5)
+						{
+							bool	bool_val = m_buffer[3 + i] ? true : false;
+							i++;
+//							log_msg("bool(%d)\n", bool_val);
+							env->push(bool_val);
+						}
+						else if (type == 6)
+						{
+							// double
+							// wacky format: 45670123
+							union {
+								double	d;
+								Uint64	i;
+								struct {
+									Uint32	lo;
+									Uint32	hi;
+								} sub;
+							} u;
+							compiler_assert(sizeof(u) == sizeof(u.i));
+
+							memcpy(&u.sub.hi, &m_buffer[3 + i], 4);
+							memcpy(&u.sub.lo, &m_buffer[3 + i + 4], 4);
+							u.i = swap_le64(u.i);
+							i += 8;
+
+							env->push(u.d);
+						}
+						else if (type == 7)
+						{
+							// int32
+							Sint32	val = m_buffer[3 + i]
+								| (m_buffer[3 + i + 1] << 8)
+								| (m_buffer[3 + i + 2] << 16)
+								| (m_buffer[3 + i + 3] << 24);
+							i += 4;
+						
+							env->push(val);
+						}
+						else if (type == 8)
+						{
+							int	id = m_buffer[3 + i];
+							i++;
+//							log_msg("dict_lookup[%d]\n", id);
+							env->push(0);	// @@ TODO
+						}
+						else if (type == 9)
+						{
+							int	id = m_buffer[3 + i] | (m_buffer[3 + i + 1] << 8);
+							i += 2;
+//							log_msg("dict_lookup_lg[%d]\n", id);
+							env->push(0);	// @@ TODO
+						}
+					}
+					
+					break;
+				}
 				case 0x99:	// branch always (goto)
 				case 0x9A:	// get url 2
 				case 0x9D:	// branch if true
@@ -249,7 +364,57 @@ namespace gameswf
 				pc = next_pc;
 			}
 		}
+
+		env->set_target(original_target);
 	}
+
+
+	//
+	// as_value -- ActionScript value type
+	//
+
+
+	const char*	as_value::to_string() const
+	// Conversion to string.
+	{
+		if (m_type == STRING) { return m_string_value; }
+		else if (m_type == NUMBER)
+		{
+			char buffer[50];
+			snprintf(buffer, 50, "%g", m_number_value);
+			m_string_value = buffer;
+			return &m_string_value[0];
+		}
+		else if (m_type == UNDEFINED)
+		{
+			return "<undefined>";
+		}
+		
+		assert(0);
+		return "<unknown type>";
+	}
+
+
+	//
+	// as_environment
+	//
+
+
+	void	as_environment::set_variable(const char* path, const as_value& val)
+	// Given a path to variable, set its value.
+	{
+		// @@ Need to implement the whole path rigmarole.
+		// @@ For the moment, skip that and talk directly to the current target.
+
+		assert(m_target);
+
+		bool	success = m_target->set_value(path, val);
+		if (success == false)
+		{
+			IF_VERBOSE_ACTION(log_msg("set_variable(%s, \"%s\") failed\n", path, val.to_string()));
+		}
+	}
+
 
 
 #define COMPILE_DISASM 1
@@ -587,6 +752,7 @@ namespace gameswf
 	}
 
 #endif // COMPILE_DISASM
+
 
 };
 
