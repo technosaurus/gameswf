@@ -26,6 +26,12 @@ namespace gameswf
 	}
 
 
+	sound_handler*	get_sound_handler()
+	{
+		return s_sound_handler;
+	}
+
+
 	struct sound_sample_impl : public sound_sample
 	{
 		int	m_sound_handler_id;

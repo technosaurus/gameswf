@@ -1358,6 +1358,104 @@ namespace gameswf
 		mov->add_ref();
 		return mov;
 	}
+
+
+	void	precompute_cached_data(movie_definition* movie_def)
+	// Fill in cached data in movie_def.
+	{
+		assert(movie_def != NULL);
+
+		// Temporarily install null render and sound handlers,
+		// so we don't get output during preprocessing.
+		//
+		// Use automatic struct var to make sure we restore
+		// when exiting the function.
+		struct save_stuff
+		{
+			render_handler*	m_original_rh;
+			sound_handler*	m_original_sh;
+
+			save_stuff()
+			{
+				// Save.
+				m_original_rh = get_render_handler();
+				m_original_sh = get_sound_handler();
+				set_render_handler(NULL);
+				set_sound_handler(NULL);
+			}
+
+			~save_stuff()
+			{
+				// Restore.
+				set_render_handler(m_original_rh);
+				set_sound_handler(m_original_sh);
+			}
+		} save_stuff_instance;
+
+		// Need an instance.
+		gameswf::movie_interface*	m = movie_def->create_instance();
+		if (m == NULL)
+		{
+			log_error("error: precompute_cached_data can't create instance of movie\n");
+			return;
+		}
+		
+		// Run through the movie's frames.
+		//
+		// @@ there might be cleaner ways to do this; e.g. do
+		// execute_frame_tags(i, true) on movie and all child
+		// sprites.
+		int	kick_count = 0;
+		for (;;)
+		{
+			// @@ do we also have to run through all sprite frames
+			// as well?
+			//
+			// @@ also, ActionScript can rescale things
+			// dynamically -- we can't really do much about that I
+			// guess?
+			//
+			// @@ Maybe we should allow the user to specify some
+			// safety margin on scaled shapes.
+
+			int	last_frame = m->get_current_frame();
+			m->advance(0.010f);
+			m->display();
+
+			if (m->get_current_frame() == movie_def->get_frame_count() - 1)
+			{
+				// Done.
+				break;
+			}
+
+			if (m->get_play_state() == gameswf::movie_interface::STOP)
+			{
+				// Kick the movie.
+				//printf("kicking movie, kick ct = %d\n", kick_count);
+				m->goto_frame(last_frame + 1);
+				m->set_play_state(gameswf::movie_interface::PLAY);
+				kick_count++;
+
+				if (kick_count > 10)
+				{
+					//printf("movie is stalled; giving up on playing it through.\n");
+					break;
+				}
+			}
+			else if (m->get_current_frame() < last_frame)
+			{
+				// Hm, apparently we looped back.  Skip ahead...
+				printf("loop back; jumping to frame %d\n", last_frame);
+				m->goto_frame(last_frame + 1);
+			}
+			else
+			{
+				kick_count = 0;
+			}
+		}
+
+		m->drop_ref();
+	}
 	
 
 	//
@@ -2761,7 +2859,7 @@ namespace gameswf
 
 		void	goto_frame(int target_frame_number)
 		// Set the sprite state at the specified frame number.
-		// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
+		// 0-based frame numbers!!  (in contrast to Flash MX)
 		{
 //			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
 
