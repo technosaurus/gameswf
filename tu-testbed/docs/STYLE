@@ -1,0 +1,80 @@
+Random thoughts on coding style/conventions:
+
+* Hungarian Notation is a crime against programity and I will not
+  mention it again.
+
+* Scope (not type) prefixes are a different animal, and may be OK.
+  For example, the common practice of prefixing member variables with
+  'm_'.  I'm experimenting on a limited basis.  The 'm_' convention
+  might be enough for me; I'm not sure it's useful to have prefixes
+  for constants, globals (you have globals in your code? :), statics,
+  etc.
+
+* For me, the correct tab size will always be 8.  However, I think the
+  One True Style is to not write tab size dependent code; that way
+  everybody can pick their favorite tab size.  The key to this is to
+  let go of trying to line things in a particular column; that's a
+  maintenance nightmare anyway.  The One True Style uses tabs in three
+  places only: 1) indentation, 2) after type specifiers in variable
+  declarations, and 3) before comments on the end of code lines.  I'm
+  pretty ironclad in favor of 1; 2 and 3 are debatable.  E.g.
+
+	for (;;) {
+		// indented with tabs; pick your tab size, and enjoy.
+		int	a;	// *one* tab after the 'int', and *one* before this comment.
+		bool	b;	// *one* tab after the 'bool', etc.
+	}
+
+  There's one gaping hole with this scheme, which is that indented
+  paragraph comments right-justify at a tab-size dependent distance to
+  the right, if your editor likes to justify at a particular column.
+  Proposed solution: at some point I'll see if it's easy to make emacs
+  always use 70 columns for justifying comments, starting from the
+  indent rather than column 0.
+
+* Where to put the brace?  The One True Style recognizes two options:
+
+	if (condition) {
+		do stuff;
+	}
+
+or
+
+	if (condition)
+	{
+		do stuff;
+	}
+
+  That ought to be enough options for every occasion.  The GNU-esque
+  abomination:
+
+	if (condition)
+	  {
+	    do stuff;
+	  }
+
+  is just horrible.  I can't imagine who would do such a thing.
+  Didn't your momma read K&R to you?
+
+* Function comments are required for anything more than a one-liner,
+  and they belong between the function header and the body.  Like
+  this:
+
+	int function(int a, int b)
+	// Returns a function of a and b.  Put any necessary explanation
+	// here.
+	{
+		return a + b*a;
+	}
+
+  You can't lose them this way, and they're more likely to get used
+  and maintained.
+
+* Identifiers: I think I'm back to
+  lowercase_with_embedded_underscores.  I wandered in the EmbeddedCaps
+  desert for a long time, but I think embedded underscores are easier
+  to read.  They may be slightly easier to type as well, since you're
+  always hitting the shift key in conjunction with the -/_, rather
+  than the shift key in conjunction with some letter.  They take up a
+  little more room, but I think it's probably worth it for the
+  readability.
