@@ -980,6 +980,8 @@ namespace swf
 					e->execute(this);
 				}
 
+				m_current_frame = frame;
+
 				// Take care of this frame's actions.
 				if (execute_actions(this, m_action_list))
 				{
@@ -988,8 +990,6 @@ namespace swf
 					return;
 				}
 				m_action_list.resize(0);
-
-				m_current_frame = frame;
 			}
 
 //			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
@@ -1875,7 +1875,7 @@ namespace swf
 	void	define_font_loader(stream* in, int tag_type, movie* m)
 	// Load a DefineFont or DefineFont2 tag.
 	{
-		assert(tag_type == 10);
+		assert(tag_type == 10 || tag_type == 48);
 
 		Uint16	font_id = in->read_u16();
 		
@@ -2186,7 +2186,7 @@ namespace swf
 			switch (m_place_type)
 			{
 			case PLACE:
-				IF_DEBUG(printf("  place: cid %2d depth %2d\n", m_character_id, m_depth));
+//				IF_DEBUG(printf("  place: cid %2d depth %2d\n", m_character_id, m_depth));
 				m->add_display_object(m_character_id,
 						      m_depth,
 						      m_color_transform,
@@ -2195,7 +2195,7 @@ namespace swf
 				break;
 
 			case MOVE:
-				IF_DEBUG(printf("   move: depth %2d\n", m_depth));
+//				IF_DEBUG(printf("   move: depth %2d\n", m_depth));
 				m->move_display_object(m_depth,
 						       m_has_cxform,
 						       m_color_transform,
@@ -2206,13 +2206,7 @@ namespace swf
 
 			case REPLACE:
 			{
-				IF_DEBUG(printf("replace: cid %d depth %d\n", m_character_id, m_depth));
-//				m->remove_display_object(m_depth);
-//				m->add_display_object(m_character_id,
-//						      m_depth,
-//						      m_color_transform,
-//						      m_matrix,
-//						      m_ratio);
+//				IF_DEBUG(printf("replace: cid %d depth %d\n", m_character_id, m_depth));
 				m->replace_display_object(m_character_id,
 							  m_depth,
 							  m_has_cxform,
@@ -2414,6 +2408,8 @@ namespace swf
 					e->execute(this);
 				}
 
+				m_current_frame = frame;
+
 				// Take care of this frame's actions.
 				if (execute_actions(this, m_action_list))
 				{
@@ -2422,8 +2418,6 @@ namespace swf
 					return;
 				}
 				m_action_list.resize(0);
-
-				m_current_frame = frame;
 			}
 
 //			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
@@ -2524,6 +2518,15 @@ namespace swf
 		}
 
 
+		void	add_action_buffer(action_buffer* a)
+		// Add the given action buffer to the list of action
+		// buffers to be processed at the end of the next
+		// frame advance.
+		{
+			m_action_list.push_back(a);
+		}
+
+
 		int	get_id_at_depth(int depth)
 		// For debugging -- return the id of the character at the specified depth.
 		// Return -1 if nobody's home.
@@ -2604,7 +2607,7 @@ namespace swf
 
 		void	execute(movie* m)
 		{
-			IF_DEBUG(printf(" remove: depth %2d\n", m_depth));
+//			IF_DEBUG(printf(" remove: depth %2d\n", m_depth));
 			m->remove_display_object(m_depth);
 		}
 	};
@@ -2665,7 +2668,7 @@ namespace swf
 			int	action_id = m_buffer[pc];
 			if ((action_id & 0x80) == 0)
 			{
-				IF_DEBUG(printf("aid = 0x%x\n", action_id));
+				IF_DEBUG(printf("aid = 0x%02x\n", action_id));
 
 				// Simple action; no extra data.
 				switch (action_id)
@@ -2679,11 +2682,11 @@ namespace swf
 					return;
 
 				case 0x04:	// next frame.
-//					m->set_current_frame(m->get_current_frame() + 1);
+					m->goto_frame(m->get_current_frame() + 1);
 					break;
 
 				case 0x05:	// prev frame.
-//					m->set_current_frame(m->get_current_frame() - 1);
+					m->goto_frame(m->get_current_frame() - 1);
 					break;
 
 				case 0x06:	// action play
@@ -2713,8 +2716,8 @@ namespace swf
 
 				case 0x81:	// goto frame
 				{
-//					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
-//					m->set_current_frame(frame);
+					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					m->goto_frame(frame);
 					break;
 				}
 
