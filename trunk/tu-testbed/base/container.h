@@ -614,6 +614,14 @@ public:
 	{
 		return *this < str.c_str();
 	}
+	bool	operator>(const char* str) const
+	{
+		return strcmp(c_str(), str) > 0;
+	}
+	bool	operator>(const tu_string& str) const
+	{
+		return *this > str.c_str();
+	}
 
 	void	resize(int new_size)
 	{
