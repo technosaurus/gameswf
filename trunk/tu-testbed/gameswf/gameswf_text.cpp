@@ -431,9 +431,15 @@ namespace gameswf
 
 			float scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
 
+			int	last_code = -1;
+
 			for (int j = 0; j < m_text.length(); j++)
 			{
 				Uint16	code = m_text[j];
+
+				x += m_font->get_kerning_adjustment(last_code, code) * scale;
+				last_code = code;
+
 				int	index = m_font->get_glyph_index(code);
 				if (index == -1)
 				{
@@ -443,7 +449,7 @@ namespace gameswf
 				}
 				text_glyph_record::glyph_entry	ge;
 				ge.m_glyph_index = index;
-				ge.m_glyph_advance = m_font->get_advance(index) * scale;	// TODO: kerning
+				ge.m_glyph_advance = scale * m_font->get_advance(index);
 
 // Really need to check this per-word, not per glyph
 #if 0

@@ -327,6 +327,23 @@ namespace gameswf
 	{
 		return m_advance_table[glyph_index];
 	}
+
+
+	float	font::get_kerning_adjustment(int last_code, int code) const
+	// Return the adjustment in advance between the given two
+	// characters.  Normally this will be 0; i.e. the 
+	{
+		float	adjustment;
+		kerning_pair	k;
+		k.m_char0 = last_code;
+		k.m_char1 = code;
+		if (m_kerning_pairs.get(k, &adjustment))
+		{
+			return adjustment;
+		}
+		return 0;
+	}
+	
 };	// end namespace gameswf
 
 
