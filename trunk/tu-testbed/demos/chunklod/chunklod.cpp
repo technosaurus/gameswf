@@ -105,6 +105,9 @@ private:
 static vertex_streaming_buffer*	s_stream = NULL;
 
 
+static float	s_vertical_scale = 1.0;
+
+
 struct vertex_info {
 // Structure for storing morphable vertex mesh info.
 	int	vertex_count;
@@ -396,7 +399,7 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 	for (int i = 0; i < morph_verts.vertex_count; i++) {
 		const vertex_info::vertex&	v = morph_verts.vertices[i];
 		verts[i*3 + 0] = offsetx + v.x[0] * sx;
-		verts[i*3 + 1] = v.x[1] + v.y_delta * one_minus_f;	// lerp the y value of the vert.
+		verts[i*3 + 1] = (v.x[1] + v.y_delta * one_minus_f) * s_vertical_scale;	// lerp the y value of the vert.
 		verts[i*3 + 2] = offsetz + v.x[2] * sz;
 	}
 #if 0
@@ -804,12 +807,13 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 
 	int	triangle_count = 0;
 
-	glPushMatrix();
-	glScalef(1.0, m_vertical_scale, 1.0);	// scale the vertical axis.  Input is 16-bit integers; transform to world coords.
+//	glPushMatrix();
+//	glScalef(1.0, m_vertical_scale, 1.0);	// scale the vertical axis.  Input is 16-bit integers; transform to world coords.
+	s_vertical_scale = m_vertical_scale;
 	{
 		triangle_count = m_root->render(*this, v, cull::result_info(), opt);
 	}
-	glPopMatrix();
+//	glPopMatrix();
 
 	return triangle_count;
 }
