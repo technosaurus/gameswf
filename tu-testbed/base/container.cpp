@@ -141,6 +141,99 @@ void	tu_string::resize(int new_size)
 }
 
 
+uint32	tu_string::utf8_char_at(int index) const
+{
+	const char*	buf = get_buffer();
+	uint32	c;
+
+	do
+	{
+		c = utf8::decode_next_unicode_character(&buf);
+		index--;
+
+		if (c == 0)
+		{
+			// We've hit the end of the string; don't go further.
+			assert(index == 0);
+			return c;
+		}
+	}
+	while (index > 0);
+
+	return c;
+}
+
+
+/*static*/ int	tu_string::utf8_char_count(const char* buf, int buflen)
+{
+	const char*	p = buf;
+	int	length = 0;
+
+	while (p - buf < buflen)
+	{
+		uint32	c = utf8::decode_next_unicode_character(&p);
+		if (c == 0)
+		{
+			break;
+		}
+
+		length++;
+	}
+
+	return length;
+}
+
+
+tu_string	tu_string::utf8_substring(int start, int end) const
+{
+	assert(start <= end);
+
+	if (start == end)
+	{
+		// Special case, always return empty string.
+		return tu_string();
+	}
+
+	const char*	p = get_buffer();
+	int	index = 0;
+	const char*	start_pointer = p;
+	const char*	end_pointer = p;
+
+	for (;;)
+	{
+		if (index == start)
+		{
+			start_pointer = p;
+		}
+
+		uint32	c = utf8::decode_next_unicode_character(&p);
+		index++;
+
+		if (index == end)
+		{
+			end_pointer = p;
+			break;
+		}
+
+		if (c == 0)
+		{
+			if (index < end)
+			{
+				assert(0);
+				end_pointer = p;
+			}
+			break;
+		}
+	}
+
+	if (end_pointer < start_pointer)
+	{
+		end_pointer = start_pointer;
+	}
+
+	return tu_string(start_pointer, end_pointer - start_pointer);
+}
+
 
 #ifdef CONTAINER_UNIT_TEST
 

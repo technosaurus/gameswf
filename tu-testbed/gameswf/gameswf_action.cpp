@@ -540,8 +540,7 @@ namespace gameswf
 		math_obj->set_member("floor", &math_floor);
 		math_obj->set_member("log", &math_log);
 		math_obj->set_member("random", &math_random);
-//v
-    math_obj->set_member("round", &math_round);
+		math_obj->set_member("round", &math_round);
 		math_obj->set_member("sin", &math_sin);
 		math_obj->set_member("sqrt", &math_sqrt);
 		math_obj->set_member("tan", &math_tan);
@@ -916,9 +915,9 @@ namespace gameswf
 		if (method_name == "charCodeAt")
 		{
 			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
-			if (index >= 0 && index < this_string.length())
+			if (index >= 0 && index < this_string.utf8_length())
 			{
-				return as_value(this_string[index]);
+				return as_value((double) (this_string.utf8_char_at(index)));
 			}
 
 			return as_value(0);
@@ -940,12 +939,12 @@ namespace gameswf
 				const char*	p = strstr(
 					str + start_index,
 					env->bottom(first_arg_bottom_index).to_string());
-				if (str == NULL)
+				if (p == NULL)
 				{
 					return -1;
 				}
 
-				return p - str;
+				return tu_string::utf8_char_count(str, p - str);
 			}
 		}
 		else if (method_name == "substring")
@@ -956,19 +955,20 @@ namespace gameswf
 			if (nargs >= 1)
 			{
 				start = (int) env->bottom(first_arg_bottom_index).to_number();
-				start = iclamp(start, 0, this_string.length());
+				start = iclamp(start, 0, this_string.utf8_length());
 			}
 			if (nargs >= 2)
 			{
 				end = (int) env->bottom(first_arg_bottom_index - 1).to_number();
-				end = iclamp(end, 0, this_string.length());
+				end = iclamp(end, 0, this_string.utf8_length());
 			}
 
 			if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
 			assert(end >= start);
 
-			tu_string	result(this_string.c_str() + start);
-			result.resize(end - start);	// @@ check this!
+			tu_string	result = this_string.utf8_substring(start, end);
+			//.c_str() + start);
+			//result.resize(end - start);	// @@ check this!
 
 			return as_value(result);
 		}
@@ -1569,13 +1569,14 @@ namespace gameswf
 				}
 				case 0x3B:	// delete2
 				{
-					// @@ tulrich: delete is scary here!  Do we actually just want to 
+					// @@ tulrich: delete is not valid here!  Do we actually just want to 
 					// NULL out the object pointer in the environment (to drop the ref)?
 					// Should at least check the ref count before deleting anything!!!
 //					as_value	obj_name = env->pop();
 					as_value obj_ptr = env->get_variable_raw(env->top(0).to_tu_string(), with_stack);
-					delete obj_ptr.to_object();
-//  				log_error("%08X\n", obj_ptr.to_object());
+///x					delete obj_ptr.to_object();
+// 	 				log_error("%08X\n", obj_ptr.to_object());
+					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
 
@@ -1822,7 +1823,7 @@ namespace gameswf
 					    && env->top(1).get_type() == as_value::STRING
 					    && env->top(0).to_tu_stringi() == "length")
 					{
-						int	len = env->top(1).to_tu_string().length();
+						int	len = env->top(1).to_tu_string().utf8_length();
 						env->top(1).set(len);
 					}
 					else

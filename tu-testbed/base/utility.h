@@ -128,6 +128,8 @@ inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 
 		size--;
 		h = ((h << 5) + h) ^ (unsigned) data[size];
 	}
+
+	return h;
 }
 
 
