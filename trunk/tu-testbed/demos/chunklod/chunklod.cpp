@@ -44,6 +44,38 @@ static int	s_bytes_in_use = 0;
 static int	s_textures_bound = 0;
 
 
+// MAP_ONTO_SPHERE is currently just a quick experiment to see if the
+// geometry works out.  Texturing doesn't work, and the LOD metric is
+// all screwed up, and the initial viewpoint doesn't show the world;
+// you'll have to rotate around a little to see anything.  Also,
+// morph_vertices() burns much CPU due to the reciprocal sqrt in the
+// normalize, so you wouldn't want to use this approach at all unless
+// you have a fast vshader version.
+//
+// The basic idea is to treat the (square) heightfield as a face of a
+// cubemap, and warp it onto the corresponding patch of a sphere.  So
+// you could make a whole sphere by rendering six heightfields in
+// different orientations.  The height values in the heightmap are
+// turned into radial distances relative to the sphere center, so that
+// all works out.
+//
+// Anyway, the basic geometry looks like it works out, but this is
+// kind of a brute-force method; only viable if you have tons CPU or
+// vshader cycles to burn.
+//
+// One more little footnote: the crack-filling skirts would have to
+// take the warping into account, to make sure skirts along long edges
+// are properly covered.  Basically, the skirts have to get much more
+// conversative; otherwise there are cracks along long curvy edges.
+//
+//#define MAP_ONTO_SPHERE
+
+#ifdef MAP_ONTO_SPHERE
+// Some experimental hacks for mapping heightfield onto a sphere.
+static float	s_max_horizontal_dimension = 1.0f;	// set by top-level render call, used by morph_vertices()
+#endif // MAP_ONTO_SPHERE
+
+
 namespace lod_tile_freelist
 // A little module to hold onto unused textures, for later reuse.
 // Cuts down on needless texture creation/destruction.
@@ -1000,7 +1032,59 @@ bool	chunk_tree_loader::loader_service_texture()
 //
 
 
-static void	morph_vertices(float* verts, const vertex_info& morph_verts, const vec3& box_center, const vec3& box_extent, float f)
+#ifdef MAP_ONTO_SPHERE
+
+
+void	map_onto_sphere(vec3* out, const vec3& in)
+// Take a heightfield coordinate, and map it into 3D such that the
+// heightfield corresponds to the face of a cube-map, mapped onto a
+// sphere.
+{
+	float	world_radius = s_max_horizontal_dimension/2;
+
+	vec3	v(in.x / world_radius - 1.0f, 1.0f, in.z / world_radius - 1.0f);
+	v.normalize();	// ouch
+
+	v *= world_radius + in.y;
+	v.y -= world_radius;
+
+	*out = v;
+}
+
+
+void	map_onto_heightfield(vec3* out, const vec3& in)
+// Given a 3D world coordinate (where the heightfield appears as a
+// curved part of a cubemap face), warp it into heightfield
+// coordinates.
+{
+	float	world_radius = s_max_horizontal_dimension/2;
+
+	// Avoid divide by zero
+	if (fabs(in.y) < 1e-6)
+	{
+		*out = vec3(0, -world_radius, 0);
+		return;
+	}
+
+	vec3	v(in.x, in.y + world_radius, in.z);
+	vec3	p(v.x / v.y, 1, v.z / v.y);
+	float	r = v.magnitude();
+
+	out->x = (p.x + 1.0f) * world_radius;
+	out->y = (r - world_radius);
+	out->z = (p.z + 1.0f) * world_radius;
+}
+
+
+#endif // MAP_ONTO_SPHERE
+
+
+static void	morph_vertices(
+	float* verts,
+	const vertex_info& morph_verts,
+	const vec3& box_center,
+	const vec3& box_extent,
+	float f)
 // Adjust the positions of our morph vertices according to f, the
 // given morph parameter.  verts is the output buffer for processed
 // verts.
@@ -1028,6 +1112,10 @@ static void	morph_vertices(float* verts, const vertex_info& morph_verts, const v
 		verts[i*3 + 0] = offsetx + v.x[0] * sx;
 		verts[i*3 + 1] = (v.x[1] + v.y_delta * one_minus_f) * s_vertical_scale;	// lerp the y value of the vert.
 		verts[i*3 + 2] = offsetz + v.x[2] * sz;
+
+#ifdef MAP_ONTO_SPHERE
+		map_onto_sphere((vec3*)(&verts[i*3 + 0]), *(vec3*)(&verts[i*3 + 0]));
+#endif // MAP_ONTO_SPHERE
 	}
 #if 0
 	// With a vshader, this routine would be replaced by an initial agp_alloc() & memcpy()/memmap().
@@ -1244,7 +1332,7 @@ void	lod_chunk::update(lod_chunk_tree* tree, const vec3& viewpoint)
 }
 
 
-void	lod_chunk::update_texture(lod_chunk_tree* tree, const vec3& viewpoint)
+void	lod_chunk::update_texture(lod_chunk_tree* tree, const vec3& viewpoint_in)
 // Decides when to load & release textures for this node and its descendents.
 //
 // Invariant: if a node has a non-zero m_texture_id, then all its
@@ -1264,6 +1352,13 @@ void	lod_chunk::update_texture(lod_chunk_tree* tree, const vec3& viewpoint)
 // sniper-scope views, where it's a real issue, but then there are
 // compensating factors there too...).
 {
+#ifdef MAP_ONTO_SPHERE
+	vec3	viewpoint;
+	map_onto_heightfield(&viewpoint, viewpoint_in);
+#else
+	const vec3&	viewpoint = viewpoint_in;
+#endif
+
 	assert(tree->m_texture_quadtree != NULL);
 
 	if (m_level >= tree->m_texture_quadtree->get_depth())
@@ -1527,6 +1622,13 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 	compute_bounding_box(c, &box_center, &box_extent);
 
 	// Frustum culling.
+#ifdef MAP_ONTO_SPHERE
+
+	// Need to cull differently in this case, or compute the box
+	// differently, or something.  For now, don't cull.
+
+#else	// not MAP_ONTO_SPHERE
+
 	if (cull_info.active_planes) {
 		cull_info = cull::compute_box_visibility(box_center, box_extent, v.m_frustum, cull_info);
 		if (cull_info.culled) {
@@ -1534,6 +1636,8 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 			return 0;
 		}
 	}
+
+#endif // not MAP_ONTO_SPHERE
 
 	int	triangle_count = 0;
 
@@ -1821,6 +1925,10 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 //
 // Returns the number of triangles rendered.
 {
+#ifdef MAP_ONTO_SPHERE
+	s_max_horizontal_dimension = m_base_chunk_dimension * (1 << (m_tree_depth - 1));
+#endif // MAP_ONTO_SPHERE
+
 	int	triangle_count = 0;
 
 	s_vertical_scale = m_vertical_scale;
@@ -1900,7 +2008,7 @@ void	lod_chunk_tree::set_parameters(float max_pixel_error, float max_texel_size,
 	assert(screen_width_pixels > 0);
 	assert(horizontal_FOV_degrees > 0 && horizontal_FOV_degrees < 180.0f);
 
-	const float	tan_half_FOV = tanf(0.5f * horizontal_FOV_degrees * (float) M_PI / 180.0f);
+	const float	tan_half_FOV = tanf(0.5f * horizontal_FOV_degrees * M_PI / 180.0f);
 	const float	K = screen_width_pixels / tan_half_FOV;
 
 	// distance_LODmax is the distance below which we need to be
