@@ -1294,7 +1294,7 @@ namespace gameswf
 
 
 	// For built-in sprite ActionScript methods.
-	as_object*	s_sprite_builtins;	// shared among all sprites.
+	as_object*	s_sprite_builtins = 0;	// shared among all sprites.
 	static void	sprite_builtins_init();
 	static void	sprite_builtins_clear();
 
