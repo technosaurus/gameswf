@@ -156,6 +156,19 @@ inline Uint64 swap64(Uint64 u)
 }
 
 
+inline Uint64	swap_le64(Uint64 le_64)
+// Given a 64-bit little-endian piece of data, return it as a 64-bit
+// integer in native endian-ness.  I.e., do a swap if we're on a
+// big-endian machine.
+{
+#ifdef _TU_LITTLE_ENDIAN_
+	return le_64;
+#else	// not _TU_LITTLE_ENDIAN_
+	return swap64(le_64);	// convert to big-endian.
+#endif	// not _TU_LITTLE_ENDIAN_
+}
+
+
 inline Uint32	swap_le32(Uint32 le_32)
 // Given a 32-bit little-endian piece of data, return it as a 32-bit
 // integer in native endian-ness.  I.e. on a little-endian machine,
