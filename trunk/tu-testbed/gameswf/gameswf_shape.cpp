@@ -208,6 +208,8 @@ namespace gameswf
 	}
 
 
+
+
 	mesh_set::mesh_set(const shape_character* sh, float error_tolerance)
 	// Tesselate the shape's paths into a different mesh for each fill style.
 		:
