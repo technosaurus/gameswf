@@ -12,7 +12,12 @@
 
 #include <stdio.h>
 #include "base/tu_types.h"
-#include "base/utility.h"
+#include "base/tu_swap.h"
+
+// Compile-time assert.  Thanks to Jon Jagger
+// (http://www.jaggersoft.com) for this trick.
+#define compiler_assert(x)	switch(0){case 0: case x:;}
+
 
 struct SDL_RWops;
 

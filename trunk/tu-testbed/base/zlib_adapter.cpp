@@ -9,6 +9,7 @@
 
 #include "base/zlib_adapter.h"
 #include "base/tu_file.h"
+#include "base/utility.h"
 #include <zlib.h>
 
 

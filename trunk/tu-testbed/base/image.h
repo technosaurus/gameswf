@@ -9,7 +9,7 @@
 #define IMAGE_H
 
 
-#include "base/utility.h"
+#include "base/tu_types.h"
 class tu_file;
 namespace jpeg { struct input; };
 
@@ -72,19 +72,8 @@ namespace image
 	alpha*	create_alpha(int width, int height);
 
 	
-	inline Uint8*	scanline(image_base* surf, int y)
-	{
-		assert(surf);
-		assert(y >= 0 && y < surf->m_height);
-		return ((Uint8*) surf->m_data) + surf->m_pitch * y;
-	}
-
-	inline const Uint8*	scanline(const image_base* surf, int y)
-	{
-		assert(surf);
-		assert(y >= 0 && y < surf->m_height);
-		return ((const Uint8*) surf->m_data) + surf->m_pitch * y;
-	}
+	Uint8*	scanline(image_base* surf, int y);
+	const Uint8*	scanline(const image_base* surf, int y);
 
 
 	void	resample(rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
