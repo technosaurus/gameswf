@@ -33,21 +33,15 @@ namespace gameswf
 	}
 
 
-// *(#^ Windows lacks vsnprintf...
 #ifdef WIN32
-#define FORMAT_INTO_BUFFER(fmt)				\
-		va_list ap;				\
-		va_start(ap, fmt);			\
-		vsprintf(s_buffer, fmt, ap);		\
-		va_end(ap);
-#else	// not WIN32
+#define vsnprintf	_vsnprintf
+#endif // WIN32
+
 #define FORMAT_INTO_BUFFER(fmt)				\
 		va_list ap;				\
 		va_start(ap, fmt);			\
 		vsnprintf(s_buffer, BUFFER_SIZE, fmt, ap);	\
 		va_end(ap);
-#endif	// not WIN32
-
 
 	void	log_msg(const char* fmt, ...)
 	// Printf-style informational log.
