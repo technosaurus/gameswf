@@ -24,7 +24,8 @@ all: $(LIB_OUT) $(EXE_OUT)
 
 OBJS = \
 	swf_impl.$(OBJ_EXT)	\
-	swf_stream.$(OBJ_EXT)
+	swf_stream.$(OBJ_EXT)	\
+	swf_render.$(OBJ_EXT)
 
 swf_impl.$(OBJ_EXT): swf.h swf_impl.h
 
