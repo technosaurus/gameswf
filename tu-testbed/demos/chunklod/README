@@ -26,11 +26,6 @@ automatic binary-triangle-tree strip generation approach from the
 Lindstrom et al SIGGRAPH '96 paper.  A stripifier designed for
 arbitrary meshes might be able to do better.
 
-There's one bad, known bug, which is that my vertex stream buffer is
-totally unsynchronized at the moment.  Occasionally this will cause
-garbage output when the stream wraps around.  The fix shouldn't be
-hard; I just need to get off my butt and do it.
-
 Crater dataset thanks to John Ratcliff, http://ratcliff.flipcode.com
 
 Thanks to Ben Discoe & http://www.vterrain.org for the .bt terrain
@@ -77,6 +72,33 @@ console.
 
 
 CHANGES
+
+1 Mar 2002
+
+Egads!  I was going over the LOD formulas, and they're off by a factor
+of 2!  The pixel errors previously reported were too pessimistic!
+This means two things: 1) I'm a dope for missing this, and 2) the demo
+actually works "better" than previously reported.  Although, now I
+discover that using 5 as a max-pixel-error can introduce pops when LOD
+jumps completely over a level.  I'll have to ponder the correct
+solution to this problem -- perhaps a restricted time-based morph.
+
+
+Sometime in Jan/Feb 2002
+
+Memory-mapping utilities, for processing giant .bt's, and future
+paging experiments.  I'm going to try a different approach though, for
+the Puget Sound dataset: break into 16 tiles of 4k x 4k each.  I'll
+mmap the .bt image on disk for the heightfield_chunker, to avoid the
+long useless loading phase.
+
+GL_SHORTs are horribly slow for NVIDIA's GeForce2Go driver to process
+--> back to floats.  Will have to switch over to using a vertex shader
+before that type of compression becomes feasible.
+
+Added some prerequisites to paging.  Actual chunk data is loaded on
+demand.  Currently it's never paged out though.
+
 
 1 Jan 2002
 
