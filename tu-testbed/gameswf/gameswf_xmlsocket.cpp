@@ -382,16 +382,16 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
 
   if (ptr->obj.anydata(data)) {
     if (this_ptr->get_member("onData", &method)) {
-      log_msg("Got data from socket!!\n%s", data.c_str());
+      //log_msg("Got data from socket!!\n%s", data.c_str());
       env->push(as_value(data));
       as_c_function_ptr	func = method.to_c_function();
       if (func) {
         // It's a C function.  Call it.
-        log_msg("Calling C function for onData\n");
+        //log_msg("Calling C function for onData\n");
         (*func)(&val, this_ptr, env, 1, 0);
       } else if (as_as_function* as_func = method.to_as_function()) {
         // It's an ActionScript function.  Call it.
-        log_msg("Calling ActionScript function for onData\n");
+        //log_msg("Calling ActionScript function for onData\n");
         (*as_func)(&val, this_ptr, env, 1, 0);
       } else {
         log_error("error in call_method(): method is not a function\n");

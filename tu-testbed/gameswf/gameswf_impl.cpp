@@ -1068,7 +1068,6 @@ namespace gameswf
 		{
 			Timer *ptr = static_cast<Timer *>(timer);
 			
-			// log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
 			m_interval_timers.push_back(ptr);
 			return m_interval_timers.size();
 		}
@@ -1148,9 +1147,8 @@ namespace gameswf
 			}
 			if (m_interval_timers.size() > 0) {
 				for (i=0; i<m_interval_timers.size(); i++) {
-					//log_msg("FIXME: Checking Interval Timer !\n");
 					if (m_interval_timers[i]->expired()) {
-						log_msg("FIXME: Interval Timer Expired!\n");
+						//log_msg("FIXME: Interval Timer Expired!\n");
 						//m_movie->on_event_interval_timer();
 						m_movie->do_something(m_interval_timers[i]);
 						// clear_interval_timer(m_interval_timers[i]->getIntervalID()); // FIXME: we shouldn't really disable the timer here
@@ -3145,9 +3143,9 @@ namespace gameswf
 			as_value       *as_val;
 			as_object      *obj;
 
-			log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
+			//log_msg("FIXME: %s:\n", __PRETTY_FUNCTION__);
 			Timer *ptr = (Timer *)timer;
-			log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
+			//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
 
 			as_val = ptr->getASFunction();
 			obj = ptr->getObject();
@@ -3155,13 +3153,13 @@ namespace gameswf
 			as_c_function_ptr	cfunc = as_val->to_c_function();
 			if (cfunc) {
 				// It's a C function.  Call it.
-				log_msg("Calling C function for from interval timer\n");
+				//log_msg("Calling C function for from interval timer\n");
 				(*cfunc)(&val, obj, &m_as_environment, 0, 0);
 				
 			} else if (as_as_function* as_func = as_val->to_as_function()) {
 				// It's an ActionScript function.  Call it.
 				as_value method;
-				log_msg("Calling ActionScript function from interval timer\n");
+				//log_msg("Calling ActionScript function from interval timer\n");
 				(*as_func)(&val, (as_object_interface *)this, &m_as_environment, 0, 0);
 			} else {
 				log_error("error in call_method(): method is not a function\n");
@@ -4455,15 +4453,6 @@ namespace gameswf
 			on_event(event_id::LOAD);
 		}
 
-#if 0
-		// Do the events that happen when there is data waiting
-		// on the XML socket connection.
-		virtual void	on_event_xmlsocket_ondata()
-		{
-			log_msg("FIXME: %s: unimplemented\n", __PRETTY_FUNCTION__);
-			on_event(event_id::SOCK_DATA);
-		}
-#endif
 		// Do the events that happen when there is XML data waiting
 		// on the XML socket connection.
 		virtual void	on_event_xmlsocket_onxml()

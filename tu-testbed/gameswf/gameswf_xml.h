@@ -76,8 +76,6 @@ public:
   
   XMLNode *operator = (XMLNode &node)
   {
-    gameswf::log_msg("%s: copy element %s\n",
-                     __PRETTY_FUNCTION__, node._name.c_str());
     _name = node._name;
     _value = node._value;
     _children = node._children;
@@ -86,8 +84,6 @@ public:
 
   XMLNode *operator = (XMLNode *node)
   {
-    gameswf::log_msg("%s: copy element %s\n",
-                     __PRETTY_FUNCTION__, node->_name.c_str());
     _name = node->_name;
     _value = node->_value;
     _children = node->_children;
