@@ -18,6 +18,7 @@ SRCS :=						\
 	image.cpp				\
 	image_filters.cpp			\
 	jpeg.cpp				\
+	png_helper.cpp				\
 	postscript.cpp				\
 	tu_file.cpp				\
 	tu_file_SDL.cpp				\

@@ -8,12 +8,12 @@
 TOP = ../..
 include $(TOP)/config
 
-INCLUDE_PATHS := $(ENGINE_INCLUDE) -I/usr/include/freetype2
+INCLUDE_PATHS := $(ENGINE_INCLUDE) $(LIBPNG_INCLUDE) -I/usr/include/freetype2
 
 CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
 LDFLAGS := $(LIB_DEBUG_FLAGS) $(LDFLAGS) -lfreetype
 
-LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(ZLIB)
+LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(LIBPNG) $(ZLIB)
 
 
 all: font_output$(EXE_EXT)

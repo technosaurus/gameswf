@@ -11,6 +11,8 @@
 
 
 #include "base/container.h"
+#include "base/image.h"
+#include "base/png_helper.h"
 #include <assert.h>
 #include <stdio.h>
 #include <ft2build.h>
@@ -18,24 +20,29 @@
 #include FT_GLYPH_H
 
 
-static const int WIDTH = 600;
-static const int HEIGHT = 600;
+static const int LITTLE_WIDTH = 200;
+static const int LITTLE_HEIGHT = 60;
 
-static uint8	s_bitmap[HEIGHT][WIDTH];
+static const int BIG_WIDTH = 600;
+static const int BIG_HEIGHT = 600;
+
+static image::alpha*	s_image;
+
+//static uint8	s_bitmap[HEIGHT][WIDTH];
 static int	s_y = 0;
 
 
 void	my_draw_x(int x, int y)
 // For debugging.
 {
-	if (x >= 1 && x < WIDTH - 1
-	    && y >= 1 && y < HEIGHT - 1)
+	if (x >= 1 && x < s_image->m_width - 1
+	    && y >= 1 && y < s_image->m_height - 1)
 	{
-		s_bitmap[HEIGHT - 1 - y][x] ^= 255;
-		s_bitmap[HEIGHT - 2 - y][x - 1] ^= 255;
-		s_bitmap[HEIGHT - 2 - y][x + 1] ^= 255;
-		s_bitmap[HEIGHT - 0 - y][x - 1] ^= 255;
-		s_bitmap[HEIGHT - 0 - y][x + 1] ^= 255;
+		s_image->set_pixel(x    , s_image->m_height - 1 - y, 0);
+		s_image->set_pixel(x - 1, s_image->m_height - 2 - y, 0);
+		s_image->set_pixel(x + 1, s_image->m_height - 2 - y, 0);
+		s_image->set_pixel(x - 1, s_image->m_height - 0 - y, 0);
+		s_image->set_pixel(x + 1, s_image->m_height - 0 - y, 0);
 	}
 }
 
@@ -46,7 +53,7 @@ void	my_draw_bitmap(FT_Bitmap* bitmap, int left_x, int top_y )
 	int	x0 = left_x;
 	int	sx0 = 0;
 	int	sw = bitmap->width;
-	if (x0 >= WIDTH)
+	if (x0 >= s_image->m_width)
 	{
 		return;
 	}
@@ -61,27 +68,27 @@ void	my_draw_bitmap(FT_Bitmap* bitmap, int left_x, int top_y )
 	{
 		return;
 	}
-	else if (x0 + sw > WIDTH)
+	else if (x0 + sw > s_image->m_width)
 	{
 		// Clip right.
-		sw -= (x0 + sw - WIDTH);
+		sw -= (x0 + sw - s_image->m_width);
 	}
 
 	for (int i = 0; i < bitmap->rows; i++)
 	{
 		// Vertical clipping.
-		int	y = HEIGHT - 1 - (top_y) + i;
+		int	y = s_image->m_height - 1 - (top_y) + i;
 		if (y < 0)
 		{
 			continue;
 		}
-		else if (y >= HEIGHT)
+		else if (y >= s_image->m_height)
 		{
 			break;
 		}
 
 		uint8*	src = bitmap->buffer + (bitmap->pitch * (i)) + sx0;
-		uint8*	dst = &s_bitmap[y][x0];
+		uint8*	dst = s_image->m_data + y * s_image->m_width + x0;
 
 		int	x = sw;
 		while (x-- > 0)
@@ -199,8 +206,8 @@ void	draw_centered_text(FT_Face& face, const char* text)
 	s_y += string_height + 5;
 
 	/* compute start pen position in 26.6 cartesian pixels */
-	int	start_x = ( ( WIDTH - string_width ) / 2 ) * 64;
-	int	start_y = (HEIGHT - 1 - s_y) * 64;
+	int	start_x = ( ( s_image->m_width - string_width ) / 2 ) * 64;	// centered
+	int	start_y = (s_image->m_height - 1 - s_y) * 64;
 	for ( n = 0; n < glyphs.size(); n++ )
 	{
 		FT_Glyph image;
@@ -225,22 +232,27 @@ void	draw_centered_text(FT_Face& face, const char* text)
 
 
 void	output_image(const char* filename)
-// Output a grayscale PPM file.
+// Output a grayscale png file.
 {
 	FILE*	fp = fopen(filename, "wb");
 	if (fp)
 	{
-		fprintf(fp, "P6\n%d %d\n255\n", WIDTH, HEIGHT);
-		for (int j = 0; j < HEIGHT; j++)
-		{
-			for (int i = 0; i < WIDTH; i++)
-			{
-				fputc(s_bitmap[j][i], fp);
-				fputc(s_bitmap[j][i], fp);
-				fputc(s_bitmap[j][i], fp);
-			}
-		}
-		fclose(fp);
+		// PPM -- very simple format
+// 		fprintf(fp, "P6\n%d %d\n255\n", WIDTH, HEIGHT);
+// 		for (int j = 0; j < HEIGHT; j++)
+// 		{
+// 			for (int i = 0; i < WIDTH; i++)
+// 			{
+// 				fputc(s_bitmap[j][i], fp);
+// 				fputc(s_bitmap[j][i], fp);
+// 				fputc(s_bitmap[j][i], fp);
+// 			}
+// 		}
+
+		// PNG
+		png_helper::write_grayscale(fp, s_image->m_data, s_image->m_width, s_image->m_height);
+
+ 		fclose(fp);
 	}
 }
 
@@ -331,11 +343,41 @@ int	main(int argc, const char** argv)
 		300 /*vert device dpi*/);
 	assert(error == 0);
 
-	// Draw something.
-	memset(s_bitmap, 255, WIDTH * HEIGHT);
+	// Draw stuff.
+
+	// The small image, containing just the font name.
+	s_image = image::create_alpha(LITTLE_WIDTH, LITTLE_HEIGHT);
+
+	// Clear.
+	memset(s_image->m_data, 255, s_image->m_width * s_image->m_height);
+
+	s_y = -10;
+	const char*	fontname = FT_Get_Postscript_Name(face);
+	if (fontname)
+	{
+		draw_centered_text(face, fontname);
+	}
+	else
+	{
+		draw_centered_text(face, font_filename);
+	}
+
+	tu_string	ofile0(output_basename);
+	ofile0 += "_thumb.png";
+	output_image(ofile0.c_str());
+
+	delete s_image;
+
+
+	// The big image.
+
+	s_image = image::create_alpha(BIG_WIDTH, BIG_HEIGHT);
+
+	// Clear.
+	memset(s_image->m_data, 255, s_image->m_width * s_image->m_height);
 
 	// Large text.
-	const char*	fontname = FT_Get_Postscript_Name(face);
+	s_y = 0;
 	if (fontname)
 	{
 		draw_centered_text(face, fontname);
@@ -369,8 +411,10 @@ int	main(int argc, const char** argv)
 	draw_centered_text(face, "Go hang a salami, I'm a lasagna hog.");
 
 	tu_string	ofile1(output_basename);
-	ofile1 += ".ppm";
+	ofile1 += ".png";
 	output_image(ofile1.c_str());
+
+	delete s_image;
 
 	FT_Done_FreeType(lib);
 }
