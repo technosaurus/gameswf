@@ -89,7 +89,7 @@ public:
 
 // Do we even need a C++ cfloat class?  E.g. just use a pointer to
 // an ordinary float:
-//	#define declare_cfloat(name, value) \ 
+//	#define declare_cfloat(name, value) \x
 //		extern float name = value; config::export_float(#name, &f);
 //
 // Probably still need a class constructor tho, to do that export automatically.

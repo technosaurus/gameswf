@@ -7,6 +7,12 @@
 // file access to a (potentially giant) data file directly without
 // loading it all into RAM.
 
+#include <stdlib.h>
+#include <stdio.h>
+//#include <io.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
 
 #include "bt_array.h"
 #include "mmap_util.h"
@@ -37,7 +43,8 @@ bt_array::bt_array()
 	  m_bottom(0),
 	  m_top(0),
 	  m_data(0),
-	  m_data_size(0)
+	  m_data_size(0),
+	  m_file_handle(0)
 {
 }
 
@@ -52,6 +59,12 @@ bt_array::~bt_array()
 
 		m_data = 0;
 		m_data_size = 0;
+	}
+
+	// *** MJH modification: have to close the file if it was open w/ low level I/O
+	if (m_file_handle)
+	{
+		close(m_file_handle);
 	}
 }
 
@@ -131,15 +144,40 @@ bt_array::~bt_array()
 	delete in;
 	in = NULL;
 
-	// Reopen the data using memory-mapping.
-	bt->m_data_size = sample_size * bt->m_width * bt->m_height;
-	bt->m_data_size += BT_HEADER_SIZE;
-	bt->m_data = mmap_util::map(bt->m_data_size, false, filename);
-	if (bt->m_data == 0) {
-		// Failed to open a memory-mapped view to the data.
-		printf("mmap_util::map() failed on %s, size = %d\n", filename, bt->m_data_size);
-		delete bt;
-		return NULL;
+	// *** MJH modification: only if the BT file is < 32768 samples wide/high do we
+	//     do the memory map (else it requires 4GB address space which is impossible)
+
+	if (bt->m_width < 32768 && bt->m_height < 32768)
+	{
+		// Reopen the data using memory-mapping.
+		bt->m_data_size = sample_size * bt->m_width * bt->m_height;
+		bt->m_data_size += BT_HEADER_SIZE;
+		bt->m_data = mmap_util::map(bt->m_data_size, false, filename);
+		if (bt->m_data == 0) {
+			// Failed to open a memory-mapped view to the data.
+			printf("mmap_util::map() failed on %s, size = %d\n", filename, bt->m_data_size);
+			delete bt;
+			return NULL;
+		}
+	}
+	else
+	{
+		// *** MJH modification: else we leave the data / data_size member variables null
+		bt->m_data = NULL;
+		bt->m_data_size = 0;
+
+		// ... and open the file using low level I/O
+#ifdef WIN32
+		if ((bt->m_file_handle = open(filename, O_BINARY | O_RDWR | O_RANDOM)) == -1)
+#else // not WIN32
+		if ((bt->m_file_handle = open(filename, O_LARGEFILE | O_RDWR)) == -1)
+#endif	// not WIN32
+		{
+			// Failed to re-open file w/ low level I/O
+			printf("_open failed on %s\n", filename);
+			delete bt;
+			return NULL;
+		}
 	}
 
 	// Initialize the (empty) cache.
@@ -187,12 +225,28 @@ float	bt_array::get_sample(int x, int z) const
 			// Cache line must be refreshed.
 			cl->m_v0 = (v / m_cache_height) * m_cache_height;
 			if (cl->m_data == NULL) {
-				cl->m_data = new Uint8[m_cache_height * m_sizeof_element];
+				cl->m_data = new unsigned char[m_cache_height * m_sizeof_element];
 			}
 			int	fillsize = imin(m_cache_height, m_height - cl->m_v0) * m_sizeof_element;
-			memcpy(cl->m_data,
-			       ((Uint8*)m_data) + BT_HEADER_SIZE + (cl->m_v0 + m_height * x) * m_sizeof_element,
-			       fillsize);
+
+			// *** MJH modification: only read from memory mapped file if its around
+			if (m_data != NULL)
+			{
+				memcpy(cl->m_data,
+					   ((unsigned char*)m_data) + BT_HEADER_SIZE + (cl->m_v0 + m_height * x) * m_sizeof_element,
+					   fillsize);
+			}
+			else
+			{
+				// *** MJH modification: else seek and load from the file proper, 64bit addressing
+				Uint64 offset_i64 =
+					(Uint64) BT_HEADER_SIZE
+					+ ((Uint64) cl->m_v0 + (Uint64) m_height * (Uint64) x)
+					* (Uint64) m_sizeof_element;
+
+				lseek64(m_file_handle, offset_i64, SEEK_SET);
+				read(m_file_handle, cl->m_data, fillsize);
+			}
 		}
 
 		index = v - cl->m_v0;
