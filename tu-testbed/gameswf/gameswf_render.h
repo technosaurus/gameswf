@@ -66,7 +66,7 @@ namespace gameswf
 
 		void	begin_submit_mask();
 		void	end_submit_mask();
-		void	end_mask();
+		void	disable_mask();
 
 		// Special function to draw a rectangular bitmap;
 		// intended for textured glyph rendering.  Ignores

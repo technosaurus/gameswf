@@ -164,9 +164,9 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->end_submit_mask();
 		}
 
-		void	end_mask()
+		void	disable_mask()
 		{
-			if (s_render_handler) s_render_handler->end_mask();
+			if (s_render_handler) s_render_handler->disable_mask();
 		}
 
 		// Special function to draw a rectangular bitmap;
