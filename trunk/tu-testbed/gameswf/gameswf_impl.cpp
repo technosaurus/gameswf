@@ -3286,7 +3286,7 @@ namespace gameswf
 			return;
 		}
 
-		int	target_frame = env->bottom(first_arg).to_number() - 1;	// Convert to 0-based
+		int	target_frame = int(env->bottom(first_arg).to_number() - 1);	// Convert to 0-based
 
 		sprite->goto_frame(target_frame);
 		sprite->set_play_state(movie_interface::PLAY);
@@ -3303,7 +3303,7 @@ namespace gameswf
 			return;
 		}
 
-		int	target_frame = env->bottom(first_arg).to_number() - 1;	// Convert to 0-based
+		int	target_frame = int(env->bottom(first_arg).to_number() - 1);	// Convert to 0-based
 
 		sprite->goto_frame(target_frame);
 		sprite->set_play_state(movie_interface::STOP);
