@@ -59,8 +59,7 @@ void	print_usage()
 }
 
 
-#undef main	// @@ some crazy SDL/WIN32 thing that I don't understand.
-int	main(int argc, char* argv[])
+int	wrapped_main(int argc, char* argv[])
 // Reads the given .BT terrain file or grayscale bitmap, and generates
 // a texture map to use when rendering the heightfield.
 {
@@ -173,6 +172,22 @@ int	main(int argc, char* argv[])
 	SDL_RWclose(out);
 
 	return 0;
+}
+
+
+#undef main	// @@ some crazy SDL/WIN32 thing that I don't understand.
+int	main(int argc, char* argv[])
+{
+	try {
+		return wrapped_main(argc, argv);
+	}
+	catch (const char* message) {
+		printf("exception: %s\n", message);
+	}
+	catch (...) {
+		printf("unknown exception\n");
+	}
+	return -1;
 }
 
 
@@ -376,13 +391,25 @@ struct heightfield {
 		size = width;
 		if (height != size) {
 			// Data must be square!
-			throw "heightfield::load() -- input dataset is not square!";
+			printf("Warning: non-square data; will extend to make it square\n");
 		}
+
+		size = fmax(width, height);
 
 		// Compute the log_size and make sure the size is 2^N + 1
 		log_size = (int) (log2(size - 1) + 0.5);
 		if (size != (1 << log_size) + 1) {
-			throw "heightfield::load() -- input dataset size is not (2^N + 1) x (2^N + 1)!";
+			if (size < 0 || size > (1 << 20)) {
+				throw "invalid heightfield dimensions";
+			}
+
+			printf("Warning: data is not (2^N + 1) x (2^N + 1); will extend to make it the correct size.\n");
+
+			// Expand log_size until it contains size.
+			while (size > (1 << log_size) + 1) {
+				log_size++;
+			}
+			size = (1 << log_size) + 1;
 		}
 
 		sample_spacing = fabs(right - left) / (size - 1);
@@ -393,8 +420,8 @@ struct heightfield {
 		data = new float[sample_count];
 
 		// Load the data.  BT data is goes in columns, bottom-to-top, left-to-right.
-		for (int i = 0; i < size; i++) {
-			for (int j = 0; j < size; j++) {
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
 				float	y;
 				if (float_flag) {
 					y = ReadFloat32(in);
@@ -406,6 +433,18 @@ struct heightfield {
 				data[i + (size - 1 - j) * size] = y;
 			}
 		}
+
+		// Extend data to fill out any unused space.
+		{for (int i = 0; i < width; i++) {
+			for (int j = height; j < size; j++) {
+				data[i + (size - 1 - j) * size] = data[i + (size - 1 - (height-1)) * size];
+			}
+		}}
+		{for (int i = width; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				data[i + (size - 1 - j) * size] = data[width - 1 + (size - 1 - j) * size];
+			}
+		}}
 
 		return 0;
 	}
