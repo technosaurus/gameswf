@@ -40,7 +40,9 @@
 	#include <SDL.h>
 	
 	#if SDL_BYTEORDER == SDL_LIL_ENDIAN
-	#define _TU_LITTLE_ENDIAN_ 1
+		#define _TU_LITTLE_ENDIAN_ 1
+	#else
+		#undef _TU_LITTLE_ENDIAN_
 	#endif // SDL_BYTEORDER == SDL_LIL_ENDIAN
 
 #endif	// not __I366__ and not _WIN32

@@ -15,18 +15,18 @@
 #include <limits.h>
 
 #include <SDL.h>
-#include <SDL_image.h>
 
 #include "engine/utility.h"
 #include "engine/container.h"
 #include "engine/geometry.h"
 #include "engine/tqt.h"
+#include "engine/tu_file.h"
 
 #include "mmap_array.h"
 #include "bt_array.h"
 
 
-void	heightfield_chunker(const char* infile, SDL_RWops* out,
+void	heightfield_chunker(const char* infile, tu_file* out,
 			    int tree_depth,
 			    float base_max_error,
 			    float spacing,
@@ -202,15 +202,10 @@ int	wrapped_main(int argc, char* argv[])
 		exit(1);
 	}
 	
-//	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
-//	if (in == 0) {
-//		printf("error: can't open %s for input.\n", infile);
-//		exit(1);
-//	}
-
-	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
-	if (out == 0) {
+	tu_file*	out = new tu_file(outfile, "wb");
+	if (out->get_error()) {
 		printf("error: can't open %s for output.\n", outfile);
+		delete out;
 		exit(1);
 	}
 
@@ -224,10 +219,10 @@ int	wrapped_main(int argc, char* argv[])
 	// Process the data.
 	heightfield_chunker(infile, out, tree_depth, max_geometric_error, spacing, vertical_scale, input_vertical_scale);
 
-	stats.output_size = SDL_RWtell(out);
+	stats.output_size = out->get_position();
 
-//	SDL_RWclose(in);
-	SDL_RWclose(out);
+	delete out;
+	out = NULL;
 
 	float	verts_per_chunk = stats.output_vertices / (float) stats.output_chunks;
 
@@ -669,11 +664,11 @@ struct heightfield {
 void	update(heightfield& hf, float base_max_error, int ax, int az, int rx, int rz, int lx, int lz);
 void	propagate_activation_level(heightfield& hf, int cx, int cz, int level, int target_level);
 int	check_propagation(heightfield& hf, int cx, int cz, int level);
-void	generate_empty_TOC(SDL_RWops* rw, int level);
-void	generate_node_data(SDL_RWops* rw, heightfield& hf, int x0, int z0, int log_size, int level);
+void	generate_empty_TOC(tu_file* rw, int level);
+void	generate_node_data(tu_file* rw, heightfield& hf, int x0, int z0, int log_size, int level);
 
 
-void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, float base_max_error, float spacing, float vertical_scale, float input_vertical_scale)
+void	heightfield_chunker(const char* infile, tu_file* out, int tree_depth, float base_max_error, float spacing, float vertical_scale, float input_vertical_scale)
 // Generate LOD chunks from the given heightfield.
 // 
 // tree_depth determines the depth of the chunk quadtree.
@@ -728,13 +723,13 @@ void	heightfield_chunker(const char* infile, SDL_RWops* out, int tree_depth, flo
 	printf("done\n");
 
 	// Write a .chu header for the output file.
-	SDL_WriteLE32(out, ('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
-	SDL_WriteLE16(out, 9);	// file format version.
-	SDL_WriteLE16(out, tree_depth);	// depth of the chunk quadtree.
-	WriteFloat32(out, base_max_error);	// max geometric error at base level mesh.
-	WriteFloat32(out, vertical_scale);	// meters / unit of vertical measurement.
-	WriteFloat32(out, (1 << (hf.m_log_size - (tree_depth - 1))) * hf.sample_spacing);	// x/z dimension, in meters, of highest LOD chunks.
-	SDL_WriteLE32(out, 0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
+	out->write_le32(('C') | ('H' << 8) | ('U' << 16));	// four byte "CHU\0" tag
+	out->write_le32(9);	// file format version.
+	out->write_le32(tree_depth);	// depth of the chunk quadtree.
+	out->write_float32(base_max_error);	// max geometric error at base level mesh.
+	out->write_float32(vertical_scale);	// meters / unit of vertical measurement.
+	out->write_float32((1 << (hf.m_log_size - (tree_depth - 1))) * hf.sample_spacing);	// x/z dimension, in meters, of highest LOD chunks.
+	out->write_le32(0x55555555 & ((1 << (tree_depth*2)) - 1));	// Chunk count.  Fully populated quadtree.
 
 	printf("meshing....");
 
@@ -992,7 +987,7 @@ namespace mesh {
 
 	int	lookup_index(int x, int z);
 
-	void	write(SDL_RWops* rw, heightfield& hf, int activation_level);
+	void	write(tu_file* rw, heightfield& hf, int activation_level);
 
 //	void	add_edge_strip_index(int edge_dir, int index);
 //	void	add_edge_vertex_lo(int edge_dir, int x, int z);
@@ -1000,7 +995,7 @@ namespace mesh {
 };
 
 
-void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level);
+void	generate_edge_data(tu_file* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level);
 
 
 // Manually synced!!!  (@@ should use a fixed-size struct, to be
@@ -1011,7 +1006,7 @@ void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0
 const int	CHUNK_HEADER_BYTES = 4 + 4*4 + 1 + 2 + 2 + 2*2 + 4;
 
 
-void	generate_empty_TOC(SDL_RWops* rw, int root_level)
+void	generate_empty_TOC(tu_file* rw, int root_level)
 // Append an empty table-of-contents for a fully-populated quadtree,
 // and rewind the stream to the start of the contents.  Use this to
 // make room for TOC at the beginning of the file, while bulk
@@ -1020,16 +1015,16 @@ void	generate_empty_TOC(SDL_RWops* rw, int root_level)
 	Uint8	buf[CHUNK_HEADER_BYTES];	// dummy chunk header.
 	memset(buf, 0, sizeof(buf));
 
-	int	start_pos = SDL_RWtell(rw);
+	int	start_pos = rw->get_position();
 
 	int	chunk_count = tqt::node_count(root_level + 1);	// tqt has a handy function to compute # of nodes in a quadtree
 	for (int i = 0; i < chunk_count; i++)
 	{
-		SDL_RWwrite(rw, buf, sizeof(buf), 1);
+		rw->write_bytes(buf, sizeof(buf));
 	}
 
 	// Rewind, so caller can start writing real TOC data.
-	SDL_RWseek(rw, start_pos, SEEK_SET);
+	rw->set_position(start_pos);
 }
 
 
@@ -1038,7 +1033,7 @@ void	generate_block(heightfield& hf, int level, int log_size, int cx, int cz);
 void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, int tz, int rx, int rz, int level);
 
 
-void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log_size, int level)
+void	generate_node_data(tu_file* out, heightfield& hf, int x0, int z0, int log_size, int level)
 // Given a square of data, with northwest corner at (x0, z0) and
 // comprising ((1<<log_size)+1) verts along each axis, this function
 // generates the mesh using verts which are active at the given level.
@@ -1046,7 +1041,7 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 // If we're not at the base level (level > 0), then also recurses to
 // quadtree child nodes and generates their data.
 {
-	int	start_pos = SDL_RWtell(out);	// use this to verify the value of CHUNK_HEADER_BYTES
+	int	start_pos = out->get_position();	// use this to verify the value of CHUNK_HEADER_BYTES
 
 	stats.output_chunks++;
 
@@ -1060,20 +1055,20 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 //	printf("chunk_label(%d,%d) = %d\n", cx, cz, chunk_label);//xxxx
 
 	// Write our label.
-	SDL_WriteLE32(out, chunk_label);
+	out->write_le32(chunk_label);
 
 	// Write the labels of our neighbors.
-	SDL_WriteLE32(out, hf.node_index(cx + size, cz));	// EAST
-	SDL_WriteLE32(out, hf.node_index(cx, cz - size));	// NORTH
-	SDL_WriteLE32(out, hf.node_index(cx - size, cz));	// WEST
-	SDL_WriteLE32(out, hf.node_index(cx, cz + size));	// SOUTH
+	out->write_le32(hf.node_index(cx + size, cz));	// EAST
+	out->write_le32(hf.node_index(cx, cz - size));	// NORTH
+	out->write_le32(hf.node_index(cx - size, cz));	// WEST
+	out->write_le32(hf.node_index(cx, cz + size));	// SOUTH
 
 	// Chunk address.
 	int	LOD_level = hf.root_level - level;
 	assert(LOD_level >= 0 && LOD_level < 256);
-	WriteByte(out, LOD_level);
-	SDL_WriteLE16(out, x0 >> log_size);
-	SDL_WriteLE16(out, z0 >> log_size);
+	out->write_byte(LOD_level);
+	out->write_le32(x0 >> log_size);
+	out->write_le32(z0 >> log_size);
 
 	// Start making the mesh.
 	mesh::clear();
@@ -1103,7 +1098,7 @@ void	generate_node_data(SDL_RWops* out, heightfield& hf, int x0, int z0, int log
 	// Finish writing our data.
 	mesh::write(out, hf, level);
 
-	int	header_bytes_written = SDL_RWtell(out) - start_pos;
+	int	header_bytes_written = out->get_position() - start_pos;
 	assert(header_bytes_written == CHUNK_HEADER_BYTES);
 	header_bytes_written = header_bytes_written;	// don't warn about unused var
 
@@ -1232,7 +1227,7 @@ void	generate_quadrant(heightfield& hf, gen_state* s, int lx, int lz, int tx, in
 }
 
 
-void	generate_edge_data(SDL_RWops* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level)
+void	generate_edge_data(tu_file* out, heightfield& hf, int dir, int x0, int z0, int x1, int z1, int level)
 // Write out the data for an edge of the chunk that was just generated.
 // (x0,z0) - (x1,z1) defines the extent of the edge in the heightfield.
 // level determines which vertices in the mesh are active.
@@ -1385,7 +1380,8 @@ namespace mesh {
 // mini module for building up mesh data.
 
 //data:
-	struct vert_info {
+	struct vert_info
+	{
 		Sint16	x, z;
 		Sint16	y;
 		bool	special;
@@ -1408,7 +1404,7 @@ namespace mesh {
 			  special(true)
 		{}
 
-		bool	operator==(const vert_info& v) { return x == v.x && z == v.z; }
+		bool	operator==(const vert_info& v) const { return x == v.x && z == v.z; }
 	};
 
 	array<vert_info>	vertices;
@@ -1494,7 +1490,7 @@ namespace mesh {
 		max_y = (Sint16) 0x8000;
 	}
 
-	static void	write_vertex(SDL_RWops* rw, heightfield& hf,
+	static void	write_vertex(tu_file* rw, heightfield& hf,
 				     int level, const vec3& box_center, const vec3& compress_factor,
 				     const vert_info& v)
 	// Utility function, to output the quantized data for a vertex.
@@ -1509,9 +1505,9 @@ namespace mesh {
 		}
 		z = (int) floor(((v.z * hf.sample_spacing - box_center.get_z()) * compress_factor.get_z()) + 0.5);
 
-		SDL_WriteLE16(rw, x);
-		SDL_WriteLE16(rw, y);
-		SDL_WriteLE16(rw, z);
+		rw->write_le16(x);
+		rw->write_le16(y);
+		rw->write_le16(z);
 
 		// Morph info.  Calculate the difference between the
 		// vert height, and the height of the same spot in the
@@ -1523,30 +1519,30 @@ namespace mesh {
 			lerped_height = get_height_at_LOD(hf, level + 1, v.x, v.z);
 		}
 		int	morph_delta = (lerped_height - y);
-		SDL_WriteLE16(rw, (Sint16) morph_delta);
+		rw->write_le16((Sint16) morph_delta);
 		assert(morph_delta == (Sint16) morph_delta);	// Watch out for overflow.
 	}
 
 
-	void	write(SDL_RWops* rw, heightfield& hf, int level)
+	void	write(tu_file* rw, heightfield& hf, int level)
 	// Write out the current chunk.
 	{
 		// Write min & max y values.  This can be used to reconstruct
 		// the bounding box.
-		SDL_WriteLE16(rw, min_y);
-		SDL_WriteLE16(rw, max_y);
+		rw->write_le16(min_y);
+		rw->write_le16(max_y);
 
 //		// Make a placeholder for this data chunk's data size.
 //		int	size_filepos = SDL_RWtell(rw);
 //		SDL_WriteLE32(rw, 0);
 
 		// Write a placeholder for the mesh data file pos.
-		int	current_pos = SDL_RWtell(rw);
-		SDL_WriteLE32(rw, 0);
+		int	current_pos = rw->get_position();
+		rw->write_le32(0);
 		
 		// write out the vertex data at the *end* of the file.
-		SDL_RWseek(rw, 0, SEEK_END);
-		int	mesh_pos = SDL_RWtell(rw);
+		rw->go_to_end();
+		int	mesh_pos = rw->get_position();
 
 		// Compute bounding box.  Determines the scale and offset for
 		// quantizing the verts.
@@ -1573,16 +1569,16 @@ namespace mesh {
 		}
 
 		// Write vertices.  All verts contain morph info.
-		SDL_WriteLE16(rw, vertices.size());
+		rw->write_le16(vertices.size());
 		for (int i = 0; i < vertices.size(); i++) {
 			write_vertex(rw, hf, level, box_center, compress_factor, vertices[i]);
 		}
 
 		{
 			// Write triangle-strip vertex indices.
-			SDL_WriteLE32(rw, vertex_indices.size());
+			rw->write_le32(vertex_indices.size());
 			for (int i = 0; i < vertex_indices.size(); i++) {
-				SDL_WriteLE16(rw, vertex_indices[i]);
+				rw->write_le16(vertex_indices[i]);
 			}
 		}
 
@@ -1602,12 +1598,12 @@ namespace mesh {
 			stats.output_degenerate_triangles += (vertex_indices.size() - 2) - tris;
 
 			// Write real triangle count.
-			SDL_WriteLE32(rw, tris);
+			rw->write_le32(tris);
 		}
 
 		// Rewind, and fill in the mesh data file pos.
-		SDL_RWseek(rw, current_pos, SEEK_SET);
-		SDL_WriteLE32(rw, mesh_pos);
+		rw->set_position(current_pos);
+		rw->write_le32(mesh_pos);
 
 //		// Go back and write the size of the chunk we just wrote.
 //		int	current_filepos = SDL_RWtell(rw);

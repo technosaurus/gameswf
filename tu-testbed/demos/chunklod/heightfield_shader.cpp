@@ -13,16 +13,16 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
+#include <SDL.h>
 extern "C" {
 #include <jpeglib.h>
 }
 
-#include <engine/utility.h>
-#include <engine/container.h>
-#include <engine/geometry.h>
-#include <engine/jpeg.h>
+#include "engine/utility.h"
+#include "engine/container.h"
+#include "engine/geometry.h"
+#include "engine/jpeg.h"
+#include "engine/tu_file.h"
 
 #include "bt_array.h"
 
@@ -30,8 +30,8 @@ extern "C" {
 //void	initialize_tileset(array<texture_tile>* tileset);
 //const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b);
 void	heightfield_shader(const char* infile,
-			   SDL_RWops* out,
-			   SDL_RWops* diffuse_input,
+			   tu_file* out,
+			   tu_file* diffuse_input,
 			   SDL_Surface* altitude_gradient,
 			   int dimension,
 			   float input_vertical_scale
@@ -170,20 +170,23 @@ int	wrapped_main(int argc, char* argv[])
 		exit( 1 );
 	}
 	
-	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
-	if (out == 0) {
+	tu_file*	out = new tu_file(outfile, "wb");
+	if (out->get_error())
+	{
 		printf("error: can't open %s for output.\n", outfile);
+		delete out;
 		exit(1);
 	}
 
 	// Try to open diffuse texture file.
-	SDL_RWops*	diffuse_input = NULL;
+	tu_file*	diffuse_input = NULL;
 	if (diffuse_texture_filename)
 	{
-		diffuse_input = SDL_RWFromFile(diffuse_texture_filename, "rb");
-		if (diffuse_input == NULL)
+		diffuse_input = new tu_file(diffuse_texture_filename, "rb");
+		if (diffuse_input->get_error())
 		{
 			printf("error: can't open %s for input.\n", diffuse_texture_filename);
+			delete diffuse_input;
 			exit(1);
 		}
 	}
@@ -203,7 +206,15 @@ int	wrapped_main(int argc, char* argv[])
 	heightfield_shader(infile, out, diffuse_input, altitude_gradient,
 			   dimension, input_vertical_scale);
 
-	SDL_RWclose(out);
+	// Close files.
+	delete out;
+	out = NULL;
+
+	if (diffuse_input)
+	{
+		delete diffuse_input;
+		diffuse_input = NULL;
+	}
 
 	return 0;
 }
@@ -432,8 +443,8 @@ void	compute_lightmap(SDL_Surface* out, const heightfield& hf);
 
 
 void	heightfield_shader(const char* infile,
-			   SDL_RWops* out,
-			   SDL_RWops* diffuse_input,
+			   tu_file* out,
+			   tu_file* diffuse_input,
 			   SDL_Surface* altitude_gradient,
 			   int dimension,
 			   float input_vertical_scale

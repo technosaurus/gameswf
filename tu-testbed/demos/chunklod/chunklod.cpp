@@ -15,11 +15,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "engine/ogl.h"
-#include "engine/utility.h"
-#include "engine/tqt.h"
-#include "engine/image.h"
 #include "engine/dlmalloc.h"
+#include "engine/image.h"
+#include "engine/ogl.h"
+#include "engine/tqt.h"
+#include "engine/tu_file.h"
+#include "engine/utility.h"
 
 #include "SDL_thread.h"
 
@@ -114,8 +115,8 @@ namespace lod_tile_freelist
 			glGenTextures(1, &texture_id);
 			glBindTexture(GL_TEXTURE_2D, texture_id);
 			
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, ogl::get_clamp_mode());
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, ogl::get_clamp_mode());
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, surf->m_width, surf->m_height, 0, GL_RGB, GL_UNSIGNED_BYTE, surf->m_data);
@@ -145,12 +146,12 @@ struct vertex_info {
 		Sint16	x[3];
 		Sint16	y_delta;	// delta, to get to morphed y
 
-		void	read(SDL_RWops* in)
+		void	read(tu_file* in)
 		{
-			x[0] = SDL_ReadLE16(in);
-			x[1] = SDL_ReadLE16(in);
-			x[2] = SDL_ReadLE16(in);
-			y_delta = SDL_ReadLE16(in);
+			x[0] = in->read_le16();
+			x[1] = in->read_le16();
+			x[2] = in->read_le16();
+			y_delta = in->read_le16();
 
 //			// xxxxxx TEST QUANTIZATION xxxxxxx
 //			// lose the bottom 8 bits by rounding
@@ -189,7 +190,7 @@ struct vertex_info {
 		}
 	}
 
-	void	read(SDL_RWops* in);
+	void	read(tu_file* in);
 
 	int	get_data_size() const
 	// Return the data bytes used by this object.
@@ -199,10 +200,10 @@ struct vertex_info {
 };
 
 
-void	vertex_info::read(SDL_RWops* in)
+void	vertex_info::read(tu_file* in)
 // Read vert info from the given file.
 {
-	vertex_count = SDL_ReadLE16(in);
+	vertex_count = in->read_le16();
 //	vertices = new vertex[vertex_count];
 	vertices = (vertex*) dlmalloc(vertex_count * sizeof(vertex));
 	for (int i = 0; i < vertex_count; i++) {
@@ -210,7 +211,7 @@ void	vertex_info::read(SDL_RWops* in)
 	}
 		
 	// Load indices.
-	index_count = SDL_ReadLE32(in);
+	index_count = in->read_le32();
 	if (index_count > 0) {
 //		indices = new Uint16[ index_count ];
 		indices = (Uint16*) dlmalloc(index_count * sizeof(Uint16));
@@ -218,11 +219,11 @@ void	vertex_info::read(SDL_RWops* in)
 		indices = NULL;
 	}
 	{for (int i = 0; i < index_count; i++) {
-		indices[i] = SDL_ReadLE16(in);
+		indices[i] = in->read_le16();
 	}}
 
 	// Load the real triangle count, for computing statistics.
-	triangle_count = SDL_ReadLE32(in);
+	triangle_count = in->read_le32();
 
 //	printf("vertex_info::read() -- vertex_count = %d, index_count = %d\n", vertex_count, index_count);//xxxxxxxx
 }
@@ -239,7 +240,7 @@ struct lod_chunk_data {
 	//	lod_chunk_data* m_prev_data;
 
 
-	lod_chunk_data(SDL_RWops* in)
+	lod_chunk_data(tu_file* in)
 	// Constructor.  Read our data & set our texture id.
 	{
 		// Load the main chunk data.
@@ -321,7 +322,7 @@ struct lod_chunk {
 
 	int	render(const lod_chunk_tree& c, const view_state& v, cull::result_info cull_info, render_options opt, bool texture_bound);
 
-	void	read(SDL_RWops* in, int recursion_count, lod_chunk_tree* tree, bool vert_data_at_end);
+	void	read(tu_file* in, int recursion_count, lod_chunk_tree* tree, bool vert_data_at_end);
 	void	lookup_neighbors(lod_chunk_tree* tree);
 
 	// Utilities.
@@ -367,7 +368,7 @@ struct lod_chunk {
 class chunk_tree_loader
 {
 public:
-	chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src);	// @@ should make tqt* a parameter.
+	chunk_tree_loader(lod_chunk_tree* tree, tu_file* src);	// @@ should make tqt* a parameter.
 	~chunk_tree_loader();
 
 	void	sync_loader_thread();	// called by lod_chunk_tree::update(), to implement any changes that are ready.
@@ -377,7 +378,7 @@ public:
 	void	request_chunk_load_texture(lod_chunk* chunk);
 	void	request_chunk_unload_texture(lod_chunk* chunk);
 
-	SDL_RWops*	get_source() { return m_source_stream; }
+	tu_file*	get_source() { return m_source_stream; }
 
 	// Call this to enable/disable the background loader thread.
 	void	set_use_loader_thread(bool use);
@@ -433,7 +434,7 @@ private:
 	};
 
 	lod_chunk_tree*	m_tree;
-	SDL_RWops*	m_source_stream;
+	tu_file*	m_source_stream;
 
 	// These two are for the main thread's use only.  For
 	// update()/update_texture() to communicate with
@@ -460,7 +461,7 @@ private:
 };
 
 
-chunk_tree_loader::chunk_tree_loader(lod_chunk_tree* tree, SDL_RWops* src)
+chunk_tree_loader::chunk_tree_loader(lod_chunk_tree* tree, tu_file* src)
 // Constructor.  Retains internal copies of the given pointers.
 {
 	m_tree = tree;
@@ -880,7 +881,7 @@ bool	chunk_tree_loader::loader_service_data()
 	lod_chunk_data*	loaded_data = NULL;
 
 	// Geometry.
-	SDL_RWseek(m_source_stream, chunk_to_load->m_data_file_position, SEEK_SET);
+	m_source_stream->set_position(chunk_to_load->m_data_file_position);
 	loaded_data = new lod_chunk_data(m_source_stream);
 
 	// "Retire" the request.  Must do this with the mutex locked.
@@ -1619,7 +1620,7 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 }
 
 
-void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree, bool vert_data_at_end)
+void	lod_chunk::read(tu_file* in, int recurse_count, lod_chunk_tree* tree, bool vert_data_at_end)
 // Read chunk data from the given file and initialize this chunk with it.
 // Recursively loads child chunks for recurse_count > 0.
 {
@@ -1628,7 +1629,7 @@ void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree, boo
 	m_data = NULL;
 
 	// Get this chunk's label, and add it to the table.
-	int	chunk_label = SDL_ReadLE32(in);
+	int	chunk_label = in->read_le32();
 	if (chunk_label > tree->m_chunk_count)
 	{
 		assert(0);
@@ -1640,17 +1641,17 @@ void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree, boo
 
 	// Initialize neighbor links.
 	{for (int i = 0; i < 4; i++) {
-		m_neighbor[i].m_label = SDL_ReadLE32(in);
+		m_neighbor[i].m_label = in->read_le32();
 	}}
 
 	// Read our chunk address.  We can reconstruct our bounding box
 	// from this info, along with the root tree info.
-	m_level = ReadByte(in);
-	m_x = SDL_ReadLE16(in);
-	m_z = SDL_ReadLE16(in);
+	m_level = in->read_byte();
+	m_x = in->read_le16();
+	m_z = in->read_le16();
 
-	m_min_y = SDL_ReadLE16(in);
-	m_max_y = SDL_ReadLE16(in);
+	m_min_y = in->read_le16();
+	m_max_y = in->read_le16();
 
 	// Skip the chunk data but remember our filepos, so we can load it
 	// when it's demanded.
@@ -1658,17 +1659,17 @@ void	lod_chunk::read(SDL_RWops* in, int recurse_count, lod_chunk_tree* tree, boo
 	{
 		// Format version 9 and later.  Vert data file offset
 		// is just stored directly in the header.
-		m_data_file_position = SDL_ReadLE32(in);
+		m_data_file_position = in->read_le32();
 	}
 	else
 	{
 		// Format version 8: vert data is in-line w/ chunk headers.
 		// @@ Remove this code once I get rid of all my version 8 data.
-		int	chunk_size = SDL_ReadLE32(in);
-		m_data_file_position = SDL_RWtell(in);
-		SDL_RWseek(in, chunk_size, SEEK_CUR);
+		int	chunk_size = in->read_le32();
+		m_data_file_position = in->get_position();
+		in->set_position(m_data_file_position + chunk_size);
 
-		assert(m_data_file_position + chunk_size == SDL_RWtell(in));
+		assert(m_data_file_position + chunk_size == in->get_position());
 	}
 
 	// Recurse to child chunks.
@@ -1717,7 +1718,7 @@ void	lod_chunk::lookup_neighbors(lod_chunk_tree* tree)
 //
 
 
-lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
+lod_chunk_tree::lod_chunk_tree(tu_file* src, const tqt* texture_quadtree)
 // Construct and initialize a tree of LOD chunks, using data from the given
 // source.  Uses a special .chu file format which is a pretty direct
 // encoding of the chunk data.
@@ -1725,13 +1726,13 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 	m_texture_quadtree = texture_quadtree;
 
 	// Read and verify a "CHU\0" header tag.
-	Uint32	tag = SDL_ReadLE32(src);
+	Uint32	tag = src->read_le32();
 	if (tag != (('C') | ('H' << 8) | ('U' << 16))) {
 		printf("Input file is not in .CHU format");
 		exit(1);
 	}
 
-	int	format_version = SDL_ReadLE16(src);
+	int	format_version = src->read_le16();
 	if (format_version != 8 && format_version != 9)
 	{
 		printf("Input format has non-matching version number");
@@ -1743,11 +1744,11 @@ lod_chunk_tree::lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree)
 		vert_data_at_end = true;
 	}
 	
-	m_tree_depth = SDL_ReadLE16(src);
-	m_error_LODmax = ReadFloat32(src);
-	m_vertical_scale = ReadFloat32(src);
-	m_base_chunk_dimension = ReadFloat32(src);
-	m_chunk_count = SDL_ReadLE32(src);
+	m_tree_depth = src->read_le16();
+	m_error_LODmax = src->read_float32();
+	m_vertical_scale = src->read_float32();
+	m_base_chunk_dimension = src->read_float32();
+	m_chunk_count = src->read_le32();
 
 	// Create a lookup table of chunk labels.
 	m_chunk_table = new lod_chunk*[m_chunk_count];

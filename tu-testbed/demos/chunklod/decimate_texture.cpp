@@ -16,12 +16,13 @@ extern "C" {
 #include <jpeglib.h>
 }
 
-#include <engine/utility.h>
-#include <engine/container.h>
-#include <engine/jpeg.h>
+#include "engine/container.h"
+#include "engine/jpeg.h"
+#include "engine/tu_file.h"
+#include "engine/utility.h"
 
 
-void	decimate(SDL_RWops* out, SDL_RWops* in, int factor);
+void	decimate(tu_file* out, tu_file* in, int factor);
 
 
 void	print_usage()
@@ -101,22 +102,27 @@ int	wrapped_main(int argc, char* argv[])
 		exit( 1 );
 	}
 	
-	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
-	if (in == 0) {
+	tu_file*	in = new tu_file(infile, "rb");
+	if (in->get_error())
+	{
 		printf("error: can't open %s for input.\n", outfile);
+		delete in;
 		exit(1);
 	}
 
-	SDL_RWops*	out = SDL_RWFromFile(outfile, "wb");
-	if (out == 0) {
+	tu_file*	out = new tu_file(outfile, "wb");
+	if (out->get_error())
+	{
 		printf("error: can't open %s for output.\n", outfile);
+		delete in;
+		delete out;
 		exit(1);
 	}
 
 	decimate(out, in, factor);
 
-	SDL_RWclose(in);
-	SDL_RWclose(out);
+	delete in;
+	delete out;
 
 	return 0;
 }
@@ -138,7 +144,7 @@ int	main(int argc, char* argv[])
 }
 
 
-void	decimate(SDL_RWops* out, SDL_RWops* in, int factor)
+void	decimate(tu_file* out, tu_file* in, int factor)
 // Generate texture for heightfield.
 {
 	// Open the input texture.

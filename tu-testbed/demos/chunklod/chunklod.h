@@ -6,13 +6,14 @@
 #define CHUNKLOD_H
 
 
-#include <engine/geometry.h>
-#include <engine/view_state.h>
-#include <engine/container.h>
+#include "engine/geometry.h"
+#include "engine/view_state.h"
+#include "engine/container.h"
 
 class tqt;
 struct lod_chunk;
 class chunk_tree_loader;
+class tu_file;
 
 
 struct render_options {
@@ -34,7 +35,7 @@ class lod_chunk_tree {
 // Use this class as the UI to a chunked-LOD object.
 // !!! turn this into an interface class and get the data into the .cpp file !!!
 public:
-	lod_chunk_tree(SDL_RWops* src, const tqt* texture_quadtree);
+	lod_chunk_tree(tu_file* src, const tqt* texture_quadtree);
 	~lod_chunk_tree();
 
 	// External interface.

@@ -10,7 +10,8 @@
 
 #include "bt_array.h"
 #include "mmap_util.h"
-#include <engine/utility.h>
+#include "engine/utility.h"
+#include "engine/tu_file.h"
 #include <string.h>
 
 
@@ -62,8 +63,9 @@ bt_array::~bt_array()
 {
 	assert(filename);
 
-	SDL_RWops*	in = SDL_RWFromFile(filename, "rb");
-	if (in == 0) {
+	tu_file*	in = new tu_file(filename, "rb");
+	if (in->get_error())
+	{
 		// Can't open the file.
 		// warning ...
 		printf("can't open file %s\n", filename);
@@ -76,57 +78,58 @@ bt_array::~bt_array()
 	
 	// File-type marker.
 	char	buf[11];
-	SDL_RWread(in, buf, 1, 10);
+	in->read_bytes(buf, 10);
 	buf[10] = 0;
 	if (strcmp(buf, "binterr1.1") != 0) {
 		// Bad input file format.  Must not be BT 1.1.
 		printf("input file %s is not .BT version 1.1 format\n", filename);
-		SDL_RWclose(in);
+		delete in;
 		return NULL;
 	}
 
 	// Create a bt_array instance, and load its members.
 	bt_array*	bt = new bt_array();
 
-	bt->m_width = SDL_ReadLE32(in);
-	bt->m_height = SDL_ReadLE32(in);
+	bt->m_width = in->read_le32();
+	bt->m_height = in->read_le32();
 	if (bt->m_width <= 0 || bt->m_height <= 0) {
 		// invalid data size.
 		printf("invalid data size: width = %d, height = %d\n", bt->m_width, bt->m_height);
 
 		delete bt;
-		SDL_RWclose(in);
+		delete in;
 		return NULL;
 	}
 
-	int	sample_size = SDL_ReadLE16(in);
-	bt->m_float_data = SDL_ReadLE16(in) == 1 ? true : false;
+	int	sample_size = in->read_le16();
+	bt->m_float_data = in->read_le16() == 1 ? true : false;
 	if (bt->m_float_data && sample_size != 4) {
 		// can't deal with floats that aren't 4 bytes.
 		printf("invalid data format: float, but size = %d\n", sample_size);
 		delete bt;
-		SDL_RWclose(in);
+		delete in;
 		return NULL;
 	}
 	if (bt->m_float_data == false && sample_size != 2) {
 		// can't deal with ints that aren't 2 bytes.
 		printf("invalid data format: int, but size = %d\n", sample_size);
 		delete bt;
-		SDL_RWclose(in);
+		delete in;
 		return NULL;
 	}
 	
 	bt->m_sizeof_element = bt->m_float_data ? 4 : 2;
-	bt->m_utm_flag = SDL_ReadLE16(in) ? true : false;
-	bt->m_utm_zone = SDL_ReadLE16(in);
-	bt->m_datum = SDL_ReadLE16(in);
-	bt->m_left = ReadDouble64(in);
-	bt->m_right = ReadDouble64(in);
-	bt->m_bottom = ReadDouble64(in);
-	bt->m_top = ReadDouble64(in);
+	bt->m_utm_flag = in->read_le16() ? true : false;
+	bt->m_utm_zone = in->read_le16();
+	bt->m_datum = in->read_le16();
+	bt->m_left = in->read_double64();
+	bt->m_right = in->read_double64();
+	bt->m_bottom = in->read_double64();
+	bt->m_top = in->read_double64();
 
 	// Close the file.
-	SDL_RWclose(in);
+	delete in;
+	in = NULL;
 
 	// Reopen the data using memory-mapping.
 	bt->m_data_size = sample_size * bt->m_width * bt->m_height;
@@ -208,14 +211,14 @@ float	bt_array::get_sample(int x, int z) const
 			float	f;
 			Uint32	u;
 		} raw;
-		raw.u = SDL_SwapLE32(*(Uint32*) data);
+		raw.u = swap_le32(*(Uint32*) data);
 
 		return raw.f;
 
 	} else {
 		// Raw data is 16-bit integer.
 		data += index * 2;
-		Uint16	y = SDL_SwapLE16(*(Uint16*) data);
+		Uint16	y = swap_le16(*(Uint16*) data);
 
 		return y;
 	}

@@ -57,6 +57,9 @@ namespace ogl {
 	PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB = 0;
 
 
+	// GL_CLAMP or GL_CLAMP_TO_EDGE, depending on which is available.
+	int	s_clamp_to_edge = GL_CLAMP;
+
 	// Big, fast vertex-memory buffer.
 	const int	VERTEX_BUFFER_SIZE = 4 << 20;
 	void*	vertex_memory_buffer = 0;
@@ -66,7 +69,8 @@ namespace ogl {
 
 	const int	STREAM_SUB_BUFFER_COUNT = 2;
 
-	class vertex_stream {
+	class vertex_stream
+	{
 	// Class to facilitate streaming verts to the video card.  Takes
 	// care of fencing, and buffer bookkeeping.
 	public:
@@ -104,6 +108,13 @@ namespace ogl {
 		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
 		glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
 		glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
+
+		if (check_extension("GL_SGIS_texture_edge_clamp")
+		    || check_extension("GL_EXT_texture_edge_clamp"))
+		{
+			// Use CLAMP_TO_EDGE, since it's available.
+			s_clamp_to_edge = GL_CLAMP_TO_EDGE;
+		}
 	}
 
 
@@ -111,6 +122,59 @@ namespace ogl {
 	// Release anything we need to.
 	{
 		// @@ free that mongo vertex buffer.
+	}
+
+
+	int	get_clamp_mode()
+	// Return a constant to pass to glTexParameteri(GL_TEXTURE_2D,
+	// GL_TEXTURE_WRAP_x, ...), which is either GL_CLAMP or
+	// GL_CLAMP_TO_EDGE, depending on whether GL_CLAMP_TO_EDGE is
+	// available.
+	{
+		return s_clamp_to_edge;
+	}
+
+
+	bool	check_extension(const char* extension)
+	// Some extension checking code snipped from glut.
+	{
+		static const char*	extensions = NULL;
+		const char*	start;
+		char*	where;
+		char*	terminator;
+		bool	supported;
+	
+		// Extension names should not have spaces
+		where = strchr(extension, ' ');
+		if (where || *extension == '\0') return false;
+	
+		// Grab extensions (but only once)
+		if (!extensions) extensions = (const char*)glGetString(GL_EXTENSIONS);
+	
+		// Look for extension
+		start = extensions;
+		supported = false;
+		while (!supported)
+		{
+			// Does extension SEEM to be supported?
+			where = strstr((const char*)start, extension);
+			if (!where) break;
+
+			// Ok, extension SEEMS to be supported
+			supported = true;
+
+			// Check for space before extension
+			supported &= (where == start) || (where[-1] == ' ');
+
+			// Check for space after extension
+			terminator = where + strlen(extension);
+			supported &= (*terminator == '\0') || (*terminator == ' ');
+
+			// Next search starts at current terminator
+			start = terminator;
+		}
+
+		return supported;
 	}
 
 

@@ -11,7 +11,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
 extern "C" {
 #include <jpeglib.h>
 }
@@ -22,6 +21,7 @@ extern "C" {
 #include "engine/jpeg.h"
 #include "engine/image.h"
 #include "engine/tqt.h"
+#include "engine/tu_file.h"
 
 
 static const char*	spinner = "-\\|/";
@@ -42,13 +42,14 @@ void	print_usage()
 }
 
 
-struct tqt_info {
-	SDL_RWops* out;
+struct tqt_info
+{
+	tu_file* out;
 	array<Uint32>&	toc;
 	int	tree_depth;
 	int	tile_size;
 
-	tqt_info(SDL_RWops* o, array<Uint32>* tocptr, int d, int ts)
+	tqt_info(tu_file* o, array<Uint32>* tocptr, int d, int ts)
 		: out(o),
 		  toc(*tocptr),
 		  tree_depth(d),
@@ -153,17 +154,21 @@ int	main(int argc, char* argv[])
 	}
 	
 	// Open input file.
-	SDL_RWops*	in = SDL_RWFromFile(infile, "rb");
-	if (in == NULL) {
+	tu_file*	in = new tu_file(infile, "rb");
+	if (in->get_error())
+	{
 		printf("Can't open input file '%s'!\n", infile);
+		delete in;
 		exit(1);
 	}
 
 	// Open output file.
-	SDL_RWops*	out = SDL_RWFromFile(outfile, "w+b");
-	if (out == NULL) {
+	tu_file*	out = new tu_file(outfile, "w+b");
+	if (out->get_error())
+	{
 		printf("Can't open output file '%s'!\n", outfile);
-		SDL_RWclose(in);
+		delete in;
+		delete out;
 		exit(1);
 	}
 
@@ -171,8 +176,8 @@ int	main(int argc, char* argv[])
 	jpeg::input*	j_in = jpeg::input::create(in);
 	if (j_in == NULL) {
 		printf("Failure reading JPEG header of input file '%s'!\n", infile);
-		SDL_RWclose(in);
-		SDL_RWclose(out);
+		delete in;
+		delete out;
 		exit(1);
 	}
 
@@ -180,19 +185,19 @@ int	main(int argc, char* argv[])
 	int	tile_dim = 1 << (tree_depth - 1);
 
 	// Write .tqt header.
-	SDL_RWwrite(out, "tqt\0", 1, 4);	// filetype tag
-	SDL_WriteLE32(out, 1);			// version number.
-	SDL_WriteLE32(out, tree_depth);
-	SDL_WriteLE32(out, tile_size);
+	out->write_bytes("tqt\0", 4);	// filetype tag
+	out->write_le32(1);			// version number.
+	out->write_le32(tree_depth);
+	out->write_le32(tile_size);
 
 	// Make a null table of contents, and write it to the file.
 	array<Uint32>	toc;
 	toc.resize(tqt::node_count(tree_depth));
 
-	int	toc_start = SDL_RWtell(out);
+	int	toc_start = out->get_position();
 	for (int i = 0; i < toc.size(); i++) {
 		toc[i] = 0;
-		SDL_WriteLE32(out, toc[i]);
+		out->write_le32(toc[i]);
 	}
 
 	int	tile_max_source_height = int(j_in->get_height() / float(tile_dim) + 1);
@@ -245,7 +250,7 @@ int	main(int argc, char* argv[])
 
 			// Update the table of contents with an offset
 			// to the data we're about to write.
-			int	offset = SDL_RWtell(out);
+			int	offset = out->get_position();
 			int	quadtree_index = tqt::node_index(tree_depth - 1, col, row);
 			toc[quadtree_index] = offset;
 
@@ -260,7 +265,7 @@ int	main(int argc, char* argv[])
 
 	// Done reading the input file.
 	delete j_in;
-	SDL_RWclose(in);
+	delete in;
 
 	delete strip;
 	delete tile;	// done with the working tile surface.
@@ -279,12 +284,12 @@ int	main(int argc, char* argv[])
 	delete root_tile;	// dispose of root tile.
 
 	// Write the TOC back into the head of the file.
-	SDL_RWseek(out, toc_start, SEEK_SET);
+	out->set_position(toc_start);
 	{for (int i = 0; i < toc.size(); i++) {
-		SDL_WriteLE32(out, toc[i]);
+		out->write_le32(toc[i]);
 	}}
 
-	SDL_RWclose(out);
+	delete out;
 
 	return 0;
 }
@@ -299,7 +304,7 @@ image::rgb*	generate_tiles(tqt_info* p, int level, int col, int row)
 	int	offset = p->toc[qindex];
 	if (offset) {
 		// Tile already built.  Read it from the file.
-		SDL_RWseek(p->out, offset, SEEK_SET);
+		p->out->set_position(offset);
 		image::rgb*	tile = image::read_jpeg(p->out);
 		return tile;
 	}
@@ -356,8 +361,8 @@ image::rgb*	generate_tiles(tqt_info* p, int level, int col, int row)
 
 	// Write out the generated tile.
 	{
-		SDL_RWseek(p->out, 0, SEEK_END);
-		int	offset = SDL_RWtell(p->out);
+		p->out->go_to_end();
+		int	offset = p->out->get_position();
 		
 		// Update table of contents.
 		p->toc[qindex] = offset;

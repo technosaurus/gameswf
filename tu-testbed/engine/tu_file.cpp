@@ -28,6 +28,11 @@ static int std_seek_func(int pos, void *appdata)
 	assert(appdata);
 	return fseek((FILE*)appdata, pos, SEEK_SET);
 }
+static int std_seek_to_end_func(void *appdata)
+{
+	assert(appdata);
+	return fseek((FILE*)appdata, 0, SEEK_END);
+}
 static int std_tell_func(const void *appdata)
 {
 	assert(appdata);
@@ -40,13 +45,14 @@ static int std_close_func(const void *appdata)
 }
 
 	
-tu_file::tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, tell_func tf, close_func cf)
+tu_file::tu_file(void * appdata, read_func rf, write_func wf, seek_func sf, seek_to_end_func ef, tell_func tf, close_func cf)
 // Create a file using the custom callbacks.
 {
 	m_data = appdata;
 	m_read = rf;
 	m_write = wf;
 	m_seek = sf;
+	m_seek_to_end = ef;
 	m_tell = tf;
 	m_close = cf;
 	m_error = NO_ERROR;
@@ -60,6 +66,7 @@ tu_file::tu_file(FILE* fp, bool autoclose=false)
 	m_read = std_read_func;
 	m_write = std_write_func;
 	m_seek = std_seek_func;
+	m_seek_to_end = std_seek_to_end_func;
 	m_tell = std_tell_func;
 	m_close = autoclose ? std_close_func : NULL;
 	m_error = NO_ERROR;
@@ -75,6 +82,7 @@ tu_file::tu_file(const char * name, const char * mode)
 		m_read = std_read_func;
 		m_write = std_write_func;
 		m_seek = std_seek_func;
+		m_seek_to_end = std_seek_to_end_func;
 		m_tell = std_tell_func;
 		m_close = std_close_func;
 		m_error = NO_ERROR;
