@@ -90,6 +90,7 @@ namespace gameswf
 		virtual movie_definition*	get_movie_definition() = 0;
 
 		virtual int	get_current_frame() const = 0;
+		virtual bool	has_looped() const = 0;
 		
 		virtual void	restart() = 0;
 		virtual void	advance(float delta_time) = 0;

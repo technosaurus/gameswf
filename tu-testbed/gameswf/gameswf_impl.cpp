@@ -425,8 +425,6 @@ namespace gameswf
 				delete m_jpeg_in;
 			}
 
-//			restart();
-
 			if (original_in)
 			{
 				// Done with the zlib_adapter.
@@ -818,6 +816,7 @@ namespace gameswf
 			m_background_color(0, 0, 0, 255),
 			m_play_state(PLAY),
 			m_current_frame(0),
+			m_has_looped(false),
 			m_next_frame(0),
 			m_time_remainder(0.0f),
 			m_timer(0.0f),
@@ -860,6 +859,7 @@ namespace gameswf
 
 
 		int	get_current_frame() const { return m_current_frame; }
+		bool	has_looped() const { return m_has_looped; }
 
 		void	notify_mouse_state(int x, int y, int buttons)
 		// The host app uses this to tell the movie where the
@@ -1033,9 +1033,8 @@ namespace gameswf
 
 		void	restart()
 		{
-		//	m_display_list.clear();
-		//	m_action_list.clear();
 			m_current_frame = 0;
+			m_has_looped = false;
 			m_next_frame = 0;
 			m_time_remainder = 0;
 			m_update_frame = true;
@@ -1093,9 +1092,12 @@ namespace gameswf
 						m_next_frame = m_def->m_frame_count;
 					}
 				}
-				else if (m_next_frame >= m_def->m_frame_count)	// && m_play_state == PLAY
+				else if (m_next_frame >= m_def->m_frame_count)
 				{
+					// Loop by default.
   					m_next_frame = 0;
+					m_has_looped = true;
+
 					/* Is this still necessary?
 					if (m_frame_count > 1)
 					{
@@ -2705,8 +2707,6 @@ namespace gameswf
 
 		void	restart()
 		{
-		//	m_display_list.clear();
-		//	m_action_list.clear();
 			m_current_frame = 0;
 			m_next_frame = 0;
 			m_time_remainder = 0;
