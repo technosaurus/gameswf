@@ -92,6 +92,12 @@ namespace gameswf
 	// script to fscommand().
 	typedef void (*fscommand_callback)(movie_interface* movie, const char* command, const char* arg);
 	void	register_fscommand_callback(fscommand_callback handler);
+
+	// Use this to control how finely curves are subdivided.  1.0
+	// is the default; it's a pretty good value.  Larger values
+	// result in coarser, more angular curves with fewer vertices.
+	void	set_curve_max_pixel_error(float pixel_error);
+	float	get_curve_max_pixel_error();
 	
 	// Some helpers that may or may not be compiled into your
 	// version of the library, depending on platform etc.
