@@ -104,97 +104,181 @@ void	close()
 
 
 //
-// cglobal
+// cvar
 //
 
 
-cglobal::cglobal( const char* name )
-// Constructor; leaves existing value, if any (otherwise it's 'nil').
+void	cvar::init( const char* name )
+// Initializes a chain of references to Lua strings, for looking up
+// the value of the specified name.
+//
+// The name can contain embedded '.' separators, to refer to values
+// within nested tables.  For example, a name of
+// "player.spaceship.health" would refer to the "health" member of the
+// "player.spaceship" table (where the "player.spaceship" table is
+// found by looking up the "spaceship" member of the "player" table).
 {
 	config::open();
 
-	lua_pushstring( config::L, name );
-	m_lua_name_reference = lua_ref( config::L, 1 );
+	// Count the number of keys in the name (keys are separated by '.'
+	// chars).
+	m_lua_key_count = 1;
+	const char*	p = name;
+	while (*p) {
+		if (*p == '.') {
+			m_lua_key_count++;
+		}
+		p++;
+	}
+
+	// Allocate array for references.
+	m_lua_key_reference = new int[m_lua_key_count];
+
+	// Now initialize the keys.
+	const char*	varname = name;
+
+	int	key_index = 0;
+	p = name;
+	while (*p) {
+		if (*p == '.') {
+			assert_else(varname != p) {
+				// null string for a key.
+				// warning("something or other");
+				assert(0);	// TODO: recover somehow.
+			}
+
+			// Reference the name of the table.
+			lua_pushlstring(config::L, varname, p - varname);
+			m_lua_key_reference[key_index] = lua_ref(config::L, 1);
+
+			key_index++;
+			varname = p + 1;
+		}
+		p++;
+	}
+
+	// Get a reference to the last key name.
+	assert(varname != p);	// else...
+	lua_pushlstring(config::L, varname, p - varname);
+	m_lua_key_reference[key_index] = lua_ref(config::L, 1);
 }
 
 
-cglobal::cglobal( const char* name, const cvalue& val )
+void	cvar::push_table_and_key() const
+// Traverse our key names, and push the table and keyname of our value
+// onto the Lua stack.
+//
+// Creates empty tables if necessary to fill in missing links in the
+// chain.
+{
+	lua_getglobals(config::L);	// Start with the global table.
+
+	// Chain through additional tables.
+	for (int i = 0; i < m_lua_key_count - 1; i++) {
+		lua_getref(config::L, m_lua_key_reference[i]);
+		lua_gettable(config::L, -2);
+
+		if (lua_isnil(config::L, -1)) {
+			// Tablename is undefined, so create a new empty table for it.
+			lua_pop(config::L, 1);	// pop the nil.
+			lua_getref(config::L, m_lua_key_reference[i]);
+			lua_newtable(config::L);
+			lua_settable(config::L, -3);
+			
+			// Get the newly created table and put it on the top
+			// of stack.
+			lua_getref(config::L, m_lua_key_reference[i]);
+			lua_gettable(config::L, -2);
+		}
+
+		lua_remove(config::L, -2);	// previous table that we just chained from
+	}
+
+	// push the final key, on top of the table we just pushed.
+	lua_getref(config::L, m_lua_key_reference[i]);
+}
+
+
+cvar::cvar( const char* name )
+// Constructor; leaves existing value, if any (otherwise it's 'nil').
+{
+	init(name);
+}
+
+
+cvar::cvar( const char* name, const cvalue& val )
 // Constructor; initializes to given Lua value.
 {
-	config::open();
-
-	lua_pushstring( config::L, name );
-	m_lua_name_reference = lua_ref( config::L, 1 );
+	init(name);
 	*this = val;	// invoke operator=(const cvalue& val)
 }
 
 
-cglobal::cglobal( const char* name, const char* val )
+cvar::cvar( const char* name, const char* val )
 // Constructor; initializes to given string value.
 {
-	config::open();
-
-	lua_pushstring( config::L, name );
-	m_lua_name_reference = lua_ref( config::L, 1 );
+	init(name);
 	*this = val;	// invoke operator=(const char*)
 }
 
 
-cglobal::cglobal( const char* name, float val )
+cvar::cvar( const char* name, float val )
 // Constructor; initializes to given float value.
 {
-	config::open();
-
-	lua_pushstring( config::L, name );
-	m_lua_name_reference = lua_ref( config::L, 1 );
+	init(name);
 	*this = val;	// invoke operator=(float f)
 }
 
 
-cglobal::~cglobal()
+cvar::~cvar()
 // Destructor; make sure our references are released.
 {
-	// drop lua reference to our name, so our name string can be
-	// gc'd if not referenced elsewhere.
-	lua_unref( config::L, m_lua_name_reference );
-	m_lua_name_reference = LUA_NOREF;
+	// drop lua references, so table & name can be gc'd if not
+	// referenced elsewhere.
+
+	for (int i = 0; i < m_lua_key_count; i++) {
+		lua_unref(config::L, m_lua_key_reference[i]);
+	}
+
+	m_lua_key_count = 0;
+	m_lua_key_reference = NULL;
 }
 
 
-const char*	cglobal::get_name() const
+#if 0
+const char*	cvar::get_name() const
 // Return our name.  The char[] storage is valid at least as long
 // as this variable is alive.
 {
 	lua_getref( config::L, m_lua_name_reference );
 	return lua_tostring( config::L, -1 );
 }
+#endif // 0
 
 
-cglobal::operator float() const
+cvar::operator float() const
 // Convert the variable to a float and return it.
 {
-	lua_getglobals( config::L );
-	lua_getref( config::L, m_lua_name_reference );
-	lua_gettable( config::L, -2 );	// get the value of our variable from the global table.
+	push_table_and_key();
+	lua_gettable( config::L, -2 );	// get the value of our variable from the table.
 	float	f = lua_tonumber( config::L, -1 );
-	lua_pop( config::L, 2 );	// discard global table & the number result.
+	lua_pop( config::L, 2 );	// pop table & the number result.
 
 	return f;
 }
 
 
-void	cglobal::operator=( float f )
+void	cvar::operator=( float f )
 // Assign a float to this lua variable.
 {
-	lua_getglobals( config::L );
-	lua_getref( config::L, m_lua_name_reference );
+	push_table_and_key();
 	lua_pushnumber( config::L, f );
 	lua_settable( config::L, -3 );
-	lua_pop( config::L, 1 );	// discard the global table.
+	lua_pop( config::L, 1 );	// pop the table.
 }
 
 
-cglobal::operator const char*() const
+cvar::operator const char*() const
 // Convert to a string.
 //
 // xxx there are garbage-collection issues here!  Returned string
@@ -204,52 +288,48 @@ cglobal::operator const char*() const
 // - return a C++ "string" value; i.e. make a copy
 // - hold a locked reference in this instance; drop it on next call to this conversion operator (blech).
 {
-	lua_getglobals( config::L );
-	lua_getref( config::L, m_lua_name_reference );
-	lua_gettable( config::L, -2 );	// get the value of our variable from the global table.
+	push_table_and_key();
+	lua_gettable( config::L, -2 );	// get the value of our variable from the table.
 	const char*	c = lua_tostring( config::L, -1 );
 	// TODO: grab a locked reference to the string!  Or copy it!
-	lua_pop( config::L, 2 );	// discard global table & the string result.
+	lua_pop( config::L, 2 );	// discard table & the string result.
 
 	return c;
 }
 
 
-void	cglobal::operator=( const cvalue& val )
+void	cvar::operator=( const cvalue& val )
 // Assign a Lua value to this lua global variable.
 {
-	lua_getglobals( config::L );
-	lua_getref( config::L, m_lua_name_reference );
+	push_table_and_key();
 	val.lua_push();
 	lua_settable( config::L, -3 );
-	lua_pop( config::L, 1 );	// discard the global table.
+	lua_pop( config::L, 1 );	// pop the table.
 }
 
 
-void	cglobal::operator=( const char* s )
+void	cvar::operator=( const char* s )
 // Assign a string to this lua variable.
 {
-	lua_getglobals( config::L );
-	lua_getref( config::L, m_lua_name_reference );
+	push_table_and_key();
 	lua_pushstring( config::L, s );
 	lua_settable( config::L, -3 );
-	lua_pop( config::L, 1 );	// discard the global table.
+	lua_pop( config::L, 1 );	// pop the table.
 }
 
 
-cglobal::operator cvalue() const
+cvar::operator cvalue() const
 // Return a reference to our value.
 {
-	lua_getglobals( config::L );
-	lua_getref( config::L, m_lua_name_reference );
+	push_table_and_key();
 	cvalue	c = cvalue::lua_stacktop_reference();
-	lua_pop( config::L, 1 );	// pop the global table.
+	lua_pop( config::L, 1 );	// pop the table.
 
 	return c;
 }
 
 
-//	void	operator=( const cglobal c );
+//	void	operator=( const cvar c );
 
 
 
