@@ -2338,8 +2338,7 @@ namespace gameswf
 			switch (m_place_type)
 			{
 			case PLACE:
-			{
-				character*	ch = m->add_display_object(
+				m->add_display_object(
 					m_character_id,
 					m_name,
 					m_event_handlers,
@@ -2348,9 +2347,7 @@ namespace gameswf
 					m_matrix,
 					m_ratio,
 					m_clip_depth);
-
 				break;
-			}
 
 			case MOVE:
 				m->move_display_object(
@@ -2364,7 +2361,6 @@ namespace gameswf
 				break;
 
 			case REPLACE:
-			{
 				m->replace_display_object(
 					m_character_id,
 					m_name,
@@ -2376,8 +2372,6 @@ namespace gameswf
 					m_ratio,
 					m_clip_depth);
 				break;
-			}
-
 			}
 		}
 
