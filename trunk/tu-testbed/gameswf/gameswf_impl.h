@@ -217,6 +217,13 @@ namespace gameswf
 		matrix	m_matrix;
 		float	m_ratio;
 
+		display_info()
+			:
+			m_depth(0),
+			m_ratio(0.0f)
+		{
+		}
+
 		void	concatenate(const display_info& di)
 		// Concatenate the transforms from di into our
 		// transforms.
