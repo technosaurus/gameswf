@@ -66,7 +66,8 @@ gameswf_source = \
 gameswf_exe = \
 		tu-testbed/gameswf/gameswf_test_ogl.exe
 
-gameswf_files = $(gameswf_source) $(gameswf_exe)
+gameswf_files = $(gameswf_source) $(gameswf_exe)	\
+	tu-testbed/go_gameswf.bat
 
 crater_data_files = \
 		tu-testbed/demos/chunklod/crater/crater.chu	\
