@@ -335,8 +335,8 @@ function engine_loop()
 	end
 
 	-- clean up
-	if event_buffer then
-		SDL.SDL_Event_delete(event)
+	if gamestate.event_buffer then
+		SDL.SDL_Event_delete(gamestate.event_buffer)
 	end
 
 	-- Print out some timing information
