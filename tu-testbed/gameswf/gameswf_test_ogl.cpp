@@ -1,4 +1,4 @@
-// gameswf_test_ogl.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003
+// gameswf_test_ogl.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003 -*- coding: utf-8;-*-
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -394,7 +394,7 @@ int	main(int argc, char *argv[])
 				else if (ctrl && key == SDLK_t)
 				{
 					// test text replacement / variable setting:
-					m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box");
+					m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box\nSome UTF-8: ñö£ç°ÄÀÔ¿");
 				}
 				else if (ctrl && key == SDLK_g)
 				{
