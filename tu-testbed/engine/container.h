@@ -267,7 +267,7 @@ public:
 		}
 
 		unsigned int	hash_value = hash_functor::compute(key);
-		int	index = hash_value % m_table.size();
+		int	index = hash_value & m_size_mask;	// % m_table.size();
 		for (int i = 0; i < m_table[index].size(); i++) {
 			if (m_table[index][i].key == key) {
 				if (value) {

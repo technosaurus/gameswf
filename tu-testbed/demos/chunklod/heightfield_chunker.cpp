@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <limits.h>
+#include <float.h>
 
 #include <SDL.h>
 
@@ -1483,8 +1484,8 @@ namespace mesh {
 			edge_hi[i][1].clear();
 		}
 
-		min = vec3(1000000, 1000000, 1000000);
-		max = vec3(-1000000, -1000000, -1000000);
+		min = vec3(FLT_MAX, FLT_MAX, FLT_MAX);
+		max = vec3(-FLT_MAX, -FLT_MAX, -FLT_MAX);
 
 		min_y = (Sint16) 0x7FFF;
 		max_y = (Sint16) 0x8000;

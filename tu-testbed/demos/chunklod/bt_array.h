@@ -68,6 +68,7 @@ private:
 	void*	m_data;
 	int	m_data_size;
 
+	int	m_file_handle;
 };
 
 
