@@ -4,12 +4,12 @@
 // whatever you want with it.
 
 // tu_file constructor, for creating a tu_file from an SDL_RWops*
-// stream.  In its own source file so that if clients of the engine
+// stream.  In its own source file so that if clients of the base
 // library don't call it, it won't get pulled in by the linker and
 // won't try to link with SDL.
 
 
-#include "engine/tu_file.h"
+#include "base/tu_file.h"
 #include <SDL.h>
 
 

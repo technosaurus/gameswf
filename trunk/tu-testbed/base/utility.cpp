@@ -6,8 +6,8 @@
 // Various little utility functions, macros & typedefs.
 
 
-#include "engine/utility.h"
-#include "engine/dlmalloc.h"
+#include "base/utility.h"
+#include "base/dlmalloc.h"
 
 
 #ifdef _WIN32

@@ -6,9 +6,9 @@
 // Some helpers for generating Postscript graphics.
 
 
-#include "engine/postscript.h"
+#include "base/postscript.h"
 
-#include "engine/tu_file.h"
+#include "base/tu_file.h"
 #include <stdarg.h>
 
 
@@ -82,7 +82,7 @@ postscript::~postscript()
 		"showpage\n"
 		"%%%%Trailer\n"
 		"%%%%Pages: %d %d\n"
-		"%%%%BoundingBox: %d %d %d %d\n"
+		"%%%%BoundingBox: %f %f %f %f\n"
 		"%%%%EOF\n",
 		m_page + 1, m_page + 1,
 		m_x0, m_y0, m_x1, m_y1
@@ -110,11 +110,11 @@ void	postscript::comment(const char* s)
 }
 
 
-void	postscript::rgbcolor(int r, int g, int b)
+void	postscript::rgbcolor(float r, float g, float b)
 // Set the pen color.
 // @@ need to look up the units for this!
 {
-	m_out->printf("%d %d %d setrgbcolor\n", r, g, b);
+	m_out->printf("%f %f %f setrgbcolor\n", r, g, b);
 }
 
 
@@ -125,10 +125,10 @@ void	postscript::gray(float amount)
 }
 
 
-void	postscript::line(int x0, int y0, int x1, int y1)
+void	postscript::line(float x0, float y0, float x1, float y1)
 {
 	m_out->printf(
-		"%d %d %d %d L\n",
+		"%f %f %f %f L\n",
 		x1, y1, x0, y0);
 
 	update(x0, y0);
@@ -136,29 +136,29 @@ void	postscript::line(int x0, int y0, int x1, int y1)
 }
 
 
-void	postscript::moveto(int x0, int y0)
+void	postscript::moveto(float x0, float y0)
 {
 	m_out->printf(
-		"%d %d m\n",
+		"%f %f m\n",
 		x0, y0);
 
 	update(x0, y0);
 }
 
 
-void	postscript::lineto(int x0, int y0)
+void	postscript::lineto(float x0, float y0)
 {
 	m_out->printf(
-		"%d %d l\n",
+		"%f %f l\n",
 		x0, y0);
 
 	update(x0, y0);
 }
 
 
-void	postscript::linewidth(int w)
+void	postscript::linewidth(float w)
 {
-	m_out->printf("%d LW\n", w);
+	m_out->printf("%f LW\n", w);
 }
 
 
@@ -214,13 +214,13 @@ void	postscript::dot(float x, float y)
 }
 
 
-void	postscript::rectangle(int x0, int x1, int y0, int y1)
+void	postscript::rectangle(float x0, float x1, float y0, float y1)
 {
 	m_out->printf(
-		"%d %d m "
-		"%d %d l "
-		"%d %d l "
-		"%d %d l s\n",
+		"%f %f m "
+		"%f %f l "
+		"%f %f l "
+		"%f %f l s\n",
 		x0, y0,
 		x1, y0,
 		x1, y1,
@@ -230,13 +230,13 @@ void	postscript::rectangle(int x0, int x1, int y0, int y1)
 }
 
 
-void	postscript::box(int x0, int x1, int y0, int y1)
+void	postscript::box(float x0, float x1, float y0, float y1)
 {
 	m_out->printf(
-		"%d %d m "
-		"%d %d l "
-		"%d %d l "
-		"%d %d l f\n",
+		"%f %f m "
+		"%f %f l "
+		"%f %f l "
+		"%f %f l f\n",
 		x0, y0,
 		x1, y0,
 		x1, y1,
@@ -249,10 +249,10 @@ void	postscript::box(int x0, int x1, int y0, int y1)
 void	postscript::update(float x, float y)
 // enlarge the bounding box if necessary.
 {
-	if (x < m_x0) m_x0 = int(floorf(x));
-	if (x > m_x1) m_x1 = int(ceilf(x));
-	if (y < m_y0) m_y0 = int(floorf(y));
-	if (y > m_y1) m_y1 = int(ceilf(y));
+	if (x < m_x0) m_x0 = floorf(x);
+	if (x > m_x1) m_x1 = ceilf(x);
+	if (y < m_y0) m_y0 = floorf(y);
+	if (y > m_y1) m_y1 = ceilf(y);
 
 	m_empty = false;
 }

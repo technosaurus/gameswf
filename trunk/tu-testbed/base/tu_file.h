@@ -11,8 +11,8 @@
 
 
 #include <stdio.h>
-#include "engine/tu_types.h"
-#include "engine/utility.h"
+#include "base/tu_types.h"
+#include "base/utility.h"
 
 struct SDL_RWops;
 

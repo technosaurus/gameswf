@@ -6,11 +6,11 @@
 // Handy image utilities for RGB surfaces.
 
 
-#include "engine/image.h"
-#include "engine/utility.h"
-#include "engine/jpeg.h"
-#include "engine/dlmalloc.h"
-#include "engine/tu_file.h"
+#include "base/image.h"
+#include "base/utility.h"
+#include "base/jpeg.h"
+#include "base/dlmalloc.h"
+#include "base/tu_file.h"
 #include <stdlib.h>
 
 
