@@ -2356,8 +2356,6 @@ namespace gameswf
 
 				if (rec.m_style.m_font == NULL) continue;
 
-				sub_di.m_matrix = base_matrix;
-
 				scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
 				if (rec.m_style.m_has_x_offset)
 				{
@@ -2367,9 +2365,6 @@ namespace gameswf
 				{
 					y = rec.m_style.m_y_offset;
 				}
-				sub_di.m_matrix.concatenate_translation(x, y);
-				sub_di.m_matrix.m_[0][0] *= scale;
-				sub_di.m_matrix.m_[1][1] *= scale;
 
 				m_dummy_style[0].m_color = rec.m_style.m_color;
 
@@ -2377,6 +2372,12 @@ namespace gameswf
 				{
 					int	index = rec.m_glyphs[j].m_glyph_index;
 					const texture_glyph*	tg = rec.m_style.m_font->get_texture_glyph(index);
+					
+					sub_di.m_matrix = base_matrix;
+					sub_di.m_matrix.concatenate_translation( x, y );
+					sub_di.m_matrix.concatenate_scale( scale );
+
+
 					if (tg)
 					{
 						// Draw the glyph using the cached texture-map info.
@@ -2394,9 +2395,7 @@ namespace gameswf
 						if (glyph) glyph->display(sub_di, m_dummy_style);
 					}
 
-					float	dx = rec.m_glyphs[j].m_glyph_advance;
-					x += dx;
-					sub_di.m_matrix.concatenate_translation(dx / scale, 0);
+					x += rec.m_glyphs[j].m_glyph_advance;
 				}
 			}
 		}
