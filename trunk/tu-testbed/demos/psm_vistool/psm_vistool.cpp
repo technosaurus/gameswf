@@ -396,10 +396,29 @@ void	draw_stuff(const controls& c, float density)
 }
 
 
+void	print_usage()
+// Instructions.
+{
+	printf("psm_vistool by Thatcher Ulrich http://tulrich.com\n"
+	       "This program has been donated to the Public Domain\n"
+	       "\n"
+	       "2D visualization of perspective shadow-maps.  The goal is to help get some\n"
+	       "intuition about PSM's.  Enjoy!\n"
+	       "\n"
+	       "Controls:\n"
+	       "\n"
+	       "   mouse-left    -- place or delete an occluder (blue circle)\n"
+	       "\n"
+	       "   mouse-right   -- change the light direction\n"
+		);
+}
+
 
 #undef main	// SDL wackiness
 int	main(int argc, char *argv[])
 {
+	print_usage();
+
 	// Initialize the SDL subsystems we're using.
 	if (SDL_Init(SDL_INIT_VIDEO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM | SDL_INIT_AUDIO*/))
 	{
