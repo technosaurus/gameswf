@@ -19,25 +19,25 @@ INCLUDE_PATHS := -I$(SDL_INCLUDE) -I$(LUA_INCLUDE) -I$(ENGINE_INCLUDE)
 CFLAGS := $(CFLAGS) $(SDL_CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS) -DNO_GLIB
 LDFLAGS := $(SDL_LDFLAGS) $(LDFLAGS)
 
-LUA_LIBS := $(LUA)/lib/liblua.$(DLL_EXT) $(LUA)/lib/liblualib.$(DLL_EXT)
+LUA_LIBS := $(LUA)/lib/lua.lib # $(LUA)/lib/$(LIB_PRE)lua.$(DLL_EXT) $(LUA)/lib/$(LIB_PRE)lualib.$(DLL_EXT)
 
 #LIBS := $(ENGINE) $(LUA_LIBS) $(LIBS) ../../../luaswig/libluaswig40.$(LIB_EXT)
 # $(GTK_DIR)/gtk-1.3.lib $(GDK_DIR)/gdk/gdk-1.3.lib $(GLIB_DIR)/glib-1.3.lib
 
-LUA_USE_OBJS := luause.$(OBJ_EXT)
-LUA_USE_LIBS := $(LUA_LIBS) -ldl
+LUA_USE_OBJS := luse.$(OBJ_EXT)
+LUA_USE_LIBS := $(LUA_LIBS) $(DLL_LIBS)
 
 LUA_SDL_OBJS := SDL_wrap.$(OBJ_EXT)
-LUA_SDL_LIBS := ../../../luaswig/libluaswig40.$(LIB_EXT) $(LUA_LIBS) $(LIBS)
+LUA_SDL_LIBS := ../../../luaswig/$(LIB_PRE)luaswig40.$(LIB_EXT) $(LUA_LIBS) $(LIBS)
 
-all: luause$(EXE_EXT) libluasdl.$(DLL_EXT)
+all: luse$(EXE_EXT) $(LIB_PRE)luaSDL.$(DLL_EXT)
 
 SDL_wrap.c : SDL.i
 	luaswig -shadow SDL.i
 
-luause$(EXE_EXT): $(LUA_USE_OBJS)
+luse$(EXE_EXT): $(LUA_USE_OBJS)
 	$(CC) -o $@ $(LUA_USE_OBJS) $(LUA_USE_LIBS)
 
 
-libluasdl.$(DLL_EXT): $(LUA_SDL_OBJS)
-	$(MAKE_DLL) -g -o $@ $(LUA_SDL_OBJS) $(LUA_SDL_LIBS)
+$(LIB_PRE)luaSDL.$(DLL_EXT): $(LUA_SDL_OBJS)
+	$(MAKE_DLL) -o $@ $(LUA_SDL_OBJS) $(LUA_SDL_LIBS)

@@ -1,1 +1,1 @@
-luaSDL meteor_shower.lua
+luse meteor_shower.lua
