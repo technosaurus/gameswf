@@ -782,12 +782,14 @@ namespace fontlib
 	}
 
 
-	void	draw_glyph(const texture_glyph* tg, rgba color)
-	// Draw the given texture glyph using current render
-	// transforms, in the given color.
+	void	draw_glyph(const matrix& mat, const texture_glyph* tg, rgba color)
+	// Draw the given texture glyph using the given transform, in
+	// the given color.
 	{
 		assert(tg);
 		assert(tg->m_bitmap_info);
+
+		// @@ worth it to precompute these bounds?
 
 		rect	bounds = tg->m_uv_bounds;
 		bounds.m_x_min -= tg->m_uv_origin.m_x;
@@ -803,8 +805,9 @@ namespace fontlib
 		bounds.m_y_min *= s_scale;
 		bounds.m_y_max *= s_scale;
 		
-		render::draw_bitmap(tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
+		render::draw_bitmap(mat, tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
 	}
+
 
 	void	draw_string(const font* f, float x, float y, float size, const char* text)
 	// Host-driven text rendering function. This not-tested and unfinished.
@@ -837,11 +840,7 @@ namespace fontlib
 			if (tg)
 			{
 				// Draw the glyph using the cached texture-map info.
-				gameswf::render::push_apply_matrix(m);
-		//		gameswf::render::push_apply_cxform(sub_di.m_color_transform);
-				fontlib::draw_glyph(tg, rgba());
-		//		gameswf::render::pop_cxform();
-				gameswf::render::pop_matrix();
+				fontlib::draw_glyph(m, tg, rgba());
 			}
 			else
 			{

@@ -1597,6 +1597,8 @@ namespace gameswf
 
 			for (int i = 0; i < m_text_glyph_records.size(); i++)
 			{
+				// Draw the characters within the current record; i.e. consectutive
+				// chars that share a particular style.
 				text_glyph_record&	rec = m_text_glyph_records[i];
 
 				if (rec.m_style.m_font == NULL) continue;
@@ -1621,6 +1623,8 @@ namespace gameswf
 
 				m_dummy_style[0].set_color(rec.m_style.m_color);
 
+				rgba	transformed_color = sub_di.m_color_transform.transform(rec.m_style.m_color);
+
 				for (int j = 0; j < rec.m_glyphs.size(); j++)
 				{
 					int	index = rec.m_glyphs[j].m_glyph_index;
@@ -1632,12 +1636,7 @@ namespace gameswf
 
 					if (tg && ! use_shape_glyphs)
 					{
-						// Draw the glyph using the cached texture-map info.
-						gameswf::render::push_apply_matrix(sub_di.m_matrix);
-						gameswf::render::push_apply_cxform(sub_di.m_color_transform);
-						fontlib::draw_glyph(tg, rec.m_style.m_color);
-						gameswf::render::pop_cxform();
-						gameswf::render::pop_matrix();
+						fontlib::draw_glyph(sub_di.m_matrix, tg, transformed_color);
 					}
 					else
 					{

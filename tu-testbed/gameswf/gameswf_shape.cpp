@@ -35,13 +35,6 @@ namespace gameswf
 	{
 	}
 
-	void	edge::render_curve() const
-	// Send this segment to the renderer.
-	{
-		gameswf::render::add_curve_segment(m_cx, m_cy, m_ax, m_ay);
-	}
-
-
 	void	edge::tesselate_curve() const
 	// Send this segment to the tesselator.
 	{
@@ -88,49 +81,7 @@ namespace gameswf
 		return m_edges.size() == 0;
 	}
 
-		
-	void	path::display(
-		const display_info& di,
-		const array<fill_style>& fill_styles,
-		const array<line_style>& line_styles) const
-	// Render this path.
-	{
-		if (m_fill0 > 0)
-		{
-			fill_styles[m_fill0 - 1].apply(0);
-		}
-		else 
-		{
-			gameswf::render::fill_style_disable(0);
-		}
 
-		if (m_fill1 > 0)
-		{
-			fill_styles[m_fill1 - 1].apply(1);
-		}
-		else
-		{
-			gameswf::render::fill_style_disable(1);
-		}
-
-		if (m_line > 0)
-		{
-			line_styles[m_line - 1].apply();
-		}
-		else
-		{
-			gameswf::render::line_style_disable();
-		}
-
-		gameswf::render::begin_path(m_ax, m_ay);
-		for (int i = 0; i < m_edges.size(); i++)
-		{
-			m_edges[i].render_curve();
-		}
-		gameswf::render::end_path();
-	}
-
-		
 	bool	path::point_test(float x, float y)
 	// Point-in-shape test.  Return true if the query point is on the filled
 	// interior of this shape.
@@ -311,8 +262,10 @@ namespace gameswf
 		assert(m_error_tolerance > 0);
 
 		// Setup transforms.
-		render::push_apply_matrix(di.m_matrix);
-		render::push_apply_cxform(di.m_color_transform);
+//		render::push_apply_matrix(di.m_matrix);
+//		render::push_apply_cxform(di.m_color_transform);
+		render::set_matrix(di.m_matrix);
+		render::set_cxform(di.m_color_transform);
 
 		// Dump meshes into renderer, one mesh per style.
 		{for (int i = 0; i < m_meshes.size(); i++)
@@ -327,8 +280,8 @@ namespace gameswf
 			m_line_strips[i].display(line_styles[style]);
 		}
 
-		render::pop_cxform();
-		render::pop_matrix();
+//		render::pop_cxform();
+//		render::pop_matrix();
 	}
 
 

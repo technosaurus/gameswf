@@ -26,7 +26,6 @@ namespace gameswf
 	{
 		edge();
 		edge(float cx, float cy, float ax, float ay);
-		void	render_curve() const;
 		void	tesselate_curve() const;
 
 	//private:
@@ -46,10 +45,6 @@ namespace gameswf
 		void	reset(float ax, float ay, int fill0, int fill1, int line);
 		bool	is_empty() const;
 
-		void	display(
-			const display_info& di,
-			const array<fill_style>& fill_styles,
-			const array<line_style>& line_styles) const;
 		bool	point_test(float x, float y);
 
 		// Push the path into the tesselator.
