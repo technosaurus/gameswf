@@ -7,6 +7,7 @@
 
 
 #ifndef GAMESWF_FONT_H
+#define GAMESWF_FONT_H
 
 
 #include "engine/container.h"
