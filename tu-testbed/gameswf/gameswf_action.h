@@ -163,6 +163,8 @@ namespace gameswf
 		void	set(double val) { m_type = NUMBER; m_number_value = val; }
 		void	set(bool val) { m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
 		void	set(int val) { set(double(val)); }
+		void	set(as_object_interface* obj) { m_type = OBJECT; m_object_value = obj; }
+		void	set_undefined() { m_type = UNDEFINED; }
 
 		bool	operator==(const as_value& v) const;
 		bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
@@ -181,14 +183,6 @@ namespace gameswf
 	};
 
 
-	// For objects that can get/set ActionScript values.
-	// E.g. text fields, ...
-	struct as_variable_interface
-	{
-		virtual bool	set_value(const as_value& val) = 0;
-	};
-
-
 	struct as_property_interface
 	{
 		virtual bool	set_property(int index, const as_value& val) = 0;
@@ -198,13 +192,19 @@ namespace gameswf
 	struct as_object_interface
 	{
 		virtual ~as_object_interface() {}
+
+		virtual bool	set_self_value(const as_value& val) = 0;
+		virtual bool	get_self_value(as_value* val) = 0;
+
 		virtual void	set_member(const tu_string& name, const as_value& val) = 0;
-		virtual as_value	get_member(const tu_string& name) = 0;
+		virtual bool	get_member(const tu_string& name, as_value* val) = 0;
 		virtual as_value	call_method(
 			const tu_string& name,
 			as_environment* env,
 			int nargs,
 			int first_arg_bottom_index) = 0;
+
+		virtual movie*	to_movie() = 0;
 	};
 
 
@@ -251,12 +251,17 @@ namespace gameswf
 		as_value	get_variable_raw(const tu_string& varname) const;	// no path stuff
 
 		void	set_variable(const tu_string& path, const as_value& val);
+		void	set_variable_raw(const tu_string& path, const as_value& val);	// no path stuff
 		void	set_local(const tu_string& varname, const as_value& val);
+
+		bool	get_member(const tu_string& varname, as_value* val) const;
+		void	set_member(const tu_string& varname, const as_value& val);
 
 		// Internal.
 		int	find_local(const tu_string& varname) const;
 		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
 		movie*	find_target(const tu_string& path) const;
+		movie*	find_target(const as_value& val) const;
 	};
 
 

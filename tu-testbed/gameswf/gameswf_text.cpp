@@ -305,9 +305,7 @@ namespace gameswf
 	// be changed at runtime (by script or host).
 	{
 		rect	m_rect;
-//		array<text_glyph_record>	m_text_glyph_records;
-//		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
-//		array<line_style>	m_dummy_line_style;
+		tu_string	m_default_name;
 
 		bool	m_word_wrap;
 		bool	m_multiline;
@@ -458,7 +456,7 @@ namespace gameswf
 			}
 
 			char*	name = in->read_string();
-			set_name(name);
+			m_default_name = name;
 			delete [] name;
 
 			if (has_text)
@@ -505,10 +503,11 @@ namespace gameswf
 		}
 
 		virtual int	get_id() const { return m_def->get_id(); }
-		virtual const char*	get_name() const { return m_def->get_name(); }
 
 
-		virtual bool	set_value(const as_value& new_val)
+		virtual const char*	get_variable_name() const { return m_def->m_default_name.c_str(); }
+
+		virtual bool	set_self_value(const as_value& new_val)
 		// Overload from class character.
 		// Set our text to the given string.
 		{
@@ -516,7 +515,7 @@ namespace gameswf
 			return true;
 		}
 
-		virtual bool	get_value(as_value* val)
+		virtual bool	get_self_value(as_value* val)
 		// Return our contents.
 		{
 			val->set(m_text);
@@ -650,12 +649,15 @@ namespace gameswf
 
 			for (int j = 0; j < m_text.length(); j++)
 			{
+// @@ ??
+#if 0
 				if (y + m_def->m_font->get_descent() * scale > m_def->m_rect.height())
 				{
 					// Text goes below the bottom of our bounding box.
 					rec.m_glyphs.resize(0);
 					break;
 				}
+#endif // 0
 
 				Uint16	code = m_text[j];
 
@@ -835,6 +837,7 @@ namespace gameswf
 	character*	edit_text_character_def::create_character_instance(movie* parent)
 	{
 		edit_text_character*	ch = new edit_text_character(parent, this);
+		ch->set_name(m_default_name);
 		return ch;
 	}
 

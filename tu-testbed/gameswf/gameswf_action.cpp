@@ -43,16 +43,17 @@ namespace gameswf
 	{
 		string_hash<as_value>	m_members;
 
+		virtual bool	set_self_value(const as_value& val) { return false; }
+		virtual bool	get_self_value(as_value* val) { val->set(static_cast<as_object_interface*>(this)); return true; }
+
 		virtual void	set_member(const tu_string& name, const as_value& val)
 		{
 			m_members.set(name, val);
 		}
 
-		virtual as_value	get_member(const tu_string& name)
+		virtual bool	get_member(const tu_string& name, as_value* val)
 		{
-			as_value	val;
-			m_members.get(name, &val);	// @@ do we need to emit an error if name has no value?
-			return val;
+			return m_members.get(name, val);
 		}
 
 		virtual as_value	call_method(
@@ -65,7 +66,7 @@ namespace gameswf
 			as_value	method;
 
 			// Look up method.
-			method = get_member(name);
+			get_member(name, &method);
 
 			// Is it a function?  If so, call it.
 			as_function_ptr	func = method.to_function();
@@ -79,6 +80,12 @@ namespace gameswf
 			}
 
 			return val;
+		}
+
+		virtual movie*	to_movie()
+		// This object is not a movie; no conversion.
+		{
+			return NULL;
 		}
 	};
 
@@ -173,6 +180,60 @@ namespace gameswf
 			math_obj->set_member("tan", &math_tan);
 
  			s_built_ins.add("math", math_obj);
+		}
+	}
+
+
+	static const tu_string	s_property_names[] =
+	{
+		tu_string("_x"),
+		tu_string("_y"),
+		tu_string("_xscale"),
+		tu_string("_yscale"),
+		tu_string("_currentframe"),
+		tu_string("_totalframes"),
+		tu_string("_alpha"),
+		tu_string("_visible"),
+		tu_string("_width"),
+		tu_string("_height"),
+		tu_string("_rotation"),
+		tu_string("_target"),
+		tu_string("_framesloaded"),
+		tu_string("_name"),
+		tu_string("_droptarget"),
+		tu_string("_url"),
+		tu_string("_highquality"),
+		tu_string("_focusrect"),
+		tu_string("_soundbuftime"),
+		tu_string("@@ mystery quality member"),
+		tu_string("_xmouse"),
+		tu_string("_ymouse"),
+	};
+
+
+	static as_value	get_property(as_object_interface* obj, int prop_number)
+	{
+		as_value	val;
+		if (prop_number >= 0 && prop_number < sizeof(s_property_names)/sizeof(s_property_names[0]))
+		{
+			obj->get_member(s_property_names[prop_number], &val);
+		}
+		else
+		{
+			log_error("error: invalid property query, property number %d\n", prop_number);
+		}
+		return val;
+	}
+
+	static void	set_property(as_object_interface* obj, int prop_number, const as_value& val)
+	{
+		if (prop_number >= 0 && prop_number < sizeof(s_property_names)/sizeof(s_property_names[0]))
+		{
+			obj->set_member(s_property_names[prop_number], val);
+		}
+		else
+		{
+			log_error("error: invalid set_property, property number %d\n", prop_number);
 		}
 	}
 
@@ -430,10 +491,10 @@ namespace gameswf
 				}
 				case 0x22:	// get property
 				{
-					movie*	target = env->find_target(env->top(1).to_tu_string());
+					movie*	target = env->find_target(env->top(1));
 					if (target)
 					{
-						env->top(1) = target->get_property((int) env->top(0).to_number());
+						env->top(1) = get_property(target, (int) env->top(0).to_number());
 					}
 					else
 					{
@@ -445,11 +506,10 @@ namespace gameswf
 
 				case 0x23:	// set property
 				{
-					movie*	target = env->find_target(env->top(2).to_tu_string());
+					movie*	target = env->find_target(env->top(2));
 					if (target)
 					{
-						// double to int cast !
-						target->set_property( (int) env->top(1).to_number(), env->top(0));
+						set_property(target, (int) env->top(1).to_number(), env->top(0));
 					}
 					env->drop(3);
 					break;
@@ -462,11 +522,44 @@ namespace gameswf
 
 				case 0x27:	// start drag movie
 				{
+					movie*	target = env->find_target(env->top(0));
+					if (target == NULL)
+					{
+						log_error("error: start_drag of invalid target '%s'.\n",
+							  env->top(0).to_tu_string());
+					}
+
+					bool	lock_center = env->top(1).to_bool();
+					bool	rect_bound = env->top(2).to_bool();
+					float	x0(0), y0(0), x1(1), y1(1);
+					if (rect_bound)
+					{
+						x0 = (float) env->top(6).to_number();
+						y0 = (float) env->top(5).to_number();
+						x1 = (float) env->top(4).to_number();
+						y1 = (float) env->top(3).to_number();
+						env->drop(4);
+					}
+					env->drop(3);
+
+					movie*	root_movie = env->get_target()->get_root_movie();
+					assert(root_movie);
+
+					if (root_movie && target)
+					{
+						root_movie->start_drag(target, lock_center, rect_bound, x0, y0, x1, y1);
+					}
+					
 					break;
 				}
 
 				case 0x28:	// stop drag movie
 				{
+					movie*	root_movie = env->get_target()->get_root_movie();
+					assert(root_movie);
+
+					root_movie->stop_drag();
+
 					break;
 				}
 
@@ -642,14 +735,14 @@ namespace gameswf
 				case 0x4E:	// get member
 				{
 					as_object_interface*	obj = env->top(1).to_object();
+					env->top(1).set_undefined();
 					if (obj)
 					{
-						env->top(1) = obj->get_member(env->top(0).to_tu_string());
+						obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
 					}
 					else
 					{
 						// @@ log error?
-						env->top(1) = as_value();	// UNDEFINED
 					}
 					env->drop(1);
 					break;
@@ -1152,7 +1245,8 @@ namespace gameswf
 			target = find_target(path);
 
 			as_value	val;
-			return target->get_value(var);
+			target->get_member(var, &val);
+			return val;
 		}
 		else
 		{
@@ -1166,6 +1260,7 @@ namespace gameswf
 	{
 		assert(strchr(varname.c_str(), ':') == NULL);
 		assert(strchr(varname.c_str(), '/') == NULL);
+		assert(strchr(varname.c_str(), '.') == NULL);
 
 		// Check locals.
 		int	local_index = find_local(varname);
@@ -1175,21 +1270,19 @@ namespace gameswf
 			return m_local_frames[local_index].m_value;
 		}
 
-		// Check vars in this environment.
-		as_value	val = NULL;
-		if (m_variables.get(varname, &val))
-		{
-			// Get existing.
-			return val;
-		}
+		as_value	val;
 
-		// Check movie characters.
-		if (m_target->get_character_value(varname.c_str(), &val))
+		// Check movie members.
+		if (m_target->get_member(varname.c_str(), &val))
 		{
 			return val;
 		}
 
 		// Check built-in constants.
+		if (varname == "_root" || varname == "_level0")
+		{
+			return as_value(m_target->get_root_movie());
+		}
 		if (s_built_ins.get(varname, &val))
 		{
 			return val;
@@ -1201,11 +1294,33 @@ namespace gameswf
 	}
 
 
-	void	as_environment::set_variable(const tu_string& path, const as_value& val)
+	void	as_environment::set_variable(const tu_string& varname, const as_value& val)
 	// Given a path to variable, set its value.
 	{
+		// Path lookup rigamarole.
+		movie*	target = m_target;
+		tu_string	path;
+		tu_string	var;
+		if (parse_path(varname, &path, &var))
+		{
+			target = find_target(path);
+			if (target)
+			{
+				target->set_member(var, val);
+			}
+		}
+		else
+		{
+			this->set_variable_raw(varname, val);
+		}
+	}
+
+
+	void	as_environment::set_variable_raw(const tu_string& varname, const as_value& val)
+	// No path rigamarole.
+	{
 		// Check locals.
-		int	local_index = find_local(path);
+		int	local_index = find_local(varname);
 		if (local_index >= 0)
 		{
 			// Set local var.
@@ -1213,6 +1328,7 @@ namespace gameswf
 			return;
 		}
 
+#if 0
 		// Check current environment.
 		if (m_variables.get(path, NULL))
 		{
@@ -1220,19 +1336,11 @@ namespace gameswf
 			m_variables.set(path, val);
 			return;
 		}
-
-		// @@ Need to implement the whole path rigmarole.
-		// @@ For the moment, skip that and talk directly to the current target.
+#endif // 0
 
 		assert(m_target);
 
-		bool	success = m_target->set_value(path.c_str(), val);
-		if (success == false)
-		{
-			// Unknown character.  Spawn a new variable local to this environment.
-			m_variables.add(path, val);
-//			IF_VERBOSE_ACTION(log_msg("set_variable(%s, \"%s\") failed\n", path.c_str(), val.to_string()));
-		}
+		m_target->set_member(varname, val);
 	}
 
 
@@ -1253,6 +1361,17 @@ namespace gameswf
 			// In frame already; modify existing var.
 			m_local_frames[index].m_value = val;
 		}
+	}
+
+	bool	as_environment::get_member(const tu_string& varname, as_value* val) const
+	{
+		return m_variables.get(varname, val);
+	}
+
+
+	void	as_environment::set_member(const tu_string& varname, const as_value& val)
+	{
+		m_variables.set(varname, val);
 	}
 
 
@@ -1336,6 +1455,27 @@ namespace gameswf
 		path->resize(colon_index);
 
 		return true;
+	}
+
+
+	movie*	as_environment::find_target(const as_value& val) const
+	// Find the sprite/movie represented by the given value.  The
+	// value might be a reference to the object itself, or a
+	// string giving a relative path name to the object.
+	{
+		if (val.get_type() == as_value::OBJECT)
+		{
+			return val.to_object()->to_movie();
+		}
+		else if (val.get_type() == as_value::STRING)
+		{
+			return find_target(val.to_tu_string());
+		}
+		else
+		{
+			log_error("error: invalid path; neither string nor object");
+			return NULL;
+		}
 	}
 
 
