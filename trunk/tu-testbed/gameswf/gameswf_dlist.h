@@ -88,6 +88,9 @@ namespace gameswf
 		int	get_character_count() { return m_display_object_array.size(); }
 		character*	get_character(int index) { return m_display_object_array[index].m_character; }
 
+		// May return NULL.
+		character*	get_character_at_depth(int depth);
+
 		inline const display_object_info&	get_display_object(int idx) const
 		// get the display object at the given position.
 		{

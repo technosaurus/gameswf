@@ -85,7 +85,7 @@ namespace gameswf
 		return index;
 	}
 	
-	
+
 	int	display_list::get_display_index(int depth)
 		// Like the above, but looks for an exact match, and returns -1 if failed.
 	{
@@ -98,7 +98,22 @@ namespace gameswf
 		}
 		return index;
 	}
-	
+
+
+	character*	display_list::get_character_at_depth(int depth)
+	{
+		int	index = get_display_index(depth);
+		if (index != -1)
+		{
+			character*	ch = m_display_object_array[index].m_character;
+			if (ch->get_depth() == depth)
+			{
+				return ch;
+			}
+		}
+
+		return NULL;
+	}
 	
 	void	display_list::add_display_object(
 		character* ch, 
@@ -108,6 +123,8 @@ namespace gameswf
 		float ratio,
 		Uint16 clip_depth)
 	{
+		IF_VERBOSE_DEBUG(log_msg("dl::add(%d, '%s')\n", depth, ch->get_name()));//xxxxx
+
 		assert(ch);
 		
 		// Eliminate an existing object if it's in the way.
@@ -117,9 +134,12 @@ namespace gameswf
 		{
 			display_object_info & dobj = m_display_object_array[index];
 
-			delete dobj.m_character;
-			dobj.m_character = NULL;
-			m_display_object_array.remove(index);
+			if (dobj.m_character->get_depth() == depth)
+			{
+				delete dobj.m_character;
+				dobj.m_character = NULL;
+				m_display_object_array.remove(index);
+			}
 		}
 
 		ch->set_depth(depth);
@@ -151,6 +171,8 @@ namespace gameswf
 	// Updates the transform properties of the object at
 	// the specified depth.
 	{
+		IF_VERBOSE_DEBUG(log_msg("dl::move(%d)\n", depth));//xxxxx
+
 		int	size = m_display_object_array.size();
 		if (size <= 0)
 		{
@@ -178,7 +200,16 @@ namespace gameswf
 			//			assert(0);
 			return;
 		}
-		
+
+		di.m_ref = true;
+
+		if (ch->get_accept_anim_moves() == false)
+		{
+			// This character is rejecting anim moves.  This happens after it
+			// has been manipulated by ActionScript.
+			return;
+		}
+
 		if (use_cxform)
 		{
 			ch->set_cxform(color_xform);
@@ -206,6 +237,8 @@ namespace gameswf
 	// then keep those respective properties from the existing
 	// character.
 	{
+		IF_VERBOSE_DEBUG(log_msg("dl::replace(%d)\n", depth));//xxxxx
+
 		int	size = m_display_object_array.size();
 		int	index = find_display_index(depth);
 		if (index < 0 || index >= size)
@@ -267,6 +300,8 @@ namespace gameswf
 	void	display_list::remove_display_object(Uint16 depth)
 	// Removes the object at the specified depth.
 	{
+		IF_VERBOSE_DEBUG(log_msg("dl::remove(%d)\n", depth));//xxxxx
+
 		int	size = m_display_object_array.size();
 		if (size <= 0)
 		{

@@ -162,6 +162,56 @@ namespace gameswf
 	}
 
 
+	void	character::do_mouse_drag()
+	// Implement mouse-dragging for this movie.
+	{
+		drag_state	st;
+		get_drag_state(&st);
+		if (this == st.m_character)
+		{
+			// We're being dragged!
+			int	x, y, buttons;
+			get_root_movie()->get_mouse_state(&x, &y, &buttons);
+
+			point	world_mouse(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
+			if (st.m_bound)
+			{
+				// Clamp mouse coords within a defined rect.
+				world_mouse.m_x =
+					fclamp(world_mouse.m_x, st.m_bound_x0, st.m_bound_x1);
+				world_mouse.m_y =
+					fclamp(world_mouse.m_y, st.m_bound_y0, st.m_bound_y1);
+			}
+
+			if (st.m_lock_center)
+			{
+				matrix	world_mat = get_world_matrix();
+				point	local_mouse;
+				world_mat.transform_by_inverse(&local_mouse, world_mouse);
+
+				matrix	parent_world_mat;
+				if (m_parent)
+				{
+					parent_world_mat = m_parent->get_world_matrix();
+				}
+
+				point	parent_mouse;
+				parent_world_mat.transform_by_inverse(&parent_mouse, world_mouse);
+					
+				// Place our origin so that it coincides with the mouse coords
+				// in our parent frame.
+				matrix	local = get_matrix();
+				local.m_[0][2] = parent_mouse.m_x;
+				local.m_[1][2] = parent_mouse.m_y;
+				set_matrix(local);
+			}
+			else
+			{
+				// Implement relative drag...
+			}
+		}
+	}
+
 
 	//
 	// movie_def_impl
@@ -579,13 +629,7 @@ namespace gameswf
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
 		int	m_mouse_capture_id;
 
-		movie*	m_drag_character;
-		bool	m_drag_lock_center;
-		bool	m_drag_bound;
-		float	m_drag_bound_x0;
-		float	m_drag_bound_y0;
-		float	m_drag_bound_x1;
-		float	m_drag_bound_y1;
+		movie::drag_state	m_drag_state;
 
 		movie_root(movie_def_impl* def)
 			:
@@ -601,14 +645,7 @@ namespace gameswf
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
-			m_mouse_capture_id(-1),
-			m_drag_character(NULL),
-			m_drag_lock_center(false),
-			m_drag_bound(false),
-			m_drag_bound_x0(0),
-			m_drag_bound_y0(0),
-			m_drag_bound_x1(1),
-			m_drag_bound_y1(1)
+			m_mouse_capture_id(-1)
 		{
 			set_display_viewport(0, 0, m_def->get_width(), m_def->get_height());
 		}
@@ -667,32 +704,9 @@ namespace gameswf
 		}
 
 		
-		void	set_drag_parameters(
-			movie* target,
-			bool lock_center,
-			bool rect_bound,
-			float x0,
-			float y0,
-			float x1,
-			float y1)
-		// Set the information about mouse-drags.  Sprites
-		// query this info to implement mouse-dragging.
-		{
-			assert(target);
-
-			m_drag_character = target;
-			m_drag_lock_center = lock_center;
-			m_drag_bound = rect_bound;
-			m_drag_bound_x0 = x0;
-			m_drag_bound_y0 = y0;
-			m_drag_bound_x1 = x1;
-			m_drag_bound_y1 = y1;
-		}
-
-
 		void	stop_drag()
 		{
-			m_drag_character = NULL;
+			m_drag_state.m_character = NULL;
 		}
 
 
@@ -1889,6 +1903,7 @@ namespace gameswf
 		float	m_time_remainder;
 		bool	m_update_frame;
 		bool	m_has_looped;
+		bool	m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
 
 		as_environment	m_as_environment;
 
@@ -1908,7 +1923,8 @@ namespace gameswf
 			m_next_frame(0),
 			m_time_remainder(0),
 			m_update_frame(true),
-			m_has_looped(false)
+			m_has_looped(false),
+			m_accept_anim_moves(true)
 		{
 			assert(m_def);
 			assert(m_root);
@@ -1990,28 +2006,34 @@ namespace gameswf
 
 		virtual bool	has_looped() const { return m_has_looped; }
 
+		virtual bool	get_accept_anim_moves() const { return m_accept_anim_moves; }
+
 		virtual void	advance(float delta_time)
 		{
 			assert(m_def && m_root);
 
 			// mouse drag.
-			if (this == m_root->m_drag_character)
+			character::do_mouse_drag();
+#if 0
+			drag_state	st;
+			get_drag_state(&st);
+			if (this == st.m_character)
 			{
 				// We're being dragged!
 				int	x, y, buttons;
 				m_root->get_mouse_state(&x, &y, &buttons);
 
 				point	world_mouse(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
-				if (m_root->m_drag_bound)
+				if (st.m_bound)
 				{
 					// Clamp mouse coords within a defined rect.
 					world_mouse.m_x =
-						fclamp(world_mouse.m_x, m_root->m_drag_bound_x0, m_root->m_drag_bound_x1);
+						fclamp(world_mouse.m_x, st.m_bound_x0, st.m_bound_x1);
 					world_mouse.m_y =
-						fclamp(world_mouse.m_y, m_root->m_drag_bound_y0, m_root->m_drag_bound_y1);
+						fclamp(world_mouse.m_y, st.m_bound_y0, st.m_bound_y1);
 				}
 
-				if (m_root->m_drag_lock_center)
+				if (st.m_lock_center)
 				{
 					matrix	world_mat = get_world_matrix();
 					point	local_mouse;
@@ -2038,6 +2060,7 @@ namespace gameswf
 					// Implement relative drag...
 				}
 			}
+#endif // 0
 
 			m_time_remainder += delta_time;
 			const float	frame_time = 1.0f / m_root->get_frame_rate();
@@ -2108,7 +2131,7 @@ namespace gameswf
 		}
 
 
-		void	execute_frame_tags(int frame, bool state_only=false)
+		void	execute_frame_tags(int frame, bool state_only = false)
 		// Execute the tags associated with the specified frame.
 		{
 			assert(frame >= 0);
@@ -2125,6 +2148,24 @@ namespace gameswf
 				else
 				{
 					e->execute(this);
+				}
+			}
+		}
+
+
+		void	execute_remove_tags(int frame)
+		// Execute any remove-object tags associated with the specified frame.
+		{
+			assert(frame >= 0);
+			assert(frame < m_def->get_frame_count());
+
+			const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
+			for (int i = 0; i < playlist.size(); i++)
+			{
+				execute_tag*	e = playlist[i];
+				if (e->is_remove_tag())
+				{
+					e->execute_state(this);
 				}
 			}
 		}
@@ -2152,22 +2193,31 @@ namespace gameswf
 
 			if (target_frame_number < m_current_frame)
 			{
+				// Apply any intervening remove-object tags, to clean out undesired
+				// objects.
+				for (int f = m_current_frame - 1; f > target_frame_number; f--)
+				{
+					execute_remove_tags(f);
+				}
+				m_display_list.update();
+
+				// Advance the display list to the target frame.
 				m_display_list.reset();
-				for (int f = 0; f < target_frame_number; f++)
+				{for (int f = 0; f < target_frame_number; f++)
 				{
 					execute_frame_tags(f, true);
-					m_display_list.update();
-				}
+				}}
 				execute_frame_tags(target_frame_number, false);
+				m_display_list.update();
 			}
-			else if(target_frame_number > m_current_frame)
+			else if (target_frame_number > m_current_frame)
 			{
 				for (int f = m_current_frame; f < target_frame_number; f++)
 				{
 					execute_frame_tags(f, true);
-					m_display_list.update();
 				}
 				execute_frame_tags(target_frame_number, false);
+				m_display_list.update();
 			}
 
 
@@ -2175,7 +2225,7 @@ namespace gameswf
 			m_current_frame = target_frame_number;
 			m_next_frame = target_frame_number + 1;
 
-			// I think that buttons stop by default.
+			// goto_frame stops by default.
 			m_play_state = STOP;
 		}
 
@@ -2218,6 +2268,21 @@ namespace gameswf
 				log_error("sprite::add_display_object(): unknown cid = %d\n", character_id);
 				return;
 			}
+
+			// If we already have this object on this
+			// plane, then move it instead of replacing
+			// it.
+			character*	existing_char = m_display_list.get_character_at_depth(depth);
+			if (existing_char
+			    && existing_char->get_id() == character_id
+			    && ((name == NULL && existing_char->get_name().length() == 0)
+				|| (name && existing_char->get_name() == name)))
+			{
+				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
+				move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
+				return;
+			}
+
 			assert(cdef);
 			character*	ch = cdef->create_character_instance(this);
 			assert(ch);
@@ -2341,10 +2406,102 @@ namespace gameswf
 		// Set the named member to the value.  Return true if we have
 		// that member; false otherwise.
 		{
-			// @@ TODO check special properties...
-			// else
+			if (name == "_x")
 			{
-				// First, check for matching named characters in the display list.
+				matrix	m = get_matrix();
+				m.m_[0][2] = PIXELS_TO_TWIPS(val.to_number());
+				set_matrix(m);
+
+				m_accept_anim_moves = false;
+
+				return;
+			}
+			else if (name == "_y")
+			{
+				matrix	m = get_matrix();
+				m.m_[1][2] = PIXELS_TO_TWIPS(val.to_number());
+				set_matrix(m);
+
+				m_accept_anim_moves = false;
+
+				return;
+			}
+			else if (name == "_xscale")
+			{
+//				matrix	m = get_world_matrix();
+//				// @@ quick and dirty; test/fix this
+//				val->set(m.m_[0][0] * 100);	// percent!
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_yscale")
+			{
+//				matrix	m = get_world_matrix();
+//				// @@ quick and dirty; test/fix this
+//				val->set(m.m_[1][1] * 100);	// percent!
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_alpha")
+			{
+				set_background_alpha(val.to_number());
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_visible")
+			{
+//				val->set(true);	// @@
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_width")
+			{
+//				matrix	m = get_world_matrix();
+//				// @@ run our bounding box through m and return transformed bound...
+//				val->set(1.0);
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_height")
+			{
+//				matrix	m = get_world_matrix();
+//				// @@ run our bounding box through m and return transformed bound...
+//				val->set(1.0);
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_rotation")
+			{
+//				// Rotation angle in DEGREES.
+//				matrix	m = get_world_matrix();
+//				// @@ TODO some trig in here...
+//				val->set(0.0);
+				m_accept_anim_moves = false;
+				return;
+			}
+			else if (name == "_highquality")
+			{
+				// @@ global { 0, 1, 2 }
+//				// Whether we're in high quality mode or not.
+//				val->set(true);
+				return;
+			}
+			else if (name == "_focusrect")
+			{
+//				// Is a yellow rectangle visible around a focused movie clip (?)
+//				val->set(false);
+				return;
+			}
+			else if (name == "_soundbuftime")
+			{
+				// @@ global
+//				// Number of seconds before sound starts to stream.
+//				val->set(0.0);
+				return;
+			}
+
+			// Not a built-in property.  Is it a named character in the display list?
+			{
 				bool	success = false;
 				for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 				{
@@ -2355,10 +2512,10 @@ namespace gameswf
 					}
 				}
 				if (success) return;
-
-				// If that didn't work, set a var within this environment.
-				m_as_environment.set_member(name, val);
 			}
+
+			// If that didn't work, set a variable within this environment.
+			m_as_environment.set_member(name, val);
 		}
 
 
@@ -2370,14 +2527,14 @@ namespace gameswf
 		{
 			if (name == "_x")
 			{
-				matrix	m = get_world_matrix();
-				val->set(m.m_[0][2]);
+				matrix	m = get_matrix();
+				val->set(TWIPS_TO_PIXELS(m.m_[0][2]));
 				return true;
 			}
 			else if (name == "_y")
 			{
-				matrix	m = get_world_matrix();
-				val->set(m.m_[1][2]);
+				matrix	m = get_matrix();
+				val->set(TWIPS_TO_PIXELS(m.m_[1][2]));
 				return true;
 			}
 			else if (name == "_xscale")
@@ -2419,14 +2576,14 @@ namespace gameswf
 			{
 				matrix	m = get_world_matrix();
 				// @@ run our bounding box through m and return transformed bound...
-				val->set(1.0);
+				val->set(100.0);
 				return true;
 			}
 			else if (name == "_height")
 			{
 				matrix	m = get_world_matrix();
 				// @@ run our bounding box through m and return transformed bound...
-				val->set(1.0);
+				val->set(100.0);
 				return true;
 			}
 			else if (name == "_rotation")
@@ -2550,222 +2707,6 @@ namespace gameswf
 		}
 
 
-#if 0
-		/* sprite_instance */
-		virtual as_value	get_value(const char* var_name)
-		// Return the value of the given variable in this environment.
-		{
-			return m_as_environment.get_variable_raw(var_name);
-		}
-
-
-		/* sprite_instance */
-		as_value	get_property(int prop_number)
-		{
-			if (prop_number == 0)
-			{
-				// x coordinate in pixels (not TWIPS!)
-			}
-			else if (prop_number == 1)
-			{
-				// y coord
-			}
-			else if (prop_number == 2)
-			{
-				// x scale in PERCENT!  @@ settable!
-			}
-			else if (prop_number == 3)
-			{
-				// y scale in PERCENT!  @@ settable!
-			}
-			else if (prop_number == 4)
-			{
-				// current frame.  Read only.
-				return as_value(m_current_frame);
-			}
-			else if (prop_number == 5)
-			{
-				// number of frames.  Read only.
-				return as_value(m_def->get_frame_count());
-			}
-			else if (prop_number == 6)
-			{
-				// alpha value in percent.  @@ settable
-			}
-			else if (prop_number == 7)
-			{
-				// visibility; whether object is visible.
-			}
-			else if (prop_number == 8)
-			{
-				// max width of the object (@@ i.e. bounding box width?)  in pixels
-//@@				return as_value(m_def->m_frame_size.height());	// @@ Must apply our display-list scale!
-			}
-			else if (prop_number == 9)
-			{
-				// max height (i.e. bounding box height)  in pixels
-//@@				return as_value(m_def->m_frame_size.height());	// @@ Must apply our display-list scale!
-			}
-			else if (prop_number == 10)
-			{
-				// rotation angle in degrees
-			}
-			else if (prop_number == 11)
-			{
-				// full path to this object!
-//				return as_value("_level0");
-			}
-			else if (prop_number == 12)
-			{
-				// number of frames already loaded.
-				// We don't do incremental streaming.
-				return as_value(m_def->get_frame_count());
-			}
-			else if (prop_number == 13)
-			{
-				// the name of this object
-			}
-			else if (prop_number == 14)
-			{
-				// most recent drop target (!)  Read only.
-			}
-			else if (prop_number == 15)
-			{
-				// the URL linked to this object  Read only.
-				return as_value("gameswf");	// @@ should use file name or something?
-			}
-			else if (prop_number == 16)
-			{
-				// whether we're in high-quality mode
-				return as_value(1);
-			}
-			else if (prop_number == 17)
-			{
-				// whether focus rectangle is visible.
-			}
-			else if (prop_number == 18)
-			{
-				// sound buffer time (?)
-			}
-			else if (prop_number == 19)
-			{
-				// what the quality is (0-2)
-				return as_value(2);
-			}
-			else if (prop_number == 20)
-			{
-				// mouse x.  Read only.
-				return as_value(m_root->m_mouse_x);
-			}
-			else if (prop_number == 21)
-			{
-				// mouse y.  Read only.
-				return as_value(m_root->m_mouse_y);
-			}
-			// else if (prop_number == 16384) { ...?; }
-
-			return as_value(as_value::UNDEFINED);
-		}
-
-
-		/* sprite_instance */
-		virtual void	set_property(int prop_number, const as_value& new_val)
-		{
-			if (prop_number == 0)
-			{
-				// x coordinate in pixels (not TWIPS!)
-			}
-			else if (prop_number == 1)
-			{
-				// y coord
-			}
-			else if (prop_number == 2)
-			{
-				// x scale in PERCENT!  @@ settable!
-			}
-			else if (prop_number == 3)
-			{
-				// y scale in PERCENT!
-			}
-			else if (prop_number == 4)
-			{
-				// current frame.  Read only.
-			}
-			else if (prop_number == 5)
-			{
-				// number of frames.  Read only.
-			}
-			else if (prop_number == 6)
-			{
-				// alpha value in percent.
-			}
-			else if (prop_number == 7)
-			{
-				// visibility; whether object is visible.
-			}
-			else if (prop_number == 8)
-			{
-				// max width of the object (@@ i.e. bounding box width?)  TWIPS or pixels?
-			}
-			else if (prop_number == 9)
-			{
-				// max height (i.e. bounding box height)  @@ TWIPs or pixels?
-			}
-			else if (prop_number == 10)
-			{
-				// rotation angle in degrees
-			}
-			else if (prop_number == 11)
-			{
-				// full path to this object!
-			}
-			else if (prop_number == 12)
-			{
-				// number of frames already loaded.
-				// We don't do incremental streaming.
-			}
-			else if (prop_number == 13)
-			{
-				// the name of this object
-			}
-			else if (prop_number == 14)
-			{
-				// most recent drop target (!)  Read only.
-			}
-			else if (prop_number == 15)
-			{
-				// the URL linked to this object  Read only.
-			}
-			else if (prop_number == 16)
-			{
-				// whether we're in high-quality mode
-			}
-			else if (prop_number == 17)
-			{
-				// whether focus rectangle is visible.
-			}
-			else if (prop_number == 18)
-			{
-				// sound buffer time (?)
-			}
-			else if (prop_number == 19)
-			{
-				// what the quality is (0-2)
-			}
-			else if (prop_number == 20)
-			{
-				// mouse x.  Read only.
-			}
-			else if (prop_number == 21)
-			{
-				// mouse y.  Read only.
-			}
-			// else if (prop_number == 16384) { ...?; }
-		}
-#endif // 0
-
-
-
 		/* sprite_instance */
 		virtual movie*	get_relative_target(const tu_string& name)
 		// Find the movie which is one degree removed from us,
@@ -2813,19 +2754,56 @@ namespace gameswf
 			return NULL;
 		}
 
+
 		/* sprite_instance */
-		virtual void	start_drag(
-			movie* target,
-			bool lock_center,
-			bool rect_bound,
-			float x0,
-			float y0,
-			float x1,
-			float y1)
+		virtual void	call_frame_actions(const as_value& frame_spec)
+		// Execute the actions for the specified frame.  The
+		// frame_spec could be an integer or a string.
 		{
-			assert(m_parent == NULL);	// we must be the root movie!!!
+			int	frame_number = -1;
+
+			// Figure out what frame to call.
+			if (frame_spec.get_type() == as_value::STRING)
+			{
+				if (m_def->get_labeled_frame(frame_spec.to_string(), &frame_number) == false)
+				{
+					// Try converting to integer.
+					frame_number = (int) frame_spec.to_number();
+				}
+			}
+			else
+			{
+				frame_number = (int) frame_spec.to_number();
+			}
+
+			if (frame_number < 0 || frame_number >= m_def->get_frame_count())
+			{
+				// No dice.
+				log_error("error: call_frame('%s') -- unknown frame\n", frame_spec.to_string());
+				return;
+			}
+
+			assert(m_action_list.size() == 0);
+
+			// Execute the actions.
+			const array<execute_tag*>&	playlist = m_def->get_playlist(frame_number);
+			for (int i = 0; i < playlist.size(); i++)
+			{
+				execute_tag*	e = playlist[i];
+				if (e->is_action_tag())
+				{
+					e->execute(this);
+				}
+				do_actions();
+			}
 			
-			m_root->set_drag_parameters(target, lock_center, rect_bound, x0, y0, x1, y1);
+		}
+
+
+		/* sprite_instance */
+		virtual void	set_drag_state(const drag_state& st)
+		{
+			m_root->m_drag_state = st;
 		}
 
 		/* sprite_instance */
@@ -2836,6 +2814,12 @@ namespace gameswf
 			m_root->stop_drag();
 		}
 
+
+		/* sprite_instance */
+		virtual void	get_drag_state(drag_state* st)
+		{
+			*st = m_root->m_drag_state;
+		}
 	};
 
 
@@ -2911,16 +2895,18 @@ namespace gameswf
 			m_depth = in->read_u16();
 		}
 
-		void	execute(movie* m)
+		virtual void	execute(movie* m)
 		{
 //			IF_DEBUG(log_msg(" remove: depth %2d\n", m_depth));
 			m->remove_display_object(m_depth);
 		}
 
-		void	execute_state(movie* m)
+		virtual void	execute_state(movie* m)
 		{
 			execute(m);
 		}
+
+		virtual bool	is_remove_tag() const { return true; }
 	};
 
 
@@ -2930,6 +2916,8 @@ namespace gameswf
 
 		remove_object_2*	t = new remove_object_2;
 		t->read(in);
+
+		IF_VERBOSE_PARSE(log_msg("remove_object_2(%d)\n", t->m_depth));
 
 		m->add_execute_tag(t);
 	}

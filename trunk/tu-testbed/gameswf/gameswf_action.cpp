@@ -262,6 +262,12 @@ namespace gameswf
 		{
 			// left empty because actions don't have to be replayed when seeking the movie.
 		}
+
+		virtual bool	is_action_tag() const
+		// Tell the caller that we are an action tag.
+		{
+			return true;
+		}
 	};
 
 	void	do_action_loader(stream* in, int tag_type, movie_definition_sub* m)
@@ -403,7 +409,7 @@ namespace gameswf
 				}
 				case 0x0F:	// less than
 				{
-					env->top(1).set(env->top(1) < env->top(1));
+					env->top(1).set(env->top(1) < env->top(0));
 					env->drop(1);
 					break;
 				}
@@ -522,22 +528,23 @@ namespace gameswf
 
 				case 0x27:	// start drag movie
 				{
-					movie*	target = env->find_target(env->top(0));
-					if (target == NULL)
+					movie::drag_state	st;
+
+					st.m_character = env->find_target(env->top(0));
+					if (st.m_character == NULL)
 					{
 						log_error("error: start_drag of invalid target '%s'.\n",
 							  env->top(0).to_tu_string());
 					}
 
-					bool	lock_center = env->top(1).to_bool();
-					bool	rect_bound = env->top(2).to_bool();
-					float	x0(0), y0(0), x1(1), y1(1);
-					if (rect_bound)
+					st.m_lock_center = env->top(1).to_bool();
+					st.m_bound = env->top(2).to_bool();
+					if (st.m_bound)
 					{
-						x0 = (float) env->top(6).to_number();
-						y0 = (float) env->top(5).to_number();
-						x1 = (float) env->top(4).to_number();
-						y1 = (float) env->top(3).to_number();
+						st.m_bound_x0 = (float) env->top(6).to_number();
+						st.m_bound_y0 = (float) env->top(5).to_number();
+						st.m_bound_x1 = (float) env->top(4).to_number();
+						st.m_bound_y1 = (float) env->top(3).to_number();
 						env->drop(4);
 					}
 					env->drop(3);
@@ -545,9 +552,10 @@ namespace gameswf
 					movie*	root_movie = env->get_target()->get_root_movie();
 					assert(root_movie);
 
-					if (root_movie && target)
+					if (root_movie && st.m_character)
 					{
-						root_movie->start_drag(target, lock_center, rect_bound, x0, y0, x1, y1);
+						root_movie->set_drag_state(st);
+//						root_movie->start_drag(target, lock_center, rect_bound, x0, y0, x1, y1);
 					}
 					
 					break;
@@ -1079,8 +1087,19 @@ namespace gameswf
 					break;
 				}
 				case 0x9E:	// call frame
-				case 0x9F:	// goto expression (?)
+				{
+					// Note: no extra data in this instruction!
+					assert(env->m_target);
+					env->m_target->call_frame_actions(env->top(0));
+					env->drop(1);
+
 					break;
+				}
+
+				case 0x9F:	// goto expression (?)
+				{
+					break;
+				}
 				
 				}
 				pc = next_pc;
@@ -1308,6 +1327,8 @@ namespace gameswf
 	void	as_environment::set_variable(const tu_string& varname, const as_value& val)
 	// Given a path to variable, set its value.
 	{
+		IF_VERBOSE_DEBUG(log_msg("-------------- %s = %s\n", varname.c_str(), val.to_string()));//xxxxxxxxxx
+
 		// Path lookup rigamarole.
 		movie*	target = m_target;
 		tu_string	path;
