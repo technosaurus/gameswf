@@ -30,18 +30,10 @@ namespace swf
 	struct cxform;
 	struct matrix;
 
-	// SWF movies contain "characters" to represent the various elements.
-	struct character
-	{
-		virtual ~character() {}
-		virtual void	display(const display_info& di) {}	// renderer state contains context
-	};
-
-
 	struct movie : public movie_interface
 	{
-		virtual void	add_character(int id, character* ch) = 0;
-		virtual void	add_execute_tag(execute_tag* c) = 0;
+		virtual void	add_character(int id, character* ch) {}
+		virtual void	add_execute_tag(execute_tag* c) {}
 
 		virtual void	add_display_object(Uint16 character_id,
 						   Uint16 depth,
@@ -61,6 +53,21 @@ namespace swf
 		virtual void	remove_display_object(Uint16 depth)
 		{
 		}
+	};
+
+
+	// SWF movies contain "characters" to represent the various elements.
+	struct character : public movie
+	{
+		virtual ~character() {}
+		virtual void	display(const display_info& di) {}	// renderer state contains context
+
+		// Movie interfaces.  By default do nothing.  sprite will override these.
+		int	get_width() { return 0; }
+		int	get_height() { return 0; }
+		virtual void	restart() {}
+		virtual void	advance(float delta_time) {}
+		virtual void	display() {}
 	};
 
 
@@ -116,3 +123,11 @@ namespace swf
 
 
 #endif // SWF_IMPL_H
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

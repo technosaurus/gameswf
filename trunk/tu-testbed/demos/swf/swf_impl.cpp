@@ -105,6 +105,24 @@ namespace swf
 			m_[1][1] = 1;
 		}
 
+
+		void	concatenate(const matrix& m)
+		// Concatenate m's transform onto ours.  When
+		// transforming points, m happens first, then our
+		// original xform.
+		{
+			matrix	t;
+			t.m_[0][0] = m_[0][0] * m.m_[0][0] + m_[0][1] * m.m_[1][0];
+			t.m_[1][0] = m_[1][0] * m.m_[0][0] + m_[1][1] * m.m_[1][0];
+			t.m_[0][1] = m_[0][0] * m.m_[0][1] + m_[0][1] * m.m_[1][1];
+			t.m_[1][1] = m_[1][0] * m.m_[0][1] + m_[1][1] * m.m_[1][1];
+			t.m_[0][2] = m_[0][0] * m.m_[0][2] + m_[0][1] * m.m_[1][2] + m_[0][2];
+			t.m_[1][2] = m_[1][0] * m.m_[0][2] + m_[1][1] * m.m_[1][2] + m_[1][2];
+
+			*this = t;
+		}
+
+
 		void	read(stream* in)
 		{
 			in->align();
@@ -253,6 +271,22 @@ namespace swf
 			m_[3][1] = 0;
 		}
 
+		void	concatenate(const cxform& c)
+		// Concatenate c's transform onto ours.  When
+		// transforming colors, c's transform is applied
+		// first, then ours.
+		{
+			m_[0][1] += m_[0][0] * c.m_[0][1];
+			m_[1][1] += m_[1][0] * c.m_[1][1];
+			m_[2][1] += m_[2][0] * c.m_[2][1];
+			m_[3][1] += m_[3][0] * c.m_[3][1];
+
+			m_[0][0] *= c.m_[0][0];
+			m_[1][0] *= c.m_[1][0];
+			m_[2][0] *= c.m_[2][0];
+			m_[3][0] *= c.m_[3][0];
+		}
+
 		void	read_rgb(stream* in)
 		{
 			in->align();
@@ -345,6 +379,16 @@ namespace swf
 		cxform	m_color_transform;
 		matrix	m_matrix;
 		float	m_ratio;
+
+		void	concatenate(const display_info& di)
+		// Concatenate the transforms from di into our
+		// transforms.
+		{
+			m_depth = di.m_depth;
+			m_color_transform.concatenate(di.m_color_transform);
+			m_matrix.concatenate(di.m_matrix);
+			m_ratio = di.m_ratio;
+		}
 	};
 
 
@@ -373,6 +417,168 @@ namespace swf
 			}
 		}
 	};
+
+
+	//
+	// some display list management functions
+	//
+
+
+	static int	find_display_index(const array<display_object_info>& display_list, int depth)
+	// Find the index in the display list matching the given
+	// depth.  Failing that, return the index of the first object
+	// with a larger depth.
+	{
+		int	size = display_list.size();
+		if (size == 0)
+		{
+			return 0;
+		}
+
+		// Binary search.
+		int	jump = size >> 1;
+		int	index = jump;
+		for (;;)
+		{
+			jump >>= 1;
+			if (jump < 1) jump = 1;
+
+			if (depth > display_list[index].m_depth) {
+				if (index == size - 1)
+				{
+					index = size;
+					break;
+				}
+				index += jump;
+			}
+			else if (depth < display_list[index].m_depth)
+			{
+				if (index == 0
+				    || depth > display_list[index - 1].m_depth)
+				{
+					break;
+				}
+				index -= jump;
+			}
+			else
+			{
+				// match -- return this index.
+				break;
+			}
+		}
+
+		assert(index >= 0 && index <= size);
+
+		return index;
+	}
+
+
+
+	static void	add_display_object(array<display_object_info>* display_list,
+					   character* ch,
+					   Uint16 depth,
+					   const cxform& color_transform,
+					   const matrix& matrix,
+					   float ratio)
+	{
+		assert(ch);
+
+		display_object_info	di;
+		di.m_character = ch;
+		di.m_depth = depth;
+		di.m_color_transform = color_transform;
+		di.m_matrix = matrix;
+		di.m_ratio = ratio;
+
+		// Insert into the display list...
+
+		int	index = find_display_index(*display_list, di.m_depth);
+
+		// Shift existing objects up.
+		display_list->resize(display_list->size() + 1);
+		if (display_list->size() - 1 > index)
+		{
+			memmove(&(*display_list)[index + 1],
+				&(*display_list)[index],
+				sizeof((*display_list)[0]) * (display_list->size() - 1 - index));
+		}
+
+		// Put new info in the opened slot.
+		(*display_list)[index] = di;
+
+		// Restart the character (e.g. if it's a sprite).
+		//
+		// @@ does a sprite actually want to create a new
+		// instance here??
+		di.m_character->restart();
+	}
+
+
+	static void	move_display_object(array<display_object_info>* display_list,
+					    Uint16 depth,
+					    const cxform& color_xform,
+					    const matrix& mat,
+					    float ratio)
+	// Updates the transform properties of the object at
+	// the specified depth.
+	{
+		int	size = display_list->size();
+		if (size <= 0)
+		{
+			// error.
+			assert(0);
+			return;
+		}
+
+		int	index = find_display_index(*display_list, depth);
+		if (index < 0 || index >= size)
+		{
+			// error.
+			assert(0);
+			return;
+		}
+
+		display_object_info&	di = (*display_list)[index];
+		if (di.m_depth != depth)
+		{
+			// error
+			assert(0);
+			return;
+		}
+
+		di.m_color_transform = color_xform;
+		di.m_matrix = mat;
+		di.m_ratio = ratio;
+	}
+		
+
+	static void remove_display_object(array<display_object_info>* display_list, Uint16 depth)
+	// Removes the object at the specified depth.
+	{
+		int	size = display_list->size();
+		if (size <= 0)
+		{
+			// error.
+			assert(0);
+			return;
+		}
+
+		int	index = find_display_index(*display_list, depth);
+		if (index < 0 || index >= size)
+		{
+			// error.
+			assert(0);
+			return;
+		}
+
+		if (index < size - 1)
+		{
+			memmove(&(*display_list)[index],
+				&(*display_list)[index + 1],
+				sizeof((*display_list)[0]) * (size - 1 - index));
+		}
+		display_list->resize(size - 1);
+	}
 
 
 	struct movie_impl : public movie
@@ -408,64 +614,9 @@ namespace swf
 			m_characters.add(character_id, c);
 		}
 
-//		void	add_sprite(int character_id, movie* m)
-//		// A sprite is both a character, and a little sub-movie.
-//		{
-//			m_characters.add(character_id, 
-//		}
-
 		void	add_execute_tag(execute_tag* e)
 		{
 			m_playlist[m_current_frame].push_back(e);
-		}
-
-		
-		int	find_display_index(int depth)
-		// Find the index in the display list matching the
-		// given depth.  Failing that, return the index of the
-		// first object with a larger depth.
-		{
-			int	size = m_display_list.size();
-			if (size == 0)
-			{
-				return 0;
-			}
-
-			// Binary search.
-			int	jump = size >> 1;
-			int	index = jump;
-			for (;;)
-			{
-				jump >>= 1;
-				if (jump < 1) jump = 1;
-
-				if (depth > m_display_list[index].m_depth) {
-					if (index == size - 1)
-					{
-						index = size;
-						break;
-					}
-					index += jump;
-				}
-				else if (depth < m_display_list[index].m_depth)
-				{
-					if (index == 0
-					    || depth > m_display_list[index - 1].m_depth)
-					{
-						break;
-					}
-					index -= jump;
-				}
-				else
-				{
-					// match -- return this index.
-					break;
-				}
-			}
-
-			assert(index >= 0 && index <= size);
-
-			return index;
 		}
 
 		
@@ -483,28 +634,7 @@ namespace swf
 			}
 			assert(ch);
 
-			display_object_info	di;
-			di.m_character = ch;
-			di.m_depth = depth;
-			di.m_color_transform = color_transform;
-			di.m_matrix = matrix;
-			di.m_ratio = ratio;
-
-			// Insert into the display list...
-
-			int	index = find_display_index(di.m_depth);
-
-			// Shift existing objects up.
-			m_display_list.resize(m_display_list.size() + 1);
-			if (m_display_list.size() - 1 > index)
-			{
-				memmove(&m_display_list[index + 1],
-					&m_display_list[index],
-					sizeof(m_display_list[0]) * (m_display_list.size() - 1 - index));
-			}
-
-			// Put new info in the opened slot.
-			m_display_list[index] = di;
+			swf::add_display_object(&m_display_list, ch, depth, color_transform, matrix, ratio);
 		}
 
 
@@ -512,62 +642,14 @@ namespace swf
 		// Updates the transform properties of the object at
 		// the specified depth.
 		{
-			int	size = m_display_list.size();
-			if (size <= 0)
-			{
-				// error.
-				assert(0);
-				return;
-			}
-
-			int	index = find_display_index(depth);
-			if (index < 0 || index >= size)
-			{
-				// error.
-				assert(0);
-				return;
-			}
-
-			display_object_info&	di = m_display_list[index];
-			if (di.m_depth != depth)
-			{
-				// error
-				assert(0);
-				return;
-			}
-
-			di.m_color_transform = color_xform;
-			di.m_matrix = mat;
-			di.m_ratio = ratio;
+			swf::move_display_object(&m_display_list, depth, color_xform, mat, ratio);
 		}
 
 
 		void	remove_display_object(Uint16 depth)
 		// Remove the object at the specified depth.
 		{
-			int	size = m_display_list.size();
-			if (size <= 0)
-			{
-				// error.
-				assert(0);
-				return;
-			}
-
-			int	index = find_display_index(depth);
-			if (index < 0 || index >= size)
-			{
-				// error.
-				assert(0);
-				return;
-			}
-
-			if (index < size - 1)
-			{
-				memmove(&m_display_list[index],
-					&m_display_list[index + 1],
-					sizeof(m_display_list[0]) * (size - 1 - index));
-			}
-			m_display_list.resize(size - 1);
+			swf::remove_display_object(&m_display_list, depth);
 		}
 
 
@@ -610,6 +692,13 @@ namespace swf
 			}
 
 //			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
+
+			// Call advance() on each object in our
+			// display list.  Takes care of sprites.
+			for (int i = 0; i < m_display_list.size(); i++)
+			{
+				m_display_list[i].m_character->advance(delta_time);
+			}
 		}
 
 		void	display()
@@ -1456,13 +1545,13 @@ namespace swf
 	// A sprite is a mini movie-within-a-movie.  It doesn't define
 	// its own characters; it uses the characters from the parent
 	// movie, but it has its own frame counter, display list, etc.
-	struct sprite : public movie, public character
+	struct sprite : public character
 	{
 		movie_impl*	m_movie;		// parent movie.
 		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
 
 		int	m_current_frame;
-		array<character*>	m_display_list;	// active characters, ordered by depth.
+		array<display_object_info>	m_display_list;	// active characters, ordered by depth.
 
 		int	m_frame_count;
 		float	m_time;
@@ -1482,28 +1571,71 @@ namespace swf
 		int	get_width() { assert(0); return 0; }
 		int	get_height() { assert(0); return 0; }
 
+
 		void	restart()
 		{
-			m_current_frame = 0;
+			m_display_list.resize(0);
+			m_current_frame = -1;
+			m_time = 0;
 		}
+
 
 		void	advance(float delta_time)
 		{
-			assert(0);
+			assert(m_movie);
+
+			m_time += delta_time;
+			int	target_frame_number = (int) floorf(m_time * m_movie->m_frame_rate);
+			assert(target_frame_number >= m_current_frame);
+
+			if (target_frame_number >= m_frame_count)
+			{
+				// Either clamp, or loop here...
+
+				// Loop.
+				restart();
+				target_frame_number = 0;
+			}
+
+			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
+			{
+				array<execute_tag*>&	playlist = m_playlist[frame];
+				for (int i = 0; i < playlist.size(); i++)
+				{
+					execute_tag*	e = playlist[i];
+					e->execute(this);
+				}
+				m_current_frame = frame;
+			}
+
+//			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
+
+			// Call advance() on each object in our
+			// display list.  Takes care of sprites.
+			for (int i = 0; i < m_display_list.size(); i++)
+			{
+				m_display_list[i].m_character->advance(delta_time);
+			}
 		}
 
 		void	display()
 		{
+			// don't call this one; call display(const display_info&);
+			assert(0);
 		}
 
 		void	display(const display_info& di)
 		{
-//			printf("sprite display\n");
-		}
+			// Display all display objects, starting at
+			// max depth and moving up.
+			for (int i = m_display_list.size() - 1; i >= 0; i--)
+			{
+				display_object_info&	dobj = m_display_list[i];
 
-		void	execute(movie* m)
-		{
-			/* TODO */
+				display_info	sub_di = di;
+				sub_di.concatenate(dobj);
+				dobj.m_character->display(sub_di);
+			}
 		}
 
 		void	add_character(int id, character* ch)
@@ -1515,6 +1647,42 @@ namespace swf
 		void	add_execute_tag(execute_tag* c)
 		{
 			m_playlist[m_current_frame].push_back(c);
+		}
+
+
+		void	add_display_object(Uint16 character_id,
+					   Uint16 depth,
+					   const cxform& color_transform,
+					   const matrix& matrix,
+					   float ratio)
+		// Add an object to the display list.
+		{
+			assert(m_movie);
+
+			character*	ch = NULL;
+			if (m_movie->m_characters.get(character_id, &ch) == false)
+			{
+				fprintf(stderr, "sprite::add_display_object(): unknown cid = %d\n", character_id);
+				return;
+			}
+			assert(ch);
+
+			swf::add_display_object(&m_display_list, ch, depth, color_transform, matrix, ratio);
+		}
+
+
+		void	move_display_object(Uint16 depth, const cxform& color_xform, const matrix& mat, float ratio)
+		// Updates the transform properties of the object at
+		// the specified depth.
+		{
+			swf::move_display_object(&m_display_list, depth, color_xform, mat, ratio);
+		}
+
+
+		void	remove_display_object(Uint16 depth)
+		// Remove the object at the specified depth.
+		{
+			swf::remove_display_object(&m_display_list, depth);
 		}
 
 

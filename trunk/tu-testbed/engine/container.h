@@ -321,6 +321,8 @@ public:
 		m_table.transfer_members(&new_table);
 	}
 
+	// @@ need an API for iterating over all contents, probably using a (blech) iterator.
+
 private:
 	struct entry {
 		T	key;
