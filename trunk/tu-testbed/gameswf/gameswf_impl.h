@@ -202,11 +202,11 @@ namespace gameswf
 		virtual bool	get_self_value(as_value* val) { assert(0); return false; }
 		virtual void	set_member(const tu_string& name, const as_value& val) { assert(0); }
 		virtual bool	get_member(const tu_string& name, as_value* val) { assert(0); return false; }
-		virtual as_value	call_method(const tu_string& name, as_environment* env, int nargs, int arg0)
-		{
-			assert(0);
-			return as_value();
-		}
+//		virtual as_value	call_method(const tu_string& name, as_environment* env, int nargs, int arg0)
+//		{
+//			assert(0);
+//			return as_value();
+//		}
 
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
 

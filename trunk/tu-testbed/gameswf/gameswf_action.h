@@ -27,9 +27,11 @@ namespace gameswf
 	struct action_buffer
 	{
 		array<unsigned char>	m_buffer;
+		array<const char*>	m_dictionary;
 
 		void	read(stream* in);
 		void	execute(as_environment* env);
+		void	execute(as_environment* env, int start_pc, int exec_bytes, as_value* retval);
 
 		bool	is_null()
 		{
@@ -38,13 +40,14 @@ namespace gameswf
 	};
 
 
-	typedef void (*as_function_ptr)(
+	typedef void (*as_c_function_ptr)(
 		as_value* result,
 		void* this_ptr,
 		as_environment* env,
 		int nargs,
 		int first_arg_bottom_index);
 
+	struct as_as_function;	// forward decl
 
 	// ActionScript value type.
 	struct as_value
@@ -55,21 +58,27 @@ namespace gameswf
 			STRING,
 			NUMBER,
 			OBJECT,
-			FUNCTION,
+			C_FUNCTION,
+			AS_FUNCTION,	// ActionScript function.
 		};
 
 		type	m_type;
-		mutable	double	m_number_value;	// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
 		mutable tu_string	m_string_value;
-		as_object_interface*	m_object_value;
-		as_function_ptr	m_function_value;
+		union
+		{
+			mutable	double	m_number_value;	// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
+			as_object_interface*	m_object_value;
+			as_c_function_ptr	m_c_function_value;
+			as_as_function*	m_as_function_value;
+		};
 
 		as_value()
 			:
 			m_type(UNDEFINED),
 			m_number_value(0.0),
 			m_object_value(0),
-			m_function_value(0)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
 		}
 
@@ -79,7 +88,8 @@ namespace gameswf
 			m_number_value(0.0),
 			m_string_value(str),
 			m_object_value(0),
-			m_function_value(0)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
 		}
 
@@ -88,62 +98,86 @@ namespace gameswf
 			m_type(e),
 			m_number_value(0.0),
 			m_object_value(0),
-			m_function_value(0)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
 		}
 
 		as_value(bool val)
 			:
 			m_type(NUMBER),
-			m_number_value(double(val)),
+			m_number_value(0),
 			m_object_value(0),
-			m_function_value(0)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
+			m_number_value = double(val);
 		}
 
 		as_value(int val)
 			:
 			m_type(NUMBER),
-			m_number_value(val),
+			m_number_value(0),
 			m_object_value(0),
-			m_function_value(0)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
+			m_number_value = double(val);
 		}
 
 		as_value(float val)
 			:
 			m_type(NUMBER),
-			m_number_value(val),
+			m_number_value(0),
 			m_object_value(0),
-			m_function_value(0)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
+			m_number_value = double(val);
 		}
 
 		as_value(double val)
 			:
 			m_type(NUMBER),
-			m_number_value(val),
+			m_number_value(0),
 			m_object_value(0),
-			m_function_value(0)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
+			m_number_value = val;
 		}
 
 		as_value(as_object_interface* obj)
 			:
 			m_type(OBJECT),
 			m_number_value(0.0),
-			m_object_value(obj),
-			m_function_value(0)
+			m_object_value(0),
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
+			m_object_value = obj;
 		}
 
-		as_value(as_function_ptr func)
+		as_value(as_c_function_ptr func)
 			:
-			m_type(FUNCTION),
+			m_type(C_FUNCTION),
 			m_number_value(0.0),
 			m_object_value(0),
-			m_function_value(func)
+			m_c_function_value(0),
+			m_as_function_value(0)
 		{
+			m_c_function_value = func;
+		}
+
+		as_value(as_as_function* func)
+			:
+			m_type(AS_FUNCTION),
+			m_number_value(0.0),
+			m_object_value(0),
+			m_c_function_value(0),
+			m_as_function_value(0)
+		{
+			m_as_function_value = func;
 		}
 
 		type	get_type() const { return m_type; }
@@ -153,7 +187,8 @@ namespace gameswf
 		double	to_number() const;
 		bool	to_bool() const;
 		as_object_interface*	to_object() const;
-		as_function_ptr	to_function() const;
+		as_c_function_ptr	to_c_function() const;
+		as_as_function*	to_as_function() const;
 
 		void	convert_to_number();
 		void	convert_to_string();
@@ -198,11 +233,11 @@ namespace gameswf
 
 		virtual void	set_member(const tu_string& name, const as_value& val) = 0;
 		virtual bool	get_member(const tu_string& name, as_value* val) = 0;
-		virtual as_value	call_method(
-			const tu_string& name,
-			as_environment* env,
-			int nargs,
-			int first_arg_bottom_index) = 0;
+//		virtual as_value	call_method(
+//			const tu_string& name,
+//			as_environment* env,
+//			int nargs,
+//			int first_arg_bottom_index) = 0;
 
 		virtual movie*	to_movie() = 0;
 	};
@@ -239,7 +274,8 @@ namespace gameswf
 		// stack access/manipulation
 		// @@ TODO do more checking on these
 		template<class T>
-		void	push(T val) { m_stack.push_back(as_value(val)); }
+		void	push(T val) { push_val(as_value(val)); }
+		void	push_val(const as_value& val) { m_stack.push_back(val); }
 		as_value	pop() { return m_stack.pop_back(); }
 		as_value&	top(int dist) { return m_stack[m_stack.size() - 1 - dist]; }
 		as_value&	bottom(int index) { return m_stack[index]; }
@@ -253,9 +289,15 @@ namespace gameswf
 		void	set_variable(const tu_string& path, const as_value& val);
 		void	set_variable_raw(const tu_string& path, const as_value& val);	// no path stuff
 		void	set_local(const tu_string& varname, const as_value& val);
+		void	add_local(const tu_string& varname, const as_value& val);	// when you know it doesn't exist.
 
 		bool	get_member(const tu_string& varname, as_value* val) const;
 		void	set_member(const tu_string& varname, const as_value& val);
+
+		// Parameter/local stack frame management.
+		int	get_local_frame_top() const { return m_local_frames.size(); }
+		void	set_local_frame_top(int t) { assert(t <= m_local_frames.size()); m_local_frames.resize(t); }
+		void	add_frame_barrier() { m_local_frames.push_back(frame_slot()); }
 
 		// Internal.
 		int	find_local(const tu_string& varname) const;
@@ -265,7 +307,42 @@ namespace gameswf
 	};
 
 
-};	// end namespace gameswf
+	//
+	// as_object
+	//
+	// A generic bag of attributes.  Base-class for ActionScript
+	// script-defined objects.
+	struct as_object : public as_object_interface
+	{
+		string_hash<as_value>	m_members;
+
+		virtual bool	set_self_value(const as_value& val) { return false; }
+		virtual bool	get_self_value(as_value* val) { val->set(static_cast<as_object_interface*>(this)); return true; }
+
+		virtual void	set_member(const tu_string& name, const as_value& val)
+		{
+			m_members.set(name, val);
+		}
+
+		virtual bool	get_member(const tu_string& name, as_value* val)
+		{
+			return m_members.get(name, val);
+		}
+
+// 		virtual as_value	call_method(
+// 			const tu_string& name,
+// 			as_environment* env,
+// 			int nargs,
+// 			int first_arg_bottom_index);
+
+		virtual movie*	to_movie()
+		// This object is not a movie; no conversion.
+		{
+			return NULL;
+		}
+	};
+
+}	// end namespace gameswf
 
 
 #endif // GAMESWF_ACTION_H

@@ -123,7 +123,7 @@ namespace gameswf
 		float ratio,
 		Uint16 clip_depth)
 	{
-		IF_VERBOSE_DEBUG(log_msg("dl::add(%d, '%s')\n", depth, ch->get_name()));//xxxxx
+//		IF_VERBOSE_DEBUG(log_msg("dl::add(%d, '%s')\n", depth, ch->get_name()));//xxxxx
 
 		assert(ch);
 		
@@ -171,7 +171,7 @@ namespace gameswf
 	// Updates the transform properties of the object at
 	// the specified depth.
 	{
-		IF_VERBOSE_DEBUG(log_msg("dl::move(%d)\n", depth));//xxxxx
+//		IF_VERBOSE_DEBUG(log_msg("dl::move(%d)\n", depth));//xxxxx
 
 		int	size = m_display_object_array.size();
 		if (size <= 0)
@@ -237,14 +237,14 @@ namespace gameswf
 	// then keep those respective properties from the existing
 	// character.
 	{
-		IF_VERBOSE_DEBUG(log_msg("dl::replace(%d)\n", depth));//xxxxx
+//		IF_VERBOSE_DEBUG(log_msg("dl::replace(%d)\n", depth));//xxxxx
 
 		int	size = m_display_object_array.size();
 		int	index = find_display_index(depth);
 		if (index < 0 || index >= size)
 		{
 			// Error.
-			IF_VERBOSE_DEBUG(log_msg("dl::replace_display_object() no obj at depth %d\n", depth));
+//			IF_VERBOSE_DEBUG(log_msg("dl::replace_display_object() no obj at depth %d\n", depth));
 			// Fallback -- add the object.
 			add_display_object(ch, depth, color_xform, mat, ratio, clip_depth);
 			return;
@@ -254,7 +254,7 @@ namespace gameswf
 		if (di.m_character->get_depth() != depth)
 		{
 			// error
-			IF_VERBOSE_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
+//			IF_VERBOSE_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
 			return;
 		}
 		
@@ -300,7 +300,7 @@ namespace gameswf
 	void	display_list::remove_display_object(Uint16 depth)
 	// Removes the object at the specified depth.
 	{
-		IF_VERBOSE_DEBUG(log_msg("dl::remove(%d)\n", depth));//xxxxx
+//		IF_VERBOSE_DEBUG(log_msg("dl::remove(%d)\n", depth));//xxxxx
 
 		int	size = m_display_object_array.size();
 		if (size <= 0)
@@ -428,7 +428,7 @@ namespace gameswf
 			// check whether this object should become mask
 			if (ch->get_clip_depth() > 0)
 			{
-				log_msg("begin submit mask\n");
+				//log_msg("begin submit mask\n");
 				render::begin_submit_mask();
 			}
 			
@@ -444,7 +444,7 @@ namespace gameswf
 			// information about it
 			if (ch->get_clip_depth() > 0)
 			{
-				log_msg("end submit mask\n");
+				//log_msg("end submit mask\n");
 				render::end_submit_mask();
 				highest_masked_layer = ch->get_clip_depth();
 				masked = true;

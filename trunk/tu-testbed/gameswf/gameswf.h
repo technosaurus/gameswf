@@ -28,6 +28,7 @@ namespace gameswf
 	struct action_buffer;
 	struct execute_tag;
 	struct font;
+	namespace key { enum code; }
 	struct movie_interface;
 	struct resource;
 	struct rgba;
@@ -93,6 +94,7 @@ namespace gameswf
 		// move/scale the movie...
 		virtual void	set_display_viewport(int x0, int y0, int w, int h) = 0;
 		
+		// Input.
 		virtual void	notify_mouse_state(int x, int y, int buttons) = 0;
 		
 		// Need an event queue API here, for extracting user and movie events.
@@ -467,6 +469,118 @@ namespace gameswf
 	render_handler*	create_render_handler_xbox();
 	render_handler*	create_render_handler_ogl();
 	sound_handler*	create_sound_handler_sdl();
+
+
+	// Keyboard handling
+	namespace key {
+		enum code
+		{
+			A = 65,
+			B,
+			C,
+			D,
+			E,
+			F,
+			G,
+			H,
+			I,
+			J,
+			K,
+			L,
+			M,
+			N,
+			O,
+			P,
+			Q,
+			R,
+			S,
+			T,
+			U,
+			V,
+			W,
+			X,
+			Y,
+			Z,
+			_0 = 48,
+			_1,
+			_2,
+			_3,
+			_4,
+			_5,
+			_6,
+			_7,
+			_8,
+			_9,
+			KP_0 = 96,
+			KP_1,
+			KP_2,
+			KP_3,
+			KP_4,
+			KP_5,
+			KP_6,
+			KP_7,
+			KP_8,
+			KP_9,
+			KP_MULTIPLY,
+			KP_ADD,
+			KP_ENTER,
+			KP_SUBTRACT,
+			KP_DECIMAL,
+			KP_DIVIDE,
+			F1 = 112,
+			F2,
+			F3,
+			F4,
+			F5,
+			F6,
+			F7,
+			F8,
+			F9,
+			F10,
+			F11,
+			F12,
+			F13,
+			F14,
+			F15,
+			BACKSPACE = 8,
+			TAB,
+			CLEAR = 12,
+			ENTER,
+			SHIFT = 16,
+			CONTROL,
+			ALT,
+			CAPSLOCK = 20,
+			ESCAPE = 27,
+			SPACE = 32,
+			PGDN,
+			PGUP,
+			END = 35,
+			HOME,
+			LEFT,
+			UP,
+			RIGHT,
+			DOWN,
+			INSERT = 45,
+			DELETEKEY,
+			HELP,
+			NUM_LOCK = 144,
+			SEMICOLON = 186,
+			EQUALS = 187,
+			MINUS = 189,
+			SLASH = 191,
+			BACKTICK = 192,
+			LEFT_BRACKET = 219,
+			BACKSLASH = 220,
+			RIGHT_BRACKET = 221,
+			QUOTE = 222,
+
+			KEYCOUNT
+		};
+	}	// end namespace key
+
+	// Key events are global throughout gameswf.
+	// @@ Maybe someday make these local to the movie_interface?
+	void	notify_key_event(key::code k, bool down);
 
 }	// namespace gameswf
 
