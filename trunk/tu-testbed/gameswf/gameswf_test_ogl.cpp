@@ -415,6 +415,20 @@ int	main(int argc, char *argv[])
 					extern bool gameswf_debug_show_paths;
 					gameswf_debug_show_paths = !gameswf_debug_show_paths;
 				}
+				else if (ctrl && key == SDLK_EQUALS)
+				{
+					float	f = gameswf::get_curve_max_pixel_error();
+					f *= 1.1f;
+					gameswf::set_curve_max_pixel_error(f);
+					printf("curve error tolerance = %f\n", f);
+				}
+				else if (ctrl && key == SDLK_MINUS)
+				{
+					float	f = gameswf::get_curve_max_pixel_error();
+					f *= 0.9f;
+					gameswf::set_curve_max_pixel_error(f);
+					printf("curve error tolerance = %f\n", f);
+				}
 
 				key_event(key, true);
 

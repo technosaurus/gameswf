@@ -28,6 +28,18 @@
 
 namespace gameswf
 {
+	static float	s_curve_max_pixel_error = 1.0f;
+
+	void	set_curve_max_pixel_error(float pixel_error)
+	{
+		s_curve_max_pixel_error = fclamp(pixel_error, 1e-6f, 1e6f);
+	}
+
+	float	get_curve_max_pixel_error()
+	{
+		return s_curve_max_pixel_error;
+	}
+
 
 	//
 	// edge
@@ -1089,7 +1101,7 @@ namespace gameswf
 			return;
 		}
 
-		float	object_space_max_error = 20.0f / max_scale / pixel_scale;
+		float	object_space_max_error = 20.0f / max_scale / pixel_scale * s_curve_max_pixel_error;
 
 #ifdef DEBUG_DISPLAY_SHAPE_PATHS
 		// Render a debug view of shape path outlines, instead
