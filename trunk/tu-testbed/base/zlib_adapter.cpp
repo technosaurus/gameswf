@@ -35,8 +35,8 @@ namespace zlib_adapter
 			m_in(in),
 			m_initial_stream_pos(in->get_position()),
 			m_logical_stream_pos(0),
-			m_error(0),
-			m_at_eof(false)
+			m_at_eof(false),
+			m_error(0)
 		{
 			assert(m_in);
 

@@ -698,16 +698,14 @@ namespace gameswf
 				// Show white background + black bounding box.
 				render::set_matrix(di.m_matrix);
 
-				point	coords[6];
+				point	coords[4];
 				coords[0] = m_rect.get_corner(0);
 				coords[1] = m_rect.get_corner(1);
-				coords[2] = m_rect.get_corner(2);
 				coords[3] = m_rect.get_corner(3);
-				coords[4] = m_rect.get_corner(0);
-				coords[5] = m_rect.get_corner(2);
+				coords[2] = m_rect.get_corner(2);
 				
 				render::fill_style_color(0, rgba(255, 255, 255, 255));
-				render::draw_mesh(&coords[0].m_x, 6);
+				render::draw_mesh_strip(&coords[0].m_x, 4);
 
 				render::line_style_color(rgba(0,0,0,255));
 				render::draw_line_strip(&coords[0].m_x, 5);

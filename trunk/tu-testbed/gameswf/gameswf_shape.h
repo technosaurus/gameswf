@@ -63,14 +63,14 @@ namespace gameswf
 	{
 		mesh();
 
-		void	add_triangle(const point& a, const point& b, const point& c);
+		void	set_tri_strip(const point pts[], int count);
 
 		void	display(const fill_style& style) const;
 
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
 	private:
-		array<point>	m_triangle_list;	// 3 points per tri
+		array<point>	m_triangle_strip;
 	};
 
 
@@ -106,7 +106,7 @@ namespace gameswf
 			const array<fill_style>& fills,
 			const array<line_style>& line_styles) const;
 
-		void	add_triangle(int style, const point& a, const point& b, const point& c);
+		void	set_tri_strip(int style, const point pts[], int count);
 		void	add_line_strip(int style, const point coords[], int coord_count);
 
 		void	output_cached_data(tu_file* out);

@@ -45,9 +45,9 @@ namespace gameswf
 		// Clears the style list after rendering.
 		//
 		// coords is a list of (x,y) coordinate pairs, in
-		// triangle-list order.  The type of the array should
+		// triangle-strip order.  The type of the array should
 		// be float[vertex_count*2]
-		void	draw_mesh(const float coords[], int vertex_count);
+		void	draw_mesh_strip(const float coords[], int vertex_count);
 
 		// Draw a line-strip using the current line style.
 		// Clear the style list after rendering.

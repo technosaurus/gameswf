@@ -173,21 +173,20 @@ namespace gameswf
 	}
 
 
-	void	mesh::add_triangle(const point& a, const point& b, const point& c)
+	void	mesh::set_tri_strip(const point pts[], int count)
 	{
-		m_triangle_list.push_back(a);
-		m_triangle_list.push_back(b);
-		m_triangle_list.push_back(c);
+		m_triangle_strip.resize(count);
+		memcpy(&m_triangle_strip[0], &pts[0], count * sizeof(point));
 	}
 
 
 	void	mesh::display(const fill_style& style) const
 	{
 		// pass mesh to renderer.
-		if (m_triangle_list.size() > 0)
+		if (m_triangle_strip.size() > 0)
 		{
 			style.apply(0);
-			render::draw_mesh(&m_triangle_list[0].m_x, m_triangle_list.size());
+			render::draw_mesh_strip(&m_triangle_strip[0].m_x, m_triangle_strip.size());
 		}
 	}
 
@@ -195,14 +194,14 @@ namespace gameswf
 	void	mesh::output_cached_data(tu_file* out)
 	// Dump our data to *out.
 	{
-		write_point_array(out, m_triangle_list);
+		write_point_array(out, m_triangle_strip);
 	}
 
 	
 	void	mesh::input_cached_data(tu_file* in)
 	// Slurp our data from *out.
 	{
-		read_point_array(in, &m_triangle_list);
+		read_point_array(in, &m_triangle_strip);
 	}
 
 
@@ -258,6 +257,100 @@ namespace gameswf
 	}
 
 
+	// Utility: very simple greedy tri-stripper.  Useful for
+	// stripping the stacks of trapezoids that come out of our
+	// tesselator.
+	struct tri_stripper
+	{
+		// A set of strips; we'll join them together into one
+		// strip during the flush.
+		array< array<point> >	m_strips;
+
+		tri_stripper() {}
+
+		void	add_triangle(const point& a, const point& b, const point& c)
+		// Add triangle to our strip.
+		{
+			// See if we can attach this strip to an existing strip.
+			for (int i = 0, n = m_strips.size(); i < n; i++)
+			{
+				array<point>&	str = m_strips[i];
+				assert(str.size() >= 3);	// should have at least one tri already.
+				
+				int	last = str.size() - 1;
+				if (str[last] == a && str[last - 1] == b)
+				{
+					// Can join this tri to this strip.
+					str.push_back(c);
+					return;
+				}
+			}
+
+			// Can't join with existing strip, so start a new strip.
+			m_strips.resize(m_strips.size() + 1);
+			m_strips.back().push_back(a);
+			m_strips.back().push_back(b);
+			m_strips.back().push_back(c);
+		}
+
+
+		void	flush(mesh_set* m, int style) const
+		// Join sub-strips together, and push the whole thing into the given mesh_set,
+		// under the given style.
+		{
+			if (m_strips.size())
+			{
+				array<point>	big_strip;
+
+				big_strip = m_strips[0];
+				assert(big_strip.size() >= 3);
+
+				for (int i = 1, n = m_strips.size(); i < n; i++)
+				{
+					// Append to the big strip.
+					const array<point>&	str = m_strips[i];
+					assert(str.size() >= 3);	// should have at least one tri already.
+				
+					int	last = big_strip.size() - 1;
+					if (big_strip[last] == str[1]
+					    && big_strip[last - 1] == str[0])
+					{
+						// Strips fit right together.  Append.
+						for (int j = 2, jn = str.size(); j < jn; j++)
+						{
+							big_strip.push_back(str[j]);
+						}
+					}
+					else if (big_strip[last] == str[0]
+						 && big_strip[last - 1] == str[1])
+					{
+						// Strips fit together with a half-twist.
+						point	to_dup = big_strip[last - 1];
+						big_strip.push_back(to_dup);
+						for (int j = 2, jn = str.size(); j < jn; j++)
+						{
+							big_strip.push_back(str[j]);
+						}
+					}
+					else
+					{
+						// Strips need a degenerate to link them together.
+						point	to_dup = big_strip[last];
+						big_strip.push_back(to_dup);
+						big_strip.push_back(str[0]);
+						for (int j = 0, jn = str.size(); j < jn; j++)
+						{
+							big_strip.push_back(str[j]);
+						}
+					}
+				}
+
+				m->set_tri_strip(style, &big_strip[0], big_strip.size());
+			}
+		}
+	};
+
+
 	//
 	// mesh_set
 	//
@@ -270,9 +363,6 @@ namespace gameswf
 	{
 	}
 
-
-
-
 	mesh_set::mesh_set(const shape_character* sh, float error_tolerance)
 	// Tesselate the shape's paths into a different mesh for each fill style.
 		:
@@ -283,33 +373,61 @@ namespace gameswf
 		{
 			mesh_set*	m;	// the mesh_set that receives trapezoids.
 
+			// strips-in-progress.
+			hash<int, tri_stripper*>	m_strips;
+
 			collect_traps(mesh_set* set) : m(set) {}
+			virtual ~collect_traps() {}
 
 			// Overrides from trapezoid_accepter
 			virtual void	accept_trapezoid(int style, const tesselate::trapezoid& tr)
 			{
-				// Add the trapezoid to our mesh set.
-				m->add_triangle(
-					style,
+				// Add trapezoid to appropriate stripper.
+
+				tri_stripper*	s = NULL;
+				m_strips.get(style, &s);
+				if (s == NULL)
+				{
+					s = new tri_stripper;
+					m_strips.add(style, s);
+				}
+
+				// Be careful to emit the verts in strip-friendly order!
+				s->add_triangle(
 					point(tr.m_lx0, tr.m_y0),
+					point(tr.m_rx0, tr.m_y0),
+					point(tr.m_lx1, tr.m_y1));
+				s->add_triangle(
 					point(tr.m_lx1, tr.m_y1),
-					point(tr.m_rx1, tr.m_y1));
-				m->add_triangle(
-					style,
-					point(tr.m_lx0, tr.m_y0),
 					point(tr.m_rx0, tr.m_y0),
 					point(tr.m_rx1, tr.m_y1));
 			}
 
-			void	accept_line_strip(int style, const point coords[], int coord_count)
+			virtual void	accept_line_strip(int style, const point coords[], int coord_count)
 			// Remember this line strip in our mesh set.
 			{
 				m->add_line_strip(style, coords, coord_count);
+			}
+
+			void	flush() const
+			// Push our strips into the mesh set.
+			{
+				for (hash<int, tri_stripper*>::iterator it = m_strips.begin();
+				     it != m_strips.end();
+				     ++it)
+				{
+					// Push strip into m.
+					tri_stripper*	s = it.get_value();
+					s->flush(m, it.get_key());
+					
+					delete s;
+				}
 			}
 		};
 		collect_traps	accepter(this);
 
 		sh->tesselate(error_tolerance, &accepter);
+		accepter.flush();
 
 		// triangles should be collected now into the meshes for each fill style.
 	}
@@ -346,9 +464,9 @@ namespace gameswf
 	}
 
 
-	void	mesh_set::add_triangle(int style, const point& a, const point& b, const point& c)
-	// Add the specified triangle to the mesh associated with the
-	// given fill style.
+	void	mesh_set::set_tri_strip(int style, const point pts[], int count)
+	// Set mesh associated with the given fill style to the
+	// specified triangle strip.
 	{
 		assert(style >= 0);
 		assert(style < 1000);	// sanity check
@@ -359,7 +477,7 @@ namespace gameswf
 			m_meshes.resize(style + 1);
 		}
 
-		m_meshes[style].add_triangle(a, b, c);
+		m_meshes[style].set_tri_strip(pts, count);
 	}
 
 	
