@@ -24,7 +24,12 @@
 #include "base/utility.h"
 #include "base/triangulate.h"
 #include "base/tu_random.h"
+#include "base/grid_index.h"
 
+#define PROFILE_TRIANGULATE
+#ifdef PROFILE_TRIANGULATE
+#include "base/tu_timer.h"
+#endif // PROFILE_TRIANGULATE
 
 
 // Template this whole thing on coord_t, so sint16 and float versions
@@ -157,6 +162,8 @@ struct poly_vert
 		m_v(x, y),
 		m_next(-1),
 		m_prev(-1),
+		m_convex_result(0),	// 1 (convex), 0 (colinear), -1 (reflex)
+		m_is_ear(false),
 		m_poly_owner(owner),
 		m_my_index(my_index)
 	{
@@ -174,6 +181,8 @@ struct poly_vert
 	int	m_my_index;	// my index into sorted_verts array
 	int	m_next;
 	int	m_prev;
+	int	m_convex_result;	// (@@ only need 2 bits)
+	bool	m_is_ear;
 	poly<coord_t>*	m_poly_owner;	 // needed?
 };
 
@@ -396,7 +405,9 @@ struct poly
 		:
 		m_loop(-1),
 		m_leftmost_vert(-1),
-		m_vertex_count(0)
+		m_vertex_count(0),
+		m_ear_count(0),
+		m_reflex_point_index(NULL)
 	{
 	}
 
@@ -407,7 +418,10 @@ struct poly
 
 	int	find_valid_bridge_vert(const array<poly_vert<coord_t> >& sorted_verts, int v1);
 
-	void	build_ear_list(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg);
+	void	build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg);
+
+	void	classify_vert(array<vert_t>* sorted_verts, int vi);
+	void	dirty_vert(array<vert_t>* sorted_verts, int vi);
 
 	void	emit_and_remove_ear(array<coord_t>* result, array<vert_t>* sorted_verts, int v0, int v1, int v2);
 	bool	any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int v2);
@@ -420,20 +434,30 @@ struct poly
 
 	void	invalidate(const array<vert_t>& sorted_verts);
 
-	void	remove_degenerate_chain(array<vert_t>* sorted_verts, int vi);
+	int	remove_degenerate_chain(array<vert_t>* sorted_verts, int vi);
 
-	bool	find_and_fix_tangled_triple(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg);
-
+	bool	find_and_fix_tangled_triple(array<vert_t>* sorted_verts, tu_random::generator* rg);
 	void	flip_triple_configuration(array<vert_t>* sorted_verts, int v0, int v1, int v2);
 
 	void	update_connected_sub_poly(array<vert_t>* sorted_verts, int v_start, int v_stop);
+
+	void	init_for_ear_clipping(array<vert_t>* sorted_verts);
+
+	int	get_vertex_count() const { return m_vertex_count; }
+	int	get_ear_count() const { return m_ear_count; }
+
+	int	get_next_ear(const array<vert_t>& sorted_verts, tu_random::generator* rg);
 
 //data:
 	int	m_loop;	// index of first vert
 	int	m_leftmost_vert;
 	int	m_vertex_count;
+	int	m_ear_count;
 
 	// edge search_index;
+
+	// point search index (for finding reflex verts within a potential ear)
+	grid_index_point<coord_t, int>*	m_reflex_point_index;
 };
 
 
@@ -455,11 +479,14 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 	int	first_vert = m_loop;
 	int	vi = first_vert;
 	int	vert_count = 0;
+	int	ear_count = 0;
 	bool	found_leftmost = false;
 	do
 	{
+		const poly_vert<coord_t>*	pvi = &sorted_verts[vi];
+
 		// Check ownership.
-		assert(sorted_verts[vi].m_poly_owner == this);
+		assert(pvi->m_poly_owner == this);
 
 		// Check leftmost vert.
 		assert(m_leftmost_vert == -1
@@ -468,7 +495,7 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 			       (const void*) &sorted_verts[vi]) <= 0);
 
 		// Check link integrity.
-		int	v_next = sorted_verts[vi].m_next;
+		int	v_next = pvi->m_next;
 		assert(sorted_verts[v_next].m_prev == vi);
 
 		if (vi == m_leftmost_vert)
@@ -481,16 +508,23 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 			// Subsequent verts are not allowed to be
 			// coincident; that causes errors in ear
 			// classification.
-			assert((sorted_verts[vi].m_v == sorted_verts[v_next].m_v) == false);
+			assert((pvi->m_v == sorted_verts[v_next].m_v) == false);
 		}
 
+		if (pvi->m_is_ear)
+		{
+			ear_count++;
+		}
 		vert_count++;
 		vi = v_next;
 	}
 	while (vi != first_vert);
 
+	assert(ear_count == m_ear_count);
 	assert(vert_count == m_vertex_count);
 	assert(found_leftmost || m_leftmost_vert == -1);
+
+	// @@ some checks on reflex index?  Make sure reflex vert count matches?
 
 	// Might be nice to check that all verts with (m_poly_owner ==
 	// this) are in our loop.
@@ -665,67 +699,79 @@ void	poly<coord_t>::remap_for_duped_verts(int v0, int v1)
 
 
 template<class coord_t>
-void	poly<coord_t>::build_ear_list(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg)
-// Fill in *ear_list with a list of ears that can be clipped.
+void	poly<coord_t>::classify_vert(array<vert_t>* sorted_verts, int vi)
+// Decide if vi is an ear, and mark its m_is_ear flag & update counts.
+{
+	poly_vert<coord_t>*	pvi = &((*sorted_verts)[vi]);
+	const poly_vert<coord_t>*	pv_prev = &((*sorted_verts)[pvi->m_prev]);
+	const poly_vert<coord_t>*	pv_next = &((*sorted_verts)[pvi->m_next]);
+
+	bool	is_ear = false;
+
+	if (pvi->m_convex_result > 0)
+	{
+		if (vert_in_cone(*sorted_verts, pvi->m_prev, vi, pvi->m_next, pv_next->m_next)
+		    && vert_in_cone(*sorted_verts, pvi->m_next, pv_prev->m_prev, pvi->m_prev, vi))
+		{
+			if (! ear_contains_reflex_vertex(*sorted_verts, pvi->m_prev, vi, pvi->m_next))
+			{
+				// Valid ear.
+				assert(pvi->m_is_ear == false);
+				pvi->m_is_ear = true;
+				m_ear_count++;
+			}
+		}
+	}
+}
+
+
+template<class coord_t>
+void	poly<coord_t>::dirty_vert(array<vert_t>* sorted_verts, int vi)
+// Call when an adjacent vert gets clipped.  Recomputes
+// m_convex_result and clears m_is_ear for the vert.
+{
+	poly_vert<coord_t>*	pvi = &((*sorted_verts)[vi]);
+
+	int	new_convex_result =
+		vertex_left_test<coord_t>((*sorted_verts)[pvi->m_prev].m_v, pvi->m_v, (*sorted_verts)[pvi->m_next].m_v);
+	if (new_convex_result < 0 && pvi->m_convex_result >= 0)
+	{
+		// Vert is newly reflex.
+		// @@ add to reflex vert index
+	}
+	else if (pvi->m_convex_result < 0 && new_convex_result >= 0)
+	{
+		// Vert is newly convex/colinear.
+		// @@ remove from reflex vert index
+	}
+	pvi->m_convex_result = new_convex_result;
+
+	if (pvi->m_is_ear)
+	{
+		// Clear its ear flag.
+		pvi->m_is_ear = false;
+		m_ear_count--;
+	}
+}
+
+
+template<class coord_t>
+void	poly<coord_t>::build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg)
+// Initialize our ear loop with all the ears that can be clipped.
 {
 	assert(is_valid(*sorted_verts));
-
-restart_build_ear_list:
+	assert(m_ear_count == 0);
 
 	if (m_vertex_count < 3)
 	{
-		// Not even a real poly --> no ears.
+		// Not a real poly, no ears.
 		return;
 	}
 
-	// Optimization: limit the size of the ear list to some
-	// smallish number.  After scanning, move m_loop to after the
-	// last ear, so the next scan will pick up in fresh territory.
-	//
-	// We do this to avoid an N^2 search for invalid ears, after
-	// clipping an ear.
-	//
-	// I'm not sure there's much/any cost to keeping this value
-	// small.
-	int	MAX_EAR_COUNT = 4;
-
-// define this if you want to randomize the ear selection (should
-// improve the average ear shape, at low cost).
-//#define RANDOMIZE
-#ifdef RANDOMIZE
-	// Randomization: skip a random number of verts before
-	// starting to look for ears.  (Or skip some random verts in
-	// between ears?)
-	if (m_vertex_count > 6)
-	{
-		// Decide how many verts to skip.
-
-		// Here's a lot of twiddling to avoid a % op.  Worth it?
-		int	random_range = m_vertex_count >> 2;
-		static const int	MASK_TABLE_SIZE = 8;
-		int	random_mask[MASK_TABLE_SIZE] = {
-			1, 1, 1, 3, 3, 3, 3, 7	// roughly, the largest (2^N-1) <= index
-		};
-		if (random_range >= MASK_TABLE_SIZE) random_range = MASK_TABLE_SIZE - 1;
-		assert(random_range > 0);
-
-		int	random_skip = rg->next_random() & random_mask[random_range];
-
-		// Do the skipping, by manipulating m_loop.
-		while (random_skip-- > 0)
-		{
-			m_loop = (*sorted_verts)[m_loop].m_next;
-		}
-	}
-#endif // RANDOMIZE
-
-	assert(is_valid(*sorted_verts));
-	assert(ear_list);
-	assert(ear_list->size() == 0);
-
-	int	first_vert = m_loop;
-	int	vi = first_vert;
-	do
+	// Go around the loop, evaluating the verts.
+	int	vi = m_loop;
+	int	verts_processed_count = 0;
+	for (;;)
 	{
 		const poly_vert<coord_t>*	pvi = &((*sorted_verts)[vi]);
 		const poly_vert<coord_t>*	pv_prev = &((*sorted_verts)[pvi->m_prev]);
@@ -755,49 +801,83 @@ restart_build_ear_list:
 			// Degenerate case: zero-area triangle.
 			//
 			// Remove it (and any additional degenerates chained onto this ear).
-			remove_degenerate_chain(sorted_verts, vi);
+			vi = remove_degenerate_chain(sorted_verts, vi);
 
-			// Restart our ear search.  Results so far may
-			// be invalid due to degenerate removal.
-			ear_list->clear();
-			goto restart_build_ear_list;
-		}
-		else if (vertex_left_test<coord_t>(pv_prev->m_v, pvi->m_v, pv_next->m_v) > 0)
-		{
-			if (vert_in_cone(*sorted_verts, pvi->m_prev, vi, pvi->m_next, pv_next->m_next)
-			    && vert_in_cone(*sorted_verts, pvi->m_next, pv_prev->m_prev, pvi->m_prev, vi))
+			if (m_vertex_count < 3)
 			{
-				if (! ear_contains_reflex_vertex(*sorted_verts, pvi->m_prev, vi, pvi->m_next))
-				{
-					// Valid ear.
-					is_ear = true;
-				}
-			}
-		}
-
-		if (is_ear)
-		{
-			// Add to the ear list.
-			ear_list->push_back(vi);
-
-			if (ear_list->size() >= MAX_EAR_COUNT)
-			{
-				// Don't add any more ears.
-
-				// Adjust m_loop so that the next
-				// search starts at the end of the
-				// current search.
-				m_loop = pvi->m_next;
-
 				break;
 			}
+
+			continue;
+		}
+		else
+		{
+			classify_vert(sorted_verts, vi);
 		}
 
 		vi = pvi->m_next;
+		verts_processed_count++;
+
+		if (verts_processed_count >= m_vertex_count)
+		{
+			break;
+		}
 	}
-	while (vi != first_vert);
 
 	assert(is_valid(*sorted_verts, true /* do check for dupes */));
+}
+
+
+template<class coord_t>
+int	poly<coord_t>::get_next_ear(const array<vert_t>& sorted_verts, tu_random::generator* rg)
+// Return the next ear to be clipped.
+{
+	assert(m_ear_count > 0);
+
+	while (sorted_verts[m_loop].m_is_ear == false)
+	{
+		m_loop = sorted_verts[m_loop].m_next;
+	}
+
+	int	next_ear = m_loop;
+
+// define this if you want to randomize the ear selection (should
+// improve the average ear shape, at low cost).
+//#define RANDOMIZE
+#ifdef RANDOMIZE
+	// Randomization: skip a random number of ears.
+	if (m_ear_count > 6)
+	{
+		// Decide how many ears to skip.
+
+		// Here's a lot of twiddling to avoid a % op.  Worth it?
+		int	random_range = m_ear_count >> 2;
+		static const int	MASK_TABLE_SIZE = 8;
+		int	random_mask[MASK_TABLE_SIZE] = {
+			1, 1, 1, 3, 3, 3, 3, 7	// roughly, the largest (2^N-1) <= index
+		};
+		if (random_range >= MASK_TABLE_SIZE) random_range = MASK_TABLE_SIZE - 1;
+		assert(random_range > 0);
+
+		int	random_skip = rg->next_random() & random_mask[random_range];
+
+		// Do the skipping, by manipulating m_loop.
+		while (random_skip > 0)
+		{
+			if (sorted_verts[m_loop].m_is_ear)
+			{
+				random_skip--;
+			}
+			m_loop = sorted_verts[m_loop].m_next;
+		}
+
+		assert(is_valid(sorted_verts));
+	}
+#endif // RANDOMIZE
+
+	assert(sorted_verts[next_ear].m_is_ear == true);
+
+	return next_ear;
 }
 
 
@@ -818,10 +898,12 @@ void	poly<coord_t>::emit_and_remove_ear(
 	poly_vert<coord_t>*	pv1 = &(*sorted_verts)[v1];
 	poly_vert<coord_t>*	pv2 = &(*sorted_verts)[v2];
 
+	assert((*sorted_verts)[v1].m_is_ear);
+
 	if (m_loop == v1)
 	{
 		// Change m_loop, since we're about to lose it.
-		m_loop = v0;
+		m_loop = v2;
 	}
 
 	// Make sure m_leftmost_vert is dead; we don't need it now.
@@ -858,38 +940,33 @@ void	poly<coord_t>::emit_and_remove_ear(
 
 	// We lost v1.
 	m_vertex_count--;
+	m_ear_count--;
 
 	if (pv0->m_v == pv2->m_v)
 	{
-		// remove_degenerate_chain() should take care of this, right?
+		// remove_degenerate_chain() should have taken care of
+		// this before we got here.
 		assert(0);
-
-		// We've created a duplicate vertex by removing a
-		// degenerate ear.  Must eliminate the duplication.
-
-		// Unlink pv2.
-		if (m_loop == v2)
-		{
-			m_loop = v0;
-		}
-
-		pv0->m_next = pv2->m_next;
-		(*sorted_verts)[pv2->m_next].m_prev = v0;
-
-		m_vertex_count--;
 	}
+
+	// ear status of v0 and v2 could have changed now.
+	dirty_vert(sorted_verts, v0);
+	dirty_vert(sorted_verts, v2);
 
 	assert(is_valid(*sorted_verts));
 }
 
 
 template<class coord_t>
-void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
+int	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 // Remove the degenerate ear at vi, and any degenerate ear formed as
 // we remove the previous one.
+//
+// Return the index of a vertex just prior to the chain we've removed.
 {
-	// Make sure m_leftmost_vert is dead; we don't need it now.
-	m_leftmost_vert = -1;
+	assert(m_leftmost_vert == -1);
+
+	int	retval = vi;
 
 	for (;;)
 	{
@@ -918,6 +995,17 @@ void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 		pv1->m_prev = -1;
 		pv1->m_poly_owner = NULL;
 
+		if (pv1->m_convex_result < 0)
+		{
+			// vi was reflex, remove it from index
+			// @@ TODO
+		}
+
+		if (pv1->m_is_ear)
+		{
+			m_ear_count--;
+		}
+
 		// We lost vi.
 		m_vertex_count--;
 
@@ -925,6 +1013,7 @@ void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 
 		if (m_vertex_count < 3)
 		{
+			retval = pv0->m_my_index;
 			break;
 		}
 
@@ -946,11 +1035,19 @@ void	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 		}
 		else
 		{
+			// ear/reflex status of pv0 & pv2 may have changed.
+			dirty_vert(sorted_verts, pv0->m_my_index);
+			dirty_vert(sorted_verts, pv2->m_my_index);
+
+			retval = pv0->m_my_index;
+
 			break;
 		}
 	}
 
 	assert(is_valid(*sorted_verts, true /* do check for dupes; there shouldn't be any! */));
+
+	return retval;
 }
 
 
@@ -986,7 +1083,63 @@ void	poly<coord_t>::update_connected_sub_poly(array<vert_t>* sorted_verts, int v
 
 
 template<class coord_t>
-bool	poly<coord_t>::find_and_fix_tangled_triple(array<int>* ear_list, array<vert_t>* sorted_verts, tu_random::generator* rg)
+void	poly<coord_t>::init_for_ear_clipping(array<vert_t>* sorted_verts)
+// Classify all verts for convexity.
+//
+// Initialize our point-search structure, for quickly finding reflex
+// verts within a potential ear.
+{
+	assert(is_valid(*sorted_verts));
+
+	// Kill m_leftmost_vert; don't need it once all the polys are
+	// joined together into one loop.
+	m_leftmost_vert = -1;
+
+	int	reflex_vert_count = 0;
+
+	int	vi = m_loop;
+	for (;;)
+	{
+		// Classify vi as reflex/convex.
+		vert_t*	pvi = &(*sorted_verts)[vi];
+		pvi->m_convex_result =
+			vertex_left_test<coord_t>((*sorted_verts)[pvi->m_prev].m_v, pvi->m_v, (*sorted_verts)[pvi->m_next].m_v);
+		
+		if (pvi->m_convex_result < 0)
+		{
+			reflex_vert_count++;
+
+			// @@ TODO update bounds
+		}
+
+		vi = (*sorted_verts)[vi].m_next;
+		if (vi == m_loop)
+		{
+			break;
+		}
+	}
+
+
+	// @@ TODO
+
+	// decide on grid density, FIST recommends sqrt(N) x sqrt(N)
+
+	// m_reflex_point_index = new grid_index_point<coord_t, int>(bound, x_cells, y_cells);
+
+	// for verts {
+	//	if (v m_convex_result < 0)
+	//	{
+	//		m_reflex_point_index->add(index_point<coord_t>(v.m_v.x, v.m_v.y), v.m_my_index);
+	//	}
+	// }
+
+	assert(is_valid(*sorted_verts));
+}
+
+
+
+template<class coord_t>
+bool	poly<coord_t>::find_and_fix_tangled_triple(array<vert_t>* sorted_verts, tu_random::generator* rg)
 // Search for a triple of coincident verts, whose configuration can be
 // flipped, to allow finding more polygon ears.
 //
@@ -997,7 +1150,7 @@ bool	poly<coord_t>::find_and_fix_tangled_triple(array<int>* ear_list, array<vert
 // ears.  ear_list will have the new ears.
 {
 	assert(is_valid(*sorted_verts));
-	assert(ear_list && ear_list->size() == 0);
+	assert(get_ear_count() == 0);
 
 	// Find all coincident triple combos (lexicographic order).
 	for (int v0 = 0, n = sorted_verts->size(); v0 < n - 2; v0++)
@@ -1047,9 +1200,9 @@ bool	poly<coord_t>::find_and_fix_tangled_triple(array<int>* ear_list, array<vert
 				flip_triple_configuration(sorted_verts, v0, v1, v2);
 
 				// New ears?
-				build_ear_list(ear_list, sorted_verts, rg);
+				build_ear_list(sorted_verts, rg);
 
-				if (ear_list->size())
+				if (get_ear_count() > 0)
 				{
 					// The flip worked!
 					return true;
@@ -1145,6 +1298,18 @@ bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int
 {
 	// @@ TODO implement spatial search structure to accelerate this!
 
+// 	query	q(min_x, max_x, min_y, max_y);
+// 	for (spatial_index::iterator it = m_edge_index.begin(q); ! it.at_end(); it++)
+// 	{
+// 		it.first ---> box (yes?);
+// 		it.second ---> payload (yes?);
+
+// 		int	vi = it.second.v0;
+// 		int	v_next = it.second.v1;
+
+// 		// @@ stuff
+// 	}
+
 	// For now, brute force O(N) :^o
 
 	assert(sorted_verts[external_vert].m_poly_owner != this);
@@ -1207,6 +1372,11 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 	// indices.  The vertical culling has early outs, but could
 	// possibly have to look at lots of verts if there is a ton of
 	// vertical overlap.
+	//
+	// The other problem with the current culling is that for
+	// large polys, as the poly gets trimmed down, there will be a
+	// lot of null verts in the sorted list that must be skipped
+	// over.
 
 	assert(is_valid(sorted_verts));
 
@@ -1333,11 +1503,7 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 			}
 			else
 			{
-				// @@ cache this in vert?  Must refresh when
-				// ear is clipped, polys are joined, etc.
-				bool	reflex = vertex_left_test(
-					sorted_verts[v_next].m_v, pvk->m_v, sorted_verts[v_prev].m_v) > 0;
-
+				bool	reflex = pvk->m_convex_result < 0;
 				if (reflex
 				    && vertex_in_ear(
 					    pvk->m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
@@ -1450,7 +1616,11 @@ struct poly_env
 
 private:
 	// Internal helpers.
-	void	join_paths_with_bridge(int vert_on_main_poly, int vert_on_sub_poly);
+	void	join_paths_with_bridge(
+		poly<coord_t>* main_poly,
+		poly<coord_t>* sub_poly,
+		int vert_on_main_poly,
+		int vert_on_sub_poly);
 	void	dupe_two_verts(int v0, int v1);
 };
 
@@ -1598,15 +1768,15 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 			//
 			assert(m_sorted_verts[v2].m_poly_owner == m_polys[0]);
 			assert(m_sorted_verts[v1].m_poly_owner == m_polys[1]);
-			join_paths_with_bridge(v2, v1);
+			join_paths_with_bridge(full_poly, m_polys[1], v2, v1);
 
 			// Drop the joined poly.
 			delete m_polys[1];
 			m_polys.remove(1);
 		}
-
-		//   that we can run ear-clipping on.
 	}
+
+	m_polys[0]->init_for_ear_clipping(&m_sorted_verts);
 
 	assert(m_polys.size() == 1);
 	// assert(all verts in m_sorted_verts have m_polys[0] as their owner);
@@ -1614,18 +1784,20 @@ void	poly_env<coord_t>::join_paths_into_one_poly()
 
 
 template<class coord_t>
-void	poly_env<coord_t>::join_paths_with_bridge(int vert_on_main_poly, int vert_on_sub_poly)
+void	poly_env<coord_t>::join_paths_with_bridge(
+	poly<coord_t>* main_poly,
+	poly<coord_t>* sub_poly,
+	int vert_on_main_poly,
+	int vert_on_sub_poly)
 // Absorb the sub-poly into the main poly, using a zero-area bridge
 // between the two given verts.
 {
 	assert(vert_on_main_poly != vert_on_sub_poly);
-
-	poly<coord_t>*	main_poly = m_sorted_verts[vert_on_main_poly].m_poly_owner;
-	poly<coord_t>*	sub_poly = m_sorted_verts[vert_on_sub_poly].m_poly_owner;
-
 	assert(main_poly != NULL);
 	assert(sub_poly != NULL);
 	assert(main_poly != sub_poly);
+	assert(main_poly == m_sorted_verts[vert_on_main_poly].m_poly_owner);
+	assert(sub_poly == m_sorted_verts[vert_on_sub_poly].m_poly_owner);
 
 	if (m_sorted_verts[vert_on_main_poly].m_v == m_sorted_verts[vert_on_sub_poly].m_v)
 	{
@@ -1737,7 +1909,6 @@ template<class coord_t>
 static void	recovery_process(
 	array<poly<coord_t>*>* polys,	// polys waiting to be processed
 	poly<coord_t>* P,	// current poly
-	array<int>* Q,	// ears
 	array<poly_vert<coord_t> >* sorted_verts,
 	tu_random::generator* rg);
 
@@ -1784,6 +1955,10 @@ static void compute_triangulation(
 		return;
 	}
 
+#ifdef PROFILE_TRIANGULATE
+	uint64	start_ticks = tu_timer::get_profile_ticks();
+#endif // PROFILE_TRIANGULATE
+
 	// Local generator, for some parts of the algo that need random numbers.
 	tu_random::generator	rand_gen;
 
@@ -1793,6 +1968,11 @@ static void compute_triangulation(
 	penv.init(path_count, paths);
 
 	penv.join_paths_into_one_poly();
+
+#ifdef PROFILE_TRIANGULATE
+	uint64	join_ticks = tu_timer::get_profile_ticks();
+	fprintf(stderr, "join poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(join_ticks - start_ticks));
+#endif // PROFILE_TRIANGULATE
 
 // Debugging only: just emit our joined poly, without triangulating.
 //#define EMIT_JOINED_POLY
@@ -1858,39 +2038,20 @@ static void compute_triangulation(
 		poly<coord_t>*	P = penv.m_polys.back();
 		penv.m_polys.pop_back();
 
-		array<int>	Q;	// Q is the ear list
-		P->build_ear_list(&Q, &penv.m_sorted_verts, &rand_gen);
+		P->build_ear_list(&penv.m_sorted_verts, &rand_gen);
 
 		bool	ear_was_clipped = false;
-		while (P->m_vertex_count > 3)
+		while (P->get_vertex_count() > 3)
 		{
-			if (Q.size())
+			if (P->get_ear_count() > 0)
 			{
 				// Clip the next ear from Q.
-				int	v1 = Q.back();	// @@ or pop randomly!  or sort Q!
-				Q.pop_back();
+				int	v1 = P->get_next_ear(penv.m_sorted_verts, &rand_gen);
 				int	v0 = penv.m_sorted_verts[v1].m_prev;
 				int	v2 = penv.m_sorted_verts[v1].m_next;
 
 				P->emit_and_remove_ear(result, &penv.m_sorted_verts, v0, v1, v2);
-
 				ear_was_clipped = true;
-
-				// v0 and v2 must be removed from ear
-				// list, if they're in it.
-				//
-				// This sucks, unless the size of Q is
-				// limited (it should be).  See
-				// build_ear_list().
-				for (int i = 0, n = Q.size(); i < n; i++)
-				{
-					if (Q[i] == v0 || Q[i] == v2)
-					{
-						Q.remove(i);	// or erase_u() or something
-						i--;
-						n--;
-					}
-				}
 
 #if 0
 				// debug hack: emit current state of P
@@ -1902,13 +2063,11 @@ static void compute_triangulation(
 					return;
 				}
 #endif // HACK
-
-
 			}
 			else if (ear_was_clipped == true)
 			{
 				// Re-examine P for new ears.
-				P->build_ear_list(&Q, &penv.m_sorted_verts, &rand_gen);
+				P->build_ear_list(&penv.m_sorted_verts, &rand_gen);
 				ear_was_clipped = false;
 			}
 			else
@@ -1921,22 +2080,35 @@ static void compute_triangulation(
 				return;
 #endif
 
-				recovery_process(&penv.m_polys, P, &Q, &penv.m_sorted_verts, &rand_gen);
+				recovery_process(&penv.m_polys, P, &penv.m_sorted_verts, &rand_gen);
 				ear_was_clipped = false;
 			}
 		}
-		if (P->m_vertex_count == 3)
+		if (P->get_vertex_count() == 3)
 		{
 			// Emit the final triangle.
+			if (penv.m_sorted_verts[P->m_loop].m_is_ear == false)
+			{
+				// Force an arbitrary vert to be an ear.
+				penv.m_sorted_verts[P->m_loop].m_is_ear = true;
+				P->m_ear_count++;
+				true;
+			}
 			P->emit_and_remove_ear(
 				result,
 				&penv.m_sorted_verts,
+				penv.m_sorted_verts[P->m_loop].m_prev,
 				P->m_loop,
-				penv.m_sorted_verts[P->m_loop].m_next,
-				penv.m_sorted_verts[penv.m_sorted_verts[P->m_loop].m_next].m_next);
+				penv.m_sorted_verts[P->m_loop].m_next);
 		}
 		delete P;
 	}
+
+#ifdef PROFILE_TRIANGULATE
+	uint64	clip_ticks = tu_timer::get_profile_ticks();
+	fprintf(stderr, "clip poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks));
+	fprintf(stderr, "total for poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks));
+#endif // PROFILE_TRIANGULATE
 
 	assert(penv.m_polys.size() == 0);
 	// assert(for all penv.m_sorted_verts: owning poly == NULL);
@@ -1949,7 +2121,6 @@ template<class coord_t>
 void	recovery_process(
 	array<poly<coord_t>*>* polys,
 	poly<coord_t>* P,
-	array<int>* Q,
 	array<poly_vert<coord_t> >* sorted_verts,
 	tu_random::generator* rg)
 {
@@ -1976,7 +2147,8 @@ void	recovery_process(
 		if (edges_intersect(*sorted_verts, ev0, ev1, ev2, ev3))
 		{
 			// Insert (1,2,3) as an ear.
-			Q->push_back(ev2);
+			(*sorted_verts)[ev2].m_is_ear = true;
+			P->m_ear_count++;
 
 			fprintf(stderr, "recovery_process: self-intersecting sequence, treating %d as an ear\n", ev2);//xxxx
 
@@ -2029,10 +2201,10 @@ void	recovery_process(
 	// Convert the three crossing paths into three coincident
 	// corners that can be clipped separately.
 
-	if (P->find_and_fix_tangled_triple(Q, sorted_verts, rg))
+	if (P->find_and_fix_tangled_triple(sorted_verts, rg))
 	{
 		fprintf(stderr, "recovery_process: tangled triple\n");//xxxx
-		assert(Q->size() > 0);
+		assert(P->get_ear_count() > 0);
 		return;
 	}
 
@@ -2077,7 +2249,8 @@ void	recovery_process(
 		{
 			// vi is convex; treat it as an ear,
 			// regardless of other problems it may have.
-			Q->push_back(vi);
+			(*sorted_verts)[vi].m_is_ear = true;
+			P->m_ear_count++;
 
 			fprintf(stderr, "recovery_process: found convex vert, treating %d as an ear\n", vi);//xxxx
 
@@ -2096,7 +2269,8 @@ void	recovery_process(
 	{
 		vi = (*sorted_verts)[vi].m_next;
 	}
-	Q->push_back(vi);
+	(*sorted_verts)[vi].m_is_ear = true;
+	P->m_ear_count++;
 
 	fprintf(stderr, "recovery_process: treating random vert %d as an ear\n", vi);//xxxx
 
