@@ -53,6 +53,7 @@ namespace gameswf
 
 	struct button_character_definition : public character
 	{
+		bool m_menu;
 		array<button_record>	m_button_records;
 		array<button_action>	m_button_actions;
 
