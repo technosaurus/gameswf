@@ -146,6 +146,24 @@ float	vec3::sqrmag() const
 }
 
 
+void	vec3::read(SDL_RWops* in)
+// Read our values from the given stream.
+{
+	m[0] = ReadFloat32(in);
+	m[1] = ReadFloat32(in);
+	m[2] = ReadFloat32(in);
+}
+
+
+void	vec3::write(SDL_RWops* out)
+// Write our contents to the given stream.
+{
+	WriteFloat32(out, m[0]);
+	WriteFloat32(out, m[1]);
+	WriteFloat32(out, m[2]);
+}
+
+
 bool	vec3::checknan() const
 // Returns true if any component is nan.
 {
