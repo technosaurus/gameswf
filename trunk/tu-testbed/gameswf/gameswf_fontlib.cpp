@@ -84,7 +84,76 @@ namespace fontlib
 
 	static Uint8*	s_current_cache_image = NULL;
 	static bitmap_info*	s_current_bitmap_info = NULL;
-	static Uint8*	s_coverage_image = NULL;
+//	static Uint8*	s_coverage_image = NULL;
+
+	// Integer-bounded 2D rectangle.
+	struct recti
+	{
+		int	m_x_min, m_x_max, m_y_min, m_y_max;
+
+		recti(int x0 = 0, int x1 = 0, int y0 = 0, int y1 = 0)
+			:
+			m_x_min(x0),
+			m_y_min(x1),
+			m_x_max(y0),
+			m_y_max(y1)
+		{
+		}
+
+		bool	is_valid() const
+		{
+			return m_x_min <= m_x_max
+				&& m_y_min <= m_y_max;
+		}
+
+		bool	intersects(const recti& r) const
+		// Return true if r touches *this.
+		{
+			if (m_x_min >= r.m_x_max
+			    || m_x_max <= r.m_x_min
+			    || m_y_min >= r.m_y_max
+			    || m_y_max <= r.m_y_min)
+			{
+				// disjoint.
+				return false;
+			}
+			return true;
+		}
+
+		bool	contains(int x, int y) const
+		// Return true if (x,y) is inside *this.
+		{
+			return x >= m_x_min
+				&& x < m_x_max
+				&& y >= m_y_min
+				&& y < m_y_max;
+		}
+	};
+	// Rects already on the texture.
+	static array<recti>	s_covered_rects;
+
+	// 2d integer point.
+	struct pointi
+	{
+		int	m_x, m_y;
+
+		pointi(int x = 0, int y = 0)
+			:
+			m_x(x),
+			m_y(y)
+		{
+		}
+
+		bool	operator<(const pointi& p) const
+		// For sorting anchor points.
+		{
+			return imin(m_x, m_y) < imin(p.m_x, p.m_y);
+		}
+	};
+	// Candidates for upper-left corner of a new rectangle.  Use
+	// lower-left and upper-right of previously placed rects.
+	static array<pointi>	s_anchor_points;
+
 
 	static bool	s_saving = false;
 	static tu_file*	s_file = NULL;
@@ -139,13 +208,91 @@ namespace fontlib
 	}
 
 
+	bool	is_rect_available(const recti& r)
+	// Return true if the given rect can be packed into the
+	// currently active texture.
+	{
+		assert(r.is_valid());
+		assert(r.m_x_min >= 0);
+		assert(r.m_y_min >= 0);
+
+		if (r.m_x_max > GLYPH_CACHE_TEXTURE_SIZE
+		    || r.m_y_max > GLYPH_CACHE_TEXTURE_SIZE)
+		{
+			// Rect overflows the texture bounds.
+			return false;
+		}
+
+		// Check against existing rects.
+		for (int i = 0, n = s_covered_rects.size(); i < n; i++)
+		{
+			if (r.intersects(s_covered_rects[i]))
+			{
+				return false;
+			}
+		}
+
+		// Spot appears to be open.
+		return true;
+	}
+
+
+	void	add_cover_rect(const recti& r)
+	// Add the given rect to our list.  Eliminate any anchor
+	// points that are disqualified by this new rect.
+	{
+		s_covered_rects.push_back(r);
+
+		for (int i = 0; i < s_anchor_points.size(); i++)
+		{
+			const pointi&	p = s_anchor_points[i];
+			if (r.contains(p.m_x, p.m_y))
+			{
+				// Eliminate this point from consideration.
+				s_anchor_points.remove(i);
+				i--;
+			}
+		}
+	}
+
+
+	void	add_anchor_point(const pointi& p)
+	// Add point to our list of anchors.  Keep the list sorted.
+	{
+		// Add it to end, since we expect new points to be
+		// relatively greater than existing points.
+		s_anchor_points.push_back(p);
+
+		// Insertion sort -- bubble down into correct spot.
+		for (int i = s_anchor_points.size() - 2; i >= 0; i--)
+		{
+			if (s_anchor_points[i + 1] < s_anchor_points[i])
+			{
+				swap(&(s_anchor_points[i]), &(s_anchor_points[i + 1]));
+			}
+			else
+			{
+				// Done bubbling down.
+				break;
+			}
+		}
+	}
+
+
 	bool	pack_rectangle(int* px, int* py, int width, int height)
 	// Find a spot for the rectangle in the current cache image.
 	// Return true if there's a spot; false if there's no room.
+	//
+	// @@ for better packing, we should keep *several* textures
+	// open and try to pack rects into the dregs of old textures
+	// before closing them.  Often smaller glyphs that come after
+	// a big glyph can fit in some leftover space.
+	//
+	// @@ we could also be on the lookout for glyphs w/ identical
+	// image data?  I.e. compute a hash on the image data; check
+	// hash table before packing a duplicate?
 	{
-		// Really dumb implementation.  Just search for a fit.
-
-		// @@ much faster algo, due to JARE:
+		// Nice algo, due to JARE:
 		//
 		// * keep a list of "candidate points"; initialize it with {0,0}
 		//
@@ -154,17 +301,59 @@ namespace fontlib
 		//
 		// * search the candidate points only, when looking
 		// for a good spot.  If we find a good one, also try
-		// to scanning left or up as well; sometimes this can
+		// scanning left or up as well; sometimes this can
 		// close some open space.
 		//
 		// * when we use a candidate point, remove it from the list.
 
-		// @@ or, keep a "horizon", and play tetris by putting
-		// each new rect in the spot furthest to the (left |
-		// top).  Actually, the horizon probably kicks butt,
-		// because you can do the coverage search just by
-		// looking ahead in the horizon.  Occasionally you'll
-		// lose some empty space due to bubbles, though...
+		// Consider candidate spots.
+		for (int i = 0, n = s_anchor_points.size(); i < n; i++)
+		{
+			const pointi&	p = s_anchor_points[i];
+			recti	r(p.m_x, p.m_y, p.m_x + width, p.m_y + height);
+
+			// Is this spot any good?
+			if (is_rect_available(r))
+			{
+				// Good spot.  Scan left to see if we can tighten it up.
+				while (r.m_x_min > 0)
+				{
+					recti	r2(r.m_x_min - 1, r.m_y_min, r.m_x_min - 1 + width, r.m_y_min + height);
+					if (is_rect_available(r2))
+					{
+						// Shift left.
+						r = r2;
+					}
+					else
+					{
+						// Not clear; stop scanning.
+						break;
+					}
+				}
+
+				// Mark our covered rect; remove newly covered anchors.
+				add_cover_rect(r);
+
+				// Found our desired spot.  Add new
+				// candidate points to the anchor list.
+				add_anchor_point(pointi(r.m_x_min, r.m_y_max));	// lower-left
+				add_anchor_point(pointi(r.m_x_max, r.m_y_min));	// upper-right
+
+				*px = r.m_x_min;
+				*py = r.m_y_min;
+
+				return true;
+			}
+		}
+
+		// Couldn't find a good spot.
+		return false;
+	}
+
+// The old stuff.
+#if 0
+		// Really dumb implementation.  Just search for a fit.
+
 
 		// Width/height coords, scaled down to the coverage map.
 		int	round_up_add = (1 << GLYPH_PACK_ROUNDING_BITS);
@@ -210,6 +399,7 @@ namespace fontlib
 
 		return false;
 	}
+#endif // 0
 
 
 	texture_glyph*	texture_pack(
@@ -251,11 +441,16 @@ namespace fontlib
 				{
 					s_current_cache_image = new Uint8[GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE];
 
-					assert(s_coverage_image == NULL);
-					s_coverage_image = new Uint8[GLYPH_COVERAGE_BITMAP_SIZE * GLYPH_COVERAGE_BITMAP_SIZE];
+//					assert(s_coverage_image == NULL);
+//					s_coverage_image = new Uint8[GLYPH_COVERAGE_BITMAP_SIZE * GLYPH_COVERAGE_BITMAP_SIZE];
 				}
 				memset(s_current_cache_image, 0, GLYPH_CACHE_TEXTURE_SIZE * GLYPH_CACHE_TEXTURE_SIZE);
-				memset(s_coverage_image, 0, GLYPH_COVERAGE_BITMAP_SIZE * GLYPH_COVERAGE_BITMAP_SIZE);
+//				memset(s_coverage_image, 0, GLYPH_COVERAGE_BITMAP_SIZE * GLYPH_COVERAGE_BITMAP_SIZE);
+
+				// Initialize the coverage data.
+				s_covered_rects.resize(0);
+				s_anchor_points.resize(0);
+				s_anchor_points.push_back(pointi(0, 0));	// seed w/ upper-left of texture.
 			}
 		
 			// Can we fit the image data into the current cache?
@@ -544,9 +739,11 @@ namespace fontlib
 			delete [] s_current_cache_image;
 			s_current_cache_image = NULL;
 
-			assert(s_coverage_image);
-			delete [] s_coverage_image;
-			s_coverage_image = NULL;
+//			assert(s_coverage_image);
+//			delete [] s_coverage_image;
+//			s_coverage_image = NULL;
+			s_covered_rects.resize(0);
+			s_anchor_points.resize(0);
 		}
 
 		// Clean up the render buffer that we just used.
