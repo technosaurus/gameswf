@@ -9,6 +9,8 @@
 #define POSTSCRIPT_H
 
 
+#include "base/tu_config.h"
+
 // Loosely translated into C++ from:
 // -- ps.lua
 // -- lua interface to postscript

@@ -8,6 +8,7 @@
 #ifndef TU_MATH_H
 #define TU_MATH_H
 
+#include "base/tu_config.h"
 #include <math.h>
 
 // OSX doesn't have single precision math functions defined in math.h

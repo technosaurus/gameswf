@@ -9,6 +9,7 @@
 #define IMAGE_H
 
 
+#include "base/tu_config.h"
 #include "base/tu_types.h"
 class tu_file;
 namespace jpeg { struct input; };

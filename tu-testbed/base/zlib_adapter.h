@@ -11,6 +11,7 @@
 #define ZLIB_ADAPTER_H
 
 
+#include "base/tu_config.h"
 class tu_file;
 
 

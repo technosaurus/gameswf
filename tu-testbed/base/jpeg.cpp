@@ -7,8 +7,8 @@
 // IJG jpeg lib.
 
 
-#include "base/jpeg.h"
 #include "base/utility.h"
+#include "base/jpeg.h"
 #include "base/tu_file.h"
 #include <stdio.h>
 extern "C" {
@@ -149,7 +149,7 @@ namespace jpeg
 	// stream.
 	{
 		// assert(cinfo->src == NULL);
-		cinfo->src = (jpeg_source_mgr*) new rw_source(instream);
+		cinfo->src = (jpeg_source_mgr*) (new rw_source(instream));
 	}
 
 
@@ -233,7 +233,7 @@ namespace jpeg
 	// Set up the given compress object to write to the given
 	// output stream.
 	{
-		cinfo->dest = (jpeg_destination_mgr*) new rw_dest(outstream);
+		cinfo->dest = (jpeg_destination_mgr*) (new rw_dest(outstream));
 	}
 
 

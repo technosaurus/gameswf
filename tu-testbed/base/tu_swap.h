@@ -10,6 +10,7 @@
 #define TU_SWAP_H
 
 
+#include "base/tu_config.h"
 #include "base/tu_types.h"
 
 
