@@ -327,7 +327,8 @@ struct grid_index_point
 	iterator	find(const point_t& location, payload p)
 	// Helper.  Search for matching entry.
 	{
-		for (iterator it = begin(box_t(location, location)); ! it.at_end(); ++it)
+		iterator it;
+		for (it = begin(box_t(location, location)); ! it.at_end(); ++it)
 		{
 			if (it->location == location && it->value == p)
 			{
@@ -687,7 +688,8 @@ struct grid_index_box
 	iterator	find(const box_t& bound, payload p)
 	// Helper.  Search for matching entry.
 	{
-		for (iterator it = begin(bound); ! it.at_end(); ++it)
+		iterator it;
+		for (it = begin(bound); ! it.at_end(); ++it)
 		{
 			if (it->bound == bound && it->value == p)
 			{
