@@ -1648,6 +1648,8 @@ namespace gameswf
 							const char*	str = (const char*) &m_buffer[3 + i];
 							i += strlen(str) + 1;
 							env->push(str);
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", str));
 						}
 						else if (type == 1)
 						{
@@ -1663,15 +1665,21 @@ namespace gameswf
 							i += 4;
 
 							env->push(u.f);
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed '%f'\n", u.f));
 						}
 						else if (type == 2)
 						{
 							// NULL
 							env->push(as_value());	// @@???
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed NULL\n"));
 						}
 						else if (type == 3)
 						{
 							env->push(as_value(as_value::UNDEFINED));
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed UNDEFINED\n"));
 						}
 						else if (type == 4)
 						{
@@ -1681,6 +1689,10 @@ namespace gameswf
 							i++;
 //							log_msg("reg[%d]\n", reg);
 							env->push(/* contents of register[reg] */ false);	// @@ TODO
+
+							log_error("error: push register not defined\n");
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed register[%d] (@@ TODO)\n", reg));
 						}
 						else if (type == 5)
 						{
@@ -1688,6 +1700,8 @@ namespace gameswf
 							i++;
 //							log_msg("bool(%d)\n", bool_val);
 							env->push(bool_val);
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed %s\n", bool_val ? "true" : "false"));
 						}
 						else if (type == 6)
 						{
@@ -1709,6 +1723,8 @@ namespace gameswf
 							i += 8;
 
 							env->push(u.d);
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed double %f\n", u.d));
 						}
 						else if (type == 7)
 						{
@@ -1720,6 +1736,8 @@ namespace gameswf
 							i += 4;
 						
 							env->push(val);
+
+							IF_VERBOSE_ACTION(log_msg("-------------- pushed int32 %d\n", val));
 						}
 						else if (type == 8)
 						{
@@ -1728,11 +1746,14 @@ namespace gameswf
 							if (id < m_dictionary.size())
 							{
 								env->push(m_dictionary[id]);
+
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", m_dictionary[id]));
 							}
 							else
 							{
 								log_error("error: dict_lookup(%d) is out of bounds!\n", id);
 								env->push(0);
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed 0 @@\n"));
 							}
 						}
 						else if (type == 9)
@@ -1742,11 +1763,14 @@ namespace gameswf
 							if (id < m_dictionary.size())
 							{
 								env->push(m_dictionary[id]);
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", m_dictionary[id]));
 							}
 							else
 							{
 								log_error("error: dict_lookup(%d) is out of bounds!\n", id);
 								env->push(0);
+
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed 0 @@"));
 							}
 						}
 					}
@@ -2840,6 +2864,13 @@ namespace gameswf
 				for (int ct = 0; ct < count; ct++)
 				{
 					log_msg("\t\t");	// indent
+
+					//xxxxxxx debug
+					if (count == 8 && strcmp((const char*) &instruction_data[3 + i], "runThrough") == 0)
+					{
+						count = count; // break here!
+					}
+					//xxxxxxxx
 
 					log_msg("\"");
 					while (instruction_data[3 + i])
