@@ -13,6 +13,7 @@
 #include "gameswf_impl.h"
 #include "gameswf_font.h"
 #include "gameswf_render.h"
+#include "gameswf_file.h"
 
 
 namespace gameswf
@@ -70,6 +71,8 @@ namespace fontlib
 	static render::bitmap_info*	s_current_bitmap_info = NULL;
 	static Uint8*	s_coverage_image = NULL;
 
+	static bool s_saving = false;
+	static file * s_file = NULL;
 
 	void	finish_current_texture()
 	{
@@ -97,11 +100,25 @@ namespace fontlib
 		}
 		//xxxxxx
 
+		if (s_saving)		// HACK!!!
+		{
+			int w = GLYPH_CACHE_TEXTURE_SIZE;
+			int h = GLYPH_CACHE_TEXTURE_SIZE;
 
-		render::set_alpha_image(s_current_bitmap_info,
-					GLYPH_CACHE_TEXTURE_SIZE,
-					GLYPH_CACHE_TEXTURE_SIZE,
-					s_current_cache_image);
+			// save bitmap size
+			s_file->write_le16(w);
+			s_file->write_le16(h);
+
+			// save bitmap contents
+			s_file->write_bytes(s_current_cache_image, w*h);
+		}
+		else
+		{
+			render::set_alpha_image(s_current_bitmap_info,
+						GLYPH_CACHE_TEXTURE_SIZE,
+						GLYPH_CACHE_TEXTURE_SIZE,
+						s_current_cache_image);
+		}
 
 		s_current_bitmap_info = NULL;
 	}
@@ -432,11 +449,83 @@ namespace fontlib
 
 
 	void	save_cached_font_data(const char* filename)
+	// Save cached glyph textures to a file.  This might be used by an
+	// offline tool, which loads in all movies, calls
+	// generate_font_bitmaps(), and then calls save_cached_font_data()
+	// so that a run-time app can call load_cached_font_data().
 	{
+		s_file = new file("filename", "wb" );
+		if (s_file->error()==NO_ERROR)
+		{
+			// save header identifier.
+			s_file->write_bytes( "gswf", 4 );
+
+			// save version number.
+			s_file->write_le16( 0x0100 );
+			
+			// save number of bitmaps.
+			s_file->write_le16( 0 );
+			
+			// save bitmaps
+			s_saving = true;		// HACK!!!
+			generate_font_bitmaps();
+			s_saving = false;
+			
+			// save number of bitmaps.
+			int restore = s_file->get_pos();
+			s_file->set_pos(6);
+			s_file->write_le16( s_bitmaps_used.size() );
+			s_file->set_pos(restore);
+			
+			// save number of fonts.
+			s_file->write_le16( s_fonts.size() );
+			
+			// for each font:
+			for (int f=0; f<s_fonts.size(); f++)
+			{
+				// save font name.
+				s_file->write_string(s_fonts[f]->get_name());
+				
+				// save number of glyphs.
+				int ng = s_fonts[f]->get_glyph_count();
+				s_file->write_le32(ng);
+				
+				int n = 0;
+				
+				// save glyphs:
+				for (int g=0; g<ng; g++)
+				{
+					const texture_glyph * tg = s_fonts[f]->get_texture_glyph(g);
+					if (tg!=NULL)
+					{
+						// save glyph index.
+						s_file->write_le32(n);
+
+						// save bitmap index.
+						int bi;
+						for (bi=0; bi<s_bitmaps_used.size(); bi++)
+							if (tg->m_bitmap_info==s_bitmaps_used[bi]) break;
+						s_file->write_le16((Uint16)bi);
+
+						// save rect, position.
+						s_file->write_le32((Uint32&)tg->m_uv_bounds.m_x_min);
+						s_file->write_le32((Uint32&)tg->m_uv_bounds.m_y_min);
+						s_file->write_le32((Uint32&)tg->m_uv_bounds.m_x_max);
+						s_file->write_le32((Uint32&)tg->m_uv_bounds.m_y_max);
+						s_file->write_le32((Uint32&)tg->m_uv_origin.m_x);
+						s_file->write_le32((Uint32&)tg->m_uv_origin.m_y);
+						n++;
+					}
+				}
+			}
+		}
+		delete s_file;
+		s_file = NULL;
 	}
 	
 
 	void	load_cached_font_data(const char* filename)
+	// Load a file containing previously-saved font glyph textures.
 	{
 	}
 

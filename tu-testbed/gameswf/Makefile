@@ -28,7 +28,8 @@ OBJS = \
 	gameswf_impl.$(OBJ_EXT)	\
 	gameswf_render_ogl.$(OBJ_EXT)	\
 	gameswf_stream.$(OBJ_EXT)	\
-	gameswf_types.$(OBJ_EXT)
+	gameswf_types.$(OBJ_EXT) \
+	gameswf_file.$(OBJ_EXT)
 
 gameswf_impl.$(OBJ_EXT): gameswf.h gameswf_impl.h gameswf_types.h
 
