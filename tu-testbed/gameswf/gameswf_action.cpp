@@ -74,7 +74,7 @@ namespace gameswf
 
 	// Statics.
 	bool	s_inited = false;
-	stringi_hash<as_value>	s_built_ins;
+	smart_ptr<as_object>	s_global;
 	stringi_hash<as_c_function_ptr>	s_objects_interface;
 
 	fscommand_callback	s_fscommand_handler = NULL;
@@ -186,18 +186,134 @@ namespace gameswf
 		int	local_stack_top = our_env->get_local_frame_top();
 		our_env->add_frame_barrier();
 
-		// Push the arguments onto the local frame.
-		int	args_to_pass = imin(nargs, m_args.size());
-		for (int i = 0; i < args_to_pass; i++)
+		if (m_is_function2 == false)
 		{
-			our_env->add_local(m_args[i], caller_env->bottom(first_arg - i));
+			// Conventional function.
+
+			// Push the arguments onto the local frame.
+			int	args_to_pass = imin(nargs, m_args.size());
+			for (int i = 0; i < args_to_pass; i++)
+			{
+				assert(m_args[i].m_register == 0);
+				our_env->add_local(m_args[i].m_name, caller_env->bottom(first_arg - i));
+			}
+		}
+		else
+		{
+			// function2: most args go in registers; any others get pushed.
+			
+			// Create local registers.
+			our_env->add_local_registers(m_local_register_count);
+
+			// Handle the explicit args.
+			int	args_to_pass = imin(nargs, m_args.size());
+			for (int i = 0; i < args_to_pass; i++)
+			{
+				if (m_args[i].m_register == 0)
+				{
+					// Conventional arg passing: create a local var.
+					our_env->add_local(m_args[i].m_name, caller_env->bottom(first_arg - i));
+				}
+				else
+				{
+					// Pass argument into a register.
+					int	reg = m_args[i].m_register;
+					*(our_env->local_register_ptr(reg)) = caller_env->bottom(first_arg - i);
+				}
+			}
+
+			// Handle the implicit args.
+			int	current_reg = 1;
+			if (m_function2_flags & 0x01)
+			{
+				// preload 'this' into a register.
+				(*(our_env->local_register_ptr(current_reg))).set(our_env->m_target);
+				current_reg++;
+			}
+
+			if (m_function2_flags & 0x02)
+			{
+				// Don't put 'this' into a local var.
+			}
+			else
+			{
+				// Put 'this' in a local var.
+				our_env->add_local("this", as_value(our_env->m_target));
+			}
+
+			if (m_function2_flags & 0x04)
+			{
+				// preload 'arguments' into a register.
+
+				// @@ 'arguments' is an array of all the function args.
+				log_error("TODO: implement 'arguments' in function2 dispatch (reg)\n");
+
+				current_reg++;
+			}
+
+			if (m_function2_flags & 0x08)
+			{
+				// Don't put 'arguments' in a local var.
+			}
+			else
+			{
+				// Put 'arguments' in a local var.
+				log_error("TODO: implement 'arguments' in function2 displatch (var)\n");
+			}
+
+			if (m_function2_flags & 0x10)
+			{
+				// Put 'super' in a register.
+				log_error("TODO: implement 'super' in function2 dispatch (reg)\n");
+
+				current_reg++;
+			}
+
+			if (m_function2_flags & 0x20)
+			{
+				// Don't put 'super' in a local var.
+			}
+			else
+			{
+				// Put 'super' in a local var.
+				log_error("TODO: implement 'super' in function2 dispatch (var)\n");
+			}
+
+			if (m_function2_flags & 0x40)
+			{
+				// Put '_root' in a register.
+				(*(our_env->local_register_ptr(current_reg))).set(our_env->m_target->get_root_movie());
+				current_reg++;
+			}
+
+			if (m_function2_flags & 0x80)
+			{
+				// Put '_parent' in a register.
+				
+				// @@ WTF is _parent?  Need to read docs.
+				log_error("TODO: implement '_parent' in function2 dispatch (reg)\n");
+				current_reg++;
+			}
+
+			if (m_function2_flags & 0x100)
+			{
+				// Put '_global' in a register.
+				(*(our_env->local_register_ptr(current_reg))).set(s_global.get_ptr());
+				current_reg++;
+			}
 		}
 
 		// Execute the actions.
-		m_action_buffer->execute(our_env, m_start_pc, m_length, result, m_with_stack);
+		m_action_buffer->execute(our_env, m_start_pc, m_length, result, m_with_stack, m_is_function2);
 
 		// Clean up stack frame.
 		our_env->set_local_frame_top(local_stack_top);
+
+		if (m_is_function2)
+		{
+			// Clean up the local registers.
+			our_env->drop_local_registers(m_local_register_count);
+		}
 	}
 
 
@@ -617,7 +733,7 @@ namespace gameswf
 		math_obj->set_member("min", &math_min);
 		math_obj->set_member("pow", &math_pow);
 
-		s_built_ins.add("math", math_obj);
+		s_global->set_member("math", math_obj);
 	}
 
 
@@ -895,7 +1011,7 @@ namespace gameswf
 		key_obj->set_member("isToggled", &key_is_toggled);
 		key_obj->set_member("removeListener", &key_remove_listener);
 
-		s_built_ins.add("Key", key_obj);
+		s_global->set_member("Key", key_obj);
 	}
 
 
@@ -907,7 +1023,7 @@ namespace gameswf
 		static tu_string	key_obj_name("Key");
 
 		as_value	kval;
-		s_built_ins.get(key_obj_name, &kval);
+		s_global->get_member(key_obj_name, &kval);
 		if (kval.get_type() == as_value::OBJECT)
 		{
 			key_as_object*	ko = (key_as_object*) kval.to_object();
@@ -928,6 +1044,16 @@ namespace gameswf
 	//
 
 
+	void	as_global_trace(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	{
+		// Log our argument.
+		//
+		// @@ what if we get extra args?
+		const char* arg0 = env->bottom(first_arg_bottom_index).to_string();
+		log_msg("%s\n", arg0);
+	}
+
+
 	void	action_init()
 	// Create/hook built-ins.
 	{
@@ -935,9 +1061,16 @@ namespace gameswf
 		{
 			s_inited = true;
 
-			// @@ hm, should this be per movie_interface
-			// instead of truly global?
-			s_built_ins.add("_global", new as_object);
+			// @@ s_global should really be a
+			// client-visible player object, which
+			// contains one or more actual movie
+			// instances.  We're currently just hacking it
+			// in as an app-global mutable object :(
+			assert(s_global == NULL);
+			s_global = new as_object;
+
+			smart_ptr<as_object>	global(new as_object);
+			s_global->set_member("trace", as_value(as_global_trace));
 
 			math_init();
 			key_init();
@@ -951,18 +1084,26 @@ namespace gameswf
 		{
 			s_inited = false;
 
-			for (stringi_hash<as_value>::iterator it = s_built_ins.begin();
-			     it != s_built_ins.end();
-			     ++it)
-			{
-				as_object_interface*	obj = it->second.to_object();
-				if (obj)
-				{
-					delete obj;	// obj->drop_ref()
-				}
-			}
+// @@ !! as_value objects do ref-counting now, which is good for
+// safety, and necessary for all the places where we allocate new
+// as_objects and stash the pointer in as_value.  There is a danger of
+// getting cycles, due to variables in a movie's as_environment
+// keeping a pointer to the movie itself ("_root" or "this").
+// 
+//xxxxx
+// 			for (stringi_hash<as_value>::iterator it = s_global.begin();
+// 			     it != s_global.end();
+// 			     ++it)
+// 			{
+// 				as_object_interface*	obj = it->second.to_object();
+// 				if (obj)
+// 				{
+// 					delete obj;	// obj->drop_ref()
+// 				}
+// 			}
 
-			s_built_ins.clear();
+			s_global->clear();
+			s_global = NULL;
 		}
 	}
 
@@ -1149,6 +1290,26 @@ namespace gameswf
 		m->add_execute_tag(da);
 	}
 
+	
+	//
+	// do_init_action
+	//
+
+
+	void	do_init_action_loader(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 59);
+
+		int	sprite_character_id = in->read_u16();
+
+		IF_VERBOSE_PARSE(log_msg("  tag %d: do_init_action_loader\n", tag_type));
+		IF_VERBOSE_ACTION(log_msg("  -- init actions for sprite %d\n", sprite_character_id));
+
+		do_action*	da = new do_action;
+		da->read(in);
+		m->add_init_action(sprite_character_id, da);
+	}
+
 
 	//
 	// action_buffer
@@ -1293,7 +1454,7 @@ namespace gameswf
 		env->add_frame_barrier();
 
 		array<with_stack_entry>	empty_with_stack;
-		execute(env, 0, m_buffer.size(), NULL, empty_with_stack);
+		execute(env, 0, m_buffer.size(), NULL, empty_with_stack, false /* not function2 */);
 
 		env->set_local_frame_top(local_stack_top);
 	}
@@ -1304,11 +1465,14 @@ namespace gameswf
 		int start_pc,
 		int exec_bytes,
 		as_value* retval,
-		const array<with_stack_entry>& initial_with_stack)
+		const array<with_stack_entry>& initial_with_stack,
+		bool is_function2)
 	// Interpret the specified subset of the actions in our
 	// buffer.  Caller is responsible for cleaning up our local
 	// stack frame (it may have passed its arguments in via the
 	// local stack frame).
+	// 
+	// The is_function2 flag determines whether to use global or local registers.
 	{
 		action_init();	// @@ stick this somewhere else; need some global static init function
 
@@ -1542,8 +1706,9 @@ namespace gameswf
 				case 0x26:	// trace
 				{
 					// Log the stack val.
-					const char*	message = env->top(0).to_string();
-					log_msg("%s\n", message);
+					as_global_trace(&env->top(0), NULL, env, 1, env->get_top_index());
+// 					const char*	message = env->top(0).to_string();
+// 					log_msg("%s\n", message);
 					env->drop(1);
 					break;
 				}
@@ -1597,6 +1762,36 @@ namespace gameswf
 					env->top(1).set(env->top(1).to_tu_string() < env->top(0).to_tu_string());
 					break;
 				}
+
+				case 0x2A:	// throw
+				{
+					log_error("todo opcode: %02X\n", action_id);
+					break;
+				}
+
+				case 0x2B:	// cast_object
+				{
+					// TODO
+					//
+					// Pop o1, pop s2
+					// Make sure o1 is an instance of s2.
+					// If the cast succeeds, push o1, else push NULL.
+					//
+					// The cast doesn't appear to coerce at all, it's more
+					// like a dynamic_cast<> in C++ I think.
+					log_error("todo opcode: %02X\n", action_id);
+					break;
+				}
+
+				case 0x2C:	// implements
+				{
+					// Declare that a class s1 implements one or more
+					// interfaces (i2 == number of interfaces, s3..sn are the names
+					// of the interfaces).
+					log_error("todo opcode: %02X\n", action_id);
+					break;
+				}
+
 				case 0x30:	// random
 				{
 					int	max = int(env->top(0).to_number());
@@ -1645,6 +1840,10 @@ namespace gameswf
 				case 0x3A:	// delete
 				{
 					// @@ TODO
+					
+					// Apparently this can be used to remove properties from
+					// an object.
+
 					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
@@ -1728,21 +1927,49 @@ namespace gameswf
 				}
 				case 0x40:	// new
 				{
-					as_value	objname = env->pop();
-//					log_error("---new object: %s\n", objname.to_tu_string().c_str());
+					as_value	classname = env->pop();
+//					log_msg("---new object: %s\n", classname.to_tu_string().c_str());
 					int	nargs = (int) env->pop().to_number();
-//					log_error("---new nargs: %d\n", nargs);
+//					log_msg("---new nargs: %d\n", nargs);
 
-					as_c_function_ptr handler;
+					as_value constructor = env->get_variable(classname.to_tu_string(), with_stack);
 					as_value new_obj;
-					if (s_objects_interface.get(objname.to_tu_string(), &handler))
+					if (constructor.get_type() == as_value::C_FUNCTION)
 					{
-						// create new object and set members
-						(*handler)(&new_obj, NULL, env, nargs, env->get_top_index());
+						// C function creates the new object and sets members.
+						(constructor.to_c_function())(&new_obj, NULL, env, nargs, env->get_top_index());
+					}
+					else if (as_as_function* ctor_as_func = constructor.to_as_function())
+					{
+						// This function is being used as a constructor; make sure
+						// it has a prototype object.
+						ctor_as_func->lazy_create_properties();
+						assert(ctor_as_func->m_properties);
+
+						// Set up the prototype.
+						as_value	proto;
+						ctor_as_func->m_properties->get_member("prototype", &proto);
+
+						assert(proto.to_object() != NULL);
+
+						// Create an empty object, with a ref to the constructor's prototype.
+						smart_ptr<as_object>	new_obj_ptr(new as_object(proto.to_object()));
+
+						// Set up the constructor member.
+						new_obj_ptr->set_member("constructor", constructor);
+						
+						new_obj.set(new_obj_ptr.get_ptr());
+
+						// Call the actual constructor function; new_obj is its 'this'.
+						// We don't need the function result.
+						call_method(constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
 					}
 					else
 					{
-						if (objname.to_tu_string()=="Sound")
+						// @@ tulrich: this is garbage -- these need to be
+						// registered as C function constructors.
+
+						if (classname.to_tu_string() == "Sound")
 						{
 							as_object*	sound_obj = new sound_as_object;
 
@@ -1752,21 +1979,19 @@ namespace gameswf
 							sound_obj->set_member("stop", &sound_stop);
 							new_obj = sound_obj;
 						}
-						else
-						if (objname.to_tu_string()=="Object")
+						else if (classname.to_tu_string() == "Object")
 						{
-							new_obj = as_value(env->get_target()->get_root_movie());
+							new_obj.set(new as_object);//@@ KILL = as_value(env->get_target()->get_root_movie());
+						}
+						else if (classname.to_tu_string() == "Array")
+						{
+							new_obj.set(new array_as_object);
 						}
 						else
-							if (objname.to_tu_string()=="Array")
-							{
-								as_object*	ao = new array_as_object;
-								new_obj = ao;
-							}
-							else
-							{
-								log_error("can't create unregistered object '%s'\n", objname.to_tu_string().c_str());
-							}
+						{
+							log_error("can't create object with unknown class  '%s'\n",
+								  classname.to_tu_string().c_str());
+						}
 					}
 
 					env->drop(nargs);
@@ -1927,13 +2152,19 @@ namespace gameswf
 					{
 						obj->set_member(env->top(1).to_tu_string(), env->top(0));
 						IF_VERBOSE_ACTION(
-							log_msg("-- set_member %s=%s\n",
+							log_msg("-- set_member %s.%s=%s\n",
+								env->top(2).to_tu_string().c_str(),
 								env->top(1).to_tu_string().c_str(),
 								env->top(0).to_tu_string().c_str()));
 					}
 					else
 					{
-						// @@ invalid object: log error?
+						// Invalid object, can't set.
+						IF_VERBOSE_ACTION(
+							log_msg("-- set_member %s.%s=%s on invalid object!\n",
+								env->top(2).to_tu_string().c_str(),
+								env->top(1).to_tu_string().c_str(),
+								env->top(0).to_tu_string().c_str()));
 					}
 					env->drop(3);
 					break;
@@ -1973,7 +2204,8 @@ namespace gameswf
 						}
 						else
 						{
-							log_error("error: call_method can't find method %s\n", method_name.c_str());
+							log_error("error: call_method can't find method %s\n",
+								  method_name.c_str());
 						}
 					}
 					else if (env->top(1).get_type() == as_value::STRING)
@@ -2061,6 +2293,11 @@ namespace gameswf
 					env->top(1).set(env->top(1).to_tu_string() > env->top(0).to_tu_string());
 					env->drop(1);
 					break;
+
+				case 0x69:	// extends
+					log_error("todo opcode: %02X\n", action_id);
+					break;
+
 				}
 				pc++;	// advance to next action.
 			}
@@ -2132,13 +2369,22 @@ namespace gameswf
 				case 0x87:	// store_register
 				{
 					int	reg = m_buffer[pc + 3];
-					if (reg >= 0 && reg < 4)
+					// Save top of stack in specified register.
+					if (is_function2)
 					{
-						// Save top of stack in specified register.
-						env->m_register[reg] = env->top(0);
-						
+						*(env->local_register_ptr(reg)) = env->top(0);
+
 						IF_VERBOSE_ACTION(
-							log_msg("-------------- reg[%d] = '%s'\n",
+							log_msg("-------------- local register[%d] = '%s'\n",
+								reg,
+								env->top(0).to_string()));
+					}
+					else if (reg >= 0 && reg < 4)
+					{
+						env->m_global_register[reg] = env->top(0);
+					
+						IF_VERBOSE_ACTION(
+							log_msg("-------------- global register[%d] = '%s'\n",
 								reg,
 								env->top(0).to_string()));
 					}
@@ -2197,6 +2443,67 @@ namespace gameswf
 					// Since we don't support incremental loading, pop our arg and
 					// don't do anything.
 					env->drop(1);
+					break;
+				}
+
+				case 0x8E:	// function2
+				{
+					as_as_function*	func = new as_as_function(this, env, next_pc, with_stack);
+					func->set_is_function2();
+
+					int	i = pc;
+					i += 3;
+
+					// Extract name.
+					// @@ security: watch out for possible missing terminator here!
+					tu_string	name = (const char*) &m_buffer[i];
+					i += name.length() + 1;
+
+					// Get number of arguments.
+					int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+					i += 2;
+
+					// Get the count of local registers used by this function.
+					uint8	register_count = m_buffer[i];
+					i += 1;
+					func->set_local_register_count(register_count);
+
+					// Flags, for controlling register assignment of implicit args.
+					uint16	flags = m_buffer[i] | (m_buffer[i + 1] << 8);
+					i += 2;
+					func->set_function2_flags(flags);
+
+					// Get the register assignments and names of the arguments.
+					for (int n = 0; n < nargs; n++)
+					{
+						int	arg_register = m_buffer[i];
+						i++;
+
+						// @@ security: watch out for possible missing terminator here!
+						func->add_arg(arg_register, (const char*) &m_buffer[i]);
+						i += func->m_args.back().m_name.length() + 1;
+					}
+
+					// Get the length of the actual function code.
+					int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+					i += 2;
+					func->set_length(length);
+
+					// Skip the function body (don't interpret it now).
+					next_pc += length;
+
+					// If we have a name, then save the function in this
+					// environment under that name.
+					as_value	function_value(func);
+					if (name.length() > 0)
+					{
+						// @@ NOTE: should this be m_target->set_variable()???
+						env->set_member(name, function_value);
+					}
+
+					// Also leave it on the stack.
+					env->push_val(function_value);
+
 					break;
 				}
 
@@ -2264,16 +2571,24 @@ namespace gameswf
 							int	reg = m_buffer[3 + i];
 							UNUSED(reg);
 							i++;
-							if (reg < 0 || reg >= 4)
+							if (is_function2)
+							{
+								env->push(*(env->local_register_ptr(reg)));
+								IF_VERBOSE_ACTION(
+									log_msg("-------------- pushed local register[%d] = '%s'\n",
+										reg,
+										env->top(0).to_string()));
+							}
+							else if (reg < 0 || reg >= 4)
 							{
 								env->push(as_value(as_value::UNDEFINED));
 								log_error("push register[%d] -- register out of bounds!\n", reg);
 							}
 							else
 							{
-								env->push(env->m_register[reg]);
+								env->push(env->m_global_register[reg]);
 								IF_VERBOSE_ACTION(
-									log_msg("-------------- pushed register[%d] = '%s'\n",
+									log_msg("-------------- pushed global register[%d] = '%s'\n",
 										reg,
 										env->top(0).to_string()));
 							}
@@ -2416,6 +2731,7 @@ namespace gameswf
 					i += 3;
 
 					// Extract name.
+					// @@ security: watch out for possible missing terminator here!
 					tu_string	name = (const char*) &m_buffer[i];
 					i += name.length() + 1;
 
@@ -2426,8 +2742,9 @@ namespace gameswf
 					// Get the names of the arguments.
 					for (int n = 0; n < nargs; n++)
 					{
-						func->add_arg((const char*) &m_buffer[i]);
-						i += func->m_args.back().length() + 1;
+						// @@ security: watch out for possible missing terminator here!
+						func->add_arg(0, (const char*) &m_buffer[i]);
+						i += func->m_args.back().m_name.length() + 1;
 					}
 
 					// Get the length of the actual function code.
@@ -2452,6 +2769,7 @@ namespace gameswf
 
 					break;
 				}
+
 				case 0x9D:	// branch if true
 				{
 					Sint16	offset = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
@@ -2534,6 +2852,30 @@ namespace gameswf
 	//
 	// as_value -- ActionScript value type
 	//
+
+	
+	as_value::as_value(as_object_interface* obj)
+		:
+		m_type(OBJECT),
+		m_object_value(obj)
+	{
+		if (m_object_value)
+		{
+			m_object_value->add_ref();
+		}
+	}
+
+
+	as_value::as_value(as_as_function* func)
+		:
+		m_type(AS_FUNCTION),
+		m_as_function_value(func)
+	{
+		if (m_as_function_value)
+		{
+			m_as_function_value->add_ref();
+		}
+	}
 
 
 	const char*	as_value::to_string() const
@@ -2679,9 +3021,19 @@ namespace gameswf
 			// OK.
 			return m_object_value;
 		}
+		else if (m_type == AS_FUNCTION && m_as_function_value != NULL)
+		{
+			// Make sure this as_function has properties &
+			// a prototype object attached to it, since those
+			// may be about to be referenced.
+			m_as_function_value->lazy_create_properties();
+			assert(m_as_function_value->m_properties);
+
+			return m_as_function_value->m_properties;
+		}
 		else
 		{
-			return NULL;	// @@ or return a valid "null object"?
+			return NULL;
 		}
 	}
 
@@ -2732,6 +3084,35 @@ namespace gameswf
 	}
 
 
+	void	as_value::set(as_object_interface* obj)
+	{
+		if (m_type != OBJECT || m_object_value != obj)
+		{
+			drop_refs();
+			m_type = OBJECT;
+			m_object_value = obj;
+			if (m_object_value)
+			{
+				m_object_value->add_ref();
+			}
+		}
+	}
+
+	void	as_value::set(as_as_function* func)
+	{
+		if (m_type != AS_FUNCTION || m_as_function_value != func)
+		{
+			drop_refs();
+			m_type = AS_FUNCTION;
+			m_as_function_value = func;
+			if (m_as_function_value)
+			{
+				m_as_function_value->add_ref();
+			}
+		}
+	}
+
+
 	bool	as_value::operator==(const as_value& v) const
 	// Return true if operands are equal.
 	{
@@ -2766,6 +3147,13 @@ namespace gameswf
 			if (m_as_function_value)
 			{
 				m_as_function_value->drop_ref();
+			}
+		}
+		else if (m_type == OBJECT)
+		{
+			if (m_object_value)
+			{
+				m_object_value->drop_ref();
 			}
 		}
 	}
@@ -2853,7 +3241,11 @@ namespace gameswf
 		{
 			return as_value(m_target->get_root_movie());
 		}
-		if (s_built_ins.get(varname, &val))
+		if (varname == "_global")
+		{
+			return as_value(s_global.get_ptr());
+		}
+		if (s_global->get_member(varname, &val))
 		{
 			return val;
 		}
@@ -2983,6 +3375,31 @@ namespace gameswf
 	void	as_environment::set_member(const tu_stringi& varname, const as_value& val)
 	{
 		m_variables.set(varname, val);
+	}
+
+	as_value*	as_environment::local_register_ptr(int reg)
+	// Return a pointer to the specified local register.
+	// Local registers are numbered starting with 1.
+	//
+	// Return value will never be NULL.  If reg is out of bounds,
+	// we log an error, but still return a valid pointer (to
+	// global reg[0]).  So the behavior is a bit undefined, but
+	// not dangerous.
+	{
+		// We index the registers from the end of the register
+		// array, so we don't have to keep base/frame
+		// pointers.
+
+		if (reg <= 0 || reg > m_local_register.size())
+		{
+			log_error("Invalid local register %d, stack only has %d entries\n",
+				  reg, m_local_register.size());
+
+			// Fallback: use global 0.
+			return &m_global_register[0];
+		}
+
+		return &m_local_register[m_local_register.size() - reg];
 	}
 
 
@@ -3335,6 +3752,7 @@ namespace gameswf
 			{ 0x27, "start_drag", ARG_NONE },
 			{ 0x28, "stop_drag", ARG_NONE },
 			{ 0x29, "str_lt", ARG_NONE },
+			{ 0x2B, "cast_object", ARG_NONE },
 			{ 0x30, "random", ARG_NONE },
 			{ 0x31, "mb_length", ARG_NONE },
 			{ 0x32, "ord", ARG_NONE },
@@ -3621,24 +4039,53 @@ namespace gameswf
 				log_msg("\n\t\tname = '%s', arg_count = %d, reg_count = %d\n",
 					function_name, arg_count, reg_count);
 
-				bool	preload_global = (instruction_data[3 + i] & 0x80) != 0;
-				i++;
+				uint16	flags = (instruction_data[3 + i]) | (instruction_data[3 + i + 1] << 8);
+				i += 2;
 
-				bool	preload_parent = (instruction_data[3 + i] & 0x01) != 0;
-				bool	preload_root   = (instruction_data[3 + i] & 0x02) != 0;
-				bool	suppress_super = (instruction_data[3 + i] & 0x04) != 0;
-				bool	preload_super  = (instruction_data[3 + i] & 0x08) != 0;
-				bool	suppress_args  = (instruction_data[3 + i] & 0x10) != 0;
-				bool	preload_args   = (instruction_data[3 + i] & 0x20) != 0;
-				bool	suppress_this  = (instruction_data[3 + i] & 0x40) != 0;
-				bool	preload_this   = (instruction_data[3 + i] & 0x80) != 0;
-				i++;
+				// @@ Trying to figure out what "suppress" means.
+				//
+				// In MTASC source, they say "*Register" and "*NoVar"
+				// for "preload_*" and "suppress_*".
+				//
+				// The Flasm documentation says:
+				//
+				// "They will neither be stored in registers nor accessible by name
+				// inside of function2 [...]"
+				//
+				// So the suppress flags prevent those vars from being available by name?
+				// What is the point of that?  Is it completely useless?  Or is the point
+				// that the Macromedia player creates local vars for "this", "arguments" and/or
+				// "super" when they're not suppressed.  I guess that must be it.
+				//
+				// "arguments" seems to be an array containing copies of the function
+				// args!  So that should definitely be suppressed whenever possible.
 
-				log_msg("\t\t        pp = %d\n"
+				// @@ What is the difference between "super" and "_parent"?
+
+				// @@ What is the difference between "_global" and "_root"?
+				//
+				// ==> _global is essentially the player object, which can contain multiple
+				// stacked movies.  Each movie has its own _root, but there's only one
+				// _global in the player.  The movies can be referenced as _level0,
+				// _level1, etc.
+
+				bool	preload_global = (flags & 0x100) != 0;
+				bool	preload_parent = (flags & 0x80) != 0;
+				bool	preload_root   = (flags & 0x40) != 0;
+				bool	suppress_super = (flags & 0x20) != 0;
+				bool	preload_super  = (flags & 0x10) != 0;
+				bool	suppress_args  = (flags & 0x08) != 0;
+				bool	preload_args   = (flags & 0x04) != 0;
+				bool	suppress_this  = (flags & 0x02) != 0;
+				bool	preload_this   = (flags & 0x01) != 0;
+
+				log_msg("\t\t        pg = %d\n"
+					"\t\t        pp = %d\n"
 					"\t\t        pr = %d\n"
 					"\t\tss = %d, ps = %d\n"
 					"\t\tsa = %d, pa = %d\n"
 					"\t\tst = %d, pt = %d\n",
+					int(preload_global),
 					int(preload_parent),
 					int(preload_root),
 					int(suppress_super),

@@ -22,6 +22,7 @@ namespace gameswf
 	struct as_environment;
 	struct as_object_interface;
 	struct as_value;
+	struct as_as_function;
 
 
 	//
@@ -61,7 +62,8 @@ namespace gameswf
 			int start_pc,
 			int exec_bytes,
 			as_value* retval,
-			const array<with_stack_entry>& initial_with_stack);
+			const array<with_stack_entry>& initial_with_stack,
+			bool is_function2);
 
 		bool	is_null()
 		{
@@ -94,49 +96,10 @@ namespace gameswf
 		int nargs,
 		int first_arg_bottom_index);
 
-	//
-	// as_as_function
-	//
-	// ActionScript function.
 
-	struct as_as_function : public ref_counted
+	struct as_property_interface
 	{
-		action_buffer*	m_action_buffer;
-		as_environment*	m_env;	// @@ might need some kind of ref count here, but beware cycles
-		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
-		int	m_start_pc;
-		int	m_length;
-		array<tu_string>	m_args;
-
-		// NULL environment is allowed -- if so, then
-		// functions will be executed in the caller's
-		// environment, rather than the environment where they
-		// were defined.
-		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
-			:
-			m_action_buffer(ab),
-			m_env(env),
-			m_with_stack(with_stack),
-			m_start_pc(start),
-			m_length(0)
-		{
-			assert(m_action_buffer);
-		}
-
-		void	add_arg(const char* name)
-		{
-			m_args.push_back(tu_string(name));
-		}
-
-		void	set_length(int len) { assert(len >= 0); m_length = len; }
-
-		// Dispatch.
-		void	operator()(
-			as_value* result,
-			as_object_interface* this_ptr,
-			as_environment* caller_env,
-			int nargs,
-			int first_arg);
+		virtual bool	set_property(int index, const as_value& val) = 0;
 	};
 
 
@@ -240,12 +203,7 @@ namespace gameswf
 		{
 		}
 
-		as_value(as_object_interface* obj)
-			:
-			m_type(OBJECT),
-			m_object_value(obj)
-		{
-		}
+		as_value(as_object_interface* obj);
 
 		as_value(as_c_function_ptr func)
 			:
@@ -255,16 +213,7 @@ namespace gameswf
 			m_c_function_value = func;
 		}
 
-		as_value(as_as_function* func)
-			:
-			m_type(AS_FUNCTION),
-			m_as_function_value(func)
-		{
-			if (m_as_function_value)
-			{
-				m_as_function_value->add_ref();
-			}
-		}
+		as_value(as_as_function* func);
 
 		~as_value() { drop_refs(); }
 
@@ -290,21 +239,9 @@ namespace gameswf
 		void	set(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
 		void	set(bool val) { drop_refs(); m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
 		void	set(int val) { drop_refs(); set(double(val)); }
-		void	set(as_object_interface* obj) { drop_refs(); m_type = OBJECT; m_object_value = obj; }
+		void	set(as_object_interface* obj);
 		void	set(as_c_function_ptr func) { drop_refs(); m_type = C_FUNCTION; m_c_function_value = func; }
-		void	set(as_as_function* func)
-		{
-			if (m_type != AS_FUNCTION || m_as_function_value != func)
-			{
-				drop_refs();
-				m_type = AS_FUNCTION;
-				m_as_function_value = func;
-				if (m_as_function_value)
-				{
-					m_as_function_value->add_ref();
-				}
-			}
-		}
+		void	set(as_as_function* func);
 		void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
 
 		void	operator=(const as_value& v)
@@ -335,12 +272,6 @@ namespace gameswf
 	};
 
 
-	struct as_property_interface
-	{
-		virtual bool	set_property(int index, const as_value& val) = 0;
-	};
-
-
 	struct as_object_interface : virtual public ref_counted
 	{
 		virtual ~as_object_interface() {}
@@ -355,11 +286,179 @@ namespace gameswf
 	};
 
 
+	//
+	// as_object
+	//
+	// A generic bag of attributes.  Base-class for ActionScript
+	// script-defined objects.
+	struct as_object : public as_object_interface
+	{
+		stringi_hash<as_value>	m_members;
+		as_object_interface*	m_prototype;
+
+		as_object() : m_prototype(NULL) {}
+		as_object(as_object_interface* proto) : m_prototype(proto)
+		{
+			if (m_prototype)
+			{
+				m_prototype->add_ref();
+			}
+		}
+
+		virtual ~as_object()
+		{
+			if (m_prototype)
+			{
+				m_prototype->drop_ref();
+			}
+		}
+		
+		virtual const char*	get_text_value() const { return NULL; }
+
+		virtual void	set_member(const tu_stringi& name, const as_value& val)
+		{
+			if (name == "prototype")
+			{
+				if (m_prototype) m_prototype->drop_ref();
+				m_prototype = val.to_object();
+				if (m_prototype) m_prototype->add_ref();
+			}
+			else
+			{
+				m_members.set(name, val);
+			}
+		}
+
+		virtual bool	get_member(const tu_stringi& name, as_value* val)
+		{
+			if (name == "prototype")
+			{
+				val->set(m_prototype);
+				return true;
+			}
+			else if (m_members.get(name, val) == false)
+			{
+				if (m_prototype != NULL)
+				{
+					return m_prototype->get_member(name, val);
+				}
+				return false;
+			}
+			return true;
+		}
+
+		virtual movie*	to_movie()
+		// This object is not a movie; no conversion.
+		{
+			return NULL;
+		}
+
+		void	clear()
+		{
+			m_members.clear();
+			if (m_prototype)
+			{
+				m_prototype->drop_ref();
+				m_prototype = NULL;
+			}
+		}
+	};
+
+
+	//
+	// as_as_function
+	//
+	// ActionScript function.
+
+	struct as_as_function : public ref_counted
+	{
+		action_buffer*	m_action_buffer;
+		as_environment*	m_env;	// @@ might need some kind of ref count here, but beware cycles
+		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
+		int	m_start_pc;
+		int	m_length;
+		struct arg_spec
+		{
+			int	m_register;
+			tu_string	m_name;
+		};
+		array<arg_spec>	m_args;
+		bool	m_is_function2;
+		uint8	m_local_register_count;
+		uint16	m_function2_flags;	// used by function2 to control implicit arg register assignments
+
+		// ActionScript functions have a property namespace!
+		// Typically used for class constructors, for "prototype", "constructor",
+		// and class properties.
+		as_object*	m_properties;
+
+		// NULL environment is allowed -- if so, then
+		// functions will be executed in the caller's
+		// environment, rather than the environment where they
+		// were defined.
+		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
+			:
+			m_action_buffer(ab),
+			m_env(env),
+			m_with_stack(with_stack),
+			m_start_pc(start),
+			m_length(0),
+			m_is_function2(false),
+			m_local_register_count(0),
+			m_function2_flags(0),
+			m_properties(NULL)
+		{
+			assert(m_action_buffer);
+		}
+
+		void	set_is_function2() { m_is_function2 = true; }
+		void	set_local_register_count(uint8 ct) { assert(m_is_function2); m_local_register_count = ct; }
+		void	set_function2_flags(uint16 flags) { assert(m_is_function2); m_function2_flags = flags; }
+
+		void	add_arg(int arg_register, const char* name)
+		{
+			assert(arg_register == 0 || m_is_function2 == true);
+			m_args.resize(m_args.size() + 1);
+			m_args.back().m_register = arg_register;
+			m_args.back().m_name = name;
+		}
+
+		void	set_length(int len) { assert(len >= 0); m_length = len; }
+
+		// Dispatch.
+		void	operator()(
+			as_value* result,
+			as_object_interface* this_ptr,
+			as_environment* caller_env,
+			int nargs,
+			int first_arg);
+
+		void	lazy_create_properties()
+		// This ensures that this as_function has a valid
+		// prototype in its properties.  This is done lazily
+		// so that functions/methods which are not used as
+		// constructors don't carry along extra unnecessary
+		// baggage.
+		{
+			if (m_properties == NULL)
+			{
+				m_properties = new as_object();
+				m_properties->add_ref();
+
+				// Create new empty prototype
+				as_value	proto(new as_object());
+				m_properties->set_member("prototype", proto);
+			}
+		}
+	};
+
+
 	// ActionScript "environment", essentially VM state?
 	struct as_environment
 	{
 		array<as_value>	m_stack;
-		as_value	m_register[4];
+		as_value	m_global_register[4];
+		array<as_value>	m_local_register;	// function2 uses this
 		movie*	m_target;
 		stringi_hash<as_value>	m_variables;
 
@@ -416,40 +515,22 @@ namespace gameswf
 		void	set_local_frame_top(int t) { assert(t <= m_local_frames.size()); m_local_frames.resize(t); }
 		void	add_frame_barrier() { m_local_frames.push_back(frame_slot()); }
 
+		// Local registers.
+		void	add_local_registers(int register_count)
+		{
+			m_local_register.resize(m_local_register.size() + register_count);
+		}
+		void	drop_local_registers(int register_count)
+		{
+			m_local_register.resize(m_local_register.size() - register_count);
+		}
+		as_value*	local_register_ptr(int reg);
+
 		// Internal.
 		int	find_local(const tu_string& varname) const;
 		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
 		movie*	find_target(const tu_string& path) const;
 		movie*	find_target(const as_value& val) const;
-	};
-
-
-	//
-	// as_object
-	//
-	// A generic bag of attributes.  Base-class for ActionScript
-	// script-defined objects.
-	struct as_object : public as_object_interface
-	{
-		stringi_hash<as_value>	m_members;
-
-		virtual const char*	get_text_value() const { return NULL; }
-
-		virtual void	set_member(const tu_stringi& name, const as_value& val)
-		{
-			m_members.set(name, val);
-		}
-
-		virtual bool	get_member(const tu_stringi& name, as_value* val)
-		{
-			return m_members.get(name, val);
-		}
-
-		virtual movie*	to_movie()
-		// This object is not a movie; no conversion.
-		{
-			return NULL;
-		}
 	};
 
 
@@ -539,7 +620,12 @@ namespace gameswf
 		const tu_string&	get_function_name() const;
 	};
 
-	void register_as_object(const char* object_name, as_c_function_ptr handler);
+	// tulrich: don't use this!  To register a class constructor,
+	// just assign the classname to the constructor function.  E.g.:
+	//
+	// my_movie->set_member("MyClass", as_value(MyClassConstructorFunction));
+	// 
+	//void register_as_object(const char* object_name, as_c_function_ptr handler);
 
 	// Numerical indices for standard member names.  Can use this
 	// to help speed up get/set member calls, by using a switch()

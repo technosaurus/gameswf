@@ -48,6 +48,7 @@ namespace gameswf
 	struct movie_definition_sub : public movie_definition
 	{
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) = 0;
+		virtual const array<execute_tag*>*	get_init_actions(int frame_number) = 0;
 		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol) = 0;
 		virtual character_def*	get_character_def(int id) = 0;
 
@@ -60,6 +61,7 @@ namespace gameswf
 		virtual void	add_font(int id, font* ch) = 0;
 		virtual font*	get_font(int id) = 0;
 		virtual void	add_execute_tag(execute_tag* c) = 0;
+		virtual void	add_init_action(int sprite_id, execute_tag* c) = 0;
 		virtual void	add_frame_name(const char* name) = 0;
 		virtual void	set_jpeg_loader(jpeg::input* j_in) = 0;
 		virtual jpeg::input*	get_jpeg_loader() = 0;

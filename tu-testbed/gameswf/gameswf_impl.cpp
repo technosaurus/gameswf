@@ -332,6 +332,7 @@ namespace gameswf
 		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
 		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
 		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
+		array<array<execute_tag*> >	m_init_action_list;	// Init actions for each frame.
 		stringi_hash<int>	m_named_frames;	// 0-based frame #'s
 		stringi_hash<smart_ptr<resource> >	m_exports;
 
@@ -378,6 +379,15 @@ namespace gameswf
 				for (int j = 0, m = m_playlist[i].size(); j < m; j++)
 				{
 					delete m_playlist[i][j];
+				}
+			}}
+
+			// Release init action data.
+			{for (int i = 0, n = m_init_action_list.size(); i < n; i++)
+			{
+				for (int j = 0, m = m_init_action_list[i].size(); j < m; j++)
+				{
+					delete m_init_action_list[i][j];
 				}
 			}}
 
@@ -637,6 +647,16 @@ namespace gameswf
 			m_playlist[m_loading_frame].push_back(e);
 		}
 
+		void	add_init_action(int sprite_id, execute_tag* e)
+		// Need to execute the given tag before entering the
+		// currently-loading frame for the first time.
+		//
+		// @@ AFAIK, the sprite_id is totally pointless -- correct?
+		{
+			assert(e);
+			m_init_action_list[m_loading_frame].push_back(e);
+		}
+
 		void	add_frame_name(const char* name)
 		// Labels the frame currently being loaded with the
 		// given name.  A copy of the name string is made and
@@ -667,7 +687,12 @@ namespace gameswf
 
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) { return m_playlist[frame_number]; }
 
-		
+		/* movie_def_impl */
+		virtual const array<execute_tag*>*	get_init_actions(int frame_number)
+		{
+			return &m_init_action_list[frame_number];
+		}
+
 		/* movie_def_impl */
 		void	read(tu_file* in)
 		// Read a .SWF movie.
@@ -716,6 +741,7 @@ namespace gameswf
 			m_frame_count = str.read_u16();
 
 			m_playlist.resize(m_frame_count);
+			m_init_action_list.resize(m_frame_count);
 
 			IF_VERBOSE_PARSE(m_frame_size.print());
 			IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
@@ -2788,15 +2814,15 @@ namespace gameswf
 		stringi_hash<int>	m_named_frames;	// stores 0-based frame #'s
 		int	m_frame_count;
 		int	m_loading_frame;
-		action_buffer* m_init_actions;         
-		bool m_do_init_actions;
+//@@ KILL		action_buffer* m_init_actions;         
+//@@ KILL		bool m_do_init_actions;
 		sprite_definition(movie_definition_sub* m)
 			:
 			m_movie_def(m),
 			m_frame_count(0),
-			m_loading_frame(0),
-			m_init_actions(NULL),                    
-			m_do_init_actions(false)									
+			m_loading_frame(0)
+//@@ KILL			m_init_actions(NULL),
+//@@ KILL			m_do_init_actions(false)									
 
 		{
 			assert(m_movie_def);
@@ -2876,6 +2902,12 @@ namespace gameswf
 			m_playlist[m_loading_frame].push_back(c);
 		}
 
+		/* sprite_definition */
+		virtual void	add_init_action(int sprite_id, execute_tag* c)
+		{
+			// Sprite def's should not have do_init_action tags in them!  (@@ correct?)
+			log_error("sprite_definition::add_init_action called!  Ignored.\n");
+		}
 
 		/* sprite_definition */
 		virtual void	add_frame_name(const char* name)
@@ -2908,6 +2940,15 @@ namespace gameswf
 		// frame_number is 0-based
 		{
 			return m_playlist[frame_number];
+		}
+
+		/* sprite_definition */
+		virtual const array<execute_tag*>*	get_init_actions(int frame_number)
+		{
+			// Sprites do not have init actions in their
+			// playlists!  Only the root movie
+			// (movie_def_impl) does (@@ correct?)
+			return NULL;
 		}
 
 
@@ -2979,6 +3020,7 @@ namespace gameswf
 		bool	m_update_frame;
 		bool	m_has_looped;
 		bool	m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
+		array<bool>	m_init_actions_executed;	// a bit-array class would be ideal for this
 
 		as_environment	m_as_environment;
 
@@ -3011,13 +3053,18 @@ namespace gameswf
 
 			sprite_builtins_init();
 
-			sprite_definition* sd = (sprite_definition*) def;
-			if (sd->m_do_init_actions)
-			{
-				//printf("do_init_actions\n");
-				sd->m_do_init_actions = false;
-				sd->m_init_actions->execute(&m_as_environment);
-			}
+			// Initialize the flags for init action executed.
+			m_init_actions_executed.resize(m_def->get_frame_count());
+			memset(&m_init_actions_executed[0], 0,
+			       sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
+// @@ KILL
+// 			sprite_definition* sd = (sprite_definition*) def;
+// 			if (sd->m_do_init_actions)
+// 			{
+// 				//printf("do_init_actions\n");
+// 				sd->m_do_init_actions = false;
+// 				sd->m_init_actions->execute(&m_as_environment);
+// 			}
 		}
 
 		virtual ~sprite_instance()
@@ -3252,6 +3299,25 @@ namespace gameswf
 
 			assert(frame >= 0);
 			assert(frame < m_def->get_frame_count());
+
+			// Execute this frame's init actions, if necessary.
+			if (m_init_actions_executed[frame] == false)
+			{
+				const array<execute_tag*>*	init_actions = m_def->get_init_actions(frame);
+				if (init_actions->size() > 0)
+				{
+					// Need to execute these actions.
+					for (int i= 0; i < init_actions->size(); i++)
+					{
+						execute_tag*	e = (*init_actions)[i];
+						e->execute(this);
+					}
+
+					// Mark this frame done, so we never execute these init actions
+					// again.
+					m_init_actions_executed[frame] = true;
+				}
+			}
 
 			const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
 			for (int i = 0; i < playlist.size(); i++)
@@ -4617,23 +4683,6 @@ namespace gameswf
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);
-	}
-
-
-	void	do_init_action_loader(stream* in, int tag_type, movie_definition_sub* m)
-	{
-		assert(tag_type == 59);
-
-		int	sprite_character_id = in->read_u16();
-		sprite_definition* ch = (sprite_definition*) m->get_character_def(sprite_character_id);
-		assert(ch != NULL);
-
-		IF_VERBOSE_PARSE(log_msg("  tag %d: do_init_action_loader\n", tag_type));
-		IF_VERBOSE_ACTION(log_msg("  -- init actions in sprite %d\n", sprite_character_id));
-
-		ch->m_init_actions = new action_buffer;
-		ch->m_init_actions->read(in);
-		ch->m_do_init_actions = true;
 	}
 
 
