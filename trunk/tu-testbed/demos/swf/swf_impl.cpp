@@ -60,6 +60,16 @@ namespace swf
 		}
 
 
+		void	concatenate_translation(float tx, float ty)
+		// Concatenate a translation onto the front of our
+		// matrix.  When transforming points, the translation
+		// happens first, then our original xform.
+		{
+			m_[0][2] += m_[0][0] * tx + m_[0][1] * ty;
+			m_[1][2] += m_[1][0] * tx + m_[1][1] * ty;
+		}
+
+
 		void	read(stream* in)
 		{
 			in->align();
@@ -635,6 +645,77 @@ namespace swf
 	}
 		
 
+	static void	replace_display_object(array<display_object_info>* display_list,
+					       character* ch,
+					       Uint16 depth,
+					       bool use_cxform,
+					       const cxform& color_xform,
+					       bool use_matrix,
+					       const matrix& mat,
+					       float ratio)
+	// Puts a new character at the specified depth, replacing any
+	// existing character.  If use_cxform or use_matrix are false,
+	// then keep those respective properties from the existing
+	// character.
+	{
+		int	size = display_list->size();
+		if (size <= 0)
+		{
+			// error.
+			assert(0);
+			return;
+		}
+
+		int	index = find_display_index(*display_list, depth);
+		if (index < 0 || index >= size)
+		{
+			// error.
+			assert(0);
+			return;
+		}
+
+		display_object_info&	di = (*display_list)[index];
+		if (di.m_depth != depth)
+		{
+			// error
+			IF_DEBUG(printf("error: replace_display_object() -- no object at depth %d\n", depth));
+//			assert(0);
+			return;
+		}
+
+		// If the old character is an instance, then delete it.
+		if (di.m_character->is_instance())
+		{
+			delete di.m_character;
+			di.m_character = 0;
+		}
+
+		// Put the new character in its place.
+		assert(ch);
+
+		// If the character needs per-instance state, then
+		// create the instance here, and substitute it for the
+		// definition.
+		if (ch->is_definition())
+		{
+			ch = ch->create_instance();
+			ch->restart();
+		}
+
+		// Set the display properties.
+		di.m_character = ch;
+		if (use_cxform)
+		{
+			di.m_color_transform = color_xform;
+		}
+		if (use_matrix)
+		{
+			di.m_matrix = mat;
+		}
+		di.m_ratio = ratio;
+	}
+		
+
 	static void remove_display_object(array<display_object_info>* display_list, Uint16 depth)
 	// Removes the object at the specified depth.
 	{
@@ -802,6 +883,26 @@ namespace swf
 		// the specified depth.
 		{
 			swf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
+		}
+
+
+		void	replace_display_object(Uint16 character_id,
+					       Uint16 depth,
+					       bool use_cxform,
+					       const cxform& color_transform,
+					       bool use_matrix,
+					       const matrix& mat,
+					       float ratio)
+		{
+			character*	ch = NULL;
+			if (m_characters.get(character_id, &ch) == false)
+			{
+				fprintf(stderr, "movie_impl::add_display_object(): unknown cid = %d\n", character_id);
+				return;
+			}
+			assert(ch);
+
+			swf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
 		}
 
 
@@ -1015,6 +1116,7 @@ namespace swf
 			register_tag_loader(26, place_object_2_loader);
 			register_tag_loader(28, remove_object_2_loader);
 			register_tag_loader(32, define_shape_loader);
+			register_tag_loader(33, define_text_loader);
 			register_tag_loader(36, define_bits_lossless_2_loader);
 			register_tag_loader(39, sprite_loader);
 			register_tag_loader(48, define_font_loader);
@@ -1887,7 +1989,15 @@ namespace swf
 					}
 					if (has_color)
 					{
-						style.m_color.read_rgb(in);
+						if (tag_type == 11)
+						{
+							style.m_color.read_rgb(in);
+						}
+						else
+						{
+							assert(tag_type == 33);
+							style.m_color.read_rgba(in);
+						}
 					}
 					if (has_x_offset)
 					{
@@ -1933,10 +2043,12 @@ namespace swf
 				sub_di.m_matrix = base_matrix;
 				
 				float	scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+				sub_di.m_matrix.concatenate_translation(rec.m_style.m_x_offset /* + m_rect.m_x_min */,
+									rec.m_style.m_y_offset /* + m_rect.m_y_min */);
 				sub_di.m_matrix.m_[0][0] *= scale;
 				sub_di.m_matrix.m_[1][1] *= scale;
-				sub_di.m_matrix.m_[0][2] += rec.m_style.m_x_offset;
-				sub_di.m_matrix.m_[1][2] += rec.m_style.m_y_offset;
+//				sub_di.m_matrix.m_[0][2] += ;
+//				sub_di.m_matrix.m_[1][2] += ;
 
 				// set rec.m_style.m_color // @@ what exactly does this mean?
 
@@ -1948,7 +2060,8 @@ namespace swf
 					// Draw the character.
 					if (glyph) glyph->display(sub_di);
 
-					sub_di.m_matrix.m_[0][2] += rec.m_glyphs[j].m_glyph_advance;
+//					sub_di.m_matrix.m_[0][2] += rec.m_glyphs[j].m_glyph_advance;
+					sub_di.m_matrix.concatenate_translation(rec.m_glyphs[j].m_glyph_advance / scale, 0);
 				}
 			}
 		}
@@ -1958,7 +2071,7 @@ namespace swf
 	void	define_text_loader(stream* in, int tag_type, movie* m)
 	// Read a DefineText tag.
 	{
-		assert(tag_type == 11);
+		assert(tag_type == 11 || tag_type == 33);
 
 		Uint16	character_id = in->read_u16();
 		
@@ -2092,14 +2205,24 @@ namespace swf
 				break;
 
 			case REPLACE:
+			{
 				IF_DEBUG(printf("replace: cid %d depth %d\n", m_character_id, m_depth));
-				m->remove_display_object(m_depth);
-				m->add_display_object(m_character_id,
-						      m_depth,
-						      m_color_transform,
-						      m_matrix,
-						      m_ratio);
+//				m->remove_display_object(m_depth);
+//				m->add_display_object(m_character_id,
+//						      m_depth,
+//						      m_color_transform,
+//						      m_matrix,
+//						      m_ratio);
+				m->replace_display_object(m_character_id,
+							  m_depth,
+							  m_has_cxform,
+							  m_color_transform,
+							  m_has_matrix,
+							  m_matrix,
+							  m_ratio);
 				break;
+			}
+
 			}
 		}
 	};
@@ -2369,6 +2492,28 @@ namespace swf
 		// the specified depth.
 		{
 			swf::move_display_object(&m_display_list, depth, use_cxform, color_xform, use_matrix, mat, ratio);
+		}
+
+
+		void	replace_display_object(Uint16 character_id,
+					       Uint16 depth,
+					       bool use_cxform,
+					       const cxform& color_transform,
+					       bool use_matrix,
+					       const matrix& mat,
+					       float ratio)
+		{
+			assert(m_def && m_def->m_movie);
+
+			character*	ch = NULL;
+			if (m_def->m_movie->m_characters.get(character_id, &ch) == false)
+			{
+				fprintf(stderr, "sprite::add_display_object(): unknown cid = %d\n", character_id);
+				return;
+			}
+			assert(ch);
+
+			swf::replace_display_object(&m_display_list, ch, depth, use_cxform, color_transform, use_matrix, mat, ratio);
 		}
 
 
