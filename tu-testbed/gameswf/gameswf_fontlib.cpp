@@ -463,7 +463,7 @@ namespace fontlib
 			// save version number.
 			s_file->write_le16( 0x0100 );
 			
-			// save number of bitmaps.
+			// skip number of bitmaps.
 			s_file->write_le16( 0 );
 			
 			// save bitmaps
@@ -484,11 +484,22 @@ namespace fontlib
 			for (int f=0; f < s_fonts.size(); f++)
 			{
 				// save font name.
-				s_file->write_string(s_fonts[f]->get_name());
+				const char * font_name = s_fonts[f]->get_name();
+				if (font_name!=NULL)
+				{
+					int font_name_len = strlen(s_fonts[f]->get_name());
+					s_file->write_le16(font_name_len);
+					s_file->write_bytes(s_fonts[f]->get_name(), font_name_len);
+				}
+				else
+				{
+					s_file->write_le16(0);
+				}
 				
-				// save number of glyphs.
+				// skip number of glyphs.
 				int ng = s_fonts[f]->get_glyph_count();
-				s_file->write_le32(ng);
+				int ng_position = s_file->get_position();
+				s_file->write_le32(0);
 				
 				int n = 0;
 				
@@ -499,7 +510,7 @@ namespace fontlib
 					if (tg!=NULL)
 					{
 						// save glyph index.
-						s_file->write_le32(n);
+						s_file->write_le32(g);
 
 						// save bitmap index.
 						int bi;
@@ -510,6 +521,7 @@ namespace fontlib
 								break;
 							}
 						}
+						assert(bi!=s_bitmaps_used.size());
 						s_file->write_le16((Uint16)bi);
 
 						// save rect, position.
@@ -522,16 +534,133 @@ namespace fontlib
 						n++;
 					}
 				}
+				
+				restore = s_file->get_position();
+				s_file->set_position(ng_position);
+				s_file->write_le32(n);
+				s_file->set_position(restore);
 			}
+		}
+		else
+		{
+			printf("cannot open '%s'\n", filename);
 		}
 		delete s_file;
 		s_file = NULL;
 	}
 	
 
-	void	load_cached_font_data(const char* filename)
+	bool	load_cached_font_data(const char* filename)
 	// Load a file containing previously-saved font glyph textures.
 	{
+		bool result = false;
+		s_file = new file(filename, "rb" );
+		if (s_file->error()==NO_ERROR)
+		{
+			// load header identifier.
+			char head[4];
+			s_file->read_bytes( head, 4 );
+			assert(head[0]=='g' || head[1]=='s' || head[2]=='w' || head[3]=='f');
+
+			// load version number.
+			Uint16 version	= s_file->read_le16();
+			assert(version==0x0100);
+
+			// load number of bitmaps.
+			int nb = s_file->read_le16();
+			//s_bitmaps_used.resize(nb);
+
+			int pw=0, ph=0;
+
+			// load bitmaps.
+			for (int b=0; b<nb; b++)
+			{
+				s_current_bitmap_info = render::create_bitmap_info_blank();
+				s_bitmaps_used.push_back(s_current_bitmap_info);
+
+				// save bitmap size
+				int w = s_file->read_le16();
+				int h = s_file->read_le16();
+
+				if (s_current_cache_image == NULL || w!=pw || h!=ph)
+				{
+					delete [] s_current_cache_image;
+					s_current_cache_image = new Uint8[w*h];
+					pw = w;
+					ph = h;
+				}
+
+				// save bitmap contents
+				s_file->read_bytes(s_current_cache_image, w*h);
+
+				render::set_alpha_image(s_current_bitmap_info,
+						w, h,
+						s_current_cache_image);
+			}
+
+			// reset pointers.
+			s_current_bitmap_info = NULL;
+			delete [] s_current_cache_image;
+			s_current_cache_image = NULL;
+
+			// load number of fonts.
+			int nf = s_file->read_le16();
+			assert(s_fonts.size()==nf);		// FIXME: doesn't have to.
+
+			// for each font:
+			for (int f=0; f<nf; f++)
+			{
+
+				// read font name.
+				if (s_fonts[f]->get_name()!=NULL) 
+				{
+					int font_name_lenght;
+					font_name_lenght = s_file->read_le16();
+					char * font_name = new char[font_name_lenght];
+					s_file->read_bytes(font_name, font_name_lenght);
+					assert(0==strcmp(font_name, s_fonts[f]->get_name()));
+					delete font_name;
+				}
+				else
+				{
+					int dummy = s_file->read_le16();
+					assert(0==dummy);
+				}
+					
+
+				
+				// load number of glyphs.
+				int ng = s_file->read_le32();
+
+				// load glyphs:
+				for (int g=0; g<ng; g++)
+				{
+					// load glyph index.
+					int glyph_index = s_file->read_le32();
+
+					texture_glyph * tg = new texture_glyph;
+
+					// load bitmap index
+					int bi = s_file->read_le16();
+					assert(bi<s_bitmaps_used.size());
+					tg->m_bitmap_info = s_bitmaps_used[bi];
+
+					// load glyph bounds and origin.
+					(Uint32&)tg->m_uv_bounds.m_x_min = s_file->read_le32();
+					(Uint32&)tg->m_uv_bounds.m_y_min = s_file->read_le32();
+					(Uint32&)tg->m_uv_bounds.m_x_max = s_file->read_le32();
+					(Uint32&)tg->m_uv_bounds.m_y_max = s_file->read_le32();
+					(Uint32&)tg->m_uv_origin.m_x = s_file->read_le32();
+					(Uint32&)tg->m_uv_origin.m_y = s_file->read_le32();
+
+					s_fonts[f]->add_texture_glyph(glyph_index, tg);
+				}
+			}
+			result = true;
+		}
+		delete s_file;
+		s_file = NULL;
+		return result;
 	}
 
 

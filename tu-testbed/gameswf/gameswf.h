@@ -85,7 +85,7 @@ namespace gameswf
 		void	save_cached_font_data(const char* filename);
 
 		// Load a file containing previously-saved font glyph textures.
-		void	load_cached_font_data(const char* filename);
+		bool	load_cached_font_data(const char* filename);
 
 		// For accessing the fonts in the library.
 		int	get_font_count();
