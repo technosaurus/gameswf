@@ -225,6 +225,9 @@ namespace gameswf
 		// ActionScript event handler.  Returns true if a handler was called.
 		virtual bool	on_event(event_id id) { return false; }
 
+		// Special event handler; sprites also execute their frame1 actions on this event.
+		virtual void	on_event_load() { on_event(event_id::LOAD); }
+
 		// as_object_interface stuff
 		virtual void	set_member(const tu_string& name, const as_value& val) { assert(0); }
 		virtual bool	get_member(const tu_string& name, as_value* val) { assert(0); return false; }

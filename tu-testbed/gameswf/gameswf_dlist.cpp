@@ -174,8 +174,9 @@ namespace gameswf
 		
 		m_display_object_array.insert(index, di);
 
-		// do the "onClipEvent (load)" event.
-		ch->on_event(event_id::LOAD);
+		// do the frame1 actions (if applicable) and the "onClipEvent (load)" event.
+		//ch->on_event(event_id::LOAD);
+		ch->on_event_load();
 	}
 	
 	
