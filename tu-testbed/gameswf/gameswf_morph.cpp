@@ -98,9 +98,9 @@ namespace gameswf {
 		int line_style_count = in->read_variable_count();
 		
 		IF_VERBOSE_PARSE(log_msg("smd: lsc = %d\n", line_style_count));
-		for (int i = 0; i < line_style_count; i++) {
+		{for (int i = 0; i < line_style_count; i++) {
 			m_line_styles.push_back(morph_line_style(in));
-		}
+		}}
 
 		int edges1 = read_shape_record(in, m, true);
 		IF_VERBOSE_PARSE(log_msg("morph: read %d edges for shape 1\n",
@@ -284,9 +284,9 @@ namespace gameswf {
 				}
 
 				count = in->read_variable_count();
-				for (int i = 0; i < count; i++) {
+				{for (int i = 0; i < count; i++) {
 					m_line_styles.push_back(morph_line_style(in));
-				}
+				}}
 
 				fill_bits = in->read_uint(4);
 				fill_bits = in->read_uint(4);
