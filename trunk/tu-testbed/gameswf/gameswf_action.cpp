@@ -1780,8 +1780,18 @@ namespace gameswf
 	{
 		if (m_type == STRING)
 		{
-			// @@ Hm.
-			return to_number() != 0.0;
+			if (m_string_value == "false")
+			{
+				return false;
+			}
+			else if (m_string_value == "true")
+			{
+				return true;
+			}
+			else
+			{
+				return to_number() != 0.0;
+			}
 		}
 		else if (m_type == NUMBER)
 		{
