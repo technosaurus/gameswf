@@ -176,14 +176,19 @@ namespace ogl {
 	vertex_stream::vertex_stream(int buffer_size)
 	// Construct a streaming buffer, with vertex RAM of the specified size.
 	{
-		assert(buffer_size >= 2);
+		assert(buffer_size >= 4);
 	
-		m_half_buffer_size = buffer_size / 2;
+		m_quarter_buffer_size = buffer_size / 4;
 		m_buffer = ogl::allocate_vertex_memory(buffer_size);
 		m_buffer_top = 0;
 	
 		// set up fences.
-		ogl::gen_fences(2, &m_fence[0]);
+		ogl::gen_fences(4, &m_fence[0]);
+
+		// Set (dummy) fences which will be finished as we reach them.
+		ogl::set_fence(m_fence[1]);
+		ogl::set_fence(m_fence[2]);
+		ogl::set_fence(m_fence[3]);
 	}
 
 	vertex_stream::~vertex_stream()
@@ -199,29 +204,25 @@ namespace ogl {
 	// returned buffer in a glDrawElements call before you call
 	// reserve_memory() to get the next chunk.
 	{
-		assert(size <= m_half_buffer_size);
+		// @@ using quarter buffers instead of half buffers, because
+		// of a suspected driver or cache bug...
+
+		assert(size <= m_quarter_buffer_size);
 	
-		if (m_buffer_top <= m_half_buffer_size
-			&& m_buffer_top + size > m_half_buffer_size)
+		for (int quarter = 1; quarter <= 4; quarter++)
 		{
-			// Crossing into second half of the buffer.
-				
-			ogl::set_fence(m_fence[0]);
-			ogl::finish_fence(m_fence[1]);	// don't overwrite second half-buffer while it's still active.
+			int	border = m_quarter_buffer_size * quarter;
+
+			if (m_buffer_top <= border
+				&& m_buffer_top + size > border)
+			{
+				// Crossing into the next quarter.
+				ogl::set_fence(m_fence[quarter - 1]);
+				ogl::finish_fence(m_fence[quarter & 3]);	// don't overwrite the next quarter-buffer while it's still active.
 	
-			// Start the the second half-buffer.
-			m_buffer_top = m_half_buffer_size;
-		}
-		else if (m_buffer_top + size > m_half_buffer_size * 2) {
-			// Desired chunk is bigger than what we've got
-			// left in the second half-buffer; flush the
-			// buffer and start again at the beginning.
-	
-			ogl::set_fence(m_fence[1]);
-			ogl::finish_fence(m_fence[0]);	// don't overwrite first half-buffer while it's still active.
-	
-			// Start the first half-buffer.
-			m_buffer_top = 0;
+				// Start the next quarter-buffer.
+				m_buffer_top = m_quarter_buffer_size * (quarter & 3);
+			}
 		}
 	
 		void*	buf = ((char*) m_buffer) + m_buffer_top;
@@ -234,3 +235,10 @@ namespace ogl {
 	
 };
 
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

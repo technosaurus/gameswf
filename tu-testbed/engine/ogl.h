@@ -79,11 +79,11 @@ namespace ogl {
 		void*	reserve_memory(int size);
 	
 	private:
-		int	m_half_buffer_size;
+		int	m_quarter_buffer_size;
 		int	m_buffer_top;
 		void*	m_buffer;
 	
-		unsigned int	m_fence[2];
+		unsigned int	m_fence[4];
 	};
 		
 };

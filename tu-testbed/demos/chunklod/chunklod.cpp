@@ -1811,7 +1811,7 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 {
 	// Make sure we have a vertex stream.
 	if (s_stream == NULL) {
-		s_stream = new ogl::vertex_stream(2 << 20);
+		s_stream = new ogl::vertex_stream(4 << 20);
 	}
 
 	int	triangle_count = 0;
