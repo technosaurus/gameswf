@@ -27,7 +27,9 @@ class array {
 public:
 	array() : m_buffer(0), m_size(0), m_buffer_size(0) {}
 	array(int size_hint) : m_buffer(0), m_size(0), m_buffer_size(0) { resize(size_hint); }
-	~array() { resize(0); }
+	~array() {
+		clear();
+	}
 	
 	T&	operator[](int index) { assert(index >= 0 && index < m_size); return m_buffer[index]; }
 	const T&	operator[](int index) const { assert(index >= 0 && index < m_size); return m_buffer[index]; }
@@ -47,12 +49,18 @@ public:
 		assert(new_size >= 0);
 
 		m_size = new_size;
-		if (m_size <= m_buffer_size) {
+
+		if (new_size == 0) {
+			m_buffer_size = 0;
+
+		} else if (m_size <= m_buffer_size && m_size > m_buffer_size >> 1) {
+			// don't compact yet.
 			return;
+		} else {
+			m_buffer_size = m_size + (m_size >> 2);
 		}
 
-		// Need to expand the buffer.
-		m_buffer_size = m_size + (m_size >> 2);
+		// Resize the buffer.
 		if (m_buffer_size == 0) {
 			if (m_buffer) {
 				free(m_buffer);
@@ -67,17 +75,23 @@ public:
 		}			
 	}
 
-	void	clear() { resize(0); }
+	void	clear() {
+		resize(0);
+	}
 
 	// void	remove(int index);
 
-	void	copy_members(const array<T>& a)
+	void	transfer_members(array<T>* a)
 	// UNSAFE!  Low-level utility function: replace this array's
 	// members with a's members.
 	{
-		m_buffer = a.m_buffer;
-		m_size = a.m_size;
-		m_buffer_size = a.m_buffer_size;
+		m_buffer = a->m_buffer;
+		m_size = a->m_size;
+		m_buffer_size = a->m_buffer_size;
+
+		a->m_buffer = 0;
+		a->m_size = 0;
+		a->m_buffer_size = 0;
 	}
 
 private:
@@ -119,6 +133,9 @@ class hash {
 public:
 	hash() { m_entry_count = 0;  m_size_mask = 0; }
 	hash(int size_hint) { m_entry_count = 0; m_size_mask = 0; resize(size_hint); }
+	~hash() {
+		clear();
+	}
 
 	void	add(T key, U value)
 	// Add a new value to the hash table, under the specified key.
@@ -220,7 +237,7 @@ public:
 		// Init entries in new_table, since constructors aren't
 		// called.
 		for (int i = 0; i < new_size; i++) {
-			new_table[i].copy_members(array<entry>(0));
+			new_table[i].transfer_members(&array<entry>(0));
 		}
 
 		// Copy all entries to the new table.
@@ -236,8 +253,8 @@ public:
 		}}
 		m_table.clear();
 
-		// Replace old table with new table.
-		m_table.copy_members(new_table);
+		// Replace old table data with new table's data.
+		m_table.transfer_members(&new_table);
 	}
 
 private:
