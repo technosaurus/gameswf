@@ -13,10 +13,10 @@
 #include "gameswf_xmlsocket.h"
 
 
+#ifdef HAVE_LIBXML
+
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
-
-#ifdef HAVE_LIBXML
 
 namespace gameswf
 {
