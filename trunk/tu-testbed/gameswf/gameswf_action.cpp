@@ -203,11 +203,11 @@ namespace gameswf
 		}
 	};
 
-	void	do_action_loader(stream* in, int tag_type, movie* m)
+	void	do_action_loader(stream* in, int tag_type, movie_definition* m)
 	{
 		IF_VERBOSE_PARSE(log_msg("tag %d: do_action_loader\n", tag_type));
 
-		IF_VERBOSE_ACTION(log_msg("-- actions in frame %d\n", m->get_current_frame()));
+		IF_VERBOSE_ACTION(log_msg("-- actions in frame %d\n", m->get_loading_frame()));
 
 		assert(in);
 		assert(tag_type == 12);

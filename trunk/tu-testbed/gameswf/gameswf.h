@@ -14,36 +14,81 @@
 class tu_file;
 class render_handler;
 
-// @@ TODO must get rid of external includes!
-//#include "gameswf_types.h"
-
 // @@ forward decl to avoid including base/image.h; TODO change the
 // render_handler interface to not depend on these structs at all.
 namespace image { struct rgb; struct rgba; }
 
+// forward decl
+namespace jpeg { struct input; }
+class tu_string;
+
 
 namespace gameswf
 {
+	struct action_buffer;
+	struct bitmap_character;
 	struct character;
 	struct execute_tag;
+	struct font;
+	struct movie_interface;
+	struct resource;
 	struct rgba;
+	struct sound_sample;
+	struct stream;
 	
 	//
-	// This is the client program's interface to a movie.
+	// This is the client program's interface to the definition of
+	// a movie (i.e. the shared constant source info).
+	//
+	struct movie_definition
+	{
+		virtual ~movie_definition() {}
+
+		virtual int	get_width() const = 0;
+		virtual int	get_height() const = 0;
+		virtual int	get_frame_count() const = 0;
+		virtual float	get_frame_rate() const = 0;
+
+		virtual movie_interface*	create_instance() = 0;
+
+		// For use during creation.
+		virtual int	get_loading_frame() const = 0;
+		virtual void	add_character(int id, character* ch) = 0;
+		virtual void	add_font(int id, font* ch) = 0;
+		virtual font*	get_font(int id) = 0;
+		virtual void	add_execute_tag(execute_tag* c) = 0;
+		virtual void	add_frame_name(const char* name) = 0;
+		virtual void	set_jpeg_loader(jpeg::input* j_in) = 0;
+		virtual jpeg::input*	get_jpeg_loader() = 0;
+		virtual bitmap_character*	get_bitmap_character(int character_id) = 0;
+		virtual void	add_bitmap_character(int character_id, bitmap_character* ch) = 0;
+		virtual sound_sample*	get_sound_sample(int character_id) = 0;
+		virtual void	add_sound_sample(int character_id, sound_sample* sam) = 0;
+		virtual void	export_resource(const tu_string& symbol, resource* res) = 0;
+
+		virtual resource*	get_exported_resource(const tu_string& symbol) = 0;
+		virtual character*	get_character(int id) = 0;
+
+		virtual void	generate_font_bitmaps() = 0;
+
+		// For caching precomputed stuff.  Generally of
+		// interest to gameswf_processor and programs like it.
+		virtual void	output_cached_data(tu_file* out) = 0;
+		virtual void	input_cached_data(tu_file* in) = 0;
+	};
+
+	//
+	// This is the client program's interface to an instance of a
+	// movie (i.e. an independent stateful live movie).
 	//
 	struct movie_interface
 	{
 		virtual ~movie_interface() {}
 
-		// If you use create_movie_with_cache(), you don't need to call this.
-		virtual void	generate_font_bitmaps() = 0;
-		
-		virtual int	get_width() = 0;
-		virtual int	get_height() = 0;
+		virtual movie_definition*	get_movie_definition() = 0;
+
 		virtual int	get_current_frame() const = 0;
-		virtual int	get_frame_count() const = 0;
 		
-		// Play control.
 		virtual void	restart() = 0;
 		virtual void	advance(float delta_time) = 0;
 		virtual void	goto_frame(int frame_number) = 0;
@@ -58,7 +103,7 @@ namespace gameswf
 		virtual play_state	get_play_state() const = 0;
 		
 		virtual void	set_background_color(const rgba& bg_color) = 0;
-		
+
 		// Set to 0 if you don't want the movie to render its
 		// background at all.  1 == full opacity.
 		virtual void	set_background_alpha(float alpha) = 0;
@@ -75,11 +120,6 @@ namespace gameswf
 		// Push replacement text into an edit-text field.  Returns
 		// true if the field was found and could accept text.
 		virtual bool	set_edit_text(const char* var_name, const char* new_text) = 0;
-
-		// For caching precomputed stuff.  Generally of
-		// interest to gameswf_processor and programs like it.
-		virtual void	output_cached_data(tu_file* out) = 0;
-		virtual void	input_cached_data(tu_file* in) = 0;
 	};
 
 	// Try to grab movie info from the header of the given .swf
@@ -100,7 +140,7 @@ namespace gameswf
 	// loading movies.
 	void	set_use_cache_files(bool use_cache);
 	
-	// Create a gameswf::movie_interface from the given file name.
+	// Create a gameswf::movie_definition from the given file name.
 	// Normally, will also try to load any cached data file
 	// (".gsc") that corresponds to the given movie file.  This
 	// will still work even if there is no cache file.  You can
@@ -109,9 +149,9 @@ namespace gameswf
 	//
 	// Uses the registered file-opener callback to read the files
 	// themselves.
-	movie_interface*	create_movie(const char* filename);
+	movie_definition*	create_movie(const char* filename);
 
-	// Create a gameswf::movie_interface from the given file name.
+	// Create a gameswf::movie_definition from the given file name.
 	// This is just like create_movie(), except that it checks the
 	// "library" to see if a movie of this name has already been
 	// created, and returns that movie if so.  Also, if it creates
@@ -123,7 +163,7 @@ namespace gameswf
 	// other movies as well.
 	//
 	// @@ this explanation/functionality could be clearer!
-	movie_interface*	create_library_movie(const char* filename);
+	movie_definition*	create_library_movie(const char* filename);
 	
 	
 	//
@@ -158,9 +198,7 @@ namespace gameswf
 	// Register a loader function for a certain tag type.  Most
 	// standard tags are handled within gameswf.  Host apps might want
 	// to call this in order to handle special tag types.
-	struct stream;
-	struct movie;
-	typedef void (*loader_function)(stream* input, int tag_type, movie* m);
+	typedef void (*loader_function)(stream* input, int tag_type, movie_definition* m);
 	void	register_tag_loader(int tag_type, loader_function lf);
 	
 	

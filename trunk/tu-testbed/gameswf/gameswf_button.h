@@ -26,7 +26,7 @@ namespace gameswf
 		matrix	m_button_matrix;
 		cxform	m_button_cxform;
 
-		bool	read(stream* in, int tag_type, movie* m);
+		bool	read(stream* in, int tag_type, movie_definition* m);
 	};
 	
 
@@ -59,8 +59,8 @@ namespace gameswf
 
 		button_character_definition();
 		bool	is_definition() const;
-		character*	create_instance();
-		void	read(stream* in, int tag_type, movie* m);
+		character*	create_character_instance(movie* m);
+		void	read(stream* in, int tag_type, movie_definition* m);
 	};
 
 };	// end namespace gameswf

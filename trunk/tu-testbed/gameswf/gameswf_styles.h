@@ -34,7 +34,7 @@ namespace gameswf
 	{
 		fill_style();
 
-		void	read(stream* in, int tag_type, movie* m);
+		void	read(stream* in, int tag_type, movie_definition* m);
 		rgba	sample_gradient(int ratio) const;
 		gameswf::bitmap_info*	create_gradient_bitmap() const;
 		void	apply(int fill_side) const;

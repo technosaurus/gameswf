@@ -55,9 +55,32 @@ namespace gameswf
 		int	find_display_index(int depth);
 		int	get_display_index(int depth);
 		
-		void	add_display_object(movie* root_movie, character* ch, Uint16 depth, const cxform& color_xform, const matrix& mat, float ratio, Uint16 clip_depth);
-		void	move_display_object(Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth);
-		void	replace_display_object(character* ch, Uint16 depth, bool use_cxform, const cxform& color_xform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth);
+		void	add_display_object(
+			movie* root_movie,
+			character* ch,
+			Uint16 depth,
+			const cxform& color_xform,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth);
+		void	move_display_object(
+			Uint16 depth,
+			bool use_cxform,
+			const cxform& color_xform,
+			bool use_matrix,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth);
+		void	replace_display_object(
+			movie* root_movie,
+			character* ch,
+			Uint16 depth,
+			bool use_cxform,
+			const cxform& color_xform,
+			bool use_matrix,
+			const matrix& mat,
+			float ratio,
+			Uint16 clip_depth);
 		void	remove_display_object(Uint16 depth);
 
 		// clear the display list.
@@ -95,3 +118,12 @@ namespace gameswf
 
 
 #endif // GAMESWF_DLIST_H
+
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:

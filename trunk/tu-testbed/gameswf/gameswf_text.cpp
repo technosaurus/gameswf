@@ -157,7 +157,7 @@ namespace gameswf
 		{
 		}
 
-		void	read(stream* in, int tag_type, movie* m)
+		void	read(stream* in, int tag_type, movie_definition* m)
 		{
 			assert(m != NULL);
 			assert(tag_type == 11 || tag_type == 33);
@@ -268,7 +268,7 @@ namespace gameswf
 	};
 
 
-	void	define_text_loader(stream* in, int tag_type, movie* m)
+	void	define_text_loader(stream* in, int tag_type, movie_definition* m)
 	// Read a DefineText tag.
 	{
 		assert(tag_type == 11 || tag_type == 33);
@@ -631,7 +631,7 @@ namespace gameswf
 		}
 
 
-		void	read(stream* in, int tag_type, movie* m)
+		void	read(stream* in, int tag_type, movie_definition* m)
 		{
 			assert(m != NULL);
 			assert(tag_type == 37);
@@ -744,7 +744,7 @@ namespace gameswf
 	};
 
 
-	void	define_edit_text_loader(stream* in, int tag_type, movie* m)
+	void	define_edit_text_loader(stream* in, int tag_type, movie_definition* m)
 	// Read a DefineText tag.
 	{
 		assert(tag_type == 37);

@@ -41,7 +41,7 @@ namespace gameswf
 		};
 		mouse_state m_mouse_state;
 
-		button_character_instance(button_character_definition* def)
+		button_character_instance(button_character_definition* def, movie* m)
 			:
 			m_def(def),
 			m_last_mouse_flags(IDLE),
@@ -59,7 +59,7 @@ namespace gameswf
 				character * ch = m_def->m_button_records[r].m_character;
 				if (ch->is_definition())
 				{
-					m_record_character[r] = ch->create_instance();
+					m_record_character[r] = ch->create_character_instance(m);
 					m_record_character[r]->restart();
 				}
 				else 
@@ -361,7 +361,7 @@ namespace gameswf
 	// button_record
 	//
 
-	bool	button_record::read(stream* in, int tag_type, movie* m)
+	bool	button_record::read(stream* in, int tag_type, movie_definition* m)
 	// Return true if we read a record; false if this is a null record.
 	{
 		int	flags = in->read_u8();
@@ -432,7 +432,7 @@ namespace gameswf
 	}
 
 
-	void	button_character_definition::read(stream* in, int tag_type, movie* m)
+	void	button_character_definition::read(stream* in, int tag_type, movie_definition* m)
 	// Initialize from the given stream.
 	{
 		assert(tag_type == 7 || tag_type == 34);
@@ -505,12 +505,12 @@ namespace gameswf
 	}
 
 
-	character*	button_character_definition::create_instance()
+	character*	button_character_definition::create_character_instance(movie* m)
 	// Create a mutable instance of our definition.  The instance is
 	// designed to be put on the display list, possibly active at the same
 	// time as other instances of the same definition.
 	{
-		return new button_character_instance(this);
+		return new button_character_instance(this, m);
 	}
 };
 

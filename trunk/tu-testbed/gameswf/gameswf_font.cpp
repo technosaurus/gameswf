@@ -93,7 +93,7 @@ namespace gameswf
 	}
 
 
-	void	font::read(stream* in, int tag_type, movie* m)
+	void	font::read(stream* in, int tag_type, movie_definition* m)
 	{
 		assert(tag_type == 10 || tag_type == 48);
 
