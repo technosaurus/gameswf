@@ -52,6 +52,18 @@ namespace gameswf
 				if (m_bitmap_info) m_bitmap_info->add_ref();
 			}
 		}
+
+		void operator=(const texture_glyph& tg)
+		// Assignment; make sure to handle ref counts properly.
+		{
+			set_bitmap_info(tg.m_bitmap_info);
+			m_uv_bounds = tg.m_uv_bounds;
+			m_uv_origin = tg.m_uv_origin;
+		}
+
+	private:
+		// Don't allow copy-constructor.
+		texture_glyph(const texture_glyph& tg) { assert(0); }
 	};
 
 
