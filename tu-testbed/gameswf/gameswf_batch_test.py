@@ -68,6 +68,25 @@ onEnterFrame 10
 frame 10 actions
 '''.splitlines(1)],
 
+["samples/TestFunction2.swf", '''Tulsa nightlife -
+filth, gin, a slut.
+
+Arg a
+Arg b
+[object Object]
+[object Object]
+Arg a,Arg b
+Arg b
+modified b!
+another test
+27
+[object Object]
+[object Object]
+another test,27
+27
+modified b!
+'''.splitlines(1)],
+
 # Add more tests here, in form of [ filename, expected_output ]
 
 ]
@@ -89,6 +108,7 @@ def run_batch_test(testfile, expected_output):
   expected_output = map(fix_string, expected_output)    # lose trailing newlines, avoid DOS/Unix confusion
 
   if (status != 0):
+    success = False;
     report += format_header_line(testfile, "[failed]")
     report += "  command returned status code " + str(status) + "\n"
     report += "  command output:\n"
@@ -97,9 +117,9 @@ def run_batch_test(testfile, expected_output):
     # Let's show the difference between expected and actual output
     difference = list(difflib.unified_diff(expected_output, output, "expected", "actual"))
     if (len(difference) == 0):
-      success = False;
       report += format_header_line(testfile, "[OK]")
     else:
+      success = False;
       report += format_header_line(testfile, "[failed]")
       report += "    " + string.join(difference, "    ")
 
