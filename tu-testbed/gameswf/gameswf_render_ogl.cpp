@@ -551,8 +551,6 @@ namespace render
 	void	draw_mesh(const float coords[], int vertex_count)
 	{
 		// Set up current style.
-		matrix	ident;
-		ident.set_identity();
 		s_current_styles[LEFT_STYLE].apply();
 
 		glMatrixMode(GL_MODELVIEW);
@@ -573,8 +571,6 @@ namespace render
 	// Draw the line strip formed by the sequence of points.
 	{
 		// Set up current style.
-		matrix	ident;
-		ident.set_identity();
 		s_current_styles[LINE_STYLE].apply();
 
 		glMatrixMode(GL_MODELVIEW);

@@ -1956,9 +1956,29 @@ namespace gameswf
 			matrix	base_matrix = sub_di.m_matrix;
 			float	base_matrix_max_scale = base_matrix.get_max_scale();
 
+			if (m_border)
+			{
+				// Show white background + black bounding box.
+				render::set_matrix(base_matrix);
+
+				point	coords[6];
+				coords[0] = m_rect.get_corner(0);
+				coords[1] = m_rect.get_corner(1);
+				coords[2] = m_rect.get_corner(2);
+				coords[3] = m_rect.get_corner(3);
+				coords[4] = m_rect.get_corner(0);
+				coords[5] = m_rect.get_corner(2);
+				
+				render::fill_style_color(0, rgba(255, 255, 255, 255));
+				render::draw_mesh(&coords[0].m_x, 6);
+
+				render::line_style_color(rgba(0,0,0,255));
+				render::draw_line_strip(&coords[0].m_x, 5);
+			}
+
 			float	scale = 1.0f;
 			float	x = 0.0f;
-			float	y = 0.0f;
+			float	y = 0.0f + m_text_height;
 
 			if (m_font == NULL) return;
 

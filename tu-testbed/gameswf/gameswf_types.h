@@ -132,6 +132,15 @@ namespace gameswf
 		void	expand_to_point(float x, float y);
 		float width() const { return m_x_max-m_x_min; }
 		float height() const { return m_y_max-m_y_min; }
+
+		point	get_corner(int i)
+		// Get one of the rect verts.
+		{
+			assert(i >= 0 && i < 4);
+			return point(
+				(i == 0 || i == 3) ? m_x_min : m_x_max,
+				(i < 2) ? m_y_min : m_y_max);
+		}
 	};
 	
 
