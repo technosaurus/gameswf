@@ -718,17 +718,17 @@ namespace gameswf
 				Sint16	icoords[18] = 
 				{
 					// strip (fill in)
-					coords[0].m_x, coords[0].m_y,
-					coords[1].m_x, coords[1].m_y,
-					coords[2].m_x, coords[2].m_y,
-					coords[3].m_x, coords[3].m_y,
+					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y,
+					(Sint16) coords[1].m_x, (Sint16) coords[1].m_y,
+					(Sint16) coords[2].m_x, (Sint16) coords[2].m_y,
+					(Sint16) coords[3].m_x, (Sint16) coords[3].m_y,
 
 					// outline
-					coords[0].m_x, coords[0].m_y,
-					coords[1].m_x, coords[1].m_y,
-					coords[3].m_x, coords[3].m_y,
-					coords[2].m_x, coords[2].m_y,
-					coords[0].m_x, coords[0].m_y,
+					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y,
+					(Sint16) coords[1].m_x, (Sint16) coords[1].m_y,
+					(Sint16) coords[3].m_x, (Sint16) coords[3].m_y,
+					(Sint16) coords[2].m_x, (Sint16) coords[2].m_y,
+					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y,
 				};
 				
 				render::fill_style_color(0, rgba(255, 255, 255, 255));

@@ -33,9 +33,9 @@ namespace gameswf
 	}
 
 
-#ifdef WIN32
+#ifdef _WIN32
 #define vsnprintf	_vsnprintf
-#endif // WIN32
+#endif // _WIN32
 
 #define FORMAT_INTO_BUFFER(fmt)				\
 		va_list ap;				\
