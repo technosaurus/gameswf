@@ -30,7 +30,8 @@ static int	bits_per_pixel = 0;	// 0 --> use the desktop depth.
 static int	window_width = 1024;
 static int	window_height = 768;
 static float	horizontal_fov_degrees = 90.f;
-static bool	two_phase_render = false;	// use this to combat z-precision problems
+static bool	s_two_phase_render = false;	// use this to combat z-precision problems
+static bool	s_use_loader_thread = true;	// toggle this for synchronous vs. asynchronous chunk/texture loading.
 
 
 static float	nearz = 4.0;
@@ -242,6 +243,7 @@ void	print_usage()
 		"  'e' - toggle edge rendering\n"
 		"  'u' - toggle LOD updating (turn off to freeze LOD changes)\n"
 		"  'f' - toggle viewpoint forward motion\n"
+		"  't' - toggle background loader thread on/off\n"
 		"  '2' - toggle 2-phase rendering (for z-buffer precision)\n"
 		"  ',' or 'd' - decrease viewpoint speed\n"
 		"  '.' or 'g' - increase viewpoint speed\n"
@@ -389,8 +391,13 @@ void	process_events()
 				printf("perf monitor %s\n", measure_performance ? "on" : "off");
 			}
 			if (key == SDLK_2) {
-				two_phase_render = ! two_phase_render;
-				printf("two-phase rendering %s\n", two_phase_render ? "on" : "off");
+				s_two_phase_render = ! s_two_phase_render;
+				printf("two-phase rendering %s\n", s_two_phase_render ? "on" : "off");
+			}
+			if (key == SDLK_t) {
+				// Toggle background loader thread...
+				s_use_loader_thread = ! s_use_loader_thread;
+				printf("loader thread %s\n", s_use_loader_thread ? "on" : "off");
 			}
 			if (key == SDLK_QUESTION || key == SDLK_F1 || key == SDLK_h) {
 				print_usage();
@@ -474,7 +481,7 @@ int	main(int argc, char *argv[])
 				break;
 
 			case '2':	// two-pass flag
-				two_phase_render = true;
+				s_two_phase_render = true;
 				break;
 			}
 			break;
@@ -667,6 +674,7 @@ int	main(int argc, char *argv[])
 				viewer_pos += viewer_dir * delta_t * (float) (1 << speed) * 0.50f;
 			}
 
+			model->set_use_loader_thread(s_use_loader_thread);
 			model->set_parameters(max_pixel_error, max_texel_size, (float) window_width, horizontal_fov_degrees);
 			if (enable_update) {
 				model->update(viewer_pos);
@@ -675,12 +683,12 @@ int	main(int argc, char *argv[])
 			clear();
 
 			float	midz = farz;
-			if (two_phase_render) {
+			if (s_two_phase_render) {
 				// Draw the far part of the terrain, then clear the z-buffer before
 				// drawing the near part.  Helps (a lot!) w/ z-buffer precision.
 				midz = sqrt(nearz * farz);
 
-				setup_view(midz * 0.9f, farz);
+				setup_view(midz * 0.9f, farz);	// must overlap at the boundary; otherwise there can be cracks.
 
 				frame_triangle_count += model->render(s_view, render_opt);
 
@@ -695,17 +703,17 @@ int	main(int argc, char *argv[])
 			s_view.m_frame_number++;
 
 			// Performance counting.
-			if ( measure_performance ) {
+			if (measure_performance) {
 				frame_count ++;
 				total_triangle_count += frame_triangle_count;
 				performance_timer += delta_ticks;
 
 				// See if one second has elapsed.
-				if ( performance_timer > 1000 ) {
+				if (performance_timer > 1000) {
 					// Print out stats for the previous second.
-					float	fps = frame_count / ( performance_timer / 1000.f );
-					float	tps = total_triangle_count / ( performance_timer / 1000.f );
-					printf( "fps = %3.1f : tri/s = %3.2fM : tri/frame = %2.3fM\n", fps, tps / 1000000.f, frame_triangle_count / 1000000.f );
+					float	fps = frame_count / (performance_timer / 1000.f);
+					float	tps = total_triangle_count / (performance_timer / 1000.f);
+					printf("fps = %3.1f : tri/s = %3.2fM : tri/frame = %2.3fM\n", fps, tps / 1000000.f, frame_triangle_count / 1000000.f);
 
 					total_triangle_count = 0;
 					performance_timer = 0;
