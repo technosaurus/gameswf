@@ -29,7 +29,7 @@ namespace gameswf
 	// and returns it.  The given bitcount determines the
 	// number of bits to read.
 	{
-		assert(bitcount <= 32 && bitcount > 0);
+		assert(bitcount <= 32 && bitcount >= 0);
 			
 		Uint32	value = 0;
 

@@ -132,6 +132,14 @@ namespace jpeg
 			delete src;
 			cinfo->src = NULL;
 		}
+
+
+		void	discard_partial_buffer()
+		{
+			// Discard existing bytes in our buffer.
+			m_pub.bytes_in_buffer = 0;
+			m_pub.next_input_byte = NULL;
+		}
 	};
 
 	
@@ -238,9 +246,14 @@ namespace jpeg
 		struct jpeg_decompress_struct	m_cinfo;
 		struct jpeg_error_mgr m_jerr;
 
+		bool	m_compressor_opened;
+
 		enum SWF_DEFINE_BITS_JPEG2 { SWF_JPEG2 };
+		enum SWF_DEFINE_BITS_JPEG2_HEADER_ONLY { SWF_JPEG2_HEADER_ONLY };
 
 		input_impl(SDL_RWops* in)
+			:
+			m_compressor_opened(false)
 		// Constructor.  Read the header data from in, and
 		// prepare to read data.
 		{
@@ -251,12 +264,13 @@ namespace jpeg
 
 			setup_rw_source(&m_cinfo, in);
 
-			jpeg_read_header(&m_cinfo, TRUE);
-			jpeg_start_decompress(&m_cinfo);
+			start_image();
 		}
 
-
+#if 0
 		input_impl(SWF_DEFINE_BITS_JPEG2 e, SDL_RWops* in)
+			:
+			m_compressor_opened(false)
 		// The SWF file format stores JPEG images with the
 		// encoding tables separate from the image data.  This
 		// constructor reads the encoding tables, and then
@@ -272,17 +286,38 @@ namespace jpeg
 			// Read the encoding tables.
 			jpeg_read_header(&m_cinfo, FALSE);
 
-			// Now, read the image header.
-			jpeg_read_header(&m_cinfo, TRUE);
-			jpeg_start_decompress(&m_cinfo);
+			start_image();
 		}
+#endif // 0
 
+		input_impl(SWF_DEFINE_BITS_JPEG2_HEADER_ONLY e, SDL_RWops* in)
+			:
+			m_compressor_opened(false)
+		// The SWF file format stores JPEG images with the
+		// encoding tables separate from the image data.  This
+		// constructor reads the encoding table only and keeps
+		// them in this object.  You need to call
+		// start_image() and finish_image() around any calls
+		// to get_width/height/components and read_scanline.
+		{
+			m_cinfo.err = jpeg_std_error(&m_jerr);
+
+			// Initialize decompression object.
+			jpeg_create_decompress(&m_cinfo);
+
+			setup_rw_source(&m_cinfo, in);
+
+			// Read the encoding tables.
+			jpeg_read_header(&m_cinfo, FALSE);
+
+			// Don't start reading any image data!
+			// App does that manually using start_image.
+		}
 
 		~input_impl()
 		// Destructor.  Clean up our jpeg reader state.
 		{
-			jpeg_finish_decompress(&m_cinfo);
-
+			finish_image();
 /*
 			rw_source* src = (rw_source*) m_cinfo.src;
 			delete src;
@@ -292,15 +327,53 @@ namespace jpeg
 			jpeg_destroy_decompress(&m_cinfo);
 		}
 
+
+		void	discard_partial_buffer()
+		// Discard any data sitting in our input buffer.  Use
+		// this before/after reading headers or partial image
+		// data, to avoid screwing up future reads.
+		{
+			rw_source* src = (rw_source*) m_cinfo.src;
+			assert(src);
+			src->discard_partial_buffer();
+		}
+
+
+		void	start_image()
+		// This is something you can do with "abbreviated"
+		// streams; i.e. if you constructed this inputter
+		// using (SWF_JPEG2_HEADER_ONLY) to just load the
+		// tables, or if you called finish_image() and want to
+		// load another image using the existing tables.
+		{
+			assert(m_compressor_opened == false);
+
+			// Now, read the image header.
+			jpeg_read_header(&m_cinfo, TRUE);
+			jpeg_start_decompress(&m_cinfo);
+			m_compressor_opened = true;
+		}
+
+		void	finish_image()
+		{
+			if (m_compressor_opened)
+			{
+				jpeg_finish_decompress(&m_cinfo);
+				m_compressor_opened = false;
+			}
+		}
+
 		int	get_height() const
 		// Return the height of the image.  Take the data from our m_cinfo struct.
 		{
+			assert(m_compressor_opened);
 			return m_cinfo.output_height;
 		}
 
 		int	get_width() const
 		// Return the width of the image.  Take the data from our m_cinfo struct.
 		{
+			assert(m_compressor_opened);
 			return m_cinfo.output_width;
 		}
 
@@ -309,6 +382,7 @@ namespace jpeg
 		// data).  The size of the data for a scanline is
 		// get_width() * get_components().
 		{
+			assert(m_compressor_opened);
 			return m_cinfo.output_components;
 		}
 
@@ -318,6 +392,7 @@ namespace jpeg
 		// given buffer.  The amount of data read is
 		// get_width() * get_components().
 		{
+			assert(m_compressor_opened);
 			assert(m_cinfo.output_scanline < m_cinfo.output_height);
 			int	lines_read = jpeg_read_scanlines(&m_cinfo, &rgb_data, 1);
 			assert(lines_read == 1);
@@ -333,12 +408,13 @@ namespace jpeg
 		return new input_impl(in);
 	}
 
-	/*static*/ input*	input::create_swf_jpeg2(SDL_RWops* in)
-	// Read SWF JPEG2-style header (separate encoding
-	// table followed by image data), and create jpeg
-	// input object.
+	/*static*/ input*	input::create_swf_jpeg2_header_only(SDL_RWops* in)
+	// Read SWF JPEG2-style header.  App needs to call
+	// start_image() before loading any image data.  Multiple
+	// images can be loaded by bracketing within
+	// start_image()/finish_image() pairs.
 	{
-		return new input_impl(input_impl::SWF_JPEG2, in);
+		return new input_impl(input_impl::SWF_JPEG2_HEADER_ONLY, in);
 	}
 
 

@@ -22,6 +22,7 @@
 
 
 #include <stdlib.h>
+#include <string.h>
 #include <new>	// for placement new
 #include "engine/utility.h"
 #include "engine/dlmalloc.h"
@@ -114,6 +115,7 @@ public:
 			reserve(m_buffer_size);
 		} else if (m_size <= m_buffer_size && m_size > m_buffer_size >> 1) {
 			// don't compact yet.
+			assert(m_buffer != 0);
 		} else {
 			m_buffer_size = m_size + (m_size >> 2);
 			reserve(m_buffer_size);
@@ -210,7 +212,7 @@ public:
 
 	// @@ need a "remove()" or "set()" function, to replace/remove existing key.
 
-	void	add(T key, U value)
+	void	add(const T& key, U value)
 	// Add a new value to the hash table, under the specified key.
 	{
 		assert(get(key, NULL) == false);
@@ -239,7 +241,7 @@ public:
 	}
 
 
-	bool	get(T key, U* value)
+	bool	get(const T& key, U* value)
 	// Retrieve the value under the given key.
 	//
 	// If there's no value under the key, then return false and leave
@@ -336,6 +338,90 @@ private:
 	int	m_entry_count;
 	int	m_size_mask;
 	array< array<entry> >	m_table;
+};
+
+
+// very simple string-like type
+class tu_string
+{
+public:
+	tu_string() { m_buffer.push_back(0); }
+	tu_string(const char* str)
+	{
+		m_buffer.resize(strlen(str) + 1);
+		strcpy(&m_buffer[0], str);
+	}
+	tu_string(const tu_string& str)
+	{
+		m_buffer = str.m_buffer;
+	}
+
+	operator const char*() const
+	{
+		return &m_buffer[0];
+	}
+
+	operator=(const char* str)
+	{
+		m_buffer.resize(strlen(str) + 1);
+		strcpy(&m_buffer[0], str);
+	}
+
+	operator=(const tu_string& str)
+	{
+		m_buffer = str.m_buffer;
+	}
+
+	operator==(const char* str) const
+	{
+		return strcmp(*this, str) == 0;
+	}
+
+	operator==(const tu_string& str) const
+	{
+		return strcmp(*this, str) == 0;
+	}
+
+	int	length() const { return m_buffer.size() - 1; }
+
+	char&	operator[](int index) { return m_buffer[index]; }
+	const char&	operator[](int index) const { return m_buffer[index]; }
+
+private:
+	array<char>	m_buffer;	// we do store the terminating \0
+};
+
+
+template<class T>
+class string_hash_functor
+// Computes a hash of a string-like object (something that has
+// ::length() and ::[int]).
+{
+public:
+	static int	compute(const T& data)
+	{
+		int	size = data.length();
+
+		// Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html
+		// Due to Dan Bernstein.  Allegedly very good on strings.
+		int	h = 5381;
+		while (size > 0) {
+			size--;
+			h = ((h << 5) + h) ^ data[size];
+		}
+
+		// Alternative: "sdbm" hash function, suggested at same web page above.
+		// h = 0;
+		// for bytes { h = (h << 16) + (h << 6) - hash + *p; }
+
+		return h;
+	}
+};
+
+
+template<class U>
+class string_hash : public hash<tu_string, U, string_hash_functor<tu_string> >
+{
 };
 
 
