@@ -90,6 +90,8 @@ inline float	fclamp(float f, float min, float max) {
 	return fmax(min, fmin(f, max));
 }
 
+inline float flerp(float a, float b, float f) { return (b - a) * f + a; }
+
 const float LN_2 = 0.693147180559945f;
 inline float	log2(float f) { return logf(f) / LN_2; }
 

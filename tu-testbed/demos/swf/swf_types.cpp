@@ -260,6 +260,8 @@ namespace swf
 
 	void	cxform::read_rgba(stream* in)
 	{
+		in->align();
+
 		int	has_add = in->read_uint(1);
 		int	has_mult = in->read_uint(1);
 		int	nbits = in->read_uint(4);

@@ -170,8 +170,12 @@ namespace swf
 				input_matrix.read(in);
 
 				m_gradient_matrix.set_identity();
-				m_gradient_matrix.concatenate_scale(1.0f / 256.0f);
-				m_gradient_matrix.concatenate(input_matrix);
+				m_gradient_matrix.concatenate_translation(128.f, 0.f);
+				m_gradient_matrix.concatenate_scale(1.0f / 128.0f);
+
+				matrix	m;
+				m.set_inverse(input_matrix);
+				m_gradient_matrix.concatenate(m);
 				
 				// GRADIENT
 				int	num_gradients = in->read_u8();
@@ -903,6 +907,14 @@ namespace swf
 					dt = 0.0f;
 					next_frame = m_current_frame;
 				}
+				if (next_frame >= m_frame_count)
+				{
+					// End of movie.  Loop to beginning.
+					m_current_frame = -1;
+					m_display_list.resize(0);
+					m_action_list.resize(0);
+					next_frame = 0;
+				}
 
 				// Advance everything in the display list.
 				for (int i = 0; i < m_display_list.size(); i++)
@@ -910,23 +922,31 @@ namespace swf
 					m_display_list[i].m_character->advance(dt, this, m_display_list[i].m_matrix);
 				}
 
-				if (next_frame < m_frame_count)
+				// Execute the next frame's tags.
+				if (next_frame != m_current_frame
+				    && next_frame >= 0
+				    && next_frame < m_frame_count)
 				{
-					if (m_current_frame >= 0
-					    && m_current_frame < m_frame_count
-					    && next_frame > m_current_frame)
-					{
-						array<execute_tag*>&	playlist = m_playlist[m_current_frame];
-						for (int i = 0; i < playlist.size(); i++)
-						{
-							execute_tag*	e = playlist[i];
-							e->execute(this);
-						}
-					}
+					execute_frame_tags(next_frame);
 					m_current_frame = next_frame;
 				}
 
 				do_actions();
+			}
+		}
+
+
+		void	execute_frame_tags(int frame)
+		// Execute the tags associated with the specified frame.
+		{
+			assert(frame >= 0);
+			assert(frame < m_frame_count);
+
+			array<execute_tag*>&	playlist = m_playlist[frame];
+			for (int i = 0; i < playlist.size(); i++)
+			{
+				execute_tag*	e = playlist[i];
+				e->execute(this);
 			}
 		}
 
@@ -944,45 +964,15 @@ namespace swf
 		{
 			IF_DEBUG(printf("goto_frame(%d)\n", target_frame_number));//xxxxx
 
-			m_current_frame = target_frame_number;
+			if (target_frame_number != m_current_frame
+			    && target_frame_number >= 0
+			    && target_frame_number < m_frame_count)
+			{
+				execute_frame_tags(target_frame_number);
+				m_current_frame = target_frame_number;
+			}
+
 			m_time_remainder = 0 /* @@ frame time */;
-#if 0
-			if (target_frame_number < m_current_frame)
-			{
-				// Can't incrementally update, so start from the beginning.
-				restart();
-			}
-
-			assert(target_frame_number == m_current_frame
-			       || target_frame_number == m_current_frame + 1);
-			assert(target_frame_number < m_frame_count);
-
-			for (int frame = m_current_frame + 1; frame <= target_frame_number; frame++)
-			{
-				if (frame < 0) continue;
-
-				array<execute_tag*>&	playlist = m_playlist[frame];
-				for (int i = 0; i < playlist.size(); i++)
-				{
-					execute_tag*	e = playlist[i];
-					e->execute(this);
-				}
-
-				m_current_frame = frame;
-			}
-
-
-			// Take care of this frame's actions.
-			if (execute_actions(this, m_action_list))
-			{
-				// Some action called goto_frame() or restart() or something like that.
-				// Exit this function immediately before undoing desired changes.
-				return;
-			}
-			m_action_list.resize(0);
-
-//			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
-#endif // 0
 		}
 
 		void	display()
@@ -1078,6 +1068,7 @@ namespace swf
 			register_tag_loader(10, define_font_loader);
 			register_tag_loader(11, define_text_loader);
 			register_tag_loader(12, do_action_loader);
+			register_tag_loader(20, define_bits_lossless_2_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
 			register_tag_loader(26, place_object_2_loader);
@@ -1262,110 +1253,217 @@ namespace swf
 
 	void	define_bits_lossless_2_loader(stream* in, int tag_type, movie* m)
 	{
-		assert(tag_type == 36);
+		assert(tag_type == 20 || tag_type == 36);
 
 		Uint16	character_id = in->read_u16();
 		Uint8	bitmap_format = in->read_u8();	// 3 == 8 bit, 4 == 16 bit, 5 == 32 bit
 		Uint16	width = in->read_u16();
 		Uint16	height = in->read_u16();
 
-		IF_DEBUG(printf("dbl2l: id = %d, fmt = %d, w = %d, h = %d\n", character_id, bitmap_format, width, height));
+		IF_DEBUG(printf("dbl2l: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
+				tag_type,
+				character_id,
+				bitmap_format,
+				width,
+				height));
 
-		bitmap_character_rgba*	ch = new bitmap_character_rgba();
-		ch->m_id = character_id;
-		ch->m_image = image::create_rgba(width, height);
-
-		if (bitmap_format == 3)
+		if (tag_type == 20)
 		{
-			// 8-bit data, preceded by a palette.
+			// RGB image data.
+			bitmap_character_rgb*	ch = new bitmap_character_rgb();
+			ch->m_id = character_id;
+			ch->m_image = image::create_rgb(width, height);
 
-			const int	bytes_per_pixel = 1;
-			int	color_table_size = in->read_u8();
-			color_table_size += 1;	// !! SWF stores one less than the actual size
-
-			int	pitch = (width * bytes_per_pixel + 3) & ~3;
-
-			int	buffer_bytes = color_table_size * 4 + pitch * height;
-			Uint8*	buffer = new Uint8[buffer_bytes];
-
-			inflate_wrapper(in->m_input, buffer, buffer_bytes);
-			assert(in->get_tag_end_position() == in->get_position());
-
-			Uint8*	color_table = buffer;
-
-			for (int j = 0; j < height; j++)
+			if (bitmap_format == 3)
 			{
-				Uint8*	image_in_row = buffer + color_table_size * 4 + j * pitch;
-				Uint8*	image_out_row = image::scanline(ch->m_image, j);
-				for (int i = 0; i < width; i++)
+				// 8-bit data, preceded by a palette.
+
+				const int	bytes_per_pixel = 1;
+				int	color_table_size = in->read_u8();
+				color_table_size += 1;	// !! SWF stores one less than the actual size
+
+				int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+				int	buffer_bytes = color_table_size * 3 + pitch * height;
+				Uint8*	buffer = new Uint8[buffer_bytes];
+
+				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				assert(in->get_tag_end_position() == in->get_position());
+
+				Uint8*	color_table = buffer;
+
+				for (int j = 0; j < height; j++)
 				{
-					Uint8	pixel = image_in_row[i * bytes_per_pixel];
-					image_out_row[i * 4 + 0] = color_table[pixel * 4 + 0];
-					image_out_row[i * 4 + 1] = color_table[pixel * 4 + 1];
-					image_out_row[i * 4 + 2] = color_table[pixel * 4 + 2];
-					image_out_row[i * 4 + 3] = color_table[pixel * 4 + 3];
+					Uint8*	image_in_row = buffer + color_table_size * 3 + j * pitch;
+					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					for (int i = 0; i < width; i++)
+					{
+						Uint8	pixel = image_in_row[i * bytes_per_pixel];
+						image_out_row[i * 3 + 0] = color_table[pixel * 3 + 0];
+						image_out_row[i * 3 + 1] = color_table[pixel * 3 + 1];
+						image_out_row[i * 3 + 2] = color_table[pixel * 3 + 2];
+					}
 				}
+
+				delete [] buffer;
 			}
-
-			delete [] buffer;
-		}
-		else if (bitmap_format == 4)
-		{
-			// 16 bits / pixel
-			const int	bytes_per_pixel = 2;
-			int	pitch = (width * bytes_per_pixel + 3) & ~3;
-
-			int	buffer_bytes = pitch * height;
-			Uint8*	buffer = new Uint8[buffer_bytes];
-
-			inflate_wrapper(in->m_input, buffer, buffer_bytes);
-			assert(in->get_tag_end_position() == in->get_position());
-			
-			for (int j = 0; j < height; j++)
+			else if (bitmap_format == 4)
 			{
-				Uint8*	image_in_row = buffer + j * pitch;
-				Uint8*	image_out_row = image::scanline(ch->m_image, j);
-				for (int i = 0; i < width; i++)
+				// 16 bits / pixel
+				const int	bytes_per_pixel = 2;
+				int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+				int	buffer_bytes = pitch * height;
+				Uint8*	buffer = new Uint8[buffer_bytes];
+
+				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				assert(in->get_tag_end_position() == in->get_position());
+			
+				for (int j = 0; j < height; j++)
 				{
-					Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
+					Uint8*	image_in_row = buffer + j * pitch;
+					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					for (int i = 0; i < width; i++)
+					{
+						Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
 					
-					// @@ How is the data packed???  I'm just guessing here that it's 565!
-					image_out_row[i * 4 + 0] = 255;			// alpha
-					image_out_row[i * 4 + 1] = (pixel >> 8) & 0xF8;	// red
-					image_out_row[i * 4 + 2] = (pixel >> 3) & 0xFC;	// green
-					image_out_row[i * 4 + 3] = (pixel << 3) & 0xF8;	// blue
+						// @@ How is the data packed???  I'm just guessing here that it's 565!
+						image_out_row[i * 3 + 0] = (pixel >> 8) & 0xF8;	// red
+						image_out_row[i * 3 + 1] = (pixel >> 3) & 0xFC;	// green
+						image_out_row[i * 3 + 2] = (pixel << 3) & 0xF8;	// blue
+					}
 				}
+			
+				delete [] buffer;
 			}
-			
-			delete [] buffer;
-		}
-		else if (bitmap_format == 5)
-		{
-			// 32 bits / pixel, input is ARGB format
-
-			inflate_wrapper(in->m_input, ch->m_image->m_data, width * height * 4);
-			assert(in->get_tag_end_position() == in->get_position());
-			
-			// Need to re-arrange ARGB into RGBA.
-			for (int j = 0; j < height; j++)
+			else if (bitmap_format == 5)
 			{
-				Uint8*	image_row = image::scanline(ch->m_image, j);
-				for (int i = 0; i < width; i++)
+				// 32 bits / pixel, input is ARGB format (???)
+
+				inflate_wrapper(in->m_input, ch->m_image->m_data, width * height * 3);
+				assert(in->get_tag_end_position() == in->get_position());
+			
+				// Need to re-arrange ARGB into RGB.
+				for (int j = 0; j < height; j++)
 				{
-					Uint8	a = image_row[i * 4 + 0];
-					Uint8	r = image_row[i * 4 + 1];
-					Uint8	g = image_row[i * 4 + 2];
-					Uint8	b = image_row[i * 4 + 3];
-					image_row[i * 4 + 0] = r;
-					image_row[i * 4 + 1] = g;
-					image_row[i * 4 + 2] = b;
-					image_row[i * 4 + 3] = a;
+					Uint8*	image_row = image::scanline(ch->m_image, j);
+					for (int i = 0; i < width; i++)
+					{
+						Uint8	a = image_row[i * 4 + 0];
+						Uint8	r = image_row[i * 4 + 1];
+						Uint8	g = image_row[i * 4 + 2];
+						Uint8	b = image_row[i * 4 + 3];
+						image_row[i * 3 + 0] = r;
+						image_row[i * 3 + 1] = g;
+						image_row[i * 3 + 2] = b;
+					}
 				}
 			}
-		}
 
-		// add image to movie, under character id.
-		m->add_bitmap_character(character_id, ch);
+			// add image to movie, under character id.
+			m->add_bitmap_character(character_id, ch);
+		}
+		else
+		{
+			// RGBA image data.
+			assert(tag_type == 36);
+
+			bitmap_character_rgba*	ch = new bitmap_character_rgba();
+			ch->m_id = character_id;
+			ch->m_image = image::create_rgba(width, height);
+
+			if (bitmap_format == 3)
+			{
+				// 8-bit data, preceded by a palette.
+
+				const int	bytes_per_pixel = 1;
+				int	color_table_size = in->read_u8();
+				color_table_size += 1;	// !! SWF stores one less than the actual size
+
+				int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+				int	buffer_bytes = color_table_size * 4 + pitch * height;
+				Uint8*	buffer = new Uint8[buffer_bytes];
+
+				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				assert(in->get_tag_end_position() == in->get_position());
+
+				Uint8*	color_table = buffer;
+
+				for (int j = 0; j < height; j++)
+				{
+					Uint8*	image_in_row = buffer + color_table_size * 4 + j * pitch;
+					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					for (int i = 0; i < width; i++)
+					{
+						Uint8	pixel = image_in_row[i * bytes_per_pixel];
+						image_out_row[i * 4 + 0] = color_table[pixel * 4 + 0];
+						image_out_row[i * 4 + 1] = color_table[pixel * 4 + 1];
+						image_out_row[i * 4 + 2] = color_table[pixel * 4 + 2];
+						image_out_row[i * 4 + 3] = color_table[pixel * 4 + 3];
+					}
+				}
+
+				delete [] buffer;
+			}
+			else if (bitmap_format == 4)
+			{
+				// 16 bits / pixel
+				const int	bytes_per_pixel = 2;
+				int	pitch = (width * bytes_per_pixel + 3) & ~3;
+
+				int	buffer_bytes = pitch * height;
+				Uint8*	buffer = new Uint8[buffer_bytes];
+
+				inflate_wrapper(in->m_input, buffer, buffer_bytes);
+				assert(in->get_tag_end_position() == in->get_position());
+			
+				for (int j = 0; j < height; j++)
+				{
+					Uint8*	image_in_row = buffer + j * pitch;
+					Uint8*	image_out_row = image::scanline(ch->m_image, j);
+					for (int i = 0; i < width; i++)
+					{
+						Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
+					
+						// @@ How is the data packed???  I'm just guessing here that it's 565!
+						image_out_row[i * 4 + 0] = 255;			// alpha
+						image_out_row[i * 4 + 1] = (pixel >> 8) & 0xF8;	// red
+						image_out_row[i * 4 + 2] = (pixel >> 3) & 0xFC;	// green
+						image_out_row[i * 4 + 3] = (pixel << 3) & 0xF8;	// blue
+					}
+				}
+			
+				delete [] buffer;
+			}
+			else if (bitmap_format == 5)
+			{
+				// 32 bits / pixel, input is ARGB format
+
+				inflate_wrapper(in->m_input, ch->m_image->m_data, width * height * 4);
+				assert(in->get_tag_end_position() == in->get_position());
+			
+				// Need to re-arrange ARGB into RGBA.
+				for (int j = 0; j < height; j++)
+				{
+					Uint8*	image_row = image::scanline(ch->m_image, j);
+					for (int i = 0; i < width; i++)
+					{
+						Uint8	a = image_row[i * 4 + 0];
+						Uint8	r = image_row[i * 4 + 1];
+						Uint8	g = image_row[i * 4 + 2];
+						Uint8	b = image_row[i * 4 + 3];
+						image_row[i * 4 + 0] = r;
+						image_row[i * 4 + 1] = g;
+						image_row[i * 4 + 2] = b;
+						image_row[i * 4 + 3] = a;
+					}
+				}
+			}
+
+			// add image to movie, under character id.
+			m->add_bitmap_character(character_id, ch);
+		}
 	}
 
 
@@ -2458,17 +2556,17 @@ namespace swf
 
 				if (has_char == true && flag_move == true)
 				{
-				// Remove whatever's at m_depth, and put m_character there.
+					// Remove whatever's at m_depth, and put m_character there.
 					m_place_type = REPLACE;
 				}
 				else if (has_char == false && flag_move == true)
 				{
-				// Moves the object at m_depth to the new location.
+					// Moves the object at m_depth to the new location.
 					m_place_type = MOVE;
 				}
 				else if (has_char == true && flag_move == false)
 				{
-				// Put m_character at m_depth.
+					// Put m_character at m_depth.
 					m_place_type = PLACE;
 				}
 
@@ -2686,6 +2784,14 @@ namespace swf
 					dt = 0.0f;
 					next_frame = m_current_frame;
 				}
+				if (next_frame >= m_def->m_frame_count)
+				{
+					// End of movie.  Loop to beginning.
+					m_current_frame = -1;
+					m_display_list.resize(0);
+					m_action_list.resize(0);
+					next_frame = 0;
+				}
 
 				// Advance everything in the display list.
 				for (int i = 0; i < m_display_list.size(); i++)
@@ -2695,52 +2801,35 @@ namespace swf
 					m_display_list[i].m_character->advance(dt, m, sub_matrix);
 				}
 
-				if (next_frame < m_def->m_frame_count)
+				// Execute the next frame's tags.
+				if (next_frame != m_current_frame
+				    && next_frame >= 0
+				    && next_frame < m_def->m_frame_count)
 				{
-					if (m_current_frame >= 0
-					    && m_current_frame < m_def->m_frame_count
-					    && next_frame > m_current_frame)
-					{
-						array<execute_tag*>&	playlist = m_def->m_playlist[m_current_frame];
-						for (int i = 0; i < playlist.size(); i++)
-						{
-							execute_tag*	e = playlist[i];
-							e->execute(this);
-						}
-					}
+					execute_frame_tags(next_frame);
 					m_current_frame = next_frame;
 				}
 
+				// Perform any pending actions.
 				do_actions();
 			}
-
-#if 0
-			// Call advance() on each object in our
-			// display list.  Takes care of sub-sprites & buttons.
-			for (int i = 0; i < m_display_list.size(); i++)
-			{
-				matrix	sub_matrix = mat;
-				sub_matrix.concatenate(m_display_list[i].m_matrix);
-				m_display_list[i].m_character->advance(delta_time, m, sub_matrix);
-			}
-
-			m_time += delta_time;
-			int	target_frame_number = (int) floorf(m_time * m_def->m_movie->m_frame_rate);
-
-			if (target_frame_number >= m_def->m_frame_count
-			    || target_frame_number < 0)
-			{
-				// Loop.  Correct?  Or should we hang?
-				target_frame_number = 0;
-				restart();
-//				// Hang.
-//				target_frame_number = m_def->m_frame_count - 1;
-//				m_display_list.resize(0);
-			}
-
-			goto_frame(target_frame_number);
-#endif // 0
 		}
+
+
+		void	execute_frame_tags(int frame)
+		// Execute the tags associated with the specified frame.
+		{
+			assert(frame >= 0);
+			assert(frame < m_def->m_frame_count);
+
+			array<execute_tag*>&	playlist = m_def->m_playlist[frame];
+			for (int i = 0; i < playlist.size(); i++)
+			{
+				execute_tag*	e = playlist[i];
+				e->execute(this);
+			}
+		}
+
 
 		void	do_actions()
 		// Take care of this frame's actions.
@@ -2755,43 +2844,17 @@ namespace swf
 		{
 			IF_DEBUG(printf("goto_frame(%d)\n", target_frame_number));//xxxxx
 
-			m_current_frame = target_frame_number;
+			if (target_frame_number != m_current_frame
+			    && target_frame_number >= 0
+			    && target_frame_number < m_def->m_frame_count)
+			{
+				execute_frame_tags(target_frame_number);
+				m_current_frame = target_frame_number;
+			}
+
 			m_time_remainder = 0 /* @@ frame time */;
-#if 0
-			if (target_frame_number < m_current_frame)
-			{
-				// Can't incrementally update, so start from the beginning.
-				restart();
-			}
-
-			assert(target_frame_number >= m_current_frame);
-			assert(target_frame_number < m_def->m_frame_count);
-
-			for (int frame = m_current_frame; frame <= target_frame_number; frame++)
-			{
-				// Handle the normal frame updates.
-				array<execute_tag*>&	playlist = m_def->m_playlist[frame];
-				for (int i = 0; i < playlist.size(); i++)
-				{
-					execute_tag*	e = playlist[i];
-					e->execute(this);
-				}
-
-				m_current_frame = frame;
-
-				// Take care of this frame's actions.
-				if (execute_actions(this, m_action_list))
-				{
-					// Some action called goto_frame() or restart() or something like that.
-					// Exit this function immediately before undoing desired changes.
-					return;
-				}
-				m_action_list.resize(0);
-			}
-
-//			IF_DEBUG(printf("m_time = %f, fr = %d\n", m_time, m_current_frame));
-#endif // 0
 		}
+
 
 		void	display()
 		{
@@ -3128,7 +3191,7 @@ namespace swf
 				int	flags = in->read_u8();
 
 				int	button_2_action_offset = in->read_u16();
-				// int	button_record_start_pos = in->get_position(); ???
+				int	next_action_pos = in->get_position() + button_2_action_offset - 2;
 
 				// Read button records.
 				for (;;)
@@ -3142,22 +3205,26 @@ namespace swf
 					m_button_records.push_back(r);
 				}
 
+				in->set_position(next_action_pos);
+
 				// Read Button2ActionConditions
 				for (;;)
 				{
 					int	next_action_offset = in->read_u16();
-					int	this_action_position = in->get_position();
+					next_action_pos = in->get_position() + next_action_offset - 2;
 
 					m_button_actions.resize(m_button_actions.size() + 1);
 					m_button_actions.back().read(in, tag_type);
 
-					if (next_action_offset == 0)
+					if (next_action_offset == 0
+					    || in->get_position() >= in->get_tag_end_position())
 					{
 						// done.
 						break;
 					}
 
-					// do we need to seek?
+					// seek to next action.
+					in->set_position(next_action_pos);
 				}
 			}
 		}

@@ -77,6 +77,14 @@ namespace swf
 		void	read_rgba(stream* in);
 		void	read_rgb(stream* in);
 
+		void	set(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
+		{
+			m_r = r;
+			m_g = g;
+			m_b = b;
+			m_a = a;
+		}
+
 		void	set_lerp(const rgba& a, const rgba& b, float f)
 		{
 			m_r = (Uint8) frnd(flerp(a.m_r, b.m_r, f));
