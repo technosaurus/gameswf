@@ -263,7 +263,17 @@ namespace gameswf
 	// drop_ref() when you're done with it.
 	movie_definition*	create_library_movie(const char* filename);
 	
-	
+
+	// Maximum release of resources.  Calls clear_library() and
+	// fontlib::clear(), and also clears some extra internal stuff
+	// that may have been allocated (e.g. global ActionScript
+	// objects).  This should get all gameswf structures off the
+	// heap, with the exception of any objects that are still
+	// referenced by the host program and haven't had drop_ref()
+	// called on them.
+	void	clear();
+
+
 	//
 	// Library management
 	//

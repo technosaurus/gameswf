@@ -458,6 +458,10 @@ done:
 	if (md) md->drop_ref();
 	delete sound;
 	delete render;
+
+	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
+	gameswf::clear();
+
 	return 0;
 }
 

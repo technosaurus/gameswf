@@ -145,6 +145,8 @@ namespace fontlib
 		{
 			// Set up a cache.
 			s_current_bitmap_info = render::create_bitmap_info_blank();
+			s_current_bitmap_info->add_ref();
+			s_current_bitmap_info->add_ref();
 			s_bitmaps_used.push_back(s_current_bitmap_info);
 
 			if (s_current_cache_image == NULL)
@@ -209,6 +211,7 @@ namespace fontlib
 						s_current_cache_image);
 		}
 
+		if (s_current_bitmap_info) s_current_bitmap_info->drop_ref();
 		s_current_bitmap_info = NULL;
 	}
 
@@ -665,7 +668,7 @@ namespace fontlib
 
 					// Fill out the glyph info.
 					texture_glyph*	tg = new texture_glyph;
-					tg->m_bitmap_info = s_current_bitmap_info;
+					tg->set_bitmap_info(s_current_bitmap_info);
 					tg->m_uv_origin.m_x = (pack_x + rgi.m_offset_x) / (GLYPH_CACHE_TEXTURE_SIZE);
 					tg->m_uv_origin.m_y = (pack_y + rgi.m_offset_y) / (GLYPH_CACHE_TEXTURE_SIZE);
 					tg->m_uv_bounds.m_x_min = float(pack_x) / (GLYPH_CACHE_TEXTURE_SIZE);
@@ -903,6 +906,8 @@ namespace fontlib
 		for (int b = 0; b < nb; b++)
 		{
 			s_current_bitmap_info = render::create_bitmap_info_blank();
+			s_current_bitmap_info->add_ref();	// one for s_current_bitmap_info
+			s_current_bitmap_info->add_ref();	// one for s_bitmaps_used
 			s_bitmaps_used.push_back(s_current_bitmap_info);
 
 			// save bitmap size
@@ -927,7 +932,9 @@ namespace fontlib
 		}
 
 		// reset pointers.
+		if (s_current_bitmap_info) s_current_bitmap_info->drop_ref();
 		s_current_bitmap_info = NULL;
+
 		delete [] s_current_cache_image;
 		s_current_cache_image = NULL;
 
@@ -976,7 +983,7 @@ namespace fontlib
 					goto error_exit;
 				}
 
-				tg->m_bitmap_info = s_bitmaps_used[bi + bitmaps_used_base];
+				tg->set_bitmap_info(s_bitmaps_used[bi + bitmaps_used_base]);
 
 				// load glyph bounds and origin.
 				tg->m_uv_bounds.m_x_min = in->read_float32();
@@ -1006,6 +1013,14 @@ namespace fontlib
 		{
 			s_fonts[i]->drop_ref();
 		}
+		s_fonts.clear();
+
+		// Release bitmaps.
+		{for (int i = 0, n = s_bitmaps_used.size(); i < n; i++)
+		{
+			s_bitmaps_used[i]->drop_ref();
+		}}
+		s_bitmaps_used.clear();
 	}
 
 

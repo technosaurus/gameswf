@@ -33,6 +33,7 @@ namespace gameswf
 	// For the interior of outline shapes.
 	{
 		fill_style();
+		~fill_style();
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		rgba	sample_gradient(int ratio) const;

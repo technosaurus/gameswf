@@ -1093,11 +1093,39 @@ namespace gameswf
 
 
 	//
+	// global gameswf management
+	//
+
+
+	void	clear()
+	// Maximum release of resources.
+	{
+		clear_library();
+		fontlib::clear();
+		action_clear();
+	}
+
+
+	//
 	// library stuff, for sharing resources among different movies.
 	//
 
 
 	static string_hash<movie_definition_sub*>	s_movie_library;
+
+	void	clear_library()
+	// Drop all library references to movie_definitions, so they
+	// can be cleaned up.
+	{
+		// @@ TODO make a smart_ptr class to deal with this automatically
+		for (string_hash<movie_definition_sub*>::iterator it = s_movie_library.begin();
+		     it != s_movie_library.end();
+		     ++it)
+		{
+			it->second->drop_ref();
+		}
+		s_movie_library.clear();
+	}
 
 	movie_definition*	create_library_movie(const char* filename)
 	// Try to load a movie from the given url, if we haven't
@@ -1223,6 +1251,7 @@ namespace gameswf
 			{
 				// Create our bitmap info, from our image.
 				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
+				m_bitmap_info->add_ref();
 				delete m_image;
 				m_image = 0;
 			}
@@ -1254,6 +1283,7 @@ namespace gameswf
 			{
 				// Create our bitmap info, from our image.
 				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
+				m_bitmap_info->add_ref();
 				delete m_image;
 				m_image = 0;
 			}
@@ -1965,6 +1995,7 @@ namespace gameswf
 				if (ch)
 				{
 					attach_events(ch);
+					ch->drop_ref();
 				}
 
 				break;
@@ -2060,6 +2091,18 @@ namespace gameswf
 			m_loading_frame(0)
 		{
 			assert(m_movie_def);
+		}
+
+		~sprite_definition()
+		{
+			// Release our playlist data.
+			{for (int i = 0, n = m_playlist.size(); i < n; i++)
+			{
+				for (int j = 0, m = m_playlist[i].size(); j < m; j++)
+				{
+					delete m_playlist[i][j];
+				}
+			}}
 		}
 
 		// overloads from movie_definition
@@ -2202,7 +2245,7 @@ namespace gameswf
 			assert(m_root);
 			
 			m_def->add_ref();
-			m_root->add_ref();
+			//m_root->add_ref();	// @@ circular!
 			m_as_environment.set_target(this);
 		}
 
@@ -2210,7 +2253,7 @@ namespace gameswf
 		{
 			m_display_list.clear();
 			m_def->drop_ref();
-			m_root->drop_ref();
+			//m_root->drop_ref();
 		}
 
 		movie_interface*	get_root_interface() { return m_root; }
@@ -2509,6 +2552,7 @@ namespace gameswf
 			m_display_list.display();
 		}
 
+		// Caller must call drop_ref() on the returned object, if it's not NULL!!
 		character*	add_display_object(
 			Uint16 character_id,
 			const char* name,
@@ -2545,6 +2589,7 @@ namespace gameswf
 			assert(cdef);
 			character*	ch = cdef->create_character_instance(this, character_id);
 			assert(ch);
+			ch->add_ref();
 			if (name != NULL && name[0] != 0)
 			{
 				ch->set_name(name);
@@ -2593,6 +2638,7 @@ namespace gameswf
 
 			character*	ch = cdef->create_character_instance(this, character_id);
 			assert(ch);
+			ch->add_ref();
 
 			if (name != NULL && name[0] != 0)
 			{
@@ -2608,6 +2654,8 @@ namespace gameswf
 				mat,
 				ratio,
 				clip_depth);
+
+			ch->drop_ref();
 		}
 
 
@@ -3100,7 +3148,7 @@ namespace gameswf
 			character* ch = m_display_list.get_character_by_name(name);
 			if (ch)
 			{
-				add_display_object(
+				character*	new_ch = add_display_object(
 					ch->get_id(),
 					newname.c_str(),
 					depth,
@@ -3110,6 +3158,8 @@ namespace gameswf
 					ch->get_clip_depth());
 				// @@ TODO need to duplicate ch's event handlers, and presumably other members?
 				// Probably should make a character::clone() function to handle this.
+
+				if (new_ch) new_ch->drop_ref();
 			}
 		}
 

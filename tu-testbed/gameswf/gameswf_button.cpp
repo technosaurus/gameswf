@@ -60,9 +60,10 @@ namespace gameswf
 				const cxform&	cx = m_def->m_button_records[r].m_button_cxform;
 
 				character*	ch = cdef->create_character_instance(this, id);
+				ch->add_ref();
+				m_record_character[r] = ch;
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
-				m_record_character[r] = ch;
 				ch->restart();
 			}
 		}
@@ -73,7 +74,7 @@ namespace gameswf
 
 			for (r = 0; r < r_num; r++)
 			{
-				delete m_record_character[r];
+				m_record_character[r]->drop_ref();
 			}
 		}
 
