@@ -32,6 +32,7 @@ namespace image
 	}
 
 
+#if 0
 	void	resample(SDL_Surface* dest, int out_x0, int out_y0, int out_x1, int out_y1,
 			 SDL_Surface* src, float in_x0, float in_y0, float in_x1, float in_y1)
 	// Resample the specified rectangle of the src surface into the
@@ -76,7 +77,7 @@ namespace image
 			}
 		}
 	}
-
+#endif // 0
 
 	void	write_jpeg(SDL_RWops* out, SDL_Surface* image, int quality)
 	// Write the given image to the given out stream, in jpeg format.

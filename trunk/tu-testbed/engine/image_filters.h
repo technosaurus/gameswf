@@ -10,18 +10,11 @@
 #define IMAGE_FILTERS_H
 
 
+struct SDL_Surface;
+
+
 namespace image_filters
 {
-	enum filter_type {
-		BOX,
-		TRIANGLE,
-		BELL,
-		B_SPLINE,
-		SOME_CUBIC,	// Cubic approximation of Sinc's hump (but no tails).
-		LANCZOS3,
-		MITCHELL	// This one is alleged to be pretty nice.
-	};
-
 	void	resample(SDL_Surface* out,
 			 SDL_Surface* in, float in_x0, float in_y0, float in_x1, float in_y1);
 };

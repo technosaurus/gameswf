@@ -27,6 +27,7 @@ SRCS := \
 	ogl.cpp \
 	jpeg.cpp \
 	image.cpp \
+	image_filters.cpp \
 	tqt.cpp
 OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 
