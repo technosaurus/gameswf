@@ -936,9 +936,9 @@ namespace gameswf
 		rgba	m_background_color;
 		float	m_timer;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
-		int	m_mouse_capture_id;
 		void * m_userdata;
-		movie::drag_state	m_drag_state;
+		movie::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
+		mouse_button_state	m_mouse_button_state;
 		bool	m_on_event_load_called;
 
 		movie_root(movie_def_impl* def)
@@ -955,7 +955,6 @@ namespace gameswf
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
-			m_mouse_capture_id(-1),
 			m_userdata(NULL),
 			m_on_event_load_called(false)
 		{
@@ -1015,19 +1014,7 @@ namespace gameswf
 
 		movie*	get_root_movie() { return m_movie.get_ptr(); }
 
-		int	get_mouse_capture()
-		// Use this to retrive the character that has captured the mouse.
-		{
-			return m_mouse_capture_id;
-		}
 
-		void	set_mouse_capture(int cid)
-		// Set the mouse capture to the given character.
-		{
-			m_mouse_capture_id = cid;
-		}
-
-		
 		void	stop_drag()
 		{
 			m_drag_state.m_character = NULL;
@@ -1077,6 +1064,7 @@ namespace gameswf
 		float	get_timer() const { return m_timer; }
 
 		void	restart() { m_movie->restart(); }
+
 		void	advance(float delta_time)
 		{
 			if (m_on_event_load_called == false)
@@ -1089,8 +1077,20 @@ namespace gameswf
 			}
 
 			m_timer += delta_time;
+			// @@ TODO handle multi-frame catch-up stuff
+			// here, and make it optional.  Make
+			// movie::advance() a fixed framerate w/ no
+			// dt.
+
+			// Handle the mouse.
+			m_mouse_button_state.m_topmost_entity =
+				m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
+			m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
+			generate_mouse_button_events(&m_mouse_button_state);
+
 			m_movie->advance(delta_time);
 		}
+
 		// 0-based!!
 		void	goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
 
@@ -1194,6 +1194,7 @@ namespace gameswf
 			register_tag_loader(0, end_loader);
 			register_tag_loader(2, define_shape_loader);
 			register_tag_loader(4, place_object_2_loader);
+			register_tag_loader(5, remove_object_2_loader);
 			register_tag_loader(6, define_bits_jpeg_loader);
 			register_tag_loader(7, button_character_loader);
 			register_tag_loader(8, jpeg_tables_loader);
@@ -2417,6 +2418,7 @@ namespace gameswf
 	
 	struct place_object_2 : public execute_tag
 	{
+		int	m_tag_type;
 		char*	m_name;
 		float	m_ratio;
 		cxform	m_color_transform;
@@ -2436,6 +2438,7 @@ namespace gameswf
 
 		place_object_2()
 			:
+			m_tag_type(0),
 			m_name(NULL),
 			m_ratio(0),
 			m_has_matrix(false),
@@ -2462,6 +2465,8 @@ namespace gameswf
 		void	read(stream* in, int tag_type, int movie_version)
 		{
 			assert(tag_type == 4 || tag_type == 26);
+
+			m_tag_type = tag_type;
 
 			if (tag_type == 4)
 			{
@@ -2611,6 +2616,7 @@ namespace gameswf
 					m_name,
 					m_event_handlers,
 					m_depth,
+					m_tag_type != 4,	// original place_object doesn't do replacement
 					m_color_transform,
 					m_matrix,
 					m_ratio,
@@ -2654,7 +2660,7 @@ namespace gameswf
 			{
 			case PLACE:
 				// reverse of add is remove
-				m->remove_display_object(m_depth);
+				m->remove_display_object(m_depth, m_tag_type == 4 ? m_character_id : -1);
 				break;
 
 			case MOVE:
@@ -2672,7 +2678,7 @@ namespace gameswf
 			case REPLACE:
 			{
 				// reverse of replace is to re-add the previous object.
-				execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth);
+				execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, -1);
 				if (last_add)
 				{
 					last_add->execute_state(m);
@@ -2688,11 +2694,19 @@ namespace gameswf
 			}
 		}
 
-		virtual int	get_depth_of_replace_or_add_tag() const
+		virtual uint32	get_depth_id_of_replace_or_add_tag() const
+		// "depth_id" is the 16-bit depth & id packed into one 32-bit int.
 		{
 			if (m_place_type == PLACE || m_place_type == REPLACE)
 			{
-				return m_depth;
+				int	id = -1;
+				if (m_tag_type == 4)
+				{
+					// Old-style PlaceObject; the corresponding Remove
+					// is specific to the character_id.
+					id = m_character_id;
+				}
+				return ((m_depth & 0x0FFFF) << 16) | (id & 0x0FFFF);
 			}
 			else
 			{
@@ -2934,20 +2948,6 @@ namespace gameswf
 
 		as_environment	m_as_environment;
 
-		enum mouse_flags
-		{
-			IDLE = 0,
-			FLAG_OVER = 1,
-			FLAG_DOWN = 2,
-			OVER_DOWN = FLAG_OVER|FLAG_DOWN,
-
-			// aliases
-			OVER_UP = FLAG_OVER,
-			OUT_DOWN = FLAG_DOWN
-
-		};
-		int	m_last_mouse_flags, m_mouse_flags;
-
 		enum mouse_state
 		{
 			UP = 0,
@@ -2968,8 +2968,6 @@ namespace gameswf
 			m_update_frame(true),
 			m_has_looped(false),
 			m_accept_anim_moves(true),
-			m_last_mouse_flags(IDLE),
-			m_mouse_flags(IDLE),
 			m_mouse_state(UP)
 		{
 			assert(m_def != NULL);
@@ -3091,19 +3089,6 @@ namespace gameswf
 			m_root->get_mouse_state(x, y, buttons);
 		}
 
-		/*sprite_instance*/
-		virtual int	get_mouse_capture()
-		// Use this to retrive the character that has captured the mouse.
-		{
-			return m_root->get_mouse_capture();
-		}
-
-		virtual void	set_mouse_capture(int cid)
-		// Set the mouse capture to the given character.
-		{
-			m_root->set_mouse_capture(cid);
-		}
-
 		void	set_background_color(const rgba& color)
 		{
 			m_root->set_background_color(color);
@@ -3118,6 +3103,8 @@ namespace gameswf
 			m_time_remainder = 0;
 			m_update_frame = true;
 			m_has_looped = false;
+
+			m_play_state = PLAY;
 		}
 
 		virtual bool	has_looped() const { return m_has_looped; }
@@ -3130,88 +3117,30 @@ namespace gameswf
 			return (a << 2) | b;
 		}
 
-		bool	point_test(float x, float y)
+		virtual character*	get_topmost_mouse_entity(float x, float y)
+		// Return the topmost entity that the given point covers.  NULL if none.
+		// Coords are in parent's frame.
 		{
-			int i, n = m_display_list.get_character_count();
-			character* ch;
-			for (i=0; i < n; i++)
-			{
-				ch = m_display_list.get_character(i);
-				if (ch != NULL)
+			matrix	m = get_matrix();
+			point	p;
+			m.transform_by_inverse(&p, point(x, y));
 
+			int i, n = m_display_list.get_character_count();
+			// Go backwards, to check higher objects first.
+			for (i = n - 1; i >= 0; i--)
+			{
+				character* ch = m_display_list.get_character(i);
+				if (ch != NULL)
 				{
-					if (ch->point_test(x, y))
+					character*	te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
+					if (te)
 					{
-						// The mouse is inside the sprite
-						return true;
+						// Found one.
+						return te;
 					}
 				}
 			}
 			return false;
-		}
-
-		void	do_mouse_events()
-		// Check mouse state.
-		{
-			// Get current mouse capture.
-
-			movie* parent = get_parent();
-			if (parent == NULL) parent = get_root_movie();
-			int id = parent->get_mouse_capture();
-
-			// update state if no mouse capture or we have the capture.
-			//if (id == -1 || (!m_def->m_menu && id == get_id()))
-			if ( !(id == -1 || id == get_id()))
-			{
-				return;
-			}
-
-			matrix	mat = get_world_matrix();
-
-			int	mx, my, mbuttons;
-			parent->get_mouse_state(&mx, &my, &mbuttons);
-
-			m_last_mouse_flags = m_mouse_flags;
-			m_mouse_flags = 0;
-
-			if (mbuttons)
-			{
-				// Mouse button is pressed.
-				m_mouse_flags |= FLAG_DOWN;
-			}
-
-			// Check the mouse position in sprite
-			if (point_test(PIXELS_TO_TWIPS(mx), PIXELS_TO_TWIPS(my)))
- 			{
- 				// The mouse is inside the sprite
- 				m_mouse_flags |= FLAG_OVER;
-			}
-			if (m_mouse_flags == m_last_mouse_flags)
-			{
-				// No state change
-				return;
-			}
-
- 			int t = transition(m_last_mouse_flags, m_mouse_flags);
-
-			if (t == transition(OVER_DOWN, OVER_UP))
-			{
-				on_event(event_id::MOUSE_UP);
-				on_event(event_id::RELEASE);
-			}
-			else if (t == transition(OVER_UP, OVER_DOWN))
-			{
-				on_event(event_id::MOUSE_DOWN);
-				on_event(event_id::PRESS);
-			}
-			else if (t == transition(IDLE, OVER_UP))	// Roll Over
-			{
-				on_event(event_id::ROLL_OVER);
-			}
-			else if (t == transition(OVER_UP, IDLE))	// Roll Out
-			{
-				on_event(event_id::ROLL_OUT);
-			}
 		}
 
 
@@ -3220,14 +3149,6 @@ namespace gameswf
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
 			smart_ptr<as_object_interface>	this_ptr(this);
-
-//v   is not valid: invisible do not means deaded
-//			if (get_visible() == false)
-//			{
-	
-				// We're invisible, and therefore frozen.
-//				return;
-//			}
 
 			assert(m_def != NULL && m_root != NULL);
 
@@ -3276,7 +3197,6 @@ namespace gameswf
 				// Dispatch onEnterFrame event.
 				on_event(event_id::ENTER_FRAME);
 
-				do_mouse_events();
 				do_actions();
 
 				// Clean up display list (remove dead objects).
@@ -3355,15 +3275,17 @@ namespace gameswf
 
 		
 		/*sprite_instance*/
-		execute_tag*	find_previous_replace_or_add_tag(int frame, int depth)
+		execute_tag*	find_previous_replace_or_add_tag(int frame, int depth, int id)
 		{
+			uint32	depth_id = ((depth & 0x0FFFF) << 16) | (id & 0x0FFFF);
+
 			for (int f = frame - 1; f >= 0; f--)
 			{
 				const array<execute_tag*>&	playlist = m_def->get_playlist(f);
 				for (int i = playlist.size() - 1; i >= 0; i--)
 				{
 					execute_tag*	e = playlist[i];
-					if (e->get_depth_of_replace_or_add_tag() == depth)
+					if (e->get_depth_id_of_replace_or_add_tag() == depth_id)
 					{
 						return e;
 					}
@@ -3493,6 +3415,7 @@ namespace gameswf
 			const char* name,
 			const array<swf_event*>& event_handlers,
 			Uint16 depth,
+			bool replace_if_depth_is_occupied,
 			const cxform& color_transform,
 			const matrix& matrix,
 			float ratio,
@@ -3536,7 +3459,14 @@ namespace gameswf
 				event_handlers[i]->attach_to(ch.get_ptr());
 			}}
 
-			m_display_list.add_display_object(ch.get_ptr(), depth, color_transform, matrix, ratio, clip_depth);
+			m_display_list.add_display_object(
+				ch.get_ptr(),
+				depth,
+				replace_if_depth_is_occupied,
+				color_transform,
+				matrix,
+				ratio,
+				clip_depth);
 
 			assert(ch == NULL || ch->get_ref_count() > 1);
 			return ch.get_ptr();
@@ -3634,11 +3564,11 @@ namespace gameswf
 
 
 		/*sprite_instance*/
-		void	remove_display_object(Uint16 depth)
+		void	remove_display_object(Uint16 depth, int id)
 		// Remove the object at the specified depth.
+		// If id != -1, then only remove the object at depth with matching id.
 		{
-			//gameswf::remove_display_object(&m_display_list, depth);
-			m_display_list.remove_display_object(depth);
+			m_display_list.remove_display_object(depth, id);
 		}
 
 
@@ -4209,7 +4139,7 @@ namespace gameswf
 				return;
 			}
 
-			assert(m_action_list.size() == 0);
+			int	top_action = m_action_list.size();
 
 			// Execute the actions.
 			const array<execute_tag*>&	playlist = m_def->get_playlist(frame_number);
@@ -4220,9 +4150,16 @@ namespace gameswf
 				{
 					e->execute(this);
 				}
-				do_actions();
 			}
-			
+
+			// Execute any new actions triggered by the tag,
+			// leaving existing actions to be executed.
+			while (m_action_list.size() > top_action)
+			{
+				m_action_list[top_action]->execute(&m_as_environment);
+				m_action_list.remove(top_action);
+			}
+			assert(m_action_list.size() == top_action);
 		}
 
 
@@ -4262,6 +4199,7 @@ namespace gameswf
 					newname.c_str(),
 					dummy_event_handlers,
 					depth,
+					true,	// replace if depth is occupied
 					ch->get_cxform(),
 					ch->get_matrix(),
 					ch->get_ratio(),
@@ -4276,11 +4214,11 @@ namespace gameswf
 		// Remove the object with the specified name.
 		{
 			character* ch = m_display_list.get_character_by_name(name);
-			if( ch ) 
+			if (ch)
 			{
 				// @@ TODO: should only remove movies that were created via clone_display_object --
 				// apparently original movies, placed by anim events, are immune to this.
-				remove_display_object(ch->get_depth());
+				remove_display_object(ch->get_depth(), ch->get_id());
 			}
 		}
 
@@ -4576,19 +4514,27 @@ namespace gameswf
 	
 	struct remove_object_2 : public execute_tag
 	{
-		int	m_depth;
+		int	m_depth, m_id;
 
-		remove_object_2() : m_depth(-1) {}
+		remove_object_2() : m_depth(-1), m_id(-1) {}
 
-		void	read(stream* in)
+		void	read(stream* in, int tag_type)
 		{
+			assert(tag_type == 5 || tag_type == 28);
+
+			if (tag_type == 5)
+			{
+				// Older SWF's allow multiple objects at the same depth;
+				// this m_id disambiguates.  Later SWF's just use one
+				// object per depth.
+				m_id = in->read_u16();
+			}
 			m_depth = in->read_u16();
 		}
 
 		virtual void	execute(movie* m)
 		{
-//			IF_DEBUG(log_msg(" remove: depth %2d\n", m_depth));
-			m->remove_display_object(m_depth);
+			m->remove_display_object(m_depth, m_id);
 		}
 
 		virtual void	execute_state(movie* m)
@@ -4599,7 +4545,7 @@ namespace gameswf
 		virtual void	execute_state_reverse(movie* m, int frame)
 		{
 			// reverse of remove is to re-add the previous object.
-			execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth);
+			execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, m_id);
 			if (last_add)
 			{
 				last_add->execute_state(m);
@@ -4618,10 +4564,10 @@ namespace gameswf
 
 	void	remove_object_2_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
-		assert(tag_type == 28);
+		assert(tag_type == 5 || tag_type == 28);
 
 		remove_object_2*	t = new remove_object_2;
-		t->read(in);
+		t->read(in, tag_type);
 
 		IF_VERBOSE_PARSE(log_msg("  remove_object_2(%d)\n", t->m_depth));
 

@@ -67,6 +67,7 @@ namespace gameswf
 		void	add_display_object(
 			character* ch,
 			Uint16 depth,
+			bool replace_if_depth_is_occupied,
 			const cxform& color_xform,
 			const matrix& mat,
 			float ratio,
@@ -88,7 +89,7 @@ namespace gameswf
 			const matrix& mat,
 			float ratio,
 			Uint16 clip_depth);
-		void	remove_display_object(Uint16 depth);
+		void	remove_display_object(Uint16 depth, int id);
 
 		// clear the display list.
 		void	clear();

@@ -38,9 +38,9 @@ namespace gameswf
 
 	
 	int	display_list::find_display_index(int depth)
-		// Find the index in the display list matching the given
-		// depth.  Failing that, return the index of the first object
-		// with a larger depth.
+	// Find the index in the display list of the first object
+	// matching the given depth.  Failing that, return the index
+	// of the first object with a larger depth.
 	{
 		int	size = m_display_object_array.size();
 		if (size == 0)
@@ -56,7 +56,8 @@ namespace gameswf
 			jump >>= 1;
 			if (jump < 1) jump = 1;
 			
-			if (depth > m_display_object_array[index].m_character->get_depth()) {
+			if (depth > m_display_object_array[index].m_character->get_depth())
+			{
 				if (index == size - 1)
 				{
 					index = size;
@@ -67,7 +68,7 @@ namespace gameswf
 			else if (depth < m_display_object_array[index].m_character->get_depth())
 			{
 				if (index == 0
-					|| depth > m_display_object_array[index - 1].m_character->get_depth())
+				    || depth > m_display_object_array[index - 1].m_character->get_depth())
 				{
 					break;
 				}
@@ -75,7 +76,21 @@ namespace gameswf
 			}
 			else
 			{
-				// match -- return this index.
+				// match -- scan backward to make sure this is the first entry with this depth.
+				//
+				// Linear.  But multiple objects with the same depth are only allowed for
+				// very old SWF's, so we don't really care.
+				for (;;)
+				{
+					if (index == 0
+					    || m_display_object_array[index - 1].m_character->get_depth() < depth)
+					{
+						break;
+					}
+					index--;
+				}
+				assert(m_display_object_array[index].m_character->get_depth() == depth);
+				assert(index == 0 || m_display_object_array[index - 1].m_character->get_depth() < depth);
 				break;
 			}
 		}
@@ -151,7 +166,8 @@ namespace gameswf
 
 	void	display_list::add_display_object(
 		character* ch, 
-		Uint16 depth, 
+		Uint16 depth,
+		bool replace_if_depth_is_occupied,
 		const cxform& color_xform, 
 		const matrix& mat, 
 		float ratio,
@@ -161,18 +177,33 @@ namespace gameswf
 
 		assert(ch);
 		
-		// Eliminate an existing object if it's in the way.
 		int	size = m_display_object_array.size();
 		int index = find_display_index(depth);
-		if (index >= 0 && index < size)
-		{
-			display_object_info & dobj = m_display_object_array[index];
 
-			if (dobj.m_character->get_depth() == depth)
+		if (replace_if_depth_is_occupied)
+		{
+			// Eliminate an existing object if it's in the way.
+			if (index >= 0 && index < size)
 			{
-				dobj.set_character(NULL);
-				m_display_object_array.remove(index);
+				display_object_info & dobj = m_display_object_array[index];
+
+				if (dobj.m_character->get_depth() == depth)
+				{
+					dobj.set_character(NULL);
+					m_display_object_array.remove(index);
+				}
 			}
+		}
+		else
+		{
+			// Caller wants us to allow multiple objects
+			// with the same depth.  find_display_index()
+			// returns the first matching depth, if there
+			// are any, so the new character will get
+			// inserted before all the others with the
+			// same depth.  This matches the semantics
+			// described by Alexi's SWF ref.  (This is all
+			// for legacy SWF compatibility anyway.)
 		}
 
 		ch->set_depth(depth);
@@ -187,7 +218,7 @@ namespace gameswf
 		di.m_character->set_clip_depth(clip_depth);
 
 		// Insert into the display list...
-		index = find_display_index(depth);
+		assert(index == find_display_index(depth));
 		
 		m_display_object_array.insert(index, di);
 
@@ -280,10 +311,10 @@ namespace gameswf
 		int	index = find_display_index(depth);
 		if (index < 0 || index >= size)
 		{
-			// Error.
+			// Error, no existing object found at depth.
 //			IF_VERBOSE_DEBUG(log_msg("dl::replace_display_object() no obj at depth %d\n", depth));
 			// Fallback -- add the object.
-			add_display_object(ch, depth, color_xform, mat, ratio, clip_depth);
+			add_display_object(ch, depth, true, color_xform, mat, ratio, clip_depth);
 			return;
 		}
 		
@@ -331,7 +362,7 @@ namespace gameswf
 	}
 	
 	
-	void	display_list::remove_display_object(Uint16 depth)
+	void	display_list::remove_display_object(Uint16 depth, int id)
 	// Removes the object at the specified depth.
 	{
 //		IF_VERBOSE_DEBUG(log_msg("dl::remove(%d)\n", depth));//xxxxx
@@ -345,13 +376,40 @@ namespace gameswf
 		}
 		
 		int	index = find_display_index(depth);
-		if (index < 0 || index >= size)
+		if (index < 0
+		    || index >= size
+		    || get_character(index)->get_depth() != depth)
 		{
 			// error -- no character at the given depth.
 			log_error("remove_display_object: no character at depth %d\n", depth);
 			return;
 		}
+
+		assert(get_character(index)->get_depth() == depth);
 		
+		if (id != -1)
+		{
+			// Caller specifies a specific id; scan forward til we find it.
+			for (;;)
+			{
+				if (get_character(index)->get_id() == id)
+				{
+					break;
+				}
+				if (index + 1 >= size
+				    || get_character(index + 1)->get_depth() != depth)
+				{
+					// Didn't find a match!
+					log_error("remove_display_object: no character at depth %d with id %d\n", depth, id);
+					return;
+				}
+				index++;
+			}
+			assert(index < size);
+			assert(get_character(index)->get_depth() == depth);
+			assert(get_character(index)->get_id() == id);
+		}
+
 		// Removing the character at get_display_object(index).
 		display_object_info&	di = m_display_object_array[index];
 		
@@ -427,7 +485,7 @@ namespace gameswf
 			// iterate through the copy
 			//
 			// * use (or emulate) a linked list instead of
-			// an array (still had problems; e.g. what
+			// an array (still has problems; e.g. what
 			// happens if the next or current object gets
 			// removed from the dlist?)
 			//
@@ -439,7 +497,6 @@ namespace gameswf
 			// * ???
 			//
 			// Need to test to see what Flash does.
-			assert(n == m_display_object_array.size());
 			if (n != m_display_object_array.size())
 			{
 				log_error("gameswf bug: dlist size changed due to character actions, bailing on update!\n");
@@ -452,12 +509,6 @@ namespace gameswf
 			{
 				character*	ch = dobj.m_character.get_ptr();
 				assert(ch);
-
-// 				if (ch->get_visible() == false)
-// 				{
-// 					// Don't advance.
-// 					continue;
-// 				}
 
 				ch->advance(delta_time);
 			}
