@@ -37,11 +37,11 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	gameswf::matrix	m_current_matrix;
 	gameswf::cxform	m_current_cxform;
-        
-        void set_antialiased(bool enable)
-        {
-            m_enable_antialias = enable;
-        }
+	
+	void set_antialiased(bool enable)
+	{
+	    m_enable_antialias = enable;
+	}
 
 	static void make_next_miplevel(int* width, int* height, Uint8* data)
 	// Utility.  Mutates *width, *height and *data to create the
@@ -56,11 +56,11 @@ struct render_handler_ogl : public gameswf::render_handler
 		if (new_w < 1) new_w = 1;
 		if (new_h < 1) new_h = 1;
 		
-		if (new_w * 2 != *width  || new_h * 2 != *height)
+		if (new_w * 2 != *width	 || new_h * 2 != *height)
 		{
 			// Image can't be shrunk along (at least) one
 			// of its dimensions, so don't bother
-			// resampling.  Technically we should, but
+			// resampling.	Technically we should, but
 			// it's pretty useless at this point.  Just
 			// change the image dimensions and leave the
 			// existing pixels.
@@ -116,7 +116,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 			if (m_mode == COLOR)
 			{
-				m_color.apply();
+				apply_color(m_color);
 				glDisable(GL_TEXTURE_2D);
 			}
 			else if (m_mode == BITMAP_WRAP
@@ -124,7 +124,7 @@ struct render_handler_ogl : public gameswf::render_handler
 			{
 				assert(m_bitmap_info != NULL);
 
-				m_color.apply();
+				apply_color(m_color);
 
 				if (m_bitmap_info == NULL)
 				{
@@ -138,7 +138,7 @@ struct render_handler_ogl : public gameswf::render_handler
 						// For the moment we can only handle the modulate part of the
 						// color transform...
 						// How would we handle any additive part?  Realistically we
-						// need to use a pixel shader.  Although there is a GL_COLOR_SUM
+						// need to use a pixel shader.	Although there is a GL_COLOR_SUM
 						// extension that can set an offset for R,G,B (but apparently not A).
 						glColor4f(m_bitmap_color_transform.m_[0][0],
 							  m_bitmap_color_transform.m_[1][0],
@@ -233,7 +233,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 
 	gameswf::bitmap_info*	create_bitmap_info_blank()
-	// Creates and returns an empty bitmap_info structure.  Image data
+	// Creates and returns an empty bitmap_info structure.	Image data
 	// can be bound to this info later, via set_alpha_image().
 	{
 		return new bitmap_info_ogl(gameswf::bitmap_info::empty);
@@ -265,7 +265,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		int viewport_width, int viewport_height,
 		float x0, float x1, float y0, float y1)
 	// Set up to render a full frame from a movie and fills the
-	// background.  Sets up necessary transforms, to scale the
+	// background.	Sets up necessary transforms, to scale the
 	// movie to fit within the given dimensions.  Call
 	// end_display() when you're done.
 	//
@@ -297,7 +297,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		if (background_color.m_a > 0)
 		{
 			// Draw a big quad.
-			background_color.apply();
+			apply_color(background_color);
 			glBegin(GL_QUADS);
 			glVertex2f(x0, y0);
 			glVertex2f(x1, y0);
@@ -372,28 +372,28 @@ struct render_handler_ogl : public gameswf::render_handler
 	{
 		m_current_cxform = cx;
 	}
-        
-        void 	apply_matrix(const gameswf::matrix& m)
-        // multiply current matrix with opengl matrix
-        {
-                float	mat[16];
-                memset(&mat[0], 0, sizeof(mat));
-                mat[0] = m.m_[0][0];
-                mat[1] = m.m_[1][0];
-                mat[4] = m.m_[0][1];
-                mat[5] = m.m_[1][1];
-                mat[10] = 1;
-                mat[12] = m.m_[0][2];
-                mat[13] = m.m_[1][2];
-                mat[15] = 1;
-                glMultMatrixf(mat);
-        }
+	
+	static void	apply_matrix(const gameswf::matrix& m)
+	// multiply current matrix with opengl matrix
+	{
+		float	mat[16];
+		memset(&mat[0], 0, sizeof(mat));
+		mat[0] = m.m_[0][0];
+		mat[1] = m.m_[1][0];
+		mat[4] = m.m_[0][1];
+		mat[5] = m.m_[1][1];
+		mat[10] = 1;
+		mat[12] = m.m_[0][2];
+		mat[13] = m.m_[1][2];
+		mat[15] = 1;
+		glMultMatrixf(mat);
+	}
 
-        void 	apply_color(const gameswf::rgba& c)
-        // multiply current matrix with opengl matrix
-        {
-                glColor4ub(c.m_r, c.m_g, c.m_b, c.m_a);
-        }
+	static void	apply_color(const gameswf::rgba& c)
+	// multiply current matrix with opengl matrix
+	{
+		glColor4ub(c.m_r, c.m_g, c.m_b, c.m_a);
+	}
 
 	void	fill_style_disable(int fill_side)
 	// Don't fill on the {0 == left, 1 == right} side of a path.
@@ -434,8 +434,8 @@ struct render_handler_ogl : public gameswf::render_handler
 		assert(fill_side >= 0 && fill_side < 2);
 		m_current_styles[fill_side].set_bitmap(bi, m, wm, m_current_cxform);
 	}
-        
-        void	line_style_width(float width)
+	
+	void	line_style_width(float width)
 	{
 		// WK: what to do here???
 	}
@@ -448,7 +448,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
-		m_current_matrix.apply();
+		apply_matrix(m_current_matrix);
 
 		// Send the tris to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -468,7 +468,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
-		m_current_matrix.apply();
+		apply_matrix(m_current_matrix);
 
 		// Send the line-strip to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -487,15 +487,14 @@ struct render_handler_ogl : public gameswf::render_handler
 		const gameswf::rect& uv_coords,
 		gameswf::rgba color)
 	// Draw a rectangle textured with the given bitmap, with the
-	// given color.  Apply given transform; ignore any currently
+	// given color.	 Apply given transform; ignore any currently
 	// set transforms.
 	//
 	// Intended for textured glyph rendering.
 	{
 		assert(bi);
 
-	//	color = s_cxform_stack.back().transform(color);
-		color.apply();
+		apply_color(color);
 
 		gameswf::point a, b, c, d;
 		m.transform(&a, gameswf::point(coords.m_x_min, coords.m_y_min));
@@ -525,32 +524,32 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		glEnd();
 	}
-        
-        void begin_submit_mask()
-        {
-            glEnable(GL_STENCIL_TEST); 
-            glClearStencil(0);
-            glClear(GL_STENCIL_BUFFER_BIT);
-            glColorMask(0,0,0,0); 	// disable framebuffer writes
-            glEnable(GL_STENCIL_TEST);	// enable stencil buffer for "marking" the mask
-            glStencilFunc(GL_ALWAYS, 1, 1);	// always passes, 1 bit plane, 1 as mask
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);	// we set the stencil buffer to 1 where we draw any polygon
-                                                        // keep if test fails, keep if test passes but buffer test fails
-                                                        // replace if test passes 
-        }
-        
-        void end_submit_mask()
-        {            
-            glColorMask(1,1,1,1);	// enable framebuffer writes
-            glStencilFunc(GL_EQUAL, 1, 1);	// we draw only where the stencil is 1 (where the mask was drawn)
-            glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);	// don't change the stencil buffer    
-        }
-        
-        void end_mask()
-        {              
-            glDisable(GL_STENCIL_TEST); 
-        }
-        
+	
+	void begin_submit_mask()
+	{
+	    glEnable(GL_STENCIL_TEST); 
+	    glClearStencil(0);
+	    glClear(GL_STENCIL_BUFFER_BIT);
+	    glColorMask(0,0,0,0);	// disable framebuffer writes
+	    glEnable(GL_STENCIL_TEST);	// enable stencil buffer for "marking" the mask
+	    glStencilFunc(GL_ALWAYS, 1, 1);	// always passes, 1 bit plane, 1 as mask
+	    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);	// we set the stencil buffer to 1 where we draw any polygon
+							// keep if test fails, keep if test passes but buffer test fails
+							// replace if test passes 
+	}
+	
+	void end_submit_mask()
+	{	     
+	    glColorMask(1,1,1,1);	// enable framebuffer writes
+	    glStencilFunc(GL_EQUAL, 1, 1);	// we draw only where the stencil is 1 (where the mask was drawn)
+	    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);	// don't change the stencil buffer    
+	}
+	
+	void end_mask()
+	{	       
+	    glDisable(GL_STENCIL_TEST); 
+	}
+	
 };	// end struct render_handler_ogl
 
 

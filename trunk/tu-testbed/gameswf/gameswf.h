@@ -258,9 +258,6 @@ namespace gameswf
 		virtual void	set_matrix(const matrix& m) = 0;
 		virtual void	set_cxform(const cxform& cx) = 0;
                 
-                virtual void apply_matrix(const matrix& m) = 0;
-                virtual void apply_color(const rgba& c) = 0;
-
 		// Draw triangles using the current fill-style 0.
 		// Clears the style list after rendering.
 		//
@@ -328,7 +325,6 @@ namespace gameswf
         // Get and set the render handler. this is one of the first things you should do to initialise
         // the player.
 	extern void set_render_handler(render_handler* s);
-        extern render_handler*	get_sound_handler();
         
 }	// namespace gameswf
 

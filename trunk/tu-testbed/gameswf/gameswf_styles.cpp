@@ -198,7 +198,7 @@ namespace gameswf
 			}
 		}
 
-		gameswf::bitmap_info*	bi = gameswf::get_render_handler()->create_bitmap_info(im);
+		gameswf::bitmap_info*	bi = gameswf::render::create_bitmap_info(im);
 		delete im;
 
 		return bi;
@@ -211,7 +211,7 @@ namespace gameswf
 		if (m_type == 0x00)
 		{
 			// 0x00: solid fill
-			gameswf::get_render_handler()->fill_style_color(fill_side, m_color);
+			gameswf::render::fill_style_color(fill_side, m_color);
 		}
 		else if (m_type == 0x10 || m_type == 0x12)
 		{
@@ -225,7 +225,7 @@ namespace gameswf
 
 			if (m_gradient_bitmap_info)
 			{
-				gameswf::get_render_handler()->fill_style_bitmap(
+				gameswf::render::fill_style_bitmap(
 					fill_side,
 					m_gradient_bitmap_info,
 					m_gradient_matrix,
@@ -234,7 +234,7 @@ namespace gameswf
 			else
 			{
 				// Hack.
-				gameswf::get_render_handler()->fill_style_color(
+				gameswf::render::fill_style_color(
 					fill_side,
 					m_color);
 			}
@@ -254,7 +254,7 @@ namespace gameswf
 					{
 						wmode = gameswf::render_handler::WRAP_CLAMP;
 					}
-					gameswf::get_render_handler()->fill_style_bitmap(
+					gameswf::render::fill_style_bitmap(
 						fill_side,
 						bi,
 						m_bitmap_matrix,
@@ -286,7 +286,7 @@ namespace gameswf
 
 	void	line_style::apply() const
 	{
-		gameswf::get_render_handler()->line_style_color(m_color);
+		gameswf::render::line_style_color(m_color);
 	}
 
 }

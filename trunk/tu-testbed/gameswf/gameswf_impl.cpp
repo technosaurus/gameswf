@@ -654,7 +654,7 @@ namespace gameswf
 		void	display()
 		// Show our display list.
 		{
-			gameswf::get_render_handler()->begin_display(
+			gameswf::render::begin_display(
 				m_background_color,
 				m_viewport_x0, m_viewport_y0,
 				m_viewport_width, m_viewport_height,
@@ -663,7 +663,7 @@ namespace gameswf
 
 			m_display_list.display(m_total_display_count);
 
-			gameswf::get_render_handler()->end_display();
+			gameswf::render::end_display();
 
 			m_total_display_count++;
 		}
@@ -984,7 +984,7 @@ namespace gameswf
 			if (m_image != 0)
 			{
 				// Create our bitmap info, from our image.
-				m_bitmap_info = gameswf::get_render_handler()->create_bitmap_info(m_image);
+				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
 				delete m_image;
 				m_image = 0;
 			}
@@ -1005,7 +1005,7 @@ namespace gameswf
 			if (m_image != 0)
 			{
 				// Create our bitmap info, from our image.
-				m_bitmap_info = gameswf::get_render_handler()->create_bitmap_info(m_image);
+				m_bitmap_info = gameswf::render::create_bitmap_info(m_image);
 				delete m_image;
 				m_image = 0;
 			}

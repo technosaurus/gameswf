@@ -378,7 +378,7 @@ namespace gameswf
                         if (dobj.m_clip_depth > 0) // check whether this object should mask
                         {
                             log_msg("begin submit mask\n");
-                            get_render_handler()->begin_submit_mask();
+                            render::begin_submit_mask();
                         }               
                         
                         dobj.m_display_number = m_total_display_count;                             
@@ -388,7 +388,7 @@ namespace gameswf
                         if(dobj.m_clip_depth > 0)
                         {
                             log_msg("end submit mask\n");
-                            get_render_handler()->end_submit_mask();                            
+                            render::end_submit_mask();                            
                             highest_masked_layer = dobj.m_clip_depth;
                             masked = true;                                                    
                         }
@@ -399,8 +399,8 @@ namespace gameswf
                             {
                                 log_msg("disabled mask at depth %i", highest_masked_layer);
                                 masked = false;
-                                // turn of mask
-                                get_render_handler()->end_mask();
+                                // turn off mask
+                                render::end_mask();
                             }
                         }
 		}
@@ -409,7 +409,7 @@ namespace gameswf
                 {
                     // if masking is still enabled after we drew the entire list, disable it anyway
                     // need to get the semantics better defined
-                    get_render_handler()->end_mask();
+                    render::end_mask();
                 }
 	}
 
