@@ -360,7 +360,7 @@ int	main()
 	}}
 #endif
 
-#if 0
+#if 1
 	// Lots of concentric circles.
 	static int	CIRCLE_COUNT = 20;	// CIRCLE_COUNT >= 10 is a good performance test.
 	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
@@ -407,7 +407,7 @@ int	main()
 	reverse_path(&paths.back());
 #endif
 
-#if 1
+#if 0
 	// This one has a tricky triple dupe vertex that puts us into
 	// the recovery mode.  See "Case A" in recovery_process() in
 	// triangulate_imp.h.
