@@ -3557,7 +3557,7 @@ namespace gameswf
 
 		
 		/* sprite_instance */
-		virtual void	set_member(const tu_string& name, const as_value& val)
+		virtual void	set_member(const tu_stringi& name, const as_value& val)
 		// Set the named member to the value.  Return true if we have
 		// that member; false otherwise.
 		{
@@ -3673,6 +3673,8 @@ namespace gameswf
 				for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 				{
 					character*	ch = m_display_list.get_character(i);
+					// CASE INSENSITIVE compare.  In ActionScript 2.0, this
+					// changes to CASE SENSITIVE!!!
 					if (name == ch->get_text_name())
 					{
 						ch->set_text_value(text);
@@ -3688,7 +3690,7 @@ namespace gameswf
 
 
 		/* sprite_instance */
-		virtual bool	get_member(const tu_string& name, as_value* val)
+		virtual bool	get_member(const tu_stringi& name, as_value* val)
 		// Set *val to the value of the named member and
 		// return true, if we have the named member.
 		// Otherwise leave *val alone and return false.
@@ -3879,7 +3881,9 @@ namespace gameswf
 			for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 			{
 				character*	ch = m_display_list.get_character(i);
-				if (name == ch->get_name())
+				// CASE INSENSITIVE compare.  In ActionScript 2.0, this
+				// changes to CASE SENSITIVE!!!
+				if (name == ch->get_name().c_str())
 				{
 					// Found object.
 					val->set(static_cast<as_object_interface*>(ch));
@@ -3917,9 +3921,13 @@ namespace gameswf
 		// Otherwise, the name should refer to one our our
 		// named characters, so we return it.
 		//
-		// @@ what's the real deal with sprites?  How to
-		// distinguish between multiple instances of the same
-		// sprite???
+		// NOTE: In ActionScript 2.0, top level names (like
+		// "_root" and "_level0") are CASE SENSITIVE.
+		// Character names in a display list are CASE
+		// SENSITIVE. Member names are CASE INSENSITIVE.  Gah.
+		//
+		// In ActionScript 1.0, everything seems to be CASE
+		// INSENSITIVE.
 		{
 			if (name == "." || name == "this")
 			{
@@ -4064,6 +4072,8 @@ namespace gameswf
 
 			// Check for member function.
 			{
+				// In ActionScript 2.0, event method names are CASE SENSITIVE.
+				// In ActionScript 1.0, event method names are CASE INSENSITIVE.
 				const tu_string&	method_name = id.get_function_name();
 				if (method_name.length() > 0)
 				{

@@ -145,7 +145,6 @@ namespace gameswf
 		virtual void	display(character* inst);
 		bool	point_test_local(float x, float y);
 
-//vb
 		float	get_height_local();
 		float	get_width_local();
 

@@ -2883,13 +2883,13 @@ namespace gameswf
 	}
 
 	
-	bool	as_environment::get_member(const tu_string& varname, as_value* val) const
+	bool	as_environment::get_member(const tu_stringi& varname, as_value* val) const
 	{
 		return m_variables.get(varname, val);
 	}
 
 
-	void	as_environment::set_member(const tu_string& varname, const as_value& val)
+	void	as_environment::set_member(const tu_stringi& varname, const as_value& val)
 	{
 		m_variables.set(varname, val);
 	}

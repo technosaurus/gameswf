@@ -562,7 +562,7 @@ namespace gameswf
 		}
 
 
-		void	set_member(const tu_string& name, const as_value& val)
+		void	set_member(const tu_stringi& name, const as_value& val)
 		// We have a "text" member.
 		{
 			if (name == "text")
@@ -597,7 +597,7 @@ namespace gameswf
 		}
 
 
-		bool	get_member(const tu_string& name, as_value* val)
+		bool	get_member(const tu_stringi& name, as_value* val)
 		{
 			if (name == "text")
 			{

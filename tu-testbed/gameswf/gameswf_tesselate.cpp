@@ -6,14 +6,71 @@
 // 2D shape tesselator.  Actually a "trapezoidizer".  Takes line/curve
 // segments with a style index, and outputs trapezoids.
 //
-// Someday it might be cool to make a real tesselator, using something
-// like Shewchuk's constrained delaunay triangulator.
+// Comments on tesselation strategies:
 //
-// Or, improve the trapezoidation algorithm, using something like "A
-// Fast Trapezoidation Technique For Planar Polygons".  The key
-// improvement there is to only cut from a vertex/event to the nearest
-// adjacent edges, instead of slicing across the entire set of active
-// edges.
+// Current method basically works but has some problems.  It's slow,
+// it generates lots of triangles where the poly edges are curvy, and
+// occasionally it makes a leak around very thin shapes.
+//
+// Shewchuk's constrained delaunay triangulator: not appropriate for
+// rendering; it's big thing is making roundish triangles, at the
+// expense of triangle count.  That's the right tradeoff for FEA
+// (Shewchuk's main target application), but the wrong tradeoff for
+// rendering; we don't have any particular problem with skinny
+// triangles.
+//
+// Something like "A Fast Trapezoidation Technique For Planar
+// Polygons".  The key improvement there is to only cut from a
+// vertex/event to the nearest adjacent edges, instead of slicing
+// across the entire set of active edges.  This sounds good.
+//
+// Or, "FIST: Fast Industrial-Strength Triangulation of Polygons" by
+// Martin Held.  This looks good; application is rasterization.  The
+// funny thing here is that they explicitly deal with holes by
+// inserting zero-area bridge edges to connect the holes with the
+// outer boundary, to make one continuous poly.  This seems a little
+// hacky and possibly tricky.
+//
+// Or, just optimize what we've got.  I took a quick look at the cairo
+// project's trapezoider -- it's very similar to ours but seems to do
+// its work in-place without resizing the edge list constantly, so it
+// should be pretty quick.  They do some high-precision integer voodoo
+// in their intercept calculation that I don't 100% understand.
+//
+//
+// Findings re SWF polygons:
+//
+// (Based on experiments with Flash MX 2004; old movies seem to obey
+// these rules as well, as far as I can tell):
+//
+// * no intersecting edges -- if you make intersections in the tool
+// (even by stretching curve segments around), the tool inserts verts
+// automatically.
+//
+// * left-fill and right-fill seem to be randomly selected.
+//
+// * individual paths (i.e. segment paths with a consistent set of
+// fill styles) are not closed
+//
+// * there's no odd-even insanity; the tool cleans up the poly if you
+// try to make self-intersections and flips and such.
+//
+// * if you duplicate the paths with two fill styles (so every path
+// has just one fill style), and reverse the right-fill paths so they
+// make left-fill paths, and then join open verts of the same fill
+// style, you will be left with a set of non-intersecting closed polys
+// with a consistent winding.  I.e. fairly well-behaved.  They may
+// have holes though.
+//
+// Current outlook: Any of "A Fast Trapezoidation", "FIST", or
+// cairo-style should work.  FIST will make the fewest tris (since it
+// doesn't add any verts).  Current method can be optimized as well --
+// can remove intersection checks (they're probably just harmful).
+//
+// FIST will probably be the most impervious to leaks, since it
+// rationally deals with self-intersection by just overlapping parts
+// of the tesselated poly.
+
 
 #include "gameswf_tesselate.h"
 #include "gameswf_types.h"

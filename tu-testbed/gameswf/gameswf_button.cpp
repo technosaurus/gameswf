@@ -403,7 +403,7 @@ namespace gameswf
 		// ActionScript overrides
 		//
 
-		virtual void	set_member(const tu_string& name, const as_value& val)
+		virtual void	set_member(const tu_stringi& name, const as_value& val)
 		{
 			if (name == "_alpha")
 			{
@@ -426,7 +426,7 @@ namespace gameswf
 			}
 		}
 
-		virtual bool	get_member(const tu_string& name, as_value* val)
+		virtual bool	get_member(const tu_stringi& name, as_value* val)
 		{
 			//v not tested
 			if (name == "_alpha")
