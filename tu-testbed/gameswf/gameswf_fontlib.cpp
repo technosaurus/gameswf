@@ -1077,17 +1077,22 @@ namespace fontlib
 		// Dumb linear search.
 		for (int i = 0; i < s_fonts.size(); i++)
 		{
-			if (strcmp(s_fonts[i]->get_name(), name) == 0)
+			font*	f = s_fonts[i].get_ptr();
+			if (f != NULL)
 			{
-				return s_fonts[i].get_ptr();
+				if (strcmp(f->get_name(), name) == 0)
+				{
+					return f;
+				}
 			}
 		}
 		return NULL;
 	}
-
+			
 
 	const char*	get_font_name(const font* f)
-	// Return the name of the given font.
+	// Return the name of the given font.  (This basically exists
+	// so that font* can be opaque to the host app).
 	{
 		if (f == NULL)
 		{

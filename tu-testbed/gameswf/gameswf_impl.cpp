@@ -2061,7 +2061,10 @@ namespace gameswf
 
 		m->add_font(font_id, f);
 
-		fontlib::add_font(f);
+		// Automatically keeping fonts in fontlib is
+		// problematic.  The app should be responsible for
+		// optionally adding fonts to fontlib.
+		// //fontlib::add_font(f);
 	}
 
 

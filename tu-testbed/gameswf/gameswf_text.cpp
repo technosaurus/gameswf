@@ -12,6 +12,7 @@
 #include "gameswf_stream.h"
 #include "gameswf_log.h"
 #include "gameswf_font.h"
+#include "gameswf_fontlib.h"
 #include "gameswf_render.h"
 
 
@@ -391,7 +392,6 @@ namespace gameswf
 		float	m_indent;	// how much to indent the first line of multiline text
 		float	m_leading;	// extra space between lines (in addition to default font line spacing)
 		tu_string	m_default_text;
-//		tu_string	m_text;
 
 
 		edit_text_character_def(movie_definition_sub* root_def)
@@ -530,9 +530,6 @@ namespace gameswf
 		~edit_text_character()
 		{
 		}
-
-//		virtual int	get_id() const { return m_def->get_id(); }
-
 
 		virtual const char*	get_text_name() const { return m_def->m_default_name.c_str(); }
 
@@ -700,7 +697,6 @@ namespace gameswf
 			int	last_line_start_record = 0;
 
 			const char*	text = &m_text[0];
-//			for (int j = 0; j < m_text.length(); j++)
 			while (Uint32 code = utf8::decode_next_unicode_character(&text))
 			{
 // @@ try to truncate overflow text??

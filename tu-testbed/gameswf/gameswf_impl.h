@@ -505,22 +505,6 @@ namespace gameswf
 	// sound_stream_loader();	// head, head2, block
 
 
-	struct texture_glyph;
-	namespace fontlib
-	{
-		// For adding fonts.
-		void	add_font(font* f);
-
-		// For drawing a textured glyph w/ current render transforms.
-		void	draw_glyph(const matrix& m, const texture_glyph* g, rgba color);
-
-		// Return the pixel height of text, such that the
-		// texture glyphs are sampled 1-to-1 texels-to-pixels.
-		// I.e. the height of the glyph box, in texels.
-		float	get_nominal_texture_glyph_height();
-	}
-
-
 }	// end namespace gameswf
 
 
