@@ -236,17 +236,10 @@ struct SDL_sound_handler : gameswf::sound_handler
 };
 
 
-gameswf::sound_handler*	create_sound_handler_sdl()
+gameswf::sound_handler*	gameswf::create_sound_handler_sdl()
 // Factory.
 {
 	return new SDL_sound_handler;
-}
-
-
-void	delete_sound_handler_sdl(gameswf::sound_handler* h)
-// Destructor.
-{
-	delete (SDL_sound_handler*) h;
 }
 
 

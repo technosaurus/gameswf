@@ -97,15 +97,6 @@ static tu_file*	file_opener(const char* url)
 }
 
 
-// @@ definitely make a header for this if it grows at all...
-extern gameswf::sound_handler*	create_sound_handler_sdl();
-extern void	delete_sound_handler_sdl(gameswf::sound_handler* h);
-
-// @@ definitely make a header for this if it grows at all...
-extern gameswf::render_handler*	create_render_handler_ogl();
-extern void	delete_render_handler_ogl(gameswf::render_handler* h);
-
-
 int	main(int argc, char *argv[])
 {
 	assert(tu_types_validate());
@@ -194,10 +185,10 @@ int	main(int argc, char *argv[])
 	gameswf::set_log_callback(log_callback);
 	//gameswf::set_antialiased(s_antialiased);
         
-	gameswf::sound_handler*	sound = create_sound_handler_sdl();
+	gameswf::sound_handler*	sound = gameswf::create_sound_handler_sdl();
 	gameswf::set_sound_handler(sound);
         
-	gameswf::render_handler*	render = create_render_handler_ogl();
+	gameswf::render_handler*	render = gameswf::create_render_handler_ogl();
 	gameswf::set_render_handler(render); 
 
 	// Get info about the width & height of the movie.
@@ -437,8 +428,8 @@ int	main(int argc, char *argv[])
 	}
 
 done:
-	delete_sound_handler_sdl(sound);
-	delete_render_handler_ogl(render);
+	delete sound;
+	delete render;
 	return 0;
 }
 
