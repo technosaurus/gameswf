@@ -168,10 +168,12 @@ namespace gameswf
 	struct movie_container;
 
 
-	// Factory functions for opaque-ish types.
+	// Factory functions and some operations for opaque-ish types.
 	struct shape_character;
 	shape_character*	create_shape_character(stream* in, int tag_type, bool with_style, movie* m);
 	void	delete_shape_character(shape_character* sh);
+	void	display_shape_character_in_white(const shape_character* sh);
+	void	get_shape_bounds(rect* result, const shape_character* sh);
 
 	// Tag loader functions.
 	void	null_loader(stream* in, int tag_type, movie* m);
@@ -192,7 +194,18 @@ namespace gameswf
 	void	button_character_loader(stream* in, int tag_type, movie* m);
 	void	frame_label_loader(stream* in, int tag_type, movie* m);
 
-};	// end namespace gameswf
+
+	struct texture_glyph;
+	namespace fontlib
+	{
+		// For adding fonts.
+		void	add_font(font* f);
+
+		// For drawing a textured glyph w/ current render transforms.
+		void	draw_glyph(const texture_glyph* g, rgba color);
+	}
+
+}	// end namespace gameswf
 
 
 #endif // GAMESWF_IMPL_H

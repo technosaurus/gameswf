@@ -55,12 +55,79 @@ namespace render
 	static array<cxform>	s_cxform_stack;
 
 
+	// Specialized hacky software mode -- for rendering font glyph
+	// shapes into an 8-bit alpha texture, in order to have faster
+	// & better looking small text rendering.
+	static bool	s_software_mode_active = false;
+	static Uint8*	s_software_mode_buffer = NULL;
+	static int	s_software_mode_width = 0;
+	static int	s_software_mode_height = 0;
+
+
+	void	make_next_miplevel(int* width, int* height, Uint8* data)
+	// Utility.  Mutates *width, *height and *data to create the
+	// next mip level.
+	{
+		assert(width);
+		assert(height);
+		assert(data);
+
+		int	new_w = *width >> 1;
+		int	new_h = *height >> 1;
+		if (new_w < 1) new_w = 1;
+		if (new_h < 1) new_h = 1;
+		
+		if (new_w * 2 != *width  || new_h * 2 != *height)
+		{
+			// Image can't be shrunk along (at least) one
+			// of its dimensions, so don't bother
+			// resampling.  Technically we should, but
+			// it's pretty useless at this point.  Just
+			// change the image dimensions and leave the
+			// existing pixels.
+		}
+		else
+		{
+			// Resample.  Simple average 2x2 --> 1, in-place.
+			for (int j = 0; j < new_h; j++) {
+				Uint8*	out = ((Uint8*) data) + j * new_w;
+				Uint8*	in = ((Uint8*) data) + (j << 1) * *width;
+				for (int i = 0; i < new_w; i++) {
+					int	a;
+					a = (*(in + 0) + *(in + 1) + *(in + 0 + *width) + *(in + 1 + *width));
+					*(out) = a >> 2;
+					out++;
+					in += 2;
+				}
+			}
+		}
+
+		// Munge parameters to reflect the shrunken image.
+		*width = new_w;
+		*height = new_h;
+	}
+
+
 	// A struct used to hold info about an OpenGL texture.
 	struct bitmap_info
 	{
 		unsigned int	m_texture_id;	// OpenGL texture id
 		int	m_original_width;
 		int	m_original_height;
+
+		enum create_empty
+		{
+			empty
+		};
+
+		bitmap_info(create_empty e)
+			:
+			m_texture_id(0),
+			m_original_width(0),
+			m_original_height(0)
+		{
+			// A null texture.  Needs to be initialized later.
+		}
 
 		bitmap_info(image::rgb* im)
 			:
@@ -141,6 +208,51 @@ namespace render
 				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
 			}
 		}
+
+
+		void	set_alpha_image(int width, int height, Uint8* data)
+		// Initialize this bitmap_info to an alpha image
+		// containing the specified data (1 byte per texel).
+		//
+		// !! Munges *data in order to create mipmaps !!
+		{
+			assert(m_texture_id == 0);	// only call this on an empty bitmap_info
+			assert(data);
+			
+			// Create the texture.
+
+			glEnable(GL_TEXTURE_2D);
+			glGenTextures(1, &m_texture_id);
+			glBindTexture(GL_TEXTURE_2D, m_texture_id);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		
+			m_original_width = width;
+			m_original_height = height;
+
+#ifndef NDEBUG
+			// You must use power-of-two dimensions!!
+			int	w = 1; while (w < width) { w <<= 1; }
+			int	h = 1; while (h < height) { h <<= 1; }
+			assert(w == width);
+			assert(h == height);
+#endif // not NDEBUG
+
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, w, h, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+
+			// Build mips.
+			int	level = 1;
+			while (width > 1 || height > 1)
+			{
+				make_next_miplevel(&width, &height, data);
+				glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+				level++;
+			}
+		}
+
 	};
 
 
@@ -353,6 +465,26 @@ namespace render
 	// This version takes an image with an alpha channel.
 	{
 		return new bitmap_info(im);
+	}
+
+
+	bitmap_info*	create_bitmap_info_blank()
+	// Creates and returns an empty bitmap_info structure.  Image data
+	// can be bound to this info later, via set_alpha_image().
+	{
+		return new bitmap_info(bitmap_info::empty);
+	}
+
+
+	void	set_alpha_image(bitmap_info* bi, int w, int h, Uint8* data)
+	// Set the specified bitmap_info so that it contains an alpha
+	// texture with the given data (1 byte per texel).
+	//
+	// Munges *data (in order to make mipmaps)!!
+	{
+		assert(bi);
+
+		bi->set_alpha_image(w, h, data);
 	}
 
 
@@ -824,6 +956,70 @@ namespace render
 	}
 
 
+	static void	software_trapezoid(
+		float y0, float y1,
+		float xl0, float xl1,
+		float xr0, float xr1)
+	{
+		int	iy0 = (int) floorf(y0);
+		int	iy1 = (int) floorf(y1);
+
+		for (int y = iy0; y < iy1; y++)
+		{
+			if (y < 0) continue;
+			if (y >= s_software_mode_height) return;
+
+			float	f = (y - y0) / (y1 - y0);
+			int	xl = (int) floorf(flerp(xl0, xl1, f));
+			int	xr = (int) floorf(flerp(xr0, xr1, f));
+			
+			xl = iclamp(xl, 0, s_software_mode_width - 1);
+			xr = iclamp(xr, 0, s_software_mode_width - 1);
+
+			if (xr > xl)
+			{
+				memset(s_software_mode_buffer + y * s_software_mode_width + xl,
+				       255,
+				       xr - xl);
+			}
+		}
+	}
+
+
+	static void	draw_software_slab(const array<fill_segment>& slab)
+	{
+		if (slab.size() > 0
+		    && slab[0].m_left_style.is_valid() == false
+		    && slab[0].m_right_style.is_valid() == true)
+		{
+			// Reverse sense of polygon fill!  Right fill style is in charge.
+			for (int i = 0; i < slab.size() - 1; i++)
+			{
+				if (slab[i].m_right_style.is_valid())
+				{
+					software_trapezoid(
+						slab[i].m_begin.m_y, slab[i].m_end.m_y,
+						slab[i].m_begin.m_x, slab[i].m_end.m_x,
+						slab[i + 1].m_begin.m_x, slab[i + 1].m_end.m_x);
+				}
+			}
+		}
+		else
+		{
+			for (int i = 0; i < slab.size() - 1; i++)
+			{
+				if (slab[i].m_left_style.is_valid())
+				{
+					software_trapezoid(
+						slab[i].m_begin.m_y, slab[i].m_end.m_y,
+						slab[i].m_begin.m_x, slab[i].m_end.m_x,
+						slab[i + 1].m_begin.m_x, slab[i + 1].m_end.m_x);
+				}
+			}
+		}
+	}
+
+
 	void	peel_off_and_render(int i0, int i1, float y0, float y1)
 	// Clip the interval [y0, y1] off of the segments from s_current_segments[i0 through (i1-1)]
 	// and render the clipped segments.  Modifies the values in s_current_segments.
@@ -864,6 +1060,12 @@ namespace render
 
 		// Sort by x.
 		qsort(&slab[0], slab.size(), sizeof(slab[0]), compare_segment_x);
+
+		if (s_software_mode_active == true)
+		{
+			draw_software_slab(slab);
+			return;
+		}
 
 #if 0
 // This antialiasing trick works rather well for vertical lines :), 
@@ -1301,6 +1503,104 @@ namespace render
 		s_current_path.resize(0);
 	}
 
+
+	void	draw_bitmap(const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color)
+	// Draw a rectangle textured with the given bitmap, with the
+	// given color.  Apply current transforms.
+	//
+	// Intended for textured glyph rendering.
+	{
+		assert(bi);
+
+		color = s_cxform_stack.back().transform(color);
+		color.ogl_color();
+
+		point	pmin, pmax;	// transformed box coords.
+		s_matrix_stack.back().transform(&pmin, point(coords.m_x_min, coords.m_y_min));
+		s_matrix_stack.back().transform(&pmax, point(coords.m_x_max, coords.m_y_max));
+
+		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+		glEnable(GL_TEXTURE_2D);
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+
+		glBegin(GL_TRIANGLE_STRIP);
+
+		glTexCoord2f(uv_coords.m_x_min, uv_coords.m_y_min);
+		glVertex2f(pmin.m_x, pmin.m_y);
+
+		glTexCoord2f(uv_coords.m_x_max, uv_coords.m_y_min);
+		glVertex2f(pmax.m_x, pmin.m_y);
+
+		glTexCoord2f(uv_coords.m_x_min, uv_coords.m_y_max);
+		glVertex2f(pmin.m_x, pmax.m_y);
+
+		glTexCoord2f(uv_coords.m_x_max, uv_coords.m_y_max);
+		glVertex2f(pmax.m_x, pmax.m_y);
+
+		glEnd();
+	}
+
+
+
+	//
+	// special hacky software-mode interface
+	//
+
+
+	void	software_mode_enable(int width, int height)
+	// Enable special software-rendering mode.  8-bit RAM render
+	// target of given dimensions.
+	{
+		assert(s_software_mode_active == false);
+		assert(s_software_mode_buffer == NULL);
+
+		s_software_mode_active = true;
+		s_software_mode_buffer = new Uint8[width * height];
+		s_software_mode_width = width;
+		s_software_mode_height = height;
+
+		// Set up transform stacks.
+
+		// Prime the matrix stack with an identity transform.
+		assert(s_matrix_stack.size() == 0);
+		matrix	identity;
+		identity.set_identity();
+		s_matrix_stack.push_back(identity);
+
+		// Prime the cxform stack with an identity cxform.
+		assert(s_cxform_stack.size() == 0);
+		cxform	cx_identity;
+		s_cxform_stack.push_back(cx_identity);
+	}
+
+
+	void	software_mode_disable()
+	// Turn off software-rendering mode.
+	{
+		assert(s_software_mode_active);
+		assert(s_software_mode_buffer);
+
+		s_software_mode_active = false;
+		delete [] s_software_mode_buffer;
+		s_software_mode_buffer = NULL;
+
+		// Clean up stacks.
+
+		assert(s_matrix_stack.size() == 1);
+		s_matrix_stack.resize(0);
+
+		assert(s_cxform_stack.size() == 1);
+		s_cxform_stack.resize(0);
+	}
+
+
+	Uint8*	get_software_mode_buffer()
+	// Return the buffer we've been using for software rendering.
+	{
+		return s_software_mode_buffer;
+	}
+
 }	// end namespace render
 };	// end namespace gameswf
 
@@ -1329,7 +1629,7 @@ namespace gameswf
 		}
 	}
 
-};	// end namespace gameswf
+}	// end namespace gameswf
 
 
 

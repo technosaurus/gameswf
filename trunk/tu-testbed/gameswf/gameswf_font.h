@@ -18,19 +18,39 @@ namespace gameswf
 	struct movie;
 	struct shape_character;
 	struct stream;
+	namespace render { struct bitmap_info; }
+
+	
+	// Struct for holding (cached) textured glyph info.
+	struct texture_glyph
+	{
+		render::bitmap_info*	m_bitmap_info;
+		rect	m_uv_bounds;
+		point	m_uv_origin;	// the origin of the glyph box, in uv coords
+
+		texture_glyph() : m_bitmap_info(NULL) {}
+	};
+
 
 	struct font
 	{
 		font();
 		~font();
-		shape_character*	get_glyph(int index) const;
+		int	get_glyph_count() const { return m_glyphs.size(); }
+		shape_character*	get_glyph(int glyph_index) const;
 		void	read(stream* in, int tag_type, movie* m);
 		void	read_font_info(stream* in);
+
+		const char*	get_name() const { return m_name; }
+
+		const texture_glyph*	get_texture_glyph(int glyph_index) const;
+		void	add_texture_glyph(int glyph_index, const texture_glyph* glyph);
 
 	private:
 		void	read_code_table(stream* in);
 
 		array<shape_character*>	m_glyphs;
+		array<const texture_glyph*>	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
 		char*	m_name;
 		bool	m_has_layout;
 		bool	m_unicode_chars;
@@ -60,7 +80,7 @@ namespace gameswf
 		hash<kerning_pair, float>	m_kerning_pairs;
 	};
 
-};	// end namespace gameswf
+}	// end namespace gameswf
 
 
 

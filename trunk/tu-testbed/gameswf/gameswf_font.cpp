@@ -57,6 +57,38 @@ namespace gameswf
 		}
 	}
 
+
+	const texture_glyph*	font::get_texture_glyph(int glyph_index) const
+	// Return a pointer to a texture_glyph struct corresponding to
+	// the given glyph_index, if we have one.  Otherwise return NULL.
+	{
+		if (glyph_index < 0 || glyph_index >= m_texture_glyphs.size())
+		{
+			return NULL;
+		}
+
+		return m_texture_glyphs[glyph_index];
+	}
+
+
+	void	font::add_texture_glyph(int glyph_index, const texture_glyph* glyph)
+	// Register some texture info for the glyph at the specified
+	// index.  The texture_glyph can be used later to render the
+	// glyph.
+	{
+		assert(glyph_index >= 0 && glyph_index < m_glyphs.size());
+
+		// Expand m_texture_glyphs as necessary.
+		while (glyph_index >= m_texture_glyphs.size())
+		{
+			m_texture_glyphs.push_back(NULL);
+		}
+
+		assert(m_texture_glyphs[glyph_index] == NULL);
+		m_texture_glyphs[glyph_index] = glyph;
+	}
+
+
 	void	font::read(stream* in, int tag_type, movie* m)
 	{
 		assert(tag_type == 10 || tag_type == 48);
@@ -248,6 +280,8 @@ namespace gameswf
 	// Read the table that maps from glyph indices to character
 	// codes.
 	{
+		IF_DEBUG(printf("reading code table at offset %d\n", in->get_position()));
+
 		assert(m_code_table.size() == 0);
 
 		if (m_wide_codes)

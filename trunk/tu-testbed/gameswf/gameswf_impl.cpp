@@ -22,6 +22,7 @@
 #include <string.h>	// for memset
 #include <zlib.h>
 #include <typeinfo>
+#include <float.h>
 
 
 namespace gameswf
@@ -1972,20 +1973,11 @@ namespace gameswf
 		}
 
 		
-		void	display(const display_info& di, const array<fill_style>& fill_styles)
+		void	display(const display_info& di, const array<fill_style>& fill_styles) const
 		// Display our shape.  Use the fill_styles arg to
 		// override our default set of fill styles (e.g. when
 		// rendering text).
 		{
-			// @@ set color transform into the renderer...
-			// @@ set matrix into the renderer...
-
-			// @@ emit edges to the renderer...
-
-//			glMatrixMode(GL_MODELVIEW);
-//			glPushMatrix();
-
-//			di.m_matrix.ogl_multiply();
 			gameswf::render::push_apply_matrix(di.m_matrix);
 			gameswf::render::push_apply_cxform(di.m_color_transform);
 
@@ -2003,11 +1995,24 @@ namespace gameswf
 					m_paths[i].display(di, fill_styles, m_line_styles);
 				}
 			}
+#if 0
+			// Show bounding box.
+			gameswf::render::line_style_color(rgba(0, 0, 0, 255));
+			gameswf::render::fill_style_disable(0);
+			gameswf::render::fill_style_disable(1);
+			rect	bounds;
+			get_bounds(&bounds);
+			gameswf::render::begin_path(bounds.m_x_min, bounds.m_y_min);
+			gameswf::render::add_line_segment(bounds.m_x_max, bounds.m_y_min);
+			gameswf::render::add_line_segment(bounds.m_x_max, bounds.m_y_max);
+			gameswf::render::add_line_segment(bounds.m_x_min, bounds.m_y_max);
+			gameswf::render::add_line_segment(bounds.m_x_min, bounds.m_y_min);
+			gameswf::render::end_path();
+#endif // 0
 			gameswf::render::end_shape();
 
 			gameswf::render::pop_cxform();
 			gameswf::render::pop_matrix();
-//			glPopMatrix();
 		}
 
 		
@@ -2034,6 +2039,28 @@ namespace gameswf
 #endif // 0
 			return true;
 		}
+
+
+		void	get_bounds(rect* r) const
+		// Find the bounds of this shape, and store them in
+		// the given rectangle.
+		{
+			r->m_x_min = FLT_MAX;
+			r->m_y_min = FLT_MAX;
+			r->m_x_max = -FLT_MAX;
+			r->m_y_max = -FLT_MAX;
+
+			for (int i = 0; i < m_paths.size(); i++)
+			{
+				const path&	p = m_paths[i];
+				r->expand_to_point(p.m_ax, p.m_ay);
+				for (int j = 0; j < p.m_edges.size(); j++)
+				{
+					r->expand_to_point(p.m_edges[j].m_ax, p.m_edges[j].m_ay);
+//					r->expand_to_point(p.m_edges[j].m_cx, p.m_edges[j].m_cy);
+				}
+			}
+		}
 	};
 
 	
@@ -2043,6 +2070,13 @@ namespace gameswf
 	{
 		shape_character* ch = new shape_character;
 		ch->read(in, tag_type, with_style, m);
+		IF_DEBUG(
+		{
+			rect	bounds;
+			ch->get_bounds(&bounds);
+			printf("bounds: ");
+			bounds.print(stdout);
+		});
 		return ch;
 	}
 
@@ -2050,6 +2084,25 @@ namespace gameswf
 	// Opaque wrapper for "delete shape".
 	{
 		delete ch;
+	}
+
+
+	void	display_shape_character_in_white(const shape_character* sh)
+	// For use by fontlib, for rendering character glyph outlines
+	// into a texture cache.
+	{
+		array<fill_style>	dummy_style;
+		dummy_style.push_back(fill_style());
+		dummy_style[0].m_color = rgba(0, 0, 0, 255);
+
+		display_info	di;
+		sh->display(di, dummy_style);
+	}
+
+	
+	void	get_shape_bounds(rect* result, const shape_character* sh)
+	{
+		sh->get_bounds(result);
 	}
 
 	
@@ -2092,6 +2145,8 @@ namespace gameswf
 //		IF_DEBUG(0);
 
 		m->add_font(font_id, f);
+
+		fontlib::add_font(f);
 	}
 
 
@@ -2320,10 +2375,23 @@ namespace gameswf
 				for (int j = 0; j < rec.m_glyphs.size(); j++)
 				{
 					int	index = rec.m_glyphs[j].m_glyph_index;
-					shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
+					const texture_glyph*	tg = rec.m_style.m_font->get_texture_glyph(index);
+					if (tg)
+					{
+						// Draw the glyph using the cached texture-map info.
+						gameswf::render::push_apply_matrix(sub_di.m_matrix);
+						gameswf::render::push_apply_cxform(sub_di.m_color_transform);
+						fontlib::draw_glyph(tg, rec.m_style.m_color);
+						gameswf::render::pop_cxform();
+						gameswf::render::pop_matrix();
+					}
+					else
+					{
+						shape_character*	glyph = rec.m_style.m_font->get_glyph(index);
 
-					// Draw the character.
-					if (glyph) glyph->display(sub_di, m_dummy_style);
+						// Draw the character using the filled outline.
+						if (glyph) glyph->display(sub_di, m_dummy_style);
+					}
 
 					float	dx = rec.m_glyphs[j].m_glyph_advance;
 					x += dx;
