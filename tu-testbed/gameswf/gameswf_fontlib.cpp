@@ -22,8 +22,17 @@ namespace fontlib
 	array<font*>	s_fonts;
 	array<render::bitmap_info*>	s_bitmaps_used;	// keep these so we can delete them during shutdown.
 
-	// The nominal size of the final antialiased glyphs stored in the texture.
-	static const int	GLYPH_FINAL_SIZE = 64;
+	// Size (in TWIPS) of the box that the glyph should
+	// stay within.
+	static float	s_rendering_box = 1536.0f;	// this *should* be 1024, but some glyphs in some fonts exceed it!
+
+	// The nominal size of the final antialiased glyphs stored in
+	// the texture.  This parameter controls how large the very
+	// largest glyphs will be in the texture; most glyphs will be
+	// considerably smaller.  This is also the parameter that
+	// controls the tradeoff between texture RAM usage and
+	// sharpness of large text.
+	static const int	GLYPH_FINAL_SIZE = 96;
 
 	static const int	OVERSAMPLE_BITS = 2;
 	static const int	OVERSAMPLE_FACTOR = (1 << OVERSAMPLE_BITS);
@@ -257,7 +266,7 @@ namespace fontlib
 		// Look at glyph bounds; adjust origin to make sure
 		// the shape will fit in our output.
 		float	offset_x = 0.f;
-		float	offset_y = 1024.f;
+		float	offset_y = s_rendering_box;
 		rect	glyph_bounds;
 		get_shape_bounds(&glyph_bounds, sh);
 		if (glyph_bounds.m_x_min < 0)
@@ -266,12 +275,12 @@ namespace fontlib
 		}
 		if (glyph_bounds.m_y_max > 0)
 		{
-			offset_y = 1024 - glyph_bounds.m_y_max;
+			offset_y = s_rendering_box - glyph_bounds.m_y_max;
 		}
 
 		matrix	mat;
 		mat.set_identity();
-		mat.concatenate_scale(GLYPH_RENDER_SIZE / 1024.0f);
+		mat.concatenate_scale(GLYPH_RENDER_SIZE / s_rendering_box);
 		mat.concatenate_translation(offset_x, offset_y);
 
 		// Draw the shape.
@@ -321,8 +330,8 @@ namespace fontlib
 
 		// Pack into an available texture.
 		return texture_pack(output, min_x, min_y, max_x, max_y,
-				    offset_x / 1024.0f * GLYPH_FINAL_SIZE,
-				    offset_y / 1024.0f * GLYPH_FINAL_SIZE);
+				    offset_x / s_rendering_box * GLYPH_FINAL_SIZE,
+				    offset_y / s_rendering_box * GLYPH_FINAL_SIZE);
 	}
 
 	static int compare_glyphs( const void * a, const void * b ) {
@@ -354,11 +363,20 @@ namespace fontlib
 					// get a rough estimation of glyph size
 					rect	glyph_bounds;
 					get_shape_bounds(&glyph_bounds, sh);
+
 					int w = (int) glyph_bounds.width();
 					int h = (int) glyph_bounds.height();
-					sorted_array[n].size = w>h ? w : h;
-					sorted_array[n].i = i;
-					n++;
+					if (glyph_bounds.width() < 0)
+					{
+						// Invalid width; this must be an empty glyph.
+						// Don't bother generating a texture for it.
+					}
+					else
+					{
+						sorted_array[n].size = w>h ? w : h;
+						sorted_array[n].i = i;
+						n++;
+					}
 				}
 			}
 		}
@@ -369,7 +387,10 @@ namespace fontlib
 		{
 			shape_character*	sh = f->get_glyph(sorted_array[i].i);
 			texture_glyph*	tg = make_texture_glyph(sh);
-			f->add_texture_glyph(sorted_array[i].i, tg);
+			if (tg)
+			{
+				f->add_texture_glyph(sorted_array[i].i, tg);
+			}
 		}
 		
 		delete [] sorted_array;
@@ -494,12 +515,12 @@ namespace fontlib
 		bounds.m_y_max -= tg->m_uv_origin.m_y;
 
 		// Scale from uv coords to the 1024x1024 glyph square.
-		float	scale = 256.0f * 1024.0f / GLYPH_FINAL_SIZE;
+		static float	s_scale = GLYPH_CACHE_TEXTURE_SIZE * s_rendering_box / GLYPH_FINAL_SIZE;
 
-		bounds.m_x_min *= scale;
-		bounds.m_x_max *= scale;
-		bounds.m_y_min *= scale;
-		bounds.m_y_max *= scale;
+		bounds.m_x_min *= s_scale;
+		bounds.m_x_max *= s_scale;
+		bounds.m_y_min *= s_scale;
+		bounds.m_y_max *= s_scale;
 		
 		render::draw_bitmap(tg->m_bitmap_info, bounds, tg->m_uv_bounds, color);
 	}
