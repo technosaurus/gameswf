@@ -386,6 +386,7 @@ namespace gameswf
 		play_state	m_play_state;
 		int	m_current_frame;
 		int	m_next_frame;
+		int	m_total_display_count;
 		float	m_time_remainder;
 		bool	m_update_frame;
 		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
@@ -402,6 +403,7 @@ namespace gameswf
 			m_play_state(PLAY),
 			m_current_frame(0),
 			m_next_frame(0),
+			m_total_display_count(0),
 			m_time_remainder(0.0f),
 			m_update_frame(true),
 			m_mouse_x(0),
@@ -755,12 +757,15 @@ namespace gameswf
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	di = m_display_list[i];
+				di.m_display_number = m_total_display_count;
 				di.m_character->display(di);
 
 //				printf("display %s\n", typeid(*(di.m_character)).name());
 			}
 
 			gameswf::render::end_display();
+
+			m_total_display_count++;
 		}
 
 

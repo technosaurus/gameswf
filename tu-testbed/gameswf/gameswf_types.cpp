@@ -199,6 +199,20 @@ namespace gameswf
 	}
 
 
+	float	matrix::get_max_scale() const
+	// Return the maximum scale factor that this transform
+	// applies.  For assessing scale, when determining acceptable
+	// errors in tesselation.
+	{
+		// @@ not 100% sure what the heck I'm doing here.  I
+		// think this is roughly what I want; take the max
+		// length of the two basis vectors.
+		float	basis0_length = sqrtf(m_[0][0] * m_[0][0] + m_[0][1] * m_[0][1]);
+		float	basis1_length = sqrtf(m_[1][0] * m_[1][0] + m_[1][1] * m_[1][1]);
+		return fmax(basis0_length, basis1_length);
+	}
+
+
 	//
 	// cxform
 	//

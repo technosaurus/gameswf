@@ -211,11 +211,13 @@ namespace gameswf
 		cxform	m_color_transform;
 		matrix	m_matrix;
 		float	m_ratio;
+		int	m_display_number;
 
 		display_info()
 			:
 			m_depth(0),
-			m_ratio(0.0f)
+			m_ratio(0.0f),
+			m_display_number(0)
 		{
 		}
 

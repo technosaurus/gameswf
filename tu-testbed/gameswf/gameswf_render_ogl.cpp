@@ -55,15 +55,6 @@ namespace render
 	static array<cxform>	s_cxform_stack;
 
 
-	// Specialized hacky software mode -- for rendering font glyph
-	// shapes into an 8-bit alpha texture, in order to have faster
-	// & better looking small text rendering.
-	static bool	s_software_mode_active = false;
-	static Uint8*	s_software_mode_buffer = NULL;
-	static int	s_software_mode_width = 0;
-	static int	s_software_mode_height = 0;
-
-
 	void	make_next_miplevel(int* width, int* height, Uint8* data)
 	// Utility.  Mutates *width, *height and *data to create the
 	// next mip level.
@@ -659,6 +650,36 @@ namespace render
 	}
 
 
+	void	draw_mesh(const float coords[], int vertex_count)
+	{
+		assert(s_left_style >= 0);
+		assert(s_left_style < s_current_styles.size());
+
+		// Set up current style.
+		matrix	ident;
+		ident.set_identity();
+		s_current_styles[s_left_style].apply(ident /*s_matrix_stack.back()*/);
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		s_matrix_stack.back().ogl_multiply();
+
+		// Send the tris to OpenGL
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
+		glDrawArrays(GL_TRIANGLES, 0, vertex_count);
+		glDisableClientState(GL_VERTEX_ARRAY);
+
+		glPopMatrix();
+
+		// Clear the current style(s).
+		s_current_styles.resize(0);
+		s_left_style = -1;
+		s_right_style = -1;
+		s_line_style = -1;
+	}
+
+
 	void	begin_shape()
 	{
 		// make sure our shape state is cleared out.
@@ -669,56 +690,6 @@ namespace render
 
 		gameswf::tesselate::begin_shape(s_tolerance / 20.0f);
 	}
-
-
-	static void	software_trapezoid(
-		float y0, float y1,
-		float xl0, float xl1,
-		float xr0, float xr1)
-	// Fill the specified trapezoid in the software output buffer.
-	{
-		int	iy0 = (int) ceilf(y0);
-		int	iy1 = (int) ceilf(y1);
-		float	dy = y1 - y0;
-
-		for (int y = iy0; y < iy1; y++)
-		{
-			if (y < 0) continue;
-			if (y >= s_software_mode_height) return;
-
-			float	f = (y - y0) / dy;
-			int	xl = (int) ceilf(flerp(xl0, xl1, f));
-			int	xr = (int) ceilf(flerp(xr0, xr1, f));
-			
-			xl = iclamp(xl, 0, s_software_mode_width - 1);
-			xr = iclamp(xr, 0, s_software_mode_width - 1);
-
-			if (xr > xl)
-			{
-				memset(s_software_mode_buffer + y * s_software_mode_width + xl,
-				       255,
-				       xr - xl);
-			}
-		}
-	}
-
-
-	struct software_accepter : public gameswf::tesselate::trapezoid_accepter
-	{
-		void	accept_trapezoid(int style, const gameswf::tesselate::trapezoid& tr)
-		// Render trapezoids into the software buffer, as they're
-		// emitted from the tesselator.
-		{
-			software_trapezoid(tr.m_y0, tr.m_y1, tr.m_lx0, tr.m_lx1, tr.m_rx0, tr.m_rx1);
-		}
-
-		void	accept_line_segment(int style, float x0, float y0, float x1, float y1)
-		// The software renderer doesn't care about lines;
-		// it's only used for rendering font glyphs which
-		// don't use lines.
-		{
-		}
-	};
 
 
 	// Render OpenGL trapezoids, as they're emitted from the
@@ -763,16 +734,8 @@ namespace render
 	void	end_shape()
 	{
 		// Render the shape stored in the tesselator.
-		if (s_software_mode_active)
-		{
-			software_accepter	s;
-			gameswf::tesselate::end_shape(&s);
-		}
-		else
-		{
-			opengl_accepter	o;
-			gameswf::tesselate::end_shape(&o);
-		}
+		opengl_accepter	o;
+		gameswf::tesselate::end_shape(&o);
 	}
 
 
@@ -861,65 +824,6 @@ namespace render
 		glEnd();
 	}
 
-
-	//
-	// special hacky software-mode interface
-	//
-
-
-	void	software_mode_enable(int width, int height)
-	// Enable special software-rendering mode.  8-bit RAM render
-	// target of given dimensions.
-	{
-		assert(s_software_mode_active == false);
-		assert(s_software_mode_buffer == NULL);
-
-		s_software_mode_active = true;
-		s_software_mode_buffer = new Uint8[width * height];
-		s_software_mode_width = width;
-		s_software_mode_height = height;
-
-		// Set up transform stacks.
-
-		// Prime the matrix stack with an identity transform.
-		assert(s_matrix_stack.size() == 0);
-		matrix	identity;
-		identity.set_identity();
-		s_matrix_stack.push_back(identity);
-
-		// Prime the cxform stack with an identity cxform.
-		assert(s_cxform_stack.size() == 0);
-		cxform	cx_identity;
-		s_cxform_stack.push_back(cx_identity);
-	}
-
-
-	void	software_mode_disable()
-	// Turn off software-rendering mode.
-	{
-		assert(s_software_mode_active);
-		assert(s_software_mode_buffer);
-
-		s_software_mode_active = false;
-		delete [] s_software_mode_buffer;
-		s_software_mode_buffer = NULL;
-
-		// Clean up stacks.
-
-		assert(s_matrix_stack.size() == 1);
-		s_matrix_stack.resize(0);
-
-		assert(s_cxform_stack.size() == 1);
-		s_cxform_stack.resize(0);
-	}
-
-
-	Uint8*	get_software_mode_buffer()
-	// Return the buffer we've been using for software rendering.
-	{
-		return s_software_mode_buffer;
-	}
-
 }	// end namespace render
 };	// end namespace gameswf
 
@@ -946,6 +850,11 @@ namespace gameswf
 			render::s_pixel_scale = scale;
 			render::s_tolerance = 20.0f / render::s_pixel_scale;
 		}
+	}
+
+	float	get_pixel_scale()
+	{
+		return render::s_pixel_scale;
 	}
 
 }	// end namespace gameswf

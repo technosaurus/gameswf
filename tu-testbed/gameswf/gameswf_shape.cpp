@@ -58,7 +58,7 @@ namespace gameswf
 		:
 		m_new_shape(false)
 	{
-		reset(0, 0, -1, -1, -1);
+		reset(0, 0, 0, 0, 0);
 	}
 
 	path::path(float ax, float ay, int fill0, int fill1, int line)
@@ -71,8 +71,8 @@ namespace gameswf
 	// Reset all our members to the given values, and clear our edge list.
 	{
 		m_ax = ax;
-		m_ay = ay,
-			m_fill0 = fill0;
+		m_ay = ay;
+		m_fill0 = fill0;
 		m_fill1 = fill1;
 		m_line = line;
 
@@ -137,7 +137,7 @@ namespace gameswf
 	{
 		assert(0);	// this routine isn't finished
 
-		if (m_fill0 == -1 && m_fill1 == -1)
+		if (m_fill0 == 0 && m_fill1 == 0)
 		{
 			// Not a filled shape.
 			return false;
@@ -165,7 +165,11 @@ namespace gameswf
 	void	path::tesselate() const
 	// Push this path into the tesselator.
 	{
-		tesselate::begin_path(m_fill0, m_fill1, m_line, m_ax, m_ay);
+		tesselate::begin_path(
+			m_fill0 - 1,
+			m_fill1 - 1,
+			m_line - 1,
+			m_ax, m_ay);
 		for (int i = 0; i < m_edges.size(); i++)
 		{
 			m_edges[i].tesselate_curve();
@@ -192,10 +196,14 @@ namespace gameswf
 	}
 
 
-	void	mesh::display(const display_info& di, const fill_style& style) const
+	void	mesh::display(const fill_style& style) const
 	{
-		// pass to renderer.
-		// renderer::draw_mesh(di.something, style, &m_triangle_list[0].m_x, m_triangle_list.size() / 3);
+		// pass mesh to renderer.
+		if (m_triangle_list.size() > 0)
+		{
+			style.apply(0);
+			render::draw_mesh(&m_triangle_list[0].m_x, m_triangle_list.size());
+		}
 	}
 
 
@@ -212,8 +220,8 @@ namespace gameswf
 	}
 
 
-	mesh_set::mesh_set(const array<path>& paths, float error_tolerance)
-	// Tesselate the paths into a different mesh for each fill style.
+	mesh_set::mesh_set(const shape_character* sh, float error_tolerance)
+	// Tesselate the shape's paths into a different mesh for each fill style.
 		:
 		m_last_frame_rendered(0),
 		m_error_tolerance(error_tolerance)
@@ -247,15 +255,7 @@ namespace gameswf
 		};
 		collect_traps	accepter(this);
 
-		// Push the shape through the tesselator.
-		tesselate::begin_shape(error_tolerance);
-		{
-			{for (int i = 0; i < paths.size(); i++)
-			{
-				paths[i].tesselate();
-			}}
-		}
-		tesselate::end_shape(&accepter);
+		sh->tesselate(error_tolerance, &accepter);
 
 		// triangles should be collected now into the meshes for each fill style.
 	}
@@ -265,24 +265,23 @@ namespace gameswf
 	void	mesh_set::set_last_frame_rendered(int frame_counter) { m_last_frame_rendered = frame_counter; }
 
 
-	bool	mesh_set::can_render_within_tolerance(
-		const display_info& di,
-		float error_tolerance) const
-	{
-		assert(m_error_tolerance > 0);
-
-		// ...  di.something * error_tolerance > m_error_tolerance ?
-
-		return true;
-	}
-
-
 	void	mesh_set::display(const display_info& di, const array<fill_style>& fills) const
 	// Throw our meshes at the renderer.
 	{
 		assert(m_error_tolerance > 0);
 
-		// ...
+		// Setup transforms.
+		render::push_apply_matrix(di.m_matrix);
+		render::push_apply_cxform(di.m_color_transform);
+
+		// Dump meshes into renderer, one mesh per style.
+		for (int i = 0; i < m_meshes.size(); i++)
+		{
+			m_meshes[i].display(fills[i]);
+		}
+
+		render::pop_cxform();
+		render::pop_matrix();
 	}
 
 
@@ -594,7 +593,7 @@ namespace gameswf
 
 
 	void	shape_character::display(const display_info& di)
-	// Draw the shape using the given environment.
+	// Draw the shape using our own inherent styles.
 	{
 		display(di, m_fill_styles);
 	}
@@ -605,24 +604,36 @@ namespace gameswf
 	// override our default set of fill styles (e.g. when
 	// rendering text).
 	{
-		// @@
-		// error_tolerance = some function of di.m_matrix max scale and global error tolerance
-		//
-		// bool rendered = false;
-		// for (m_cached_meshes)
-		//   if (m_cached_meshes[i].can_render_within_tolerance(error_tolerance))
-		//     m_cached_meshes[i].display(di, fill_styles);
-		//     m_cached_meshes[i].set_last_frame_rendered(di.m_frame_counter);
-		//     rendered = true;
-		// 
-		// if (rendered == false)
-		//   // construct a new mesh for this error tolerance
-		//   mesh_set	m(m_paths, error_tolerance);
-		//   m_cached_meshes.push_back(m);
-		//   m.display(di, fill_styles);
-		//
-		// // clean out mesh_sets that haven't been used recently
+		// Compute the error tolerance in object-space.
+		float	object_space_max_error = 20.0f / di.m_matrix.get_max_scale() / get_pixel_scale();
 
+		// See if we have an acceptable mesh available; if so then render with it.
+		bool rendered = false;
+		for (int i = 0; i < m_cached_meshes.size(); i++)
+		{
+			if (m_cached_meshes[i].get_error_tolerance() < object_space_max_error)
+			{
+				// Do it.
+				m_cached_meshes[i].display(di, fill_styles);
+				m_cached_meshes[i].set_last_frame_rendered(di.m_display_number);
+				rendered = true;
+				break;
+			}
+		}
+
+		if (rendered == false)
+		{
+			// Construct a new mesh to handle this error tolerance.
+			mesh_set	m(this, object_space_max_error * 0.5f);
+			m_cached_meshes.push_back(m);
+			m.display(di, fill_styles);
+			m.set_last_frame_rendered(di.m_display_number);
+		}
+
+		// TODO clean out mesh_sets that haven't been used recently...
+		// (need to keep them sorted from high error to low error)
+
+#if 0
 
 		gameswf::render::push_apply_matrix(di.m_matrix);
 		gameswf::render::push_apply_cxform(di.m_color_transform);
@@ -659,9 +670,31 @@ namespace gameswf
 
 		gameswf::render::pop_cxform();
 		gameswf::render::pop_matrix();
+#endif // 0
 	}
 
 		
+	void	shape_character::tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const
+	// Push our shape data through the tesselator.
+	{
+		tesselate::begin_shape(error_tolerance);
+		for (int i = 0; i < m_paths.size(); i++)
+		{
+			if (m_paths[i].m_new_shape == true)
+			{
+				// Hm; should handle separate sub-shapes in a less lame way.
+				tesselate::end_shape(accepter);
+				tesselate::begin_shape(error_tolerance);
+			}
+			else
+			{
+				m_paths[i].tesselate();
+			}
+		}
+		tesselate::end_shape(accepter);
+	}
+
+
 	bool	shape_character::point_test(float x, float y)
 	// Return true if the specified point is on the interior of our shape.
 	{

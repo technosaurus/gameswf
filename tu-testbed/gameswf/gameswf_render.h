@@ -45,6 +45,14 @@ namespace gameswf
 		void	push_apply_cxform(const cxform& cx);
 		void	pop_cxform();
 
+		// Draw triangles using the current fill-style 0.
+		// Clears the style list after rendering.
+		//
+		// coords is a list of (x,y) coordinate pairs, in
+		// triangle-list order.  The type of the array should
+		// be float[vertex_count*2]
+		void	draw_mesh(const float coords[], int vertex_count);
+
 		// A shape has one or more paths.  The paths in a
 		// shape are rasterized together using a typical
 		// polygon odd-even rule.
@@ -81,12 +89,6 @@ namespace gameswf
 		// intended for textured glyph rendering.  Applies
 		// current transforms to points and color.
 		void	draw_bitmap(const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color);
-
-		// Some hacky stuff for use by the fontlib texture-cacher.
-		// Basically redirects rendering output to a RAM byte array.
-		void	software_mode_enable(int width, int height);
-		void	software_mode_disable();
-		Uint8*	get_software_mode_buffer();
 
 	};	// end namespace render
 };	// end namespace gameswf
