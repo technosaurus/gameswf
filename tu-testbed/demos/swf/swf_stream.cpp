@@ -159,7 +159,8 @@ namespace swf
 		else
 		{
 			char*	buffer = new char[len + 1];
-			for (int i = 0; i < len; i++)
+			int	i;
+			for (i = 0; i < len; i++)
 			{
 				buffer[i] = read_u8();
 			}

@@ -759,31 +759,7 @@ namespace swf
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	di = m_display_list[i];
-//				display_object_info&	di = m_display_list[m_display_list.size() - 1 - i];	// front-to-back instead of back-to-front
-
-#if 0
-				// xxxx DEBUG HACK
-				extern int	hilite_depth;
-				if (di.m_depth == hilite_depth)
-				{
-					// Don't draw any more layers.
-					break;
-
-					// Draw this layer in red.
-					cxform	saved = di.m_color_transform;
-					di.m_color_transform.m_[0][0] = 0;
-					di.m_color_transform.m_[1][0] = 0;
-					di.m_color_transform.m_[2][0] = 0;
-					di.m_color_transform.m_[0][1] = 1;
-					di.m_character->display(di);
-					di.m_color_transform = saved;
-				}
-				else
-				// xxxx DEBUG HACK
-#endif // 0
-				{
-					di.m_character->display(di);
-				}
+				di.m_character->display(di);
 
 //				printf("display %s\n", typeid(*(di.m_character)).name());
 			}
@@ -2437,21 +2413,9 @@ namespace swf
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	dobj = m_display_list[i];
-//				display_object_info&	dobj = m_display_list[m_display_list.size() - 1 - i];	// front-to-back instead of back-to-front
 
 				display_info	sub_di = di;
 				sub_di.concatenate(dobj);
-#if 1
-				// xxxx DEBUG HACK
-				extern int	hilite_depth;
-				if (di.m_depth == hilite_depth)
-				{
-					// Don't draw any more layers.
-					break;
-				}
-				else
-				// xxxx DEBUG HACK
-#endif // 1
 				dobj.m_character->display(sub_di);
 			}
 		}
