@@ -17,6 +17,7 @@
 #include "gameswf_font.h"
 #include "gameswf_render.h"
 #include "gameswf_stream.h"
+#include "gameswf_styles.h"
 #include "engine/image.h"
 #include "engine/jpeg.h"
 #include <string.h>	// for memset
@@ -43,245 +44,6 @@ namespace gameswf
 			m_color_transform.concatenate(di.m_color_transform);
 			m_matrix.concatenate(di.m_matrix);
 			m_ratio = di.m_ratio;
-		}
-	};
-
-
-	struct gradient_record
-	{
-		Uint8	m_ratio;
-		rgba	m_color;
-
-		gradient_record() : m_ratio(0) {}
-
-		void	read(stream* in, int tag_type)
-		{
-			m_ratio = in->read_u8();
-			m_color.read(in, tag_type);
-		}
-	};
-
-	struct fill_style
-	{
-		int	m_type;
-		rgba	m_color;
-		matrix	m_gradient_matrix;
-		array<gradient_record>	m_gradients;
-		gameswf::render::bitmap_info*	m_gradient_bitmap_info;
-		bitmap_character*	m_bitmap_character;
-		matrix	m_bitmap_matrix;
-
-		fill_style()
-			:
-			m_type(0),
-			m_gradient_bitmap_info(0),
-			m_bitmap_character(0)
-		{
-			assert(m_gradients.size() == 0);
-		}
-
-		void	read(stream* in, int tag_type, movie* m)
-		{
-			m_type = in->read_u8();
-
-			IF_DEBUG(printf("fsr type = 0x%X\n", m_type));
-
-			if (m_type == 0x00)
-			{
-				// 0x00: solid fill
-				if (tag_type <= 22) {
-					m_color.read_rgb(in);
-				} else {
-					m_color.read_rgba(in);
-				}
-
-				IF_DEBUG(printf("fsr color: ");
-					 m_color.print(stdout));
-			}
-			else if (m_type == 0x10 || m_type == 0x12)
-			{
-				// 0x10: linear gradient fill
-				// 0x12: radial gradient fill
-
-				matrix	input_matrix;
-				input_matrix.read(in);
-
-				m_gradient_matrix.set_identity();
-				m_gradient_matrix.concatenate_translation(128.f, 0.f);
-				m_gradient_matrix.concatenate_scale(1.0f / 128.0f);
-
-				matrix	m;
-				m.set_inverse(input_matrix);
-				m_gradient_matrix.concatenate(m);
-				
-				// GRADIENT
-				int	num_gradients = in->read_u8();
-				assert(num_gradients >= 1 && num_gradients <= 8);
-				m_gradients.resize(num_gradients);
-				for (int i = 0; i < num_gradients; i++)
-				{
-					m_gradients[i].read(in, tag_type);
-				}
-
-				IF_DEBUG(printf("fsr: num_gradients = %d\n", num_gradients));
-
-				// @@ hack.
-				if (num_gradients > 0)
-				{
-					m_color = m_gradients[0].m_color;
-				}
-			}
-			else if (m_type == 0x40 || m_type == 0x41)
-			{
-				// 0x40: tiled bitmap fill
-				// 0x41: clipped bitmap fill
-
-				int	bitmap_char_id = in->read_u16();
-				IF_DEBUG(printf("fsr: bitmap_char = %d\n", bitmap_char_id));
-
-				// Look up the bitmap character.
-				m_bitmap_character = m->get_bitmap_character(bitmap_char_id);
-
-				matrix	m;
-				m.read(in);
-
-				// For some reason, it looks like they store the inverse of the
-				// TWIPS-to-texcoords matrix.
-				m_bitmap_matrix.set_inverse(m);
-				IF_DEBUG(m_bitmap_matrix.print(stdout));
-			}
-		}
-
-
-		rgba	sample_gradient(int ratio) const
-		// Return the color at the specified ratio into our gradient.
-		// Ratio is in [0, 255].
-		{
-			assert(ratio >= 0 && ratio <= 255);
-			assert(m_type == 0x10 || m_type == 0x12);
-			assert(m_gradients.size() > 0);
-
-			for (int i = 0; i < m_gradients.size(); i++)
-			{
-				if (m_gradients[i].m_ratio >= ratio)
-				{
-					if (i == 0)
-					{
-						return m_gradients[i].m_color;
-					}
-					float	f = (ratio - m_gradients[i - 1].m_ratio) / float(m_gradients[i].m_ratio - m_gradients[i - 1].m_ratio);
-
-					rgba	result;
-					result.set_lerp(m_gradients[i - 1].m_color, m_gradients[i].m_color, f);
-					return result;
-				}
-			}
-			return m_gradients.back().m_color;
-		}
-
-		gameswf::render::bitmap_info*	create_gradient_bitmap() const
-		// Make a bitmap_info* corresponding to our gradient.
-		// We can use this to set the gradient fill style.
-		{
-			assert(m_type == 0x10);	// linear only, for the moment.  TODO radial fill.
-
-			if (m_type == 0x10)
-			{
-				image::rgba*	im = image::create_rgba(256, 1);
-
-				for (int i = 0; i < im->m_width; i++)
-				{
-					rgba	sample = sample_gradient(i);
-					im->set_pixel(i, 0, sample.m_r, sample.m_g, sample.m_b, sample.m_a);
-				}
-
-				gameswf::render::bitmap_info*	bi = gameswf::render::create_bitmap_info(im);
-				delete im;
-
-				return bi;
-			}
-
-			return NULL;
-		}
-
-
-		void	apply(int fill_side) const
-		// Push our style parameters into the renderer.
-		{
-			if (m_type == 0x00)
-			{
-				// 0x00: solid fill
-				gameswf::render::fill_style_color(fill_side, m_color);
-			}
-			else if (m_type == 0x10 || m_type == 0x12)
-			{
-				// 0x10: linear gradient fill
-				// 0x12: radial gradient fill
-
-				if (m_type == 0x10 && m_gradient_bitmap_info == NULL)
-				{
-					(const_cast<fill_style*>(this))->m_gradient_bitmap_info = create_gradient_bitmap();
-				}
-
-				if (m_gradient_bitmap_info)
-				{
-					gameswf::render::fill_style_bitmap(
-						fill_side,
-						m_gradient_bitmap_info,
-						m_gradient_matrix,
-						gameswf::render::WRAP_CLAMP);
-				}
-				else
-				{
-					// Hack.
-					gameswf::render::fill_style_color(
-						fill_side,
-						m_color);
-				}
-			}
-			else if (m_type == 0x40
-				 || m_type == 0x41)
-			{
-				// bitmap fill (either tiled or clipped)
-				gameswf::render::bitmap_info*	bi = NULL;
-				if (m_bitmap_character != NULL)
-				{
-					bi = m_bitmap_character->get_bitmap_info();
-					if (bi != NULL)
-					{
-						gameswf::render::bitmap_wrap_mode	wmode = gameswf::render::WRAP_REPEAT;
-						if (m_type == 0x41)
-						{
-							wmode = gameswf::render::WRAP_CLAMP;
-						}
-						gameswf::render::fill_style_bitmap(
-							fill_side,
-							bi,
-							m_bitmap_matrix,
-							wmode);
-					}
-				}
-			}
-		}
-	};
-
-
-	struct line_style
-	{
-		Uint16	m_width;	// in TWIPS
-		rgba	m_color;
-
-		line_style() : m_width(0) {}
-
-		void	read(stream* in, int tag_type)
-		{
-			m_width = in->read_u16();
-			m_color.read(in, tag_type);
-		}
-
-		void	apply() const
-		{
-			gameswf::render::line_style_color(m_color);
 		}
 	};
 
@@ -2094,7 +1856,7 @@ namespace gameswf
 	{
 		array<fill_style>	dummy_style;
 		dummy_style.push_back(fill_style());
-		dummy_style[0].m_color = rgba(0, 0, 0, 255);
+		dummy_style[0].set_color(rgba(0, 0, 0, 255));
 
 		display_info	di;
 		sh->display(di, dummy_style);
@@ -2366,7 +2128,7 @@ namespace gameswf
 					y = rec.m_style.m_y_offset;
 				}
 
-				m_dummy_style[0].m_color = rec.m_style.m_color;
+				m_dummy_style[0].set_color(rec.m_style.m_color);
 
 				for (int j = 0; j < rec.m_glyphs.size(); j++)
 				{
