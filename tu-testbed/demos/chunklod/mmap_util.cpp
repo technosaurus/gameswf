@@ -188,7 +188,7 @@ namespace mmap_util {
 			if (lseek(fildes,size,SEEK_SET) == -1) {
 				goto UNWIND;
 			}
-			write(fildes,'\0',1) == -1;
+			write(fildes,'\0',1)/* == -1 */;
 		}
 		// else if size == 0 then size = filesize(filename);
 		else {

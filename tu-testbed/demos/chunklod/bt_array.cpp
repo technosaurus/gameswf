@@ -64,8 +64,6 @@ bt_array::~bt_array()
 		return NULL;
 	}
 	
-	int	start = SDL_RWtell(in);
-
 	//
 	// Read .BT header.
 	//

@@ -1350,15 +1350,15 @@ namespace mesh {
 		}
 
 
-		vert_info() : x(-1), z(-1), special(false), y(0) {}
-		vert_info(int vx, int vz) : x(vx), z(vz), special(false), y(0) {}
+		vert_info() : x(-1), z(-1), y(0), special(false) {}
+		vert_info(int vx, int vz) : x(vx), z(vz), y(0), special(false) {}
 
 		// A "special" vert is not on the heightfield, but has its own Y value.
 		vert_info(int vx, int vy, int vz)
 			: x(vx),
 			  z(vz),
-			  special(true),
-			  y(vy)
+			  y(vy),
+			  special(true)
 		{}
 
 		bool	operator==(const vert_info& v) { return x == v.x && z == v.z; }
