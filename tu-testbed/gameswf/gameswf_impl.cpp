@@ -2940,7 +2940,6 @@ namespace gameswf
 
 		play_state	m_play_state;
 		int	m_current_frame;
-		int	m_next_frame;
 		float	m_time_remainder;
 		bool	m_update_frame;
 		bool	m_has_looped;
@@ -2963,7 +2962,6 @@ namespace gameswf
 			m_root(r),
 			m_play_state(PLAY),
 			m_current_frame(0),
-			m_next_frame(0),
 			m_time_remainder(0),
 			m_update_frame(true),
 			m_has_looped(false),
@@ -3054,17 +3052,6 @@ namespace gameswf
 			}
 
 			m_play_state = s;
-
-			// @@ tulrich: not sure about this.
-			if (s == STOP)
-			{
-
-				m_next_frame = m_current_frame + 1;
-				if (m_next_frame >= m_def->get_frame_count())
-				{
- 					m_next_frame = 0;
-				}
-			}
 		}
 		play_state	get_play_state() const { return m_play_state; }
 
@@ -3099,13 +3086,15 @@ namespace gameswf
 		void	restart()
 		{
 			m_current_frame = 0;
-			m_next_frame = 0;
 			m_time_remainder = 0;
 			m_update_frame = true;
 			m_has_looped = false;
-
 			m_play_state = PLAY;
+
+			execute_frame_tags(m_current_frame);
+			m_display_list.update();
 		}
+
 
 		virtual bool	has_looped() const { return m_has_looped; }
 
@@ -3145,6 +3134,26 @@ namespace gameswf
 
 
 		/* sprite_instance */
+		void	increment_frame_and_check_for_loop()
+		// Increment m_current_frame, and take care of looping.
+		{
+			m_current_frame++;
+
+			int	frame_count = m_def->get_frame_count();
+			if (m_current_frame >= frame_count)
+			{
+				// Loop.
+				m_current_frame = 0;
+				m_has_looped = true;
+				if (frame_count > 1)
+				{
+					m_display_list.reset();
+				}
+			}
+		}
+
+
+		/* sprite_instance */
 		virtual void	advance(float delta_time)
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
@@ -3158,17 +3167,6 @@ namespace gameswf
 			// mouse drag.
 			character::do_mouse_drag();
 
-			if (m_play_state == STOP)
-			{
-				// Do button actions, if any.
-				do_actions();
-				return;
-			}
-
-			//
-			// m_play_state == PLAY
-			//
-
 			m_time_remainder += delta_time;
 
 			const float	frame_time = 1.0f / m_root->get_frame_rate();	// @@ cache this
@@ -3181,17 +3179,16 @@ namespace gameswf
 				m_time_remainder -= frame_time;
 
 				// Update current and next frames.
-				m_current_frame = m_next_frame;
-				m_next_frame = m_current_frame + 1;
-
-				// Execute the current frame's tags.
-
-				// frame 1 tags don't seem to
-				// be re-executed in one-frame
-				// movies...
-				if (single_frame_movie == false)
+				if (m_play_state == PLAY)
 				{
-					execute_frame_tags(m_current_frame);
+					int	current_frame0 = m_current_frame;
+					increment_frame_and_check_for_loop();
+
+					// Execute the current frame's tags.
+					if (m_current_frame != current_frame0)
+					{
+						execute_frame_tags(m_current_frame);
+					}
 				}
 
 				// Dispatch onEnterFrame event.
@@ -3201,18 +3198,6 @@ namespace gameswf
 
 				// Clean up display list (remove dead objects).
 				m_display_list.update();
-
-				// Watch for the end of the movie.
-				if (m_next_frame >= m_def->get_frame_count())
-				{
-					// Loop.
-  					m_next_frame = 0;
-					m_has_looped = true;
-					if (single_frame_movie == false)
-					{
-						m_display_list.reset();
-					}
-				}
 			}
 
 			// Skip excess time.  TODO root caller should
@@ -3337,43 +3322,28 @@ namespace gameswf
 
 			target_frame_number = iclamp(target_frame_number, 0, m_def->get_frame_count() - 1);
 
-			/* does STOP need a special case?
-			if (m_play_state == STOP)
-			{
-				target_frame_number++;	// if stopped, update_frame won't increase it
-				m_current_frame = target_frame_number;
-			}*/
-
 			if (target_frame_number < m_current_frame)
 			{
 				for (int f = m_current_frame; f > target_frame_number; f--)
 				{
 					execute_frame_tags_reverse(f);
-					m_display_list.update();//xxx can we just get rid of dlist m_ref stuff completely?
 				}
+
 				execute_frame_tags(target_frame_number, false);
 				m_display_list.update();
-
 			}
 			else if (target_frame_number > m_current_frame)
 			{
-				for (int f = m_current_frame; f < target_frame_number; f++)
+				for (int f = m_current_frame + 1; f < target_frame_number; f++)
 				{
 					execute_frame_tags(f, true);
 				}
+
 				execute_frame_tags(target_frame_number, false);
 				m_display_list.update();
 			}
 
-
-			// Set current and next frames.
-
-			//v in advance current=next; next++;
-			// test file "goto_play.swf"
-
 			m_current_frame = target_frame_number;      
-			m_next_frame = target_frame_number;
-//			m_next_frame = iclamp(target_frame_number + 1, 0, m_def->get_frame_count() - 1);
 
 			// goto_frame stops by default.
 			m_play_state = STOP;

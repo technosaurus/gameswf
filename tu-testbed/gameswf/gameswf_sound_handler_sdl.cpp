@@ -61,15 +61,16 @@ struct SDL_sound_handler : gameswf::sound_handler
 			case AUDIO_S16MSB: format_str = "S16MSB"; break;
 			}
 	    
-			IF_VERBOSE_DEBUG(
-				gameswf::log_msg("SDL_mixer: opened %d times, frequency=%dHz, format=%s, stereo=%s\n",
-					     num_times_opened,
-					     m_sample_rate,
-					     format_str,
-					     m_stereo ? "yes" : "no"));
-			char name[32];
-			IF_VERBOSE_DEBUG(
-				gameswf::log_msg("Using audio driver: %s\n", SDL_AudioDriverName(name, 32)));
+			// @@ Usually I don't care about this.  Need a IF_VERBOSE_SOUND or something.
+			// IF_VERBOSE_DEBUG(
+			// 	gameswf::log_msg("SDL_mixer: opened %d times, frequency=%dHz, format=%s, stereo=%s\n",
+			// 		     num_times_opened,
+			// 		     m_sample_rate,
+			// 		     format_str,
+			// 		     m_stereo ? "yes" : "no"));
+			// char name[32];
+			// IF_VERBOSE_DEBUG(
+			// 	gameswf::log_msg("Using audio driver: %s\n", SDL_AudioDriverName(name, 32)));
 		}
 	}
 
@@ -140,13 +141,13 @@ struct SDL_sound_handler : gameswf::sound_handler
 				convert_mp3_data(&adjusted_data, &adjusted_size, data, sample_count, 0, sample_rate, stereo);
 			}
 #else
-			IF_VERBOSE_DEBUG(gameswf::log_msg("mp3 format sound requested; this demo does not handle mp3\n"));
+			IF_VERBOSE_DEBUG(gameswf::log_error("mp3 format sound requested; this demo does not handle mp3\n"));
 #endif
 			break;
 
 		default:
 			// Unhandled format.
-			IF_VERBOSE_DEBUG(gameswf::log_msg("unknown format sound requested; this demo does not handle it\n"));
+			IF_VERBOSE_DEBUG(gameswf::log_error("unknown format sound requested; this demo does not handle it\n"));
 			break;
 		}
 

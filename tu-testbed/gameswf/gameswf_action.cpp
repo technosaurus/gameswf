@@ -3089,7 +3089,14 @@ namespace gameswf
 	{
 		if (val.get_type() == as_value::OBJECT)
 		{
-			return val.to_object()->to_movie();
+			if (val.to_object() != NULL)
+			{
+				return val.to_object()->to_movie();
+			}
+			else
+			{
+				return NULL;
+			}
 		}
 		else if (val.get_type() == as_value::STRING)
 		{
