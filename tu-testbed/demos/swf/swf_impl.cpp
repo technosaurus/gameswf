@@ -9,8 +9,6 @@
 // Useful links:
 //
 // http://www.openswf.org
-//
-// http://www-lehre.informatik.uni-osnabrueck.de/~fbstark/diplom/docs/swf/Shapes.htm
 
 
 #include "engine/ogl.h"
