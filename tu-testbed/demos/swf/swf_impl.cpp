@@ -177,7 +177,12 @@ namespace swf
 				// Look up the bitmap character.
 				m_bitmap_character = m->get_bitmap_character(bitmap_char_id);
 
-				m_bitmap_matrix.read(in);
+				matrix	m;
+				m.read(in);
+
+				// For some reason, it looks like they store the inverse of the
+				// TWIPS-to-texcoords matrix.
+				m_bitmap_matrix.set_inverse(m);
 				IF_DEBUG(m_bitmap_matrix.print(stdout));
 			}
 		}

@@ -128,6 +128,35 @@ namespace swf
 	}
 
 
+	void	matrix::set_inverse(const matrix& m)
+	// Set this matrix to the inverse of the given matrix.
+	{
+		// Invert the rotation part.
+		float	det = m.m_[0][0] * m.m_[1][1] - m.m_[0][1] * m.m_[1][0];
+		if (det == 0.0f)
+		{
+			// Not invertible.
+			assert(0);
+
+			// Arbitrary fallback.
+			set_identity();
+			m_[0][2] = -m.m_[0][2];
+			m_[1][2] = -m.m_[1][2];
+		}
+		else
+		{
+			float	inv_det = 1.0f / det;
+			m_[0][0] = m.m_[1][1] * inv_det;
+			m_[1][1] = m.m_[0][0] * inv_det;
+			m_[0][1] = -m.m_[0][1] * inv_det;
+			m_[1][0] = -m.m_[1][0] * inv_det;
+
+			m_[0][2] = -(m_[0][0] * m.m_[0][2] + m_[0][1] * m.m_[1][2]);
+			m_[1][2] = -(m_[1][0] * m.m_[0][2] + m_[1][1] * m.m_[1][2]);
+		}
+	}
+
+
 	//
 	// cxform
 	//
