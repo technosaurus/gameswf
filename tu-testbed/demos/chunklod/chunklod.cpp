@@ -273,6 +273,13 @@ int	lod_chunk_data::render(const lod_chunk_tree& c, const lod_chunk& chunk, cons
 			float	x0 = box_center.get_x() - box_extent.get_x() - (xsize / 256.0f) * 0.5f;
 			float	z0 = box_center.get_z() - box_extent.get_z() - (xsize / 256.0f) * 0.5f;
 
+//			//xxxxx
+//			xsize = box_extent.get_x() * 2 - 10.0f;
+//			zsize = box_extent.get_z() * 2 - 10.0f;
+//			x0 = box_center.get_x() - box_extent.get_x() + 5.0f;
+//			z0 = box_center.get_z() - box_extent.get_z() + 5.0f;
+//			//xxxxx
+
 			// Set up texgen for this tile.
 			glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 			float	p[4] = { 0, 0, 0, 0 };

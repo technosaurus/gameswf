@@ -44,7 +44,7 @@ static plane_info	frustum_plane[6];
 static view_state	view;
 
 
-int	speed = 5;
+int	speed = 9;
 //bool	pin_to_ground = false;
 bool	move_forward = false;
 bool	wireframe_mode = false;
