@@ -20,39 +20,21 @@
 #include <stdlib.h>
 
 
-// On any multitexture card, we should be able to modulate in an edge
-// texture for nice edge antialiasing.
-#define USE_MULTITEXTURE_ANTIALIASING	1
-
-
 namespace gameswf
 {
 namespace render
 {
 	// Some renderer state.
 
-	// Hint that tells us how the physical output is zoomed.  This
-	// is important for getting the antialiasing and curve
-	// subdivision right.
-	static float	s_pixel_scale = 1.0f;
-
 	// Enable/disable antialiasing.
 	static bool	s_enable_antialias = true;
-
-	// Curve subdivision error tolerance (in TWIPs)
-	static float	s_tolerance = 20.0f / s_pixel_scale;
-
-	// Controls whether we do antialiasing by modulating in a special edge texture.
-	static bool	s_multitexture_antialias = false;
-	static unsigned int	s_edge_texture_id = 0;
 
 	// Output size.
 	static float	s_display_width;
 	static float	s_display_height;
 
-	// Transform stacks.
-	static array<matrix>	s_matrix_stack;
-	static array<cxform>	s_cxform_stack;
+	static matrix	s_current_matrix;
+	static cxform	s_current_cxform;
 
 
 	void	make_next_miplevel(int* width, int* height, Uint8* data)
@@ -270,7 +252,7 @@ namespace render
 		{
 		}
 
-		void	apply(const matrix& current_matrix) const
+		void	apply(/*const matrix& current_matrix*/) const
 		// Push our style into OpenGL.
 		{
 			assert(m_mode != INVALID);
@@ -333,11 +315,11 @@ namespace render
 					float	inv_width = 1.0f / m_bitmap_info->m_original_width;
 					float	inv_height = 1.0f / m_bitmap_info->m_original_height;
 
-					matrix	screen_to_obj;
-					screen_to_obj.set_inverse(current_matrix);	// @@ should cache the inverse
+//					matrix	screen_to_obj;
+//					screen_to_obj.set_inverse(current_matrix);	// @@ should cache the inverse
 
-					matrix	m = m_bitmap_matrix;
-					m.concatenate(screen_to_obj);
+					const matrix&	m = m_bitmap_matrix;
+//					m.concatenate(screen_to_obj);
 
 
 					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
@@ -370,11 +352,16 @@ namespace render
 	};
 
 
-	// More Renderer state.
-	static array<fill_style>	s_current_styles;
-	static int	s_left_style = -1;
-	static int	s_right_style = -1;
-	static int	s_line_style = -1;
+	// Style state.
+	enum style_index
+	{
+		LEFT_STYLE = 0,
+		RIGHT_STYLE,
+		LINE_STYLE,
+
+		STYLE_COUNT
+	};
+	static fill_style	s_current_styles[STYLE_COUNT];
 
 
 	bitmap_info*	create_bitmap_info(image::rgb* im)
@@ -388,7 +375,7 @@ namespace render
 
 	bitmap_info*	create_bitmap_info(image::rgba* im)
 	// Given an image, returns a pointer to a bitmap_info struct
-	// that can later be passed to fill_styleX_bitmap(), to set a
+	// that can later be passed to fill_style_bitmap(), to set a
 	// bitmap fill style.
 	//
 	// This version takes an image with an alpha channel.
@@ -461,17 +448,8 @@ namespace render
 			glEnd();
 		}
 
-		// Prime the matrix stack with an identity transform.
-		assert(s_matrix_stack.size() == 0);
-		matrix	identity;
-		identity.set_identity();
-		s_matrix_stack.push_back(identity);
-
-		// Prime the cxform stack an identity cxform.
-		assert(s_cxform_stack.size() == 0);
-		cxform	cx_identity;
-		s_cxform_stack.push_back(cx_identity);
-
+// Old unused code.  Might get revived someday.
+#if 0
 		// See if we want to, and can, use multitexture
 		// antialiasing.
 		s_multitexture_antialias = false;
@@ -511,6 +489,7 @@ namespace render
 				glDisable(GL_TEXTURE_2D);
 			}
 		}
+#endif // 0
 	}
 
 
@@ -518,89 +497,38 @@ namespace render
 	// Clean up after rendering a frame.  Client program is still
 	// responsible for calling glSwapBuffers() or whatever.
 	{
-		assert(s_matrix_stack.size() == 1);
-		s_matrix_stack.resize(0);
-
-		assert(s_cxform_stack.size() == 1);
-		s_cxform_stack.resize(0);
-
 		glMatrixMode(GL_MODELVIEW);
 		glPopMatrix();
 	}
 
 
-	void	push_apply_matrix(const matrix& m)
-	// Compute the current matrix times the given matrix, and push
-	// it onto the top of the matrix stack.  The composite matrix
-	// applies to all geometry sent into the renderer, until the
-	// next call to pop_matrix().
+	void	set_matrix(const matrix& m)
+	// Set the current transform for mesh & line-strip rendering.
 	{
-		assert(s_matrix_stack.size() < 100);	// sanity check.
-
-		matrix	composite = s_matrix_stack.back();
-		composite.concatenate(m);
-		s_matrix_stack.push_back(composite);
+		s_current_matrix = m;
 	}
 
 
-	void	pop_matrix()
-	// Pop the previously-pushed matrix.  Restore the transform
-	// from before the last push_apply_matrix.
+	void	set_cxform(const cxform& cx)
+	// Set the current color transform for mesh & line-strip rendering.
 	{
-		assert(s_matrix_stack.size() > 0);
-		if (s_matrix_stack.size() > 0)
-		{
-			s_matrix_stack.resize(s_matrix_stack.size() - 1);
-		}
-	}
-
-
-	void	push_apply_cxform(const cxform& cx)
-	// Apply a color transform to be used in rendering the
-	// following styles.  Concatenates the given transform onto
-	// any existing transform; the combined cxform applies until
-	// the next call to pop_cxform(), when the current cxform
-	// reverts to the previous value.
-	{
-		assert(s_cxform_stack.size() < 100);	// sanity check.
-
-		cxform	composite = s_cxform_stack.back();
-		composite.concatenate(cx);
-		s_cxform_stack.push_back(composite);
-	}
-
-	
-	void	pop_cxform()
-	// Restore the cxform that was in effect before the last call
-	// to push_apply_cxform().
-	{
-		assert(s_cxform_stack.size() > 0);
-		if (s_cxform_stack.size() > 0)
-		{
-			s_cxform_stack.resize(s_cxform_stack.size() - 1);
-		}
+		s_current_cxform = cx;
 	}
 
 
 	void	fill_style_disable(int fill_side)
 	// Don't fill on the {0 == left, 1 == right} side of a path.
 	{
-		if (fill_side == 0)
-		{
-			s_left_style = -1;
-		}
-		else
-		{
-			assert(fill_side == 1);
-			s_right_style = -1;
-		}
+		assert(fill_side >= 0 && fill_side < 2);
+
+		s_current_styles[fill_side].disable();
 	}
 
 
 	void	line_style_disable()
 	// Don't draw a line on this path.
 	{
-		s_line_style = -1;
+		s_current_styles[LINE_STYLE].disable();
 	}
 
 
@@ -608,18 +536,9 @@ namespace render
 	// Set fill style for the left interior of the shape.  If
 	// enable is false, turn off fill for the left interior.
 	{
-		s_current_styles.push_back(fill_style());
-		s_current_styles.back().set_color(s_cxform_stack.back().transform(color));
+		assert(fill_side >= 0 && fill_side < 2);
 
-		if (fill_side == 0)
-		{
-			s_left_style = s_current_styles.size() - 1;
-		}
-		else
-		{
-			assert(fill_side == 1);
-			s_right_style = s_current_styles.size() - 1;
-		}
+		s_current_styles[fill_side].set_color(s_current_cxform.transform(color));
 	}
 
 
@@ -627,42 +546,27 @@ namespace render
 	// Set the line style of the shape.  If enable is false, turn
 	// off lines for following curve segments.
 	{
-		s_current_styles.push_back(fill_style());
-		s_current_styles.back().set_color(s_cxform_stack.back().transform(color));
-		s_line_style = s_current_styles.size() - 1;
+		s_current_styles[LINE_STYLE].set_color(s_current_cxform.transform(color));
 	}
 
 
 	void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm)
 	{
-		s_current_styles.push_back(fill_style());
-		s_current_styles.back().set_bitmap(bi, m, wm, s_cxform_stack.back());
-
-		if (fill_side == 0)
-		{
-			s_left_style = s_current_styles.size() - 1;
-		}
-		else
-		{
-			assert(fill_side == 1);
-			s_right_style = s_current_styles.size() - 1;
-		}
+		assert(fill_side >= 0 && fill_side < 2);
+		s_current_styles[fill_side].set_bitmap(bi, m, wm, s_current_cxform);
 	}
 
 
 	void	draw_mesh(const float coords[], int vertex_count)
 	{
-		assert(s_left_style >= 0);
-		assert(s_left_style < s_current_styles.size());
-
 		// Set up current style.
 		matrix	ident;
 		ident.set_identity();
-		s_current_styles[s_left_style].apply(ident /*s_matrix_stack.back()*/);
+		s_current_styles[LEFT_STYLE].apply(/* ident /*s_matrix_stack.back()*/);
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
-		s_matrix_stack.back().ogl_multiply();
+		s_current_matrix.ogl_multiply();
 
 		// Send the tris to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
@@ -671,166 +575,47 @@ namespace render
 		glDisableClientState(GL_VERTEX_ARRAY);
 
 		glPopMatrix();
-
-		// Clear the current style(s).
-		s_current_styles.resize(0);
-		s_left_style = -1;
-		s_right_style = -1;
-		s_line_style = -1;
 	}
 
 
 	void	draw_line_strip(const float coords[], int vertex_count)
 	// Draw the line strip formed by the sequence of points.
 	{
-		assert(s_line_style >= 0);
-		assert(s_line_style < s_current_styles.size());
-
 		// Set up current style.
 		matrix	ident;
 		ident.set_identity();
-		s_current_styles[s_line_style].apply(ident);
+		s_current_styles[LINE_STYLE].apply(/*ident*/);
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
-		s_matrix_stack.back().ogl_multiply();
+		s_current_matrix.ogl_multiply();
 
-		// Send the tris to OpenGL
+		// Send the line-strip to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
 		glDrawArrays(GL_LINE_STRIP, 0, vertex_count);
 		glDisableClientState(GL_VERTEX_ARRAY);
 
 		glPopMatrix();
-
-		// Clear the current style(s).
-		s_current_styles.resize(0);
-		s_left_style = -1;
-		s_right_style = -1;
-		s_line_style = -1;
 	}
 
 
-	// Render OpenGL trapezoids, as they're emitted from the
-	// tesselator.
-	struct opengl_accepter : public gameswf::tesselate::trapezoid_accepter
-	{
-		void	accept_trapezoid(int style, const gameswf::tesselate::trapezoid& tr)
-		// The style arg tells us which style out of
-		// s_current_styles to activate.
-		{
-			assert(style >= 0 && style < s_current_styles.size());
-			assert(s_current_styles[style].is_valid());
-
-			s_current_styles[style].apply(s_matrix_stack.back());
-
-			// Draw the trapezoid.
-			glBegin(GL_QUADS);
-			glVertex2f(tr.m_lx0, tr.m_y0);
-			glVertex2f(tr.m_lx1, tr.m_y1);
-			glVertex2f(tr.m_rx1, tr.m_y1);
-			glVertex2f(tr.m_rx0, tr.m_y0);
-			glEnd();
-		}
-
-
-		void	accept_line_strip(int style, const point coords[], int coord_count)
-		// Draw a line strip, given a style and an array of points.
-		{
-			assert(style >= 0 && style < s_current_styles.size());
-			assert(s_current_styles[style].is_valid());
-
-			s_current_styles[style].apply(s_matrix_stack.back());
-
-			// Draw the line segment.
-			glEnableClientState(GL_VERTEX_ARRAY);
-			glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, (float*) coords);
-			glDrawArrays(GL_LINE_STRIP, 0, coord_count);
-			glDisableClientState(GL_VERTEX_ARRAY);
-		}
-	};
-
-
-	void	begin_shape()
-	{
-		// make sure our shape state is cleared out.
-		s_current_styles.resize(0);
-		s_left_style = -1;
-		s_right_style = -1;
-		s_line_style = -1;
-
-		static opengl_accepter	o;
-		gameswf::tesselate::begin_shape(&o, s_tolerance / 20.0f);
-	}
-
-
-	void	end_shape()
-	{
-		// Render the shape stored in the tesselator.
-		gameswf::tesselate::end_shape();
-	}
-
-
-	void	begin_path(float ax, float ay)
-	// This call begins drawing a sequence of segments, which all
-	// share the same fill & line styles.  Add segments to the
-	// shape using add_curve_segment() or add_line_segment(), and
-	// call end_path() when you're done with this sequence.
-	{
-		point	p;
-		s_matrix_stack.back().transform(&p, point(ax, ay));
-
-		gameswf::tesselate::begin_path(s_left_style, s_right_style, s_line_style, p.m_x, p.m_y);
-	}
-
-
-	void	add_line_segment(float ax, float ay)
-	// Add a line running from the previous anchor point to the
-	// given new anchor point.
-	{
-		point	p;
-		s_matrix_stack.back().transform(&p, point(ax, ay));
-
-		gameswf::tesselate::add_line_segment(p.m_x, p.m_y);
-	}
-
-
-	void	add_curve_segment(float cx, float cy, float ax, float ay)
-	// Add a curve segment to the shape.  The curve segment is a
-	// quadratic bezier, running from the previous anchor point to
-	// the given new anchor point (ax, ay), with (cx, cy) acting
-	// as the control point in between.
-	{
-		point	c, a;
-		s_matrix_stack.back().transform(&c, point(cx, cy));
-		s_matrix_stack.back().transform(&a, point(ax, ay));
-
-		gameswf::tesselate::add_curve_segment(c.m_x, c.m_y, a.m_x, a.m_y);
-	}
-
-
-	void	end_path()
-	// Mark the end of a set of edges that all use the same styles.
-	{
-		gameswf::tesselate::end_path();
-	}
-
-
-	void	draw_bitmap(const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color)
+	void	draw_bitmap(const matrix& m, const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color)
 	// Draw a rectangle textured with the given bitmap, with the
-	// given color.  Apply current transforms.
+	// given color.  Apply given transform; ignore any currently
+	// set transforms.
 	//
 	// Intended for textured glyph rendering.
 	{
 		assert(bi);
 
-		color = s_cxform_stack.back().transform(color);
+//		color = s_cxform_stack.back().transform(color);
 		color.ogl_color();
 
 		point a, b, c, d;
-		s_matrix_stack.back().transform(&a, point(coords.m_x_min, coords.m_y_min));
-		s_matrix_stack.back().transform(&b, point(coords.m_x_max, coords.m_y_min));
-		s_matrix_stack.back().transform(&c, point(coords.m_x_min, coords.m_y_max));
+		m.transform(&a, point(coords.m_x_min, coords.m_y_min));
+		m.transform(&b, point(coords.m_x_max, coords.m_y_min));
+		m.transform(&c, point(coords.m_x_min, coords.m_y_max));
 		d.m_x = b.m_x + c.m_x - a.m_x;
 		d.m_y = b.m_y + c.m_y - a.m_y;
 
@@ -871,6 +656,12 @@ namespace gameswf
 	}
 
 
+	// Hint that tells us how the physical output is zoomed.  This
+	// is important for getting the antialiasing and curve
+	// subdivision right.
+	static float	s_pixel_scale = 1.0f;
+
+
 	void	set_pixel_scale(float scale)
 	// Call with the zoom factor the movie is being displayed at.
 	// I.e. if you're showing the movie 2x normal size, then pass
@@ -879,14 +670,13 @@ namespace gameswf
 	{
 		if (scale > 0)
 		{
-			render::s_pixel_scale = scale;
-			render::s_tolerance = 20.0f / render::s_pixel_scale;
+			s_pixel_scale = scale;
 		}
 	}
 
 	float	get_pixel_scale()
 	{
-		return render::s_pixel_scale;
+		return s_pixel_scale;
 	}
 
 }	// end namespace gameswf
