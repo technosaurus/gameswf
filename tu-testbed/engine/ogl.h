@@ -17,39 +17,40 @@
 // make the gl.h stuff work.
 //
 
-#ifndef _INC_WINDOWS
+#	ifndef _INC_WINDOWS
 
-#define WINAPI	__stdcall
-#define APIENTRY WINAPI
-#define CALLBACK __stdcall
-#define DECLSPEC_IMPORT __declspec(dllimport)
+#		define WINAPI	__stdcall
+#		define APIENTRY WINAPI
+#		define CALLBACK __stdcall
+#		define DECLSPEC_IMPORT __declspec(dllimport)
 
-#if !defined(_GDI32_)
-#define WINGDIAPI DECLSPEC_IMPORT
-#else
-#define WINGDIAPI
-#endif
+#		if !defined(_GDI32_)
+#			define WINGDIAPI DECLSPEC_IMPORT
+#		else
+#			define WINGDIAPI
+#		endif
 
-#endif
+#	endif
 
-#ifndef _WCHAR_T_DEFINED
-typedef unsigned short wchar_t;
-#define _WCHAR_T_DEFINED
-#endif // _WCHAR_T_DEFINED
+#	ifndef _WCHAR_T_DEFINED
+		typedef unsigned short wchar_t;
+#		define _WCHAR_T_DEFINED
+#	endif // _WCHAR_T_DEFINED
 
-#include <GL/gl.h>
-#include <GL/glu.h>
+#	include <GL/gl.h>
+#	include <GL/glu.h>
 
 
 #else // not WIN32
-//
-// not WIN32
-//
 
-#include <GL/gl.h>
-#include <GL/glu.h>
+	//
+	// not WIN32
+	//
 
-#define APIENTRY
+#	include <GL/gl.h>
+#	include <GL/glu.h>
+
+#	define APIENTRY
 
 
 #endif // not LINUX
@@ -64,11 +65,27 @@ namespace ogl {
 	void	free_vertex_memory( void* buffer );
 
 	// Fences; for synchronizing with the GPU.
-	int	create_fence();
-	void	set_fence( int fence_id );
-	bool	test_fence( int fence_id );
-	void	finish_fence( int fence_id );
+	void	gen_fences(int count, unsigned int* fence_array);
+	void	set_fence(unsigned int fence_id);
+	void	finish_fence(unsigned int fence_id);
 
+	class vertex_stream {
+	// Class to facilitate streaming verts to the video card.  Takes
+	// care of fencing, and buffer bookkeeping.
+	public:
+		vertex_stream(int buffer_size);
+		~vertex_stream();
+	
+		void*	reserve_memory(int size);
+	
+	private:
+		int	m_half_buffer_size;
+		int	m_buffer_top;
+		void*	m_buffer;
+	
+		unsigned int	m_fence[2];
+	};
+		
 };
 
 
