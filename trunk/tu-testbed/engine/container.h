@@ -25,8 +25,9 @@ public:
 	~array() { resize(0); }
 
 	T&	operator[](int index) { assert(index >= 0 && index < m_size); return m_buffer[index]; }
+	const T&	operator[](int index) const { assert(index >= 0 && index < m_size); return m_buffer[index]; }
 
-	int	size() { return m_size; }
+	int	size() const { return m_size; }
 	void	push_back(const T& val)
 	{
 		int	new_size = m_size + 1;
