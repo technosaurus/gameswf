@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <SDL/SDL.h>
+#include <SDL.h>
 extern "C" {
 #include <jpeglib.h>
 }

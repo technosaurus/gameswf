@@ -376,7 +376,7 @@ struct lod_chunk {
 
 	void	compute_bounding_box(const lod_chunk_tree& tree, vec3* box_center, vec3* box_extent)
 	{
-		float	level_factor = (1 << (tree.m_tree_depth - 1 - m_level));
+		float	level_factor = (float) (1 << (tree.m_tree_depth - 1 - m_level));
 
 		box_center->y = (m_max_y + m_min_y) * 0.5f * tree.m_vertical_scale;
 		box_extent->y = (m_max_y - m_min_y) * 0.5f * tree.m_vertical_scale;
@@ -2008,7 +2008,7 @@ void	lod_chunk_tree::set_parameters(float max_pixel_error, float max_texel_size,
 	assert(screen_width_pixels > 0);
 	assert(horizontal_FOV_degrees > 0 && horizontal_FOV_degrees < 180.0f);
 
-	const float	tan_half_FOV = tanf(0.5f * horizontal_FOV_degrees * M_PI / 180.0f);
+	const float	tan_half_FOV = tanf(0.5f * horizontal_FOV_degrees * float(M_PI) / 180.0f);
 	const float	K = screen_width_pixels / tan_half_FOV;
 
 	// distance_LODmax is the distance below which we need to be

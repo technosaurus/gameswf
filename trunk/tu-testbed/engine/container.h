@@ -30,9 +30,9 @@
 #include "engine/dlmalloc.h"
 
 
-#ifdef __VISUALC__
+#ifdef _WIN32
 #pragma warning(disable : 4345)	// in MSVC 7.1, warning about placement new POD default initializer
-#endif // __VISUALC__
+#endif // _WIN32
 
 
 template<class T>

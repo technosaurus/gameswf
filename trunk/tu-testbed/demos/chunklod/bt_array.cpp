@@ -9,8 +9,11 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-//#include <io.h>
-#include <unistd.h>
+#ifdef _WIN32
+	#include <io.h>
+#else	// not _WIN32
+	#include <unistd.h>
+#endif	// not _WIN32
 #include <fcntl.h>
 #include <string.h>
 
@@ -19,6 +22,11 @@
 #include "engine/utility.h"
 #include "engine/tu_file.h"
 #include <string.h>
+
+
+#ifdef _WIN32
+#define lseek64 _lseeki64
+#endif // _WIN32
 
 
 const int	BT_HEADER_SIZE = 256;	// offset from the start of the .bt file, before the data starts.
