@@ -10,7 +10,7 @@
 #define GAMESWF_TYPES_H
 
 
-#include "base/utility.h"
+#include "base/tu_types.h"
 
 
 #ifndef NDEBUG
@@ -62,13 +62,7 @@ namespace gameswf
 			m_a = a;
 		}
 
-		void	set_lerp(const rgba& a, const rgba& b, float f)
-		{
-			m_r = (Uint8) frnd(flerp(a.m_r, b.m_r, f));
-			m_g = (Uint8) frnd(flerp(a.m_g, b.m_g, f));
-			m_b = (Uint8) frnd(flerp(a.m_b, b.m_b, f));
-			m_a = (Uint8) frnd(flerp(a.m_a, b.m_a, f));
-		}
+		void	set_lerp(const rgba& a, const rgba& b, float f);
 
 		void	print();
 	};

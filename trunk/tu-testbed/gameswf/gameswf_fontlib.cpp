@@ -731,8 +731,6 @@ namespace fontlib
 					rect	glyph_bounds;
 					sh->compute_bound(&glyph_bounds);
 
-					int w = (int) glyph_bounds.width();
-					int h = (int) glyph_bounds.height();
 					if (glyph_bounds.width() < 0)
 					{
 						// Invalid width; this must be an empty glyph.
