@@ -321,8 +321,8 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 
 #if 0
 			int	half_tile = p->tile_size >> 1;
-			int	ox = i ? half_tile : 0;
-			int	oy = j ? half_tile : 0;
+			int	ox = i ? half_tile - 1 : 0;
+			int	oy = j ? half_tile - 1 : 0;
 			float	shave = 0.5f * float(p->tile_size - 1) / float(p->tile_size - 2);
 			float	ix = i ? shave : 0;
 			float	iy = j ? shave : 0;
@@ -330,16 +330,16 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 					child_tile,
 					ix, iy,
 					ix + float(p->tile_size) - shave, iy + float(p->tile_size) - shave);
-#endif // 0
-
+#else
 			// Copy image data into workspace.
 			{
 				int	ox = i ? p->tile_size - 1 : 0;
 				int	oy = j ? p->tile_size - 1 : 0;
-				// should replace this with "blit", or just memcpy the scanlines...
-				image::resample(workspace, ox, oy, ox + p->tile_size - 1, oy + p->tile_size - 1,
-						child_tile, 0.f, 0.f, float(p->tile_size) - 1, float(p->tile_size) - 1);
+				for (int row = 0; row < p->tile_size; row++, oy++) {
+					memcpy(image::scanline(workspace, oy) + ox * 3, image::scanline(child_tile, row), p->tile_size * 3);
+				}
 			}
+#endif // 0
 
 			SDL_FreeSurface(child_tile);
 		}
@@ -347,7 +347,7 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 
 	// Resample from the workspace into the output tile.
 	image::resample(tile, 0, 0, p->tile_size - 1, p->tile_size - 1,
-			workspace, 0.f, 0.f, float(p->tile_size * 2 - 1), float(p->tile_size * 2 - 1));
+			workspace, 0.f, 0.f, float(workspace->w - 1), float(workspace->h - 1));
 
 	SDL_FreeSurface(workspace);
 

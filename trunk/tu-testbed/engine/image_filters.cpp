@@ -54,7 +54,27 @@ void	get_row(Uint8* row, SDL_Surface* image, int x0, int xsize, int y)
 // Copy RGB data from the specified row into the given buffer.
 {
 	y = iclamp(y, 0, image->h - 1);
-	memcpy(row, ((Uint8*) image->pixels) + (y * image->pitch) + x0 * 3, (3 * xsize));
+	int	x1 = x0 + xsize - 1;
+	if (x1 >= image->w) {
+		// clip, then extend.
+		int	extra_pixels = x1 - image->w + 1;
+		Uint8*	p = ((Uint8*) image->pixels) + (y * image->pitch);
+		memcpy(row, p + x0 * 3, (3 * (image->w - x0)));
+		// repeat last pixel
+		p = p + (image->w - 1) * 3;
+		Uint8*	q = row + (image->w - x0) * 3;
+		while (extra_pixels > 0) {
+			*(q + 0) = *(p + 0);
+			*(q + 1) = *(p + 1);
+			*(q + 2) = *(p + 2);
+			q += 3;
+			extra_pixels--;
+		}
+	}
+	else
+	{
+		memcpy(row, ((Uint8*) image->pixels) + (y * image->pitch) + x0 * 3, (3 * xsize));
+	}
 }
 
 
@@ -73,7 +93,7 @@ void	get_column(Uint8* column, SDL_Surface* image, int x)
 	for (i = image->h, p = ((Uint8*) image->pixels) + x * 3; i-- > 0; p += d) {
 		*column++ = *p;
 		*column++ = *(p + 1);
-		*column++ = *(p + 1);
+		*column++ = *(p + 2);
 	}
 }
 
@@ -374,12 +394,10 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			float	green = 0.0f;
 			float	blue = 0.0f;
 			for(j = 0; j < contrib[i].size(); ++j) {
-				red += raster[contrib[i][j].pixel * 3 + 0]
-					* contrib[i][j].weight;
-				green += raster[contrib[i][j].pixel * 3 + 1]
-					* contrib[i][j].weight;
-				blue += raster[contrib[i][j].pixel * 3 + 2]
-					* contrib[i][j].weight;
+				int	pixel = contrib[i][j].pixel;
+				red	+= raster[pixel * 3 + 0] * contrib[i][j].weight;
+				green	+= raster[pixel * 3 + 1] * contrib[i][j].weight;
+				blue	+= raster[pixel * 3 + 2] * contrib[i][j].weight;
 			}
 			put_pixel(tmp, i, k, red, green, blue);
 		}
@@ -428,12 +446,10 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			float	green = 0.0f;
 			float	blue = 0.0f;
 			for (j = 0; j < contrib[i].size(); ++j) {
-				red += raster[contrib[i][j].pixel * 3 + 0]
-					* contrib[i][j].weight;
-				green += raster[contrib[i][j].pixel * 3 + 1]
-					* contrib[i][j].weight;
-				blue += raster[contrib[i][j].pixel * 3 + 2]
-					* contrib[i][j].weight;
+				int	pixel = contrib[i][j].pixel;
+				red	+= raster[pixel * 3 + 0] * contrib[i][j].weight;
+				green	+= raster[pixel * 3 + 1] * contrib[i][j].weight;
+				blue	+= raster[pixel * 3 + 2] * contrib[i][j].weight;
 			}
 			put_pixel(out, k + out_x0, i + out_y0, red, green, blue);
 		}
