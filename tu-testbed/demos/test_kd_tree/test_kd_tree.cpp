@@ -6,10 +6,11 @@
 // Test program for kd-tree mesh collision.
 
 
-#include "engine/kd_tree_packed.h"
-#include "engine/kd_tree_dynamic.h"
-#include "engine/axial_box.h"
-#include "engine/tu_file.h"
+#include "geometry/kd_tree_packed.h"
+#include "geometry/kd_tree_dynamic.h"
+#include "geometry/axial_box.h"
+#include "base/tu_file.h"
+#include "base/tu_timer.h"
 
 
 void	print_usage()
@@ -23,6 +24,7 @@ void	print_usage()
 
 
 static kd_tree_dynamic*	make_kd_tree(const char* filename);
+static void	test_cast_against_tree(const kd_tree_dynamic* tree);
 
 
 int main(int argc, const char** argv)
@@ -75,8 +77,10 @@ int main(int argc, const char** argv)
 
 	if (tree)
 	{
-		tree->diagram_dump(&tu_file(stdout, false));
+//		tree->diagram_dump(&tu_file(stdout, false));
 	}
+
+	test_cast_against_tree(tree);
 
 	delete tree;
 
@@ -192,6 +196,47 @@ kd_tree_dynamic*	make_kd_tree(const char* filename)
 	kd_tree_dynamic*	tree = new kd_tree_dynamic(vert_count, &verts[0], tri_count, &indices[0]);
 
 	return tree;
+}
+
+
+void	test_cast_against_tree(const kd_tree_dynamic* tree)
+// Shoot a ton of random rays against the kdtree.
+{
+	static const int	RAY_COUNT = 100000;
+
+	printf("starting to cast...\n");
+
+	uint64	start_ticks = tu_timer::get_profile_ticks();
+
+	// Make a packed tree.
+	kd_tree_packed*	kd = kd_tree_packed::build(tree);
+
+	const axial_box&	bound = kd->get_bound();
+
+	for (int i = 0; i < RAY_COUNT; i++)
+	{
+		vec3	start = bound.get_random_point();
+		vec3	end = bound.get_random_point();
+
+		// Avoid very short ray tests.
+		while ((start - end).sqrmag() < 1e-3f)
+		{
+			end = bound.get_random_point();
+		}
+
+		ray_query	ray(ray_query::start_end, start, end);
+
+		bool	result = kd->ray_test(ray);
+	}
+
+	uint64	end_ticks = tu_timer::get_profile_ticks();
+	double	seconds = tu_timer::profile_ticks_to_seconds(end_ticks - start_ticks);
+	double	secs_per_ray = seconds / RAY_COUNT;
+	printf("%d ray casts took %3.3f seconds, %3.3f micros/ray\n", RAY_COUNT, seconds, secs_per_ray * 1000000);
+	printf("tests: %d nodes, %d leaves, %d faces\n",
+	       kd_tree_packed::s_ray_test_node_count,
+	       kd_tree_packed::s_ray_test_leaf_count,
+	       kd_tree_packed::s_ray_test_face_count);
 }
 
 

@@ -78,6 +78,10 @@ ActionScript
 ============
 
 * bug:
+	
+	onEnterFrame should get called even when sprite is stopped
+
+* bug:
 
 	// e.g. declared inside main movie frame 1,
 	// and we have a movie clip w/ instance named "instance"

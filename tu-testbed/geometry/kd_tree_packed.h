@@ -11,31 +11,48 @@
 
 
 #include "base/container.h"
+#include "geometry/axial_box.h"
+#include "geometry/collision.h"
 #include "geometry/geometry.h"
 
 
 class tu_file;
 struct kd_tree_dynamic;
+struct kd_node;
 
 
 struct kd_tree_packed
 {
-	kd_tree_packed();
 	~kd_tree_packed();
 
 	void	read(tu_file* in);
 	void	write(tu_file* out);
 
-	void	build(kd_tree_dynamic* source_tree);
+	static kd_tree_packed*	build(const kd_tree_dynamic* source_tree);
 
-	// void	ray_test(....);
+	// Return true if the ray query hits any of our faces.
+	bool	ray_test(const ray_query& query);
+
 	// void	lss_test(....);
 
-private:
-	struct node_chunk;
+	const axial_box&	get_bound() const { return m_bound; }
 
+	// statistics.
+	static int	s_ray_test_face_count;
+	static int	s_ray_test_leaf_count;
+	static int	s_ray_test_node_count;
+
+private:
+	kd_tree_packed();
+
+	//struct node_chunk;
+
+	axial_box	m_bound;
+	int	m_vert_count;
 	vec3*	m_verts;
-	node_chunk*	m_packed_tree;
+
+	int	m_packed_tree_size;
+	kd_node*	m_packed_tree;
 };
 
 

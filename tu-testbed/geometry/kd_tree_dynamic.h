@@ -33,6 +33,9 @@ struct kd_tree_dynamic
 	{
 		Uint16	m_vi[3];	// indices of verts
 		Uint16	m_flags;
+
+		float	get_min_coord(int axis, const array<vec3>& verts) const;
+		float	get_max_coord(int axis, const array<vec3>& verts) const;
 	};
 
 	struct leaf
@@ -40,17 +43,40 @@ struct kd_tree_dynamic
 		array<face>	m_faces;
 	};
 
-
 	// Internal node.  Not too tidy; would use unions etc. if it were
 	// important.
+	//
+	// This is a "loose" kdtree in the sense that there are two
+	// independent splitting planes on the chosen axis.  This
+	// ensures that all faces can be classified onto one side or
+	// the other.  Almost the same as a binary AABB tree.
+	//
+	//                   |   |
+	//    +--------------+---+----------------+
+	//    |     /   /  \ |   |/       --   \  |
+	//    |    /   /    \+---/     \        \ |
+	//    | |  --- \     |  /|--\   \    /    |
+	//    | |       \ -- | / |   \      /  ---|
+	//    +--------------+---+----------------+
+	//                   |   |
+	//  axis *--> +     neg pos
+	//
+	// So the idea here is that the neg node contains all faces
+	// that are strictly on the negative side of the neg_offset,
+	// and the pos node has all the rest of the faces, and the
+	// pos_offset is placed so that all the pos node faces are
+	// strictly on the positive side of pos_offset.
+	//
+	// Note that the pos and neg nodes could overlap, or could be
+	// disjoint.
 	struct node
 	{
-		node*	m_back;
-		node*	m_cross;
-		node*	m_front;
+		node*	m_neg;
+		node*	m_pos;
 		leaf*	m_leaf;
-		int		m_axis;	// split axis: 0 = x, 1 = y, 2 = z
-		float	m_offset;	// where the split occurs
+		int	m_axis;	// split axis: 0 = x, 1 = y, 2 = z
+		float	m_neg_offset;	// where the back split occurs
+		float	m_pos_offset;	// where the front split occurs
 
 		node();
 		~node();
@@ -68,17 +94,30 @@ struct kd_tree_dynamic
 
 private:
 	void	compute_actual_bounds(axial_box* result, int face_count, face faces[]);
-	node*	build_tree(int face_count, face faces[], const axial_box& bounds);
+	node*	build_tree(int depth, int face_count, face faces[], const axial_box& bounds);
+
 	void	do_split(
-		int* back_end,
-		int* cross_end,
-		int* front_end,
+		int* neg_end,
+		int* pos_end,
 		int face_count,
 		face faces[],
 		int axis,
-		float offset);
-	float	evaluate_split(int face_count, face faces[], const axial_box& bounds, int axis, float offset);
+		float neg_offset,
+		float pos_offset);
+
+	float	evaluate_split(
+		int depth,
+		int face_count,
+		face faces[],
+		const axial_box& bounds,
+		int axis,
+		float neg_offset,
+		float* pos_offset);
+
 	int	classify_face(const face& f, int axis, float offset);
+
+	// Utility, for  testing a clipping  non-loose kdtree.  Duping
+	// is probably much preferable to clipping though.
 	void	clip_faces(array<face>* faces, int axis, float offset);
 
 	array<vec3>	m_verts;
@@ -92,7 +131,7 @@ private:
 
 // Local Variables:
 // mode: C++
-// c-basic-offset: 8 
+// c-basic-offset: 8
 // tab-width: 8
 // indent-tabs-mode: t
 // End:

@@ -84,6 +84,18 @@ vec3&	vec3::operator-=(const vec3& v)
 }
 
 
+void	vec3::set_cross(const vec3& a, const vec3& b) const
+// Cross product.
+{
+	assert(this != &a);
+	assert(this != &b);
+
+	x = a.y * b.z - a.z * b.y;
+	y = a.z * b.x - a.x * b.z;
+	z = a.x * b.y - a.y * b.x;
+}
+
+
 #endif // INLINE_VEC3
 
 
@@ -102,9 +114,7 @@ vec3	vec3::cross(const vec3& v) const
 // Cross product.  Creates a temporary for the return value.
 {
 	vec3	result;
-	result.x = y * v.z - z * v.y;
-	result.y = z * v.x - x * v.z;
-	result.z = x * v.y - y * v.x;
+	result.set_cross(*this, v);
 	return result;
 }
 

@@ -41,6 +41,8 @@ struct axial_box
 
 	float	get_surface_area() const;
 
+	vec3	get_random_point() const;
+
 	//
 	// Setters
 	//
