@@ -55,7 +55,7 @@ XMLSocket::~XMLSocket()
 bool
 XMLSocket::connect(const char *host, int port)
 {
-  log_msg("%s: \n", __PRETTY_FUNCTION__);
+  log_msg("%s: to host %s at port %d\n", __PRETTY_FUNCTION__, host, port);
   struct sockaddr_in  sock_in;
   fd_set              fdset;
   struct timeval      tval;
@@ -187,7 +187,7 @@ XMLSocket::anydata(tu_string &data)
 
   memset(buf, 0, 512);
   
-  // log_msg("%s: \n", __PRETTY_FUNCTION__);
+  //log_msg("%s: \n", __PRETTY_FUNCTION__);
 
   if (_sockfd <= 0) {
     return false;
@@ -238,12 +238,16 @@ XMLSocket::anydata(tu_string &data)
       if (ch != '\0') {
         buf[i++] = ch;
       } else {
-        // ::read(_sockfd, &ch, 1); // don't read ahead.  '\0' ends the message. 
+#ifdef USE_NETCAT
+        // Remove the NULL when reading from netcat.
+        // When talking to a real application, '\0' ends the message.
+        // so we want to leave it intact.
+        ::read(_sockfd, &ch, 1);
+#endif
         break;
       }
     }
     //log_msg("%s: read %d bytes, data was %s\n", __FUNCTION__, ret, buf);
-
     data = buf;
     return true;
   }

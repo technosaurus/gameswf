@@ -20,9 +20,6 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
-// @@ evil: kill
-using namespace std;
-
 namespace gameswf
 {
 
@@ -108,12 +105,128 @@ XML::on_event_load()
   }
 }
 
+XMLNode*
+XML::extractNode(xmlNodePtr node)  
+{
+  xmlAttrPtr attr;
+  xmlNodePtr childnode, next;
+  xmlChar *ptr;
+  XMLNode *element, *child;
+
+  element = new XMLNode;
+  memset(element, 0, sizeof (XMLNode));
+
+  log_msg("%s: extracting node %s\n", __FUNCTION__, node->name);
+  if (xmlStrcmp(node->name, (const xmlChar *)"text") == 0) {
+    //  node = node->next;
+  }
+  
+  // See if we have any data (content)
+  childnode = node->children;
+  while (childnode != NULL) {
+    // This block of code is only used with text based XML files.
+    if (xmlStrcmp(childnode->name, (const xmlChar *)"text") == 0) {
+      //log_msg("Getting the next childnode!\n");
+      next = childnode->next;
+      if (next != 0) {
+        child = extractNode(next);
+        log_msg("Pushing childNode after extractNode()\n");
+        element->_children.push_back(child);
+      } else {
+        ptr = childnode->content;
+        if (ptr != NULL) {
+          child = new XMLNode;
+          memset(child, 0, sizeof (XMLNode));
+          log_msg("extractChildNode from text for %s has contents %s\n", node->name, ptr);
+          child->_name  = reinterpret_cast<const char *>(node->name);
+          child->_value = reinterpret_cast<const char *>(ptr);
+          log_msg("Pushing childNode1 %s\n", node->name);
+          element->_children.push_back(child);
+        }
+      }
+    }
+    // This block of code is used by the network messages.
+    else {
+      if (xmlStrcmp(node->name, (const xmlChar *)"text") == 0) {
+        next = node->next;
+      } else {
+        next = node->children;
+      }
+      if (next != 0) {
+        child = extractNode(next);
+        log_msg("Pushing childNode2 %s\n", childnode->name);
+        element->_children.push_back(child);
+      } else {
+        next = childnode->children;
+        if (next != 0) {
+          if (xmlStrcmp(next->name, (const xmlChar *)"text") != 0) {
+            child = extractNode(next);
+            log_msg("Pushing childNode3 %s\n", childnode->name);
+            element->_children.push_back(child);
+          } else {
+            ptr = next->content;
+            if (ptr != NULL) {
+              child = new XMLNode;
+              memset(child, 0, sizeof (XMLNode));
+              log_msg("extractChildNode from text for %s has contents %s\n", childnode->name, ptr);
+              child->_name  = reinterpret_cast<const char *>(childnode->name);
+              child->_value = reinterpret_cast<const char *>(ptr);
+              log_msg("Pushing childNode4 %s\n", childnode->name);
+              element->_children.push_back(child);
+            }
+          }
+        } else {
+          attr = node->properties;
+          while (attr != NULL) {
+            log_msg("extractNode %s has property %s, value is %s\n",
+                    node->name, attr->name, attr->children->content);
+            XMLAttr *attrib = new XMLAttr;
+            attrib->_name = reinterpret_cast<const char *>(attr->name);
+            attrib->_value = reinterpret_cast<const char *>(attr->children->content);
+            element->_attributes.push_back(attrib);
+            attr = attr->next;
+          }
+        }
+      }
+    }
+    childnode = childnode->next;
+  }
+  
+  // See if we have any Attributes (properties)
+  attr = node->properties;
+  while (attr != NULL) {
+    log_msg("extractNode %s has property %s, value is %s\n",
+            node->name, attr->name, attr->children->content);
+    XMLAttr *attrib = new XMLAttr;
+    attrib->_name = reinterpret_cast<const char *>(attr->name);
+    attrib->_value = reinterpret_cast<const char *>(attr->children->content);
+    element->_attributes.push_back(attrib);
+    attr = attr->next;
+  }
+
+  //
+  element->_name = reinterpret_cast<const char *>(node->name);
+  if (node->children) {
+    ptr = node->children->content;
+    if (ptr != NULL) {
+      element->_value = reinterpret_cast<const char *>(ptr);
+    }
+  } else {
+    ptr = node->content;
+    if (ptr != NULL) {
+      element->_value = reinterpret_cast<const char *>(ptr);
+    }
+  }
+  
+  return element;
+}
+
 // Read in an XML document from the specified source
 bool
 XML::parseDoc(xmlDocPtr document)
 {
   // struct node *element, *child, *first;
-  XMLNode *element, *child, *grandchild;
+  XMLNode *element, *child, *grandchild, *test;
   xmlNodePtr cur;
   xmlNodePtr children;
   xmlNodePtr lastchild;
@@ -126,6 +239,17 @@ XML::parseDoc(xmlDocPtr document)
   }
 
   cur = xmlDocGetRootElement(document);
+
+#if 1
+  if (cur != NULL) {
+    test = extractNode(cur);
+    //_nodes->_name = reinterpret_cast<const char *>(cur->name);
+    _nodes = test;
+    //cur = cur->next;
+  }
+#else
+      // nuke everything
+
   _firstChild = cur;
   log_msg("Adding First element %s\n", cur->name);
   XMLNode *xmlnode = new XMLNode;
@@ -143,11 +267,15 @@ XML::parseDoc(xmlDocPtr document)
     _nodes._attributes.push_back(attrib);
     attr = attr->next;
   }
-  
+
   cur = cur->xmlChildrenNode;
   while (cur != NULL) {
+
     if ((xmlStrcmp(cur->name, (const xmlChar *)"text"))) {
-      // element = new struct node; // FIXME:
+#if 0
+      test = extractNode(cur); // FIXME: testing this only
+#endif
+    // element = new struct node; // FIXME:
       element = new XMLNode;
       element->_name = reinterpret_cast<const char *>(cur->name);
       tmpstr = xmlNodeListGetString(_doc, cur->xmlChildrenNode, 1);
@@ -155,7 +283,6 @@ XML::parseDoc(xmlDocPtr document)
         element->_value = reinterpret_cast<const char *>(tmpstr);
         
       }
-
       attr = cur->properties;
       while (attr != NULL) {
         log_msg("Childnode %s has property %s, value is %s\n",
@@ -171,14 +298,23 @@ XML::parseDoc(xmlDocPtr document)
       //  _firstNode.children.push_back(element);
 
       children = cur->xmlChildrenNode;
+
       while (children != NULL) {
         if ((xmlStrcmp(children->name, (const xmlChar *)"text"))) {
+#if 0
+          child = extractNode(children); // FIXME: testing this only
+#else   
           // child = new struct node;
           child = new XMLNode;
           child->_name = reinterpret_cast<const char *>(children->name);
-          tmpstr = xmlNodeListGetString(_doc, children->xmlChildrenNode, 1);
-          if (tmpstr != 0) {
-            child->_value = reinterpret_cast<const char *>(tmpstr);
+          
+          //tmpstr = xmlNodeListGetString(_doc, children->xmlChildrenNode, 1);
+          
+          //if (tmpstr != 0)          
+          if (children->children->children)
+            {
+              //tmpstr = xmlNodeListGetString(_doc, children->xmlChildrenNode, 1);
+              //child->_value = reinterpret_cast<const char *>(tmpstr);
             log_msg("child %s has data %s\n", child->_name.c_str(), child->_value.to_string());
 
             lastchild = children->xmlChildrenNode;
@@ -210,9 +346,12 @@ XML::parseDoc(xmlDocPtr document)
               lastchild = lastchild->next; 
             }
           } else {
+            tmpstr = xmlNodeListGetString(_doc, children->xmlChildrenNode, 1);
+            child->_value = reinterpret_cast<const char *>(tmpstr);
             log_msg("Adding child element %s\n", child->_name.c_str());
           }
           element->_children.push_back(child);
+#endif
         }
         children = children->next;
       }
@@ -221,7 +360,8 @@ XML::parseDoc(xmlDocPtr document)
     }
     cur = cur->next;
   }
-
+#endif
+  
   _loaded = true;
   return true;
 }
@@ -276,7 +416,7 @@ XMLNode *
 XML::operator [] (int x) {
   log_msg("%s:\n", __PRETTY_FUNCTION__);
 
-  return _nodes._children[x];
+  return _nodes->_children[x];
 }
 
 #if 0

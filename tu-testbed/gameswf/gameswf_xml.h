@@ -97,6 +97,7 @@ public:
   }
 
   void  change_stack_frame(int frame, gameswf::as_object *xml, gameswf::as_environment *env);
+
   
 #if 0
 appendChild()   	 XML.appendChild()
@@ -142,7 +143,7 @@ class XML
   // Appends a node to the end of the specified object's child list.
   void appendChild(XMLNode *node)
   {
-    _nodes._children.push_back(node);
+    _nodes->_children.push_back(node);
   }
   
   virtual bool on_event(gameswf::event_id id);
@@ -151,20 +152,22 @@ class XML
 
   XMLNode *firstChild()
   {
-    return &_nodes;
+    return _nodes;
   }
   
   array<XMLNode *> childNodes()
   {
-    return _nodes._children;
+    return _nodes->_children;
   }
   
 
   //  Returns true if the specified node has child nodes; otherwise, returns false.
   bool hasChildNodes()
   {
-    return _nodes._children.size();
+    return _nodes->_children.size();
   }
+
+  XMLNode *extractNode(xmlNodePtr node);
 
 #if 1
   // This implements a way to keep track of the stack depth from from
@@ -204,7 +207,7 @@ class XML
       return _nodename;
     }
   
-  int length() { return _nodes.length(); }
+  int length() { return _nodes->length(); }
   
 #if 0
   void addRequestHeader();          // Adds or changes HTTP headers for POST
@@ -252,7 +255,7 @@ class XML
     bool _loaded;                           // Read-only; checks if
                                             // the specified XML object has loaded.
     const char  *_nodename;                  // The node name of an XML object.
-    XMLNode     _nodes;
+    XMLNode     *_nodes;
   
   //    hash<gameswf::event_id, gameswf::as_value>	_event_handlers;
 #if 0
