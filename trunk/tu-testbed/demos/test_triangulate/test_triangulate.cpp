@@ -348,7 +348,7 @@ int	main()
 	// Lots of circles.
 
 	// @@ set this to 100 for a good performance torture test of bridge-finding.
-	const int	TEST_DIM = 20;	// 30
+	const int	TEST_DIM = 30;	// 20, 30
 	{for (int x = 0; x < TEST_DIM; x++)
 	{
 		for (int y = 0; y < TEST_DIM; y++)
@@ -362,7 +362,7 @@ int	main()
 
 #if 0
 	// Lots of concentric circles.
-	static int	CIRCLE_COUNT = 10;	// CIRCLE_COUNT >= 10 is a good performance test.
+	static int	CIRCLE_COUNT = 30;	// CIRCLE_COUNT >= 10 is a good performance test.
 	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
 	{
 		paths.resize(paths.size() + 1);
@@ -520,7 +520,11 @@ int	main()
 	// Set radians (3rd arg) to ~100 for a good performance test
 	// of poly clipping.
 	paths.resize(paths.size() + 1);
-	make_spiral(&paths.back(), 10, 40);
+	make_spiral(&paths.back(), 10, 120);
+
+	// 2004-12-31 radians = 120, time = 11.15 s
+	// 2004-12-31 radians = 120, time =  0.072 s (with grid index, and localized ear clipping)
+	// 2004-12-31 radians = 120, time =  0.115 s (as above, with rotate_coord_order(,20) -- speed is quite sensitive to initial m_loop!)
 #endif
 
 	// Triangulate.

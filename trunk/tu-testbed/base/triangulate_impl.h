@@ -418,7 +418,7 @@ struct poly
 
 	int	find_valid_bridge_vert(const array<poly_vert<coord_t> >& sorted_verts, int v1);
 
-	void	build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg);
+	bool	build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg);
 
 	void	classify_vert(array<vert_t>* sorted_verts, int vi);
 	void	dirty_vert(array<vert_t>* sorted_verts, int vi);
@@ -481,6 +481,7 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 	int	vert_count = 0;
 	int	ear_count = 0;
 	bool	found_leftmost = false;
+	int	reflex_vert_count = 0;
 	do
 	{
 		const poly_vert<coord_t>*	pvi = &sorted_verts[vi];
@@ -511,6 +512,10 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 			assert((pvi->m_v == sorted_verts[v_next].m_v) == false);
 		}
 
+		if (pvi->m_convex_result < 0)
+		{
+			reflex_vert_count++;
+		}
 		if (pvi->m_is_ear)
 		{
 			ear_count++;
@@ -524,7 +529,19 @@ bool	poly<coord_t>::is_valid(const array<vert_t>& sorted_verts, bool check_conse
 	assert(vert_count == m_vertex_count);
 	assert(found_leftmost || m_leftmost_vert == -1);
 
-	// @@ some checks on reflex index?  Make sure reflex vert count matches?
+	// Count reflex verts in the grid index.
+	if (m_reflex_point_index)
+	{
+		int	check_count = 0;
+		for (grid_index_point<coord_t,int>::iterator it = m_reflex_point_index->begin(m_reflex_point_index->get_bound());
+		     ! it.at_end();
+		     ++it)
+		{
+			check_count++;
+		}
+
+		assert(check_count == reflex_vert_count);
+	}
 
 	// Might be nice to check that all verts with (m_poly_owner ==
 	// this) are in our loop.
@@ -737,12 +754,20 @@ void	poly<coord_t>::dirty_vert(array<vert_t>* sorted_verts, int vi)
 	if (new_convex_result < 0 && pvi->m_convex_result >= 0)
 	{
 		// Vert is newly reflex.
-		// @@ add to reflex vert index
+		// Add to reflex vert index
+		assert(m_reflex_point_index);
+		m_reflex_point_index->add(index_point<coord_t>(pvi->m_v.x, pvi->m_v.y), vi);
 	}
 	else if (pvi->m_convex_result < 0 && new_convex_result >= 0)
 	{
 		// Vert is newly convex/colinear.
-		// @@ remove from reflex vert index
+		// Remove from reflex vert index.
+		assert(m_reflex_point_index);
+		grid_index_point<coord_t,int>::iterator	it =
+			m_reflex_point_index->find(index_point<coord_t>(pvi->m_v.x, pvi->m_v.y), vi);
+		assert(it.at_end() == false);
+
+		m_reflex_point_index->remove(&(*it));
 	}
 	pvi->m_convex_result = new_convex_result;
 
@@ -756,16 +781,20 @@ void	poly<coord_t>::dirty_vert(array<vert_t>* sorted_verts, int vi)
 
 
 template<class coord_t>
-void	poly<coord_t>::build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg)
+bool	poly<coord_t>::build_ear_list(array<vert_t>* sorted_verts, tu_random::generator* rg)
 // Initialize our ear loop with all the ears that can be clipped.
+//
+// Returns true if we clipped any degenerates while looking for ears.
 {
 	assert(is_valid(*sorted_verts));
 	assert(m_ear_count == 0);
 
+	bool	clipped_any_degenerates = false;
+
 	if (m_vertex_count < 3)
 	{
 		// Not a real poly, no ears.
-		return;
+		return false;
 	}
 
 	// Go around the loop, evaluating the verts.
@@ -803,6 +832,8 @@ void	poly<coord_t>::build_ear_list(array<vert_t>* sorted_verts, tu_random::gener
 			// Remove it (and any additional degenerates chained onto this ear).
 			vi = remove_degenerate_chain(sorted_verts, vi);
 
+			clipped_any_degenerates = true;
+
 			if (m_vertex_count < 3)
 			{
 				break;
@@ -822,9 +853,21 @@ void	poly<coord_t>::build_ear_list(array<vert_t>* sorted_verts, tu_random::gener
 		{
 			break;
 		}
+
+		// Performance optimization: if we're finding lots of
+		// ears, keep our working set local by processing a
+		// few ears soon after examining them.
+		if (m_ear_count > 5 && verts_processed_count > 10)
+		{
+			break;
+		}
 	}
 
 	assert(is_valid(*sorted_verts, true /* do check for dupes */));
+
+	// @@ idea for cheap ear shape control: m_loop = best_ear_found;
+
+	return clipped_any_degenerates;
 }
 
 
@@ -903,7 +946,7 @@ void	poly<coord_t>::emit_and_remove_ear(
 	if (m_loop == v1)
 	{
 		// Change m_loop, since we're about to lose it.
-		m_loop = v2;
+		m_loop = v0;
 	}
 
 	// Make sure m_leftmost_vert is dead; we don't need it now.
@@ -926,6 +969,18 @@ void	poly<coord_t>::emit_and_remove_ear(
 	}
 
 	// Unlink v1.
+
+	if (pv1->m_convex_result < 0)
+	{
+		// Vert was reflex (can happen due to e.g. recovery).
+		// Remove from reflex vert index.
+		assert(m_reflex_point_index);
+		grid_index_point<coord_t,int>::iterator	it =
+			m_reflex_point_index->find(index_point<coord_t>(pv1->m_v.x, pv1->m_v.y), v1);
+		assert(it.at_end() == false);
+
+		m_reflex_point_index->remove(&(*it));
+	}
 
 	assert(pv0->m_poly_owner == this);
 	assert(pv1->m_poly_owner == this);
@@ -952,6 +1007,13 @@ void	poly<coord_t>::emit_and_remove_ear(
 	// ear status of v0 and v2 could have changed now.
 	dirty_vert(sorted_verts, v0);
 	dirty_vert(sorted_verts, v2);
+
+	// Big huge performance boost: recheck these local verts now;
+	// often we'll clip them right away.
+	//
+	// @@ what happens if v0 or v2 are now degenerate???
+	classify_vert(sorted_verts, v0);	
+	classify_vert(sorted_verts, v2);
 
 	assert(is_valid(*sorted_verts));
 }
@@ -998,7 +1060,12 @@ int	poly<coord_t>::remove_degenerate_chain(array<vert_t>* sorted_verts, int vi)
 		if (pv1->m_convex_result < 0)
 		{
 			// vi was reflex, remove it from index
-			// @@ TODO
+			assert(m_reflex_point_index);
+			grid_index_point<coord_t,int>::iterator	it =
+				m_reflex_point_index->find(index_point<coord_t>(pv1->m_v.x, pv1->m_v.y), vi);
+			assert(it.at_end() == false);
+
+			m_reflex_point_index->remove(&(*it));
 		}
 
 		if (pv1->m_is_ear)
@@ -1097,6 +1164,9 @@ void	poly<coord_t>::init_for_ear_clipping(array<vert_t>* sorted_verts)
 
 	int	reflex_vert_count = 0;
 
+	bool	bound_inited = false;
+	index_box<coord_t>	reflex_bound(index_point<coord_t>(0, 0), index_point<coord_t>(0, 0));
+
 	int	vi = m_loop;
 	for (;;)
 	{
@@ -1109,7 +1179,17 @@ void	poly<coord_t>::init_for_ear_clipping(array<vert_t>* sorted_verts)
 		{
 			reflex_vert_count++;
 
-			// @@ TODO update bounds
+			// Update bounds.
+			index_point<coord_t>	location(pvi->m_v.x, pvi->m_v.y);
+			if (bound_inited == false)
+			{
+				bound_inited = true;
+				reflex_bound = index_box<coord_t>(location, location);
+			}
+			else
+			{
+				reflex_bound.expand_to_enclose(location);
+			}
 		}
 
 		vi = (*sorted_verts)[vi].m_next;
@@ -1119,24 +1199,67 @@ void	poly<coord_t>::init_for_ear_clipping(array<vert_t>* sorted_verts)
 		}
 	}
 
+	// Compute grid density.  FIST recommends w * sqrt(N) * h *
+	// sqrt(N), where w*h is between 0.5 and 2.  (N is the reflex
+	// vert count.)
+	int	x_cells = 1;
+	int	y_cells = 1;
+	if (reflex_vert_count > 0)
+	{
+		const float	GRID_SCALE = sqrtf(0.5f);
+		coord_t	width = reflex_bound.get_width();
+		coord_t	height = reflex_bound.get_height();
+		float	area = float(width) * float(height);
+		if (area > 0)
+		{
+			float	sqrt_n = sqrt((float) reflex_vert_count);
+			float	w = width * width / area * GRID_SCALE;
+			float	h = height * height / area * GRID_SCALE;
+			x_cells = int(w * sqrt_n);
+			y_cells = int(h * sqrt_n);
+		}
+		else
+		{
+			// Zero area.
+			if (width > 0)
+			{
+				x_cells = int(GRID_SCALE * GRID_SCALE * reflex_vert_count);
+			}
+			else
+			{
+				y_cells = int(GRID_SCALE * GRID_SCALE * reflex_vert_count);
+			}
+		}
+		x_cells = iclamp(x_cells, 1, 256);
+		y_cells = iclamp(y_cells, 1, 256);
+	}
+	
+	m_reflex_point_index = new grid_index_point<coord_t, int>(reflex_bound, x_cells, y_cells);
 
-	// @@ TODO
+	// Insert reflex verts into the index.
+	vi = m_loop;
+	for (;;)
+	{
+		vert_t*	pvi = &(*sorted_verts)[vi];
+		if (pvi->m_convex_result < 0)
+		{
+			// Reflex.  Insert it.
+			m_reflex_point_index->add(index_point<coord_t>(pvi->m_v.x, pvi->m_v.y), vi);
+		}
 
-	// decide on grid density, FIST recommends sqrt(N) x sqrt(N)
-
-	// m_reflex_point_index = new grid_index_point<coord_t, int>(bound, x_cells, y_cells);
-
-	// for verts {
-	//	if (v m_convex_result < 0)
-	//	{
-	//		m_reflex_point_index->add(index_point<coord_t>(v.m_v.x, v.m_v.y), v.m_my_index);
-	//	}
-	// }
+		vi = (*sorted_verts)[vi].m_next;
+		if (vi == m_loop)
+		{
+			break;
+		}
+	}
 
 	assert(is_valid(*sorted_verts));
 }
 
 
+
+#if 0
 
 template<class coord_t>
 bool	poly<coord_t>::find_and_fix_tangled_triple(array<vert_t>* sorted_verts, tu_random::generator* rg)
@@ -1291,6 +1414,8 @@ void	poly<coord_t>::flip_triple_configuration(array<vert_t>* sorted_verts, int v
 }
 
 
+#endif // 0
+
 
 template<class coord_t>
 bool	poly<coord_t>::any_edge_intersection(const array<vert_t>& sorted_verts, int external_vert, int my_vert)
@@ -1364,64 +1489,17 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 // interior of the triangle (v0,v1,v2), or on the segments [v1,v0) or
 // [v1,v2).
 {
-	// @@ TODO an accel structure could help here, for very large
-	// polys in some configurations.  Could use the edge spatial
-	// index to find verts within the triangle bound.
-	//
-	// Currently the horizontal culling is fast due to the sorted
-	// indices.  The vertical culling has early outs, but could
-	// possibly have to look at lots of verts if there is a ton of
-	// vertical overlap.
-	//
-	// The other problem with the current culling is that for
-	// large polys, as the poly gets trimmed down, there will be a
-	// lot of null verts in the sorted list that must be skipped
-	// over.
+	// Compute the bounding box of reflex verts we want to check.
+	index_box<coord_t>	query_bound(index_point<coord_t>(sorted_verts[v0].m_v.x, sorted_verts[v0].m_v.y));
+	query_bound.expand_to_enclose(index_point<coord_t>(sorted_verts[v1].m_v.x, sorted_verts[v1].m_v.y));
+	query_bound.expand_to_enclose(index_point<coord_t>(sorted_verts[v2].m_v.x, sorted_verts[v2].m_v.y));
 
-	assert(is_valid(sorted_verts));
-
-	// Find the min/max of our triangle indices, for fast
-	// index-based culling.
-	int	min_index = v0;
-	int	max_index = v0;
-	if (v1 < min_index) min_index = v1;
-	if (v1 > max_index) max_index = v1;
-	if (v2 < min_index) min_index = v2;
-	if (v2 > max_index) max_index = v2;
-
-	// Careful here: must expand min/max to include coincident
-	// verts in our traversal.
-	while (min_index > 0 && sorted_verts[min_index - 1].m_v == sorted_verts[min_index].m_v)
+	for (grid_index_point<coord_t,int>::iterator it = m_reflex_point_index->begin(query_bound);
+	     ! it.at_end();
+	     ++it)
 	{
-		min_index--;
-	}
-	while (max_index < sorted_verts.size() - 1 && sorted_verts[max_index + 1].m_v == sorted_verts[max_index].m_v)
-	{
-		max_index++;
-	}
+		int	vk = it->value;
 
-	assert(min_index < max_index);
-	assert(min_index <= v0 && min_index <= v1 && min_index <= v2);
-	assert(max_index >= v0 && max_index >= v1 && max_index >= v2);
-
-	// Find min/max vertical bounds, for culling.
-	coord_t	min_y = sorted_verts[v0].m_v.y;
-	coord_t	max_y = sorted_verts[v0].m_v.y;
-	if (sorted_verts[v1].m_v.y < min_y) min_y = sorted_verts[v1].m_v.y;
-	if (sorted_verts[v1].m_v.y > max_y) max_y = sorted_verts[v1].m_v.y;
-	if (sorted_verts[v2].m_v.y < min_y) min_y = sorted_verts[v2].m_v.y;
-	if (sorted_verts[v2].m_v.y > max_y) max_y = sorted_verts[v2].m_v.y;
-	assert(min_y <= max_y);
-	assert(min_y <= sorted_verts[v0].m_v.y && min_y <= sorted_verts[v1].m_v.y && min_y <= sorted_verts[v2].m_v.y);
-	assert(max_y >= sorted_verts[v0].m_v.y && max_y >= sorted_verts[v1].m_v.y && max_y >= sorted_verts[v2].m_v.y);
-
-	// We're using the sorted vert array to reduce our search
-	// area.  Walk between min_index and max_index, only
-	// considering verts with m_poly_owner==this.  This cheaply
-	// considers only verts within the horizontal bounds of the
-	// triangle.
-	for (int vk = min_index; vk <= max_index; vk++)
-	{
 		const vert_t*	pvk = &sorted_verts[vk];
 		if (pvk->m_poly_owner != this)
 		{
@@ -1430,11 +1508,8 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 		}
 
 		if (vk != v0 && vk != v1 && vk != v2
-		    && pvk->m_v.y >= min_y
-		    && pvk->m_v.y <= max_y)
+		    && query_bound.contains_point(index_point<coord_t>(pvk->m_v.x, pvk->m_v.y)))
 		{
-			// vk is within the triangle's bounding box.
-
 #if 0
 			//xxxxxx debug hook
 			if (v1 == 131 && vk == 132)
@@ -1503,9 +1578,8 @@ bool	poly<coord_t>::ear_contains_reflex_vertex(const array<vert_t>& sorted_verts
 			}
 			else
 			{
-				bool	reflex = pvk->m_convex_result < 0;
-				if (reflex
-				    && vertex_in_ear(
+				assert(pvk->m_convex_result < 0);
+				if (vertex_in_ear(
 					    pvk->m_v, sorted_verts[v0].m_v, sorted_verts[v1].m_v, sorted_verts[v2].m_v))
 				{
 					// Found one.
@@ -1599,11 +1673,23 @@ template<class coord_t>
 struct poly_env
 // Struct that holds the state of a triangulation.
 {
+//data:
 	array<poly_vert<coord_t> >	m_sorted_verts;
 	array<poly<coord_t>*>	m_polys;
 
+	int	m_estimated_triangle_count;
+
+//code:
 	void	init(int path_count, const array<coord_t> paths[]);
 	void	join_paths_into_one_poly();
+
+	int	get_estimated_triangle_count() const { return m_estimated_triangle_count; }
+
+	poly_env()
+		:
+		m_estimated_triangle_count(0)
+	{
+	}
 
 	~poly_env()
 	{
@@ -1640,6 +1726,10 @@ void	poly_env<coord_t>::init(int path_count, const array<coord_t> paths[])
 	{
 		vert_count += paths[i].size();
 	}
+
+	// Slight over-estimate; the true number depends on how many
+	// of the paths are actually islands.
+	m_estimated_triangle_count = vert_count /* - 2 * path_count */;
 
 	// Collect the input verts and create polys for the input paths.
 	m_sorted_verts.reserve(vert_count + (path_count - 1) * 2);	// verts, plus two duped verts for each path, for bridges
@@ -1969,6 +2059,14 @@ static void compute_triangulation(
 
 	penv.join_paths_into_one_poly();
 
+	result->reserve(2 * 3 * penv.get_estimated_triangle_count());
+
+	int	input_vert_count = 0;
+	if (penv.m_polys.size() > 0)
+	{
+		input_vert_count = penv.m_polys[0]->get_vertex_count();
+	}
+
 #ifdef PROFILE_TRIANGULATE
 	uint64	join_ticks = tu_timer::get_profile_ticks();
 	fprintf(stderr, "join poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(join_ticks - start_ticks));
@@ -1999,20 +2097,6 @@ static void compute_triangulation(
 
 	return;
 #endif // EMIT_JOINED_POLY
-
-	// classification of ear, CE2 from FIST paper:
-	//
-	// v[i-1],v[i],v[i+1] of P form an ear of P iff
-	//
-	// 1. v[i] is a convex vertex
-	//
-	// 2. the interior plus boundary of triangle
-	// v[i-1],v[i],v[i+1] does not contain any reflex vertex of P
-	// (except v[i-1] or v[i+1])
-	//
-	// 3. v[i-1] is in the cone(v[i],v[i+1],v[i+2]) and v[i+1] is
-	// in the cone(v[i-2],v[i-1],v[i]) (not strictly necessary,
-	// but used for efficiency and robustness)
 
 	// ear-clip, adapted from FIST paper:
 	//
@@ -2067,8 +2151,7 @@ static void compute_triangulation(
 			else if (ear_was_clipped == true)
 			{
 				// Re-examine P for new ears.
-				P->build_ear_list(&penv.m_sorted_verts, &rand_gen);
-				ear_was_clipped = false;
+				ear_was_clipped = P->build_ear_list(&penv.m_sorted_verts, &rand_gen);
 			}
 			else
 			{
@@ -2108,6 +2191,9 @@ static void compute_triangulation(
 	uint64	clip_ticks = tu_timer::get_profile_ticks();
 	fprintf(stderr, "clip poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks));
 	fprintf(stderr, "total for poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks));
+	fprintf(stderr, "vert count = %d, verts clipped / sec = %f\n",
+		input_vert_count,
+		input_vert_count / tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks));
 #endif // PROFILE_TRIANGULATE
 
 	assert(penv.m_polys.size() == 0);
@@ -2157,6 +2243,8 @@ void	recovery_process(
 		}
 	}}
 
+// This junk is not necessary, if bridge code is correct.
+#if 0
 	// Case A: self-bridge
 	//
 	// Not mentioned in FIST.  This situation can happen when
@@ -2207,6 +2295,7 @@ void	recovery_process(
 		assert(P->get_ear_count() > 0);
 		return;
 	}
+#endif // 0
 
 // Deviation from FIST: Because I'm lazy, I'm skipping this test for
 // now...
