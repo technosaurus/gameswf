@@ -847,7 +847,7 @@ private:
 			}
 
 			// Delete our old data buffer.
-			delete [] m_table;
+			tu_free(m_table, sizeof(table) + sizeof(entry) * (m_table->m_size_mask + 1));
 		}
 
 		// Steal new_hash's data.
