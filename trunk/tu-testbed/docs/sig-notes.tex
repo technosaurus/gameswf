@@ -19,9 +19,9 @@
 
 \title{Rendering Massive Terrains using Chunked Level of Detail Control\\DRAFT}
 \author{
-	Thatcher Ulrich\\
-	Oddworld Inhabitants\\
-	tu@tulrich.com\\
+        Thatcher Ulrich\\
+        Oddworld Inhabitants\\
+        tu@tulrich.com\\
 }
 \date{Revised 14 April 2002}
 
@@ -47,7 +47,7 @@ simulation applications.  Hardware and algorithms continue to improve
 rapidly, which enhances our ability to render realistic terrains.  The
 shift in recent years in consumer hardware from CPU bound graphics
 pipelines to high speed special purpose graphics processing units
-(GPU's) has drastically changed the tradeoffs in geometric level of
+(GPUs) has drastically changed the tradeoffs in geometric level of
 detail (LOD) terrain rendering algorithms.  These new tradeoffs have
 sparked the development of GPU-oriented {\em aggregated } LOD
 algorithms.  Furthermore, the increased quantity and detail of the
@@ -209,11 +209,11 @@ NVIDIA GeForce, ATI Radeon and Sony PlayStation 2.  This class of
 hardware incorporates one or more floating point transformation units
 in addition to the integer pixel rasterization hardware common in the
 previous generation of consumer graphics hardware.  The floating point
-vertex processing done by these high speed GPU's had previously been
+vertex processing done by these high speed GPUs had previously been
 the responsibility of the general purpose CPU, greatly limiting
 triangle throughput.
  
-Prior to the widespread adoption of GPU's, LOD algorithms for game
+Prior to the widespread adoption of GPUs, LOD algorithms for game
 applications focused on minimizing the number of triangles drawn, at
 the expense of a limited amount of extra CPU processing.  Various
 published algorithms for this, such as Lindstrom-Koller CLOD
@@ -225,7 +225,7 @@ the time saved by transforming fewer vertices for rendering.
 
 \section{Post-GPU LOD Algorithms}
 
-With the advent of GPU's, consumer hardware saw maximum triangle
+With the advent of GPUs, consumer hardware saw maximum triangle
 rendering rates skyrocket.  CPU involvement in rendering could be
 limited to merely pointing the GPU at a section memory containing the
 vertices of a model to render.  Developers interested in producing top
@@ -392,15 +392,15 @@ recurse to the child nodes.  Pseudocode:
 \begin{ttfamily}
 \begin{tabbing}
 \hspace{0.25in}\=\hspace{0.25in}\=\hspace{0.25in}\=\hspace{0.25in}\=\hspace{0.25in}\= \\
-function render\_lod(node) 							\\
-\>	if rho(node, viewpoint) $<=$ tau then			\\
-\>\>		draw(node.mesh)							\\
-\>	else									\\
-\>\>		for c in node.children do					\\
-\>\>\>			render\_lod(c)						\\
-\>\>		end								\\
-\>	end									\\
-end										\\
+function render\_lod(node)                                                      \\
+\>      if rho(node, viewpoint) $<=$ tau then                   \\
+\>\>            draw(node.mesh)                                                 \\
+\>      else                                                                    \\
+\>\>            for c in node.children do                                       \\
+\>\>\>                  render\_lod(c)                                          \\
+\>\>            end                                                             \\
+\>      end                                                                     \\
+end                                                                             \\
 \end{tabbing}
 \end{ttfamily}
 
@@ -666,23 +666,23 @@ chunk data.  The render pseudocode is modified as follows:
 \begin{ttfamily}
 \begin{tabbing}
 \hspace{0.25in}\=\hspace{0.25in}\=\hspace{0.25in}\=\hspace{0.25in}\=\hspace{0.25in}\= \\
-function render\_lod(node)							\\
-\>	node.last\_used\_frame = current\_frame					\\
-\>	if									\\
-\>\>		not\_all\_child\_data\_resident(node)				\\
-\>	or									\\
-\>\>		rho(node, viewpoint) $<=$ tau			\\
-\>	then									\\
-\>\>		-- compute morph\_parameter					\\
-\>\>		draw(node.geometry, morph\_parameter)				\\
-\>\>		for c in node.children do					\\
-\>\>\>			request\_residency(c)					\\
-\>\>		end								\\
-\>	else									\\
-\>\>		for c in node.children do					\\
-\>\>\>			render\_lod(c)						\\
-\>\>		end								\\
-\>	end									\\
+function render\_lod(node)                                                      \\
+\>      node.last\_used\_frame = current\_frame                                 \\
+\>      if                                                                      \\
+\>\>            not\_all\_child\_data\_resident(node)                           \\
+\>      or                                                                      \\
+\>\>            rho(node, viewpoint) $<=$ tau                   \\
+\>      then                                                                    \\
+\>\>            -- compute morph\_parameter                                     \\
+\>\>            draw(node.geometry, morph\_parameter)                           \\
+\>\>            for c in node.children do                                       \\
+\>\>\>                  request\_residency(c)                                   \\
+\>\>            end                                                             \\
+\>      else                                                                    \\
+\>\>            for c in node.children do                                       \\
+\>\>\>                  render\_lod(c)                                          \\
+\>\>            end                                                             \\
+\>      end                                                                     \\
 end
 \end{tabbing}
 \end{ttfamily}
