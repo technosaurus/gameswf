@@ -6,8 +6,11 @@
 #include <string>
 #include "gameswf_string.h"
 #include "gameswf_log.h"
-using namespace gameswf;
+
 using namespace std;
+
+namespace gameswf
+{  
 
 BaseString::BaseString()
 {
@@ -207,3 +210,5 @@ string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, ga
   // log_msg("%s: New string name is:  %s\n", __PRETTY_FUNCTION__, filespec.c_str());
   result->set(str);
 }
+
+} // end of gameswf namespace

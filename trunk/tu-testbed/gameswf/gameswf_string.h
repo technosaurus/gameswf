@@ -13,6 +13,9 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 
+namespace gameswf 
+{
+  
 class BaseString
 {
 public:
@@ -68,7 +71,8 @@ string_lastIndexOf(gameswf::as_value* result, gameswf::as_object_interface* this
 
 void
 string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+ 
+} // end of gameswf namespace
 
-		 
 // __STRING_H__
 #endif

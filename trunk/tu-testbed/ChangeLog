@@ -1,5 +1,10 @@
 2005-03-20  Rob Savoye  <rob@bertha.welcomehome.org>
 
+	* gameswf/gameswf_movie.{cpp,h}: Add gameswf namespace. 
+	* gameswf/gameswf_string.{cpp,h}: Add gameswf namespace. 
+	* gameswf/gameswf_textfield.{cpp,h}: Add gameswf namespace. 
+	* gameswf/gameswf_textformat.{cpp,h}: Add gameswf namespace.
+	Rename TextFormat to text_format.
 	* gameswf/gameswf_timers.cpp (Timer::start): Don't cast the double
 	to a time_t.
 	* macros/libXML.m4: Define HAVE_LIBXML if libxml2 is found.

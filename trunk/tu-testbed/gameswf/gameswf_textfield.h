@@ -33,7 +33,8 @@ namespace gameswf
   
   void
     textfield_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-}
+
+} // end of gameswf namespace
 
 // __TEXTFIELD_H__
 #endif

@@ -8,6 +8,9 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 
+namespace gameswf
+{
+  
 class MovieClipLoader : public gameswf::character_def
 {
  public:
@@ -82,6 +85,8 @@ void
 moviecliploader_default(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
                         gameswf::as_environment* env, int nargs, int first_arg);
 
+
+} // end of gameswf namespace
 
 // __MOVIE_H__
 #endif

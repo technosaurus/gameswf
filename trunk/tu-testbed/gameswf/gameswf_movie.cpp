@@ -2,7 +2,9 @@
 #include <string>
 #include "gameswf_movie.h"
 #include "gameswf_log.h"
-using namespace gameswf;
+
+namespace gameswf
+{
 
 MovieClipLoader::MovieClipLoader()
 {
@@ -181,3 +183,4 @@ moviecliploader_default(gameswf::as_value* result, gameswf::as_object_interface*
   log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __PRETTY_FUNCTION__);
 }
 
+} // end of gameswf namespace

@@ -24,6 +24,8 @@ namespace gameswf
   {
     log_msg("%s: args=%d\n", __PRETTY_FUNCTION__, nargs);
   }
-}
+
+} // end of gameswf namespace
+
 
 

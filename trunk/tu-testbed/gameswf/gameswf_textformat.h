@@ -13,20 +13,20 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 
-// FIXME namespace gameswf
-// FIXME s/TextFormat/text_format/
+namespace gameswf
+{  
 
-class TextFormat
+class text_format
 {
 public:
-	// new TextFormat([font, [size, [color, [bold, [italic, [underline, [url, [target, [align,
+	// new text_format([font, [size, [color, [bold, [italic, [underline, [url, [target, [align,
 	//                [leftMargin, [rightMargin, [indent, [leading]]]]]]]]]]]]])
   
-	TextFormat();
-	TextFormat(tu_string font);
-	TextFormat(tu_string font, int size);
-	TextFormat(tu_string font, int size, int color);
-	~TextFormat();
+	text_format();
+	text_format(tu_string font);
+	text_format(tu_string font, int size);
+	text_format(tu_string font, int size, int color);
+	~text_format();
   
 	bool underlined()  { return _underline; }
 	bool italiced()    { return _italic; }
@@ -77,7 +77,7 @@ public:
 
 struct textformat_as_object : public gameswf::as_object
 {
-	TextFormat text_obj;
+	text_format text_obj;
 };
 
 void
@@ -86,5 +86,6 @@ textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr
 void
 textformat_underline(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
+} // end of gameswf namespace
 
 #endif	// __TEXTFORMAT_H__
