@@ -493,7 +493,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	draw_mesh(const float coords[], int vertex_count)
+	void	draw_mesh_strip(const float coords[], int vertex_count)
 	{
 		// Set up current style.
 		m_current_styles[LEFT_STYLE].apply();
@@ -505,12 +505,12 @@ struct render_handler_ogl : public gameswf::render_handler
 		// Send the tris to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
-		glDrawArrays(GL_TRIANGLES, 0, vertex_count);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
 
 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
 		{
 			m_current_styles[LEFT_STYLE].apply_second_pass();
-			glDrawArrays(GL_TRIANGLES, 0, vertex_count);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
 		}
 

@@ -51,6 +51,8 @@ namespace gameswf
 			m_x = a.m_x + (b.m_x - a.m_x) * t;
 			m_y = a.m_y + (b.m_y - a.m_y) * t;
 		}
+
+		bool operator==(const point& p) const { return m_x == p.m_x && m_y == p.m_y; }
 	};
 
 
