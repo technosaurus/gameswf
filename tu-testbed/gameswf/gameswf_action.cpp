@@ -632,7 +632,7 @@ namespace gameswf
 				case 0x52:	// call method
 				{
 					as_object_interface*	obj = env->top(1).to_object();
-					int	nargs = env->top(2).to_number();
+					int	nargs = (int) env->top(2).to_number();
 					as_value	result;
 
 					if (obj)
