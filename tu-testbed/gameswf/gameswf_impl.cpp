@@ -1760,7 +1760,7 @@ namespace gameswf
 			// Read the actions.
 			m_action_buffer.read(in);
 
-			if (m_action_buffer.get_length() != event_length)
+			if (m_action_buffer.get_length() != (int) event_length)
 			{
 				log_error("error -- swf_event::read(), event_length = %d, but read %d\n",
 					  event_length,

@@ -91,53 +91,143 @@ private:
 };
 
 
+// Helper for making objects that can have weak_ptr's.
+struct weak_proxy
+{
+	weak_proxy()
+		:
+		m_ref_count(0),
+		m_alive(true)
+	{
+	}
+
+	// weak_ptr's call this to determine if their pointer is valid or not.
+	bool	is_alive() const { return m_alive; }
+
+	// Only the actual object is allowed to call this.
+	void	notify_object_died(bool alive) { m_alive = alive; }
+
+	void	add_ref() { assert(m_ref_count >= 0); m_ref_count++; }
+	void	drop_ref()
+	{
+		assert(m_ref_count > 0);
+
+		m_ref_count--;
+		if (m_ref_count == 0)
+		{
+			// Now we die.
+			delete this;
+		}
+	}
+
+private:
+	// Don't use these.
+	weak_proxy(const weak_proxy& w) { assert(0); }
+	void	operator=(const weak_proxy& w) { assert(0); }
+
+	int	m_ref_count;
+	bool	m_alive;
+};
+
 
 // A weak pointer points at an object, but the object may be deleted
 // at any time, in which case the weak pointer automatically becomes
 // NULL.  The only way to use a weak pointer is by converting it to a
 // strong pointer (i.e. for temporary use).
 //
-// The class pointed to must have add_weak_ptr(weak_ptr_void* p),
-// remove_weak_ptr(weak_ptr_void* p), and also set the weak ptr's to
-// null when the object is destroyed.
+// The class pointed to must have a "weak_proxy* get_weak_proxy()" method.
 //
 // Usage idiom:
 //
 // if (smart_ptr<my_type> ptr = m_weak_ptr_to_my_type) { ... use ptr->whatever() safely in here ... }
-//
-struct weak_ptr_void
-{
-
-protected:
-	weak_ptr_void*	m_next_ptr;
-	weak_ptr_void*	m_prev_ptr;
-	T*	m_ptr;
-};
-
 
 template<class T>
-struct weak_ptr<T> : public weak_ptr_void
+struct weak_ptr
 {
 	weak_ptr()
 		:
-		m_next_ptr(0),
-		m_prev_ptr(0),
 		m_ptr(0)
 	{
 	}
 
 	weak_ptr(T* ptr)
 		:
-		m_next_ptr(0),
-		m_prev_ptr(0),
-		m_ptr(ptr)
+		m_ptr(0)
 	{
-		if (ptr)
+		operator=(ptr);
+	}
+
+	weak_ptr(const smart_ptr<T>& ptr)
+	{
+		operator=(ptr.get_ptr());
+	}
+
+	// Default constructor and assignment from weak_ptr<T> are OK.
+
+	void	operator=(T* ptr)
+	{
+		m_ptr = ptr;
+		if (m_ptr)
 		{
-			ptr->add_weak_ptr(this);
+			m_proxy = m_ptr->get_weak_proxy();
+			assert(m_proxy != NULL);
+			assert(m_proxy->is_alive());
+		}
+		else
+		{
+			m_proxy = NULL;
+		}
+	}
+
+	void	operator=(const smart_ptr<T>& ptr) { operator=(ptr.get_ptr()); }
+
+	// Conversion to smart_ptr.
+	operator smart_ptr<T>() const
+	{
+		if (m_ptr)
+		{
+			assert(m_proxy != NULL);
+			if (m_proxy->is_alive() == false)
+			{
+				// Underlying object went away.
+				m_proxy = NULL;
+				m_ptr = NULL;
+			}
+		}
+		return smart_ptr<T>(m_ptr);
+	}
+
+private:
+	smart_ptr<weak_proxy>	m_proxy;
+	T*	m_ptr;
+};
+
+
+// Example ref_counted class:
+// 
+#if 0
+ref_counted
+{
+	int	m_ref_count
+
+	// @@ usual ref-counted stuff here
+
+	virtual ~ref_counted()
+	{
+		assert(m_ref_count == 0);
+		if (m_weak_proxy) { m_weak_proxy->set_alive(false); }
+	}
+
+	smart_ptr<weak_proxy> m_weak_proxy;
+	weak_proxy* get_weak_proxy()
+	{
+		if (m_weak_proxy == NULL)
+		{
+			m_weak_proxy = new weak_proxy;
 		}
 	}
 };
+#endif // 0
 
 
 #endif // SMART_PTR_H
