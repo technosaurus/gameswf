@@ -759,6 +759,7 @@ namespace swf
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	di = m_display_list[i];
+//				display_object_info&	di = m_display_list[m_display_list.size() - 1 - i];	// front-to-back instead of back-to-front
 
 #if 0
 				// xxxx DEBUG HACK
@@ -1683,9 +1684,12 @@ namespace swf
 	struct font
 	{
 		array<shape_character*>	m_glyphs;
+		char*	m_name;
 		// etc
 
 		font()
+			:
+			m_name(NULL)
 		{
 		}
 
@@ -1697,6 +1701,12 @@ namespace swf
 				delete m_glyphs[i];
 			}
 			m_glyphs.resize(0);
+
+			// Delete the name string.
+			if (m_name)
+			{
+				delete [] m_name;
+			}
 		}
 
 		shape_character*	get_glyph(int index)
@@ -1715,7 +1725,7 @@ namespace swf
 		{
 			if (tag_type == 10)
 			{
-				IF_DEBUG(printf("reading define_font\n"));
+				IF_DEBUG(printf("reading DefineFont\n"));
 
 				int	table_base = in->get_position();
 
@@ -1748,6 +1758,96 @@ namespace swf
 
 					m_glyphs.push_back(s);
 				}}
+			}
+			else if (tag_type == 48)
+			{
+				IF_DEBUG(printf("reading DefineFont2\n"));
+
+				int	has_layout = in->read_uint(1);
+				int	shift_jis = in->read_uint(1);
+				int	unicode = in->read_uint(1);
+				int	ansi = in->read_uint(1);
+				int	wide_offsets = in->read_uint(1);
+				int	wide_codes = in->read_uint(1);
+				int	italic = in->read_uint(1);
+				int	bold = in->read_uint(1);
+				Uint8	reserved = in->read_u8();
+
+				char*	m_name = in->read_string_with_length();
+
+				int	glyph_count = in->read_u16();
+				
+				int	table_base = in->get_position();
+
+				// Read the glyph offsets.  Offsets
+				// are measured from the start of the
+				// offset table.
+				array<int>	offsets;
+				if (wide_offsets)
+				{
+					// 32-bit offsets.
+					for (int i = 0; i < glyph_count; i++)
+					{
+						offsets.push_back(in->read_u32());
+					}
+				}
+				else
+				{
+					// 16-bit offsets.
+					for (int i = 0; i < glyph_count; i++)
+					{
+						offsets.push_back(in->read_u16());
+					}
+				}
+
+				int	font_code_offset;
+				if (wide_offsets)
+				{
+					font_code_offset = in->read_u32();
+				}
+				else
+				{
+					font_code_offset = in->read_u16();
+				}
+
+				m_glyphs.reserve(glyph_count);
+
+				// Read the glyph shapes.
+				{for (int i = 0; i < glyph_count; i++)
+				{
+					// Seek to the start of the shape data.
+					int	new_pos = table_base + offsets[i];
+					assert(new_pos >= in->get_position());	// if we're seeking backwards, then that looks like a bug.
+					in->set_position(new_pos);
+
+					// Create & read the shape.
+					shape_character*	s = new shape_character;
+					s->read(in, 22, false);
+
+					m_glyphs.push_back(s);
+				}}
+
+				// Read code table...
+				// in->set_position(table_base + font_code_offset);
+				// if (wide_codes) { read glyph_count * u16(); }
+				// else { read glyph_count * u8(); }
+				// put codes in a hash table
+
+				// if (has_layout)
+				// {
+				//    ascender height = s16();
+				//    descender height = s16();
+				//    leading height = s16();
+				//    advance table = glyph_count * s16();
+				//    bounds table = glyph_count * rect();
+				//    font kerning count = u16();
+				//    kerning info = font kerning count * kerning_record;
+				// }
+
+				// kerning record:
+				// if (wide_codes) { code1 = u16(); } else { code1 = u8(); }
+				// if (wide_codes) { code2 = u16(); } else { code2 = u8(); }
+				// adjustment = s16(); // relative to advance values
 			}
 			else
 			{
@@ -2337,6 +2437,7 @@ namespace swf
 			for (int i = 0; i < m_display_list.size(); i++)
 			{
 				display_object_info&	dobj = m_display_list[i];
+//				display_object_info&	dobj = m_display_list[m_display_list.size() - 1 - i];	// front-to-back instead of back-to-front
 
 				display_info	sub_di = di;
 				sub_di.concatenate(dobj);

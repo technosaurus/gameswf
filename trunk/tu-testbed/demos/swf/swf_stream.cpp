@@ -109,6 +109,13 @@ namespace swf
 		return val;
 	}
 	Sint16	stream::read_s16() { align(); return SDL_ReadLE16(m_input); }
+	Uint32	stream::read_u32()
+	{
+		align();
+		Uint32	val = SDL_ReadLE32(m_input);
+		return val;
+	}
+	Sint32	stream::read_s32() { align(); return SDL_ReadLE32(m_input); }
 
 
 	char*	stream::read_string()
@@ -134,6 +141,32 @@ namespace swf
 		strcpy(retval, &buffer[0]);
 
 		return retval;
+	}
+
+
+	char*	stream::read_string_with_length()
+	// Reads *and new[]'s* the string from the given file.
+	// Ownership passes to the caller; caller must delete[] the
+	// string when it is done with it.
+	{
+		align();
+
+		int	len = read_u8();
+		if (len <= 0)
+		{
+			return NULL;
+		}
+		else
+		{
+			char*	buffer = new char[len + 1];
+			for (int i = 0; i < len; i++)
+			{
+				buffer[i] = read_u8();
+			}
+			buffer[i] = 0;	// terminate.
+
+			return buffer;
+		}
 	}
 
 

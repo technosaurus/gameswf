@@ -1,0 +1,57 @@
+Renderer
+========
+
+* optimizations
+
+  * treat line segments as true line segments, instead of a flat curve.
+
+  * coarse clip/cull
+
+* handle gradients
+
+  linear gradients could be done w/ a 1-D texture and texgen or
+  explicit UV calcs.  Problem: potential banding.
+
+  radial gradients need a 2D texture, or a pixel shader + 1D texture,
+  or lots of subdivision w/ vertex coloring.  Not sure what the best
+  policy is.
+
+* antialiasing
+
+  desirable thing here would be a hardware mode that generates alpha
+  values according to coverage.  Since we always render back to front,
+  I think this would work nicely, just using plain alpha blending.
+
+* real lines
+
+  Approach: within a path that has a line style, save the coords that
+  come in and keep them in line-strip order.  Then, at the end of
+  end_shape(), trace them out directly, including rounded edges.
+  Should be pretty straightforward.
+
+* bitmap fills
+
+  initialize the bitmap; probably just resample the input image into a
+  power-of-two texture.  Some hardware can handle non-power-of-two
+  textures.  Flash probably assumings no mip-mapping and no bilinear
+  magnifying, althougth maybe those would be good options
+
+
+General
+=======
+
+* bitmapped fonts; not a native part of swf, but should be a good win
+  in rendering speed on most hardware.  Perhaps render the font glyphs
+  off to a texture, and pull them out at run-time instead of drawing
+  the outline shapes.
+
+  Alternative: make a separate tool that processes .swf's, and
+  substitutes conventional text with bitmap shapes.  This actually
+  sounds pretty good to me; reduces the amount of work at playback
+  time.
+
+* buttons
+
+* text entry
+
+* action stuff

@@ -16,7 +16,7 @@
 #undef main	// SDL wackiness
 
 
-#define SCALE	6.0f
+#define SCALE	4.0f
 #define OVERSIZE	1.0f
 
 
@@ -69,6 +69,7 @@ int	main(int argc, char *argv[])
 	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
 	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+//	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 5);
 //	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
@@ -76,7 +77,7 @@ int	main(int argc, char *argv[])
 	int	height = imin(int(m->get_height() * SCALE), 600);
 
 	// Set the video mode.
-	if (SDL_SetVideoMode(width, height, 16, SDL_OPENGL) == 0)
+	if (SDL_SetVideoMode(width, height, 16 /* 32 */, SDL_OPENGL) == 0)
 	{
 		fprintf(stderr, "SDL_SetVideoMode() failed.");
 		exit(1);
@@ -85,6 +86,11 @@ int	main(int argc, char *argv[])
 	// Turn on alpha blending.
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+	// Turn on line smoothing.  Antialiased lines can be used to
+	// smooth the outsides of shapes.
+	glEnable(GL_LINE_SMOOTH);
+	glHint(GL_LINE_SMOOTH_HINT, GL_FASTEST);
 
 	glMatrixMode(GL_PROJECTION);
 	glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
