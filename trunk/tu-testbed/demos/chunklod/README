@@ -253,4 +253,116 @@ Windows Users
    > cd tu-testbed
    > make
 
-   Hopefully it works.
+   Hopefully it works.  The various Chunked LOD executables are in
+   tu-testbed/demos/chunklod/
+
+
+HISTORY
+=======
+
+The Chunked LOD software was written primarily between late July 2001
+and early August 2002.  A neat, one-year side project.  In April 2001
+I had begun working for Oddworld Inhabitants, and during the summer I
+was on-site in San Luis Obispo CA, pushing hard to help finish Munch's
+Oddysee for the Xbox launch.  I was away from home, living in a hotel,
+working long hours alongside some LOD experts like Jonathan Blow and
+Charles Bloom.  Under the circumstances I didn't have much time or
+energy for things outside of work, so my blowing-off-steam activities
+consisted mostly of hiking and mountain biking in the early mornings
+in the mountains in and around SLO, and messing with an old Linux
+laptop I kept in my hotel room.
+
+It seems crazy that I would have started a programming side-project
+during high-pressure crunch mode on a game, but actually it made some
+sense: my work on the game involved much heavy slogging through an
+unfamiliar engine, including a lot of non-graphics work; I was getting
+a lot of intellectual stimulation every day by talking to the other
+programmers about various topics of interest; and prior to starting at
+Oddworld I had just finished working on another terrain engine for the
+game Soul Ride, so the ideas were percolating, they just needed an
+outlet.
+
+The thinking that leads up to Chunked LOD goes back a few years.  The
+idea of quadtree tiling was planted in my mind sometime in 1996.  I
+had seen Michael Abrash's talk in April 1996 at the Computer Game
+Developers Conference, where he talked about Quake.  The concept of
+surface caching really blew my mind, and sparked all kinds of
+thinking.  I had been working with loose octrees for database
+organization around that time, and I realized that quadtree tiling
+with surface caching and procedural generation would be a fantastic
+way to handle tons of texture detail.  Then, I considered it "the way
+of the future".  Six years later, it *still* seems to be the way of
+the future...
+
+I was working for Tectrix Fitness Equipment at the time.  In 1997 I
+had a chance to try out quadtree tiling with the engine for a tank
+combat game I was working on.  This saw the light of day as the
+creatively-titled "Tank" for VR Bike & VR Climber.  The game as
+released was much less ambitious than the original design, due to
+corporate circumstances, and doesn't show off the texturing nearly as
+well as some of the earlier demos.  But the concept is there: quadtree
+tiling, surface caching, procedural generation (using geotypical tiles
+and vector outlines of terrain types), and lightmap shading baked into
+the cached textures.  This was all software rendered.  IMHO it looked
+pretty swank, for that era of hardware.
+
+In 1998 I started working on Soul Ride, a terrain-focused snowboarding
+simulation.  I did a lot of work on geometric LOD for that project,
+which is documented elsewhere.  Quadtree tiling made its way into the
+end product here as well, in a much more aggressive form.  As the
+project wound down in late 2000 I participated in some good
+discussions with people on the gdalgorithms mailing list, notably Tom
+Forsyth and Charles Bloom, about LOD for games.  This is when I
+started to seriously consider the idea of using static mesh
+connectivity for LOD.  At first I had a bunch of fairly minor ideas
+about how to refine the fine-grained adaptive quadtree I was using in
+Soul Ride.
+
+During the same time, Sean Barrett started a private email discussion
+amongst a few developers about terrain rendering, wanting to explore
+the state-of-the-art for something he was working on.  His ideas &
+demo about insisting on morphing, and the distribution of detail
+vs. distance convinced me, and pushed me towards the concept of
+Chunked LOD.  I didn't have time to try it out then, but I was
+confident about the basic idea.  Confident enough, that when I started
+at Oddworld in April 2001, I pronounced geometric LOD as a "solved
+problem" when talking with Charles and Jonathan.
+
+Jon, correctly, begged to differ with my rash statement, of course --
+his objection was mainly that shading had become the most important
+driver of visual quality, not geometric detail, so anything that
+compromised shading in any way would necessarily lose.  I tend to be
+doggedly wedded to the concept of scalability, so my feeling was that
+a Chunked LOD approach would still let you do any shading you wanted
+to, since it essentially uses static meshes, but give the benefits of
+LOD.  I was motivated to write a demo, to prove out the idea.  Jon's
+objection is still a good one, I think, and may yet prevail.  This
+also helped motivate my decision to release the Chunked LOD work as
+freely as possible -- one of the ways that LOD can compromise shading
+is by absorbing developer time, so by making code freely available,
+hopefully LOD can be used by some busy programmers who otherwise
+wouldn't have time for it.
+
+The actual amount of code is not very large, and the ideas themselves
+are straightforward and built on things I was familiar with, so I had
+a basic demo going within a month or two.  I showed it to the people
+at work, and I remember Charles pronouncing it "promising".  I
+released cleaned up versions to the 'net in October and November, and
+mostly stopped working on it.  I got some very helpful patches and
+correspondence as a result of those releases.  In early 2002, Mike
+Capps asked me to give a talk on terrain rendering at his SIGGRAPH
+2002 course, "Super-Size It!"  I wrote up the course notes in the
+spring of 2002, and of course that sparked a bunch of implementation
+ideas, so between then and late July, I focused on adding things like
+paging and quadtree texture tiling.  The 16K x 16K Puget Sound dataset
+was the driver for these features; Hughes Hoppe had released a nice
+Progressive Mesh demo rendering the Puget data, and the
+Lindstrom/Pascucci paper & movie showed that it was possible to handle
+the whole thing out-of-core in real time.  I knew my approach had a
+few inherent advantages in terms of triangle rate, texturing, and
+simplicity relative to those demos, so that was my focus leading up to
+SIGGRAPH.
+
+After SIGGRAPH, I cleaned up a few things, released it, and considered
+it basically done.  I think it's a nice demo, and hopefully the work
+will find its way into useful applications.
