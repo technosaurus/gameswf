@@ -636,7 +636,7 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
         xmlnodeD_obj->obj = xmlnodes->_children[childa]->_children[childb]->_children[childc];
         nodename =          xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeName().c_str();
         nodevalue =         xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeValue();
-        log_msg("Created XMLNodeD %s at 0x%X\n", nodename.c_str(), xmlnodeD_obj);
+        //log_msg("Created XMLNodeD %s at 0x%X\n", nodename.c_str(), xmlnodeD_obj);
         inum = childc;
         xmlnodeC_obj->set_member(inum.to_string(), xmlnodeD_obj);
         
