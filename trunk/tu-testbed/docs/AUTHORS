@@ -1,2 +1,4 @@
 Thatcher Ulrich <tu@tulrich.com> -- most of the code so far
-Mike Shaver -- fixes for the Linux version
+Mike Shaver -- fixes for Linux
+Thierry Berger-Perrin -- fixes, fixes for Linux, Linux version of memory mapping wrapper
+Ignacio Castaño -- fixes
