@@ -48,6 +48,14 @@ chunklod_files = \
 		tu-testbed/demos/chunklod/lua.exe	\
 		tu-testbed/demos/chunklod/*.lua
 
+psm_vistool_files = \
+		tu-testbed/go_psm_vistool.bat	\
+		tu-testbed/demos/psm_vistool/psm_vistool.exe \
+		tu-testbed/demos/psm_vistool/Makefile \
+		tu-testbed/demos/psm_vistool/*.cpp \
+		tu-testbed/demos/psm_vistool/*.h	\
+		tu-testbed/demos/psm_vistool/*.dll
+
 gameswf_source = \
 		tu-testbed/gameswf/Makefile	\
 		tu-testbed/gameswf/*.cpp	\
@@ -90,6 +98,11 @@ bspdemo.zip:
 		tu-testbed/engine/TODO
 	# Include the lua stuff to make it easier to build the demo.
 	cd ..; zip tu-testbed/bspdemo.zip -r lua/*
+
+psm_vistool.zip:
+	cd ..; zip tu-testbed/psm_vistool.zip \
+		$(basic_files) $(engine_files) $(psm_vistool_files)
+
 
 luaSDL.src.tar.gz:
 	make -C luaSDL clean
