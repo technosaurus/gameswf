@@ -25,6 +25,7 @@ static bool	s_antialiased = false;
 static bool	s_loop = true;
 static bool	s_cache = false;
 static bool	s_verbose = false;
+static bool	s_background = true;
 
 
 static void	message_log(const char* message)
@@ -143,7 +144,6 @@ int	main(int argc, char *argv[])
 
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::set_log_callback(log_callback);
-	gameswf::set_pixel_scale(s_scale);
 	gameswf::set_antialiased(s_antialiased);
 
 	// Load the movie.
@@ -301,6 +301,11 @@ int	main(int argc, char *argv[])
 					// test text replacement:
 					m->set_edit_text("test_text", "set_edit_text was here...\nanother line of text for you to see in the text box");
 				}
+				else if (key == SDLK_b)
+				{
+					// toggle background color.
+					s_background = !s_background;
+				}
 
 				break;
 			}
@@ -334,21 +339,17 @@ int	main(int argc, char *argv[])
 			}
 		}
 
+		m->set_display_viewport(0, 0, width, height);
+		m->set_background_alpha(s_background ? 1.0f : 0.05f);
+
 		m->notify_mouse_state(mouse_x, mouse_y, mouse_buttons);
 
 		m->advance(delta_t * speed_scale);
 
 		glDisable(GL_DEPTH_TEST);	// Disable depth testing.
 		glDrawBuffer(GL_BACK);
-		glClear(GL_COLOR_BUFFER_BIT);
 
 		m->display();
-
-	/*	if (s_loop
-		    && m->get_current_frame() >= m->get_frame_count() )
-		{
-			m->restart();
-		}*/
 
 		SDL_GL_SwapBuffers();
 

@@ -460,8 +460,8 @@ namespace gameswf
 					int	move_x = in->read_sint(num_move_bits);
 					int	move_y = in->read_sint(num_move_bits);
 
-					x = move_x;
-					y = move_y;
+					x = (float) move_x;
+					y = (float) move_y;
 
 					// Set the beginning of the path.
 					current_path.m_ax = x;
@@ -585,18 +585,18 @@ namespace gameswf
 					if (line_flag)
 					{
 						// General line.
-						dx = in->read_sint(num_bits);
-						dy = in->read_sint(num_bits);
+						dx = (float) in->read_sint(num_bits);
+						dy = (float) in->read_sint(num_bits);
 					}
 					else
 					{
 						int	vert_flag = in->read_uint(1);
 						if (vert_flag == 0) {
 							// Horizontal line.
-							dx = in->read_sint(num_bits);
+							dx = (float) in->read_sint(num_bits);
 						} else {
 							// Vertical line.
-							dy = in->read_sint(num_bits);
+							dy = (float) in->read_sint(num_bits);
 						}
 					}
 
@@ -627,8 +627,10 @@ namespace gameswf
 	// override our default set of fill styles (e.g. when
 	// rendering text).
 	{
+		assert(di.m_movie);
+
 		// Compute the error tolerance in object-space.
-		float	object_space_max_error = 20.0f / di.m_matrix.get_max_scale() / get_pixel_scale();
+		float	object_space_max_error = 20.0f / di.m_matrix.get_max_scale() / di.m_movie->get_pixel_scale();
 
 		// See if we have an acceptable mesh available; if so then render with it.
 		bool rendered = false;
