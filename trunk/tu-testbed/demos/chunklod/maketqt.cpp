@@ -58,7 +58,7 @@ struct tqt_info {
 };
 
 
-SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row);
+image::rgb*	generate_tiles(tqt_info* p, int level, int col, int row);
 
 
 #undef main	// @@ Under Win32, SDL wants to put in its own main(), to process args.  We don't need that.
@@ -199,7 +199,7 @@ int	main(int argc, char* argv[])
 
 	// Create a horizontal strip, as wide as the image, and tall
 	// enough to cover a whole tile.
-	SDL_Surface*	strip = image::create_rgb(j_in->get_width(), tile_max_source_height);
+	image::rgb*	strip = image::create_rgb(j_in->get_width(), tile_max_source_height);
 
 	// Initialize the strip by reading the first set of scanlines.
 	int	next_scanline = 0;
@@ -209,26 +209,26 @@ int	main(int argc, char* argv[])
 		next_scanline++;
 	}
 
-	SDL_Surface*	tile = image::create_rgb(tile_size, tile_size);
+	image::rgb*	tile = image::create_rgb(tile_size, tile_size);
 
-	printf("making leaf tiles....");
+	printf("making leaf tiles....     ");
 
 	// generate base level tiles.
 	for (int row = 0; row < tile_dim; row++) {
 		float	y0 = float(row) / tile_dim * j_in->get_height();
 		float	y1 = float(row + 1) / tile_dim * j_in->get_height();
 
-		int	lines_to_read = imin(int(y1), j_in->get_height()) - (strip_top + strip->h);
+		int	lines_to_read = imin(int(y1), j_in->get_height()) - (strip_top + strip->m_height);
 		if (lines_to_read > 0)
 		{
 			// Copy existing lines up...
-			int	lines_to_keep = strip->h - lines_to_read;
+			int	lines_to_keep = strip->m_height - lines_to_read;
 			{for (int i = 0; i < lines_to_keep; i++) {
-				memcpy(image::scanline(strip, i), image::scanline(strip, i + lines_to_read /*keep*/), strip->w * 3);
+				memcpy(image::scanline(strip, i), image::scanline(strip, i + lines_to_read /*keep*/), strip->m_width * 3);
 			}}
 
 			// Read new lines
-			{for (int i = lines_to_keep; i < strip->h; i++) {
+			{for (int i = lines_to_keep; i < strip->m_height; i++) {
 				j_in->read_scanline(image::scanline(strip, i));
 			}}
 
@@ -251,7 +251,9 @@ int	main(int argc, char* argv[])
 
 			// Write the jpeg data.
 			image::write_jpeg(out, tile, 100);
-			printf("\b%c", spinner[(spin_count++)&3]);
+
+			int	percent_done = int(100.f * float(col + row * tile_dim) / (tile_dim * tile_dim));
+			printf("\b\b\b\b\b\b%3d%% %c", percent_done, spinner[(spin_count++)&3]);
 		}
 	}
 
@@ -260,7 +262,8 @@ int	main(int argc, char* argv[])
 	delete j_in;
 	SDL_RWclose(in);
 
-	SDL_FreeSurface(tile);	// done with the working tile surface.
+	delete strip;
+	delete tile;	// done with the working tile surface.
 
 	printf("\n");
 
@@ -271,9 +274,9 @@ int	main(int argc, char* argv[])
 	// 
 	// The output file is both input and output at this point.
 	tqt_info	inf(out, &toc, tree_depth, tile_size);
-	SDL_Surface*	root_tile = generate_tiles(&inf, 0, 0, 0);
+	image::rgb*	root_tile = generate_tiles(&inf, 0, 0, 0);
 
-	SDL_FreeSurface(root_tile);	// dispose of root tile.
+	delete root_tile;	// dispose of root tile.
 
 	// Write the TOC back into the head of the file.
 	SDL_RWseek(out, toc_start, SEEK_SET);
@@ -287,7 +290,7 @@ int	main(int argc, char* argv[])
 }
 
 
-SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
+image::rgb*	generate_tiles(tqt_info* p, int level, int col, int row)
 // (Recursively) generate quadtree tiles by resampling child tiles.
 // Returns the tile for the specified node.  As tiles are generated,
 // write offsets into the table of contents.
@@ -297,7 +300,7 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 	if (offset) {
 		// Tile already built.  Read it from the file.
 		SDL_RWseek(p->out, offset, SEEK_SET);
-		SDL_Surface*	tile = image::read_jpeg(p->out);
+		image::rgb*	tile = image::read_jpeg(p->out);
 		return tile;
 	}
 
@@ -308,16 +311,16 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 	}
 
 	// Make a workspace to temporarily hold child tile data in one big image.
-	SDL_Surface*	workspace = image::create_rgb(p->tile_size * 2 - 1, p->tile_size * 2 - 1);
+	image::rgb*	workspace = image::create_rgb(p->tile_size * 2 - 1, p->tile_size * 2 - 1);
 
 	// Resample the four child tiles to make this tile.
-	SDL_Surface*	tile = image::create_rgb(p->tile_size, p->tile_size);
+	image::rgb*	tile = image::create_rgb(p->tile_size, p->tile_size);
 
 	for (int j = 0; j < 2; j++) {
 		for (int i = 0; i < 2; i++) {
 			int	ccol = col * 2 + i;
 			int	crow = row * 2 + j;
-			SDL_Surface*	child_tile = generate_tiles(p, level + 1, ccol, crow);
+			image::rgb*	child_tile = generate_tiles(p, level + 1, ccol, crow);
 
 #if 0
 			int	half_tile = p->tile_size >> 1;
@@ -341,15 +344,15 @@ SDL_Surface*	generate_tiles(tqt_info* p, int level, int col, int row)
 			}
 #endif // 0
 
-			SDL_FreeSurface(child_tile);
+			delete child_tile;
 		}
 	}
 
 	// Resample from the workspace into the output tile.
 	image::resample(tile, 0, 0, p->tile_size - 1, p->tile_size - 1,
-			workspace, 0.f, 0.f, float(workspace->w - 1), float(workspace->h - 1));
+			workspace, 0.f, 0.f, float(workspace->m_width - 1), float(workspace->m_height - 1));
 
-	SDL_FreeSurface(workspace);
+	delete workspace;
 
 	// Write out the generated tile.
 	{

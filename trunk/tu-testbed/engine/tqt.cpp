@@ -100,7 +100,8 @@ unsigned int	tqt::get_texture_id(int level, int col, int row) const
 
 	// Load the .jpg and make a texture from it.
 	SDL_RWseek(m_source, m_toc[index], SEEK_SET);
-	SDL_Surface*	surf = image::read_jpeg(m_source);
+	image::rgb*	im = image::read_jpeg(m_source);
+	SDL_Surface*	surf = image::create_SDL_Surface(im);
 	if (surf == NULL) {
 		return 0;
 	}

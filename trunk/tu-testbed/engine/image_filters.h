@@ -10,13 +10,13 @@
 #define IMAGE_FILTERS_H
 
 
-struct SDL_Surface;
+#include <engine/image.h>
 
 
 namespace image_filters
 {
-	void	resample(SDL_Surface* out,
-			 SDL_Surface* in, float in_x0, float in_y0, float in_x1, float in_y1);
+	void	resample(image::rgb* out,
+			 image::rgb* in, float in_x0, float in_y0, float in_x1, float in_y1);
 };
 
 

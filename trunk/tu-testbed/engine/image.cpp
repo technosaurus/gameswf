@@ -11,22 +11,41 @@
 #include "engine/jpeg.h"
 #include <SDL/SDL.h>
 #include <SDL/SDL_endian.h>
+#include <stdlib.h>
 
 
 namespace image
 {
-	SDL_Surface*	create_rgb(int width, int height)
-	// Create an system-memory rgb surface.  The data order is packed
-	// 24-bit, RGBRGB..., regardless of the endian-ness of the CPU.
+	rgb::rgb(int width, int height)
+		: m_data(0),
+		  m_width(width),
+		  m_height(height),
+		  m_pitch((m_width * 3 + 3) & ~3)		// Round up to next 4-byte boundary.
 	{
-		SDL_Surface*	s = SDL_CreateRGBSurface(SDL_SWSURFACE,
-												 width, height, 24,
-												 SDL_SwapLE32(0x0FF),
-												 SDL_SwapLE32(0x0FF00),
-												 SDL_SwapLE32(0x0FF0000),
-												 0);
-		assert(s->format->BytesPerPixel == 3);
-		assert(s->format->BitsPerPixel == 24);
+		assert(width > 0);
+		assert(height > 0);
+		assert(m_pitch >= m_width * 3);
+		assert((m_pitch & 3) == 0);
+
+		// Allocate data.  Use malloc(), since we share this data with SDL.
+		m_data = (Uint8*) malloc(m_pitch * m_height);
+	}
+
+	rgb::~rgb()
+	{
+		if (m_data) {
+			free(m_data);
+			m_data = 0;
+		}
+	}
+
+
+	rgb*	create_rgb(int width, int height)
+	// Create an system-memory rgb surface.  The data order is
+	// packed 24-bit, RGBRGB..., regardless of the endian-ness of
+	// the CPU.
+	{
+		rgb*	s = new rgb(width, height);
 
 		return s;
 	}
@@ -79,12 +98,12 @@ namespace image
 	}
 #endif // 0
 
-	void	write_jpeg(SDL_RWops* out, SDL_Surface* image, int quality)
+	void	write_jpeg(SDL_RWops* out, rgb* image, int quality)
 	// Write the given image to the given out stream, in jpeg format.
 	{
-		jpeg::output*	j_out = jpeg::output::create(out, image->w, image->h, quality);
+		jpeg::output*	j_out = jpeg::output::create(out, image->m_width, image->m_height, quality);
 
-		for (int y = 0; y < image->h; y++) {
+		for (int y = 0; y < image->m_height; y++) {
 			j_out->write_scanline(scanline(image, y));
 		}
 
@@ -92,13 +111,13 @@ namespace image
 	}
 
 
-	SDL_Surface*	read_jpeg(SDL_RWops* in)
+	rgb*	read_jpeg(SDL_RWops* in)
 	// Create and read a new image from the stream.
 	{
 		jpeg::input*	j_in = jpeg::input::create(in);
 		if (j_in == NULL) return NULL;
 		
-		SDL_Surface*	im = image::create_rgb(j_in->get_width(), j_in->get_height());
+		rgb*	im = image::create_rgb(j_in->get_width(), j_in->get_height());
 
 		for (int y = 0; y < j_in->get_height(); y++) {
 			j_in->read_scanline(scanline(im, y));
@@ -107,6 +126,33 @@ namespace image
 		delete j_in;
 
 		return im;
+	}
+
+
+	SDL_Surface*	create_SDL_Surface(rgb* image)
+	// Steal *image's data to create an SDL_Surface.  *image is
+	// invalidated.
+	{
+		assert(image->m_pitch < 65536);	// SDL_Surface only uses Uint16 for pitch!!!
+
+		SDL_Surface*	s = SDL_CreateRGBSurfaceFrom(image->m_data,
+							     image->m_width, image->m_height, 24, image->m_pitch,
+							     SDL_SwapLE32(0x0FF),
+							     SDL_SwapLE32(0x0FF00),
+							     SDL_SwapLE32(0x0FF0000),
+							     0);
+
+		// s owns *image's data now -- invalidate *image.
+		image->m_data = 0;
+		image->m_height = 0;
+		image->m_width = 0;
+		image->m_pitch = 0;
+
+		assert(s->pixels);
+		assert(s->format->BytesPerPixel == 3);
+		assert(s->format->BitsPerPixel == 24);
+
+		return s;
 	}
 
 };

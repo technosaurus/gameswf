@@ -16,23 +16,39 @@ struct SDL_RWops;
 
 namespace image
 {
+	// 24-bit RGB image.  Packed data, red byte first (RGBRGB...)
+	struct rgb {
+		rgb(int width, int height);
+		~rgb();
+
+		Uint8*	m_data;
+		int	m_width;
+		int	m_height;
+		int	m_pitch;	// byte offset from one row to the next
+	};
+
+
 	// Make a system-memory 24-bit bitmap surface.  24-bit packed
 	// data, red byte first.
-	SDL_Surface*	create_rgb(int width, int height);
+	rgb*	create_rgb(int width, int height);
 	
-	inline Uint8*	scanline(SDL_Surface* surf, int y)
+	inline Uint8*	scanline(rgb* surf, int y)
 	{
 		assert(surf);
-		assert(y < surf->h);
-		return ((Uint8*) surf->pixels) + surf->pitch * y;
+		assert(y < surf->m_height);
+		return ((Uint8*) surf->m_data) + surf->m_pitch * y;
 	}
 
-	void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
-			 SDL_Surface* in, float in_x0, float in_y0, float in_x1, float in_y1);
+	void	resample(rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
+			 rgb* in, float in_x0, float in_y0, float in_x1, float in_y1);
 
-	void	write_jpeg(SDL_RWops* out, SDL_Surface* image, int quality);
+	void	write_jpeg(SDL_RWops* out, rgb* image, int quality);
 
-	SDL_Surface*	read_jpeg(SDL_RWops* in);
+	rgb*	read_jpeg(SDL_RWops* in);
+
+	// Makes an SDL_Surface from the given image data.  DOES NOT
+	// COPY image's DATA -- INSTEAD, INVALIDATES image!!!
+	SDL_Surface*	create_SDL_Surface(rgb* image);
 };
 
 

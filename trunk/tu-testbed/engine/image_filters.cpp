@@ -27,10 +27,10 @@ namespace {
 // anonymous namespace to hold local stuff.
 
 
-Uint8*	get_pixel(SDL_Surface* image, int x, int y)
+Uint8*	get_pixel(image::rgb* image, int x, int y)
 {
 	// Memoize the row calculation.
-	static SDL_Surface*	im = NULL;
+	static image::rgb*	im = NULL;
 	static int	yy = -1;
 	static Uint8*	row = NULL;
 
@@ -38,31 +38,31 @@ Uint8*	get_pixel(SDL_Surface* image, int x, int y)
 //		return(0);
 //	}
 
-	x = iclamp(x, 0, image->w - 1);
-	y = iclamp(y, 0, image->h - 1);
+	x = iclamp(x, 0, image->m_width - 1);
+	y = iclamp(y, 0, image->m_height - 1);
 
 	if ((im != image) || (yy != y)) {
 		im = image;
 		yy = y;
-		row = ((Uint8*) image->pixels) + (y * image->pitch);
+		row = image->m_data + (y * image->m_pitch);
 	}
 	return(&row[x * 3]);
 }
 
 
-void	get_row(Uint8* row, SDL_Surface* image, int x0, int xsize, int y)
+void	get_row(Uint8* row, image::rgb* image, int x0, int xsize, int y)
 // Copy RGB data from the specified row into the given buffer.
 {
-	y = iclamp(y, 0, image->h - 1);
+	y = iclamp(y, 0, image->m_height - 1);
 	int	x1 = x0 + xsize - 1;
-	if (x1 >= image->w) {
+	if (x1 >= image->m_width) {
 		// clip, then extend.
-		int	extra_pixels = x1 - image->w + 1;
-		Uint8*	p = ((Uint8*) image->pixels) + (y * image->pitch);
-		memcpy(row, p + x0 * 3, (3 * (image->w - x0)));
+		int	extra_pixels = x1 - image->m_width + 1;
+		Uint8*	p = ((Uint8*) image->m_data) + (y * image->m_pitch);
+		memcpy(row, p + x0 * 3, (3 * (image->m_width - x0)));
 		// repeat last pixel
-		p = p + (image->w - 1) * 3;
-		Uint8*	q = row + (image->w - x0) * 3;
+		p = p + (image->m_width - 1) * 3;
+		Uint8*	q = row + (image->m_width - x0) * 3;
 		while (extra_pixels > 0) {
 			*(q + 0) = *(p + 0);
 			*(q + 1) = *(p + 1);
@@ -73,24 +73,24 @@ void	get_row(Uint8* row, SDL_Surface* image, int x0, int xsize, int y)
 	}
 	else
 	{
-		memcpy(row, ((Uint8*) image->pixels) + (y * image->pitch) + x0 * 3, (3 * xsize));
+		memcpy(row, ((Uint8*) image->m_data) + (y * image->m_pitch) + x0 * 3, (3 * xsize));
 	}
 }
 
 
-void	get_column(Uint8* column, SDL_Surface* image, int x)
+void	get_column(Uint8* column, image::rgb* image, int x)
 // Copy RGB data from the specified column into the given buffer.
 {
 	int	i, d;
 	Uint8*	p;
 
-	if ((x < 0) || (x >= image->w)) {
+	if ((x < 0) || (x >= image->m_width)) {
 		assert(0);
 		return;
 	}
 
-	d = image->pitch;
-	for (i = image->h, p = ((Uint8*) image->pixels) + x * 3; i-- > 0; p += d) {
+	d = image->m_pitch;
+	for (i = image->m_height, p = ((Uint8*) image->m_data) + x * 3; i-- > 0; p += d) {
 		*column++ = *p;
 		*column++ = *(p + 1);
 		*column++ = *(p + 2);
@@ -98,22 +98,22 @@ void	get_column(Uint8* column, SDL_Surface* image, int x)
 }
 
 
-void	put_pixel(SDL_Surface* image, int x, int y, float r, float g, float b)
+void	put_pixel(image::rgb* image, int x, int y, float r, float g, float b)
 // Clamp {r, g, b} to [0,255], and write pixel data to the given image
 // at (x, y).
 {
-	static SDL_Surface*	im = NULL;
+	static image::rgb*	im = NULL;
 	static int	yy = -1;
 	static Uint8*	p = NULL;
 
-	if ((x < 0) || (x >= image->w) || (y < 0) || (y >= image->h)) {
+	if ((x < 0) || (x >= image->m_width) || (y < 0) || (y >= image->m_height)) {
 		assert(0);
 		return;
 	}
 	if ((im != image) || (yy != y)) {
 		im = image;
 		yy = y;
-		p = ((Uint8*) image->pixels) + (y * image->pitch);
+		p = ((Uint8*) image->m_data) + (y * image->m_pitch);
 	}
 	p[x * 3 + 0] = iclamp(frnd(r), 0, 255);
 	p[x * 3 + 1] = iclamp(frnd(g), 0, 255);
@@ -303,17 +303,17 @@ struct {
 filter_type	default_type = MITCHELL;
 
 
-void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
-		 SDL_Surface* in, float in_x0, float in_y0, float in_x1, float in_y1)
+void	resample(image::rgb* out, int out_x0, int out_y0, int out_x1, int out_y1,
+		 image::rgb* in, float in_x0, float in_y0, float in_x1, float in_y1)
 // Rescale the specified portion of the input image into the specified
 // portion of the output image.  Coordinates are *inclusive*.
 {
 	assert(out_x0 <= out_x1);
 	assert(out_y0 <= out_y1);
-	assert(out_x0 >= 0 && out_x0 < out->w);
-	assert(out_x1 >= 0 && out_x1 < out->w);
-	assert(out_y0 >= 0 && out_y0 < out->h);
-	assert(out_y1 >= 0 && out_y1 < out->h);
+	assert(out_x0 >= 0 && out_x0 < out->m_width);
+	assert(out_x1 >= 0 && out_x1 < out->m_width);
+	assert(out_y0 >= 0 && out_y0 < out->m_height);
+	assert(out_y1 >= 0 && out_y1 < out->m_height);
 
 	float	(*filter_function)(float);
 	float	support;
@@ -324,7 +324,7 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	support = filter_table[default_type].support;
 
 
-	SDL_Surface*	tmp;		/* intermediate image */
+	image::rgb*	tmp;		/* intermediate image */
 	float	xscale, yscale;		/* zoom scale factors */
 	int i, j, k;			/* loop variables */
 	int n;				/* pixel number */
@@ -353,11 +353,11 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 	yscale = (float) (out_height - 1) / in_height;
 
 	/* pre-calculate filter contributions for a row */
-	contrib.resize(tmp->w);
+	contrib.resize(tmp->m_width);
 	if(xscale < 1.0f) {
 		width = support / xscale;
 		fscale = 1.0f / xscale;
-		for (i = 0; i < tmp->w; ++i) {
+		for (i = 0; i < tmp->m_width; ++i) {
 			contrib[i].resize(0);
 
 			center = (float) i / xscale;
@@ -371,7 +371,7 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			}
 		}
 	} else {
-		for (i = 0; i < tmp->w; ++i) {
+		for (i = 0; i < tmp->m_width; ++i) {
 			contrib[i].resize(0);
 			center = (float) i / xscale;
 			left = ceilf(center - support);
@@ -387,9 +387,9 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 
 	/* apply filter to zoom horizontally from src to tmp */
 	raster = (Uint8*) calloc(in_window_w, 3);
-	for (k = 0; k < tmp->h; ++k) {
+	for (k = 0; k < tmp->m_height; ++k) {
 		get_row(raster, in, floorf(in_x0), in_window_w, k);
-		for (i = 0; i < tmp->w; ++i) {
+		for (i = 0; i < tmp->m_width; ++i) {
 			float	red = 0.0f;
 			float	green = 0.0f;
 			float	blue = 0.0f;
@@ -418,7 +418,7 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			for (j = left; j <= right; ++j) {
 				weight = center - (float) j;
 				weight = (*filter_function)(weight / fscale) / fscale;
-				n = iclamp(j, 0, tmp->h - 1);
+				n = iclamp(j, 0, tmp->m_height - 1);
 				contrib[i].push_back(CONTRIB(n, weight));
 			}
 		}
@@ -431,15 +431,15 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			for(j = left; j <= right; ++j) {
 				weight = center - (float) j;
 				weight = (*filter_function)(weight);
-				n = iclamp(j, 0, tmp->h - 1);
+				n = iclamp(j, 0, tmp->m_height - 1);
 				contrib[i].push_back(CONTRIB(n, weight));
 			}
 		}
 	}
 
 	/* apply filter to zoom vertically from tmp to dst */
-	raster = (Uint8*) calloc(tmp->h, 3);
-	for (k = 0; k < tmp->w; ++k) {
+	raster = (Uint8*) calloc(tmp->m_height, 3);
+	for (k = 0; k < tmp->m_width; ++k) {
 		get_column(raster, tmp, k);
 		for (i = 0; i < out_height; ++i) {
 			float	red = 0.0f;
@@ -458,7 +458,7 @@ void	resample(SDL_Surface* out, int out_x0, int out_y0, int out_x1, int out_y1,
 
 	contrib.resize(0);
 
-	SDL_FreeSurface(tmp);
+	delete tmp;
 }
 
 

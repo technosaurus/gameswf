@@ -27,20 +27,24 @@ extern "C" {
 #include "bt_array.h"
 
 
+#if 0
+
 struct texture_tile {
 	Uint8	r, g, b;	// identifier
 	SDL_Surface*	image;
 };
 
+#endif // 0
 
-void	initialize_tileset(array<texture_tile>* tileset);
-const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b);
+
+//void	initialize_tileset(array<texture_tile>* tileset);
+//const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g, int b);
 void	heightfield_shader(const char* infile,
 			   SDL_RWops* out,
-			   SDL_Surface* tilemap,
-			   const array<texture_tile>& tileset,
+//			   SDL_Surface* tilemap,
+//			   const array<texture_tile>& tileset,
 			   SDL_Surface* altitude_gradient,
-			   float resolution,
+			   int dimension,
 			   float input_vertical_scale
 			   );
 
@@ -64,8 +68,11 @@ void	print_usage()
 	       "terrain.\n\n"
 	       "This program has been donated to the Public Domain by Thatcher Ulrich http://tulrich.com\n"
 	       "Incorporates software from the Independent JPEG Group\n\n"
-	       "usage: heightfield_shader <input_filename> <output_filename> [-t <tilemap_bitmap>]\n"
-	       "\t[-g <altitude_gradient_bitmap>] [-r <texels per heixel>] [-v <bt_input_vertical_scale>]\n"
+	       "usage: heightfield_shader <input.bt> <output.jpg>\n"
+	       "\t[-t <tilemap_bitmap>]\n"
+	       "\t[-g <altitude_gradient_bitmap>]\n"
+	       "\t[-r <dimension of output texture>]\n"
+	       "\t[-v <bt_input_vertical_scale>]\n"
 	       "\n"
 	       "\tThe input file should be a .BT format terrain file with (2^N+1) x (2^N+1) datapoints.\n"
 		);
@@ -79,10 +86,10 @@ int	wrapped_main(int argc, char* argv[])
 	// Process command-line options.
 	char*	infile = NULL;
 	char*	outfile = NULL;
-	char*	tilemap = NULL;
+//	char*	tilemap = NULL;
 	char*	gradient_file = NULL;
-	array<texture_tile>	tileset;
-	float	resolution = 1.0;
+//	array<texture_tile>	tileset;
+	int	dimension = 1024;
 	float	input_vertical_scale = 1.0f;
 
 	for ( int arg = 1; arg < argc; arg++ ) {
@@ -96,6 +103,7 @@ int	wrapped_main(int argc, char* argv[])
 				exit( 1 );
 				break;
 
+#if 0
 			case 't':
 				// Get tilemap filename.
 				if (arg + 1 >= argc) {
@@ -106,6 +114,7 @@ int	wrapped_main(int argc, char* argv[])
 				arg++;
 				tilemap = argv[arg];
 				break;
+#endif // 0
 			case 'g':
 				// Get gradient filename.
 				if (arg + 1 >= argc) {
@@ -117,16 +126,16 @@ int	wrapped_main(int argc, char* argv[])
 				gradient_file = argv[arg];
 				break;
 			case 'r':
-				// Get output resolution.
+				// Get output dimension.
 				if (arg + 1 >= argc) {
-					printf("error: -r option requires a resolution (floating point value for texels/heixel)\n");
+					printf("error: -r option requires a bitmap dimension (usually a power of 2)\n");
 					print_usage();
 					exit(1);
 				}
 				arg++;
-				resolution = (float) atof(argv[arg]);
-				if (resolution <= 0.001) {
-					printf("error: resolution must be greater than 0\n");
+				dimension = atoi(argv[arg]);
+				if (dimension <= 16 || dimension >= 66636) {
+					printf("error: bad output dimension\n");
 					print_usage();
 					exit(1);
 				}
@@ -180,6 +189,7 @@ int	wrapped_main(int argc, char* argv[])
 		exit(1);
 	}
 
+#if 0
 	// Initialize the tilemap and tileset.
 	SDL_Surface*	tilemap_surface = NULL;
 	if (tilemap && tilemap[0]) {
@@ -191,6 +201,7 @@ int	wrapped_main(int argc, char* argv[])
 	// Tileset is a set of textures, associated with a particular
 	// color in the tilemap.
 	initialize_tileset(&tileset);
+#endif // 0
 
 	// Altitude gradient bitmap.
 	SDL_Surface*	altitude_gradient = NULL;
@@ -203,7 +214,7 @@ int	wrapped_main(int argc, char* argv[])
 	printf("outfile: %s\n", outfile);
 
 	// Process the data.
-	heightfield_shader(infile, out, tilemap_surface, tileset, altitude_gradient, resolution, input_vertical_scale);
+	heightfield_shader(infile, out, /* tilemap_surface, tileset, */ altitude_gradient, dimension, input_vertical_scale);
 
 	SDL_RWclose(out);
 
@@ -435,10 +446,10 @@ void	compute_lightmap(SDL_Surface* out, const heightfield& hf);
 
 void	heightfield_shader(const char* infile,
 			   SDL_RWops* out,
-			   SDL_Surface* tilemap,
-			   const array<texture_tile>& tileset,
+//			   SDL_Surface* tilemap,
+//			   const array<texture_tile>& tileset,
 			   SDL_Surface* altitude_gradient,
-			   float resolution,
+			   int dimension,
 			   float input_vertical_scale
 			   )
 // Generate texture for heightfield.
@@ -453,12 +464,15 @@ void	heightfield_shader(const char* infile,
 	hf.m_input_vertical_scale = input_vertical_scale;
 
 	// Compute and write the lightmap, if any.
-	printf("Shading... ");
+	printf("Shading...      ");
 
 	const char*	spinner = "-\\|/";
 
-	int	width = (int) ((1 << hf.m_log_size) * resolution);
-	int	height = (int) ((1 << hf.m_log_size) * resolution);
+//	int	width = (int) ((1 << hf.m_log_size) * resolution);
+//	int	height = (int) ((1 << hf.m_log_size) * resolution);
+	int	width = dimension;
+	int	height = dimension;
+	float	resolution = float(dimension) / (hf.m_size);
 	
 	// create a buffer to hold a 1-pixel high RGB buffer.  We're
 	// going to create our texture one scanline at a time.
@@ -511,6 +525,10 @@ void	heightfield_shader(const char* infile,
 				}
 			}
 			else {
+				r = g = b = 255;
+			}
+#if 0
+			else {
 				// Select a tile.
 				const texture_tile*	t;
 				if (tilemap) {
@@ -533,6 +551,7 @@ void	heightfield_shader(const char* infile,
 				Uint8	r, g, b, a;
 				ReadPixel(t->image, tx, ty, &r, &g, &b, &a);
 			}
+#endif // 0
 
 			// apply light to the color
 			Uint8	light = hf.compute_light(i / resolution, j / resolution);
@@ -551,7 +570,9 @@ void	heightfield_shader(const char* infile,
 		row_pointer[0] = texture_pixels;
 		jpeg_write_scanlines(&cinfo, row_pointer, 1);
 
-		printf("\b%c", spinner[j&3]);
+		int	percent_done = int(100.0f * float(j) / (height - 1));
+
+		printf("\b\b\b\b\b\b%3d%% %c", percent_done, spinner[j&3]);
 	}}
 	
 	jpeg_finish_compress(&cinfo);
@@ -562,6 +583,8 @@ void	heightfield_shader(const char* infile,
 	printf("done\n");
 }
 
+
+#if 0
 
 void	initialize_tileset(array<texture_tile>* tileset)
 // Adds a few standard tiles to the given tileset.
@@ -628,6 +651,10 @@ const texture_tile*	choose_tile(const array<texture_tile>& tileset, int r, int g
 
 	return result;
 }
+
+
+#endif // 0
+
 
 // Local Variables:
 // mode: C++
