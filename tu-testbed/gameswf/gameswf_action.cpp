@@ -155,20 +155,103 @@ namespace gameswf
 
 				case 0x08:	// toggle quality
 				case 0x09:	// stop sounds
-				case 0x0A:	// add
-				case 0x0B:	// subtract
-				case 0x0C:	// multiply
-				case 0x0D:	// divide
-				case 0x0E:	// equal
-				case 0x0F:	// less than
-				case 0x10:	// logical and
-				case 0x11:	// logical or
-				case 0x12:	// logical not
-				case 0x13:	// string equal
-				case 0x14:	// string length
-				case 0x15:	// substring
-				case 0x18:	// int
 					break;
+
+				case 0x0A:	// add
+				{
+					env->top(1) += env->top(0);
+					env->drop(1);
+					break;
+				}
+				case 0x0B:	// subtract
+				{
+					env->top(1) -= env->top(0);
+					env->drop(1);
+					break;
+				}
+				case 0x0C:	// multiply
+				{
+					env->top(1) *= env->top(0);
+					env->drop(1);
+					break;
+				}
+				case 0x0D:	// divide
+				{
+					env->top(1) /= env->top(0);
+					env->drop(1);
+					break;
+				}
+				case 0x0E:	// equal
+				{
+					env->top(1).set(env->top(1) == env->top(0));
+					env->drop(1);
+					break;
+				}
+				case 0x0F:	// less than
+				{
+					env->top(1).set(env->top(1) < env->top(1));
+					env->drop(1);
+					break;
+				}
+				case 0x10:	// logical and
+				{
+					env->top(1).set(env->top(1).to_bool() && env->top(0).to_bool());
+					env->drop(1);
+					break;
+				}
+				case 0x11:	// logical or
+				{
+					env->top(1).set(env->top(1).to_bool() && env->top(0).to_bool());
+					env->drop(1);
+					break;
+				}
+				case 0x12:	// logical not
+				{
+					env->top(0).set(! env->top(0).to_bool());
+					break;
+				}
+				case 0x13:	// string equal
+				{
+					env->top(1).set(env->top(1).to_tu_string() == env->top(0).to_tu_string());
+					env->drop(1);
+					break;
+				}
+				case 0x14:	// string length
+				{
+					env->top(0).set(env->top(0).to_tu_string().length());
+					break;
+				}
+				case 0x15:	// substring
+				{
+					int	size = int(env->top(0).to_number());
+					int	base = int(env->top(1).to_number()) - 1;
+					const tu_string&	str = env->top(2).to_tu_string();
+
+					// Keep base within range.
+					base = iclamp(base, 0, str.length());
+
+					// Truncate if necessary.
+					size = imin(str.length() - base, size);
+
+					// @@ This can be done without new allocations if we get dirtier w/ internals
+					// of as_value and tu_string...
+					tu_string	new_string = str.c_str() + base;
+					new_string.resize(size);
+
+					env->drop(2);
+
+					break;
+				}
+				case 0x17:	// pop
+				{
+					env->drop(1);
+					break;
+				}
+				case 0x18:	// int
+				{
+					env->top(0).set(int(floor(env->top(0).to_number())));
+					break;
+				}
 				case 0x1C:	// get variable
 				{
 					as_value	varname = env->pop();
@@ -183,7 +266,16 @@ namespace gameswf
 					break;
 				}
 				case 0x20:	// set target expression
+				{
+					// @@ TODO
+					break;
+				}
 				case 0x21:	// string concat
+				{
+					env->top(1).string_concat(env->top(0).to_tu_string());
+					env->drop(1);
+					break;
+				}
 				case 0x22:	// get property
 				case 0x23:	// set property
 				case 0x24:	// duplicate clip (sprite?)
@@ -191,12 +283,38 @@ namespace gameswf
 				case 0x26:	// trace
 				case 0x27:	// start drag movie
 				case 0x28:	// stop drag movie
-				case 0x29:	// string less than
-				case 0x30:	// random
-				case 0x31:	// mb length
-				case 0x32:	// ord
-				case 0x33:	// chr
 					break;
+				case 0x29:	// string less than
+				{
+					env->top(1).set(env->top(1).to_tu_string() < env->top(0).to_tu_string());
+					break;
+				}
+				case 0x30:	// random
+				{
+					int	max = int(env->top(0).to_number());
+					if (max < 1) max = 1;
+					env->top(0).set(double(rand() % max));
+					break;
+				}
+				case 0x31:	// mb length
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x32:	// ord
+				{
+					// ASCII code of first character
+					env->top(0).set(env->top(0).to_string()[0]);
+					break;
+				}
+				case 0x33:	// chr
+				{
+					char	buf[2];
+					buf[0] = int(env->top(0).to_number());
+					buf[1] = 0;
+					env->top(0).set(buf);
+					break;
+				}
 
 				case 0x34:	// get timer
 					// Push milliseconds since we started playing.
@@ -204,14 +322,98 @@ namespace gameswf
 					break;
 
 				case 0x35:	// mb substring
+				{
+					// @@ TODO
+				}
 				case 0x37:	// mb chr
+				{
+					// @@ TODO
 					break;
+				}
+				case 0x3A:	// delete
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x3B:	// delete all
+				{
+					// @@ TODO
+					break;
+				}
 
 				case 0x3C:	// set local
 				{
 					as_value	value = env->pop();
 					as_value	varname = env->pop();
 					env->set_local(varname.to_tu_string(), value);
+					break;
+				}
+
+				case 0x3D:	// call function
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x3E:	// return
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x3F:	// modulo
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x40:	// new
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x41:	// declare local
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x42:	// declare array
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x43:	// declare object
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x44:	// type of
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x45:	// get target
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x46:	// enumerate
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x47:	// add (typed)
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x48:	// less than (typed)
+				{
+					// @@ TODO
+					break;
+				}
+				case 0x49:	// equal (typed)
+				{
+					// @@ identical to untyped equal, as far as I can tell...
+					env->top(1).set(env->top(1) == env->top(0));
+					env->drop(1);
 					break;
 				}
 
@@ -420,8 +622,27 @@ namespace gameswf
 					break;
 				}
 				case 0x99:	// branch always (goto)
+				{
+					Sint16	offset = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					next_pc += offset;
+					// @@ TODO range checks
+					break;
+				}
 				case 0x9A:	// get url 2
+					break;
 				case 0x9D:	// branch if true
+				{
+					Sint16	offset = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					
+					bool	test = env->top(0).to_bool();
+					env->drop(1);
+					if (test)
+					{
+						next_pc += offset;
+						// @@ TODO range checks
+					}
+					break;
+				}
 				case 0x9E:	// call frame
 				case 0x9F:	// goto expression (?)
 					break;
@@ -468,6 +689,72 @@ namespace gameswf
 		}
 		
 		return m_string_value;
+	}
+
+	
+	double	as_value::to_number() const
+	// Conversion to double.
+	{
+		if (m_type == STRING)
+		{
+			m_number_value = atof(m_string_value.c_str());
+		}
+		else if (m_type == NUMBER)
+		{
+			// don't need to do anything.
+		}
+		else
+		{
+			m_number_value = 0;
+		}
+		
+		return m_number_value;
+	}
+
+
+	bool	as_value::to_bool() const
+	// Conversion to boolean.
+	{
+		if (m_type == STRING)
+		{
+			// @@ Hm.
+			return to_number() != 0.0;
+		}
+		else if (m_type == NUMBER)
+		{
+			return m_number_value != 0.0;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+
+	bool	as_value::operator==(const as_value& v) const
+	// Return true if operands are equal.
+	{
+		if (m_type == STRING)
+		{
+			return m_string_value == v.to_tu_string();
+		}
+		else if (m_type == NUMBER)
+		{
+			return m_number_value == v.to_number();
+		}
+		else
+		{
+			return m_type == v.m_type;
+		}
+	}
+
+	
+	void	as_value::string_concat(const tu_string& str)
+	// Sets *this to this string plus the given string.
+	{
+		to_tu_string();	// make sure our m_string_value is initialized
+		m_type = STRING;
+		m_string_value += str;
 	}
 
 

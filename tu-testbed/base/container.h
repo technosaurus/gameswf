@@ -589,6 +589,15 @@ public:
 		strcpy(&m_buffer[old_length], str);
 	}
 
+	void	operator+=(const tu_string& str)
+	{
+		int	str_length = str.length();
+		int	old_length = length();
+		assert(old_length >= 0);
+		m_buffer.resize(old_length + str_length + 1);
+		strcpy(&m_buffer[old_length], str.c_str());
+	}
+
 	tu_string	operator+(const char* str) const
 	// NOT EFFICIENT!  But convenient.
 	{
@@ -597,6 +606,14 @@ public:
 		return new_string;
 	}
 
+	bool	operator<(const char* str) const
+	{
+		return strcmp(c_str(), str) < 0;
+	}
+	bool	operator<(const tu_string& str) const
+	{
+		return *this < str.c_str();
+	}
 
 	void	resize(int new_size)
 	{

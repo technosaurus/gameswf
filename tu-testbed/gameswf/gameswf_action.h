@@ -47,7 +47,7 @@ namespace gameswf
 		};
 
 		type	m_type;
-		double	m_number_value;
+		mutable	double	m_number_value;	// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
 		mutable tu_string	m_string_value;
 
 		as_value()
@@ -103,6 +103,25 @@ namespace gameswf
 		bool	is_string() const { return m_type == STRING; }
 		const char*	to_string() const;
 		const tu_string&	to_tu_string() const;
+
+		double	to_number() const;
+		bool	to_bool() const;
+
+		void	set(const tu_string& str) { m_type = STRING; m_string_value = str; }
+		void	set(const char* str) { m_type = STRING; m_string_value = str; }
+		void	set(double val) { m_type = NUMBER; m_number_value = val; }
+		void	set(bool val) { m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
+		void	set(int val) { set(double(val)); }
+
+		bool	operator==(const as_value& v) const;
+		bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
+		void	operator+=(const as_value& v) { set(this->to_number() + v.to_number()); }
+		void	operator-=(const as_value& v) { set(this->to_number() - v.to_number()); }
+		void	operator*=(const as_value& v) { set(this->to_number() * v.to_number()); }
+		void	operator/=(const as_value& v) { set(this->to_number() / v.to_number()); }	// @@ check for div/0
+		void	operator&(const as_value& v) { set(int(this->to_number()) & int(v.to_number())); }
+
+		void	string_concat(const tu_string& str);
 	};
 
 
@@ -136,10 +155,13 @@ namespace gameswf
 		movie*	get_target() { return m_target; }
 		void	set_target(movie* target) { m_target = target; }
 
+		// stack access/manipulation
+		// @@ TODO do more checking on these
 		template<class T>
 		void	push(T val) { m_stack.push_back(as_value(val)); }
-
 		as_value	pop() { return m_stack.pop_back(); }
+		as_value&	top(int dist) { return m_stack[m_stack.size() - 1 - dist]; }
+		void	drop(int count) { m_stack.resize(m_stack.size() - count); }
 
 		as_value	get_variable(const tu_string& varname) const;
 
