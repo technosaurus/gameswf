@@ -122,7 +122,7 @@ namespace gameswf
 		for (int i = 0, n = get_character_count(); i < n; i++)
 		{
 			character*	ch = get_character(i);
-			if (strcmp(ch->get_name(), name) == 0)
+			if (ch->get_name() == name.c_str())
 			{
 				// Found it.
 				return ch;

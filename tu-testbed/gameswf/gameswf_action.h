@@ -89,7 +89,7 @@ namespace gameswf
 	struct as_as_function : public ref_counted
 	{
 		action_buffer*	m_action_buffer;
-		as_environment*	m_env;	// @@ need ref-counting here!!!
+		as_environment*	m_env;	// @@ might need some kind of ref count here, but beware cycles
 		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
 		int	m_start_pc;
 		int	m_length;
@@ -112,7 +112,7 @@ namespace gameswf
 
 		void	add_arg(const char* name)
 		{
-			m_args.push_back(name);
+			m_args.push_back(tu_string(name));
 		}
 
 		void	set_length(int len) { assert(len >= 0); m_length = len; }
@@ -343,7 +343,7 @@ namespace gameswf
 		template<class T>
 		void	push(T val) { push_val(as_value(val)); }
 		void	push_val(const as_value& val) { m_stack.push_back(val); }
-		as_value	pop() { return m_stack.pop_back(); }
+		as_value	pop() { as_value result = m_stack.back(); m_stack.pop_back(); return result; }
 		as_value&	top(int dist) { return m_stack[m_stack.size() - 1 - dist]; }
 		as_value&	bottom(int index) { return m_stack[index]; }
 		void	drop(int count) { m_stack.resize(m_stack.size() - count); }

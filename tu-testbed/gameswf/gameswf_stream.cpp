@@ -261,7 +261,8 @@ namespace gameswf
 	// Seek to the end of the most-recently-opened tag.
 	{
 		assert(m_tag_stack.size() > 0);
-		int	end_pos = m_tag_stack.pop_back();
+		int	end_pos = m_tag_stack.back();
+		m_tag_stack.pop_back();
 		m_input->set_position(end_pos);
 
 		m_unused_bits = 0;
