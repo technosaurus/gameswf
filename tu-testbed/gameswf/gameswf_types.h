@@ -117,8 +117,8 @@ namespace gameswf
 		float	m_x_min, m_x_max, m_y_min, m_y_max;
 
 		void	read(stream* in);
-		void	print(FILE* out);
-		bool	point_test(float x, float y);
+		void	print(FILE* out) const;
+		bool	point_test(float x, float y) const;
 		void	expand_to_point(float x, float y);
 		float width() const { return m_x_max-m_x_min; }
 		float height() const { return m_y_max-m_y_min; }
