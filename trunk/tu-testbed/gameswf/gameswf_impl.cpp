@@ -3684,7 +3684,7 @@ namespace gameswf
 
 
 		/*sprite_instance*/
-		void	do_load_events()
+		virtual void	on_event_load()
 		// Do the events that (appear to) happen as the movie
 		// loads.  frame1 tags and actions are executed (even
 		// before advance() is called).  Then the onLoad event
@@ -3723,8 +3723,6 @@ namespace gameswf
 	{
 		smart_ptr<sprite_instance>	si = new sprite_instance(this, parent->get_root(), parent, id);
 
-		si->do_load_events();
-
 		return si.get_ptr();
 	}
 
@@ -3741,7 +3739,10 @@ namespace gameswf
 		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
 
-		root_movie->do_load_events();
+		// Must do loading events.  For child sprites this is
+		// done by the dlist, but root movies don't get added
+		// to a dlist, so we do it here.
+		root_movie->on_event_load();
 
 		m->add_ref();
 		return m;
