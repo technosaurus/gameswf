@@ -1,0 +1,58 @@
+#LyX 1.1 created this file. For more info see http://www.lyx.org/
+\lyxformat 218
+\textclass article
+\language english
+\inputencoding auto
+\fontscheme default
+\graphics default
+\paperfontsize default
+\spacing single 
+\papersize Default
+\paperpackage a4
+\use_geometry 0
+\use_amsmath 0
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\quotes_times 2
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+
+\layout Standard
+
+Motivation:
+\layout Standard
+
+* perspective transform
+\layout Standard
+
+* large environments
+\layout Standard
+
+* high detail
+\layout Standard
+
+Rendering
+\layout Standard
+
+* some good LOD algorithms
+\layout Standard
+
+Now The Problem Is: getting the data to the renderer
+\layout Standard
+
+* compression?
+\layout Standard
+
+* adaptive detail?
+\layout Standard
+
+* procedural detail?
+\layout Standard
+
+* page off disk (local or remote)
+\the_end
