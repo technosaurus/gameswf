@@ -1,76 +1,83 @@
+// gameswf_xml.h      -- Rob Savoye <rob@welcomehome.org> 2005
 
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#ifdef HAVE_LIBXML
+#include <libxml/nanohttp.h>
+#endif
 #include "gameswf_movie.h"
 #include "gameswf_log.h"
+#include "base/tu_file.h"
+#include "base/image.h"
+#include "gameswf_render.h"
 
 namespace gameswf
 {
 
 MovieClipLoader::MovieClipLoader()
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
+  _mcl.bytes_loaded = 0;
+  _mcl.bytes_total = 0;  
 }
 
 MovieClipLoader::~MovieClipLoader()
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 void
 MovieClipLoader::load(const tu_string& filespec)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 // progress of the downloaded file(s).
-as_object *
+struct mcl *
 MovieClipLoader::getProgress(as_object *ao)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
-  return NULL;
+
+  return &_mcl;
 }
 
 
 bool
 MovieClipLoader::loadClip(const tu_string& str, void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
+
   return false;
 }
 
 void
 MovieClipLoader::unloadClip(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 
 void
 MovieClipLoader::addListener(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 
 void
 MovieClipLoader::removeListener(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
   
@@ -79,59 +86,217 @@ MovieClipLoader::removeListener(void *)
 void
 MovieClipLoader::onLoadStart(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 void
 MovieClipLoader::onLoadProgress(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 void
 MovieClipLoader::onLoadInit(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 void
 MovieClipLoader::onLoadComplete(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 void
 MovieClipLoader::onLoadError(void *)
 {
-#ifdef __FUNCTION__
   log_msg("%s: \n", __FUNCTION__);
-#endif
 }
 
 void
 moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __FUNCTION__
-  // const tu_string filespec = env->bottom(first_arg).to_string();
+  as_value	val, method;
+  struct stat   stats;
+  int           fd;
+  
   log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, nargs);
-#endif  
+  moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
+  
+  tu_string url = env->bottom(first_arg).to_string();  
+  as_object *target = (as_object *)env->bottom(first_arg-1).to_object();
+  log_msg("load clip: %s, target is: 0x%x\n", url.c_str(), (void *)target);
+
+  xmlNanoHTTPInit();            // This doesn't do much for now, but in the
+                                // future it might, so here it is...
+  
+  if (url.utf8_substring(0, 4) == "file") {
+    url = url.utf8_substring(19, url.length());
+    // If the file doesn't exist, don't try to do anything.
+    if (stat(url.c_str(), &stats) < 0) {
+      fprintf(stderr, "ERROR: doesn't exist: %s\n", url.c_str());
+      result->set(false);
+      return;
+    }
+  }
+
+  // Grab the filename off the end of the URL, and use the same name
+  // as the disk file when something is fetched. Store files in /tmp/.
+  // If the file exists, libxml properly replaces it.
+  char *filename = strrchr(url.c_str(), '/');
+  tu_string filespec = "/tmp";
+  filespec += filename; 
+    
+  // fetch resource from URL
+  xmlNanoHTTPFetch(url.c_str(), filespec.c_str(), NULL);
+
+  // Call the callback since we've started loading the file
+  if (this_ptr->get_member("onLoadStart", &method)) {
+    //log_msg("FIXME: Found onLoadStart!\n");
+    as_c_function_ptr	func = method.to_c_function();
+    env->set_variable("success", true, 0);
+    if (func)
+      {
+        // It's a C function.  Call it.
+        log_msg("Calling C function for onLoadStart\n");
+        (*func)(&val, this_ptr, env, 0, 0);
+      }
+    else if (as_as_function* as_func = method.to_as_function())
+      {
+        // It's an ActionScript function.  Call it.
+        log_msg("Calling ActionScript function for onLoadStart\n");
+        (*as_func)(&val, this_ptr, env, 0, 0);
+      }
+    else
+      {
+        log_error("error in call_method(): method is not a function\n");
+      }    
+  } else {
+    log_error("Couldn't find onLoadStart!\n");
+  }
+
+  // See if the file exists
+  if (stat(filespec.c_str(), &stats) < 0) {
+    log_error("Clip doesn't exist: %s\n", filespec.c_str());
+    result->set(false);
+    return;
+  }
+
+  tu_string suffix = filespec.utf8_substring(filespec.length() - 4, filespec.length());
+  log_msg("File suffix to load is: %s\n", suffix.c_str());
+
+  if (suffix == ".swf") {
+    movie_definition_sub*	md = create_library_movie_sub(filespec.c_str());
+    if (md == NULL) {
+      log_error("can't create movie_definition_sub for %s\n", filespec.c_str());
+      return;
+    }
+    gameswf::movie_interface* extern_movie;
+    extern_movie = md->create_instance();
+    if (extern_movie == NULL) {
+      log_error("can't create extern movie_interface for %s\n", filespec.c_str());
+      return;
+    }
+  
+    save_extern_movie(extern_movie);
+    
+    character* tar = (character*)target;
+    const char* name = tar->get_name();
+    Uint16 depth = tar->get_depth();
+    bool use_cxform = false;
+    cxform color_transform =  tar->get_cxform();
+    bool use_matrix = false;
+    matrix mat = tar->get_matrix();
+    float ratio = tar->get_ratio();
+    Uint16 clip_depth = tar->get_clip_depth();
+    
+    movie* parent = tar->get_parent();
+    movie* new_movie = static_cast<movie*>(extern_movie)->get_root_movie();
+    
+    assert(parent != NULL);
+    
+    ((character*)new_movie)->set_parent(parent);
+    
+    parent->replace_display_object(
+                                   (character*) new_movie,
+                                   name,
+                                   depth,
+                                   use_cxform,
+                                   color_transform,
+                                   use_matrix,
+                                   mat,
+                                   ratio,
+                                   clip_depth);
+  } else if (suffix == ".jpg") {
+    // Just case the filespec suffix claims it's a jpeg, we have to check,
+    // since when grabbing an image form a web server that doesn't exist,
+    // we don't get an error, we get a short HTML page containing a 404.
+    if ((fd = open(filespec.c_str(), O_RDONLY)) > 0) {
+      unsigned char buf[5];
+      memset(buf, 0, 5);
+      if (read(fd, buf, 4)) {
+        // This is the magic number for any JPEG format file
+        if ((buf[0] == 0xff) && (buf[1] == 0xd8) && (buf[2] == 0xff)) {
+          log_msg("File is a JPEG!\n");
+        } else {
+          log_error("File is not a JPEG!\n");
+          unlink(filespec.c_str());
+          result->set(false);
+          return;
+        }
+      } else {
+        log_error("Can't read image header!\n");
+        unlink(filespec.c_str());
+        result->set(false);
+        return;
+      }
+    } else {
+        log_error("Can't open image!\n");
+        unlink(filespec.c_str());
+        result->set(false);
+        return;
+    }
+    
+    bitmap_info*	bi = NULL;
+    image::rgb*	im = image::read_jpeg(filespec.c_str());
+  }
+  
+#if 0
+  bitmap_info*	bi = NULL;
+  image::rgb*	im = image::read_jpeg(filespec.c_str());
+  if (im != NULL) {
+    bi = render::create_bitmap_info_rgb(im);
+    delete im;
+  } else {
+    log_error("Can't read jpeg: %s\n", filespec.c_str());
+  }
+#endif
+  
+  struct mcl *mcl_data = ptr->mov_obj.getProgress(target);
+
+  // the callback since we're done loading the file
+  mcl_data->bytes_loaded = stats.st_size;
+  mcl_data->bytes_total = stats.st_size;
+
+  env->set_member("target_mc", target);
+  //env->push(as_value(target));
+  moviecliploader_onload_complete(result, this_ptr, env, 0, 0);
+  //env->pop();
+  
+  result->set(true);
+
+  //unlink(filespec.c_str());
+  
+  xmlNanoHTTPCleanup();
+  
 }
 
 void
 moviecliploader_unloadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
   const tu_string filespec = env->bottom(first_arg).to_string();
-#ifdef __FUNCTION__
   log_msg("%s: FIXME: Load Movie Clip: %s\n", __FUNCTION__, filespec.c_str());
-#endif  
+  
 }
 
 void
@@ -191,9 +356,7 @@ moviecliploader_new(gameswf::as_value* result, gameswf::as_object_interface* thi
 void
 moviecliploader_onload_init(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __FUNCTION__
   log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
-#endif
 }
 
 // Invoked when a call to MovieClipLoader.loadClip() has successfully
@@ -201,9 +364,7 @@ moviecliploader_onload_init(gameswf::as_value* result, gameswf::as_object_interf
 void
 moviecliploader_onload_start(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __FUNCTION__
   log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
-#endif
 }
 
 // Invoked every time the loading content is written to disk during
@@ -211,20 +372,21 @@ moviecliploader_onload_start(gameswf::as_value* result, gameswf::as_object_inter
 void
 moviecliploader_getprogress(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
-#endif
-  as_value	method;
-
-#ifdef __FUNCTION__
-  log_msg("%s:\n", __FUNCTION__);
-#endif
-    
+  log_msg("%s: nargs = %d\n", __FUNCTION__, nargs);
+  
   moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
   assert(ptr);
-  as_object *obj = (as_object *)env->bottom(first_arg).to_object();
-  result->set_as_object_interface(ptr->mov_obj.getProgress(obj));
+  
+  as_object *target = (as_object *)env->bottom(first_arg).to_object();
+  
+  struct mcl *mcl_data = ptr->mov_obj.getProgress(target);
 
+  mcl_as_object *mcl_obj = (mcl_as_object *)new mcl_as_object;
+
+  mcl_obj->set_member("bytesLoaded", mcl_data->bytes_loaded);
+  mcl_obj->set_member("bytesTotal",  mcl_data->bytes_total);
+  
+  result->set_as_object_interface(mcl_obj);
 }
 
 // Invoked when a file loaded with MovieClipLoader.loadClip() has
@@ -232,27 +394,84 @@ moviecliploader_getprogress(gameswf::as_value* result, gameswf::as_object_interf
 void
 moviecliploader_onload_complete(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
-#endif
+  as_value	val, method;
+  log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, nargs);
+  moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
+  
+  tu_string url = env->bottom(first_arg).to_string();  
+  as_object *target = (as_object *)env->bottom(first_arg-1).to_object();
+  log_msg("load clip: %s, target is: 0x%x\n", url.c_str(), (void *)target);
+
+  //log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
+  if (this_ptr->get_member("onLoadComplete", &method)) {
+    //log_msg("FIXME: Found onLoadComplete!\n");
+    as_c_function_ptr	func = method.to_c_function();
+    env->set_variable("success", true, 0);
+    if (func)
+      {
+        // It's a C function.  Call it.
+        log_msg("Calling C function for onLoadComplete\n");
+        (*func)(&val, this_ptr, env, 0, 0);
+      }
+    else if (as_as_function* as_func = method.to_as_function())
+      {
+        // It's an ActionScript function.  Call it.
+        log_msg("Calling ActionScript function for onLoadComplete\n");
+        (*as_func)(&val, this_ptr, env, 0, 0);
+      }
+    else
+      {
+        log_error("error in call_method(): method is not a function\n");
+      }    
+  } else {
+    log_error("Couldn't find onLoadComplete!\n");
+  }
 }
 
 // Invoked when a file loaded with MovieClipLoader.loadClip() has failed to load.
 void
 moviecliploader_onload_error(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __FUNCTION__
-  log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
-#endif
+  //log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
+  as_value	val, method;
+  log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, nargs);
+  moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
+  
+  tu_string url = env->bottom(first_arg).to_string();  
+  as_object *target = (as_object *)env->bottom(first_arg-1).to_object();
+  log_msg("load clip: %s, target is: 0x%x\n", url.c_str(), (void *)target);
+
+  //log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
+  if (this_ptr->get_member("onLoadError", &method)) {
+    //log_msg("FIXME: Found onLoadError!\n");
+    as_c_function_ptr	func = method.to_c_function();
+    env->set_variable("success", true, 0);
+    if (func)
+      {
+        // It's a C function.  Call it.
+        log_msg("Calling C function for onLoadError\n");
+        (*func)(&val, this_ptr, env, 0, 0);
+      }
+    else if (as_as_function* as_func = method.to_as_function())
+      {
+        // It's an ActionScript function.  Call it.
+        log_msg("Calling ActionScript function for onLoadError\n");
+        (*as_func)(&val, this_ptr, env, 0, 0);
+      }
+    else
+      {
+        log_error("error in call_method(): method is not a function\n");
+      }    
+  } else {
+    log_error("Couldn't find onLoadError!\n");
+  }
 }
 
 // This is the default event handler. To wind up here is an error.
 void
 moviecliploader_default(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-#ifdef __FUNCTION__
   log_msg("%s: FIXME: Default event handler, you shouldn't be here!\n", __FUNCTION__);
-#endif
 }
 
 } // end of gameswf namespace
