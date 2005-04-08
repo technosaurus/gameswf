@@ -7,6 +7,11 @@
 
 namespace gameswf
 {
+  struct mcl {
+    int bytes_loaded;
+    int bytes_total;
+  };
+  
   
 class MovieClipLoader : public gameswf::character_def
 {
@@ -16,7 +21,7 @@ class MovieClipLoader : public gameswf::character_def
 
   void load(const tu_string& filespec);
   
-  gameswf::as_object *getProgress(gameswf::as_object *ao);
+  struct mcl *getProgress(as_object *ao);
 
   bool loadClip(const tu_string& str, void *);
   void unloadClip(void *);
@@ -35,11 +40,17 @@ class MovieClipLoader : public gameswf::character_def
   tu_string     _filespec;
   int           _progress;
   bool          _error;
+  struct mcl    _mcl;
 };
 
 struct moviecliploader_as_object : public gameswf::as_object
 {
   MovieClipLoader mov_obj;
+};
+
+struct mcl_as_object : public gameswf::as_object
+{
+  struct mcl data;
 };
 
 void

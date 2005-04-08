@@ -22,6 +22,9 @@ namespace gameswf
 class XMLAttr
 {
 public:
+  XMLAttr();
+  ~XMLAttr();
+  
   tu_string          _name;
   gameswf::as_value  _value;
 private:

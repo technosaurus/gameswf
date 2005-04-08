@@ -127,7 +127,7 @@ namespace gameswf
 
 		if (target == root_movie)
 		{
-			extern_movie = create_library_movie_inst_sub(md);
+			extern_movie = create_library_movie_inst_sub(md);			
 			if (extern_movie == NULL)
 			{
 				log_error("can't create extern root movie_interface for %s\n", infile.c_str());

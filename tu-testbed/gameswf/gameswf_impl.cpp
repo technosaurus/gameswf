@@ -297,7 +297,7 @@ namespace gameswf
 	struct import_info
 	{
 		tu_string	m_source_url;
-		int	m_character_id;
+		int	        m_character_id;
 		tu_string	m_symbol;
 
 		import_info()
@@ -329,13 +329,13 @@ namespace gameswf
 	struct movie_def_impl : public movie_definition_sub
 	{
 		hash<int, smart_ptr<character_def> >	m_characters;
-		hash<int, smart_ptr<font> >	m_fonts;
+		hash<int, smart_ptr<font> >	 m_fonts;
 		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
 		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
-		array<array<execute_tag*> >	m_playlist;	// A list of movie control events for each frame.
-		array<array<execute_tag*> >	m_init_action_list;	// Init actions for each frame.
-		stringi_hash<int>	m_named_frames;	// 0-based frame #'s
-		stringi_hash<smart_ptr<resource> >	m_exports;
+		array<array<execute_tag*> >	   m_playlist;	// A list of movie control events for each frame.
+		array<array<execute_tag*> >	   m_init_action_list;	// Init actions for each frame.
+		stringi_hash<int>	           m_named_frames;	// 0-based frame #'s
+		stringi_hash<smart_ptr<resource> > m_exports;
 
 		// Items we import.
 		array<import_info>	m_imports;
@@ -2864,11 +2864,11 @@ namespace gameswf
 
 	struct sprite_definition : public movie_definition_sub, public character_def
 	{
-		movie_definition_sub*	m_movie_def;		// parent movie.
-		array<array<execute_tag*> >	m_playlist;	// movie control events for each frame.
-		stringi_hash<int>	m_named_frames;	// stores 0-based frame #'s
-		int	m_frame_count;
-		int	m_loading_frame;
+		movie_definition_sub*	     m_movie_def;		// parent movie.
+		array<array<execute_tag*> >  m_playlist;	// movie control events for each frame.
+		stringi_hash<int>	     m_named_frames;	// stores 0-based frame #'s
+		int	                     m_frame_count;
+		int	                     m_loading_frame;
 //@@ KILL		action_buffer* m_init_actions;         
 //@@ KILL		bool m_do_init_actions;
 		sprite_definition(movie_definition_sub* m)
@@ -3070,11 +3070,11 @@ namespace gameswf
 		array<action_buffer*>	m_action_list;
 
 		play_state	m_play_state;
-		int	m_current_frame;
-		float	m_time_remainder;
-		bool	m_update_frame;
-		bool	m_has_looped;
-		bool	m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
+		int		m_current_frame;
+		float		m_time_remainder;
+		bool		m_update_frame;
+		bool		m_has_looped;
+		bool	        m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
 		array<bool>	m_init_actions_executed;	// a bit-array class would be ideal for this
 
 		as_environment	m_as_environment;
@@ -4462,27 +4462,21 @@ namespace gameswf
 		// on the XML socket connection.
 		virtual void	on_event_xmlsocket_onxml()
 		{
-#ifdef __FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-#endif
 			on_event(event_id::SOCK_XML);
 		}
 		
 		// Do the events that (appear to) happen on a specified interval.
 		virtual void	on_event_interval_timer()
 		{
-#ifdef __FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-#endif
 			on_event(event_id::TIMER);
 		}
 
 		// Do the events that happen as a MovieClip (swf 7 only) loads.
 		virtual void	on_event_load_progress()
 		{
-#ifdef __FUNCTION__
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-#endif
 			on_event(event_id::LOAD_PROGRESS);
 		}
 

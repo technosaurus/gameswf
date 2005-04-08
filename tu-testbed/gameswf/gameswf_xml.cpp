@@ -26,15 +26,36 @@
 namespace gameswf
 {
 
+XMLAttr::XMLAttr()
+{
+  //log_msg("%s: 0x%x \n", __FUNCTION__, (void *)this);
+}
+
+XMLAttr::~XMLAttr()
+{
+  //log_msg("%s: 0x%x \n", __FUNCTION__, (void *)this);
+}
+  
 XMLNode::XMLNode()
 {
+  //log_msg("%s: 0x%x \n", __FUNCTION__, (void *)this);
 }
 
 XMLNode::~XMLNode()
 {
-  log_msg("%s: \n", __FUNCTION__);
-}
+  int i;
+  //log_msg("%s: 0x%x \n", __FUNCTION__, (void *)this);
 
+  for (i=0; i<_children.size(); i++) {
+    delete _children[i];
+  }
+  _children.clear();
+    
+  for (i=0; i<_attributes.size(); i++) {
+    delete _attributes[i];
+  }
+  _attributes.clear();
+}
 
 XML::XML()
 {
@@ -245,14 +266,6 @@ XML::extractNode(xmlNodePtr node)
 bool
 XML::parseDoc(xmlDocPtr document)
 {
-#if 0
-  // struct node *element, *child, *first;
-  XMLNode *element, *child, *grandchild;
-  xmlNodePtr children;
-  xmlNodePtr lastchild;
-  const xmlChar *tmpstr;
-  xmlAttrPtr attr;
-#endif
   XMLNode *top;
   xmlNodePtr cur;
 
@@ -263,127 +276,12 @@ XML::parseDoc(xmlDocPtr document)
 
   cur = xmlDocGetRootElement(document);
 
-#if 1
   if (cur != NULL) {
     top = extractNode(cur);
     //_nodes->_name = reinterpret_cast<const char *>(cur->name);
     _nodes = top;
     //cur = cur->next;
   }
-#else
-      // nuke everything
-
-  _firstChild = cur;
-  log_msg("Adding First element %s\n", cur->name);
-  XMLNode *xmlnode = new XMLNode;
-  xmlnode->_name = reinterpret_cast<const char *>(cur->name);
-  _nodename = xmlnode->_name;   // FIXME:
-
-  _nodes._name = xmlnode->_name;
-  attr = cur->properties;
-  while (attr != NULL) {
-    log_msg("Node %s has property %s, value is %s\n",
-            _nodes._name.c_str(), attr->name, attr->children->content);
-    XMLAttr *attrib = new XMLAttr;
-    attrib->_name = reinterpret_cast<const char *>(attr->name);
-    attrib->_value = reinterpret_cast<const char *>(attr->children->content);
-    _nodes._attributes.push_back(attrib);
-    attr = attr->next;
-  }
-
-  cur = cur->xmlChildrenNode;
-  while (cur != NULL) {
-
-    if ((xmlStrcmp(cur->name, (const xmlChar *)"text"))) {
-#if 0
-      test = extractNode(cur); // FIXME: testing this only
-#endif
-    // element = new struct node; // FIXME:
-      element = new XMLNode;
-      element->_name = reinterpret_cast<const char *>(cur->name);
-      tmpstr = xmlNodeListGetString(_doc, cur->xmlChildrenNode, 1);
-      if (tmpstr != 0) {
-        element->_value = reinterpret_cast<const char *>(tmpstr);
-        
-      }
-      attr = cur->properties;
-      while (attr != NULL) {
-        log_msg("Childnode %s has property %s, value is %s\n",
-                element->_name.c_str(), attr->name, attr->children->content);
-        XMLAttr *attrib = new XMLAttr;
-        attrib->_name = reinterpret_cast<const char *>(attr->name);
-        attrib->_value = reinterpret_cast<const char *>(attr->children->content);
-        element->_attributes.push_back(attrib);
-        attr = attr->next;
-      }
-      
-      log_msg("Adding element %s\n", element->_name.c_str());
-      //  _firstNode.children.push_back(element);
-
-      children = cur->xmlChildrenNode;
-
-      while (children != NULL) {
-        if ((xmlStrcmp(children->name, (const xmlChar *)"text"))) {
-#if 0
-          child = extractNode(children); // FIXME: testing this only
-#else   
-          // child = new struct node;
-          child = new XMLNode;
-          child->_name = reinterpret_cast<const char *>(children->name);
-          
-          //tmpstr = xmlNodeListGetString(_doc, children->xmlChildrenNode, 1);
-          
-          //if (tmpstr != 0)          
-          if (children->children->children)
-            {
-              //tmpstr = xmlNodeListGetString(_doc, children->xmlChildrenNode, 1);
-              //child->_value = reinterpret_cast<const char *>(tmpstr);
-            log_msg("child %s has data %s\n", child->_name.c_str(), child->_value.to_string());
-
-            lastchild = children->xmlChildrenNode;
-            while (lastchild != NULL) {
-              if ((xmlStrcmp(lastchild->name, (const xmlChar *)"text"))) {
-                // child = new struct node;
-                grandchild = new XMLNode;
-                grandchild->_name = reinterpret_cast<const char *>(lastchild->name);
-                tmpstr = xmlNodeListGetString(_doc, lastchild->xmlChildrenNode, 1);
-                // FIXME: get attributes for grandchildren too!
-                if (tmpstr != 0) {
-                  grandchild->_value = reinterpret_cast<const char *>(tmpstr);
-                  log_msg("grandchild %s has data \"%s\"\n", grandchild->_name.c_str(), grandchild->_value.to_string());
-                } else {
-                  log_msg("Adding grandchild element %s\n", grandchild->_name.c_str());
-                }
-                attr = lastchild->properties;
-                while (attr != NULL) {
-                  log_msg("Node %s has property %s, value is %s\n",
-                          grandchild->_name.c_str(), attr->name, attr->children->content);
-                  XMLAttr *attrib = new XMLAttr;
-                  attrib->_name = reinterpret_cast<const char *>(attr->name);
-                  attrib->_value = reinterpret_cast<const char *>(attr->children->content);
-                  grandchild->_attributes.push_back(attrib);
-                  attr = attr->next;
-                }
-                child->_children.push_back(grandchild);
-              }
-              lastchild = lastchild->next; 
-            }
-          } else {
-            tmpstr = xmlNodeListGetString(_doc, children->xmlChildrenNode, 1);
-            child->_value = reinterpret_cast<const char *>(tmpstr);
-            log_msg("Adding child element %s\n", child->_name.c_str());
-          }
-          element->_children.push_back(child);
-#endif
-        }
-        children = children->next;
-      }
-      _nodes._children.push_back(element);
-      
-    }
-    cur = cur->next;
-  }
-#endif
   
   _loaded = true;
   return true;
@@ -560,7 +458,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
       xmlattr_as_object*	nattr_obj     = new xmlattr_as_object;
       for (j=0; j<xmlnodes->_attributes.size(); j++) {
         nattr_obj->set_member(xmlnodes->_attributes[j]->_name, xmlnodes->_attributes[j]->_value);
+        delete xmlnodes->_attributes[j];
       }
+      xmlnodes->_attributes.clear();
       xmlnode1_obj->set_member("attributes", nattr_obj);
     }
   }
@@ -578,7 +478,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
   for (i=0; i<xmlnodes->_attributes.size(); i++) {
     //log_msg("Created attribute %s at 0x%X for firstNode\n", xmlnodes->_attributes[i]->_name.c_str(), attr_obj);
     attr_obj->set_member(xmlnodes->_attributes[i]->_name, xmlnodes->_attributes[i]->_value);
+    delete xmlnodes->_attributes[i];
   }
+  xmlnodes->_attributes.clear();
   xmlfirstnode_obj->set_member("attributes", attr_obj);
   
   for (childa=0; childa < xmlnodes->length(); childa++) {
@@ -601,7 +503,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
         //        xmlnodes->_children[childa]->_attributes[i]->_name.c_str(), attr_obj);
         attr_obj->set_member(xmlnodes->_children[childa]->_attributes[i]->_name,
                              xmlnodes->_children[childa]->_attributes[i]->_value);
+        delete xmlnodes->_children[childa]->_attributes[i];
       }
+      xmlnodes->_children[childa]->_attributes.clear();
       xmlnodeA_obj->set_member("attributes", attr_obj);
     }
     if (nodevalue->to_string()) {
@@ -630,7 +534,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
         //        xmlnodes->_children[childa]->_attributes[i]->_name.c_str(), attr_obj);
         attr_obj->set_member(xmlnodes->_children[childa]->_attributes[i]->_name,
                              xmlnodes->_children[childa]->_attributes[i]->_value);
+        delete xmlnodes->_children[childa]->_attributes[i];
       }
+      xmlnodes->_children[childa]->_attributes.clear();
       xmlnodeB_obj->set_member("attributes", attr_obj);
     }
     for (childb=0; childb < xmlnodeA_obj->obj.length(); childb++) {
@@ -655,7 +561,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
         //log_msg("Created attribute %s at 0x%X for xmlnodeC\n", xmlnodes->_children[childa]->_children[childb]->_attributes[i]->_name.c_str(), attr_obj);
         attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_attributes[i]->_name,
                              xmlnodes->_children[childa]->_children[childb]->_attributes[i]->_value);
+        delete xmlnodes->_children[childa]->_children[childb]->_attributes[i];
         }
+        xmlnodes->_children[childa]->_children[childb]->_attributes.clear();
         xmlnodeC_obj->set_member("attributes", attr_obj);
       }
 
@@ -687,7 +595,9 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
               //        xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[i]->_name.c_str(), attr_obj);
               attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_name,
                                    xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_value);
+              delete xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k];
             }
+            xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes.clear();
             xmlnodeD_obj->set_member("attributes", attr_obj);
           }
         }
@@ -707,7 +617,6 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
           }
           inum = childd;
           xmlnodeD_obj->set_member(inum.to_string(), xmlnodeE_obj);
-          
           if (xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes.size() > 0) {
             xmlattr_as_object*	attr_obj     = new xmlattr_as_object;
             for (i=0; i<xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes.size(); i++) {
@@ -715,16 +624,24 @@ XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
               //        xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i]->_name.c_str(), attr_obj);
               attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i]->_name,
                                    xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i]->_value);
+              delete xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i];
             }
+            xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes.clear();
             xmlnodeE_obj->set_member("attributes", attr_obj);
-    }
-
+          }
+          delete xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd];
         }
-        //xmlnodeB_obj->set_member("length", xmlnodeB_obj->obj.length());      
+        xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children.clear();
+        //xmlnodeB_obj->set_member("length", xmlnodeB_obj->obj.length());
+        delete  xmlnodes->_children[childa]->_children[childb]->_children[childc];
       }
+      xmlnodes->_children[childa]->_children[childb]->_children.clear(); 
       xmlnodeB_obj->set_member("childNodes", xmlnodeC_obj);
+      delete  xmlnodes->_children[childa]->_children[childb];
     }
+    xmlnodes->_children[childa]->_children.clear();
   }
+  delete xmlnodes;
 }
 
 //
@@ -773,8 +690,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
 
   if (ptr->obj.hasChildNodes() == false) {
     log_error("%s: No child nodes!\n", __FUNCTION__);
-  }
-  
+  }  
   array<XMLNode *> childnodes = ptr->obj.childNodes();
   //  node
   node->obj = *ptr->obj.firstChild();
@@ -783,6 +699,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
 #if 1
   // The old way
   ptr->obj.setupStackFrames(ptr, env);
+  
 #else
   // The new recursive way
   ptr->obj.setupFrame(node, env);

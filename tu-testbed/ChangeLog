@@ -1,3 +1,15 @@
+2005-04-08  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xml.cpp (setupStackFrames): delete the XML
+	parsed data after setting up the stack frames.
+	* gameswf/gameswf_movie.cpp: Make sure the files exist, and is a
+	valid JPEG before trying to read it.
+
+2005-04-06  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_movie.cpp: New data structure to hold MCL data
+	for GetProgress().
+
 2005-04-03  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_xml.cpp (setupStackFrames): Grab nodeValue for
