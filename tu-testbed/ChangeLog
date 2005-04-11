@@ -1,3 +1,8 @@
+2005-04-10  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_test_ogl.cpp (main): Add -d option to supply a
+	different value for SDL_Delay() in the main loop.
+
 2005-04-08  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_xml.cpp (setupStackFrames): delete the XML

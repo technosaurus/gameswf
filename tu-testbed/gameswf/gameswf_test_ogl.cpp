@@ -35,7 +35,8 @@ void	print_usage()
 		"\n"
 		"  -h          Print this info.\n"
 		"  -s <factor> Scale the movie up/down by the specified factor\n"
-		"  -c          Turn SDL SEGFAULT trapping off\n"
+		"  -c          Produce a core file instead of letting SDL trap it\n"
+		"  -d num      Number of milli-seconds to delay in main loop\n"
 		"  -a          Turn antialiasing on/off.  (obsolete)\n"
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
@@ -180,6 +181,7 @@ int	main(int argc, char *argv[])
 	bool	do_render = true;
 	bool	do_loop = true;
 	bool	sdl_abort = true;
+	int     delay = 30;
 
 	for (int arg = 1; arg < argc; arg++)
 	{
@@ -223,6 +225,21 @@ int	main(int argc, char *argv[])
 				else
 				{
 					fprintf(stderr, "-a arg must be followed by 0 or 1 to disable/enable antialiasing\n");
+					print_usage();
+					exit(1);
+				}
+			}
+			else if (argv[arg][1] == 'd')
+			{
+				// Set a delay
+				arg++;
+				if (arg < argc)
+				{
+					delay = atoi(argv[arg]);
+				}
+				else
+				{
+					fprintf(stderr, "-d arg must be followed by number of milli-seconds to del in the main loop\n");
 					print_usage();
 					exit(1);
 				}
@@ -309,7 +326,6 @@ int	main(int argc, char *argv[])
 	{
 		sound = gameswf::create_sound_handler_sdl();
 		gameswf::set_sound_handler(sound);
-        
 		render = gameswf::create_render_handler_ogl();
 		gameswf::set_render_handler(render); 
 	}
@@ -623,7 +639,7 @@ int	main(int argc, char *argv[])
 			if (s_measure_performance == false)
 			{
 				// Don't hog the CPU.
-				SDL_Delay(30);
+				SDL_Delay(delay);
 			}
 			else
 			{
