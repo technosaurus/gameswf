@@ -401,7 +401,7 @@ namespace gameswf
 	}
 
 
-	void	font::output_cached_data(tu_file* out, const movie_definition::cache_options& options)
+	void	font::output_cached_data(tu_file* out, const cache_options& options)
 	// Dump our cached data into the given stream.
 	{
 // @@ Disabled.  Need to fix input_cached_data, so that it has a

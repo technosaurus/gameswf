@@ -91,7 +91,7 @@ namespace gameswf
 	void set_workdir(const char* dir);
 	void delete_unused_root();
 
-	struct movie : public movie_interface, public as_object_interface
+	struct movie : public movie_interface
 	{
 		virtual void set_extern_movie(movie_interface* m) { }
 		virtual movie_interface*	get_extern_movie() { return NULL; }
@@ -297,7 +297,6 @@ namespace gameswf
 		// as_object_interface stuff
 		virtual void	set_member(const tu_stringi& name, const as_value& val) { assert(0); }
 		virtual bool	get_member(const tu_stringi& name, as_value* val) { assert(0); return false; }
-		virtual const char*	get_text_value() const { return NULL; }	// edit_text_character overrides this
 
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
 
@@ -337,41 +336,6 @@ namespace gameswf
 		// Override me to provide this functionality.
 		{
 		}
-	};
-
-
-	// A character_def is the immutable data representing the template of a
-	// movie element.
-	struct character_def : public resource
-	{
-	private:
-		int	m_id;
-		
-	public:
-		character_def()
-			:
-			m_id(-1)
-		{
-		}
-
-		virtual ~character_def() {}
-
-		virtual void	display(character* instance_info) {}
-		virtual bool	point_test_local(float x, float y) { return false; }
-		virtual float	get_height_local() { return 0.0f; }
-		virtual float	get_width_local() { return 0.0f; }
-
-		virtual smart_ptr<character>	create_character_instance(movie* parent, int id);	// default is to make a generic_character
-
-		// From resource interface.
-		virtual character_def*	cast_to_character_def() { return this; }
-
-		//
-		// Caching.
-		//
-
-		virtual void	output_cached_data(tu_file* out, const movie_definition::cache_options& options) {}
-		virtual void	input_cached_data(tu_file* in) {}
 	};
 
 

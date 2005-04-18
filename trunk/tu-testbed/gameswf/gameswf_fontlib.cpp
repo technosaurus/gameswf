@@ -989,7 +989,7 @@ namespace fontlib
 		tu_file* out,
 		const array<font*>& fonts,
 		movie_definition_sub* owner,
-		const movie_definition::cache_options& options)
+		const cache_options& options)
 	// Save cached font data, including glyph textures, to a
 	// stream.  This is used by the movie caching code.
 	{

@@ -42,7 +42,7 @@ namespace gameswf
 			tu_file* out,
 			const array<font*>& fonts,
 			movie_definition_sub* owner,
-			const movie_definition::cache_options& options);
+			const cache_options& options);
 		
 		// Load a stream containing previously-saved cachded font
 		// data, including glyph texture info.

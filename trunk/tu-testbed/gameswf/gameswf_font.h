@@ -64,7 +64,7 @@ namespace gameswf
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	read_font_info(stream* in);
 
-		void	output_cached_data(tu_file* out, const movie_definition::cache_options& options);
+		void	output_cached_data(tu_file* out, const cache_options& options);
 		void	input_cached_data(tu_file* in);
 
 		void	wipe_texture_glyphs();

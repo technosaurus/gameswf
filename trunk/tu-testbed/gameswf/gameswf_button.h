@@ -131,7 +131,7 @@ namespace gameswf
 		button_character_definition();
 		virtual ~button_character_definition();
 
-		smart_ptr<character>	create_character_instance(movie* parent, int id);
+		character*	create_character_instance(movie* parent, int id);
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 	};
 

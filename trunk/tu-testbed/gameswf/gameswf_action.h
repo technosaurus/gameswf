@@ -367,20 +367,6 @@ namespace gameswf
 	};
 
 
-	struct as_object_interface : virtual public ref_counted
-	{
-		virtual ~as_object_interface() {}
-
-		// So that text_character's can return something reasonable.
-		virtual const char*	get_text_value() const = 0;
-
-		virtual void	set_member(const tu_stringi& name, const as_value& val) = 0;
-		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
-
-		virtual movie*	to_movie() = 0;
-	};
-
-
 // tulrich: I'm not too sure this is useful.  For things like
 // xml_as_object, is it sufficient to always store the event handlers
 // as ordinary members using their canonical names, instead of this

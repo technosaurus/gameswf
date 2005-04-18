@@ -9,11 +9,13 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 #ifdef HAVE_LIBXML
+// TODO: http and sockets and such ought to be factored out into an
+// abstract driver, like we do for file access.
 #include <libxml/nanohttp.h>
+#include <unistd.h>
+#include <fcntl.h>
 #endif
 #include "gameswf_movie.h"
 #include "gameswf_log.h"
@@ -116,6 +118,7 @@ MovieClipLoader::onLoadError(void *)
 void
 moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
+#if HAVE_LIBXML
   as_value	val, method;
   struct stat   stats;
   int           fd;
@@ -288,7 +291,7 @@ moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface
   //unlink(filespec.c_str());
   
   xmlNanoHTTPCleanup();
-  
+#endif // HAVE_LIBXML
 }
 
 void
