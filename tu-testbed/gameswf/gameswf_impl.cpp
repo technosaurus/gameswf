@@ -173,10 +173,10 @@ namespace gameswf
 	}
 
 
-	smart_ptr<character>	character_def::create_character_instance(movie* parent, int id)
+	character*	character_def::create_character_instance(movie* parent, int id)
 	// Default.  Make a generic_character.
 	{
-		return smart_ptr<character>(new generic_character(this, parent, id));
+		return new generic_character(this, parent, id);
 	}
 
 
@@ -1005,6 +1005,12 @@ namespace gameswf
 			m_movie = NULL;
 			m_def = NULL;
 		}
+
+		// @@ should these delegate to m_movie?  Probably...
+		virtual void	set_member(const tu_stringi& name, const as_value& val) {}
+		virtual bool	get_member(const tu_stringi& name, as_value* val) { return false; }
+		virtual movie*	to_movie() { assert(0); return 0; } // @@ should this return m_movie.get_ptr()?
+		
 
 		void	set_root_movie(movie* root_movie)
 		{
@@ -2862,7 +2868,7 @@ namespace gameswf
 	// and displayed in the parent movie's display list.
 
 
-	struct sprite_definition : public movie_definition_sub, public character_def
+	struct sprite_definition : public movie_definition_sub
 	{
 		movie_definition_sub*	     m_movie_def;		// parent movie.
 		array<array<execute_tag*> >  m_playlist;	// movie control events for each frame.
@@ -2948,7 +2954,7 @@ namespace gameswf
 		}
 
 		// overloads from character_def
-		virtual smart_ptr<character>	create_character_instance(movie* parent, int id);
+		virtual character*	create_character_instance(movie* parent, int id);
 
 
 		/* sprite_definition */
@@ -4509,14 +4515,14 @@ namespace gameswf
 	};
 
 
-	smart_ptr<character>	sprite_definition::create_character_instance(movie* parent, int id)
+	character*	sprite_definition::create_character_instance(movie* parent, int id)
 	// Create a (mutable) instance of our definition.  The
 	// instance is created to live (temporarily) on some level on
 	// the parent movie's display list.
 	{
-		smart_ptr<sprite_instance>	si = new sprite_instance(this, parent->get_root(), parent, id);
+		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
 
-		return si.get_ptr();
+		return si;
 	}
 
 

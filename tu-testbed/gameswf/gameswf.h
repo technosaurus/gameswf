@@ -25,15 +25,19 @@ namespace image { struct rgb; struct rgba; }
 // forward decl
 namespace jpeg { struct input; }
 class tu_string;
+class tu_stringi;
 
 
 namespace gameswf
 {
 	// Forward declarations.
 	struct action_buffer;
+	struct as_value;
 	struct bitmap_info;
+	struct character;
 	struct execute_tag;
 	struct font;
+	struct movie;
 	struct movie_interface;
 	struct render_handler;
 	struct resource;
@@ -126,11 +130,98 @@ namespace gameswf
 	};
 
 
+	struct font;
+	struct character_def;
+	struct sound_sample;
+	
+	// An interface for casting to different types of
+	// resources.
+	struct resource : public ref_counted
+	{
+		virtual ~resource() {}
+
+		// Override in derived classes that implement corresponding interfaces.
+		virtual font*	cast_to_font() { return 0; }
+		virtual character_def*	cast_to_character_def() { return 0; }
+		virtual sound_sample*	cast_to_sound_sample() { return 0; }
+	};
+
+
+	// This is the base class for all ActionScript-able objects
+	// ("as_" stands for ActionScript).
+	struct as_object_interface : public resource
+	{
+		virtual ~as_object_interface() {}
+
+		// So that text_character's can return something reasonable.
+		virtual const char*	get_text_value() const { return 0; }
+
+		virtual void	set_member(const tu_stringi& name, const as_value& val) = 0;
+		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
+
+		virtual movie*	to_movie() = 0;
+	};
+
+
+	// For caching precomputed stuff.  Generally of
+	// interest to gameswf_processor and programs like it.
+	struct cache_options
+	{
+		bool	m_include_font_bitmaps;
+		
+		cache_options()
+			:
+			m_include_font_bitmaps(true)
+		{
+		}
+	};
+
+
+	// A character_def is the immutable data representing the template of a
+	// movie element.
+	//
+	// @@ This is not really a public interface.  It's here so it
+	// can be mixed into movie_definition, movie_definition_sub,
+	// and sprite_definition, without using multiple inheritance.
+	struct character_def : public resource
+	{
+	private:
+		int	m_id;
+		
+	public:
+		character_def()
+			:
+			m_id(-1)
+		{
+		}
+
+		virtual ~character_def() {}
+
+		virtual void	display(character* instance_info) {}
+		virtual bool	point_test_local(float x, float y) { return false; }
+		virtual float	get_height_local() { return 0.0f; }
+		virtual float	get_width_local() { return 0.0f; }
+
+		// Should stick the result in a smart_ptr immediately.
+		virtual character*	create_character_instance(movie* parent, int id);	// default is to make a generic_character
+
+		// From resource interface.
+		virtual character_def*	cast_to_character_def() { return this; }
+
+		//
+		// Caching.
+		//
+
+		virtual void	output_cached_data(tu_file* out, const cache_options& options) {}
+		virtual void	input_cached_data(tu_file* in) {}
+	};
+
+
 	//
 	// This is the client program's interface to the definition of
 	// a movie (i.e. the shared constant source info).
 	//
-	struct movie_definition : virtual public ref_counted
+	struct movie_definition : public character_def
 	{
 		virtual float	get_width_pixels() const = 0;
 		virtual float	get_height_pixels() const = 0;
@@ -142,18 +233,6 @@ namespace gameswf
 		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 		virtual movie_interface*	create_instance() = 0;
 
-		// For caching precomputed stuff.  Generally of
-		// interest to gameswf_processor and programs like it.
-		struct cache_options
-		{
-			bool	m_include_font_bitmaps;
-		
-			cache_options()
-				:
-				m_include_font_bitmaps(true)
-			{
-			}
-		};
 		virtual void	output_cached_data(tu_file* out, const cache_options& options) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
 
@@ -227,7 +306,7 @@ namespace gameswf
 	// This is the client program's interface to an instance of a
 	// movie (i.e. an independent stateful live movie).
 	//
-	struct movie_interface : virtual public ref_counted
+	struct movie_interface : public as_object_interface
 	{
 		virtual movie_definition*	get_movie_definition() = 0;
 
@@ -676,7 +755,7 @@ namespace gameswf
 	// need to subclass bitmap_info in order to add the
 	// information and functionality your app needs to render
 	// using textures.
-	struct bitmap_info : virtual public ref_counted
+	struct bitmap_info : public ref_counted
 	{
 		unsigned int	m_texture_id;	// nuke?
 		int	m_original_width;	// nuke?

@@ -853,10 +853,10 @@ namespace gameswf
 	}
 
 
-	smart_ptr<character>	button_character_definition::create_character_instance(movie* parent, int id)
+	character*	button_character_definition::create_character_instance(movie* parent, int id)
 	// Create a mutable instance of our definition.
 	{
-		smart_ptr<character>	ch = new button_character_instance(this, parent, id);
+		character*	ch = new button_character_instance(this, parent, id);
 		return ch;
 	}
 };
