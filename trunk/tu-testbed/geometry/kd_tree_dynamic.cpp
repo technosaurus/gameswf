@@ -525,7 +525,7 @@ void	kd_tree_dynamic::do_split(
 	// next position for either the back or front face segment.
 	int	back_faces_end = 0;
 	int	front_faces_start = face_count;
-	int	next_face = 0;
+	//int	next_face = 0;
 	
 	while (back_faces_end < front_faces_start)
 	{
@@ -658,8 +658,8 @@ float	kd_tree_dynamic::evaluate_split(
 		return -1;
 	}
 
-	float	center = bounds.get_center().get(axis);
-	float	extent = bounds.get_extent().get(axis);
+	//float	center = bounds.get_center().get(axis);
+	//float	extent = bounds.get_extent().get(axis);
 
 	axial_box	back_bounds(bounds);
 	back_bounds.set_axis_max(axis, neg_offset);

@@ -16,7 +16,7 @@
 #include "base/tu_types.h"
 #include "base/tu_swap.h"
 #include <ctype.h>
-
+#include <algorithm>		// for std::min and std::max
 
 #ifdef _WIN32
 #ifndef NDEBUG
@@ -76,12 +76,17 @@ void	operator delete[](void* ptr);
 inline int	iabs(int i) { if (i < 0) return -i; else return i; }
 #ifdef __GNUC__
 	// use the builtin (gcc) operator. ugly, but not my call.
-	#define imax _max
+#ifdef __STDC_HOSTED__
+        #define _max(a,b) ((a)>(b)?(a):(b))
+	#define _min(a,b) ((a)<(b)?(a):(b))
+#else
+        #define _max(a,b) ((a)>?(b))
+	#define _min(a,b) ((a)<?(b))
+#endif
+        #define imax _max
 	#define fmax _max
-	#define _max(a,b) ((a)>?(b))
 	#define imin _min
 	#define fmin _min
-	#define _min(a,b) ((a)<?(b))
 #else // not GCC
 	inline int	imax(int a, int b) { if (a < b) return b; else return a; }
 	inline float	fmax(float a, float b) { if (a < b) return b; else return a; }
@@ -94,9 +99,9 @@ inline int	iclamp(int i, int min, int max) {
 	return imax(min, imin(i, max));
 }
 
-inline float	fclamp(float f, float min, float max) {
-	assert( min <= max );
-	return fmax(min, fmin(f, max));
+inline float	fclamp(float f, float xmin, float xmax) {
+	assert( xmin <= xmax );
+	return fmax(xmin, fmin(f, xmax));
 }
 
 inline float flerp(float a, float b, float f) { return (b - a) * f + a; }

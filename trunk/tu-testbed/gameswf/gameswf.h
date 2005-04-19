@@ -59,7 +59,7 @@ namespace gameswf
 	// Get and set the render handler.  This is one of the first
 	// things you should do to initialise the player (assuming you
 	// want to display anything).
-	void set_render_handler(render_handler* s);
+	void    set_render_handler(render_handler* s);
 
 	// Pass in a sound handler, so you can handle audio on behalf of
 	// gameswf.  This is optional; if you don't set a handler, or set
@@ -406,8 +406,8 @@ namespace gameswf
 		virtual bool	get_visible() const = 0;
 
 		// Set and get userdata, that's useful for the fs_command handler.
-		virtual void * get_userdata() = 0;
-		virtual void set_userdata(void *) = 0;
+		virtual void   *get_userdata() = 0;
+		virtual void   set_userdata(void *) = 0;
 
 		// Display callbacks, for client rendering.  Callback
 		// is called after rendering the object it's attached
@@ -427,13 +427,13 @@ namespace gameswf
 	//
 	// You can pass NULL for any entries you're not interested in.
 	void	get_movie_info(
-		const char* filename,
-		int* version,
-		int* width,
-		int* height,
-		float* frames_per_second,
-		int* frame_count,
-		int* tag_count
+		const char*	filename,
+		int*		version,
+		int*		width,
+		int*		height,
+		float*		frames_per_second,
+		int*		frame_count,
+		int*		tag_count
 		);
 
 	// Enable/disable attempts to read cache files (.gsc) when
@@ -487,8 +487,8 @@ namespace gameswf
 		DO_NOT_LOAD_FONT_SHAPES
 	};
 	movie_definition*	create_movie_no_recurse(
-		tu_file* input_stream,
-		create_bitmaps_flag cbf,
+		tu_file*		input_stream,
+		create_bitmaps_flag	cbf,
 		create_font_shapes_flag cfs);
 
 	// Create a gameswf::movie_definition from the given file name.
@@ -620,12 +620,12 @@ namespace gameswf
 		//
 		// Assign handles however you like.
 		virtual int	create_sound(
-			void* data,
-			int data_bytes,
-			int sample_count,
-			format_type format,
-			int sample_rate,	/* one of 5512, 11025, 22050, 44100 */
-			bool stereo
+			void*		data,
+			int		data_bytes,
+			int		sample_count,
+			format_type	format,
+			int		sample_rate,	/* one of 5512, 11025, 22050, 44100 */
+			bool		stereo
 			) = 0;
 		
 		// gameswf calls this when it wants you to play the defined sound.
@@ -757,9 +757,9 @@ namespace gameswf
 	// using textures.
 	struct bitmap_info : public ref_counted
 	{
-		unsigned int	m_texture_id;	// nuke?
-		int	m_original_width;	// nuke?
-		int	m_original_height;	// nuke?
+		unsigned int	m_texture_id;		// nuke?
+		int		m_original_width;	// nuke?
+		int		m_original_height;	// nuke?
 		
 		bitmap_info()
 			:
@@ -832,11 +832,11 @@ namespace gameswf
 		// intended for textured glyph rendering.  Ignores
 		// current transforms.
 		virtual void	draw_bitmap(
-			const matrix& m,
-			const bitmap_info* bi,
-			const rect& coords,
-			const rect& uv_coords,
-			rgba color) = 0;
+			const matrix&		m,
+			const bitmap_info*	bi,
+			const rect&		coords,
+			const rect&		uv_coords,
+			rgba			color) = 0;
 		
 		virtual void	set_antialiased(bool enable) = 0;
 		

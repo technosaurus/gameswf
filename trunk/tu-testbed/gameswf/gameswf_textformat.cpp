@@ -68,7 +68,7 @@ text_format::setTextFormat (int start, int end, text_format &format)
 void
 textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-    log_msg("%s: args=%d\n", __FUNCTION__, nargs);
+  //log_msg("%s: args=%d\n", __FUNCTION__, nargs);
 
     textformat_as_object*	text_obj = new textformat_as_object;
     //text_obj->set_member("underline", &textformat_underline);

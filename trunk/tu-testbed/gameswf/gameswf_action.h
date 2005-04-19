@@ -406,7 +406,7 @@ namespace gameswf
 		stringi_hash<as_value>	m_members;
 		as_object_interface*	m_prototype;
 
-		as_object() : m_prototype(NULL) {}
+		as_object() : m_prototype(NULL) { }
 		as_object(as_object_interface* proto) : m_prototype(proto)
 		{
 			if (m_prototype)

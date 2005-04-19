@@ -957,21 +957,21 @@ namespace gameswf
 	{
 		smart_ptr<movie_def_impl>	m_def;
 		smart_ptr<movie>	m_movie;
-		int	m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
-		float	m_pixel_scale;
+		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
+		float			m_pixel_scale;
 
-		rgba	m_background_color;
-		float	m_timer;
-		int	m_mouse_x, m_mouse_y, m_mouse_buttons;
-		void * m_userdata;
+		rgba			m_background_color;
+		float			m_timer;
+		int			m_mouse_x, m_mouse_y, m_mouse_buttons;
+		void *			m_userdata;
 		movie::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
 		mouse_button_state	m_mouse_button_state;
-		bool	m_on_event_load_called;
+		bool			m_on_event_load_called;
 
 		// Flags for event handlers
-		bool	m_on_event_xmlsocket_ondata_called;
-		bool	m_on_event_xmlsocket_onxml_called;
-		bool	m_on_event_load_progress_called;
+		bool			m_on_event_xmlsocket_ondata_called;
+		bool			m_on_event_xmlsocket_onxml_called;
+		bool			m_on_event_load_progress_called;
 		array<Timer *>	m_interval_timers;
 
 		movie_root(movie_def_impl* def)
@@ -1863,7 +1863,7 @@ namespace gameswf
 		m->add_execute_tag(t);
 	}
 
-
+#if 0
 	// Bitmap character
 	struct bitmap_character : public bitmap_character_def
 	{
@@ -1897,7 +1897,7 @@ namespace gameswf
 	private:
 		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
 	};
-
+#endif
 
 	void	jpeg_tables_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Load JPEG compression tables that can be used to load
