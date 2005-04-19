@@ -33,6 +33,16 @@ private:
 struct xmlattr_as_object : public gameswf::as_object
 {
   XMLAttr obj;
+#if 0
+  xmlattr_as_object() 
+  {
+    log_msg("\tCreating xmlattr_as_object at %p\n", this);
+  };
+  ~xmlattr_as_object() 
+  {
+    log_msg("\tDeleting xmlattr_as_object at %p \n", this);
+  };
+#endif
 };
  
 class XMLNode
@@ -134,6 +144,16 @@ toString() 	XML.toString()
 struct xmlnode_as_object : public gameswf::as_object
 {
   XMLNode obj;
+#if 0
+  xmlnode_as_object() 
+  {
+    log_msg("\tCreating xmlnode_as_object at %p \n", this);
+  };
+  ~xmlnode_as_object() 
+  {
+    log_msg("\tDeleting xmlnode_as_object at %p \n", this);
+  };
+#endif
 };
 
 class XML
@@ -145,7 +165,7 @@ class XML
   virtual ~XML();
 
   // Methods
-  bool parseDoc(xmlDocPtr document); // This is the base method used by both parseXML() and load().
+  bool parseDoc(xmlDocPtr document, bool mem); // This is the base method used by both parseXML() and load().
   bool parseXML(tu_string xml_in); // Parses an XML document into the specified XML object tree.
   bool load(const char *filespec);  // Loads a document (specified by
                                     // the XML object) from a URL.
@@ -169,6 +189,7 @@ class XML
   XMLNode *firstChild()
   {
     return _nodes;
+    //return _node_data[0];
   }
   
   array<XMLNode *> childNodes()
@@ -182,11 +203,12 @@ class XML
     return _nodes->_children.size();
   }
 
-  XMLNode *extractNode(xmlNodePtr node);
+  XMLNode *extractNode(xmlNodePtr node, bool mem);
 
   void  change_stack_frame(int frame, gameswf::as_object *xml, gameswf::as_environment *env);
   void  setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env);
-  XMLNode *setupFrame(gameswf::xmlnode_as_object *xml, gameswf::as_environment *env);
+  void  cleanupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env);
+  as_object *setupFrame(gameswf::as_object *xml, XMLNode *data, bool src);
   
   const char *nodeNameGet() 
     {
@@ -228,10 +250,13 @@ class XML
     _nodes = node;
   }
 
-  XMLNode *operator = (XMLNode *node)
-  {
-  }
 #endif
+  XML *operator = (XMLNode *node)
+  {
+    _nodes = node;    
+    return this;
+  }
+
  private:
     bool _on_event_loaded;
     xmlDocPtr _doc;
@@ -242,7 +267,7 @@ class XML
                                             // the specified XML object has loaded.
     const char  *_nodename;                  // The node name of an XML object.
     XMLNode     *_nodes;
-  
+    array<XMLNode *>  _node_data;
   //    hash<gameswf::event_id, gameswf::as_value>	_event_handlers;
 #if 0
     array<struct node *> _childNodes; // Read-only; returns an array containing
@@ -274,6 +299,16 @@ class XML
 struct xml_as_object : public gameswf::as_object
 {
   XML obj;
+#if 0
+  xml_as_object() 
+  {
+    log_msg("\tCreating xml_as_object at %p\n", this);
+  };
+  ~xml_as_object() 
+  {
+    log_msg("\tDeleting xml_as_object at %p ", this);
+  };
+#endif
 };
 
 

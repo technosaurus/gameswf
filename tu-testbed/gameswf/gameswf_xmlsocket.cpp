@@ -8,6 +8,7 @@
 #endif
 
 #include "gameswf_log.h"
+#include "gameswf_xml.h"
 #include "gameswf_xmlsocket.h"
 #include "gameswf_timers.h"
 
@@ -41,7 +42,7 @@ const int INBUF = 7000;
 
 XMLSocket::XMLSocket()
 {
-  log_msg("%s: \n", __FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
   _data = false;
   _xmldata = false;
   _closed = false;
@@ -188,7 +189,7 @@ bool
 XMLSocket::anydata(tu_string &data)
 {
   //printf("%s: \n", __FUNCTION__);
-  anydata(_sockfd, data);
+  return anydata(_sockfd, data);
 }
 
 bool XMLSocket::processingData()
@@ -208,7 +209,7 @@ XMLSocket::anydata(int fd, tu_string &data)
 {
   fd_set                fdset;
   struct timeval        tval;
-  int                   ret = 0, i;
+  int                   ret = 0;
   char                  buf[INBUF];
   int                   retries = 10;
   char                  *ptr;
@@ -352,7 +353,7 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
     return;
   }
   
-  log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
+  //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
   assert(ptr);
   const tu_string host = env->bottom(first_arg).to_string();
@@ -506,7 +507,7 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
     result->set(false);
     return;
   }
-    
+
   if (ptr->obj.anydata(tmp)) {
     if (this_ptr->get_member("onData", &method)) {
       as_c_function_ptr	func = method.to_c_function();
@@ -515,7 +516,8 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
       for (i=0; i<ptr->obj.messagesCount(); i++) {
         tu_string data = ptr->obj[i];
         //log_msg("Got data from socket!!\n%s", data.c_str());
-        // 
+        //
+#if 0
         if (((data[0] != '<') && ((data[1] != 'R') || (data[1] != '?')))
             || (data[data.size()-2] != '>')){
           printf("%s: bad message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
@@ -523,7 +525,7 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
           //delete data;
           continue;
         }
-
+#endif
         //log_msg("%s: Got message %s: ", data.c_str());
         env->push(as_value(data));
         if (func) {
@@ -537,6 +539,7 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
         } else {
           log_error("error in call_method(): method is not a function\n");
         }
+        
         env->pop();
         //printf("%s: Removing message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
         //ptr->obj.messageRemove(i);
@@ -548,9 +551,40 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
     } else {
       log_msg("FIXME: Couldn't find onData!\n");
     }
-  }
-
   //  env->pop();
+
+// #if 0
+//     log_msg("There are %d ATTR objects in the cache\n", attr_objects.size());
+//     for (i=0; i<attr_objects.size(); i++) {
+//       delete attr_objects[i];
+//     }
+//     attr_objects.clear();
+    
+//     log_msg("There are %d XMLNode objects in the cache\n", xmlnode_objects.size());
+//     for (i=xmlnode_objects.size()-1; i>0; i--) {
+//       //log_msg("Should Delete XMLNode object at %p\n", xml_objects[i]);
+//       //delete xmlnode_objects[i];
+//       xmlnode_objects.remove(i);
+//     }
+//     //xmlnode_objects.clear();
+    
+//     log_msg("There are %d XML objects in the cache\n", xml_objects.size());
+// #if 0
+//     // FIXME: we can't delete smart_ptr's this way or it causes memory
+//     // corruption problems...
+    
+//     //    for (i=xml_objects.size()-1; i>0; i--) {
+//     for (i=5; i<xml_objects.size()-5; i++) {
+//       log_msg("Should Delete XML object at %p\n", xml_objects[i]);
+//       if (xml_objects[i] > 0) {
+//         delete xml_objects[i];
+//         xml_objects.remove(i);
+//       }
+//     }
+// #endif
+//     //xml_objects.clear();    
+// #endif
+  }
 
   //result->set(&data);
   result->set(true);
@@ -621,7 +655,8 @@ main_read_thread(void *arg)
   int                 sockfd;
 
   sockfd = *(int *)arg;
-  
+
+  return arg;
 }
 
 } // end of gameswf namespace

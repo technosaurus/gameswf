@@ -7,6 +7,7 @@
 
 
 #include "base/utf8.h"
+#include "base/utility.h"
 #include "gameswf_impl.h"
 #include "gameswf_shape.h"
 #include "gameswf_stream.h"

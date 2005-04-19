@@ -1,3 +1,26 @@
+2005-04-16  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xml.cpp (extractNode): New recursive
+	version. Faster, and uses less memory.
+	(setupFrame) New recursive version. Faster, and uses less memory.
+	* gameswf_impl.cpp: Move the definition of bitmap_character to
+	gameswf_impl.h.
+	* gameswf_movie.cpp (loadclip): Various hacks trying to replace a
+	character with a bitmap defined by a jpeg. None of these works
+	yet...
+	* gameswf_xml.h: Add conditional debug print statements as
+	constructor/destructors so we can track memory allocation.
+	* gameswf_xmlsocket.cpp (XMLSocket::anydata): Return the returned
+	value.
+	* kd_tree_dynamic.cpp: Comment out a few variable definitions that
+	aren't used cause GCC 4.1 complains.
+
+2005-04-14  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* base/utility.h: Tweak definitions of _max and _min to not
+	produce errors with a more recent GCC because the "<?" operator
+	has been depreciated.
+
 2005-04-10  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_test_ogl.cpp (main): Add -d option to supply a

@@ -13,7 +13,7 @@ namespace gameswf
   };
   
   
-class MovieClipLoader : public gameswf::character_def
+class MovieClipLoader
 {
  public:
   MovieClipLoader();

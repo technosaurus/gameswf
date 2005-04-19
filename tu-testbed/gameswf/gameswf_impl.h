@@ -85,7 +85,7 @@ namespace gameswf
 
 //v for extern movies
 	movie_interface*	create_library_movie_inst(movie_definition* md);
-	movie_interface* get_current_root();
+	movie_interface*        get_current_root();
 	void set_current_root(movie_interface* m);
 	const char* get_workdir();
 	void set_workdir(const char* dir);
@@ -97,15 +97,15 @@ namespace gameswf
 		virtual movie_interface*	get_extern_movie() { return NULL; }
 
 		virtual movie_definition*	get_movie_definition() { return NULL; }
-		virtual movie_root*	get_root() { return NULL; }
+		virtual movie_root*	        get_root() { return NULL; }
 		virtual movie_interface*	get_root_interface() { return NULL; }
-		virtual movie*	get_root_movie() { return NULL; }
+		virtual movie*	                get_root_movie() { return NULL; }
 
-		virtual float	get_pixel_scale() const { return 1.0f; }
-		virtual character*	get_character(int id) { return NULL; }
+		virtual float	                get_pixel_scale() const { return 1.0f; }
+		virtual character*	        get_character(int id) { return NULL; }
 
-		virtual matrix	get_world_matrix() const { return matrix::identity; }
-		virtual cxform	get_world_cxform() const { return cxform::identity; }
+		virtual matrix	                get_world_matrix() const { return matrix::identity; }
+		virtual cxform	                get_world_cxform() const { return cxform::identity; }
 
 		//
 		// display-list management.
@@ -118,52 +118,52 @@ namespace gameswf
 
 		virtual character*	add_display_object(
 			Uint16 character_id,
-			const char* name,
+			const char*		 name,
 			const array<swf_event*>& event_handlers,
-			Uint16 depth,
-			bool replace_if_depth_is_occupied,
-			const cxform& color_transform,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth)
+			Uint16			 depth,
+			bool			 replace_if_depth_is_occupied,
+			const cxform&		 color_transform,
+			const matrix&		 mat,
+			float			 ratio,
+			Uint16			clip_depth)
 		{
 			return NULL;
 		}
 
 		virtual void	move_display_object(
-			Uint16 depth,
-			bool use_cxform,
-			const cxform& color_transform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth)
+			Uint16		depth,
+			bool		use_cxform,
+			const cxform&	color_transform,
+			bool		use_matrix,
+			const matrix&	mat,
+			float		ratio,
+			Uint16		clip_depth)
 		{
 		}
 
 		virtual void	replace_display_object(
-			Uint16 character_id,
-			const char* name,
-			Uint16 depth,
-			bool use_cxform,
-			const cxform& color_transform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth)
+			Uint16		character_id,
+			const char*	name,
+			Uint16		depth,
+			bool		use_cxform,
+			const cxform&	color_transform,
+			bool		use_matrix,
+			const matrix&	mat,
+			float		ratio,
+			Uint16		clip_depth)
 		{
 		}
 
 		virtual void	replace_display_object(
-			character* ch,
-			const char* name,
-			Uint16 depth,
-			bool use_cxform,
-			const cxform& color_transform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth)
+			character*	ch,
+			const char*	name,
+			Uint16		depth,
+			bool		use_cxform,
+			const cxform&	color_transform,
+			bool		use_matrix,
+			const matrix&	mat,
+			float		ratio,
+			Uint16		clip_depth)
 		{
 		}
 
@@ -247,7 +247,7 @@ namespace gameswf
 		// Mouse/Button interface.
 		//
 
-		virtual character*	get_topmost_mouse_entity(float x, float y) { return NULL; }
+		virtual character *get_topmost_mouse_entity(float x, float y) { return NULL; }
 		virtual bool	get_track_as_menu() const { return false; }
 		virtual void	on_button_event(event_id id) { on_event(id); }
 
@@ -375,18 +375,18 @@ namespace gameswf
 	// It represents a single active element in a movie.
 	struct character : public movie
 	{
-		int	m_id;
-		movie*	m_parent;
+		int		m_id;
+		movie*		m_parent;
 		tu_string	m_name;
-		int	m_depth;
-		cxform	m_color_transform;
-		matrix	m_matrix;
-		float	m_ratio;
-                Uint16 	m_clip_depth;
-		bool	m_visible;
+		int		m_depth;
+		cxform		m_color_transform;
+		matrix		m_matrix;
+		float		m_ratio;
+                Uint16		m_clip_depth;
+		bool		m_visible;
 		hash<event_id, as_value>	m_event_handlers;
-		void	(*m_display_callback)(void*);
-		void*	m_display_callback_user_ptr;
+		void		(*m_display_callback)(void*);
+		void*		m_display_callback_user_ptr;
 
 		character(movie* parent, int id)
 			:
@@ -557,6 +557,42 @@ namespace gameswf
 		virtual gameswf::bitmap_info*	get_bitmap_info() = 0;
 	};
 
+#if 1
+	// Bitmap character
+	struct bitmap_character : public bitmap_character_def
+	{
+		bitmap_character(bitmap_info* bi)
+			:
+			m_bitmap_info(bi)
+		{
+		}
+
+// 		bitmap_character(image::rgb* image)
+// 		{
+// 			assert(image != 0);
+
+// 			// Create our bitmap info, from our image.
+// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
+// 		}
+
+// 		bitmap_character(image::rgba* image)
+// 		{
+// 			assert(image != 0);
+
+// 			// Create our bitmap info, from our image.
+// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
+// 		}
+
+		gameswf::bitmap_info*	get_bitmap_info()
+		{
+			return m_bitmap_info.get_ptr();
+		}
+
+	private:
+		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
+	};
+
+#endif
 
 	// Execute tags include things that control the operation of
 	// the movie.  Essentially, these are the events associated

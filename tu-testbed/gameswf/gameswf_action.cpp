@@ -32,6 +32,7 @@
 #define snprintf _snprintf
 #endif // _WIN32
 
+extern unsigned long _start;
 
 // NOTES:
 //
@@ -1622,6 +1623,35 @@ namespace gameswf
 			while (with_stack.size() > 0
 			       && pc >= with_stack.back().m_block_end_pc)
 			{
+#if 0				// FIXME: what kind of object are we ?
+				log_msg("Cleanup with block, stack size is %d\n", with_stack.size());
+				as_value val = with_stack[with_stack.size()-1].m_object;
+				//delete obj;
+				switch (val.get_type()) {
+				case as_value::OBJECT:
+					log_msg("Got an AS Object in the with_stack\n");
+					break;
+				case as_value::NUMBER:
+					log_msg("Got a Number Object in the with_stack\n");
+					break;
+				case as_value::STRING:
+					log_msg("Got a String Object in the with_stack\n");
+					break;
+				default:
+					log_msg("Got an unknown Object in the with_stack\n");
+					break;
+				}
+#endif
+#if 0
+				xmlnode_as_object *node = (xmlnode_as_object *)val.to_object();
+				const char *x = node->obj._name;
+				if (node) {
+					log_msg("Want to delete object at %p ????\n", node);
+					node->drop_ref();
+				}
+#endif
+				
+				// Drop this stack element
 				with_stack.resize(with_stack.size() - 1);
 			}
 
