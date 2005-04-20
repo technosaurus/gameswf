@@ -1646,7 +1646,7 @@ namespace gameswf
 				xmlnode_as_object *node = (xmlnode_as_object *)val.to_object();
 				const char *x = node->obj._name;
 				if (node) {
-					log_msg("Want to delete object at %p ???? %d\n", node, node->get_ref_count());
+					//log_msg("Want to delete object at %p ???? %d\n", node, node->get_ref_count());
 					node->drop_ref();
 				}
 #endif
