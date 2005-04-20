@@ -14,8 +14,14 @@
 // TODO: http and sockets and such ought to be factored out into an
 // abstract driver, like we do for file access.
 #include <libxml/nanohttp.h>
-#include <unistd.h>
-#include <fcntl.h>
+#ifdef HAVE_WINSOCK
+# include <windows.h>
+# include <sys/stat.h>
+# include <io.h>
+#else
+# include <unistd.h>
+# include <fcntl.h>
+#endif
 #endif
 #include "gameswf_movie.h"
 #include "gameswf_log.h"

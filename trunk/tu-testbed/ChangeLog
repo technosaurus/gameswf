@@ -1,3 +1,16 @@
+2005-04-19  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_movie.cpp: Use different headers on win32.
+	* gameswf/gameswf_xmlsocket.cpp: Use different headers on win32
+	for tcp/ip networking. Also define MAXHOSTNAMELEN if if doesn't
+	exist, don't use fcntl(), and use SHUT_BOTH for shutdown() on
+	win32 as well.
+	* configure.ac: Set HAVE_WINSOCK if the platform is win23.
+	* configure: Regenerated.
+	* gameswf/Makefile: Add optional libxml support. Update
+	dependencies to not have system paths.
+	* config: Add optional libxml defines.
+
 2005-04-16  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_xml.cpp (extractNode): New recursive

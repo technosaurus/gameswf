@@ -18,22 +18,30 @@ using namespace gameswf;
 
 #ifdef HAVE_LIBXML
 
-#include <string>	// tulrich: FIXME
 #include <sys/types.h>
-#include <sys/time.h>
-#include <sys/fcntl.h>
-#include <unistd.h>
-#include <sys/select.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
-#include <errno.h>
-#include <sys/param.h>
-#include <sys/select.h>
+#ifdef HAVE_WINSOCK
+# include <WinSock2.h>
+# include <windows.h>
+# include <fcntl.h>
+# include <sys/stat.h>
+# include <io.h>
+#else
+# include <sys/time.h>
+# include <sys/fcntl.h>
+# include <unistd.h>
+# include <sys/select.h>
+# include <netinet/in.h>
+# include <arpa/inet.h>
+# include <sys/socket.h>
+# include <netdb.h>
+# include <errno.h>
+# include <sys/param.h>
+# include <sys/select.h>
+#endif
 
-// FIXME
-using namespace std;
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN 256
+#endif
 
 namespace gameswf
 {
@@ -135,7 +143,11 @@ XMLSocket::connect(const char *host, int port)
       {
         log_msg("The connect() socket for fd #%d never was available for writing!\n",
                 _sockfd);
+#ifdef HAVE_WINSOCK
+        ::shutdown(_sockfd, SHUT_BOTH);
+#else
         ::shutdown(_sockfd, SHUT_RDWR);
+#endif
         _sockfd = -1;      
         return false;
       }
@@ -167,7 +179,9 @@ XMLSocket::connect(const char *host, int port)
   log_msg("\tConnect at port %d on IP %s for fd #%d\n", port,
           ::inet_ntoa(sock_in.sin_addr), _sockfd);
   
+#ifndef HAVE_WINSOCK
   fcntl(_sockfd, F_SETFL, O_NONBLOCK);
+#endif
 
   _connect = true;
   return true;

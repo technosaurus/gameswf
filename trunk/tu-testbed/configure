@@ -6232,6 +6232,13 @@ echo "${ECHO_T}${ac_cv_path_png_lib}" >&6
 
 
 
+if test x"$EXEEXT" == "exe"; then
+  cat >>confdefs.h <<\_ACEOF
+#define HAVE_WINSOCK 1
+_ACEOF
+
+fi
+
 if test x"$pthreads" = x"yes"; then
   echo "$as_me:$LINENO: checking for main in -lpthread" >&5
 echo $ECHO_N "checking for main in -lpthread... $ECHO_C" >&6

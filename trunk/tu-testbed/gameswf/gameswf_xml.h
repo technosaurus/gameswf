@@ -144,7 +144,7 @@ toString() 	XML.toString()
 struct xmlnode_as_object : public gameswf::as_object
 {
   XMLNode obj;
-#if 0
+#if 1
   xmlnode_as_object() 
   {
     log_msg("\tCreating xmlnode_as_object at %p \n", this);
@@ -299,7 +299,7 @@ class XML
 struct xml_as_object : public gameswf::as_object
 {
   XML obj;
-#if 0
+#if 1
   xml_as_object() 
   {
     log_msg("\tCreating xml_as_object at %p\n", this);

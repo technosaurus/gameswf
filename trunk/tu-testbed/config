@@ -70,6 +70,14 @@ SDL_MIXER_LIB := $(TOP)/../SDL_mixer-1.2.5/lib/SDL_mixer.lib
 LIBS := opengl32.lib glu32.lib $(SDL_DIR)/lib/SDLmain.lib $(SDL_DIR)/lib/SDL.lib gdi32.lib oldnames.lib $(SDL_LIBS)
 CFLAGS := $(CFLAGS) /MD -GR -GX -DWIN32=1 -D_WIN32=1 $(USE_DL_MALLOC_FLAG) -W3 $(SDL_INCLUDE) $(GAMESWF_MP3_SUPPORT)
 LDFLAGS := /link /NODEFAULTLIB:libc.lib /NODEFAULTLIB:libcd.lib /INCREMENTAL:NO /subsystem:console
+# Uncomment these definitions if you want to use libxml on win32.
+# LIBS := opengl32.lib glu32.lib wsock32.lib $(SDL_DIR)/lib/SDLmain.lib $(SDL_DIR)/lib/SDL.lib gdi32.lib oldnames.lib $(SDL_LIBS)
+# CFLAGS := $(CFLAGS) /MD -GR -GX -DWIN32=1 -D_WIN32=1 -DHAVE_LIBXML=1 -DLIBXML_HTTP_ENABLED $(USE_DL_MALLOC_FLAG) -W3 $(SDL_INCLUDE) $(GAMESWF_MP3_SUPPORT) -
+# ICONV_DIR := $(TOP)/../iconv-1.9.1.win32
+# XML2_DIR := $(TOP)/../libxml2-2.6.19.win32
+# XML2_INCLUDE := -I$(XML2_DIR)/include -I$(ICONV_DIR)/include
+# XML2LIB := $(XML2_DIR)/lib/libxml2.$(LIB_EXT) $(ICONV_DIR)/lib/iconv.$(LIB_EXT)+
+# CFLAGS += -DHAVE_WINSOCK -DHAVE_LIBXML
 
 LIBPNG_DIR := $(TOP)/../libpng
 LIBPNG_INCLUDE := -I$(LIBPNG_DIR)

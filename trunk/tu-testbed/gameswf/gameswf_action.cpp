@@ -1623,9 +1623,9 @@ namespace gameswf
 			while (with_stack.size() > 0
 			       && pc >= with_stack.back().m_block_end_pc)
 			{
+				as_value val = with_stack[with_stack.size()-1].m_object;
 #if 0				// FIXME: what kind of object are we ?
 				log_msg("Cleanup with block, stack size is %d\n", with_stack.size());
-				as_value val = with_stack[with_stack.size()-1].m_object;
 				//delete obj;
 				switch (val.get_type()) {
 				case as_value::OBJECT:
@@ -1642,11 +1642,11 @@ namespace gameswf
 					break;
 				}
 #endif
-#if 0
+#if 1
 				xmlnode_as_object *node = (xmlnode_as_object *)val.to_object();
 				const char *x = node->obj._name;
 				if (node) {
-					log_msg("Want to delete object at %p ????\n", node);
+					log_msg("Want to delete object at %p ???? %d\n", node, node->get_ref_count());
 					node->drop_ref();
 				}
 #endif

@@ -48,6 +48,12 @@ AM_PATH_ZLIB
 AM_PATH_JPEG
 AM_PATH_PNG
 
+dnl Define winsock if we're on wodows. We could do something complicated,
+dnl but since AC_EXEEXT does it for us, we'll do this the easy way.
+if test x"$EXEEXT" == "exe"; then
+  AC_DEFINE(HAVE_WINSOCK)
+fi
+
 dnl Look for pthreads
 if test x"$pthreads" = x"yes"; then
   AC_CHECK_LIB(pthread, main, PTHREAD_LIB=-lpthread,PTHREAD_LIB="")
