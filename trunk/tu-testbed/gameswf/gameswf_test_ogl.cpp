@@ -500,6 +500,7 @@ int	main(int argc, char *argv[])
 					else if (ctrl && key == SDLK_r)
 					{
 						// Restart the movie.
+						message_log("FIXME: restarting movie!\n");
 						m->restart();
 					}
 					else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))
