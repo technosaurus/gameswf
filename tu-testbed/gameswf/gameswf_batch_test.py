@@ -87,6 +87,11 @@ another test,27
 modified b!
 '''.splitlines(1)],
 
+[ "samples/test_action_order2.swf",
+'''frame 1 actions
+frame 2 actions
+'''.splitlines(1)],
+
 # Add more tests here, in form of [ filename, expected_output ]
 
 ]
