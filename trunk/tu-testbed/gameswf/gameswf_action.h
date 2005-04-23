@@ -14,6 +14,8 @@
 #include "gameswf_types.h"
 
 #include "base/container.h"
+#include "base/smart_ptr.h"
+
 
 namespace gameswf
 {
@@ -109,7 +111,7 @@ namespace gameswf
 
 	struct with_stack_entry
 	{
-		as_object_interface*	m_object;
+		smart_ptr<as_object_interface>	m_object;
 		int	m_block_end_pc;
 
 		with_stack_entry()

@@ -22,6 +22,16 @@
 #include <string.h>
 
 
+// Determines whether to generate mipmaps for smoother rendering of
+// minified textures.  It actually tends to look OK to not use
+// mipmaps, though it is potentially a performance hit if you use big
+// textures.
+//
+// TODO: need to code mipmap LOD bias adjustment, to keep mipmaps from
+// looking too blurry.  (Also applies to text rendering.)
+#define GENERATE_MIPMAPS 0
+
+
 // bitmap_info_ogl declaration
 struct bitmap_info_ogl : public gameswf::bitmap_info
 {
@@ -741,7 +751,7 @@ void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8
 {
 	assert(bytes_per_pixel == 3 || bytes_per_pixel == 4);
 
-	unsigned int	in_format = bytes_per_pixel == 3 ? GL_RGB8 : GL_RGBA8;
+	unsigned int	in_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
 	unsigned int	out_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
 
 	// alex: use the hardware to resample the image
@@ -783,6 +793,29 @@ void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8
 }
 
 
+void	generate_mipmaps(unsigned int internal_format, unsigned int input_format, int bytes_per_pixel, image::image_base* im)
+// DESTRUCTIVELY generate mipmaps of the given image.  The image data
+// and width/height of im are munged in this process.
+{
+	int	level = 1;
+	while (im->m_width > 1 || im->m_height > 1)
+	{
+		if (bytes_per_pixel == 3)
+		{
+			image::make_next_miplevel((image::rgb*) im);
+		}
+		else
+		{
+			image::make_next_miplevel((image::rgba*) im);
+		}
+
+		glTexImage2D(GL_TEXTURE_2D, level, internal_format, im->m_width, im->m_height, 0,
+			     input_format, GL_UNSIGNED_BYTE, im->m_data);
+		level++;
+	}
+}
+
+
 void	software_resample(
 	int bytes_per_pixel,
 	int src_width,
@@ -802,8 +835,8 @@ void	software_resample(
 	assert(dst_width >= src_width);
 	assert(dst_height >= src_height);
 
-	unsigned int	in_format = bytes_per_pixel == 3 ? GL_RGB8 : GL_RGBA8;
-	unsigned int	out_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
+	unsigned int	internal_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
+	unsigned int	input_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
 
 	// FAST bi-linear filtering
 	// the code here is designed to be fast, not readable
@@ -899,7 +932,14 @@ void	software_resample(
 		}
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, in_format, dst_width, dst_height, 0, out_format, GL_UNSIGNED_BYTE, rescaled);
+	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, dst_width, dst_height, 0, input_format, GL_UNSIGNED_BYTE, rescaled);
+
+#if GENERATE_MIPMAPS
+	// Build mipmaps.
+	image::image_base	im(rescaled, dst_width, dst_height, dst_width * bytes_per_pixel);
+	generate_mipmaps(internal_format, input_format, bytes_per_pixel, &im);
+#endif // GENERATE_MIPMAPS
+
 	delete [] rescaled;
 }
 
@@ -962,6 +1002,7 @@ bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* data)
 
 
 bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
+// NOTE: This function destroys im's data in the process of making mipmaps.
 {
 	assert(im);
 
@@ -974,7 +1015,11 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* LINEAR_MIPMAP_LINEAR */);
+#if GENERATE_MIPMAPS
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+#else
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+#endif
 
 	m_original_width = im->m_width;
 	m_original_height = im->m_height;
@@ -1009,7 +1054,7 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 		image::resample(rescaled, 0, 0, w - 1, h - 1,
 				im, 0, 0, (float) im->m_width, (float) im->m_height);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rescaled->m_width, rescaled->m_height,
 				GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
 
@@ -1019,13 +1064,15 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 	else
 	{
 		// Use original image directly.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, im->m_data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, im->m_data);
+		generate_mipmaps(GL_RGB, GL_RGB, 3, im);
 	}
 }
 
 
 bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 // Version of the constructor that takes an image with alpha.
+// NOTE: This function destroys im's data in the process of making mipmaps.
 {
 	assert(im);
 
@@ -1038,7 +1085,11 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST /* LINEAR_MIPMAP_LINEAR */);
+#if GENERATE_MIPMAPS
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+#else
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+#endif
 
 	m_original_width = im->m_width;
 	m_original_height = im->m_height;
@@ -1074,7 +1125,7 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 		image::resample(rescaled, 0, 0, w - 1, h - 1,
 				im, 0, 0, (float) im->m_width, (float) im->m_height);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
 
 		delete [] rescaled;
 #endif
@@ -1082,7 +1133,8 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 	else
 	{
 		// Use original image directly.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+		generate_mipmaps(GL_RGBA, GL_RGBA, 4, im);
 	}
 }
 

@@ -45,6 +45,7 @@ void	print_usage()
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
 		"  -r <0|1>    0 disables renderering & sound (good for batch tests)\n"
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
+		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -68,6 +69,7 @@ void	print_usage()
 
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
+static int	s_bit_depth = 16;
 static bool	s_verbose = false;
 static bool	s_background = true;
 static bool	s_measure_performance = false;
@@ -229,6 +231,27 @@ int	main(int argc, char *argv[])
 					exit(1);
 				}
 			}
+			else if (argv[arg][1] == 'b')
+			{
+				// Set default bit depth.
+				arg++;
+				if (arg < argc)
+				{
+					s_bit_depth = atoi(argv[arg]);
+					if (s_bit_depth != 16 && s_bit_depth != 32)
+					{
+						fprintf(stderr, "Command-line supplied bit depth %d, but it must be 16 or 32");
+						print_usage();
+						exit(1);
+					}
+				}
+				else
+				{
+					fprintf(stderr, "-b arg must be followed by 16 or 32 to set bit depth\n");
+					print_usage();
+					exit(1);
+				}
+			}
 			else if (argv[arg][1] == 'd')
 			{
 				// Set a delay
@@ -368,28 +391,34 @@ int	main(int argc, char *argv[])
 
 		SDL_EnableKeyRepeat(250, 33);
 
-		int	bpp = 16;
+		if (s_bit_depth == 16)
+		{
+			// 16-bit color, surface creation is likely to succeed.
+			SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+			SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+			SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
+			SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+		}
+		else
+		{
+			assert(s_bit_depth == 32);
 
-		// 16-bit color, surface creation is likely to succeed.
-		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
-
-//		// 32-bit color etc, for getting dest alpha, for MULTIPASS_ANTIALIASING (see gameswf_render_handler_ogl.cpp).
-// 		SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-// 		SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-// 		SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-// 		SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-// 		SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-// 		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-// 		SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
-// 		bpp = 32;
+			// 32-bit color etc, for getting dest alpha,
+			// for MULTIPASS_ANTIALIASING (see
+			// gameswf_render_handler_ogl.cpp).
+			SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+			SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+		}
 
 		// Set the video mode.
-		if (SDL_SetVideoMode(width, height, bpp, SDL_OPENGL) == 0)
+		if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL) == 0)
 		{
 			fprintf(stderr, "SDL_SetVideoMode() failed.");
 			exit(1);
@@ -500,7 +529,6 @@ int	main(int argc, char *argv[])
 					else if (ctrl && key == SDLK_r)
 					{
 						// Restart the movie.
-						message_log("FIXME: restarting movie!\n");
 						m->restart();
 					}
 					else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))

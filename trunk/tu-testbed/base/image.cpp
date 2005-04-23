@@ -357,6 +357,36 @@ namespace image
 	}
 
 
+	void	write_tga(tu_file* out, rgba* im)
+	// Write a 32-bit Targa format bitmap.  Dead simple, no compression.
+	{
+		out->write_byte(0);
+		out->write_byte(0);
+		out->write_byte(2);	/* uncompressed RGB */
+		out->write_le16(0);
+		out->write_le16(0);
+		out->write_byte(0);
+		out->write_le16(0);	/* X origin */
+		out->write_le16(0);	/* y origin */
+		out->write_le16(im->m_width);
+		out->write_le16(im->m_height);
+		out->write_byte(32);	/* 32 bit bitmap */
+		out->write_byte(0);
+
+		for (int y = 0; y < im->m_height; y++)
+		{
+			uint8*	p = scanline(im, y);
+			for (int x = 0; x < im->m_width; x++)
+			{
+				out->write_byte(p[x * 4]);
+				out->write_byte(p[x * 4 + 1]);
+				out->write_byte(p[x * 4 + 2]);
+				out->write_byte(p[x * 4 + 3]);
+			}
+		}
+	}
+
+
 #if 0
 	SDL_Surface*	create_SDL_Surface(rgb* image)
 	// Steal *image's data to create an SDL_Surface.
@@ -428,6 +458,58 @@ namespace image
 					*(out + 2) = b >> 2;
 					out += 3;
 					in += 6;
+				}
+			}
+		}
+
+		// Munge image's members to reflect the shrunken image.
+		image->m_width = new_w;
+		image->m_height = new_h;
+		image->m_pitch = new_pitch;
+	}
+
+
+	void	make_next_miplevel(rgba* image)
+	// Fast, in-place resample.  For making mip-maps.  Munges the
+	// input image to produce the output image.
+	{
+		assert(image->m_data);
+
+		int	new_w = image->m_width >> 1;
+		int	new_h = image->m_height >> 1;
+		if (new_w < 1) new_w = 1;
+		if (new_h < 1) new_h = 1;
+
+		int	new_pitch = new_w * 4;
+
+		if (new_w * 2 != image->m_width  || new_h * 2 != image->m_height)
+		{
+			// Image can't be shrunk along (at least) one
+			// of its dimensions, so don't bother
+			// resampling.  Technically we should, but
+			// it's pretty useless at this point.  Just
+			// change the image dimensions and leave the
+			// existing pixels.
+		}
+		else
+		{
+			// Resample.  Simple average 2x2 --> 1, in-place.
+			int	pitch = image->m_pitch;
+			for (int j = 0; j < new_h; j++) {
+				Uint8*	out = ((Uint8*) image->m_data) + j * new_pitch;
+				Uint8*	in = ((Uint8*) image->m_data) + (j << 1) * pitch;
+				for (int i = 0; i < new_w; i++) {
+					int	r, g, b, a;
+					r = (*(in + 0) + *(in + 4) + *(in + 0 + pitch) + *(in + 4 + pitch));
+					g = (*(in + 1) + *(in + 5) + *(in + 1 + pitch) + *(in + 5 + pitch));
+					b = (*(in + 2) + *(in + 6) + *(in + 2 + pitch) + *(in + 6 + pitch));
+					a = (*(in + 3) + *(in + 7) + *(in + 3 + pitch) + *(in + 7 + pitch));
+					*(out + 0) = r >> 2;
+					*(out + 1) = g >> 2;
+					*(out + 2) = b >> 2;
+					*(out + 3) = a >> 2;
+					out += 4;
+					in += 8;
 				}
 			}
 		}
