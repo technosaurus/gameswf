@@ -145,6 +145,19 @@ struct kd_leaf
 };
 
 
+// TODO I believe it may be better for cache usage to store the leaf
+// array separately from the kd tree nodes.  The reasoning is, when
+// traversing, the two child nodes of a parent can be adjacent in
+// memory, so if the first child is rejected, the second child is
+// (likely) already in cache.
+//
+// The node layout changes: siblings are always stored together, so
+// the child offset points to both children and the neg child is not
+// immediately after the parent.  IIRC this is what both Opcode and
+// OpenRT do, and they both have clues.
+//
+// (Also, obviously, need to try aligning this struct.)
+
 struct kd_node
 {
 	uint8	m_flags[4];
