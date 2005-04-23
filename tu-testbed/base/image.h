@@ -84,6 +84,7 @@ namespace image
 			 rgba* in, float in_x0, float in_y0, float in_x1, float in_y1);
 
 	void	write_jpeg(tu_file* out, rgb* image, int quality);
+	void	write_tga(tu_file* out, rgba* image);
 
 	rgb*	read_jpeg(const char* filename);
 	rgb*	read_jpeg(tu_file* in);
@@ -103,6 +104,7 @@ namespace image
 	// Fast, in-place, DESTRUCTIVE resample.  For making mip-maps.
 	// Munges the input image to produce the output image.
 	void	make_next_miplevel(rgb* image);
+	void	make_next_miplevel(rgba* image);
 };
 
 

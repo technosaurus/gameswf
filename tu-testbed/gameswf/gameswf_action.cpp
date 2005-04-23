@@ -1623,34 +1623,6 @@ namespace gameswf
 			while (with_stack.size() > 0
 			       && pc >= with_stack.back().m_block_end_pc)
 			{
-				as_value val = with_stack[with_stack.size()-1].m_object;
-#if 0				// FIXME: what kind of object are we ?
-				log_msg("Cleanup with block, stack size is %d\n", with_stack.size());
-				//delete obj;
-				switch (val.get_type()) {
-				case as_value::OBJECT:
-					log_msg("Got an AS Object in the with_stack\n");
-					break;
-				case as_value::NUMBER:
-					log_msg("Got a Number Object in the with_stack\n");
-					break;
-				case as_value::STRING:
-					log_msg("Got a String Object in the with_stack\n");
-					break;
-				default:
-					log_msg("Got an unknown Object in the with_stack\n");
-					break;
-				}
-#endif
-#if 1
-				xmlnode_as_object *node = (xmlnode_as_object *)val.to_object();
-				const char *x = node->obj._name;
-				if (node) {
-					//log_msg("Want to delete object at %p ???? %d\n", node, node->get_ref_count());
-					node->drop_ref();
-				}
-#endif
-				
 				// Drop this stack element
 				with_stack.resize(with_stack.size() - 1);
 			}
@@ -3433,7 +3405,7 @@ namespace gameswf
 		// Check the with-stack.
 		for (int i = with_stack.size() - 1; i >= 0; i--)
 		{
-			as_object_interface*	obj = with_stack[i].m_object;
+			as_object_interface*	obj = with_stack[i].m_object.get_ptr();
 			if (obj && obj->get_member(varname, &val))
 			{
 				// Found the var in this context.
@@ -3518,7 +3490,7 @@ namespace gameswf
 		// Check the with-stack.
 		for (int i = with_stack.size() - 1; i >= 0; i--)
 		{
-			as_object_interface*	obj = with_stack[i].m_object;
+			as_object_interface*	obj = with_stack[i].m_object.get_ptr();
 			as_value	dummy;
 			if (obj && obj->get_member(varname, &dummy))
 			{
