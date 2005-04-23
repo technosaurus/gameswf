@@ -316,6 +316,17 @@ kd_tree_dynamic::node*	kd_tree_dynamic::build_tree(int depth, int face_count, fa
 		return n;
 	}
 
+	// TODO I believe it may be better to try partitioning planes,
+	// which separate the faces according to triangle centroid (or
+	// centroid of the bound?), and then compute the actual
+	// splitting planes based on the partition.  I think this
+	// helps avoid some bad situations with large triangles, where
+	// a large tri keeps getting pushed down deeper and deeper.
+	//
+	// Currently we generate a candidate neg_offset plane
+	// directly, and include all triangles fully behind the
+	// neg_offset in one child, which may tend to be unbalanced.
+
 	// Find a good splitting plane.
 	float	best_split_quality = 0.0f;
 	int	best_split_axis = -1;
