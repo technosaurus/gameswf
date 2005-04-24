@@ -6,13 +6,6 @@
 // A gameswf::render_handler that uses SDL & OpenGL
 
 
-// choose the resampling method:
-// 1 = hardware (experimental, should be fast, somewhat buggy)
-// 2 = fast software bilinear (default)
-// 3 = use image::resample(), slow software resampling
-#define RESAMPLE_METHOD 2
-
-
 #include "gameswf.h"
 #include "gameswf_types.h"
 #include "base/image.h"
@@ -20,6 +13,13 @@
 #include "base/utility.h"
 
 #include <string.h>
+
+
+// choose the resampling method:
+// 1 = hardware (experimental, should be fast, somewhat buggy)
+// 2 = fast software bilinear (default)
+// 3 = use image::resample(), slow software resampling
+#define RESAMPLE_METHOD 2
 
 
 // Determines whether to generate mipmaps for smoother rendering of
@@ -1048,24 +1048,33 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 			hardware_resample(3, im->m_width, im->m_height, im->m_data, w, h);
 		}
 #elif (RESAMPLE_METHOD == 2)
-		software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+		{
+			// Faster/simpler software bilinear rescale.
+			software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+		}
 #else
-		image::rgb*	rescaled = image::create_rgb(w, h);
-		image::resample(rescaled, 0, 0, w - 1, h - 1,
-				im, 0, 0, (float) im->m_width, (float) im->m_height);
+		{
+			// Fancy but slow software resampling.
+			image::rgb*	rescaled = image::create_rgb(w, h);
+			image::resample(rescaled, 0, 0, w - 1, h - 1,
+					im, 0, 0, (float) im->m_width, (float) im->m_height);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, rescaled->m_width, rescaled->m_height,
-				GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
+#if GENERATE_MIPMAPS
+			generate_mipmaps(GL_RGB, GL_RGB, 3, rescaled);
+#endif // GENERATE_MIPMAPS
 
-		delete [] rescaled;
+			delete rescaled;
+		}
 #endif
 	}
 	else
 	{
 		// Use original image directly.
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, im->m_data);
+#if GENERATE_MIPMAPS
 		generate_mipmaps(GL_RGB, GL_RGB, 3, im);
+#endif // GENERATE_MIPMAPS
 	}
 }
 
@@ -1118,23 +1127,33 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 			hardware_resample(4, im->m_width, im->m_height, im->m_data, w, h);
 		}
 #elif (RESAMPLE_METHOD == 2)
-		software_resample(4, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+		{
+			// Faster/simpler software bilinear rescale.
+			software_resample(4, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
+		}
 #else
-		// Fancy but slow software resampling.
-		image::rgba*	rescaled = image::create_rgba(w, h);
-		image::resample(rescaled, 0, 0, w - 1, h - 1,
-				im, 0, 0, (float) im->m_width, (float) im->m_height);
+		{
+			// Fancy but slow software resampling.
+			image::rgba*	rescaled = image::create_rgba(w, h);
+			image::resample(rescaled, 0, 0, w - 1, h - 1,
+					im, 0, 0, (float) im->m_width, (float) im->m_height);
 
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
+#if GENERATE_MIPMAPS
+			generate_mipmaps(GL_RGBA, GL_RGBA, 4, rescaled);
+#endif // GENERATE_MIPMAPS
 
-		delete [] rescaled;
+			delete rescaled;
+		}
 #endif
 	}
 	else
 	{
 		// Use original image directly.
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+#if GENERATE_MIPMAPS
 		generate_mipmaps(GL_RGBA, GL_RGBA, 4, im);
+#endif // GENERATE_MIPMAPS
 	}
 }
 
