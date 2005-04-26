@@ -16,7 +16,7 @@
 #include "base/tu_types.h"
 #include "base/tu_swap.h"
 #include <ctype.h>
-#include <algorithm>		// for std::min and std::max
+
 
 #ifdef _WIN32
 #ifndef NDEBUG
@@ -73,26 +73,13 @@ void	operator delete[](void* ptr);
 //
 // some misc handy math functions
 //
+
 inline int	iabs(int i) { if (i < 0) return -i; else return i; }
-#ifdef __GNUC__
-	// use the builtin (gcc) operator. ugly, but not my call.
-#ifdef __STDC_HOSTED__
-        #define _max(a,b) ((a)>(b)?(a):(b))
-	#define _min(a,b) ((a)<(b)?(a):(b))
-#else
-        #define _max(a,b) ((a)>?(b))
-	#define _min(a,b) ((a)<?(b))
-#endif
-        #define imax _max
-	#define fmax _max
-	#define imin _min
-	#define fmin _min
-#else // not GCC
-	inline int	imax(int a, int b) { if (a < b) return b; else return a; }
-	inline float	fmax(float a, float b) { if (a < b) return b; else return a; }
-	inline int	imin(int a, int b) { if (a < b) return a; else return b; }
-	inline float	fmin(float a, float b) { if (a < b) return a; else return b; }
-#endif // not GCC
+inline int	imax(int a, int b) { if (a < b) return b; else return a; }
+inline float	fmax(float a, float b) { if (a < b) return b; else return a; }
+inline int	imin(int a, int b) { if (a < b) return a; else return b; }
+inline float	fmin(float a, float b) { if (a < b) return a; else return b; }
+
 
 inline int	iclamp(int i, int min, int max) {
 	assert( min <= max );
