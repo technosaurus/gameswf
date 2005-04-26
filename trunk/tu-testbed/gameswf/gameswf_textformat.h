@@ -83,14 +83,14 @@ public:
  
 struct textformat_as_object : public gameswf::as_object
 {
-	text_format text_obj;
+	text_format obj;
 };
 
 void
 textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 void
-textformat_underline(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 } // end of gameswf namespace
 

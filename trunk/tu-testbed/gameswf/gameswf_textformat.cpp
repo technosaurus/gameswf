@@ -49,19 +49,19 @@ text_format::operator = (text_format &format)
 void
 text_format::setTextFormat (text_format &format)
 {
-  log_msg("%s: \n", __FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
 }
 
 void
 text_format::setTextFormat (int index, text_format &format)
 {
-  log_msg("%s: \n", __FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
 }
 
 void
 text_format::setTextFormat (int start, int end, text_format &format)
 {
-  log_msg("%s: \n", __FUNCTION__);
+  //log_msg("%s: \n", __FUNCTION__);
 }
 
 
@@ -70,22 +70,27 @@ textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr
 {
   //log_msg("%s: args=%d\n", __FUNCTION__, nargs);
 
-    textformat_as_object*	text_obj = new textformat_as_object;
-    //text_obj->set_member("underline", &textformat_underline);
-
-    result->set_as_object_interface(text_obj);
+  textformat_as_object*	text_obj = new textformat_as_object;
+  log_msg("\tCreated New TextFormat object at %p\n", text_obj);
+  
+  env->set_variable("setTextFormat", &textformat_setformat, 0);
+  
+  result->set_as_object_interface(text_obj);
 }
 
-#if 0
+
 void
-textformat_underline(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-    log_msg("%s: args=%d\n", __FUNCTION__, nargs);
-    textformat_as_object*	ptr = (textformat_as_object*) (as_object*) this_ptr;
+    log_msg("%s: args=%d unfinished implementation\n", __FUNCTION__, nargs);
+    textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
+    double start = env->bottom(first_arg).to_number();
+    double end = env->bottom(first_arg-1).to_number();
+    textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
     assert(ptr);
     
-    result->set_bool(ptr->text_obj.underlined());
+    ptr->obj.setTextFormat(obj->obj);
+    result->set_bool(true);
 }
-#endif
 
 } // end of gameswf namespace
