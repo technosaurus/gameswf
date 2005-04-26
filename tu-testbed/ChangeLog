@@ -1,3 +1,8 @@
+2005-04-26  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_textformat.cpp: Add setTextFormat as a variable
+	when making a new TextFormat object.
+
 2005-04-19  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_movie.cpp: Use different headers on win32.
