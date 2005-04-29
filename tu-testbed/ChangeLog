@@ -1,3 +1,8 @@
+2005-04-29  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_impl.cpp (get_topmost_mouse_entity): Don't
+	return a character unless the parent is visible.
+
 2005-04-26  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_textformat.cpp: Add setTextFormat as a variable

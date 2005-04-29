@@ -1137,6 +1137,7 @@ namespace gameswf
 				m_on_event_load_called = true;
 				m_movie->on_event_load();
 			}
+#if 0
 			// Must check the socket connection for data
 			if (m_on_event_xmlsocket_ondata_called == true) {
 				m_movie->on_event_xmlsocket_ondata();
@@ -1151,6 +1152,7 @@ namespace gameswf
 			if (m_on_event_load_progress_called == true) {
 				m_movie->on_event_load_progress();				
 			}
+#endif
 			if (m_interval_timers.size() > 0) {
 				for (i=0; i<m_interval_timers.size(); i++) {
 					if (m_interval_timers[i]->expired()) {
@@ -3311,13 +3313,18 @@ namespace gameswf
 			for (i = n - 1; i >= 0; i--)
 			{
 				character* ch = m_display_list.get_character(i);
+				
 				if (ch != NULL)
 				{
 					character*	te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
 					if (te)
 					{
 						// Found one.
-						return te;
+						if (te->get_parent()->get_visible()) {
+							return te;
+						} else {
+							return false;
+						}
 					}
 				}
 			}
