@@ -41,6 +41,8 @@ void	print_usage()
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
 		"  -vp         Be verbose about parsing the movie\n"
+		"  -mi         Specify the minimum LOD bais\n"
+		"  -ma         Specify the maximum LOD bais\n"
 		"  -p          Run full speed (no sleep) and log frame rate\n"
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
 		"  -r <0|1>    0 disables renderering & sound (good for batch tests)\n"
@@ -172,6 +174,8 @@ static void	key_event(SDLKey key, bool down)
 	}
 }
 
+int	min_lod_bais;
+int	max_lod_bais;
 
 int	main(int argc, char *argv[])
 {
@@ -184,6 +188,9 @@ int	main(int argc, char *argv[])
 	bool	do_loop = true;
 	bool	sdl_abort = true;
 	int     delay = 30;
+
+	min_lod_bais = -1000;
+	max_lod_bais =  1000;
 
 	for (int arg = 1; arg < argc; arg++)
 	{
@@ -275,6 +282,7 @@ int	main(int argc, char *argv[])
 			else if (argv[arg][1] == '1')
 			{
 				// Play once; don't loop.
+				printf("Don't loop\n");
 				do_loop = false;
 			}
 			else if (argv[arg][1] == 'r')
@@ -323,6 +331,19 @@ int	main(int argc, char *argv[])
 					gameswf::set_verbose_parse(true);
 				}
 				// ...
+			}
+			else if (argv[arg][1] == 'm')
+			{
+				if (argv[arg][2] == 'i') {
+					arg++;
+					min_lod_bais = atoi(argv[arg]);
+					printf("Minimum LOD Bais is now %d\n", min_lod_bais);
+				} else if (argv[arg][2] == 'a') {
+					arg++;
+					max_lod_bais = atoi(argv[arg]);
+					printf("Maximum LOD Bais is no %d\n", max_lod_bais);
+				}
+			
 			}
 		}
 		else
@@ -385,8 +406,7 @@ int	main(int argc, char *argv[])
 					exit(1);
 			}
 		}
-		
-		
+
 		atexit(SDL_Quit);
 
 		SDL_EnableKeyRepeat(250, 33);
@@ -439,6 +459,7 @@ int	main(int argc, char *argv[])
 		glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
+
 	}
 
 	// Load the actual movie.
