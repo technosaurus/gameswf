@@ -1,5 +1,9 @@
 2005-04-29  Rob Savoye  <rob@bertha.welcomehome.org>
 
+	* gameswf/gameswf_test_ogl.cpp (main): Add -mi and -ma options to
+	set the minimum and maximum LOD Bais.
+	* gameswf_render_handler_ogl.cpp (apply): Set the LOD Bais.
+
 	* gameswf/gameswf_impl.cpp (get_topmost_mouse_entity): Don't
 	return a character unless the parent is visible.
 
