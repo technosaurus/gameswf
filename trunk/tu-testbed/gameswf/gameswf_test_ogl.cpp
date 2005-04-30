@@ -41,8 +41,9 @@ void	print_usage()
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
 		"  -vp         Be verbose about parsing the movie\n"
-		"  -mi         Specify the minimum LOD bais\n"
-		"  -ma         Specify the maximum LOD bais\n"
+		"  -mi         Specify the minimum LOD bias (integer)\n"
+		"  -ma         Specify the maximum LOD bias (integer)\n"
+		"  -ml         Specify the Texture LOD bias (float)\n"
 		"  -p          Run full speed (no sleep) and log frame rate\n"
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
 		"  -r <0|1>    0 disables renderering & sound (good for batch tests)\n"
@@ -174,8 +175,9 @@ static void	key_event(SDLKey key, bool down)
 	}
 }
 
-int	min_lod_bais;
-int	max_lod_bais;
+int	min_lod_bias;
+int	max_lod_bias;
+float	tex_lod_bias;
 
 int	main(int argc, char *argv[])
 {
@@ -189,8 +191,10 @@ int	main(int argc, char *argv[])
 	bool	sdl_abort = true;
 	int     delay = 30;
 
-	min_lod_bais = -1000;
-	max_lod_bais =  1000;
+	// These are the defaults used by OpenGL
+	min_lod_bias = -1000;
+	max_lod_bias =  1000;
+	tex_lod_bias =  0;
 
 	for (int arg = 1; arg < argc; arg++)
 	{
@@ -247,7 +251,7 @@ int	main(int argc, char *argv[])
 					s_bit_depth = atoi(argv[arg]);
 					if (s_bit_depth != 16 && s_bit_depth != 32)
 					{
-						fprintf(stderr, "Command-line supplied bit depth %d, but it must be 16 or 32");
+						fprintf(stderr, "Command-line supplied bit depth %d, but it must be 16 or 32", s_bit_depth);
 						print_usage();
 						exit(1);
 					}
@@ -336,12 +340,16 @@ int	main(int argc, char *argv[])
 			{
 				if (argv[arg][2] == 'i') {
 					arg++;
-					min_lod_bais = atoi(argv[arg]);
-					printf("Minimum LOD Bais is now %d\n", min_lod_bais);
+					min_lod_bias = atoi(argv[arg]);
+					//printf("Minimum LOD Bais is now %d\n", min_lod_bias);
 				} else if (argv[arg][2] == 'a') {
 					arg++;
-					max_lod_bais = atoi(argv[arg]);
-					printf("Maximum LOD Bais is no %d\n", max_lod_bais);
+					max_lod_bias = atoi(argv[arg]);
+					//printf("Maximum LOD Bais is no %d\n", max_lod_bias);
+				} else if (argv[arg][2] == 'l') {
+					arg++;
+					tex_lod_bias = atof(argv[arg]);
+					//printf("Texture LOD Bais is no %f\n", tex_lod_bias);
 				}
 			
 			}

@@ -13,7 +13,7 @@
 #include "base/utility.h"
 
 #include <string.h>
-
+//#define GL_EXT_texture_lod_bias   -1.0
 
 // choose the resampling method:
 // 1 = hardware (experimental, should be fast, somewhat buggy)
@@ -31,8 +31,9 @@
 // looking too blurry.  (Also applies to text rendering.)
 #define GENERATE_MIPMAPS 0
 
-extern int	min_lod_bais;
-extern int	max_lod_bais;
+extern int	min_lod_bias;
+extern int	max_lod_bias;
+extern float	tex_lod_bias;
 
 // bitmap_info_ogl declaration
 struct bitmap_info_ogl : public gameswf::bitmap_info
@@ -143,15 +144,11 @@ struct render_handler_ogl : public gameswf::render_handler
 		{
 			assert(m_mode != INVALID);
 
-			// FIXME: LOD BAIS hack
-#if 0
-			float lod;
-			glGetTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, &lod);
-			printf("Max LOD is %f\n", lod);
-#endif
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, min_lod_bais);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, max_lod_bais);
-			
+			// CHange the LOD BIAS values to tweak bluriness
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, min_lod_bias);
+			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, max_lod_bias);
+			glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
+				
 			if (m_mode == COLOR)
 			{
 				apply_color(m_color);

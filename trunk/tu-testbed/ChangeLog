@@ -1,8 +1,16 @@
+2005-04-30  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_render_handler_ogl.cpp (apply): Set the Texture
+	LOD BIAS.
+	* gameswf/gameswf_test_ogl.cpp (main): Add -ml option to
+	set the Texture LOD Bias. "-ml -1.0" works good for small fonts.
+
 2005-04-29  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_test_ogl.cpp (main): Add -mi and -ma options to
-	set the minimum and maximum LOD Bais.
-	* gameswf_render_handler_ogl.cpp (apply): Set the LOD Bais.
+	set the minimum and maximum LOD Bias. "-mi -2 -ma 2" seems to work
+	good. 
+	* gameswf_render_handler_ogl.cpp (apply): Set the LOD Bias.
 
 	* gameswf/gameswf_impl.cpp (get_topmost_mouse_entity): Don't
 	return a character unless the parent is visible.
