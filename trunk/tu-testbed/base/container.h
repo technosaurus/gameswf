@@ -978,9 +978,19 @@ public:
 		return strcmp(*this, str) == 0;
 	}
 
+	bool	operator!=(const char* str) const
+	{
+		return strcmp(*this, str) != 0;
+	}
+
 	bool	operator==(const tu_string& str) const
 	{
 		return strcmp(*this, str) == 0;
+	}
+
+	bool	operator!=(const tu_string& str) const
+	{
+		return strcmp(*this, str) != 0;
 	}
 
 	int	length() const
@@ -1013,6 +1023,14 @@ public:
 		assert(old_length >= 0);
 		resize(old_length + str_length);
 		strcpy(get_buffer() + old_length, str);
+	}
+
+	void	operator+=(char ch)
+	{
+		int	old_length = length();
+		assert(old_length >= 0);
+		resize(old_length + 1);
+		strncpy(get_buffer() + old_length, (char *)&ch, 1);
 	}
 
 	void	operator+=(const tu_string& str)
@@ -1065,6 +1083,15 @@ public:
 	// Return the Unicode char at the specified character
 	// position.  index is in UTF-8 chars, NOT bytes.
 	uint32	utf8_char_at(int index) const;
+
+	// 
+	tu_string utf8_from_char(array<int> chars) const;
+
+	// Return the string in this container as all upper case letters
+	tu_string utf8_to_upper() const;	
+
+	// Return the string in this container as all lower case letters
+	tu_string utf8_to_lower() const;
 
 	// Return the number of UTF-8 characters in the given
 	// substring buffer.  You must pass in a valid buffer length;

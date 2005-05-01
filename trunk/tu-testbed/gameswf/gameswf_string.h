@@ -53,14 +53,12 @@ namespace gameswf
 
 	struct string_as_object : public gameswf::as_object
 	{
-		String str;
-
-		string_as_object(const char* s) : str(s)
-		{
-		}
-		string_as_object(const tu_string& s) : str(s)
-		{
-		}
+          //String str;
+        };
+        
+	struct tu_string_as_object : public gameswf::as_object
+	{
+          tu_string str;
 	};
 
 
@@ -79,7 +77,21 @@ namespace gameswf
 		int nargs,
 		int first_arg);
 
- 
+ 	void string_from_char_code(
+		gameswf::as_value* result,
+		gameswf::as_object_interface* this_ptr,
+		gameswf::as_environment* env,
+		int nargs,
+		int first_arg);
+
+	void string_char_code_at(
+		gameswf::as_value* result,
+		gameswf::as_object_interface* this_ptr,
+		gameswf::as_environment* env,
+		int nargs,
+		int first_arg);
+
+
 } // end of gameswf namespace
 
 #endif // __STRING_H__

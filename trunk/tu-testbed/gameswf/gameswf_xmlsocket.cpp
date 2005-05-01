@@ -12,10 +12,6 @@
 #include "gameswf_xmlsocket.h"
 #include "gameswf_timers.h"
 
-// FIXME
-using namespace gameswf;
-
-
 #ifdef HAVE_LIBXML
 
 #include <sys/types.h>
@@ -354,6 +350,29 @@ XMLSocket::onXML(tu_string str)
 }
 
 void
+XMLSocket::push(as_object_interface *obj)
+{
+  _nodes.push_back(obj);
+}
+
+void
+XMLSocket::clear()
+{
+  int i;
+  for (i=0; i< _nodes.size(); i++) {
+    delete _nodes[i];
+  }
+}
+
+int
+XMLSocket::count()
+{
+  return _nodes.size();
+}
+
+array<as_object_interface *> _xmlobjs;
+
+void
 xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
   as_value	method;
@@ -449,9 +468,20 @@ xmlsocket_close(gameswf::as_value* result, gameswf::as_object_interface* this_pt
 }
 
 void
+xmlsocket_xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+{
+  //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
+  
+  xml_new(result, this_ptr, env, nargs, first_arg);
+  as_object_interface *as = result->to_object();
+  _xmlobjs.push_back(as);
+  //push(as);
+}
+
+void
 xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-  // round argument to nearest int.
   log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   
   as_object*	xmlsock_obj = new xmlsocket_as_object;
@@ -598,8 +628,22 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
 // #endif
 //     //xml_objects.clear();    
 // #endif
-  }
 
+#if 0
+    log_msg("Have %d XMLnodes\n", _xmlobjs.size());
+    for (i=_xmlobjs.size()-1; i>0; i--) {
+      log_msg("Have %d ref counts for XMLnode at %p\n", _xmlobjs[i]->get_ref_count(), _xmlobjs[i]);
+      //_xmlobjs[i]->drop_ref();
+      // delete _xmlobjs[i];
+    }
+    _xmlobjs.clear();
+#endif
+  }
+  
+  if (this_ptr->get_member("childNodes", &method)) {
+    log_msg("Have childNodes!\n");
+  }
+    
   //result->set(&data);
   result->set(true);
 }

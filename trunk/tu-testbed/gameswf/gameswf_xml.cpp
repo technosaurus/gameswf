@@ -132,168 +132,6 @@ XML::on_event_load()
   }
 }
 
-#if 0
-XMLNode*
-XML::extractNode(xmlNodePtr node)  
-{
-  xmlAttrPtr attr;
-  xmlNodePtr childnode, next;
-  xmlChar *ptr;
-  XMLNode *element, *child;
-
-  element = new XMLNode;
-  memset(element, 0, sizeof (XMLNode));
-
-  // log_msg("%s: extracting node %s\n", __FUNCTION__, node->name);
-  if (xmlStrcmp(node->name, (const xmlChar *)"text") == 0) {
-    //  node = node->next;
-  }
-
-  // See if we have any data (content)
-  childnode = node->children;
-  while (childnode != NULL) {
-    // This block of code is only used with text based XML files.
-    if (xmlStrcmp(childnode->name, (const xmlChar *)"text") == 0) {
-      //log_msg("Getting the next childnode!\n");
-      next = childnode->next;
-      if (next != 0) {
-        child = extractNode(next);
-        //log_msg("Pushing childNode1 %s after extractNode()\n", child->_name.c_str());
-        //element->_children.push_back(child);
-      }
-    }
-    // This block of code is used by the network messages.
-    else {
-      if (xmlStrcmp(node->name, (const xmlChar *)"text") == 0) {
-        next = node->next;
-      } else {
-#if 0
-        child = new XMLNode;
-        memset(child, 0, sizeof (XMLNode));
-        child->_name  = reinterpret_cast<const char *>(node->name);
-        //log_msg("extractChildNode1 for %s has contents %s\n", node->name, ptr);
-        log_msg("Pushing XMLNode[%d] %s\n", element->_children.size(), child->_name.c_str());
-        element->_children.push_back(child);
-#endif
-        next = node->children;
-        if (next != 0) {
-          child = extractNode(next);
-        }
-#if 0
-        if (strcmp(child->_name.c_str(), "text") != 0) {
-          //log_msg("Pushing childNode2 %s after extractNode()\n", child->_name.c_str());
-          element->_children.push_back(child);
-        }
-      } else {
-        next = childnode->children;
-        if (next != 0) {
-          if (xmlStrcmp(next->name, (const xmlChar *)"text") != 0) {
-            child = extractNode(next);
-            //log_msg("Pushing childNode3 %s\n", childnode->name);
-            element->_children.push_back(child);
-          } else {
-            ptr = next->content;
-            if (ptr != NULL) {
-              child = new XMLNode;
-              memset(child, 0, sizeof (XMLNode));
-              child->_name  = reinterpret_cast<const char *>(childnode->name);
-              if ((ptr[0] != '\n') && (ptr[1] != ' ')) {
-                child->_value = reinterpret_cast<const char *>(ptr);
-                } else {
-                  ptr[0] = 0;
-                }
-              //log_msg("extractChildNode2 from text for %s has contents %s\n", childnode->name, ptr);
-              //log_msg("Pushing childNode4 %s\n", childnode->name);
-              element->_children.push_back(child);
-            }
-          }
-        } else {
-          attr = node->properties;
-          while (attr != NULL) {
-            //log_msg("extractNode %s has property %s, value is %s\n", node->name, attr->name, attr->children->content);
-            XMLAttr *attrib = new XMLAttr;
-            attrib->_name = reinterpret_cast<const char *>(attr->name);
-            attrib->_value = reinterpret_cast<const char *>(attr->children->content);
-            //log_msg("\tPushing attribute1 %s for element %s\n", attr->name, node->name);
-            element->_attributes.push_back(attrib);
-            attr = attr->next;
-          }
-        }
-#endif
-      }
-    }
-    childnode = childnode->next;
-  }
-
-  if (childnode == NULL) {
-    child = new XMLNode;
-    memset(child, 0, sizeof (XMLNode));
-    if (xmlStrcmp(node->name, (const xmlChar *)"text") != 0) {
-      child->_name  = reinterpret_cast<const char *>(node->name);
-      //log_msg("extractChildNode for %s has contents %s\n", node->name, ptr);
-      //log_msg("Pushing childNode %s\n", child->_name.c_str());
-      //child->_children.push_back();
-      element->_children.push_back(child);
-
-      attr = node->properties;
-      while (attr != NULL) {
-        log_msg("extractNode %s has property %s, value is %s\n", node->name, attr->name, attr->children->content);
-        XMLAttr *attrib = new XMLAttr;
-        attrib->_name = reinterpret_cast<const char *>(attr->name);
-        attrib->_value = reinterpret_cast<const char *>(attr->children->content);
-        //log_msg("\tPushing attribute1 %s for element %s\n", attr->name, node->name);
-        element->_attributes.push_back(attrib);
-        attr = attr->next;
-      }
-    }
-  }
-
-  // See if we have any Attributes (properties)
-  attr = node->properties;
-  while (attr != NULL) {
-    //log_msg("extractNode %s has property %s, value is %s\n", node->name, attr->name, attr->children->content);
-    XMLAttr *attrib = new XMLAttr;
-    attrib->_name = reinterpret_cast<const char *>(attr->name);
-    attrib->_value = reinterpret_cast<const char *>(attr->children->content);
-    //log_msg("\tPushing attribute2 %s for element %s\n", attr->name, node->name);
-    element->_attributes.push_back(attrib);
-    attr = attr->next;
-  }
-
-  //
-  element->_name = reinterpret_cast<const char *>(node->name);
-  if (node->children) {
-    //ptr = node->children->content;
-    ptr = xmlNodeGetContent(node->children);
-    
-    if (ptr != NULL) {
-      if ((strchr((const char *)ptr, '\n') == 0) && (ptr[0] != 0))
-      {
-        if (node->children->content == NULL) {
-          //log_msg("extractChildNode3 from text for %s has no contents\n", node->name);
-        } else {
-          //log_msg("extractChildNode3 from text for %s has contents %s\n", node->name, ptr);
-          element->_value = reinterpret_cast<const char *>(ptr);
-        }
-      }
-      xmlFree(ptr);
-    }
-  } else {
-    //ptr = node->content;
-    ptr = xmlNodeGetContent(node);
-    if (ptr != NULL) {
-      if ((ptr[0] != '\n') && (ptr[1] != ' '))
-      {          
-        //log_msg("extractChildNode4 from text for %s has contents %s\n", node->name, ptr);
-        element->_value = reinterpret_cast<const char *>(ptr);
-        xmlFree(ptr);
-      }
-    }
-  }
-  
-  return element;
-}
-#else
 XMLNode*
 XML::extractNode(xmlNodePtr node, bool mem)
 {
@@ -377,7 +215,6 @@ XML::extractNode(xmlNodePtr node, bool mem)
 
   return element;
 }
-#endif
 
 // Read in an XML document from the specified source
 bool
@@ -500,7 +337,11 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   obj->set_member("nodeName",           nodename);
   obj->set_member("length",             length);
   if (nodevalue.get_type() != as_value::UNDEFINED) {
+    tu_string_as_object *val_obj = new tu_string_as_object;
+    val_obj->str = nodevalue.to_string();
+    //obj->set_member("nodeValue",        val_obj);
     obj->set_member("nodeValue",        nodevalue.to_string());
+    //obj->set_member("nodeValue",        nodevalue);
     //log_msg("\tnodevalue for %s is: %s\n", nodename, nodevalue.to_string());
   }
   
@@ -540,250 +381,6 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   return obj;
 }
   
-// This sets up the stack frames for all the nodes from the XML file, so they
-// can have the right vales in the right stack frame for the executing AS
-// fucntion later.
-void
-XML::setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env)
-{
-
-  xml_as_object *xobj = (xml_as_object *)xml;
-  //xmlnode_as_object *xmlnode_obj      = new xmlnode_as_object;
-  //xmlnode_as_object *xmlchildnode_obj = new xmlnode_as_object;
-  int childa, childb, childc, childd, i, j, k;
-  tu_string nodename;
-  as_value  *nodevalue;
-  int len;
-  as_value inum;
-  xmlnode_as_object *xmlnodeA_obj;
-  xmlnode_as_object *xmlnodeB_obj;
-  xmlnode_as_object *xmlnodeC_obj;
-  xmlnode_as_object *xmlnodeD_obj;
-  xmlnode_as_object *xmlnodeE_obj;
-  //xmlnode_as_object *xmlnodeF_obj;
-  
-  //log_msg("%s:\n",  __FUNCTION__);
-  
-  if (xml == 0) {
-    log_error("No XML object!\n");
-    return;
-  }
-
-  xmlnode_as_object *xmlfirstnode_obj = new xmlnode_as_object;
-  
-  //xmlattr_as_object*	nattr_obj     = new xmlattr_as_object;
-  
-  XMLNode *xmlnodes = xobj->obj.firstChild();
-
-  xmlfirstnode_obj->obj = xmlnodes; // copy XML tree to XMLNode
-  
-  //log_msg("Created First XMLNode %s at %p\n", xmlnodes->nodeName().c_str(), xmlnodes);
-  
-  // this is only used by network messages
-  xml->set_member("firstChild", xmlfirstnode_obj);
-  xml->set_member("childNodes",  xobj);
-  xobj->set_member("length", xmlnodes->length());
-  //xobj->set_member("length", xmlfirstnode_obj->obj.length());
-
-  // This sets up the top level for parsing from memory
-  for (i=0; i<xobj->obj.length(); i++) {
-    xmlnode_as_object *xmlnode1_obj      = new xmlnode_as_object;
-    log_msg("Created XMLNode1 %s at %p\n", xmlnodes->nodeName().c_str(), xmlnode1_obj );
-    inum = i;
-    xobj->set_member(inum.to_string(), xmlnode1_obj);
-    xmlnode1_obj->set_member("nodeName", xmlnodes->_name.c_str());
-    xmlnode1_obj->set_member("childNodes", xmlfirstnode_obj);
-    xmlnode1_obj->set_member("length", xmlfirstnode_obj->obj.length());
-    if (xmlnodes->_attributes.size() > 0) {
-      xmlattr_as_object*	nattr_obj     = new xmlattr_as_object;
-      for (j=0; j<xmlnodes->_attributes.size(); j++) {
-        nattr_obj->set_member(xmlnodes->_attributes[j]->_name, xmlnodes->_attributes[j]->_value);
-        delete xmlnodes->_attributes[j];
-      }
-      xmlnodes->_attributes.clear();
-      xmlnode1_obj->set_member("attributes", nattr_obj);
-    }
-  }
-  
-  // This is used when parsing from a text file
-  nodename = xmlnodes->_name;
-
-  xmlfirstnode_obj->set_member("nodeName", nodename.c_str());
-  xmlfirstnode_obj->set_member("childNodes", xmlfirstnode_obj);
-  xmlfirstnode_obj->set_member("length", xmlfirstnode_obj->obj.length());
-
-  xmlattr_as_object*	attr_obj = new xmlattr_as_object;
-  //log_msg("Created XMLAttr %s at %p\n", xmlnodes->_attributes[i]->_name, attr_obj );
-
-  for (i=0; i<xmlnodes->_attributes.size(); i++) {
-    log_msg("Created attribute %s at %p for firstNode\n", xmlnodes->_attributes[i]->_name.c_str(), attr_obj);
-    attr_obj->set_member(xmlnodes->_attributes[i]->_name, xmlnodes->_attributes[i]->_value);
-    delete xmlnodes->_attributes[i];
-  }
-  xmlnodes->_attributes.clear();
-  xmlfirstnode_obj->set_member("attributes", attr_obj);
-  
-  for (childa=0; childa < xmlnodes->length(); childa++) {
-    xmlnodeA_obj = new xmlnode_as_object;
-    log_msg("Created XMLNodeA %s at %p\n", xmlnodes->nodeName().c_str(), xmlnodeA_obj );
-
-    xmlnodeA_obj->obj = xmlnodes->_children[childa];
-    
-    inum = childa;
-    nodename  = xmlnodes->_children[childa]->nodeName().c_str();
-    nodevalue = xmlnodes->_children[childa]->nodeValue();
-    xmlfirstnode_obj->set_member(inum.to_string(), xmlnodeA_obj);
-    
-    xmlnodeA_obj->set_member("nodeName", nodename.c_str());
-    xmlnodeA_obj->set_member("length", xmlnodeA_obj->obj.length());
-    if (xmlnodes->_children[childa]->_attributes.size() > 0) {
-      xmlattr_as_object*	attr_obj     = new xmlattr_as_object;
-      for (i=0; i<xmlnodes->_children[childa]->_attributes.size(); i++) {
-        log_msg("Created attribute %s at %p for xmlnodeA\n",
-                xmlnodes->_children[childa]->_attributes[i]->_name.c_str(), attr_obj);
-        attr_obj->set_member(xmlnodes->_children[childa]->_attributes[i]->_name,
-                             xmlnodes->_children[childa]->_attributes[i]->_value);
-        delete xmlnodes->_children[childa]->_attributes[i];
-      }
-      xmlnodes->_children[childa]->_attributes.clear();
-      xmlnodeA_obj->set_member("attributes", attr_obj);
-    }
-    if (nodevalue->to_string()) {
-      xmlnodeA_obj->set_member("nodeValue", nodevalue->to_string());
-      //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
-    }
-    xmlnodeB_obj = new xmlnode_as_object;
-
-    log_msg("Created XMLNodeB %s at %p\n",
-            xmlnodes->_children[childa]->nodeName().c_str(), xmlnodeB_obj );
-    xmlnodeA_obj->set_member("childNodes", xmlnodeB_obj);
-    xmlnodeA_obj->set_member("firstChild", xmlnodeB_obj);
-    //xmlnodeA_obj->set_member(inum.to_string(), xmlnodeB_obj);
-    len =               xmlnodes->_children[childa]->length();
-    nodename =          xmlnodes->_children[childa]->nodeName().c_str();
-    nodevalue =         xmlnodes->_children[childa]->nodeValue();
-    if (nodevalue->to_string()) {
-      xmlnodeB_obj->set_member("nodeValue", nodevalue->to_string());
-      //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
-    }
-    xmlnodeB_obj->set_member("length", len);
-    xmlnodeB_obj->set_member("firstChild", xmlnodeB_obj);
-    if (xmlnodes->_children[childa]->_attributes.size() > 0) {
-      xmlattr_as_object*	attr_obj     = new xmlattr_as_object;
-      for (i=0; i<xmlnodes->_children[childa]->_attributes.size(); i++) {
-        //log_msg("Created attribute %s at %p for xmlnodeB\n",
-        //        xmlnodes->_children[childa]->_attributes[i]->_name.c_str(), attr_obj);
-        attr_obj->set_member(xmlnodes->_children[childa]->_attributes[i]->_name,
-                             xmlnodes->_children[childa]->_attributes[i]->_value);
-        delete xmlnodes->_children[childa]->_attributes[i];
-      }
-      xmlnodes->_children[childa]->_attributes.clear();
-      xmlnodeB_obj->set_member("attributes", attr_obj);
-    }
-    for (childb=0; childb < xmlnodeA_obj->obj.length(); childb++) {
-      xmlnodeC_obj = new xmlnode_as_object;
-      log_msg("Created XMLNodeC %s at %p\n", xmlnodes->_children[childa]->_children[childb]->nodeName().c_str(), xmlnodeC_obj);
-      xmlnodeC_obj->obj = xmlnodes->_children[childa]->_children[childb];
-      nodename =          xmlnodes->_children[childa]->_children[childb]->nodeName().c_str();
-      nodevalue =         xmlnodes->_children[childa]->_children[childb]->nodeValue();
-      
-      inum = childb;
-      xmlnodeB_obj->set_member(inum.to_string(), xmlnodeC_obj);
-      xmlnodeC_obj->set_member("childNodes", xmlnodeC_obj);
-      xmlnodeC_obj->set_member("firstChild", xmlnodeC_obj);
-      xmlnodeC_obj->set_member("nodeName", nodename.c_str());
-      if (nodevalue->to_string()) {
-        xmlnodeC_obj->set_member("nodeValue", nodevalue->to_string());
-        //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
-      }
-      if (xmlnodes->_children[childa]->_children[childb]->_attributes.size() > 0) {
-        for (i=0; i<xmlnodes->_children[childa]->_attributes.size(); i++) {
-        xmlattr_as_object*	attr_obj     = new xmlattr_as_object;
-        //log_msg("Created attribute %s at %p for xmlnodeC\n", xmlnodes->_children[childa]->_children[childb]->_attributes[i]->_name.c_str(), attr_obj);
-        attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_attributes[i]->_name,
-                             xmlnodes->_children[childa]->_children[childb]->_attributes[i]->_value);
-        delete xmlnodes->_children[childa]->_children[childb]->_attributes[i];
-        }
-        xmlnodes->_children[childa]->_children[childb]->_attributes.clear();
-        xmlnodeC_obj->set_member("attributes", attr_obj);
-      }
-
-      xmlnodeC_obj->set_member("length", xmlnodeC_obj->obj.length());
-      for (childc=0; childc <  xmlnodeC_obj->obj.length(); childc++) {
-        
-        xmlnodeD_obj = new xmlnode_as_object;
-        xmlnodeD_obj->obj = xmlnodes->_children[childa]->_children[childb]->_children[childc];
-        nodename =          xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeName().c_str();
-        nodevalue =         xmlnodes->_children[childa]->_children[childb]->_children[childc]->nodeValue();
-        log_msg("Created XMLNodeD %s at %p\n", nodename.c_str(), xmlnodeD_obj);
-        inum = childc;
-        xmlnodeC_obj->set_member(inum.to_string(), xmlnodeD_obj);
-        
-        xmlnodeD_obj->set_member("childNodes", xmlnodeD_obj);
-        xmlnodeD_obj->set_member("firstChild", xmlnodeD_obj);
-        xmlnodeD_obj->set_member("nodeName", nodename.c_str());
-        xmlnodeD_obj->set_member("length", xmlnodeD_obj->obj.length());
-
-        if (nodevalue->to_string()) {
-          xmlnodeD_obj->set_member("nodeValue", nodevalue->to_string());
-          //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
-        }
-        if (xmlnodes->_children[childa]->_children[childb]->length() > 0) {
-          if (xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes.size() > 0) {
-            xmlattr_as_object*	attr_obj     = new xmlattr_as_object;
-            for (k=0; k<xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes.size(); k++) {
-              //log_msg("Created attribute %s at %p for xmlnodeD\n",
-              //        xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[i]->_name.c_str(), attr_obj);
-              attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_name,
-                                   xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k]->_value);
-              delete xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes[k];
-            }
-            xmlnodes->_children[childa]->_children[childb]->_children[childc]->_attributes.clear();
-            xmlnodeD_obj->set_member("attributes", attr_obj);
-          }
-        }
-        
-        for (childd=0; childd <  xmlnodeD_obj->obj.length(); childd++) {
-          xmlnodeE_obj = new xmlnode_as_object;
-          nodename =  xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->nodeName().c_str();
-          nodevalue = xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->nodeValue();
-          xmlnodeE_obj->obj = xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd];
-          log_msg("Created XMLNodeE %s at %p, value %s\n", nodename.c_str(), xmlnodeE_obj, nodevalue->to_string());
-          xmlnodeE_obj->set_member("firstChild", xmlnodeE_obj);
-          xmlnodeE_obj->set_member("nodeName", nodename.c_str());
-          if (nodevalue->to_string()) {
-            xmlnodeE_obj->set_member("nodeValue", nodevalue->to_string());
-            //log_msg("nodevalue for %s is: %s\n", nodename.c_str(), nodevalue->to_string());
-          }
-          inum = childd;
-          xmlnodeD_obj->set_member(inum.to_string(), xmlnodeE_obj);
-          if (xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes.size() > 0) {
-            xmlattr_as_object*	attr_obj     = new xmlattr_as_object;
-            for (i=0; i<xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes.size(); i++) {
-              //log_msg("Created attribute %s at %p for xmlnodeE\n",
-              //        xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i]->_name.c_str(), attr_obj);
-              attr_obj->set_member(xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i]->_name,
-                                   xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i]->_value);
-              delete xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes[i];
-            }
-            xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd]->_attributes.clear();
-            xmlnodeE_obj->set_member("attributes", attr_obj);
-          }
-          delete xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children[childd];
-        }
-        xmlnodes->_children[childa]->_children[childb]->_children[childc]->_children.clear();
-        //xmlnodeB_obj->set_member("length", xmlnodeB_obj->obj.length());
-        delete  xmlnodes->_children[childa]->_children[childb]->_children[childc];
-      }
-      xmlnodes->_children[childa]->_children[childb]->_children.clear(); 
-      xmlnodeB_obj->set_member("childNodes", xmlnodeC_obj);
-      delete  xmlnodes->_children[childa]->_children[childb];
-    }
-    xmlnodes->_children[childa]->_children.clear();
-  }
-  delete xmlnodes;
-}
-
 //
 // Callbacks. These are the wrappers for the C++ functions so they'll work as
 // callbacks from within gameswf.
@@ -980,18 +577,12 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
       //log_msg("\tCreated New XML object at %p\n", xml_obj);
       tu_string datain = env->top(0).to_tu_string();
       xml_obj->obj.parseXML(datain);
-// FIXME: decide...
-#if 0
-  // The old way
-      xml_obj->obj.setupStackFrames(xml_obj, env);
-#else
-  // The new recursive way
       xml_obj->obj.setupFrame(xml_obj, xml_obj->obj.firstChild(), true);
-#endif
     } else {
       xml_as_object*	xml_obj = (xml_as_object*)env->top(0).to_object();      
       //log_msg("\tCloned the XML object at %p\n", xml_obj);
-      result->set(xml_obj);
+      //result->set(xml_obj);
+      result->set_as_object_interface(xml_obj);
       return;
     }
   } else {
@@ -1001,7 +592,8 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
     xml_obj->set_member("loaded", &xml_loaded);
   }
 
-  result->set(xml_obj);
+  //result->set(xml_obj);
+  result->set_as_object_interface(xml_obj);
 }
 
 //

@@ -9,7 +9,6 @@
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
-#include "gameswf_xmlsocket.h"
 
 #ifdef HAVE_LIBXML
 
@@ -19,15 +18,14 @@
 namespace gameswf
 {
   
-class XMLAttr
-{
-public:
+class XMLAttr {
+ public:
   XMLAttr();
   ~XMLAttr();
   
   tu_string          _name;
   gameswf::as_value  _value;
-private:
+ private:
 };
 
 struct xmlattr_as_object : public gameswf::as_object
@@ -147,17 +145,16 @@ struct xmlnode_as_object : public gameswf::as_object
 #if 0
   xmlnode_as_object() 
   {
-    log_msg("\tCreating xmlnode_as_object at %p \n", this);
+    log_msg("\t\tCreating xmlnode_as_object at %p \n", this);
   };
   ~xmlnode_as_object() 
   {
-    log_msg("\tDeleting xmlnode_as_object at %p \n", this);
+    log_msg("\t\tDeleting xmlnode_as_object at %p \n", this);
   };
 #endif
 };
 
-class XML
-{
+class XML {
  public:
   XML();
   XML(tu_string xml_in);

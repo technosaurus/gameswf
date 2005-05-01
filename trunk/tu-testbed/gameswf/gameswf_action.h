@@ -194,7 +194,7 @@ namespace gameswf
 			C_FUNCTION,
 			AS_FUNCTION,	// ActionScript function.
 		};
-
+		bool	m_temporary;
 		type	m_type;
 		mutable tu_string	m_string_value;
 		union
@@ -353,6 +353,7 @@ namespace gameswf
 		}
 
 		bool	operator==(const as_value& v) const;
+		bool	operator!=(const as_value& v) const;
 		bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
 		void	operator+=(const as_value& v) { set(this->to_number() + v.to_number()); }
 		void	operator-=(const as_value& v) { set(this->to_number() - v.to_number()); }
@@ -429,6 +430,7 @@ namespace gameswf
 
 		virtual void	set_member(const tu_stringi& name, const as_value& val)
 		{
+			//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
 			if (name == "prototype")
 			{
 				if (m_prototype) m_prototype->drop_ref();
@@ -443,6 +445,7 @@ namespace gameswf
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val)
 		{
+			//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
 			if (name == "prototype")
 			{
 				val->set(m_prototype);

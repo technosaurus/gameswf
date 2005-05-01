@@ -10,19 +10,17 @@
 #include "config.h"
 #endif
 
-#include "gameswf_log.h"
-#include "gameswf_action.h"
+#include "gameswf_xml.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 #include "base/container.h"
 
 #ifdef HAVE_LIBXML
 
-namespace gameswf
-{  
-
+namespace gameswf {
+  
 class XMLSocket {
-public:
+ public:
   XMLSocket();
   ~XMLSocket();
   
@@ -50,6 +48,12 @@ public:
   void onConnect(tu_string);
   void onData(tu_string);
   void onXML(tu_string);
+
+  // These handle the array of XML nodes
+  void push(as_object_interface *obj);
+  void clear();
+  int  count();
+ 
  private:
   tu_string     _host;
   short         _port;
@@ -60,6 +64,7 @@ public:
   bool          _connect;
   bool          _processing;
   array<tu_string> _messages;
+  array<as_object_interface *>  _nodes;
 };
 
 
@@ -74,6 +79,8 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
 void
 xmlsocket_send(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
+void
+xmlsocket_xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 void
 xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);

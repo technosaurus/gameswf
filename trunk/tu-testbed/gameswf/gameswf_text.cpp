@@ -435,7 +435,6 @@ namespace gameswf
 		float	m_leading;	// extra space between lines (in addition to default font line spacing)
 		tu_string	m_default_text;
 
-
 		edit_text_character_def(movie_definition_sub* root_def)
 			:
 			m_root_def(root_def),

@@ -165,6 +165,75 @@ uint32	tu_string::utf8_char_at(int index) const
 }
 
 
+tu_string	tu_string::utf8_from_char(array<int> chars) const
+{
+  const char*	buf = get_buffer();
+  uint32	c;
+  tu_string str;
+#if 0
+  do
+    {
+      c = utf8::decode_next_unicode_character(&buf);
+      index--;
+      
+      if (c == 0)
+        {
+          // We've hit the end of the string; don't go further.
+          assert(index == 0);
+          return c;
+		}
+    }
+  while (index > 0);
+#endif
+  return str;
+}
+
+tu_string	tu_string::utf8_to_upper() const
+{
+  
+  const char*	buf = get_buffer();
+  uint32	c;
+  tu_string str;
+  int index = length();
+  do {
+    c = utf8::decode_next_unicode_character(&buf);
+    index--;
+          
+    if (c == 0) {
+      // We've hit the end of the string; don't go further.
+      assert(index == 0);
+      return str;
+    }
+    str += toupper(c);
+  }
+	while (index > 0);
+  
+  return str;
+}
+
+tu_string	tu_string::utf8_to_lower() const
+{
+  
+  const char*	buf = get_buffer();
+  uint32	c;
+  tu_string str;
+  int index = length();
+  do {
+    c = utf8::decode_next_unicode_character(&buf);
+    index--;
+    
+    if (c == 0) {
+      // We've hit the end of the string; don't go further.
+      assert(index == 0);
+      return str;
+    }
+    str += tolower(c);
+  }
+  while (index > 0);
+  
+  return str;
+}
+
 /*static*/ int	tu_string::utf8_char_count(const char* buf, int buflen)
 {
 	const char*	p = buf;

@@ -28,11 +28,14 @@
 #include "base/tu_file.h"
 #include "base/image.h"
 #include "gameswf_render.h"
+#include "gameswf_impl.h"
 
 namespace gameswf
 {
 
-MovieClipLoader::MovieClipLoader()
+  
+  MovieClipLoader::MovieClipLoader()
+      // :     character(0, 0)
 {
   log_msg("%s: \n", __FUNCTION__);
   _mcl.bytes_loaded = 0;
@@ -90,7 +93,6 @@ MovieClipLoader::removeListener(void *)
 
   
 // Callbacks
-  
 void
 MovieClipLoader::onLoadStart(void *)
 {
@@ -122,6 +124,51 @@ MovieClipLoader::onLoadError(void *)
 }
 
 void
+MovieClipLoader::on_button_event(event_id event)
+{
+  log_msg("%s: \n", __FUNCTION__);
+  
+  // Set our mouse state (so we know how to render).
+  switch (event.m_id)
+    {
+    case event_id::ROLL_OUT:
+    case event_id::RELEASE_OUTSIDE:
+      _mouse_state = MOUSE_UP;
+      break;
+      
+    case event_id::RELEASE:
+    case event_id::ROLL_OVER:
+    case event_id::DRAG_OUT:
+      _mouse_state = MOUSE_OVER;
+      break;
+      
+    case event_id::PRESS:
+    case event_id::DRAG_OVER:
+      _mouse_state = MOUSE_DOWN;
+      break;
+      
+    default:
+      assert(0);	// missed a case?
+      break;
+    };
+  
+  // @@ eh, should just be a lookup table.
+#if 0
+  // Add appropriate actions to the movie's execute list...
+  for (int i = 0; i < m_def->m_button_actions.size(); i++) {
+    if (m_def->m_button_actions[i].m_conditions & c) {
+      // Matching action.
+      for (int j = 0; j < m_def->m_button_actions[i].m_actions.size(); j++) {
+        get_parent()->add_action_buffer(m_def->m_button_actions[i].m_actions[j]);
+      }
+    }
+  }
+#endif
+  // Call conventional attached method.
+  // @@ TODO
+}
+
+void
 moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
 #ifdef HAVE_LIBXML
@@ -129,12 +176,12 @@ moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface
   struct stat   stats;
   int           fd;
   
-  //log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, nargs);
+  log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, nargs);
   moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
   
   tu_string url = env->bottom(first_arg).to_string();  
   as_object *target = (as_object *)env->bottom(first_arg-1).to_object();
-  //log_msg("load clip: %s, target is: %p\n", url.c_str(), target);
+  log_msg("load clip: %s, target is: %p\n", url.c_str(), target);
 
   xmlNanoHTTPInit();            // This doesn't do much for now, but in the
                                 // future it might, so here it is...
@@ -288,7 +335,6 @@ moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface
     //movie_definition_sub *m = (movie_definition_sub *)mov;
     //target->add_bitmap_info(bi);
 
-    
     character* tar = (character*)mov;
     const char* name = tar->get_name();
     Uint16 id = tar->get_id();
@@ -301,13 +347,22 @@ moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface
     //m->add_bitmap_character(666, ch);
 
 // #if 1
-//     movie_definition_sub  *ms = create_movie_sub(filespec.c_str());
-//     movie_interface* extern_movie = create_library_movie_inst_sub(ms);
+    tu_string swfm = filespec.utf8_substring(0, filespec.length() - 3);
+    swfm += "swf";
+
+     movie_definition_sub  *ms = create_movie_sub(swfm.c_str());
+     movie_interface* extern_movie = create_library_movie_inst_sub(ms);
+
+     character * newchar = ms->create_character_instance(tar->get_parent(), id);
+     
+     //save_extern_movie(extern_movie);
+     //movie* new_movie = static_cast<movie*>(extern_movie)->get_root_movie();
+     
 // #else
 //     movie_definition_sub  *ms;
 //     ms->add_bitmap_info(bi);
 // #endif
-    //movie* m = mov->get_root_movie();
+     //movie* m = mov->get_root_movie();
     //set_current_root(extern_movie);
     //movie* m = static_cast<movie*>(extern_movie)->get_root_movie();
     mov->on_event(event_id::LOAD);
@@ -324,8 +379,8 @@ moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface
     movie* parent = tar->get_parent();
     
     character *newch = new character(parent, id);
-
-#if 1
+    
+#if 0
     parent->clone_display_object(name, "album_image", depth);
     parent->add_display_object((Uint16)id,
                                 name,
@@ -366,6 +421,7 @@ moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface
   //unlink(filespec.c_str());
   
   xmlNanoHTTPCleanup();
+
 #endif // HAVE_LIBXML
 }
 

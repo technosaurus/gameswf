@@ -45,6 +45,12 @@ namespace gameswf
 	//
 	// button characters
 	//
+	enum mouse_state
+	{
+		MOUSE_UP,
+		MOUSE_DOWN,
+		MOUSE_OVER
+	};
 
 	struct button_record
 	{
