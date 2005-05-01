@@ -281,14 +281,13 @@ namespace gameswf
 			OUT_DOWN = FLAG_DOWN
 		};
 		int	m_last_mouse_flags, m_mouse_flags;
-
-		enum mouse_state
+		enum e_mouse_state
 		{
 			UP = 0,
 			DOWN,
 			OVER
 		};
-		mouse_state m_mouse_state;
+		e_mouse_state m_mouse_state;
 
 		button_character_instance(button_character_definition* def, movie* parent, int id)
 			:

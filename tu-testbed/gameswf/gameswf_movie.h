@@ -1,6 +1,7 @@
 #ifndef __MOVIE_H__
 #define __MOVIE_H__
 
+#include "gameswf_button.h"
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
@@ -11,12 +12,22 @@ namespace gameswf
     int bytes_loaded;
     int bytes_total;
   };
-  
-  
-class MovieClipLoader
+
+#if 0
+struct MovieClipLoader : public character
 {
- public:
-  MovieClipLoader();
+  MovieClipLoader(movie* parent, int id) :
+      character(parent, id)
+  {
+    log_msg("%s: \n", __FUNCTION__);
+  }
+#else
+  class MovieClipLoader
+  {
+#endif
+  public:
+    MovieClipLoader();
+
   ~MovieClipLoader();
 
   void load(const tu_string& filespec);
@@ -27,20 +38,22 @@ class MovieClipLoader
   void unloadClip(void *);
   void addListener(void *);
   void removeListener(void *);
-  
+
+  void	on_button_event(event_id event);
   // Callbacks
   void onLoadStart(void *);
   void onLoadProgress(void *);
   void onLoadInit(void *);
   void onLoadComplete(void *);
   void onLoadError(void *);
- private:
+  private:
   bool          _started;
   bool          _completed;
   tu_string     _filespec;
   int           _progress;
   bool          _error;
   struct mcl    _mcl;
+  mouse_state   _mouse_state;
 };
 
 struct moviecliploader_as_object : public gameswf::as_object

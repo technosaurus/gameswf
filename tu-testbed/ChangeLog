@@ -1,5 +1,30 @@
 2005-04-30  Rob Savoye  <rob@bertha.welcomehome.org>
 
+	* base/container.h: Add support to tu_string for += char.
+	Added new methods to tu_string, utf8_from_char(), utf8_to_upper(),
+	utf8_to_lower().
+	* base/container.cpp: Add functions for utf8_from_char(),
+	utf8_to_upper(), utf8_to_lower().
+	* gameswf/gameswf_action.h: Add operator!= to as_value.
+	* gameswf/gameswf_action.cpp:  Add operator!= to as_value. Don't
+	flag a "new String error", cause it's being used like this
+	String.fromCharCode(67) without needing an object tio be created
+	first.
+	* gameswf/gameswf_string.h: Add support for fromCharCode,
+	toUpperCase, toLowerCase.
+	* gameswf/gameswf_string.cpp: Make string_new return a
+	tu_string_as_object after attaching fromCharCode and charCodeAt
+	members to it.
+	* gameswf/gameswf_action.cpp: Add fromCharCode, toUpperCase,
+	toLowerCase, to builtin string.
+	* gameswf/gameswf_textformat.cpp: Initialize all data in
+	constructor to -1 so we can tell if it's been set or not
+	later. Add getTextFormat() support.
+	* gameswf/gameswf_textformat.h: Make several values that were an
+	int a float.
+	* gameswf/gameswf_xmlsocket.cpp: Add a xmlsocket_xml_new so the
+	socket class has a handle on the XML messages it's processing.
+	
 	* gameswf/gameswf_render_handler_ogl.cpp (apply): Set the Texture
 	LOD BIAS.
 	* gameswf/gameswf_test_ogl.cpp (main): Add -ml option to
@@ -10,7 +35,7 @@
 	* gameswf/gameswf_test_ogl.cpp (main): Add -mi and -ma options to
 	set the minimum and maximum LOD Bias. "-mi -2 -ma 2" seems to work
 	good. 
-	* gameswf_render_handler_ogl.cpp (apply): Set the LOD Bias.
+	* gameswf/gameswf_render_handler_ogl.cpp (apply): Set the LOD Bias.
 
 	* gameswf/gameswf_impl.cpp (get_topmost_mouse_entity): Don't
 	return a character unless the parent is visible.

@@ -285,6 +285,7 @@ namespace gameswf
 		// Special event handler; sprites also execute their frame1 actions on this event.
 		virtual void	on_event_load() { on_event(event_id::LOAD); }
 
+#if 0
 		// tulrich: @@ is there a good reason these are in the
 		// vtable?  I.e. can the caller just call
 		// on_event(event_id::SOCK_DATA) instead of
@@ -293,7 +294,7 @@ namespace gameswf
 		virtual void	on_event_xmlsocket_onxml() { on_event(event_id::SOCK_XML); }
 		virtual void	on_event_interval_timer() { on_event(event_id::TIMER); }
 		virtual void	on_event_load_progress() { on_event(event_id::LOAD_PROGRESS); }
-
+#endif
 		// as_object_interface stuff
 		virtual void	set_member(const tu_stringi& name, const as_value& val) { assert(0); }
 		virtual bool	get_member(const tu_stringi& name, as_value* val) { assert(0); return false; }

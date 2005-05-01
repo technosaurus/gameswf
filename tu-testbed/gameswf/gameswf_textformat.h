@@ -33,27 +33,31 @@ public:
   bool bold()        { return _bold; }
   bool bullet()      { return _bullet; }
   uint32 color() const { return _color; }
-  int indent() const { return _indent; }
+  float indent() const { return _indent; }
   const tu_string& align() const { return _align; }
   int blockIndent() { return _block_indent; }
-  int leading()     { return _leading; }
-  int leftMargin()  { return _left_margin; }
-  int RightMargin() { return _right_margin; }
-  int size()        { return _point_size; }
+  float leading()     { return _leading; }
+  float leftMargin()  { return _left_margin; }
+  float RightMargin() { return _right_margin; }
+  float size()        { return _point_size; }
 
   // In a paragraph, change the format of a range of characters.
   void setTextFormat (text_format &format);
   void setTextFormat (int index, text_format &format);
   void setTextFormat (int start, int end, text_format &format);
 
+  text_format &getTextFormat ();
+  text_format &getTextFormat (int index);
+  text_format &getTextFormat (int start, int end);
+
   int getTextExtant();
   text_format *operator = (text_format &format);
   
  private:
-  bool	_underline;		// A Boolean value that indicates whether the text is underlined.
-  bool	_bold;			// A Boolean value that indicates whether the text is boldface.
-  bool	_italic;		// A Boolean value that indicates whether the text is italicized.
-  bool	_bullet;		// 
+  bool          _underline;	// A Boolean value that indicates whether the text is underlined.
+  bool          _bold;		// A Boolean value that indicates whether the text is boldface.
+  bool          _italic;	// A Boolean value that indicates whether the text is italicized.
+  bool          _bullet;	// 
   
   tu_string	 _align;	// The alignment of the paragraph, represented as a string.
                                 // If "left", the paragraph is left-aligned. If "center", the
@@ -64,13 +68,13 @@ public:
                                 // containing three 8-bit RGB components; for example,
                                 // 0xFF0000 is red, 0x00FF00 is green.
   tu_string _font;		// The name of a font for text as a string.
-  int		_indent;	// An integer that indicates the indentation from the left
+  float		_indent;	// An integer that indicates the indentation from the left
                                 // margin to the first character in the paragraph
-  int		_leading;	// A number that indicates the amount of leading vertical
+  float		_leading;	// A number that indicates the amount of leading vertical
                                 // space between lines.
-  int		_left_margin;	// Indicates the left margin of the paragraph, in points.
-  int		_right_margin;	// Indicates the right margin of the paragraph, in points.
-  int		_point_size;	// An integer that indicates the point size.
+  float		_left_margin;	// Indicates the left margin of the paragraph, in points.
+  float		_right_margin;	// Indicates the right margin of the paragraph, in points.
+  float		_point_size;	// An integer that indicates the point size.
   int		_tab_stops;	// 
   int		_target;	// The target window where the hyperlink is displayed. If the
                                 // target window is an empty string, the text is displayed in
@@ -91,6 +95,9 @@ textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr
 
 void
 textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+
+void
+textformat_getformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
 
 } // end of gameswf namespace
 

@@ -32,8 +32,6 @@
 #define snprintf _snprintf
 #endif // _WIN32
 
-extern unsigned long _start;
-
 // NOTES:
 //
 // Buttons
@@ -1201,7 +1199,8 @@ namespace gameswf
 
 			s_global->set_member("TextFormat", as_value(textformat_new));
 #ifdef HAVE_LIBXML
-			s_global->set_member("XML", as_value(xml_new));
+			//s_global->set_member("XML", as_value(xml_new));
+			s_global->set_member("XML", as_value(xmlsocket_xml_new));
 			s_global->set_member("XMLSocket", as_value(xmlsocket_new));
 #endif // HAVE_LIBXML
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
@@ -1237,6 +1236,8 @@ namespace gameswf
 		int nargs,
 		int first_arg_bottom_index)
 	{
+		//log_msg("%s: method_name is %s, nargs is %d\n", __FUNCTION__, method_name.c_str(), nargs);
+		
 		if (method_name == "charCodeAt")
 		{
 			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
@@ -1246,6 +1247,25 @@ namespace gameswf
 			}
 
 			return as_value(0);
+		}
+		if (method_name == "fromCharCode") // FIXME: not fully implemented
+		{
+			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
+			if (index >= 0 && index < this_string.utf8_length())
+			{
+				array<int> arr;
+				return as_value(this_string.utf8_from_char(arr));
+			}
+
+			return as_value(0);
+		}
+		if (method_name == "toUpperCase")
+		{
+			return as_value(this_string.utf8_to_upper());
+		}
+		if (method_name == "toLowerCase")
+		{
+			return as_value(this_string.utf8_to_lower());
 		}
 		else if (method_name == "indexOf")
 		{
@@ -1303,8 +1323,6 @@ namespace gameswf
 		// substr()
 		// slice()
 		// split()
-		// toUpperCase()
-		// toLowerCase()
 		// etc.
 
 		return as_value();
@@ -1616,6 +1634,7 @@ namespace gameswf
 		UNUSED(original_target);		// Avoid warnings.
 
 		int	stop_pc = start_pc + exec_bytes;
+		int	i;
 
 		for (int pc = start_pc; pc < stop_pc; )
 		{
@@ -1623,6 +1642,36 @@ namespace gameswf
 			while (with_stack.size() > 0
 			       && pc >= with_stack.back().m_block_end_pc)
 			{
+				for (i=0; i<with_stack.size(); i++) {
+					smart_ptr<as_object_interface> obj = with_stack[i].m_object;;
+					as_value *val = (as_value *)obj.get_ptr();
+#if 0                           // FIXME: what kind of object are we ?
+					log_msg("Cleanup with block, stack size is %d\n", with_stack.size());
+					//delete obj;
+					switch (val->get_type()) {
+					case as_value::OBJECT:
+						log_msg("Got an AS Object in the with_stack\n");
+						break;
+					case as_value::NUMBER:
+						log_msg("Got a Number Object in the with_stack\n");
+						break;
+					case as_value::STRING:
+						log_msg("Got a String Object in the with_stack\n");
+						break;
+					default:
+						log_msg("Got an unknown Object in the with_stack\n");
+						break;
+					}
+#endif
+#if 1
+					xmlnode_as_object *node = (xmlnode_as_object *)obj.get_ptr();
+					const char *x = node->obj._name;
+					if (node) {
+						//log_msg("Want to delete object at %p ???? %d\n", node, node->get_ref_count());
+						//node->clear();
+					}
+				}
+#endif
 				// Drop this stack element
 				with_stack.resize(with_stack.size() - 1);
 			}
@@ -2105,8 +2154,12 @@ namespace gameswf
 					}
 					else
 					{
-						log_error("can't create object with unknown class '%s'\n",
-							  classname.to_tu_string().c_str());
+						if (classname != "String") {
+							log_error("can't create object with unknown class '%s'\n",
+								  classname.to_tu_string().c_str());
+						} else {
+							log_msg("Created special String class\n");
+						}
 					}
 
 					env->drop(nargs);
@@ -3325,6 +3378,24 @@ namespace gameswf
 		else
 		{
 			return m_type == v.m_type;
+		}
+	}
+
+	
+	bool	as_value::operator!=(const as_value& v) const
+	// Return true if operands are not equal.
+	{
+		if (m_type == STRING)
+		{
+			return m_string_value != v.to_tu_string();
+		}
+		else if (m_type == NUMBER)
+		{
+			return m_number_value != v.to_number();
+		}
+		else
+		{
+			return m_type != v.m_type;
 		}
 	}
 
