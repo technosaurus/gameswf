@@ -2158,7 +2158,7 @@ namespace gameswf
 							log_error("can't create object with unknown class '%s'\n",
 								  classname.to_tu_string().c_str());
 						} else {
-							log_msg("Created special String class\n");
+							//log_msg("Created special String class\n");
 						}
 					}
 

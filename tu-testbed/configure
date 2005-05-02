@@ -1942,7 +1942,7 @@ echo "$as_me: error: bad value ${enableval} for disable-xml option" >&2;}
 esac
 fi;
 
-if test -z $enable_xml; then
+if test x$enable_xml != xyes; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBXML

@@ -30,7 +30,7 @@ AC_ARG_ENABLE(libxml, [  --disable-xml            Disable support for xml and xm
   *)   AC_MSG_ERROR([bad value ${enableval} for disable-xml option]) ;;
 esac])
 
-if test -z $enable_xml; then
+if test x$enable_xml != xyes; then
     AC_DEFINE([HAVE_LIBXML], [], [Use XML])
     AM_PATH_LIBXML2
 fi
