@@ -35,11 +35,24 @@ public:
   uint32 color() const { return _color; }
   float indent() const { return _indent; }
   const tu_string& align() const { return _align; }
-  int blockIndent() { return _block_indent; }
+  float blockIndent() { return _block_indent; }
   float leading()     { return _leading; }
   float leftMargin()  { return _left_margin; }
   float RightMargin() { return _right_margin; }
   float size()        { return _point_size; }
+
+  void underlinedSet(bool x)   { _underline = x; }
+  void italicedSet(bool x)     { _italic = x; }
+  void boldSet(bool x)         { _bold = x; }
+  void bulletSet(bool x)       { _bullet = x; }
+  void colorSet(uint32 x)      { _color = x; }
+  void indentSet(float x)      { _indent = x; }
+  void alignSet(tu_string x)  { _align = x; }
+  void blockIndentSet(float x)   { _block_indent = x; }
+  void leadingSet(float x)     { _leading = x; }
+  void leftMarginSet(float x)  { _left_margin = x; }
+  void rightMarginSet(float x) { _right_margin = x; }
+  void sizeSet(float x)        { _point_size = x; }
 
   // In a paragraph, change the format of a range of characters.
   void setTextFormat (text_format &format);
@@ -63,7 +76,7 @@ public:
                                 // If "left", the paragraph is left-aligned. If "center", the
                                 // paragraph is centered. If "right", the paragraph is
                                 // right-aligned.
-  int		_block_indent;	// 
+  float		_block_indent;	// 
   uint32	_color;		// The color of text using this text format. A number
                                 // containing three 8-bit RGB components; for example,
                                 // 0xFF0000 is red, 0x00FF00 is green.

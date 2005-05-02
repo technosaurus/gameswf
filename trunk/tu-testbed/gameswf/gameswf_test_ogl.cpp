@@ -46,7 +46,9 @@ void	print_usage()
 		"  -ml         Specify the Texture LOD bias (float)\n"
 		"  -p          Run full speed (no sleep) and log frame rate\n"
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
-		"  -r <0|1>    0 disables renderering & sound (good for batch tests)\n"
+                "  -r <0|1|2>  0 disables renderering & sound (good for batch tests)\n"
+                "              1 enables rendering & sound (default setting)\n"
+                "              2 enables rendering & disables sound\n"
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
 		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
 		"\n"
@@ -187,6 +189,7 @@ int	main(int argc, char *argv[])
 
 	float	exit_timeout = 0;
 	bool	do_render = true;
+        bool    do_sound = true;
 	bool	do_loop = true;
 	bool	sdl_abort = true;
 	int     delay = 30;
@@ -295,11 +298,32 @@ int	main(int argc, char *argv[])
 				arg++;
 				if (arg < argc)
 				{
-					do_render = atoi(argv[arg]) ? true : false;
-				}
-				else
-				{
-					fprintf(stderr, "-r must be followed by 0 or 1 to disable/enable rendering\n");
+					const int render_arg = atoi(argv[arg]);
+					switch (render_arg) {
+					case 0:
+						// Disable both
+						do_render = false;
+						do_sound = false;
+						break;
+					case 1:
+						// Enable both
+						do_render = true;
+						do_sound = true;
+						break;
+					case 2:
+						// Disable just sound
+						do_render = true;
+						do_sound = false;
+						break;
+					default:
+						fprintf(stderr, "-r must be followed by 0, 1 or 2 (%d is invalid)\n",
+							render_arg);
+						print_usage();
+						exit(1);
+						break;
+					}
+				} else {
+					fprintf(stderr, "-r must be followed by 0 an argument to disable/enable rendering\n");
 					print_usage();
 					exit(1);
 				}
@@ -376,8 +400,10 @@ int	main(int argc, char *argv[])
 	gameswf::render_handler*	render = NULL;
 	if (do_render)
 	{
-		sound = gameswf::create_sound_handler_sdl();
-		gameswf::set_sound_handler(sound);
+		if (do_sound) {
+			sound = gameswf::create_sound_handler_sdl();
+			gameswf::set_sound_handler(sound);
+		}
 		render = gameswf::create_render_handler_ogl();
 		gameswf::set_render_handler(render); 
 	}

@@ -1,3 +1,15 @@
+2005-05-01  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_textformat.cpp (textformat_setformat): Set the
+	flags if the corresponding members are set.
+
+	* configure.ac: Add patch from sourceforge (#1186726) for checking
+	xml option differently.
+	* aclocal.m4, configure: Regenerated.
+	* gameswf/gameswf_test_ogl.cpp: Add addition value to "-r" option
+	to optionally disable sound. From same sourceforge patch
+	#1186726.
+	
 2005-04-30  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* base/container.h: Add support to tu_string for += char.

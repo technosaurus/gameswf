@@ -11,8 +11,8 @@ namespace gameswf
 
   text_format::text_format() :
       _underline(-1),
-      _italic(-1),
       _bold(-1),
+      _italic(-1),
       _bullet(-1),
       _block_indent(-1),
       _color(0),
@@ -78,6 +78,7 @@ text_format::setTextFormat (int start, int end, text_format &format)
   //log_msg("%s: \n", __FUNCTION__);
 }
 
+#if 0
 text_format &
 text_format::getTextFormat ()
 {
@@ -95,6 +96,7 @@ text_format::getTextFormat (int start, int end)
 {
   log_msg("%s: \n", __FUNCTION__);
 }
+#endif
 
 void
 textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
@@ -113,29 +115,96 @@ textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr
 void
 textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
-    log_msg("%s: args=%d unfinished implementation\n", __FUNCTION__, nargs);
-    textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
-    double start = env->bottom(first_arg).to_number();
-    double end = env->bottom(first_arg-1).to_number();
-    textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
-    assert(ptr);
-    
-    ptr->obj.setTextFormat(start, end, obj->obj);
-    result->set_bool(true);
-}
+  as_value	method;
+  //log_msg("%s: args=%d at %p\n", __FUNCTION__, nargs, this_ptr);
+  textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
+  assert(ptr);
+  double start = env->bottom(first_arg).to_number();
+  double end = env->bottom(first_arg-1).to_number();
+  textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
+  assert(obj);
 
-void
-textformat_getformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
-{
-    log_msg("%s: args=%d unfinished implementation\n", __FUNCTION__, nargs);
-    textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
-    double start = env->bottom(first_arg).to_number();
-    double end = env->bottom(first_arg-1).to_number();
-    textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
-    assert(ptr);
-    
-    ptr->obj = ptr->obj.getTextFormat();
-    result->set_bool(true);
+  //log_msg("Change from %f for %f characters for object at %p\n", start, end, obj);
+
+  // Check for the flags that could be set
+  if (obj->get_member("underline", &method)) {
+    //log_msg("Underline exists and is set to %d\n", method.to_bool());
+    obj->obj.underlinedSet(method.to_bool());
+  }
+  
+  if (obj->get_member("italic", &method)) {
+    //log_msg("Italic exists and is set to %d\n", method.to_bool());
+    obj->obj.italicedSet(method.to_bool());
+  }
+  
+  if (obj->get_member("bold", &method)) {
+    //log_msg("Bold exists and is set to %d\n", method.to_bool());
+    obj->obj.boldSet(method.to_bool());
+  }
+  
+  if (obj->get_member("bullet", &method)) {
+    //log_msg("Bullet exists and is set to %d\n", method.to_bool());
+    obj->obj.bulletSet(method.to_bool());
+  }
+
+  if (obj->get_member("color", &method)) {
+    //log_msg("Color exists and is set to %f\n", method.to_number());
+    obj->obj.colorSet((uint32)method.to_number());
+  }
+
+  if (obj->get_member("indent", &method)) {
+    //log_msg("Indent exists and is set to %f\n", method.to_number());
+    obj->obj.indentSet(method.to_number());
+  }
+
+  if (obj->get_member("align", &method)) {
+    //log_msg("Align exists and is set to %s\n", method.to_string());
+    obj->obj.alignSet(method.to_tu_string());
+  }
+
+  if (obj->get_member("blockIndent", &method)) {
+    //log_msg("BlockIndent exists and is set to %f\n", method.to_number());
+    obj->obj.blockIndentSet(method.to_number());
+  }
+  
+  if (obj->get_member("leading", &method)) {
+    //log_msg("Leading exists and is set to %f\n", method.to_number());
+    obj->obj.leadingSet(method.to_number());
+  }
+  
+  if (obj->get_member("leftMargin", &method)) {
+    //log_msg("LeftMargin exists and is set to %f\n", method.to_number());
+    obj->obj.leftMarginSet(method.to_number());
+  }
+  
+  if (obj->get_member("RightMargin", &method)) {
+    //log_msg("RightMargin exists and is set to %f\n", method.to_number());
+    obj->obj.rightMarginSet(method.to_number());
+  }
+  
+  if (obj->get_member("size", &method)) {
+    //log_msg("Size exists and is set to %f\n", method.to_number());
+    obj->obj.sizeSet(method.to_number());
+  }
+  
+  //ptr->obj.setTextFormat(start, end, obj->obj);
+  //result->set_bool(true);
 }
+#if 0
+  void
+  textformat_getformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+{
+  log_msg("%s: args=%d unfinished implementation\n", __FUNCTION__, nargs);
+  textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
+  assert(ptr);
+  double start = env->bottom(first_arg).to_number();
+  double end = env->bottom(first_arg-1).to_number();
+  textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
+  assert(obj);
+    
+  ptr->obj = ptr->obj.getTextFormat();
+  result->set_bool(true);
+}
+#endif
 
 } // end of gameswf namespace
