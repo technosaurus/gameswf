@@ -1,3 +1,9 @@
+2005-05-04  Rob Savoye  <rob@blackpeter.welcomehome.org>
+
+	* gameswf/gameswf_render_handler_ogl.cpp (render_handler): Added
+	and slightly changed patch #1194680. This code now only gets
+	executed when using a non default value for the LOD BIAS.
+
 2005-05-01  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_textformat.cpp (textformat_setformat): Set the
@@ -6,7 +12,7 @@
 	* configure.ac: Add patch from sourceforge (#1186726) for checking
 	xml option differently.
 	* aclocal.m4, configure: Regenerated.
-	* gameswf/gameswf_test_ogl.cpp: Add addition value to "-r" option
+	* gameswf/gameswf_test_ogl.cpp: Add additional value to "-r" option
 	to optionally disable sound. From same sourceforge patch
 	#1186726.
 	
@@ -19,8 +25,8 @@
 	utf8_to_upper(), utf8_to_lower().
 	* gameswf/gameswf_action.h: Add operator!= to as_value.
 	* gameswf/gameswf_action.cpp:  Add operator!= to as_value. Don't
-	flag a "new String error", cause it's being used like this
-	String.fromCharCode(67) without needing an object tio be created
+	flag a "new String error", cause it's being used like this 
+	"String.fromCharCode(67)" without needing an object to be created
 	first.
 	* gameswf/gameswf_string.h: Add support for fromCharCode,
 	toUpperCase, toLowerCase.

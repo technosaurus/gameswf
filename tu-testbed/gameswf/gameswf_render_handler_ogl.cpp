@@ -147,7 +147,21 @@ struct render_handler_ogl : public gameswf::render_handler
 			// CHange the LOD BIAS values to tweak bluriness
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, min_lod_bias);
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, max_lod_bias);
-			glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
+			if (tex_lod_bias) {
+				// If 2D textures weren't previously enabled, enable
+				// them now and force the driver to notice the update,
+				// then disable them again.
+				if (!glIsEnabled(GL_TEXTURE_2D)) {
+					// Clearing a mask of zero *should* have no
+					// side effects, but coupled with enbling
+					// GL_TEXTURE_2D it works around a segmentation
+					// fault in the driver for the Intel 810 chip.
+					glEnable(GL_TEXTURE_2D);
+					glClear(0);
+					glDisable(GL_TEXTURE_2D);
+				}
+				glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
+			}
 				
 			if (m_mode == COLOR)
 			{
