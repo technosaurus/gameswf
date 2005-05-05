@@ -164,7 +164,8 @@ struct render_handler_ogl : public gameswf::render_handler
 					glClear(0);
 					glDisable(GL_TEXTURE_2D);
 				}
-#endif // FIX_I810_LOD_BIAS
+// end of FIX_I810_LOD_BIAS
+#endif
 				glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
 			}
 				
