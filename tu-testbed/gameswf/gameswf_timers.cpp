@@ -110,7 +110,17 @@ namespace gameswf
         //log_msg("Timer expired! \n");
         return true;
       }
+      // FIXME: Sometimes, "now" and "_start" have bad values.
+      // I don't know why, but this works around the problem..
+      else if (now < _start) {
+        log_msg( "Timer::expired - now (%lf) is before start (%lf)!\n"
+                 "     Expiring right now.\n",
+                 now, _start);
+        _start = now;
+        return true;
+      }
     }
+      
     // log_msg("Timer not enabled! \n");
     return false;
   }

@@ -1,3 +1,13 @@
+2005-05-05  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_timers.cpp (gameswf): If _start is trashed for
+	some reason, assuming it's expired and then reset it. This should
+	eventually be fixed once I figure out what's causing the
+	problem. It takes about an hour to occur.
+	* base/tu_timer.cpp (get_profile_ticks): Don't need the tz
+	variable, as it's not used with gettimeofday() on Linux anymore.
+	
+
 2005-05-05  Rob Savoye  <rob@darkstar.welcomehome.org>
 
 	* gameswf_string.cpp (string_new): Don't recreate the String
