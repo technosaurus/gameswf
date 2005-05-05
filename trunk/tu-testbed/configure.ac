@@ -35,6 +35,18 @@ if test x$enable_xml != xyes; then
     AM_PATH_LIBXML2
 fi
 
+dnl Fix the Intel 810 LOD bias problem
+AC_ARG_ENABLE(i810-lod-bias, [  --enable-i810-lod-bias       Enable fix for Intel 810 LOD bias problem],
+[case "${enableval}" in
+  yes) i810lodbias=yes ;;
+  no)  i810lodbias=no ;;
+  *)   AC_MSG_ERROR([bad value ${enableval} for enable-i810-lod-bias option]) ;;
+esac])
+
+if test x$i810lodbias = xyes; then
+    AC_DEFINE([FIX_I810_LOD_BIAS], [], [Fix i810 LOD bias problem])
+fi
+
 AC_PROG_CC
 AC_PROG_CXX
 AC_EXEEXT
@@ -48,10 +60,10 @@ AM_PATH_ZLIB
 AM_PATH_JPEG
 AM_PATH_PNG
 
-dnl Define winsock if we're on wodows. We could do something complicated,
+dnl Define winsock if we're on widows. We could do something complicated,
 dnl but since AC_EXEEXT does it for us, we'll do this the easy way.
 if test x"$EXEEXT" == "exe"; then
-  AC_DEFINE(HAVE_WINSOCK)
+  AC_DEFINE(HAVE_WINSOCK,1,[This is defined is we are on Win32])
 fi
 
 dnl Look for pthreads
