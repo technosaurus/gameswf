@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Fix i810 LOD bias problem */
+#undef FIX_I810_LOD_BIAS
+
 /* Define this if you have GLU support available */
 #undef HAVE_GLU
 
@@ -50,6 +53,9 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* This is defined is we are on Win32 */
+#undef HAVE_WINSOCK
 
 /* Define to 1 if you have the <zlib.h> header file. */
 #undef HAVE_ZLIB_H

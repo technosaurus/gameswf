@@ -862,6 +862,7 @@ Optional Features:
 			  (and sometimes confusing) to the casual installer
   --enable-pthreads            Enable support for pthreads
   --disable-xml            Disable support for xml and xmlsocket
+  --enable-i810-lod-bias       Enable fix for Intel 810 LOD bias problem
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --disable-sdltest       Do not try to compile and run a test SDL program
@@ -2016,6 +2017,26 @@ echo "${ECHO_T}no" >&6
 
 
 
+
+fi
+
+# Check whether --enable-i810-lod-bias or --disable-i810-lod-bias was given.
+if test "${enable_i810_lod_bias+set}" = set; then
+  enableval="$enable_i810_lod_bias"
+  case "${enableval}" in
+  yes) i810lodbias=yes ;;
+  no)  i810lodbias=no ;;
+  *)   { { echo "$as_me:$LINENO: error: bad value ${enableval} for enable-i810-lod-bias option" >&5
+echo "$as_me: error: bad value ${enableval} for enable-i810-lod-bias option" >&2;}
+   { (exit 1); exit 1; }; } ;;
+esac
+fi;
+
+if test x$i810lodbias = xyes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define FIX_I810_LOD_BIAS
+_ACEOF
 
 fi
 
@@ -6233,7 +6254,8 @@ echo "${ECHO_T}${ac_cv_path_png_lib}" >&6
 
 
 if test x"$EXEEXT" == "exe"; then
-  cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define HAVE_WINSOCK 1
 _ACEOF
 

@@ -1,3 +1,12 @@
+2005-05-05  Rob Savoye  <rob@darkstar.welcomehome.org>
+
+	* gameswf/gameswf_render_handler_ogl.cpp (render_handler): Check
+	in patch #1195922, making the workaround for the i810 OpenGL
+	problem configurable.
+	* configure.ac: Add -enable-i810-lod-bias to make workaround
+	optional. Add descriptive text to AC_DEFINE(HAVE_WINSOCK)
+	* configure, config.h.in: Regenerated.
+
 2005-05-04  Rob Savoye  <rob@blackpeter.welcomehome.org>
 
 	* gameswf/gameswf_render_handler_ogl.cpp (render_handler): Added

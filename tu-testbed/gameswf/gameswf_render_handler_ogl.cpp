@@ -5,6 +5,9 @@
 
 // A gameswf::render_handler that uses SDL & OpenGL
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "gameswf.h"
 #include "gameswf_types.h"
@@ -148,6 +151,7 @@ struct render_handler_ogl : public gameswf::render_handler
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, min_lod_bias);
 			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, max_lod_bias);
 			if (tex_lod_bias) {
+#ifdef FIX_I810_LOD_BIAS	
 				// If 2D textures weren't previously enabled, enable
 				// them now and force the driver to notice the update,
 				// then disable them again.
@@ -160,6 +164,7 @@ struct render_handler_ogl : public gameswf::render_handler
 					glClear(0);
 					glDisable(GL_TEXTURE_2D);
 				}
+#endif // FIX_I810_LOD_BIAS
 				glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
 			}
 				
