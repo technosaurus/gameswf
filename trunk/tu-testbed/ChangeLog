@@ -1,5 +1,13 @@
 2005-05-05  Rob Savoye  <rob@darkstar.welcomehome.org>
 
+	* gameswf_string.cpp (string_new): Don't recreate the String
+	object.
+	* gameswf/gameswf_action.cpp (execute): Clear the members of an
+	object on the stack when the 'with' stack frame returns to a
+	higher level.
+
+2005-05-05  Rob Savoye  <rob@darkstar.welcomehome.org>
+
 	* gameswf/gameswf_render_handler_ogl.cpp (render_handler): Check
 	in patch #1195922, making the workaround for the i810 OpenGL
 	problem configurable.
