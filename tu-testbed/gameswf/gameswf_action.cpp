@@ -1642,34 +1642,14 @@ namespace gameswf
 			while (with_stack.size() > 0
 			       && pc >= with_stack.back().m_block_end_pc)
 			{
-				for (i=0; i<with_stack.size(); i++) {
-					smart_ptr<as_object_interface> obj = with_stack[i].m_object;;
-					as_value *val = (as_value *)obj.get_ptr();
-#if 0                           // FIXME: what kind of object are we ?
-					log_msg("Cleanup with block, stack size is %d\n", with_stack.size());
-					//delete obj;
-					switch (val->get_type()) {
-					case as_value::OBJECT:
-						log_msg("Got an AS Object in the with_stack\n");
-						break;
-					case as_value::NUMBER:
-						log_msg("Got a Number Object in the with_stack\n");
-						break;
-					case as_value::STRING:
-						log_msg("Got a String Object in the with_stack\n");
-						break;
-					default:
-						log_msg("Got an unknown Object in the with_stack\n");
-						break;
-					}
-#endif
 #if 1
-					xmlnode_as_object *node = (xmlnode_as_object *)obj.get_ptr();
-					const char *x = node->obj._name;
-					if (node) {
-						//log_msg("Want to delete object at %p ???? %d\n", node, node->get_ref_count());
-						//node->clear();
-					}
+				smart_ptr<as_object_interface> obj = with_stack[with_stack.size()-1].m_object;
+				xmlnode_as_object *node = (xmlnode_as_object *)obj.get_ptr();
+				if (node) {
+					//log_msg("Want to clear objects at %p ???? %d\n", node, node->get_ref_count());
+					node->clear();
+					//log_msg("%d references to XML objects left at %p.\n", node->get_ref_count(), node); //  node, node->obj._name
+					//node->drop_ref();
 				}
 #endif
 				// Drop this stack element
@@ -2158,7 +2138,7 @@ namespace gameswf
 							log_error("can't create object with unknown class '%s'\n",
 								  classname.to_tu_string().c_str());
 						} else {
-							//log_msg("Created special String class\n");
+							log_msg("Created special String class\n");
 						}
 					}
 

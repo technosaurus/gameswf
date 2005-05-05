@@ -218,7 +218,8 @@ namespace gameswf
     tu_string_as_object* str = new tu_string_as_object;
     //log_msg("New String object at %p\n", str);
 
-    env->set_variable("String", str, 0);
+    //env->set_variable("String", str, 0);
+    //env->set_member("String", as_value(string_new));
     str->set_member("fromCharCode", &string_from_char_code);
     str->set_member("charCodeAt", &string_char_code_at);
     
