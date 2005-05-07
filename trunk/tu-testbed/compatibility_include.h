@@ -36,6 +36,6 @@
 
 // For enabling XML/XMLSocket functionality in gameswf, using GNOME
 // libxml
-// #define TU_CONFIG_LINK_TO_LIBXML 1
+// #define HAVE_LIBXML 1
 
-#define TU_CONFIG_LINK_TO_LIBPNG 0
+// #define TU_CONFIG_LINK_TO_LIBPNG 0
