@@ -45,7 +45,22 @@ namespace ogl {
 	void	multi_tex_coord_2fv(int stage, float* st);
 };
 
+
+// Some old gl/gl.h files don't define these, e.g. default Windows includes.
+// It shouldn't hurt anything to call glTexEnvf() with these values on a system
+// that doesn't implement them.
+
+#ifndef GL_TEXTURE_FILTER_CONTROL_EXT
+#define GL_TEXTURE_FILTER_CONTROL_EXT 0x8500
+#endif
+
+#ifndef GL_TEXTURE_LOD_BIAS_EXT
+#define GL_TEXTURE_LOD_BIAS_EXT 0x8501
+#endif
+
+
 #endif // OGL_H
+
 
 // Local Variables:
 // mode: C++

@@ -92,6 +92,23 @@ modified b!
 frame 2 actions
 '''.splitlines(1)],
 
+
+[ "samples/test_string.swf",
+'''a value
+ABC
+65
+66
+67
+abc
+HELLO
+-1
+2
+4
+string
+hello
+pants
+'''.splitlines(1)],
+
 # Add more tests here, in form of [ filename, expected_output ]
 
 ]

@@ -1235,6 +1235,7 @@ namespace gameswf
 		const tu_stringi& method_name,
 		int nargs,
 		int first_arg_bottom_index)
+	// Executes the string method named by method_name.
 	{
 		//log_msg("%s: method_name is %s, nargs is %d\n", __FUNCTION__, method_name.c_str(), nargs);
 		
@@ -1246,24 +1247,29 @@ namespace gameswf
 				return as_value((double) (this_string.utf8_char_at(index)));
 			}
 
-			return as_value(0);
+			return as_value(0);	// FIXME: according to docs, we're supposed to return "NaN"
 		}
-		if (method_name == "fromCharCode") // FIXME: not fully implemented
+		else if (method_name == "fromCharCode")
 		{
-			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
-			if (index >= 0 && index < this_string.utf8_length())
+			// Takes a variable number of args.  Each arg
+			// is a numeric character code.  Construct the
+			// string from the character codes.
+
+			tu_string result;
+
+			for (int i = 0; i < nargs; i++)
 			{
-				array<int> arr;
-				return as_value(this_string.utf8_from_char(arr));
+				uint32 c = (uint32) env->bottom(first_arg_bottom_index - i).to_number();
+				result.append_wide_char(c);
 			}
 
-			return as_value(0);
+			return as_value(result);
 		}
-		if (method_name == "toUpperCase")
+		else if (method_name == "toUpperCase")
 		{
 			return as_value(this_string.utf8_to_upper());
 		}
-		if (method_name == "toLowerCase")
+		else if (method_name == "toLowerCase")
 		{
 			return as_value(this_string.utf8_to_lower());
 		}
@@ -1634,7 +1640,6 @@ namespace gameswf
 		UNUSED(original_target);		// Avoid warnings.
 
 		int	stop_pc = start_pc + exec_bytes;
-		int	i;
 
 		for (int pc = start_pc; pc < stop_pc; )
 		{
@@ -1642,16 +1647,20 @@ namespace gameswf
 			while (with_stack.size() > 0
 			       && pc >= with_stack.back().m_block_end_pc)
 			{
-#if 1
+				// tulrich: it would be better if the ActionScript called
+				// clear() explicitly on the XMLNodes it knows about.  In
+				// general, I don't think it is correct to clear() something
+				// just because it's going out of with-stack scope.
+#if HAVE_LIBXML
 				smart_ptr<as_object_interface> obj = with_stack[with_stack.size()-1].m_object;
-				xmlnode_as_object *node = (xmlnode_as_object *)obj.get_ptr();
+				xmlnode_as_object *node = (xmlnode_as_object *)obj.get_ptr();	// tulrich: unsafe cast!
 				if (node) {
 					//log_msg("Want to clear objects at %p ???? %d\n", node, node->get_ref_count());
 					node->clear();
 					//log_msg("%d references to XML objects left at %p.\n", node->get_ref_count(), node); //  node, node->obj._name
 					//node->drop_ref();
 				}
-#endif
+#endif // HAVE_LIBXML
 				// Drop this stack element
 				with_stack.resize(with_stack.size() - 1);
 			}
@@ -2405,6 +2414,28 @@ namespace gameswf
 							env->top(0).to_tu_stringi(),
 							nargs,
 							env->get_top_index() - 3);
+					}
+					else if (env->top(1).get_type() == as_value::C_FUNCTION)
+					{
+						// Catch method calls on String
+						// constructor.  There may be a cleaner
+						// way to do this. Perhaps we call the
+						// constructor function with a special flag, to
+						// indicate that it's a method call?
+						if (env->top(1).to_c_function() == string_new)
+						{
+							tu_string dummy;
+							result = string_method(
+								env,
+								dummy,
+								env->top(0).to_tu_stringi(),
+								nargs,
+								env->get_top_index() - 3);
+						}
+						else
+						{
+							log_error("error: method call on unknown c function.\n");
+						}
 					}
 					else
 					{

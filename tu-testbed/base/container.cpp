@@ -11,6 +11,28 @@
 #include "base/tu_random.h"
 
 
+void tu_string::append_wide_char(uint16 c)
+{
+	char buf[8];
+	int index = 0;
+	utf8::encode_unicode_character(buf, &index, (uint32) c);
+	buf[index] = 0;
+
+	*this += buf;
+}
+
+
+void tu_string::append_wide_char(uint32 c)
+{
+	char buf[8];
+	int index = 0;
+	utf8::encode_unicode_character(buf, &index, c);
+	buf[index] = 0;
+
+	*this += buf;
+}
+
+
 void	tu_string::resize(int new_size)
 {
 	assert(new_size >= 0);
@@ -83,9 +105,10 @@ void	tu_string::resize(int new_size)
 }
 
 
-/*static*/ void	tu_string::encode_utf8_from_wchar(tu_string* result, const wchar_t* wstr)
+template<class char_type>
+/*static*/ void	encode_utf8_from_wchar_generic(tu_string* result, const char_type* wstr)
 {
-	const wchar_t*	in = wstr;
+	const char_type*	in = wstr;
 
 	// First pass: compute the necessary string length.
 	int	bytes_needed = 0;
@@ -132,6 +155,18 @@ void	tu_string::resize(int new_size)
 }
 
 
+void tu_string::encode_utf8_from_wchar(tu_string* result, const uint32* wstr)
+{
+	encode_utf8_from_wchar_generic<uint32>(result, wstr);
+}
+
+
+void tu_string::encode_utf8_from_wchar(tu_string* result, const uint16* wstr)
+{
+	encode_utf8_from_wchar_generic<uint16>(result, wstr);
+}
+
+
 /*static*/ int	tu_string::stricmp(const char* a, const char* b)
 {
 #ifdef _WIN32
@@ -159,80 +194,50 @@ uint32	tu_string::utf8_char_at(int index) const
 			return c;
 		}
 	}
-	while (index > 0);
+	while (index >= 0);
 
 	return c;
 }
 
 
-tu_string	tu_string::utf8_from_char(array<int> chars) const
-{
-  const char*	buf = get_buffer();
-  uint32	c;
-  tu_string str;
-#if 0
-  do
-    {
-      c = utf8::decode_next_unicode_character(&buf);
-      index--;
-      
-      if (c == 0)
-        {
-          // We've hit the end of the string; don't go further.
-          assert(index == 0);
-          return c;
-		}
-    }
-  while (index > 0);
-#endif
-  return str;
-}
-
 tu_string	tu_string::utf8_to_upper() const
 {
-  
-  const char*	buf = get_buffer();
-  uint32	c;
-  tu_string str;
-  int index = length();
-  do {
-    c = utf8::decode_next_unicode_character(&buf);
-    index--;
+	const char*	buf = get_buffer();
+	tu_string str;
+	for (;;)
+	{
+		uint32 c = utf8::decode_next_unicode_character(&buf);
           
-    if (c == 0) {
-      // We've hit the end of the string; don't go further.
-      assert(index == 0);
-      return str;
-    }
-    str += toupper(c);
-  }
-	while (index > 0);
+		if (c == 0)
+		{
+			// We've hit the end of the string; don't go further.
+			return str;
+		}
+		str += toupper(c);
+	}
   
-  return str;
+	return str;
 }
+
 
 tu_string	tu_string::utf8_to_lower() const
 {
-  
-  const char*	buf = get_buffer();
-  uint32	c;
-  tu_string str;
-  int index = length();
-  do {
-    c = utf8::decode_next_unicode_character(&buf);
-    index--;
+	const char*	buf = get_buffer();
+	tu_string str;
+	for (;;)
+	{
+		uint32 c = utf8::decode_next_unicode_character(&buf);
     
-    if (c == 0) {
-      // We've hit the end of the string; don't go further.
-      assert(index == 0);
-      return str;
-    }
-    str += tolower(c);
-  }
-  while (index > 0);
+		if (c == 0) {
+			// We've hit the end of the string; don't go further.
+			return str;
+		}
+		str += tolower(c);
+	}
   
-  return str;
+	return str;
 }
+
 
 /*static*/ int	tu_string::utf8_char_count(const char* buf, int buflen)
 {
@@ -545,11 +550,21 @@ void	test_stringi_hash()
 }
 
 
+void test_unicode()
+{
+	tu_string a;
+
+	tu_string::encode_utf8_from_wchar(&a, L"19 character string");
+	assert(a.length() == 19);
+
+	// TODO add some more tests; should test actual UTF-8 conversions.
+}
+
+
 
 int	main()
 {
-
-#if 0
+#if 1
 	printf("sizeof(tu_string) == %d\n", sizeof(tu_string));
 
 	array<tu_string>	storage;
@@ -642,7 +657,9 @@ int	main()
 	test_stringi();
 	test_stringi_hash();
 
-	// TODO: unit tests for array<>, tu_string, string_hash<>
+	test_unicode();
+
+	// TODO: unit tests for array<>, string_hash<>
 #endif
 
 	test_hash_speed();
@@ -652,3 +669,11 @@ int	main()
 
 
 #endif // CONTAINER_UNIT_TEST
+
+
+// Local Variables:
+// mode: C++
+// c-basic-offset: 8 
+// tab-width: 8
+// indent-tabs-mode: t
+// End:
