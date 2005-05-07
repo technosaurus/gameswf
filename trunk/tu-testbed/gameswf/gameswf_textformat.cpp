@@ -10,10 +10,10 @@ namespace gameswf
 {  
 
   text_format::text_format() :
-      _underline(-1),
-      _bold(-1),
-      _italic(-1),
-      _bullet(-1),
+      _underline(false),
+      _bold(false),
+      _italic(false),
+      _bullet(false),
       _block_indent(-1),
       _color(0),
       _indent(-1),
@@ -154,7 +154,7 @@ textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* th
 
   if (obj->get_member("indent", &method)) {
     //log_msg("Indent exists and is set to %f\n", method.to_number());
-    obj->obj.indentSet(method.to_number());
+    obj->obj.indentSet(float(method.to_number()));
   }
 
   if (obj->get_member("align", &method)) {
@@ -164,27 +164,27 @@ textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* th
 
   if (obj->get_member("blockIndent", &method)) {
     //log_msg("BlockIndent exists and is set to %f\n", method.to_number());
-    obj->obj.blockIndentSet(method.to_number());
+    obj->obj.blockIndentSet(float(method.to_number()));
   }
   
   if (obj->get_member("leading", &method)) {
     //log_msg("Leading exists and is set to %f\n", method.to_number());
-    obj->obj.leadingSet(method.to_number());
+    obj->obj.leadingSet(float(method.to_number()));
   }
   
   if (obj->get_member("leftMargin", &method)) {
     //log_msg("LeftMargin exists and is set to %f\n", method.to_number());
-    obj->obj.leftMarginSet(method.to_number());
+    obj->obj.leftMarginSet(float(method.to_number()));
   }
   
   if (obj->get_member("RightMargin", &method)) {
     //log_msg("RightMargin exists and is set to %f\n", method.to_number());
-    obj->obj.rightMarginSet(method.to_number());
+    obj->obj.rightMarginSet(float(method.to_number()));
   }
   
   if (obj->get_member("size", &method)) {
     //log_msg("Size exists and is set to %f\n", method.to_number());
-    obj->obj.sizeSet(method.to_number());
+    obj->obj.sizeSet(float(method.to_number()));
   }
   
   //ptr->obj.setTextFormat(start, end, obj->obj);

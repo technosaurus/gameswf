@@ -936,6 +936,20 @@ public:
 		resize(str.size());
 		strcpy(get_buffer(), str.get_buffer());
 	}
+	tu_string(const uint32* wide_char_str)
+	{
+		m_local.m_size = 1;
+		m_local.m_buffer[0] = 0;
+
+		*this = wide_char_str;
+	}
+	tu_string(const uint16* wide_char_str)
+	{
+		m_local.m_size = 1;
+		m_local.m_buffer[0] = 0;
+
+		*this = wide_char_str;
+	}
 
 	~tu_string()
 	{
@@ -1033,6 +1047,10 @@ public:
 		strncpy(get_buffer() + old_length, (char *)&ch, 1);
 	}
 
+	// Append wide char.  Both versions of wide char.
+	void	append_wide_char(uint16 ch);
+	void	append_wide_char(uint32 ch);
+
 	void	operator+=(const tu_string& str)
 	{
 		int	str_length = str.length();
@@ -1067,14 +1085,17 @@ public:
 		return *this > str.c_str();
 	}
 
-
+	// Sets buffer size to new_size+1 (i.e. enough room for
+	// new_size chars, plus terminating 0).
 	void	resize(int new_size);
 
 	// Set *result to the UTF-8 encoded version of wstr[].
+	// Both version of wchar_t.
 	//
 	// Could add operator= overloads, but maybe it's better to
 	// keep this very explicit.
-	static void	encode_utf8_from_wchar(tu_string* result, const wchar_t* wstr);
+	static void	encode_utf8_from_wchar(tu_string* result, const uint32* wstr);
+	static void	encode_utf8_from_wchar(tu_string* result, const uint16* wstr);
 
 	// Utility: case-insensitive string compare.  stricmp() is not
 	// ANSI or POSIX, doesn't seem to appear in Linux.
@@ -1084,11 +1105,8 @@ public:
 	// position.  index is in UTF-8 chars, NOT bytes.
 	uint32	utf8_char_at(int index) const;
 
-	// 
-	tu_string utf8_from_char(array<int> chars) const;
-
 	// Return the string in this container as all upper case letters
-	tu_string utf8_to_upper() const;	
+	tu_string utf8_to_upper() const;
 
 	// Return the string in this container as all lower case letters
 	tu_string utf8_to_lower() const;

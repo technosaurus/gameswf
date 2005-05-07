@@ -367,6 +367,8 @@ namespace gameswf
 		void	lsr(const as_value& v) { set(double(Uint32(this->to_number()) >> int(v.to_number()))); }
 
 		void	string_concat(const tu_string& str);
+
+		tu_string* get_mutable_tu_string() { assert(m_type == STRING); return &m_string_value; }
 	};
 
 

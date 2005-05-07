@@ -34,9 +34,7 @@
 // looking too blurry.  (Also applies to text rendering.)
 #define GENERATE_MIPMAPS 0
 
-extern int	min_lod_bias;
-extern int	max_lod_bias;
-extern float	tex_lod_bias;
+extern float	tex_lod_bias;	// FIXME
 
 // bitmap_info_ogl declaration
 struct bitmap_info_ogl : public gameswf::bitmap_info
@@ -148,8 +146,6 @@ struct render_handler_ogl : public gameswf::render_handler
 			assert(m_mode != INVALID);
 
 			// CHange the LOD BIAS values to tweak bluriness
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, min_lod_bias);
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, max_lod_bias);
 			if (tex_lod_bias) {
 #ifdef FIX_I810_LOD_BIAS	
 				// If 2D textures weren't previously enabled, enable
@@ -164,8 +160,7 @@ struct render_handler_ogl : public gameswf::render_handler
 					glClear(0);
 					glDisable(GL_TEXTURE_2D);
 				}
-// end of FIX_I810_LOD_BIAS
-#endif
+#endif // FIX_I810_LOD_BIAS
 				glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
 			}
 				
