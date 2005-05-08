@@ -12,6 +12,7 @@
 
 #include "gameswf.h"
 #include "gameswf_types.h"
+#include <wchar.h>
 
 #include "base/container.h"
 #include "base/smart_ptr.h"
@@ -251,7 +252,16 @@ namespace gameswf
 			// Storing UTF-8 seems like a pretty decent
 			// way to do it.  Everything else just
 			// continues to work.
+
+#if (WCHAR_MAX != MAXINT)
+			tu_string::encode_utf8_from_wchar(&m_string_value, (const uint16 *)wstr);
+#else
+# if (WCHAR_MAX != MAXSHORT)
+# error "Can't determine the size of wchar_t"
+# else
 			tu_string::encode_utf8_from_wchar(&m_string_value, (const uint32 *)wstr);
+# endif
+#endif
 		}
 
 		as_value(bool val)

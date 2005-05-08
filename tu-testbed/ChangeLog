@@ -1,3 +1,8 @@
+2005-05-08  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_movie.cpp (as_value): Cast wstr to be either 32
+	or 16 bit based on the size of wchar_t.
+
 2005-05-08  Rob Savoye  <rob@darkstar.welcomehome.org>
 
 	* gameswf/gameswf_action.h: Cast the wide character to a uint32 so
