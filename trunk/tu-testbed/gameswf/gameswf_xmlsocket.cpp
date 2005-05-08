@@ -41,8 +41,12 @@
 
 namespace gameswf
 {
+  
+extern array<as_object *> _xmlobjs;    // FIXME: hack alert
 
+  
 const int INBUF = 7000;
+  //array<as_object *> _xmlobjs;    // FIXME: hack alert
 
 XMLSocket::XMLSocket()
 {
@@ -370,8 +374,6 @@ XMLSocket::count()
   return _nodes.size();
 }
 
-array<as_object_interface *> _xmlobjs;
-
 void
 xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
@@ -471,12 +473,12 @@ void
 xmlsocket_xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
   //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
+  //log_msg("%s: cache size is %d\n", __FUNCTION__, _xmlobjs.size());
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*)this_ptr;
   
   xml_new(result, this_ptr, env, nargs, first_arg);
   as_object_interface *as = result->to_object();
-  _xmlobjs.push_back(as);
-  //push(as);
+  //_xmlobjs.push_back((as_object *)as);
 }
 
 void
@@ -544,7 +546,7 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
   tu_string     tmp;
   int           i;
   
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*)this_ptr;
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*)this_ptr;
   assert(ptr);
   if (ptr->obj.processingData()) {
     log_msg("Still processing data!\n");
@@ -556,7 +558,7 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
     if (this_ptr->get_member("onData", &method)) {
       as_c_function_ptr	func = method.to_c_function();
       as_as_function* as_func = method.to_as_function();
-      log_msg("Got %d messages from XMLsocket\n", ptr->obj.messagesCount());
+      //og_msg("Got %d messages from XMLsocket\n", ptr->obj.messagesCount());
       for (i=0; i<ptr->obj.messagesCount(); i++) {
         tu_string data = ptr->obj[i];
         //log_msg("Got data from socket!!\n%s", data.c_str());
@@ -570,7 +572,7 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
           continue;
         }
 #endif
-        //log_msg("%s: Got message %s: ", data.c_str());
+        //log_msg("Got message %s: ", data.c_str());
         env->push(as_value(data));
         if (func) {
           // It's a C function.  Call it.
@@ -583,67 +585,22 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
         } else {
           log_error("error in call_method(): method is not a function\n");
         }
-        
         env->pop();
+
         //printf("%s: Removing message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
         //ptr->obj.messageRemove(i);
-      }
-      //printf("%s: Removing messages\n", __FUNCTION__);
+      }      
+      
       ptr->obj.messagesClear();
       ptr->obj.processing(false);
       //msgs->clear();
     } else {
-      log_msg("FIXME: Couldn't find onData!\n");
+      log_error("Couldn't find onData!\n");
     }
   //  env->pop();
 
-// #if 0
-//     log_msg("There are %d ATTR objects in the cache\n", attr_objects.size());
-//     for (i=0; i<attr_objects.size(); i++) {
-//       delete attr_objects[i];
-//     }
-//     attr_objects.clear();
-    
-//     log_msg("There are %d XMLNode objects in the cache\n", xmlnode_objects.size());
-//     for (i=xmlnode_objects.size()-1; i>0; i--) {
-//       //log_msg("Should Delete XMLNode object at %p\n", xml_objects[i]);
-//       //delete xmlnode_objects[i];
-//       xmlnode_objects.remove(i);
-//     }
-//     //xmlnode_objects.clear();
-    
-//     log_msg("There are %d XML objects in the cache\n", xml_objects.size());
-// #if 0
-//     // FIXME: we can't delete smart_ptr's this way or it causes memory
-//     // corruption problems...
-    
-//     //    for (i=xml_objects.size()-1; i>0; i--) {
-//     for (i=5; i<xml_objects.size()-5; i++) {
-//       log_msg("Should Delete XML object at %p\n", xml_objects[i]);
-//       if (xml_objects[i] > 0) {
-//         delete xml_objects[i];
-//         xml_objects.remove(i);
-//       }
-//     }
-// #endif
-//     //xml_objects.clear();    
-// #endif
-
-#if 0
-    log_msg("Have %d XMLnodes\n", _xmlobjs.size());
-    for (i=_xmlobjs.size()-1; i>0; i--) {
-      log_msg("Have %d ref counts for XMLnode at %p\n", _xmlobjs[i]->get_ref_count(), _xmlobjs[i]);
-      //_xmlobjs[i]->drop_ref();
-      // delete _xmlobjs[i];
-    }
-    _xmlobjs.clear();
-#endif
   }
   
-  if (this_ptr->get_member("childNodes", &method)) {
-    log_msg("Have childNodes!\n");
-  }
-    
   //result->set(&data);
   result->set(true);
 }

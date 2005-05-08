@@ -26,6 +26,8 @@
 namespace gameswf
 {
 
+array<as_object *> _xmlobjs;    // FIXME: hack alert
+
 XMLAttr::XMLAttr()
 {
   //log_msg("%s: %p \n", __FUNCTION__, this);
@@ -76,14 +78,14 @@ XML::XML(tu_string xml_in)
 
 XML::XML(struct node *childNode)
 {
-  log_msg("%s: %p \n", __FUNCTION__, this);
+  //log_msg("%s: %p \n", __FUNCTION__, this);
 }
 
 
 XML::~XML()
 {
-  log_msg("%s: %p \n", __FUNCTION__, this);
-  delete _nodes;
+  //log_msg("%s: %p \n", __FUNCTION__, this);
+  //delete _nodes;
 }
 
 // Dispatch event handler(s), if any.
@@ -178,8 +180,8 @@ XML::extractNode(xmlNodePtr node, bool mem)
     }
   }
 
-  if (node->parent->type == XML_DOCUMENT_NODE) {
 #if 0
+  if (node->parent->type == XML_DOCUMENT_NODE) {
     if (mem) {
       //child = new XMLNode;
       //memset(child, 0, sizeof (XMLNode));
@@ -193,8 +195,8 @@ XML::extractNode(xmlNodePtr node, bool mem)
         element->_children.push_back(child);
       }
     }
-#endif
   }
+#endif
   
   // See if we have any data (content)
   childnode = node->children;
@@ -319,8 +321,10 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   xmlnode_as_object *xmlnode_obj;
   xmlattr_as_object* attr_obj;
 
-  //log_msg("%s: processing node %s for object %p, mem is %d\n", __FUNCTION__, xml->_name.c_str(), obj, mem);
-
+#if 0
+  log_msg("%s: processing node %s for object %p, mem is %d\n", __FUNCTION__, xml->_name.c_str(), obj, mem);
+#endif
+  
   xmlnode_as_object *xobj = (xmlnode_as_object *)obj;
   
   // Get the data for this node
@@ -332,8 +336,8 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   // primarily by the disk based XML parser, where at least in all my current
   // test cases this is referenced with firstChild first, then nodeName and
   // childNodes.
-  obj->set_member("firstChild",         xobj);
-  obj->set_member("childNodes",         xobj); 
+  //obj->set_member("firstChild",         xobj);
+  //obj->set_member("childNodes",         xobj);
   obj->set_member("nodeName",           nodename);
   obj->set_member("length",             length);
   if (nodevalue.get_type() != as_value::UNDEFINED) {
@@ -343,7 +347,15 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
     obj->set_member("nodeValue",        nodevalue.to_string());
     //obj->set_member("nodeValue",        nodevalue);
     //log_msg("\tnodevalue for %s is: %s\n", nodename, nodevalue.to_string());
+  } else {
+    // If there is no value, we want to define an empty
+    // object. otherwise we wind up with an "undefined" object anyway,
+    // which gets displayed.
+    tu_string_as_object *val_obj = new tu_string_as_object;
+    val_obj->str = nodevalue.to_string();
+    obj->set_member("nodeValue", "");
   }
+  
   
   // Process the attributes, if any
   attr_obj = new xmlattr_as_object;
@@ -427,14 +439,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
   if (xml_obj->obj.hasChildNodes() == false) {
     log_error("%s: No child nodes!\n", __FUNCTION__);
   }  
-// FIXME: decide...
-#if 0
-  // The old way
-  ptr->obj.setupStackFrames(ptr, env);
-#else
-  // The new recursive way
   xml_obj->obj.setupFrame(xml_obj, xml_obj->obj.firstChild(), false);
-#endif
   
 #if 1
   if (this_ptr->get_member("onLoad", &method)) {
@@ -559,7 +564,7 @@ xml_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env)
       log_msg("FIXME: Couldn't find onData!\n");
     }
   }
-  
+
   result->set(&val);
 }
 
@@ -591,6 +596,8 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
     xml_obj->set_member("load", &xml_load);
     xml_obj->set_member("loaded", &xml_loaded);
   }
+
+  _xmlobjs.push_back((as_object *)xml_obj);
 
   //result->set(xml_obj);
   result->set_as_object_interface(xml_obj);

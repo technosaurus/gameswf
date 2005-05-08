@@ -113,7 +113,7 @@ namespace gameswf
 	{
 		smart_ptr<as_object_interface>	m_object;
 		int	m_block_end_pc;
-
+		
 		with_stack_entry()
 			:
 			m_object(NULL),
@@ -251,7 +251,7 @@ namespace gameswf
 			// Storing UTF-8 seems like a pretty decent
 			// way to do it.  Everything else just
 			// continues to work.
-			tu_string::encode_utf8_from_wchar(&m_string_value, wstr);
+			tu_string::encode_utf8_from_wchar(&m_string_value, (const uint32 *)wstr);
 		}
 
 		as_value(bool val)

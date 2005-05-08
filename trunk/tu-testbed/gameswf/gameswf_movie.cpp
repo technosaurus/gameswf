@@ -351,9 +351,11 @@ moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface
     swfm += "swf";
 
      movie_definition_sub  *ms = create_movie_sub(swfm.c_str());
-     movie_interface* extern_movie = create_library_movie_inst_sub(ms);
-
-     character * newchar = ms->create_character_instance(tar->get_parent(), id);
+     // The file may not exist.
+     if (ms) { 
+       movie_interface* extern_movie = create_library_movie_inst_sub(ms);
+       character * newchar = ms->create_character_instance(tar->get_parent(), id);
+     }
      
      //save_extern_movie(extern_movie);
      //movie* new_movie = static_cast<movie*>(extern_movie)->get_root_movie();

@@ -1,3 +1,14 @@
+2005-05-08  Rob Savoye  <rob@darkstar.welcomehome.org>
+
+	* gameswf/gameswf_action.h: Cast the wide character to a uint32 so
+	it'll compile.
+	* gameswf/gameswf_xml.cpp (setupFrame): Don't set members for
+	firstChild or childNodes, these are handled differently now. 
+	* gameswf/gameswf_xml.h: Add virtual overload of get_member() to
+	the xml_as_object and xmlnode_as_object to return firstChild and
+	childNodes without creating a circular dependancy.
+	
+
 2005-05-05  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_timers.cpp (gameswf): If _start is trashed for
