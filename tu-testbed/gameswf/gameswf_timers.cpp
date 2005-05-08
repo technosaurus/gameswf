@@ -150,6 +150,7 @@ namespace gameswf
     env->add_frame_barrier();
     //method = env->get_variable("loopvar", dummy_with_stack);
 
+#if 1
     // FIXME: This is pretty gross, but something is broke elsewhere and it doesn't
     // seem to effect anything else. When a function is called from a executing
     // function, like calling setInterval() from within the callback to
@@ -168,6 +169,7 @@ namespace gameswf
         }
       }
     }
+#endif
     //    ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
     
     //Ptr->obj.setInterval(val, ms);

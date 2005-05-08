@@ -1202,7 +1202,8 @@ namespace gameswf
 			//s_global->set_member("XML", as_value(xml_new));
 			s_global->set_member("XML", as_value(xmlsocket_xml_new));
 			s_global->set_member("XMLSocket", as_value(xmlsocket_new));
-#endif // HAVE_LIBXML
+// end of HAVE_LIBXML
+#endif
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
 			s_global->set_member("String", as_value(string_new));
 
@@ -1647,20 +1648,6 @@ namespace gameswf
 			while (with_stack.size() > 0
 			       && pc >= with_stack.back().m_block_end_pc)
 			{
-				// tulrich: it would be better if the ActionScript called
-				// clear() explicitly on the XMLNodes it knows about.  In
-				// general, I don't think it is correct to clear() something
-				// just because it's going out of with-stack scope.
-#if HAVE_LIBXML
-				smart_ptr<as_object_interface> obj = with_stack[with_stack.size()-1].m_object;
-				xmlnode_as_object *node = (xmlnode_as_object *)obj.get_ptr();	// tulrich: unsafe cast!
-				if (node) {
-					//log_msg("Want to clear objects at %p ???? %d\n", node, node->get_ref_count());
-					node->clear();
-					//log_msg("%d references to XML objects left at %p.\n", node->get_ref_count(), node); //  node, node->obj._name
-					//node->drop_ref();
-				}
-#endif // HAVE_LIBXML
 				// Drop this stack element
 				with_stack.resize(with_stack.size() - 1);
 			}
@@ -2154,8 +2141,7 @@ namespace gameswf
 					env->drop(nargs);
 					env->push(new_obj);
 #if 0
-					log_msg("0x%08x: %s\n", new_obj.to_object(),
-						objname.to_tu_string().c_str());
+					log_msg("new object %s at %p\n", classname.to_tu_string().c_str(), new_obj);
 #endif
 					break;
 				}

@@ -158,7 +158,6 @@ namespace gameswf
 
 		virtual void	set_member(const tu_stringi& name, const as_value& val) = 0;
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
-
 		virtual movie*	to_movie() = 0;
 	};
 

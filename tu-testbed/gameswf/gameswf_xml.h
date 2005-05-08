@@ -152,6 +152,24 @@ struct xmlnode_as_object : public gameswf::as_object
     log_msg("\t\tDeleting xmlnode_as_object at %p \n", this);
   };
 #endif
+  virtual bool	get_member(const tu_stringi& name, as_value* val)
+  {
+    //printf("GET XMLNode MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
+
+    if ((name == "firstChild") || (name == "childNodes")) {
+      //printf("Returning a self reference for %s for object at %p\n", name.c_str(), this);
+      val->set(this);
+      return true;
+    }
+    
+    if (m_members.get(name, val) == false) {
+      if (m_prototype != NULL) {
+        return m_prototype->get_member(name, val);
+      }
+      return false;
+    }
+    return true;
+  }
 };
 
 class XML {
@@ -303,9 +321,27 @@ struct xml_as_object : public gameswf::as_object
   };
   ~xml_as_object() 
   {
-    log_msg("\tDeleting xml_as_object at %p ", this);
+    log_msg("\tDeleting xml_as_object at %p\n", this);
   };
 #endif
+  virtual bool	get_member(const tu_stringi& name, as_value* val)
+  {
+    //printf("GET XML MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
+
+    if ((name == "firstChild") || (name == "childNodes")) {
+      //printf("Returning a self reference for %s for object at %p\n", name.c_str(), this);
+      val->set(this);
+      return true;
+    }
+    
+    if (m_members.get(name, val) == false) {
+      if (m_prototype != NULL) {
+        return m_prototype->get_member(name, val);
+      }
+      return false;
+    }
+    return true;
+  }
 };
 
 

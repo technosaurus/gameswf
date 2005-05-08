@@ -117,10 +117,13 @@ textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* th
 {
   as_value	method;
   //log_msg("%s: args=%d at %p\n", __FUNCTION__, nargs, this_ptr);
+#if 0
+  // FIXME: these are only commented out to eliminate compilation warnings.
   textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
   assert(ptr);
   double start = env->bottom(first_arg).to_number();
   double end = env->bottom(first_arg-1).to_number();
+#endif
   textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
   assert(obj);
 

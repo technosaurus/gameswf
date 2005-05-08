@@ -110,7 +110,11 @@ public:
 	// Only the actual object should call this.
 	void	notify_object_died() { m_alive = false; }
 
-	void	add_ref() { assert(m_ref_count >= 0); m_ref_count++; }
+	void	add_ref()
+	{
+		assert(m_ref_count >= 0);
+		m_ref_count++;
+	}
 	void	drop_ref()
 	{
 		assert(m_ref_count > 0);
