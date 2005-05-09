@@ -341,18 +341,13 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   obj->set_member("nodeName",           nodename);
   obj->set_member("length",             length);
   if (nodevalue.get_type() != as_value::UNDEFINED) {
-    tu_string_as_object *val_obj = new tu_string_as_object;
-    val_obj->str = nodevalue.to_string();
     //obj->set_member("nodeValue",        val_obj);
     obj->set_member("nodeValue",        nodevalue.to_string());
     //obj->set_member("nodeValue",        nodevalue);
     //log_msg("\tnodevalue for %s is: %s\n", nodename, nodevalue.to_string());
   } else {
-    // If there is no value, we want to define an empty
-    // object. otherwise we wind up with an "undefined" object anyway,
-    // which gets displayed.
-    tu_string_as_object *val_obj = new tu_string_as_object;
-    val_obj->str = nodevalue.to_string();
+    // If there is no value, we want to define it as an empty
+    // string.
     obj->set_member("nodeValue", "");
   }
   
