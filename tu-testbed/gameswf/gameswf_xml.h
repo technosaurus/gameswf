@@ -348,11 +348,6 @@ struct xml_as_object : public gameswf::as_object
 void xml_load(const fn_call& fn);
 void xml_set_current(const fn_call& fn);
 void xml_new(const fn_call& fn);
-void xml_firstchild(const fn_call& fn);
-void xml_childnodes(const fn_call& fn);
-void xml_nodename(const fn_call& fn);
-void xml_next_stack_depth(const fn_call& fn);
-
 
 // These are the event handlers called for this object
 void xml_onload(const fn_call& fn);
