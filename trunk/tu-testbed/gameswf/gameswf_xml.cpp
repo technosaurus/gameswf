@@ -30,24 +30,27 @@ array<as_object *> _xmlobjs;    // FIXME: hack alert
 
 XMLAttr::XMLAttr()
 {
-  //log_msg("%s: %p \n", __FUNCTION__, this);
+  //log_msg("\t\t\tCreating XMLAttr at %p \n", this);
 }
 
 XMLAttr::~XMLAttr()
 {
+  //log_msg("\t\t\tDeleting XMLAttr at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
 }
   
 XMLNode::XMLNode()
 {
+  //log_msg("\t\tCreating XMLNode at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
 }
 
 XMLNode::~XMLNode()
 {
+  int i;
   //log_msg("%s: %p \n", __FUNCTION__, this);
+  //log_msg("\t\tDeleting XMLNode at %p \n", this);
 
-#if 0
   for (i=0; i<_children.size(); i++) {
     delete _children[i];
   }
@@ -57,11 +60,11 @@ XMLNode::~XMLNode()
     delete _attributes[i];
   }
   _attributes.clear();
-#endif
 }
 
 XML::XML()
 {
+  //log_msg("\tCreating XML at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
   _loaded = false;
   _nodename = 0;
@@ -71,6 +74,7 @@ XML::XML()
 // Parse the ASCII XML string into memory
 XML::XML(tu_string xml_in)
 {
+  //log_msg("\tCreating XML at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
   memset(&_nodes, 0, sizeof(XMLNode));
   parseXML(xml_in);
@@ -78,14 +82,16 @@ XML::XML(tu_string xml_in)
 
 XML::XML(struct node *childNode)
 {
+  //log_msg("\tCreating XML at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
 }
 
 
 XML::~XML()
 {
+  //log_msg("\tDeleting XML at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
-  //delete _nodes;
+  delete _nodes;
 }
 
 // Dispatch event handler(s), if any.
@@ -395,13 +401,6 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
 void
 xml_load(const fn_call& fn)
 {
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-
   as_value	method;
   as_value	val;
   bool          ret;
@@ -410,22 +409,22 @@ xml_load(const fn_call& fn)
 
   //log_msg("%s:\n", __FUNCTION__);
   
-  xml_as_object *xml_obj = (xml_as_object*) (as_object*) this_ptr;
+  xml_as_object *xml_obj = (xml_as_object*)fn.this_ptr;
   
   assert(ptr);
-  const tu_string filespec = env->bottom(first_arg).to_string();
+  const tu_string filespec = fn.env->bottom(fn.first_arg_bottom_index).to_string();
 
   // If the file doesn't exist, don't try to do anything.
   if (stat(filespec.c_str(), &stats) < 0) {
     fprintf(stderr, "ERROR: doesn't exist.%s\n", filespec.c_str());
-    result->set(false);
+    fn.result->set(false);
     return;
   }
   
   // Set the argument to the function event handler based on whether the load
   // was successful or failed.
   ret = xml_obj->obj.load(filespec);
-  result->set(ret);
+  fn.result->set(ret);
 
   if (ret == false) {
     return;
@@ -444,22 +443,22 @@ xml_load(const fn_call& fn)
   xml_obj->obj.setupFrame(xml_obj, xml_obj->obj.firstChild(), false);
   
 #if 1
-  if (this_ptr->get_member("onLoad", &method)) {
+  if (fn.this_ptr->get_member("onLoad", &method)) {
     //    log_msg("FIXME: Found onLoad!\n");
-    env->set_variable("success", true, 0);
-    env->bottom(first_arg) = true;
+    fn.env->set_variable("success", true, 0);
+    fn.env->bottom(fn.first_arg_bottom_index) = true;
     as_c_function_ptr	func = method.to_c_function();
     if (func)
       {
         // It's a C function.  Call it.
         log_msg("Calling C function for onLoad\n");
-        (*func)(fn_call(&val, xml_obj, env, nargs, first_arg)); // was this_ptr instead of node
+        (*func)(fn_call(&val, xml_obj, fn.env, fn.nargs, fn.first_arg_bottom_index)); // was this_ptr instead of node
       }
     else if (as_as_function* as_func = method.to_as_function())
       {
         // It's an ActionScript function.  Call it.
         log_msg("Calling ActionScript function for onLoad\n");
-        (*as_func)(fn_call(&val, xml_obj, env, nargs, first_arg)); // was this_ptr instead of node
+        (*as_func)(fn_call(&val, xml_obj, fn.env, fn.nargs, fn.first_arg_bottom_index)); // was this_ptr instead of node
       } else {
         log_error("error in call_method(): method is not a function\n");
       }
@@ -472,7 +471,7 @@ xml_load(const fn_call& fn)
 
 #endif
 
-  result->set(true);
+  fn.result->set(true);
 }
 
 // This executes the event handler for XML::XML_LOAD if it's been defined,
@@ -480,20 +479,13 @@ xml_load(const fn_call& fn)
 void
 xml_onload(const fn_call& fn)
 {
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  //int nargs = fn.nargs;
-  //int first_arg = fn.first_arg_bottom_index;
-
-  log_msg("%s:\n", __FUNCTION__);
+  //log_msg("%s:\n", __FUNCTION__);
     
   as_value	method;
   as_value      val;
   static bool first = true;     // This event handler should only be executed once.
   array<with_stack_entry>	empty_with_stack;
-  xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
+  xml_as_object*	ptr = (xml_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
   
   if ((ptr->obj.loaded()) && (first)) {
@@ -507,20 +499,20 @@ xml_onload(const fn_call& fn)
     //env->set_variable("success", true, 0);
     //env->bottom(0) = true;
     
-    if (this_ptr->get_member("onLoad", &method)) {
+    if (fn.this_ptr->get_member("onLoad", &method)) {
       // log_msg("FIXME: Found onLoad!\n");
       as_c_function_ptr	func = method.to_c_function();
       if (func)
         {
           // It's a C function.  Call it.
           log_msg("Calling C function for onLoad\n");
-          (*func)(fn_call(&val, this_ptr, env, 0, 0));
+          (*func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
         }
       else if (as_as_function* as_func = method.to_as_function())
         {
           // It's an ActionScript function.  Call it.
           log_msg("Calling ActionScript function for onLoad\n");
-        (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
+        (*as_func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
         }
       else
         {
@@ -531,45 +523,38 @@ xml_onload(const fn_call& fn)
     }
   }
       
-  result->set(&val);
+  fn.result->set(&val);
 }
 
 // This is the default event handler, and is usually redefined in the SWF script
 void
 xml_ondata(const fn_call& fn)
 {
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  //int nargs = fn.nargs;
-  //int first_arg = fn.first_arg_bottom_index;
-
   log_msg("%s:\n", __FUNCTION__);
     
   as_value	method;
   as_value	val;
   static bool first = true;     // FIXME: ugly hack!
   
-  xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
+  xml_as_object*	ptr = (xml_as_object*)fn.this_ptr;
   assert(ptr);
   
   if ((ptr->obj.loaded()) && (first)) {
-    if (this_ptr->get_member("onData", &method)) {
+    if (fn.this_ptr->get_member("onData", &method)) {
       log_msg("FIXME: Found onData!\n");
       as_c_function_ptr	func = method.to_c_function();
-      env->set_variable("success", true, 0);
+      fn.env->set_variable("success", true, 0);
       if (func)
         {
           // It's a C function.  Call it.
           log_msg("Calling C function for onData\n");
-          (*func)(fn_call(&val, this_ptr, env, 0, 0));
+          (*func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
       }
       else if (as_as_function* as_func = method.to_as_function())
         {
           // It's an ActionScript function.  Call it.
           log_msg("Calling ActionScript function for onData\n");
-          (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
+          (*as_func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
         }
       else
         {
@@ -580,36 +565,29 @@ xml_ondata(const fn_call& fn)
     }
   }
 
-  result->set(&val);
+  fn.result->set(&val);
 }
 
 void
 xml_new(const fn_call& fn)
 {
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  //as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  //int first_arg = fn.first_arg_bottom_index;
-
   as_value      inum;
   xml_as_object *xml_obj;
   
   //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   
-  if (nargs > 0) {
-    if (env->top(0).get_type() == as_value::STRING) {
+  if (fn.nargs > 0) {
+    if (fn.env->top(0).get_type() == as_value::STRING) {
       xml_obj = new xml_as_object;
       //log_msg("\tCreated New XML object at %p\n", xml_obj);
-      tu_string datain = env->top(0).to_tu_string();
+      tu_string datain = fn.env->top(0).to_tu_string();
       xml_obj->obj.parseXML(datain);
       xml_obj->obj.setupFrame(xml_obj, xml_obj->obj.firstChild(), true);
     } else {
-      xml_as_object*	xml_obj = (xml_as_object*)env->top(0).to_object();      
+      xml_as_object*	xml_obj = (xml_as_object*)fn.env->top(0).to_object();      
       //log_msg("\tCloned the XML object at %p\n", xml_obj);
       //result->set(xml_obj);
-      result->set_as_object_interface(xml_obj);
+      fn.result->set_as_object_interface(xml_obj);
       return;
     }
   } else {
@@ -619,10 +597,7 @@ xml_new(const fn_call& fn)
     xml_obj->set_member("loaded", &xml_loaded);
   }
 
-  _xmlobjs.push_back((as_object *)xml_obj);
-
-  //result->set(xml_obj);
-  result->set_as_object_interface(xml_obj);
+  fn.result->set_as_object_interface(xml_obj);
 }
 
 //
@@ -636,22 +611,15 @@ xml_new(const fn_call& fn)
 void
 xml_loaded(const fn_call& fn)
 {
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  //int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-
   as_value	method;
   as_value	val;
 
   log_msg("%s:\n", __FUNCTION__);
     
-  xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
+  xml_as_object*	ptr = (xml_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
-  tu_string filespec = env->bottom(first_arg).to_string();
-  result->set(ptr->obj.loaded());
+  tu_string filespec = fn.env->bottom(fn.first_arg_bottom_index).to_string();
+  fn.result->set(ptr->obj.loaded());
 }
 
 } // end of gameswf namespace
