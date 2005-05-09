@@ -169,12 +169,13 @@ namespace gameswf
 	};
 
 
-	typedef void (*as_c_function_ptr)(
-		as_value* result,
-		as_object_interface* this_ptr,
-		as_environment* env,
-		int nargs,
-		int first_arg_bottom_index);
+	struct fn_call;
+	typedef void (*as_c_function_ptr)(const fn_call& fn);
+//		as_value* result,
+//		as_object_interface* this_ptr,
+//		as_environment* env,
+//		int nargs,
+//		int first_arg_bottom_index);
 
 
 	struct as_property_interface
@@ -553,12 +554,12 @@ namespace gameswf
 		void	set_length(int len) { assert(len >= 0); m_length = len; }
 
 		// Dispatch.
-		void	operator()(
-			as_value* result,
-			as_object_interface* this_ptr,
-			as_environment* caller_env,
-			int nargs,
-			int first_arg);
+		void	operator()(const fn_call& fn);
+// 			as_value* result,
+// 			as_object_interface* this_ptr,
+// 			as_environment* caller_env,
+// 			int nargs,
+// 			int first_arg);
 
 		void	lazy_create_properties()
 		// This ensures that this as_function has a valid
@@ -658,6 +659,34 @@ namespace gameswf
 		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
 		movie*	find_target(const tu_string& path) const;
 		movie*	find_target(const as_value& val) const;
+	};
+
+
+	// Parameters/environment for C functions callable from ActionScript.
+	struct fn_call
+	{
+		as_value* result;
+		as_object_interface* this_ptr;
+		as_environment* env;
+		int nargs;
+		int first_arg_bottom_index;
+
+		fn_call(as_value* res_in, as_object_interface* this_in, as_environment* env_in, int nargs_in, int first_in)
+			:
+			result(res_in),
+			this_ptr(this_in),
+			env(env_in),
+			nargs(nargs_in),
+			first_arg_bottom_index(first_in)
+		{
+		}
+
+		as_value& arg(int n) const
+		// Access a particular argument.
+		{
+			assert(n < nargs);
+			return env->bottom(first_arg_bottom_index - n);
+		}
 	};
 
 

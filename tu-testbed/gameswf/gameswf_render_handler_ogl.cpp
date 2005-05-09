@@ -15,8 +15,8 @@
 #include "base/ogl.h"
 #include "base/utility.h"
 
-#include <string.h>
-//#define GL_EXT_texture_lod_bias   -1.0
+#include <string.h>	// for memset()
+
 
 // choose the resampling method:
 // 1 = hardware (experimental, should be fast, somewhat buggy)
@@ -145,8 +145,8 @@ struct render_handler_ogl : public gameswf::render_handler
 		{
 			assert(m_mode != INVALID);
 
-			// CHange the LOD BIAS values to tweak bluriness
-			if (tex_lod_bias) {
+			// Change the LOD BIAS values to tweak blurriness.
+			if (tex_lod_bias != 0.0f) {
 #ifdef FIX_I810_LOD_BIAS	
 				// If 2D textures weren't previously enabled, enable
 				// them now and force the driver to notice the update,

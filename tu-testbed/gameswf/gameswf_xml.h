@@ -345,27 +345,19 @@ struct xml_as_object : public gameswf::as_object
 };
 
 
-void xml_load(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void xml_set_current(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void xml_firstchild(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void xml_childnodes(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void xml_nodename(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void xml_next_stack_depth(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+void xml_load(const fn_call& fn);
+void xml_set_current(const fn_call& fn);
+void xml_new(const fn_call& fn);
+void xml_firstchild(const fn_call& fn);
+void xml_childnodes(const fn_call& fn);
+void xml_nodename(const fn_call& fn);
+void xml_next_stack_depth(const fn_call& fn);
 
 
 // These are the event handlers called for this object
-void xml_onload(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
-
-void xml_ondata(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
-
-void xml_loaded(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+void xml_onload(const fn_call& fn);
+void xml_ondata(const fn_call& fn);
+void xml_loaded(const fn_call& fn);
 
 }	// end namespace gameswf
 

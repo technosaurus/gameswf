@@ -212,7 +212,7 @@ namespace gameswf
 //		}
 	};
 
-	void	array_not_impl(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	array_not_impl(const fn_call& fn) // xxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		log_error("array methods not implemented yet\n");
 	}
@@ -222,18 +222,18 @@ namespace gameswf
 	// as_as_function
 	//
 
-	void	as_as_function::operator()(
-		as_value* result,
-		as_object_interface* this_ptr,
-		as_environment* caller_env,
-		int nargs,
-		int first_arg)
+	void	as_as_function::operator()(const fn_call& fn)
+// 		as_value* result,
+// 		as_object_interface* this_ptr,
+// 		as_environment* caller_env,
+// 		int nargs,
+// 		int first_arg)
 	// Dispatch.
 	{
 		as_environment*	our_env = m_env;
 		if (our_env == NULL)
 		{
-			our_env = caller_env;
+			our_env = fn.env;
 		}
 		assert(our_env);
 
@@ -246,11 +246,11 @@ namespace gameswf
 			// Conventional function.
 
 			// Push the arguments onto the local frame.
-			int	args_to_pass = imin(nargs, m_args.size());
+			int	args_to_pass = imin(fn.nargs, m_args.size());
 			for (int i = 0; i < args_to_pass; i++)
 			{
 				assert(m_args[i].m_register == 0);
-				our_env->add_local(m_args[i].m_name, caller_env->bottom(first_arg - i));
+				our_env->add_local(m_args[i].m_name, fn.arg(i));
 			}
 		}
 		else
@@ -261,19 +261,19 @@ namespace gameswf
 			our_env->add_local_registers(m_local_register_count);
 
 			// Handle the explicit args.
-			int	args_to_pass = imin(nargs, m_args.size());
+			int	args_to_pass = imin(fn.nargs, m_args.size());
 			for (int i = 0; i < args_to_pass; i++)
 			{
 				if (m_args[i].m_register == 0)
 				{
 					// Conventional arg passing: create a local var.
-					our_env->add_local(m_args[i].m_name, caller_env->bottom(first_arg - i));
+					our_env->add_local(m_args[i].m_name, fn.arg(i));
 				}
 				else
 				{
 					// Pass argument into a register.
 					int	reg = m_args[i].m_register;
-					*(our_env->local_register_ptr(reg)) = caller_env->bottom(first_arg - i);
+					*(our_env->local_register_ptr(reg)) = fn.arg(i);
 				}
 			}
 
@@ -303,10 +303,10 @@ namespace gameswf
 				arg_array = new as_array_object;
 
 				as_value	index_number;
-				for (int i = 0; i < nargs; i++)
+				for (int i = 0; i < fn.nargs; i++)
 				{
 					index_number.set_int(i);
-					arg_array->set_member(index_number.to_string(), our_env->bottom(first_arg - i));
+					arg_array->set_member(index_number.to_string(), fn.arg(i));
 				}
 			}
 
@@ -371,7 +371,7 @@ namespace gameswf
 		}
 
 		// Execute the actions.
-		m_action_buffer->execute(our_env, m_start_pc, m_length, result, m_with_stack, m_is_function2);
+		m_action_buffer->execute(our_env, m_start_pc, m_length, fn.result, m_with_stack, m_is_function2);
 
 		// Clean up stack frame.
 		our_env->set_local_frame_top(local_stack_top);
@@ -405,12 +405,12 @@ namespace gameswf
 		if (func)
 		{
 			// It's a C function.  Call it.
-			(*func)(&val, this_ptr, env, nargs, first_arg_bottom_index);
+			(*func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
 		}
 		else if (as_as_function* as_func = method.to_as_function())
 		{
 			// It's an ActionScript function.  Call it.
-			(*as_func)(&val, this_ptr, env, nargs, first_arg_bottom_index);
+			(*as_func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
 		}
 		else
 		{
@@ -632,53 +632,54 @@ namespace gameswf
 		IF_VERBOSE_ACTION(log_msg("-- start movie \n"));
 	}
 
-	void	sound_start(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sound_start(const fn_call& fn) // xxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		IF_VERBOSE_ACTION(log_msg("-- start sound \n"));
 		sound_handler* s = get_sound_handler();
 		if (s != NULL)
 		{
-			sound_as_object*	so = (sound_as_object*) (as_object*) this_ptr;
+			sound_as_object*	so = (sound_as_object*) (as_object*) fn.this_ptr;
 			assert(so);
 			s->play_sound(so->sound_id, 0);
 		}
 	}
 
 
-	void	sound_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sound_stop(const fn_call& fn) // xxxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		IF_VERBOSE_ACTION(log_msg("-- stop sound \n"));
 		sound_handler* s = get_sound_handler();
 		if (s != NULL)
 		{
-			sound_as_object*	so = (sound_as_object*) (as_object*) this_ptr;
+			sound_as_object*	so = (sound_as_object*) (as_object*) fn.this_ptr;
 			assert(so);
 			s->stop_sound(so->sound_id);
 		}
 	}
 
-	void	sound_attach(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sound_attach(const fn_call& fn) // xxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
 	{
 		IF_VERBOSE_ACTION(log_msg("-- attach sound \n"));
-		if (nargs < 1)
+		if (fn.nargs < 1)
 		{
 			log_error("attach sound needs one argument\n");
 			return;
 		}
 
-		sound_as_object*	so = (sound_as_object*) (as_object*) this_ptr;
+		sound_as_object*	so = (sound_as_object*) (as_object*) fn.this_ptr;
 		assert(so);
 
-		so->sound = env->bottom(first_arg).to_tu_string();
+		so->sound = fn.arg(0).to_tu_string();
 
 		// check the import.
-		movie_definition_sub*	def = (movie_definition_sub*) env->get_target()->get_root_movie()->get_movie_definition();
+		movie_definition_sub*	def = (movie_definition_sub*)
+			fn.env->get_target()->get_root_movie()->get_movie_definition();
 		assert(def);
 		smart_ptr<resource> res = def->get_exported_resource(so->sound);
 		if (res == NULL)
 		{
 			log_error("import error: resource '%s' is not exported\n", so->sound.c_str());
-			return;  
+			return;
 		}
 
 		int si = 0;
@@ -709,6 +710,7 @@ namespace gameswf
 	//
 
 
+#if 0
 	// One-argument simple functions.
 	#define MATH_WRAP_FUNC1(funcname)							\
 	void	math_##funcname(as_value* result, as_object_interface* this_ptr,		\
@@ -717,6 +719,15 @@ namespace gameswf
 		double	arg = env->bottom(first_arg_bottom_index).to_number();			\
 		result->set_double(funcname(arg));						\
 	}
+#else
+	// One-argument simple functions.
+	#define MATH_WRAP_FUNC1(funcname)							\
+	void	math_##funcname(const fn_call& fn)						\
+	{											\
+		double	arg = fn.arg(0).to_number();						\
+		fn.result->set_double(funcname(arg));						\
+	}
+#endif
 
 	MATH_WRAP_FUNC1(fabs);
 	MATH_WRAP_FUNC1(acos);
@@ -731,6 +742,7 @@ namespace gameswf
 	MATH_WRAP_FUNC1(sqrt);
 	MATH_WRAP_FUNC1(tan);
 
+#if 0
 	// Two-argument functions.
 	#define MATH_WRAP_FUNC2_EXP(funcname, expr)										\
 	void	math_##funcname(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)	\
@@ -739,22 +751,32 @@ namespace gameswf
 		double	arg1 = env->bottom(first_arg_bottom_index - 1).to_number();						\
 		result->set_double(expr);											\
 	}
+#else
+	// Two-argument functions.
+	#define MATH_WRAP_FUNC2_EXP(funcname, expr)										\
+	void	math_##funcname(const fn_call& fn)										\
+	{															\
+		double	arg0 = fn.arg(0).to_number();										\
+		double	arg1 = fn.arg(1).to_number();										\
+		fn.result->set_double(expr);											\
+	}
+#endif
 	MATH_WRAP_FUNC2_EXP(atan2, (atan2(arg0, arg1)));
 	MATH_WRAP_FUNC2_EXP(max, (arg0 > arg1 ? arg0 : arg1));
 	MATH_WRAP_FUNC2_EXP(min, (arg0 < arg1 ? arg0 : arg1));
 	MATH_WRAP_FUNC2_EXP(pow, (pow(arg0, arg1)));
 
 	// A couple of oddballs.
-	void	math_random(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	math_random(const fn_call& fn)
 	{
 		// Random number between 0 and 1.
-		result->set_double(tu_random::next_random() / double(Uint32(0x0FFFFFFFF)));
+		fn.result->set_double(tu_random::next_random() / double(Uint32(0x0FFFFFFFF)));
 	}
-	void	math_round(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	math_round(const fn_call& fn)
 	{
 		// round argument to nearest int.
-		double	arg0 = env->bottom(first_arg_bottom_index).to_number();
-		result->set_double(floor(arg0 + 0.5));
+		double	arg0 = fn.arg(0).to_number();
+		fn.result->set_double(floor(arg0 + 0.5));
 	}
 	
 	void math_init()
@@ -796,7 +818,7 @@ namespace gameswf
 		s_global->set_member("math", math_obj);
 	}
 		
-	void event_test(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg) 
+	void event_test(const fn_call& fn)
 	{
 		log_msg("FIXME: %s\n", __FUNCTION__);
 	}
@@ -939,37 +961,37 @@ namespace gameswf
 	};
 
 
-	void	key_add_listener(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_add_listener(const fn_call& fn)
 	// Add a listener (first arg is object reference) to our list.
 	// Listeners will have "onKeyDown" and "onKeyUp" methods
 	// called on them when a key changes state.
 	{
-		if (nargs < 1)
+		if (fn.nargs < 1)
 		{
 			log_error("key_add_listener needs one argument (the listener object)\n");
 			return;
 		}
 
-		as_object_interface*	listener = env->bottom(first_arg).to_object();
+		as_object_interface*	listener = fn.arg(0).to_object();
 		if (listener == NULL)
 		{
 			log_error("key_add_listener passed a NULL object; ignored\n");
 			return;
 		}
 
-		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		key_as_object*	ko = (key_as_object*) (as_object*) fn.this_ptr;
 		assert(ko);
 
 		ko->add_listener(listener);
 	}
 
-	void	key_get_ascii(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_get_ascii(const fn_call& fn)
 	// Return the ascii value of the last key pressed.
 	{
-		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		key_as_object*	ko = (key_as_object*) (as_object*) fn.this_ptr;
 		assert(ko);
 
-		result->set_undefined();
+		fn.result->set_undefined();
 
 		int	code = ko->get_last_key_pressed();
 		if (code > 0)
@@ -980,61 +1002,61 @@ namespace gameswf
 			buf[0] = (char) code;
 			buf[1] = 0;
 
-			result->set_string(buf);
+			fn.result->set_string(buf);
 		}
 	}
 
-	void	key_get_code(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_get_code(const fn_call& fn)
 	// Returns the keycode of the last key pressed.
 	{
-		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		key_as_object*	ko = (key_as_object*) (as_object*) fn.this_ptr;
 		assert(ko);
 
-		result->set_int(ko->get_last_key_pressed());
+		fn.result->set_int(ko->get_last_key_pressed());
 	}
 
-	void	key_is_down(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_is_down(const fn_call& fn)
 	// Return true if the specified (first arg keycode) key is pressed.
 	{
-		if (nargs < 1)
+		if (fn.nargs < 1)
 		{
 			log_error("key_is_down needs one argument (the key code)\n");
 			return;
 		}
 
-		int	code = (int) env->bottom(first_arg).to_number();
+		int	code = (int) fn.arg(0).to_number();
 
-		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		key_as_object*	ko = (key_as_object*) (as_object*) fn.this_ptr;
 		assert(ko);
 
-		result->set_bool(ko->is_key_down(code));
+		fn.result->set_bool(ko->is_key_down(code));
 	}
 
-	void	key_is_toggled(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_is_toggled(const fn_call& fn)
 	// Given the keycode of NUM_LOCK or CAPSLOCK, returns true if
 	// the associated state is on.
 	{
 		// @@ TODO
-		result->set_bool(false);
+		fn.result->set_bool(false);
 	}
 
-	void	key_remove_listener(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	key_remove_listener(const fn_call& fn)
 	// Remove a previously-added listener.
 	{
-		if (nargs < 1)
+		if (fn.nargs < 1)
 		{
 			log_error("key_remove_listener needs one argument (the listener object)\n");
 			return;
 		}
 
-		as_object_interface*	listener = env->bottom(first_arg).to_object();
+		as_object_interface*	listener = fn.arg(0).to_object();
 		if (listener == NULL)
 		{
 			log_error("key_remove_listener passed a NULL object; ignored\n");
 			return;
 		}
 
-		key_as_object*	ko = (key_as_object*) (as_object*) this_ptr;
+		key_as_object*	ko = (key_as_object*) (as_object*) fn.this_ptr;
 		assert(ko);
 
 		ko->remove_listener(listener);
@@ -1108,20 +1130,19 @@ namespace gameswf
 	//
 
 
-	void	as_global_trace(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	as_global_trace(const fn_call& fn)
 	{
 		// Log our argument.
 		//
 		// @@ what if we get extra args?
 		//
 		// @@ Array gets special treatment.
-		const char* arg0 = env->bottom(first_arg_bottom_index).to_string();
+		const char* arg0 = fn.arg(0).to_string();
 		log_msg("%s\n", arg0);
 	}
 
 
-	void	as_global_Sound(
-		as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	as_global_sound_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Sound.
 	{
 		smart_ptr<as_object>	sound_obj(new sound_as_object);
@@ -1131,29 +1152,27 @@ namespace gameswf
 		sound_obj->set_member("start", &sound_start);
 		sound_obj->set_member("stop", &sound_stop);
 
-		result->set_as_object_interface(sound_obj.get_ptr());
+		fn.result->set_as_object_interface(sound_obj.get_ptr());
 	}
 
 
-	void	as_global_Object(
-		as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	as_global_object_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Object.
 	{
-		result->set_as_object_interface(new as_object);
+		fn.result->set_as_object_interface(new as_object);
 	}
 
-	void	as_global_Array(
-		as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg_bottom_index)
+	void	as_global_array_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Array.
 	{
 		smart_ptr<as_array_object>	ao = new as_array_object;
 
-		if (nargs == 0)
+		if (fn.nargs == 0)
 		{
 			// Empty array.
 		}
-		else if (nargs == 1
-			 && env->bottom(first_arg_bottom_index).get_type() == as_value::NUMBER)
+		else if (fn.nargs == 1
+			 && fn.arg(0).get_type() == as_value::NUMBER)
 		{
 			// Create an empty array with the given number of undefined elements.
 			//
@@ -1165,16 +1184,16 @@ namespace gameswf
 		{
 			// Use the arguments as initializers.
 			as_value	index_number;
-			for (int i = 0; i < nargs; i++)
+			for (int i = 0; i < fn.nargs; i++)
 			{
 				index_number.set_int(i);
-				ao->set_member(index_number.to_string(), env->bottom(first_arg_bottom_index - i));
+				ao->set_member(index_number.to_string(), fn.arg(i));
 			}
 
 			// @@ TODO set length property
 		}
 
-		result->set_as_object_interface(ao.get_ptr());
+		fn.result->set_as_object_interface(ao.get_ptr());
 	}
 
 
@@ -1193,17 +1212,16 @@ namespace gameswf
 			assert(s_global == NULL);
 			s_global = new as_object;
 			s_global->set_member("trace", as_value(as_global_trace));
-			s_global->set_member("Object", as_value(as_global_Object));
-			s_global->set_member("Sound", as_value(as_global_Sound));
-			s_global->set_member("Array", as_value(as_global_Array));
+			s_global->set_member("Object", as_value(as_global_object_ctor));
+			s_global->set_member("Sound", as_value(as_global_sound_ctor));
+			s_global->set_member("Array", as_value(as_global_array_ctor));
 
 			s_global->set_member("TextFormat", as_value(textformat_new));
 #ifdef HAVE_LIBXML
 			//s_global->set_member("XML", as_value(xml_new));
 			s_global->set_member("XML", as_value(xmlsocket_xml_new));
 			s_global->set_member("XMLSocket", as_value(xmlsocket_new));
-// end of HAVE_LIBXML
-#endif
+#endif // HAVE_LIBXML
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
 			s_global->set_member("String", as_value(string_new));
 
@@ -1246,6 +1264,18 @@ namespace gameswf
 			if (index >= 0 && index < this_string.utf8_length())
 			{
 				return as_value((double) (this_string.utf8_char_at(index)));
+			}
+
+			return as_value(0);	// FIXME: according to docs, we're supposed to return "NaN"
+		}
+		else if (method_name == "charAt")
+		{
+			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
+			if (index >= 0 && index < this_string.utf8_length())
+			{
+				tu_string result;
+				result += this_string.utf8_char_at(index);
+				return as_value(result);
 			}
 
 			return as_value(0);	// FIXME: according to docs, we're supposed to return "NaN"
@@ -1323,14 +1353,12 @@ namespace gameswf
 
 			return as_value(result);
 		}
-		// @@ isEmpty()
 		// concat()
 		// lastIndexOf()
 		// length property
-		// substr()
 		// slice()
 		// split()
-		// etc.
+		// substr()
 
 		return as_value();
 	}
@@ -1871,7 +1899,7 @@ namespace gameswf
 				case 0x26:	// trace
 				{
 					// Log the stack val.
-					as_global_trace(&env->top(0), NULL, env, 1, env->get_top_index());
+					as_global_trace(fn_call(&env->top(0), NULL, env, 1, env->get_top_index()));
 // 					const char*	message = env->top(0).to_string();
 // 					log_msg("%s\n", message);
 					env->drop(1);
@@ -2101,7 +2129,7 @@ namespace gameswf
 					if (constructor.get_type() == as_value::C_FUNCTION)
 					{
 						// C function is responsible for creating the new object and setting members.
-						(constructor.to_c_function())(&new_obj, NULL, env, nargs, env->get_top_index());
+						(constructor.to_c_function())(fn_call(&new_obj, NULL, env, nargs, env->get_top_index()));
 					}
 					else if (as_as_function* ctor_as_func = constructor.to_as_function())
 					{
@@ -2161,7 +2189,7 @@ namespace gameswf
 
 					// Call the array constructor, to create an empty array.
 					as_value	result;
-					as_global_Array(&result, NULL, env, 0, env->get_top_index());
+					as_global_array_ctor(fn_call(&result, NULL, env, 0, env->get_top_index()));
 
 					as_object_interface*	ao = result.to_object();
 					assert(ao);
@@ -2182,36 +2210,7 @@ namespace gameswf
 
 					log_msg("xxx init array end: top of stack = %d, trace(top(0)) =",
 						env->get_top_index());//xxxxxxx
-					as_global_trace(NULL, NULL, env, 1, env->get_top_index());	//xxxx
-
-
-#if 0
-					as_array_object*	ao = new array_as_object;
-//					ao->set_member("length", &array_not_impl);
-//					ao->set_member("join", &array_not_impl);
-//					ao->set_member("concat", &array_not_impl);
-//					ao->set_member("slice", &array_not_impl);
-//					ao->set_member("push", &array_not_impl);
-//					ao->set_member("unshift", &array_not_impl);
-//					ao->set_member("pop", &array_not_impl);
-//					ao->set_member("shift", &array_not_impl);
-//					ao->set_member("splice", &array_not_impl);
-//					ao->set_member("sort", &array_not_impl);
-//					ao->set_member("sortOn", &array_not_impl);
-//					ao->set_member("reverse", &array_not_impl);
-//					ao->set_member("toString", &array_not_impl);
-
-					// @@ TODO a set_member that takes an int or as_value?
-					int	array_size = (int) env->pop().to_number();
-					char s[20];
-					for (int i = 0; i < array_size; i++)
-					{
-						sprintf(s,"%d",i);
-						ao->set_member(s, env->pop());
-					}
-					as_value new_array = ao;
-					env->push(new_array);
-#endif // 0
+					as_global_trace(fn_call(NULL, NULL, env, 1, env->get_top_index()));	//xxxx
 
 					break;
 				}

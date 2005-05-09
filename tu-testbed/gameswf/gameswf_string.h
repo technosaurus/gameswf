@@ -62,35 +62,10 @@ namespace gameswf
 	};
 
 
-	void string_lastIndexOf(
-		gameswf::as_value* result,
-		gameswf::as_object_interface* this_ptr,
-		gameswf::as_environment* env,
-		int nargs,
-		int first_arg);
-
-
-	void string_new(
-		gameswf::as_value* result,
-		gameswf::as_object_interface* this_ptr,
-		gameswf::as_environment* env,
-		int nargs,
-		int first_arg);
-
- 	void string_from_char_code(
-		gameswf::as_value* result,
-		gameswf::as_object_interface* this_ptr,
-		gameswf::as_environment* env,
-		int nargs,
-		int first_arg);
-
-	void string_char_code_at(
-		gameswf::as_value* result,
-		gameswf::as_object_interface* this_ptr,
-		gameswf::as_environment* env,
-		int nargs,
-		int first_arg);
-
+	void string_lastIndexOf(const fn_call& fn);
+	void string_new(const fn_call& fn);
+ 	void string_from_char_code(const fn_call& fn);
+	void string_char_code_at(const fn_call& fn);
 
 } // end of gameswf namespace
 
