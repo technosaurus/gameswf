@@ -128,15 +128,9 @@ namespace gameswf
   void
   timer_setinterval(const fn_call& fn)
   {
-    as_value* result = fn.result;
-    //as_object_interface* this_ptr = fn.this_ptr;
-    int nargs = fn.nargs;
-    int first_arg = fn.first_arg_bottom_index;
-    as_environment* env = fn.env;
-
     int i;
     as_value	method;
-    log_msg("%s: args=%d\n", __FUNCTION__, nargs);
+    log_msg("%s: args=%d\n", __FUNCTION__, fn.nargs);
     
     timer_as_object *ptr = new timer_as_object;
     
@@ -144,16 +138,16 @@ namespace gameswf
     //timer_as_object*	ptr = (timer_as_object*) (as_object*) this_ptr;
     assert(ptr);
     
-    movie*	mov = env->get_target()->get_root_movie();
-    as_as_function *as_func = (as_as_function *)env->bottom(first_arg).to_as_function();
+    movie*	mov = fn.env->get_target()->get_root_movie();
+    as_as_function *as_func = (as_as_function *)fn.env->bottom(fn.first_arg_bottom_index).to_as_function();
     as_value val(as_func);
-    int ms = (int)env->bottom(first_arg-1).to_number();
+    int ms = (int)fn.env->bottom(fn.first_arg_bottom_index-1).to_number();
 
     tu_string local_name;
     as_value local_val;
     array<with_stack_entry>	dummy_with_stack;
 
-    env->add_frame_barrier();
+    fn.env->add_frame_barrier();
     //method = env->get_variable("loopvar", dummy_with_stack);
 
 #if 1
@@ -164,14 +158,14 @@ namespace gameswf
     // be propogated to the local stack as regular variables (not locals) or
     // they can't be found in the scope of the executing chld function. There is
     // probably a better way to do this... but at least this works.
-    for (i=0; i< env->get_local_frame_top(); i++) {
-      if (env->m_local_frames[i].m_name.size()) {
+    for (i=0; i< fn.env->get_local_frame_top(); i++) {
+      if (fn.env->m_local_frames[i].m_name.size()) {
         //method = env->get_variable(env->m_local_frames[i].m_name, dummy_with_stack);
         //if (method.get_type() != as_value::UNDEFINED)
         {
-          local_name  = env->m_local_frames[i].m_name;
-          local_val = env->m_local_frames[i].m_value;
-          env->set_variable(local_name, local_val, 0);
+          local_name  = fn.env->m_local_frames[i].m_name;
+          local_val = fn.env->m_local_frames[i].m_value;
+          fn.env->set_variable(local_name, local_val, 0);
         }
       }
     }
@@ -179,30 +173,24 @@ namespace gameswf
     //    ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
     
     //Ptr->obj.setInterval(val, ms);
-    ptr->obj.setInterval(val, ms, (as_object *)ptr, env);
+    ptr->obj.setInterval(val, ms, (as_object *)ptr, fn.env);
     
-    result->set_int(mov->add_interval_timer(&ptr->obj));
+    fn.result->set_int(mov->add_interval_timer(&ptr->obj));
   }
   
   void
   timer_expire(const fn_call& fn)
   {
-    as_value* result = fn.result;
-    as_object_interface* this_ptr = fn.this_ptr;
-    //int nargs = fn.nargs;
-    //int first_arg = fn.first_arg_bottom_index;
-    as_environment* env = fn.env;
-
     //log_msg("%s:\n", __FUNCTION__);
 
-    timer_as_object*	ptr = (timer_as_object*) (as_object*) this_ptr;
+    timer_as_object*	ptr = (timer_as_object*) (as_object*) fn.this_ptr;
     assert(ptr);
     const as_value&	val = ptr->obj.getASFunction();
     
     if (as_as_function* as_func = val.to_as_function()) {
       // It's an ActionScript function.  Call it.
       log_msg("Calling ActionScript function for setInterval Timer\n");
-      (*as_func)(fn_call(result, this_ptr, env, 0, 0));
+      (*as_func)(fn_call(fn.result, fn.this_ptr, fn.env, 0, 0));
     } else {
       log_error("FIXME: Couldn't find setInterval Timer!\n");
     }
@@ -211,18 +199,12 @@ namespace gameswf
   void
   timer_clearinterval(const fn_call& fn)
   {
-    as_value* result = fn.result;
-    //as_object_interface* this_ptr = fn.this_ptr;
-    //int nargs = fn.nargs;
-    int first_arg = fn.first_arg_bottom_index;
-    as_environment* env = fn.env;
-
     //log_msg("%s: nargs = %d\n", __FUNCTION__, nargs);
 
-    double id = env->bottom(first_arg).to_number();
+    double id = fn.env->bottom(fn.first_arg_bottom_index).to_number();
 
-    movie*	mov = env->get_target()->get_root_movie();
+    movie*	mov = fn.env->get_target()->get_root_movie();
     mov->clear_interval_timer((int)id);
-    result->set_bool(true); 
+    fn.result->set_bool(true); 
   }
 }

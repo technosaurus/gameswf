@@ -200,7 +200,7 @@ XMLSocket::close()
 
 // Return true if there is data in the socket, otherwise return false.
 bool
-XMLSocket::anydata(tu_string &data)
+XMLSocket::anydata(array<const char *> &data)
 {
   //printf("%s: \n", __FUNCTION__);
   return anydata(_sockfd, data);
@@ -219,17 +219,18 @@ void XMLSocket::processing(bool x)
 }
 
 bool
-XMLSocket::anydata(int fd, tu_string &data)
+XMLSocket::anydata(int fd, array<const char *> &data)
 {
   fd_set                fdset;
   struct timeval        tval;
   int                   ret = 0;
   char                  buf[INBUF];
+  char                  *packet;
   int                   retries = 10;
   char                  *ptr;
   int                   pos;
   bool                  ifdata = false;
-  static tu_string             remainder;
+  static tu_string      remainder;
 
   //log_msg("%s: \n", __FUNCTION__);
 
@@ -268,29 +269,37 @@ XMLSocket::anydata(int fd, tu_string &data)
     }
     processing(true);
     memset(buf, 0, INBUF);
-    ret = ::read(_sockfd, buf, INBUF-1);
+    ret = ::read(_sockfd, buf, INBUF-2);
     //log_msg("%s: read %d bytes\n", __FUNCTION__, ret);
     //log_msg("%s: read (%d,%d) %s\n", __FUNCTION__, buf[0], buf[1], buf);    
     ptr = buf;
     pos = 1;
     while (pos > 0) {
-      tu_string msg;
+      //tu_string msg;
+      packet = new char[ret + remainder.size() + 1];
+      memset(packet, 0, ret + remainder.size() + 1);
+      
       //ptr = strchr('\0', buf);
       if (remainder.size() > 0) {
         //printf("%s: The remainder is: \"%s\"\n", __FUNCTION__, remainder.c_str());
         //printf("%s: The rest of the message is: \"%s\"\n", __FUNCTION__, ptr);
-        msg = remainder;
-        msg += buf;
+        //msg = remainder;
+        //msg += buf;
+        strcpy(packet, remainder.c_str());
+        strcat(packet, buf);
         //ptr =
-        //printf("%s: The whole message for %d is: \"%s\"\n", __FUNCTION__, _messages.size(), msg.c_str());
+        //printf("%s: The whole message is: \"%s\"\n", __FUNCTION__, packet);
         remainder.resize(0);
       } else {
-        msg = ptr;
+        //msg = ptr;
+        strcpy(packet, ptr);
+      
         //        strcpy(msg, ptr);
       }
       if (ptr[strlen(ptr)-1] == '\n') {
         ifdata = true;
-        _messages.push_back(msg);
+        //_messages.push_back(msg);
+        data.push_back(packet);
         pos = strlen(ptr);
         ptr += pos + 1;
         //remainder.resize(0);
@@ -299,14 +308,14 @@ XMLSocket::anydata(int fd, tu_string &data)
         if (remainder.size() > 0) {
           //printf("%s: Adding remainder: \"%s\"\n", __FUNCTION__, remainder.c_str());
         } else {
-          remainder = "";
+          remainder.resize(0);
         }
         break;
       }
     }
   }
   
-  data = buf;
+  //data = buf;
 
   return true;
 }
@@ -377,11 +386,6 @@ XMLSocket::count()
 void
 xmlsocket_connect(const fn_call& fn)
 {
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  //int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-  as_environment* env = fn.env;  
   as_value	method;
   as_value	val;
   static bool first = true;     // This event handler should only be executed once.
@@ -389,28 +393,28 @@ xmlsocket_connect(const fn_call& fn)
   const array<with_stack_entry> with_stack;
 
   if (!first) {
-    result->set(true);
+    fn.result->set(true);
     return;
   }
   
   //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
-  const tu_string host = env->bottom(first_arg).to_string();
-  double port = env->bottom(first_arg-1).to_number();
+  const tu_string host = fn.env->bottom(fn.first_arg_bottom_index).to_string();
+  double port = fn.env->bottom(fn.first_arg_bottom_index-1).to_number();
   ret = ptr->obj.connect(host, static_cast<int>(port));
 
 #if 0
   // Push result onto stack for onConnect
   if (ret) {
-    env->push(as_value(true));
+    fn.env->push(as_value(true));
   }
   else {
-    env->push(as_value(false));
+    fn.env->push(as_value(false));
   }
 #endif
-  env->push(as_value(true));
-  if (this_ptr->get_member("onConnect", &method)) {
+  fn.env->push(as_value(true));
+  if (fn.this_ptr->get_member("onConnect", &method)) {
     //    log_msg("FIXME: Found onConnect!\n");
     as_c_function_ptr	func = method.to_c_function();
     first = false;
@@ -419,12 +423,12 @@ xmlsocket_connect(const fn_call& fn)
     if (func) {
       // It's a C function.  Call it.
       log_msg("Calling C function for onConnect\n");
-      (*func)(fn_call(&val, this_ptr, env, 0, 0));
+      (*func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
     }
     else if (as_as_function* as_func = method.to_as_function()) {
       // It's an ActionScript function.  Call it.
       log_msg("Calling ActionScript function for onConnect\n");
-      (*as_func)(fn_call(&val, this_ptr, env, 2, 2));
+      (*as_func)(fn_call(&val, fn.this_ptr, fn.env, 2, 2));
     } else {
       log_error("error in call_method(): method is not a function\n");
     }    
@@ -433,52 +437,41 @@ xmlsocket_connect(const fn_call& fn)
   }
 
 #if 1
-  movie*	mov = env->get_target()->get_root_movie();
+  movie*	mov = fn.env->get_target()->get_root_movie();
   Timer *timer = new Timer;
   as_c_function_ptr ondata_handler =
     (as_c_function_ptr)&xmlsocket_event_ondata;
-  timer->setInterval(ondata_handler, 50, ptr, env);
+  timer->setInterval(ondata_handler, 50, ptr, fn.env);
   timer->setObject(ptr);
   mov->add_interval_timer(timer);
 #endif
 
-  env->pop();
+  fn.env->pop();
   
-  result->set(true);
+  fn.result->set(true);
 }
 
 
 void
 xmlsocket_send(const fn_call& fn)
 {
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  //int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-  as_environment* env = fn.env;  
-
   as_value	method;
   as_value	val;
   
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
-  const tu_string object = env->bottom(first_arg).to_string();
+  const tu_string object = fn.env->bottom( fn.first_arg_bottom_index).to_string();
   //  log_msg("%s: host=%s, port=%g\n", __FUNCTION__, host, port);
-  result->set(ptr->obj.send(object));
+  fn.result->set(ptr->obj.send(object));
 }
 
 void
 xmlsocket_close(const fn_call& fn)
 {
-  //as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  //int nargs = fn.nargs;
-  //int first_arg = fn.first_arg_bottom_index;
-
   as_value	method;
   as_value	val;
   
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
   // Since the return code from close() doesn't get used by Shockwave,
   // we don't care either.
@@ -496,12 +489,6 @@ xmlsocket_xml_new(const fn_call& fn)
 void
 xmlsocket_new(const fn_call& fn)
 {
-  as_value* result = fn.result;
-  //as_object_interface* this_ptr = fn.this_ptr;
-  //int nargs = fn.nargs;
-  //int first_arg = fn.first_arg_bottom_index;
-  as_environment* env = fn.env;
-
   //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   
   as_object*	xmlsock_obj = new xmlsocket_as_object;
@@ -529,10 +516,10 @@ xmlsocket_new(const fn_call& fn)
 #if 1
   //as_c_function_ptr int_handler = (as_c_function_ptr)&timer_setinterval;
   //env->set_member("setInterval", int_handler);
-  env->set_member("setInterval", timer_setinterval);
+  fn.env->set_member("setInterval", timer_setinterval);
   
   //as_c_function_ptr clr_handler = timer_clearinterval;
-  env->set_member("clearInterval", timer_clearinterval);
+  fn.env->set_member("clearInterval", timer_clearinterval);
   //env->set_variable("setInterval", int_handler, 0);
   //xmlsock_obj->set_event_handler(event_id::TIMER,
   //       (as_c_function_ptr)&timer_expire);
@@ -545,7 +532,7 @@ xmlsocket_new(const fn_call& fn)
   current_movie->add_interval_timer(timer);
 #endif
   
-  result->set(xmlsock_obj);
+  fn.result->set(xmlsock_obj);
   
 #endif
 }
@@ -554,38 +541,32 @@ xmlsocket_new(const fn_call& fn)
 void
 xmlsocket_event_ondata(const fn_call& fn)
 {
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  //int nargs = fn.nargs;
-  //int first_arg = fn.first_arg_bottom_index;
-  as_environment* env = fn.env;
-    
   //log_msg("%s: nargs is %d\n", __FUNCTION__, nargs);
     
   as_value	method;
   as_value	val;
-  array<tu_string> msgs;
-  tu_string     tmp;
+  as_value      datain;
+  array<const char *> msgs;
   int           i;
   
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*)this_ptr;
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*)fn.this_ptr;
   assert(ptr);
   if (ptr->obj.processingData()) {
     log_msg("Still processing data!\n");
-    result->set(false);
+    fn.result->set(false);
     return;
   }
 
-  if (ptr->obj.anydata(tmp)) {
-    if (this_ptr->get_member("onData", &method)) {
+  if (ptr->obj.anydata(msgs)) {
+    if (fn.this_ptr->get_member("onData", &method)) {
       as_c_function_ptr	func = method.to_c_function();
       as_as_function* as_func = method.to_as_function();
-      //og_msg("Got %d messages from XMLsocket\n", ptr->obj.messagesCount());
-      for (i=0; i<ptr->obj.messagesCount(); i++) {
+      log_msg("Got %d messages from XMLsocket\n", msgs.size());
+      for (i=0; i<msgs.size(); i++) {
+#if 0
         tu_string data = ptr->obj[i];
         //log_msg("Got data from socket!!\n%s", data.c_str());
         //
-#if 0
         if (((data[0] != '<') && ((data[1] != 'R') || (data[1] != '?')))
             || (data[data.size()-2] != '>')){
           printf("%s: bad message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
@@ -594,26 +575,29 @@ xmlsocket_event_ondata(const fn_call& fn)
           continue;
         }
 #endif
-        //log_msg("Got message %s: ", data.c_str());
-        env->push(as_value(data));
+        //log_msg("Got message %s: ", msgs[i]);
+        datain.set(msgs[i]);
+        fn.env->push(datain);
         if (func) {
           // It's a C function.  Call it.
           //log_msg("Calling C function for onData\n");
-          (*func)(fn_call(&val, this_ptr, env, 1, 0));
+          (*func)(fn_call(&val, fn.this_ptr, fn.env, 1, 0));
         } else if (as_func) {
           // It's an ActionScript function.  Call it.
           //log_msg("Calling ActionScript function for onData, processing msg %d\n", i);
-          (*as_func)(fn_call(&val, this_ptr, env, 1, 0));
+          (*as_func)(fn_call(&val, fn.this_ptr, fn.env, 1, 0));
         } else {
           log_error("error in call_method(): method is not a function\n");
         }
-        env->pop();
+        datain.drop_refs();
+        delete msgs[i];
+        fn.env->pop();
 
         //printf("%s: Removing message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
         //ptr->obj.messageRemove(i);
       }      
-      
-      ptr->obj.messagesClear();
+      msgs.resize(0);
+      //ptr->obj.messagesClear();
       ptr->obj.processing(false);
       //msgs->clear();
     } else {
@@ -624,7 +608,7 @@ xmlsocket_event_ondata(const fn_call& fn)
   }
   
   //result->set(&data);
-  result->set(true);
+  fn.result->set(true);
 }
 
 void
@@ -643,23 +627,17 @@ xmlsocket_event_close(const fn_call& fn)
 void
 xmlsocket_event_connect(const fn_call& fn)
 {
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  //int nargs = fn.nargs;
-  //int first_arg = fn.first_arg_bottom_index;
-  as_environment* env = fn.env; 
-
   as_value	method;
   as_value	val;
   tu_string     data;
   static bool first = true;     // This event handler should only be executed once.
 
   if (!first) {
-    result->set(true);
+    fn.result->set(true);
     return;
   }
   
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) this_ptr;
+  xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
 
   log_msg("%s: connected = %d\n", __FUNCTION__, ptr->obj.connected());
@@ -668,19 +646,19 @@ xmlsocket_event_connect(const fn_call& fn)
     //env->set_variable("success", true, 0);
     //env->bottom(0) = true;
 
-    if (this_ptr->get_member("onConnect", &method)) {
+    if (fn.this_ptr->get_member("onConnect", &method)) {
       as_c_function_ptr	func = method.to_c_function();
       if (func)
         {
           // It's a C function.  Call it.
           //log_msg("Calling C function for onConnect\n");
-          (*func)(fn_call(&val, this_ptr, env, 0, 0));
+          (*func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
       }
       else if (as_as_function* as_func = method.to_as_function())
         {
           // It's an ActionScript function.  Call it.
           //log_msg("Calling ActionScript function for onConnect\n");
-          (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
+          (*as_func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
         }
       else
         {
@@ -691,7 +669,7 @@ xmlsocket_event_connect(const fn_call& fn)
     }
   }
 
-  result->set(&val); 
+  fn.result->set(&val); 
 }
 void
 xmlsocket_event_xml(const fn_call& fn)

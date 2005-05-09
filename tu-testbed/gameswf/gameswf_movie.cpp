@@ -171,21 +171,21 @@ MovieClipLoader::on_button_event(event_id event)
 void moviecliploader_loadclip(const fn_call& fn)
 {
 #ifdef HAVE_LIBXML
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-  as_environment* env = fn.env;
+  //as_value* result = fn.result;
+  //as_object_interface* this_ptr = fn.this_ptr;
+  //int nargs = fn.nargs;
+  //int first_arg = fn.first_arg_bottom_index;
+  //as_environment* env = fn.env;
 
   as_value	val, method;
   struct stat   stats;
   int           fd;
   
-  log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, nargs);
-  moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) this_ptr;
+  log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, fn.nargs);
+  moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) fn.this_ptr;
   
-  tu_string url = env->bottom(first_arg).to_string();  
-  as_object *target = (as_object *)env->bottom(first_arg-1).to_object();
+  tu_string url = fn.env->bottom(fn.first_arg_bottom_index).to_string();  
+  as_object *target = (as_object *)fn.env->bottom(fn.first_arg_bottom_index-1).to_object();
   log_msg("load clip: %s, target is: %p\n", url.c_str(), target);
 
   xmlNanoHTTPInit();            // This doesn't do much for now, but in the
@@ -196,14 +196,14 @@ void moviecliploader_loadclip(const fn_call& fn)
     // If the file doesn't exist, don't try to do anything.
     if (stat(url.c_str(), &stats) < 0) {
       fprintf(stderr, "ERROR: doesn't exist: %s\n", url.c_str());
-      result->set(false);
+      fn.result->set(false);
       return;
     }
   }
   
   if (target == NULL) {
     //log_error("target doesn't exist:\n");
-      result->set(false);
+      fn.result->set(false);
       return;    
   }
   
@@ -218,21 +218,21 @@ void moviecliploader_loadclip(const fn_call& fn)
   xmlNanoHTTPFetch(url.c_str(), filespec.c_str(), NULL);
 
   // Call the callback since we've started loading the file
-  if (this_ptr->get_member("onLoadStart", &method)) {
+  if (fn.this_ptr->get_member("onLoadStart", &method)) {
     //log_msg("FIXME: Found onLoadStart!\n");
     as_c_function_ptr	func = method.to_c_function();
-    env->set_variable("success", true, 0);
+    fn.env->set_variable("success", true, 0);
     if (func)
       {
         // It's a C function.  Call it.
         //log_msg("Calling C function for onLoadStart\n");
-        (*func)(fn_call(&val, this_ptr, env, 0, 0));
+        (*func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
       }
     else if (as_as_function* as_func = method.to_as_function())
       {
         // It's an ActionScript function.  Call it.
         //log_msg("Calling ActionScript function for onLoadStart\n");
-        (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
+        (*as_func)(fn_call(&val, fn.this_ptr, fn.env, 0, 0));
       }
     else
       {
@@ -245,7 +245,7 @@ void moviecliploader_loadclip(const fn_call& fn)
   // See if the file exists
   if (stat(filespec.c_str(), &stats) < 0) {
     log_error("Clip doesn't exist: %s\n", filespec.c_str());
-    result->set(false);
+    fn.result->set(false);
     return;
   }
 
@@ -308,19 +308,19 @@ void moviecliploader_loadclip(const fn_call& fn)
         } else {
           //log_error("File is not a JPEG!\n");
           unlink(filespec.c_str());
-          result->set(false);
+          fn.result->set(false);
           return;
         }
       } else {
         log_error("Can't read image header!\n");
         unlink(filespec.c_str());
-        result->set(false);
+        fn.result->set(false);
         return;
       }
     } else {
         log_error("Can't open image!\n");
         unlink(filespec.c_str());
-        result->set(false);
+        fn.result->set(false);
         return;
     }
     
@@ -418,13 +418,13 @@ void moviecliploader_loadclip(const fn_call& fn)
   mcl_data->bytes_loaded = stats.st_size;
   mcl_data->bytes_total = stats.st_size;
 
-  env->set_member("target_mc", target);
+  fn.env->set_member("target_mc", target);
   //env->push(as_value(target));
   //moviecliploader_onload_complete(result, this_ptr, env, 0, 0);
   moviecliploader_onload_complete(fn);
   //env->pop();
   
-  result->set(true);
+  fn.result->set(true);
 
   //unlink(filespec.c_str());
   
