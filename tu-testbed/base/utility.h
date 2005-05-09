@@ -112,7 +112,7 @@ inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 
 // One problem with this hash function is that e.g. if you take a
 // bunch of 32-bit ints and hash them, their hash values will be
 // concentrated toward zero, instead of randomly distributed in
-// [0,2^32-1], because of shifting up on 5 bits per byte.
+// [0,2^32-1], because of shifting up only 5 bits per byte.
 {
 	const unsigned char*	data = (const unsigned char*) data_in;
 	unsigned int	h = seed;
