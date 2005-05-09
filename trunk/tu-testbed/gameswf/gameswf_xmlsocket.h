@@ -73,32 +73,17 @@ struct xmlsocket_as_object : public gameswf::as_object
   XMLSocket obj;
 };
 
-void
-xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-xmlsocket_send(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-xmlsocket_xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-xmlsocket_close(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+void xmlsocket_connect(const fn_call& fn);
+void xmlsocket_send(const fn_call& fn);
+void xmlsocket_xml_new(const fn_call& fn);
+void xmlsocket_new(const fn_call& fn);
+void xmlsocket_close(const fn_call& fn);
 
 // These are the event handlers called for this object
-void xmlsocket_event_ondata(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-void xmlsocket_event_close(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
-
-void xmlsocket_event_connect(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
-
-void xmlsocket_event_xml(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
-
-void *main_read_thread(void *arg);
-
+void xmlsocket_event_ondata(const fn_call& fn);
+void xmlsocket_event_close(const fn_call& fn);
+void xmlsocket_event_connect(const fn_call& fn);
+void xmlsocket_event_xml(const fn_call& fn);
  
 } // end of gameswf namespace
 

@@ -325,7 +325,7 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   log_msg("%s: processing node %s for object %p, mem is %d\n", __FUNCTION__, xml->_name.c_str(), obj, mem);
 #endif
   
-  xmlnode_as_object *xobj = (xmlnode_as_object *)obj;
+  //xmlnode_as_object *xobj = (xmlnode_as_object *)obj;
   
   // Get the data for this node
   nodename   = xml->_name;
@@ -453,13 +453,13 @@ xml_load(const fn_call& fn)
       {
         // It's a C function.  Call it.
         log_msg("Calling C function for onLoad\n");
-        (*func)(&val, xml_obj, env, nargs, first_arg); // was this_ptr instead of node
+        (*func)(fn_call(&val, xml_obj, env, nargs, first_arg)); // was this_ptr instead of node
       }
     else if (as_as_function* as_func = method.to_as_function())
       {
         // It's an ActionScript function.  Call it.
         log_msg("Calling ActionScript function for onLoad\n");
-        (*as_func)(&val, xml_obj, env, nargs, first_arg); // was this_ptr instead of node
+        (*as_func)(fn_call(&val, xml_obj, env, nargs, first_arg)); // was this_ptr instead of node
       } else {
         log_error("error in call_method(): method is not a function\n");
       }
@@ -484,8 +484,8 @@ xml_onload(const fn_call& fn)
   as_value* result = fn.result;
   as_object_interface* this_ptr = fn.this_ptr;
   as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
+  //int nargs = fn.nargs;
+  //int first_arg = fn.first_arg_bottom_index;
 
   log_msg("%s:\n", __FUNCTION__);
     
@@ -514,13 +514,13 @@ xml_onload(const fn_call& fn)
         {
           // It's a C function.  Call it.
           log_msg("Calling C function for onLoad\n");
-          (*func)(&val, this_ptr, env, 0, 0);
+          (*func)(fn_call(&val, this_ptr, env, 0, 0));
         }
       else if (as_as_function* as_func = method.to_as_function())
         {
           // It's an ActionScript function.  Call it.
           log_msg("Calling ActionScript function for onLoad\n");
-        (*as_func)(&val, this_ptr, env, 0, 0);
+        (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
         }
       else
         {
@@ -542,8 +542,8 @@ xml_ondata(const fn_call& fn)
   as_value* result = fn.result;
   as_object_interface* this_ptr = fn.this_ptr;
   as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
+  //int nargs = fn.nargs;
+  //int first_arg = fn.first_arg_bottom_index;
 
   log_msg("%s:\n", __FUNCTION__);
     
@@ -563,13 +563,13 @@ xml_ondata(const fn_call& fn)
         {
           // It's a C function.  Call it.
           log_msg("Calling C function for onData\n");
-          (*func)(&val, this_ptr, env, 0, 0);
+          (*func)(fn_call(&val, this_ptr, env, 0, 0));
       }
       else if (as_as_function* as_func = method.to_as_function())
         {
           // It's an ActionScript function.  Call it.
           log_msg("Calling ActionScript function for onData\n");
-          (*as_func)(&val, this_ptr, env, 0, 0);
+          (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
         }
       else
         {
@@ -588,10 +588,10 @@ xml_new(const fn_call& fn)
 {
   // tulrich: temp adapter code
   as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
+  //as_object_interface* this_ptr = fn.this_ptr;
   as_environment* env = fn.env;
   int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
+  //int first_arg = fn.first_arg_bottom_index;
 
   as_value      inum;
   xml_as_object *xml_obj;
@@ -640,7 +640,7 @@ xml_loaded(const fn_call& fn)
   as_value* result = fn.result;
   as_object_interface* this_ptr = fn.this_ptr;
   as_environment* env = fn.env;
-  int nargs = fn.nargs;
+  //int nargs = fn.nargs;
   int first_arg = fn.first_arg_bottom_index;
 
   as_value	method;
@@ -652,95 +652,6 @@ xml_loaded(const fn_call& fn)
   assert(ptr);
   tu_string filespec = env->bottom(first_arg).to_string();
   result->set(ptr->obj.loaded());
-}
-
-// References the first child in the parent node's children list. This
-// property is null if the node does not have children. This property
-// is undefined if the node is a text node.
-void
-xml_firstchild(const fn_call& fn)
-{
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-
-  as_value	method;
-  as_value	val;
-
-  log_msg("%s:\n", __FUNCTION__);
-    
-  xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
-  assert(ptr);
-  tu_string filespec = env->bottom(first_arg).to_string();
-  result->set(ptr->obj.firstChild());
-}
-
-// an array of the specified XML object's children. Each element in the
-// array is a reference to an XML object that represents a child node.
-void
-xml_childnodes(const fn_call& fn)
-{
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-
-  as_value	method;
-  as_value	val;
-
-  log_msg("%s:\n", __FUNCTION__);
-    
-  // xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
-  // assert(ptr);
-  tu_string filespec = env->bottom(first_arg).to_string();
-  //  result->set(ptr->obj.childNodesGet());
-}
-
-void
-xml_nodename(const fn_call& fn)
-{
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-
-  as_value	method;
-
-  log_msg("%s:\n", __FUNCTION__);
-    
-  // xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
-  // assert(ptr);
-  tu_string filespec = env->bottom(first_arg).to_string();
-  //  result->set(ptr->obj.nodeNameGet().c_str());
-}
-
-void xml_next_stack_depth(const fn_call& fn)
-{
-  // tulrich: temp adapter code
-  as_value* result = fn.result;
-  as_object_interface* this_ptr = fn.this_ptr;
-  as_environment* env = fn.env;
-  int nargs = fn.nargs;
-  int first_arg = fn.first_arg_bottom_index;
-
-  as_value	method;
-  as_value	val;
-
-  log_msg("%s:\n", __FUNCTION__);
-  array<with_stack_entry> with_stack;
-    
-  // xml_as_object*	ptr = (xml_as_object*) (as_object*) this_ptr;
-  // assert(ptr);
-  // double index = env->bottom(first_arg).to_number();
-  //  ptr->obj.currentSet(index);
-  //  env->set_variable("nodeName", ptr->obj.nodeNameGet(), with_stack);
 }
 
 } // end of gameswf namespace

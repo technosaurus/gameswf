@@ -1232,8 +1232,8 @@ namespace gameswf
 
 			s_global->set_member("TextFormat", as_value(textformat_new));
 #ifdef HAVE_LIBXML
-			//s_global->set_member("XML", as_value(xml_new));
-			s_global->set_member("XML", as_value(xmlsocket_xml_new));
+			s_global->set_member("XML", as_value(xml_new));
+			//s_global->set_member("XML", as_value(xmlsocket_xml_new));
 			s_global->set_member("XMLSocket", as_value(xmlsocket_new));
 #endif // HAVE_LIBXML
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));

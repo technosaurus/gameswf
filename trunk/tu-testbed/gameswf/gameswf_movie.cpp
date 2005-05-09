@@ -171,6 +171,12 @@ MovieClipLoader::on_button_event(event_id event)
 void moviecliploader_loadclip(const fn_call& fn)
 {
 #ifdef HAVE_LIBXML
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+  as_environment* env = fn.env;
+
   as_value	val, method;
   struct stat   stats;
   int           fd;
@@ -220,13 +226,13 @@ void moviecliploader_loadclip(const fn_call& fn)
       {
         // It's a C function.  Call it.
         //log_msg("Calling C function for onLoadStart\n");
-        (*func)(&val, this_ptr, env, 0, 0);
+        (*func)(fn_call(&val, this_ptr, env, 0, 0));
       }
     else if (as_as_function* as_func = method.to_as_function())
       {
         // It's an ActionScript function.  Call it.
         //log_msg("Calling ActionScript function for onLoadStart\n");
-        (*as_func)(&val, this_ptr, env, 0, 0);
+        (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
       }
     else
       {
@@ -369,7 +375,7 @@ void moviecliploader_loadclip(const fn_call& fn)
     mov->on_event(event_id::LOAD);
     //add_display_object();
 
-    Uint16 depth = tar->get_depth();
+    //Uint16 depth = tar->get_depth();
     bool use_cxform = false;
     //cxform color_transform =  tar->get_cxform();
     bool use_matrix = false;
@@ -414,7 +420,8 @@ void moviecliploader_loadclip(const fn_call& fn)
 
   env->set_member("target_mc", target);
   //env->push(as_value(target));
-  moviecliploader_onload_complete(result, this_ptr, env, 0, 0);
+  //moviecliploader_onload_complete(result, this_ptr, env, 0, 0);
+  moviecliploader_onload_complete(fn);
   //env->pop();
   
   result->set(true);

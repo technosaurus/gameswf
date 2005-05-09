@@ -1,3 +1,12 @@
+2005-05-09  Rob Savoye  <rob@wharfrat.welcomehome.org>
+
+	* gameswf/gameswf_action.cpp: Use xml_new instead of
+	xmlsocket_xml_new for new XML objects.
+	* gameswf/gameswf_timers.cpp, gameswf_timers.h,
+	gameswf_xmlsocket.cpp, gameswf_xmlsocket.h, gameswf_movie.cpp:
+	Extract args from fn structure. Call AS functions the new way with
+	fn_call().
+
 2005-05-08  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_movie.cpp (as_value): Cast wstr to be either 32

@@ -375,8 +375,13 @@ XMLSocket::count()
 }
 
 void
-xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+xmlsocket_connect(const fn_call& fn)
 {
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  //int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+  as_environment* env = fn.env;  
   as_value	method;
   as_value	val;
   static bool first = true;     // This event handler should only be executed once.
@@ -414,12 +419,12 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
     if (func) {
       // It's a C function.  Call it.
       log_msg("Calling C function for onConnect\n");
-      (*func)(&val, this_ptr, env, 0, 0);
+      (*func)(fn_call(&val, this_ptr, env, 0, 0));
     }
     else if (as_as_function* as_func = method.to_as_function()) {
       // It's an ActionScript function.  Call it.
       log_msg("Calling ActionScript function for onConnect\n");
-      (*as_func)(&val, this_ptr, env, 2, 2);
+      (*as_func)(fn_call(&val, this_ptr, env, 2, 2));
     } else {
       log_error("error in call_method(): method is not a function\n");
     }    
@@ -444,8 +449,14 @@ xmlsocket_connect(gameswf::as_value* result, gameswf::as_object_interface* this_
 
 
 void
-xmlsocket_send(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+xmlsocket_send(const fn_call& fn)
 {
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  //int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+  as_environment* env = fn.env;  
+
   as_value	method;
   as_value	val;
   
@@ -457,8 +468,13 @@ xmlsocket_send(gameswf::as_value* result, gameswf::as_object_interface* this_ptr
 }
 
 void
-xmlsocket_close(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+xmlsocket_close(const fn_call& fn)
 {
+  //as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  //int nargs = fn.nargs;
+  //int first_arg = fn.first_arg_bottom_index;
+
   as_value	method;
   as_value	val;
   
@@ -470,21 +486,23 @@ xmlsocket_close(gameswf::as_value* result, gameswf::as_object_interface* this_pt
 }
 
 void
-xmlsocket_xml_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+xmlsocket_xml_new(const fn_call& fn)
 {
   //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
-  //log_msg("%s: cache size is %d\n", __FUNCTION__, _xmlobjs.size());
-  xmlsocket_as_object*	ptr = (xmlsocket_as_object*)this_ptr;
   
-  xml_new(result, this_ptr, env, nargs, first_arg);
-  as_object_interface *as = result->to_object();
-  //_xmlobjs.push_back((as_object *)as);
+  xml_new(fn);
 }
 
 void
-xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+xmlsocket_new(const fn_call& fn)
 {
-  log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
+  as_value* result = fn.result;
+  //as_object_interface* this_ptr = fn.this_ptr;
+  //int nargs = fn.nargs;
+  //int first_arg = fn.first_arg_bottom_index;
+  as_environment* env = fn.env;
+
+  //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   
   as_object*	xmlsock_obj = new xmlsocket_as_object;
   //log_msg("\tCreated New XMLSocket object at 0x%X\n", (unsigned int)xmlsock_obj);
@@ -509,14 +527,12 @@ xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
   
   
 #if 1
-  as_c_function_ptr int_handler =
-    (as_c_function_ptr)&timer_setinterval;
+  //as_c_function_ptr int_handler = (as_c_function_ptr)&timer_setinterval;
+  //env->set_member("setInterval", int_handler);
+  env->set_member("setInterval", timer_setinterval);
   
-  env->set_member("setInterval", int_handler);
-  as_c_function_ptr clr_handler =
-    (as_c_function_ptr)&timer_clearinterval;
-  
-  env->set_member("clearInterval", clr_handler);
+  //as_c_function_ptr clr_handler = timer_clearinterval;
+  env->set_member("clearInterval", timer_clearinterval);
   //env->set_variable("setInterval", int_handler, 0);
   //xmlsock_obj->set_event_handler(event_id::TIMER,
   //       (as_c_function_ptr)&timer_expire);
@@ -536,8 +552,14 @@ xmlsocket_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
 
 
 void
-xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+xmlsocket_event_ondata(const fn_call& fn)
 {
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  //int nargs = fn.nargs;
+  //int first_arg = fn.first_arg_bottom_index;
+  as_environment* env = fn.env;
+    
   //log_msg("%s: nargs is %d\n", __FUNCTION__, nargs);
     
   as_value	method;
@@ -577,11 +599,11 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
         if (func) {
           // It's a C function.  Call it.
           //log_msg("Calling C function for onData\n");
-          (*func)(&val, this_ptr, env, 1, 0);
+          (*func)(fn_call(&val, this_ptr, env, 1, 0));
         } else if (as_func) {
           // It's an ActionScript function.  Call it.
           //log_msg("Calling ActionScript function for onData, processing msg %d\n", i);
-          (*as_func)(&val, this_ptr, env, 1, 0);
+          (*as_func)(fn_call(&val, this_ptr, env, 1, 0));
         } else {
           log_error("error in call_method(): method is not a function\n");
         }
@@ -606,14 +628,27 @@ xmlsocket_event_ondata(as_value* result, as_object_interface* this_ptr, as_envir
 }
 
 void
-xmlsocket_event_close(as_value* result, as_object_interface* this_ptr, as_environment* env)
+xmlsocket_event_close(const fn_call& fn)
 {
-  
+#if 0
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+#else
+  log_error("%s: unimplemented!\n", __FUNCTION__);
+#endif
 }
+
 void
-xmlsocket_event_connect(as_value* result, as_object_interface* this_ptr, as_environment* env)
+xmlsocket_event_connect(const fn_call& fn)
 {
-    
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  //int nargs = fn.nargs;
+  //int first_arg = fn.first_arg_bottom_index;
+  as_environment* env = fn.env; 
+
   as_value	method;
   as_value	val;
   tu_string     data;
@@ -639,13 +674,13 @@ xmlsocket_event_connect(as_value* result, as_object_interface* this_ptr, as_envi
         {
           // It's a C function.  Call it.
           //log_msg("Calling C function for onConnect\n");
-          (*func)(&val, this_ptr, env, 0, 0);
+          (*func)(fn_call(&val, this_ptr, env, 0, 0));
       }
       else if (as_as_function* as_func = method.to_as_function())
         {
           // It's an ActionScript function.  Call it.
           //log_msg("Calling ActionScript function for onConnect\n");
-          (*as_func)(&val, this_ptr, env, 0, 0);
+          (*as_func)(fn_call(&val, this_ptr, env, 0, 0));
         }
       else
         {
@@ -659,19 +694,16 @@ xmlsocket_event_connect(as_value* result, as_object_interface* this_ptr, as_envi
   result->set(&val); 
 }
 void
-xmlsocket_event_xml(as_value* result, as_object_interface* this_ptr, as_environment* env)
+xmlsocket_event_xml(const fn_call& fn)
 {
-  
-}
-
-void *
-main_read_thread(void *arg)
-{
-  int                 sockfd;
-
-  sockfd = *(int *)arg;
-
-  return arg;
+#if 0
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+#else
+  log_error("%s: unimplemented!\n", __FUNCTION__);
+#endif  
 }
 
 } // end of gameswf namespace

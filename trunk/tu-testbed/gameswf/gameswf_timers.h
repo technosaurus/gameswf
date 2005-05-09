@@ -75,12 +75,9 @@ namespace gameswf
     Timer obj;
   };
   
-  void timer_setinterval(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-  void timer_clearinterval(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
-
-
-  void timer_expire(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env);
+  void timer_setinterval(const fn_call& fn);
+  void timer_clearinterval(const fn_call& fn);
+  void timer_expire(const fn_call& fn);
   
 } // end of namespace gameswf
 
