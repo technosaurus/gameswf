@@ -66,46 +66,16 @@ struct mcl_as_object : public gameswf::as_object
   struct mcl data;
 };
 
-void
-moviecliploader_loadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_unloadclip(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_getprogress(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_onload_init(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_onload_start(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_onload_progress(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_onload_complete(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_onload_error(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
-void
-moviecliploader_default(gameswf::as_value* result, gameswf::as_object_interface* this_ptr,
-                        gameswf::as_environment* env, int nargs, int first_arg);
-
+void moviecliploader_loadclip(const fn_call& fn);
+void moviecliploader_unloadclip(const fn_call& fn);
+void moviecliploader_getprogress(const fn_call& fn);
+void moviecliploader_new(const fn_call& fn);
+void moviecliploader_onload_init(const fn_call& fn);
+void moviecliploader_onload_start(const fn_call& fn);
+void moviecliploader_onload_progress(const fn_call& fn);
+void moviecliploader_onload_complete(const fn_call& fn);
+void moviecliploader_onload_error(const fn_call& fn);
+void moviecliploader_default(const fn_call& fn);
 
 } // end of gameswf namespace
 

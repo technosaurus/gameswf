@@ -175,15 +175,15 @@ namespace gameswf
   
   
   void
-  string_lastIndexOf(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+  string_lastIndexOf(const fn_call& fn)
   {
-    tu_string filespec = env->bottom(first_arg).to_string();
-    log_msg("%s: args=%d\n", __FUNCTION__, nargs);
+    tu_string filespec = fn.arg(0).to_string();
+    log_msg("%s: args=%d\n", __FUNCTION__, fn.nargs);
     //    xsockobj.connect(filespec, 8000);
   }
   
   void
-  string_from_char_code(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+  string_from_char_code(const fn_call& fn)
   {
     int i, ch;
     tu_string str;
@@ -193,26 +193,23 @@ namespace gameswf
     //tu_string filespec = env->bottom(first_arg).to_string();
     //int ch = env->bottom(first_arg).to_number();
 
-    for (i=0; i<nargs; i++) {
-      ch = env->bottom(first_arg).to_number();
-      //log_msg("FIXME: char %d is %c\n", ch, ch);
+    for (i = 0; i < fn.nargs; i++) {
+      ch = (int) fn.arg(i).to_number();
       str += ch;
     }
 
-    result->set(str);
+    fn.result->set(str);
   }
 
   void
-  string_char_code_at(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+  string_char_code_at(const fn_call& fn)
   {
-    log_msg("FIXME: %s: args=%d\n", __FUNCTION__, nargs);
+    log_msg("FIXME: %s: args=%d\n", __FUNCTION__, fn.nargs);
   }
 
   void
-  string_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+  string_new(const fn_call& fn)
   {
-    as_value method;
-    
     //log_msg("%s:\n", __FUNCTION__);
 
     tu_string_as_object* str = new tu_string_as_object;
@@ -223,7 +220,7 @@ namespace gameswf
     str->set_member("fromCharCode", &string_from_char_code);
     str->set_member("charCodeAt", &string_char_code_at);
     
-    result->set_as_object_interface(str);
+    fn.result->set_as_object_interface(str);
   }
   
 } // end of gameswf namespace

@@ -190,7 +190,7 @@ namespace gameswf
     if (as_as_function* as_func = val.to_as_function()) {
       // It's an ActionScript function.  Call it.
       log_msg("Calling ActionScript function for setInterval Timer\n");
-      (*as_func)(result, this_ptr, env, 0, 0);
+      (*as_func)(fn_call(result, this_ptr, env, 0, 0));
     } else {
       log_error("FIXME: Couldn't find setInterval Timer!\n");
     }

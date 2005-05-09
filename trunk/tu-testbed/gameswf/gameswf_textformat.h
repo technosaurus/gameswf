@@ -103,14 +103,11 @@ struct textformat_as_object : public gameswf::as_object
 	text_format obj;
 };
 
-void
-textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+void textformat_new(const fn_call& fn);
 
-void
-textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+void textformat_setformat(const fn_call& fn);
 
-void
-textformat_getformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg);
+void textformat_getformat(const fn_call& fn);
 
 } // end of gameswf namespace
 

@@ -398,8 +398,15 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
 // callbacks from within gameswf.
 //
 void
-xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+xml_load(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   as_value	method;
   as_value	val;
   bool          ret;
@@ -466,8 +473,7 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
     // ptr->set_event_handler(event_id::XML_LOAD, (as_c_function_ptr)&xml_onload);
   }
 #else
-  xml_obj->set_event_handler(event_id::XML_LOAD,
-                               (as_c_function_ptr)&xml_onload);
+  xml_obj->set_event_handler(event_id::XML_LOAD, &xml_onload);
 
 #endif
 
@@ -477,8 +483,15 @@ xml_load(as_value* result, as_object_interface* this_ptr, as_environment* env, i
 // This executes the event handler for XML::XML_LOAD if it's been defined,
 // and the XML file has loaded sucessfully.
 void
-xml_onload(as_value* result, as_object_interface* this_ptr, as_environment* env)
+xml_onload(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   log_msg("%s:\n", __FUNCTION__);
     
   as_value	method;
@@ -528,9 +541,16 @@ xml_onload(as_value* result, as_object_interface* this_ptr, as_environment* env)
 
 // This is the default event handler, and is usually redefined in the SWF script
 void
-xml_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env)
+xml_ondata(const fn_call& fn)
 {
-   log_msg("%s:\n", __FUNCTION__);
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
+  log_msg("%s:\n", __FUNCTION__);
     
   as_value	method;
   as_value	val;
@@ -569,8 +589,15 @@ xml_ondata(as_value* result, as_object_interface* this_ptr, as_environment* env)
 }
 
 void
-xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+xml_new(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   as_value      inum;
   xml_as_object *xml_obj;
   
@@ -612,8 +639,15 @@ xml_new(as_value* result, as_object_interface* this_ptr, as_environment* env, in
 // call has completed. If the process completes successfully, the method
 // returns true; otherwise, it returns false.
 void
-xml_loaded(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+xml_loaded(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   as_value	method;
   as_value	val;
 
@@ -629,8 +663,15 @@ xml_loaded(as_value* result, as_object_interface* this_ptr, as_environment* env,
 // property is null if the node does not have children. This property
 // is undefined if the node is a text node.
 void
-xml_firstchild(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+xml_firstchild(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   as_value	method;
   as_value	val;
 
@@ -645,8 +686,15 @@ xml_firstchild(as_value* result, as_object_interface* this_ptr, as_environment* 
 // an array of the specified XML object's children. Each element in the
 // array is a reference to an XML object that represents a child node.
 void
-xml_childnodes(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+xml_childnodes(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   as_value	method;
   as_value	val;
 
@@ -659,8 +707,15 @@ xml_childnodes(as_value* result, as_object_interface* this_ptr, as_environment* 
 }
 
 void
-xml_nodename(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+xml_nodename(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   as_value	method;
 
   log_msg("%s:\n", __FUNCTION__);
@@ -671,8 +726,15 @@ xml_nodename(as_value* result, as_object_interface* this_ptr, as_environment* en
   //  result->set(ptr->obj.nodeNameGet().c_str());
 }
 
-void xml_next_stack_depth(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+void xml_next_stack_depth(const fn_call& fn)
 {
+  // tulrich: temp adapter code
+  as_value* result = fn.result;
+  as_object_interface* this_ptr = fn.this_ptr;
+  as_environment* env = fn.env;
+  int nargs = fn.nargs;
+  int first_arg = fn.first_arg_bottom_index;
+
   as_value	method;
   as_value	val;
 

@@ -3166,13 +3166,13 @@ namespace gameswf
 				// It's a C function. Call it.
 				//log_msg("Calling C function for interval timer\n");
 				//(*cfunc)(&val, obj, as_env, 0, 0);
-				(*cfunc)(&val, obj, &m_as_environment, 0, 0);
+				(*cfunc)(fn_call(&val, obj, &m_as_environment, 0, 0));
 				
 			} else if (as_as_function* as_func = timer_method.to_as_function()) {
 				// It's an ActionScript function. Call it.
 				as_value method;
 				//log_msg("Calling ActionScript function for interval timer\n");
-				(*as_func)(&val, (as_object_interface *)this_ptr, as_env, 0, 0);
+				(*as_func)(fn_call(&val, (as_object_interface *)this_ptr, as_env, 0, 0));
 				//(*as_func)(&val, (as_object_interface *)this_ptr, &m_as_environment, 1, 1);
 			} else {
 				log_error("error in call_method(): method is not a function\n");
@@ -4570,76 +4570,76 @@ namespace gameswf
 	// sprite built-in ActionScript methods
 	//
 
-	void	sprite_play(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sprite_play(const fn_call& fn)
 	{
-		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
 		if (sprite == NULL)
 		{
-			sprite = (sprite_instance*) env->get_target();
+			sprite = (sprite_instance*) fn.env->get_target();
 		}
 		assert(sprite);
 		sprite->set_play_state(movie_interface::PLAY);
 	}
 
-	void	sprite_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sprite_stop(const fn_call& fn)
 	{
-		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
 		if (sprite == NULL)
 		{
-			sprite = (sprite_instance*) env->get_target();
+			sprite = (sprite_instance*) fn.env->get_target();
 		}
 		assert(sprite);
 		sprite->set_play_state(movie_interface::STOP);
 	}
 
-	void	sprite_goto_and_play(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sprite_goto_and_play(const fn_call& fn)
 	{
-		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
 		if (sprite == NULL)
 		{
-			sprite = (sprite_instance*) env->get_target();
+			sprite = (sprite_instance*) fn.env->get_target();
 		}
 		assert(sprite);
 
-		if (nargs < 1)
+		if (fn.nargs < 1)
 		{
 			log_error("error: sprite_goto_and_play needs one arg\n");
 			return;
 		}
 
-		int	target_frame = int(env->bottom(first_arg).to_number() - 1);	// Convert to 0-based
+		int	target_frame = int(fn.arg(0).to_number() - 1);	// Convert to 0-based
 
 		sprite->goto_frame(target_frame);
 		sprite->set_play_state(movie_interface::PLAY);
 	}
 
-	void	sprite_goto_and_stop(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sprite_goto_and_stop(const fn_call& fn)
 	{
-		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
 		if (sprite == NULL)
 		{
-			sprite = (sprite_instance*) env->get_target();
+			sprite = (sprite_instance*) fn.env->get_target();
 		}
 		assert(sprite);
 
-		if (nargs < 1)
+		if (fn.nargs < 1)
 		{
 			log_error("error: sprite_goto_and_stop needs one arg\n");
 			return;
 		}
 
-		int	target_frame = int(env->bottom(first_arg).to_number() - 1);	// Convert to 0-based
+		int	target_frame = int(fn.arg(0).to_number() - 1);	// Convert to 0-based
 
 		sprite->goto_frame(target_frame);
 		sprite->set_play_state(movie_interface::STOP);
 	}
 
-	void	sprite_next_frame(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sprite_next_frame(const fn_call& fn)
 	{
-		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
 		if (sprite == NULL)
 		{
-			sprite = (sprite_instance*) env->get_target();
+			sprite = (sprite_instance*) fn.env->get_target();
 		}
 		assert(sprite);
 
@@ -4653,28 +4653,28 @@ namespace gameswf
 	}
 
 
-	void	sprite_get_bytes_loaded(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sprite_get_bytes_loaded(const fn_call& fn)
 	{
-		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
 		if (sprite == NULL)
 		{
-			sprite = (sprite_instance*) env->get_target();
+			sprite = (sprite_instance*) fn.env->get_target();
 		}
 		assert(sprite);
 
-		result->set_int(sprite->get_root()->get_file_bytes());
+		fn.result->set_int(sprite->get_root()->get_file_bytes());
 	}
 
-	void	sprite_get_bytes_total(as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sprite_get_bytes_total(const fn_call& fn)
 	{
-		sprite_instance* sprite = (sprite_instance*) this_ptr;
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
 		if (sprite == NULL)
 		{
-			sprite = (sprite_instance*) env->get_target();
+			sprite = (sprite_instance*) fn.env->get_target();
 		}
 		assert(sprite);
 
-		result->set_int(sprite->get_root()->get_file_bytes());
+		fn.result->set_int(sprite->get_root()->get_file_bytes());
 	}
 
 

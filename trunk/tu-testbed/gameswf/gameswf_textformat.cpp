@@ -98,33 +98,37 @@ text_format::getTextFormat (int start, int end)
 }
 #endif
 
-void
-textformat_new(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+void textformat_new(const fn_call& fn)
 {
   //log_msg("%s: args=%d\n", __FUNCTION__, nargs);
 
   textformat_as_object*	text_obj = new textformat_as_object;
   log_msg("\tCreated New TextFormat object at %p\n", text_obj);
   
-  env->set_variable("setTextFormat", &textformat_setformat, 0);
+  // tulrich: this looks like it's inserting a method into our
+  // caller's env.  setTextFormat is a method on TextField.  So here
+  // we're hoping our caller is a text field... scary.
+  //
+  // TODO we should handle setTextFormat as a method on TextField,
+  // instead of doing this.
+  fn.env->set_variable("setTextFormat", &textformat_setformat, 0);
   
-  result->set_as_object_interface(text_obj);
+  fn.result->set_as_object_interface(text_obj);
 }
 
 
-void
-textformat_setformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
+void textformat_setformat(const fn_call& fn)
 {
   as_value	method;
   //log_msg("%s: args=%d at %p\n", __FUNCTION__, nargs, this_ptr);
 #if 0
   // FIXME: these are only commented out to eliminate compilation warnings.
-  textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
+  textformat_as_object*	ptr = (textformat_as_object*) fn.this_ptr;	// tulrich: TODO fix this unsafe cast; see textformat_new().
   assert(ptr);
-  double start = env->bottom(first_arg).to_number();
-  double end = env->bottom(first_arg-1).to_number();
+  double start = fn.arg(0).to_number();
+  double end = fn.arg(1).to_number();
 #endif
-  textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
+  textformat_as_object *obj = (textformat_as_object*) fn.arg(2).to_object();	// tulrich: TODO fix this unsafe cast.  (need cast_to_textformat())
   assert(obj);
 
   //log_msg("Change from %f for %f characters for object at %p\n", start, end, obj);
