@@ -171,11 +171,6 @@ namespace gameswf
 
 	struct fn_call;
 	typedef void (*as_c_function_ptr)(const fn_call& fn);
-//		as_value* result,
-//		as_object_interface* this_ptr,
-//		as_environment* env,
-//		int nargs,
-//		int first_arg_bottom_index);
 
 
 	struct as_property_interface
@@ -311,6 +306,12 @@ namespace gameswf
 		void	drop_refs();
 
 		type	get_type() const { return m_type; }
+
+		// Return true if this value is callable.
+		bool is_function() const
+		{
+			return m_type == C_FUNCTION || m_type == AS_FUNCTION;
+		}
 
 		const char*	to_string() const;
 		const tu_string&	to_tu_string() const;
@@ -555,11 +556,6 @@ namespace gameswf
 
 		// Dispatch.
 		void	operator()(const fn_call& fn);
-// 			as_value* result,
-// 			as_object_interface* this_ptr,
-// 			as_environment* caller_env,
-// 			int nargs,
-// 			int first_arg);
 
 		void	lazy_create_properties()
 		// This ensures that this as_function has a valid

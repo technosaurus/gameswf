@@ -107,6 +107,12 @@ HELLO
 string
 hello
 pants
+Stringobj
+42
+42
+undefined
+[object Object]
+myObj
 '''.splitlines(1)],
 
 # Add more tests here, in form of [ filename, expected_output ]

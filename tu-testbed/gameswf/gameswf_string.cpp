@@ -3,224 +3,209 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+// Implementation of ActionScript String class.
+
 
 #include "gameswf_string.h"
 #include "gameswf_log.h"
-
-using namespace std;
-
-
-//#ifndef __FUNCTION__
-//#define __FUNCTION__ "__FUNCTION__"
-//#endif
+#include "base/smart_ptr.h"
 
 
 namespace gameswf
-{  
-  String::String(const char* str) : m_value(str)
-  {
-          //log_msg("%s: \n", __FUNCTION__);
-  }
-  
-  String::String(const tu_string& str) : m_value(str)
-  {
-    //log_msg("%s: \n", __FUNCTION__);
-  }
-  
-  String::~String()
-  {
-  }
-  
-  tu_string
-  String::charAt(short index)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  short
-  String::charCodeAt(short index)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return -1;                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::concat(tu_string str1, tu_string str2)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
+{
+	void string_method(const fn_call& fn, const tu_stringi& method_name, const tu_string& this_string)
+	// Executes the string method named by method_name.
+	{
+		if (method_name == "charCodeAt")
+		{
+			int	index = (int) fn.arg(0).to_number();
+			if (index >= 0 && index < this_string.utf8_length())
+			{
+				fn.result->set_double(this_string.utf8_char_at(index));
+				return;
+			}
 
-  // Return a string made up of the values of ASCII characters
-  tu_string
-  String::fromCharCode(short code)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    m_value = "foobar!";
-    return m_value;                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  short
-  String::indexOf(tu_string str, int short)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return -1;                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  short
-  String::indexOf(tu_string str)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return -1;                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::lastIndexOf(tu_string, int index)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::lastIndexOf(tu_string)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::slice(int start) 
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::slice(int start, int end)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::split(tu_string str)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::split(tu_string, int limit)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::substr(int start)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::substr(int start, int end)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::substring(int start)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::substring(int start, int end)
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string 
-  String::toLowerCase()
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  tu_string
-  String::toUpperCase()
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return "";                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  int
-  String::length()
-  {
-    log_msg("%s: \n", __FUNCTION__);
-    return -1;                    // FIXME: this is just to shut up G++ for now
-  }
-  
-  void
-  String::test(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
-  {
-    log_msg("%s: args=%d\n", __FUNCTION__, nargs);
-  }
+			fn.result->set_double(0);	// FIXME: according to docs, we're supposed to return "NaN"
+			return;
+		}
+		else if (method_name == "charAt")
+		{
+			int	index = (int) fn.arg(0).to_number();
+			if (index >= 0 && index < this_string.utf8_length())
+			{
+				tu_string result;
+				result += this_string.utf8_char_at(index);
+				fn.result->set_tu_string(result);
+			}
+
+			fn.result->set_string("");
+			return;
+		}
+		else if (method_name == "fromCharCode")
+		{
+			// Takes a variable number of args.  Each arg
+			// is a numeric character code.  Construct the
+			// string from the character codes.
+
+			tu_string result;
+
+			for (int i = 0; i < fn.nargs; i++)
+			{
+				uint32 c = (uint32) fn.arg(i).to_number();
+				result.append_wide_char(c);
+			}
+
+			fn.result->set_tu_string(result);
+			return;
+		}
+		else if (method_name == "toUpperCase")
+		{
+			fn.result->set_tu_string(this_string.utf8_to_upper());
+			return;
+		}
+		else if (method_name == "toLowerCase")
+		{
+			fn.result->set_tu_string(this_string.utf8_to_lower());
+			return;
+		}
+		else if (method_name == "indexOf")
+		{
+			if (fn.nargs < 1)
+			{
+				fn.result->set_double(-1);
+				return;
+			}
+			else
+			{
+				int	start_index = 0;
+				if (fn.nargs > 1)
+				{
+					start_index = (int) fn.arg(1).to_number();
+				}
+				const char*	str = this_string.c_str();
+				const char*	p = strstr(
+					str + start_index,	// FIXME: not UTF-8 correct!
+					fn.arg(0).to_string());
+				if (p == NULL)
+				{
+					fn.result->set_double(-1);
+					return;
+				}
+
+				fn.result->set_double(tu_string::utf8_char_count(str, p - str));
+				return;
+			}
+		}
+		else if (method_name == "substring")
+		{
+			// Pull a slice out of this_string.
+			int	start = 0;
+			int	utf8_len = this_string.utf8_length();
+			int	end = utf8_len;
+			if (fn.nargs >= 1)
+			{
+				start = (int) fn.arg(0).to_number();
+				start = iclamp(start, 0, utf8_len);
+			}
+			if (fn.nargs >= 2)
+			{
+				end = (int) fn.arg(1).to_number();
+				end = iclamp(end, 0, utf8_len);
+			}
+
+			if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
+			assert(end >= start);
+
+			fn.result->set_tu_string(this_string.utf8_substring(start, end));
+			return;
+		}
+		// concat()
+		// lastIndexOf()
+		// length property
+		// slice()
+		// split()
+		// substr()
+
+		fn.result->set_undefined();
+	}
+
+
+
+	struct tu_string_as_object : public gameswf::as_object
+	{
+		tu_string m_string;
+	};
   
   
+	void string_last_index_of(const fn_call& fn)
+	{
+		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		assert(this_string_ptr);
+
+		// tulrich: Ugh!  The caller has done hash.get() on
+		// the method name to find the method, and now we're
+		// going to construct a new method name and run it
+		// through a big if-else.
+		//
+		// TODO do this more efficiently.
+		string_method(fn, tu_stringi("lastIndexOf"), this_string_ptr->m_string);
+	}
   
-  void
-  string_lastIndexOf(const fn_call& fn)
-  {
-    tu_string filespec = fn.arg(0).to_string();
-    log_msg("%s: args=%d\n", __FUNCTION__, fn.nargs);
-    //    xsockobj.connect(filespec, 8000);
-  }
-  
-  void
-  string_from_char_code(const fn_call& fn)
-  {
-    int i, ch;
-    tu_string str;
+	void string_from_char_code(const fn_call& fn)
+	{
+		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		assert(this_string_ptr);
+
+		// tulrich: Ugh!  The caller has done hash.get() on
+		// the method name to find the method, and now we're
+		// going to construct a new method name and run it
+		// through a big if-else.
+		//
+		// TODO do this more efficiently.
+		string_method(fn, tu_stringi("fromCharCode"), this_string_ptr->m_string);
+	}
+
+
+	void string_char_code_at(const fn_call& fn)
+	{
+		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		assert(this_string_ptr);
+
+		// tulrich: Ugh!  The caller has done hash.get() on
+		// the method name to find the method, and now we're
+		// going to construct a new method name and run it
+		// through a big if-else.
+		//
+		// TODO do this more efficiently.
+		string_method(fn, tu_stringi("charCodeAt"), this_string_ptr->m_string);
+	}
+
+
+	void string_to_string(const fn_call& fn)
+	{
+		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		assert(this_string_ptr);
+
+		fn.result->set_tu_string(this_string_ptr->m_string);
+	}
+
+
+	void string_ctor(const fn_call& fn)
+	{
+		smart_ptr<tu_string_as_object> str = new tu_string_as_object;
+
+		if (fn.nargs > 0)
+		{
+			str->m_string = fn.arg(0).to_tu_string();
+		}
+		
+		// TODO fill in the rest
+		str->set_member("toString", &string_to_string);
+		str->set_member("fromCharCode", &string_from_char_code);
+		str->set_member("charCodeAt", &string_char_code_at);
+		str->set_member("lastIndexOf", &string_last_index_of);
     
-    //log_msg("FIXME: %s: args=%d\n", __FUNCTION__, nargs);
-
-    //tu_string filespec = env->bottom(first_arg).to_string();
-    //int ch = env->bottom(first_arg).to_number();
-
-    for (i = 0; i < fn.nargs; i++) {
-      ch = (int) fn.arg(i).to_number();
-      str += ch;
-    }
-
-    fn.result->set(str);
-  }
-
-  void
-  string_char_code_at(const fn_call& fn)
-  {
-    log_msg("FIXME: %s: args=%d\n", __FUNCTION__, fn.nargs);
-  }
-
-  void
-  string_new(const fn_call& fn)
-  {
-    //log_msg("%s:\n", __FUNCTION__);
-
-    tu_string_as_object* str = new tu_string_as_object;
-    //log_msg("New String object at %p\n", str);
-
-    //env->set_variable("String", str, 0);
-    //env->set_member("String", as_value(string_new));
-    str->set_member("fromCharCode", &string_from_char_code);
-    str->set_member("charCodeAt", &string_char_code_at);
-    
-    fn.result->set_as_object_interface(str);
-  }
+		fn.result->set_as_object_interface(str.get_ptr());
+	}
   
-} // end of gameswf namespace
+} // namespace gameswf

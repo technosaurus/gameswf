@@ -212,7 +212,7 @@ namespace gameswf
 //		}
 	};
 
-	void	array_not_impl(const fn_call& fn) // xxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	array_not_impl(const fn_call& fn)
 	{
 		log_error("array methods not implemented yet\n");
 	}
@@ -223,11 +223,6 @@ namespace gameswf
 	//
 
 	void	as_as_function::operator()(const fn_call& fn)
-// 		as_value* result,
-// 		as_object_interface* this_ptr,
-// 		as_environment* caller_env,
-// 		int nargs,
-// 		int first_arg)
 	// Dispatch.
 	{
 		as_environment*	our_env = m_env;
@@ -632,7 +627,7 @@ namespace gameswf
 		IF_VERBOSE_ACTION(log_msg("-- start movie \n"));
 	}
 
-	void	sound_start(const fn_call& fn) // xxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sound_start(const fn_call& fn)
 	{
 		IF_VERBOSE_ACTION(log_msg("-- start sound \n"));
 		sound_handler* s = get_sound_handler();
@@ -645,7 +640,7 @@ namespace gameswf
 	}
 
 
-	void	sound_stop(const fn_call& fn) // xxxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sound_stop(const fn_call& fn)
 	{
 		IF_VERBOSE_ACTION(log_msg("-- stop sound \n"));
 		sound_handler* s = get_sound_handler();
@@ -657,7 +652,7 @@ namespace gameswf
 		}
 	}
 
-	void	sound_attach(const fn_call& fn) // xxxx as_value* result, as_object_interface* this_ptr, as_environment* env, int nargs, int first_arg)
+	void	sound_attach(const fn_call& fn)
 	{
 		IF_VERBOSE_ACTION(log_msg("-- attach sound \n"));
 		if (fn.nargs < 1)
@@ -1132,6 +1127,25 @@ namespace gameswf
 
 	void	as_global_trace(const fn_call& fn)
 	{
+		assert(fn.nargs >= 1);
+
+		// Special case for objects: try the toString() method.
+		if (fn.arg(0).get_type() == as_value::OBJECT)
+		{
+			as_object_interface* obj = fn.arg(0).to_object();
+			assert(obj);
+
+			as_value method;
+			if (obj->get_member("toString", &method)
+			    && method.is_function())
+			{
+				as_value result = call_method0(method, fn.env, obj);
+				log_msg("%s\n", result.to_string());
+
+				return;
+			}
+		}
+
 		// Log our argument.
 		//
 		// @@ what if we get extra args?
@@ -1223,7 +1237,7 @@ namespace gameswf
 			s_global->set_member("XMLSocket", as_value(xmlsocket_new));
 #endif // HAVE_LIBXML
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
-			s_global->set_member("String", as_value(string_new));
+			s_global->set_member("String", as_value(string_ctor));
 
 			math_init();
 			key_init();
@@ -1240,127 +1254,6 @@ namespace gameswf
 			s_global->clear();
 			s_global = NULL;
 		}
-	}
-
-
-	//
-	// string
-	//
-
-
-	as_value	string_method(
-		as_environment* env,
-		const tu_string& this_string,
-		const tu_stringi& method_name,
-		int nargs,
-		int first_arg_bottom_index)
-	// Executes the string method named by method_name.
-	{
-		//log_msg("%s: method_name is %s, nargs is %d\n", __FUNCTION__, method_name.c_str(), nargs);
-		
-		if (method_name == "charCodeAt")
-		{
-			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
-			if (index >= 0 && index < this_string.utf8_length())
-			{
-				return as_value((double) (this_string.utf8_char_at(index)));
-			}
-
-			return as_value(0);	// FIXME: according to docs, we're supposed to return "NaN"
-		}
-		else if (method_name == "charAt")
-		{
-			int	index = (int) env->bottom(first_arg_bottom_index).to_number();
-			if (index >= 0 && index < this_string.utf8_length())
-			{
-				tu_string result;
-				result += this_string.utf8_char_at(index);
-				return as_value(result);
-			}
-
-			return as_value(0);	// FIXME: according to docs, we're supposed to return "NaN"
-		}
-		else if (method_name == "fromCharCode")
-		{
-			// Takes a variable number of args.  Each arg
-			// is a numeric character code.  Construct the
-			// string from the character codes.
-
-			tu_string result;
-
-			for (int i = 0; i < nargs; i++)
-			{
-				uint32 c = (uint32) env->bottom(first_arg_bottom_index - i).to_number();
-				result.append_wide_char(c);
-			}
-
-			return as_value(result);
-		}
-		else if (method_name == "toUpperCase")
-		{
-			return as_value(this_string.utf8_to_upper());
-		}
-		else if (method_name == "toLowerCase")
-		{
-			return as_value(this_string.utf8_to_lower());
-		}
-		else if (method_name == "indexOf")
-		{
-			if (nargs < 1)
-			{
-				return as_value(-1);
-			}
-			else
-			{
-				int	start_index = 0;
-				if (nargs > 1)
-				{
-					start_index = (int) env->bottom(first_arg_bottom_index - 1).to_number();
-				}
-				const char*	str = this_string.c_str();
-				const char*	p = strstr(
-					str + start_index,
-					env->bottom(first_arg_bottom_index).to_string());
-				if (p == NULL)
-				{
-					return -1;
-				}
-
-				return tu_string::utf8_char_count(str, p - str);
-			}
-		}
-		else if (method_name == "substring")
-		{
-			// Pull a slice out of this_string.
-			int	start = 0;
-			int	utf8_len = this_string.utf8_length();
-			int	end = utf8_len;
-			if (nargs >= 1)
-			{
-				start = (int) env->bottom(first_arg_bottom_index).to_number();
-				start = iclamp(start, 0, utf8_len);
-			}
-			if (nargs >= 2)
-			{
-				end = (int) env->bottom(first_arg_bottom_index - 1).to_number();
-				end = iclamp(end, 0, utf8_len);
-			}
-
-			if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
-			assert(end >= start);
-
-			tu_string	result = this_string.utf8_substring(start, end);
-
-			return as_value(result);
-		}
-		// concat()
-		// lastIndexOf()
-		// length property
-		// slice()
-		// split()
-		// substr()
-
-		return as_value();
 	}
 
 
@@ -1900,8 +1793,6 @@ namespace gameswf
 				{
 					// Log the stack val.
 					as_global_trace(fn_call(&env->top(0), NULL, env, 1, env->get_top_index()));
-// 					const char*	message = env->top(0).to_string();
-// 					log_msg("%s\n", message);
 					env->drop(1);
 					break;
 				}
@@ -2389,16 +2280,11 @@ namespace gameswf
 					}
 					else if (env->top(1).get_type() == as_value::STRING)
 					{
-						// Hack to call String methods.  as_value
-						// should maybe be subclassed from as_object_interface
-						// instead, or have as_value::to_object() make a proxy
-						// or something.
-						result = string_method(
-							env,
-							env->top(1).to_tu_string(),
-							env->top(0).to_tu_stringi(),
-							nargs,
-							env->get_top_index() - 3);
+						// Handle methods on literal strings.
+						string_method(
+							fn_call(&result, NULL, env, nargs, env->get_top_index() - 3),
+							method_name.to_tu_stringi(),
+							env->top(1).to_tu_string());
 					}
 					else if (env->top(1).get_type() == as_value::C_FUNCTION)
 					{
@@ -2407,15 +2293,13 @@ namespace gameswf
 						// way to do this. Perhaps we call the
 						// constructor function with a special flag, to
 						// indicate that it's a method call?
-						if (env->top(1).to_c_function() == string_new)
+						if (env->top(1).to_c_function() == string_ctor)
 						{
 							tu_string dummy;
-							result = string_method(
-								env,
-								dummy,
-								env->top(0).to_tu_stringi(),
-								nargs,
-								env->get_top_index() - 3);
+							string_method(
+								fn_call(&result, NULL, env, nargs, env->get_top_index() - 3),
+								method_name.to_tu_stringi(),
+								dummy);
 						}
 						else
 						{
@@ -3146,12 +3030,12 @@ namespace gameswf
 			}
 			else
 			{
-				// @@ actually, we need to return our full path.
+				// Do we have a "toString" method?
 				//
-				// @@ Flash seems to do "[object Object]" or some such.
-				char buffer[50];
-				snprintf(buffer, 50, "<object 0x%X>", (unsigned) m_object_value);
-				m_string_value = buffer;
+				// TODO: we need an environment in order to call toString()!
+
+				// This is the default.
+				m_string_value = "[object Object]";
 			}
 		}
 		else if (m_type == C_FUNCTION)
