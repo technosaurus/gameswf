@@ -1205,16 +1205,19 @@ namespace gameswf
 			gameswf::render::end_display();
 		}
 
-		virtual void	goto_labeled_frame(const char* label)
+		virtual bool	goto_labeled_frame(const char* label)
 		{
 			int	target_frame = -1;
 			if (m_def->get_labeled_frame(label, &target_frame))
 			{
 				goto_frame(target_frame);
+				return true;
 			}
 			else
 			{
-				log_error("error: movie_impl::goto_labeled_frame('%s') unknown label\n", label);
+				IF_VERBOSE_ACTION(
+					log_error("error: movie_impl::goto_labeled_frame('%s') unknown label\n", label));
+				return false;
 			}
 		}
 
@@ -3564,17 +3567,20 @@ namespace gameswf
 		}
 
 
-		void	goto_labeled_frame(const char* label)
+		bool	goto_labeled_frame(const char* label)
 		// Look up the labeled frame, and jump to it.
 		{
 			int	target_frame = -1;
 			if (m_def->get_labeled_frame(label, &target_frame))
 			{
 				goto_frame(target_frame);
+				return true;
 			}
 			else
 			{
-				log_error("error: movie_impl::goto_labeled_frame('%s') unknown label\n", label);
+				IF_VERBOSE_ACTION(
+					log_error("error: movie_impl::goto_labeled_frame('%s') unknown label\n", label));
+				return false;
 			}
 		}
 
