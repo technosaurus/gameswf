@@ -1,4 +1,4 @@
-// gameswf_action.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003
+ // gameswf_action.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -183,6 +183,23 @@ namespace gameswf
 	// External interface.
 	{
 		s_fscommand_handler = handler;
+	}
+
+
+
+	static bool string_to_number(double* result, const char* str)
+	// Utility.  Try to convert str to a number.  If successful,
+	// put the result in *result, and return true.  If not
+	// successful, put 0 in *result, and reutrn false.
+	{
+		char* tail = 0;
+		*result = strtod(str, &tail);
+		if (tail == str || *tail != 0)
+		{
+			// Failed conversion to Number.
+			return false;
+		}
+		return true;
 	}
 
 
@@ -1756,7 +1773,7 @@ namespace gameswf
 					}
 					else
 					{
-						env->top(1) = as_value(as_value::UNDEFINED);
+						env->top(1) = as_value();
 					}
 					env->drop(1);
 					break;
@@ -2012,8 +2029,8 @@ namespace gameswf
 				case 0x40:	// new
 				{
 					as_value	classname = env->pop();
-					IF_VERBOSE_ACTION(log_error("---new object: %s\n",
-								     classname.to_tu_string().c_str()));
+					IF_VERBOSE_ACTION(log_msg("---new object: %s\n",
+								  classname.to_tu_string().c_str()));
 					int	nargs = (int) env->pop().to_number();
 					as_value constructor = env->get_variable(classname.to_tu_string(), with_stack);
 					as_value new_obj;
@@ -2523,7 +2540,7 @@ namespace gameswf
 					break;
 				}
 
-				case 0x8C:	// go to labeled frame
+				case 0x8C:	// go to labeled frame, goto_frame_lbl
 				{
 					char*	frame_label = (char*) &m_buffer[pc + 3];
 					env->get_target()->goto_labeled_frame(frame_label);
@@ -2659,7 +2676,7 @@ namespace gameswf
 						}
 						else if (type == 3)
 						{
-							env->push(as_value(as_value::UNDEFINED));
+							env->push(as_value());
 
 							IF_VERBOSE_ACTION(log_msg("-------------- pushed UNDEFINED\n"));
 						}
@@ -2679,7 +2696,7 @@ namespace gameswf
 							}
 							else if (reg < 0 || reg >= 4)
 							{
-								env->push(as_value(as_value::UNDEFINED));
+								env->push(as_value());
 								log_error("push register[%d] -- register out of bounds!\n", reg);
 							}
 							else
@@ -2897,11 +2914,8 @@ namespace gameswf
 					break;
 				}
 
-				case 0x9F:	// goto frame expression (?)
+				case 0x9F:	// goto frame expression, goto_frame_exp
 				{
-					//assert(0);
-					//log_error("error: unimplemented opcode 0x9F, goto_frame_exp\n");
-
 					// From Alexi's SWF ref:
 					//
 					// Pop a value or a string and jump to the specified
@@ -2913,24 +2927,58 @@ namespace gameswf
 					// When f_play is ON, the action is to play as soon as
 					// that frame is reached. Otherwise, the
 					// frame is shown in stop mode.
+
 					unsigned char	play_flag = m_buffer[pc + 3];
 					movie::play_state	state = play_flag ? movie::PLAY : movie::STOP;
 
-					if (env->top(0).get_type() == as_value::STRING)
+					movie* target = env->get_target();
+					bool success = false;
+
+					if (env->top(0).get_type() == as_value::UNDEFINED)
+					{
+						// No-op.
+					}
+					else if (env->top(0).get_type() == as_value::STRING)
 					{
 						// @@ TODO: parse possible sprite path...
 						
 						// Also, if the frame spec is actually a number (not a label), then
 						// we need to do the conversion...
 
-						env->get_target()->goto_labeled_frame(env->top(0).to_string());
+						const char* frame_label = env->top(0).to_string();
+						if (target->goto_labeled_frame(frame_label))
+						{
+							success = true;
+						}
+						else
+						{
+							// Couldn't find the label.  Try converting to a number.
+							double num;
+							if (string_to_number(&num, env->top(0).to_string()))
+							{
+								int frame_number = int(num);
+								target->goto_frame(frame_number);
+								success = true;
+							}
+							// else no-op.
+						}
 					}
-					else
+					else if (env->top(0).get_type() == as_value::OBJECT)
+					{
+						// This is a no-op; see test_goto_frame.swf
+					}
+					else if (env->top(0).get_type() == as_value::NUMBER)
 					{
 						// Frame numbers appear to be 0-based!  @@ Verify.
-						env->get_target()->goto_frame(int(env->top(0).to_number()));
+						int frame_number = int(env->top(0).to_number());
+						target->goto_frame(frame_number);
+						success = true;
 					}
-					env->get_target()->set_play_state(state);
+
+					if (success)
+					{
+						target->set_play_state(state);
+					}
 					
 					env->drop(1);
 
@@ -3003,7 +3051,8 @@ namespace gameswf
 		}
 		else if (m_type == UNDEFINED)
 		{
-			// @@ Moock says this should be ""
+			// @@ Moock says this should be "".
+			// But my tests show it's "undefined".
 			m_string_value = "undefined";
 		}
 		// else if (m_type == NULLTYPE) { /* @@ Moock says "null" */ }
@@ -3059,7 +3108,7 @@ namespace gameswf
 		return m_string_value;
 	}
 
-	
+
 	double	as_value::to_number() const
 	// Conversion to double.
 	{
@@ -3071,7 +3120,11 @@ namespace gameswf
 			//
 			// Also, "Infinity", "-Infinity", and "NaN"
 			// are recognized.
-			m_number_value = atof(m_string_value.c_str());
+			if (string_to_number(&m_number_value, m_string_value.c_str()))
+			{
+				// Failed conversion to Number.
+				m_number_value = 0.0;	// TODO should be NaN
+			}
 			return m_number_value;
 		}
 		else if (m_type == NUMBER)
@@ -3088,7 +3141,13 @@ namespace gameswf
 
 			// Text characters with var names could get in
 			// here.
-			return atof(m_object_value->get_text_value());
+			const char* textval = m_object_value->get_text_value();
+			if (textval)
+			{
+				return atof(textval);
+			}
+
+			return 0.0;
 		}
 		else
 		{
@@ -3332,7 +3391,7 @@ namespace gameswf
 			else
 			{
 				log_error("find_target(\"%s\") failed\n", path.c_str());
-				return as_value(as_value::UNDEFINED);
+				return as_value();
 			}
 		}
 		else
@@ -3401,7 +3460,7 @@ namespace gameswf
 	
 		// Fallback.
 		IF_VERBOSE_ACTION(log_msg("get_variable_raw(\"%s\") failed, returning UNDEFINED.\n", varname.c_str()));
-		return as_value(as_value::UNDEFINED);
+		return as_value();
 	}
 
 

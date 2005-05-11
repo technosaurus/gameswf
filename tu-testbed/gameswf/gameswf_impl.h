@@ -177,7 +177,7 @@ namespace gameswf
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 
 		virtual void	goto_frame(int target_frame_number) { assert(0); }
-		virtual void	goto_labeled_frame(const char* label) { assert(0); }
+		virtual bool	goto_labeled_frame(const char* label) { assert(0); return false; }
 
 		virtual void	set_play_state(play_state s) {}
 		virtual play_state	get_play_state() const { assert(0); return STOP; }
