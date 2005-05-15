@@ -11,7 +11,7 @@ AM_MAINTAINER_MODE
 AC_PROG_MAKE_SET
 
 dnl Use the POSIX Threads library, if specified.
-AC_ARG_ENABLE(pthreads, [  --enable-pthreads            Enable support for pthreads],
+AC_ARG_ENABLE(pthreads, [  --enable-pthreads       Enable support for pthreads],
 [case "${enableval}" in
   yes) pthreads=yes ;;
   no)  pthreads=no ;;
@@ -23,7 +23,7 @@ if test x$pthreads = xyes; then
 fi
 
 dnl Add XML support, if specified.
-AC_ARG_ENABLE(libxml, [  --disable-xml            Disable support for xml and xmlsocket],
+AC_ARG_ENABLE(libxml, [  --disable-xml           Disable support for xml and xmlsocket],
 [case "${enableval}" in
   yes) disablexml=yes ;;
   no)  disablexml=no ;;
@@ -36,7 +36,7 @@ if test x$enable_xml != xyes; then
 fi
 
 dnl Fix the Intel 810 LOD bias problem
-AC_ARG_ENABLE(i810-lod-bias, [  --enable-i810-lod-bias       Enable fix for Intel 810 LOD bias problem],
+AC_ARG_ENABLE(i810-lod-bias, [  --enable-i810-lod-bias  Enable fix for Intel 810 LOD bias problem],
 [case "${enableval}" in
   yes) i810lodbias=yes ;;
   no)  i810lodbias=no ;;
@@ -46,6 +46,22 @@ esac])
 if test x$i810lodbias = xyes; then
     AC_DEFINE([FIX_I810_LOD_BIAS], [], [Fix i810 LOD bias problem])
 fi
+
+dnl Use the DMalloc library, if specified.
+AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc        Enable support for DMalloc],
+[case "${enableval}" in
+  yes) dmalloc=yes ;;
+  no)  dmalloc=no ;;
+  *)   AC_MSG_ERROR([bad value ${enableval} for enable-malloc option]) ;;
+esac])
+
+if test x$dmalloc = xyes; then
+    AC_DEFINE([USE_DMALLOC], [], [Use DMalloc])
+    DMALLOC_LIB="-ldmallocxx"
+else
+    DMALLOC_LIB=""
+fi
+AC_SUBST(DMALLOC_LIB)
 
 AC_PROG_CC
 AC_PROG_CXX
@@ -80,3 +96,28 @@ geometry/Makefile
 gameswf/Makefile
 config.mk
 )
+
+echo ""
+echo "Configurable options are:"
+if test x"$pthreads" = x"yes"; then
+  echo "        Using POSIX Threads"
+else
+  echo "        Not using POSIX Threads"
+fi
+if test x"$disablexml" = x"yes"; then
+  echo "        Not using XML"
+else
+  echo "        Using XML"
+fi
+if test x"$i810lodbias" = x"yes"; then
+  echo "        Using the Intel 810 LOD bias hack"
+else
+  echo "        Not using the Intel 810 LOD bias hack"
+fi
+if test x"$dmalloc" = x"yes"; then
+  echo "        Using DMalloc, For a list of the command-line options enter: dmalloc --usage"
+  dnl dmalloc
+else
+  echo "        Not using DMalloc"
+fi
+

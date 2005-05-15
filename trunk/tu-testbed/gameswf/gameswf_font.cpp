@@ -5,6 +5,9 @@
 
 // A font type for gameswf.
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "gameswf_font.h"
 #include "gameswf_stream.h"
@@ -13,6 +16,9 @@
 #include "gameswf_shape.h"
 #include "base/tu_file.h"
 
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
 
 namespace gameswf
 {

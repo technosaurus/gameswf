@@ -27,6 +27,9 @@
 #include "gameswf_xmlsocket.h"
 #endif
 
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -1729,10 +1732,16 @@ namespace gameswf
 
 					as_value variable = env->get_variable(var_string, with_stack);
 					env->push(variable);
-
-					IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s \n",
-								  var_string.c_str(),
-								  variable.to_tu_string().c_str()));
+					if (variable.to_object() == NULL) {
+						IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s\n",
+									  var_string.c_str(),
+									  variable.to_tu_string().c_str()));
+					} else {
+						IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s at %p\n",
+									  var_string.c_str(),
+									  variable.to_tu_string().c_str(), variable.to_object()));
+					}
+					
 
 					break;
 				}
@@ -2219,9 +2228,15 @@ namespace gameswf
 						// int	nargs = (int) env->top(1).to_number();
 						if (obj) {
 							obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
-							IF_VERBOSE_ACTION(log_msg("-- get_member %s=%s\n",
-										  env->top(0).to_tu_string().c_str(),
-										  env->top(1).to_tu_string().c_str()));
+							if (env->top(1).to_object() == NULL) {
+								IF_VERBOSE_ACTION(log_msg("-- get_member %s=%s\n",
+											  env->top(0).to_tu_string().c_str(),
+											  env->top(1).to_tu_string().c_str()));
+							} else {
+								IF_VERBOSE_ACTION(log_msg("-- get_member %s=%s at %p\n",
+											  env->top(0).to_tu_string().c_str(),
+											  env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
+							}
 						}
 						else
 						{

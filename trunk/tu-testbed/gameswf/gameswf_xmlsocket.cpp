@@ -35,6 +35,10 @@
 # include <sys/select.h>
 #endif
 
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
+
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 256
 #endif
@@ -42,11 +46,7 @@
 namespace gameswf
 {
   
-extern array<as_object *> _xmlobjs;    // FIXME: hack alert
-
-  
 const int INBUF = 7000;
-  //array<as_object *> _xmlobjs;    // FIXME: hack alert
 
 XMLSocket::XMLSocket()
 {
@@ -298,7 +298,6 @@ XMLSocket::anydata(int fd, array<const char *> &data)
       }
       if (ptr[strlen(ptr)-1] == '\n') {
         ifdata = true;
-        //_messages.push_back(msg);
         data.push_back(packet);
         pos = strlen(ptr);
         ptr += pos + 1;
@@ -315,8 +314,6 @@ XMLSocket::anydata(int fd, array<const char *> &data)
     }
   }
   
-  //data = buf;
-
   return true;
 }
 
@@ -324,7 +321,8 @@ bool
 XMLSocket::send(tu_string str)
 {
   //log_msg("%s: \n", __FUNCTION__);
-  str += tu_string( "\0", 1);
+  //str += tu_string( "\0", 1);
+  str += '\0';
   int ret = write(_sockfd, str.c_str(), str.size());
 
   //log_msg("%s: sent %d bytes, data was %s\n", __FUNCTION__, ret, str.c_str());
@@ -397,11 +395,12 @@ xmlsocket_connect(const fn_call& fn)
     return;
   }
   
-  //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
+  log_msg("%s: nargs=%d\n", __FUNCTION__, fn.nargs);
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
   const tu_string host = fn.env->bottom(fn.first_arg_bottom_index).to_string();
-  double port = fn.env->bottom(fn.first_arg_bottom_index-1).to_number();
+  tu_string port_str = fn.env->bottom(fn.first_arg_bottom_index-1).to_tu_string();
+  double port = atof(port_str.c_str());
   ret = ptr->obj.connect(host, static_cast<int>(port));
 
 #if 0
@@ -589,7 +588,7 @@ xmlsocket_event_ondata(const fn_call& fn)
         } else {
           log_error("error in call_method(): method is not a function\n");
         }
-        datain.drop_refs();
+        //datain.drop_refs();
         delete msgs[i];
         fn.env->pop();
 

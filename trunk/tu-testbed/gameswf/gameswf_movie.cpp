@@ -30,6 +30,10 @@
 #include "gameswf_render.h"
 #include "gameswf_impl.h"
 
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
+
 namespace gameswf
 {
 

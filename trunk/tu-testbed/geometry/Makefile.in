@@ -9,6 +9,7 @@ top_srcdir = @top_srcdir@
 VPATH = $(srcdir)
 
 INCLUDES := \
+	-I.. \
 	-I$(top_srcdir) \
 	$(SDL_CFLAGS) \
 	$(ENGINE_INCLUDE) \
