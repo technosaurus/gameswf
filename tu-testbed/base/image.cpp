@@ -5,6 +5,9 @@
 
 // Handy image utilities for RGB surfaces.
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include "base/image.h"
 
@@ -16,6 +19,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
 
 namespace image
 {

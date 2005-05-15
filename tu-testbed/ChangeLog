@@ -1,3 +1,39 @@
+2005-05-14  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_action.cpp: Print the address of the object for
+	get_variable and get_member so we can trace through the object
+	dependancies.
+	* geometry/Makefile.in: Add -I.. to INCLUDES so config.h can be
+	found.
+	* gameswf/gameswf_xml.cpp: Call xmlCleanupParser() after freeing
+	the Doc pointer.
+	* base/{container.h, image.cpp, ogl.cpp, tu_file.cpp}: Add support
+	for optionally using dmalloc for debugging memory problems.
+	* gameswf/{gameswf_action.cpp, gameswf_font.cpp,
+	gameswf_fontlib.cpp, gameswf_impl.cpp, gameswf_movie.cpp,
+	gameswf_string.cpp, gameswf_xml.cpp, gameswf_xmlsocket.cpp}: Add
+	support for optionally using dmalloc for debugging memory
+	problems.
+	* geometry/bsp.cpp:  Add support for optionally using dmalloc for
+	debugging memory problems.
+	* configure.ac: Add --enable-dmalloc option. Display all config
+	options at the end.
+	* configure, config.h.in: Regenerated.
+	* gameswf/Makefile.in: Link in libdmallocxx if --enable-dmalloc is
+	passed to configure.
+
+2005-05-09  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf_xmlsocket.h: Pass an array to anydata instead of a
+	string.
+	* gameswf_xmlsocket.cpp: Pass an array to anydata instead of a
+	string.
+	* gameswf/gameswf_timers.cpp, gameswf_timers.h,
+	gameswf_xmlsocket.cpp, gameswf_xmlsocket.h, gameswf_movie.cpp:
+	Use fn structure fields instead of a slew of local variables.
+	* gameswf/gameswf_xml.cpp: Delete all the attributes and child
+	nodes too.
+	
 2005-05-09  Rob Savoye  <rob@wharfrat.welcomehome.org>
 
 	* gameswf/gameswf_action.cpp: Use xml_new instead of

@@ -23,6 +23,10 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
+
 namespace gameswf
 {
 
@@ -272,6 +276,8 @@ XML::parseXML(tu_string xml_in)
   
   bool ret = parseDoc(_doc, true);
   xmlFreeDoc(_doc);
+  xmlCleanupParser();
+  xmlMemoryDump();
   return ret;
 }
 
@@ -291,6 +297,8 @@ XML::load(const char *filespec)
 
   bool ret = parseDoc(_doc, false);
   xmlFreeDoc(_doc);
+  xmlCleanupParser();
+  xmlMemoryDump();
   return ret;
 }
 
@@ -328,7 +336,8 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   xmlattr_as_object* attr_obj;
 
 #if 0
-  log_msg("%s: processing node %s for object %p, mem is %d\n", __FUNCTION__, xml->_name.c_str(), obj, mem);
+  log_msg("%s: processing node %s for object %p, mem is %d\n", __FUNCTION__,
+          xml->_name.c_str(), obj, mem);
 #endif
   
   //xmlnode_as_object *xobj = (xmlnode_as_object *)obj;

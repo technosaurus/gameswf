@@ -5,11 +5,19 @@
 
 // Some OpenGL helpers; mainly to generically deal with extensions.
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <SDL.h>
 #include "base/ogl.h"
 #include "base/utility.h"
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
 
 namespace ogl {
 

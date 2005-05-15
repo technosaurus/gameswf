@@ -309,7 +309,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBXML_CFLAGS LIBXML_LIBS CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE LIBPRE LIBEXT SDL_CONFIG SDL_CFLAGS SDL_LIBS CPP EGREP SDL_MIXER_CFLAGS SDL_MIXER_LIBS OPENGL_CFLAGS OPENGL_LIBS GLUT_LIBS GLU_LIBS HAVE_OPENGL_TRUE HAVE_OPENGL_FALSE ZLIB_CFLAGS ZLIB_LIBS JPEG_CFLAGS JPEG_LIBS PNG_CFLAGS PNG_LIBS PTHREAD_LIB LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os target target_cpu target_vendor target_os INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA CYGPATH_W PACKAGE VERSION ACLOCAL AUTOCONF AUTOMAKE AUTOHEADER MAKEINFO install_sh STRIP ac_ct_STRIP INSTALL_STRIP_PROGRAM mkdir_p AWK SET_MAKE am__leading_dot AMTAR am__tar am__untar MAINTAINER_MODE_TRUE MAINTAINER_MODE_FALSE MAINT LIBXML_CFLAGS LIBXML_LIBS DMALLOC_LIB CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT DEPDIR am__include am__quote AMDEP_TRUE AMDEP_FALSE AMDEPBACKSLASH CCDEPMODE am__fastdepCC_TRUE am__fastdepCC_FALSE CXX CXXFLAGS ac_ct_CXX CXXDEPMODE am__fastdepCXX_TRUE am__fastdepCXX_FALSE LIBPRE LIBEXT SDL_CONFIG SDL_CFLAGS SDL_LIBS CPP EGREP SDL_MIXER_CFLAGS SDL_MIXER_LIBS OPENGL_CFLAGS OPENGL_LIBS GLUT_LIBS GLU_LIBS HAVE_OPENGL_TRUE HAVE_OPENGL_FALSE ZLIB_CFLAGS ZLIB_LIBS JPEG_CFLAGS JPEG_LIBS PNG_CFLAGS PNG_LIBS PTHREAD_LIB LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -860,9 +860,10 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-maintainer-mode  enable make rules and dependencies not useful
 			  (and sometimes confusing) to the casual installer
-  --enable-pthreads            Enable support for pthreads
-  --disable-xml            Disable support for xml and xmlsocket
-  --enable-i810-lod-bias       Enable fix for Intel 810 LOD bias problem
+  --enable-pthreads       Enable support for pthreads
+  --disable-xml           Disable support for xml and xmlsocket
+  --enable-i810-lod-bias  Enable fix for Intel 810 LOD bias problem
+  --enable-dmalloc        Enable support for DMalloc
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --disable-sdltest       Do not try to compile and run a test SDL program
@@ -2039,6 +2040,30 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 fi
+
+# Check whether --enable-dmalloc or --disable-dmalloc was given.
+if test "${enable_dmalloc+set}" = set; then
+  enableval="$enable_dmalloc"
+  case "${enableval}" in
+  yes) dmalloc=yes ;;
+  no)  dmalloc=no ;;
+  *)   { { echo "$as_me:$LINENO: error: bad value ${enableval} for enable-malloc option" >&5
+echo "$as_me: error: bad value ${enableval} for enable-malloc option" >&2;}
+   { (exit 1); exit 1; }; } ;;
+esac
+fi;
+
+if test x$dmalloc = xyes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_DMALLOC
+_ACEOF
+
+    DMALLOC_LIB="-ldmallocxx"
+else
+    DMALLOC_LIB=""
+fi
+
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -7033,6 +7058,7 @@ s,@MAINTAINER_MODE_FALSE@,$MAINTAINER_MODE_FALSE,;t t
 s,@MAINT@,$MAINT,;t t
 s,@LIBXML_CFLAGS@,$LIBXML_CFLAGS,;t t
 s,@LIBXML_LIBS@,$LIBXML_LIBS,;t t
+s,@DMALLOC_LIB@,$DMALLOC_LIB,;t t
 s,@CC@,$CC,;t t
 s,@CFLAGS@,$CFLAGS,;t t
 s,@LDFLAGS@,$LDFLAGS,;t t
@@ -7792,5 +7818,29 @@ if test "$no_create" != yes; then
   # Use ||, not &&, to avoid exiting from the if with $? = 1, which
   # would make configure fail if this is the last instruction.
   $ac_cs_success || { (exit 1); exit 1; }
+fi
+
+
+echo ""
+echo "Configurable options are:"
+if test x"$pthreads" = x"yes"; then
+  echo "        Using POSIX Threads"
+else
+  echo "        Not using POSIX Threads"
+fi
+if test x"$disablexml" = x"yes"; then
+  echo "        Not using XML"
+else
+  echo "        Using XML"
+fi
+if test x"$i810lodbias" = x"yes"; then
+  echo "        Using the Intel 810 LOD bias hack"
+else
+  echo "        Not using the Intel 810 LOD bias hack"
+fi
+if test x"$dmalloc" = x"yes"; then
+  echo "        Using DMalloc, For a list of the command-line options enter: dmalloc --usage"
+  else
+  echo "        Not using DMalloc"
 fi
 

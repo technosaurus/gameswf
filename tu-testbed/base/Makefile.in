@@ -58,12 +58,6 @@ echo:
 	echo $(OBJS)
 	echo $(BASE_LIB)
 
-# Local Variables:
-# tab-width: 8
-# indent-tabs-mode: t
-# End:
-# DO NOT DELETE
-
 container.o: ../base/container.h ../base/tu_config.h
 container.o: ../compatibility_include.h ../base/dlmalloc.h ../base/utility.h
 container.o: ../base/tu_math.h ../base/tu_types.h ../base/tu_swap.h
@@ -127,3 +121,10 @@ zlib_adapter.o: ../base/zlib_adapter.h ../base/tu_config.h
 zlib_adapter.o: ../compatibility_include.h ../base/dlmalloc.h
 zlib_adapter.o: ../base/tu_file.h ../base/tu_types.h ../base/tu_swap.h
 zlib_adapter.o: ../base/utility.h ../base/tu_math.h
+
+# Local Variables:
+# tab-width: 8
+# indent-tabs-mode: t
+# End:
+# DO NOT DELETE
+

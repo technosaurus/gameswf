@@ -6,10 +6,17 @@
 // Implementation of ActionScript String class.
 
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "gameswf_string.h"
 #include "gameswf_log.h"
 #include "base/smart_ptr.h"
 
+#ifdef USE_DMALLOC
+#include "dmalloc.h"
+#endif
 
 namespace gameswf
 {
