@@ -44,7 +44,7 @@ static int	s_bytes_in_use = 0;
 static int	s_textures_bound = 0;
 
 
-// MAP_ONTO_SPHERE is currently just a quick experiment to see if the
+// MAP_ONTO_CUBEMAP is currently just a quick experiment to see if the
 // geometry works out.  Texturing doesn't work, and the LOD metric is
 // all screwed up, and the initial viewpoint doesn't show the world;
 // you'll have to rotate around a little to see anything.  Also,
@@ -66,14 +66,45 @@ static int	s_textures_bound = 0;
 // One more little footnote: the crack-filling skirts would have to
 // take the warping into account, to make sure skirts along long edges
 // are properly covered.  Basically, the skirts have to get much more
-// conversative; otherwise there are cracks along long curvy edges.
+// conservative; otherwise there are cracks along long curvy edges.
 //
-//#define MAP_ONTO_SPHERE
+//#define MAP_ONTO_CUBEMAP
 
-#ifdef MAP_ONTO_SPHERE
+#ifdef MAP_ONTO_CUBEMAP
 // Some experimental hacks for mapping heightfield onto a sphere.
 static float	s_max_horizontal_dimension = 1.0f;	// set by top-level render call, used by morph_vertices()
-#endif // MAP_ONTO_SPHERE
+#endif // MAP_ONTO_CUBEMAP
+
+
+// MAP_ONTO_MERCATOR is another experiment with spherical geometry.
+// Take the square terrain, and treat it like a mercator projection
+// map.  The geometry gets increasingly stretched towards the poles,
+// so to do this properly we would adjust the lod metric to
+// compensate.  Also we would not fill in the more detailed quadtree
+// nodes towards the poles, since quad nodes cover increasingly less
+// geometric area, so requires fewer nodes to achieve visible detail
+// targets.
+//
+// Same caveat as cubemap, w/r/t needing more conservative
+// crack-filling skirts on the larger tiles.
+//
+// Mercator has a couple of nice properties:
+//
+// * can use a single quadtree, and it's easy to match up all seams;
+// just make sure the left & right heightfield edges are identical
+// (make them neighbors).
+//
+// * at lower levels of the quadtree, quads have approximately uniform
+// sampling density of the underlying geometry.
+//
+// It gets very wacky near the poles unfortunately.
+//
+//#define MAP_ONTO_MERCATOR
+
+#ifdef MAP_ONTO_MERCATOR
+// Some experimental hacks for mapping heightfield onto a sphere.
+static float	s_max_horizontal_dimension = 1.0f;	// set by top-level render call, used by morph_vertices()
+#endif // MAP_ONTO_MERCATOR
 
 
 namespace lod_tile_freelist
@@ -1032,10 +1063,10 @@ bool	chunk_tree_loader::loader_service_texture()
 //
 
 
-#ifdef MAP_ONTO_SPHERE
+#ifdef MAP_ONTO_CUBEMAP
 
 
-void	map_onto_sphere(vec3* out, const vec3& in)
+void	map_heightfield_onto_cubemap(vec3* out, const vec3& in)
 // Take a heightfield coordinate, and map it into 3D such that the
 // heightfield corresponds to the face of a cube-map, mapped onto a
 // sphere.
@@ -1052,7 +1083,7 @@ void	map_onto_sphere(vec3* out, const vec3& in)
 }
 
 
-void	map_onto_heightfield(vec3* out, const vec3& in)
+void	map_cubemap_onto_heightfield(vec3* out, const vec3& in)
 // Given a 3D world coordinate (where the heightfield appears as a
 // curved part of a cubemap face), warp it into heightfield
 // coordinates.
@@ -1076,7 +1107,68 @@ void	map_onto_heightfield(vec3* out, const vec3& in)
 }
 
 
-#endif // MAP_ONTO_SPHERE
+#endif // MAP_ONTO_CUBEMAP
+
+
+#ifdef MAP_ONTO_MERCATOR
+
+
+void map_heightfield_onto_mercator(vec3* out, const vec3& in)
+// Take a heightfield coordinate and map it into 3D such that the
+// heightfield corresponds to a mercator projection map, wrapped onto
+// a sphere.
+{
+	// Horizontal dimension == planetary radius.
+	float world_radius = s_max_horizontal_dimension / float(2 * M_PI);
+
+	// @@ This is probably full of sign errors, and it obviously
+	// is not efficient.
+
+	// @@ precompute M_PI / s_max_horizontal_dimension
+
+	float theta = -((in.x / s_max_horizontal_dimension) - 0.5f) * 2.0f * float(M_PI);
+
+	float sin_phi = ((in.z / s_max_horizontal_dimension) - 0.5f) * 2.0f;
+	float phi = asinf(fclamp(sin_phi, -1, 1));
+	float r = (in.y + world_radius);
+
+	float sin_theta = sinf(theta);
+	float cos_theta = cosf(theta);
+	float cos_phi = cosf(phi);
+
+	out->x = cos_theta * cos_phi * r;
+	out->y = sin_phi * r;
+	out->z = -sin_theta * cos_phi * r;
+}
+
+
+void	map_mercator_onto_heightfield(vec3* out, const vec3& in)
+// Given a 3D world coordinate (where the heightfield is a mercator
+// projection wrapped around a sphere), warp it into flattened-out
+// heightfield coordinates.
+{
+	// Horizontal dimension == planetary radius.
+	float world_radius = s_max_horizontal_dimension / float(2 * M_PI);
+
+	// @@ This may all be totally wrong.
+
+	float	r = in.magnitude();
+	float	sin_phi = in.y / r;
+	float	phi = float(M_PI);
+	float	theta = 0;
+	if (fabs(sin_phi) + 1e-6f < 1.0f)
+	{
+		// Not on either pole.
+		theta = atan2f(-in.z, in.x);
+	}
+
+	out->x = theta / float(M_PI) * s_max_horizontal_dimension;
+	out->z = phi / float(M_PI) * s_max_horizontal_dimension;
+	out->y = r / world_radius - 1.0f;
+}
+
+
+#endif // MAP_ONTO_MERCATOR
 
 
 static void	morph_vertices(
@@ -1113,9 +1205,12 @@ static void	morph_vertices(
 		verts[i*3 + 1] = (v.x[1] + v.y_delta * one_minus_f) * s_vertical_scale;	// lerp the y value of the vert.
 		verts[i*3 + 2] = offsetz + v.x[2] * sz;
 
-#ifdef MAP_ONTO_SPHERE
-		map_onto_sphere((vec3*)(&verts[i*3 + 0]), *(vec3*)(&verts[i*3 + 0]));
-#endif // MAP_ONTO_SPHERE
+#ifdef MAP_ONTO_CUBEMAP
+		map_heightfield_onto_cubemap((vec3*)(&verts[i*3 + 0]), *(vec3*)(&verts[i*3 + 0]));
+#endif // MAP_ONTO_CUBEMAP
+#ifdef MAP_ONTO_MERCATOR
+		map_heightfield_onto_mercator((vec3*)(&verts[i*3 + 0]), *(vec3*)(&verts[i*3 + 0]));
+#endif // MAP_ONTO_MERCATOR
 	}
 #if 0
 	// With a vshader, this routine would be replaced by an initial agp_alloc() & memcpy()/memmap().
@@ -1352,11 +1447,16 @@ void	lod_chunk::update_texture(lod_chunk_tree* tree, const vec3& viewpoint_in)
 // sniper-scope views, where it's a real issue, but then there are
 // compensating factors there too...).
 {
-#ifdef MAP_ONTO_SPHERE
+#ifdef MAP_ONTO_CUBEMAP
 	vec3	viewpoint;
-	map_onto_heightfield(&viewpoint, viewpoint_in);
+	map_cubemap_onto_heightfield(&viewpoint, viewpoint_in);
+#else
+#ifdef MAP_ONTO_MERCATOR
+	vec3	viewpoint;
+	map_mercator_onto_heightfield(&viewpoint, viewpoint_in);
 #else
 	const vec3&	viewpoint = viewpoint_in;
+#endif
 #endif
 
 	assert(tree->m_texture_quadtree != NULL);
@@ -1622,12 +1722,17 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 	compute_bounding_box(c, &box_center, &box_extent);
 
 	// Frustum culling.
-#ifdef MAP_ONTO_SPHERE
+#ifdef MAP_ONTO_CUBEMAP
 
 	// Need to cull differently in this case, or compute the box
 	// differently, or something.  For now, don't cull.
 
-#else	// not MAP_ONTO_SPHERE
+#else	// not MAP_ONTO_CUBEMAP
+#ifdef MAP_ONTO_MERCATOR
+
+	// TODO figure out how to cull
+
+#else	// not MAP_ONTO_MERCATOR
 
 	if (cull_info.active_planes) {
 		cull_info = cull::compute_box_visibility(box_center, box_extent, v.m_frustum, cull_info);
@@ -1637,7 +1742,8 @@ int	lod_chunk::render(const lod_chunk_tree& c, const view_state& v, cull::result
 		}
 	}
 
-#endif // not MAP_ONTO_SPHERE
+#endif // not MAP_ONTO_MERCATOR
+#endif // not MAP_ONTO_CUBEMAP
 
 	int	triangle_count = 0;
 
@@ -1925,9 +2031,12 @@ int	lod_chunk_tree::render(const view_state& v, render_options opt)
 //
 // Returns the number of triangles rendered.
 {
-#ifdef MAP_ONTO_SPHERE
+#ifdef MAP_ONTO_CUBEMAP
 	s_max_horizontal_dimension = m_base_chunk_dimension * (1 << (m_tree_depth - 1));
-#endif // MAP_ONTO_SPHERE
+#endif // MAP_ONTO_CUBEMAP
+#ifdef MAP_ONTO_MERCATOR
+	s_max_horizontal_dimension = m_base_chunk_dimension * (1 << (m_tree_depth - 1));
+#endif // MAP_ONTO_MERCATOR
 
 	int	triangle_count = 0;
 
