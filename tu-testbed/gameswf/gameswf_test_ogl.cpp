@@ -194,7 +194,7 @@ int	main(int argc, char *argv[])
 
 	// -1.0 tends to look good.
 	tex_lod_bias = -1.0f;
-
+	
 	for (int arg = 1; arg < argc; arg++)
 	{
 		if (argv[arg][0] == '-')

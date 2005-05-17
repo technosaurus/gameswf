@@ -1,3 +1,22 @@
+2005-05-16  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* base/utility.cpp (dump_memory_stats): Disable for now by exiting
+	before right away..
+	* gameswf/gameswf_xmlsocket.h: Add char ** parameter to anydata().
+	* gameswf/gameswf_xmlsocket.cpp: Add char ** parameter to
+	anydata(). Call malloc_trim() to release memory back to the
+	system so we don't eat up all the memory. 
+	(anydata) Use char * rather than tu_strings for the buffering so
+	we can track every byte. Parse looking for the nll. delimiter
+	between messages. Setup single messages faster than processing
+	multiple messages.
+	* gameswf/gameswf_xml.cpp: Delete name and value too. Use char *
+	rather than tu_strings for the attribute name and value.
+	
+	* base/utility.{cpp,h}: Add dump_memory_stats() to dump the
+	internal statistics from malloc so we can track memory allocations
+	in great detail.
+
 2005-05-14  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_action.cpp: Print the address of the object for

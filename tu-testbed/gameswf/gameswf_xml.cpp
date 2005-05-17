@@ -45,8 +45,8 @@ XMLAttr::~XMLAttr()
   
 XMLNode::XMLNode()
 {
-  //log_msg("\t\tCreating XMLNode at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
+  //log_msg("\t\tCreating XMLNode at %p \n", this);
 }
 
 XMLNode::~XMLNode()
@@ -61,9 +61,18 @@ XMLNode::~XMLNode()
   _children.clear();
     
   for (i=0; i<_attributes.size(); i++) {
+    if (_attributes[i]->_name) {
+      delete _attributes[i]->_name;
+    }
+    if (_attributes[i]->_value) {
+      delete _attributes[i]->_value;
+    }
     delete _attributes[i];
   }
   _attributes.clear();
+
+  _name.resize(0);
+  _value.set_undefined();
 }
 
 XML::XML()
@@ -80,7 +89,7 @@ XML::XML(tu_string xml_in)
 {
   //log_msg("\tCreating XML at %p \n", this);
   //log_msg("%s: %p \n", __FUNCTION__, this);
-  memset(&_nodes, 0, sizeof(XMLNode));
+  //memset(&_nodes, 0, sizeof(XMLNode));
   parseXML(xml_in);
 }
 
@@ -164,8 +173,12 @@ XML::extractNode(xmlNodePtr node, bool mem)
     //log_msg("extractNode %s has property %s, value is %s\n",
     //          node->name, attr->name, attr->children->content);
     XMLAttr *attrib = new XMLAttr;
-    attrib->_name = reinterpret_cast<const char *>(attr->name);
-    attrib->_value = reinterpret_cast<const char *>(attr->children->content);
+    attrib->_name = (char *)new char[strlen(reinterpret_cast<const char *>(attr->name))+2];
+    strcpy(attrib->_name, reinterpret_cast<const char *>(attr->name));
+    //attrib->_name = reinterpret_cast<const char *>(attr->name);
+    attrib->_value = (char *)new char[strlen(reinterpret_cast<const char *>(attr->children->content))+2];
+    strcpy(attrib->_value, reinterpret_cast<const char *>(attr->children->content));
+    //attrib->_value = reinterpret_cast<const char *>(attr->children->content);
     //log_msg("\tPushing attribute %s for element %s has value %s\n",
     //        attr->name, node->name, attr->children->content);
     element->_attributes.push_back(attrib);
@@ -190,24 +203,6 @@ XML::extractNode(xmlNodePtr node, bool mem)
     }
   }
 
-#if 0
-  if (node->parent->type == XML_DOCUMENT_NODE) {
-    if (mem) {
-      //child = new XMLNode;
-      //memset(child, 0, sizeof (XMLNode));
-      if (node->type  == XML_ELEMENT_NODE) {
-        child = new XMLNode;
-        child->_name  = reinterpret_cast<const char *>(node->name);
-        child->_attributes = element->_attributes;
-        //log_msg("extractChildNode for %s has contents %s\n", node->name, ptr);
-        //log_msg("Pushing Top Node %s for element %p\n", child->_name.c_str(), element);
-        //child->_children.push_back();
-        element->_children.push_back(child);
-      }
-    }
-  }
-#endif
-  
   // See if we have any data (content)
   childnode = node->children;
 
@@ -275,8 +270,8 @@ XML::parseXML(tu_string xml_in)
   }
   
   bool ret = parseDoc(_doc, true);
-  xmlFreeDoc(_doc);
   xmlCleanupParser();
+  xmlFreeDoc(_doc);
   xmlMemoryDump();
   return ret;
 }
@@ -296,8 +291,8 @@ XML::load(const char *filespec)
   }
 
   bool ret = parseDoc(_doc, false);
-  xmlFreeDoc(_doc);
   xmlCleanupParser();
+  xmlFreeDoc(_doc);
   xmlMemoryDump();
   return ret;
 }
@@ -318,7 +313,7 @@ XML::operator [] (int x) {
 }
 
 void
-XML::cleanupStackFrames(as_object *xml, as_environment *env)
+XML::cleanupStackFrames(XMLNode *xml)
 {
 }
 
@@ -332,18 +327,13 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   as_value      inum;
   XMLNode       *childnode;
   xmlnode_as_object *xmlchildnode_obj;
-  xmlnode_as_object *xmlnode_obj;
   xmlattr_as_object* attr_obj;
 
-#if 0
-  log_msg("%s: processing node %s for object %p, mem is %d\n", __FUNCTION__,
-          xml->_name.c_str(), obj, mem);
-#endif
-  
-  //xmlnode_as_object *xobj = (xmlnode_as_object *)obj;
+  //log_msg("%s: processing node %s for object %p, mem is %d\n", __FUNCTION__,
+  //          xml->_name.c_str(), obj, mem);
   
   // Get the data for this node
-  nodename   = xml->_name;
+  nodename   = xml->_name.c_str();
   nodevalue  = xml->_value;
   length     = xml->length();
 
@@ -356,9 +346,7 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
   obj->set_member("nodeName",           nodename);
   obj->set_member("length",             length);
   if (nodevalue.get_type() != as_value::UNDEFINED) {
-    //obj->set_member("nodeValue",        val_obj);
     obj->set_member("nodeValue",        nodevalue.to_string());
-    //obj->set_member("nodeValue",        nodevalue);
     //log_msg("\tnodevalue for %s is: %s\n", nodename, nodevalue.to_string());
   } else {
     // If there is no value, we want to define it as an empty
@@ -366,21 +354,21 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
     obj->set_member("nodeValue", "");
   }
   
-  
   // Process the attributes, if any
   attr_obj = new xmlattr_as_object;
   for (i=0; i<xml->_attributes.size(); i++) {
     attr_obj->set_member(xml->_attributes[i]->_name, xml->_attributes[i]->_value);
-//     log_msg("\tCreated attribute %s, value is %s\n",
-//             xml->_attributes[i]->_name.c_str(),
-//             xml->_attributes[i]->_value.to_string());
+    //log_msg("\tCreated attribute %s, value is %s\n",
+    //        xml->_attributes[i]->_name,
+    //        xml->_attributes[i]->_value);
   }
+  //xml->_attributes.resize(0);
   obj->set_member("attributes", attr_obj);
 
-  //
   // Process the children, if there are any
   if (length) {
     //log_msg("\tProcessing %d children nodes for %s\n", length, nodename);
+    inum = 0;
     for (child=0; child<length; child++) {
       // Create a new AS object for this node's children
       xmlchildnode_obj = new xmlnode_as_object;
@@ -388,18 +376,20 @@ XML::setupFrame(as_object *obj, XMLNode *xml, bool mem)
       // to be the first element of the array instead.
       if (mem) {
         childnode = xml;
+        //obj->set_member(inum.to_string(), obj);
+        //inum += 1;
+        //childnode = xml->_children[child];
       } else {
         childnode = xml->_children[child];
       }
-      xmlnode_obj = (xmlnode_as_object *)setupFrame(xmlchildnode_obj, childnode, false); // call ourself
-      inum = child;
-      obj->set_member(inum.to_string(), xmlnode_obj);
+      setupFrame(xmlchildnode_obj, childnode, false); // setup child node
+      obj->set_member(inum.to_string(), xmlchildnode_obj);
+      inum += 1;
     }
-  
   } else {
     //log_msg("\tNode %s has no children\n", nodename);
-  }
-  
+  }  
+
   return obj;
 }
   
@@ -582,7 +572,6 @@ xml_new(const fn_call& fn)
 {
   as_value      inum;
   xml_as_object *xml_obj;
-  
   //log_msg("%s: nargs=%d\n", __FUNCTION__, nargs);
   
   if (fn.nargs > 0) {
@@ -590,10 +579,13 @@ xml_new(const fn_call& fn)
       xml_obj = new xml_as_object;
       //log_msg("\tCreated New XML object at %p\n", xml_obj);
       tu_string datain = fn.env->top(0).to_tu_string();
+      //xml.parseXML(datain);
       xml_obj->obj.parseXML(datain);
       xml_obj->obj.setupFrame(xml_obj, xml_obj->obj.firstChild(), true);
+      //xml_obj->obj.clear();
+      //delete xml_obj->obj.firstChild();
     } else {
-      xml_as_object*	xml_obj = (xml_as_object*)fn.env->top(0).to_object();      
+      xml_as_object*	xml_obj = (xml_as_object*)fn.env->top(0).to_object();
       //log_msg("\tCloned the XML object at %p\n", xml_obj);
       //result->set(xml_obj);
       fn.result->set_as_object_interface(xml_obj);
