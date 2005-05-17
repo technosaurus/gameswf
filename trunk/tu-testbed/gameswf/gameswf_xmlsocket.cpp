@@ -7,6 +7,7 @@
 #include "config.h"
 #endif
 
+#include "base/utility.h"
 #include "gameswf_log.h"
 #include "gameswf_xml.h"
 #include "gameswf_xmlsocket.h"
@@ -45,7 +46,7 @@
 
 namespace gameswf
 {
-  
+
 const int INBUF = 7000;
 
 XMLSocket::XMLSocket()
@@ -200,10 +201,10 @@ XMLSocket::close()
 
 // Return true if there is data in the socket, otherwise return false.
 bool
-XMLSocket::anydata(array<const char *> &data)
+XMLSocket::anydata(array<const char *> &data, char **msgs)
 {
   //printf("%s: \n", __FUNCTION__);
-  return anydata(_sockfd, data);
+  return anydata(_sockfd, data, msgs);
 }
 
 bool XMLSocket::processingData()
@@ -219,7 +220,7 @@ void XMLSocket::processing(bool x)
 }
 
 bool
-XMLSocket::anydata(int fd, array<const char *> &data)
+XMLSocket::anydata(int fd, array<const char *> &data, char **msgs)
 {
   fd_set                fdset;
   struct timeval        tval;
@@ -227,16 +228,20 @@ XMLSocket::anydata(int fd, array<const char *> &data)
   char                  buf[INBUF];
   char                  *packet;
   int                   retries = 10;
-  char                  *ptr;
+  char                  *ptr, *eom;
   int                   pos;
-  bool                  ifdata = false;
-  static tu_string      remainder;
+  int                   cr, index = 0;
+  static char           *leftover = 0;
 
   //log_msg("%s: \n", __FUNCTION__);
 
   if (fd <= 0) {
     return false;
   }
+  //data.clear();
+
+  //msgs = (char **)realloc(msgs, sizeof(char *));
+  //currentmsg = *msgs;
   while (retries-- > 0) {
     FD_ZERO(&fdset);
     FD_SET(fd, &fdset);
@@ -245,7 +250,7 @@ XMLSocket::anydata(int fd, array<const char *> &data)
     tval.tv_usec = 10;
     
     ret = ::select(fd+1, &fdset, NULL, NULL, &tval);
-    
+
     // If interupted by a system call, try again
     if (ret == -1 && errno == EINTR) {
       log_msg("The socket for fd #%d was interupted by a system call!\n",
@@ -253,67 +258,97 @@ XMLSocket::anydata(int fd, array<const char *> &data)
       continue;
     }
     if (ret == -1) {
-      log_msg("The socket for fd #%d never was available!\n", fd);
+      log_error("The socket for fd #%d never was available!\n", fd);
       return false;
     }
     if (ret == 0) {
       //log_msg("There is no data in the socket for fd #%d!\n", fd);
-      if (ifdata) {
-        remainder = ptr;
-      }
-      return ifdata;
+      return false;
     }
     if (ret > 0) {
       //log_msg("There is data in the socket for fd #%d!\n", fd);        
       //break;
     }
-    processing(true);
     memset(buf, 0, INBUF);
     ret = ::read(_sockfd, buf, INBUF-2);
-    //log_msg("%s: read %d bytes\n", __FUNCTION__, ret);
-    //log_msg("%s: read (%d,%d) %s\n", __FUNCTION__, buf[0], buf[1], buf);    
+    cr = strlen(buf);
+    //log_msg("%s: read %d bytes, first msg terminates at %d\n", __FUNCTION__, ret, cr);
+    //log_msg("%s: read (%d,%d) %s\n", __FUNCTION__, buf[0], buf[1], buf);
     ptr = buf;
-    pos = 1;
-    while (pos > 0) {
-      //tu_string msg;
-      packet = new char[ret + remainder.size() + 1];
-      memset(packet, 0, ret + remainder.size() + 1);
-      
-      //ptr = strchr('\0', buf);
-      if (remainder.size() > 0) {
-        //printf("%s: The remainder is: \"%s\"\n", __FUNCTION__, remainder.c_str());
-        //printf("%s: The rest of the message is: \"%s\"\n", __FUNCTION__, ptr);
-        //msg = remainder;
-        //msg += buf;
-        strcpy(packet, remainder.c_str());
-        strcat(packet, buf);
-        //ptr =
-        //printf("%s: The whole message is: \"%s\"\n", __FUNCTION__, packet);
-        remainder.resize(0);
-      } else {
-        //msg = ptr;
-        strcpy(packet, ptr);
-      
-        //        strcpy(msg, ptr);
+    // If we get a single XML message, do less work
+    if (ret == cr + 1) {
+      packet = new char[ret + 1];
+      //printf("Packet size is %d at %p\n", ret + 1, packet);
+      memset(packet, 0, ret + 1);
+      strcpy(packet, ptr);
+      eom = strrchr(packet, '\n'); // drop the CR off the end if there is one
+      if (eom) {
+        *eom = 0;
       }
-      if (ptr[strlen(ptr)-1] == '\n') {
-        ifdata = true;
-        data.push_back(packet);
-        pos = strlen(ptr);
-        ptr += pos + 1;
-        //remainder.resize(0);
-      } else {
-        remainder = ptr;
-        if (remainder.size() > 0) {
-          //printf("%s: Adding remainder: \"%s\"\n", __FUNCTION__, remainder.c_str());
-        } else {
-          remainder.resize(0);
-        }
-        break;
-      }
+      //data.push_back(packet);
+      msgs[index] = packet;
+      msgs[index+1] = 0;
+      //printf("%d: Pushing Packet of size %d at %p\n", __LINE__, strlen(packet), packet);
+      processing(false);
+      return true;
     }
-  }
-  
+
+    // If we get mltiple messages in a single transmission, break the buffer
+    // into separate messages.
+    while (strchr(ptr, '\n') > 0) {
+      if (leftover) {
+        processing(false);
+        //printf("%s: The remainder is: \"%s\"\n", __FUNCTION__, leftover);
+        //printf("%s: The rest of the message is: \"%s\"\n", __FUNCTION__, ptr);
+        packet = new char[cr + strlen(leftover) + 1];
+        memset(packet, 0, cr + strlen(leftover) + 1);
+        strcpy(packet, leftover);
+        strcat(packet, ptr);
+        eom = strrchr(packet, '\n'); // drop the CR off the end there is one
+        if (eom) {
+          *eom = 0;
+        }
+        //printf("%s: The whole message is: \"%s\"\n", __FUNCTION__, packet);
+        ptr = strchr(ptr, '\n') + 2; // messages are delimited by a "\n\0"
+        delete leftover;
+        leftover = 0;
+      } else {
+        packet = new char[cr + 1];
+        memset(packet, 0, cr + 1);
+        strcpy(packet, ptr);
+        ptr += cr + 1;
+      } // end of if remainder
+      if (*packet == '<') {
+        //printf("%d: Pushing Packet #%d of size %d at %p: %s\n", __LINE__,
+        //       data.size(), strlen(packet), packet, packet);
+        eom = strrchr(packet, '\n'); // drop the CR off the end there is one
+        if (eom) {
+          *eom = 0;
+        }
+        //printf("Allocating new packet at %p\n", packet);
+        //data.push_back(packet);
+        msgs[index++] = packet;
+      } else {
+        log_error("Throwing out partial packet %s\n", packet);
+      }
+      
+      //log_msg("%d messages in array now\n", data.size());
+      cr = strlen(ptr);
+    } // end of while (cr)
+    
+    if (strlen(ptr) > 0) {
+      leftover = new char[strlen(ptr) + 1];
+      strcpy(leftover, ptr);
+      processing(true);
+      //printf("%s: Adding remainder: \"%s\"\n", __FUNCTION__, leftover);
+    }
+    
+    processing(false);
+    log_msg("Returning %d messages\n", index);
+    return true;
+    
+  } // end of while (retires)
+
   return true;
 }
 
@@ -532,7 +567,12 @@ xmlsocket_new(const fn_call& fn)
 #endif
   
   fn.result->set(xmlsock_obj);
-  
+
+  // Tune malloc for the best performance
+  //mallopt(M_MMAP_MAX,0);
+  //mallopt(M_TRIM_THRESHOLD,-1);
+  //mallopt(M_MMAP_THRESHOLD,16);
+
 #endif
 }
 
@@ -546,8 +586,12 @@ xmlsocket_event_ondata(const fn_call& fn)
   as_value	val;
   as_value      datain;
   array<const char *> msgs;
+  char          *messages[200];
   int           i;
-  
+  as_c_function_ptr	func;
+  as_as_function*       as_func;
+  tu_string     data; 
+
   xmlsocket_as_object*	ptr = (xmlsocket_as_object*)fn.this_ptr;
   assert(ptr);
   if (ptr->obj.processingData()) {
@@ -555,28 +599,26 @@ xmlsocket_event_ondata(const fn_call& fn)
     fn.result->set(false);
     return;
   }
-
-  if (ptr->obj.anydata(msgs)) {
-    if (fn.this_ptr->get_member("onData", &method)) {
-      as_c_function_ptr	func = method.to_c_function();
-      as_as_function* as_func = method.to_as_function();
-      log_msg("Got %d messages from XMLsocket\n", msgs.size());
-      for (i=0; i<msgs.size(); i++) {
-#if 0
-        tu_string data = ptr->obj[i];
-        //log_msg("Got data from socket!!\n%s", data.c_str());
-        //
-        if (((data[0] != '<') && ((data[1] != 'R') || (data[1] != '?')))
-            || (data[data.size()-2] != '>')){
-          printf("%s: bad message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
-          //printf("%s: previous message was message: \"%s\"\n", __FUNCTION__, ptr->obj[i-1]);
-          //delete data;
-          continue;
-        }
+  
+  memset(messages, 0, sizeof(char *)*200);
+  
+#ifndef USE_DMALLOC
+  dump_memory_stats(__FUNCTION__, __LINE__, "start");
 #endif
-        //log_msg("Got message %s: ", msgs[i]);
-        datain.set(msgs[i]);
-        fn.env->push(datain);
+  
+  if (ptr->obj.anydata(msgs, messages)) {
+#ifndef USE_DMALLOC
+    dump_memory_stats(__FUNCTION__, __LINE__, "after anydata");
+#endif
+    if (fn.this_ptr->get_member("onData", &method)) {
+      func = method.to_c_function();
+      as_func = method.to_as_function();
+      //log_msg("Got %d messages from XMLsocket\n", msgs.size());
+      //      for (i=0; i<msgs.size(); i++) {
+      for (i=0; messages[i] != 0; i++) {
+        //log_msg("Got message #%d, %d bytes long at %p: %s: ", i,
+        // strlen(msgs[i]), msgs[i], msgs[i]);
+        fn.env->push(as_value(messages[i]));
         if (func) {
           // It's a C function.  Call it.
           //log_msg("Calling C function for onData\n");
@@ -588,23 +630,21 @@ xmlsocket_event_ondata(const fn_call& fn)
         } else {
           log_error("error in call_method(): method is not a function\n");
         }
-        //datain.drop_refs();
-        delete msgs[i];
+        //log_msg("Deleting message #%d at %p\n", i, messages[i]);
+        delete messages[i];
         fn.env->pop();
-
-        //printf("%s: Removing message %d: \"%s\"\n", __FUNCTION__, i, data.c_str());
-        //ptr->obj.messageRemove(i);
       }      
-      msgs.resize(0);
-      //ptr->obj.messagesClear();
       ptr->obj.processing(false);
-      //msgs->clear();
     } else {
       log_error("Couldn't find onData!\n");
     }
-  //  env->pop();
-
   }
+  
+  malloc_trim(0);
+  //malloc_stats();
+#ifndef USE_DMALLOC
+  dump_memory_stats(__FUNCTION__, __LINE__, "end");
+#endif
   
   //result->set(&data);
   fn.result->set(true);

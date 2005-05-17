@@ -184,8 +184,12 @@ void moviecliploader_loadclip(const fn_call& fn)
   as_value	val, method;
   struct stat   stats;
   int           fd;
+
+  fn.result->set(true);         // FIXME:
+  log_msg("%s: FIXME: this function disabled for memory leak testing.\n", __FUNCTION__);
+  return;                       // FIXME:
   
-  log_msg("%s: FIXME: nargs = %d\n", __FUNCTION__, fn.nargs);
+  log_msg("%s: nargs = %d\n", __FUNCTION__, fn.nargs);
   moviecliploader_as_object*	ptr = (moviecliploader_as_object*) (as_object*) fn.this_ptr;
   
   tu_string url = fn.env->bottom(fn.first_arg_bottom_index).to_string();  
@@ -220,7 +224,7 @@ void moviecliploader_loadclip(const fn_call& fn)
     
   // fetch resource from URL
   xmlNanoHTTPFetch(url.c_str(), filespec.c_str(), NULL);
-
+  
   // Call the callback since we've started loading the file
   if (fn.this_ptr->get_member("onLoadStart", &method)) {
     //log_msg("FIXME: Found onLoadStart!\n");
@@ -245,6 +249,7 @@ void moviecliploader_loadclip(const fn_call& fn)
   } else {
     log_error("Couldn't find onLoadStart!\n");
   }
+  xmlNanoHTTPCleanup();
 
   // See if the file exists
   if (stat(filespec.c_str(), &stats) < 0) {
@@ -432,7 +437,7 @@ void moviecliploader_loadclip(const fn_call& fn)
 
   //unlink(filespec.c_str());
   
-  xmlNanoHTTPCleanup();
+  //xmlNanoHTTPCleanup();
 
 #endif // HAVE_LIBXML
 }
@@ -455,7 +460,7 @@ moviecliploader_new(const fn_call& fn)
   
   as_object*	mov_obj = new moviecliploader_as_object;
   //log_msg("\tCreated New MovieClipLoader object at %p\n", mov_obj);
-  
+
   mov_obj->set_member("loadClip",
                       &moviecliploader_loadclip);
   mov_obj->set_member("unloadClip",
@@ -476,24 +481,6 @@ moviecliploader_new(const fn_call& fn)
                              (as_c_function_ptr)&event_test);
   mov_obj->set_event_handler(event_id::LOAD_ERROR,
                              (as_c_function_ptr)&event_test);
-
-  // Load the actual movie.
-  //gameswf::movie_definition*	md = gameswf::create_movie("/home/rob/projects/request/alpha/tu-testbed/tests/test2.swf");
-  gameswf::movie_definition*	md = current_movie->get_movie_definition();
-  if (md == NULL)	{
-    fprintf(stderr, "error: can't create a movie from\n");
-    exit(1);
-  }
-  gameswf::movie_interface*	m = md->create_instance();
-  if (m == NULL) {
-    fprintf(stderr, "error: can't create movie instance\n");
-    exit(1);
-  }
-  //current_movie->add_display_object();
-  //env->get_target()->clone_display_object("_root",
-  //				"MovieClipLoader", 1);
-  //m->set_visible(true);
-  //m->display();
 #endif
   
   fn.result->set_as_object_interface(mov_obj);

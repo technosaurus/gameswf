@@ -23,8 +23,10 @@ class XMLAttr {
   XMLAttr();
   ~XMLAttr();
   
-  tu_string          _name;
-  gameswf::as_value  _value;
+  //tu_string  _name;
+  char        *_name;
+  //  gameswf::as_value  _value;
+  char        *_value;
  private:
 };
 
@@ -207,6 +209,11 @@ class XML {
     //return _node_data[0];
   }
   
+  void clear()
+  {
+    delete _nodes;
+  }
+  
   array<XMLNode *> childNodes()
   {
     return _nodes->_children;
@@ -222,7 +229,7 @@ class XML {
 
   void  change_stack_frame(int frame, gameswf::as_object *xml, gameswf::as_environment *env);
   void  setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env);
-  void  cleanupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env);
+  void  cleanupStackFrames( XMLNode *data);
   as_object *setupFrame(gameswf::as_object *xml, XMLNode *data, bool src);
   
   const char *nodeNameGet() 
