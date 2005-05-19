@@ -5,23 +5,15 @@
 
 // Handy image utilities for RGB surfaces.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "base/image.h"
 
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/jpeg.h"
-//#include "base/dlmalloc.h"
 #include "base/tu_file.h"
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 namespace image
 {

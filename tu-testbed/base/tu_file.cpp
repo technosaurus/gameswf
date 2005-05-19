@@ -5,17 +5,11 @@
 
 // A file class that can be customized with callbacks.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "base/tu_file.h"
 #include "base/utility.h"
 #include "base/container.h"
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 //
 // tu_file functions using FILE

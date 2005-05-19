@@ -5,9 +5,6 @@
 
 // A gameswf::render_handler that uses SDL & OpenGL
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "gameswf.h"
 #include "gameswf_types.h"

@@ -3,10 +3,8 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
+#include "base/tu_config.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -30,9 +28,6 @@
 #include "gameswf_render.h"
 #include "gameswf_impl.h"
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 namespace gameswf
 {

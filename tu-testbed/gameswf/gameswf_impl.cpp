@@ -12,9 +12,6 @@
 
 // @@ Need to break this file into pieces
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "base/tu_file.h"
 #include "base/utility.h"
@@ -38,9 +35,6 @@
 #include <typeinfo>
 #include <float.h>
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 #if TU_CONFIG_LINK_TO_ZLIB
 #include <zlib.h>

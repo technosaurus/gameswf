@@ -6,10 +6,8 @@
 #ifndef __XMLSOCKET_H__
 #define __XMLSOCKET_H__
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
+#include "base/tu_config.h"
 #include "gameswf_xml.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"

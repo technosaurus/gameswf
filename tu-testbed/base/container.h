@@ -12,9 +12,6 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "base/tu_config.h"
 #include "base/utility.h"
@@ -22,9 +19,6 @@
 #include <string.h>	// for strcmp and friends
 #include <new>	// for placement new
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 // If you prefer STL implementations of array<> (i.e. std::vector) and
 // hash<> (i.e. std::hash_map) instead of home cooking, then put
