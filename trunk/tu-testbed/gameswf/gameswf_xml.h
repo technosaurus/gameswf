@@ -1,10 +1,8 @@
 #ifndef __XML_H__
 #define __XML_H__
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
+#include "base/tu_config.h"
 #include "gameswf_log.h"
 #include "gameswf_action.h"
 #include "gameswf_impl.h"

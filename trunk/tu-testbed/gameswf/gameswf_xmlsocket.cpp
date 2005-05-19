@@ -3,9 +3,6 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "base/utility.h"
 #include "gameswf_log.h"
@@ -36,9 +33,6 @@
 # include <sys/select.h>
 #endif
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 256

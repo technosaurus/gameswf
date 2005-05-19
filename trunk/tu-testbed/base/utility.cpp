@@ -5,10 +5,6 @@
 
 // Various little utility functions, macros & typedefs.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "base/utility.h"
 #include "base/dlmalloc.h"
 
@@ -54,41 +50,46 @@ void	operator delete[](void* ptr)
 
 #endif // USE_DL_MALLOC
 
+
+void dump_memory_stats(const char *from, int line, const char *label) 
 // Dump the internal statistics from malloc() so we can track memory leaks
-#ifndef USE_DMALLOC
+{
+	return;                       // FIXME: 
+
+// This doesn't compile on Windows.
+#if 0
+  
 // This does not work with DMALLOC, since the internal data structures
 // differ.
-void
-dump_memory_stats(const char *from, int line, const char *label) 
-{
+#ifndef USE_DMALLOC
 
-  return;                       // FIXME: 
+	struct mallinfo mi;
+	static int allocated = 0;
+	static int freeb = 0;
   
-  struct mallinfo mi;
-  static int allocated = 0;
-  static int freeb = 0;
+	mi = mallinfo();
+	if (label != 0) {
+		printf("Malloc Statistics from %s() (line #%d): %s\n", from, line, label);
+	} else { 
+		printf("Malloc Statistics from %s() (line #%d):\n", from, line);
+	}
   
-  mi = mallinfo();
-  if (label != 0) {
-    printf("Malloc Statistics from %s() (line #%d): %s\n", from, line, label);
-  } else { 
-    printf("Malloc Statistics from %s() (line #%d):\n", from, line);
-  }
-  
-  //printf("\tnon-mapped space from system:  %d\n", mi.arena);
-  printf("\ttotal allocated space:         %d\n", mi.uordblks);
-  printf("\ttotal free space:              %d\n", mi.fordblks);
-  printf("\tspace in mmapped regions:      %d\n", mi.hblkhd);
-  printf("\ttop-most, releasable space:    %d\n", mi.keepcost); // Prints 78824
-  if (freeb != mi.fordblks) {
-    printf("\t%d bytes difference in free space.\n", freeb - mi.fordblks);
-    freeb = mi.fordblks;
-  }
+	//printf("\tnon-mapped space from system:  %d\n", mi.arena);
+	printf("\ttotal allocated space:         %d\n", mi.uordblks);
+	printf("\ttotal free space:              %d\n", mi.fordblks);
+	printf("\tspace in mmapped regions:      %d\n", mi.hblkhd);
+	printf("\ttop-most, releasable space:    %d\n", mi.keepcost); // Prints 78824
+	if (freeb != mi.fordblks) {
+		printf("\t%d bytes difference in free space.\n", freeb - mi.fordblks);
+		freeb = mi.fordblks;
+	}
 
-  //if (allocated != mi.uordblks) {
-  //  printf("\t%d bytes difference in allocated space.\n", mi.uordblks - allocated);
-  //  allocated = mi.uordblks;
-  //}  
+	//if (allocated != mi.uordblks) {
+	//  printf("\t%d bytes difference in allocated space.\n", mi.uordblks - allocated);
+	//  allocated = mi.uordblks;
+	//}  
+
+#endif // USE_DMALLOC
+
+#endif // 0
 }
-// end of USE_DMALLOC
-#endif

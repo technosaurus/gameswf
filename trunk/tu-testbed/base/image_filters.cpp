@@ -11,9 +11,6 @@
 // converted from K&R C to C-like C++, changed the interfaces a bit,
 // etc.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "base/image.h"
 #include "base/utility.h"
@@ -22,9 +19,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 namespace {
 // anonymous namespace to hold local stuff.

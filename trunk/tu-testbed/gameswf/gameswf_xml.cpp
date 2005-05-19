@@ -3,9 +3,6 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -23,9 +20,6 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 namespace gameswf
 {

@@ -6,10 +6,6 @@
 // Implementation and helpers for SWF actions.
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "gameswf_action.h"
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
@@ -27,9 +23,6 @@
 #include "gameswf_xmlsocket.h"
 #endif
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 #ifdef _WIN32
 #define snprintf _snprintf

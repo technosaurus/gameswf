@@ -4,9 +4,6 @@
 
 // Code to make a collision-bsp tree out of triangle soup.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 
 #include "base/tu_math.h"
 #include <stdio.h>
@@ -15,9 +12,6 @@
 #include "base/utility.h"
 #include "geometry/bsp.h"
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 const bool	print_debug = 0;
 

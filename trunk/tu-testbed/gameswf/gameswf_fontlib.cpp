@@ -5,12 +5,6 @@
 
 // A module to take care of all of gameswf's loaded fonts.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#ifndef GAMESWF_FONTLIB_CPP
-
 
 #include "base/container.h"
 #include "base/tu_file.h"
@@ -24,9 +18,6 @@
 #include "gameswf_tesselate.h"
 #include "gameswf_render.h"
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
 
 namespace gameswf
 {
@@ -1387,8 +1378,6 @@ namespace fontlib
 }	// end namespace fontlib
 }	// end namespace gameswf
 
-
-#endif	// GAMESWF_FONTLIB_CPP
 
 // Local Variables:
 // mode: C++
