@@ -5,6 +5,10 @@
 // Some optional general configuration.
 //
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 // Choose STL containers, or tu-testbed's simplified work-alikes.
 // #define _TU_USE_STL 1
 
@@ -35,7 +39,7 @@
 // #define TU_CONFIG_LINK_TO_ZLIB 0
 
 // For enabling XML/XMLSocket functionality in gameswf, using GNOME
-// libxml
+// libxml2
 // #define HAVE_LIBXML 1
 
 // #define TU_CONFIG_LINK_TO_LIBPNG 0
