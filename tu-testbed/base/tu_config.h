@@ -10,15 +10,9 @@
 #define TU_CONFIG_H
 
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-
 // In case you need some unusual stuff to be predefined.  For example,
 // maybe you #define new/delete to be something special.
 #include "compatibility_include.h"
-
 
 #ifdef USE_DMALLOC
 #include "dmalloc.h"
@@ -72,7 +66,7 @@
 // define TU_CONFIG_LINK_TO_LIBXML to 1 to include XML support in
 // gameswf, depending on the GNOME libxml library.
 #ifndef TU_CONFIG_LINK_TO_LIBXML
-#define TU_CONFIG_LINK_TO_LIBXML 0
+#define TU_CONFIG_LINK_TO_LIBXML 1
 #endif
 
 

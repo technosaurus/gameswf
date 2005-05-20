@@ -1,3 +1,9 @@
+2005-05-19  Rob Savoye  <rob@darkstar.welcomehome.org>
+
+	* base/utility.cpp: Use _win32 rather than 0 for #ifdef.
+	* compatibility_include.h: Optionally include config.h.
+	* base/tu_config.h: Don't include config.h here.
+
 2005-05-16  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* base/utility.cpp (dump_memory_stats): Disable for now by exiting
