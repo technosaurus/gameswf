@@ -14,13 +14,7 @@
 // maybe you #define new/delete to be something special.
 #include "compatibility_include.h"
 
-#ifdef USE_DMALLOC
-#include "dmalloc.h"
-#endif
-
-
 #include "base/dlmalloc.h"
-
 
 // #define these in compatibility_include.h if you want something different.
 #ifndef tu_malloc

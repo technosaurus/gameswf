@@ -8,7 +8,6 @@
 #include "base/utility.h"
 #include "base/dlmalloc.h"
 
-
 #ifdef _WIN32
 #ifndef NDEBUG
 
@@ -54,10 +53,9 @@ void	operator delete[](void* ptr)
 void dump_memory_stats(const char *from, int line, const char *label) 
 // Dump the internal statistics from malloc() so we can track memory leaks
 {
-	return;                       // FIXME: 
 
 // This doesn't compile on Windows.
-#if 0
+#if  !defined(_WIN32) && !defined(__APPLE_CC__)
   
 // This does not work with DMALLOC, since the internal data structures
 // differ.
@@ -77,8 +75,8 @@ void dump_memory_stats(const char *from, int line, const char *label)
 	//printf("\tnon-mapped space from system:  %d\n", mi.arena);
 	printf("\ttotal allocated space:         %d\n", mi.uordblks);
 	printf("\ttotal free space:              %d\n", mi.fordblks);
-	printf("\tspace in mmapped regions:      %d\n", mi.hblkhd);
-	printf("\ttop-most, releasable space:    %d\n", mi.keepcost); // Prints 78824
+	//printf("\tspace in mmapped regions:      %d\n", mi.hblkhd);
+	//printf("\ttop-most, releasable space:    %d\n", mi.keepcost); // Prints 78824
 	if (freeb != mi.fordblks) {
 		printf("\t%d bytes difference in free space.\n", freeb - mi.fordblks);
 		freeb = mi.fordblks;
@@ -89,7 +87,9 @@ void dump_memory_stats(const char *from, int line, const char *label)
 	//  allocated = mi.uordblks;
 	//}  
 
-#endif // USE_DMALLOC
+// USE_DMALLOC
+#endif
 
-#endif // 0
+// _WIN32
+#endif
 }

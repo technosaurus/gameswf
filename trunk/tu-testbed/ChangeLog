@@ -1,3 +1,43 @@
+2005-05-23  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xmlsocket.cpp(anydata): Use our own environment
+	when calling sub functions, and then be like George Bush, and nuke
+	the environment.
+	* gameswf/gameswf_xml.cpp: Enable the DOM parser by default, as
+	the new xmlReader one has problems with gcc 3.x.
+
+2005-05-21  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_xml.cpp (load): Use xmlReader API instead of
+	lower-level DOM API to save memory.
+
+2005-05-20  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* Makefile.in, base/Makefile.in, geometry/Makefile.in,
+	gameswf/Makefile.in: Add a "mudflap" target that rebuilds
+	everything with mudflap enabled. Mudflap is the new GCC memory
+	checker like Purify. Slow but thorough...
+	* gameswf/gameswf_xml.cpp: Use DEBUG_MEMORY_ALLOCATION to
+	optionally display memory allocation information. Set _name and
+	_value to zero when instantiating. Explicitly delete _name and
+	_value when destructing. Use char * rather than as_value or
+	tu_string for an XMLNode name and value so we can track every
+	byte better.
+	* gameswf/gameswf_xml.h: Use char * rather than as_value or
+	tu_string for an XMLNode name and value so we track every byte
+	better. Use DEBUG_MEMORY_ALLOCATION to optionally display memory
+	allocation information.
+	* gameswf/gameswf_xmlsocket.cpp:  Don't pass an array to anydata()
+	anymore. Delete messages in a batch so we can track memory
+	allocation better.
+	* gameswf/gameswf_xmlsocket.h: Don't pass an array to anydata()
+	anymore.
+	* base/tu_config.h: Don't include dmalloc.h, it conflicts with the
+	one included from glib.h, which we inherit via libxml2. Since
+	glib.h and gameswf use the same constant for enabling this
+	feature, we get this support by default.
+	* base/utility.cpp (dump_memory_stats): Renable.
+	
 2005-05-19  Rob Savoye  <rob@darkstar.welcomehome.org>
 
 	* base/utility.cpp: Use _win32 rather than 0 for #ifdef.

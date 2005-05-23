@@ -8,6 +8,7 @@ include ../config.mk
 
 
 INCLUDES:= \
+	-I..\
 	$(ENGINE_INCLUDE) \
 	$(LIBPNG_INCLUDE) \
 	$(ZLIB_INCLUDE) \
@@ -20,6 +21,11 @@ LDFLAGS := $(OPENGL_LIBS) $(GLU_LIBS) $(SDL_LIBS) $(LIB_DEBUG_FLAGS)
 
 BASE_LIB = $(LIB_PRE)base.$(LIB_EXT)
 all: $(BASE_LIB)
+
+# Rebuild everything completely, but with GCC 4.x Mudflap support
+mudflap:
+	@echo "Rebuilding with GCC Mudflap support"
+	$(MAKE) clean all CFLAGS="$(CFLAGS) -fmudflap"
 
 # Source files.
 SRCS :=						\

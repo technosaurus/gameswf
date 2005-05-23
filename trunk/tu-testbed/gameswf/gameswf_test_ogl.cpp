@@ -707,7 +707,7 @@ int	main(int argc, char *argv[])
 		}
 		m->display();
 		frame_counter++;
-
+		
 		if (do_render)
 		{
 			SDL_GL_SwapBuffers();

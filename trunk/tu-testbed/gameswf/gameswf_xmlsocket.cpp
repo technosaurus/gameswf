@@ -33,7 +33,6 @@
 # include <sys/select.h>
 #endif
 
-
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 256
 #endif
@@ -195,10 +194,10 @@ XMLSocket::close()
 
 // Return true if there is data in the socket, otherwise return false.
 bool
-XMLSocket::anydata(array<const char *> &data, char **msgs)
+XMLSocket::anydata(char **msgs)
 {
   //printf("%s: \n", __FUNCTION__);
-  return anydata(_sockfd, data, msgs);
+  return anydata(_sockfd, msgs);
 }
 
 bool XMLSocket::processingData()
@@ -214,7 +213,7 @@ void XMLSocket::processing(bool x)
 }
 
 bool
-XMLSocket::anydata(int fd, array<const char *> &data, char **msgs)
+XMLSocket::anydata(int fd, char **msgs)
 {
   fd_set                fdset;
   struct timeval        tval;
@@ -232,10 +231,9 @@ XMLSocket::anydata(int fd, array<const char *> &data, char **msgs)
   if (fd <= 0) {
     return false;
   }
-  //data.clear();
 
   //msgs = (char **)realloc(msgs, sizeof(char *));
-  //currentmsg = *msgs;
+
   while (retries-- > 0) {
     FD_ZERO(&fdset);
     FD_SET(fd, &fdset);
@@ -361,7 +359,6 @@ XMLSocket::send(tu_string str)
     return false;
   }
 }
-
 
 // Callbacks
 
@@ -600,45 +597,55 @@ xmlsocket_event_ondata(const fn_call& fn)
   dump_memory_stats(__FUNCTION__, __LINE__, "start");
 #endif
   
-  if (ptr->obj.anydata(msgs, messages)) {
-#ifndef USE_DMALLOC
-    dump_memory_stats(__FUNCTION__, __LINE__, "after anydata");
-#endif
+  if (ptr->obj.anydata(messages)) {
     if (fn.this_ptr->get_member("onData", &method)) {
       func = method.to_c_function();
       as_func = method.to_as_function();
       //log_msg("Got %d messages from XMLsocket\n", msgs.size());
       //      for (i=0; i<msgs.size(); i++) {
       for (i=0; messages[i] != 0; i++) {
-        //log_msg("Got message #%d, %d bytes long at %p: %s: ", i,
-        // strlen(msgs[i]), msgs[i], msgs[i]);
-        fn.env->push(as_value(messages[i]));
+         log_msg("Got message #%d, %d bytes long at %p: %s: \n", i,
+                 strlen(messages[i]), messages[i], messages[i]);
+        datain = messages[i];
+        //fn.env->push(datain);
+#ifndef USE_DMALLOC
+        //dump_memory_stats(__FUNCTION__, __LINE__, "start");
+#endif
+        as_environment *env = new as_environment;
+        env->push(datain);
         if (func) {
           // It's a C function.  Call it.
           //log_msg("Calling C function for onData\n");
-          (*func)(fn_call(&val, fn.this_ptr, fn.env, 1, 0));
+          (*func)(fn_call(&val, fn.this_ptr, env, 1, 0));
         } else if (as_func) {
           // It's an ActionScript function.  Call it.
           //log_msg("Calling ActionScript function for onData, processing msg %d\n", i);
-          (*as_func)(fn_call(&val, fn.this_ptr, fn.env, 1, 0));
+          (*as_func)(fn_call(&val, fn.this_ptr, env, 1, 0));
         } else {
           log_error("error in call_method(): method is not a function\n");
         }
+        env->pop();
+        delete env;
+#ifndef USE_DMALLOC
+        //dump_memory_stats(__FUNCTION__, __LINE__, "end");
+#endif  
         //log_msg("Deleting message #%d at %p\n", i, messages[i]);
-        delete messages[i];
-        fn.env->pop();
-      }      
+        //delete messages[i];
+        //fn.env->pop();
+        datain.set_undefined();
+      }
       ptr->obj.processing(false);
     } else {
       log_error("Couldn't find onData!\n");
     }
+    // Delete this in a batch for now so we can track memory allocation
+    for (i=0; messages[i] != 0; i++) {
+      //log_msg("Deleting message #%d at %p\n", i, messages[i]);
+      delete messages[i];
+    }
   }
-  
-  malloc_trim(0);
-  //malloc_stats();
-#ifndef USE_DMALLOC
-  dump_memory_stats(__FUNCTION__, __LINE__, "end");
-#endif
+
+  //malloc_trim(0);
   
   //result->set(&data);
   fn.result->set(true);

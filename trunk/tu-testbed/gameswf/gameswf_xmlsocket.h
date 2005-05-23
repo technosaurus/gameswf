@@ -27,8 +27,8 @@ class XMLSocket {
   void close();
 
   
-  bool anydata(array<const char *> &data, char **msgs);
-  bool anydata(int sockfd, array<const char *> &data, char **msgs);
+  bool anydata(char **msgs);
+  bool anydata(int sockfd, char **msgs);
   bool connected() { return _connect; };
   bool fdclosed() { return _closed; }
   bool xmlmsg() { return _xmldata; }

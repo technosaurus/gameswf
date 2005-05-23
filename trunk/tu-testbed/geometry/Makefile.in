@@ -38,6 +38,11 @@ GEOMETRY_LIB = $(LIB_PRE)geometry.$(LIB_EXT)
 
 all: $(GEOMETRY_LIB)
 
+# Rebuild everything completely, but with GCC 4.x Mudflap support
+mudflap:
+	@echo "Rebuilding with GCC Mudflap support"
+	$(MAKE) clean all CFLAGS="$(CFLAGS) -fmudflap"
+
 $(GEOMETRY_LIB): $(OBJS)
 	$(AR) $(ARFLAGS) $(LIB_OUT_FLAG)$(GEOMETRY_LIB) $(OBJS)
 
