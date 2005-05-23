@@ -7,6 +7,13 @@ all:
 	make -C gameswf
 #	make -C demos/chunklod
 
+# Rebuild everything completely, but with GCC 4.x Mudflap support
+mudflap:
+	@echo "Rebuilding with GCC Mudflap support"
+	make -C base mudflap
+	make -C geometry mudflap
+	make -C gameswf mudflap
+
 clean:
 	make -C base clean
 	make -C geometry clean

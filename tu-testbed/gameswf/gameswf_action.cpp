@@ -884,7 +884,9 @@ namespace gameswf
 			m_keymap[byte_index] |= mask;
 
 			// Notify listeners.
-			for (int i = 0, n = m_listeners.size(); i < n; i++)
+			int i;
+			int n = m_listeners.size();
+			for (i = 0; i < n; i++)
 			{
 				smart_ptr<as_object_interface>	listener = m_listeners[i];
 				as_value	method;

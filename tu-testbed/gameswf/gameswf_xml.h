@@ -1,6 +1,7 @@
 #ifndef __XML_H__
 #define __XML_H__
 
+//#define DEBUG_MEMORY_ALLOCATION 1
 
 #include "base/tu_config.h"
 #include "gameswf_log.h"
@@ -12,29 +13,41 @@
 
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
+#include <libxml/xmlreader.h>
 
 namespace gameswf
 {
-  
+
 class XMLAttr {
  public:
   XMLAttr();
   ~XMLAttr();
   
-  //tu_string  _name;
   char        *_name;
-  //  gameswf::as_value  _value;
   char        *_value;
- private:
+
+  XMLAttr *operator = (XMLAttr node) {
+    log_msg("\t\tCopying XMLAttr object at %p\n", this);
+    
+    _name = new char[strlen(node._name)+2];
+    memset(_name, 0, strlen(node._name)+2);
+    strcpy(_name, node._name);
+
+    _value = new char[strlen(node._value)+2];
+    memset(_value, 0, strlen(node._value)+2);
+    strcpy(_value, node._value);
+
+    return this;
+  }
 };
 
 struct xmlattr_as_object : public gameswf::as_object
 {
-  XMLAttr obj;
-#if 0
+  //XMLAttr obj;
+#ifdef DEBUG_MEMORY_ALLOCATION
   xmlattr_as_object() 
   {
-    log_msg("\tCreating xmlattr_as_object at %p\n", this);
+    log_msg("\t\tCreating xmlattr_as_object at %p\n", this);
   };
   ~xmlattr_as_object() 
   {
@@ -54,10 +67,10 @@ public:
   {
     return _name;
   }
-  
-  gameswf::as_value *nodeValue()
+
+  char *nodeValue()
   {
-    return &_value;
+    return _value;
   }
   
   //  nodeType 	XML.nodeType
@@ -78,11 +91,6 @@ public:
   array<XMLNode *>childNodes()
   {
     return _children;
-  }  
-
-  array<XMLAttr *> attributesGet()
-  {
-    return _attributes;
   }  
 
   XMLNode *operator [] (int x)
@@ -133,23 +141,25 @@ removeNode() 	XML.removeNode()
 toString() 	XML.toString()
 #endif
   //private:
-  tu_string          _name;
-  gameswf::as_value  _value;
+  //tu_string          _name;
+  //gameswf::as_value  _value;
+  char              *_name;
+  char               *_value;
   array<XMLNode *>   _children;
   array<XMLAttr *>   _attributes;
 };
 
 struct xmlnode_as_object : public gameswf::as_object
 {
-  XMLNode obj;
-#if 0
+  //XMLNode obj;
+#ifdef DEBUG_MEMORY_ALLOCATION
   xmlnode_as_object() 
   {
-    log_msg("\t\tCreating xmlnode_as_object at %p \n", this);
+    log_msg("\tCreating xmlnode_as_object at %p \n", this);
   };
   ~xmlnode_as_object() 
   {
-    log_msg("\t\tDeleting xmlnode_as_object at %p \n", this);
+    log_msg("\tDeleting xmlnode_as_object at %p \n", this);
   };
 #endif
   virtual bool	get_member(const tu_stringi& name, as_value* val)
@@ -224,6 +234,7 @@ class XML {
   }
 
   XMLNode *extractNode(xmlNodePtr node, bool mem);
+  XMLNode *processNode(xmlTextReaderPtr reader, XMLNode *node);
 
   void  change_stack_frame(int frame, gameswf::as_object *xml, gameswf::as_environment *env);
   void  setupStackFrames(gameswf::as_object *xml, gameswf::as_environment *env);
@@ -277,7 +288,7 @@ class XML {
     return this;
   }
 
- private:
+  private:
     bool _on_event_loaded;
     xmlDocPtr _doc;
     xmlNodePtr _firstChild;
@@ -319,7 +330,7 @@ class XML {
 struct xml_as_object : public gameswf::as_object
 {
   XML obj;
-#if 0
+#ifdef DEBUG_MEMORY_ALLOCATION
   xml_as_object() 
   {
     log_msg("\tCreating xml_as_object at %p\n", this);

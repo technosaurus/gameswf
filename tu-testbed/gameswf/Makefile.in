@@ -98,6 +98,11 @@ OBJS = $(LIB_OBJS) $(TEST_PROGRAM_OBJS) $(PARSER_OBJS) $(PROCESSOR_OBJS)
 
 gameswf_impl.$(OBJ_EXT): gameswf.h gameswf_impl.h gameswf_types.h
 
+# Rebuild everything completely, but with GCC 4.x Mudflap support
+mudflap:
+	@echo "Rebuilding with GCC Mudflap support"
+	$(MAKE) clean all CFLAGS="$(CFLAGS) -fmudflap" LDFLAGS="$(LDFLAGS) -lmudflap"
+
 $(LIB_OUT): $(LIB_OBJS)
 	$(AR) $(AR_FLAGS) $(LIB_OUT_FLAG)$@ $^
 
