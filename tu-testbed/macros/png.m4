@@ -1,7 +1,7 @@
 AC_DEFUN([AM_PATH_PNG],
 [
   dnl Lool for the header
-  AC_ARG_WITH(png_incl, [  --with-png-incl        directory where png header is], with_png_incl=${withval})
+  AC_ARG_WITH(png_incl, [  --with-png-incl         directory where png header is], with_png_incl=${withval})
   AC_CACHE_VAL(ac_cv_path_png_incl,[
   if test x"${with_png_incl}" != x ; then
     if test -f ${with_png_incl}/png.h ; then
@@ -44,7 +44,7 @@ AC_DEFUN([AM_PATH_PNG],
   fi
 
   dnl Look for the library
-  AC_ARG_WITH(png_lib, [  --with-png-lib         directory where png library is], with_png_lib=${withval})
+  AC_ARG_WITH(png_lib, [  --with-png-lib          directory where png library is], with_png_lib=${withval})
   AC_MSG_CHECKING([for png library])
   AC_CACHE_VAL(ac_cv_path_png_lib,[
   if test x"${with_png_lib}" != x ; then

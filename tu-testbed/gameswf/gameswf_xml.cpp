@@ -302,9 +302,6 @@ bool
 XML::parseXML(tu_string xml_in)
 {
   bool ret = true;
-  XMLNode *node = 0;
-  xmlTextReaderPtr reader;
-
   //log_msg("Parse XML from memory: %s\n", xml_in.c_str());
 
   if (xml_in.size() == 0) {
@@ -316,7 +313,10 @@ XML::parseXML(tu_string xml_in)
   //dump_memory_stats(__FUNCTION__, __LINE__, "before xmlParseMemory");
 #endif
 
-#if 0
+#ifdef USE_XMLREADER
+  XMLNode *node = 0;
+  xmlTextReaderPtr reader;
+
   reader = xmlReaderForMemory(xml_in.c_str(), xml_in.size(), NULL, NULL, 0);
   if (reader != NULL) {
     ret = true;
@@ -336,6 +336,7 @@ XML::parseXML(tu_string xml_in)
   xmlCleanupParser();
   return true;
 #else
+#ifdef USE_DOM
   xmlInitParser();
   
   _doc = xmlParseMemory(xml_in.c_str(), xml_in.size());
@@ -347,6 +348,7 @@ XML::parseXML(tu_string xml_in)
   xmlCleanupParser();
   xmlFreeDoc(_doc);
   xmlMemoryDump();
+#endif
 #ifndef USE_DMALLOC
   //dump_memory_stats(__FUNCTION__, __LINE__, "after xmlParseMemory");
 #endif
@@ -381,7 +383,9 @@ const char *tabs[] = {
   "\t\t\t\t",
 };
 
-#if 0
+#ifdef USE_XMLREADER
+// This is an xmlReader (SAX) based parser. For some reason it core dumps
+// when compiled with GCC 3.x, but works just fine with GCC 4.x.
 XMLNode*
 XML::processNode(xmlTextReaderPtr reader, XMLNode *node)
 {
@@ -493,14 +497,14 @@ bool
 XML::load(const char *filespec)
 {
   bool ret = true;
-  XMLNode *node = 0;
-  xmlTextReaderPtr reader;  
-  
   log_msg("Load disk XML file: %s\n", filespec);
   
   //log_msg("%s: mem is %d\n", __FUNCTION__, mem);
 
-#if 0
+#ifdef USE_XMLREADER
+  XMLNode *node = 0;
+  xmlTextReaderPtr reader;  
+  
   reader = xmlNewTextReaderFilename(filespec);
   if (reader != NULL) {
     ret = true;
@@ -520,7 +524,7 @@ XML::load(const char *filespec)
   xmlCleanupParser();
   return true;
 #else
-  
+#ifdef USE_DOM
   xmlInitParser();
   _doc = xmlParseFile(filespec);
   if (_doc == 0) {
@@ -532,7 +536,10 @@ XML::load(const char *filespec)
   xmlFreeDoc(_doc);
   xmlMemoryDump();
   return true;
-#endif  
+#else
+#error "You have to enable either a DOM or an xmlReader XML parser"
+#endif
+#endif
 }
 
 bool
