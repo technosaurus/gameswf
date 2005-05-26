@@ -864,6 +864,8 @@ Optional Features:
   --disable-xml           Disable support for xml and xmlsocket
   --enable-i810-lod-bias  Enable fix for Intel 810 LOD bias problem
   --enable-dmalloc        Enable support for DMalloc
+  --enable-dom         Enable support for Dom parser
+  --enable-xmlreader      Enable support for xmlReader parser
   --disable-dependency-tracking  speeds up one-time build
   --enable-dependency-tracking   do not reject slow dependency extractors
   --disable-sdltest       Do not try to compile and run a test SDL program
@@ -877,14 +879,14 @@ Optional Packages:
   --with-libxml-includes=DIR   Directory where libxmlc++ header files are installed (optional)
   --with-sdl-prefix=PFX   Prefix where SDL is installed (optional)
   --with-sdl-exec-prefix=PFX Exec prefix where SDL is installed (optional)
-  --with-sdl_mixer-incl        directory where sdl_mixer header is
-  --with-sdl_mixer-lib         directory where sdl_mixer library is
+  --with-sdl_mixer-incl   directory where sdl_mixer header is
+  --with-sdl_mixer-lib    directory where sdl_mixer library is
   --with-zlib-incl        directory where zlib header is
   --with-zlib-lib         directory where zlib library is
   --with-jpeg-incl        directory where jpeg header is
   --with-jpeg-lib         directory where jpeg library is
-  --with-png-incl        directory where png header is
-  --with-png-lib         directory where png library is
+  --with-png-incl         directory where png header is
+  --with-png-lib          directory where png library is
 
 Some influential environment variables:
   CC          C compiler command
@@ -1944,7 +1946,7 @@ echo "$as_me: error: bad value ${enableval} for disable-xml option" >&2;}
 esac
 fi;
 
-if test x$enable_xml != xyes; then
+if test x$disable_xml != xno; then
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LIBXML
@@ -2062,6 +2064,55 @@ _ACEOF
     DMALLOC_LIB="-ldmallocxx"
 else
     DMALLOC_LIB=""
+fi
+
+
+
+dom=yes
+# Check whether --enable-dom or --disable-dom was given.
+if test "${enable_dom+set}" = set; then
+  enableval="$enable_dom"
+  case "${enableval}" in
+  yes) dom=yes ;;
+  no)  dom=no ;;
+  *)   { { echo "$as_me:$LINENO: error: bad value ${enableval} for enable-malloc option" >&5
+echo "$as_me: error: bad value ${enableval} for enable-malloc option" >&2;}
+   { (exit 1); exit 1; }; } ;;
+esac
+fi;
+
+if test x$dom = xyes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_DOM
+_ACEOF
+
+fi
+
+# Check whether --enable-reader or --disable-reader was given.
+if test "${enable_reader+set}" = set; then
+  enableval="$enable_reader"
+  case "${enableval}" in
+  yes) reader=yes ;;
+  no)  reader=no ;;
+  *)   { { echo "$as_me:$LINENO: error: bad value ${enableval} for enable-malloc option" >&5
+echo "$as_me: error: bad value ${enableval} for enable-malloc option" >&2;}
+   { (exit 1); exit 1; }; } ;;
+esac
+fi;
+
+if test x$reader = xyes; then
+
+cat >>confdefs.h <<\_ACEOF
+#define USE_XMLREADER
+_ACEOF
+
+fi
+
+if test x$reader = xyes -a x$dom = xyes; then
+   { { echo "$as_me:$LINENO: error: Can't specify a DOM and an xmlReader parser" >&5
+echo "$as_me: error: Can't specify a DOM and an xmlReader parser" >&2;}
+   { (exit 1); exit 1; }; }
 fi
 
 

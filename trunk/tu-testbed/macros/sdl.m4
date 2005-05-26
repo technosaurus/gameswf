@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 AC_DEFUN([AM_PATH_SDL_MIXER],
 [
   dnl Lool for the header
-  AC_ARG_WITH(sdl_mixer_incl, [  --with-sdl_mixer-incl        directory where sdl_mixer header is], with_sdl_mixer_incl=${withval})
+  AC_ARG_WITH(sdl_mixer_incl, [  --with-sdl_mixer-incl   directory where sdl_mixer header is], with_sdl_mixer_incl=${withval})
   AC_CACHE_VAL(ac_cv_path_sdl_mixer_incl,[
   if test x"${with_sdl_mixer_incl}" != x ; then
     if test -f ${with_sdl_mixer_incl}/SDL_mixer.h ; then
@@ -221,7 +221,7 @@ AC_DEFUN([AM_PATH_SDL_MIXER],
   fi
 
   dnl Look for the library
-  AC_ARG_WITH(sdl_mixer_lib, [  --with-sdl_mixer-lib         directory where sdl_mixer library is], with_sdl_mixer_lib=${withval})
+  AC_ARG_WITH(sdl_mixer_lib, [  --with-sdl_mixer-lib    directory where sdl_mixer library is], with_sdl_mixer_lib=${withval})
   AC_MSG_CHECKING([for sdl_mixer library])
   AC_CACHE_VAL(ac_cv_path_sdl_mixer_lib,[
   if test x"${with_sdl_mixer_lib}" != x ; then

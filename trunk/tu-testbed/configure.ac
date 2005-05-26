@@ -30,7 +30,7 @@ AC_ARG_ENABLE(libxml, [  --disable-xml           Disable support for xml and xml
   *)   AC_MSG_ERROR([bad value ${enableval} for disable-xml option]) ;;
 esac])
 
-if test x$enable_xml != xyes; then
+if test x$disable_xml != xno; then
     AC_DEFINE([HAVE_LIBXML], [], [Use XML])
     AM_PATH_LIBXML2
 fi
@@ -62,6 +62,38 @@ else
     DMALLOC_LIB=""
 fi
 AC_SUBST(DMALLOC_LIB)
+
+
+dnl Use the Dom parser from libxml2, not the xmlReader one
+dnl The default is to use the Dom parser
+dom=yes
+AC_ARG_ENABLE(dom, [  --enable-dom         Enable support for Dom parser],
+[case "${enableval}" in
+  yes) dom=yes ;;
+  no)  dom=no ;;
+  *)   AC_MSG_ERROR([bad value ${enableval} for enable-malloc option]) ;;
+esac])
+
+if test x$dom = xyes; then
+    AC_DEFINE([USE_DOM], [], [Use Dom parser])
+fi
+
+dnl Use an xmlReader parser, instead of the DOM one
+AC_ARG_ENABLE(reader, [  --enable-xmlreader      Enable support for xmlReader parser],
+[case "${enableval}" in
+  yes) reader=yes ;;
+  no)  reader=no ;;
+  *)   AC_MSG_ERROR([bad value ${enableval} for enable-malloc option]) ;;
+esac])
+
+if test x$reader = xyes; then
+    AC_DEFINE([USE_XMLREADER], [], [Use xmlReader parser])
+fi
+
+if test x$reader = xyes -a x$dom = xyes; then
+   AC_ERROR([Can't specify a DOM and an xmlReader parser])
+fi
+
 
 AC_PROG_CC
 AC_PROG_CXX

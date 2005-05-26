@@ -1,3 +1,10 @@
+2005-05-25  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* macros/png.m4, sdl.m4: tweak so help output lines up.
+	* configure.ac: Add enable options for DOM or xmlReader parsers,
+	with DOM being the default.
+	* configure, config.h.in, aclocal.m4: Regenerated.
+
 2005-05-23  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_xmlsocket.cpp(anydata): Use our own environment
@@ -24,7 +31,7 @@
 	tu_string for an XMLNode name and value so we can track every
 	byte better.
 	* gameswf/gameswf_xml.h: Use char * rather than as_value or
-	tu_string for an XMLNode name and value so we track every byte
+	tu_string for an XMLNode name and value so we can track every byte
 	better. Use DEBUG_MEMORY_ALLOCATION to optionally display memory
 	allocation information.
 	* gameswf/gameswf_xmlsocket.cpp:  Don't pass an array to anydata()
@@ -53,7 +60,7 @@
 	anydata(). Call malloc_trim() to release memory back to the
 	system so we don't eat up all the memory. 
 	(anydata) Use char * rather than tu_strings for the buffering so
-	we can track every byte. Parse looking for the nll. delimiter
+	we can track every byte. Parse looking for the newline delimiter
 	between messages. Setup single messages faster than processing
 	multiple messages.
 	* gameswf/gameswf_xml.cpp: Delete name and value too. Use char *

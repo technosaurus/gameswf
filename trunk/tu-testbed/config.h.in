@@ -84,5 +84,11 @@
 /* Use DMalloc */
 #undef USE_DMALLOC
 
+/* Use Dom parser */
+#undef USE_DOM
+
+/* Use xmlReader parser */
+#undef USE_XMLREADER
+
 /* Version number of package */
 #undef VERSION
