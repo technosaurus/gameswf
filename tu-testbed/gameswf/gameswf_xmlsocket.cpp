@@ -594,7 +594,7 @@ xmlsocket_event_ondata(const fn_call& fn)
   memset(messages, 0, sizeof(char *)*200);
   
 #ifndef USE_DMALLOC
-  dump_memory_stats(__FUNCTION__, __LINE__, "start");
+  //dump_memory_stats(__FUNCTION__, __LINE__, "start");
 #endif
   
   if (ptr->obj.anydata(messages)) {
@@ -604,8 +604,8 @@ xmlsocket_event_ondata(const fn_call& fn)
       //log_msg("Got %d messages from XMLsocket\n", msgs.size());
       //      for (i=0; i<msgs.size(); i++) {
       for (i=0; messages[i] != 0; i++) {
-         log_msg("Got message #%d, %d bytes long at %p: %s: \n", i,
-                 strlen(messages[i]), messages[i], messages[i]);
+//          log_msg("Got message #%d, %d bytes long at %p: %s: \n", i,
+//                  strlen(messages[i]), messages[i], messages[i]);
         datain = messages[i];
         //fn.env->push(datain);
 #ifndef USE_DMALLOC

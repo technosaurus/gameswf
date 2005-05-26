@@ -1,3 +1,10 @@
+2005-05-26  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_test_ogl.cpp (main): Don't initialize the
+	log_callback unless verbose is specified. This improves the
+	performance when not using -v, since the display function returns
+	immediately.
+
 2005-05-25  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* macros/png.m4, sdl.m4: tweak so help output lines up.

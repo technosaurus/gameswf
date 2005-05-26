@@ -385,7 +385,9 @@ int	main(int argc, char *argv[])
 
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_fscommand_callback(fs_callback);
-	gameswf::register_log_callback(log_callback);
+	if (s_verbose == true) {
+		gameswf::register_log_callback(log_callback);
+	}
 	//gameswf::set_antialiased(s_antialiased);
 
 	gameswf::sound_handler*	sound = NULL;
