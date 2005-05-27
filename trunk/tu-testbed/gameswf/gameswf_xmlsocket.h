@@ -16,6 +16,8 @@
 #ifdef HAVE_LIBXML
 
 namespace gameswf {
+
+extern const int SOCKET_DATA;
   
 class XMLSocket {
  public:
@@ -82,6 +84,8 @@ void xmlsocket_event_ondata(const fn_call& fn);
 void xmlsocket_event_close(const fn_call& fn);
 void xmlsocket_event_connect(const fn_call& fn);
 void xmlsocket_event_xml(const fn_call& fn);
+
+void check_sockets();
  
 } // end of gameswf namespace
 

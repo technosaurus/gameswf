@@ -1,5 +1,8 @@
-2005-05-26  Rob Savoye  <rob@bertha.welcomehome.org>
+2005-05-26  Rob Savoye  <rob@darkstar.welcomehome.org>
 
+	* gameswf/gameswf_test_ogl.cpp (main): Initialize the LOD BIAS
+	here, rather than in apply(). This gets rid of the global
+	variable.
 	* gameswf/gameswf_test_ogl.cpp (main): Don't initialize the
 	log_callback unless verbose is specified. This improves the
 	performance when not using -v, since the display function returns
@@ -41,7 +44,7 @@
 	tu_string for an XMLNode name and value so we can track every byte
 	better. Use DEBUG_MEMORY_ALLOCATION to optionally display memory
 	allocation information.
-	* gameswf/gameswf_xmlsocket.cpp:  Don't pass an array to anydata()
+	* gameswf/gameswf_xmlsocket.cpp: Don't pass an array to anydata()
 	anymore. Delete messages in a batch so we can track memory
 	allocation better.
 	* gameswf/gameswf_xmlsocket.h: Don't pass an array to anydata()
