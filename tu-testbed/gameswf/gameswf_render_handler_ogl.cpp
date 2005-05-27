@@ -31,8 +31,6 @@
 // looking too blurry.  (Also applies to text rendering.)
 #define GENERATE_MIPMAPS 0
 
-extern float	tex_lod_bias;	// FIXME
-
 // bitmap_info_ogl declaration
 struct bitmap_info_ogl : public gameswf::bitmap_info
 {
@@ -50,18 +48,17 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 	}
 };
 
-
 struct render_handler_ogl : public gameswf::render_handler
 {
 	// Some renderer state.
 
 	// Enable/disable antialiasing.
 	bool	m_enable_antialias;
-
+	
 	// Output size.
 	float	m_display_width;
 	float	m_display_height;
-
+	
 	gameswf::matrix	m_current_matrix;
 	gameswf::cxform	m_current_cxform;
 	void set_antialiased(bool enable)
@@ -111,7 +108,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		*width = new_w;
 		*height = new_h;
 	}
-
+	
 	struct fill_style
 	{
 		enum mode
@@ -129,7 +126,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		gameswf::matrix	m_bitmap_matrix;
 		gameswf::cxform	m_bitmap_color_transform;
 		bool	m_has_nonzero_bitmap_additive_color;
-
+		
 		fill_style()
 			:
 			m_mode(INVALID),
@@ -141,25 +138,6 @@ struct render_handler_ogl : public gameswf::render_handler
 		// Push our style into OpenGL.
 		{
 			assert(m_mode != INVALID);
-
-			// Change the LOD BIAS values to tweak blurriness.
-			if (tex_lod_bias != 0.0f) {
-#ifdef FIX_I810_LOD_BIAS	
-				// If 2D textures weren't previously enabled, enable
-				// them now and force the driver to notice the update,
-				// then disable them again.
-				if (!glIsEnabled(GL_TEXTURE_2D)) {
-					// Clearing a mask of zero *should* have no
-					// side effects, but coupled with enbling
-					// GL_TEXTURE_2D it works around a segmentation
-					// fault in the driver for the Intel 810 chip.
-					glEnable(GL_TEXTURE_2D);
-					glClear(0);
-					glDisable(GL_TEXTURE_2D);
-				}
-#endif // FIX_I810_LOD_BIAS
-				glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
-			}
 				
 			if (m_mode == COLOR)
 			{

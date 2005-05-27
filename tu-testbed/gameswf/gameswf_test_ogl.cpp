@@ -16,7 +16,6 @@
 #include "base/tu_file.h"
 #include "base/tu_types.h"
 
-
 void	print_usage()
 // Brief instructions.
 {
@@ -176,7 +175,6 @@ static void	key_event(SDLKey key, bool down)
 }
 
 
-float	tex_lod_bias;	// FIXME: should not use globals to pass args!
 
 
 int	main(int argc, char *argv[])
@@ -191,9 +189,10 @@ int	main(int argc, char *argv[])
 	bool	do_loop = true;
 	bool	sdl_abort = true;
 	int     delay = 30;
+	float	tex_lod_bias;
 
 	// -1.0 tends to look good.
-	tex_lod_bias = -1.0f;
+	tex_lod_bias = -1.2f;
 	
 	for (int arg = 1; arg < argc; arg++)
 	{
@@ -399,7 +398,8 @@ int	main(int argc, char *argv[])
 			gameswf::set_sound_handler(sound);
 		}
 		render = gameswf::create_render_handler_ogl();
-		gameswf::set_render_handler(render); 
+		gameswf::set_render_handler(render);
+		// render->set_lod_bias(tex_lod_bias);
 	}
 
 	// Get info about the width & height of the movie.
@@ -487,7 +487,25 @@ int	main(int argc, char *argv[])
 		glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-
+		
+		// Change the LOD BIAS values to tweak blurriness.
+		if (tex_lod_bias != 0.0f) {
+#ifdef FIX_I810_LOD_BIAS	
+			// If 2D textures weren't previously enabled, enable
+			// them now and force the driver to notice the update,
+			// then disable them again.
+			if (!glIsEnabled(GL_TEXTURE_2D)) {
+				// Clearing a mask of zero *should* have no
+				// side effects, but coupled with enbling
+				// GL_TEXTURE_2D it works around a segmentation
+				// fault in the driver for the Intel 810 chip.
+				glEnable(GL_TEXTURE_2D);
+				glClear(0);
+				glDisable(GL_TEXTURE_2D);
+			}
+#endif // FIX_I810_LOD_BIAS
+			glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
+		}
 	}
 
 	// Load the actual movie.
@@ -514,6 +532,7 @@ int	main(int argc, char *argv[])
 	if (do_render)
 	{
 		start_ticks = SDL_GetTicks();
+		
 	}
 	Uint32	last_ticks = start_ticks;
 	int	frame_counter = 0;
@@ -552,6 +571,9 @@ int	main(int argc, char *argv[])
 			{
 				switch (event.type)
 				{
+				case SDL_USEREVENT:
+					printf("%s, %d\n", __FUNCTION__, __LINE__);
+					break;
 				case SDL_KEYDOWN:
 				{
 					SDLKey	key = event.key.keysym.sym;

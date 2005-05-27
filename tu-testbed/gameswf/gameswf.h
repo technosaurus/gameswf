@@ -840,7 +840,6 @@ namespace gameswf
 		
 		virtual void	set_antialiased(bool enable) = 0;
 		
-		
 		virtual void begin_submit_mask() = 0;
 		virtual void end_submit_mask() = 0;
 		virtual void disable_mask() = 0;

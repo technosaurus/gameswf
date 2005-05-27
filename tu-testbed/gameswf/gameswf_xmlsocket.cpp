@@ -40,6 +40,8 @@
 namespace gameswf
 {
 
+const int SOCKET_DATA = 1;
+
 const int INBUF = 7000;
 
 XMLSocket::XMLSocket()
@@ -722,6 +724,21 @@ xmlsocket_event_xml(const fn_call& fn)
 #else
   log_error("%s: unimplemented!\n", __FUNCTION__);
 #endif  
+}
+
+void check_sockets()
+{
+  log_msg("%s unimplemented\n", __FUNCTION__);
+#if 0
+  SDL_Event event;
+  
+  // Setup user event handler
+  event.type = SDL_USEREVENT;
+  event.user.code = 123;
+  event.user.data1 = 0;
+  event.user.data2 = 0;
+  SDL_PushEvent(&event);
+#endif
 }
 
 } // end of gameswf namespace
