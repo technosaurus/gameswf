@@ -1,3 +1,9 @@
+2005-05-28  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_test_ogl.cpp (main): Move the setting of the LOD
+	BIAS up a few lines, as to be effective, it has to be executed
+	before initializing the video mode for the I810.
+
 2005-05-26  Rob Savoye  <rob@darkstar.welcomehome.org>
 
 	* gameswf/gameswf_test_ogl.cpp (main): Initialize the LOD BIAS

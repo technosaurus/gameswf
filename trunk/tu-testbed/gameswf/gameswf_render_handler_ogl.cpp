@@ -138,7 +138,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		// Push our style into OpenGL.
 		{
 			assert(m_mode != INVALID);
-				
+			
 			if (m_mode == COLOR)
 			{
 				apply_color(m_color);
