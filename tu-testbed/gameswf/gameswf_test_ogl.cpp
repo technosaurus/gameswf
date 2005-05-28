@@ -465,6 +465,25 @@ int	main(int argc, char *argv[])
 			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
 		}
 
+		// Change the LOD BIAS values to tweak blurriness.
+		if (tex_lod_bias != 0.0f) {
+#ifdef FIX_I810_LOD_BIAS	
+			// If 2D textures weren't previously enabled, enable
+			// them now and force the driver to notice the update,
+			// then disable them again.
+			if (!glIsEnabled(GL_TEXTURE_2D)) {
+				// Clearing a mask of zero *should* have no
+				// side effects, but coupled with enbling
+				// GL_TEXTURE_2D it works around a segmentation
+				// fault in the driver for the Intel 810 chip.
+				glEnable(GL_TEXTURE_2D);
+				glClear(0);
+				glDisable(GL_TEXTURE_2D);
+			}
+#endif // FIX_I810_LOD_BIAS
+			glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
+		}
+		
 		// Set the video mode.
 		if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL) == 0)
 		{
@@ -488,24 +507,6 @@ int	main(int argc, char *argv[])
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		
-		// Change the LOD BIAS values to tweak blurriness.
-		if (tex_lod_bias != 0.0f) {
-#ifdef FIX_I810_LOD_BIAS	
-			// If 2D textures weren't previously enabled, enable
-			// them now and force the driver to notice the update,
-			// then disable them again.
-			if (!glIsEnabled(GL_TEXTURE_2D)) {
-				// Clearing a mask of zero *should* have no
-				// side effects, but coupled with enbling
-				// GL_TEXTURE_2D it works around a segmentation
-				// fault in the driver for the Intel 810 chip.
-				glEnable(GL_TEXTURE_2D);
-				glClear(0);
-				glDisable(GL_TEXTURE_2D);
-			}
-#endif // FIX_I810_LOD_BIAS
-			glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
-		}
 	}
 
 	// Load the actual movie.
