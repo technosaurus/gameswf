@@ -7,7 +7,11 @@
 
 
 #include "SDL.h"
+#include "SDL_thread.h"
+
 #include "gameswf.h"
+#include <unistd.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "base/ogl.h"
@@ -15,6 +19,14 @@
 #include "base/container.h"
 #include "base/tu_file.h"
 #include "base/tu_types.h"
+#include "gameswf_xmlsocket.h"
+
+extern int xml_fd;		// FIXME: this is the file descriptor
+				// from XMLSocket::connect(). This
+				// needs to be propogated up through
+				// the layers properly, but first I
+				// want to make sure it all works.
+
 
 void	print_usage()
 // Brief instructions.
@@ -42,6 +54,7 @@ void	print_usage()
 		"  -vp         Be verbose about parsing the movie\n"
 		"  -ml <bias>  Specify the texture LOD bias (float, default is -1)\n"
 		"  -p          Run full speed (no sleep) and log frame rate\n"
+		"  -e          Use SDL Event thread\n"
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
                 "  -r <0|1|2>  0 disables renderering & sound (good for batch tests)\n"
                 "              1 enables rendering & sound (default setting)\n"
@@ -68,6 +81,8 @@ void	print_usage()
 
 #define OVERSIZE	1.0f
 
+static int runThread(void *nothing);
+static int doneYet = 0;
 
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
@@ -75,7 +90,7 @@ static int	s_bit_depth = 16;
 static bool	s_verbose = false;
 static bool	s_background = true;
 static bool	s_measure_performance = false;
-
+static bool	s_event_thread = false;
 
 static void	message_log(const char* message)
 // Process a log message.
@@ -188,7 +203,7 @@ int	main(int argc, char *argv[])
         bool    do_sound = true;
 	bool	do_loop = true;
 	bool	sdl_abort = true;
-	int     delay = 30;
+	int     delay = 31;
 	float	tex_lod_bias;
 
 	// -1.0 tends to look good.
@@ -280,6 +295,11 @@ int	main(int argc, char *argv[])
 			{
 				// Enable frame-rate/performance logging.
 				s_measure_performance = true;
+			}
+			else if (argv[arg][1] == 'e')
+			{
+				// Use an SDL thread to handle events
+				s_event_thread = true;
 			}
 			else if (argv[arg][1] == '1')
 			{
@@ -399,7 +419,6 @@ int	main(int argc, char *argv[])
 		}
 		render = gameswf::create_render_handler_ogl();
 		gameswf::set_render_handler(render);
-		// render->set_lod_bias(tex_lod_bias);
 	}
 
 	// Get info about the width & height of the movie.
@@ -419,16 +438,27 @@ int	main(int argc, char *argv[])
 
 	if (do_render)
 	{
-		// Initialize the SDL subsystems we're using.
+		// Initialize the SDL subsystems we're using. Linux
+		// and Darwin use Pthreads for SDL threads, Win32
+		// doesn't. Otherwise the SDL event loop just polls.
 		if (sdl_abort) {
-			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO /* | SDL_INIT_JOYSTICK | SDL_INIT_CDROM*/))
-			{
+			//  Other flags are SDL_INIT_JOYSTICK | SDL_INIT_CDROM
+#ifdef _WIN32
+			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
+#else
+			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTTHREAD ))
+#endif
+				{
 				fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 					exit(1);
 			}
 		} else {
 			fprintf(stderr, "warning: SDL won't trap core dumps \n");
-			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE ))
+#ifdef _WIN32
+			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE  | SDL_INIT_EVENTTHREAD))
+#else
+			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE))
+#endif
 			{
 				fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 					exit(1);
@@ -439,6 +469,7 @@ int	main(int argc, char *argv[])
 
 		SDL_EnableKeyRepeat(250, 33);
 
+		
 		if (s_bit_depth == 16)
 		{
 			// 16-bit color, surface creation is likely to succeed.
@@ -506,7 +537,12 @@ int	main(int argc, char *argv[])
 		glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-		
+
+		// We don't need lighting effects
+		glDisable(GL_LIGHTING);
+		// glColorPointer(4, GL_UNSIGNED_BYTE, 0, *);
+		// glInterleavedArrays(GL_T2F_N3F_V3F, 0, *)
+		glPushAttrib (GL_ALL_ATTRIB_BITS);		
 	}
 
 	// Load the actual movie.
@@ -539,9 +575,18 @@ int	main(int argc, char *argv[])
 	int	frame_counter = 0;
 	int	last_logged_fps = last_ticks;
 
-	tu_string foo;
+
+	SDL_Thread *thread = NULL;
+	if (s_event_thread) {
+		thread = SDL_CreateThread(runThread, NULL);
+		if ( thread == NULL) {
+			fprintf(stderr, "Unable to create thread: %s\n", SDL_GetError());
+		}
+	}
+	
+	
 	for (;;)
-	{		
+	{
 		Uint32	ticks;
 		if (do_render)
 		{
@@ -564,16 +609,24 @@ int	main(int argc, char *argv[])
 			break;
 		}
 		
+		bool ret = true;
 		if (do_render)
 		{
-			// Handle input.
 			SDL_Event	event;
-			while (SDL_PollEvent(&event))
+			// Handle input.
+			while (ret)
 			{
+				if (s_event_thread && xml_fd > 0) {
+					ret = SDL_WaitEvent(&event);
+				} else {
+					ret = SDL_PollEvent(&event);
+				}
+				//printf("EVENT Type is %d\n", event.type);
 				switch (event.type)
 				{
 				case SDL_USEREVENT:
-					printf("%s, %d\n", __FUNCTION__, __LINE__);
+					//printf("SDL_USER_EVENT at %s, code %d%d\n", __FUNCTION__, __LINE__, event.user.code);
+					ret = false;
 					break;
 				case SDL_KEYDOWN:
 				{
@@ -736,6 +789,7 @@ int	main(int argc, char *argv[])
 		if (do_render)
 		{
 			SDL_GL_SwapBuffers();
+			//glPopAttrib ();
 
 			if (s_measure_performance == false)
 			{
@@ -774,6 +828,10 @@ int	main(int argc, char *argv[])
 	}
 
 done:
+	doneYet = 1;
+	SDL_KillThread(thread);	// kill the network read thread
+	//SDL_Quit();
+	
 	if (md) md->drop_ref();
 	if (m) m->drop_ref();
 	delete sound;
@@ -789,6 +847,54 @@ done:
 	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 	gameswf::clear();
 
+	return 0;
+}
+
+static int
+runThread(void *nothing)
+{
+	//int i = 123;
+	int val;
+	int count = 0;
+	SDL_Event *ptr;
+#if 1
+	SDL_Event ev;
+	ev.type = SDL_USEREVENT;
+	ev.user.code  = 0;
+	ev.user.data1 = 0;
+	ev.user.data2 = 0;
+	ptr = &ev;
+#else
+	ptr = (SDL_Event *)ev_ptr;
+	ptr->type = SDL_USEREVENT;
+	ptr->user.code  = 0;
+	ptr->user.data1 = 0;
+	ptr->user.data2 = 0;
+#endif
+
+	printf("Initializing event thread...\n");
+	
+	while (!doneYet) {
+		//ptr->user.data1 = (void *)i;
+		// FIXME: this file descriptor is hardcoded so this
+		// doesn't work under GDB right now.
+		if ((val = gameswf::check_sockets(xml_fd)) == -1) {
+			sleep(100);
+			continue;
+		}
+		s_event_thread = true;
+		// Don't push an event if there is already one in the
+		// queue. XMLSocket::onData() will come around and get
+		// the data anyway.
+		count = SDL_PeepEvents(ptr, 1, SDL_PEEKEVENT, SDL_USEREVENT);
+		// printf("%d User Events in queue\n", count);
+		if ((count == 0) && (val >= 0)) {
+			//printf("Pushing User Event on queue\n");
+			SDL_PushEvent(ptr);
+			SDL_Delay(300);
+		}
+	}
+	
 	return 0;
 }
 

@@ -1,8 +1,28 @@
+2005-06-06  Rob Savoye  <rob@bertha.welcomehome.org>
+
+	* gameswf/gameswf_test_ogl.cpp (runThread): New SDL_Thread to
+	handle looking for network data, and if there is data, push an SDL
+	User Event on the event queue.
+	(main): Add new -e option to enable a threaded event based main
+	loop or the existing polling one. Pass SDL_INIT_EVENTTHREAD to
+	SDL_Init() on all platforms but win32.
+	(runThread): Use the global variable to pass to select().
+	* gameswf/gameswf_xmlsocket.{h,cpp}: Add checkSockets(), which
+	checks to see if there is data waiting in a socket. Add a temporay
+	global variable to pass the file descriptor from ::connect() up to
+	the main loop.
+	* gameswf/gameswf_xml.{h,cpp} (memadjust): Adjust a byte count to
+	be aligned on the proper boundary. (word size for now) Use only
+	adjusted memory for all dynamic memory allocation sizes.
+	* autogen.h: Remove bogus warning message and amke it say
+	something intelligent.
+
 2005-05-28  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_test_ogl.cpp (main): Move the setting of the LOD
 	BIAS up a few lines, as to be effective, it has to be executed
-	before initializing the video mode for the I810.
+	before initializing the video mode for the I810. Otherwise it core
+	dumps.
 
 2005-05-26  Rob Savoye  <rob@darkstar.welcomehome.org>
 
