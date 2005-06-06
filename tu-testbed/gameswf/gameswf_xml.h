@@ -44,6 +44,7 @@ class XMLAttr {
 struct xmlattr_as_object : public gameswf::as_object
 {
   //XMLAttr obj;
+  int   padding;
 #ifdef DEBUG_MEMORY_ALLOCATION
   xmlattr_as_object() 
   {
@@ -140,10 +141,7 @@ previousSibling 	XML.previousSibling
 removeNode() 	XML.removeNode()
 toString() 	XML.toString()
 #endif
-  //private:
-  //tu_string          _name;
-  //gameswf::as_value  _value;
-  char              *_name;
+  char               *_name;
   char               *_value;
   array<XMLNode *>   _children;
   array<XMLAttr *>   _attributes;
@@ -152,6 +150,8 @@ toString() 	XML.toString()
 struct xmlnode_as_object : public gameswf::as_object
 {
   //XMLNode obj;
+  int                _padding;
+
 #ifdef DEBUG_MEMORY_ALLOCATION
   xmlnode_as_object() 
   {
@@ -289,7 +289,7 @@ class XML {
   }
 
   private:
-    bool _on_event_loaded;
+  //bool _on_event_loaded;
     xmlDocPtr _doc;
     xmlNodePtr _firstChild;
     
@@ -298,7 +298,7 @@ class XML {
                                             // the specified XML object has loaded.
     const char  *_nodename;                  // The node name of an XML object.
     XMLNode     *_nodes;
-    array<XMLNode *>  _node_data;
+    //    array<XMLNode *>  _node_data;
   //    hash<gameswf::event_id, gameswf::as_value>	_event_handlers;
 #if 0
     array<struct node *> _childNodes; // Read-only; returns an array containing
@@ -369,6 +369,8 @@ void xml_new(const fn_call& fn);
 void xml_onload(const fn_call& fn);
 void xml_ondata(const fn_call& fn);
 void xml_loaded(const fn_call& fn);
+
+int memadjust(int x);
 
 }	// end namespace gameswf
 

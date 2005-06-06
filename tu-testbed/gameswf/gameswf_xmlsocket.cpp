@@ -3,6 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+#include <SDL.h>
 
 #include "base/utility.h"
 #include "gameswf_log.h"
@@ -37,12 +38,15 @@
 #define MAXHOSTNAMELEN 256
 #endif
 
+int xml_fd = 0;              // FIXME: This file descriptor is used by
+                             // XML::checkSocket() when called from the main
+                             // processing loop. 
+
 namespace gameswf
 {
-
 const int SOCKET_DATA = 1;
 
-const int INBUF = 7000;
+const int INBUF = 10000;
 
 XMLSocket::XMLSocket()
 {
@@ -54,6 +58,7 @@ XMLSocket::XMLSocket()
   _processing = false;
   _port = 0;
   _sockfd = 0;
+  xml_fd = 0;
 }
 
 XMLSocket::~XMLSocket()
@@ -172,13 +177,16 @@ XMLSocket::connect(const char *host, int port)
   //  ::close(_sockfd);
   //  return false;
 
-  log_msg("\tConnect at port %d on IP %s for fd #%d\n", port,
+  printf("\tConnected at port %d on IP %s for fd #%d\n", port,
           ::inet_ntoa(sock_in.sin_addr), _sockfd);
   
 #ifndef HAVE_WINSOCK
   fcntl(_sockfd, F_SETFL, O_NONBLOCK);
 #endif
 
+  xml_fd = _sockfd;             // FIXME: This file descriptor is used by
+                                // XML::checkSocket() when called from
+                                // the main processing loop.
   _connect = true;
   return true;
 }
@@ -227,6 +235,7 @@ XMLSocket::anydata(int fd, char **msgs)
   int                   pos;
   int                   cr, index = 0;
   static char           *leftover = 0;
+  int                   adjusted_size;
 
   //log_msg("%s: \n", __FUNCTION__);
 
@@ -240,7 +249,7 @@ XMLSocket::anydata(int fd, char **msgs)
     FD_ZERO(&fdset);
     FD_SET(fd, &fdset);
     
-    tval.tv_sec = 0;
+    tval.tv_sec = 1;
     tval.tv_usec = 10;
     
     ret = ::select(fd+1, &fdset, NULL, NULL, &tval);
@@ -271,9 +280,10 @@ XMLSocket::anydata(int fd, char **msgs)
     ptr = buf;
     // If we get a single XML message, do less work
     if (ret == cr + 1) {
-      packet = new char[ret + 1];
+      adjusted_size = memadjust(ret + 1);
+      packet = new char[adjusted_size];
       //printf("Packet size is %d at %p\n", ret + 1, packet);
-      memset(packet, 0, ret + 1);
+      memset(packet, 0, adjusted_size);
       strcpy(packet, ptr);
       eom = strrchr(packet, '\n'); // drop the CR off the end if there is one
       if (eom) {
@@ -287,15 +297,16 @@ XMLSocket::anydata(int fd, char **msgs)
       return true;
     }
 
-    // If we get mltiple messages in a single transmission, break the buffer
+    // If we get multiple messages in a single transmission, break the buffer
     // into separate messages.
     while (strchr(ptr, '\n') > 0) {
       if (leftover) {
         processing(false);
         //printf("%s: The remainder is: \"%s\"\n", __FUNCTION__, leftover);
         //printf("%s: The rest of the message is: \"%s\"\n", __FUNCTION__, ptr);
-        packet = new char[cr + strlen(leftover) + 1];
-        memset(packet, 0, cr + strlen(leftover) + 1);
+        adjusted_size = memadjust(cr + strlen(leftover) + 1);
+        packet = new char[adjusted_size];
+        memset(packet, 0, adjusted_size);
         strcpy(packet, leftover);
         strcat(packet, ptr);
         eom = strrchr(packet, '\n'); // drop the CR off the end there is one
@@ -307,8 +318,9 @@ XMLSocket::anydata(int fd, char **msgs)
         delete leftover;
         leftover = 0;
       } else {
-        packet = new char[cr + 1];
-        memset(packet, 0, cr + 1);
+        adjusted_size = memadjust(cr + 1);
+        packet = new char[adjusted_size];
+        memset(packet, 0, adjusted_size);
         strcpy(packet, ptr);
         ptr += cr + 1;
       } // end of if remainder
@@ -338,7 +350,7 @@ XMLSocket::anydata(int fd, char **msgs)
     }
     
     processing(false);
-    log_msg("Returning %d messages\n", index);
+    printf("Returning %d messages\n", index);
     return true;
     
   } // end of while (retires)
@@ -407,6 +419,47 @@ int
 XMLSocket::count()
 {
   return _nodes.size();
+}
+
+int
+XMLSocket::checkSockets(void)
+{
+  return checkSockets(_sockfd);
+}
+
+int
+XMLSocket::checkSockets(int fd)
+{
+  fd_set                fdset;
+  int                   ret = 0;
+  struct timeval        tval;
+
+  //log_msg("%s:\n", __FUNCTION__);
+
+  FD_ZERO(&fdset);
+  FD_SET(fd, &fdset);
+  
+  tval.tv_sec = 2;
+  tval.tv_usec = 10;
+  
+  ret = ::select(fd+1, &fdset, NULL, NULL, &tval); // &tval
+  
+  // If interupted by a system call, try again
+  if (ret == -1 && errno == EINTR) {
+    log_msg("The socket for fd #%d was interupted by a system call in this thread!\n",
+            fd);
+  }
+  if (ret == -1) {
+    log_error("The socket for fd #%d never was available!\n", fd);
+  }
+  if (ret == 0) {
+    printf("There is no data in the socket for fd #%d!\n", fd);
+  }
+  if (ret > 0) {
+    //printf("There is data in the socket for fd #%d!\n", fd);        
+  }
+  
+  return ret;
 }
 
 void
@@ -596,7 +649,7 @@ xmlsocket_event_ondata(const fn_call& fn)
   memset(messages, 0, sizeof(char *)*200);
   
 #ifndef USE_DMALLOC
-  //dump_memory_stats(__FUNCTION__, __LINE__, "start");
+  //dump_memory_stats(__FUNCTION__, __LINE__, "memory checkpoint");
 #endif
   
   if (ptr->obj.anydata(messages)) {
@@ -726,19 +779,17 @@ xmlsocket_event_xml(const fn_call& fn)
 #endif  
 }
 
-void check_sockets()
+static XMLSocket xs;
+
+int
+check_sockets(int x)
 {
-  log_msg("%s unimplemented\n", __FUNCTION__);
-#if 0
-  SDL_Event event;
+  //log_msg("%s unimplemented\n", __FUNCTION__);
+  if (xml_fd == 0) {
+    return -1;
+  }
   
-  // Setup user event handler
-  event.type = SDL_USEREVENT;
-  event.user.code = 123;
-  event.user.data1 = 0;
-  event.user.data2 = 0;
-  SDL_PushEvent(&event);
-#endif
+  return xs.checkSockets(x);
 }
 
 } // end of gameswf namespace

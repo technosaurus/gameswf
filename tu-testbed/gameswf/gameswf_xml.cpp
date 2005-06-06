@@ -6,6 +6,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "gameswf_log.h"
 #include "gameswf_action.h"
@@ -200,8 +201,10 @@ XML::extractNode(xmlNodePtr node, bool mem)
   xmlNodePtr childnode;
   xmlChar *ptr = NULL;
   XMLNode *element, *child;
+  int len;
 
   element = new XMLNode;
+            
   //log_msg("Created new element for %s at %p\n", node->name, element);
   memset(element, 0, sizeof (XMLNode));
 
@@ -213,11 +216,13 @@ XML::extractNode(xmlNodePtr node, bool mem)
     //log_msg("extractNode %s has property %s, value is %s\n",
     //          node->name, attr->name, attr->children->content);
     XMLAttr *attrib = new XMLAttr;
-    attrib->_name = (char *)new char[strlen(reinterpret_cast<const char *>(attr->name))+2];
-    memset(attrib->_name, 0, strlen(reinterpret_cast<const char *>(attr->name))+2);
+    len = memadjust(strlen(reinterpret_cast<const char *>(attr->name))+1);
+    attrib->_name = (char *)new char[len];
+    memset(attrib->_name, 0, len);
     strcpy(attrib->_name, reinterpret_cast<const char *>(attr->name));
-    attrib->_value = (char *)new char[strlen(reinterpret_cast<const char *>(attr->children->content))+2];
-    memset(attrib->_value, 0, strlen(reinterpret_cast<const char *>(attr->children->content))+2);
+    len = memadjust(strlen(reinterpret_cast<const char *>(attr->children->content))+1);
+    attrib->_value = (char *)new char[len];
+    memset(attrib->_value, 0, len);
     strcpy(attrib->_value, reinterpret_cast<const char *>(attr->children->content));
     //log_msg("\tPushing attribute %s for element %s has value %s\n",
     //        attr->name, node->name, attr->children->content);
@@ -225,8 +230,9 @@ XML::extractNode(xmlNodePtr node, bool mem)
     attr = attr->next;
   }
 
-  element->_name = (char *)new char[strlen(reinterpret_cast<const char *>(node->name))+2];
-  memset(element->_name, 0, strlen(reinterpret_cast<const char *>(node->name))+2);
+  len = memadjust(strlen(reinterpret_cast<const char *>(node->name))+1);
+  element->_name = (char *)new char[len];
+  memset(element->_name, 0, len);
   strcpy(element->_name, reinterpret_cast<const char *>(node->name));
   //element->_name = reinterpret_cast<const char *>(node->name);
   if (node->children) {
@@ -239,8 +245,9 @@ XML::extractNode(xmlNodePtr node, bool mem)
           //log_msg("Node %s has no contents\n", node->name);
         } else {
           //log_msg("extractChildNode from text for %s has contents %s\n", node->name, ptr);
-          element->_value = (char *)new char[strlen(reinterpret_cast<const char *>(ptr))+2];
-          memset(element->_value, 0, strlen(reinterpret_cast<const char *>(ptr))+2);
+          len = memadjust(strlen(reinterpret_cast<const char *>(ptr))+1);
+          element->_value = (char *)new char[len];
+          memset(element->_value, 0, len);
           strcpy(element->_value, reinterpret_cast<const char *>(ptr));
           //element->_value = reinterpret_cast<const char *>(ptr);
         }
@@ -884,7 +891,15 @@ xml_loaded(const fn_call& fn)
   fn.result->set(ptr->obj.loaded());
 }
 
+int
+memadjust(int x)
+{
+  return (x + (4 - x % 4));
+}
+
+
 } // end of gameswf namespace
+
 
 // HAVE_LIBXML
 #endif

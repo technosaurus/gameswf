@@ -53,7 +53,10 @@ class XMLSocket {
   void push(as_object_interface *obj);
   void clear();
   int  count();
- 
+
+  int XMLSocket::checkSockets(void);
+  int XMLSocket::checkSockets(int x);
+
  private:
   tu_string     _host;
   short         _port;
@@ -85,7 +88,7 @@ void xmlsocket_event_close(const fn_call& fn);
 void xmlsocket_event_connect(const fn_call& fn);
 void xmlsocket_event_xml(const fn_call& fn);
 
-void check_sockets();
+int check_sockets(int fd);
  
 } // end of gameswf namespace
 
