@@ -19,7 +19,7 @@ Tasks to make gameswf ready for including in real games.
   gameswf-push (fscommand)
   host-push (call_method, set_variable)
   host-pull (call_method, get_variable)
-  
+
   we are missing gameswf-pull.  This would be useful for things like
   looking up localized text in the game engine's translation table,
   among other things.
@@ -61,7 +61,7 @@ General
     into C++.  Prototype in Flash on a fast machine, convert the
     scripts and deliver a blazing fast executable.
 
-* Helpers for arbitrary tag-processing 
+* Helpers for arbitrary tag-processing
 
 * Would be good if one of the log options produced a nice usable
   human-readable parsing of the file.  Or even a SSWF equivalent?
@@ -78,7 +78,7 @@ ActionScript
 ============
 
 * bug:
-	
+
 	onEnterFrame should get called even when sprite is stopped
 
 * bug:
@@ -233,9 +233,9 @@ Renderer
   * artists can work around it
 
 * Instead of using textured lines we could compute the antialiasing
-  gradients analitically, although it requires a simple fragment 
+  gradients analitically, although it requires a simple fragment
   program and some per-edge computations:
-  
+
   http://graphics.csail.mit.edu/~ericchan/articles/prefilter/
 
 * Antialiasing using destination alpha and the edge-coverage alpha
@@ -323,3 +323,54 @@ Renderer
 
   * I'm sure someone has mentioned this idea somewhere, need to look
     for more info.
+
+* Idea: render filled quadratic beziers DIRECTLY, without any
+  tesselation, nor any subdividing of curves.  This works essentially
+  the same way as the above signed-area thing for poly rendering, plus
+  a special rendering of the curved segments:
+
+  * take a reference point x
+
+  * for each quadratic bezier curved segment (a0, c, a1) (the a's are
+    "anchor" points; the c is a "control" point), we render the signed
+    triangle (x, a0, a1) as above.  We also render (a0, c, a1) with a
+    special shader (this can also be done easily in the fixed-function
+    pipe with a square alpha texture made up of a quarter-circle).
+    The texture or shader function looks like:
+
+    a1                      c
+     +---------------------+ 
+     ......     0 out here |
+     |     ....            |
+     |         ...         |
+     |            ..       |
+     |              .      |
+     |               ..    |
+     |                 .   |
+     |                  .  |
+     |    1 in here     .  |
+     |                   . |
+     |                   . |
+     |                    .|
+     |                    .|
+     o--------------------.+ a0
+
+    So this quarter-circular texture (or simple shader function)
+    determines the stencil/alpha value to add into the render target.
+    We get 1's inside the shape, and 0's outside the shape.  The 1's
+    have to be turned into -1's if (a0, c, a1) is backfacing.
+
+    The sum in the render target should be exactly the filled curved
+    shape, so then we can do a stencil-masked fill of the bounding
+    box, or whatever.
+
+    This might even get us edge antialiasing in the bargain!  I.e the
+    texels on the boundary of the circle will be between 0 and 1, so
+    they're feathered.
+
+    ISSUE: will mip-mapping foul this up in case of very acute or
+    obtuse triangles?  We probably want mip-mapping for two reasons:
+    1) for performance, and 2) if we're trying for antialiasing, we
+    want the footprint of the soft texture edge to be about one
+    rendered pixel wide.  (I suspect the scaling issues will be
+    similar to rendering glyphs using textures.)
