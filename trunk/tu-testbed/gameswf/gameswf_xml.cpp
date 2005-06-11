@@ -6,7 +6,6 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "gameswf_log.h"
 #include "gameswf_action.h"
@@ -18,6 +17,7 @@
 
 #ifdef HAVE_LIBXML
 
+#include <unistd.h>
 #include "gameswf_xml.h"
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>

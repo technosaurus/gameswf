@@ -10,8 +10,6 @@
 #include "SDL_thread.h"
 
 #include "gameswf.h"
-#include <unistd.h>
-#include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "base/ogl.h"
@@ -21,11 +19,14 @@
 #include "base/tu_types.h"
 #include "gameswf_xmlsocket.h"
 
+
+#ifdef HAVE_LIBXML
 extern int xml_fd;		// FIXME: this is the file descriptor
 				// from XMLSocket::connect(). This
 				// needs to be propogated up through
 				// the layers properly, but first I
 				// want to make sure it all works.
+#endif // HAVE_LIBXML
 
 
 void	print_usage()
@@ -616,11 +617,16 @@ int	main(int argc, char *argv[])
 			// Handle input.
 			while (ret)
 			{
+#ifdef HAVE_LIBXML
 				if (s_event_thread && xml_fd > 0) {
-					ret = SDL_WaitEvent(&event);
+					ret = SDL_WaitEvent(&event) ? true : false;
 				} else {
-					ret = SDL_PollEvent(&event);
+					ret = SDL_PollEvent(&event) ? true : false;
 				}
+#else
+				ret = SDL_PollEvent(&event) ? true : false;
+#endif
+
 				//printf("EVENT Type is %d\n", event.type);
 				switch (event.type)
 				{
@@ -853,6 +859,8 @@ done:
 static int
 runThread(void *nothing)
 {
+#ifdef HAVE_LIBXML
+
 	//int i = 123;
 	int val;
 	int count = 0;
@@ -894,6 +902,7 @@ runThread(void *nothing)
 			SDL_Delay(300);
 		}
 	}
+#endif // HAVE_LIBXML
 	
 	return 0;
 }
