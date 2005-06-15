@@ -50,6 +50,7 @@ engine_files = $(base_files) $(geometry_files)
 
 chunklod_files =						\
 	tu-testbed/go_chunklod.bat				\
+	tu-testbed/go_chunklod_puget.bat				\
 	tu-testbed/demos/chunklod/chunkdemo.exe			\
 	tu-testbed/demos/chunklod/heightfield_chunker.exe	\
 	tu-testbed/demos/chunklod/heightfield_shader.exe	\

@@ -600,7 +600,7 @@ public:
 			set_raw_capacity(16);
 		} else if (m_table->m_entry_count * 3 > (m_table->m_size_mask + 1) * 2) {
 			// Table is more than 2/3rds full.  Expand.
-			set_raw_capacity(m_table->m_entry_count * 2);
+			set_raw_capacity((m_table->m_size_mask + 1) * 2);
 		}
 	}
 
