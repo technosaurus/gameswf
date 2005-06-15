@@ -79,7 +79,7 @@ LDFLAGS := /link /NODEFAULTLIB:libc.lib /NODEFAULTLIB:libcd.lib /NODEFAULTLIB:ms
 # XML2LIB := $(XML2_DIR)/lib/libxml2.$(LIB_EXT) $(ICONV_DIR)/lib/iconv.$(LIB_EXT)+
 # CFLAGS += -DHAVE_WINSOCK -DHAVE_LIBXML
 
-LIBPNG_DIR := $(TOP)/../libpng
+LIBPNG_DIR := $(TOP)/../libpng-1.2.8
 LIBPNG_INCLUDE := -I$(LIBPNG_DIR)
 LIBPNG := $(LIBPNG_DIR)/libpng.$(LIB_EXT)
 
