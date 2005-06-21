@@ -468,38 +468,42 @@ namespace gameswf
 			{
 				int bi; // button sound array index [0..3]
 				sound_handler* s = get_sound_handler();
-				switch (event.m_id)
-				{
-				case event_id::ROLL_OUT:
-					bi = 0;
-					break;
-				case event_id::ROLL_OVER:
-					bi = 1;
-					break;
-				case event_id::PRESS:
-					bi = 2;
-					break;
-				case event_id::RELEASE:
-					bi = 3;
-					break;
-				default:
-					bi = -1;
-					break;
-				}
-				if (bi >= 0)
-				{
-					button_character_definition::button_sound_info& bs = m_def->m_sound->m_button_sounds[bi];
-					// character zero is considered as null character
-					if (bs.m_sound_id > 0)
+
+				// Check if there is a sound handler
+				if (s != NULL) {
+					switch (event.m_id)
 					{
-						assert(m_def->m_sound->m_button_sounds[bi].m_sam != NULL);
-						if (bs.m_sound_style.m_stop_playback)
+					case event_id::ROLL_OUT:
+						bi = 0;
+						break;
+					case event_id::ROLL_OVER:
+						bi = 1;
+						break;
+					case event_id::PRESS:
+						bi = 2;
+						break;
+					case event_id::RELEASE:
+						bi = 3;
+						break;
+					default:
+						bi = -1;
+						break;
+					}
+					if (bi >= 0)
+					{
+						button_character_definition::button_sound_info& bs = m_def->m_sound->m_button_sounds[bi];
+						// character zero is considered as null character
+						if (bs.m_sound_id > 0)
 						{
-							s->stop_sound(bs.m_sam->m_sound_handler_id);
-						}
-						else
-						{
-							s->play_sound(bs.m_sam->m_sound_handler_id, bs.m_sound_style.m_loop_count);
+							assert(m_def->m_sound->m_button_sounds[bi].m_sam != NULL);
+							if (bs.m_sound_style.m_stop_playback)
+							{
+								s->stop_sound(bs.m_sam->m_sound_handler_id);
+							}
+							else
+							{
+								s->play_sound(bs.m_sam->m_sound_handler_id, bs.m_sound_style.m_loop_count);
+							}
 						}
 					}
 				}
@@ -583,7 +587,20 @@ namespace gameswf
 
 		virtual void	set_member(const tu_stringi& name, const as_value& val)
 		{
-			if (name == "_alpha")
+			// TODO: pull these up into a base class, to
+			// share as much as possible with sprite_instance.
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
+			{
+			default:
+			case M_INVALID_MEMBER:
+				break;
+			case M_VISIBLE:  // _visible
+			{
+				m_visible = val.to_bool();
+				return;
+			}
+			case M_ALPHA:  // _alpha
 			{
 				// Set alpha modulate, in percent.
 				cxform	cx = get_cxform();
@@ -592,39 +609,155 @@ namespace gameswf
 				//m_accept_anim_moves = false;
 				return;
 			}
-			else if (name == "_visible")
+			case M_X:  // _x
 			{
-				m_visible = val.to_bool();
+				matrix	m = get_matrix();	// @@ get_world_matrix()???
+				m.m_[0][2] = float(PIXELS_TO_TWIPS(val.to_number()));
+				this->set_matrix(m);
+				return;
 			}
-			else
+			case M_Y:  // _y
 			{
-				log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
+				matrix	m = get_matrix();	// @@ get_world_matrix()???
+				m.m_[1][2] = float(PIXELS_TO_TWIPS(val.to_number()));
+				this->set_matrix(m);
+				return;
+			}
+// evan : need set_width and set_height function for struct character
+#if 0
+			case M_WIDTH:  // _width
+			{
+				for (int i = 0; i < m_def->m_button_records.size(); i++)
+				{
+					button_record&	rec = m_def->m_button_records[i];
+					if (m_record_character[i] == NULL)
+					{
+						continue;
+					}
+					if ((m_mouse_state == UP && rec.m_up)
+					    || (m_mouse_state == DOWN && rec.m_down)
+					    || (m_mouse_state == OVER && rec.m_over))
+					{
+						m_record_character[i]->set_width(val.to_number);
+						// @@ evan: should we return here?
+						return;
+					}
+				}
+
+				return;
+			}
+			case M_HEIGHT:  // _height
+			{
+				for (int i = 0; i < m_def->m_button_records.size(); i++)
+				{
+					button_record&	rec = m_def->m_button_records[i];
+					if (m_record_character[i] == NULL)
+					{
+						continue;
+					}
+					if ((m_mouse_state == UP && rec.m_up)
+					    || (m_mouse_state == DOWN && rec.m_down)
+					    || (m_mouse_state == OVER && rec.m_over))
+					{
+						m_record_character[i]->set_height(val.to_number);
+						// @@ evan: should we return here?
+						return;
+					}
+				}
+
+				return;
+			}
+#endif
+			}
+
+			log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
 					  name.c_str(),
 					  val.to_string());
-			}
 		}
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val)
 		{
-			if (name == "_alpha")
+			// TODO: pull these up into a base class, to
+			// share as much as possible with sprite_instance.
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
 			{
+			default:
+			case M_INVALID_MEMBER:
+				break;
+			case M_VISIBLE:  // _visible
+			{
+				val->set_bool(this->get_visible());
+				return true;
+			}
+			case M_ALPHA:  // _alpha
+			{
+				// @@ TODO this should be generic to struct character!
 				// Alpha units are in percent.
 				val->set_double(get_cxform().m_[3][0] * 100.f);
 				return true;
 			}
-			else
+			case M_X:  // _x
 			{
-				if (name == "_visible")
-				{
-					val->set_bool(m_visible);
-				}
-				else
-				{
-					log_error("error: button_character_instance::get_member('%s') not implemented yet\n", name.c_str());
-					return false;
-				}
+				matrix	m = get_matrix();	// @@ get_world_matrix()???
+				val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
+				return true;
 			}
-			return true;
+			case M_Y:  // _y
+			{
+				matrix	m = get_matrix();	// @@ get_world_matrix()???
+				val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
+				return true;
+			}
+			case M_WIDTH:  // _width
+			{
+				for (int i = 0; i < m_def->m_button_records.size(); i++)
+				{
+					button_record&	rec = m_def->m_button_records[i];
+					if (m_record_character[i] == NULL)
+					{
+						continue;
+					}
+					if ((m_mouse_state == UP && rec.m_up)
+					    || (m_mouse_state == DOWN && rec.m_down)
+					    || (m_mouse_state == OVER && rec.m_over))
+					{
+						val->set_double(TWIPS_TO_PIXELS(m_record_character[i]->get_width()));
+						// @@ evan: should we return here?
+						return true;
+					}
+				}
+
+				// from the experiments with macromedia flash player
+				val->set_double(0);
+				return true;
+			}
+			case M_HEIGHT:  // _height
+			{
+				for (int i = 0; i < m_def->m_button_records.size(); i++)
+				{
+					button_record&	rec = m_def->m_button_records[i];
+					if (m_record_character[i] == NULL)
+					{
+						continue;
+					}
+					if ((m_mouse_state == UP && rec.m_up)
+					    || (m_mouse_state == DOWN && rec.m_down)
+					    || (m_mouse_state == OVER && rec.m_over))
+					{
+						val->set_double(TWIPS_TO_PIXELS(m_record_character[i]->get_height()));
+						// @@ evan: should we return here?
+						return true;
+					}
+				}
+
+				// from the experiments with macromedia flash player
+				val->set_double(0);
+				return true;
+			}
+			}
+
+			return false;
 		}
 
 		// not sure if we need to override this one.
