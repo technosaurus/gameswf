@@ -1566,6 +1566,9 @@ namespace gameswf
 
 		array<with_stack_entry>	with_stack(initial_with_stack);
 
+		// Some corner case behaviors depend on the SWF file version.
+		int version = env->get_target()->get_movie_definition()->get_version();
+
 #if 0
 		// Check the time
 		if (periodic_events.expired()) {
@@ -1686,14 +1689,14 @@ namespace gameswf
 				}
 				case 0x14:	// string length
 				{
-					env->top(0).set_int(env->top(0).to_tu_string().utf8_length());
+					env->top(0).set_int(env->top(0).to_tu_string_versioned(version).utf8_length());
 					break;
 				}
 				case 0x15:	// substring
 				{
 					int	size = int(env->top(0).to_number());
-					int	base = int(env->top(1).to_number()) - 1;
-					const tu_string&	str = env->top(2).to_tu_string();
+					int	base = int(env->top(1).to_number()) - 1;  // 1-based indices
+					const tu_string&	str = env->top(2).to_tu_string_versioned(version);
 
 					// Keep base within range.
 					base = iclamp(base, 0, str.length());
@@ -1707,6 +1710,7 @@ namespace gameswf
 					new_string.resize(size);
 
 					env->drop(2);
+					env->top(0).set_tu_string(new_string);
 
 					break;
 				}
@@ -1763,7 +1767,8 @@ namespace gameswf
 				}
 				case 0x21:	// string concat
 				{
-					env->top(1).string_concat(env->top(0).to_tu_string());
+					env->top(1).convert_to_string_versioned(version);
+					env->top(1).string_concat(env->top(0).to_tu_string_versioned(version));
 					env->drop(1);
 					break;
 				}
@@ -2150,12 +2155,13 @@ namespace gameswf
 					log_error("todo opcode: %02X\n", action_id);
 					break;
 				}
-				case 0x47:	// add (typed)
+				case 0x47:	// add_t (typed)
 				{
 					if (env->top(0).get_type() == as_value::STRING
 					    || env->top(1).get_type() == as_value::STRING)
 					{
-						env->top(1).string_concat(env->top(0).to_tu_string());
+						env->top(1).convert_to_string_versioned(version);
+						env->top(1).string_concat(env->top(0).to_tu_string_versioned(version));
 					}
 					else
 					{
@@ -2191,7 +2197,7 @@ namespace gameswf
 				}
 				case 0x4B:	// to string
 				{
-					env->top(0).convert_to_string();
+					env->top(0).convert_to_string_versioned(version);
 					break;
 				}
 				case 0x4C:	// dup
@@ -2214,7 +2220,7 @@ namespace gameswf
                                             && env->top(1).get_type() == as_value::STRING
                                             && env->top(0).to_tu_stringi() == "length")
 					{
-						int     len = env->top(1).to_tu_string().utf8_length();
+						int     len = env->top(1).to_tu_string_versioned(version).utf8_length();
                                                 env->top(1).set_int(len);
 					}
                                         else
@@ -2311,7 +2317,7 @@ namespace gameswf
 						string_method(
 							fn_call(&result, NULL, env, nargs, env->get_top_index() - 3),
 							method_name.to_tu_stringi(),
-							env->top(1).to_tu_string());
+							env->top(1).to_tu_string_versioned(version));
 					}
 					else if (env->top(1).get_type() == as_value::C_FUNCTION)
 					{
@@ -3061,8 +3067,13 @@ namespace gameswf
 		}
 		else if (m_type == UNDEFINED)
 		{
-			// @@ Moock says this should be "".
-			// But my tests show it's "undefined".
+			// Behavior depends on file version.  In
+			// version 7+, it's "undefined", in versions
+			// 6-, it's "".
+			//
+			// We'll go with the v7 behavior by default,
+			// and conditionalize via _versioned()
+			// functions.
 			m_string_value = "undefined";
 		}
 		// else if (m_type == NULLTYPE) { /* @@ Moock says "null" */ }
@@ -3118,6 +3129,26 @@ namespace gameswf
 		return m_string_value;
 	}
 
+
+	const tu_string&	as_value::to_tu_string_versioned(int version) const
+	// Conversion to const tu_string&.
+	{
+		if (m_type == UNDEFINED)
+		{
+			// Version-dependent behavior.
+			if (version <= 6)
+			{
+				m_string_value = "";
+			}
+			else
+			{
+				m_string_value = "undefined";
+			}
+			return m_string_value;
+		}
+		
+		return to_tu_string();
+	}
 
 	double	as_value::to_number() const
 	// Conversion to double.
@@ -3280,6 +3311,14 @@ namespace gameswf
 	// Force type to string.
 	{
 		to_tu_string();	// init our string data.
+		m_type = STRING;	// force type.
+	}
+
+
+	void	as_value::convert_to_string_versioned(int version)
+	// Force type to string.
+	{
+		to_tu_string_versioned(version);	// init our string data.
 		m_type = STRING;	// force type.
 	}
 

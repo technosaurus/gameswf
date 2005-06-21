@@ -629,7 +629,8 @@ namespace gameswf
 			case M_TEXT:
 				//if (name == "text")
 			{
-				set_text_value(val.to_string());
+				int version = get_parent()->get_movie_definition()->get_version();
+				set_text_value(val.to_tu_string_versioned(version));
 				return;
 			}
 			case M_X:

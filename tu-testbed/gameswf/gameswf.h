@@ -222,6 +222,7 @@ namespace gameswf
 	//
 	struct movie_definition : public character_def
 	{
+		virtual int	get_version() const = 0;
 		virtual float	get_width_pixels() const = 0;
 		virtual float	get_height_pixels() const = 0;
 		virtual int	get_frame_count() const = 0;

@@ -122,6 +122,9 @@ test_field.text
 
 a
 a 
+a != '' and a != 'undefined'
+0
+
 '''.splitlines(1)],
 
 [ "samples/test_undefined_v7.swf",
@@ -131,6 +134,9 @@ test_field.text
 undefined
 a
 a undefined
+a != '' and a != 'undefined'
+9
+nde
 '''.splitlines(1)],
 
 # Add more tests here, in form of [ filename, expected_output ]
