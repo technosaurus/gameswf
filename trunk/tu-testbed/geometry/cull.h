@@ -10,7 +10,6 @@
 #define CULL_H
 
 
-#include <SDL.h>
 #include "geometry.h"
 
 
