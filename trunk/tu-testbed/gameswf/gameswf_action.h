@@ -315,6 +315,7 @@ namespace gameswf
 
 		const char*	to_string() const;
 		const tu_string&	to_tu_string() const;
+		const tu_string&	to_tu_string_versioned(int version) const;
 		const tu_stringi&	to_tu_stringi() const;
 		double	to_number() const;
 		bool	to_bool() const;
@@ -324,6 +325,7 @@ namespace gameswf
 
 		void	convert_to_number();
 		void	convert_to_string();
+		void	convert_to_string_versioned(int version);
 
 		// These set_*()'s are more type-safe; should be used
 		// in preference to generic overloaded set().  You are

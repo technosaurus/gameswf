@@ -53,7 +53,6 @@ namespace gameswf
 		virtual character_def*	get_character_def(int id) = 0;
 
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
-		virtual int	get_version() const = 0;
 
 		// For use during creation.
 		virtual int	get_loading_frame() const = 0;

@@ -4009,7 +4009,6 @@ namespace gameswf
 			if (text_val)
 			{
 				bool	success = false;
-				const char*	text = val.to_string();
 				for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
 				{
 					character*	ch = m_display_list.get_character(i);
@@ -4017,6 +4016,7 @@ namespace gameswf
 					// changes to CASE SENSITIVE!!!
 					if (name == ch->get_text_name())
 					{
+						const char* text = val.to_string();
 						ch->set_text_value(text);
 						success = true;
 					}
