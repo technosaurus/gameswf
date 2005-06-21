@@ -115,6 +115,24 @@ undefined
 myObj
 '''.splitlines(1)],
 
+[ "samples/test_undefined_v6.swf",
+'''a
+undefined
+test_field.text
+
+a
+a 
+'''.splitlines(1)],
+
+[ "samples/test_undefined_v7.swf",
+'''a
+undefined
+test_field.text
+undefined
+a
+a undefined
+'''.splitlines(1)],
+
 # Add more tests here, in form of [ filename, expected_output ]
 
 ]
