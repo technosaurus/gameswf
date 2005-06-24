@@ -185,18 +185,21 @@ namespace gameswf
 		enum type
 		{
 			UNDEFINED,
+			NULLTYPE,
+			BOOLEAN,
 			STRING,
 			NUMBER,
 			OBJECT,
 			C_FUNCTION,
 			AS_FUNCTION,	// ActionScript function.
 		};
-		bool	m_temporary;
 		type	m_type;
 		mutable tu_string	m_string_value;
 		union
 		{
-			mutable	double	m_number_value;	// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
+			bool m_boolean_value;
+			// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
+			mutable	double	m_number_value;
 			as_object_interface*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_as_function*	m_as_function_value;
@@ -262,8 +265,8 @@ namespace gameswf
 
 		as_value(bool val)
 			:
-			m_type(NUMBER),
-			m_number_value(double(val))
+			m_type(BOOLEAN),
+			m_boolean_value(val)
 		{
 		}
 
@@ -333,8 +336,8 @@ namespace gameswf
 		void	set_tu_string(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
-		void	set_bool(bool val) { drop_refs(); m_type = NUMBER; m_number_value = val ? 1.0 : 0.0; }
-		void	set_int(int val) { drop_refs(); set(double(val)); }
+		void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
+		void	set_int(int val) { drop_refs(); set_double(val); }
 		void	set_as_object_interface(as_object_interface* obj);
 		void	set_as_c_function_ptr(as_c_function_ptr func)
 		{
@@ -342,43 +345,33 @@ namespace gameswf
 		}
 		void	set_as_as_function(as_as_function* func);
 		void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
-
-		// @@ tulrich: it's awfully dangerous to have so many
-		// overloads of set() -- should consider eliminating
-		// these completely.
-		void	set(const tu_string& str) { set_tu_string(str); }
-		void	set(const char* str) { set_string(str); }
-		void	set(double val) { set_double(val); }
-		void	set(bool val) { set_bool(val); }
-		void	set(int val) { set_int(val); }
-		void	set(as_object_interface* obj) { set_as_object_interface(obj); }
-		void	set(as_c_function_ptr func) { set_as_c_function_ptr(func); }
-		void	set(as_as_function* func) { set_as_as_function(func); }
+		void	set_null() { drop_refs(); m_type = NULLTYPE; }
 
 		void	operator=(const as_value& v)
 		{
 			if (v.m_type == UNDEFINED) set_undefined();
-			else if (v.m_type == STRING) set(v.m_string_value);
-			else if (v.m_type == NUMBER) set(v.m_number_value);
-			else if (v.m_type == OBJECT) set(v.m_object_value);
-			else if (v.m_type == C_FUNCTION) set(v.m_c_function_value);
-			else if (v.m_type == STRING) set(v.m_string_value);
-			else if (v.m_type == AS_FUNCTION) set(v.m_as_function_value);
+			else if (v.m_type == NULLTYPE) set_null();
+			else if (v.m_type == BOOLEAN) set_bool(v.m_boolean_value);
+			else if (v.m_type == STRING) set_tu_string(v.m_string_value);
+			else if (v.m_type == NUMBER) set_double(v.m_number_value);
+			else if (v.m_type == OBJECT) set_as_object_interface(v.m_object_value);
+			else if (v.m_type == C_FUNCTION) set_as_c_function_ptr(v.m_c_function_value);
+			else if (v.m_type == AS_FUNCTION) set_as_as_function(v.m_as_function_value);
 		}
 
 		bool	operator==(const as_value& v) const;
 		bool	operator!=(const as_value& v) const;
 		bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
-		void	operator+=(const as_value& v) { set(this->to_number() + v.to_number()); }
-		void	operator-=(const as_value& v) { set(this->to_number() - v.to_number()); }
-		void	operator*=(const as_value& v) { set(this->to_number() * v.to_number()); }
-		void	operator/=(const as_value& v) { set(this->to_number() / v.to_number()); }	// @@ check for div/0
-		void	operator&=(const as_value& v) { set(int(this->to_number()) & int(v.to_number())); }
-		void	operator|=(const as_value& v) { set(int(this->to_number()) | int(v.to_number())); }
-		void	operator^=(const as_value& v) { set(int(this->to_number()) ^ int(v.to_number())); }
-		void	shl(const as_value& v) { set(int(this->to_number()) << int(v.to_number())); }
-		void	asr(const as_value& v) { set(int(this->to_number()) >> int(v.to_number())); }
-		void	lsr(const as_value& v) { set(double(Uint32(this->to_number()) >> int(v.to_number()))); }
+		void	operator+=(const as_value& v) { set_double(this->to_number() + v.to_number()); }
+		void	operator-=(const as_value& v) { set_double(this->to_number() - v.to_number()); }
+		void	operator*=(const as_value& v) { set_double(this->to_number() * v.to_number()); }
+		void	operator/=(const as_value& v) { set_double(this->to_number() / v.to_number()); }  // @@ check for div/0
+		void	operator&=(const as_value& v) { set_int(int(this->to_number()) & int(v.to_number())); }
+		void	operator|=(const as_value& v) { set_int(int(this->to_number()) | int(v.to_number())); }
+		void	operator^=(const as_value& v) { set_int(int(this->to_number()) ^ int(v.to_number())); }
+		void	shl(const as_value& v) { set_int(int(this->to_number()) << int(v.to_number())); }
+		void	asr(const as_value& v) { set_int(int(this->to_number()) >> int(v.to_number())); }
+		void	lsr(const as_value& v) { set_int((Uint32(this->to_number()) >> int(v.to_number()))); }
 
 		void	string_concat(const tu_string& str);
 
@@ -464,7 +457,7 @@ namespace gameswf
 			//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
 			if (name == "prototype")
 			{
-				val->set(m_prototype);
+				val->set_as_object_interface(m_prototype);
 				return true;
 			}
 			else if (m_members.get(name, val) == false)

@@ -186,7 +186,7 @@ namespace gameswf
 	static bool string_to_number(double* result, const char* str)
 	// Utility.  Try to convert str to a number.  If successful,
 	// put the result in *result, and return true.  If not
-	// successful, put 0 in *result, and reutrn false.
+	// successful, put 0 in *result, and return false.
 	{
 		char* tail = 0;
 		*result = strtod(str, &tail);
@@ -2139,8 +2139,34 @@ namespace gameswf
 				}
 				case 0x44:	// type of
 				{
-					// @@ TODO
-					log_error("todo opcode: %02X\n", action_id);
+					switch(env->top(0).get_type())
+					{
+					case as_value::UNDEFINED:
+						env->top(0).set_string("undefined");
+						break;
+					case as_value::STRING:
+						env->top(0).set_string("string");
+						break;
+					case as_value::NUMBER:
+						env->top(0).set_string("number");
+						break;
+					case as_value::BOOLEAN:
+						env->top(0).set_string("boolean");
+						break;
+					case as_value::OBJECT:
+						env->top(0).set_string("object");
+						break;
+					case as_value::NULLTYPE:
+						env->top(0).set_string("null");
+						break;
+					case as_value::AS_FUNCTION:
+					case as_value::C_FUNCTION:
+						env->top(0).set_string("function");
+						break;
+					default:
+						log_error("typeof unknown type: %02X\n", env->top(0).get_type());
+						break;
+					}
 					break;
 				}
 				case 0x45:	// get target
@@ -2151,8 +2177,68 @@ namespace gameswf
 				}
 				case 0x46:	// enumerate
 				{
-					// @@ TODO
-					log_error("todo opcode: %02X\n", action_id);
+					as_value var_name = env->pop();
+					const tu_string& var_string = var_name.to_tu_string();
+
+					as_value variable = env->get_variable(var_string, with_stack);
+
+					if (variable.to_object() == NULL)
+					{
+						break;
+					}
+					const as_object* object = (as_object*) (variable.to_object());
+
+					// The end of the enumeration
+					as_value nullvalue;
+					nullvalue.set_null();
+					env->push(nullvalue);
+					IF_VERBOSE_ACTION(log_msg("---enumerate - push: NULL\n"));
+
+					stringi_hash<as_value>::const_iterator it = object->m_members.begin();
+					while (it != object->m_members.end())
+					{
+						const as_value member = it.get_value();
+						switch(member.get_type())
+						{
+						case as_value::AS_FUNCTION:
+							// @@ TODO
+							// Check if this function member should be in the enumeration
+							// For example, the constructor shouldn't appear..
+						default:
+							env->push(as_value(it.get_key()));
+
+							IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
+										  it.get_key().c_str()));
+							break;
+						};
+							
+						++it;
+					};
+
+					const as_object * prototype = (as_object *) object->m_prototype;
+					if (prototype != NULL)
+					{
+						stringi_hash<as_value>::const_iterator it = prototype->m_members.begin();
+						while (it != prototype->m_members.end())
+						{
+							const as_value member = it.get_value();
+							switch(member.get_type())
+							{
+							case as_value::AS_FUNCTION:
+								// @@ TODO
+								// Check if this function member should be in the enumeration
+							default:
+								env->push(as_value(it.get_key()));
+
+								IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
+											  it.get_key().c_str()));
+								break;
+							};
+								
+							++it;
+						};
+					}
+
 					break;
 				}
 				case 0x47:	// add_t (typed)
@@ -2685,8 +2771,9 @@ namespace gameswf
 						}
 						else if (type == 2)
 						{
-							// NULL
-							env->push(as_value());	// @@ null is different from undefined!
+							as_value nullvalue;
+							nullvalue.set_null();
+							env->push(nullvalue);	
 
 							IF_VERBOSE_ACTION(log_msg("-------------- pushed NULL\n"));
 						}
@@ -3076,8 +3163,14 @@ namespace gameswf
 			// functions.
 			m_string_value = "undefined";
 		}
-		// else if (m_type == NULLTYPE) { /* @@ Moock says "null" */ }
-		// else if (m_type == BOOLEAN) { /* @@ Moock says "true" or "false" */ }
+		else if (m_type == NULLTYPE)
+		{ 
+			m_string_value = "null";
+		}
+		else if (m_type == BOOLEAN)
+		{
+			m_string_value = this->m_boolean_value ? "true" : "false";
+		}
 		else if (m_type == OBJECT)
 		{
 			// @@ Moock says, "the value that results from
@@ -3161,12 +3254,22 @@ namespace gameswf
 			//
 			// Also, "Infinity", "-Infinity", and "NaN"
 			// are recognized.
-			if (string_to_number(&m_number_value, m_string_value.c_str()))
+			if (! string_to_number(&m_number_value, m_string_value.c_str()))
 			{
 				// Failed conversion to Number.
 				m_number_value = 0.0;	// TODO should be NaN
 			}
 			return m_number_value;
+		}
+		else if (m_type == NULLTYPE)
+		{
+ 			// Evan: from my tests
+			return 0;
+		}
+		else if (m_type == BOOLEAN)
+		{
+			// Evan: from my tests
+			return (this->m_boolean_value) ? 1 : 0;
 		}
 		else if (m_type == NUMBER)
 		{
@@ -3200,6 +3303,7 @@ namespace gameswf
 	bool	as_value::to_bool() const
 	// Conversion to boolean.
 	{
+		// From Moock
 		if (m_type == STRING)
 		{
 			if (m_string_value == "false")
@@ -3225,6 +3329,10 @@ namespace gameswf
 			// @@ Moock says, NaN --> false
 			return m_number_value != 0.0;
 		}
+		else if (m_type == BOOLEAN)
+		{
+			return this->m_boolean_value;
+		}
 		else if (m_type == OBJECT)
 		{
 			return m_object_value != NULL;
@@ -3239,6 +3347,7 @@ namespace gameswf
 		}
 		else
 		{
+			assert(m_type == UNDEFINED || m_type == NULLTYPE);
 			return false;
 		}
 	}
@@ -3355,7 +3464,13 @@ namespace gameswf
 	bool	as_value::operator==(const as_value& v) const
 	// Return true if operands are equal.
 	{
-		if (m_type == STRING)
+		bool this_nulltype = (m_type == UNDEFINED || m_type == NULLTYPE);
+		bool v_nulltype = (v.get_type() == UNDEFINED || v.get_type() == NULLTYPE);
+		if (this_nulltype || v_nulltype)
+		{
+			return this_nulltype == v_nulltype;
+		}
+		else if (m_type == STRING)
 		{
 			return m_string_value == v.to_tu_string();
 		}
@@ -3363,8 +3478,14 @@ namespace gameswf
 		{
 			return m_number_value == v.to_number();
 		}
+		else if (m_type == BOOLEAN)
+		{
+			return m_boolean_value == v.to_bool();
+		}
 		else
 		{
+			// Evan: what about objects???
+			// TODO
 			return m_type == v.m_type;
 		}
 	}
@@ -3373,18 +3494,7 @@ namespace gameswf
 	bool	as_value::operator!=(const as_value& v) const
 	// Return true if operands are not equal.
 	{
-		if (m_type == STRING)
-		{
-			return m_string_value != v.to_tu_string();
-		}
-		else if (m_type == NUMBER)
-		{
-			return m_number_value != v.to_number();
-		}
-		else
-		{
-			return m_type != v.m_type;
-		}
+		return ! (*this == v);
 	}
 
 	
