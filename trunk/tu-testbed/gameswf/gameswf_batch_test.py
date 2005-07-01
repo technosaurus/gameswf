@@ -201,6 +201,9 @@ false
 false
 '''.splitlines(1)],
 
+[ "samples/test_forin_array.swf",
+'''true'''.splitlines(1)],
+
 # Add more tests here, in form of [ filename, expected_output ]
 
 ]
