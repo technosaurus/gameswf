@@ -409,13 +409,113 @@ namespace gameswf
 
 
 	//
+	// as_prop_flags
+	//
+	// flags defining the level of protection of a member
+	struct as_prop_flags
+	{
+		// Numeric flags
+		int m_flags;
+		// if true, this value is protected (internal to gameswf)
+		bool m_is_protected;
+
+		// mask for flags
+		const static int as_prop_flags_mask = 0x7;
+
+		// Default constructor
+		as_prop_flags() : m_flags(0), m_is_protected(false)
+		{
+		}
+
+		// Constructor
+		as_prop_flags(const bool read_only, const bool dont_delete, const bool dont_enum)
+			:
+			m_flags(((read_only) ? 0x4 : 0) | ((dont_delete) ? 0x2 : 0) | ((dont_enum) ? 0x1 : 0)),
+			m_is_protected(false)
+		{
+		}
+
+		// Constructor, from numerical value
+		as_prop_flags(const int flags)
+			: m_flags(flags), m_is_protected(false)
+		{
+		}
+
+		// accessor to m_readOnly
+		bool get_read_only() const { return (((this->m_flags & 0x4)!=0)?true:false); }
+
+		// accessor to m_dontDelete
+		bool get_dont_delete() const { return (((this->m_flags & 0x2)!=0)?true:false); }
+
+		// accessor to m_dontEnum
+		bool get_dont_enum() const { return (((this->m_flags & 0x1)!=0)?true:false);	}
+
+		// accesor to the numerical flags value
+		int get_flags() const { return this->m_flags; }
+
+		// accessor to m_is_protected
+		bool get_is_protected() const { return this->m_is_protected; }
+		// setter to m_is_protected
+		void set_get_is_protected(const bool is_protected) { this->m_is_protected = is_protected; }
+
+		// set the numerical flags value (return the new value )
+		// If unlocked is false, you cannot un-protect from over-write,
+		// you cannot un-protect from deletion and you cannot
+		// un-hide from the for..in loop construct
+		int set_flags(const int setTrue, const int set_false = 0)
+		{
+			if (!this->get_is_protected())
+			{
+				this->m_flags = this->m_flags & (~set_false);
+				this->m_flags |= setTrue;
+			}
+
+			return get_flags();
+		}
+	};
+
+	//
+	// as_member
+	//
+	// member for as_object: value + flags
+	struct as_member {
+		// value
+		as_value m_value;
+		// Properties flags
+		as_prop_flags m_flags;
+
+		// Default constructor
+		as_member() {
+		}
+
+		// Constructor
+		as_member(const as_value &value,const as_prop_flags flags=as_prop_flags())
+			:
+			m_value(value),
+			m_flags(flags)
+		{
+		}
+
+		// accessor to the value
+		as_value get_member_value() const { return m_value; }
+		// accessor to the properties flags
+		as_prop_flags get_member_flags() const { return m_flags; }
+
+		// set the value
+		void set_member_value(const as_value &value)  { m_value = value; }
+		// accessor to the properties flags
+		void set_member_flags(const as_prop_flags &flags)  { m_flags = flags; }
+	};
+
+
+	//
 	// as_object
 	//
 	// A generic bag of attributes.  Base-class for ActionScript
 	// script-defined objects.
 	struct as_object : public as_object_interface
 	{
-		stringi_hash<as_value>	m_members;
+		stringi_hash<as_member>	m_members;
 		as_object_interface*	m_prototype;
 
 		as_object() : m_prototype(NULL) { }
@@ -437,8 +537,7 @@ namespace gameswf
 		
 		virtual const char*	get_text_value() const { return NULL; }
 
-		virtual void	set_member(const tu_stringi& name, const as_value& val)
-		{
+		virtual void	set_member(const tu_stringi& name, const as_value& val ) {
 			//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
 			if (name == "prototype")
 			{
@@ -448,7 +547,20 @@ namespace gameswf
 			}
 			else
 			{
-				m_members.set(name, val);
+				stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
+				
+				if ( it != this->m_members.end() ) {
+
+					const as_prop_flags flags = (it.get_value()).get_member_flags();
+
+					// is the member read-only ?
+					if (!flags.get_read_only()) {
+						m_members.set(name, as_member(val, flags));
+					}
+
+				} else {
+					m_members.set(name, as_member(val));
+				}
 			}
 		}
 
@@ -460,15 +572,45 @@ namespace gameswf
 				val->set_as_object_interface(m_prototype);
 				return true;
 			}
-			else if (m_members.get(name, val) == false)
-			{
-				if (m_prototype != NULL)
+			else {
+				as_member m;
+
+				if (m_members.get(name, &m) == false)
 				{
-					return m_prototype->get_member(name, val);
+					if (m_prototype != NULL)
+					{
+						return m_prototype->get_member(name, val);
+					}
+					return false;
+				} else {
+					*val=m.get_member_value();
+					return true;
 				}
-				return false;
 			}
 			return true;
+		}
+
+		virtual bool get_member(const tu_stringi& name, as_member* member) const
+		{
+			//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
+			assert(member != NULL);
+			return m_members.get(name, member);
+		}
+
+		virtual bool	set_member_flags(const tu_stringi& name, const int flags)
+		{
+			as_member member;
+			if (this->get_member(name, &member)) {
+				as_prop_flags f = member.get_member_flags();
+				f.set_flags(flags);
+				member.set_member_flags(f);
+
+				m_members.set(name, member);
+
+				return true;
+			}
+
+			return false;
 		}
 
 		virtual movie*	to_movie()
