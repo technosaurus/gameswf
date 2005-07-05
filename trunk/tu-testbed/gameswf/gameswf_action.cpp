@@ -1,4 +1,4 @@
- // gameswf_action.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003
+// gameswf_action.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -1226,6 +1226,119 @@ namespace gameswf
 	}
 
 
+	void	as_global_assetpropflags(const fn_call& fn)
+	// ASSetPropFlags function
+	{
+		const int version = fn.env->get_target()->get_movie_definition()->get_version();
+
+		// Check the arguments
+		assert(fn.nargs == 3 || fn.nargs == 4);
+		assert((version == 5) ? (fn.nargs == 3) : true);
+
+		// object
+		as_object_interface* const obj = fn.arg(0).to_object();
+		assert(obj != NULL);
+
+		// list of child names
+		as_object_interface* props = fn.arg(1).to_object();
+		if (props == NULL) {
+			// tulrich: this fires in test_ASSetPropFlags -- is it correct?
+			//xxx assert(fn.arg(1).get_type() == as_value::NULLTYPE);
+		}
+
+		// a number which represents three bitwise flags which
+		// are used to determine whether the list of child names should be hidden,
+		// un-hidden, protected from over-write, un-protected from over-write,
+		// protected from deletion and un-protected from deletion
+		int set_true = int(fn.arg(2).to_number()) & as_prop_flags::as_prop_flags_mask;
+
+		// Is another integer bitmask that works like set_true,
+		// except it sets the attributes to false. The
+		// set_false bitmask is applied before set_true is applied
+
+		// ASSetPropFlags was exposed in Flash 5, however the fourth argument 'set_false'
+		// was not required as it always defaulted to the value '~0'. 
+		int set_false = (fn.nargs == 3 ? 
+				 (version == 5 ? ~0 : 0) : int(fn.arg(3).to_number()))
+			& as_prop_flags::as_prop_flags_mask;
+
+		// Evan: it seems that if set_true == 0 and set_false == 0, this function
+		// acts as if the parameters where (object, null, 0x1, 0) ...
+		if (set_false == 0 && set_true == 0)
+		{
+			props = NULL;
+			set_false = 0;
+			set_true = 0x1;
+		}
+
+		if (props == NULL)
+		{
+			// Take all the members of the object
+
+			as_object* object = (as_object*) obj;
+
+			stringi_hash<as_member>::const_iterator it = object->m_members.begin();
+			while (it != object->m_members.end())
+			{
+				as_member member = it.get_value();
+
+				as_prop_flags f = member.get_member_flags();
+				const int oldflags = f.get_flags();
+				const int newflags = f.set_flags(set_true, set_false);
+				member.set_member_flags(f);
+
+				object->m_members.set(it.get_key(), member);
+
+				++it;
+			}
+
+			if (object->m_prototype != NULL)
+			{
+				const as_object* prototype = (as_object*) object->m_prototype;
+
+				it = prototype->m_members.begin();
+				while (it != prototype->m_members.end())
+				{
+					as_member member = it.get_value();
+
+					as_prop_flags f = member.get_member_flags();
+					const int oldflags = f.get_flags();
+					const int newflags = f.set_flags(set_true, set_false);
+					member.set_member_flags(f);
+
+					object->m_members.set(it.get_key(), member);
+
+					++it;
+				}
+			}
+		} else {
+			as_object* object = (as_object*) obj;
+			as_object* object_props = (as_object*) props;
+
+			stringi_hash<as_member>::iterator it = object_props->m_members.begin();
+			while(it != object_props->m_members.end())
+			{
+				const tu_stringi key = (it.get_value()).get_member_value().to_string();
+				stringi_hash<as_member>::iterator it2 = object->m_members.find(key);
+
+				if (it2 != object->m_members.end())
+				{
+					as_member member = it2.get_value();
+
+					as_prop_flags f = member.get_member_flags();
+					const int oldflags = f.get_flags();
+					const int newflags = f.set_flags(set_true, set_false);
+					member.set_member_flags(f);
+
+					object->m_members.set((it.get_value()).get_member_value().to_string(), member);
+				}
+
+				++it;
+			}
+		}
+	}
+
+
 	void	action_init()
 	// Create/hook built-ins.
 	{
@@ -1253,6 +1366,9 @@ namespace gameswf
 #endif // HAVE_LIBXML
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
 			s_global->set_member("String", as_value(string_ctor));
+
+			// ASSetPropFlags
+			s_global->set_member("ASSetPropFlags", as_global_assetpropflags);
 
 			math_init();
 			key_init();
@@ -2066,6 +2182,7 @@ namespace gameswf
 
 						// Set up the constructor member.
 						new_obj_ptr->set_member("constructor", constructor);
+						new_obj_ptr->set_member_flags("constructor", 1);
 						
 						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
 
@@ -2101,32 +2218,32 @@ namespace gameswf
 				{
 					int	array_size = (int) env->pop().to_number();
 
-					log_msg("xxx init array: size = %d, top of stack = %d\n",
-						array_size, env->get_top_index());//xxxxx
+					//log_msg("xxx init array: size = %d, top of stack = %d\n",
+					//	// array_size, env->get_top_index());//xxxxx
 
-					// Call the array constructor, to create an empty array.
-					as_value	result;
-					as_global_array_ctor(fn_call(&result, NULL, env, 0, env->get_top_index()));
+// 					// Call the array constructor, to create an empty array.
+// 					as_value	result;
+// 					as_global_array_ctor(fn_call(&result, NULL, env, 0, env->get_top_index()));
 
-					as_object_interface*	ao = result.to_object();
-					assert(ao);
+// 					as_object_interface*	ao = result.to_object();
+// 					assert(ao);
 
-					// @@ TODO Set array size.
-					// ao->set_length(whatever); or something
+// 					// @@ TODO Set array size.
+// 					// ao->set_length(whatever); or something
 
-					// Fill the elements with the initial values from the stack.
-					as_value	index_number;
-					for (int i = 0; i < array_size; i++)
-					{
-						// @@ TODO a set_member that takes an int or as_value?
-						index_number.set_int(i);
-						ao->set_member(index_number.to_string(), env->pop());
-					}
+// 					// Fill the elements with the initial values from the stack.
+// 					as_value	index_number;
+// 					for (int i = 0; i < array_size; i++)
+// 					{
+// 						// @@ TODO a set_member that takes an int or as_value?
+// 						index_number.set_int(i);
+// 						ao->set_member(index_number.to_string(), env->pop());
+// 					}
 
-					env->push(result);
+// 					env->push(result);
 
-					log_msg("xxx init array end: top of stack = %d, trace(top(0)) =",
-						env->get_top_index());//xxxxxxx
+// 					//log_msg("xxx init array end: top of stack = %d, trace(top(0)) =",
+// 					//	env->get_top_index());//xxxxxxx
 					as_global_trace(fn_call(NULL, NULL, env, 1, env->get_top_index()));	//xxxx
 
 					break;
@@ -2194,46 +2311,37 @@ namespace gameswf
 					env->push(nullvalue);
 					IF_VERBOSE_ACTION(log_msg("---enumerate - push: NULL\n"));
 
-					stringi_hash<as_value>::const_iterator it = object->m_members.begin();
+					stringi_hash<as_member>::const_iterator it = object->m_members.begin();
 					while (it != object->m_members.end())
 					{
-						const as_value member = it.get_value();
-						switch(member.get_type())
+						const as_member member = (it.get_value());
+
+						if (! member.get_member_flags().get_dont_enum())
 						{
-						case as_value::AS_FUNCTION:
-							// @@ TODO
-							// Check if this function member should be in the enumeration
-							// For example, the constructor shouldn't appear..
-						default:
 							env->push(as_value(it.get_key()));
 
 							IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
 										  it.get_key().c_str()));
-							break;
-						};
+						}
 							
 						++it;
-					};
+					}
 
 					const as_object * prototype = (as_object *) object->m_prototype;
 					if (prototype != NULL)
 					{
-						stringi_hash<as_value>::const_iterator it = prototype->m_members.begin();
+						stringi_hash<as_member>::const_iterator it = prototype->m_members.begin();
 						while (it != prototype->m_members.end())
 						{
-							const as_value member = it.get_value();
-							switch(member.get_type())
+							const as_member member = (it.get_value());
+
+							if (! member.get_member_flags().get_dont_enum())
 							{
-							case as_value::AS_FUNCTION:
-								// @@ TODO
-								// Check if this function member should be in the enumeration
-							default:
 								env->push(as_value(it.get_key()));
 
 								IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
 											  it.get_key().c_str()));
-								break;
-							};
+							}
 								
 							++it;
 						};
@@ -3149,7 +3257,7 @@ namespace gameswf
 			// INF goes to "Infinity"
 			// -INF goes to "-Infinity"
 			char buffer[50];
-			snprintf(buffer, 50, "%g", m_number_value);
+			snprintf(buffer, 50, "%.14g", m_number_value);
 			m_string_value = buffer;
 		}
 		else if (m_type == UNDEFINED)
