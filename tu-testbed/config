@@ -66,6 +66,7 @@ SDL_LIBS := winmm.lib kernel32.lib user32.lib gdi32.lib # dxguid.lib winspool.li
 SDL_MIXER_INCLUDE := -I$(TOP)/../SDL_mixer-1.2.5/include
 SDL_MIXER_LIB := $(TOP)/../SDL_mixer-1.2.5/lib/SDL_mixer.lib
 
+SOCKET_LIBS := wsock32.lib ws2_32.lib
 
 LIBS := opengl32.lib glu32.lib $(SDL_DIR)/lib/SDLmain.lib $(SDL_DIR)/lib/SDL.lib gdi32.lib oldnames.lib $(SDL_LIBS)
 CFLAGS := $(CFLAGS) /MD -GR -GX -DWIN32=1 -D_WIN32=1 $(USE_DL_MALLOC_FLAG) -W3 $(SDL_INCLUDE) $(GAMESWF_MP3_SUPPORT)

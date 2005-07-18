@@ -103,6 +103,10 @@ inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm 
 #define UNUSED(x) (x) = (x)
 
 
+// Compile-time constant size of array.
+#define ARRAYSIZE(x) (sizeof(x)/sizeof(x[0]))
+
+
 inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 5381)
 // Computes a hash of the given data buffer.
 // Hash function suggested by http://www.cs.yorku.ca/~oz/hash.html

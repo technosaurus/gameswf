@@ -14,6 +14,11 @@
 
 namespace tu_timer
 {
+	// General-purpose wall-clock timer.  May not be hi-res enough
+	// for profiling.
+	uint64 get_ticks();
+	double ticks_to_seconds(uint64 ticks);
+	
 	// Hi-res timer for CPU profiling.
 
 	// Return a hi-res timer value.  Time 0 is arbitrary, so

@@ -1243,7 +1243,7 @@ namespace gameswf
 		as_object_interface* props = fn.arg(1).to_object();
 		if (props == NULL) {
 			// tulrich: this fires in test_ASSetPropFlags -- is it correct?
-			//xxx assert(fn.arg(1).get_type() == as_value::NULLTYPE);
+			assert(fn.arg(1).get_type() == as_value::NULLTYPE);
 		}
 
 		// a number which represents three bitwise flags which
