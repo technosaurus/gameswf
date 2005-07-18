@@ -29,15 +29,15 @@ Random thoughts on coding style/conventions:
   One True Style is to not write tab size dependent code; that way
   everybody can pick their favorite tab size.  The key to this is to
   let go of trying to line things in a particular column; that's a
-  maintenance nightmare anyway.  The One True Style uses tabs in three
-  places only: 1) indentation, 2) after type specifiers in variable
-  declarations, and 3) before comments on the end of code lines.  I'm
-  pretty ironclad in favor of 1; 2 and 3 are debatable.  E.g.
+  maintenance nightmare anyway.  The One True Style uses tabs in two
+  places only: 1) indentation, and 2) before comments on the end of
+  code lines.  I'm pretty ironclad in favor of 1; 2 is debatable.
+  E.g.
 
 	for (;;) {
 		// indented with tabs; pick your tab size, and enjoy.
-		int	a;	// *one* tab after the 'int', and *one* before this comment.
-		bool	b;	// *one* tab after the 'bool', etc.
+		int a;	// *one* tab before this comment.
+		bool b;	// same thing here
 	}
 
   There's one gaping hole with this scheme, which is that indented
@@ -46,6 +46,10 @@ Random thoughts on coding style/conventions:
   Proposed solution: at some point I'll see if it's easy to make emacs
   always use 70 columns for justifying comments, starting from the
   indent rather than column 0.
+
+  I used to put one tab after the typename in a variable declaration,
+  but I've stopped doing it; it's a little too confusing for most
+  programmers.
 
   Summary:
 

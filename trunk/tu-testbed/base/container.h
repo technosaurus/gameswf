@@ -329,8 +329,7 @@ public:
 
 
 	void	resize(int new_size)
-	// Preserve existing elements via realloc. @@ TODO change this
-	// to use ctor, dtor, and operator= instead!!!
+	// Preserve existing elements via realloc.
 	// 
 	// Newly created elements are initialized with default element
 	// of T.  Removed elements are destructed.
@@ -363,6 +362,9 @@ public:
 	}
 
 	void	reserve(int rsize)
+	// @@ TODO change this to use ctor, dtor, and operator=
+	// instead of preserving existing elements via binary copy via
+	// realloc?
 	{
 		assert(m_size >= 0);
 
@@ -1085,6 +1087,11 @@ public:
 		return *this > str.c_str();
 	}
 
+	void clear()
+	{
+		resize(0);
+	}
+	
 	// Sets buffer size to new_size+1 (i.e. enough room for
 	// new_size chars, plus terminating 0).
 	void	resize(int new_size);

@@ -14,6 +14,18 @@
 #include <windows.h>
 
 
+uint64 tu_timer::get_ticks()
+{
+	return timeGetTime();
+}
+
+
+double tu_timer::ticks_to_seconds(uint64 ticks)
+{
+	return ticks * (1.0f / 1000.f);
+}
+
+
 uint64	tu_timer::get_profile_ticks()
 {
 	// @@ use rdtsc?
@@ -41,6 +53,21 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 
 
 #include <sys/time.h>
+
+
+// The profile ticks implementation is just fine for a normal timer.
+
+
+uint64 tu_timer::get_ticks()
+{
+	return get_profile_ticks();
+}
+
+
+double tu_timer::ticks_to_seconds(uint64 ticks)
+{
+	return profile_ticks_to_seconds(ticks);
+}
 
 
 uint64	tu_timer::get_profile_ticks()

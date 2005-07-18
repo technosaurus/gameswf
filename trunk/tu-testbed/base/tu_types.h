@@ -51,12 +51,16 @@
 
 typedef Uint8 uint8;
 typedef Sint8 sint8;
+typedef Sint8 int8;
 typedef Uint16 uint16;
 typedef Sint16 sint16;
+typedef Sint16 int16;
 typedef Uint32 uint32;
 typedef Sint32 sint32;
+typedef Sint32 int32;
 typedef Uint64 uint64;
 typedef Sint64 sint64;
+typedef Sint64 int64;
 
 
 
