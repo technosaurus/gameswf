@@ -337,7 +337,7 @@ namespace gameswf
 		void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
 		void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
-		void	set_int(int val) { drop_refs(); set_double(val); }
+		void	set_int(int val) { set_double(val); }
 		void	set_as_object_interface(as_object_interface* obj);
 		void	set_as_c_function_ptr(as_c_function_ptr func)
 		{

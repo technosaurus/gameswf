@@ -3622,6 +3622,7 @@ namespace gameswf
 			if (m_as_function_value)
 			{
 				m_as_function_value->drop_ref();
+				m_as_function_value = 0;
 			}
 		}
 		else if (m_type == OBJECT)
@@ -3629,6 +3630,7 @@ namespace gameswf
 			if (m_object_value)
 			{
 				m_object_value->drop_ref();
+				m_object_value = 0;
 			}
 		}
 	}
