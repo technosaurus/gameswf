@@ -246,7 +246,7 @@ namespace gameswf
 		// Mouse/Button interface.
 		//
 
-		virtual character *get_topmost_mouse_entity(float x, float y) { return NULL; }
+		virtual movie* get_topmost_mouse_entity(float x, float y) { return NULL; }
 		virtual bool	get_track_as_menu() const { return false; }
 		virtual void	on_button_event(event_id id) { on_event(id); }
 
@@ -547,9 +547,23 @@ namespace gameswf
 			float	w = m_def->get_width_local() * m.m_[0][0];
 			return w;
 		}
-		
-	};
 
+		// new, from Vitaly.
+		virtual movie*	get_topmost_mouse_entity(float x, float y)
+		{
+			matrix	m = get_matrix();
+			point	p;
+			m.transform_by_inverse(&p, point(x, y));
+
+			if (m_def->point_test_local(p.m_x, p.m_y))
+			{
+				// The mouse is inside the shape.
+				return get_parent();
+				// return this;
+			}
+			return NULL;
+		}
+	};
 
 
 	struct bitmap_character_def : public character_def

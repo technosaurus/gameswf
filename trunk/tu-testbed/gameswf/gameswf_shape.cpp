@@ -65,6 +65,12 @@ namespace gameswf
 	}
 
 
+	bool	edge::is_straight() const
+	{
+		return m_cx == m_ax && m_cy == m_ay;
+	}
+
+
 	//
 	// path
 	//
@@ -109,30 +115,180 @@ namespace gameswf
 	// Point-in-shape test.  Return true if the query point is on the filled
 	// interior of this shape.
 	{
-		assert(0);	// this routine isn't finished
-
-		if (m_fill0 == 0 && m_fill1 == 0)
+		if (m_edges.size() <= 0)
 		{
-			// Not a filled shape.
 			return false;
 		}
 
-		// Look for the nearest point on an edge,
-		// to the left of the query point.  If that
-		// edge is a fill edge, then the query point
-		// is inside the shape.
-		bool	inside = false;
-		//float	closest_point = 1e6;
-
-		for (int i = 0; i < m_edges.size(); i++)
+		if (m_fill0 < 0)
 		{
-			// edges[i].solve_at_y(hit?, x?, slope up/down?, y);
-			// if (hit && x - x? < closest_point) {
-			//   inside = up/down ? (m_fill0 > -1) : (m_fill1 > -1);
-			// }
+			// No interior fill.
+			
+			// @@ This isn't quite right due to some paths
+			// doing double-duty with both fill0 and fill1
+			// styles.
+
+			// TODO: get rid of this stupid fill0/fill1
+			// business -- a path should always be
+			// counterclockwise and have one fill.  For
+			// input paths with fill1, generate a separate
+			// reversed path with fill set to fill1.
+			// Group all paths with the same fill into a
+			// path group; do the point_test on the whole
+			// group.
+			return false;
 		}
 
-		return inside;
+		// Shoot a horizontal ray from (x,y) to the right, and
+		// count the number of edge crossings.  An even number
+		// of crossings means the point is outside; an odd
+		// number means it's inside.
+
+		float x0 = m_ax;
+		float y0 = m_ay;
+
+		int ray_crossings = 0;
+		for (int i = 0, n = m_edges.size(); i < n; i++)
+		{
+			const edge& e = m_edges[i];
+
+			float x1 = e.m_ax;
+			float y1 = e.m_ay;
+
+			if (e.is_straight()) {
+				// Straight-line case.
+				
+				// See if (x0,y0)-(x1,y1) crosses (x,y)-(infinity,y)
+			
+				// Does the segment straddle the horizontal ray?
+				bool cross_up = (y0 < y && y1 >= y);
+				bool cross_down = (!cross_up) && (y0 > y && y1 <= y);
+				if (cross_up || cross_down)
+				{
+					// Straddles.
+				
+					// Is the crossing point to the right of x?
+					float dy = y1 - y0;
+
+					// x_intercept = x0 + (x1 - x0) * (y - y0) / dy;
+					float x_intercept_times_dy = x0 * dy + (x1 - x0) * (y - y0);
+					float x_times_dy = x * dy;
+
+					// text x_intercept > x
+				
+					// factor out the division; two cases depending on sign of dy
+					if (cross_up)
+					{
+						assert(dy > 0);
+						if (x_intercept_times_dy > x * dy)
+						{
+							ray_crossings++;
+						}
+					}
+					else
+					{
+						// dy is negative; reverse the inequality test
+						assert(dy < 0);
+						if (x_intercept_times_dy < x * dy)
+						{
+							ray_crossings++;
+						}
+					}
+				}
+			}
+			else
+			{
+				// Curve case.
+				float cx = e.m_cx;
+				float cy = e.m_cy;
+
+				// Find whether & where the curve crosses y
+				if ((y0 < y && y1 < y && cy < y)
+				    || (y0 > y && y1 > y && cy > y))
+				{
+					// All above or all below -- no possibility of crossing.
+				}
+				else if (x0 < x && x1 < x && cx < x)
+				{
+					// All to the left -- no possibility of crossing to the right.
+				}
+				else
+				{
+					// Find points where the curve crosses y.
+
+					// Quadratic bezier is:
+					//
+					// p = (1-t)^2 * a0 + 2t(1-t) * c + t^2 * a1
+					//
+					// We need to solve for x at y.
+					
+					// Use the quadratic formula.
+
+					// Numerical Recipes suggests this variation:
+					// q = -0.5 [b +sgn(b) sqrt(b^2 - 4ac)]
+					// x1 = q/a;  x2 = c/q;
+
+					float A = y1 + y0 - 2 * cy;
+					float B = 2 * (cy - y0);
+					float C = y0 - y;
+
+					float rad = B * B - 4 * A * C;
+					if (rad < 0)
+					{
+						// No real solutions.
+					}
+					else
+					{
+						float q;
+						float sqrt_rad = sqrtf(rad);
+						if (B < 0) {
+							q = -0.5f * (B - sqrt_rad);
+						} else {
+							q = -0.5f * (B + sqrt_rad);
+						}
+
+						// The old-school way.
+						// float t0 = (-B + sqrt_rad) / (2 * A);
+						// float t1 = (-B - sqrt_rad) / (2 * A);
+
+						if (A != 0)
+						{
+							float t0 = q / A;
+							if (t0 >= 0 && t0 < 1) {
+								float x_at_t0 =
+									x0 + 2 * (cx - x0) * t0 + (x1 + x0 - 2 * cx) * t0 * t0;
+								if (x_at_t0 > x) {
+									ray_crossings++;
+								}
+							}
+						}
+
+						if (q != 0)
+						{
+							float t1 = C / q;
+							if (t1 >= 0 && t1 < 1) {
+								float x_at_t1 =
+									x0 + 2 * (cx - x0) * t1 + (x1 + x0 - 2 * cx) * t1 * t1;
+								if (x_at_t1 > x) {
+									ray_crossings++;
+								}
+							}
+						}
+					}
+				}
+			}
+
+			x0 = x1;
+			y0 = y1;
+		}
+
+		if (ray_crossings & 1)
+		{
+			// Odd number of ray crossings means the point
+			// is inside the poly.
+			return true;
+		}
+		return false;
 	}
 
 
@@ -875,7 +1031,7 @@ namespace gameswf
 
 					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character read: curved edge   = %4g %4g - %4g %4g - %4g %4g\n", x, y, cx, cy, ax, ay));
 
-					current_path.m_edges.push_back(edge(cx, cy, ax, ay));	
+					current_path.m_edges.push_back(edge(cx, cy, ax, ay));
 
 					x = ax;
 					y = ay;
@@ -906,7 +1062,7 @@ namespace gameswf
 
 					if (SHAPE_LOG) IF_VERBOSE_PARSE(log_msg("  shape_character_read: straight edge = %4g %4g - %4g %4g\n", x, y, x + dx, y + dy));
 
-					current_path.m_edges.push_back(edge(x + dx/2, y + dy/2, x + dx, y + dy));
+					current_path.m_edges.push_back(edge(x + dx, y + dy, x + dx, y + dy));
 
 					x += dx;
 					y += dy;
@@ -1222,7 +1378,6 @@ namespace gameswf
 			return false;
 		}
 
-#if 0
 		// Try each of the paths.
 		for (int i = 0; i < m_paths.size(); i++)
 		{
@@ -1233,8 +1388,6 @@ namespace gameswf
 		}
 
 		return false;
-#endif // 0
-		return true;
 	}
 
 

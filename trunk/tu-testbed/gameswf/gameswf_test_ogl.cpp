@@ -547,18 +547,19 @@ int	main(int argc, char *argv[])
 	}
 
 	// Load the actual movie.
-	gameswf::movie_definition*	md = gameswf::create_movie(infile);
+	gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
 	if (md == NULL)
 	{
 		fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
 		exit(1);
 	}
-	gameswf::movie_interface*	m = md->create_instance();
+	gameswf::movie_interface*	m = create_library_movie_inst(md);
 	if (m == NULL)
 	{
 		fprintf(stderr, "error: can't create movie instance\n");
 		exit(1);
 	}
+	gameswf::set_current_root(m);
 
 	// Mouse state.
 	int	mouse_x = 0;
@@ -776,6 +777,9 @@ int	main(int argc, char *argv[])
 				}
 			}
 		}
+
+		m = gameswf::get_current_root();
+		gameswf::delete_unused_root();
 
 		m->set_display_viewport(0, 0, width, height);
 		m->set_background_alpha(s_background ? 1.0f : 0.05f);
