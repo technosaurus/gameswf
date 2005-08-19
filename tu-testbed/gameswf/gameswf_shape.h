@@ -34,7 +34,8 @@ namespace gameswf
 		edge();
 		edge(float cx, float cy, float ax, float ay);
 		void	tesselate_curve() const;
-
+		bool	is_straight() const;
+		
 	//private:
 		// *quadratic* bezier: point = p0 * t^2 + p1 * 2t(1-t) + p2 * (1-t)^2
 		float	m_cx, m_cy;		// "control" point

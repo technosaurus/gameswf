@@ -419,6 +419,9 @@ namespace gameswf
 
 		virtual int add_interval_timer(void *timer) = 0;
 		virtual void clear_interval_timer(int x) = 0;
+
+		// for external movies
+		virtual movie*	get_root_movie() = 0;
 	};
 
 	// Try to grab movie info from the header of the given .swf

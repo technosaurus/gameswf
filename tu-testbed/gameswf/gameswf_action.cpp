@@ -129,8 +129,8 @@ namespace gameswf
 				return;
 			}
 			set_current_root(extern_movie);
-			// FIXME: why does this core dump
-			movie* m = static_cast<movie*>(extern_movie)->get_root_movie();
+			movie* m = extern_movie->get_root_movie();
+
 			m->on_event(event_id::LOAD);
 		}
 		else
@@ -155,7 +155,7 @@ namespace gameswf
 			Uint16 clip_depth = tar->get_clip_depth();
 
 			movie* parent = tar->get_parent();
-			movie* new_movie = static_cast<movie*>(extern_movie)->get_root_movie();
+			movie* new_movie = extern_movie->get_root_movie();
 
 			assert(parent != NULL);
 

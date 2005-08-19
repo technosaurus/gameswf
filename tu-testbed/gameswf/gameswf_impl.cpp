@@ -1555,7 +1555,7 @@ namespace gameswf
 		for (int i = 0; i < s_extern_sprites.size(); i++)
 		{
 			movie_interface* root_m = s_extern_sprites[i];
-			movie* m = static_cast<movie*>(root_m)->get_root_movie();
+			movie* m = root_m->get_root_movie();
       
 			if (m->get_ref_count() < 2)
 			{
@@ -3304,7 +3304,8 @@ namespace gameswf
 			return (a << 2) | b;
 		}
 
-		virtual character*	get_topmost_mouse_entity(float x, float y)
+		/* sprite_instance */
+		virtual movie*	get_topmost_mouse_entity(float x, float y)
 		// Return the topmost entity that the given point covers.  NULL if none.
 		// Coords are in parent's frame.
 		{
@@ -3320,19 +3321,34 @@ namespace gameswf
 				
 				if (ch != NULL)
 				{
-					character*	te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
+					movie*	te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
 					if (te)
 					{
 						// Found one.
-						if (te->get_parent()->get_visible()) {
+						//
+						// @@ tulrich: get_visible() needs to be recursive here!
+						if (te->get_visible())
+						{
+							// @@
+							// Vitaly suggests "return ch" here, but it breaks
+							// samples/test_button_functions.swf
+							//
+							// However, it fixes samples/clip_as_button.swf
+							//
+							// What gives?
+							//
 							return te;
-						} else {
-							return false;
+							//return ch;
+						} 
+						else
+						{
+							return NULL;
 						}
 					}
 				}
 			}
-			return false;
+
+			return NULL;
 		}
 
 
@@ -3946,7 +3962,12 @@ namespace gameswf
 			{
 				// @@ tulrich: is parameter in world-coords or local-coords?
 				matrix	m = get_matrix();
-				m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number())) / get_width();
+				m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number()));
+				float w = get_width();
+				if (fabsf(w) > 1e-6f)
+				{
+					 m.m_[0][0] /= w;
+				}
 				set_matrix(m);
 				m_accept_anim_moves = false;
 				return;
@@ -3956,7 +3977,12 @@ namespace gameswf
 			{
 				// @@ tulrich: is parameter in world-coords or local-coords?
 				matrix	m = get_matrix();
-				m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number())) / get_height();
+				m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number()));
+				float h = get_width();
+				if (fabsf(h) > 1e-6f)
+				{
+					m.m_[1][1] /= h;
+				}
 				set_matrix(m);
 				m_accept_anim_moves = false;
 				return;
@@ -4659,6 +4685,22 @@ namespace gameswf
 		sprite->set_play_state(movie_interface::STOP);
 	}
 
+	void	sprite_prev_frame(const fn_call& fn)
+	{
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+
+		int current_frame = sprite->get_current_frame();
+		if (current_frame > 0)
+		{
+			sprite->goto_frame(current_frame - 1);
+		}
+		sprite->set_play_state(movie_interface::STOP);
+	}
 
 	void	sprite_get_bytes_loaded(const fn_call& fn)
 	{
@@ -4698,6 +4740,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("gotoAndStop", &sprite_goto_and_stop);
 		s_sprite_builtins->set_member("gotoAndPlay", &sprite_goto_and_play);
 		s_sprite_builtins->set_member("nextFrame", &sprite_next_frame);
+		s_sprite_builtins->set_member("prevFrame", &sprite_prev_frame);
 		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
 		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
 

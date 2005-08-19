@@ -405,7 +405,7 @@ namespace gameswf
 		}
 
 
-		virtual character*	get_topmost_mouse_entity(float x, float y)
+		virtual movie*	get_topmost_mouse_entity(float x, float y)
 		// Return the topmost entity that the given point covers.  NULL if none.
 		// I.e. check against ourself.
 		{
@@ -416,8 +416,7 @@ namespace gameswf
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
-				if (rec.m_character_id < 0
-				    || rec.m_hit_test == false)
+				if (rec.m_character_id < 0 || rec.m_hit_test == false)
 				{
 					continue;
 				}
@@ -429,7 +428,8 @@ namespace gameswf
 				if (rec.m_character_def->point_test_local(sub_p.m_x, sub_p.m_y))
 				{
 					// The mouse is inside the shape.
-					return this;
+					return this;//xxxxxx
+					//return m_record_character[i].get_ptr();
 				}
 			}}
 
