@@ -3327,7 +3327,7 @@ namespace gameswf
 						// Found one.
 						//
 						// @@ tulrich: get_visible() needs to be recursive here!
-						if (te->get_visible())
+						if (te->get_visible())  // TODO move this check to the base case(s) only
 						{
 							// @@
 							// Vitaly suggests "return ch" here, but it breaks
@@ -3336,6 +3336,9 @@ namespace gameswf
 							// However, it fixes samples/clip_as_button.swf
 							//
 							// What gives?
+							//
+							// Answer: a button event must be passed up to parent until
+							// somebody handles it.
 							//
 							return te;
 							//return ch;
@@ -4454,6 +4457,22 @@ namespace gameswf
 			}
 		}
 
+		
+		/* sprite_instance */
+		virtual void	on_button_event(event_id id)
+		// Handle a button event.
+		{
+			// Handle it ourself?
+			bool handled = on_event(id);
+
+			if (handled == false && get_parent() != NULL) {
+				// We couldn't handle it ourself, so
+				// pass it up to our parent.
+				get_parent()->on_button_event(id);
+			}
+		}
+
+		
 		/* sprite_instance */
 		virtual bool	on_event(event_id id)
 		// Dispatch event handler(s), if any.
@@ -4476,7 +4495,7 @@ namespace gameswf
 			{
 				// In ActionScript 2.0, event method names are CASE SENSITIVE.
 				// In ActionScript 1.0, event method names are CASE INSENSITIVE.
-				const tu_string&	method_name = id.get_function_name();
+				const tu_stringi&	method_name = id.get_function_name().to_tu_stringi();
 				if (method_name.length() > 0)
 				{
 					as_value	method;

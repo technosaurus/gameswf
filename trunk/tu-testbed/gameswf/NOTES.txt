@@ -33,3 +33,43 @@ ActionScript Notes
 * null and undefined are distinct???  Flash help says null is for
   missing parameters or return values, while undefined is for things
   that haven't been assigned yet.
+
+
+
+Movie clip button events
+========================
+
+See test_cascaded_clipbuttons.swf/fla
+
+Apparently, the behavior on mouse press is:
+
+1. detect topmost character containing the event
+
+2. proceed down from root (not including root) towards the topmost
+   character under mouse: the first entity that has a clip handler or
+   an onXXX function becomes the active entity, and receives the
+   event.  (TODO determine what exactly is required to qualify for
+   this -- is an onEnterFrame enough?)
+
+   on (keyPress "...") {} qualifies (!)
+   function onRelease() {} qualifies
+   onDragOver
+   onDragOut
+   onPress
+   onRelease
+   onReleaseOutside
+   onRollOut
+   onRollOver
+   
+   onClipEvent (load) {} does NOT qualify
+   onClipEvent (keyDown) {} does NOT qualify
+   function onKeyDown() {} does NOT qualify
+   function onEnterFrame() {} does NOT qualify
+   function onKillFocus() {} does NOT qualify
+   function onLoad() {} does NOT qualify
+   function onMouseDown does NOT qualify (though it is triggered as well on any mouse down event; it's like a listener)
+
+
+3. if the entity has *both* an instance clip handler and a onXXX
+   function, the instance clip handler is invoked, followed by the
+   onXXX function.
