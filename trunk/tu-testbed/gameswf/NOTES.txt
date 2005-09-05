@@ -52,7 +52,6 @@ Apparently, the behavior on mouse press is:
    this -- is an onEnterFrame enough?)
 
    on (keyPress "...") {} qualifies (!)
-   function onRelease() {} qualifies
    onDragOver
    onDragOut
    onPress

@@ -551,6 +551,8 @@ namespace gameswf
 		// new, from Vitaly.
 		virtual movie*	get_topmost_mouse_entity(float x, float y)
 		{
+			assert(get_visible());	// caller should check this.
+
 			matrix	m = get_matrix();
 			point	p;
 			m.transform_by_inverse(&p, point(x, y));
@@ -558,8 +560,7 @@ namespace gameswf
 			if (m_def->point_test_local(p.m_x, p.m_y))
 			{
 				// The mouse is inside the shape.
-				return get_parent();
-				// return this;
+				return this;
 			}
 			return NULL;
 		}
