@@ -409,6 +409,10 @@ namespace gameswf
 		// Return the topmost entity that the given point covers.  NULL if none.
 		// I.e. check against ourself.
 		{
+			if (get_visible() == false) {
+				return false;
+			}
+
 			matrix	m = get_matrix();
 			point	p;
 			m.transform_by_inverse(&p, point(x, y));
@@ -428,7 +432,8 @@ namespace gameswf
 				if (rec.m_character_def->point_test_local(sub_p.m_x, sub_p.m_y))
 				{
 					// The mouse is inside the shape.
-					return this;//xxxxxx
+					return this;
+					// @@ Are there any circumstances where this is correct:
 					//return m_record_character[i].get_ptr();
 				}
 			}}

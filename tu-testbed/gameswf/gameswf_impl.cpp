@@ -2881,16 +2881,11 @@ namespace gameswf
 		stringi_hash<int>	     m_named_frames;	// stores 0-based frame #'s
 		int	                     m_frame_count;
 		int	                     m_loading_frame;
-//@@ KILL		action_buffer* m_init_actions;         
-//@@ KILL		bool m_do_init_actions;
 		sprite_definition(movie_definition_sub* m)
 			:
 			m_movie_def(m),
 			m_frame_count(0),
 			m_loading_frame(0)
-//@@ KILL			m_init_actions(NULL),
-//@@ KILL			m_do_init_actions(false)									
-
 		{
 			assert(m_movie_def);
 		}
@@ -3124,14 +3119,6 @@ namespace gameswf
 			m_init_actions_executed.resize(m_def->get_frame_count());
 			memset(&m_init_actions_executed[0], 0,
 			       sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
-// @@ KILL
-// 			sprite_definition* sd = (sprite_definition*) def;
-// 			if (sd->m_do_init_actions)
-// 			{
-// 				//printf("do_init_actions\n");
-// 				sd->m_do_init_actions = false;
-// 				sd->m_init_actions->execute(&m_as_environment);
-// 			}
 		}
 
 		// sprite instance of add_interval_handler()
@@ -3304,11 +3291,60 @@ namespace gameswf
 			return (a << 2) | b;
 		}
 
+
+		bool can_handle_mouse_event()
+		// Return true if we have any mouse event handlers.
+		{
+			// We should cache this!
+			as_value dummy;
+
+			// Functions that qualify as mouse event handlers.
+			const char* FN_NAMES[] = {
+				"onKeyPress",
+				"onRelease",
+				"onDragOver",
+				"onDragOut",
+				"onPress",
+				"onReleaseOutside",
+				"onRollout",
+				"onRollover",
+			};
+			for (int i = 0; i < ARRAYSIZE(FN_NAMES); i++) {
+				if (get_member(FN_NAMES[i], &dummy)) {
+					return true;
+				}
+			}
+
+			// Event handlers that qualify as mouse event handlers.
+			const event_id::id_code EH_IDS[] = {
+				event_id::PRESS,
+				event_id::RELEASE,
+				event_id::RELEASE_OUTSIDE,
+				event_id::ROLL_OVER,
+				event_id::ROLL_OUT,
+				event_id::DRAG_OVER,
+				event_id::DRAG_OUT,
+			};
+			{for (int i = 0; i < ARRAYSIZE(EH_IDS); i++) {
+				if (get_event_handler(EH_IDS[i], &dummy)) {
+					return true;
+				}
+			}}
+
+			return false;
+		}
+		
+
 		/* sprite_instance */
 		virtual movie*	get_topmost_mouse_entity(float x, float y)
-		// Return the topmost entity that the given point covers.  NULL if none.
-		// Coords are in parent's frame.
+		// Return the topmost entity that the given point
+		// covers that can receive mouse events.  NULL if
+		// none.  Coords are in parent's frame.
 		{
+			if (get_visible() == false) {
+				return NULL;
+			}
+
 			matrix	m = get_matrix();
 			point	p;
 			m.transform_by_inverse(&p, point(x, y));
@@ -3319,33 +3355,17 @@ namespace gameswf
 			{
 				character* ch = m_display_list.get_character(i);
 				
-				if (ch != NULL)
+				if (ch != NULL && ch->get_visible())
 				{
 					movie*	te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
 					if (te)
 					{
-						// Found one.
-						//
-						// @@ tulrich: get_visible() needs to be recursive here!
-						if (te->get_visible())  // TODO move this check to the base case(s) only
-						{
-							// @@
-							// Vitaly suggests "return ch" here, but it breaks
-							// samples/test_button_functions.swf
-							//
-							// However, it fixes samples/clip_as_button.swf
-							//
-							// What gives?
-							//
-							// Answer: a button event must be passed up to parent until
-							// somebody handles it.
-							//
+						// The containing entity that 1) is closest to root and 2) can
+						// handle mouse events takes precedence.
+						if (can_handle_mouse_event()) {
+							return this;
+						} else {
 							return te;
-							//return ch;
-						} 
-						else
-						{
-							return NULL;
 						}
 					}
 				}
@@ -4459,35 +4479,26 @@ namespace gameswf
 
 		
 		/* sprite_instance */
-		virtual void	on_button_event(event_id id)
-		// Handle a button event.
-		{
-			// Handle it ourself?
-			bool handled = on_event(id);
-
-			if (handled == false && get_parent() != NULL) {
-				// We couldn't handle it ourself, so
-				// pass it up to our parent.
-				get_parent()->on_button_event(id);
-			}
-		}
-
-		
-		/* sprite_instance */
 		virtual bool	on_event(event_id id)
 		// Dispatch event handler(s), if any.
 		{
 			// Keep m_as_environment alive during any method calls!
 			smart_ptr<as_object_interface>	this_ptr(this);
 
+			bool called = false;
+			
 			// First, check for built-in event handler.
 			{
 				as_value	method;
-				if (get_event_handler(event_id(id), &method))
+				if (get_event_handler(id, &method))
 				{
 					// Dispatch.
 					call_method0(method, &m_as_environment, this);
-					return true;
+
+					called = true;
+					// Fall through and call the function also, if it's defined!
+					// (@@ Seems to be the behavior for mouse events; not tested & verified for
+					// every event type.)
 				}
 			}
 
@@ -4502,12 +4513,12 @@ namespace gameswf
 					if (get_member(method_name, &method))
 					{
 						call_method0(method, &m_as_environment, this);
-						return true;
+						called = true;
 					}
 				}
 			}
 
-			return false;
+			return called;
 		}
 
 
