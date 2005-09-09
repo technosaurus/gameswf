@@ -374,3 +374,11 @@ Renderer
     want the footprint of the soft texture edge to be about one
     rendered pixel wide.  (I suspect the scaling issues will be
     similar to rendering glyphs using textures.)
+
+  * see similar idea explored much more thoroughly by Loop and Blinn
+    in this paper:
+    http://research.microsoft.com/~cloop/LoopBlinn05.pdf
+
+    (Actually they explore the math etc for the curve outline,
+    including cubic curves, but not the signed-area idea; instead they
+    do some funky extra tesselation to avoid overlaps.)
