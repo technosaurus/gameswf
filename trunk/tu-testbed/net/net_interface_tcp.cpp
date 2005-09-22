@@ -45,6 +45,22 @@ struct net_socket_tcp : public net_socket
 		return get_error() == 0;
 	}
 
+	virtual bool is_readable() const
+	// Return true if this socket has incoming data available.
+	{
+		fd_set fds;
+		FD_ZERO(&fds);
+		FD_SET(m_sock, &fds);
+		struct timeval tv = { 0, 0 };
+		select(1, &fds, NULL, NULL, &tv);
+		if (FD_ISSET(m_sock, &fds)) {
+			// Socket has data available.
+			return true;
+		}
+
+		return false;
+	}
+
 	virtual int read(void* data, int bytes, float timeout_seconds)
 	// Try to read the requested number of bytes.  Returns the
 	// number of bytes actually read.
@@ -122,6 +138,7 @@ struct net_socket_tcp : public net_socket
 		{
 			// Read a byte at a time.  Probably slow!
 			char c;
+			bool waiting = false;
 			int bytes_read = recv(m_sock, &c, 1, 0);
 			if (bytes_read == SOCKET_ERROR)
 			{
@@ -130,19 +147,7 @@ struct net_socket_tcp : public net_socket
 				{
 					// No data ready.
 					m_error = 0;
-
-					// Timeout?
-					uint64 now = tu_timer::get_ticks();
-					double elapsed = tu_timer::ticks_to_seconds(now - start);
-
-					if (elapsed > timeout_seconds)
-					{
-						// TODO this spins; fix it by sleeping a bit?
-						// if (time_left > 0.010f) { sleep(...); }
-						continue;
-					}
-				
-					return 0;
+					waiting = true;
 				}
 				else
 				{
@@ -151,7 +156,26 @@ struct net_socket_tcp : public net_socket
 						WSAGetLastError());
 					return 0;
 				}
+			} else if (bytes_read == 0) {
+				waiting = true;
 			}
+
+			if (waiting) {
+				// Timeout?
+				uint64 now = tu_timer::get_ticks();
+				double elapsed = tu_timer::ticks_to_seconds(now - start);
+
+				if (elapsed < timeout_seconds)
+				{
+					// TODO this spins; fix it by sleeping a bit?
+					// if (time_left > 0.010f) { sleep(...); }
+					continue;
+				}
+
+				// Timed out.
+				return 0;
+			}
+
 			assert(bytes_read == 1);
 
 			(*data) += c;

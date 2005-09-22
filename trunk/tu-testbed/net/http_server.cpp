@@ -106,9 +106,9 @@ bool http_server::add_handler(const char* path, http_handler* handler)
 void http_server::update()
 // Call this periodically to serve pending requests.
 {
-	if (m_state.is_active() == false)
+	if (m_state.is_alive() == false)
 	{
-		// Check for new requests.
+		// Check for new connections.
 		net_socket* sock = m_net->accept();
 		if (sock)
 		{
@@ -116,11 +116,6 @@ void http_server::update()
 		}
 	}
 	
-	if (! m_state.is_active())
-	{
-		return;
-	}
-
 	// Update the active request, if there is one.
 	static const float UPDATE_TIMEOUT_SECONDS = 0.010f;
 	uint64 start = tu_timer::get_ticks();
@@ -128,7 +123,7 @@ void http_server::update()
 	{
 		m_state.update(this);
 
-		if (! m_state.is_active())
+		if (m_state.is_alive() == false || m_state.is_pending() == false)
 		{
 			break;
 		}
@@ -164,7 +159,7 @@ void http_server::dispatch_request(http_request* req)
 // Return a response for the given request.
 {
 	assert(req);
-	assert(req->is_active());
+	assert(req->m_sock);
 	
 	if (! req->m_sock->is_open())
 	{
@@ -175,7 +170,8 @@ void http_server::dispatch_request(http_request* req)
 	if (req->m_status >= 400)
 	{
 		// Minimal error response.
-		tu_string error_body = "<html><head><title>Error</title></head><body>Error</body></html>";
+		tu_string error_body = string_printf(
+			"<html><head><title>Error %d</title></head><body>Error %d</body></html>", req->m_status, req->m_status);
 		send_html_response(req, error_body);
 
 		return;
@@ -225,13 +221,41 @@ void http_server::http_request_state::update(http_server* server)
 // Continues processing the request.  Deactivates our state when the
 // request is finished.
 {
-	assert(is_active());
+	if (! is_alive()) {
+		return;
+	}
 
 	int bytes_in;
 
 	static const int MAX_LINE_BYTES = 32768;  // very generous, but not insane, max line size.
+	static const float CONNECTION_TIMEOUT = 300.0f;  // How long to leave the socket open.
+
+	if (m_request_state == REQUEST_FINISHED) {
+		// Watch for the start of a new request.
+		if (m_req.m_sock->is_readable() == false) {
+			uint64 now = tu_timer::get_ticks();
+			if (tu_timer::ticks_to_seconds(now - m_last_activity) > CONNECTION_TIMEOUT) {
+				// Timed out; close the socket.
+				deactivate();
+			}
+
+			// Idle.
+			return;
+		} else {
+			m_request_state = PARSE_START_LINE;
+			m_last_activity = tu_timer::get_ticks();
+
+			// Fall through and start processing.
+		}
+	}
+
+	if (m_req.m_sock->is_open() == false) {
+		// The connection closed on us -- abort the current request!
+		deactivate();
+		return;
+	}
 	
-	switch (m_parse_state)
+	switch (m_request_state)
 	{
 	default:
 		// Invalid state.
@@ -250,7 +274,7 @@ void http_server::http_request_state::update(http_server* server)
 			if (m_req.m_status >= 400)
 			{
 				m_line_buffer.clear();
-				m_parse_state = PARSE_DONE;
+				m_request_state = PARSE_DONE;
 			}
 			// else we're either still in the header, or
 			// process_header changed our parse state.
@@ -262,7 +286,7 @@ void http_server::http_request_state::update(http_server* server)
 			// Invalid line.
 			m_line_buffer.clear();
 			m_req.m_status = HTTP_BAD_REQUEST;
-			m_parse_state = PARSE_DONE;
+			m_request_state = PARSE_DONE;
 		}
 		break;
 
@@ -273,14 +297,19 @@ void http_server::http_request_state::update(http_server* server)
 		if (m_req.m_status >= 400)
 		{
 			// Something bad happened.
-			m_parse_state = PARSE_DONE;
+			m_request_state = PARSE_DONE;
 		}
 		break;
 
 	case PARSE_DONE:
 		// Respond to the request.
 		server->dispatch_request(&m_req);
-		deactivate();
+
+		// Leave the connection open, but go idle, waiting for
+		// another request.
+		m_request_state = REQUEST_FINISHED;
+		m_last_activity = tu_timer::get_ticks();
+		clear();
 		break;
 	}
 }
@@ -294,17 +323,26 @@ void http_server::http_request_state::activate(net_socket* sock)
 	// Adopt the given socket.
 	assert(m_req.m_sock == NULL);
 	m_req.m_sock = sock;
+
+	m_last_activity = tu_timer::get_ticks();
 }
 
 
 void http_server::http_request_state::deactivate()
+// Clear request state & close the socket.
+{
+	clear();
+	m_req.deactivate();
+}
+
+void http_server::http_request_state::clear()
+// Clear out request state, but don't mess with our socket.
 {
 	m_req.clear();
-
 	m_line_buffer.clear();
 	m_parse_key.clear();
 	m_parse_value.clear();
-	m_parse_state = PARSE_START_LINE;
+	m_request_state = PARSE_START_LINE;
 	m_content_length = -1;
 }
 
@@ -344,7 +382,7 @@ http_status http_server::http_request_state::parse_message_line(const char* line
 {
 	http_status status = HTTP_BAD_REQUEST;
 	
-	switch (m_parse_state)
+	switch (m_request_state)
 	{
 	default:
 	case PARSE_DONE:
@@ -355,7 +393,7 @@ http_status http_server::http_request_state::parse_message_line(const char* line
 		if (status < 400)
 		{
 			// Move on to the rest of the header.
-			m_parse_state = PARSE_HEADER;
+			m_request_state = PARSE_HEADER;
 		}
 		break;
 	case PARSE_HEADER:
@@ -413,11 +451,11 @@ http_status http_server::http_request_state::parse_header_line(const char* hline
 // Parse a header line.  Call this multiple lines, once with each
 // header line, to build up m_req.
 //
-// Sets m_parse_state to PARSE_BODY if hline is the last header line.
+// Sets m_request_state to PARSE_BODY if hline is the last header line.
 //
 // Returns an error code >= 400 on error; < 400 on success.
 {
-	assert(m_parse_state == PARSE_HEADER);
+	assert(m_request_state == PARSE_HEADER);
 
 	if (hline[0] == '\r' && hline[1] == '\n')
 	{
@@ -482,12 +520,130 @@ http_status http_server::http_request_state::parse_header_line(const char* hline
 static const int MAX_CONTENT_LENGTH_ACCEPTED = 32768;
 
 
+int hex_to_int(char c)
+// Convert a hex digit ([0-9] or [a-fA-F]) to an integer [0,15].
+// Return -1 if the character is not a hex digit.
+{
+	if (c >= '0' && c <= '9') {
+		return c - '0';
+	} else if (c >= 'a' && c <= 'f') {
+		return 10 + (c - 'a');
+	} else if (c >= 'A' && c <= 'F') {
+		return 10 + (c - 'A');
+	}
+
+	return -1;
+}
+
+
+static void unescape_url_component(tu_string* str)
+// Do URL unescaping on a URL component.  I.e. convert the hex code
+// "%xx" to the corresponding byte, and change '+' to ' '.
+{
+	tu_string out;
+	for (int i = 0; i < str->length(); i++) {
+		char c = (*str)[i];
+		if (c == '%'
+		    && i + 2 < str->length()) {
+			// Interpret the next two chars as hex digits.
+			char digit_hi = (*str)[i + 1];
+			char digit_lo = (*str)[i + 2];
+			int val_hi = hex_to_int(digit_hi);
+			int val_lo = hex_to_int(digit_lo);
+			if (val_hi < 0 || val_lo < 0) {
+				// Invalid hex digits.  Pass the '%'
+				// straight through and don't consume the
+				// two following chars.
+				out += c;
+			} else {
+				char encoded = (val_hi << 4) | (val_lo);
+				if (encoded > 0) {
+					out += encoded;
+				}
+				i += 2;
+			}
+		} else if (c == '+') {
+			// '+' is turned into a space.
+			out += ' ';
+		} else {
+			// Pass this character straight through.
+			out += c;
+		}
+	}
+
+	*str = out;
+}
+
+
+void http_server::http_request_state::parse_query_string(const char* query)
+// Parses a URL-encoded query string.  Puts decoded param/value pairs
+// into m_req.m_params.
+{
+	while (query) {
+		const char* equals = strchr(query, '=');
+		tu_string param;
+		tu_string value;
+		if (equals) {
+			param = tu_string(query, equals - query);
+			
+			// Find the end of the value and update the query.
+			query = strchr(query, '&');
+			if (query) {
+				value = tu_string(equals + 1, query - (equals + 1));
+				query++;  // Skip the '&'
+			} else {
+				value = equals + 1;
+			}
+		} else {
+			const char* next_query = strchr(query, '&');
+			if (next_query) {
+				param = tu_string(query, next_query - query);
+				next_query++;  // Skip the '&'
+			} else {
+				param = query;
+			}
+			
+			query = next_query;
+		}
+
+		unescape_url_component(&param);
+		unescape_url_component(&value);
+
+		if (param.length()) {
+			// TODO -- figure out how to handle multiple values for the same param!
+			m_req.m_param.set(param, value);
+		}
+	}
+}
+
+
 http_status http_server::http_request_state::process_header()
 // Call this after finishing parsing the header.  Sets the following
 // parse state.  Returns an HTTP status code.
 {
-	assert(m_parse_state == PARSE_HEADER);
+	assert(m_request_state == PARSE_HEADER);
 	assert(m_req.m_body.length() == 0);
+
+	// Set up path/file vars.
+	const char* pathend = strchr(m_req.m_uri.c_str(), '?');
+	const char* query = NULL;
+	if (pathend) {
+		query = pathend + 1;
+	} else {
+		pathend = m_req.m_uri.c_str() + m_req.m_uri.length();
+	}
+	m_req.m_path = tu_string(m_req.m_uri.c_str(), pathend - m_req.m_uri.c_str());
+	unescape_url_component(&m_req.m_path);
+	
+	const char* filestart = strrchr(m_req.m_path.c_str(), '/');
+	if (filestart)
+	{
+		m_req.m_file = (filestart + 1);
+		unescape_url_component(&m_req.m_file);
+	}
+
+	// Parse params in the request string.
+	parse_query_string(query);
 
 	m_content_length = -1;
 	tu_string content_length_str;
@@ -496,7 +652,7 @@ http_status http_server::http_request_state::process_header()
 		m_content_length = atol(content_length_str.c_str());
 		if (m_content_length > MAX_CONTENT_LENGTH_ACCEPTED)
 		{
-			m_parse_state = PARSE_DONE;
+			m_request_state = PARSE_DONE;
 			return HTTP_REQUEST_ENTITY_TOO_LARGE;
 		}
 	}
@@ -509,7 +665,7 @@ http_status http_server::http_request_state::process_header()
 			// We're required to ignore the content-length
 			// header.
 			m_content_length = -1;
-			m_parse_state = PARSE_BODY_CHUNKED_CHUNK;
+			m_request_state = PARSE_BODY_CHUNKED_CHUNK;
 			return parse_body();
 		}
 		else if (transfer_encoding.to_tu_stringi() == "identity")
@@ -520,32 +676,20 @@ http_status http_server::http_request_state::process_header()
 		{
 			// A transfer encoding we don't know how to handle.
 			// Reject it.
-			m_parse_state = PARSE_DONE;
+			m_request_state = PARSE_DONE;
 			return HTTP_NOT_IMPLEMENTED;
 		}
 	}
 
+	// If there's a body section, then we need to read it & parse it.
 	if (m_content_length >= 0)
 	{
-		m_parse_state = PARSE_BODY_IDENTITY;
+		m_request_state = PARSE_BODY_IDENTITY;
 		return parse_body();
 	}
 	else
 	{
-		m_parse_state = PARSE_DONE;
-	}
-
-	// Set up path/file vars.
-	const char* pathend = strchr(m_req.m_uri.c_str(), '?');
-	if (!pathend)
-	{
-		pathend = m_req.m_uri.c_str() + m_req.m_uri.length();
-	}
-	m_req.m_path = tu_string(m_req.m_uri.c_str(), pathend - m_req.m_uri.c_str());
-	const char* filestart = strrchr(m_req.m_path.c_str(), '/');
-	if (filestart)
-	{
-		m_req.m_file = (filestart + 1);
+		m_request_state = PARSE_DONE;
 	}
 	
 	return HTTP_OK;
@@ -555,28 +699,29 @@ http_status http_server::http_request_state::process_header()
 http_status http_server::http_request_state::parse_body()
 // Read the body section from the socket and fills m_req.m_body.
 //
-// Sets m_parse_state to PARSE_DONE.
+// Sets m_request_state to PARSE_DONE.
 //
 // Returns an error code >= 400 on error; < 400 on success.
 {
 	assert(m_req.m_body.length() == 0);
 
-	switch (m_parse_state)
+	// Get the body data and stash it in m_req.m_body.
+	switch (m_request_state)
 	{
 	default:
 		assert(0);
 		break;
 
 	case PARSE_BODY_IDENTITY:
-		m_parse_state = PARSE_DONE;
-		
+		m_request_state = PARSE_DONE;
+
+		// We assume we can get the whole body within 100 ms.
 		m_req.m_body.resize(m_content_length);
-		int bytes_read = m_req.m_sock->read(&(m_req.m_body[0]), m_content_length, 100 /*ms*/);
+		int bytes_read = m_req.m_sock->read(&(m_req.m_body[0]), m_content_length, 0.100f);
 		if (bytes_read < m_content_length)
 		{
 			return HTTP_BAD_REQUEST;
 		}
-		return HTTP_OK;
 		break;
 
 #if 0
@@ -598,11 +743,56 @@ http_status http_server::http_request_state::parse_body()
 			read entity_header;
 		}
 
-		m_parse_state = PARSE_DONE;
-		return HTTP_OK;
+		m_request_state = PARSE_DONE;
 
 		break;
 #endif // 0
+	}
+
+	// Parse the body data if necessary.
+	tu_string type_str;
+	if (m_req.m_method == "POST" && m_req.m_header.get("content-type", &type_str)) {
+		if (type_str == "application/x-www-form-urlencoded") {
+			// Parse "Content-type: application/x-www-form-urlencoded" in the body
+			//
+			// Basically this is a long string that looks like:
+			//
+			//  key1=value1&key2=value2&key3=value3 [...]
+			//
+			// I.e. just like in the URL.
+			//
+			// http://www.w3.org/TR/REC-html40/interact/forms.html says
+			// it's "the default content type".  Quote from that doc:
+			//
+			//    1. Control names and values are escaped. Space
+			//    characters are replaced by `+', and then reserved
+			//    characters are escaped as described in [RFC1738],
+			//    section 2.2: Non-alphanumeric characters are replaced by
+			//    `%HH', a percent sign and two hexadecimal digits
+			//    representing the ASCII code of the character. Line
+			//    breaks are represented as "CR LF" pairs (i.e.,
+			//    `%0D%0A').
+			//
+			//    2. The control names/values are listed in the order they
+			//    appear in the document. The name is separated from the
+			//    value by `=' and name/value pairs are separated from
+			//    each other by `&'.
+			parse_query_string(m_req.m_body.c_str());
+			
+		} else if (type_str == "multipart/form-data") {
+			// Parse "Content-type: multipart/form-data" in the body
+			// (i.e. file uploads, non-ASCII fields, ... -- what else?)
+			//   etc...
+			//   // each part has a header like: Content-disposition: form-data; name="something"
+			//   // each part optionally has a Content-type: header.  The default is "text/plain".
+			//   // each part may have a Content-transfer-encoding:, if it differs from the body
+			//
+			//   // http://www.faqs.org/rfcs/rfc2388.html covers multipart/form-data for HTTP 1.1
+			//   // http://www.faqs.org/rfcs/rfc2046.html covers MIME multipart encoding generically
+			return HTTP_UNSUPPORTED_MEDIA_TYPE;
+		} else {
+			return HTTP_UNSUPPORTED_MEDIA_TYPE;
+		}
 	}
 
 	return HTTP_OK;

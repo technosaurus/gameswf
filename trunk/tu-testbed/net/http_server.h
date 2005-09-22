@@ -28,6 +28,7 @@ enum http_status
 	HTTP_NOT_FOUND = 404,
 	HTTP_METHOD_NOT_ALLOWED = 405,
 	HTTP_REQUEST_ENTITY_TOO_LARGE = 413,
+	HTTP_UNSUPPORTED_MEDIA_TYPE = 415,
 	HTTP_INTERNAL_SERVER_ERROR = 500,
 	HTTP_NOT_IMPLEMENTED = 501,
 	HTTP_HTTP_VERSION_NOT_SUPPORTED = 505,
@@ -56,7 +57,6 @@ enum http_status
           | "411"  ; Section 10.4.12: Length Required
           | "412"  ; Section 10.4.13: Precondition Failed
           | "414"  ; Section 10.4.15: Request-URI Too Large
-          | "415"  ; Section 10.4.16: Unsupported Media Type
           | "416"  ; Section 10.4.17: Requested range not satisfiable
           | "417"  ; Section 10.4.18: Expectation Failed
           | "500"  ; Section 10.5.1: Internal Server Error
@@ -92,9 +92,9 @@ struct http_request
 	{
 	}
 
-	~http_request() { clear(); }
+	~http_request() { deactivate(); }
 
-	void clear()
+	void deactivate()
 	{
 		if (m_sock)
 		{
@@ -102,6 +102,11 @@ struct http_request
 			m_sock = NULL;
 		}
 
+		clear();
+	}
+
+	void clear()
+	{
 		m_status = HTTP_OK;
 		m_http_version_x256 = 0x0101;
 		m_method.clear();
@@ -112,8 +117,6 @@ struct http_request
 		m_header.clear();
 		m_body.clear();
 	}
-
-	bool is_active() const { return m_sock->is_open(); }
 
 	// Utility.
 	void dump_html(tu_string* out);
@@ -212,7 +215,7 @@ private:
 		tu_string m_parse_key;
 		tu_string m_parse_value;
 
-		enum parse_state
+		enum request_state
 		{
 			PARSE_START_LINE,
 			PARSE_HEADER,
@@ -220,14 +223,18 @@ private:
 			PARSE_BODY_CHUNKED_CHUNK,
 			PARSE_BODY_CHUNKED_TRAILER,
 			PARSE_DONE,
+			REQUEST_FINISHED,
 		};
-		parse_state m_parse_state;
+		request_state m_request_state;
 		int m_content_length;
+
+		uint64 m_last_activity;
 
 		http_request_state()
 			:
-			m_parse_state(PARSE_START_LINE),
-			m_content_length(-1)
+			m_request_state(PARSE_START_LINE),
+			m_content_length(-1),
+			m_last_activity(0)
 		{}
 
 		~http_request_state()
@@ -238,7 +245,13 @@ private:
 		void activate(net_socket* sock);
 		void deactivate();
 
-		bool is_active() const { return m_req.m_sock != NULL; }
+		void clear();
+
+		bool is_alive() const
+		{
+			return m_req.m_sock != NULL;
+		}
+		bool is_pending() const { return m_request_state != REQUEST_FINISHED; }
 		void update(http_server* server);
 
 		http_status parse_message_line(const char* line);
@@ -248,6 +261,7 @@ private:
 		http_status parse_header_line(const char* hline);
 		http_status process_header();
 		http_status parse_body();
+		void parse_query_string(const char* query);
 	};
 	http_request_state m_state;
 };

@@ -1,4 +1,4 @@
-// net_interface_tcp.cpp -- Thatcher Ulrich http://tulrich.com 2005
+// net_test.cpp -- Thatcher Ulrich http://tulrich.com 2005
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -32,11 +32,27 @@ struct my_handler : public http_handler
 };
 
 
+static bool s_quit = false;
+
+
+struct quit_handler : public http_handler
+{
+	virtual void handle_request(http_server* server, const tu_string& key, http_request* req)
+	{
+		s_quit = true;
+	}
+};
+
+
 int main(int argc, const char** argv)
 {
-	static const int PORT = 0x7EEC; // 32492.  "7EEC" looks vaguely like "TWEAK"
+	int port = 0x7EEC; // 32492.  "7EEC" looks vaguely like "TWEAK"
 
-	net_interface* iface = tu_create_net_interface_tcp(PORT);
+	if (argc > 1) {
+		port = atoi(argv[1]);
+	}
+	
+	net_interface* iface = tu_create_net_interface_tcp(port);
 	if (iface == NULL)
 	{
 		fprintf(stderr, "Couldn't open net interface\n");
@@ -44,12 +60,17 @@ int main(int argc, const char** argv)
 	}
 
 	http_server* server = new http_server(iface);
+
 	my_handler handler;
 	server->add_handler("/status", &handler);
-	
-	printf("Point a browser at http://localhost:%d to test http_server\n", PORT);
 
-	for (;;)
+	quit_handler quit_h;
+	server->add_handler("/quit", &quit_h);
+	
+	printf("Point a browser at http://localhost:%d to test http_server\n", port);
+	fflush(stdout);
+
+	while (s_quit == false)
 	{
 		server->update();
 	}
