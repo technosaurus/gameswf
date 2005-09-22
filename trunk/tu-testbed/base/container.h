@@ -1295,6 +1295,15 @@ class stringi_hash : public hash<tu_stringi, U, stringi_hash_functor<tu_stringi>
 };
 
 
+// Utility: handy sprintf wrapper.
+tu_string string_printf(const char* fmt, ...)
+#ifdef __GNUC__
+	// use the following to catch errors: (only with gcc)
+	__attribute__((format (printf, 1, 2)))
+#endif	// not __GNUC__
+;
+
+
 #endif // CONTAINER_H
 
 // Local Variables:
