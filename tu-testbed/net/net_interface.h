@@ -11,6 +11,7 @@
 
 
 #include "base/tu_types.h"
+#include "base/container.h"
 #include <string.h>
 
 
@@ -42,6 +43,9 @@ struct net_socket
 	virtual int get_error() const = 0;
 
 	virtual bool is_open() const = 0;
+
+	// Returns true if there's data available to read.
+	virtual bool is_readable() const = 0;
 	
 	// Returns bytes read.
 	//

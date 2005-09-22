@@ -1,0 +1,53 @@
+<html>
+<head>
+<title>Test page for WebTweaker widgets</title>
+<META http-equiv="Content-Script-Type" content="text/javascript">
+<script src="wt_widgets.js"></script>
+<style>
+</style>
+</head>
+<body onLoad="wt_init()">
+
+<h4>Here are some test widgets for the WebTweaker:</h4>
+
+<form action="" method=POST name="wt">
+
+<hr>
+Slider:
+
+<script>
+  new wt_slider("myvar1", 0, -100, 100);
+</script>
+
+<hr>
+Color Picker:
+
+<script>
+  new wt_color_picker("mycolor1", "#40B3E1");
+</script>
+
+<hr>
+Tree view:
+
+
+<hr>
+Angle
+
+<hr>
+
+etc...
+
+
+</form>
+
+<!-- debug log window -->
+<form action="" method=POST name="debugout">
+  <textarea readonly=1 id="debugout" cols=80 rows=10></textarea>
+  <br>
+  <button type=button name=clear onclick="document.getElementById('debugout').value='';">Clear</button>
+</form>
+
+<!-- div id=whatever, span id=whatever -->
+
+</body>
+</html>
