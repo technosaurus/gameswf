@@ -9,6 +9,7 @@
 #include "base/container.h"
 #include "base/utf8.h"
 #include "base/tu_random.h"
+#include <stdarg.h>
 
 
 void tu_string::append_wide_char(uint16 c)
@@ -308,6 +309,26 @@ tu_string	tu_string::utf8_substring(int start, int end) const
 
 	return tu_string(start_pointer, end_pointer - start_pointer);
 }
+
+
+#ifdef _WIN32
+#define vsnprintf	_vsnprintf
+#endif // _WIN32
+
+tu_string string_printf(const char* fmt, ...)
+// Handy sprintf wrapper.
+{
+	static const int	BUFFER_SIZE = 500;
+	char	s_buffer[BUFFER_SIZE];
+
+	va_list ap;
+	va_start(ap, fmt);
+	vsnprintf(s_buffer, BUFFER_SIZE, fmt, ap);
+	va_end(ap);
+
+	return s_buffer;
+}
+
 
 
 #ifdef CONTAINER_UNIT_TEST
