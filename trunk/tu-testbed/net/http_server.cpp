@@ -44,13 +44,15 @@ void http_request::dump_html(tu_string* outptr)
 	out += "<br>\n";
 
 	out += "params:<br><ul>\n";
-	for (string_hash<tu_string>::iterator it = m_param.begin(); it != m_param.end(); ++it)
+	for (string_hash<array<tu_string>* >::iterator it = m_param.begin(); it != m_param.end(); ++it)
 	{
-		out += "<li><b>";
-		out += it->first;
-		out += "</b> - ";
-		out += it->second;
-		out += "</li>\n";
+		for (int i = 0, n = it->second->size(); i < n; i++) {
+			out += "<li><b>";
+			out += it->first;
+			out += "</b> - ";
+			out += (*it->second)[i];
+			out += "</li>\n";
+		}
 	}
 	out += "</ul><br>\n";
 	
@@ -610,8 +612,7 @@ void http_server::http_request_state::parse_query_string(const char* query)
 		unescape_url_component(&value);
 
 		if (param.length()) {
-			// TODO -- figure out how to handle multiple values for the same param!
-			m_req.m_param.set(param, value);
+			m_req.add_param(param, value);
 		}
 	}
 }
