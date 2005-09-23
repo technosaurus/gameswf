@@ -79,7 +79,9 @@ struct http_request
 	// pre-parsed elements of the request.
 	tu_string m_path;
 	tu_string m_file;
-	string_hash<tu_string> m_param;
+	// A param can have more than one value (canonical example is
+	// a set of checkboxes in a form).
+	string_hash<array<tu_string>* > m_param;
 	string_hash<tu_string> m_header;
 
 	tu_string m_body;
@@ -113,9 +115,47 @@ struct http_request
 		m_uri.clear();
 		m_path.clear();
 		m_file.clear();
+		for (string_hash<array<tu_string>* >::iterator it = m_param.begin(); it != m_param.end(); ++it) {
+			delete it->second;
+		}
 		m_param.clear();
 		m_header.clear();
 		m_body.clear();
+	}
+
+	void add_param(const tu_string& key, const tu_string& value)
+	// Helper.  Adds a value under the given key.
+	{
+		array<tu_string>* values;
+		if (m_param.get(key, &values) == false) {
+			values = new array<tu_string>;
+			m_param.add(key, values);
+		}
+		values->push_back(value);
+	}
+
+	int param_count(const tu_string& key)
+	// Return the number of values for the given param.
+	{
+		array<tu_string>* values;
+		if (m_param.get(key, &values)) {
+			return values->size();
+		}
+
+		return 0;
+	}
+
+	const tu_string& get_param(const tu_string& key, int index)
+	// Returns the index'th value of the specified key.
+	{
+		array<tu_string>* values;
+		if (m_param.get(key, &values)) {
+			return (*values)[index];
+		}
+
+		assert(0);
+		static tu_string dummy;
+		return dummy;
 	}
 
 	// Utility.
