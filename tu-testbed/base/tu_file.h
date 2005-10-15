@@ -14,12 +14,9 @@
 #include <stdio.h>
 #include "base/tu_types.h"
 #include "base/tu_swap.h"
+#include "base/utility.h"
 
-// Compile-time assert.  Thanks to Jon Jagger
-// (http://www.jaggersoft.com) for this trick.
-#define compiler_assert(x)	switch(0){case 0: case x:;}
-
-
+struct membuf;
 struct SDL_RWops;
 
 
@@ -81,7 +78,9 @@ public:
 	~tu_file();
 
 	// Copy remaining contents of *in into *this.
-	void	copy_from(tu_file* in);
+	void copy_from(tu_file* in);
+	// Copy remaining contents of *this into *out.
+	void copy_to(membuf* out);
 
 	// Copy a fixed number of bytes from *in to *this.
 	// Returns number of bytes copied.

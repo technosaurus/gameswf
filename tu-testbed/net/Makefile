@@ -22,8 +22,12 @@ all: base_lib $(LIB_OUT) $(EXE_OUT)
 
 
 LIB_OBJS = \
-	http_server.$(OBJ_EXT)	\
-	net_interface_tcp.$(OBJ_EXT)
+	http_file_handler.$(OBJ_EXT)		\
+	http_server.$(OBJ_EXT)			\
+	net_interface_tcp.$(OBJ_EXT) 		\
+	webtweaker.$(OBJ_EXT)			\
+	webwidgets.$(OBJ_EXT)
+
 
 TEST_PROGRAM_OBJS = \
 	net_test.$(OBJ_EXT)

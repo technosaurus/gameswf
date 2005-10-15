@@ -15,7 +15,7 @@
 #include <string.h>
 
 
-struct tu_file;
+class tu_file;
 struct net_socket;
 class tu_string;
 

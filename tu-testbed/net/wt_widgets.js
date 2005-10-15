@@ -29,8 +29,22 @@
 // Mollyrocket IMGUI forum:
 // https://mollyrocket.com/forums/viewforum.php?f=10
 
+// Decent HTML/CSS tutorials:
+// http://www.goer.org/HTML/intermediate/align_and_indent/
 
-var wt_id = 0;
+// "Core JavaScript 1.5 Guide" @ mozilla.org
+// http://developer.mozilla.org/en/docs/Core_JavaScript_1.5_Guide
+
+// "How To Write HTML Forms"
+// http://www.cs.tut.fi/~jkorpela/forms/index.html
+
+
+// onclick
+// onmouseup
+// onmousemove
+// onmouseout
+
+
 var wt_widgets = new Array();
 var wt_tracking_widget = undefined;
 
@@ -127,11 +141,11 @@ function wt_init()
 }
 
 
-function wt_register(obj)
+function wt_register(id, obj)
 // Register a widget object and give it a unique 'id' attribute.
 // You can retrieve the widget later via wt_widgets[id].
 {
-	obj.id = wt_id++;
+	obj.id = id;
 	wt_widgets[obj.id] = obj;
 }
 
@@ -150,6 +164,19 @@ function log(msg)
 
 		// Make sure we're scrolled to the bottom.
 		out.scrollTop = out.scrollHeight;
+	}
+}
+
+
+function wt_click(widget_id, event)
+{
+	if (widget_id == -1) { return; }
+
+	var widget = wt_widgets[widget_id];
+	if (widget) {
+		widget.click(event);
+	} else {
+		alert("mousedown: no widget with id: '" + widget_id + "'!");
 	}
 }
 
@@ -240,9 +267,9 @@ function event_handlers(id)
 // Return the HTML for dispatching standard event handlers for the
 // widget with the given id.
 {
-	return ' onmousedown="return wt_mousedown(' + id + ', event);"'
-		+ ' onmouseup="return wt_mouseup(' + id + ', event);"'
-		+ ' onmousemove="return wt_mousemove(' + id + ', event);"'
+	return ' onmousedown=\'return wt_mousedown("' + id + '", event);\''
+		+ ' onmouseup=\'return wt_mouseup("' + id + '", event);\''
+		+ ' onmousemove=\'return wt_mousemove("' + id + '", event);\''
 //		+ ' onmouseout="return wt_mouseout(' + id + ', event);"'
 		;
 }
@@ -252,21 +279,21 @@ function event_handlers(id)
 // class wt_slider
 //
 // Numeric slider, use like:
-// <script>new wt_slider("varname", initial_value, min, max);</script>
+// <script>new wt_slider("id###", "varname", initial_value, min, max);</script>
 
 
-function wt_slider(name, val, min, max)
+function wt_slider(id, name, val, min, max)
 // Constructor for a slider widget.  Inserts necessary HTML into the
 // document.
 {
-	wt_register(this);
+	wt_register(id, this);
 	
 	this.name = name;
 	this.initial_value = val;
 	this.min = min;
 	this.max = max;
 	this.is_tracking = false;
-	this.width = 300;
+	this.width = 353;
 
 	this.mousedown = function(event)
 	{
@@ -285,8 +312,7 @@ function wt_slider(name, val, min, max)
 		{
 			this.is_tracking = false;
 			wt_tracking_widget = undefined;
-
-			// TODO submit the form!
+			document.forms[0].submit();
 		}
 		return false;
 	}
@@ -339,9 +365,9 @@ function wt_slider(name, val, min, max)
 	var html = '';
 	html += '<table style="border-style:solid; border-color:black; border-width:1px"><tr><td>' + name + '</td>';
 	html += '<td align=center><span id="slidervalue' + this.id + '">' + val + '</span></td></tr><tr><td colspan=2>';
-	html += '<input type=hidden name=hiddenvalue' + this.id + ' value=""></input>';
+	html += '<input type=hidden name="' + this.id + '" value="' + this.initial_value + '"></input>';
 
-	html += '<div id="sliderbody' + this.id + '" id="body' + this.id + '"';
+	html += '<div id="sliderbody' + this.id + '"';
 	html += event_handlers(this.id) + ' style="padding-left: 20px; padding-right: 20px">';
 
 	// Slider line.
@@ -369,7 +395,7 @@ function wt_slider(name, val, min, max)
 	this.sliderbody_y = absolute_top(this.sliderbody);
 	this.sliderpointer.style.top = this.sliderbody_y - 4;
 	
-	this.hiddenvalue = document.getElementsByName("hiddenvalue" + this.id)[0];
+	this.hiddenvalue = document.getElementsByName(this.id)[0];
 
 	this.set_slider_pos(this.initial_value);
 }
@@ -379,13 +405,14 @@ function wt_slider(name, val, min, max)
 // class wt_color_picker
 //
 // Color picker, use like:
-// <script>new wt_color_picker("varname", initial_value);</script>
+// <script>new wt_color_picker("id###", "varname", initial_value);</script>
 //
-// initial_value would be in the usual html format "#RRGGBB"
+// initial_value should be in the usual html format "#RRGGBB"
 
-function wt_color_picker(name, initial_value)
+
+function wt_color_picker(id, name, initial_value)
 {
-	wt_register(this);
+	wt_register(id, this);
 	
 	this.name = name;
 	this.initial_value = initial_value;
@@ -393,9 +420,8 @@ function wt_color_picker(name, initial_value)
 	this.hsv_width = 360;
 	this.height = 100;
 
-	this.mousedown = function(event)
+	this.mouseevent = function(event)
 	{
-		// log("mouse down");
 		var hue = page_offset_x(event) - this.hsv_x;
 		var vertical = page_offset_y(event) - this.hsv_y;
 		if (hue >= 0 && hue < 360 && vertical >= 0 && vertical < 100) {
@@ -409,13 +435,36 @@ function wt_color_picker(name, initial_value)
 		}
 	}
 
+	this.mousedown = function(event)
+	{
+		// log("mouse down");
+		wt_tracking_widget = this;
+		this.is_tracking = true;
+		this.mouseevent(event);
+		return false;
+	}
+
 	this.mouseup = function(event)
 	{
+		if (this.is_tracking)
+		{
+			this.mouseevent(event);
+			this.is_tracking = false;
+			wt_tracking_widget = undefined;
+
+			// TODO submit the form!
+		}
+		return false;
 	}
 
 	this.mousemove = function(event)
 	{
+		if (this.is_tracking)
+		{
+			this.mouseevent(event);
+		}
 		// log("mouse move");
+		return false;
 	}
 
 	this.mouseout = function(event)
@@ -534,8 +583,8 @@ function wt_color_picker(name, initial_value)
 
 		this.color_value.style.backgroundColor = color;
 		
-		this.hsv_cursor.style.left = (h / 360 * 360) + this.hsv_x;
-		this.hsv_cursor.style.top = (1 - s) * 100 + this.hsv_y;
+		this.hsv_cursor.style.left = (h / 360 * 360) + this.hsv_x - 4;
+		this.hsv_cursor.style.top = (1 - s) * 100 + this.hsv_y - 12;
 
 		this.sliderpointer.style.top = (1 - v) * this.height + this.hsv_y;
 	}
@@ -547,14 +596,15 @@ function wt_color_picker(name, initial_value)
 	html += '<td>' + name + '</td><td width=100px id="colorvalue' + this.id + '" ';
 	html += 'style="background-color: red;">';
 	html += '</td></tr><tr><td colspan=2>';
-	html += '<input type=hidden name=hiddenvalue' + this.id + ' value=""></input>';
+	html += '<input type=hidden name="' + this.id + '" value=""></input>';
 
 	// Color Hue/Sat picker.
 	html += '<div id="hsv_body' + this.id + '" style="background-image: url(\'wt_hsv.png\'); width: 360px; height: 100px;" ';
 	html += event_handlers(this.id) + '></div>';
 
 	// HSV cursor.
-	html += '<hr id="hsv_cursor' + this.id + '" style="position:absolute; border: 2px solid black; height: 9px; width: 9px">';
+	html += '<hr id="hsv_cursor' + this.id + '" style="position:absolute; border: 2px solid black; height: 9px; width: 9px" ';
+	html += event_handlers(this.id) + '>';
 
 	html += '</td><td>';
 	
@@ -587,7 +637,7 @@ function wt_color_picker(name, initial_value)
 	this.hsv_cursor = document.getElementById("hsv_cursor" + this.id);
 	this.sliderline = document.getElementById("sliderline" + this.id);
 	this.sliderpointer = document.getElementById("sliderpointer" + this.id);
-	this.hiddenvalue = document.getElementsByName("hiddenvalue" + this.id)[0];
+	this.hiddenvalue = document.getElementsByName(this.id)[0];
 
 //	this.hsv_cursor.style.left = this.hsv_x + 50;
 //	this.hsv_cursor.style.top = this.hsv_y + 50;
@@ -599,3 +649,50 @@ function wt_color_picker(name, initial_value)
 	
 	this.set_cursors(this.initial_value);
 }
+
+
+//
+// class wt_tree_node
+//
+// A node in a tree widget.  Can be open or closed, according to
+// the third arg.  Use like:
+//
+// <script>new wt_tree_node("id###", "label", 1);</script>
+
+
+function wt_tree_node(id, label, open)
+// Constructor for a tree node label.  Inserts necessary HTML into the
+// document.
+//
+// TODO needs to take id as a param.
+{
+	wt_register(id, this);
+	
+	this.name = label;
+	this.open_state = open ? 1 : 0;
+
+	this.click = function(event)
+	{
+		this.open_state = 1 - this.open_state;
+		this.hiddenvalue.value = this.open_state;
+		document.forms[0].submit();
+	}
+
+	// Generate the HTML for the visible parts of the widget.
+	var html = '';
+	html += '<div id="tree_node' + this.id + '" onclick=\'return wt_click("' + this.id + '", event);\'>'
+	html += '<a href="javascript:void(0)" style="text-decoration: none;">';
+	if (this.open_state) {
+		html += "- ";
+	} else {
+		html += "+ ";
+	}
+	html += label + '</a></div>';
+	html += '<input type=hidden name="' + this.id + '" value="' + this.open_state + '"></input>';
+	
+	document.write(html);
+	document.close();
+
+	this.hiddenvalue = document.getElementsByName(this.id)[0];
+}
+

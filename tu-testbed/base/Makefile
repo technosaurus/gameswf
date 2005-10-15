@@ -17,10 +17,12 @@ SRCS :=						\
 	container.cpp				\
 	dlmalloc.c				\
 	config.cpp				\
+	file_util.cpp				\
 	ogl.cpp					\
 	image.cpp				\
 	image_filters.cpp			\
 	jpeg.cpp				\
+	membuf.cpp				\
 	png_helper.cpp				\
 	postscript.cpp				\
 	triangulate_float.cpp			\

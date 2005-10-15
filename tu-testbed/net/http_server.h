@@ -158,7 +158,7 @@ struct http_request
 		return dummy;
 	}
 
-	// Utility.
+	// Utility.  Append info to the given string.
 	void dump_html(tu_string* out);
 };
 
@@ -212,14 +212,18 @@ struct http_server
 	
 	// Simple known-length response.  content_type can be things
 	// such as "text/html", "text/plain", "image/jpeg", etc.
-	void send_response(http_request* req, const char* content_type, const tu_string& body);
+	void send_response(http_request* req, const char* content_type, const void* data, int len);
+	void send_response(http_request* req, const char* content_type, const tu_string& body)
+	{
+		send_response(req, content_type, body.c_str(), body.length());
+	}
 	void send_html_response(http_request* req, const tu_string& body)
 	{
 		send_response(req, "text/html", body);
 	}
 	void send_text_response(http_request* req, const tu_string& body)
 	{
-		send_response(req, "text/text", body);
+		send_response(req, "text/plain", body);
 	}
 
 	// For a response of unknown length.  Do begin, append+, end.
