@@ -21,7 +21,7 @@
 void http_request::dump_html(tu_string* outptr)
 // Debug helper.
 //
-// Dump our contents into the given string, in HTML format.
+// Append our contents into the given string, in HTML format.
 {
 	tu_string& out = *outptr;
 	
@@ -140,21 +140,21 @@ void http_server::update()
 }
 
 
-void http_server::send_response(http_request* req, const char* content_type, const tu_string& body)
+void http_server::send_response(http_request* req, const char* content_type, const void* data, int len)
 // Send a known-length response.
 {
-	char buf[200];
-	sprintf(buf, "HTTP/1.1 %d %s\r\nContent-length: %d\r\n",
+	tu_string header = string_printf(
+		"HTTP/1.1 %d %s\r\nContent-length: %d\r\n"
+		"Content-type: %s\r\n"
+		"\r\n"
+		,
 		int(req->m_status),
 		req->m_status >= 400 ? "ERROR" : "OK",
-		body.length());
-	req->m_sock->write_string(buf, 0.010f);
-	req->m_sock->write_string("Content-type: ", 0.010f);
-	req->m_sock->write_string(content_type, 0.010f);
-	req->m_sock->write_string("\r\n\r\n", 0.010f);
-	req->m_sock->write(&body[0], body.length(), 0.010f);
+		len,
+		content_type);
+	req->m_sock->write(header.c_str(), header.length(), 0.010f);
+	req->m_sock->write(data, len, 0.010f);
 }
-
 
 
 void http_server::dispatch_request(http_request* req)

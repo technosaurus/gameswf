@@ -7,9 +7,11 @@
 
 
 #include <stdio.h>
+#include "base/tu_timer.h"
+#include "net/http_file_handler.h"
 #include "net/http_server.h"
 #include "net/net_interface.h"
-#include "base/tu_timer.h"
+#include "net/webtweaker.h"
 
 
 struct my_handler : public http_handler
@@ -39,19 +41,54 @@ struct quit_handler : public http_handler
 {
 	virtual void handle_request(http_server* server, const tu_string& key, http_request* req)
 	{
+		server->send_text_response(req, "Bye!");
+		
+		// Exit the app, next time through the main loop.
 		s_quit = true;
 	}
 };
 
 
+void do_ui(webtweaker* wt)
+// This is the entry point to our UI traversal code.  Webtweaker calls
+// this; we do all our ui stuff like, wt->body().button(...) yadda yadda from
+// here.
+{
+	static float s_slider_value = 0;
+
+	wt->head()->print("<h2>My Tweaker</h2>");
+	wt->head()->print("<a href=\"/quit\">quit</a>");
+	
+	if (wt->nav()->begin_tree_group("stuff 0")) {
+		if (wt->nav()->begin_tree_group("Stuff 1")) {
+			if (wt->nav()->button("Push me!")) {
+				printf("Pushed!\n");
+				wt->body()->print("Pushed!\n");
+			}
+
+			if (wt->body()->button("Quit")) {
+				// Exit the app, next time through the main loop.
+				wt->body()->print("Bye!");
+				s_quit = true;
+			}
+
+			wt->body()->slider("Some value", &s_slider_value, -10, 10);
+		}
+		wt->nav()->end_tree_group();
+	}
+	wt->nav()->end_tree_group();
+}
+
+
 int main(int argc, const char** argv)
 {
-	int port = 0x7EEC; // 32492.  "7EEC" looks vaguely like "TWEAK"
+	int port = 30000;
 
 	if (argc > 1) {
 		port = atoi(argv[1]);
 	}
 	
+	// Open a socket to receive connections on.
 	net_interface* iface = tu_create_net_interface_tcp(port);
 	if (iface == NULL)
 	{
@@ -59,17 +96,43 @@ int main(int argc, const char** argv)
 		exit(1);
 	}
 
+	// Attach a server to the socket.
 	http_server* server = new http_server(iface);
 
+	// Add handlers to the server.
+
+	// This one gets called if the browser hits
+	// "http://this.host:<port>/status"
 	my_handler handler;
 	server->add_handler("/status", &handler);
 
+	// This one gets called if the browser hits
+	// "http://this.host:<port>/quit"
 	quit_handler quit_h;
 	server->add_handler("/quit", &quit_h);
+
+	// Create a webtweaker, for presenting the app's tweaking UI.
+	// Hook it up to the URL "http://this.host:<port>/tweak".
+	struct do_my_ui : public http_handler
+	{
+		virtual void handle_request(http_server* server, const tu_string& key, http_request* req)
+		{
+			webtweaker wt("My Tweaker", server, req);
+			do_ui(&wt);
+			wt.send_response();
+		}
+	} my_ui;
+	server->add_handler("/tweak", &my_ui);
+
+	// Create a handler for serving static files.
+	http_file_handler static_handler(".", "/static");
+	server->add_handler(static_handler.http_basepath(), &static_handler);
 	
-	printf("Point a browser at http://localhost:%d to test http_server\n", port);
+	printf("Point a browser at http://localhost:%d/tweak to test webtweaker\n", port);
 	fflush(stdout);
 
+	// This is a stand-in for the typical game loop.  We just need
+	// to call server->update() somewhere in there.
 	while (s_quit == false)
 	{
 		server->update();
