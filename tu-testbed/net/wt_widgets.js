@@ -99,6 +99,19 @@ if (isIE) {
 //document.documentElement.scrollLeft;
 
 
+function fclamp(val, min, max)
+// Return the val, clamped to be within [min,max].
+{
+	if (val < min) {
+		return min;
+	} else if (val > max) {
+		return max;
+	} else {
+		return val;
+	}
+}
+
+
 function absolute_left(elem)
 // absolute_left(elem) gives the x coordinate of the left of the given
 // element, relative to the page origin.
@@ -334,12 +347,9 @@ function wt_slider(id, name, val, min, max)
 	this.update_slider = function(event)
 	{
 		var x = page_offset_x(event) - this.sliderbody_x - 20;
-		if (x < 0) x = 0;
-		if (x > this.width) x = this.width;
 
 		var value = (x / this.width) * (this.max - this.min) + this.min;
-
-		// TODO do rounding or whatever
+		value = fclamp(value.toPrecision(3), this.min, this.max);
 		
 		this.set_slider_pos(value);
 		this.slidervalue.innerHTML = value;
@@ -349,8 +359,7 @@ function wt_slider(id, name, val, min, max)
 	this.set_slider_pos = function(value)
 	{
 		var x = this.width * (value - this.min) / (this.max - this.min);
-		if (x < 0) x = 0;
-		if (x > this.width) x = this.width;
+		x = fclamp(x, 0, this.width);
 
 		this.sliderpointer.style.left = (this.sliderbody_x + x + 20 - 5) + "px";
 	}
@@ -364,7 +373,7 @@ function wt_slider(id, name, val, min, max)
 	// Generate the HTML for the visible parts of the widget.
 	var html = '';
 	html += '<table style="border-style:solid; border-color:black; border-width:1px"><tr><td>' + name + '</td>';
-	html += '<td align=center><span id="slidervalue' + this.id + '">' + val + '</span></td></tr><tr><td colspan=2>';
+	html += '<td align=right><span id="slidervalue' + this.id + '">' + val + '</span></td></tr><tr><td colspan=2>';
 	html += '<input type=hidden name="' + this.id + '" value="' + this.initial_value + '"></input>';
 
 	html += '<div id="sliderbody' + this.id + '"';
@@ -417,29 +426,50 @@ function wt_color_picker(id, name, initial_value)
 	this.name = name;
 	this.initial_value = initial_value;
 	this.is_tracking = false;
+	// If tracking, whether we're tracking the value slider or the
+	// hue/sat area.
+	this.is_tracking_slider = false;
 	this.hsv_width = 360;
 	this.height = 100;
 
 	this.mouseevent = function(event)
 	{
-		var hue = page_offset_x(event) - this.hsv_x;
-		var vertical = page_offset_y(event) - this.hsv_y;
-		if (hue >= 0 && hue < 360 && vertical >= 0 && vertical < 100) {
+		if (this.is_tracking_slider) {
+			// Deal with slider.
+			var vertical = page_offset_y(event) - this.hsv_y;
+			vertical = fclamp(vertical, 0, 99);
+
+			var value = (99 - vertical) / 99;
+
+			this.set_cursors_hsv(this.hsv[0], this.hsv[1], value);
+		} else {
+			// Deal with the hue/sat area.
+			var hue = page_offset_x(event) - this.hsv_x;
+			var vertical = page_offset_y(event) - this.hsv_y;
+			hue = fclamp(hue, 0, 360 - 1);
+			vertical = fclamp(vertical, 0, 99);
+
 			// In the HSV area.
 			var sat = (99 - vertical) / 99;
-			var value = this.hsv[2];
 
-			var new_color = this.hsv_to_html(hue, sat, value);
-
-			this.set_cursors(new_color);
+			this.set_cursors_hsv(hue, sat, this.hsv[2]);
 		}
 	}
 
 	this.mousedown = function(event)
 	{
-		// log("mouse down");
 		wt_tracking_widget = this;
 		this.is_tracking = true;
+
+		// Decide whether we're tracking the hsv area or the
+		// value slider.
+		var x = page_offset_x(event) - this.hsv_x;
+		if (x > 365) {
+			this.is_tracking_slider = true;
+		} else {
+			this.is_tracking_slider = false;
+		}
+		
 		this.mouseevent(event);
 		return false;
 	}
@@ -453,6 +483,7 @@ function wt_color_picker(id, name, initial_value)
 			wt_tracking_widget = undefined;
 
 			// TODO submit the form!
+			// xxxxx document.forms[0].submit();
 		}
 		return false;
 	}
@@ -562,31 +593,45 @@ function wt_color_picker(id, name, initial_value)
 		if (r.length < 2) r = '0' + r;
 		if (g.length < 2) g = '0' + g;
 		if (b.length < 2) b = '0' + b;
-		
 
 		var color = '#' + r.toString(16) + g.toString(16) + b.toString(16);
-//		alert(r + ' ' + g + ' ' + b + ' ' + color);
+
 		return color;
 	}
 
+	this.set_cursors_sub = function(h, s, v)
+	// Position the actual cursors.  Use the wrappers to also set
+	// the color swatch.
+	{
+		this.hsv = [ h, s, v ];
+		
+		this.hsv_cursor.style.left = (h / 360 * 360) + this.hsv_x - 4;
+		this.hsv_cursor.style.top = (1 - s) * 99 + this.hsv_y - 12;
+
+		this.sliderpointer.style.top = (1 - v) * (this.height - 1) + this.hsv_y - 14;
+	}
+
+	this.set_cursors_hsv = function(h, s, v)
+	// Position the cursors according to the given hsv color.
+	{
+		var color = this.hsv_to_html(h, s, v);
+		this.color_value.style.backgroundColor = color;
+
+		this.set_cursors_sub(h, s, v);
+	}
 
 	this.set_cursors = function(color)
-	// Position the cursors according to the color.
+	// Position the cursors according to the given (html) color.
 	{
-		this.hsv = this.html_to_hsv(color);
+		var hsv = this.html_to_hsv(color);
 
-		var h = this.hsv[0];
-		var s = this.hsv[1];
-		var v = this.hsv[2];
-
-		// alert(h + " " + s + " " + v);//xxxxx
+		var h = hsv[0];
+		var s = hsv[1];
+		var v = hsv[2];
 
 		this.color_value.style.backgroundColor = color;
 		
-		this.hsv_cursor.style.left = (h / 360 * 360) + this.hsv_x - 4;
-		this.hsv_cursor.style.top = (1 - s) * 100 + this.hsv_y - 12;
-
-		this.sliderpointer.style.top = (1 - v) * this.height + this.hsv_y;
+		this.set_cursors_sub(h, s, v);
 	}
 	
 
@@ -595,7 +640,7 @@ function wt_color_picker(id, name, initial_value)
 	html += '<table style="border-style:solid; border-color:black; border-width:1px"><tr>';
 	html += '<td>' + name + '</td><td width=100px id="colorvalue' + this.id + '" ';
 	html += 'style="background-color: red;">';
-	html += '</td></tr><tr><td colspan=2>';
+	html += '</td><td></td></tr><tr><td colspan=2>';
 	html += '<input type=hidden name="' + this.id + '" value=""></input>';
 
 	// Color Hue/Sat picker.
@@ -609,7 +654,7 @@ function wt_color_picker(id, name, initial_value)
 	html += '</td><td>';
 	
 	// Color value picker.
-	html += '<span id="sliderbody' + this.id + '';
+	html += '<span id="sliderbody' + this.id + '"';
 	html += event_handlers(this.id) + '>';
 
 	// Line.
