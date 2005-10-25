@@ -207,7 +207,28 @@ endif
 
 BASE_LIB := $(TOP)/base/$(LIB_PRE)base.$(LIB_EXT)
 GEOMETRY_LIB := $(TOP)/geometry/$(LIB_PRE)geometry.$(LIB_EXT)
+NET_LIB := $(TOP)/net/$(LIB_PRE)net.$(LIB_EXT)
 ENGINE_INCLUDE := -I$(TOP)
+
+
+all:
+
+base_lib:
+	make -C $(TOP)/base
+base_clean:
+	make -C $(TOP)/base clean
+
+net_lib:
+	make -C $(TOP)/net
+net_clean:
+	make -C $(TOP)/net clean
+
+geometry_lib:
+	make -C $(TOP)/geometry
+geometry_clean:
+	make -C $(TOP)/geometry clean
+
+
 
 # Local Variables:
 # mode: Makefile

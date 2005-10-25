@@ -9,7 +9,12 @@
 #include "base/triangulate.h"
 #include "base/postscript.h"
 #include "base/tu_file.h"
+#include "base/ogl.h"
+#include "base/demo.h"
+#include "net/http_server.h"
+#include "net/webtweaker.h"
 #include <float.h>
+#include "SDL.h"
 
 
 void	compute_bounding_box(float* x0, float* y0, float* x1, float* y1, const array<float>& coord_list)
@@ -29,6 +34,61 @@ void	compute_bounding_box(float* x0, float* y0, float* x1, float* y1, const arra
 		if (coord_list[i] < *y0) *y0 = coord_list[i];
 		i++;
 	}
+}
+
+
+void render_diagram(array<float>& trilist, const array<array<float> >& input_paths)
+// Render an OpenGL diagram of the given info.  trilist is the output
+// of the triangulation algo; input_paths is the input.
+{
+	int	tricount = trilist.size() / 6;
+	int	trilabel = 0;
+
+	// TODO: highlight one of the tris, by number
+	
+	// Draw the triangle mesh.
+	assert(trilist.size() % 6 == 0);
+	glColor3f(0, 0, 1);  // blue
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < trilist.size(); i += 6)
+	{
+		glVertex2f(trilist[i + 0], trilist[i + 1]);
+		glVertex2f(trilist[i + 2], trilist[i + 3]);
+		glVertex2f(trilist[i + 4], trilist[i + 5]);
+	}
+	glEnd();
+
+	// Draw the internal edges.
+	glColor3f(0, 1, 0);  // green
+	glBegin(GL_LINES);
+	{for (int i = 0; i < trilist.size(); i += 6)
+	{
+		glVertex2f(trilist[i + 0], trilist[i + 1]);
+		glVertex2f(trilist[i + 2], trilist[i + 3]);
+		
+		glVertex2f(trilist[i + 2], trilist[i + 3]);
+		glVertex2f(trilist[i + 4], trilist[i + 5]);
+
+		glVertex2f(trilist[i + 4], trilist[i + 5]);
+		glVertex2f(trilist[i + 0], trilist[i + 1]);
+	}}
+	glEnd();
+
+	// Draw the input paths.
+	glColor3f(1, 0, 0);  // red
+	{for (int j = 0; j < input_paths.size(); j++) {
+		const array<float>& path = input_paths[j];
+		assert((path.size() & 1) == 0);
+		if (path.size() == 0) {
+			continue;
+		}
+		glBegin(GL_LINE_STRIP);
+		for (int i = 0; i < path.size(); i += 2) {
+			glVertex2f(path[i], path[i + 1]);
+		}
+		glVertex2f(path[0], path[1]);
+		glEnd();
+	}}
 }
 
 
@@ -320,6 +380,299 @@ static bool	is_all_whitespace(const char* str)
 }
 
 
+void generate_test_shape(int shape_number, array<array<float> >* paths_out)
+// Fill *paths_out with one of the test shapes.
+{
+	assert(paths_out);
+	
+	// Use a reference, slightly more concise.
+	array<array<float> >& paths = *paths_out;
+
+	switch (shape_number) {
+	default:
+		fprintf(stderr, "Invalid test shape number\n");
+		exit(1);
+		break;
+
+	case 0:
+		// Make a square.
+		paths.resize(paths.size() + 1);
+		make_square(&paths.back(), 1100);
+
+		// Another square.
+		paths.resize(paths.size() + 1);
+		make_square(&paths.back(), 1100);
+		offset_path(&paths.back(), 1200, 100);
+
+		break;
+
+	case 1:
+		// Make a square.
+		paths.resize(paths.size() + 1);
+		make_square(&paths.back(), 1100);
+
+		// Make a little square inside.
+		paths.resize(paths.size() + 1);
+		make_square(&paths.back(), 100);
+		reverse_path(&paths.back());
+
+		// Make a little star island.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 50, 250, 3);
+		offset_path(&paths.back(), -300, -300);
+		reverse_path(&paths.back());
+
+		// Make a circle.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 200, 200, 20);
+		offset_path(&paths.back(), 300, 300);
+		reverse_path(&paths.back());
+
+		// Make a circle inside the circle.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 50, 50, 5);
+		offset_path(&paths.back(), 300, 300);
+
+		// Make a circle outside the big square.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 50, 50, 8);
+		offset_path(&paths.back(), 1200, 300);
+
+		break;
+
+	case 2:
+	{
+		// Lots of circles.
+
+		// @@ set this to 100 for a good performance torture test of bridge-finding.
+		const int	TEST_DIM = 30;	// 20, 30
+		{for (int x = 0; x < TEST_DIM; x++)
+		{
+			for (int y = 0; y < TEST_DIM; y++)
+			{
+				paths.resize(paths.size() + 1);
+				make_star(&paths.back(), 10, 10, 10);	// (... 9, 9, 10)
+				offset_path(&paths.back(), float(x) * 20, float(y) * 20);
+			}
+		}}
+
+		// 2005-1-1 TEST_DIM=40, join poly = 4.9  s (ouch!)
+		// 2005-1-2                        = 6.3  s (with grid_index_box) (double ouch!  index makes things slower!  what's wrong?)
+		//                                          (what's wrong is that the vert remap on the whole edge index gets expensive!)
+		// 2005-1-2                        = 2.94 s (optimize dupe_verts!  cull grid update (big win), more efficient vert insertion (win))
+
+		break;
+	}
+
+	case 3:
+	{
+		// Lots of concentric circles.
+		static int	CIRCLE_COUNT = 10;	// CIRCLE_COUNT >= 10 is a good performance test.
+		{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
+		{
+			paths.resize(paths.size() + 1);
+			make_star(&paths.back(), 2 + float(i), 2 + float(i), 10 + i * 6);
+			if (i & 1) reverse_path(&paths.back());
+		}}
+
+		break;
+	}
+
+	case 4:
+		// test some degenerates.
+		paths.resize(paths.size() + 1);
+		paths.back().push_back(0);
+		paths.back().push_back(0);
+		paths.back().push_back(100);
+		paths.back().push_back(-50);
+		paths.back().push_back(120);
+		paths.back().push_back(0);
+		paths.back().push_back(100);
+		paths.back().push_back(50);
+		paths.back().push_back(0);
+		paths.back().push_back(0);
+		paths.back().push_back(-100);
+		paths.back().push_back(-100);
+		rotate_coord_order(&paths.back(), 5);
+		break;
+
+	case 5:
+		// Make a star.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 2300, 3000, 20);
+
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 1100, 2200, 20);
+		reverse_path(&paths.back());
+
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(),  800, 1800, 20);
+
+		// Make a star island.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 100, 500, 3);
+		reverse_path(&paths.back());
+		break;
+
+	case 6:
+		// This one has tricky coincident verts, good test case for
+		// some code paths.
+
+		// Stars with touching verts on different paths.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 2300, 3000, 20);
+
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 2300, 1100, 20);
+		reverse_path(&paths.back());
+
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 800, 1100, 20);
+
+		// Make a star island.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 100, 300, 3);
+		reverse_path(&paths.back());
+		break;
+
+	case 7:
+		// A direct, simplified expression of the "tricky triple dupe".
+		//
+		// The tricky duped vert is at (2,2).
+		paths.resize(paths.size() + 1);
+
+		paths.back().push_back(0);
+		paths.back().push_back(0);
+
+		paths.back().push_back(3);
+		paths.back().push_back(0);
+
+		paths.back().push_back(3);
+		paths.back().push_back(2);
+
+		paths.back().push_back(2);
+		paths.back().push_back(2);
+
+		paths.back().push_back(0);
+		paths.back().push_back(2);
+
+		paths.back().push_back(0);
+		paths.back().push_back(3);
+
+		paths.back().push_back(1);
+		paths.back().push_back(3);
+
+		paths.back().push_back(2);
+		paths.back().push_back(2);
+
+		paths.back().push_back(2.5f);
+		paths.back().push_back(0.5f);
+
+		paths.back().push_back(1.5f);
+		paths.back().push_back(0.5f);
+
+		paths.back().push_back(2);
+		paths.back().push_back(2);
+
+		paths.back().push_back(1);
+		paths.back().push_back(3);
+
+		paths.back().push_back(0);
+		paths.back().push_back(3);
+
+		paths.back().push_back(0);
+		paths.back().push_back(2);
+		break;
+
+	case 8:
+	{
+		// Another direct expression of the "tricky triple dupe".  The
+		// actual triple dupe occurs when P2 is attached with a bridge
+		// to P (so it depends on the bridge-finding code).
+		//
+		// The tricky duped vert is at (2,2).
+		paths.resize(paths.size() + 1);
+		static const float	P[] =
+		{
+			0,0,  3,0,  3,2,  2,2,  1.5f,1.5f,  1.5f,2.5f,  2,2,  2,3,  0,3
+		};
+		set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
+
+		paths.resize(paths.size() + 1);
+		static const float	P2[] =
+		{
+			2.1f,1,  2.3f,1.5f, 2.5f,1
+		};
+		set_to_array(&paths.back(), sizeof(P2)/sizeof(P2[0]), P2);
+		break;
+	}
+
+	case 9:
+	{
+		// As above, pre-combined into one path with a zero-area bridge.
+		//
+		// The tricky duped vert is at (2,2).
+		//
+		// Note: this path contains a twist!  So in a sense, it is
+		// invalid input.
+		paths.resize(paths.size() + 1);
+		static const float	P[] =
+		{
+			0,0,  3,0,  3,2,  2,2,  1.5f,1.5f,  1.5f,2.5f,  2,2,  2.1f,1,  2.3f,1.5f,  2.5f,1,  2.1f,1,  2,2,  2,3,  0,3
+		};
+		set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
+		break;
+	}
+	case 10:
+		// Spiral.
+		//
+		// Set radians (3rd arg) to ~100 for a good performance test
+		// of poly clipping.
+		paths.resize(paths.size() + 1);
+		make_spiral(&paths.back(), 10, 20);
+
+		// 2004-12-31 radians = 120, time = 11.15 s
+		// 2004-12-31 radians = 120, time =  0.072 s (with grid index, and localized ear clipping)
+		// 2004-12-31 radians = 120, time =  0.115 s (as above, with rotate_coord_order(,20) -- speed is quite sensitive to initial m_loop!)
+		break;
+
+	case 11:
+		// Big star.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 100, 1000, 256);
+		break;
+
+	case 12:
+	{
+		// Holes wanting to join to main loop at the same point.
+		paths.resize(paths.size() + 1);
+		static const float	P[] =
+		{
+			0, 0,	3, 0,	0, 3
+		};
+		set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
+	
+		paths.resize(paths.size() + 1);
+		static const float	P1[] =
+		{
+			0.5f, 0.7f,	1.0f, 0.8f,	1.5f, 0.7f
+		};
+		set_to_array(&paths.back(), sizeof(P1)/sizeof(P1[0]), P1);
+	
+		paths.resize(paths.size() + 1);
+		static const float	P2[] =
+		{
+			0.5f, 0.5f,	1.0f, 0.6f,	1.5f, 0.5f
+		};
+		set_to_array(&paths.back(), sizeof(P2)/sizeof(P2[0]), P2);
+		break;
+	}
+	} // end switch
+}
+
+
+
+#undef main	// SDL wackiness
 int	main(int argc, const char** argv)
 {
 	array<float>	result;
@@ -366,293 +719,57 @@ int	main(int argc, const char** argv)
 					paths.back().push_back(y);
 				}
 			}
-
-			// Triangulate.
-			triangulate::compute(&result, paths.size(), &paths[0]);
-
-			assert((result.size() % 6) == 0);
-
-			// Dump.
-			output_diagram(result, paths);
 			
-			return 0;
+		} else if (strcmp(argv[1], "-n") == 0) {
+			if (argc > 2) {
+				generate_test_shape(atoi(argv[2]), &paths);
+			}
 		}
 		else
 		{
 			fprintf(stderr, "unknown arg.  -i means take loop input from stdin.\n");
 			exit(1);
 		}
+	} else {
+		fprintf(stderr, "usage: test_triangulate ([-n #] | [-i < inputloop.txt])\n");
+		exit(1);
 	}
-
-#if 0
-	// Make a square.
-	paths.resize(paths.size() + 1);
-	make_square(&paths.back(), 1100);
-
-	// Another square.
-	paths.resize(paths.size() + 1);
-	make_square(&paths.back(), 1100);
-	offset_path(&paths.back(), 1200, 100);
-#endif
-
-#if 0
-	// Make a square.
-	paths.resize(paths.size() + 1);
-	make_square(&paths.back(), 1100);
-
-	// Make a little square inside.
-	paths.resize(paths.size() + 1);
-	make_square(&paths.back(), 100);
-	reverse_path(&paths.back());
-
-	// Make a little star island.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 50, 250, 3);
-	offset_path(&paths.back(), -300, -300);
-	reverse_path(&paths.back());
-
-	// Make a circle.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 200, 200, 20);
-	offset_path(&paths.back(), 300, 300);
-	reverse_path(&paths.back());
-
-	// Make a circle inside the circle.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 50, 50, 5);
-	offset_path(&paths.back(), 300, 300);
-
-	// Make a circle outside the big square.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 50, 50, 8);
-	offset_path(&paths.back(), 1200, 300);
-#endif
-
-#if 0
-	// Lots of circles.
-
-	// @@ set this to 100 for a good performance torture test of bridge-finding.
-	const int	TEST_DIM = 30;	// 20, 30
-	{for (int x = 0; x < TEST_DIM; x++)
-	{
-		for (int y = 0; y < TEST_DIM; y++)
-		{
-			paths.resize(paths.size() + 1);
-			make_star(&paths.back(), 10, 10, 10);	// (... 9, 9, 10)
-			offset_path(&paths.back(), float(x) * 20, float(y) * 20);
-		}
-	}}
-
-	// 2005-1-1 TEST_DIM=40, join poly = 4.9  s (ouch!)
-	// 2005-1-2                        = 6.3  s (with grid_index_box) (double ouch!  index makes things slower!  what's wrong?)
-	//                                          (what's wrong is that the vert remap on the whole edge index gets expensive!)
-	// 2005-1-2                        = 2.94 s (optimize dupe_verts!  cull grid update (big win), more efficient vert insertion (win))
-#endif
-
-#if 0
-	// Lots of concentric circles.
-	static int	CIRCLE_COUNT = 10;	// CIRCLE_COUNT >= 10 is a good performance test.
-	{for (int i = 0; i < CIRCLE_COUNT * 2 + 1; i++)
-	{
-		paths.resize(paths.size() + 1);
-		make_star(&paths.back(), 2 + float(i), 2 + float(i), 10 + i * 6);
-		if (i & 1) reverse_path(&paths.back());
-	}}
-#endif
-
-#if 0
-	// test some degenerates.
-	paths.resize(paths.size() + 1);
-	paths.back().push_back(0);
-	paths.back().push_back(0);
-	paths.back().push_back(100);
-	paths.back().push_back(-50);
-	paths.back().push_back(120);
-	paths.back().push_back(0);
-	paths.back().push_back(100);
-	paths.back().push_back(50);
-	paths.back().push_back(0);
-	paths.back().push_back(0);
-	paths.back().push_back(-100);
-	paths.back().push_back(-100);
-	rotate_coord_order(&paths.back(), 5);
-#endif
-
-#if 0
-	// Make a star.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 2300, 3000, 20);
-
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 1100, 2200, 20);
-	reverse_path(&paths.back());
-
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(),  800, 1800, 20);
-
-	// Make a star island.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 100, 500, 3);
-	reverse_path(&paths.back());
-#endif
-
-#if 0
-	// This one has tricky coincident verts, good test case for
-	// some code paths.
-
-	// Stars with touching verts on different paths.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 2300, 3000, 20);
-
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 2300, 1100, 20);
-	reverse_path(&paths.back());
-
- 	paths.resize(paths.size() + 1);
- 	make_star(&paths.back(), 800, 1100, 20);
-
-	// Make a star island.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 100, 300, 3);
-	reverse_path(&paths.back());
-#endif
-
-#if 0
-	// A direct, simplified expression of the "tricky triple dupe".
-	//
-	// The tricky duped vert is at (2,2).
-	paths.resize(paths.size() + 1);
-
-	paths.back().push_back(0);
-	paths.back().push_back(0);
-
-	paths.back().push_back(3);
-	paths.back().push_back(0);
-
-	paths.back().push_back(3);
-	paths.back().push_back(2);
-
-	paths.back().push_back(2);
-	paths.back().push_back(2);
-
-	paths.back().push_back(0);
-	paths.back().push_back(2);
-
-	paths.back().push_back(0);
-	paths.back().push_back(3);
-
-	paths.back().push_back(1);
-	paths.back().push_back(3);
-
-	paths.back().push_back(2);
-	paths.back().push_back(2);
-
-	paths.back().push_back(2.5f);
-	paths.back().push_back(0.5f);
-
-	paths.back().push_back(1.5f);
-	paths.back().push_back(0.5f);
-
-	paths.back().push_back(2);
-	paths.back().push_back(2);
-
-	paths.back().push_back(1);
-	paths.back().push_back(3);
-
-	paths.back().push_back(0);
-	paths.back().push_back(3);
-
-	paths.back().push_back(0);
-	paths.back().push_back(2);
-#endif // 0
-
-#if 0
-	// Another direct expression of the "tricky triple dupe".  The
-	// actual triple dupe occurs when P2 is attached with a bridge
-	// to P (so it depends on the bridge-finding code).
-	//
-	// The tricky duped vert is at (2,2).
-	paths.resize(paths.size() + 1);
-	static const float	P[] =
-	{
-		0,0,  3,0,  3,2,  2,2,  1.5f,1.5f,  1.5f,2.5f,  2,2,  2,3,  0,3
-	};
-	set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
-
-	paths.resize(paths.size() + 1);
-	static const float	P2[] =
-	{
-		2.1f,1,  2.3f,1.5f, 2.5f,1
-	};
-	set_to_array(&paths.back(), sizeof(P2)/sizeof(P2[0]), P2);
-#endif
-
-#if 0
-	// As above, pre-combined into one path with a zero-area bridge.
-	//
-	// The tricky duped vert is at (2,2).
-	//
-	// Note: this path contains a twist!  So in a sense, it is
-	// invalid input.
-	paths.resize(paths.size() + 1);
-	static const float	P[] =
-	{
-		0,0,  3,0,  3,2,  2,2,  1.5f,1.5f,  1.5f,2.5f,  2,2,  2.1f,1,  2.3f,1.5f,  2.5f,1,  2.1f,1,  2,2,  2,3,  0,3
-	};
-	set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
-#endif
-
-#if 0
-	// Spiral.
-	//
-	// Set radians (3rd arg) to ~100 for a good performance test
-	// of poly clipping.
-	paths.resize(paths.size() + 1);
-	make_spiral(&paths.back(), 10, 20);
-
-	// 2004-12-31 radians = 120, time = 11.15 s
-	// 2004-12-31 radians = 120, time =  0.072 s (with grid index, and localized ear clipping)
-	// 2004-12-31 radians = 120, time =  0.115 s (as above, with rotate_coord_order(,20) -- speed is quite sensitive to initial m_loop!)
-#endif
-
-#if 0
-	// Big star.
-	paths.resize(paths.size() + 1);
-	make_star(&paths.back(), 100, 1000, 256);
-#endif
-
-
-#if 1
-	// Holes wanting to join to main loop at the same point.
-	paths.resize(paths.size() + 1);
-	static const float	P[] =
-	{
-		0, 0,	3, 0,	0, 3
-	};
-	set_to_array(&paths.back(), sizeof(P)/sizeof(P[0]), P);
-	
-	paths.resize(paths.size() + 1);
-	static const float	P1[] =
-	{
-		0.5f, 0.7f,	1.0f, 0.8f,	1.5f, 0.7f
-	};
-	set_to_array(&paths.back(), sizeof(P1)/sizeof(P1[0]), P1);
-	
-	paths.resize(paths.size() + 1);
-	static const float	P2[] =
-	{
-		0.5f, 0.5f,	1.0f, 0.6f,	1.5f, 0.5f
-	};
-	set_to_array(&paths.back(), sizeof(P2)/sizeof(P2[0]), P2);
-#endif
 
 	// Triangulate.
 	triangulate::compute(&result, paths.size(), &paths[0]);
-
 	assert((result.size() % 6) == 0);
 
-	// Dump.
-	output_diagram(result, paths);
+	// Interactive display.
+
+	int	width = 1000;
+	int	height = 1000;
+	demo::init_video(width, height, 16);
+
+	demo::nav2d_state nav_state;
+	for (;;) {
+		if (demo::update_nav2d(&nav_state)) {
+			// User wants to quit.
+			break;
+		}
+
+		// Turn on alpha blending.
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_ONE, GL_ONE);
+
+ 		demo::set_nav2d_viewport(nav_state);
+
+		glDisable(GL_DEPTH_TEST);	// Disable depth testing.
+		glDrawBuffer(GL_BACK);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		render_diagram(result, paths);
+
+		SDL_GL_SwapBuffers();
+
+		SDL_Delay(10);
+	}
+
+//	output_diagram(result, paths);
 
 	return 0;
 }

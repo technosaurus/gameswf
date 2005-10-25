@@ -17,21 +17,14 @@ LDFLAGS := $(SDL_LDFLAGS) $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 LIBS := $(GEOMETRY_LIB) $(BASE_LIBS) $(LIBS) $(JPEGLIB) $(ZLIB)
 
 
-all: engine_libs test_triangulate$(EXE_EXT)
+all: test_triangulate$(EXE_EXT)
 
 
-test_triangulate$(EXE_EXT): test_triangulate.$(OBJ_EXT) $(GEOMETRY_LIB) $(BASE_LIB)
-	$(CC) -o $@ $^ $(LIBS) $(GEOMETRY_LIB) $(BASE_LIB) $(LDFLAGS)
+test_triangulate$(EXE_EXT): test_triangulate.$(OBJ_EXT) base_lib net_lib geometry_lib
+	$(CC) -o $@ $< $(LIBS) $(GEOMETRY_LIB) $(NET_LIB) $(BASE_LIB) $(LDFLAGS)
 
 
-engine_libs:
-	$(MAKE) -C $(TOP)/base
-	$(MAKE) -C $(TOP)/geometry
-
-
-clean:
-	$(MAKE) -C $(TOP)/base clean
-	$(MAKE) -C $(TOP)/geometry clean
+clean: base_clean net_clean geometry_clean
 	-rm test_triangulate.$(OBJ_EXT) test_triangulate$(EXE_EXT)
 
 fresh: clean all
