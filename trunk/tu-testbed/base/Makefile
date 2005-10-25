@@ -14,15 +14,16 @@ all: $(BASE_LIB)
 
 # Source files.
 SRCS :=						\
-	container.cpp				\
-	dlmalloc.c				\
 	config.cpp				\
+	container.cpp				\
+	demo.cpp				\
+	dlmalloc.c				\
 	file_util.cpp				\
-	ogl.cpp					\
 	image.cpp				\
 	image_filters.cpp			\
 	jpeg.cpp				\
 	membuf.cpp				\
+	ogl.cpp					\
 	png_helper.cpp				\
 	postscript.cpp				\
 	triangulate_float.cpp			\

@@ -18,7 +18,7 @@ EXE_OUT = net_test$(EXE_EXT)
 
 LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(SOCKET_LIBS)
 
-all: base_lib $(LIB_OUT) $(EXE_OUT)
+all: $(LIB_OUT) $(EXE_OUT)
 
 
 LIB_OBJS = \
@@ -38,18 +38,12 @@ $(LIB_OUT): $(LIB_OBJS)
 	$(AR) $(LIB_OUT_FLAG)$@ $^
 
 
-$(EXE_OUT): $(TEST_PROGRAM_OBJS) $(LIB_OUT) $(BASE_LIB)
+$(EXE_OUT): $(TEST_PROGRAM_OBJS) base_lib $(LIB_OUT)
 	$(CC) -o $@ $(TEST_PROGRAM_OBJS) $(LIBS) $(LDFLAGS)
 
-
-base_lib:
-	make -C $(TOP)/base
 
 clean:
 	make -C $(TOP)/base clean
 	-rm $(OBJS) $(LIB_OUT) $(EXE_OUT)
-
-depend:
-	makedepend -Y -I.. -f Makefile *.cpp
 
 fresh: clean all
