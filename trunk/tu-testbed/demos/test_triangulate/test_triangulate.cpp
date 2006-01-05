@@ -37,9 +37,11 @@ void	compute_bounding_box(float* x0, float* y0, float* x1, float* y1, const arra
 }
 
 
-void render_diagram(array<float>& trilist, const array<array<float> >& input_paths)
+void render_diagram(array<float>& trilist, const array<array<float> >& input_paths, const array<float>& debug_path)
 // Render an OpenGL diagram of the given info.  trilist is the output
-// of the triangulation algo; input_paths is the input.
+// of the triangulation algo; input_paths is the input.  debug_path is
+// the incremental state of the path being tessleted, if the
+// tesselation has been stopped in advance.
 {
 	int	tricount = trilist.size() / 6;
 	int	trilabel = 0;
@@ -48,7 +50,7 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	
 	// Draw the triangle mesh.
 	assert(trilist.size() % 6 == 0);
-	glColor3f(0, 0, 1);  // blue
+	glColor3f(0, 0, 0.5f);  // blue
 	glBegin(GL_TRIANGLES);
 	for (int i = 0; i < trilist.size(); i += 6)
 	{
@@ -59,7 +61,7 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	glEnd();
 
 	// Draw the internal edges.
-	glColor3f(0, 1, 0);  // green
+	glColor3f(0, 0.25f, 0);  // green
 	glBegin(GL_LINES);
 	{for (int i = 0; i < trilist.size(); i += 6)
 	{
@@ -75,7 +77,7 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	glEnd();
 
 	// Draw the input paths.
-	glColor3f(1, 0, 0);  // red
+	glColor3f(0.5f, 0, 0);  // red
 	{for (int j = 0; j < input_paths.size(); j++) {
 		const array<float>& path = input_paths[j];
 		assert((path.size() & 1) == 0);
@@ -89,6 +91,18 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 		glVertex2f(path[0], path[1]);
 		glEnd();
 	}}
+
+	// Draw the debug path.
+	glColor3f(0.5f, 0.5f, 0.5f);
+	assert((debug_path.size() & 1) == 0);
+	if (debug_path.size() > 0) {
+		glBegin(GL_LINE_STRIP);
+		for (int i = 0; i < debug_path.size(); i += 2) {
+			glVertex2f(debug_path[i], debug_path[i + 1]);
+		}
+		glVertex2f(debug_path[0], debug_path[1]);
+		glEnd();
+	}
 }
 
 
@@ -667,6 +681,60 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 		set_to_array(&paths.back(), sizeof(P2)/sizeof(P2[0]), P2);
 		break;
 	}
+
+	case 13:
+	{
+		paths.resize(paths.size() + 1);
+		static const float P[] =
+		{
+			0,0,
+			1,1,
+			3,2,
+			0,2,
+			1,1,
+			0,0,
+			1,-1,
+			0,-2,
+			3,-2,
+			1,-1,
+			0,0,
+		};
+		set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		break;
+	}
+	
+	case 14:
+	{
+		// Coincident edges -- can't determine sidedness
+		// locally, so may foul up ear detection.
+
+		paths.resize(paths.size() + 1);
+		static const float P[] =
+		{
+			0,0,
+			1,1,
+			-1,2,
+			-1,-2,
+			1,-1,
+			0,0,
+		};
+		set_to_array(&paths.back(), ARRAYSIZE(P), P);
+
+		paths.resize(paths.size() + 1);
+		static const float P2[] =
+		{
+			0,0,
+			1,-1,
+			3,-2,
+			3,2,
+			1,1,
+			0,0,
+		};
+		set_to_array(&paths.back(), ARRAYSIZE(P2), P2);
+		
+		break;
+	}
+	
 	} // end switch
 }
 
@@ -675,8 +743,9 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 #undef main	// SDL wackiness
 int	main(int argc, const char** argv)
 {
-	array<float>	result;
-	array<array<float> >	paths;
+	array<float> result;
+	array<array<float> > paths;
+	array<float> debug_path;
 
 	if (argc > 1)
 	{
@@ -735,21 +804,39 @@ int	main(int argc, const char** argv)
 		exit(1);
 	}
 
-	// Triangulate.
-	triangulate::compute(&result, paths.size(), &paths[0]);
-	assert((result.size() % 6) == 0);
-
 	// Interactive display.
-
 	int	width = 1000;
 	int	height = 1000;
 	demo::init_video(width, height, 16);
 
+	bool do_triangulate = true;
+	int debug_halt_tri = 0;
+
 	demo::nav2d_state nav_state;
 	for (;;) {
+		if (do_triangulate) {
+			// Triangulate.
+			do_triangulate = false;
+			result.resize(0);
+			debug_path.resize(0);
+			triangulate::compute(&result, paths.size(), &paths[0], debug_halt_tri, &debug_path);
+			assert((result.size() % 6) == 0);
+		}
+		
 		if (demo::update_nav2d(&nav_state)) {
 			// User wants to quit.
 			break;
+		}
+		// Check key input.
+		for (int i = 0, n = nav_state.m_keys.size(); i < n; i++) {
+			int key = nav_state.m_keys[i];
+			if (key == SDLK_LEFT && debug_halt_tri > 0) {
+				debug_halt_tri--;
+				do_triangulate = true;
+			} else if (key == SDLK_RIGHT) {
+				debug_halt_tri++;
+				do_triangulate = true;
+			}
 		}
 
 		// Turn on alpha blending.
@@ -762,7 +849,7 @@ int	main(int argc, const char** argv)
 		glDrawBuffer(GL_BACK);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		render_diagram(result, paths);
+		render_diagram(result, paths, debug_path);
 
 		SDL_GL_SwapBuffers();
 
