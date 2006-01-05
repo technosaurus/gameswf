@@ -15,6 +15,7 @@
 #include "base/tu_types.h"
 #include "base/tu_swap.h"
 #include <ctype.h>
+#include <new>
 
 
 #ifdef _WIN32

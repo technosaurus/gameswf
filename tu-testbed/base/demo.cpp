@@ -41,6 +41,8 @@ namespace demo
 
 	bool update_nav2d(nav2d_state* state)
 	{
+		state->m_keys.resize(0);
+
 		// Handle input.
 		SDL_Event	event;
 		while (SDL_PollEvent(&event))
@@ -58,6 +60,8 @@ namespace demo
 					state->m_scale *= 0.5f;
 				} else if (key == SDLK_MINUS) {
 					state->m_scale *= 2.0f;
+				} else {
+					state->m_keys.push_back(key);
 				}
 				break;
 			}
