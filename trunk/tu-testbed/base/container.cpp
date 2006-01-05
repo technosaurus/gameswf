@@ -340,7 +340,7 @@ tu_string string_printf(const char* fmt, ...)
 //
 //    or
 //
-// cl container.cpp utf8.cpp tu_random.cpp -Zi -Od -DCONTAINER_UNIT_TEST -I..
+// cl container.cpp utf8.cpp tu_random.cpp dlmalloc.c -Zi -Od -DCONTAINER_UNIT_TEST -DUSE_DL_MALLOC -I..
 
 
 void	test_hash()

@@ -12,6 +12,7 @@
 
 
 #include "base/tu_config.h"
+#include "base/container.h"
 
 
 namespace demo
@@ -36,6 +37,9 @@ namespace demo
 		int m_mouse_dx;
 		int m_mouse_dy;
 
+		// Codes of any keys pushed this frame.
+		array<int> m_keys;
+
 		nav2d_state()
 			:
 			m_center_x(0),
@@ -47,6 +51,13 @@ namespace demo
 			m_mouse_dx(0),
 			m_mouse_dy(0)
 		{
+		}
+
+		void mouse_to_world(float* x, float* y)
+		// Returns the current world-coords of the mouse pointer.
+		{
+			*x = (m_mouse_x - 500) * m_scale + m_center_x;
+			*y = (500 - m_mouse_y) * m_scale + m_center_y;
 		}
 	};
 
