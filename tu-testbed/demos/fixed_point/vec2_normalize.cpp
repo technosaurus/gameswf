@@ -394,90 +394,6 @@ void draw_vector_calculation2(float x_in, float y_in)
 }
 
 
-void compute_nr_lookup_table(fixed output[], int lookup_size, int lookup_bits, int iterations)
-// Search for near-optimal values for the lookup table for the initial
-// step of Newton-Raphson.
-{
-	// Assumptions: the vectors to be processed will be scaled
-	// such that the max coordinate is in [1,2).
-	//
-	// So the maximum mag2 value is in [1,8).  At runtime, the
-	// lookup table will be indexed by the first log2(lookup_size)
-	// bits in mag2.
-	//
-	// For a given table index t,
-	// 
-	//   min_mag2 = 8 * t / lookup_size
-	//   max_mag2 < 8 * (t + 1) / lookup_size
-	
-	assert((lookup_size & (lookup_size - 1)) == 0);  // lookup_size must be a power of two
-
-	float worst_overall_error_pct = 0;
-	
-	for (int t = 0; t < lookup_size; t++) {
-		// Find the best value for this table entry.
-
-		// Find the range of vector lengths that maps into
-		// this table.
-		fixed min_mag2 = fixed(8 * t) >> log2i(lookup_size);
-		fixed max_mag2 = fixed(8 * (t + 1)) >> log2i(lookup_size);
-
-		fixed best_value = 0;
-		float best_error_pct = 100;
-
-		for (int raw_value = 0; raw_value < (1 << lookup_bits); raw_value++) {
-			fixed value(fixed::FROM_RAW, raw_value << (18 - lookup_bits));  // xxx TODO check this!
-
-#if 0
-			vec_generator g(min_mag2, max_mag2);
-			float worst_error_pct = 0;
-			for (int i = 0; i < 1000; i++) {
-				vec2_fixed v = g.next();
-				fixed mag2 = v.mag2();
-
-				// Normalize.
-				fixed factor;
-				factor.from_raw(value);
-
-				// Improve the approximation.
-				for (int i = 0; i < iterations; i++) {
-					factor = mul<2>(factor, (fixed(1.5f) - mul<2>((mag2 >> 1), mul<2>(factor * factor))));
-				}
-
-				// See how we did.
-				vec2_fixed v_unit = v.mul<2>(factor);
-				
-				float error_pct = measure_error(v, v_unit);
-				if (error_pct > worst_error_pct) {
-					worst_error_pct = error_pct;
-				}
-			}
-
-			if (worst_error_pct < best_error_pct) {
-				best_error_pct = worst_error_pct;
-				best_value = value;
-			}
-#endif // 0
-		}
-		if (best_error_pct > worst_overall_error_pct) {
-			worst_overall_error_pct = best_error_pct;
-		}
-	}
-
-	printf("\t// NR table: size = %d, bits = %d, iteratons = %d, max error = %f%%\n",
-	       lookup_size, lookup_bits, iterations, worst_overall_error_pct);
-	
-	// Print a C array initialization.
-	printf("\t{\n");
-	{for (int t = 0; t < lookup_size; t++) {
-		printf("\t\t0x%X,\n", output[t].to_raw());
-	}}
-	printf("\t};\n");
-}
-
-
-
-
 int nr_lookup_index(fixed mag2, int table_size)
 // Given a vector magnitude squared value and a lookup table size,
 // return the index into the table containing the best approximation
@@ -575,16 +491,49 @@ void build_nr_lookup_table(fixed table[], int size, int precision_bits, int iter
 
 	printf("size = %d, precision_bits = %d, iterations = %d, worst error pct = %f\n",
 	       size, precision_bits, iterations, worst_error_pct);//xxxxx
+
+	/* Computed table for 32 entries, 8 bits each, 1 iteration, <0.53% error:
+	fixed table_32_8_1[32] = {
+		0.996094,
+		0.996094,
+		0.996094,
+		0.996094,
+		0.945313,
+		0.851563,
+		0.785156,
+		0.730469,
+		0.687500,
+		0.648438,
+		0.617188,
+		0.589844,
+		0.566406,
+		0.542969,
+		0.523438,
+		0.507813,
+		0.492188,
+		0.476563,
+		0.464844,
+		0.453125,
+		0.441406,
+		0.429688,
+		0.421875,
+		0.414063,
+		0.402344,
+		0.398438,
+		0.386719,
+		0.382813,
+		0.375000,
+		0.367188,
+		0.363281,
+		0.355469,
+	};
+	*/
 }
 
 
 void do_vector_calculation3(fixed* x_out, fixed* y_out, fixed x_in, fixed y_in, bool draw)
 // Use Newton-Raphson search for inv sqrt.
 {
-//	// Force input into the positive quadrant.
-//	if (x_in < fixed(-0.1f)) { x_in = -0.1f; }
-//	if (y_in < fixed(-0.1f)) { y_in = -0.1f; }
-
 	if (draw) {
 		// draw the input
 		glColor3f(0, 0, 1);
@@ -628,8 +577,8 @@ void do_vector_calculation3(fixed* x_out, fixed* y_out, fixed x_in, fixed y_in, 
 	//
 	// 256 bit lookup table (32 entries by 8 bits), 1 iterations, <0.53% error
 	
-	static const int LOOKUP_SIZE = 8; // number of entries
-	static const int LOOKUP_PRECISION_BITS = 4;  // precision of the lookup table
+	static const int LOOKUP_SIZE = 32; // number of entries
+	static const int LOOKUP_PRECISION_BITS = 8;  // precision of the lookup table
 	static const int ITERATIONS = 1;
 	static fixed approx_table[LOOKUP_SIZE];
 	static bool inited = false;
