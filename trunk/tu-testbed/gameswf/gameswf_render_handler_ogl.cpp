@@ -259,10 +259,16 @@ struct render_handler_ogl : public gameswf::render_handler
 		void	set_bitmap(const gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm, const gameswf::cxform& color_transform)
 		{
 			m_mode = (wm == WRAP_REPEAT) ? BITMAP_WRAP : BITMAP_CLAMP;
-			m_color = gameswf::rgba();
 			m_bitmap_info = bi;
 			m_bitmap_matrix = m;
 			m_bitmap_color_transform = color_transform;
+			m_bitmap_color_transform.clamp();
+
+			m_color = gameswf::rgba(
+				Uint8(m_bitmap_color_transform.m_[0][0] * 255.0f), 
+				Uint8(m_bitmap_color_transform.m_[1][0] * 255.0f), 
+				Uint8(m_bitmap_color_transform.m_[2][0] * 255.0f), 
+				Uint8(m_bitmap_color_transform.m_[3][0] * 255.0f));
 
 			if (m_bitmap_color_transform.m_[0][1] > 1.0f
 			    || m_bitmap_color_transform.m_[1][1] > 1.0f

@@ -79,9 +79,6 @@ $(PROCESSOR_OUT): $(PROCESSOR_OBJS) $(LIB_OUT) $(BASE_LIB)
 	$(CC) -o $@ $(PROCESSOR_OBJS) $(LIBS) $(LDFLAGS)
 
 
-base_lib:
-	make -C $(TOP)/base
-
 clean:
 	make -C $(TOP)/base clean
 	-rm $(OBJS) $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
