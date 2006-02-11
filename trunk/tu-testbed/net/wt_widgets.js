@@ -386,7 +386,21 @@ function wt_slider(id, name, val, min, max)
 	// Pointer
 	html += '<hr style="width: 12px; height: 20px; background-color: #A0A0A0; border: 1px solid black; border-left: 1px solid #E0E0E0; border-top: 1px solid #E0E0E0; " id="sliderpointer' + this.id + '">';
 	
-	html += '</span>';
+	make_incrementer = function(inc)
+	{
+		var html = "<td><table cellpadding=0 cellspacing=0><tr>";
+		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="wt_up.png" border=0></a></span></td>';
+		html += '<td rowspan=2>' + inc + '&nbsp;&nbsp;&nbsp;</td></tr><tr>';
+		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="wt_down.png" border=0></a></span></td>';
+		html += '</tr></table></td>';
+		return html;
+	}
+
+	html += "<table>\n";
+	html += "<tr>" + make_incrementer(1) + make_incrementer(10) + make_incrementer(100) + "</tr>";
+	html += "</table>";
+	
+
 	html += '</td></tr></table>';
 	html += '<style>';
 	html += '#sliderpointer' + this.id + ' { position: absolute; top: 0px; left: 0px; padding: 0px; }';
