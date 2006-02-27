@@ -22,6 +22,7 @@ SRCS :=						\
 	image.cpp				\
 	image_filters.cpp			\
 	jpeg.cpp				\
+	logger.cpp				\
 	membuf.cpp				\
 	ogl.cpp					\
 	png_helper.cpp				\

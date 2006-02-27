@@ -16,6 +16,7 @@
 #include "net/http_server.h"
 #include "net/net_interface.h"
 #include "base/tu_timer.h"
+#include "base/logger.h"
 
 
 void http_request::dump_html(tu_string* outptr)
@@ -320,6 +321,8 @@ void http_server::http_request_state::update(http_server* server)
 void http_server::http_request_state::activate(net_socket* sock)
 // Initialize to handle a request coming in on the given socket.
 {
+	VLOG("hrs::activate(%x)", sock);
+
 	deactivate();
 
 	// Adopt the given socket.
@@ -333,6 +336,8 @@ void http_server::http_request_state::activate(net_socket* sock)
 void http_server::http_request_state::deactivate()
 // Clear request state & close the socket.
 {
+	VLOG("hrs::deactivate(), sock = %x\n", m_req.m_sock);
+
 	clear();
 	m_req.deactivate();
 }
@@ -340,6 +345,8 @@ void http_server::http_request_state::deactivate()
 void http_server::http_request_state::clear()
 // Clear out request state, but don't mess with our socket.
 {
+	VLOG("hrs::clear(), sock = %x\n", m_req.m_sock);
+
 	m_req.clear();
 	m_line_buffer.clear();
 	m_parse_key.clear();
@@ -412,6 +419,8 @@ http_status http_server::http_request_state::parse_request_line(const char* reql
 // appropriately.  Returns HTTP result code, 400+ if we detected an
 // error, HTTP_OK if the parse is OK.
 {
+	VLOG("hrs::parse_request_line(), sock = %x: %s\n", m_req.m_sock, reqline);
+
 	// Method.
 	const char* first_space = strchr(reqline, ' ');
 	if (first_space == NULL || first_space == reqline)
