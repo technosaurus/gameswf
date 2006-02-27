@@ -72,11 +72,6 @@ struct CUSTOMVERTEX2
 #define D3DFVF_CUSTOMVERTEX2 (D3DFVF_XYZ|D3DFVF_TEX1)
 
 
-namespace
-{
-  array<IDirect3DBaseTexture*> s_d3d_textures;
-};
-
 static inline float clamp( float x,float min,float max ) {
   union { float f; int hex; };
   f = x - min;
@@ -117,6 +112,7 @@ struct render_handler_d3d : public gameswf::render_handler
   static D3DFORMAT m_FormatA;
   static D3DXMATRIX m_ModelViewMatrix;
   static D3DXMATRIX m_ProjMatrix;
+  static array<IDirect3DBaseTexture*> m_d3d_textures;
 
   void set_antialiased(bool enable)
   {
@@ -225,7 +221,7 @@ struct render_handler_d3d : public gameswf::render_handler
           // additive part, if any, needs to
           // happen in a second pass.
 
-          m_pd3dDevice->SetTexture(0, s_d3d_textures[m_bitmap_info->m_texture_id]);
+          m_pd3dDevice->SetTexture(0, m_d3d_textures[m_bitmap_info->m_texture_id]);
           m_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_MODULATE );
           m_pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_MODULATE );
 
@@ -411,8 +407,10 @@ struct render_handler_d3d : public gameswf::render_handler
 
     if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_DXT1))) 
       m_FormatRGB = D3DFMT_DXT1;
-    else 
+    else if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_R8G8B8))) 
       m_FormatRGB = D3DFMT_R8G8B8;
+    else       
+      m_FormatRGB = D3DFMT_A8R8G8B8;
 
       if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_DXT5))) 
         m_FormatRGBA = D3DFMT_DXT5;
@@ -433,10 +431,13 @@ struct render_handler_d3d : public gameswf::render_handler
   ~render_handler_d3d()
     // Destructor.
   {
-    for (int i = 0; i < s_d3d_textures.size(); i++)
+    for (int i = 0; i < m_d3d_textures.size(); i++)
     {
-      s_d3d_textures[i]->Release();
-      s_d3d_textures[i] = 0;
+      if( m_d3d_textures[i] )
+      {
+        m_d3d_textures[i]->Release();
+        m_d3d_textures[i] = 0;
+      }
     }
 
 
@@ -886,7 +887,7 @@ struct render_handler_d3d : public gameswf::render_handler
     d.m_y = b.m_y + c.m_y - a.m_y;
 
     // Set texture.
-    m_pd3dDevice->SetTexture(0, s_d3d_textures[bi->m_texture_id]);
+    m_pd3dDevice->SetTexture(0, m_d3d_textures[bi->m_texture_id]);
     m_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG2);
     m_pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
 
@@ -903,7 +904,7 @@ struct render_handler_d3d : public gameswf::render_handler
     CUSTOMVERTEX2 *pVertices;
     HRESULT result;
 
-    if( FAILED( m_pVB->Lock( 0, 0, (tLock**)&pVertices, D3DLOCK_DISCARD ) ) )
+    if( FAILED( m_pVB2->Lock( 0, 0, (tLock**)&pVertices, D3DLOCK_DISCARD ) ) )
     {
       assert(0);
     }
@@ -1075,8 +1076,8 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgb* im)
   }
 
   // Create the texture.
-  s_d3d_textures.push_back(NULL);
-  m_texture_id = s_d3d_textures.size() - 1;
+  render_handler_d3d::m_d3d_textures.push_back(NULL);
+  m_texture_id = render_handler_d3d::m_d3d_textures.size() - 1;
 
   IDirect3DTexture*  tex;
   HRESULT result = render_handler_d3d::m_pd3dDevice->CreateTexture(
@@ -1088,12 +1089,24 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgb* im)
 #endif
     );
 
+  if (render_handler_d3d::m_FormatRGB!=D3DFMT_A8R8G8B8 && result != S_OK)
+  {
+    result = render_handler_d3d::m_pd3dDevice->CreateTexture(
+      w, h, 1, 0,      // Usage
+      D3DFMT_A8R8G8B8,  // Format
+      D3DPOOL_MANAGED, &tex
+#if DIRECT3D_VERSION >= 0x0900
+      , NULL
+#endif    
+      );
+  }
   if (result != S_OK)
   {
     gameswf::log_error("error: can't create texture\n");
     return;
   }
-  s_d3d_textures.back() = tex;
+  assert(tex);
+  render_handler_d3d::m_d3d_textures.back() = tex;
 
   IDirect3DSurface*  surf = NULL;
   result = tex->GetSurfaceLevel(0, &surf);
@@ -1165,8 +1178,8 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgba* im)
   int h = 1; while (h < im->m_height) { h <<= 1; }
 
   // Create the texture.
-  s_d3d_textures.push_back(NULL);
-  m_texture_id = s_d3d_textures.size() - 1;
+  render_handler_d3d::m_d3d_textures.push_back(NULL);
+  m_texture_id = render_handler_d3d::m_d3d_textures.size() - 1;
 
   IDirect3DTexture*  tex;
   HRESULT result = render_handler_d3d::m_pd3dDevice->CreateTexture(
@@ -1178,12 +1191,25 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgba* im)
 #endif    
     );
 
-  if (result != S_OK)
+  if (render_handler_d3d::m_FormatRGBA!=D3DFMT_A8R8G8B8 && result != S_OK)
   {
+    result = render_handler_d3d::m_pd3dDevice->CreateTexture(
+      w, h, 1, 0,      // Usage
+      D3DFMT_A8R8G8B8,  // Format
+      D3DPOOL_MANAGED, &tex
+#if DIRECT3D_VERSION >= 0x0900
+      , NULL
+#endif    
+      );
+  }
+
+  if (result != S_OK)
+  { 
     gameswf::log_error("error: can't create texture\n");
     return;
   }
-  s_d3d_textures.back() = tex;
+  assert(tex);
+  render_handler_d3d::m_d3d_textures.back() = tex;
 
   IDirect3DSurface*  surf = NULL;
   result = tex->GetSurfaceLevel(0, &surf);
@@ -1232,8 +1258,8 @@ bitmap_info_d3d::bitmap_info_d3d(int width, int height, Uint8* data)
   int w = 1; while (w < width) { w <<= 1; }
   int h = 1; while (h < height) { h <<= 1; }
 
-  s_d3d_textures.push_back(NULL);
-  m_texture_id = s_d3d_textures.size() - 1;
+  render_handler_d3d::m_d3d_textures.push_back(NULL);
+  m_texture_id = render_handler_d3d::m_d3d_textures.size() - 1;
 
   IDirect3DTexture*  tex;
   HRESULT result = render_handler_d3d::m_pd3dDevice->CreateTexture(
@@ -1250,7 +1276,8 @@ bitmap_info_d3d::bitmap_info_d3d(int width, int height, Uint8* data)
     gameswf::log_error("error: can't create texture\n");
     return;
   }
-  s_d3d_textures.back() = tex;
+  assert(tex);
+  render_handler_d3d::m_d3d_textures.back() = tex;
 
   IDirect3DSurface*  surf = NULL;
 
@@ -1293,6 +1320,7 @@ D3DFORMAT         render_handler_d3d::m_FormatRGBA;
 D3DFORMAT         render_handler_d3d::m_FormatA;
 D3DXMATRIX        render_handler_d3d::m_ModelViewMatrix;
 D3DXMATRIX        render_handler_d3d::m_ProjMatrix;
+array<IDirect3DBaseTexture*> render_handler_d3d::m_d3d_textures;
 
 gameswf::render_handler*  gameswf::create_render_handler_d3d(IDirect3DDevice* device)
 // Factory.
@@ -1307,6 +1335,7 @@ gameswf::render_handler*  gameswf::create_render_handler_d3d(IDirect3DDevice* de
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
+
 
 
 
