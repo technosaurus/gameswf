@@ -389,9 +389,9 @@ function wt_slider(id, name, val, min, max)
 	make_incrementer = function(inc)
 	{
 		var html = "<td><table cellpadding=0 cellspacing=0><tr>";
-		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="wt_up.png" border=0></a></span></td>';
+		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="images/wt_up.png" border=0></a></span></td>';
 		html += '<td rowspan=2>' + inc + '&nbsp;&nbsp;&nbsp;</td></tr><tr>';
-		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="wt_down.png" border=0></a></span></td>';
+		html += '<td><span onclick=\'return 1\'><a href="javascript:void(0)"><img src="images/wt_down.png" border=0>hi</a></span></td>';
 		html += '</tr></table></td>';
 		return html;
 	}
@@ -400,7 +400,6 @@ function wt_slider(id, name, val, min, max)
 	html += "<tr>" + make_incrementer(1) + make_incrementer(10) + make_incrementer(100) + "</tr>";
 	html += "</table>";
 	
-
 	html += '</td></tr></table>';
 	html += '<style>';
 	html += '#sliderpointer' + this.id + ' { position: absolute; top: 0px; left: 0px; padding: 0px; }';
@@ -658,7 +657,7 @@ function wt_color_picker(id, name, initial_value)
 	html += '<input type=hidden name="' + this.id + '" value=""></input>';
 
 	// Color Hue/Sat picker.
-	html += '<div id="hsv_body' + this.id + '" style="background-image: url(\'wt_hsv.png\'); width: 360px; height: 100px;" ';
+	html += '<div id="hsv_body' + this.id + '" style="background-image: url(\'images/wt_hsv.png\'); width: 360px; height: 100px;" ';
 	html += event_handlers(this.id) + '></div>';
 
 	// HSV cursor.
@@ -748,7 +747,7 @@ function wt_tree_node(id, label, open)
 	}
 	html += label + '</a></div>';
 	html += '<input type=hidden name="' + this.id + '" value="' + this.open_state + '"></input>';
-	
+
 	document.write(html);
 	document.close();
 

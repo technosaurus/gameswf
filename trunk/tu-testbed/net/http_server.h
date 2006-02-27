@@ -108,6 +108,7 @@ struct http_request
 	}
 
 	void clear()
+	// Clear everything, but not our socket.
 	{
 		m_status = HTTP_OK;
 		m_http_version_x256 = 0x0101;

@@ -7,6 +7,7 @@
 
 
 #include <stdio.h>
+#include "base/logger.h"
 #include "base/tu_timer.h"
 #include "net/http_file_handler.h"
 #include "net/http_server.h"
@@ -84,10 +85,28 @@ int main(int argc, const char** argv)
 {
 	int port = 30000;
 
-	if (argc > 1) {
-		port = atoi(argv[1]);
+	logger::set_standard_log_handlers();
+
+	for (int i = 1; i < argc; i++) {
+		const char* arg = argv[i];
+		if (arg[1] && arg[0] == '-') {
+			switch (arg[1]) {
+			default:
+				break;
+			case 'v':
+				// Verbose logging.
+				logger::FLAG_verbose_log = true;
+				break;
+			case 'p':
+				if (argc > i) {
+					i++;
+					port = atoi(argv[i + 1]);
+				}
+				break;
+			}
+		}
 	}
-	
+
 	// Open a socket to receive connections on.
 	net_interface* iface = tu_create_net_interface_tcp(port);
 	if (iface == NULL)
@@ -125,7 +144,7 @@ int main(int argc, const char** argv)
 	server->add_handler("/tweak", &my_ui);
 
 	// Create a handler for serving static files.
-	http_file_handler static_handler(".", "/static");
+	http_file_handler static_handler("./static", "/static");
 	server->add_handler(static_handler.http_basepath(), &static_handler);
 	
 	printf("Point a browser at http://localhost:%d/tweak to test webtweaker\n", port);
