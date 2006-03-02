@@ -27,6 +27,11 @@ namespace jpeg { struct input; }
 class tu_string;
 class tu_stringi;
 
+// Forward decl for D3D render handlers, in case they are
+// instantiated.  Harmless on non-D3D platforms.
+struct IDirect3DDevice9;
+struct IDirect3DDevice8;
+
 
 namespace gameswf
 {
@@ -111,6 +116,8 @@ namespace gameswf
 	// version of the library, depending on platform etc.
 	render_handler*	create_render_handler_xbox();
 	render_handler*	create_render_handler_ogl();
+	render_handler* create_render_handler_d3d(IDirect3DDevice9* _pDevice);
+	render_handler* create_render_handler_d3d(IDirect3DDevice8* _pDevice);
 	sound_handler*	create_sound_handler_sdl();
 
 
