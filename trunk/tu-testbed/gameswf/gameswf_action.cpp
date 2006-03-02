@@ -1368,7 +1368,7 @@ namespace gameswf
 			s_global->set_member("String", as_value(string_ctor));
 
 			// ASSetPropFlags
-			s_global->set_member("ASSetPropFlags", as_global_assetpropflags);
+			s_global->set_member("ASSetPropFlags", as_value(as_global_assetpropflags));
 
 			math_init();
 			key_init();

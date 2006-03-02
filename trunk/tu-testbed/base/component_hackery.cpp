@@ -1,3 +1,5 @@
+// Just some messing around.
+#if 0
 
 #include <vector>
 
@@ -40,3 +42,5 @@ foreach(SpecialInterface*, p, actors)
 	some_list.push_back( p );
 }
 
+
+#endif // 0
