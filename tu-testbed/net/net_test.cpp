@@ -100,7 +100,7 @@ int main(int argc, const char** argv)
 			case 'p':
 				if (argc > i) {
 					i++;
-					port = atoi(argv[i]);
+					port = atoi(argv[i + 1]);
 				}
 				break;
 			}
