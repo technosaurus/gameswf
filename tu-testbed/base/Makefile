@@ -15,6 +15,7 @@ all: $(BASE_LIB)
 # Source files.
 SRCS :=						\
 	config.cpp				\
+	constrained_triangulate.cpp		\
 	container.cpp				\
 	demo.cpp				\
 	dlmalloc.c				\
