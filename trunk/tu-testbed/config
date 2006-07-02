@@ -99,8 +99,8 @@ ifeq ($(DEBUG),1)
 	MAKE_DLL := cl /nologo /LDd
 else
 	# msvc non-debug flags
-	CC_DEBUG_FLAGS := -Ox -DNDEBUG=1
-	LDFLAGS := msvcrt.lib -Zi $(LDFLAGS) /NODEFAULTLIB:msvcrtd.lib
+	CC_DEBUG_FLAGS := -Ox -DNDEBUG=1 -Zi
+	LDFLAGS := -Zi msvcrt.lib $(LDFLAGS) /NODEFAULTLIB:msvcrtd.lib
 	MAKE_DLL := cl /nologo /LD
 endif
 endif
