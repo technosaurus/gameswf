@@ -38,6 +38,8 @@
 // "How To Write HTML Forms"
 // http://www.cs.tut.fi/~jkorpela/forms/index.html
 
+// DOM
+// http://www.csscripting.com/css-multi-column/dom-width-height.php
 
 // onclick
 // onmouseup
