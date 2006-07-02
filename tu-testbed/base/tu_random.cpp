@@ -70,6 +70,12 @@ namespace tu_random
 
 	void	generator::seed_random(Uint32 seed)
 	{
+		if (seed == 0) {
+			// 0 is a terrible seed (probably the only bad
+			// choice), substitute something else:
+			seed = 12345;
+		}
+
 		// Simple pseudo-random to reseed the seeds.
 		// Suggested by the above article.
 		Uint32	j = seed;
@@ -122,20 +128,87 @@ namespace tu_random
 
 #ifdef TEST_TU_RANDOM
 
+
+int count_ones(uint32 i)
+// Return the number of set bits.
+{
+	// I know there are cleverer ways to do this.
+	int count = 0;
+	for (uint32 j = 1; j != 0; j <<= 1) {
+		if (j & i) count++;
+	}
+	return count;
+}
+
+unsigned char s_on_bits[256];
+
+void init_count()
+{
+	for (int i = 0; i < 256; i++) {
+		s_on_bits[i] = count_ones(i);
+	}
+}
+
+
+int count_ones_fast(uint32 i)
+{
+	return s_on_bits[(i & 0x0FF)]
+		+ s_on_bits[((i >> 8) & 0x0FF)]
+		+ s_on_bits[((i >> 16) & 0x0FF)]
+		+ s_on_bits[((i >> 24) & 0x0FF)];
+}
+
+
+
 // Compile with e.g.:
 //
 //  gcc -o tu_random_test tu_random.cpp -I.. -g -DTEST_TU_RANDOM -lstdc++
+//  cl -o tu_random_test.exe tu_random.cpp -I.. -Od -DTEST_TU_RANDOM
 //
 // Generate a test file of random numbers for DIEHARD.
 int	main()
 {
 	const int	COUNT = 15000000 / 4;	// number of 4-byte words; DIEHARD needs ~80M bits
 
+	// Generate random bitstream for DIEHARD.
 	for (int i = 0; i < COUNT; i++)
 	{
 		Uint32	val = tu_random::next_random();
 		fwrite(&val, sizeof(val), 1, stdout);
 	}
+
+// 	// Test small seeds.
+// 	for (int i = 0; i < 10; i++) {
+// 		tu_random::seed_random(i);
+// 		srand(i);
+// 		for (int j = 0; j < 100; j++) {
+// 			printf("seed = %d, tur = 0x%X, rand = 0x%X\n", i, tu_random::next_random(), rand());//xxxxxxx
+// 		}
+// 		printf("\n");
+// 	}
+
+
+// 	init_count();
+// 	// Search for bad seeds:
+// 	uint32 worst_seed = 0;
+// 	uint32 worst_seed_bits = 16;
+// 	uint32 worst_seed_j = 0;
+// 	// We know 0 is bad.  Try every other 32-bit value.
+// 	for (uint32 i = 1; i != 0; i++) {
+// 		uint32 j = i;
+// 		j = j ^ (j << 13);
+// 		j = j ^ (j >> 17);
+// 		j = j ^ (j << 5);
+
+// 		int one_bits = count_ones_fast(j);// _fast
+// 		if (one_bits <= worst_seed_bits) {
+// 			worst_seed_bits = one_bits;
+// 			worst_seed = i;
+// 			worst_seed_j = j;
+
+// 			printf("i = 0x%X, worst seed = 0x%X, j = 0x%X, bits = 0x%X\n", i, worst_seed, worst_seed_j, worst_seed_bits);
+// 		}
+// 	}
 }
 
 

@@ -74,6 +74,7 @@ void	operator delete[](void* ptr);
 // some misc handy math functions
 //
 
+inline int64	i64abs(int64 i) { if (i < 0) return -i; else return i; }
 inline int	iabs(int i) { if (i < 0) return -i; else return i; }
 inline int	imax(int a, int b) { if (a < b) return b; else return a; }
 inline float	fmax(float a, float b) { if (a < b) return b; else return a; }

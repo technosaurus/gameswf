@@ -29,6 +29,7 @@
 #include "base/triangulate.h"
 #include "base/tu_random.h"
 #include "base/grid_index.h"
+#include "base/vert_types.h"
 
 #define PROFILE_TRIANGULATE
 #ifdef PROFILE_TRIANGULATE
@@ -42,72 +43,6 @@
 // These templates are instantiated in triangulate_<type>.cpp files.
 // They're in separate cpp files so the linker will discard code for
 // unused types.
-
-
-// convenience struct; this could use some public vec2 type, but often
-// it's nicer for users if the external interface is smaller and more
-// c-like, since they probably have their own vec2 that they prefer.
-template<class coord_t>
-struct vec2
-{
-	vec2() : x(0), y(0) {}
-	vec2(coord_t _x, coord_t _y) : x(_x), y(_y) {}
-
-	bool	operator==(const vec2<coord_t>& v) const
-	{
-		return x == v.x && y == v.y;
-	}
-
-//data:
-	coord_t	x, y;
-};
-
-
-inline double	determinant_float(const vec2<float>& a, const vec2<float>& b, const vec2<float>& c)
-{
-	return (double(b.x) - double(a.x)) * (double(c.y) - double(a.y))
-		- (double(b.y) - double(a.y)) * (double(c.x) - double(a.x));
-}
-
-
-inline sint64	determinant_sint32(const vec2<sint32>& a, const vec2<sint32>& b, const vec2<sint32>& c)
-{
-	return (sint64(b.x) - sint64(a.x)) * (sint64(c.y) - sint64(a.y))
-		- (sint64(b.y) - sint64(a.y)) * (sint64(c.x) - sint64(a.x));
-}
-
-
-// Return {-1,0,1} if c is {to the right, on, to the left} of the
-// directed edge defined by a->b.
-template<class coord_t>
-inline int	vertex_left_test(const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
-{
-	compiler_assert(0);	// must specialize
-	return -1;
-}
-
-
-template<>
-inline int	vertex_left_test(const vec2<float>& a, const vec2<float>& b, const vec2<float>& c)
-// Specialize for vec2<float>
-{
-	double	det = determinant_float(a, b, c);
-	if (det > 0) return 1;
-	else if (det < 0) return -1;
-	else return 0;
-}
-
-
-template<>
-inline int	vertex_left_test(const vec2<sint32>& a, const vec2<sint32>& b, const vec2<sint32>& c)
-// Specialize for vec2<sint32>
-{
-	sint64	det = determinant_sint32(a, b, c);
-	if (det > 0) return 1;
-	else if (det < 0) return -1;
-	else return 0;
-}
-
 
 template<class coord_t>
 bool	vertex_in_ear(const vec2<coord_t>& v, const vec2<coord_t>& a, const vec2<coord_t>& b, const vec2<coord_t>& c)
@@ -2174,7 +2109,7 @@ inline void	debug_emit_poly_loop(
 	array<coord_t>* result,
 	const array<poly_vert<coord_t> >& sorted_verts,
 	poly<coord_t>* P)
-// Fill *result with a poly loop representing P.
+// Fill *result with a set of edges representing P.
 {
 	result->resize(0);	// clear existing junk.
 
@@ -2185,6 +2120,8 @@ inline void	debug_emit_poly_loop(
 		result->push_back(sorted_verts[vi].m_v.x);
 		result->push_back(sorted_verts[vi].m_v.y);
 		vi = sorted_verts[vi].m_next;
+		result->push_back(sorted_verts[vi].m_v.x);
+		result->push_back(sorted_verts[vi].m_v.y);
 	}
 	while (vi != first_vert);
 
@@ -2204,7 +2141,7 @@ static void compute_triangulation(
 	int path_count,
 	const array<coord_t> paths[],
 	int debug_halt_step,
-	array<coord_t>* debug_remaining_loop)
+	array<coord_t>* debug_edges)
 // Compute triangulation.
 //
 // The debug_ args are optional; they're for terminating early and
@@ -2326,8 +2263,8 @@ static void compute_triangulation(
 				// For debugging -- terminate early if the debug counter hits zero.
 				debug_halt_step--;
 				if (debug_halt_step == 0) {
-					if (debug_remaining_loop) {
-						debug_emit_poly_loop(debug_remaining_loop, penv.m_sorted_verts, P);
+					if (debug_edges) {
+						debug_emit_poly_loop(debug_edges, penv.m_sorted_verts, P);
 					}
 					return;
 				}
