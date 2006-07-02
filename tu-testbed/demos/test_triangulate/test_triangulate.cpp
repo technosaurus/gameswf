@@ -7,6 +7,7 @@
 
 
 #include "base/triangulate.h"
+#include "base/constrained_triangulate.h"
 #include "base/postscript.h"
 #include "base/tu_file.h"
 #include "base/ogl.h"
@@ -96,11 +97,10 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	glColor3f(0.5f, 0.5f, 0.5f);
 	assert((debug_path.size() & 1) == 0);
 	if (debug_path.size() > 0) {
-		glBegin(GL_LINE_STRIP);
+		glBegin(GL_LINES);
 		for (int i = 0; i < debug_path.size(); i += 2) {
 			glVertex2f(debug_path[i], debug_path[i + 1]);
 		}
-		glVertex2f(debug_path[0], debug_path[1]);
 		glEnd();
 	}
 }
@@ -739,6 +739,62 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 }
 
 
+// Wrapper around constrained triangulator.  Basically converts floats to sint16.
+void do_constrained_triangulate(array<float>* result, int paths_size, array<float> paths[],
+				int debug_halt_tri, array<float>* debug_path)
+{
+	// Adapt input.
+	int vert_count = 0;
+	float min_x = FLT_MAX, max_x = -FLT_MAX, min_y = FLT_MAX, max_y = -FLT_MAX;
+
+	for (int i = 0; i < paths_size; i++) {
+		for (int j = 0; j < paths[i].size(); j += 2) {
+			vert_count++;
+			float x = paths[i][j];
+			float y = paths[i][j + 1];
+			if (x < min_x) min_x = x;
+			if (x > max_x) max_x = x;
+			if (y < min_y) min_y = y;
+			if (y > max_y) max_y = y;
+		}
+	}
+
+	if (vert_count == 0 || min_x == max_x || min_y == max_y) {
+		return;
+	}
+
+	array< array<sint16> > spaths;
+	{for (int i = 0; i < paths_size; i++) {
+		spaths.resize(spaths.size() + 1);
+		array<sint16>* p = &spaths.back();
+		for (int j = 0; j < paths[i].size(); j += 2) {
+			float x = paths[i][j];
+			float y = paths[i][j + 1];
+			p->push_back(sint16(32767 * ((x - min_x) / (max_x - min_x))));
+			p->push_back(sint16(32767 * ((y - min_y) / (max_y - min_y))));
+		}
+	}}
+
+	// Triangulate.
+	array<sint16> sresult;
+	array<sint16> sdebug_path;
+	constrained_triangulate::compute(&sresult, paths_size, &spaths[0], debug_halt_tri, &sdebug_path);
+	
+	// Adapt output.
+	{for (int j = 0; j < sresult.size(); j += 2) {
+		float x = min_x + (sresult[j] / 32767.0f) * (max_x - min_x);
+		float y = min_y + (sresult[j + 1] / 32767.0f) * (max_y - min_y);
+		result->push_back(x);
+		result->push_back(y);
+	}}
+	{for (int j = 0; j < sdebug_path.size(); j += 2) {
+		float x = min_x + (sdebug_path[j] / 32767.0f) * (max_x - min_x);
+		float y = min_y + (sdebug_path[j + 1] / 32767.0f) * (max_y - min_y);
+		debug_path->push_back(x);
+		debug_path->push_back(y);
+	}}
+}
+
 
 #undef main	// SDL wackiness
 int	main(int argc, const char** argv)
@@ -746,10 +802,11 @@ int	main(int argc, const char** argv)
 	array<float> result;
 	array<array<float> > paths;
 	array<float> debug_path;
-
-	if (argc > 1)
-	{
-		if (strcmp(argv[1], "-i") == 0)
+	bool use_constrained = false;
+	int debug_halt_tri = 0;
+	
+	for (int arg = 1; arg < argc; arg++) {
+		if (strcmp(argv[arg], "-i") == 0)
 		{
 			// Take input from stdin.
 			bool	start_new_path = true;
@@ -789,18 +846,32 @@ int	main(int argc, const char** argv)
 				}
 			}
 			
-		} else if (strcmp(argv[1], "-n") == 0) {
-			if (argc > 2) {
-				generate_test_shape(atoi(argv[2]), &paths);
+		} else if (strcmp(argv[arg], "-n") == 0) {
+			arg++;
+			if (arg < argc) {
+				generate_test_shape(atoi(argv[arg]), &paths);
 			}
-		}
-		else
-		{
+		} else if (strcmp(argv[arg], "-c") == 0) {
+			// Use the constrained triangulator algo.
+			use_constrained = true;
+		} else if (strcmp(argv[arg], "-d") == 0) {
+			arg++;
+			if (arg < argc) {
+				debug_halt_tri = atoi(argv[arg]);
+			}
+		} else if (strcmp(argv[arg], "-break") == 0) {
+			// Break into debugger.
+			#ifdef _WIN32
+			_asm { int 3 };
+			#endif // _WIN32
+		} else {
 			fprintf(stderr, "unknown arg.  -i means take loop input from stdin.\n");
 			exit(1);
 		}
-	} else {
-		fprintf(stderr, "usage: test_triangulate ([-n #] | [-i < inputloop.txt])\n");
+	}
+
+	if (paths.size() == 0) {
+		fprintf(stderr, "usage: test_triangulate [-c] [-break] [-d #] ([-n #] | [-i < inputloop.txt])\n");
 		exit(1);
 	}
 
@@ -810,7 +881,6 @@ int	main(int argc, const char** argv)
 	demo::init_video(width, height, 16);
 
 	bool do_triangulate = true;
-	int debug_halt_tri = 0;
 
 	demo::nav2d_state nav_state;
 	for (;;) {
@@ -819,7 +889,11 @@ int	main(int argc, const char** argv)
 			do_triangulate = false;
 			result.resize(0);
 			debug_path.resize(0);
-			triangulate::compute(&result, paths.size(), &paths[0], debug_halt_tri, &debug_path);
+			if (use_constrained) {
+				do_constrained_triangulate(&result, paths.size(), &paths[0], debug_halt_tri, &debug_path);
+			} else {
+				triangulate::compute(&result, paths.size(), &paths[0], debug_halt_tri, &debug_path);
+			}
 			assert((result.size() % 6) == 0);
 		}
 		
@@ -833,7 +907,7 @@ int	main(int argc, const char** argv)
 			if (key == SDLK_LEFT && debug_halt_tri > 0) {
 				debug_halt_tri--;
 				do_triangulate = true;
-			} else if (key == SDLK_RIGHT) {
+			} else if (key == SDLK_RIGHT) {	
 				debug_halt_tri++;
 				do_triangulate = true;
 			}
