@@ -262,8 +262,8 @@ inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, i
 	}
 
 	// See if e1 crosses line of e0.
-	sint64	det10 = determinant_sint32(e0v0, e0v1, e1v0);
-	sint64	det11 = determinant_sint32(e0v0, e0v1, e1v1);
+	double	det10 = determinant_sint32(e0v0, e0v1, e1v0);
+	double	det11 = determinant_sint32(e0v0, e0v1, e1v1);
 
 	// Note: we do > 0, which means a vertex on a line counts as
 	// intersecting.  In general, if one vert is on the other
@@ -278,8 +278,8 @@ inline bool	edges_intersect_sub(const array<poly_vert<sint32> >& sorted_verts, i
 	}
 
 	// See if e0 crosses line of e1.
-	sint64	det00 = determinant_sint32(e1v0, e1v1, e0v0);
-	sint64	det01 = determinant_sint32(e1v0, e1v1, e0v1);
+	double det00 = determinant_sint32(e1v0, e1v1, e0v0);
+	double det01 = determinant_sint32(e1v0, e1v1, e0v1);
 
 	if (det00 * det01 > 0)
 	{
@@ -1948,6 +1948,11 @@ void	poly_env<coord_t>::join_paths_with_bridge(
 // Absorb the sub-poly into the main poly, using a zero-area bridge
 // between the two given verts.
 {
+	// TODO: tricky case here, needs to be handled.  What if
+	// vert_on_main_poly already has multiple entry/exit edges?
+	// We need to be careful to insert the bridge entry/exit in
+	// the correct loop(s).
+	
 	assert(vert_on_main_poly != vert_on_sub_poly);
 	assert(main_poly != NULL);
 	assert(sub_poly != NULL);
