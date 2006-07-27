@@ -763,6 +763,10 @@ void do_constrained_triangulate(array<float>* result, int paths_size, array<floa
 		return;
 	}
 
+	//const int SCALE = 16384;
+	const int SCALE = 65533;
+	const int OFFSET = -32767;
+	
 	array< array<sint16> > spaths;
 	{for (int i = 0; i < paths_size; i++) {
 		spaths.resize(spaths.size() + 1);
@@ -770,8 +774,8 @@ void do_constrained_triangulate(array<float>* result, int paths_size, array<floa
 		for (int j = 0; j < paths[i].size(); j += 2) {
 			float x = paths[i][j];
 			float y = paths[i][j + 1];
-			p->push_back(sint16(32767 * ((x - min_x) / (max_x - min_x))));
-			p->push_back(sint16(32767 * ((y - min_y) / (max_y - min_y))));
+			p->push_back(sint16(OFFSET + SCALE * ((x - min_x) / (max_x - min_x))));
+			p->push_back(sint16(OFFSET + SCALE * ((y - min_y) / (max_y - min_y))));
 		}
 	}}
 
@@ -782,14 +786,14 @@ void do_constrained_triangulate(array<float>* result, int paths_size, array<floa
 	
 	// Adapt output.
 	{for (int j = 0; j < sresult.size(); j += 2) {
-		float x = min_x + (sresult[j] / 32767.0f) * (max_x - min_x);
-		float y = min_y + (sresult[j + 1] / 32767.0f) * (max_y - min_y);
+		float x = min_x + ((sresult[j] - float(OFFSET)) / float(SCALE)) * (max_x - min_x);
+		float y = min_y + ((sresult[j + 1] - float(OFFSET)) / float(SCALE)) * (max_y - min_y);
 		result->push_back(x);
 		result->push_back(y);
 	}}
 	{for (int j = 0; j < sdebug_path.size(); j += 2) {
-		float x = min_x + (sdebug_path[j] / 32767.0f) * (max_x - min_x);
-		float y = min_y + (sdebug_path[j + 1] / 32767.0f) * (max_y - min_y);
+		float x = min_x + ((sdebug_path[j] - float(OFFSET)) / float(SCALE)) * (max_x - min_x);
+		float y = min_y + ((sdebug_path[j + 1] - float(OFFSET)) / float(SCALE)) * (max_y - min_y);
 		debug_path->push_back(x);
 		debug_path->push_back(y);
 	}}
