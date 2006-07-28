@@ -734,6 +734,152 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 		
 		break;
 	}
+
+	case 15: {
+		// "fish shape" -- coincident edges forming an ear in
+		// the fish "tail", but shouldn't be clipped.
+		paths.resize(paths.size() + 1);
+		static const float P[] =
+		{
+			-100,100,
+			0,0,
+			-100,-100,
+			0,0,
+			100,-100,
+			200,0,
+			100,100,
+			0,0,
+			-100,100,
+		};
+		set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		//rotate_coord_order(&paths.back(), 5);
+		break;
+	}
+
+	case 16: {
+		// checkerboard -- positive square w/ holes
+		{
+			paths.resize(paths.size() + 1);
+			static const float P[] = {
+				0, 0,
+				1, 0,
+				2, 0,
+				2, 1,
+				2, 2,
+				1, 2,
+				0, 2,
+				0, 1,
+			};
+			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		}
+		{
+			paths.resize(paths.size() + 1);
+			static const float P[] = {
+				0, 0,
+				0, 1,
+				1, 1,
+				1, 0,
+			};
+			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		}
+		{
+			paths.resize(paths.size() + 1);
+			static const float P[] = {
+				1, 1,
+				1, 2,
+				2, 2,
+				2, 1,
+			};
+			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		}
+		break;
+	}
+
+	case 17: {
+		// Star-like things w/ degeneracies.
+		{
+			paths.resize(paths.size() + 1);
+			static const float P[] = {
+				 0,  0,
+				 1,  1,
+				 2,  1,
+				 1,  2,
+				 1,  1,
+				 0,  0,
+				-1,  1,
+				-1,  2,
+				-2,  1,
+				-1,  1,
+				 0,  0,
+				-1, -1,
+				-2, -1,
+				-1, -2,
+				-1, -1,
+				 0,  0,
+				 1, -1,
+				 1, -2,
+				 2, -1,
+				 1, -1,
+			};
+			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		}
+		{
+			paths.resize(paths.size() + 1);
+			static const float P[] = {
+				3, 3,
+				4, 3,
+				4, 2,
+				4, 3,
+				5, 2,
+				5, 4,
+				4, 3,
+				4.5, 4,
+				3.5, 4,
+				4, 3,
+			};
+			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		}
+		break;
+	}
+
+	case 18: {
+		// Figure eight like shape -- contains a crossing.
+		{
+			paths.resize(paths.size() + 1);
+			static const float P[] = {
+				 0,  0,
+				 1,  0,
+				 2,  1,  // crossing point
+				 3,  2,
+				 4,  2,
+				 3.5, 1,
+				 4,  0,
+				 3,  0,
+				 2,  1,  // crossing point
+				 1,  2,
+				 0,  2,
+				 0.5, 1,
+			};
+			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		}
+		{
+			paths.resize(paths.size() + 1);
+			static const float P[] = {
+				4, 3,
+				5, 3,
+				5, 2,
+				5, 3,
+				6, 2,
+				6, 4,
+				5, 3,
+				5.5, 4,
+				4.5, 4,
+				//5, 3,
+			};
+			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		}
+		break;
+	}
 	
 	} // end switch
 }
@@ -907,12 +1053,21 @@ int	main(int argc, const char** argv)
 		}
 		// Check key input.
 		for (int i = 0, n = nav_state.m_keys.size(); i < n; i++) {
-			int key = nav_state.m_keys[i];
-			if (key == SDLK_LEFT && debug_halt_tri > 0) {
-				debug_halt_tri--;
+			int key = nav_state.m_keys[i].key;
+
+			// Allow larger increments via shift/ctrl combos.
+			int mod = nav_state.m_keys[i].modifier;
+			static const int INCREMENT_TABLE[4] = { 1, 10, 100, 1000 };
+			int increment = INCREMENT_TABLE[((mod & KMOD_SHIFT) ? 1 : 0) + ((mod & KMOD_CTRL) ? 2 : 0)];
+			
+			if (key == SDLK_LEFT) {
+				debug_halt_tri -= increment;
+				if (debug_halt_tri < -1) {
+					debug_halt_tri = -1;
+				}
 				do_triangulate = true;
 			} else if (key == SDLK_RIGHT) {	
-				debug_halt_tri++;
+				debug_halt_tri += increment;
 				do_triangulate = true;
 			}
 		}
