@@ -5,32 +5,9 @@
 
 // Code to triangulate arbitrary 2D polygonal regions.
 //
-// This uses an experimental algorithm.  The basic idea is to eschew
-// maintaining a notion of loop boundaries, and deal with raw points
-// and edges only.  The thought is that this avoids having to deal
-// with tricky consistency issues in degenerate inputs (long thin
-// 0-area bridges and such, which cause problems when implementing
-// FIST).
-//
-// We basically flood-fill triangles inside the convex hull of the
-// input (including "negative" spaces), and keep track of input-edge
-// crossings to determine if our tris are in/out.
-
-// questions:
-//
-// * does flood-filling easily give us correct odd-even rules (in the
-// face of various kinds of degenerate inputs)? --> Yes.
-//
-// * can we get positive/negative fill rule?
-//
-// * can flood-filling be made fast?  (Issue is search for valid next
-// vert; maybe have to do line-sweep approach to make it simple/fast?)
-//
-// * how does it fail when given bad input?  (i.e. self-intersection)
-// -- do we have to pre-resolve self-intersections, or is it OK to
-// just leave them in if they're minor?  Self-intersecting input is
-// not good; it can block our fill and make us terminate early.
-
+// Ear-clipping (similar to FIST), but loop-less; i.e. not relying on
+// ordering of the edges.  This avoids complications with loop twists
+// and determining loop order when joining loops together.
 
 
 #include "base/constrained_triangulate.h"
@@ -105,114 +82,10 @@ struct tristate {
 	array<active_edge> m_active;
 	int m_next_active;
 
-	// NOTE: m_sweep is a nice easy way to determine whether a
-	// vert has been dealt with or not, and keep a set of active
-	// verts to try to clip ears off of.  The achilles heels are:
-	//
-	// * sometimes/frequently have to jump the sweep frontier to
-	// an unconnected vert, i.e. relatively expensive or
-	// complicated search
-	//
-	// * or, can advance the sweep frontier using zero-area
-	// probes, but then have to keep the loop polyline from
-	// getting twisted --> complicated and potentially expensive.
-	array<int> m_sweep;  // this is a polyloop that sweeps through the shape
-	array<bool> m_swept;  // TODO: put this flag in the poly_vert struct?  Or, bitarray.
-
-	array<edge> m_created;
-
-	// Ideas:
-	//
-	// * line sweep?
-	//
-	// * active edge set; preprocess to connect islands, similar
-	// to FIST; only advance an active edge by crawling an
-	// existing (exposed) edge.
-
 	// For debugging.
 	int m_debug_halt_step;
 	array<sint16>* m_debug_edges;
 };
-
-
-void update_seed_edge(tristate* ts, const edge& e)
-// Update m_active[0] based on e.  If e is a better seed edge than
-// m_active[0], then replace m_active[0].  If e is coincident with
-// m_active[0], then toggle its m_in status.
-{
-	if (ts->m_active.size() == 0) {
-		// Make sure edge points upwards.
-		if (ts->m_verts[e.m_0].m_v.y < ts->m_verts[e.m_1].m_v.y) {
-			ts->m_active.push_back(active_edge(e.m_0, e.m_1, false));
-		} else {
-			ts->m_active.push_back(active_edge(e.m_1, e.m_0, false));
-		}
-		return;
-	}
-
-	assert(ts->m_active.size() == 1);
-
-	vec2<sint16> ev0 = ts->m_verts[e.m_0].m_v;
-	vec2<sint16> ev1 = ts->m_verts[e.m_1].m_v;
-
-	vec2<sint16> sv0 = ts->m_verts[ts->m_active[0].m_0].m_v;
-	vec2<sint16> sv1 = ts->m_verts[ts->m_active[0].m_1].m_v;
-
-	if ((ev0 == sv0 && ev1 == sv1) || (ev0 == sv1 && ev1 == sv0)) {
-		// Coincident; no need to do anything.
-		return;
-	}
-
-	// Decide if e is a better seed edge than m_active[0].
-	bool e_is_better = false;
-	if (sv0 == sv1) {
-		e_is_better = true;
-	} else if (!(ev0 == ev1)) {
-		// Sort verts.
-		if (ev1 < ev0) {
-			swap(&ev0, &ev1);
-		}
-		if (sv1 < sv0) {
-			swap(&sv0, &sv1);
-		}
-		if (ev0 < sv0) {
-			e_is_better = true;
-		} else if (ev0 == sv0) {
-			// Take the edge which is more vertical.
-			int64 verticalness_e = i64abs((ev1.y - ev0.y) * (sv1.x - sv0.x));
-			int64 verticalness_s = i64abs((sv1.y - sv0.y) * (ev1.x - ev0.x));
-			if (verticalness_e > verticalness_s) {
-				e_is_better = true;
-			} else if (verticalness_e == verticalness_s) {
-
-			}
-
-			// see if ev1 is closer to the outside of the
-			// shape than the existing seed edge.
-			int e1_is_left = vertex_left_test(ev0, ev1, sv1);
-			if (e1_is_left == 0) {
-				// Take the shorter edge.
-				if (ev1.x < sv1.x) {
-					e_is_better = true;
-				}
-			} else {
-				// Same slope; prefer the shorter edge.
-				if (ev1.x < sv1.x) {
-					e_is_better = true;
-				}
-			}
-		}
-	}
-
-	if (e_is_better) {
-		// Replace m_active[0].  Edge must point upward.
-		if (ts->m_verts[e.m_0].m_v.y < ts->m_verts[e.m_1].m_v.y) {
-			ts->m_active[0] = active_edge(e.m_0, e.m_1, false);
-		} else {
-			ts->m_active[0] = active_edge(e.m_1, e.m_0, false);
-		}
-	}
-}
 
 
 int	compare_vertices(const poly_vert& a, const poly_vert& b)
@@ -482,14 +355,6 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 
 	// TODO: find & fix edge intersections
 
-// 	// Add in the corners of the bounding box, as synthetic verts.
-// 	// We are going to use these to initialize our sweep polyline.
-// 	// TODO: size the bounding box according to the input.
-// 	verts.push_back(poly_vert(-32768, -32768));
-// 	verts.push_back(poly_vert(-32768,  32767));
-// 	verts.push_back(poly_vert( 32767,  32767));
-// 	verts.push_back(poly_vert( 32767, -32768));
-
 	//
 	// Sort and scrub dupes.
 	//
@@ -539,47 +404,6 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 	}
 
 	join_paths_into_one_poly(ts, old_to_new);
-
-// 	// Make sure the synthetic verts ended up in the expected indices.
-// 	assert(ts->m_verts[0].m_v.x == -32768);
-// 	assert(ts->m_verts[0].m_v.y == -32768);
-// 	assert(ts->m_verts[1].m_v.x == -32768);
-// 	assert(ts->m_verts[1].m_v.y ==  32767);
-// 	assert(ts->m_verts[ts->m_verts.size() - 2].m_v.x ==  32767);
-// 	assert(ts->m_verts[ts->m_verts.size() - 2].m_v.y == -32768);
-// 	assert(ts->m_verts[ts->m_verts.size() - 1].m_v.x ==  32767);
-// 	assert(ts->m_verts[ts->m_verts.size() - 1].m_v.y ==  32767);
-}
-
-
-bool edge_exists(const array<edge>& edgeset, const edge& e)
-// Return true if there's an edge in edgeset coincident and in the
-// same direction as e.
-{
-	for (int i = 0; i < edgeset.size(); i++) {
-		if (edgeset[i].m_0 == e.m_0 && edgeset[i].m_1 == e.m_1) {
-			return true;
-		}
-	}
-	return false;
-}
-
-
-int count_coincident_edges(const tristate* ts, const array<edge>& edgeset, const edge& e)
-// Count the number of edges that are coincident with e (in either
-// direction).
-{
-	const vec2<sint16>& v0 = ts->m_verts[e.m_0].m_v;
-	const vec2<sint16>& v1 = ts->m_verts[e.m_1].m_v;
-
-	int count = 0;
-	for (int i = 0; i < edgeset.size(); i++) {
-		if ((ts->m_verts[edgeset[i].m_0].m_v == v0 && ts->m_verts[edgeset[i].m_1].m_v == v1)
-		    || (ts->m_verts[edgeset[i].m_0].m_v == v1 && ts->m_verts[edgeset[i].m_1].m_v == v0)) {
-			count++;
-		}
-	}
-	return count;
 }
 
 
@@ -618,7 +442,8 @@ bool any_vert_in_triangle(const array<poly_vert>& verts, int vi0, int vi1, int v
 }
 
 
-bool vertex_in_cone(const vec2<sint16>& vert, const vec2<sint16>& cone_v0, const vec2<sint16>& cone_v1, const vec2<sint16>& cone_v2)
+bool vertex_in_cone(const vec2<sint16>& vert,
+		    const vec2<sint16>& cone_v0, const vec2<sint16>& cone_v1, const vec2<sint16>& cone_v2)
 // Returns true if vert is within the cone defined by [v0,v1,v2].
 /*
 //  (out)  v0
@@ -649,146 +474,6 @@ bool vertex_in_cone(const vec2<sint16>& vert, const vec2<sint16>& cone_v0, const
 }
 
 
-int test_other_edge_for_apex_vert(const tristate* ts, const edge& e, const edge& oe, int other_vert)
-// Return a new value for other_edge, if a vert on oe can make a valid apex for edge e.
-{
-	int ov = -1;
-	if (oe.m_1 == e.m_0) {
-		ov = oe.m_0;
-	} else if (oe.m_0 == e.m_0) {
-		ov = oe.m_1;
-	}
-	if (ov >= 0
-	    && vertex_left_test(ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[ov].m_v) < 0) {
-		// Is this the closest vert?
-		if (other_vert == -1
-		    || vertex_in_cone(ts->m_verts[ov].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[e.m_0].m_v, ts->m_verts[other_vert].m_v)) {
-			return ov;
-		}
-	}
-	return other_vert;
-}
-
-
-int test_other_edge_for_apex_vert_inverted(const tristate* ts, const edge& e, const edge& oe, int other_vert)
-// Return a new value for other_edge, if a vert on oe can make a valid apex for edge e.
-{
-	int ov = -1;
-	if (oe.m_1 == e.m_1) {
-		ov = oe.m_0;
-	} else if (oe.m_0 == e.m_1) {
-		ov = oe.m_1;
-	}
-	if (ov >= 0
-	    && vertex_left_test(ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[ov].m_v) < 0) {
-		// Is this the closest vert?
-		if (other_vert == -1
-		    || vertex_in_cone(ts->m_verts[ov].m_v, ts->m_verts[other_vert].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[e.m_0].m_v)) {
-			return ov;
-		}
-	}
-	return other_vert;
-}
-
-
-int find_apex_vertex(tristate* ts, const edge& e)
-// find a vertex v such that:
-//
-// * there's no existing edge (e.m_1, e.m_0) (thus indicating that the
-// space to the right of e has not already been triangulated).
-//
-// * v is to the right of e
-//
-// * edges (e.m_0, v) and (v, e.m_1) don't intersect
-// any input edges or generated edges
-//
-// * triangle (e.m_0, v, e.m_1) doesn't contain any verts
-{
-	if (ts->m_verts[e.m_0].m_v == ts->m_verts[e.m_1].m_v) {
-		// zero-length edge -- not useful for triangulating; skip it.
-		return -1;
-	}
-
-	// Make sure no (e.m_1, e.m_0).
-	if (edge_exists(ts->m_created, edge(e.m_1, e.m_0))) {
-		// The space to the right of e has already been filled...
-		return -1;
-	}
-
-	// Find an edge incident on e.m_0, whose other vert is a valid
-	// apex for edge e.
-	int other_vert = -1;
-	for (int i = 0; i < ts->m_input.size(); i++) {
-		other_vert = test_other_edge_for_apex_vert(ts, e, ts->m_input[i], other_vert);
-	}
-	{for (int i = 0; i < ts->m_created.size(); i++) {
-		other_vert = test_other_edge_for_apex_vert(ts, e, ts->m_created[i], other_vert);
-	}}
-	if (other_vert >= 0
-	    && any_vert_in_triangle(ts->m_verts, e.m_0, other_vert, e.m_1) == false) {
-		return other_vert;
-	}
-
-	// Repeat for edges incident on e.m_1.
-	other_vert = -1;
-	for (int i = 0; i < ts->m_input.size(); i++) {
-		other_vert = test_other_edge_for_apex_vert_inverted(ts, e, ts->m_input[i], other_vert);
-	}
-	{for (int i = 0; i < ts->m_created.size(); i++) {
-		other_vert = test_other_edge_for_apex_vert_inverted(ts, e, ts->m_created[i], other_vert);
-	}}
-	if (other_vert >= 0
-	    && any_vert_in_triangle(ts->m_verts, e.m_0, other_vert, e.m_1) == false) {
-		return other_vert;
-	}
-
-// 	// Check candidate verts.
-// 	{for (int i = 0; i < ts->m_verts.size(); i++) {
-// 		if (vertex_left_test(ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[i].m_v) < 0) {
-// 			// i is to the right of e.
-// 			if (any_edge_intersects(ts, ts->m_created, edge(e.m_0, i)) == false
-// 			    && any_edge_intersects(ts, ts->m_input, edge(e.m_0, i)) == false
-// 			    && any_edge_intersects(ts, ts->m_created, edge(i, e.m_1)) == false
-// 			    && any_edge_intersects(ts, ts->m_input, edge(i, e.m_1)) == false) {
-// 				if (any_vert_in_triangle(ts->m_verts, e.m_0, i, e.m_1) == false) {
-// 					// We've found a good vert to attach to.
-// 					return i;
-// 				}
-// 			}
-// 		}
-// 	}}
-
-	// No good vert found.
-	return -1;
-}
-
-
-void add_triangle(tristate* ts, const edge& e, int v, bool in_status)
-// Add the triangle formed by e and v to our triangulation.
-{
-	// Add the edges of the triangle, (e.m_1, e.m_0), (e.m_0, v), (v, e.m_1) to m_created
-	edge a(e.m_1, e.m_0);
-	edge b(e.m_0, v);
-	edge c(v, e.m_1);
-	ts->m_created.push_back(a);
-	ts->m_created.push_back(b);
-	ts->m_created.push_back(c);
-
-	if (in_status) {
-		ts->m_results->push_back(ts->m_verts[e.m_0].m_v.x);
-		ts->m_results->push_back(ts->m_verts[e.m_0].m_v.y);
-		ts->m_results->push_back(ts->m_verts[v].m_v.x);
-		ts->m_results->push_back(ts->m_verts[v].m_v.y);
-		ts->m_results->push_back(ts->m_verts[e.m_1].m_v.x);
-		ts->m_results->push_back(ts->m_verts[e.m_1].m_v.y);
-	}
-
-	// Add the edges (e.m_0, v) and (v, e.m_1) to m_active, to continue the flood fill
-	ts->m_active.push_back(active_edge(b, in_status));
-	ts->m_active.push_back(active_edge(c, in_status));
-}
-
-
 void fill_debug_out(tristate* ts)
 {
 	// Put the current active edges in the debug output.
@@ -798,18 +483,6 @@ void fill_debug_out(tristate* ts)
 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_active[i].m_1].m_v.x);
 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_active[i].m_1].m_v.y);
 	}
-
-// 	// Put the current sweep loop in the debug output.
-// 	for (int i = 0; i < ts->m_sweep.size() - 1; i++) {
-// 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[i]].m_v.x);
-// 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[i]].m_v.y);
-// 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[i + 1]].m_v.x);
-// 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[i + 1]].m_v.y);
-// 	}
-// 	ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[ts->m_sweep.size() - 1]].m_v.x);
-// 	ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[ts->m_sweep.size() - 1]].m_v.y);
-// 	ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[0]].m_v.x);
-// 	ts->m_debug_edges->push_back(ts->m_verts[ts->m_sweep[0]].m_v.y);
 }
 
 
@@ -828,203 +501,6 @@ bool check_debug_dump(tristate* ts)
 			return true;
 		}
 	}
-	return false;
-}
-
-
-bool clip_sweep_corner(tristate* ts, int index)
-// Try clipping a corner of the sweep line.  Return true if we were
-// able to.
-{
-	if (index >= ts->m_sweep.size()) {
-		return false;
-	}
-
-	int i0 = index;
-	int i1 = index + 1;
-	int i2 = index + 2;
-	if (i1 >= ts->m_sweep.size()) {
-		i1 -= ts->m_sweep.size();
-	}
-	if (i2 >= ts->m_sweep.size()) {
-		i2 -= ts->m_sweep.size();
-	}
-
-	int vi0 = ts->m_sweep[i0];
-	int vi1 = ts->m_sweep[i1];
-	int vi2 = ts->m_sweep[i2];
-
-	if (vertex_left_test(ts->m_verts[vi0].m_v, ts->m_verts[vi1].m_v, ts->m_verts[vi2].m_v) > 0) {
-		if (!any_vert_in_triangle(ts->m_verts, vi0, vi1, vi2)
-		    // This check can be replaced by: "! any_edges_emanating_from_vi1_within_cone(vi0, vi1, vi2)"
-		    && any_edge_intersects(ts, ts->m_input, edge(vi2, vi0)) == false) {
-			// Clip corner.
-
-			edge a(vi0, vi1);
-			edge b(vi1, vi2);
-			edge c(vi2, vi0);
-			ts->m_created.push_back(a);
-			ts->m_created.push_back(b);
-			ts->m_created.push_back(c);
-
-			// if (in_status) {
-			ts->m_results->push_back(ts->m_verts[vi0].m_v.x);
-			ts->m_results->push_back(ts->m_verts[vi0].m_v.y);
-			ts->m_results->push_back(ts->m_verts[vi1].m_v.x);
-			ts->m_results->push_back(ts->m_verts[vi1].m_v.y);
-			ts->m_results->push_back(ts->m_verts[vi2].m_v.x);
-			ts->m_results->push_back(ts->m_verts[vi2].m_v.y);
-			// }
-
-			// Adjust sweep line.
-			ts->m_sweep.remove(i1);
-
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool split_sweep_edge(tristate* ts, int index)
-{
-	assert(ts->m_sweep.size() >= 2);
-	assert(index < ts->m_sweep.size());
-
-	int i0 = index;
-	int i1 = index + 1;
-	if (i1 >= ts->m_sweep.size()) {
-		i1 -= ts->m_sweep.size();
-	}
-	int vi0 = ts->m_sweep[i0];
-	int vi1 = ts->m_sweep[i1];
-
-	assert(ts->m_swept[vi0]);
-	assert(ts->m_swept[vi1]);
-
-	// Find a vert that validly completes the triangle.
-
-	// TODO: how to make this search faster?
-	//
-	// * would be good & ~cheap to follow edge(s) emanating from
-	// vi0 or vi1, if present
-
-	// * would be good to do a shallow search of verts close to
-	// the edge, before doing any deep search
-
-	// N
-	// Check candidate verts.
-	{for (int i = 0; i < ts->m_verts.size(); i++) {
-		if (ts->m_swept[i]) {
-			continue;
-		}
-
-		if (vertex_left_test(ts->m_verts[vi0].m_v, ts->m_verts[vi1].m_v, ts->m_verts[i].m_v) > 0) {
-			// i is to the left of (vi0, vi1).
-			if (any_edge_intersects(ts, ts->m_created, edge(vi0, i)) == false
-			    && any_edge_intersects(ts, ts->m_input, edge(vi0, i)) == false
-			    // TODO: replace next two w/ !any_edge_emanating_from_vi0_in_cone(i, vi0, vi1)?
-			    && any_edge_intersects(ts, ts->m_created, edge(i, vi1)) == false
-			    && any_edge_intersects(ts, ts->m_input, edge(i, vi1)) == false
-			    && any_vert_in_triangle(ts->m_verts, vi0, vi1, i) == false) {
-				// We've found a good vert to include in the sweepline.
-
-				// Add triangle.
-				edge a(vi0, vi1);
-				edge b(vi1, i);
-				edge c(i, vi0);
-				ts->m_created.push_back(a);
-				ts->m_created.push_back(b);
-				ts->m_created.push_back(c);
-
-				// if (in_status) {
-				ts->m_results->push_back(ts->m_verts[vi0].m_v.x);
-				ts->m_results->push_back(ts->m_verts[vi0].m_v.y);
-				ts->m_results->push_back(ts->m_verts[vi1].m_v.x);
-				ts->m_results->push_back(ts->m_verts[vi1].m_v.y);
-				ts->m_results->push_back(ts->m_verts[i].m_v.x);
-				ts->m_results->push_back(ts->m_verts[i].m_v.y);
-				// }
-
-				// Adjust sweep line.
-				ts->m_sweep.insert(i1, i);
-				ts->m_swept[i] = true;
-
-				return true;
-			}
-		}
-	}}
-
-	return false;
-}
-
-
-bool find_sweep_probe(tristate* ts, int index)
-// Look for a place in the sweep loop where we can extend a zero-area
-// probe into virgin territory.
-//
-// Start looking around sweep[index], but check all possibilities.
-{
-	for (int i = 0, n = ts->m_sweep.size(); i < n; i++) {
-		int i0 = index + i;
-		if (i0 >= n) {
-			i0 -= n;
-		}
-		assert(i0 >= 0);
-		assert(i0 < n);
-
-		int vi0 = ts->m_sweep[i0];
-
-		// Does vert[vi0] have any edge that connects to a
-		// non-swept vert?
-		//
-		// TODO use an index to make this much faster
-		int vi = -1;
-		for (int j = 0; j < ts->m_input.size(); j++) {
-			if (ts->m_input[j].m_0 == vi0 && ts->m_swept[ts->m_input[j].m_1] == false) {
-				vi = ts->m_input[j].m_1;
-				break;
-			} else if (ts->m_input[j].m_1 == vi0 && ts->m_swept[ts->m_input[j].m_0] == false) {
-				vi = ts->m_input[j].m_0;
-				break;
-			}
-		}
-		if (vi >= 0) {
-			// Found something.
-			ts->m_sweep.insert(i0, vi);
-			ts->m_sweep.insert(i0, vi0);
-			ts->m_swept[vi] = true;
-			return true;
-		}
-	}
-
-	return false;
-}
-
-
-bool full_sweep_check(tristate* ts)
-// Recovery fallback -- try all ears & edges in the sweep line, when
-// our simple heuristic check didn't find a way to advance.
-//
-// Returns true if we advanced, false if not.  If we return false
-// here, it means our algorithm is hung and can't advance.  This
-// should only happen if the input has self-intersections.
-{
-	// Try clipping an ear off the sweep line.
-	for (int i = 0; i < ts->m_sweep.size(); i++) {
-		if (clip_sweep_corner(ts, i)) {
-			return true;
-		}
-	}
-
-// 	// Couldn't clip an ear; try splitting a sweep edge.
-// 	{for (int i = 0; i < ts->m_sweep.size(); i++) {
-// 		if (split_sweep_edge(ts, i)) {
-// 			return true;
-// 		}
-// 	}}
-
 	return false;
 }
 
@@ -1194,72 +670,6 @@ void triangulate_plane(tristate* ts)
 // Make triangles.
 {
 	assert(ts->m_active.size() == 0);
-	assert(ts->m_created.size() == 0);
-
-	// The synthetic bounding box looks like this:
-	//
-	// v[1] *--* v[size-1]
-	//      |  |
-	// v[0] *--* v[size-2]
-
-// 	// Create the initial sweep polyline.
-// 	//
-// 	// *--*
-// 	// |
-// 	// *--*
-// 	ts->m_sweep.push_back(ts->m_verts.size() - 1);
-// 	ts->m_sweep.push_back(1);
-// 	ts->m_sweep.push_back(0);
-// 	ts->m_sweep.push_back(ts->m_verts.size() - 2);
-
-// 	ts->m_swept.resize(ts->m_verts.size());
-// 	for (int i = 0, n = ts->m_swept.size(); i < n; i++) {
-// 		ts->m_swept[i] = false;
-// 	}
-// 	ts->m_swept[ts->m_verts.size() - 1] = true;
-// 	ts->m_swept[1] = true;
-// 	ts->m_swept[0] = true;
-// 	ts->m_swept[ts->m_verts.size() - 2] = true;
-
-// 	// Pick a good seed edge.
-// 	{for (int i = 0; i < ts->m_input.size(); i++) {
-// 		// Use the leftmost non-degenerate edge.
-// 		update_seed_edge(ts, ts->m_input[i]);
-// 		assert(ts->m_active.size() == 1);
-// 	}}
-
-// 	// Use the bounding box as seed edges.
-// 	ts->m_active.push_back(active_edge(ts->m_verts.size() - 2, 0));
-// 	ts->m_active.push_back(active_edge(ts->m_verts.size() - 1, ts->m_verts.size() - 2));
-// 	ts->m_active.push_back(active_edge(1, ts->m_verts.size() - 1));
-// 	ts->m_active.push_back(active_edge(0, 1));
-
-// 	// Flood-fill.  Spread out from current active edges, until
-// 	// the shape is consumed.
-// 	while (ts->m_next_active < ts->m_active.size()) {
-// 		active_edge e = ts->m_active[ts->m_next_active];
-// 		ts->m_next_active++;
-
-// 		int v = find_apex_vertex(ts, e);
-// 		if (v >= 0) {
-// 			// New triangle IN status = (e.m_in) ^ (# of
-// 			// edges in the input set, coincident with e)
-// 			int edge_ct = count_coincident_edges(ts, ts->m_input, e);
-// 			bool in_status = e.m_in;
-// 			if (edge_ct & 1) {
-// 				in_status = !in_status;
-// 			}
-
-// 			// Found one.  Add the triangle (e.m_0, v, e.m_1).
-// 			add_triangle(ts, e, v, in_status);
-// 		}
-
-// 		// Debug dumping.
-// 		if (check_debug_dump(ts)) {
-// 			return;
-// 		}
-// 	}
-
 
 	// Ear-clip, not based on loops.  (Reasoning: don't need to be
 	// careful to do non-local analysis when constructing master
@@ -1280,71 +690,6 @@ void triangulate_plane(tristate* ts)
 			return;
 		}
 	}
-
-
-// 	// Flood-fill by sweeping a polyline through the shape.
-// 	//
-// 	// When m_sweep reaches (size - 1, size - 2), or equivalently,
-// 	// has only two verts, then we know we're done triangulating.
-// 	int sweep_index = 0;
-// 	for (;;) {
-// 		//assert(ts->m_sweep[0] == ts->m_verts.size() - 1);
-// 		// TODO: check this!
-// 		if (ts->m_sweep.size() == 2) {
-// 			//assert(ts->m_sweep[1] == ts->m_verts.size() - 2);
-// 			// Termination condition -- we're done!
-// 			return;
-// 		}
-
-// 		// heuristically pick an edge or a corner to advance
-// 		// the sweepline.
-
-// 		// Try the next few verts to see if they can be clipped.
-// 		bool did_advance = false;
-// 		for (int i = 0; i < 3; i++) {
-// 			sweep_index++;
-// 			if (sweep_index >= ts->m_sweep.size()) {
-// 				sweep_index = 0;
-// 			}
-
-// 			if (clip_sweep_corner(ts, sweep_index)) {
-// 				did_advance = true;
-// 				// adjust sweep_index?
-// 				break;
-// 			}
-// 		}
-
-// 		if (!did_advance) {
-// 			// Couldn't clip an ear; try extending the sweep loop via a probe.
-// 			if (sweep_index >= ts->m_sweep.size()) {
-// 				sweep_index = 0;
-// 			}
-
-// 			if (find_sweep_probe(ts, sweep_index)) {
-// 				did_advance = true;
-// 			}
-// 		}
-
-// 		if (!did_advance) {
-// 			if (!full_sweep_check(ts)) {
-// 				// Uh oh, we can't advance.
-// 				// TODO log something
-// 				fill_debug_out(ts);
-// 				return;
-// 			}
-// 		}
-
-// 		// Debug dumping.
-// 		if (check_debug_dump(ts)) {
-// 			return;
-// 		}
-// 	}
-}
-
-
-void eat_bad_triangles(tristate* ts)
-// Remove triangles that aren't in the interior of the shape.
-{
 }
 
 
@@ -1359,12 +704,8 @@ namespace constrained_triangulate {
 		tristate ts;
 		init(&ts, results, path_count, paths, debug_halt_step, debug_edges);
 		triangulate_plane(&ts);
-		eat_bad_triangles(&ts);
 	}
 }
-
-
-
 
 
 /* triangulation notes
