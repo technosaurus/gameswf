@@ -51,7 +51,8 @@ namespace demo
 			{
 			case SDL_KEYDOWN:
 			{
-				int	key = event.key.keysym.sym;
+				int key = event.key.keysym.sym;
+				int mod = event.key.keysym.mod;
 
 				if (key == SDLK_q || key == SDLK_ESCAPE)
 				{
@@ -61,7 +62,9 @@ namespace demo
 				} else if (key == SDLK_MINUS) {
 					state->m_scale *= 2.0f;
 				} else {
-					state->m_keys.push_back(key);
+					state->m_keys.resize(state->m_keys.size() + 1);
+					state->m_keys.back().key = key;
+					state->m_keys.back().modifier = mod;
 				}
 				break;
 			}
