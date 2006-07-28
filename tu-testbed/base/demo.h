@@ -38,7 +38,11 @@ namespace demo
 		int m_mouse_dy;
 
 		// Codes of any keys pushed this frame.
-		array<int> m_keys;
+		struct key_event_info {
+			int key;         // SDLK_ codes (from SDL)
+			int modifier;    // KMOD_ codes (from SDL)
+		};
+		array<key_event_info> m_keys;
 
 		nav2d_state()
 			:

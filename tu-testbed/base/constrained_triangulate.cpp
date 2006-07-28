@@ -1032,9 +1032,10 @@ bool full_sweep_check(tristate* ts)
 int find_ear_edge(const tristate* ts, const edge& e)
 // Look through m_active to find an edge e1 such that:
 //
-// * e-e1 is a left turn, and there are no edges within the cone
+// * e-e1 is a left turn, and there are no other edges going into or
+// out of the apex vert.
 //
-// * e.m_1 is not degenerate -- i.e. there are unpaired edges in/out of e.m_1
+// * e and e1 are not both degenerate.
 //
 // * triangle e-e1 doesn't contain any (reflex) verts
 //
@@ -1044,26 +1045,26 @@ int find_ear_edge(const tristate* ts, const edge& e)
 
 	// Find an edge incident on e.m_0, whose other vert is a valid
 	// left turn for edge e.
-	hash<int, int> in_out;
-	int oe_i = -1;
+
+	// xxxx collect incident edges for second pass
+	array<int> in_edges;
+	array<int> out_edges;
+
+	// TODO: use sorted edge list instead of checking all of m_active!
+	int oe_i = -1;   // oe_i --> "out-edge index", index of inside-most outgoing edge (the other edge of the potential ear)
+	int ie_i = -1;   // ie_i --> "in-edge index", index of inside-most incoming edge (can invalidate the ear)
 	for (int i = 0; i < ts->m_active.size(); i++) {
 		const edge& te = ts->m_active[i];  // te --> "temp edge"
 		if (te.m_1 == e.m_1) {
 			// in edge
-			int total = 0;
-			in_out.get(te.m_0, &total);
-			total++;
-			in_out.set(te.m_0, total);
+			in_edges.push_back(i);
 		} else if (te.m_0 == e.m_1) {
 			// out edge
-			int total = 0;
-			in_out.get(te.m_1, &total);
-			total--;
-			in_out.set(te.m_1, total);
-
+			out_edges.push_back(i);
+			
 			// Is this a valid out edge?
 			if (vertex_left_test(ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[te.m_1].m_v) > 0) {
-				// Is this the inside-most out edge so far?
+				// Is this the inside-most outgoing edge so far?
 				if (oe_i == -1
 				    || vertex_in_cone(ts->m_verts[te.m_1].m_v,
 						      ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[ts->m_active[oe_i].m_1].m_v)) {
@@ -1072,24 +1073,61 @@ int find_ear_edge(const tristate* ts, const edge& e)
 			}
 		}
 	}
+	// See if an in-edge is in our cone.
 	if (oe_i >= 0) {
-		// Check degeneracy.
-		bool non_degenerate_edge = false;
-		bool edge_in_cone = false;
-		for (hash<int, int>::iterator it = in_out.begin(); it != in_out.end(); ++it) {
-			if (it->second != 0) {
-				non_degenerate_edge = true;
-			}
-			if (it->first != ts->m_active[oe_i].m_1
-			    && it->first != e.m_0
-			    && vertex_in_cone(ts->m_verts[it->first].m_v,
+		// Check for an edge in the way.
+		for (int i = 0; i < in_edges.size(); i++) {
+			const edge& ie = ts->m_active[in_edges[i]];
+			if (&ie != &e
+			    && vertex_left_test(ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[ie.m_0].m_v) > 0
+			    && vertex_in_cone(ts->m_verts[ie.m_0].m_v,
 					      ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[ts->m_active[oe_i].m_1].m_v)) {
-				// Can't clip; there's another edge in the way.
-				edge_in_cone = true;
-				//break;
+				// Can't clip this ear; there's an edge in the way.
+				return -1;
 			}
 		}
-		if (non_degenerate_edge && !edge_in_cone && !any_vert_in_triangle(ts->m_verts, e.m_0, e.m_1, ts->m_active[oe_i].m_1)) {
+
+		// Make sure at least one of the ear sides is not
+		// degenerate.
+		//
+		// TODO: I think we can just de-dupe edges
+		// during init, and never have more than 2 edges
+		// between any vert pair (one incoming, one outgoing).
+		int valence0 = 0;
+		int valence1 = 0;
+		for (int i = 0; i < in_edges.size(); i++) {
+			const edge& ie = ts->m_active[in_edges[i]];
+			assert(ie.m_1 == e.m_1);
+			if (ie.m_0 == ts->m_active[oe_i].m_1) {
+				// coincident with oe_i, but in reverse
+				valence1--;
+			} else if (ie.m_0 == e.m_0) {
+				// coincident with e
+				valence0++;
+			}
+		}
+		for (int i = 0; i < out_edges.size(); i++) {
+			const edge& oe = ts->m_active[out_edges[i]];
+			assert(oe.m_0 == e.m_1);
+			if (oe.m_1 == ts->m_active[oe_i].m_1) {
+				// coincident with oe_i
+				valence1++;
+			} else if (oe.m_1 == e.m_0) {
+				// coincident with e, but in reverse
+				valence0--;
+			}
+		}
+		if (valence0 < 1 && valence1 < 1) {
+			return -1;
+		}
+
+		// TODO: use point index here
+		//
+		// Really this test is !any_REFLEX_vert_in_triangle,
+		// which is presumably cheaper, and tolerates a bit
+		// more bad input (slightly overlapping convex
+		// shapes).
+		if (!any_vert_in_triangle(ts->m_verts, e.m_0, e.m_1, ts->m_active[oe_i].m_1)) {
 			return oe_i;
 		}
 	}
@@ -1182,12 +1220,6 @@ void triangulate_plane(tristate* ts)
 // 	ts->m_swept[1] = true;
 // 	ts->m_swept[0] = true;
 // 	ts->m_swept[ts->m_verts.size() - 2] = true;
-
-// 	// TODO: join the islands a la FIST.  For quick testing, do
-// 	// something simple & cheesy -- connect the bounding box to
-// 	// the leftmost input vert.
-// 	ts->m_input.push_back(edge(0, 2));
-// 	ts->m_input.push_back(edge(2, 0));
 
 // 	// Pick a good seed edge.
 // 	{for (int i = 0; i < ts->m_input.size(); i++) {
@@ -1343,6 +1375,45 @@ http://arachne.ics.uci.edu/~eppstein/junkyard/godfried.toussaint.html
 Narkhede & Manocha's description/code of Seidel's alg:
 http://www.cs.unc.edu/~dm/CODE/GEM/chapter.html
 
+Some school project notes w/ triangulation overview & diagrams:
+http://www.mema.ucl.ac.be/~wu/FSA2716-2002/project.html
 
+Toussaint paper about sleeve-following, including interesting
+description & opinion on various other algorithms:
+http://citeseer.ist.psu.edu/toussaint91efficient.html
+
+Toussaint outline & links:
+http://cgm.cs.mcgill.ca/~godfried/teaching/cg-web.html
+
+
+http://geometryalgorithms.com/algorithms.htm
+
+History Of Triangulation Algorithms
+http://cgm.cs.mcgill.ca/~godfried/teaching/cg-projects/97/Thierry/thierry507webprj/complexity.html
+
+Ear Cutting For Simple Polygons
+http://cgm.cs.mcgill.ca/~godfried/teaching/cg-projects/97/Ian//cutting_ears.html
+
+Intersections for a set of 2D segments
+http://geometryalgorithms.com/Archive/algorithm_0108/algorithm_0108.htm
+
+Simple Polygon Triangulation
+http://cgafaq.info/wiki/Simple_Polygon_Triangulation
+
+KKT O(n log log n) algo
+http://portal.acm.org/citation.cfm?id=150693&dl=ACM&coll=portal&CFID=11111111&CFTOKEN=2222222
+
+Poly2Tri implemenation, good notes and looks like good code, sadly the
+license is non-commercial only:
+http://www.mema.ucl.ac.be/~wu/Poly2Tri/poly2tri.html
+
+FIST
+http://www.cosy.sbg.ac.at/~held/projects/triang/triang.html
+
+Nice slides on monotone subdivision & triangulation:
+http://www.cs.ucsb.edu/~suri/cs235/Triangulation.pdf
+
+Interesting forum post re monotone subdivision in Amanith:
+http://www.amanith.org/forum/viewtopic.php?pid=43
 
 */
