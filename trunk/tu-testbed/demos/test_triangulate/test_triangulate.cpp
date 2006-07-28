@@ -954,6 +954,7 @@ int	main(int argc, const char** argv)
 	array<float> debug_path;
 	bool use_constrained = false;
 	int debug_halt_tri = 0;
+	int shape_number = -1;
 	
 	for (int arg = 1; arg < argc; arg++) {
 		if (strcmp(argv[arg], "-i") == 0)
@@ -995,11 +996,11 @@ int	main(int argc, const char** argv)
 					paths.back().push_back(y);
 				}
 			}
-			
 		} else if (strcmp(argv[arg], "-n") == 0) {
 			arg++;
 			if (arg < argc) {
-				generate_test_shape(atoi(argv[arg]), &paths);
+				shape_number = atoi(argv[arg]);
+				generate_test_shape(shape_number, &paths);
 			}
 		} else if (strcmp(argv[arg], "-c") == 0) {
 			// Use the constrained triangulator algo.
@@ -1068,6 +1069,16 @@ int	main(int argc, const char** argv)
 				do_triangulate = true;
 			} else if (key == SDLK_RIGHT) {	
 				debug_halt_tri += increment;
+				do_triangulate = true;
+			} else if (key == SDLK_RIGHTBRACKET) {
+				shape_number++;
+				paths.resize(0);
+				generate_test_shape(shape_number, &paths);
+				do_triangulate = true;
+			} else if (key == SDLK_LEFTBRACKET) {
+				shape_number--;
+				paths.resize(0);
+				generate_test_shape(shape_number, &paths);
 				do_triangulate = true;
 			}
 		}
