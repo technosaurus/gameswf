@@ -11,6 +11,7 @@
 
 
 #include "base/constrained_triangulate.h"
+#include "base/grid_index.h"
 #include "base/tu_random.h"
 #include "base/vert_types.h"
 #include <algorithm>
@@ -18,9 +19,14 @@
 
 struct poly_vert {
 	vec2<sint16> m_v;
+	int m_next;
+	int m_prev;
+	// flags: DELETED, COINCIDENT, REFLEX, DIRTY, ...?
 
-	poly_vert() {}
-	poly_vert(sint16 x, sint16 y) : m_v(x, y) {}
+	poly_vert() : m_next(-1), m_prev(-1) {}
+	poly_vert(sint16 x, sint16 y) : m_v(x, y), m_next(-1), m_prev(-1) {}
+
+	index_point<sint16>	get_index_point() const { return index_point<sint16>(m_v.x, m_v.y); }
 };
 
 
@@ -29,6 +35,26 @@ struct edge {
 	int m_0, m_1;
 
 	edge(int v0 = -1, int v1 = -1) : m_0(v0), m_1(v1) {}
+
+	static bool sort_by_startpoint(const edge& a, const edge& b) {
+		if (a.m_0 < b.m_0) {
+			return true;
+		} else if (a.m_0 == b.m_0) {
+			return a.m_1 < b.m_1;
+		} else {
+			return false;
+		}
+	}
+
+	static bool sort_by_endpoint(const edge& a, const edge& b) {
+		if (a.m_1 < b.m_1) {
+			return true;
+		} else if (a.m_1 == b.m_1) {
+			return a.m_0 < b.m_0;
+		} else {
+			return false;
+		}
+	}
 };
 
 struct active_edge : public edge {
@@ -63,24 +89,33 @@ struct path_info {
 
 // Triangulator state.
 struct tristate {
+	tristate()
+		: m_reflex_point_index(NULL)
+	{
+	}
+	~tristate()
+	{
+		delete m_reflex_point_index;
+	}
+	
 	array<sint16>* m_results;
 	array<poly_vert> m_verts;
-	array<edge> m_input;
+	array<edge> m_edges;
 	array<path_info> m_input_paths;
 
-	// NOTE: an unstructured active edge set is a very robust way
-	// to flood-fill.  The problems:
-	//
-	// * how to efficiently advance?  The obvious thing is, given
-	// an edge, search for a valid vert to join with.  But that
-	// kind of search is expensive.
-	//
-	// * would be nice to have a way to discount verts that are
-	// completely filled around.  Looks like this can be done
-	// using a bounding box, and counting incident edges vs. tris
-	// for each vert.
+	// This is the working set of live edges in the polygon.  We
+	// look for ears here.
 	array<active_edge> m_active;
 	int m_next_active;
+
+	// A search index for fast checking of reflex verts within a
+	// triangle.
+	//
+	// TODO: we don't need a payload, but having one bloats the
+	// index by 2x.  Is it worth making a version of
+	// grid_index_point that stores the point locations only, with
+	// no payload?
+	grid_index_point<sint16, bool>* m_reflex_point_index;
 
 	// For debugging.
 	int m_debug_halt_step;
@@ -228,23 +263,15 @@ bool any_edge_intersects(const tristate* ts, const array<edge>& edgeset, const e
 }
 
 
-void mark_joined(array<bool>* joined, const path_info& pi, const array<int> old_to_new)
-// Helper to set joined[] values to true for verts from path pi.
-{
-	for (int i = pi.m_begin_vert_orig; i < pi.m_end_vert_orig; i++) {
-		int ni = old_to_new[i];
-		(*joined)[ni] = true;
-	}
-}
-
-
 int find_valid_bridge_vert(const tristate* ts, int v1 /*, edge index */)
 // Find v2 such that v2 is left of v1, and the segment v1-v2 doesn't
 // cross any edges.
 {
+	// We work backwards from v1.  Normally we shouldn't have to
+	// look very far.
 	assert(v1 > 0);
 	for (int i = v1 - 1; i >= 0; i--) {
-		if (!any_edge_intersects(ts, ts->m_input, edge(v1, i))) {
+		if (!any_edge_intersects(ts, ts->m_edges, edge(v1, i))) {
 			// This vert is good.
 			return i;
 		}
@@ -254,6 +281,8 @@ int find_valid_bridge_vert(const tristate* ts, int v1 /*, edge index */)
 	// TODO log something
 	assert(0);  // temp xxxxx
 
+	// Default fallback: join to the next-most-leftmost vert,
+	// regardless of crossing other edges.
 	return v1 - 1;
 }
 
@@ -269,19 +298,9 @@ void join_paths_into_one_poly(tristate* ts, const array<int>& old_to_new)
 	// Bridges are zero-area regions that connect a vert on each
 	// of two paths.
 	if (ts->m_input_paths.size() > 1) {
-		array<bool> joined;
-		joined.resize(ts->m_verts.size());
-		
-		std::sort(&ts->m_input_paths[0], &ts->m_input_paths[0] + ts->m_input_paths.size());
-		
 		// Sort polys in order of each poly's leftmost vert.
+		std::sort(&ts->m_input_paths[0], &ts->m_input_paths[0] + ts->m_input_paths.size());
 		assert(ts->m_input_paths[0].m_leftmost_vert_new <= ts->m_input_paths[1].m_leftmost_vert_new);
-
-		// Assume that the enclosing boundary is the leftmost
-		// path; this is true if the regions are valid and
-		// don't cross.
-
-		mark_joined(&joined, ts->m_input_paths[0], old_to_new);
 
 		// TODO
 		//full_poly->init_edge_index(m_sorted_verts, m_bound);
@@ -293,7 +312,7 @@ void join_paths_into_one_poly(tristate* ts, const array<int>& old_to_new)
 			int	v1 = pi.m_leftmost_vert_new;
 			assert(v1 >= 0);
 
-			//     find a joined v2, such that:
+			//     find a vert v2, such that:
 			//       v2 is to the left of v1,
 			//       and v1-v2 seg doesn't intersect any other edges
 
@@ -302,16 +321,16 @@ void join_paths_into_one_poly(tristate* ts, const array<int>& old_to_new)
 			//     // it can only hit edges in the joined poly) (need to think
 			//     // about equality cases)
 			//
-			if (v1 > 0 && !joined[v1]) {
+			if (v1 > 0) {
 				int	v2 = find_valid_bridge_vert(ts, v1 /*, edge index */);
 				assert(v2 != v1);
-				assert(joined[v2]);
 
 				// Join pi.
-				ts->m_input.push_back(edge(v1, v2));
-				ts->m_input.push_back(edge(v2, v1));
-			}
-			mark_joined(&joined, pi, old_to_new);
+				ts->m_edges.push_back(edge(v1, v2));
+				ts->m_edges.push_back(edge(v2, v1));
+			} // else no joining required; vert[0] is already joined and v1 is coincident with it
+			
+			// TODO: update edge index
 		}
 	}
 }
@@ -330,33 +349,103 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 	// TODO: verify no verts on boundary of coord bounding box.
 
 	// Dump verts and edges into tristate.
+	index_box<sint16> bbox;
 	array<poly_vert> verts;
 	for (int i = 0; i < path_count; i++) {
 		assert((paths[i].size() & 1) == 0);
 
+		// Keep some info about the path itself (so we can
+		// sort and join paths later).
 		ts->m_input_paths.resize(ts->m_input_paths.size() + 1);
 		path_info* pi = &ts->m_input_paths.back();
 		pi->m_begin_vert_orig = verts.size();
-		
+
+		// Grab all the verts and edges.
 		for (int j = 0; j < paths[i].size(); j += 2) {
 			int vert_index = verts.size();
 			verts.push_back(poly_vert(paths[i][j], paths[i][j + 1]));
 			edge e(vert_index, vert_index + 1);
-			ts->m_input.push_back(e);
+			ts->m_edges.push_back(e);
 
+			// Update bounding box.
+			if (vert_index == 0) {
+				bbox.set_to_point(verts.back().get_index_point());
+			} else {
+				bbox.expand_to_enclose(verts.back().get_index_point());
+			}
+
+			
 			if (pi->m_leftmost_vert_orig == -1
 			    || compare_vertices(verts[pi->m_leftmost_vert_orig], verts[vert_index]) > 0) {
 				pi->m_leftmost_vert_orig = vert_index;
 			}
 		}
-		ts->m_input.back().m_1 = pi->m_begin_vert_orig;  // close the path
+		ts->m_edges.back().m_1 = pi->m_begin_vert_orig;  // close the path
 		pi->m_end_vert_orig = verts.size();
+	}
+
+	// Init reflex point search index.
+	//
+	// Compute grid density.
+	int	x_cells = 1;
+	int	y_cells = 1;
+	if (verts.size() > 0)
+	{
+		const float	GRID_SCALE = sqrtf(0.5f);
+		sint16	width = bbox.get_width();
+		sint16	height = bbox.get_height();
+		float	area = float(width) * float(height);
+		if (area > 0)
+		{
+			float	sqrt_n = sqrt((float) verts.size());
+			float	w = width * width / area * GRID_SCALE;
+			float	h = height * height / area * GRID_SCALE;
+			x_cells = int(w * sqrt_n);
+			y_cells = int(h * sqrt_n);
+		}
+		else
+		{
+			// Zero area.
+			if (width > 0)
+			{
+				x_cells = int(GRID_SCALE * GRID_SCALE * verts.size());
+			}
+			else
+			{
+				y_cells = int(GRID_SCALE * GRID_SCALE * verts.size());
+			}
+		}
+		x_cells = iclamp(x_cells, 1, 256);
+		y_cells = iclamp(y_cells, 1, 256);
+	}
+	ts->m_reflex_point_index = new grid_index_point<sint16, bool>(bbox, x_cells, y_cells);
+	
+	for (int i = 0; i < ts->m_input_paths.size(); i++) {
+		const path_info* pi = &ts->m_input_paths[i];
+		
+		// Identify any reflex verts and put them in an index.
+		int pathsize = pi->m_end_vert_orig - pi->m_begin_vert_orig;
+		if (pathsize > 2) {
+			// Thanks Sean Barrett for the fun/sneaky
+			// trick for iterating over subsequences of 3
+			// verts.
+			for (int j = pi->m_begin_vert_orig, k = pi->m_end_vert_orig - 1, l = pi->m_end_vert_orig - 2;
+			     j < pi->m_end_vert_orig;
+			     l = k, k = j, j++) {
+				const vec2<sint16>& v0 = verts[l].m_v;
+				const vec2<sint16>& v1 = verts[k].m_v;
+				const vec2<sint16>& v2 = verts[j].m_v;
+				if (vertex_left_test(v0, v1, v2) <= 0) {
+					ts->m_reflex_point_index->add(index_point<sint16>(v1.x, v1.y), 0);
+				}
+			}
+		}
 	}
 
 	// TODO: find & fix edge intersections
 
 	//
-	// Sort and scrub dupes.
+	// Sort.
 	//
 
 	// Sort.
@@ -386,6 +475,12 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 	}
 	vert_indices.resize(last_unique_vi + 1);  // drop duped verts.
 
+// 	// Make old_to_new mapping.
+// 	for (int i = 0; i < vert_indices.size(); i++) {
+// 		int old_index = vert_indices[i];
+// 		old_to_new[old_index] = i;
+// 	}
+
 	// Make output array.
 	ts->m_verts.resize(vert_indices.size());
 	for (int i = 0; i < vert_indices.size(); i++) {
@@ -393,9 +488,9 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 	}
 
 	// Remap edge indices.
-	for (int i = 0; i < ts->m_input.size(); i++) {
-		ts->m_input[i].m_0 = old_to_new[ts->m_input[i].m_0];
-		ts->m_input[i].m_1 = old_to_new[ts->m_input[i].m_1];
+	for (int i = 0; i < ts->m_edges.size(); i++) {
+		ts->m_edges[i].m_0 = old_to_new[ts->m_edges[i].m_0];
+		ts->m_edges[i].m_1 = old_to_new[ts->m_edges[i].m_1];
 	}
 
 	// Update path info.
@@ -404,40 +499,86 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 	}
 
 	join_paths_into_one_poly(ts, old_to_new);
+
+	// Sort the edges.  This makes it faster to locate the edges
+	// of interest when evaluating an ear.
+	std::sort(&ts->m_edges[0], &ts->m_edges[0] + ts->m_edges.size(), edge::sort_by_startpoint);
+	// TODO: keep a m_edges_by_endpoint sorted list...
 }
 
 
-// Return true if there is any vertex in tristate that touches the
-// interior of the given triangle.  Verts coincident with the triangle
-// verts are excluded.
-bool any_vert_in_triangle(const array<poly_vert>& verts, int vi0, int vi1, int vi2)
+bool vert_in_triangle(const vec2<sint16>& v, const vec2<sint16>& v0, const vec2<sint16>& v1, const vec2<sint16>& v2)
+// Return true if v touches the boundary or the interior of triangle (v0, v1, v2).  
 {
-	const vec2<sint16>& v0 = verts[vi0].m_v;
-	const vec2<sint16>& v1 = verts[vi1].m_v;
-	const vec2<sint16>& v2 = verts[vi2].m_v;
-
-	for (int i = 0; i < verts.size(); i++) {
-		if (i == vi0 || i == vi1 || i == vi2) {
-			continue;
-		}
-		const vec2<sint16>& v = verts[i].m_v;
-		if (v == v0 || v == v1 || v == v2) {
-			// Coincident.
-			continue;
-		}
-
-		sint64 det0 = determinant_sint16(v0, v1, v);
-		if (det0 >= 0) {
-			sint64 det1 = determinant_sint16(v1, v2, v);
-			if (det1 >= 0) {
-				sint64 det2 = determinant_sint16(v2, v0, v);
-				if (det2 >= 0) {
-					// Point touches the triangle.
-					return true;
-				}
+	sint64 det0 = determinant_sint16(v0, v1, v);
+	if (det0 >= 0) {
+		sint64 det1 = determinant_sint16(v1, v2, v);
+		if (det1 >= 0) {
+			sint64 det2 = determinant_sint16(v2, v0, v);
+			if (det2 >= 0) {
+				// Point touches the triangle.
+				return true;
 			}
 		}
 	}
+	return false;
+}
+
+
+bool any_reflex_vert_in_triangle(const tristate* ts, int vi0, int vi1, int vi2)
+// Return true if there is any reflex vertex in tristate that touches
+// the interior or edges of the given triangle.  Verts coincident with
+// the actual triangle verts will return false.
+{
+	const vec2<sint16>& v0 = ts->m_verts[vi0].m_v;
+	const vec2<sint16>& v1 = ts->m_verts[vi1].m_v;
+	const vec2<sint16>& v2 = ts->m_verts[vi2].m_v;
+
+	const index_point<sint16>& ip0 = ts->m_verts[vi0].get_index_point();
+	const index_point<sint16>& ip1 = ts->m_verts[vi1].get_index_point();
+	const index_point<sint16>& ip2 = ts->m_verts[vi2].get_index_point();
+
+	// Compute the bounding box of reflex verts we want to check.
+	index_box<sint16>	query_bound(ip0);
+	query_bound.expand_to_enclose(ip1);
+	query_bound.expand_to_enclose(ip2);
+
+	for (grid_index_point<sint16, bool>::iterator it = ts->m_reflex_point_index->begin(query_bound);
+	     ! it.at_end();
+	     ++it)
+	{
+		if (ip0 == it->location || ip1 == it->location || ip2 == it->location) {
+			continue;
+		}
+
+		if (query_bound.contains_point(it->location)) {
+			vec2<sint16> v(it->location.x, it->location.y);
+			if (vert_in_triangle(v, v0, v1, v2)) {
+				return true;
+			}
+		}
+	}
+	return false;
+
+// 	// TODO: use point index!
+// 	//
+// 	// TODO: try checking only reflex verts.
+// 	for (int i = 0; i < ts->m_verts.size(); i++) {
+// 		if (i == vi0 || i == vi1 || i == vi2) {
+// 			// Concident -- exclude.
+// 			continue;
+// 		}
+// 		const vec2<sint16>& v = ts->m_verts[i].m_v;
+// 		if (v == v0 || v == v1 || v == v2) {
+// 			// Coincident.
+// 			assert(0); // we should have already removed all dupes!
+// 			continue;
+// 		}
+
+// 		if (vert_in_triangle(v, v0, v1, v2)) {
+// 			return true;
+// 		}
+// 	}
 	return false;
 }
 
@@ -477,7 +618,7 @@ bool vertex_in_cone(const vec2<sint16>& vert,
 void fill_debug_out(tristate* ts)
 {
 	// Put the current active edges in the debug output.
-	for (int i = ts->m_next_active; i < ts->m_active.size(); i++) {
+	for (int i = 0; i < ts->m_active.size(); i++) {
 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_active[i].m_0].m_v.x);
 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_active[i].m_0].m_v.y);
 		ts->m_debug_edges->push_back(ts->m_verts[ts->m_active[i].m_1].m_v.x);
@@ -524,7 +665,15 @@ int find_ear_edge(const tristate* ts, const edge& e)
 
 	// xxxx collect incident edges for second pass
 	array<int> in_edges;
-	array<int> out_edges;
+
+	const active_edge* out_edges_begin = std::lower_bound(
+		&ts->m_active[0], &ts->m_active[0] + ts->m_active.size(),
+		active_edge(e.m_1, 0), edge::sort_by_startpoint);
+	const active_edge* out_edges_end = out_edges_begin;
+	while (out_edges_end < (&ts->m_active[0] + ts->m_active.size())
+	       && edge::sort_by_startpoint(*out_edges_end, active_edge(e.m_1 + 1, 0))) {
+		out_edges_end++;
+	}
 
 	// TODO: use sorted edge list instead of checking all of m_active!
 	int oe_i = -1;   // oe_i --> "out-edge index", index of inside-most outgoing edge (the other edge of the potential ear)
@@ -534,18 +683,19 @@ int find_ear_edge(const tristate* ts, const edge& e)
 		if (te.m_1 == e.m_1) {
 			// in edge
 			in_edges.push_back(i);
-		} else if (te.m_0 == e.m_1) {
-			// out edge
-			out_edges.push_back(i);
-			
-			// Is this a valid out edge?
-			if (vertex_left_test(ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[te.m_1].m_v) > 0) {
-				// Is this the inside-most outgoing edge so far?
-				if (oe_i == -1
-				    || vertex_in_cone(ts->m_verts[te.m_1].m_v,
-						      ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[ts->m_active[oe_i].m_1].m_v)) {
-					oe_i = i;
-				}
+		}
+	}
+	for (const active_edge* p = out_edges_begin; p < out_edges_end; p++) {
+		const edge& te = *p;
+		assert(te.m_0 == e.m_1);
+
+		// Is this a valid out edge?
+		if (vertex_left_test(ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[te.m_1].m_v) > 0) {
+			// Is this the inside-most outgoing edge so far?
+			if (oe_i == -1
+			    || vertex_in_cone(ts->m_verts[te.m_1].m_v,
+					      ts->m_verts[e.m_0].m_v, ts->m_verts[e.m_1].m_v, ts->m_verts[ts->m_active[oe_i].m_1].m_v)) {
+				oe_i = (p - &ts->m_active[0]);
 			}
 		}
 	}
@@ -565,10 +715,6 @@ int find_ear_edge(const tristate* ts, const edge& e)
 
 		// Make sure at least one of the ear sides is not
 		// degenerate.
-		//
-		// TODO: I think we can just de-dupe edges
-		// during init, and never have more than 2 edges
-		// between any vert pair (one incoming, one outgoing).
 		int valence0 = 0;
 		int valence1 = 0;
 		for (int i = 0; i < in_edges.size(); i++) {
@@ -582,8 +728,8 @@ int find_ear_edge(const tristate* ts, const edge& e)
 				valence0++;
 			}
 		}
-		for (int i = 0; i < out_edges.size(); i++) {
-			const edge& oe = ts->m_active[out_edges[i]];
+		for (const active_edge* p = out_edges_begin; p < out_edges_end; p++) {
+			const edge& oe = *p;
 			assert(oe.m_0 == e.m_1);
 			if (oe.m_1 == ts->m_active[oe_i].m_1) {
 				// coincident with oe_i
@@ -597,13 +743,7 @@ int find_ear_edge(const tristate* ts, const edge& e)
 			return -1;
 		}
 
-		// TODO: use point index here
-		//
-		// Really this test is !any_REFLEX_vert_in_triangle,
-		// which is presumably cheaper, and tolerates a bit
-		// more bad input (slightly overlapping convex
-		// shapes).
-		if (!any_vert_in_triangle(ts->m_verts, e.m_0, e.m_1, ts->m_active[oe_i].m_1)) {
+		if (!any_reflex_vert_in_triangle(ts, e.m_0, e.m_1, ts->m_active[oe_i].m_1)) {
 			return oe_i;
 		}
 	}
@@ -627,14 +767,15 @@ bool find_and_clip_ear(tristate* ts, int* next_vert)
 			int i1 = ts->m_active[i].m_1;
 			assert(i1 == ts->m_active[oe_i].m_0);
 			int i2 = ts->m_active[oe_i].m_1;
-			
-			if (oe_i < i) {
-				swap(&oe_i, &i);
-			}
-			// remove later index first!
+
+			// Replace first edge of the ear with the newly created edge.
+			ts->m_active[i].m_1 = i2;
+			// TODO: mark dirty flags.
+			//
+			// Remove second edge of the ear.
 			ts->m_active.remove(oe_i);
-			ts->m_active.remove(i);
-			ts->m_active.push_back(active_edge(i0, i2));
+			//ts->m_active.remove(i);
+			//ts->m_active.push_back(active_edge(i0, i2));
 			// Emit triangle.
 			ts->m_results->push_back(ts->m_verts[i0].m_v.x);
 			ts->m_results->push_back(ts->m_verts[i0].m_v.y);
@@ -665,6 +806,17 @@ bool find_and_clip_ear(tristate* ts, int* next_vert)
 //
 // * these indices can directly replace our m_active list.
 
+// Problems with the above: it makes what should be O(1) (finding
+// edges incident to a vertex) an O(logN) operation.  Plus it's still
+// not that lean in terms of memory, because you need two sorted lists
+// (one for incoming, one for outgoing).  Also, deleting edges is kind
+// of awkward.
+
+// Alternative: use loops (a la FIST), but have special logic to deal
+// with coincident vertices.  If a vert is not coincident, then normal
+// loop logic works fine.  Most verts are expected to not be
+// coincident.  This should be fairly compact, simple and efficient.
+
 
 void triangulate_plane(tristate* ts)
 // Make triangles.
@@ -676,9 +828,9 @@ void triangulate_plane(tristate* ts)
 	// loop.)
 	//
 	// Copy all input edges to active list.
-	ts->m_active.reserve(ts->m_input.size());
-	for (int i = 0; i < ts->m_input.size(); i++) {
-		const edge& e = ts->m_input[i];
+	ts->m_active.reserve(ts->m_edges.size());
+	for (int i = 0; i < ts->m_edges.size(); i++) {
+		const edge& e = ts->m_edges[i];
 		if (e.m_0 != e.m_1) {  // omit zero-length edges
 			ts->m_active.push_back(active_edge(e.m_0, e.m_1));
 		}

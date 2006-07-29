@@ -61,12 +61,26 @@ struct index_box
 	coord_t	get_width() const { return max.x - min.x; }
 	coord_t	get_height() const { return max.y - min.y; }
 
+	void set_to_point(coord_t x, coord_t y)
+	{
+		min.x = x; min.y = y;
+		max.x = x; max.y = y;
+	}
+	void set_to_point(const index_point<coord_t>& loc) {
+		set_to_point(loc.x, loc.y);
+	}
+	
+	void expand_to_enclose(coord_t x, coord_t y)
+	{
+		if (x < min.x) min.x = x;
+		if (y < min.y) min.y = y;
+		if (x > max.x) max.x = x;
+		if (y > max.y) max.y = y;
+	}
+	
 	void	expand_to_enclose(const index_point<coord_t>& loc)
 	{
-		if (loc.x < min.x) min.x = loc.x;
-		if (loc.y < min.y) min.y = loc.y;
-		if (loc.x > max.x) max.x = loc.x;
-		if (loc.y > max.y) max.y = loc.y;
+		expand_to_enclose(loc.x, loc.y);
 	}
 
 	bool	contains_point(const index_point<coord_t>& loc) const
