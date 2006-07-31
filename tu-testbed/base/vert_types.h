@@ -23,6 +23,10 @@ struct vec2
 	{
 		return x == v.x && y == v.y;
 	}
+	bool operator!=(const vec2<coord_t>& v) const
+	{
+		return !operator==(v);
+	}
 	bool operator<(const vec2<coord_t>& v) const
 	// For sorting verts lexicographically.
 	{
