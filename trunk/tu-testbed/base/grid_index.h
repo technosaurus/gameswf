@@ -45,6 +45,12 @@ struct index_box
 // Simple bounding box class.
 {
 	index_box() {}
+	index_box(coord_t min_max_x, coord_t min_max_y)
+		:
+		min(min_max_x, min_max_y),
+		max(min_max_x, min_max_y)
+	{
+	}
 	index_box(const index_point<coord_t>& min_max_in)
 		:
 		min(min_max_in),
@@ -58,6 +64,9 @@ struct index_box
 	{
 	}
 
+	const index_point<coord_t>& get_min() const { return min; }
+	const index_point<coord_t>& get_max() const { return max; }
+	
 	coord_t	get_width() const { return max.x - min.x; }
 	coord_t	get_height() const { return max.y - min.y; }
 
@@ -101,6 +110,54 @@ struct index_box
 };
 
 
+// Flag for passing to grid_index constructors; causes them to
+// autosize their grid based on bbox and estimated item count.
+enum grid_index_autosize {
+	GRID_INDEX_AUTOSIZE,
+};
+
+template<class coord_t>
+void grid_index_pick_good_grid_size(
+	int* x_cells, int* y_cells, const index_box<coord_t>& bound, int item_count_estimate, float grid_scale = 0.707f)
+// Utility to find good values for *x_cells and *y_cells for a grid
+// index, based on the expected number of items to index and the
+// bounding box.
+//
+// You can bias the values up or down using grid_scale.
+{
+	*x_cells = 1;
+	*y_cells = 1;
+	if (item_count_estimate > 0)
+	{
+		coord_t	width = bound.get_width();
+		coord_t	height = bound.get_height();
+		float	area = float(width) * float(height);
+		if (area > 0)
+		{
+			float	sqrt_n = sqrt((float) item_count_estimate);
+			float	w = width * width / area * grid_scale;
+			float	h = height * height / area * grid_scale;
+			*x_cells = int(w * sqrt_n);
+			*y_cells = int(h * sqrt_n);
+		}
+		else
+		{
+			// Zero area.
+			if (width > 0)
+			{
+				*x_cells = int(grid_scale * grid_scale * item_count_estimate);
+			}
+			else
+			{
+				*y_cells = int(grid_scale * grid_scale * item_count_estimate);
+			}
+		}
+		*x_cells = iclamp(*x_cells, 1, 256);
+		*y_cells = iclamp(*y_cells, 1, 256);
+	}
+}
+
+
 template<class coord_t, class payload_t>
 struct grid_entry_point
 // Holds one entry for a grid point cell.
@@ -135,6 +192,22 @@ struct grid_index_point
 		memset(&m_grid[0], 0, sizeof(grid_entry_t*) * x_cells * y_cells);
 	}
 
+	grid_index_point(grid_index_autosize p, const box_t& bound, int item_count_estimate, float grid_scale = 0.707f)
+		:
+		m_bound(bound)
+	{
+		grid_index_pick_good_grid_size(&m_x_cells, &m_y_cells, bound, item_count_estimate, grid_scale);
+		
+		assert(m_x_cells > 0 && m_y_cells > 0);
+		assert(bound.min.x <= bound.max.x);
+		assert(bound.min.y <= bound.max.y);
+
+		// Allocate the grid.
+		m_grid = new grid_entry_t*[m_x_cells * m_y_cells];
+		memset(&m_grid[0], 0, sizeof(grid_entry_t*) * m_x_cells * m_y_cells);
+	}
+
+	
 	~grid_index_point()
 	{
 		for (int y = 0; y < m_y_cells; y++)
@@ -376,7 +449,7 @@ private:
 		return index;
 	}
 
-	index_point<int>	get_containing_cell_clamped(const point_t& p)
+	index_point<int>	get_containing_cell_clamped(const point_t& p) const
 	// Get the indices of the cell that contains the given point.
 	{
 		index_point<int>	ip;
@@ -439,6 +512,25 @@ struct grid_index_box
 
 		// Allocate the grid.
 		m_grid = new array<grid_entry_t*>[x_cells * y_cells];
+	}
+
+	// Constructor that picks good values for x_cells and y_cells,
+	// assuming the (approximate) given number of items are
+	// distributed throughout the given bounding box.
+	//
+	// You can optionally adjust grid_scale to get more or fewer
+	// grid cells.
+	grid_index_box(grid_index_autosize p, const box_t& bound, int item_count_estimate, float grid_scale = 0.707f)
+		:
+		m_bound(bound),
+		m_query_id(0)
+	{
+		grid_index_pick_good_grid_size(&m_x_cells, &m_y_cells, bound, item_count_estimate, grid_scale);
+		
+		assert(m_x_cells > 0 && m_y_cells > 0);
+		assert(bound.min.x <= bound.max.x);
+		assert(bound.min.y <= bound.max.y);
+		m_grid = new array<grid_entry_t*>[m_x_cells * m_y_cells];
 	}
 
 	~grid_index_box()

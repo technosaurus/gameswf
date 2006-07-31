@@ -78,7 +78,7 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	glEnd();
 
 	// Draw the input paths.
-	glColor3f(0.5f, 0, 0);  // red
+	glColor3f(0.25f, 0, 0);  // red
 	{for (int j = 0; j < input_paths.size(); j++) {
 		const array<float>& path = input_paths[j];
 		assert((path.size() & 1) == 0);
@@ -94,7 +94,7 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	}}
 
 	// Draw the debug path.
-	glColor3f(0.5f, 0.5f, 0.5f);
+	glColor3f(0.25f, 0.25f, 0.25f);
 	assert((debug_path.size() & 1) == 0);
 	if (debug_path.size() > 0) {
 		glBegin(GL_LINES);
