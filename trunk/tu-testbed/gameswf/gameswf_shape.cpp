@@ -26,6 +26,9 @@
 #endif // DEBUG_DISPLAY_SHAPE_PATHS
 
 
+extern bool gameswf_tesselate_dump_shape;
+
+
 namespace gameswf
 {
 	static float	s_curve_max_pixel_error = 1.0f;
@@ -62,6 +65,13 @@ namespace gameswf
 	// Send this segment to the tesselator.
 	{
 		tesselate::add_curve_segment(m_cx, m_cy, m_ax, m_ay);
+	}
+
+
+	void	edge::tesselate_curve_new() const
+	// Send this segment to the tesselator.
+	{
+		tesselate_new::add_curve_segment(m_cx, m_cy, m_ax, m_ay);
 	}
 
 
@@ -308,6 +318,22 @@ namespace gameswf
 	}
 
 
+	void	path::tesselate_new() const
+	// Push this path into the tesselator.
+	{
+		tesselate_new::begin_path(
+			m_fill0 - 1,
+			m_fill1 - 1,
+			m_line - 1,
+			m_ax, m_ay);
+		for (int i = 0; i < m_edges.size(); i++)
+		{
+			m_edges[i].tesselate_curve_new();
+		}
+		tesselate_new::end_path();
+	}
+
+
 	// Utility.
 
 
@@ -522,6 +548,26 @@ namespace gameswf
 		}
 
 
+		void	add_triangle(const point& v0, const point& v1, const point& v2)
+		// Add a triangle to our strip.
+		{
+			// TODO: should probabably just rip out the
+			// tristripper and directly use the trilists
+			// produced by the new triangulator.
+			//
+			// Dumb temp code!
+			if (m_strips.size() == 0) {
+				// Start a new strip.
+				m_strips.resize(m_strips.size() + 1);
+			}
+
+			m_strips[0].push_back(v0);
+			m_strips[0].push_back(v0);
+			m_strips[0].push_back(v1);
+			m_strips[0].push_back(v2);
+			m_strips[0].push_back(v2);
+		}
+
 		void	flush(mesh_set* m, int style) const
 		// Join sub-strips together, and push the whole thing into the given mesh_set,
 		// under the given style.
@@ -639,17 +685,69 @@ namespace gameswf
 				}
 			}
 		};
-		collect_traps	accepter(this);
 
-		sh->tesselate(error_tolerance, &accepter);
+		struct collect_tris : public tesselate_new::mesh_accepter
+		{
+			mesh_set*	m;	// the mesh_set that receives trapezoids.
+
+			// strips-in-progress.
+			hash<int, tri_stripper*>	m_strips;
+
+			collect_tris(mesh_set* set) : m(set) {}
+			virtual ~collect_tris() {}
+
+			// Overrides from mesh_accepter
+			virtual void	accept_trilist(int style, const point trilist[], int point_count)
+			{
+				// Add triangles to appropriate stripper.
+
+				tri_stripper*	s = NULL;
+				m_strips.get(style, &s);
+				if (s == NULL)
+				{
+					s = new tri_stripper;
+					m_strips.add(style, s);
+				}
+
+				for (int i = 0; i < point_count; i += 3) {
+					s->add_triangle(trilist[i], trilist[i + 1], trilist[i + 2]);
+				}
+			}
+
+			virtual void	accept_line_strip(int style, const point coords[], int coord_count)
+			// Remember this line strip in our mesh set.
+			{
+				m->add_line_strip(style, coords, coord_count);
+			}
+
+			void	flush() const
+			// Push our strips into the mesh set.
+			{
+				for (hash<int, tri_stripper*>::const_iterator it = m_strips.begin();
+				     it != m_strips.end();
+				     ++it)
+				{
+					// Push strip into m.
+					tri_stripper*	s = it->second;
+					s->flush(m, it->first);
+					
+					delete s;
+				}
+			}
+		};
+
+		// Old tesselator.
+// 		collect_traps	accepter(this);
+// 		sh->tesselate(error_tolerance, &accepter);
+// 		accepter.flush();
+
+		// New tesselator.
+		collect_tris	accepter(this);
+		sh->tesselate_new(error_tolerance, &accepter);
 		accepter.flush();
 
 		// triangles should be collected now into the meshes for each fill style.
 	}
-
-
-//	int	mesh_set::get_last_frame_rendered() const { return m_last_frame_rendered; }
-//	void	mesh_set::set_last_frame_rendered(int frame_counter) { m_last_frame_rendered = frame_counter; }
 
 
 	void	mesh_set::display(
@@ -1152,9 +1250,24 @@ namespace gameswf
 		const array<fill_style>& fill_styles,
 		const array<line_style>& line_styles)
 	{
+// Useful for debugging.  TODO: make a cleaner interface to this.
+// 		// xxxxxxxx
+// 		// Dump shape info.
+// 		printf("\n# shape %x\n", (uint32) &paths);
+// 		for (int i = 0; i < paths.size(); i++) {
+// 			const path&	p = paths[i];
+// 			printf("# path %d, fill0 = %d, fill1 = %d\n", i, p.m_fill0, p.m_fill1);
+// 			printf("%d\n", p.m_edges.size() * 2 + 1);
+// 			printf("%f %f\n", p.m_ax, p.m_ay);
+// 			for (int j = 0; j < p.m_edges.size(); j++) {
+// 				printf("%f %f\n", p.m_edges[j].m_cx, p.m_edges[j].m_cy);
+// 				printf("%f %f\n", p.m_edges[j].m_ax, p.m_edges[j].m_ay);
+// 			}
+// 		}
+// 		// xxxxxxx
+		
 		for (int i = 0; i < paths.size(); i++)
 		{
-//			if (i > 0) break;//xxxxxxxx
 			const path&	p = paths[i];
 
 			if (p.m_fill0 == 0 && p.m_fill1 == 0)
@@ -1166,9 +1279,9 @@ namespace gameswf
 
 			// Color the line according to which side has
 			// fills.
-			if (p.m_fill0 == 0) glColor4f(1, 0, 0, 0.5);
-			else if (p.m_fill1 == 0) glColor4f(0, 1, 0, 0.5);
-			else glColor4f(0, 0, 1, 0.5);
+			if (p.m_fill0 == 0) glColor4f(0.25f * p.m_fill1, 0, 0, 0.5);
+			else if (p.m_fill1 == 0) glColor4f(0, 0.25f * p.m_fill0, 0, 0.5);
+			else glColor4f(0.25f * p.m_fill1, 0.25f * p.m_fill0, 0, 0.5);
 
 			// Offset according to which loop we are.
 			float	offset_x = (i & 1) * 80.0f;
@@ -1194,6 +1307,7 @@ namespace gameswf
 
 			glEnd();
 
+#if 0
 			// Draw arrowheads.
 			point	dir, right, p0, p1;
 			glBegin(GL_LINES);
@@ -1205,7 +1319,7 @@ namespace gameswf
 				point_normalize(&dir);
 				right = point(-dir.m_y, dir.m_x);	// perpendicular
 
-				const float	ARROW_MAG = 60.f;	// TWIPS?
+				const float	ARROW_MAG = 60.0f;	// TWIPS?
 				if (p.m_fill0 != 0)
 				{
 					glColor4f(0, 1, 0, 0.5);
@@ -1232,6 +1346,7 @@ namespace gameswf
 				}
 			}}
 			glEnd();
+#endif // 0
 
 			glPopMatrix();
 		}
@@ -1256,6 +1371,19 @@ namespace gameswf
 			// Scale is essentially zero.
 			return;
 		}
+
+// Useful for debugging.  TODO: make a cleaner interface to this.
+// 		//xxxxxxxx
+// 		//
+// 		// If we want the tesselator to dump shapes, then
+// 		// flush our cache so the shapes go through the
+// 		// tesselator.
+// 		if (gameswf_tesselate_dump_shape) {
+// 			for (int i = 0; i < m_cached_meshes.size(); i++) {
+// 				delete m_cached_meshes[i];
+// 			}
+// 			m_cached_meshes.resize(0);
+// 		}
 
 		float	object_space_max_error = 20.0f / max_scale / pixel_scale * s_curve_max_pixel_error;
 
@@ -1365,6 +1493,27 @@ namespace gameswf
 			}
 		}
 		tesselate::end_shape();
+	}
+
+
+	void	shape_character_def::tesselate_new(float error_tolerance, tesselate_new::mesh_accepter* accepter) const
+	// Push our shape data through the tesselator.
+	{
+		tesselate_new::begin_shape(accepter, error_tolerance);
+		for (int i = 0; i < m_paths.size(); i++)
+		{
+			if (m_paths[i].m_new_shape == true)
+			{
+				// Hm; should handle separate sub-shapes in a less lame way.
+				tesselate_new::end_shape();
+				tesselate_new::begin_shape(accepter, error_tolerance);
+			}
+			else
+			{
+				m_paths[i].tesselate_new();
+			}
+		}
+		tesselate_new::end_shape();
 	}
 
 

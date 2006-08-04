@@ -68,6 +68,7 @@ namespace gameswf
 			p.m_fill1 = p1.m_fill1;
 
  			// @@ hack.
+			// tulrich: Hm -- is this right?  It looks pretty suspicious.
 			if (p.m_fill0 == 0 && p.m_fill1 == 0)
 			{
 				if (m_shape1->get_fill_styles().size() > 0) p.m_fill0 = 1;
@@ -96,11 +97,12 @@ namespace gameswf
 			}
 		}
     
-//  display
+		//  display
 
 		matrix mat = inst->get_world_matrix();
 		cxform cx = inst->get_world_cxform();
 		float max_error = 20.0f / mat.get_max_scale() /	inst->get_parent()->get_pixel_scale();
+
 		if (ratio != m_last_ratio)
 		{
 			delete m_mesh;

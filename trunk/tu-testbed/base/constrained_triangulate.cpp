@@ -18,14 +18,28 @@
 #include <algorithm>
 
 
-#define PROFILE_TRIANGULATE
+//#define PROFILE_TRIANGULATE
 #ifdef PROFILE_TRIANGULATE
 #include "base/tu_timer.h"
 #endif // PROFILE_TRIANGULATE
 
 
+// This struct's only purpose is to parameterize the coord type and
+// enclose typedefs for the code within.
+//
+// It's not indented, to keep the indentation within reason.
+template<class coord_t>
+struct coord_type_wrapper {
+
+typedef vec2<coord_t> vec2_t;
+typedef index_point<coord_t> index_point_t;
+typedef index_box<coord_t> index_box_t;
+typedef grid_index_point<coord_t, bool> grid_index_point_t;
+typedef grid_index_box<coord_t, bool> grid_index_box_t;
+	
+
 struct poly_vert {
-	vec2<sint16> m_v;
+	vec2_t m_v;
 	int m_next;
 	int m_prev;
 	enum state_enum {
@@ -36,9 +50,9 @@ struct poly_vert {
 	state_enum m_state;
 
 	poly_vert() : m_next(-1), m_prev(-1), m_state(DIRTY) {}
-	poly_vert(sint16 x, sint16 y, int prev, int next) : m_v(x, y), m_next(next), m_prev(prev), m_state(DIRTY) {}
+	poly_vert(coord_t x, coord_t y, int prev, int next) : m_v(x, y), m_next(next), m_prev(prev), m_state(DIRTY) {}
 
-	index_point<sint16>	get_index_point() const { return index_point<sint16>(m_v.x, m_v.y); }
+	index_point_t	get_index_point() const { return index_point_t(m_v.x, m_v.y); }
 };
 
 
@@ -101,22 +115,24 @@ struct path_info {
 // Triangulator state.
 struct tristate {
 	tristate()
-		: m_next_dirty(0), m_reflex_point_index(NULL), m_edge_index(NULL)
+		: m_estimated_vert_count(0), m_next_dirty(0), m_reflex_point_index(NULL)
 	{
 	}
 	~tristate()
 	{
 		delete m_reflex_point_index;
-		delete m_edge_index;
 	}
 	
-	array<sint16>* m_results;
+	array<coord_t>* m_results;
 	array<poly_vert> m_verts;
 	array<path_info> m_input_paths;
 
-	int m_next_dirty;  // points into the m_verts list
-
-	index_box<sint16> m_bbox;
+	int m_estimated_vert_count;
+	index_box_t m_bbox;
+	
+	// Points into the m_verts list; every vert before it is
+	// unclippable.
+	int m_next_dirty;
 	
 	// A search index for fast checking of reflex verts within a
 	// triangle.
@@ -125,17 +141,15 @@ struct tristate {
 	// index by 2x.  Is it worth making a version of
 	// grid_index_point that stores the point locations only, with
 	// no payload?
-	grid_index_point<sint16, bool>* m_reflex_point_index;
-
-	grid_index_box<sint16, bool>* m_edge_index;
+	grid_index_point_t* m_reflex_point_index;
 
 	// For debugging.
 	int m_debug_halt_step;
-	array<sint16>* m_debug_edges;
+	array<coord_t>* m_debug_edges;
 };
 
 
-int	compare_vertices(const poly_vert& a, const poly_vert& b)
+static int	compare_vertices(const poly_vert& a, const poly_vert& b)
 // For qsort.  Sort by x, then by y.
 {
 	if (a.m_v.x < b.m_v.x) {
@@ -168,104 +182,21 @@ struct vert_index_sorter {
 };
 
 
-void edges_intersect_sub(int* e0_vs_e1, int* e1_vs_e0,
-			 const vec2<sint16>& e0v0, const vec2<sint16>& e0v1,
-			 const vec2<sint16>& e1v0, const vec2<sint16>& e1v1)
-// Return {-1,0,1} for edge A {crossing, vert-touching, not-crossing}
-// the line of edge B.
-//
-// Specialized for sint16
-{
-	// If e1v0,e1v1 are on opposite sides of e0, and e0v0,e0v1 are
-	// on opposite sides of e1, then the segments cross.  These
-	// are all determinant checks.
-
-	// The main degenerate case we need to watch out for is if
-	// both segments are zero-length.
-	//
-	// If only one is degenerate, our tests are still OK.
-
-	if (e0v0.x == e0v1.x && e0v0.y == e0v1.y)
-	{
-		// e0 is zero length.
-		if (e1v0.x == e1v1.x && e1v0.y == e1v1.y)
-		{
-			if (e1v0.x == e0v0.x && e1v0.y == e0v0.y) {
-				// Coincident.
-				*e0_vs_e1 = 0;
-				*e1_vs_e0 = 0;
-				return;
-			}
-		}
-	}
-
-	// See if e1 crosses line of e0.
-	sint64	det10 = determinant_sint16(e0v0, e0v1, e1v0);
-	sint64	det11 = determinant_sint16(e0v0, e0v1, e1v1);
-
-	// Note: we do > 0, which means a vertex on a line counts as
-	// intersecting.  In general, if one vert is on the other
-	// segment, we have to go searching along the path in either
-	// direction to see if it crosses or not, and it gets
-	// complicated.  Better to treat it as intersection.
-
-	int det1sign = 0;
-	if (det11 < 0) det1sign = -1;
-	else if (det11 > 0) det1sign = 1;
-	if (det10 < 0) det1sign = -det1sign;
-	else if (det10 == 0) det1sign = 0;
-
-	if (det1sign > 0) {
-		// e1 doesn't cross the line of e0.
-		*e1_vs_e0 = 1;
-	} else if (det1sign < 0) {
-		// e1 does cross the line of e0.
-		*e1_vs_e0 = -1;
-	} else {
-		// One (or both) of the endpoints of e1 are on the
-		// line of e0.
-		*e1_vs_e0 = 0;
-	}
-
-	// See if e0 crosses line of e1.
-	sint64	det00 = determinant_sint16(e1v0, e1v1, e0v0);
-	sint64	det01 = determinant_sint16(e1v0, e1v1, e0v1);
-
-	int det0sign = 0;
-	if (det01 < 0) det0sign = -1;
-	else if (det01 > 0) det0sign = 1;
-	if (det00 < 0) det0sign = -det0sign;
-	else if (det00 == 0) det0sign = 0;
-
-	if (det0sign > 0) {
-		// e0 doesn't cross the line of e1.
-		*e0_vs_e1 = 1;
-	} else if (det0sign < 0) {
-		// e0 crosses line of e1
-		*e0_vs_e1 = -1;
-	} else {
-		// One (or both) of the endpoints of e0 are on the
-		// line of e1.
-		*e0_vs_e1 = 0;
-	}
-}
-
-
-bool any_edge_intersects(const tristate* ts, const edge& e, grid_index_box<sint16, bool>* edge_index)
+static bool any_edge_intersects(const tristate* ts, const edge& e, grid_index_box_t* edge_index)
 // Return true if any edge intersects the edge e.
 //
 // Intersection is defined as any part of an edgeset edge touching any
 // part of the *interior* of e.
 {
-	const vec2<sint16>& ev0 = ts->m_verts[e.m_0].m_v;
-	const vec2<sint16>& ev1 = ts->m_verts[e.m_1].m_v;
+	const vec2_t& ev0 = ts->m_verts[e.m_0].m_v;
+	const vec2_t& ev1 = ts->m_verts[e.m_1].m_v;
 	
-	index_box<sint16> bound(ev0.x, ev0.y);
+	index_box_t bound(ev0.x, ev0.y);
 	bound.expand_to_enclose(ev1.x, ev1.y);
 
-	for (grid_index_box<sint16, bool>::iterator it = edge_index->begin(bound); !it.at_end(); ++it) {
-		vec2<sint16> eev0(it->bound.get_min().x, it->bound.get_min().y);
-		vec2<sint16> eev1(it->bound.get_max().x, it->bound.get_max().y);
+	for (grid_index_box_t::iterator it = edge_index->begin(bound); !it.at_end(); ++it) {
+		vec2_t eev0(it->bound.get_min().x, it->bound.get_min().y);
+		vec2_t eev1(it->bound.get_max().x, it->bound.get_max().y);
 		if (it->value == false) {
 			// Edge crosses the indexed bounding box w/ negative slope, not positive.
 			swap(&eev0.y, &eev1.y);
@@ -284,7 +215,7 @@ bool any_edge_intersects(const tristate* ts, const edge& e, grid_index_box<sint1
 }
 
 
-int find_valid_bridge_vert(const tristate* ts, int v1, grid_index_box<sint16, bool>* edge_index)
+static int find_valid_bridge_vert(const tristate* ts, int v1, grid_index_box_t* edge_index)
 // Find v2 such that v2 is left of v1, and the segment v1-v2 doesn't
 // cross any edges.
 {
@@ -300,7 +231,7 @@ int find_valid_bridge_vert(const tristate* ts, int v1, grid_index_box<sint16, bo
 
 	// If we get here, then the input is not well formed.
 	// TODO log something
-	assert(0);  // temp xxxxx
+	//assert(0);  // temp xxxxx
 
 	// Default fallback: join to the next-most-leftmost vert,
 	// regardless of crossing other edges.
@@ -308,26 +239,26 @@ int find_valid_bridge_vert(const tristate* ts, int v1, grid_index_box<sint16, bo
 }
 
 
-void add_edge(grid_index_box<sint16, bool>* edge_index, const vec2<sint16>& v0, const vec2<sint16>& v1)
+static void add_edge(grid_index_box_t* edge_index, const vec2_t& v0, const vec2_t& v1)
 {
 	bool m_slope_up = (v1.x - v0.x) * (v1.y - v0.y) > 0;
-	index_box<sint16> bound(v0.x, v0.y);
+	index_box_t bound(v0.x, v0.y);
 	bound.expand_to_enclose(v1.x, v1.y);
 	edge_index->add(bound, m_slope_up);
 }
 
 
-void add_all_edges_into_index(tristate* ts, grid_index_box<sint16, bool>* edge_index)
+static void add_all_edges_into_index(tristate* ts, grid_index_box_t* edge_index)
 {
 	for (int i = 0; i < ts->m_verts.size(); i++) {
-		const vec2<sint16>& v0 = ts->m_verts[i].m_v;
-		const vec2<sint16>& v1 = ts->m_verts[ts->m_verts[i].m_next].m_v;
+		const vec2_t& v0 = ts->m_verts[i].m_v;
+		const vec2_t& v1 = ts->m_verts[ts->m_verts[i].m_next].m_v;
 		add_edge(edge_index, v0, v1);
 	}
 }
 
 
-void join_paths_into_one_poly(tristate* ts)
+static void join_paths_into_one_poly(tristate* ts)
 // Use zero-area bridges to connect separate polys & islands into one
 // big continuous poly.
 //
@@ -343,8 +274,8 @@ void join_paths_into_one_poly(tristate* ts)
 		assert(ts->m_input_paths[0].m_leftmost_vert <= ts->m_input_paths[1].m_leftmost_vert);
 
 		// Init index to speed up edge-crossing checks.
-		ts->m_edge_index = new grid_index_box<sint16,bool>(GRID_INDEX_AUTOSIZE, ts->m_bbox, ts->m_verts.size());
-		add_all_edges_into_index(ts, ts->m_edge_index);
+		grid_index_box_t edge_index(GRID_INDEX_AUTOSIZE, ts->m_bbox, ts->m_verts.size());
+		add_all_edges_into_index(ts, &edge_index);
 		
 		// Iterate from left to right
 		for (int i = 1; i < ts->m_input_paths.size(); i++) {
@@ -363,7 +294,7 @@ void join_paths_into_one_poly(tristate* ts)
 			//     // about equality cases)
 			//
 			if (v1 > 0) {
-				int	v2 = find_valid_bridge_vert(ts, v1, ts->m_edge_index);
+				int	v2 = find_valid_bridge_vert(ts, v1, &edge_index);
 				assert(v2 != v1);
 
 				// Join pi.
@@ -397,7 +328,7 @@ void join_paths_into_one_poly(tristate* ts)
 				ts->m_verts[ts->m_verts[n1].m_prev].m_next = n1;
 				ts->m_verts[ts->m_verts[n2].m_next].m_prev = n2;
 
-				add_edge(ts->m_edge_index, ts->m_verts[v1].m_v, ts->m_verts[v2].m_v);
+				add_edge(&edge_index, ts->m_verts[v1].m_v, ts->m_verts[v2].m_v);
 
 				assert(ts->m_verts[ts->m_verts[v1].m_prev].m_next == v1);
 				assert(ts->m_verts[ts->m_verts[v1].m_next].m_prev == v1);
@@ -413,13 +344,11 @@ void join_paths_into_one_poly(tristate* ts)
 			// TODO: update edge index
 		}
 	}
-
-	// TODO delete m_edge_index
 }
 
 
 
-void sort_and_remap(tristate* ts)
+static void sort_and_remap(tristate* ts)
 // Sort the verts by position, and remap the things that refer to
 // verts.
 {
@@ -430,7 +359,9 @@ void sort_and_remap(tristate* ts)
 		vert_indices[i] = i;
 	}
 	vert_index_sorter sorter(verts);
-	std::sort(&vert_indices[0], &vert_indices[0] + vert_indices.size(), sorter);
+	if (vert_indices.size()) {
+		std::sort(&vert_indices[0], &vert_indices[0] + vert_indices.size(), sorter);
+	}
 
 	// Make the old-to-new mapping.
 	array<int> old_to_new;
@@ -471,13 +402,15 @@ void sort_and_remap(tristate* ts)
 
 	// Update path info.
 	for (int i = 0; i < ts->m_input_paths.size(); i++) {
-		ts->m_input_paths[i].m_leftmost_vert = old_to_new[ts->m_input_paths[i].m_leftmost_vert];
+		if (ts->m_input_paths[i].m_leftmost_vert >= 0) {
+			ts->m_input_paths[i].m_leftmost_vert = old_to_new[ts->m_input_paths[i].m_leftmost_vert];
+		}
 	}
 }
 
 
-void init(tristate* ts, array<sint16>* results, int path_count, const array<sint16> paths[],
-	  int debug_halt_step, array<sint16>* debug_edges)
+static void init(tristate* ts, array<coord_t>* results, int path_count, const array<coord_t> paths[],
+	  int debug_halt_step, array<coord_t>* debug_edges)
 // Pull the paths into *tristate.
 {
 	assert(results);
@@ -485,7 +418,19 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 	ts->m_debug_halt_step = debug_halt_step;
 	ts->m_debug_edges = debug_edges;
 	ts->m_next_dirty = 0;
+	ts->m_estimated_vert_count = 0;
 
+	// For faster & tighter allocation of the vert array, we first
+	// figure out how big it is going to be.
+	//
+	// Count the input verts.
+	for (int i = 0; i < path_count; i++) {
+		ts->m_estimated_vert_count += paths[i].size();
+	}
+	ts->m_estimated_vert_count += (path_count - 1) * 2;  // There are two extra verts involved when joining a path.
+
+	ts->m_verts.reserve(ts->m_estimated_vert_count);
+	
 	// Dump verts and edges into tristate.
 	ts->m_input_paths.resize(path_count);
 	for (int i = 0; i < path_count; i++) {
@@ -517,14 +462,16 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 				pi->m_leftmost_vert = vert_index;
 			}
 		}
-		ts->m_verts.back().m_next = pi->m_begin_vert_orig;  // close the path
+		if (ts->m_verts.size()) {
+			ts->m_verts.back().m_next = pi->m_begin_vert_orig;  // close the path
+		}
 		pi->m_end_vert_orig = ts->m_verts.size();
 	}
 
 	// Init reflex point search index.
 	//
 	// TODO: experiment with estimated item count.
- 	ts->m_reflex_point_index = new grid_index_point<sint16, bool>(GRID_INDEX_AUTOSIZE, ts->m_bbox, ts->m_verts.size() / 2);
+ 	ts->m_reflex_point_index = new grid_index_point_t(GRID_INDEX_AUTOSIZE, ts->m_bbox, ts->m_verts.size() / 2);
 
 	// TODO: since we're keeping loop info in the verts, we could
 	// do this much more simply.
@@ -540,11 +487,11 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 			for (int j = pi->m_begin_vert_orig, k = pi->m_end_vert_orig - 1, l = pi->m_end_vert_orig - 2;
 			     j < pi->m_end_vert_orig;
 			     l = k, k = j, j++) {
-				const vec2<sint16>& v0 = ts->m_verts[l].m_v;
-				const vec2<sint16>& v1 = ts->m_verts[k].m_v;
-				const vec2<sint16>& v2 = ts->m_verts[j].m_v;
+				const vec2_t& v0 = ts->m_verts[l].m_v;
+				const vec2_t& v1 = ts->m_verts[k].m_v;
+				const vec2_t& v2 = ts->m_verts[j].m_v;
 				if (vertex_left_test(v0, v1, v2) <= 0) {
-					ts->m_reflex_point_index->add(index_point<sint16>(v1.x, v1.y), 0);
+					ts->m_reflex_point_index->add(index_point_t(v1.x, v1.y), 0);
 					// TODO: mark ts->m_verts[k] as REFLEX (or COINCIDENT...)
 				}
 			}
@@ -560,46 +507,30 @@ void init(tristate* ts, array<sint16>* results, int path_count, const array<sint
 	}
 
 	ts->m_results->reserve(2 * 3 * ts->m_verts.size());
+
+	assert(ts->m_estimated_vert_count >= ts->m_verts.size());  // make sure our estimate was conservative
 }
 
 
-bool vert_in_triangle(const vec2<sint16>& v, const vec2<sint16>& v0, const vec2<sint16>& v1, const vec2<sint16>& v2)
-// Return true if v touches the boundary or the interior of triangle (v0, v1, v2).  
-{
-	sint64 det0 = determinant_sint16(v0, v1, v);
-	if (det0 >= 0) {
-		sint64 det1 = determinant_sint16(v1, v2, v);
-		if (det1 >= 0) {
-			sint64 det2 = determinant_sint16(v2, v0, v);
-			if (det2 >= 0) {
-				// Point touches the triangle.
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-
-bool any_reflex_vert_in_triangle(const tristate* ts, int vi0, int vi1, int vi2)
+static bool any_reflex_vert_in_triangle(const tristate* ts, int vi0, int vi1, int vi2)
 // Return true if there is any reflex vertex in tristate that touches
 // the interior or edges of the given triangle.  Verts coincident with
 // the actual triangle verts will return false.
 {
-	const vec2<sint16>& v0 = ts->m_verts[vi0].m_v;
-	const vec2<sint16>& v1 = ts->m_verts[vi1].m_v;
-	const vec2<sint16>& v2 = ts->m_verts[vi2].m_v;
+	const vec2_t& v0 = ts->m_verts[vi0].m_v;
+	const vec2_t& v1 = ts->m_verts[vi1].m_v;
+	const vec2_t& v2 = ts->m_verts[vi2].m_v;
 
-	const index_point<sint16>& ip0 = ts->m_verts[vi0].get_index_point();
-	const index_point<sint16>& ip1 = ts->m_verts[vi1].get_index_point();
-	const index_point<sint16>& ip2 = ts->m_verts[vi2].get_index_point();
+	const index_point_t& ip0 = ts->m_verts[vi0].get_index_point();
+	const index_point_t& ip1 = ts->m_verts[vi1].get_index_point();
+	const index_point_t& ip2 = ts->m_verts[vi2].get_index_point();
 
 	// Compute the bounding box of reflex verts we want to check.
-	index_box<sint16>	query_bound(ip0);
+	index_box_t	query_bound(ip0);
 	query_bound.expand_to_enclose(ip1);
 	query_bound.expand_to_enclose(ip2);
 
-	for (grid_index_point<sint16, bool>::iterator it = ts->m_reflex_point_index->begin(query_bound);
+	for (grid_index_point_t::iterator it = ts->m_reflex_point_index->begin(query_bound);
 	     ! it.at_end();
 	     ++it)
 	{
@@ -608,7 +539,7 @@ bool any_reflex_vert_in_triangle(const tristate* ts, int vi0, int vi1, int vi2)
 		}
 
 		if (query_bound.contains_point(it->location)) {
-			vec2<sint16> v(it->location.x, it->location.y);
+			vec2_t v(it->location.x, it->location.y);
 			if (vert_in_triangle(v, v0, v1, v2)) {
 				return true;
 			}
@@ -618,8 +549,8 @@ bool any_reflex_vert_in_triangle(const tristate* ts, int vi0, int vi1, int vi2)
 }
 
 
-bool vertex_in_cone(const vec2<sint16>& vert,
-		    const vec2<sint16>& cone_v0, const vec2<sint16>& cone_v1, const vec2<sint16>& cone_v2)
+static bool vertex_in_cone(const vec2_t& vert,
+		    const vec2_t& cone_v0, const vec2_t& cone_v1, const vec2_t& cone_v2)
 // Returns true if vert is within the cone defined by [v0,v1,v2].
 /*
 //  (out)  v0
@@ -650,30 +581,32 @@ bool vertex_in_cone(const vec2<sint16>& vert,
 }
 
 
-void fill_debug_out(tristate* ts)
+static void fill_debug_out(tristate* ts)
 {
-	for (int i = 0; i < ts->m_verts.size(); i++) {
-		if (ts->m_verts[i].m_state == poly_vert::DELETED) {
-			continue;
+	if (ts->m_debug_edges) {
+		for (int i = 0; i < ts->m_verts.size(); i++) {
+			if (ts->m_verts[i].m_state == poly_vert::DELETED) {
+				continue;
+			}
+			const vec2_t& v0 = ts->m_verts[i].m_v;
+			const vec2_t& v1 = ts->m_verts[ts->m_verts[i].m_next].m_v;
+			const vec2_t& vprev = ts->m_verts[ts->m_verts[i].m_prev].m_v;
+		
+			ts->m_debug_edges->push_back(v0.x);
+			ts->m_debug_edges->push_back(v0.y);
+			ts->m_debug_edges->push_back(v1.x);
+			ts->m_debug_edges->push_back(v1.y);
+		
+			ts->m_debug_edges->push_back(v0.x);
+			ts->m_debug_edges->push_back(v0.y);
+			ts->m_debug_edges->push_back(vprev.x);
+			ts->m_debug_edges->push_back(vprev.y);
 		}
-		const vec2<sint16>& v0 = ts->m_verts[i].m_v;
-		const vec2<sint16>& v1 = ts->m_verts[ts->m_verts[i].m_next].m_v;
-		const vec2<sint16>& vprev = ts->m_verts[ts->m_verts[i].m_prev].m_v;
-		
-		ts->m_debug_edges->push_back(v0.x);
-		ts->m_debug_edges->push_back(v0.y);
-		ts->m_debug_edges->push_back(v1.x);
-		ts->m_debug_edges->push_back(v1.y);
-		
-		ts->m_debug_edges->push_back(v0.x);
-		ts->m_debug_edges->push_back(v0.y);
-		ts->m_debug_edges->push_back(vprev.x);
-		ts->m_debug_edges->push_back(vprev.y);
 	}
 }
 
 
-bool check_debug_dump(tristate* ts)
+static bool check_debug_dump(tristate* ts)
 // If we should debug dump now, this function returns true and fills
 // the debug output.
 //
@@ -695,17 +628,18 @@ bool check_debug_dump(tristate* ts)
 #define DEBUG_MARKUP
 #ifdef DEBUG_MARKUP
 
-vec2<sint16> debug_centroid(const tristate* ts, int vi0, int vi1, int vi2)
+static vec2_t debug_centroid(const tristate* ts, int vi0, int vi1, int vi2)
 {
-	int x = ts->m_verts[vi0].m_v.x + ts->m_verts[vi1].m_v.x + ts->m_verts[vi2].m_v.x;
-	int y = ts->m_verts[vi0].m_v.y + ts->m_verts[vi1].m_v.y + ts->m_verts[vi2].m_v.y;
+	double x = ts->m_verts[vi0].m_v.x + ts->m_verts[vi1].m_v.x + ts->m_verts[vi2].m_v.x;
+	double y = ts->m_verts[vi0].m_v.y + ts->m_verts[vi1].m_v.y + ts->m_verts[vi2].m_v.y;
 
-	return vec2<sint16>(x / 3, y / 3);
+	return vec2_t(coord_t(x / 3), coord_t(y / 3));
 }
 
 
-void debug_make_x(array<sint16>* out, const vec2<sint16>& v)
+static void debug_make_x(array<coord_t>* out, const vec2_t& v)
 {
+	if (!out) return;
 	out->push_back(v.x - 200);
 	out->push_back(v.y - 200);
 	out->push_back(v.x + 200);
@@ -717,8 +651,9 @@ void debug_make_x(array<sint16>* out, const vec2<sint16>& v)
 }
 
 
-void debug_make_plus(array<sint16>* out, const vec2<sint16>& v)
+static void debug_make_plus(array<coord_t>* out, const vec2_t& v)
 {
+	if (!out) return;
 	out->push_back(v.x);
 	out->push_back(v.y - 200);
 	out->push_back(v.x);
@@ -730,8 +665,9 @@ void debug_make_plus(array<sint16>* out, const vec2<sint16>& v)
 }
 
 
-void debug_make_square(array<sint16>* out, const vec2<sint16>& v)
+static void debug_make_square(array<coord_t>* out, const vec2_t& v)
 {
+	if (!out) return;
 	out->push_back(v.x - 200);
 	out->push_back(v.y - 200);
 	out->push_back(v.x + 200);
@@ -756,7 +692,7 @@ void debug_make_square(array<sint16>* out, const vec2<sint16>& v)
 #endif // DEBUG_MARKUP
 
 
-int find_ear_vertex(const tristate* ts, int vi0, int vi1)
+static int find_ear_vertex(const tristate* ts, int vi0, int vi1)
 // Find a vertex index vi2 such that:
 //
 // * vi0-vi1-vi2 is the sharpest left turn through vi0-vi1, and there
@@ -840,7 +776,7 @@ int find_ear_vertex(const tristate* ts, int vi0, int vi1)
 				      ts->m_verts[vi0].m_v, ts->m_verts[vi1].m_v, ts->m_verts[vi2].m_v)) {
 			// Can't clip this ear; there's an edge in the way.
 #ifdef DEBUG_MARKUP
-			vec2<sint16> centroid = debug_centroid(ts, vi0, vi1, vi2);
+			vec2_t centroid = debug_centroid(ts, vi0, vi1, vi2);
 			debug_make_square(ts->m_debug_edges, debug_centroid(ts, vi0, vi1, vi2));
 #endif // DEBUG_MARKUP
 			return -1;
@@ -877,7 +813,7 @@ int find_ear_vertex(const tristate* ts, int vi0, int vi1)
 	if (valence0 < 1 && valence1 < 1) {
 		// valence error
 #ifdef DEBUG_MARKUP
-		vec2<sint16> centroid = debug_centroid(ts, vi0, vi1, vi2);
+		vec2_t centroid = debug_centroid(ts, vi0, vi1, vi2);
 		debug_make_x(ts->m_debug_edges, debug_centroid(ts, vi0, vi1, vi2));
 #endif // DEBUG_MARKUP
 		return -1;
@@ -885,7 +821,7 @@ int find_ear_vertex(const tristate* ts, int vi0, int vi1)
 
 	if (any_reflex_vert_in_triangle(ts, vi0, vi1, vi2)) {
 #ifdef DEBUG_MARKUP
-		vec2<sint16> centroid = debug_centroid(ts, vi0, vi1, vi2);
+		vec2_t centroid = debug_centroid(ts, vi0, vi1, vi2);
 		debug_make_plus(ts->m_debug_edges, debug_centroid(ts, vi0, vi1, vi2));
 #endif // DEBUG_MARKUP
 		return -1;
@@ -895,7 +831,7 @@ int find_ear_vertex(const tristate* ts, int vi0, int vi1)
 }
 
 
-void check_loops_valid(tristate* ts)
+static void check_loops_valid(tristate* ts)
 // assert if there's anything amiss in our vertex loops.
 {
 // Can be a bit expensive; enable to help debug problems.
@@ -916,7 +852,7 @@ void check_loops_valid(tristate* ts)
 }
 
 
-bool find_and_clip_ear(tristate* ts)
+static bool find_and_clip_ear(tristate* ts)
 // Return true if we found an ear to clip.
 {
 	while (ts->m_next_dirty < ts->m_verts.size()) {
@@ -1034,34 +970,7 @@ bool find_and_clip_ear(tristate* ts)
 }
 
 
-// Edge index ideas.  Needs to, given a vert, quickly find all edges
-// into and out of that vert.
-//
-// * use two sorted lists of edges, m_out and m_in.  m_out is sorted
-// by m_0, and m_in is sorted by m_1.  Edges for a particular vert are
-// together; to find them, just do binary search.
-//
-// * when updating edge list, we always drop two and add one.  So to
-// update indices, replace one edge (fortunately the new edge touches
-// a vert we need to replace, so it can stay where it is) and mark the
-// other one as invalid (perhaps with a skip count to get to the next
-// valid edge?)
-//
-// * these indices can directly replace our m_active list.
-
-// Problems with the above: it makes what should be O(1) (finding
-// edges incident to a vertex) an O(logN) operation.  Plus it's still
-// not that lean in terms of memory, because you need two sorted lists
-// (one for incoming, one for outgoing).  Also, deleting edges is kind
-// of awkward.
-
-// Alternative: use loops (a la FIST), but have special logic to deal
-// with coincident vertices.  If a vert is not coincident, then normal
-// loop logic works fine.  Most verts are expected to not be
-// coincident.  This should be fairly compact, simple and efficient.
-
-
-void triangulate_plane(tristate* ts)
+static void triangulate_plane(tristate* ts)
 // Make triangles.
 {
 	// Ear-clip, allowing for twisted loops.  (Reasoning: don't
@@ -1074,33 +983,39 @@ void triangulate_plane(tristate* ts)
 			return;
 		}
 #ifdef DEBUG_MARKUP
-		ts->m_debug_edges->resize(0);
+		if (ts->m_debug_edges) {
+			ts->m_debug_edges->resize(0);
+		}
 #endif // DEBUG_MARKUP
 	}
 }
 
 
+}; // end struct coord_type_wrapper
+
+
 namespace constrained_triangulate {
-	void compute(
-		array<sint16>* results,
+	template<class coord_t>
+	void compute_t(
+		array<coord_t>* results,
 		int path_count,
-		const array<sint16> paths[],
+		const array<coord_t> paths[],
 		int debug_halt_step,
-		array<sint16>* debug_edges)
+		array<coord_t>* debug_edges)
 	{
 #ifdef PROFILE_TRIANGULATE
 		uint64	start_ticks = tu_timer::get_profile_ticks();
 #endif // PROFILE_TRIANGULATE
 	
-		tristate ts;
-		init(&ts, results, path_count, paths, debug_halt_step, debug_edges);
+		coord_type_wrapper<coord_t>::tristate ts;
+		coord_type_wrapper<coord_t>::init(&ts, results, path_count, paths, debug_halt_step, debug_edges);
 
 #ifdef PROFILE_TRIANGULATE
 		uint64	join_ticks = tu_timer::get_profile_ticks();
 		fprintf(stderr, "join poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(join_ticks - start_ticks));
 #endif // PROFILE_TRIANGULATE
 		
-		triangulate_plane(&ts);
+		coord_type_wrapper<coord_t>::triangulate_plane(&ts);
 
 #ifdef PROFILE_TRIANGULATE
 		uint64	clip_ticks = tu_timer::get_profile_ticks();
@@ -1113,6 +1028,28 @@ namespace constrained_triangulate {
 			);
 #endif // PROFILE_TRIANGULATE
 	}
+
+
+	void compute(
+		array<sint16>* results,
+		int path_count,
+		const array<sint16> paths[],
+		int debug_halt_step,
+		array<sint16>* debug_edges)
+	{
+		compute_t(results, path_count, paths, debug_halt_step, debug_edges);
+	}
+
+	void compute(
+		array<float>* results,
+		int path_count,
+		const array<float> paths[],
+		int debug_halt_step,
+		array<float>* debug_edges)
+	{
+		compute_t(results, path_count, paths, debug_halt_step, debug_edges);
+	}
+
 }
 
 

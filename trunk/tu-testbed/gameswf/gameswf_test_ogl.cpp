@@ -191,6 +191,8 @@ static void	key_event(SDLKey key, bool down)
 }
 
 
+// TODO: clean up this interface and re-enable.
+//extern bool gameswf_tesselate_dump_shape;
 
 
 int	main(int argc, char *argv[])
@@ -734,7 +736,20 @@ int	main(int argc, char *argv[])
 						f *= 0.9f;
 						gameswf::set_curve_max_pixel_error(f);
 						printf("curve error tolerance = %f\n", f);
-					}
+					} else if (ctrl && key == SDLK_F2) {
+						// Toggle wireframe.
+						static bool wireframe_mode = false;
+						wireframe_mode = !wireframe_mode;
+						if (wireframe_mode) {
+							glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+						} else {
+							glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+						}
+// TODO: clean up this interafce and re-enable.
+// 					} else if (ctrl && key == SDLK_d) {
+// 						// Flip a special debug flag.
+// 						gameswf_tesselate_dump_shape = true;
+ 					}
 
 					key_event(key, true);
 
@@ -827,6 +842,9 @@ int	main(int argc, char *argv[])
 				}
 			}
 		}
+
+// TODO: clean up this interface and re-enable.
+//		gameswf_tesselate_dump_shape = false;  ///xxxxx
 
 		// See if we should exit.
 		if (do_loop == false

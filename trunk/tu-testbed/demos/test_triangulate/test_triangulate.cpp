@@ -38,10 +38,11 @@ void	compute_bounding_box(float* x0, float* y0, float* x1, float* y1, const arra
 }
 
 
-void render_diagram(array<float>& trilist, const array<array<float> >& input_paths, const array<float>& debug_path)
+void render_diagram(array<float>& trilist, const array<array<float> >& input_paths, const array<float>& debug_path,
+		    bool flip_vertical, bool show_direction, bool show_verts)
 // Render an OpenGL diagram of the given info.  trilist is the output
 // of the triangulation algo; input_paths is the input.  debug_path is
-// the incremental state of the path being tessleted, if the
+// the incremental state of the path being tesselated, if the
 // tesselation has been stopped in advance.
 {
 	int	tricount = trilist.size() / 6;
@@ -78,6 +79,7 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 	glEnd();
 
 	// Draw the input paths.
+
 	glColor3f(0.25f, 0, 0);  // red
 	{for (int j = 0; j < input_paths.size(); j++) {
 		const array<float>& path = input_paths[j];
@@ -86,12 +88,73 @@ void render_diagram(array<float>& trilist, const array<array<float> >& input_pat
 			continue;
 		}
 		glBegin(GL_LINE_STRIP);
-		for (int i = 0; i < path.size(); i += 2) {
-			glVertex2f(path[i], path[i + 1]);
+		if (flip_vertical) {
+			for (int i = 0; i < path.size(); i += 2) {
+				glVertex2f(path[i], -path[i + 1]);
+			}
+			glVertex2f(path[0], -path[1]);
+		} else {
+			for (int i = 0; i < path.size(); i += 2) {
+				glVertex2f(path[i], path[i + 1]);
+			}
+			glVertex2f(path[0], path[1]);
 		}
-		glVertex2f(path[0], path[1]);
 		glEnd();
 	}}
+
+	if (show_direction || show_verts) {
+		float x0 = FLT_MAX;
+		float x1 = -FLT_MAX;
+		float y0 = FLT_MAX;
+		float y1 = -FLT_MAX;
+		for (int j = 0; j < input_paths.size(); j++) {
+			const array<float>& path = input_paths[j];
+			for (int i = 0; i < path.size(); i += 2) {
+				if (path[i] < x0) x0 = path[i];
+				if (path[i] > x1) x1 = path[i];
+				if (path[i + 1] < y0) y0 = path[i + 1];
+				if (path[i + 1] > y1) y1 = path[i + 1];
+			}
+		}
+
+		if (show_direction) {
+			float arrow_size = (x1 - x0) / 200.0f;
+			glColor3f(0.5f, 0, 0);  // red
+			glBegin(GL_LINES);
+			for (int j = 0; j < input_paths.size(); j++) {
+				const array<float>& path = input_paths[j];
+				for (int i = 0; i < path.size(); i += 2) {
+					float x0 = path[i];
+					float y0 = path[i + 1];
+					float x1, y1;
+					if (i + 2 >= path.size()) {
+						x1 = path[0];
+						y1 = path[1];
+					} else {
+						x1 = path[i + 2];
+						y1 = path[i + 3];
+					}
+					if (flip_vertical) {
+						y0 = -y0;
+						y1 = -y1;
+					}
+					float dx = x1 - x0;
+					float dy = y1 - y0;
+					float mag = sqrtf(dx * dx + dy * dy);
+					if (mag > 0) {
+						float rmag = 1.0f / mag;
+						float xmid = (x1 - x0) * 2 / 3 + x0;
+						float ymid = (y1 - y0) * 2 / 3 + y0;
+						float ax = (dy - dx) * rmag * arrow_size;
+						float ay = (-dx - dy) * rmag * arrow_size;
+						glVertex2f(xmid, ymid);
+						glVertex2f(xmid + ax, ymid + ay);
+					}
+				}
+			}
+			glEnd();
+		}
+	}
 
 	// Draw the debug path.
 	glColor3f(0.25f, 0.25f, 0.25f);
@@ -304,10 +367,10 @@ void	reverse_path(array<float>* path)
 	int	coord_ct = path->size() >> 1;
 	int	ct = coord_ct >> 1;
 
-	for (int i = 0; i < ct * 2; i += 2)
+	for (int i = 0; i < path->size() >> 1; i += 2)
 	{
-		swap(&(*path)[i * 2], &(*path)[(coord_ct - 1 - i) * 2]);	// x coord
-		swap(&(*path)[i * 2 + 1], &(*path)[(coord_ct - 1 - i) * 2 + 1]);	// y coord
+		swap(&(*path)[i], &(*path)[path->size() - 2 - i]);	// x coord
+		swap(&(*path)[i + 1], &(*path)[path->size() - 1 - i]);	// y coord
 	}
 }
 
@@ -459,7 +522,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 		// Lots of circles.
 
 		// @@ set this to 100 for a good performance torture test of bridge-finding.
-		const int	TEST_DIM = 30;	// 20, 30
+		const int	TEST_DIM = 40;	// 20, 30
 		{for (int x = 0; x < TEST_DIM; x++)
 		{
 			for (int y = 0; y < TEST_DIM; y++)
@@ -470,11 +533,30 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 			}
 		}}
 
-		// 2005-1-1 TEST_DIM=40, join poly = 4.9  s (ouch!)
-		// 2005-1-2                        = 6.3  s (with grid_index_box) (double ouch!  index makes things slower!  what's wrong?)
-		//                                          (what's wrong is that the vert remap on the whole edge index gets expensive!)
-		// 2005-1-2                        = 2.94 s (optimize dupe_verts!  cull grid update (big win), more efficient vert insertion (win))
+		// 2005-1-1  TEST_DIM=40, join poly = 4.9  s (ouch!)
+		// 2005-1-2                         = 6.3  s (with grid_index_box) (double ouch!  index makes things slower!  what's wrong?)
+		//                                           (what's wrong is that the vert remap on the whole edge index gets expensive!)
+		// 2005-1-2                         = 2.94 s (optimize dupe_verts!  cull grid update (big win), more efficient vert insertion (win))
 
+		// 2006-7-31 TEST_DIM=40, join poly = .087 s (new ear-clip code) (new code wins big!  On a laptop even!  (IBM T41p, 1.7GHz) but note, it's sint16)
+		//                                  = .097 s (as above, but with float coords, still a huge win)
+		//                                  = .231 s (old FIST-like imple, same machine as above)
+		//
+		// 2006-7-31: Including clipping time, the new code is
+		// about twice as fast as the old code on the same
+		// machine/compiler/etc.  I'm not really sure why;
+		// they're doing roughly the same thing.  Actually the
+		// new code works a little harder per-vert since it
+		// analyzes coincident verts.  The big differences are
+		// that the new code proceeds in sort order (i.e. it
+		// scans the vertex list instead of traveling around
+		// the poly loop), and doesn't mess with any pseudo
+		// priority queue.  The sort order thing may help with
+		// cache coherency.  Though I don't think the old code
+		// had a big problem there.  The new code is a bit
+		// simpler in many other small ways, like it never
+		// bothers to update the reflex point index, once it's
+		// built.
 		break;
 	}
 
@@ -886,7 +968,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 
 
 // Wrapper around constrained triangulator.  Basically converts floats to sint16.
-void do_constrained_triangulate(array<float>* result, int paths_size, array<float> paths[],
+void do_constrained_triangulate_sint16(array<float>* result, int paths_size, array<float> paths[],
 				int debug_halt_tri, array<float>* debug_path)
 {
 	// Adapt input.
@@ -946,6 +1028,25 @@ void do_constrained_triangulate(array<float>* result, int paths_size, array<floa
 }
 
 
+void flip_paths_vertically(array<array<float> >* paths)
+{
+	for (int i = 0; i < paths->size(); i++) {
+		for (int j = 1; j < (*paths)[i].size(); j += 2) {
+			(*paths)[i][j] = -(*paths)[i][j];
+		}
+	}
+}
+
+
+void reverse_paths(array<array<float> >* paths)
+{
+	for (int i = 0; i < paths->size(); i++) {
+		reverse_path(&(*paths)[i]);
+	}
+}
+
+
+
 #undef main	// SDL wackiness
 int	main(int argc, const char** argv)
 {
@@ -955,12 +1056,21 @@ int	main(int argc, const char** argv)
 	bool use_constrained = false;
 	int debug_halt_tri = 0;
 	int shape_number = -1;
+	bool dump_bdm_output = false;
+	tu_string vert_type("float");
+	bool reverse_input_paths = false;
+	bool flip_vertical = false;
 	
 	for (int arg = 1; arg < argc; arg++) {
 		if (strcmp(argv[arg], "-i") == 0)
 		{
-			// Take input from stdin.
+			// Take input from stdin, in "BDM" format.
+			// Vert count on a line, followed by verts,
+			// one per line.  '#' starts a comment.
+			// Ignore blank lines.
 			bool	start_new_path = true;
+			int verts_left_in_path = 0;
+			int line_number = 0;
 			for (;;)
 			{
 				char	line[80];
@@ -969,31 +1079,38 @@ int	main(int argc, const char** argv)
 					// EOF.
 					break;
 				}
+				line_number++;
 
-				if (is_all_whitespace(line))
-				{
-					// Start a new path on next valid input line.
-					start_new_path = true;
-				}
-				else
-				{
+				if (line[0] == '#'
+				    || is_all_whitespace(line)
+				    || strncmp(line, "begin", 5) == 0
+				    || strncmp(line, "end", 3) == 0
+				    || strncmp(line, "type", 4) == 0) {
+					// comment or other irrelevant input
+					continue;
+				} else if (verts_left_in_path == 0) {
+					verts_left_in_path = atoi(line);
+					if (verts_left_in_path > 0) {
+						paths.resize(paths.size() + 1);
+					} else {
+						verts_left_in_path = 0;
+					}
+				} else {
+					assert(verts_left_in_path > 0);
+					
 					float	x = 0, y = 0;
-					int	coord_count = sscanf(line, "%f, %f", &x, &y);
+					int	coord_count = sscanf(line, "%f %f", &x, &y);
 					if (coord_count != 2)
 					{
 						fprintf(stderr, "invalid input format.\n");
 						exit(1);
 					}
 
-					if (start_new_path)
-					{
-						start_new_path = false;
-						paths.resize(paths.size() + 1);
-					}
-
 					// Add another point to the current path.
 					paths.back().push_back(x);
 					paths.back().push_back(y);
+
+					verts_left_in_path--;
 				}
 			}
 		} else if (strcmp(argv[arg], "-n") == 0) {
@@ -1010,6 +1127,22 @@ int	main(int argc, const char** argv)
 			if (arg < argc) {
 				debug_halt_tri = atoi(argv[arg]);
 			}
+		} else if (strcmp(argv[arg], "-o") == 0) {
+			// Dump test shape to BDM output file.
+			dump_bdm_output = true;
+		} else if (strcmp(argv[arg], "-vt") == 0) {
+			arg++;
+			if (arg < argc) {
+				vert_type = argv[arg];
+				if (vert_type != "sint16" && vert_type != "float") {
+					fprintf(stderr, "invalid vert type.  Try 'sint16' or 'float'.\n");
+					exit(1);
+				}
+			}
+		} else if (strcmp(argv[arg], "-rp") == 0) {
+			reverse_input_paths = true;
+		} else if (strcmp(argv[arg], "-fv") == 0) {
+			flip_vertical = true;
 		} else if (strcmp(argv[arg], "-break") == 0) {
 			// Break into debugger.
 			#ifdef _WIN32
@@ -1022,8 +1155,19 @@ int	main(int argc, const char** argv)
 	}
 
 	if (paths.size() == 0) {
-		fprintf(stderr, "usage: test_triangulate [-c] [-break] [-d #] ([-n #] | [-i < inputloop.txt])\n");
+		fprintf(stderr, "usage: test_triangulate [-c] [-break] [-d #] ([-n #] | [-i < inputloop.txt]) [-o] [-vt [float|sint16]]\n");
 		exit(1);
+	}
+
+	if (dump_bdm_output) {
+		for (int i = 0; i < paths.size(); i++) {
+			printf("%d\n", paths[i].size() / 2);
+			for (int j = 0; j < paths[i].size(); j += 2) {
+				printf("%f %f\n", paths[i][j], paths[i][j + 1]);
+			}
+			printf("\n");
+		}
+		exit(0);
 	}
 
 	// Interactive display.
@@ -1040,10 +1184,36 @@ int	main(int argc, const char** argv)
 			do_triangulate = false;
 			result.resize(0);
 			debug_path.resize(0);
+
+			// Preprocess if desired.
+			array<array<float> >* input = &paths;
+			array<array<float> > temp_paths;
+			bool invert = reverse_input_paths;
+			if (invert || flip_vertical) {
+				temp_paths = paths;
+				input = &temp_paths;
+
+				if (flip_vertical) {
+					invert = !invert;
+					flip_paths_vertically(&temp_paths);
+				}					
+
+				if (invert) {
+					reverse_paths(&temp_paths);
+				}
+			}
+
+			
 			if (use_constrained) {
-				do_constrained_triangulate(&result, paths.size(), &paths[0], debug_halt_tri, &debug_path);
+				if (vert_type == "sint16") {
+					do_constrained_triangulate_sint16(
+						&result, input->size(), &(*input)[0], debug_halt_tri, &debug_path);
+				} else {
+					constrained_triangulate::compute(
+						&result, input->size(), &(*input)[0], debug_halt_tri, &debug_path);
+				}
 			} else {
-				triangulate::compute(&result, paths.size(), &paths[0], debug_halt_tri, &debug_path);
+				triangulate::compute(&result, input->size(), &(*input)[0], debug_halt_tri, &debug_path);
 			}
 			assert((result.size() % 6) == 0);
 		}
@@ -1080,6 +1250,12 @@ int	main(int argc, const char** argv)
 				paths.resize(0);
 				generate_test_shape(shape_number, &paths);
 				do_triangulate = true;
+			} else if (key == SDLK_r) {
+				do_triangulate = true;
+				reverse_input_paths = !reverse_input_paths;
+			} else if (key == SDLK_v) {
+				do_triangulate = true;
+				flip_vertical = !flip_vertical;
 			}
 		}
 
@@ -1093,7 +1269,7 @@ int	main(int argc, const char** argv)
 		glDrawBuffer(GL_BACK);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		render_diagram(result, paths, debug_path);
+		render_diagram(result, paths, debug_path, flip_vertical, true, false);
 
 		SDL_GL_SwapBuffers();
 
