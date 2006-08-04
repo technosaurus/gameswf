@@ -114,5 +114,219 @@ inline int	vertex_left_test(const vec2<sint16>& a, const vec2<sint16>& b, const 
 }
 
 
+// TODO: these don't really have to be inline.
+
+
+inline void edges_intersect_sub(int* e0_vs_e1, int* e1_vs_e0,
+				const vec2<sint16>& e0v0, const vec2<sint16>& e0v1,
+				const vec2<sint16>& e1v0, const vec2<sint16>& e1v1)
+// Return {-1,0,1} for edge A {crossing, vert-touching, not-crossing}
+// the line of edge B.
+//
+// Specialized for sint16
+{
+	// If e1v0,e1v1 are on opposite sides of e0, and e0v0,e0v1 are
+	// on opposite sides of e1, then the segments cross.  These
+	// are all determinant checks.
+
+	// The main degenerate case we need to watch out for is if
+	// both segments are zero-length.
+	//
+	// If only one is degenerate, our tests are still OK.
+
+	if (e0v0.x == e0v1.x && e0v0.y == e0v1.y)
+	{
+		// e0 is zero length.
+		if (e1v0.x == e1v1.x && e1v0.y == e1v1.y)
+		{
+			if (e1v0.x == e0v0.x && e1v0.y == e0v0.y) {
+				// Coincident.
+				*e0_vs_e1 = 0;
+				*e1_vs_e0 = 0;
+				return;
+			}
+		}
+	}
+
+	// See if e1 crosses line of e0.
+	sint64	det10 = determinant_sint16(e0v0, e0v1, e1v0);
+	sint64	det11 = determinant_sint16(e0v0, e0v1, e1v1);
+
+	// Note: we do > 0, which means a vertex on a line counts as
+	// intersecting.  In general, if one vert is on the other
+	// segment, we have to go searching along the path in either
+	// direction to see if it crosses or not, and it gets
+	// complicated.  Better to treat it as intersection.
+
+	int det1sign = 0;
+	if (det11 < 0) det1sign = -1;
+	else if (det11 > 0) det1sign = 1;
+	if (det10 < 0) det1sign = -det1sign;
+	else if (det10 == 0) det1sign = 0;
+
+	if (det1sign > 0) {
+		// e1 doesn't cross the line of e0.
+		*e1_vs_e0 = 1;
+	} else if (det1sign < 0) {
+		// e1 does cross the line of e0.
+		*e1_vs_e0 = -1;
+	} else {
+		// One (or both) of the endpoints of e1 are on the
+		// line of e0.
+		*e1_vs_e0 = 0;
+	}
+
+	// See if e0 crosses line of e1.
+	sint64	det00 = determinant_sint16(e1v0, e1v1, e0v0);
+	sint64	det01 = determinant_sint16(e1v0, e1v1, e0v1);
+
+	int det0sign = 0;
+	if (det01 < 0) det0sign = -1;
+	else if (det01 > 0) det0sign = 1;
+	if (det00 < 0) det0sign = -det0sign;
+	else if (det00 == 0) det0sign = 0;
+
+	if (det0sign > 0) {
+		// e0 doesn't cross the line of e1.
+		*e0_vs_e1 = 1;
+	} else if (det0sign < 0) {
+		// e0 crosses line of e1
+		*e0_vs_e1 = -1;
+	} else {
+		// One (or both) of the endpoints of e0 are on the
+		// line of e1.
+		*e0_vs_e1 = 0;
+	}
+}
+
+
+inline void edges_intersect_sub(int* e0_vs_e1, int* e1_vs_e0,
+				const vec2<float>& e0v0, const vec2<float>& e0v1,
+				const vec2<float>& e1v0, const vec2<float>& e1v1)
+// Return {-1,0,1} for edge A {crossing, vert-touching, not-crossing}
+// the line of edge B.
+//
+// Specialized for float
+{
+	// If e1v0,e1v1 are on opposite sides of e0, and e0v0,e0v1 are
+	// on opposite sides of e1, then the segments cross.  These
+	// are all determinant checks.
+
+	// The main degenerate case we need to watch out for is if
+	// both segments are zero-length.
+	//
+	// If only one is degenerate, our tests are still OK.
+
+	if (e0v0.x == e0v1.x && e0v0.y == e0v1.y)
+	{
+		// e0 is zero length.
+		if (e1v0.x == e1v1.x && e1v0.y == e1v1.y)
+		{
+			if (e1v0.x == e0v0.x && e1v0.y == e0v0.y) {
+				// Coincident.
+				*e0_vs_e1 = 0;
+				*e1_vs_e0 = 0;
+				return;
+			}
+		}
+	}
+
+	// See if e1 crosses line of e0.
+	double	det10 = determinant_float(e0v0, e0v1, e1v0);
+	double	det11 = determinant_float(e0v0, e0v1, e1v1);
+
+	// Note: we do > 0, which means a vertex on a line counts as
+	// intersecting.  In general, if one vert is on the other
+	// segment, we have to go searching along the path in either
+	// direction to see if it crosses or not, and it gets
+	// complicated.  Better to treat it as intersection.
+
+	int det1sign = 0;
+	if (det11 < 0) det1sign = -1;
+	else if (det11 > 0) det1sign = 1;
+	if (det10 < 0) det1sign = -det1sign;
+	else if (det10 == 0) det1sign = 0;
+
+	if (det1sign > 0) {
+		// e1 doesn't cross the line of e0.
+		*e1_vs_e0 = 1;
+	} else if (det1sign < 0) {
+		// e1 does cross the line of e0.
+		*e1_vs_e0 = -1;
+	} else {
+		// One (or both) of the endpoints of e1 are on the
+		// line of e0.
+		*e1_vs_e0 = 0;
+	}
+
+	// See if e0 crosses line of e1.
+	double	det00 = determinant_float(e1v0, e1v1, e0v0);
+	double	det01 = determinant_float(e1v0, e1v1, e0v1);
+
+	int det0sign = 0;
+	if (det01 < 0) det0sign = -1;
+	else if (det01 > 0) det0sign = 1;
+	if (det00 < 0) det0sign = -det0sign;
+	else if (det00 == 0) det0sign = 0;
+
+	if (det0sign > 0) {
+		// e0 doesn't cross the line of e1.
+		*e0_vs_e1 = 1;
+	} else if (det0sign < 0) {
+		// e0 crosses line of e1
+		*e0_vs_e1 = -1;
+	} else {
+		// One (or both) of the endpoints of e0 are on the
+		// line of e1.
+		*e0_vs_e1 = 0;
+	}
+}
+
+
+inline bool vert_in_triangle(const vec2<sint16>& v, const vec2<sint16>& v0, const vec2<sint16>& v1, const vec2<sint16>& v2)
+// Return true if v touches the boundary or the interior of triangle (v0, v1, v2).
+//
+// Specialized for sint16
+{
+	sint64 det0 = determinant_sint16(v0, v1, v);
+	if (det0 >= 0) {
+		sint64 det1 = determinant_sint16(v1, v2, v);
+		if (det1 >= 0) {
+			sint64 det2 = determinant_sint16(v2, v0, v);
+			if (det2 >= 0) {
+				// Point touches the triangle.
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+inline bool vert_in_triangle(const vec2<float>& v, const vec2<float>& v0, const vec2<float>& v1, const vec2<float>& v2)
+// Return true if v touches the boundary or the interior of triangle (v0, v1, v2).
+//
+// Specialized for sint16
+{
+	double det0 = determinant_float(v0, v1, v);
+	if (det0 >= 0) {
+		double det1 = determinant_float(v1, v2, v);
+		if (det1 >= 0) {
+			double det2 = determinant_float(v2, v0, v);
+			if (det2 >= 0) {
+				// Point touches the triangle.
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+
+
+
+
+
 #endif // VERT_TYPES_H
 

@@ -54,6 +54,29 @@ namespace gameswf
 
 	};	// end namespace tesselate
 
+	namespace tesselate_new {
+		struct mesh_accepter {
+			// TODO: too much array copying!  Fix it.
+			// Accepter should be able to fill its buffer
+			// triangle-by-triangle via a callback from
+			// within the tesselator.  We should also add
+			// a result size hint function so the accepter
+			// can reserve the right amount of output
+			// space.
+			virtual void accept_trilist(int style, const point trilist[], int point_count) = 0;
+			virtual void accept_line_strip(int style, const point coords[], int point_count) = 0;
+		};
+
+		void	begin_shape(mesh_accepter* accepter, float curve_error_tolerance);
+		void	end_shape();
+
+		// A path is a subpart of a shape, having a consistent style.
+		void	begin_path(int style_left, int style_right, int line_style, float ax, float ay);
+		void	add_line_segment(float ax, float ay);
+		void	add_curve_segment(float cx, float cy, float ax, float ay);
+		void	end_path();
+	} // end namespace tesselate_new
+
 };	// end namespace gameswf
 
 

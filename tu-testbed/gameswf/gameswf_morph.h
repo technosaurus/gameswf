@@ -64,8 +64,6 @@ namespace gameswf
 		shape_morph_def *m_sh;
 		float            m_ratio;
 	};
-		
-
 }
 
 #endif /* GAMESWF_MORPH_H */

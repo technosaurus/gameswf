@@ -18,11 +18,16 @@ namespace gameswf
 	struct character;
 	struct stream;
 	struct shape_character_def;
+	namespace tesselate_new {
+		struct mesh_accepter;
+	}
 	namespace tesselate {
 		struct trapezoid_accepter;
 		struct tesselating_shape {
 			virtual void tesselate(float error_tolerance, 
 					       trapezoid_accepter *accepter) const = 0;
+			virtual void tesselate_new(float error_tolerance, 
+					           gameswf::tesselate_new::mesh_accepter *accepter) const = 0;
 		};
 	}
 
@@ -34,6 +39,7 @@ namespace gameswf
 		edge();
 		edge(float cx, float cy, float ax, float ay);
 		void	tesselate_curve() const;
+		void	tesselate_curve_new() const;
 		bool	is_straight() const;
 		
 	//private:
@@ -57,6 +63,7 @@ namespace gameswf
 
 		// Push the path into the tesselator.
 		void	tesselate() const;
+		void	tesselate_new() const;
 
 	//private:
 		int	m_fill0, m_fill1, m_line;
@@ -157,6 +164,7 @@ namespace gameswf
 			const array<fill_style>& fill_styles,
 			const array<line_style>& line_styles) const;
 		virtual void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
+		virtual void	tesselate_new(float error_tolerance, tesselate_new::mesh_accepter* accepter) const;
 		const rect&	get_bound() const { return m_bound; }
 		void	compute_bound(rect* r) const;	// @@ what's the difference between this and get_bound?
 
