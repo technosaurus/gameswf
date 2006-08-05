@@ -488,7 +488,43 @@ namespace fontlib
 	}
 
 
-	struct draw_into_software_buffer : tesselate::trapezoid_accepter
+	static void software_triangle(float x0, float y0, float x1, float y1, float x2, float y2)
+	// Fill the specified triangle in the software output buffer.
+	{
+		// Sort by y.
+		if (y0 > y1) {
+			swap(&x0, &x1);
+			swap(&y0, &y1);
+		}
+		if (y1 > y2) {
+			swap(&x1, &x2);
+			swap(&y1, &y2);
+		}
+		if (y0 > y1) {
+			swap(&x0, &x1);
+			swap(&y0, &y1);
+		}
+
+		float dy1 = (y1 - y0);
+		if (dy1 > 1e-6f) {
+			float x_at_y1 = (x2 - x0) * dy1 / (y2 - y0) + x0;
+			if (x_at_y1 < x1) {
+				software_trapezoid(y0, y1, x0, x_at_y1, x0, x1);
+				software_trapezoid(y1, y2, x_at_y1, x2, x1, x2);
+			} else {
+				software_trapezoid(y0, y1, x0, x1, x0, x_at_y1);
+				software_trapezoid(y1, y2, x1, x2, x_at_y1, x2);
+			}
+		} else {
+			if (x0 > x1) {
+				swap(&x0, &x1);
+			}
+			software_trapezoid(y0, y2, x0, x2, x1, x2);
+		}
+	}
+	
+
+	struct draw_into_software_buffer_old : tesselate::trapezoid_accepter
 	// A trapezoid accepter that does B&W rendering into our
 	// software buffer.
 	{
@@ -510,6 +546,38 @@ namespace fontlib
 
 			// Draw into the software buffer.
 			software_trapezoid(y0, y1, lx0, lx1, rx0, rx1);
+		}
+
+		virtual void	accept_line_strip(int style, const point coords[], int coord_count)
+		{
+			assert(0);	// Shape glyphs should not contain lines.
+		}
+	};
+
+
+	struct draw_into_software_buffer : tesselate_new::mesh_accepter
+	// A triangle accepter that does B&W rendering into our
+	// software buffer.
+	{
+		// Overrides from mesh_accepter
+		virtual void begin_trilist(int style, int expected_triangle_count) {
+		}
+		virtual void accept_trilist_batch(const point trilist[], int point_count)
+		{
+			// Transform the coords.
+			float	x_scale = s_render_matrix.m_[0][0];
+			float	y_scale = s_render_matrix.m_[1][1];
+			float	x_offset = s_render_matrix.m_[0][2];
+			float	y_offset = s_render_matrix.m_[1][2];
+
+			for (int i = 0; i < point_count; i += 3) {
+				software_triangle(
+					trilist[i].m_x * x_scale + x_offset, trilist[i].m_y * y_scale + y_offset,
+					trilist[i + 1].m_x * x_scale + x_offset, trilist[i + 1].m_y * y_scale + y_offset,
+					trilist[i + 2].m_x * x_scale + x_offset, trilist[i + 2].m_y * y_scale + y_offset);
+			}
+		}
+		virtual void end_trilist() {
 		}
 
 		virtual void	accept_line_strip(int style, const point coords[], int coord_count)
@@ -558,8 +626,18 @@ namespace fontlib
 		s_render_matrix.concatenate_translation(offset_x, offset_y);
 
 		// Tesselate & draw the shape.
-		draw_into_software_buffer	accepter;
+
+		// old
+		draw_into_software_buffer_old	accepter;
 		sh->tesselate(s_rendering_box / s_glyph_render_size * 0.5f, &accepter);
+
+// 		// new
+//		//
+// 		// xxxx new one is slower for building fonts (debug compile)!  Perhaps building grid indexes hurts?
+//		// Plus all the unnecessary data copies.
+// 		draw_into_software_buffer accepter;
+// 		float error_tolerance = s_rendering_box / s_glyph_render_size * 0.5f;
+// 		sh->tesselate_new(error_tolerance, &accepter);
 
 		//
 		// Process the results of rendering.

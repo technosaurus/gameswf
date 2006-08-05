@@ -1,22 +1,27 @@
-// constrained_triangulate.h	-- Thatcher Ulrich 2004
+// ear_clip_triangulate.h	-- Thatcher Ulrich 2006
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// Code to triangulate arbitrary 2D polygonal regions.
+// Code to triangulate 2D polygonal regions.
 //
-// see constrained_triangulate.cpp for more details.
+// see ear_clip_triangulate.cpp for more details.
 
 
-#ifndef CONSTRAINED_TRIANGULATE_H
-#define CONSTRAINED_TRIANGULATE_H
+#ifndef EAR_CLIP_TRIANGULATE_H
+#define EAR_CLIP_TRIANGULATE_H
 
 #include "base/container.h"
 #include "base/tu_types.h"
 
-namespace constrained_triangulate {
+namespace ear_clip_triangulate
+{
+	// Triangulators that take input arrays and output trilist
+	// coordinate arrays.
 
-	// Output a triangle list.
+	// The triangulator for each coord type is implemented in
+	// different .cpp files, to avoid code bloat if you only need
+	// to link to one version.
 
 	// coord type sint16
 	void compute(
@@ -36,4 +41,4 @@ namespace constrained_triangulate {
 }
 
 
-#endif // CONSTRAINED_TRIANGULATE_H
+#endif // EAR_CLIP_TRIANGULATE_H

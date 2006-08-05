@@ -7,7 +7,7 @@
 
 
 #include "base/triangulate.h"
-#include "base/constrained_triangulate.h"
+#include "base/ear_clip_triangulate.h"
 #include "base/postscript.h"
 #include "base/tu_file.h"
 #include "base/ogl.h"
@@ -1010,7 +1010,7 @@ void do_constrained_triangulate_sint16(array<float>* result, int paths_size, arr
 	// Triangulate.
 	array<sint16> sresult;
 	array<sint16> sdebug_path;
-	constrained_triangulate::compute(&sresult, paths_size, &spaths[0], debug_halt_tri, &sdebug_path);
+	ear_clip_triangulate::compute(&sresult, paths_size, &spaths[0], debug_halt_tri, &sdebug_path);
 	
 	// Adapt output.
 	{for (int j = 0; j < sresult.size(); j += 2) {
@@ -1209,7 +1209,7 @@ int	main(int argc, const char** argv)
 					do_constrained_triangulate_sint16(
 						&result, input->size(), &(*input)[0], debug_halt_tri, &debug_path);
 				} else {
-					constrained_triangulate::compute(
+					ear_clip_triangulate::compute(
 						&result, input->size(), &(*input)[0], debug_halt_tri, &debug_path);
 				}
 			} else {
