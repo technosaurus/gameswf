@@ -1,17 +1,26 @@
-// constrained_triangulate.h	-- Thatcher Ulrich 2004
+// ear_clip_triangulate_impl.h	-- Thatcher Ulrich 2006
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// Code to triangulate arbitrary 2D polygonal regions.
+// Code to triangulate 2D polygonal regions.
 //
 // Ear-clipping (similar to FIST), but not relying on topology of the
 // loops to untangle coincident verts; instead, when handling
 // coincident verts use robust ear checks.  This avoids complicated
 // non-local analysis when joining loops together.
+//
+// Also, process verts in lexicographic sort order, rather than using
+// a priority queue or similar.
+//
+// This file contains a templated implementation; specific .cpp files
+// may instantiate versions for particular coordinate types.
 
 
-#include "base/constrained_triangulate.h"
+#ifndef EAR_CLIP_TRIANGULATE_IMPL_H
+#define EAR_CLIP_TRIANGULATE_IMPL_H
+
+
 #include "base/grid_index.h"
 #include "base/tu_random.h"
 #include "base/vert_types.h"
@@ -991,66 +1000,42 @@ static void triangulate_plane(tristate* ts)
 }
 
 
-}; // end struct coord_type_wrapper
-
-
-namespace constrained_triangulate {
-	template<class coord_t>
-	void compute_t(
-		array<coord_t>* results,
-		int path_count,
-		const array<coord_t> paths[],
-		int debug_halt_step,
-		array<coord_t>* debug_edges)
-	{
+template<class coord_t>
+static void compute_triangulation(
+	array<coord_t>* results,
+	int path_count,
+	const array<coord_t> paths[],
+	int debug_halt_step,
+	array<coord_t>* debug_edges)
+{
 #ifdef PROFILE_TRIANGULATE
-		uint64	start_ticks = tu_timer::get_profile_ticks();
+	uint64	start_ticks = tu_timer::get_profile_ticks();
 #endif // PROFILE_TRIANGULATE
 	
-		coord_type_wrapper<coord_t>::tristate ts;
-		coord_type_wrapper<coord_t>::init(&ts, results, path_count, paths, debug_halt_step, debug_edges);
+	coord_type_wrapper<coord_t>::tristate ts;
+	coord_type_wrapper<coord_t>::init(&ts, results, path_count, paths, debug_halt_step, debug_edges);
 
 #ifdef PROFILE_TRIANGULATE
-		uint64	join_ticks = tu_timer::get_profile_ticks();
-		fprintf(stderr, "join poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(join_ticks - start_ticks));
+	uint64	join_ticks = tu_timer::get_profile_ticks();
+	fprintf(stderr, "join poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(join_ticks - start_ticks));
 #endif // PROFILE_TRIANGULATE
 		
-		coord_type_wrapper<coord_t>::triangulate_plane(&ts);
+	coord_type_wrapper<coord_t>::triangulate_plane(&ts);
 
 #ifdef PROFILE_TRIANGULATE
-		uint64	clip_ticks = tu_timer::get_profile_ticks();
-		fprintf(stderr, "clip poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks));
-		fprintf(stderr, "total for poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks));
-		fprintf(stderr, "vert count = %d, verts clipped / sec = %f, verts processed / sec = %f\n",
-			ts.m_verts.size(),
-			ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks),
-			ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks)
-			);
+	uint64	clip_ticks = tu_timer::get_profile_ticks();
+	fprintf(stderr, "clip poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks));
+	fprintf(stderr, "total for poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks));
+	fprintf(stderr, "vert count = %d, verts clipped / sec = %f, verts processed / sec = %f\n",
+		ts.m_verts.size(),
+		ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks),
+		ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks)
+		);
 #endif // PROFILE_TRIANGULATE
-	}
-
-
-	void compute(
-		array<sint16>* results,
-		int path_count,
-		const array<sint16> paths[],
-		int debug_halt_step,
-		array<sint16>* debug_edges)
-	{
-		compute_t(results, path_count, paths, debug_halt_step, debug_edges);
-	}
-
-	void compute(
-		array<float>* results,
-		int path_count,
-		const array<float> paths[],
-		int debug_halt_step,
-		array<float>* debug_edges)
-	{
-		compute_t(results, path_count, paths, debug_halt_step, debug_edges);
-	}
-
 }
+
+
+}; // end struct coord_type_wrapper
 
 
 /* triangulation notes
@@ -1103,3 +1088,7 @@ Interesting forum post re monotone subdivision in Amanith:
 http://www.amanith.org/forum/viewtopic.php?pid=43
 
 */
+
+
+#endif // EAR_CLIP_TRIANGULATE_IMPL_H
+
