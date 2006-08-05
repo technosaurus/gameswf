@@ -111,6 +111,11 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->draw_mesh_strip(coords, vertex_count);
 		}
 
+		void draw_triangle_list(const sint16 coords[], int vertex_count) {
+			if (s_render_handler) s_render_handler->draw_triangle_list(coords, vertex_count);
+		}
+		
+
 		// Draw a line-strip using the current line style.
 		// Clear the style list after rendering.
 		//

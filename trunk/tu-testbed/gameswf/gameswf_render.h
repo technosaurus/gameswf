@@ -49,6 +49,14 @@ namespace gameswf
 		// be float[vertex_count*2]
 		void	draw_mesh_strip(const Sint16 coords[], int vertex_count);
 
+		// Draw triangles using the current fill-style 0.
+		// Clears the style list after rendering.
+		//
+		// coords is a list of (x,y) coordinate pairs, in
+		// triangle-list order.  The type of the array should
+		// be float[vertex_count*2]
+		void draw_triangle_list(const sint16 coords[], int vertex_count);
+
 		// Draw a line-strip using the current line style.
 		// Clear the style list after rendering.
 		//

@@ -532,7 +532,8 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	draw_mesh_strip(const void* coords, int vertex_count)
+	void	draw_mesh_primitive(int primitive_type, const void* coords, int vertex_count)
+	// Helper for draw_mesh_strip and draw_triangle_list.
 	{
 #define NORMAL_RENDERING
 //#define MULTIPASS_ANTIALIASING
@@ -548,12 +549,12 @@ struct render_handler_ogl : public gameswf::render_handler
 		// Send the tris to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
+		glDrawArrays(primitive_type, 0, vertex_count);
 
 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
 		{
 			m_current_styles[LEFT_STYLE].apply_second_pass();
-			glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
+			glDrawArrays(primitive_type, 0, vertex_count);
 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
 		}
 
@@ -614,7 +615,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		// destination alpha channel.
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
+		glDrawArrays(primitive_type, 0, vertex_count);
 		glDisableClientState(GL_VERTEX_ARRAY);
 
 		glPopMatrix();
@@ -637,7 +638,7 @@ struct render_handler_ogl : public gameswf::render_handler
 // 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
 // 		{
 // 			m_current_styles[LEFT_STYLE].apply_second_pass();
-// 			glDrawArrays(GL_TRIANGLE_STRIP, 0, vertex_count);
+// 			glDrawArrays(primitive_type, 0, vertex_count);
 // 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
 // 		}
 
@@ -645,6 +646,16 @@ struct render_handler_ogl : public gameswf::render_handler
 		// fixing here, or setting elsewhere.
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif // MULTIPASS_ANTIALIASING
+	}
+
+	void draw_mesh_strip(const void* coords, int vertex_count)
+	{
+		draw_mesh_primitive(GL_TRIANGLE_STRIP, coords, vertex_count);
+	}
+			
+	void	draw_triangle_list(const void* coords, int vertex_count)
+	{
+		draw_mesh_primitive(GL_TRIANGLES, coords, vertex_count);
 	}
 
 
