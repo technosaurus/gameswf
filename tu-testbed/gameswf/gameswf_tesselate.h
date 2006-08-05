@@ -56,14 +56,17 @@ namespace gameswf
 
 	namespace tesselate_new {
 		struct mesh_accepter {
-			// TODO: too much array copying!  Fix it.
-			// Accepter should be able to fill its buffer
-			// triangle-by-triangle via a callback from
-			// within the tesselator.  We should also add
-			// a result size hint function so the accepter
-			// can reserve the right amount of output
-			// space.
-			virtual void accept_trilist(int style, const point trilist[], int point_count) = 0;
+			// Caller begins a trilist of a particular
+			// style, then passes in batches of individual
+			// triangles, then ends the trilist.  The idea
+			// behind small batches is that the data can
+			// pass directly from the tesselator into the
+			// output mesh storage, without allocating a
+			// big intermediate buffer.
+			virtual void begin_trilist(int style, int expected_triangle_count) = 0;
+			virtual void accept_trilist_batch(const point trilist[], int point_count) = 0;
+			virtual void end_trilist() = 0;
+
 			virtual void accept_line_strip(int style, const point coords[], int point_count) = 0;
 		};
 

@@ -388,6 +388,17 @@ namespace gameswf
 //		memcpy(&m_triangle_strip[0], &pts[0], count * sizeof(point));
 	}
 
+	void mesh::reserve_triangles(int expected_triangle_count)
+	{
+		m_triangle_list.reserve(expected_triangle_count * 6);  // 6 coords per triangle
+	}
+
+
+	void mesh::add_triangle(const sint16 pts[6])
+	{
+		m_triangle_list.append(pts, 6);
+	}
+
 
 	void	mesh::display(const base_fill_style& style, float ratio) const
 	{
@@ -397,6 +408,10 @@ namespace gameswf
 			style.apply(0, ratio);
 			render::draw_mesh_strip(&m_triangle_strip[0], m_triangle_strip.size() >> 1);
 		}
+		if (m_triangle_list.size() > 0) {
+			style.apply(0, ratio);
+			render::draw_triangle_list(&m_triangle_list[0], m_triangle_list.size() >> 1);
+		}
 	}
 
 
@@ -404,6 +419,7 @@ namespace gameswf
 	// Dump our data to *out.
 	{
 		write_coord_array(out, m_triangle_strip);
+		write_coord_array(out, m_triangle_list);
 	}
 
 	
@@ -411,6 +427,7 @@ namespace gameswf
 	// Slurp our data from *out.
 	{
 		read_coord_array(in, &m_triangle_strip);
+		read_coord_array(in, &m_triangle_list);
 	}
 
 
@@ -623,7 +640,6 @@ namespace gameswf
 
 	mesh_set::mesh_set()
 		:
-//		m_last_frame_rendered(-1),
 		m_error_tolerance(0)	// invalid -- don't use this constructor; it's only here for array (@@ fix array)
 	{
 	}
@@ -631,9 +647,9 @@ namespace gameswf
 	mesh_set::mesh_set(const tesselate::tesselating_shape* sh, float error_tolerance)
 	// Tesselate the shape's paths into a different mesh for each fill style.
 		:
-//		m_last_frame_rendered(0),
 		m_error_tolerance(error_tolerance)
 	{
+		// For collecting trapezoids emitted by the old tesselator.
 		struct collect_traps : public tesselate::trapezoid_accepter
 		{
 			mesh_set*	m;	// the mesh_set that receives trapezoids.
@@ -686,53 +702,53 @@ namespace gameswf
 			}
 		};
 
+		// For collecting triangles emitted by the new tesselator.
 		struct collect_tris : public tesselate_new::mesh_accepter
 		{
-			mesh_set*	m;	// the mesh_set that receives trapezoids.
+			mesh_set*	ms;	// the mesh_set that receives trapezoids.
+			mesh* m;
 
-			// strips-in-progress.
-			hash<int, tri_stripper*>	m_strips;
-
-			collect_tris(mesh_set* set) : m(set) {}
+			collect_tris(mesh_set* set) : ms(set), m(NULL) {}
 			virtual ~collect_tris() {}
 
 			// Overrides from mesh_accepter
-			virtual void	accept_trilist(int style, const point trilist[], int point_count)
-			{
-				// Add triangles to appropriate stripper.
-
-				tri_stripper*	s = NULL;
-				m_strips.get(style, &s);
-				if (s == NULL)
-				{
-					s = new tri_stripper;
-					m_strips.add(style, s);
-				}
-
-				for (int i = 0; i < point_count; i += 3) {
-					s->add_triangle(trilist[i], trilist[i + 1], trilist[i + 2]);
-				}
-			}
-
+			
 			virtual void	accept_line_strip(int style, const point coords[], int coord_count)
 			// Remember this line strip in our mesh set.
 			{
-				m->add_line_strip(style, coords, coord_count);
+				ms->add_line_strip(style, coords, coord_count);
 			}
 
-			void	flush() const
-			// Push our strips into the mesh set.
+			virtual void begin_trilist(int style, int expected_triangle_count)
 			{
-				for (hash<int, tri_stripper*>::const_iterator it = m_strips.begin();
-				     it != m_strips.end();
-				     ++it)
-				{
-					// Push strip into m.
-					tri_stripper*	s = it->second;
-					s->flush(m, it->first);
-					
-					delete s;
+				assert(m == NULL);
+				m = ms->get_mutable_mesh(style);
+				m->reserve_triangles(expected_triangle_count);
+			}
+
+			virtual void accept_trilist_batch(const point trilist[], int point_count)
+			// Accept one or more triangles to add to the
+			// mesh for the specified style.
+			{
+				assert(m != NULL);
+				
+				// Convert input from float coords to
+				// sint16 and add them to the mesh.
+				sint16 tri[6];
+				for (int i = 0; i < point_count; i += 3) {
+					tri[0] = static_cast<sint16>(trilist[i].m_x);
+					tri[1] = static_cast<sint16>(trilist[i].m_y);
+					tri[2] = static_cast<sint16>(trilist[i + 1].m_x);
+					tri[3] = static_cast<sint16>(trilist[i + 1].m_y);
+					tri[4] = static_cast<sint16>(trilist[i + 2].m_x);
+					tri[5] = static_cast<sint16>(trilist[i + 2].m_y);
+					m->add_triangle(tri);
 				}
+			}
+
+			virtual void end_trilist()
+			{
+				m = NULL;
 			}
 		};
 
@@ -744,9 +760,19 @@ namespace gameswf
 		// New tesselator.
 		collect_tris	accepter(this);
 		sh->tesselate_new(error_tolerance, &accepter);
-		accepter.flush();
 
 		// triangles should be collected now into the meshes for each fill style.
+	}
+
+
+	mesh_set::~mesh_set()
+	{
+		for (int i = 0; i < m_line_strips.size(); i++) {
+			delete m_line_strips[i];
+		}
+		for (int i = 0; i < m_meshes.size(); i++) {
+			delete m_meshes[i];
+		}
 	}
 
 
@@ -766,14 +792,16 @@ namespace gameswf
 		// Dump meshes into renderer, one mesh per style.
 		for (int i = 0; i < m_meshes.size(); i++)
 		{
-			m_meshes[i].display(fills[i], 1.0);
+			if (m_meshes[i]) {
+				m_meshes[i]->display(fills[i], 1.0);
+			}
 		}
 
 		// Dump line-strips into renderer.
 		{for (int i = 0; i < m_line_strips.size(); i++)
 		{
-			int	style = m_line_strips[i].get_style();
-			m_line_strips[i].display(line_styles[style], 1.0);
+			int	style = m_line_strips[i]->get_style();
+			m_line_strips[i]->display(line_styles[style], 1.0);
 		}}
 	}
 
@@ -794,20 +822,20 @@ namespace gameswf
 		// Dump meshes into renderer, one mesh per style.
 		for (int i = 0; i < m_meshes.size(); i++)
 		{
-			m_meshes[i].display(fills[i], ratio);
+			if (m_meshes[i]) {
+				m_meshes[i]->display(fills[i], ratio);
+			}
 		}
 
 		// Dump line-strips into renderer.
 		{for (int i = 0; i < m_line_strips.size(); i++)
 		{
-			int	style = m_line_strips[i].get_style();
-			m_line_strips[i].display(line_styles[style], ratio);
+			int	style = m_line_strips[i]->get_style();
+			m_line_strips[i]->display(line_styles[style], ratio);
 		}}
 	}
 
-	void	mesh_set::set_tri_strip(int style, const point pts[], int count)
-	// Set mesh associated with the given fill style to the
-	// specified triangle strip.
+	void mesh_set::expand_styles_to_include(int style)
 	{
 		assert(style >= 0);
 		assert(style < 10000);	// sanity check
@@ -818,10 +846,25 @@ namespace gameswf
 			m_meshes.resize(style + 1);
 		}
 
-		m_meshes[style].set_tri_strip(pts, count);
+		if (m_meshes[style] == NULL) {
+			m_meshes[style] = new mesh;
+		}
 	}
 
-	
+	void	mesh_set::set_tri_strip(int style, const point pts[], int count)
+	// Set mesh associated with the given fill style to the
+	// specified triangle strip.
+	{
+		expand_styles_to_include(style);
+		m_meshes[style]->set_tri_strip(pts, count);
+	}
+
+	mesh* mesh_set::get_mutable_mesh(int style)
+	{
+		expand_styles_to_include(style);
+		return m_meshes[style];
+	}
+
 	void	mesh_set::add_line_strip(int style, const point coords[], int coord_count)
 	// Add the specified line strip to our list of things to render.
 	{
@@ -830,7 +873,7 @@ namespace gameswf
 		assert(coords != NULL);
 		assert(coord_count > 1);
 
-		m_line_strips.push_back(line_strip(style, coords, coord_count));
+		m_line_strips.push_back(new line_strip(style, coords, coord_count));
 	}
 
 
@@ -843,14 +886,19 @@ namespace gameswf
 		out->write_le32(mesh_n);
 		for (int i = 0; i < mesh_n; i++)
 		{
-			m_meshes[i].output_cached_data(out);
+			if (m_meshes[i]) {
+				out->write_byte(1);
+				m_meshes[i]->output_cached_data(out);
+			} else {
+				out->write_byte(0);
+			}
 		}
 
 		int	lines_n = m_line_strips.size();
 		out->write_le32(lines_n);
 		{for (int i = 0; i < lines_n; i++)
 		{
-			m_line_strips[i].output_cached_data(out);
+			m_line_strips[i]->output_cached_data(out);
 		}}
 	}
 
@@ -864,14 +912,19 @@ namespace gameswf
 		m_meshes.resize(mesh_n);
 		for (int i = 0; i < mesh_n; i++)
 		{
-			m_meshes[i].input_cached_data(in);
+			bool non_null = in->read_byte() > 0;
+			if (non_null) {
+				m_meshes[i] = new mesh;
+				m_meshes[i]->input_cached_data(in);
+			}
 		}
 
 		int	lines_n = in->read_le32();
 		m_line_strips.resize(lines_n);
 		{for (int i = 0; i < lines_n; i++)
 		{
-			m_line_strips[i].input_cached_data(in);
+			m_line_strips[i] = new line_strip;
+			m_line_strips[i]->input_cached_data(in);
 		}}
 	}
 

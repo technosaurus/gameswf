@@ -817,6 +817,8 @@ namespace gameswf
 		// triangle-strip order.  The type of the array should
 		// be Sint16[vertex_count*2]
 		virtual void	draw_mesh_strip(const void* coords, int vertex_count) = 0;
+		// As above, but coords is in triangle list order.
+		virtual void	draw_triangle_list(const void* coords, int vertex_count) = 0;
 		
 		// Draw a line-strip using the current line style.
 		// Clear the style list after rendering.

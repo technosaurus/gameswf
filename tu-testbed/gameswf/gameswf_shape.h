@@ -77,14 +77,17 @@ namespace gameswf
 	{
 		mesh();
 
-		void	set_tri_strip(const point pts[], int count);
+		void	set_tri_strip(const point pts[], int count); // TODO remove
+		void reserve_triangles(int expected_triangle_count);
+		void add_triangle(const sint16 pts[6]);
 
 		void	display(const base_fill_style& style, float ratio) const;
 
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
 	private:
-		array<Sint16>	m_triangle_strip;
+		array<Sint16>	m_triangle_strip;// TODO remove
+		array<sint16> m_triangle_list;
 	};
 
 
@@ -111,9 +114,8 @@ namespace gameswf
 		mesh_set();
 		mesh_set(const tesselate::tesselating_shape* sh,
 			 float error_tolerance);
+		~mesh_set();
 
-//		int	get_last_frame_rendered() const;
-//		void	set_last_frame_rendered(int frame_counter);
 		float	get_error_tolerance() const { return m_error_tolerance; }
 
 		void display(
@@ -132,14 +134,17 @@ namespace gameswf
 		void	set_tri_strip(int style, const point pts[], int count);
 		void	add_line_strip(int style, const point coords[], int coord_count);
 
+		mesh* get_mutable_mesh(int style);
+		
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
 
 	private:
-//		int	m_last_frame_rendered;	// @@ Hm, we shouldn't spontaneously drop cached data I don't think...
+		void expand_styles_to_include(int style);
+		
 		float	m_error_tolerance;
-		array<mesh>	m_meshes;	// One mesh per style.
-		array<line_strip>	m_line_strips;
+		array<mesh*>	m_meshes;	// One mesh per style.
+		array<line_strip*>	m_line_strips;
 	};
 
 

@@ -773,10 +773,17 @@ namespace tesselate_new
 				}
 				array<float> trilist;
 				constrained_triangulate::compute(&trilist, paths.size(), &paths[0]);
+				// TODO: get the results from the
+				// triangulator in a more incremental
+				// way (without the intermediate
+				// trilist buffer!)
+
 				// Give the results to the accepter.
 				if (trilist.size() > 0) {
-					s_accepter->accept_trilist(
-						style, reinterpret_cast<point*>(&trilist[0]), trilist.size() / 2);
+					s_accepter->begin_trilist(style, trilist.size() / 6);
+					s_accepter->accept_trilist_batch(
+						reinterpret_cast<point*>(&trilist[0]), trilist.size() / 2);
+					s_accepter->end_trilist();
 				}
 
 // Useful for debugging.  TODO: make a cleaner interface to this.
