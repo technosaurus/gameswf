@@ -44,6 +44,10 @@ OBJS := $(SRCS:.cpp=.$(OBJ_EXT))
 OBJS := $(OBJS:.c=.$(OBJ_EXT))
 
 triangulate_sint32.$(OBJ_EXT) triangulate_float.$(OBJ_EXT): triangulate_impl.h triangulate.h grid_index.h
+ear_clip_triangulate_sint16.$(OBJ_EXT) ear_clip_triangulate_float.$(OBJ_EXT): \
+	ear_clip_triangulate.h \
+	ear_clip_triangulate_impl.h \
+	grid_index.h
 
 $(BASE_LIB): $(OBJS)
 	$(AR) $(LIB_OUT_FLAG)$(BASE_LIB) $(OBJS)

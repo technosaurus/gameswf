@@ -17,7 +17,7 @@ namespace ear_clip_triangulate {
 		int debug_halt_step,
 		array<float>* debug_edges)
 	{
-		coord_type_wrapper<float>::compute_triangulation(results, path_count, paths, debug_halt_step, debug_edges);
+		ear_clip_triangulate::compute_triangulation<float>(results, path_count, paths, debug_halt_step, debug_edges);
 	}
 }
 

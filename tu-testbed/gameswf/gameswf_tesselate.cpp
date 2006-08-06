@@ -119,7 +119,7 @@
 #include "base/utility.h"
 #include "base/container.h"
 #include <stdlib.h>
-#include "base/constrained_triangulate.h"
+#include "base/ear_clip_triangulate.h"
 
 
 // Useful for debugging.  TODO: make a cleaner interface to this.
@@ -772,7 +772,7 @@ namespace tesselate_new
 					}
 				}
 				array<float> trilist;
-				constrained_triangulate::compute(&trilist, paths.size(), &paths[0]);
+				ear_clip_triangulate::compute(&trilist, paths.size(), &paths[0]);
 				// TODO: get the results from the
 				// triangulator in a more incremental
 				// way (without the intermediate

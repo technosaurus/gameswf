@@ -632,9 +632,9 @@ namespace fontlib
 		sh->tesselate(s_rendering_box / s_glyph_render_size * 0.5f, &accepter);
 
 // 		// new
-//		//
+// 		//
 // 		// xxxx new one is slower for building fonts (debug compile)!  Perhaps building grid indexes hurts?
-//		// Plus all the unnecessary data copies.
+// 		// Plus all the unnecessary data copies.
 // 		draw_into_software_buffer accepter;
 // 		float error_tolerance = s_rendering_box / s_glyph_render_size * 0.5f;
 // 		sh->tesselate_new(error_tolerance, &accepter);
