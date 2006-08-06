@@ -33,12 +33,30 @@
 #endif // PROFILE_TRIANGULATE
 
 
-// This struct's only purpose is to parameterize the coord type and
-// enclose typedefs for the code within.
+// This struct's purpose is to parameterize the coord type and IO
+// objects, and enclose typedefs for the code within.
 //
 // It's not indented, to keep the indentation within reason.
-template<class coord_t>
-struct coord_type_wrapper {
+//
+// coord_t is a scalar type (like sint16, float, etc).
+//
+// trilist_accepter is a class with methods:
+//
+//   void notify_estimated_coord_count(int estimated_coord_count);
+//   void accept_triangle(coord_t x0, coord_t y0, coord_t x1, coord_t y1, coord_t x2, coord_t y2);
+//   void trilist_done();
+//
+// path_supplier is a class with methods:
+//
+//   int get_estimated_path_data_size(int* estimated_path_count,
+//                                    int* estimated_coord_count);
+//   int get_path_data(int* coord_count, const coord_t path_data*[]);
+//   fills coord_count and *path_data and returns:
+//     0 if there are more coords in the current path
+//     1 if there are no more coords in the current path
+//     2 if there are no more paths
+template<class coord_t, class trilist_accepter, class path_supplier>
+struct ear_clip_wrapper {
 
 typedef vec2<coord_t> vec2_t;
 typedef index_point<coord_t> index_point_t;
@@ -124,7 +142,11 @@ struct path_info {
 // Triangulator state.
 struct tristate {
 	tristate()
-		: m_estimated_vert_count(0), m_next_dirty(0), m_reflex_point_index(NULL)
+		:
+		m_output(NULL),
+		m_estimated_vert_count(0),
+		m_next_dirty(0),
+		m_reflex_point_index(NULL)
 	{
 	}
 	~tristate()
@@ -132,7 +154,8 @@ struct tristate {
 		delete m_reflex_point_index;
 	}
 	
-	array<coord_t>* m_results;
+//	array<coord_t>* m_results;
+	trilist_accepter* m_output;
 	array<poly_vert> m_verts;
 	array<path_info> m_input_paths;
 
@@ -418,12 +441,14 @@ static void sort_and_remap(tristate* ts)
 }
 
 
-static void init(tristate* ts, array<coord_t>* results, int path_count, const array<coord_t> paths[],
-	  int debug_halt_step, array<coord_t>* debug_edges)
+static void init(tristate* ts, trilist_accepter* output, path_supplier* input,
+		 /*array<coord_t>* results, int path_count, const array<coord_t> paths[], */
+		 int debug_halt_step, array<coord_t>* debug_edges)
 // Pull the paths into *tristate.
 {
-	assert(results);
-	ts->m_results = results;
+	assert(output);
+	assert(input);
+	ts->m_output = output;
 	ts->m_debug_halt_step = debug_halt_step;
 	ts->m_debug_edges = debug_edges;
 	ts->m_next_dirty = 0;
@@ -431,51 +456,107 @@ static void init(tristate* ts, array<coord_t>* results, int path_count, const ar
 
 	// For faster & tighter allocation of the vert array, we first
 	// figure out how big it is going to be.
-	//
-	// Count the input verts.
-	for (int i = 0; i < path_count; i++) {
-		ts->m_estimated_vert_count += paths[i].size();
-	}
-	ts->m_estimated_vert_count += (path_count - 1) * 2;  // There are two extra verts involved when joining a path.
-
-	ts->m_verts.reserve(ts->m_estimated_vert_count);
+	int estimated_path_count = 0;
+	int estimated_coord_count = 0;
+	input->get_estimated_path_data_size(&estimated_path_count, &estimated_coord_count);
+	// verts ~= coords / 2 + adjustment;
+	// adjustment: there are two extra verts involved when joining a path.
+	ts->m_estimated_vert_count = (estimated_coord_count >> 1) + (estimated_path_count - 1) * 2;
 	
-	// Dump verts and edges into tristate.
-	ts->m_input_paths.resize(path_count);
-	for (int i = 0; i < path_count; i++) {
-		assert((paths[i].size() & 1) == 0);
+	ts->m_verts.reserve(ts->m_estimated_vert_count);
 
-		// Keep some info about the path itself (so we can
-		// sort and join paths later).
-		path_info* pi = &ts->m_input_paths[i];
-		pi->m_begin_vert_orig = ts->m_verts.size();
+	// Pull input verts and edges into tristate.
+	ts->m_input_paths.reserve(estimated_path_count);
+	path_info* pi = NULL;
+	for (;;) {
+		int coord_count = 0;
+		const coord_t* path_data = NULL;
+		int next_input_state = input->get_path_data(&coord_count, &path_data);
+		// input_state:
+		//   0: inside a path
+		//   1: end of path
+		//   2: end of input
 
-		// Grab all the verts and edges.
-		int path_length = paths[i].size() / 2;
-		int previous_vert = ts->m_verts.size() + path_length - 1;
-		for (int j = 0; j < paths[i].size(); j += 2) {
-			int vert_index = ts->m_verts.size();
-			ts->m_verts.push_back(poly_vert(paths[i][j], paths[i][j + 1], previous_vert, vert_index + 1));
-			previous_vert = vert_index;
+		if (coord_count > 0) {
+			// Incoming data.
+			assert((coord_count & 1) == 0);
 			
-			// Update bounding box.
-			if (vert_index == 0) {
-				ts->m_bbox.set_to_point(ts->m_verts.back().get_index_point());
-			} else {
-				ts->m_bbox.expand_to_enclose(ts->m_verts.back().get_index_point());
+			if (pi == NULL) {
+				// Start a new path.
+				ts->m_input_paths.resize(ts->m_input_paths.size() + 1);
+				pi = &ts->m_input_paths.back();
+				pi->m_begin_vert_orig = ts->m_verts.size();
 			}
 
-			
-			if (pi->m_leftmost_vert == -1
-			    || compare_vertices(ts->m_verts[pi->m_leftmost_vert], ts->m_verts[vert_index]) > 0) {
-				pi->m_leftmost_vert = vert_index;
+			for (int j = 0; j < coord_count; j += 2) {
+				int vert_index = ts->m_verts.size();
+				ts->m_verts.push_back(poly_vert(path_data[j], path_data[j + 1], vert_index - 1, vert_index + 1));
+
+				// Update bounding box.
+				if (vert_index == 0) {
+					ts->m_bbox.set_to_point(ts->m_verts.back().get_index_point());
+				} else {
+					ts->m_bbox.expand_to_enclose(ts->m_verts.back().get_index_point());
+				}
+
+				// Update pi->m_leftmost_vert
+				if (pi->m_leftmost_vert == -1
+				    || compare_vertices(ts->m_verts[pi->m_leftmost_vert], ts->m_verts[vert_index]) > 0) {
+					pi->m_leftmost_vert = vert_index;
+				}
 			}
 		}
-		if (ts->m_verts.size()) {
-			ts->m_verts.back().m_next = pi->m_begin_vert_orig;  // close the path
+
+		if (pi != NULL && next_input_state != 0) {
+			// Close the open path.
+			if (ts->m_verts.size()) {
+				ts->m_verts.back().m_next = pi->m_begin_vert_orig;
+				ts->m_verts[pi->m_begin_vert_orig].m_prev = ts->m_verts.size() - 1;
+			}
+			pi->m_end_vert_orig = ts->m_verts.size();
+			pi = NULL;
 		}
-		pi->m_end_vert_orig = ts->m_verts.size();
+
+		if (next_input_state == 2) {
+			// No more input.
+			break;
+		}
 	}
+		
+/* 	for (int i = 0; i < path_count; i++) { */
+/* 		assert((paths[i].size() & 1) == 0); */
+
+/* 		// Keep some info about the path itself (so we can */
+/* 		// sort and join paths later). */
+/* 		path_info* pi = &ts->m_input_paths[i]; */
+/* 		pi->m_begin_vert_orig = ts->m_verts.size(); */
+
+/* 		// Grab all the verts and edges. */
+/* 		int path_length = paths[i].size() / 2; */
+/* 		int previous_vert = ts->m_verts.size() + path_length - 1; */
+/* 		for (int j = 0; j < paths[i].size(); j += 2) { */
+/* 			int vert_index = ts->m_verts.size(); */
+/* 			ts->m_verts.push_back(poly_vert(paths[i][j], paths[i][j + 1], previous_vert, vert_index + 1)); */
+/* 			previous_vert = vert_index; */
+			
+/* 			// Update bounding box. */
+/* 			if (vert_index == 0) { */
+/* 				ts->m_bbox.set_to_point(ts->m_verts.back().get_index_point()); */
+/* 			} else { */
+/* 				ts->m_bbox.expand_to_enclose(ts->m_verts.back().get_index_point()); */
+/* 			} */
+
+			
+/* 			if (pi->m_leftmost_vert == -1 */
+/* 			    || compare_vertices(ts->m_verts[pi->m_leftmost_vert], ts->m_verts[vert_index]) > 0) { */
+/* 				pi->m_leftmost_vert = vert_index; */
+/* 			} */
+/* 		} */
+/* 		if (ts->m_verts.size()) { */
+/* 			ts->m_verts.back().m_next = pi->m_begin_vert_orig;  // close the path */
+/* 		} */
+/* 		pi->m_end_vert_orig = ts->m_verts.size(); */
+/* 	} */
 
 	// Init reflex point search index.
 	//
@@ -515,9 +596,12 @@ static void init(tristate* ts, array<coord_t>* results, int path_count, const ar
 		sort_and_remap(ts);
 	}
 
-	ts->m_results->reserve(2 * 3 * ts->m_verts.size());
-
-	assert(ts->m_estimated_vert_count >= ts->m_verts.size());  // make sure our estimate was conservative
+	// We can guess how many triangles will be in the output, so
+	// we should notify the output accepter.  The actual number
+	// may be smaller due to degeneracies.
+	int estimated_triangle_count = ts->m_verts.size() - 2;
+	// 6 coordinates per triangle.
+	ts->m_output->notify_estimated_coord_count(estimated_triangle_count * 6);
 }
 
 
@@ -861,6 +945,21 @@ static void check_loops_valid(tristate* ts)
 }
 
 
+static void emit_triangle(tristate* ts,
+			  coord_t x0, coord_t y0,
+			  coord_t x1, coord_t y1,
+			  coord_t x2, coord_t y2)
+{
+/* 	ts->m_results->push_back(ts->m_verts[vi0].m_v.x); */
+/* 	ts->m_results->push_back(ts->m_verts[vi0].m_v.y); */
+/* 	ts->m_results->push_back(ts->m_verts[vi1].m_v.x); */
+/* 	ts->m_results->push_back(ts->m_verts[vi1].m_v.y); */
+/* 	ts->m_results->push_back(ts->m_verts[vi2].m_v.x); */
+/* 	ts->m_results->push_back(ts->m_verts[vi2].m_v.y); */
+	ts->m_output->accept_triangle(x0, y0, x1, y1, x2, y2);
+}
+
+
 static bool find_and_clip_ear(tristate* ts)
 // Return true if we found an ear to clip.
 {
@@ -964,12 +1063,13 @@ static bool find_and_clip_ear(tristate* ts)
 
 			// Emit triangle.
 			if (vi0 != vi1 && vi0 != vi2 && vi1 != vi2) {
-				ts->m_results->push_back(ts->m_verts[vi0].m_v.x);
-				ts->m_results->push_back(ts->m_verts[vi0].m_v.y);
-				ts->m_results->push_back(ts->m_verts[vi1].m_v.x);
-				ts->m_results->push_back(ts->m_verts[vi1].m_v.y);
-				ts->m_results->push_back(ts->m_verts[vi2].m_v.x);
-				ts->m_results->push_back(ts->m_verts[vi2].m_v.y);
+				emit_triangle(ts,
+					      ts->m_verts[vi0].m_v.x,
+					      ts->m_verts[vi0].m_v.y,
+					      ts->m_verts[vi1].m_v.x,
+					      ts->m_verts[vi1].m_v.y,
+					      ts->m_verts[vi2].m_v.x,
+					      ts->m_verts[vi2].m_v.y);
 			}
 			return true;
 		}
@@ -997,7 +1097,128 @@ static void triangulate_plane(tristate* ts)
 		}
 #endif // DEBUG_MARKUP
 	}
+
+	ts->m_output->trilist_done();
 }
+
+
+static void compute_triangulation_impl(
+	trilist_accepter* output,
+	path_supplier* input,
+	int debug_halt_step,
+	array<coord_t>* debug_edges)
+{
+#ifdef PROFILE_TRIANGULATE
+	uint64	start_ticks = tu_timer::get_profile_ticks();
+#endif // PROFILE_TRIANGULATE
+
+	// Init.
+	tristate ts;
+	init(&ts, output, input, debug_halt_step, debug_edges);
+
+#ifdef PROFILE_TRIANGULATE
+	uint64	init_ticks = tu_timer::get_profile_ticks();
+#endif // PROFILE_TRIANGULATE
+
+	// Clip.
+	triangulate_plane(&ts);
+
+#ifdef PROFILE_TRIANGULATE
+	uint64	clip_ticks = tu_timer::get_profile_ticks();
+	fprintf(stderr, "init poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(init_ticks - start_ticks));
+	fprintf(stderr, "clip poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - init_ticks));
+	fprintf(stderr, "total for poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks));
+	fprintf(stderr, "vert count = %d, verts clipped / sec = %f, verts processed / sec = %f\n",
+		ts.m_verts.size(),
+		ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - init_ticks),
+		ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks)
+		);
+#endif // PROFILE_TRIANGULATE
+}
+
+
+}; // end struct ear_clip_wrapper
+
+
+namespace ear_clip_triangulate
+{
+
+// Handles array-based I/O for triangulator.
+template<class coord_t>
+struct ear_clip_array_io
+{
+	ear_clip_array_io(array<coord_t>* results, int path_count, const array<coord_t> paths[])
+		:
+		m_results(results),
+		m_path_count(path_count),
+		m_paths(paths),
+		m_next_path(0)
+	{
+	}
+
+	void notify_estimated_coord_count(int estimated_coord_count)
+	// Hint for how much output to expect.
+	{
+		// Size the output.
+		m_results->reserve(estimated_coord_count);
+	}
+
+	void accept_triangle(coord_t x0, coord_t y0, coord_t x1, coord_t y1, coord_t x2, coord_t y2)
+	// Receive some output.
+	{
+		m_results->resize(m_results->size() + 6);
+		coord_t* p = &m_results->back() - 5;
+		p[0] = x0;
+		p[1] = y0;
+		p[2] = x1;
+		p[3] = y1;
+		p[4] = x2;
+		p[5] = y2;
+	}
+
+	void trilist_done()
+	// The triangulator is done giving us output.
+	{
+	}
+
+
+	void get_estimated_path_data_size(int* estimated_path_count,
+					  int* estimated_coord_count)
+	// Return the estimated size of the input.  It's best if the
+	// estimates are exact or slight over-estimates, since they're
+	// used to size array allocations.
+	{
+		*estimated_path_count = m_path_count;
+		*estimated_coord_count = 0;
+		for (int i = 0; i < m_path_count; i++) {
+			*estimated_coord_count += m_paths[i].size();
+		}
+	}
+
+	
+	int get_path_data(int* coord_count, coord_t const *path_data[])
+	{
+		if (m_next_path >= m_path_count) {
+			// No more input data!
+			*coord_count = 0;
+			return 2;
+		}
+
+		// Emit an entire path.
+		*coord_count = m_paths[m_next_path].size();
+		if (*coord_count > 0) {
+			*path_data = &m_paths[m_next_path][0];
+		}
+		m_next_path++;
+		return 1;
+	}
+
+// data:
+	array<coord_t>* m_results;
+	int m_path_count;
+	const array<coord_t>* m_paths;
+	int m_next_path;
+};
 
 
 template<class coord_t>
@@ -1008,34 +1229,13 @@ static void compute_triangulation(
 	int debug_halt_step,
 	array<coord_t>* debug_edges)
 {
-#ifdef PROFILE_TRIANGULATE
-	uint64	start_ticks = tu_timer::get_profile_ticks();
-#endif // PROFILE_TRIANGULATE
-	
-	coord_type_wrapper<coord_t>::tristate ts;
-	coord_type_wrapper<coord_t>::init(&ts, results, path_count, paths, debug_halt_step, debug_edges);
-
-#ifdef PROFILE_TRIANGULATE
-	uint64	join_ticks = tu_timer::get_profile_ticks();
-	fprintf(stderr, "join poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(join_ticks - start_ticks));
-#endif // PROFILE_TRIANGULATE
-		
-	coord_type_wrapper<coord_t>::triangulate_plane(&ts);
-
-#ifdef PROFILE_TRIANGULATE
-	uint64	clip_ticks = tu_timer::get_profile_ticks();
-	fprintf(stderr, "clip poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks));
-	fprintf(stderr, "total for poly = %1.6f sec\n", tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks));
-	fprintf(stderr, "vert count = %d, verts clipped / sec = %f, verts processed / sec = %f\n",
-		ts.m_verts.size(),
-		ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - join_ticks),
-		ts.m_verts.size() / tu_timer::profile_ticks_to_seconds(clip_ticks - start_ticks)
-		);
-#endif // PROFILE_TRIANGULATE
+	ear_clip_array_io<coord_t> io(results, path_count, paths);
+	ear_clip_wrapper<coord_t, ear_clip_array_io<coord_t>, ear_clip_array_io<coord_t> >::
+		compute_triangulation_impl(&io, &io, debug_halt_step, debug_edges);
 }
 
 
-}; // end struct coord_type_wrapper
+}  // namespace ear_clip_triangulate
 
 
 /* triangulation notes
