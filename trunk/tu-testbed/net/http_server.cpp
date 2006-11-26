@@ -153,7 +153,6 @@ void http_server::update()
 			}
 
 			active_requests++;
-			activity = true;
 			last_activity_ticks = tu_timer::get_ticks();
 		}
 
