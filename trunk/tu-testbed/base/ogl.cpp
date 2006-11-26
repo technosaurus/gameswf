@@ -126,8 +126,8 @@ namespace ogl {
 	{
 		static const char*	extensions = NULL;
 		const char*	start;
-		char*	where;
-		char*	terminator;
+		const char*	where;
+		const char*	terminator;
 		bool	supported;
 	
 		// Extension names should not have spaces
