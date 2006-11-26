@@ -12,14 +12,11 @@
 
 
 #ifdef _WIN32
-#include <winsock.h>
-#endif // _WIN32
 
+#include <winsock.h>
 
 struct net_socket_tcp : public net_socket
 {
-	
-#ifdef _WIN32
 	SOCKET m_sock;
 	int m_error;
 	
@@ -260,8 +257,6 @@ struct net_socket_tcp : public net_socket
 
 	closesocket(remoteSocket);
 #endif // 0
-#endif // _WIN32
-
 };
 
 
@@ -269,15 +264,11 @@ struct net_interface_tcp : public net_interface
 {
 	int m_port_number;
 
-#ifdef _WIN32
 	SOCKET m_listen_sock;
-#endif // _WIN32
-	
 	net_interface_tcp(int port_number)
 		:
 		m_port_number(port_number)
 	{
-#ifdef _WIN32
 		m_listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (m_listen_sock == INVALID_SOCKET)
 		{
@@ -319,32 +310,26 @@ struct net_interface_tcp : public net_interface
 		// connection.
 		int mode = 1;
 		ioctlsocket(m_listen_sock, FIONBIO, (u_long FAR*) &mode);
-#endif // _WIN32
 	}
 
 	~net_interface_tcp()
 	{
-#ifdef _WIN32
 		closesocket(m_listen_sock);
-#endif // _WIN32
 	}
 
 
 	bool is_valid() const
 	{
-#ifdef _WIN32
 		if (m_listen_sock == INVALID_SOCKET)
 		{
 			return false;
 		}
-#endif // _WIN32
 
 		return true;
 	}
 
 	net_socket* accept()
 	{
-#ifdef _WIN32
 		// Accept an incoming request.
 		SOCKET	remote_socket;
 		remote_socket = ::accept(m_listen_sock, NULL, NULL);
@@ -355,10 +340,8 @@ struct net_interface_tcp : public net_interface
 		}
 
 		return new net_socket_tcp(remote_socket);
-#else // not _WIN32
 		// TODO implement
 		return NULL;
-#endif // not _WIN32
 	}
 };
 
@@ -366,7 +349,6 @@ struct net_interface_tcp : public net_interface
 
 net_interface* tu_create_net_interface_tcp(int port_number)
 {
-#ifdef _WIN32
 	WORD version_requested = MAKEWORD(1, 1);
 	WSADATA wsa;
 
@@ -378,7 +360,6 @@ net_interface* tu_create_net_interface_tcp(int port_number)
 		fprintf(stderr, "Bad Winsock version %d\n", wsa.wVersion);
 		return NULL;
 	}
-#endif // WIN32
 
 
 	net_interface_tcp* iface = new net_interface_tcp(port_number);
@@ -391,10 +372,16 @@ net_interface* tu_create_net_interface_tcp(int port_number)
 	return iface;
 }
 
-//#ifdef _WIN32
 //		WSACleanup();
-//#endif // WIN32
 
+
+#else  // not _WIN32
+
+
+// ...
+
+
+#endif  // not _WIN32
 
 
 // Local Variables:

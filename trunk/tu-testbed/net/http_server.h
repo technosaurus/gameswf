@@ -268,7 +268,7 @@ private:
 			PARSE_BODY_CHUNKED_CHUNK,
 			PARSE_BODY_CHUNKED_TRAILER,
 			PARSE_DONE,
-			REQUEST_FINISHED,
+			IDLE,
 		};
 		request_state m_request_state;
 		int m_content_length;
@@ -296,7 +296,7 @@ private:
 		{
 			return m_req.m_sock != NULL;
 		}
-		bool is_pending() const { return m_request_state != REQUEST_FINISHED; }
+		bool is_pending() const { return m_request_state != IDLE; }
 		void update(http_server* server);
 
 		http_status parse_message_line(const char* line);
@@ -308,7 +308,7 @@ private:
 		http_status parse_body();
 		void parse_query_string(const char* query);
 	};
-	http_request_state m_state;
+	array<http_request_state*> m_state;
 };
 
 
