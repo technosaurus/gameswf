@@ -155,6 +155,7 @@ int main(int argc, const char** argv)
 	while (s_quit == false)
 	{
 		server->update();
+		tu_timer::sleep(10);
 	}
 }
 

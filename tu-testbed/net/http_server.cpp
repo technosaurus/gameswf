@@ -84,6 +84,11 @@ http_server::http_server(net_interface* net)
 
 http_server::~http_server()
 {
+	for (int i = 0; i < m_state.size(); i++) {
+		delete m_state[i];
+	}
+	m_state.resize(0);
+
 	if (m_net)
 	{
 		delete m_net;
@@ -109,34 +114,62 @@ bool http_server::add_handler(const char* path, http_handler* handler)
 void http_server::update()
 // Call this periodically to serve pending requests.
 {
-	if (m_state.is_alive() == false)
-	{
-		// Check for new connections.
-		net_socket* sock = m_net->accept();
-		if (sock)
-		{
-			m_state.activate(sock);
+	// if (active sockets < 10 or so)
+	// Check for new connections.
+	net_socket* sock = m_net->accept();
+	if (sock) {
+		// Find or create a state for this socket.
+		int use_state = -1;
+		for (int i = 0; i < m_state.size(); i++) {
+			if (!m_state[i]->is_alive()) {
+				// Re-use this state.
+				use_state = i;
+				break;
+			}
 		}
+		if (use_state == -1) {
+			use_state = m_state.size();
+			m_state.push_back(new http_request_state);
+		}
+		m_state[use_state]->activate(sock);
+		printf("accepted new socket on state %d\n", use_state);//xxxxxx
 	}
 	
-	// Update the active request, if there is one.
-	static const float UPDATE_TIMEOUT_SECONDS = 0.010f;
+	// Update any active requests.
+	static const float UPDATE_TIMEOUT_SECONDS = 0.100f;
 	uint64 start = tu_timer::get_ticks();
-	for (;;)
-	{
-		m_state.update(this);
+	uint64 last_activity_ticks = start;
+	for (;;) {
+		int active_requests = 0;
+		
+		for (int i = 0; i < m_state.size(); i++) {
+			if (!m_state[i]->is_alive()) {
+				continue;
+			}
+			m_state[i]->update(this);
 
-		if (m_state.is_alive() == false || m_state.is_pending() == false)
-		{
-			break;
+			if (m_state[i]->is_alive() == false || m_state[i]->is_pending() == false) {
+				continue;
+			}
+
+			active_requests++;
+			activity = true;
+			last_activity_ticks = tu_timer::get_ticks();
 		}
 
-		// Don't block for very long.
+		if (!active_requests) {
+			break;
+		}
+		
+		// Even when there are pending requests, don't block
+		// for very long.
 		uint64 now = tu_timer::get_ticks();
 		if (tu_timer::ticks_to_seconds(now - start) >= UPDATE_TIMEOUT_SECONDS)
 		{
+			printf("state long timed out ****\n");//xxxxxx
 			break;
 		}
+		tu_timer::sleep(0);
 	}
 }
 
@@ -233,28 +266,33 @@ void http_server::http_request_state::update(http_server* server)
 	static const int MAX_LINE_BYTES = 32768;  // very generous, but not insane, max line size.
 	static const float CONNECTION_TIMEOUT = 300.0f;  // How long to leave the socket open.
 
-	if (m_request_state == REQUEST_FINISHED) {
+	if (m_request_state == IDLE) {
 		// Watch for the start of a new request.
 		if (m_req.m_sock->is_readable() == false) {
 			uint64 now = tu_timer::get_ticks();
 			if (tu_timer::ticks_to_seconds(now - m_last_activity) > CONNECTION_TIMEOUT) {
 				// Timed out; close the socket.
 				deactivate();
+				printf("socket timed out, deactivating.\n");//xxxxxx
 			}
 
 			// Idle.
 			return;
 		} else {
+			// We have some data on the socket; start
+			// parsing it.
 			m_request_state = PARSE_START_LINE;
 			m_last_activity = tu_timer::get_ticks();
 
 			// Fall through and start processing.
+			//printf("socket is now readable\n");//xxxx
 		}
 	}
 
 	if (m_req.m_sock->is_open() == false) {
 		// The connection closed on us -- abort the current request!
 		deactivate();
+		printf("socket closed, deactivating.\n");//xxxxxx
 		return;
 	}
 	
@@ -272,6 +310,8 @@ void http_server::http_request_state::update(http_server* server)
 		bytes_in = m_req.m_sock->read_line(&m_line_buffer, MAX_LINE_BYTES - m_line_buffer.length(), 0.010f);
 		if (m_line_buffer.length() >= 2 && m_line_buffer[m_line_buffer.length() - 1] == '\n')
 		{
+			//printf("req got header line: %s", m_line_buffer.c_str());//xxxxxx
+			
 			// We have the whole line.  Parse and continue.
 			m_req.m_status = parse_message_line(m_line_buffer.c_str());
 			if (m_req.m_status >= 400)
@@ -286,6 +326,8 @@ void http_server::http_request_state::update(http_server* server)
 		}
 		else if (m_line_buffer.length() >= MAX_LINE_BYTES)
 		{
+			printf("req invalid header line length\n");//xxxxxx
+			
 			// Invalid line.
 			m_line_buffer.clear();
 			m_req.m_status = HTTP_BAD_REQUEST;
@@ -302,6 +344,7 @@ void http_server::http_request_state::update(http_server* server)
 			// Something bad happened.
 			m_request_state = PARSE_DONE;
 		}
+
 		break;
 
 	case PARSE_DONE:
@@ -310,7 +353,7 @@ void http_server::http_request_state::update(http_server* server)
 
 		// Leave the connection open, but go idle, waiting for
 		// another request.
-		m_request_state = REQUEST_FINISHED;
+		m_request_state = IDLE;
 		m_last_activity = tu_timer::get_ticks();
 		clear();
 		break;
@@ -351,7 +394,7 @@ void http_server::http_request_state::clear()
 	m_line_buffer.clear();
 	m_parse_key.clear();
 	m_parse_value.clear();
-	m_request_state = PARSE_START_LINE;
+	m_request_state = IDLE;
 	m_content_length = -1;
 }
 
