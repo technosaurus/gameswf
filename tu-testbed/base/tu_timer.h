@@ -18,6 +18,11 @@ namespace tu_timer
 	// for profiling.
 	uint64 get_ticks();
 	double ticks_to_seconds(uint64 ticks);
+
+	// Sleep the current thread for the given number of
+	// milliseconds.  Don't rely on the sleep period being very
+	// accurate.
+	void sleep(int milliseconds);
 	
 	// Hi-res timer for CPU profiling.
 

@@ -26,6 +26,12 @@ double tu_timer::ticks_to_seconds(uint64 ticks)
 }
 
 
+void tu_timer::sleep(int milliseconds)
+{
+	::Sleep(milliseconds);
+}
+
+
 uint64	tu_timer::get_profile_ticks()
 {
 	// @@ use rdtsc?
@@ -53,6 +59,7 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 
 
 #include <sys/time.h>
+#include <unistd.h>
 
 
 // The profile ticks implementation is just fine for a normal timer.
@@ -67,6 +74,12 @@ uint64 tu_timer::get_ticks()
 double tu_timer::ticks_to_seconds(uint64 ticks)
 {
 	return profile_ticks_to_seconds(ticks);
+}
+
+
+void tu_timer::sleep(int milliseconds)
+{
+	usleep(milliseconds * 1000);
 }
 
 
