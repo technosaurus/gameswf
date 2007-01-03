@@ -109,7 +109,8 @@ namespace gameswf
 
 
 	struct mesh_set
-	// A whole shape, tesselated to a certain error tolerance.
+	// A whole shape, divided into layers and tesselated to a
+	// certain error tolerance.
 	{
 		mesh_set();
 		mesh_set(const tesselate::tesselating_shape* sh,
@@ -124,6 +125,7 @@ namespace gameswf
 			const array<fill_style>& fills,
 			const array<line_style>& line_styles) const;
 
+		// TODO: get rid of this?  I think it's legacy.
 		void display(
 			const matrix& m,
 			const cxform& cx,
@@ -131,6 +133,7 @@ namespace gameswf
 			const array<morph_line_style>& line_styles,
 			float ratio) const;
 
+		void new_layer();
 		void	set_tri_strip(int style, const point pts[], int count);
 		void	add_line_strip(int style, const point coords[], int coord_count);
 
@@ -143,8 +146,15 @@ namespace gameswf
 		void expand_styles_to_include(int style);
 		
 		float	m_error_tolerance;
-		array<mesh*>	m_meshes;	// One mesh per style.
-		array<line_strip*>	m_line_strips;
+		struct layer {
+			array<mesh*> m_meshes;  // one mesh per style.
+			array<line_strip*> m_line_strips;
+
+			~layer();  // delete m_meshes & m_line_strips
+		};
+		array<layer> m_layers;
+// 		array<mesh*>	m_meshes;	// One mesh per style.
+// 		array<line_strip*>	m_line_strips;
 	};
 
 

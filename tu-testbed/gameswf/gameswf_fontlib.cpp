@@ -552,6 +552,8 @@ namespace fontlib
 		{
 			assert(0);	// Shape glyphs should not contain lines.
 		}
+
+		virtual void end_shape() {}
 	};
 
 
@@ -577,8 +579,8 @@ namespace fontlib
 					trilist[i + 2].m_x * x_scale + x_offset, trilist[i + 2].m_y * y_scale + y_offset);
 			}
 		}
-		virtual void end_trilist() {
-		}
+		virtual void end_trilist() {}
+		virtual void end_shape() {}
 
 		virtual void	accept_line_strip(int style, const point coords[], int coord_count)
 		{

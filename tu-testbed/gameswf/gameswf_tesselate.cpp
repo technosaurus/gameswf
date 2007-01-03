@@ -459,7 +459,7 @@ namespace tesselate
 	void	end_shape()
 	{
 		output_current_segments();
-
+		s_accepter->end_shape();
 		s_accepter = NULL;
 
 		s_current_path.release();
@@ -802,6 +802,7 @@ namespace tesselate_new
 			}
 		}
 
+		s_accepter->end_shape();
 		s_accepter = NULL;
 		s_path_parts.resize(0);
 	}
