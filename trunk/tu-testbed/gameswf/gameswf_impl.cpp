@@ -855,7 +855,7 @@ namespace gameswf
 
 
 		// Increment this when the cache data format changes.
-		#define CACHE_FILE_VERSION 5
+		#define CACHE_FILE_VERSION 6
 
 
 		/* movie_def_impl */

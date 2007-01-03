@@ -372,7 +372,6 @@ namespace gameswf
 	{
 	}
 
-
 	void	mesh::set_tri_strip(const point pts[], int count)
 	{
 		m_triangle_strip.resize(count * 2);	// 2 coords per point
@@ -653,11 +652,12 @@ namespace gameswf
 		struct collect_traps : public tesselate::trapezoid_accepter
 		{
 			mesh_set*	m;	// the mesh_set that receives trapezoids.
+			bool m_new_layer;
 
 			// strips-in-progress.
 			hash<int, tri_stripper*>	m_strips;
 
-			collect_traps(mesh_set* set) : m(set) {}
+			collect_traps(mesh_set* set) : m(set), m_new_layer(true) {}
 			virtual ~collect_traps() {}
 
 			// Overrides from trapezoid_accepter
@@ -683,12 +683,20 @@ namespace gameswf
 			virtual void	accept_line_strip(int style, const point coords[], int coord_count)
 			// Remember this line strip in our mesh set.
 			{
+				if (m_new_layer) {
+					m->new_layer();
+					m_new_layer = false;
+				}
 				m->add_line_strip(style, coords, coord_count);
 			}
 
-			void	flush() const
+			void	flush()
 			// Push our strips into the mesh set.
 			{
+				if (m_new_layer) {
+					m->new_layer();
+					m_new_layer = false;
+				}
 				for (hash<int, tri_stripper*>::const_iterator it = m_strips.begin();
 				     it != m_strips.end();
 				     ++it)
@@ -700,15 +708,21 @@ namespace gameswf
 					delete s;
 				}
 			}
+
+			void end_shape() {
+				m_new_layer = true;
+			}
 		};
 
 		// For collecting triangles emitted by the new tesselator.
 		struct collect_tris : public tesselate_new::mesh_accepter
 		{
-			mesh_set*	ms;	// the mesh_set that receives trapezoids.
+			mesh_set*	ms;	// the mesh_set that receives triangles.
 			mesh* m;
+			bool m_new_layer;
 
-			collect_tris(mesh_set* set) : ms(set), m(NULL) {}
+			collect_tris(mesh_set* set) : ms(set), m(NULL), m_new_layer(true) {
+			}
 			virtual ~collect_tris() {}
 
 			// Overrides from mesh_accepter
@@ -716,12 +730,20 @@ namespace gameswf
 			virtual void	accept_line_strip(int style, const point coords[], int coord_count)
 			// Remember this line strip in our mesh set.
 			{
+				if (m_new_layer) {
+					ms->new_layer();
+					m_new_layer = false;
+				}
 				ms->add_line_strip(style, coords, coord_count);
 			}
 
 			virtual void begin_trilist(int style, int expected_triangle_count)
 			{
 				assert(m == NULL);
+				if (m_new_layer) {
+					ms->new_layer();
+					m_new_layer = false;
+				}
 				m = ms->get_mutable_mesh(style);
 				m->reserve_triangles(expected_triangle_count);
 			}
@@ -750,6 +772,11 @@ namespace gameswf
 			{
 				m = NULL;
 			}
+
+			virtual void end_shape()
+			{
+				m_new_layer = true;
+			}
 		};
 
 		// Old tesselator.
@@ -767,6 +794,9 @@ namespace gameswf
 
 	mesh_set::~mesh_set()
 	{
+	}
+
+	mesh_set::layer::~layer() {
 		for (int i = 0; i < m_line_strips.size(); i++) {
 			delete m_line_strips[i];
 		}
@@ -775,6 +805,12 @@ namespace gameswf
 		}
 	}
 
+
+	void mesh_set::new_layer()
+	// Make room for a new layer.
+	{
+		m_layers.resize(m_layers.size() + 1);
+	}
 
 	void	mesh_set::display(
 		const matrix& mat,
@@ -789,20 +825,24 @@ namespace gameswf
 		render::set_matrix(mat);
 		render::set_cxform(cx);
 
-		// Dump meshes into renderer, one mesh per style.
-		for (int i = 0; i < m_meshes.size(); i++)
-		{
-			if (m_meshes[i]) {
-				m_meshes[i]->display(fills[i], 1.0);
+		// Dump layers into renderer.
+		for (int j = 0; j < m_layers.size(); j++) {
+			const layer& l = m_layers[j];
+			
+			// Dump meshes into renderer, one mesh per style.
+			for (int i = 0; i < l.m_meshes.size(); i++) {
+				if (l.m_meshes[i]) {
+					l.m_meshes[i]->display(fills[i], 1.0f);
+				}
 			}
-		}
 
-		// Dump line-strips into renderer.
-		{for (int i = 0; i < m_line_strips.size(); i++)
-		{
-			int	style = m_line_strips[i]->get_style();
-			m_line_strips[i]->display(line_styles[style], 1.0);
-		}}
+			// Dump line-strips into renderer.
+			{for (int i = 0; i < l.m_line_strips.size(); i++)
+			{
+				int	style = l.m_line_strips[i]->get_style();
+				l.m_line_strips[i]->display(line_styles[style], 1.0f);
+			}}
+		}
 	}
 
 	void	mesh_set::display(
@@ -819,35 +859,41 @@ namespace gameswf
 		render::set_matrix(mat);
 		render::set_cxform(cx);
 
-		// Dump meshes into renderer, one mesh per style.
-		for (int i = 0; i < m_meshes.size(); i++)
-		{
-			if (m_meshes[i]) {
-				m_meshes[i]->display(fills[i], ratio);
+		// Dump layers into renderer.
+		for (int j = 0; j < m_layers.size(); j++) {
+			const layer& l = m_layers[j];
+			
+			// Dump meshes into renderer, one mesh per style.
+			for (int i = 0; i < l.m_meshes.size(); i++) {
+				if (l.m_meshes[i]) {
+					l.m_meshes[i]->display(fills[i], ratio);
+				}
 			}
-		}
 
-		// Dump line-strips into renderer.
-		{for (int i = 0; i < m_line_strips.size(); i++)
-		{
-			int	style = m_line_strips[i]->get_style();
-			m_line_strips[i]->display(line_styles[style], ratio);
-		}}
+			// Dump line-strips into renderer.
+			{for (int i = 0; i < l.m_line_strips.size(); i++)
+			{
+				int	style = l.m_line_strips[i]->get_style();
+				l.m_line_strips[i]->display(line_styles[style], ratio);
+			}}
+		}
 	}
 
 	void mesh_set::expand_styles_to_include(int style)
+	// 
 	{
 		assert(style >= 0);
 		assert(style < 10000);	// sanity check
 
+		layer* l = &m_layers.back();
+
 		// Expand our mesh list if necessary.
-		if (style >= m_meshes.size())
-		{
-			m_meshes.resize(style + 1);
+		if (style >= l->m_meshes.size()) {
+			l->m_meshes.resize(style + 1);
 		}
 
-		if (m_meshes[style] == NULL) {
-			m_meshes[style] = new mesh;
+		if (l->m_meshes[style] == NULL) {
+			l->m_meshes[style] = new mesh;
 		}
 	}
 
@@ -856,13 +902,13 @@ namespace gameswf
 	// specified triangle strip.
 	{
 		expand_styles_to_include(style);
-		m_meshes[style]->set_tri_strip(pts, count);
+		m_layers.back().m_meshes[style]->set_tri_strip(pts, count);
 	}
 
 	mesh* mesh_set::get_mutable_mesh(int style)
 	{
 		expand_styles_to_include(style);
-		return m_meshes[style];
+		return m_layers.back().m_meshes[style];
 	}
 
 	void	mesh_set::add_line_strip(int style, const point coords[], int coord_count)
@@ -873,7 +919,7 @@ namespace gameswf
 		assert(coords != NULL);
 		assert(coord_count > 1);
 
-		m_line_strips.push_back(new line_strip(style, coords, coord_count));
+		m_layers.back().m_line_strips.push_back(new line_strip(style, coords, coord_count));
 	}
 
 
@@ -882,24 +928,31 @@ namespace gameswf
 	{
 		out->write_float32(m_error_tolerance);
 
-		int	mesh_n = m_meshes.size();
-		out->write_le32(mesh_n);
-		for (int i = 0; i < mesh_n; i++)
-		{
-			if (m_meshes[i]) {
-				out->write_byte(1);
-				m_meshes[i]->output_cached_data(out);
-			} else {
-				out->write_byte(0);
-			}
-		}
+		int layer_n = m_layers.size();
+		out->write_le32(layer_n);
 
-		int	lines_n = m_line_strips.size();
-		out->write_le32(lines_n);
-		{for (int i = 0; i < lines_n; i++)
-		{
-			m_line_strips[i]->output_cached_data(out);
-		}}
+		for (int j = 0; j < layer_n; j++) {
+			const layer& l = m_layers[j];
+			
+			int	mesh_n = l.m_meshes.size();
+			out->write_le32(mesh_n);
+			for (int i = 0; i < mesh_n; i++)
+			{
+				if (l.m_meshes[i]) {
+					out->write_byte(1);
+					l.m_meshes[i]->output_cached_data(out);
+				} else {
+					out->write_byte(0);
+				}
+			}
+
+			int	lines_n = l.m_line_strips.size();
+			out->write_le32(lines_n);
+			{for (int i = 0; i < lines_n; i++)
+			{
+				l.m_line_strips[i]->output_cached_data(out);
+			}}
+		}
 	}
 
 
@@ -908,24 +961,30 @@ namespace gameswf
 	{
 		m_error_tolerance = in->read_float32();
 
-		int	mesh_n = in->read_le32();
-		m_meshes.resize(mesh_n);
-		for (int i = 0; i < mesh_n; i++)
-		{
-			bool non_null = in->read_byte() > 0;
-			if (non_null) {
-				m_meshes[i] = new mesh;
-				m_meshes[i]->input_cached_data(in);
-			}
-		}
+		int layer_n = in->read_le32();
+		m_layers.resize(layer_n);
+		for (int j = 0; j < layer_n; j++) {
+			layer* l = &m_layers[j];
 
-		int	lines_n = in->read_le32();
-		m_line_strips.resize(lines_n);
-		{for (int i = 0; i < lines_n; i++)
-		{
-			m_line_strips[i] = new line_strip;
-			m_line_strips[i]->input_cached_data(in);
-		}}
+			int	mesh_n = in->read_le32();
+			l->m_meshes.resize(mesh_n);
+			for (int i = 0; i < mesh_n; i++)
+			{
+				bool non_null = in->read_byte() > 0;
+				if (non_null) {
+					l->m_meshes[i] = new mesh;
+					l->m_meshes[i]->input_cached_data(in);
+				}
+			}
+
+			int	lines_n = in->read_le32();
+			l->m_line_strips.resize(lines_n);
+			{for (int i = 0; i < lines_n; i++)
+			{
+				l->m_line_strips[i] = new line_strip;
+				l->m_line_strips[i]->input_cached_data(in);
+			}}
+		}
 	}
 
 

@@ -29,8 +29,9 @@ namespace gameswf
 		// trapezoidation.
 		struct trapezoid_accepter
 		{
-			virtual void	accept_trapezoid(int style, const trapezoid& tr) = 0;
-			virtual void	accept_line_strip(int style, const point coords[], int coord_count) = 0;
+			virtual void accept_trapezoid(int style, const trapezoid& tr) = 0;
+			virtual void accept_line_strip(int style, const point coords[], int coord_count) = 0;
+			virtual void end_shape() = 0;
 		};
 
 		// A shape has one or more paths.  The paths in a
@@ -68,6 +69,7 @@ namespace gameswf
 			virtual void end_trilist() = 0;
 
 			virtual void accept_line_strip(int style, const point coords[], int point_count) = 0;
+			virtual void end_shape() = 0;
 		};
 
 		void	begin_shape(mesh_accepter* accepter, float curve_error_tolerance);
