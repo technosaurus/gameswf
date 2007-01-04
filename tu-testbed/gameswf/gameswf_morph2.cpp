@@ -39,12 +39,12 @@ namespace gameswf
 		// fill styles
 		for (i=0; i < m_fill_styles.size(); i++)
 		{
-			fill_style& fs = m_fill_styles[i];
+			fill_style* fs = &m_fill_styles[i];
 
 			const fill_style& fs1 = m_shape1->get_fill_styles()[i];
 			const fill_style& fs2 = m_shape2->get_fill_styles()[i];
 
-			fs.set_lerp(fs1, fs2, ratio);
+			fs->set_lerp(fs1, fs2, ratio);
 		}
 
 		// line styles
@@ -58,22 +58,17 @@ namespace gameswf
 		}
 
 		// shape
-		int k=0, n=0;
-		for (i=0; i < m_paths.size(); i++)
-		{
+		int k = 0, n = 0;
+		for (i = 0; i < m_paths.size(); i++) {
 			path& p = m_paths[i];
 			const path& p1 = m_shape1->get_paths()[i];
 
-			p.m_fill0 = p1.m_fill0;
-			p.m_fill1 = p1.m_fill1;
+			// Swap fill styles -- for some reason, morph
+			// shapes seem to be defined with their fill
+			// styles backwards!
+			p.m_fill0 = p1.m_fill1;
+			p.m_fill1 = p1.m_fill0;
 
- 			// @@ hack.
-			// tulrich: Hm -- is this right?  It looks pretty suspicious.
-			if (p.m_fill0 == 0 && p.m_fill1 == 0)
-			{
-				if (m_shape1->get_fill_styles().size() > 0) p.m_fill0 = 1;
-			}
-      
 			p.m_line = p1.m_line;
 
 			p.m_ax = flerp(p1.m_ax, m_shape2->get_paths()[n].m_ax, ratio);
@@ -83,16 +78,15 @@ namespace gameswf
 			int len = p1.m_edges.size();
 			p.m_edges.resize(len);
 
-			for (int j=0; j < p.m_edges.size(); j++)
-			{
+			for (int j=0; j < p.m_edges.size(); j++) {
 				p.m_edges[j].m_cx = flerp(p1.m_edges[j].m_cx, m_shape2->get_paths()[n].m_edges[k].m_cx, ratio);
 				p.m_edges[j].m_cy = flerp(p1.m_edges[j].m_cy, m_shape2->get_paths()[n].m_edges[k].m_cy, ratio);
 				p.m_edges[j].m_ax = flerp(p1.m_edges[j].m_ax, m_shape2->get_paths()[n].m_edges[k].m_ax, ratio);
 				p.m_edges[j].m_ay = flerp(p1.m_edges[j].m_ay, m_shape2->get_paths()[n].m_edges[k].m_ay, ratio);
 				k++;
-				if (m_shape2->get_paths()[n].m_edges.size() <= k)
-				{
-					k=0; n++;
+				if (m_shape2->get_paths()[n].m_edges.size() <= k) {
+					k = 0;
+					n++;
 				}
 			}
 		}
@@ -103,8 +97,7 @@ namespace gameswf
 		cxform cx = inst->get_world_cxform();
 		float max_error = 20.0f / mat.get_max_scale() /	inst->get_parent()->get_pixel_scale();
 
-		if (ratio != m_last_ratio)
-		{
+		if (ratio != m_last_ratio) {
 			delete m_mesh;
 			m_last_ratio = ratio;
 			m_mesh = new mesh_set(this, max_error * 0.75f);

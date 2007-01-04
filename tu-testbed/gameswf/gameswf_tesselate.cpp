@@ -547,7 +547,6 @@ namespace tesselate
 		if (dist < s_tolerance)
 		{
 			// Emit edge.
-//			add_line_segment(qx, qy);
 			add_line_segment(p2x, p2y);
 		}
 		else
@@ -569,8 +568,13 @@ namespace tesselate
 	// the given new anchor point (ax, ay), with (cx, cy) acting
 	// as the control point in between.
 	{
-		// Subdivide, and add line segments...
-		curve(s_last_point.m_x, s_last_point.m_y, cx, cy, ax, ay);
+		if (cx == ax && cy == ay) {
+			// Early-out for degenerate straight segments.
+			add_line_segment(ax, ay);
+		} else {
+			// Subdivide, and add line segments...
+			curve(s_last_point.m_x, s_last_point.m_y, cx, cy, ax, ay);
+		}
 	}
 
 
@@ -887,8 +891,13 @@ namespace tesselate_new
 	// the given new anchor point (ax, ay), with (cx, cy) acting
 	// as the control point in between.
 	{
-		// Subdivide, and add line segments...
-		curve(s_last_point.m_x, s_last_point.m_y, cx, cy, ax, ay);
+		if (cx == ax && cy == ay) {
+			// Early-out for degenerate straight segments.
+			add_line_segment(ax, ay);
+		} else {
+			// Subdivide, and add line segments...
+			curve(s_last_point.m_x, s_last_point.m_y, cx, cy, ax, ay);
+		}
 	}
 
 
@@ -915,3 +924,5 @@ namespace tesselate_new
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
+
+

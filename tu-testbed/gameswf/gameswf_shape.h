@@ -153,8 +153,6 @@ namespace gameswf
 			~layer();  // delete m_meshes & m_line_strips
 		};
 		array<layer> m_layers;
-// 		array<mesh*>	m_meshes;	// One mesh per style.
-// 		array<line_strip*>	m_line_strips;
 	};
 
 

@@ -19,6 +19,9 @@
 #include <float.h>
 
 
+#define USE_NEW_TESSELATOR
+
+
 #define DEBUG_DISPLAY_SHAPE_PATHS
 #ifdef DEBUG_DISPLAY_SHAPE_PATHS
 	// For debugging only!
@@ -779,14 +782,16 @@ namespace gameswf
 			}
 		};
 
+#ifndef USE_NEW_TESSELATOR
 		// Old tesselator.
-// 		collect_traps	accepter(this);
-// 		sh->tesselate(error_tolerance, &accepter);
-// 		accepter.flush();
-
+		collect_traps	accepter(this);
+		sh->tesselate(error_tolerance, &accepter);
+		accepter.flush();
+#else  // USE_NEW_TESSELATOR
 		// New tesselator.
 		collect_tris	accepter(this);
 		sh->tesselate_new(error_tolerance, &accepter);
+#endif // USE_NEW_TESSELATOR
 
 		// triangles should be collected now into the meshes for each fill style.
 	}
