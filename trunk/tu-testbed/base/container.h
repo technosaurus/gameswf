@@ -449,6 +449,27 @@ public:
 
 	// @@ need a "remove()"
 
+	// For convenience
+	U&	operator[](const T& key)
+	{
+		int	index = find_index(key);
+		if (index >= 0)
+		{
+			return E(index).second;
+		}
+		add(key, (U) 0);
+		index = find_index(key);
+		if (index >= 0)
+		{
+			return E(index).second;
+		}
+
+		// Doesn't look nice but removes
+		// warning on non-void function not returning.
+		assert(0);
+		return E(index).second;
+	}
+
 	void	set(const T& key, const U& value)
 	// Set a new or existing value under the key, to the value.
 	{
