@@ -1,3 +1,10 @@
+2007-02-06  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* base/tu_types.h: The new version of SDL has own
+	typedefs(Sint8, Uint8, ..)
+	* gameswf/win32/VC8/gameswf.vcproj: added VC8 project file
+
+
 2005-06-06  Rob Savoye  <rob@bertha.welcomehome.org>
 
 	* gameswf/gameswf_test_ogl.cpp (runThread): New SDL_Thread to
