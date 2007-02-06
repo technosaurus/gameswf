@@ -20,12 +20,15 @@
 	// On known little-endian platforms, define this stuff.
 	#define _TU_LITTLE_ENDIAN_	1
 	
-	typedef unsigned char	Uint8;
-	typedef signed char	Sint8;
-	typedef unsigned short	Uint16;
-	typedef short	Sint16;
-	typedef unsigned int	Uint32;
-	typedef int	Sint32;
+	#ifndef _SDL_stdinc_h
+		typedef unsigned char	Uint8;
+		typedef signed char	Sint8;
+		typedef unsigned short	Uint16;
+		typedef short	Sint16;
+		typedef unsigned int	Uint32;
+		typedef int	Sint32;
+	#endif
+
 	#ifndef _MSC_VER
 		// Probably gcc or something compatible
 		typedef unsigned long long	Uint64;
