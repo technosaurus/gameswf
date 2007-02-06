@@ -609,6 +609,9 @@ namespace gameswf
 	// set_sound_handler().
 	struct sound_handler
 	{
+		// audio for video
+		typedef void (*aux_streamer_ptr)(void* udata, unsigned char* stream, int len);
+
 		enum format_type
 		{
 			FORMAT_RAW = 0,		// unspecified format.  Useful for 8-bit sounds???
