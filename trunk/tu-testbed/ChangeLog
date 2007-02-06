@@ -1,5 +1,17 @@
 2007-02-06  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* base/container.h: added operator[] into class hash
+	* gameswf/gameswf.h: added typedef used for audio of video
+	* gameswf/gameswf_sound_handler_sdl.h: added new h-file for
+	gameswf_sound_handler_sdl.cpp
+	* gameswf/gameswf_sound_handler_sdl.cpp: totally rewritten.
+	Uses FFMPEG for MP3 audio. Can process audio of video stream.
+	* gameswf/gameswf_test_ogl.cpp: a bit cleanup
+	* gameswf/win32/VC8/gameswf.vcproj: added gameswf_sound_handler.h
+	
+
+2007-02-06  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* base/tu_types.h: The new version of SDL has own
 	typedefs(Sint8, Uint8, ..)
 	* gameswf/win32/VC8/gameswf.vcproj: added VC8 project file
