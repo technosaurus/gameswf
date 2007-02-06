@@ -1,309 +1,438 @@
-// gameswf_sound_handler_sdl.cpp	-- Thatcher Ulrich http://tulrich.com 2003
+// gameswf_sound_handler.cpp	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// A gameswf::sound_handler that uses SDL_mixer for output
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
+#include "gameswf_sound_handler_sdl.h"
+#include <cmath>
+#include <vector>
+#include <SDL/SDL.h>   
 
-#include "gameswf/gameswf.h"
-#include "base/container.h"
-#include "SDL_mixer.h"
-#include "gameswf/gameswf_log.h"
-#include "gameswf/gameswf_types.h"	// for IF_VERBOSE_* macros
-
-
-// Use SDL_mixer to handle gameswf sounds.
-struct SDL_sound_handler : gameswf::sound_handler
+namespace gameswf
 {
-	bool	m_opened;
-	bool	m_stereo;
-	int	m_sample_rate;
-	Uint16 m_format;
-	array<Mix_Chunk*>	m_samples;
 
-	#define	SAMPLE_RATE 44100
-	#define MIX_CHANNELS 8
-	#define CHANNELS 2		//stereo - 2, mono - 1
-	#define BUFSIZE 4096		// for 44100 bufsize 1024 is small
+	static void sdl_audio_callback(void *udata, Uint8 *stream, int len); // SDL C audio handler
 
-	SDL_sound_handler()
-		:
-		m_opened(false),
-		m_stereo(false),
-		m_sample_rate(0),
-		m_format(0)
+	SDL_sound_handler::SDL_sound_handler():
+		m_defvolume(100),
+		m_mutex(NULL),
+		soundOpened(true)
 	{
-		// !!! some drivers on Linux always open audio with channels=2
-		if (Mix_OpenAudio(SAMPLE_RATE, AUDIO_S16SYS, CHANNELS, BUFSIZE) != 0)
-		{
-			gameswf::log_error("can't open SDL_mixer: %s\n", Mix_GetError());
-		}
-		else
-		{
-			m_opened = true;     
-			Mix_AllocateChannels(MIX_CHANNELS);
-			Mix_Volume(-1, MIX_MAX_VOLUME);
+		m_mutex = SDL_CreateMutex();
 
-			// get and print the audio format in use
-			int channels;
-			int num_times_opened = Mix_QuerySpec(&m_sample_rate, &m_format, &channels);
-			UNUSED(num_times_opened);
-			m_stereo = channels == 2 ? true : false;
-			
-			const char *format_str = "Unknown";
-			switch (m_format)
-			{
-			case AUDIO_U8: format_str = "U8"; break;
-			case AUDIO_S8: format_str = "S8"; break;
-			case AUDIO_U16LSB: format_str = "U16LSB"; break;
-			case AUDIO_S16LSB: format_str = "S16LSB"; break;
-			case AUDIO_U16MSB: format_str = "U16MSB"; break;
-			case AUDIO_S16MSB: format_str = "S16MSB"; break;
-			}
-	    
-			// @@ Usually I don't care about this.  Need a IF_VERBOSE_SOUND or something.
-			// IF_VERBOSE_DEBUG(
-			// 	gameswf::log_msg("SDL_mixer: opened %d times, frequency=%dHz, format=%s, stereo=%s\n",
-			// 		     num_times_opened,
-			// 		     m_sample_rate,
-			// 		     format_str,
-			// 		     m_stereo ? "yes" : "no"));
-			// char name[32];
-			// IF_VERBOSE_DEBUG(
-			// 	gameswf::log_msg("Using audio driver: %s\n", SDL_AudioDriverName(name, 32)));
+		// This is our sound settings
+		audioSpec.freq = 44100;
+		audioSpec.format = AUDIO_S16SYS;
+		audioSpec.channels = 2;
+		audioSpec.callback = sdl_audio_callback;
+		audioSpec.userdata = this;
+		audioSpec.samples = 4096;
+
+		if (SDL_OpenAudio(&audioSpec, NULL) < 0 )
+		{
+			printf("Unable to START SOUND: %s\n", SDL_GetError());
+			soundOpened = false;
+			return;
 		}
+
+#ifdef USE_FFMPEG
+		avcodec_init();
+		avcodec_register_all();
+#endif
+
+		SDL_PauseAudio(1);
 	}
 
-	~SDL_sound_handler()
+	SDL_sound_handler::~SDL_sound_handler()
 	{
-		if (m_opened)
-		{
-			Mix_CloseAudio();
-			for (int i = 0, n = m_samples.size(); i < n; i++)
-			{
-				if (m_samples[i])
-				{
-					Mix_FreeChunk(m_samples[i]);
-				}
-			}
-		}
-		else
-		{
-			assert(m_samples.size() == 0);
-		}
+		if (soundOpened) SDL_CloseAudio();
+		m_sound.clear();
+		SDL_DestroyMutex(m_mutex);
 	}
 
-
-	virtual int	create_sound(
+	int	SDL_sound_handler::create_sound(
 		void* data,
 		int data_bytes,
 		int sample_count,
 		format_type format,
 		int sample_rate,
 		bool stereo)
-	// Called by gameswf to create a sample.  We'll return a sample ID that gameswf
-	// can use for playing it.
+		// Called to create a sample.  We'll return a sample ID that
+		// can be use for playing it.
 	{
-		if (m_opened == false)
+		assert(data_bytes > 0);
+		locker lock(m_mutex);
+
+		int sound_id = m_sound.size();
+		m_sound[sound_id] = new sound(data_bytes, (Uint8*) data, format, sample_count, sample_rate, 
+			stereo, m_defvolume);
+
+		return sound_id;
+	}
+
+	void	SDL_sound_handler::set_default_volume(int vol)
+	{
+		if (m_defvolume >= 0 && m_defvolume <= 100)
 		{
-			return 0;
+			m_defvolume = vol;
+		}
+	}
+
+	void	SDL_sound_handler::play_sound(int sound_handle, int loops)
+	// Play the index'd sample.
+	{
+		locker lock(m_mutex);
+
+		it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			it->second->play(loops, this);
+		}
+	}
+
+	void	SDL_sound_handler::stop_sound(int sound_handle)
+	{
+		locker lock(m_mutex);
+
+		it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			it->second->clear_playlist();
+		}
+	}
+
+
+	void	SDL_sound_handler::delete_sound(int sound_handle)
+	// this gets called when it's done with a sample.
+	{
+		locker lock(m_mutex);
+
+		it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			//		stop_sound(sound_handle);
+			m_sound.erase(sound_handle);
+		}
+	}
+
+	void	SDL_sound_handler::stop_all_sounds()
+	{
+		locker lock(m_mutex);
+
+		for (it = m_sound.begin(); it != m_sound.end(); ++it)
+		{
+			it->second->clear_playlist();
+		}
+	}
+
+	//	returns the sound volume level as an integer from 0 to 100,
+	//	where 0 is off and 100 is full volume. The default setting is 100.
+	int	SDL_sound_handler::get_volume(int sound_handle)
+	{
+		locker lock(m_mutex);
+
+		int vol = 0;
+		it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			vol = it->second->get_volume();
+		}
+		return vol;
+	}
+
+
+	//	A number from 0 to 100 representing a volume level.
+	//	100 is full volume and 0 is no volume. The default setting is 100.
+	void	SDL_sound_handler::set_volume(int sound_handle, int volume)
+	{
+		locker lock(m_mutex);
+
+		it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			it->second->set_volume(volume);
+		}
+	}
+
+	void	SDL_sound_handler::attach_aux_streamer(aux_streamer_ptr ptr, void* owner)
+	{
+		assert(owner);
+		assert(ptr);
+		locker lock(m_mutex);
+
+		hash_map< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
+		if (it == m_aux_streamer.end())
+		{
+			m_aux_streamer[(Uint32) owner] = ptr;
+			SDL_PauseAudio(0);
+		}
+	}
+
+	void SDL_sound_handler::detach_aux_streamer(void* owner)
+	{
+		locker lock(m_mutex);
+		m_aux_streamer.erase((Uint32) owner);
+	}
+
+	void SDL_sound_handler::cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, 
+		int size, int channels, int freq)
+	{
+		*adjusted_data = NULL;
+		*adjusted_size = 0;
+
+		SDL_AudioCVT  wav_cvt;
+		int rc = SDL_BuildAudioCVT(&wav_cvt, AUDIO_S16SYS, channels, freq,
+			audioSpec.format, audioSpec.channels, audioSpec.freq);
+		if (rc == -1)
+		{
+			printf("Couldn't build converter!\n");
+			return;
 		}
 
-		Sint16*	adjusted_data = 0;
-		int	adjusted_size = 0;
-		Mix_Chunk*	sample = 0;
+		// Setup for conversion 
+		wav_cvt.buf = (Uint8*) malloc(size * wav_cvt.len_mult);
+		wav_cvt.len = size;
+		memcpy(wav_cvt.buf, data, size);
 
-		switch (format)
+		// We can delete to original WAV data now 
+		// free(data);
+
+		// And now we're ready to convert
+		SDL_ConvertAudio(&wav_cvt);
+
+		*adjusted_data = (int16_t*) wav_cvt.buf;
+		*adjusted_size = size * wav_cvt.len_mult;
+	}
+
+	sound::sound(int size, Uint8* data, sound_handler::format_type format, int sample_count, 
+		int sample_rate, bool stereo, int vol):
+		m_data(data),
+		m_size(size),
+		m_volume(vol),
+		m_format(format),
+		m_sample_count(sample_count),
+		m_sample_rate(sample_rate),
+		m_stereo(stereo)
+	{
+		assert(data);
+		assert(size > 0);
+		m_data = new Uint8[size];
+		memcpy(m_data, data, size);
+	}
+
+	sound::~sound()
+	{
+		delete [] m_data;
+	}
+
+#ifdef USE_FFMPEG
+	int sound::decode_mp3_data(int data_size, Uint8* data,	int* newsize, Uint8** newdata)
+	{
+		AVCodec* m_MP3_codec = avcodec_find_decoder(CODEC_ID_MP3);
+		if (m_MP3_codec == NULL)
 		{
-		case FORMAT_RAW:
-			convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 1, sample_rate, stereo);
-			break;
+			printf("FFMPEG can't decode MP3\n");
+			return -1;
+		}
 
-		case FORMAT_NATIVE16:
-			convert_raw_data(&adjusted_data, &adjusted_size, data, sample_count, 2, sample_rate, stereo);
-			break;
+		AVCodecContext *cc;
+		AVCodecParserContext* parser;
 
-		case FORMAT_MP3:
-#ifdef GAMESWF_MP3_SUPPORT
-			extern void convert_mp3_data(Sint16 **adjusted_data, int *adjusted_size, void *data, const int sample_count, const int sample_size, const int sample_rate, const bool stereo);
-			if (1) {
-				Sint16*	x_adjusted_data = 0;
-				int	x_adjusted_size = 0;
-				Mix_Chunk*	x_sample = 0;
-				convert_mp3_data(&x_adjusted_data, &x_adjusted_size, data, sample_count, 0, sample_rate, stereo);
-				/* convert_mp3_data doesn't ACTUALLY convert
-				   samplerate, so... */
-				convert_raw_data(&adjusted_data, &adjusted_size, x_adjusted_data, sample_count, 0, sample_rate, stereo);
-				if (x_adjusted_data) {
-					delete x_adjusted_data;
-				}
-			} else {
-				convert_mp3_data(&adjusted_data, &adjusted_size, data, sample_count, 0, sample_rate, stereo);
+		// Init the parser
+		parser = av_parser_init(CODEC_ID_MP3);
+
+		cc = avcodec_alloc_context();
+		if (cc == NULL)
+		{
+			printf("Could not alloc MP3 codec context\n");
+			return -1;
+		}
+
+		if (avcodec_open(cc, m_MP3_codec) < 0)
+		{
+			printf("Could not open MP3 codec\n");
+			avcodec_close(cc);
+			return -1;
+		}
+
+		int asize = (AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2;
+
+		int bufsize = 2 * asize;
+		Uint8* buf = (Uint8*) malloc(bufsize);
+		int buflen = 0;
+
+		while (data_size > 0)
+		{
+			uint8_t* frame;
+			int framesize;
+			int decoded = av_parser_parse(parser, cc, &frame, &framesize, data, data_size, 0, 0);
+
+			if (decoded < 0)
+			{
+				printf("Error while decoding MP3-stream\n");
+				break;
 			}
-#else
-			IF_VERBOSE_DEBUG(gameswf::log_error("mp3 format sound requested; this demo does not handle mp3\n"));
+
+			data += decoded;
+			data_size -= decoded;
+
+			if (framesize > 0)
+			{
+				int len = 0;
+				if (avcodec_decode_audio(cc, (int16_t*) (buf + buflen), &len, frame, framesize) >= 0)
+				{
+					buflen += len;
+
+					if (buflen > bufsize - asize)
+					{
+						bufsize += asize;
+						buf = (Uint8*) realloc(buf, bufsize);
+					}
+				}
+			}
+		}
+
+		*newdata = buf;
+		*newsize = buflen;
+
+		avcodec_close(cc);
+		av_parser_close(parser);
+
+		return 0;
+	}
 #endif
+
+	void sound::play(int loops, SDL_sound_handler* handler)
+	{
+		int16_t*	adjusted_data = NULL;
+		int	adjusted_size = 0;	
+
+		switch (m_format)
+		{
+		case sound_handler::FORMAT_NATIVE16:
+			handler->cvt(&adjusted_data, &adjusted_size, m_data, m_size, m_stereo ? 2 : 1, m_sample_rate);
 			break;
+
+		case sound_handler::FORMAT_MP3:
+			{
+#ifdef USE_FFMPEG
+				int mp3size = 0;
+				Uint8* mp3data = NULL;
+				if (decode_mp3_data(m_size, m_data, &mp3size, &mp3data) == 0)
+				{
+					handler->cvt(&adjusted_data, &adjusted_size, mp3data, mp3size, m_stereo ? 2 : 1, m_sample_rate);
+					free(mp3data);
+				}
+				else
+				{
+					printf("gameswf does not handle MP3 yet\n");
+				}
+#else
+				printf("MP3 requires FFMPEG library\n");
+#endif
+				break;
+			}
 
 		default:
-			// Unhandled format.
-			IF_VERBOSE_DEBUG(gameswf::log_error("unknown format sound requested; this demo does not handle it\n"));
+			printf("Sound format #%d is not supported\n", m_format);
 			break;
 		}
 
 		if (adjusted_data)
 		{
-			sample = Mix_QuickLoad_RAW((unsigned char*) adjusted_data, adjusted_size);
-			Mix_VolumeChunk(sample, MIX_MAX_VOLUME);	// full volume by default
+			m_playlist.push_back(new active_sound(adjusted_size, (Uint8*) adjusted_data, loops));
+			SDL_PauseAudio(0);
 		}
 
-		m_samples.push_back(sample);
-		return m_samples.size() - 1;
 	}
 
-
-	virtual void	play_sound(int sound_handle, int loop_count /* other params */)
-	// Play the index'd sample.
+	// called from audio callback
+	bool sound::mix(Uint8* stream, int len)
 	{
-		if (sound_handle >= 0 && sound_handle < m_samples.size())
+		Uint8* buf = new Uint8[len];
+
+		bool play = false;
+		for (vector< smart_ptr<active_sound> >::iterator it = m_playlist.begin(); it != m_playlist.end(); )
 		{
-			if (m_samples[sound_handle])
+			play = true;
+			bool next_it = (*it->get_ptr()).mix(buf, len);
+
+			int volume = (int) floorf(SDL_MIX_MAXVOLUME / 100.0f * m_volume);
+			SDL_MixAudio(stream, buf, len, volume);
+
+			if (next_it)
 			{
-				// Play this sample on the first available channel.
-				Mix_PlayChannel(-1, m_samples[sound_handle], loop_count);
+				it++;
+			}
+			else
+			{
+				it = m_playlist.erase(it);
 			}
 		}
+
+		delete [] buf;
+		return play;
 	}
 
-	
-	virtual void	stop_sound(int sound_handle)
+	gameswf::sound_handler*	gameswf::create_sound_handler_sdl()
+		// Factory.
 	{
-		if (sound_handle < 0 || sound_handle >= m_samples.size())
-		{
-			// Invalid handle.
-			return;
-		}
-
-		for (int i = 0; i < MIX_CHANNELS; i++)
-		{
-			Mix_Chunk*	playing_chunk = Mix_GetChunk(i);
-			if (Mix_Playing(i)
-			    && playing_chunk == m_samples[sound_handle])
-			{
-				// Stop this channel.
-				Mix_HaltChannel(i);
-			}
-		}
+		return new SDL_sound_handler;
 	}
 
+	/// The callback function which refills the buffer with data
+	/// We run through all of the sounds, and mix all of the active sounds 
+	/// into the stream given by the callback.
+	/// If sound is compresssed (mp3) a mp3-frame is decoded into a buffer,
+	/// and resampled if needed. When the buffer has been sampled, another
+	/// frame is decoded until all frames has been decoded.
+	/// If a sound is looping it will be decoded from the beginning again.
 
-	virtual void	delete_sound(int sound_handle)
-	// gameswf calls this when it's done with a sample.
+	static void
+		sdl_audio_callback (void *udata, Uint8 *stream, int len)
 	{
-		if (sound_handle >= 0 && sound_handle < m_samples.size())
+		// Get the soundhandler
+		SDL_sound_handler* handler = static_cast<SDL_sound_handler*>(udata);
+		locker lock(handler->m_mutex);
+
+		int pause = 1;
+		memset(stream, 0, len);
+
+		// mix Flash audio
+		for (hash_map< int, smart_ptr<sound> >::iterator snd = handler->m_sound.begin();
+			snd != handler->m_sound.end(); ++snd)
 		{
-			Mix_Chunk*	chunk = m_samples[sound_handle];
-			if (chunk)
-			{
-				delete [] (chunk->abuf);
-				Mix_FreeChunk(chunk);
-				m_samples[sound_handle] = 0;
-			}
+			bool play = snd->second->mix(stream, len);
+			pause = play ? 0 : pause;
 		}
+
+		// mix audio of video 
+		if (handler->m_aux_streamer.size() > 0)
+		{
+			Uint8* mix_buf = new Uint8[len];
+			hash_map< Uint32, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it;
+			for (it = handler->m_aux_streamer.begin(); it != handler->m_aux_streamer.end(); ++it)
+			{
+				memset(mix_buf, 0, len); 
+
+				gameswf::sound_handler::aux_streamer_ptr aux_streamer = it->second;
+				void* owner = (void*) it->first;
+				(aux_streamer)(owner, mix_buf, len);
+
+				SDL_MixAudio(stream, mix_buf, len, SDL_MIX_MAXVOLUME);
+			}
+			pause = 0;
+			delete [] mix_buf;
+		}
+		SDL_PauseAudio(pause);
 	}
 
-	virtual void convert_raw_data(
-		Sint16** adjusted_data,
-		int* adjusted_size,
-		void* data,
-		int sample_count,
-		int sample_size,
-		int sample_rate,
-		bool stereo)
-	// VERY crude sample-rate & sample-size conversion.  Converts
-	// input data to the SDL_mixer output format (SAMPLE_RATE,
-	// stereo, 16-bit native endianness)
-	{
-// 		// xxxxx debug pass-thru
-// 		{
-// 			int	output_sample_count = sample_count * (stereo ? 2 : 1);
-// 			Sint16*	out_data = new Sint16[output_sample_count];
-// 			*adjusted_data = out_data;
-// 			*adjusted_size = output_sample_count * 2;	// 2 bytes per sample
-// 			memcpy(out_data, data, *adjusted_size);
-// 			return;
-// 		}
-// 		// xxxxx
-
-		// simple hack to handle dup'ing mono to stereo
-		if ( !stereo && m_stereo)
-		{
-			sample_rate >>= 1;
-		}
-
-		 // simple hack to lose half the samples to get mono from stereo
-		if ( stereo && !m_stereo)
-		{
-			sample_rate <<= 1; 
-		}
-
-		// Brain-dead sample-rate conversion: duplicate or
-		// skip input samples an integral number of times.
-		int	inc = 1;	// increment
-		int	dup = 1;	// duplicate
-		if (sample_rate > m_sample_rate)
-		{
-			inc = sample_rate / m_sample_rate;
-		}
-		else if (sample_rate < m_sample_rate)
-		{
-			dup = m_sample_rate / sample_rate;
-		}
-
-		int	output_sample_count = (sample_count * dup) / inc;
-		Sint16*	out_data = new Sint16[output_sample_count];
-		*adjusted_data = out_data;
-		*adjusted_size = output_sample_count * 2;	// 2 bytes per sample
-
-		if (sample_size == 1)
-		{
-			// Expand from 8 bit to 16 bit.
-			Uint8*	in = (Uint8*) data;
-			for (int i = 0; i < output_sample_count; i++)
-			{
-				Uint8	val = *in;
-				for (int j = 0; j < dup; j++)
-				{
-					*out_data++ = (int(val) - 128);
-				}
-				in += inc;
-			}
-		}
-		else
-		{
-			// 16-bit to 16-bit conversion.
-			Sint16*	in = (Sint16*) data;
-			for (int i = 0; i < output_sample_count; i += dup)
-			{
-				Sint16	val = *in;
-				for (int j = 0; j < dup; j++)
-				{
-					*out_data++ = val;
-				}
-				in += inc;
-			}
-		}
-	}
-
-};
-
-
-gameswf::sound_handler*	gameswf::create_sound_handler_sdl()
-// Factory.
-{
-	return new SDL_sound_handler;
 }
+
 
 
 // Local Variables:
