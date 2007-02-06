@@ -140,7 +140,7 @@
 				Optimization="0"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_FFMPEG"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -264,10 +264,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_sound_handler_mp3.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_sound_handler_sdl.cpp"
 				>
 			</File>
@@ -381,6 +377,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_sound_handler_sdl.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_stream.h"
 				>
 			</File>
@@ -443,14 +443,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\base\cschema.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\base\demo.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\base\demo.h"
 				>
 			</File>
 			<File
