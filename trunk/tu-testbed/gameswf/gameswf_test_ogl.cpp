@@ -862,7 +862,10 @@ done:
 	
 	if (md) md->drop_ref();
 	if (m) m->drop_ref();
+
 	delete sound;
+	gameswf::set_sound_handler(NULL);
+
 	delete render;
 
 	// For testing purposes, throw some keypresses into gameswf,
