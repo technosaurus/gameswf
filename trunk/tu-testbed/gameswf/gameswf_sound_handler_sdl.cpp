@@ -1,4 +1,5 @@
-// gameswf_sound_handler.cpp	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
+// gameswf_sound_handler_sdl.cpp	-- Thatcher Ulrich http://tulrich.com 2003
+// gameswf_sound_handler_sdl.cpp	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.

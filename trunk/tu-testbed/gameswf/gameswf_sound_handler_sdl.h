@@ -1,4 +1,4 @@
-// gameswf_sound_handler.h	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
+// gameswf_sound_handler_sdl.h	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
