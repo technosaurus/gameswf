@@ -18,6 +18,7 @@
 #include "base/tu_file.h"
 #include "base/tu_types.h"
 #include "gameswf_xmlsocket.h"
+#include "base/image.h"	// for logo
 
 
 #ifdef HAVE_LIBXML
@@ -187,6 +188,116 @@ static void	key_event(SDLKey key, bool down)
 	if (c != gameswf::key::INVALID)
 	{
 		gameswf::notify_key_event(c, down);
+	}
+}
+
+
+// for progress bar & logo 
+#define H_BAR 0.075f
+static int s_total_tags = 0, s_loaded_tags = 0;
+static int s_wlogo = 0, s_hlogo = 0;
+static gameswf::render_handler*	s_logo_render = NULL;
+static gameswf::bitmap_info* s_logo_bi = NULL;
+
+static void show_logo()
+{
+	glViewport(0, 0, s_wlogo, s_hlogo);
+	if (s_logo_bi && s_logo_render)
+	{
+		gameswf::matrix m;
+		gameswf::rect coords;
+		gameswf::rect uv_coords;
+		gameswf::rgba color;
+
+		m.set_identity();
+
+		coords.m_x_min  = -1.0f;
+		coords.m_x_max  = 1.0f;
+		coords.m_y_min  = -1.0f;
+		coords.m_y_max  = 1.0f;
+
+		uv_coords.m_x_min  = 0.0f;
+		uv_coords.m_x_max  = 1.0f;
+		uv_coords.m_y_min  = 0.0f;
+		uv_coords.m_y_max  = 1.0f;
+
+		color.m_a = 255;
+		color.m_r = 255;
+		color.m_g = 255;
+		color.m_b = 255;
+
+		s_logo_render->draw_bitmap(m, s_logo_bi, coords,	uv_coords,	color);
+		glDisable(GL_TEXTURE_2D);
+	}
+	else
+	{
+		glBegin(GL_QUADS);
+		glColor4ub(0, 0, 255, 255);
+		glVertex2f(-1.0, -1.0);
+		glVertex2f(1.0, -1.0);            
+		glColor4ub(0, 0, 0, 255);
+		glVertex2f(1.0, 1.0);
+		glVertex2f(-1.0, 1.0);
+		glEnd();
+	}
+}
+
+static void	test_progress_callback(unsigned int loaded_tags, unsigned int total_tags)
+// Callback function.  This show loading progress.
+{
+	float p;
+	if (s_total_tags > 0)
+	{
+		// initial loading
+		s_loaded_tags++;
+		p = (float)s_loaded_tags / (float)s_total_tags * 2.0f;
+		if (s_loaded_tags >= s_total_tags)
+		{
+			s_total_tags = 0;
+		}
+	}
+	else
+	{
+		// runtime loading (LoadMovie("next.swf", _root))
+		p = (float)loaded_tags / (float)total_tags * 2.0f;
+	}
+
+//	SDL_Surface* screen  = SDL_GetVideoSurface();
+	glViewport(0, 0, s_wlogo, s_hlogo);
+
+	glDisable(GL_DEPTH_TEST);	// Disable depth testing.
+	glDrawBuffer(GL_BACK);
+	glDisable(GL_TEXTURE_2D);
+
+	// show background
+	show_logo();
+
+	// show progress bar
+	glBegin(GL_QUADS);
+	glColor3ub(255, 255, 255);
+	glVertex2f(-1.0f, 1.0f - H_BAR);
+	glVertex2f(1.0f, 1.0f - H_BAR);
+	glVertex2f(1.0f, 1.0f);
+	glVertex2f(-1.0f, 1.0f);
+	glEnd();
+
+	// show progress %
+	glBegin(GL_QUADS);
+
+	glColor4ub(255, 0, 0, 255);
+	glVertex2f(-1.0f, 1.0f - H_BAR);
+	glVertex2f(-1.0f + p, 1.0f - H_BAR);
+	glVertex2f(-1.0f + p, 1.0f);
+	glVertex2f(-1.0f, 1.0f);
+	glEnd();
+
+	SDL_GL_SwapBuffers();
+
+	// initial loading are finished
+	if (s_loaded_tags >= s_total_tags)
+	{
+		s_loaded_tags = 0;
+		s_total_tags = 0;
 	}
 }
 
@@ -405,6 +516,7 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	gameswf::register_progress_callback(test_progress_callback);
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_fscommand_callback(fs_callback);
 	if (s_verbose == true) {
@@ -420,7 +532,7 @@ int	main(int argc, char *argv[])
 			sound = gameswf::create_sound_handler_sdl();
 			gameswf::set_sound_handler(sound);
 		}
-		render = gameswf::create_render_handler_ogl();
+		render = s_logo_render = gameswf::create_render_handler_ogl();
 		gameswf::set_render_handler(render);
 	}
 
@@ -429,15 +541,16 @@ int	main(int argc, char *argv[])
 	int	movie_width = 0;
 	int	movie_height = 0;
 	float	movie_fps = 30.0f;
-	gameswf::get_movie_info(infile, &movie_version, &movie_width, &movie_height, &movie_fps, NULL, NULL);
+	gameswf::get_movie_info(infile, &movie_version, &movie_width, &movie_height, &movie_fps,
+		NULL, &s_total_tags);
 	if (movie_version == 0)
 	{
 		fprintf(stderr, "error: can't get info about %s\n", infile);
 		exit(1);
 	}
 
-	int	width = int(movie_width * s_scale);
-	int	height = int(movie_height * s_scale);
+	int	width = s_wlogo = int(movie_width * s_scale);
+	int	height = s_hlogo = int(movie_height * s_scale);
 
 	if (do_render)
 	{
@@ -547,6 +660,19 @@ int	main(int argc, char *argv[])
 		// glInterleavedArrays(GL_T2F_N3F_V3F, 0, *)
 		glPushAttrib (GL_ALL_ATTRIB_BITS);		
 	}
+
+
+	// create logo
+	image::rgb* im = image::read_jpeg("gameswf_logo.jpg");
+	if (im != NULL)
+	{
+		s_logo_bi = render->create_bitmap_info_rgb(im);
+	}
+
+	// show logo
+	show_logo();
+	glDrawBuffer(GL_BACK);
+	SDL_GL_SwapBuffers();
 
 	// Load the actual movie.
 	gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
