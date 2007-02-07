@@ -2,6 +2,7 @@
 
 	* gameswf/gameswf_test_ogl.cpp: display of the gameswf_logo and process of loading
 	of a swf-file is added
+	* gameswf/gameswf_sound_handler.(cpp, h): has returned the lost comments
 	
 2007-02-06  Vitaly Alexeev <tishka92@yahoo.com>
 
