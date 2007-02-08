@@ -1384,6 +1384,7 @@ namespace gameswf
 			// Subtract the size of the 8-byte header, since
 			// it's not included in the compressed
 			// stream length.
+			file_end_pos = file_length - 8;
 			file_length -= 8;
 		}
 

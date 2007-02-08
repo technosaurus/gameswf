@@ -516,6 +516,19 @@ int	main(int argc, char *argv[])
 		exit(1);
 	}
 
+	// use this for multifile games
+	// workdir is used when LoadMovie("myfile.swf", _root) is called
+	{
+		char workdir[256];
+		const char* ptr = infile + strlen(infile);
+		for (; ptr >= infile && *ptr != '/' && *ptr != '\\'; ptr--)	{}
+		int len = ptr - infile + 1;
+		assert(len < 256);
+		strncpy(workdir, infile, len);
+		workdir[len] = 0;
+		gameswf::set_workdir(workdir);
+	}
+
 	gameswf::register_progress_callback(test_progress_callback);
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_fscommand_callback(fs_callback);
@@ -714,7 +727,6 @@ int	main(int argc, char *argv[])
 		}
 	}
 	
-	
 	for (;;)
 	{
 		Uint32	ticks;
@@ -739,6 +751,9 @@ int	main(int argc, char *argv[])
 			break;
 		}
 		
+		// use this for multifile games
+		m = gameswf::get_current_root();
+
 		bool ret = true;
 		if (do_render)
 		{

@@ -99,8 +99,8 @@ namespace gameswf
 
 		virtual void	set_volume(int sound_handle, int volume);
 
-		virtual void	attach_aux_streamer(gameswf::sound_handler::aux_streamer_ptr ptr, void* owner);	//vv
-		virtual void	detach_aux_streamer(void* owner);	//vv
+		virtual void	attach_aux_streamer(gameswf::sound_handler::aux_streamer_ptr ptr, void* owner);
+		virtual void	detach_aux_streamer(void* owner);
 
 		// Converts input data to the SDL output format.
 		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, int size, 
