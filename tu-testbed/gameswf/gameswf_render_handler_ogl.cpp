@@ -5,9 +5,9 @@
 
 // A gameswf::render_handler that uses SDL & OpenGL
 
-
 #include "gameswf.h"
 #include "gameswf_types.h"
+#include "gameswf_video_ogl.h"
 #include "base/image.h"
 #include "base/ogl.h"
 #include "base/utility.h"
@@ -337,13 +337,25 @@ struct render_handler_ogl : public gameswf::render_handler
 		return new bitmap_info_ogl(w, h, data);
 	}
 
-
 	void	delete_bitmap_info(gameswf::bitmap_info* bi)
 	// Delete the given bitmap info struct.
 	{
 		delete bi;
 	}
 
+	gameswf::YUV_video*	create_YUV_video(int w, int h)
+	{
+		if (ogl::is_combiner())
+		{
+			return new YUV_video_ogl_NV(w, h);
+		}
+		return new YUV_video_ogl(w, h);
+	}
+
+	void	delete_YUV_video(gameswf::YUV_video* yuv)
+	{
+		if (yuv) delete yuv;
+	}
 
 	~render_handler_ogl()
 	{
@@ -1169,7 +1181,6 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 #endif // GENERATE_MIPMAPS
 	}
 }
-
 
 gameswf::render_handler*	gameswf::create_render_handler_ogl()
 // Factory.

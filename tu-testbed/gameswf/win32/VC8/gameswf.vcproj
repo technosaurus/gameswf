@@ -248,6 +248,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_netstream.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_render.cpp"
 				>
 			</File>
@@ -308,6 +312,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_video_base.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_video_impl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_video_ogl.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_xml.cpp"
 				>
 			</File>
@@ -365,6 +381,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_netstream.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_render.h"
 				>
 			</File>
@@ -406,6 +426,18 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_types.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_video_base.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_video_impl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_video_ogl.h"
 				>
 			</File>
 			<File

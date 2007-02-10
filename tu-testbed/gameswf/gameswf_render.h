@@ -25,7 +25,10 @@ namespace gameswf
 		bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data);
 		bitmap_info*	create_bitmap_info_rgb(image::rgb* im);
 		bitmap_info*	create_bitmap_info_rgba(image::rgba* im);
+		YUV_video*	create_YUV_video(int w, int h);
+
 		void	delete_bitmap_info(bitmap_info* bi);
+		void	delete_YUV_video(YUV_video* vi);
 
 		// Bracket the displaying of a frame from a movie.
 		// Fill the background color, and set up default

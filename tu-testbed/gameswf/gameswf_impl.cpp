@@ -22,6 +22,7 @@
 #include "gameswf_fontlib.h"
 #include "gameswf_log.h"
 #include "gameswf_morph2.h"
+#include "gameswf_video_impl.h"
 #include "gameswf_render.h"
 #include "gameswf_shape.h"
 #include "gameswf_stream.h"
@@ -1318,10 +1319,10 @@ namespace gameswf
 			register_tag_loader(56, export_loader);
 			register_tag_loader(57, import_loader);
 			register_tag_loader(59, do_init_action_loader);   
+			register_tag_loader(60, define_video_loader);
+			register_tag_loader(61, video_loader);
 		}
 	}
-
-
 
 	void	get_movie_info(
 		const char* filename,
@@ -5023,6 +5024,33 @@ namespace gameswf
 
 		delete [] source_url;
 	}
+
+	void define_video_loader(stream* in, int tag, movie_definition_sub* m)
+	{
+		assert(tag == 60); // 60
+		Uint16 character_id = in->read_u16();
+
+		video_stream_definition* ch = new video_stream_definition;
+		ch->read(in, tag, m);
+
+		m->add_character(character_id, ch);
+	}
+
+	void video_loader(stream* in, int tag, movie_definition_sub* m)
+	{
+		assert(tag == 61); // 61
+
+		Uint16 character_id = in->read_u16();
+		character_def* chdef = m->get_character_def(character_id);
+
+		assert ( dynamic_cast<video_stream_definition*> (chdef) );
+		video_stream_definition* ch = static_cast<video_stream_definition*> (chdef);
+		assert(ch != NULL);
+
+		ch->read(in, tag, m);
+	}
+
+
 }
 
 

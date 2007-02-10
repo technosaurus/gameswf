@@ -545,8 +545,8 @@ int	main(int argc, char *argv[])
 			sound = gameswf::create_sound_handler_sdl();
 			gameswf::set_sound_handler(sound);
 		}
-		render = s_logo_render = gameswf::create_render_handler_ogl();
-		gameswf::set_render_handler(render);
+//		render = s_logo_render = gameswf::create_render_handler_ogl();
+//		gameswf::set_render_handler(render);
 	}
 
 	// Get info about the width & height of the movie.
@@ -650,6 +650,9 @@ int	main(int argc, char *argv[])
 			fprintf(stderr, "SDL_SetVideoMode() failed.");
 			exit(1);
 		}
+
+		render = s_logo_render = gameswf::create_render_handler_ogl();
+		gameswf::set_render_handler(render);
 
 		ogl::open();
 
