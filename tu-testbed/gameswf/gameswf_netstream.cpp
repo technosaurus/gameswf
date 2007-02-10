@@ -17,10 +17,12 @@ namespace gameswf {
 NetStream::NetStream():
 	m_video_index(-1),
 	m_audio_index(-1),
+#ifdef USE_FFMPEG
 	m_VCodecCtx(NULL),
 	m_ACodecCtx(NULL),
 	m_FormatCtx(NULL),
 	m_Frame(NULL),
+#endif
 	m_go(false),
 	m_yuv(NULL),
 	m_video_clock(0),
@@ -60,6 +62,7 @@ void NetStream::pause(int mode)
 
 void NetStream::close()
 {
+#ifdef USE_FFMPEG
 	if (m_go)
 	{
 		// terminate thread
@@ -101,12 +104,12 @@ void NetStream::close()
 		delete m_qaudio.front();
 		m_qaudio.pop();
 	}
-
+#endif
 }
 
-int
-NetStream::play(const char* c_url)
+int NetStream::play(const char* c_url)
 {
+#ifdef USE_FFMPEG
 	// This registers all available file formats and codecs 
 	// with the library so they will be used automatically when
 	// a file with the corresponding format/codec is opened
@@ -237,6 +240,10 @@ NetStream::play(const char* c_url)
 	}
 
 	return 0;
+#else
+	printf("video requires FFMEG library\n");
+	return -1;
+#endif
 }
 
 // decoder thread
@@ -337,6 +344,7 @@ void NetStream::audio_streamer(void *owner, Uint8 *stream, int len)
 
 raw_videodata_t* NetStream::read_frame(raw_videodata_t* unqueued_data)
 {
+#ifdef USE_FFMPEG
 	raw_videodata_t* ret = NULL;
 	if (unqueued_data)
 	{
@@ -461,6 +469,9 @@ raw_videodata_t* NetStream::read_frame(raw_videodata_t* unqueued_data)
 	}
 
 	return ret;
+#else
+	return NULL;
+#endif
 }
 
 
@@ -471,6 +482,7 @@ YUV_video* NetStream::get_video()
 
 void NetStream::seek(double seek_time)
 {
+#ifdef USE_FFMPEG
 	return;
 	double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
 	clock += seek_time;
@@ -482,6 +494,7 @@ void NetStream::seek(double seek_time)
 	{
 		printf("could not seek to position rc=%d\n", rc);
 	}
+#endif
 }
 
 void
@@ -489,40 +502,6 @@ NetStream::setBufferTime()
 {
     log_msg("%s:unimplemented \n", __FUNCTION__);
 }
-
-/*
-void
-netstream_new(const fn_call& fn)
-{
-    netstream_as_object *netstream_obj = new netstream_as_object;
-
-    netstream_obj->set_member("close", &netstream_close);
-    netstream_obj->set_member("pause", &netstream_pause);
-    netstream_obj->set_member("play", &netstream_play);
-    netstream_obj->set_member("seek", &netstream_seek);
-    netstream_obj->set_member("setbuffertime", &netstream_setbuffertime);
-
-    fn.result->set(netstream_obj);
-}
-
-
-void	netstream_as_object::set_member(const tu_stringi& name, const as_value& val)
-{
-		log_error("error: video_stream_instance::set_member('%s', '%s') not implemented yet\n",
-				name.c_str(),
-				val.to_string());
-}
-
-bool netstream_as_object::get_member(const tu_stringi& name, as_value* val)
-{
-	if (name == "attachVideo")
-	{
-//			val->set(attach_video);
-		return true;
-	}
-	return false;
-}
-*/
 
 void netstream_close(const fn_call& fn)
 {
@@ -581,4 +560,3 @@ void netstream_setbuffertime(const fn_call& /*fn*/) {
 }
 
 } // end of gameswf namespace
-
