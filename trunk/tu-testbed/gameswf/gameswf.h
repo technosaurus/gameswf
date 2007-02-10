@@ -49,6 +49,7 @@ namespace gameswf
 	struct rgba;
 	struct sound_handler;
 	struct stream;
+	struct YUV_video;
 	
 	//
 	// Log & error reporting control.
@@ -655,7 +656,13 @@ namespace gameswf
 		
 		// gameswf calls this when it's done with a particular sound.
 		virtual void	delete_sound(int sound_handle) = 0;
-		
+
+		// They are called from netstream when it wishes to sound video 
+		virtual void attach_aux_streamer(aux_streamer_ptr ptr, void* owner) {};
+		virtual void detach_aux_streamer(void* owner) {};
+		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, 
+			int size, int channels, int freq) {};
+
 		virtual ~sound_handler() {};
 	};
 	
@@ -784,7 +791,7 @@ namespace gameswf
 		{
 		}
 	};
-	
+
 	// You must define a subclass of render_handler, and pass an
 	// instance to set_render_handler().
 	struct render_handler
@@ -796,8 +803,10 @@ namespace gameswf
 		virtual bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data) = 0;
 		virtual bitmap_info*	create_bitmap_info_rgb(image::rgb* im) = 0;
 		virtual bitmap_info*	create_bitmap_info_rgba(image::rgba* im) = 0;
+		virtual YUV_video*	create_YUV_video(int w, int h) = 0;
 
 		virtual void	delete_bitmap_info(bitmap_info* bi) = 0;
+		virtual void	delete_YUV_video(YUV_video* vi) = 0;
 		
 		// Bracket the displaying of a frame from a movie.
 		// Fill the background color, and set up default

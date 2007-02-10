@@ -1,3 +1,17 @@
+2007-02-10  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_impl(h,cpp): added video tag loaders
+	* gameswf/gameswf_action.cpp: added netstream constructor
+	* gameswf/gameswf_render(h, cpp): added video interface
+	* gameswf/gameswf_test_ogl.cpp: SDL_Init() should be executed
+	up to create_render_handler()
+	* gameswf/gameswf.h: added video interface
+	* gameswf/gameswf_render_handler_ogl.cpp: added video interface
+	* gameswf/gameswf_video_base(h,cpp), gameswf/gameswf_video_impl(h,cpp),
+	gameswf/gameswf_video_ogl(h,cpp), gameswf/gameswf_netstream(h,cpp):
+	added video stuff
+	* base/ogl(h,cpp): added video stuf
+	
 2007-02-08  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_test_ogl.cpp: added the support of multi-file games

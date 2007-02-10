@@ -17,6 +17,7 @@
 #include "gameswf_timers.h"
 #include "gameswf_textformat.h"
 #include "gameswf_sound.h"
+#include "gameswf_netstream.h"
 
 #ifdef HAVE_LIBXML
 #include "gameswf_xml.h"
@@ -1225,6 +1226,20 @@ namespace gameswf
 		fn.result->set_as_object_interface(ao.get_ptr());
 	}
 
+	void	as_global_netstream_ctor(const fn_call& fn)
+	// Constructor for ActionScript class NetStream.
+	{
+		smart_ptr<as_object>	netstream_obj(new netstream_as_object);
+
+		// methods
+		netstream_obj->set_member("close", &netstream_close);
+		netstream_obj->set_member("pause", &netstream_pause);
+		netstream_obj->set_member("play", &netstream_play);
+		netstream_obj->set_member("seek", &netstream_seek);
+		netstream_obj->set_member("setbuffertime", &netstream_setbuffertime);
+
+		fn.result->set_as_object_interface(netstream_obj.get_ptr());
+	}
 
 	void	as_global_assetpropflags(const fn_call& fn)
 	// ASSetPropFlags function
@@ -1369,6 +1384,9 @@ namespace gameswf
 
 			// ASSetPropFlags
 			s_global->set_member("ASSetPropFlags", as_value(as_global_assetpropflags));
+
+			// for video
+			s_global->set_member("NetStream", as_value(as_global_netstream_ctor));
 
 			math_init();
 			key_init();
