@@ -1,34 +1,41 @@
+// gameswf_netstream.h	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
 #ifndef NETSTREAM_H
 #define NETSTREAM_H
-
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 #include "gameswf_video_impl.h"
+
+#ifdef USE_FFMPEG
 #include <ffmpeg/avformat.h>
+#endif
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_thread.h>
 
 #include <queue>
 
-namespace gameswf {
-
-template<class T>
-class multithread_queue
+namespace gameswf
 {
+
+	template<class T>
+	class multithread_queue
+	{
 	public:
 
-		multithread_queue(const int size):
-		m_size(size)
+		multithread_queue(const int size):m_size(size)
 		{
 			assert(m_size > 0);
 			m_mutex = SDL_CreateMutex();
 		};
 
-    ~multithread_queue()
+		~multithread_queue()
 		{
 			SDL_DestroyMutex(m_mutex);
 		}
@@ -48,7 +55,7 @@ class multithread_queue
 			{
 				T x = m_queue.front();
 				m_queue.pop();
-//				delete x;
+				//				delete x;
 			}
 			unlock();
 		}
@@ -133,16 +140,16 @@ class multithread_queue
 		SDL_mutex* m_mutex;
 		std::queue < T > m_queue;
 		size_t m_size;
-};
+	};
 
-struct raw_videodata_t
-{
-	raw_videodata_t():
-	m_stream_index(-1),
-	m_size(0),
-	m_data(NULL),
-	m_ptr(NULL),
-	m_pts(0)
+	struct raw_videodata_t
+	{
+		raw_videodata_t():
+		m_stream_index(-1),
+		m_size(0),
+		m_data(NULL),
+		m_ptr(NULL),
+		m_pts(0)
 	{
 	};
 
@@ -159,45 +166,42 @@ struct raw_videodata_t
 	Uint8* m_data;
 	Uint8* m_ptr;
 	double m_pts;	// presentation timestamp in sec
-};
+	};
 
-class NetStream {
-public:
+	class NetStream
+	{
+	public:
 
 		NetStream();
-    ~NetStream();
-	
-	 void set_status(const char* code);
-   void close();
-   void pause(int mode);
-   int play(const char* source);
-   void seek(double seek_time);
-   void setBufferTime();
+		~NetStream();
 
-	 raw_videodata_t* read_frame(raw_videodata_t* vd);
-	 YUV_video* get_video();
+		void set_status(const char* code);
+		void close();
+		void pause(int mode);
+		int play(const char* source);
+		void seek(double seek_time);
+		void setBufferTime();
 
-	inline double as_double(AVRational time)
-	{
-		return time.num / (double) time.den;
-	}
-	 static int av_streamer(void* arg);
-	 static void audio_streamer(void *udata, Uint8 *stream, int len);
+		raw_videodata_t* read_frame(raw_videodata_t* vd);
+		YUV_video* get_video();
 
-	 void set_ns(void* ns)
-	 {
-		 m_ns = ns;
-	 }
+#ifdef USE_FFMPEG
+		inline double as_double(AVRational time)
+		{
+			return time.num / (double) time.den;
+		}
+#endif
+		static int av_streamer(void* arg);
+		static void audio_streamer(void *udata, Uint8 *stream, int len);
 
-private:
-    bool _bufferLength;
-    bool _bufferTime;
-    bool _bytesLoaded;
-    bool _bytesTotal;
-    bool _currentFps;
-    bool _onStatus;
-    bool _time;
+		void set_ns(void* ns)
+		{
+			m_ns = ns;
+		}
 
+	private:
+
+#ifdef USE_FFMPEG
 		AVFormatContext *m_FormatCtx;
 
 		// video
@@ -209,6 +213,8 @@ private:
 		AVStream* m_audio_stream;
 
 		AVFrame* m_Frame;
+#endif
+
 		int m_video_index;
 		int m_audio_index;
 		volatile bool m_go;
@@ -222,34 +228,34 @@ private:
 		bool m_pause;
 		void* m_ns;
 		double m_start_clock;
-};
+	};
 
-class netstream_as_object : public as_object
-{
+	class netstream_as_object : public as_object
+	{
 	public:
-	
-	netstream_as_object()
-	{
-		obj.set_ns(this);
-	}
 
-	~netstream_as_object()
-	{
-	}
+		netstream_as_object()
+		{
+			obj.set_ns(this);
+		}
 
-	NetStream obj;
+		~netstream_as_object()
+		{
+		}
 
-//	virtual void set_member(const tu_stringi& name, const as_value& val);
-//	virtual bool get_member(const tu_stringi& name, as_value* val);
+		NetStream obj;
 
-};
+		//	virtual void set_member(const tu_stringi& name, const as_value& val);
+		//	virtual bool get_member(const tu_stringi& name, as_value* val);
 
-void netstream_new(const fn_call& fn);
-void netstream_close(const fn_call& fn);
-void netstream_pause(const fn_call& fn);
-void netstream_play(const fn_call& fn);
-void netstream_seek(const fn_call& fn);
-void netstream_setbuffertime(const fn_call& fn);
+	};
+
+	void netstream_new(const fn_call& fn);
+	void netstream_close(const fn_call& fn);
+	void netstream_pause(const fn_call& fn);
+	void netstream_play(const fn_call& fn);
+	void netstream_seek(const fn_call& fn);
+	void netstream_setbuffertime(const fn_call& fn);
 
 } // end of gameswf namespace
 

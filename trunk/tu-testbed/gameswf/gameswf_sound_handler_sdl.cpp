@@ -9,8 +9,6 @@
 #endif
 
 #include "gameswf_sound_handler_sdl.h"
-#include <cmath>
-#include <vector>
 #include <SDL/SDL.h>   
 
 namespace gameswf
@@ -165,7 +163,7 @@ namespace gameswf
 		assert(ptr);
 		locker lock(m_mutex);
 
-		hash_map< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
+		stdext::hash_map< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
 		if (it == m_aux_streamer.end())
 		{
 			m_aux_streamer[(Uint32) owner] = ptr;
@@ -357,22 +355,20 @@ namespace gameswf
 		Uint8* buf = new Uint8[len];
 
 		bool play = false;
-		for (vector< smart_ptr<active_sound> >::iterator it = m_playlist.begin(); it != m_playlist.end(); )
+		for (int i = 0; i < m_playlist.size(); )
 		{
 			play = true;
-			bool next_it = (*it->get_ptr()).mix(buf, len);
-
-			int volume = (int) floorf(SDL_MIX_MAXVOLUME / 100.0f * m_volume);
-			SDL_MixAudio(stream, buf, len, volume);
-
-			if (next_it)
+			if ((*m_playlist[i].get_ptr()).mix(buf, len))
 			{
-				it++;
+				i++;
 			}
 			else
 			{
-				it = m_playlist.erase(it);
+				m_playlist.remove(i);
 			}
+
+			int volume = (int) floorf(SDL_MIX_MAXVOLUME / 100.0f * m_volume);
+			SDL_MixAudio(stream, buf, len, volume);
 		}
 
 		delete [] buf;
@@ -404,7 +400,7 @@ namespace gameswf
 		memset(stream, 0, len);
 
 		// mix Flash audio
-		for (hash_map< int, smart_ptr<sound> >::iterator snd = handler->m_sound.begin();
+		for (stdext::hash_map< int, smart_ptr<sound> >::iterator snd = handler->m_sound.begin();
 			snd != handler->m_sound.end(); ++snd)
 		{
 			bool play = snd->second->mix(stream, len);
@@ -415,7 +411,7 @@ namespace gameswf
 		if (handler->m_aux_streamer.size() > 0)
 		{
 			Uint8* mix_buf = new Uint8[len];
-			hash_map< Uint32, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it;
+			stdext::hash_map< Uint32, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it;
 			for (it = handler->m_aux_streamer.begin(); it != handler->m_aux_streamer.end(); ++it)
 			{
 				memset(mix_buf, 0, len); 

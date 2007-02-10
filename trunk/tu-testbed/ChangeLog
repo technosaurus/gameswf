@@ -1,5 +1,11 @@
 2007-02-10  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_netstream(h,cpp): added USE_FFMEG ifdefs
+	* gameswf/gameswf_sound_handler_sdl(h,cpp): vector ==> array
+	* video.fla is compacted
+
+2007-02-10  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_impl(h,cpp): added video tag loaders
 	* gameswf/gameswf_action.cpp: added netstream constructor
 	* gameswf/gameswf_render(h, cpp): added video interface
@@ -10,7 +16,7 @@
 	* gameswf/gameswf_video_base(h,cpp), gameswf/gameswf_video_impl(h,cpp),
 	gameswf/gameswf_video_ogl(h,cpp), gameswf/gameswf_netstream(h,cpp):
 	added video stuff
-	* base/ogl(h,cpp): added video stuf
+	* base/ogl(h,cpp): added video stuff
 	
 2007-02-08  Vitaly Alexeev <tishka92@yahoo.com>
 

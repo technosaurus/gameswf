@@ -3,15 +3,12 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-
 #ifndef SOUND_HANDLER_SDL_H
 #define SOUND_HANDLER_SDL_H
 
 #ifdef USE_FFMPEG
 #include <ffmpeg/avformat.h>
 #endif
-
-#include <vector>
 
 #ifdef WIN32
 #include <hash_map>
@@ -24,12 +21,10 @@
 #include <SDL/SDL_thread.h>
 
 #include "gameswf.h"
+#include "base/container.h"
 #include "base/smart_ptr.h"
 
 // Used to hold the info about active sounds
-
-using namespace std;
-using namespace stdext;
 
 namespace gameswf
 {
@@ -61,9 +56,9 @@ namespace gameswf
 	{
 
 		// NetStream audio callbacks
-		hash_map< Uint32 /* owner */, aux_streamer_ptr /* callback */> m_aux_streamer;
-		hash_map< int, smart_ptr<sound> > m_sound;
-		hash_map< int, smart_ptr<sound> >::iterator it;
+		stdext::hash_map< Uint32 /* owner */, aux_streamer_ptr /* callback */> m_aux_streamer;
+		stdext::hash_map< int, smart_ptr<sound> > m_sound;
+		stdext::hash_map< int, smart_ptr<sound> >::iterator it;
 		int m_defvolume;
 		SDL_mutex* m_mutex;
 
@@ -200,7 +195,7 @@ namespace gameswf
 		int m_sample_count;
 		int m_sample_rate;
 		bool m_stereo;
-		vector< smart_ptr<active_sound> > m_playlist;
+		array < smart_ptr<active_sound> > m_playlist;
 	};
 
 }
