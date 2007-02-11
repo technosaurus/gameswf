@@ -448,6 +448,10 @@
 				RelativePath="..\..\gameswf_xmlsocket.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\..\base\tu_queue.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"
