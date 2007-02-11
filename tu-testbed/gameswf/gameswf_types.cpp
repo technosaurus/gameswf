@@ -26,7 +26,7 @@ namespace gameswf
 	// Bitwise comparison; return true if *this is bitwise
 	// identical to p.
 	{
-		return memcmp(this, &p, sizeof(p)) == 0;
+                return memcmp(this, &p, sizeof(p)) == 0;
 	}
 
 
@@ -38,7 +38,7 @@ namespace gameswf
 
 	matrix::matrix()
 	{
-		// Default to identity.
+            // Default to identity.
 		set_identity();
 	}
 

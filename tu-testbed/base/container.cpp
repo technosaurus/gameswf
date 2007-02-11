@@ -389,7 +389,7 @@ void	test_hash()
 	{
 		Uint32	key = data[i*2];
 		Uint32	val;
-		bool	got = h.get(key, &val);
+		bool	got = h2.get(key, &val);
 		assert(got);
 		assert(val == data[i*2 + 1]);
 	}}
@@ -404,6 +404,43 @@ void	test_hash()
 		assert(h2.get(it->first, NULL) == true);
 		assert(h.find(it->first) == h.end());
 		assert(h2.find(it->first) != h2.end());
+	}}
+
+	// Copy h2 back into h.
+	h = h2;
+
+	assert(h.size() == h2.size());
+	
+	// Verify h2 contents are in h.
+	{for (hash<Uint32, Uint32>::iterator it = h2.begin(); it != h2.end(); ++it)
+	{
+		assert(h.get(it->first, NULL) == true);
+		assert(h2.get(it->first, NULL) == true);
+		assert(h.find(it->first) != h.end());
+		assert(h2.find(it->first) != h2.end());
+	}}
+
+	// Verify h contents are in h2.
+	{for (hash<Uint32, Uint32>::iterator it = h.begin(); it != h.end(); ++it)
+	{
+		assert(h.get(it->first, NULL) == true);
+		assert(h2.get(it->first, NULL) == true);
+		assert(h.find(it->first) != h.end());
+		assert(h2.find(it->first) != h2.end());
+	}}
+
+	// Test element removal.
+	int h2_size = h2.size();
+	{for (hash<Uint32, Uint32>::iterator it = h2.begin(); it != h2.end(); ) {
+		hash<Uint32, Uint32>::iterator next = it;
+		++next;
+		h2_size--;
+		Uint32 key = it->first;
+		Uint32 value = it->second;
+		h2.erase(it);
+		assert(h2.size() == h2_size);
+		assert(h2.find(key) == h2.end());
+		it = next;
 	}}
 }
 

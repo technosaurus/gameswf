@@ -13,11 +13,8 @@
 
 namespace gameswf
 {
-
 	struct YUV_video : public ref_counted
 	{
-
-
 		enum {Y, U, V, T, NB_TEXS};
 
 		YUV_video(int w, int h);
@@ -29,7 +26,6 @@ namespace gameswf
 		bool video_in_place() const;
 
 	protected:
-
 		unsigned char* m_data;
 		int m_width;
 		int m_height;
@@ -46,7 +42,6 @@ namespace gameswf
 		const rect* m_bounds;
 		bool m_video_in_place;
 	};
-
 }
 
 #endif

@@ -12,40 +12,39 @@
 
 namespace gameswf {
 
-void video_stream_definition::read(stream* in, int tag, movie_definition* m)
-{
-	// Character ID has been read already 
-
-	assert(tag == 60 ||	tag == 61);
-
-	if (tag == 60)
+	void video_stream_definition::read(stream* in, int tag, movie_definition* m)
 	{
-
-		Uint16 numframes = in->read_u16();
-		m_frames.resize(numframes);
-
-		m_width = in->read_u16();
-		m_height = in->read_u16();
-		Uint8 reserved_flags = in->read_uint(5);
-		m_deblocking_flags = in->read_uint(2);
-		m_smoothing_flags = in->read_uint(1) ? true : false;
-
-		m_codec_id = in->read_u8();
+		// Character ID has been read already 
+	
+		assert(tag == 60 ||	tag == 61);
+	
+		if (tag == 60)
+		{
+	
+			Uint16 numframes = in->read_u16();
+			m_frames.resize(numframes);
+	
+			m_width = in->read_u16();
+			m_height = in->read_u16();
+			Uint8 reserved_flags = in->read_uint(5);
+			m_deblocking_flags = in->read_uint(2);
+			m_smoothing_flags = in->read_uint(1) ? true : false;
+	
+			m_codec_id = in->read_u8();
+		}
+		else if (tag == 61)
+		{
+			Uint16 n = in->read_u16();
+			m_frames[n] = NULL;
+		}
+	
 	}
-	else
-	if (tag == 61)
+	
+	character* video_stream_definition::create_character_instance(movie* parent, int id)
 	{
-		Uint16 n = in->read_u16();
-		m_frames[n] = NULL;
+		character* ch = new video_stream_instance(this, parent, id);
+		return ch;
 	}
-
-}
-
-character* video_stream_definition::create_character_instance(movie* parent, int id)
-{
-	character* ch = new video_stream_instance(this, parent, id);
-	return ch;
-}
 
 	void attach_video(const fn_call& fn)
 	{

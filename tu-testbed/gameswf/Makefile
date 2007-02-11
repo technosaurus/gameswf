@@ -33,6 +33,7 @@ LIB_OBJS = \
 	gameswf_log.$(OBJ_EXT)	\
 	gameswf_morph2.$(OBJ_EXT)	\
 	gameswf_movie.$(OBJ_EXT)	\
+	gameswf_netstream.$(OBJ_EXT)	\
 	gameswf_render.$(OBJ_EXT)	\
 	gameswf_shape.$(OBJ_EXT)	\
 	gameswf_sound.$(OBJ_EXT)	\
@@ -44,6 +45,8 @@ LIB_OBJS = \
 	gameswf_textformat.$(OBJ_EXT)	\
 	gameswf_timers.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)	\
+	gameswf_video_base.$(OBJ_EXT)	\
+	gameswf_video_impl.$(OBJ_EXT)	\
 	gameswf_xml.$(OBJ_EXT)	        \
 	gameswf_xmlsocket.$(OBJ_EXT)
 
@@ -51,7 +54,8 @@ TEST_PROGRAM_OBJS = \
 	gameswf_test_ogl.$(OBJ_EXT)             \
 	gameswf_render_handler_ogl.$(OBJ_EXT)	\
 	gameswf_sound_handler_sdl.$(OBJ_EXT)	\
-	gameswf_sound_handler_mp3.$(OBJ_EXT)
+	gameswf_sound_handler_mp3.$(OBJ_EXT)    \
+	gameswf_video_ogl.$(OBJ_EXT)
 
 PARSER_OBJS = \
 	gameswf_parser.$(OBJ_EXT) 

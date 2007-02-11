@@ -8,10 +8,10 @@
 TOP = ../..
 include $(TOP)/config
 
-INCLUDE_PATHS := $(ENGINE_INCLUDE) $(LIBPNG_INCLUDE) -I/usr/include/freetype2
+INCLUDE_PATHS := $(ENGINE_INCLUDE) $(LIBPNG_INCLUDE) -I../../../../../freetype-2.1.10-lib/include -I../../../../../freetype-2.1.10-lib/include/freetype2 #-I/usr/include/freetype2
 
 CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
-LDFLAGS := $(LIB_DEBUG_FLAGS) $(LDFLAGS) -lfreetype
+LDFLAGS := $(LIB_DEBUG_FLAGS) $(LDFLAGS) ../../../../../freetype-2.1.10-lib/lib/freetype.lib # -lfreetype
 
 LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(LIBPNG) $(ZLIB)
 

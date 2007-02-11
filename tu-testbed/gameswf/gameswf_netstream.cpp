@@ -129,7 +129,7 @@ int NetStream::play(const char* c_url)
 
 	if (av_open_input_file(&m_FormatCtx, c_url, NULL, 0, NULL) != 0)
 	{
-	  log_error("Couldn't open file '%s'\n", c_url);
+		log_error("Couldn't open file '%s'\n", c_url);
 		set_status("NetStream.Play.StreamNotFound");
 		return -1;
 	}
@@ -138,7 +138,7 @@ int NetStream::play(const char* c_url)
 	// This fills the streams field of the AVFormatContext with valid information
 	if (av_find_stream_info(m_FormatCtx) < 0)
 	{
-    log_error("Couldn't find stream information from '%s'\n", c_url);
+		log_error("Couldn't find stream information from '%s'\n", c_url);
 		return -1;
 	}
 
@@ -154,26 +154,24 @@ int NetStream::play(const char* c_url)
 
 		switch (enc->codec_type)
 		{
-			case CODEC_TYPE_AUDIO:
-				if (m_audio_index < 0)
-				{
-					m_audio_index = i;
-					m_audio_stream = m_FormatCtx->streams[i];
-				}
-				break;
+		case CODEC_TYPE_AUDIO:
+			if (m_audio_index < 0) {
+				m_audio_index = i;
+				m_audio_stream = m_FormatCtx->streams[i];
+			}
+			break;
 
-			case CODEC_TYPE_VIDEO:
-				if (m_video_index < 0)
-				{
-					m_video_index = i;
-					m_video_stream = m_FormatCtx->streams[i];
-				}
-				break;
-			case CODEC_TYPE_DATA:
-			case CODEC_TYPE_SUBTITLE:
-			case CODEC_TYPE_UNKNOWN:
-				break;
-    }
+		case CODEC_TYPE_VIDEO:
+			if (m_video_index < 0) {
+				m_video_index = i;
+				m_video_stream = m_FormatCtx->streams[i];
+			}
+			break;
+		case CODEC_TYPE_DATA:
+		case CODEC_TYPE_SUBTITLE:
+		case CODEC_TYPE_UNKNOWN:
+			break;
+		}
 	}
 
 	if (m_video_index < 0)
@@ -183,7 +181,7 @@ int NetStream::play(const char* c_url)
 	}
 
 	// Get a pointer to the codec context for the video stream
-  m_VCodecCtx = m_FormatCtx->streams[m_video_index]->codec;
+	m_VCodecCtx = m_FormatCtx->streams[m_video_index]->codec;
 
 	// Find the decoder for the video stream
 	AVCodec* pCodec = avcodec_find_decoder(m_VCodecCtx->codec_id);
@@ -387,7 +385,7 @@ raw_videodata_t* NetStream::read_frame(raw_videodata_t* unqueued_data)
 					int n = 0;
 					s->cvt(&adjusted_data, &n, ptr, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
 
-			    raw_videodata_t* raw = new raw_videodata_t;
+					raw_videodata_t* raw = new raw_videodata_t;
 					raw->m_data = (uint8_t*) adjusted_data;
 					raw->m_ptr = raw->m_data;
 					raw->m_size = n;
@@ -402,7 +400,7 @@ raw_videodata_t* NetStream::read_frame(raw_videodata_t* unqueued_data)
 		if (packet.stream_index == m_video_index)
 		{
 			int got = 0;
-		  avcodec_decode_video(m_VCodecCtx, m_Frame, &got, packet.data, packet.size);
+			avcodec_decode_video(m_VCodecCtx, m_Frame, &got, packet.data, packet.size);
 			if (got)
 			{
 				if (m_VCodecCtx->pix_fmt != PIX_FMT_YUV420P)
@@ -531,8 +529,8 @@ void netstream_play(const fn_call& fn)
 	
 	if (fn.nargs < 1)
 	{
-    log_error("NetStream play needs args\n");
-    return;
+		log_error("NetStream play needs args\n");
+		return;
 	}
 
 	if (ns->obj.play(fn.arg(0).to_string()) != 0)
@@ -548,8 +546,8 @@ void netstream_seek(const fn_call& fn)
 	
 	if (fn.nargs < 1)
 	{
-    log_error("NetStream seek needs args\n");
-    return;
+		log_error("NetStream seek needs args\n");
+		return;
 	}
 
 	ns->obj.seek(fn.arg(0).to_number());

@@ -1,3 +1,12 @@
+2007-02-11  Thatcher Ulrich <tu@tulrich.com>
+
+	* base/tu_queue.h: very simple std::queue work-alike
+	* base/container(h,cpp): add hash::erase() functions
+	* gameswf/Makefile: add Vitaly's new files
+	* gameswf/gameswf_test_ogl.cpp: avoid fixed-size buffer for path manipulations
+	* gameswf/gameswf_impl.cpp: try workdir when importing resources from other movies
+	* gameswf/(various): remove std:: headers, and other misc compile fixes.
+
 2007-02-10  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_netstream(h,cpp): added USE_FFMEG ifdefs

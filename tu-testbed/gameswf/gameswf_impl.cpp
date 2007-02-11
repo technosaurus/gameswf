@@ -1386,7 +1386,7 @@ namespace gameswf
 			// it's not included in the compressed
 			// stream length.
 			file_end_pos = file_length - 8;
-			file_length -= 8;
+			file_length -= 8; //???
 		}
 
 		stream	str(in);
@@ -1409,7 +1409,7 @@ namespace gameswf
 			int local_tag_count = 0;
 			while ((Uint32) str.get_position() < file_end_pos)
 			{
-				str.open_tag();
+				int tag_type = str.open_tag();
 				str.close_tag();
 				local_tag_count++;
 			}
@@ -4973,9 +4973,19 @@ namespace gameswf
 			source_movie = create_library_movie_sub(source_url);
 			if (source_movie == NULL)
 			{
-				// Give up on imports.
-				log_error("can't import movie from url %s\n", source_url);
-				return;
+				// If workdir is set, try again with
+				// the path relative to workdir.
+				tu_string relative_url = get_workdir();
+				if (relative_url.length()) {
+					relative_url += source_url;
+					source_movie = create_library_movie_sub(relative_url);
+				}
+
+				if (source_movie == NULL) {
+					// Give up on imports.
+					log_error("can't import movie from url %s\n", source_url);
+					return;
+				}
 			}
 		}
 

@@ -440,14 +440,12 @@ public:
 		{
 			set_capacity(src.size());
 
-			for (iterator it = src.begin(); it != src.end(); it++)
+			for (const_iterator it = src.begin(); it != src.end(); ++it)
 			{
 				add(it->first, it->second);
 			}
 		}
 	}
-
-	// @@ need a "remove()"
 
 	// For convenience
 	U&	operator[](const T& key)
@@ -493,18 +491,19 @@ public:
 		assert(m_table);
 		m_table->m_entry_count++;
 
-		unsigned int	hash_value = hash_functor()(key);
+		unsigned int	hash_value = compute_hash(key);
 		int	index = hash_value & m_table->m_size_mask;
 
 		entry*	natural_entry = &(E(index));
 		
-		if (natural_entry->is_empty())
-		{
+		if (natural_entry->is_empty()) {
 			// Put the new entry in.
 			new (natural_entry) entry(key, value, -1, hash_value);
-		}
-		else
-		{
+		} else if (natural_entry->is_tombstone()) {
+			// Put the new entry in, without disturbing the rest of the chain.
+			int next_in_chain = natural_entry->m_next_in_chain;
+			new (natural_entry) entry(key, value, next_in_chain, hash_value);
+		} else {
 			// Find a blank spot.
 			int	blank_index = index;
 			for (;;)
@@ -519,6 +518,7 @@ public:
 				// Collision.  Link into this chain.
 
 				// Move existing list head.
+				// @@ this could invalidate an existing iterator
 				new (blank_entry) entry(*natural_entry);	// placement new, copy ctor
 
 				// Put the new info in the natural entry.
@@ -541,6 +541,7 @@ public:
 					if (e->m_next_in_chain == index)
 					{
 						// Here's where we need to splice.
+						// @@ this could invalidate an existing iterator
 						new (blank_entry) entry(*natural_entry);
 						e->m_next_in_chain = blank_index;
 						break;
@@ -567,7 +568,7 @@ public:
 			for (int i = 0, n = m_table->m_size_mask; i <= n; i++)
 			{
 				entry*	e = &E(i);
-				if (e->is_empty() == false)
+				if (e->is_empty() == false && e->is_tombstone() == false)
 				{
 					e->clear();
 				}
@@ -608,7 +609,7 @@ public:
 	}
 
 
-	int	size()
+	int	size() const
 	{
 		return m_table == NULL ? 0 : m_table->m_entry_count;
 	}
@@ -627,6 +628,16 @@ public:
 		}
 	}
 
+	void check_shrink()
+	// Shrink our capacity, if it makes sense.
+	{
+		if (m_table) {
+			if (size() * 3 < m_table->m_size_mask + 1) {
+				// Table is less than 1/3 full.  Shrink.
+				set_capacity(size());
+			}
+		}
+	}
 
 	void	resize(size_t n)
 	// Hint the bucket count to >= n.
@@ -645,9 +656,12 @@ public:
 	// number of elements.  If the hash already contains more
 	// elements than new_size, then this may be a no-op.
 	{
+		if (new_size < size()) {
+			// Make sure requested size is large enough to
+			// contain existing elements!
+			new_size = size();
+		}
 		int	new_raw_size = (new_size * 3) / 2;
-		if (new_raw_size < size()) { return; }
-
 		set_raw_capacity(new_raw_size);
 	}
 
@@ -668,27 +682,37 @@ public:
 			: m_next_in_chain(next_in_chain), m_hash_value(hash_value), first(key), second(value)
 		{
 		}
-		bool	is_empty() const { return m_next_in_chain == -2; }
-		bool	is_end_of_chain() const { return m_next_in_chain == -1; }
+		bool is_empty() const { return m_next_in_chain == -2; }
+		bool is_end_of_chain() const { return m_next_in_chain == -1; }
+		bool is_tombstone() const { return m_hash_value == TOMBSTONE_HASH; }
 
 		void	clear()
 		{
 			first.~T();	// placement delete
 			second.~U();	// placement delete
 			m_next_in_chain = -2;
+			m_hash_value = ~TOMBSTONE_HASH;
+		}
+
+		void make_tombstone() {
+			first.~T();
+			second.~U();
+			m_hash_value = TOMBSTONE_HASH;
 		}
 	};
 	
 	// Iterator API, like STL.
 
-	struct const_iterator
+	class const_iterator
 	{
+	public:
 		T	get_key() const { return m_hash->E(m_index).first; }
 		U	get_value() const { return m_hash->E(m_index).second; }
 
 		const entry&	operator*() const
 		{
-			assert(is_end() == false && (m_hash->E(m_index).is_empty() == false));
+			assert(is_end() == false && m_hash->E(m_index).is_empty() == false);
+			assert(m_hash->E(m_index).is_tombstone() == false);
 			return m_hash->E(m_index);
 		}
 		const entry*	operator->() const { return &(operator*()); }
@@ -702,7 +726,7 @@ public:
 			{
 				m_index++;
 				while (m_index <= m_hash->m_table->m_size_mask
-				       && m_hash->E(m_index).is_empty())
+				       && (m_hash->E(m_index).is_empty() || m_hash->E(m_index).is_tombstone()))
 				{
 					m_index++;
 				}
@@ -747,11 +771,12 @@ public:
 		const hash*	m_hash;
 		int	        m_index;
 	};
-	friend struct const_iterator;
+	friend class const_iterator;
 
 	// non-const iterator; get most of it from const_iterator.
-	struct iterator : public const_iterator
+	class iterator : public const_iterator
 	{
+	public:
 		// Allow non-const access to entries.
 		entry&	operator*() const
 		{
@@ -769,8 +794,64 @@ public:
 		{
 		}
 	};
-	friend struct iterator;
+	friend class iterator;
 
+	void erase(const iterator& pos)
+	// Removes the element at pos.
+	{
+		if (pos.is_end() || pos.m_hash != this) {
+			// Invalid iterator.
+			return;
+		}
+		assert(m_table);
+
+		int natural_index = pos->m_hash_value & m_table->m_size_mask;
+
+		if (pos.m_index != natural_index) {
+			// We're not the head of our chain, so we can
+			// be spliced out of it.
+			
+			// Iterate up the chain, and splice out when
+			// we get to m_index.
+			entry* e = &E(natural_index);
+			while (e->m_next_in_chain != pos.m_index) {
+				assert(e->is_end_of_chain() == false);
+				e = &E(e->m_next_in_chain);
+			}
+			e->m_next_in_chain = pos->m_next_in_chain;
+			pos->clear();
+		} else if (pos->is_end_of_chain() == false) {
+			// We're the head of our chain, and there are
+			// additional elements.
+			//
+			// We need to put a tombstone here.
+			//
+			// We can't clear the element, because the
+			// rest of the elements in the chain must be
+			// linked to this position.
+			//
+			// We can't move any of the succeeding
+			// elements in the chain (i.e. to fill this
+			// entry), because we don't want to invalidate
+			// any other existing iterators.
+			pos->make_tombstone();
+		} else {
+			// We're the head of the chain, but we're the
+			// only member of the chain.
+			pos->clear();
+		}
+
+		m_table->m_entry_count--;
+	}
+
+	void erase(const T& key)
+	// Removes the element with the given key (if any).
+	{
+		iterator it = find(key);
+		if (it != end()) {
+			erase(it);
+		}
+	}
 
 	iterator	begin()
 	{
@@ -779,7 +860,7 @@ public:
 		// Scan til we hit the first valid entry.
 		int	i0 = 0;
 		while (i0 <= m_table->m_size_mask
-			&& E(i0).is_empty())
+			&& (E(i0).is_empty() || E(i0).is_tombstone()))
 		{
 			i0++;
 		}
@@ -803,29 +884,37 @@ public:
 	const_iterator	find(const T& key) const { return const_cast<hash*>(this)->find(key); }
 
 private:
-
+	// A value of m_hash_value that marks an entry as a
+	// "tombstone" -- i.e. a placeholder entry.
+	static const size_t TOMBSTONE_HASH = (size_t) -1;
+	
 	int	find_index(const T& key) const
 	// Find the index of the matching entry.  If no match, then return -1.
 	{
 		if (m_table == NULL) return -1;
 
-		size_t	hash_value = hash_functor()(key);
+		size_t	hash_value = compute_hash(key);
 		int	index = hash_value & m_table->m_size_mask;
 
 		const entry*	e = &E(index);
 		if (e->is_empty()) return -1;
-		if (int(e->m_hash_value & m_table->m_size_mask) != index) return -1;	// occupied by a collider
+		if (e->is_tombstone() == false
+		    && int(e->m_hash_value & m_table->m_size_mask) != index) {
+			// occupied by a collider
+			return -1;
+		}
 
 		for (;;)
 		{
-			assert((e->m_hash_value & m_table->m_size_mask) == (hash_value & m_table->m_size_mask));
+			assert(e->is_tombstone()
+			       || (e->m_hash_value & m_table->m_size_mask) == (hash_value & m_table->m_size_mask));
 
 			if (e->m_hash_value == hash_value && e->first == key)
 			{
 				// Found it.
 				return index;
 			}
-			assert(! (e->first == key));	// keys are equal, but hash differs!
+			assert(e->is_tombstone() || ! (e->first == key));	// keys are equal, but hash differs!
 
 			// Keep looking through the chain.
 			index = e->m_next_in_chain;
@@ -834,9 +923,17 @@ private:
 			assert(index >= 0 && index <= m_table->m_size_mask);
 			e = &E(index);
 
-			assert(e->is_empty() == false);
+			assert(e->is_empty() == false || e->is_tombstone());
 		}
 		return -1;
+	}
+
+	size_t compute_hash(const T& key) const {
+		size_t hash_value = hash_functor()(key);
+		if (hash_value == TOMBSTONE_HASH) {
+			hash_value ^= 0x8000;
+		}
+		return hash_value;
 	}
 
 	// Helpers.
@@ -879,6 +976,11 @@ private:
 			new_size = 16;
 		}
 
+		if (m_table && new_size == m_table->m_size_mask + 1) {
+			// No change in raw capacity; don't do any work.
+			return;
+		}
+
 		hash<T, U, hash_functor>	new_hash;
 		new_hash.m_table = (table*) tu_malloc(sizeof(table) + sizeof(entry) * new_size);
 		assert(new_hash.m_table);	// @@ need to throw (or something) on malloc failure!
@@ -896,7 +998,7 @@ private:
 			for (int i = 0, n = m_table->m_size_mask; i <= n; i++)
 			{
 				entry*	e = &E(i);
-				if (e->is_empty() == false)
+				if (e->is_empty() == false && e->is_tombstone() == false)
 				{
 					// Insert old entry into new hash.
 					new_hash.add(e->first, e->second);
