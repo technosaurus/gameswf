@@ -1,3 +1,7 @@
+2007-02-11  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* base/tu_queue.h: fixed typo
+
 2007-02-11  Thatcher Ulrich <tu@tulrich.com>
 
 	* base/tu_queue.h: very simple std::queue work-alike

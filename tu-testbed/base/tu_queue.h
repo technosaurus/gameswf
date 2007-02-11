@@ -14,10 +14,19 @@ template<class T>
 class tu_queue
 {
 public:
+
+	tu_queue::tu_queue()
+	{
+		m_size = 0;
+		m_back = NULL;
+		m_front = NULL;
+	}
+
 	const T& back() const {
 		assert(m_back);
 		return m_back->m_value;
 	}
+
 	T& back() {
 		assert(m_back);
 		return m_back->m_value;
@@ -27,6 +36,7 @@ public:
 		assert(m_front);
 		return m_front->m_value;
 	}
+
 	T& front() {
 		assert(m_front);
 		return m_front->m_value;
@@ -44,16 +54,16 @@ public:
 			assert(m_size == 0);
 		}
 	}
-	
+
 	void push(const T& val) {
 		if (!m_back) {
 			assert(!m_front);
 			assert(m_size == 0);
-			m_back = new elem(T);
+			m_back = new elem(val);
 			m_front = m_back;
 		} else {
 			assert(m_back->m_next == NULL);
-			m_back->m_next = new elem(T);
+			m_back->m_next = new elem(val);
 			m_back = m_back->m_next;
 		}
 		m_size++;
@@ -62,8 +72,9 @@ public:
 	size_t size() const {
 		return m_size;
 	}
-	
+
 private:
+
 	struct elem {
 		T m_value;
 		elem* m_next;
@@ -71,6 +82,7 @@ private:
 		elem(const T& v) : m_value(v), m_next(NULL) {
 		}
 	};
+
 	elem* m_back;
 	elem* m_front;
 	int m_size;
