@@ -299,7 +299,7 @@ namespace gameswf
 	struct import_info
 	{
 		tu_string	m_source_url;
-		int	        m_character_id;
+		int		m_character_id;
 		tu_string	m_symbol;
 
 		import_info()
@@ -336,7 +336,7 @@ namespace gameswf
 		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
 		array<array<execute_tag*> >	   m_playlist;	// A list of movie control events for each frame.
 		array<array<execute_tag*> >	   m_init_action_list;	// Init actions for each frame.
-		stringi_hash<int>	           m_named_frames;	// 0-based frame #'s
+		stringi_hash<int>		   m_named_frames;	// 0-based frame #'s
 		stringi_hash<smart_ptr<resource> > m_exports;
 
 		// Items we import.
@@ -450,7 +450,7 @@ namespace gameswf
 
 		virtual void	export_resource(const tu_string& symbol, resource* res)
 		// Expose one of our resources under the given symbol,
-		// for export.  Other movies can import it.
+		// for export.	Other movies can import it.
 		{
 			// SWF sometimes exports the same thing more than once!
 			m_exports.set(symbol, res);
@@ -513,7 +513,7 @@ namespace gameswf
 		// Grabs the stuff we want from the source movie.
 		{
 			// @@ should be safe, but how can we verify
-			// it?  Compare a member function pointer, or
+			// it?	Compare a member function pointer, or
 			// something?
 			movie_def_impl*	def_impl = static_cast<movie_def_impl*>(source_movie);
 			movie_definition_sub*	def = static_cast<movie_definition_sub*>(def_impl);
@@ -662,7 +662,7 @@ namespace gameswf
 
 		void	add_frame_name(const char* name)
 		// Labels the frame currently being loaded with the
-		// given name.  A copy of the name string is made and
+		// given name.	A copy of the name string is made and
 		// kept in this object.
 		{
 			assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
@@ -768,7 +768,7 @@ namespace gameswf
 				}
 				else if (s_tag_loaders.get(tag_type, &lf))
 				{
-					// call the tag loader.  The tag loader should add
+					// call the tag loader.	 The tag loader should add
 					// characters or tags to the movie data structure.
 					(*lf)(&str, tag_type, this);
 
@@ -1008,7 +1008,7 @@ namespace gameswf
 			m_def = NULL;
 		}
 
-		// @@ should these delegate to m_movie?  Probably...
+		// @@ should these delegate to m_movie?	 Probably...
 		virtual void	set_member(const tu_stringi& name, const as_value& val) {}
 		virtual bool	get_member(const tu_stringi& name, as_value* val) { return false; }
 		virtual movie*	to_movie() { assert(0); return 0; } // @@ should this return m_movie.get_ptr()?
@@ -1080,13 +1080,13 @@ namespace gameswf
 			return m_interval_timers.size();
 		}
 	
-		virtual void    clear_interval_timer(int x)
+		virtual void	clear_interval_timer(int x)
 		{
 			m_interval_timers.remove(x-1);
 			//m_interval_timers[x]->clearInterval();
 		}
 	
-		virtual void    do_something(void *timer)
+		virtual void	do_something(void *timer)
 		{
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 		}
@@ -1169,7 +1169,7 @@ namespace gameswf
 			
 			m_timer += delta_time;
 			// @@ TODO handle multi-frame catch-up stuff
-			// here, and make it optional.  Make
+			// here, and make it optional.	Make
 			// movie::advance() a fixed framerate w/ no
 			// dt.
 
@@ -1318,7 +1318,7 @@ namespace gameswf
 			register_tag_loader(48, define_font_loader);
 			register_tag_loader(56, export_loader);
 			register_tag_loader(57, import_loader);
-			register_tag_loader(59, do_init_action_loader);   
+			register_tag_loader(59, do_init_action_loader);	  
 			register_tag_loader(60, define_video_loader);
 			register_tag_loader(61, video_loader);
 		}
@@ -1434,7 +1434,7 @@ namespace gameswf
 		if (s_opener_function == NULL)
 		{
 			// Don't even have a way to open the file.
-			log_error("error: no file opener function; can't create movie.  "
+			log_error("error: no file opener function; can't create movie.	"
 				  "See gameswf::register_file_opener_callback\n");
 			return NULL;
 		}
@@ -1605,35 +1605,35 @@ namespace gameswf
 // like it may be dropping refs in order to remove cyclic references.
 // I would rather fix the source of any cyclic references directly.
 //
-// 	void clear_library()
-// 	// Drop all library references to movie_definitions, so they
-// 	// can be cleaned up.
-// 	{
-// 		{for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it =
-// 			      s_movie_library_inst.begin();
-// 		      it != s_movie_library_inst.end();
-// 		      ++it)
-// 		{
-// 			smart_ptr<movie_interface> obj = it->second;
-// 			while (obj->get_ref_count() > 2)            
-// 			{                               
-// 				obj->drop_ref();
-// 			}
-// 		}}
-// 		s_movie_library_inst.clear();
+//	void clear_library()
+//	// Drop all library references to movie_definitions, so they
+//	// can be cleaned up.
+//	{
+//		{for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it =
+//			      s_movie_library_inst.begin();
+//		      it != s_movie_library_inst.end();
+//		      ++it)
+//		{
+//			smart_ptr<movie_interface> obj = it->second;
+//			while (obj->get_ref_count() > 2)	    
+//			{				
+//				obj->drop_ref();
+//			}
+//		}}
+//		s_movie_library_inst.clear();
 //   
-// 		{for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = s_movie_library.begin();
-// 		      it != s_movie_library.end();                                                            
-// 		      ++it)                        
-// 		{
-// 			smart_ptr<movie_definition_sub> obj = it->second;
-// 			while (obj->get_ref_count() > 2)                 
-// 			{                               
-// 				obj->drop_ref();
-// 			}
-// 		}}
-// 		s_movie_library.clear();
-// 	}
+//		{for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = s_movie_library.begin();
+//		      it != s_movie_library.end();							      
+//		      ++it)			   
+//		{
+//			smart_ptr<movie_definition_sub> obj = it->second;
+//			while (obj->get_ref_count() > 2)		 
+//			{				
+//				obj->drop_ref();
+//			}
+//		}}
+//		s_movie_library.clear();
+//	}
 
 
 	movie_definition*	create_library_movie(const char* filename)
@@ -1881,21 +1881,21 @@ namespace gameswf
 		{
 		}
 
-// 		bitmap_character(image::rgb* image)
-// 		{
-// 			assert(image != 0);
+//		bitmap_character(image::rgb* image)
+//		{
+//			assert(image != 0);
 
-// 			// Create our bitmap info, from our image.
-// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
-// 		}
+//			// Create our bitmap info, from our image.
+//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
+//		}
 
-// 		bitmap_character(image::rgba* image)
-// 		{
-// 			assert(image != 0);
+//		bitmap_character(image::rgba* image)
+//		{
+//			assert(image != 0);
 
-// 			// Create our bitmap info, from our image.
-// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
-// 		}
+//			// Create our bitmap info, from our image.
+//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
+//		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{
@@ -2197,7 +2197,7 @@ namespace gameswf
 						{
 							Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
 					
-							// @@ How is the data packed???  I'm just guessing here that it's 565!
+							// @@ How is the data packed???	 I'm just guessing here that it's 565!
 							image_out_row[i * 3 + 0] = (pixel >> 8) & 0xF8;	// red
 							image_out_row[i * 3 + 1] = (pixel >> 3) & 0xFC;	// green
 							image_out_row[i * 3 + 2] = (pixel << 3) & 0xF8;	// blue
@@ -2243,8 +2243,8 @@ namespace gameswf
 				bi = render::create_bitmap_info_rgb(image);
 				delete image;
 
-// 				// add image to movie, under character id.
-// 				m->add_bitmap_character(character_id, ch);
+//				// add image to movie, under character id.
+//				m->add_bitmap_character(character_id, ch);
 			}
 			else
 			{
@@ -2307,7 +2307,7 @@ namespace gameswf
 						{
 							Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
 					
-							// @@ How is the data packed???  I'm just guessing here that it's 565!
+							// @@ How is the data packed???	 I'm just guessing here that it's 565!
 							image_out_row[i * 4 + 0] = 255;			// alpha
 							image_out_row[i * 4 + 1] = (pixel >> 8) & 0xF8;	// red
 							image_out_row[i * 4 + 2] = (pixel >> 3) & 0xFC;	// green
@@ -2346,8 +2346,8 @@ namespace gameswf
 //				bitmap_character*	ch = new bitmap_character(image);
 				delete image;
 
-//	 			// add image to movie, under character id.
-//	 			m->add_bitmap_character(character_id, ch);
+//				// add image to movie, under character id.
+//				m->add_bitmap_character(character_id, ch);
 			}
 #endif // TU_CONFIG_LINK_TO_ZLIB
 		}
@@ -2409,7 +2409,7 @@ namespace gameswf
 		m->add_font(font_id, f);
 
 		// Automatically keeping fonts in fontlib is
-		// problematic.  The app should be responsible for
+		// problematic.	 The app should be responsible for
 		// optionally adding fonts to fontlib.
 		// //fontlib::add_font(f);
 	}
@@ -2557,7 +2557,7 @@ namespace gameswf
 		bool	m_has_cxform;
 		Uint16	m_depth;
 		Uint16	m_character_id;
-                Uint16 	m_clip_depth;
+		Uint16	m_clip_depth;
 		enum place_type {
 			PLACE,
 			MOVE,
@@ -2575,7 +2575,7 @@ namespace gameswf
 			m_has_cxform(false),
 			m_depth(0),
 			m_character_id(0),
-                        m_clip_depth(0),
+			m_clip_depth(0),
 			m_place_type(PLACE)
 		{
 		}
@@ -2729,7 +2729,7 @@ namespace gameswf
 					// Put m_character at m_depth.
 					m_place_type = PLACE;
 				}
-                                
+				
 				//log_msg("place object at depth %i\n", m_depth);
 			}
 		}
@@ -2881,8 +2881,8 @@ namespace gameswf
 		movie_definition_sub*	     m_movie_def;		// parent movie.
 		array<array<execute_tag*> >  m_playlist;	// movie control events for each frame.
 		stringi_hash<int>	     m_named_frames;	// stores 0-based frame #'s
-		int	                     m_frame_count;
-		int	                     m_loading_frame;
+		int			     m_frame_count;
+		int			     m_loading_frame;
 		sprite_definition(movie_definition_sub* m)
 			:
 			m_movie_def(m),
@@ -2976,7 +2976,7 @@ namespace gameswf
 		/* sprite_definition */
 		virtual void	add_frame_name(const char* name)
 		// Labels the frame currently being loaded with the
-		// given name.  A copy of the name string is made and
+		// given name.	A copy of the name string is made and
 		// kept in this object.
 		{
 			assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
@@ -3047,7 +3047,7 @@ namespace gameswf
 				}
 				else if (s_tag_loaders.get(tag_type, &lf))
 				{
-					// call the tag loader.  The tag loader should add
+					// call the tag loader.	 The tag loader should add
 					// characters or tags to the movie data structure.
 					(*lf)(in, tag_type, this);
 				}
@@ -3083,7 +3083,7 @@ namespace gameswf
 		float		m_time_remainder;
 		bool		m_update_frame;
 		bool		m_has_looped;
-		bool	        m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
+		bool		m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
 		array<bool>	m_init_actions_executed;	// a bit-array class would be ideal for this
 
 		as_environment	m_as_environment;
@@ -3130,7 +3130,7 @@ namespace gameswf
 			return m_root->add_interval_timer(timer);
 		}
 
-		virtual void    clear_interval_timer(int x)
+		virtual void	clear_interval_timer(int x)
 		{
 			// log_msg("FIXME: %s:\n", __FUNCTION__);
 			m_root->clear_interval_timer(x);
@@ -3138,7 +3138,7 @@ namespace gameswf
 	
 
 		/* sprite_instance */
-		virtual void    do_something(void *timer)
+		virtual void	do_something(void *timer)
 		{
 			as_value	val;
 			as_object      *obj, *this_ptr;
@@ -3602,7 +3602,7 @@ namespace gameswf
 				m_display_list.update();
 			}
 
-			m_current_frame = target_frame_number;      
+			m_current_frame = target_frame_number;	    
 
 			// goto_frame stops by default.
 			m_play_state = STOP;
@@ -4333,7 +4333,7 @@ namespace gameswf
 		// given the relative pathname.
 		//
 		// If the pathname is "..", then return our parent.
-		// If the pathname is ".", then return ourself.  If
+		// If the pathname is ".", then return ourself.	 If
 		// the pathname is "_level0" or "_root", then return
 		// the root movie.
 		//
@@ -4369,7 +4369,7 @@ namespace gameswf
 
 		/* sprite_instance */
 		virtual void	call_frame_actions(const as_value& frame_spec)
-		// Execute the actions for the specified frame.  The
+		// Execute the actions for the specified frame.	 The
 		// frame_spec could be an integer or a string.
 		{
 			int	frame_number = -1;
@@ -4528,7 +4528,7 @@ namespace gameswf
 		virtual void	on_event_load()
 		// Do the events that (appear to) happen as the movie
 		// loads.  frame1 tags and actions are executed (even
-		// before advance() is called).  Then the onLoad event
+		// before advance() is called).	 Then the onLoad event
 		// is triggered.
 		{
 			execute_frame_tags(0);
@@ -4619,7 +4619,7 @@ namespace gameswf
 	// Create and initialize a sprite, and add it to the movie.
 	{
 		assert(tag_type == 39);
-                
+		
 		int	character_id = in->read_u16();
 
 		IF_VERBOSE_PARSE(log_msg("  sprite\n  char id = %d\n", character_id));

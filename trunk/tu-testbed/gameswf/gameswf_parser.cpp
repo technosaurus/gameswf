@@ -502,7 +502,7 @@ namespace parser
 		register_tag_loader(32,parse_define_shape123);
 		register_tag_loader(39,parse_define_sprite);	
 		register_tag_loader(43,parse_set_framelabel);		
-                register_tag_loader(46,parse_define_shape_morph);
+		register_tag_loader(46,parse_define_shape_morph);
 
 		ident = 1;
 

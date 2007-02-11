@@ -768,8 +768,8 @@ public:
 		{
 		}
 
-		const hash*	m_hash;
-		int	        m_index;
+		const hash* m_hash;
+		int m_index;
 	};
 	friend class const_iterator;
 

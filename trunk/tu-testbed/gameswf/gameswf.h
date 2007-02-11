@@ -65,7 +65,7 @@ namespace gameswf
 	// Get and set the render handler.  This is one of the first
 	// things you should do to initialise the player (assuming you
 	// want to display anything).
-	void    set_render_handler(render_handler* s);
+	void	set_render_handler(render_handler* s);
 
 	// Pass in a sound handler, so you can handle audio on behalf of
 	// gameswf.  This is optional; if you don't set a handler, or set
@@ -97,7 +97,7 @@ namespace gameswf
 
 	// ActionScripts embedded in a movie can use the built-in
 	// fscommand() function to send data back to the host
-	// application.  If you are interested in this data, register
+	// application.	 If you are interested in this data, register
 	// a handler, which will be called when the embedded scripts
 	// call fscommand().
 	//
@@ -246,7 +246,7 @@ namespace gameswf
 
 		// Causes this movie def to generate texture-mapped
 		// versions of all the fonts it owns.  This improves
-		// speed and quality of text rendering.  The
+		// speed and quality of text rendering.	 The
 		// texture-map data is serialized in the
 		// output/input_cached_data() calls, so you can
 		// preprocess this if you load cached data.
@@ -373,7 +373,7 @@ namespace gameswf
 		// ActionScript method call.  Return value points to a
 		// static string buffer with the result; caller should
 		// use the value immediately before making more calls
-		// to gameswf.  NOT THREAD SAFE!!!
+		// to gameswf.	NOT THREAD SAFE!!!
 		// 
 		// method_name is the name of the method (possibly namespaced).
 		//
@@ -474,7 +474,7 @@ namespace gameswf
 	movie_definition*	create_movie(const char* filename);
 
 	// Creates the movie from the given input stream.  Only reads
-	// from the given stream; does not open files.  If the movie
+	// from the given stream; does not open files.	If the movie
 	// imports resources from other movies, the created movie
 	// inserts proxy stubs in place of those resources.  The list
 	// of imported movie filenames can be retrieved with
@@ -530,7 +530,7 @@ namespace gameswf
 	// by movie_definition::output_cached_data().
 	//
 	// Note that this tesselates shapes to the resolution they
-	// explicitly appear in the linear frames of the movie.  Does
+	// explicitly appear in the linear frames of the movie.	 Does
 	// not try very hard to run your ActionScript to account for
 	// dynamic scaling (that's more or less futile anyway due to
 	// the halting problem).
@@ -570,7 +570,7 @@ namespace gameswf
 	// the movie_def and add them to fontlib.
 	//
 	// @@ TODO: not all public APIs to enable this are in place
-	// yet!  Need md::get_font_count()/get_font(), and
+	// yet!	 Need md::get_font_count()/get_font(), and
 	// fontlib::add_font().
 	//
 	// Otherwise, text written in a font with no glyphs just
@@ -615,7 +615,7 @@ namespace gameswf
 
 		enum format_type
 		{
-			FORMAT_RAW = 0,		// unspecified format.  Useful for 8-bit sounds???
+			FORMAT_RAW = 0,		// unspecified format.	Useful for 8-bit sounds???
 			FORMAT_ADPCM = 1,	// gameswf doesn't pass this through; it uncompresses and sends FORMAT_NATIVE16
 			FORMAT_MP3 = 2,
 			FORMAT_UNCOMPRESSED = 3,	// 16 bits/sample, little-endian
@@ -1003,7 +1003,7 @@ namespace gameswf
 		};
 
 		// Copy tags from *in to *out, applying the given
-		// options.  *in should be a SWF-format stream.  The
+		// options.  *in should be a SWF-format stream.	 The
 		// output will be a SWF-format stream.
 		//
 		// Returns 0 on success, or a non-zero error-code on

@@ -61,24 +61,24 @@ namespace gameswf
 			KEY_UP,
 			DATA,
 			
-                        // These are for the MoveClipLoader ActionScript only
-                        LOAD_START,
-                        LOAD_ERROR,
-                        LOAD_PROGRESS,
-                        LOAD_INIT,
+			// These are for the MoveClipLoader ActionScript only
+			LOAD_START,
+			LOAD_ERROR,
+			LOAD_PROGRESS,
+			LOAD_INIT,
 			
-                        // These are for the XMLSocket ActionScript only
-                        SOCK_CLOSE,
-                        SOCK_CONNECT,
-                        SOCK_DATA,
-                        SOCK_XML,
+			// These are for the XMLSocket ActionScript only
+			SOCK_CLOSE,
+			SOCK_CONNECT,
+			SOCK_DATA,
+			SOCK_XML,
 			
-                        // These are for the XML ActionScript only
-                        XML_LOAD,
-                        XML_DATA,
+			// These are for the XML ActionScript only
+			XML_LOAD,
+			XML_DATA,
 			
-                        // This is for setInterval
-                        TIMER,
+			// This is for setInterval
+			TIMER,
 			
 			EVENT_COUNT
 		};
@@ -198,7 +198,7 @@ namespace gameswf
 		union
 		{
 			bool m_boolean_value;
-			// @@ hm, what about PS2, where double is bad?  should maybe have int&float types.
+			// @@ hm, what about PS2, where double is bad?	should maybe have int&float types.
 			mutable	double	m_number_value;
 			as_object_interface*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
@@ -389,21 +389,21 @@ namespace gameswf
 	// handler table added.
 	struct as_object_with_handlers : public as_object_interface
 	{
-                // ActionScript event handler table.
-                hash<event_id, gameswf::as_value>        m_event_handlers;
+		// ActionScript event handler table.
+		hash<event_id, gameswf::as_value>	 m_event_handlers;
 
-                // ActionScript event handler.
-                void    set_event_handler(event_id id, const as_value& method)
-                {
-                        // m_event_handlers.push_back(as);
-                        //m_event_handlers.set(id, method);
-                }
+		// ActionScript event handler.
+		void	set_event_handler(event_id id, const as_value& method)
+		{
+			// m_event_handlers.push_back(as);
+			//m_event_handlers.set(id, method);
+		}
 
-                bool    get_event_handler(event_id id, gameswf::as_value* result)
-                {
-                        //return m_event_handlers.get(id, result);
+		bool	get_event_handler(event_id id, gameswf::as_value* result)
+		{
+			//return m_event_handlers.get(id, result);
 			return false;
-                }
+		}
 	};
 #endif // 0
 
@@ -511,7 +511,7 @@ namespace gameswf
 	//
 	// as_object
 	//
-	// A generic bag of attributes.  Base-class for ActionScript
+	// A generic bag of attributes.	 Base-class for ActionScript
 	// script-defined objects.
 	struct as_object : public as_object_interface
 	{
@@ -696,7 +696,7 @@ namespace gameswf
 
 		void	lazy_create_properties()
 		// This ensures that this as_function has a valid
-		// prototype in its properties.  This is done lazily
+		// prototype in its properties.	 This is done lazily
 		// so that functions/methods which are not used as
 		// constructors don't carry along extra unnecessary
 		// baggage.
@@ -857,7 +857,7 @@ namespace gameswf
 	// 
 	//void register_as_object(const char* object_name, as_c_function_ptr handler);
 
-	// Numerical indices for standard member names.  Can use this
+	// Numerical indices for standard member names.	 Can use this
 	// to help speed up get/set member calls, by using a switch()
 	// instead of nasty string compares.
 	enum as_standard_member
