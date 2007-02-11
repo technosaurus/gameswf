@@ -349,8 +349,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		{
 			return new YUV_video_ogl_NV(w, h);
 		}
-		printf("Now video works only on NVIDIA card\n");
-		return NULL; //new YUV_video_ogl(w, h);
+		return new YUV_video_ogl(w, h);
 	}
 
 	void	delete_YUV_video(gameswf::YUV_video* yuv)

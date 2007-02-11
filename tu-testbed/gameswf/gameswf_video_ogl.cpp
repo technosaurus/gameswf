@@ -18,7 +18,7 @@ YUV_video_ogl_NV::YUV_video_ogl_NV(int width, int height): YUV_video(width, heig
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(NB_TEXS, texids);
 
-	for(int i = 0; i < 3; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		GLenum units[3] = {GL_TEXTURE0_ARB, GL_TEXTURE0_ARB, GL_TEXTURE1_ARB};
 		planes[i].id = texids[i];
@@ -47,7 +47,7 @@ void YUV_video_ogl_NV::bind_tex()
 
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-	for(int i = 0; i < 3; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		ogl::active_texture(planes[i].unit);
 		glEnable(GL_TEXTURE_2D);
@@ -91,7 +91,7 @@ void YUV_video_ogl_NV::draw()
 
 	glBegin(GL_QUADS);
 	{
-		for(int i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; ++i)
 		{
 			ogl::multi_tex_coord_2fv(planes[U].unit, planes[1].coords[i]);
 			ogl::multi_tex_coord_2fv(planes[V].unit, planes[2].coords[i]);
@@ -129,7 +129,7 @@ void YUV_video_ogl_NV::draw()
 
 	glBegin(GL_QUADS);
 	{
-		for(int i = 0; i < 4; ++i)
+		for (int i = 0; i < 4; ++i)
 		{
 			ogl::multi_tex_coord_2fv(planes[Y].unit, planes[Y].coords[i]);
 			ogl::multi_tex_coord_2fv(planes[T].unit, planes[T].coords[i]);
@@ -142,7 +142,7 @@ void YUV_video_ogl_NV::draw()
 void YUV_video_ogl_NV::upload_data()
 {
 	unsigned char*   ptr = m_data;
-	for(int i = 0; i < 3; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
 		GLint als[4] = {4, 1, 2, 1};
 		glBindTexture(GL_TEXTURE_2D, planes[i].id);
@@ -166,9 +166,6 @@ void YUV_video_ogl_NV::display(const gameswf::matrix* mat, const gameswf::rect* 
 
 	m = mat;
 	m_bounds = bounds;
-
-	//				glPixelStorei(GL_UNPACK_ALIGNMENT, als[planes[i].offset & 3]);
-	//				glPixelStorei(GL_UNPACK_ROW_LENGTH, planes[i].w);
 
 	bind_tex();
 	upload_data();
@@ -221,18 +218,20 @@ void YUV_video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bou
 	float xpos = a.m_x < 0 ? 0.0f : a.m_x;	//hack
 	float ypos = a.m_y < 0 ? 0.0f : a.m_y;	//hack
 	glRasterPos2f(xpos, ypos);	//hack
-	for(int i = 0; i < 3; ++i)
+
+	glDisable(GL_TEXTURE_2D);
+
+	for (int i = 0; i < 3; ++i)
 	{
-		float zx = w_bounds /(float) planes[i].w;
-		float zy = h_bounds /(float) planes[i].h;
+		float zx = w_bounds / (float) planes[i].w;
+		float zy = h_bounds / (float) planes[i].h;
 		glPixelZoom(zx, - zy);	// flip & zoom image
 
-		if(i > 0)
+		if (i > 0)
 		{
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_ONE, GL_ONE);
 		}
-
 		glDrawPixels(planes[i].w, planes[i].h, rgb[i], GL_UNSIGNED_BYTE, ptr);
 		ptr += planes[i].size;
 	}
