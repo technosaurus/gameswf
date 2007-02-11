@@ -2425,17 +2425,17 @@ namespace gameswf
 				}
 				case 0x4E:	// get member
 				{
-                                        as_object_interface*    obj = env->top(1).to_object();
+					as_object_interface*	obj = env->top(1).to_object();
 
-                                        // Special case: String has a member "length"
-                                        if (obj == NULL
-                                            && env->top(1).get_type() == as_value::STRING
-                                            && env->top(0).to_tu_stringi() == "length")
+					// Special case: String has a member "length"
+					if (obj == NULL
+					    && env->top(1).get_type() == as_value::STRING
+					    && env->top(0).to_tu_stringi() == "length")
 					{
-						int     len = env->top(1).to_tu_string_versioned(version).utf8_length();
-                                                env->top(1).set_int(len);
+						int	len = env->top(1).to_tu_string_versioned(version).utf8_length();
+						env->top(1).set_int(len);
 					}
-                                        else
+					else
 					{
 						env->top(1).set_undefined();
 						// int	nargs = (int) env->top(1).to_number();
@@ -2456,9 +2456,8 @@ namespace gameswf
 							// @@ log error?
 						}
 					}
-                                        env->drop(1);
-                                        break;
-					
+					env->drop(1);
+					break;
 				}
 				case 0x4F:	// set member
 				{
@@ -2688,7 +2687,6 @@ namespace gameswf
 					{
 #ifdef EXTERN_MOVIE
 //						log_error("get url: target=%s, url=%s\n", target, url);
-            
 						tu_string tu_target = target;
 						movie* target_movie = env->find_target(tu_target);
 						if (target_movie != NULL)
@@ -4134,7 +4132,7 @@ namespace gameswf
 			// These are for the XML ActionScript only
 			"onXMLLoad",		 // XML_LOAD
 			"onXMLData",		 // XML_DATA
-			"onTimer",	         // setInterval Timer expired
+			"onTimer",		 // setInterval Timer expired
 		};
 
 		assert(m_id > INVALID && m_id < EVENT_COUNT);

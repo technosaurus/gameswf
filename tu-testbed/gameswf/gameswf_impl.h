@@ -28,7 +28,7 @@ namespace gameswf
 {
 	struct action_buffer;
 	struct bitmap_character_def;
-        struct bitmap_info;
+	struct bitmap_info;
 	struct character;
 	struct character_def;
 	struct display_info;
@@ -84,7 +84,7 @@ namespace gameswf
 
 //v for extern movies
 	movie_interface*	create_library_movie_inst(movie_definition* md);
-	movie_interface*        get_current_root();
+	movie_interface*	get_current_root();
 	void set_current_root(movie_interface* m);
 	const char* get_workdir();
 	void set_workdir(const char* dir);
@@ -96,15 +96,15 @@ namespace gameswf
 		virtual movie_interface*	get_extern_movie() { return NULL; }
 
 		virtual movie_definition*	get_movie_definition() { return NULL; }
-		virtual movie_root*	        get_root() { return NULL; }
+		virtual movie_root*		get_root() { return NULL; }
 		virtual movie_interface*	get_root_interface() { return NULL; }
-		virtual movie*	                get_root_movie() { return NULL; }
+		virtual movie*			get_root_movie() { return NULL; }
 
-		virtual float	                get_pixel_scale() const { return 1.0f; }
-		virtual character*	        get_character(int id) { return NULL; }
+		virtual float			get_pixel_scale() const { return 1.0f; }
+		virtual character*		get_character(int id) { return NULL; }
 
-		virtual matrix	                get_world_matrix() const { return matrix::identity; }
-		virtual cxform	                get_world_cxform() const { return cxform::identity; }
+		virtual matrix			get_world_matrix() const { return matrix::identity; }
+		virtual cxform			get_world_cxform() const { return cxform::identity; }
 
 		//
 		// display-list management.
@@ -262,7 +262,7 @@ namespace gameswf
 			return NULL;
 		}
 
-		// ActionScript event handler.  Returns true if a handler was called.
+		// ActionScript event handler.	Returns true if a handler was called.
 		virtual bool	on_event(event_id id) { return false; }
 
 		int    add_interval_timer(void *timer)
@@ -271,12 +271,12 @@ namespace gameswf
 			return -1;	// ???
 		}
 		
-		void    clear_interval_timer(int x)
+		void	clear_interval_timer(int x)
 		{
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 		}
 		
-		virtual void    do_something(void *timer)
+		virtual void	do_something(void *timer)
 		{
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 		}
@@ -347,14 +347,14 @@ namespace gameswf
 		cxform	m_color_transform;
 		matrix	m_matrix;
 		float	m_ratio;
-                Uint16 	m_clip_depth;
+		Uint16	m_clip_depth;
 
 		display_info()
 			:
 			m_parent(NULL),
 			m_depth(0),
 			m_ratio(0.0f),
-                        m_clip_depth(0)
+			m_clip_depth(0)
 		{
 		}
 
@@ -366,7 +366,7 @@ namespace gameswf
 			m_color_transform.concatenate(di.m_color_transform);
 			m_matrix.concatenate(di.m_matrix);
 			m_ratio = di.m_ratio;
-                        m_clip_depth = di.m_clip_depth;
+			m_clip_depth = di.m_clip_depth;
 		}
 	};
 
@@ -382,7 +382,7 @@ namespace gameswf
 		cxform		m_color_transform;
 		matrix		m_matrix;
 		float		m_ratio;
-                Uint16		m_clip_depth;
+		Uint16		m_clip_depth;
 		bool		m_visible;
 		hash<event_id, as_value>	m_event_handlers;
 		void		(*m_display_callback)(void*);
@@ -435,7 +435,7 @@ namespace gameswf
 		virtual void	set_text_value(const char* new_text) { assert(0); }
 
 		virtual matrix	get_world_matrix() const
-		// Get our concatenated matrix (all our ancestor transforms, times our matrix).  Maps
+		// Get our concatenated matrix (all our ancestor transforms, times our matrix).	 Maps
 		// from our local space into "world" space (i.e. root movie space).
 		{
 			matrix	m;
@@ -582,21 +582,21 @@ namespace gameswf
 		{
 		}
 
-// 		bitmap_character(image::rgb* image)
-// 		{
-// 			assert(image != 0);
+//		bitmap_character(image::rgb* image)
+//		{
+//			assert(image != 0);
 
-// 			// Create our bitmap info, from our image.
-// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
-// 		}
+//			// Create our bitmap info, from our image.
+//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
+//		}
 
-// 		bitmap_character(image::rgba* image)
-// 		{
-// 			assert(image != 0);
+//		bitmap_character(image::rgba* image)
+//		{
+//			assert(image != 0);
 
-// 			// Create our bitmap info, from our image.
-// 			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
-// 		}
+//			// Create our bitmap info, from our image.
+//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
+//		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{

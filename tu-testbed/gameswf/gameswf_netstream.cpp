@@ -210,16 +210,16 @@ int NetStream::play(const char* c_url)
 		// Get a pointer to the audio codec context for the video stream
 		m_ACodecCtx = m_FormatCtx->streams[m_audio_index]->codec;
     
-    // Find the decoder for the audio stream
-    AVCodec* pACodec = avcodec_find_decoder(m_ACodecCtx->codec_id);
-    if(pACodec == NULL)
+		// Find the decoder for the audio stream
+		AVCodec* pACodec = avcodec_find_decoder(m_ACodecCtx->codec_id);
+		if(pACodec == NULL)
 		{
-      log_error("No available AUDIO decoder to process MPEG file: '%s'\n", c_url);
+			log_error("No available AUDIO decoder to process MPEG file: '%s'\n", c_url);
 			return -1;
 		}
         
-    // Open codec
-    if (avcodec_open(m_ACodecCtx, pACodec) < 0)
+		// Open codec
+		if (avcodec_open(m_ACodecCtx, pACodec) < 0)
 		{
 			log_error("Could not open AUDIO codec\n");
 			return -1;
@@ -536,7 +536,7 @@ void netstream_play(const fn_call& fn)
 	if (ns->obj.play(fn.arg(0).to_string()) != 0)
 	{
 		ns->obj.close();
-	};
+	}
 }
 
 void netstream_seek(const fn_call& fn)

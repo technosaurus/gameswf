@@ -58,9 +58,9 @@ void	print_usage()
 		"  -p          Run full speed (no sleep) and log frame rate\n"
 		"  -e          Use SDL Event thread\n"
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
-                "  -r <0|1|2>  0 disables renderering & sound (good for batch tests)\n"
-                "              1 enables rendering & sound (default setting)\n"
-                "              2 enables rendering & disables sound\n"
+		"  -r <0|1|2>  0 disables renderering & sound (good for batch tests)\n"
+		"              1 enables rendering & sound (default setting)\n"
+		"              2 enables rendering & disables sound\n"
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
 		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
 		"\n"
@@ -100,7 +100,7 @@ static void	message_log(const char* message)
 	if (s_verbose)
 	{
 		fputs(message, stdout);
-                fflush(stdout); // needed on osx for some reason
+		fflush(stdout); // needed on osx for some reason
 	}
 }
 

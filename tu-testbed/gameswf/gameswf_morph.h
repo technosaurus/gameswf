@@ -27,16 +27,16 @@ namespace gameswf
 		bool m_new_shape;
 	};
 
-        struct shape_morph_def : public character_def
-        {
-                shape_morph_def();
-                virtual ~shape_morph_def();
-                virtual void display(character *instance_info);
-                void read(stream* in, int tag_type, bool with_style,
+	struct shape_morph_def : public character_def
+	{
+		shape_morph_def();
+		virtual ~shape_morph_def();
+		virtual void display(character *instance_info);
+		void read(stream* in, int tag_type, bool with_style,
 			  movie_definition_sub* m);
 		virtual void tesselate(float error_tolerance, tesselate::trapezoid_accepter *accepter, float ratio) const;
 
-        private:
+	private:
 		void read_edge(stream* in, edge& e, float& x, float& y);
 		int read_shape_record(stream* in, movie_definition_sub* m,
 				      bool start);
@@ -48,7 +48,7 @@ namespace gameswf
 
 		float m_last_ratio;
 		mesh_set *m_last_mesh;
-        };
+	};
 
 	struct morph_tesselating_shape : public tesselate::tesselating_shape
 	{
@@ -62,7 +62,7 @@ namespace gameswf
 		
 	private:
 		shape_morph_def *m_sh;
-		float            m_ratio;
+		float		 m_ratio;
 	};
 }
 
