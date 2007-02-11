@@ -203,6 +203,11 @@ int NetStream::play(const char* c_url)
 	
 	// Determine required buffer size and allocate buffer
 	m_yuv = render::create_YUV_video(m_VCodecCtx->width,	m_VCodecCtx->height);
+	if (m_yuv == NULL)
+	{
+		log_error("No available video render\n");
+		return -1;
+	}
 
 	sound_handler* s = get_sound_handler();
 	if (m_audio_index >= 0 && s != NULL)
