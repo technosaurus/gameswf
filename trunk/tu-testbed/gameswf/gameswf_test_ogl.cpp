@@ -519,14 +519,16 @@ int	main(int argc, char *argv[])
 	// use this for multifile games
 	// workdir is used when LoadMovie("myfile.swf", _root) is called
 	{
-		char workdir[256];
-		const char* ptr = infile + strlen(infile);
-		for (; ptr >= infile && *ptr != '/' && *ptr != '\\'; ptr--)	{}
+		tu_string workdir;
+		// Find last slash or backslash.
+ 		const char* ptr = infile + strlen(infile);
+		for (; ptr >= infile && *ptr != '/' && *ptr != '\\'; ptr--) {}
+		// Use everything up to last slash as the "workdir".
 		int len = ptr - infile + 1;
-		assert(len < 256);
-		strncpy(workdir, infile, len);
-		workdir[len] = 0;
-		gameswf::set_workdir(workdir);
+		if (len > 0) {
+			tu_string workdir(infile, len);
+			gameswf::set_workdir(workdir.c_str());
+		}
 	}
 
 	gameswf::register_progress_callback(test_progress_callback);
@@ -577,7 +579,7 @@ int	main(int argc, char *argv[])
 #else
 			if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTTHREAD ))
 #endif
-				{
+			{
 				fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 					exit(1);
 			}

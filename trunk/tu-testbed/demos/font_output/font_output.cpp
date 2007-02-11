@@ -161,7 +161,7 @@ void	draw_centered_text(FT_Face& face, const char* text)
 
 	pen_x = 0;	/* start at (0,0) */
 	pen_y = 0;
-	use_kerning = FT_HAS_KERNING( face );
+	use_kerning = static_cast<FT_Bool>(FT_HAS_KERNING( face ));
 	previous = 0;
 	int	c;
 	while ((c = *text++))

@@ -7,7 +7,6 @@
 #ifndef VIDEO_IMPL_H
 #define VIDEO_IMPL_H
 
-#include <vector>
 #include "gameswf_impl.h"
 
 namespace gameswf
@@ -41,7 +40,7 @@ namespace gameswf
 		// 3: screen video (Flash 7+ only)
 		// 4: VP6
 		Uint8 m_codec_id;
-		std::vector<void*>	m_frames;
+		array<void*>	m_frames;
 		rect m_unused_rect;
 	};
 

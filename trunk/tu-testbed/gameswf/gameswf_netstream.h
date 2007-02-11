@@ -16,10 +16,10 @@
 #include <ffmpeg/avformat.h>
 #endif
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_thread.h>
+#include <SDL.h>
+#include <SDL_thread.h>
 
-#include <queue>
+#include "base/tu_queue.h"
 
 namespace gameswf
 {
@@ -138,7 +138,7 @@ namespace gameswf
 		}
 
 		SDL_mutex* m_mutex;
-		std::queue < T > m_queue;
+		tu_queue<T> m_queue;
 		size_t m_size;
 	};
 

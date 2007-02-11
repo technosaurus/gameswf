@@ -10,15 +10,8 @@
 #include <ffmpeg/avformat.h>
 #endif
 
-#ifdef WIN32
-#include <hash_map>
-#else
-#include <ext/hash_map>
-#define stdext __gnu_cxx
-#endif
-
-#include <SDL/SDL_audio.h>
-#include <SDL/SDL_thread.h>
+#include <SDL_audio.h>
+#include <SDL_thread.h>
 
 #include "gameswf.h"
 #include "base/container.h"
@@ -44,10 +37,8 @@ namespace gameswf
 			SDL_UnlockMutex(m_mutex);
 		}
 
-		private:
-
-			SDL_mutex* m_mutex;
-
+	private:
+		SDL_mutex* m_mutex;
 	};
 
 
@@ -56,9 +47,8 @@ namespace gameswf
 	{
 
 		// NetStream audio callbacks
-		stdext::hash_map< Uint32 /* owner */, aux_streamer_ptr /* callback */> m_aux_streamer;
-		stdext::hash_map< int, smart_ptr<sound> > m_sound;
-		stdext::hash_map< int, smart_ptr<sound> >::iterator it;
+		hash< Uint32 /* owner */, aux_streamer_ptr /* callback */> m_aux_streamer;
+		hash< int, smart_ptr<sound> > m_sound;
 		int m_defvolume;
 		SDL_mutex* m_mutex;
 

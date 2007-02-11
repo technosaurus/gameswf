@@ -7,7 +7,7 @@
 
 
 #include <SDL.h>
-#include <SDL/SDL_opengl.h>
+#include <SDL_opengl.h>
 #include "base/ogl.h"
 #include "base/utility.h"
 #include <stdlib.h>

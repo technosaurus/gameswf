@@ -9,7 +9,7 @@
 #endif
 
 #include "gameswf_sound_handler_sdl.h"
-#include <SDL/SDL.h>   
+#include <SDL.h>   
 
 namespace gameswf
 {
@@ -86,7 +86,7 @@ namespace gameswf
 	{
 		locker lock(m_mutex);
 
-		it = m_sound.find(sound_handle);
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->play(loops, this);
@@ -97,7 +97,7 @@ namespace gameswf
 	{
 		locker lock(m_mutex);
 
-		it = m_sound.find(sound_handle);
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->clear_playlist();
@@ -110,7 +110,7 @@ namespace gameswf
 	{
 		locker lock(m_mutex);
 
-		it = m_sound.find(sound_handle);
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			//		stop_sound(sound_handle);
@@ -122,7 +122,7 @@ namespace gameswf
 	{
 		locker lock(m_mutex);
 
-		for (it = m_sound.begin(); it != m_sound.end(); ++it)
+		for (hash< int, smart_ptr<sound> >::iterator it = m_sound.begin(); it != m_sound.end(); ++it)
 		{
 			it->second->clear_playlist();
 		}
@@ -135,7 +135,7 @@ namespace gameswf
 		locker lock(m_mutex);
 
 		int vol = 0;
-		it = m_sound.find(sound_handle);
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			vol = it->second->get_volume();
@@ -150,7 +150,7 @@ namespace gameswf
 	{
 		locker lock(m_mutex);
 
-		it = m_sound.find(sound_handle);
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->set_volume(volume);
@@ -163,7 +163,8 @@ namespace gameswf
 		assert(ptr);
 		locker lock(m_mutex);
 
-		stdext::hash_map< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
+		//stdext::hash_map< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
+		hash< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
 		if (it == m_aux_streamer.end())
 		{
 			m_aux_streamer[(Uint32) owner] = ptr;
@@ -203,7 +204,7 @@ namespace gameswf
 		// And now we're ready to convert
 		SDL_ConvertAudio(&wav_cvt);
 
-		*adjusted_data = (int16_t*) wav_cvt.buf;
+		*adjusted_data = (int16*) wav_cvt.buf;
 		*adjusted_size = size * wav_cvt.len_mult;
 	}
 
@@ -307,7 +308,7 @@ namespace gameswf
 
 	void sound::play(int loops, SDL_sound_handler* handler)
 	{
-		int16_t*	adjusted_data = NULL;
+		int16*	adjusted_data = NULL;
 		int	adjusted_size = 0;	
 
 		switch (m_format)
@@ -400,7 +401,7 @@ namespace gameswf
 		memset(stream, 0, len);
 
 		// mix Flash audio
-		for (stdext::hash_map< int, smart_ptr<sound> >::iterator snd = handler->m_sound.begin();
+		for (hash< int, smart_ptr<sound> >::iterator snd = handler->m_sound.begin();
 			snd != handler->m_sound.end(); ++snd)
 		{
 			bool play = snd->second->mix(stream, len);
@@ -411,8 +412,9 @@ namespace gameswf
 		if (handler->m_aux_streamer.size() > 0)
 		{
 			Uint8* mix_buf = new Uint8[len];
-			stdext::hash_map< Uint32, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it;
-			for (it = handler->m_aux_streamer.begin(); it != handler->m_aux_streamer.end(); ++it)
+			for (hash< Uint32, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it = handler->m_aux_streamer.begin();
+			     it != handler->m_aux_streamer.end();
+			     ++it)
 			{
 				memset(mix_buf, 0, len); 
 
