@@ -26,9 +26,14 @@ static const int LITTLE_HEIGHT = 60;
 static const int BIG_WIDTH = 600;
 static const int BIG_HEIGHT = 600;
 
+static const int CHARMAP_CHARS_PER_ROW = 16;
+static const int CHARMAP_PIXELS_PER_CHAR_X = 48;
+static const int CHARMAP_PIXELS_PER_CHAR_Y = 64;
+static const int CHARMAP_WIDTH = CHARMAP_CHARS_PER_ROW * CHARMAP_PIXELS_PER_CHAR_X;
+static const int CHARMAP_HEIGHT = CHARMAP_PIXELS_PER_CHAR_Y * 16;
+
 static image::alpha*	s_image;
 
-//static uint8	s_bitmap[HEIGHT][WIDTH];
 static int	s_y = 0;
 
 
@@ -237,6 +242,67 @@ void	draw_centered_text(FT_Face& face, const char* text)
 }
 
 
+void draw_character_map(FT_Face& face)
+// Draw all the characters in a big grid.
+{
+	int pen_x, pen_y;
+	FT_Glyph glyph; 	/* glyph image */
+
+	pen_x = 0;	/* start at (0,0) */
+	pen_y = CHARMAP_HEIGHT - CHARMAP_PIXELS_PER_CHAR_Y;
+
+	// Iterate through all glyphs in the font.
+	FT_ULong  charcode;
+	FT_UInt glyph_index;
+	charcode = FT_Get_First_Char(face, &glyph_index);
+	if (glyph_index == 0) {
+		// No glyphs!
+		return;
+	}
+	for (;;) {
+		// Draw this character.
+		pen_x = (charcode % CHARMAP_CHARS_PER_ROW) * CHARMAP_PIXELS_PER_CHAR_X;
+		int error = FT_Load_Glyph(face, glyph_index, FT_LOAD_DEFAULT);
+		if (!error) {
+			// extract glyph image
+			error = FT_Get_Glyph(face->glyph, &glyph);
+			if (!error) {
+				FT_Vector pen;
+				pen.x = pen_x * 64;
+				pen.y = pen_y * 64;
+
+				// Center the glyph horizontally.
+				FT_BBox glyph_bbox;
+				FT_Glyph_Get_CBox(glyph, ft_glyph_bbox_pixels, &glyph_bbox);
+				int width = glyph_bbox.xMax - glyph_bbox.xMin;
+				pen.x -= glyph_bbox.xMin * 64;
+				pen.x += (CHARMAP_PIXELS_PER_CHAR_X - width) / 2 * 64;
+
+				error = FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, &pen, 0);
+				if (!error) {
+					// Draw it.
+					FT_BitmapGlyph bit = (FT_BitmapGlyph) glyph;
+					my_draw_bitmap(&bit->bitmap, bit->left, bit->top);
+				}
+				FT_Done_Glyph(glyph);
+			}
+		}
+
+		FT_ULong next_charcode = FT_Get_Next_Char(face, charcode, &glyph_index);
+		if (glyph_index == 0) {
+			// Done.
+			break;
+		}
+
+		if ((next_charcode / CHARMAP_CHARS_PER_ROW) != (charcode / CHARMAP_CHARS_PER_ROW)) {
+			// Drop down to the next row.
+			pen_y -= CHARMAP_PIXELS_PER_CHAR_Y;
+		}
+		charcode = next_charcode;
+	}
+}
+
+
 void	output_image(const char* filename)
 // Output a grayscale png file.
 {
@@ -349,78 +415,105 @@ int	main(int argc, const char** argv)
 		300 /*vert device dpi*/);
 	assert(error == 0);
 
+	const char*	fontname = FT_Get_Postscript_Name(face);
+	
 	// Draw stuff.
 
 	// The small image, containing just the font name.
-	s_image = image::create_alpha(LITTLE_WIDTH, LITTLE_HEIGHT);
-
-	// Clear.
-	memset(s_image->m_data, 255, s_image->m_width * s_image->m_height);
-
-	s_y = -10;
-	const char*	fontname = FT_Get_Postscript_Name(face);
-	if (fontname)
 	{
-		draw_centered_text(face, fontname);
+		s_image = image::create_alpha(LITTLE_WIDTH, LITTLE_HEIGHT);
+
+		// Clear.
+		memset(s_image->m_data, 255, s_image->m_width * s_image->m_height);
+
+		s_y = -10;
+		if (fontname)
+		{
+			draw_centered_text(face, fontname);
+		}
+		else
+		{
+			draw_centered_text(face, font_filename);
+		}
+
+		tu_string	ofile0(output_basename);
+		ofile0 += "_thumb.png";
+		output_image(ofile0.c_str());
+
+		delete s_image;
 	}
-	else
+
+
+	// The big image, with sample text in two sizes.
 	{
-		draw_centered_text(face, font_filename);
+		s_image = image::create_alpha(BIG_WIDTH, BIG_HEIGHT);
+
+		// Clear.
+		memset(s_image->m_data, 255, s_image->m_width * s_image->m_height);
+
+		// Large text.
+		s_y = 0;
+		if (fontname)
+		{
+			draw_centered_text(face, fontname);
+		}
+		else
+		{
+			draw_centered_text(face, font_filename);
+		}
+		s_y += 10;
+		draw_centered_text(face, "ABCDEFGHIJKLM");
+		draw_centered_text(face, "NOPQRSTUVWXYZ");
+		draw_centered_text(face, "abcdefghijklmnopqr");
+		draw_centered_text(face, "stuvwxyz 0123456789");
+		draw_centered_text(face, "!@#$%^&*()_+-=`~{}|");
+		draw_centered_text(face, "[]\\- ,./<>?;':\"");
+		draw_centered_text(face, "The quick brown fox");
+		draw_centered_text(face, "jumps over the lazy dog.");
+
+		// Small text.
+		error = FT_Set_Char_Size(
+			face,
+			0 /*width*/,
+			12*64 /*height*64 in points!*/,
+			96 /*horiz device dpi*/,
+			96 /*vert device dpi*/);
+		assert(error == 0);
+		draw_centered_text(face, "12pt @ 96 dpi:");
+		draw_centered_text(face, "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz");
+		draw_centered_text(face, "!@#$%^&*()_+-=`~{}|[]\\- ,./<>?;':\"");
+		draw_centered_text(face, "Satan oscillate my metallic sonatas!  The quick brown fox jumps over the lazy dog.");
+		draw_centered_text(face, "Go hang a salami, I'm a lasagna hog.");
+
+		tu_string	ofile1(output_basename);
+		ofile1 += ".png";
+		output_image(ofile1.c_str());
+
+		delete s_image;
 	}
 
-	tu_string	ofile0(output_basename);
-	ofile0 += "_thumb.png";
-	output_image(ofile0.c_str());
-
-	delete s_image;
-
-
-	// The big image.
-
-	s_image = image::create_alpha(BIG_WIDTH, BIG_HEIGHT);
-
-	// Clear.
-	memset(s_image->m_data, 255, s_image->m_width * s_image->m_height);
-
-	// Large text.
-	s_y = 0;
-	if (fontname)
+	//
+	// A character map, showing everything in the font.
+	//
 	{
-		draw_centered_text(face, fontname);
+		s_image = image::create_alpha(CHARMAP_WIDTH, CHARMAP_HEIGHT);
+		memset(s_image->m_data, 255, s_image->m_width * s_image->m_height);
+
+		error = FT_Set_Char_Size(
+			face,
+			0 /*width*/,
+			12*64 /*height*64 in points!*/,
+			300 /*horiz device dpi*/,
+			300 /*vert device dpi*/);
+		assert(error == 0);
+		draw_character_map(face);
+
+		tu_string ofile2(output_basename);
+		ofile2 += "_charmap.png";
+		output_image(ofile2.c_str());
+
+		delete s_image;
 	}
-	else
-	{
-		draw_centered_text(face, font_filename);
-	}
-	s_y += 10;
-	draw_centered_text(face, "ABCDEFGHIJKLM");
-	draw_centered_text(face, "NOPQRSTUVWXYZ");
-	draw_centered_text(face, "abcdefghijklmnopqr");
-	draw_centered_text(face, "stuvwxyz 0123456789");
-	draw_centered_text(face, "!@#$%^&*()_+-=`~{}|");
-	draw_centered_text(face, "[]\\- ,./<>?;':\"");
-	draw_centered_text(face, "The quick brown fox");
-	draw_centered_text(face, "jumps over the lazy dog.");
-
-	// Small text.
-	error = FT_Set_Char_Size(
-		face,
-		0 /*width*/,
-		12*64 /*height*64 in points!*/,
-		96 /*horiz device dpi*/,
-		96 /*vert device dpi*/);
-	assert(error == 0);
-	draw_centered_text(face, "12pt @ 96 dpi:");
-	draw_centered_text(face, "ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz");
-	draw_centered_text(face, "!@#$%^&*()_+-=`~{}|[]\\- ,./<>?;':\"");
-	draw_centered_text(face, "Satan oscillate my metallic sonatas!  The quick brown fox jumps over the lazy dog.");
-	draw_centered_text(face, "Go hang a salami, I'm a lasagna hog.");
-
-	tu_string	ofile1(output_basename);
-	ofile1 += ".png";
-	output_image(ofile1.c_str());
-
-	delete s_image;
 
 	FT_Done_FreeType(lib);
 }

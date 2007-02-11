@@ -16,10 +16,10 @@ LDFLAGS := $(LIB_DEBUG_FLAGS) $(LDFLAGS) ../../../../../freetype-2.1.10-lib/lib/
 LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(LIBPNG) $(ZLIB)
 
 
-all: font_output$(EXE_EXT)
+all: font_output$(EXE_EXT) base_lib
 
 
-font_output$(EXE_EXT): font_output.$(OBJ_EXT) $(BASE_LIB)
+font_output$(EXE_EXT): font_output.$(OBJ_EXT)
 	$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 clean:
