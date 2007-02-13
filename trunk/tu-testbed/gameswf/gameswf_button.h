@@ -17,32 +17,6 @@
 namespace gameswf
 {
 	//
-	// Helper to generate mouse events, given mouse state & history.
-	//
-
-	struct mouse_button_state
-	{
-		weak_ptr<movie>	m_active_entity;	// entity that currently owns the mouse pointer
-		weak_ptr<movie>	m_topmost_entity;	// what's underneath the mouse right now
-
-		bool	m_mouse_button_state_last;		// previous state of mouse button
-		bool	m_mouse_button_state_current;		// current state of mouse button
-
-		bool	m_mouse_inside_entity_last;	// whether mouse was inside the active_entity last frame
-
-		mouse_button_state()
-			:
-			m_mouse_button_state_last(0),
-			m_mouse_button_state_current(0),
-			m_mouse_inside_entity_last(false)
-		{
-		}
-	};
-
-	void	generate_mouse_button_events(mouse_button_state* ms);
-
-
-	//
 	// button characters
 	//
 	enum mouse_state

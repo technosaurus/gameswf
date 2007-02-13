@@ -171,6 +171,16 @@ static void	key_event(SDLKey key, bool down)
 				{ SDLK_UP, gameswf::key::UP },
 				{ SDLK_RIGHT, gameswf::key::RIGHT },
 				{ SDLK_DOWN, gameswf::key::DOWN },
+				{ SDLK_SPACE, gameswf::key::SPACE },
+        { SDLK_PAGEDOWN, gameswf::key::PGDN },
+        { SDLK_PAGEUP, gameswf::key::PGUP },
+        { SDLK_HOME, gameswf::key::HOME },
+        { SDLK_END, gameswf::key::END },
+        { SDLK_INSERT, gameswf::key::INSERT },
+        { SDLK_DELETE, gameswf::key::DELETEKEY },
+        { SDLK_BACKSPACE, gameswf::key::BACKSPACE },
+        { SDLK_TAB, gameswf::key::TAB },
+
 				// @@ TODO fill this out some more
 				{ SDLK_UNKNOWN, gameswf::key::INVALID }
 			};
@@ -756,9 +766,6 @@ int	main(int argc, char *argv[])
 			break;
 		}
 		
-		// use this for multifile games
-		m = gameswf::get_current_root();
-
 		bool ret = true;
 		if (do_render)
 		{
@@ -773,7 +780,10 @@ int	main(int argc, char *argv[])
 					ret = SDL_PollEvent(&event) ? true : false;
 				}
 #else
-				ret = SDL_PollEvent(&event) ? true : false;
+				if (SDL_PollEvent(&event) == 0)
+				{
+					break;
+				}
 #endif
 
 				//printf("EVENT Type is %d\n", event.type);

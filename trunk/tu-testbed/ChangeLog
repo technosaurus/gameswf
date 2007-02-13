@@ -1,3 +1,12 @@
+2007-02-13  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* base/container.h: added erase & insert methods to tu_string
+	* gameswf/gameswf_impl(h.cpp), gameswf/gameswf_button(h.cpp):	
+	the development of input_edit_text has demanded reorganization of these files
+	* gameswf/gameswf_action(h,cpp), gameswf/gameswf_text(h,cpp):
+	added input edit text stuff
+	* gameswf/gameswf_test_ogl.cpp: fixed "processing of not arising events" bug
+	
 2007-02-11  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* base/tu_queue.h: fixed typo

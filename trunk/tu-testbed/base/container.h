@@ -1145,6 +1145,23 @@ public:
 	}
 	int	size() const { return length(); }
 
+	// index >=0
+	void erase(int index, int count)
+	{
+		assert(index + count <= length());
+		strcpy(get_buffer() + index, get_buffer() + index + count);
+		resize(length() - count);
+	}
+
+	// insert char before index
+	void insert(int index, char ch)
+	{
+		assert(index >= 0 && index <= size());
+		resize(length() + 1);
+		strcpy(get_buffer() + index + 1, get_buffer() + index);
+		*(get_buffer()+ index) = ch;
+	}
+
 	char&	operator[](int index)
 	{
 		assert(index >= 0 && index <= size());

@@ -55,14 +55,14 @@ namespace gameswf
 
 
 	void	set_verbose_action(bool verbose)
-	// Enable/disable log messages re: actions.
+		// Enable/disable log messages re: actions.
 	{
 		s_verbose_action = verbose;
 	}
 
 
 	void	set_verbose_parse(bool verbose)
-	// Enable/disable log messages re: parsing the movie.
+		// Enable/disable log messages re: parsing the movie.
 	{
 		s_verbose_parse = verbose;
 	}
@@ -71,8 +71,8 @@ namespace gameswf
 	static bool	s_use_cache_files = true;
 
 	void	set_use_cache_files(bool use_cache)
-	// Enable/disable attempts to read cache files when loading
-	// movies.
+		// Enable/disable attempts to read cache files when loading
+		// movies.
 	{
 		s_use_cache_files = use_cache;
 	}
@@ -82,8 +82,8 @@ namespace gameswf
 	static hash<int, loader_function>	s_tag_loaders;
 
 	void	register_tag_loader(int tag_type, loader_function lf)
-	// Associate the specified tag type with the given tag loader
-	// function.
+		// Associate the specified tag type with the given tag loader
+		// function.
 	{
 		assert(s_tag_loaders.get(tag_type, NULL) == false);
 		assert(lf != NULL);
@@ -99,8 +99,8 @@ namespace gameswf
 	static file_opener_callback	s_opener_function = NULL;
 
 	void	register_file_opener_callback(file_opener_callback opener)
-	// Host calls this to register a function for opening files,
-	// for loading movies.
+		// Host calls this to register a function for opening files,
+		// for loading movies.
 	{
 		s_opener_function = opener;
 	}
@@ -112,20 +112,20 @@ namespace gameswf
 	static progress_callback	s_progress_function = NULL;
 
 	void	register_progress_callback(progress_callback progress_handle)
-	// Host calls this to register a function for progress bar handling
-	// during loading movies.
+		// Host calls this to register a function for progress bar handling
+		// during loading movies.
 	{
 		s_progress_function = progress_handle;
 	}
-	
+
 	//
 	// some utility stuff
 	//
 
 
 	static void	execute_actions(as_environment* env, const array<action_buffer*>& action_list)
-	// Execute the actions in the action list, in the given
-	// environment.
+		// Execute the actions in the action list, in the given
+		// environment.
 	{
 		for (int i = 0; i < action_list.size(); i++)
 		{
@@ -135,7 +135,7 @@ namespace gameswf
 
 
 	static void	dump_tag_bytes(stream* in)
-	// Log the contents of the current tag, in hex.
+		// Log the contents of the current tag, in hex.
 	{
 		static const int	ROW_BYTES = 16;
 		char	row_buf[ROW_BYTES];
@@ -149,7 +149,7 @@ namespace gameswf
 			if (c < 32) c = '.';
 			if (c > 127) c = '.';
 			row_buf[row_count] = c;
-			
+
 			row_count++;
 			if (row_count >= ROW_BYTES)
 			{
@@ -176,7 +176,7 @@ namespace gameswf
 
 
 	character*	character_def::create_character_instance(movie* parent, int id)
-	// Default.  Make a generic_character.
+		// Default.  Make a generic_character.
 	{
 		return new generic_character(this, parent, id);
 	}
@@ -189,7 +189,7 @@ namespace gameswf
 
 	ref_counted::ref_counted()
 		:
-		m_ref_count(0),
+	m_ref_count(0),
 		m_weak_proxy(0)
 	{
 	}
@@ -242,7 +242,7 @@ namespace gameswf
 
 
 	void	character::do_mouse_drag()
-	// Implement mouse-dragging for this movie.
+		// Implement mouse-dragging for this movie.
 	{
 		drag_state	st;
 		get_drag_state(&st);
@@ -276,7 +276,7 @@ namespace gameswf
 
 				point	parent_mouse;
 				parent_world_mat.transform_by_inverse(&parent_mouse, world_mouse);
-					
+
 				// Place our origin so that it coincides with the mouse coords
 				// in our parent frame.
 				matrix	local = get_matrix();
@@ -292,79 +292,9 @@ namespace gameswf
 	}
 
 
-	//
-	// Helper for movie_def_impl
-	//
-
-	struct import_info
-	{
-		tu_string	m_source_url;
-		int		m_character_id;
-		tu_string	m_symbol;
-
-		import_info()
+			movie_def_impl::movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs)
 			:
-			m_character_id(-1)
-		{
-		}
-
-		import_info(const char* source, int id, const char* symbol)
-			:
-			m_source_url(source),
-			m_character_id(id),
-			m_symbol(symbol)
-		{
-		}
-	};
-
-
-	//
-	// movie_def_impl
-	//
-	// This class holds the immutable definition of a movie's
-	// contents.  It cannot be played directly, and does not hold
-	// current state; for that you need to call create_instance()
-	// to get a movie_instance.
-	//
-
-
-	struct movie_def_impl : public movie_definition_sub
-	{
-		hash<int, smart_ptr<character_def> >	m_characters;
-		hash<int, smart_ptr<font> >	 m_fonts;
-		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
-		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
-		array<array<execute_tag*> >	   m_playlist;	// A list of movie control events for each frame.
-		array<array<execute_tag*> >	   m_init_action_list;	// Init actions for each frame.
-		stringi_hash<int>		   m_named_frames;	// 0-based frame #'s
-		stringi_hash<smart_ptr<resource> > m_exports;
-
-		// Items we import.
-		array<import_info>	m_imports;
-
-		// Movies we import from; hold a ref on these, to keep them alive
-		array<smart_ptr<movie_definition> >	m_import_source_movies;
-
-		// Bitmaps used in this movie; collected in one place to make
-		// it possible for the host to manage them as textures.
-		array<smart_ptr<bitmap_info> >	m_bitmap_list;
-
-		create_bitmaps_flag	m_create_bitmaps;
-		create_font_shapes_flag	m_create_font_shapes;
-
-		rect	m_frame_size;
-		float	m_frame_rate;
-		int	m_frame_count;
-		int	m_version;
-		int	m_loading_frame;
-		uint32	m_file_length;
-
-		jpeg::input*	m_jpeg_in;
-
-
-		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs)
-			:
-			m_create_bitmaps(cbf),
+		m_create_bitmaps(cbf),
 			m_create_font_shapes(cfs),
 			m_frame_rate(30.0f),
 			m_frame_count(0),
@@ -374,7 +304,7 @@ namespace gameswf
 		{
 		}
 
-		~movie_def_impl()
+		movie_def_impl::~movie_def_impl()
 		{
 			// Release our playlist data.
 			{for (int i = 0, n = m_playlist.size(); i < n; i++)
@@ -397,89 +327,86 @@ namespace gameswf
 			assert(m_jpeg_in == NULL);	// It's supposed to be cleaned up in read()
 		}
 
-
-		movie_interface*	create_instance();
-
 		// ...
-		int	get_frame_count() const { return m_frame_count; }
-		float	get_frame_rate() const { return m_frame_rate; }
-		float	get_width_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.width())); }
-		float	get_height_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
+		int	movie_def_impl::get_frame_count() const { return m_frame_count; }
+		float	movie_def_impl::get_frame_rate() const { return m_frame_rate; }
+		float	movie_def_impl::get_width_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.width())); }
+		float	movie_def_impl::get_height_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
 
-		virtual int	get_version() const { return m_version; }
+		int	movie_def_impl::get_version() const { return m_version; }
 
-		virtual int	get_loading_frame() const { return m_loading_frame; }
+		int	movie_def_impl::get_loading_frame() const { return m_loading_frame; }
 
-		uint32	get_file_bytes() const { return m_file_length; }
+		uint32	movie_def_impl::get_file_bytes() const { return m_file_length; }
 
 		/* movie_def_impl */
-		virtual create_bitmaps_flag	get_create_bitmaps() const
-		// Returns DO_CREATE_BITMAPS if we're supposed to
-		// initialize our bitmap infos, or DO_NOT_INIT_BITMAPS
-		// if we're supposed to create blank placeholder
-		// bitmaps (to be init'd later explicitly by the host
-		// program).
+		create_bitmaps_flag	movie_def_impl::get_create_bitmaps() const
+			// Returns DO_CREATE_BITMAPS if we're supposed to
+			// initialize our bitmap infos, or DO_NOT_INIT_BITMAPS
+			// if we're supposed to create blank placeholder
+			// bitmaps (to be init'd later explicitly by the host
+			// program).
 		{
 			return m_create_bitmaps;
 		}
 
 		/* movie_def_impl */
-		virtual create_font_shapes_flag	get_create_font_shapes() const
-		// Returns DO_LOAD_FONT_SHAPES if we're supposed to
-		// initialize our font shape info, or
-		// DO_NOT_LOAD_FONT_SHAPES if we're supposed to not
-		// create any (vector) font glyph shapes, and instead
-		// rely on precached textured fonts glyphs.
+		create_font_shapes_flag	movie_def_impl::get_create_font_shapes() const
+			// Returns DO_LOAD_FONT_SHAPES if we're supposed to
+			// initialize our font shape info, or
+			// DO_NOT_LOAD_FONT_SHAPES if we're supposed to not
+			// create any (vector) font glyph shapes, and instead
+			// rely on precached textured fonts glyphs.
 		{
 			return m_create_font_shapes;
 		}
 
-		virtual void	add_bitmap_info(bitmap_info* bi)
-		// All bitmap_info's used by this movie should be
-		// registered with this API.
+		void	movie_def_impl::add_bitmap_info(bitmap_info* bi)
+			// All bitmap_info's used by this movie should be
+			// registered with this API.
 		{
 			m_bitmap_list.push_back(bi);
 		}
 
 
-		virtual int	get_bitmap_info_count() const { return m_bitmap_list.size(); }
-		virtual bitmap_info*	get_bitmap_info(int i) const
+		int	movie_def_impl::get_bitmap_info_count() const { return m_bitmap_list.size(); }
+		bitmap_info*	movie_def_impl::get_bitmap_info(int i) const
 		{
 			return m_bitmap_list[i].get_ptr();
 		}
 
-		virtual void	export_resource(const tu_string& symbol, resource* res)
-		// Expose one of our resources under the given symbol,
-		// for export.	Other movies can import it.
+		void	movie_def_impl::export_resource(const tu_string& symbol, resource* res)
+			// Expose one of our resources under the given symbol,
+			// for export.	Other movies can import it.
 		{
 			// SWF sometimes exports the same thing more than once!
 			m_exports.set(symbol, res);
 		}
 
-		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol)
-		// Get the named exported resource, if we expose it.
-		// Otherwise return NULL.
+		smart_ptr<resource>	movie_def_impl::get_exported_resource(const tu_string& symbol)
+			// Get the named exported resource, if we expose it.
+			// Otherwise return NULL.
 		{
 			smart_ptr<resource>	res;
 			m_exports.get(symbol, &res);
 			return res;
 		}
 
-		virtual void	add_import(const char* source_url, int id, const char* symbol)
-		// Adds an entry to a table of resources that need to
-		// be imported from other movies.  Client code must
-		// call resolve_import() later, when the source movie
-		// has been loaded, so that the actual resource can be
-		// used.
+		void	movie_def_impl::add_import(const char* source_url, int id, const char* symbol)
+			// Adds an entry to a table of resources that need to
+			// be imported from other movies.  Client code must
+			// call resolve_import() later, when the source movie
+			// has been loaded, so that the actual resource can be
+			// used.
 		{
 			assert(in_import_table(id) == false);
 
 			m_imports.push_back(import_info(source_url, id, symbol));
 		}
 
-		bool	in_import_table(int character_id)
-		// Debug helper; returns true if the given
-		// character_id is listed in the import table.
+		bool	movie_def_impl::in_import_table(int character_id)
+			// Debug helper; returns true if the given
+			// character_id is listed in the import table.
 		{
 			for (int i = 0, n = m_imports.size(); i < n; i++)
 			{
@@ -491,9 +418,9 @@ namespace gameswf
 			return false;
 		}
 
-		virtual void	visit_imported_movies(import_visitor* visitor)
-		// Calls back the visitor for each movie that we
-		// import symbols from.
+		void	movie_def_impl::visit_imported_movies(import_visitor* visitor)
+			// Calls back the visitor for each movie that we
+			// import symbols from.
 		{
 			stringi_hash<bool>	visited;	// ugh!
 
@@ -509,8 +436,8 @@ namespace gameswf
 			}
 		}
 
-		virtual void	resolve_import(const char* source_url, movie_definition* source_movie)
-		// Grabs the stuff we want from the source movie.
+		void	movie_def_impl::resolve_import(const char* source_url, movie_definition* source_movie)
+			// Grabs the stuff we want from the source movie.
 		{
 			// @@ should be safe, but how can we verify
 			// it?	Compare a member function pointer, or
@@ -531,7 +458,7 @@ namespace gameswf
 					if (res == NULL)
 					{
 						log_error("import error: resource '%s' is not exported from movie '%s'\n",
-							  inf.m_symbol.c_str(), source_url);
+							inf.m_symbol.c_str(), source_url);
 					}
 					else if (font* f = res->cast_to_font())
 					{
@@ -548,7 +475,7 @@ namespace gameswf
 					else
 					{
 						log_error("import error: resource '%s' from movie '%s' has unknown type\n",
-							  inf.m_symbol.c_str(), source_url);
+							inf.m_symbol.c_str(), source_url);
 					}
 
 					if (imported)
@@ -562,20 +489,20 @@ namespace gameswf
 			}
 		}
 
-		void	add_character(int character_id, character_def* c)
+		void	movie_def_impl::add_character(int character_id, character_def* c)
 		{
 			assert(c);
 			m_characters.add(character_id, c);
 		}
 
-		character_def*	get_character_def(int character_id)
+		character_def*	movie_def_impl::get_character_def(int character_id)
 		{
 #ifndef NDEBUG
 			// make sure character_id is resolved
 			if (in_import_table(character_id))
 			{
 				log_error("get_character_def(): character_id %d is still waiting to be imported\n",
-					  character_id);
+					character_id);
 			}
 #endif // not NDEBUG
 
@@ -585,26 +512,26 @@ namespace gameswf
 			return ch.get_ptr();
 		}
 
-		bool	get_labeled_frame(const char* label, int* frame_number)
-		// Returns 0-based frame #
+		bool	movie_def_impl::get_labeled_frame(const char* label, int* frame_number)
+			// Returns 0-based frame #
 		{
 			return m_named_frames.get(label, frame_number);
 		}
 
-		void	add_font(int font_id, font* f)
+		void	movie_def_impl::add_font(int font_id, font* f)
 		{
 			assert(f);
 			m_fonts.add(font_id, f);
 		}
 
-		font*	get_font(int font_id)
+		font*	movie_def_impl::get_font(int font_id)
 		{
 #ifndef NDEBUG
 			// make sure font_id is resolved
 			if (in_import_table(font_id))
 			{
 				log_error("get_font(): font_id %d is still waiting to be imported\n",
-					  font_id);
+					font_id);
 			}
 #endif // not NDEBUG
 
@@ -614,7 +541,7 @@ namespace gameswf
 			return f.get_ptr();
 		}
 
-		bitmap_character_def*	get_bitmap_character(int character_id)
+		bitmap_character_def*	movie_def_impl::get_bitmap_character(int character_id)
 		{
 			smart_ptr<bitmap_character_def>	ch;
 			m_bitmap_characters.get(character_id, &ch);
@@ -622,7 +549,7 @@ namespace gameswf
 			return ch.get_ptr();
 		}
 
-		void	add_bitmap_character(int character_id, bitmap_character_def* ch)
+		void	movie_def_impl::add_bitmap_character(int character_id, bitmap_character_def* ch)
 		{
 			assert(ch);
 			m_bitmap_characters.add(character_id, ch);
@@ -630,7 +557,7 @@ namespace gameswf
 			add_bitmap_info(ch->get_bitmap_info());
 		}
 
-		sound_sample*	get_sound_sample(int character_id)
+		sound_sample*	movie_def_impl::get_sound_sample(int character_id)
 		{
 			smart_ptr<sound_sample>	ch;
 			m_sound_samples.get(character_id, &ch);
@@ -638,32 +565,32 @@ namespace gameswf
 			return ch.get_ptr();
 		}
 
-		virtual void	add_sound_sample(int character_id, sound_sample* sam)
+		void	movie_def_impl::add_sound_sample(int character_id, sound_sample* sam)
 		{
 			assert(sam);
 			m_sound_samples.add(character_id, sam);
 		}
 
-		void	add_execute_tag(execute_tag* e)
+		void	movie_def_impl::add_execute_tag(execute_tag* e)
 		{
 			assert(e);
 			m_playlist[m_loading_frame].push_back(e);
 		}
 
-		void	add_init_action(int sprite_id, execute_tag* e)
-		// Need to execute the given tag before entering the
-		// currently-loading frame for the first time.
-		//
-		// @@ AFAIK, the sprite_id is totally pointless -- correct?
+		void	movie_def_impl::add_init_action(int sprite_id, execute_tag* e)
+			// Need to execute the given tag before entering the
+			// currently-loading frame for the first time.
+			//
+			// @@ AFAIK, the sprite_id is totally pointless -- correct?
 		{
 			assert(e);
 			m_init_action_list[m_loading_frame].push_back(e);
 		}
 
-		void	add_frame_name(const char* name)
-		// Labels the frame currently being loaded with the
-		// given name.	A copy of the name string is made and
-		// kept in this object.
+		void	movie_def_impl::add_frame_name(const char* name)
+			// Labels the frame currently being loaded with the
+			// given name.	A copy of the name string is made and
+			// kept in this object.
 		{
 			assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
 
@@ -672,33 +599,32 @@ namespace gameswf
 			m_named_frames.add(n, m_loading_frame);	// stores 0-based frame #
 		}
 
-		void	set_jpeg_loader(jpeg::input* j_in)
-		// Set an input object for later loading DefineBits
-		// images (JPEG images without the table info).
+		void	movie_def_impl::set_jpeg_loader(jpeg::input* j_in)
+			// Set an input object for later loading DefineBits
+			// images (JPEG images without the table info).
 		{
 			assert(m_jpeg_in == NULL);
 			m_jpeg_in = j_in;
 		}
 
-		jpeg::input*	get_jpeg_loader()
-		// Get the jpeg input loader, to load a DefineBits
-		// image (one without table info).
+		jpeg::input*	movie_def_impl::get_jpeg_loader()
+			// Get the jpeg input loader, to load a DefineBits
+			// image (one without table info).
 		{
 			return m_jpeg_in;
 		}
 
 
-		virtual const array<execute_tag*>&	get_playlist(int frame_number) { return m_playlist[frame_number]; }
+		const array<execute_tag*>&	movie_def_impl::get_playlist(int frame_number) { return m_playlist[frame_number]; }
 
-		/* movie_def_impl */
-		virtual const array<execute_tag*>*	get_init_actions(int frame_number)
+		const array<execute_tag*>*	movie_def_impl::get_init_actions(int frame_number)
 		{
 			return &m_init_action_list[frame_number];
 		}
 
 		/* movie_def_impl */
-		void	read(tu_file* in)
-		// Read a .SWF movie.
+		void	movie_def_impl::read(tu_file* in)
+			// Read a .SWF movie.
 		{
 			Uint32	file_start_pos = in->get_position();
 			Uint32	header = in->read_le32();
@@ -707,7 +633,7 @@ namespace gameswf
 
 			m_version = (header >> 24) & 255;
 			if ((header & 0x0FFFFFF) != 0x00535746
-			    && (header & 0x0FFFFFF) != 0x00535743)
+				&& (header & 0x0FFFFFF) != 0x00535743)
 			{
 				// ERROR
 				log_error("gameswf::movie_def_impl::read() -- file does not start with a SWF header!\n");
@@ -807,9 +733,8 @@ namespace gameswf
 		}
 
 
-		/* movie_def_impl */
-		void	get_owned_fonts(array<font*>* fonts)
-		// Fill up *fonts with fonts that we own.
+		void	movie_def_impl::get_owned_fonts(array<font*>* fonts)
+			// Fill up *fonts with fonts that we own.
 		{
 			assert(fonts);
 			fonts->resize(0);
@@ -817,8 +742,8 @@ namespace gameswf
 			array<int>	font_ids;
 
 			for (hash<int, smart_ptr<font> >::iterator it = m_fonts.begin();
-			     it != m_fonts.end();
-			     ++it)
+				it != m_fonts.end();
+				++it)
 			{
 				font*	f = it->second.get_ptr();
 				if (f->get_owning_movie() == this)
@@ -845,8 +770,8 @@ namespace gameswf
 
 
 		/* movie_def_impl */
-		void	generate_font_bitmaps()
-		// Generate bitmaps for our fonts, if necessary.
+		void	movie_def_impl::generate_font_bitmaps()
+			// Generate bitmaps for our fonts, if necessary.
 		{
 			// Collect list of fonts.
 			array<font*>	fonts;
@@ -856,12 +781,12 @@ namespace gameswf
 
 
 		// Increment this when the cache data format changes.
-		#define CACHE_FILE_VERSION 6
+#define CACHE_FILE_VERSION 6
 
 
 		/* movie_def_impl */
-		void	output_cached_data(tu_file* out, const cache_options& options)
-		// Dump our cached data into the given stream.
+		void	movie_def_impl::output_cached_data(tu_file* out, const cache_options& options)
+			// Dump our cached data into the given stream.
 		{
 			// Write a little header.
 			char	header[5];
@@ -878,8 +803,8 @@ namespace gameswf
 
 			// Write character data.
 			{for (hash<int, smart_ptr<character_def> >::iterator it = m_characters.begin();
-			     it != m_characters.end();
-			     ++it)
+			it != m_characters.end();
+			++it)
 			{
 				out->write_le16(it->first);
 				it->second->output_cached_data(out, options);
@@ -890,8 +815,8 @@ namespace gameswf
 
 
 		/* movie_def_impl */
-		void	input_cached_data(tu_file* in)
-		// Read in cached data and use it to prime our loaded characters.
+		void	movie_def_impl::input_cached_data(tu_file* in)
+			// Read in cached data and use it to prime our loaded characters.
 		{
 			// Read the header & check version.
 			unsigned char	header[4];
@@ -940,45 +865,15 @@ namespace gameswf
 				else
 				{
 					log_error("sync error in cache file (reading characters)!  "
-						  "Skipping rest of cache data.\n");
+						"Skipping rest of cache data.\n");
 					return;
 				}
 			}
 		}
 
-	};
-
-
-	//
-	// movie_root
-	//
-	// Global, shared root state for a movie and all its characters.
-	//
-
-	struct movie_root : public movie_interface
-	{
-		smart_ptr<movie_def_impl>	m_def;
-		smart_ptr<movie>	m_movie;
-		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
-		float			m_pixel_scale;
-
-		rgba			m_background_color;
-		float			m_timer;
-		int			m_mouse_x, m_mouse_y, m_mouse_buttons;
-		void *			m_userdata;
-		movie::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
-		mouse_button_state	m_mouse_button_state;
-		bool			m_on_event_load_called;
-
-		// Flags for event handlers
-		bool			m_on_event_xmlsocket_ondata_called;
-		bool			m_on_event_xmlsocket_onxml_called;
-		bool			m_on_event_load_progress_called;
-		array<Timer *>	m_interval_timers;
-
-		movie_root(movie_def_impl* def)
+	movie_root::movie_root(movie_def_impl* def)
 			:
-			m_def(def),
+		m_def(def),
 			m_movie(NULL),
 			m_viewport_x0(0),
 			m_viewport_y0(0),
@@ -994,33 +889,223 @@ namespace gameswf
 			m_on_event_load_called(false),
 			m_on_event_xmlsocket_ondata_called(false),
 			m_on_event_xmlsocket_onxml_called(false),
-			m_on_event_load_progress_called(false)
+			m_on_event_load_progress_called(false),
+			m_active_input_text(NULL)
 		{
 			assert(m_def != NULL);
 
 			set_display_viewport(0, 0, (int) m_def->get_width_pixels(), (int) m_def->get_height_pixels());
 		}
 
-		~movie_root()
+		movie_root::~movie_root()
 		{
 			assert(m_def != NULL);
 			m_movie = NULL;
 			m_def = NULL;
 		}
 
-		// @@ should these delegate to m_movie?	 Probably...
-		virtual void	set_member(const tu_stringi& name, const as_value& val) {}
-		virtual bool	get_member(const tu_stringi& name, as_value* val) { return false; }
-		virtual movie*	to_movie() { assert(0); return 0; } // @@ should this return m_movie.get_ptr()?
-		
+		void	movie_root::generate_mouse_button_events(mouse_button_state* ms)
+		{
+			smart_ptr<movie>	active_entity = ms->m_active_entity;
+			smart_ptr<movie>	topmost_entity = ms->m_topmost_entity;
 
-		void	set_root_movie(movie* root_movie)
+			if (ms->m_mouse_button_state_last == 1)
+			{
+				// Mouse button was down.
+
+				// Handle trackAsMenu dragOver
+				if (active_entity == NULL
+					|| active_entity->get_track_as_menu())
+				{
+					if (topmost_entity != NULL
+						&& topmost_entity != active_entity
+						&& topmost_entity->get_track_as_menu() == true)
+					{
+						// Transfer to topmost entity, dragOver
+						active_entity = topmost_entity;
+						active_entity->on_button_event(event_id::DRAG_OVER);
+						ms->m_mouse_inside_entity_last = true;
+					}
+				}
+
+				// Handle onDragOut, onDragOver
+				if (ms->m_mouse_inside_entity_last == false)
+				{
+					if (topmost_entity == active_entity)
+					{
+						// onDragOver
+						if (active_entity != NULL)
+						{
+							active_entity->on_button_event(event_id::DRAG_OVER);
+						}
+						ms->m_mouse_inside_entity_last = true;
+					}
+				}
+				else
+				{
+					// mouse_inside_entity_last == true
+					if (topmost_entity != active_entity)
+					{
+						// onDragOut
+						if (active_entity != NULL)
+						{
+							active_entity->on_button_event(event_id::DRAG_OUT);
+						}
+						ms->m_mouse_inside_entity_last = false;
+					}
+				}
+
+				// Handle onRelease, onReleaseOutside
+				if (ms->m_mouse_button_state_current == 0)
+				{
+					// Mouse button just went up.
+					ms->m_mouse_button_state_last = 0;
+
+					if (active_entity != NULL)
+					{
+						if (ms->m_mouse_inside_entity_last)
+						{
+							// onRelease
+							active_entity->on_button_event(event_id::RELEASE);
+						}
+						else
+						{
+							// onReleaseOutside
+							if (active_entity->get_track_as_menu() == false)
+							{
+								active_entity->on_button_event(event_id::RELEASE_OUTSIDE);
+							}
+						}
+					}
+				}
+			}
+
+			if (ms->m_mouse_button_state_last == 0)
+			{
+				// Mouse button was up.
+
+				// New active entity is whatever is below the mouse right now.
+				if (topmost_entity != active_entity)
+				{
+					// onRollOut
+					if (active_entity != NULL)
+					{
+						active_entity->on_button_event(event_id::ROLL_OUT);
+					}
+
+					active_entity = topmost_entity;
+
+					// onRollOver
+					if (active_entity != NULL)
+					{
+						active_entity->on_button_event(event_id::ROLL_OVER);
+					}
+
+					ms->m_mouse_inside_entity_last = true;
+				}
+
+				// mouse button press
+				if (ms->m_mouse_button_state_current == 1)
+				{
+					// onPress
+
+					// set/kill focus
+					character* current_active_entity = (character*) get_active_entity();
+
+					// It's another entity ?
+					if (current_active_entity != active_entity.get_ptr())
+					{
+						// First to clean focus
+						if (current_active_entity != NULL)
+						{
+							current_active_entity->on_event(event_id::KILLFOCUS);
+							set_active_entity(NULL);
+						}
+
+						// Then to set focus
+						if (active_entity != NULL)
+						{
+							if (active_entity->on_event(event_id::SETFOCUS))
+							{
+								set_active_entity(active_entity.get_ptr());
+							}
+						}
+					}
+
+					if (active_entity != NULL)
+					{
+						active_entity->on_button_event(event_id::PRESS);
+					}
+					ms->m_mouse_inside_entity_last = true;
+					ms->m_mouse_button_state_last = 1;
+				}
+			}
+
+			// Write the (possibly modified) smart_ptr copies back
+			// into the state struct.
+			ms->m_active_entity = active_entity;
+			ms->m_topmost_entity = topmost_entity;
+		}
+
+		void movie_root::notify_keypress_listeners(key::code k) 
+		{
+			for (int i = 0; i < m_keypress_listeners.size(); i++)
+			{ 
+				if (m_keypress_listeners[i] != NULL) 
+				{ 
+					// sprite, button & input_edit_text characters 
+					m_keypress_listeners[i]->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
+				}
+			}
+		} 
+
+		void movie_root::add_keypress_listener(character* listener) 
+		{
+			for (int i = 0; i < m_keypress_listeners.size(); i++)
+			{ 
+				if (m_keypress_listeners[i] == listener) 
+				{
+					// Already in the list. 
+					return; 
+				} 
+			} 
+			m_keypress_listeners.push_back(listener);
+		} 
+
+		void movie_root::remove_keypress_listener(character* listener) 
+		{
+			for (int i = 0; i < m_keypress_listeners.size(); i++)
+			{ 
+				if (m_keypress_listeners[i] == listener) 
+				{
+					m_keypress_listeners.remove(i);
+					return;
+				} 
+			} 
+		} 
+
+		movie* movie_root::get_active_entity() 
+		{ 
+			return m_active_input_text; 
+		} 
+
+		void movie_root::set_active_entity(movie* ch) 
+		{ 
+			m_active_input_text = ch; 
+		} 
+
+		// @@ should these delegate to m_movie?	 Probably...
+		void	movie_root::set_member(const tu_stringi& name, const as_value& val) {}
+		bool	movie_root::get_member(const tu_stringi& name, as_value* val) { return false; }
+		movie*	movie_root::to_movie() { assert(0); return 0; } // @@ should this return m_movie.get_ptr()?
+
+		void	movie_root::set_root_movie(movie* root_movie)
 		{
 			m_movie = root_movie;
 			assert(m_movie != NULL);
 		}
 
-		void	set_display_viewport(int x0, int y0, int w, int h)
+		void	movie_root::set_display_viewport(int x0, int y0, int w, int h)
 		{
 			m_viewport_x0 = x0;
 			m_viewport_y0 = y0;
@@ -1034,18 +1119,18 @@ namespace gameswf
 		}
 
 
-		void	notify_mouse_state(int x, int y, int buttons)
-		// The host app uses this to tell the movie where the
-		// user's mouse pointer is.
+		void	movie_root::notify_mouse_state(int x, int y, int buttons)
+			// The host app uses this to tell the movie where the
+			// user's mouse pointer is.
 		{
 			m_mouse_x = x;
 			m_mouse_y = y;
 			m_mouse_buttons = buttons;
 		}
 
-		virtual void	get_mouse_state(int* x, int* y, int* buttons)
-		// Use this to retrieve the last state of the mouse, as set via
-		// notify_mouse_state().  Coordinates are in PIXELS, NOT TWIPS.
+		void	movie_root::get_mouse_state(int* x, int* y, int* buttons)
+			// Use this to retrieve the last state of the mouse, as set via
+			// notify_mouse_state().  Coordinates are in PIXELS, NOT TWIPS.
 		{
 			assert(x);
 			assert(y);
@@ -1056,79 +1141,79 @@ namespace gameswf
 			*buttons = m_mouse_buttons;
 		}
 
-		movie*	get_root_movie() { return m_movie.get_ptr(); }
+		movie*	movie_root::get_root_movie() { return m_movie.get_ptr(); }
 
 
-		void	stop_drag()
+		void	movie_root::stop_drag()
 		{
 			m_drag_state.m_character = NULL;
 		}
 
 
-		movie_definition*	get_movie_definition() { return m_movie->get_movie_definition(); }
+		movie_definition*	movie_root::get_movie_definition() { return m_movie->get_movie_definition(); }
 
-		uint32	get_file_bytes() const
+		uint32	movie_root::get_file_bytes() const
 		{
 			return m_def->get_file_bytes();
 		}
 
-		virtual int    add_interval_timer(void *timer)
+		int    movie_root::add_interval_timer(void *timer)
 		{
 			Timer *ptr = static_cast<Timer *>(timer);
-			
+
 			m_interval_timers.push_back(ptr);
 			return m_interval_timers.size();
 		}
-	
-		virtual void	clear_interval_timer(int x)
+
+		void	movie_root::clear_interval_timer(int x)
 		{
 			m_interval_timers.remove(x-1);
 			//m_interval_timers[x]->clearInterval();
 		}
-	
-		virtual void	do_something(void *timer)
+
+		void	movie_root::do_something(void *timer)
 		{
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 		}
-		
-		// 0-based!!
-		int	get_current_frame() const { return m_movie->get_current_frame(); }
-		float	get_frame_rate() const { return m_def->get_frame_rate(); }
 
-		virtual float	get_pixel_scale() const
-		// Return the size of a logical movie pixel as
-		// displayed on-screen, with the current device
-		// coordinates.
+		// 0-based!!
+		int	movie_root::get_current_frame() const { return m_movie->get_current_frame(); }
+		float	movie_root::get_frame_rate() const { return m_def->get_frame_rate(); }
+
+		float	movie_root::get_pixel_scale() const
+			// Return the size of a logical movie pixel as
+			// displayed on-screen, with the current device
+			// coordinates.
 		{
 			return m_pixel_scale;
 		}
 
 		// @@ Is this one necessary?
-		character*	get_character(int character_id)
+		character*	movie_root::get_character(int character_id)
 		{
 			return m_movie->get_character(character_id);
 		}
 
-		void	set_background_color(const rgba& color)
+		void	movie_root::set_background_color(const rgba& color)
 		{
 			m_background_color = color;
 		}
 
-		void	set_background_alpha(float alpha)
+		void	movie_root::set_background_alpha(float alpha)
 		{
 			m_background_color.m_a = iclamp(frnd(alpha * 255.0f), 0, 255);
 		}
 
-		float	get_background_alpha() const
+		float	movie_root::get_background_alpha() const
 		{
 			return m_background_color.m_a / 255.0f;
 		}
 
-		float	get_timer() const { return m_timer; }
+		float	movie_root::get_timer() const { return m_timer; }
 
-		void	restart() { m_movie->restart(); }
-		
-		void	advance(float delta_time)
+		void	movie_root::restart() { m_movie->restart(); }
+
+		void	movie_root::advance(float delta_time)
 		{
 			int i;
 			if (m_on_event_load_called == false)
@@ -1144,7 +1229,7 @@ namespace gameswf
 			if (m_on_event_xmlsocket_ondata_called == true) {
 				m_movie->on_event_xmlsocket_ondata();
 			}
-			
+
 			if (m_on_event_xmlsocket_onxml_called == true) {
 				m_movie->on_event_xmlsocket_onxml();
 			}
@@ -1165,8 +1250,8 @@ namespace gameswf
 					}
 				}
 			}
-			
-			
+
+
 			m_timer += delta_time;
 			// @@ TODO handle multi-frame catch-up stuff
 			// here, and make it optional.	Make
@@ -1183,11 +1268,11 @@ namespace gameswf
 		}
 
 		// 0-based!!
-		void	goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
+		void	movie_root::goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
 
-		virtual bool	has_looped() const { return m_movie->has_looped(); }
+		bool	movie_root::has_looped() const { return m_movie->has_looped(); }
 
-		void	display()
+		void	movie_root::display()
 		{
 			if (m_movie->get_visible() == false)
 			{
@@ -1207,7 +1292,7 @@ namespace gameswf
 			gameswf::render::end_display();
 		}
 
-		virtual bool	goto_labeled_frame(const char* label)
+		bool	movie_root::goto_labeled_frame(const char* label)
 		{
 			int	target_frame = -1;
 			if (m_def->get_labeled_frame(label, &target_frame))
@@ -1223,29 +1308,29 @@ namespace gameswf
 			}
 		}
 
-		virtual void	set_play_state(play_state s) { m_movie->set_play_state(s); }
-		virtual play_state	get_play_state() const { return m_movie->get_play_state(); }
+		void	movie_root::set_play_state(play_state s) { m_movie->set_play_state(s); }
+		movie_root::play_state	movie_root::get_play_state() const { return m_movie->get_play_state(); }
 
 		/* movie_root */
-		virtual void	set_variable(const char* path_to_var, const char* new_value)
+		void	movie_root::set_variable(const char* path_to_var, const char* new_value)
 		{
 			m_movie->set_variable(path_to_var, new_value);
 		}
 
 		/* movie_root */
-		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value)
+		void	movie_root::set_variable(const char* path_to_var, const wchar_t* new_value)
 		{
 			m_movie->set_variable(path_to_var, new_value);
 		}
 
-		virtual const char*	get_variable(const char* path_to_var) const
+		const char*	movie_root::get_variable(const char* path_to_var) const
 		{
 			return m_movie->get_variable(path_to_var);
 		}
 
 		/*movie_root*/
 		// For ActionScript interfacing convenience.
-		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+		const char*	movie_root::call_method(const char* method_name, const char* method_arg_fmt, ...)
 		{
 			assert(m_movie != NULL);
 
@@ -1258,29 +1343,27 @@ namespace gameswf
 		}
 
 		/*movie_root*/
-		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
+		const char*	movie_root::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		{
 			assert(m_movie != NULL);
 			return m_movie->call_method_args(method_name, method_arg_fmt, args);
 		}
 
-		virtual void	set_visible(bool visible) { m_movie->set_visible(visible); }
-		virtual bool	get_visible() const { return m_movie->get_visible(); }
+		void	movie_root::set_visible(bool visible) { m_movie->set_visible(visible); }
+		bool	movie_root::get_visible() const { return m_movie->get_visible(); }
 
-		virtual void * get_userdata() { return m_userdata; }
-		virtual void set_userdata(void * ud ) { m_userdata = ud;  }
+		void* movie_root::get_userdata() { return m_userdata; }
+		void movie_root::set_userdata(void * ud ) { m_userdata = ud;  }
 
-		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr)
+		void	movie_root::attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr)
 		{
 			m_movie->attach_display_callback(path_to_object, callback, user_ptr);
 		}
-	};
-
 
 	static void	ensure_loaders_registered()
 	{
 		static bool	s_registered = false;
-	
+
 		if (s_registered == false)
 		{
 			// Register the standard loaders.
@@ -1333,9 +1416,9 @@ namespace gameswf
 		int* frame_count,
 		int* tag_count
 		)
-	// Attempt to read the header of the given .swf movie file.
-	// Put extracted info in the given vars.
-	// Sets *version to 0 if info can't be extracted.
+		// Attempt to read the header of the given .swf movie file.
+		// Put extracted info in the given vars.
+		// Sets *version to 0 if info can't be extracted.
 	{
 		if (s_opener_function == NULL)
 		{
@@ -1360,7 +1443,7 @@ namespace gameswf
 
 		int	local_version = (header >> 24) & 255;
 		if ((header & 0x0FFFFFF) != 0x00535746
-		    && (header & 0x0FFFFFF) != 0x00535743)
+			&& (header & 0x0FFFFFF) != 0x00535743)
 		{
 			// ERROR
 			log_error("error: get_movie_info(): file '%s' does not start with a SWF header!\n", filename);
@@ -1423,7 +1506,7 @@ namespace gameswf
 
 
 	movie_definition*	create_movie(const char* filename)
-	// Create the movie definition from the specified .swf file.
+		// Create the movie definition from the specified .swf file.
 	{
 		return create_movie_sub(filename);
 	}
@@ -1435,7 +1518,7 @@ namespace gameswf
 		{
 			// Don't even have a way to open the file.
 			log_error("error: no file opener function; can't create movie.	"
-				  "See gameswf::register_file_opener_callback\n");
+				"See gameswf::register_file_opener_callback\n");
 			return NULL;
 		}
 
@@ -1465,7 +1548,7 @@ namespace gameswf
 			cache_filename += ".gsc";
 			tu_file*	cache_in = s_opener_function(cache_filename.c_str());
 			if (cache_in == NULL
-			    || cache_in->get_error() != TU_FILE_NO_ERROR)
+				|| cache_in->get_error() != TU_FILE_NO_ERROR)
 			{
 				// Can't open cache file; don't sweat it.
 				IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
@@ -1525,7 +1608,7 @@ namespace gameswf
 
 
 	void	clear()
-	// Maximum release of resources.
+		// Maximum release of resources.
 	{
 		clear_library();
 		sprite_builtins_clear();
@@ -1551,14 +1634,14 @@ namespace gameswf
 		s_extern_sprites.push_back(m);
 	}
 
-//#if 0
+	//#if 0
 	void delete_unused_root()
 	{
 		for (int i = 0; i < s_extern_sprites.size(); i++)
 		{
 			movie_interface* root_m = s_extern_sprites[i];
 			movie* m = root_m->get_root_movie();
-      
+
 			if (m->get_ref_count() < 2)
 			{
 				IF_VERBOSE_ACTION(log_msg("extern movie deleted\n"));
@@ -1568,7 +1651,7 @@ namespace gameswf
 			}
 		}
 	}
-//#endif // 0
+	//#endif // 0
 
 	movie_interface* get_current_root()
 	{
@@ -1594,52 +1677,52 @@ namespace gameswf
 	}
 
 	void	clear_library()
-	// Drop all library references to movie_definitions, so they
-	// can be cleaned up.
+		// Drop all library references to movie_definitions, so they
+		// can be cleaned up.
 	{
 		s_movie_library.clear();
 		s_movie_library_inst.clear();
 	}
 
-// tulrich: Vitaly sent this code.  I don't trust it though!  It looks
-// like it may be dropping refs in order to remove cyclic references.
-// I would rather fix the source of any cyclic references directly.
-//
-//	void clear_library()
-//	// Drop all library references to movie_definitions, so they
-//	// can be cleaned up.
-//	{
-//		{for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it =
-//			      s_movie_library_inst.begin();
-//		      it != s_movie_library_inst.end();
-//		      ++it)
-//		{
-//			smart_ptr<movie_interface> obj = it->second;
-//			while (obj->get_ref_count() > 2)	    
-//			{				
-//				obj->drop_ref();
-//			}
-//		}}
-//		s_movie_library_inst.clear();
-//   
-//		{for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = s_movie_library.begin();
-//		      it != s_movie_library.end();							      
-//		      ++it)			   
-//		{
-//			smart_ptr<movie_definition_sub> obj = it->second;
-//			while (obj->get_ref_count() > 2)		 
-//			{				
-//				obj->drop_ref();
-//			}
-//		}}
-//		s_movie_library.clear();
-//	}
+	// tulrich: Vitaly sent this code.  I don't trust it though!  It looks
+	// like it may be dropping refs in order to remove cyclic references.
+	// I would rather fix the source of any cyclic references directly.
+	//
+	//	void clear_library()
+	//	// Drop all library references to movie_definitions, so they
+	//	// can be cleaned up.
+	//	{
+	//		{for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it =
+	//			      s_movie_library_inst.begin();
+	//		      it != s_movie_library_inst.end();
+	//		      ++it)
+	//		{
+	//			smart_ptr<movie_interface> obj = it->second;
+	//			while (obj->get_ref_count() > 2)	    
+	//			{				
+	//				obj->drop_ref();
+	//			}
+	//		}}
+	//		s_movie_library_inst.clear();
+	//   
+	//		{for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = s_movie_library.begin();
+	//		      it != s_movie_library.end();							      
+	//		      ++it)			   
+	//		{
+	//			smart_ptr<movie_definition_sub> obj = it->second;
+	//			while (obj->get_ref_count() > 2)		 
+	//			{				
+	//				obj->drop_ref();
+	//			}
+	//		}}
+	//		s_movie_library.clear();
+	//	}
 
 
 	movie_definition*	create_library_movie(const char* filename)
-	// Try to load a movie from the given url, if we haven't
-	// loaded it already.  Add it to our library on success, and
-	// return a pointer to it.
+		// Try to load a movie from the given url, if we haven't
+		// loaded it already.  Add it to our library on success, and
+		// return a pointer to it.
 	{
 		return create_library_movie_sub(filename);
 	}
@@ -1677,7 +1760,7 @@ namespace gameswf
 		mov->add_ref();
 		return mov;
 	}
-	
+
 	movie_interface*	create_library_movie_inst(movie_definition* md)
 	{
 		return create_library_movie_inst_sub((movie_definition_sub*)md);
@@ -1718,8 +1801,8 @@ namespace gameswf
 
 
 	void	precompute_cached_data(movie_definition* movie_def)
-	// Fill in cached data in movie_def.
-	// @@@@ NEEDS TESTING -- MIGHT BE BROKEN!!!
+		// Fill in cached data in movie_def.
+		// @@@@ NEEDS TESTING -- MIGHT BE BROKEN!!!
 	{
 		assert(movie_def != NULL);
 
@@ -1757,7 +1840,7 @@ namespace gameswf
 			log_error("error: precompute_cached_data can't create instance of movie\n");
 			return;
 		}
-		
+
 		// Run through the movie's frames.
 		//
 		// @@ there might be cleaner ways to do this; e.g. do
@@ -1822,12 +1905,12 @@ namespace gameswf
 
 
 	void	null_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Silently ignore the contents of this tag.
+		// Silently ignore the contents of this tag.
 	{
 	}
 
 	void	frame_label_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Label the current frame of m with the name from the stream.
+		// Label the current frame of m with the name from the stream.
 	{
 		char*	n = in->read_string();
 		m->add_frame_name(n);
@@ -1855,7 +1938,7 @@ namespace gameswf
 			m_color.read_rgb(in);
 
 			IF_VERBOSE_PARSE(log_msg("  set_background_color: (%d %d %d)\n",
-						 m_color.m_r, m_color.m_g, m_color.m_b));
+				m_color.m_r, m_color.m_g, m_color.m_b));
 		}
 	};
 
@@ -1877,25 +1960,25 @@ namespace gameswf
 	{
 		bitmap_character(bitmap_info* bi)
 			:
-			m_bitmap_info(bi)
+		m_bitmap_info(bi)
 		{
 		}
 
-//		bitmap_character(image::rgb* image)
-//		{
-//			assert(image != 0);
+		//		bitmap_character(image::rgb* image)
+		//		{
+		//			assert(image != 0);
 
-//			// Create our bitmap info, from our image.
-//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
-//		}
+		//			// Create our bitmap info, from our image.
+		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
+		//		}
 
-//		bitmap_character(image::rgba* image)
-//		{
-//			assert(image != 0);
+		//		bitmap_character(image::rgba* image)
+		//		{
+		//			assert(image != 0);
 
-//			// Create our bitmap info, from our image.
-//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
-//		}
+		//			// Create our bitmap info, from our image.
+		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
+		//		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{
@@ -1908,8 +1991,8 @@ namespace gameswf
 #endif
 
 	void	jpeg_tables_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Load JPEG compression tables that can be used to load
-	// images further along in the stream.
+		// Load JPEG compression tables that can be used to load
+		// images further along in the stream.
 	{
 		assert(tag_type == 8);
 
@@ -1923,8 +2006,8 @@ namespace gameswf
 
 
 	void	define_bits_jpeg_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// A JPEG image without included tables; those should be in an
-	// existing jpeg::input object stored in the movie.
+		// A JPEG image without included tables; those should be in an
+		// existing jpeg::input object stored in the movie.
 	{
 		assert(tag_type == 6);
 
@@ -1966,7 +2049,7 @@ namespace gameswf
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		assert(tag_type == 21);
-		
+
 		Uint16	character_id = in->read_u16();
 
 		IF_VERBOSE_PARSE(log_msg("  define_bits_jpeg2_loader: charid = %d pos = 0x%x\n", character_id, in->get_position()));
@@ -1974,7 +2057,7 @@ namespace gameswf
 		//
 		// Read the image data.
 		//
-		
+
 		bitmap_info*	bi = NULL;
 
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
@@ -2003,9 +2086,9 @@ namespace gameswf
 
 #if TU_CONFIG_LINK_TO_ZLIB
 	void	inflate_wrapper(tu_file* in, void* buffer, int buffer_bytes)
-	// Wrapper function -- uses Zlib to uncompress in_bytes worth
-	// of data from the input file into buffer_bytes worth of data
-	// into *buffer.
+		// Wrapper function -- uses Zlib to uncompress in_bytes worth
+		// of data from the input file into buffer_bytes worth of data
+		// into *buffer.
 	{
 		assert(in);
 		assert(buffer);
@@ -2056,8 +2139,8 @@ namespace gameswf
 
 
 	void	define_bits_jpeg3_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// loads a define_bits_jpeg3 tag. This is a jpeg file with an alpha
-	// channel using zlib compression.
+		// loads a define_bits_jpeg3 tag. This is a jpeg file with an alpha
+		// channel using zlib compression.
 	{
 		assert(tag_type == 35);
 
@@ -2079,7 +2162,7 @@ namespace gameswf
 			//
 			// Read the image data.
 			//
-		
+
 			// Read rgb data.
 			image::rgba*	im = image::read_swf_jpeg3(in->get_underlying_stream());
 
@@ -2126,11 +2209,11 @@ namespace gameswf
 		Uint16	height = in->read_u16();
 
 		IF_VERBOSE_PARSE(log_msg("  defbitslossless2: tag_type = %d, id = %d, fmt = %d, w = %d, h = %d\n",
-				tag_type,
-				character_id,
-				bitmap_format,
-				width,
-				height));
+			tag_type,
+			character_id,
+			bitmap_format,
+			width,
+			height));
 
 		bitmap_info*	bi = NULL;
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
@@ -2188,7 +2271,7 @@ namespace gameswf
 
 					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 					assert(in->get_position() <= in->get_tag_end_position());
-			
+
 					for (int j = 0; j < height; j++)
 					{
 						Uint8*	image_in_row = buffer + j * pitch;
@@ -2196,14 +2279,14 @@ namespace gameswf
 						for (int i = 0; i < width; i++)
 						{
 							Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
-					
+
 							// @@ How is the data packed???	 I'm just guessing here that it's 565!
 							image_out_row[i * 3 + 0] = (pixel >> 8) & 0xF8;	// red
 							image_out_row[i * 3 + 1] = (pixel >> 3) & 0xFC;	// green
 							image_out_row[i * 3 + 2] = (pixel << 3) & 0xF8;	// blue
 						}
 					}
-			
+
 					delete [] buffer;
 				}
 				else if (bitmap_format == 5)
@@ -2217,7 +2300,7 @@ namespace gameswf
 
 					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 					assert(in->get_position() <= in->get_tag_end_position());
-			
+
 					// Need to re-arrange ARGB into RGB.
 					for (int j = 0; j < height; j++)
 					{
@@ -2239,12 +2322,12 @@ namespace gameswf
 					delete [] buffer;
 				}
 
-//				bitmap_character*	ch = new bitmap_character(image);
+				//				bitmap_character*	ch = new bitmap_character(image);
 				bi = render::create_bitmap_info_rgb(image);
 				delete image;
 
-//				// add image to movie, under character id.
-//				m->add_bitmap_character(character_id, ch);
+				//				// add image to movie, under character id.
+				//				m->add_bitmap_character(character_id, ch);
 			}
 			else
 			{
@@ -2298,7 +2381,7 @@ namespace gameswf
 
 					inflate_wrapper(in->get_underlying_stream(), buffer, buffer_bytes);
 					assert(in->get_position() <= in->get_tag_end_position());
-			
+
 					for (int j = 0; j < height; j++)
 					{
 						Uint8*	image_in_row = buffer + j * pitch;
@@ -2306,7 +2389,7 @@ namespace gameswf
 						for (int i = 0; i < width; i++)
 						{
 							Uint16	pixel = image_in_row[i * 2] | (image_in_row[i * 2 + 1] << 8);
-					
+
 							// @@ How is the data packed???	 I'm just guessing here that it's 565!
 							image_out_row[i * 4 + 0] = 255;			// alpha
 							image_out_row[i * 4 + 1] = (pixel >> 8) & 0xF8;	// red
@@ -2314,7 +2397,7 @@ namespace gameswf
 							image_out_row[i * 4 + 3] = (pixel << 3) & 0xF8;	// blue
 						}
 					}
-			
+
 					delete [] buffer;
 				}
 				else if (bitmap_format == 5)
@@ -2323,7 +2406,7 @@ namespace gameswf
 
 					inflate_wrapper(in->get_underlying_stream(), image->m_data, width * height * 4);
 					assert(in->get_position() <= in->get_tag_end_position());
-			
+
 					// Need to re-arrange ARGB into RGBA.
 					for (int j = 0; j < height; j++)
 					{
@@ -2343,11 +2426,11 @@ namespace gameswf
 				}
 
 				bi = render::create_bitmap_info_rgba(image);
-//				bitmap_character*	ch = new bitmap_character(image);
+				//				bitmap_character*	ch = new bitmap_character(image);
 				delete image;
 
-//				// add image to movie, under character id.
-//				m->add_bitmap_character(character_id, ch);
+				//				// add image to movie, under character id.
+				//				m->add_bitmap_character(character_id, ch);
 			}
 #endif // TU_CONFIG_LINK_TO_ZLIB
 		}
@@ -2367,8 +2450,8 @@ namespace gameswf
 	void	define_shape_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		assert(tag_type == 2
-		       || tag_type == 22
-		       || tag_type == 32);
+			|| tag_type == 22
+			|| tag_type == 32);
 
 		Uint16	character_id = in->read_u16();
 		IF_VERBOSE_PARSE(log_msg("  shape_loader: id = %d\n", character_id));
@@ -2397,12 +2480,12 @@ namespace gameswf
 
 
 	void	define_font_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Load a DefineFont or DefineFont2 tag.
+		// Load a DefineFont or DefineFont2 tag.
 	{
 		assert(tag_type == 10 || tag_type == 48);
 
 		Uint16	font_id = in->read_u16();
-		
+
 		font*	f = new font;
 		f->read(in, tag_type, m);
 
@@ -2416,13 +2499,13 @@ namespace gameswf
 
 
 	void	define_font_info_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Load a DefineFontInfo tag.  This adds information to an
-	// existing font.
+		// Load a DefineFontInfo tag.  This adds information to an
+		// existing font.
 	{
 		assert(tag_type == 13);
 
 		Uint16	font_id = in->read_u16();
-		
+
 		font*	f = m->get_font(font_id);
 		if (f)
 		{
@@ -2471,7 +2554,7 @@ namespace gameswf
 			if (flags & (flags - 1))
 			{
 				log_error("error: swf_event::read() -- more than one event type encoded!  "
-					  "unexpected! flags = 0x%x\n", flags);
+					"unexpected! flags = 0x%x\n", flags);
 			}
 
 			// 14 bits reserved, 18 bits used
@@ -2522,8 +2605,8 @@ namespace gameswf
 			if (m_action_buffer.get_length() != (int) event_length)
 			{
 				log_error("error -- swf_event::read(), event_length = %d, but read %d\n",
-					  event_length,
-					  m_action_buffer.get_length());
+					event_length,
+					m_action_buffer.get_length());
 				// @@ discard this event handler??
 			}
 
@@ -2545,7 +2628,7 @@ namespace gameswf
 	//
 	// place_object_2
 	//
-	
+
 	struct place_object_2 : public execute_tag
 	{
 		int	m_tag_type;
@@ -2568,7 +2651,7 @@ namespace gameswf
 
 		place_object_2()
 			:
-			m_tag_type(0),
+		m_tag_type(0),
 			m_name(NULL),
 			m_ratio(0),
 			m_has_matrix(false),
@@ -2607,11 +2690,11 @@ namespace gameswf
 
 				IF_VERBOSE_PARSE(
 					log_msg("  char_id = %d\n"
-						"  depth = %d\n"
-						"  mat = \n",
-						m_character_id,
-						m_depth);
-					m_matrix.print());
+					"  depth = %d\n"
+					"  mat = \n",
+					m_character_id,
+					m_depth);
+				m_matrix.print());
 
 				if (in->get_position() < in->get_tag_end_position())
 				{
@@ -2650,12 +2733,12 @@ namespace gameswf
 					m_color_transform.read_rgba(in);
 					IF_VERBOSE_PARSE(log_msg("  cxform:\n"); m_color_transform.print());
 				}
-				
+
 				if (has_ratio) {
 					m_ratio = (float)in->read_u16() / (float)65535;
 					IF_VERBOSE_PARSE(log_msg("  ratio: %f\n", m_ratio));
 				}
-				
+
 				if (has_name) {
 					m_name = in->read_string();
 					IF_VERBOSE_PARSE(log_msg("  name = %s\n", m_name ? m_name : "<null>"));
@@ -2729,14 +2812,14 @@ namespace gameswf
 					// Put m_character at m_depth.
 					m_place_type = PLACE;
 				}
-				
+
 				//log_msg("place object at depth %i\n", m_depth);
 			}
 		}
 
-		
+
 		void	execute(movie* m)
-		// Place/move/whatever our object in the given movie.
+			// Place/move/whatever our object in the given movie.
 		{
 			switch (m_place_type)
 			{
@@ -2806,26 +2889,26 @@ namespace gameswf
 				break;
 
 			case REPLACE:
-			{
-				// reverse of replace is to re-add the previous object.
-				execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, -1);
-				if (last_add)
 				{
-					last_add->execute_state(m);
+					// reverse of replace is to re-add the previous object.
+					execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, -1);
+					if (last_add)
+					{
+						last_add->execute_state(m);
+					}
+					else
+					{
+						log_error("reverse REPLACE can't find previous replace or add tag(%d, %d)\n",
+							frame, m_depth);
+
+					}
+					break;
 				}
-				else
-				{
-					log_error("reverse REPLACE can't find previous replace or add tag(%d, %d)\n",
-						  frame, m_depth);
-					
-				}
-				break;
-			}
 			}
 		}
 
 		virtual uint32	get_depth_id_of_replace_or_add_tag() const
-		// "depth_id" is the 16-bit depth & id packed into one 32-bit int.
+			// "depth_id" is the 16-bit depth & id packed into one 32-bit int.
 		{
 			if (m_place_type == PLACE || m_place_type == REPLACE)
 			{
@@ -2846,7 +2929,7 @@ namespace gameswf
 	};
 
 
-	
+
 	void	place_object_2_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		assert(tag_type == 4 || tag_type == 26);
@@ -2885,7 +2968,7 @@ namespace gameswf
 		int			     m_loading_frame;
 		sprite_definition(movie_definition_sub* m)
 			:
-			m_movie_def(m),
+		m_movie_def(m),
 			m_frame_count(0),
 			m_loading_frame(0)
 		{
@@ -2975,9 +3058,9 @@ namespace gameswf
 
 		/* sprite_definition */
 		virtual void	add_frame_name(const char* name)
-		// Labels the frame currently being loaded with the
-		// given name.	A copy of the name string is made and
-		// kept in this object.
+			// Labels the frame currently being loaded with the
+			// given name.	A copy of the name string is made and
+			// kept in this object.
 		{
 			assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
 
@@ -2986,22 +3069,22 @@ namespace gameswf
 			if (m_named_frames.get(n, &currently_assigned) == true)
 			{
 				log_error("add_frame_name(%d, '%s') -- frame name already assigned to frame %d; overriding\n",
-					  m_loading_frame,
-					  name,
-					  currently_assigned);
+					m_loading_frame,
+					name,
+					currently_assigned);
 			}
 			m_named_frames.set(n, m_loading_frame);	// stores 0-based frame #
 		}
 
 		/* sprite_definition */
 		bool	get_labeled_frame(const char* label, int* frame_number)
-		// Returns 0-based frame #
+			// Returns 0-based frame #
 		{
 			return m_named_frames.get(label, frame_number);
 		}
 
 		const array<execute_tag*>&	get_playlist(int frame_number)
-		// frame_number is 0-based
+			// frame_number is 0-based
 		{
 			return m_playlist[frame_number];
 		}
@@ -3018,7 +3101,7 @@ namespace gameswf
 
 		/* sprite_definition */
 		void	read(stream* in)
-		// Read the sprite info.  Consists of a series of tags.
+			// Read the sprite info.  Consists of a series of tags.
 		{
 			int	tag_end = in->get_tag_end_position();
 
@@ -3098,7 +3181,7 @@ namespace gameswf
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
 			:
-			character(parent, id),
+		character(parent, id),
 			m_def(def),
 			m_root(r),
 			m_play_state(PLAY),
@@ -3111,7 +3194,7 @@ namespace gameswf
 		{
 			assert(m_def != NULL);
 			assert(m_root != NULL);
-			
+
 			//m_root->add_ref();	// @@ circular!
 			m_as_environment.set_target(this);
 
@@ -3120,7 +3203,7 @@ namespace gameswf
 			// Initialize the flags for init action executed.
 			m_init_actions_executed.resize(m_def->get_frame_count());
 			memset(&m_init_actions_executed[0], 0,
-			       sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
+				sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 		}
 
 		// sprite instance of add_interval_handler()
@@ -3135,7 +3218,7 @@ namespace gameswf
 			// log_msg("FIXME: %s:\n", __FUNCTION__);
 			m_root->clear_interval_timer(x);
 		}
-	
+
 
 		/* sprite_instance */
 		virtual void	do_something(void *timer)
@@ -3153,14 +3236,14 @@ namespace gameswf
 			this_ptr = ptr->getASObject();
 			obj = ptr->getObject();
 			//m_as_environment.push(obj);
-			
+
 			as_c_function_ptr	cfunc = timer_method.to_c_function();
 			if (cfunc) {
 				// It's a C function. Call it.
 				//log_msg("Calling C function for interval timer\n");
 				//(*cfunc)(&val, obj, as_env, 0, 0);
 				(*cfunc)(fn_call(&val, obj, &m_as_environment, 0, 0));
-				
+
 			} else if (as_as_function* as_func = timer_method.to_as_function()) {
 				// It's an ActionScript function. Call it.
 				as_value method;
@@ -3231,7 +3314,7 @@ namespace gameswf
 		int	get_frame_count() const { return m_def->get_frame_count(); }
 
 		void	set_play_state(play_state s)
-		// Stop or play the sprite.
+			// Stop or play the sprite.
 		{
 			if (m_play_state != s)
 			{
@@ -3245,7 +3328,7 @@ namespace gameswf
 
 		character*	get_character(int character_id)
 		{
-//			return m_def->get_character_def(character_id);
+			//			return m_def->get_character_def(character_id);
 			// @@ TODO -- look through our dlist for a match
 			return NULL;
 		}
@@ -3288,14 +3371,14 @@ namespace gameswf
 		virtual bool	get_accept_anim_moves() const { return m_accept_anim_moves; }
 
 		inline int	transition(int a, int b) const
-		// Combine the flags to avoid a conditional. It would be faster with a macro.
+			// Combine the flags to avoid a conditional. It would be faster with a macro.
 		{
 			return (a << 2) | b;
 		}
 
 
 		bool can_handle_mouse_event()
-		// Return true if we have any mouse event handlers.
+			// Return true if we have any mouse event handlers.
 		{
 			// We should cache this!
 			as_value dummy;
@@ -3335,13 +3418,13 @@ namespace gameswf
 
 			return false;
 		}
-		
+
 
 		/* sprite_instance */
 		virtual movie*	get_topmost_mouse_entity(float x, float y)
-		// Return the topmost entity that the given point
-		// covers that can receive mouse events.  NULL if
-		// none.  Coords are in parent's frame.
+			// Return the topmost entity that the given point
+			// covers that can receive mouse events.  NULL if
+			// none.  Coords are in parent's frame.
 		{
 			if (get_visible() == false) {
 				return NULL;
@@ -3356,7 +3439,7 @@ namespace gameswf
 			for (i = n - 1; i >= 0; i--)
 			{
 				character* ch = m_display_list.get_character(i);
-				
+
 				if (ch != NULL && ch->get_visible())
 				{
 					movie*	te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
@@ -3379,7 +3462,7 @@ namespace gameswf
 
 		/* sprite_instance */
 		void	increment_frame_and_check_for_loop()
-		// Increment m_current_frame, and take care of looping.
+			// Increment m_current_frame, and take care of looping.
 		{
 			m_current_frame++;
 
@@ -3451,8 +3534,8 @@ namespace gameswf
 
 		/*sprite_instance*/
 		void	execute_frame_tags(int frame, bool state_only = false)
-		// Execute the tags associated with the specified frame.
-		// frame is 0-based
+			// Execute the tags associated with the specified frame.
+			// frame is 0-based
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
 			smart_ptr<as_object_interface>	this_ptr(this);
@@ -3497,11 +3580,11 @@ namespace gameswf
 
 		/*sprite_instance*/
 		void	execute_frame_tags_reverse(int frame)
-		// Execute the tags associated with the specified frame, IN REVERSE.
-		// I.e. if it's an "add" tag, then we do a "remove" instead.
-		// Only relevant to the display-list manipulation tags: add, move, remove, replace.
-		//
-		// frame is 0-based
+			// Execute the tags associated with the specified frame, IN REVERSE.
+			// I.e. if it's an "add" tag, then we do a "remove" instead.
+			// Only relevant to the display-list manipulation tags: add, move, remove, replace.
+			//
+			// frame is 0-based
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
 			smart_ptr<as_object_interface>	this_ptr(this);
@@ -3517,7 +3600,7 @@ namespace gameswf
 			}
 		}
 
-		
+
 		/*sprite_instance*/
 		execute_tag*	find_previous_replace_or_add_tag(int frame, int depth, int id)
 		{
@@ -3542,8 +3625,8 @@ namespace gameswf
 
 		/*sprite_instance*/
 		void	execute_remove_tags(int frame)
-		// Execute any remove-object tags associated with the specified frame.
-		// frame is 0-based
+			// Execute any remove-object tags associated with the specified frame.
+			// frame is 0-based
 		{
 			assert(frame >= 0);
 			assert(frame < m_def->get_frame_count());
@@ -3562,7 +3645,7 @@ namespace gameswf
 
 		/*sprite_instance*/
 		void	do_actions()
-		// Take care of this frame's actions.
+			// Take care of this frame's actions.
 		{
 			// Keep m_as_environment alive during any method calls!
 			smart_ptr<as_object_interface>	this_ptr(this);
@@ -3574,10 +3657,10 @@ namespace gameswf
 
 		/*sprite_instance*/
 		void	goto_frame(int target_frame_number)
-		// Set the sprite state at the specified frame number.
-		// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
+			// Set the sprite state at the specified frame number.
+			// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
 		{
-//			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
+			//			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
 
 			target_frame_number = iclamp(target_frame_number, 0, m_def->get_frame_count() - 1);
 
@@ -3610,7 +3693,7 @@ namespace gameswf
 
 
 		bool	goto_labeled_frame(const char* label)
-		// Look up the labeled frame, and jump to it.
+			// Look up the labeled frame, and jump to it.
 		{
 			int	target_frame = -1;
 			if (m_def->get_labeled_frame(label, &target_frame))
@@ -3626,7 +3709,7 @@ namespace gameswf
 			}
 		}
 
-		
+
 		/*sprite_instance*/
 		void	display()
 		{
@@ -3652,7 +3735,7 @@ namespace gameswf
 			const matrix& matrix,
 			float ratio,
 			Uint16 clip_depth)
-		// Add an object to the display list.
+			// Add an object to the display list.
 		{
 			assert(m_def != NULL);
 
@@ -3668,11 +3751,11 @@ namespace gameswf
 			// it.
 			character*	existing_char = m_display_list.get_character_at_depth(depth);
 			if (existing_char
-			    && existing_char->get_id() == character_id
-			    && ((name == NULL && existing_char->get_name().length() == 0)
+				&& existing_char->get_id() == character_id
+				&& ((name == NULL && existing_char->get_name().length() == 0)
 				|| (name && existing_char->get_name() == name)))
 			{
-//				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
+				//				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
 				move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
 				return NULL;
 			}
@@ -3714,8 +3797,8 @@ namespace gameswf
 			const matrix& mat,
 			float ratio,
 			Uint16 clip_depth)
-		// Updates the transform properties of the object at
-		// the specified depth.
+			// Updates the transform properties of the object at
+			// the specified depth.
 		{
 			m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio, clip_depth);
 		}
@@ -3797,8 +3880,8 @@ namespace gameswf
 
 		/*sprite_instance*/
 		void	remove_display_object(Uint16 depth, int id)
-		// Remove the object at the specified depth.
-		// If id != -1, then only remove the object at depth with matching id.
+			// Remove the object at the specified depth.
+			// If id != -1, then only remove the object at depth with matching id.
 		{
 			m_display_list.remove_display_object(depth, id);
 		}
@@ -3806,9 +3889,9 @@ namespace gameswf
 
 		/*sprite_instance*/
 		void	add_action_buffer(action_buffer* a)
-		// Add the given action buffer to the list of action
-		// buffers to be processed at the end of the next
-		// frame advance.
+			// Add the given action buffer to the list of action
+			// buffers to be processed at the end of the next
+			// frame advance.
 		{
 			m_action_list.push_back(a);
 		}
@@ -3816,8 +3899,8 @@ namespace gameswf
 
 		/*sprite_instance*/
 		int	get_id_at_depth(int depth)
-		// For debugging -- return the id of the character at the specified depth.
-		// Return -1 if nobody's home.
+			// For debugging -- return the id of the character at the specified depth.
+			// Return -1 if nobody's home.
 		{
 			int	index = m_display_list.get_display_index(depth);
 			if (index == -1)
@@ -3901,11 +3984,11 @@ namespace gameswf
 			return val.to_string();	// ack!
 		}
 
-		
+
 		/* sprite_instance */
 		virtual void	set_member(const tu_stringi& name, const as_value& val)
-		// Set the named member to the value.  Return true if we have
-		// that member; false otherwise.
+			// Set the named member to the value.  Return true if we have
+			// that member; false otherwise.
 		{
 			as_standard_member	std_member = get_standard_member(name);
 			switch (std_member)
@@ -3915,141 +3998,141 @@ namespace gameswf
 				break;
 			case M_X:
 				//if (name == "_x")
-			{
-				matrix	m = get_matrix();
-				m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-				set_matrix(m);
+				{
+					matrix	m = get_matrix();
+					m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					set_matrix(m);
 
-				m_accept_anim_moves = false;
+					m_accept_anim_moves = false;
 
-				return;
-			}
+					return;
+				}
 			case M_Y:
 				//else if (name == "_y")
-			{
-				matrix	m = get_matrix();
-				m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-				set_matrix(m);
+				{
+					matrix	m = get_matrix();
+					m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					set_matrix(m);
 
-				m_accept_anim_moves = false;
+					m_accept_anim_moves = false;
 
-				return;
-			}
+					return;
+				}
 			case M_XSCALE:
 				//else if (name == "_xscale")
-			{
-				matrix	m = get_matrix();
+				{
+					matrix	m = get_matrix();
 
-				// Decompose matrix and insert the desired value.
-				float	x_scale = (float) val.to_number() / 100.f;	// input is in percent
-				float	y_scale = m.get_y_scale();
-				float	rotation = m.get_rotation();
-				m.set_scale_rotation(x_scale, y_scale, rotation);
+					// Decompose matrix and insert the desired value.
+					float	x_scale = (float) val.to_number() / 100.f;	// input is in percent
+					float	y_scale = m.get_y_scale();
+					float	rotation = m.get_rotation();
+					m.set_scale_rotation(x_scale, y_scale, rotation);
 
-				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
+					set_matrix(m);
+					m_accept_anim_moves = false;
+					return;
+				}
 			case M_YSCALE:
 				//else if (name == "_yscale")
-			{
-				matrix	m = get_matrix();
+				{
+					matrix	m = get_matrix();
 
-				// Decompose matrix and insert the desired value.
-				float	x_scale = m.get_x_scale();
-				float	y_scale = (float) val.to_number() / 100.f;	// input is in percent
-				float	rotation = m.get_rotation();
-				m.set_scale_rotation(x_scale, y_scale, rotation);
+					// Decompose matrix and insert the desired value.
+					float	x_scale = m.get_x_scale();
+					float	y_scale = (float) val.to_number() / 100.f;	// input is in percent
+					float	rotation = m.get_rotation();
+					m.set_scale_rotation(x_scale, y_scale, rotation);
 
-				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
+					set_matrix(m);
+					m_accept_anim_moves = false;
+					return;
+				}
 			case M_ALPHA:
 				//else if (name == "_alpha")
-			{
-				// Set alpha modulate, in percent.
-				cxform	cx = get_cxform();
-				cx.m_[3][0] = float(val.to_number()) / 100.f;
-				set_cxform(cx);
-				m_accept_anim_moves = false;
-				return;
-			}
+				{
+					// Set alpha modulate, in percent.
+					cxform	cx = get_cxform();
+					cx.m_[3][0] = float(val.to_number()) / 100.f;
+					set_cxform(cx);
+					m_accept_anim_moves = false;
+					return;
+				}
 			case M_VISIBLE:
 				//else if (name == "_visible")
-			{
-				set_visible(val.to_bool());
-				m_accept_anim_moves = false;
-				return;
-			}
+				{
+					set_visible(val.to_bool());
+					m_accept_anim_moves = false;
+					return;
+				}
 			case M_WIDTH:
 				//else if (name == "_width")
-			{
-				// @@ tulrich: is parameter in world-coords or local-coords?
-				matrix	m = get_matrix();
-				m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number()));
-				float w = get_width();
-				if (fabsf(w) > 1e-6f)
 				{
-					 m.m_[0][0] /= w;
+					// @@ tulrich: is parameter in world-coords or local-coords?
+					matrix	m = get_matrix();
+					m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number()));
+					float w = get_width();
+					if (fabsf(w) > 1e-6f)
+					{
+						m.m_[0][0] /= w;
+					}
+					set_matrix(m);
+					m_accept_anim_moves = false;
+					return;
 				}
-				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
 			case M_HEIGHT:
 				//else if (name == "_height")
-			{
-				// @@ tulrich: is parameter in world-coords or local-coords?
-				matrix	m = get_matrix();
-				m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number()));
-				float h = get_width();
-				if (fabsf(h) > 1e-6f)
 				{
-					m.m_[1][1] /= h;
+					// @@ tulrich: is parameter in world-coords or local-coords?
+					matrix	m = get_matrix();
+					m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number()));
+					float h = get_width();
+					if (fabsf(h) > 1e-6f)
+					{
+						m.m_[1][1] /= h;
+					}
+					set_matrix(m);
+					m_accept_anim_moves = false;
+					return;
 				}
-				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
 			case M_ROTATION:
 				//else if (name == "_rotation")
-			{
-				matrix	m = get_matrix();
+				{
+					matrix	m = get_matrix();
 
-				// Decompose matrix and insert the desired value.
-				float	x_scale = m.get_x_scale();
-				float	y_scale = m.get_y_scale();
-				float	rotation = (float) val.to_number() * float(M_PI) / 180.f;	// input is in degrees
-				m.set_scale_rotation(x_scale, y_scale, rotation);
+					// Decompose matrix and insert the desired value.
+					float	x_scale = m.get_x_scale();
+					float	y_scale = m.get_y_scale();
+					float	rotation = (float) val.to_number() * float(M_PI) / 180.f;	// input is in degrees
+					m.set_scale_rotation(x_scale, y_scale, rotation);
 
-				set_matrix(m);
-				m_accept_anim_moves = false;
-				return;
-			}
+					set_matrix(m);
+					m_accept_anim_moves = false;
+					return;
+				}
 			case M_HIGHQUALITY:
 				//else if (name == "_highquality")
-			{
-				// @@ global { 0, 1, 2 }
-//				// Whether we're in high quality mode or not.
-//				val->set(true);
-				return;
-			}
+				{
+					// @@ global { 0, 1, 2 }
+					//				// Whether we're in high quality mode or not.
+					//				val->set(true);
+					return;
+				}
 			case M_FOCUSRECT:
 				//else if (name == "_focusrect")
-			{
-//				// Is a yellow rectangle visible around a focused movie clip (?)
-//				val->set(false);
-				return;
-			}
+				{
+					//				// Is a yellow rectangle visible around a focused movie clip (?)
+					//				val->set(false);
+					return;
+				}
 			case M_SOUNDBUFTIME:
 				//else if (name == "_soundbuftime")
-			{
-				// @@ global
-//				// Number of seconds before sound starts to stream.
-//				val->set(0.0);
-				return;
-			}
+				{
+					// @@ global
+					//				// Number of seconds before sound starts to stream.
+					//				val->set(0.0);
+					return;
+				}
 			}	// end switch
 
 			// Not a built-in property.  See if we have a
@@ -4082,9 +4165,9 @@ namespace gameswf
 
 		/* sprite_instance */
 		virtual bool	get_member(const tu_stringi& name, as_value* val)
-		// Set *val to the value of the named member and
-		// return true, if we have the named member.
-		// Otherwise leave *val alone and return false.
+			// Set *val to the value of the named member and
+			// return true, if we have the named member.
+			// Otherwise leave *val alone and return false.
 		{
 			as_standard_member	std_member = get_standard_member(name);
 			switch (std_member)
@@ -4094,210 +4177,210 @@ namespace gameswf
 				break;
 			case M_X:
 				//if (name == "_x")
-			{
-				matrix	m = get_matrix();
-				val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
-				return true;
-			}
-			case M_Y:
-				//else if (name == "_y")
-			{
-				matrix	m = get_matrix();
-				val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
-				return true;
-			}
-			case M_XSCALE:
-				//else if (name == "_xscale")
-			{
-				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
-				float xscale = m.get_x_scale();
-				val->set_double(xscale * 100);		// result in percent
-				return true;
-			}
-			case M_YSCALE:
-				//else if (name == "_yscale")
-			{
-				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
-				float yscale = m.get_y_scale();
-				val->set_double(yscale * 100);		// result in percent
-				return true;
-			}
-			case M_CURRENTFRAME:
-				//else if (name == "_currentframe")
-			{
-				val->set_int(m_current_frame + 1);
-				return true;
-			}
-			case M_TOTALFRAMES:
-				//else if (name == "_totalframes")
-			{
-				// number of frames.  Read only.
-				val->set_int(m_def->get_frame_count());
-				return true;
-			}
-			case M_ALPHA:
-				//else if (name == "_alpha")
-			{
-				// Alpha units are in percent.
-				val->set_double(get_cxform().m_[3][0] * 100.f);
-				return true;
-			}
-			case M_VISIBLE:
-				//else if (name == "_visible")
-			{
-				val->set_bool(get_visible());
-				return true;
-			}
-			case M_WIDTH:
-				//else if (name == "_width")
-			{
-				matrix	m = get_world_matrix();
-				rect	transformed_rect;
-
-				// @@ not sure about this...
-				rect	source_rect;
-				source_rect.m_x_min = 0;
-				source_rect.m_y_min = 0;
-				source_rect.m_x_max = (float) get_width();
-				source_rect.m_y_max = (float) get_height();
-
-				transformed_rect.enclose_transformed_rect(get_world_matrix(), source_rect);
-				val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
-				return true;
-			}
-			case M_HEIGHT:
-				//else if (name == "_height")
-			{
-				rect	transformed_rect;
-
-				// @@ not sure about this...
-				rect	source_rect;
-				source_rect.m_x_min = 0;
-				source_rect.m_y_min = 0;
-				source_rect.m_x_max = (float) get_width();
-				source_rect.m_y_max = (float) get_height();
-
-				transformed_rect.enclose_transformed_rect(get_world_matrix(), source_rect);
-				val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
-				return true;
-			}
-			case M_ROTATION:
-				//else if (name == "_rotation")
-			{
-				// Verified against Macromedia player using samples/test_rotation.swf
-				float	angle = get_matrix().get_rotation();
-
-				// Result is CLOCKWISE DEGREES, [-180,180]
-				angle *= 180.0f / float(M_PI);
-
-				val->set_double(angle);
-				return true;
-			}
-			case M_TARGET:
-				//else if (name == "_target")
-			{
-				// Full path to this object; e.g. "/_level0/sprite1/sprite2/ourSprite"
-				val->set_string("/_root");
-				return true;
-			}
-			case M_FRAMESLOADED:
-				//else if (name == "_framesloaded")
-			{
-				val->set_int(m_def->get_frame_count());
-				return true;
-			}
-			case M_NAME:
-				//else if (name == "_name")
-			{
-				val->set_tu_string(get_name());
-				return true;
-			}
-			case M_DROPTARGET:
-				//else if (name == "_droptarget")
-			{
-				// Absolute path in slash syntax where we were last dropped (?)
-				// @@ TODO
-				val->set_string("/_root");
-				return true;
-			}
-			case M_URL:
-				//else if (name == "_url")
-			{
-				// our URL.
-				val->set_string("gameswf");
-				return true;
-			}
-			case M_HIGHQUALITY:
-				//else if (name == "_highquality")
-			{
-				// Whether we're in high quality mode or not.
-				val->set_bool(true);
-				return true;
-			}
-			case M_FOCUSRECT:
-				//else if (name == "_focusrect")
-			{
-				// Is a yellow rectangle visible around a focused movie clip (?)
-				val->set_bool(false);
-				return true;
-			}
-			case M_SOUNDBUFTIME:
-				//else if (name == "_soundbuftime")
-			{
-				// Number of seconds before sound starts to stream.
-				val->set_double(0.0);
-				return true;
-			}
-			case M_XMOUSE:
-				//else if (name == "_xmouse")
-			{
-				// Local coord of mouse IN PIXELS.
-				int	x, y, buttons;
-				assert(m_root);
-				m_root->get_mouse_state(&x, &y, &buttons);
-
-				matrix	m = get_world_matrix();
-
-				point	a(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
-				point	b;
-				
-				m.transform_by_inverse(&b, a);
-
-				val->set_double(TWIPS_TO_PIXELS(b.m_x));
-				return true;
-			}
-			case M_YMOUSE:
-				//else if (name == "_ymouse")
-			{
-				// Local coord of mouse IN PIXELS.
-				int	x, y, buttons;
-				assert(m_root);
-				m_root->get_mouse_state(&x, &y, &buttons);
-
-				matrix	m = get_world_matrix();
-
-				point	a(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
-				point	b;
-				
-				m.transform_by_inverse(&b, a);
-
-				val->set_double(TWIPS_TO_PIXELS(b.m_y));
-				return true;
-			}
-			case M_PARENT:
-			{
-				val->set_as_object_interface(static_cast<as_object_interface*>(m_parent));
-				return true;
-			}
-			case M_ONLOAD:
-			{
-				if (m_as_environment.get_member(name, val))
 				{
+					matrix	m = get_matrix();
+					val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
 					return true;
 				}
-				// Optimization: if no hit, don't bother looking in the display list, etc.
-				return false;
-			}
+			case M_Y:
+				//else if (name == "_y")
+				{
+					matrix	m = get_matrix();
+					val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
+					return true;
+				}
+			case M_XSCALE:
+				//else if (name == "_xscale")
+				{
+					matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
+					float xscale = m.get_x_scale();
+					val->set_double(xscale * 100);		// result in percent
+					return true;
+				}
+			case M_YSCALE:
+				//else if (name == "_yscale")
+				{
+					matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
+					float yscale = m.get_y_scale();
+					val->set_double(yscale * 100);		// result in percent
+					return true;
+				}
+			case M_CURRENTFRAME:
+				//else if (name == "_currentframe")
+				{
+					val->set_int(m_current_frame + 1);
+					return true;
+				}
+			case M_TOTALFRAMES:
+				//else if (name == "_totalframes")
+				{
+					// number of frames.  Read only.
+					val->set_int(m_def->get_frame_count());
+					return true;
+				}
+			case M_ALPHA:
+				//else if (name == "_alpha")
+				{
+					// Alpha units are in percent.
+					val->set_double(get_cxform().m_[3][0] * 100.f);
+					return true;
+				}
+			case M_VISIBLE:
+				//else if (name == "_visible")
+				{
+					val->set_bool(get_visible());
+					return true;
+				}
+			case M_WIDTH:
+				//else if (name == "_width")
+				{
+					matrix	m = get_world_matrix();
+					rect	transformed_rect;
+
+					// @@ not sure about this...
+					rect	source_rect;
+					source_rect.m_x_min = 0;
+					source_rect.m_y_min = 0;
+					source_rect.m_x_max = (float) get_width();
+					source_rect.m_y_max = (float) get_height();
+
+					transformed_rect.enclose_transformed_rect(get_world_matrix(), source_rect);
+					val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
+					return true;
+				}
+			case M_HEIGHT:
+				//else if (name == "_height")
+				{
+					rect	transformed_rect;
+
+					// @@ not sure about this...
+					rect	source_rect;
+					source_rect.m_x_min = 0;
+					source_rect.m_y_min = 0;
+					source_rect.m_x_max = (float) get_width();
+					source_rect.m_y_max = (float) get_height();
+
+					transformed_rect.enclose_transformed_rect(get_world_matrix(), source_rect);
+					val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
+					return true;
+				}
+			case M_ROTATION:
+				//else if (name == "_rotation")
+				{
+					// Verified against Macromedia player using samples/test_rotation.swf
+					float	angle = get_matrix().get_rotation();
+
+					// Result is CLOCKWISE DEGREES, [-180,180]
+					angle *= 180.0f / float(M_PI);
+
+					val->set_double(angle);
+					return true;
+				}
+			case M_TARGET:
+				//else if (name == "_target")
+				{
+					// Full path to this object; e.g. "/_level0/sprite1/sprite2/ourSprite"
+					val->set_string("/_root");
+					return true;
+				}
+			case M_FRAMESLOADED:
+				//else if (name == "_framesloaded")
+				{
+					val->set_int(m_def->get_frame_count());
+					return true;
+				}
+			case M_NAME:
+				//else if (name == "_name")
+				{
+					val->set_tu_string(get_name());
+					return true;
+				}
+			case M_DROPTARGET:
+				//else if (name == "_droptarget")
+				{
+					// Absolute path in slash syntax where we were last dropped (?)
+					// @@ TODO
+					val->set_string("/_root");
+					return true;
+				}
+			case M_URL:
+				//else if (name == "_url")
+				{
+					// our URL.
+					val->set_string("gameswf");
+					return true;
+				}
+			case M_HIGHQUALITY:
+				//else if (name == "_highquality")
+				{
+					// Whether we're in high quality mode or not.
+					val->set_bool(true);
+					return true;
+				}
+			case M_FOCUSRECT:
+				//else if (name == "_focusrect")
+				{
+					// Is a yellow rectangle visible around a focused movie clip (?)
+					val->set_bool(false);
+					return true;
+				}
+			case M_SOUNDBUFTIME:
+				//else if (name == "_soundbuftime")
+				{
+					// Number of seconds before sound starts to stream.
+					val->set_double(0.0);
+					return true;
+				}
+			case M_XMOUSE:
+				//else if (name == "_xmouse")
+				{
+					// Local coord of mouse IN PIXELS.
+					int	x, y, buttons;
+					assert(m_root);
+					m_root->get_mouse_state(&x, &y, &buttons);
+
+					matrix	m = get_world_matrix();
+
+					point	a(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
+					point	b;
+
+					m.transform_by_inverse(&b, a);
+
+					val->set_double(TWIPS_TO_PIXELS(b.m_x));
+					return true;
+				}
+			case M_YMOUSE:
+				//else if (name == "_ymouse")
+				{
+					// Local coord of mouse IN PIXELS.
+					int	x, y, buttons;
+					assert(m_root);
+					m_root->get_mouse_state(&x, &y, &buttons);
+
+					matrix	m = get_world_matrix();
+
+					point	a(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
+					point	b;
+
+					m.transform_by_inverse(&b, a);
+
+					val->set_double(TWIPS_TO_PIXELS(b.m_y));
+					return true;
+				}
+			case M_PARENT:
+				{
+					val->set_as_object_interface(static_cast<as_object_interface*>(m_parent));
+					return true;
+				}
+			case M_ONLOAD:
+				{
+					if (m_as_environment.get_member(name, val))
+					{
+						return true;
+					}
+					// Optimization: if no hit, don't bother looking in the display list, etc.
+					return false;
+				}
 			}	// end switch
 
 			// Try variables.
@@ -4329,24 +4412,24 @@ namespace gameswf
 
 		/* sprite_instance */
 		virtual movie*	get_relative_target(const tu_string& name)
-		// Find the movie which is one degree removed from us,
-		// given the relative pathname.
-		//
-		// If the pathname is "..", then return our parent.
-		// If the pathname is ".", then return ourself.	 If
-		// the pathname is "_level0" or "_root", then return
-		// the root movie.
-		//
-		// Otherwise, the name should refer to one our our
-		// named characters, so we return it.
-		//
-		// NOTE: In ActionScript 2.0, top level names (like
-		// "_root" and "_level0") are CASE SENSITIVE.
-		// Character names in a display list are CASE
-		// SENSITIVE. Member names are CASE INSENSITIVE.  Gah.
-		//
-		// In ActionScript 1.0, everything seems to be CASE
-		// INSENSITIVE.
+			// Find the movie which is one degree removed from us,
+			// given the relative pathname.
+			//
+			// If the pathname is "..", then return our parent.
+			// If the pathname is ".", then return ourself.	 If
+			// the pathname is "_level0" or "_root", then return
+			// the root movie.
+			//
+			// Otherwise, the name should refer to one our our
+			// named characters, so we return it.
+			//
+			// NOTE: In ActionScript 2.0, top level names (like
+			// "_root" and "_level0") are CASE SENSITIVE.
+			// Character names in a display list are CASE
+			// SENSITIVE. Member names are CASE INSENSITIVE.  Gah.
+			//
+			// In ActionScript 1.0, everything seems to be CASE
+			// INSENSITIVE.
 		{
 			if (name == "." || name == "this")
 			{
@@ -4357,7 +4440,7 @@ namespace gameswf
 				return get_parent();
 			}
 			else if (name == "_level0"
-				 || name == "_root")
+				|| name == "_root")
 			{
 				return m_root->m_movie.get_ptr();
 			}
@@ -4369,8 +4452,8 @@ namespace gameswf
 
 		/* sprite_instance */
 		virtual void	call_frame_actions(const as_value& frame_spec)
-		// Execute the actions for the specified frame.	 The
-		// frame_spec could be an integer or a string.
+			// Execute the actions for the specified frame.	 The
+			// frame_spec could be an integer or a string.
 		{
 			int	frame_number = -1;
 
@@ -4430,7 +4513,7 @@ namespace gameswf
 		virtual void	stop_drag()
 		{
 			assert(m_parent == NULL);	// we must be the root movie!!!
-			
+
 			m_root->stop_drag();
 		}
 
@@ -4443,8 +4526,8 @@ namespace gameswf
 
 
 		void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth)
-		// Duplicate the object with the specified name and add it with a new name 
-		// at a new depth.
+			// Duplicate the object with the specified name and add it with a new name 
+			// at a new depth.
 		{
 			character* ch = m_display_list.get_character_by_name(name);
 			if (ch)
@@ -4468,7 +4551,7 @@ namespace gameswf
 
 
 		void	remove_display_object(const tu_string& name)
-		// Remove the object with the specified name.
+			// Remove the object with the specified name.
 		{
 			character* ch = m_display_list.get_character_by_name(name);
 			if (ch)
@@ -4479,16 +4562,16 @@ namespace gameswf
 			}
 		}
 
-		
+
 		/* sprite_instance */
 		virtual bool	on_event(event_id id)
-		// Dispatch event handler(s), if any.
+			// Dispatch event handler(s), if any.
 		{
 			// Keep m_as_environment alive during any method calls!
 			smart_ptr<as_object_interface>	this_ptr(this);
 
 			bool called = false;
-			
+
 			// First, check for built-in event handler.
 			{
 				as_value	method;
@@ -4526,10 +4609,10 @@ namespace gameswf
 
 		/*sprite_instance*/
 		virtual void	on_event_load()
-		// Do the events that (appear to) happen as the movie
-		// loads.  frame1 tags and actions are executed (even
-		// before advance() is called).	 Then the onLoad event
-		// is triggered.
+			// Do the events that (appear to) happen as the movie
+			// loads.  frame1 tags and actions are executed (even
+			// before advance() is called).	 Then the onLoad event
+			// is triggered.
 		{
 			execute_frame_tags(0);
 			do_actions();
@@ -4543,7 +4626,7 @@ namespace gameswf
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 			on_event(event_id::SOCK_XML);
 		}
-		
+
 		// Do the events that (appear to) happen on a specified interval.
 		virtual void	on_event_interval_timer()
 		{
@@ -4558,7 +4641,7 @@ namespace gameswf
 			on_event(event_id::LOAD_PROGRESS);
 		}
 
-	/*sprite_instance*/
+		/*sprite_instance*/
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		{
 			// Keep m_as_environment alive during any method calls!
@@ -4588,9 +4671,9 @@ namespace gameswf
 
 
 	character*	sprite_definition::create_character_instance(movie* parent, int id)
-	// Create a (mutable) instance of our definition.  The
-	// instance is created to live (temporarily) on some level on
-	// the parent movie's display list.
+		// Create a (mutable) instance of our definition.  The
+		// instance is created to live (temporarily) on some level on
+		// the parent movie's display list.
 	{
 		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
 
@@ -4599,7 +4682,7 @@ namespace gameswf
 
 
 	movie_interface*	movie_def_impl::create_instance()
-	// Create a playable movie instance from a def.
+		// Create a playable movie instance from a def.
 	{
 		movie_root*	m = new movie_root(this);
 		assert(m);
@@ -4616,10 +4699,10 @@ namespace gameswf
 
 
 	void	sprite_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Create and initialize a sprite, and add it to the movie.
+		// Create and initialize a sprite, and add it to the movie.
 	{
 		assert(tag_type == 39);
-		
+
 		int	character_id = in->read_u16();
 
 		IF_VERBOSE_PARSE(log_msg("  sprite\n  char id = %d\n", character_id));
@@ -4777,10 +4860,10 @@ namespace gameswf
 		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
 
 		// @TODO
-//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
-//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
-//		s_sprite_builtins->set_member("getURL", &sprite_get_url);
-//		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
+		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
+		//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
+		//		s_sprite_builtins->set_member("getURL", &sprite_get_url);
+		//		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
 	}
 
 	static void	sprite_builtins_clear()
@@ -4813,7 +4896,7 @@ namespace gameswf
 	// remove_object_2
 	//
 
-	
+
 	struct remove_object_2 : public execute_tag
 	{
 		int	m_depth, m_id;
@@ -4855,8 +4938,8 @@ namespace gameswf
 			else
 			{
 				log_error("reverse REMOVE can't find previous replace or add tag(%d, %d)\n",
-					  frame, m_depth);
-					
+					frame, m_depth);
+
 			}
 		}
 
@@ -4910,7 +4993,7 @@ namespace gameswf
 
 
 	void	export_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Load an export tag (for exposing internal resources of m)
+		// Load an export tag (for exposing internal resources of m)
 	{
 		assert(tag_type == 56);
 
@@ -4942,7 +5025,7 @@ namespace gameswf
 			else
 			{
 				log_error("export error: don't know how to export resource '%s'\n",
-					  symbol_name);
+					symbol_name);
 			}
 
 			delete [] symbol_name;
@@ -4956,7 +5039,7 @@ namespace gameswf
 
 
 	void	import_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Load an import tag (for pulling in external resources)
+		// Load an import tag (for pulling in external resources)
 	{
 		assert(tag_type == 57);
 
@@ -5010,7 +5093,7 @@ namespace gameswf
 				if (res == NULL)
 				{
 					log_error("import error: resource '%s' is not exported from movie '%s'\n",
-						  symbol_name, source_url);
+						symbol_name, source_url);
 				}
 				else if (font* f = res->cast_to_font())
 				{
@@ -5025,7 +5108,7 @@ namespace gameswf
 				else
 				{
 					log_error("import error: resource '%s' from movie '%s' has unknown type\n",
-						  symbol_name, source_url);
+						symbol_name, source_url);
 				}
 			}
 

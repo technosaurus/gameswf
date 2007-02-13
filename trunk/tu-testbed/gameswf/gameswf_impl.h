@@ -35,6 +35,8 @@ namespace gameswf
 	struct execute_tag;
 	struct font;
 	struct movie_root;
+	class Timer;
+
 	struct sound_sample : public resource //virtual public ref_counted
 	{
 		virtual sound_sample*	cast_to_sound_sample() { return this; }
@@ -82,7 +84,7 @@ namespace gameswf
 	movie_definition_sub*	create_library_movie_sub(const char* filename);
 	movie_interface*	create_library_movie_inst_sub(movie_definition_sub* md);
 
-//v for extern movies
+	// for extern movies
 	movie_interface*	create_library_movie_inst(movie_definition* md);
 	movie_interface*	get_current_root();
 	void set_current_root(movie_interface* m);
@@ -182,14 +184,14 @@ namespace gameswf
 		virtual play_state	get_play_state() const { assert(0); return STOP; }
 
 		virtual void	notify_mouse_state(int x, int y, int buttons)
-		// The host app uses this to tell the movie where the
-		// user's mouse pointer is.
+			// The host app uses this to tell the movie where the
+			// user's mouse pointer is.
 		{
 		}
 
 		virtual void	get_mouse_state(int* x, int* y, int* buttons)
-		// Use this to retrieve the last state of the mouse, as set via
-		// notify_mouse_state().
+			// Use this to retrieve the last state of the mouse, as set via
+			// notify_mouse_state().
 		{
 			assert(0);
 		}
@@ -206,7 +208,7 @@ namespace gameswf
 
 			drag_state()
 				:
-				m_character(0), m_lock_center(0), m_bound(0),
+			m_character(0), m_lock_center(0), m_bound(0),
 				m_bound_x0(0), m_bound_y0(0), m_bound_x1(1), m_bound_y1(1)
 			{
 			}
@@ -270,17 +272,17 @@ namespace gameswf
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 			return -1;	// ???
 		}
-		
+
 		void	clear_interval_timer(int x)
 		{
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 		}
-		
+
 		virtual void	do_something(void *timer)
 		{
 			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
 		}
-		
+
 		// Special event handler; sprites also execute their frame1 actions on this event.
 		virtual void	on_event_load() { on_event(event_id::LOAD); }
 
@@ -318,7 +320,7 @@ namespace gameswf
 		}
 
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
-		// Override this if you implement call_method.
+			// Override this if you implement call_method.
 		{
 			assert(0);
 			return NULL;
@@ -333,7 +335,7 @@ namespace gameswf
 		}
 
 		virtual void	set_display_callback(void (*callback)(void*), void* user_ptr)
-		// Override me to provide this functionality.
+			// Override me to provide this functionality.
 		{
 		}
 	};
@@ -351,7 +353,7 @@ namespace gameswf
 
 		display_info()
 			:
-			m_parent(NULL),
+		m_parent(NULL),
 			m_depth(0),
 			m_ratio(0.0f),
 			m_clip_depth(0)
@@ -359,8 +361,8 @@ namespace gameswf
 		}
 
 		void	concatenate(const display_info& di)
-		// Concatenate the transforms from di into our
-		// transforms.
+			// Concatenate the transforms from di into our
+			// transforms.
 		{
 			m_depth = di.m_depth;
 			m_color_transform.concatenate(di.m_color_transform);
@@ -390,7 +392,7 @@ namespace gameswf
 
 		character(movie* parent, int id)
 			:
-			m_id(id),
+		m_id(id),
 			m_parent(parent),
 			m_depth(-1),
 			m_ratio(0.0f),
@@ -398,10 +400,10 @@ namespace gameswf
 			m_visible(true),
 			m_display_callback(NULL),
 			m_display_callback_user_ptr(NULL)
-			
+
 		{
 			assert((parent == NULL && m_id == -1)
-			       || (parent != NULL && m_id >= 0));
+				|| (parent != NULL && m_id >= 0));
 		}
 
 		// Accessors for basic display info.
@@ -435,8 +437,8 @@ namespace gameswf
 		virtual void	set_text_value(const char* new_text) { assert(0); }
 
 		virtual matrix	get_world_matrix() const
-		// Get our concatenated matrix (all our ancestor transforms, times our matrix).	 Maps
-		// from our local space into "world" space (i.e. root movie space).
+			// Get our concatenated matrix (all our ancestor transforms, times our matrix).	 Maps
+			// from our local space into "world" space (i.e. root movie space).
 		{
 			matrix	m;
 			if (m_parent)
@@ -449,8 +451,8 @@ namespace gameswf
 		}
 
 		virtual cxform	get_world_cxform() const
-		// Get our concatenated color transform (all our ancestor transforms,
-		// times our cxform).  Maps from our local space into normal color space.
+			// Get our concatenated color transform (all our ancestor transforms,
+			// times our cxform).  Maps from our local space into normal color space.
 		{
 			cxform	m;
 			if (m_parent)
@@ -518,7 +520,7 @@ namespace gameswf
 
 		generic_character(character_def* def, movie* parent, int id)
 			:
-			character(parent, id),
+		character(parent, id),
 			m_def(def)
 		{
 			assert(m_def);
@@ -578,25 +580,25 @@ namespace gameswf
 	{
 		bitmap_character(bitmap_info* bi)
 			:
-			m_bitmap_info(bi)
+		m_bitmap_info(bi)
 		{
 		}
 
-//		bitmap_character(image::rgb* image)
-//		{
-//			assert(image != 0);
+		//		bitmap_character(image::rgb* image)
+		//		{
+		//			assert(image != 0);
 
-//			// Create our bitmap info, from our image.
-//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
-//		}
+		//			// Create our bitmap info, from our image.
+		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
+		//		}
 
-//		bitmap_character(image::rgba* image)
-//		{
-//			assert(image != 0);
+		//		bitmap_character(image::rgba* image)
+		//		{
+		//			assert(image != 0);
 
-//			// Create our bitmap info, from our image.
-//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
-//		}
+		//			// Create our bitmap info, from our image.
+		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
+		//		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{
@@ -623,18 +625,253 @@ namespace gameswf
 		virtual uint32	get_depth_id_of_replace_or_add_tag() const { return static_cast<uint32>(-1); }
 	};
 
+	//
+	// Helper to generate mouse events, given mouse state & history.
+	//
+
+	struct mouse_button_state
+	{
+		weak_ptr<movie>	m_active_entity;	// entity that currently owns the mouse pointer
+		weak_ptr<movie>	m_topmost_entity;	// what's underneath the mouse right now
+
+		bool	m_mouse_button_state_last;		// previous state of mouse button
+		bool	m_mouse_button_state_current;		// current state of mouse button
+
+		bool	m_mouse_inside_entity_last;	// whether mouse was inside the active_entity last frame
+
+		mouse_button_state()
+			:
+			m_mouse_button_state_last(0),
+			m_mouse_button_state_current(0),
+			m_mouse_inside_entity_last(false)
+		{
+		}
+	};
+
+	void	generate_mouse_button_events(mouse_button_state* ms);
+
+	//
+	// Helper for movie_def_impl
+	//
+	struct import_info
+	{
+		tu_string	m_source_url;
+		int		m_character_id;
+		tu_string	m_symbol;
+
+		import_info():
+		m_character_id(-1)
+		{
+		}
+
+		import_info(const char* source, int id, const char* symbol):
+			m_source_url(source),
+			m_character_id(id),
+			m_symbol(symbol)
+		{
+		}
+	};
+
+	//
+	// movie_def_impl
+	//
+	// This class holds the immutable definition of a movie's
+	// contents.  It cannot be played directly, and does not hold
+	// current state; for that you need to call create_instance()
+	// to get a movie_instance.
+	//
+	struct movie_def_impl : public movie_definition_sub
+	{
+		hash<int, smart_ptr<character_def> >	m_characters;
+		hash<int, smart_ptr<font> >	 m_fonts;
+		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
+		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
+		array<array<execute_tag*> >	   m_playlist;	// A list of movie control events for each frame.
+		array<array<execute_tag*> >	   m_init_action_list;	// Init actions for each frame.
+		stringi_hash<int>		   m_named_frames;	// 0-based frame #'s
+		stringi_hash<smart_ptr<resource> > m_exports;
+
+		// Items we import.
+		array<import_info>	m_imports;
+
+		// Movies we import from; hold a ref on these, to keep them alive
+		array<smart_ptr<movie_definition> >	m_import_source_movies;
+
+		// Bitmaps used in this movie; collected in one place to make
+		// it possible for the host to manage them as textures.
+		array<smart_ptr<bitmap_info> >	m_bitmap_list;
+
+		create_bitmaps_flag	m_create_bitmaps;
+		create_font_shapes_flag	m_create_font_shapes;
+
+		rect	m_frame_size;
+		float	m_frame_rate;
+		int	m_frame_count;
+		int	m_version;
+		int	m_loading_frame;
+		uint32	m_file_length;
+
+		jpeg::input*	m_jpeg_in;
+
+		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs);
+		~movie_def_impl();
+
+		movie_interface*	movie_def_impl::create_instance();
+
+		int	get_frame_count() const;
+		float	get_frame_rate() const;
+		float	get_width_pixels() const;
+		float	get_height_pixels() const;
+		virtual int	get_version() const;
+		virtual int	get_loading_frame() const;
+		uint32	get_file_bytes() const;
+		virtual create_bitmaps_flag	get_create_bitmaps() const;
+		virtual create_font_shapes_flag	get_create_font_shapes() const;
+		virtual void	add_bitmap_info(bitmap_info* bi);
+		virtual int	get_bitmap_info_count() const;
+		virtual bitmap_info*	get_bitmap_info(int i) const;
+		virtual void	export_resource(const tu_string& symbol, resource* res);
+		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol);
+		virtual void	add_import(const char* source_url, int id, const char* symbol);
+		bool	in_import_table(int character_id);
+		virtual void	visit_imported_movies(import_visitor* visitor);
+		virtual void	resolve_import(const char* source_url, movie_definition* source_movie);
+		void	add_character(int character_id, character_def* c);
+		character_def*	get_character_def(int character_id);
+		bool	get_labeled_frame(const char* label, int* frame_number);
+		void	add_font(int font_id, font* f);
+		font*	get_font(int font_id);
+		bitmap_character_def*	get_bitmap_character(int character_id);
+		void	add_bitmap_character(int character_id, bitmap_character_def* ch);
+		sound_sample*	get_sound_sample(int character_id);
+		virtual void	add_sound_sample(int character_id, sound_sample* sam);
+		void	add_execute_tag(execute_tag* e);
+		void	add_init_action(int sprite_id, execute_tag* e);
+		void	add_frame_name(const char* name);
+
+		void	set_jpeg_loader(jpeg::input* j_in);
+		jpeg::input*	get_jpeg_loader();
+
+		virtual const array<execute_tag*>&	get_playlist(int frame_number);
+
+		virtual const array<execute_tag*>*	get_init_actions(int frame_number);
+		void	read(tu_file* in);
+		void	get_owned_fonts(array<font*>* fonts);
+
+		void	generate_font_bitmaps();
+		void	output_cached_data(tu_file* out, const cache_options& options);
+		void	input_cached_data(tu_file* in);
+
+
+	};
+
+	//
+	// movie_root
+	//
+	// Global, shared root state for a movie and all its characters.
+	//
+	struct movie_root : public movie_interface
+	{
+		smart_ptr<movie_def_impl>	m_def;
+		smart_ptr<movie>	m_movie;
+		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
+		float			m_pixel_scale;
+
+		rgba			m_background_color;
+		float			m_timer;
+		int			m_mouse_x, m_mouse_y, m_mouse_buttons;
+		void *			m_userdata;
+		movie::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
+		mouse_button_state m_mouse_button_state;
+		bool			m_on_event_load_called;
+
+		// Flags for event handlers
+		bool			m_on_event_xmlsocket_ondata_called;
+		bool			m_on_event_xmlsocket_onxml_called;
+		bool			m_on_event_load_progress_called;
+		array< Timer* >	m_interval_timers;
+		array< character* > m_keypress_listeners;
+		movie* m_active_input_text; 
+
+		movie_root(movie_def_impl* def);
+		~movie_root();
+
+		void	generate_mouse_button_events(mouse_button_state* ms);
+		movie* get_active_entity();
+		void set_active_entity(movie* ch);
+		virtual void	set_member(const tu_stringi& name, const as_value& val);
+		virtual bool	get_member(const tu_stringi& name, as_value* val);
+		virtual movie*	to_movie();
+		void	set_root_movie(movie* root_movie);
+
+		void	set_display_viewport(int x0, int y0, int w, int h);
+		void	notify_mouse_state(int x, int y, int buttons);
+		virtual void	get_mouse_state(int* x, int* y, int* buttons);
+		movie*	get_root_movie();
+
+		void	stop_drag();
+		movie_definition*	get_movie_definition();
+		uint32	get_file_bytes() const;
+		virtual int  add_interval_timer(void *timer);
+
+		virtual void	clear_interval_timer(int x);
+		virtual void	do_something(void *timer);
+		int	get_current_frame() const;
+		float	get_frame_rate() const;
+
+		virtual float	get_pixel_scale() const;
+
+		character*	get_character(int character_id);
+		void	set_background_color(const rgba& color);
+		void	set_background_alpha(float alpha);
+		float	get_background_alpha() const;
+		float	get_timer() const;
+		void	restart();
+		void	advance(float delta_time);
+
+		void	goto_frame(int target_frame_number);
+		virtual bool	has_looped() const;
+
+		void	display();
+
+		virtual bool	goto_labeled_frame(const char* label);
+		virtual void	set_play_state(play_state s);
+		virtual play_state	get_play_state() const;
+		virtual void	set_variable(const char* path_to_var, const char* new_value);
+		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value);
+		virtual const char*	get_variable(const char* path_to_var) const;
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...);
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, 
+			va_list args);
+
+		virtual void	set_visible(bool visible);
+		virtual bool	get_visible() const;
+
+		virtual void* get_userdata();
+		virtual void set_userdata(void * ud );
+
+		virtual void	attach_display_callback(const char* path_to_object,
+			void (*callback)(void* user_ptr), void* user_ptr);
+
+		void notify_keypress_listeners(key::code k);
+		void add_keypress_listener(character* listener) ;
+		void remove_keypress_listener(character* listener);
+
+
+	};
+
 
 	//
 	// Loader callbacks.
 	//
-	
+
 	// Register a loader function for a certain tag type.  Most
 	// standard tags are handled within gameswf.  Host apps might want
 	// to call this in order to handle special tag types.
 	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
 	void	register_tag_loader(int tag_type, loader_function lf);
-	
-	
+
+
 	// Tag loader functions.
 	void	null_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	set_background_color_loader(stream* in, int tag_type, movie_definition_sub* m);
