@@ -17,6 +17,9 @@
 #include "gameswf_render.h"
 #include "gameswf_textformat.h"
 
+//#include "Key.h" 
+//#include "movie_root.h" 
+
 namespace gameswf
 {
 	//
@@ -38,7 +41,7 @@ namespace gameswf
 
 		text_style()
 			:
-			m_font_id(-1),
+		m_font_id(-1),
 			m_font(NULL),
 			m_x_offset(0),
 			m_y_offset(0),
@@ -104,10 +107,10 @@ namespace gameswf
 		cxform	cx = inst->get_world_cxform();
 		float	pixel_scale = inst->get_pixel_scale();
 
-//		display_info	sub_di = di;
-//		sub_di.m_matrix.concatenate(mat);
+		//		display_info	sub_di = di;
+		//		sub_di.m_matrix.concatenate(mat);
 
-//		matrix	base_matrix = sub_di.m_matrix;
+		//		matrix	base_matrix = sub_di.m_matrix;
 		matrix	base_matrix = mat;
 		float	base_matrix_max_scale = base_matrix.get_max_scale();
 
@@ -161,7 +164,7 @@ namespace gameswf
 			for (int j = 0; j < rec.m_glyphs.size(); j++)
 			{
 				int	index = rec.m_glyphs[j].m_glyph_index;
-					
+
 				mat = base_matrix;
 				mat.concatenate_translation(x, y);
 				mat.concatenate_scale(scale);
@@ -178,11 +181,11 @@ namespace gameswf
 					// The Y baseline is at 0; negative Y is up.
 					static const Sint16	s_empty_char_box[5 * 2] =
 					{
-						 32,   32,
+						32,   32,
 						480,   32,
 						480, -656,
-						 32, -656,
-						 32,   32
+						32, -656,
+						32,   32
 					};
 					render::draw_line_strip(s_empty_char_box, 5);
 				}
@@ -192,7 +195,7 @@ namespace gameswf
 					shape_character_def*	glyph = fnt->get_glyph(index);
 
 					if (tg.is_renderable()
-					    && (use_glyph_textures || glyph == NULL))
+						&& (use_glyph_textures || glyph == NULL))
 					{
 						fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
 					}
@@ -221,7 +224,7 @@ namespace gameswf
 
 		text_character_def(movie_definition_sub* root_def)
 			:
-			m_root_def(root_def)
+		m_root_def(root_def)
 		{
 			assert(m_root_def);
 		}
@@ -245,7 +248,7 @@ namespace gameswf
 			for (;;)
 			{
 				int	first_byte = in->read_u8();
-				
+
 				if (first_byte == 0)
 				{
 					// This is the end of the text records.
@@ -319,15 +322,15 @@ namespace gameswf
 				{
 					// Read the glyph record.
 
- 					last_record_was_style_change = false;
+					last_record_was_style_change = false;
 
 					int	glyph_count = first_byte;
 
-// 					if (! last_record_was_style_change)
-// 					{
-// 						glyph_count &= 0x7F;
-// 					}
-// 					// else { Don't mask the top bit; the first record is allowed to have > 127 glyphs. }
+					// 					if (! last_record_was_style_change)
+					// 					{
+					// 						glyph_count &= 0x7F;
+					// 					}
+					// 					// else { Don't mask the top bit; the first record is allowed to have > 127 glyphs. }
 
 					m_text_glyph_records.resize(m_text_glyph_records.size() + 1);
 					m_text_glyph_records.back().m_style = style;
@@ -340,7 +343,7 @@ namespace gameswf
 
 
 		void	display(character* inst)
-		// Draw the string.
+			// Draw the string.
 		{
 			display_glyph_records(m_matrix, inst, m_text_glyph_records, m_root_def);
 		}
@@ -348,12 +351,12 @@ namespace gameswf
 
 
 	void	define_text_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Read a DefineText tag.
+		// Read a DefineText tag.
 	{
 		assert(tag_type == 11 || tag_type == 33);
 
 		Uint16	character_id = in->read_u16();
-		
+
 		text_character_def*	ch = new text_character_def(m);
 		IF_VERBOSE_PARSE(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
@@ -370,8 +373,8 @@ namespace gameswf
 
 
 	struct edit_text_character_def : public character_def
-	// A definition for a text display character, whose text can
-	// be changed at runtime (by script or host).
+		// A definition for a text display character, whose text can
+		// be changed at runtime (by script or host).
 	{
 		movie_definition_sub*	m_root_def;
 		rect			m_rect;
@@ -428,7 +431,7 @@ namespace gameswf
 			ALIGN_JUSTIFY	// probably don't need to implement...
 		};
 		alignment	m_alignment;
-		
+
 		float	m_left_margin;	// extra space between box border and text
 		float	m_right_margin;
 		float	m_indent;	// how much to indent the first line of multiline text
@@ -437,7 +440,7 @@ namespace gameswf
 
 		edit_text_character_def(movie_definition_sub* root_def)
 			:
-			m_root_def(root_def),
+		m_root_def(root_def),
 			m_word_wrap(false),
 			m_multiline(false),
 			m_password(false),
@@ -467,7 +470,7 @@ namespace gameswf
 		{
 			m_format = format;
 		}
-		
+
 		~edit_text_character_def()
 		{
 		}
@@ -539,7 +542,7 @@ namespace gameswf
 			}
 
 			IF_VERBOSE_PARSE(log_msg("edit_text_char, varname = %s, text = %s\n",
-						 m_default_name.c_str(), m_default_text.c_str()));
+				m_default_name.c_str(), m_default_text.c_str()));
 		}
 	};
 
@@ -559,10 +562,19 @@ namespace gameswf
 
 		tu_string	m_text;
 
+		bool m_has_focus;
+		int m_cursor;
+		float m_xcursor;
+		float m_ycursor;
+
 		edit_text_character(movie* parent, edit_text_character_def* def, int id)
 			:
-			character(parent, id),
-			m_def(def)
+		character(parent, id),
+			m_def(def),
+			m_has_focus(false), 
+			m_cursor(0), 
+			m_xcursor(0.0f), 
+			m_ycursor(0.0f) 
 		{
 			assert(parent);
 			assert(m_def);
@@ -574,15 +586,211 @@ namespace gameswf
 			reset_bounding_box(0, 0);
 		}
 
-		~edit_text_character()
+		edit_text_character::~edit_text_character() 
+		{ 
+			on_event(event_id::KILLFOCUS); 
+		} 
+
+		movie_root* edit_text_character::get_root()
 		{
-		}
+			return get_parent()->get_root(); 
+		} 
+
+		void edit_text_character::show_cursor() 
+		{ 
+			Uint16 x = (int) m_xcursor; 
+			Uint16 y = (int) m_ycursor; 
+			Uint16 h = (int) m_def->m_text_height;
+
+			Sint16 box[4]; 
+			box[0] = x; 
+			box[1] = y; 
+			box[2] = x; 
+			box[3] = y + h; 
+
+			matrix mat = get_world_matrix(); 
+			render::set_matrix(mat); 
+			render::line_style_color(rgba(0, 0, 0, 255));   // black cursor 
+			render::draw_line_strip(box, 2);        // draw line 
+		} 
+
+		void edit_text_character::display() 
+		{ 
+
+			if (m_def->m_border == true) 
+			{ 
+				matrix  mat = get_world_matrix(); 
+
+				// @@ hm, should we apply the color xform?  It seems logical; need to test. 
+				// cxform       cx = get_world_cxform(); 
+
+				// Show white background + black bounding box. 
+				render::set_matrix(mat); 
+
+				point   coords[4]; 
+				coords[0] = m_def->m_rect.get_corner(0); 
+				coords[1] = m_def->m_rect.get_corner(1); 
+				coords[2] = m_def->m_rect.get_corner(3); 
+				coords[3] = m_def->m_rect.get_corner(2); 
+
+				Sint16 icoords[18] = 
+				{ 
+					// strip (fill in) 
+					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y, 
+					(Sint16) coords[1].m_x, (Sint16) coords[1].m_y, 
+					(Sint16) coords[2].m_x, (Sint16) coords[2].m_y, 
+					(Sint16) coords[3].m_x, (Sint16) coords[3].m_y, 
+
+					// outline 
+					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y, 
+					(Sint16) coords[1].m_x, (Sint16) coords[1].m_y, 
+					(Sint16) coords[3].m_x, (Sint16) coords[3].m_y, 
+					(Sint16) coords[2].m_x, (Sint16) coords[2].m_y, 
+					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y, 
+				}; 
+
+				render::fill_style_color(0, rgba(255, 255, 255, 255)); 
+				render::draw_mesh_strip(&icoords[0], 4); 
+
+				render::line_style_color(rgba(0,0,0,255)); 
+				render::draw_line_strip(&icoords[8], 5); 
+			} 
+
+			// Draw our actual text. 
+			display_glyph_records(matrix::identity, this, m_text_glyph_records, 
+				m_def->m_root_def); 
+
+			if (m_has_focus) 
+			{ 
+				show_cursor(); 
+			} 
+
+			do_display_callback(); 
+		} 
+
+		bool edit_text_character::on_event(event_id id) 
+		{ 
+			if (m_def->m_readonly == true) 
+			{ 
+				return false; 
+			} 
+
+			switch (id.m_id) 
+			{ 
+			case event_id::SETFOCUS: 
+				{ 
+					if (m_has_focus == false) 
+					{ 
+						get_root()->add_keypress_listener(this); 
+						m_has_focus = true; 
+						m_cursor = m_text.size(); 
+						format_text(); 
+					} 
+					break; 
+				} 
+
+			case event_id::KILLFOCUS: 
+				{ 
+					if (m_has_focus == true) 
+					{ 
+						get_root()->set_active_entity(NULL); 
+						get_root()->remove_keypress_listener(this); 
+						m_has_focus = false; 
+						format_text(); 
+					} 
+					break; 
+				} 
+
+			case event_id::KEY_PRESS: 
+				{ 
+					tu_string s(m_text); 
+
+					// may be m_text is changed in ActionScript 
+					m_cursor = imin(m_cursor, m_text.size()); 
+
+					switch (id.m_key_code) 
+					{ 
+					case key::BACKSPACE: 
+						if (m_cursor > 0) 
+						{ 
+							s.erase(m_cursor - 1, 1); 
+							m_cursor--; 
+							set_text_value(s.c_str()); 
+						} 
+						break; 
+
+					case key::DELETEKEY: 
+						if (s.size() > m_cursor) 
+						{ 
+							s.erase(m_cursor, 1); 
+							set_text_value(s.c_str()); 
+						} 
+						break; 
+
+					case key::HOME: 
+					case key::PGUP: 
+					case key::UP: 
+						m_cursor = 0; 
+						format_text(); 
+						break; 
+
+					case key::END: 
+					case key::PGDN: 
+					case key::DOWN: 
+						m_cursor = m_text.size(); 
+						format_text(); 
+						break; 
+
+					case key::LEFT: 
+						m_cursor = m_cursor > 0 ? m_cursor - 1 : 0; 
+						format_text(); 
+						break; 
+
+					case key::RIGHT: 
+						m_cursor = m_cursor < m_text.size() ? m_cursor + 1 : m_text.size(); 
+						format_text(); 
+						break; 
+
+					default: 
+						{ 
+							s.insert(m_cursor, id.m_key_code); 
+							m_cursor++; 
+							set_text_value(s.c_str()); 
+							break; 
+						} 
+					} 
+				} 
+
+			default: 
+				return false; 
+			} 
+			return true; 
+		} 
+
+		movie*  edit_text_character::get_topmost_mouse_entity(float x, float y) 
+		{ 
+			if (get_visible() == false) 
+			{ 
+				return NULL; 
+			} 
+
+			matrix  m = get_matrix(); 
+
+			point   p; 
+			m.transform_by_inverse(&p, point(x, y)); 
+
+			if (m_def->m_rect.point_test(p.m_x, p.m_y)) 
+			{ 
+				return this; 
+			} 
+			return NULL; 
+		} 
 
 		virtual const char*	get_text_name() const { return m_def->m_default_name.c_str(); }
 
 
 		void	reset_bounding_box(float x, float y)
-		// Reset our text bounding box to the given point.
+			// Reset our text bounding box to the given point.
 		{
 			m_text_bounding_box.m_x_min = x;
 			m_text_bounding_box.m_x_max = x;
@@ -592,7 +800,7 @@ namespace gameswf
 
 
 		virtual void	set_text_value(const char* new_text)
-		// Set our text to the given string.
+			// Set our text to the given string.
 		{
 			if (m_text == new_text)
 			{
@@ -601,7 +809,7 @@ namespace gameswf
 
 			m_text = new_text;
 			if (m_def->m_max_length > 0
-			    && m_text.length() > m_def->m_max_length)
+				&& m_text.length() > m_def->m_max_length)
 			{
 				m_text.resize(m_def->m_max_length);
 			}
@@ -616,7 +824,7 @@ namespace gameswf
 
 
 		void	set_member(const tu_stringi& name, const as_value& val)
-		// We have a "text" member.
+			// We have a "text" member.
 		{
 			// @@ TODO need to inherit basic stuff like _x, _y, _xscale, _yscale etc
 
@@ -628,64 +836,64 @@ namespace gameswf
 				break;
 			case M_TEXT:
 				//if (name == "text")
-			{
-				int version = get_parent()->get_movie_definition()->get_version();
-				set_text_value(val.to_tu_string_versioned(version));
-				return;
-			}
+				{
+					int version = get_parent()->get_movie_definition()->get_version();
+					set_text_value(val.to_tu_string_versioned(version));
+					return;
+				}
 			case M_X:
 				//else if (name == "_x")
-			{
-				matrix	m = get_matrix();
-				m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-				set_matrix(m);
+				{
+					matrix	m = get_matrix();
+					m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					set_matrix(m);
 
-				// m_accept_anim_moves = false;
-				
-				return;
-			}
+					// m_accept_anim_moves = false;
+
+					return;
+				}
 			case M_Y:
 				//else if (name == "_y")
-			{
-				matrix	m = get_matrix();
-				m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-				set_matrix(m);
+				{
+					matrix	m = get_matrix();
+					m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					set_matrix(m);
 
-				// m_accept_anim_moves = false;
-				
-				return;
-			}
+					// m_accept_anim_moves = false;
+
+					return;
+				}
 			case M_VISIBLE:
 				//else if (name == "_visible")
-			{
-				set_visible(val.to_bool());
-				return;
-			}
+				{
+					set_visible(val.to_bool());
+					return;
+				}
 			case M_ALPHA:
 				//else if (name == "_alpha")
-			{
-				// @@ TODO this should be generic to struct character!
-				// Arg is in percent.
-				cxform	cx = get_cxform();
-				cx.m_[3][0] = fclamp(float(val.to_number()) / 100.f, 0, 1);
-				set_cxform(cx);
-				return;
-			}
+				{
+					// @@ TODO this should be generic to struct character!
+					// Arg is in percent.
+					cxform	cx = get_cxform();
+					cx.m_[3][0] = fclamp(float(val.to_number()) / 100.f, 0, 1);
+					set_cxform(cx);
+					return;
+				}
 			case M_TEXTCOLOR:
 				//else if (name == "textColor")
-			{	
-				// The arg is 0xRRGGBB format.
-				Uint32	rgb = (Uint32) val.to_number();
+				{	
+					// The arg is 0xRRGGBB format.
+					Uint32	rgb = (Uint32) val.to_number();
 
-				cxform	cx = get_cxform();
-				cx.m_[0][0] = fclamp(((rgb >> 16) & 255) / 255.0f, 0, 1);
-				cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
-				cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
-				set_cxform(cx);
+					cxform	cx = get_cxform();
+					cx.m_[0][0] = fclamp(((rgb >> 16) & 255) / 255.0f, 0, 1);
+					cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
+					cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
+					set_cxform(cx);
 
-				return;
-			}
-			// @@ TODO see TextField members in Flash MX docs
+					return;
+				}
+				// @@ TODO see TextField members in Flash MX docs
 			}	// end switch
 		}
 
@@ -700,97 +908,97 @@ namespace gameswf
 				break;
 			case M_TEXT:
 				//if (name == "text")
-			{
-				val->set_tu_string(m_text);
-				return true;
-			}
+				{
+					val->set_tu_string(m_text);
+					return true;
+				}
 			case M_VISIBLE:
 				//else if (name == "_visible")
-			{
-				val->set_bool(get_visible());
-				return true;
-			}
+				{
+					val->set_bool(get_visible());
+					return true;
+				}
 			case M_ALPHA:
 				//else if (name == "_alpha")
-			{
-				// @@ TODO this should be generic to struct character!
-				const cxform&	cx = get_cxform();
-				val->set_double(cx.m_[3][0] * 100.f);
-				return true;
-			}
+				{
+					// @@ TODO this should be generic to struct character!
+					const cxform&	cx = get_cxform();
+					val->set_double(cx.m_[3][0] * 100.f);
+					return true;
+				}
 			case M_TEXTCOLOR:
 				//else if (name == "textColor")
-			{
-				// Return color in 0xRRGGBB format
-				const cxform&	cx = get_cxform();
-				int	r = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-				int	g = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-				int	b = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-				val->set_int((r << 16) + (g << 8) + b);
-				return true;
-			}
+				{
+					// Return color in 0xRRGGBB format
+					const cxform&	cx = get_cxform();
+					int	r = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+					int	g = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+					int	b = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+					val->set_int((r << 16) + (g << 8) + b);
+					return true;
+				}
 			case M_X:
 				//else if (name == "_x")
-			{
-				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
-				return true;
-			}
+				{
+					matrix	m = get_matrix();	// @@ get_world_matrix()???
+					val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
+					return true;
+				}
 			case M_Y:
 				//else if (name == "_y")
-			{
-				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
-				return true;
-			}
+				{
+					matrix	m = get_matrix();	// @@ get_world_matrix()???
+					val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
+					return true;
+				}
 			case M_WIDTH:
 				//else if (name == "_width")
-			{
-				// @@ TODO should implement this in
-				// character and inherit into both here and sprite_instance
-				rect	transformed_rect;
-				transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
-				val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
-				return true;
-			}
+				{
+					// @@ TODO should implement this in
+					// character and inherit into both here and sprite_instance
+					rect	transformed_rect;
+					transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
+					val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
+					return true;
+				}
 			case M_HEIGHT:
 				//else if (name == "_height")
-			{
-				// @@ TODO should implement this in
-				// character and inherit into both here and sprite_instance
-				rect	transformed_rect;
-				transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
-				val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
-				return true;
-			}
+				{
+					// @@ TODO should implement this in
+					// character and inherit into both here and sprite_instance
+					rect	transformed_rect;
+					transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
+					val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
+					return true;
+				}
 			case M_TEXTWIDTH:
 				//else if (name == "textWidth")
-			{
-				// Return the width, in pixels, of the text as laid out.
-				// (I.e. the actual text content, not our defined
-				// bounding box.)
-				//
-				// In local coords.  Verified against Macromedia Flash.
-				val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
+				{
+					// Return the width, in pixels, of the text as laid out.
+					// (I.e. the actual text content, not our defined
+					// bounding box.)
+					//
+					// In local coords.  Verified against Macromedia Flash.
+					val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
 
-				return true;
-			}
+					return true;
+				}
 			}	// end switch
 
 			return false;
 		}
 
-		
+
 		// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
 		// we have a bug?
-		#define WIDTH_FUDGE 80.0f
+#define WIDTH_FUDGE 80.0f
 
 
 		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x)
-		// Does LEFT/CENTER/RIGHT alignment on the records in
-		// m_text_glyph_records[], starting with
-		// last_line_start_record and going through the end of
-		// m_text_glyph_records.
+			// Does LEFT/CENTER/RIGHT alignment on the records in
+			// m_text_glyph_records[], starting with
+			// last_line_start_record and going through the end of
+			// m_text_glyph_records.
 		{
 			float	extra_space = (m_def->m_rect.width() - m_def->m_right_margin) - x - WIDTH_FUDGE;
 			assert(extra_space >= 0.0f);
@@ -859,8 +1067,8 @@ namespace gameswf
 				if (m_def->m_font != newfont)
 				{
 					log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
-						  fontlib::get_font_name(m_def->m_font),
-						  fontlib::get_font_name(newfont));
+						fontlib::get_font_name(m_def->m_font),
+						fontlib::get_font_name(newfont));
 
 					m_def->m_font = newfont;
 				}
@@ -883,7 +1091,7 @@ namespace gameswf
 			float	y = rec.m_style.m_y_offset;
 
 			// Start the bbox at the upper-left corner of the first glyph.
- 			reset_bounding_box(x, y - m_def->m_font->get_descent() * scale + m_def->m_text_height);
+			reset_bounding_box(x, y - m_def->m_font->get_descent() * scale + m_def->m_text_height);
 
 			float	leading = m_def->m_leading;
 			leading += m_def->m_font->get_leading() * scale;
@@ -891,11 +1099,14 @@ namespace gameswf
 			int	last_code = -1;
 			int	last_space_glyph = -1;
 			int	last_line_start_record = 0;
+			int character_idx = 0; 
+			m_xcursor = x; 
+			m_ycursor = y; 
 
 			const char*	text = &m_text[0];
 			while (Uint32 code = utf8::decode_next_unicode_character(&text))
 			{
-// @@ try to truncate overflow text??
+				// @@ try to truncate overflow text??
 #if 0
 				if (y + m_def->m_font->get_descent() * scale > m_def->m_rect.height())
 				{
@@ -982,17 +1193,17 @@ namespace gameswf
 				if (index == -1)
 				{
 					// error -- missing glyph!
-					
+
 					// Log an error, but don't log too many times.
 					static int	s_log_count = 0;
 					if (s_log_count < 10)
 					{
 						s_log_count++;
 						log_error("edit_text_character::display() -- missing glyph for char %d "
-							  "-- make sure character shapes for font %s are being exported "
-							  "into your SWF file!\n",
-							  code,
-							  m_def->m_font->get_name());
+							"-- make sure character shapes for font %s are being exported "
+							"into your SWF file!\n",
+							code,
+							m_def->m_font->get_name());
 					}
 
 					// Drop through and use index == -1; this will display
@@ -1006,7 +1217,7 @@ namespace gameswf
 
 				x += ge.m_glyph_advance;
 
-				
+
 				if (x >= m_def->m_rect.width() - m_def->m_right_margin - WIDTH_FUDGE)
 				{
 					// Whoops, we just exceeded the box width.  Do word-wrap.
@@ -1029,7 +1240,7 @@ namespace gameswf
 					rec.m_style.m_text_height = m_def->m_text_height;
 					rec.m_style.m_has_x_offset = true;
 					rec.m_style.m_has_y_offset = true;
-					
+
 					text_glyph_record&	last_line = m_text_glyph_records.back();
 					if (last_space_glyph == -1)
 					{
@@ -1063,9 +1274,18 @@ namespace gameswf
 					last_space_glyph = -1;
 					last_line_start_record = m_text_glyph_records.size();
 				}
+				if (m_cursor > character_idx) 
+				{ 
+					m_xcursor = x; 
+					m_ycursor = y; 
+				} 
+				character_idx++; 
 
 				// TODO: HTML markup
 			}
+			m_xcursor += m_def->m_font->get_leading() * scale; 
+			m_ycursor -= m_def->m_text_height + 
+				(m_def->m_font->get_leading() - m_def->m_font->get_descent()) * scale; 
 
 			// Add this line to our output.
 			m_text_glyph_records.push_back(rec);
@@ -1073,53 +1293,6 @@ namespace gameswf
 		}
 
 
-		void	display()
-		// Draw the dynamic string.
-		{
-			if (m_def->m_border)
-			{
-				matrix	mat = get_world_matrix();
-				
-				// @@ hm, should we apply the color xform?  It seems logical; need to test.
-				// cxform	cx = get_world_cxform();
-
-				// Show white background + black bounding box.
-				render::set_matrix(mat);
-
-				point	coords[4];
-				coords[0] = m_def->m_rect.get_corner(0);
-				coords[1] = m_def->m_rect.get_corner(1);
-				coords[2] = m_def->m_rect.get_corner(3);
-				coords[3] = m_def->m_rect.get_corner(2);
-
-				Sint16	icoords[18] = 
-				{
-					// strip (fill in)
-					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y,
-					(Sint16) coords[1].m_x, (Sint16) coords[1].m_y,
-					(Sint16) coords[2].m_x, (Sint16) coords[2].m_y,
-					(Sint16) coords[3].m_x, (Sint16) coords[3].m_y,
-
-					// outline
-					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y,
-					(Sint16) coords[1].m_x, (Sint16) coords[1].m_y,
-					(Sint16) coords[3].m_x, (Sint16) coords[3].m_y,
-					(Sint16) coords[2].m_x, (Sint16) coords[2].m_y,
-					(Sint16) coords[0].m_x, (Sint16) coords[0].m_y,
-				};
-				
-				render::fill_style_color(0, rgba(255, 255, 255, 255));
-				render::draw_mesh_strip(&icoords[0], 4);
-
-				render::line_style_color(rgba(0,0,0,255));
-				render::draw_line_strip(&icoords[8], 5);
-			}
-
-			// Draw our actual text.
-			display_glyph_records(matrix::identity, this, m_text_glyph_records, m_def->m_root_def);
-
-			do_display_callback();
-		}
 	};
 
 
@@ -1142,7 +1315,7 @@ namespace gameswf
 
 
 	void	define_edit_text_loader(stream* in, int tag_type, movie_definition_sub* m)
-	// Read a DefineText tag.
+		// Read a DefineText tag.
 	{
 		assert(tag_type == 37);
 

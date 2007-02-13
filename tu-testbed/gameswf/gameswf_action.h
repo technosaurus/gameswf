@@ -79,7 +79,11 @@ namespace gameswf
 			
 			// This is for setInterval
 			TIMER,
-			
+
+			CONSTRUCT,
+			SETFOCUS,
+			KILLFOCUS,			
+
 			EVENT_COUNT
 		};
 

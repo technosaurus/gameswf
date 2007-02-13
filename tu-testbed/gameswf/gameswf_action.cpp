@@ -1117,6 +1117,13 @@ namespace gameswf
 	{
 		action_init();	// @@ put this in some global init somewhere else...
 
+		// Notify keypress listeners.
+		if (down) 
+		{
+			movie_root* mroot = (movie_root*) get_current_root();
+			mroot->notify_keypress_listeners(k);
+		}
+
 		static tu_string	key_obj_name("Key");
 
 		as_value	kval;
@@ -4133,6 +4140,10 @@ namespace gameswf
 			"onXMLLoad",		 // XML_LOAD
 			"onXMLData",		 // XML_DATA
 			"onTimer",		 // setInterval Timer expired
+
+	    "onConstruct",
+			"onSetFocus",
+			"onKillFocus"	//vv
 		};
 
 		assert(m_id > INVALID && m_id < EVENT_COUNT);
