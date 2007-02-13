@@ -17,9 +17,6 @@
 #include "gameswf_render.h"
 #include "gameswf_textformat.h"
 
-//#include "Key.h" 
-//#include "movie_root.h" 
-
 namespace gameswf
 {
 	//
@@ -41,7 +38,7 @@ namespace gameswf
 
 		text_style()
 			:
-		m_font_id(-1),
+			m_font_id(-1),
 			m_font(NULL),
 			m_x_offset(0),
 			m_y_offset(0),
