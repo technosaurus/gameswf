@@ -790,7 +790,7 @@ namespace gameswf
 		bool			m_on_event_xmlsocket_onxml_called;
 		bool			m_on_event_load_progress_called;
 		array< Timer* >	m_interval_timers;
-		array< character* > m_keypress_listeners;
+		array< smart_ptr<character> > m_keypress_listeners;
 		movie* m_active_input_text; 
 
 		movie_root(movie_def_impl* def);

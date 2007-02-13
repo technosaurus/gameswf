@@ -1,5 +1,11 @@
 2007-02-13  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp: cleanup
+	* gameswf/gameswf_text.cpp: cleanup
+	* gameswf/gameswf_impl.h: character* ==> smart_ptr<character>
+
+2007-02-13  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* base/container.h: added erase & insert methods to tu_string
 	* gameswf/gameswf_impl(h.cpp), gameswf/gameswf_button(h.cpp):	
 	the development of input_edit_text has demanded reorganization of these files

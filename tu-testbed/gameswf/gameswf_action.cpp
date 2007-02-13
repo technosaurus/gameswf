@@ -4143,7 +4143,7 @@ namespace gameswf
 
 	    "onConstruct",
 			"onSetFocus",
-			"onKillFocus"	//vv
+			"onKillFocus"
 		};
 
 		assert(m_id > INVALID && m_id < EVENT_COUNT);
