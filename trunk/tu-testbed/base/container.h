@@ -1157,9 +1157,12 @@ public:
 	void insert(int index, char ch)
 	{
 		assert(index >= 0 && index <= size());
-		resize(length() + 1);
-		strcpy(get_buffer() + index + 1, get_buffer() + index);
-		*(get_buffer()+ index) = ch;
+		int len = length();
+		resize(len + 1);
+		char* buf = get_buffer();
+		// actual memory size of the empty string is 1 (zero at the end)
+		memmove(buf + index + 1, buf + index, len + 1 - index);
+		*(buf + index) = ch;
 	}
 
 	char&	operator[](int index)
