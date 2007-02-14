@@ -1,3 +1,10 @@
+2007-02-14  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* base/contatiner.h: fixed insert() method of tu_string.
+	VC8 recognizes this situation and creates a correct code,
+	but other compilers probably to not recognize it. 
+	Thanks Thatcher.
+
 2007-02-13  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_action.cpp: cleanup
