@@ -41,6 +41,7 @@ namespace gameswf
 	{
 		virtual sound_sample*	cast_to_sound_sample() { return this; }
 	};
+
 	struct stream;
 	struct swf_event;
 
@@ -176,6 +177,7 @@ namespace gameswf
 		virtual void	set_display_viewport(int x0, int y0, int width, int height) {}
 
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
+		virtual void	do_actions(const array<action_buffer*>& action_list) { assert(0); }
 
 		virtual void	goto_frame(int target_frame_number) { assert(0); }
 		virtual bool	goto_labeled_frame(const char* label) { assert(0); return false; }
@@ -372,7 +374,6 @@ namespace gameswf
 		}
 	};
 
-
 	// character is a live, stateful instance of a character_def.
 	// It represents a single active element in a movie.
 	struct character : public movie
@@ -510,6 +511,38 @@ namespace gameswf
 
 		// Utility.
 		void	do_mouse_drag();
+
+		virtual bool has_keypress_event()
+		{
+			return false;
+		}
+
+	};
+
+	struct swf_event
+	{
+		// NOTE: DO NOT USE THESE AS VALUE TYPES IN AN
+		// array<>!  They cannot be moved!  The private
+		// operator=(const swf_event&) should help guard
+		// against that.
+
+		event_id	m_event;
+		action_buffer	m_action_buffer;
+		as_value	m_method;
+
+		swf_event()
+		{
+		}
+
+		void	attach_to(character* ch) const
+		{
+			ch->set_event_handler(m_event, m_method);
+		}
+
+	private:
+		// DON'T USE THESE
+		swf_event(const swf_event& s) { assert(0); }
+		void	operator=(const swf_event& s) { assert(0); }
 	};
 
 
@@ -790,7 +823,7 @@ namespace gameswf
 		bool			m_on_event_xmlsocket_onxml_called;
 		bool			m_on_event_load_progress_called;
 		array< Timer* >	m_interval_timers;
-		array< smart_ptr<character> > m_keypress_listeners;
+		hash< smart_ptr<character>, int > m_keypress_listeners;
 		movie* m_active_input_text; 
 
 		movie_root(movie_def_impl* def);
@@ -856,7 +889,6 @@ namespace gameswf
 		void notify_keypress_listeners(key::code k);
 		void add_keypress_listener(character* listener) ;
 		void remove_keypress_listener(character* listener);
-
 
 	};
 

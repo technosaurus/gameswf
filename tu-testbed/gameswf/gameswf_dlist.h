@@ -89,7 +89,11 @@ namespace gameswf
 			const matrix& mat,
 			float ratio,
 			Uint16 clip_depth);
+
 		void	remove_display_object(Uint16 depth, int id);
+
+		void add_keypress_listener(character* ch);
+		void remove_keypress_listener(character* ch);
 
 		// clear the display list.
 		void	clear();

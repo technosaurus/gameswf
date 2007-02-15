@@ -573,6 +573,12 @@ int	main(int argc, char *argv[])
 		fprintf(stderr, "error: can't get info about %s\n", infile);
 		exit(1);
 	}
+	else
+	if (movie_version > 6)
+	{
+		fprintf(stderr, "warning: The file %s has the version %d\n", infile, movie_version);
+		fprintf(stderr, "warning: Playing of files of version 7 and above can cause crash of the program\n");
+	}
 
 	int	width = s_wlogo = int(movie_width * s_scale);
 	int	height = s_hlogo = int(movie_height * s_scale);

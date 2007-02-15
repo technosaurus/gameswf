@@ -13,7 +13,6 @@
 #include "gameswf_sound.h"
 #include "gameswf_stream.h"
 
-
 /*
 
 Observations about button & mouse behavior
@@ -211,6 +210,18 @@ namespace gameswf
 		{
 		}
 
+		virtual bool has_keypress_event()
+		{
+			for (int i = 0; i < m_def->m_button_actions.size(); i++)
+			{
+				if (m_def->m_button_actions[i].m_conditions & 0xFE00)	// check up on CondKeyPress: UB[7]
+				{
+					return true;
+				}
+			}	
+			return false;
+		}
+
 		movie_root*	get_root() { return get_parent()->get_root(); }
 		movie*	get_root_movie() { return get_parent()->get_root_movie(); }
 
@@ -321,6 +332,52 @@ namespace gameswf
 			return NULL;
 		}
 
+		// called from keypress listener only
+		virtual bool	on_event(event_id id)
+		{
+			if (id.m_id != event_id::KEY_PRESS)
+			{
+				return false;
+			}
+
+			bool called = false;
+			static const event_id s_key[32] =
+			{
+				event_id(),
+				event_id(event_id::KEY_PRESS, key::LEFT),
+				event_id(event_id::KEY_PRESS, key::RIGHT),
+				event_id(event_id::KEY_PRESS, key::HOME),
+				event_id(event_id::KEY_PRESS, key::END),
+				event_id(event_id::KEY_PRESS, key::INSERT),
+				event_id(event_id::KEY_PRESS, key::DELETEKEY),
+				event_id(),
+				event_id(event_id::KEY_PRESS, key::BACKSPACE),	//8
+				event_id(),
+				event_id(),
+				event_id(),
+				event_id(),
+				event_id(event_id::KEY_PRESS, key::ENTER),	//13
+				event_id(event_id::KEY_PRESS, key::UP),
+				event_id(event_id::KEY_PRESS, key::DOWN),
+				event_id(event_id::KEY_PRESS, key::PGUP),
+				event_id(event_id::KEY_PRESS, key::PGDN),
+				event_id(event_id::KEY_PRESS, key::TAB),
+				// 32-126 folows ASCII*/
+			};
+
+			// Execute appropriate actions
+			for (int i = 0; i < m_def->m_button_actions.size(); i++)
+			{
+				int keycode = (m_def->m_button_actions[i].m_conditions & 0xFE00) >> 9;
+				event_id key_event = keycode < 32 ? s_key[keycode] : event_id(event_id::KEY_PRESS, (key::code) keycode);
+				if (key_event == id)
+				{
+					get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
+					called = true;
+				}
+			}
+			return called;
+		}
 
 		virtual void	on_button_event(event_id event)
 		{
@@ -409,18 +466,16 @@ namespace gameswf
 			// restart the characters of the new state.
 			restart_characters(c);
 
-			// Add appropriate actions to the movie's execute list...
-			{for (int i = 0; i < m_def->m_button_actions.size(); i++)
+			// Execute appropriate actions
 			{
-				if (m_def->m_button_actions[i].m_conditions & c)
+				for (int i = 0; i < m_def->m_button_actions.size(); i++)
 				{
-					// Matching action.
-					for (int j = 0; j < m_def->m_button_actions[i].m_actions.size(); j++)
+					if (m_def->m_button_actions[i].m_conditions & c)
 					{
-						get_parent()->add_action_buffer(m_def->m_button_actions[i].m_actions[j]);
+						get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
 					}
 				}
-			}}
+			}
 
 			// Call conventional attached method.
 			// @@ TODO
