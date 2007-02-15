@@ -1,5 +1,13 @@
 2007-02-15  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_impl(h, cpp): 
+	* gameswf/gameswf_dlist.cpp: fixed the incorrect sequence of
+	execution of events
+	* gameswf/samples/test_action_order(fla, swf): updated
+	for fuller analysis of sequence of events
+
+2007-02-15  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/samples/test_keypress_event(swf, fla): added testcase
 	* gameswf/gameswf_button.cpp: added keypress event handler, 
 	events do not added to parent action list, and are executed at once
