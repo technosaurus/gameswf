@@ -189,6 +189,7 @@ namespace gameswf
 
 				if (dobj.m_character->get_depth() == depth)
 				{
+					remove_keypress_listener(dobj.m_character.get_ptr());
 					dobj.set_character(NULL);
 					m_display_object_array.remove(index);
 				}
@@ -224,8 +225,8 @@ namespace gameswf
 
 		// do the frame1 actions (if applicable) and the "onClipEvent (load)" event.
 		ch->on_event_load();
+		add_keypress_listener(ch);
 	}
-	
 	
 	void	display_list::move_display_object(
 		Uint16 depth,
@@ -359,6 +360,9 @@ namespace gameswf
 
 		ch->set_ratio(ratio);
 		ch->set_clip_depth(clip_depth);
+
+		remove_keypress_listener(old_ch.get_ptr());
+		add_keypress_listener(ch);
 	}
 	
 	
@@ -415,8 +419,30 @@ namespace gameswf
 		
 		// Remove reference only.
 		di.m_ref = false;
+
+		// remove this character from listener
+		remove_keypress_listener(di.m_character.get_ptr());
+	}
+
+	void display_list::add_keypress_listener(character* ch)
+	{
+		// has character keypress event ?
+		if (ch->has_keypress_event())
+		{
+			ch->get_root()->add_keypress_listener(ch);
+		}
 	}
 	
+	void display_list::remove_keypress_listener(character* ch)
+	{
+		if (ch)
+		{
+			if (ch->get_root())
+			{
+				ch->get_root()->remove_keypress_listener(ch);
+			}
+		}
+	}
 	
 	void	display_list::clear()
 	// clear the display list.
@@ -425,7 +451,7 @@ namespace gameswf
 		for (i = 0; i < n; i++)
 		{
 			display_object_info&	di = m_display_object_array[i];
-			//character*	ch = m_display_object_array[i].m_character;
+			remove_keypress_listener(di.m_character.get_ptr());
 			di.m_character->on_event(event_id::UNLOAD);
 		}
 		
@@ -459,7 +485,7 @@ namespace gameswf
 			if (dobj.m_ref == false)
 			{
 				dobj.set_character(NULL);
-
+				remove_keypress_listener(dobj.m_character.get_ptr());
 				m_display_object_array.remove(i);
 				r++;
 			}

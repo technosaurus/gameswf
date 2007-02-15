@@ -1049,39 +1049,25 @@ namespace gameswf
 
 		void movie_root::notify_keypress_listeners(key::code k) 
 		{
-			for (int i = 0; i < m_keypress_listeners.size(); i++)
-			{ 
-				if (m_keypress_listeners[i] != NULL) 
-				{ 
-					// sprite, button & input_edit_text characters 
-					m_keypress_listeners[i]->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
-				}
+			for (hash< smart_ptr<character>, int >::iterator it = m_keypress_listeners.begin();
+				it != m_keypress_listeners.end(); ++it)
+			{
+ 				it->first.get_ptr()->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
 			}
 		} 
 
 		void movie_root::add_keypress_listener(character* listener) 
 		{
-			for (int i = 0; i < m_keypress_listeners.size(); i++)
-			{ 
-				if (m_keypress_listeners[i] == listener) 
-				{
-					// Already in the list. 
-					return; 
-				} 
-			} 
-			m_keypress_listeners.push_back(listener);
+			m_keypress_listeners[listener] = 0;
+
+			// sanity check
+//			printf("keypress_listeners=%d\n", m_keypress_listeners.size());
+			assert(m_keypress_listeners.size() < 100);
 		} 
 
 		void movie_root::remove_keypress_listener(character* listener) 
 		{
-			for (int i = 0; i < m_keypress_listeners.size(); i++)
-			{ 
-				if (m_keypress_listeners[i] == listener) 
-				{
-					m_keypress_listeners.remove(i);
-					return;
-				} 
-			} 
+			m_keypress_listeners.erase(listener);
 		} 
 
 		movie* movie_root::get_active_entity() 
@@ -2523,108 +2509,6 @@ namespace gameswf
 	//
 	// For embedding event handlers in place_object_2
 
-
-	struct swf_event
-	{
-		// NOTE: DO NOT USE THESE AS VALUE TYPES IN AN
-		// array<>!  They cannot be moved!  The private
-		// operator=(const swf_event&) should help guard
-		// against that.
-
-		event_id	m_event;
-		action_buffer	m_action_buffer;
-		as_value	m_method;
-
-		swf_event()
-		{
-		}
-
-		void	attach_to(character* ch) const
-		{
-			ch->set_event_handler(m_event, m_method);
-		}
-
-		void	read(stream* in, Uint32 flags)
-		{
-			assert(flags != 0);
-
-			// Scream if more than one bit is set, since we're not set up to handle
-			// that, and it doesn't seem possible to express in ActionScript source,
-			// so it's important to know if this ever occurs in the wild.
-			if (flags & (flags - 1))
-			{
-				log_error("error: swf_event::read() -- more than one event type encoded!  "
-					"unexpected! flags = 0x%x\n", flags);
-			}
-
-			// 14 bits reserved, 18 bits used
-
-			static const event_id	s_code_bits[18] =
-			{
-				event_id::LOAD,
-				event_id::ENTER_FRAME,
-				event_id::UNLOAD,
-				event_id::MOUSE_MOVE,
-				event_id::MOUSE_DOWN,
-				event_id::MOUSE_UP,
-				event_id::KEY_DOWN,
-				event_id::KEY_UP,
-				event_id::DATA,
-				event_id::INITIALIZE,
-				event_id::PRESS,
-				event_id::RELEASE,
-				event_id::RELEASE_OUTSIDE,
-				event_id::ROLL_OVER,
-				event_id::ROLL_OUT,
-				event_id::DRAG_OVER,
-				event_id::DRAG_OUT,
-			};
-
-			for (int i = 0, mask = 1; i < int(sizeof(s_code_bits)/sizeof(s_code_bits[0])); i++, mask <<= 1)
-			{
-				if (flags & mask)
-				{
-					m_event = s_code_bits[i];
-					break;
-				}
-			}
-
-			// what to do w/ key_press???  Is the data in the reserved parts of the flags???
-			if (flags & (1 << 17))
-			{
-				log_error("swf_event::read -- KEY_PRESS found, not handled yet, flags = 0x%x\n", flags);
-			}
-
-			Uint32	event_length = in->read_u32();
-			UNUSED(event_length);
-
-			// Read the actions.
-			IF_VERBOSE_ACTION(log_msg("---- actions for event %s\n", m_event.get_function_name().c_str()));
-			m_action_buffer.read(in);
-
-			if (m_action_buffer.get_length() != (int) event_length)
-			{
-				log_error("error -- swf_event::read(), event_length = %d, but read %d\n",
-					event_length,
-					m_action_buffer.get_length());
-				// @@ discard this event handler??
-			}
-
-			// Create a function to execute the actions.
-			array<with_stack_entry>	empty_with_stack;
-			as_as_function*	func = new as_as_function(&m_action_buffer, NULL, 0, empty_with_stack);
-			func->set_length(m_action_buffer.get_length());
-
-			m_method.set_as_as_function(func);
-		}
-
-	private:
-		// DON'T USE THESE
-		swf_event(const swf_event& s) { assert(0); }
-		void	operator=(const swf_event& s) { assert(0); }
-	};
-
-
 	//
 	// place_object_2
 	//
@@ -2647,7 +2531,6 @@ namespace gameswf
 			REPLACE,
 		} m_place_type;
 		array<swf_event*>	m_event_handlers;
-
 
 		place_object_2()
 			:
@@ -2773,29 +2656,92 @@ namespace gameswf
 						// Read event.
 						in->align();
 
-						Uint32	this_flags = 0;
-						if (movie_version >= 6)
-						{
-							this_flags = in->read_u32();
-						}
-						else
-						{
-							this_flags = in->read_u16();
-						}
-
-						if (this_flags == 0)
+						Uint32 flags = (movie_version >= 6) ? in->read_u32() : in->read_u16();
+						if (flags == 0)
 						{
 							// Done with events.
 							break;
 						}
 
-						swf_event*	ev = new swf_event;
-						ev->read(in, this_flags);
+						Uint32 event_length = in->read_u32();
+						Uint8 ch = key::INVALID;
 
-						m_event_handlers.push_back(ev);
+						if (flags & (1 << 17))	// has keypress event
+						{
+							ch = in->read_u8();
+							event_length--;
+						}
+
+						// Read the actions for event(s)
+						action_buffer action;
+						action.read(in);
+
+						if (action.get_length() != event_length)
+						{
+							log_error("swf_event::read(), "
+								"event_length = %d, "
+								"but read %lu\n",
+								event_length,
+								static_cast<unsigned long>(action.get_length()));
+							break;
+						}
+
+						// 13 bits reserved, 19 bits used
+						static const event_id s_code_bits[19] =
+						{
+							event_id::LOAD,
+							event_id::ENTER_FRAME,
+							event_id::UNLOAD,
+							event_id::MOUSE_MOVE,
+							event_id::MOUSE_DOWN,
+							event_id::MOUSE_UP,
+							event_id::KEY_DOWN,
+							event_id::KEY_UP,
+							event_id::DATA,
+							event_id::INITIALIZE,
+							event_id::PRESS,
+							event_id::RELEASE,
+							event_id::RELEASE_OUTSIDE,
+							event_id::ROLL_OVER,
+							event_id::ROLL_OUT,
+							event_id::DRAG_OVER,
+							event_id::DRAG_OUT,
+							event_id(event_id::KEY_PRESS, key::CONTROL),
+							event_id::CONSTRUCT
+						};
+
+						// Let's see if the event flag we received is for an event that we know of
+						if ((pow(2.0, int( sizeof(s_code_bits) / sizeof(s_code_bits[0]) )) - 1) < flags)
+						{
+							log_error("swf_event::read() -- unknown / unhandled event type received, flags = 0x%x\n", flags);
+						}
+
+						for (int i = 0, mask = 1; i < int(sizeof(s_code_bits)/sizeof(s_code_bits[0])); i++, mask <<= 1)
+						{
+							if (flags & mask)
+							{
+								swf_event* ev = new swf_event;
+								ev->m_event = s_code_bits[i];
+								ev->m_action_buffer = action;
+
+								// hack
+								if (i == 17)	// has keypress event ?
+								{
+									ev->m_event.m_key_code = ch;
+								}
+
+								// Create a function to execute the actions.
+								array<with_stack_entry>	empty_with_stack;
+								as_as_function*	func = new as_as_function(&ev->m_action_buffer, NULL, 0, empty_with_stack);
+								func->set_length(ev->m_action_buffer.get_length());
+
+								ev->m_method.set_as_as_function(func);
+
+								m_event_handlers.push_back(ev);
+							}
+						}
 					}
 				}
-
 
 				if (has_char == true && flag_move == true)
 				{
@@ -3217,6 +3163,19 @@ namespace gameswf
 		{
 			// log_msg("FIXME: %s:\n", __FUNCTION__);
 			m_root->clear_interval_timer(x);
+		}
+
+		virtual bool has_keypress_event()
+		{
+			for (hash<event_id, as_value>::iterator it = m_event_handlers.begin();
+				it != m_event_handlers.end(); ++it)
+			{
+				if (it->first.m_id == event_id::KEY_PRESS)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 
@@ -3654,6 +3613,13 @@ namespace gameswf
 			m_action_list.resize(0);
 		}
 
+		virtual void do_actions(const array<action_buffer*>& action_list)
+		{
+			for (int i = 0; i < action_list.size(); i++)
+			{
+				action_list[i]->execute(&m_as_environment);
+			}
+		}
 
 		/*sprite_instance*/
 		void	goto_frame(int target_frame_number)
@@ -3769,10 +3735,12 @@ namespace gameswf
 			}
 
 			// Attach event handlers (if any).
-			{for (int i = 0, n = event_handlers.size(); i < n; i++)
 			{
-				event_handlers[i]->attach_to(ch.get_ptr());
-			}}
+				for (int i = 0, n = event_handlers.size(); i < n; i++)
+				{
+					event_handlers[i]->attach_to(ch.get_ptr());
+				}
+			}
 
 			m_display_list.add_display_object(
 				ch.get_ptr(),

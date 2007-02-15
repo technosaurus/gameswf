@@ -162,7 +162,7 @@ namespace gameswf
 		// If you need to keep an array of them, keep pointers
 		// to new'd instances.
 		action_buffer(const action_buffer& a) { assert(0); }
-		void operator=(const action_buffer& a) { assert(0); }
+//		void operator=(const action_buffer& a) { assert(0); }
 
 		void	process_decl_dict(int start_pc, int stop_pc);
 

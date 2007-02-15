@@ -1,3 +1,20 @@
+2007-02-15  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/samples/test_keypress_event(swf, fla): added testcase
+	* gameswf/gameswf_button.cpp: added keypress event handler, 
+	events do not added to parent action list, and are executed at once
+	* gameswf/gameswf_impl(h,cpp): optimized methods of keypress listener,
+	added keypress & multi event handler,
+	like on(release, press, keyPress "<Space>") {...},
+	added do_actions(const array<action_buffer*>& action_list)
+	to execute a code in the environment of the parent
+	* gameswf/gameswf_test_ogl.cpp: added warning about version 7 & above
+	* gameswf/gameswf_dlist(h,cpp): keypress event is activated/deactivated when 
+	character is added/removed from dlist
+	* gameswf/gameswf_action.h: operator= of action_buffer has been commented
+	because	I need to assign same code to another events
+	
+
 2007-02-14  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* base/contatiner.h: fixed insert() method of tu_string.
