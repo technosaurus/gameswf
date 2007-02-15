@@ -224,8 +224,9 @@ namespace gameswf
 		m_display_object_array.insert(index, di);
 
 		// do the frame1 actions (if applicable) and the "onClipEvent (load)" event.
-		ch->on_event_load();
-		add_keypress_listener(ch);
+//		ch->on_event_load();
+//		add_keypress_listener(ch);
+		ch->execute_frame_tags(0);
 	}
 	
 	void	display_list::move_display_object(
@@ -416,6 +417,10 @@ namespace gameswf
 
 		// Removing the character at get_display_object(index).
 		display_object_info&	di = m_display_object_array[index];
+
+		//Vitaly: UNLOAD event in DisplayList::clear() is not caused,
+		// since character is removed already
+		di.m_character->on_event(event_id::UNLOAD);
 		
 		// Remove reference only.
 		di.m_ref = false;

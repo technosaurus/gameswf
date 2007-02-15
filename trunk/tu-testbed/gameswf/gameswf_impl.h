@@ -825,6 +825,8 @@ namespace gameswf
 		array< Timer* >	m_interval_timers;
 		hash< smart_ptr<character>, int > m_keypress_listeners;
 		movie* m_active_input_text; 
+		float	m_time_remainder;
+		float m_frame_time;
 
 		movie_root(movie_def_impl* def);
 		~movie_root();

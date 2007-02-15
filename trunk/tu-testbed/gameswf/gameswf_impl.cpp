@@ -32,6 +32,7 @@
 #include "base/image.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
+#include "base/tu_random.h"
 #include <string.h>	// for memset
 #include <typeinfo>
 #include <float.h>
@@ -873,7 +874,7 @@ namespace gameswf
 
 	movie_root::movie_root(movie_def_impl* def)
 			:
-		m_def(def),
+			m_def(def),
 			m_movie(NULL),
 			m_viewport_x0(0),
 			m_viewport_y0(0),
@@ -890,11 +891,17 @@ namespace gameswf
 			m_on_event_xmlsocket_ondata_called(false),
 			m_on_event_xmlsocket_onxml_called(false),
 			m_on_event_load_progress_called(false),
-			m_active_input_text(NULL)
+			m_active_input_text(NULL),
+
+			// the first time we needs do advance() and
+			// then display() certainly
+			m_time_remainder(1.0f),
+
+			m_frame_time(1.0f)
 		{
 			assert(m_def != NULL);
-
 			set_display_viewport(0, 0, (int) m_def->get_width_pixels(), (int) m_def->get_height_pixels());
+			m_frame_time = 1.0f / get_frame_rate();
 		}
 
 		movie_root::~movie_root()
@@ -1199,7 +1206,7 @@ namespace gameswf
 
 		void	movie_root::restart() { m_movie->restart(); }
 
-		void	movie_root::advance(float delta_time)
+		/*void	movie_root::advance(float delta_time)
 		{
 			int i;
 			if (m_on_event_load_called == false)
@@ -1251,6 +1258,37 @@ namespace gameswf
 			generate_mouse_button_events(&m_mouse_button_state);
 
 			m_movie->advance(delta_time);
+		}*/
+
+		void	movie_root::advance(float delta_time)
+		{
+			// Handle the mouse.
+			m_mouse_button_state.m_topmost_entity =
+				m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
+
+			m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
+			generate_mouse_button_events(&m_mouse_button_state);
+
+			m_timer += delta_time;   
+			m_time_remainder += delta_time;
+      if (m_time_remainder >= m_frame_time)
+			{
+				// this should be called infinitely to not repeat
+				// the game situation after restart
+				tu_random::next_random();
+
+				m_movie->advance(delta_time); 
+				if (m_on_event_load_called == false)
+				{
+					// Must do loading events.  For child sprites this is
+					// done by the dlist, but root movies don't get added
+					// to a dlist, so we do it here.
+					m_on_event_load_called = true;
+					m_movie->on_event_load();
+				}
+
+				m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
+			}
 		}
 
 		// 0-based!!
@@ -1782,7 +1820,13 @@ namespace gameswf
 		}
 
 		mov->add_ref();
+
+		// create dlist
+		// movie is ready for momentaly reaction
+		movie* m = mov->get_root_movie();
+		m->execute_frame_tags(0);		
 		return mov;
+
 	}
 
 
@@ -3109,7 +3153,7 @@ namespace gameswf
 
 		play_state	m_play_state;
 		int		m_current_frame;
-		float		m_time_remainder;
+//		float		m_time_remainder;
 		bool		m_update_frame;
 		bool		m_has_looped;
 		bool		m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
@@ -3124,6 +3168,8 @@ namespace gameswf
 			OVER
 		};
 		mouse_state m_mouse_state;
+		bool m_enabled;
+		bool m_on_event_load_called;
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
 			:
@@ -3132,11 +3178,13 @@ namespace gameswf
 			m_root(r),
 			m_play_state(PLAY),
 			m_current_frame(0),
-			m_time_remainder(0),
+//			m_time_remainder(0),
 			m_update_frame(true),
 			m_has_looped(false),
 			m_accept_anim_moves(true),
-			m_mouse_state(UP)
+			m_mouse_state(UP),
+			m_enabled(true),
+			m_on_event_load_called(false)
 		{
 			assert(m_def != NULL);
 			assert(m_root != NULL);
@@ -3277,7 +3325,7 @@ namespace gameswf
 		{
 			if (m_play_state != s)
 			{
-				m_time_remainder = 0;
+//todo				m_time_remainder = 0;
 			}
 
 			m_play_state = s;
@@ -3315,7 +3363,7 @@ namespace gameswf
 		void	restart()
 		{
 			m_current_frame = 0;
-			m_time_remainder = 0;
+//todo			m_time_remainder = 0;
 			m_update_frame = true;
 			m_has_looped = false;
 			m_play_state = PLAY;
@@ -3439,7 +3487,7 @@ namespace gameswf
 		}
 
 		/* sprite_instance */
-		virtual void	advance(float delta_time)
+/*		virtual void	advance(float delta_time)
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
 			smart_ptr<as_object_interface>	this_ptr(this);
@@ -3489,7 +3537,57 @@ namespace gameswf
 			// advance(dt) should be a discrete tick()
 			// with no dt.
 			m_time_remainder = fmod(m_time_remainder, frame_time);
-		}
+		}*/
+
+ 
+		// Very-very "thin" thing. 100 times think before changing
+		void advance(float delta_time) 
+		{ 
+			// Vitaly: 
+			// child movieclip frame rate is the same the root movieclip frame rate 
+			// that's why it is not needed to analyze 'm_time_remainder' 
+			if (m_on_event_load_called == false) 
+			{ 
+				// clip sprite onload 
+				// Vitaly:
+				// _root.onLoad() will not be executed since do_actions()
+				// for frame(0) has not executed yet.
+				// _root.onLoad() will be executed later in movie_root::advance()
+				on_event(event_id::LOAD);
+			} 
+
+			// mouse drag. 
+			character::do_mouse_drag(); 
+
+			if (m_on_event_load_called) 
+			{ 
+				on_event(event_id::ENTER_FRAME); 
+			} 
+
+			// Update current and next frames. 
+			if (m_play_state == PLAY) 
+			{ 
+				int prev_frame = m_current_frame; 
+				if (m_on_event_load_called) 
+				{ 
+					increment_frame_and_check_for_loop(); 
+				} 
+
+				// Execute the current frame's tags. 
+				// execute_frame_tags(0) already executed in dlist.cpp 
+				if (m_current_frame != prev_frame) 
+				{ 
+					execute_frame_tags(m_current_frame); 
+				} 
+			} 
+
+			do_actions(); 
+
+			// Advance everything in the display list. 
+			m_display_list.advance(delta_time); 
+
+			m_on_event_load_called = true; 
+		} 
 
 		/*sprite_instance*/
 		void	execute_frame_tags(int frame, bool state_only = false)
@@ -4576,16 +4674,16 @@ namespace gameswf
 
 
 		/*sprite_instance*/
-		virtual void	on_event_load()
+//		virtual void	on_event_load()
 			// Do the events that (appear to) happen as the movie
 			// loads.  frame1 tags and actions are executed (even
 			// before advance() is called).	 Then the onLoad event
 			// is triggered.
-		{
-			execute_frame_tags(0);
-			do_actions();
-			on_event(event_id::LOAD);
-		}
+//		{
+//			execute_frame_tags(0);
+//			do_actions();
+//			on_event(event_id::LOAD);
+//		}
 
 		// Do the events that happen when there is XML data waiting
 		// on the XML socket connection.
