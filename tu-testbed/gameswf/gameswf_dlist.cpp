@@ -223,6 +223,7 @@ namespace gameswf
 		m_display_object_array.insert(index, di);
 
 		ch->execute_frame_tags(0);
+		add_keypress_listener(ch);
 	}
 	
 	void	display_list::move_display_object(

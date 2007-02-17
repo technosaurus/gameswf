@@ -2721,11 +2721,8 @@ namespace gameswf
 
 						if (action.get_length() != event_length)
 						{
-							log_error("swf_event::read(), "
-								"event_length = %d, "
-								"but read %lu\n",
-								event_length,
-								static_cast<unsigned long>(action.get_length()));
+							log_error("swf_event::read(), event_length = %d, but read %lu\n",
+								event_length, action.get_length());
 							break;
 						}
 
@@ -2754,9 +2751,9 @@ namespace gameswf
 						};
 
 						// Let's see if the event flag we received is for an event that we know of
-						if ((pow(2.0, int( sizeof(s_code_bits) / sizeof(s_code_bits[0]) )) - 1) < flags)
+						if (1 << (ARRAYSIZE(s_code_bits)) < flags)
 						{
-							log_error("swf_event::read() -- unknown / unhandled event type received, flags = 0x%x\n", flags);
+							log_error("swf_event::read() -- unknown event type received, flags = 0x%x\n", flags);
 						}
 
 						for (int i = 0, mask = 1; i < int(sizeof(s_code_bits)/sizeof(s_code_bits[0])); i++, mask <<= 1)
