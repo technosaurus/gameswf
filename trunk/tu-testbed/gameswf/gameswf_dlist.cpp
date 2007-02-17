@@ -425,7 +425,10 @@ namespace gameswf
 		// has character keypress event ?
 		if (ch->has_keypress_event())
 		{
-			ch->get_root()->add_keypress_listener(ch);
+			if (ch->get_root())
+			{
+				ch->get_root()->add_keypress_listener(ch);
+			}
 		}
 	}
 	

@@ -1,5 +1,15 @@
 2007-02-17  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_button.cpp: protect character from deleting
+	during execution of event handler
+	* gameswf/gameswf_test_ogl: added digits to key_event()
+	* gameswf/gameswf_impl.cpp: added the addition check of type
+	in	notify_keypress_listeners()
+	* gameswf/gameswf_dlist.cpp: cleanuping
+
+
+2007-02-17  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_impl.cpp: pow() ==>  (1 << (ARRAYSIZE(s_code_bits))
 	Thanks Thatcher.
 	* gameswf/gameswf_dlist.cpp: forgot add_keypress_listener()

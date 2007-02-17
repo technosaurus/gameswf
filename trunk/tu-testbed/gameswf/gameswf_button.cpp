@@ -366,6 +366,11 @@ namespace gameswf
 			};
 
 			// Execute appropriate actions
+
+			// actions can delete THIS through execute_frame_tags()
+			// therefore we need to protect THIS from deleting
+			this->add_ref();
+
 			for (int i = 0; i < m_def->m_button_actions.size(); i++)
 			{
 				int keycode = (m_def->m_button_actions[i].m_conditions & 0xFE00) >> 9;
@@ -376,6 +381,9 @@ namespace gameswf
 					called = true;
 				}
 			}
+
+			this->drop_ref();
+
 			return called;
 		}
 
@@ -467,6 +475,11 @@ namespace gameswf
 			restart_characters(c);
 
 			// Execute appropriate actions
+
+			// actions can delete THIS through execute_frame_tags()
+			// therefore we need to protect THIS from deleting
+			this->add_ref();
+
 			{
 				for (int i = 0; i < m_def->m_button_actions.size(); i++)
 				{
@@ -476,6 +489,8 @@ namespace gameswf
 					}
 				}
 			}
+
+			this->drop_ref();
 
 			// Call conventional attached method.
 			// @@ TODO
