@@ -1059,7 +1059,9 @@ namespace gameswf
 			for (hash< smart_ptr<character>, int >::iterator it = m_keypress_listeners.begin();
 				it != m_keypress_listeners.end(); ++it)
 			{
- 				it->first.get_ptr()->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
+ 				character* ch = dynamic_cast<character*>(it->first.get_ptr());
+				assert(ch);
+				ch->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
 			}
 		} 
 
@@ -1068,12 +1070,14 @@ namespace gameswf
 			m_keypress_listeners[listener] = 0;
 
 			// sanity check
+//			printf("add_keypress_listener=%08X (%d)\n", listener, m_keypress_listeners.size());
 			assert(m_keypress_listeners.size() < 100);
 		} 
 
 		void movie_root::remove_keypress_listener(character* listener) 
 		{
 			m_keypress_listeners.erase(listener);
+//			printf("remove_keypress_listener=%08X (%d)\n", listener, m_keypress_listeners.size());
 		} 
 
 		movie* movie_root::get_active_entity() 

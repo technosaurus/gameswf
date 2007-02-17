@@ -144,7 +144,11 @@ static void	key_event(SDLKey key, bool down)
 {
 	gameswf::key::code	c(gameswf::key::INVALID);
 
-	if (key >= SDLK_a && key <= SDLK_z)
+	if (key >= SDLK_0 && key <= SDLK_9)
+	{
+		c = (gameswf::key::code) ((key - SDLK_0) + gameswf::key::_0);
+	}
+	else if (key >= SDLK_a && key <= SDLK_z)
 	{
 		c = (gameswf::key::code) ((key - SDLK_a) + gameswf::key::A);
 	}
