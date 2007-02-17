@@ -328,7 +328,7 @@ int	main(int argc, char *argv[])
 
 	float	exit_timeout = 0;
 	bool	do_render = true;
-        bool    do_sound = true;
+	bool    do_sound = true;
 	bool	do_loop = true;
 	bool	sdl_abort = true;
 	int     delay = 31;
@@ -800,11 +800,10 @@ int	main(int argc, char *argv[])
 				switch (event.type)
 				{
 				case SDL_VIDEORESIZE:
-					//todo
 					s_scale = (float) event.resize.w / (float) width;
 					width = event.resize.w;
 					height = event.resize.h;
-					if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL | SDL_RESIZABLE) == 0)
+					if (SDL_SetVideoMode(event.resize.w, event.resize.h, 0, SDL_OPENGL | SDL_RESIZABLE) == 0)
 					{
 						fprintf(stderr, "SDL_SetVideoMode() failed.");
 						exit(1);
@@ -843,6 +842,48 @@ int	main(int argc, char *argv[])
 					{
 						// Restart the movie.
 						m->restart();
+					}
+					else if (ctrl && key == SDLK_i)
+					{
+						// Init library, for detection of memory leaks (for testing purposes)
+
+						if (md) md->drop_ref();
+						if (m) m->drop_ref();
+
+						delete sound;
+						gameswf::set_sound_handler(NULL);
+
+						delete render;
+						gameswf::set_render_handler(NULL);
+
+						// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
+						gameswf::clear();
+
+						if (do_render)
+						{
+							if (do_sound)
+							{
+								sound = gameswf::create_sound_handler_sdl();
+								gameswf::set_sound_handler(sound);
+							}
+							render = s_logo_render = gameswf::create_render_handler_ogl();
+							gameswf::set_render_handler(render);
+						}
+						// Load the actual movie.
+						gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
+						if (md == NULL)
+						{
+							fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
+							exit(1);
+						}
+						gameswf::movie_interface*	m = create_library_movie_inst(md);
+						if (m == NULL)
+						{
+							fprintf(stderr, "error: can't create movie instance\n");
+							exit(1);
+						}
+						gameswf::set_current_root(m);
+
 					}
 					else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))
 					{
