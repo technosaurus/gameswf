@@ -1,5 +1,9 @@
 2007-02-17  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_test_ogl: added memory leaks tester
+
+2007-02-17  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_test_ogl: added SDL_VIDEORESIZE event handler
 	* gameswf/gameswf_impl.cpp: a bit cleanup
 
