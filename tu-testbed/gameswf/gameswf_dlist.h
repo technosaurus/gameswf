@@ -21,18 +21,14 @@ namespace gameswf
 	// A struct to serve as an entry in the display list.
 	struct display_object_info
 	{
-		bool	m_ref;
+//		bool	m_ref;
 		smart_ptr<character>	m_character;	// state is held in here
 
 		display_object_info()
-			:
-			m_ref(false)
 		{
 		}
 
 		display_object_info(const display_object_info& di)
-			:
-			m_ref(false)
 		{
 			*this = di;
 		}
@@ -43,7 +39,6 @@ namespace gameswf
 
 		void	operator=(const display_object_info& di)
 		{
-			m_ref = di.m_ref;
 			m_character = di.m_character;
 		}
 
@@ -98,12 +93,6 @@ namespace gameswf
 		// clear the display list.
 		void	clear();
 
-		// reset the references to the display list.
-		void	reset();
-
-		// remove unreferenced objects.
-		void	update();
-
 		// advance referenced characters.
 		void	advance(float delta_time);
 
@@ -130,6 +119,8 @@ namespace gameswf
 		{
 			return m_display_object_array[idx];
 		}
+
+		void clear_unaffected(array<Uint16>& affected_depths);
 
 
 //		void	set_character_position(character* ch, float x, float y);

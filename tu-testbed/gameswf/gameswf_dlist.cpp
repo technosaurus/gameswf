@@ -210,7 +210,6 @@ namespace gameswf
 		ch->set_depth(depth);
 
 		display_object_info	di;
-		di.m_ref = true;
 		di.set_character(ch);
 		di.m_character->set_depth(depth);
 		di.m_character->set_cxform(color_xform);
@@ -223,9 +222,6 @@ namespace gameswf
 		
 		m_display_object_array.insert(index, di);
 
-		// do the frame1 actions (if applicable) and the "onClipEvent (load)" event.
-//		ch->on_event_load();
-//		add_keypress_listener(ch);
 		ch->execute_frame_tags(0);
 	}
 	
@@ -266,11 +262,8 @@ namespace gameswf
 		{
 			// error
 			log_error("error: move_display_object() -- no object at depth %d\n", depth);
-			//			assert(0);
 			return;
 		}
-
-		di.m_ref = true;
 
 		if (ch->get_accept_anim_moves() == false)
 		{
@@ -336,9 +329,7 @@ namespace gameswf
 		ch->restart();
 		
 		// Set the display properties.
-		di.m_ref = true;
 		di.set_character(ch);
-
 		if (use_cxform)
 		{
 			ch->set_cxform(color_xform);
@@ -422,11 +413,10 @@ namespace gameswf
 		// since character is removed already
 		di.m_character->on_event(event_id::UNLOAD);
 		
-		// Remove reference only.
-		di.m_ref = false;
-
 		// remove this character from listener
 		remove_keypress_listener(di.m_character.get_ptr());
+
+		m_display_object_array.remove(index);
 	}
 
 	void display_list::add_keypress_listener(character* ch)
@@ -463,84 +453,19 @@ namespace gameswf
 		m_display_object_array.clear();
 	}
 	
-	
-	void	display_list::reset()
-	// reset the references to the display list.
-	{
-		//printf("### reset the display list!\n");
-		int i, n = m_display_object_array.size();
-		for (i = 0; i < n; i++)
-		{
-			m_display_object_array[i].m_ref = false;
-		}
-	}
-	
-	
-	void	display_list::update()
-	// remove unreferenced objects.
-	{
-		//printf("### update the display list!\n");
-		
-		int r = 0;
-		int i, n = m_display_object_array.size();
-		for (i = n-1; i >= 0; i--)
-		{
-			display_object_info & dobj = m_display_object_array[i];
-			
-			if (dobj.m_ref == false)
-			{
-				dobj.set_character(NULL);
-				remove_keypress_listener(dobj.m_character.get_ptr());
-				m_display_object_array.remove(i);
-				r++;
-			}
-		}
-		
-		//printf("### removed characters: %4d active characters: %4d\n", r, m_display_object_array.size());
-	}
-	
-	
 	void	display_list::advance(float delta_time)
 	// advance referenced characters.
 	{
-		int n = m_display_object_array.size();
+
+		//Vitaly:  That there was no crash because of actions script
+		// we iterate through the copy
+		array<display_object_info> tmp_list = m_display_object_array;
+		int n = tmp_list.size();
 		for (int i = 0; i < n; i++)
 		{
-			// @@@@ TODO FIX: If array changes size due to
-			// character actions, the iteration may not be
-			// correct!
-			//
-			// What's the correct thing to do here?  Options:
-			//
-			// * copy the display list at the beginning,
-			// iterate through the copy
-			//
-			// * use (or emulate) a linked list instead of
-			// an array (still has problems; e.g. what
-			// happens if the next or current object gets
-			// removed from the dlist?)
-			//
-			// * iterate through current array in depth
-			// order.  Always find the next object using a
-			// search of current array (but optimize the
-			// common case where nothing has changed).
-			//
-			// * ???
-			//
-			// Need to test to see what Flash does.
-			if (n != m_display_object_array.size())
+			character*	ch = tmp_list[i].m_character.get_ptr();
+			if (ch)
 			{
-				log_error("gameswf bug: dlist size changed due to character actions, bailing on update!\n");
-				break;
-			}
-
-			display_object_info & dobj = m_display_object_array[i];
-			
-			if (dobj.m_ref == true)
-			{
-				character*	ch = dobj.m_character.get_ptr();
-				assert(ch);
-
 				ch->advance(delta_time);
 			}
 		}
@@ -620,6 +545,38 @@ namespace gameswf
 			render::disable_mask();
 		}
 	}
+
+	void display_list::clear_unaffected(array<Uint16>& affected_depths) 
+	{ 
+		for (int i = 0; i < m_display_object_array.size(); )
+		{
+			display_object_info&	di = m_display_object_array[i];
+
+			int di_depth = di.m_character->get_depth(); 
+			bool is_affected = false; 
+
+			for (int j = 0; j < affected_depths.size(); j++) 
+			{ 
+				if (affected_depths[j] != di_depth) 
+				{ 
+					continue; 
+				} 
+				is_affected = true; 
+				break; 
+			} 
+
+			if (is_affected == false) 
+			{ 
+				remove_keypress_listener(di.m_character.get_ptr());
+				di.m_character->on_event(event_id::UNLOAD); 
+				di.set_character(NULL);
+				m_display_object_array.remove(i);
+				continue; 
+			} 
+			i++; 
+		} 
+	} 
+
 }
 
 

@@ -746,7 +746,9 @@ namespace gameswf
 		}
 
 		movie*	get_target() { return m_target; }
-		void	set_target(movie* target) { m_target = target; }
+
+		void set_target(movie* target) { m_target = target; }
+		void set_target(as_value& target, movie* original_target);
 
 		// stack access/manipulation
 		// @@ TODO do more checking on these

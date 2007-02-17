@@ -131,11 +131,11 @@ static tu_file*	file_opener(const char* url)
 static void	fs_callback(gameswf::movie_interface* movie, const char* command, const char* args)
 // For handling notification callbacks from ActionScript.
 {
-	message_log("fs_callback: '");
-	message_log(command);
-	message_log("' '");
-	message_log(args);
-	message_log("'\n");
+//	message_log("fs_callback: '");
+//	message_log(command);
+//	message_log("' '");
+//	message_log(args);
+//	message_log("'\n");
 }
 
 
