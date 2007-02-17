@@ -3155,7 +3155,7 @@ namespace gameswf
 		int		m_current_frame;
 //		float		m_time_remainder;
 		bool		m_update_frame;
-		bool		m_has_looped;
+//		bool		m_has_looped;
 		bool		m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
 		array<bool>	m_init_actions_executed;	// a bit-array class would be ideal for this
 
@@ -3180,7 +3180,7 @@ namespace gameswf
 			m_current_frame(0),
 //			m_time_remainder(0),
 			m_update_frame(true),
-			m_has_looped(false),
+//			m_has_looped(false),
 			m_accept_anim_moves(true),
 			m_mouse_state(UP),
 			m_enabled(true),
@@ -3323,10 +3323,10 @@ namespace gameswf
 		void	set_play_state(play_state s)
 			// Stop or play the sprite.
 		{
-			if (m_play_state != s)
-			{
-//todo				m_time_remainder = 0;
-			}
+//			if (m_play_state != s)
+//			{
+//				m_time_remainder = 0;
+//			}
 
 			m_play_state = s;
 		}
@@ -3363,9 +3363,9 @@ namespace gameswf
 		void	restart()
 		{
 			m_current_frame = 0;
-//todo			m_time_remainder = 0;
+//			m_time_remainder = 0;
 			m_update_frame = true;
-			m_has_looped = false;
+//			m_has_looped = false;
 			m_play_state = PLAY;
 
 			m_display_list.clear();
@@ -3374,7 +3374,7 @@ namespace gameswf
 		}
 
 
-		virtual bool	has_looped() const { return m_has_looped; }
+//		virtual bool	has_looped() const { return m_has_looped; }
 
 		virtual bool	get_accept_anim_moves() const { return m_accept_anim_moves; }
 
@@ -3469,25 +3469,6 @@ namespace gameswf
 
 
 		/* sprite_instance */
-		void	increment_frame_and_check_for_loop()
-			// Increment m_current_frame, and take care of looping.
-		{
-			m_current_frame++;
-
-			int	frame_count = m_def->get_frame_count();
-			if (m_current_frame >= frame_count)
-			{
-				// Loop.
-				m_current_frame = 0;
-				m_has_looped = true;
-//				if (frame_count > 1)
-//				{
-//					m_display_list.reset();
-//				}
-			}
-		}
-
-		/* sprite_instance */
 /*		virtual void	advance(float delta_time)
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
@@ -3565,9 +3546,12 @@ namespace gameswf
 				on_event(event_id::ENTER_FRAME); 
 			} 
 
-			// execute actions from gotoAndPlay(n) or gotoAndStop(n) frame,
-			execute_actions(&m_as_environment, m_goto_frame_action_list);
-			m_goto_frame_action_list.clear();
+			// execute actions from gotoAndPlay(n) or gotoAndStop(n) frame
+			if (m_goto_frame_action_list.size() > 0)
+			{
+				execute_actions(&m_as_environment, m_goto_frame_action_list);
+				m_goto_frame_action_list.clear();
+			}
 
 			// Update current and next frames. 
 			if (m_play_state == PLAY) 
@@ -3575,7 +3559,11 @@ namespace gameswf
 				int prev_frame = m_current_frame;
 				if (m_on_event_load_called) 
 				{ 
-					increment_frame_and_check_for_loop(); 
+					m_current_frame++;
+					if (m_current_frame >= m_def->get_frame_count())
+					{
+						m_current_frame = 0;
+					}
 				} 
 
 				// Execute the current frame's tags. 

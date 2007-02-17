@@ -667,7 +667,7 @@ int	main(int argc, char *argv[])
 		}
 		
 		// Set the video mode.
-		if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL) == 0)
+		if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL | SDL_RESIZABLE) == 0)
 		{
 			fprintf(stderr, "SDL_SetVideoMode() failed.");
 			exit(1);
@@ -799,6 +799,19 @@ int	main(int argc, char *argv[])
 				//printf("EVENT Type is %d\n", event.type);
 				switch (event.type)
 				{
+				case SDL_VIDEORESIZE:
+					//todo
+					s_scale = (float) event.resize.w / (float) width;
+					width = event.resize.w;
+					height = event.resize.h;
+					if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL | SDL_RESIZABLE) == 0)
+					{
+						fprintf(stderr, "SDL_SetVideoMode() failed.");
+						exit(1);
+					}
+					glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
+					break;
+
 				case SDL_USEREVENT:
 					//printf("SDL_USER_EVENT at %s, code %d%d\n", __FUNCTION__, __LINE__, event.user.code);
 					ret = false;
