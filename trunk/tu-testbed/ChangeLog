@@ -1,5 +1,11 @@
 2007-02-17  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_impl.cpp: pow() ==>  (1 << (ARRAYSIZE(s_code_bits))
+	Thanks Thatcher.
+	* gameswf/gameswf_dlist.cpp: forgot add_keypress_listener()
+
+2007-02-17  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action(cpp, h): fixed set_target, target can be both 
 	movie* and path
 	* gameswf/gameswf_dlist(cpp, h): fixed goto_farme(), 
