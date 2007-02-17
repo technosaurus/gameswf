@@ -1068,7 +1068,6 @@ namespace gameswf
 			m_keypress_listeners[listener] = 0;
 
 			// sanity check
-//			printf("keypress_listeners=%d\n", m_keypress_listeners.size());
 			assert(m_keypress_listeners.size() < 100);
 		} 
 
@@ -2768,7 +2767,6 @@ namespace gameswf
 								ev->m_event = s_code_bits[i];
 								ev->m_action_buffer = action;
 
-								// hack
 								if (i == 17)	// has keypress event ?
 								{
 									ev->m_event.m_key_code = ch;
@@ -3150,6 +3148,7 @@ namespace gameswf
 
 		display_list	m_display_list;
 		array<action_buffer*>	m_action_list;
+		array<action_buffer*>	m_goto_frame_action_list;
 
 		play_state	m_play_state;
 		int		m_current_frame;
@@ -3368,8 +3367,9 @@ namespace gameswf
 			m_has_looped = false;
 			m_play_state = PLAY;
 
+			m_display_list.clear();
 			execute_frame_tags(m_current_frame);
-			m_display_list.update();
+//			m_display_list.update();
 		}
 
 
@@ -3479,10 +3479,10 @@ namespace gameswf
 				// Loop.
 				m_current_frame = 0;
 				m_has_looped = true;
-				if (frame_count > 1)
-				{
-					m_display_list.reset();
-				}
+//				if (frame_count > 1)
+//				{
+//					m_display_list.reset();
+//				}
 			}
 		}
 
@@ -3564,10 +3564,14 @@ namespace gameswf
 				on_event(event_id::ENTER_FRAME); 
 			} 
 
+			// execute actions from gotoAndPlay(n) or gotoAndStop(n) frame,
+			execute_actions(&m_as_environment, m_goto_frame_action_list);
+			m_goto_frame_action_list.clear();
+
 			// Update current and next frames. 
 			if (m_play_state == PLAY) 
 			{ 
-				int prev_frame = m_current_frame; 
+				int prev_frame = m_current_frame;
 				if (m_on_event_load_called) 
 				{ 
 					increment_frame_and_check_for_loop(); 
@@ -3577,6 +3581,33 @@ namespace gameswf
 				// execute_frame_tags(0) already executed in dlist.cpp 
 				if (m_current_frame != prev_frame) 
 				{ 
+					//Vitaly:
+					// Macromedia Flash does not call remove display object tag
+					// for 1-st frame therefore we should do it for it :-)
+					if (m_current_frame == 0 && m_def->get_frame_count() > 1)
+					{
+						// affected depths
+						const array<execute_tag*>& playlist = m_def->get_playlist(0);
+						array<Uint16> affected_depths;
+						for (int i = 0; i < playlist.size(); i++)
+						{
+							Uint16 depth = (playlist[i]->get_depth_id_of_replace_or_add_tag()) >> 16;
+							if (depth != static_cast<uint16>(-1))
+							{
+								affected_depths.push_back(depth);
+							}
+						}
+
+						if (affected_depths.size() > 0)
+						{
+							m_display_list.clear_unaffected(affected_depths);					
+						}
+						else
+						{
+							m_display_list.clear();
+						}
+
+					}
 					execute_frame_tags(m_current_frame); 
 				} 
 			} 
@@ -3724,9 +3755,13 @@ namespace gameswf
 			// Set the sprite state at the specified frame number.
 			// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
 		{
-			//			IF_VERBOSE_DEBUG(log_msg("sprite::goto_frame(%d)\n", target_frame_number));//xxxxx
-
-			target_frame_number = iclamp(target_frame_number, 0, m_def->get_frame_count() - 1);
+			// Macromedia Flash ignores goto_frame(bad_frame)
+			if (target_frame_number > m_def->get_frame_count() - 1 ||
+					target_frame_number == m_current_frame)	// to prevent infinitive recursion
+			{
+				set_play_state(STOP);
+				return;
+			}
 
 			if (target_frame_number < m_current_frame)
 			{
@@ -3734,9 +3769,9 @@ namespace gameswf
 				{
 					execute_frame_tags_reverse(f);
 				}
-
+				m_action_list.clear();
 				execute_frame_tags(target_frame_number, false);
-				m_display_list.update();
+//				m_display_list.update();
 			}
 			else if (target_frame_number > m_current_frame)
 			{
@@ -3744,15 +3779,22 @@ namespace gameswf
 				{
 					execute_frame_tags(f, true);
 				}
-
+				m_action_list.clear();
 				execute_frame_tags(target_frame_number, false);
-				m_display_list.update();
+//				m_display_list.update();
 			}
 
 			m_current_frame = target_frame_number;	    
 
 			// goto_frame stops by default.
 			m_play_state = STOP;
+
+			// actions from gotoFrame() will be executed in advance()
+			// Macromedia Flash does goto_frame then run actions from this frame.
+			// We do too.
+			m_goto_frame_action_list = m_action_list; 
+			m_action_list.clear();
+
 		}
 
 

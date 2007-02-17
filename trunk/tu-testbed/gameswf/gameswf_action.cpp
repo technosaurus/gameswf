@@ -1718,7 +1718,6 @@ namespace gameswf
 #endif
 		
 		movie*	original_target = env->get_target();
-		UNUSED(original_target);		// Avoid warnings.
 
 		int	stop_pc = start_pc + exec_bytes;
 
@@ -1896,14 +1895,11 @@ namespace gameswf
 				}
 				case 0x20:	// set target expression
 				{
-					as_object_interface* target_object = env->top(0).to_object();
-
-					IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s (%d)",
-								  ((character *) target_object)->m_name.c_str(),
-								  ((character *) target_object)->m_id));
-
-					movie* target = env->find_target(target_object);
-					env->set_target (target);
+					// Flash doc says:
+					// This action behaves exactly like the original ActionSetTarget from SWF 3, 
+					// but is stack-based to enable the target path to be the result of expression evaluation.
+					env->set_target(env->top(0),original_target);
+					env->drop(1);
 					break;
 				}
 				case 0x21:	// string concat
@@ -2764,12 +2760,7 @@ namespace gameswf
 				case 0x8B:	// set target
 				{
 					// Change the movie we're working on.
-					const char* target_name = (const char*) &m_buffer[pc + 3];
-					if (target_name[0] == 0) { env->set_target(original_target); }
-					else {
-//						env->set_target(env->get_target()->find_labeled_target(target_name));
-//						if (env->get_target() == NULL) env->set_target(original_target);
-					}
+					env->set_target(as_value((const char*) &m_buffer[pc + 3]),original_target);
 					break;
 				}
 
@@ -3755,6 +3746,40 @@ namespace gameswf
 		return as_value();
 	}
 
+	void as_environment::set_target(as_value& target, movie* original_target)
+	{
+		if (target.get_type() == as_value::STRING)
+		{
+			tu_string path = target.to_tu_string();
+			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", path.c_str()));
+			if (path.size() > 0)
+			{
+				movie* tar = find_target(path);
+				if (tar)
+				{
+					set_target(tar);
+					return;
+				}
+			}
+			else
+			{
+				set_target(original_target);
+				return;
+			}
+		}
+		else
+		if (target.get_type() == as_value::OBJECT)
+		{
+			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", target.to_string()));
+			movie* tar = find_target(target);
+			if (tar)
+			{
+				set_target(tar);
+				return;
+			}
+		}
+		log_error("can't set target %s\n", target.to_string());
+	}
 
 	void	as_environment::set_variable(
 		const tu_string& varname,

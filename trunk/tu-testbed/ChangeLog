@@ -1,3 +1,15 @@
+2007-02-17  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_action(cpp, h): fixed set_target, target can be both 
+	movie* and path
+	* gameswf/gameswf_dlist(cpp, h): fixed goto_farme(), 
+	Macromedia Flash ignores goto_frame(bad_frame) & does goto_frame then
+	run actions from this frame. We do too. Removed display_list::reset() & clear()
+	as we do not require them more.
+	* gameswf/gameswf_test_ogl: commented fscommand messages because they stir to debugging
+	* gameswf/gameswf_impl.cpp: Macromedia Flash does not call remove display object tag
+	for 1-st frame therefore we should do it for it
+
 2007-02-15  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_impl(h, cpp): 
