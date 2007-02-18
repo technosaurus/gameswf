@@ -1,5 +1,12 @@
 2007-02-18  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp: There is begun process of allocation
+	of action script classes in own files, fixed as_array
+	* gameswf/gameswf_classes/as_array(cpp,h): moved as_array class stuff
+	* gameswf/win32/VC8: added new files
+	
+2007-02-18  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_test_ogl: a bit cleanup
 	* gameswf/gameswf_impl.cpp: fixed memory leaks
 
