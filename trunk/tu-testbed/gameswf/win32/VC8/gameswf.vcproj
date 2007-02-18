@@ -678,6 +678,18 @@
 				>
 			</File>
 		</Filter>
+		<Filter
+			Name="as_classes"
+			>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_array.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_array.h"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>
