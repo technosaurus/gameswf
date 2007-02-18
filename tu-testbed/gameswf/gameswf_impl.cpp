@@ -1704,47 +1704,14 @@ namespace gameswf
 	}
 
 	void	clear_library()
-		// Drop all library references to movie_definitions, so they
-		// can be cleaned up.
+	// Drop all library references to movie_definitions, so they
+	// can be cleaned up.
 	{
-		s_movie_library.clear();
+		// First it is necessary to clean s_movie_library_inst since
+		// s_movie_library refers on s_movie_library_inst
 		s_movie_library_inst.clear();
+		s_movie_library.clear();
 	}
-
-	// tulrich: Vitaly sent this code.  I don't trust it though!  It looks
-	// like it may be dropping refs in order to remove cyclic references.
-	// I would rather fix the source of any cyclic references directly.
-	//
-	//	void clear_library()
-	//	// Drop all library references to movie_definitions, so they
-	//	// can be cleaned up.
-	//	{
-	//		{for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it =
-	//			      s_movie_library_inst.begin();
-	//		      it != s_movie_library_inst.end();
-	//		      ++it)
-	//		{
-	//			smart_ptr<movie_interface> obj = it->second;
-	//			while (obj->get_ref_count() > 2)	    
-	//			{				
-	//				obj->drop_ref();
-	//			}
-	//		}}
-	//		s_movie_library_inst.clear();
-	//   
-	//		{for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = s_movie_library.begin();
-	//		      it != s_movie_library.end();							      
-	//		      ++it)			   
-	//		{
-	//			smart_ptr<movie_definition_sub> obj = it->second;
-	//			while (obj->get_ref_count() > 2)		 
-	//			{				
-	//				obj->drop_ref();
-	//			}
-	//		}}
-	//		s_movie_library.clear();
-	//	}
-
 
 	movie_definition*	create_library_movie(const char* filename)
 		// Try to load a movie from the given url, if we haven't
@@ -1779,12 +1746,11 @@ namespace gameswf
 			log_error("error: couldn't load library movie '%s'\n", filename);
 			return NULL;
 		}
-		else
-		{
-			s_movie_library.add(fn, mov);
-		}
 
-		mov->add_ref();
+		s_movie_library.add(fn, mov);
+
+		// The previous operator has added already the ref
+//		mov->add_ref();
 		return mov;
 	}
 
@@ -1814,22 +1780,19 @@ namespace gameswf
 		if (mov == NULL)
 		{
 			log_error("error: couldn't create instance\n");
-
 			return NULL;
 		}
-		else
-		{
-			s_movie_library_inst.add(md, mov);
-		}
 
-		mov->add_ref();
+		s_movie_library_inst.add(md, mov);
+
+		// The previous operator has added already the ref
+//		mov->add_ref();
 
 		// create dlist
 		// movie is ready for momentaly reaction
 		movie* m = mov->get_root_movie();
 		m->execute_frame_tags(0);		
 		return mov;
-
 	}
 
 

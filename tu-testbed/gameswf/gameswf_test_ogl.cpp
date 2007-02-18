@@ -847,17 +847,16 @@ int	main(int argc, char *argv[])
 					{
 						// Init library, for detection of memory leaks (for testing purposes)
 
+						// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 						if (md) md->drop_ref();
 						if (m) m->drop_ref();
+						gameswf::clear();
 
 						delete sound;
 						gameswf::set_sound_handler(NULL);
 
 						delete render;
 						gameswf::set_render_handler(NULL);
-
-						// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
-						gameswf::clear();
 
 						if (do_render)
 						{
@@ -869,14 +868,15 @@ int	main(int argc, char *argv[])
 							render = s_logo_render = gameswf::create_render_handler_ogl();
 							gameswf::set_render_handler(render);
 						}
+
 						// Load the actual movie.
-						gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
+						md = gameswf::create_library_movie(infile);
 						if (md == NULL)
 						{
 							fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
 							exit(1);
 						}
-						gameswf::movie_interface*	m = create_library_movie_inst(md);
+						m = create_library_movie_inst(md);
 						if (m == NULL)
 						{
 							fprintf(stderr, "error: can't create movie instance\n");
