@@ -146,6 +146,21 @@ namespace gameswf
 		return NULL;
 	}
 
+	int	display_list::get_character_by_ptr(const character* ch_search)
+	{
+		// See if we have a match on the display list.
+		for (int i = 0, n = get_character_count(); i < n; i++)
+		{
+			character*	ch = get_character(i);
+			if (ch == ch_search)
+			{
+				// Found it.
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	character*	display_list::get_character_by_name_i(const tu_stringi& name)
 	// Return first character with matching (case insensitive) name, if any.
 	{
@@ -578,6 +593,19 @@ namespace gameswf
 				continue; 
 			} 
 			i++; 
+		} 
+	} 
+
+	void display_list::swap_characters(character* ch1, character* ch2) 
+	{ 
+		// find ch1 & ch2
+		int i1 = get_character_by_ptr(ch1);
+		int i2 = get_character_by_ptr(ch2);
+		if (i1 >=0 && i2 >= 0) 
+		{ 
+			display_object_info tmp = m_display_object_array[i2];
+			m_display_object_array[i2] = m_display_object_array[i1];
+			m_display_object_array[i1] = tmp;
 		} 
 	} 
 
