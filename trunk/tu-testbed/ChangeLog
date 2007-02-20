@@ -1,5 +1,13 @@
 2007-02-20  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/samples/test_delete(fla, swf): added delete tester
+	* gameswf/gameswf_classes/as_array(cpp,h): added to_string()
+	for trace() & updated length property
+	* gameswf/gameswf_action.cpp: The next attempt to fix the delete & delete2
+	
+
+2007-02-20  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/samples/test_mysql.fla: compacted
 
 2007-02-20  Vitaly Alexeev <tishka92@yahoo.com>
