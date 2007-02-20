@@ -2029,6 +2029,7 @@ namespace gameswf
 				{
 					tu_string varname(env->top(0).to_tu_string());
 					as_object obj(env->top(1).to_object());
+					env->drop(1);
 
 					as_value val;
 					obj.get_member(varname, &val);
@@ -2038,7 +2039,6 @@ namespace gameswf
 
 					// Vitaly:
 					// finally to remove it we need set varname to undefined
-					// But I am not assured of it
 					if (obj.m_prototype != NULL)		
 					{
 						as_object* prototype = (as_object*) obj.m_prototype;
@@ -2051,9 +2051,11 @@ namespace gameswf
 						{
 							prototype->m_members.set(varname, val);
 						}
+						env->top(0).set_bool(true);
+						break;
 					}
 
-//					env->drop(2);
+					env->top(0).set_bool(false);
 					break;
 				}
 				case 0x3B:	// delete2
@@ -2061,13 +2063,37 @@ namespace gameswf
 					tu_string varname(env->top(0).to_tu_string());
 					as_value obj(env->get_variable_raw(varname, with_stack));
 
-					// drop refs
-					obj.set_undefined();
+					if (obj.get_type() != as_value::UNDEFINED)
+					{
+						// drop refs
+						obj.set_undefined();
 
-					// finally to remove it we need set varname to undefined
-					env->m_variables.set(varname, obj);
+						// finally to remove it we need set varname to undefined
 
-//					env->drop(1);
+						// try delete local var
+						int	local_index = env->find_local(varname);
+						if (local_index >= 0)
+						{
+							// local var is found
+							env->m_local_frames[local_index].m_value.set_undefined();
+							env->top(0).set_bool(true);
+							break;
+						}
+						else
+						{
+							// check var in m_variables
+							as_value val;
+							if (env->m_variables.get(varname, &val))
+							{
+								env->m_variables.set(varname, obj);
+								env->top(0).set_bool(true);
+								break;
+							}
+						}
+					}
+
+					// can't delete var
+					env->top(0).set_bool(false);
 					break;
 				}
 

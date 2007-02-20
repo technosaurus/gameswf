@@ -9,6 +9,15 @@
 namespace gameswf
 {
 
+	void	as_array_tostring(const fn_call& fn)
+	{
+		as_array* a = (as_array*) fn.this_ptr;
+		assert(a);
+
+		fn.result->set_tu_string(a->to_string());
+	}
+
+
 	void	as_global_array_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Array.
 	{
@@ -67,17 +76,28 @@ namespace gameswf
 		//			this->set_member("sort", &array_not_impl);
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
-		//			this->set_member("toString", &array_not_impl);
-		//	
+
+		set_member("toString", &as_array_tostring);
+		set_member_flags("toString", -1);	// hack
 	}
 
 	bool as_array::get_member(const tu_stringi& name, as_value* val)
 	{
 		if (name == "length")
 		{
-			val->set_int(as_object::m_members.size());
+			// exclude own methods
+			int n = 0;
+			for (stringi_hash<as_member>::iterator it = m_members.begin(); it != m_members.end(); ++it)
+			{
+				if (it->second.get_member_flags().get_flags() != -1)
+				{
+					n++;
+				}
+			}
+			val->set_int(n);
 			return true;
 		}
+		
 		return as_object::get_member(name, val);
 	}
 
@@ -91,5 +111,50 @@ namespace gameswf
 		as_object::set_member(name, val);
 	}
 
+	tu_string as_array::to_string()
+	{
+		// receive indexes
+		// array may contain not numerical indexes
+		array<tu_stringi> idx;
+		for (stringi_hash<as_member>::iterator it = m_members.begin(); it != m_members.end(); ++it)
+		{
+			if (it->second.get_member_flags().get_flags() != -1)
+			{
+				idx.push_back(it->first);
+			}
+		}
+
+		// sort indexes
+		int n = idx.size();
+		for (int i = 0; i < n - 1; i++)
+		{
+			for (int j = i + 1; j < n; j++)
+			{
+				if (idx[i] > idx[j])
+				{
+					tu_stringi temp;
+					temp = idx[i];
+					idx[i] = idx[j];
+					idx[j] = temp;
+				}
+			}
+		}
+
+		// form string
+		tu_string s;
+		for (int i = 0; i < n; i++)
+		{
+			as_value val;
+			as_object::get_member(idx[i], &val);
+			s += val.to_string();
+
+			if (i < n - 1)
+			{
+				s +=  ",";
+			}
+		}
+
+		return s;
+	}
 
 };
