@@ -4899,6 +4899,125 @@ namespace gameswf
 		fn.result->set_int(sprite->get_root()->get_file_bytes());
 	}
 
+	//swapDepths(target:Object) : Void
+	void sprite_swap_depths(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+
+		if (fn.nargs != 1) 
+		{ 
+			log_error("swapDepths needs one arg\n"); 
+			return; 
+		} 
+
+		sprite_instance* target; 
+		if (fn.arg(0).get_type() == as_value::OBJECT) 
+		{ 
+			target = (sprite_instance*) fn.arg(0).to_object(); 
+		} 
+		else 
+		if (fn.arg(0).get_type() == as_value::NUMBER) 
+		{ 
+			int target_depth = int(fn.arg(0).to_number()); 
+			sprite_instance* parent = (sprite_instance*) sprite->get_parent(); 
+			target = (sprite_instance*) parent->m_display_list.get_character_at_depth(target_depth); 
+		} 
+		else 
+		{ 
+			log_error("swapDepths has received invalid arg\n"); 
+			return; 
+		} 
+
+		if (sprite == NULL || target == NULL) 
+		{ 
+			log_error("It is impossible to swap NULL character\n"); 
+			return; 
+		} 
+
+		if (sprite->get_parent() == target->get_parent() && sprite->get_parent() != NULL) 
+		{ 
+			int target_depth = target->get_depth(); 
+			target->set_depth(sprite->get_depth()); 
+			sprite->set_depth(target_depth); 
+
+			sprite_instance* parent = (sprite_instance*) sprite->get_parent(); 
+			parent->m_display_list.swap_characters(sprite, target); 
+		} 
+		else 
+		{ 
+			log_error("MovieClips should have the same parent\n"); 
+		} 
+	} 
+
+	//duplicateMovieClip(name:String, depth:Number, [initObject:Object]) : MovieClip 
+	void sprite_duplicate_movieclip(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+
+		if (fn.nargs < 2) 
+		{ 
+			log_error("duplicateMovieClip needs 2 or 3 args\n"); 
+			return; 
+		} 
+
+		// Copy event handlers from sprite 
+		// We should not copy 'm_action_buffer' since the 'm_method' already contains it 
+		array<swf_event*> event_handlers; 
+		const hash<event_id, as_value>* sprite_events = sprite->get_event_handlers(); 
+		typedef hash<event_id, as_value>::const_iterator event_iterator; 
+		for (event_iterator it = sprite_events->begin(), itEnd = sprite_events->end(); 
+			it != itEnd; ++it ) 
+		{ 
+			swf_event* e = new swf_event; 
+			e->m_event = it->first; 
+			e->m_method = it->second; 
+			event_handlers.push_back(e); 
+		} 
+
+		character* parent = (character*) sprite->get_parent(); 
+		character* ch = NULL; 
+		if (parent != NULL) 
+		{ 
+			ch = parent->add_display_object( 
+				sprite->get_id(), 
+				fn.arg(0).to_string(), 
+				event_handlers, 
+				int(fn.arg(1).to_number()), 
+				true, // replace if depth is occupied (to drop) 
+				sprite->get_cxform(), 
+				sprite->get_matrix(), 
+				sprite->get_ratio(), 
+				sprite->get_clip_depth()); 
+
+			// Copy members from initObject 
+			if (fn.nargs == 3 && ch) 
+			{ 
+				as_object* initObject = (as_object*) fn.arg(2).to_object(); 
+				typedef stringi_hash<as_member>::const_iterator members_iterator; 
+				for (members_iterator it = initObject->m_members.begin(), 
+					itEnd = initObject->m_members.end(); 
+					it != itEnd; 
+				++it ) 
+				{ 
+					const tu_stringi name = it->first; 
+					const as_member member = it->second; 
+					ch->set_member(name, member.get_member_value()); 
+				} 
+			} 
+
+		} 
+		fn.result->set_as_object_interface(ch); 
+	} 
 
 	static void	sprite_builtins_init()
 	{
@@ -4916,12 +5035,13 @@ namespace gameswf
 		s_sprite_builtins->set_member("prevFrame", &sprite_prev_frame);
 		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
 		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
+		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
+		s_sprite_builtins->set_member("duplicateMovieClip", &sprite_duplicate_movieclip);
 
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
 		//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
 		//		s_sprite_builtins->set_member("getURL", &sprite_get_url);
-		//		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
 	}
 
 	static void	sprite_builtins_clear()

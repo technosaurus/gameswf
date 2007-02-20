@@ -110,6 +110,9 @@ namespace gameswf
 		// If there are multiples, returns the *first* match only!
 		character*	get_character_by_name(const tu_string& name);
 
+		// returns index of ch
+		int	display_list::get_character_by_ptr(const character* ch);
+
 		// May return NULL.
 		// If there are multiples, returns the *first* match only!
 		character*	get_character_by_name_i(const tu_stringi& name);
@@ -121,7 +124,8 @@ namespace gameswf
 		}
 
 		void clear_unaffected(array<Uint16>& affected_depths);
-
+		
+		void swap_characters(character* ch, character* ch2);
 
 //		void	set_character_position(character* ch, float x, float y);
 

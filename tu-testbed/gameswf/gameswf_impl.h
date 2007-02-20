@@ -466,6 +466,11 @@ namespace gameswf
 		}
 
 		// Event handler accessors.
+		const hash<event_id, as_value>* get_event_handlers() const 
+		{ 
+			return &m_event_handlers; 
+		} 
+
 		bool	get_event_handler(event_id id, as_value* result)
 		{
 			return m_event_handlers.get(id, result);
