@@ -1059,9 +1059,7 @@ namespace gameswf
 			for (hash< smart_ptr<character>, int >::iterator it = m_keypress_listeners.begin();
 				it != m_keypress_listeners.end(); ++it)
 			{
- 				character* ch = dynamic_cast<character*>(it->first.get_ptr());
-				assert(ch);
-				ch->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
+				it->first.get_ptr()->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
 			}
 		} 
 

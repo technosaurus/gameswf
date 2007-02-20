@@ -21,6 +21,7 @@
 
 // classes
 #include "gameswf_as_classes/as_array.h"
+#include "gameswf_as_classes/as_db.h"	// mysql db extension
 
 
 #ifdef HAVE_LIBXML
@@ -1332,6 +1333,9 @@ namespace gameswf
 			// for video
 			s_global->set_member("NetStream", as_value(as_global_netstream_ctor));
 
+			// MYSQL extensions
+			s_global->set_member("MyDb", as_value(as_global_mysqldb_ctor));
+
 			math_init();
 			key_init();
 		}
@@ -2023,24 +2027,47 @@ namespace gameswf
 				}
 				case 0x3A:	// delete
 				{
-					// @@ TODO
-					
-					// Apparently this can be used to remove properties from
-					// an object?
+					tu_string varname(env->top(0).to_tu_string());
+					as_object obj(env->top(1).to_object());
 
-					log_error("todo opcode: %02X\n", action_id);
+					as_value val;
+					obj.get_member(varname, &val);
+
+					// drop refs
+					val.set_undefined();
+
+					// Vitaly:
+					// finally to remove it we need set varname to undefined
+					// But I am not assured of it
+					if (obj.m_prototype != NULL)		
+					{
+						as_object* prototype = (as_object*) obj.m_prototype;
+						movie* movie = obj.m_prototype->to_movie();
+						if (movie)
+						{
+							movie->set_member(varname, val);
+						}
+						else
+						{
+							prototype->m_members.set(varname, val);
+						}
+					}
+
+//					env->drop(2);
 					break;
 				}
 				case 0x3B:	// delete2
 				{
-					// @@ tulrich: delete is not valid here!  Do we actually just want to 
-					// NULL out the object pointer in the environment (to drop the ref)?
-					// Should at least check the ref count before deleting anything!!!
-//					as_value	obj_name = env->pop();
-					as_value obj_ptr = env->get_variable_raw(env->top(0).to_tu_string(), with_stack);
-///x					delete obj_ptr.to_object();
-// 	 				log_error("%08X\n", obj_ptr.to_object());
-					log_error("todo opcode: %02X\n", action_id);
+					tu_string varname(env->top(0).to_tu_string());
+					as_value obj(env->get_variable_raw(varname, with_stack));
+
+					// drop refs
+					obj.set_undefined();
+
+					// finally to remove it we need set varname to undefined
+					env->m_variables.set(varname, obj);
+
+//					env->drop(1);
 					break;
 				}
 
@@ -2081,7 +2108,7 @@ namespace gameswf
 				}
 				case 0x3E:	// return
 				{
-					// Put top of stack in the provided return slot, if
+					// Put top of stack in the provided a slot, if
 					// it's not NULL.
 					if (retval)
 					{

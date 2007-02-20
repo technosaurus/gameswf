@@ -1,3 +1,15 @@
+2007-02-20  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/samples/test_mysql(fla, swf): added mysql test
+	* gameswf/gameswf_classes/as_db(cpp,h), as_table(h, cpp):
+	added very simple, working and convenient MYSQL extension
+	for the gameswf SWF player library.
+	* gameswf/win32/VC8: added as_db(cpp,h) & as_table(h, cpp) files
+	* gameswf/gameswf_action.cpp: The attempt to fix delete & delete2,
+	added the call to mysql ctor
+	* gameswf/gameswf_impl.cpp: simplified notify_keypress_listener(),
+	Thanks Thatcher
+
 2007-02-18  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_action.cpp: There is begun process of allocation
