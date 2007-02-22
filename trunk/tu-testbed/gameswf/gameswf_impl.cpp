@@ -4583,28 +4583,51 @@ namespace gameswf
 		}
 
 
-		void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth)
-			// Duplicate the object with the specified name and add it with a new name 
-			// at a new depth.
+		character*	clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object)
+		// Duplicate the object with the specified name and add it with a new name 
+		// at a new depth.
 		{
-			character* ch = m_display_list.get_character_by_name(name);
-			if (ch)
-			{
-				array<swf_event*>	dummy_event_handlers;
 
-				add_display_object(
-					ch->get_id(),
-					newname.c_str(),
-					dummy_event_handlers,
-					depth,
-					true,	// replace if depth is occupied
-					ch->get_cxform(),
-					ch->get_matrix(),
-					ch->get_ratio(),
-					ch->get_clip_depth());
-				// @@ TODO need to duplicate ch's event handlers, and presumably other members?
-				// Probably should make a character::clone() function to handle this.
-			}
+			// Create the copy event handlers from sprite 
+			// We should not copy 'm_action_buffer' since the 'm_method' already contains it 
+			array<swf_event*> event_handlers; 
+			const hash<event_id, as_value>* sprite_events = get_event_handlers(); 
+			for (hash<event_id, as_value>::const_iterator it = sprite_events->begin();
+				it != sprite_events->end(); ++it ) 
+			{ 
+				swf_event* e = new swf_event; 
+				e->m_event = it->first; 
+				e->m_method = it->second; 
+				event_handlers.push_back(e); 
+			} 
+
+			character* parent = (character*) get_parent(); 
+			character* ch = NULL; 
+			if (parent != NULL) 
+			{ 
+				ch = parent->add_display_object( 
+					get_id(), 
+					newname.c_str(), 
+					event_handlers, 
+					depth, 
+					true, // replace if depth is occupied (to drop) 
+					get_cxform(), 
+					get_matrix(), 
+					get_ratio(), 
+					get_clip_depth()); 
+
+				// Copy members from initObject 
+				if (init_object)
+				{
+					for (stringi_hash<as_member>::const_iterator it = init_object->m_members.begin(); 
+						it != init_object->m_members.end(); ++it ) 
+					{ 
+						ch->set_member(it->first, it->second.get_member_value()); 
+					} 
+				}
+
+			} 
+			return ch;
 		}
 
 
@@ -4970,52 +4993,17 @@ namespace gameswf
 			return; 
 		} 
 
-		// Copy event handlers from sprite 
-		// We should not copy 'm_action_buffer' since the 'm_method' already contains it 
-		array<swf_event*> event_handlers; 
-		const hash<event_id, as_value>* sprite_events = sprite->get_event_handlers(); 
-		typedef hash<event_id, as_value>::const_iterator event_iterator; 
-		for (event_iterator it = sprite_events->begin(), itEnd = sprite_events->end(); 
-			it != itEnd; ++it ) 
+		as_object* init_object = NULL;
+		if (fn.nargs == 3) 
 		{ 
-			swf_event* e = new swf_event; 
-			e->m_event = it->first; 
-			e->m_method = it->second; 
-			event_handlers.push_back(e); 
+			init_object = (as_object*) fn.arg(2).to_object(); 
 		} 
 
-		character* parent = (character*) sprite->get_parent(); 
-		character* ch = NULL; 
-		if (parent != NULL) 
-		{ 
-			ch = parent->add_display_object( 
-				sprite->get_id(), 
-				fn.arg(0).to_string(), 
-				event_handlers, 
-				int(fn.arg(1).to_number()), 
-				true, // replace if depth is occupied (to drop) 
-				sprite->get_cxform(), 
-				sprite->get_matrix(), 
-				sprite->get_ratio(), 
-				sprite->get_clip_depth()); 
+		character* ch = sprite->clone_display_object(
+			fn.arg(0).to_tu_string(), 
+			(int) fn.arg(1).to_number(),
+			init_object);
 
-			// Copy members from initObject 
-			if (fn.nargs == 3 && ch) 
-			{ 
-				as_object* initObject = (as_object*) fn.arg(2).to_object(); 
-				typedef stringi_hash<as_member>::const_iterator members_iterator; 
-				for (members_iterator it = initObject->m_members.begin(), 
-					itEnd = initObject->m_members.end(); 
-					it != itEnd; 
-				++it ) 
-				{ 
-					const tu_stringi name = it->first; 
-					const as_member member = it->second; 
-					ch->set_member(name, member.get_member_value()); 
-				} 
-			} 
-
-		} 
 		fn.result->set_as_object_interface(ch); 
 	} 
 

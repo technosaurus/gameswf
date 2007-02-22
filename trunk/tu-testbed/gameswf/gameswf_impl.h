@@ -307,7 +307,12 @@ namespace gameswf
 		virtual float	get_timer() const { return 0.0f; }
 		virtual movie*	to_movie() { return this; }
 
-		virtual void	clone_display_object(const tu_string& name, const tu_string& newname, Uint16 depth) { assert(0); }
+		virtual character*	clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object)
+		{
+			assert(0);
+			return NULL; 
+		}
+
 		virtual void	remove_display_object(const tu_string& name) { assert(0); }
 
 		// Forward vararg call to version taking va_list.

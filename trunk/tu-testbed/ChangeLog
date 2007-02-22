@@ -1,3 +1,14 @@
+2007-02-22  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/samples/test_duplicateclip(fla, swf): includes the using of
+	duplicateMovieClip() function & duplicateMovieClip() method
+	* gameswf/gameswf_impl(cpp, h): fixed sprite_duplicate_movieclip(), 
+	clone_display_object() is used for duplicateMovieClip() function & 
+	duplicateMovieClip() method
+	* gameswf/gameswf_action.cpp: fixed 0x24(duplicate) opcode,
+	added 0x43 opcode(decl object) is needed for duplicateclip
+	* gameswf/gameswf_classes/as_db.cpp: added [#define ulong Uint32]
+
 2007-02-20  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/samples/test_swapdepths(fla, swf): swapDepths() tester
