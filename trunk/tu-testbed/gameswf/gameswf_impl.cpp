@@ -882,7 +882,7 @@ namespace gameswf
 			m_viewport_height(1),
 			m_pixel_scale(1.0f),
 			m_background_color(0, 0, 0, 255),
-			m_timer(0.0f),
+//			m_timer(0.0f),
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
@@ -1203,8 +1203,6 @@ namespace gameswf
 			return m_background_color.m_a / 255.0f;
 		}
 
-		float	movie_root::get_timer() const { return m_timer; }
-
 		void	movie_root::restart() { m_movie->restart(); }
 
 		/*void	movie_root::advance(float delta_time)
@@ -1270,7 +1268,6 @@ namespace gameswf
 			m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
 			generate_mouse_button_events(&m_mouse_button_state);
 
-			m_timer += delta_time;   
 			m_time_remainder += delta_time;
       if (m_time_remainder >= m_frame_time)
 			{
@@ -3353,8 +3350,6 @@ namespace gameswf
 		{
 			m_root->set_background_color(color);
 		}
-
-		float	get_timer() const { return m_root->get_timer(); }
 
 		void	restart()
 		{

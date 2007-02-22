@@ -107,6 +107,7 @@ namespace gameswf
 	bool	s_inited = false;
 	smart_ptr<as_object>	s_global;
 	fscommand_callback	s_fscommand_handler = NULL;
+	Uint64 s_start_time = 0;
 
 
 #define EXTERN_MOVIE
@@ -1305,6 +1306,7 @@ namespace gameswf
 		if (s_inited == false)
 		{
 			s_inited = true;
+			s_start_time = tu_timer::get_ticks();
 
 			// @@ s_global should really be a
 			// client-visible player object, which
@@ -2035,7 +2037,7 @@ namespace gameswf
 
 				case 0x34:	// get timer
 					// Push milliseconds since we started playing.
-					env->push(floorf(env->m_target->get_timer() * 1000.0f));
+					env->push((double) (tu_timer::get_ticks() - s_start_time));
 					break;
 
 				case 0x35:	// mb substring

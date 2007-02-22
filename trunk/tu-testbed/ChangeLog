@@ -1,5 +1,18 @@
 2007-02-22  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_impl(cpp, h): get_timer() is removed because this
+	for (i=0; i<1000000;i++)
+	{
+		trace(getTimer());
+	}
+	showed the const result,
+	get_timer() depends on advance() that is incorrect
+	
+	* gameswf/gameswf_action.cpp: added s_start_time = tu_timer::get_ticks()
+	at the moment of start gameswf
+
+2007-02-22  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/samples/test_duplicateclip(fla, swf): added the test of
 	getDepth(), removeMovieClip() & createEmptyMovieClip() method
 	* gameswf/gameswf_impl.cpp: added
