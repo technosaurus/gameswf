@@ -85,8 +85,8 @@ namespace gameswf
 	// matrix.  When transforming points, the translation
 	// happens first, then our original xform.
 	{
-		m_[0][2] += m_[0][0] * tx + m_[0][1] * ty;
-		m_[1][2] += m_[1][0] * tx + m_[1][1] * ty;
+		m_[0][2] += infinite_to_fzero(m_[0][0] * tx + m_[0][1] * ty);
+		m_[1][2] += infinite_to_fzero(m_[1][0] * tx + m_[1][1] * ty);
 	}
 
 
@@ -95,10 +95,10 @@ namespace gameswf
 	// matrix.  When transforming points, the scale
 	// happens first, then our original xform.
 	{
-		m_[0][0] *= scale;
-		m_[0][1] *= scale;
-		m_[1][0] *= scale;
-		m_[1][1] *= scale;
+		m_[0][0] *= infinite_to_fzero(scale);
+		m_[0][1] *= infinite_to_fzero(scale);
+		m_[1][0] *= infinite_to_fzero(scale);
+		m_[1][1] *= infinite_to_fzero(scale);
 	}
 
 
@@ -120,10 +120,10 @@ namespace gameswf
 	{
 		float	cos_angle = cosf(angle);
 		float	sin_angle = sinf(angle);
-		m_[0][0] = x_scale * cos_angle;
-		m_[0][1] = y_scale * -sin_angle;
-		m_[1][0] = x_scale * sin_angle;
-		m_[1][1] = y_scale * cos_angle;
+		m_[0][0] = infinite_to_fzero(x_scale * cos_angle);
+		m_[0][1] = infinite_to_fzero(y_scale * -sin_angle);
+		m_[1][0] = infinite_to_fzero(x_scale * sin_angle);
+		m_[1][1] = infinite_to_fzero(y_scale * cos_angle);
 	}
 
 

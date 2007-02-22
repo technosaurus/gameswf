@@ -3737,6 +3737,7 @@ namespace gameswf
 		{
 			// Macromedia Flash ignores goto_frame(bad_frame)
 			if (target_frame_number > m_def->get_frame_count() - 1 ||
+					target_frame_number < 0 ||
 					target_frame_number == m_current_frame)	// to prevent infinitive recursion
 			{
 				set_play_state(STOP);
@@ -3842,8 +3843,35 @@ namespace gameswf
 				|| (name && existing_char->get_name() == name)))
 			{
 				//				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
-				move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
-				return NULL;
+
+				// compare events 
+				hash<event_id, as_value>* existing_events =
+					(hash<event_id, as_value>*) existing_char->get_event_handlers(); 
+				int n = event_handlers.size(); 
+				if (existing_events->size() == n) 
+				{ 
+					bool same_events = true; 
+					for (int i = 0; i < n; i++) 
+					{ 
+						as_value result; 
+						if (existing_events->get(event_handlers[i]->m_event, &result)) 
+						{ 
+							// compare actionscipt in event 
+							if (event_handlers[i]->m_method == result) 
+							{ 
+								continue; 
+							} 
+						} 
+						same_events = false; 
+						break; 
+					} 
+
+					if (same_events) 
+					{ 
+						move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
+						return NULL;
+					}
+				}
 			}
 
 			assert(cdef);
@@ -4088,7 +4116,7 @@ namespace gameswf
 				//if (name == "_x")
 				{
 					matrix	m = get_matrix();
-					m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					m.m_[0][2] = infinite_to_fzero((float) PIXELS_TO_TWIPS(val.to_number()));
 					set_matrix(m);
 
 					m_accept_anim_moves = false;
@@ -4099,7 +4127,7 @@ namespace gameswf
 				//else if (name == "_y")
 				{
 					matrix	m = get_matrix();
-					m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					m.m_[1][2] = infinite_to_fzero((float) PIXELS_TO_TWIPS(val.to_number()));
 					set_matrix(m);
 
 					m_accept_anim_moves = false;
@@ -4141,7 +4169,7 @@ namespace gameswf
 				{
 					// Set alpha modulate, in percent.
 					cxform	cx = get_cxform();
-					cx.m_[3][0] = float(val.to_number()) / 100.f;
+					cx.m_[3][0] = infinite_to_fzero(float(val.to_number())) / 100.f;
 					set_cxform(cx);
 					m_accept_anim_moves = false;
 					return;
@@ -4158,7 +4186,7 @@ namespace gameswf
 				{
 					// @@ tulrich: is parameter in world-coords or local-coords?
 					matrix	m = get_matrix();
-					m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number()));
+					m.m_[0][0] = infinite_to_fzero(float(PIXELS_TO_TWIPS(val.to_number())));
 					float w = get_width();
 					if (fabsf(w) > 1e-6f)
 					{
@@ -4173,7 +4201,7 @@ namespace gameswf
 				{
 					// @@ tulrich: is parameter in world-coords or local-coords?
 					matrix	m = get_matrix();
-					m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number()));
+					m.m_[1][1] = infinite_to_fzero(float(PIXELS_TO_TWIPS(val.to_number())));
 					float h = get_width();
 					if (fabsf(h) > 1e-6f)
 					{
@@ -4523,12 +4551,11 @@ namespace gameswf
 			{
 				return this;
 			}
-			else if (name == "..")
+			else if (name == ".." || name == "_parent")
 			{
 				return get_parent();
 			}
-			else if (name == "_level0"
-				|| name == "_root")
+			else if (name == "_level0" || name == "_root")
 			{
 				return m_root->m_movie.get_ptr();
 			}
