@@ -304,7 +304,6 @@ namespace gameswf
 
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
 
-		virtual float	get_timer() const { return 0.0f; }
 		virtual movie*	to_movie() { return this; }
 
 		virtual character*	clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object)
@@ -821,7 +820,7 @@ namespace gameswf
 		float			m_pixel_scale;
 
 		rgba			m_background_color;
-		float			m_timer;
+//		float			m_timer;
 		int			m_mouse_x, m_mouse_y, m_mouse_buttons;
 		void *			m_userdata;
 		movie::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
@@ -870,7 +869,6 @@ namespace gameswf
 		void	set_background_color(const rgba& color);
 		void	set_background_alpha(float alpha);
 		float	get_background_alpha() const;
-		float	get_timer() const;
 		void	restart();
 		void	advance(float delta_time);
 
