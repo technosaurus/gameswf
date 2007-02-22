@@ -1878,12 +1878,37 @@ namespace gameswf
 					break;
 				}
 
-				case 0x24:	// duplicate clip (sprite?)
+				case 0x24:
+				// duplicateMovieClip(target:String, newname:String, depth:Number) : Void
+				// duplicateMovieClip(target:MovieClip, newname:String, depth:Number) : Void
 				{
-					env->get_target()->clone_display_object(
-						env->top(2).to_tu_string(),
-						env->top(1).to_tu_string(),
-						(int) env->top(0).to_number());
+					movie* target = NULL;
+					switch (env->top(2).get_type())
+					{
+						case as_value::OBJECT:
+							target = env->top(2).to_object()->to_movie();
+							break;
+						case as_value::STRING:
+							{
+								as_value val = env->get_variable(env->top(2).to_string(), with_stack);
+								if (val.to_object() != NULL)
+								{
+									target = val.to_object()->to_movie();
+								}
+							}
+							break;
+						default:
+							break;
+					}
+
+					if (target)
+					{
+						target->clone_display_object(
+							env->top(1).to_tu_string(),
+							(int) env->top(0).to_number(),
+							NULL);
+					}
+
 					env->drop(3);
 					break;
 				}
@@ -2237,8 +2262,26 @@ namespace gameswf
 				}
 				case 0x43:	// declare object
 				{
-					// @@ TODO
-					log_error("todo opcode: %02X\n", action_id);
+				// Pops elems off of the stack. Pops [value1, name1, …, valueN, nameN] off the stack.
+				// It does the following:
+				// 1 Pops the number of initial properties from the stack.
+				// 2 Initializes the object as a ScriptObject.
+				// 3 Sets the object type to “Object”.
+				// 4 Pops each initial property off the stack. For each initial property, the value of the property is
+				// popped off the stack, then the name of the property is popped off the stack. The name of the
+				// property is converted to a string. The value may be of any type.				{
+
+					int n = (int) env->pop().to_number();
+					as_object* obj = new as_object();
+
+					// Set members
+					for (int i = 0; i < n; i++)
+					{
+						obj->set_member(env->top(1).to_tu_string(), env->top(0));
+						env->drop(2);
+					}
+
+					env->push(obj); 
 					break;
 				}
 				case 0x44:	// type of

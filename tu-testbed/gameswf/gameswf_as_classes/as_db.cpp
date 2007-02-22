@@ -14,6 +14,8 @@
 namespace gameswf
 {
 
+	#define ulong Uint32
+
 	void	as_db_connect(const fn_call& fn)
 	//  Closes a previously opened connection & create new connection to db
 	{
