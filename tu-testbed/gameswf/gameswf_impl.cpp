@@ -2916,13 +2916,24 @@ namespace gameswf
 		stringi_hash<int>	     m_named_frames;	// stores 0-based frame #'s
 		int			     m_frame_count;
 		int			     m_loading_frame;
-		sprite_definition(movie_definition_sub* m)
-			:
-		m_movie_def(m),
+
+		sprite_definition(movie_definition_sub* m):
+			m_movie_def(m),
 			m_frame_count(0),
 			m_loading_frame(0)
 		{
-			assert(m_movie_def);
+			// create empty sprite_definition (it is used for createEmptyMovieClip() method)
+			if (m == NULL)
+			{
+				m_frame_count = 1;
+				m_loading_frame = 1;
+				m_playlist.resize(1);
+				m_playlist[0].push_back(new execute_tag());
+			}
+			else
+			{
+				assert(m_movie_def);
+			}
 		}
 
 		~sprite_definition()
@@ -3280,6 +3291,30 @@ namespace gameswf
 
 		int	get_current_frame() const { return m_current_frame; }
 		int	get_frame_count() const { return m_def->get_frame_count(); }
+
+
+		character* add_empty_movieclip(const char* name, int depth)
+		{
+			cxform color_transform;
+			matrix matrix;
+
+			// empty_sprite_def will be deleted during deliting sprite
+			sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+
+			sprite_instance* sprite =	new sprite_instance(empty_sprite_def, m_root, this, 0);
+			sprite->set_name(name);
+
+			m_display_list.add_display_object(
+				sprite,
+				depth,
+				true,
+				color_transform,
+				matrix,
+				0.0f,
+				0); 
+
+			return sprite;
+		}
 
 		void	set_play_state(play_state s)
 			// Stop or play the sprite.
@@ -5007,6 +5042,58 @@ namespace gameswf
 		fn.result->set_as_object_interface(ch); 
 	} 
 
+	void sprite_get_depth(const fn_call& fn)
+	{
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+
+		int n = sprite->get_depth();
+
+		// Macromedia Flash help says: depth starts at -16383 (0x3FFF)
+		fn.result->set_int( - (n + 16383 - 1));
+	}
+
+	//createEmptyMovieClip(name:String, depth:Number) : MovieClip
+	void sprite_create_empty_movieclip(const fn_call& fn)
+	{
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+
+		if (fn.nargs != 2)
+		{
+			log_error("createEmptyMovieClip needs 2 args\n");
+			return;
+		}
+
+		character* ch = sprite->add_empty_movieclip(fn.arg(0).to_string(), int(fn.arg(1).to_number()));
+		fn.result->set_as_object_interface(ch);
+	}
+
+  // removeMovieClip() : Void 
+	void sprite_remove_movieclip(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+
+		sprite_instance* parent = (sprite_instance*) sprite->get_parent(); 
+		if (parent) 
+		{ 
+			parent->remove_display_object(sprite->get_depth(), -1); 
+		} 
+	} 
+
 	static void	sprite_builtins_init()
 	{
 		if (s_sprite_builtins)
@@ -5025,6 +5112,9 @@ namespace gameswf
 		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
 		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
 		s_sprite_builtins->set_member("duplicateMovieClip", &sprite_duplicate_movieclip);
+		s_sprite_builtins->set_member("getDepth", &sprite_get_depth);
+		s_sprite_builtins->set_member("createEmptyMovieClip", &sprite_create_empty_movieclip);
+		s_sprite_builtins->set_member("removeMovieClip", &sprite_remove_movieclip);
 
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
