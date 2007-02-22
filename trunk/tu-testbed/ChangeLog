@@ -1,5 +1,12 @@
 2007-02-22  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/samples/test_duplicateclip(fla, swf): added the test of
+	getDepth(), removeMovieClip() & createEmptyMovieClip() method
+	* gameswf/gameswf_impl.cpp: added
+	getDepth(), removeMovieClip() & createEmptyMovieClip() method
+
+2007-02-22  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/samples/test_duplicateclip(fla, swf): includes the using of
 	duplicateMovieClip() function & duplicateMovieClip() method
 	* gameswf/gameswf_impl(cpp, h): fixed sprite_duplicate_movieclip(), 
