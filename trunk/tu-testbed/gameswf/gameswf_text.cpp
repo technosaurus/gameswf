@@ -583,7 +583,7 @@ namespace gameswf
 			reset_bounding_box(0, 0);
 		}
 
-		edit_text_character::~edit_text_character() 
+		~edit_text_character() 
 		{ 
 			on_event(event_id::KILLFOCUS); 
 		} 
@@ -593,7 +593,7 @@ namespace gameswf
 			return get_parent()->get_root(); 
 		} 
 
-		void edit_text_character::show_cursor() 
+		void show_cursor() 
 		{ 
 			Uint16 x = (int) m_xcursor; 
 			Uint16 y = (int) m_ycursor; 
@@ -611,7 +611,7 @@ namespace gameswf
 			render::draw_line_strip(box, 2);        // draw line 
 		} 
 
-		void edit_text_character::display() 
+		void display() 
 		{ 
 
 			if (m_def->m_border == true) 
@@ -665,7 +665,7 @@ namespace gameswf
 			do_display_callback(); 
 		} 
 
-		bool edit_text_character::on_event(event_id id) 
+		bool on_event(event_id id) 
 		{ 
 			if (m_def->m_readonly == true) 
 			{ 
@@ -764,7 +764,12 @@ namespace gameswf
 			return true; 
 		} 
 
-		movie*  edit_text_character::get_topmost_mouse_entity(float x, float y) 
+		virtual bool can_handle_mouse_event() 
+		{
+			return m_def->m_readonly == false;
+		}
+
+		movie*  get_topmost_mouse_entity(float x, float y) 
 		{ 
 			if (get_visible() == false) 
 			{ 

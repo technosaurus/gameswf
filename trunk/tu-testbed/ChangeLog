@@ -1,5 +1,13 @@
 2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_impl(cpp,h): added 
+	virtual bool can_handle_mouse_event(), 	fixed mouse event bug
+	* gameswf/gameswf_text.cpp,
+	* gameswf/gameswf_button.cpp: added can_handle_mouse_event() method
+	* gameswf/gameswf_action.cpp:  a bit cleanup of get_variable_raw()
+	
+2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* base/utility.h,
 	* gameswf/gameswf_types(cpp,h),
 	* gameswf/gameswf_impl.cpp,
