@@ -19,20 +19,22 @@ namespace gameswf
 
 		YUV_video(int w, int h);
 		~YUV_video();
-		unsigned int video_nlpo2(unsigned int x) const;
-		void update(unsigned char* data);
+
+		void update(Uint8* data);
 		virtual void display(const matrix* m, const rect* bounds, const rgba& cx);
 		int size() const;
 		bool video_in_place() const;
 
 	protected:
-		unsigned char* m_data;
+
+		Uint8* m_data;
 		int m_width;
 		int m_height;
 		int m_size;
 
-		struct plane {
-			unsigned int w, h, p2w, p2h, offset, size;
+		struct plane
+		{
+			Uint32 w, h, p2w, p2h, offset, size;
 			int unit;
 			int id;
 			float coords[4][2];
@@ -41,6 +43,11 @@ namespace gameswf
 		const matrix* m;
 		const rect* m_bounds;
 		bool m_video_in_place;
+
+	private:
+
+		Uint32 video_nlpo2(Uint32 x) const;
+
 	};
 }
 
