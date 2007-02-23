@@ -3376,7 +3376,7 @@ namespace gameswf
 		}
 
 
-		bool can_handle_mouse_event()
+		virtual bool can_handle_mouse_event()
 			// Return true if we have any mouse event handlers.
 		{
 			// We should cache this!
@@ -3433,7 +3433,10 @@ namespace gameswf
 			point	p;
 			m.transform_by_inverse(&p, point(x, y));
 
+			movie*	top_te = NULL;
+			bool this_has_focus = false;
 			int i, n = m_display_list.get_character_count();
+
 			// Go backwards, to check higher objects first.
 			for (i = n - 1; i >= 0; i--)
 			{
@@ -3441,18 +3444,30 @@ namespace gameswf
 
 				if (ch != NULL && ch->get_visible())
 				{
-					movie*	te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
+					movie* te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
 					if (te)
 					{
+						this_has_focus = true;
 						// The containing entity that 1) is closest to root and 2) can
 						// handle mouse events takes precedence.
-						if (can_handle_mouse_event()) {
-							return this;
-						} else {
-							return te;	//todo
+						if (te->can_handle_mouse_event())
+						{
+							top_te = te;
+							break;
 						}
 					}
 				}
+			}
+
+			//  THIS is closest to root
+			if (this_has_focus && can_handle_mouse_event())
+			{
+				return this;
+			}
+
+			if (top_te)
+			{
+				return top_te;
 			}
 
 			return NULL;

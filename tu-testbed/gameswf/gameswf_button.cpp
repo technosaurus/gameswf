@@ -717,6 +717,12 @@ namespace gameswf
 
 		// not sure if we need to override this one.
 		//virtual const char*	get_text_value() const { return NULL; }	// edit_text_character overrides this
+
+		virtual bool can_handle_mouse_event()
+		{
+			return true;
+		}
+
 	};
 
 

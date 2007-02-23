@@ -344,6 +344,9 @@ namespace gameswf
 			// Override me to provide this functionality.
 		{
 		}
+
+		virtual bool can_handle_mouse_event() { return false; }
+
 	};
 
 
@@ -592,7 +595,6 @@ namespace gameswf
 			return w;
 		}
 
-		// new, from Vitaly.
 		virtual movie*	get_topmost_mouse_entity(float x, float y)
 		{
 			assert(get_visible());	// caller should check this.

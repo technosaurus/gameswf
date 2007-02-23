@@ -3700,11 +3700,14 @@ namespace gameswf
 		const array<with_stack_entry>& with_stack) const
 	// varname must be a plain variable name; no path parsing.
 	{
-		assert(strchr(varname.c_str(), ':') == NULL);
-		assert(strchr(varname.c_str(), '/') == NULL);
-		assert(strchr(varname.c_str(), '.') == NULL);
-
 		as_value	val;
+
+		if (strchr(varname.c_str(), ':') != NULL ||
+			strchr(varname.c_str(), '/') != NULL ||
+			strchr(varname.c_str(), '.') != NULL)
+		{
+			return val;
+		}
 
 		// Check the with-stack.
 		for (int i = with_stack.size() - 1; i >= 0; i--)
