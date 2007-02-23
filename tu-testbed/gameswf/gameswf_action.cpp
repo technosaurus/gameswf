@@ -16,11 +16,11 @@
 #include "gameswf_movie.h"
 #include "gameswf_timers.h"
 #include "gameswf_textformat.h"
-#include "gameswf_sound.h"
 #include "gameswf_netstream.h"
 
 // classes
 #include "gameswf_as_classes/as_array.h"
+#include "gameswf_as_classes/as_sound.h"
 #include "gameswf_as_classes/as_db.h"	// mysql db extension
 
 
@@ -598,88 +598,9 @@ namespace gameswf
 		return s_retval.c_str();
 	}
 
-
-	//
-	// sound object
-	//
-
-	struct sound_as_object : public as_object
-	{
-		tu_string sound;
-		int sound_id;
-	};
-
 	void	movie_load()
 	{
 		IF_VERBOSE_ACTION(log_msg("-- start movie \n"));
-	}
-
-	void	sound_start(const fn_call& fn)
-	{
-		IF_VERBOSE_ACTION(log_msg("-- start sound \n"));
-		sound_handler* s = get_sound_handler();
-		if (s != NULL)
-		{
-			sound_as_object*	so = (sound_as_object*) (as_object*) fn.this_ptr;
-			assert(so);
-			s->play_sound(so->sound_id, 0);
-		}
-	}
-
-
-	void	sound_stop(const fn_call& fn)
-	{
-		IF_VERBOSE_ACTION(log_msg("-- stop sound \n"));
-		sound_handler* s = get_sound_handler();
-		if (s != NULL)
-		{
-			sound_as_object*	so = (sound_as_object*) (as_object*) fn.this_ptr;
-			assert(so);
-			s->stop_sound(so->sound_id);
-		}
-	}
-
-	void	sound_attach(const fn_call& fn)
-	{
-		IF_VERBOSE_ACTION(log_msg("-- attach sound \n"));
-		if (fn.nargs < 1)
-		{
-			log_error("attach sound needs one argument\n");
-			return;
-		}
-
-		sound_as_object*	so = (sound_as_object*) (as_object*) fn.this_ptr;
-		assert(so);
-
-		so->sound = fn.arg(0).to_tu_string();
-
-		// check the import.
-		movie_definition_sub*	def = (movie_definition_sub*)
-			fn.env->get_target()->get_root_movie()->get_movie_definition();
-		assert(def);
-		smart_ptr<resource> res = def->get_exported_resource(so->sound);
-		if (res == NULL)
-		{
-			log_error("import error: resource '%s' is not exported\n", so->sound.c_str());
-			return;
-		}
-
-		int si = 0;
-		sound_sample_impl* ss = (sound_sample_impl*) res->cast_to_sound_sample();
-
-		if (ss != NULL)
-		{
-			si = ss->m_sound_handler_id;
-		}
-		else
-		{
-			log_error("sound sample is NULL\n");
-			return;
-		}
-
-		// sanity check
-		assert(si >= 0 && si < 1000);
-		so->sound_id = si;
 	}
 
 	//
@@ -1150,21 +1071,6 @@ namespace gameswf
 		const char* arg0 = fn.arg(0).to_string();
 		log_msg("%s\n", arg0);
 	}
-
-
-	void	as_global_sound_ctor(const fn_call& fn)
-	// Constructor for ActionScript class Sound.
-	{
-		smart_ptr<as_object>	sound_obj(new sound_as_object);
-
-		// methods
-		sound_obj->set_member("attachSound", &sound_attach);
-		sound_obj->set_member("start", &sound_start);
-		sound_obj->set_member("stop", &sound_stop);
-
-		fn.result->set_as_object_interface(sound_obj.get_ptr());
-	}
-
 
 	void	as_global_object_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Object.
@@ -4007,7 +3913,8 @@ namespace gameswf
 			// one, if any.
 			for (colon_index = var_path_length - 1; colon_index >= 0; colon_index--)
 			{
-				if (var_path[colon_index] == '.')
+				if (var_path[colon_index] == '.'	||
+					var_path[colon_index] == '/')		// ActionScript 1.0
 				{
 					// Found it.
 					break;
