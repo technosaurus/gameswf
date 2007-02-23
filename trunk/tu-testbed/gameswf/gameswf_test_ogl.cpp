@@ -852,11 +852,11 @@ int	main(int argc, char *argv[])
 						if (m) m->drop_ref();
 						gameswf::clear();
 
-						delete sound;
 						gameswf::set_sound_handler(NULL);
+						delete sound;
 
-						delete render;
 						gameswf::set_render_handler(NULL);
+						delete render;
 
 						if (do_render)
 						{
@@ -1083,9 +1083,10 @@ done:
 	if (md) md->drop_ref();
 	if (m) m->drop_ref();
 
-	delete sound;
 	gameswf::set_sound_handler(NULL);
+	delete sound;
 
+	gameswf::set_render_handler(NULL);
 	delete render;
 
 	// For testing purposes, throw some keypresses into gameswf,

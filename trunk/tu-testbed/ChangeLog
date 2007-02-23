@@ -1,5 +1,10 @@
 2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf.h: fixed tu_float
+	* gameswf/gameswf_test_ogl: the cleanup
+
+2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_impl(cpp,h): added 
 	virtual bool can_handle_mouse_event(), 	fixed mouse event bug
 	* gameswf/gameswf_text.cpp,

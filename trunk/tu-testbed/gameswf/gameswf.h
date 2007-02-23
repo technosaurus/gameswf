@@ -675,10 +675,10 @@ namespace gameswf
 		{
 			m_float = x >= -3.402823466e+38F && x <= 3.402823466e+38F ? x : 0.0f;
 		}
-		void	operator+=(const float x) { m_float += x; }
-		void	operator-=(const float x) { m_float -= x; }
-		void	operator*=(const float x) { m_float *= x; }
-		void	operator/=(const float x) { m_float /= x; }
+		void	operator+=(const float x) { m_float += x; operator=(m_float); }
+		void	operator-=(const float x) { m_float -= x; operator=(m_float); }
+		void	operator*=(const float x) { m_float *= x; operator=(m_float); }
+		void	operator/=(const float x) { m_float /= x; operator=(m_float); }
 
 		private:
 			float m_float;
