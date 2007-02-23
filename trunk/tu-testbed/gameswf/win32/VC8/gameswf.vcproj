@@ -698,6 +698,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_sound.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_sound.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_table.cpp"
 				>
 			</File>

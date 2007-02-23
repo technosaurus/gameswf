@@ -1,5 +1,12 @@
 2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp,
+	* gameswf/gameswf_classes/as_sound(cpp,h): sound object is moved to
+	own files
+	* gameswf/win32/VC8/gameswf.vcproj: added as_sound(cpp,h)
+	
+2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf.h: fixed tu_float
 	* gameswf/gameswf_test_ogl: the cleanup
 
