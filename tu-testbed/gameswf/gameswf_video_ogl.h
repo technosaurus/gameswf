@@ -14,8 +14,6 @@
 struct YUV_video_ogl_NV : public gameswf::YUV_video
 {
 
-	enum {Y, U, V, T, NB_TEXS};
-
 	YUV_video_ogl_NV(int width, int height);
 	~YUV_video_ogl_NV();
 

@@ -1,5 +1,10 @@
 2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_video_base(cpp,h),
+	* gameswf/gameswf_video_ogl.cpp: tabs & cleanup
+	
+2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.cpp,
 	* gameswf/gameswf_classes/as_sound(cpp,h): sound object is moved to
 	own files
