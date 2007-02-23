@@ -665,7 +665,26 @@ namespace gameswf
 
 		virtual ~sound_handler() {};
 	};
-	
+
+	// tu_float is used in matrix & cxform because
+	// Flash converts inf to zero when works with matrix & cxform
+	struct tu_float
+	{
+		operator float() const { return m_float; }
+		void	operator=(const float x)
+		{
+			m_float = x >= -3.402823466e+38F && x <= 3.402823466e+38F ? x : 0.0f;
+		}
+		void	operator+=(const float x) { m_float += x; }
+		void	operator-=(const float x) { m_float -= x; }
+		void	operator*=(const float x) { m_float *= x; }
+		void	operator/=(const float x) { m_float /= x; }
+
+		private:
+			float m_float;
+	};
+
+
 
 	//
 	// matrix type, used by render handler
@@ -674,7 +693,7 @@ namespace gameswf
 	struct point;
 	struct matrix
 	{
-		float	m_[2][3];
+		tu_float	m_[2][3];
 
 		static matrix	identity;
 
@@ -755,7 +774,7 @@ namespace gameswf
 	//
 	struct cxform
 	{
-		float	m_[4][2];	// [RGBA][mult, add]
+		tu_float	m_[4][2];	// [RGBA][mult, add]
 
 		cxform();
 		void	concatenate(const cxform& c);

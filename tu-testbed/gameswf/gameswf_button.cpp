@@ -559,7 +559,7 @@ namespace gameswf
 			{
 				// Set alpha modulate, in percent.
 				cxform	cx = get_cxform();
-				cx.m_[3][0] = infinite_to_fzero(float(val.to_number())) / 100.f;
+				cx.m_[3][0] = float(val.to_number()) / 100.f;
 				set_cxform(cx);
 				//m_accept_anim_moves = false;
 				return;
@@ -567,14 +567,14 @@ namespace gameswf
 			case M_X:  // _x
 			{
 				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				m.m_[0][2] = infinite_to_fzero(float(PIXELS_TO_TWIPS(val.to_number())));
+				m.m_[0][2] = float(PIXELS_TO_TWIPS(val.to_number()));
 				this->set_matrix(m);
 				return;
 			}
 			case M_Y:  // _y
 			{
 				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				m.m_[1][2] = infinite_to_fzero(float(PIXELS_TO_TWIPS(val.to_number())));
+				m.m_[1][2] = float(PIXELS_TO_TWIPS(val.to_number()));
 				this->set_matrix(m);
 				return;
 			}

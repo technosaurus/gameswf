@@ -3449,7 +3449,7 @@ namespace gameswf
 						if (can_handle_mouse_event()) {
 							return this;
 						} else {
-							return te;
+							return te;	//todo
 						}
 					}
 				}
@@ -4116,7 +4116,7 @@ namespace gameswf
 				//if (name == "_x")
 				{
 					matrix	m = get_matrix();
-					m.m_[0][2] = infinite_to_fzero((float) PIXELS_TO_TWIPS(val.to_number()));
+					m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
 					set_matrix(m);
 
 					m_accept_anim_moves = false;
@@ -4127,7 +4127,7 @@ namespace gameswf
 				//else if (name == "_y")
 				{
 					matrix	m = get_matrix();
-					m.m_[1][2] = infinite_to_fzero((float) PIXELS_TO_TWIPS(val.to_number()));
+					m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
 					set_matrix(m);
 
 					m_accept_anim_moves = false;
@@ -4169,7 +4169,7 @@ namespace gameswf
 				{
 					// Set alpha modulate, in percent.
 					cxform	cx = get_cxform();
-					cx.m_[3][0] = infinite_to_fzero(float(val.to_number())) / 100.f;
+					cx.m_[3][0] = float(val.to_number()) / 100.f;
 					set_cxform(cx);
 					m_accept_anim_moves = false;
 					return;
@@ -4186,7 +4186,7 @@ namespace gameswf
 				{
 					// @@ tulrich: is parameter in world-coords or local-coords?
 					matrix	m = get_matrix();
-					m.m_[0][0] = infinite_to_fzero(float(PIXELS_TO_TWIPS(val.to_number())));
+					m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number()));
 					float w = get_width();
 					if (fabsf(w) > 1e-6f)
 					{
@@ -4201,7 +4201,7 @@ namespace gameswf
 				{
 					// @@ tulrich: is parameter in world-coords or local-coords?
 					matrix	m = get_matrix();
-					m.m_[1][1] = infinite_to_fzero(float(PIXELS_TO_TWIPS(val.to_number())));
+					m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number()));
 					float h = get_width();
 					if (fabsf(h) > 1e-6f)
 					{
