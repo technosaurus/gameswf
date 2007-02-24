@@ -585,7 +585,11 @@ namespace gameswf
 
 		~edit_text_character() 
 		{ 
-			on_event(event_id::KILLFOCUS); 
+			// To prevent the infinite cycle beginning with remove_keypress_listener
+			if (get_ref_count() > 0)
+			{
+				on_event(event_id::KILLFOCUS); 
+			}
 		} 
 
 		movie_root* edit_text_character::get_root()
@@ -690,9 +694,11 @@ namespace gameswf
 				{ 
 					if (m_has_focus == true) 
 					{ 
-						get_root()->set_active_entity(NULL); 
-						get_root()->remove_keypress_listener(this); 
 						m_has_focus = false; 
+
+						// We cannot use get_parent() because parent may not be any more
+						((movie_root*) get_current_root())->remove_keypress_listener(this); 
+
 						format_text(); 
 					} 
 					break; 

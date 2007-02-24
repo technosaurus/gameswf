@@ -891,7 +891,7 @@ namespace gameswf
 			m_on_event_xmlsocket_ondata_called(false),
 			m_on_event_xmlsocket_onxml_called(false),
 			m_on_event_load_progress_called(false),
-			m_active_input_text(NULL),
+			m_current_active_entity(NULL),
 
 			// the first time we needs do advance() and
 			// then display() certainly
@@ -1017,16 +1017,14 @@ namespace gameswf
 					// onPress
 
 					// set/kill focus
-					character* current_active_entity = (character*) get_active_entity();
-
 					// It's another entity ?
-					if (current_active_entity != active_entity.get_ptr())
+					if (m_current_active_entity != active_entity)
 					{
 						// First to clean focus
-						if (current_active_entity != NULL)
+						if (m_current_active_entity != NULL)
 						{
-							current_active_entity->on_event(event_id::KILLFOCUS);
-							set_active_entity(NULL);
+							m_current_active_entity->on_event(event_id::KILLFOCUS);
+							m_current_active_entity = NULL;
 						}
 
 						// Then to set focus
@@ -1034,7 +1032,7 @@ namespace gameswf
 						{
 							if (active_entity->on_event(event_id::SETFOCUS))
 							{
-								set_active_entity(active_entity.get_ptr());
+								m_current_active_entity = active_entity;
 							}
 						}
 					}
@@ -1092,16 +1090,6 @@ namespace gameswf
 		{
 			m_keypress_listeners.erase(listener);
 //			printf("remove_keypress_listener=%08X (%d)\n", listener, m_keypress_listeners.size());
-		} 
-
-		movie* movie_root::get_active_entity() 
-		{ 
-			return m_active_input_text; 
-		} 
-
-		void movie_root::set_active_entity(movie* ch) 
-		{ 
-			m_active_input_text = ch; 
 		} 
 
 		// @@ should these delegate to m_movie?	 Probably...
