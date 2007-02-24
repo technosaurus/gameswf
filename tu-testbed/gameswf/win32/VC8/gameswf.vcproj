@@ -212,6 +212,10 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_key.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_action.cpp"
 				>
 			</File>
@@ -336,6 +340,10 @@
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl"
 			>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_key.h"
+				>
+			</File>
 			<File
 				RelativePath="..\..\gameswf.h"
 				>

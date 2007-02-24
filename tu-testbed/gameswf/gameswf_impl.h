@@ -898,8 +898,10 @@ namespace gameswf
 		virtual void	attach_display_callback(const char* path_to_object,
 			void (*callback)(void* user_ptr), void* user_ptr);
 
+		virtual void	notify_key_event(key::code k, bool down);
+
 		void notify_keypress_listeners(key::code k);
-		void add_keypress_listener(character* listener) ;
+		void add_keypress_listener(character* listener);
 		void remove_keypress_listener(character* listener);
 
 	};
