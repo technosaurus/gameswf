@@ -1,3 +1,15 @@
+2007-02-24  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_action.(cpp,h),
+	* gameswf/gameswf_impl.(cpp,h),
+	* gameswf/gameswf.h,
+	* gameswf/gameswf_test_ogl.cpp:
+	key object is moved to own files, 
+	I do not see the sense to send key events to inactive movies
+	in multifile games therefore notify_key_event() is moved to
+	movie_root 
+	* gameswf/win32/VC8/gameswf.vcproj: added as_key(cpp,h)
+
 2007-02-23  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_video_base(cpp,h),

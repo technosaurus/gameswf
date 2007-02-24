@@ -1054,12 +1054,28 @@ namespace gameswf
 			ms->m_topmost_entity = topmost_entity;
 		}
 
+		void	action_init();
+		void notify_key_object(key::code k, bool down);
+		void	movie_root::notify_key_event(key::code k, bool down)
+		{
+			action_init();	// @@ put this in some global init somewhere else...
+
+			// Notify keypress listeners.
+			if (down)
+			{
+				notify_keypress_listeners(k);
+			}
+
+			// Notify global Key object
+			notify_key_object(k, down);
+		}
+
 		void movie_root::notify_keypress_listeners(key::code k) 
 		{
 			for (hash< smart_ptr<character>, int >::iterator it = m_keypress_listeners.begin();
 				it != m_keypress_listeners.end(); ++it)
 			{
-				it->first.get_ptr()->on_event(event_id(event_id::KEY_PRESS, (key::code) k)); 
+				it->first.get_ptr()->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
 			}
 		} 
 

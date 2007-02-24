@@ -139,7 +139,7 @@ static void	fs_callback(gameswf::movie_interface* movie, const char* command, co
 }
 
 
-static void	key_event(SDLKey key, bool down)
+static gameswf::key::code	translate_key(SDLKey key)
 // For forwarding SDL key events to gameswf.
 {
 	gameswf::key::code	c(gameswf::key::INVALID);
@@ -199,10 +199,7 @@ static void	key_event(SDLKey key, bool down)
 		}
 	}
 
-	if (c != gameswf::key::INVALID)
-	{
-		gameswf::notify_key_event(c, down);
-	}
+	return c;
 }
 
 
@@ -971,7 +968,11 @@ int	main(int argc, char *argv[])
 // 						gameswf_tesselate_dump_shape = true;
  					}
 
-					key_event(key, true);
+					gameswf::key::code c = translate_key(key);
+					if (c != gameswf::key::INVALID)
+					{
+						gameswf::get_current_root()->notify_key_event(c, true);
+					}
 
 					break;
 				}
@@ -979,7 +980,13 @@ int	main(int argc, char *argv[])
 				case SDL_KEYUP:
 				{
 					SDLKey	key = event.key.keysym.sym;
-					key_event(key, false);
+
+					gameswf::key::code c = translate_key(key);
+					if (c != gameswf::key::INVALID)
+					{
+						gameswf::get_current_root()->notify_key_event(c, false);
+					}
+
 					break;
 				}
 
@@ -1092,9 +1099,9 @@ done:
 	// For testing purposes, throw some keypresses into gameswf,
 	// to make sure the key handler is properly using weak
 	// references to listeners.
-	gameswf::notify_key_event(gameswf::key::A, true);
-	gameswf::notify_key_event(gameswf::key::B, true);
-	gameswf::notify_key_event(gameswf::key::C, true);
+//	gameswf::notify_key_event(gameswf::key::A, true);
+//	gameswf::notify_key_event(gameswf::key::B, true);
+//	gameswf::notify_key_event(gameswf::key::C, true);
 
 	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 	gameswf::clear();
