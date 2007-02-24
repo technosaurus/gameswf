@@ -835,7 +835,7 @@ namespace gameswf
 		bool			m_on_event_load_progress_called;
 		array< Timer* >	m_interval_timers;
 		hash< smart_ptr<character>, int > m_keypress_listeners;
-		movie* m_active_input_text; 
+		smart_ptr<movie> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
 
@@ -843,8 +843,6 @@ namespace gameswf
 		~movie_root();
 
 		void	generate_mouse_button_events(mouse_button_state* ms);
-		movie* get_active_entity();
-		void set_active_entity(movie* ch);
 		virtual void	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual movie*	to_movie();
