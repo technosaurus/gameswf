@@ -244,10 +244,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_movie.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_netstream.cpp"
 				>
 			</File>
@@ -369,15 +365,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_morph.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_morph2.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_movie.h"
 				>
 			</File>
 			<File
@@ -703,6 +691,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_key.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.h"
 				>
 			</File>
 			<File

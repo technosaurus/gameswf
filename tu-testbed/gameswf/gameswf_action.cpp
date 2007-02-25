@@ -13,7 +13,6 @@
 #include "base/tu_random.h"
 
 #include "gameswf_string.h"
-#include "gameswf_movie.h"
 #include "gameswf_timers.h"
 #include "gameswf_textformat.h"
 #include "gameswf_netstream.h"
@@ -22,6 +21,7 @@
 #include "gameswf_as_classes/as_array.h"
 #include "gameswf_as_classes/as_sound.h"
 #include "gameswf_as_classes/as_key.h"
+#include "gameswf_as_classes/as_MovieClipLoader.h"
 #include "gameswf_as_classes/as_db.h"	// mysql db extension
 
 
