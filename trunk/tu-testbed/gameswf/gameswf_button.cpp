@@ -333,7 +333,7 @@ namespace gameswf
 		}
 
 		// called from keypress listener only
-		virtual bool	on_event(event_id id)
+		virtual bool	on_event(const event_id& id)
 		{
 			if (id.m_id != event_id::KEY_PRESS)
 			{

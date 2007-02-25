@@ -49,6 +49,10 @@ namespace gameswf
 		void	add_listener(as_object_interface* listener);
 		void	remove_listener(as_object_interface* listener);
 		int	get_last_key_pressed() const;
+
+		// called from keypress listener only
+		virtual bool	on_event(const event_id& id);
+
 	};
 
 	as_key* key_init();

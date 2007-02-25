@@ -5,6 +5,7 @@
 
 #include "../gameswf_as_classes/as_key.h"
 #include "../gameswf_log.h"
+#include "../gameswf_root.h"
 
 namespace gameswf
 {
@@ -138,6 +139,17 @@ namespace gameswf
 		return m_last_key_pressed; 
 	}
 
+
+	// called from keypress listener only
+	bool	as_key::on_event(const event_id& id)
+	{
+		if (id.m_id != event_id::KEY_PRESS)
+		{
+			return false;
+		}
+
+		return true;
+	}
 
 	void	key_add_listener(const fn_call& fn)
 	// Add a listener (first arg is object reference) to our list.

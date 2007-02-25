@@ -1,5 +1,20 @@
 2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
 
+	Preparation for merge keypress_listeners & key listeners(from "as_key")
+	* gameswf/gameswf_classes/as_key(cpp,h): added
+	virtual	bool as_key::on_event(const event_id& id)
+	* gameswf/gameswf_root.(cpp,h): replaced
+	character* listener ==>	as_object_interface* listener
+	* gameswf/gameswf.h: added
+	virtual	bool as_key::on_event(const event_id& id) to as_object_interface
+	* gameswf/gameswf_movie.h: removed
+	virtual	bool as_key::on_event(const event_id& id) to as_object_interface
+	* gameswf/gameswf_text.cpp,
+	* gameswf/gameswf_button.cpp,
+	* gameswf/gameswf_impl.cpp: updated on_event() declaration
+
+2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
+
 	struct movie_root is moved
 	from
 	* gameswf/gameswf_impl.(cpp,h)

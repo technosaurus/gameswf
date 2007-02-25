@@ -215,14 +215,14 @@ namespace gameswf
 
 		void movie_root::notify_keypress_listeners(key::code k) 
 		{
-			for (hash< smart_ptr<character>, int >::iterator it = m_keypress_listeners.begin();
+			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_keypress_listeners.begin();
 				it != m_keypress_listeners.end(); ++it)
 			{
-				it->first.get_ptr()->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
+				it->first->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
 			}
 		} 
 
-		void movie_root::add_keypress_listener(character* listener) 
+		void movie_root::add_keypress_listener(as_object_interface* listener) 
 		{
 			m_keypress_listeners[listener] = 0;
 
@@ -231,7 +231,7 @@ namespace gameswf
 			assert(m_keypress_listeners.size() < 100);
 		} 
 
-		void movie_root::remove_keypress_listener(character* listener) 
+		void movie_root::remove_keypress_listener(as_object_interface* listener) 
 		{
 			m_keypress_listeners.erase(listener);
 //			printf("remove_keypress_listener=%08X (%d)\n", listener, m_keypress_listeners.size());
@@ -431,7 +431,7 @@ namespace gameswf
 					// done by the dlist, but root movies don't get added
 					// to a dlist, so we do it here.
 					m_on_event_load_called = true;
-					m_movie->on_event_load();
+					m_movie->on_event(event_id::LOAD);
 				}
 
 				m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
