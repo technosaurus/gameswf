@@ -1,5 +1,16 @@
 2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
 
+	struct movie_root is moved
+	from
+	* gameswf/gameswf_impl.(cpp,h)
+	to
+	* gameswf/gameswf_root.(cpp,h)
+	* gameswf/gameswf_text.cpp,
+	* gameswf/gameswf_dlist.cpp: added #include gameswf_root.h
+	* gameswf/win32/VC8/gameswf.vcproj: added gameswf_root.(cpp,h)
+	
+2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_movie.h: added,
 	contains struct movie
 	* gameswf/gameswf_impl.h: added #include gameswf_movie.h

@@ -11,6 +11,7 @@
 #include "gameswf_log.h"
 #include "gameswf_render.h"
 #include "gameswf.h"
+#include "gameswf_root.h"
 #include <typeinfo>
 
 
