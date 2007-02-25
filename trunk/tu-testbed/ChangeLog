@@ -1,5 +1,11 @@
 2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/win32/VC8/gameswf.vcproj,
+	* gameswf/gameswf_classes/as_key(cpp,h): 
+	forgot to commit
+
+2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_text.cpp: fixed ~edit_text_character()
 	on_event(event_id::KILLFOCUS) bug
 	* gameswf/gameswf_button.cpp: a bit cleanup
