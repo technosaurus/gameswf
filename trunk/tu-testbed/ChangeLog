@@ -1,5 +1,12 @@
 2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_movie.h: added,
+	contains struct movie
+	* gameswf/gameswf_impl.h: added #include gameswf_movie.h
+	* gameswf/win32/VC8/gameswf.vcproj: added gameswf_movie.h
+	
+2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_morph(cpp,h): removed since they
 	have become outdated many years ago
 	

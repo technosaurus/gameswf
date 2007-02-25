@@ -369,6 +369,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_movie.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_netstream.h"
 				>
 			</File>
