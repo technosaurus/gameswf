@@ -667,7 +667,7 @@ namespace gameswf
 			do_display_callback(); 
 		} 
 
-		bool on_event(event_id id) 
+		virtual bool on_event(const event_id& id) 
 		{ 
 			if (m_def->m_readonly == true) 
 			{ 

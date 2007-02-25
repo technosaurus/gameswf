@@ -23,16 +23,31 @@
 
 namespace gameswf
 {
-	struct action_buffer;
-	struct bitmap_character_def;
-	struct bitmap_info;
-	struct character;
-	struct character_def;
-	struct display_info;
-	struct execute_tag;
-	struct font;
-	struct movie_root;
 	class Timer;
+	struct movie_def_impl;
+
+	//
+	// Helper to generate mouse events, given mouse state & history.
+	//
+
+	struct mouse_button_state
+	{
+		weak_ptr<movie>	m_active_entity;	// entity that currently owns the mouse pointer
+		weak_ptr<movie>	m_topmost_entity;	// what's underneath the mouse right now
+
+		bool	m_mouse_button_state_last;		// previous state of mouse button
+		bool	m_mouse_button_state_current;		// current state of mouse button
+
+		bool	m_mouse_inside_entity_last;	// whether mouse was inside the active_entity last frame
+
+		mouse_button_state()
+			:
+			m_mouse_button_state_last(0),
+			m_mouse_button_state_current(0),
+			m_mouse_inside_entity_last(false)
+		{
+		}
+	};
 
 	//
 	// movie_root
@@ -59,7 +74,7 @@ namespace gameswf
 		bool			m_on_event_xmlsocket_onxml_called;
 		bool			m_on_event_load_progress_called;
 		array< Timer* >	m_interval_timers;
-		hash< smart_ptr<character>, int > m_keypress_listeners;
+		hash< smart_ptr<as_object_interface>, int > m_keypress_listeners;
 		smart_ptr<movie> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
@@ -124,8 +139,8 @@ namespace gameswf
 		virtual void	notify_key_event(key::code k, bool down);
 
 		void notify_keypress_listeners(key::code k);
-		void add_keypress_listener(character* listener);
-		void remove_keypress_listener(character* listener);
+		void add_keypress_listener(as_object_interface* listener);
+		void remove_keypress_listener(as_object_interface* listener);
 
 	};
 }

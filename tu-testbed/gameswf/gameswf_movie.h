@@ -198,7 +198,7 @@ namespace gameswf
 		}
 
 		// ActionScript event handler.	Returns true if a handler was called.
-		virtual bool	on_event(event_id id) { return false; }
+//		virtual bool	on_event(const event_id& id) { return false; }
 
 		int    add_interval_timer(void *timer)
 		{
@@ -217,7 +217,7 @@ namespace gameswf
 		}
 
 		// Special event handler; sprites also execute their frame1 actions on this event.
-		virtual void	on_event_load() { on_event(event_id::LOAD); }
+//		virtual void	on_event_load() { on_event(event_id::LOAD); }
 
 #if 0
 		// tulrich: @@ is there a good reason these are in the

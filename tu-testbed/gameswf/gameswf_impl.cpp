@@ -4208,7 +4208,7 @@ namespace gameswf
 
 
 		/* sprite_instance */
-		virtual bool	on_event(event_id id)
+		virtual bool	on_event(const event_id& id)
 			// Dispatch event handler(s), if any.
 		{
 			// Keep m_as_environment alive during any method calls!
