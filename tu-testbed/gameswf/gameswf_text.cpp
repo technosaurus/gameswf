@@ -585,11 +585,8 @@ namespace gameswf
 
 		~edit_text_character() 
 		{ 
-			// To prevent the infinite cycle beginning with remove_keypress_listener
-			if (get_ref_count() > 0)
-			{
-				on_event(event_id::KILLFOCUS); 
-			}
+			// on_event(event_id::KILLFOCUS) will be executed
+			// during remove_display_object()
 		} 
 
 		movie_root* edit_text_character::get_root()
