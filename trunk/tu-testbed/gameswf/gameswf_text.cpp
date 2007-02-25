@@ -16,6 +16,7 @@
 #include "gameswf_fontlib.h"
 #include "gameswf_render.h"
 #include "gameswf_textformat.h"
+#include "gameswf_root.h"
 
 namespace gameswf
 {
