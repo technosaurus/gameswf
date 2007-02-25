@@ -1,5 +1,14 @@
 2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp: movie.h => gameswf_classes/as_MovieClipLoader.h
+	* gameswf/gameswf_movie(cpp, h): moved to
+	gameswf_classes/as_MovieClipLoader(cpp,h)
+	* gameswf/win32/VC8/gameswf.vcproj:
+	removed gameswf_movie9cpp,h)
+	added gameswf_classes/as_MovieClipLoader(cpp,h)
+	
+2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/win32/VC8/gameswf.vcproj,
 	* gameswf/gameswf_classes/as_key(cpp,h): 
 	forgot to commit
