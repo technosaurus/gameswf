@@ -1,5 +1,10 @@
 2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_morph(cpp,h): removed since they
+	have become outdated many years ago
+	
+2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.cpp: movie.h => gameswf_classes/as_MovieClipLoader.h
 	* gameswf/gameswf_movie(cpp, h): moved to
 	gameswf_classes/as_MovieClipLoader(cpp,h)
