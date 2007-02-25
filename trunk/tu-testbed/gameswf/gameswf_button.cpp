@@ -369,7 +369,7 @@ namespace gameswf
 
 			// actions can delete THIS through execute_frame_tags()
 			// therefore we need to protect THIS from deleting
-			this->add_ref();
+			add_ref();
 
 			for (int i = 0; i < m_def->m_button_actions.size(); i++)
 			{
@@ -382,7 +382,7 @@ namespace gameswf
 				}
 			}
 
-			this->drop_ref();
+			drop_ref();
 
 			return called;
 		}
@@ -478,7 +478,7 @@ namespace gameswf
 
 			// actions can delete THIS through execute_frame_tags()
 			// therefore we need to protect THIS from deleting
-			this->add_ref();
+			add_ref();
 
 			{
 				for (int i = 0; i < m_def->m_button_actions.size(); i++)
@@ -490,7 +490,7 @@ namespace gameswf
 				}
 			}
 
-			this->drop_ref();
+			drop_ref();
 
 			// Call conventional attached method.
 			// @@ TODO
