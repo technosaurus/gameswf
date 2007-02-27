@@ -106,7 +106,12 @@ inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm 
 
 
 // Compile-time constant size of array.
+//
+// (Some windows header defines a work-alike ARRAYSIZE, so avoid
+// re-defining)
+#ifndef ARRAYSIZE
 #define ARRAYSIZE(x) (sizeof(x)/sizeof(x[0]))
+#endif
 
 
 inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 5381)

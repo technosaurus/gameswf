@@ -199,10 +199,10 @@ endif
 endif
 
 %.$(OBJ_EXT): %.cpp
-	$(CC) -c $< $(CFLAGS)
+	$(CC) -c $< -Fo$@ $(CFLAGS)
 
 %.$(OBJ_EXT): %.c
-	$(CC) -c $< $(CFLAGS)
+	$(CC) -c $< -Fo$@ $(CFLAGS)
 
 
 BASE_LIB := $(TOP)/base/$(LIB_PRE)base.$(LIB_EXT)
