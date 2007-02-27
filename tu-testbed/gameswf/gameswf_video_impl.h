@@ -4,17 +4,16 @@
 // whatever you want with it.
 
 
-#ifndef VIDEO_IMPL_H
-#define VIDEO_IMPL_H
+#ifndef GAMESWF_VIDEO_H
+#define GAMESWF_VIDEO_H
 
 #include "gameswf_impl.h"
 
 namespace gameswf
 {
 
-	class video_stream_definition : public character_def
+	struct video_stream_definition : public character_def
 	{
-	public:
 
 		//	video_stream_definition();
 		//	virtual ~video_stream_definition();
@@ -60,7 +59,7 @@ namespace gameswf
 
 		~video_stream_instance();
 
-		virtual void	advance(float delta_time);
+//		virtual void	advance(float delta_time);
 		void	display();
 
 		//	void set_source(const as_object* source)
@@ -83,4 +82,4 @@ namespace gameswf
 }	// end namespace gameswf
 
 
-#endif // VIDEO_IMPL_H
+#endif // GAMESWF_VIDEO_H

@@ -15,13 +15,13 @@
 #include "gameswf_string.h"
 #include "gameswf_timers.h"
 #include "gameswf_textformat.h"
-#include "gameswf_netstream.h"
 
 // classes
 #include "gameswf_as_classes/as_array.h"
 #include "gameswf_as_classes/as_sound.h"
 #include "gameswf_as_classes/as_key.h"
 #include "gameswf_as_classes/as_MovieClipLoader.h"
+#include "gameswf_as_classes/as_netstream.h"
 #include "gameswf_as_classes/as_db.h"	// mysql db extension
 
 
@@ -772,7 +772,7 @@ namespace gameswf
 	void	as_global_netstream_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetStream.
 	{
-		smart_ptr<as_object>	netstream_obj(new netstream_as_object);
+		smart_ptr<as_object>	netstream_obj(new as_netstream);
 
 		// methods
 		netstream_obj->set_member("close", &netstream_close);

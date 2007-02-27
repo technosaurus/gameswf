@@ -7,10 +7,11 @@
 
 #include "gameswf_video_impl.h"
 #include "gameswf_video_base.h"
-#include "gameswf_netstream.h"
 #include "gameswf_stream.h"
+#include "gameswf_as_classes/as_netstream.h"
 
-namespace gameswf {
+namespace gameswf
+{
 
 	void video_stream_definition::read(stream* in, int tag, movie_definition* m)
 	{
@@ -57,10 +58,10 @@ namespace gameswf {
 			return;
 		}
 
-		//		if (dynamic_cast<netstream_as_object*>(fn.arg(0).to_object()))
+		//		if (dynamic_cast<as_netstream*>(fn.arg(0).to_object()))
 		if (video)
 		{
-			video->m_ns = static_cast<netstream_as_object*>(fn.arg(0).to_object());
+			video->m_ns = (as_netstream*) fn.arg(0).to_object();
 		}
 	}
 
@@ -82,7 +83,7 @@ namespace gameswf {
 	{
 		if (m_ns)
 		{
-			netstream_as_object* nso = static_cast<netstream_as_object*>(m_ns);
+			as_netstream* nso = static_cast<as_netstream*>(m_ns);
 			YUV_video* v = nso->obj.get_video();
 			if (v)
 			{
@@ -108,9 +109,9 @@ namespace gameswf {
 		}
 	}
 
-	void video_stream_instance::advance(float delta_time)
-	{
-	}
+//	void video_stream_instance::advance(float delta_time)
+//	{
+//	}
 
 	void	video_stream_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
@@ -129,8 +130,7 @@ namespace gameswf {
 		}
 
 		log_error("error: video_stream_instance::set_member('%s', '%s') not implemented yet\n",
-			name.c_str(),
-			val.to_string());
+			name.c_str(),	val.to_string());
 	}
 
 	bool video_stream_instance::get_member(const tu_stringi& name, as_value* val)

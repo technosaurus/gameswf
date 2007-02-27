@@ -1,16 +1,16 @@
-// gameswf_netstream.h	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
+// as_netstream.h	-- Vitaly Alexeev <tishka92@yahoo.com> 2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#ifndef NETSTREAM_H
-#define NETSTREAM_H
+#ifndef GAMESWF_NETSTREAM_H
+#define GAMESWF_NETSTREAM_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "gameswf_video_impl.h"
+#include "../gameswf_video_impl.h"
 
 #ifdef USE_FFMPEG
 #include <ffmpeg/avformat.h>
@@ -168,12 +168,11 @@ namespace gameswf
 	double m_pts;	// presentation timestamp in sec
 	};
 
-	class NetStream
+	struct netstream
 	{
-	public:
 
-		NetStream();
-		~NetStream();
+		netstream();
+		~netstream();
 
 		void set_status(const char* code);
 		void close();
@@ -230,20 +229,18 @@ namespace gameswf
 		double m_start_clock;
 	};
 
-	class netstream_as_object : public as_object
+	struct as_netstream : public as_object
 	{
-	public:
-
-		netstream_as_object()
+		as_netstream()
 		{
 			obj.set_ns(this);
 		}
 
-		~netstream_as_object()
+		~as_netstream()
 		{
 		}
 
-		NetStream obj;
+		netstream obj;
 
 		//	virtual void set_member(const tu_stringi& name, const as_value& val);
 		//	virtual bool get_member(const tu_stringi& name, as_value* val);
@@ -259,6 +256,6 @@ namespace gameswf
 
 } // end of gameswf namespace
 
-// NETSTREAM_H
+// GAMESWF_NETSTREAM_H
 #endif
 
