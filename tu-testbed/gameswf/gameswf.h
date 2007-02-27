@@ -13,6 +13,7 @@
 
 #include <ctype.h>	// for poxy wchar_t
 #include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
+#include <assert.h>
 
 class tu_file;
 class render_handler;
@@ -175,7 +176,7 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 		virtual movie*	to_movie() = 0;
 		virtual bool	on_event(const event_id& id) { return false; }
-		virtual movie_root*		get_root() { return 0; }
+		virtual movie_root*		get_root() { assert(0);  return 0; }
 
 		// Replacements for dynamic_cast<>.  Override in subclasses
 		// that implement the corresponding interfaces.

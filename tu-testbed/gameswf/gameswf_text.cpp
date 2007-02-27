@@ -693,10 +693,7 @@ namespace gameswf
 					if (m_has_focus == true) 
 					{ 
 						m_has_focus = false; 
-
-						// We cannot use get_parent() because parent may not be any more
-						((movie_root*) get_current_root())->remove_keypress_listener(this); 
-
+						get_root()->remove_keypress_listener(this); 
 						format_text(); 
 					} 
 					break; 

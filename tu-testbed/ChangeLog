@@ -1,3 +1,9 @@
+2007-02-27  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_dlist.cpp,
+	* gameswf/gameswf_text.cpp: fixed KILLFOCUS bug
+	* gameswf/gameswf.h: added assert(0) to virtual get_root()
+	
 2007-02-27  Thatcher Ulrich <tu@tulrich.com>
 	Remove dynamic_cast, using cast_to_* idiom.  Library clients
 	should be able to choose whether or not to enable RTTI, therefore gameswf

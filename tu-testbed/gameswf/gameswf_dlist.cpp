@@ -426,6 +426,8 @@ namespace gameswf
 		// Removing the character at get_display_object(index).
 		display_object_info&	di = m_display_object_array[index];
 
+		di.m_character->on_event(event_id::KILLFOCUS);
+
 		//Vitaly: UNLOAD event in DisplayList::clear() is not caused,
 		// since character is removed already
 		di.m_character->on_event(event_id::UNLOAD);
@@ -467,6 +469,7 @@ namespace gameswf
 		{
 			display_object_info&	di = m_display_object_array[i];
 			remove_keypress_listener(di.m_character.get_ptr());
+			di.m_character->on_event(event_id::KILLFOCUS);
 			di.m_character->on_event(event_id::UNLOAD);
 		}
 		
@@ -588,6 +591,7 @@ namespace gameswf
 			if (is_affected == false) 
 			{ 
 				remove_keypress_listener(di.m_character.get_ptr());
+				di.m_character->on_event(event_id::KILLFOCUS); 
 				di.m_character->on_event(event_id::UNLOAD); 
 				di.set_character(NULL);
 				m_display_object_array.remove(i);
