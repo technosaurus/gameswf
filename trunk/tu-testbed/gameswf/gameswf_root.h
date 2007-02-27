@@ -137,8 +137,6 @@ namespace gameswf
 			void (*callback)(void* user_ptr), void* user_ptr);
 
 		virtual void	notify_key_event(key::code k, bool down);
-
-		void notify_keypress_listeners(key::code k);
 		void add_keypress_listener(as_object_interface* listener);
 		void remove_keypress_listener(as_object_interface* listener);
 

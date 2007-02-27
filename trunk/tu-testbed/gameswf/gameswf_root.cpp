@@ -203,24 +203,25 @@ namespace gameswf
 		{
 			action_init();	// @@ put this in some global init somewhere else...
 
-			// Notify keypress listeners.
-			if (down)
-			{
-				notify_keypress_listeners(k);
-			}
-
-			// Notify global Key object
+			// First notify global Key object
+			// listeners uses the last keypressed code
 			notify_key_object(k, down);
-		}
 
-		void movie_root::notify_keypress_listeners(key::code k) 
-		{
+			// Notify keypress listeners.
 			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_keypress_listeners.begin();
 				it != m_keypress_listeners.end(); ++it)
 			{
-				it->first->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
+				if (down)
+				{
+					it->first->on_event(event_id(event_id::KEY_DOWN));
+					it->first->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
+				}
+				else
+				{
+					it->first->on_event(event_id(event_id::KEY_UP));
+				}
 			}
-		} 
+		}
 
 		void movie_root::add_keypress_listener(as_object_interface* listener) 
 		{
