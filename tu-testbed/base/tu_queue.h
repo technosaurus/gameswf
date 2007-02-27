@@ -15,7 +15,7 @@ class tu_queue
 {
 public:
 
-	tu_queue::tu_queue()
+	tu_queue()
 	{
 		m_size = 0;
 		m_back = NULL;

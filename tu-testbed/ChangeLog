@@ -1,3 +1,13 @@
+2007-02-27  Thatcher Ulrich <tu@tulrich.com>
+	Fixes for the Makefile
+	* gameswf/config: adjusted c/c++ build rule to specify the object directory
+	  (so source files can live in subdirectories of the Makefile dir)
+	* gameswf/Makefile: added new source files from Vitaly
+	* gameswf/gameswf_test_ogl.cpp: disable logo & progress bar when
+	  do_render is false
+	* base/utility.h: fix windows warning
+	* base/tu_queue.h: small compile fix
+
 2007-02-27  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_video_impl.(cpp,h),

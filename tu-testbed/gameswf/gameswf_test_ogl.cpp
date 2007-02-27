@@ -100,7 +100,7 @@ static void	message_log(const char* message)
 	if (s_verbose)
 	{
 		fputs(message, stdout);
-		fflush(stdout); // needed on osx for some reason
+		fflush(stdout);
 	}
 }
 
@@ -113,6 +113,7 @@ static void	log_callback(bool error, const char* message)
 		// Log, and also print to stderr.
 		message_log(message);
 		fputs(message, stderr);
+		fflush(stderr);
 	}
 	else
 	{
@@ -542,7 +543,9 @@ int	main(int argc, char *argv[])
 		}
 	}
 
-	gameswf::register_progress_callback(test_progress_callback);
+	if (do_render) {
+		gameswf::register_progress_callback(test_progress_callback);
+	}
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_fscommand_callback(fs_callback);
 	if (s_verbose == true) {
@@ -704,11 +707,13 @@ int	main(int argc, char *argv[])
 		s_logo_bi = render->create_bitmap_info_rgb(im);
 	}
 
-	// show logo
-	show_logo();
-	glDrawBuffer(GL_BACK);
-	SDL_GL_SwapBuffers();
-
+	if (do_render) {
+		// show logo
+		show_logo();
+		glDrawBuffer(GL_BACK);
+		SDL_GL_SwapBuffers();
+	}
+	
 	// Load the actual movie.
 	gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
 	if (md == NULL)
