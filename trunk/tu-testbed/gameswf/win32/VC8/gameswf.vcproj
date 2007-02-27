@@ -244,10 +244,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_netstream.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_render.cpp"
 				>
 			</File>
@@ -374,10 +370,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_movie.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_netstream.h"
 				>
 			</File>
 			<File
@@ -711,6 +703,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_netstream.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_netstream.h"
 				>
 			</File>
 			<File
