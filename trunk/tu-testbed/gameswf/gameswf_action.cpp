@@ -1874,7 +1874,7 @@ namespace gameswf
  					// Call the array constructor
  					as_value	result;
  					as_global_array_ctor(fn_call(&result, NULL, env, -1, -1));
- 					as_object_interface* ao = dynamic_cast<as_object_interface*> (result.to_object());
+ 					as_object_interface* ao = result.to_object();
  					assert(ao);
  					env->push(result);
 					break;

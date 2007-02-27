@@ -151,12 +151,17 @@ namespace gameswf
 		virtual ~resource() {}
 
 		// Override in derived classes that implement corresponding interfaces.
-		virtual font*	cast_to_font() { return 0; }
-		virtual character_def*	cast_to_character_def() { return 0; }
-		virtual sound_sample*	cast_to_sound_sample() { return 0; }
+		virtual font* cast_to_font() { return 0; }
+		virtual character_def* cast_to_character_def() { return 0; }
+		virtual sound_sample* cast_to_sound_sample() { return 0; }
 	};
 
-
+	// Forward decls for cast_to_*
+	struct as_db;
+	struct as_netstream;
+	struct as_table;
+	class video_stream_instance;
+	
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
 	struct as_object_interface : public resource
@@ -171,6 +176,13 @@ namespace gameswf
 		virtual movie*	to_movie() = 0;
 		virtual bool	on_event(const event_id& id) { return false; }
 		virtual movie_root*		get_root() { return 0; }
+
+		// Replacements for dynamic_cast<>.  Override in subclasses
+		// that implement the corresponding interfaces.
+		virtual video_stream_instance* cast_to_video_stream_instance() { return 0; }
+		virtual as_db* cast_to_as_db() { return 0; }
+		virtual as_netstream* cast_to_as_netstream() { return 0; }
+		virtual as_table* cast_to_as_table() { return 0; }
 	};
 
 

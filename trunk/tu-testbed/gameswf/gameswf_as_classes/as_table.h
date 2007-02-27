@@ -22,6 +22,7 @@ namespace gameswf
 		as_table();
 		~as_table();
 
+		virtual as_table* cast_to_as_table() { return this; }
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 
 		int size();
