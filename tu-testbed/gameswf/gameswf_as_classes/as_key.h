@@ -37,7 +37,7 @@ namespace gameswf
 	struct as_key : public as_object
 	{
 		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
-		array<weak_ptr<as_object_interface> >	m_listeners;
+//		array<weak_ptr<as_object_interface> >	m_listeners;
 		int	m_last_key_pressed;
 
 		as_key();
@@ -45,13 +45,7 @@ namespace gameswf
 		bool	is_key_down(int code);
 		void	set_key_down(int code);
 		void	set_key_up(int code);
-		void	cleanup_listeners();
-		void	add_listener(as_object_interface* listener);
-		void	remove_listener(as_object_interface* listener);
 		int	get_last_key_pressed() const;
-
-		// called from keypress listener only
-		virtual bool	on_event(const event_id& id);
 
 	};
 

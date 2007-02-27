@@ -51,7 +51,8 @@ namespace gameswf
 	struct stream;
 	struct YUV_video;
 	struct event_id;
-	
+	struct movie_root;
+
 	//
 	// Log & error reporting control.
 	//
@@ -169,6 +170,7 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 		virtual movie*	to_movie() = 0;
 		virtual bool	on_event(const event_id& id) { return false; }
+		virtual movie_root*		get_root() { return 0; }
 	};
 
 

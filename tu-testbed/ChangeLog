@@ -1,3 +1,12 @@
+2007-02-27  Vitaly Alexeev <tishka92@yahoo.com>
+
+	Key object listeners are being handled by movie_root
+	* gameswf/gameswf.h: added get_root() to struct as_object_interface
+	* gameswf/gameswf_root(cpp,h): removed notify_keypress_listeners()
+	and updated notify_key_event()
+	* gameswf/gameswf_classes/as_key(cpp,h): removed
+	add_listener(), remove_listener(), clear_listener()
+
 2007-02-25  Vitaly Alexeev <tishka92@yahoo.com>
 
 	Preparation for merge keypress_listeners & key listeners(from "as_key")

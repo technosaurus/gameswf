@@ -10,147 +10,6 @@
 namespace gameswf
 {
 
-	as_key::as_key():
-		m_last_key_pressed(0)
-	{
-		memset(m_keymap, 0, sizeof(m_keymap));
-	}
-
-	bool	as_key::is_key_down(int code)
-	{
-		if (code < 0 || code >= key::KEYCOUNT) return false;
-
-		int	byte_index = code >> 3;
-		int	bit_index = code - (byte_index << 3);
-		int	mask = 1 << bit_index;
-
-		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
-
-		if (m_keymap[byte_index] & mask)
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
-	}
-
-	void	as_key::set_key_down(int code)
-	{
-		if (code < 0 || code >= key::KEYCOUNT) return;
-
-		m_last_key_pressed = code;
-
-		int	byte_index = code >> 3;
-		int	bit_index = code - (byte_index << 3);
-		int	mask = 1 << bit_index;
-
-		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
-
-		m_keymap[byte_index] |= mask;
-
-		// Notify listeners.
-		int i;
-		int n = m_listeners.size();
-		for (i = 0; i < n; i++)
-		{
-			smart_ptr<as_object_interface>	listener = m_listeners[i];
-			as_value	method;
-			if (listener != NULL
-				&& listener->get_member(event_id(event_id::KEY_DOWN).get_function_name(), &method))
-			{
-				call_method(method, NULL /* or root? */, listener.get_ptr(), 0, 0);
-			}
-		}
-	}
-
-	void	as_key::set_key_up(int code)
-	{
-		if (code < 0 || code >= key::KEYCOUNT) return;
-
-		int	byte_index = code >> 3;
-		int	bit_index = code - (byte_index << 3);
-		int	mask = 1 << bit_index;
-
-		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
-
-		m_keymap[byte_index] &= ~mask;
-
-		// Notify listeners.
-		for (int i = 0, n = m_listeners.size(); i < n; i++)
-		{
-			smart_ptr<as_object_interface>	listener = m_listeners[i];
-
-			as_value	method;
-			if (listener != NULL
-				&& listener->get_member(event_id(event_id::KEY_UP).get_function_name(), &method))
-			{
-				call_method(method, NULL /* or root? */, listener.get_ptr(), 0, 0);
-			}
-		}
-	}
-
-	void	as_key::cleanup_listeners()
-	// Remove dead entries in the listeners list.  (Since
-	// we use weak_ptr's, listeners can disappear without
-	// notice.)
-	{
-		for (int i = m_listeners.size() - 1; i >= 0; i--)
-		{
-			if (m_listeners[i] == NULL)
-			{
-				m_listeners.remove(i);
-			}
-		}
-	}
-
-	void	as_key::add_listener(as_object_interface* listener)
-	{
-		cleanup_listeners();
-
-		for (int i = 0, n = m_listeners.size(); i < n; i++)
-		{
-			if (m_listeners[i] == listener)
-			{
-				// Already in the list.
-				return;
-			}
-		}
-
-		m_listeners.push_back(listener);
-	}
-
-	void	as_key::remove_listener(as_object_interface* listener)
-	{
-		cleanup_listeners();
-
-		for (int i = m_listeners.size() - 1; i >= 0; i--)
-		{
-			if (m_listeners[i] == listener)
-			{
-				m_listeners.remove(i);
-			}
-		}
-	}
-
-	int	as_key::get_last_key_pressed() const
-	{
-		return m_last_key_pressed; 
-	}
-
-
-	// called from keypress listener only
-	bool	as_key::on_event(const event_id& id)
-	{
-		if (id.m_id != event_id::KEY_PRESS)
-		{
-			return false;
-		}
-
-		return true;
-	}
-
 	void	key_add_listener(const fn_call& fn)
 	// Add a listener (first arg is object reference) to our list.
 	// Listeners will have "onKeyDown" and "onKeyUp" methods
@@ -169,10 +28,26 @@ namespace gameswf
 			return;
 		}
 
-		as_key*	ko = (as_key*) (as_object*) fn.this_ptr;
-		assert(ko);
+		listener->get_root()->add_keypress_listener(listener);
+	}
 
-		ko->add_listener(listener);
+	void	key_remove_listener(const fn_call& fn)
+	// Remove a previously-added listener.
+	{
+		if (fn.nargs < 1)
+		{
+			log_error("key_remove_listener needs one argument (the listener object)\n");
+			return;
+		}
+
+		as_object_interface*	listener = fn.arg(0).to_object();
+		if (listener == NULL)
+		{
+			log_error("key_remove_listener passed a NULL object; ignored\n");
+			return;
+		}
+
+		listener->get_root()->remove_keypress_listener(listener);
 	}
 
 	void	key_get_ascii(const fn_call& fn)
@@ -230,29 +105,6 @@ namespace gameswf
 		fn.result->set_bool(false);
 	}
 
-	void	key_remove_listener(const fn_call& fn)
-	// Remove a previously-added listener.
-	{
-		if (fn.nargs < 1)
-		{
-			log_error("key_remove_listener needs one argument (the listener object)\n");
-			return;
-		}
-
-		as_object_interface*	listener = fn.arg(0).to_object();
-		if (listener == NULL)
-		{
-			log_error("key_remove_listener passed a NULL object; ignored\n");
-			return;
-		}
-
-		as_key*	ko = (as_key*) (as_object*) fn.this_ptr;
-		assert(ko);
-
-		ko->remove_listener(listener);
-	}
-
-
 	as_key* key_init()
 	{
 		// Create built-in key object.
@@ -288,6 +140,62 @@ namespace gameswf
 		key_obj->set_member("removeListener", &key_remove_listener);
 
 		return key_obj;
+	}
+
+	as_key::as_key():	m_last_key_pressed(0)
+	{
+		memset(m_keymap, 0, sizeof(m_keymap));
+	}
+
+	bool	as_key::is_key_down(int code)
+	{
+		if (code < 0 || code >= key::KEYCOUNT) return false;
+
+		int	byte_index = code >> 3;
+		int	bit_index = code - (byte_index << 3);
+		int	mask = 1 << bit_index;
+
+		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
+
+		if (m_keymap[byte_index] & mask)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	void	as_key::set_key_down(int code)
+	{
+		if (code < 0 || code >= key::KEYCOUNT) return;
+
+		m_last_key_pressed = code;
+
+		int	byte_index = code >> 3;
+		int	bit_index = code - (byte_index << 3);
+		int	mask = 1 << bit_index;
+
+		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
+		m_keymap[byte_index] |= mask;
+	}
+
+	void	as_key::set_key_up(int code)
+	{
+		if (code < 0 || code >= key::KEYCOUNT) return;
+
+		int	byte_index = code >> 3;
+		int	bit_index = code - (byte_index << 3);
+		int	mask = 1 << bit_index;
+
+		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
+		m_keymap[byte_index] &= ~mask;
+	}
+
+	int	as_key::get_last_key_pressed() const
+	{
+		return m_last_key_pressed; 
 	}
 
 }
