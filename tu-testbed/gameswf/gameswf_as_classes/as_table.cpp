@@ -18,7 +18,7 @@ namespace gameswf
 	// Returns amount of the rows in the table
 	{
 		assert(fn.this_ptr);	assert(fn.env);
-		as_table* tbl = dynamic_cast<as_table*> (fn.this_ptr);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		*fn.result = tbl->size();
 	}
 
@@ -26,7 +26,7 @@ namespace gameswf
 	// Moves row pointer to next row
 	{
 		assert(fn.this_ptr);	assert(fn.env);
-		as_table* tbl = dynamic_cast<as_table*> (fn.this_ptr);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		tbl->next();
 	}
 
@@ -34,7 +34,7 @@ namespace gameswf
 	// Moves row pointer to prev row
 	{
 		assert(fn.this_ptr);	assert(fn.env);
-		as_table* tbl = dynamic_cast<as_table*> (fn.this_ptr);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		tbl->prev();
 	}
 
@@ -42,7 +42,7 @@ namespace gameswf
 	// Moves row pointer to the first row
 	{
 		assert(fn.this_ptr);	assert(fn.env);
-		as_table* tbl = dynamic_cast<as_table*> (fn.this_ptr);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		tbl->first();
 	}
 
@@ -50,7 +50,7 @@ namespace gameswf
 	// Returns amount of the fields in the table
 	{
 		assert(fn.this_ptr);	assert(fn.env);
-		as_table* tbl = dynamic_cast<as_table*> (fn.this_ptr);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		*fn.result = tbl->fld_count();
 	}
 
@@ -58,7 +58,7 @@ namespace gameswf
 	// Moves row pointer to the fn.arg(0).to_number()
 	{
 		assert(fn.this_ptr);	assert(fn.env);
-		as_table* tbl = dynamic_cast<as_table*> (fn.this_ptr);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		assert(fn.nargs == 1);
 		tbl->goto_record((int) fn.arg(0).to_number());
 	}
@@ -67,7 +67,7 @@ namespace gameswf
 	// Returns the name of fn.arg(0).to_number() field
 	{
 		assert(fn.this_ptr);	assert(fn.env);
-		as_table* tbl = dynamic_cast<as_table*> (fn.this_ptr);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		assert(fn.nargs == 1);
 		*fn.result = tbl->get_field_title((int) fn.arg(0).to_number());
 	}

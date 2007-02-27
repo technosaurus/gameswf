@@ -1,4 +1,16 @@
 2007-02-27  Thatcher Ulrich <tu@tulrich.com>
+	Remove dynamic_cast, using cast_to_* idiom.  Library clients
+	should be able to choose whether or not to enable RTTI, therefore gameswf
+	should not require it.
+	* docs/AUTHORS: misc updates
+	* gameswf/gameswf.h
+	* gameswf/gameswf_action.cpp
+	* gameswf/gameswf_as_classes/as_db(cpp,h)
+	* gameswf/gameswf_as_classes/as_netstream(cpp,h)
+	* gameswf/gameswf_as_classes/as_table(cpp,h)
+	* gameswf/gameswf_video_impl(cpp,h)
+
+2007-02-27  Thatcher Ulrich <tu@tulrich.com>
 	Fixes for the Makefile
 	* gameswf/config: adjusted c/c++ build rule to specify the object directory
 	  (so source files can live in subdirectories of the Makefile dir)

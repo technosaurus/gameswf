@@ -509,15 +509,15 @@ namespace gameswf
 
 	void netstream_close(const fn_call& fn)
 	{
-		assert(dynamic_cast<as_netstream*>(fn.this_ptr));
-		as_netstream* ns = static_cast<as_netstream*>(fn.this_ptr);
+		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		assert(ns);
 		ns->obj.close();
 	}
 
 	void netstream_pause(const fn_call& fn)
 	{
-		assert(dynamic_cast<as_netstream*>(fn.this_ptr));
-		as_netstream* ns = static_cast<as_netstream*>(fn.this_ptr);
+		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		assert(ns);
 
 		// mode: -1 ==> toogle, 0==> pause, 1==> play
 		int mode = -1;
@@ -530,8 +530,8 @@ namespace gameswf
 
 	void netstream_play(const fn_call& fn)
 	{
-		assert(dynamic_cast<as_netstream*>(fn.this_ptr));
-		as_netstream* ns = static_cast<as_netstream*>(fn.this_ptr);
+		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		assert(ns);
 
 		if (fn.nargs < 1)
 		{
@@ -547,8 +547,8 @@ namespace gameswf
 
 	void netstream_seek(const fn_call& fn)
 	{
-		assert(dynamic_cast<as_netstream*>(fn.this_ptr));
-		as_netstream* ns = static_cast<as_netstream*>(fn.this_ptr);
+		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		assert(ns);
 
 		if (fn.nargs < 1)
 		{

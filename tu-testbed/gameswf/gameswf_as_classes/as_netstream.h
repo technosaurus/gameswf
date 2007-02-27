@@ -170,7 +170,6 @@ namespace gameswf
 
 	struct netstream
 	{
-
 		netstream();
 		~netstream();
 
@@ -239,6 +238,8 @@ namespace gameswf
 		~as_netstream()
 		{
 		}
+
+		virtual as_netstream* cast_to_as_netstream() { return this; }
 
 		netstream obj;
 

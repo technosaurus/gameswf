@@ -59,6 +59,10 @@ namespace gameswf
 
 		~video_stream_instance();
 
+		virtual video_stream_instance* cast_to_video_stream_instance() {
+			return this;
+		}
+
 //		virtual void	advance(float delta_time);
 		void	display();
 
