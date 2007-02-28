@@ -49,14 +49,14 @@ namespace tu_random
 	// random number generator.  _Statistics and Probability Letters
 	// 8_ (1990), 35-39.
 
-//	const Uint64	a = 123471786;	// for SEED_COUNT=1024
-//	const Uint64	a = 123554632;	// for SEED_COUNT=512
-//	const Uint64	a = 8001634;	// for SEED_COUNT=255
-//	const Uint64	a = 8007626;	// for SEED_COUNT=128
-//	const Uint64	a = 647535442;	// for SEED_COUNT=64
-//	const Uint64	a = 547416522;	// for SEED_COUNT=32
-//	const Uint64	a = 487198574;	// for SEED_COUNT=16
-	const Uint64	a = 716514398;	// for SEED_COUNT=8
+//	const Uint64	a = 123471786;	// for SEED_COUNT=1024, period approx 2^32794
+//	const Uint64	a = 123554632;	// for SEED_COUNT=512, period approx 2^16410
+//	const Uint64	a = 8001634;	// for SEED_COUNT=256, period approx 2^8182
+//	const Uint64	a = 8007626;	// for SEED_COUNT=128, period approx 2^4118
+//	const Uint64	a = 647535442;	// for SEED_COUNT=64, period approx 2^2077
+//	const Uint64	a = 547416522;	// for SEED_COUNT=32, period approx 2^1053
+//	const Uint64	a = 487198574;	// for SEED_COUNT=16, period approx  2^540
+	const Uint64	a = 716514398;	// for SEED_COUNT=8, period approx 2^285
 
 
 	generator::generator()
@@ -128,6 +128,9 @@ namespace tu_random
 
 #ifdef TEST_TU_RANDOM
 
+#include "base/tu_timer.h"
+#include <math.h>
+
 
 int count_ones(uint32 i)
 // Return the number of set bits.
@@ -159,15 +162,35 @@ int count_ones_fast(uint32 i)
 }
 
 
-
 // Compile with e.g.:
 //
-//  gcc -o tu_random_test tu_random.cpp -I.. -g -DTEST_TU_RANDOM -lstdc++
-//  cl -o tu_random_test.exe tu_random.cpp -I.. -Od -DTEST_TU_RANDOM
+//  gcc -o tu_random_test tu_random.cpp -I.. -g -DTEST_TU_RANDOM -DMEASURE_SPEED -lstdc++
+//  cl -o tu_random_test.exe tu_random.cpp tu_timer.cpp -I.. -Od -DTEST_TU_RANDOM -DMEASURE_SPEED /link winmm.lib
 //
 // Generate a test file of random numbers for DIEHARD.
 int	main()
 {
+#ifdef MEASURE_SPEED
+	const int SQRT_COUNT = 20000;
+
+	uint64 start = tu_timer::get_ticks();
+	unsigned int dummy = 0;
+	for (int j = 0; j < SQRT_COUNT; j++) {
+		for (int i = 0; i < SQRT_COUNT; i++) {
+			dummy += tu_random::next_random();
+		}
+	}
+	uint64 ticks = tu_timer::get_ticks() - start;
+
+	double period = double(tu_random::a) * pow(pow(2.0, 32.0), double(tu_random::SEED_COUNT));
+	double log2_period = log(period) / log(2.0);
+
+	double secs = tu_timer::ticks_to_seconds(ticks);
+	double counts_per_sec = floor(double(SQRT_COUNT) * double(SQRT_COUNT) / secs);
+	printf("dummy = %u, period = %g ~= 2 ^ %g, generated %g rands / sec\n", dummy, period, log2_period, counts_per_sec);
+#endif // MEASURE_SPEED
+	
+#ifdef GENERATE_DIEHARD_DATA
 	const int	COUNT = 15000000 / 4;	// number of 4-byte words; DIEHARD needs ~80M bits
 
 	// Generate random bitstream for DIEHARD.
@@ -176,39 +199,45 @@ int	main()
 		Uint32	val = tu_random::next_random();
 		fwrite(&val, sizeof(val), 1, stdout);
 	}
+#endif // GENERATE_DIEHARD_DATA
 
-// 	// Test small seeds.
-// 	for (int i = 0; i < 10; i++) {
-// 		tu_random::seed_random(i);
-// 		srand(i);
-// 		for (int j = 0; j < 100; j++) {
-// 			printf("seed = %d, tur = 0x%X, rand = 0x%X\n", i, tu_random::next_random(), rand());//xxxxxxx
-// 		}
-// 		printf("\n");
-// 	}
+#ifdef TEST_SMALL_SEEDS
+	// Test small seeds.
+	for (int i = 0; i < 10; i++) {
+		tu_random::seed_random(i);
+		srand(i);
+		for (int j = 0; j < 100; j++) {
+			printf("seed = %d, tur = 0x%X, rand = 0x%X\n", i, tu_random::next_random(), rand());//xxxxxxx
+		}
+		printf("\n");
+	}
+#endif // TEST_SMALL_SEEDS
 
+#ifdef FIND_BAD_SEEDS
+	init_count();
+	// Search for bad seeds:
+	uint32 worst_seed = 0;
+	uint32 worst_seed_bits = 16;
+	uint32 worst_seed_j = 0;
+	// We know 0 is bad.  Try every other 32-bit value.
+	for (uint32 i = 1; i != 0; i++) {
+		uint32 j = i;
+		j = j ^ (j << 13);
+		j = j ^ (j >> 17);
+		j = j ^ (j << 5);
 
-// 	init_count();
-// 	// Search for bad seeds:
-// 	uint32 worst_seed = 0;
-// 	uint32 worst_seed_bits = 16;
-// 	uint32 worst_seed_j = 0;
-// 	// We know 0 is bad.  Try every other 32-bit value.
-// 	for (uint32 i = 1; i != 0; i++) {
-// 		uint32 j = i;
-// 		j = j ^ (j << 13);
-// 		j = j ^ (j >> 17);
-// 		j = j ^ (j << 5);
+		int one_bits = count_ones_fast(j);// _fast
+		if (one_bits <= worst_seed_bits) {
+			worst_seed_bits = one_bits;
+			worst_seed = i;
+			worst_seed_j = j;
 
-// 		int one_bits = count_ones_fast(j);// _fast
-// 		if (one_bits <= worst_seed_bits) {
-// 			worst_seed_bits = one_bits;
-// 			worst_seed = i;
-// 			worst_seed_j = j;
+			printf("i = 0x%X, worst seed = 0x%X, j = 0x%X, bits = 0x%X\n", i, worst_seed, worst_seed_j, worst_seed_bits);
+		}
+	}
+#endif // FIND_BAD_SEEDS
 
-// 			printf("i = 0x%X, worst seed = 0x%X, j = 0x%X, bits = 0x%X\n", i, worst_seed, worst_seed_j, worst_seed_bits);
-// 		}
-// 	}
+	return 0;
 }
 
 

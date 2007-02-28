@@ -21,9 +21,10 @@ namespace tu_random
 	void	seed_random(Uint32 seed);
 	float	get_unit_float();
 
+	const int	SEED_COUNT = 8;
+	
 	// In case you need independent generators.  The global
 	// generator is just an instance of this.
-	const int	SEED_COUNT = 8;
 	struct generator
 	{
 		generator();
