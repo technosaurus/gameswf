@@ -669,7 +669,14 @@ namespace gameswf
 
 			m_frame_size.read(&str);
 			m_frame_rate = str.read_u16() / 256.0f;
+
 			m_frame_count = str.read_u16();
+
+			// version 4 specific
+			if (m_frame_count  == 0)
+			{
+				m_frame_count = 1;
+			}
 
 			m_playlist.resize(m_frame_count);
 			m_init_action_list.resize(m_frame_count);
