@@ -243,7 +243,7 @@ namespace gameswf
 
 		netstream obj;
 
-		//	virtual void set_member(const tu_stringi& name, const as_value& val);
+		//	virtual bool set_member(const tu_stringi& name, const as_value& val);
 		//	virtual bool get_member(const tu_stringi& name, as_value* val);
 
 	};

@@ -27,7 +27,7 @@ namespace gameswf
 		virtual as_db* cast_to_as_db() { return this; }
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual void	set_member(const tu_stringi& name, const as_value& val);
+		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 
 		bool connect(const char* host, const char* dbname, const char* user, const char* pwd);
 		void disconnect();

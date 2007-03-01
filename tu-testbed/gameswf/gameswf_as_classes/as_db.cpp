@@ -223,14 +223,14 @@ namespace gameswf
 		return as_object::get_member(name, val);
 	}
 
-	void as_db::set_member(const tu_stringi& name, const as_value& val)
+	bool as_db::set_member(const tu_stringi& name, const as_value& val)
 	{
 		if (name == "auto_commit")
 		{
 			set_autocommit(val.to_bool());
-			return;
+			return true;
 		}
-		as_object::set_member(name, val);
+		return as_object::set_member(name, val);
 	}
 
 

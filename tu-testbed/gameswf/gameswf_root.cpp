@@ -239,7 +239,7 @@ namespace gameswf
 		} 
 
 		// @@ should these delegate to m_movie?	 Probably...
-		void	movie_root::set_member(const tu_stringi& name, const as_value& val) {}
+		bool	movie_root::set_member(const tu_stringi& name, const as_value& val) { return false; }
 		bool	movie_root::get_member(const tu_stringi& name, as_value* val) { return false; }
 		movie*	movie_root::to_movie() { assert(0); return 0; } // @@ should this return m_movie.get_ptr()?
 

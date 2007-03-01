@@ -535,184 +535,75 @@ namespace gameswf
 			get_parent()->get_mouse_state(x, y, buttons);
 		}
 
-
 		//
 		// ActionScript overrides
 		//
 
-		virtual void	set_member(const tu_stringi& name, const as_value& val)
+		virtual bool	set_member(const tu_stringi& name, const as_value& val)
 		{
-			// TODO: pull these up into a base class, to
-			// share as much as possible with sprite_instance.
-			as_standard_member	std_member = get_standard_member(name);
-			switch (std_member)
+			// first try standart properties
+			if (character::set_member(name, val))
 			{
-			default:
-			case M_INVALID_MEMBER:
-				break;
-			case M_VISIBLE:  // _visible
-			{
-				m_visible = val.to_bool();
-				return;
-			}
-			case M_ALPHA:  // _alpha
-			{
-				// Set alpha modulate, in percent.
-				cxform	cx = get_cxform();
-				cx.m_[3][0] = float(val.to_number()) / 100.f;
-				set_cxform(cx);
-				//m_accept_anim_moves = false;
-				return;
-			}
-			case M_X:  // _x
-			{
-				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				m.m_[0][2] = float(PIXELS_TO_TWIPS(val.to_number()));
-				this->set_matrix(m);
-				return;
-			}
-			case M_Y:  // _y
-			{
-				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				m.m_[1][2] = float(PIXELS_TO_TWIPS(val.to_number()));
-				this->set_matrix(m);
-				return;
-			}
-// evan : need set_width and set_height function for struct character
-#if 0
-			case M_WIDTH:  // _width
-			{
-				for (int i = 0; i < m_def->m_button_records.size(); i++)
-				{
-					button_record&	rec = m_def->m_button_records[i];
-					if (m_record_character[i] == NULL)
-					{
-						continue;
-					}
-					if ((m_mouse_state == UP && rec.m_up)
-					    || (m_mouse_state == DOWN && rec.m_down)
-					    || (m_mouse_state == OVER && rec.m_over))
-					{
-						m_record_character[i]->set_width(val.to_number);
-						// @@ evan: should we return here?
-						return;
-					}
-				}
-
-				return;
-			}
-			case M_HEIGHT:  // _height
-			{
-				for (int i = 0; i < m_def->m_button_records.size(); i++)
-				{
-					button_record&	rec = m_def->m_button_records[i];
-					if (m_record_character[i] == NULL)
-					{
-						continue;
-					}
-					if ((m_mouse_state == UP && rec.m_up)
-					    || (m_mouse_state == DOWN && rec.m_down)
-					    || (m_mouse_state == OVER && rec.m_over))
-					{
-						m_record_character[i]->set_height(val.to_number);
-						// @@ evan: should we return here?
-						return;
-					}
-				}
-
-				return;
-			}
-#endif
+				return true;
 			}
 
 			log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
-					  name.c_str(),
-					  val.to_string());
+					  name.c_str(), val.to_string());
+
+			return false;
 		}
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val)
 		{
-			// TODO: pull these up into a base class, to
-			// share as much as possible with sprite_instance.
-			as_standard_member	std_member = get_standard_member(name);
-			switch (std_member)
+			// first try standart properties
+			if (character::get_member(name, val))
 			{
-			default:
-			case M_INVALID_MEMBER:
-				break;
-			case M_VISIBLE:  // _visible
-			{
-				val->set_bool(this->get_visible());
 				return true;
-			}
-			case M_ALPHA:  // _alpha
-			{
-				// @@ TODO this should be generic to struct character!
-				// Alpha units are in percent.
-				val->set_double(get_cxform().m_[3][0] * 100.f);
-				return true;
-			}
-			case M_X:  // _x
-			{
-				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
-				return true;
-			}
-			case M_Y:  // _y
-			{
-				matrix	m = get_matrix();	// @@ get_world_matrix()???
-				val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
-				return true;
-			}
-			case M_WIDTH:  // _width
-			{
-				for (int i = 0; i < m_def->m_button_records.size(); i++)
-				{
-					button_record&	rec = m_def->m_button_records[i];
-					if (m_record_character[i] == NULL)
-					{
-						continue;
-					}
-					if ((m_mouse_state == UP && rec.m_up)
-					    || (m_mouse_state == DOWN && rec.m_down)
-					    || (m_mouse_state == OVER && rec.m_over))
-					{
-						val->set_double(TWIPS_TO_PIXELS(m_record_character[i]->get_width()));
-						// @@ evan: should we return here?
-						return true;
-					}
-				}
-
-				// from the experiments with macromedia flash player
-				val->set_double(0);
-				return true;
-			}
-			case M_HEIGHT:  // _height
-			{
-				for (int i = 0; i < m_def->m_button_records.size(); i++)
-				{
-					button_record&	rec = m_def->m_button_records[i];
-					if (m_record_character[i] == NULL)
-					{
-						continue;
-					}
-					if ((m_mouse_state == UP && rec.m_up)
-					    || (m_mouse_state == DOWN && rec.m_down)
-					    || (m_mouse_state == OVER && rec.m_over))
-					{
-						val->set_double(TWIPS_TO_PIXELS(m_record_character[i]->get_height()));
-						// @@ evan: should we return here?
-						return true;
-					}
-				}
-
-				// from the experiments with macromedia flash player
-				val->set_double(0);
-				return true;
-			}
 			}
 
 			return false;
+		}
+
+		virtual float	get_width()
+		{
+			for (int i = 0; i < m_def->m_button_records.size(); i++)
+			{
+				button_record&	rec = m_def->m_button_records[i];
+				if (m_record_character[i] == NULL)
+				{
+					continue;
+				}
+				if ((m_mouse_state == UP && rec.m_up)
+				    || (m_mouse_state == DOWN && rec.m_down)
+				    || (m_mouse_state == OVER && rec.m_over))
+				{
+					return m_record_character[i]->get_width();
+				}
+			}
+
+			// from the experiments with macromedia flash player
+			return 0;
+		}
+
+		virtual float	get_height()
+		{
+			for (int i = 0; i < m_def->m_button_records.size(); i++)
+			{
+				button_record&	rec = m_def->m_button_records[i];
+				if (m_record_character[i] == NULL)
+				{
+					continue;
+				}
+				if ((m_mouse_state == UP && rec.m_up)
+				    || (m_mouse_state == DOWN && rec.m_down)
+				    || (m_mouse_state == OVER && rec.m_over))
+				{
+					return m_record_character[i]->get_height();
+				}
+			}
+
+			// from the experiments with macromedia flash player
+			return 0;
 		}
 
 		// not sure if we need to override this one.
