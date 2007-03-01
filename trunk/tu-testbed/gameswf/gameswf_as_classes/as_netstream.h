@@ -248,6 +248,7 @@ namespace gameswf
 
 	};
 
+	void as_global_netstream_ctor(const fn_call& fn);
 	void netstream_new(const fn_call& fn);
 	void netstream_close(const fn_call& fn);
 	void netstream_pause(const fn_call& fn);

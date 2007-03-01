@@ -272,10 +272,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_string.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_styles.cpp"
 				>
 			</File>
@@ -289,10 +285,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_text.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_textformat.cpp"
 				>
 			</File>
 			<File
@@ -397,19 +389,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_string.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_styles.h"
 				>
 			</File>
 			<File
 				RelativePath="..\..\gameswf_tesselate.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_textformat.h"
 				>
 			</File>
 			<File
@@ -698,6 +682,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_math.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_math.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.cpp"
 				>
 			</File>
@@ -722,11 +714,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_string.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_string.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_table.cpp"
 				>
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_table.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_textformat.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_textformat.h"
 				>
 			</File>
 		</Filter>
