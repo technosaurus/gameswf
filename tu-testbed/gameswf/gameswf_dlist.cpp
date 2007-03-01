@@ -384,7 +384,8 @@ namespace gameswf
 		if (size <= 0)
 		{
 			// error.
-			log_error("remove_display_object: no characters in display list\n");
+			// Vitaly: it's not error
+			//log_error("remove_display_object: no characters in display list\n");
 			return;
 		}
 		
@@ -394,7 +395,8 @@ namespace gameswf
 		    || get_character(index)->get_depth() != depth)
 		{
 			// error -- no character at the given depth.
-			log_error("remove_display_object: no character at depth %d\n", depth);
+			// Vitaly: it's not error
+			// log_error("remove_display_object: no character at depth %d\n", depth);
 			return;
 		}
 

@@ -1,5 +1,23 @@
 2007-03-01  Vitaly Alexeev <tishka92@yahoo.com>
 
+	Re-structuring
+	* gameswf/gameswf_as_classes/as_netstream.(cpp,h):
+	as_global_netstream_ctor moved from action.cpp
+	* gameswf/gameswf_as_classes/as_string.(cpp,h),
+	* gameswf/gameswf_as_classes/as_textformat.(cpp,h):
+	added new files, moved from gameswf_textformat & gameswf_string
+	* gameswf/gameswf_string.(cpp,h),
+	* gameswf/gameswf_textformat.(cpp,h): removed
+	* /gameswf/gameswf_dlist.cpp:
+	commented <log_error("remove_display_object: no characters in display list\n")>
+	because it's not error
+	* gameswf/gameswf_text.cpp,
+	* gameswf/gameswf_xml.cpp: updated #includes
+	* gameswf/gameswf_action.cpp: math moved to as_classes folder
+	* gameswf/win32/VC8/gameswf.vcproj: removed unused files & added new files
+
+2007-03-01  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_impl.cpp: a bit optimization
 	* gameswf/gameswf.h,
 	* gameswf/gameswf_movie.h,

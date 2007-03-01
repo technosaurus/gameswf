@@ -563,4 +563,19 @@ namespace gameswf
 		log_msg("%s:unimplemented \n", __FUNCTION__);
 	}
 
+	void	as_global_netstream_ctor(const fn_call& fn)
+	// Constructor for ActionScript class NetStream.
+	{
+		smart_ptr<as_object>	netstream_obj(new as_netstream);
+
+		// methods
+		netstream_obj->set_member("close", &netstream_close);
+		netstream_obj->set_member("pause", &netstream_pause);
+		netstream_obj->set_member("play", &netstream_play);
+		netstream_obj->set_member("seek", &netstream_seek);
+		netstream_obj->set_member("setbuffertime", &netstream_setbuffertime);
+
+		fn.result->set_as_object_interface(netstream_obj.get_ptr());
+	}
+
 } // end of gameswf namespace
