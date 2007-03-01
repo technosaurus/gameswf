@@ -14,7 +14,6 @@
 #include <ctype.h>	// for poxy wchar_t
 #include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
 #include <assert.h>
-#include <stdio.h>
 
 class tu_file;
 class render_handler;
@@ -799,15 +798,15 @@ namespace gameswf
 	// Flash converts inf to zero when works with matrix & cxform
 	struct tu_float
 	{
-		inline operator float() const { return m_float; }
+		operator float() const { return m_float; }
 		inline void	operator=(const float x)
 		{
 			m_float = x >= -3.402823466e+38F && x <= 3.402823466e+38F ? x : 0.0f;
 		}
-		inline void	operator+=(const float x) { operator=(m_float + x); }
-		inline void	operator-=(const float x) { operator=(m_float - x); }
-		inline void	operator*=(const float x) { operator=(m_float * x); }
-		inline void	operator/=(const float x) { operator=(m_float / x); }
+		void	operator+=(const float x) { operator=(m_float + x); }
+		void	operator-=(const float x) { operator=(m_float - x); }
+		void	operator*=(const float x) { operator=(m_float * x); }
+		void	operator/=(const float x) { operator=(m_float / x); }
 
 		private:
 			float m_float;
@@ -827,7 +826,7 @@ namespace gameswf
 		static matrix	identity;
 
 		matrix();
-		bool	is_valid() const;
+//		bool	is_valid() const;
 		void	set_identity();
 		void	concatenate(const matrix& m);
 		void	concatenate_translation(float tx, float ty);
