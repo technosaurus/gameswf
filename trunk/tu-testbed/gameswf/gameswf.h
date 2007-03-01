@@ -172,7 +172,7 @@ namespace gameswf
 		// So that text_character's can return something reasonable.
 		virtual const char*	get_text_value() const { return 0; }
 
-		virtual void	set_member(const tu_stringi& name, const as_value& val) = 0;
+		virtual bool	set_member(const tu_stringi& name, const as_value& val) = 0;
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 		virtual movie*	to_movie() = 0;
 		virtual bool	on_event(const event_id& id) { return false; }

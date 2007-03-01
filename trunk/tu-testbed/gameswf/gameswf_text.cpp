@@ -826,171 +826,87 @@ namespace gameswf
 		}
 
 
-		void	set_member(const tu_stringi& name, const as_value& val)
-			// We have a "text" member.
+		bool	set_member(const tu_stringi& name, const as_value& val)
+		// We have a "text" member.
 		{
-			// @@ TODO need to inherit basic stuff like _x, _y, _xscale, _yscale etc
-
-			as_standard_member	std_member = get_standard_member(name);
-			switch (std_member)
+			// first try standart properties
+			if (character::set_member(name, val))
 			{
-			default:
-			case M_INVALID_MEMBER:
-				break;
-			case M_TEXT:
-				//if (name == "text")
-				{
-					int version = get_parent()->get_movie_definition()->get_version();
-					set_text_value(val.to_tu_string_versioned(version));
-					return;
-				}
-			case M_X:
-				//else if (name == "_x")
-				{
-					matrix	m = get_matrix();
-					m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-					set_matrix(m);
+				return true;
+			}
 
-					// m_accept_anim_moves = false;
+			if (name == "text")
+			{
+				int version = get_parent()->get_movie_definition()->get_version();
+				set_text_value(val.to_tu_string_versioned(version));
+				return true;
+			}
+			else if (name == "textColor")
+			{	
+				// The arg is 0xRRGGBB format.
+				Uint32	rgb = (Uint32) val.to_number();
 
-					return;
-				}
-			case M_Y:
-				//else if (name == "_y")
-				{
-					matrix	m = get_matrix();
-					m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-					set_matrix(m);
+				cxform	cx = get_cxform();
+				cx.m_[0][0] = fclamp(((rgb >> 16) & 255) / 255.0f, 0, 1);
+				cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
+				cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
+				set_cxform(cx);
 
-					// m_accept_anim_moves = false;
+				return true;
+			}
 
-					return;
-				}
-			case M_VISIBLE:
-				//else if (name == "_visible")
-				{
-					set_visible(val.to_bool());
-					return;
-				}
-			case M_ALPHA:
-				//else if (name == "_alpha")
-				{
-					// @@ TODO this should be generic to struct character!
-					// Arg is in percent.
-					cxform	cx = get_cxform();
-					cx.m_[3][0] = fclamp(float(val.to_number()) / 100.f, 0, 1);
-					set_cxform(cx);
-					return;
-				}
-			case M_TEXTCOLOR:
-				//else if (name == "textColor")
-				{	
-					// The arg is 0xRRGGBB format.
-					Uint32	rgb = (Uint32) val.to_number();
+			// @@ TODO see TextField members in Flash MX docs
 
-					cxform	cx = get_cxform();
-					cx.m_[0][0] = fclamp(((rgb >> 16) & 255) / 255.0f, 0, 1);
-					cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
-					cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
-					set_cxform(cx);
-
-					return;
-				}
-				// @@ TODO see TextField members in Flash MX docs
-			}	// end switch
+			return false;
 		}
 
 
 		bool	get_member(const tu_stringi& name, as_value* val)
 		{
-			as_standard_member	std_member = get_standard_member(name);
-			switch (std_member)
+			// first try standart properties
+			if (character::get_member(name, val))
 			{
-			default:
-			case M_INVALID_MEMBER:
-				break;
-			case M_TEXT:
-				//if (name == "text")
-				{
-					val->set_tu_string(m_text);
-					return true;
-				}
-			case M_VISIBLE:
-				//else if (name == "_visible")
-				{
-					val->set_bool(get_visible());
-					return true;
-				}
-			case M_ALPHA:
-				//else if (name == "_alpha")
-				{
-					// @@ TODO this should be generic to struct character!
-					const cxform&	cx = get_cxform();
-					val->set_double(cx.m_[3][0] * 100.f);
-					return true;
-				}
-			case M_TEXTCOLOR:
-				//else if (name == "textColor")
-				{
-					// Return color in 0xRRGGBB format
-					const cxform&	cx = get_cxform();
-					int	r = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-					int	g = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-					int	b = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-					val->set_int((r << 16) + (g << 8) + b);
-					return true;
-				}
-			case M_X:
-				//else if (name == "_x")
-				{
-					matrix	m = get_matrix();	// @@ get_world_matrix()???
-					val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
-					return true;
-				}
-			case M_Y:
-				//else if (name == "_y")
-				{
-					matrix	m = get_matrix();	// @@ get_world_matrix()???
-					val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
-					return true;
-				}
-			case M_WIDTH:
-				//else if (name == "_width")
-				{
-					// @@ TODO should implement this in
-					// character and inherit into both here and sprite_instance
-					rect	transformed_rect;
-					transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
-					val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
-					return true;
-				}
-			case M_HEIGHT:
-				//else if (name == "_height")
-				{
-					// @@ TODO should implement this in
-					// character and inherit into both here and sprite_instance
-					rect	transformed_rect;
-					transformed_rect.enclose_transformed_rect(get_world_matrix(), m_def->m_rect);
-					val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
-					return true;
-				}
-			case M_TEXTWIDTH:
-				//else if (name == "textWidth")
-				{
-					// Return the width, in pixels, of the text as laid out.
-					// (I.e. the actual text content, not our defined
-					// bounding box.)
-					//
-					// In local coords.  Verified against Macromedia Flash.
-					val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
+				return true;
+			}
 
-					return true;
-				}
-			}	// end switch
+			if (name == "text")
+			{
+				val->set_tu_string(m_text);
+				return true;
+			}
+			else if (name == "textColor")
+			{
+				// Return color in 0xRRGGBB format
+				const cxform&	cx = get_cxform();
+				int	r = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+				int	g = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+				int	b = iclamp(int(cx.m_[0][0] * 255), 0, 255);
+				val->set_int((r << 16) + (g << 8) + b);
+				return true;
+			}
+			else if (name == "textWidth")
+			{
+				// Return the width, in pixels, of the text as laid out.
+				// (I.e. the actual text content, not our defined
+				// bounding box.)
+				//
+				// In local coords.  Verified against Macromedia Flash.
+				val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
+				return true;
+			}
 
 			return false;
 		}
 
+		virtual float	get_width()
+		{
+			return m_def->m_rect.width();
+		}
+
+		virtual float	get_height()
+		{
+			return m_def->m_rect.height();
+		}
 
 		// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
 		// we have a bug?

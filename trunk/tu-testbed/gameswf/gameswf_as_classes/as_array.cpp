@@ -101,14 +101,14 @@ namespace gameswf
 		return as_object::get_member(name, val);
 	}
 
-	void as_array::set_member(const tu_stringi& name, const as_value& val)
+	bool as_array::set_member(const tu_stringi& name, const as_value& val)
 	{
 		if (name == "length")
 		{
 			// can't set length property
-			return;
+			return true;
 		}
-		as_object::set_member(name, val);
+		return as_object::set_member(name, val);
 	}
 
 	tu_string as_array::to_string()

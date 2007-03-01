@@ -83,7 +83,7 @@ namespace gameswf
 		~movie_root();
 
 		void	generate_mouse_button_events(mouse_button_state* ms);
-		virtual void	set_member(const tu_stringi& name, const as_value& val);
+		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual movie*	to_movie();
 		void	set_root_movie(movie* root_movie);
@@ -100,7 +100,7 @@ namespace gameswf
 
 		virtual void	clear_interval_timer(int x);
 		virtual void	do_something(void *timer);
-		int	get_current_frame() const;
+		virtual int	get_current_frame() const;
 		float	get_frame_rate() const;
 
 		virtual float	get_pixel_scale() const;

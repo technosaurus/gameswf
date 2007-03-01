@@ -63,19 +63,13 @@ namespace gameswf
 			return this;
 		}
 
-//		virtual void	advance(float delta_time);
 		void	display();
-
-		//	void set_source(const as_object* source)
-		//	{
-		//		m_source = source;
-		//	}
 
 		//
 		// ActionScript overrides
 		//
 
-		virtual void set_member(const tu_stringi& name, const as_value& val);
+//		virtual bool set_member(const tu_stringi& name, const as_value& val);
 		virtual bool get_member(const tu_stringi& name, as_value* val);
 
 		as_object* m_ns;

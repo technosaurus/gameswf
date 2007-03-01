@@ -109,47 +109,17 @@ namespace gameswf
 		}
 	}
 
-//	void video_stream_instance::advance(float delta_time)
-//	{
-//	}
-
-	void	video_stream_instance::set_member(const tu_stringi& name, const as_value& val)
-	{
-		if (name == "_alpha")
-		{
-			// Set alpha modulate, in percent.
-			cxform	cx = get_cxform();
-			cx.m_[3][0] = float(val.to_number()) / 100.f;
- 			set_cxform(cx);
-			return;
-		}
-		if (name == "_visible")
-		{
-			m_visible = val.to_bool();
-			return;
-		}
-
-		log_error("error: video_stream_instance::set_member('%s', '%s') not implemented yet\n",
-			name.c_str(),	val.to_string());
-	}
-
 	bool video_stream_instance::get_member(const tu_stringi& name, as_value* val)
 	{
+		// first try standart members
+		if (character::get_member(name, val))
+		{
+			return true;
+		}
+
 		if (name == "attachVideo")
 		{
 			val->set_as_c_function_ptr(attach_video);
-			return true;
-		}
-		else
-		if (name == "_alpha")
-		{
-			// Alpha units are in percent.
-			val->set_double(get_cxform().m_[3][0] * 100.f);
-			return true;
-		}
-		else if (name == "_visible")
-		{
-			val->set_bool(m_visible);
 			return true;
 		}
 		return false;

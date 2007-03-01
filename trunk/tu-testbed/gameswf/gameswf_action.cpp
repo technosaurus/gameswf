@@ -3528,9 +3528,10 @@ namespace gameswf
 	}
 
 
-	void	as_environment::set_member(const tu_stringi& varname, const as_value& val)
+	bool	as_environment::set_member(const tu_stringi& varname, const as_value& val)
 	{
 		m_variables.set(varname, val);
+		return true;
 	}
 
 	as_value*	as_environment::local_register_ptr(int reg)
@@ -3841,10 +3842,10 @@ namespace gameswf
 			s_standard_member_map.add("_xmouse", M_XMOUSE);
 			s_standard_member_map.add("_ymouse", M_YMOUSE);
 			s_standard_member_map.add("_parent", M_PARENT);
-			s_standard_member_map.add("text", M_TEXT);
-			s_standard_member_map.add("textWidth", M_TEXTWIDTH);
-			s_standard_member_map.add("textColor", M_TEXTCOLOR);
-			s_standard_member_map.add("onLoad", M_ONLOAD);
+//			s_standard_member_map.add("text", M_TEXT);
+//			s_standard_member_map.add("textWidth", M_TEXTWIDTH);
+//			s_standard_member_map.add("textColor", M_TEXTCOLOR);
+//			s_standard_member_map.add("onLoad", M_ONLOAD);
 		}
 
 		as_standard_member	result = M_INVALID_MEMBER;
