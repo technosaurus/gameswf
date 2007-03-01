@@ -1,5 +1,10 @@
 2007-03-01  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf.h: a bit optimization of tu_float
+	* gameswf/gameswf_impl.cpp: added flash version 4 specific code
+
+2007-03-01  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* a lot of files: void set_member() ==> bool set_member()
 	* gameswf/gameswf_movie.h: added bool get_member() & bool set_member()
 	to struct character	which contains the standart properties of character
