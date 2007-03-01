@@ -3253,7 +3253,7 @@ namespace gameswf
 					target_frame_number < 0 ||
 					target_frame_number == m_current_frame)	// to prevent infinitive recursion
 			{
-				set_play_state(STOP);
+				m_play_state = STOP;
 				return;
 			}
 

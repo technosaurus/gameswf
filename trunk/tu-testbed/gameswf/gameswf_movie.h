@@ -354,7 +354,7 @@ namespace gameswf
 		const matrix&	get_matrix() const { return m_matrix; }
 		void	set_matrix(const matrix& m)
 		{
-			assert(m.is_valid());
+//			assert(m.is_valid());
 			m_matrix = m;
 		}
 		const cxform&	get_cxform() const { return m_color_transform; }
