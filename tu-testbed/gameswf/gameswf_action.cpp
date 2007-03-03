@@ -236,6 +236,11 @@ namespace gameswf
 				assert(m_args[i].m_register == 0);
 				our_env->add_local(m_args[i].m_name, fn.arg(i));
 			}
+
+			if (fn.this_ptr)
+			{
+				our_env->set_local("this", fn.this_ptr);
+			}
 		}
 		else
 		{

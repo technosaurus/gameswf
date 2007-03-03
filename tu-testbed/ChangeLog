@@ -1,5 +1,9 @@
 2007-03-03  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp: fixed #1229756 bug
+
+2007-03-03  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_movie.h: added get_member("_target") &
 	set_member("_name")
 	* gameswf/gameswf_impl.cpp: commented set_name("_root"),
