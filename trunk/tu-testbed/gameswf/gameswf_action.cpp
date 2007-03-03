@@ -622,7 +622,12 @@ namespace gameswf
 		if (fn.arg(0).get_type() == as_value::OBJECT)
 		{
 			as_object_interface* obj = fn.arg(0).to_object();
-			assert(obj);
+
+			if (obj == NULL)
+			{
+				log_msg("The attempt to trace of NULL object\n");
+				return;
+			}
 
 			as_value method;
 			if (obj->get_member("toString", &method)

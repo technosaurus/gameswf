@@ -3995,7 +3995,8 @@ namespace gameswf
 		sprite_instance*	root_movie = new sprite_instance(this, m, NULL, -1);
 		assert(root_movie);
 
-		root_movie->set_name("_root");
+		// By default _root has no name
+		//		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
 
 		m->add_ref();
