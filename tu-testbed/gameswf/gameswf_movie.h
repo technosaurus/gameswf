@@ -596,7 +596,31 @@ namespace gameswf
 				//else if (name == "_target")
 				{
 					// Full path to this object; e.g. "/_level0/sprite1/sprite2/ourSprite"
-					val->set_string("/_root");
+					movie* parent = get_parent();
+					if (parent == NULL)	// root
+					{
+						val->set_tu_string("/");
+						return true;
+					}
+
+					as_value target;
+					parent->get_member("_target", &target);
+
+					// if s != "/"(root) add "/"
+					tu_string s = target.to_tu_string();
+					s += s == "/" ? "" : "/";
+
+					// add own name
+					if (get_name().length() == 0)
+					{
+						s += "noname";
+					}
+					else
+					{
+						s += get_name();
+					}
+
+					val->set_tu_string(s);
 					return true;
 				}
 			case M_FRAMESLOADED:
@@ -806,6 +830,12 @@ namespace gameswf
 					m.set_scale_rotation(x_scale, y_scale, rotation);
 
 					set_matrix(m);
+					return true;
+				}
+			case M_NAME:
+				//else if (name == "_name")
+				{
+					set_name(val.to_string());
 					return true;
 				}
 			case M_HIGHQUALITY:

@@ -1,3 +1,12 @@
+2007-03-03  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_movie.h: added get_member("_target") &
+	set_member("_name")
+	* gameswf/gameswf_impl.cpp: commented set_name("_root"),
+	by default root has no name
+	* gameswf/gameswf_action.cpp: removed assert from trace when object==null
+	because it's not error but warning
+
 2007-03-01  Vitaly Alexeev <tishka92@yahoo.com>
 
 	Re-structuring
