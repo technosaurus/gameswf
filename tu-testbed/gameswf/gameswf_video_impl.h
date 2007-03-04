@@ -8,6 +8,7 @@
 #define GAMESWF_VIDEO_H
 
 #include "gameswf_impl.h"
+#include "gameswf_as_classes/as_netstream.h"
 
 namespace gameswf
 {
@@ -21,7 +22,8 @@ namespace gameswf
 
 		character* create_character_instance(movie* parent, int id);
 		void	read(stream* in, int tag, movie_definition* m);
-		const rect&	get_bound() const	{
+		const rect&	get_bound() const
+		{
 			return m_unused_rect;
 		}
 
@@ -43,23 +45,13 @@ namespace gameswf
 		rect m_unused_rect;
 	};
 
-	class video_stream_instance : public character
+	struct video_stream_instance : public character
 	{
-
-	public:
-
-		//	const as_object* m_source;
-		video_stream_definition*	m_def;
-
-		// m_video_source - A Camera object that is capturing video data or a NetStream object.
-		// To drop the connection to the Video object, pass null for source.
-		as_object* m_video_source;
-
 		video_stream_instance(video_stream_definition* def,	movie* parent, int id);
-
 		~video_stream_instance();
 
-		virtual video_stream_instance* cast_to_video_stream_instance() {
+		virtual video_stream_instance* cast_to_video_stream_instance()
+		{
 			return this;
 		}
 
@@ -72,10 +64,19 @@ namespace gameswf
 //		virtual bool set_member(const tu_stringi& name, const as_value& val);
 		virtual bool get_member(const tu_stringi& name, as_value* val);
 
-		as_object* m_ns;
+		// To drop the connection to the Video object, pass null for source.
+		void attach_netstream(as_netstream* ns)
+		{
+			m_ns = ns;
+		}
 
+		private:
+
+		smart_ptr<video_stream_definition>	m_def;
+
+		// A Camera object that is capturing video data or a NetStream object.
+		smart_ptr<as_netstream> m_ns;
 	};
-
 
 }	// end namespace gameswf
 

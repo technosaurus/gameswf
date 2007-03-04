@@ -58,21 +58,16 @@ namespace gameswf
 			return;
 		}
 
-		//		if (dynamic_cast<as_netstream*>(fn.arg(0).to_object()))
-		if (video)
-		{
-			video->m_ns = (as_netstream*) fn.arg(0).to_object();
-		}
+		// fn.arg(0) may be null
+		video->attach_netstream((as_netstream*) fn.arg(0).to_object());
 	}
 
 	video_stream_instance::video_stream_instance(video_stream_definition* def, movie* parent, int id)
-		:
-	character(parent, id),
-		m_def(def),
-		m_video_source(NULL),
-		m_ns(NULL)
+	:
+		character(parent, id),
+		m_def(def)
 	{
-		assert(m_def);
+		assert(m_def != NULL);
 	}
 
 	video_stream_instance::~video_stream_instance()
@@ -81,10 +76,9 @@ namespace gameswf
 
 	void video_stream_instance::display()
 	{
-		if (m_ns)
+		if (m_ns != NULL)	// is attached video ?
 		{
-			as_netstream* nso = static_cast<as_netstream*>(m_ns);
-			YUV_video* v = nso->obj.get_video();
+			YUV_video* v = m_ns->obj.get_video();
 			if (v)
 			{
 				if (v->video_in_place())
@@ -96,7 +90,7 @@ namespace gameswf
 					bounds.m_y_min = 0.0f;
 					bounds.m_x_max = PIXELS_TO_TWIPS(m_def->m_width);
 					bounds.m_y_max = PIXELS_TO_TWIPS(m_def->m_height);
-	
+
 					cxform cx = get_world_cxform();
 					gameswf::rgba color = cx.transform(gameswf::rgba());
 
