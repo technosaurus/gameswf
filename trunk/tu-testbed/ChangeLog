@@ -1,5 +1,11 @@
 2007-03-04  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf.h: class video_stream_instance ==> struct ...
+	* gameswf/gameswf_video_impl.(cpp,h): pointers ==> smart_ptr<>
+	* gameswf/gameswf_as_classes/as_netconnection.(cpp,h): updated comments
+
+2007-03-04  Vitaly Alexeev <tishka92@yahoo.com>
+
 	added the processing of events from video thread (onStatus)
 	* gameswf/gameswf_mutex.(cpp,h):
 	* gameswf/gameswf_sound_handler_sdl.(cpp,h): struct locker
