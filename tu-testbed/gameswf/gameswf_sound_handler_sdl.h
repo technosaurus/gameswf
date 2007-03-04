@@ -24,24 +24,6 @@ namespace gameswf
 
 	struct sound;
 
-	struct locker
-	{
-		locker(SDL_mutex* mutex):
-		m_mutex(mutex)
-		{
-			SDL_LockMutex(m_mutex);
-		}
-
-		~locker()
-		{
-			SDL_UnlockMutex(m_mutex);
-		}
-
-	private:
-		SDL_mutex* m_mutex;
-	};
-
-
 	// Use SDL and ffmpeg to handle sounds.
 	struct SDL_sound_handler : public sound_handler
 	{

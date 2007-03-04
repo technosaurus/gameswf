@@ -21,6 +21,7 @@
 #include "gameswf_as_classes/as_math.h"
 #include "gameswf_as_classes/as_MovieClipLoader.h"
 #include "gameswf_as_classes/as_netstream.h"
+#include "gameswf_as_classes/as_netconnection.h"
 #include "gameswf_as_classes/as_textformat.h"
 #include "gameswf_as_classes/as_string.h"
 #include "gameswf_as_classes/as_db.h"	// mysql db extension
@@ -807,6 +808,7 @@ namespace gameswf
 
 			// for video
 			s_global->set_member("NetStream", as_value(as_global_netstream_ctor));
+			s_global->set_member("NetConnection", as_value(as_global_netconnection_ctor));
 
 			// MYSQL extensions
 			s_global->set_member("MyDb", as_value(as_global_mysqldb_ctor));

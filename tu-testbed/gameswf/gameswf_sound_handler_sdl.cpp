@@ -9,6 +9,7 @@
 #endif
 
 #include "gameswf_sound_handler_sdl.h"
+#include "gameswf_mutex.h"
 #include <SDL.h>   
 
 namespace gameswf
