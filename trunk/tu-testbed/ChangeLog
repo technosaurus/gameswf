@@ -1,3 +1,18 @@
+2007-03-04  Vitaly Alexeev <tishka92@yahoo.com>
+
+	added the processing of events from video thread (onStatus)
+	* gameswf/gameswf_mutex.(cpp,h):
+	* gameswf/gameswf_sound_handler_sdl.(cpp,h): struct locker
+	moved from sound_handler files into gameswf_mutex files
+	* gameswf/gameswf_action.h: commented the unused call_method1..3
+	* gameswf/gameswf_action.cpp: added as_netconnection include
+	* gameswf/gameswf_root.cpp: added the locking of gameswf engine into advance()
+	* gameswf/samples/video.(fla,swf): updated, added onStatus function
+	* gameswf/win32/VC8/gameswf.vcproj: added new files
+	* gameswf/gameswf_as_classes/as_netstream.(cpp,h): added on_status handler
+	* gameswf/gameswf_as_classes/as_netconnection.(cpp,h): added 
+	NetConnection class for local file system
+	
 2007-03-03  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_action.cpp: fixed #1229756 bug

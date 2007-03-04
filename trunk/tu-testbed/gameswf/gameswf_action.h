@@ -843,7 +843,7 @@ namespace gameswf
 		int nargs, int first_arg_bottom_index);
 
 	as_value	call_method0(const as_value& method, as_environment* env, as_object_interface* this_ptr);
-	as_value	call_method1(
+/*	as_value	call_method1(
 		const as_value& method, as_environment* env, as_object_interface* this_ptr,
 		const as_value& arg0);
 	as_value	call_method2(
@@ -852,7 +852,7 @@ namespace gameswf
 	as_value	call_method3(
 		const as_value& method, as_environment* env, as_object_interface* this_ptr,
 		const as_value& arg0, const as_value& arg1, const as_value& arg2);
-
+*/
 
 	const char*	call_method_parsed(
 		as_environment* env,

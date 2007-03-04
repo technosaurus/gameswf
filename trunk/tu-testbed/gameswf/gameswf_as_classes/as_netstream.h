@@ -173,7 +173,7 @@ namespace gameswf
 		netstream();
 		~netstream();
 
-		void set_status(const char* code);
+		void set_status(const char* level, const char* code);
 		void close();
 		void pause(int mode);
 		int play(const char* source);

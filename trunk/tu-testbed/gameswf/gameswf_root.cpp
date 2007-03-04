@@ -13,6 +13,7 @@
 #include "gameswf_render.h"
 #include "gameswf_timers.h"
 #include "gameswf_root.h"
+#include "gameswf_mutex.h"
 #include "base/tu_random.h"
 
 namespace gameswf
@@ -411,6 +412,14 @@ namespace gameswf
 
 		void	movie_root::advance(float delta_time)
 		{
+			// Vitaly: lock gameswf engine
+			// video is running in separate thread and
+			// it calls gameswf functions from separate thread
+			// to set status of netstream object
+			// Other decision - the organization of multithread queue
+			// What is better ?
+			locker lock(get_gameswf_mutex());
+
 			// Handle the mouse.
 			m_mouse_button_state.m_topmost_entity =
 				m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));

@@ -244,6 +244,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_mutex.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_render.cpp"
 				>
 			</File>
@@ -362,6 +366,10 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_movie.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_mutex.h"
 				>
 			</File>
 			<File
@@ -695,6 +703,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_netconnection.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_netconnection.h"
 				>
 			</File>
 			<File

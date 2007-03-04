@@ -10,6 +10,7 @@
 #include "../gameswf_as_classes/as_netstream.h"
 #include "../gameswf_render.h"
 #include "../gameswf_video_base.h"
+#include "../gameswf_mutex.h"
 #include "base/tu_timer.h"
 
 namespace gameswf
@@ -39,13 +40,29 @@ namespace gameswf
 		close();
 	}
 
-	void netstream::set_status(const char* code)
+	// called from video decoder thread
+	void netstream::set_status(const char* level, const char* code)
 	{
 		as_netstream* ns = (as_netstream*) m_ns;
 		if (ns)
 		{
-			ns->set_member("onStatus_Code", code);
-			//		push_video_event(ns);
+			locker lock(get_gameswf_mutex());
+
+			as_value function;
+			if (ns->get_member("onStatus", &function))
+			{
+
+				smart_ptr<as_object> infoObject = new as_object();
+				infoObject->set_member("level", level);
+				infoObject->set_member("code", code);
+
+				as_environment* env = function.to_as_function()->m_env;
+				assert(env);
+
+				env->push_val(infoObject.get_ptr());
+				call_method(function, env, NULL, 1, env->get_top_index());
+				env->drop(1);
+			}
 		}
 	}
 
@@ -70,6 +87,7 @@ namespace gameswf
 			m_go = false;
 
 			// wait till thread is complete before main continues
+			SDL_UnlockMutex(get_gameswf_mutex());	// hack, to prevent dead lock
 			SDL_WaitThread(m_thread, NULL);
 		}
 
@@ -130,8 +148,8 @@ namespace gameswf
 
 		if (av_open_input_file(&m_FormatCtx, c_url, NULL, 0, NULL) != 0)
 		{
-			log_error("Couldn't open file '%s'\n", c_url);
-			set_status("NetStream.Play.StreamNotFound");
+//			log_error("Couldn't open file '%s'\n", c_url);
+			set_status("error", "NetStream.Play.StreamNotFound");
 			return -1;
 		}
 
@@ -255,7 +273,7 @@ namespace gameswf
 	{
 
 		netstream* ns = (netstream*) arg;
-		ns->set_status("NetStream.Play.Start");
+		ns->set_status("status", "NetStream.Play.Start");
 
 		raw_videodata_t* unqueued_data = NULL;
 		raw_videodata_t* video = NULL;
@@ -313,7 +331,7 @@ namespace gameswf
 			}
 		}
 
-		ns->set_status("NetStream.Play.Stop");
+		ns->set_status("status", "NetStream.Play.Stop");
 		return 0;
 	}
 
