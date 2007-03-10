@@ -739,7 +739,7 @@ namespace gameswf
 	struct sound_handler
 	{
 		// audio for video
-		typedef void (*aux_streamer_ptr)(void* udata, unsigned char* stream, int len);
+		typedef void (*aux_streamer_ptr)(as_object_interface* netstream, unsigned char* stream, int len);
 
 		enum format_type
 		{
@@ -786,8 +786,8 @@ namespace gameswf
 		virtual void	delete_sound(int sound_handle) = 0;
 
 		// They are called from netstream when it wishes to sound video 
-		virtual void attach_aux_streamer(aux_streamer_ptr ptr, void* owner) {};
-		virtual void detach_aux_streamer(void* owner) {};
+		virtual void attach_aux_streamer(aux_streamer_ptr ptr, as_object_interface* netstream) {};
+		virtual void detach_aux_streamer(as_object_interface* netstream) {};
 		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, 
 			int size, int channels, int freq) {};
 

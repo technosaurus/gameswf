@@ -78,7 +78,7 @@ namespace gameswf
 	{
 		if (m_ns != NULL)	// is attached video ?
 		{
-			YUV_video* v = m_ns->obj.get_video();
+			YUV_video* v = m_ns->get_video();
 			if (v)
 			{
 				if (v->video_in_place())

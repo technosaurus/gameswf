@@ -158,25 +158,20 @@ namespace gameswf
 		}
 	}
 
-	void	SDL_sound_handler::attach_aux_streamer(aux_streamer_ptr ptr, void* owner)
+	void	SDL_sound_handler::attach_aux_streamer(aux_streamer_ptr ptr, as_object_interface* netstream)
 	{
-		assert(owner);
+		assert(netstream);
 		assert(ptr);
 		locker lock(m_mutex);
 
-		//stdext::hash_map< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
-		hash< Uint32, aux_streamer_ptr >::const_iterator it = m_aux_streamer.find((Uint32) owner);
-		if (it == m_aux_streamer.end())
-		{
-			m_aux_streamer[(Uint32) owner] = ptr;
-			SDL_PauseAudio(0);
-		}
+		m_aux_streamer[netstream] = ptr;
+		SDL_PauseAudio(0);
 	}
 
-	void SDL_sound_handler::detach_aux_streamer(void* owner)
+	void SDL_sound_handler::detach_aux_streamer(as_object_interface* netstream)
 	{
 		locker lock(m_mutex);
-		m_aux_streamer.erase((Uint32) owner);
+		m_aux_streamer.erase(netstream);
 	}
 
 	void SDL_sound_handler::cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, 
@@ -413,15 +408,14 @@ namespace gameswf
 		if (handler->m_aux_streamer.size() > 0)
 		{
 			Uint8* mix_buf = new Uint8[len];
-			for (hash< Uint32, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it = handler->m_aux_streamer.begin();
+			for (hash< as_object_interface*, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it = handler->m_aux_streamer.begin();
 			     it != handler->m_aux_streamer.end();
 			     ++it)
 			{
 				memset(mix_buf, 0, len); 
 
 				gameswf::sound_handler::aux_streamer_ptr aux_streamer = it->second;
-				void* owner = (void*) it->first;
-				(aux_streamer)(owner, mix_buf, len);
+				(aux_streamer)(it->first, mix_buf, len);
 
 				SDL_MixAudio(stream, mix_buf, len, SDL_MIX_MAXVOLUME);
 			}
