@@ -16,10 +16,10 @@
 #include <ffmpeg/avformat.h>
 #endif
 
-#include <SDL.h>
 #include <SDL_thread.h>
 
 #include "base/tu_queue.h"
+#include "../gameswf_mutex.h"
 
 namespace gameswf
 {
@@ -32,45 +32,40 @@ namespace gameswf
 		multithread_queue(const int size):m_size(size)
 		{
 			assert(m_size > 0);
-			m_mutex = SDL_CreateMutex();
+			m_mutex = tu_mutex_create();
 		};
 
 		~multithread_queue()
 		{
-			SDL_DestroyMutex(m_mutex);
+			tu_mutex_destroy(m_mutex);
 		}
 
 		size_t size()
 		{
-			lock();
-			size_t n = m_queue.size();
-			unlock();
-			return n;
+			locker lock(m_mutex);
+			return m_queue.size();
 		}
 
 		void clear()
 		{
-			lock();
+			locker lock(m_mutex);
 			while (m_queue.size() > 0)
 			{
 				T x = m_queue.front();
 				m_queue.pop();
 				//				delete x;
 			}
-			unlock();
 		}
 
 		bool push(T member)
 		{
-			bool rc = false;
-			lock();
+			locker lock(m_mutex);
 			if (m_queue.size() < m_size)	// hack
 			{
 				m_queue.push(member);
-				rc = true;
+				return true;
 			}
-			unlock();
-			return rc;
+			return false;
 		}
 
 		bool push_roll(T member)
@@ -93,51 +88,37 @@ namespace gameswf
 
 		T front()
 		{
-			lock();
-			T member = NULL;
+			locker lock(m_mutex);
 			if (m_queue.size() > 0)
 			{
-				member = m_queue.front();
+				return m_queue.front();
 			}
-			unlock();
-			return member;
+			return NULL;
 		}
 
 		void pop()
 		{
-			lock();
+			locker lock(m_mutex);
 			if (m_queue.size() > 0)
 			{
 				m_queue.pop();
 			}
-			unlock();
 		}
 
 		void extract(T* var, int count)
 		{
-			lock();
+			locker lock(m_mutex);
 			int i = 0;
 			while (m_queue.size() > 0 && i < count)
 			{
 				var[i++] = m_queue.front();
 				m_queue.pop();
 			}
-			unlock();
 		}
 
 	private:
 
-		inline void lock()
-		{
-			SDL_LockMutex(m_mutex);
-		}
-
-		inline void unlock()
-		{
-			SDL_UnlockMutex(m_mutex);
-		}
-
-		SDL_mutex* m_mutex;
+		tu_mutex* m_mutex;
 		tu_queue<T> m_queue;
 		size_t m_size;
 	};

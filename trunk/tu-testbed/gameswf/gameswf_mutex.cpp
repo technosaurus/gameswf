@@ -14,7 +14,7 @@ namespace gameswf
 
 	static gameswf_mutex s_gameswf_mutex;
 
-	SDL_mutex* get_gameswf_mutex()
+	tu_mutex* get_gameswf_mutex()
 	{
 		return s_gameswf_mutex.get_mutex();
 	}

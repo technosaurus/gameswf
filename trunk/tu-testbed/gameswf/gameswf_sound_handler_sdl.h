@@ -16,6 +16,7 @@
 #include "gameswf.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
+#include "gameswf_mutex.h"
 
 // Used to hold the info about active sounds
 
@@ -32,7 +33,7 @@ namespace gameswf
 		hash< smart_ptr<as_object_interface> /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
 		hash< int, smart_ptr<sound> > m_sound;
 		int m_defvolume;
-		SDL_mutex* m_mutex;
+		tu_mutex* m_mutex;
 
 		// SDL_audio specs
 		SDL_AudioSpec audioSpec;
