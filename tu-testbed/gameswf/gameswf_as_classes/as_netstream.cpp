@@ -118,7 +118,7 @@ namespace gameswf
 			m_go = false;
 
 			// wait till thread is complete before main continues
-			SDL_UnlockMutex(get_gameswf_mutex());	// hack, to prevent dead lock
+			tu_mutex_unlock(get_gameswf_mutex());	// hack, to prevent dead lock
 			SDL_WaitThread(m_thread, NULL);
 		}
 

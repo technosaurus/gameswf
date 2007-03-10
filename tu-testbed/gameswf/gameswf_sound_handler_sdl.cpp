@@ -9,8 +9,6 @@
 #endif
 
 #include "gameswf_sound_handler_sdl.h"
-#include "gameswf_mutex.h"
-#include <SDL.h>   
 
 namespace gameswf
 {
@@ -22,7 +20,7 @@ namespace gameswf
 		m_mutex(NULL),
 		soundOpened(true)
 	{
-		m_mutex = SDL_CreateMutex();
+		m_mutex = tu_mutex_create();
 
 		// This is our sound settings
 		audioSpec.freq = 44100;
@@ -51,7 +49,7 @@ namespace gameswf
 	{
 		if (soundOpened) SDL_CloseAudio();
 		m_sound.clear();
-		SDL_DestroyMutex(m_mutex);
+		tu_mutex_destroy(m_mutex);
 	}
 
 	int	SDL_sound_handler::create_sound(

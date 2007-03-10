@@ -4,6 +4,8 @@
 // whatever you want with it.
 
 // auto locker/unlocker
+// We have redefined SDL mutex functions that
+// there was an opportunity to use other libraries (pthread, ...)
 
 #ifndef GAMESWF_MUTEX_H
 #define GAMESWF_MUTEX_H
@@ -13,21 +15,45 @@
 namespace gameswf
 {
 
+	typedef SDL_mutex tu_mutex;
+	
+	inline int tu_mutex_lock(tu_mutex* mutex)
+	{
+		return SDL_LockMutex(mutex);
+	}
+
+	inline int tu_mutex_unlock(tu_mutex* mutex)
+	{
+		return SDL_UnlockMutex(mutex);
+	}
+
+	inline tu_mutex* tu_mutex_create()
+	{
+		return SDL_CreateMutex();
+	}
+
+	inline void tu_mutex_destroy(tu_mutex* mutex)
+	{
+		SDL_DestroyMutex(mutex);
+	}
+
+
 	struct locker
 	{
-		locker(SDL_mutex* mutex):
+		locker(tu_mutex* mutex):
 			m_mutex(mutex)
 		{
-			SDL_LockMutex(m_mutex);
+			tu_mutex_lock(m_mutex);
 		}
 
 		~locker()
 		{
-			SDL_UnlockMutex(m_mutex);
+			tu_mutex_unlock(m_mutex);
 		}
 
 		private:
-			SDL_mutex* m_mutex;
+
+			tu_mutex* m_mutex;
 	};
 
 	// auto mutex
@@ -35,25 +61,26 @@ namespace gameswf
 	{
 		gameswf_mutex()
 		{
-			m_mutex = SDL_CreateMutex();
+			m_mutex = tu_mutex_create();
 		}
 
 		~gameswf_mutex()
 		{
-			SDL_DestroyMutex(m_mutex);
+			tu_mutex_destroy(m_mutex);
 		}
 
-		SDL_mutex* get_mutex()
+		tu_mutex* get_mutex()
 		{
 			return m_mutex;
 		}
 
 		private:
-			SDL_mutex* m_mutex;
+
+			tu_mutex* m_mutex;
 
 	};
 
-	SDL_mutex* get_gameswf_mutex();
+	tu_mutex* get_gameswf_mutex();
 
 }
 
