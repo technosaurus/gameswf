@@ -7,6 +7,8 @@
 #include "config.h"
 #endif
 
+#ifdef USE_FFMPEG
+
 #include "../gameswf_as_classes/as_netstream.h"
 #include "../gameswf_render.h"
 #include "../gameswf_video_base.h"
@@ -16,20 +18,80 @@
 namespace gameswf
 {
 
+	// decoder thread
+	static int netstream_server(void* arg)
+	{
+		as_netstream* ns = (as_netstream*) arg;
+		ns->run();
+		printf("~netstream_server\n");
+		return 0;
+	}
+
 	// audio callback is running in sound handler thread
-	static void audio_streamer(as_object_interface* netstream, Uint8 *stream, int len)
+	static void audio_streamer(as_object_interface* netstream, Uint8* stream, int len)
 	{
 		as_netstream* ns = netstream->cast_to_as_netstream();
 		assert(ns);
+		ns->audio_callback(stream, len);
+	}
 
-		if (ns->m_pause)
+	as_netstream::as_netstream():
+		m_video_index(-1),
+		m_audio_index(-1),
+		m_VCodecCtx(NULL),
+		m_ACodecCtx(NULL),
+		m_FormatCtx(NULL),
+		m_Frame(NULL),
+		m_yuv(NULL),
+		m_video_clock(0),
+		m_pause(false),
+		m_is_alive(true),
+		m_qaudio(20),
+		m_qvideo(20),
+		m_url("")
+	{
+		av_register_all();
+
+		m_thread = tu_create_thread(netstream_server, this);
+		assert(m_thread);
+	}
+
+	as_netstream::~as_netstream()
+	{
+		m_is_alive = false;
+		m_cond.signal();
+		tu_wait_thread(m_thread);
+
+		// delete prev video buffer
+		render::delete_YUV_video(m_yuv);
+		m_yuv = NULL;
+
+		printf("~as_netstream\n");
+	}
+
+	void as_netstream::play(const char* url)
+	{
+		m_url = url;
+		m_break = true;
+		m_cond.signal();
+	}
+
+	void as_netstream::close()
+	{
+		m_url = "";
+		m_break = true;
+	}
+
+	void as_netstream::audio_callback(Uint8* stream, int len)
+	{
+		if (m_pause)
 		{
 			return;
 		}
 
-		while (len > 0 && ns->m_qaudio.size() > 0)
+		while (len > 0 && m_qaudio.size() > 0)
 		{
-			raw_videodata_t* samples = ns->m_qaudio.front();
+			raw_videodata_t* samples = m_qaudio.front();
 
 			int n = imin(samples->m_size, len);
 			memcpy(stream, samples->m_ptr, n);
@@ -40,49 +102,22 @@ namespace gameswf
 
 			if (samples->m_size == 0)
 			{
-				ns->m_qaudio.pop();
+				m_qaudio.pop();
 				delete samples;
 			}
 		}
 	}
 
-
-	as_netstream::as_netstream():
-		m_video_index(-1),
-		m_audio_index(-1),
-#ifdef USE_FFMPEG
-		m_VCodecCtx(NULL),
-		m_ACodecCtx(NULL),
-		m_FormatCtx(NULL),
-		m_Frame(NULL),
-#endif
-		m_go(false),
-		m_yuv(NULL),
-		m_video_clock(0),
-		m_pause(false),
-		m_ns(NULL),
-		m_qaudio(20),
-		m_qvideo(20)
-	{
-	}
-
-	as_netstream::~as_netstream()
-	{
-		close();
-	}
-
 	// called from video decoder thread
 	void as_netstream::set_status(const char* level, const char* code)
 	{
-		as_netstream* ns = (as_netstream*) m_ns;
-		if (ns)
+		if (m_is_alive)
 		{
 			locker lock(get_gameswf_mutex());
 
 			as_value function;
-			if (ns->get_member("onStatus", &function))
+			if (get_member("onStatus", &function))
 			{
-
 				smart_ptr<as_object> infoObject = new as_object();
 				infoObject->set_member("level", level);
 				infoObject->set_member("code", code);
@@ -109,25 +144,8 @@ namespace gameswf
 		}
 	}
 
-	void as_netstream::close()
+	void as_netstream::close_stream()
 	{
-#ifdef USE_FFMPEG
-		if (m_go)
-		{
-			// terminate thread
-			m_go = false;
-
-			// wait till thread is complete before main continues
-			tu_mutex_unlock(get_gameswf_mutex());	// hack, to prevent dead lock
-			SDL_WaitThread(m_thread, NULL);
-		}
-
-		sound_handler* s = get_sound_handler();
-		if (s)
-		{
-			s->detach_aux_streamer(this);
-		}
-
 		if (m_Frame) av_free(m_Frame);
 		m_Frame = NULL;
 
@@ -140,9 +158,6 @@ namespace gameswf
 		if (m_FormatCtx) av_close_input_file(m_FormatCtx);
 		m_FormatCtx = NULL;
 
-		render::delete_YUV_video(m_yuv);
-		m_yuv = NULL;
-
 		while (m_qvideo.size() > 0)
 		{
 			delete m_qvideo.front();
@@ -154,23 +169,13 @@ namespace gameswf
 			delete m_qaudio.front();
 			m_qaudio.pop();
 		}
-#endif
 	}
 
-	int as_netstream::play(const char* c_url)
+	bool as_netstream::open_stream(const char* c_url)
 	{
-#ifdef USE_FFMPEG
 		// This registers all available file formats and codecs 
 		// with the library so they will be used automatically when
 		// a file with the corresponding format/codec is opened
-
-		// Is it already playing ?
-		if (m_go)
-		{
-			return 0;
-		}
-
-		av_register_all();
 
 		// Open video file
 		// The last three parameters specify the file format, buffer size and format parameters;
@@ -181,7 +186,7 @@ namespace gameswf
 		{
 //			log_error("Couldn't open file '%s'\n", c_url);
 			set_status("error", "NetStream.Play.StreamNotFound");
-			return -1;
+			return false;
 		}
 
 		// Next, we need to retrieve information about the streams contained in the file
@@ -189,7 +194,7 @@ namespace gameswf
 		if (av_find_stream_info(m_FormatCtx) < 0)
 		{
 			log_error("Couldn't find stream information from '%s'\n", c_url);
-			return -1;
+			return false;
 		}
 
 		//	m_FormatCtx->pb.eof_reached = 0;
@@ -227,7 +232,7 @@ namespace gameswf
 		if (m_video_index < 0)
 		{
 			log_error("Didn't find a video stream from '%s'\n", c_url);
-			return -1;
+			return false;
 		}
 
 		// Get a pointer to the codec context for the video stream
@@ -239,7 +244,7 @@ namespace gameswf
 		{
 			m_VCodecCtx = NULL;
 			log_error("Decoder not found\n");
-			return -1;
+			return false;
 		}
 
 		// Open codec
@@ -251,12 +256,16 @@ namespace gameswf
 		// Allocate a frame to store the decoded frame in
 		m_Frame = avcodec_alloc_frame();
 
+		// delete prev video buffer
+		render::delete_YUV_video(m_yuv);
+		m_yuv = NULL;
+
 		// Determine required buffer size and allocate buffer
 		m_yuv = render::create_YUV_video(m_VCodecCtx->width,	m_VCodecCtx->height);
 		if (m_yuv == NULL)
 		{
 			log_error("No available video render\n");
-			return -1;
+			return false;
 		}
 
 		sound_handler* s = get_sound_handler();
@@ -270,105 +279,117 @@ namespace gameswf
 			if(pACodec == NULL)
 			{
 				log_error("No available AUDIO decoder to process MPEG file: '%s'\n", c_url);
-				return -1;
+				return false;
 			}
 
 			// Open codec
 			if (avcodec_open(m_ACodecCtx, pACodec) < 0)
 			{
 				log_error("Could not open AUDIO codec\n");
-				return -1;
+				return false;
 			}
-
-			s->attach_aux_streamer(audio_streamer, this);
-
 		}
-
-		m_pause = false;
-
-		m_thread = SDL_CreateThread(av_streamer, this);
-		if (m_thread == NULL)
-		{
-			return -1;
-		}
-
-		return 0;
-#else
-		printf("video requires FFMEG library\n");
-		return -1;
-#endif
+		return true;
 	}
 
 	// decoder thread
-	int as_netstream::av_streamer(void* arg)
+	void as_netstream::run()
 	{
-
-		as_netstream* ns = (as_netstream*) arg;
-		ns->set_status("status", "NetStream.Play.Start");
-
-		raw_videodata_t* unqueued_data = NULL;
-		raw_videodata_t* video = NULL;
-
-		ns->m_video_clock = 0;
-
-		int delay = 0;
-		ns->m_start_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-		ns->m_go = true;
-		while (ns->m_go)
+		while (m_is_alive)
 		{
-			if (ns->m_pause)
+			if (m_url == "")
 			{
-				double t = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-				SDL_Delay(100);
-				ns->m_start_clock += tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - t;
-				continue;
+				printf("waiting a job...\n");
+				m_cond.wait();
 			}
 
-			unqueued_data = ns->read_frame(unqueued_data);
-			if ((int) unqueued_data < 0)
+			if (open_stream(m_url.c_str()))
 			{
-				unqueued_data = NULL;
-				if (ns->m_qvideo.size() == 0)
+				set_status("status", "NetStream.Play.Start");
+
 				{
-					break;
+					sound_handler* sound = get_sound_handler();
+					if (sound)
+					{
+						sound->attach_aux_streamer(audio_streamer, this);
+					}
 				}
+
+				raw_videodata_t* unqueued_data = NULL;
+				raw_videodata_t* video = NULL;
+
+				m_video_clock = 0;
+
+				int delay = 0;
+				m_start_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+
+				m_break = false;
+				m_pause = false;
+				while (m_break == false && m_is_alive)
+				{
+					if (m_pause)
+					{
+						double t = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+						tu_delay(100);
+						m_start_clock += tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - t;
+						continue;
+					}
+
+					unqueued_data = read_frame(unqueued_data);
+					if ((int) unqueued_data < 0)
+					{
+						unqueued_data = NULL;
+						if (m_qvideo.size() == 0)
+						{
+							break;
+						}
+					}
+
+					if (m_qvideo.size() > 0)
+					{
+						video = m_qvideo.front();
+						double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
+						double video_clock = video->m_pts;
+
+						if (clock >= video_clock)
+						{
+							m_yuv->update(video->m_data);
+							m_qvideo.pop();
+							delete video;
+							delay = 0;
+						}
+						else
+						{
+							delay = int(1000 * (video_clock - clock));
+						}
+
+						// Don't hog the CPU.
+						// Queues have filled, video frame have shown
+						// now it is possible and to have a rest
+						if (unqueued_data && delay > 0)
+						{
+							tu_delay(delay);
+						}
+					}
+				}
+
+				{
+					sound_handler* sound = get_sound_handler();
+					if (sound)
+					{
+						sound->detach_aux_streamer(this);
+					}
+				}
+	
+				close_stream();
+				set_status("status", "NetStream.Play.Stop");
 			}
 
-			if (ns->m_qvideo.size() > 0)
-			{
-				video = ns->m_qvideo.front();
-				double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - ns->m_start_clock;
-				double video_clock = video->m_pts;
-
-				if (clock >= video_clock)
-				{
-					ns->m_yuv->update(video->m_data);
-					ns->m_qvideo.pop();
-					delete video;
-					delay = 0;
-				}
-				else
-				{
-					delay = int(1000 * (video_clock - clock));
-				}
-
-				// Don't hog the CPU.
-				// Queues have filled, video frame have shown
-				// now it is possible and to have a rest
-				if (unqueued_data && delay > 0)
-				{
-					SDL_Delay(delay);
-				}
-			}
 		}
-
-		ns->set_status("status", "NetStream.Play.Stop");
-		return 0;
 	}
 
 	raw_videodata_t* as_netstream::read_frame(raw_videodata_t* unqueued_data)
 	{
-#ifdef USE_FFMPEG
 		raw_videodata_t* ret = NULL;
 		if (unqueued_data)
 		{
@@ -493,21 +514,23 @@ namespace gameswf
 		}
 
 		return ret;
-#else
-		return NULL;
-#endif
 	}
 
 
 	YUV_video* as_netstream::get_video()
 	{
-		return m_yuv;
+		if (m_yuv)
+		{
+			if (m_yuv->is_updated())
+			{
+				return m_yuv;
+			}
+		}
+		return NULL;
 	}
 
 	void as_netstream::seek(double seek_time)
 	{
-#ifdef USE_FFMPEG
-		return;
 		double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
 		clock += seek_time;
 		int64_t timestamp = (int64_t) clock * AV_TIME_BASE;
@@ -518,7 +541,6 @@ namespace gameswf
 		{
 			printf("could not seek to position rc=%d\n", rc);
 		}
-#endif
 	}
 
 	void as_netstream::setBufferTime()
@@ -558,10 +580,7 @@ namespace gameswf
 			return;
 		}
 
-		if (ns->play(fn.arg(0).to_string()) != 0)
-		{
-			ns->close();
-		}
+		ns->play(fn.arg(0).to_tu_string());
 	}
 
 	void netstream_seek(const fn_call& fn)
@@ -598,3 +617,18 @@ namespace gameswf
 	}
 
 } // end of gameswf namespace
+
+#else
+
+#include "../gameswf_action.h"
+#include "../gameswf_log.h"
+
+namespace gameswf
+{
+	void as_global_netstream_ctor(const fn_call& fn)
+	{
+		log_error("video requires FFMPEG library\n");
+	}
+}
+
+#endif

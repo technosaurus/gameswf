@@ -30,7 +30,7 @@ namespace gameswf
 	{
 
 		// NetStream audio callbacks
-		hash< smart_ptr<as_object_interface> /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
+		hash< as_object_interface* /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
 		hash< int, smart_ptr<sound> > m_sound;
 		int m_defvolume;
 		tu_mutex* m_mutex;

@@ -16,7 +16,23 @@ namespace gameswf
 {
 
 	typedef SDL_mutex tu_mutex;
-	
+	typedef SDL_Thread tu_thread;
+
+	inline void tu_delay(Uint32 ms)
+	{
+		SDL_Delay(ms);
+	}
+
+	inline void tu_wait_thread(tu_thread* thread)
+	{
+		SDL_WaitThread(thread, NULL);
+	}
+
+	inline tu_thread* tu_create_thread(int (*fn)(void *), void* data)
+	{
+		return SDL_CreateThread(fn, data);
+	}
+
 	inline int tu_mutex_lock(tu_mutex* mutex)
 	{
 		return SDL_LockMutex(mutex);
@@ -69,15 +85,53 @@ namespace gameswf
 			tu_mutex_destroy(m_mutex);
 		}
 
-		tu_mutex* get_mutex()
+		inline tu_mutex* get_mutex() const
 		{
 			return m_mutex;
+		}
+
+		void lock()
+		{
+			tu_mutex_lock(m_mutex);
+		}
+
+		void unlock()
+		{
+			tu_mutex_unlock(m_mutex);
 		}
 
 		private:
 
 			tu_mutex* m_mutex;
 
+	};
+
+	struct tu_condition
+	{
+		tu_condition()
+		{
+			m_cond = SDL_CreateCond();
+		}
+
+		~tu_condition()
+		{
+			SDL_DestroyCond(m_cond);
+		}
+
+		void wait()
+		{
+			m_cond_mutex.lock();
+			SDL_CondWait(m_cond, m_cond_mutex.get_mutex());
+//			m_cond_mutex.unlock();
+		}
+
+		void signal()
+		{
+			SDL_CondSignal(m_cond);
+		}
+
+		SDL_cond *m_cond;
+		gameswf_mutex m_cond_mutex;
 	};
 
 	tu_mutex* get_gameswf_mutex();

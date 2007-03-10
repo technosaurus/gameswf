@@ -10,19 +10,24 @@
 #include "config.h"
 #endif
 
-#include "../gameswf_video_impl.h"
-
 #ifdef USE_FFMPEG
-#include <ffmpeg/avformat.h>
-#endif
 
-#include <SDL_thread.h>
+#include <ffmpeg/avformat.h>
 
 #include "base/tu_queue.h"
 #include "../gameswf_mutex.h"
+#include "../gameswf_video_impl.h"
 
 namespace gameswf
 {
+
+	void as_global_netstream_ctor(const fn_call& fn);
+	void netstream_new(const fn_call& fn);
+	void netstream_close(const fn_call& fn);
+	void netstream_pause(const fn_call& fn);
+	void netstream_play(const fn_call& fn);
+	void netstream_seek(const fn_call& fn);
+	void netstream_setbuffertime(const fn_call& fn);
 
 	template<class T>
 	class multithread_queue
@@ -157,26 +162,27 @@ namespace gameswf
 		virtual as_netstream* cast_to_as_netstream() { return this; }
 
 		void set_status(const char* level, const char* code);
-		void close();
 		void pause(int mode);
-		int play(const char* source);
+
+		void run();
+		bool open_stream(const char* source);
+		void close_stream();
 		void seek(double seek_time);
 		void setBufferTime();
 
 		raw_videodata_t* read_frame(raw_videodata_t* vd);
 		YUV_video* get_video();
+		void audio_callback(Uint8* stream, int len);
+		void close();
+		void play(const char* url);
 
-#ifdef USE_FFMPEG
 		inline double as_double(AVRational time)
 		{
 			return time.num / (double) time.den;
 		}
-#endif
-		static int av_streamer(void* arg);
 
-//	private:
+	private:
 
-#ifdef USE_FFMPEG
 		AVFormatContext *m_FormatCtx;
 
 		// video
@@ -188,34 +194,45 @@ namespace gameswf
 		AVStream* m_audio_stream;
 
 		AVFrame* m_Frame;
-#endif
+
+		double m_video_clock;
+		double m_start_clock;
 
 		int m_video_index;
 		int m_audio_index;
 
-		volatile bool m_go;
+		tu_string m_url;
+		volatile bool m_is_alive;
+		volatile bool m_break;
 		volatile bool m_pause;
 
 		YUV_video* m_yuv;
-		double m_video_clock;
 
-		SDL_Thread* m_thread;
 		multithread_queue<raw_videodata_t*> m_qaudio;
 		multithread_queue<raw_videodata_t*> m_qvideo;
-		void* m_ns;
-		double m_start_clock;
 
+		tu_thread* m_thread;
+		tu_condition m_cond;
 	};
 
-	void as_global_netstream_ctor(const fn_call& fn);
-	void netstream_new(const fn_call& fn);
-	void netstream_close(const fn_call& fn);
-	void netstream_pause(const fn_call& fn);
-	void netstream_play(const fn_call& fn);
-	void netstream_seek(const fn_call& fn);
-	void netstream_setbuffertime(const fn_call& fn);
-
 } // end of gameswf namespace
+
+#else	// ffmpeg is not present
+
+#include "../gameswf_video_impl.h"
+
+namespace gameswf
+{
+	void as_global_netstream_ctor(const fn_call& fn);
+
+	struct as_netstream : public as_object
+	{
+		YUV_video* get_video() { return NULL; }
+	};
+
+}
+
+#endif
 
 // GAMESWF_NETSTREAM_H
 #endif
