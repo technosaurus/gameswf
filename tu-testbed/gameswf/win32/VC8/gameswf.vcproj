@@ -466,14 +466,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\base\dlmalloc.c"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\base\dlmalloc.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\base\ear_clip_triangulate.h"
 				>
 			</File>

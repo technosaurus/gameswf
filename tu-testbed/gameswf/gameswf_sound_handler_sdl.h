@@ -29,7 +29,7 @@ namespace gameswf
 	{
 
 		// NetStream audio callbacks
-		hash< Uint32 /* owner */, aux_streamer_ptr /* callback */> m_aux_streamer;
+		hash< as_object_interface* /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
 		hash< int, smart_ptr<sound> > m_sound;
 		int m_defvolume;
 		SDL_mutex* m_mutex;
@@ -66,8 +66,9 @@ namespace gameswf
 
 		virtual void	set_volume(int sound_handle, int volume);
 
-		virtual void	attach_aux_streamer(gameswf::sound_handler::aux_streamer_ptr ptr, void* owner);
-		virtual void	detach_aux_streamer(void* owner);
+		virtual void	attach_aux_streamer(gameswf::sound_handler::aux_streamer_ptr ptr,
+			as_object_interface* netstream);
+		virtual void	detach_aux_streamer(as_object_interface* netstream);
 
 		// Converts input data to the SDL output format.
 		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, int size, 

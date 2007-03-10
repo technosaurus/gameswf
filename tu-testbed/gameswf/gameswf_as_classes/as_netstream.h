@@ -168,10 +168,12 @@ namespace gameswf
 	double m_pts;	// presentation timestamp in sec
 	};
 
-	struct netstream
+	struct as_netstream : public as_object
 	{
-		netstream();
-		~netstream();
+		as_netstream();
+		~as_netstream();
+
+		virtual as_netstream* cast_to_as_netstream() { return this; }
 
 		void set_status(const char* level, const char* code);
 		void close();
@@ -190,14 +192,8 @@ namespace gameswf
 		}
 #endif
 		static int av_streamer(void* arg);
-		static void audio_streamer(void *udata, Uint8 *stream, int len);
 
-		void set_ns(void* ns)
-		{
-			m_ns = ns;
-		}
-
-	private:
+//	private:
 
 #ifdef USE_FFMPEG
 		AVFormatContext *m_FormatCtx;
@@ -215,7 +211,9 @@ namespace gameswf
 
 		int m_video_index;
 		int m_audio_index;
+
 		volatile bool m_go;
+		volatile bool m_pause;
 
 		YUV_video* m_yuv;
 		double m_video_clock;
@@ -223,28 +221,8 @@ namespace gameswf
 		SDL_Thread* m_thread;
 		multithread_queue<raw_videodata_t*> m_qaudio;
 		multithread_queue<raw_videodata_t*> m_qvideo;
-		bool m_pause;
 		void* m_ns;
 		double m_start_clock;
-	};
-
-	struct as_netstream : public as_object
-	{
-		as_netstream()
-		{
-			obj.set_ns(this);
-		}
-
-		~as_netstream()
-		{
-		}
-
-		virtual as_netstream* cast_to_as_netstream() { return this; }
-
-		netstream obj;
-
-		//	virtual bool set_member(const tu_stringi& name, const as_value& val);
-		//	virtual bool get_member(const tu_stringi& name, as_value* val);
 
 	};
 

@@ -16,7 +16,38 @@
 namespace gameswf
 {
 
-	netstream::netstream():
+	// audio callback is running in sound handler thread
+	static void audio_streamer(as_object_interface* netstream, Uint8 *stream, int len)
+	{
+		as_netstream* ns = netstream->cast_to_as_netstream();
+		assert(ns);
+
+		if (ns->m_pause)
+		{
+			return;
+		}
+
+		while (len > 0 && ns->m_qaudio.size() > 0)
+		{
+			raw_videodata_t* samples = ns->m_qaudio.front();
+
+			int n = imin(samples->m_size, len);
+			memcpy(stream, samples->m_ptr, n);
+			stream += n;
+			samples->m_ptr += n;
+			samples->m_size -= n;
+			len -= n;
+
+			if (samples->m_size == 0)
+			{
+				ns->m_qaudio.pop();
+				delete samples;
+			}
+		}
+	}
+
+
+	as_netstream::as_netstream():
 		m_video_index(-1),
 		m_audio_index(-1),
 #ifdef USE_FFMPEG
@@ -35,13 +66,13 @@ namespace gameswf
 	{
 	}
 
-	netstream::~netstream()
+	as_netstream::~as_netstream()
 	{
 		close();
 	}
 
 	// called from video decoder thread
-	void netstream::set_status(const char* level, const char* code)
+	void as_netstream::set_status(const char* level, const char* code)
 	{
 		as_netstream* ns = (as_netstream*) m_ns;
 		if (ns)
@@ -66,7 +97,7 @@ namespace gameswf
 		}
 	}
 
-	void netstream::pause(int mode)
+	void as_netstream::pause(int mode)
 	{
 		if (mode == -1)
 		{
@@ -78,7 +109,7 @@ namespace gameswf
 		}
 	}
 
-	void netstream::close()
+	void as_netstream::close()
 	{
 #ifdef USE_FFMPEG
 		if (m_go)
@@ -94,7 +125,7 @@ namespace gameswf
 		sound_handler* s = get_sound_handler();
 		if (s)
 		{
-			s->detach_aux_streamer((void*) this);
+			s->detach_aux_streamer(this);
 		}
 
 		if (m_Frame) av_free(m_Frame);
@@ -126,7 +157,7 @@ namespace gameswf
 #endif
 	}
 
-	int netstream::play(const char* c_url)
+	int as_netstream::play(const char* c_url)
 	{
 #ifdef USE_FFMPEG
 		// This registers all available file formats and codecs 
@@ -249,13 +280,13 @@ namespace gameswf
 				return -1;
 			}
 
-			s->attach_aux_streamer(audio_streamer, (void*) this);
+			s->attach_aux_streamer(audio_streamer, this);
 
 		}
 
 		m_pause = false;
 
-		m_thread = SDL_CreateThread(netstream::av_streamer, this);
+		m_thread = SDL_CreateThread(av_streamer, this);
 		if (m_thread == NULL)
 		{
 			return -1;
@@ -269,10 +300,10 @@ namespace gameswf
 	}
 
 	// decoder thread
-	int netstream::av_streamer(void* arg)
+	int as_netstream::av_streamer(void* arg)
 	{
 
-		netstream* ns = (netstream*) arg;
+		as_netstream* ns = (as_netstream*) arg;
 		ns->set_status("status", "NetStream.Play.Start");
 
 		raw_videodata_t* unqueued_data = NULL;
@@ -335,36 +366,7 @@ namespace gameswf
 		return 0;
 	}
 
-	// audio callback is running in sound handler thread
-	void netstream::audio_streamer(void *owner, Uint8 *stream, int len)
-	{
-		netstream* ns = (netstream*) owner;
-
-		if (ns->m_pause)
-		{
-			return;
-		}
-
-		while (len > 0 && ns->m_qaudio.size() > 0)
-		{
-			raw_videodata_t* samples = ns->m_qaudio.front();
-
-			int n = imin(samples->m_size, len);
-			memcpy(stream, samples->m_ptr, n);
-			stream += n;
-			samples->m_ptr += n;
-			samples->m_size -= n;
-			len -= n;
-
-			if (samples->m_size == 0)
-			{
-				ns->m_qaudio.pop();
-				delete samples;
-			}
-		}
-	}
-
-	raw_videodata_t* netstream::read_frame(raw_videodata_t* unqueued_data)
+	raw_videodata_t* as_netstream::read_frame(raw_videodata_t* unqueued_data)
 	{
 #ifdef USE_FFMPEG
 		raw_videodata_t* ret = NULL;
@@ -497,12 +499,12 @@ namespace gameswf
 	}
 
 
-	YUV_video* netstream::get_video()
+	YUV_video* as_netstream::get_video()
 	{
 		return m_yuv;
 	}
 
-	void netstream::seek(double seek_time)
+	void as_netstream::seek(double seek_time)
 	{
 #ifdef USE_FFMPEG
 		return;
@@ -519,8 +521,7 @@ namespace gameswf
 #endif
 	}
 
-	void
-	netstream::setBufferTime()
+	void as_netstream::setBufferTime()
 	{
 		log_msg("%s:unimplemented \n", __FUNCTION__);
 	}
@@ -529,7 +530,7 @@ namespace gameswf
 	{
 		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
 		assert(ns);
-		ns->obj.close();
+		ns->close();
 	}
 
 	void netstream_pause(const fn_call& fn)
@@ -543,7 +544,7 @@ namespace gameswf
 		{
 			mode = fn.arg(0).to_bool() ? 0 : 1;
 		}
-		ns->obj.pause(mode);	// toggle mode
+		ns->pause(mode);	// toggle mode
 	}
 
 	void netstream_play(const fn_call& fn)
@@ -557,9 +558,9 @@ namespace gameswf
 			return;
 		}
 
-		if (ns->obj.play(fn.arg(0).to_string()) != 0)
+		if (ns->play(fn.arg(0).to_string()) != 0)
 		{
-			ns->obj.close();
+			ns->close();
 		}
 	}
 
@@ -574,7 +575,7 @@ namespace gameswf
 			return;
 		}
 
-		ns->obj.seek(fn.arg(0).to_number());
+		ns->seek(fn.arg(0).to_number());
 	}
 
 	void netstream_setbuffertime(const fn_call& /*fn*/) {
