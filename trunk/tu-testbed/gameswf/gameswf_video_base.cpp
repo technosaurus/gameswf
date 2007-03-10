@@ -21,7 +21,7 @@ namespace gameswf
 	YUV_video::YUV_video(int w, int h):
 		m_width(w),
 		m_height(h),
-		m_video_in_place(false)
+		m_is_updated(false)
 	{
 		planes[Y].w = m_width;
 		planes[Y].h = m_height;
@@ -81,18 +81,18 @@ namespace gameswf
 
 	void YUV_video::update(Uint8* data)
 	{
-		m_video_in_place = true;
+		m_is_updated = true;
 		memcpy(m_data, data, m_size);
+	}
+
+	bool YUV_video::is_updated() const
+	{
+		return m_is_updated;
 	}
 
 	int YUV_video::size() const
 	{
 		return m_size;
-	}
-
-	bool YUV_video::video_in_place() const
-	{
-		return m_video_in_place;
 	}
 
 	void YUV_video::display(const matrix* m, const rect* bounds, const rgba& cx)

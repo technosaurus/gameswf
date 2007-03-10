@@ -23,7 +23,7 @@ namespace gameswf
 		void update(Uint8* data);
 		virtual void display(const matrix* m, const rect* bounds, const rgba& cx);
 		int size() const;
-		bool video_in_place() const;
+		bool is_updated() const;
 
 	protected:
 
@@ -31,6 +31,7 @@ namespace gameswf
 		int m_width;
 		int m_height;
 		int m_size;
+		bool m_is_updated;
 
 		struct plane
 		{
@@ -42,7 +43,6 @@ namespace gameswf
 
 		const matrix* m;
 		const rect* m_bounds;
-		bool m_video_in_place;
 
 	private:
 

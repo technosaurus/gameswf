@@ -406,14 +406,14 @@ namespace gameswf
 		if (handler->m_aux_streamer.size() > 0)
 		{
 			Uint8* mix_buf = new Uint8[len];
-			for (hash< smart_ptr<as_object_interface>, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it = handler->m_aux_streamer.begin();
+			for (hash< as_object_interface*, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it = handler->m_aux_streamer.begin();
 			     it != handler->m_aux_streamer.end();
 			     ++it)
 			{
 				memset(mix_buf, 0, len); 
 
 				gameswf::sound_handler::aux_streamer_ptr aux_streamer = it->second;
-				(aux_streamer)(it->first.get_ptr(), mix_buf, len);
+				(aux_streamer)(it->first, mix_buf, len);
 
 				SDL_MixAudio(stream, mix_buf, len, SDL_MIX_MAXVOLUME);
 			}

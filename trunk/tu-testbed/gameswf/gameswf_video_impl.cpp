@@ -79,26 +79,23 @@ namespace gameswf
 		if (m_ns != NULL)	// is attached video ?
 		{
 			YUV_video* v = m_ns->get_video();
-			if (v)
+			if (v != NULL)
 			{
-				if (v->video_in_place())
-				{
-					// Uint32 t = SDL_GetTicks();
+				// Uint32 t = SDL_GetTicks();
 
-					rect bounds;
-					bounds.m_x_min = 0.0f;
-					bounds.m_y_min = 0.0f;
-					bounds.m_x_max = PIXELS_TO_TWIPS(m_def->m_width);
-					bounds.m_y_max = PIXELS_TO_TWIPS(m_def->m_height);
+				rect bounds;
+				bounds.m_x_min = 0.0f;
+				bounds.m_y_min = 0.0f;
+				bounds.m_x_max = PIXELS_TO_TWIPS(m_def->m_width);
+				bounds.m_y_max = PIXELS_TO_TWIPS(m_def->m_height);
 
-					cxform cx = get_world_cxform();
-					gameswf::rgba color = cx.transform(gameswf::rgba());
+				cxform cx = get_world_cxform();
+				gameswf::rgba color = cx.transform(gameswf::rgba());
 
-					matrix m = get_world_matrix();
-					v->display(&m, &bounds, color);
+				matrix m = get_world_matrix();
+				v->display(&m, &bounds, color);
 
-					// printf("video time %d\n", SDL_GetTicks() - t);
-				}
+				// printf("video time %d\n", SDL_GetTicks() - t);
 			}
 		}
 	}
