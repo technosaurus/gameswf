@@ -1,5 +1,11 @@
 2007-03-010  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_sound_handler.(cpp,h):
+	hash< as_object_interface*, .. ==> hash< smart_ptr<as_object_interface>, ..
+	to prevent premature deleting of object
+
+2007-03-010  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/win32/VC8/gameswf.vcproj: dlmalloc.(c,h) are removed from project
 	because there are enough VC8++ toolkit
 	* gameswf/gameswf_netstream.(cpp,h): removed useless struct netstream
