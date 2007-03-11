@@ -329,7 +329,7 @@ int	main(int argc, char *argv[])
 	bool    do_sound = true;
 	bool	do_loop = true;
 	bool	sdl_abort = true;
-	int     delay = 31;
+	int     delay = 10;
 	float	tex_lod_bias;
 
 	// -1.0 tends to look good.

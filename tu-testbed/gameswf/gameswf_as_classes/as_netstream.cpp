@@ -307,7 +307,6 @@ namespace gameswf
 
 			if (open_stream(m_url.c_str()))
 			{
-				m_url = "";
 				set_status("status", "NetStream.Play.Start");
 
 				{
@@ -387,7 +386,7 @@ namespace gameswf
 	
 				close_stream();
 			}
-
+			m_url = "";
 		}
 	}
 
