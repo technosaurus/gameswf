@@ -13,7 +13,7 @@
 static GLfloat yuv2rgb[2][4] = {{0.500000f, 0.413650f, 0.944700f, 0.f},	{0.851850f, 0.320550f, 0.500000f, 1.f}};
 static GLint iquad[] = {-1, 1, 1, 1, 1, -1, -1, -1};
 
-YUV_video_ogl_NV::YUV_video_ogl_NV(int width, int height): YUV_video(width, height)
+YUV_video_ogl_NV::YUV_video_ogl_NV()
 {
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(NB_TEXS, texids);
@@ -176,8 +176,13 @@ void YUV_video_ogl_NV::display(const gameswf::matrix* mat, const gameswf::rect* 
 
 
 
-YUV_video_ogl::YUV_video_ogl(int width, int height): YUV_video(width, height)
+YUV_video_ogl::YUV_video_ogl()
 {
+	for (int i = 0; i < 3; ++i)
+	{
+		planes[i].id = 0;
+		planes[i].unit = 0;
+	}
 }
 
 YUV_video_ogl::~YUV_video_ogl()

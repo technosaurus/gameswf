@@ -1033,14 +1033,24 @@ int	main(int argc, char *argv[])
 
 		m->notify_mouse_state(mouse_x, mouse_y, mouse_buttons);
 
-		m->advance(delta_t * speed_scale);
+		{
+//			Uint32 t = SDL_GetTicks();
+			m->advance(delta_t * speed_scale);
+//			printf("advance time %d\n", SDL_GetTicks()-t);
+		}
 
 		if (do_render)
 		{
 			glDisable(GL_DEPTH_TEST);	// Disable depth testing.
 			glDrawBuffer(GL_BACK);
 		}
-		m->display();
+
+		{
+//			Uint32 t = SDL_GetTicks();
+			m->display();
+//			printf("display time %d\n", SDL_GetTicks()-t);
+		}
+
 		frame_counter++;
 		
 		if (do_render)

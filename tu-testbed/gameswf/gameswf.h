@@ -950,7 +950,7 @@ namespace gameswf
 		virtual bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data) = 0;
 		virtual bitmap_info*	create_bitmap_info_rgb(image::rgb* im) = 0;
 		virtual bitmap_info*	create_bitmap_info_rgba(image::rgba* im) = 0;
-		virtual YUV_video*	create_YUV_video(int w, int h) = 0;
+		virtual YUV_video*	create_YUV_video() = 0;
 
 		virtual void	delete_bitmap_info(bitmap_info* bi) = 0;
 		virtual void	delete_YUV_video(YUV_video* vi) = 0;

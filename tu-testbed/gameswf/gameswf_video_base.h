@@ -17,9 +17,10 @@ namespace gameswf
 	{
 		enum {Y, U, V, T, NB_TEXS};
 
-		YUV_video(int w, int h);
+		YUV_video();
 		~YUV_video();
 
+		void resize(int w, int h);
 		void update(Uint8* data);
 		virtual void display(const matrix* m, const rect* bounds, const rgba& cx);
 		int size() const;

@@ -51,6 +51,8 @@ namespace gameswf
 	{
 		av_register_all();
 
+		m_yuv = render::create_YUV_video();
+
 		m_thread = tu_create_thread(netstream_server, this);
 		assert(m_thread);
 	}
@@ -254,7 +256,7 @@ namespace gameswf
 
 		// Determine required buffer size and allocate buffer
 		m_yuv_mutex.lock();
-		m_yuv = render::create_YUV_video(m_VCodecCtx->width,	m_VCodecCtx->height);
+		m_yuv->resize(m_VCodecCtx->width,	m_VCodecCtx->height);
 		m_yuv_mutex.unlock();
 		if (m_yuv == NULL)
 		{
@@ -522,7 +524,7 @@ namespace gameswf
 		{
 			if (m_yuv->is_updated())
 			{
-				tmp = m_yuv.get_ptr();
+				tmp = m_yuv;
 			}
 		}
 		m_yuv_mutex.unlock();
