@@ -29,18 +29,48 @@ namespace gameswf
 	void netstream_seek(const fn_call& fn);
 	void netstream_setbuffertime(const fn_call& fn);
 
-	template<class T>
-	class multithread_queue
-	{
-	public:
 
-		multithread_queue(const int size):m_size(size)
+	// With these data are filled audio & video queues. 
+	// They the common both for audio and for video
+	struct av_data
+	{
+		av_data():
+			m_stream_index(-1),
+			m_size(0),
+			m_data(NULL),
+			m_ptr(NULL),
+			m_pts(0)
+		{
+		};
+
+		~av_data()
+		{
+			if (m_data)
+			{
+				delete m_data;
+			}
+		};
+
+		int m_stream_index;
+		Uint32 m_size;
+		Uint8* m_data;
+		Uint8* m_ptr;
+		double m_pts;	// presentation timestamp in sec
+	};
+
+	// audio_queue is filled in decoder thread, 
+	// and read in sound handler thread
+	// therefore mutex is required
+	struct audio_queue
+	{
+
+		audio_queue(size_t size) : m_size(size)
 		{
 			assert(m_size > 0);
 			m_mutex = tu_mutex_create();
 		};
 
-		~multithread_queue()
+		~audio_queue()
 		{
 			tu_mutex_destroy(m_mutex);
 		}
@@ -51,18 +81,7 @@ namespace gameswf
 			return m_queue.size();
 		}
 
-		void clear()
-		{
-			locker lock(m_mutex);
-			while (m_queue.size() > 0)
-			{
-				T x = m_queue.front();
-				m_queue.pop();
-				//				delete x;
-			}
-		}
-
-		bool push(T member)
+		bool push(av_data* member)
 		{
 			locker lock(m_mutex);
 			if (m_queue.size() < m_size)	// hack
@@ -73,25 +92,7 @@ namespace gameswf
 			return false;
 		}
 
-		bool push_roll(T member)
-		{
-			bool rc = false;
-			lock();
-			if (m_queue.size() < m_size)
-			{
-				m_queue.push(member);
-				rc = true;
-			}
-			else
-			{
-				m_queue.pop();	// remove the oldest member
-				m_queue.push(member);
-			}
-			unlock();
-			return rc;
-		}
-
-		T front()
+		av_data* front()
 		{
 			locker lock(m_mutex);
 			if (m_queue.size() > 0)
@@ -110,48 +111,63 @@ namespace gameswf
 			}
 		}
 
-		void extract(T* var, int count)
+	private:
+
+		tu_mutex* m_mutex;
+		tu_queue<av_data*> m_queue;
+		size_t m_size;
+	};
+
+	// video_queue is used only in decoder thread,
+	// therefore mutex is not required
+	struct video_queue
+	{
+
+		video_queue(size_t size) : m_size(size)
 		{
-			locker lock(m_mutex);
-			int i = 0;
-			while (m_queue.size() > 0 && i < count)
+			assert(m_size > 0);
+		};
+
+		~video_queue()
+		{
+		}
+
+		size_t size()
+		{
+			return m_queue.size();
+		}
+
+		bool push(av_data* member)
+		{
+			if (m_queue.size() < m_size)	// hack
 			{
-				var[i++] = m_queue.front();
+				m_queue.push(member);
+				return true;
+			}
+			return false;
+		}
+
+		av_data* front()
+		{
+			if (m_queue.size() > 0)
+			{
+				return m_queue.front();
+			}
+			return NULL;
+		}
+
+		void pop()
+		{
+			if (m_queue.size() > 0)
+			{
 				m_queue.pop();
 			}
 		}
 
 	private:
 
-		tu_mutex* m_mutex;
-		tu_queue<T> m_queue;
+		tu_queue<av_data*> m_queue;
 		size_t m_size;
-	};
-
-	struct raw_videodata_t
-	{
-		raw_videodata_t():
-		m_stream_index(-1),
-		m_size(0),
-		m_data(NULL),
-		m_ptr(NULL),
-		m_pts(0)
-	{
-	};
-
-	~raw_videodata_t()
-	{
-		if (m_data)
-		{
-			delete m_data;
-		}
-	};
-
-	int m_stream_index;
-	Uint32 m_size;
-	Uint8* m_data;
-	Uint8* m_ptr;
-	double m_pts;	// presentation timestamp in sec
 	};
 
 	struct as_netstream : public as_object
@@ -161,27 +177,22 @@ namespace gameswf
 
 		virtual as_netstream* cast_to_as_netstream() { return this; }
 
-		void set_status(const char* level, const char* code);
-		void pause(int mode);
-
+		YUV_video* get_video();
 		void run();
-		bool open_stream(const char* source);
-		void close_stream();
+		void pause(int mode);
 		void seek(double seek_time);
 		void setBufferTime();
-
-		raw_videodata_t* read_frame(raw_videodata_t* vd);
-		YUV_video* get_video();
 		void audio_callback(Uint8* stream, int len);
 		void close();
 		void play(const char* url);
 
-		inline double as_double(AVRational time)
-		{
-			return time.num / (double) time.den;
-		}
-
 	private:
+
+		inline double as_double(AVRational time){	return time.num / (double) time.den; }
+		void set_status(const char* level, const char* code);
+		bool open_stream(const char* url);
+		void close_stream();
+		av_data* read_frame(av_data* vd);
 
 		AVFormatContext *m_FormatCtx;
 
@@ -208,11 +219,11 @@ namespace gameswf
 
 		YUV_video* m_yuv;
 
-		multithread_queue<raw_videodata_t*> m_qaudio;
-		multithread_queue<raw_videodata_t*> m_qvideo;
+		audio_queue m_qaudio;
+		video_queue m_qvideo;
 
 		tu_thread* m_thread;
-		tu_condition m_cond;
+		tu_condition m_decoder;
 	};
 
 } // end of gameswf namespace
