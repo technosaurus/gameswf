@@ -78,7 +78,7 @@ namespace gameswf
 	{
 		if (m_ns != NULL)	// is attached video ?
 		{
-			smart_ptr<YUV_video> video_frame = m_ns->get_video();
+			YUV_video* video_frame = m_ns->get_video();
 			if (video_frame != NULL)
 			{
 				// Uint32 t = SDL_GetTicks();

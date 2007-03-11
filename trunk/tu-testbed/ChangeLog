@@ -1,5 +1,18 @@
 2007-03-11  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_test_ogl.cpp: added printf for debugging
+	* gameswf/gameswf.h,
+	* gameswf/gameswf_render_handler_ogl.cpp,
+	* gameswf/gameswf_video_base.(cpp,h),
+	* gameswf/gameswf_render.(cpp,h),
+	* gameswf/gameswf_video_ogl.(cpp,h),
+	* gameswf/gameswf_video_impl.cpp,
+	* gameswf/gameswf_as_classes/as_netstream.(cpp,h):
+	OpenGL is accessible only from one thread,
+	therefore we are forced to move OpenGL calls to the main thread
+	
+2007-03-11  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_video_impl.cpp,
 	* gameswf/gameswf_as_classes/as_netstream.cpp: added
 	mutex for working with video frame

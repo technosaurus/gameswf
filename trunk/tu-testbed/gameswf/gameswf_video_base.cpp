@@ -18,34 +18,45 @@
 namespace gameswf
 {
 
-	YUV_video::YUV_video(int w, int h):
-		m_width(w),
-		m_height(h),
-		m_is_updated(false)
+	YUV_video::YUV_video():
+		m_width(0),
+		m_height(0),
+		m_is_updated(false),
+		m_data(NULL)
 	{
+	}
+
+	// We should save planes[i].id & planes[i].unit
+	// because they are already inited
+	void YUV_video::resize(int w, int h)
+	{
+		delete [] m_data;
+
+		m_width = w;
+		m_height = h;
+		m_is_updated = false;
+
 		planes[Y].w = m_width;
 		planes[Y].h = m_height;
 		planes[Y].size = m_width * m_height;
 		planes[Y].offset = 0;
 
-		planes[U] = planes[Y];
-		planes[U].w >>= 1;
-		planes[U].h >>= 1;
-		planes[U].size >>= 2;
+		planes[U].w = m_width >> 1;
+		planes[U].h = m_height >> 1;
+		planes[U].size = planes[Y].size >> 2;
 		planes[U].offset = planes[Y].size;
 
-		planes[V] = planes[U];
-		planes[V].offset += planes[U].size;
+		planes[V].w = planes[U].w;
+		planes[V].h = planes[U].h;
+		planes[V].size = planes[U].size;
+		planes[V].offset = planes[U].offset + planes[U].size;
 
 		m_size = planes[Y].size + (planes[U].size << 1);
 
 		for (int i = 0; i < 3; ++i)
 		{
-			planes[i].id = 0;	//texids[i];
-
 			Uint32 ww = planes[i].w;
 			Uint32 hh = planes[i].h;
-			planes[i].unit = 0; // i[units];
 			planes[i].p2w = (ww & (ww - 1)) ? video_nlpo2(ww) : ww;
 			planes[i].p2h = (hh & (hh - 1)) ? video_nlpo2(hh) : hh;
 			float tw = (float) ww / planes[i].p2w;

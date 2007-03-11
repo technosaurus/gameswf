@@ -222,7 +222,7 @@ namespace gameswf
 		tu_thread* m_thread;
 		tu_condition m_decoder;
 
-		smart_ptr<YUV_video> m_yuv;
+		YUV_video* m_yuv;
 		gameswf_mutex m_yuv_mutex;
 	};
 

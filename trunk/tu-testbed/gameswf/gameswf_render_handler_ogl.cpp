@@ -343,13 +343,13 @@ struct render_handler_ogl : public gameswf::render_handler
 		delete bi;
 	}
 
-	gameswf::YUV_video*	create_YUV_video(int w, int h)
+	gameswf::YUV_video*	create_YUV_video()
 	{
 		if (ogl::is_combiner())
 		{
-			return new YUV_video_ogl_NV(w, h);
+			return new YUV_video_ogl_NV();
 		}
-		return new YUV_video_ogl(w, h);
+		return new YUV_video_ogl();
 	}
 
 	void	delete_YUV_video(gameswf::YUV_video* yuv)

@@ -14,7 +14,7 @@
 struct YUV_video_ogl_NV : public gameswf::YUV_video
 {
 
-	YUV_video_ogl_NV(int width, int height);
+	YUV_video_ogl_NV();
 	~YUV_video_ogl_NV();
 
 private:
@@ -28,7 +28,7 @@ private:
 
 struct YUV_video_ogl : public gameswf::YUV_video
 {
-	YUV_video_ogl(int width, int height);
+	YUV_video_ogl();
 	~YUV_video_ogl();
 
 	void display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color);
