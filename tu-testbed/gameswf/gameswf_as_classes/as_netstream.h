@@ -29,7 +29,6 @@ namespace gameswf
 	void netstream_seek(const fn_call& fn);
 	void netstream_setbuffertime(const fn_call& fn);
 
-
 	// With these data are filled audio & video queues. 
 	// They the common both for audio and for video
 	struct av_data
@@ -217,13 +216,14 @@ namespace gameswf
 		volatile bool m_break;
 		volatile bool m_pause;
 
-		YUV_video* m_yuv;
-
 		audio_queue m_qaudio;
 		video_queue m_qvideo;
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;
+
+		smart_ptr<YUV_video> m_yuv;
+		gameswf_mutex m_yuv_mutex;
 	};
 
 } // end of gameswf namespace
