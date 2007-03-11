@@ -18,12 +18,12 @@
 namespace gameswf
 {
 
-	// decoder thread
+	// it is running in decoder thread
 	static int netstream_server(void* arg)
 	{
 		as_netstream* ns = (as_netstream*) arg;
 		ns->run();
-		printf("~netstream_server\n");
+//		printf("~netstream_server\n");
 		return 0;
 	}
 
@@ -36,19 +36,19 @@ namespace gameswf
 	}
 
 	as_netstream::as_netstream():
-		m_video_index(-1),
-		m_audio_index(-1),
+		m_FormatCtx(NULL),
 		m_VCodecCtx(NULL),
 		m_ACodecCtx(NULL),
-		m_FormatCtx(NULL),
 		m_Frame(NULL),
+		m_video_index(-1),
+		m_audio_index(-1),
+		m_url(""),
+		m_is_alive(true),
+		m_pause(false),
 		m_yuv(NULL),
 		m_video_clock(0),
-		m_pause(false),
-		m_is_alive(true),
 		m_qaudio(20),
-		m_qvideo(20),
-		m_url("")
+		m_qvideo(20)
 	{
 		av_register_all();
 
@@ -59,10 +59,10 @@ namespace gameswf
 	as_netstream::~as_netstream()
 	{
 		m_is_alive = false;
-		m_cond.signal();
+		m_decoder.signal();
 		tu_wait_thread(m_thread);
 
-		// delete prev video buffer
+		// delete prev video frame buffer
 		render::delete_YUV_video(m_yuv);
 		m_yuv = NULL;
 
@@ -73,7 +73,7 @@ namespace gameswf
 	{
 		m_url = url;
 		m_break = true;
-		m_cond.signal();
+		m_decoder.signal();
 	}
 
 	void as_netstream::close()
@@ -91,7 +91,7 @@ namespace gameswf
 
 		while (len > 0 && m_qaudio.size() > 0)
 		{
-			raw_videodata_t* samples = m_qaudio.front();
+			av_data* samples = m_qaudio.front();
 
 			int n = imin(samples->m_size, len);
 			memcpy(stream, samples->m_ptr, n);
@@ -108,7 +108,7 @@ namespace gameswf
 		}
 	}
 
-	// called from video decoder thread
+	// it is running in decoder thread
 	void as_netstream::set_status(const char* level, const char* code)
 	{
 		if (m_is_alive)
@@ -144,6 +144,7 @@ namespace gameswf
 		}
 	}
 
+	// it is running in decoder thread
 	void as_netstream::close_stream()
 	{
 		if (m_Frame) av_free(m_Frame);
@@ -171,6 +172,7 @@ namespace gameswf
 		}
 	}
 
+	// it is running in decoder thread
 	bool as_netstream::open_stream(const char* c_url)
 	{
 		// This registers all available file formats and codecs 
@@ -292,19 +294,20 @@ namespace gameswf
 		return true;
 	}
 
-	// decoder thread
+	// it is running in decoder thread
 	void as_netstream::run()
 	{
 		while (m_is_alive)
 		{
 			if (m_url == "")
 			{
-				printf("waiting a job...\n");
-				m_cond.wait();
+//				printf("waiting a job...\n");
+				m_decoder.wait();
 			}
 
 			if (open_stream(m_url.c_str()))
 			{
+				m_url = "";
 				set_status("status", "NetStream.Play.Start");
 
 				{
@@ -315,8 +318,8 @@ namespace gameswf
 					}
 				}
 
-				raw_videodata_t* unqueued_data = NULL;
-				raw_videodata_t* video = NULL;
+				av_data* unqueued_data = NULL;
+				av_data* video = NULL;
 
 				m_video_clock = 0;
 
@@ -341,6 +344,7 @@ namespace gameswf
 						unqueued_data = NULL;
 						if (m_qvideo.size() == 0)
 						{
+							set_status("status", "NetStream.Play.Stop");
 							break;
 						}
 					}
@@ -382,15 +386,15 @@ namespace gameswf
 				}
 	
 				close_stream();
-				set_status("status", "NetStream.Play.Stop");
 			}
 
 		}
 	}
 
-	raw_videodata_t* as_netstream::read_frame(raw_videodata_t* unqueued_data)
+	// it is running in decoder thread
+	av_data* as_netstream::read_frame(av_data* unqueued_data)
 	{
-		raw_videodata_t* ret = NULL;
+		av_data* ret = NULL;
 		if (unqueued_data)
 		{
 			if (unqueued_data->m_stream_index == m_audio_index)
@@ -432,7 +436,7 @@ namespace gameswf
 						int n = 0;
 						s->cvt(&adjusted_data, &n, ptr, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
 
-						raw_videodata_t* raw = new raw_videodata_t;
+						av_data* raw = new av_data;
 						raw->m_data = (uint8_t*) adjusted_data;
 						raw->m_ptr = raw->m_data;
 						raw->m_size = n;
@@ -456,7 +460,7 @@ namespace gameswf
 							assert(0);	// TODO
 						}
 
-						raw_videodata_t* video = new raw_videodata_t;
+						av_data* video = new av_data;
 						video->m_data = (uint8_t*) malloc(m_yuv->size());
 						video->m_ptr = video->m_data;
 						video->m_stream_index = m_video_index;
@@ -510,7 +514,7 @@ namespace gameswf
 		}
 		else
 		{
-			return (raw_videodata_t*) rc;
+			return (av_data*) rc;
 		}
 
 		return ret;
