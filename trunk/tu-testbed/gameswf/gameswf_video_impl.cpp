@@ -78,8 +78,8 @@ namespace gameswf
 	{
 		if (m_ns != NULL)	// is attached video ?
 		{
-			YUV_video* v = m_ns->get_video();
-			if (v != NULL)
+			smart_ptr<YUV_video> video_frame = m_ns->get_video();
+			if (video_frame != NULL)
 			{
 				// Uint32 t = SDL_GetTicks();
 
@@ -93,7 +93,7 @@ namespace gameswf
 				gameswf::rgba color = cx.transform(gameswf::rgba());
 
 				matrix m = get_world_matrix();
-				v->display(&m, &bounds, color);
+				video_frame->display(&m, &bounds, color);
 
 				// printf("video time %d\n", SDL_GetTicks() - t);
 			}

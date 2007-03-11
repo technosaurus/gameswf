@@ -1,5 +1,11 @@
 2007-03-11  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_video_impl.cpp,
+	* gameswf/gameswf_as_classes/as_netstream.cpp: added
+	mutex for working with video frame
+	
+2007-03-11  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_test_ogl.cpp: delay=31 ==> delay=10
 	* gameswf/gameswf_as_classes/as_netstream.cpp: fixed a bit bug
 	* gameswf/samples/video.(fla,swf): updated, 

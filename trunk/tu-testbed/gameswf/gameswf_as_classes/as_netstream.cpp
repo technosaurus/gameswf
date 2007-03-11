@@ -45,7 +45,6 @@ namespace gameswf
 		m_url(""),
 		m_is_alive(true),
 		m_pause(false),
-		m_yuv(NULL),
 		m_video_clock(0),
 		m_qaudio(20),
 		m_qvideo(20)
@@ -61,12 +60,8 @@ namespace gameswf
 		m_is_alive = false;
 		m_decoder.signal();
 		tu_wait_thread(m_thread);
-
-		// delete prev video frame buffer
-		render::delete_YUV_video(m_yuv);
 		m_yuv = NULL;
-
-		printf("~as_netstream\n");
+//		printf("~as_netstream\n");
 	}
 
 	void as_netstream::play(const char* url)
@@ -78,7 +73,6 @@ namespace gameswf
 
 	void as_netstream::close()
 	{
-		m_url = "";
 		m_break = true;
 	}
 
@@ -258,12 +252,10 @@ namespace gameswf
 		// Allocate a frame to store the decoded frame in
 		m_Frame = avcodec_alloc_frame();
 
-		// delete prev video buffer
-		render::delete_YUV_video(m_yuv);
-		m_yuv = NULL;
-
 		// Determine required buffer size and allocate buffer
+		m_yuv_mutex.lock();
 		m_yuv = render::create_YUV_video(m_VCodecCtx->width,	m_VCodecCtx->height);
+		m_yuv_mutex.unlock();
 		if (m_yuv == NULL)
 		{
 			log_error("No available video render\n");
@@ -305,7 +297,10 @@ namespace gameswf
 				m_decoder.wait();
 			}
 
-			if (open_stream(m_url.c_str()))
+			bool is_open = open_stream(m_url.c_str());
+			m_url = "";
+
+			if (is_open)
 			{
 				set_status("status", "NetStream.Play.Start");
 
@@ -386,7 +381,6 @@ namespace gameswf
 	
 				close_stream();
 			}
-			m_url = "";
 		}
 	}
 
@@ -411,7 +405,7 @@ namespace gameswf
 				}
 				else
 				{
-					printf("read_frame: not audio & video stream\n");
+					log_error("read_frame: not audio & video stream\n");
 				}
 
 				return ret;
@@ -522,14 +516,17 @@ namespace gameswf
 
 	YUV_video* as_netstream::get_video()
 	{
-		if (m_yuv)
+		YUV_video* tmp = NULL;
+		m_yuv_mutex.lock();
+		if (m_yuv != NULL)
 		{
 			if (m_yuv->is_updated())
 			{
-				return m_yuv;
+				tmp = m_yuv.get_ptr();
 			}
 		}
-		return NULL;
+		m_yuv_mutex.unlock();
+		return tmp;
 	}
 
 	void as_netstream::seek(double seek_time)
@@ -542,7 +539,7 @@ namespace gameswf
 		int rc = av_seek_frame(m_FormatCtx, -1, AV_TIME_BASE, 0);
 		if (rc < 0)
 		{
-			printf("could not seek to position rc=%d\n", rc);
+			log_error("could not seek to position rc=%d\n", rc);
 		}
 	}
 
