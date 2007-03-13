@@ -5,7 +5,6 @@
 
 // auto locker/unlocker
 
-#include <SDL.h>
 #include "gameswf_mutex.h"
 #include "base/smart_ptr.h"
 

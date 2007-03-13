@@ -802,15 +802,16 @@ int	main(int argc, char *argv[])
 				switch (event.type)
 				{
 				case SDL_VIDEORESIZE:
-					s_scale = (float) event.resize.w / (float) width;
-					width = event.resize.w;
-					height = event.resize.h;
-					if (SDL_SetVideoMode(event.resize.w, event.resize.h, 0, SDL_OPENGL | SDL_RESIZABLE) == 0)
-					{
-						fprintf(stderr, "SDL_SetVideoMode() failed.");
-						exit(1);
-					}
-					glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
+					//todo
+//					s_scale = (float) event.resize.w / (float) width;
+//					width = event.resize.w;
+//					height = event.resize.h;
+//					if (SDL_SetVideoMode(event.resize.w, event.resize.h, 0, SDL_OPENGL | SDL_RESIZABLE) == 0)
+//					{
+//						fprintf(stderr, "SDL_SetVideoMode() failed.");
+//						exit(1);
+//					}
+//					glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
 					break;
 
 				case SDL_USEREVENT:

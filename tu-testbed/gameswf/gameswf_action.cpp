@@ -2265,7 +2265,8 @@ namespace gameswf
 				case 0x8B:	// set target
 				{
 					// Change the movie we're working on.
-					env->set_target(as_value((const char*) &m_buffer[pc + 3]),original_target);
+					as_value val = (const char*) &m_buffer[pc + 3];
+					env->set_target(val, original_target);
 					break;
 				}
 
