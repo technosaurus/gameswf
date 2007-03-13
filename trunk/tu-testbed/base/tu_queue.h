@@ -22,6 +22,14 @@ public:
 		m_front = NULL;
 	}
 
+	~tu_queue()
+	{
+		while (size() > 0)
+		{
+			pop();
+		}
+	}
+
 	const T& back() const {
 		assert(m_back);
 		return m_back->m_value;

@@ -1,5 +1,11 @@
 2007-03-13  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* base/tu_queue.h: added destructor which pops elements from queue
+	* gameswf/gameswf_as_classes/as_netstream.(cpp,h): fixed memory leaks
+	& simplified netstream
+
+2007-03-13  Vitaly Alexeev <tishka92@yahoo.com>
+
 	Porting to Linux (gcc 3.2.2)
 	* base/ear_clip_triangulate_impl.h: fixed gcc compilation error
 	* gameswf/gameswf_action.(cpp,h):  fixed gcc compilation warning
