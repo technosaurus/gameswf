@@ -31,23 +31,21 @@ namespace gameswf
 
 	// With these data are filled audio & video queues. 
 	// They the common both for audio and for video
-	struct av_data
+	struct av_data : public ref_counted
 	{
-		av_data():
-			m_stream_index(-1),
-			m_size(0),
-			m_data(NULL),
-			m_ptr(NULL),
+		av_data(int stream, Uint8* data, int size) :
+			m_stream_index(stream),
+			m_size(size),
+			m_data(data),
+			m_ptr(data),
 			m_pts(0)
 		{
+			assert(data);
 		};
 
 		~av_data()
 		{
-			if (m_data)
-			{
-				delete m_data;
-			}
+			delete m_data;
 		};
 
 		int m_stream_index;
@@ -55,118 +53,6 @@ namespace gameswf
 		Uint8* m_data;
 		Uint8* m_ptr;
 		double m_pts;	// presentation timestamp in sec
-	};
-
-	// audio_queue is filled in decoder thread, 
-	// and read in sound handler thread
-	// therefore mutex is required
-	struct audio_queue
-	{
-
-		audio_queue(size_t size) : m_size(size)
-		{
-			assert(m_size > 0);
-			m_mutex = tu_mutex_create();
-		};
-
-		~audio_queue()
-		{
-			tu_mutex_destroy(m_mutex);
-		}
-
-		size_t size()
-		{
-			locker lock(m_mutex);
-			return m_queue.size();
-		}
-
-		bool push(av_data* member)
-		{
-			locker lock(m_mutex);
-			if (m_queue.size() < m_size)	// hack
-			{
-				m_queue.push(member);
-				return true;
-			}
-			return false;
-		}
-
-		av_data* front()
-		{
-			locker lock(m_mutex);
-			if (m_queue.size() > 0)
-			{
-				return m_queue.front();
-			}
-			return NULL;
-		}
-
-		void pop()
-		{
-			locker lock(m_mutex);
-			if (m_queue.size() > 0)
-			{
-				m_queue.pop();
-			}
-		}
-
-	private:
-
-		tu_mutex* m_mutex;
-		tu_queue<av_data*> m_queue;
-		size_t m_size;
-	};
-
-	// video_queue is used only in decoder thread,
-	// therefore mutex is not required
-	struct video_queue
-	{
-
-		video_queue(size_t size) : m_size(size)
-		{
-			assert(m_size > 0);
-		};
-
-		~video_queue()
-		{
-		}
-
-		size_t size()
-		{
-			return m_queue.size();
-		}
-
-		bool push(av_data* member)
-		{
-			if (m_queue.size() < m_size)	// hack
-			{
-				m_queue.push(member);
-				return true;
-			}
-			return false;
-		}
-
-		av_data* front()
-		{
-			if (m_queue.size() > 0)
-			{
-				return m_queue.front();
-			}
-			return NULL;
-		}
-
-		void pop()
-		{
-			if (m_queue.size() > 0)
-			{
-				m_queue.pop();
-			}
-		}
-
-	private:
-
-		tu_queue<av_data*> m_queue;
-		size_t m_size;
 	};
 
 	struct as_netstream : public as_object
@@ -216,15 +102,19 @@ namespace gameswf
 		volatile bool m_break;
 		volatile bool m_pause;
 
-		audio_queue m_qaudio;
-		video_queue m_qvideo;
+		tu_queue< smart_ptr<av_data> > m_qvideo;
+
+		gameswf_mutex m_audio_mutex;
+		tu_queue< smart_ptr<av_data> > m_qaudio;
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;
 
 		YUV_video* m_yuv;
 		gameswf_mutex m_yuv_mutex;
-		av_data* m_unqueued_data;
+		smart_ptr<av_data> m_unqueued_data;
+
+		size_t m_queue_size;
 	};
 
 } // end of gameswf namespace

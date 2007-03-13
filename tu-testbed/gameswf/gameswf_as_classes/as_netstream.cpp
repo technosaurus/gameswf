@@ -23,7 +23,6 @@ namespace gameswf
 	{
 		as_netstream* ns = (as_netstream*) arg;
 		ns->run();
-//		printf("~netstream_server\n");
 		return 0;
 	}
 
@@ -46,12 +45,17 @@ namespace gameswf
 		m_url(""),
 		m_is_alive(true),
 		m_pause(false),
-		m_qaudio(20),
-		m_qvideo(20)              
+		m_thread(NULL),
+		m_queue_size(20)	//hack
 	{
 		av_register_all();
 
 		m_yuv = render::create_YUV_video();
+		if (m_yuv == NULL)
+		{
+			log_error("No available video render\n");
+			return;
+		}
 
 		m_thread = tu_create_thread(netstream_server, this);
 		assert(m_thread);
@@ -62,8 +66,7 @@ namespace gameswf
 		m_is_alive = false;
 		m_decoder.signal();
 		tu_wait_thread(m_thread);
-		m_yuv = NULL;
-//		printf("~as_netstream\n");
+		render::delete_YUV_video(m_yuv);
 	}
 
 	void as_netstream::play(const char* url)
@@ -85,9 +88,10 @@ namespace gameswf
 			return;
 		}
 
+		locker lock(m_audio_mutex.get_mutex());
 		while (len > 0 && m_qaudio.size() > 0)
 		{
-			av_data* samples = m_qaudio.front();
+			smart_ptr<av_data>& samples = m_qaudio.front();
 
 			int n = imin(samples->m_size, len);
 			memcpy(stream, samples->m_ptr, n);
@@ -99,7 +103,6 @@ namespace gameswf
 			if (samples->m_size == 0)
 			{
 				m_qaudio.pop();
-				delete samples;
 			}
 		}
 	}
@@ -154,18 +157,6 @@ namespace gameswf
 
 		if (m_FormatCtx) av_close_input_file(m_FormatCtx);
 		m_FormatCtx = NULL;
-
-		while (m_qvideo.size() > 0)
-		{
-			delete m_qvideo.front();
-			m_qvideo.pop();
-		}
-
-		while (m_qaudio.size() > 0)
-		{
-			delete m_qaudio.front();
-			m_qaudio.pop();
-		}
 	}
 
 	// it is running in decoder thread
@@ -255,14 +246,8 @@ namespace gameswf
 		m_yuv_mutex.lock();
 		m_yuv->resize(m_VCodecCtx->width,	m_VCodecCtx->height);
 		m_yuv_mutex.unlock();
-		if (m_yuv == NULL)
-		{
-			log_error("No available video render\n");
-			return false;
-		}
 
-		sound_handler* s = get_sound_handler();
-		if (m_audio_index >= 0 && s != NULL)
+		if (m_audio_index >= 0 && get_sound_handler() != NULL)
 		{
 			// Get a pointer to the audio codec context for the video stream
 			m_ACodecCtx = m_FormatCtx->streams[m_audio_index]->codec;
@@ -311,9 +296,6 @@ namespace gameswf
 					}
 				}
 
-				m_unqueued_data = NULL;
-				av_data* video = NULL;
-
 				m_video_clock = 0;
 
 				int delay = 0;
@@ -343,7 +325,7 @@ namespace gameswf
 
 					if (m_qvideo.size() > 0)
 					{
-						video = m_qvideo.front();
+						smart_ptr<av_data>& video = m_qvideo.front();
 						double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
 						double video_clock = video->m_pts;
 
@@ -351,7 +333,6 @@ namespace gameswf
 						{
 							m_yuv->update(video->m_data);
 							m_qvideo.pop();
-							delete video;
 							delay = 0;
 						}
 						else
@@ -362,7 +343,7 @@ namespace gameswf
 						// Don't hog the CPU.
 						// Queues have filled, video frame have shown
 						// now it is possible and to have a rest
-						if (m_unqueued_data && delay > 0)
+						if (m_unqueued_data != NULL && delay > 0)
 						{
 							tu_delay(delay);
 						}
@@ -385,15 +366,17 @@ namespace gameswf
 	// it is running in decoder thread
 	bool as_netstream::read_frame()
 	{
-		if (m_unqueued_data)
+		if (m_unqueued_data != NULL)
 		{
 			if (m_unqueued_data->m_stream_index == m_audio_index)
 			{
 				sound_handler* s = get_sound_handler();
 				if (s)
 				{
-					if (m_qaudio.push(m_unqueued_data))
+					locker lock(m_audio_mutex.get_mutex());
+					if (m_qaudio.size() < m_queue_size)
 					{
+						m_qaudio.push(m_unqueued_data);
 						m_unqueued_data = NULL;
 					}
 				}
@@ -401,8 +384,9 @@ namespace gameswf
 			else
 				if (m_unqueued_data->m_stream_index == m_video_index)
 				{
-					if (m_qvideo.push(m_unqueued_data))
+					if (m_qvideo.size() < m_queue_size)
 					{
+						m_qvideo.push(m_unqueued_data);
 						m_unqueued_data = NULL;
 					}
 				}
@@ -427,26 +411,17 @@ namespace gameswf
 			if (s)
 			{
 				int frame_size;
-				uint8_t* ptr = (uint8_t*) malloc((AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2);
-				if (avcodec_decode_audio(m_ACodecCtx, (int16_t*) ptr, &frame_size, packet.data, packet.size) >= 0)
+				Uint8* decoder_buf = (Uint8*) malloc((AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2);
+				if (avcodec_decode_audio(m_ACodecCtx, (Sint16*) decoder_buf, &frame_size, packet.data, packet.size) >= 0)
 				{
 
 					int16_t*	adjusted_data = 0;
 					int n = 0;
-					s->cvt(&adjusted_data, &n, ptr, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
+					s->cvt(&adjusted_data, &n, decoder_buf, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
 
-					av_data* raw = new av_data;
-					raw->m_data = (uint8_t*) adjusted_data;
-					raw->m_ptr = raw->m_data;
-					raw->m_size = n;
-					raw->m_stream_index = m_audio_index;
-
-					if (m_qaudio.push(raw) == false)
-					{
-						m_unqueued_data = raw;			
-					}
+					m_unqueued_data = new av_data(m_audio_index, (Uint8*) adjusted_data, n);
 				}
-				free(ptr);
+				free(decoder_buf);
 			}
 		}
 		else
@@ -462,10 +437,8 @@ namespace gameswf
 					assert(0);	// TODO
 				}
 
-				av_data* video = new av_data;
-				video->m_data = (uint8_t*) malloc(m_yuv->size());
-				video->m_ptr = video->m_data;
-				video->m_stream_index = m_video_index;
+				int n = m_yuv->size();
+				av_data* video = new av_data(m_video_index, (Uint8*) malloc(n), n);
 
 				// set presentation timestamp
 				if (packet.dts != AV_NOPTS_VALUE)
@@ -509,10 +482,7 @@ namespace gameswf
 					}
 				}
 				video->m_size = copied;
-				if (m_qvideo.push(video) == false)
-				{
-					m_unqueued_data = video;
-				}
+				m_unqueued_data = video;
 			}
 		}
 		av_free_packet(&packet);
