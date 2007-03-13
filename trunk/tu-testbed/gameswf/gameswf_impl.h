@@ -298,7 +298,7 @@ namespace gameswf
 		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
 
-		movie_interface*	movie_def_impl::create_instance();
+		movie_interface*	create_instance();
 
 		int	get_frame_count() const;
 		float	get_frame_rate() const;

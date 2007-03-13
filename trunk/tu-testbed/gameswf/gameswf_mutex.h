@@ -11,6 +11,7 @@
 #define GAMESWF_MUTEX_H
 
 #include <SDL.h>
+#include <SDL_thread.h>
 
 namespace gameswf
 {

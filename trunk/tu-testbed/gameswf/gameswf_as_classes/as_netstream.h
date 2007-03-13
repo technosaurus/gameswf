@@ -191,7 +191,7 @@ namespace gameswf
 		void set_status(const char* level, const char* code);
 		bool open_stream(const char* url);
 		void close_stream();
-		av_data* read_frame(av_data* vd);
+		bool read_frame();
 
 		AVFormatContext *m_FormatCtx;
 
@@ -224,6 +224,7 @@ namespace gameswf
 
 		YUV_video* m_yuv;
 		gameswf_mutex m_yuv_mutex;
+		av_data* m_unqueued_data;
 	};
 
 } // end of gameswf namespace

@@ -40,14 +40,14 @@ namespace gameswf
 		m_VCodecCtx(NULL),
 		m_ACodecCtx(NULL),
 		m_Frame(NULL),
-		m_video_index(-1),
+		m_video_clock(0),
+		m_video_index(-1),              
 		m_audio_index(-1),
 		m_url(""),
 		m_is_alive(true),
 		m_pause(false),
-		m_video_clock(0),
 		m_qaudio(20),
-		m_qvideo(20)
+		m_qvideo(20)              
 	{
 		av_register_all();
 
@@ -195,9 +195,6 @@ namespace gameswf
 			return false;
 		}
 
-		//	m_FormatCtx->pb.eof_reached = 0;
-		//	av_read_play(m_FormatCtx);
-
 		// Find the first video & audio stream
 		m_video_index = -1;
 		m_audio_index = -1;
@@ -314,7 +311,7 @@ namespace gameswf
 					}
 				}
 
-				av_data* unqueued_data = NULL;
+				m_unqueued_data = NULL;
 				av_data* video = NULL;
 
 				m_video_clock = 0;
@@ -334,10 +331,9 @@ namespace gameswf
 						continue;
 					}
 
-					unqueued_data = read_frame(unqueued_data);
-					if ((int) unqueued_data < 0)
+					bool rc = read_frame();
+					if (rc == false)
 					{
-						unqueued_data = NULL;
 						if (m_qvideo.size() == 0)
 						{
 							set_status("status", "NetStream.Play.Stop");
@@ -366,7 +362,7 @@ namespace gameswf
 						// Don't hog the CPU.
 						// Queues have filled, video frame have shown
 						// now it is possible and to have a rest
-						if (unqueued_data && delay > 0)
+						if (m_unqueued_data && delay > 0)
 						{
 							tu_delay(delay);
 						}
@@ -387,134 +383,142 @@ namespace gameswf
 	}
 
 	// it is running in decoder thread
-	av_data* as_netstream::read_frame(av_data* unqueued_data)
+	bool as_netstream::read_frame()
 	{
-		av_data* ret = NULL;
-		if (unqueued_data)
+		if (m_unqueued_data)
 		{
-			if (unqueued_data->m_stream_index == m_audio_index)
+			if (m_unqueued_data->m_stream_index == m_audio_index)
 			{
 				sound_handler* s = get_sound_handler();
 				if (s)
 				{
-					ret = m_qaudio.push(unqueued_data) ? NULL : unqueued_data;
+					if (m_qaudio.push(m_unqueued_data))
+					{
+						m_unqueued_data = NULL;
+					}
 				}
 			}
 			else
-				if (unqueued_data->m_stream_index == m_video_index)
+				if (m_unqueued_data->m_stream_index == m_video_index)
 				{
-					ret = m_qvideo.push(unqueued_data) ? NULL : unqueued_data;
+					if (m_qvideo.push(m_unqueued_data))
+					{
+						m_unqueued_data = NULL;
+					}
 				}
 				else
 				{
 					log_error("read_frame: not audio & video stream\n");
 				}
 
-				return ret;
+				return true;
 		}
 
 		AVPacket packet;
 		int rc = av_read_frame(m_FormatCtx, &packet);
-		if (rc >= 0)
+		if (rc < 0)
 		{
-			if (packet.stream_index == m_audio_index)
+			return false;
+		}
+
+		if (packet.stream_index == m_audio_index)
+		{
+			sound_handler* s = get_sound_handler();
+			if (s)
 			{
-				sound_handler* s = get_sound_handler();
-				if (s)
+				int frame_size;
+				uint8_t* ptr = (uint8_t*) malloc((AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2);
+				if (avcodec_decode_audio(m_ACodecCtx, (int16_t*) ptr, &frame_size, packet.data, packet.size) >= 0)
 				{
-					int frame_size;
-					uint8_t* ptr = (uint8_t*) malloc((AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2);
-					if (avcodec_decode_audio(m_ACodecCtx, (int16_t*) ptr, &frame_size, packet.data, packet.size) >= 0)
+
+					int16_t*	adjusted_data = 0;
+					int n = 0;
+					s->cvt(&adjusted_data, &n, ptr, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
+
+					av_data* raw = new av_data;
+					raw->m_data = (uint8_t*) adjusted_data;
+					raw->m_ptr = raw->m_data;
+					raw->m_size = n;
+					raw->m_stream_index = m_audio_index;
+
+					if (m_qaudio.push(raw) == false)
 					{
-
-						int16_t*	adjusted_data = 0;
-						int n = 0;
-						s->cvt(&adjusted_data, &n, ptr, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
-
-						av_data* raw = new av_data;
-						raw->m_data = (uint8_t*) adjusted_data;
-						raw->m_ptr = raw->m_data;
-						raw->m_size = n;
-						raw->m_stream_index = m_audio_index;
-
-						ret = m_qaudio.push(raw) ? NULL : raw;
+						m_unqueued_data = raw;			
 					}
-					free(ptr);
 				}
+				free(ptr);
 			}
-			else
-				if (packet.stream_index == m_video_index)
-				{
-					int got = 0;
-					avcodec_decode_video(m_VCodecCtx, m_Frame, &got, packet.data, packet.size);
-					if (got)
-					{
-						if (m_VCodecCtx->pix_fmt != PIX_FMT_YUV420P)
-						{
-							//				img_convert((AVPicture*) pFrameYUV, PIX_FMT_YUV420P, (AVPicture*) pFrame, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height);
-							assert(0);	// TODO
-						}
-
-						av_data* video = new av_data;
-						video->m_data = (uint8_t*) malloc(m_yuv->size());
-						video->m_ptr = video->m_data;
-						video->m_stream_index = m_video_index;
-
-						// set presentation timestamp
-						if (packet.dts != AV_NOPTS_VALUE)
-						{
-							video->m_pts = as_double(m_video_stream->time_base) * packet.dts;
-						}
-
-						if (video->m_pts != 0)
-						{	
-							// update video clock with pts, if present
-							m_video_clock = video->m_pts;
-						}
-						else
-						{
-							video->m_pts = m_video_clock;
-						}
-
-						// update video clock for next frame
-						double frame_delay = as_double(m_video_stream->codec->time_base);
-
-						// for MPEG2, the frame can be repeated, so we update the clock accordingly
-						frame_delay += m_Frame->repeat_pict * (frame_delay * 0.5);
-
-						m_video_clock += frame_delay;
-
-						int copied = 0;
-						uint8_t* ptr = video->m_data;
-						for (int i = 0; i < 3 ; i++)
-						{
-							int shift = (i == 0 ? 0 : 1);
-							uint8_t* yuv_factor = m_Frame->data[i];
-							int h = m_VCodecCtx->height >> shift;
-							int w = m_VCodecCtx->width >> shift;
-							for (int j = 0; j < h; j++)
-							{
-								copied += w;
-								assert(copied <= m_yuv->size());
-								memcpy(ptr, yuv_factor, w);
-								yuv_factor += m_Frame->linesize[i];
-								ptr += w;
-							}
-						}
-						video->m_size = copied;
-						ret = m_qvideo.push(video) ? NULL : video;
-					}
-				}
-				av_free_packet(&packet);
 		}
 		else
+		if (packet.stream_index == m_video_index)
 		{
-			return (av_data*) rc;
+			int got = 0;
+			avcodec_decode_video(m_VCodecCtx, m_Frame, &got, packet.data, packet.size);
+			if (got)
+			{
+				if (m_VCodecCtx->pix_fmt != PIX_FMT_YUV420P)
+				{
+					//				img_convert((AVPicture*) pFrameYUV, PIX_FMT_YUV420P, (AVPicture*) pFrame, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height);
+					assert(0);	// TODO
+				}
+
+				av_data* video = new av_data;
+				video->m_data = (uint8_t*) malloc(m_yuv->size());
+				video->m_ptr = video->m_data;
+				video->m_stream_index = m_video_index;
+
+				// set presentation timestamp
+				if (packet.dts != AV_NOPTS_VALUE)
+				{
+					video->m_pts = as_double(m_video_stream->time_base) * packet.dts;
+				}
+
+				if (video->m_pts != 0)
+				{	
+					// update video clock with pts, if present
+					m_video_clock = video->m_pts;
+				}
+				else
+				{
+					video->m_pts = m_video_clock;
+				}
+
+				// update video clock for next frame
+				double frame_delay = as_double(m_video_stream->codec->time_base);
+
+				// for MPEG2, the frame can be repeated, so we update the clock accordingly
+				frame_delay += m_Frame->repeat_pict * (frame_delay * 0.5);
+
+				m_video_clock += frame_delay;
+
+				int copied = 0;
+				uint8_t* ptr = video->m_data;
+				for (int i = 0; i < 3 ; i++)
+				{
+					int shift = (i == 0 ? 0 : 1);
+					uint8_t* yuv_factor = m_Frame->data[i];
+					int h = m_VCodecCtx->height >> shift;
+					int w = m_VCodecCtx->width >> shift;
+					for (int j = 0; j < h; j++)
+					{
+						copied += w;
+						assert(copied <= m_yuv->size());
+						memcpy(ptr, yuv_factor, w);
+						yuv_factor += m_Frame->linesize[i];
+						ptr += w;
+					}
+				}
+				video->m_size = copied;
+				if (m_qvideo.push(video) == false)
+				{
+					m_unqueued_data = video;
+				}
+			}
 		}
+		av_free_packet(&packet);
 
-		return ret;
+		return true;
 	}
-
 
 	YUV_video* as_netstream::get_video()
 	{
@@ -535,9 +539,9 @@ namespace gameswf
 	{
 		double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
 		clock += seek_time;
-		int64_t timestamp = (int64_t) clock * AV_TIME_BASE;
+//		int64_t timestamp = (int64_t) clock * AV_TIME_BASE;
 
-		int flg = seek_time < 0 ? AVSEEK_FLAG_BACKWARD : 0;
+//		int flg = seek_time < 0 ? AVSEEK_FLAG_BACKWARD : 0;
 		int rc = av_seek_frame(m_FormatCtx, -1, AV_TIME_BASE, 0);
 		if (rc < 0)
 		{

@@ -195,7 +195,7 @@ namespace gameswf
 			NUMBER,
 			OBJECT,
 			C_FUNCTION,
-			AS_FUNCTION,	// ActionScript function.
+			AS_FUNCTION	// ActionScript function.
 		};
 		type	m_type;
 		mutable tu_string	m_string_value;

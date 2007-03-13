@@ -64,6 +64,8 @@ typedef index_box<coord_t> index_box_t;
 typedef grid_index_point<coord_t, bool> grid_index_point_t;
 typedef grid_index_box<coord_t, bool> grid_index_box_t;
 	
+typedef typename grid_index_point_t::iterator it_point;
+typedef typename grid_index_box_t::iterator it_box;
 
 struct poly_vert {
 	vec2_t m_v;
@@ -130,7 +132,7 @@ struct path_info {
 		m_leftmost_vert(-1) {
 	}
 
-	bool operator<(const path_info& pi) {
+	bool operator<(const path_info& pi) const {
 		assert(m_leftmost_vert >= 0);
 		assert(pi.m_leftmost_vert >= 0);
 
@@ -226,7 +228,7 @@ static bool any_edge_intersects(const tristate* ts, const edge& e, grid_index_bo
 	index_box_t bound(ev0.x, ev0.y);
 	bound.expand_to_enclose(ev1.x, ev1.y);
 
-	for (grid_index_box_t::iterator it = edge_index->begin(bound); !it.at_end(); ++it) {
+	for (it_box it = edge_index->begin(bound); !it.at_end(); ++it) {
 		vec2_t eev0(it->bound.get_min().x, it->bound.get_min().y);
 		vec2_t eev1(it->bound.get_max().x, it->bound.get_max().y);
 		if (it->value == false) {
@@ -623,9 +625,7 @@ static bool any_reflex_vert_in_triangle(const tristate* ts, int vi0, int vi1, in
 	query_bound.expand_to_enclose(ip1);
 	query_bound.expand_to_enclose(ip2);
 
-	for (grid_index_point_t::iterator it = ts->m_reflex_point_index->begin(query_bound);
-	     ! it.at_end();
-	     ++it)
+	for (it_point it = ts->m_reflex_point_index->begin(query_bound); ! it.at_end();  ++it)
 	{
 		if (ip0 == it->location || ip1 == it->location || ip2 == it->location) {
 			continue;

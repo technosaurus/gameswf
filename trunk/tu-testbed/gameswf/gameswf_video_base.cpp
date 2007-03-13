@@ -19,10 +19,11 @@ namespace gameswf
 {
 
 	YUV_video::YUV_video():
+		m_data(NULL),
 		m_width(0),
 		m_height(0),
-		m_is_updated(false),
-		m_data(NULL)
+		m_size(0),
+		m_is_updated(false)
 	{
 	}
 
@@ -35,6 +36,10 @@ namespace gameswf
 		m_width = w;
 		m_height = h;
 		m_is_updated = false;
+		m_size = m_width * m_height;
+		m_size += m_size >> 1;
+
+		m_data = new Uint8[m_size];
 
 		planes[Y].w = m_width;
 		planes[Y].h = m_height;
@@ -50,8 +55,6 @@ namespace gameswf
 		planes[V].h = planes[U].h;
 		planes[V].size = planes[U].size;
 		planes[V].offset = planes[U].offset + planes[U].size;
-
-		m_size = planes[Y].size + (planes[U].size << 1);
 
 		for (int i = 0; i < 3; ++i)
 		{
@@ -72,7 +75,6 @@ namespace gameswf
 			planes[i].coords[3][1] = th;
 		}
 
-		m_data = new Uint8[m_size];
 	}	
 
 	YUV_video::~YUV_video()
