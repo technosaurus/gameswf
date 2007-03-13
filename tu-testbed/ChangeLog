@@ -1,5 +1,20 @@
 2007-03-13  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf.h,
+	* gameswf/gameswf_render.(cpp,h),
+	* gameswf/gameswf_render_handler_ogl.cpp:
+	The beginning of job on the runing create_library_movie() & 
+	create_library_movie_inst in separate threads. Advance thread is
+	the main thread therefore in the create_library_movie thread opengl
+	is not accessible and we can't use opengl functions for creating
+	textures. We save image in system memory and then layout it to video
+	memory when it's required.
+	* base/image.(cpp,h): added image type to image_base (rgb, rgba, ...)
+	* base/tu_opengl_includes.h: added wglGetCurrentContext() declaration,
+	it is used to find out if opengl is accessible
+	
+2007-03-13  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* base/tu_queue.h: added destructor which pops elements from queue
 	* gameswf/gameswf_as_classes/as_netstream.(cpp,h): fixed memory leaks
 	& simplified netstream
