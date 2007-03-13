@@ -155,7 +155,7 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->fill_style_color(fill_side, color);
 		}
 
-		void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, render_handler::bitmap_wrap_mode wm)
+		void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, render_handler::bitmap_wrap_mode wm)
 		{
 			if (s_render_handler) s_render_handler->fill_style_bitmap(fill_side, bi, m, wm);
 		}
@@ -193,7 +193,7 @@ namespace gameswf
 		// Special function to draw a rectangular bitmap;
 		// intended for textured glyph rendering.  Ignores
 		// current transforms.
-		void	draw_bitmap(const matrix& m, const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color)
+		void	draw_bitmap(const matrix& m, bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color)
 		{
 			if (s_render_handler)
 			{

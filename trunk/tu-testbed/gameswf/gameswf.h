@@ -21,7 +21,7 @@ class weak_proxy;	// forward decl; defined in base/smart_ptr.h
 
 // @@ forward decl to avoid including base/image.h; TODO change the
 // render_handler interface to not depend on these structs at all.
-namespace image { struct rgb; struct rgba; }
+namespace image { struct rgb; struct rgba; struct image_base; }
 
 // forward decl
 namespace jpeg { struct input; }
@@ -929,12 +929,16 @@ namespace gameswf
 		unsigned int	m_texture_id;		// nuke?
 		int		m_original_width;	// nuke?
 		int		m_original_height;	// nuke?
+
+		virtual void layout_image(image::image_base* im) { };
+		image::image_base* m_suspended_image;
 		
 		bitmap_info()
 			:
 			m_texture_id(0),
 			m_original_width(0),
-			m_original_height(0)
+			m_original_height(0),
+			m_suspended_image(0)
 		{
 		}
 	};
@@ -995,7 +999,7 @@ namespace gameswf
 		};
 		virtual void	fill_style_disable(int fill_side) = 0;
 		virtual void	fill_style_color(int fill_side, rgba color) = 0;
-		virtual void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm) = 0;
+		virtual void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm) = 0;
 		
 		virtual void	line_style_disable() = 0;
 		virtual void	line_style_color(rgba color) = 0;
@@ -1006,7 +1010,7 @@ namespace gameswf
 		// current transforms.
 		virtual void	draw_bitmap(
 			const matrix&		m,
-			const bitmap_info*	bi,
+			bitmap_info*	bi,
 			const rect&		coords,
 			const rect&		uv_coords,
 			rgba			color) = 0;

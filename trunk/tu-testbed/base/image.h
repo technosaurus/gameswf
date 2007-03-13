@@ -19,12 +19,22 @@ namespace image
 {
 	struct image_base
 	{
+		enum id_image
+		{
+			INVALID,
+			RGB,
+			RGBA,
+			ALPHA,
+			ROW
+		};
+
+		id_image m_type;
 		Uint8*	m_data;
 		int	m_width;
 		int	m_height;
 		int	m_pitch;	// byte offset from one row to the next
 
-		image_base(Uint8* data, int width, int height, int pitch);
+		image_base(Uint8* data, int width, int height, int pitch, id_image type);
 	};
 
 	// 24-bit RGB image.  Packed data, red byte first (RGBRGB...)

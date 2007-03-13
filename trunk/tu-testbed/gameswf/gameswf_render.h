@@ -69,7 +69,7 @@ namespace gameswf
 
 		void	fill_style_disable(int fill_side);
 		void	fill_style_color(int fill_side, rgba color);
-		void	fill_style_bitmap(int fill_side, const bitmap_info* bi, const matrix& m, render_handler::bitmap_wrap_mode wm);
+		void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, render_handler::bitmap_wrap_mode wm);
 
 		void	line_style_disable();
 		void	line_style_color(rgba color);
@@ -82,7 +82,7 @@ namespace gameswf
 		// Special function to draw a rectangular bitmap;
 		// intended for textured glyph rendering.  Ignores
 		// current transforms.
-		void	draw_bitmap(const matrix& m, const bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color);
+		void	draw_bitmap(const matrix& m, bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color);
 
 	};	// end namespace render
 };	// end namespace gameswf

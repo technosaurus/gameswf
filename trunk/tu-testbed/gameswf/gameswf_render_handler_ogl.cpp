@@ -14,7 +14,6 @@
 
 #include <string.h>	// for memset()
 
-
 // choose the resampling method:
 // 1 = hardware (experimental, should be fast, somewhat buggy)
 // 2 = fast software bilinear (default)
@@ -31,6 +30,16 @@
 // looking too blurry.  (Also applies to text rendering.)
 #define GENERATE_MIPMAPS 0
 
+
+//inline bool opengl_accessible()
+//{
+//#ifdef _WIN32
+//	return wglGetCurrentContext() != 0;
+//#else
+//	return glXGetCurrentContext() != 0;
+//#endif
+//}
+
 // bitmap_info_ogl declaration
 struct bitmap_info_ogl : public gameswf::bitmap_info
 {
@@ -38,6 +47,11 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 	bitmap_info_ogl(int width, int height, Uint8* data);
 	bitmap_info_ogl(image::rgb* im);
 	bitmap_info_ogl(image::rgba* im);
+	virtual void layout_image(image::image_base* im);
+
+	void layout_row(int width, int height, Uint8* data);
+	void layout_rgb(image::rgb* im);
+	void layout_rgba(image::rgba* im);
 
 	~bitmap_info_ogl()
 	{
@@ -122,7 +136,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		};
 		mode	m_mode;
 		gameswf::rgba	m_color;
-		const gameswf::bitmap_info*	m_bitmap_info;
+		gameswf::bitmap_info*	m_bitmap_info;
 		gameswf::matrix	m_bitmap_matrix;
 		gameswf::cxform	m_bitmap_color_transform;
 		bool	m_has_nonzero_bitmap_additive_color;
@@ -168,6 +182,13 @@ struct render_handler_ogl : public gameswf::render_handler
 							  m_bitmap_color_transform.m_[2][0],
 							  m_bitmap_color_transform.m_[3][0]
 							  );
+					}
+
+					if (m_bitmap_info->m_texture_id == 0 && m_bitmap_info->m_suspended_image != NULL)
+					{
+						m_bitmap_info->layout_image(m_bitmap_info->m_suspended_image);
+						delete m_bitmap_info->m_suspended_image;
+						m_bitmap_info->m_suspended_image = NULL;
 					}
 
 					glBindTexture(GL_TEXTURE_2D, m_bitmap_info->m_texture_id);
@@ -256,7 +277,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		void	disable() { m_mode = INVALID; }
 		void	set_color(gameswf::rgba color) { m_mode = COLOR; m_color = color; }
-		void	set_bitmap(const gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm, const gameswf::cxform& color_transform)
+		void	set_bitmap(gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm, const gameswf::cxform& color_transform)
 		{
 			m_mode = (wm == WRAP_REPEAT) ? BITMAP_WRAP : BITMAP_CLAMP;
 			m_bitmap_info = bi;
@@ -532,7 +553,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	fill_style_bitmap(int fill_side, const gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm)
+	void	fill_style_bitmap(int fill_side, gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm)
 	{
 		assert(fill_side >= 0 && fill_side < 2);
 		m_current_styles[fill_side].set_bitmap(bi, m, wm, m_current_cxform);
@@ -693,7 +714,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	void	draw_bitmap(
 		const gameswf::matrix& m,
-		const gameswf::bitmap_info* bi,
+		gameswf::bitmap_info* bi,
 		const gameswf::rect& coords,
 		const gameswf::rect& uv_coords,
 		gameswf::rgba color)
@@ -713,6 +734,13 @@ struct render_handler_ogl : public gameswf::render_handler
 		m.transform(&c, gameswf::point(coords.m_x_min, coords.m_y_max));
 		d.m_x = b.m_x + c.m_x - a.m_x;
 		d.m_y = b.m_y + c.m_y - a.m_y;
+
+		if (bi->m_texture_id == 0 && bi->m_suspended_image != NULL)
+		{
+			bi->layout_image(bi->m_suspended_image);
+			delete bi->m_suspended_image;
+			bi->m_suspended_image = NULL;
+		}
 
 		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
 		glEnable(GL_TEXTURE_2D);
@@ -978,16 +1006,25 @@ bitmap_info_ogl::bitmap_info_ogl()
 	m_original_height = 0;
 }
 
-
 bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* data)
+{
+	assert(width > 0);
+	assert(height > 0);
+	assert(data);
+
+
+	image::image_base* im = new image::image_base(new Uint8[width * height], width, height, 1, image::image_base::ROW);
+
+	memcpy(im->m_data, data, width * height);
+	m_suspended_image = im;
+}
+
+void bitmap_info_ogl::layout_row(int width, int height, Uint8* data)
 // Initialize this bitmap_info to an alpha image
 // containing the specified data (1 byte per texel).
 //
 // !! Munges *data in order to create mipmaps !!
 {
-	assert(width > 0);
-	assert(height > 0);
-	assert(data);
 
 	m_texture_id = 0;
 	
@@ -1027,6 +1064,13 @@ bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* data)
 
 
 bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
+{
+	assert(im);
+	m_suspended_image = image::create_rgb(im->m_width, im->m_height);
+	memcpy(m_suspended_image->m_data, im->m_data, im->m_pitch * im->m_height);
+}
+
+void bitmap_info_ogl::layout_rgb(image::rgb* im)
 // NOTE: This function destroys im's data in the process of making mipmaps.
 {
 	assert(im);
@@ -1103,8 +1147,14 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 	}
 }
 
-
 bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
+{
+	assert(im);
+	m_suspended_image = image::create_rgba(im->m_width, im->m_height);
+	memcpy(m_suspended_image->m_data, im->m_data, im->m_pitch * im->m_height);
+}
+
+void bitmap_info_ogl::layout_rgba(image::rgba* im)
 // Version of the constructor that takes an image with alpha.
 // NOTE: This function destroys im's data in the process of making mipmaps.
 {
@@ -1179,6 +1229,25 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 #if GENERATE_MIPMAPS
 		generate_mipmaps(GL_RGBA, GL_RGBA, 4, im);
 #endif // GENERATE_MIPMAPS
+	}
+}
+
+void bitmap_info_ogl::layout_image(image::image_base* im)
+{
+	assert(im);
+	switch (im->m_type)
+	{
+		case image::image_base::RGB:
+			layout_rgb((image::rgb*) im);
+			break;
+		case image::image_base::RGBA:
+			layout_rgba((image::rgba*) im);
+			break;
+		case image::image_base::ROW:
+			layout_row(im->m_width, im->m_height, im->m_data);
+			break;
+		default:
+			assert(0);
 	}
 }
 
