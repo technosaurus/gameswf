@@ -24,8 +24,7 @@ namespace image
 			INVALID,
 			RGB,
 			RGBA,
-			ALPHA,
-			ROW
+			ALPHA
 		};
 
 		id_image m_type;
@@ -35,6 +34,7 @@ namespace image
 		int	m_pitch;	// byte offset from one row to the next
 
 		image_base(Uint8* data, int width, int height, int pitch, id_image type);
+		virtual ~image_base();
 	};
 
 	// 24-bit RGB image.  Packed data, red byte first (RGBRGB...)

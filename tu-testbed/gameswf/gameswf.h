@@ -14,6 +14,7 @@
 #include <ctype.h>	// for poxy wchar_t
 #include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
 #include <assert.h>
+#include "base/image.h"	// for delete m_suspended_image
 
 class tu_file;
 class render_handler;
@@ -941,6 +942,12 @@ namespace gameswf
 			m_suspended_image(0)
 		{
 		}
+		
+		~bitmap_info()
+		{
+			delete m_suspended_image;
+		}
+
 	};
 
 	// You must define a subclass of render_handler, and pass an
@@ -956,9 +963,6 @@ namespace gameswf
 		virtual bitmap_info*	create_bitmap_info_rgba(image::rgba* im) = 0;
 		virtual YUV_video*	create_YUV_video() = 0;
 
-		virtual void	delete_bitmap_info(bitmap_info* bi) = 0;
-		virtual void	delete_YUV_video(YUV_video* vi) = 0;
-		
 		// Bracket the displaying of a frame from a movie.
 		// Fill the background color, and set up default
 		// transforms, etc.

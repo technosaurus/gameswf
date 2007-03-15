@@ -30,6 +30,14 @@ namespace image
 	{
 	}
 
+	image_base::~image_base()
+	{
+		if (m_data) 
+		{
+			delete [] m_data;
+			m_data = 0;
+		}
+	}
 
 	Uint8*	scanline(image_base* surf, int y)
 	{
@@ -70,11 +78,11 @@ namespace image
 
 	rgb::~rgb()
 	{
-		if (m_data) {
+//		if (m_data) {
 //			dlfree(m_data);
-			delete [] m_data;
-			m_data = 0;
-		}
+//			delete [] m_data;
+//			m_data = 0;
+//		}
 	}
 
 
@@ -109,11 +117,11 @@ namespace image
 
 	rgba::~rgba()
 	{
-		if (m_data) {
+//		if (m_data) {
 //			dlfree(m_data);
-			delete [] m_data;
-			m_data = 0;
-		}
+//			delete [] m_data;
+//			m_data = 0;
+//		}
 	}
 
 
@@ -171,11 +179,11 @@ namespace image
 
 	alpha::~alpha()
 	{
-		if (m_data) {
+//		if (m_data) {
 //			dlfree(m_data);
-			delete [] m_data;
-			m_data = 0;
-		}
+//			delete [] m_data;
+//			m_data = 0;
+//		}
 	}
 
 

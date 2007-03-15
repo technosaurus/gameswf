@@ -49,7 +49,7 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 	bitmap_info_ogl(image::rgba* im);
 	virtual void layout_image(image::image_base* im);
 
-	void layout_row(int width, int height, Uint8* data);
+	void layout_alpha(int width, int height, Uint8* data);
 	void layout_rgb(image::rgb* im);
 	void layout_rgba(image::rgba* im);
 
@@ -358,12 +358,6 @@ struct render_handler_ogl : public gameswf::render_handler
 		return new bitmap_info_ogl(w, h, data);
 	}
 
-	void	delete_bitmap_info(gameswf::bitmap_info* bi)
-	// Delete the given bitmap info struct.
-	{
-		delete bi;
-	}
-
 	gameswf::YUV_video*	create_YUV_video()
 	{
 		if (ogl::is_combiner())
@@ -371,11 +365,6 @@ struct render_handler_ogl : public gameswf::render_handler
 			return new YUV_video_ogl_NV();
 		}
 		return new YUV_video_ogl();
-	}
-
-	void	delete_YUV_video(gameswf::YUV_video* yuv)
-	{
-		if (yuv) delete yuv;
 	}
 
 	~render_handler_ogl()
@@ -1011,15 +1000,11 @@ bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* data)
 	assert(width > 0);
 	assert(height > 0);
 	assert(data);
-
-
-	image::image_base* im = new image::image_base(new Uint8[width * height], width, height, 1, image::image_base::ROW);
-
-	memcpy(im->m_data, data, width * height);
-	m_suspended_image = im;
+	m_suspended_image = image::create_alpha(width, height);
+	memcpy(m_suspended_image->m_data, data, m_suspended_image->m_pitch * m_suspended_image->m_height);
 }
 
-void bitmap_info_ogl::layout_row(int width, int height, Uint8* data)
+void bitmap_info_ogl::layout_alpha(int width, int height, Uint8* data)
 // Initialize this bitmap_info to an alpha image
 // containing the specified data (1 byte per texel).
 //
@@ -1243,8 +1228,8 @@ void bitmap_info_ogl::layout_image(image::image_base* im)
 		case image::image_base::RGBA:
 			layout_rgba((image::rgba*) im);
 			break;
-		case image::image_base::ROW:
-			layout_row(im->m_width, im->m_height, im->m_data);
+		case image::image_base::ALPHA:
+			layout_alpha(im->m_width, im->m_height, im->m_data);
 			break;
 		default:
 			assert(0);

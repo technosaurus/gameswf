@@ -66,7 +66,7 @@ namespace gameswf
 		m_is_alive = false;
 		m_decoder.signal();
 		tu_wait_thread(m_thread);
-		render::delete_YUV_video(m_yuv);
+		delete m_yuv;
 	}
 
 	void as_netstream::play(const char* url)
