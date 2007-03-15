@@ -30,6 +30,8 @@ namespace gameswf
 	class Timer;
 	struct movie_definition_sub;
 
+	void set_progress_callback(progress_callback handler);
+
 	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
 	bool get_tag_loader(int tag_type, loader_function* lf);
 
