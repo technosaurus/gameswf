@@ -1,5 +1,11 @@
 2007-03-15  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/gameswf_test_ogl.cpp: optimized progress bar perfomance
+	* gameswf/gameswf_impl.cpp,
+	* gameswf/gameswf_movie_def.(cpp,h): fixed progress bar broken before
+
+2007-03-15  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* a lot of files: gameswf_impl is divided into 2 parts:
 	gameswf_impl & gameswf_movie_def
 

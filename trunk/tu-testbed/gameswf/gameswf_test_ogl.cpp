@@ -5,6 +5,11 @@
 
 // A minimal test player app for the gameswf library.
 
+#if defined(WIN32) && defined(_DEBUG) && defined(USE_STACKWALKER)
+	#include <windows.h>
+	#include "Stackwalker.h"
+#endif
+
 
 #include "SDL.h"
 #include "SDL_thread.h"
@@ -210,6 +215,7 @@ static int s_total_tags = 0, s_loaded_tags = 0;
 static int s_wlogo = 0, s_hlogo = 0;
 static gameswf::render_handler*	s_logo_render = NULL;
 static gameswf::bitmap_info* s_logo_bi = NULL;
+static int s_logo_tick = 0;
 
 static void show_logo()
 {
@@ -303,7 +309,11 @@ static void	test_progress_callback(unsigned int loaded_tags, unsigned int total_
 	glVertex2f(-1.0f, 1.0f);
 	glEnd();
 
-	SDL_GL_SwapBuffers();
+	if (SDL_GetTicks() - s_logo_tick > 500)
+	{
+		s_logo_tick = SDL_GetTicks();
+		SDL_GL_SwapBuffers();
+	}
 
 	// initial loading are finished
 	if (s_loaded_tags >= s_total_tags)
@@ -320,6 +330,11 @@ static void	test_progress_callback(unsigned int loaded_tags, unsigned int total_
 
 int	main(int argc, char *argv[])
 {
+
+#if defined(WIN32) && defined(_DEBUG) && defined(USE_STACKWALKER)
+  InitAllocCheck(ACOutput_XML);
+#endif
+
 	assert(tu_types_validate());
 
 	const char* infile = NULL;
@@ -1121,6 +1136,10 @@ done:
 
 	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 	gameswf::clear();
+
+#if defined(WIN32) && defined(_DEBUG) && defined(USE_STACKWALKER)
+	DeInitAllocCheck();
+#endif
 
 	return 0;
 }

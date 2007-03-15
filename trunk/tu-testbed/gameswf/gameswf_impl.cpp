@@ -94,16 +94,14 @@ namespace gameswf
 	}
 
 	//
-	// progress callback stuff (from Vitaly)
+	// progress callback stuff
 	//
 
-	static progress_callback	s_progress_function = NULL;
-
-	void	register_progress_callback(progress_callback progress_handle)
+	void	register_progress_callback(progress_callback handler)
 		// Host calls this to register a function for progress bar handling
 		// during loading movies.
 	{
-		s_progress_function = progress_handle;
+		set_progress_callback(handler);
 	}
 
 	//

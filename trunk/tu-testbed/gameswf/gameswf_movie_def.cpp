@@ -37,6 +37,12 @@ namespace gameswf
 		return 0;
 	}
 
+	static progress_callback	s_progress_function = NULL;
+	void set_progress_callback(progress_callback handler)
+	{
+		s_progress_function = handler;
+	}
+
 	// Keep a table of loader functions for the different tag types.
 	static hash<int, loader_function>	s_tag_loaders;
 	bool get_tag_loader(int tag_type, loader_function* lf)
@@ -488,9 +494,9 @@ namespace gameswf
 		{
 			int	tag_type = str.open_tag();
 
-//vv			if (s_progress_function != NULL)
+			if (s_progress_function != NULL)
 			{
-//vv				s_progress_function((Uint32) str.get_position(), file_end_pos);
+				s_progress_function((Uint32) str.get_position(), file_end_pos);
 			}
 
 			loader_function	lf = NULL;
