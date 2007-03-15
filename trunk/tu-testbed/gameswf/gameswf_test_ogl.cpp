@@ -5,11 +5,7 @@
 
 // A minimal test player app for the gameswf library.
 
-#if defined(WIN32) && defined(_DEBUG) && defined(USE_STACKWALKER)
-	#include <windows.h>
-	#include "Stackwalker.h"
-#endif
-
+#include "base/tu_memdebug.h"	// must be the first in the include list
 
 #include "SDL.h"
 #include "SDL_thread.h"
@@ -331,9 +327,7 @@ static void	test_progress_callback(unsigned int loaded_tags, unsigned int total_
 int	main(int argc, char *argv[])
 {
 
-#if defined(WIN32) && defined(_DEBUG) && defined(USE_STACKWALKER)
-  InitAllocCheck(ACOutput_XML);
-#endif
+	tu_memdebug::open(tu_memdebug::ALLOCCHECK);
 
 	assert(tu_types_validate());
 
@@ -1137,9 +1131,7 @@ done:
 	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 	gameswf::clear();
 
-#if defined(WIN32) && defined(_DEBUG) && defined(USE_STACKWALKER)
-	DeInitAllocCheck();
-#endif
+	tu_memdebug::close();
 
 	return 0;
 }
