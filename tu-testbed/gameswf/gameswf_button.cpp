@@ -12,6 +12,7 @@
 #include "gameswf_render.h"
 #include "gameswf_sound.h"
 #include "gameswf_stream.h"
+#include "gameswf_movie_def.h"
 
 /*
 

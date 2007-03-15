@@ -1,4 +1,9 @@
 2007-03-15  Vitaly Alexeev <tishka92@yahoo.com>
+	
+	* a lot of files: gameswf_impl is divided into 2 parts:
+	gameswf_impl & gameswf_movie_def
+
+2007-03-15  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* base/image.(cpp,h): added ~image_base(),
 	moved ~rgb(), ~rgba() and ~alpha() code to ~image_base()

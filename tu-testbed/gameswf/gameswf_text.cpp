@@ -17,6 +17,7 @@
 #include "gameswf_render.h"
 #include "gameswf_as_classes/as_textformat.h"
 #include "gameswf_root.h"
+#include "gameswf_movie_def.h"
 
 namespace gameswf
 {
