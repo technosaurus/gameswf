@@ -552,9 +552,9 @@ int	main(int argc, char *argv[])
 		}
 	}
 
-	if (do_render) {
-		gameswf::register_progress_callback(test_progress_callback);
-	}
+//	if (do_render) {
+//		gameswf::register_progress_callback(test_progress_callback);
+//	}
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_fscommand_callback(fs_callback);
 	if (s_verbose == true) {

@@ -413,11 +413,10 @@ namespace gameswf
 
 		movie_def_impl*	m = new movie_def_impl(DO_LOAD_BITMAPS, DO_LOAD_FONT_SHAPES);
 
-//		m->m_in = in;
-//		tu_create_thread(movie_def_loader, m);
-
 		m->read(in);
-		delete in;
+
+		// "in" will be deleted after termination of the loader thread
+		//	delete in;
 
 		if (m && s_use_cache_files)
 		{
@@ -1769,6 +1768,7 @@ namespace gameswf
 		stringi_hash<int>	     m_named_frames;	// stores 0-based frame #'s
 		int			     m_frame_count;
 		int			     m_loading_frame;
+		tu_condition m_frame;
 
 		sprite_definition(movie_definition_sub* m):
 			m_movie_def(m),
@@ -1806,6 +1806,16 @@ namespace gameswf
 		virtual float	get_height_pixels() const { return 1; }
 		virtual int	get_frame_count() const { return m_frame_count; }
 		virtual float	get_frame_rate() const { return m_movie_def->get_frame_rate(); }
+
+		virtual void	wait_frame(int frame)
+		{
+			while (frame > m_loading_frame - 1)
+			{
+//				printf("wait for sprite frame %d, loaded %d\n", frame + 1, m_loading_frame);
+				m_frame.wait();
+			}
+		}
+
 		virtual int	get_loading_frame() const { return m_loading_frame; }
 		virtual int	get_version() const { return m_movie_def->get_version(); }
 		virtual void	add_character(int id, character_def* ch) { log_error("add_character tag appears in sprite tags!\n"); }
@@ -1941,6 +1951,8 @@ namespace gameswf
 					// show frame tag -- advance to the next frame.
 					IF_VERBOSE_PARSE(log_msg("  show_frame (sprite)\n"));
 					m_loading_frame++;
+//					printf("signal sprite frame %d\n", m_loading_frame);
+					m_frame.signal();
 				}
 				else if (get_tag_loader(tag_type, &lf))
 				{
@@ -2329,62 +2341,8 @@ namespace gameswf
 			return NULL;
 		}
 
-
-		/* sprite_instance */
-/*		virtual void	advance(float delta_time)
-		{
-			// Keep this (particularly m_as_environment) alive during execution!
-			smart_ptr<as_object_interface>	this_ptr(this);
-
-			assert(m_def != NULL && m_root != NULL);
-
-			// Advance everything in the display list.
-			m_display_list.advance(delta_time);
-
-			// mouse drag.
-			character::do_mouse_drag();
-
-			m_time_remainder += delta_time;
-
-			const float	frame_time = 1.0f / m_root->get_frame_rate();	// @@ cache this
-
-			// Check for the end of frame
-			if (m_time_remainder >= frame_time)
-			{
-				m_time_remainder -= frame_time;
-
-				// Update current and next frames.
-				if (m_play_state == PLAY)
-				{
-					int	current_frame0 = m_current_frame;
-					increment_frame_and_check_for_loop();
-
-					// Execute the current frame's tags.
-					if (m_current_frame != current_frame0)
-					{
-						execute_frame_tags(m_current_frame);
-					}
-				}
-
-				// Dispatch onEnterFrame event.
-				on_event(event_id::ENTER_FRAME);
-
-				do_actions();
-
-				// Clean up display list (remove dead objects).
-				m_display_list.update();
-			}
-
-			// Skip excess time.  TODO root caller should
-			// loop to prevent this happening; probably
-			// only root should keep m_time_remainder, and
-			// advance(dt) should be a discrete tick()
-			// with no dt.
-			m_time_remainder = fmod(m_time_remainder, frame_time);
-		}*/
-
  
-		// Very-very "thin" thing. 100 times think before changing
+		// Very-very "thin" thing. 100 times think before updating
 		void advance(float delta_time) 
 		{ 
 			// Vitaly: 
@@ -2481,6 +2439,8 @@ namespace gameswf
 
 			assert(frame >= 0);
 			assert(frame < m_def->get_frame_count());
+
+			m_def->wait_frame(frame);
 
 			// Execute this frame's init actions, if necessary.
 			if (m_init_actions_executed[frame] == false)

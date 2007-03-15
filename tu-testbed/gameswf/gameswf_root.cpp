@@ -413,12 +413,10 @@ namespace gameswf
 
 		void	movie_root::advance(float delta_time)
 		{
-			// Vitaly: lock gameswf engine
-			// video is running in separate thread and
-			// it calls gameswf functions from separate thread
-			// to set status of netstream object
-			// Other decision - the organization of multithread queue
-			// What is better ?
+			// Lock gameswf engine. Video is running in separate thread and
+			// it calls gameswf functions from separate thread to set
+			// status of netstream object
+
 			locker lock(get_gameswf_mutex());
 
 			// Handle the mouse.

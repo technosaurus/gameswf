@@ -34,6 +34,11 @@ namespace gameswf
 		return SDL_CreateThread(fn, data);
 	}
 
+	inline void tu_kill_thread(tu_thread* thread)
+	{
+		return SDL_KillThread(thread);
+	}
+
 	inline int tu_mutex_lock(tu_mutex* mutex)
 	{
 		return SDL_LockMutex(mutex);
