@@ -6,6 +6,7 @@
 #include "../gameswf_as_classes/as_sound.h"
 #include "../gameswf_log.h"
 #include "../gameswf_sound.h"
+#include "../gameswf_movie_def.h"
 
 namespace gameswf
 {

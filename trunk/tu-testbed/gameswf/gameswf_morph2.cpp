@@ -8,6 +8,7 @@
 
 #include "gameswf_morph2.h"
 #include "gameswf_stream.h"
+#include "gameswf_movie_def.h"
 
 
 namespace gameswf

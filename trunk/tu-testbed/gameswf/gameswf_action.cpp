@@ -10,6 +10,7 @@
 #include "gameswf_impl.h"
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
+#include "gameswf_movie_def.h"
 #include "base/tu_random.h"
 
 #include "gameswf_timers.h"

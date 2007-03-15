@@ -10,6 +10,7 @@
 // http://sswf.sourceforge.net/SWFalexref.html
 // http://www.openswf.org
 
+#include "gameswf_movie_def.h"
 #include "gameswf_render.h"
 #include "gameswf_timers.h"
 #include "gameswf_root.h"

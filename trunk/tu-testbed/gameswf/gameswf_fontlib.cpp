@@ -17,6 +17,7 @@
 #include "gameswf_styles.h"
 #include "gameswf_tesselate.h"
 #include "gameswf_render.h"
+#include "gameswf_movie_def.h"
 
 
 namespace gameswf
