@@ -62,16 +62,6 @@ namespace gameswf
 			else return NULL; //hack new bogus_bi;
 		}
 
-		void	delete_bitmap_info(bitmap_info* bi)
-		{
-			if (s_render_handler) s_render_handler->delete_bitmap_info(bi);
-		}
-
-		void	delete_YUV_video(YUV_video* yuv)
-		{
-			if (s_render_handler) s_render_handler->delete_YUV_video(yuv);
-		}
-
 		// Bracket the displaying of a frame from a movie.
 		// Fill the background color, and set up default
 		// transforms, etc.
