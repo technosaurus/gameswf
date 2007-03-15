@@ -17,6 +17,7 @@
 #include "gameswf_font.h"
 #include "gameswf_fontlib.h"
 #include "gameswf_stream.h"
+#include "gameswf_mutex.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
 
@@ -29,11 +30,10 @@ namespace gameswf
 {
 
 	// it's running in loader thread
-	static int movie_def_loader(void* arg)
+	int movie_def_loader(void* arg)
 	{
 		movie_def_impl* m = (movie_def_impl*) arg;
-		m->read(m->m_in);
-		delete m->m_in;
+		m->read_tags();
 		return 0;
 	}
 
@@ -108,12 +108,24 @@ namespace gameswf
 		m_frame_count(0),
 		m_version(0),
 		m_loading_frame(0),
-		m_jpeg_in(0)
+		m_jpeg_in(0),
+		m_str(NULL),
+		m_file_end_pos(0),
+		m_zlib_in(NULL),
+		m_origin_in(NULL),
+		m_thread(NULL),
+		m_break(false)
 	{
 	}
 
 	movie_def_impl::~movie_def_impl()
 	{
+		// terminate thread
+		// it's used when user pressed Esc button
+		m_break = true;
+		tu_wait_thread(m_thread);
+		m_thread = NULL;
+
 		// Release our playlist data.
 		{for (int i = 0, n = m_playlist.size(); i < n; i++)
 		{
@@ -142,6 +154,15 @@ namespace gameswf
 	float	movie_def_impl::get_height_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
 
 	int	movie_def_impl::get_version() const { return m_version; }
+
+	void	movie_def_impl::wait_frame(int frame)
+	{
+		while (frame > m_loading_frame - 1)
+		{
+//			printf("wait for root frame %d, loaded %d\n", frame + 1, m_loading_frame);
+			m_frame.wait();
+		}
+	}
 
 	int	movie_def_impl::get_loading_frame() const { return m_loading_frame; }
 
@@ -434,10 +455,11 @@ namespace gameswf
 	void	movie_def_impl::read(tu_file* in)
 		// Read a .SWF movie.
 	{
+		m_origin_in = in;
 		Uint32	file_start_pos = in->get_position();
 		Uint32	header = in->read_le32();
 		m_file_length = in->read_le32();
-		Uint32	file_end_pos = file_start_pos + m_file_length;
+		m_file_end_pos = file_start_pos + m_file_length;
 
 		m_version = (header >> 24) & 255;
 		if ((header & 0x0FFFFFF) != 0x00535746
@@ -451,7 +473,7 @@ namespace gameswf
 
 		IF_VERBOSE_PARSE(log_msg("version = %d, file_length = %d\n", m_version, m_file_length));
 
-		tu_file*	original_in = NULL;
+		m_zlib_in = NULL;
 		if (compressed)
 		{
 #if TU_CONFIG_LINK_TO_ZLIB == 0
@@ -460,23 +482,23 @@ namespace gameswf
 #endif
 
 			IF_VERBOSE_PARSE(log_msg("file is compressed.\n"));
-			original_in = in;
 
 			// Uncompress the input as we read it.
-			in = zlib_adapter::make_inflater(original_in);
+			in = zlib_adapter::make_inflater(in);
+			m_zlib_in = in;
 
 			// Subtract the size of the 8-byte header, since
 			// it's not included in the compressed
 			// stream length.
-			file_end_pos = m_file_length - 8;
+			m_file_end_pos = m_file_length - 8;
 		}
 
-		stream	str(in);
+		m_str = new stream(in);
 
-		m_frame_size.read(&str);
-		m_frame_rate = str.read_u16() / 256.0f;
+		m_frame_size.read(m_str);
+		m_frame_rate = m_str->read_u16() / 256.0f;
 
-		m_frame_count = str.read_u16();
+		m_frame_count = m_str->read_u16();
 
 		// version 4 specific
 		if (m_frame_count  == 0)
@@ -490,13 +512,21 @@ namespace gameswf
 		IF_VERBOSE_PARSE(m_frame_size.print());
 		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
 
-		while ((Uint32) str.get_position() < file_end_pos)
+		m_thread = tu_create_thread(movie_def_loader, this);
+	}
+
+	// is running in loader thread
+	void	movie_def_impl::read_tags()
+	{
+
+		while ((Uint32) m_str->get_position() < m_file_end_pos && m_break == false)
 		{
-			int	tag_type = str.open_tag();
+
+			int	tag_type = m_str->open_tag();
 
 			if (s_progress_function != NULL)
 			{
-				s_progress_function((Uint32) str.get_position(), file_end_pos);
+				s_progress_function((Uint32) m_str->get_position(), m_file_end_pos);
 			}
 
 			loader_function	lf = NULL;
@@ -506,27 +536,29 @@ namespace gameswf
 				// show frame tag -- advance to the next frame.
 				IF_VERBOSE_PARSE(log_msg("  show_frame\n"));
 				m_loading_frame++;
+//				printf("signal root frame %d\n", m_loading_frame);
+				m_frame.signal();
 			}
 			else
 			if (s_tag_loaders.get(tag_type, &lf))
 			{
 				// call the tag loader.	 The tag loader should add
 				// characters or tags to the movie data structure.
-				(*lf)(&str, tag_type, this);
+				(*lf)(m_str, tag_type, this);
 
 			}
 			else
 			{
 				// no tag loader for this tag type.
 				IF_VERBOSE_PARSE(log_msg("*** no tag loader for type %d\n", tag_type));
-				IF_VERBOSE_PARSE(dump_tag_bytes(&str));
+				IF_VERBOSE_PARSE(dump_tag_bytes(m_str));
 			}
 
-			str.close_tag();
+			m_str->close_tag();
 
 			if (tag_type == 0)
 			{
-				if ((unsigned int) str.get_position() != file_end_pos)
+				if ((unsigned int) m_str->get_position() != m_file_end_pos)
 				{
 					// Safety break, so we don't read past the end of the
 					// movie.
@@ -543,11 +575,14 @@ namespace gameswf
 			m_jpeg_in = NULL;
 		}
 
-		if (original_in)
+		if (m_zlib_in)
 		{
 			// Done with the zlib_adapter.
-			delete in;
+			delete m_zlib_in;
 		}
+
+		delete m_str;
+		delete m_origin_in;
 	}
 
 

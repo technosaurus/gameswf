@@ -11,6 +11,7 @@
 
 
 #include "gameswf.h"
+#include "gameswf_mutex.h"
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/smart_ptr.h"
@@ -30,6 +31,8 @@ namespace gameswf
 	class Timer;
 	struct movie_definition_sub;
 
+	
+	int movie_def_loader(void* arg);
 	void set_progress_callback(progress_callback handler);
 
 	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
@@ -47,6 +50,7 @@ namespace gameswf
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
 
 		// For use during creation.
+		virtual void	wait_frame(int frame) = 0;
 		virtual int	get_loading_frame() const = 0;
 		virtual void	add_character(int id, character_def* ch) = 0;
 		virtual void	add_font(int id, font* ch) = 0;
@@ -132,7 +136,13 @@ namespace gameswf
 
 		jpeg::input*	m_jpeg_in;
 
-		tu_file* m_in;
+		stream*	m_str;
+		Uint32	m_file_end_pos;
+		tu_file*	m_zlib_in;
+		tu_file*	m_origin_in;
+		tu_condition m_frame;
+		tu_thread* m_thread;
+		volatile bool m_break;
 
 		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
@@ -144,6 +154,7 @@ namespace gameswf
 		float	get_width_pixels() const;
 		float	get_height_pixels() const;
 		virtual int	get_version() const;
+		virtual void	wait_frame(int frame);
 		virtual int	get_loading_frame() const;
 		uint32	get_file_bytes() const;
 		virtual create_bitmaps_flag	get_create_bitmaps() const;
@@ -177,6 +188,7 @@ namespace gameswf
 
 		virtual const array<execute_tag*>*	get_init_actions(int frame_number);
 		void	read(tu_file* in);
+		void	read_tags();
 		void	get_owned_fonts(array<font*>* fonts);
 
 		void	generate_font_bitmaps();
