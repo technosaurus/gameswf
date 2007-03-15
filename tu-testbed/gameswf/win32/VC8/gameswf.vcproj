@@ -602,6 +602,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\..\base\tu_memdebug.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\..\base\tu_opengl_includes.h"
 				>
 			</File>
@@ -758,11 +762,11 @@
 			Name="leak"
 			>
 			<File
-				RelativePath="..\..\Stackwalker.cpp"
+				RelativePath="..\..\..\base\Stackwalker.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\Stackwalker.h"
+				RelativePath="..\..\..\base\Stackwalker.h"
 				>
 			</File>
 		</Filter>
