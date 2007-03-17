@@ -1,4 +1,4 @@
-// as_color.h	-- Thatcher Ulrich <tu@tulrich.com> 2003, Vitaly Alexeev <tishka92@yahoo.com>	2007
+// as_color.h	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.

@@ -20,6 +20,32 @@ namespace gameswf
 	// sprite built-in ActionScript methods
 	//
 
+	void	sprite_hit_test(const fn_call& fn)
+	{
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+
+		fn.result->set_bool(false);
+		if (fn.nargs == 1) 
+		{
+			// Evaluates the bounding boxes of the target and specified instance,
+			// and returns true if they overlap or intersect at any point.
+			character* ch = fn.env->find_target(fn.arg(0))->cast_to_character();
+			if (ch)
+			{
+				fn.result->set_bool(sprite->hit_test(ch));
+				return;
+			}
+			log_error("hiTest: can't find target\n");
+			return;
+		}
+		log_error("hiTest(x,y,flag) is't implemented yet\n");
+	}
+
 	void	sprite_play(const fn_call& fn)
 	{
 		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;

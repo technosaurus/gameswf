@@ -1,5 +1,11 @@
 2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/gameswf_sprite.(cpp,h),
+	* gameswf/gameswf_as_sprite.(cpp,h): added hitTest() method
+	* gameswf/gameswf_as_classes/as_color.(cpp,h): added comments
+
+2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* gameswf/gameswf.h,
 	* gameswf/gameswf_movie.h,
 	* gameswf/gameswf_action.cpp,
