@@ -128,6 +128,250 @@ namespace gameswf
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 	}
 
+	sprite_instance::~sprite_instance()
+	{
+		m_display_list.clear();
+		//m_root->drop_ref();
+	}
+
+	// sprite instance of add_interval_handler()
+	int sprite_instance::add_interval_timer(void *timer)
+	{
+		// log_msg("FIXME: %s:\n", __FUNCTION__);
+		return m_root->add_interval_timer(timer);
+	}
+
+	void	sprite_instance::clear_interval_timer(int x)
+	{
+		// log_msg("FIXME: %s:\n", __FUNCTION__);
+		m_root->clear_interval_timer(x);
+	}
+
+
+	bool sprite_instance::has_keypress_event()
+	{
+		for (hash<event_id, as_value>::iterator it = m_event_handlers.begin();
+			it != m_event_handlers.end(); ++it)
+		{
+			if (it->first.m_id == event_id::KEY_PRESS)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	void	sprite_instance::do_something(void *timer)
+	{
+		as_value	val;
+		as_object      *obj, *this_ptr;
+		as_environment *as_env;
+
+		//printf("FIXME: %s:\n", __FUNCTION__);
+		Timer *ptr = (Timer *)timer;
+		//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
+
+		const as_value&	timer_method = ptr->getASFunction();
+		as_env = ptr->getASEnvironment();
+		this_ptr = ptr->getASObject();
+		obj = ptr->getObject();
+		//m_as_environment.push(obj);
+
+		as_c_function_ptr	cfunc = timer_method.to_c_function();
+		if (cfunc) {
+			// It's a C function. Call it.
+			//log_msg("Calling C function for interval timer\n");
+			//(*cfunc)(&val, obj, as_env, 0, 0);
+			(*cfunc)(fn_call(&val, obj, &m_as_environment, 0, 0));
+
+		} else if (as_as_function* as_func = timer_method.to_as_function()) {
+			// It's an ActionScript function. Call it.
+			as_value method;
+			//log_msg("Calling ActionScript function for interval timer\n");
+			(*as_func)(fn_call(&val, (as_object_interface *)this_ptr, as_env, 0, 0));
+			//(*as_func)(&val, (as_object_interface *)this_ptr, &m_as_environment, 1, 1);
+		} else {
+			log_error("error in call_method(): method is not a function\n");
+		}    
+	}	
+
+	float	sprite_instance::get_width()
+	{
+		float	w = 0;
+		int i, n = m_display_list.get_character_count();
+		character* ch;
+		for (i = 0; i < n; i++)
+		{
+			ch = m_display_list.get_character(i);
+			if (ch != NULL)
+			{
+				float ch_w = ch->get_width();
+				if (ch_w > w)
+				{
+					w = ch_w;
+				}
+			}
+		}
+
+		return w;
+	}
+
+	float	sprite_instance::get_height()
+	{
+		float	h = 0; 
+		int i, n = m_display_list.get_character_count();
+		character* ch;
+		for (i=0; i < n; i++)
+		{
+			ch = m_display_list.get_character(i);
+			if (ch != NULL)
+			{
+				float	ch_h = ch->get_height();
+				if (ch_h > h)
+				{
+					h = ch_h;
+				}
+			}
+		}
+		return h;
+	}
+
+	character* sprite_instance::add_empty_movieclip(const char* name, int depth)
+	{
+		cxform color_transform;
+		matrix matrix;
+
+		// empty_sprite_def will be deleted during deliting sprite
+		sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+
+		sprite_instance* sprite =	new sprite_instance(empty_sprite_def, m_root, this, 0);
+		sprite->set_name(name);
+
+		m_display_list.add_display_object(
+			sprite,
+			depth,
+			true,
+			color_transform,
+			matrix,
+			0.0f,
+			0); 
+
+		return sprite;
+	}
+
+	void	sprite_instance::set_play_state(play_state s)
+		// Stop or play the sprite.
+	{
+		//			if (m_play_state != s)
+		//			{
+		//				m_time_remainder = 0;
+		//			}
+
+		m_play_state = s;
+	}
+
+	sprite_instance::play_state	sprite_instance::get_play_state() const
+	{
+		return m_play_state; 
+	}
+
+	bool sprite_instance::can_handle_mouse_event()
+		// Return true if we have any mouse event handlers.
+	{
+		// We should cache this!
+		as_value dummy;
+
+		// Functions that qualify as mouse event handlers.
+		const char* FN_NAMES[] = {
+			"onKeyPress",
+			"onRelease",
+			"onDragOver",
+			"onDragOut",
+			"onPress",
+			"onReleaseOutside",
+			"onRollout",
+			"onRollover",
+		};
+		for (int i = 0; i < ARRAYSIZE(FN_NAMES); i++) {
+			if (get_member(FN_NAMES[i], &dummy)) {
+				return true;
+			}
+		}
+
+		// Event handlers that qualify as mouse event handlers.
+		const event_id::id_code EH_IDS[] = {
+			event_id::PRESS,
+			event_id::RELEASE,
+			event_id::RELEASE_OUTSIDE,
+			event_id::ROLL_OVER,
+			event_id::ROLL_OUT,
+			event_id::DRAG_OVER,
+			event_id::DRAG_OUT,
+		};
+		{for (int i = 0; i < ARRAYSIZE(EH_IDS); i++) {
+			if (get_event_handler(EH_IDS[i], &dummy)) {
+				return true;
+			}
+		}}
+
+		return false;
+	}
+
+
+	movie*	sprite_instance::get_topmost_mouse_entity(float x, float y)
+		// Return the topmost entity that the given point
+		// covers that can receive mouse events.  NULL if
+		// none.  Coords are in parent's frame.
+	{
+		if (get_visible() == false) {
+			return NULL;
+		}
+
+		matrix	m = get_matrix();
+		point	p;
+		m.transform_by_inverse(&p, point(x, y));
+
+		movie*	top_te = NULL;
+		bool this_has_focus = false;
+		int i, n = m_display_list.get_character_count();
+
+		// Go backwards, to check higher objects first.
+		for (i = n - 1; i >= 0; i--)
+		{
+			character* ch = m_display_list.get_character(i);
+
+			if (ch != NULL && ch->get_visible())
+			{
+				movie* te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
+				if (te)
+				{
+					this_has_focus = true;
+					// The containing entity that 1) is closest to root and 2) can
+					// handle mouse events takes precedence.
+					if (te->can_handle_mouse_event())
+					{
+						top_te = te;
+						break;
+					}
+				}
+			}
+		}
+
+		//  THIS is closest to root
+		if (this_has_focus && can_handle_mouse_event())
+		{
+			return this;
+		}
+
+		if (top_te)
+		{
+			return top_te;
+		}
+
+		return NULL;
+	}
+
+
 	// Very-very "thin" thing. 100 times think before updating
 	void sprite_instance::advance(float delta_time) 
 	{ 
@@ -214,6 +458,115 @@ namespace gameswf
 
 		m_on_event_load_called = true; 
 	} 
+
+
+	void	sprite_instance::execute_frame_tags(int frame, bool state_only)
+		// Execute the tags associated with the specified frame.
+		// frame is 0-based
+	{
+		// Keep this (particularly m_as_environment) alive during execution!
+		smart_ptr<as_object_interface>	this_ptr(this);
+
+		assert(frame >= 0);
+		assert(frame < m_def->get_frame_count());
+
+		m_def->wait_frame(frame);
+
+		// Execute this frame's init actions, if necessary.
+		if (m_init_actions_executed[frame] == false)
+		{
+			const array<execute_tag*>*	init_actions = m_def->get_init_actions(frame);
+			if (init_actions && init_actions->size() > 0)
+			{
+				// Need to execute these actions.
+				for (int i= 0; i < init_actions->size(); i++)
+				{
+					execute_tag*	e = (*init_actions)[i];
+					e->execute(this);
+				}
+
+				// Mark this frame done, so we never execute these init actions
+				// again.
+				m_init_actions_executed[frame] = true;
+			}
+		}
+
+		const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
+		for (int i = 0; i < playlist.size(); i++)
+		{
+			execute_tag*	e = playlist[i];
+			if (state_only)
+			{
+				e->execute_state(this);
+			}
+			else
+			{
+				e->execute(this);
+			}
+		}
+	}
+
+
+	void	sprite_instance::execute_frame_tags_reverse(int frame)
+		// Execute the tags associated with the specified frame, IN REVERSE.
+		// I.e. if it's an "add" tag, then we do a "remove" instead.
+		// Only relevant to the display-list manipulation tags: add, move, remove, replace.
+		//
+		// frame is 0-based
+	{
+		// Keep this (particularly m_as_environment) alive during execution!
+		smart_ptr<as_object_interface>	this_ptr(this);
+
+		assert(frame >= 0);
+		assert(frame < m_def->get_frame_count());
+
+		const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
+		for (int i = 0; i < playlist.size(); i++)
+		{
+			execute_tag*	e = playlist[i];
+			e->execute_state_reverse(this, frame);
+		}
+	}
+
+
+	execute_tag*	sprite_instance::find_previous_replace_or_add_tag(int frame, int depth, int id)
+	{
+		uint32	depth_id = ((depth & 0x0FFFF) << 16) | (id & 0x0FFFF);
+
+		for (int f = frame - 1; f >= 0; f--)
+		{
+			const array<execute_tag*>&	playlist = m_def->get_playlist(f);
+			for (int i = playlist.size() - 1; i >= 0; i--)
+			{
+				execute_tag*	e = playlist[i];
+				if (e->get_depth_id_of_replace_or_add_tag() == depth_id)
+				{
+					return e;
+				}
+			}
+		}
+
+		return NULL;
+	}
+
+
+	void	sprite_instance::execute_remove_tags(int frame)
+		// Execute any remove-object tags associated with the specified frame.
+		// frame is 0-based
+	{
+		assert(frame >= 0);
+		assert(frame < m_def->get_frame_count());
+
+		const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
+		for (int i = 0; i < playlist.size(); i++)
+		{
+			execute_tag*	e = playlist[i];
+			if (e->is_remove_tag())
+			{
+				e->execute_state(this);
+			}
+		}
+	}
 
 	void	sprite_instance::do_actions()
 		// Take care of this frame's actions.
