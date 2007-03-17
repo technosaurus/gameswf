@@ -28,7 +28,6 @@ namespace gameswf
 	struct execute_tag;
 	struct font;
 	struct movie_root;
-	class Timer;
 	struct movie_definition_sub;
 
 	
@@ -38,10 +37,50 @@ namespace gameswf
 	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
 	bool get_tag_loader(int tag_type, loader_function* lf);
 
+	inline bool get_break_loading();
 
 	// Extra internal interfaces added to movie_definition
-	struct movie_definition_sub : public movie_definition
+	struct movie_definition_sub : public movie_definition 
 	{
+		movie_definition_sub() :
+			m_frame_count(0),
+			m_loading_frame(0)
+		{
+		}
+
+		void	wait_frame(int frame)
+		{
+			while (frame > m_loading_frame - 1)
+			{
+//				printf("wait for frame %d, loaded %d\n", frame + 1, m_loading_frame);
+				m_frame.wait();
+			}
+		}
+
+		inline int	get_loading_frame() const
+		{
+			assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
+			return m_loading_frame; 
+		}
+		void	inc_loading_frame() 
+		{ 
+			m_loading_frame++;
+			signal();
+		}
+
+		inline int	get_frame_count() const { return m_frame_count; }
+		void	set_frame_count(int frames)
+		{
+			m_frame_count = frames;
+
+			// ALEX: some SWF files have been seen that have 0-frame sprites.
+			// The Macromedia player behaves as if they have 1 frame.
+			if (m_frame_count < 1)
+			{
+				m_frame_count = 1;
+			}
+		}
+
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) = 0;
 		virtual const array<execute_tag*>*	get_init_actions(int frame_number) = 0;
 		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol) = 0;
@@ -50,8 +89,6 @@ namespace gameswf
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
 
 		// For use during creation.
-		virtual void	wait_frame(int frame) = 0;
-		virtual int	get_loading_frame() const = 0;
 		virtual void	add_character(int id, character_def* ch) = 0;
 		virtual void	add_font(int id, font* ch) = 0;
 		virtual font*	get_font(int id) = 0;
@@ -70,6 +107,20 @@ namespace gameswf
 
 		virtual create_bitmaps_flag	get_create_bitmaps() const = 0;
 		virtual create_font_shapes_flag	get_create_font_shapes() const = 0;
+
+		private:
+
+		int	m_frame_count;
+		int	m_loading_frame;
+		tu_condition m_frame;
+
+		void	signal()
+		{
+			// printf("signal %d frames is loaded\n", m_loading_frame);
+			m_frame.signal();
+		}
+
+
 	};
 
 	//
@@ -129,9 +180,7 @@ namespace gameswf
 
 		rect	m_frame_size;
 		float	m_frame_rate;
-		int	m_frame_count;
 		int	m_version;
-		int	m_loading_frame;
 		uint32	m_file_length;
 
 		jpeg::input*	m_jpeg_in;
@@ -140,22 +189,17 @@ namespace gameswf
 		Uint32	m_file_end_pos;
 		tu_file*	m_zlib_in;
 		tu_file*	m_origin_in;
-		tu_condition m_frame;
 		tu_thread* m_thread;
-		volatile bool m_break;
 
 		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
 
 		movie_interface*	create_instance();
 
-		int	get_frame_count() const;
 		float	get_frame_rate() const;
 		float	get_width_pixels() const;
 		float	get_height_pixels() const;
 		virtual int	get_version() const;
-		virtual void	wait_frame(int frame);
-		virtual int	get_loading_frame() const;
 		uint32	get_file_bytes() const;
 		virtual create_bitmaps_flag	get_create_bitmaps() const;
 		virtual create_font_shapes_flag	get_create_font_shapes() const;

@@ -50,6 +50,13 @@ namespace gameswf
 		return s_tag_loaders.get(tag_type, lf);
 	}
 
+	// it's used when user has pressed Esc button to break the loading of the .swf file
+	static bool s_break_loading = false;
+	bool get_break_loading()
+	{
+		return s_break_loading;
+	}
+
 	void	register_tag_loader(int tag_type, loader_function lf)
 		// Associate the specified tag type with the given tag loader
 		// function.
@@ -105,24 +112,21 @@ namespace gameswf
 	m_create_bitmaps(cbf),
 		m_create_font_shapes(cfs),
 		m_frame_rate(30.0f),
-		m_frame_count(0),
 		m_version(0),
-		m_loading_frame(0),
 		m_jpeg_in(0),
 		m_str(NULL),
 		m_file_end_pos(0),
 		m_zlib_in(NULL),
 		m_origin_in(NULL),
-		m_thread(NULL),
-		m_break(false)
+		m_thread(NULL)
 	{
 	}
 
 	movie_def_impl::~movie_def_impl()
 	{
 		// terminate thread
-		// it's used when user pressed Esc button
-		m_break = true;
+		// it's used when user has pressed Esc button
+		s_break_loading = true;
 		tu_wait_thread(m_thread);
 		m_thread = NULL;
 
@@ -148,24 +152,11 @@ namespace gameswf
 	}
 
 	// ...
-	int	movie_def_impl::get_frame_count() const { return m_frame_count; }
 	float	movie_def_impl::get_frame_rate() const { return m_frame_rate; }
 	float	movie_def_impl::get_width_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.width())); }
 	float	movie_def_impl::get_height_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
 
 	int	movie_def_impl::get_version() const { return m_version; }
-
-	void	movie_def_impl::wait_frame(int frame)
-	{
-		while (frame > m_loading_frame - 1)
-		{
-//			printf("wait for root frame %d, loaded %d\n", frame + 1, m_loading_frame);
-			m_frame.wait();
-		}
-	}
-
-	int	movie_def_impl::get_loading_frame() const { return m_loading_frame; }
-
 	uint32	movie_def_impl::get_file_bytes() const { return m_file_length; }
 
 	/* movie_def_impl */
@@ -403,7 +394,7 @@ namespace gameswf
 	void	movie_def_impl::add_execute_tag(execute_tag* e)
 	{
 		assert(e);
-		m_playlist[m_loading_frame].push_back(e);
+		m_playlist[get_loading_frame()].push_back(e);
 	}
 
 	void	movie_def_impl::add_init_action(int sprite_id, execute_tag* e)
@@ -413,7 +404,7 @@ namespace gameswf
 		// @@ AFAIK, the sprite_id is totally pointless -- correct?
 	{
 		assert(e);
-		m_init_action_list[m_loading_frame].push_back(e);
+		m_init_action_list[get_loading_frame()].push_back(e);
 	}
 
 	void	movie_def_impl::add_frame_name(const char* name)
@@ -421,11 +412,9 @@ namespace gameswf
 		// given name.	A copy of the name string is made and
 		// kept in this object.
 	{
-		assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
-
 		tu_string	n = name;
 		assert(m_named_frames.get(n, NULL) == false);	// frame should not already have a name (?)
-		m_named_frames.add(n, m_loading_frame);	// stores 0-based frame #
+		m_named_frames.add(n, get_loading_frame());	// stores 0-based frame #
 	}
 
 	void	movie_def_impl::set_jpeg_loader(jpeg::input* j_in)
@@ -498,19 +487,13 @@ namespace gameswf
 		m_frame_size.read(m_str);
 		m_frame_rate = m_str->read_u16() / 256.0f;
 
-		m_frame_count = m_str->read_u16();
+		set_frame_count(m_str->read_u16());
 
-		// version 4 specific
-		if (m_frame_count  == 0)
-		{
-			m_frame_count = 1;
-		}
-
-		m_playlist.resize(m_frame_count);
-		m_init_action_list.resize(m_frame_count);
+		m_playlist.resize(get_frame_count());
+		m_init_action_list.resize(get_frame_count());
 
 		IF_VERBOSE_PARSE(m_frame_size.print());
-		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, m_frame_count));
+		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, get_frame_count()));
 
 		m_thread = tu_create_thread(movie_def_loader, this);
 	}
@@ -519,7 +502,7 @@ namespace gameswf
 	void	movie_def_impl::read_tags()
 	{
 
-		while ((Uint32) m_str->get_position() < m_file_end_pos && m_break == false)
+		while ((Uint32) m_str->get_position() < m_file_end_pos && get_break_loading() == false)
 		{
 
 			int	tag_type = m_str->open_tag();
@@ -535,9 +518,7 @@ namespace gameswf
 			{
 				// show frame tag -- advance to the next frame.
 				IF_VERBOSE_PARSE(log_msg("  show_frame\n"));
-				m_loading_frame++;
-//				printf("signal root frame %d\n", m_loading_frame);
-				m_frame.signal();
+				inc_loading_frame();
 			}
 			else
 			if (s_tag_loaders.get(tag_type, &lf))

@@ -15,6 +15,7 @@
 #include "gameswf_types.h"
 #include "gameswf_log.h"
 #include "gameswf_movie.h"
+#include "gameswf_timers.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -23,7 +24,6 @@
 
 namespace gameswf
 {
-	class Timer;
 	struct movie_def_impl;
 
 	//

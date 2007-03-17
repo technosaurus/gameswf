@@ -124,11 +124,12 @@ namespace gameswf
 			SDL_DestroyCond(m_cond);
 		}
 
+		// Wait on the condition variable cond and unlock the provided mutex.
+		// The mutex must the locked before entering this function.
 		void wait()
 		{
 			m_cond_mutex.lock();
 			SDL_CondWait(m_cond, m_cond_mutex.get_mutex());
-//			m_cond_mutex.unlock();
 		}
 
 		void signal()

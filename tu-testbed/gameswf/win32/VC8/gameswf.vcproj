@@ -216,6 +216,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_sprite.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_button.cpp"
 				>
 			</File>
@@ -273,6 +277,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_sound_handler_sdl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_sprite.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_sprite_def.cpp"
 				>
 			</File>
 			<File
@@ -341,6 +353,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_sprite.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_button.h"
 				>
 			</File>
@@ -398,6 +414,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_sound_handler_sdl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_sprite.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_sprite_def.h"
 				>
 			</File>
 			<File
