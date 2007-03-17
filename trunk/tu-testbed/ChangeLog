@@ -1,3 +1,11 @@
+2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
+	
+	* a lot of files: gameswf_impl is divided into 4 parts:
+	gameswf_impl,
+	gameswf_sprite_def (sprite definition) ,
+	gameswf_sprite (sprite instance) & 
+	gameswf_as_sprite (sprite built-in ActionScript methods)
+
 2007-03-15  Vitaly Alexeev <tishka92@yahoo.com>
 	
 	* gameswf/gameswf_movie_def.(cpp,h),

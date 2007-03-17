@@ -38,7 +38,6 @@ namespace gameswf
 	struct font;
 	struct movie_root;
 	struct movie_definition_sub;
-	class Timer;
 
 	struct sound_sample : public resource //virtual public ref_counted
 	{
