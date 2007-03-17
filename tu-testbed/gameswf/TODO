@@ -83,22 +83,6 @@ ActionScript
 
 * bug:
 
-	// e.g. declared inside main movie frame 1,
-	// and we have a movie clip w/ instance named "instance"
-	function instance.some_method()
-	{
-		// "this" must refer to "instance", not the main movie!
-		// currently gameswf refers to the main movie.
-		this._visible = false;
-	}
-
-* bug:
-
-	// In single-frame movies, the frame 1 actions should execute only once.
-	// The same actions in a two-frame movie should execute continuously.
-
-* bug:
-
 	// If we have a dynamic text instance "inst" that contains a string,
 	// doing to_string() or to_tu_string() on it should return its string
 	// contents, not "<object xxx>" or whatever we do now.
@@ -113,9 +97,6 @@ ActionScript
 * all event hooks
 
 * arrays, object constructors
-
-* sprites can receive button events!  Like mouse down/up, etc.  So
-  need the appropriate machinery for watching the mouse.
 
 * make sure the frame semantics are correct.  I'm not 100% clear on
   the semantics of frame transitions.  I think that "being on frame N"

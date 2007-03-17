@@ -1,5 +1,10 @@
 2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/TODO: some bugs are fixed
+
+
+2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* gameswf/gameswf_sprite.(cpp,h): cleanup
 	* base/tu_memdebug.h: cleanup
 
