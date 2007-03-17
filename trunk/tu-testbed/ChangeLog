@@ -1,5 +1,10 @@
 2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/gameswf_sprite.(cpp,h): cleanup
+	* base/tu_memdebug.h: cleanup
+
+2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* a lot of files: gameswf_impl is divided into 4 parts:
 	gameswf_impl,
 	gameswf_sprite_def (sprite definition) ,

@@ -4,6 +4,7 @@
 // whatever you want with it.
 
 #ifndef TU_MEMDEBUG_H
+#define TU_MEMDEBUG_H
 
 #ifdef USE_STACKWALKER
 	#include <windows.h>
