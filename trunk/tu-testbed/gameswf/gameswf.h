@@ -163,6 +163,7 @@ namespace gameswf
 	struct as_netstream;
 	struct as_table;
 	struct video_stream_instance;
+	struct sprite_instance;
 	
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -185,6 +186,7 @@ namespace gameswf
 		virtual as_db* cast_to_as_db() { return 0; }
 		virtual as_netstream* cast_to_as_netstream() { return 0; }
 		virtual as_table* cast_to_as_table() { return 0; }
+		virtual character* cast_to_character() { return 0; }
 	};
 
 

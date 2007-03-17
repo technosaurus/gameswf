@@ -1,5 +1,14 @@
 2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/gameswf.h,
+	* gameswf/gameswf_movie.h,
+	* gameswf/gameswf_action.cpp,
+	* gameswf/gameswf_as_classes/as_color.(cpp,h),
+	* gameswf/win32/VC8/gameswf.vcproj:
+	added the part of Color() Action Script class
+	
+2007-03-17  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* gameswf/TODO: some bugs are fixed
 
 

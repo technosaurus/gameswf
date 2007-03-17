@@ -25,6 +25,7 @@
 #include "gameswf_as_classes/as_netconnection.h"
 #include "gameswf_as_classes/as_textformat.h"
 #include "gameswf_as_classes/as_string.h"
+#include "gameswf_as_classes/as_color.h"
 #include "gameswf_as_classes/as_db.h"	// mysql db extension
 
 
@@ -803,6 +804,7 @@ namespace gameswf
 #endif // HAVE_LIBXML
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
 			s_global->set_member("String", as_value(string_ctor));
+			s_global->set_member("Color", as_value(as_global_color_ctor));
 
 			// ASSetPropFlags
 			s_global->set_member("ASSetPropFlags", as_value(as_global_assetpropflags));
