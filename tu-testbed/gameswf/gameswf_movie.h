@@ -345,6 +345,8 @@ namespace gameswf
 				|| (parent != NULL && m_id >= 0));
 		}
 
+		virtual character* cast_to_character() { return this; }
+
 		// Accessors for basic display info.
 		int	get_id() const { return m_id; }
 		movie*	get_parent() const { return m_parent; }
@@ -354,11 +356,16 @@ namespace gameswf
 		const matrix&	get_matrix() const { return m_matrix; }
 		void	set_matrix(const matrix& m)
 		{
-//			assert(m.is_valid());
 			m_matrix = m;
 		}
-		const cxform&	get_cxform() const { return m_color_transform; }
-		void	set_cxform(const cxform& cx) { m_color_transform = cx; }
+		const cxform&	get_cxform() const 
+		{ 
+			return m_color_transform; 
+		}
+		void	set_cxform(const cxform& cx)
+		{
+			m_color_transform = cx;
+		}
 		void	concatenate_cxform(const cxform& cx) { m_color_transform.concatenate(cx); }
 		void	concatenate_matrix(const matrix& m) { m_matrix.concatenate(m); }
 		float	get_ratio() const { return m_ratio; }
