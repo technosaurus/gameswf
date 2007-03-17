@@ -3,6 +3,9 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+// The Color class lets you set the RGB color value and color transform
+// of movie clips and retrieve those values once they have been set. 
+
 #include "../gameswf_as_classes/as_color.h"
 
 namespace gameswf

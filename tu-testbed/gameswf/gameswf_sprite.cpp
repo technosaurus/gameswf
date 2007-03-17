@@ -10,40 +10,12 @@
 // http://sswf.sourceforge.net/SWFalexref.html
 // http://www.openswf.org
 
-#include "base/tu_file.h"
-#include "base/utility.h"
 #include "gameswf_action.h"
-#include "gameswf_button.h"
 #include "gameswf_impl.h"
-#include "gameswf_font.h"
-#include "gameswf_fontlib.h"
-#include "gameswf_log.h"
-#include "gameswf_morph2.h"
-#include "gameswf_video_impl.h"
-#include "gameswf_render.h"
-#include "gameswf_shape.h"
 #include "gameswf_stream.h"
-#include "gameswf_styles.h"
-#include "gameswf_dlist.h"
-#include "gameswf_timers.h"
-#include "gameswf_root.h"
-#include "gameswf_movie_def.h"
 #include "gameswf_sprite_def.h"
 #include "gameswf_sprite.h"
 #include "gameswf_as_sprite.h"
-#include "base/image.h"
-#include "base/jpeg.h"
-#include "base/zlib_adapter.h"
-#include "base/tu_random.h"
-#include <string.h>	// for memset
-#include <typeinfo>
-#include <float.h>
-
-
-#if TU_CONFIG_LINK_TO_ZLIB
-#include <zlib.h>
-#endif // TU_CONFIG_LINK_TO_ZLIB
-
 
 namespace gameswf
 {
@@ -91,7 +63,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("getDepth", &sprite_get_depth);
 		s_sprite_builtins->set_member("createEmptyMovieClip", &sprite_create_empty_movieclip);
 		s_sprite_builtins->set_member("removeMovieClip", &sprite_remove_movieclip);
-
+		s_sprite_builtins->set_member("hitTest", &sprite_hit_test);
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
 		//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
@@ -1293,4 +1265,39 @@ namespace gameswf
 			}
 		}
 	}
+
+	bool	sprite_instance::hit_test(character* ch)
+	{
+		as_value val;
+		rect r;
+		get_member("_x", &val);
+		r.m_x_min = (float) val.to_number();
+		get_member("_y", &val);
+		r.m_y_min = (float) val.to_number();
+		get_member("_width", &val);
+		r.m_x_max = (float) val.to_number() + r.m_x_min;
+		get_member("_height", &val);
+		r.m_y_max = (float) val.to_number() + r.m_y_min;
+
+		rect ch_r;
+		ch->get_member("_x", &val);
+		ch_r.m_x_min = (float) val.to_number();
+		ch->get_member("_y", &val);
+		ch_r.m_y_min = (float) val.to_number();
+		ch->get_member("_width", &val);
+		ch_r.m_x_max = (float) val.to_number() + ch_r.m_x_min;;
+		ch->get_member("_height", &val);
+		ch_r.m_y_max = (float) val.to_number() + ch_r.m_x_min;;
+
+		if (r.point_test(ch_r.m_x_min, ch_r.m_y_min) ||
+			r.point_test(ch_r.m_x_min, ch_r.m_y_max) ||
+			r.point_test(ch_r.m_x_max, ch_r.m_y_min) ||
+			r.point_test(ch_r.m_x_max, ch_r.m_y_max))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 }
