@@ -1270,24 +1270,20 @@ namespace gameswf
 	{
 		as_value val;
 		rect r;
-		get_member("_x", &val);
-		r.m_x_min = (float) val.to_number();
-		get_member("_y", &val);
-		r.m_y_min = (float) val.to_number();
-		get_member("_width", &val);
-		r.m_x_max = (float) val.to_number() + r.m_x_min;
-		get_member("_height", &val);
-		r.m_y_max = (float) val.to_number() + r.m_y_min;
+
+		matrix	m = get_world_matrix();
+		r.m_x_min = m.m_[0][2];
+		r.m_y_min = m.m_[1][2];
+		r.m_x_max = r.m_x_min + get_width();
+		r.m_y_max = r.m_y_min + get_height();
 
 		rect ch_r;
-		ch->get_member("_x", &val);
-		ch_r.m_x_min = (float) val.to_number();
-		ch->get_member("_y", &val);
-		ch_r.m_y_min = (float) val.to_number();
-		ch->get_member("_width", &val);
-		ch_r.m_x_max = (float) val.to_number() + ch_r.m_x_min;;
-		ch->get_member("_height", &val);
-		ch_r.m_y_max = (float) val.to_number() + ch_r.m_x_min;;
+
+		m = ch->get_world_matrix();
+		ch_r.m_x_min = m.m_[0][2];
+		ch_r.m_y_min = m.m_[1][2];
+		ch_r.m_x_max = ch_r.m_x_min + ch->get_width();
+		ch_r.m_y_max = ch_r.m_y_min + ch->get_height();
 
 		if (r.point_test(ch_r.m_x_min, ch_r.m_y_min) ||
 			r.point_test(ch_r.m_x_min, ch_r.m_y_max) ||
