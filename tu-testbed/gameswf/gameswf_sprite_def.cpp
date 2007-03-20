@@ -95,7 +95,7 @@ namespace gameswf
 			else
 			{
 				// no tag loader for this tag type.
-				IF_VERBOSE_PARSE(log_msg("*** no tag loader for type %d\n", tag_type));
+				log_msg("*** no tag loader for type %d\n", tag_type);
 			}
 
 			in->close_tag();

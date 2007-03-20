@@ -238,9 +238,10 @@ namespace gameswf
 	void	start_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	button_sound_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	do_init_action_loader(stream* in, int tag_type, movie_definition_sub* m);
-	// sound_stream_loader();	// head, head2, block
 	void	define_video_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	video_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	sound_stream_head_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	sound_stream_block_loader(stream* in, int tag_type, movie_definition_sub* m);
 
 }	// end namespace gameswf
 
