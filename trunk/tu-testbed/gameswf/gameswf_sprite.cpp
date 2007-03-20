@@ -375,6 +375,19 @@ namespace gameswf
 			m_goto_frame_action_list.clear();
 		}
 
+		// start stream sound
+		sound_handler* sound = get_sound_handler();
+		if (sound)
+		{
+			if (m_def->m_ss_start == m_current_frame)
+			{
+				if (m_def->m_ss_id >= 0)
+				{
+					sound->play_sound(m_def->m_ss_id, 0);
+				}
+			}
+		}
+
 		// Update current and next frames. 
 		if (m_play_state == PLAY) 
 		{ 
@@ -477,7 +490,6 @@ namespace gameswf
 			}
 		}
 	}
-
 
 	void	sprite_instance::execute_frame_tags_reverse(int frame)
 		// Execute the tags associated with the specified frame, IN REVERSE.

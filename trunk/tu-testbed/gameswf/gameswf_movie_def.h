@@ -44,8 +44,20 @@ namespace gameswf
 	{
 		movie_definition_sub() :
 			m_frame_count(0),
-			m_loading_frame(0)
+			m_loading_frame(0),
+			m_ss_id(-1),
+			m_ss_format(sound_handler::FORMAT_RAW),
+			m_ss_start(-1)
 		{
+		}
+
+		~movie_definition_sub()
+		{
+			sound_handler* sound = get_sound_handler();
+			if (sound)
+			{
+				sound->delete_sound(m_ss_id);
+			}
 		}
 
 		void	wait_frame(int frame)
@@ -107,6 +119,11 @@ namespace gameswf
 
 		virtual create_bitmaps_flag	get_create_bitmaps() const = 0;
 		virtual create_font_shapes_flag	get_create_font_shapes() const = 0;
+
+		// stream sound variables
+		int m_ss_id;	// stream sound handler_id
+		sound_handler::format_type m_ss_format;	// used in tag 19
+		int m_ss_start;	// start frame
 
 		private:
 

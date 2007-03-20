@@ -9,6 +9,7 @@
 #endif
 
 #include "gameswf_sound_handler_sdl.h"
+#include "gameswf_log.h"
 
 namespace gameswf
 {
@@ -32,7 +33,7 @@ namespace gameswf
 
 		if (SDL_OpenAudio(&audioSpec, NULL) < 0 )
 		{
-			printf("Unable to START SOUND: %s\n", SDL_GetError());
+			log_error("Unable to start sound handler: %s\n", SDL_GetError());
 			soundOpened = false;
 			return;
 		}
@@ -52,6 +53,7 @@ namespace gameswf
 		tu_mutex_destroy(m_mutex);
 	}
 
+	// may be used for the creation stream sound head
 	int	SDL_sound_handler::create_sound(
 		void* data,
 		int data_bytes,
@@ -62,7 +64,7 @@ namespace gameswf
 		// Called to create a sample.  We'll return a sample ID that
 		// can be use for playing it.
 	{
-		assert(data_bytes > 0);
+//		assert(data_bytes > 0);
 		locker lock(m_mutex);
 
 		int sound_id = m_sound.size();
@@ -77,6 +79,17 @@ namespace gameswf
 		if (m_defvolume >= 0 && m_defvolume <= 100)
 		{
 			m_defvolume = vol;
+		}
+	}
+
+	void	SDL_sound_handler::append_sound(int sound_handle, void* data, int data_bytes)
+	{
+		locker lock(m_mutex);
+
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			it->second->append(data, data_bytes, this);
 		}
 	}
 
@@ -109,12 +122,8 @@ namespace gameswf
 	{
 		locker lock(m_mutex);
 
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
-		if (it != m_sound.end())
-		{
-			//		stop_sound(sound_handle);
-			m_sound.erase(sound_handle);
-		}
+		//		stop_sound(sound_handle);
+		m_sound.erase(sound_handle);
 	}
 
 	void	SDL_sound_handler::stop_all_sounds()
@@ -212,15 +221,16 @@ namespace gameswf
 		m_sample_rate(sample_rate),
 		m_stereo(stereo)
 	{
-		assert(data);
-		assert(size > 0);
-		m_data = new Uint8[size];
-		memcpy(m_data, data, size);
+		if (data != NULL && size > 0)
+		{
+			m_data = (Uint8*) malloc(size);
+			memcpy(m_data, data, size);
+		}
 	}
 
 	sound::~sound()
 	{
-		delete [] m_data;
+		free(m_data);
 	}
 
 #ifdef USE_FFMPEG
@@ -300,8 +310,23 @@ namespace gameswf
 	}
 #endif
 
+	void sound::append(void* data, int size, SDL_sound_handler* handler)
+	{
+		m_data = (Uint8*) realloc(m_data, size + m_size);
+		memcpy(m_data + m_size, data, size);
+		m_size += size;
+//		printf("append sound size=%d, total size=%d\n", size, m_size);
+	}
+
 	void sound::play(int loops, SDL_sound_handler* handler)
 	{
+//		printf("play sound total size=%d\n", m_size);
+		if (m_size == 0)
+		{
+			log_error("the attempt to play empty sound\n");
+			return;
+		}
+
 		int16*	adjusted_data = NULL;
 		int	adjusted_size = 0;	
 
@@ -323,7 +348,7 @@ namespace gameswf
 				}
 				else
 				{
-					printf("gameswf does not handle MP3 yet\n");
+					log_error("gameswf does not handle MP3 yet\n");
 				}
 #else
 				printf("MP3 requires FFMPEG library\n");

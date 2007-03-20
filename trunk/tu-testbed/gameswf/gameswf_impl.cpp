@@ -257,6 +257,8 @@ namespace gameswf
 			register_tag_loader(14, define_sound_loader);
 			register_tag_loader(15, start_sound_loader);
 			register_tag_loader(17, button_sound_loader);
+			register_tag_loader(18, sound_stream_head_loader);
+			register_tag_loader(19, sound_stream_block_loader);
 			register_tag_loader(20, define_bits_lossless_2_loader);
 			register_tag_loader(21, define_bits_jpeg2_loader);
 			register_tag_loader(22, define_shape_loader);
@@ -271,6 +273,7 @@ namespace gameswf
 			register_tag_loader(36, define_bits_lossless_2_loader);
 			register_tag_loader(39, sprite_loader);
 			register_tag_loader(43, frame_label_loader);
+			register_tag_loader(45, sound_stream_head_loader);
 			register_tag_loader(46, define_shape_morph_loader);
 			register_tag_loader(48, define_font_loader);
 			register_tag_loader(56, export_loader);
@@ -2044,9 +2047,84 @@ namespace gameswf
 		ch->read(in, tag, m);
 	}
 
+	void sound_stream_head_loader(stream* in, int tag, movie_definition_sub* m)
+	{
+		assert(tag == 18 || tag == 45);
 
+		in->read_u8();	// player may ignore this byte
+		sound_handler::format_type format = (sound_handler::format_type) in->read_uint(4);
+		int	sample_rate = in->read_uint(2);	// multiples of 5512.5
+		bool sample_16bit = in->read_uint(1) ? true : false;
+		bool stereo = in->read_uint(1) ? true : false;
+		int	sample_count = in->read_u16();
+		int  latency_seek = 0;
+		if (format == sound_handler::FORMAT_MP3)
+		{
+			latency_seek = in->read_s16();
+		}
+
+		IF_VERBOSE_PARSE(log_msg("define stream sound: format=%d, rate=%d, 16=%d, stereo=%d, ct=%d\n",
+			 int(format), sample_rate, int(sample_16bit), int(stereo), sample_count));
+
+
+		sound_handler* sound = get_sound_handler();
+//	where will be deleted sound ?
+		if (sound)
+		{
+			int	handler_id = sound->create_sound(
+				NULL, //	data
+				0, //	size
+				sample_count,
+				format,
+				get_sample_rate(sample_rate),
+				stereo);
+
+			m->m_ss_id = handler_id;
+			m->m_ss_format = format;
+		}
+	}
+
+	void sound_stream_block_loader(stream* in, int tag, movie_definition_sub* m)
+	{
+		assert(tag == 19);
+		assert(m->m_ss_id >= 0);
+
+		if (m->m_ss_start == -1)
+		{
+			m->m_ss_start = m->get_loading_frame();
+		}
+
+		int sample_count = 0;
+		int seek_samples = 0;
+		if (m->m_ss_format == sound_handler::FORMAT_MP3)	//MP3
+		{
+			sample_count = in->read_u16();
+			seek_samples = in->read_s16();
+		}
+
+		int data_size = in->get_tag_end_position() - in->get_position();
+		if (data_size > 0)
+		{
+//			printf("frame=%d, samples=%d, data_size=%d, seek_samples=%d\n",
+//				m->get_loading_frame(), sample_count, data_size, seek_samples);
+
+			Uint8* data = new Uint8[data_size];
+
+			for (int i = 0; i < data_size; i++)
+			{
+				data[i] = in->read_u8();
+			}
+
+			sound_handler* sound = get_sound_handler();
+			if (sound)
+			{
+				sound->append_sound(m->m_ss_id, data, data_size);
+			}
+
+			delete [] data;
+		}
+	}
 }
-
 
 // Local Variables:
 // mode: C++

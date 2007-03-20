@@ -755,6 +755,7 @@ namespace gameswf
 			// gameswf tries to convert data to this format when possible:
 			FORMAT_NATIVE16 = 7	// gameswf extension: 16 bits/sample, native-endian
 		};
+
 		// If stereo is true, samples are interleaved w/ left sample first.
 		
 		// gameswf calls at load-time with sound data, to be
@@ -774,6 +775,8 @@ namespace gameswf
 			bool		stereo
 			) = 0;
 		
+		virtual void append_sound(int sound_handle, void* data, int data_bytes) = 0;
+
 		// gameswf calls this when it wants you to play the defined sound.
 		//
 		// loop_count == 0 means play the sound once (1 means play it twice, etc)

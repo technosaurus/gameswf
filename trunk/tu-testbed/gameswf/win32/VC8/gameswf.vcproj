@@ -4,6 +4,7 @@
 	Version="8,00"
 	Name="swfvc"
 	ProjectGUID="{EB28DB11-E5F4-4A55-B792-F82257ED0466}"
+	RootNamespace="swfvc"
 	>
 	<Platforms>
 		<Platform

@@ -12,6 +12,8 @@
 
 namespace gameswf
 {
+	int get_sample_rate(int index);
+
 	struct sound_sample_impl : public sound_sample
 	{
 		int	m_sound_handler_id;

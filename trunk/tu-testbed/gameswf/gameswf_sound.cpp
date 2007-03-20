@@ -19,6 +19,13 @@ namespace gameswf
 	// sound is ignored.
 	static sound_handler*	s_sound_handler = 0;
 
+	static int	s_sample_rate_table[] = { 5512, 11025, 22050, 44100 };
+
+	int get_sample_rate(int index)
+	{
+		assert(index >=0 && index < 4);
+		return s_sample_rate_table[index];
+	}
 
 	void	set_sound_handler(sound_handler* s)
 	// Called by host, to set a handler for all sounds.
@@ -63,8 +70,6 @@ namespace gameswf
 		bool	sample_16bit = in->read_uint(1) ? true : false;
 		bool	stereo = in->read_uint(1) ? true : false;
 		int	sample_count = in->read_u32();
-
-		static int	s_sample_rate_table[] = { 5512, 11025, 22050, 44100 };
 
 		IF_VERBOSE_PARSE(log_msg("define sound: ch=%d, format=%d, rate=%d, 16=%d, stereo=%d, ct=%d\n",
 					 character_id, int(format), sample_rate, int(sample_16bit), int(stereo), sample_count));
@@ -115,7 +120,7 @@ namespace gameswf
 				data_bytes,
 				sample_count,
 				format,
-				s_sample_rate_table[sample_rate],
+				get_sample_rate(sample_rate),
 				stereo);
 			sound_sample*	sam = new sound_sample_impl(handler_id);
 			m->add_sound_sample(character_id, sam);
