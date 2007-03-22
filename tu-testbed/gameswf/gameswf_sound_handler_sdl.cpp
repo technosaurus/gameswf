@@ -9,7 +9,6 @@
 #endif
 
 #include "gameswf_sound_handler_sdl.h"
-#include "gameswf_log.h"
 
 namespace gameswf
 {
@@ -24,14 +23,14 @@ namespace gameswf
 		m_mutex = tu_mutex_create();
 
 		// This is our sound settings
-		audioSpec.freq = 44100;
-		audioSpec.format = AUDIO_S16SYS;
-		audioSpec.channels = 2;
-		audioSpec.callback = sdl_audio_callback;
-		audioSpec.userdata = this;
-		audioSpec.samples = 4096;
+		m_audioSpec.freq = 44100;
+		m_audioSpec.format = AUDIO_S16SYS;
+		m_audioSpec.channels = 2;
+		m_audioSpec.callback = sdl_audio_callback;
+		m_audioSpec.userdata = this;
+		m_audioSpec.samples = 4096;
 
-		if (SDL_OpenAudio(&audioSpec, NULL) < 0 )
+		if (SDL_OpenAudio(&m_audioSpec, NULL) < 0 )
 		{
 			log_error("Unable to start sound handler: %s\n", SDL_GetError());
 			soundOpened = false;
@@ -41,6 +40,7 @@ namespace gameswf
 #ifdef USE_FFMPEG
 		avcodec_init();
 		avcodec_register_all();
+		m_MP3_codec = avcodec_find_decoder(CODEC_ID_MP3);
 #endif
 
 		SDL_PauseAudio(1);
@@ -189,10 +189,10 @@ namespace gameswf
 
 		SDL_AudioCVT  wav_cvt;
 		int rc = SDL_BuildAudioCVT(&wav_cvt, AUDIO_S16SYS, channels, freq,
-			audioSpec.format, audioSpec.channels, audioSpec.freq);
+			m_audioSpec.format, m_audioSpec.channels, m_audioSpec.freq);
 		if (rc == -1)
 		{
-			printf("Couldn't build converter!\n");
+			log_error("Couldn't build SDL audio converter\n");
 			return;
 		}
 
@@ -233,140 +233,35 @@ namespace gameswf
 		free(m_data);
 	}
 
-#ifdef USE_FFMPEG
-	int sound::decode_mp3_data(int data_size, Uint8* data,	int* newsize, Uint8** newdata)
-	{
-		AVCodec* m_MP3_codec = avcodec_find_decoder(CODEC_ID_MP3);
-		if (m_MP3_codec == NULL)
-		{
-			printf("FFMPEG can't decode MP3\n");
-			return -1;
-		}
-
-		AVCodecContext *cc;
-		AVCodecParserContext* parser;
-
-		// Init the parser
-		parser = av_parser_init(CODEC_ID_MP3);
-
-		cc = avcodec_alloc_context();
-		if (cc == NULL)
-		{
-			printf("Could not alloc MP3 codec context\n");
-			return -1;
-		}
-
-		if (avcodec_open(cc, m_MP3_codec) < 0)
-		{
-			printf("Could not open MP3 codec\n");
-			avcodec_close(cc);
-			return -1;
-		}
-
-		int asize = (AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2;
-
-		int bufsize = 2 * asize;
-		Uint8* buf = (Uint8*) malloc(bufsize);
-		int buflen = 0;
-
-		while (data_size > 0)
-		{
-			uint8_t* frame;
-			int framesize;
-			int decoded = av_parser_parse(parser, cc, &frame, &framesize, data, data_size, 0, 0);
-
-			if (decoded < 0)
-			{
-				printf("Error while decoding MP3-stream\n");
-				break;
-			}
-
-			data += decoded;
-			data_size -= decoded;
-
-			if (framesize > 0)
-			{
-				int len = 0;
-				if (avcodec_decode_audio(cc, (int16_t*) (buf + buflen), &len, frame, framesize) >= 0)
-				{
-					buflen += len;
-
-					if (buflen > bufsize - asize)
-					{
-						bufsize += asize;
-						buf = (Uint8*) realloc(buf, bufsize);
-					}
-				}
-			}
-		}
-
-		*newdata = buf;
-		*newsize = buflen;
-
-		avcodec_close(cc);
-		av_parser_close(parser);
-
-		return 0;
-	}
-#endif
-
 	void sound::append(void* data, int size, SDL_sound_handler* handler)
 	{
 		m_data = (Uint8*) realloc(m_data, size + m_size);
 		memcpy(m_data + m_size, data, size);
 		m_size += size;
-//		printf("append sound size=%d, total size=%d\n", size, m_size);
 	}
 
 	void sound::play(int loops, SDL_sound_handler* handler)
 	{
-//		printf("play sound total size=%d\n", m_size);
 		if (m_size == 0)
 		{
 			log_error("the attempt to play empty sound\n");
 			return;
 		}
 
-		int16*	adjusted_data = NULL;
-		int	adjusted_size = 0;	
-
-		switch (m_format)
-		{
-		case sound_handler::FORMAT_NATIVE16:
-			handler->cvt(&adjusted_data, &adjusted_size, m_data, m_size, m_stereo ? 2 : 1, m_sample_rate);
-			break;
-
-		case sound_handler::FORMAT_MP3:
-			{
 #ifdef USE_FFMPEG
-				int mp3size = 0;
-				Uint8* mp3data = NULL;
-				if (decode_mp3_data(m_size, m_data, &mp3size, &mp3data) == 0)
-				{
-					handler->cvt(&adjusted_data, &adjusted_size, mp3data, mp3size, m_stereo ? 2 : 1, m_sample_rate);
-					free(mp3data);
-				}
-				else
-				{
-					log_error("gameswf does not handle MP3 yet\n");
-				}
+		m_playlist.push_back(new active_sound(this, loops));
+		SDL_PauseAudio(0);
 #else
-				printf("MP3 requires FFMPEG library\n");
-#endif
-				break;
-			}
-
-		default:
-			printf("Sound format #%d is not supported\n", m_format);
-			break;
-		}
-
-		if (adjusted_data)
+		if (m_format != sound_handler::FORMAT_MP3)
 		{
-			m_playlist.push_back(new active_sound(adjusted_size, (Uint8*) adjusted_data, loops));
+			m_playlist.push_back(new active_sound(this, loops));
 			SDL_PauseAudio(0);
 		}
-
+		else
+		{
+			log_error("MP3 requires FFMPEG library\n");
+		}
+#endif
 	}
 
 	// called from audio callback
@@ -409,8 +304,7 @@ namespace gameswf
 	/// frame is decoded until all frames has been decoded.
 	/// If a sound is looping it will be decoded from the beginning again.
 
-	static void
-		sdl_audio_callback (void *udata, Uint8 *stream, int len)
+	static void	sdl_audio_callback (void *udata, Uint8 *stream, int len)
 	{
 		// Get the soundhandler
 		SDL_sound_handler* handler = static_cast<SDL_sound_handler*>(udata);
