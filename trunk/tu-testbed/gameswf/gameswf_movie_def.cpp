@@ -496,6 +496,11 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, get_frame_count()));
 
 		m_thread = tu_create_thread(movie_def_loader, this);
+
+#ifndef USE_SEPARATE_THREAD
+		tu_wait_thread(m_thread);
+		m_thread = NULL;
+#endif
 	}
 
 	// is running in loader thread
