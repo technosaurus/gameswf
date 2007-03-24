@@ -497,10 +497,10 @@ namespace gameswf
 
 		m_thread = tu_create_thread(movie_def_loader, this);
 
-#ifndef USE_SEPARATE_THREAD
-		tu_wait_thread(m_thread);
-		m_thread = NULL;
-#endif
+//#ifndef USE_SEPARATE_THREAD
+//		tu_wait_thread(m_thread);
+//		m_thread = NULL;
+//#endif
 	}
 
 	// is running in loader thread

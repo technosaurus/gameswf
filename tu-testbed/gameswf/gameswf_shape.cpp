@@ -18,8 +18,12 @@
 
 #include <float.h>
 
-
-#define USE_NEW_TESSELATOR
+// Vitaly: there are problems with NEW TESSELATOR because USE_NEW_TESSELATOR
+//	is commented
+//	1. Memory leaks
+//	2. Arises	assert(vi2 != vi0) in file "ear_clip_triangulate_impl.h", line 982
+//	while playing some files with static text on dual processor mashine
+//	#define USE_NEW_TESSELATOR
 
 
 #define DEBUG_DISPLAY_SHAPE_PATHS

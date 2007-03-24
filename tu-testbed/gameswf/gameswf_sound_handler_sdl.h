@@ -268,8 +268,9 @@ namespace gameswf
 		assert(m_pos <= m_size);
 		assert(m_decoded <= m_parent->m_size);
 
-		if (m_pos + len > m_size && m_decoded < m_parent->m_size)
+		if (m_decoded < m_parent->m_size)
 		{
+
 			int decoded_size = 0;
 			Uint8* decoded_data = NULL;
 			decode(len, &decoded_size, &decoded_data);
@@ -312,7 +313,6 @@ namespace gameswf
 
 			ptr += n;
 			m_pos = (m_pos + n)  % m_size;
-
 			if (m_pos == 0)	// is buf played ?
 			{
 				if (m_loops == 0)
