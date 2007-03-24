@@ -3560,7 +3560,7 @@ namespace gameswf
 		}
 		else
 		{
-			log_error("error: invalid path; neither string nor object");
+			log_error("error: invalid path; neither string nor object\n");
 			return NULL;
 		}
 	}

@@ -53,7 +53,7 @@ namespace gameswf
 		tu_mutex_destroy(m_mutex);
 	}
 
-	// may be used for the creation stream sound head
+	// may be used for the creation stream sound head with data_bytes=0 
 	int	SDL_sound_handler::create_sound(
 		void* data,
 		int data_bytes,
@@ -64,7 +64,6 @@ namespace gameswf
 		// Called to create a sample.  We'll return a sample ID that
 		// can be use for playing it.
 	{
-//		assert(data_bytes > 0);
 		locker lock(m_mutex);
 
 		int sound_id = m_sound.size();
