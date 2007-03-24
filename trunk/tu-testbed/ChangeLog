@@ -1,5 +1,9 @@
 2007-03-24  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/gameswf_sound_handler.h: optimization & cleanup
+
+2007-03-24  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* gameswf/gameswf_action.cpp: added \n in log_msg()
 	* gameswf/gameswf_sound_handler.(cpp,h): fixed bug leading to
 	infinite playing of sound

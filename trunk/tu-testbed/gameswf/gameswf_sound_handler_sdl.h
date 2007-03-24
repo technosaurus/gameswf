@@ -137,9 +137,9 @@ namespace gameswf
 		m_handler = (SDL_sound_handler*) get_sound_handler();
 		assert(m_handler);
 		
+#ifdef USE_FFMPEG
 		if (m_parent->m_format == sound_handler::FORMAT_MP3)
 		{
-#ifdef USE_FFMPEG
 			// Init MP3 the parser
 			m_parser = av_parser_init(CODEC_ID_MP3);
 			m_cc = avcodec_alloc_context();
@@ -155,8 +155,8 @@ namespace gameswf
 				avcodec_close(m_cc);
 				return;
 			}
-#endif
 		}
+#endif
 	}
 
 	~active_sound()
@@ -165,175 +165,153 @@ namespace gameswf
 		// memory was allocated in decode()
 		free(m_data);
 
+#ifdef USE_FFMPEG
 		if (m_parent->m_format == sound_handler::FORMAT_MP3)
 		{
-#ifdef USE_FFMPEG
 			avcodec_close(m_cc);
 			av_parser_close(m_parser);
-#endif
 		}
+#endif
 	}
 
-	int decode(int mix_buflen, int* newsize, Uint8** newdata)
+	// returns true if the sound is played
+	bool mix(Uint8* mixbuf , int mixbuf_len)
 	{
-		*newdata = NULL;
-		*newsize = 0;
-		switch (m_parent->m_format)
-		{
-			default:
-				log_error("unknown sound format %d\n", m_parent->m_format);
-				break;
+		memset(mixbuf, 0, mixbuf_len);
+		Uint8* mixbuf_ptr = mixbuf;
 
-			case sound_handler::FORMAT_NATIVE16:
-			{
-				float	dup = float(m_handler->m_audioSpec.freq) / float(m_parent->m_sample_rate);
-				int samples = int(float(mix_buflen) / dup / (m_parent->m_stereo ? 1.0f : 2.0f));
-				samples = imin(samples, m_parent->m_size - m_decoded);
-				*newsize = samples;
-				*newdata = (Uint8*) malloc(samples);
-
-				memcpy(*newdata, m_parent->m_data + m_decoded, samples);
-				m_decoded += samples;
-				return true;
-			}
-
-			case sound_handler::FORMAT_MP3:
-			{
-#ifdef USE_FFMPEG
-				int asize = (AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2;
-
-				int bufsize = 2 * asize;
-				Uint8* buf = (Uint8*) malloc(bufsize);
-				int buflen = 0;
-
-				while (m_decoded < m_parent->m_size)
-				{
-					uint8_t* frame;
-					int framesize;
-					int decoded = av_parser_parse(m_parser, m_cc, &frame, &framesize,
-						m_parent->m_data + m_decoded , m_parent->m_size - m_decoded, 0, 0);
-
-					if (decoded < 0)
-					{
-						log_error("Error while decoding MP3-stream\n");
-						free(buf);
-						buf = NULL;
-						buflen = 0;
-						break;
-					}
-
-					m_decoded += decoded;
-
-					if (framesize > 0)
-					{
-						int len = 0;
-						if (avcodec_decode_audio(m_cc, (int16_t*) (buf + buflen), &len, frame, framesize) >= 0)
-						{
-							buflen += len;
-
-							if (buflen > bufsize - asize)
-							{
-								bufsize += asize;
-								buf = (Uint8*) realloc(buf, bufsize);
-							}
-
-							// Whether is it time to stop ?
-							float	dup = float(m_handler->m_audioSpec.freq) / float(m_parent->m_sample_rate);
-							int	output_sample_count = int(buflen * dup * (m_parent->m_stereo ? 1 : 2));
-							if (output_sample_count >= mix_buflen)
-							{
-								break;
-							}
-						}
-					}
-				}
-
-				*newdata = buf;
-				*newsize = buflen;
-#endif
-			}
-		}
-		return true;
-	}
-
-	bool mix(Uint8* buf , int len)
-	{
-		memset(buf, 0, len);
-
-		// m_pos ==> current position of sound which should be played
-		// len ==> mix buffer size
-		// m_size==> current sound size
-		// (size of stream sound may be be increased)
-		// If is not enough sound then try decode it
+		// m_pos ==> current position of decoded sound which should be played
 		assert(m_pos <= m_size);
 		assert(m_decoded <= m_parent->m_size);
 
-		if (m_decoded < m_parent->m_size)
+		bool is_playing = true;
+		while (mixbuf_ptr - mixbuf < mixbuf_len)
 		{
+			int free_space = mixbuf_len - (mixbuf_ptr - mixbuf);
+			int n = imin(m_size - m_pos, free_space);
+			memcpy(mixbuf_ptr, m_data + m_pos, n);
+			mixbuf_ptr += n;
+			m_pos += n;
 
-			int decoded_size = 0;
-			Uint8* decoded_data = NULL;
-			decode(len, &decoded_size, &decoded_data);
-			if (decoded_size > 0)
+			// there are decoded data
+			if (m_pos < m_size)
 			{
-
-				int16* cvt_data;
-				int cvt_size;
-				m_handler->cvt(&cvt_data, &cvt_size, decoded_data, decoded_size, 
-					m_parent->m_stereo ? 2 : 1, m_parent->m_sample_rate);
-
-				free(decoded_data);
-
-				// copy the rest of buf to the beginning
-				// then copy newdata
-				int rest = m_size - m_pos;
-				m_size = cvt_size + rest;
-				Uint8* new_m_data = (Uint8*) malloc(m_size);
-
-				memcpy(new_m_data, m_data + m_pos,  rest);	// the rest
-				memcpy(new_m_data + rest, (Uint8*) cvt_data, cvt_size);	// cvt data
-
-				free(cvt_data);
-				free(m_data);
-				m_data = new_m_data;
-
-				m_pos = 0;
+				continue;
 			}
-		}
 
-		bool next_it = true;
-		Uint8* ptr = buf;
+			free(m_data);
+			m_data = NULL;
+			m_pos = 0;
 
-		while (ptr - buf < len)
-		{
-			int left = len - (ptr - buf);
-			int n = imin(m_size - m_pos, left);
-			assert(n > 0);
-			memcpy(ptr, m_data + m_pos, n);
-
-			ptr += n;
-			m_pos = (m_pos + n)  % m_size;
-			if (m_pos == 0)	// is buf played ?
+			// no decoded data & free_space > 0 &
+			// there are coded data
+			if (m_decoded < m_parent->m_size)
 			{
+				switch (m_parent->m_format)
+				{
+					default:
+						log_error("unknown sound format %d\n", m_parent->m_format);
+						return false;
+
+					case sound_handler::FORMAT_NATIVE16:
+					{
+						float	dup = float(m_handler->m_audioSpec.freq) / float(m_parent->m_sample_rate);
+						int samples = int(float(mixbuf_len) / dup / (m_parent->m_stereo ? 1.0f : 2.0f));
+						samples = imin(samples, m_parent->m_size - m_decoded);
+
+						assert(samples > 0);
+
+						int16* cvt_data;
+						m_handler->cvt(&cvt_data, &m_size, m_parent->m_data + m_decoded,
+							samples, m_parent->m_stereo ? 2 : 1, m_parent->m_sample_rate);
+
+						m_data = (Uint8*) cvt_data;
+						m_decoded += samples;
+						break;
+					}
+
+					case sound_handler::FORMAT_MP3:
+					{
+		#ifdef USE_FFMPEG
+						int asize = (AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2;
+
+						int bufsize = 2 * asize;
+						Uint8* buf = (Uint8*) malloc(bufsize);
+						int buflen = 0;
+
+						while (m_decoded < m_parent->m_size)
+						{
+							uint8_t* frame;
+							int framesize;
+							int decoded = av_parser_parse(m_parser, m_cc, &frame, &framesize,
+								m_parent->m_data + m_decoded , m_parent->m_size - m_decoded, 0, 0);
+
+							if (decoded < 0)
+							{
+								log_error("Error while decoding MP3-stream\n");
+								free(buf);
+								buf = NULL;
+								buflen = 0;
+								break;
+							}
+
+							m_decoded += decoded;
+
+							if (framesize > 0)
+							{
+								int len = 0;
+								if (avcodec_decode_audio(m_cc, (int16_t*) (buf + buflen), &len, frame, framesize) >= 0)
+								{
+									buflen += len;
+
+									if (buflen > bufsize - asize)
+									{
+										bufsize += asize;
+										buf = (Uint8*) realloc(buf, bufsize);
+									}
+
+									// Whether is it time to stop ?
+									float	dup = float(m_handler->m_audioSpec.freq) / float(m_parent->m_sample_rate);
+									int	output_sample_count = int(buflen * dup * (m_parent->m_stereo ? 1 : 2));
+									if (output_sample_count >= mixbuf_len)
+									{
+										break;	// exit from while()
+									}
+								}
+							}
+						}
+
+						assert(buflen > 0);
+
+						int16* cvt_data;
+						m_handler->cvt(&cvt_data, &m_size, buf, buflen,
+							m_parent->m_stereo ? 2 : 1, m_parent->m_sample_rate);
+
+						free(buf);	// decoded from MP3 data
+						m_data = (Uint8*) cvt_data;
+		#else
+						log_error("MP3 requires FFMPEG library\n");
+		#endif
+						break;
+					}
+				}
+			}
+			else
+			{
+				m_decoded = 0;
 				if (m_loops == 0)
 				{
-					if (m_decoded >= m_parent->m_size)
-					{
-						next_it = false;
-					}
-					else
-					{
-						m_size = 0;
-					}
+					is_playing = false;
 					break;
 				}
-				if (m_loops > 0)
+				else
 				{
 					m_loops--;
 				}
 			}
-		}
-		return next_it;
+		}	// end while
+
+		return is_playing;
 	}
 
 	private:
