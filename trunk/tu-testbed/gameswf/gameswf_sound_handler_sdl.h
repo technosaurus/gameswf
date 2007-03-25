@@ -169,6 +169,7 @@ namespace gameswf
 		if (m_parent->m_format == sound_handler::FORMAT_MP3)
 		{
 			avcodec_close(m_cc);
+			av_free(m_cc);
 			av_parser_close(m_parser);
 		}
 #endif
