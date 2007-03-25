@@ -579,14 +579,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\base\postscript.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\base\postscript.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\base\smart_ptr.h"
 				>
 			</File>
