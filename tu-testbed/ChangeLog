@@ -1,5 +1,10 @@
 2007-03-25  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/gameswf_sound_handler.h: fixed memory leaks
+	in ffmpeg sound mixer
+	
+2007-03-25  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* gameswf/gameswf_sound_handler.h: fixed bug
 
 2007-03-25  Vitaly Alexeev <tishka92@yahoo.com>
