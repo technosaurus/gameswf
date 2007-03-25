@@ -19,15 +19,32 @@
 
 
 #ifdef _WIN32
-#ifndef NDEBUG
 
-// On windows, replace ANSI assert with our own, for a less annoying
-// debugging experience.
-//int	tu_testbed_assert_break(const char* filename, int linenum, const char* expression);
-#undef assert
-#define assert(x)	if (!(x)) { __asm { int 3 } }	// tu_testbed_assert_break(__FILE__, __LINE__, #x))
+#define __PRETTY_FUNCTION__ __FUNCDNAME__
 
-#endif // not NDEBUG
+#ifdef SVN_RELEASE
+
+	// It will help users to send messages about bugs
+	#undef assert
+	#define assert(x)		\
+	if (!(x))		\
+	{		\
+		printf("assert(%s): %s\n%s(%d)\n",  #x, __PRETTY_FUNCTION__, __FILE__, __LINE__);		\
+		exit(0);		\
+	}
+
+#else
+
+	#ifndef NDEBUG
+
+	// On windows, replace ANSI assert with our own, for a less annoying
+	// debugging experience.
+	//int	tu_testbed_assert_break(const char* filename, int linenum, const char* expression);
+	#undef assert
+	#define assert(x)	if (!(x)) { __asm { int 3 } }	// tu_testbed_assert_break(__FILE__, __LINE__, #x))
+
+	#endif // not NDEBUG
+#endif	// not RELEASE
 #endif // _WIN32
 
 

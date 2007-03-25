@@ -25,7 +25,7 @@
 				Optimization="0"
 				InlineFunctionExpansion="0"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG;SVN_RELEASE"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
@@ -425,12 +425,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\base\png_helper.h">
-			</File>
-			<File
-				RelativePath="..\..\..\base\postscript.cpp">
-			</File>
-			<File
-				RelativePath="..\..\..\base\postscript.h">
 			</File>
 			<File
 				RelativePath="..\..\..\base\smart_ptr.h">
