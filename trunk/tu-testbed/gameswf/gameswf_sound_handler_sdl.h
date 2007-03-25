@@ -202,6 +202,7 @@ namespace gameswf
 			free(m_data);
 			m_data = NULL;
 			m_pos = 0;
+			m_size = 0;
 
 			// no decoded data & free_space > 0 &
 			// there are coded data
