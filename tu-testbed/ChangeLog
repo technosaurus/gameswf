@@ -1,5 +1,9 @@
 2007-03-25  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* gameswf/gameswf_sound_handler.h: fixed bug
+
+2007-03-25  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* base/utility.h: added assert() for SVN_RELEASE which
 	will help users to send messages about bugs
 	* base/postscipt.(cpp,h): removed from projects because it is't used
@@ -19,7 +23,7 @@
 	* gameswf/gameswf_sound_handler.(cpp,h): fixed bug leading to
 	infinite playing of sound
 	* gameswf/gameswf_shape.cpp: there are problems with NEW TESSELATOR:
-	because "#define USE_NEW_TESSELATOR" is commented
+	therefore "#define USE_NEW_TESSELATOR" is commented
 	* gameswf/gameswf_movie_def.cpp: removed ifdef USE_SEPARATE_THREAD
 	
 
