@@ -26,6 +26,23 @@ namespace gameswf
 	struct as_value;
 	struct as_as_function;
 
+	// Clean up any stray heap stuff we've allocated.
+	void	action_clear();
+
+	// Dispatching methods from C++.
+	as_value	call_method(
+		const as_value& method,	as_environment* env, as_object_interface* this_ptr,
+		int nargs, int first_arg_bottom_index);
+
+	as_value	call_method0(const as_value& method, as_environment* env, as_object_interface* this_ptr);
+
+	const char*	call_method_parsed(
+		as_environment* env,
+		as_object_interface* this_ptr,
+		const char* method_name,
+		const char* method_arg_fmt,
+		va_list args);
+
 
 	//
 	// event_id
@@ -540,99 +557,13 @@ namespace gameswf
 		}
 		
 		virtual const char*	get_text_value() const { return NULL; }
-
-		virtual bool	set_member(const tu_stringi& name, const as_value& val ) {
-			//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
-			if (name == "prototype")
-			{
-				if (m_prototype) m_prototype->drop_ref();
-				m_prototype = val.to_object();
-				if (m_prototype) m_prototype->add_ref();
-			}
-			else
-			{
-				stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
-				
-				if ( it != this->m_members.end() ) {
-
-					const as_prop_flags flags = (it.get_value()).get_member_flags();
-
-					// is the member read-only ?
-					if (!flags.get_read_only()) {
-						m_members.set(name, as_member(val, flags));
-					}
-
-				} else {
-					m_members.set(name, as_member(val));
-				}
-			}
-			return true;
-		}
-
-		virtual bool	get_member(const tu_stringi& name, as_value* val)
-		{
-			//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
-			if (name == "prototype")
-			{
-				val->set_as_object_interface(m_prototype);
-				return true;
-			}
-			else {
-				as_member m;
-
-				if (m_members.get(name, &m) == false)
-				{
-					if (m_prototype != NULL)
-					{
-						return m_prototype->get_member(name, val);
-					}
-					return false;
-				} else {
-					*val=m.get_member_value();
-					return true;
-				}
-			}
-			return true;
-		}
-
-		virtual bool get_member(const tu_stringi& name, as_member* member) const
-		{
-			//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
-			assert(member != NULL);
-			return m_members.get(name, member);
-		}
-
-		virtual bool	set_member_flags(const tu_stringi& name, const int flags)
-		{
-			as_member member;
-			if (this->get_member(name, &member)) {
-				as_prop_flags f = member.get_member_flags();
-				f.set_flags(flags);
-				member.set_member_flags(f);
-
-				m_members.set(name, member);
-
-				return true;
-			}
-
-			return false;
-		}
-
-		virtual movie*	to_movie()
-		// This object is not a movie; no conversion.
-		{
-			return NULL;
-		}
-
-		void	clear()
-		{
-			m_members.clear();
-			if (m_prototype)
-			{
-				m_prototype->drop_ref();
-				m_prototype = NULL;
-			}
-		}
+		virtual bool	set_member(const tu_stringi& name, const as_value& val );
+		virtual bool	get_member(const tu_stringi& name, as_value* val);
+		virtual bool get_member(const tu_stringi& name, as_member* member) const;
+		virtual bool	set_member_flags(const tu_stringi& name, const int flags);
+		virtual movie*	to_movie();
+		void	clear();
+		virtual bool	on_event(const event_id& id);
 	};
 
 
@@ -833,33 +764,6 @@ namespace gameswf
 	//
 	// Some handy helpers
 	//
-
-	// Clean up any stray heap stuff we've allocated.
-	void	action_clear();
-
-	// Dispatching methods from C++.
-	as_value	call_method(
-		const as_value& method,	as_environment* env, as_object_interface* this_ptr,
-		int nargs, int first_arg_bottom_index);
-
-	as_value	call_method0(const as_value& method, as_environment* env, as_object_interface* this_ptr);
-/*	as_value	call_method1(
-		const as_value& method, as_environment* env, as_object_interface* this_ptr,
-		const as_value& arg0);
-	as_value	call_method2(
-		const as_value& method, as_environment* env, as_object_interface* this_ptr,
-		const as_value& arg0, const as_value& arg1);
-	as_value	call_method3(
-		const as_value& method, as_environment* env, as_object_interface* this_ptr,
-		const as_value& arg0, const as_value& arg1, const as_value& arg2);
-*/
-
-	const char*	call_method_parsed(
-		as_environment* env,
-		as_object_interface* this_ptr,
-		const char* method_name,
-		const char* method_arg_fmt,
-		va_list args);
 
 	// tulrich: don't use this!  To register a class constructor,
 	// just assign the classname to the constructor function.  E.g.:

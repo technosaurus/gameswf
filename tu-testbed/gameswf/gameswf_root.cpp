@@ -357,60 +357,6 @@ namespace gameswf
 
 		void	movie_root::restart() { m_movie->restart(); }
 
-		/*void	movie_root::advance(float delta_time)
-		{
-			int i;
-			if (m_on_event_load_called == false)
-			{
-				// Must do loading events.  For child sprites this is
-				// done by the dlist, but root movies don't get added
-				// to a dlist, so we do it here.
-				m_on_event_load_called = true;
-				m_movie->on_event_load();
-			}
-#if 0
-			// Must check the socket connection for data
-			if (m_on_event_xmlsocket_ondata_called == true) {
-				m_movie->on_event_xmlsocket_ondata();
-			}
-
-			if (m_on_event_xmlsocket_onxml_called == true) {
-				m_movie->on_event_xmlsocket_onxml();
-			}
-
-
-			// Must check the progress of the MovieClip being loaded
-			if (m_on_event_load_progress_called == true) {
-				m_movie->on_event_load_progress();				
-			}
-#endif
-			if (m_interval_timers.size() > 0) {
-				for (i=0; i<m_interval_timers.size(); i++) {
-					if (m_interval_timers[i]->expired()) {
-						// printf("FIXME: Interval Timer Expired!\n");
-						//m_movie->on_event_interval_timer();
-						m_movie->do_something(m_interval_timers[i]);
-						// clear_interval_timer(m_interval_timers[i]->getIntervalID()); // FIXME: we shouldn't really disable the timer here
-					}
-				}
-			}
-
-
-			m_timer += delta_time;
-			// @@ TODO handle multi-frame catch-up stuff
-			// here, and make it optional.	Make
-			// movie::advance() a fixed framerate w/ no
-			// dt.
-
-			// Handle the mouse.
-			m_mouse_button_state.m_topmost_entity =
-				m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
-			m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
-			generate_mouse_button_events(&m_mouse_button_state);
-
-			m_movie->advance(delta_time);
-		}*/
-
 		void	movie_root::advance(float delta_time)
 		{
 			// Lock gameswf engine. Video is running in separate thread and

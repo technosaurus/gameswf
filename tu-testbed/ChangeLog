@@ -1,3 +1,10 @@
+2007-03-27  Vitaly Alexeev <tishka92@yahoo.com>
+	
+	* gameswf/gameswf_root.h: removed useless commented code
+	* gameswf/gameswf_sprite.cpp: fixed get_topmost_mouse_enity() broken before
+	* gameswf/gameswf_action.(cpp,h),
+	* gameswf/gameswf.h: as_object() may have events()
+
 2007-03-25  Vitaly Alexeev <tishka92@yahoo.com>
 	
 	* gameswf/gameswf_sound_handler.h: fixed memory leaks

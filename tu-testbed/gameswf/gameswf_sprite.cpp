@@ -304,6 +304,7 @@ namespace gameswf
 		m.transform_by_inverse(&p, point(x, y));
 
 		movie*	top_te = NULL;
+		movie* te = NULL;
 		bool this_has_focus = false;
 		int i, n = m_display_list.get_character_count();
 
@@ -314,7 +315,7 @@ namespace gameswf
 
 			if (ch != NULL && ch->get_visible())
 			{
-				movie* te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
+				te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
 				if (te)
 				{
 					this_has_focus = true;
@@ -335,12 +336,14 @@ namespace gameswf
 			return this;
 		}
 
+		// else character which has event is closest to root
 		if (top_te)
 		{
 			return top_te;
 		}
 
-		return NULL;
+		// else if we have focus then return not NULL
+		return te;
 	}
 
 

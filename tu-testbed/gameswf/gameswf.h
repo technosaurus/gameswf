@@ -55,6 +55,8 @@ namespace gameswf
 	struct event_id;
 	struct movie_root;
 
+	movie_interface* get_current_root();
+
 	//
 	// Log & error reporting control.
 	//
@@ -178,7 +180,7 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 		virtual movie*	to_movie() = 0;
 		virtual bool	on_event(const event_id& id) { return false; }
-		virtual movie_root*		get_root() { assert(0);  return 0; }
+		virtual movie_root*		get_root() { return (movie_root*) get_current_root(); }
 
 		// Replacements for dynamic_cast<>.  Override in subclasses
 		// that implement the corresponding interfaces.
