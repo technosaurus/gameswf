@@ -1,5 +1,10 @@
 2007-03-27  Vitaly Alexeev <tishka92@yahoo.com>
 	
+	* net/net_test.cpp: fixed typo
+	* net/win32/VC8/net_test.vcproj: added VC8 project file
+
+2007-03-27  Vitaly Alexeev <tishka92@yahoo.com>
+	
 	* gameswf/gameswf_spite.cpp: cleanup
 
 2007-03-27  Vitaly Alexeev <tishka92@yahoo.com>
