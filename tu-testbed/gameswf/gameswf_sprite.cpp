@@ -1220,19 +1220,6 @@ namespace gameswf
 		return called;
 	}
 
-
-	/*sprite_instance*/
-	//		virtual void	on_event_load()
-	// Do the events that (appear to) happen as the movie
-	// loads.  frame1 tags and actions are executed (even
-	// before advance() is called).	 Then the onLoad event
-	// is triggered.
-	//		{
-	//			execute_frame_tags(0);
-	//			do_actions();
-	//			on_event(event_id::LOAD);
-	//		}
-
 	// Do the events that happen when there is XML data waiting
 	// on the XML socket connection.
 	void	sprite_instance::on_event_xmlsocket_onxml()
