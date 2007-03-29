@@ -187,6 +187,8 @@ void http_server::send_response(http_request* req, const char* content_type, con
 		content_type);
 	req->m_sock->write(header.c_str(), header.length(), 0.010f);
 	req->m_sock->write(data, len, 0.010f);
+
+	VLOG("send_response: \n%s\n", header.c_str());
 }
 
 
@@ -294,7 +296,7 @@ void http_server::http_request_state::update(http_server* server)
 		printf("socket closed, deactivating.\n");//xxxxxx
 		return;
 	}
-	
+
 	switch (m_request_state)
 	{
 	default:

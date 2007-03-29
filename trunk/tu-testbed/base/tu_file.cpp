@@ -11,6 +11,9 @@
 #include "base/container.h"
 #include "base/membuf.h"
 
+#ifdef USE_HTTP_CLIENT
+#include "net/http_client.h"
+#endif
 
 //
 // tu_file functions using FILE
@@ -316,10 +319,30 @@ tu_file::tu_file(FILE* fp, bool autoclose=false)
 	m_error = TU_FILE_NO_ERROR;
 }
 
-
 tu_file::tu_file(const char * name, const char * mode)
 // Create a file from the given name and the given mode.
 {
+
+	assert(name);
+
+#ifdef USE_HTTP_CLIENT
+	if (strncmp(name, "http://", 7) == 0)
+	// Create a file from a URL using HTTP protocol
+	{
+		m_data = new netfile(name + 7); 
+		m_read = netfile::http_read;
+		m_write = netfile::http_write;
+		m_seek = netfile::http_seek;
+		m_seek_to_end = netfile::http_seek_to_end;
+		m_tell = netfile::http_tell;
+		m_get_eof = netfile::http_get_eof;
+		m_close = netfile::http_close;
+		m_error = TU_FILE_NO_ERROR;
+
+		return;
+	}
+#endif
+
 	m_data = fopen(name, mode);
 	if (m_data)
 	{
