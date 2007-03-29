@@ -1,0 +1,34 @@
+2007-03-29  Vitaly Alexeev <tishka92@yahoo.com>
+
+The gameswf-2007-03-25 release of GameSWF is coming. Improvements since
+the gameswf-2006-02-27 release are:
+
+* Added video & MP3 audio support using FFMPEG library.
+* Loading and displaying of the swf-file is running in different threads
+that allows to display the first frame immideately. 
+* Added keyPress event handler
+* Added multievent support, like 
+on(release, press, keyPress "<Space>") {...}
+* Added input text fields support
+* Added stream sound support
+* Added delete & delete property operator support
+* Fixed or added the following Action script classes:
+- Array()
+- Color()
+- NetConnection()
+- NetStream()
+* Added MYSQL support
+* Added:
+- swapDepths(), 
+- getDepths(),
+- duplicateMovieClip(),
+- createEmptyMovieClip(),
+- removeMovieClip(),
+- HitTest()
+methods of sprite instance
+* Added 0x43 opcode(decl object)
+* Rewritten sound_handler_SDL to provide support video, 
+SDL_mixer library now is not used
+* Added SetFocus & KilFocus events handler
+* Fixed many bugs
+* Added new bugs :)
