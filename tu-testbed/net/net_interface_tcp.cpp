@@ -265,7 +265,7 @@ struct net_interface_tcp : public net_interface
 	int m_port_number;
 
 	SOCKET m_listen_sock;
-	net_interface_tcp(int port_number)
+	net_interface_tcp(const char* url, int port_number)
 		:
 		m_port_number(port_number)
 	{
@@ -281,6 +281,21 @@ struct net_interface_tcp : public net_interface
 		saddr.sin_family = AF_INET;
 		saddr.sin_addr.s_addr = INADDR_ANY;
 		saddr.sin_port = htons(m_port_number);
+
+		// if client
+		if (url)
+		{
+//			hostent* host = gethostbyname(url);
+			hostent* host = gethostbyname("localhost");
+			if (host == NULL)
+			{
+				fprintf(stderr, "host '%s' is't found\n", url);
+				return;
+			}
+
+			// get server address
+			memcpy(&saddr.sin_addr, host->h_addr, host->h_length);
+		}
 
 		// bind the address
 		int ret = bind(m_listen_sock, (LPSOCKADDR) &saddr, sizeof(saddr));
@@ -328,6 +343,11 @@ struct net_interface_tcp : public net_interface
 		return true;
 	}
 
+	net_socket* create_socket()
+	{
+		return new net_socket_tcp(m_listen_sock);
+	}
+
 	net_socket* accept()
 	{
 		// Accept an incoming request.
@@ -347,7 +367,7 @@ struct net_interface_tcp : public net_interface
 
 
 
-net_interface* tu_create_net_interface_tcp(int port_number)
+net_interface* tu_create_net_interface_tcp(const char* url, int port_number)
 {
 	WORD version_requested = MAKEWORD(1, 1);
 	WSADATA wsa;
@@ -362,7 +382,7 @@ net_interface* tu_create_net_interface_tcp(int port_number)
 	}
 
 
-	net_interface_tcp* iface = new net_interface_tcp(port_number);
+	net_interface_tcp* iface = new net_interface_tcp(url, port_number);
 	if (iface == NULL || iface->is_valid() == false)
 	{
 		delete iface;

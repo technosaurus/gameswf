@@ -9,7 +9,6 @@
 #ifndef NET_INTERFACE_H
 #define NET_INTERFACE_H
 
-
 #include "base/tu_types.h"
 #include "base/container.h"
 #include <string.h>
@@ -31,6 +30,9 @@ struct net_interface
 	//
 	// Returns NULL if no incoming connection is pending.
 	virtual net_socket* accept() = 0;
+
+	// returns opened socket
+	virtual net_socket* create_socket() = 0;
 };
 
 
@@ -82,7 +84,7 @@ struct net_socket
 // Factories for some concrete net_interfaces.
 
 // TCP interface.
-net_interface* tu_create_net_interface_tcp(int port_number);
+net_interface* tu_create_net_interface_tcp(const char* url, int port_number);
 
 // Handy for testing.
 //

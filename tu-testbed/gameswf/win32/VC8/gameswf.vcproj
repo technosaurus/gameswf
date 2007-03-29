@@ -141,7 +141,7 @@
 				Optimization="0"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG;USE_HTTP_CLIENT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -792,6 +792,26 @@
 			</File>
 			<File
 				RelativePath="..\..\..\base\Stackwalker.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="http client"
+			>
+			<File
+				RelativePath="..\..\..\net\http_client.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\net\http_client.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\net\net_interface.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\net\net_interface_tcp.cpp"
 				>
 			</File>
 		</Filter>

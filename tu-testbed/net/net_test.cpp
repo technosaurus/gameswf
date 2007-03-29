@@ -108,7 +108,7 @@ int main(int argc, const char** argv)
 	}
 
 	// Open a socket to receive connections on.
-	net_interface* iface = tu_create_net_interface_tcp(port);
+	net_interface* iface = tu_create_net_interface_tcp(NULL, port);
 	if (iface == NULL)
 	{
 		fprintf(stderr, "Couldn't open net interface\n");

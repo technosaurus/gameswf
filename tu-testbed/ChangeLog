@@ -1,4 +1,16 @@
 2007-03-29  Vitaly Alexeev <tishka92@yahoo.com>
+
+	The beginning of works on HTTP implementation of tu_file()
+	* base/tu_file.cpp: added parsing filename on "http://"
+	* net/http_client.*: added new files, its will contain 
+	http implementation of tu_file
+	* net/http_server.cpp: added VLOG("send response ...")
+	* net/net_test.cpp,
+	* net/net_interface.h:
+	* net/net_interface_tcp.cpp: added url to
+	tu_create_network_interface_tcp()
+
+2007-03-29  Vitaly Alexeev <tishka92@yahoo.com>
 	
 	* added NEWS file
 
