@@ -197,6 +197,8 @@ void http_server::dispatch_request(http_request* req)
 {
 	assert(req);
 	assert(req->m_sock);
+
+	VLOG("dispatch_request: \n%s\n", req);
 	
 	if (! req->m_sock->is_open())
 	{
@@ -433,6 +435,7 @@ tu_string trim_whitespace(const char* buf)
 http_status http_server::http_request_state::parse_message_line(const char* line)
 // Parse the next line.
 {
+	VLOG("parse_message_line: '%s'\n", line);
 	http_status status = HTTP_BAD_REQUEST;
 	
 	switch (m_request_state)
@@ -463,7 +466,7 @@ http_status http_server::http_request_state::parse_request_line(const char* reql
 // appropriately.  Returns HTTP result code, 400+ if we detected an
 // error, HTTP_OK if the parse is OK.
 {
-	VLOG("hrs::parse_request_line(), sock = %x: %s\n", m_req.m_sock, reqline);
+	VLOG("parse_request_line(), sock = %x: %s\n", m_req.m_sock, reqline);
 
 	// Method.
 	const char* first_space = strchr(reqline, ' ');

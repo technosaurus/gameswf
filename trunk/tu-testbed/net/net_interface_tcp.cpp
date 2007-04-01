@@ -10,7 +10,6 @@
 #include "base/tu_timer.h"
 #include "base/container.h"
 
-
 #ifdef _WIN32
 
 #include <winsock.h>
@@ -69,6 +68,12 @@ struct net_socket_tcp : public net_socket
 		for (;;)
 		{
 			int bytes_read = recv(m_sock, (char*) data, bytes, 0);
+
+			if (bytes_read == 0)
+			{
+				break;
+			}
+
 			if (bytes_read == SOCKET_ERROR)
 			{
 				m_error = WSAGetLastError();
@@ -263,14 +268,14 @@ struct net_socket_tcp : public net_socket
 struct net_interface_tcp : public net_interface
 {
 	int m_port_number;
+	SOCKET m_socket;
 
-	SOCKET m_listen_sock;
-	net_interface_tcp(const char* url, int port_number)
-		:
-		m_port_number(port_number)
+	net_interface_tcp(const char* host, int port_number)	:
+		m_port_number(port_number),
+			m_socket(INVALID_SOCKET)
 	{
-		m_listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (m_listen_sock == INVALID_SOCKET)
+		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (m_socket == INVALID_SOCKET)
 		{
 			fprintf(stderr, "can't open listen socket\n");
 			return;
@@ -283,59 +288,82 @@ struct net_interface_tcp : public net_interface
 		saddr.sin_port = htons(m_port_number);
 
 		// if client
-		if (url)
+		if (host)
 		{
-//			hostent* host = gethostbyname(url);
-			hostent* host = gethostbyname("localhost");
-			if (host == NULL)
+			// if proxy is used
+//		Uint32 addr = inet_addr("192.168.1.201");
+//		hostent* host = gethostbyaddr((char *) &addr, 4, AF_INET);
+			hostent* he = gethostbyname(host);
+			if (he == NULL)
 			{
-				fprintf(stderr, "host '%s' is't found\n", url);
+				fprintf(stderr, "can't find '%s'\n", host);
+				closesocket(m_socket);
+				m_socket = INVALID_SOCKET;
 				return;
 			}
 
 			// get server address
-			memcpy(&saddr.sin_addr, host->h_addr, host->h_length);
+			memcpy(&saddr.sin_addr, he->h_addr, he->h_length);
+
+//      printf("The IP address is '%d.%d.%d.%d'\n", 
+//				saddr.sin_addr.S_un.S_un_b.s_b1,
+//				saddr.sin_addr.S_un.S_un_b.s_b2,
+//				saddr.sin_addr.S_un.S_un_b.s_b3,
+//				saddr.sin_addr.S_un.S_un_b.s_b4);
+
+			int rc = connect(m_socket, (struct sockaddr*) &saddr, sizeof(struct sockaddr));
+			if (rc != 0)
+			{
+				fprintf(stderr, "can't connect to '%s'\n", host);
+				closesocket(m_socket);
+				m_socket = INVALID_SOCKET;
+			}
+
 		}
+		else
 
-		// bind the address
-		int ret = bind(m_listen_sock, (LPSOCKADDR) &saddr, sizeof(saddr));
-		if (ret == SOCKET_ERROR)
+		// if server
 		{
-			fprintf(stderr, "bind failed\n");
-			closesocket(m_listen_sock);
-			m_listen_sock = INVALID_SOCKET;
-			return;
-		}
+
+			// bind the address
+			int ret = bind(m_socket, (LPSOCKADDR) &saddr, sizeof(saddr));
+			if (ret == SOCKET_ERROR)
+			{
+				fprintf(stderr, "bind failed\n");
+				closesocket(m_socket);
+				m_socket = INVALID_SOCKET;
+				return;
+			}
 
 
-		// gethostname
+			// gethostname
 
-		// Start listening.
-		ret = listen(m_listen_sock, SOMAXCONN);
-		if (ret == SOCKET_ERROR)
-		{
-			fprintf(stderr, "listen() failed\n");
-			closesocket(m_listen_sock);
-			m_listen_sock = INVALID_SOCKET;
-			return;
+			// Start listening.
+			ret = listen(m_socket, SOMAXCONN);
+			if (ret == SOCKET_ERROR)
+			{
+				fprintf(stderr, "listen() failed\n");
+				closesocket(m_socket);
+				m_socket = INVALID_SOCKET;
+				return;
+			}
 		}
 
 		// Set non-blocking mode for the socket, so that
 		// accept() doesn't block if there's no pending
 		// connection.
 		int mode = 1;
-		ioctlsocket(m_listen_sock, FIONBIO, (u_long FAR*) &mode);
+		ioctlsocket(m_socket, FIONBIO, (u_long FAR*) &mode);
 	}
 
 	~net_interface_tcp()
 	{
-		closesocket(m_listen_sock);
+		closesocket(m_socket);
 	}
-
 
 	bool is_valid() const
 	{
-		if (m_listen_sock == INVALID_SOCKET)
+		if (m_socket == INVALID_SOCKET)
 		{
 			return false;
 		}
@@ -345,14 +373,14 @@ struct net_interface_tcp : public net_interface
 
 	net_socket* create_socket()
 	{
-		return new net_socket_tcp(m_listen_sock);
+		return new net_socket_tcp(m_socket);
 	}
 
 	net_socket* accept()
 	{
 		// Accept an incoming request.
 		SOCKET	remote_socket;
-		remote_socket = ::accept(m_listen_sock, NULL, NULL);
+		remote_socket = ::accept(m_socket, NULL, NULL);
 		if (remote_socket == INVALID_SOCKET)
 		{
 			// No connection pending, or some other error.
@@ -366,8 +394,7 @@ struct net_interface_tcp : public net_interface
 };
 
 
-
-net_interface* tu_create_net_interface_tcp(const char* url, int port_number)
+net_interface* tu_create_net_interface_tcp(const char* host, int port_number)
 {
 	WORD version_requested = MAKEWORD(1, 1);
 	WSADATA wsa;
@@ -382,7 +409,7 @@ net_interface* tu_create_net_interface_tcp(const char* url, int port_number)
 	}
 
 
-	net_interface_tcp* iface = new net_interface_tcp(url, port_number);
+	net_interface_tcp* iface = new net_interface_tcp(host, port_number);
 	if (iface == NULL || iface->is_valid() == false)
 	{
 		delete iface;
