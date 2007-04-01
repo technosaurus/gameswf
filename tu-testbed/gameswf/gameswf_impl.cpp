@@ -70,7 +70,7 @@ namespace gameswf
 	}
 
 
-	static bool	s_use_cache_files = true;
+	static bool	s_use_cache_files = false;
 
 	void	set_use_cache_files(bool use_cache)
 		// Enable/disable attempts to read cache files when loading

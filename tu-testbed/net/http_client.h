@@ -46,9 +46,16 @@ struct netfile
 	static int http_seek_to_end(void *appdata);
 	static bool http_get_eof(void *appdata);
 
+	private:
+
+	void close();
+	bool open_uri(const tu_string& host_name, const tu_string& resource);
+
 	// vars
 	int m_position;
 	net_interface* m_iface;
+	net_socket* m_ns;
+	int m_size;
 };
 
 // Local Variables:
