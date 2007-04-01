@@ -55,7 +55,7 @@ struct netfile
 	int m_position;
 	net_interface* m_iface;
 	net_socket* m_ns;
-	int m_size;
+	bool m_eof;
 };
 
 // Local Variables:
