@@ -1,5 +1,10 @@
 2007-04-01  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* net/http_client.*: fixed eof()
+	some http server not send the Content-Length headers
+
+2007-04-01  Vitaly Alexeev <tishka92@yahoo.com>
+
 	The implementation of tu_file that support HTTP is finished
 	* gameswf/gameswf_impl.cpp: use_cache_files = false (because of net files)
 	* net/http_client.*,

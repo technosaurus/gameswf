@@ -15,7 +15,7 @@ netfile::netfile(const char* c_url) :
 	m_position(0),
 	m_iface(NULL),
 	m_ns(NULL),
-	m_size(0)
+	m_eof(false)
 {
 	char* url = strdup(c_url);
 
@@ -78,9 +78,12 @@ int netfile::http_read(void* dst, int bytes, void* appdata)
 	int n = 0;
 	if (nf->m_ns)
 	{
-		n = nf->m_ns->read(dst, bytes, 1);
+		n = nf->m_ns->read(dst, bytes, 10);
 		nf->m_position += n;
 	}
+	
+	nf->m_eof = n == bytes ? false : true;
+
 	return n;
 }
 
@@ -133,7 +136,16 @@ int netfile::http_seek_to_end(void *appdata)
 {
 	assert(appdata);
 	netfile* nf = (netfile*) appdata;
-	return http_seek(nf->m_size, appdata);
+
+	int n = 0;
+	do
+	{
+		Uint8 b;
+		n = http_read(&b, 1, appdata);
+	}
+	while (n == 1);
+
+	return 0;
 }
 
 bool netfile::http_get_eof(void *appdata)
@@ -141,7 +153,7 @@ bool netfile::http_get_eof(void *appdata)
 {
 	assert(appdata);
 	netfile* nf = (netfile*) appdata;
-	return nf->m_position >= nf->m_size;
+	return nf->m_eof;
 }
 
 
@@ -149,13 +161,13 @@ bool netfile::open_uri(const tu_string& host_name, const tu_string& resource)
 {
 	assert(m_ns);
 
-//			m_if->write_string("CONNECT xxx.com HTTP/1.1\r\n		// if proxy is used 
+//			m_ns->write_string("CONNECT xxx.com HTTP/1.1\r\n		// if proxy is used 
 	m_ns->write_string(tu_string("GET ") + resource + tu_string(" HTTP/1.1\r\n"), 1);
 	m_ns->write_string(tu_string("Host:") + host_name + tu_string("\r\n"), 1);
-	//		m_if->write_string("Accept:*/*\r\n", 1);
-	//		m_if->write_string("Accept-Language: en\r\n", 1);
-	//		m_if->write_string("Accept-Encoding: gzip, deflate, chunked\r\n", 1);
-	//		m_if->write_string("Accept-Encoding: *\r\n", 1);
+	//		m_ns->write_string("Accept:*/*\r\n", 1);
+	//		m_ns->write_string("Accept-Language: en\r\n", 1);
+	//		m_ns->write_string("Accept-Encoding: gzip, deflate, chunked\r\n", 1);
+	//		m_ns->write_string("Accept-Encoding: *\r\n", 1);
 	m_ns->write_string("User-Agent:gameswf\r\n", 1);
 	m_ns->write_string("Connection:Close\r\n", 1);
 	m_ns->write_string("\r\n", 1);
@@ -183,11 +195,6 @@ bool netfile::open_uri(const tu_string& host_name, const tu_string& resource)
 			{
 				retcode = true;
 			}
-		}
-		else
-		if (strncmp(s.c_str(), "Content-Length:", 15) == 0)
-		{
-			m_size = atoi(s.c_str() + 15);
 		}
 	}
 	return retcode;
