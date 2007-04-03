@@ -1,5 +1,9 @@
 2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* net/http_client.cpp: forgot to cleanup
+
+2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_test_ogl.cpp: s_total_tags is commented out
 	to not read two times *.swf from network
 	* net/http_client.*,

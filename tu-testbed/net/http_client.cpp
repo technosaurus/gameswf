@@ -245,11 +245,6 @@ bool netfile::open_uri()
 {
 	assert(m_ns);
 
-//	for debuging
-// http://tu-testbed.svn.sourceforge.net/viewvc/*checkout*/tu-testbed/trunk/tu-testbed/gameswf/samples/video.swf?revision=891
-// http://www.olm.co.jp/swf/main.swf 
-// http://cvs.savannah.gnu.org/viewcvs/gnash/testsuite/movies.all/gravity.swf?rev=1.2&root=gnash&view=auto
-
 	if (m_ci.m_proxy_port > 0)
 	{
 		char buf[80];
