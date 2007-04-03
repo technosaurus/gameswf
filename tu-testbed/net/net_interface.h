@@ -80,11 +80,24 @@ struct net_socket
 	}
 };
 
+struct connect_info
+{
+	tu_string m_host;
+	int m_port;
+	tu_string m_uri;
+
+	tu_string m_proxy;
+	int m_proxy_port;
+
+};
 
 // Factories for some concrete net_interfaces.
 
-// TCP interface.
-net_interface* tu_create_net_interface_tcp(const char* host, int port_number);
+// TCP server interface.
+net_interface* tu_create_net_interface_tcp(int port_number);
+
+// TCP client interface.
+net_interface* tu_create_net_interface_tcp(const connect_info* ci);
 
 // Handy for testing.
 //
