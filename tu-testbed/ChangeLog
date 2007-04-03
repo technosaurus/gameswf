@@ -1,5 +1,9 @@
 2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* net/http_client.cpp: sprintf() ==> snprintf()
+
+2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* net/http_client.cpp: forgot to cleanup
 
 2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>

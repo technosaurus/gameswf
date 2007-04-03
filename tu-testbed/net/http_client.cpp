@@ -9,6 +9,10 @@
 #include "base/tu_file.h"
 #include "net/http_client.h"
 
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif // _WIN32
+
 #define HTTP_TIMEOUT 10	// sec
 //#define USE_PROXY
 
@@ -247,8 +251,8 @@ bool netfile::open_uri()
 
 	if (m_ci.m_proxy_port > 0)
 	{
-		char buf[80];
-		sprintf(buf, "CONNECT %s:%d HTTP/1.0\r\n", m_ci.m_host.c_str(), m_ci.m_port);
+		char buf[256];
+		snprintf(buf, 256, "CONNECT %s:%d HTTP/1.0\r\n", m_ci.m_host.c_str(), m_ci.m_port);
 		m_ns->write_string(buf, 1);
 		m_ns->write_string("User-Agent:gameswf\r\n", 1);
 		m_ns->write_string("Connection:Keep-Alive\r\n", 1);
