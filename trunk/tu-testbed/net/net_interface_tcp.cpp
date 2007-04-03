@@ -270,9 +270,10 @@ struct net_interface_tcp : public net_interface
 	int m_port_number;
 	SOCKET m_socket;
 
-	net_interface_tcp(const char* host, int port_number)	:
+	//	server
+	net_interface_tcp(int port_number) :
 		m_port_number(port_number),
-			m_socket(INVALID_SOCKET)
+		m_socket(INVALID_SOCKET)
 	{
 		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (m_socket == INVALID_SOCKET)
@@ -287,67 +288,91 @@ struct net_interface_tcp : public net_interface
 		saddr.sin_addr.s_addr = INADDR_ANY;
 		saddr.sin_port = htons(m_port_number);
 
-		// if client
-		if (host)
+		// bind the address
+		int ret = bind(m_socket, (LPSOCKADDR) &saddr, sizeof(saddr));
+		if (ret == SOCKET_ERROR)
 		{
-			// if proxy is used
-//		Uint32 addr = inet_addr("192.168.1.201");
-//		hostent* host = gethostbyaddr((char *) &addr, 4, AF_INET);
-			hostent* he = gethostbyname(host);
-			if (he == NULL)
-			{
-				fprintf(stderr, "can't find '%s'\n", host);
-				closesocket(m_socket);
-				m_socket = INVALID_SOCKET;
-				return;
-			}
+			fprintf(stderr, "bind failed\n");
+			closesocket(m_socket);
+			m_socket = INVALID_SOCKET;
+			return;
+		}
 
-			// get server address
-			memcpy(&saddr.sin_addr, he->h_addr, he->h_length);
+		// gethostname
 
-//      printf("The IP address is '%d.%d.%d.%d'\n", 
-//				saddr.sin_addr.S_un.S_un_b.s_b1,
-//				saddr.sin_addr.S_un.S_un_b.s_b2,
-//				saddr.sin_addr.S_un.S_un_b.s_b3,
-//				saddr.sin_addr.S_un.S_un_b.s_b4);
+		// Start listening.
+		ret = listen(m_socket, SOMAXCONN);
+		if (ret == SOCKET_ERROR)
+		{
+			fprintf(stderr, "listen() failed\n");
+			closesocket(m_socket);
+			m_socket = INVALID_SOCKET;
+			return;
+		}
 
-			int rc = connect(m_socket, (struct sockaddr*) &saddr, sizeof(struct sockaddr));
-			if (rc != 0)
-			{
-				fprintf(stderr, "can't connect to '%s'\n", host);
-				closesocket(m_socket);
-				m_socket = INVALID_SOCKET;
-			}
+		// Set non-blocking mode for the socket, so that
+		// accept() doesn't block if there's no pending
+		// connection.
+		int mode = 1;
+		ioctlsocket(m_socket, FIONBIO, (u_long FAR*) &mode);
+	}
 
+	// client
+	net_interface_tcp(const connect_info* ci) :	m_socket(INVALID_SOCKET)
+	{
+		assert(ci);
+
+		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (m_socket == INVALID_SOCKET)
+		{
+			fprintf(stderr, "can't open listen socket\n");
+			return;
+		}
+
+		// Set the address.
+		SOCKADDR_IN saddr;
+		saddr.sin_family = AF_INET;
+		saddr.sin_addr.s_addr = INADDR_ANY;
+		m_port_number = ci->m_proxy_port > 0 ? ci->m_proxy_port : ci->m_port;
+		saddr.sin_port = htons(m_port_number);
+
+		hostent* he;
+		const char* host = ci->m_proxy_port > 0 ? ci->m_proxy.c_str() : ci->m_host.c_str();
+		if (host[0] >= '0' && host[0] <= '9')	// absolue address ?
+		{
+			Uint32 addr = inet_addr(host);
+			he = gethostbyaddr((char *) &addr, 4, AF_INET);
 		}
 		else
-
-		// if server
 		{
-
-			// bind the address
-			int ret = bind(m_socket, (LPSOCKADDR) &saddr, sizeof(saddr));
-			if (ret == SOCKET_ERROR)
-			{
-				fprintf(stderr, "bind failed\n");
-				closesocket(m_socket);
-				m_socket = INVALID_SOCKET;
-				return;
-			}
-
-
-			// gethostname
-
-			// Start listening.
-			ret = listen(m_socket, SOMAXCONN);
-			if (ret == SOCKET_ERROR)
-			{
-				fprintf(stderr, "listen() failed\n");
-				closesocket(m_socket);
-				m_socket = INVALID_SOCKET;
-				return;
-			}
+			he = gethostbyname(host);
 		}
+
+		if (he == NULL)
+		{
+			fprintf(stderr, "can't find '%s'\n", host);
+			closesocket(m_socket);
+			m_socket = INVALID_SOCKET;
+			return;
+		}
+
+		// get server address
+		memcpy(&saddr.sin_addr, he->h_addr, he->h_length);
+
+		//      printf("The IP address is '%d.%d.%d.%d'\n", 
+		//				saddr.sin_addr.S_un.S_un_b.s_b1,
+		//				saddr.sin_addr.S_un.S_un_b.s_b2,
+		//				saddr.sin_addr.S_un.S_un_b.s_b3,
+		//				saddr.sin_addr.S_un.S_un_b.s_b4);
+
+		int rc = connect(m_socket, (struct sockaddr*) &saddr, sizeof(struct sockaddr));
+		if (rc != 0)
+		{
+			fprintf(stderr, "can't connect to '%s'\n", host);
+			closesocket(m_socket);
+			m_socket = INVALID_SOCKET;
+		}
+
 
 		// Set non-blocking mode for the socket, so that
 		// accept() doesn't block if there's no pending
@@ -393,8 +418,7 @@ struct net_interface_tcp : public net_interface
 	}
 };
 
-
-net_interface* tu_create_net_interface_tcp(const char* host, int port_number)
+bool net_init()
 {
 	WORD version_requested = MAKEWORD(1, 1);
 	WSADATA wsa;
@@ -405,19 +429,43 @@ net_interface* tu_create_net_interface_tcp(const char* host, int port_number)
 	{	
 		// TODO log_error
 		fprintf(stderr, "Bad Winsock version %d\n", wsa.wVersion);
-		return NULL;
+		return false;
 	}
-
-
-	net_interface_tcp* iface = new net_interface_tcp(host, port_number);
-	if (iface == NULL || iface->is_valid() == false)
-	{
-		delete iface;
-		return NULL;
-	}
-
-	return iface;
+	return true;
 }
+
+// server
+net_interface* tu_create_net_interface_tcp(int port_number)
+{
+	if (net_init())
+	{
+		net_interface_tcp* iface = new net_interface_tcp(port_number);
+		if (iface == NULL || iface->is_valid() == false)
+		{
+			delete iface;
+			return NULL;
+		}
+		return iface;
+	}
+	return NULL;
+}
+
+// client
+net_interface* tu_create_net_interface_tcp(const connect_info* ci)
+{
+	if (net_init())
+	{
+		net_interface_tcp* iface = new net_interface_tcp(ci);
+		if (iface == NULL || iface->is_valid() == false)
+		{
+			delete iface;
+			return NULL;
+		}
+		return iface;
+	}
+	return NULL;
+}
+
 
 //		WSACleanup();
 

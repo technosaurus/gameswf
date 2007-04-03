@@ -580,7 +580,7 @@ int	main(int argc, char *argv[])
 	int	movie_height = 0;
 	float	movie_fps = 30.0f;
 	gameswf::get_movie_info(infile, &movie_version, &movie_width, &movie_height, &movie_fps,
-		NULL, &s_total_tags);
+		NULL, NULL);
 	if (movie_version == 0)
 	{
 		fprintf(stderr, "error: can't get info about %s\n", infile);

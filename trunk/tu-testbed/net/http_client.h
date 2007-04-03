@@ -48,14 +48,25 @@ struct netfile
 
 	private:
 
+	int read(void* dst, int bytes);
+	int seek(int pos);
 	void close();
-	bool open_uri(const tu_string& host_name, const tu_string& resource);
+	bool read_response();
+	bool open_uri();
 
 	// vars
 	int m_position;
 	net_interface* m_iface;
 	net_socket* m_ns;
 	bool m_eof;
+	connect_info m_ci;
+
+	// We use set_position(back) therefore we need to use buf to store input data
+	Uint8* m_buf;		// data
+	int m_bufsize;	// current bufsize
+	int m_size;			// data size
+
+//	FILE* m_fd;	// for debuging
 };
 
 // Local Variables:
