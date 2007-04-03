@@ -5,28 +5,6 @@
 
 // HTTP implementation of tu_file
 
-#ifdef _WIN32
-#include "Winsock.h"
-typedef void siginfo_t;
-typedef int socklen_t;                   
-#define EINPROGRESS 0
-#define EALREADY 0
-#define strdup _strdup
-#else
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#endif
-
 #include "base/container.h"
 #include "net/net_interface.h"
 

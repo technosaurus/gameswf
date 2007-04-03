@@ -12,7 +12,36 @@
 
 #ifdef _WIN32
 
-#include <winsock.h>
+#include "Winsock.h"
+#define strdup _strdup
+
+#else
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <sys/time.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <stdarg.h>
+#include <signal.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+typedef int SOCKET;
+#define closesocket close
+#define SOCKET_ERROR -1
+#define WSAGetLastError() errno
+#define WSAEWOULDBLOCK 1
+#define INVALID_SOCKET ENOTSOCK
+#define WSAENOBUFS 1
+#define SOCKADDR_IN sockaddr_in
+#define LPSOCKADDR sockaddr*
+
+#endif
 
 struct net_socket_tcp : public net_socket
 {
@@ -313,10 +342,21 @@ struct net_interface_tcp : public net_interface
 		// Set non-blocking mode for the socket, so that
 		// accept() doesn't block if there's no pending
 		// connection.
-		int mode = 1;
-		ioctlsocket(m_socket, FIONBIO, (u_long FAR*) &mode);
+		set_nonblock();
 	}
 
+	void set_nonblock()
+	{
+#ifdef _WIN32
+		int mode = 1;
+		ioctlsocket(m_socket, FIONBIO, (u_long FAR*) &mode);
+#else
+		int mode = fcntl(m_socket, F_GETFL, 0);
+		mode |= O_NONBLOCK;
+		fcntl(m_socket, F_SETFL, mode);
+#endif
+   }
+	
 	// client
 	net_interface_tcp(const connect_info* ci) :	m_socket(INVALID_SOCKET)
 	{
@@ -335,6 +375,7 @@ struct net_interface_tcp : public net_interface
 		saddr.sin_addr.s_addr = INADDR_ANY;
 		m_port_number = ci->m_proxy_port > 0 ? ci->m_proxy_port : ci->m_port;
 		saddr.sin_port = htons(m_port_number);
+
 
 		hostent* he;
 		const char* host = ci->m_proxy_port > 0 ? ci->m_proxy.c_str() : ci->m_host.c_str();
@@ -377,8 +418,7 @@ struct net_interface_tcp : public net_interface
 		// Set non-blocking mode for the socket, so that
 		// accept() doesn't block if there's no pending
 		// connection.
-		int mode = 1;
-		ioctlsocket(m_socket, FIONBIO, (u_long FAR*) &mode);
+		set_nonblock();
 	}
 
 	~net_interface_tcp()
@@ -405,6 +445,7 @@ struct net_interface_tcp : public net_interface
 	{
 		// Accept an incoming request.
 		SOCKET	remote_socket;
+
 		remote_socket = ::accept(m_socket, NULL, NULL);
 		if (remote_socket == INVALID_SOCKET)
 		{
@@ -420,6 +461,7 @@ struct net_interface_tcp : public net_interface
 
 bool net_init()
 {
+#ifdef _WIN32
 	WORD version_requested = MAKEWORD(1, 1);
 	WSADATA wsa;
 
@@ -431,6 +473,7 @@ bool net_init()
 		fprintf(stderr, "Bad Winsock version %d\n", wsa.wVersion);
 		return false;
 	}
+#endif
 	return true;
 }
 
@@ -465,18 +508,6 @@ net_interface* tu_create_net_interface_tcp(const connect_info* ci)
 	}
 	return NULL;
 }
-
-
-//		WSACleanup();
-
-
-#else  // not _WIN32
-
-
-// ...
-
-
-#endif  // not _WIN32
 
 
 // Local Variables:
