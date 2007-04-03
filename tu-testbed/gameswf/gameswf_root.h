@@ -136,6 +136,11 @@ namespace gameswf
 		virtual void	attach_display_callback(const char* path_to_object,
 			void (*callback)(void* user_ptr), void* user_ptr);
 
+		virtual int	get_movie_version();
+		virtual int	get_movie_width();
+		virtual int	get_movie_height();
+		virtual float	get_movie_fps();
+
 		virtual void	notify_key_event(key::code k, bool down);
 		void add_keypress_listener(as_object_interface* listener);
 		void remove_keypress_listener(as_object_interface* listener);

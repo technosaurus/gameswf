@@ -1,5 +1,11 @@
 2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* a lot of files: removed useless progress_bar stuff &
+	the calling of useless get_movie_info().
+	The movie file is opened only once. It is important for network
+
+2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* net/http_client.cpp: sprintf() ==> snprintf()
 
 2007-04-03  Vitaly Alexeev <tishka92@yahoo.com>
