@@ -97,10 +97,6 @@ namespace gameswf
 	typedef tu_file* (*file_opener_callback)(const char* url_or_path);
 	void	register_file_opener_callback(file_opener_callback opener);
 
-	// Register a callback for displaying SWF load progress.
-	typedef void (*progress_callback)(unsigned int loaded_bytes, unsigned int total_bytes);
-	void	register_progress_callback(progress_callback progress_handle);
-
 	// ActionScripts embedded in a movie can use the built-in
 	// fscommand() function to send data back to the host
 	// application.	 If you are interested in this data, register
@@ -562,6 +558,12 @@ namespace gameswf
 
 		// External interface for the host to report key events.
 		virtual void	notify_key_event(key::code k, bool down) { /*assert(0);*/ }
+
+		// Movie info
+		virtual int	get_movie_version() { return 0; }
+		virtual int	get_movie_width() { return 0; }
+		virtual int	get_movie_height() { return 0; }
+		virtual float	get_movie_fps() { return 0.0f; }
 
 	};
 

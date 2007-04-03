@@ -93,20 +93,8 @@ namespace gameswf
 	}
 
 	//
-	// progress callback stuff
-	//
-
-	void	register_progress_callback(progress_callback handler)
-		// Host calls this to register a function for progress bar handling
-		// during loading movies.
-	{
-		set_progress_callback(handler);
-	}
-
-	//
 	// some utility stuff
 	//
-
 
 	void	execute_actions(as_environment* env, const array<action_buffer*>& action_list)
 		// Execute the actions in the action list, in the given

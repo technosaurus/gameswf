@@ -199,6 +199,26 @@ namespace gameswf
 			ms->m_topmost_entity = topmost_entity;
 		}
 
+		// movie info
+
+		int	movie_root::get_movie_version()
+		{
+			return m_def->get_version();
+		}
+
+		int	movie_root::get_movie_width()
+		{
+			return (int) m_def->get_width_pixels();
+		}
+		int	movie_root::get_movie_height()
+		{
+			return (int) m_def->get_height_pixels();
+		}
+		float	movie_root::get_movie_fps()
+		{
+			return m_def->get_frame_rate();
+		}
+
 		void	action_init();
 		void notify_key_object(key::code k, bool down);
 		void	movie_root::notify_key_event(key::code k, bool down)

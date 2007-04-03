@@ -204,19 +204,11 @@ static gameswf::key::code	translate_key(SDLKey key)
 	return c;
 }
 
-
-// for progress bar & logo 
-#define H_BAR 0.075f
-static int s_total_tags = 0, s_loaded_tags = 0;
-static int s_wlogo = 0, s_hlogo = 0;
-static gameswf::render_handler*	s_logo_render = NULL;
-static gameswf::bitmap_info* s_logo_bi = NULL;
-static int s_logo_tick = 0;
-
-static void show_logo()
+static void show_logo(gameswf::render_handler* render,
+											gameswf::bitmap_info* logo, int width, int height)
 {
-	glViewport(0, 0, s_wlogo, s_hlogo);
-	if (s_logo_bi && s_logo_render)
+	glViewport(0, 0, width, height);
+	if (logo && render)
 	{
 		gameswf::matrix m;
 		gameswf::rect coords;
@@ -240,7 +232,7 @@ static void show_logo()
 		color.m_g = 255;
 		color.m_b = 255;
 
-		s_logo_render->draw_bitmap(m, s_logo_bi, coords,	uv_coords,	color);
+		render->draw_bitmap(m, logo, coords,	uv_coords,	color);
 		glDisable(GL_TEXTURE_2D);
 	}
 	else
@@ -256,73 +248,8 @@ static void show_logo()
 	}
 }
 
-static void	test_progress_callback(unsigned int loaded_tags, unsigned int total_tags)
-// Callback function.  This show loading progress.
-{
-	float p;
-	if (s_total_tags > 0)
-	{
-		// initial loading
-		s_loaded_tags++;
-		p = (float)s_loaded_tags / (float)s_total_tags * 2.0f;
-		if (s_loaded_tags >= s_total_tags)
-		{
-			s_total_tags = 0;
-		}
-	}
-	else
-	{
-		// runtime loading (LoadMovie("next.swf", _root))
-		p = (float)loaded_tags / (float)total_tags * 2.0f;
-	}
-
-//	SDL_Surface* screen  = SDL_GetVideoSurface();
-	glViewport(0, 0, s_wlogo, s_hlogo);
-
-	glDisable(GL_DEPTH_TEST);	// Disable depth testing.
-	glDrawBuffer(GL_BACK);
-	glDisable(GL_TEXTURE_2D);
-
-	// show background
-	show_logo();
-
-	// show progress bar
-	glBegin(GL_QUADS);
-	glColor3ub(255, 255, 255);
-	glVertex2f(-1.0f, 1.0f - H_BAR);
-	glVertex2f(1.0f, 1.0f - H_BAR);
-	glVertex2f(1.0f, 1.0f);
-	glVertex2f(-1.0f, 1.0f);
-	glEnd();
-
-	// show progress %
-	glBegin(GL_QUADS);
-
-	glColor4ub(255, 0, 0, 255);
-	glVertex2f(-1.0f, 1.0f - H_BAR);
-	glVertex2f(-1.0f + p, 1.0f - H_BAR);
-	glVertex2f(-1.0f + p, 1.0f);
-	glVertex2f(-1.0f, 1.0f);
-	glEnd();
-
-	if (SDL_GetTicks() - s_logo_tick > 500)
-	{
-		s_logo_tick = SDL_GetTicks();
-		SDL_GL_SwapBuffers();
-	}
-
-	// initial loading are finished
-	if (s_loaded_tags >= s_total_tags)
-	{
-		s_loaded_tags = 0;
-		s_total_tags = 0;
-	}
-}
-
-
 // TODO: clean up this interface and re-enable.
 //extern bool gameswf_tesselate_dump_shape;
-
 
 int	main(int argc, char *argv[])
 {
@@ -552,9 +479,6 @@ int	main(int argc, char *argv[])
 		}
 	}
 
-//	if (do_render) {
-//		gameswf::register_progress_callback(test_progress_callback);
-//	}
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_fscommand_callback(fs_callback);
 	if (s_verbose == true) {
@@ -570,31 +494,40 @@ int	main(int argc, char *argv[])
 			sound = gameswf::create_sound_handler_sdl();
 			gameswf::set_sound_handler(sound);
 		}
-//		render = s_logo_render = gameswf::create_render_handler_ogl();
-//		gameswf::set_render_handler(render);
+		render = gameswf::create_render_handler_ogl();
+		gameswf::set_render_handler(render);
 	}
 
-	// Get info about the width & height of the movie.
-	int	movie_version = 0;
-	int	movie_width = 0;
-	int	movie_height = 0;
-	float	movie_fps = 30.0f;
-	gameswf::get_movie_info(infile, &movie_version, &movie_width, &movie_height, &movie_fps,
-		NULL, NULL);
-	if (movie_version == 0)
+	// Load the actual movie.
+	gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
+	if (md == NULL)
 	{
-		fprintf(stderr, "error: can't get info about %s\n", infile);
+		fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
 		exit(1);
 	}
-	else
+	gameswf::movie_interface*	m = create_library_movie_inst(md);
+	if (m == NULL)
+	{
+		fprintf(stderr, "error: can't create movie instance\n");
+		exit(1);
+	}
+	gameswf::set_current_root(m);
+
+	int	movie_version = m->get_movie_version();
+	int	movie_width = m->get_movie_width();
+	int	movie_height = m->get_movie_height();
+	float	movie_fps = m->get_movie_fps();
+
 	if (movie_version > 6)
 	{
-		fprintf(stderr, "warning: The file %s has the version %d\n", infile, movie_version);
-		fprintf(stderr, "warning: Playing of files of version 7 and above can cause crash of the program\n");
+		fprintf(stderr, "warning:\n");
+		fprintf(stderr, "The file %s has the version %d\n", infile, movie_version);
+		fprintf(stderr, "Playing of files of version 7 and above can cause crash of the program\n");
 	}
 
-	int	width = s_wlogo = int(movie_width * s_scale);
-	int	height = s_hlogo = int(movie_height * s_scale);
+
+	int	width = int(movie_width * s_scale);
+	int	height = int(movie_height * s_scale);
 
 	if (do_render)
 	{
@@ -682,9 +615,6 @@ int	main(int argc, char *argv[])
 			exit(1);
 		}
 
-		render = s_logo_render = gameswf::create_render_handler_ogl();
-		gameswf::set_render_handler(render);
-
 		ogl::open();
 
 		// Turn on alpha blending.
@@ -708,36 +638,21 @@ int	main(int argc, char *argv[])
 		glPushAttrib (GL_ALL_ATTRIB_BITS);		
 	}
 
-
-	// create logo
+	// show logo
+	gameswf::bitmap_info* logo = NULL;
 	image::rgb* im = image::read_jpeg("gameswf_logo.jpg");
 	if (im != NULL)
 	{
-		s_logo_bi = render->create_bitmap_info_rgb(im);
+		logo = render->create_bitmap_info_rgb(im);
 	}
 
-	if (do_render) {
-		// show logo
-		show_logo();
+	if (do_render) 
+	{
+		show_logo(render, logo, width, height);
 		glDrawBuffer(GL_BACK);
 		SDL_GL_SwapBuffers();
 	}
 	
-	// Load the actual movie.
-	gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
-	if (md == NULL)
-	{
-		fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
-		exit(1);
-	}
-	gameswf::movie_interface*	m = create_library_movie_inst(md);
-	if (m == NULL)
-	{
-		fprintf(stderr, "error: can't create movie instance\n");
-		exit(1);
-	}
-	gameswf::set_current_root(m);
-
 	// Mouse state.
 	int	mouse_x = 0;
 	int	mouse_y = 0;
@@ -877,7 +792,7 @@ int	main(int argc, char *argv[])
 								sound = gameswf::create_sound_handler_sdl();
 								gameswf::set_sound_handler(sound);
 							}
-							render = s_logo_render = gameswf::create_render_handler_ogl();
+							render = gameswf::create_render_handler_ogl();
 							gameswf::set_render_handler(render);
 						}
 
