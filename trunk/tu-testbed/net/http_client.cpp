@@ -28,7 +28,8 @@ netfile::netfile(const char* c_url) :
 	m_ci.m_port = 80;
 
 #ifdef USE_PROXY
-	m_ci.m_proxy = "192.168.1.201";
+//	m_ci.m_proxy = "192.168.1.201";
+	m_ci.m_proxy = "192.168.100.200";
 	m_ci.m_proxy_port = 8080;
 #else
 	m_ci.m_proxy = "";
