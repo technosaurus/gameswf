@@ -481,14 +481,18 @@ namespace gameswf
 		}
 
 		// start stream sound
-		sound_handler* sound = get_sound_handler();
-		if (sound)
+		if (state_only == false)
 		{
-			if (m_def->m_ss_start == m_current_frame)
+			sound_handler* sound = get_sound_handler();
+			if (sound)
 			{
-				if (m_def->m_ss_id >= 0)
+				if (m_def->m_ss_start == frame)
 				{
-					sound->play_sound(m_def->m_ss_id, 0);
+					if (m_def->m_ss_id >= 0)
+					{
+						sound->stop_sound(m_def->m_ss_id);
+						sound->play_sound(m_def->m_ss_id, 0);
+					}
 				}
 			}
 		}
