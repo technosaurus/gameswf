@@ -473,6 +473,7 @@ XML::processNode(xmlTextReaderPtr reader, XMLNode *node)
     strcpy(element->_value, reinterpret_cast<const char *>(value));
     break;
   case XML_READER_TYPE_ATTRIBUTE:
+	{
     element = node;
     XMLAttr *attrib = new XMLAttr;
     attrib->_name = (char *)new char[strlen(reinterpret_cast<const char *>(name))+1];
@@ -484,6 +485,7 @@ XML::processNode(xmlTextReaderPtr reader, XMLNode *node)
 //     log_msg("%sPushing attribute %s, value \"%s\" for node %s\n", tabs[depth], name, value, element->_name);
     element->_attributes.push_back(attrib);
     break;
+	}
   default:   // FIXME: why does this break GCC 3.3.3 but not 3.4.3 ?
     log_error("Unsupported XML type %d\n!", type);
     break;
@@ -676,20 +678,21 @@ xml_load(const fn_call& fn)
   
   xml_as_object *xml_obj = (xml_as_object*)fn.this_ptr;
   
-  assert(ptr);
+  assert(xml_obj);
+
   const tu_string filespec = fn.env->bottom(fn.first_arg_bottom_index).to_string();
 
   // If the file doesn't exist, don't try to do anything.
   if (stat(filespec.c_str(), &stats) < 0) {
     fprintf(stderr, "ERROR: doesn't exist.%s\n", filespec.c_str());
-    fn.result->set(false);
+		fn.result->set_bool(false);
     return;
   }
   
   // Set the argument to the function event handler based on whether the load
   // was successful or failed.
   ret = xml_obj->obj.load(filespec);
-  fn.result->set(ret);
+	fn.result->set_bool(ret);
 
   if (ret == false) {
     return;
@@ -736,7 +739,7 @@ xml_load(const fn_call& fn)
 
 #endif
 
-  fn.result->set(true);
+  fn.result->set_bool(true);
 }
 
 // This executes the event handler for XML::XML_LOAD if it's been defined,
@@ -788,7 +791,7 @@ xml_onload(const fn_call& fn)
     }
   }
       
-  fn.result->set(&val);
+	*fn.result = val;
 }
 
 // This is the default event handler, and is usually redefined in the SWF script
@@ -830,7 +833,7 @@ xml_ondata(const fn_call& fn)
     }
   }
 
-  fn.result->set(&val);
+  *fn.result = val;
 }
 
 void
@@ -888,7 +891,7 @@ xml_loaded(const fn_call& fn)
   xml_as_object*	ptr = (xml_as_object*) (as_object*) fn.this_ptr;
   assert(ptr);
   tu_string filespec = fn.env->bottom(fn.first_arg_bottom_index).to_string();
-  fn.result->set(ptr->obj.loaded());
+  fn.result->set_bool(ptr->obj.loaded());
 }
 
 int

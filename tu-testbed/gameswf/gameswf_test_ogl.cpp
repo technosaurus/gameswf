@@ -1079,7 +1079,7 @@ runThread(void *nothing)
 		// FIXME: this file descriptor is hardcoded so this
 		// doesn't work under GDB right now.
 		if ((val = gameswf::check_sockets(xml_fd)) == -1) {
-			sleep(100);
+			SDL_Delay(100);
 			continue;
 		}
 		s_event_thread = true;

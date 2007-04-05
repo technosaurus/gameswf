@@ -168,11 +168,12 @@ struct xmlnode_as_object : public gameswf::as_object
 
     if ((name == "firstChild") || (name == "childNodes")) {
       //printf("Returning a self reference for %s for object at %p\n", name.c_str(), this);
-      val->set(this);
+			val->set_as_object_interface(this);
       return true;
     }
     
-    if (m_members.get(name, val) == false) {
+//    if (m_members.get(name, val) == false) {
+    if (get_member(name, val) == false) {
       if (m_prototype != NULL) {
         return m_prototype->get_member(name, val);
       }
@@ -230,7 +231,7 @@ class XML {
   //  Returns true if the specified node has child nodes; otherwise, returns false.
   bool hasChildNodes()
   {
-    return _nodes->_children.size();
+		return _nodes->_children.size() > 0 ? true : false;
   }
 
   XMLNode *extractNode(xmlNodePtr node, bool mem);
@@ -346,11 +347,12 @@ struct xml_as_object : public gameswf::as_object
 
     if ((name == "firstChild") || (name == "childNodes")) {
       //printf("Returning a self reference for %s for object at %p\n", name.c_str(), this);
-      val->set(this);
+			val->set_as_object_interface(this);
       return true;
     }
     
-    if (m_members.get(name, val) == false) {
+//    if (m_members.get(name, val) == false) {
+    if (get_member(name, val) == false) {
       if (m_prototype != NULL) {
         return m_prototype->get_member(name, val);
       }
