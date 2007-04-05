@@ -319,8 +319,17 @@ tu_file::tu_file(FILE* fp, bool autoclose=false)
 	m_error = TU_FILE_NO_ERROR;
 }
 
-tu_file::tu_file(const char * name, const char * mode)
+tu_file::tu_file(const char * name, const char * mode) :
 // Create a file from the given name and the given mode.
+	m_data(NULL),
+	m_read(NULL),
+	m_write(NULL),
+	m_seek(NULL),
+	m_seek_to_end(NULL),
+	m_tell(NULL),
+	m_get_eof(NULL),
+	m_close(NULL),
+	m_error(TU_FILE_OPEN_ERROR)
 {
 
 	assert(name);
@@ -329,16 +338,23 @@ tu_file::tu_file(const char * name, const char * mode)
 	if (strncmp(name, "http://", 7) == 0)
 	// Create a file from a URL using HTTP protocol
 	{
-		m_data = new netfile(name + 7); 
-		m_read = netfile::http_read;
-		m_write = netfile::http_write;
-		m_seek = netfile::http_seek;
-		m_seek_to_end = netfile::http_seek_to_end;
-		m_tell = netfile::http_tell;
-		m_get_eof = netfile::http_get_eof;
-		m_close = netfile::http_close;
-		m_error = TU_FILE_NO_ERROR;
-
+		netfile* fi = new netfile(name + 7);
+		if (fi->is_open())
+		{
+			m_data = fi;
+			m_read = netfile::http_read;
+			m_write = netfile::http_write;
+			m_seek = netfile::http_seek;
+			m_seek_to_end = netfile::http_seek_to_end;
+			m_tell = netfile::http_tell;
+			m_get_eof = netfile::http_get_eof;
+			m_close = netfile::http_close;
+			m_error = TU_FILE_NO_ERROR;
+		}
+		else
+		{
+			delete fi;
+		}
 		return;
 	}
 #endif
@@ -354,17 +370,6 @@ tu_file::tu_file(const char * name, const char * mode)
 		m_get_eof = std_get_eof_func;
 		m_close = std_close_func;
 		m_error = TU_FILE_NO_ERROR;
-	}
-	else 
-	{
-		m_read = NULL;
-		m_write = NULL;
-		m_seek = NULL;
-		m_seek_to_end = NULL;
-		m_tell = NULL;
-		m_get_eof = NULL;
-		m_close = NULL;
-		m_error = TU_FILE_OPEN_ERROR;
 	}
 }
 

@@ -375,8 +375,6 @@ namespace gameswf
 			return m_background_color.m_a / 255.0f;
 		}
 
-		void	movie_root::restart() { m_movie->restart(); }
-
 		void	movie_root::advance(float delta_time)
 		{
 			// Lock gameswf engine. Video is running in separate thread and

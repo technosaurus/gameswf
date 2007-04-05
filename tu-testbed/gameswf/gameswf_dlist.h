@@ -127,9 +127,10 @@ namespace gameswf
 		
 		void swap_characters(character* ch, character* ch2);
 
-//		void	set_character_position(character* ch, float x, float y);
-
 	private:
+
+		void remove(int index);
+
 		array<display_object_info> m_display_object_array;
 	};
 

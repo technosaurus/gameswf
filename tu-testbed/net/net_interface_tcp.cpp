@@ -17,14 +17,7 @@
 
 #else
 
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/ioctl.h>
-#include <sys/time.h>
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <signal.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
@@ -32,12 +25,13 @@
 #include <netdb.h>
 
 typedef int SOCKET;
+
 #define closesocket close
 #define SOCKET_ERROR -1
 #define WSAGetLastError() errno
-#define WSAEWOULDBLOCK 1
+#define WSAEWOULDBLOCK EAGAIN
 #define INVALID_SOCKET ENOTSOCK
-#define WSAENOBUFS 1
+#define WSAENOBUFS EAGAIN
 #define SOCKADDR_IN sockaddr_in
 #define LPSOCKADDR sockaddr*
 

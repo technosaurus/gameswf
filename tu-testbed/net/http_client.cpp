@@ -28,8 +28,8 @@ netfile::netfile(const char* c_url) :
 	m_ci.m_port = 80;
 
 #ifdef USE_PROXY
-//	m_ci.m_proxy = "192.168.1.201";
-	m_ci.m_proxy = "192.168.100.200";
+	m_ci.m_proxy = "192.168.1.201";
+	//m_ci.m_proxy = "192.168.100.200";
 	m_ci.m_proxy_port = 8080;
 #else
 	m_ci.m_proxy = "";
@@ -91,6 +91,11 @@ void netfile::close()
 	free(m_buf);
 	m_buf = NULL;
 //	fclose(m_fd);
+}
+
+bool netfile::is_open() const
+{
+	return m_ns != NULL && m_iface != NULL;
 }
 
 int netfile::http_read(void* dst, int bytes, void* appdata) 
@@ -271,6 +276,8 @@ bool netfile::open_uri()
 //	m_ns->write_string("Accept-Language: en\r\n", 1);
 //	m_ns->write_string("Accept-Encoding: gzip, deflate, chunked\r\n", 1);
 //	m_ns->write_string("Accept-Encoding: *\r\n", 1);
+//	m_ns->write_string("Proxy-Authenticate:prg\r\n", 1);
+//	m_ns->write_string("Proxy-Authorization:123\r\n", 1);
 	m_ns->write_string("User-Agent:gameswf\r\n", 1);
 	m_ns->write_string("Connection:Close\r\n", 1);
 	m_ns->write_string("\r\n", 1);
