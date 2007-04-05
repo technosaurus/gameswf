@@ -291,7 +291,7 @@ namespace gameswf
 	}
 
 
-	void	font::read_font_info(stream* in)
+	void	font::read_font_info(stream* in, int tag_type)
 	// Read additional information about this font, from a
 	// DefineFontInfo tag.  The caller has already read the tag
 	// type and font id.
@@ -311,6 +311,13 @@ namespace gameswf
 		m_is_italic = (flags & 0x04) != 0;
 		m_is_bold = (flags & 0x02) != 0;
 		m_wide_codes = (flags & 0x01) != 0;
+
+		// language code
+		if (tag_type == 62)
+		{
+			// now unused
+			in->read_u8();
+		}
 
 		read_code_table(in);
 	}

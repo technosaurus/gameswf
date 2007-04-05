@@ -269,6 +269,7 @@ namespace gameswf
 			register_tag_loader(59, do_init_action_loader);	  
 			register_tag_loader(60, define_video_loader);
 			register_tag_loader(61, video_loader);
+			register_tag_loader(62, define_font_info_loader);
 		}
 	}
 
@@ -1331,14 +1332,14 @@ namespace gameswf
 		// Load a DefineFontInfo tag.  This adds information to an
 		// existing font.
 	{
-		assert(tag_type == 13);
+		assert(tag_type == 13 || tag_type == 62);
 
 		Uint16	font_id = in->read_u16();
 
 		font*	f = m->get_font(font_id);
 		if (f)
 		{
-			f->read_font_info(in);
+			f->read_font_info(in, tag_type);
 		}
 		else
 		{

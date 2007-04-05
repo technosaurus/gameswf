@@ -1,5 +1,10 @@
 2007-04-05  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_impl.cpp,
+	* gameswf/gameswf_font.*: added tag 62 implementation (DefineFontInfo2)
+
+2007-04-05  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_sound_handler.cpp: fixed one more stream sound bug
 
 2007-04-05  Vitaly Alexeev <tishka92@yahoo.com>
