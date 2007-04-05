@@ -179,6 +179,20 @@ namespace gameswf
 		return NULL;
 	}
 
+	void display_list::remove(int index)
+	// Removing the character at get_display_object(index).
+	{
+		display_object_info&	di = m_display_object_array[index];
+
+		di.m_character->on_event(event_id::KILLFOCUS);
+		di.m_character->on_event(event_id::UNLOAD);
+		
+		// remove this character from listener
+		remove_keypress_listener(di.m_character.get_ptr());
+
+		di.set_character(NULL);
+		m_display_object_array.remove(index);
+	}
 
 	void	display_list::add_display_object(
 		character* ch, 
@@ -205,9 +219,7 @@ namespace gameswf
 
 				if (dobj.m_character->get_depth() == depth)
 				{
-					remove_keypress_listener(dobj.m_character.get_ptr());
-					dobj.set_character(NULL);
-					m_display_object_array.remove(index);
+					remove(index);
 				}
 			}
 		}
@@ -323,55 +335,34 @@ namespace gameswf
 		int	index = find_display_index(depth);
 		if (index < 0 || index >= size)
 		{
-			// Error, no existing object found at depth.
-//			IF_VERBOSE_DEBUG(log_msg("dl::replace_display_object() no obj at depth %d\n", depth));
-			// Fallback -- add the object.
 			add_display_object(ch, depth, true, color_xform, mat, ratio, clip_depth);
 			return;
 		}
 		
 		display_object_info&	di = m_display_object_array[index];
-		if (di.m_character->get_depth() != depth)
-		{
-			// error
-//			IF_VERBOSE_DEBUG(log_msg("warning: replace_display_object() -- no object at depth %d\n", depth));
-			return;
-		}
-		
 		smart_ptr<character>	old_ch = di.m_character;
 
 		// Put the new character in its place.
+
 		assert(ch);
-		ch->set_depth(depth);
-		ch->restart();
-		
+
+		cxform cx = color_xform;
+		matrix m = mat;
+
 		// Set the display properties.
-		di.set_character(ch);
-		if (use_cxform)
-		{
-			ch->set_cxform(color_xform);
-		}
-		else
+		if (use_cxform == false)
 		{
 			// Use the cxform from the old character.
-			ch->set_cxform(old_ch->get_cxform());
+			cx = old_ch->get_cxform();
 		}
 
-		if (use_matrix)
-		{
-			ch->set_matrix(mat);
-		}
-		else
+		if (use_matrix == false)
 		{
 			// Use the matrix from the old character.
-			ch->set_matrix(old_ch->get_matrix());
+			m = old_ch->get_matrix();
 		}
 
-		ch->set_ratio(ratio);
-		ch->set_clip_depth(clip_depth);
-
-		remove_keypress_listener(old_ch.get_ptr());
-		add_keypress_listener(ch);
+		add_display_object(ch, depth, true, cx, m, ratio, clip_depth);
 	}
 	
 	
@@ -425,19 +416,7 @@ namespace gameswf
 			assert(get_character(index)->get_id() == id);
 		}
 
-		// Removing the character at get_display_object(index).
-		display_object_info&	di = m_display_object_array[index];
-
-		di.m_character->on_event(event_id::KILLFOCUS);
-
-		//Vitaly: UNLOAD event in DisplayList::clear() is not caused,
-		// since character is removed already
-		di.m_character->on_event(event_id::UNLOAD);
-		
-		// remove this character from listener
-		remove_keypress_listener(di.m_character.get_ptr());
-
-		m_display_object_array.remove(index);
+		remove(index);
 	}
 
 	void display_list::add_keypress_listener(character* ch)
@@ -466,16 +445,10 @@ namespace gameswf
 	void	display_list::clear()
 	// clear the display list.
 	{
-		int i, n = m_display_object_array.size();
-		for (i = 0; i < n; i++)
+		while (m_display_object_array.size() > 0)
 		{
-			display_object_info&	di = m_display_object_array[i];
-			remove_keypress_listener(di.m_character.get_ptr());
-			di.m_character->on_event(event_id::KILLFOCUS);
-			di.m_character->on_event(event_id::UNLOAD);
+			remove(0);
 		}
-		
-		m_display_object_array.clear();
 	}
 	
 	void	display_list::advance(float delta_time)
@@ -592,11 +565,7 @@ namespace gameswf
 
 			if (is_affected == false) 
 			{ 
-				remove_keypress_listener(di.m_character.get_ptr());
-				di.m_character->on_event(event_id::KILLFOCUS); 
-				di.m_character->on_event(event_id::UNLOAD); 
-				di.set_character(NULL);
-				m_display_object_array.remove(i);
+				remove(i);
 				continue; 
 			} 
 			i++; 

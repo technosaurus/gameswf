@@ -15,6 +15,7 @@ struct netfile
 
 	netfile(const char* url);
 	~netfile();
+	bool is_open() const;
 
 	static int http_read(void* dst, int bytes, void* appdata);
 	static int http_tell(const void *appdata);

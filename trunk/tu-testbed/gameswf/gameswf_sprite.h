@@ -109,20 +109,6 @@ namespace gameswf
 			m_root->set_background_color(color);
 		}
 
-		void	restart()
-		{
-			m_current_frame = 0;
-//			m_time_remainder = 0;
-			m_update_frame = true;
-//			m_has_looped = false;
-			m_play_state = PLAY;
-
-			m_display_list.clear();
-			execute_frame_tags(m_current_frame);
-//			m_display_list.update();
-		}
-
-
 //		virtual bool	has_looped() const { return m_has_looped; }
 
 		virtual bool	get_accept_anim_moves() const { return m_accept_anim_moves; }

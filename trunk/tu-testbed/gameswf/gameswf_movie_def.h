@@ -36,7 +36,7 @@ namespace gameswf
 	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
 	bool get_tag_loader(int tag_type, loader_function* lf);
 
-	inline bool get_break_loading();
+	bool get_break_loading();
 
 	// Extra internal interfaces added to movie_definition
 	struct movie_definition_sub : public movie_definition 

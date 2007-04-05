@@ -70,7 +70,6 @@ void	print_usage()
 		"  CTRL-W          Quit/Exit\n"
 		"  ESC             Quit/Exit\n"
 		"  CTRL-P          Toggle Pause\n"
-		"  CTRL-R          Restart the movie\n"
 		"  CTRL-[ or kp-   Step back one frame\n"
 		"  CTRL-] or kp+   Step forward one frame\n"
 		"  CTRL-A          Toggle antialiasing (doesn't work)\n"
@@ -499,6 +498,9 @@ int	main(int argc, char *argv[])
 	}
 
 	// Load the actual movie.
+
+	fprintf(stderr, "Starting ... Wait some seconds\n");
+
 	gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
 	if (md == NULL)
 	{
@@ -764,11 +766,6 @@ int	main(int argc, char *argv[])
 						{
 							m->set_play_state(gameswf::movie_interface::STOP);
 						}
-					}
-					else if (ctrl && key == SDLK_r)
-					{
-						// Restart the movie.
-						m->restart();
 					}
 					else if (ctrl && key == SDLK_i)
 					{

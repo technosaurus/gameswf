@@ -203,7 +203,6 @@ namespace gameswf
 				m_record_character[r] = ch;
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
-				ch->restart();
 			}
 		}
 
@@ -225,19 +224,6 @@ namespace gameswf
 
 		movie_root*	get_root() { return get_parent()->get_root(); }
 		movie*	get_root_movie() { return get_parent()->get_root_movie(); }
-
-		void	restart()
-		{
-			m_last_mouse_flags = IDLE;
-			m_mouse_flags = IDLE;
-			m_mouse_state = UP;
-			int r, r_num =  m_record_character.size();
-			for (r = 0; r < r_num; r++)
-			{
-				m_record_character[r]->restart();
-			}
-		}
-
 
 		virtual void	advance(float delta_time)
 		{
@@ -472,9 +458,6 @@ namespace gameswf
 		        //IDLE_TO_OVER_DOWN = 1 << 7,
 			//OVER_DOWN_TO_IDLE = 1 << 8,
 
-			// restart the characters of the new state.
-			restart_characters(c);
-
 			// Execute appropriate actions
 
 			// actions can delete THIS through execute_frame_tags()
@@ -496,40 +479,6 @@ namespace gameswf
 			// Call conventional attached method.
 			// @@ TODO
 		}
-
-
-		void restart_characters(int condition)
-		{
-			// Restart our relevant characters
-			for (int i = 0; i < m_def->m_button_records.size(); i++)
-			{
-				bool	restart = false;
-				button_record* rec = &m_def->m_button_records[i];
-
-				switch (m_mouse_state)
-				{
-				case OVER:
-				{
-					if ((rec->m_over) && (condition & button_action::IDLE_TO_OVER_UP))
-					{
-						restart = true;
-					}
-					break;
-				}
-				// @@ Hm, are there other cases where we restart stuff?
-				default:
-				{
-					break;
-				}
-				}
-
-				if (restart == true)
-				{
-					m_record_character[i]->restart();
-				}
-			}
-		}
-
 
 		virtual void	get_mouse_state(int* x, int* y, int* buttons)
 		{

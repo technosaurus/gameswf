@@ -96,7 +96,6 @@ namespace gameswf
 	// Play the index'd sample.
 	{
 		locker lock(m_mutex);
-
 		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
