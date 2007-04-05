@@ -14,8 +14,9 @@
 #ifdef HAVE_LIBXML
 
 #include <sys/types.h>
-#ifdef HAVE_WINSOCK
-# include <WinSock2.h>
+
+#ifdef _WIN32
+# include <Winsock.h>
 # include <windows.h>
 # include <fcntl.h>
 # include <sys/stat.h>
@@ -144,8 +145,8 @@ XMLSocket::connect(const char *host, int port)
       {
         log_msg("The connect() socket for fd #%d never was available for writing!\n",
                 _sockfd);
-#ifdef HAVE_WINSOCK
-        ::shutdown(_sockfd, SHUT_BOTH);
+#ifdef _WIN32
+//hack        ::shutdown(_sockfd, SHUT_BOTH);
 #else
         ::shutdown(_sockfd, SHUT_RDWR);
 #endif
@@ -180,7 +181,7 @@ XMLSocket::connect(const char *host, int port)
   printf("\tConnected at port %d on IP %s for fd #%d\n", port,
           ::inet_ntoa(sock_in.sin_addr), _sockfd);
   
-#ifndef HAVE_WINSOCK
+#ifndef _WIN32
   fcntl(_sockfd, F_SETFL, O_NONBLOCK);
 #endif
 
@@ -472,7 +473,7 @@ xmlsocket_connect(const fn_call& fn)
   const array<with_stack_entry> with_stack;
 
   if (!first) {
-    fn.result->set(true);
+		fn.result->set_bool(true);
     return;
   }
   
@@ -528,7 +529,7 @@ xmlsocket_connect(const fn_call& fn)
 
   fn.env->pop();
   
-  fn.result->set(true);
+  fn.result->set_bool(true);
 }
 
 
@@ -542,7 +543,7 @@ xmlsocket_send(const fn_call& fn)
   assert(ptr);
   const tu_string object = fn.env->bottom( fn.first_arg_bottom_index).to_string();
   //  log_msg("%s: host=%s, port=%g\n", __FUNCTION__, host, port);
-  fn.result->set(ptr->obj.send(object));
+  fn.result->set_bool(ptr->obj.send(object));
 }
 
 void
@@ -612,7 +613,7 @@ xmlsocket_new(const fn_call& fn)
   current_movie->add_interval_timer(timer);
 #endif
   
-  fn.result->set(xmlsock_obj);
+	fn.result->set_as_object_interface(xmlsock_obj);
 
   // Tune malloc for the best performance
   //mallopt(M_MMAP_MAX,0);
@@ -642,7 +643,7 @@ xmlsocket_event_ondata(const fn_call& fn)
   assert(ptr);
   if (ptr->obj.processingData()) {
     log_msg("Still processing data!\n");
-    fn.result->set(false);
+    fn.result->set_bool(false);
     return;
   }
   
@@ -703,7 +704,7 @@ xmlsocket_event_ondata(const fn_call& fn)
   //malloc_trim(0);
   
   //result->set(&data);
-  fn.result->set(true);
+  fn.result->set_bool(true);
 }
 
 void
@@ -728,7 +729,7 @@ xmlsocket_event_connect(const fn_call& fn)
   static bool first = true;     // This event handler should only be executed once.
 
   if (!first) {
-    fn.result->set(true);
+    fn.result->set_bool(true);
     return;
   }
   
@@ -764,7 +765,7 @@ xmlsocket_event_connect(const fn_call& fn)
     }
   }
 
-  fn.result->set(&val); 
+  *fn.result = val; 
 }
 void
 xmlsocket_event_xml(const fn_call& fn)

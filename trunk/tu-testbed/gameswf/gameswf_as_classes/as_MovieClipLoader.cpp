@@ -180,7 +180,7 @@ void moviecliploader_loadclip(const fn_call& fn)
   struct stat   stats;
   int           fd;
 
-  fn.result->set(true);         // FIXME:
+  fn.result->set_bool(true);         // FIXME:
   log_msg("%s: FIXME: this function disabled for memory leak testing.\n", __FUNCTION__);
   return;                       // FIXME:
   
@@ -199,21 +199,21 @@ void moviecliploader_loadclip(const fn_call& fn)
     // If the file doesn't exist, don't try to do anything.
     if (stat(url.c_str(), &stats) < 0) {
       fprintf(stderr, "ERROR: doesn't exist: %s\n", url.c_str());
-      fn.result->set(false);
+      fn.result->set_bool(false);
       return;
     }
   }
   
   if (target == NULL) {
     //log_error("target doesn't exist:\n");
-      fn.result->set(false);
+      fn.result->set_bool(false);
       return;    
   }
   
   // Grab the filename off the end of the URL, and use the same name
   // as the disk file when something is fetched. Store files in /tmp/.
   // If the file exists, libxml properly replaces it.
-  char *filename = strrchr(url.c_str(), '/');
+  const char *filename = strrchr(url.c_str(), '/');
   tu_string filespec = "/tmp";
   filespec += filename; 
     
@@ -249,7 +249,7 @@ void moviecliploader_loadclip(const fn_call& fn)
   // See if the file exists
   if (stat(filespec.c_str(), &stats) < 0) {
     log_error("Clip doesn't exist: %s\n", filespec.c_str());
-    fn.result->set(false);
+		fn.result->set_bool(false);
     return;
   }
 
@@ -312,19 +312,19 @@ void moviecliploader_loadclip(const fn_call& fn)
         } else {
           //log_error("File is not a JPEG!\n");
           unlink(filespec.c_str());
-          fn.result->set(false);
+          fn.result->set_bool(false);
           return;
         }
       } else {
         log_error("Can't read image header!\n");
         unlink(filespec.c_str());
-        fn.result->set(false);
+        fn.result->set_bool(false);
         return;
       }
     } else {
         log_error("Can't open image!\n");
         unlink(filespec.c_str());
-        fn.result->set(false);
+        fn.result->set_bool(false);
         return;
     }
     
@@ -428,7 +428,7 @@ void moviecliploader_loadclip(const fn_call& fn)
   moviecliploader_onload_complete(fn);
   //env->pop();
   
-  fn.result->set(true);
+  fn.result->set_bool(true);
 
   //unlink(filespec.c_str());
   
