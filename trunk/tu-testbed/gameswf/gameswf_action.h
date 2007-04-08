@@ -85,14 +85,14 @@ namespace gameswf
 			LOAD_INIT,
 			
 			// These are for the XMLSocket ActionScript only
-			SOCK_CLOSE,
-			SOCK_CONNECT,
-			SOCK_DATA,
+			SOCK_CLOSE,	// unused
+			SOCK_CONNECT,	// unused
+			SOCK_DATA,	// unused
 			SOCK_XML,
 			
 			// These are for the XML ActionScript only
-			XML_LOAD,
-			XML_DATA,
+			XML_LOAD,	// unused
+			XML_DATA,	// unused
 			
 			// This is for setInterval
 			TIMER,

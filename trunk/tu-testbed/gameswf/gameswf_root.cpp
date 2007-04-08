@@ -221,6 +221,7 @@ namespace gameswf
 
 		void	action_init();
 		void notify_key_object(key::code k, bool down);
+
 		void	movie_root::notify_key_event(key::code k, bool down)
 		{
 			action_init();	// @@ put this in some global init somewhere else...
@@ -230,33 +231,57 @@ namespace gameswf
 			notify_key_object(k, down);
 
 			// Notify keypress listeners.
-			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_keypress_listeners.begin();
-				it != m_keypress_listeners.end(); ++it)
+			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+				it != m_listeners.end(); ++it)
 			{
-				if (down)
+				if (it->second == KEYPRESS)
 				{
-					it->first->on_event(event_id(event_id::KEY_DOWN));
-					it->first->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
-				}
-				else
-				{
-					it->first->on_event(event_id(event_id::KEY_UP));
+					if (down)
+					{
+						it->first->on_event(event_id(event_id::KEY_DOWN));
+						it->first->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
+					}
+					else
+					{
+						it->first->on_event(event_id(event_id::KEY_UP));
+					}
 				}
 			}
 		}
 
-		void movie_root::add_keypress_listener(as_object_interface* listener) 
+		void	movie_root::generate_network_events()
 		{
-			m_keypress_listeners[listener] = 0;
+			action_init();	// @@ put this in some global init somewhere else...
+
+			// Notify network listeners.
+			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+				it != m_listeners.end(); ++it)
+			{
+				if (it->second == NETWORK)
+				{
+					it->first->on_event(event_id(event_id::SOCK_XML));
+				}
+			}
+		}
+
+		void movie_root::add_listener(as_object_interface* listener, 
+			listener_type lt) 
+		{
+			m_listeners[listener] = lt;
 
 			// sanity check
 //			printf("add_keypress_listener=%08X (%d)\n", listener, m_keypress_listeners.size());
-			assert(m_keypress_listeners.size() < 100);
+			assert(m_listeners.size() < 100);
 		} 
 
-		void movie_root::remove_keypress_listener(as_object_interface* listener) 
+		void movie_root::remove_listener(as_object_interface* listener) 
 		{
-			m_keypress_listeners.erase(listener);
+			// Do not delete this "if", it is necessary for prevention
+			// of an infinite loop
+			if (m_listeners.size() > 0)
+			{
+				m_listeners.erase(listener);
+			}
 //			printf("remove_keypress_listener=%08X (%d)\n", listener, m_keypress_listeners.size());
 		} 
 
@@ -389,6 +414,8 @@ namespace gameswf
 
 			m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
 			generate_mouse_button_events(&m_mouse_button_state);
+
+			generate_network_events();
 
 			m_time_remainder += delta_time;
       if (m_time_remainder >= m_frame_time)

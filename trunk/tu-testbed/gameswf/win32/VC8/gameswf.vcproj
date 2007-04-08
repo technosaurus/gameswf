@@ -141,7 +141,7 @@
 				Optimization="0"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG;USE_HTTP_CLIENT;HAVE_LIBXML;USE_XMLREADER;USE_STACKWALKER"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG;USE_STACKWALKER"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -332,14 +332,6 @@
 				RelativePath="..\..\gameswf_video_ogl.cpp"
 				>
 			</File>
-			<File
-				RelativePath="..\..\gameswf_xml.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_xmlsocket.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -455,14 +447,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_video_ogl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_xml.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_xmlsocket.h"
 				>
 			</File>
 			<File
@@ -782,6 +766,14 @@
 				RelativePath="..\..\gameswf_as_classes\as_textformat.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_xmlsocket.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_xmlsocket.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="leak"
@@ -812,6 +804,10 @@
 			</File>
 			<File
 				RelativePath="..\..\..\net\net_interface_tcp.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\net\net_interface_tcp.h"
 				>
 			</File>
 		</Filter>

@@ -20,16 +20,7 @@
 #include "base/tu_types.h"
 #include "gameswf_xmlsocket.h"
 #include "base/image.h"	// for logo
-
-
-#ifdef HAVE_LIBXML
-extern int xml_fd;		// FIXME: this is the file descriptor
-				// from XMLSocket::connect(). This
-				// needs to be propogated up through
-				// the layers properly, but first I
-				// want to make sure it all works.
-#endif // HAVE_LIBXML
-
+#include "net/net_interface_tcp.h"	// for proxy
 
 void	print_usage()
 // Brief instructions.
@@ -57,7 +48,6 @@ void	print_usage()
 		"  -vp         Be verbose about parsing the movie\n"
 		"  -ml <bias>  Specify the texture LOD bias (float, default is -1)\n"
 		"  -p          Run full speed (no sleep) and log frame rate\n"
-		"  -e          Use SDL Event thread\n"
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
 		"  -r <0|1|2>  0 disables renderering & sound (good for batch tests)\n"
 		"              1 enables rendering & sound (default setting)\n"
@@ -83,16 +73,12 @@ void	print_usage()
 
 #define OVERSIZE	1.0f
 
-static int runThread(void *nothing);
-static int doneYet = 0;
-
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
 static int	s_bit_depth = 16;
 static bool	s_verbose = false;
 static bool	s_background = true;
 static bool	s_measure_performance = false;
-static bool	s_event_thread = false;
 
 static void	message_log(const char* message)
 // Process a log message.
@@ -357,11 +343,6 @@ int	main(int argc, char *argv[])
 				// Enable frame-rate/performance logging.
 				s_measure_performance = true;
 			}
-			else if (argv[arg][1] == 'e')
-			{
-				// Use an SDL thread to handle events
-				s_event_thread = true;
-			}
 			else if (argv[arg][1] == '1')
 			{
 				// Play once; don't loop.
@@ -497,10 +478,10 @@ int	main(int argc, char *argv[])
 		gameswf::set_render_handler(render);
 	}
 
+
 	// Load the actual movie.
-
 	fprintf(stderr, "Starting ... Wait some seconds\n");
-
+//	set_proxy("192.168.1.201", 8080);
 	gameswf::movie_definition*	md = gameswf::create_library_movie(infile);
 	if (md == NULL)
 	{
@@ -671,15 +652,6 @@ int	main(int argc, char *argv[])
 	int	frame_counter = 0;
 	int	last_logged_fps = last_ticks;
 
-
-	SDL_Thread *thread = NULL;
-	if (s_event_thread) {
-		thread = SDL_CreateThread(runThread, NULL);
-		if ( thread == NULL) {
-			fprintf(stderr, "Unable to create thread: %s\n", SDL_GetError());
-		}
-	}
-	
 	for (;;)
 	{
 		Uint32	ticks;
@@ -711,18 +683,10 @@ int	main(int argc, char *argv[])
 			// Handle input.
 			while (ret)
 			{
-#ifdef HAVE_LIBXML
-				if (s_event_thread && xml_fd > 0) {
-					ret = SDL_WaitEvent(&event) ? true : false;
-				} else {
-					ret = SDL_PollEvent(&event) ? true : false;
-				}
-#else
 				if (SDL_PollEvent(&event) == 0)
 				{
 					break;
 				}
-#endif
 
 				//printf("EVENT Type is %d\n", event.type);
 				switch (event.type)
@@ -1020,8 +984,7 @@ int	main(int argc, char *argv[])
 	}
 
 done:
-	doneYet = 1;
-	SDL_KillThread(thread);	// kill the network read thread
+
 	//SDL_Quit();
 	
 	if (md) md->drop_ref();
@@ -1047,58 +1010,6 @@ done:
 
 	return 0;
 }
-
-static int
-runThread(void *nothing)
-{
-#ifdef HAVE_LIBXML
-
-	//int i = 123;
-	int val;
-	int count = 0;
-	SDL_Event *ptr;
-#if 1
-	SDL_Event ev;
-	ev.type = SDL_USEREVENT;
-	ev.user.code  = 0;
-	ev.user.data1 = 0;
-	ev.user.data2 = 0;
-	ptr = &ev;
-#else
-	ptr = (SDL_Event *)ev_ptr;
-	ptr->type = SDL_USEREVENT;
-	ptr->user.code  = 0;
-	ptr->user.data1 = 0;
-	ptr->user.data2 = 0;
-#endif
-
-	printf("Initializing event thread...\n");
-	
-	while (!doneYet) {
-		//ptr->user.data1 = (void *)i;
-		// FIXME: this file descriptor is hardcoded so this
-		// doesn't work under GDB right now.
-		if ((val = gameswf::check_sockets(xml_fd)) == -1) {
-			SDL_Delay(100);
-			continue;
-		}
-		s_event_thread = true;
-		// Don't push an event if there is already one in the
-		// queue. XMLSocket::onData() will come around and get
-		// the data anyway.
-		count = SDL_PeepEvents(ptr, 1, SDL_PEEKEVENT, SDL_USEREVENT);
-		// printf("%d User Events in queue\n", count);
-		if ((count == 0) && (val >= 0)) {
-			//printf("Pushing User Event on queue\n");
-			SDL_PushEvent(ptr);
-			SDL_Delay(300);
-		}
-	}
-#endif // HAVE_LIBXML
-	
-	return 0;
-}
-
 
 // Local Variables:
 // mode: C++

@@ -26,14 +26,8 @@
 #include "gameswf_as_classes/as_textformat.h"
 #include "gameswf_as_classes/as_string.h"
 #include "gameswf_as_classes/as_color.h"
+#include "gameswf_as_classes/as_xmlsocket.h"
 #include "gameswf_as_classes/as_db.h"	// mysql db extension
-
-
-#ifdef HAVE_LIBXML
-#include "gameswf_xml.h"
-#include "gameswf_xmlsocket.h"
-#endif
-
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -920,11 +914,11 @@ namespace gameswf
 			s_global->set_member("Array", as_value(as_global_array_ctor));
 
 			s_global->set_member("TextFormat", as_value(textformat_new));
-#ifdef HAVE_LIBXML
-			s_global->set_member("XML", as_value(xml_new));
-			//s_global->set_member("XML", as_value(xmlsocket_xml_new));
-			s_global->set_member("XMLSocket", as_value(xmlsocket_new));
-#endif // HAVE_LIBXML
+
+			//			s_global->set_member("XML", as_value(xml_new));
+//			s_global->set_member("XML", as_value(xmlsocket_xml_new));
+			s_global->set_member("XMLSocket", as_value(as_global_xmlsock_ctor));
+
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
 			s_global->set_member("String", as_value(string_ctor));
 			s_global->set_member("Color", as_value(as_global_color_ctor));
