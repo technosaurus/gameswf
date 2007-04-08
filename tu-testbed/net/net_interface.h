@@ -31,8 +31,8 @@ struct net_interface
 	// Returns NULL if no incoming connection is pending.
 	virtual net_socket* accept() = 0;
 
-	// create new net_socket
-	virtual net_socket* create_socket() = 0;
+	// create new client connection
+	virtual net_socket* connect(const char* c_url, int port) = 0; 
 };
 
 
@@ -80,24 +80,10 @@ struct net_socket
 	}
 };
 
-struct connect_info
-{
-	tu_string m_host;
-	int m_port;
-	tu_string m_uri;
-
-	tu_string m_proxy;
-	int m_proxy_port;
-
-};
-
 // Factories for some concrete net_interfaces.
 
 // TCP server interface.
 net_interface* tu_create_net_interface_tcp(int port_number);
-
-// TCP client interface.
-net_interface* tu_create_net_interface_tcp(const connect_info* ci);
 
 // Handy for testing.
 //

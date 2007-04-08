@@ -56,6 +56,12 @@ namespace gameswf
 	//
 	struct movie_root : public movie_interface
 	{
+		enum listener_type
+		{
+			KEYPRESS,
+			NETWORK
+		};
+
 		smart_ptr<movie_def_impl>	m_def;
 		smart_ptr<movie>	m_movie;
 		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
@@ -74,7 +80,7 @@ namespace gameswf
 		bool			m_on_event_xmlsocket_onxml_called;
 		bool			m_on_event_load_progress_called;
 		array< Timer* >	m_interval_timers;
-		hash< smart_ptr<as_object_interface>, int > m_keypress_listeners;
+		hash< smart_ptr<as_object_interface>, int > m_listeners;
 		smart_ptr<movie> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
@@ -141,8 +147,10 @@ namespace gameswf
 		virtual float	get_movie_fps();
 
 		virtual void	notify_key_event(key::code k, bool down);
-		void add_keypress_listener(as_object_interface* listener);
-		void remove_keypress_listener(as_object_interface* listener);
+		void add_listener(as_object_interface* listener, listener_type lt);
+		void remove_listener(as_object_interface* listener);
+
+		void	generate_network_events();
 
 	};
 }

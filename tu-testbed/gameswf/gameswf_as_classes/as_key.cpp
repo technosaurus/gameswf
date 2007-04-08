@@ -28,7 +28,7 @@ namespace gameswf
 			return;
 		}
 
-		listener->get_root()->add_keypress_listener(listener);
+		listener->get_root()->add_listener(listener, movie_root::KEYPRESS);
 	}
 
 	void	key_remove_listener(const fn_call& fn)
@@ -47,7 +47,7 @@ namespace gameswf
 			return;
 		}
 
-		listener->get_root()->remove_keypress_listener(listener);
+		listener->get_root()->remove_listener(listener);
 	}
 
 	void	key_get_ascii(const fn_call& fn)

@@ -6,186 +6,92 @@
 // TCP implementation of net_socket
 
 
-#include "net/net_interface.h"
+#include "net/net_interface_tcp.h"
 #include "base/tu_timer.h"
 #include "base/container.h"
 
-#ifdef _WIN32
+static tu_string s_proxy;
+static int s_proxy_port;
 
-#include "Winsock.h"
-#define strdup _strdup
-
-#else
-
-#include <sys/socket.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-
-typedef int SOCKET;
-
-#define closesocket close
-#define SOCKET_ERROR -1
-#define WSAGetLastError() errno
-#define WSAEWOULDBLOCK EAGAIN
-#define INVALID_SOCKET ENOTSOCK
-#define WSAENOBUFS EAGAIN
-#define SOCKADDR_IN sockaddr_in
-#define LPSOCKADDR sockaddr*
-
-#endif
-
-struct net_socket_tcp : public net_socket
+void set_proxy(const char* host, int port)
 {
-	SOCKET m_sock;
-	int m_error;
-	
-	net_socket_tcp(SOCKET sock)
-		:
-		m_sock(sock),
-		m_error(0)
-	{
+	s_proxy = host ? host : "";
+	s_proxy_port = port;
+}
+
+int get_proxy_port()
+{
+	return s_proxy_port;
+}
+
+const char* get_proxy()
+{
+	return s_proxy.c_str();
+}
+
+net_socket_tcp::net_socket_tcp(SOCKET sock)
+:
+m_sock(sock),
+m_error(0)
+{
+}
+
+net_socket_tcp::~net_socket_tcp()
+{
+	closesocket(m_sock);
+}
+
+int net_socket_tcp::get_error() const
+{
+	return m_error;
+}
+
+bool net_socket_tcp::is_open() const
+{
+	return get_error() == 0;
+}
+
+bool net_socket_tcp::is_readable() const
+// Return true if this socket has incoming data available.
+{
+	fd_set fds;
+	FD_ZERO(&fds);
+	FD_SET(m_sock, &fds);
+	struct timeval tv = { 0, 0 };
+	select(1, &fds, NULL, NULL, &tv);
+	if (FD_ISSET(m_sock, &fds)) {
+		// Socket has data available.
+		return true;
 	}
 
-	~net_socket_tcp()
-	{
-		closesocket(m_sock);
-	}
+	return false;
+}
 
-	virtual int get_error() const
-	{
-		return m_error;
-	}
+int net_socket_tcp::read(void* data, int bytes, float timeout_seconds)
+// Try to read the requested number of bytes.  Returns the
+// number of bytes actually read.
+{
+	uint64 start = tu_timer::get_ticks();
 
-	virtual bool is_open() const
-	{
-		return get_error() == 0;
-	}
+	int total_bytes_read = 0;
 
-	virtual bool is_readable() const
-	// Return true if this socket has incoming data available.
+	for (;;)
 	{
-		fd_set fds;
-		FD_ZERO(&fds);
-		FD_SET(m_sock, &fds);
-		struct timeval tv = { 0, 0 };
-		select(1, &fds, NULL, NULL, &tv);
-		if (FD_ISSET(m_sock, &fds)) {
-			// Socket has data available.
-			return true;
+		int bytes_read = recv(m_sock, (char*) data, bytes, 0);
+
+		if (bytes_read == 0)
+		{
+			break;
 		}
 
-		return false;
-	}
-
-	virtual int read(void* data, int bytes, float timeout_seconds)
-	// Try to read the requested number of bytes.  Returns the
-	// number of bytes actually read.
-	{
-		uint64 start = tu_timer::get_ticks();
-
-		int total_bytes_read = 0;
-
-		for (;;)
+		if (bytes_read == SOCKET_ERROR)
 		{
-			int bytes_read = recv(m_sock, (char*) data, bytes, 0);
-
-			if (bytes_read == 0)
+			m_error = WSAGetLastError();
+			if (m_error == WSAEWOULDBLOCK)
 			{
-				break;
-			}
+				// No data ready.
+				m_error = 0;
 
-			if (bytes_read == SOCKET_ERROR)
-			{
-				m_error = WSAGetLastError();
-				if (m_error == WSAEWOULDBLOCK)
-				{
-					// No data ready.
-					m_error = 0;
-
-					// Timeout?
-					uint64 now = tu_timer::get_ticks();
-					double elapsed = tu_timer::ticks_to_seconds(now - start);
-
-					if (elapsed < timeout_seconds)
-					{
-						// TODO this spins; fix it by sleeping a bit?
-						// if (time_left > 0.010f) { sleep(...); }
-						continue;
-					}
-
-					// Timed out.
-					return total_bytes_read;
-				}
-				else
-				{
-					// Presumably something bad.
-					fprintf(stderr, "net_socket_tcp::read() error in recv, error code = %d\n",
-						WSAGetLastError());
-					return total_bytes_read;
-				}
-			}
-
-			// Got some data.
-			total_bytes_read += bytes_read;
-			bytes -= bytes_read;
-			data = (void*) (((char*) data) + bytes_read);
-
-			assert(bytes >= 0);
-
-			if (bytes == 0)
-			{
-				// Done.
-				break;
-			}
-		}
-
-		return total_bytes_read;
-	}
-
-	
-	virtual int read_line(tu_string* data, int maxbytes, float timeout_seconds)
-	// Try to read a string, up to the next '\n' character.
-	// Returns the actual bytes read.
-	//
-	// If the last character in the string is not '\n', then
-	// either we read maxbytes, or we timed out or the socket
-	// closed or something.
-	{
-		assert(data);
-		
-		uint64 start = tu_timer::get_ticks();
-		int total_bytes_read = 0;
-
-		for (;;)
-		{
-			// Read a byte at a time.  Probably slow!
-			char c;
-			bool waiting = false;
-			int bytes_read = recv(m_sock, &c, 1, 0);
-			if (bytes_read == SOCKET_ERROR)
-			{
-				m_error = WSAGetLastError();
-				if (m_error == WSAEWOULDBLOCK)
-				{
-					// No data ready.
-					m_error = 0;
-					waiting = true;
-				}
-				else
-				{
-					// Presumably something bad.
-					fprintf(stderr, "net_socket_tcp::read() error in recv, error code = %d\n",
-						WSAGetLastError());
-					return 0;
-				}
-			} else if (bytes_read == 0) {
-				waiting = true;
-			}
-
-			if (waiting) {
 				// Timeout?
 				uint64 now = tu_timer::get_ticks();
 				double elapsed = tu_timer::ticks_to_seconds(now - start);
@@ -198,260 +104,328 @@ struct net_socket_tcp : public net_socket
 				}
 
 				// Timed out.
+				return total_bytes_read;
+			}
+			else
+			{
+				// Presumably something bad.
+				fprintf(stderr, "net_socket_tcp::read() error in recv, error code = %d\n",
+					WSAGetLastError());
+				return total_bytes_read;
+			}
+		}
+
+		// Got some data.
+		total_bytes_read += bytes_read;
+		bytes -= bytes_read;
+		data = (void*) (((char*) data) + bytes_read);
+
+		assert(bytes >= 0);
+
+		if (bytes == 0)
+		{
+			// Done.
+			break;
+		}
+	}
+
+	return total_bytes_read;
+}
+
+
+int net_socket_tcp::read_line(tu_string* data, int maxbytes, float timeout_seconds)
+// Try to read a string, up to the next '\n' character.
+// Returns the actual bytes read.
+//
+// If the last character in the string is not '\n', then
+// either we read maxbytes, or we timed out or the socket
+// closed or something.
+{
+	assert(data);
+
+	uint64 start = tu_timer::get_ticks();
+	int total_bytes_read = 0;
+
+	for (;;)
+	{
+		// Read a byte at a time.  Probably slow!
+		char c;
+		bool waiting = false;
+		int bytes_read = recv(m_sock, &c, 1, 0);
+		if (bytes_read == SOCKET_ERROR)
+		{
+			m_error = WSAGetLastError();
+			if (m_error == WSAEWOULDBLOCK)
+			{
+				// No data ready.
+				m_error = 0;
+				waiting = true;
+			}
+			else
+			{
+				// Presumably something bad.
+				fprintf(stderr, "net_socket_tcp::read() error in recv, error code = %d\n",
+					WSAGetLastError());
 				return 0;
 			}
-
-			assert(bytes_read == 1);
-
-			(*data) += c;
-			total_bytes_read += 1;
-
-			if (c == '\n')
-			{
-				// Done.
-				return total_bytes_read;
-			}
-
-			if (maxbytes && total_bytes_read >= maxbytes)
-			{
-				// Caller doesn't want any more bytes.
-				return total_bytes_read;
-			}
-
-			// else keep reading.
+		} else if (bytes_read == 0) {
+			waiting = true;
 		}
 
-		return 0;
-	}
+		if (waiting) {
+			// Timeout?
+			uint64 now = tu_timer::get_ticks();
+			double elapsed = tu_timer::ticks_to_seconds(now - start);
 
-
-	virtual int write(const void* data, int bytes, float timeout_seconds)
-	// Try to write the given data buffer.  Return the number of
-	// bytes actually written.
-	{
-		uint64 start = tu_timer::get_ticks();
-
-		int total_bytes_written = 0;
-		
-		for (;;)
-		{
-			int bytes_sent = send(m_sock, (const char*) data, bytes, 0);
-			if (bytes_sent == SOCKET_ERROR)
+			if (elapsed < timeout_seconds)
 			{
-				m_error = WSAGetLastError();
-				if (m_error == WSAENOBUFS || m_error == WSAEWOULDBLOCK)
-				{
-					// Non-fatal.
-					m_error = 0;
-
-					uint64 now = tu_timer::get_ticks();
-					double elapsed = tu_timer::ticks_to_seconds(now - start);
-
-					if (elapsed < timeout_seconds)
-					{
-						// Keep trying.
-						// TODO possibly sleep() here
-						continue;
-					}
-
-					// Timed out.
-					return total_bytes_written;
-				}
+				// TODO this spins; fix it by sleeping a bit?
+				// if (time_left > 0.010f) { sleep(...); }
+				continue;
 			}
 
-			total_bytes_written += bytes_sent;
-			data = (const void*) (((const char*) data) + bytes_sent);
-			bytes -= bytes_sent;
+			// Timed out.
+			return 0;
+		}
 
-			assert(bytes >= 0);
-			if (bytes == 0)
+		assert(bytes_read == 1);
+
+		(*data) += c;
+		total_bytes_read += 1;
+
+		if (c == '\n')
+		{
+			// Done.
+			return total_bytes_read;
+		}
+
+		if (maxbytes && total_bytes_read >= maxbytes)
+		{
+			// Caller doesn't want any more bytes.
+			return total_bytes_read;
+		}
+
+		// else keep reading.
+	}
+
+	return 0;
+}
+
+
+int net_socket_tcp::write(const void* data, int bytes, float timeout_seconds)
+// Try to write the given data buffer.  Return the number of
+// bytes actually written.
+{
+	uint64 start = tu_timer::get_ticks();
+
+	int total_bytes_written = 0;
+
+	for (;;)
+	{
+		int bytes_sent = send(m_sock, (const char*) data, bytes, 0);
+		if (bytes_sent == SOCKET_ERROR)
+		{
+			m_error = WSAGetLastError();
+			if (m_error == WSAENOBUFS || m_error == WSAEWOULDBLOCK)
 			{
-				// Done.
+				// Non-fatal.
+				m_error = 0;
+
+				uint64 now = tu_timer::get_ticks();
+				double elapsed = tu_timer::ticks_to_seconds(now - start);
+
+				if (elapsed < timeout_seconds)
+				{
+					// Keep trying.
+					// TODO possibly sleep() here
+					continue;
+				}
+
+				// Timed out.
 				return total_bytes_written;
 			}
-			// else keep trying.
+
+			// write error
+			return total_bytes_written;
+
 		}
+
+		total_bytes_written += bytes_sent;
+		data = (const void*) (((const char*) data) + bytes_sent);
+		bytes -= bytes_sent;
+
+		assert(bytes >= 0);
+		if (bytes == 0)
+		{
+			// Done.
+			return total_bytes_written;
+		}
+		// else keep trying.
 	}
-	
-#if 0
-	//
-	// Send data back to the client
-	//
-	strcpy(szBuf, "From the Server");
-	nRet = send(remoteSocket,				// Connected socket
-				szBuf,						// Data buffer
-				strlen(szBuf),				// Lenght of data
-				0);							// Flags
+}
 
-	closesocket(remoteSocket);
-#endif // 0
-};
-
-
-struct net_interface_tcp : public net_interface
+//	server
+net_interface_tcp::net_interface_tcp(int port_number) :
+m_port_number(port_number),
+m_socket(INVALID_SOCKET)
 {
-	int m_port_number;
-	SOCKET m_socket;
-
-	//	server
-	net_interface_tcp(int port_number) :
-		m_port_number(port_number),
-		m_socket(INVALID_SOCKET)
+	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (m_socket == INVALID_SOCKET)
 	{
-		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (m_socket == INVALID_SOCKET)
-		{
-			fprintf(stderr, "can't open listen socket\n");
-			return;
-		}
-
-		// Set the address.
-		SOCKADDR_IN saddr;
-		saddr.sin_family = AF_INET;
-		saddr.sin_addr.s_addr = INADDR_ANY;
-		saddr.sin_port = htons(m_port_number);
-
-		// bind the address
-		int ret = bind(m_socket, (LPSOCKADDR) &saddr, sizeof(saddr));
-		if (ret == SOCKET_ERROR)
-		{
-			fprintf(stderr, "bind failed\n");
-			closesocket(m_socket);
-			m_socket = INVALID_SOCKET;
-			return;
-		}
-
-		// gethostname
-
-		// Start listening.
-		ret = listen(m_socket, SOMAXCONN);
-		if (ret == SOCKET_ERROR)
-		{
-			fprintf(stderr, "listen() failed\n");
-			closesocket(m_socket);
-			m_socket = INVALID_SOCKET;
-			return;
-		}
-
-		// Set non-blocking mode for the socket, so that
-		// accept() doesn't block if there's no pending
-		// connection.
-		set_nonblock();
+		fprintf(stderr, "can't open listen socket\n");
+		return;
 	}
 
-	void set_nonblock()
+	// Set the address.
+	SOCKADDR_IN saddr;
+	saddr.sin_family = AF_INET;
+	saddr.sin_addr.s_addr = INADDR_ANY;
+	saddr.sin_port = htons(m_port_number);
+
+	// bind the address
+	int ret = bind(m_socket, (LPSOCKADDR) &saddr, sizeof(saddr));
+	if (ret == SOCKET_ERROR)
 	{
-#ifdef _WIN32
-		int mode = 1;
-		ioctlsocket(m_socket, FIONBIO, (u_long FAR*) &mode);
-#else
-		int mode = fcntl(m_socket, F_GETFL, 0);
-		mode |= O_NONBLOCK;
-		fcntl(m_socket, F_SETFL, mode);
-#endif
-   }
-	
-	// client
-	net_interface_tcp(const connect_info* ci) :	m_socket(INVALID_SOCKET)
-	{
-		assert(ci);
-
-		m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-		if (m_socket == INVALID_SOCKET)
-		{
-			fprintf(stderr, "can't open listen socket\n");
-			return;
-		}
-
-		// Set the address.
-		SOCKADDR_IN saddr;
-		saddr.sin_family = AF_INET;
-		saddr.sin_addr.s_addr = INADDR_ANY;
-		m_port_number = ci->m_proxy_port > 0 ? ci->m_proxy_port : ci->m_port;
-		saddr.sin_port = htons(m_port_number);
-
-
-		hostent* he;
-		const char* host = ci->m_proxy_port > 0 ? ci->m_proxy.c_str() : ci->m_host.c_str();
-		if (host[0] >= '0' && host[0] <= '9')	// absolue address ?
-		{
-			Uint32 addr = inet_addr(host);
-			he = gethostbyaddr((char *) &addr, 4, AF_INET);
-		}
-		else
-		{
-			he = gethostbyname(host);
-		}
-
-		if (he == NULL)
-		{
-			fprintf(stderr, "can't find '%s'\n", host);
-			closesocket(m_socket);
-			m_socket = INVALID_SOCKET;
-			return;
-		}
-
-		// get server address
-		memcpy(&saddr.sin_addr, he->h_addr, he->h_length);
-
-		//      printf("The IP address is '%d.%d.%d.%d'\n", 
-		//				saddr.sin_addr.S_un.S_un_b.s_b1,
-		//				saddr.sin_addr.S_un.S_un_b.s_b2,
-		//				saddr.sin_addr.S_un.S_un_b.s_b3,
-		//				saddr.sin_addr.S_un.S_un_b.s_b4);
-
-		int rc = connect(m_socket, (struct sockaddr*) &saddr, sizeof(struct sockaddr));
-		if (rc != 0)
-		{
-			fprintf(stderr, "can't connect to '%s'\n", host);
-			closesocket(m_socket);
-			m_socket = INVALID_SOCKET;
-		}
-
-
-		// Set non-blocking mode for the socket, so that
-		// accept() doesn't block if there's no pending
-		// connection.
-		set_nonblock();
-	}
-
-	~net_interface_tcp()
-	{
+		fprintf(stderr, "bind failed\n");
 		closesocket(m_socket);
+		m_socket = INVALID_SOCKET;
+		return;
 	}
 
-	bool is_valid() const
-	{
-		if (m_socket == INVALID_SOCKET)
-		{
-			return false;
-		}
+	// gethostname
 
-		return true;
+	// Start listening.
+	ret = listen(m_socket, SOMAXCONN);
+	if (ret == SOCKET_ERROR)
+	{
+		fprintf(stderr, "listen() failed\n");
+		closesocket(m_socket);
+		m_socket = INVALID_SOCKET;
+		return;
 	}
 
-	net_socket* create_socket()
+	// Set non-blocking mode for the socket, so that
+	// accept() doesn't block if there's no pending
+	// connection.
+	set_nonblock();
+}
+
+void net_interface_tcp::set_nonblock()
+{
+#ifdef _WIN32
+	int mode = 1;
+	ioctlsocket(m_socket, FIONBIO, (u_long FAR*) &mode);
+#else
+	int mode = fcntl(m_socket, F_GETFL, 0);
+	mode |= O_NONBLOCK;
+	fcntl(m_socket, F_SETFL, mode);
+#endif
+}
+
+// client
+net_interface_tcp::net_interface_tcp() :
+m_socket(INVALID_SOCKET)
+{
+}
+
+net_socket* net_interface_tcp::connect(const char* c_host, int port)
+{
+	assert(c_host);
+	assert(port > 0);
+
+	m_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (m_socket == INVALID_SOCKET)
 	{
-		return new net_socket_tcp(m_socket);
-	}
-
-	net_socket* accept()
-	{
-		// Accept an incoming request.
-		SOCKET	remote_socket;
-
-		remote_socket = ::accept(m_socket, NULL, NULL);
-		if (remote_socket == INVALID_SOCKET)
-		{
-			// No connection pending, or some other error.
-			return NULL;
-		}
-
-		return new net_socket_tcp(remote_socket);
-		// TODO implement
+		fprintf(stderr, "can't open listen socket\n");
 		return NULL;
 	}
-};
+
+	// Set the address.
+	SOCKADDR_IN saddr;
+	saddr.sin_family = AF_INET;
+	saddr.sin_addr.s_addr = INADDR_ANY;
+	m_port_number = get_proxy_port() > 0 ? get_proxy_port() : port;
+	saddr.sin_port = htons(m_port_number);
+
+
+	hostent* he;
+	const char* host = get_proxy_port() > 0 ? get_proxy() : c_host;
+	if (host[0] >= '0' && host[0] <= '9')	// absolue address ?
+	{
+		Uint32 addr = inet_addr(host);
+		he = gethostbyaddr((char *) &addr, 4, AF_INET);
+	}
+	else
+	{
+		he = gethostbyname(host);
+	}
+
+	if (he == NULL)
+	{
+		fprintf(stderr, "can't find '%s'\n", host);
+		closesocket(m_socket);
+		m_socket = INVALID_SOCKET;
+		return NULL;
+	}
+
+	// get server address
+	memcpy(&saddr.sin_addr, he->h_addr, he->h_length);
+
+	//      printf("The IP address is '%d.%d.%d.%d'\n", 
+	//				saddr.sin_addr.S_un.S_un_b.s_b1,
+	//				saddr.sin_addr.S_un.S_un_b.s_b2,
+	//				saddr.sin_addr.S_un.S_un_b.s_b3,
+	//				saddr.sin_addr.S_un.S_un_b.s_b4);
+
+	int rc = ::connect(m_socket, (struct sockaddr*) &saddr, sizeof(struct sockaddr));
+	if (rc != 0)
+	{
+		fprintf(stderr, "can't connect to '%s', port %d\n", host, m_port_number);
+		closesocket(m_socket);
+		m_socket = INVALID_SOCKET;
+		return NULL;
+	}
+
+	// Set non-blocking mode for the socket, so that
+	// accept() doesn't block if there's no pending
+	// connection.
+	set_nonblock();
+
+	return new net_socket_tcp(m_socket);
+}
+
+net_interface_tcp::~net_interface_tcp()
+{
+	closesocket(m_socket);
+}
+
+bool net_interface_tcp::is_valid() const
+{
+	if (m_socket == INVALID_SOCKET)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+net_socket* net_interface_tcp::accept()
+{
+	// Accept an incoming request.
+	SOCKET	remote_socket;
+
+	remote_socket = ::accept(m_socket, NULL, NULL);
+	if (remote_socket == INVALID_SOCKET)
+	{
+		// No connection pending, or some other error.
+		return NULL;
+	}
+
+	return new net_socket_tcp(remote_socket);
+	// TODO implement
+	return NULL;
+}
+
 
 bool net_init()
 {
@@ -486,23 +460,6 @@ net_interface* tu_create_net_interface_tcp(int port_number)
 	}
 	return NULL;
 }
-
-// client
-net_interface* tu_create_net_interface_tcp(const connect_info* ci)
-{
-	if (net_init())
-	{
-		net_interface_tcp* iface = new net_interface_tcp(ci);
-		if (iface == NULL || iface->is_valid() == false)
-		{
-			delete iface;
-			return NULL;
-		}
-		return iface;
-	}
-	return NULL;
-}
-
 
 // Local Variables:
 // mode: C++

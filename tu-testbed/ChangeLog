@@ -1,3 +1,11 @@
+2007-04-08  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* base/tu_file.cpp: netfile stuff moved from http_client.cpp
+	* net/a lot files,
+	* gameswf/a lot of files: completely rewritten  XMLSocket stuff,
+	using net/net_interface_tcp.*
+	* gameswf/as_classes/as_xmlsocket.*: added new files
+
 2007-04-05  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_xmlsocket.cpp

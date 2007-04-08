@@ -541,7 +541,17 @@ namespace gameswf
 	// Drop all library references to movie_definitions, so they
 	// can be cleaned up.
 	{
-		// First it is necessary to clean s_movie_library_inst since
+
+		// First it's necessary to clean listeners
+		// to prevent an infinite loop
+		for (hash<movie_definition_sub*, smart_ptr<movie_interface>>::iterator
+			it = s_movie_library_inst.begin(); it != s_movie_library_inst.end(); ++it)
+		{
+			movie_root* mr = (movie_root*) it->second.get_ptr();
+			mr->m_listeners.clear();
+		}
+
+		// Then it is necessary to clean s_movie_library_inst since
 		// s_movie_library refers on s_movie_library_inst
 		s_movie_library_inst.clear();
 		s_movie_library.clear();

@@ -5,48 +5,41 @@
 
 // HTTP implementation of tu_file
 
+#ifndef HTTP_CLIENT_H
+#define HTTP_CLIENT_H
+
+#define HTTP_SERVER_PORT 80
+#define HTTP_TIMEOUT 1	// sec
+
 #include "base/container.h"
-#include "net/net_interface.h"
+#include "net/net_interface_tcp.h"
 
-struct netfile
+// this is used for HTTP connection
+// if connection is going through proxy server
+void set_proxy(const char* host, int port);
+
+// HTTP client interface.
+struct http_connection : public net_interface_tcp
 {
-	// Return the number of bytes actually read.  EOF or an error would
-	// cause that to not be equal to "bytes".
+	http_connection();
+	~http_connection();
+	bool is_open();
+	net_socket* connect(const char* url, int port);
+	int read(void* data, int bytes);
+	int read_line(tu_string* data, int maxbytes);
+	int write(const void* data, int bytes);
+	int write_string(const char* str);
 
-	netfile(const char* url);
-	~netfile();
-	bool is_open() const;
+private:
 
-	static int http_read(void* dst, int bytes, void* appdata);
-	static int http_tell(const void *appdata);
-	static int http_close(void *appdata);
-	static int http_write(const void* src, int bytes, void* appdata);
-	static int http_seek(int pos, void *appdata);
-	static int http_seek_to_end(void *appdata);
-	static bool http_get_eof(void *appdata);
-
-	private:
-
-	int read(void* dst, int bytes);
-	int seek(int pos);
-	void close();
 	bool read_response();
-	bool open_uri();
 
-	// vars
-	int m_position;
 	net_interface* m_iface;
 	net_socket* m_ns;
-	bool m_eof;
-	connect_info m_ci;
 
-	// We use set_position(back) therefore we need to use buf to store input data
-	Uint8* m_buf;		// data
-	int m_bufsize;	// current bufsize
-	int m_size;			// data size
-
-//	FILE* m_fd;	// for debuging
 };
+
+#endif
 
 // Local Variables:
 // mode: C++
