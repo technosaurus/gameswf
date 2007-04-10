@@ -25,7 +25,6 @@
 #include "gameswf_stream.h"
 #include "gameswf_styles.h"
 #include "gameswf_dlist.h"
-#include "gameswf_timers.h"
 #include "gameswf_root.h"
 #include "gameswf_movie_def.h"
 #include "gameswf_sprite_def.h"

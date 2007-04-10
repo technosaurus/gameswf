@@ -25,7 +25,7 @@ namespace gameswf
 		as_xmlsock();
 		~as_xmlsock();
 
-		virtual bool	on_event(const event_id& id);
+		virtual void advance(float delta_time);
 
 		bool connect(const char* host, int port);
 		void close();

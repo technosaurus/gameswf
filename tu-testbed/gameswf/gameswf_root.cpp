@@ -12,7 +12,6 @@
 
 #include "gameswf_movie_def.h"
 #include "gameswf_render.h"
-#include "gameswf_timers.h"
 #include "gameswf_root.h"
 #include "gameswf_mutex.h"
 #include "base/tu_random.h"
@@ -29,15 +28,11 @@ namespace gameswf
 			m_viewport_height(1),
 			m_pixel_scale(1.0f),
 			m_background_color(0, 0, 0, 255),
-//			m_timer(0.0f),
 			m_mouse_x(0),
 			m_mouse_y(0),
 			m_mouse_buttons(0),
 			m_userdata(NULL),
 			m_on_event_load_called(false),
-			m_on_event_xmlsocket_ondata_called(false),
-			m_on_event_xmlsocket_onxml_called(false),
-			m_on_event_load_progress_called(false),
 			m_current_active_entity(NULL),
 
 			// the first time we needs do advance() and
@@ -224,7 +219,6 @@ namespace gameswf
 
 		void	movie_root::notify_key_event(key::code k, bool down)
 		{
-			action_init();	// @@ put this in some global init somewhere else...
 
 			// First notify global Key object
 			// listeners uses the last keypressed code
@@ -249,17 +243,15 @@ namespace gameswf
 			}
 		}
 
-		void	movie_root::generate_network_events()
+		void	movie_root::advance_listeners(float delta_time)
 		{
-			action_init();	// @@ put this in some global init somewhere else...
-
 			// Notify network listeners.
 			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
 				it != m_listeners.end(); ++it)
 			{
-				if (it->second == NETWORK)
+				if (it->second == ADVANCE)
 				{
-					it->first->on_event(event_id(event_id::SOCK_XML));
+					it->first->advance(delta_time);
 				}
 			}
 		}
@@ -348,25 +340,6 @@ namespace gameswf
 			return m_def->get_file_bytes();
 		}
 
-		int    movie_root::add_interval_timer(void *timer)
-		{
-			Timer *ptr = static_cast<Timer *>(timer);
-
-			m_interval_timers.push_back(ptr);
-			return m_interval_timers.size();
-		}
-
-		void	movie_root::clear_interval_timer(int x)
-		{
-			m_interval_timers.remove(x-1);
-			//m_interval_timers[x]->clearInterval();
-		}
-
-		void	movie_root::do_something(void *timer)
-		{
-			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-		}
-
 		// 0-based!!
 		int	movie_root::get_current_frame() const { return m_movie->get_current_frame(); }
 		float	movie_root::get_frame_rate() const { return m_def->get_frame_rate(); }
@@ -408,6 +381,8 @@ namespace gameswf
 
 			locker lock(get_gameswf_mutex());
 
+			action_init();	// @@ put this in some global init somewhere else...
+
 			// Handle the mouse.
 			m_mouse_button_state.m_topmost_entity =
 				m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
@@ -415,7 +390,7 @@ namespace gameswf
 			m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
 			generate_mouse_button_events(&m_mouse_button_state);
 
-			generate_network_events();
+			advance_listeners(delta_time);
 
 			m_time_remainder += delta_time;
       if (m_time_remainder >= m_frame_time)

@@ -18,9 +18,10 @@
 #include "base/container.h"
 #include "base/tu_file.h"
 #include "base/tu_types.h"
-#include "gameswf_xmlsocket.h"
 #include "base/image.h"	// for logo
 #include "net/net_interface_tcp.h"	// for proxy
+#include "gameswf_types.h"
+#include "gameswf_impl.h"
 
 void	print_usage()
 // Brief instructions.
