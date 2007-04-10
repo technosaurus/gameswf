@@ -23,7 +23,7 @@ namespace gameswf
 	{
 		smart_ptr<as_array>	ao = new as_array;
 
-		// case of "var x = ["abc","def", 1,2,3,4];"
+		// case of "var x = ["abc","def", 1,2,3,4,..];"
 		// called from "init array" operation only
 		if (fn.nargs == -1 && fn.first_arg_bottom_index == -1)
 		{
@@ -54,9 +54,17 @@ namespace gameswf
 		}
 		else
 
-		// case of "var x = new Array()" or unhandled case 
+		// case of "var x = new Array(1,2,3,4,5,6,7,8,..);"
 		{
-			// Empty array.
+			assert(fn.env);
+
+			// Use the arguments as initializers.
+			as_value	index_number;
+			for (int i = 0; i < fn.nargs; i++)
+			{
+				index_number.set_int(i);
+				ao->set_member(index_number.to_string(), fn.arg(i));
+			}
 		}
 
 		fn.result->set_as_object_interface(ao.get_ptr());
