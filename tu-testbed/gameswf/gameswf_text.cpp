@@ -591,7 +591,7 @@ namespace gameswf
 			// during remove_display_object()
 		} 
 
-		movie_root* edit_text_character::get_root()
+		movie_root* get_root()
 		{
 			return get_parent()->get_root(); 
 		} 
@@ -1257,4 +1257,3 @@ namespace gameswf
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
-

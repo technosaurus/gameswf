@@ -111,7 +111,7 @@ namespace gameswf
 		character*	get_character_by_name(const tu_string& name);
 
 		// returns index of ch
-		int	display_list::get_character_by_ptr(const character* ch);
+		int	get_character_by_ptr(const character* ch);
 
 		// May return NULL.
 		// If there are multiples, returns the *first* match only!
