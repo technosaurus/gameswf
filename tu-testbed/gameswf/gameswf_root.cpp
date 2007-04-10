@@ -230,14 +230,17 @@ namespace gameswf
 			{
 				if (it->second == KEYPRESS)
 				{
+					// protect from deleting in Action Script
+					smart_ptr<as_object_interface> obj = it->first;
+
 					if (down)
 					{
-						it->first->on_event(event_id(event_id::KEY_DOWN));
-						it->first->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
+						obj->on_event(event_id(event_id::KEY_DOWN));
+						obj->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
 					}
 					else
 					{
-						it->first->on_event(event_id(event_id::KEY_UP));
+						obj->on_event(event_id(event_id::KEY_UP));
 					}
 				}
 			}
@@ -251,7 +254,10 @@ namespace gameswf
 			{
 				if (it->second == ADVANCE)
 				{
-					it->first->advance(delta_time);
+					// protect from deleting in Action Script
+					smart_ptr<as_object_interface> obj = it->first;
+
+					obj->advance(delta_time);
 				}
 			}
 		}
