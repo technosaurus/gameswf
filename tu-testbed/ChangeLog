@@ -1,5 +1,15 @@
 2007-04-10  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_xml.*: moved to 
+	* gameswf/as_classes/as_xml.*
+	* gameswf/as_classes/as_MovieClipLoader.*: removed
+	(obsoletly, the new version - as_mcloader.*, now is not finished)
+	* gameswf/gameswf_as_sprite.*,
+	* gameswf/gameswf_sprite.cpp: added loadMovie method
+	* gameswf/gameswf_timer.cpp: cleanup
+
+2007-04-10  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/as_classes/as_array.cpp: processing of the following case is added
 	new Array("ab", "cd", "ef", "gh", ...);
 	* gameswf/gameswf_timer.*: processing of the multiparam setInterval

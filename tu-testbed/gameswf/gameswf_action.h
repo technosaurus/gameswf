@@ -43,6 +43,8 @@ namespace gameswf
 		const char* method_arg_fmt,
 		va_list args);
 
+	bool load_file(const char* url, const movie* target, 
+		const movie* root_movie, bool relative_path = true);
 
 	//
 	// event_id
@@ -81,6 +83,13 @@ namespace gameswf
 			CONSTRUCT,
 			SETFOCUS,
 			KILLFOCUS,			
+
+			// MovieClipLoader events
+			ONLOAD_COMPLETE,
+			ONLOAD_ERROR,
+			ONLOAD_INIT,
+			ONLOAD_PROGRESS,
+			ONLOAD_SRART,
 
 			EVENT_COUNT
 		};

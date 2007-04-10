@@ -26,8 +26,6 @@ namespace gameswf
 				func = fn.arg(0);
 			}
 
-			int x=fn.arg(3).get_type();
-
 			if (func.get_type() == as_value::AS_FUNCTION)
 			{
 				timer = new as_timer(func, fn.arg(2).to_number(), fn);

@@ -711,11 +711,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.cpp"
+				RelativePath="..\..\gameswf_as_classes\as_mcloader.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.h"
+				RelativePath="..\..\gameswf_as_classes\as_mcloader.h"
 				>
 			</File>
 			<File

@@ -64,6 +64,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("createEmptyMovieClip", &sprite_create_empty_movieclip);
 		s_sprite_builtins->set_member("removeMovieClip", &sprite_remove_movieclip);
 		s_sprite_builtins->set_member("hitTest", &sprite_hit_test);
+		s_sprite_builtins->set_member("loadMovie", &sprite_loadmovie);
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
 		//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
