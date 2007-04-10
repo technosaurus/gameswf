@@ -20,7 +20,7 @@
 #include "gameswf_as_classes/as_sound.h"
 #include "gameswf_as_classes/as_key.h"
 #include "gameswf_as_classes/as_math.h"
-#include "gameswf_as_classes/as_MovieClipLoader.h"
+#include "gameswf_as_classes/as_mcloader.h"
 #include "gameswf_as_classes/as_netstream.h"
 #include "gameswf_as_classes/as_netconnection.h"
 #include "gameswf_as_classes/as_textformat.h"
@@ -108,20 +108,21 @@ namespace gameswf
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
 
-
-#define EXTERN_MOVIE
-	
-#ifdef EXTERN_MOVIE
-	void attach_extern_movie(const char* url, const movie* target, const movie* root_movie)
+	bool load_file(const char* url, const movie* target, 
+		const movie* root_movie, bool relative_path)
 	{
-		tu_string infile = get_workdir();
+		tu_string infile = "";
+		if (relative_path)
+		{
+			infile = get_workdir();
+		}
 		infile += url;
 
 		movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
 		if (md == NULL)
 		{
 			log_error("can't create movie_definition_sub for %s\n", infile.c_str());
-			return;
+			return false;
 		}
 
 		gameswf::movie_interface* extern_movie;
@@ -132,7 +133,7 @@ namespace gameswf
 			if (extern_movie == NULL)
 			{
 				log_error("can't create extern root movie_interface for %s\n", infile.c_str());
-				return;
+				return false;
 			}
 			set_current_root(extern_movie);
 			movie* m = extern_movie->get_root_movie();
@@ -145,7 +146,7 @@ namespace gameswf
 			if (extern_movie == NULL)
 			{
 				log_error("can't create extern movie_interface for %s\n", infile.c_str());
-				return;
+				return false;
 			}
       
 			save_extern_movie(extern_movie);
@@ -178,8 +179,8 @@ namespace gameswf
 				ratio,
 				clip_depth);
 		}
+		return true;
 	}
-#endif // EXTERN_MOVIE
 
 	void	register_fscommand_callback(fscommand_callback handler)
 	// External interface.
@@ -918,7 +919,7 @@ namespace gameswf
 			//			s_global->set_member("XML", as_value(xml_new));
 			s_global->set_member("XMLSocket", as_value(as_global_xmlsock_ctor));
 
-			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
+			s_global->set_member("MovieClipLoader", as_value(as_global_mcloader_ctor));
 			s_global->set_member("String", as_value(string_ctor));
 			s_global->set_member("Color", as_value(as_global_color_ctor));
 
@@ -2317,20 +2318,18 @@ namespace gameswf
 					}
 					else
 					{
-#ifdef EXTERN_MOVIE
 //						log_error("get url: target=%s, url=%s\n", target, url);
 						tu_string tu_target = target;
 						movie* target_movie = env->find_target(tu_target);
 						if (target_movie != NULL)
 						{
 							movie*	root_movie = env->get_target()->get_root_movie();
-							attach_extern_movie(url, target_movie, root_movie);
+							load_file(url, target_movie, root_movie);
 						}
 						else
 						{
 							log_error("get url: target %s not found\n", target);
 						}
-#endif // EXTERN_MOVIE
 					}
 
 					break;
@@ -2674,20 +2673,18 @@ namespace gameswf
 					}
 					else
 					{
-#ifdef EXTERN_MOVIE
 //            log_error("get url2: target=%s, url=%s\n", target, url);
 
 						movie* target_movie = env->find_target(env->top(0));
 						if (target_movie != NULL)
 						{
 							movie*	root_movie = env->get_target()->get_root_movie();
-							attach_extern_movie(url, target_movie, root_movie);
+							load_file(url, target_movie, root_movie);
 						}
 						else
 						{
 							log_error("get url2: target %s not found\n", target);
 						}
-#endif // EXTERN_MOVIE
 					}
 					env->drop(2);
 					break;
@@ -3790,7 +3787,15 @@ namespace gameswf
 
 	    "onConstruct",
 			"onSetFocus",
-			"onKillFocus"
+			"onKillFocus",
+
+			// MovieClipLoader events
+			"onLoadComplete",
+			"onLoadError",
+			"onLoadInit",
+			"onLoadProgress",
+			"onLoadStart"
+
 		};
 
 		assert(m_id > INVALID && m_id < EVENT_COUNT);
