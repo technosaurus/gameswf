@@ -15,7 +15,6 @@
 #include "gameswf_types.h"
 #include "gameswf_log.h"
 #include "gameswf_movie.h"
-#include "gameswf_timers.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -59,7 +58,7 @@ namespace gameswf
 		enum listener_type
 		{
 			KEYPRESS,
-			NETWORK
+			ADVANCE
 		};
 
 		smart_ptr<movie_def_impl>	m_def;
@@ -75,11 +74,6 @@ namespace gameswf
 		mouse_button_state m_mouse_button_state;
 		bool			m_on_event_load_called;
 
-		// Flags for event handlers
-		bool			m_on_event_xmlsocket_ondata_called;
-		bool			m_on_event_xmlsocket_onxml_called;
-		bool			m_on_event_load_progress_called;
-		array< Timer* >	m_interval_timers;
 		hash< smart_ptr<as_object_interface>, int > m_listeners;
 		smart_ptr<movie> m_current_active_entity;
 		float	m_time_remainder;
@@ -102,10 +96,6 @@ namespace gameswf
 		void	stop_drag();
 		movie_definition*	get_movie_definition();
 		uint32	get_file_bytes() const;
-		virtual int  add_interval_timer(void *timer);
-
-		virtual void	clear_interval_timer(int x);
-		virtual void	do_something(void *timer);
 		virtual int	get_current_frame() const;
 		float	get_frame_rate() const;
 
@@ -150,7 +140,7 @@ namespace gameswf
 		void add_listener(as_object_interface* listener, listener_type lt);
 		void remove_listener(as_object_interface* listener);
 
-		void	generate_network_events();
+		void	advance_listeners(float delta_time);
 
 	};
 }

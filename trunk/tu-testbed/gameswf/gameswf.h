@@ -162,6 +162,7 @@ namespace gameswf
 	struct as_table;
 	struct video_stream_instance;
 	struct sprite_instance;
+	struct as_timer;
 	
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -176,6 +177,7 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
 		virtual movie*	to_movie() = 0;
 		virtual bool	on_event(const event_id& id) { return false; }
+		virtual void advance(float delta_time) { assert(0); }
 		virtual movie_root*		get_root() { return (movie_root*) get_current_root(); }
 
 		// Replacements for dynamic_cast<>.  Override in subclasses
@@ -185,6 +187,7 @@ namespace gameswf
 		virtual as_netstream* cast_to_as_netstream() { return 0; }
 		virtual as_table* cast_to_as_table() { return 0; }
 		virtual character* cast_to_character() { return 0; }
+		virtual as_timer* cast_to_as_timer() { return 0; }
 	};
 
 
@@ -548,9 +551,6 @@ namespace gameswf
 		//
 		// Attach NULL to disable the callback.
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr) = 0;
-
-		virtual int add_interval_timer(void *timer) = 0;
-		virtual void clear_interval_timer(int x) = 0;
 
 		// for external movies
 		virtual movie*	get_root_movie() = 0;

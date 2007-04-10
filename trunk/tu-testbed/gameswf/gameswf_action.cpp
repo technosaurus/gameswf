@@ -11,9 +11,9 @@
 #include "gameswf_log.h"
 #include "gameswf_stream.h"
 #include "gameswf_movie_def.h"
-#include "base/tu_random.h"
-
 #include "gameswf_timers.h"
+#include "base/tu_random.h"
+#include "base/tu_timer.h"
 
 // action script classes
 #include "gameswf_as_classes/as_array.h"
@@ -916,7 +916,6 @@ namespace gameswf
 			s_global->set_member("TextFormat", as_value(textformat_new));
 
 			//			s_global->set_member("XML", as_value(xml_new));
-//			s_global->set_member("XML", as_value(xmlsocket_xml_new));
 			s_global->set_member("XMLSocket", as_value(as_global_xmlsock_ctor));
 
 			s_global->set_member("MovieClipLoader", as_value(moviecliploader_new));
@@ -935,6 +934,11 @@ namespace gameswf
 
 			s_global->set_member("math", math_init());
 			s_global->set_member("Key", key_init());
+
+			// builtins functions
+			s_global->set_member("setInterval",  as_value(as_global_setinterval));
+			s_global->set_member("clearInterval",  as_value(as_global_clearinterval));
+
 		}
 	}
 
@@ -3783,19 +3787,6 @@ namespace gameswf
 			"onKeyDown",		 // KEY_DOWN
 			"onKeyUp",		 // KEY_UP
 			"onData",		 // DATA
-			// These are for the MoveClipLoader ActionScript only
-			"onLoadStart",		 // LOAD_START
-			"onLoadError",		 // LOAD_ERROR
-			"onLoadProgress",	 // LOAD_PROGRESS
-			"onLoadInit",		 // LOAD_INIT
-			// These are for the XMLSocket ActionScript only
-			"onSockClose",		 // CLOSE
-			"onSockConnect",	 // CONNECT
-			"onSockXML",		 // XML
-			// These are for the XML ActionScript only
-			"onXMLLoad",		 // XML_LOAD
-			"onXMLData",		 // XML_DATA
-			"onTimer",		 // setInterval Timer expired
 
 	    "onConstruct",
 			"onSetFocus",

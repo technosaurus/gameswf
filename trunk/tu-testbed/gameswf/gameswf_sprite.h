@@ -62,14 +62,7 @@ namespace gameswf
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id);
 		virtual ~sprite_instance();
 
-		// sprite instance of add_interval_handler()
-		virtual int    add_interval_timer(void *timer);
-		virtual void	clear_interval_timer(int x);
-
 		virtual bool has_keypress_event();
-		virtual void	do_something(void *timer);
-
-
 		movie_interface*	get_root_interface() { return m_root; }
 		movie_root*	get_root() { return m_root; }
 		movie*	get_root_movie() { return m_root->get_root_movie(); }
@@ -199,9 +192,6 @@ namespace gameswf
 		character*	clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object);
 		void	remove_display_object(const tu_string& name);
 		virtual bool	on_event(const event_id& id);
-		virtual void	on_event_xmlsocket_onxml();
-		virtual void	on_event_interval_timer();
-		virtual void	on_event_load_progress();
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args);
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);

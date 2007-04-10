@@ -106,20 +106,6 @@ namespace gameswf
 		//m_root->drop_ref();
 	}
 
-	// sprite instance of add_interval_handler()
-	int sprite_instance::add_interval_timer(void *timer)
-	{
-		// log_msg("FIXME: %s:\n", __FUNCTION__);
-		return m_root->add_interval_timer(timer);
-	}
-
-	void	sprite_instance::clear_interval_timer(int x)
-	{
-		// log_msg("FIXME: %s:\n", __FUNCTION__);
-		m_root->clear_interval_timer(x);
-	}
-
-
 	bool sprite_instance::has_keypress_event()
 	{
 		for (hash<event_id, as_value>::iterator it = m_event_handlers.begin();
@@ -132,40 +118,6 @@ namespace gameswf
 		}
 		return false;
 	}
-
-	void	sprite_instance::do_something(void *timer)
-	{
-		as_value	val;
-		as_object      *obj, *this_ptr;
-		as_environment *as_env;
-
-		//printf("FIXME: %s:\n", __FUNCTION__);
-		Timer *ptr = (Timer *)timer;
-		//log_msg("INTERVAL ID is %d\n", ptr->getIntervalID());
-
-		const as_value&	timer_method = ptr->getASFunction();
-		as_env = ptr->getASEnvironment();
-		this_ptr = ptr->getASObject();
-		obj = ptr->getObject();
-		//m_as_environment.push(obj);
-
-		as_c_function_ptr	cfunc = timer_method.to_c_function();
-		if (cfunc) {
-			// It's a C function. Call it.
-			//log_msg("Calling C function for interval timer\n");
-			//(*cfunc)(&val, obj, as_env, 0, 0);
-			(*cfunc)(fn_call(&val, obj, &m_as_environment, 0, 0));
-
-		} else if (as_as_function* as_func = timer_method.to_as_function()) {
-			// It's an ActionScript function. Call it.
-			as_value method;
-			//log_msg("Calling ActionScript function for interval timer\n");
-			(*as_func)(fn_call(&val, (as_object_interface *)this_ptr, as_env, 0, 0));
-			//(*as_func)(&val, (as_object_interface *)this_ptr, &m_as_environment, 1, 1);
-		} else {
-			log_error("error in call_method(): method is not a function\n");
-		}    
-	}	
 
 	float	sprite_instance::get_width()
 	{
@@ -1223,28 +1175,6 @@ namespace gameswf
 		}
 
 		return called;
-	}
-
-	// Do the events that happen when there is XML data waiting
-	// on the XML socket connection.
-	void	sprite_instance::on_event_xmlsocket_onxml()
-	{
-		log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-		on_event(event_id::SOCK_XML);
-	}
-
-	// Do the events that (appear to) happen on a specified interval.
-	void	sprite_instance::on_event_interval_timer()
-	{
-		log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-		on_event(event_id::TIMER);
-	}
-
-	// Do the events that happen as a MovieClip (swf 7 only) loads.
-	void	sprite_instance::on_event_load_progress()
-	{
-		log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-		on_event(event_id::LOAD_PROGRESS);
 	}
 
 	/*sprite_instance*/

@@ -77,25 +77,6 @@ namespace gameswf
 			KEY_DOWN,
 			KEY_UP,
 			DATA,
-			
-			// These are for the MoveClipLoader ActionScript only
-			LOAD_START,
-			LOAD_ERROR,
-			LOAD_PROGRESS,
-			LOAD_INIT,
-			
-			// These are for the XMLSocket ActionScript only
-			SOCK_CLOSE,	// unused
-			SOCK_CONNECT,	// unused
-			SOCK_DATA,	// unused
-			SOCK_XML,
-			
-			// These are for the XML ActionScript only
-			XML_LOAD,	// unused
-			XML_DATA,	// unused
-			
-			// This is for setInterval
-			TIMER,
 
 			CONSTRUCT,
 			SETFOCUS,

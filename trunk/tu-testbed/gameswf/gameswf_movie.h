@@ -197,25 +197,6 @@ namespace gameswf
 			return NULL;
 		}
 
-		// ActionScript event handler.	Returns true if a handler was called.
-//		virtual bool	on_event(const event_id& id) { return false; }
-
-		int    add_interval_timer(void *timer)
-		{
-			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-			return -1;	// ???
-		}
-
-		void	clear_interval_timer(int x)
-		{
-			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-		}
-
-		virtual void	do_something(void *timer)
-		{
-			log_msg("FIXME: %s: unimplemented\n", __FUNCTION__);
-		}
-
 		// as_object_interface stuff
 		virtual bool	set_member(const tu_stringi& name, const as_value& val) { assert(0); return false; }
 		virtual bool	get_member(const tu_stringi& name, as_value* val) { assert(0); return false; }

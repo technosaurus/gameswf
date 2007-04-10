@@ -95,7 +95,7 @@ namespace gameswf
 		// add to net listener
 		if (is_connected)
 		{
-			get_root()->add_listener(this, movie_root::NETWORK);
+			get_root()->add_listener(this, movie_root::ADVANCE);
 		}
 
 		return is_connected;
@@ -116,9 +116,8 @@ namespace gameswf
 
 	// called from movie_root
 	// To check up presence of data which have come from a network
-	bool	as_xmlsock::on_event(const event_id& id)
+	void	as_xmlsock::advance(float delta_time)
 	{
-		assert(event_id::SOCK_XML == id.m_id);
 		assert(m_ns);
 
 		if (m_ns->is_readable())
@@ -154,8 +153,6 @@ namespace gameswf
 				}
 			}
 		}
-
-		return true;
 	}
 
 };

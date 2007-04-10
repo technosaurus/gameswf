@@ -1,85 +1,33 @@
-// gameswf_xml.h      -- Rob Savoye <rob@welcomehome.org> 2005
+// gameswf_timers.h	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#ifndef __TIMERS_H_
-#define __TIMERS_H_
+#ifndef GAMESWF_TIMER_H
+#define GAMESWF_TIMER_H
 
-
-#include "gameswf_log.h"
-#include "gameswf_action.h"
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
-
-#include "base/tu_timer.h"
+#include "gameswf_action.h"	// for as_object
 
 namespace gameswf 
 {
-  
-  struct variable {
-    tu_string name;
-    as_value value;
-  };
+  void  as_global_setinterval(const fn_call& fn);
+  void  as_global_clearinterval(const fn_call& fn);
 
-  class Timer
-    {
-    public:
-      Timer();
-      Timer(as_value *obj, int ms);
-      Timer(as_value method, int ms);
-      ~Timer();
-      int setInterval(as_value obj, int ms);
-      int setInterval(as_value obj, int ms, as_object *this_ptr, as_environment *env);
-      int setInterval(as_value obj, int ms, as_environment *env);
-      int setInterval(as_value obj, int ms, array<variable *> *locals);
-      void setInterval(int ms) 
-      {
-        _interval = ms * 0.000001;
-      }
+	struct as_timer : public as_object
+	{
+		float m_interval;	// sec
+		as_value m_func;
+		float m_delta_time;
 
-      void clearInterval();
-      void start();
-      bool expired();
-      void setObject(as_object *ao) { _object = ao; }
-      as_object *getObject() { return _object; }
-      
-      // Accessors
-      const as_value& getASFunction() { return _function;  }
-      as_environment *getASEnvironment() { return _env;  }
-      as_object *getASObject() { return _object;  }
-      array<struct variable *> *getLocals() { return _locals;  }
-      int getIntervalID()  { return _which;  }
-      void add_local(tu_string name, as_value value) {
-        struct variable *var = new struct variable;
-        var->name = name;
-        var->value = value;
-        _locals->push_back(var);
-      }
-      
+		as_timer(as_value& func, double intarval);
 
-    private:
-      tu_string       _method;
-      int             _which;                // Which timer
-      double          _interval;
-      double          _start;
-      as_value        _function;
-      as_object      *_object;
-      as_environment *_env;
-      array<struct variable *> *_locals;
-      
-    };
-  
-  struct timer_as_object : public gameswf::as_object
-  {
-    Timer obj;
-  };
-  
-  void timer_setinterval(const fn_call& fn);
-  void timer_clearinterval(const fn_call& fn);
-  void timer_expire(const fn_call& fn);
-  
-} // end of namespace gameswf
+		virtual void advance(float delta_time);
+		virtual as_timer* cast_to_as_timer() { return this; }
 
-  // __TIMERS_H_
+		void clear();
+	};
+
+
+}
+
 #endif
