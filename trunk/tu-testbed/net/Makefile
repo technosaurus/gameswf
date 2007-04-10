@@ -16,12 +16,17 @@ LDFLAGS := $(LIB_DEBUG_FLAGS) $(LDFLAGS)
 LIB_OUT = $(LIB_PRE)net.$(LIB_EXT)
 EXE_OUT = net_test$(EXE_EXT)
 
-LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(SOCKET_LIBS)
+# The second $(LIB_OUT) is because tu_file refers to http_connection.
+# This is a bug.  TODO: remove the second $(LIB_OUT) here, and move
+# all http code from tu_file into the net/ library.  Clients who want
+# http functionality should use a subclass of tu_file.
+LIBS := $(LIB_OUT) $(BASE_LIB) $(LIB_OUT) $(LIBS) $(SOCKET_LIBS)
 
 all: $(LIB_OUT) $(EXE_OUT)
 
 
 LIB_OBJS = \
+	http_client.$(OBJ_EXT)		\
 	http_file_handler.$(OBJ_EXT)		\
 	http_server.$(OBJ_EXT)			\
 	net_interface_tcp.$(OBJ_EXT) 		\

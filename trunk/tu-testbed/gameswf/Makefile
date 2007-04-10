@@ -18,20 +18,27 @@ EXE_OUT = gameswf_test_ogl$(EXE_EXT)
 PARSER_OUT = gameswf_parser$(EXE_EXT)
 PROCESSOR_OUT = gameswf_processor$(EXE_EXT)
 
-LIBS := $(LIB_OUT) $(BASE_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB) $(LIBMAD_LIB) # $(XML2LIB)
+LIBS := $(LIB_OUT) $(BASE_LIB) $(NET_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB) $(LIBMAD_LIB) # $(XML2LIB)
 
-all: base_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
+all: base_lib net_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 
 LIB_OBJS = \
 	gameswf_as_classes/as_array.$(OBJ_EXT) \
+	gameswf_as_classes/as_color.$(OBJ_EXT) \
 	gameswf_as_classes/as_db.$(OBJ_EXT) \
 	gameswf_as_classes/as_key.$(OBJ_EXT) \
 	gameswf_as_classes/as_MovieClipLoader.$(OBJ_EXT) \
+	gameswf_as_classes/as_math.$(OBJ_EXT)	\
+	gameswf_as_classes/as_netconnection.$(OBJ_EXT)	\
 	gameswf_as_classes/as_netstream.$(OBJ_EXT)	\
 	gameswf_as_classes/as_sound.$(OBJ_EXT) \
+	gameswf_as_classes/as_string.$(OBJ_EXT) \
 	gameswf_as_classes/as_table.$(OBJ_EXT) \
+	gameswf_as_classes/as_textformat.$(OBJ_EXT) \
+	gameswf_as_classes/as_xmlsocket.$(OBJ_EXT) \
 	gameswf_action.$(OBJ_EXT)	\
+	gameswf_as_sprite.$(OBJ_EXT)	\
 	gameswf_button.$(OBJ_EXT)	\
 	gameswf_dlist.$(OBJ_EXT)	\
 	gameswf_font.$(OBJ_EXT)		\
@@ -39,22 +46,26 @@ LIB_OBJS = \
 	gameswf_impl.$(OBJ_EXT)		\
 	gameswf_log.$(OBJ_EXT)		\
 	gameswf_morph2.$(OBJ_EXT)	\
+	gameswf_movie_def.$(OBJ_EXT)	\
+	gameswf_mutex.$(OBJ_EXT)	\
+	gameswf_parser.$(OBJ_EXT)	\
+	gameswf_processor.$(OBJ_EXT)	\
 	gameswf_render.$(OBJ_EXT)	\
 	gameswf_root.$(OBJ_EXT)		\
 	gameswf_shape.$(OBJ_EXT)	\
 	gameswf_sound.$(OBJ_EXT)	\
+	gameswf_sprite.$(OBJ_EXT)	\
+	gameswf_sprite_def.$(OBJ_EXT)	\
 	gameswf_stream.$(OBJ_EXT)	\
-	gameswf_string.$(OBJ_EXT)	\
 	gameswf_styles.$(OBJ_EXT)	\
 	gameswf_tesselate.$(OBJ_EXT)	\
 	gameswf_text.$(OBJ_EXT)		\
-	gameswf_textformat.$(OBJ_EXT)	\
 	gameswf_timers.$(OBJ_EXT)	\
+	gameswf_tools.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)	\
 	gameswf_video_base.$(OBJ_EXT)	\
 	gameswf_video_impl.$(OBJ_EXT)	\
-	gameswf_xml.$(OBJ_EXT)	        \
-	gameswf_xmlsocket.$(OBJ_EXT)
+	gameswf_xml.$(OBJ_EXT)	        
 
 TEST_PROGRAM_OBJS = \
 	gameswf_test_ogl.$(OBJ_EXT)             \
@@ -77,15 +88,15 @@ $(LIB_OUT): $(LIB_OBJS)
 	$(AR) $(LIB_OUT_FLAG)$@ $^
 
 
-$(EXE_OUT): $(TEST_PROGRAM_OBJS) $(LIB_OUT) $(BASE_LIB)
+$(EXE_OUT): $(TEST_PROGRAM_OBJS) $(LIB_OUT) $(BASE_LIB) $(NET_LIB)
 	$(CC) -o $@ $(TEST_PROGRAM_OBJS) $(LIBS) $(LDFLAGS)
 
 
-$(PARSER_OUT): $(PARSER_OBJS) $(LIB_OUT) $(BASE_LIB)
+$(PARSER_OUT): $(PARSER_OBJS) $(LIB_OUT) $(BASE_LIB) $(NET_LIB)
 	$(CC) -o $@ $(PARSER_OBJS) $(LIBS) $(LDFLAGS)
 
 
-$(PROCESSOR_OUT): $(PROCESSOR_OBJS) $(LIB_OUT) $(BASE_LIB)
+$(PROCESSOR_OUT): $(PROCESSOR_OBJS) $(LIB_OUT) $(BASE_LIB) $(NET_LIB)
 	$(CC) -o $@ $(PROCESSOR_OBJS) $(LIBS) $(LDFLAGS)
 
 

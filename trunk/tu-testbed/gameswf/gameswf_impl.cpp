@@ -543,7 +543,7 @@ namespace gameswf
 
 		// First it's necessary to clean listeners
 		// to prevent an infinite loop
-		for (hash<movie_definition_sub*, smart_ptr<movie_interface>>::iterator
+		for (hash<movie_definition_sub*, smart_ptr<movie_interface> >::iterator
 			it = s_movie_library_inst.begin(); it != s_movie_library_inst.end(); ++it)
 		{
 			movie_root* mr = (movie_root*) it->second.get_ptr();

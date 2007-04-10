@@ -30,7 +30,6 @@ namespace gameswf
 
 	inline as_object* get_sprite_builtins();
 	void	sprite_builtins_clear();
-	void	sprite_builtins_init();
 
 	struct sprite_instance : public character
 	{

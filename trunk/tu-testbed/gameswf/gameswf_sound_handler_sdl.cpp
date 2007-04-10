@@ -288,8 +288,8 @@ namespace gameswf
 		return play;
 	}
 
-	gameswf::sound_handler*	gameswf::create_sound_handler_sdl()
-		// Factory.
+	sound_handler*	create_sound_handler_sdl()
+	// Factory.
 	{
 		return new SDL_sound_handler;
 	}
