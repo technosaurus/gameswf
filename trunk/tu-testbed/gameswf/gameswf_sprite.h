@@ -24,6 +24,7 @@
 #include "base/smart_ptr.h"
 #include <stdarg.h>
 #include "gameswf_sprite_def.h"
+#include "gameswf_as_classes/as_mcloader.h"
 
 namespace gameswf
 {
@@ -57,6 +58,7 @@ namespace gameswf
 		mouse_state m_mouse_state;
 		bool m_enabled;
 		bool m_on_event_load_called;
+		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id);
 		virtual ~sprite_instance();
@@ -194,6 +196,8 @@ namespace gameswf
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args);
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);
+
+		virtual void set_mcloader(as_mcloader* mcl);
 
 	};
 }

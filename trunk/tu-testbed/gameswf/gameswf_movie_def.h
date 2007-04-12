@@ -197,7 +197,9 @@ namespace gameswf
 		rect	m_frame_size;
 		float	m_frame_rate;
 		int	m_version;
+
 		uint32	m_file_length;
+		volatile uint32	m_loaded_length;
 
 		jpeg::input*	m_jpeg_in;
 
@@ -217,6 +219,7 @@ namespace gameswf
 		float	get_height_pixels() const;
 		virtual int	get_version() const;
 		uint32	get_file_bytes() const;
+		uint32	get_loaded_bytes() const;
 		virtual create_bitmaps_flag	get_create_bitmaps() const;
 		virtual create_font_shapes_flag	get_create_font_shapes() const;
 		virtual void	add_bitmap_info(bitmap_info* bi);

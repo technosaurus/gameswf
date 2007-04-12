@@ -59,6 +59,26 @@ namespace gameswf
 
 	void	as_mcloader_getprogress(const fn_call& fn)
 	{
+		as_mcloader* mcl = (as_mcloader*) fn.this_ptr;
+		assert(mcl);
+
+		if (fn.nargs == 1)
+		{
+			as_object_interface* obj = fn.arg(0).to_object();
+			if (obj)
+			{
+				movie* m = obj->to_movie();
+				if (m)
+				{
+					as_object* info = new as_object();
+					info->set_member("bytesLoaded", (int) m->get_root()->get_loaded_bytes());
+					info->set_member("bytesTotal", (int) m->get_root()->get_file_bytes());
+					fn.result->set_as_object_interface(info);
+					return;
+				}
+			}
+		}
+		fn.result->set_as_object_interface(NULL);
 	}
 
 	void	as_global_mcloader_ctor(const fn_call& fn)
@@ -66,7 +86,6 @@ namespace gameswf
 	{
 		fn.result->set_as_object_interface(new as_mcloader);
 	}
-
 
 	as_mcloader::as_mcloader()
 	{
@@ -110,8 +129,15 @@ namespace gameswf
 
 		if (m)
 		{
-			return load_file(url, m, get_root()->to_movie());
+			movie* loading_movie = load_file(url, m, get_root()->to_movie());
+			if (loading_movie != NULL)
+			{
+				loading_movie->set_mcloader(this);
+				on_event(event_id(event_id::ONLOAD_START, (movie*) this));
+				return true;
+			}
 		}
+		on_event(event_id(event_id::ONLOAD_ERROR, (movie*) this));
 		return false;
 	}
 
@@ -121,14 +147,63 @@ namespace gameswf
 			it != m_listener.end(); ++it)
 		{
 			as_value function;
-			if (get_member(id.get_function_name(), &function))
+			if (it->first->get_member(id.get_function_name(), &function))
 			{
 				as_environment* env = function.to_as_function()->m_env;
 				assert(env);
 				
-//				env->push(is_connected);
-				call_method(function, env, NULL, 0, env->get_top_index());
-//				env->drop(1);
+				int param_count = 0;
+				switch (id.m_id)
+				{
+					case event_id::ONLOAD_START:
+						param_count = 1;
+						env->push(id.m_target);
+						break;
+
+					case event_id::ONLOAD_INIT:
+						param_count = 1;
+						env->push(id.m_target);
+						break;
+
+					case event_id::ONLOAD_ERROR:
+						param_count = 2;
+						env->push("URLNotFound");	// 2-d param
+						env->push(id.m_target);	// 1-st param
+						break;
+
+					case event_id::ONLOAD_COMPLETE:
+						id.m_target->set_mcloader(NULL);
+						param_count = 1;
+						env->push(id.m_target);
+						break;
+
+					case event_id::ONLOAD_PROGRESS:
+					{
+						param_count = 3;	
+						int total = id.m_target->get_root()->get_file_bytes();
+						int loaded = id.m_target->get_root()->get_file_bytes();
+						env->push(total);
+						env->push(loaded);
+						env->push(id.m_target);	// 1-st param
+
+						call_method(function, env, NULL, param_count, env->get_top_index());
+						env->drop(param_count);
+						
+						if (loaded >= total)
+						{
+							on_event(event_id(event_id::ONLOAD_COMPLETE, id.m_target));
+						}
+
+						continue;
+					}
+
+					default:
+						assert(0);
+
+				}
+
+				call_method(function, env, NULL, param_count, env->get_top_index());
+				env->drop(param_count);
 			}
 		}
 		return false;

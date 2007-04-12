@@ -43,8 +43,7 @@ namespace gameswf
 		const char* method_arg_fmt,
 		va_list args);
 
-	bool load_file(const char* url, const movie* target, 
-		const movie* root_movie, bool relative_path = true);
+	movie* load_file(const char* url, const movie* target, const movie* root_movie);
 
 	//
 	// event_id
@@ -89,20 +88,33 @@ namespace gameswf
 			ONLOAD_ERROR,
 			ONLOAD_INIT,
 			ONLOAD_PROGRESS,
-			ONLOAD_SRART,
+			ONLOAD_START,
 
 			EVENT_COUNT
 		};
 
 		unsigned char	m_id;
 		unsigned char	m_key_code;
+		movie* m_target;
 
-		event_id() : m_id(INVALID), m_key_code(key::INVALID) {}
+		event_id() :
+			m_id(INVALID),
+			m_key_code(key::INVALID),
+			m_target(NULL)
+		{
+		}
 
-		event_id(id_code id, key::code c = key::INVALID)
-			:
+		event_id(id_code id, movie* target) :
 			m_id((unsigned char) id),
-			m_key_code((unsigned char) c)
+			m_key_code(key::INVALID),
+			m_target(target)
+		{
+		}
+
+		event_id(id_code id, key::code c = key::INVALID) :
+			m_id((unsigned char) id),
+			m_key_code((unsigned char) c),
+			m_target(NULL)
 		{
 			// For the button key events, you must supply a keycode.
 			// Otherwise, don't.
@@ -110,7 +122,12 @@ namespace gameswf
 				|| (m_key_code != key::INVALID && (m_id == KEY_PRESS)));
 		}
 
-		bool	operator==(const event_id& id) const { return m_id == id.m_id && m_key_code == id.m_key_code; }
+		bool	operator==(const event_id& id) const
+		{
+			return m_id == id.m_id &&
+				m_key_code == id.m_key_code &&
+				m_target == id.m_target;
+		}
 
 		// Return the name of a method-handler function corresponding to this event.
 		const tu_string&	get_function_name() const;
