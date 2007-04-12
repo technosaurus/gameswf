@@ -72,7 +72,7 @@ namespace gameswf
 					{
 						// Transfer to topmost entity, dragOver
 						active_entity = topmost_entity;
-						active_entity->on_button_event(event_id::DRAG_OVER);
+						active_entity->on_event(event_id::DRAG_OVER);
 						ms->m_mouse_inside_entity_last = true;
 					}
 				}
@@ -85,7 +85,7 @@ namespace gameswf
 						// onDragOver
 						if (active_entity != NULL)
 						{
-							active_entity->on_button_event(event_id::DRAG_OVER);
+							active_entity->on_event(event_id::DRAG_OVER);
 						}
 						ms->m_mouse_inside_entity_last = true;
 					}
@@ -98,7 +98,7 @@ namespace gameswf
 						// onDragOut
 						if (active_entity != NULL)
 						{
-							active_entity->on_button_event(event_id::DRAG_OUT);
+							active_entity->on_event(event_id::DRAG_OUT);
 						}
 						ms->m_mouse_inside_entity_last = false;
 					}
@@ -115,14 +115,14 @@ namespace gameswf
 						if (ms->m_mouse_inside_entity_last)
 						{
 							// onRelease
-							active_entity->on_button_event(event_id::RELEASE);
+							active_entity->on_event(event_id::RELEASE);
 						}
 						else
 						{
 							// onReleaseOutside
 							if (active_entity->get_track_as_menu() == false)
 							{
-								active_entity->on_button_event(event_id::RELEASE_OUTSIDE);
+								active_entity->on_event(event_id::RELEASE_OUTSIDE);
 							}
 						}
 					}
@@ -139,7 +139,7 @@ namespace gameswf
 					// onRollOut
 					if (active_entity != NULL)
 					{
-						active_entity->on_button_event(event_id::ROLL_OUT);
+						active_entity->on_event(event_id::ROLL_OUT);
 					}
 
 					active_entity = topmost_entity;
@@ -147,7 +147,7 @@ namespace gameswf
 					// onRollOver
 					if (active_entity != NULL)
 					{
-						active_entity->on_button_event(event_id::ROLL_OVER);
+						active_entity->on_event(event_id::ROLL_OVER);
 					}
 
 					ms->m_mouse_inside_entity_last = true;
@@ -181,7 +181,7 @@ namespace gameswf
 
 					if (active_entity != NULL)
 					{
-						active_entity->on_button_event(event_id::PRESS);
+						active_entity->on_event(event_id::PRESS);
 					}
 					ms->m_mouse_inside_entity_last = true;
 					ms->m_mouse_button_state_last = 1;

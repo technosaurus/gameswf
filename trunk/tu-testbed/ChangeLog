@@ -1,5 +1,12 @@
 2007-04-12  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_button.cpp,
+	* gameswf/gameswf_root.cpp,
+	* gameswf/gameswf_movie.h:
+	removed useless on_button_event()
+
+2007-04-12  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.h: fixed the bug in struct event_id
 	I add m_unused because of problem with hash<event_id, ...>
 	the reason: sizeof(unsigned char+unsigned char+movie*)  == 8 
