@@ -28,7 +28,7 @@
 #			define WINGDIAPI
 #		endif
 
-		WINGDIAPI int WINAPI wglGetCurrentContext();
+//		WINGDIAPI int WINAPI wglGetCurrentContext();
 
 #	else
 #		define WIN32_LEAN_AND_MEAN
