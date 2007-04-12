@@ -319,165 +319,158 @@ namespace gameswf
 			return NULL;
 		}
 
-		// called from keypress listener only
 		virtual bool	on_event(const event_id& id)
 		{
-			if (id.m_id != event_id::KEY_PRESS)
-			{
-				return false;
-			}
-
 			bool called = false;
-			static const event_id s_key[32] =
+			if (id.m_id == event_id::KEY_PRESS)
 			{
-				event_id(),
-				event_id(event_id::KEY_PRESS, key::LEFT),
-				event_id(event_id::KEY_PRESS, key::RIGHT),
-				event_id(event_id::KEY_PRESS, key::HOME),
-				event_id(event_id::KEY_PRESS, key::END),
-				event_id(event_id::KEY_PRESS, key::INSERT),
-				event_id(event_id::KEY_PRESS, key::DELETEKEY),
-				event_id(),
-				event_id(event_id::KEY_PRESS, key::BACKSPACE),	//8
-				event_id(),
-				event_id(),
-				event_id(),
-				event_id(),
-				event_id(event_id::KEY_PRESS, key::ENTER),	//13
-				event_id(event_id::KEY_PRESS, key::UP),
-				event_id(event_id::KEY_PRESS, key::DOWN),
-				event_id(event_id::KEY_PRESS, key::PGUP),
-				event_id(event_id::KEY_PRESS, key::PGDN),
-				event_id(event_id::KEY_PRESS, key::TAB),
-				// 32-126 folows ASCII*/
-			};
-
-			// Execute appropriate actions
-
-			// actions can delete THIS through execute_frame_tags()
-			// therefore we need to protect THIS from deleting
-			add_ref();
-
-			for (int i = 0; i < m_def->m_button_actions.size(); i++)
-			{
-				int keycode = (m_def->m_button_actions[i].m_conditions & 0xFE00) >> 9;
-				event_id key_event = keycode < 32 ? s_key[keycode] : event_id(event_id::KEY_PRESS, (key::code) keycode);
-				if (key_event == id)
+				static const event_id s_key[32] =
 				{
-					get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
-					called = true;
-				}
-			}
+					event_id(),
+					event_id(event_id::KEY_PRESS, key::LEFT),
+					event_id(event_id::KEY_PRESS, key::RIGHT),
+					event_id(event_id::KEY_PRESS, key::HOME),
+					event_id(event_id::KEY_PRESS, key::END),
+					event_id(event_id::KEY_PRESS, key::INSERT),
+					event_id(event_id::KEY_PRESS, key::DELETEKEY),
+					event_id(),
+					event_id(event_id::KEY_PRESS, key::BACKSPACE),	//8
+					event_id(),
+					event_id(),
+					event_id(),
+					event_id(),
+					event_id(event_id::KEY_PRESS, key::ENTER),	//13
+					event_id(event_id::KEY_PRESS, key::UP),
+					event_id(event_id::KEY_PRESS, key::DOWN),
+					event_id(event_id::KEY_PRESS, key::PGUP),
+					event_id(event_id::KEY_PRESS, key::PGDN),
+					event_id(event_id::KEY_PRESS, key::TAB),
+					// 32-126 folows ASCII*/
+				};
 
-			drop_ref();
+				// Execute appropriate actions
 
-			return called;
-		}
+				// actions can delete THIS through execute_frame_tags()
+				// therefore we need to protect THIS from deleting
+				add_ref();
 
-		virtual void	on_button_event(event_id event)
-		{
-			// Set our mouse state (so we know how to render).
-			switch (event.m_id)
-			{
-			case event_id::ROLL_OUT:
-			case event_id::RELEASE_OUTSIDE:
-				m_mouse_state = UP;
-				break;
-
-			case event_id::RELEASE:
-			case event_id::ROLL_OVER:
-			case event_id::DRAG_OUT:
-				m_mouse_state = OVER;
-				break;
-
-			case event_id::PRESS:
-			case event_id::DRAG_OVER:
-				m_mouse_state = DOWN;
-				break;
-
-			default:
-				assert(0);	// missed a case?
-				break;
-			};
-
-			// Button transition sounds.
-			if (m_def->m_sound != NULL)
-			{
-				int bi; // button sound array index [0..3]
-				sound_handler* s = get_sound_handler();
-
-				// Check if there is a sound handler
-				if (s != NULL) {
-					switch (event.m_id)
+				for (int i = 0; i < m_def->m_button_actions.size(); i++)
+				{
+					int keycode = (m_def->m_button_actions[i].m_conditions & 0xFE00) >> 9;
+					event_id key_event = keycode < 32 ? s_key[keycode] : event_id(event_id::KEY_PRESS, (key::code) keycode);
+					if (key_event == id)
 					{
-					case event_id::ROLL_OUT:
-						bi = 0;
-						break;
-					case event_id::ROLL_OVER:
-						bi = 1;
-						break;
-					case event_id::PRESS:
-						bi = 2;
-						break;
-					case event_id::RELEASE:
-						bi = 3;
-						break;
-					default:
-						bi = -1;
-						break;
+						get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
+						called = true;
 					}
-					if (bi >= 0)
-					{
-						button_character_definition::button_sound_info& bs = m_def->m_sound->m_button_sounds[bi];
-						// character zero is considered as null character
-						if (bs.m_sound_id > 0)
+				}
+
+				drop_ref();
+			}
+			else
+			{
+				// Set our mouse state (so we know how to render).
+				switch (id.m_id)
+				{
+				case event_id::ROLL_OUT:
+				case event_id::RELEASE_OUTSIDE:
+					m_mouse_state = UP;
+					break;
+
+				case event_id::RELEASE:
+				case event_id::ROLL_OVER:
+				case event_id::DRAG_OUT:
+					m_mouse_state = OVER;
+					break;
+
+				case event_id::PRESS:
+				case event_id::DRAG_OVER:
+					m_mouse_state = DOWN;
+					break;
+
+				default:
+					return false;	// unhandled event, like setfocus, ...
+				};
+
+				// Button transition sounds.
+				if (m_def->m_sound != NULL)
+				{
+					int bi; // button sound array index [0..3]
+					sound_handler* s = get_sound_handler();
+
+					// Check if there is a sound handler
+					if (s != NULL) {
+						switch (id.m_id)
 						{
-							assert(m_def->m_sound->m_button_sounds[bi].m_sam != NULL);
-							if (bs.m_sound_style.m_stop_playback)
+						case event_id::ROLL_OUT:
+							bi = 0;
+							break;
+						case event_id::ROLL_OVER:
+							bi = 1;
+							break;
+						case event_id::PRESS:
+							bi = 2;
+							break;
+						case event_id::RELEASE:
+							bi = 3;
+							break;
+						default:
+							bi = -1;
+							break;
+						}
+						if (bi >= 0)
+						{
+							button_character_definition::button_sound_info& bs = m_def->m_sound->m_button_sounds[bi];
+							// character zero is considered as null character
+							if (bs.m_sound_id > 0)
 							{
-								s->stop_sound(bs.m_sam->m_sound_handler_id);
-							}
-							else
-							{
-								s->play_sound(bs.m_sam->m_sound_handler_id, bs.m_sound_style.m_loop_count);
+								assert(m_def->m_sound->m_button_sounds[bi].m_sam != NULL);
+								if (bs.m_sound_style.m_stop_playback)
+								{
+									s->stop_sound(bs.m_sam->m_sound_handler_id);
+								}
+								else
+								{
+									s->play_sound(bs.m_sam->m_sound_handler_id, bs.m_sound_style.m_loop_count);
+								}
 							}
 						}
 					}
 				}
-			}
 
-			// @@ eh, should just be a lookup table.
-			int	c = 0;
-			if (event.m_id == event_id::ROLL_OVER) c |= (button_action::IDLE_TO_OVER_UP);
-			else if (event.m_id == event_id::ROLL_OUT) c |= (button_action::OVER_UP_TO_IDLE);
-			else if (event.m_id == event_id::PRESS) c |= (button_action::OVER_UP_TO_OVER_DOWN);
-			else if (event.m_id == event_id::RELEASE) c |= (button_action::OVER_DOWN_TO_OVER_UP);
-			else if (event.m_id == event_id::DRAG_OUT) c |= (button_action::OVER_DOWN_TO_OUT_DOWN);
-			else if (event.m_id == event_id::DRAG_OVER) c |= (button_action::OUT_DOWN_TO_OVER_DOWN);
-			else if (event.m_id == event_id::RELEASE_OUTSIDE) c |= (button_action::OUT_DOWN_TO_IDLE);
-		        //IDLE_TO_OVER_DOWN = 1 << 7,
-			//OVER_DOWN_TO_IDLE = 1 << 8,
+				// @@ eh, should just be a lookup table.
+				int	c = 0;
+				if (id.m_id == event_id::ROLL_OVER) c |= (button_action::IDLE_TO_OVER_UP);
+				else if (id.m_id == event_id::ROLL_OUT) c |= (button_action::OVER_UP_TO_IDLE);
+				else if (id.m_id == event_id::PRESS) c |= (button_action::OVER_UP_TO_OVER_DOWN);
+				else if (id.m_id == event_id::RELEASE) c |= (button_action::OVER_DOWN_TO_OVER_UP);
+				else if (id.m_id == event_id::DRAG_OUT) c |= (button_action::OVER_DOWN_TO_OUT_DOWN);
+				else if (id.m_id == event_id::DRAG_OVER) c |= (button_action::OUT_DOWN_TO_OVER_DOWN);
+				else if (id.m_id == event_id::RELEASE_OUTSIDE) c |= (button_action::OUT_DOWN_TO_IDLE);
+						
+				//IDLE_TO_OVER_DOWN = 1 << 7,
+				//OVER_DOWN_TO_IDLE = 1 << 8,
 
-			// Execute appropriate actions
+				// Execute appropriate actions
 
-			// actions can delete THIS through execute_frame_tags()
-			// therefore we need to protect THIS from deleting
-			add_ref();
+				// actions can delete THIS through execute_frame_tags()
+				// therefore we need to protect THIS from deleting
+				add_ref();
 
-			{
-				for (int i = 0; i < m_def->m_button_actions.size(); i++)
 				{
-					if (m_def->m_button_actions[i].m_conditions & c)
+					for (int i = 0; i < m_def->m_button_actions.size(); i++)
 					{
-						get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
+						if (m_def->m_button_actions[i].m_conditions & c)
+						{
+							get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
+							called = true;
+						}
 					}
 				}
+
+				drop_ref();
 			}
-
-			drop_ref();
-
-			// Call conventional attached method.
-			// @@ TODO
+			return called;
 		}
 
 		virtual void	get_mouse_state(int* x, int* y, int* buttons)

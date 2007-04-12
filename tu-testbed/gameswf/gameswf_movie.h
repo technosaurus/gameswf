@@ -184,8 +184,6 @@ namespace gameswf
 
 		virtual movie* get_topmost_mouse_entity(float x, float y) { return NULL; }
 		virtual bool	get_track_as_menu() const { return false; }
-		virtual void	on_button_event(event_id id) { on_event(id); }
-
 
 		//
 		// ActionScript.
