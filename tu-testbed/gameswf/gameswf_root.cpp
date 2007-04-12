@@ -346,6 +346,11 @@ namespace gameswf
 			return m_def->get_file_bytes();
 		}
 
+		uint32	movie_root::get_loaded_bytes() const
+		{
+			return m_def->get_loaded_bytes();
+		}
+
 		// 0-based!!
 		int	movie_root::get_current_frame() const { return m_movie->get_current_frame(); }
 		float	movie_root::get_frame_rate() const { return m_def->get_frame_rate(); }
@@ -396,6 +401,7 @@ namespace gameswf
 			m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
 			generate_mouse_button_events(&m_mouse_button_state);
 
+			// advance Action script objects
 			advance_listeners(delta_time);
 
 			m_time_remainder += delta_time;

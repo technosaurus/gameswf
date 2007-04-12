@@ -108,13 +108,13 @@ namespace gameswf
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
 
-	bool load_file(const char* url, const movie* target, 
-		const movie* root_movie, bool relative_path)
+	movie* load_file(const char* url, const movie* target, const movie* root_movie)
 	{
-		tu_string infile = "";
-		if (relative_path)
+		// is path relative ?
+		tu_string infile = get_workdir();
+		if (strstr(url, ":") || url[0] == '/')
 		{
-			infile = get_workdir();
+			infile = "";
 		}
 		infile += url;
 
@@ -122,7 +122,7 @@ namespace gameswf
 		if (md == NULL)
 		{
 			log_error("can't create movie_definition_sub for %s\n", infile.c_str());
-			return false;
+			return NULL;
 		}
 
 		gameswf::movie_interface* extern_movie;
@@ -133,12 +133,13 @@ namespace gameswf
 			if (extern_movie == NULL)
 			{
 				log_error("can't create extern root movie_interface for %s\n", infile.c_str());
-				return false;
+				return NULL;
 			}
 			set_current_root(extern_movie);
 			movie* m = extern_movie->get_root_movie();
 
 			m->on_event(event_id::LOAD);
+			return m;
 		}
 		else
 		{
@@ -146,7 +147,7 @@ namespace gameswf
 			if (extern_movie == NULL)
 			{
 				log_error("can't create extern movie_interface for %s\n", infile.c_str());
-				return false;
+				return NULL;
 			}
       
 			save_extern_movie(extern_movie);
@@ -178,8 +179,10 @@ namespace gameswf
 				mat,
 				ratio,
 				clip_depth);
+
+			return new_movie;
+
 		}
-		return true;
 	}
 
 	void	register_fscommand_callback(fscommand_callback handler)

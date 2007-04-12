@@ -20,6 +20,8 @@
 namespace gameswf
 {
 
+	struct as_mcloader;
+
 	// For built-in sprite ActionScript methods.
 	static as_object*	s_sprite_builtins = NULL;	// shared among all sprites.
 	static void	sprite_builtins_init();
@@ -384,7 +386,19 @@ namespace gameswf
 		// Advance everything in the display list. 
 		m_display_list.advance(delta_time); 
 
+		if (m_mcloader != NULL)
+		{
+			if (m_on_event_load_called == false)
+			{
+				m_mcloader->on_event(event_id(event_id::ONLOAD_INIT, this));
+			}
+
+			m_mcloader->on_event(event_id(event_id::ONLOAD_PROGRESS, this));
+		}
+
 		m_on_event_load_called = true; 
+
+
 	} 
 
 
@@ -1234,4 +1248,8 @@ namespace gameswf
 		return false;
 	}
 
+	void sprite_instance::set_mcloader(as_mcloader* mcl)
+	{
+		m_mcloader = mcl;
+	}
 }

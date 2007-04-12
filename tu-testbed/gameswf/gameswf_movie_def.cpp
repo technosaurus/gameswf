@@ -107,6 +107,7 @@ namespace gameswf
 		m_create_font_shapes(cfs),
 		m_frame_rate(30.0f),
 		m_version(0),
+		m_loaded_length(0),
 		m_jpeg_in(0),
 		m_str(NULL),
 		m_file_end_pos(0),
@@ -152,6 +153,7 @@ namespace gameswf
 
 	int	movie_def_impl::get_version() const { return m_version; }
 	uint32	movie_def_impl::get_file_bytes() const { return m_file_length; }
+	uint32	movie_def_impl::get_loaded_bytes() const { return m_loaded_length; }
 
 	/* movie_def_impl */
 	create_bitmaps_flag	movie_def_impl::get_create_bitmaps() const
@@ -540,6 +542,8 @@ namespace gameswf
 					break;
 				}
 			}
+
+			m_loaded_length = m_str->get_position();
 		}
 
 		if (m_jpeg_in)

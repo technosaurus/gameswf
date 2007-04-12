@@ -23,6 +23,7 @@ namespace gameswf
 {
 	struct movie_root;
 	struct swf_event;
+	struct as_mcloader;
 
 	struct movie : public movie_interface
 	{
@@ -245,6 +246,8 @@ namespace gameswf
 		}
 
 		virtual bool can_handle_mouse_event() { return false; }
+
+		virtual void set_mcloader(as_mcloader* mcl) { assert(0); }
 
 	};
 
