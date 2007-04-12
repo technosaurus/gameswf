@@ -1,6 +1,14 @@
 2007-04-12  Vitaly Alexeev <tishka92@yahoo.com>
 
-	* misc files: implemented MovieClipLoader, there are some bugs yet
+	* gameswf/gameswf_action.h: fixed the bug in struct event_id
+	I add m_unused because of problem with hash<event_id, ...>
+	the reason: sizeof(unsigned char+unsigned char+movie*)  == 8 
+	and	 sizeof(unsigned char+unsigned char+Uint16+movie*)  == 8
+	I think that compiler do aligment
+	
+2007-04-12  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* a lot of files: implemented MovieClipLoader, there are some bugs yet
 
 2007-04-10  Thatcher Ulrich <tu@tulrich.com>
 
