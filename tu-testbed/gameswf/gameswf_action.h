@@ -93,13 +93,20 @@ namespace gameswf
 			EVENT_COUNT
 		};
 
+		// Vitaly: I add m_unused because of problem with hash<event_id, ...>
+		// the reason: sizeof(unsigned char+unsigned char+movie*)  == 8 
+		// and
+		//						 sizeof(unsigned char+unsigned char+Uint16+movie*)  == 8
+		// I think that compiler do aligment
 		unsigned char	m_id;
 		unsigned char	m_key_code;
+		Uint16	m_unused;
 		movie* m_target;
 
 		event_id() :
 			m_id(INVALID),
 			m_key_code(key::INVALID),
+			m_unused(0),
 			m_target(NULL)
 		{
 		}
@@ -107,6 +114,7 @@ namespace gameswf
 		event_id(id_code id, movie* target) :
 			m_id((unsigned char) id),
 			m_key_code(key::INVALID),
+			m_unused(0),
 			m_target(target)
 		{
 		}
@@ -114,6 +122,7 @@ namespace gameswf
 		event_id(id_code id, key::code c = key::INVALID) :
 			m_id((unsigned char) id),
 			m_key_code((unsigned char) c),
+			m_unused(0),
 			m_target(NULL)
 		{
 			// For the button key events, you must supply a keycode.
