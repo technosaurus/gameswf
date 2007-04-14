@@ -43,7 +43,7 @@ namespace gameswf
 		const char* method_arg_fmt,
 		va_list args);
 
-	movie* load_file(const char* url, const movie* target, const movie* root_movie);
+	movie* load_file(const char* url, movie* target);
 
 	//
 	// event_id

@@ -77,7 +77,13 @@ void	print_usage()
 static float	s_scale = 1.0f;
 static bool	s_antialiased = false;
 static int	s_bit_depth = 16;
+
+#ifdef _DEBUG
+static bool	s_verbose = true;
+#else
 static bool	s_verbose = false;
+#endif
+
 static bool	s_background = true;
 static bool	s_measure_performance = false;
 
@@ -913,8 +919,6 @@ int	main(int argc, char *argv[])
 		}
 
 		m = gameswf::get_current_root();
-		gameswf::delete_unused_root();
-
 		m->set_display_viewport(0, 0, width, height);
 		m->set_background_alpha(s_background ? 1.0f : 0.05f);
 
@@ -931,7 +935,6 @@ int	main(int argc, char *argv[])
 			glDisable(GL_DEPTH_TEST);	// Disable depth testing.
 			glDrawBuffer(GL_BACK);
 		}
-
 		{
 //			Uint32 t = SDL_GetTicks();
 			m->display();

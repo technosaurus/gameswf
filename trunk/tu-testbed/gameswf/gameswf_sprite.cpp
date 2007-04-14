@@ -1252,4 +1252,9 @@ namespace gameswf
 	{
 		m_mcloader = mcl;
 	}
+
+	sprite_instance* sprite_instance::cast_to_sprite()
+	{
+		return this;
+	}
 }

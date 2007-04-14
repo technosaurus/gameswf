@@ -12,6 +12,7 @@
 #include "gameswf_stream.h"
 #include "gameswf_movie_def.h"
 #include "gameswf_timers.h"
+#include "gameswf_sprite.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 
@@ -108,81 +109,82 @@ namespace gameswf
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
 
-	movie* load_file(const char* url, const movie* target, const movie* root_movie)
+	// url=="" means that the load_file() works as unloadMovie(target)
+	movie* load_file(const char* url, movie* mtarget)
 	{
-		// is path relative ?
-		tu_string infile = get_workdir();
-		if (strstr(url, ":") || url[0] == '/')
+		sprite_instance* target = mtarget->cast_to_sprite();
+		assert(target);
+
+		movie_root* mroot = target->get_root();
+		movie* parent = target->get_parent();
+		sprite_instance* new_movie = NULL;
+
+		// is unloadMovie() ?
+		if (strlen(url) == 0)
 		{
-			infile = "";
-		}
-		infile += url;
-
-		movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
-		if (md == NULL)
-		{
-			log_error("can't create movie_definition_sub for %s\n", infile.c_str());
-			return NULL;
-		}
-
-		gameswf::movie_interface* extern_movie;
-
-		if (target == root_movie)
-		{
-			extern_movie = create_library_movie_inst_sub(md);			
-			if (extern_movie == NULL)
-			{
-				log_error("can't create extern root movie_interface for %s\n", infile.c_str());
-				return NULL;
-			}
-			set_current_root(extern_movie);
-			movie* m = extern_movie->get_root_movie();
-
-			m->on_event(event_id::LOAD);
-			return m;
+			sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+			new_movie = new sprite_instance(empty_sprite_def, mroot, parent, 0);
 		}
 		else
 		{
-			extern_movie = md->create_instance();
-			if (extern_movie == NULL)
+			// is path relative ?
+			tu_string infile = get_workdir();
+			if (strstr(url, ":") || url[0] == '/')
 			{
-				log_error("can't create extern movie_interface for %s\n", infile.c_str());
+				infile = "";
+			}
+			infile += url;
+
+			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
+			if (md == NULL)
+			{
+				log_error("can't create movie from %s\n", infile.c_str());
 				return NULL;
 			}
-      
-			save_extern_movie(extern_movie);
-      
-			character* tar = (character*)target;
-			const char* name = tar->get_name();
-			Uint16 depth = tar->get_depth();
-			bool use_cxform = false;
-			cxform color_transform =  tar->get_cxform();
-			bool use_matrix = false;
-			matrix mat = tar->get_matrix();
-			float ratio = tar->get_ratio();
-			Uint16 clip_depth = tar->get_clip_depth();
 
-			movie* parent = tar->get_parent();
-			movie* new_movie = extern_movie->get_root_movie();
+			// case loadMovie("my.swf", _root)
+			if (target == target->get_root_movie())
+			{
+				movie_interface* new_inst = create_library_movie_inst_sub(md);			
+				assert(new_inst);
+				save_extern_movie(new_inst);
 
-			assert(parent != NULL);
+				new_movie = (sprite_instance*) new_inst->get_root_movie();
+				set_current_root(new_inst);
+				new_movie->on_event(event_id::LOAD);
 
-			((character*)new_movie)->set_parent(parent);
-       
-			parent->replace_display_object(
-				(character*) new_movie,
-				name,
-				depth,
-				use_cxform,
-				color_transform,
-				use_matrix,
-				mat,
-				ratio,
-				clip_depth);
+				return new_movie;
+			}
 
-			return new_movie;
-
+			// case loadMovie("my.swf", container)
+			new_movie = new sprite_instance(md, mroot, parent, 0);
 		}
+
+		const char* name = target->get_name();
+		Uint16 depth = target->get_depth();
+		bool use_cxform = false;
+		cxform color_transform =  target->get_cxform();
+		bool use_matrix = false;
+		matrix mat = target->get_matrix();
+		float ratio = target->get_ratio();
+		Uint16 clip_depth = target->get_clip_depth();
+
+		assert(parent != NULL);
+		new_movie->set_parent(parent);
+		new_movie->set_root(mroot);
+
+		parent->replace_display_object(
+			(character*) new_movie,
+			name,
+			depth,
+			use_cxform,
+			color_transform,
+			use_matrix,
+			mat,
+			ratio,
+			clip_depth);
+
+		return new_movie;
 	}
 
 	void	register_fscommand_callback(fscommand_callback handler)
@@ -2326,8 +2328,7 @@ namespace gameswf
 						movie* target_movie = env->find_target(tu_target);
 						if (target_movie != NULL)
 						{
-							movie*	root_movie = env->get_target()->get_root_movie();
-							load_file(url, target_movie, root_movie);
+							load_file(url, target_movie);
 						}
 						else
 						{
@@ -2681,8 +2682,7 @@ namespace gameswf
 						movie* target_movie = env->find_target(env->top(0));
 						if (target_movie != NULL)
 						{
-							movie*	root_movie = env->get_target()->get_root_movie();
-							load_file(url, target_movie, root_movie);
+							load_file(url, target_movie);
 						}
 						else
 						{

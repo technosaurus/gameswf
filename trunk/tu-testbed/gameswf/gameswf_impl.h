@@ -61,7 +61,6 @@ namespace gameswf
 	void set_current_root(movie_interface* m);
 	const char* get_workdir();
 	void set_workdir(const char* dir);
-	void delete_unused_root();
 
 	struct swf_event
 	{

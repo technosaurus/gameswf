@@ -494,25 +494,6 @@ namespace gameswf
 		s_extern_sprites.push_back(m);
 	}
 
-	//#if 0
-	void delete_unused_root()
-	{
-		for (int i = 0; i < s_extern_sprites.size(); i++)
-		{
-			movie_interface* root_m = s_extern_sprites[i];
-			movie* m = root_m->get_root_movie();
-
-			if (m->get_ref_count() < 2)
-			{
-				IF_VERBOSE_ACTION(log_msg("extern movie deleted\n"));
-				s_extern_sprites.remove(i);
-				i--;
-				root_m->drop_ref();
-			}
-		}
-	}
-	//#endif // 0
-
 	movie_interface* get_current_root()
 	{
 		assert(s_current_root != NULL);
@@ -576,7 +557,10 @@ namespace gameswf
 			if (m != NULL)
 			{
 				// Return cached movie.
-				m->add_ref();
+
+				// ref_count will be incremented after x=create_library_movie_sub(...)
+//				m->add_ref();
+
 				return m.get_ptr();
 			}
 		}
