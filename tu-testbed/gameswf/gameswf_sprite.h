@@ -66,6 +66,10 @@ namespace gameswf
 		virtual bool has_keypress_event();
 		movie_interface*	get_root_interface() { return m_root; }
 		movie_root*	get_root() { return m_root; }
+
+		// used in loadMovieClip()
+		void	set_root(movie_root* mroot) { m_root = mroot; }
+
 		movie*	get_root_movie() { return m_root->get_root_movie(); }
 
 		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
@@ -198,7 +202,7 @@ namespace gameswf
 		bool	hit_test(character* target);
 
 		virtual void set_mcloader(as_mcloader* mcl);
-
+		virtual sprite_instance* cast_to_sprite();
 	};
 }
 

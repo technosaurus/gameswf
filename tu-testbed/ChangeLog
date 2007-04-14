@@ -1,5 +1,11 @@
 2007-04-14  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* a lot of files:
+	implemented unloadMovie() function
+	removed useless delete_unused_root() stuff
+
+2007-04-14  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_button.cpp: fixed bug
 	(a button may be the sprite's parent therefore it should call execute_frame_tags(0))
 

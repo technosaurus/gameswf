@@ -319,7 +319,7 @@ namespace gameswf
 
 		if (fn.nargs >= 1)
 		{
-			load_file(fn.arg(0).to_string(), sprite, sprite->get_root()->to_movie());
+			load_file(fn.arg(0).to_string(), sprite);
 		}
 
 	} 

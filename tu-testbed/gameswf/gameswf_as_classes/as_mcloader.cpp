@@ -55,6 +55,7 @@ namespace gameswf
 
 	void	as_mcloader_unloadclip(const fn_call& fn)
 	{
+
 	}
 
 	void	as_mcloader_getprogress(const fn_call& fn)
@@ -129,7 +130,7 @@ namespace gameswf
 
 		if (m)
 		{
-			movie* loading_movie = load_file(url, m, get_root()->to_movie());
+			movie* loading_movie = load_file(url, m);
 			if (loading_movie != NULL)
 			{
 				loading_movie->set_mcloader(this);

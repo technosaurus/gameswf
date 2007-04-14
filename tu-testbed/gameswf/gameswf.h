@@ -163,6 +163,7 @@ namespace gameswf
 	struct video_stream_instance;
 	struct sprite_instance;
 	struct as_timer;
+	struct sprite_instance;
 	
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -188,6 +189,7 @@ namespace gameswf
 		virtual as_table* cast_to_as_table() { return 0; }
 		virtual character* cast_to_character() { return 0; }
 		virtual as_timer* cast_to_as_timer() { return 0; }
+		virtual sprite_instance* cast_to_sprite() { return 0; }
 	};
 
 
