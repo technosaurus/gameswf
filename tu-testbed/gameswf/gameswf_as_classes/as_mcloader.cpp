@@ -55,6 +55,15 @@ namespace gameswf
 
 	void	as_mcloader_unloadclip(const fn_call& fn)
 	{
+		as_mcloader* mcl = (as_mcloader*) fn.this_ptr;
+		assert(mcl);
+
+		if (fn.nargs == 1)
+		{
+			fn.result->set_bool(mcl->unload_clip(fn.arg(0)));
+			return;
+		}
+		fn.result->set_bool(false);
 
 	}
 
@@ -139,6 +148,22 @@ namespace gameswf
 			}
 		}
 		on_event(event_id(event_id::ONLOAD_ERROR, (movie*) this));
+		return false;
+	}
+
+	bool as_mcloader::unload_clip(as_value& target)
+	{
+		as_object* obj = (as_object*) target.to_object();
+		movie* m = obj->to_movie();
+
+		if (m)
+		{
+			movie* loading_movie = load_file("", m);
+			if (loading_movie != NULL)
+			{
+				return true;
+			}
+		}
 		return false;
 	}
 

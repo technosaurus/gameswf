@@ -183,7 +183,8 @@ namespace gameswf
 			m_record_character.resize(r_num);
 
 			movie_definition_sub*	movie_def = static_cast<movie_definition_sub*>(
-				parent->get_root_movie()->get_movie_definition());
+//				parent->get_root_movie()->get_movie_definition());
+				parent->get_movie_definition());
 
 			for (r = 0; r < r_num; r++)
 			{

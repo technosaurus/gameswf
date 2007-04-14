@@ -300,7 +300,7 @@ namespace gameswf
 
 		character(movie* parent, int id)
 			:
-		m_id(id),
+			m_id(id),
 			m_parent(parent),
 			m_depth(-1),
 			m_ratio(0.0f),
@@ -308,10 +308,10 @@ namespace gameswf
 			m_visible(true),
 			m_display_callback(NULL),
 			m_display_callback_user_ptr(NULL)
-
 		{
-			assert((parent == NULL && m_id == -1)
-				|| (parent != NULL && m_id >= 0));
+// loadMovieClip() requires this
+//			assert((parent == NULL && m_id == -1)
+//				|| (parent != NULL && m_id >= 0));
 		}
 
 		virtual character* cast_to_character() { return this; }

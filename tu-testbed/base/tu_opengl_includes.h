@@ -15,6 +15,7 @@
 #	include <windows.h>
 #	include <GL/gl.h>
 #	include <GL/glu.h>
+# define PROC_NAME_PREFIX
 #endif // WIN32
 
 #ifdef __MACH__

@@ -101,12 +101,14 @@ namespace gameswf
 		m_init_actions_executed.resize(m_def->get_frame_count());
 		memset(&m_init_actions_executed[0], 0,
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
+//		printf("sprite_instance %08X\n", this);
 	}
 
 	sprite_instance::~sprite_instance()
 	{
 		m_display_list.clear();
 		//m_root->drop_ref();
+//		printf("~sprite_instance %08X\n", this);
 	}
 
 	bool sprite_instance::has_keypress_event()

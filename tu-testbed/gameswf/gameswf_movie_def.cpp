@@ -115,10 +115,13 @@ namespace gameswf
 		m_origin_in(NULL),
 		m_thread(NULL)
 	{
+//		printf("movie_def_impl %08X\n", this);
 	}
 
 	movie_def_impl::~movie_def_impl()
 	{
+//		printf("~movie_def_impl %08X\n", this);
+
 		// terminate thread
 		// it's used when user has pressed Esc button
 		s_break_loading = true;
