@@ -29,8 +29,7 @@ namespace gameswf
 		bool add_listener(as_value& listener);
 		bool remove_listener(as_value& listener);
 		bool load_clip(const char* url, as_value& container);
-
-
+		bool unload_clip(as_value& target);
 	};
 
 }	// end namespace gameswf

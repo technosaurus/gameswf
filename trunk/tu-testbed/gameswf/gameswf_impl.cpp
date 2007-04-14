@@ -533,7 +533,28 @@ namespace gameswf
 
 		// Then it is necessary to clean s_movie_library_inst since
 		// s_movie_library refers on s_movie_library_inst
+		for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it = 
+			s_movie_library_inst.begin(); it != s_movie_library_inst.end(); ++it)
+		{
+			if (it->second->get_ref_count() > 1)
+			{
+				printf("internal error: on exit movie_interface ref_count > 1\n");
+				printf("this = %08X, ref_count = %d\n", it->second.get_ptr(),
+					it->second->get_ref_count());
+			}
+		}
 		s_movie_library_inst.clear();
+
+		for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = 
+			s_movie_library.begin(); it != s_movie_library.end(); ++it)
+		{
+			if (it->second->get_ref_count() > 1)
+			{
+				printf("internal error: on exit movie_definition_sub ref_count > 1\n");
+				printf("this = %08X, ref_count = %d\n", it->second.get_ptr(),
+					it->second->get_ref_count());
+			}
+		}
 		s_movie_library.clear();
 	}
 

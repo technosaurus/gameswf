@@ -157,7 +157,7 @@ namespace gameswf
 			}
 
 			// case loadMovie("my.swf", container)
-			new_movie = new sprite_instance(md, mroot, parent, 0);
+			new_movie = new sprite_instance(md, mroot, parent, -1);
 		}
 
 		const char* name = target->get_name();
