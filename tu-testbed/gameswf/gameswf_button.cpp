@@ -210,6 +210,20 @@ namespace gameswf
 		{
 		}
 
+		virtual	void	execute_frame_tags(int frame, bool state_only)
+		{
+			// Keep this (particularly m_as_environment) alive during execution!
+			smart_ptr<as_object_interface>	this_ptr(this);
+			assert(frame == 0);
+			for (int i = 0; i < m_def->m_button_records.size(); i++)
+			{
+				if (m_record_character[i] != NULL)
+				{
+					m_record_character[i]->execute_frame_tags(frame, state_only);
+				}
+			}
+		}
+
 		virtual bool has_keypress_event()
 		{
 			for (int i = 0; i < m_def->m_button_actions.size(); i++)

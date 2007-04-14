@@ -1,3 +1,8 @@
+2007-04-14  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_button.cpp: fixed bug
+	(a button may be the sprite's parent therefore it should call execute_frame_tags(0))
+
 2007-04-12  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/samples/: cleanup
