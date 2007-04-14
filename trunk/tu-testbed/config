@@ -199,7 +199,7 @@ endif
 endif  # gcc3
 
 
-ifeq ($TU_TESTBED_COMPILER, msvc)
+ifeq ($(TU_TESTBED_COMPILER), msvc)
 %.$(OBJ_EXT): %.cpp
 	$(CC) -c $< -Fo$@ $(CFLAGS)
 

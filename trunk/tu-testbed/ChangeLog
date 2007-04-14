@@ -1,3 +1,16 @@
+2007-04-14  Thatcher Ulrich <tu@tulrich.com>
+
+	* gameswf_test_ogl.h, gameswf.h, gameswf/Makefile, as_xml.cpp,
+	  config:
+	misc compile fixes for msvc + Makefiles.
+	* tu_opengl_includes.h:
+	compile fix -- just include <windows.h>.  It's too hard to keep
+	faking the windows headers.
+	* base/png_helper.*:
+	added write_rgba() helper function
+	* base/ear_clip_triangulate_impl.h:
+	catch and work around a degenerate case
+
 2007-04-14  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* a lot of files:

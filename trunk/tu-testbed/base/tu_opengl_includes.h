@@ -11,37 +11,8 @@
 
 #include "base/tu_config.h"
 
-// WIN32 includes.  We don't want to have to include windows.h because
-// it's such a pig, so #define a couple things that are required to
-// make the gl.h stuff work.
 #ifdef WIN32
-#	ifndef _INC_WINDOWS
-
-#		define WINAPI	__stdcall
-#		define APIENTRY WINAPI
-#		define CALLBACK __stdcall
-#		define DECLSPEC_IMPORT __declspec(dllimport)
-
-#		if !defined(_GDI32_)
-#			define WINGDIAPI DECLSPEC_IMPORT
-#		else
-#			define WINGDIAPI
-#		endif
-
-//		WINGDIAPI int WINAPI wglGetCurrentContext();
-
-#	else
-#		define WIN32_LEAN_AND_MEAN
-#		include <windows.h>
-#	endif
-
-#	ifndef _WCHAR_T_DEFINED
-		typedef unsigned short wchar_t;
-#		define _WCHAR_T_DEFINED
-#	endif // _WCHAR_T_DEFINED
-
-#	define PROC_NAME_PREFIX "wgl"
-
+#	include <windows.h>
 #	include <GL/gl.h>
 #	include <GL/glu.h>
 #endif // WIN32

@@ -10,7 +10,7 @@
 #include "SDL.h"
 #include "SDL_thread.h"
 
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include "base/ogl.h"
@@ -20,8 +20,8 @@
 #include "base/tu_types.h"
 #include "base/image.h"	// for logo
 #include "net/net_interface_tcp.h"	// for proxy
-#include "gameswf_types.h"
-#include "gameswf_impl.h"
+#include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_impl.h"
 
 void	print_usage()
 // Brief instructions.

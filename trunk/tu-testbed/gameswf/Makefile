@@ -20,6 +20,10 @@ PROCESSOR_OUT = gameswf_processor$(EXE_EXT)
 
 LIBS := $(LIB_OUT) $(BASE_LIB) $(NET_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB) $(LIBMAD_LIB) # $(XML2LIB)
 
+# TODO: Make this conditional!!!  Many embedders of gameswf will not
+# want network/HTTP support!
+LIBS := $(LIBS) $(SOCKET_LIBS)
+
 all: base_lib net_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 
@@ -28,7 +32,7 @@ LIB_OBJS = \
 	gameswf_as_classes/as_color.$(OBJ_EXT) \
 	gameswf_as_classes/as_db.$(OBJ_EXT) \
 	gameswf_as_classes/as_key.$(OBJ_EXT) \
-	gameswf_as_classes/as_MovieClipLoader.$(OBJ_EXT) \
+	gameswf_as_classes/as_mcloader.$(OBJ_EXT) \
 	gameswf_as_classes/as_math.$(OBJ_EXT)	\
 	gameswf_as_classes/as_netconnection.$(OBJ_EXT)	\
 	gameswf_as_classes/as_netstream.$(OBJ_EXT)	\
@@ -36,6 +40,7 @@ LIB_OBJS = \
 	gameswf_as_classes/as_string.$(OBJ_EXT) \
 	gameswf_as_classes/as_table.$(OBJ_EXT) \
 	gameswf_as_classes/as_textformat.$(OBJ_EXT) \
+	gameswf_as_classes/as_xml.$(OBJ_EXT) \
 	gameswf_as_classes/as_xmlsocket.$(OBJ_EXT) \
 	gameswf_action.$(OBJ_EXT)	\
 	gameswf_as_sprite.$(OBJ_EXT)	\
@@ -64,8 +69,7 @@ LIB_OBJS = \
 	gameswf_tools.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)	\
 	gameswf_video_base.$(OBJ_EXT)	\
-	gameswf_video_impl.$(OBJ_EXT)	\
-	gameswf_xml.$(OBJ_EXT)	        
+	gameswf_video_impl.$(OBJ_EXT)
 
 TEST_PROGRAM_OBJS = \
 	gameswf_test_ogl.$(OBJ_EXT)             \
