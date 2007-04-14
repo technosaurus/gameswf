@@ -804,6 +804,10 @@ static int find_ear_vertex(const tristate* ts, int vi0, int vi1)
 		// TODO: should we eliminate zero-length edges before
 		// we even make them?
 		int vi1n = ts->m_verts[vi1].m_next;
+		if (vi1n == vi0) {
+			// Very degenerate.
+			return -1;
+		}
 		return vi1n;
 	}
 

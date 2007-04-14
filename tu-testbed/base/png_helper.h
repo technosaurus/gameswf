@@ -18,6 +18,10 @@ namespace png_helper
 {
 	void	write_grayscale(FILE* out, uint8* data, int width, int height);
 
+	// Data should be in [RGBA...] byte order.  width and height
+	// in pixels (not bytes).
+	void	write_rgba(FILE* out, uint8* data, int width, int height);
+
 	// TODO: add more helpers as needed...
 }
 

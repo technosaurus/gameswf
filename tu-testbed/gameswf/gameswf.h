@@ -60,14 +60,14 @@ namespace gameswf
 	//
 	// Log & error reporting control.
 	//
-	
+
 	// Supply a function pointer to receive log & error messages.
 	void	register_log_callback(void (*callback)(bool error, const char* message));
-	
+
 	// Control verbosity of specific categories.
 	void	set_verbose_action(bool verbose);
 	void	set_verbose_parse(bool verbose);
-	
+
 	// Get and set the render handler.  This is one of the first
 	// things you should do to initialise the player (assuming you
 	// want to display anything).
@@ -114,7 +114,7 @@ namespace gameswf
 	// result in coarser, more angular curves with fewer vertices.
 	void	set_curve_max_pixel_error(float pixel_error);
 	float	get_curve_max_pixel_error();
-	
+
 	// Some helpers that may or may not be compiled into your
 	// version of the library, depending on platform etc.
 	render_handler*	create_render_handler_xbox();
@@ -143,7 +143,7 @@ namespace gameswf
 	struct font;
 	struct character_def;
 	struct sound_sample;
-	
+
 	// An interface for casting to different types of
 	// resources.
 	struct resource : public ref_counted
@@ -164,7 +164,7 @@ namespace gameswf
 	struct sprite_instance;
 	struct as_timer;
 	struct sprite_instance;
-	
+
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
 	struct as_object_interface : public resource
@@ -198,7 +198,7 @@ namespace gameswf
 	struct cache_options
 	{
 		bool	m_include_font_bitmaps;
-		
+
 		cache_options()
 			:
 			m_include_font_bitmaps(true)
@@ -217,7 +217,7 @@ namespace gameswf
 	{
 	private:
 		int	m_id;
-		
+
 	public:
 		character_def()
 			:
@@ -320,7 +320,7 @@ namespace gameswf
 		// my_precomputed_textures->read_from_some_cache_stream(...);
 		// // This will create blank bitmap_info's.
 		// my_def = gameswf::create_movie_no_recurse("myfile.swf", DO_NOT_LOAD_BITMAPS);
-		// 
+		//
 		// // Push cached texture info into the movie's bitmap_info structs.
 		// int	ct = my_def->get_bitmap_info_count();
 		// for (int i = 0; i < ct; i++)
@@ -333,7 +333,8 @@ namespace gameswf
 	};
 
 	// Keyboard handling
-	namespace key {
+	namespace key
+	{
 		enum code
 		{
 			INVALID = 0,
@@ -451,7 +452,7 @@ namespace gameswf
 		// Frame counts in this API are 0-based (unlike ActionScript)
 		virtual int	get_current_frame() const = 0;
 		virtual bool	has_looped() const = 0;
-		
+
 		virtual void	advance(float delta_time) = 0;
 		virtual void	goto_frame(int frame_number) = 0;
 		// Returns true if labeled frame is found.
@@ -465,20 +466,20 @@ namespace gameswf
 		};
 		virtual void	set_play_state(play_state s) = 0;
 		virtual play_state	get_play_state() const = 0;
-		
+
 		virtual void	set_background_color(const rgba& bg_color) = 0;
 
 		// Set to 0 if you don't want the movie to render its
 		// background at all.  1 == full opacity.
 		virtual void	set_background_alpha(float alpha) = 0;
 		virtual float	get_background_alpha() const = 0;
-		
+
 		// move/scale the movie...
 		virtual void	set_display_viewport(int x0, int y0, int w, int h) = 0;
-		
+
 		// Input.
 		virtual void	notify_mouse_state(int x, int y, int buttons) = 0;
-		
+
 		// Set an ActionScript variable within this movie.
 		// You can use this to set the value of text fields,
 		// ordinary variables, or properties of characters
@@ -503,14 +504,14 @@ namespace gameswf
 		// static string buffer with the result; caller should
 		// use the value immediately before making more calls
 		// to gameswf.	NOT THREAD SAFE!!!
-		// 
+		//
 		// method_name is the name of the method (possibly namespaced).
 		//
 		// method_arg_fmt is a printf-style declaration of
 		// the method call, where the arguments are
 		// represented by { %d, %s, %f, %ls }, followed by the
 		// vararg list of actual arguments.
-		// 
+		//
 		// E.g.
 		//
 		// m->call_method("path.to.method_name", "%d, %s, %f", i, "hello", 2.7f);
@@ -581,13 +582,12 @@ namespace gameswf
 		int*		height,
 		float*		frames_per_second,
 		int*		frame_count,
-		int*		tag_count
-		);
+		int*		tag_count);
 
 	// Enable/disable attempts to read cache files (.gsc) when
 	// loading movies.
 	void	set_use_cache_files(bool use_cache);
-	
+
 	// @@ Hm, need to think about these creation API's.  Perhaps
 	// divide it into "low level" and "high level" calls.  Also,
 	// perhaps we need a "context" object that contains all
@@ -656,7 +656,7 @@ namespace gameswf
 	// drop_ref() when you're done with it.
 	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 	movie_definition*	create_library_movie(const char* filename);
-	
+
 
 	// Helper to pregenerate cached data (basically, shape
 	// tesselations).  Does this by running through each frame of
@@ -685,11 +685,11 @@ namespace gameswf
 	//
 	// Library management
 	//
-	
+
 	// Release any library movies we've cached.  Do this when you want
 	// maximum cleanup.
 	void	clear_library();
-	
+
 	//
 	// Font library control.  gameswf is able to substitute fonts
 	// from the font library, in case a movie lacks glyphs for a
@@ -728,7 +728,7 @@ namespace gameswf
 		font*	get_font(int index);
 		font*	get_font(const char* name);
 		const char*	get_font_name(const font* f);
-		
+
 		// @@ also need to add color controls (or just set the diffuse color
 		// in the API?), perhaps matrix xform, and maybe spacing, etc.
 		//
@@ -736,12 +736,12 @@ namespace gameswf
 		void	draw_string(const font* f, float x, float y, float size, const char* text);
 		// void	draw_string(const font* f, float x, float y, float size, const wchar_t* text);	// wide-char version
 	}
-	
-	
+
+
 	//
 	// Sound callback handler.
 	//
-	
+
 	// You may define a subclass of this, and pass an instance to
 	// set_sound_handler().
 	struct sound_handler
@@ -756,13 +756,13 @@ namespace gameswf
 			FORMAT_MP3 = 2,
 			FORMAT_UNCOMPRESSED = 3,	// 16 bits/sample, little-endian
 			FORMAT_NELLYMOSER = 6,	// Mystery proprietary format; see nellymoser.com
-				
+
 			// gameswf tries to convert data to this format when possible:
 			FORMAT_NATIVE16 = 7	// gameswf extension: 16 bits/sample, native-endian
 		};
 
 		// If stereo is true, samples are interleaved w/ left sample first.
-		
+
 		// gameswf calls at load-time with sound data, to be
 		// played later.  You should create a sample with the
 		// data, and return a handle that can be used to play
@@ -777,30 +777,29 @@ namespace gameswf
 			int		sample_count,
 			format_type	format,
 			int		sample_rate,	/* one of 5512, 11025, 22050, 44100 */
-			bool		stereo
-			) = 0;
-		
+			bool		stereo) = 0;
+
 		virtual void append_sound(int sound_handle, void* data, int data_bytes) = 0;
 
 		// gameswf calls this when it wants you to play the defined sound.
 		//
 		// loop_count == 0 means play the sound once (1 means play it twice, etc)
 		virtual void	play_sound(int sound_handle, int loop_count /* , volume, pan, etc? */) = 0;
-		
+
 		// Stop the specified sound if it's playing.
 		// (Normally a full-featured sound API would take a
 		// handle specifying the *instance* of a playing
 		// sample, but SWF is not expressive that way.)
 		virtual void	stop_sound(int sound_handle) = 0;
-		
+
 		// gameswf calls this when it's done with a particular sound.
 		virtual void	delete_sound(int sound_handle) = 0;
 
-		// They are called from netstream when it wishes to sound video 
+		// They are called from netstream when it wishes to sound video
 		virtual void attach_aux_streamer(aux_streamer_ptr ptr, as_object_interface* netstream) {};
 		virtual void detach_aux_streamer(as_object_interface* netstream) {};
-		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, 
-			int size, int channels, int freq) {};
+		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data,
+				 int size, int channels, int freq) {};
 
 		virtual ~sound_handler() {};
 	};
@@ -819,8 +818,8 @@ namespace gameswf
 		void	operator*=(const float x) { operator=(m_float * x); }
 		void	operator/=(const float x) { operator=(m_float / x); }
 
-		private:
-			float m_float;
+	private:
+		float m_float;
 	};
 
 
@@ -897,8 +896,8 @@ namespace gameswf
 		void	print() const;
 		bool	point_test(float x, float y) const;
 		void	expand_to_point(float x, float y);
-		float	width() const { return m_x_max-m_x_min; }
-		float	height() const { return m_y_max-m_y_min; }
+		float	width() const { return m_x_max - m_x_min; }
+		float	height() const { return m_y_max - m_y_min; }
 
 		point	get_corner(int i) const;
 
@@ -982,11 +981,11 @@ namespace gameswf
 			int viewport_width, int viewport_height,
 			float x0, float x1, float y0, float y1) = 0;
 		virtual void	end_display() = 0;
-		
+
 		// Geometric and color transforms for mesh and line_strip rendering.
 		virtual void	set_matrix(const matrix& m) = 0;
 		virtual void	set_cxform(const cxform& cx) = 0;
-		
+
 		// Draw triangles using the current fill-style 0.
 		// Clears the style list after rendering.
 		//
@@ -996,14 +995,14 @@ namespace gameswf
 		virtual void	draw_mesh_strip(const void* coords, int vertex_count) = 0;
 		// As above, but coords is in triangle list order.
 		virtual void	draw_triangle_list(const void* coords, int vertex_count) = 0;
-		
+
 		// Draw a line-strip using the current line style.
 		// Clear the style list after rendering.
 		//
 		// Coords is a list of (x,y) coordinate pairs, in
 		// sequence.  Each coord is a 16-bit signed integer.
 		virtual void	draw_line_strip(const void* coords, int vertex_count) = 0;
-		
+
 		// Set line and fill styles for mesh & line_strip
 		// rendering.
 		enum bitmap_wrap_mode
@@ -1014,11 +1013,11 @@ namespace gameswf
 		virtual void	fill_style_disable(int fill_side) = 0;
 		virtual void	fill_style_color(int fill_side, rgba color) = 0;
 		virtual void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm) = 0;
-		
+
 		virtual void	line_style_disable() = 0;
 		virtual void	line_style_color(rgba color) = 0;
 		virtual void	line_style_width(float width) = 0;
-		
+
 		// Special function to draw a rectangular bitmap;
 		// intended for textured glyph rendering.  Ignores
 		// current transforms.
@@ -1028,14 +1027,13 @@ namespace gameswf
 			const rect&		coords,
 			const rect&		uv_coords,
 			rgba			color) = 0;
-		
 		virtual void	set_antialiased(bool enable) = 0;
-		
+
 		virtual void begin_submit_mask() = 0;
 		virtual void end_submit_mask() = 0;
 		virtual void disable_mask() = 0;
 	};
-	
+
 	// Key events are global throughout gameswf.
 	// @@ Maybe someday make these local to the movie_interface?
 	// Vitaly: I do not see the sense to send events inactive movie
@@ -1057,8 +1055,7 @@ namespace gameswf
 				m_zip_whole_file(false),
 				m_remove_image_data(false),
 				m_remove_font_glyph_shapes(false)
-			{
-			}
+			{}
 		};
 
 		// Copy tags from *in to *out, applying the given
@@ -1078,7 +1075,7 @@ namespace gameswf
 
 // Local Variables:
 // mode: C++
-// c-basic-offset: 8 
+// c-basic-offset: 8
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
