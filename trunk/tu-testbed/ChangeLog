@@ -1,3 +1,9 @@
+2007-04-15  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_impl.cpp,
+	* gameswf/gameswf_test_ogl.cpp:
+	fixed one of the memory leaks bug
+
 2007-04-14  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/as_classes/as_mcloader.*: implemented MovieClipLoader.unloadClip() method
