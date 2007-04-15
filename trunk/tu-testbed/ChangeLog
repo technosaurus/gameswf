@@ -11,6 +11,12 @@
 
 2007-04-14  Thatcher Ulrich <tu@tulrich.com>
 
+	* demos/posterize/*: a small program for posterizing
+	images (i.e. reducing to a small number of output colors, for a
+	graphic effect or to prepare for silkscreening)
+	
+2007-04-14  Thatcher Ulrich <tu@tulrich.com>
+
 	* gameswf_test_ogl.h, gameswf.h, gameswf/Makefile, as_xml.cpp,
 	  config:
 	misc compile fixes for msvc + Makefiles.
