@@ -20,8 +20,8 @@ PROCESSOR_OUT = gameswf_processor$(EXE_EXT)
 
 LIBS := $(LIB_OUT) $(BASE_LIB) $(NET_LIB) $(LIBS) $(JPEGLIB) $(ZLIB) $(SDL_MIXER_LIB) $(LIBMAD_LIB) # $(XML2LIB)
 
-# TODO: Make this conditional!!!  Many embedders of gameswf will not
-# want network/HTTP support!
+# Embedders: if you don't want network support, then leave out
+# SOCKET_LIBS and don't reference new_tu_net_file().
 LIBS := $(LIBS) $(SOCKET_LIBS)
 
 all: base_lib net_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
@@ -53,8 +53,6 @@ LIB_OBJS = \
 	gameswf_morph2.$(OBJ_EXT)	\
 	gameswf_movie_def.$(OBJ_EXT)	\
 	gameswf_mutex.$(OBJ_EXT)	\
-	gameswf_parser.$(OBJ_EXT)	\
-	gameswf_processor.$(OBJ_EXT)	\
 	gameswf_render.$(OBJ_EXT)	\
 	gameswf_root.$(OBJ_EXT)		\
 	gameswf_shape.$(OBJ_EXT)	\

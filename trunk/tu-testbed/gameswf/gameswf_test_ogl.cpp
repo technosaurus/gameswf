@@ -19,7 +19,7 @@
 #include "base/tu_file.h"
 #include "base/tu_types.h"
 #include "base/image.h"	// for logo
-#include "net/net_interface_tcp.h"	// for proxy
+#include "net/tu_net_file.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
 
@@ -55,6 +55,7 @@ void	print_usage()
 		"              2 enables rendering & disables sound\n"
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
 		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
+		"  -n          Allow use of network to try to open resource URLs\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -71,21 +72,22 @@ void	print_usage()
 		);
 }
 
-
 #define OVERSIZE	1.0f
 
-static float	s_scale = 1.0f;
-static bool	s_antialiased = false;
-static int	s_bit_depth = 16;
+static float s_scale = 1.0f;
+static bool s_antialiased = false;
+static int s_bit_depth = 16;
 
 #ifdef _DEBUG
-static bool	s_verbose = true;
+static bool s_verbose = true;
 #else
-static bool	s_verbose = false;
+static bool s_verbose = false;
 #endif
 
-static bool	s_background = true;
-static bool	s_measure_performance = false;
+static bool s_background = true;
+static bool s_measure_performance = false;
+// Controls whether we will try to load things over the net or not.
+static bool s_allow_http = false;
 
 static void	message_log(const char* message)
 // Process a log message.
@@ -118,7 +120,11 @@ static void	log_callback(bool error, const char* message)
 static tu_file*	file_opener(const char* url)
 // Callback function.  This opens files for the gameswf library.
 {
-	return new tu_file(url, "rb");
+	if (s_allow_http) {
+		return new_tu_net_file(url, "rb");
+	} else {
+		return new tu_file(url, "rb");
+	}
 }
 
 
@@ -436,6 +442,10 @@ int	main(int argc, char *argv[])
 					print_usage();
 					exit(1);
 				}
+			}
+			else if (argv[arg][1] == 'n')
+			{
+				s_allow_http = true;
 			}
 		}
 		else

@@ -1,3 +1,16 @@
+2007-04-15  Thatcher Ulrich <tu@tulrich.com>
+
+	Make things more straightforward for embedders who don't want http
+	support linked into gameswf.
+	
+	* base/tu_file.cpp: remove http support -- moved to net/
+	* net/tu_net_file.*, net/Makefile: a tu_file that supports
+	HTTP (factored out of tu_file)
+	* gameswf/gameswf_test_ogl.cpp: add '-n' flag to control whether to allow
+	network access or not.  Support http files explicitly via
+	file_opener().
+	* gameswf/Makefile: misc fixes
+
 2007-04-15  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* net/http_client.h: HTTP_TIMEOUT is increased up to 10 sec
