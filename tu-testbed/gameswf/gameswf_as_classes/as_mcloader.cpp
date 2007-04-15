@@ -47,8 +47,15 @@ namespace gameswf
 
 		if (fn.nargs == 2)
 		{
-			fn.result->set_bool(mcl->load_clip(fn.arg(0).to_string(), fn.arg(1)));
-			return;
+			movie* loading_movie = fn.env->load_file(fn.arg(0).to_string(), fn.arg(1));
+			if (loading_movie != NULL)
+			{
+				loading_movie->set_mcloader(mcl);
+				mcl->on_event(event_id(event_id::ONLOAD_START, (movie*) mcl));
+				fn.result->set_bool(true);
+				return;
+			}
+			mcl->on_event(event_id(event_id::ONLOAD_ERROR, (movie*) mcl));
 		}
 		fn.result->set_bool(false);
 	}
@@ -60,11 +67,14 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			fn.result->set_bool(mcl->unload_clip(fn.arg(0)));
-			return;
+			movie* loading_movie = fn.env->load_file("", fn.arg(0));
+			if (loading_movie != NULL)
+			{
+				fn.result->set_bool(true);
+				return;
+			}
 		}
 		fn.result->set_bool(false);
-
 	}
 
 	void	as_mcloader_getprogress(const fn_call& fn)
@@ -128,41 +138,6 @@ namespace gameswf
 		{
 			m_listener.erase((as_object*) listener.to_object());
 			return true;
-		}
-		return false;
-	}
-
-	bool as_mcloader::load_clip(const char* url, as_value& target)
-	{
-		as_object* obj = (as_object*) target.to_object();
-		movie* m = obj->to_movie();
-
-		if (m)
-		{
-			movie* loading_movie = load_file(url, m);
-			if (loading_movie != NULL)
-			{
-				loading_movie->set_mcloader(this);
-				on_event(event_id(event_id::ONLOAD_START, (movie*) this));
-				return true;
-			}
-		}
-		on_event(event_id(event_id::ONLOAD_ERROR, (movie*) this));
-		return false;
-	}
-
-	bool as_mcloader::unload_clip(as_value& target)
-	{
-		as_object* obj = (as_object*) target.to_object();
-		movie* m = obj->to_movie();
-
-		if (m)
-		{
-			movie* loading_movie = load_file("", m);
-			if (loading_movie != NULL)
-			{
-				return true;
-			}
 		}
 		return false;
 	}

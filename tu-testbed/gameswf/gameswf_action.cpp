@@ -109,91 +109,11 @@ namespace gameswf
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
 
-	// url=="" means that the load_file() works as unloadMovie(target)
-	movie* load_file(const char* url, movie* mtarget)
-	{
-		sprite_instance* target = mtarget->cast_to_sprite();
-		assert(target);
-
-		movie_root* mroot = target->get_root();
-		movie* parent = target->get_parent();
-		sprite_instance* new_movie = NULL;
-
-		// is unloadMovie() ?
-		if (strlen(url) == 0)
-		{
-			sprite_definition* empty_sprite_def = new sprite_definition(NULL);
-			new_movie = new sprite_instance(empty_sprite_def, mroot, parent, 0);
-		}
-		else
-		{
-			// is path relative ?
-			tu_string infile = get_workdir();
-			if (strstr(url, ":") || url[0] == '/')
-			{
-				infile = "";
-			}
-			infile += url;
-
-			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
-			if (md == NULL)
-			{
-				log_error("can't create movie from %s\n", infile.c_str());
-				return NULL;
-			}
-
-			// case loadMovie("my.swf", _root)
-			if (target == target->get_root_movie())
-			{
-				movie_interface* new_inst = create_library_movie_inst_sub(md);			
-				assert(new_inst);
-				save_extern_movie(new_inst);
-
-				new_movie = (sprite_instance*) new_inst->get_root_movie();
-				set_current_root(new_inst);
-				new_movie->on_event(event_id::LOAD);
-
-				return new_movie;
-			}
-
-			// case loadMovie("my.swf", container)
-			new_movie = new sprite_instance(md, mroot, parent, -1);
-		}
-
-		const char* name = target->get_name();
-		Uint16 depth = target->get_depth();
-		bool use_cxform = false;
-		cxform color_transform =  target->get_cxform();
-		bool use_matrix = false;
-		matrix mat = target->get_matrix();
-		float ratio = target->get_ratio();
-		Uint16 clip_depth = target->get_clip_depth();
-
-		assert(parent != NULL);
-		new_movie->set_parent(parent);
-		new_movie->set_root(mroot);
-
-		parent->replace_display_object(
-			(character*) new_movie,
-			name,
-			depth,
-			use_cxform,
-			color_transform,
-			use_matrix,
-			mat,
-			ratio,
-			clip_depth);
-
-		return new_movie;
-	}
-
 	void	register_fscommand_callback(fscommand_callback handler)
 	// External interface.
 	{
 		s_fscommand_handler = handler;
 	}
-
-
 
 	static bool string_to_number(double* result, const char* str)
 	// Utility.  Try to convert str to a number.  If successful,
@@ -2323,17 +2243,7 @@ namespace gameswf
 					}
 					else
 					{
-//						log_error("get url: target=%s, url=%s\n", target, url);
-						tu_string tu_target = target;
-						movie* target_movie = env->find_target(tu_target);
-						if (target_movie != NULL)
-						{
-							load_file(url, target_movie);
-						}
-						else
-						{
-							log_error("get url: target %s not found\n", target);
-						}
+						env->load_file(url, as_value(target));
 					}
 
 					break;
@@ -2677,17 +2587,7 @@ namespace gameswf
 					}
 					else
 					{
-//            log_error("get url2: target=%s, url=%s\n", target, url);
-
-						movie* target_movie = env->find_target(env->top(0));
-						if (target_movie != NULL)
-						{
-							load_file(url, target_movie);
-						}
-						else
-						{
-							log_error("get url2: target %s not found\n", target);
-						}
+						env->load_file(url, env->top(0));
 					}
 					env->drop(2);
 					break;
@@ -3283,6 +3183,91 @@ namespace gameswf
 	//
 	// as_environment
 	//
+
+	// url=="" means that the load_file() works as unloadMovie(target)
+	movie* as_environment::load_file(const char* url, as_value& target_value)
+	{
+		movie* mtarget = find_target(target_value);
+		if (mtarget == NULL)
+		{
+			log_error("load_file: target %s is't found\n", target_value.to_string());
+			return NULL;
+		}
+
+		sprite_instance* target = mtarget->cast_to_sprite();
+		assert(target);
+
+		movie_root* mroot = target->get_root();
+		movie* parent = target->get_parent();
+		sprite_instance* new_movie = NULL;
+
+		// is unloadMovie() ?
+		if (strlen(url) == 0)
+		{
+			sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+			new_movie = new sprite_instance(empty_sprite_def, mroot, parent, 0);
+		}
+		else
+		{
+			// is path relative ?
+			tu_string infile = get_workdir();
+			if (strstr(url, ":") || url[0] == '/')
+			{
+				infile = "";
+			}
+			infile += url;
+
+			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
+			if (md == NULL)
+			{
+				log_error("can't create movie from %s\n", infile.c_str());
+				return NULL;
+			}
+
+			// case loadMovie("my.swf", _root)
+			if (target == target->get_root_movie())
+			{
+				movie_interface* new_inst = create_library_movie_inst_sub(md);			
+				assert(new_inst);
+				save_extern_movie(new_inst);
+
+				new_movie = (sprite_instance*) new_inst->get_root_movie();
+				set_current_root(new_inst);
+				new_movie->on_event(event_id::LOAD);
+
+				return new_movie;
+			}
+
+			// case loadMovie("my.swf", container)
+			new_movie = new sprite_instance(md, mroot, parent, -1);
+		}
+
+		const char* name = target->get_name();
+		Uint16 depth = target->get_depth();
+		bool use_cxform = false;
+		cxform color_transform =  target->get_cxform();
+		bool use_matrix = false;
+		matrix mat = target->get_matrix();
+		float ratio = target->get_ratio();
+		Uint16 clip_depth = target->get_clip_depth();
+
+		assert(parent != NULL);
+		new_movie->set_parent(parent);
+		new_movie->set_root(mroot);
+
+		parent->replace_display_object(
+			(character*) new_movie,
+			name,
+			depth,
+			use_cxform,
+			color_transform,
+			use_matrix,
+			mat,
+			ratio,
+			clip_depth);
+
+		return new_movie;
+	}
 
 
 	as_value	as_environment::get_variable(const tu_string& varname, const array<with_stack_entry>& with_stack) const

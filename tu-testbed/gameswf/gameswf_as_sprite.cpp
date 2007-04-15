@@ -310,16 +310,9 @@ namespace gameswf
 	// TODO: implement [method:String]
 	void sprite_loadmovie(const fn_call& fn) 
 	{ 
-		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
-		if (sprite == NULL)
-		{
-			sprite = (sprite_instance*) fn.env->get_target();
-		}
-		assert(sprite);
-
 		if (fn.nargs >= 1)
 		{
-			load_file(fn.arg(0).to_string(), sprite);
+			fn.env->load_file(fn.arg(0).to_string(), as_value(fn.this_ptr));
 		}
 
 	} 
