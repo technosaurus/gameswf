@@ -1,5 +1,14 @@
 2007-04-15  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.*,
+	* gameswf/gameswf_as_sprite.cpp,
+	* gameswf/as_classes/as_mcloader.*:
+	Has recollected that target may be both string and pointer.
+	load_file() function moved to struct as_environment(), so is more correct.
+	Something has simplified.
+
+2007-04-15  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_impl.cpp,
 	* gameswf/gameswf_test_ogl.cpp:
 	fixed one of the memory leaks bug

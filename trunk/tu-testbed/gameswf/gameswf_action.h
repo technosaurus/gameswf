@@ -43,8 +43,6 @@ namespace gameswf
 		const char* method_arg_fmt,
 		va_list args);
 
-	movie* load_file(const char* url, movie* target);
-
 	//
 	// event_id
 	//
@@ -746,6 +744,7 @@ namespace gameswf
 		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
 		movie*	find_target(const tu_string& path) const;
 		movie*	find_target(const as_value& val) const;
+		movie*	load_file(const char* url, as_value& target);
 	};
 
 
