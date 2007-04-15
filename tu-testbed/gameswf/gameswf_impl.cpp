@@ -431,7 +431,11 @@ namespace gameswf
 			delete cache_in;
 		}
 
-		m->add_ref();
+		// We should not do m->add_ref() in order to prevent memory leaks
+		// More correctly to do so:
+		// smart_ptr<movie_definition_sub> md = create_movie_sub("my.swf")
+		//		m->add_ref();
+
 		return m;
 	}
 
@@ -1766,7 +1770,10 @@ namespace gameswf
 		//		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
 
-		m->add_ref();
+		// We should not do m->add_ref() in order to prevent memory leaks
+		// More correctly to do so:
+		// smart_ptr<movie_interface> m = md->create_instance()
+		//		m->add_ref();
 		return m;
 	}
 
