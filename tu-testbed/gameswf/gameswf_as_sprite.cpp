@@ -154,7 +154,7 @@ namespace gameswf
 		}
 		assert(sprite);
 
-		fn.result->set_int(sprite->get_root()->get_loaded_bytes());
+		fn.result->set_int(sprite->get_loaded_bytes());
 	}
 
 	void	sprite_get_bytes_total(const fn_call& fn)
@@ -166,7 +166,7 @@ namespace gameswf
 		}
 		assert(sprite);
 
-		fn.result->set_int(sprite->get_root()->get_file_bytes());
+		fn.result->set_int(sprite->get_file_bytes());
 	}
 
 	//swapDepths(target:Object) : Void

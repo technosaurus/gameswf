@@ -9,7 +9,7 @@
 #define HTTP_CLIENT_H
 
 #define HTTP_SERVER_PORT 80
-#define HTTP_TIMEOUT 1	// sec
+#define HTTP_TIMEOUT 10	// sec
 
 #include "base/container.h"
 #include "net/net_interface_tcp.h"

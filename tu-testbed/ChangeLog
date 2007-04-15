@@ -1,5 +1,17 @@
 2007-04-15  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* net/http_client.h: HTTP_TIMEOUT is increased up to 10 sec
+	* gameswf/as_classes/as_mcloader.cpp: cleanup
+	(for slow connections)
+	* gameswf/gameswf_sprite.*,
+	* gameswf/gameswf_root.*,
+	* gameswf/gameswf_movie_def.h,
+	* gameswf/gameswf.h:
+	get_file_bytes() & get_loaded_bytes() are moved from movie_root to sprite_instance
+	because of child movieclip may be created from root movie def (loadMovie() stuff)
+
+2007-04-15  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.*,
 	* gameswf/gameswf_as_sprite.cpp,
 	* gameswf/as_classes/as_mcloader.*:

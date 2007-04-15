@@ -69,6 +69,8 @@ namespace gameswf
 
 		// used in loadMovieClip()
 		void	set_root(movie_root* mroot) { m_root = mroot; }
+		uint32	get_file_bytes() const;
+		uint32	get_loaded_bytes() const;
 
 		movie*	get_root_movie() { return m_root->get_root_movie(); }
 

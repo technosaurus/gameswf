@@ -1259,4 +1259,25 @@ namespace gameswf
 	{
 		return this;
 	}
+
+	uint32	sprite_instance::get_file_bytes() const
+	{
+		movie_def_impl* root_def = m_def->cast_to_movie_def_impl();
+		if (root_def)
+		{
+			return root_def->get_file_bytes();
+		}
+		return 0;
+	}
+
+	uint32	sprite_instance::get_loaded_bytes() const
+	{
+		movie_def_impl* root_def = m_def->cast_to_movie_def_impl();
+		if (root_def)
+		{
+			return root_def->get_loaded_bytes();
+		}
+		return 0;
+	}
+
 }
