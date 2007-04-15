@@ -338,18 +338,7 @@ namespace gameswf
 			m_drag_state.m_character = NULL;
 		}
 
-
 		movie_definition*	movie_root::get_movie_definition() { return m_movie->get_movie_definition(); }
-
-		uint32	movie_root::get_file_bytes() const
-		{
-			return m_def->get_file_bytes();
-		}
-
-		uint32	movie_root::get_loaded_bytes() const
-		{
-			return m_def->get_loaded_bytes();
-		}
 
 		// 0-based!!
 		int	movie_root::get_current_frame() const { return m_movie->get_current_frame(); }

@@ -258,6 +258,7 @@ namespace gameswf
 		void	output_cached_data(tu_file* out, const cache_options& options);
 		void	input_cached_data(tu_file* in);
 
+		virtual movie_def_impl* cast_to_movie_def_impl() { return this; }
 
 	};
 

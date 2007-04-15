@@ -97,9 +97,6 @@ namespace gameswf
 		void	stop_drag();
 		movie_definition*	get_movie_definition();
 
-		uint32	get_file_bytes() const;
-		uint32	get_loaded_bytes() const;
-
 		virtual int	get_current_frame() const;
 		float	get_frame_rate() const;
 

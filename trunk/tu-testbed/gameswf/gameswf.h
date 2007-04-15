@@ -54,6 +54,7 @@ namespace gameswf
 	struct YUV_video;
 	struct event_id;
 	struct movie_root;
+	struct movie_def_impl;
 
 	movie_interface* get_current_root();
 
@@ -237,7 +238,7 @@ namespace gameswf
 
 		// From resource interface.
 		virtual character_def*	cast_to_character_def() { return this; }
-
+		virtual movie_def_impl* cast_to_movie_def_impl() { return 0; }
 		//
 		// Caching.
 		//

@@ -8,6 +8,7 @@
 #include "../gameswf_as_classes/as_mcloader.h"
 #include "../gameswf_root.h"
 #include "../gameswf_movie.h"
+#include "../gameswf_sprite.h"
 #include "../gameswf_action.h"
 //#include "../gameswf_log.h"
 
@@ -87,12 +88,12 @@ namespace gameswf
 			as_object_interface* obj = fn.arg(0).to_object();
 			if (obj)
 			{
-				movie* m = obj->to_movie();
+				sprite_instance* m = obj->cast_to_sprite();
 				if (m)
 				{
 					as_object* info = new as_object();
-					info->set_member("bytesLoaded", (int) m->get_root()->get_loaded_bytes());
-					info->set_member("bytesTotal", (int) m->get_root()->get_file_bytes());
+					info->set_member("bytesLoaded", (int) m->get_loaded_bytes());
+					info->set_member("bytesTotal", (int) m->get_file_bytes());
 					fn.result->set_as_object_interface(info);
 					return;
 				}
@@ -119,7 +120,7 @@ namespace gameswf
 
 	as_mcloader::~as_mcloader()
 	{
-//		get_root()->remove_listener(this);
+		get_root()->remove_listener(this);
 	}
 
 	bool as_mcloader::add_listener(as_value& listener)
@@ -147,12 +148,13 @@ namespace gameswf
 		for (hash< smart_ptr<as_object>, int >::iterator it = m_listener.begin();
 			it != m_listener.end(); ++it)
 		{
+
 			as_value function;
 			if (it->first->get_member(id.get_function_name(), &function))
 			{
 				as_environment* env = function.to_as_function()->m_env;
 				assert(env);
-				
+
 				int param_count = 0;
 				switch (id.m_id)
 				{
@@ -173,28 +175,32 @@ namespace gameswf
 						break;
 
 					case event_id::ONLOAD_COMPLETE:
-						id.m_target->set_mcloader(NULL);
 						param_count = 1;
 						env->push(id.m_target);
 						break;
 
 					case event_id::ONLOAD_PROGRESS:
 					{
+						sprite_instance* target = id.m_target->cast_to_sprite();
+
+						// where 8 is Uint32	file_start_pos + Uint32	header
+						int total = target->get_file_bytes() - 8;
+						int loaded = target->get_loaded_bytes();
+	
 						param_count = 3;	
-						int total = id.m_target->get_root()->get_file_bytes();
-						int loaded = id.m_target->get_root()->get_file_bytes();
 						env->push(total);
 						env->push(loaded);
 						env->push(id.m_target);	// 1-st param
 
 						call_method(function, env, NULL, param_count, env->get_top_index());
 						env->drop(param_count);
-						
-						if (loaded >= total)
+	
+						if (loaded - total >= 0 && total > 0)
 						{
+							id.m_target->set_mcloader(NULL);
+							remove_listener(as_value(id.m_target));
 							on_event(event_id(event_id::ONLOAD_COMPLETE, id.m_target));
 						}
-
 						continue;
 					}
 
