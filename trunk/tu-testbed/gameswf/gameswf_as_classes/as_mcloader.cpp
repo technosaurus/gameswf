@@ -7,7 +7,7 @@
 
 #include "../gameswf_as_classes/as_mcloader.h"
 #include "../gameswf_root.h"
-#include "../gameswf_movie.h"
+#include "../gameswf_character.h"
 #include "../gameswf_sprite.h"
 #include "../gameswf_action.h"
 //#include "../gameswf_log.h"
@@ -48,15 +48,15 @@ namespace gameswf
 
 		if (fn.nargs == 2)
 		{
-			movie* loading_movie = fn.env->load_file(fn.arg(0).to_string(), fn.arg(1));
+			character* loading_movie = fn.env->load_file(fn.arg(0).to_string(), fn.arg(1));
 			if (loading_movie != NULL)
 			{
 				loading_movie->set_mcloader(mcl);
-				mcl->on_event(event_id(event_id::ONLOAD_START, (movie*) mcl));
+				mcl->on_event(event_id(event_id::ONLOAD_START, (character*) mcl));
 				fn.result->set_bool(true);
 				return;
 			}
-			mcl->on_event(event_id(event_id::ONLOAD_ERROR, (movie*) mcl));
+			mcl->on_event(event_id(event_id::ONLOAD_ERROR, (character*) mcl));
 		}
 		fn.result->set_bool(false);
 	}
@@ -68,7 +68,7 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			movie* loading_movie = fn.env->load_file("", fn.arg(0));
+			character* loading_movie = fn.env->load_file("", fn.arg(0));
 			if (loading_movie != NULL)
 			{
 				fn.result->set_bool(true);

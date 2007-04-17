@@ -20,7 +20,6 @@
 
 namespace gameswf
 {
-	struct movie;
 	struct as_environment;
 	struct as_object_interface;
 	struct as_value;
@@ -92,14 +91,14 @@ namespace gameswf
 		};
 
 		// Vitaly: I add m_unused because of problem with hash<event_id, ...>
-		// the reason: sizeof(unsigned char+unsigned char+movie*)  == 8 
+		// the reason: sizeof(unsigned char+unsigned char+character*)  == 8 
 		// and
-		//						 sizeof(unsigned char+unsigned char+Uint16+movie*)  == 8
+		//						 sizeof(unsigned char+unsigned char+Uint16+character*)  == 8
 		// I think that compiler do aligment
 		unsigned char	m_id;
 		unsigned char	m_key_code;
 		Uint16	m_unused;
-		movie* m_target;
+		character* m_target;
 
 		event_id() :
 			m_id(INVALID),
@@ -109,7 +108,7 @@ namespace gameswf
 		{
 		}
 
-		event_id(id_code id, movie* target) :
+		event_id(id_code id, character* target) :
 			m_id((unsigned char) id),
 			m_key_code(key::INVALID),
 			m_unused(0),
@@ -571,11 +570,11 @@ namespace gameswf
 		}
 		
 		virtual const char*	get_text_value() const { return NULL; }
-		virtual bool	set_member(const tu_stringi& name, const as_value& val );
+		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool get_member(const tu_stringi& name, as_member* member) const;
 		virtual bool	set_member_flags(const tu_stringi& name, const int flags);
-		virtual movie*	to_movie();
+		virtual character*	cast_to_character();
 		void	clear();
 		virtual bool	on_event(const event_id& id);
 	};
@@ -670,7 +669,7 @@ namespace gameswf
 		array<as_value>	m_stack;
 		as_value	m_global_register[4];
 		array<as_value>	m_local_register;	// function2 uses this
-		movie*	m_target;
+		character*	m_target;
 		stringi_hash<as_value>	m_variables;
 
 		// For local vars.  Use empty names to separate frames.
@@ -691,10 +690,10 @@ namespace gameswf
 		{
 		}
 
-		movie*	get_target() { return m_target; }
+		character*	get_target() { return m_target; }
 
-		void set_target(movie* target) { m_target = target; }
-		void set_target(as_value& target, movie* original_target);
+		void set_target(character* target) { m_target = target; }
+		void set_target(as_value& target, character* original_target);
 
 		// stack access/manipulation
 		// @@ TODO do more checking on these
@@ -742,9 +741,9 @@ namespace gameswf
 		// Internal.
 		int	find_local(const tu_string& varname) const;
 		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
-		movie*	find_target(const tu_string& path) const;
-		movie*	find_target(const as_value& val) const;
-		movie*	load_file(const char* url, as_value& target);
+		character*	find_target(const tu_string& path) const;
+		character*	find_target(const as_value& val) const;
+		character*	load_file(const char* url, as_value& target);
 	};
 
 

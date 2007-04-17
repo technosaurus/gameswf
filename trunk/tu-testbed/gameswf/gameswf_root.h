@@ -14,7 +14,7 @@
 #include "gameswf_action.h"
 #include "gameswf_types.h"
 #include "gameswf_log.h"
-#include "gameswf_movie.h"
+#include "gameswf_character.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -31,8 +31,8 @@ namespace gameswf
 
 	struct mouse_button_state
 	{
-		weak_ptr<movie>	m_active_entity;	// entity that currently owns the mouse pointer
-		weak_ptr<movie>	m_topmost_entity;	// what's underneath the mouse right now
+		weak_ptr<character>	m_active_entity;	// entity that currently owns the mouse pointer
+		weak_ptr<character>	m_topmost_entity;	// what's underneath the mouse right now
 
 		bool	m_mouse_button_state_last;		// previous state of mouse button
 		bool	m_mouse_button_state_current;		// current state of mouse button
@@ -63,7 +63,7 @@ namespace gameswf
 		};
 
 		smart_ptr<movie_def_impl>	m_def;
-		smart_ptr<movie>	m_movie;
+		smart_ptr<character>	m_movie;
 		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
 		float			m_pixel_scale;
 
@@ -71,12 +71,12 @@ namespace gameswf
 //		float			m_timer;
 		int			m_mouse_x, m_mouse_y, m_mouse_buttons;
 		void *			m_userdata;
-		movie::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
+		character::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
 		mouse_button_state m_mouse_button_state;
 		bool			m_on_event_load_called;
 
 		hash< smart_ptr<as_object_interface>, int > m_listeners;
-		smart_ptr<movie> m_current_active_entity;
+		smart_ptr<character> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
 
@@ -86,13 +86,13 @@ namespace gameswf
 		void	generate_mouse_button_events(mouse_button_state* ms);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual movie*	to_movie();
-		void	set_root_movie(movie* root_movie);
+		virtual character*	cast_to_character();
+		void	set_root_movie(character* root_movie);
 
 		void	set_display_viewport(int x0, int y0, int w, int h);
 		void	notify_mouse_state(int x, int y, int buttons);
 		virtual void	get_mouse_state(int* x, int* y, int* buttons);
-		movie*	get_root_movie();
+		character*	get_root_movie();
 
 		void	stop_drag();
 		movie_definition*	get_movie_definition();

@@ -55,8 +55,8 @@ namespace gameswf
 
 		void	movie_root::generate_mouse_button_events(mouse_button_state* ms)
 		{
-			smart_ptr<movie>	active_entity = ms->m_active_entity;
-			smart_ptr<movie>	topmost_entity = ms->m_topmost_entity;
+			smart_ptr<character>	active_entity = ms->m_active_entity;
+			smart_ptr<character>	topmost_entity = ms->m_topmost_entity;
 
 			if (ms->m_mouse_button_state_last == 1)
 			{
@@ -286,9 +286,9 @@ namespace gameswf
 		// @@ should these delegate to m_movie?	 Probably...
 		bool	movie_root::set_member(const tu_stringi& name, const as_value& val) { return false; }
 		bool	movie_root::get_member(const tu_stringi& name, as_value* val) { return false; }
-		movie*	movie_root::to_movie() { return m_movie.get_ptr(); } 
+		character*	movie_root::cast_to_character() { return m_movie.get_ptr(); } 
 
-		void	movie_root::set_root_movie(movie* root_movie)
+		void	movie_root::set_root_movie(character* root_movie)
 		{
 			m_movie = root_movie;
 			assert(m_movie != NULL);
@@ -330,7 +330,7 @@ namespace gameswf
 			*buttons = m_mouse_buttons;
 		}
 
-		movie*	movie_root::get_root_movie() { return m_movie.get_ptr(); }
+		character*	movie_root::get_root_movie() { return m_movie.get_ptr(); }
 
 
 		void	movie_root::stop_drag()

@@ -475,7 +475,7 @@ namespace gameswf
 		}
 
 
-		character*	create_character_instance(movie* parent, int id);
+		character*	create_character_instance(character* parent, int id);
 
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m)
@@ -566,7 +566,7 @@ namespace gameswf
 		float m_xcursor;
 		float m_ycursor;
 
-		edit_text_character(movie* parent, edit_text_character_def* def, int id)
+		edit_text_character(character* parent, edit_text_character_def* def, int id)
 			:
 		character(parent, id),
 			m_def(def),
@@ -771,7 +771,7 @@ namespace gameswf
 			return m_def->m_readonly == false;
 		}
 
-		movie*  get_topmost_mouse_entity(float x, float y) 
+		character*  get_topmost_mouse_entity(float x, float y) 
 		{ 
 			if (get_visible() == false) 
 			{ 
@@ -921,7 +921,9 @@ namespace gameswf
 			// m_text_glyph_records.
 		{
 			float	extra_space = (m_def->m_rect.width() - m_def->m_right_margin) - x - WIDTH_FUDGE;
-			assert(extra_space >= 0.0f);
+
+			// extra_space may be < 0
+			// assert(extra_space >= 0.0f);
 
 			float	shift_right = 0.0f;
 
@@ -951,6 +953,10 @@ namespace gameswf
 					rec.m_style.m_x_offset += shift_right;
 				}
 			}
+
+			// This fix the cursor position with centered texts
+			// Thanks Francois Guibert
+			m_xcursor += shift_right; 
 		}
 
 		// Convert the characters in m_text into a series of
@@ -1216,7 +1222,7 @@ namespace gameswf
 	};
 
 
-	character*	edit_text_character_def::create_character_instance(movie* parent, int id)
+	character*	edit_text_character_def::create_character_instance(character* parent, int id)
 	{
 		if (m_font == NULL)
 		{

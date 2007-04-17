@@ -44,7 +44,6 @@ namespace gameswf
 	struct character;
 	struct execute_tag;
 	struct font;
-	struct movie;
 	struct movie_interface;
 	struct render_handler;
 	struct resource;
@@ -177,7 +176,6 @@ namespace gameswf
 
 		virtual bool	set_member(const tu_stringi& name, const as_value& val) = 0;
 		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
-		virtual movie*	to_movie() = 0;
 		virtual bool	on_event(const event_id& id) { return false; }
 		virtual void advance(float delta_time) { assert(0); }
 		virtual movie_root*		get_root() { return (movie_root*) get_current_root(); }
@@ -234,7 +232,7 @@ namespace gameswf
 		virtual float	get_width_local() { return 0.0f; }
 
 		// Should stick the result in a smart_ptr immediately.
-		virtual character*	create_character_instance(movie* parent, int id);	// default is to make a generic_character
+		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character
 
 		// From resource interface.
 		virtual character_def*	cast_to_character_def() { return this; }
@@ -456,6 +454,7 @@ namespace gameswf
 
 		virtual void	advance(float delta_time) = 0;
 		virtual void	goto_frame(int frame_number) = 0;
+
 		// Returns true if labeled frame is found.
 		virtual bool	goto_labeled_frame(const char* label) = 0;
 		virtual void	display() = 0;
@@ -557,7 +556,7 @@ namespace gameswf
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr) = 0;
 
 		// for external movies
-		virtual movie*	get_root_movie() = 0;
+		virtual character*	get_root_movie() = 0;
 
 		// External interface for the host to report key events.
 		virtual void	notify_key_event(key::code k, bool down) { /*assert(0);*/ }

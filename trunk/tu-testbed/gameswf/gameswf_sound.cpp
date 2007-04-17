@@ -174,7 +174,7 @@ namespace gameswf
 		}
 
 
-		void	execute(movie* m)
+		void	execute(character* m)
 		{
 			if (s_sound_handler)
 			{

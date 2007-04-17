@@ -14,7 +14,6 @@
 #include "gameswf_action.h"
 #include "gameswf_types.h"
 #include "gameswf_log.h"
-#include "gameswf_movie.h"
 #include "gameswf_movie_def.h"
 #include "gameswf_dlist.h"
 #include "gameswf_root.h"
@@ -60,7 +59,7 @@ namespace gameswf
 		bool m_on_event_load_called;
 		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
 
-		sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id);
+		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
 		virtual ~sprite_instance();
 
 		virtual bool has_keypress_event();
@@ -72,7 +71,7 @@ namespace gameswf
 		uint32	get_file_bytes() const;
 		uint32	get_loaded_bytes() const;
 
-		movie*	get_root_movie() { return m_root->get_root_movie(); }
+		character*	get_root_movie() { return m_root->get_root_movie(); }
 
 		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
 		virtual float	get_width();
@@ -120,7 +119,7 @@ namespace gameswf
 		}
 
 		virtual bool can_handle_mouse_event();
-		virtual movie*	get_topmost_mouse_entity(float x, float y);
+		virtual character*	get_topmost_mouse_entity(float x, float y);
 		void advance(float delta_time);
 
 		void	execute_frame_tags(int frame, bool state_only = false);
@@ -191,7 +190,7 @@ namespace gameswf
 
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual movie*	get_relative_target(const tu_string& name);
+		virtual character*	get_relative_target(const tu_string& name);
 		virtual void	call_frame_actions(const as_value& frame_spec);
 		virtual void	set_drag_state(const drag_state& st);
 		virtual void	stop_drag();

@@ -225,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_character.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_dlist.cpp"
 				>
 			</File>
@@ -351,6 +355,10 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_button.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_character.h"
 				>
 			</File>
 			<File
@@ -808,6 +816,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\net\net_interface_tcp.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\net\tu_net_file.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\net\tu_net_file.h"
 				>
 			</File>
 		</Filter>

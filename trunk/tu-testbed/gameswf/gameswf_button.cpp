@@ -169,7 +169,7 @@ namespace gameswf
 		};
 		e_mouse_state m_mouse_state;
 
-		button_character_instance(button_character_definition* def, movie* parent, int id)
+		button_character_instance(button_character_definition* def, character* parent, int id)
 			:
 			character(parent, id),
 			m_def(def),
@@ -182,9 +182,8 @@ namespace gameswf
 			int r, r_num =  m_def->m_button_records.size();
 			m_record_character.resize(r_num);
 
-			movie_definition_sub*	movie_def = static_cast<movie_definition_sub*>(
-//				parent->get_root_movie()->get_movie_definition());
-				parent->get_movie_definition());
+			movie_definition_sub*	movie_def = (movie_definition_sub*) get_movie_definition();
+			assert(movie_def);
 
 			for (r = 0; r < r_num; r++)
 			{
@@ -238,7 +237,7 @@ namespace gameswf
 		}
 
 		movie_root*	get_root() { return get_parent()->get_root(); }
-		movie*	get_root_movie() { return get_parent()->get_root_movie(); }
+		character*	get_root_movie() { return get_parent()->get_root_movie(); }
 
 		virtual void	advance(float delta_time)
 		{
@@ -298,7 +297,7 @@ namespace gameswf
 		}
 
 
-		virtual movie*	get_topmost_mouse_entity(float x, float y)
+		virtual character*	get_topmost_mouse_entity(float x, float y)
 		// Return the topmost entity that the given point covers.  NULL if none.
 		// I.e. check against ourself.
 		{
@@ -795,7 +794,7 @@ namespace gameswf
 	}
 
 
-	character*	button_character_definition::create_character_instance(movie* parent, int id)
+	character*	button_character_definition::create_character_instance(character* parent, int id)
 	// Create a mutable instance of our definition.
 	{
 		character*	ch = new button_character_instance(this, parent, id);

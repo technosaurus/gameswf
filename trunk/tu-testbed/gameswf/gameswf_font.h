@@ -19,7 +19,6 @@ class tu_file;
 
 namespace gameswf
 {
-	struct movie;
 	struct shape_character_def;
 	struct stream;
 	struct bitmap_info;

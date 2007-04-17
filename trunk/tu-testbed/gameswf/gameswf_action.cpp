@@ -212,7 +212,7 @@ namespace gameswf
 		return false;
 	}
 
-	movie*	as_object::to_movie()
+	character*	as_object::cast_to_character()
 		// This object is not a movie; no conversion.
 	{
 		return NULL;
@@ -973,13 +973,13 @@ namespace gameswf
 			m_buf.read(in);
 		}
 
-		virtual void	execute(movie* m)
+		virtual void	execute(character* m)
 		{
 			m->add_action_buffer(&m_buf);
 		}
 
 		// Don't override because actions should not be replayed when seeking the movie.
-		//void	execute_state(movie* m) {}
+		//void	execute_state(character* m) {}
 
 		virtual bool	is_action_tag() const
 		// Tell the caller that we are an action tag.
@@ -1204,7 +1204,7 @@ namespace gameswf
 		}
 #endif
 		
-		movie*	original_target = env->get_target();
+		character*	original_target = env->get_target();
 
 		int	stop_pc = start_pc + exec_bytes;
 
@@ -1244,11 +1244,11 @@ namespace gameswf
 					break;
 
 				case 0x06:	// action play
-					env->get_target()->set_play_state(movie::PLAY);
+					env->get_target()->set_play_state(character::PLAY);
 					break;
 
 				case 0x07:	// action stop
-					env->get_target()->set_play_state(movie::STOP);
+					env->get_target()->set_play_state(character::STOP);
 					break;
 
 				case 0x08:	// toggle quality
@@ -1399,7 +1399,7 @@ namespace gameswf
 				case 0x22:	// get property
 				{
 
-					movie*	target = env->find_target(env->top(1));
+					character*	target = env->find_target(env->top(1));
 					if (target)
 					{
 						env->top(1) = get_property(target, (int) env->top(0).to_number());
@@ -1415,7 +1415,7 @@ namespace gameswf
 				case 0x23:	// set property
 				{
 
-					movie*	target = env->find_target(env->top(2));
+					character*	target = env->find_target(env->top(2));
 					if (target)
 					{
 						set_property(target, (int) env->top(1).to_number(), env->top(0));
@@ -1428,18 +1428,18 @@ namespace gameswf
 				// duplicateMovieClip(target:String, newname:String, depth:Number) : Void
 				// duplicateMovieClip(target:MovieClip, newname:String, depth:Number) : Void
 				{
-					movie* target = NULL;
+					character* target = NULL;
 					switch (env->top(2).get_type())
 					{
 						case as_value::OBJECT:
-							target = env->top(2).to_object()->to_movie();
+							target = env->top(2).to_object()->cast_to_character();
 							break;
 						case as_value::STRING:
 							{
 								as_value val = env->get_variable(env->top(2).to_string(), with_stack);
 								if (val.to_object() != NULL)
 								{
-									target = val.to_object()->to_movie();
+									target = val.to_object()->cast_to_character();
 								}
 							}
 							break;
@@ -1474,7 +1474,7 @@ namespace gameswf
 
 				case 0x27:	// start drag movie
 				{
-					movie::drag_state	st;
+					character::drag_state	st;
 
 					st.m_character = env->find_target(env->top(0));
 					if (st.m_character == NULL)
@@ -1495,7 +1495,7 @@ namespace gameswf
 					}
 					env->drop(3);
 
-					movie*	root_movie = env->get_target()->get_root_movie();
+					character*	root_movie = env->get_target()->get_root_movie();
 					assert(root_movie);
 
 					if (root_movie && st.m_character)
@@ -1508,7 +1508,7 @@ namespace gameswf
 
 				case 0x28:	// stop drag movie
 				{
-					movie*	root_movie = env->get_target()->get_root_movie();
+					character*	root_movie = env->get_target()->get_root_movie();
 					assert(root_movie);
 
 					root_movie->stop_drag();
@@ -1613,7 +1613,7 @@ namespace gameswf
 					if (obj.m_prototype != NULL)		
 					{
 						as_object* prototype = (as_object*) obj.m_prototype;
-						movie* movie = obj.m_prototype->to_movie();
+						character* movie = obj.m_prototype->cast_to_character();
 						if (movie)
 						{
 							movie->set_member(varname, val);
@@ -2684,9 +2684,9 @@ namespace gameswf
 					// frame is shown in stop mode.
 
 					unsigned char	play_flag = m_buffer[pc + 3];
-					movie::play_state	state = play_flag ? movie::PLAY : movie::STOP;
+					character::play_state	state = play_flag ? character::PLAY : character::STOP;
 
-					movie* target = env->get_target();
+					character* target = env->get_target();
 					bool success = false;
 
 					if (env->top(0).get_type() == as_value::UNDEFINED)
@@ -3185,9 +3185,9 @@ namespace gameswf
 	//
 
 	// url=="" means that the load_file() works as unloadMovie(target)
-	movie* as_environment::load_file(const char* url, as_value& target_value)
+	character* as_environment::load_file(const char* url, as_value& target_value)
 	{
-		movie* mtarget = find_target(target_value);
+		character* mtarget = find_target(target_value);
 		if (mtarget == NULL)
 		{
 			log_error("load_file: target %s is't found\n", target_value.to_string());
@@ -3198,7 +3198,7 @@ namespace gameswf
 		assert(target);
 
 		movie_root* mroot = target->get_root();
-		movie* parent = target->get_parent();
+		character* parent = target->get_parent();
 		sprite_instance* new_movie = NULL;
 
 		// is unloadMovie() ?
@@ -3274,7 +3274,7 @@ namespace gameswf
 	// Return the value of the given var, if it's defined.
 	{
 		// Path lookup rigamarole.
-		movie*	target = m_target;
+		character*	target = m_target;
 		tu_string	path;
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
@@ -3364,7 +3364,7 @@ namespace gameswf
 		return as_value();
 	}
 
-	void as_environment::set_target(as_value& target, movie* original_target)
+	void as_environment::set_target(as_value& target, character* original_target)
 	{
 		if (target.get_type() == as_value::STRING)
 		{
@@ -3372,7 +3372,7 @@ namespace gameswf
 			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", path.c_str()));
 			if (path.size() > 0)
 			{
-				movie* tar = find_target(path);
+				character* tar = find_target(path);
 				if (tar)
 				{
 					set_target(tar);
@@ -3389,7 +3389,7 @@ namespace gameswf
 		if (target.get_type() == as_value::OBJECT)
 		{
 			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", target.to_string()));
-			movie* tar = find_target(target);
+			character* tar = find_target(target);
 			if (tar)
 			{
 				set_target(tar);
@@ -3408,7 +3408,7 @@ namespace gameswf
 		IF_VERBOSE_ACTION(log_msg("-------------- %s = %s\n", varname.c_str(), val.to_string()));//xxxxxxxxxx
 
 		// Path lookup rigamarole.
-		movie*	target = m_target;
+		character*	target = m_target;
 		tu_string	path;
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
@@ -3644,7 +3644,7 @@ namespace gameswf
 	}
 
 
-	movie*	as_environment::find_target(const as_value& val) const
+	character*	as_environment::find_target(const as_value& val) const
 	// Find the sprite/movie represented by the given value.  The
 	// value might be a reference to the object itself, or a
 	// string giving a relative path name to the object.
@@ -3653,7 +3653,7 @@ namespace gameswf
 		{
 			if (val.to_object() != NULL)
 			{
-				return val.to_object()->to_movie();
+				return val.to_object()->cast_to_character();
 			}
 			else
 			{
@@ -3692,7 +3692,7 @@ namespace gameswf
 	}
 
 
-	movie*	as_environment::find_target(const tu_string& path) const
+	character*	as_environment::find_target(const tu_string& path) const
 	// Find the sprite/movie referenced by the given path.
 	{
 		if (path.length() <= 0)
@@ -3702,7 +3702,7 @@ namespace gameswf
 
 		assert(path.length() > 0);
 
-		movie*	env = m_target;
+		character*	env = m_target;
 		assert(env);
 		
 		const char*	p = path.c_str();

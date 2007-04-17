@@ -11,7 +11,7 @@
 #define GAMESWF_AS_COLOR_H
 
 #include "../gameswf_action.h"	// for as_object
-#include "../gameswf_movie.h"
+#include "../gameswf_character.h"
 
 namespace gameswf
 {
