@@ -388,6 +388,7 @@ namespace gameswf
 		// Advance everything in the display list. 
 		m_display_list.advance(delta_time); 
 
+		// send events to MovieClipLoader object (if it there is)
 		if (m_mcloader != NULL)
 		{
 			if (m_on_event_load_called == false)
@@ -395,7 +396,19 @@ namespace gameswf
 				m_mcloader->on_event(event_id(event_id::ONLOAD_INIT, this));
 			}
 
-			m_mcloader->on_event(event_id(event_id::ONLOAD_PROGRESS, this));
+			// 8 is (file_start_pos(4 bytes) + header(4 bytes))
+			int total = get_file_bytes() - 8;
+			int loaded = get_loaded_bytes();
+			if (loaded - total >= 0 && total > 0)
+			{
+				m_mcloader->remove_listener(as_value(this));
+				m_mcloader->on_event(event_id(event_id::ONLOAD_COMPLETE, this));
+				m_mcloader = NULL;
+			}
+			else
+			{
+				m_mcloader->on_event(event_id(event_id::ONLOAD_PROGRESS, this));
+			}
 		}
 
 		m_on_event_load_called = true; 
