@@ -74,7 +74,7 @@ namespace gameswf
 	}
 
 
-	sprite_instance::sprite_instance(movie_definition_sub* def, movie_root* r, movie* parent, int id)
+	sprite_instance::sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id)
 		:
 	character(parent, id),
 		m_def(def),
@@ -247,7 +247,7 @@ namespace gameswf
 	}
 
 
-	movie*	sprite_instance::get_topmost_mouse_entity(float x, float y)
+	character*	sprite_instance::get_topmost_mouse_entity(float x, float y)
 		// Return the topmost entity that the given point
 		// covers that can receive mouse events.  NULL if
 		// none.  Coords are in parent's frame.
@@ -260,8 +260,8 @@ namespace gameswf
 		point	p;
 		m.transform_by_inverse(&p, point(x, y));
 
-		movie*	top_te = NULL;
-		movie* te = NULL;
+		character*	top_te = NULL;
+		character* te = NULL;
 		bool this_has_focus = false;
 		int i, n = m_display_list.get_character_count();
 
@@ -985,7 +985,7 @@ namespace gameswf
 		return false;
 	}
 
-	movie*	sprite_instance::get_relative_target(const tu_string& name)
+	character*	sprite_instance::get_relative_target(const tu_string& name)
 		// Find the movie which is one degree removed from us,
 		// given the relative pathname.
 		//
@@ -1212,7 +1212,7 @@ namespace gameswf
 		as_object_interface*	as_obj = obj.to_object();
 		if (as_obj)
 		{
-			movie*	m = as_obj->to_movie();
+			character*	m = as_obj->cast_to_character();
 			if (m)
 			{
 				m->set_display_callback(callback, user_ptr);

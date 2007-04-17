@@ -95,7 +95,7 @@ namespace gameswf
 		}
 
 		// overloads from character_def
-		virtual character*	create_character_instance(movie* parent, int id);
+		virtual character*	create_character_instance(character* parent, int id);
 
 
 		/* sprite_definition */

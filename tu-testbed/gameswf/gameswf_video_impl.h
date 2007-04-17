@@ -20,7 +20,7 @@ namespace gameswf
 		//	virtual ~video_stream_definition();
 
 
-		character* create_character_instance(movie* parent, int id);
+		character* create_character_instance(character* parent, int id);
 		void	read(stream* in, int tag, movie_definition* m);
 		const rect&	get_bound() const
 		{
@@ -47,7 +47,7 @@ namespace gameswf
 
 	struct video_stream_instance : public character
 	{
-		video_stream_instance(video_stream_definition* def,	movie* parent, int id);
+		video_stream_instance(video_stream_definition* def,	character* parent, int id);
 		~video_stream_instance();
 
 		virtual video_stream_instance* cast_to_video_stream_instance()

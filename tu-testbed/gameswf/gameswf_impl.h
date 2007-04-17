@@ -14,8 +14,8 @@
 #include "gameswf_action.h"
 #include "gameswf_types.h"
 #include "gameswf_log.h"
-#include "gameswf_movie.h"
 #include "gameswf_movie_def.h"
+#include "gameswf_character.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -94,7 +94,7 @@ namespace gameswf
 	{
 		character_def*	m_def;
 
-		generic_character(character_def* def, movie* parent, int id)
+		generic_character(character_def* def, character* parent, int id)
 			:
 		character(parent, id),
 			m_def(def)
@@ -126,7 +126,7 @@ namespace gameswf
 			return w;
 		}
 
-		virtual movie*	get_topmost_mouse_entity(float x, float y)
+		virtual character*	get_topmost_mouse_entity(float x, float y)
 		{
 			assert(get_visible());	// caller should check this.
 
@@ -192,9 +192,9 @@ namespace gameswf
 	struct execute_tag
 	{
 		virtual ~execute_tag() {}
-		virtual void	execute(movie* m) {}
-		virtual void	execute_state(movie* m) {}
-		virtual void	execute_state_reverse(movie* m, int frame) { execute_state(m); }
+		virtual void	execute(character* m) {}
+		virtual void	execute_state(character* m) {}
+		virtual void	execute_state_reverse(character* m, int frame) { execute_state(m); }
 		virtual bool	is_remove_tag() const { return false; }
 		virtual bool	is_action_tag() const { return false; }
 		virtual uint32	get_depth_id_of_replace_or_add_tag() const { return static_cast<uint32>(-1); }

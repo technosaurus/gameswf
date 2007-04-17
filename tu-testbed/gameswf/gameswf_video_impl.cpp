@@ -41,7 +41,7 @@ namespace gameswf
 	
 	}
 	
-	character* video_stream_definition::create_character_instance(movie* parent, int id)
+	character* video_stream_definition::create_character_instance(character* parent, int id)
 	{
 		character* ch = new video_stream_instance(this, parent, id);
 		return ch;
@@ -62,7 +62,7 @@ namespace gameswf
 		video->attach_netstream((as_netstream*) fn.arg(0).to_object());
 	}
 
-	video_stream_instance::video_stream_instance(video_stream_definition* def, movie* parent, int id)
+	video_stream_instance::video_stream_instance(video_stream_definition* def, character* parent, int id)
 	:
 		character(parent, id),
 		m_def(def)

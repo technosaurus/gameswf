@@ -105,7 +105,7 @@ namespace gameswf
 		}
 	}
 
-	character*	character_def::create_character_instance(movie* parent, int id)
+	character*	character_def::create_character_instance(character* parent, int id)
 		// Default.  Make a generic_character.
 	{
 		return new generic_character(this, parent, id);
@@ -642,7 +642,7 @@ namespace gameswf
 
 		// create dlist
 		// movie is ready for momentaly reaction
-		movie* m = mov->get_root_movie();
+		character* m = mov->get_root_movie();
 		m->execute_frame_tags(0);		
 		return mov;
 	}
@@ -769,14 +769,14 @@ namespace gameswf
 	{
 		rgba	m_color;
 
-		void	execute(movie* m)
+		void	execute(character* m)
 		{
 			float	current_alpha = m->get_background_alpha();
 			m_color.m_a = frnd(current_alpha * 255.0f);
 			m->set_background_color(m_color);
 		}
 
-		void	execute_state(movie* m)
+		void	execute_state(character* m)
 		{
 			execute(m);
 		}
@@ -1622,7 +1622,7 @@ namespace gameswf
 		}
 
 
-		void	execute(movie* m)
+		void	execute(character* m)
 			// Place/move/whatever our object in the given movie.
 		{
 			switch (m_place_type)
@@ -1666,12 +1666,12 @@ namespace gameswf
 			}
 		}
 
-		void	execute_state(movie* m)
+		void	execute_state(character* m)
 		{
 			execute(m);
 		}
 
-		void	execute_state_reverse(movie* m, int frame)
+		void	execute_state_reverse(character* m, int frame)
 		{
 			switch (m_place_type)
 			{
@@ -1746,7 +1746,7 @@ namespace gameswf
 		m->add_execute_tag(ch);
 	}
 
-	character*	sprite_definition::create_character_instance(movie* parent, int id)
+	character*	sprite_definition::create_character_instance(character* parent, int id)
 		// Create a (mutable) instance of our definition.  The
 		// instance is created to live (temporarily) on some level on
 		// the parent movie's display list.
@@ -1831,17 +1831,17 @@ namespace gameswf
 			m_depth = in->read_u16();
 		}
 
-		virtual void	execute(movie* m)
+		virtual void	execute(character* m)
 		{
 			m->remove_display_object(m_depth, m_id);
 		}
 
-		virtual void	execute_state(movie* m)
+		virtual void	execute_state(character* m)
 		{
 			execute(m);
 		}
 
-		virtual void	execute_state_reverse(movie* m, int frame)
+		virtual void	execute_state_reverse(character* m, int frame)
 		{
 			// reverse of remove is to re-add the previous object.
 			execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, m_id);
