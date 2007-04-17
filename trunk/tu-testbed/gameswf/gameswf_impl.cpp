@@ -545,6 +545,9 @@ namespace gameswf
 				printf("internal error: on exit movie_interface ref_count > 1\n");
 				printf("this = %08X, ref_count = %d\n", it->second.get_ptr(),
 					it->second->get_ref_count());
+
+				// to detect memory leaks
+				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
 			}
 		}
 		s_movie_library_inst.clear();
@@ -557,6 +560,9 @@ namespace gameswf
 				printf("internal error: on exit movie_definition_sub ref_count > 1\n");
 				printf("this = %08X, ref_count = %d\n", it->second.get_ptr(),
 					it->second->get_ref_count());
+
+				// to detect memory leaks
+				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
 			}
 		}
 		s_movie_library.clear();

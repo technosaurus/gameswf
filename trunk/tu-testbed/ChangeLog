@@ -1,5 +1,11 @@
 2007-04-17  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_impl.cpp,
+	* gameswf/gameswf_sprite.cpp,
+	* gameswf/as_classes/as_mcloader.cpp: cleanup
+
+2007-04-17  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_text.cpp: applied the patch from Francois Guibert
 	(fixed the cursor position with centered texts)
 

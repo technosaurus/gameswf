@@ -52,11 +52,11 @@ namespace gameswf
 			if (loading_movie != NULL)
 			{
 				loading_movie->set_mcloader(mcl);
-				mcl->on_event(event_id(event_id::ONLOAD_START, (character*) mcl));
+				mcl->on_event(event_id(event_id::ONLOAD_START, loading_movie));
 				fn.result->set_bool(true);
 				return;
 			}
-			mcl->on_event(event_id(event_id::ONLOAD_ERROR, (character*) mcl));
+			mcl->on_event(event_id(event_id::ONLOAD_ERROR, loading_movie));
 		}
 		fn.result->set_bool(false);
 	}
@@ -148,7 +148,6 @@ namespace gameswf
 		for (hash< smart_ptr<as_object>, int >::iterator it = m_listener.begin();
 			it != m_listener.end(); ++it)
 		{
-
 			as_value function;
 			if (it->first->get_member(id.get_function_name(), &function))
 			{
@@ -181,27 +180,16 @@ namespace gameswf
 
 					case event_id::ONLOAD_PROGRESS:
 					{
-						sprite_instance* target = id.m_target->cast_to_sprite();
+						sprite_instance* m = id.m_target->cast_to_sprite();
 
-						// where 8 is Uint32	file_start_pos + Uint32	header
-						int total = target->get_file_bytes() - 8;
-						int loaded = target->get_loaded_bytes();
-	
+						// 8 is (file_start_pos(4 bytes) + header(4 bytes))
+						int total = m->get_file_bytes() - 8;
+						int loaded = m->get_loaded_bytes();
 						param_count = 3;	
 						env->push(total);
 						env->push(loaded);
 						env->push(id.m_target);	// 1-st param
-
-						call_method(function, env, NULL, param_count, env->get_top_index());
-						env->drop(param_count);
-	
-						if (loaded - total >= 0 && total > 0)
-						{
-							id.m_target->set_mcloader(NULL);
-							remove_listener(as_value(id.m_target));
-							on_event(event_id(event_id::ONLOAD_COMPLETE, id.m_target));
-						}
-						continue;
+						break;
 					}
 
 					default:
