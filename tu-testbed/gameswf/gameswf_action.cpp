@@ -3071,14 +3071,17 @@ namespace gameswf
 	void	as_value::convert_to_string()
 	// Force type to string.
 	{
+		drop_refs();
 		to_tu_string();	// init our string data.
 		m_type = STRING;	// force type.
 	}
 
 
+	// 
 	void	as_value::convert_to_string_versioned(int version)
 	// Force type to string.
 	{
+		drop_refs();
 		to_tu_string_versioned(version);	// init our string data.
 		m_type = STRING;	// force type.
 	}
@@ -3153,6 +3156,7 @@ namespace gameswf
 	void	as_value::string_concat(const tu_string& str)
 	// Sets *this to this string plus the given string.
 	{
+		drop_refs();
 		to_tu_string();	// make sure our m_string_value is initialized
 		m_type = STRING;
 		m_string_value += str;

@@ -1,5 +1,9 @@
 2007-04-17  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp: fixed one of the memory leaks bug
+
+2007-04-17  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_impl.cpp,
 	* gameswf/gameswf_sprite.cpp,
 	* gameswf/as_classes/as_mcloader.cpp: cleanup
