@@ -1,3 +1,12 @@
+2007-04-19  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_action.*: fixed local var bug,
+	Semantics Flash Action Script differs from semantics C++,
+	get_variables() & set_variables() search for local vars in all environment
+	declare_local() & set_local() search for local vars up to barrier of environment
+	* gameswf/samples/test_local_var.*: added testcase
+	* gameswf/gameswf_as_classes/as_mcloader.cpp: cleanup
+
 2007-04-17  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_action.cpp: fixed one of the memory leaks bug
