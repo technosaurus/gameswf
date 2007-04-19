@@ -120,7 +120,7 @@ namespace gameswf
 
 	as_mcloader::~as_mcloader()
 	{
-		get_root()->remove_listener(this);
+//		get_root()->remove_listener(this);
 	}
 
 	bool as_mcloader::add_listener(as_value& listener)

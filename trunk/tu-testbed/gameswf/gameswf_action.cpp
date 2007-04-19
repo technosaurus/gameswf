@@ -1642,7 +1642,7 @@ namespace gameswf
 						// finally to remove it we need set varname to undefined
 
 						// try delete local var
-						int	local_index = env->find_local(varname);
+						int	local_index = env->find_local(varname, true);
 						if (local_index >= 0)
 						{
 							// local var is found
@@ -3329,7 +3329,7 @@ namespace gameswf
 		}
 
 		// Check locals.
-		int	local_index = find_local(varname);
+		int	local_index = find_local(varname, true);
 		if (local_index >= 0)
 		{
 			// Get local var.
@@ -3450,7 +3450,7 @@ namespace gameswf
 		}
 
 		// Check locals.
-		int	local_index = find_local(varname);
+		int	local_index = find_local(varname, true);
 		if (local_index >= 0)
 		{
 			// Set local var.
@@ -3468,13 +3468,12 @@ namespace gameswf
 	// Set/initialize the value of the local variable.
 	{
 		// Is it in the current frame already?
-		int	index = find_local(varname);
+		int	index = find_local(varname, false);
 		if (index < 0)
 		{
 			// Not in frame; create a new local var.
-
 			assert(varname.length() > 0);	// null varnames are invalid!
-    			m_local_frames.push_back(frame_slot(varname, val));
+			m_local_frames.push_back(frame_slot(varname, val));
 		}
 		else
 		{
@@ -3499,12 +3498,12 @@ namespace gameswf
 	// Create the specified local var if it doesn't exist already.
 	{
 		// Is it in the current frame already?
-		int	index = find_local(varname);
+		int	index = find_local(varname, false);
 		if (index < 0)
 		{
 			// Not in frame; create a new local var.
 			assert(varname.length() > 0);	// null varnames are invalid!
-    			m_local_frames.push_back(frame_slot(varname, as_value()));
+ 			m_local_frames.push_back(frame_slot(varname, as_value()));
 		}
 		else
 		{
@@ -3551,11 +3550,13 @@ namespace gameswf
 	}
 
 
-	int	as_environment::find_local(const tu_string& varname) const
+	int	as_environment::find_local(const tu_string& varname, bool ignore_barrier) const
 	// Search the active frame for the named var; return its index
 	// in the m_local_frames stack if found.
 	// 
 	// Otherwise return -1.
+	// set_local should use "ignore_barrier=false"
+	// get_variable should use "ignore_barrier=true"
 	{
 		// Linear search sucks, but is probably fine for
 		// typical use of local vars in script.  There could
@@ -3566,12 +3567,13 @@ namespace gameswf
 		for (int i = m_local_frames.size() - 1; i >= 0; i--)
 		{
 			const frame_slot&	slot = m_local_frames[i];
-			if (slot.m_name.length() == 0)
+			if (slot.m_name.length() == 0 && ignore_barrier == false)
 			{
 				// End of local frame; stop looking.
 				return -1;
 			}
-			else if (slot.m_name == varname)
+			else
+			if (slot.m_name == varname)
 			{
 				// Found it.
 				return i;
