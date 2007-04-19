@@ -467,21 +467,23 @@ namespace gameswf
 
 				// Execute appropriate actions
 
-				// actions can delete THIS through execute_frame_tags()
-				// therefore we need to protect THIS from deleting
+				// actions can delete THIS & PARENT through execute_frame_tags()
+				// therefore we need to protect THIS & PARENT from deleting
 				add_ref();
-
+				character* parent = get_parent();
+				assert(parent);
+				parent->add_ref();
 				{
 					for (int i = 0; i < m_def->m_button_actions.size(); i++)
 					{
 						if (m_def->m_button_actions[i].m_conditions & c)
 						{
-							get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
+							parent->do_actions(m_def->m_button_actions[i].m_actions);
 							called = true;
 						}
 					}
 				}
-
+				parent->drop_ref();
 				drop_ref();
 			}
 			return called;

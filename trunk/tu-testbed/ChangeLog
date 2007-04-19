@@ -1,5 +1,10 @@
 2007-04-19  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_button.cpp: button on_event() must protect parent
+	from deleting just as 'this'
+
+2007-04-19  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.*: fixed local var bug,
 	Semantics Flash Action Script differs from semantics C++,
 	get_variables() & set_variables() search for local vars in all environment
