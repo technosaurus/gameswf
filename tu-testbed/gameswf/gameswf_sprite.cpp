@@ -67,6 +67,8 @@ namespace gameswf
 		s_sprite_builtins->set_member("removeMovieClip", &sprite_remove_movieclip);
 		s_sprite_builtins->set_member("hitTest", &sprite_hit_test);
 		s_sprite_builtins->set_member("loadMovie", &sprite_loadmovie);
+		s_sprite_builtins->set_member("getNextHighestDepth", &sprite_getnexthighestdepth);
+
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
 		//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
@@ -820,30 +822,24 @@ namespace gameswf
 			clip_depth);
 	}
 
-
-	/*sprite_instance*/
 	void	sprite_instance::remove_display_object(Uint16 depth, int id)
-		// Remove the object at the specified depth.
-		// If id != -1, then only remove the object at depth with matching id.
+	// Remove the object at the specified depth.
+	// If id != -1, then only remove the object at depth with matching id.
 	{
 		m_display_list.remove_display_object(depth, id);
 	}
 
-
-	/*sprite_instance*/
 	void	sprite_instance::add_action_buffer(action_buffer* a)
-		// Add the given action buffer to the list of action
-		// buffers to be processed at the end of the next
-		// frame advance.
+	// Add the given action buffer to the list of action
+	// buffers to be processed at the end of the next
+	// frame advance.
 	{
 		m_action_list.push_back(a);
 	}
 
-
-	/*sprite_instance*/
 	int	sprite_instance::get_id_at_depth(int depth)
-		// For debugging -- return the id of the character at the specified depth.
-		// Return -1 if nobody's home.
+	// For debugging -- return the id of the character at the specified depth.
+	// Return -1 if nobody's home.
 	{
 		int	index = m_display_list.get_display_index(depth);
 		if (index == -1)
@@ -856,6 +852,10 @@ namespace gameswf
 		return ch->get_id();
 	}
 
+	int	sprite_instance::get_highest_depth()
+	{
+		return m_display_list.get_highest_depth();
+	}
 
 	//
 	// ActionScript support

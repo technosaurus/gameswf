@@ -1164,13 +1164,19 @@ namespace gameswf
 	// them in the given environment.  Execute our whole buffer,
 	// without any arguments passed in.
 	{
-		int	local_stack_top = env->get_local_frame_top();
-		env->add_frame_barrier();
+		// Flash keeps local variables after executing of frame actions
+		// therefore we should not delete them
+//		int	local_stack_top = env->get_local_frame_top();
+//		env->add_frame_barrier();
+
+		// sanity check
+		assert(env->m_local_frames.size() < 1000);
 
 		array<with_stack_entry>	empty_with_stack;
 		execute(env, 0, m_buffer.size(), NULL, empty_with_stack, false /* not function2 */);
 
-		env->set_local_frame_top(local_stack_top);
+//		env->set_local_frame_top(local_stack_top);
+
 	}
 
 

@@ -35,6 +35,8 @@ namespace gameswf
 	void sprite_create_empty_movieclip(const fn_call& fn);
 	void sprite_remove_movieclip(const fn_call& fn);
 	void sprite_loadmovie(const fn_call& fn);
+	void sprite_getnexthighestdepth(const fn_call& fn);
+
 }
 
 #endif
