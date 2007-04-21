@@ -127,6 +127,8 @@ namespace gameswf
 		
 		void swap_characters(character* ch, character* ch2);
 
+		int get_highest_depth();
+
 	private:
 
 		void remove(int index);

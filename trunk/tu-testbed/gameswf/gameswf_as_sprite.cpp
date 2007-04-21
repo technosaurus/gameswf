@@ -317,4 +317,18 @@ namespace gameswf
 
 	} 
 
+	// getNextHighestDepth() : Number
+	// Determines a depth value
+	// The value returned is 0 or larger (that is, negative numbers are not returned). 
+	void sprite_getnexthighestdepth(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+		fn.result->set_int(sprite->get_highest_depth());
+	} 
+
 }

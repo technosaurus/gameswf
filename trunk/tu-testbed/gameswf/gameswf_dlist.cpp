@@ -585,6 +585,20 @@ namespace gameswf
 		} 
 	} 
 
+	int display_list::get_highest_depth() 
+	{ 
+		int depth = 0;
+		for (int i = 0, n = get_character_count(); i < n; i++)
+		{
+			character*	ch = get_character(i);
+			if (ch->get_depth() > depth)
+			{
+				depth = ch->get_depth();
+			}
+		}
+		return depth;
+	}
+
 }
 
 

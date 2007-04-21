@@ -179,6 +179,7 @@ namespace gameswf
 		void	remove_display_object(Uint16 depth, int id);
 		void	add_action_buffer(action_buffer* a);
 		int	get_id_at_depth(int depth);
+		int	get_highest_depth();
 
 		//
 		// ActionScript support
