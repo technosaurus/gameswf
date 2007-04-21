@@ -1,5 +1,10 @@
 2007-04-21  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/a lot of files:
+	as_value, as_as_function, as_environment & as_object moved to own files
+
+2007-04-21  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.*: added addProperty() method to as_object()
 	added PROPERTY type to as_value()
 

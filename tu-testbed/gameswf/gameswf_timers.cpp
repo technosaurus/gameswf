@@ -5,6 +5,7 @@
 
 #include "gameswf_timers.h"
 #include "gameswf_root.h"
+#include "gameswf_function.h"
 
 // hack: timer_id is't a number but the as_object*
 

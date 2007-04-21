@@ -29,6 +29,7 @@
 #include "gameswf_movie_def.h"
 #include "gameswf_sprite_def.h"
 #include "gameswf_sprite.h"
+#include "gameswf_function.h"
 #include "base/image.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
