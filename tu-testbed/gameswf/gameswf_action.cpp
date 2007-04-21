@@ -314,11 +314,14 @@ namespace gameswf
 
 			// Handle the implicit args.
 			int	current_reg = 1;
+
+			as_object_interface* this_ptr = fn.this_ptr ? fn.this_ptr : our_env->m_target;
 			if (m_function2_flags & 0x01)
 			{
 				// preload 'this' into a register.
-				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(our_env->m_target);
+				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(this_ptr);
 				current_reg++;
+
 			}
 
 			if (m_function2_flags & 0x02)
@@ -328,7 +331,7 @@ namespace gameswf
 			else
 			{
 				// Put 'this' in a local var.
-				our_env->add_local("this", as_value(our_env->m_target));
+				our_env->add_local("this", as_value(this_ptr));
 			}
 
 			// Init arguments array, if it's going to be needed.
@@ -2783,6 +2786,21 @@ namespace gameswf
 		}
 	}
 
+	as_value::as_value(as_as_function* getter, as_as_function* setter)
+		:
+		m_type(PROPERTY),
+		m_getter(getter),
+		m_setter(setter)
+	{
+		if (m_getter)
+		{
+			m_getter->add_ref();
+		}
+		if (m_setter)
+		{
+			m_setter->add_ref();
+		}
+	}
 
 	const char*	as_value::to_string() const
 	// Conversion to string.
@@ -2871,6 +2889,10 @@ namespace gameswf
 			snprintf(buffer, 50, "<as_function 0x%X>", (void*) (m_as_function_value));
 			m_string_value = buffer;
 		}
+		else if (m_type == PROPERTY)
+		{
+			m_string_value = get_property().to_tu_string();
+		}
 		else
 		{
 			m_string_value = "<bad type>";
@@ -2951,6 +2973,10 @@ namespace gameswf
 
 			return 0.0;
 		}
+		else if (m_type == PROPERTY)
+		{
+			return get_property().to_number();
+		}
 		else
 		{
 			return 0.0;
@@ -3002,6 +3028,10 @@ namespace gameswf
 		else if (m_type == AS_FUNCTION)
 		{
 			return m_as_function_value != NULL;
+		}
+		else if (m_type == PROPERTY)
+		{
+			return get_property().to_bool();
 		}
 		else
 		{
@@ -3187,6 +3217,21 @@ namespace gameswf
 				m_object_value = 0;
 			}
 		}
+	}
+
+	void	as_value::set_property(const as_value& v)
+	{
+		as_value val;
+		m_setter->m_env->push(v);
+		(*m_setter)(fn_call(&val, NULL, m_setter->m_env, 1, m_setter->m_env->get_top_index()));
+		m_setter->m_env->drop(1);
+	}
+
+	as_value as_value::get_property() const
+	{
+		as_value val;
+		(*m_getter)(fn_call(&val, NULL, m_getter->m_env, 0, m_getter->m_env->get_top_index()));
+		return val;
 	}
 
 
@@ -4264,6 +4309,23 @@ namespace gameswf
 
 #endif // COMPILE_DISASM
 
+	void	as_object_addproperty(const fn_call& fn)
+	{
+		if (fn.nargs == 3)
+		{
+			as_object* obj = (as_object*) fn.this_ptr;
+			assert(obj);
+			as_as_function* getter = fn.arg(1).to_as_function();
+			as_as_function* setter = fn.arg(2).to_as_function();
+			if (getter || setter)
+			{
+				obj->set_member(fn.arg(0).to_string(), as_value(getter, setter));
+				fn.result->set_bool(true);
+				return;
+			}
+		}
+		fn.result->set_bool(false);
+	}
 
 };
 

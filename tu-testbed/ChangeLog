@@ -1,5 +1,10 @@
 2007-04-21  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.*: added addProperty() method to as_object()
+	added PROPERTY type to as_value()
+
+2007-04-21  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.cpp: fixed action_buffer::execute(), 
 	Flash keeps local variables after executing of frame actions therefore we should not delete them
 	* gameswf/gameswf_sprite.*,

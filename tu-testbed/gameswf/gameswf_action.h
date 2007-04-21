@@ -225,7 +225,8 @@ namespace gameswf
 			NUMBER,
 			OBJECT,
 			C_FUNCTION,
-			AS_FUNCTION	// ActionScript function.
+			AS_FUNCTION,	// ActionScript function.
+			PROPERTY
 		};
 		type	m_type;
 		mutable tu_string	m_string_value;
@@ -237,6 +238,11 @@ namespace gameswf
 			as_object_interface*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_as_function*	m_as_function_value;
+			struct
+			{
+				as_as_function*	m_getter;
+				as_as_function*	m_setter;
+			};
 		};
 
 		as_value()
@@ -337,6 +343,8 @@ namespace gameswf
 
 		as_value(as_as_function* func);
 
+		as_value(as_as_function* getter, as_as_function* setter);
+
 		~as_value() { drop_refs(); }
 
 		// Useful when changing types/values.
@@ -371,6 +379,13 @@ namespace gameswf
 		void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
 		void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
+		void	set_as_property(as_as_function* getter, as_as_function* setter)
+		{
+			drop_refs(); 
+			m_type = PROPERTY;
+			m_setter = setter;
+			m_getter = getter;
+		}
 		void	set_int(int val) { set_double(val); }
 		void	set_as_object_interface(as_object_interface* obj);
 		void	set_as_c_function_ptr(as_c_function_ptr func)
@@ -381,9 +396,13 @@ namespace gameswf
 		void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
 		void	set_null() { drop_refs(); m_type = NULLTYPE; }
 
+		void	set_property(const as_value& v);
+		as_value get_property() const;
+
 		void	operator=(const as_value& v)
 		{
-			if (v.m_type == UNDEFINED) set_undefined();
+			if (m_type == PROPERTY) set_property(v);
+			else if (v.m_type == UNDEFINED) set_undefined();
 			else if (v.m_type == NULLTYPE) set_null();
 			else if (v.m_type == BOOLEAN) set_bool(v.m_boolean_value);
 			else if (v.m_type == STRING) set_tu_string(v.m_string_value);
@@ -391,6 +410,8 @@ namespace gameswf
 			else if (v.m_type == OBJECT) set_as_object_interface(v.m_object_value);
 			else if (v.m_type == C_FUNCTION) set_as_c_function_ptr(v.m_c_function_value);
 			else if (v.m_type == AS_FUNCTION) set_as_as_function(v.m_as_function_value);
+			else if (v.m_type == PROPERTY) set_as_property(v.m_getter, v.m_setter);
+			else assert(0);
 		}
 
 		bool	operator==(const as_value& v) const;
@@ -541,6 +562,7 @@ namespace gameswf
 		void set_member_flags(const as_prop_flags &flags)  { m_flags = flags; }
 	};
 
+	void	as_object_addproperty(const fn_call& fn);
 
 	//
 	// as_object
@@ -552,7 +574,11 @@ namespace gameswf
 		stringi_hash<as_member>	m_members;
 		as_object_interface*	m_prototype;
 
-		as_object() : m_prototype(NULL) { }
+		as_object() : m_prototype(NULL)
+		{
+			set_member("addProperty", as_object_addproperty);
+		}
+
 		as_object(as_object_interface* proto) : m_prototype(proto)
 		{
 			if (m_prototype)
