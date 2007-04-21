@@ -7,6 +7,7 @@
 
 #include "../gameswf_as_classes/as_xmlsocket.h"
 #include "../gameswf_root.h"
+#include "../gameswf_function.h"
 //#include "../gameswf_log.h"
 
 #define XML_TIMEOUT 1 //sec

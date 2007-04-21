@@ -10,6 +10,7 @@
 #include "../gameswf_character.h"
 #include "../gameswf_sprite.h"
 #include "../gameswf_action.h"
+#include "../gameswf_function.h"
 //#include "../gameswf_log.h"
 
 namespace gameswf

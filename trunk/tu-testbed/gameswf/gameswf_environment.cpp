@@ -1,0 +1,580 @@
+// gameswf_value.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
+#include "gameswf.h"
+#include "gameswf_value.h"
+#include "gameswf_character.h"
+#include "gameswf_sprite.h"
+#include "gameswf_log.h"
+#include "gameswf_function.h"
+
+#ifdef _WIN32
+#define snprintf _snprintf
+#endif // _WIN32
+
+namespace gameswf
+{
+
+	// url=="" means that the load_file() works as unloadMovie(target)
+	character* as_environment::load_file(const char* url, as_value& target_value)
+	{
+		character* mtarget = find_target(target_value);
+		if (mtarget == NULL)
+		{
+			log_error("load_file: target %s is't found\n", target_value.to_string());
+			return NULL;
+		}
+
+		sprite_instance* target = mtarget->cast_to_sprite();
+		assert(target);
+
+		movie_root* mroot = target->get_root();
+		character* parent = target->get_parent();
+		sprite_instance* new_movie = NULL;
+
+		// is unloadMovie() ?
+		if (strlen(url) == 0)
+		{
+			sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+			new_movie = new sprite_instance(empty_sprite_def, mroot, parent, 0);
+		}
+		else
+		{
+			// is path relative ?
+			tu_string infile = get_workdir();
+			if (strstr(url, ":") || url[0] == '/')
+			{
+				infile = "";
+			}
+			infile += url;
+
+			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
+			if (md == NULL)
+			{
+				log_error("can't create movie from %s\n", infile.c_str());
+				return NULL;
+			}
+
+			// case loadMovie("my.swf", _root)
+			if (target == target->get_root_movie())
+			{
+				movie_interface* new_inst = create_library_movie_inst_sub(md);			
+				assert(new_inst);
+				save_extern_movie(new_inst);
+
+				new_movie = (sprite_instance*) new_inst->get_root_movie();
+				set_current_root(new_inst);
+				new_movie->on_event(event_id::LOAD);
+
+				return new_movie;
+			}
+
+			// case loadMovie("my.swf", container)
+			new_movie = new sprite_instance(md, mroot, parent, -1);
+		}
+
+		const char* name = target->get_name();
+		Uint16 depth = target->get_depth();
+		bool use_cxform = false;
+		cxform color_transform =  target->get_cxform();
+		bool use_matrix = false;
+		matrix mat = target->get_matrix();
+		float ratio = target->get_ratio();
+		Uint16 clip_depth = target->get_clip_depth();
+
+		assert(parent != NULL);
+		new_movie->set_parent(parent);
+		new_movie->set_root(mroot);
+
+		parent->replace_display_object(
+			(character*) new_movie,
+			name,
+			depth,
+			use_cxform,
+			color_transform,
+			use_matrix,
+			mat,
+			ratio,
+			clip_depth);
+
+		return new_movie;
+	}
+
+
+	as_value	as_environment::get_variable(const tu_string& varname, const array<with_stack_entry>& with_stack) const
+	// Return the value of the given var, if it's defined.
+	{
+		// Path lookup rigamarole.
+		character*	target = m_target;
+		tu_string	path;
+		tu_string	var;
+		if (parse_path(varname, &path, &var))
+		{
+			target = find_target(path);	// @@ Use with_stack here too???  Need to test.
+			if (target)
+			{
+				as_value	val;
+				target->get_member(var, &val);
+				return val;
+			}
+			else
+			{
+				log_error("find_target(\"%s\") failed\n", path.c_str());
+				return as_value();
+			}
+		}
+		else
+		{
+			return this->get_variable_raw(varname, with_stack);
+		}
+	}
+
+
+	as_value	as_environment::get_variable_raw(
+		const tu_string& varname,
+		const array<with_stack_entry>& with_stack) const
+	// varname must be a plain variable name; no path parsing.
+	{
+		as_value	val;
+
+		if (strchr(varname.c_str(), ':') != NULL ||
+			strchr(varname.c_str(), '/') != NULL ||
+			strchr(varname.c_str(), '.') != NULL)
+		{
+			return val;
+		}
+
+		// Check the with-stack.
+		for (int i = with_stack.size() - 1; i >= 0; i--)
+		{
+			as_object_interface*	obj = with_stack[i].m_object.get_ptr();
+			if (obj && obj->get_member(varname, &val))
+			{
+				// Found the var in this context.
+				return val;
+			}
+		}
+
+		// Check locals.
+		int	local_index = find_local(varname, true);
+		if (local_index >= 0)
+		{
+			// Get local var.
+			return m_local_frames[local_index].m_value;
+		}
+
+		// Looking for "this"?
+		if (varname == "this")
+		{
+			val.set_as_object_interface(m_target);
+			return val;
+		}
+
+		// Check movie members.
+		if (m_target->get_member(varname, &val))
+		{
+			return val;
+		}
+
+		// Check built-in constants.
+		if (varname == "_root" || varname == "_level0")
+		{
+			return as_value(m_target->get_root_movie());
+		}
+		if (varname == "_global")
+		{
+			return as_value(get_global());
+		}
+		if (get_global()->get_member(varname, &val))
+		{
+			return val;
+		}
+	
+		// Fallback.
+		IF_VERBOSE_ACTION(log_msg("get_variable_raw(\"%s\") failed, returning UNDEFINED.\n", varname.c_str()));
+		return as_value();
+	}
+
+	void as_environment::set_target(as_value& target, character* original_target)
+	{
+		if (target.get_type() == as_value::STRING)
+		{
+			tu_string path = target.to_tu_string();
+			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", path.c_str()));
+			if (path.size() > 0)
+			{
+				character* tar = find_target(path);
+				if (tar)
+				{
+					set_target(tar);
+					return;
+				}
+			}
+			else
+			{
+				set_target(original_target);
+				return;
+			}
+		}
+		else
+		if (target.get_type() == as_value::OBJECT)
+		{
+			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", target.to_string()));
+			character* tar = find_target(target);
+			if (tar)
+			{
+				set_target(tar);
+				return;
+			}
+		}
+		log_error("can't set target %s\n", target.to_string());
+	}
+
+	void	as_environment::set_variable(
+		const tu_string& varname,
+		const as_value& val,
+		const array<with_stack_entry>& with_stack)
+	// Given a path to variable, set its value.
+	{
+		IF_VERBOSE_ACTION(log_msg("-------------- %s = %s\n", varname.c_str(), val.to_string()));//xxxxxxxxxx
+
+		// Path lookup rigamarole.
+		character*	target = m_target;
+		tu_string	path;
+		tu_string	var;
+		if (parse_path(varname, &path, &var))
+		{
+			target = find_target(path);
+			if (target)
+			{
+				target->set_member(var, val);
+			}
+		}
+		else
+		{
+			this->set_variable_raw(varname, val, with_stack);
+		}
+	}
+
+
+	void	as_environment::set_variable_raw(
+		const tu_string& varname,
+		const as_value& val,
+		const array<with_stack_entry>& with_stack)
+	// No path rigamarole.
+	{
+		// Check the with-stack.
+		for (int i = with_stack.size() - 1; i >= 0; i--)
+		{
+			as_object_interface*	obj = with_stack[i].m_object.get_ptr();
+			as_value	dummy;
+			if (obj && obj->get_member(varname, &dummy))
+			{
+				// This object has the member; so set it here.
+				obj->set_member(varname, val);
+				return;
+			}
+		}
+
+		// Check locals.
+		int	local_index = find_local(varname, true);
+		if (local_index >= 0)
+		{
+			// Set local var.
+			m_local_frames[local_index].m_value = val;
+			return;
+		}
+
+		assert(m_target);
+
+		m_target->set_member(varname, val);
+	}
+
+
+	void	as_environment::set_local(const tu_string& varname, const as_value& val)
+	// Set/initialize the value of the local variable.
+	{
+		// Is it in the current frame already?
+		int	index = find_local(varname, false);
+		if (index < 0)
+		{
+			// Not in frame; create a new local var.
+			assert(varname.length() > 0);	// null varnames are invalid!
+			m_local_frames.push_back(frame_slot(varname, val));
+		}
+		else
+		{
+			// In frame already; modify existing var.
+			m_local_frames[index].m_value = val;
+		}
+	}
+
+	
+	void	as_environment::add_local(const tu_string& varname, const as_value& val)
+	// Add a local var with the given name and value to our
+	// current local frame.  Use this when you know the var
+	// doesn't exist yet, since it's faster than set_local();
+	// e.g. when setting up args for a function.
+	{
+		assert(varname.length() > 0);
+		m_local_frames.push_back(frame_slot(varname, val));
+	}
+
+
+	void	as_environment::declare_local(const tu_string& varname)
+	// Create the specified local var if it doesn't exist already.
+	{
+		// Is it in the current frame already?
+		int	index = find_local(varname, false);
+		if (index < 0)
+		{
+			// Not in frame; create a new local var.
+			assert(varname.length() > 0);	// null varnames are invalid!
+ 			m_local_frames.push_back(frame_slot(varname, as_value()));
+		}
+		else
+		{
+			// In frame already; don't mess with it.
+		}
+	}
+
+	
+	bool	as_environment::get_member(const tu_stringi& varname, as_value* val) const
+	{
+		return m_variables.get(varname, val);
+	}
+
+
+	bool	as_environment::set_member(const tu_stringi& varname, const as_value& val)
+	{
+		m_variables.set(varname, val);
+		return true;
+	}
+
+	as_value*	as_environment::local_register_ptr(int reg)
+	// Return a pointer to the specified local register.
+	// Local registers are numbered starting with 1.
+	//
+	// Return value will never be NULL.  If reg is out of bounds,
+	// we log an error, but still return a valid pointer (to
+	// global reg[0]).  So the behavior is a bit undefined, but
+	// not dangerous.
+	{
+		// We index the registers from the end of the register
+		// array, so we don't have to keep base/frame
+		// pointers.
+
+		if (reg <= 0 || reg > m_local_register.size())
+		{
+			log_error("Invalid local register %d, stack only has %d entries\n",
+				  reg, m_local_register.size());
+
+			// Fallback: use global 0.
+			return &m_global_register[0];
+		}
+
+		return &m_local_register[m_local_register.size() - reg];
+	}
+
+
+	int	as_environment::find_local(const tu_string& varname, bool ignore_barrier) const
+	// Search the active frame for the named var; return its index
+	// in the m_local_frames stack if found.
+	// 
+	// Otherwise return -1.
+	// set_local should use "ignore_barrier=false"
+	// get_variable should use "ignore_barrier=true"
+	{
+		// Linear search sucks, but is probably fine for
+		// typical use of local vars in script.  There could
+		// be pathological breakdowns if a function has tons
+		// of locals though.  The ActionScript bytecode does
+		// not help us much by using strings to index locals.
+
+		for (int i = m_local_frames.size() - 1; i >= 0; i--)
+		{
+			const frame_slot&	slot = m_local_frames[i];
+			if (slot.m_name.length() == 0 && ignore_barrier == false)
+			{
+				// End of local frame; stop looking.
+				return -1;
+			}
+			else
+			if (slot.m_name == varname)
+			{
+				// Found it.
+				return i;
+			}
+		}
+		return -1;
+	}
+
+
+	bool	as_environment::parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const
+	// See if the given variable name is actually a sprite path
+	// followed by a variable name.  These come in the format:
+	//
+	// 	/path/to/some/sprite/:varname
+	//
+	// (or same thing, without the last '/')
+	//
+	// or
+	//	path.to.some.var
+	//
+	// If that's the format, puts the path part (no colon or
+	// trailing slash) in *path, and the varname part (no color)
+	// in *var and returns true.
+	//
+	// If no colon, returns false and leaves *path & *var alone.
+	{
+		// Search for colon.
+		int	colon_index = 0;
+		int	var_path_length = var_path.length();
+		for ( ; colon_index < var_path_length; colon_index++)
+		{
+			if (var_path[colon_index] == ':')
+			{
+				// Found it.
+				break;
+			}
+		}
+
+		if (colon_index >= var_path_length)
+		{
+			// No colon.  Is there a '.'?  Find the last
+			// one, if any.
+			for (colon_index = var_path_length - 1; colon_index >= 0; colon_index--)
+			{
+				if (var_path[colon_index] == '.'	||
+					var_path[colon_index] == '/')		// ActionScript 1.0
+				{
+					// Found it.
+					break;
+				}
+			}
+			if (colon_index < 0) return false;
+		}
+
+		// Make the subparts.
+
+		// Var.
+		*var = &var_path[colon_index + 1];
+
+		// Path.
+		if (colon_index > 0)
+		{
+			if (var_path[colon_index - 1] == '/')
+			{
+				// Trim off the extraneous trailing slash.
+				colon_index--;
+			}
+		}
+		// @@ could be better.  This whole usage of tu_string is very flabby...
+		*path = var_path;
+		path->resize(colon_index);
+
+		return true;
+	}
+
+
+	character*	as_environment::find_target(const as_value& val) const
+	// Find the sprite/movie represented by the given value.  The
+	// value might be a reference to the object itself, or a
+	// string giving a relative path name to the object.
+	{
+		if (val.get_type() == as_value::OBJECT)
+		{
+			if (val.to_object() != NULL)
+			{
+				return val.to_object()->cast_to_character();
+			}
+			else
+			{
+				return NULL;
+			}
+		}
+		else if (val.get_type() == as_value::STRING)
+		{
+			return find_target(val.to_tu_string());
+		}
+		else
+		{
+			log_error("error: invalid path; neither string nor object\n");
+			return NULL;
+		}
+	}
+
+
+	static const char*	next_slash_or_dot(const char* word)
+	// Search for next '.' or '/' character in this word.  Return
+	// a pointer to it, or to NULL if it wasn't found.
+	{
+		for (const char* p = word; *p; p++)
+		{
+			if (*p == '.' && p[1] == '.')
+			{
+				p++;
+			}
+			else if (*p == '.' || *p == '/')
+			{
+				return p;
+			}
+		}
+
+		return NULL;
+	}
+
+
+	character*	as_environment::find_target(const tu_string& path) const
+	// Find the sprite/movie referenced by the given path.
+	{
+		if (path.length() <= 0)
+		{
+			return m_target;
+		}
+
+		assert(path.length() > 0);
+
+		character*	env = m_target;
+		assert(env);
+		
+		const char*	p = path.c_str();
+		tu_string	subpart;
+
+		if (*p == '/')
+		{
+			// Absolute path.  Start at the root.
+			env = env->get_relative_target("_level0");
+			p++;
+		}
+
+		for (;;)
+		{
+			const char*	next_slash = next_slash_or_dot(p);
+			subpart = p;
+			if (next_slash == p)
+			{
+				log_error("error: invalid path '%s'\n", path.c_str());
+				break;
+			}
+			else if (next_slash)
+			{
+				// Cut off the slash and everything after it.
+				subpart.resize(next_slash - p);
+			}
+
+			env = env->get_relative_target(subpart);
+			//@@   _level0 --> root, .. --> parent, . --> this, other == character
+
+			if (env == NULL || next_slash == NULL)
+			{
+				break;
+			}
+
+			p = next_slash + 1;
+		}
+		return env;
+	}
+}

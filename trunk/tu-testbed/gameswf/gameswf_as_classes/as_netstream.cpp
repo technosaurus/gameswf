@@ -13,6 +13,7 @@
 #include "../gameswf_render.h"
 #include "../gameswf_video_base.h"
 #include "../gameswf_mutex.h"
+#include "../gameswf_function.h"
 #include "base/tu_timer.h"
 
 namespace gameswf
