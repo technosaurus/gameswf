@@ -1,3 +1,8 @@
+2007-04-22  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_value.*,
+	* gameswf/gameswf_action.cpp: a bit cleanup
+
 2007-04-21  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/a lot of files:

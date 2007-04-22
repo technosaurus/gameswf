@@ -489,9 +489,8 @@ namespace gameswf
 
 	void	as_value::set_property(const as_value& v)
 	{
-		as_value val;
 		m_setter->m_env->push(v);
-		(*m_setter)(fn_call(&val, NULL, m_setter->m_env, 1, m_setter->m_env->get_top_index()));
+		(*m_setter)(fn_call(NULL, NULL, m_setter->m_env, 1, m_setter->m_env->get_top_index()));
 		m_setter->m_env->drop(1);
 	}
 

@@ -353,11 +353,6 @@ namespace gameswf
 		return s_retval.c_str();
 	}
 
-	void	movie_load()
-	{
-		IF_VERBOSE_ACTION(log_msg("-- start movie \n"));
-	}
-
 	//
 	// Built-in objects
 	//
@@ -411,6 +406,7 @@ namespace gameswf
 	void	as_global_assetpropflags(const fn_call& fn)
 	// ASSetPropFlags function
 	{
+		return; //vv
 		const int version = fn.env->get_target()->get_movie_definition()->get_version();
 
 		// Check the arguments
@@ -419,7 +415,12 @@ namespace gameswf
 
 		// object
 		as_object_interface* const obj = fn.arg(0).to_object();
-		assert(obj != NULL);
+		
+		if (obj == NULL)
+		{
+			log_error("error: assetpropflags for NULL object\n");
+			return;
+		}
 
 		// list of child names
 		as_object_interface* props = fn.arg(1).to_object();
@@ -520,6 +521,13 @@ namespace gameswf
 		}
 	}
 
+	void	as_global_movieclip_ctor(const fn_call& fn)
+	// Constructor for ActionScript class XMLSocket
+	{
+		sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+		character* ch = new sprite_instance(empty_sprite_def, get_current_root()->get_root(), get_current_root()->get_root_movie(), 0);
+		fn.result->set_as_object_interface(ch);
+	}
 
 	void	action_init()
 	// Create/hook built-ins.
@@ -540,6 +548,7 @@ namespace gameswf
 			s_global->set_member("Object", as_value(as_global_object_ctor));
 			s_global->set_member("Sound", as_value(as_global_sound_ctor));
 			s_global->set_member("Array", as_value(as_global_array_ctor));
+			s_global->set_member("MovieClip", as_value(as_global_movieclip_ctor));
 
 			s_global->set_member("TextFormat", as_value(textformat_new));
 
@@ -563,10 +572,9 @@ namespace gameswf
 			s_global->set_member("math", math_init());
 			s_global->set_member("Key", key_init());
 
-			// builtins functions
+			// global builtins functions
 			s_global->set_member("setInterval",  as_value(as_global_setinterval));
 			s_global->set_member("clearInterval",  as_value(as_global_clearinterval));
-
 		}
 	}
 
@@ -1732,8 +1740,9 @@ namespace gameswf
 					{
 						obj->set_member(env->top(1).to_tu_string(), env->top(0));
 						IF_VERBOSE_ACTION(
-							log_msg("-- set_member %s.%s=%s\n",
-								env->top(2).to_tu_string().c_str(),
+							log_msg("-- set_member [%08X].%s=%s\n",
+//								env->top(2).to_tu_string().c_str(),
+								obj,
 								env->top(1).to_tu_string().c_str(),
 								env->top(0).to_tu_string().c_str()));
 					}
@@ -2356,6 +2365,7 @@ namespace gameswf
 					env->drop(1);
 					if (test)
 					{
+						IF_VERBOSE_ACTION(log_msg("-------------- branch is done\n"));
 						next_pc += offset;
 
 						if (next_pc > stop_pc)
@@ -2364,6 +2374,10 @@ namespace gameswf
 								  next_pc,
 								  stop_pc);
 						}
+					}
+					else
+					{
+						IF_VERBOSE_ACTION(log_msg("-------------- no branch\n"));
 					}
 					break;
 				}

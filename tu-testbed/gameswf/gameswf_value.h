@@ -213,7 +213,7 @@ namespace gameswf
 
 		void	operator=(const as_value& v)
 		{
-			if (m_type == PROPERTY) set_property(v);
+			if (m_type == PROPERTY && v.m_type != PROPERTY) set_property(v);
 			else if (v.m_type == UNDEFINED) set_undefined();
 			else if (v.m_type == NULLTYPE) set_null();
 			else if (v.m_type == BOOLEAN) set_bool(v.m_boolean_value);
