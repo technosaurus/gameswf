@@ -1,0 +1,129 @@
+// gameswf_cursor.cpp	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
+// Used code from SDL help
+
+#include "gameswf_cursor.h"
+#include <assert.h>
+
+namespace gameswf
+{
+
+	// XPM 
+	static const char *image[] =
+	{
+		// width height num_colors chars_per_pixel
+		"    32    32        3            1",
+		// colors
+		"X c #000000",
+		". c #ffffff",
+		"  c None",
+		// pixels
+		"X                               ",
+		"XX                              ",
+		"X.X                             ",
+		"X..X                            ",
+		"X...X                           ",
+		"X....X                          ",
+		"X.....X                         ",
+		"X......X                        ",
+		"X.......X                       ",
+		"X........X                      ",
+		"X.....XXXXX                     ",
+		"X..X..X                         ",
+		"X.X X..X                        ",
+		"XX  X..X                        ",
+		"X    X..X                       ",
+		"     X..X                       ",
+		"      X..X                      ",
+		"      X..X                      ",
+		"       XX                       ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"                                ",
+		"0,0"
+	};
+
+
+	static SDL_Cursor* s_system_cursor = NULL;
+	static SDL_Cursor* s_active_cursor = NULL;
+
+	void init_cursor()
+	{
+		// store system cursor
+		s_system_cursor = SDL_GetCursor();
+
+		int i, row, col;
+		Uint8 data[4 * 32];
+		Uint8 mask[4 * 32];
+		int hot_x, hot_y;
+
+		i = -1;
+		for (row=0; row<32; ++row)
+		{
+			for (col=0; col<32; ++col)
+			{
+				if (col % 8)
+				{
+					data[i] <<= 1;
+					mask[i] <<= 1;
+				} 
+				else
+				{
+					++i;
+					data[i] = mask[i] = 0;
+				}
+
+				switch (image[4 + row][col])
+				{
+					case 'X':
+						// black
+						data[i] |= 0x01;
+						mask[i] |= 0x01;
+						break;
+
+					case '.':
+						// white
+						mask[i] |= 0x01;
+						break;
+
+					case ' ':
+						// transparent
+						break;
+				}
+			}
+		}
+
+		sscanf(image[4 + row], "%d,%d", &hot_x, &hot_y);
+		s_active_cursor = SDL_CreateCursor(data, mask, 32, 32, hot_x, hot_y);
+	}
+
+	void set_cursor(cursor_type cursor)
+	{
+		switch (cursor)
+		{
+			case SYSTEM_CURSOR:
+				 SDL_SetCursor(s_system_cursor);
+				 break;
+
+			case ACTIVE_CURSOR:
+				 SDL_SetCursor(s_active_cursor);
+				 break;
+
+			default:
+				assert(0);
+		}
+	}
+}

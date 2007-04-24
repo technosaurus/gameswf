@@ -206,25 +206,28 @@ namespace gameswf
 		return m_play_state; 
 	}
 
+	// Functions that qualify as mouse event handlers.
+	static const tu_stringi FN_NAMES[] =
+	{
+		"onKeyPress",
+		"onRelease",
+		"onDragOver",
+		"onDragOut",
+		"onPress",
+		"onReleaseOutside",
+		"onRollout",
+		"onRollover",
+	};
+
 	bool sprite_instance::can_handle_mouse_event()
 		// Return true if we have any mouse event handlers.
 	{
-		// We should cache this!
-		as_value dummy;
 
-		// Functions that qualify as mouse event handlers.
-		const char* FN_NAMES[] = {
-			"onKeyPress",
-			"onRelease",
-			"onDragOver",
-			"onDragOut",
-			"onPress",
-			"onReleaseOutside",
-			"onRollout",
-			"onRollover",
-		};
-		for (int i = 0; i < ARRAYSIZE(FN_NAMES); i++) {
-			if (get_member(FN_NAMES[i], &dummy)) {
+		as_value dummy;
+		for (int i = 0; i < ARRAYSIZE(FN_NAMES); i++)
+		{
+			if (get_member(FN_NAMES[i], &dummy)) 
+			{
 				return true;
 			}
 		}
@@ -239,8 +242,10 @@ namespace gameswf
 			event_id::DRAG_OVER,
 			event_id::DRAG_OUT,
 		};
-		{for (int i = 0; i < ARRAYSIZE(EH_IDS); i++) {
-			if (get_event_handler(EH_IDS[i], &dummy)) {
+		{for (int i = 0; i < ARRAYSIZE(EH_IDS); i++)
+		{
+			if (get_event_handler(EH_IDS[i], &dummy))
+			{
 				return true;
 			}
 		}}

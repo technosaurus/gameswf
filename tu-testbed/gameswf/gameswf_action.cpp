@@ -14,6 +14,7 @@
 #include "gameswf_timers.h"
 #include "gameswf_sprite.h"
 #include "gameswf_function.h"
+#include "gameswf_cursor.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 
@@ -536,6 +537,8 @@ namespace gameswf
 		{
 			s_inited = true;
 			s_start_time = tu_timer::get_ticks();
+
+			init_cursor();
 
 			// @@ s_global should really be a
 			// client-visible player object, which
