@@ -60,11 +60,8 @@ namespace gameswf
 	static SDL_Cursor* s_system_cursor = NULL;
 	static SDL_Cursor* s_active_cursor = NULL;
 
-	void init_cursor()
+	void create_cursor()
 	{
-		// store system cursor
-		s_system_cursor = SDL_GetCursor();
-
 		int i, row, col;
 		Uint8 data[4 * 32];
 		Uint8 mask[4 * 32];
@@ -106,24 +103,44 @@ namespace gameswf
 			}
 		}
 
+		// store system cursor
+		s_system_cursor = SDL_GetCursor();
+
 		sscanf(image[4 + row], "%d,%d", &hot_x, &hot_y);
 		s_active_cursor = SDL_CreateCursor(data, mask, 32, 32, hot_x, hot_y);
 	}
 
+	void clear_cursor()
+	{
+		if (s_system_cursor)
+		{
+			SDL_SetCursor(s_system_cursor);
+			if (s_active_cursor)
+			{
+				SDL_FreeCursor(s_active_cursor);
+				s_active_cursor = NULL;
+			}
+		}
+		s_system_cursor = NULL;
+	}
+
 	void set_cursor(cursor_type cursor)
 	{
-		switch (cursor)
+		if (s_system_cursor && s_active_cursor)
 		{
-			case SYSTEM_CURSOR:
-				 SDL_SetCursor(s_system_cursor);
-				 break;
+			switch (cursor)
+			{
+				case SYSTEM_CURSOR:
+					SDL_SetCursor(s_system_cursor);
+					break;
 
-			case ACTIVE_CURSOR:
-				 SDL_SetCursor(s_active_cursor);
-				 break;
+				case ACTIVE_CURSOR:
+					SDL_SetCursor(s_active_cursor);
+					break;
 
-			default:
-				assert(0);
+				default:
+					assert(0);
+			}
 		}
 	}
 }

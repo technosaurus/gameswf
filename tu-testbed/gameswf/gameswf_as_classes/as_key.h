@@ -3,7 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// Action Script Array implementation code for the gameswf SWF player library.
+// Action Script Key implementation code for the gameswf SWF player library.
 
 
 #ifndef GAMESWF_AS_KEY_H
