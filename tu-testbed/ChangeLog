@@ -1,5 +1,9 @@
 2007-04-24  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_cursor.cpp: updated cursor (arrow ==> hand)
+
+2007-04-24  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.cpp,
 	* gameswf/gameswf_root.cpp,
 	* gameswf/gameswf_sprite.cpp,
