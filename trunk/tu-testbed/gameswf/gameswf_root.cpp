@@ -14,6 +14,7 @@
 #include "gameswf_render.h"
 #include "gameswf_root.h"
 #include "gameswf_mutex.h"
+#include "gameswf_cursor.h"
 #include "base/tu_random.h"
 
 namespace gameswf
@@ -57,6 +58,23 @@ namespace gameswf
 		{
 			smart_ptr<character>	active_entity = ms->m_active_entity;
 			smart_ptr<character>	topmost_entity = ms->m_topmost_entity;
+
+			// set cursor as passive/active object
+			if (active_entity != NULL)
+			{
+				if (active_entity->can_handle_mouse_event())
+				{
+					set_cursor(ACTIVE_CURSOR);
+				}
+				else
+				{
+					set_cursor(SYSTEM_CURSOR);
+				}
+			}
+			else
+			{
+				set_cursor(SYSTEM_CURSOR);
+			}
 
 			if (ms->m_mouse_button_state_last == 1)
 			{
