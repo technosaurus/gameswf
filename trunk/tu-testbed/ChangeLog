@@ -1,5 +1,10 @@
 2007-04-24  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_as_classes/as_color.cpp: added getTransform() & setTransform()
+	* gameswf/gameswf_cursor.cpp: updated a bit
+
+2007-04-24  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_action.cpp,
 	* gameswf/gameswf_cursor.*: added clear_cursor()
 

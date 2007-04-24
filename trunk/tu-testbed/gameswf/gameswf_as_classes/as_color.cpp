@@ -57,11 +57,94 @@ namespace gameswf
 		}		
 	}
 
+	void	as_color_gettransform(const fn_call& fn)
+	{
+		as_color* obj = (as_color*) fn.this_ptr;
+		assert(obj);
+		assert(obj->m_target != NULL);
+
+		cxform	cx = obj->m_target->get_cxform();
+		Uint8 r = (Uint8) ceil(cx.m_[0][0] * 255.0f);
+		Uint8 g = (Uint8) ceil(cx.m_[1][0] * 255.0f);
+		Uint8 b = (Uint8) ceil(cx.m_[2][0] * 255.0f);
+		Uint8 a = (Uint8) ceil(cx.m_[3][0] * 255.0f);
+
+		as_object* tobj = new as_object();
+		tobj->set_member("ra", r / 255.0f * 100.0f);	// percent (-100..100)
+		tobj->set_member("rb", r);	// value	(-255..255)
+		tobj->set_member("ga", g / 255.0f * 100.0f);	// percent (-100..100)
+		tobj->set_member("gb", g);	// value	(-255..255)
+		tobj->set_member("ba", b / 255.0f * 100.0f);	// percent (-100..100)
+		tobj->set_member("bb", b);	// value	(-255..255)
+		tobj->set_member("aa", a / 255.0f * 100.0f);	// percent (-100..100)
+		tobj->set_member("ab", a);	// value	(-255..255)
+		*fn.result = tobj;
+	}
+
+	void	as_color_settransform(const fn_call& fn)
+	{
+		if (fn.nargs == 1)
+		{
+			as_color* obj = (as_color*) fn.this_ptr;
+			assert(obj);
+			assert(obj->m_target != NULL);
+
+			as_object* tobj = (as_object*) fn.arg(0).to_object();
+			if (tobj)
+			{
+				cxform	cx = obj->m_target->get_cxform();
+				as_value v;
+
+				if (tobj->get_member("ra", &v))
+				{
+					cx.m_[0][0] *= float(v.to_number()) / 100.0f;
+				}
+				else
+				if (tobj->get_member("rb", &v))
+				{
+					cx.m_[0][0] = float(v.to_number()) / 255.0f;
+				}
+
+				if (tobj->get_member("ga", &v))
+				{
+					cx.m_[1][0] *= float(v.to_number()) / 100.0f;
+				}
+				else
+				if (tobj->get_member("gb", &v))
+				{
+					cx.m_[1][0] = float(v.to_number()) / 255.0f;
+				}
+
+				if (tobj->get_member("ba", &v))
+				{
+					cx.m_[2][0] *= float(v.to_number()) / 100.0f;
+				}
+				else
+				if (tobj->get_member("bb", &v))
+				{
+					cx.m_[2][0] = float(v.to_number()) / 255.0f;
+				}
+
+				if (tobj->get_member("aa", &v))
+				{
+					cx.m_[3][0] *= float(v.to_number()) / 100.0f;
+				}
+				else
+				if (tobj->get_member("ab", &v))
+				{
+					cx.m_[3][0] = float(v.to_number()) / 255.0f;
+				}
+
+				obj->m_target->set_cxform(cx);
+			}
+		}		
+	}
+
 	as_color::as_color()
 	{
 		set_member("getRGB", &as_color_getRGB);
 		set_member("setRGB", &as_color_setRGB);
-//		set_member("getTransform", &as_array_tostring);
-//		set_member("setTransform", &as_array_tostring);
+		set_member("getTransform", &as_color_gettransform);
+		set_member("setTransform", &as_color_settransform);
 	}
 };
