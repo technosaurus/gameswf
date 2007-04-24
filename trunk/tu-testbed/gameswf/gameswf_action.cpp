@@ -538,7 +538,7 @@ namespace gameswf
 			s_inited = true;
 			s_start_time = tu_timer::get_ticks();
 
-			init_cursor();
+			create_cursor();
 
 			// @@ s_global should really be a
 			// client-visible player object, which
@@ -590,6 +590,7 @@ namespace gameswf
 
 			s_global->clear();
 			s_global = NULL;
+			clear_cursor();
 		}
 	}
 

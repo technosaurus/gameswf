@@ -20,7 +20,8 @@ namespace gameswf
 		ACTIVE_CURSOR
 	};
 
-	void init_cursor();
+	void create_cursor();
+	void clear_cursor();
 	void set_cursor(cursor_type cursor);
 }
 
