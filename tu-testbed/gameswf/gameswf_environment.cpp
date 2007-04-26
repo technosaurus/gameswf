@@ -9,6 +9,7 @@
 #include "gameswf_sprite.h"
 #include "gameswf_log.h"
 #include "gameswf_function.h"
+#include "gameswf_render.h"
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -20,25 +21,22 @@ namespace gameswf
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, as_value& target_value)
 	{
-		character* mtarget = find_target(target_value);
-		if (mtarget == NULL)
+		character* target = find_target(target_value);
+		if (target == NULL)
 		{
-			log_error("load_file: target %s is't found\n", target_value.to_string());
+			IF_VERBOSE_ACTION(("load_file: target %s is't found\n", target_value.to_string()));
 			return NULL;
 		}
 
-		sprite_instance* target = mtarget->cast_to_sprite();
-		assert(target);
-
 		movie_root* mroot = target->get_root();
 		character* parent = target->get_parent();
-		sprite_instance* new_movie = NULL;
+		character* new_ch = NULL;
 
 		// is unloadMovie() ?
 		if (strlen(url) == 0)
 		{
 			sprite_definition* empty_sprite_def = new sprite_definition(NULL);
-			new_movie = new sprite_instance(empty_sprite_def, mroot, parent, 0);
+			new_ch = new sprite_instance(empty_sprite_def, mroot, parent, 0);
 		}
 		else
 		{
@@ -50,29 +48,78 @@ namespace gameswf
 			}
 			infile += url;
 
-			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
-			if (md == NULL)
+			if (infile.size() < 4)	// need at least the file extension 
 			{
-				log_error("can't create movie from %s\n", infile.c_str());
+				IF_VERBOSE_ACTION(("loadMovie: invalid path '%s'\n", infile.c_str()));
 				return NULL;
 			}
 
-			// case loadMovie("my.swf", _root)
-			if (target == target->get_root_movie())
+			if (strncmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
 			{
-				movie_interface* new_inst = create_library_movie_inst_sub(md);			
-				assert(new_inst);
-				save_extern_movie(new_inst);
+				movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
+				if (md == NULL)
+				{
+					IF_VERBOSE_ACTION(("can't create movie from %s\n", infile.c_str()));
+					return NULL;
+				}
 
-				new_movie = (sprite_instance*) new_inst->get_root_movie();
-				set_current_root(new_inst);
-				new_movie->on_event(event_id::LOAD);
+				// case loadMovie("my.swf", _root)
+				if (target == target->get_root_movie())
+				{
+					movie_interface* new_inst = create_library_movie_inst_sub(md);			
+					assert(new_inst);
+					save_extern_movie(new_inst);
 
-				return new_movie;
+					new_ch = (sprite_instance*) new_inst->get_root_movie();
+					set_current_root(new_inst);
+					new_ch->on_event(event_id::LOAD);
+
+					return new_ch;
+				}
+
+				// case loadMovie("my.swf", container)
+				new_ch = new sprite_instance(md, mroot, parent, -1);
 			}
+			else
+			if (strncmp(infile.c_str() + infile.size() - 4, ".jpg", 4) == 0)
+			{
+#if TU_CONFIG_LINK_TO_JPEGLIB == 0
+				log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
+				return NULL;
+#else
 
-			// case loadMovie("my.swf", container)
-			new_movie = new sprite_instance(md, mroot, parent, -1);
+				if (target == target->get_root_movie())
+				{
+					log_error("gameswf can't load jpg on _root\n");
+					return NULL;
+				}
+
+				image::rgb* im = image::read_jpeg(infile.c_str());
+				if (im == NULL)
+				{
+					return NULL;
+				}
+
+				bitmap_info* bi = render::create_bitmap_info_rgb(im);
+				delete im;
+
+				bitmap_character*	jpg_def = new bitmap_character(bi);
+				new_ch = jpg_def->create_character_instance(parent, 1);
+
+#endif
+
+			}
+			else
+			if (strncmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
+			// loads 3DMAX file
+			// TODO
+			{
+			}
+			else
+			{
+				IF_VERBOSE_ACTION(("loadMovie: can't load '%s'\n", infile.c_str()));
+				return NULL;
+			}
 		}
 
 		const char* name = target->get_name();
@@ -85,11 +132,15 @@ namespace gameswf
 		Uint16 clip_depth = target->get_clip_depth();
 
 		assert(parent != NULL);
-		new_movie->set_parent(parent);
-		new_movie->set_root(mroot);
+		new_ch->set_parent(parent);
+
+		if (new_ch->cast_to_sprite())
+		{
+			new_ch->cast_to_sprite()->set_root(mroot);
+		}
 
 		parent->replace_display_object(
-			(character*) new_movie,
+			(character*) new_ch,
 			name,
 			depth,
 			use_cxform,
@@ -99,7 +150,7 @@ namespace gameswf
 			ratio,
 			clip_depth);
 
-		return new_movie;
+		return new_ch;
 	}
 
 
@@ -121,7 +172,7 @@ namespace gameswf
 			}
 			else
 			{
-				log_error("find_target(\"%s\") failed\n", path.c_str());
+				IF_VERBOSE_ACTION(("find_target(\"%s\") failed\n", path.c_str()));
 				return as_value();
 			}
 		}
@@ -229,7 +280,7 @@ namespace gameswf
 				return;
 			}
 		}
-		log_error("can't set target %s\n", target.to_string());
+		IF_VERBOSE_ACTION(("can't set target %s\n", target.to_string()));
 	}
 
 	void	as_environment::set_variable(

@@ -786,11 +786,14 @@ namespace gameswf
 		// loop_count == 0 means play the sound once (1 means play it twice, etc)
 		virtual void	play_sound(int sound_handle, int loop_count /* , volume, pan, etc? */) = 0;
 
+		virtual void	set_volume(int sound_handle, int volume) = 0;
+
 		// Stop the specified sound if it's playing.
 		// (Normally a full-featured sound API would take a
 		// handle specifying the *instance* of a playing
 		// sample, but SWF is not expressive that way.)
 		virtual void	stop_sound(int sound_handle) = 0;
+		virtual void	stop_all_sounds() = 0;
 
 		// gameswf calls this when it's done with a particular sound.
 		virtual void	delete_sound(int sound_handle) = 0;

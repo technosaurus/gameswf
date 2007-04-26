@@ -16,6 +16,7 @@
 #include "gameswf_log.h"
 #include "gameswf_movie_def.h"
 #include "gameswf_character.h"
+#include "gameswf_render.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -149,42 +150,42 @@ namespace gameswf
 		virtual gameswf::bitmap_info*	get_bitmap_info() = 0;
 	};
 
-#if 1
 	// Bitmap character
 	struct bitmap_character : public bitmap_character_def
 	{
-		bitmap_character(bitmap_info* bi)
-			:
-		m_bitmap_info(bi)
+		bitmap_character(bitmap_info* bi) :	m_bitmap_info(bi)
 		{
 		}
 
-		//		bitmap_character(image::rgb* image)
-		//		{
-		//			assert(image != 0);
+		virtual void	display(character* ch)
+		{
+			rect coords;
+			coords.m_x_min  = 0.0f;
+			coords.m_x_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
+			coords.m_y_min  = 0.0f;
+			coords.m_y_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
 
-		//			// Create our bitmap info, from our image.
-		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
-		//		}
+			// show whole picture
+			rect uv_coords;
+			uv_coords.m_x_min  = 0.0f;
+			uv_coords.m_x_max  = 1.0f;
+			uv_coords.m_y_min  = 0.0f;
+			uv_coords.m_y_max  = 1.0f;
 
-		//		bitmap_character(image::rgba* image)
-		//		{
-		//			assert(image != 0);
-
-		//			// Create our bitmap info, from our image.
-		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
-		//		}
+			cxform cx = ch->get_world_cxform();
+			rgba color = cx.transform(gameswf::rgba());
+			matrix m = ch->get_world_matrix();
+			render::draw_bitmap(m, m_bitmap_info.get_ptr(), coords,	uv_coords, color);
+		}
 
 		gameswf::bitmap_info*	get_bitmap_info()
 		{
 			return m_bitmap_info.get_ptr();
 		}
 
-	private:
-		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
+		private:
+			smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
 	};
-
-#endif
 
 	// Execute tags include things that control the operation of
 	// the movie.  Essentially, these are the events associated
