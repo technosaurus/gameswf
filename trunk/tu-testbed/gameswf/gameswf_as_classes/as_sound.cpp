@@ -13,11 +13,10 @@ namespace gameswf
 
 	void	sound_start(const fn_call& fn)
 	{
-		IF_VERBOSE_ACTION(log_msg("-- start sound \n"));
 		sound_handler* s = get_sound_handler();
 		if (s != NULL)
 		{
-			as_sound*	so = (as_sound*) (as_object*) fn.this_ptr;
+			as_sound*	so = (as_sound*) fn.this_ptr;
 			assert(so);
 			s->play_sound(so->sound_id, 0);
 		}
@@ -26,11 +25,10 @@ namespace gameswf
 
 	void	sound_stop(const fn_call& fn)
 	{
-		IF_VERBOSE_ACTION(log_msg("-- stop sound \n"));
 		sound_handler* s = get_sound_handler();
 		if (s != NULL)
 		{
-			as_sound*	so = (as_sound*) (as_object*) fn.this_ptr;
+			as_sound*	so = (as_sound*) fn.this_ptr;
 			assert(so);
 			s->stop_sound(so->sound_id);
 		}
@@ -38,14 +36,13 @@ namespace gameswf
 
 	void	sound_attach(const fn_call& fn)
 	{
-		IF_VERBOSE_ACTION(log_msg("-- attach sound \n"));
 		if (fn.nargs < 1)
 		{
 			log_error("attach sound needs one argument\n");
 			return;
 		}
 
-		as_sound*	so = (as_sound*) (as_object*) fn.this_ptr;
+		as_sound*	so = (as_sound*) fn.this_ptr;
 		assert(so);
 
 		so->sound = fn.arg(0).to_tu_string();
@@ -79,6 +76,29 @@ namespace gameswf
 		so->sound_id = si;
 	}
 
+	void	sound_volume(const fn_call& fn)
+	{
+		if (fn.nargs < 1)
+		{
+			log_error("set volume of sound needs one argument\n");
+			return;
+		}
+		
+		int volume = (int) fn.arg(0).to_number();
+
+		// sanity check
+		if (volume >= 0 && volume <=100)
+		{
+			sound_handler* s = get_sound_handler();
+			if (s != NULL)
+			{
+				as_sound*	so = (as_sound*) fn.this_ptr;
+				assert(so);
+				s->set_volume(so->sound_id, volume);
+			}
+		}
+	}
+
 	void	as_global_sound_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Sound.
 	{
@@ -88,6 +108,7 @@ namespace gameswf
 		sound_obj->set_member("attachSound", &sound_attach);
 		sound_obj->set_member("start", &sound_start);
 		sound_obj->set_member("stop", &sound_stop);
+		sound_obj->set_member("setVolume", &sound_volume);
 
 		fn.result->set_as_object_interface(sound_obj.get_ptr());
 	}

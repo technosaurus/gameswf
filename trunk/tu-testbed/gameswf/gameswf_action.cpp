@@ -972,7 +972,18 @@ namespace gameswf
 					break;
 
 				case 0x08:	// toggle quality
+					// @@ TODO
+					log_error("todo opcode: %02X\n", action_id);
+					break;
+
 				case 0x09:	// stop sounds
+					{
+						sound_handler* s = get_sound_handler();
+						if (s != NULL)
+						{
+							s->stop_all_sounds();
+						}
+					}
 					break;
 
 				case 0x0A:	// add
@@ -1445,11 +1456,8 @@ namespace gameswf
 					double	x = env->pop().to_number();
 					if (y != 0)
 					{
-//						env->top(1).set_double(fmod(env->top(1).to_bool() && env->top(0).to_bool());
-//						env->drop(1);
 						result = fmod(x, y);
 					}
-//					log_error("modulo x=%f, y=%f, z=%f\n",x,y,result.to_number());
 					env->push(result);
 					break;
 				}

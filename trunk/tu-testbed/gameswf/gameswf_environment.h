@@ -13,6 +13,7 @@
 namespace gameswf
 {
 	struct character;
+	struct sprite_instance;
 
 	//
 	// with_stack_entry
@@ -118,7 +119,8 @@ namespace gameswf
 		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
 		character*	find_target(const tu_string& path) const;
 		character*	find_target(const as_value& val) const;
-		character*	load_file(const char* url, as_value& target);
+
+		character* load_file(const char* url, as_value& target);
 	};
 
 
