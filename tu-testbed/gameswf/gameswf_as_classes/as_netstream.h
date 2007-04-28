@@ -10,13 +10,13 @@
 #include "config.h"
 #endif
 
-#ifdef USE_FFMPEG
-
-#include <ffmpeg/avformat.h>
-
 #include "base/tu_queue.h"
 #include "../gameswf_mutex.h"
 #include "../gameswf_video_impl.h"
+
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
+
+#include <ffmpeg/avformat.h>
 
 namespace gameswf
 {

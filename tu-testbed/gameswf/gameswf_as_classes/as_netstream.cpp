@@ -7,14 +7,14 @@
 #include "config.h"
 #endif
 
-#ifdef USE_FFMPEG
-
 #include "../gameswf_as_classes/as_netstream.h"
 #include "../gameswf_render.h"
 #include "../gameswf_video_base.h"
 #include "../gameswf_mutex.h"
 #include "../gameswf_function.h"
 #include "base/tu_timer.h"
+
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 
 namespace gameswf
 {

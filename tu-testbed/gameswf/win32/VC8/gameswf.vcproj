@@ -141,7 +141,7 @@
 				Optimization="0"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG;USE_STACKWALKER"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_STACKWALKER"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -166,7 +166,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib wms_random.obj libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib glew32.lib WinMM.lib ws2_32.lib libxml2.lib"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib wms_random.obj libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib glew32.lib WinMM.lib ws2_32.lib libxml2.lib lib3ds-130sd.lib"
 				OutputFile=".\swfvc___Win32_Debug/swfvc.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
@@ -212,6 +212,10 @@
 			Name="Source Files"
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
+			<File
+				RelativePath="..\..\gameswf_3ds.cpp"
+				>
+			</File>
 			<File
 				RelativePath="..\..\gameswf_action.cpp"
 				>
@@ -363,6 +367,10 @@
 			>
 			<File
 				RelativePath="..\..\gameswf.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_3ds.h"
 				>
 			</File>
 			<File

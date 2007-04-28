@@ -6,7 +6,7 @@
 // Very simple, working and convenient MYSQL extension
 // for the gameswf SWF player library.
 
-#ifdef USE_MYSQL
+#if TU_CONFIG_LINK_TO_MYSQL == 1
 
 #include <gameswf/gameswf_action.h>
 #include "../gameswf_as_classes/as_table.h"
@@ -245,4 +245,4 @@ namespace gameswf
 
 #else
 
-#endif	// USE_MYSQL
+#endif	// #if TU_CONFIG_LINK_TO_MYSQL == 1
