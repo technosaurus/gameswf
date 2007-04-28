@@ -10,6 +10,7 @@
 #include "gameswf_log.h"
 #include "gameswf_function.h"
 #include "gameswf_render.h"
+#include "gameswf_3ds.h"
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -112,8 +113,22 @@ namespace gameswf
 			else
 			if (strncmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
 			// loads 3DMAX file
-			// TODO
 			{
+#if TU_CONFIG_LINK_TO_LIB3DS == 0
+				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
+				return NULL;
+#else
+
+				if (target == target->get_root_movie())
+				{
+					log_error("gameswf can't load 3DS file on _root\n");
+					return NULL;
+				}
+
+				x3ds_definition* x3ds = new x3ds_definition(infile.c_str());
+				new_ch = x3ds->create_character_instance(parent, 1);
+#endif
+
 			}
 			else
 			{

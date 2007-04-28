@@ -8,7 +8,7 @@
 #ifndef GAMESWF_AS_DB_H
 #define GAMESWF_AS_DB_H
 
-#ifdef USE_MYSQL
+#if TU_CONFIG_LINK_TO_MYSQL == 1
 
 #include <mysql/mysql.h>
 #include "../gameswf_as_classes/as_table.h"

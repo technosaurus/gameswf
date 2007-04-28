@@ -6,10 +6,6 @@
 #ifndef SOUND_HANDLER_SDL_H
 #define SOUND_HANDLER_SDL_H
 
-#ifdef USE_FFMPEG
-#include <ffmpeg/avformat.h>
-#endif
-
 #include <SDL_audio.h>
 #include <SDL_thread.h>
 
@@ -18,6 +14,10 @@
 #include "base/smart_ptr.h"
 #include "gameswf_mutex.h"
 #include "gameswf_log.h"
+
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
+#include <ffmpeg/avformat.h>
+#endif
 
 // Used to hold the info about active sounds
 
@@ -37,7 +37,7 @@ namespace gameswf
 		int m_defvolume;
 		tu_mutex* m_mutex;
 
-#ifdef USE_FFMPEG
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 		AVCodec* m_MP3_codec;
 #endif
 
@@ -137,7 +137,7 @@ namespace gameswf
 		m_handler = (SDL_sound_handler*) get_sound_handler();
 		assert(m_handler);
 		
-#ifdef USE_FFMPEG
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 		if (m_parent->m_format == sound_handler::FORMAT_MP3)
 		{
 			// Init MP3 the parser
@@ -165,7 +165,7 @@ namespace gameswf
 		// memory was allocated in decode()
 		free(m_data);
 
-#ifdef USE_FFMPEG
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 		if (m_parent->m_format == sound_handler::FORMAT_MP3)
 		{
 			avcodec_close(m_cc);
@@ -234,7 +234,7 @@ namespace gameswf
 
 					case sound_handler::FORMAT_MP3:
 					{
-		#ifdef USE_FFMPEG
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 						int asize = (AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2;
 
 						int bufsize = 2 * asize;
@@ -325,7 +325,7 @@ namespace gameswf
 		sound* m_parent;
 		int m_decoded_size;
 
-#ifdef USE_FFMPEG
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 		AVCodecContext *m_cc;
 		AVCodecParserContext* m_parser;
 #endif

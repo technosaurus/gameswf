@@ -37,7 +37,7 @@ namespace gameswf
 			return;
 		}
 
-#ifdef USE_FFMPEG
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 		avcodec_init();
 		avcodec_register_all();
 		m_MP3_codec = avcodec_find_decoder(CODEC_ID_MP3);
@@ -246,7 +246,7 @@ namespace gameswf
 			return;
 		}
 
-#ifdef USE_FFMPEG
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
 		m_playlist.push_back(new active_sound(this, loops));
 		SDL_PauseAudio(0);
 #else
