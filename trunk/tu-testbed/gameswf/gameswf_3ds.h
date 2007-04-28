@@ -25,11 +25,16 @@ namespace gameswf
 
 		virtual character* create_character_instance(character* parent, int id);
 		virtual void	display(character* inst);
+	
+		Lib3dsCamera* create_camera();
+
+		Lib3dsFile* m_file;
 
 	private:
 
-		Lib3dsFile* m_file;
+		Lib3dsVector m_bmin, m_bmax;
 		float	m_sx, m_sy, m_sz; // bounding box dimensions
+		float	m_cx, m_cy, m_cz; // bounding box center
 
 		void render_node(Lib3dsNode* node);
 	};
@@ -40,10 +45,16 @@ namespace gameswf
 		~x3ds_instance();
 
 		virtual void	display();
+		virtual void	advance(float delta_time);
+		virtual bool	get_member(const tu_stringi& name, as_value* val);
+		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+
+		Lib3dsCamera* m_camera;
 
 		private:
 		
 		smart_ptr<x3ds_definition>	m_def;
+		Lib3dsFloat m_current_frame;
 
 	};
 
