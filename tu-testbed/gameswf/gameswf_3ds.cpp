@@ -5,6 +5,8 @@
 
 // lib3ds interface
 
+#include "base/tu_config.h"
+
 #if TU_CONFIG_LINK_TO_LIB3DS == 1
 
 #include <lib3ds/file.h>
@@ -17,7 +19,6 @@
 #include <lib3ds/light.h>
 
 #include "gameswf_3ds.h"
-#include "base/tu_config.h"
 
 namespace gameswf
 {
@@ -34,11 +35,15 @@ namespace gameswf
 			return;
 		}
 
-		Lib3dsVector bmin, bmax;
-		lib3ds_file_bounding_box(m_file, bmin, bmax);
-		m_sx = bmax[0] - bmin[0];
-		m_sy = bmax[1] - bmin[1];
-		m_sz = bmax[2] - bmin[2];
+		lib3ds_file_bounding_box(m_file, m_bmin, m_bmax);
+		m_sx = m_bmax[0] - m_bmin[0];
+		m_sy = m_bmax[1] - m_bmin[1];
+		m_sz = m_bmax[2] - m_bmin[2];
+
+		// used in create_camera()
+		m_cx = (m_bmin[0] + m_bmax[0]) / 2;
+		m_cy = (m_bmin[1] + m_bmax[1]) / 2;
+		m_cz = (m_bmin[2] + m_bmax[2]) / 2;
 
 		lib3ds_file_eval(m_file, 0.);
 	}
@@ -109,6 +114,12 @@ namespace gameswf
 		glEnable(GL_POLYGON_SMOOTH);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		//		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_file->ambient);
+
+		// apply camera matrix
+		x3ds_instance* inst = (x3ds_instance*) ch;
+		Lib3dsMatrix mc;
+		lib3ds_matrix_camera(mc, inst->m_camera->position, inst->m_camera->target, inst->m_camera->roll);
+		glMultMatrixf(&mc[0][0]);
 
 		// draw 3D object
 		for (Lib3dsNode* p = m_file->nodes; p != 0; p = p->next)
@@ -239,15 +250,47 @@ namespace gameswf
 		return ch;
 	}
 
+	Lib3dsCamera* x3ds_definition::create_camera()
+	{
+		if (m_file->cameras == NULL)
+		{
+			// Add camera
+			Lib3dsCamera *camera = lib3ds_camera_new("Camera_X");
+			camera->target[0] = m_cx;
+			camera->target[1] = m_cy;
+			camera->target[2] = m_cz;
+			memcpy(camera->position, camera->target, sizeof(camera->position));
+			camera->position[0] = m_bmax[0] + 1.5 * fmax(m_sy, m_sz);
+			camera->near_range = ( camera->position[0] - m_bmax[0] ) * .5;
+			camera->far_range = ( camera->position[0] - m_bmin[0] ) * 2;
+			lib3ds_file_insert_camera(m_file, camera);
+			return camera;
+		}
+
+		assert(0);
+		return NULL;
+
+	}
+
+	//
+	// x3ds_instance
+	//
+
 	x3ds_instance::x3ds_instance(x3ds_definition* def, character* parent, int id)	:
 		character(parent, id),
-		m_def(def)
+		m_def(def),
+		m_current_frame(0.0f)
 	{
 		assert(m_def != NULL);
+		m_camera = m_def->create_camera();
 	}
 
 	x3ds_instance::~x3ds_instance()
 	{
+		if (m_camera)
+		{
+//			lib3ds_camera_free(m_camera);
+		}
 	}
 
 	void	x3ds_instance::display()
@@ -255,8 +298,45 @@ namespace gameswf
 		m_def->display(this);
 	}
 
-} // end of namespace gameswf
+	void	x3ds_instance::advance(float delta_time)
+	{
+		m_current_frame += 1.0f;
+		if (m_current_frame > m_def->m_file->frames)
+		{
+			m_current_frame = 0.0f;
+		}
+		lib3ds_file_eval(m_def->m_file, m_current_frame);
+	}
 
-#else
+	bool	x3ds_instance::get_member(const tu_stringi& name, as_value* val)
+	{
+		// first try standart properties
+		if (character::get_member(name, val))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
+	{
+		// first try standart properties
+		if (character::set_member(name, val))
+		{
+			return true;
+		}
+
+		if (name == "test")
+		{
+			m_camera->roll += 0.1;
+			return true;
+		}
+
+		log_error("error: x3ds_instance::set_member('%s', '%s') not implemented\n", name.c_str(), val.to_string());
+		return false;
+
+	}
+
+} // end of namespace gameswf
 
 #endif
