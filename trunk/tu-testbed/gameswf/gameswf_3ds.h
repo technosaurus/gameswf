@@ -27,6 +27,7 @@ namespace gameswf
 		virtual void	display(character* inst);
 	
 		Lib3dsCamera* create_camera();
+		void remove_camera(Lib3dsCamera* camera);
 
 		Lib3dsFile* m_file;
 
@@ -35,6 +36,7 @@ namespace gameswf
 		Lib3dsVector m_bmin, m_bmax;
 		float	m_sx, m_sy, m_sz; // bounding box dimensions
 		float	m_cx, m_cy, m_cz; // bounding box center
+		int m_lightList;
 
 		void render_node(Lib3dsNode* node);
 	};
@@ -55,7 +57,6 @@ namespace gameswf
 		
 		smart_ptr<x3ds_definition>	m_def;
 		Lib3dsFloat m_current_frame;
-
 	};
 
 }	// end namespace gameswf
