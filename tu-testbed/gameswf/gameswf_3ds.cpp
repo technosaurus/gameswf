@@ -59,6 +59,7 @@ namespace gameswf
 
 	void	x3ds_definition::display(character* ch)
 	{
+		x3ds_instance* inst = (x3ds_instance*) ch;
 
 		if (m_file == NULL)
 		{
@@ -72,15 +73,73 @@ namespace gameswf
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 
+		// set 3D params
+		glColor4f(0, 0, 0, 1);
+		glShadeModel(GL_SMOOTH);
+//		glEnable(GL_LIGHTING);
+//		glEnable(GL_LIGHT0);
+//		glDisable(GL_LIGHT1);
+		glDepthFunc(GL_LEQUAL);
+		glEnable(GL_DEPTH_TEST);
+		glCullFace(GL_BACK);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_POLYGON_SMOOTH);
+
 		// set GL matrix to identity
 		glMatrixMode(GL_PROJECTION);
 		glLoadIdentity();
+
+		assert(inst->m_camera);
+
+		Lib3dsNode* cnode = lib3ds_file_node_by_name(m_file, inst->m_camera->name, LIB3DS_CAMERA_NODE);
+		Lib3dsNode* tnode = lib3ds_file_node_by_name(m_file, inst->m_camera->name, LIB3DS_TARGET_NODE);
+
+		float* target = tnode ? tnode->data.target.pos : inst->m_camera->target;
+
+		float	view_angle;
+		float roll;
+		float* camera_pos;
+		if (cnode)
+		{
+			view_angle = cnode->data.camera.fov;
+			roll = cnode->data.camera.roll;
+			camera_pos = cnode->data.camera.pos;
+		}
+		else
+		{
+			view_angle = inst->m_camera->fov;
+			roll = inst->m_camera->roll;
+			camera_pos = inst->m_camera->position;
+		}
+
+		float ffar = inst->m_camera->far_range;
+		float nnear = inst->m_camera->near_range <= 0 ? ffar * .001 : inst->m_camera->near_range;
+
+		float top = tan(view_angle * 0.5) * nnear;
+		float bottom = -top;
+		float aspect = 1.3333f;	// 4/3 == width /height
+		float left = aspect* bottom;
+		float right = aspect * top;
+
+		//	gluPerspective(fov, aspect, nnear, ffar) ==> glFrustum(left, right, bottom, top, nnear, ffar);
+		//	fov * 0.5 = arctan ((top-bottom)*0.5 / near)
+		//	Since bottom == -top for the symmetrical projection that gluPerspective() produces, then:
+		//	top = tan(fov * 0.5) * near
+		//	bottom = -top
+		//	Note: fov must be in radians for the above formulae to work with the C math library. 
+		//	If you have comnputer your fov in degrees (as in the call to gluPerspective()), 
+		//	then calculate top as follows:
+		//	top = tan(fov*3.14159/360.0) * near
+		//	The left and right parameters are simply functions of the top, bottom, and aspect:
+		//	left = aspect * bottom
+		//	right = aspect * top
+		glFrustum(left, right, bottom, top, nnear, ffar);
+
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
 		// aply gameswf matrix
-		matrix m = ch->get_world_matrix();
-
+		/*		matrix m = ch->get_world_matrix();
 		float	mat[16];
 		memset(&mat[0], 0, sizeof(mat));
 		mat[0] = m.m_[0][0];
@@ -93,33 +152,64 @@ namespace gameswf
 		mat[12] = -1.0f + 2.0f * m.m_[0][2] / w - m_sx;
 		mat[13] = 1.0f  - 2.0f * m.m_[1][2] / h - m_sy;
 		mat[15] = 1;
-
 		glMultMatrixf(mat);
+		*/
 
 		glRotatef(-90., 1.0, 0., 0.);
 
-
-		//	  glClearColor(0, 0, 0, 1.0);
-		glShadeModel(GL_SMOOTH);
-		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
-		glDisable(GL_LIGHT1);
-		//  	glDepthFunc(GL_LEQUAL);
-		//	  glEnable(GL_DEPTH_TEST);
-		//  	glEnable(GL_CULL_FACE);
-		//	  glCullFace(GL_BACK);
-		//  	glDisable(GL_NORMALIZE);
-		//	  glPolygonOffset(1.0, 2);
-
-		glEnable(GL_POLYGON_SMOOTH);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		//		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_file->ambient);
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_file->ambient);
 
 		// apply camera matrix
-		x3ds_instance* inst = (x3ds_instance*) ch;
-		Lib3dsMatrix mc;
-		lib3ds_matrix_camera(mc, inst->m_camera->position, inst->m_camera->target, inst->m_camera->roll);
-		glMultMatrixf(&mc[0][0]);
+		Lib3dsMatrix cmatrix;
+		lib3ds_matrix_camera(cmatrix, camera_pos, target, roll);
+		glMultMatrixf(&cmatrix[0][0]);
+
+		// Lights
+		static const GLfloat a[] = {0.0f, 0.0f, 0.0f, 1.0f};
+		static GLfloat c[] = {1.0f, 1.0f, 1.0f, 1.0f};
+		static GLfloat p[] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+		int li = GL_LIGHT0;
+		for (Lib3dsLight* l = m_file->lights; l; l = l->next)
+		{
+			glEnable(li);
+
+			//			light_update(l);
+
+			Lib3dsNode *ln, *sn;
+
+			ln = lib3ds_file_node_by_name(m_file, l->name, LIB3DS_LIGHT_NODE);
+			sn = lib3ds_file_node_by_name(m_file, l->name, LIB3DS_SPOT_NODE);
+
+			if( ln != NULL ) {
+				memcpy(l->color, ln->data.light.col, sizeof(Lib3dsRgb));
+				memcpy(l->position, ln->data.light.pos, sizeof(Lib3dsVector));
+			}
+
+			if( sn != NULL )
+				memcpy(l->spot, sn->data.spot.pos, sizeof(Lib3dsVector));
+
+
+			c[0] = l->color[0];
+			c[1] = l->color[1];
+			c[2] = l->color[2];
+			glLightfv(li, GL_AMBIENT, a);
+			glLightfv(li, GL_DIFFUSE, c);
+			glLightfv(li, GL_SPECULAR, c);
+
+			p[0] = l->position[0];
+			p[1] = l->position[1];
+			p[2] = l->position[2];
+			glLightfv(li, GL_POSITION, p);
+
+			if (l->spot_light) {
+				p[0] = l->spot[0] - l->position[0];
+				p[1] = l->spot[1] - l->position[1];
+				p[2] = l->spot[2] - l->position[2];
+				glLightfv(li, GL_SPOT_DIRECTION, p);
+			}
+			++li;
+		}
 
 		// draw 3D object
 		for (Lib3dsNode* p = m_file->nodes; p != 0; p = p->next)
@@ -127,13 +217,14 @@ namespace gameswf
 			render_node(p);
 		}
 
-		// restote state
+		// restote openGL state
 		glMatrixMode(GL_PROJECTION);
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);
 		glPopMatrix();
-
 		glPopAttrib();
+
+		glFlush();
 	}
 
 	void x3ds_definition::render_node(Lib3dsNode* node)
@@ -252,25 +343,74 @@ namespace gameswf
 
 	Lib3dsCamera* x3ds_definition::create_camera()
 	{
+		float size = fmax(m_sx, m_sy); 
+		size = fmax(size, m_sz);
+
+		Lib3dsCamera* camera = NULL;
 		if (m_file->cameras == NULL)
 		{
 			// Add camera
-			Lib3dsCamera *camera = lib3ds_camera_new("Camera_X");
+			camera = lib3ds_camera_new("Camera_ISO");
 			camera->target[0] = m_cx;
 			camera->target[1] = m_cy;
 			camera->target[2] = m_cz;
 			memcpy(camera->position, camera->target, sizeof(camera->position));
-			camera->position[0] = m_bmax[0] + 1.5 * fmax(m_sy, m_sz);
+			camera->position[0] = m_bmax[0] + .75 * size;
+			camera->position[1] = m_bmin[1] - .75 * size;
+			camera->position[2] = m_bmax[2] + .75 * size;
 			camera->near_range = ( camera->position[0] - m_bmax[0] ) * .5;
-			camera->far_range = ( camera->position[0] - m_bmin[0] ) * 2;
+			camera->far_range = ( camera->position[0] - m_bmin[0] ) * 3;
 			lib3ds_file_insert_camera(m_file, camera);
-			return camera;
+		}
+		else
+		{
+			// take the first camera
+			camera = m_file->cameras;
 		}
 
-		assert(0);
-		return NULL;
+		// No lights in the file?  Add one. 
+		if (m_file->lights == NULL)
+		{
+			Lib3dsLight* light = lib3ds_light_new("light0");
+			light->spot_light = 0;
+			light->see_cone = 0;
+			light->color[0] = light->color[1] = light->color[2] = .6;
+			light->position[0] = m_cx + size * .75;
+			light->position[1] = m_cy - size * 1.;
+			light->position[2] = m_cz + size * 1.5;
+			light->position[3] = 0.;
+			light->outer_range = 100;
+			light->inner_range = 10;
+			light->multiplier = 1;
+			lib3ds_file_insert_light(m_file, light);
+		}
 
+		// No nodes?  Fabricate nodes to display all the meshes.
+		if (m_file->nodes == NULL)
+		{
+			Lib3dsMesh *mesh;
+			Lib3dsNode *node;
+			for (mesh = m_file->meshes; mesh != NULL; mesh = mesh->next)
+			{
+				node = lib3ds_node_new_object();
+				strcpy(node->name, mesh->name);
+				node->parent_id = LIB3DS_NO_PARENT;
+				node->data.object.scl_track.keyL = lib3ds_lin3_key_new();
+				node->data.object.scl_track.keyL->value[0] = 1.;
+				node->data.object.scl_track.keyL->value[1] = 1.;
+				node->data.object.scl_track.keyL->value[2] = 1.;
+				lib3ds_file_insert_node(m_file, node);
+			}
+		}
+
+		return camera;
 	}
+
+	void x3ds_definition::remove_camera(Lib3dsCamera* camera)
+	{
+		lib3ds_file_remove_camera(m_file, camera);
+	}
+
 
 	//
 	// x3ds_instance
@@ -287,10 +427,7 @@ namespace gameswf
 
 	x3ds_instance::~x3ds_instance()
 	{
-		if (m_camera)
-		{
-//			lib3ds_camera_free(m_camera);
-		}
+		m_def->remove_camera(m_camera);
 	}
 
 	void	x3ds_instance::display()
@@ -321,14 +458,21 @@ namespace gameswf
 	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
 		// first try standart properties
-		if (character::set_member(name, val))
-		{
-			return true;
-		}
+//		if (character::set_member(name, val))
+//		{
+//			return true;
+//		}
 
 		if (name == "test")
 		{
-			m_camera->roll += 0.1;
+			m_camera->roll += 0.01;
+//    m_camera->position +=0.01;
+ //   m_camera->target;
+  //  m_camera->roll;
+//    m_camera->fov +=0.1;
+  //  m_camera->see_cone;
+//    m_camera->near_range ++;
+//    m_camera->far_range -=10;
 			return true;
 		}
 
