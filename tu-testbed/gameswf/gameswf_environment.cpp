@@ -10,7 +10,7 @@
 #include "gameswf_log.h"
 #include "gameswf_function.h"
 #include "gameswf_render.h"
-#include "gameswf_3ds.h"
+#include "plugins/lib3ds/gameswf_3ds.h"
 
 #ifdef _WIN32
 #define snprintf _snprintf

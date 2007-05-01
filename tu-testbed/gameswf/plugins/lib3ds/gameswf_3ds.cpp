@@ -3,7 +3,8 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// lib3ds interface
+// Lib3ds plugin implementation for gameswf library
+// Now this is testbed, not release, please do not use in real game
 
 #include "base/tu_config.h"
 
@@ -22,9 +23,6 @@
 
 namespace gameswf
 {
-	static const Lib3dsRgba a={0.2, 0.2, 0.2, 1.0};
-	static const Lib3dsRgba d={0.8, 0.8, 0.8, 1.0};
-	static const Lib3dsRgba s={0.0, 0.0, 0.0, 1.0};
 
 	x3ds_definition::x3ds_definition(const char* url) : m_file(NULL)
 	{
@@ -39,6 +37,9 @@ namespace gameswf
 		m_sx = m_bmax[0] - m_bmin[0];
 		m_sy = m_bmax[1] - m_bmin[1];
 		m_sz = m_bmax[2] - m_bmin[2];
+
+		m_size = fmax(m_sx, m_sy); 
+		m_size = fmax(m_size, m_sz);
 
 		// used in create_camera()
 		m_cx = (m_bmin[0] + m_bmax[0]) / 2;
@@ -56,15 +57,14 @@ namespace gameswf
 		}
 	}
 
-
 	void	x3ds_definition::display(character* ch)
 	{
-		x3ds_instance* inst = (x3ds_instance*) ch;
-
 		if (m_file == NULL)
 		{
 			return;
 		}
+
+		x3ds_instance* inst = (x3ds_instance*) ch;
 
 		// save GL state
 		glPushAttrib (GL_ALL_ATTRIB_BITS);	
@@ -73,17 +73,19 @@ namespace gameswf
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 
+		glClear(GL_DEPTH_BUFFER_BIT);
+
 		// set 3D params
-		glColor4f(0, 0, 0, 1);
 		glShadeModel(GL_SMOOTH);
-//		glEnable(GL_LIGHTING);
-//		glEnable(GL_LIGHT0);
-//		glDisable(GL_LIGHT1);
+		glEnable(GL_LIGHTING);
+		glEnable(GL_LIGHT0);
+		glDisable(GL_LIGHT1);
 		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);
-		glClear(GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_POLYGON_SMOOTH);
+
+		glDisable(GL_BLEND);
 
 		// set GL matrix to identity
 		glMatrixMode(GL_PROJECTION);
@@ -113,9 +115,9 @@ namespace gameswf
 		}
 
 		float ffar = inst->m_camera->far_range;
-		float nnear = inst->m_camera->near_range <= 0 ? ffar * .001 : inst->m_camera->near_range;
+		float nnear = inst->m_camera->near_range <= 0 ? ffar * .001f : inst->m_camera->near_range;
 
-		float top = tan(view_angle * 0.5) * nnear;
+		float top = tan(view_angle * 0.5f) * nnear;
 		float bottom = -top;
 		float aspect = 1.3333f;	// 4/3 == width /height
 		float left = aspect* bottom;
@@ -159,72 +161,27 @@ namespace gameswf
 
 		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_file->ambient);
 
+		inst->apply_transormation(target, camera_pos);
+
+
 		// apply camera matrix
 		Lib3dsMatrix cmatrix;
 		lib3ds_matrix_camera(cmatrix, camera_pos, target, roll);
 		glMultMatrixf(&cmatrix[0][0]);
 
-		// Lights
-		static const GLfloat a[] = {0.0f, 0.0f, 0.0f, 1.0f};
-		static GLfloat c[] = {1.0f, 1.0f, 1.0f, 1.0f};
-		static GLfloat p[] = {0.0f, 0.0f, 0.0f, 1.0f};
-
-		int li = GL_LIGHT0;
-		for (Lib3dsLight* l = m_file->lights; l; l = l->next)
-		{
-			glEnable(li);
-
-			//			light_update(l);
-
-			Lib3dsNode *ln, *sn;
-
-			ln = lib3ds_file_node_by_name(m_file, l->name, LIB3DS_LIGHT_NODE);
-			sn = lib3ds_file_node_by_name(m_file, l->name, LIB3DS_SPOT_NODE);
-
-			if( ln != NULL ) {
-				memcpy(l->color, ln->data.light.col, sizeof(Lib3dsRgb));
-				memcpy(l->position, ln->data.light.pos, sizeof(Lib3dsVector));
-			}
-
-			if( sn != NULL )
-				memcpy(l->spot, sn->data.spot.pos, sizeof(Lib3dsVector));
-
-
-			c[0] = l->color[0];
-			c[1] = l->color[1];
-			c[2] = l->color[2];
-			glLightfv(li, GL_AMBIENT, a);
-			glLightfv(li, GL_DIFFUSE, c);
-			glLightfv(li, GL_SPECULAR, c);
-
-			p[0] = l->position[0];
-			p[1] = l->position[1];
-			p[2] = l->position[2];
-			glLightfv(li, GL_POSITION, p);
-
-			if (l->spot_light) {
-				p[0] = l->spot[0] - l->position[0];
-				p[1] = l->spot[1] - l->position[1];
-				p[2] = l->spot[2] - l->position[2];
-				glLightfv(li, GL_SPOT_DIRECTION, p);
-			}
-			++li;
-		}
-
-		// draw 3D object
+		// draw 3D model
 		for (Lib3dsNode* p = m_file->nodes; p != 0; p = p->next)
 		{
 			render_node(p);
 		}
 
-		// restote openGL state
+		// restore openGL state
 		glMatrixMode(GL_PROJECTION);
 		glPopMatrix();
 		glMatrixMode(GL_MODELVIEW);
 		glPopMatrix();
 		glPopAttrib();
 
-		glFlush();
 	}
 
 	void x3ds_definition::render_node(Lib3dsNode* node)
@@ -256,10 +213,10 @@ namespace gameswf
 					Lib3dsVector* normalL = (Lib3dsVector*) malloc(3 * sizeof(Lib3dsVector) * mesh->faces);
 					Lib3dsMaterial* oldmat = (Lib3dsMaterial*) -1;
 					{
-						Lib3dsMatrix M;
-						lib3ds_matrix_copy(M, mesh->matrix);
-						lib3ds_matrix_inv(M);
-						glMultMatrixf(&M[0][0]);
+						Lib3dsMatrix m;
+						lib3ds_matrix_copy(m, mesh->matrix);
+						lib3ds_matrix_inv(m);
+						glMultMatrixf(&m[0][0]);
 					}
 					lib3ds_mesh_calculate_normals(mesh, normalL);
 
@@ -293,15 +250,19 @@ namespace gameswf
 								glMaterialfv(GL_FRONT, GL_DIFFUSE, mat->diffuse);
 								glMaterialfv(GL_FRONT, GL_SPECULAR, mat->specular);
 
-								s = pow(2, 10.0 * mat->shininess);
-								if (s > 128.0)
+								s = pow(2, 10.0f * mat->shininess);
+								if (s > 128.0f)
 								{
-									s=128.0;
+									s = 128.0f;
 								}
 								glMaterialf(GL_FRONT, GL_SHININESS, s);
 							}
 							else
 							{
+								static const Lib3dsRgba a = {0.2f, 0.2f, 0.2f, 1.0f};
+								static const Lib3dsRgba d = {0.8f, 0.8f, 0.8f, 1.0f};
+								static const Lib3dsRgba s = {0.0f, 0.0f, 0.0f, 1.0f};
+
 								glMaterialfv(GL_FRONT, GL_AMBIENT, a);
 								glMaterialfv(GL_FRONT, GL_DIFFUSE, d);
 								glMaterialfv(GL_FRONT, GL_SPECULAR, s);
@@ -343,9 +304,6 @@ namespace gameswf
 
 	Lib3dsCamera* x3ds_definition::create_camera()
 	{
-		float size = fmax(m_sx, m_sy); 
-		size = fmax(size, m_sz);
-
 		Lib3dsCamera* camera = NULL;
 		if (m_file->cameras == NULL)
 		{
@@ -355,11 +313,11 @@ namespace gameswf
 			camera->target[1] = m_cy;
 			camera->target[2] = m_cz;
 			memcpy(camera->position, camera->target, sizeof(camera->position));
-			camera->position[0] = m_bmax[0] + .75 * size;
-			camera->position[1] = m_bmin[1] - .75 * size;
-			camera->position[2] = m_bmax[2] + .75 * size;
-			camera->near_range = ( camera->position[0] - m_bmax[0] ) * .5;
-			camera->far_range = ( camera->position[0] - m_bmin[0] ) * 3;
+			camera->position[0] = m_bmax[0] + 0.75f * m_size;
+			camera->position[1] = m_bmin[1] - 0.75f * m_size;
+			camera->position[2] = m_bmax[2] + 0.75f * m_size;
+			camera->near_range = ( camera->position[0] - m_bmax[0] ) * 0.5f;
+			camera->far_range = ( camera->position[0] - m_bmin[0] ) * 3.0f;
 			lib3ds_file_insert_camera(m_file, camera);
 		}
 		else
@@ -374,10 +332,10 @@ namespace gameswf
 			Lib3dsLight* light = lib3ds_light_new("light0");
 			light->spot_light = 0;
 			light->see_cone = 0;
-			light->color[0] = light->color[1] = light->color[2] = .6;
-			light->position[0] = m_cx + size * .75;
-			light->position[1] = m_cy - size * 1.;
-			light->position[2] = m_cz + size * 1.5;
+			light->color[0] = light->color[1] = light->color[2] = .6f;
+			light->position[0] = m_cx + m_size * .75f;
+			light->position[1] = m_cy - m_size * 1.f;
+			light->position[2] = m_cz + m_size * 1.5f;
 			light->position[3] = 0.;
 			light->outer_range = 100;
 			light->inner_range = 10;
@@ -423,10 +381,27 @@ namespace gameswf
 	{
 		assert(m_def != NULL);
 		m_camera = m_def->create_camera();
+
+		glEnable(GL_TEXTURE_2D);
+		glGenTextures(1, (GLuint*)&m_texture_id);
+		glBindTexture(GL_TEXTURE_2D, m_texture_id);
+	
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+		glDisable(GL_TEXTURE_2D);
+
+		for (int i = 0; i < 3; i++)
+		{
+			m_rotate[i] = 0;
+		}
 	}
 
 	x3ds_instance::~x3ds_instance()
 	{
+		glDeleteTextures(1, (GLuint*) &m_texture_id);
 		m_def->remove_camera(m_camera);
 	}
 
@@ -437,6 +412,10 @@ namespace gameswf
 
 	void	x3ds_instance::advance(float delta_time)
 	{
+		m_rotate[0]++;
+		m_rotate[1]++;
+		m_rotate[2]++;
+
 		m_current_frame += 1.0f;
 		if (m_current_frame > m_def->m_file->frames)
 		{
@@ -465,7 +444,7 @@ namespace gameswf
 
 		if (name == "test")
 		{
-			m_camera->roll += 0.01;
+			m_camera->roll += 0.01f;
 //    m_camera->position +=0.01;
  //   m_camera->target;
   //  m_camera->roll;
@@ -479,6 +458,19 @@ namespace gameswf
 		log_error("error: x3ds_instance::set_member('%s', '%s') not implemented\n", name.c_str(), val.to_string());
 		return false;
 
+	}
+
+	void	x3ds_instance::apply_transormation(float* target, float* camera_pos)
+	{
+		Lib3dsVector v;
+		lib3ds_vector_sub(v, target, camera_pos);
+		float dist = lib3ds_vector_length(v);
+
+		glTranslatef(0.,dist, 0.);
+		glRotatef(m_rotate[0], 1., 0., 0.);
+		glRotatef(m_rotate[1], 0., 1., 0.);
+		glRotatef(m_rotate[2], 0., 0., 1.);
+		glTranslatef(0.,-dist, 0.);
 	}
 
 } // end of namespace gameswf

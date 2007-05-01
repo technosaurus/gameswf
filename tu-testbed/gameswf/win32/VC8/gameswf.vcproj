@@ -213,10 +213,6 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat"
 			>
 			<File
-				RelativePath="..\..\gameswf_3ds.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_action.cpp"
 				>
 			</File>
@@ -367,10 +363,6 @@
 			>
 			<File
 				RelativePath="..\..\gameswf.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_3ds.h"
 				>
 			</File>
 			<File
@@ -832,7 +824,7 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="leak"
+			Name="memory_leaker"
 			>
 			<File
 				RelativePath="..\..\..\base\Stackwalker.cpp"
@@ -872,6 +864,18 @@
 			</File>
 			<File
 				RelativePath="..\..\..\net\tu_net_file.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="plugins"
+			>
+			<File
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds.h"
 				>
 			</File>
 		</Filter>
