@@ -3,14 +3,8 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// auto locker/unlocker
-// We have redefined SDL mutex functions that
-// there was an opportunity to use other libraries (pthread, ...)
-
 #ifndef GAMESWF_CURSOR_H
 #define GAMESWF_CURSOR_H
-
-#include <SDL.h>
 
 namespace gameswf
 {

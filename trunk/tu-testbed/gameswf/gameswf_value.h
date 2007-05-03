@@ -9,7 +9,7 @@
 #ifndef GAMESWF_VALUE_H
 #define GAMESWF_VALUE_H
 
-//#include "gameswf.h"
+//#include "gameswf/gameswf.h"
 
 #include "base/container.h"
 #include "base/smart_ptr.h"

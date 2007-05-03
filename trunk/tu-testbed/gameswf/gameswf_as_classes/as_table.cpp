@@ -1,4 +1,4 @@
-// as_table.cpp	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
+ // as_table.cpp	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -8,8 +8,8 @@
 
 #if TU_CONFIG_LINK_TO_MYSQL == 1
 
-#include <gameswf/gameswf_action.h>
-#include "../gameswf_as_classes/as_table.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_as_classes/as_table.h"
 
 namespace gameswf
 {

@@ -6,9 +6,9 @@
 
 // Loading and rendering of morphing shapes using gameswf_shape.
 
-#include "gameswf_morph2.h"
-#include "gameswf_stream.h"
-#include "gameswf_movie_def.h"
+#include "gameswf/gameswf_morph2.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_movie_def.h"
 
 
 namespace gameswf

@@ -5,7 +5,7 @@
 
 // auto locker/unlocker
 
-#include "gameswf_mutex.h"
+#include "gameswf/gameswf_mutex.h"
 #include "base/smart_ptr.h"
 
 namespace gameswf

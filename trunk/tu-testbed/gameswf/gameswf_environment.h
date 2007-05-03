@@ -8,7 +8,7 @@
 #ifndef GAMESWF_ENVIRONMENT_H
 #define GAMESWF_ENVIRONMENT_H
 
-#include "gameswf_value.h"
+#include "gameswf/gameswf_value.h"
 
 namespace gameswf
 {

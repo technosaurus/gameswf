@@ -5,9 +5,9 @@
 
 // ActionScript value type.
 
-#include "gameswf.h"
-#include "gameswf_value.h"
-#include "gameswf_function.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_value.h"
+#include "gameswf/gameswf_function.h"
 
 #ifdef _WIN32
 #define snprintf _snprintf

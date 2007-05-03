@@ -6,31 +6,31 @@
 // Implementation and helpers for SWF actions.
 
 
-#include "gameswf_action.h"
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
-#include "gameswf_stream.h"
-#include "gameswf_movie_def.h"
-#include "gameswf_timers.h"
-#include "gameswf_sprite.h"
-#include "gameswf_function.h"
-#include "gameswf_cursor.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_movie_def.h"
+#include "gameswf/gameswf_timers.h"
+#include "gameswf/gameswf_sprite.h"
+#include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_cursor.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 
 // action script classes
-#include "gameswf_as_classes/as_array.h"
-#include "gameswf_as_classes/as_sound.h"
-#include "gameswf_as_classes/as_key.h"
-#include "gameswf_as_classes/as_math.h"
-#include "gameswf_as_classes/as_mcloader.h"
-#include "gameswf_as_classes/as_netstream.h"
-#include "gameswf_as_classes/as_netconnection.h"
-#include "gameswf_as_classes/as_textformat.h"
-#include "gameswf_as_classes/as_string.h"
-#include "gameswf_as_classes/as_color.h"
-#include "gameswf_as_classes/as_xmlsocket.h"
-#include "gameswf_as_classes/as_db.h"	// mysql db extension
+#include "gameswf/gameswf_as_classes/as_array.h"
+#include "gameswf/gameswf_as_classes/as_sound.h"
+#include "gameswf/gameswf_as_classes/as_key.h"
+#include "gameswf/gameswf_as_classes/as_math.h"
+#include "gameswf/gameswf_as_classes/as_mcloader.h"
+#include "gameswf/gameswf_as_classes/as_netstream.h"
+#include "gameswf/gameswf_as_classes/as_netconnection.h"
+#include "gameswf/gameswf_as_classes/as_textformat.h"
+#include "gameswf/gameswf_as_classes/as_string.h"
+#include "gameswf/gameswf_as_classes/as_color.h"
+#include "gameswf/gameswf_as_classes/as_xmlsocket.h"
+#include "gameswf/gameswf_as_classes/as_db.h"	// mysql db extension
 
 #ifdef _WIN32
 #define snprintf _snprintf

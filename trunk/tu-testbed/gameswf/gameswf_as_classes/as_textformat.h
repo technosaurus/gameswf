@@ -6,7 +6,7 @@
 #ifndef __TEXTFORMAT_H__
 #define __TEXTFORMAT_H__
 
-#include "../gameswf_action.h"
+#include "gameswf/gameswf_action.h"
 
 namespace gameswf
 {  

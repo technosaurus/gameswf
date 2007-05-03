@@ -10,8 +10,8 @@
 #define GAMESWF_RENDER_H
 
 
-#include "gameswf_types.h"
-#include "gameswf.h"
+#include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf.h"
 #include "base/image.h"
 
 

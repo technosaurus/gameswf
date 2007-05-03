@@ -6,7 +6,7 @@
 // Some implementation code for the gameswf SWF player library.
 
 
-#include "gameswf_character.h"
+#include "gameswf/gameswf_character.h"
 
 namespace gameswf
 {

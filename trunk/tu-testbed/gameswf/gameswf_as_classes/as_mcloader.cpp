@@ -5,13 +5,13 @@
 
 // Action Script MovieClipLoader implementation code for the gameswf SWF player library.
 
-#include "../gameswf_as_classes/as_mcloader.h"
-#include "../gameswf_root.h"
-#include "../gameswf_character.h"
-#include "../gameswf_sprite.h"
-#include "../gameswf_action.h"
-#include "../gameswf_function.h"
-//#include "../gameswf_log.h"
+#include "gameswf/gameswf_as_classes/as_mcloader.h"
+#include "gameswf/gameswf_root.h"
+#include "gameswf/gameswf_character.h"
+#include "gameswf/gameswf_sprite.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_function.h"
+//#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {

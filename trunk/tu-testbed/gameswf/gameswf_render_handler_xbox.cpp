@@ -8,9 +8,9 @@
 
 #ifdef _XBOX
 
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 #include "gameswf/gameswf_log.h"
-#include "gameswf_types.h"
+#include "gameswf/gameswf_types.h"
 #include "base/image.h"
 #include "base/container.h"
 

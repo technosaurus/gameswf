@@ -5,10 +5,10 @@
 
 // video implementation
 
-#include "gameswf_video_impl.h"
-#include "gameswf_video_base.h"
-#include "gameswf_stream.h"
-#include "gameswf_as_classes/as_netstream.h"
+#include "gameswf/gameswf_video_impl.h"
+#include "gameswf/gameswf_video_base.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_as_classes/as_netstream.h"
 
 namespace gameswf
 {

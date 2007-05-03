@@ -12,7 +12,7 @@
 
 #include "base/tu_file.h"
 #include "base/container.h"
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 
 
 static bool	s_verbose = false;

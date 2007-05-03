@@ -11,7 +11,7 @@
 #if TU_CONFIG_LINK_TO_MYSQL == 1
 
 #include <mysql/mysql.h>
-#include "../gameswf_as_classes/as_table.h"
+#include "gameswf/gameswf_as_classes/as_table.h"
 
 namespace gameswf
 {

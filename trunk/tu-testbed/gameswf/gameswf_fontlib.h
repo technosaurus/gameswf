@@ -11,7 +11,7 @@
 
 
 #include "base/container.h"
-#include "gameswf_types.h"
+#include "gameswf/gameswf_types.h"
 class tu_file;
 
 

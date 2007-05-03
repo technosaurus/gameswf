@@ -7,7 +7,7 @@
 #define GAMESWF_SOUND_H
 
 
-#include "gameswf_impl.h"
+#include "gameswf/gameswf_impl.h"
 
 
 namespace gameswf

@@ -5,7 +5,7 @@
 
 // Implementation of ActionScript String class.
 
-#include "../gameswf_as_classes/as_string.h"
+#include "gameswf/gameswf_as_classes/as_string.h"
 
 namespace gameswf
 {

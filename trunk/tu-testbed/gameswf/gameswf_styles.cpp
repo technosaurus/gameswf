@@ -6,12 +6,12 @@
 // Fill and line style types.
 
 
-#include "gameswf_styles.h"
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
-#include "gameswf_render.h"
-#include "gameswf_stream.h"
-#include "gameswf_movie_def.h"
+#include "gameswf/gameswf_styles.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_movie_def.h"
 
 
 namespace gameswf

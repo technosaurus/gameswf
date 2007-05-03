@@ -8,8 +8,8 @@
 
 #if TU_CONFIG_LINK_TO_MYSQL == 1
 
-#include "../gameswf_as_classes/as_db.h"
-#include "../gameswf_log.h"
+#include "gameswf/gameswf_as_classes/as_db.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {
@@ -238,8 +238,8 @@ namespace gameswf
 
 #else
 
-#include "../gameswf_action.h"
-#include "../gameswf_log.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {

@@ -10,8 +10,8 @@
 // http://sswf.sourceforge.net/SWFalexref.html
 // http://www.openswf.org
 
-#include "gameswf_action.h"	// for as_object
-#include "gameswf_sprite.h"
+#include "gameswf/gameswf_action.h"	// for as_object
+#include "gameswf/gameswf_sprite.h"
 
 namespace gameswf
 {

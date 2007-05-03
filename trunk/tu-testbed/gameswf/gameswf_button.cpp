@@ -6,13 +6,12 @@
 // SWF buttons.  Mouse-sensitive update/display, actions, etc.
 
 
-#include "gameswf_button.h"
-
-#include "gameswf_action.h"
-#include "gameswf_render.h"
-#include "gameswf_sound.h"
-#include "gameswf_stream.h"
-#include "gameswf_movie_def.h"
+#include "gameswf/gameswf_button.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_sound.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_movie_def.h"
 
 /*
 

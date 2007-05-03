@@ -7,7 +7,7 @@
 #include "config.h"
 #endif
 
-#include "../gameswf_as_classes/as_netconnection.h"
+#include "gameswf/gameswf_as_classes/as_netconnection.h"
 
 namespace gameswf
 {

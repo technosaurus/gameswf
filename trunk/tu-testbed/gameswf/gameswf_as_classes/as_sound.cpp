@@ -3,10 +3,10 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "../gameswf_as_classes/as_sound.h"
-#include "../gameswf_log.h"
-#include "../gameswf_sound.h"
-#include "../gameswf_movie_def.h"
+#include "gameswf/gameswf_as_classes/as_sound.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_sound.h"
+#include "gameswf/gameswf_movie_def.h"
 
 namespace gameswf
 {

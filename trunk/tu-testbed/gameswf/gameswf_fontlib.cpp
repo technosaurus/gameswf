@@ -8,16 +8,16 @@
 
 #include "base/container.h"
 #include "base/tu_file.h"
-#include "gameswf.h"
-#include "gameswf_font.h"
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
-#include "gameswf_render.h"
-#include "gameswf_shape.h"
-#include "gameswf_styles.h"
-#include "gameswf_tesselate.h"
-#include "gameswf_render.h"
-#include "gameswf_movie_def.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_font.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_shape.h"
+#include "gameswf/gameswf_styles.h"
+#include "gameswf/gameswf_tesselate.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_movie_def.h"
 
 
 namespace gameswf

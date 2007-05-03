@@ -25,9 +25,9 @@
 // contains the state for a specific instance being updated
 // and displayed in the parent movie's display list.
 
-#include "gameswf_stream.h"
-#include "gameswf_dlist.h"
-#include "gameswf_sprite_def.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_dlist.h"
+#include "gameswf/gameswf_sprite_def.h"
 
 #if TU_CONFIG_LINK_TO_ZLIB
 #include <zlib.h>

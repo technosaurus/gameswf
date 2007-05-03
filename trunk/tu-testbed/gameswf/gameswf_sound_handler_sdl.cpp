@@ -8,7 +8,7 @@
 #include "config.h"
 #endif
 
-#include "gameswf_sound_handler_sdl.h"
+#include "gameswf/gameswf_sound_handler_sdl.h"
 
 namespace gameswf
 {

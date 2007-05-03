@@ -11,8 +11,8 @@
 #endif
 
 #include "base/tu_queue.h"
-#include "../gameswf_mutex.h"
-#include "../gameswf_video_impl.h"
+#include "gameswf/gameswf_mutex.h"
+#include "gameswf/gameswf_video_impl.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
@@ -121,7 +121,7 @@ namespace gameswf
 
 #else	// ffmpeg is not present
 
-#include "../gameswf_video_impl.h"
+#include "gameswf/gameswf_video_impl.h"
 
 namespace gameswf
 {

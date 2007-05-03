@@ -6,12 +6,12 @@
 // A font type for gameswf.
 
 
-#include "gameswf_font.h"
-#include "gameswf_stream.h"
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
-#include "gameswf_shape.h"
-#include "gameswf_movie_def.h"
+#include "gameswf/gameswf_font.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_shape.h"
+#include "gameswf/gameswf_movie_def.h"
 #include "base/tu_file.h"
 
 

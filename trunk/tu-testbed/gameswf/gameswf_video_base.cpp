@@ -11,9 +11,9 @@
 #endif
 
 #include <memory.h>
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 #include "base/tu_types.h"
-#include "gameswf_video_base.h"
+#include "gameswf/gameswf_video_base.h"
 
 namespace gameswf
 {

@@ -5,12 +5,12 @@
 
 // Some basic types for gameswf.
 
-#include "gameswf_types.h"
+#include "gameswf/gameswf_types.h"
 
-#include "gameswf_log.h"
-#include "gameswf_stream.h"
-#include "gameswf_render.h"
-#include "gameswf.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf.h"
 #include <string.h>
 
 

@@ -29,7 +29,7 @@
 #define GAMESWF_SPRITE_DEF_H
 
 
-//#include "gameswf.h"
+//#include "gameswf/gameswf.h"
 //#include "base/container.h"
 
 namespace gameswf

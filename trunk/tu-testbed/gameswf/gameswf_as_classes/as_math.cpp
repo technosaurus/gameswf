@@ -3,7 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "../gameswf_as_classes/as_math.h"
+#include "gameswf/gameswf_as_classes/as_math.h"
 #include "base/tu_random.h"
 
 namespace gameswf

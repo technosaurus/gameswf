@@ -9,10 +9,10 @@
 #ifndef GAMESWF_CHARACTER_H
 #define GAMESWF_CHARACTER_H
 
-#include "gameswf.h"
-#include "gameswf_action.h"
-#include "gameswf_types.h"
-#include "gameswf_log.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_log.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"

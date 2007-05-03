@@ -9,7 +9,7 @@
 #ifndef GAMESWF_STRING_H
 #define GAMESWF_STRING_H
 
-#include "../gameswf_action.h"
+#include "gameswf/gameswf_action.h"
 
 namespace gameswf 
 {

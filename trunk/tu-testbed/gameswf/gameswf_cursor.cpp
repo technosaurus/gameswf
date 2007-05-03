@@ -5,8 +5,12 @@
 
 // Used code from SDL help
 
-#include "gameswf_cursor.h"
+#include "gameswf/gameswf_cursor.h"
 #include <assert.h>
+
+// TODO(tulrich): REMOVE ALL SDL DEPENDENCIES FROM CORE GAMESWF.
+// (Embedders probably aren't using SDL; don't make their job harder.)
+#include <SDL.h>
 
 namespace gameswf
 {

@@ -10,8 +10,8 @@
 #define GAMESWF_BUTTON_H
 
 
-#include "gameswf_impl.h"
-#include "gameswf_sound.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_sound.h"
 
 
 namespace gameswf
