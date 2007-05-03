@@ -39,6 +39,14 @@ base_files =					\
 	tu-testbed/base/*.h			\
 	tu-testbed/base/TODO
 
+net_files =					\
+	tu-testbed/net/Makefile			\
+	tu-testbed/net/*.cpp			\
+	tu-testbed/net/*.h			\
+	tu-testbed/net/static/*			\
+	tu-testbed/net/static/images/*		\
+	tu-testbed/net/win32/VC8/*
+
 geometry_files =				\
 	tu-testbed/geometry/Makefile		\
 	tu-testbed/geometry/*.cpp		\
@@ -76,11 +84,20 @@ psm_vistool_files =					\
 	tu-testbed/demos/psm_vistool/*.h		\
 	tu-testbed/demos/psm_vistool/*.dll
 
+test_triangulate_files =				\
+	tu-testbed/demos/test_triangulate/Makefile	\
+	tu-testbed/demos/test_triangulate/*.cpp		\
+	tu-testbed/demos/test_triangulate/*.h		\
+	tu-testbed/demos/test_triangulate/*.txt		\
+	tu-testbed/demos/test_triangulate/*.dll
+
 gameswf_source =				\
 	tu-testbed/gameswf/Makefile		\
 	tu-testbed/gameswf/*.cpp		\
 	tu-testbed/gameswf/*.c			\
 	tu-testbed/gameswf/*.h			\
+	tu-testbed/gameswf/gameswf_as_classes/*.cpp	\
+	tu-testbed/gameswf/gameswf_as_classes/*.h	\
 	tu-testbed/gameswf/TODO
 
 gameswf_exe =					\
@@ -102,7 +119,7 @@ chunkdemo.zip:
 
 gameswf.zip:
 	cd ..; zip tu-testbed/gameswf.zip			\
-		$(basic_files) $(base_files) $(gameswf_files)
+		$(basic_files) $(base_files) $(net_files) $(gameswf_files)
 
 bspdemo.zip:
 	cd ..; zip tu-testbed/bspdemo.zip		\
@@ -126,3 +143,7 @@ psm_vistool.zip:
 luaSDL.src.tar.gz:
 	make -C luaSDL clean
 	tar czvf $@ luaSDL
+
+tu_triangulate.zip:
+	cd ..; zip tu-testbed/tu_triangulate.zip	\
+		$(basic_files) $(base_files) $(net_files) $(test_triangulate_files)

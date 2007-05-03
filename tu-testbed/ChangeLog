@@ -6,6 +6,16 @@
 	* gameswf/plugins/lib3ds/cup.3ds: removed (since does not contains texture)
 	* gameswf/plugins/lib3ds/books.3ds: added 3D model that contains texture
 	
+2007-05-02  Thatcher Ulrich <tu@tulrich.com>
+
+	Misc build fixes & cleanup.
+	
+	* base/tu_config.h: by default, don't link to MySQL, LIB3DS,
+	FFMPEG
+	* gameswf/Makefile: update filelist with newer files
+	* gameswf/*: normalize include file paths -- no relative paths;
+	path is always relative to project root.
+
 2007-05-01  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_3ds.*: moved to gameswf/plugins/lib3ds/ directory
