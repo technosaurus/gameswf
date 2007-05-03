@@ -55,7 +55,7 @@ namespace gameswf
 				return NULL;
 			}
 
-			if (strncmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
+			if (strnicmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
 			{
 				movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
 				if (md == NULL)
@@ -82,7 +82,7 @@ namespace gameswf
 				new_ch = new sprite_instance(md, mroot, parent, -1);
 			}
 			else
-			if (strncmp(infile.c_str() + infile.size() - 4, ".jpg", 4) == 0)
+			if (strnicmp(infile.c_str() + infile.size() - 4, ".jpg", 4) == 0)
 			{
 #if TU_CONFIG_LINK_TO_JPEGLIB == 0
 				log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
@@ -111,7 +111,7 @@ namespace gameswf
 
 			}
 			else
-			if (strncmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
+			if (strnicmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
 			// loads 3DMAX file
 			{
 #if TU_CONFIG_LINK_TO_LIB3DS == 0
@@ -132,7 +132,7 @@ namespace gameswf
 			}
 			else
 			{
-				IF_VERBOSE_ACTION(("loadMovie: can't load '%s'\n", infile.c_str()));
+				log_error("loadMovie: can't load '%s'\n", infile.c_str());
 				return NULL;
 			}
 		}

@@ -1,3 +1,11 @@
+2007-05-03  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_environment.cpp: in load_file() function strncmp() ==> strnicmp()
+	* gameswf/gameswf_3ds.*: added texturing of 3D model
+	* gameswf/plugins/lib3ds/test.(fla,swf): updated
+	* gameswf/plugins/lib3ds/cup.3ds: removed (since does not contains texture)
+	* gameswf/plugins/lib3ds/books.3ds: added 3D model that contains texture
+	
 2007-05-01  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_3ds.*: moved to gameswf/plugins/lib3ds/ directory

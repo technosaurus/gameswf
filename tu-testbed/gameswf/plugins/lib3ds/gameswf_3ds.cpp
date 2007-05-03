@@ -4,7 +4,12 @@
 // whatever you want with it.
 
 // Lib3ds plugin implementation for gameswf library
-// Now this is testbed, not release, please do not use in real game
+
+// TODO we should:
+// handle character properties like _x, _y, _z, _zoom, ...
+// do this more efficiently.
+// load texture from file once (use hash<file_name, bitmap_info>)
+// consider an opportunity of using movieclip as texture for 3D model
 
 #include "base/tu_config.h"
 
@@ -139,30 +144,12 @@ namespace gameswf
 
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
-
-		// aply gameswf matrix
-		/*		matrix m = ch->get_world_matrix();
-		float	mat[16];
-		memset(&mat[0], 0, sizeof(mat));
-		mat[0] = m.m_[0][0];
-		mat[1] = m.m_[1][0];
-		mat[4] = m.m_[0][1];
-		mat[5] = m.m_[1][1];
-		mat[10] = 1;
-		float w = 1024 * 20;	// hack, twips
-		float h = 768 * 20;	// hack, twips
-		mat[12] = -1.0f + 2.0f * m.m_[0][2] / w - m_sx;
-		mat[13] = 1.0f  - 2.0f * m.m_[1][2] / h - m_sy;
-		mat[15] = 1;
-		glMultMatrixf(mat);
-		*/
-
 		glRotatef(-90., 1.0, 0., 0.);
 
 		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_file->ambient);
 
-		inst->apply_transormation(target, camera_pos);
-
+		// apply gameswf matrix
+		inst->apply_matrix(target, camera_pos);
 
 		// apply camera matrix
 		Lib3dsMatrix cmatrix;
@@ -225,8 +212,6 @@ namespace gameswf
 						Lib3dsFace* f = &mesh->faceL[p];
 						Lib3dsMaterial* mat = 0;
 
-						int tex_mode = 0;
-
 						if (f->material[0]) 
 						{
 							mat = lib3ds_file_material_by_name(m_file, f->material);
@@ -244,6 +229,29 @@ namespace gameswf
 								else
 								{
 									glEnable(GL_CULL_FACE);
+								}
+
+								// load image
+								if (mat->texture1_map.name[0])
+								{
+									if (mat->texture1_map.user.p == NULL)
+									{	
+										tu_string url;
+	//									url = datapath;
+										url = "/";
+										url += mat->texture1_map.name;
+
+										image::rgb* im = image::read_jpeg(url.c_str());
+										if (im)
+										{
+											mat->texture1_map.user.p = get_render_handler()->create_bitmap_info_rgb(im);
+										}
+										else
+										{
+											printf("can't load %s\n", url.c_str());
+										}
+										// create & bind texture
+									}
 								}
 
 								glMaterialfv(GL_FRONT, GL_AMBIENT, mat->ambient);
@@ -270,14 +278,52 @@ namespace gameswf
 							oldmat = mat;
 						}
 
+						if (mat)
+						{
+							if (mat->texture1_map.user.p)
+							{
+								bitmap_info* bi = (bitmap_info*) mat->texture1_map.user.p;
+								if (bi->m_texture_id == 0 && bi->m_suspended_image != NULL)
+								{
+									bi->layout_image(bi->m_suspended_image);
+									delete bi->m_suspended_image;
+									bi->m_suspended_image = NULL;
+								}
+								glEnable(GL_TEXTURE_2D);
+								glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+								glDisable(GL_TEXTURE_GEN_S);
+								glDisable(GL_TEXTURE_GEN_T);
+							}
+						}
+
 						glBegin(GL_TRIANGLES);
 						glNormal3fv(f->normal);
 						for (int i = 0; i < 3; ++i)
 						{
-							glNormal3fv(normalL[3*p+i]);
+							glNormal3fv(normalL[3 * p + i]);
+							if (mat)
+							{
+								if (mat->texture1_map.user.p)
+								{
+									bitmap_info* bi = (bitmap_info*) mat->texture1_map.user.p;
+
+									// get texture size
+									int	tw = 1; while (tw < bi->m_original_width) { tw <<= 1; }
+									int	th = 1; while (th < bi->m_original_height) { th <<= 1; }
+
+									float scale_x = (float) bi->m_original_width / (float) tw;
+									float scale_y = (float) bi->m_original_height / (float) th;
+									float x = mesh->texelL[f->points[i]][1] * scale_x;
+									float y = scale_y - mesh->texelL[f->points[i]][0] * scale_y;
+									glTexCoord2f(x, y);
+								}
+							}
+
 							glVertex3fv(mesh->pointL[f->points[i]].pos);
 						}
 						glEnd();
+
+						glDisable(GL_TEXTURE_2D);
 					}
 					free(normalL);
 				}
@@ -393,10 +439,24 @@ namespace gameswf
 
 		glDisable(GL_TEXTURE_2D);
 
-		for (int i = 0; i < 3; i++)
-		{
-			m_rotate[i] = 0;
-		}
+		lib3ds_matrix_identity(m_matrix);
+
+		// aply gameswf matrix
+/*		matrix m = get_world_matrix();
+		float	mat[16];
+		memset(&mat[0], 0, sizeof(mat));
+		mat[0] = m.m_[0][0];
+		mat[1] = m.m_[1][0];
+		mat[4] = m.m_[0][1];
+		mat[5] = m.m_[1][1];
+		mat[10] = 1;
+		float w = 1024 * 20;	// hack, twips
+		float h = 768 * 20;	// hack, twips
+		mat[12] = -1.0f + 2.0f * m.m_[0][2] / w - m_def->m_sx;
+		mat[13] = 1.0f  - 2.0f * m.m_[1][2] / h - m_def->m_sy;
+		mat[15] = 1;
+	//	glMultMatrixf(mat);*/
+		
 	}
 
 	x3ds_instance::~x3ds_instance()
@@ -412,15 +472,12 @@ namespace gameswf
 
 	void	x3ds_instance::advance(float delta_time)
 	{
-		m_rotate[0]++;
-		m_rotate[1]++;
-		m_rotate[2]++;
+		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
+		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
+		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
 
-		m_current_frame += 1.0f;
-		if (m_current_frame > m_def->m_file->frames)
-		{
-			m_current_frame = 0.0f;
-		}
+
+		m_current_frame = fmod(m_current_frame + 1.0f, m_def->m_file->frames);
 		lib3ds_file_eval(m_def->m_file, m_current_frame);
 	}
 
@@ -460,16 +517,14 @@ namespace gameswf
 
 	}
 
-	void	x3ds_instance::apply_transormation(float* target, float* camera_pos)
+	void	x3ds_instance::apply_matrix(float* target, float* camera_pos)
 	{
 		Lib3dsVector v;
 		lib3ds_vector_sub(v, target, camera_pos);
 		float dist = lib3ds_vector_length(v);
 
 		glTranslatef(0.,dist, 0.);
-		glRotatef(m_rotate[0], 1., 0., 0.);
-		glRotatef(m_rotate[1], 0., 1., 0.);
-		glRotatef(m_rotate[2], 0., 0., 1.);
+		glMultMatrixf(&m_matrix[0][0]);
 		glTranslatef(0.,-dist, 0.);
 	}
 
