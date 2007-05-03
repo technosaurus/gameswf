@@ -4,7 +4,6 @@
 // whatever you want with it.
 
 // Lib3ds plugin implementation for gameswf library
-// Now this is testbed, not release, please do not use in real game
 
 #ifndef GAMESWF_3DS_H
 #define GAMESWF_3DS_H
@@ -31,11 +30,11 @@ namespace gameswf
 		void remove_camera(Lib3dsCamera* camera);
 
 		Lib3dsFile* m_file;
+		float	m_sx, m_sy, m_sz; // bounding box dimensions
 
 	private:
 
 		Lib3dsVector m_bmin, m_bmax;
-		float	m_sx, m_sy, m_sz; // bounding box dimensions
 		float m_size;
 
 		float	m_cx, m_cy, m_cz; // bounding box center
@@ -54,16 +53,16 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 
-		void	apply_transormation(float* target, float* camera_pos);
+		void	apply_matrix(float* target, float* camera_pos);
 
 		Lib3dsCamera* m_camera;
 		int m_texture_id;
-		float m_rotate[3];
 
 		private:
 		
 		smart_ptr<x3ds_definition>	m_def;
 		Lib3dsFloat m_current_frame;
+		Lib3dsMatrix m_matrix;
 
 	};
 
