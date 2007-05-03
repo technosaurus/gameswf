@@ -6,7 +6,7 @@
 #ifndef GAMESWF_TIMER_H
 #define GAMESWF_TIMER_H
 
-#include "gameswf_action.h"	// for as_object
+#include "gameswf/gameswf_action.h"	// for as_object
 
 namespace gameswf 
 {

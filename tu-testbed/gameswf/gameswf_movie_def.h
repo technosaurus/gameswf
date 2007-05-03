@@ -10,8 +10,8 @@
 #define GAMESWF_MOVIE_DEF_IMPL_H
 
 
-#include "gameswf.h"
-#include "gameswf_mutex.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_mutex.h"
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/smart_ptr.h"

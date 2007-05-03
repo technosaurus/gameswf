@@ -4,10 +4,10 @@
 //#define DEBUG_MEMORY_ALLOCATION 1
 
 #include "base/tu_config.h"
-#include "gameswf_log.h"
-#include "gameswf_action.h"
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_log.h"
 
 #ifdef HAVE_LIBXML
 

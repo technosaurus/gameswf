@@ -9,7 +9,7 @@
 #ifndef GAMESWF_AS_SOUND_H
 #define GAMESWF_AS_SOUND_H
 
-#include "../gameswf_action.h"	// for as_object
+#include "gameswf/gameswf_action.h"	// for as_object
 
 namespace gameswf
 {

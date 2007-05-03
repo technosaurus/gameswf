@@ -5,10 +5,10 @@
 
 // Action Script XMLSocket implementation code for the gameswf SWF player library.
 
-#include "../gameswf_as_classes/as_xmlsocket.h"
-#include "../gameswf_root.h"
-#include "../gameswf_function.h"
-//#include "../gameswf_log.h"
+#include "gameswf/gameswf_as_classes/as_xmlsocket.h"
+#include "gameswf/gameswf_root.h"
+#include "gameswf/gameswf_function.h"
+//#include "gameswf/gameswf_log.h"
 
 #define XML_TIMEOUT 1 //sec
 #define XML_MAXDATASIZE 102400 //100KB

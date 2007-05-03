@@ -14,10 +14,10 @@
 
 
 #include "base/tu_file.h"
-#include "gameswf_font.h"
-#include "gameswf_fontlib.h"
-#include "gameswf_stream.h"
-#include "gameswf_mutex.h"
+#include "gameswf/gameswf_font.h"
+#include "gameswf/gameswf_fontlib.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_mutex.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
 

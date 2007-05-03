@@ -6,7 +6,7 @@
 #ifndef GAMESWF_MORPH2_H
 #define GAMESWF_MORPH2_H
 
-#include "gameswf_shape.h"
+#include "gameswf/gameswf_shape.h"
 
 
 namespace gameswf

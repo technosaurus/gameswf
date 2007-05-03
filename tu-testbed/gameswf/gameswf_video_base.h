@@ -9,7 +9,7 @@
 #ifndef GAMESWF_VIDEO_BASE_H
 #define GAMESWF_VIDEO_BASE_H
 
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 
 namespace gameswf
 {

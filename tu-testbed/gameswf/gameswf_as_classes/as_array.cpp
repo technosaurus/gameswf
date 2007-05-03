@@ -3,8 +3,8 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "../gameswf_as_classes/as_array.h"
-//#include "../gameswf_log.h"
+#include "gameswf/gameswf_as_classes/as_array.h"
+//#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {

@@ -114,8 +114,8 @@
 // damage.
 
 
-#include "gameswf_tesselate.h"
-#include "gameswf_types.h"
+#include "gameswf/gameswf_tesselate.h"
+#include "gameswf/gameswf_types.h"
 #include "base/utility.h"
 #include "base/container.h"
 #include <stdlib.h>

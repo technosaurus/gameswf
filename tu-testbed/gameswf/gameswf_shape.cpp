@@ -6,13 +6,13 @@
 // Quadratic bezier outline shapes, the basis for most SWF rendering.
 
 
-#include "gameswf_shape.h"
+#include "gameswf/gameswf_shape.h"
 
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
-#include "gameswf_render.h"
-#include "gameswf_stream.h"
-#include "gameswf_tesselate.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_tesselate.h"
 
 #include "base/tu_file.h"
 

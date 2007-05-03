@@ -11,8 +11,8 @@
 
 
 #include "base/container.h"
-#include "gameswf_types.h"
-#include "gameswf_impl.h"
+#include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_impl.h"
 
 
 namespace gameswf

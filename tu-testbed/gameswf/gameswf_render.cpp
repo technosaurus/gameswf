@@ -6,8 +6,8 @@
 // Interface to back-end renderer.
 
 
-#include "gameswf_render.h"
-#include "gameswf_log.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_log.h"
 
 
 namespace gameswf 

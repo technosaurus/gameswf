@@ -6,7 +6,7 @@
 // The Color class lets you set the RGB color value and color transform
 // of movie clips and retrieve those values once they have been set. 
 
-#include "../gameswf_as_classes/as_color.h"
+#include "gameswf/gameswf_as_classes/as_color.h"
 
 namespace gameswf
 {

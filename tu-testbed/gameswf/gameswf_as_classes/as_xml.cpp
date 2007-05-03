@@ -18,7 +18,7 @@
 #ifdef HAVE_LIBXML
 
 #include <unistd.h>
-#include "gameswf_xml.h"
+#include "gameswf/gameswf_xml.h"
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/xmlreader.h>

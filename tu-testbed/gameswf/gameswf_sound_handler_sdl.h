@@ -9,11 +9,11 @@
 #include <SDL_audio.h>
 #include <SDL_thread.h>
 
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
-#include "gameswf_mutex.h"
-#include "gameswf_log.h"
+#include "gameswf/gameswf_mutex.h"
+#include "gameswf/gameswf_log.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 #include <ffmpeg/avformat.h>

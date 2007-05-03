@@ -6,8 +6,8 @@
 // Helpers for logging messages & errors.
 
 
-#include "gameswf_log.h"
-#include "gameswf.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf.h"
 
 #include <stdio.h>
 #include <stdarg.h>

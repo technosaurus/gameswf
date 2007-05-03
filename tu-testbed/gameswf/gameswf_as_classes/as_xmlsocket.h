@@ -9,8 +9,8 @@
 #ifndef GAMESWF_AS_XMLSOCKET_H
 #define GAMESWF_AS_XMLSOCKET_H
 
-#include "../gameswf_action.h"	// for as_object
-#include "../../net/http_client.h"
+#include "gameswf/gameswf_action.h"	// for as_object
+#include "net/http_client.h"
 
 namespace gameswf
 {

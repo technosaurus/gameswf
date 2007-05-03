@@ -3,13 +3,13 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "gameswf.h"
-#include "gameswf_value.h"
-#include "gameswf_character.h"
-#include "gameswf_sprite.h"
-#include "gameswf_log.h"
-#include "gameswf_function.h"
-#include "gameswf_render.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_value.h"
+#include "gameswf/gameswf_character.h"
+#include "gameswf/gameswf_sprite.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_render.h"
 #include "plugins/lib3ds/gameswf_3ds.h"
 
 #ifdef _WIN32

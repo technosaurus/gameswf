@@ -7,11 +7,11 @@
 
 
 
-#include "gameswf_dlist.h"
-#include "gameswf_log.h"
-#include "gameswf_render.h"
-#include "gameswf.h"
-#include "gameswf_root.h"
+#include "gameswf/gameswf_dlist.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_root.h"
 #include <typeinfo>
 
 

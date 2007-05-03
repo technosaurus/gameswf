@@ -5,8 +5,8 @@
 
 // superfast NVIDIA OpenGL video implementation
 
-#include "gameswf_types.h"
-#include "gameswf_video_ogl.h"
+#include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_video_ogl.h"
 
 // YUV_video_ogl implementation
 

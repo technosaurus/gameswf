@@ -5,10 +5,10 @@
 
 // ActionScript function.
 
-#include "gameswf_function.h"
-#include "gameswf_log.h"
-#include "gameswf_character.h"
-#include "gameswf_as_classes/as_array.h"
+#include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_character.h"
+#include "gameswf/gameswf_as_classes/as_array.h"
 
 namespace gameswf
 {

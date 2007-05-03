@@ -11,7 +11,7 @@
 #if TU_CONFIG_LINK_TO_MYSQL == 1
 
 #include <mysql/mysql.h>
-#include "../gameswf_action.h"	// for as_object
+#include "gameswf/gameswf_action.h"	// for as_object
 
 namespace gameswf
 {

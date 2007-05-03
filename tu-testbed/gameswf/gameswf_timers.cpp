@@ -3,9 +3,9 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "gameswf_timers.h"
-#include "gameswf_root.h"
-#include "gameswf_function.h"
+#include "gameswf/gameswf_timers.h"
+#include "gameswf/gameswf_root.h"
+#include "gameswf/gameswf_function.h"
 
 // hack: timer_id is't a number but the as_object*
 

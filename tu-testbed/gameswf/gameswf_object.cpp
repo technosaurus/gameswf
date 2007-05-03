@@ -6,9 +6,9 @@
 // A generic bag of attributes.	 Base-class for ActionScript
 // script-defined objects.
 
-#include "gameswf_object.h"
-#include "gameswf_action.h"
-#include "gameswf_function.h"
+#include "gameswf/gameswf_object.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_function.h"
 
 namespace gameswf
 {

@@ -6,11 +6,11 @@
 // Code to handle SWF sound-related tags.
 
 
-#include "gameswf_sound.h"
-#include "gameswf_stream.h"
-#include "gameswf_impl.h"
-#include "gameswf_log.h"
-#include "gameswf_movie_def.h"
+#include "gameswf/gameswf_sound.h"
+#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_movie_def.h"
 
 
 namespace gameswf

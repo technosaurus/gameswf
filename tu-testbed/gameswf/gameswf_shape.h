@@ -10,7 +10,7 @@
 #define GAMESWF_SHAPE_H
 
 
-#include "gameswf_styles.h"
+#include "gameswf/gameswf_styles.h"
 
 
 namespace gameswf

@@ -3,9 +3,9 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "../gameswf_as_classes/as_key.h"
-#include "../gameswf_log.h"
-#include "../gameswf_root.h"
+#include "gameswf/gameswf_as_classes/as_key.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_root.h"
 
 namespace gameswf
 {

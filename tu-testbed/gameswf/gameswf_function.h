@@ -8,9 +8,9 @@
 #ifndef GAMESWF_FUNCTION_H
 #define GAMESWF_FUNCTION_H
 
-#include "gameswf.h"
-#include "gameswf_environment.h"
-#include "gameswf_object.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_environment.h"
+#include "gameswf/gameswf_object.h"
 
 #include "base/container.h"
 #include "base/smart_ptr.h"

@@ -10,8 +10,8 @@
 #ifndef GAMESWF_AS_COLOR_H
 #define GAMESWF_AS_COLOR_H
 
-#include "../gameswf_action.h"	// for as_object
-#include "../gameswf_character.h"
+#include "gameswf/gameswf_action.h"	// for as_object
+#include "gameswf/gameswf_character.h"
 
 namespace gameswf
 {

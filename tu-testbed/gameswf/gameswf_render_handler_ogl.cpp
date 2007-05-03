@@ -5,9 +5,9 @@
 
 // A gameswf::render_handler that uses SDL & OpenGL
 
-#include "gameswf.h"
-#include "gameswf_types.h"
-#include "gameswf_video_ogl.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_video_ogl.h"
 #include "base/image.h"
 #include "base/ogl.h"
 #include "base/utility.h"

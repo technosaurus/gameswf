@@ -10,20 +10,19 @@
 #define GAMESWF_SPRITE_H
 
 
-#include "gameswf.h"
-#include "gameswf_action.h"
-#include "gameswf_types.h"
-#include "gameswf_log.h"
-#include "gameswf_movie_def.h"
-#include "gameswf_dlist.h"
-#include "gameswf_root.h"
-#include <assert.h>
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_as_classes/as_mcloader.h"
+#include "gameswf/gameswf_dlist.h"
+#include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_movie_def.h"
+#include "gameswf/gameswf_root.h"
+#include "gameswf/gameswf_sprite_def.h"
+#include "gameswf/gameswf_types.h"
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/smart_ptr.h"
 #include <stdarg.h>
-#include "gameswf_sprite_def.h"
-#include "gameswf_as_classes/as_mcloader.h"
 
 namespace gameswf
 {

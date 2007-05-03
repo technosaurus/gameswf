@@ -7,11 +7,11 @@
 #include "config.h"
 #endif
 
-#include "../gameswf_as_classes/as_netstream.h"
-#include "../gameswf_render.h"
-#include "../gameswf_video_base.h"
-#include "../gameswf_mutex.h"
-#include "../gameswf_function.h"
+#include "gameswf/gameswf_as_classes/as_netstream.h"
+#include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_video_base.h"
+#include "gameswf/gameswf_mutex.h"
+#include "gameswf/gameswf_function.h"
 #include "base/tu_timer.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
@@ -597,8 +597,8 @@ namespace gameswf
 
 #else
 
-#include "../gameswf_action.h"
-#include "../gameswf_log.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {

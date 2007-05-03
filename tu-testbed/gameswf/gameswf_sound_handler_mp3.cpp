@@ -13,7 +13,7 @@
 
 #ifdef GAMESWF_MP3_SUPPORT
 
-#include "gameswf.h"
+#include "gameswf/gameswf.h"
 #include "base/container.h"
 
 // @@ These macros are internal to gameswf; maybe should expose them for
