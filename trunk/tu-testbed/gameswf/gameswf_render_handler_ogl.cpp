@@ -58,6 +58,7 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 		if (m_texture_id > 0)
 		{
 			glDeleteTextures(1, (GLuint*) &m_texture_id);
+			m_texture_id = 0;	// for debuging
 		}
 	}
 };

@@ -8,7 +8,6 @@
 // TODO we should:
 // handle character properties like _x, _y, _z, _zoom, ...
 // do this more efficiently.
-// load texture from file once (use hash<file_name, bitmap_info>)
 // consider an opportunity of using movieclip as texture for 3D model
 
 #include "base/tu_config.h"
@@ -52,10 +51,14 @@ namespace gameswf
 		m_cz = (m_bmin[2] + m_bmax[2]) / 2;
 
 		lib3ds_file_eval(m_file, 0.);
+
+		m_mesh_list  = glGenLists(1);
+		assert(m_mesh_list);
 	}
 
 	x3ds_definition::~x3ds_definition()
 	{
+		glDeleteLists(m_mesh_list, 1);
 		if (m_file)
 		{
 			lib3ds_file_free(m_file);
@@ -171,6 +174,148 @@ namespace gameswf
 
 	}
 
+	bitmap_info* x3ds_definition::get_texture(const char* infile)
+	{
+		if (infile == NULL)
+		{
+			return NULL;
+		}
+
+		// is path relative ?
+		tu_string url = get_workdir();
+		if (strstr(infile, ":") || infile[0] == '/')
+		{
+			url = "";
+		}
+		url += infile;
+
+		// is already loaded ?
+		smart_ptr<bitmap_info> bi = NULL;
+		if (m_texture.get(url, &bi))
+		{
+			return bi.get_ptr();
+		}
+
+		// load image & create texture
+		image::rgb* im = image::read_jpeg(url.c_str());
+		if (im)
+		{
+			bi = get_render_handler()->create_bitmap_info_rgb(im);
+			delete im;
+			bi->layout_image(bi->m_suspended_image);
+			delete bi->m_suspended_image;
+			bi->m_suspended_image = NULL;
+			m_texture.add(url, bi);
+			return bi.get_ptr();
+		}
+
+		printf("can't load %s\n", url.c_str());
+		return NULL;
+	}
+
+	void x3ds_definition::set_material(Lib3dsMaterial* mat)
+	{
+		if (mat)
+		{
+			float s;
+			if (mat->two_sided)
+			{
+				glDisable(GL_CULL_FACE);
+			}
+			else
+			{
+				glEnable(GL_CULL_FACE);
+			}
+
+			glMaterialfv(GL_FRONT, GL_AMBIENT, mat->ambient);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, mat->diffuse);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, mat->specular);
+
+			s = pow(2, 10.0f * mat->shininess);
+			if (s > 128.0f)
+			{
+				s = 128.0f;
+			}
+			glMaterialf(GL_FRONT, GL_SHININESS, s);
+
+			// try to bind texture
+			bitmap_info* bi = get_texture(mat->texture1_map.name);
+			if (bi)
+			{
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+				glDisable(GL_TEXTURE_GEN_S);
+				glDisable(GL_TEXTURE_GEN_T);
+			}
+
+		}
+		else
+		{
+			// no material, assume the default
+			static const Lib3dsRgba a = {0.2f, 0.2f, 0.2f, 1.0f};
+			static const Lib3dsRgba d = {0.8f, 0.8f, 0.8f, 1.0f};
+			static const Lib3dsRgba s = {0.0f, 0.0f, 0.0f, 1.0f};
+			glMaterialfv(GL_FRONT, GL_AMBIENT, a);
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, d);
+			glMaterialfv(GL_FRONT, GL_SPECULAR, s);
+		}
+	}
+
+	void x3ds_definition::bind_material(Lib3dsMaterial* mat, float U, float V)
+	{
+		if (mat)
+		{
+			bitmap_info* bi = get_texture(mat->texture1_map.name);
+			if (bi)
+			{
+
+				// get texture size
+				int	tw = 1; while (tw < bi->m_original_width) { tw <<= 1; }
+				int	th = 1; while (th < bi->m_original_height) { th <<= 1; }
+
+				float scale_x = (float) bi->m_original_width / (float) tw;
+				float scale_y = (float) bi->m_original_height / (float) th;
+				float x = U * scale_x;
+				float y = scale_y - V * scale_y;
+				glTexCoord2f(x, y);
+			}
+		}
+	}
+
+	void x3ds_definition::create_mesh_list(Lib3dsMesh* mesh)
+	{
+		Lib3dsVector* normalL = (Lib3dsVector*) malloc(3 * sizeof(Lib3dsVector) * mesh->faces);
+		{
+			Lib3dsMatrix m;
+			lib3ds_matrix_copy(m, mesh->matrix);
+			lib3ds_matrix_inv(m);
+			glMultMatrixf(&m[0][0]);
+		}
+
+		lib3ds_mesh_calculate_normals(mesh, normalL);
+
+		Lib3dsMaterial* oldmat = NULL;
+		for (Uint32 p = 0; p < mesh->faces; ++p)
+		{
+			Lib3dsFace* f = &mesh->faceL[p];
+			Lib3dsMaterial* mat = f->material[0] ? lib3ds_file_material_by_name(m_file, f->material) : NULL;
+			set_material(mat);
+
+			glBegin(GL_TRIANGLES);
+			glNormal3fv(f->normal);
+			for (int i = 0; i < 3; ++i)
+			{
+				glNormal3fv(normalL[3 * p + i]);
+				bind_material(mat, mesh->texelL[f->points[i]][1], mesh->texelL[f->points[i]][0]);
+				glVertex3fv(mesh->pointL[f->points[i]].pos);
+			}
+			glEnd();
+			glDisable(GL_TEXTURE_2D);
+		}
+
+		free(normalL);
+	}
+
 	void x3ds_definition::render_node(Lib3dsNode* node)
 	{
 		for (Lib3dsNode* p = node->childs; p != 0; p = p->next)
@@ -191,154 +336,19 @@ namespace gameswf
 				mesh = lib3ds_file_mesh_by_name(m_file, node->name);
 			}
 			assert(mesh);
+			
+			// build mesh list
+			glNewList(m_mesh_list, GL_COMPILE);
+			create_mesh_list(mesh);
+			glEndList();
 
-			if (mesh->user.d == 0)
-			{
-				mesh->user.d = glGenLists(1);
-				glNewList(mesh->user.d, GL_COMPILE);
-				{
-					Lib3dsVector* normalL = (Lib3dsVector*) malloc(3 * sizeof(Lib3dsVector) * mesh->faces);
-					Lib3dsMaterial* oldmat = (Lib3dsMaterial*) -1;
-					{
-						Lib3dsMatrix m;
-						lib3ds_matrix_copy(m, mesh->matrix);
-						lib3ds_matrix_inv(m);
-						glMultMatrixf(&m[0][0]);
-					}
-					lib3ds_mesh_calculate_normals(mesh, normalL);
-
-					for (unsigned p = 0; p < mesh->faces; ++p)
-					{
-						Lib3dsFace* f = &mesh->faceL[p];
-						Lib3dsMaterial* mat = 0;
-
-						if (f->material[0]) 
-						{
-							mat = lib3ds_file_material_by_name(m_file, f->material);
-						}
-
-						if (mat != oldmat)
-						{
-							if (mat)
-							{
-								float s;
-								if (mat->two_sided)
-								{
-									glDisable(GL_CULL_FACE);
-								}
-								else
-								{
-									glEnable(GL_CULL_FACE);
-								}
-
-								// load image
-								if (mat->texture1_map.name[0])
-								{
-									if (mat->texture1_map.user.p == NULL)
-									{	
-										tu_string url;
-	//									url = datapath;
-										url = "/";
-										url += mat->texture1_map.name;
-
-										image::rgb* im = image::read_jpeg(url.c_str());
-										if (im)
-										{
-											mat->texture1_map.user.p = get_render_handler()->create_bitmap_info_rgb(im);
-										}
-										else
-										{
-											printf("can't load %s\n", url.c_str());
-										}
-										// create & bind texture
-									}
-								}
-
-								glMaterialfv(GL_FRONT, GL_AMBIENT, mat->ambient);
-								glMaterialfv(GL_FRONT, GL_DIFFUSE, mat->diffuse);
-								glMaterialfv(GL_FRONT, GL_SPECULAR, mat->specular);
-
-								s = pow(2, 10.0f * mat->shininess);
-								if (s > 128.0f)
-								{
-									s = 128.0f;
-								}
-								glMaterialf(GL_FRONT, GL_SHININESS, s);
-							}
-							else
-							{
-								static const Lib3dsRgba a = {0.2f, 0.2f, 0.2f, 1.0f};
-								static const Lib3dsRgba d = {0.8f, 0.8f, 0.8f, 1.0f};
-								static const Lib3dsRgba s = {0.0f, 0.0f, 0.0f, 1.0f};
-
-								glMaterialfv(GL_FRONT, GL_AMBIENT, a);
-								glMaterialfv(GL_FRONT, GL_DIFFUSE, d);
-								glMaterialfv(GL_FRONT, GL_SPECULAR, s);
-							}
-							oldmat = mat;
-						}
-
-						if (mat)
-						{
-							if (mat->texture1_map.user.p)
-							{
-								bitmap_info* bi = (bitmap_info*) mat->texture1_map.user.p;
-								if (bi->m_texture_id == 0 && bi->m_suspended_image != NULL)
-								{
-									bi->layout_image(bi->m_suspended_image);
-									delete bi->m_suspended_image;
-									bi->m_suspended_image = NULL;
-								}
-								glEnable(GL_TEXTURE_2D);
-								glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
-								glDisable(GL_TEXTURE_GEN_S);
-								glDisable(GL_TEXTURE_GEN_T);
-							}
-						}
-
-						glBegin(GL_TRIANGLES);
-						glNormal3fv(f->normal);
-						for (int i = 0; i < 3; ++i)
-						{
-							glNormal3fv(normalL[3 * p + i]);
-							if (mat)
-							{
-								if (mat->texture1_map.user.p)
-								{
-									bitmap_info* bi = (bitmap_info*) mat->texture1_map.user.p;
-
-									// get texture size
-									int	tw = 1; while (tw < bi->m_original_width) { tw <<= 1; }
-									int	th = 1; while (th < bi->m_original_height) { th <<= 1; }
-
-									float scale_x = (float) bi->m_original_width / (float) tw;
-									float scale_y = (float) bi->m_original_height / (float) th;
-									float x = mesh->texelL[f->points[i]][1] * scale_x;
-									float y = scale_y - mesh->texelL[f->points[i]][0] * scale_y;
-									glTexCoord2f(x, y);
-								}
-							}
-
-							glVertex3fv(mesh->pointL[f->points[i]].pos);
-						}
-						glEnd();
-
-						glDisable(GL_TEXTURE_2D);
-					}
-					free(normalL);
-				}
-				glEndList();
-			}
-
-			if (mesh->user.d)
-			{
-				glPushMatrix();
-				Lib3dsObjectData* d = &node->data.object;
-				glMultMatrixf(&node->matrix[0][0]);
-				glTranslatef( - d->pivot[0], - d->pivot[1], - d->pivot[2]);
-				glCallList(mesh->user.d);
-				glPopMatrix();
-			}
+			// exec mesh list
+			glPushMatrix();
+			Lib3dsObjectData* d = &node->data.object;
+			glMultMatrixf(&node->matrix[0][0]);
+			glTranslatef( - d->pivot[0], - d->pivot[1], - d->pivot[2]);
+			glCallList(m_mesh_list);
+			glPopMatrix();
 		}
 	}
 
