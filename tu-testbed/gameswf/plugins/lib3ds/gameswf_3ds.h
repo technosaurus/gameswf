@@ -36,10 +36,23 @@ namespace gameswf
 
 		Lib3dsVector m_bmin, m_bmax;
 		float m_size;
-
 		float	m_cx, m_cy, m_cz; // bounding box center
 		int m_lightList;
+		GLuint m_mesh_list;
 
+		// textures required for 3D model
+		string_hash< smart_ptr<bitmap_info> > m_texture;
+
+		// load image & create texture or get bitmap_info pointer to loaded texture
+		bitmap_info* get_texture(const char* finame);
+
+		// enables texture if there is material & loaded image
+		void set_material(Lib3dsMaterial* mat);
+
+		// binds texture to triangle (from mesh)
+		void bind_material(Lib3dsMaterial* mat, float U, float V);
+
+		void create_mesh_list(Lib3dsMesh* mesh);
 		void render_node(Lib3dsNode* node);
 	};
 
