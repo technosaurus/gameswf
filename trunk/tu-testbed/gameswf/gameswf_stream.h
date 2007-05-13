@@ -25,6 +25,9 @@ namespace gameswf
 		int	read_uint(int bitcount);
 		int	read_sint(int bitcount);
 		float	read_fixed();
+		float	read_float16();
+		float	read_float();
+		double	read_double();
 		void	align();
 
 		Uint8	read_u8();

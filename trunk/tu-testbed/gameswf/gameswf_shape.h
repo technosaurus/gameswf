@@ -204,6 +204,11 @@ namespace gameswf
 		
 		rect	m_bound;
 
+		// for DefineShape4
+		rect	m_edge_bounds;
+		bool	m_uses_nonscaling_strokes;
+		bool	m_uses_scaling_strokes;
+
 		// Cached pre-tesselated meshes.
 		mutable array<mesh_set*>	m_cached_meshes;
 	};

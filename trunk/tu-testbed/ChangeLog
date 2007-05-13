@@ -1,3 +1,13 @@
+2007-05-13  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/plugins/lib3ds/gameswf_3ds.*: inhibited till the best times
+	* gameswf/gameswf_font.*
+	* gameswf/gameswf_impl.*
+	* gameswf/gameswf_stream.*
+	* gameswf/gameswf_styles.*
+	* gameswf/gameswf_shape.cpp:
+	added readers of DefineFont3, DefineShape4, DefineFileAttribute & DefineFontAlignZones tags
+
 2007-05-06  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/plugins/lib3ds/gameswf_3ds.*: more readable, fixed memory leak & cleanup

@@ -18,8 +18,7 @@
 
 #include <float.h>
 
-// Vitaly: there are problems with NEW TESSELATOR because USE_NEW_TESSELATOR
-//	is commented
+// Vitaly: there are problems with NEW TESSELATOR therefore USE_NEW_TESSELATOR is commented
 //	1. Memory leaks
 //	2. Arises	assert(vi2 != vi0) in file "ear_clip_triangulate_impl.h", line 982
 //	while playing some files with static text on dual processor mashine
@@ -1028,7 +1027,7 @@ namespace gameswf
 	}
 
 
-	static void	read_line_styles(array<line_style>* styles, stream* in, int tag_type)
+	static void	read_line_styles(array<line_style>* styles, stream* in, int tag_type, movie_definition_sub* m)
 	// Read line styles and push them onto the back of the given array.
 	{
 		// Get the count.
@@ -1050,7 +1049,7 @@ namespace gameswf
 		for (int i = 0; i < line_style_count; i++)
 		{
 			(*styles).resize((*styles).size() + 1);
-			(*styles)[(*styles).size() - 1].read(in, tag_type);
+			(*styles)[(*styles).size() - 1].read(in, tag_type, m);
 		}
 	}
 
@@ -1060,7 +1059,9 @@ namespace gameswf
 	//
 
 
-	shape_character_def::shape_character_def()
+	shape_character_def::shape_character_def() :
+		m_uses_nonscaling_strokes(false),
+		m_uses_scaling_strokes(false)
 	{
 	}
 
@@ -1080,8 +1081,18 @@ namespace gameswf
 		if (with_style)
 		{
 			m_bound.read(in);
+	
+			// DefineShape4, Flash 8
+			if (tag_type == 83)
+			{
+				m_edge_bounds.read(in);
+				Uint8 b = in->read_u8();
+				m_uses_nonscaling_strokes = b & 0x02 ? true : false;
+				m_uses_scaling_strokes = b & 0x01 ? true : false;
+			}
+
 			read_fill_styles(&m_fill_styles, in, tag_type, m);
-			read_line_styles(&m_line_styles, in, tag_type);
+			read_line_styles(&m_line_styles, in, tag_type, m);
 		}
 
 		//
@@ -1230,7 +1241,7 @@ namespace gameswf
 					fill_base = m_fill_styles.size();
 					line_base = m_line_styles.size();
 					read_fill_styles(&m_fill_styles, in, tag_type, m);
-					read_line_styles(&m_line_styles, in, tag_type);
+					read_line_styles(&m_line_styles, in, tag_type, m);
 					num_fill_bits = in->read_uint(4);
 					num_line_bits = in->read_uint(4);
 				}

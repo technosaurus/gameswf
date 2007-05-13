@@ -95,7 +95,7 @@ namespace gameswf
 	// For the outside of outline shapes, or just bare lines.
 	{
 		line_style();
-		void	read(stream* in, int tag_type);
+		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		virtual void	apply(float ratio) const;
 
 		Uint16	get_width() const { return m_width; }
@@ -106,6 +106,16 @@ namespace gameswf
 
 		Uint16	m_width;	// in TWIPS
 		rgba	m_color;
+		fill_style m_fill_style;
+		Uint8 m_start_capstyle;
+		Uint8 m_joinstyle;
+		bool m_has_fill_flag;
+		bool m_no_hscale_flag;
+		bool m_no_vscale_flag;
+		bool m_pixelhinting_flag;
+		bool m_noclose;
+		Uint8 m_end_capstyle;
+		Uint16 m_miter_limit_factor;
 	};
 
 	struct morph_line_style : public base_line_style

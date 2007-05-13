@@ -62,6 +62,7 @@ namespace gameswf
 		shape_character_def*	get_glyph(int glyph_index) const;
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	read_font_info(stream* in, int tag_type);
+		void	read_font_alignzones(stream* in, int tag_type);
 
 		void	output_cached_data(tu_file* out, const cache_options& options);
 		void	input_cached_data(tu_file* in);
@@ -131,6 +132,25 @@ namespace gameswf
 			}
 		};
 		hash<kerning_pair, float>	m_kerning_pairs;
+
+		// Font thickness hint. Refers to the thickness of the typical stroke used in the font
+		// 0 = thin, 1 = medium, 2 = thick
+		Uint8 m_table_hint;
+
+		// Alignment zones
+		struct zone_record
+		{
+			struct zone_data
+			{
+				float m_alignment_coord;
+				float m_range;
+			};
+			array<zone_data> m_zone_data;
+
+			bool m_has_maskx;
+			bool m_has_masky;
+		};
+		array<zone_record> m_zone_table;
 	};
 
 }	// end namespace gameswf
