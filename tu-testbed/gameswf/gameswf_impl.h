@@ -242,6 +242,8 @@ namespace gameswf
 	void	video_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	sound_stream_head_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	sound_stream_block_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_file_attribute_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_font_alignzones(stream* in, int tag_type, movie_definition_sub* m);
 
 }	// end namespace gameswf
 

@@ -334,15 +334,77 @@ namespace gameswf
 	
 	line_style::line_style()
 		:
-		m_width(0)
+		m_width(0),
+		m_start_capstyle(0),
+		m_joinstyle(0),
+		m_has_fill_flag(false),
+		m_no_hscale_flag(false),
+		m_no_vscale_flag(false),
+		m_pixelhinting_flag(false),
+		m_noclose(false),
+		m_end_capstyle(0),
+		m_miter_limit_factor(0)
 	{
 	}
 
 
-	void	line_style::read(stream* in, int tag_type)
+	void	line_style::read(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		m_width = in->read_u16();
-		m_color.read(in, tag_type);
+		if (tag_type == 83)	// SHAPE 4
+		{
+			// 0 = Round cap
+			// 1 = No cap
+			// 2 = Square cap
+			m_start_capstyle = in->read_uint(2);
+
+			// 0 = Round join
+			// 1 = Bevel join
+			// 2 = Miter join
+			m_joinstyle = in->read_uint(2);
+
+			// If 0, uses Color field.
+			m_has_fill_flag  = in->read_uint(1) == 1 ? true : false;
+
+			// If 1, stroke thickness will not scale if the object is scaled horizontally.
+			m_no_hscale_flag = in->read_uint(1) == 1 ? true : false;
+
+			// If 1, stroke thickness will not scale if the object is scaled vertically.
+			m_no_vscale_flag = in->read_uint(1) == 1 ? true : false;
+
+			// If 1, all anchors will be aligned to full pixels.
+			m_pixelhinting_flag = in->read_uint(1) == 1 ? true : false;
+
+			in->read_uint(5); // Reserved UB[5] Must be 0.
+
+			// If 1, stroke will not be closed if the stroke’s last point
+			// matches its first point. Flash Player will apply caps instead of a join.
+			m_noclose = in->read_uint(1) == 1 ? true : false;
+
+			// 0 = Round cap
+			// 1 = No cap
+			// 2 = Square cap
+			m_end_capstyle = in->read_uint(2);
+
+			if (m_joinstyle == 2)
+			{
+				// Miter limit factor is an 8.8 fixed-point value
+				m_miter_limit_factor = in->read_u16();
+			}
+
+			if (m_has_fill_flag)
+			{
+				m_fill_style.read(in, tag_type, m);
+			}
+			else
+			{
+				m_color.read(in, tag_type);
+			}
+		}
+		else
+		{
+			m_color.read(in, tag_type);
+		}
 	}
 
 

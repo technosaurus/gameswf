@@ -30,7 +30,8 @@ namespace gameswf
 		m_wide_codes(false),
 		m_ascent(0.0f),
 		m_descent(0.0f),
-		m_leading(0.0f)
+		m_leading(0.0f),
+		m_table_hint(0)
 	{
 	}
 
@@ -104,7 +105,7 @@ namespace gameswf
 
 	void	font::read(stream* in, int tag_type, movie_definition_sub* m)
 	{
-		assert(tag_type == 10 || tag_type == 48);
+		assert(tag_type == 10 || tag_type == 48 || tag_type == 75);
 
 		// No add_ref() here, to avoid cycle.  m_owning_movie is our owner, so it has a ref to us.
 		m_owning_movie = m;
@@ -288,6 +289,147 @@ namespace gameswf
 				}}
 			}
 		}
+		else if (tag_type == 75)
+		{
+			IF_VERBOSE_PARSE(log_msg("reading DefineFont3\n"));
+
+			bool	has_layout = (in->read_uint(1) != 0);
+			m_shift_jis_chars = (in->read_uint(1) != 0);
+			m_unicode_chars = (in->read_uint(1) != 0);
+			m_ansi_chars = (in->read_uint(1) != 0);
+			bool	wide_offsets = (in->read_uint(1) != 0);
+			m_wide_codes = (in->read_uint(1) != 0);
+			m_is_italic = (in->read_uint(1) != 0);
+			m_is_bold = (in->read_uint(1) != 0);
+			Uint8	reserved = in->read_u8();
+
+			// Inhibit warning.
+			reserved = reserved;
+
+			m_name = in->read_string_with_length();
+
+			int	glyph_count = in->read_u16();
+			
+			int	table_base = in->get_position();
+
+			// Read the glyph offsets.  Offsets
+			// are measured from the start of the
+			// offset table.
+			array<int>	offsets;
+			int	font_code_offset;
+			if (wide_offsets)
+			{
+				// 32-bit offsets.
+				for (int i = 0; i < glyph_count; i++)
+				{
+					offsets.push_back(in->read_u32());
+				}
+				font_code_offset = in->read_u32();
+			}
+			else
+			{
+				// 16-bit offsets.
+				for (int i = 0; i < glyph_count; i++)
+				{
+					offsets.push_back(in->read_u16());
+				}
+				font_code_offset = in->read_u16();
+			}
+
+			m_glyphs.resize(glyph_count);
+			m_texture_glyphs.resize(m_glyphs.size());
+
+			if (m->get_create_font_shapes() == DO_LOAD_FONT_SHAPES)
+			{
+				// Read the glyph shapes.
+				{for (int i = 0; i < glyph_count; i++)
+				{
+					// Seek to the start of the shape data.
+					int	new_pos = table_base + offsets[i];
+					// if we're seeking backwards, then that looks like a bug.
+					assert(new_pos >= in->get_position());
+					in->set_position(new_pos);
+
+					// Create & read the shape.
+					shape_character_def* s = new shape_character_def;
+					s->read(in, 22, false, m);
+
+					m_glyphs[i] = s;
+				}}
+
+				int	current_position = in->get_position();
+				if (font_code_offset + table_base != current_position)
+				{
+					// Bad offset!  Don't try to read any more.
+					return;
+				}
+			}
+			else
+			{
+				// Skip the shape data.
+				int	new_pos = table_base + font_code_offset;
+				if (new_pos >= in->get_tag_end_position())
+				{
+					// No layout data!
+					return;
+				}
+
+				in->set_position(new_pos);
+			}
+
+			read_code_table(in);
+
+			// Read layout info for the glyphs.
+			if (has_layout)
+			{
+				m_ascent = (float) in->read_s16();
+				m_descent = (float) in->read_s16();
+				m_leading = (float) in->read_s16();
+				
+				// Advance table; i.e. how wide each character is.
+				m_advance_table.resize(m_glyphs.size());
+				for (int i = 0, n = m_advance_table.size(); i < n; i++)
+				{
+					m_advance_table[i] = (float) in->read_s16();
+				}
+
+				// Bounds table.
+				//m_bounds_table.resize(m_glyphs.size());	// kill
+				rect	dummy_rect;
+				{for (int i = 0, n = m_glyphs.size(); i < n; i++)
+				{
+					//m_bounds_table[i].read(in);	// kill
+					dummy_rect.read(in);
+				}}
+
+				// Kerning pairs.
+				int	kerning_count = in->read_u16();
+				{for (int i = 0; i < kerning_count; i++)
+				{
+					Uint16	char0, char1;
+					if (m_wide_codes)
+					{
+						char0 = in->read_u16();
+						char1 = in->read_u16();
+					}
+					else
+					{
+						char0 = in->read_u8();
+						char1 = in->read_u8();
+					}
+					float	adjustment = (float) in->read_s16();
+
+					kerning_pair	k;
+					k.m_char0 = char0;
+					k.m_char1 = char1;
+
+					// Remember this adjustment; we can look it up quickly
+					// later using the character pair as the key.
+					m_kerning_pairs.add(k, adjustment);
+				}}
+			}
+		}
+
 	}
 
 
@@ -322,6 +464,32 @@ namespace gameswf
 		read_code_table(in);
 	}
 
+	void	font::read_font_alignzones(stream* in, int tag_type)
+	// Flash uses alignment zones to establish the borders of a glyph for pixel snapping.
+	// Alignment zones are critical for high-quality display of fonts.
+	// The alignment zone defines a bounding box for strong vertical and horizontal components of
+	// a glyph. The box is described by a left coordinate, thickness, baseline coordinate, and height.	
+	{
+		m_table_hint = in->read_uint(2);
+		in->read_uint(6);	// reserved
+
+		// Read alignment zone information for each glyph.
+		m_zone_table.resize(m_glyphs.size());
+		for (int i = 0, n = m_glyphs.size(); i < n; i++)
+		{
+			int num_zone_data = in->read_u8();
+			m_zone_table[i].m_zone_data.resize(num_zone_data);
+			for (int j = 0; j < num_zone_data; j++)
+			{
+				m_zone_table[i].m_zone_data[j].m_alignment_coord = in->read_float16();
+				m_zone_table[i].m_zone_data[j].m_range = in->read_float16();
+			}
+			m_zone_table[i].m_has_maskx = in->read_uint(1) == 1 ? true : false;
+			m_zone_table[i].m_has_masky = in->read_uint(1) == 1 ? true : false;
+			in->read_uint(6);	// reserved
+		}
+
+	}
 
 	void	font::read_code_table(stream* in)
 	// Read the table that maps from glyph indices to character

@@ -270,6 +270,11 @@ namespace gameswf
 			register_tag_loader(60, define_video_loader);
 			register_tag_loader(61, video_loader);
 			register_tag_loader(62, define_font_info_loader);
+
+			register_tag_loader(69, define_file_attribute_loader);	// Flash 8
+			register_tag_loader(73, define_font_alignzones);	// DefineFontAlignZones - Flash 8
+			register_tag_loader(75, define_font_loader);	// DefineFont3 - Flash 8
+			register_tag_loader(83, define_shape_loader);		// DefineShape4 - Flash 8
 		}
 	}
 
@@ -1304,9 +1309,7 @@ namespace gameswf
 
 	void	define_shape_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
-		assert(tag_type == 2
-			|| tag_type == 22
-			|| tag_type == 32);
+		assert(tag_type == 2 || tag_type == 22 || tag_type == 32 || tag_type == 83);
 
 		Uint16	character_id = in->read_u16();
 		IF_VERBOSE_PARSE(log_msg("  shape_loader: id = %d\n", character_id));
@@ -1337,7 +1340,7 @@ namespace gameswf
 	void	define_font_loader(stream* in, int tag_type, movie_definition_sub* m)
 		// Load a DefineFont or DefineFont2 tag.
 	{
-		assert(tag_type == 10 || tag_type == 48);
+		assert(tag_type == 10 || tag_type == 48 || tag_type == 75);
 
 		Uint16	font_id = in->read_u16();
 
@@ -1372,6 +1375,34 @@ namespace gameswf
 		}
 	}
 
+	void	define_file_attribute_loader(stream* in, int tag_type, movie_definition_sub* m)
+	// this tag defines characteristics of the SWF file (Flash 8)
+	{
+		assert(tag_type == 69);
+
+		Uint32 attr = in->read_u32();
+
+		// now attr is't used
+		bool has_metadata =  attr & 0x10000000 ? true : false;
+		bool use_network =  attr & 0x01000000 ? true : false;
+	}
+
+	void	define_font_alignzones(stream* in, int tag_type, movie_definition_sub* m)
+	// this tag defines characteristics of the SWF file (Flash 8)
+	{
+		assert(tag_type == 73);
+
+		Uint16	font_id = in->read_u16();
+		font*	f = m->get_font(font_id);
+		if (f)
+		{
+			f->read_font_alignzones(in, tag_type);
+		}
+		else
+		{
+			log_error("define_font_alignzones: can't find font w/ id %d\n", font_id);
+		}
+	}
 
 	//
 	// swf_event

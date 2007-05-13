@@ -124,6 +124,62 @@ namespace gameswf
 		return (float) val / 65536.0f;
 	}
 
+	float	stream::read_float16()
+	// 1 bit for the sign
+	// 5 bits for the exponent, with an exponent bias of 16
+	// 10 bits for the mantissa
+	{
+		m_unused_bits = 0;
+
+		Uint16	val = m_input->read_le16();
+		Uint32 x = (val & 0x8000) << 16;
+		int exponent = (val & 0x7C00) >> 10;
+
+		// Special Values
+		if (exponent)
+		{
+			x |= (exponent + (127 - 16)) << 23;	// exponent
+		}
+
+		// mantissa
+		x |= (val & 0x3FF) << 13;
+
+		float f;
+		assert(sizeof(float) == sizeof(Uint32));
+		memcpy(&f, &x, sizeof(float));
+		return f;
+	}
+
+	float	stream::read_float()
+	// 1 bit for the sign
+	// 8 bits for the exponent, with an exponent bias of 127
+	// 23 bits for the mantissa
+	{
+		m_unused_bits = 0;
+
+		// not tested
+		Uint32 val = m_input->read_le32();
+		float f;
+		assert(sizeof(float) == sizeof(Uint32));
+		memcpy(&f, &val, sizeof(float));
+		return f;
+	}
+
+	double	stream::read_double()
+	// 1 bit for the sign
+	// 11 bits for the exponent, with an exponent bias of 1023
+	// 52 bits for the mantissa
+	{
+		m_unused_bits = 0;
+
+		// not tested
+		Uint64	val = m_input->read_le64();
+		double f;
+		assert(sizeof(double) == sizeof(Uint64));
+		memcpy(&f, &val, sizeof(double));
+		return f;
+	}
+
 	void	stream::align() { m_unused_bits = 0; m_current_byte = 0; }
 
 	Uint8	stream::read_u8() { align(); return m_input->read_byte(); }

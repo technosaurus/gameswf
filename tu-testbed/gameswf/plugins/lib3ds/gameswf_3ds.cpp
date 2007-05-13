@@ -5,10 +5,7 @@
 
 // Lib3ds plugin implementation for gameswf library
 
-// TODO we should:
-// handle character properties like _x, _y, _z, _zoom, ...
-// do this more efficiently.
-// consider an opportunity of using movieclip as texture for 3D model
+// TODO: consider an opportunity of using movieclip as texture for 3D model
 
 #include "base/tu_config.h"
 
@@ -91,9 +88,10 @@ namespace gameswf
 		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);
-		glEnable(GL_POLYGON_SMOOTH);
 
-		glDisable(GL_BLEND);
+//		glEnable(GL_POLYGON_SMOOTH);
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 		// set GL matrix to identity
 		glMatrixMode(GL_PROJECTION);
@@ -482,10 +480,9 @@ namespace gameswf
 
 	void	x3ds_instance::advance(float delta_time)
 	{
-		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
-		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
-		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
-
+//		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
+//		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
+//		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
 
 		m_current_frame = fmod(m_current_frame + 1.0f, m_def->m_file->frames);
 		lib3ds_file_eval(m_def->m_file, m_current_frame);
@@ -493,38 +490,16 @@ namespace gameswf
 
 	bool	x3ds_instance::get_member(const tu_stringi& name, as_value* val)
 	{
-		// first try standart properties
-		if (character::get_member(name, val))
-		{
-			return true;
-		}
+		// TODO handle character properties like _x, _y, _z, _zoom, ...
+		log_error("error: x3ds_instance::get_member('%s') is't implemented yet\n", name.c_str());
 		return false;
 	}
 
 	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
-		// first try standart properties
-//		if (character::set_member(name, val))
-//		{
-//			return true;
-//		}
-
-		if (name == "test")
-		{
-			m_camera->roll += 0.01f;
-//    m_camera->position +=0.01;
- //   m_camera->target;
-  //  m_camera->roll;
-//    m_camera->fov +=0.1;
-  //  m_camera->see_cone;
-//    m_camera->near_range ++;
-//    m_camera->far_range -=10;
-			return true;
-		}
-
-		log_error("error: x3ds_instance::set_member('%s', '%s') not implemented\n", name.c_str(), val.to_string());
+		// TODO handle character properties like _x, _y, _z, _zoom, ...
+		log_error("error: x3ds_instance::set_member('%s', '%s') is't implemented yet\n", name.c_str(), val.to_string());
 		return false;
-
 	}
 
 	void	x3ds_instance::apply_matrix(float* target, float* camera_pos)
@@ -533,9 +508,9 @@ namespace gameswf
 		lib3ds_vector_sub(v, target, camera_pos);
 		float dist = lib3ds_vector_length(v);
 
-		glTranslatef(0.,dist, 0.);
+		glTranslatef(0., dist, 0.);
 		glMultMatrixf(&m_matrix[0][0]);
-		glTranslatef(0.,-dist, 0.);
+		glTranslatef(0., -dist, 0.);
 	}
 
 } // end of namespace gameswf
