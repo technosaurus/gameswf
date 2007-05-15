@@ -1,5 +1,6 @@
 2007-05-15  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_test_ogl.cpp:	removed warning at the start
 	* gameswf/gameswf_text.cpp:	fixed edit_text bug for Flash 8
 
 2007-05-15  Vitaly Alexeev <tishka92@yahoo.com>
