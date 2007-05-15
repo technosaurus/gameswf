@@ -407,7 +407,6 @@ namespace gameswf
 	void	as_global_assetpropflags(const fn_call& fn)
 	// ASSetPropFlags function
 	{
-		return; //vv
 		const int version = fn.env->get_target()->get_movie_definition()->get_version();
 
 		// Check the arguments

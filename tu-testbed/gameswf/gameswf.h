@@ -243,6 +243,10 @@ namespace gameswf
 
 		virtual void	output_cached_data(tu_file* out, const cache_options& options) {}
 		virtual void	input_cached_data(tu_file* in) {}
+
+		// for definetext, definetext2 & defineedittext tags
+		virtual void	csm_textsetting(stream* in, int tag_type) { assert(0); };
+
 	};
 
 

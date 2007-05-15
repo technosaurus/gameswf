@@ -372,7 +372,11 @@ namespace jpeg
 			assert(m_compressor_opened == false);
 
 			// Now, read the image header.
-			jpeg_read_header(&m_cinfo, TRUE);
+			// hack, 202 means that found SOS, ready for start_decompress
+			while (m_cinfo.global_state != 202)
+			{
+				jpeg_read_header(&m_cinfo, FALSE);
+			}
 			jpeg_start_decompress(&m_cinfo);
 			m_compressor_opened = true;
 		}
