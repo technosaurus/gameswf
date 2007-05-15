@@ -524,13 +524,6 @@ int	main(int argc, char *argv[])
 		int	movie_height = m->get_movie_height();
 		float	movie_fps = m->get_movie_fps();
 
-		if (movie_version > 6)
-		{
-			fprintf(stderr, "warning:\n");
-			fprintf(stderr, "The file %s has the version %d\n", infile, movie_version);
-			fprintf(stderr, "Playing of files of version 7 and above can cause crash of the program\n");
-		}
-
 		int	width = int(movie_width * s_scale);
 		int	height = int(movie_height * s_scale);
 
