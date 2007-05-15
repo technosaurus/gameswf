@@ -273,6 +273,7 @@ namespace gameswf
 
 			register_tag_loader(69, define_file_attribute_loader);	// Flash 8
 			register_tag_loader(73, define_font_alignzones);	// DefineFontAlignZones - Flash 8
+			register_tag_loader(74, define_csm_textsetting_loader); // CSMTextSetting - Flash 8
 			register_tag_loader(75, define_font_loader);	// DefineFont3 - Flash 8
 			register_tag_loader(83, define_shape_loader);		// DefineShape4 - Flash 8
 		}
@@ -1401,6 +1402,23 @@ namespace gameswf
 		else
 		{
 			log_error("define_font_alignzones: can't find font w/ id %d\n", font_id);
+		}
+	}
+
+	void	define_csm_textsetting_loader(stream* in, int tag_type, movie_definition_sub* m)
+	// this tag defines quality & options of text filed
+	{
+		assert(tag_type == 74);
+
+		Uint16	text_id = in->read_u16();
+		character_def*	ch = m->get_character_def(text_id);
+		if (ch)
+		{
+			ch->csm_textsetting(in, tag_type);
+		}
+		else
+		{
+			log_error("define_font_alignzones: can't find font w/ id %d\n", text_id);
 		}
 	}
 

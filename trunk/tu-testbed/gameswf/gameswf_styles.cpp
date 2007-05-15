@@ -71,10 +71,13 @@ namespace gameswf
 			IF_VERBOSE_PARSE(log_msg("  color: ");
 					 m_color.print());
 		}
-		else if (m_type == 0x10 || m_type == 0x12)
+		else if (m_type == 0x10 || m_type == 0x12 || m_type  == 0x13)
 		{
 			// 0x10: linear gradient fill
 			// 0x12: radial gradient fill
+			// 0x13: focal gradient fill	// Flash 8
+
+			assert (m_type  != 0x13);	//TODO implement
 
 			matrix	input_matrix;
 			input_matrix.read(in);
@@ -126,10 +129,12 @@ namespace gameswf
 			// Make sure our movie_def_impl knows about this bitmap.
 			md->add_bitmap_info(m_gradient_bitmap_info.get_ptr());
 		}
-		else if (m_type == 0x40 || m_type == 0x41)
+		else if (m_type >= 0x40 && m_type <= 0x43)
 		{
 			// 0x40: tiled bitmap fill
 			// 0x41: clipped bitmap fill
+			// 0x42: non-smoothed repeating bitmap, Flash 8, TODO
+			// 0x43: non-smoothed clipped bitmap, Flash 8, TODO
 
 			int	bitmap_char_id = in->read_u16();
 			IF_VERBOSE_PARSE(log_msg("  bitmap_char = %d\n", bitmap_char_id));
@@ -144,6 +149,10 @@ namespace gameswf
 			// TWIPS-to-texcoords matrix.
 			m_bitmap_matrix.set_inverse(m);
 			IF_VERBOSE_PARSE(m_bitmap_matrix.print());
+		}
+		else
+		{
+			assert(0);
 		}
 	}
 
@@ -260,8 +269,7 @@ namespace gameswf
 					gameswf::render_handler::WRAP_CLAMP);
 			}
 		}
-		else if (m_type == 0x40
-				 || m_type == 0x41)
+		else if (m_type >= 0x40 || m_type <= 0x43)
 		{
 			// bitmap fill (either tiled or clipped)
 			gameswf::bitmap_info*	bi = NULL;
@@ -282,6 +290,10 @@ namespace gameswf
 						wmode);
 				}
 			}
+		}
+		else
+		{
+			assert(0);
 		}
 	}
 

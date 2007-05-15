@@ -6,6 +6,10 @@
 // Code for the text tags.
 
 
+//TODO: csm_textsetting() is common for text_def & edit_text_def
+//	therefore make new base class for text_def & edit_text_def
+//	and move csm_textsetting() to it.
+
 #include "base/utf8.h"
 #include "base/utility.h"
 #include "gameswf/gameswf_impl.h"
@@ -132,6 +136,15 @@ namespace gameswf
 			}
 
 			scale = rec.m_style.m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+
+			// Flash 8
+			// All the EMSquare coordinates are multiplied by 20 at export,
+			// allowing fractional resolution to 1/20 of a unit.
+			if (fnt->has_zones())
+			{
+				scale /= 20.0f;
+			}
+
 			float	text_screen_height = base_matrix_max_scale
 				* scale
 				* 1024.0f
@@ -221,9 +234,18 @@ namespace gameswf
 		matrix	m_matrix;
 		array<text_glyph_record>	m_text_glyph_records;
 
-		text_character_def(movie_definition_sub* root_def)
-			:
-		m_root_def(root_def)
+		// Flash 8
+		bool m_use_flashtype;
+		int m_gtrid_fit;
+		float m_thickness;
+		float m_sharpness;
+
+		text_character_def(movie_definition_sub* root_def) :
+			m_root_def(root_def),
+			m_use_flashtype(false),
+			m_gtrid_fit(0),
+			m_thickness(0.0f),
+			m_sharpness(0.0f)
 		{
 			assert(m_root_def);
 		}
@@ -342,15 +364,48 @@ namespace gameswf
 
 
 		void	display(character* inst)
-			// Draw the string.
+		// Draw the string.
 		{
 			display_glyph_records(m_matrix, inst, m_text_glyph_records, m_root_def);
 		}
+
+		void	csm_textsetting(stream* in, int tag_type)
+		{
+			assert(tag_type == 74);	// Flash 8
+
+			m_use_flashtype = in->read_uint(2) == 0 ? false : true;
+
+			// 0 = Do not use grid fitting. AlignmentZones and LCD sub-pixel information
+			// will not be used.
+			// 1 = Pixel grid fit. Only supported for left-aligned dynamic text.
+			// This setting provides the ultimate in FlashType readability, with
+			// crisp letters aligned to pixels.
+			// 2 = Sub-pixel grid fit. Align letters to the 1/3 pixel used by LCD monitors.
+			// Can also improve quality for CRT output.
+			m_gtrid_fit = in->read_uint(3);
+			
+			in->read_uint(3); // reserved;
+			
+			m_thickness = in->read_fixed();
+			m_sharpness = in->read_fixed();
+
+			in->read_u8();	// reserved
+
+			IF_VERBOSE_PARSE(
+				log_msg("reading CSMTextSetting tag\n");
+				log_msg("	m_use_flashtype = %s\n", m_use_flashtype ? "true" : "false");
+				log_msg("	m_gtrid_fit = %d\n", m_gtrid_fit);
+				log_msg("	m_thickness = %f\n", m_thickness);
+				log_msg("	m_sharpness = %f\n", m_sharpness);
+			);
+
+		}
+
 	};
 
 
 	void	define_text_loader(stream* in, int tag_type, movie_definition_sub* m)
-		// Read a DefineText tag.
+	// Read a DefineText tag.
 	{
 		assert(tag_type == 11 || tag_type == 33);
 
@@ -372,8 +427,8 @@ namespace gameswf
 
 
 	struct edit_text_character_def : public character_def
-		// A definition for a text display character, whose text can
-		// be changed at runtime (by script or host).
+	// A definition for a text display character, whose text can
+	// be changed at runtime (by script or host).
 	{
 		movie_definition_sub*	m_root_def;
 		rect			m_rect;
@@ -437,6 +492,12 @@ namespace gameswf
 		float	m_leading;	// extra space between lines (in addition to default font line spacing)
 		tu_string	m_default_text;
 
+		// Flash 8
+		bool m_use_flashtype;
+		int m_gtrid_fit;
+		float m_thickness;
+		float m_sharpness;
+
 		edit_text_character_def(movie_definition_sub* root_def)
 			:
 		m_root_def(root_def),
@@ -457,7 +518,11 @@ namespace gameswf
 			m_left_margin(0.0f),
 			m_right_margin(0.0f),
 			m_indent(0.0f),
-			m_leading(0.0f)
+			m_leading(0.0f),
+			m_use_flashtype(false),
+			m_gtrid_fit(0),
+			m_thickness(0.0f),
+			m_sharpness(0.0f)
 		{
 			assert(m_root_def);
 
@@ -543,6 +608,38 @@ namespace gameswf
 			IF_VERBOSE_PARSE(log_msg("edit_text_char, varname = %s, text = %s\n",
 				m_default_name.c_str(), m_default_text.c_str()));
 		}
+
+		void	csm_textsetting(stream* in, int tag_type)
+		{
+			assert(tag_type == 74);	// Flash 8
+			m_use_flashtype = in->read_uint(2) == 0 ? false : true;
+
+			// 0 = Do not use grid fitting. AlignmentZones and LCD sub-pixel information
+			// will not be used.
+			// 1 = Pixel grid fit. Only supported for left-aligned dynamic text.
+			// This setting provides the ultimate in FlashType readability, with
+			// crisp letters aligned to pixels.
+			// 2 = Sub-pixel grid fit. Align letters to the 1/3 pixel used by LCD monitors.
+			// Can also improve quality for CRT output.
+			m_gtrid_fit = in->read_uint(3);
+			
+			in->read_uint(3); // reserved;
+			
+			m_thickness = in->read_fixed();
+			m_sharpness = in->read_fixed();
+
+			in->read_u8();	// reserved
+
+			IF_VERBOSE_PARSE(
+				log_msg("reading CSMTextSetting tag\n");
+				log_msg("	m_use_flashtype = %s\n", m_use_flashtype ? "true" : "false");
+				log_msg("	m_gtrid_fit = %d\n", m_gtrid_fit);
+				log_msg("	m_thickness = %f\n", m_thickness);
+				log_msg("	m_sharpness = %f\n", m_sharpness);
+			);
+
+		}
+
 	};
 
 

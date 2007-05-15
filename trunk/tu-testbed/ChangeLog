@@ -1,3 +1,14 @@
+2007-05-15  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* base/jpeg.cpp: fixed bug that is shown at playing Flash 8 files
+	* gameswf/gameswf_font.*,
+	* gameswf/gameswf_impl.*,
+	* gameswf/gameswf_action.cpp,
+	* gameswf/gameswf_styles.cpp,
+	* gameswf/gameswf_text.cpp,
+	* gameswf/gameswf.h:
+	Work on maintenance of compatibility with Flash 8
+
 2007-05-13  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/plugins/lib3ds/gameswf_3ds.*: inhibited till the best times
