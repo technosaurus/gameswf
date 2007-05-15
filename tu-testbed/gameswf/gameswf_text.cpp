@@ -1100,6 +1100,14 @@ namespace gameswf
 
 			float	scale = m_def->m_text_height / 1024.0f;	// the EM square is 1024 x 1024
 
+			// Flash 8
+			// All the EMSquare coordinates are multiplied by 20 at export,
+			// allowing fractional resolution to 1/20 of a unit.
+			if (m_def->m_font->has_zones())
+			{
+				scale /= 20.0f;
+			}
+
 			text_glyph_record	rec;	// one to work on
 			rec.m_style.m_font = m_def->m_font;
 			rec.m_style.m_color = m_def->m_color;

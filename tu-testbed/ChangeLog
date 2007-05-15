@@ -1,5 +1,9 @@
 2007-05-15  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_text.cpp:	fixed edit_text bug for Flash 8
+
+2007-05-15  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* base/jpeg.cpp: fixed bug that is shown at playing Flash 8 files
 	* gameswf/gameswf_font.*,
 	* gameswf/gameswf_impl.*,
