@@ -71,13 +71,10 @@ namespace gameswf
 			IF_VERBOSE_PARSE(log_msg("  color: ");
 					 m_color.print());
 		}
-		else if (m_type == 0x10 || m_type == 0x12 || m_type  == 0x13)
+		else if (m_type == 0x10 || m_type == 0x12)
 		{
 			// 0x10: linear gradient fill
 			// 0x12: radial gradient fill
-			// 0x13: focal gradient fill	// Flash 8
-
-			assert (m_type  != 0x13);	//TODO implement
 
 			matrix	input_matrix;
 			input_matrix.read(in);
@@ -102,7 +99,10 @@ namespace gameswf
 				
 			// GRADIENT
 			int	num_gradients = in->read_u8();
-			assert(num_gradients >= 1 && num_gradients <= 8);
+
+			// SWF 8 and later supports up to 15 gradient control points
+			assert(num_gradients >= 1 && num_gradients <= 15);
+
 			m_gradients.resize(num_gradients);
 			for (int i = 0; i < num_gradients; i++)
 			{
@@ -129,7 +129,15 @@ namespace gameswf
 			// Make sure our movie_def_impl knows about this bitmap.
 			md->add_bitmap_info(m_gradient_bitmap_info.get_ptr());
 		}
-		else if (m_type >= 0x40 && m_type <= 0x43)
+		else
+		if (m_type == 0x13)
+		{
+			// 0x13: focal gradient fill	// Flash 8
+			// TODO
+			assert(0);
+		}
+		else
+		if (m_type >= 0x40 && m_type <= 0x43)
 		{
 			// 0x40: tiled bitmap fill
 			// 0x41: clipped bitmap fill
