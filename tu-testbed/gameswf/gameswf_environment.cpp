@@ -20,152 +20,198 @@ namespace gameswf
 {
 
 	// url=="" means that the load_file() works as unloadMovie(target)
-	character* as_environment::load_file(const char* url, as_value& target_value)
+	sprite_instance* as_environment::load_file(const char* url, as_value& target_value)
 	{
-		character* target = find_target(target_value);
+		sprite_instance* target = NULL;
+		{
+			character* ch = find_target(target_value);
+			if (ch == NULL)
+			{
+				IF_VERBOSE_ACTION(("load_file: target %s is't found\n", target_value.to_string()));
+				return NULL;
+			}
+			target = ch->cast_to_sprite();
+		}
+
 		if (target == NULL)
 		{
-			IF_VERBOSE_ACTION(("load_file: target %s is't found\n", target_value.to_string()));
+			IF_VERBOSE_ACTION(("load_file: target %s is't movieclip\n", target_value.to_string()));
 			return NULL;
 		}
 
 		movie_root* mroot = target->get_root();
 		character* parent = target->get_parent();
-		character* new_ch = NULL;
 
 		// is unloadMovie() ?
 		if (strlen(url) == 0)
 		{
-			sprite_definition* empty_sprite_def = new sprite_definition(NULL);
-			new_ch = new sprite_instance(empty_sprite_def, mroot, parent, 0);
+			if (parent)
+			{
+				sprite_instance* parent_as_sprite = parent->cast_to_sprite();
+				if (parent->cast_to_sprite())
+				{
+					parent_as_sprite->remove_display_object(target);
+				}
+			}
+			else	// target is _root, unloadMovie(_root)
+			{
+				target->clear_display_objects();
+			}
+			return NULL;
+		}
+
+		// is path relative ?
+		tu_string infile = get_workdir();
+		if (strstr(url, ":") || url[0] == '/')
+		{
+			infile = "";
+		}
+		infile += url;
+
+		if (infile.size() < 4)	// need at least the file extension 
+		{
+			IF_VERBOSE_ACTION(("loadMovie: invalid path '%s'\n", infile.c_str()));
+			return NULL;
+		}
+
+		// SWF loader
+
+		if (strnicmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
+		{
+			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
+			if (md == NULL)
+			{
+				IF_VERBOSE_ACTION(("can't create movie from %s\n", infile.c_str()));
+				return NULL;
+			}
+
+			// SWF loader into _root
+
+			if (target == target->get_root_movie())
+			{
+				movie_interface* new_inst = create_library_movie_inst_sub(md);			
+				assert(new_inst);
+				save_extern_movie(new_inst);
+
+				sprite_instance* new_root = (sprite_instance*) new_inst->get_root_movie();
+				set_current_root(new_inst);
+				new_root->on_event(event_id::LOAD);
+				return new_root;
+			}
+
+			// SWF loader into container
+
+			sprite_instance* new_ch = new sprite_instance(md, mroot, parent, -1);
+
+			const char* name = target->get_name();
+			Uint16 depth = target->get_depth();
+			bool use_cxform = false;
+			cxform color_transform =  target->get_cxform();
+			bool use_matrix = false;
+			matrix mat = target->get_matrix();
+			float ratio = target->get_ratio();
+			Uint16 clip_depth = target->get_clip_depth();
+
+			assert(parent != NULL);
+			new_ch->set_parent(parent);
+
+			if (new_ch->cast_to_sprite())
+			{
+				new_ch->cast_to_sprite()->set_root(mroot);
+			}
+
+			parent->replace_display_object(
+				(character*) new_ch,
+				name,
+				depth,
+				use_cxform,
+				color_transform,
+				use_matrix,
+				mat,
+				ratio,
+				clip_depth);
+
+			return new_ch;
+
 		}
 		else
+
+		// JPEG loader
+
+		if (strnicmp(infile.c_str() + infile.size() - 4, ".jpg", 4) == 0)
 		{
-			// is path relative ?
-			tu_string infile = get_workdir();
-			if (strstr(url, ":") || url[0] == '/')
-			{
-				infile = "";
-			}
-			infile += url;
-
-			if (infile.size() < 4)	// need at least the file extension 
-			{
-				IF_VERBOSE_ACTION(("loadMovie: invalid path '%s'\n", infile.c_str()));
-				return NULL;
-			}
-
-			if (strnicmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
-			{
-				movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
-				if (md == NULL)
-				{
-					IF_VERBOSE_ACTION(("can't create movie from %s\n", infile.c_str()));
-					return NULL;
-				}
-
-				// case loadMovie("my.swf", _root)
-				if (target == target->get_root_movie())
-				{
-					movie_interface* new_inst = create_library_movie_inst_sub(md);			
-					assert(new_inst);
-					save_extern_movie(new_inst);
-
-					new_ch = (sprite_instance*) new_inst->get_root_movie();
-					set_current_root(new_inst);
-					new_ch->on_event(event_id::LOAD);
-
-					return new_ch;
-				}
-
-				// case loadMovie("my.swf", container)
-				new_ch = new sprite_instance(md, mroot, parent, -1);
-			}
-			else
-			if (strnicmp(infile.c_str() + infile.size() - 4, ".jpg", 4) == 0)
-			{
 #if TU_CONFIG_LINK_TO_JPEGLIB == 0
-				log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
-				return NULL;
+			log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
+			return NULL;
 #else
 
-				if (target == target->get_root_movie())
-				{
-					log_error("gameswf can't load jpg on _root\n");
-					return NULL;
-				}
+			image::rgb* im = image::read_jpeg(infile.c_str());
+			if (im == NULL)
+			{
+				return NULL;
+			}
 
-				image::rgb* im = image::read_jpeg(infile.c_str());
-				if (im == NULL)
-				{
-					return NULL;
-				}
+			bitmap_info* bi = render::create_bitmap_info_rgb(im);
+			delete im;
 
-				bitmap_info* bi = render::create_bitmap_info_rgb(im);
-				delete im;
+			bitmap_character*	jpg_def = new bitmap_character(bi);
 
-				bitmap_character*	jpg_def = new bitmap_character(bi);
-				new_ch = jpg_def->create_character_instance(parent, 1);
+			// clear target display list
+			target->clear_display_objects();
+
+			// add new jpeg character into empty sprite
+			cxform color_transform;
+			matrix matrix;
+			target->m_display_list.add_display_object(
+				jpg_def->create_character_instance(target, 1),
+				target->get_highest_depth(),
+				true,
+				color_transform,
+				matrix,
+				0.0f,
+				0); 
+
+			return target;
 
 #endif
 
-			}
-			else
-			if (strnicmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
-			// loads 3DMAX file
-			{
-#if TU_CONFIG_LINK_TO_LIB3DS == 0
-				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
-				return NULL;
-#else
-
-				if (target == target->get_root_movie())
-				{
-					log_error("gameswf can't load 3DS file on _root\n");
-					return NULL;
-				}
-
-				x3ds_definition* x3ds = new x3ds_definition(infile.c_str());
-				new_ch = x3ds->create_character_instance(parent, 1);
-#endif
-
-			}
-			else
-			{
-				log_error("loadMovie: can't load '%s'\n", infile.c_str());
-				return NULL;
-			}
 		}
+		else
 
-		const char* name = target->get_name();
-		Uint16 depth = target->get_depth();
-		bool use_cxform = false;
-		cxform color_transform =  target->get_cxform();
-		bool use_matrix = false;
-		matrix mat = target->get_matrix();
-		float ratio = target->get_ratio();
-		Uint16 clip_depth = target->get_clip_depth();
+		// 3DS loader
 
-		assert(parent != NULL);
-		new_ch->set_parent(parent);
-
-		if (new_ch->cast_to_sprite())
+		if (strnicmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
 		{
-			new_ch->cast_to_sprite()->set_root(mroot);
+#if TU_CONFIG_LINK_TO_LIB3DS == 0
+			log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
+			return NULL;
+#else
+
+			x3ds_definition* x3ds = new x3ds_definition(infile.c_str());
+
+			// clear target display list
+			target->clear_display_objects();
+
+			// add new 3DS character into empty sprite
+			cxform color_transform;
+			matrix matrix;
+			target->m_display_list.add_display_object(
+				x3ds->create_character_instance(target, 1),
+				target->get_highest_depth(),
+				true,
+				color_transform,
+				matrix,
+				0.0f,
+				0); 
+
+			return target;
+
+#endif
+
 		}
 
-		parent->replace_display_object(
-			(character*) new_ch,
-			name,
-			depth,
-			use_cxform,
-			color_transform,
-			use_matrix,
-			mat,
-			ratio,
-			clip_depth);
-
-		return new_ch;
+		log_error("loadMovie: can't load '%s'\n", infile.c_str());
+		return NULL;
 	}
 
 

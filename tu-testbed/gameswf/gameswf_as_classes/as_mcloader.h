@@ -25,8 +25,11 @@ namespace gameswf
 		~as_mcloader();
 		
 		virtual bool	on_event(const event_id& id);
+		virtual as_mcloader* cast_to_as_mcloader() { return this; }
+
 		bool add_listener(as_value& listener);
 		bool remove_listener(as_value& listener);
+		void clear_listener();
 	};
 
 }	// end namespace gameswf

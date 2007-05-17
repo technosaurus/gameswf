@@ -85,6 +85,8 @@ namespace gameswf
 			float ratio,
 			Uint16 clip_depth);
 
+
+		void	remove_display_object(character* ch);
 		void	remove_display_object(Uint16 depth, int id);
 
 		void add_keypress_listener(character* ch);

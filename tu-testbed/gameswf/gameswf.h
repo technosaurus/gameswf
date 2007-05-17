@@ -164,6 +164,7 @@ namespace gameswf
 	struct sprite_instance;
 	struct as_timer;
 	struct sprite_instance;
+	struct as_mcloader;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -189,6 +190,7 @@ namespace gameswf
 		virtual character* cast_to_character() { return 0; }
 		virtual as_timer* cast_to_as_timer() { return 0; }
 		virtual sprite_instance* cast_to_sprite() { return 0; }
+		virtual as_mcloader* cast_to_as_mcloader() { return 0; }
 	};
 
 

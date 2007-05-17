@@ -67,6 +67,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("removeMovieClip", &sprite_remove_movieclip);
 		s_sprite_builtins->set_member("hitTest", &sprite_hit_test);
 		s_sprite_builtins->set_member("loadMovie", &sprite_loadmovie);
+		s_sprite_builtins->set_member("unloadMovie", &sprite_unloadmovie);
 		s_sprite_builtins->set_member("getNextHighestDepth", &sprite_getnexthighestdepth);
 
 		// @TODO
@@ -404,9 +405,9 @@ namespace gameswf
 			}
 
 			// 8 is (file_start_pos(4 bytes) + header(4 bytes))
-			int total = get_file_bytes() - 8;
+			int total = get_file_bytes();
 			int loaded = get_loaded_bytes();
-			if (loaded - total >= 0 && total > 0)
+			if (8 + loaded - total >= 0 || total == 0)
 			{
 				m_mcloader->remove_listener(as_value(this));
 				m_mcloader->on_event(event_id(event_id::ONLOAD_COMPLETE, this));
@@ -420,13 +421,12 @@ namespace gameswf
 
 		m_on_event_load_called = true; 
 
-
 	} 
 
 
 	void	sprite_instance::execute_frame_tags(int frame, bool state_only)
-		// Execute the tags associated with the specified frame.
-		// frame is 0-based
+	// Execute the tags associated with the specified frame.
+	// frame is 0-based
 	{
 		// Keep this (particularly m_as_environment) alive during execution!
 		smart_ptr<as_object_interface>	this_ptr(this);
@@ -834,6 +834,12 @@ namespace gameswf
 		m_display_list.remove_display_object(depth, id);
 	}
 
+	void	sprite_instance::clear_display_objects()
+	// Remove all display objects
+	{
+		m_display_list.clear();
+	}
+
 	void	sprite_instance::add_action_buffer(action_buffer* a)
 	// Add the given action buffer to the list of action
 	// buffers to be processed at the end of the next
@@ -1159,7 +1165,7 @@ namespace gameswf
 	}
 
 	void	sprite_instance::remove_display_object(const tu_string& name)
-		// Remove the object with the specified name.
+	// Remove the object with the specified name.
 	{
 		character* ch = m_display_list.get_character_by_name(name);
 		if (ch)
@@ -1168,6 +1174,12 @@ namespace gameswf
 			// apparently original movies, placed by anim events, are immune to this.
 			remove_display_object(ch->get_depth(), ch->get_id());
 		}
+	}
+
+	void	sprite_instance::remove_display_object(character* ch)
+	// Remove the object with the specified pointer.
+	{
+		m_display_list.remove_display_object(ch);
 	}
 
 	bool	sprite_instance::on_event(const event_id& id)

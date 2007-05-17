@@ -1,3 +1,16 @@
+2007-05-17  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf.h: added cast_to_as_mcloader()
+	* gameswf/gameswf_as_classes/as_mcloader.*: mc_loader is added to gameswf listener 
+	in add_listener() but not in constructor
+	* gameswf/gameswf_sprite.*: added unloadMovie()
+	* gameswf/gameswf_dlist.*: added remove_display_object(character* ch) that is used 
+	to unload movie
+	* gameswf/gameswf_environment.* rewritten load_file().
+	During loadMovie(".jpg", ...), loadMovie(".3ds", ...) & unloadMovie() new empty 
+	sprite_instance	is't created and target is used as new sprite_instance. 
+	* gameswf/gameswf_impl.*: added MetaData tag reader
+
 2007-05-15  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_styles.cpp: SWF 8 and later supports up to 15 gradient control points

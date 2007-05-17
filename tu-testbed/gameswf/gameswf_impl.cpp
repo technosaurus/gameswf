@@ -275,6 +275,7 @@ namespace gameswf
 			register_tag_loader(73, define_font_alignzones);	// DefineFontAlignZones - Flash 8
 			register_tag_loader(74, define_csm_textsetting_loader); // CSMTextSetting - Flash 8
 			register_tag_loader(75, define_font_loader);	// DefineFont3 - Flash 8
+			register_tag_loader(77, define_metadata_loader);	// MetaData - Flash 8
 			register_tag_loader(83, define_shape_loader);		// DefineShape4 - Flash 8
 		}
 	}
@@ -532,15 +533,36 @@ namespace gameswf
 	// Drop all library references to movie_definitions, so they
 	// can be cleaned up.
 	{
-
 		// First it's necessary to clean listeners
 		// to prevent an infinite loop
-		for (hash<movie_definition_sub*, smart_ptr<movie_interface> >::iterator
+
+/*		for (hash<movie_definition_sub*, smart_ptr<movie_interface> >::iterator
 			it = s_movie_library_inst.begin(); it != s_movie_library_inst.end(); ++it)
 		{
 			movie_root* mr = (movie_root*) it->second.get_ptr();
+			for (hash< smart_ptr<as_object_interface>, int >::iterator it = mr->m_listeners.begin();
+				it != mr->m_listeners.end(); ++it)
+			{
+				// protect from deleting in Action Script
+				smart_ptr<as_object_interface> obj = it->first;
+				if (it->second == movie_root::MOVIE_CLIP_LOADER)
+				{
+					as_mcloader* mcl = obj->cast_to_as_mcloader();
+					if (mcl)
+					{
+						mcl->clear_listener();
+					}
+				}
+				else
+				if (it->second == movie_root::KEYPRESS)
+				{
+					mr->m_listeners.erase(obj);
+				}
+
+			}
 			mr->m_listeners.clear();
 		}
+*/
 
 		// Then it is necessary to clean s_movie_library_inst since
 		// s_movie_library refers on s_movie_library_inst
@@ -2190,6 +2212,15 @@ namespace gameswf
 			delete [] data;
 		}
 	}
+
+	void define_metadata_loader(stream* in, int tag, movie_definition_sub* m)
+	{
+		// Flash help says: Flash Player always ignores the Metadata tag.
+		assert(tag == 77);
+		in->read_string();
+	}
+
+
 }
 
 // Local Variables:

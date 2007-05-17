@@ -176,6 +176,10 @@ namespace gameswf
 			Uint16 clip_depth);
 
 		void	remove_display_object(Uint16 depth, int id);
+		void	remove_display_object(const tu_string& name);
+		void	remove_display_object(character* ch);
+		void	clear_display_objects();
+
 		void	add_action_buffer(action_buffer* a);
 		int	get_id_at_depth(int depth);
 		int	get_highest_depth();
@@ -196,7 +200,6 @@ namespace gameswf
 		virtual void	stop_drag();
 		virtual void	get_drag_state(drag_state* st);
 		character*	clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object);
-		void	remove_display_object(const tu_string& name);
 		virtual bool	on_event(const event_id& id);
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args);
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
