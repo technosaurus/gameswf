@@ -69,12 +69,9 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			character* loading_movie = fn.env->load_file("", fn.arg(0));
-			if (loading_movie != NULL)
-			{
-				fn.result->set_bool(true);
-				return;
-			}
+			fn.env->load_file("", fn.arg(0));
+			fn.result->set_bool(true);
+			return;
 		}
 		fn.result->set_bool(false);
 	}
@@ -116,7 +113,6 @@ namespace gameswf
 		set_member("loadClip", &as_mcloader_loadclip);
 		set_member("unloadClip", &as_mcloader_unloadclip);
 		set_member("getProgress", &as_mcloader_getprogress);
-		get_root()->add_listener(this, movie_root::MOVIE_CLIP_LOADER);
 	}
 
 	as_mcloader::~as_mcloader()
@@ -129,9 +125,15 @@ namespace gameswf
 		if (listener.to_object())
 		{
 			m_listener[(as_object*) listener.to_object()] = 0;
+			get_root()->add_listener(this, movie_root::MOVIE_CLIP_LOADER);
 			return true;
 		}
 		return false;
+	}
+
+	void as_mcloader::clear_listener()
+	{
+		m_listener.clear();
 	}
 
 	bool as_mcloader::remove_listener(as_value& listener)
@@ -139,6 +141,10 @@ namespace gameswf
 		if (listener.to_object())
 		{
 			m_listener.erase((as_object*) listener.to_object());
+			if (m_listener.size() == 0)
+			{
+				get_root()->remove_listener(this);
+			}
 			return true;
 		}
 		return false;

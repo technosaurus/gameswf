@@ -120,7 +120,7 @@ namespace gameswf
 		character*	find_target(const tu_string& path) const;
 		character*	find_target(const as_value& val) const;
 
-		character* load_file(const char* url, as_value& target);
+		sprite_instance* load_file(const char* url, as_value& target);
 	};
 
 

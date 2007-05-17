@@ -317,6 +317,18 @@ namespace gameswf
 
 	} 
 
+	// public unloadMovie() : Void
+	void sprite_unloadmovie(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = (sprite_instance*) fn.this_ptr;
+		if (sprite == NULL)
+		{
+			sprite = (sprite_instance*) fn.env->get_target();
+		}
+		assert(sprite);
+		fn.env->load_file("", as_value(fn.this_ptr));
+	} 
+
 	// getNextHighestDepth() : Number
 	// Determines a depth value
 	// The value returned is 0 or larger (that is, negative numbers are not returned). 

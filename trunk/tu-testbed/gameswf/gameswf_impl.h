@@ -157,6 +157,32 @@ namespace gameswf
 		{
 		}
 
+		virtual float	get_width_local()
+		{
+			return PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
+		}
+
+		virtual float	get_height_local()
+		{
+			return PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
+		}
+
+		bool	point_test_local(float x, float y)
+		// Return true if the specified point is on the interior of our shape.
+		// Incoming coords are local coords.
+		{
+			rect coords;
+			coords.m_x_min  = 0.0f;
+			coords.m_x_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
+			coords.m_y_min  = 0.0f;
+			coords.m_y_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
+			if (coords.point_test(x, y))
+			{
+				return true;
+			}
+			return false;
+		}
+
 		virtual void	display(character* ch)
 		{
 			rect coords;
@@ -245,6 +271,7 @@ namespace gameswf
 	void	define_file_attribute_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_font_alignzones(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_csm_textsetting_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_metadata_loader(stream* in, int tag_type, movie_definition_sub* m);
 
 }	// end namespace gameswf
 

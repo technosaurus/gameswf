@@ -365,7 +365,18 @@ namespace gameswf
 		add_display_object(ch, depth, true, cx, m, ratio, clip_depth);
 	}
 	
-	
+
+	void	display_list::remove_display_object(character* ch)
+	// Removes the object with the specified pointer.
+	{
+		// find ch
+		int i = get_character_by_ptr(ch);
+		if (i >= 0) 
+		{ 
+			remove(i);
+		} 
+	}
+
 	void	display_list::remove_display_object(Uint16 depth, int id)
 	// Removes the object at the specified depth.
 	{
