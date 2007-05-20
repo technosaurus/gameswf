@@ -112,17 +112,14 @@ namespace gameswf
 		case M_WIDTH:
 			//else if (name == "_width")
 			{
-				matrix	m = get_world_matrix();
 				rect	transformed_rect;
-
-				// @@ not sure about this...
 				rect	source_rect;
 				source_rect.m_x_min = 0;
 				source_rect.m_y_min = 0;
 				source_rect.m_x_max = (float) get_width();
 				source_rect.m_y_max = (float) get_height();
 
-				transformed_rect.enclose_transformed_rect(get_world_matrix(), source_rect);
+				transformed_rect.enclose_transformed_rect(get_matrix(), source_rect);
 				val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
 				return true;
 			}
@@ -130,15 +127,13 @@ namespace gameswf
 			//else if (name == "_height")
 			{
 				rect	transformed_rect;
-
-				// @@ not sure about this...
 				rect	source_rect;
 				source_rect.m_x_min = 0;
 				source_rect.m_y_min = 0;
 				source_rect.m_x_max = (float) get_width();
 				source_rect.m_y_max = (float) get_height();
 
-				transformed_rect.enclose_transformed_rect(get_world_matrix(), source_rect);
+				transformed_rect.enclose_transformed_rect(get_matrix(), source_rect);
 				val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
 				return true;
 			}
@@ -355,29 +350,49 @@ namespace gameswf
 		case M_WIDTH:
 			//else if (name == "_width")
 			{
-				// @@ tulrich: is parameter in world-coords or local-coords?
-				matrix	m = get_matrix();
-				m.m_[0][0] = float(PIXELS_TO_TWIPS(val.to_number()));
-				float w = get_width();
-				if (fabsf(w) > 1e-6f)
+				if (val.to_number() > 0)
 				{
-					m.m_[0][0] /= w;
+					matrix	m = get_matrix();
+
+					// Decompose matrix and insert the desired value.
+					float	x_scale = m.get_x_scale();
+					float	y_scale = m.get_y_scale();
+					float	rotation = m.get_rotation();
+
+					// get current width
+					as_value w;
+					get_member("_width", &w);
+
+					// set new scale
+					x_scale /= float(w.to_number() / val.to_number());
+
+					m.set_scale_rotation(x_scale, y_scale, rotation);
+					set_matrix(m);
 				}
-				set_matrix(m);
 				return true;
 			}
 		case M_HEIGHT:
 			//else if (name == "_height")
 			{
-				// @@ tulrich: is parameter in world-coords or local-coords?
-				matrix	m = get_matrix();
-				m.m_[1][1] = float(PIXELS_TO_TWIPS(val.to_number()));
-				float h = get_height();
-				if (fabsf(h) > 1e-6f)
+				if (val.to_number() > 0)
 				{
-					m.m_[1][1] /= h;
+					matrix	m = get_matrix();
+
+					// Decompose matrix and insert the desired value.
+					float	x_scale = m.get_x_scale();
+					float	y_scale = m.get_y_scale();
+					float	rotation = m.get_rotation();
+
+					// get current width
+					as_value w;
+					get_member("_height", &w);
+
+					// set new scale
+					y_scale /= float(w.to_number() / val.to_number());
+
+					m.set_scale_rotation(x_scale, y_scale, rotation);
+					set_matrix(m);
 				}
-				set_matrix(m);
 				return true;
 			}
 		case M_ROTATION:
