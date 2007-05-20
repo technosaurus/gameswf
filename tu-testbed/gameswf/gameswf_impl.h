@@ -116,14 +116,14 @@ namespace gameswf
 		virtual float	get_height()
 		{
 			matrix	m = get_world_matrix();
-			float	h = m_def->get_height_local() * m.m_[1][1];
+			float	h = m_def->get_height_local();
 			return h;
 		}
 
 		virtual float	get_width()
 		{
 			matrix	m = get_world_matrix();
-			float	w = m_def->get_width_local() * m.m_[0][0];
+			float	w = m_def->get_width_local();
 			return w;
 		}
 
