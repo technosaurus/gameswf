@@ -1,5 +1,10 @@
 2007-05-22  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp:  fixed ASSetPropFlags,
+	the NULL second parameter means that assetpropflags is applied to all children
+
+2007-05-22  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_impl.*: added tag 64 reader
 	* gameswf/gameswf.h,
 	* gameswf/gameswf_action.*,
