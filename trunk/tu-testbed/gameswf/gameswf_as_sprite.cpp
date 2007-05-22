@@ -263,10 +263,7 @@ namespace gameswf
 		}
 		assert(sprite);
 
-		int n = sprite->get_depth();
-
-		// Macromedia Flash help says: depth starts at -16383 (0x3FFF)
-		fn.result->set_int( - (n + 16383 - 1));
+		fn.result->set_int(sprite->get_depth());
 	}
 
 	//createEmptyMovieClip(name:String, depth:Number) : MovieClip
