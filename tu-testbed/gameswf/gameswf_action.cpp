@@ -405,7 +405,7 @@ namespace gameswf
 	}
 
 	void	as_global_assetpropflags(const fn_call& fn)
-	// ASSetPropFlags function
+	// Undocumented ASSetPropFlags function
 	{
 		const int version = fn.env->get_target()->get_movie_definition()->get_version();
 
@@ -415,19 +415,21 @@ namespace gameswf
 
 		// object
 		as_object_interface* const obj = fn.arg(0).to_object();
-		
 		if (obj == NULL)
 		{
 			log_error("error: assetpropflags for NULL object\n");
 			return;
 		}
 
-		// list of child names
+		// The second argument is a list of child names,
+		// may be in the form array(like ["abc", "def", "ggggg"]) or in the form a string(like "abc, def, ggggg")
 		as_object_interface* props = fn.arg(1).to_object();
-		if (props == NULL) {
+		// Vitaly; the NULL second parameter means that assetpropflags is applied to all children
+//		if (props == NULL)
+//		{
 			// tulrich: this fires in test_ASSetPropFlags -- is it correct?
-			assert(fn.arg(1).get_type() == as_value::NULLTYPE);
-		}
+			// assert(fn.arg(1).get_type() == as_value::NULLTYPE);
+//		}
 
 		// a number which represents three bitwise flags which
 		// are used to determine whether the list of child names should be hidden,
