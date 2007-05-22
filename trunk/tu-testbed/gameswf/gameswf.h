@@ -165,6 +165,8 @@ namespace gameswf
 	struct as_timer;
 	struct sprite_instance;
 	struct as_mcloader;
+	struct as_object;
+	struct as_environment;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -191,6 +193,10 @@ namespace gameswf
 		virtual as_timer* cast_to_as_timer() { return 0; }
 		virtual sprite_instance* cast_to_sprite() { return 0; }
 		virtual as_mcloader* cast_to_as_mcloader() { return 0; }
+		virtual as_object* cast_to_as_object() { return 0; }
+
+		// retrieves members/variables from THIS & pushes them into env
+		virtual	void enumerate(as_environment* env) { assert(0); }
 	};
 
 

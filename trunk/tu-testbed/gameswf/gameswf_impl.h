@@ -272,6 +272,7 @@ namespace gameswf
 	void	define_font_alignzones(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_csm_textsetting_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_metadata_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_enable_debugger_loader(stream* in, int tag_type, movie_definition_sub* m);
 
 }	// end namespace gameswf
 

@@ -893,6 +893,25 @@ namespace gameswf
 	}
 
 
+	// local function, called from 0x46 & 0x55 opcode implementation only
+	void action_buffer::enumerate(as_environment* env, as_object_interface* obj)
+	{
+		assert(env);
+
+		// The end of the enumeration
+		as_value nullvalue;
+		nullvalue.set_null();
+		env->push(nullvalue);
+		IF_VERBOSE_ACTION(log_msg("---enumerate - push: NULL\n"));
+
+		if (obj == NULL)
+		{
+			return;
+		}
+
+		obj->enumerate(env);
+	}
+
 	void	action_buffer::execute(
 		as_environment* env,
 		int start_pc,
@@ -1599,57 +1618,8 @@ namespace gameswf
 				{
 					as_value var_name = env->pop();
 					const tu_string& var_string = var_name.to_tu_string();
-
 					as_value variable = env->get_variable(var_string, with_stack);
-
-					if (variable.to_object() == NULL)
-					{
-						break;
-					}
-					const as_object* object = (as_object*) (variable.to_object());
-
-					// The end of the enumeration
-					as_value nullvalue;
-					nullvalue.set_null();
-					env->push(nullvalue);
-					IF_VERBOSE_ACTION(log_msg("---enumerate - push: NULL\n"));
-
-					stringi_hash<as_member>::const_iterator it = object->m_members.begin();
-					while (it != object->m_members.end())
-					{
-						const as_member member = (it.get_value());
-
-						if (! member.get_member_flags().get_dont_enum())
-						{
-							env->push(as_value(it.get_key()));
-
-							IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
-										  it.get_key().c_str()));
-						}
-							
-						++it;
-					}
-
-					const as_object * prototype = (as_object *) object->m_prototype;
-					if (prototype != NULL)
-					{
-						stringi_hash<as_member>::const_iterator it = prototype->m_members.begin();
-						while (it != prototype->m_members.end())
-						{
-							const as_member member = (it.get_value());
-
-							if (! member.get_member_flags().get_dont_enum())
-							{
-								env->push(as_value(it.get_key()));
-
-								IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
-											  it.get_key().c_str()));
-							}
-								
-							++it;
-						};
-					}
-
+					enumerate(env, variable.to_object());
 					break;
 				}
 				case 0x47:	// add_t (typed)
@@ -1863,9 +1833,11 @@ namespace gameswf
 					log_error("todo opcode: %02X\n", action_id);
 					break;
 				case 0x55:	// enumerate object
-					// @@ TODO
-					log_error("todo opcode: %02X\n", action_id);
+				{
+					as_value variable = env->pop();
+					enumerate(env, variable.to_object());
 					break;
+				}
 				case 0x60:	// bitwise and
 					env->top(1) &= env->top(0);
 					env->drop(1);

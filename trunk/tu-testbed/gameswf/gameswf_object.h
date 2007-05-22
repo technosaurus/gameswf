@@ -53,6 +53,8 @@ namespace gameswf
 		virtual character*	cast_to_character();
 		void	clear();
 		virtual bool	on_event(const event_id& id);
+		virtual as_object* cast_to_as_object() { return this; }
+		virtual	void enumerate(as_environment* env);
 	};
 }
 
