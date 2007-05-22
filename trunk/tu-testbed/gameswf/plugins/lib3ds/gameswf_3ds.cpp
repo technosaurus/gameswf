@@ -229,7 +229,7 @@ namespace gameswf
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, mat->diffuse);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, mat->specular);
 
-			s = pow(2, 10.0f * mat->shininess);
+			s = pow(2.0f, 10.0f * mat->shininess);
 			if (s > 128.0f)
 			{
 				s = 128.0f;
