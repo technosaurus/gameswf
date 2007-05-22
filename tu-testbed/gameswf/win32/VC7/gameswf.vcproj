@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="swfvc"
+	Name="gameswf"
 	ProjectGUID="{EB28DB11-E5F4-4A55-B792-F82257ED0466}"
 	RootNamespace="swfvc">
 	<Platforms>
@@ -22,10 +22,10 @@
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/D _CRT_SECURE_NO_DEPRECATE /D SLOT /D EMULATE_INTTYPES
 "
-				Optimization="0"
-				InlineFunctionExpansion="0"
-				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_FFMPEG;SVN_RELEASE"
+				Optimization="3"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\..\libgame\include;..\game"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="TRUE"
@@ -92,7 +92,7 @@
 				Optimization="0"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;USE_MYSQL;USE_STACKWALKER;USE_FFMPEG"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;USE_STACKWALKER"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -108,7 +108,8 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib wms_random.obj libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib glew32.lib ws2_32.lib WinMM.lib SDL_mixer.lib"
+				AdditionalOptions="/force"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib wms_random.obj libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib glew32.lib WinMM.lib ws2_32.lib libxml2.lib lib3ds-130sd.lib"
 				OutputFile=".\swfvc___Win32_Debug/swfvc.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
@@ -161,13 +162,25 @@
 				RelativePath="..\..\gameswf_button.cpp">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_character.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_cursor.cpp">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_dlist.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_environment.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_font.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_fontlib.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_function.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_impl.cpp">
@@ -183,6 +196,9 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_mutex.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_object.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_render.cpp">
@@ -233,6 +249,9 @@
 				RelativePath="..\..\gameswf_types.cpp">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_value.cpp">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_video_base.cpp">
 			</File>
 			<File
@@ -240,12 +259,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_video_ogl.cpp">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_xml.cpp">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_xmlsocket.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -264,13 +277,25 @@
 				RelativePath="..\..\gameswf_button.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_character.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_cursor.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_dlist.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_environment.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_font.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_fontlib.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_function.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_impl.h">
@@ -289,6 +314,9 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_mutex.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_object.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_render.h">
@@ -327,6 +355,9 @@
 				RelativePath="..\..\gameswf_types.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_value.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_video_base.h">
 			</File>
 			<File
@@ -334,12 +365,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_video_ogl.h">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_xml.h">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_xmlsocket.h">
 			</File>
 			<File
 				RelativePath="..\..\..\base\tu_queue.h">
@@ -538,10 +563,10 @@
 				RelativePath="..\..\gameswf_as_classes\as_math.h">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.cpp">
+				RelativePath="..\..\gameswf_as_classes\as_mcloader.cpp">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_MovieClipLoader.h">
+				RelativePath="..\..\gameswf_as_classes\as_mcloader.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_netconnection.cpp">
@@ -579,14 +604,53 @@
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_textformat.h">
 			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_xmlsocket.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_xmlsocket.h">
+			</File>
 		</Filter>
 		<Filter
-			Name="leak">
+			Name="memory_leaker">
 			<File
 				RelativePath="..\..\..\base\Stackwalker.cpp">
 			</File>
 			<File
 				RelativePath="..\..\..\base\Stackwalker.h">
+			</File>
+		</Filter>
+		<Filter
+			Name="http client">
+			<File
+				RelativePath="..\..\..\net\http_client.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\net\http_client.h">
+			</File>
+			<File
+				RelativePath="..\..\..\net\net_interface.h">
+			</File>
+			<File
+				RelativePath="..\..\..\net\net_interface_tcp.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\net\net_interface_tcp.h">
+			</File>
+			<File
+				RelativePath="..\..\..\net\tu_net_file.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\net\tu_net_file.h">
+			</File>
+		</Filter>
+		<Filter
+			Name="plugins">
+			<File
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds.cpp">
+			</File>
+			<File
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds.h">
 			</File>
 		</Filter>
 	</Files>
