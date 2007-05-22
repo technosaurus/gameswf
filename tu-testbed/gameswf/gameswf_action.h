@@ -168,6 +168,7 @@ namespace gameswf
 //		void operator=(const action_buffer& a) { assert(0); }
 
 		void	process_decl_dict(int start_pc, int stop_pc);
+		void	enumerate(as_environment* env, as_object_interface* object);
 
 		// data:
 		array<unsigned char>	m_buffer;

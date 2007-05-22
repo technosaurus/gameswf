@@ -9,6 +9,7 @@
 #include "gameswf/gameswf_object.h"
 #include "gameswf/gameswf_action.h"
 #include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {
@@ -146,6 +147,49 @@ namespace gameswf
 		}
 
 		return called;
+	}
+
+	void as_object::enumerate(as_environment* env)
+	// retrieves members & pushes them into env
+	{
+		stringi_hash<as_member>::const_iterator it = m_members.begin();
+		while (it != m_members.end())
+		{
+			const as_member member = (it.get_value());
+
+			if (! member.get_member_flags().get_dont_enum())
+			{
+				env->push(as_value(it.get_key()));
+
+				IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
+					it.get_key().c_str()));
+			}
+
+			++it;
+		}
+
+		if (m_prototype)
+		{
+			const as_object* prototype = m_prototype->cast_to_as_object();
+			if (prototype != NULL)
+			{
+				stringi_hash<as_member>::const_iterator it = prototype->m_members.begin();
+				while (it != prototype->m_members.end())
+				{
+					const as_member member = (it.get_value());
+
+					if (! member.get_member_flags().get_dont_enum())
+					{
+						env->push(as_value(it.get_key()));
+
+						IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
+							it.get_key().c_str()));
+					}
+
+					++it;
+				};
+			}
+		}
 	}
 
 }

@@ -207,6 +207,9 @@ namespace gameswf
 
 		virtual void set_mcloader(as_mcloader* mcl);
 		virtual sprite_instance* cast_to_sprite();
+
+		virtual	void enumerate(as_environment* env);
+
 	};
 }
 

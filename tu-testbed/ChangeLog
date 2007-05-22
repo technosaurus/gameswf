@@ -1,8 +1,11 @@
-2007-05-20  Vitaly Alexeev <tishka92@yahoo.com>
+2007-05-22  Vitaly Alexeev <tishka92@yahoo.com>
 
-	* gameswf/gameswf_character.cpp,
-	* gameswf/gameswf_impl.h:
-	fixed _width & _height properties
+	* gameswf/gameswf_impl.*: added tag 64 reader
+	* gameswf/gameswf.h,
+	* gameswf/gameswf_action.*,
+	* gameswf/gameswf_object.*,
+	* gameswf/gameswf_sprite.*:
+	fixed enumerate opcodes (0x46 & 0x55)
 
 2007-05-17  Vitaly Alexeev <tishka92@yahoo.com>
 

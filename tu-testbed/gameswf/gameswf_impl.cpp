@@ -266,11 +266,14 @@ namespace gameswf
 			register_tag_loader(48, define_font_loader);
 			register_tag_loader(56, export_loader);
 			register_tag_loader(57, import_loader);
+			register_tag_loader(58, define_enable_debugger_loader);
 			register_tag_loader(59, do_init_action_loader);	  
 			register_tag_loader(60, define_video_loader);
 			register_tag_loader(61, video_loader);
 			register_tag_loader(62, define_font_info_loader);
 
+//			register_tag_loader(63, define_font_info_loader);
+			register_tag_loader(64, define_enable_debugger_loader);
 			register_tag_loader(69, define_file_attribute_loader);	// Flash 8
 			register_tag_loader(73, define_font_alignzones);	// DefineFontAlignZones - Flash 8
 			register_tag_loader(74, define_csm_textsetting_loader); // CSMTextSetting - Flash 8
@@ -1396,6 +1399,20 @@ namespace gameswf
 		{
 			log_error("define_font_info_loader: can't find font w/ id %d\n", font_id);
 		}
+	}
+
+	void	define_enable_debugger_loader(stream* in, int tag_type, movie_definition_sub* m)
+	// this tag defines characteristics of the SWF file (Flash 8)
+	{
+		assert(tag_type == 58 || tag_type == 64);
+
+		if (tag_type == 64)	// define_enable_debugger_loader
+		{
+			in->read_u16();	// reserved
+		}
+
+		// now attr is't used
+		tu_string md5_password = in->read_string();
 	}
 
 	void	define_file_attribute_loader(stream* in, int tag_type, movie_definition_sub* m)
