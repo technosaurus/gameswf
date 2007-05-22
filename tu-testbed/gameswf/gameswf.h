@@ -157,9 +157,14 @@ namespace gameswf
 	};
 
 	// Forward decls for cast_to_*
+	struct as_array;
+	struct as_color;
 	struct as_db;
 	struct as_netstream;
+	struct as_netconnection;
 	struct as_table;
+	struct as_key;
+	struct as_sound;
 	struct video_stream_instance;
 	struct sprite_instance;
 	struct as_timer;
@@ -167,6 +172,10 @@ namespace gameswf
 	struct as_mcloader;
 	struct as_object;
 	struct as_environment;
+	struct as_xmlsock;
+	struct tu_string_as_object;
+	struct textformat_as_object;
+	struct x3ds_instance;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -186,13 +195,22 @@ namespace gameswf
 		// Replacements for dynamic_cast<>.  Override in subclasses
 		// that implement the corresponding interfaces.
 		virtual video_stream_instance* cast_to_video_stream_instance() { return 0; }
+		virtual as_array* cast_to_as_array() { return 0; }
+		virtual as_color* cast_to_as_color() { return 0; }
+		virtual as_key* cast_to_as_key() { return 0; }
 		virtual as_db* cast_to_as_db() { return 0; }
+		virtual tu_string_as_object* cast_to_as_string() { return 0; }
+		virtual as_sound* cast_to_as_sound() { return 0; }
 		virtual as_netstream* cast_to_as_netstream() { return 0; }
+		virtual as_netconnection* cast_to_as_netconnection() { return 0; }
 		virtual as_table* cast_to_as_table() { return 0; }
 		virtual character* cast_to_character() { return 0; }
 		virtual as_timer* cast_to_as_timer() { return 0; }
 		virtual sprite_instance* cast_to_sprite() { return 0; }
 		virtual as_mcloader* cast_to_as_mcloader() { return 0; }
+		virtual textformat_as_object* cast_to_as_textformat() { return 0; }
+		virtual as_xmlsock* cast_to_as_xmlsock() { return 0; }
+		virtual x3ds_instance* cast_to_3ds() { return 0; }
 		virtual as_object* cast_to_as_object() { return 0; }
 
 		// retrieves members/variables from THIS & pushes them into env

@@ -18,7 +18,7 @@ namespace gameswf
 
 	void	as_mcloader_addlistener(const fn_call& fn)
 	{
-		as_mcloader* mcl = (as_mcloader*) fn.this_ptr;
+		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
 		if (fn.nargs == 1)
@@ -31,7 +31,7 @@ namespace gameswf
 
 	void	as_mcloader_removelistener(const fn_call& fn)
 	{
-		as_mcloader* mcl = (as_mcloader*) fn.this_ptr;
+		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
 		if (fn.nargs == 1)
@@ -44,7 +44,7 @@ namespace gameswf
 
 	void	as_mcloader_loadclip(const fn_call& fn)
 	{
-		as_mcloader* mcl = (as_mcloader*) fn.this_ptr;
+		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
 		if (fn.nargs == 2)
@@ -64,7 +64,7 @@ namespace gameswf
 
 	void	as_mcloader_unloadclip(const fn_call& fn)
 	{
-		as_mcloader* mcl = (as_mcloader*) fn.this_ptr;
+		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
 		if (fn.nargs == 1)
@@ -78,7 +78,7 @@ namespace gameswf
 
 	void	as_mcloader_getprogress(const fn_call& fn)
 	{
-		as_mcloader* mcl = (as_mcloader*) fn.this_ptr;
+		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
 		if (fn.nargs == 1)
@@ -124,7 +124,8 @@ namespace gameswf
 	{
 		if (listener.to_object())
 		{
-			m_listener[(as_object*) listener.to_object()] = 0;
+			assert(listener.to_object()->cast_to_as_object());
+			m_listener[listener.to_object()->cast_to_as_object()] = 0;
 			get_root()->add_listener(this, movie_root::MOVIE_CLIP_LOADER);
 			return true;
 		}
@@ -140,7 +141,7 @@ namespace gameswf
 	{
 		if (listener.to_object())
 		{
-			m_listener.erase((as_object*) listener.to_object());
+			m_listener.erase(listener.to_object()->cast_to_as_object());
 			if (m_listener.size() == 0)
 			{
 				get_root()->remove_listener(this);

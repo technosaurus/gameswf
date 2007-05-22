@@ -20,6 +20,8 @@ namespace gameswf
 	{
 		tu_string sound;
 		int sound_id;
+
+		virtual as_sound* cast_to_as_sound() { return this; }
 	};
 
 }	// end namespace gameswf

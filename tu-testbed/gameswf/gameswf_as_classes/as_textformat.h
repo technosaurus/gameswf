@@ -97,6 +97,8 @@ namespace gameswf
 	struct textformat_as_object : public gameswf::as_object
 	{
 		text_format obj;
+
+		virtual textformat_as_object* cast_to_as_textformat() { return this; }
 	};
 
 	void textformat_new(const fn_call& fn);

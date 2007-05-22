@@ -69,7 +69,7 @@ namespace gameswf
 			return;
 		}
 
-		x3ds_instance* inst = (x3ds_instance*) ch;
+		x3ds_instance* inst = ch->cast_to_3ds();
 
 		// save GL state
 		glPushAttrib (GL_ALL_ATTRIB_BITS);	

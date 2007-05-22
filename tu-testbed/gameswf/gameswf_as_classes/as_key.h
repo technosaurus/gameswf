@@ -47,6 +47,7 @@ namespace gameswf
 		void	set_key_up(int code);
 		int	get_last_key_pressed() const;
 
+		virtual as_key* cast_to_as_key() { return this; }
 	};
 
 	as_key* key_init();

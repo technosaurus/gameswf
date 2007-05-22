@@ -26,6 +26,7 @@ namespace gameswf
 		~as_xmlsock();
 
 		virtual void advance(float delta_time);
+		virtual as_xmlsock* cast_to_as_xmlsock() { return this; }
 
 		bool connect(const char* host, int port);
 		void close();
