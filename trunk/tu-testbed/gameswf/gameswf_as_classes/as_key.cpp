@@ -53,7 +53,7 @@ namespace gameswf
 	void	key_get_ascii(const fn_call& fn)
 	// Return the ascii value of the last key pressed.
 	{
-		as_key*	ko = (as_key*) (as_object*) fn.this_ptr;
+		as_key*	ko = fn.this_ptr->cast_to_as_key();
 		assert(ko);
 
 		fn.result->set_undefined();
@@ -74,7 +74,7 @@ namespace gameswf
 	void	key_get_code(const fn_call& fn)
 	// Returns the keycode of the last key pressed.
 	{
-		as_key*	ko = (as_key*) (as_object*) fn.this_ptr;
+		as_key*	ko = fn.this_ptr->cast_to_as_key();
 		assert(ko);
 
 		fn.result->set_int(ko->get_last_key_pressed());
@@ -91,7 +91,7 @@ namespace gameswf
 
 		int	code = (int) fn.arg(0).to_number();
 
-		as_key*	ko = (as_key*) (as_object*) fn.this_ptr;
+		as_key*	ko = fn.this_ptr->cast_to_as_key();
 		assert(ko);
 
 		fn.result->set_bool(ko->is_key_down(code));

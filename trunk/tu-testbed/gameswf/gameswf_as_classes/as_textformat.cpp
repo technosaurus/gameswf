@@ -123,12 +123,12 @@ void textformat_setformat(const fn_call& fn)
   //log_msg("%s: args=%d at %p\n", __FUNCTION__, nargs, this_ptr);
 #if 0
   // FIXME: these are only commented out to eliminate compilation warnings.
-  textformat_as_object*	ptr = (textformat_as_object*) fn.this_ptr;	// tulrich: TODO fix this unsafe cast; see textformat_new().
+  textformat_as_object*	ptr = fn.this_ptr->cast_to_as_textformat();
   assert(ptr);
   double start = fn.arg(0).to_number();
   double end = fn.arg(1).to_number();
 #endif
-  textformat_as_object *obj = (textformat_as_object*) fn.arg(2).to_object();	// tulrich: TODO fix this unsafe cast.  (need cast_to_textformat())
+	textformat_as_object *obj = fn.arg(2).to_object()->cast_to_as_textformat();
   assert(obj);
 
   //log_msg("Change from %f for %f characters for object at %p\n", start, end, obj);
@@ -202,11 +202,11 @@ void textformat_setformat(const fn_call& fn)
   textformat_getformat(gameswf::as_value* result, gameswf::as_object_interface* this_ptr, gameswf::as_environment* env, int nargs, int first_arg)
 {
   log_msg("%s: args=%d unfinished implementation\n", __FUNCTION__, nargs);
-  textformat_as_object*	ptr = (textformat_as_object*)this_ptr;
+  textformat_as_object*	ptr = this_ptr->cast_to_as_textformat();
   assert(ptr);
   double start = env->bottom(first_arg).to_number();
   double end = env->bottom(first_arg-1).to_number();
-  textformat_as_object *obj = (textformat_as_object *)env->bottom(first_arg-2).to_object();
+  textformat_as_object *obj = env->bottom(first_arg-2).to_object()->cast_to_as_textformat();
   assert(obj);
     
   ptr->obj = ptr->obj.getTextFormat();

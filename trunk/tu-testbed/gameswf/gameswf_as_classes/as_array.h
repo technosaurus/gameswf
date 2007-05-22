@@ -22,6 +22,7 @@ namespace gameswf
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+		virtual as_array* cast_to_as_array() { return this; }
 
 		tu_string to_string();
 

@@ -130,12 +130,14 @@ namespace gameswf
 	struct tu_string_as_object : public gameswf::as_object
 	{
 		tu_string m_string;
+
+		virtual tu_string_as_object* cast_to_as_string() { return this; }
 	};
   
   
 	void string_last_index_of(const fn_call& fn)
 	{
-		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 
 		// tulrich: Ugh!  The caller has done hash.get() on
@@ -149,7 +151,7 @@ namespace gameswf
   
 	void string_from_char_code(const fn_call& fn)
 	{
-		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 
 		// tulrich: Ugh!  The caller has done hash.get() on
@@ -164,7 +166,7 @@ namespace gameswf
 
 	void string_char_code_at(const fn_call& fn)
 	{
-		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 
 		// tulrich: Ugh!  The caller has done hash.get() on
@@ -179,7 +181,7 @@ namespace gameswf
 
 	void string_to_string(const fn_call& fn)
 	{
-		tu_string_as_object* this_string_ptr = (tu_string_as_object*) fn.this_ptr;
+		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 
 		fn.result->set_tu_string(this_string_ptr->m_string);

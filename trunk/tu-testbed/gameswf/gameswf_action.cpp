@@ -460,7 +460,7 @@ namespace gameswf
 		{
 			// Take all the members of the object
 
-			as_object* object = (as_object*) obj;
+			as_object* object = obj->cast_to_as_object();
 
 			stringi_hash<as_member>::const_iterator it = object->m_members.begin();
 			while (it != object->m_members.end())
@@ -479,7 +479,7 @@ namespace gameswf
 
 			if (object->m_prototype != NULL)
 			{
-				const as_object* prototype = (as_object*) object->m_prototype;
+				const as_object* prototype = object->m_prototype->cast_to_as_object();
 
 				it = prototype->m_members.begin();
 				while (it != prototype->m_members.end())
@@ -497,8 +497,8 @@ namespace gameswf
 				}
 			}
 		} else {
-			as_object* object = (as_object*) obj;
-			as_object* object_props = (as_object*) props;
+			as_object* object = obj->cast_to_as_object();
+			as_object* object_props = props->cast_to_as_object();
 
 			stringi_hash<as_member>::iterator it = object_props->m_members.begin();
 			while(it != object_props->m_members.end())
@@ -603,7 +603,7 @@ namespace gameswf
 		s_global->get_member(key_obj_name, &kval);
 		if (kval.get_type() == as_value::OBJECT)
 		{
-			as_key*	ko = (as_key*) kval.to_object();
+			as_key*	ko = kval.to_object()->cast_to_as_key();
 			assert(ko);
 
 			if (down) ko->set_key_down(k);
@@ -1363,7 +1363,7 @@ namespace gameswf
 					// finally to remove it we need set varname to undefined
 					if (obj.m_prototype != NULL)		
 					{
-						as_object* prototype = (as_object*) obj.m_prototype;
+						as_object* prototype = obj.m_prototype->cast_to_as_object();
 						character* movie = obj.m_prototype->cast_to_character();
 						if (movie)
 						{

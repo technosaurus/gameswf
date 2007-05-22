@@ -1,5 +1,9 @@
 2007-05-22  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/(a lot of files): cast_to_...() are applied
+
+2007-05-22  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_as_sprite.cpp: fixed get_depth()
 	* gameswf/gameswf_test_ogl.cll: added printf("Playing ..., version ...")
 	

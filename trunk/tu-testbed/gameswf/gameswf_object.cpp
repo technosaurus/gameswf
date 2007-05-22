@@ -18,7 +18,7 @@ namespace gameswf
 	{
 		if (fn.nargs == 3)
 		{
-			as_object* obj = (as_object*) fn.this_ptr;
+			as_object* obj = fn.this_ptr->cast_to_as_object();
 			assert(obj);
 			as_as_function* getter = fn.arg(1).to_as_function();
 			as_as_function* setter = fn.arg(2).to_as_function();

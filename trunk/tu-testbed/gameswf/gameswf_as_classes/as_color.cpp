@@ -26,7 +26,7 @@ namespace gameswf
 
 	void	as_color_getRGB(const fn_call& fn)
 	{
-		as_color* obj = (as_color*) fn.this_ptr;
+		as_color* obj = fn.this_ptr->cast_to_as_color();
 		assert(obj);
 		assert(obj->m_target != NULL);
 
@@ -41,7 +41,7 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			as_color* obj = (as_color*) fn.this_ptr;
+			as_color* obj = fn.this_ptr->cast_to_as_color();
 			assert(obj);
 			assert(obj->m_target != NULL);
 
@@ -59,7 +59,7 @@ namespace gameswf
 
 	void	as_color_gettransform(const fn_call& fn)
 	{
-		as_color* obj = (as_color*) fn.this_ptr;
+		as_color* obj = fn.this_ptr->cast_to_as_color();
 		assert(obj);
 		assert(obj->m_target != NULL);
 
@@ -85,11 +85,11 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			as_color* obj = (as_color*) fn.this_ptr;
+			as_color* obj = fn.this_ptr->cast_to_as_color();
 			assert(obj);
 			assert(obj->m_target != NULL);
 
-			as_object* tobj = (as_object*) fn.arg(0).to_object();
+			as_object* tobj = fn.arg(0).to_object()->cast_to_as_object();
 			if (tobj)
 			{
 				cxform	cx = obj->m_target->get_cxform();

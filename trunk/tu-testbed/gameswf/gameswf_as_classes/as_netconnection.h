@@ -20,6 +20,7 @@ namespace gameswf
 	struct as_netconnection : public as_object
 	{
 		as_netconnection();
+		virtual as_netconnection* cast_to_as_netconnection() { return this; }
 	};
 
 } // end of gameswf namespace

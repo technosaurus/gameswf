@@ -23,7 +23,7 @@ namespace gameswf
 		// Opens a local connection through which you can play back video files
 		// from an HTTP address or from the local file system.
 
-		as_netconnection* nc = (as_netconnection*) fn.this_ptr;
+		as_netconnection* nc = fn.this_ptr->cast_to_as_netconnection();
 		assert(nc);
 
 		if (fn.nargs == 1)

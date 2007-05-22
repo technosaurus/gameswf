@@ -93,7 +93,7 @@ namespace gameswf
 				assert(new_inst);
 				save_extern_movie(new_inst);
 
-				sprite_instance* new_root = (sprite_instance*) new_inst->get_root_movie();
+				sprite_instance* new_root = new_inst->get_root_movie()->cast_to_sprite();
 				set_current_root(new_inst);
 				new_root->on_event(event_id::LOAD);
 				return new_root;
@@ -121,7 +121,7 @@ namespace gameswf
 			}
 
 			parent->replace_display_object(
-				(character*) new_ch,
+				new_ch->cast_to_character(),
 				name,
 				depth,
 				use_cxform,

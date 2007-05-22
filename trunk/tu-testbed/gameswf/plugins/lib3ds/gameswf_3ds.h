@@ -65,6 +65,7 @@ namespace gameswf
 		virtual void	advance(float delta_time);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+		virtual x3ds_instance* cast_to_3ds() { return this; }
 
 		void	apply_matrix(float* target, float* camera_pos);
 
