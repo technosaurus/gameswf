@@ -128,6 +128,7 @@ void textformat_setformat(const fn_call& fn)
   double start = fn.arg(0).to_number();
   double end = fn.arg(1).to_number();
 #endif
+	assert(fn.arg(2).to_object());
 	textformat_as_object *obj = fn.arg(2).to_object()->cast_to_as_textformat();
   assert(obj);
 
