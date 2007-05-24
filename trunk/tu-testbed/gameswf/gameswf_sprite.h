@@ -127,6 +127,7 @@ namespace gameswf
 		void	execute_remove_tags(int frame);
 		void	do_actions();
 		virtual void do_actions(const array<action_buffer*>& action_list);
+		void	goto_frame(const as_value& target_frame);
 		void	goto_frame(int target_frame_number);
 		bool	goto_labeled_frame(const char* label);
 

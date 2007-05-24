@@ -569,10 +569,38 @@ namespace gameswf
 		}
 	}
 
-	void	sprite_instance::goto_frame(int target_frame_number)
-		// Set the sprite state at the specified frame number.
-		// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
+	void	sprite_instance::goto_frame(const as_value& target_frame)
 	{
+		// Flash tries to convert STRING to NUMBER,
+		// if the conversion is OK then Flash uses this NUMBER as target_frame.
+		// else uses arg as label of target_frame
+		// Thanks Francois Guibert
+
+		if (target_frame.get_type() == as_value::STRING)
+		{
+			double number_value;
+			// try as string as number
+			if (string_to_number(&number_value, target_frame.to_string()))
+			{
+		    goto_frame((int) number_value - 1);    // Convert to 0-based
+			}
+			else
+			{
+				goto_labeled_frame(target_frame.to_string());
+			}
+		}
+		else
+		{
+	    goto_frame(int(target_frame.to_number() - 1));    // Convert to 0-based
+		}
+
+	}
+
+	void	sprite_instance::goto_frame(int target_frame_number)
+	// Set the sprite state at the specified frame number.
+	// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
+	{
+
 		// Macromedia Flash ignores goto_frame(bad_frame)
 		if (target_frame_number > m_def->get_frame_count() - 1 ||
 			target_frame_number < 0 ||
