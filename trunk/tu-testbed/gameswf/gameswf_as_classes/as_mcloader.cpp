@@ -18,6 +18,7 @@ namespace gameswf
 
 	void	as_mcloader_addlistener(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
@@ -31,6 +32,7 @@ namespace gameswf
 
 	void	as_mcloader_removelistener(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
@@ -44,6 +46,7 @@ namespace gameswf
 
 	void	as_mcloader_loadclip(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
@@ -64,6 +67,7 @@ namespace gameswf
 
 	void	as_mcloader_unloadclip(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
@@ -78,6 +82,7 @@ namespace gameswf
 
 	void	as_mcloader_getprogress(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
@@ -188,6 +193,7 @@ namespace gameswf
 
 					case event_id::ONLOAD_PROGRESS:
 					{
+						assert(id.m_target);
 						sprite_instance* m = id.m_target->cast_to_sprite();
 
 						// 8 is (file_start_pos(4 bytes) + header(4 bytes))

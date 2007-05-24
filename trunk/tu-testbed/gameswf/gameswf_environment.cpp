@@ -48,7 +48,7 @@ namespace gameswf
 			if (parent)
 			{
 				sprite_instance* parent_as_sprite = parent->cast_to_sprite();
-				if (parent->cast_to_sprite())
+				if (parent_as_sprite)
 				{
 					parent_as_sprite->remove_display_object(target);
 				}

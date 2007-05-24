@@ -1,3 +1,10 @@
+2007-05-24  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_text.cpp: divided into .cpp & .h files
+	* gameswf/gameswf_as_classes/(a lot of files): assert(fn.this_ptr) is added
+	* gameswf/gameswf_sprite.*,
+	* gameswf/gameswf_as_sprite.*: added createTextField() method
+
 2007-05-22  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/(a lot of files): cast_to_...() are applied

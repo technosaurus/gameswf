@@ -17,6 +17,7 @@ namespace gameswf
 			smart_ptr<as_color>	obj = new as_color;
 
 			assert(fn.arg(0).get_type() == as_value::OBJECT);
+			assert(fn.arg(0).to_object());
 			obj->m_target = fn.arg(0).to_object()->cast_to_character();
 			assert(obj->m_target != NULL);
 			fn.result->set_as_object_interface(obj.get_ptr());
@@ -26,6 +27,7 @@ namespace gameswf
 
 	void	as_color_getRGB(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_color* obj = fn.this_ptr->cast_to_as_color();
 		assert(obj);
 		assert(obj->m_target != NULL);
@@ -41,6 +43,7 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
+			assert(fn.this_ptr);
 			as_color* obj = fn.this_ptr->cast_to_as_color();
 			assert(obj);
 			assert(obj->m_target != NULL);
@@ -59,6 +62,7 @@ namespace gameswf
 
 	void	as_color_gettransform(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_color* obj = fn.this_ptr->cast_to_as_color();
 		assert(obj);
 		assert(obj->m_target != NULL);
@@ -85,10 +89,12 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
+			assert(fn.this_ptr);
 			as_color* obj = fn.this_ptr->cast_to_as_color();
 			assert(obj);
 			assert(obj->m_target != NULL);
 
+			assert(fn.arg(0).to_object());
 			as_object* tobj = fn.arg(0).to_object()->cast_to_as_object();
 			if (tobj)
 			{

@@ -474,6 +474,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_text.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_timers.h"
 				>
 			</File>

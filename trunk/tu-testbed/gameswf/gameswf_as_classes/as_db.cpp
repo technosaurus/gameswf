@@ -19,6 +19,7 @@ namespace gameswf
 	void	as_db_connect(const fn_call& fn)
 	//  Closes a previously opened connection & create new connection to db
 	{
+		assert(fn.this_ptr);
 		as_db* db = fn.this_ptr->cast_to_as_db();
 
 		if (fn.nargs < 4)
@@ -38,6 +39,7 @@ namespace gameswf
 
 	void	as_db_disconnect(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_db* db = fn.this_ptr->cast_to_as_db();
 
 		if (db)
@@ -49,6 +51,7 @@ namespace gameswf
 	void	as_db_open(const fn_call& fn)
 	// Creates new table from sql statement & returns pointer to it
 	{
+		assert(fn.this_ptr);
 		as_db* db = fn.this_ptr->cast_to_as_db();
 
 		if (fn.nargs < 1)
@@ -69,6 +72,7 @@ namespace gameswf
 	void	as_db_run(const fn_call& fn)
 	// Executes sql statement & returns affected rows
 	{
+		assert(fn.this_ptr);
 		as_db* db = fn.this_ptr->cast_to_as_db();
 
 		if (fn.nargs < 1)
@@ -85,6 +89,7 @@ namespace gameswf
 
 	void	as_db_commit(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_db* db = fn.this_ptr->cast_to_as_db();
 
 		if (db)

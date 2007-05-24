@@ -210,6 +210,8 @@ namespace gameswf
 
 		virtual	void enumerate(as_environment* env);
 
+		character* create_text_field(const char* name, int depth, int x, int y, int width, int height);
+
 	};
 }
 

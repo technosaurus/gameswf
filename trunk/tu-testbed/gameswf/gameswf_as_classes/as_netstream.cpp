@@ -527,6 +527,7 @@ namespace gameswf
 
 	void netstream_close(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
 		assert(ns);
 		ns->close();
@@ -534,6 +535,7 @@ namespace gameswf
 
 	void netstream_pause(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
 		assert(ns);
 
@@ -548,6 +550,7 @@ namespace gameswf
 
 	void netstream_play(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
 		assert(ns);
 
@@ -562,6 +565,7 @@ namespace gameswf
 
 	void netstream_seek(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
 		assert(ns);
 

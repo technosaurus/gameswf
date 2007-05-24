@@ -137,6 +137,7 @@ namespace gameswf
   
 	void string_last_index_of(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 
@@ -151,6 +152,7 @@ namespace gameswf
   
 	void string_from_char_code(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 
@@ -166,6 +168,7 @@ namespace gameswf
 
 	void string_char_code_at(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 
@@ -181,6 +184,7 @@ namespace gameswf
 
 	void string_to_string(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
 		assert(this_string_ptr);
 

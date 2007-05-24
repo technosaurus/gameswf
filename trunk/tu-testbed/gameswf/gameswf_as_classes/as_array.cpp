@@ -11,6 +11,7 @@ namespace gameswf
 
 	void	as_array_tostring(const fn_call& fn)
 	{
+		assert(fn.this_ptr);
 		as_array* a = fn.this_ptr->cast_to_as_array();
 		assert(a);
 

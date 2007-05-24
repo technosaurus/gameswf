@@ -16,6 +16,7 @@
 #include "gameswf/gameswf_sprite_def.h"
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_as_sprite.h"
+#include "gameswf/gameswf_text.h"
 
 namespace gameswf
 {
@@ -69,6 +70,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("loadMovie", &sprite_loadmovie);
 		s_sprite_builtins->set_member("unloadMovie", &sprite_unloadmovie);
 		s_sprite_builtins->set_member("getNextHighestDepth", &sprite_getnexthighestdepth);
+		s_sprite_builtins->set_member("createTextField", &sprite_create_text_field);
 
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
@@ -79,7 +81,7 @@ namespace gameswf
 
 	sprite_instance::sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id)
 		:
-	character(parent, id),
+		character(parent, id),
 		m_def(def),
 		m_root(r),
 		m_play_state(PLAY),
@@ -1330,5 +1332,27 @@ namespace gameswf
 		}
 
 	}
+
+	character* sprite_instance::create_text_field(const char* name, int depth, int x, int y, int width, int height)
+	// Creates a new, empty text field as a child of the movie clip
+	{
+		edit_text_character_def* textdef = new edit_text_character_def(x, y, width, height);
+		character* textfield = textdef->create_character_instance(this, 0);
+		textfield->set_name(name);
+
+		cxform color_transform;
+		matrix matrix;
+		m_display_list.add_display_object(
+			textfield,
+			depth,
+			true,
+			color_transform,
+			matrix,
+			0.0f,
+			0); 
+
+		return textfield;
+	}
+
 
 }
