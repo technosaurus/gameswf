@@ -1,5 +1,10 @@
 2007-05-24  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_as_sprite.cpp,
+	* gameswf/gameswf_sprite.*: added goto_frame(const as_value& target_frame)
+	
+2007-05-24  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_as_sprite.cpp: applied the patch from Francois Guibert,
 	fixed gotoAndPlay & gotoAndStop bug, Flash tries to convert STRING to NUMBER,
 	if the conversion is OK then Flash uses this NUMBER as target_frame,

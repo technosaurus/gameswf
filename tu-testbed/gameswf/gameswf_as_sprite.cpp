@@ -76,30 +76,7 @@ namespace gameswf
 			return;
 		}
 
-		// Flash tries to convert STRING to NUMBER,
-		// if the conversion is OK then Flash uses this NUMBER as target_frame.
-		// else uses arg as label of target_frame
-		// Thanks Francois Guibert
-
-		as_value& arg = fn.arg(0);
-		if (arg.get_type() == as_value::STRING)
-		{
-			double number_value;
-			// try as string as number
-			if (string_to_number(&number_value, arg.to_string()))
-			{
-		    sprite->goto_frame((int) number_value - 1);    // Convert to 0-based
-			}
-			else
-			{
-				sprite->goto_labeled_frame(arg.to_string());
-			}
-		}
-		else
-		{
-	    sprite->goto_frame(int(fn.arg(0).to_number() - 1));    // Convert to 0-based
-		}
-
+    sprite->goto_frame(fn.arg(0));
 		sprite->set_play_state(movie_interface::PLAY);
 	}
 
@@ -112,25 +89,7 @@ namespace gameswf
 			return;
 		}
 
-		as_value& arg = fn.arg(0);
-		if (arg.get_type() == as_value::STRING)
-		{
-			double number_value;
-			// try as string as number
-			if (string_to_number(&number_value, arg.to_string()))
-			{
-		    sprite->goto_frame((int) number_value - 1);    // Convert to 0-based
-			}
-			else
-			{
-				sprite->goto_labeled_frame(arg.to_string());
-			}
-		}
-		else
-		{
-	    sprite->goto_frame(int(fn.arg(0).to_number() - 1));    // Convert to 0-based
-		}
-
+    sprite->goto_frame(fn.arg(0));
 		sprite->set_play_state(movie_interface::STOP);
 	}
 
