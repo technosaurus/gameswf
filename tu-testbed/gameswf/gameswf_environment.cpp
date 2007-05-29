@@ -524,7 +524,7 @@ namespace gameswf
 	}
 
 
-	bool	as_environment::parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const
+	bool	as_environment::parse_path(const tu_string& var_path, tu_string* path, tu_string* var)
 	// See if the given variable name is actually a sprite path
 	// followed by a variable name.  These come in the format:
 	//

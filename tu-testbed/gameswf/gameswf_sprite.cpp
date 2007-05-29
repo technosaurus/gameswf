@@ -965,8 +965,8 @@ namespace gameswf
 	}
 
 	bool	sprite_instance::set_member(const tu_stringi& name, const as_value& val)
-		// Set the named member to the value.  Return true if we have
-		// that member; false otherwise.
+	// Set the named member to the value.  Return true if we have
+	// that member; false otherwise.
 	{
 		// first try standart properties
 		if (character::set_member(name, val))
@@ -975,37 +975,14 @@ namespace gameswf
 			return true;
 		}
 
-		// Not a built-in property.  See if we have a
-		// matching edit_text character in our display
-		// list.
-		bool	text_val = val.get_type() == as_value::STRING
-			|| val.get_type() == as_value::NUMBER;
-		if (text_val)
-		{
-			bool	success = false;
-			for (int i = 0, n = m_display_list.get_character_count(); i < n; i++)
-			{
-				character*	ch = m_display_list.get_character(i);
-				// CASE INSENSITIVE compare.  In ActionScript 2.0, this
-				// changes to CASE SENSITIVE!!!
-				if (name == ch->get_text_name())
-				{
-					const char* text = val.to_string();
-					ch->set_text_value(text);
-					success = true;
-				}
-			}
-			if (success) return true;
-		}
-
-		// If that didn't work, set a variable within this environment.
+		// set a variable within this environment.
 		return m_as_environment.set_member(name, val);
 	}
 
 	bool	sprite_instance::get_member(const tu_stringi& name, as_value* val)
-		// Set *val to the value of the named member and
-		// return true, if we have the named member.
-		// Otherwise leave *val alone and return false.
+	// Set *val to the value of the named member and
+	// return true, if we have the named member.
+	// Otherwise leave *val alone and return false.
 	{
 		// first try standart properties
 		if (character::get_member(name, val))
@@ -1379,5 +1356,9 @@ namespace gameswf
 		return textfield;
 	}
 
+	character*	sprite_instance::find_target(const tu_string& path) const
+	{
+		return m_as_environment.find_target(path);
+	}
 
 }

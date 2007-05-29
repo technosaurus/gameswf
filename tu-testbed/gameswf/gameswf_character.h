@@ -393,6 +393,8 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 
+		virtual character*	find_target(const tu_string& path) const;
+
 	};
 
 }
