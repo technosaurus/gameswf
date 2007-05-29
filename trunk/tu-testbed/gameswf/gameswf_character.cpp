@@ -443,5 +443,9 @@ namespace gameswf
 		return false;
 	}
 
+	character*	character::find_target(const tu_string& path) const
+	{
+		return get_parent()->find_target(path);
+	}
 
 }

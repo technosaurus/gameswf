@@ -213,6 +213,8 @@ namespace gameswf
 
 		character* create_text_field(const char* name, int depth, int x, int y, int width, int height);
 
+		virtual character*	find_target(const tu_string& path) const;
+
 	};
 }
 

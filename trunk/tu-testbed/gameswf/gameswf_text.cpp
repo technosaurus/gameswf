@@ -11,6 +11,7 @@
 //	and move csm_textsetting() to it.
 
 #include "gameswf/gameswf_text.h"
+#include "gameswf/gameswf_sprite.h"
 
 namespace gameswf
 {
@@ -740,9 +741,13 @@ namespace gameswf
 		m_text_bounding_box.m_y_max = y;
 	}
 
+	void edit_text_character::advance(float delta_time) 
+	{ 
+		get_text_value();
+	}
 
-	void	edit_text_character::set_text_value(const char* new_text)
-	// Set our text to the given string.
+	void	edit_text_character::set_text(const char* new_text)
+	// Local. Set our text to the given string.
 	{
 		if (m_text == new_text)
 		{
@@ -750,17 +755,61 @@ namespace gameswf
 		}
 
 		m_text = new_text;
-		if (m_def->m_max_length > 0
-			&& m_text.length() > m_def->m_max_length)
+		if (m_def->m_max_length > 0	&& m_text.length() > m_def->m_max_length)
 		{
 			m_text.resize(m_def->m_max_length);
 		}
-
 		format_text();
 	}
 
-	const char*	edit_text_character::get_text_value() const
+	void	edit_text_character::set_text_value(const char* new_text)
+	// Set our text to the given string.
 	{
+		set_text(new_text);
+
+		if (strlen(get_text_name()) > 0)
+		{
+//			printf("set_text_value: %s='%s'\n", get_text_name(), new_text);
+
+			character* ch = get_parent();	// target, default is parent
+			tu_string path;
+			tu_string var = get_text_name();
+			if (as_environment::parse_path(get_text_name(), &path, &var))
+			{
+				ch = find_target(path);
+			}
+
+			if (ch)
+			{
+				ch->set_member(var, new_text);
+			}
+		}
+	}
+
+	const char*	edit_text_character::get_text_value()
+	{
+		if (strlen(get_text_name()) > 0)
+		{
+			character* ch = get_parent();	// target, default is parent
+			tu_string path;
+			tu_string var = get_text_name();
+			if (as_environment::parse_path(get_text_name(), &path, &var))
+			{
+				ch = find_target(path);
+			}
+
+			if (ch)
+			{
+				as_value val;
+				ch->get_member(var, &val);
+//				printf("get_text_value: %s='%s'\n", get_text_name(), val.to_string());
+				if (val.to_tu_string() != m_text)
+				{
+					set_text(val.to_tu_string().c_str());
+				}
+			}
+		}
+
 		return m_text.c_str();
 	}
 

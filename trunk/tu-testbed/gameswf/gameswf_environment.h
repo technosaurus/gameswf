@@ -114,9 +114,11 @@ namespace gameswf
 		}
 		as_value*	local_register_ptr(int reg);
 
+		// may be used in outside of class instance
+		static bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var);
+
 		// Internal.
 		int	find_local(const tu_string& varname, bool ignore_barrier) const;
-		bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var) const;
 		character*	find_target(const tu_string& path) const;
 		character*	find_target(const as_value& val) const;
 

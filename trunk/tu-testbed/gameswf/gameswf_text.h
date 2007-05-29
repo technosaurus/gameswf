@@ -230,13 +230,20 @@ namespace gameswf
 		virtual const char*	get_text_name() const;
 		void	reset_bounding_box(float x, float y);
 		virtual void	set_text_value(const char* new_text);
-		virtual const char*	get_text_value() const;
+		virtual const char*	get_text_value();
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
 		virtual float	get_width();
 		virtual float	get_height();
 		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x);
 		void	format_text();
+
+		virtual void advance(float delta_time);
+
+	private:
+
+		void	set_text(const char* new_text);
+
 	};
 
 }	// end namespace gameswf
