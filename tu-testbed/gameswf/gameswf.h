@@ -746,6 +746,8 @@ namespace gameswf
 	struct font;
 	namespace fontlib
 	{
+		int get_glyph_texture_size();
+
 		// Controls how large to render textured glyphs.
 		// Applies to fonts processed *after* this call only.
 		// The "nominal" size is perhaps around twice the

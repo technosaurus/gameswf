@@ -33,10 +33,6 @@ namespace gameswf
 		cxform	cx = inst->get_world_cxform();
 		float	pixel_scale = inst->get_pixel_scale();
 
-		//		display_info	sub_di = di;
-		//		sub_di.m_matrix.concatenate(mat);
-
-		//		matrix	base_matrix = sub_di.m_matrix;
 		matrix	base_matrix = mat;
 		float	base_matrix_max_scale = base_matrix.get_max_scale();
 
@@ -129,8 +125,7 @@ namespace gameswf
 					const texture_glyph&	tg = fnt->get_texture_glyph(index);
 					shape_character_def*	glyph = fnt->get_glyph(index);
 
-					if (tg.is_renderable()
-						&& (use_glyph_textures || glyph == NULL))
+					if (tg.is_renderable() && (use_glyph_textures || glyph == NULL))
 					{
 						fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
 					}
@@ -333,7 +328,7 @@ namespace gameswf
 	//
 
 	// creates empty dynamic text field
-	edit_text_character_def::edit_text_character_def(int x, int y, int width, int height) :
+	edit_text_character_def::edit_text_character_def(int width, int height) :
 		m_root_def(NULL),
 		m_word_wrap(false),
 		m_multiline(false),
@@ -346,7 +341,7 @@ namespace gameswf
 		m_use_outlines(false),
 		m_font_id(-1),
 		m_font(NULL),
-		m_text_height(1.0f),
+		m_text_height(1000.0f),
 		m_max_length(0),
 		m_alignment(ALIGN_LEFT),
 		m_left_margin(0.0f),
@@ -358,15 +353,17 @@ namespace gameswf
 		m_thickness(0.0f),
 		m_sharpness(0.0f)
 	{
-		m_rect.m_x_min = PIXELS_TO_TWIPS(x);
-		m_rect.m_y_min = PIXELS_TO_TWIPS(y);
-		m_rect.m_x_max = m_rect.m_x_min + PIXELS_TO_TWIPS(width);
-		m_rect.m_y_max = m_rect.m_y_min + PIXELS_TO_TWIPS(height);
+		m_rect.m_x_min = 0;
+		m_rect.m_y_min = 0;
+		m_rect.m_x_max = PIXELS_TO_TWIPS(width);
+		m_rect.m_y_max = PIXELS_TO_TWIPS(height);
+
+//		m_color.set(255, 255, 255, 255);
+		m_color.set(0, 0, 0, 255);
 
 		//TODO, rasterize truetype font to bitmap
 		m_font = new font();
 
-		m_color.set(0, 0, 0, 255);
 	}
 
 	edit_text_character_def::edit_text_character_def(movie_definition_sub* root_def) :
@@ -550,7 +547,7 @@ namespace gameswf
 
 		matrix mat = get_world_matrix(); 
 		render::set_matrix(mat); 
-		render::line_style_color(rgba(0, 0, 0, 255));   // black cursor 
+		render::line_style_color(rgba(255, 0, 0, 255));   // red cursor 
 		render::draw_line_strip(box, 2);        // draw line 
 	} 
 
@@ -1129,23 +1126,29 @@ namespace gameswf
 			int	index = m_def->m_font->get_glyph_index((Uint16) code);
 			if (index == -1)
 			{
-				// error -- missing glyph!
 
-				// Log an error, but don't log too many times.
-				static int	s_log_count = 0;
-				if (s_log_count < 10)
+				// try OS font
+				index = m_def->m_font->add_glyph_index(code);
+				if (index == -1)
 				{
-					s_log_count++;
-					log_error("edit_text_character::display() -- missing glyph for char %d "
-						"-- make sure character shapes for font %s are being exported "
-						"into your SWF file!\n",
-						code,
-						m_def->m_font->get_name());
-				}
+					// error -- missing glyph!
 
-				// Drop through and use index == -1; this will display
-				// using the empty-box glyph
+					// Log an error, but don't log too many times.
+					static int	s_log_count = 0;
+					if (s_log_count < 10)
+					{
+						s_log_count++;
+						log_error("edit_text_character::display() -- missing glyph for char %d "
+							"-- make sure character shapes for font %s are being exported "
+							"into your SWF file!\n",
+							code,
+							m_def->m_font->get_name());
+					}
+					// Drop through and use index == -1; this will display
+					// using the empty-box glyph
+				}
 			}
+
 			text_glyph_record::glyph_entry	ge;
 			ge.m_glyph_index = index;
 			ge.m_glyph_advance = scale * m_def->m_font->get_advance(index);
@@ -1241,10 +1244,6 @@ namespace gameswf
 				{
 					log_error("error: text style with undefined font; font_id = %d\n", m_font_id);
 				}
-			}
-			else
-			{
-				// dynamic field
 			}
 		}
 

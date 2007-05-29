@@ -12,6 +12,7 @@
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_shape.h"
 #include "gameswf/gameswf_movie_def.h"
+#include "gameswf/gameswf_freetype.h"
 #include "base/tu_file.h"
 
 
@@ -291,7 +292,6 @@ namespace gameswf
 				}}
 			}
 		}
-
 	}
 
 
@@ -389,6 +389,64 @@ namespace gameswf
 		return -1;
 	}
 
+	// for dynamic text fields
+	int	font::add_glyph_index(Uint16 code)
+	{
+		if (m_os_font == NULL)
+		{
+			// try to create face of system font
+			IF_VERBOSE_ACTION(log_msg("create_face for font %s \n", get_name()));
+			m_os_font = tu_freetype::create_face(get_name());
+			if (m_os_font == NULL)
+			{
+				return -1;
+			}
+		}
+
+		int glyph_index = -1;
+		float x_max;
+		float y_max;
+		float advance;
+		bitmap_info* bi = m_os_font->get_char_image(code, &x_max, &y_max, &advance);
+		if (bi)
+		{
+			assert(m_code_table.get(code, &glyph_index) == false);
+			glyph_index = m_glyphs.size();
+			m_code_table.add(code, glyph_index);
+
+			// Advance table; i.e. how wide each character is.
+			int n = m_code_table.size() - m_advance_table.size() - 1;
+			assert(n >= 0);
+
+			//hack
+			//Vitaly: Why in some SWF files
+			// m_code_table.size() differs from m_advance_table.size() ?
+			for (int i = 0; i < n; i++)
+			{
+				m_advance_table.push_back(0);
+			}
+			m_advance_table.push_back(advance);
+
+			m_glyphs.resize(glyph_index + 1);
+			m_texture_glyphs.resize(m_glyphs.size());
+
+			texture_glyph tg;
+
+			tg.m_uv_bounds.m_x_min = 0;
+			tg.m_uv_bounds.m_y_min = 0;
+			tg.m_uv_bounds.m_x_max = x_max; 
+			tg.m_uv_bounds.m_y_max = y_max;
+
+			// the origin
+			tg.m_uv_origin.m_x = 0;
+			tg.m_uv_origin.m_y = y_max;
+			
+			tg.set_bitmap_info(bi);
+			add_texture_glyph(glyph_index, tg);
+		}
+		return glyph_index;
+	}
+
 	float	font::get_advance(int glyph_index) const
 	{
 		if (glyph_index == -1)
@@ -482,7 +540,6 @@ namespace gameswf
 		}
 #endif // 0
 	}
-
 
 };	// end namespace gameswf
 

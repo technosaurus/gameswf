@@ -75,4 +75,11 @@
 #define TU_CONFIG_LINK_TO_FFMPEG 0
 #endif
 
+// define TU_CONFIG_LINK_TO_FREETYPE to 1 to include dynamic font support in
+// gameswf, depending on the freetype library
+#ifndef TU_CONFIG_LINK_TO_FREETYPE
+#define TU_CONFIG_LINK_TO_FREETYPE 0
+#endif
+
+
 #endif // TU_CONFIG_H

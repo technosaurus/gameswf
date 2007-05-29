@@ -1364,20 +1364,17 @@ namespace gameswf
 	character* sprite_instance::create_text_field(const char* name, int depth, int x, int y, int width, int height)
 	// Creates a new, empty text field as a child of the movie clip
 	{
-		edit_text_character_def* textdef = new edit_text_character_def(x, y, width, height);
+		edit_text_character_def* textdef = new edit_text_character_def(width, height);
+
 		character* textfield = textdef->create_character_instance(this, 0);
+
 		textfield->set_name(name);
 
+		matrix m;
+		m.concatenate_translation(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
+
 		cxform color_transform;
-		matrix matrix;
-		m_display_list.add_display_object(
-			textfield,
-			depth,
-			true,
-			color_transform,
-			matrix,
-			0.0f,
-			0); 
+		m_display_list.add_display_object(textfield, depth, true, color_transform, m, 0.0f, 0); 
 
 		return textfield;
 	}

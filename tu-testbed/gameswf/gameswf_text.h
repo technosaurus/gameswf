@@ -189,7 +189,7 @@ namespace gameswf
 		float m_thickness;
 		float m_sharpness;
 
-		edit_text_character_def(int x, int y, int width, int height);
+		edit_text_character_def(int width, int height);
 		edit_text_character_def(movie_definition_sub* root_def);
 		~edit_text_character_def();
 
