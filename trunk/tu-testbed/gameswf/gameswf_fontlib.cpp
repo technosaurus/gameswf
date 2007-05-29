@@ -64,6 +64,10 @@ namespace fontlib
 	// The raw non-antialiased render size for glyphs.
 	static int	s_glyph_render_size = s_glyph_nominal_size << OVERSAMPLE_BITS;
 
+	int get_glyph_texture_size()
+	{
+		return GLYPH_CACHE_TEXTURE_SIZE;
+	}
 	
 	void	set_nominal_glyph_pixel_size(int pixel_size)
 	{

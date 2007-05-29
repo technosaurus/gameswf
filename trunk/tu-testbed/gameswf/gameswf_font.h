@@ -14,8 +14,9 @@
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
-class tu_file;
+#include "gameswf/gameswf_freetype.h"
 
+class tu_file;
 
 namespace gameswf
 {
@@ -79,6 +80,8 @@ namespace gameswf
 		int	get_texture_glyph_nominal_size() const { return m_texture_glyph_nominal_size; }
 
 		int	get_glyph_index(Uint16 code) const;
+		int	add_glyph_index(Uint16 code);
+
 		float	get_advance(int glyph_index) const;
 		float	get_kerning_adjustment(int last_code, int this_code) const;
 		float	get_leading() const { return m_leading; }
@@ -153,6 +156,8 @@ namespace gameswf
 		};
 
 		array<zone_record> m_zone_table;
+
+		smart_ptr<tu_freetype> m_os_font;
 	};
 
 }	// end namespace gameswf
