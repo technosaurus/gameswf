@@ -513,12 +513,17 @@ namespace gameswf
 		m_has_focus(false), 
 		m_cursor(0), 
 		m_xcursor(0.0f), 
-		m_ycursor(0.0f) 
+		m_ycursor(0.0f)
 	{
 		assert(parent);
 		assert(m_def);
 
-		set_text_value(m_def->m_default_text.c_str());
+		// first set default text value
+		set_text(def->m_default_text.c_str());
+
+		// then reset VAR / TEXT_FIELD value
+		set_text_value(get_text_value());
+
 		m_dummy_style.push_back(fill_style());
 		reset_bounding_box(0, 0);
 	}
@@ -769,8 +774,6 @@ namespace gameswf
 
 		if (strlen(get_text_name()) > 0)
 		{
-//			printf("set_text_value: %s='%s'\n", get_text_name(), new_text);
-
 			character* ch = get_parent();	// target, default is parent
 			tu_string path;
 			tu_string var = get_text_name();
@@ -801,11 +804,12 @@ namespace gameswf
 			if (ch)
 			{
 				as_value val;
-				ch->get_member(var, &val);
-//				printf("get_text_value: %s='%s'\n", get_text_name(), val.to_string());
-				if (val.to_tu_string() != m_text)
+				if (ch->get_member(var, &val))
 				{
-					set_text(val.to_tu_string().c_str());
+					if (val.to_tu_string() != m_text)
+					{
+						set_text(val.to_tu_string().c_str());
+					}
 				}
 			}
 		}
