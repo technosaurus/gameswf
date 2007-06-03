@@ -14,7 +14,6 @@
 #include "gameswf/gameswf_render.h"
 #include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_mutex.h"
-#include "gameswf/gameswf_cursor.h"
 #include "base/tu_random.h"
 
 namespace gameswf
@@ -64,16 +63,16 @@ namespace gameswf
 			{
 				if (active_entity->can_handle_mouse_event())
 				{
-					set_cursor(ACTIVE_CURSOR);
+					render::set_cursor(render_handler::ACTIVE_CURSOR);
 				}
 				else
 				{
-					set_cursor(SYSTEM_CURSOR);
+					render::set_cursor(render_handler::SYSTEM_CURSOR);
 				}
 			}
 			else
 			{
-				set_cursor(SYSTEM_CURSOR);
+				render::set_cursor(render_handler::SYSTEM_CURSOR);
 			}
 
 			if (ms->m_mouse_button_state_last == 1)

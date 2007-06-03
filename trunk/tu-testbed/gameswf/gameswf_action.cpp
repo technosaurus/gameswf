@@ -14,7 +14,6 @@
 #include "gameswf/gameswf_timers.h"
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
-#include "gameswf/gameswf_cursor.h"
 #include "gameswf/gameswf_freetype.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
@@ -540,8 +539,6 @@ namespace gameswf
 			s_inited = true;
 			s_start_time = tu_timer::get_ticks();
 
-			create_cursor();
-
 			// @@ s_global should really be a
 			// client-visible player object, which
 			// contains one or more actual movie
@@ -592,7 +589,6 @@ namespace gameswf
 
 			s_global->clear();
 			s_global = NULL;
-			clear_cursor();
 			tu_freetype::close();
 		}
 	}

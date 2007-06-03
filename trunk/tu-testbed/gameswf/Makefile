@@ -47,7 +47,6 @@ LIB_OBJS = \
 	gameswf_as_sprite.$(OBJ_EXT)	\
 	gameswf_button.$(OBJ_EXT)	\
 	gameswf_character.$(OBJ_EXT)	\
-	gameswf_cursor.$(OBJ_EXT)	\
 	gameswf_dlist.$(OBJ_EXT)	\
 	gameswf_environment.$(OBJ_EXT)	\
 	gameswf_font.$(OBJ_EXT)		\
