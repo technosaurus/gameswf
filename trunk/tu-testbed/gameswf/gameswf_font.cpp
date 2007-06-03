@@ -153,7 +153,7 @@ namespace gameswf
 		else if (tag_type == 48 || tag_type == 75)
 		{
 			IF_VERBOSE_PARSE(
-				log_msg("reading DefineFont %d\n", tag_type == 48 ? 2 : 3)
+				log_msg("DefineFont%d tag\n", tag_type == 48 ? 2 : 3)
 			);
 
 			bool	has_layout = (in->read_uint(1) != 0);
@@ -404,10 +404,9 @@ namespace gameswf
 		}
 
 		int glyph_index = -1;
-		float x_max;
-		float y_max;
+		rect box;
 		float advance;
-		bitmap_info* bi = m_os_font->get_char_image(code, &x_max, &y_max, &advance);
+		bitmap_info* bi = m_os_font->get_char_image(code, box, &advance);
 		if (bi)
 		{
 			assert(m_code_table.get(code, &glyph_index) == false);
@@ -434,12 +433,12 @@ namespace gameswf
 
 			tg.m_uv_bounds.m_x_min = 0;
 			tg.m_uv_bounds.m_y_min = 0;
-			tg.m_uv_bounds.m_x_max = x_max; 
-			tg.m_uv_bounds.m_y_max = y_max;
+			tg.m_uv_bounds.m_x_max = box.m_x_max; 
+			tg.m_uv_bounds.m_y_max = box.m_y_max;
 
 			// the origin
-			tg.m_uv_origin.m_x = 0;
-			tg.m_uv_origin.m_y = y_max;
+			tg.m_uv_origin.m_x = box.m_x_min;
+			tg.m_uv_origin.m_y = box.m_y_min;
 			
 			tg.set_bitmap_info(bi);
 			add_texture_glyph(glyph_index, tg);

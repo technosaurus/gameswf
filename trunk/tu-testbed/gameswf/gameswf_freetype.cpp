@@ -130,6 +130,7 @@ namespace gameswf
 
 	// static
 	FT_Library	tu_freetype::m_lib;
+	int s_dpi = 300;
 
 	// static
 	void tu_freetype::init()
@@ -188,16 +189,6 @@ namespace gameswf
 				return;
 				break;
 		}
-
-		// quality of image
-		error = FT_Set_Char_Size(
-			m_face,
-			0,	//width
-			12 * 64,	//height*64 in points!
-			300,	//horiz device dpi
-			300	//vert device dpi
-			);
-		assert(error == 0);
 	}
 
 	tu_freetype::~tu_freetype()
@@ -224,8 +215,19 @@ namespace gameswf
 		return alpha;
 	}
 
-	bitmap_info* tu_freetype::get_char_image(Uint16 code, float* x_max, float* y_max, float* advance)
+	bitmap_info* tu_freetype::get_char_image(Uint16 code, rect& box, float* advance)
 	{
+
+		// quality of image
+		int error = FT_Set_Char_Size(
+			m_face,
+			0,	//width
+			16 * 64,	//height*64 in points!
+			s_dpi,	//horiz device dpi
+			s_dpi	//vert device dpi
+			);
+		assert(error == 0);
+
 		if (FT_Load_Char(m_face, code, FT_LOAD_RENDER))
 		{
 			return NULL;
@@ -236,10 +238,17 @@ namespace gameswf
 		image::alpha* im = draw_bitmap(m_face->glyph->bitmap);
 		bitmap_info* bi = render::create_bitmap_info_alpha(im->m_width, im->m_height, im->m_data);
 		delete im;;
+
+		box.m_x_max = float(m_face->glyph->bitmap.width) / float(bi->m_suspended_image->m_width);
+		box.m_y_max = float(m_face->glyph->bitmap.rows) / float(bi->m_suspended_image->m_height);
+
+		box.m_x_min = float(m_face->glyph->metrics.horiBearingX) / float(m_face->glyph->metrics.width);
+		box.m_y_min = float(m_face->glyph->metrics.horiBearingY) / float(m_face->glyph->metrics.height);
+		box.m_x_min *= -box.m_x_max;
+		box.m_y_min *= box.m_y_max;
 		
-		*x_max = float(m_face->glyph->bitmap.width) / float(bi->m_suspended_image->m_width);
-		*y_max = float(m_face->glyph->bitmap.rows) / float(bi->m_suspended_image->m_height);
-		*advance = m_face->glyph->advance.x / 3.2f; //vv fixme
+		*advance = m_face->glyph->metrics.horiAdvance / (float) s_dpi * 72.0f;
+
 		return bi;
 	}
 
