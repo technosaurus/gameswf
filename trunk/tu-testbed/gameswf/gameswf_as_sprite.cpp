@@ -76,7 +76,7 @@ namespace gameswf
 			return;
 		}
 
-    sprite->goto_frame(fn.arg(0));
+		sprite->goto_frame(fn.arg(0));
 		sprite->set_play_state(movie_interface::PLAY);
 	}
 
@@ -89,7 +89,7 @@ namespace gameswf
 			return;
 		}
 
-    sprite->goto_frame(fn.arg(0));
+		sprite->goto_frame(fn.arg(0));
 		sprite->set_play_state(movie_interface::STOP);
 	}
 

@@ -101,7 +101,7 @@ namespace gameswf
 
 		// Flash 8
 		bool m_use_flashtype;
-		int m_gtrid_fit;
+		int m_grid_fit;
 		float m_thickness;
 		float m_sharpness;
 
@@ -185,7 +185,7 @@ namespace gameswf
 
 		// Flash 8
 		bool m_use_flashtype;
-		int m_gtrid_fit;
+		int m_grid_fit;
 		float m_thickness;
 		float m_sharpness;
 
