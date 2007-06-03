@@ -149,7 +149,7 @@ namespace gameswf
 	text_character_def::text_character_def(movie_definition_sub* root_def) :
 		m_root_def(root_def),
 		m_use_flashtype(false),
-		m_gtrid_fit(0),
+		m_grid_fit(0),
 		m_thickness(0.0f),
 		m_sharpness(0.0f)
 	{
@@ -288,7 +288,7 @@ namespace gameswf
 		// crisp letters aligned to pixels.
 		// 2 = Sub-pixel grid fit. Align letters to the 1/3 pixel used by LCD monitors.
 		// Can also improve quality for CRT output.
-		m_gtrid_fit = in->read_uint(3);
+		m_grid_fit = in->read_uint(3);
 
 		in->read_uint(3); // reserved;
 
@@ -300,7 +300,7 @@ namespace gameswf
 		IF_VERBOSE_PARSE(
 			log_msg("reading CSMTextSetting tag\n");
 		log_msg("	m_use_flashtype = %s\n", m_use_flashtype ? "true" : "false");
-		log_msg("	m_gtrid_fit = %d\n", m_gtrid_fit);
+		log_msg("	m_grid_fit = %d\n", m_grid_fit);
 		log_msg("	m_thickness = %f\n", m_thickness);
 		log_msg("	m_sharpness = %f\n", m_sharpness);
 		);
@@ -350,7 +350,7 @@ namespace gameswf
 		m_indent(0.0f),
 		m_leading(0.0f),
 		m_use_flashtype(false),
-		m_gtrid_fit(0),
+		m_grid_fit(0),
 		m_thickness(0.0f),
 		m_sharpness(0.0f)
 	{
@@ -388,7 +388,7 @@ namespace gameswf
 		m_indent(0.0f),
 		m_leading(0.0f),
 		m_use_flashtype(false),
-		m_gtrid_fit(0),
+		m_grid_fit(0),
 		m_thickness(0.0f),
 		m_sharpness(0.0f)
 	{
@@ -484,7 +484,7 @@ namespace gameswf
 		// crisp letters aligned to pixels.
 		// 2 = Sub-pixel grid fit. Align letters to the 1/3 pixel used by LCD monitors.
 		// Can also improve quality for CRT output.
-		m_gtrid_fit = in->read_uint(3);
+		m_grid_fit = in->read_uint(3);
 
 		in->read_uint(3); // reserved;
 
@@ -496,7 +496,7 @@ namespace gameswf
 		IF_VERBOSE_PARSE(
 			log_msg("reading CSMTextSetting tag\n");
 		log_msg("	m_use_flashtype = %s\n", m_use_flashtype ? "true" : "false");
-		log_msg("	m_gtrid_fit = %d\n", m_gtrid_fit);
+		log_msg("	m_grid_fit = %d\n", m_grid_fit);
 		log_msg("	m_thickness = %f\n", m_thickness);
 		log_msg("	m_sharpness = %f\n", m_sharpness);
 		);

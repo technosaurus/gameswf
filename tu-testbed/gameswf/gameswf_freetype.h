@@ -57,7 +57,7 @@ namespace gameswf
 		static void close() {}
 		static tu_freetype* create_face(const char* fontname) { return NULL; }
 
-		bitmap_info* get_char_image(Uint16 code, float* x_max, float* y_max, float* advance)
+		bitmap_info* get_char_image(Uint16 code, rect& box, float* advance)
 		{
 			return NULL;
 		}

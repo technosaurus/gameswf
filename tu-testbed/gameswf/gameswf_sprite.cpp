@@ -582,7 +582,7 @@ namespace gameswf
 			// try as string as number
 			if (string_to_number(&number_value, target_frame.to_string()))
 			{
-		    goto_frame((int) number_value - 1);    // Convert to 0-based
+				goto_frame((int) number_value - 1);    // Convert to 0-based
 			}
 			else
 			{
@@ -591,7 +591,7 @@ namespace gameswf
 		}
 		else
 		{
-	    goto_frame(int(target_frame.to_number() - 1));    // Convert to 0-based
+			goto_frame(int(target_frame.to_number() - 1));    // Convert to 0-based
 		}
 
 	}
@@ -646,7 +646,7 @@ namespace gameswf
 
 
 	bool	sprite_instance::goto_labeled_frame(const char* label)
-		// Look up the labeled frame, and jump to it.
+	// Look up the labeled frame, and jump to it.
 	{
 		int	target_frame = -1;
 		if (m_def->get_labeled_frame(label, &target_frame))
