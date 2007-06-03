@@ -1,3 +1,8 @@
+2007-06-03  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/gameswf_freetype.cpp: added get_fontfile(...) function,
+	this function gets font file name by font name (for Win32 only)
+
 2007-06-02  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_text.cpp: applied patch from Francois Guibert,
