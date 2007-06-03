@@ -229,10 +229,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_cursor.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_dlist.cpp"
 				>
 			</File>
@@ -383,10 +379,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_character.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_cursor.h"
 				>
 			</File>
 			<File

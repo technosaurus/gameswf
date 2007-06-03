@@ -14,6 +14,162 @@
 
 #include <string.h>	// for memset()
 
+#define SDL_CURSOR_HANDLING
+
+#ifdef SDL_CURSOR_HANDLING
+#include <SDL.h>  // for cursor handling
+
+// XPM
+static const char *s_hand_image[] = {
+	// width height num_colors chars_per_pixel
+	"    32    32        3            1",
+	// colors
+	"X c #000000",
+	". c #ffffff",
+	"  c None",
+	// pixels
+	"   XX                           ",
+	"  X..X                          ",
+	"  X..X                          ",
+	"  X..X                          ",
+	"  X..X                          ",
+	"  X..XXX                        ",
+	"  X..X..XXX                     ",
+	"XXX..X..X..XXX                  ",
+	"X.X..X..X..X..X                 ",
+	"X.X..X..X..X..X                 ",
+	"X....X..X..X..X                 ",
+	"X..........X..X                 ",
+	" X............X                 ",
+	" X...........X                  ",
+	" X...........X                  ",
+	" X...........X                  ",
+	" XXXXXXXXXXXXX                  ",
+	" XXXXXXXXXXXXX                  ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"                                ",
+	"3,0"
+};
+
+struct sdl_cursor_handler {
+	bool m_inited;
+	SDL_Cursor* m_system_cursor;
+	SDL_Cursor* m_active_cursor;
+
+	sdl_cursor_handler()
+		:
+		m_inited(false),
+		m_system_cursor(NULL),
+		m_active_cursor(NULL)
+	{
+	}
+
+	void init() {
+		assert(!m_inited);
+		m_inited = true;
+		
+		// store system cursor
+		m_system_cursor = SDL_GetCursor();
+
+		// Init active cursor.
+		int i, row, col;
+		Uint8 data[4 * 32];
+		Uint8 mask[4 * 32];
+		int hot_x, hot_y;
+
+		i = -1;
+		for (row=0; row<32; ++row) {
+			for (col=0; col<32; ++col)
+			{
+				if (col % 8)
+				{
+					data[i] <<= 1;
+					mask[i] <<= 1;
+				} 
+				else
+				{
+					++i;
+					data[i] = mask[i] = 0;
+				}
+
+				switch (s_hand_image[4 + row][col])
+				{
+					case 'X':
+						// black
+						data[i] |= 0x01;
+						mask[i] |= 0x01;
+						break;
+
+					case '.':
+						// white
+						mask[i] |= 0x01;
+						break;
+
+					case ' ':
+						// transparent
+						break;
+				}
+			}
+		}
+		sscanf(s_hand_image[4 + row], "%d,%d", &hot_x, &hot_y);
+		
+		m_active_cursor = SDL_CreateCursor(data, mask, 32, 32, hot_x, hot_y);
+	}
+
+	~sdl_cursor_handler()
+	{
+		m_inited = false;
+		if (m_system_cursor)
+		{
+			SDL_SetCursor(m_system_cursor);
+			m_system_cursor = NULL;
+		}
+		if (m_active_cursor)
+		{
+			SDL_FreeCursor(m_active_cursor);
+			m_active_cursor = NULL;
+		}
+	}
+
+
+	void set_cursor(gameswf::render_handler::cursor_type cursor) {
+		if (!m_inited) {
+			init();
+		}
+		
+		switch (cursor)
+		{
+		case gameswf::render_handler::SYSTEM_CURSOR:
+			if (m_system_cursor) {
+				SDL_SetCursor(m_system_cursor);
+			}
+			break;
+
+		case gameswf::render_handler::ACTIVE_CURSOR:
+			if (m_active_cursor) {
+				SDL_SetCursor(m_active_cursor);
+			}
+			break;
+		default:
+			assert(0);
+		}
+	}
+};
+
+#endif  // SDL_CURSOR_HANDLING
+
 // choose the resampling method:
 // 1 = hardware (experimental, should be fast, somewhat buggy)
 // 2 = fast software bilinear (default)
@@ -76,6 +232,19 @@ struct render_handler_ogl : public gameswf::render_handler
 	
 	gameswf::matrix	m_current_matrix;
 	gameswf::cxform	m_current_cxform;
+
+	render_handler_ogl()
+		:
+		m_enable_antialias(false),
+		m_display_width(0),
+		m_display_height(0)
+	{
+	}
+
+	~render_handler_ogl()
+	{
+	}
+
 	void set_antialiased(bool enable)
 	{
 		m_enable_antialias = enable;
@@ -367,11 +536,6 @@ struct render_handler_ogl : public gameswf::render_handler
 		}
 		return new YUV_video_ogl();
 	}
-
-	~render_handler_ogl()
-	{
-	}
-
 
 	void	begin_display(
 		gameswf::rgba background_color,
@@ -778,7 +942,18 @@ struct render_handler_ogl : public gameswf::render_handler
 	{	       
 	    glDisable(GL_STENCIL_TEST); 
 	}
+
+
+#ifdef SDL_CURSOR_HANDLING
+	// SDL cursor handling.
+	sdl_cursor_handler m_cursor_handler;
 	
+	void set_cursor(cursor_type cursor)
+	{
+		m_cursor_handler.set_cursor(cursor);
+	}
+#endif  // SDL_CURSOR_HANDLING
+
 };	// end struct render_handler_ogl
 
 

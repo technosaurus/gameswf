@@ -1067,6 +1067,14 @@ namespace gameswf
 		virtual void begin_submit_mask() = 0;
 		virtual void end_submit_mask() = 0;
 		virtual void disable_mask() = 0;
+
+		// Mouse cursor handling.
+		enum cursor_type
+		{
+			SYSTEM_CURSOR,
+			ACTIVE_CURSOR
+		};
+		virtual void set_cursor(cursor_type cursor) {}
 	};
 
 	// Key events are global throughout gameswf.

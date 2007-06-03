@@ -191,6 +191,12 @@ namespace gameswf
 					m, bi, coords, uv_coords, color);
 			}
 		}
+
+		void set_cursor(render_handler::cursor_type cursor) {
+			if (s_render_handler) {
+				s_render_handler->set_cursor(cursor);
+			}
+		}
 	}
 }
 
