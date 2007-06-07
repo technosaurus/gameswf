@@ -176,6 +176,7 @@ namespace gameswf
 	struct tu_string_as_object;
 	struct textformat_as_object;
 	struct x3ds_instance;
+	struct edit_text_character;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -212,6 +213,7 @@ namespace gameswf
 		virtual as_xmlsock* cast_to_as_xmlsock() { return 0; }
 		virtual x3ds_instance* cast_to_3ds() { return 0; }
 		virtual as_object* cast_to_as_object() { return 0; }
+		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
@@ -990,6 +992,16 @@ namespace gameswf
 		~bitmap_info()
 		{
 			delete m_suspended_image;
+		}
+
+		int get_width() const
+		{
+			return m_suspended_image ? m_suspended_image->m_width : m_original_width;
+		}
+
+		int get_height() const
+		{
+			return m_suspended_image ? m_suspended_image->m_height : m_original_height;
 		}
 
 	};

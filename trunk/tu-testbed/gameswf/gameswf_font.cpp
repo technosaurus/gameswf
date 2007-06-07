@@ -21,7 +21,7 @@ namespace gameswf
 	font::font()
 		:
 		m_texture_glyph_nominal_size(96),	// Default is not important; gets overridden during glyph generation
-		m_name(NULL),
+		m_fontname("Times New Roman"),	// default
 		m_owning_movie(NULL),
 		m_unicode_chars(false),
 		m_shift_jis_chars(false),
@@ -39,13 +39,6 @@ namespace gameswf
 	font::~font()
 	{
 		m_glyphs.resize(0);
-
-		// Delete the name string.
-		if (m_name)
-		{
-			delete [] m_name;
-			m_name = NULL;
-		}
 	}
 
 	shape_character_def*	font::get_glyph(int index) const
@@ -169,7 +162,7 @@ namespace gameswf
 			// Inhibit warning.
 			reserved = reserved;
 
-			m_name = in->read_string_with_length();
+			m_fontname = in->read_string_with_length();
 
 			int	glyph_count = in->read_u16();
 			
@@ -300,13 +293,7 @@ namespace gameswf
 	// DefineFontInfo tag.  The caller has already read the tag
 	// type and font id.
 	{
-		if (m_name)
-		{
-			delete m_name;
-			m_name = NULL;
-		}
-
-		m_name = in->read_string_with_length();
+		m_fontname = in->read_string_with_length();
 
 		unsigned char	flags = in->read_u8();
 		m_unicode_chars = (flags & 0x20) != 0;
@@ -417,13 +404,15 @@ namespace gameswf
 			int n = m_code_table.size() - m_advance_table.size() - 1;
 			assert(n >= 0);
 
-			//hack
-			//Vitaly: Why in some SWF files
-			// m_code_table.size() differs from m_advance_table.size() ?
+			// characters from static text is in m_code_table and not is in m_advance_table
+			// to fill m_advance_table for them
 			for (int i = 0; i < n; i++)
 			{
-				m_advance_table.push_back(0);
+				m_advance_table.push_back(0);	
 			}
+
+			static float s_advance_scale = 0.165f; //Vitaly: hack, todo fix
+			advance *= s_advance_scale;
 			m_advance_table.push_back(advance);
 
 			m_glyphs.resize(glyph_index + 1);

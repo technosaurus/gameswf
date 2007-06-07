@@ -70,7 +70,7 @@ namespace gameswf
 
 		void	wipe_texture_glyphs();
 
-		const char*	get_name() const { return m_name; }
+		const char*	get_name() const { return m_fontname.c_str(); }
 		movie_definition_sub*	get_owning_movie() const { return m_owning_movie; }
 
 		const texture_glyph&	get_texture_glyph(int glyph_index) const;
@@ -95,7 +95,7 @@ namespace gameswf
 		array< texture_glyph >	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
 		int	m_texture_glyph_nominal_size;
 
-		char*	m_name;
+		tu_string	m_fontname;
 		movie_definition_sub*	m_owning_movie;
 		bool	m_has_layout;
 		bool	m_unicode_chars;

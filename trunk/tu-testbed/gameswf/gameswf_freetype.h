@@ -32,7 +32,7 @@ namespace gameswf
 
 		image::alpha* draw_bitmap(const FT_Bitmap& bitmap);
 		bitmap_info* get_char_image(Uint16 code, rect& box, float* advance);
-
+		float get_advance_x(Uint16 code);
 
 	private:
 		
