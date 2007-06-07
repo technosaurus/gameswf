@@ -383,7 +383,7 @@ namespace gameswf
 		{
 			// try to create face of system font
 			IF_VERBOSE_ACTION(log_msg("create_face for font %s \n", get_name()));
-			m_os_font = tu_freetype::create_face(get_name());
+			m_os_font = tu_freetype::create_face(get_name(), m_is_bold, m_is_italic);
 			if (m_os_font == NULL)
 			{
 				return -1;

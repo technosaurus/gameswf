@@ -484,7 +484,7 @@ namespace gameswf
 //		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
 //		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
 
-		m_current_frame = fmod(m_current_frame + 1.0f, m_def->m_file->frames);
+		m_current_frame = fmod(m_current_frame + 1.0f, (float) m_def->m_file->frames);
 		lib3ds_file_eval(m_def->m_file, m_current_frame);
 	}
 

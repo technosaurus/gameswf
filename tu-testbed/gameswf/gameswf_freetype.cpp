@@ -27,13 +27,12 @@
 namespace gameswf
 {
 
-	bool get_fontfile(const char* font_name, tu_string& file_name)
+	bool get_fontfile(const char* font_name, tu_string& file_name, bool is_bold, bool is_italic)
 	// gets font file name by font name
 	{
 
 		if (font_name == NULL)
 		{
-			file_name = "";
 			return false;
 		}
 
@@ -41,8 +40,16 @@ namespace gameswf
 
 		//Vitaly: I'm not sure that this code works on all versions of Windows
 
-#define MAX_KEY_LENGTH 255
-#define MAX_VALUE_NAME 16383
+		tu_stringi fontname = font_name;
+		if (is_bold)
+		{
+			fontname += " Bold";
+		}
+		if (is_italic)
+		{
+			fontname +=  " Italic";
+		}
+		fontname += " (TrueType)";
 
 		HKEY hKey;
 
@@ -84,19 +91,15 @@ namespace gameswf
 			NULL,	// security descriptor 
 			NULL);	// last write time 
 
-
 		// Enumerate the key values. 
 		BYTE szValueData[MAX_PATH];
-		DWORD dwValueDataSize = sizeof(szValueData)-1;
-		TCHAR  achValue[MAX_VALUE_NAME]; 
-		DWORD cchValue = MAX_VALUE_NAME; 
-
-		tu_stringi fontname = tu_string(font_name) + " (TrueType)";
+		TCHAR  achValue[MAX_PATH]; 
 		for (DWORD i = 0, retCode = ERROR_SUCCESS; i < cValues; i++) 
 		{ 
-			cchValue = MAX_VALUE_NAME; 
+			DWORD cchValue = MAX_PATH; 
+			DWORD dwValueDataSize = sizeof(szValueData) - 1;
 			achValue[0] = '\0'; 
-			retCode = RegEnumValue(hKey, i, 
+			retCode = RegEnumValueA(hKey, i, 
 				achValue, 
 				&cchValue, 
 				NULL, 
@@ -160,12 +163,12 @@ namespace gameswf
 		}
 	}
 
-	tu_freetype* tu_freetype::create_face(const char* fontname)
+	tu_freetype* tu_freetype::create_face(const char* fontname, bool is_bold, bool is_italic)
 	{
-		return new tu_freetype(fontname);
+		return new tu_freetype(fontname, is_bold, is_italic);
 	}
 
-	tu_freetype::tu_freetype(const char* fontname) :
+	tu_freetype::tu_freetype(const char* fontname, bool is_bold, bool is_italic) :
 		m_face(NULL)
 	{
 		if (m_lib == NULL)
@@ -174,7 +177,7 @@ namespace gameswf
 		}
 
 		tu_string font_filename;
-		if (get_fontfile(fontname, font_filename) == false)
+		if (get_fontfile(fontname, font_filename, is_bold, is_italic) == false)
 		{
 			log_error("can't found font file for font '%s'\n", fontname);
 			return;
