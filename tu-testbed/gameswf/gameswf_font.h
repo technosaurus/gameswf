@@ -82,7 +82,7 @@ namespace gameswf
 		int	get_glyph_index(Uint16 code) const;
 		int	add_glyph_index(Uint16 code);
 
-		float	get_advance(int glyph_index) const;
+		float	get_advance(int glyph_index);
 		float	get_kerning_adjustment(int last_code, int this_code) const;
 		float	get_leading() const { return m_leading; }
 		float	get_descent() const { return m_descent; }
