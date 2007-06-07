@@ -128,7 +128,34 @@ namespace gameswf
 
 					if (tg.is_renderable() && (use_glyph_textures || glyph == NULL))
 					{
-						fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
+//					fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
+
+						rect uv_bounds;
+						uv_bounds.m_x_min = 0;
+						uv_bounds.m_y_min = 0;
+						uv_bounds.m_x_max = tg.m_uv_bounds.m_x_max; 
+						uv_bounds.m_y_max = tg.m_uv_bounds.m_y_max;
+
+						rect bounds;
+						bounds.m_x_max = tg.m_uv_bounds.m_x_max - tg.m_uv_origin.m_x;
+						bounds.m_y_max = tg.m_uv_bounds.m_y_max - tg.m_uv_origin.m_y;
+						bounds.m_x_min = - tg.m_uv_origin.m_x;
+						bounds.m_y_min = - tg.m_uv_origin.m_y;
+
+						float s_EM_scale = 1024.0f / nominal_glyph_height;
+						float	xscale = tg.m_bitmap_info->get_width() * s_EM_scale;
+						float yscale = tg.m_bitmap_info->get_height() * s_EM_scale;
+						bounds.m_x_min *= xscale;
+						bounds.m_x_max *= xscale;
+						bounds.m_y_min *= yscale;
+						bounds.m_y_max *= yscale;
+
+						render::draw_bitmap(mat,
+							tg.m_bitmap_info.get_ptr(),
+							bounds,
+							uv_bounds,
+							transformed_color);
+
 					}
 					else
 					{
@@ -140,7 +167,9 @@ namespace gameswf
 						}
 					}
 				}
+
 				x += rec.m_glyphs[j].m_glyph_advance;
+
 			}
 		}
 	}
@@ -364,7 +393,6 @@ namespace gameswf
 
 		//TODO, rasterize truetype font to bitmap
 		m_font = new font();
-
 	}
 
 	edit_text_character_def::edit_text_character_def(movie_definition_sub* root_def) :

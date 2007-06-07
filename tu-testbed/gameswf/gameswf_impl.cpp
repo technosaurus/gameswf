@@ -16,7 +16,6 @@
 #include "gameswf/gameswf_button.h"
 #include "gameswf/gameswf_impl.h"
 #include "gameswf/gameswf_font.h"
-#include "gameswf/gameswf_fontlib.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_morph2.h"
 #include "gameswf/gameswf_video_impl.h"

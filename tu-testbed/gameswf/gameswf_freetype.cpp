@@ -22,12 +22,20 @@
 
 #if TU_CONFIG_LINK_TO_FREETYPE == 1
 
+#define MAX_FONTSIZE 96
+
 namespace gameswf
 {
 
 	bool get_fontfile(const char* font_name, tu_string& file_name)
 	// gets font file name by font name
 	{
+
+		if (font_name == NULL)
+		{
+			file_name = "";
+			return false;
+		}
 
 #ifdef _WIN32
 
@@ -130,7 +138,6 @@ namespace gameswf
 
 	// static
 	FT_Library	tu_freetype::m_lib;
-	int s_dpi = 300;
 
 	// static
 	void tu_freetype::init()
@@ -197,7 +204,11 @@ namespace gameswf
 
 	image::alpha* tu_freetype::draw_bitmap(const FT_Bitmap& bitmap)
 	{
-		image::alpha* alpha = image::create_alpha(fontlib::get_glyph_texture_size(), fontlib::get_glyph_texture_size());
+		// You must use power-of-two dimensions!!
+		int	w = 1; while (w < bitmap.pitch) { w <<= 1; }
+		int	h = 1; while (h < bitmap.rows) { h <<= 1; }
+
+		image::alpha* alpha = image::create_alpha(w, h);
 		memset(alpha->m_data, 0, alpha->m_width * alpha->m_height);
 
 		// copy image to alpha
@@ -217,17 +228,7 @@ namespace gameswf
 
 	bitmap_info* tu_freetype::get_char_image(Uint16 code, rect& box, float* advance)
 	{
-
-		// quality of image
-		int error = FT_Set_Char_Size(
-			m_face,
-			0,	//width
-			16 * 64,	//height*64 in points!
-			s_dpi,	//horiz device dpi
-			s_dpi	//vert device dpi
-			);
-		assert(error == 0);
-
+		FT_Set_Pixel_Sizes(m_face, 0, MAX_FONTSIZE);
 		if (FT_Load_Char(m_face, code, FT_LOAD_RENDER))
 		{
 			return NULL;
@@ -247,9 +248,20 @@ namespace gameswf
 		box.m_x_min *= -box.m_x_max;
 		box.m_y_min *= box.m_y_max;
 		
-		*advance = m_face->glyph->metrics.horiAdvance / (float) s_dpi * 72.0f;
+		*advance = (float) m_face->glyph->metrics.horiAdvance;
 
 		return bi;
+	}
+
+	float tu_freetype::get_advance_x(Uint16 code)
+	{
+		FT_Set_Pixel_Sizes(m_face, 0, MAX_FONTSIZE);
+		if (FT_Load_Char(m_face, code, FT_LOAD_RENDER))
+		{
+			return NULL;
+		}
+
+		return (float) m_face->glyph->metrics.horiAdvance;
 	}
 
 }
