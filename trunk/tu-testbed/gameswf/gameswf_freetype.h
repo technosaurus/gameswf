@@ -22,12 +22,12 @@ namespace gameswf
 
 	struct tu_freetype : public ref_counted
 	{
-		tu_freetype(const char* fontname);
+		tu_freetype(const char* fontname, bool is_bold, bool is_italic);
 		~tu_freetype();
 		
 		static void init();
 		static void close();
-		static tu_freetype* create_face(const char* fontname);
+		static tu_freetype* create_face(const char* fontname, bool is_bold, bool is_italic);
 
 
 		image::alpha* draw_bitmap(const FT_Bitmap& bitmap);
@@ -55,7 +55,7 @@ namespace gameswf
 		
 		static void init() {}
 		static void close() {}
-		static tu_freetype* create_face(const char* fontname) { return NULL; }
+		static tu_freetype* create_face(const char* fontname, bool is_bold, bool is_italic) { return NULL; }
 
 		bitmap_info* get_char_image(Uint16 code, rect& box, float* advance)
 		{
