@@ -22,10 +22,12 @@
 
 #if TU_CONFIG_LINK_TO_FREETYPE == 1
 
-#define MAX_FONTSIZE 96
+#define FREETYPE_MAX_FONTSIZE 96
 
 namespace gameswf
 {
+
+	static float s_advance_scale = 0.16666666f;	//vv hack
 
 	bool get_fontfile(const char* font_name, tu_string& file_name, bool is_bold, bool is_italic)
 	// gets font file name by font name
@@ -231,7 +233,7 @@ namespace gameswf
 
 	bitmap_info* tu_freetype::get_char_image(Uint16 code, rect& box, float* advance)
 	{
-		FT_Set_Pixel_Sizes(m_face, 0, MAX_FONTSIZE);
+		FT_Set_Pixel_Sizes(m_face, 0, FREETYPE_MAX_FONTSIZE);
 		if (FT_Load_Char(m_face, code, FT_LOAD_RENDER))
 		{
 			return NULL;
@@ -251,20 +253,20 @@ namespace gameswf
 		box.m_x_min *= -box.m_x_max;
 		box.m_y_min *= box.m_y_max;
 		
-		*advance = (float) m_face->glyph->metrics.horiAdvance;
+		*advance = (float) m_face->glyph->metrics.horiAdvance * s_advance_scale;
 
 		return bi;
 	}
 
 	float tu_freetype::get_advance_x(Uint16 code)
 	{
-		FT_Set_Pixel_Sizes(m_face, 0, MAX_FONTSIZE);
+		FT_Set_Pixel_Sizes(m_face, 0, FREETYPE_MAX_FONTSIZE);
 		if (FT_Load_Char(m_face, code, FT_LOAD_RENDER))
 		{
-			return NULL;
+			return 0;
 		}
 
-		return (float) m_face->glyph->metrics.horiAdvance;
+		return (float) m_face->glyph->metrics.horiAdvance * s_advance_scale;
 	}
 
 }

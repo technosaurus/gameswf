@@ -411,8 +411,6 @@ namespace gameswf
 				m_advance_table.push_back(0);	
 			}
 
-			static float s_advance_scale = 0.165f; //Vitaly: hack, todo fix
-			advance *= s_advance_scale;
 			m_advance_table.push_back(advance);
 
 			m_glyphs.resize(glyph_index + 1);
@@ -435,7 +433,7 @@ namespace gameswf
 		return glyph_index;
 	}
 
-	float	font::get_advance(int glyph_index) const
+	float	font::get_advance(int glyph_index)
 	{
 		if (glyph_index == -1)
 		{
@@ -443,29 +441,48 @@ namespace gameswf
 			return 512.0f;
 		}
 
-		if (m_advance_table.size() == 0)
+		assert(glyph_index >= 0);
+
+		if (glyph_index >= m_advance_table.size())
 		{
-			// No layout info for this font!!!
-			static bool	s_logged = false;
-			if (s_logged == false)
+			for (int n = glyph_index - m_advance_table.size(); n >= 0; n--)
 			{
-				s_logged = true;
-				log_error("error: empty advance table in font %s\n", get_name());
+				m_advance_table.push_back(0);
 			}
-			return 0;
 		}
 
-		if (glyph_index < m_advance_table.size())
+		// the char declared in 'static text' has zero advance value
+		// the 'dynamic text' requires advance value therefore we need to calculate it
+		float advance = m_advance_table[glyph_index];
+
+		if (advance == 0)
 		{
-			assert(glyph_index >= 0);
-			return m_advance_table[glyph_index];
+			if (m_os_font == NULL)
+			{
+				// try to create face of system font
+				IF_VERBOSE_ACTION(log_msg("create_face for font %s \n", get_name()));
+				m_os_font = tu_freetype::create_face(get_name(), m_is_bold, m_is_italic);
+				if (m_os_font == NULL)
+				{
+					return 0;
+				}
+			}
+
+			Uint16 code = 0;
+			for (hash<Uint16, int, simple_code_hash<Uint16> >::const_iterator it = m_code_table.begin();
+				it != m_code_table.end(); ++it)
+			{
+				if (it->second == glyph_index)
+				{
+					code = it->first;
+					break;
+				}
+			}
+			advance = m_os_font->get_advance_x(code);
+			m_advance_table[glyph_index] = advance;
 		}
-		else
-		{
-			// Bad glyph index.  Due to bad data file?
-			assert(0);
-			return 0;
-		}
+
+		return advance;
 	}
 
 
