@@ -1,7 +1,10 @@
 2007-06-09  Vitaly Alexeev <tishka92@yahoo.com>
 
-	* gameswf/gameswf_text.cpp: default fontsize is 12
-	* gameswf/gameswf_freetype.cpp: if fontfile is't found then 'Times.ttf' is used 
+	* gameswf/gameswf_as_classes/as_netstream.*,
+	* gameswf/gameswf_movie_def.cpp,
+	* gameswf/gameswf_mutex.h:
+	* gameswf/gameswf_root.cpp:
+	cleanup
 
 2007-06-07  Vitaly Alexeev <tishka92@yahoo.com>
 

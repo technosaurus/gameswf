@@ -10,7 +10,6 @@
 #include "gameswf/gameswf_as_classes/as_netstream.h"
 #include "gameswf/gameswf_render.h"
 #include "gameswf/gameswf_video_base.h"
-#include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_function.h"
 #include "base/tu_timer.h"
 
@@ -309,7 +308,7 @@ namespace gameswf
 					if (m_pause)
 					{
 						double t = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-						tu_delay(100);
+						tu_timer::sleep(100);
 						m_start_clock += tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - t;
 						continue;
 					}
@@ -346,7 +345,7 @@ namespace gameswf
 						// now it is possible and to have a rest
 						if (m_unqueued_data != NULL && delay > 0)
 						{
-							tu_delay(delay);
+							tu_timer::sleep(delay);
 						}
 					}
 				}

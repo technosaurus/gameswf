@@ -11,7 +11,6 @@
 #endif
 
 #include "base/tu_queue.h"
-#include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_video_impl.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
