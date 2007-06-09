@@ -371,7 +371,7 @@ namespace gameswf
 		m_use_outlines(false),
 		m_font_id(-1),
 		m_font(NULL),
-		m_text_height(1000.0f),
+		m_text_height(240.0f),	//	default 12
 		m_max_length(0),
 		m_alignment(ALIGN_LEFT),
 		m_left_margin(0.0f),
@@ -388,10 +388,7 @@ namespace gameswf
 		m_rect.m_x_max = PIXELS_TO_TWIPS(width);
 		m_rect.m_y_max = PIXELS_TO_TWIPS(height);
 
-//		m_color.set(255, 255, 255, 255);
 		m_color.set(0, 0, 0, 255);
-
-		//TODO, rasterize truetype font to bitmap
 		m_font = new font();
 	}
 
