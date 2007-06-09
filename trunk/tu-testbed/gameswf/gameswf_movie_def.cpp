@@ -17,7 +17,6 @@
 #include "gameswf/gameswf_font.h"
 #include "gameswf/gameswf_fontlib.h"
 #include "gameswf/gameswf_stream.h"
-#include "gameswf/gameswf_mutex.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
 

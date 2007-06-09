@@ -19,11 +19,6 @@ namespace gameswf
 	typedef SDL_mutex tu_mutex;
 	typedef SDL_Thread tu_thread;
 
-	inline void tu_delay(Uint32 ms)
-	{
-		SDL_Delay(ms);
-	}
-
 	inline void tu_wait_thread(tu_thread* thread)
 	{
 		SDL_WaitThread(thread, NULL);
