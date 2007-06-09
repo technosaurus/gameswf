@@ -77,6 +77,12 @@ namespace gameswf
 			}
 		}
 
+		// Get the value of the 'windir' environment variable.
+		size_t requiredSize = MAX_PATH - 1;
+		char buf[MAX_PATH];
+		getenv_s(&requiredSize, buf, requiredSize, "WINDIR");
+		tu_string windir(buf);
+
 		// Get value count. 
 		DWORD    cValues;              // number of values for key 
 		retCode = RegQueryInfoKey(
@@ -113,27 +119,33 @@ namespace gameswf
 			{ 
 				if (fontname == achValue)
 				{
-					// get bufsize required for windir environment variable
-					size_t requiredSize;
-					getenv_s( &requiredSize, NULL, 0, "WINDIR");
-
-					char* windir = (char*) malloc(requiredSize * sizeof(char));
-					assert(windir);
-
-					// Get the value of the 'windir' environment variable.
-					getenv_s(&requiredSize, windir, requiredSize, "WINDIR");
-					file_name = tu_string(windir) + tu_string("\\Fonts\\") + (char*) szValueData;
-
-					free(windir);
-
+					file_name = windir + tu_string("\\Fonts\\") + (char*) szValueData;
 					RegCloseKey(hKey);
 					return true;
 				}
 			} 
 		}
 
+		// font file is not found, take default value - 'Times New Roman'
+		file_name = windir + tu_string("\\Fonts\\Times");
+		if (is_bold && is_italic)
+		{
+			file_name += "BI";
+		}
+		else
+		if (is_bold)
+		{
+			file_name +=  "B";
+		}
+		else
+		if (is_italic)
+		{
+			file_name +=  "I";
+		}
+		file_name += ".ttf";
+		log_error("can't find font file for '%s'\nit's used '%s' file\n", fontname.c_str(), file_name.c_str());
 		RegCloseKey(hKey);
-		return false;
+		return true;
 
 #else
 		log_error("get_fontfile() is not implemented yet\n");
