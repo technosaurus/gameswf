@@ -17,6 +17,13 @@
 
 namespace gameswf
 {
+
+	static tu_mutex s_gameswf_engine;
+	tu_mutex& gameswf_engine_mutex()
+	{
+		return s_gameswf_engine;
+	}
+
 	movie_root::movie_root(movie_def_impl* def)
 			:
 			m_def(def),
@@ -394,8 +401,7 @@ namespace gameswf
 			// Lock gameswf engine. Video is running in separate thread and
 			// it calls gameswf functions from separate thread to set
 			// status of netstream object
-
-			locker lock(get_gameswf_mutex());
+			gameswf_engine_mutex().lock();
 
 			action_init();	// @@ put this in some global init somewhere else...
 
@@ -428,6 +434,8 @@ namespace gameswf
 
 				m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
 			}
+
+			gameswf_engine_mutex().unlock();
 		}
 
 		// 0-based!!

@@ -103,14 +103,14 @@ namespace gameswf
 
 		tu_queue< smart_ptr<av_data> > m_qvideo;
 
-		gameswf_mutex m_audio_mutex;
+		tu_mutex m_audio_mutex;
 		tu_queue< smart_ptr<av_data> > m_qaudio;
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;
 
 		YUV_video* m_yuv;
-		gameswf_mutex m_yuv_mutex;
+		tu_mutex m_yuv_mutex;
 		smart_ptr<av_data> m_unqueued_data;
 
 		size_t m_queue_size;
