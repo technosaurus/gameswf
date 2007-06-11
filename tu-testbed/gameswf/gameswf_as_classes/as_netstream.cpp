@@ -11,6 +11,7 @@
 #include "gameswf/gameswf_render.h"
 #include "gameswf/gameswf_video_base.h"
 #include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_root.h"
 #include "base/tu_timer.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
@@ -57,16 +58,16 @@ namespace gameswf
 			return;
 		}
 
-		m_thread = tu_create_thread(netstream_server, this);
-		assert(m_thread);
+		m_thread = new tu_thread(netstream_server, this);
 	}
 
 	as_netstream::~as_netstream()
 	{
 		m_is_alive = false;
 		m_decoder.signal();
-		tu_wait_thread(m_thread);
 		delete m_yuv;
+		m_thread->wait();
+		delete m_thread;
 	}
 
 	void as_netstream::play(const char* url)
@@ -88,7 +89,7 @@ namespace gameswf
 			return;
 		}
 
-		locker lock(m_audio_mutex.get_mutex());
+		m_audio_mutex.lock();
 		while (len > 0 && m_qaudio.size() > 0)
 		{
 			smart_ptr<av_data>& samples = m_qaudio.front();
@@ -105,6 +106,7 @@ namespace gameswf
 				m_qaudio.pop();
 			}
 		}
+		m_audio_mutex.unlock();
 	}
 
 	// it is running in decoder thread
@@ -112,7 +114,7 @@ namespace gameswf
 	{
 		if (m_is_alive)
 		{
-			locker lock(get_gameswf_mutex());
+			gameswf_engine_mutex().lock();
 
 			as_value function;
 			if (get_member("onStatus", &function))
@@ -128,6 +130,7 @@ namespace gameswf
 				call_method(function, env, NULL, 1, env->get_top_index());
 				env->drop(1);
 			}
+			gameswf_engine_mutex().unlock();
 		}
 	}
 
@@ -373,12 +376,13 @@ namespace gameswf
 				sound_handler* s = get_sound_handler();
 				if (s)
 				{
-					locker lock(m_audio_mutex.get_mutex());
+					m_audio_mutex.lock();
 					if (m_qaudio.size() < m_queue_size)
 					{
 						m_qaudio.push(m_unqueued_data);
 						m_unqueued_data = NULL;
 					}
+					m_audio_mutex.unlock();
 				}
 			}
 			else

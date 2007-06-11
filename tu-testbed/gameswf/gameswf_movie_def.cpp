@@ -119,13 +119,12 @@ namespace gameswf
 
 	movie_def_impl::~movie_def_impl()
 	{
-//		printf("~movie_def_impl %08X\n", this);
 
 		// terminate thread
-		// it's used when user has pressed Esc button
+		// it is used when user has pressed Esc button
 		s_break_loading = true;
-		tu_wait_thread(m_thread);
-		m_thread = NULL;
+		m_thread->wait();
+		delete m_thread;
 
 		// Release our playlist data.
 		{for (int i = 0, n = m_playlist.size(); i < n; i++)
@@ -493,12 +492,7 @@ namespace gameswf
 		IF_VERBOSE_PARSE(m_frame_size.print());
 		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, get_frame_count()));
 
-		m_thread = tu_create_thread(movie_def_loader, this);
-
-//#ifndef USE_SEPARATE_THREAD
-//		tu_wait_thread(m_thread);
-//		m_thread = NULL;
-//#endif
+		m_thread = new tu_thread(movie_def_loader, this);
 	}
 
 	// is running in loader thread

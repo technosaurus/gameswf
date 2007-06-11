@@ -81,5 +81,14 @@
 #define TU_CONFIG_LINK_TO_FREETYPE 0
 #endif
 
+// define TU_CONFIG_LINK_TO_THREAD to 0 to switch in gameswf to single thread mode
+// define TU_CONFIG_LINK_TO_THREAD to 1 to include SDL thread & mutex support in gameswf
+// define TU_CONFIG_LINK_TO_THREAD to 2 to include ... (TODO: pthread support)
+#ifndef TU_CONFIG_LINK_TO_THREAD
+#define TU_CONFIG_LINK_TO_THREAD 0
+#endif
+#if TU_CONFIG_LINK_TO_THREAD == 0 && TU_CONFIG_LINK_TO_FFMPEG == 1
+#error video & MP3 requires multi thread support
+#endif
 
 #endif // TU_CONFIG_H

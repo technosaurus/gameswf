@@ -61,6 +61,7 @@ namespace gameswf
 		{
 			return NULL;
 		}
+		float get_advance_x(Uint16 code) { return 0.0f; }
 
 	};
 }

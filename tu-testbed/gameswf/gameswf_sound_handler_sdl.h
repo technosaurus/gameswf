@@ -12,8 +12,8 @@
 #include "gameswf/gameswf.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
-#include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_mutex.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 #include <ffmpeg/avformat.h>
@@ -35,7 +35,7 @@ namespace gameswf
 		hash< as_object_interface* /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
 		hash< int, smart_ptr<sound> > m_sound;
 		int m_defvolume;
-		tu_mutex* m_mutex;
+		tu_mutex m_mutex;
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 		AVCodec* m_MP3_codec;

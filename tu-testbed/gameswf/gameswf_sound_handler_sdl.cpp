@@ -17,11 +17,8 @@ namespace gameswf
 
 	SDL_sound_handler::SDL_sound_handler():
 		m_defvolume(100),
-		m_mutex(NULL),
 		soundOpened(true)
 	{
-		m_mutex = tu_mutex_create();
-
 		// This is our sound settings
 		m_audioSpec.freq = 44100;
 		m_audioSpec.format = AUDIO_S16SYS;
@@ -50,7 +47,6 @@ namespace gameswf
 	{
 		if (soundOpened) SDL_CloseAudio();
 		m_sound.clear();
-		tu_mutex_destroy(m_mutex);
 	}
 
 	// may be used for the creation stream sound head with data_bytes=0 
@@ -64,12 +60,13 @@ namespace gameswf
 		// Called to create a sample.  We'll return a sample ID that
 		// can be use for playing it.
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
 
 		int sound_id = m_sound.size();
 		m_sound[sound_id] = new sound(data_bytes, (Uint8*) data, format, sample_count, sample_rate, 
 			stereo, m_defvolume);
 
+		m_mutex.unlock();
 		return sound_id;
 	}
 
@@ -83,62 +80,70 @@ namespace gameswf
 
 	void	SDL_sound_handler::append_sound(int sound_handle, void* data, int data_bytes)
 	{
-		locker lock(m_mutex);
-
+		m_mutex.lock();
 		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->append(data, data_bytes, this);
 		}
+		m_mutex.unlock();
 	}
 
 	void	SDL_sound_handler::play_sound(int sound_handle, int loops)
 	// Play the index'd sample.
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
+
 		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->play(loops, this);
 		}
+
+		m_mutex.unlock();
 	}
 
 	void	SDL_sound_handler::stop_sound(int sound_handle)
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
 
 		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->clear_playlist();
 		}
+
+		m_mutex.unlock();
 	}
 
 
 	void	SDL_sound_handler::delete_sound(int sound_handle)
 	// this gets called when it's done with a sample.
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
 
 		//		stop_sound(sound_handle);
 		m_sound.erase(sound_handle);
+
+		m_mutex.unlock();
 	}
 
 	void	SDL_sound_handler::stop_all_sounds()
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
 
 		for (hash< int, smart_ptr<sound> >::iterator it = m_sound.begin(); it != m_sound.end(); ++it)
 		{
 			it->second->clear_playlist();
 		}
+		m_mutex.unlock();
 	}
 
 	//	returns the sound volume level as an integer from 0 to 100,
 	//	where 0 is off and 100 is full volume. The default setting is 100.
 	int	SDL_sound_handler::get_volume(int sound_handle)
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
 
 		int vol = 0;
 		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
@@ -146,6 +151,7 @@ namespace gameswf
 		{
 			vol = it->second->get_volume();
 		}
+		m_mutex.unlock();
 		return vol;
 	}
 
@@ -154,29 +160,35 @@ namespace gameswf
 	//	100 is full volume and 0 is no volume. The default setting is 100.
 	void	SDL_sound_handler::set_volume(int sound_handle, int volume)
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
 
 		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->set_volume(volume);
 		}
+
+		m_mutex.unlock();
 	}
 
 	void	SDL_sound_handler::attach_aux_streamer(aux_streamer_ptr ptr, as_object_interface* netstream)
 	{
 		assert(netstream);
 		assert(ptr);
-		locker lock(m_mutex);
+
+		m_mutex.lock();
 
 		m_aux_streamer[netstream] = ptr;
 		SDL_PauseAudio(0);
+
+		m_mutex.unlock();
 	}
 
 	void SDL_sound_handler::detach_aux_streamer(as_object_interface* netstream)
 	{
-		locker lock(m_mutex);
+		m_mutex.lock();
 		m_aux_streamer.erase(netstream);
+		m_mutex.unlock();
 	}
 
 	void SDL_sound_handler::cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, 
@@ -306,7 +318,8 @@ namespace gameswf
 	{
 		// Get the soundhandler
 		SDL_sound_handler* handler = static_cast<SDL_sound_handler*>(udata);
-		locker lock(handler->m_mutex);
+
+		handler->m_mutex.lock();
 
 		int pause = 1;
 		memset(stream, 0, len);
@@ -338,6 +351,7 @@ namespace gameswf
 			delete [] mix_buf;
 		}
 		SDL_PauseAudio(pause);
+		handler->m_mutex.unlock();
 	}
 
 }

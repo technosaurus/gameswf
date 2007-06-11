@@ -1,14 +1,16 @@
-// gameswf_mutex.h	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
+// tu_mutex.h	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// auto locker/unlocker
-// We have redefined SDL mutex functions that
-// there was an opportunity to use other libraries (pthread, ...)
-
 #ifndef GAMESWF_MUTEX_H
 #define GAMESWF_MUTEX_H
+
+#include "base/tu_config.h"
+#include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_log.h"
+
+#if TU_CONFIG_LINK_TO_THREAD == 1
 
 #include <SDL.h>
 #include <SDL_thread.h>
@@ -16,95 +18,68 @@
 namespace gameswf
 {
 
-	typedef SDL_mutex tu_mutex;
-	typedef SDL_Thread tu_thread;
-
-	inline void tu_wait_thread(tu_thread* thread)
+	struct tu_thread
 	{
-		SDL_WaitThread(thread, NULL);
-	}
-
-	inline tu_thread* tu_create_thread(int (*fn)(void *), void* data)
-	{
-		return SDL_CreateThread(fn, data);
-	}
-
-	inline void tu_kill_thread(tu_thread* thread)
-	{
-		return SDL_KillThread(thread);
-	}
-
-	inline int tu_mutex_lock(tu_mutex* mutex)
-	{
-		return SDL_LockMutex(mutex);
-	}
-
-	inline int tu_mutex_unlock(tu_mutex* mutex)
-	{
-		return SDL_UnlockMutex(mutex);
-	}
-
-	inline tu_mutex* tu_mutex_create()
-	{
-		return SDL_CreateMutex();
-	}
-
-	inline void tu_mutex_destroy(tu_mutex* mutex)
-	{
-		SDL_DestroyMutex(mutex);
-	}
-
-
-	struct locker
-	{
-		locker(tu_mutex* mutex):
-			m_mutex(mutex)
+		tu_thread(int (*fn)(void *), void* data)
 		{
-			tu_mutex_lock(m_mutex);
+			IF_VERBOSE_ACTION(log_msg("gameswf is in multi thread mode\n"));
+			m_thread = SDL_CreateThread(fn, data);
+			assert(m_thread);
 		}
 
-		~locker()
+		~tu_thread()
 		{
-			tu_mutex_unlock(m_mutex);
+			kill();
 		}
 
-		private:
+		void wait()
+		{
+			SDL_WaitThread(m_thread, NULL);
+			m_thread = NULL;
+		}
 
-			tu_mutex* m_mutex;
+		void kill()
+		{
+			SDL_KillThread(m_thread);
+			m_thread = NULL;
+		}
+
+	private:
+
+		SDL_Thread* m_thread;
+
 	};
 
-	// auto mutex
-	struct gameswf_mutex
+	struct tu_mutex
 	{
-		gameswf_mutex()
+		tu_mutex()
 		{
-			m_mutex = tu_mutex_create();
+			m_mutex = SDL_CreateMutex();
 		}
 
-		~gameswf_mutex()
+		~tu_mutex() 
 		{
-			tu_mutex_destroy(m_mutex);
+			SDL_DestroyMutex(m_mutex);
 		}
 
-		inline tu_mutex* get_mutex() const
+		void lock() 
+		{
+			SDL_LockMutex(m_mutex);
+		}
+
+		void unlock() 
+		{
+			SDL_UnlockMutex(m_mutex);
+		}
+
+		SDL_mutex* get_ptr()
 		{
 			return m_mutex;
 		}
 
-		void lock()
-		{
-			tu_mutex_lock(m_mutex);
-		}
-
-		void unlock()
-		{
-			tu_mutex_unlock(m_mutex);
-		}
-
 		private:
 
-			tu_mutex* m_mutex;
-
+			SDL_mutex* m_mutex;
 	};
 
 	struct tu_condition
@@ -124,7 +99,7 @@ namespace gameswf
 		void wait()
 		{
 			m_cond_mutex.lock();
-			SDL_CondWait(m_cond, m_cond_mutex.get_mutex());
+			SDL_CondWait(m_cond, m_cond_mutex.get_ptr());
 		}
 
 		void signal()
@@ -132,12 +107,53 @@ namespace gameswf
 			SDL_CondSignal(m_cond);
 		}
 
-		SDL_cond *m_cond;
-		gameswf_mutex m_cond_mutex;
+		SDL_cond* m_cond;
+		tu_mutex m_cond_mutex;
 	};
-
-	tu_mutex* get_gameswf_mutex();
 
 }
 
-#endif
+#elif TU_CONFIG_LINK_TO_THREAD == 2	// libpthread
+// TODO
+#else
+
+namespace gameswf
+{
+	struct tu_thread
+	{
+		tu_thread(int (*fn)(void *), void* data)
+		{
+			IF_VERBOSE_ACTION(log_msg("gameswf is in single thread mode\n"));
+			(fn)(data);
+		}
+
+		~tu_thread() {}
+
+		void wait() {}
+		void kill() {}
+	};
+
+	struct tu_mutex
+	{
+		tu_mutex() {}
+		~tu_mutex() {}
+		void lock() {}
+		void unlock() {}
+	};
+
+	struct tu_condition
+	{
+		tu_condition() {}
+		~tu_condition() {}
+
+		// Wait on the condition variable cond and unlock the provided mutex.
+		// The mutex must the locked before entering this function.
+		void wait() {}
+		void signal() {}
+	};
+
+}
+
+#endif	// TU_CONFIG_LINK_TO_THREAD
+
+#endif	// GAMESWF_MUTEX_H
