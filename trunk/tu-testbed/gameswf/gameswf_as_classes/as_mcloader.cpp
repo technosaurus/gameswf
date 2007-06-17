@@ -122,7 +122,6 @@ namespace gameswf
 
 	as_mcloader::~as_mcloader()
 	{
-//		get_root()->remove_listener(this);
 	}
 
 	bool as_mcloader::add_listener(as_value& listener)
@@ -131,7 +130,6 @@ namespace gameswf
 		{
 			assert(listener.to_object()->cast_to_as_object());
 			m_listener[listener.to_object()->cast_to_as_object()] = 0;
-			get_root()->add_listener(this, movie_root::MOVIE_CLIP_LOADER);
 			return true;
 		}
 		return false;
@@ -147,10 +145,6 @@ namespace gameswf
 		if (listener.to_object())
 		{
 			m_listener.erase(listener.to_object()->cast_to_as_object());
-			if (m_listener.size() == 0)
-			{
-				get_root()->remove_listener(this);
-			}
 			return true;
 		}
 		return false;

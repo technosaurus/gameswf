@@ -357,6 +357,7 @@ namespace gameswf
 
 		virtual int	get_current_frame() const { return -1; }
 		virtual int	get_frame_count() const { return -1; }
+		virtual int get_loading_frame() const { return -1; }
 
 		virtual bool	has_looped() const { assert(0); return false; }
 		virtual void	advance(float delta_time) {}	// for buttons and sprites

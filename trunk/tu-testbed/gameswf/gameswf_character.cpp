@@ -183,7 +183,7 @@ namespace gameswf
 		case M_FRAMESLOADED:
 			//else if (name == "_framesloaded")
 			{
-				int n = get_frame_count();
+				int n = get_loading_frame();
 				if (n >= 0)
 				{
 					val->set_int(n);
