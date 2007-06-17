@@ -1,3 +1,14 @@
+2007-06-17  Vitaly Alexeev <tishka92@yahoo.com>
+
+	fixed _framesloaded property
+	* gameswf/gameswf_as_classes/as_mcloader.cpp
+	* gameswf/gameswf_character.cpp
+	* gameswf/gameswf_character.h
+	* gameswf/gameswf_movie_def.h
+	* gameswf/gameswf_root.h
+	* gameswf/gameswf_sprite.cpp
+	* gameswf/gameswf_sprite.h
+	
 2007-06-11  Vitaly Alexeev <tishka92@yahoo.com>
 
 	SDL mutex & thread are removed from core of gameswf

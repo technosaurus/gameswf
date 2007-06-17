@@ -406,6 +406,8 @@ namespace gameswf
 				m_mcloader->on_event(event_id(event_id::ONLOAD_INIT, this));
 			}
 
+			m_mcloader->on_event(event_id(event_id::ONLOAD_PROGRESS, this));
+
 			// 8 is (file_start_pos(4 bytes) + header(4 bytes))
 			int total = get_file_bytes();
 			int loaded = get_loaded_bytes();
@@ -414,10 +416,6 @@ namespace gameswf
 				m_mcloader->remove_listener(as_value(this));
 				m_mcloader->on_event(event_id(event_id::ONLOAD_COMPLETE, this));
 				m_mcloader = NULL;
-			}
-			else
-			{
-				m_mcloader->on_event(event_id(event_id::ONLOAD_PROGRESS, this));
 			}
 		}
 

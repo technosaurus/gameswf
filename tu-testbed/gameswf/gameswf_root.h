@@ -61,8 +61,7 @@ namespace gameswf
 		enum listener_type
 		{
 			KEYPRESS,
-			ADVANCE,
-			MOVIE_CLIP_LOADER
+			ADVANCE
 		};
 
 		smart_ptr<movie_def_impl>	m_def;

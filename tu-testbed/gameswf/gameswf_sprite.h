@@ -77,6 +77,8 @@ namespace gameswf
 		virtual float	get_height();
 		virtual int	get_current_frame() const { return m_current_frame; }
 		virtual int	get_frame_count() const { return m_def->get_frame_count(); }
+		virtual int get_loading_frame() const { return m_def->get_loading_frame(); }
+
 		character* add_empty_movieclip(const char* name, int depth);
 
 		void	set_play_state(play_state s);

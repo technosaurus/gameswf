@@ -70,7 +70,7 @@ namespace gameswf
 
 		inline int	get_loading_frame() const
 		{
-			assert(m_loading_frame >= 0 && m_loading_frame < m_frame_count);
+			assert(m_loading_frame >= 0 && m_loading_frame <= m_frame_count);
 			return m_loading_frame; 
 		}
 		void	inc_loading_frame() 
