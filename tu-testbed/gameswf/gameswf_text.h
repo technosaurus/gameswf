@@ -124,7 +124,6 @@ namespace gameswf
 		movie_definition_sub*	m_root_def;
 		rect			m_rect;
 		tu_string		m_default_name;
-		text_format		m_format;
 		bool			m_word_wrap;
 		bool			m_multiline;
 		bool			m_password;	// show asterisks instead of actual characters
@@ -193,7 +192,6 @@ namespace gameswf
 		edit_text_character_def(movie_definition_sub* root_def);
 		~edit_text_character_def();
 
-		void	set_format(text_format &format);
 		character*	create_character_instance(character* parent, int id);
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	csm_textsetting(stream* in, int tag_type);
@@ -210,16 +208,22 @@ namespace gameswf
 		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
 		array<line_style>	m_dummy_line_style;
 		rect	m_text_bounding_box;	// bounds of dynamic text, as laid out
-
 		tu_string	m_text;
-
 		bool m_has_focus;
 		int m_cursor;
 		float m_xcursor;
 		float m_ycursor;
 
+		// instance specific
+		rgba m_color;
+		float m_text_height;
+		smart_ptr<font> m_font;
+		edit_text_character_def::alignment	m_alignment;
+
 		edit_text_character(character* parent, edit_text_character_def* def, int id);
 		~edit_text_character();
+
+		void reset_format(as_textformat* tf);
 
 		movie_root* get_root();
 		void show_cursor();
@@ -239,6 +243,7 @@ namespace gameswf
 		void	format_text();
 
 		virtual void advance(float delta_time);
+		virtual edit_text_character* cast_to_edit_text_character() { return this; }
 
 	private:
 

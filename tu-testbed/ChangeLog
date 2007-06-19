@@ -1,6 +1,18 @@
+2007-06-19  Vitaly Alexeev <tishka92@yahoo.com>
+
+	Implemented font, bold, italic, size, align & color properties of
+	TextFormat Action Script class
+	* gameswf/gameswf.h
+	* gameswf/gameswf_action.cpp
+	* gameswf/gameswf_as_classes/as_textformat.cpp: rewritten
+	* gameswf/gameswf_as_classes/as_textformat.h: rewritten
+	* gameswf/gameswf_font.h
+	* gameswf/gameswf_text.cpp
+	* gameswf/gameswf_text.h
+
 2007-06-17  Vitaly Alexeev <tishka92@yahoo.com>
 
-	fixed _framesloaded property
+	Fixed _framesloaded property
 	* gameswf/gameswf_as_classes/as_mcloader.cpp
 	* gameswf/gameswf_character.cpp
 	* gameswf/gameswf_character.h
