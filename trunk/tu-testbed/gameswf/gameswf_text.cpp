@@ -371,7 +371,7 @@ namespace gameswf
 		m_use_outlines(false),
 		m_font_id(-1),
 		m_font(NULL),
-		m_text_height(240.0f),	//	default 12
+		m_text_height(PIXELS_TO_TWIPS(12)),	//	default 12
 		m_max_length(0),
 		m_alignment(ALIGN_LEFT),
 		m_left_margin(0.0f),
@@ -405,7 +405,7 @@ namespace gameswf
 		m_use_outlines(false),
 		m_font_id(-1),
 		m_font(NULL),
-		m_text_height(1.0f),
+		m_text_height(PIXELS_TO_TWIPS(12)),	//	default 12
 		m_max_length(0),
 		m_alignment(ALIGN_LEFT),
 		m_left_margin(0.0f),
@@ -419,12 +419,6 @@ namespace gameswf
 	{
 		assert(m_root_def);
 		m_color.set(0, 0, 0, 255);
-	}
-
-	void	edit_text_character_def::set_format(text_format &format)
-	// Set the format of the text
-	{
-		m_format = format;
 	}
 
 	edit_text_character_def::~edit_text_character_def()
@@ -532,6 +526,22 @@ namespace gameswf
 	// edit_text_character
 	//
 
+	void	set_textformat(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		edit_text_character* et = fn.this_ptr->cast_to_edit_text_character();
+		assert(et);
+		if (fn.nargs == 1)
+		{
+			as_object_interface* obj = fn.arg(0).to_object();
+			if (obj)
+			{
+				as_textformat* tf = obj->cast_to_as_textformat();
+				et->reset_format(tf);
+			}
+		}
+	}
+
 	edit_text_character::edit_text_character(character* parent, edit_text_character_def* def, int id)	:
 		character(parent, id),
 		m_def(def),
@@ -542,6 +552,12 @@ namespace gameswf
 	{
 		assert(parent);
 		assert(m_def);
+
+		// defaults
+		m_color = m_def->m_color;
+		m_text_height = m_def->m_text_height;
+		m_font = m_def->m_font;
+		m_alignment = m_def->m_alignment;
 
 		// first set default text value
 		set_text(def->m_default_text.c_str());
@@ -559,6 +575,79 @@ namespace gameswf
 		// during remove_display_object()
 	} 
 
+	void edit_text_character::reset_format(as_textformat* tf)
+	{
+		assert(tf);
+		as_value val;
+
+		if (tf->get_member("color", &val))
+		{
+			int rgb = (int) val.to_number();
+			Uint8 r = (rgb >> 16) & 0xFF;
+			Uint8 g = (rgb >> 8) & 0xFF;
+			Uint8 b = rgb & 0xFF;
+			m_color.set(r, g, b, 255);
+		}
+
+		if (tf->get_member("size", &val))
+		{
+			m_text_height = PIXELS_TO_TWIPS((float) val.to_number());
+		}
+
+		if (tf->get_member("align", &val))
+		{
+			if (val.to_tu_string() == "left")
+			{
+				m_alignment = edit_text_character_def::ALIGN_LEFT;
+			}
+			else
+			if (val.to_tu_string() == "center")
+			{
+				m_alignment = edit_text_character_def::ALIGN_CENTER;
+			}
+			else
+			if (val.to_tu_string() == "right")
+			{
+				m_alignment = edit_text_character_def::ALIGN_RIGHT;
+			}
+			else
+			if (val.to_tu_string() == "justify")
+			{
+				m_alignment = edit_text_character_def::ALIGN_JUSTIFY;
+			}
+		}
+
+		tu_string fontname = m_font->get_name();
+		if (tf->get_member("font", &val))
+		{
+			fontname = val.to_tu_string();
+		}
+
+		bool bold = m_font->is_bold();
+		if (tf->get_member("bold", &val))
+		{
+			bold = val.to_bool();
+		}
+
+		bool italic  = m_font->is_italic();
+		if (tf->get_member("italic", &val))
+		{
+			italic = val.to_bool();
+		}
+
+		if (italic  != m_font->is_italic() ||
+				bold  != m_font->is_bold() ||
+				fontname  != m_font->get_name())
+		{
+			m_font = new font();
+			m_font->set_bold(bold);
+			m_font->set_italic(italic);
+			m_font->set_name(fontname.c_str());
+		}
+
+		format_text();
+	}
+
 	movie_root* edit_text_character::get_root()
 	{
 		return get_parent()->get_root(); 
@@ -568,7 +657,7 @@ namespace gameswf
 	{ 
 		Uint16 x = (int) m_xcursor; 
 		Uint16 y = (int) m_ycursor; 
-		Uint16 h = (int) m_def->m_text_height;
+		Uint16 h = (int) m_text_height;
 
 		Sint16 box[4]; 
 		box[0] = x; 
@@ -970,6 +1059,11 @@ namespace gameswf
 			val->set_tu_string(m_def->m_readonly ? "dynamic" : "input");
 			return true;
 		}
+		else if (name == "setTextFormat")
+		{
+			val->set_as_c_function_ptr(&set_textformat);
+			return true;
+		}
 
 		log_error("edit_text_character: get_member(%s) is't implemented yet\n",
 			name.c_str());
@@ -1041,9 +1135,10 @@ namespace gameswf
 	// text_glyph_records to be rendered.
 	void	edit_text_character::format_text()
 	{
+
 		m_text_glyph_records.resize(0);
 
-		if (m_def->m_font == NULL)
+		if (m_font == NULL)
 		{
 			return;
 		}
@@ -1051,10 +1146,10 @@ namespace gameswf
 		// @@ mostly for debugging
 		// Font substitution -- if the font has no
 		// glyphs, try some other defined font!
-		if (m_def->m_font->get_glyph_count() == 0)
+		if (m_font->get_glyph_count() == 0)
 		{
 			// Find a better font.
-			font*	newfont = m_def->m_font;
+			font*	newfont = m_font.get_ptr();
 			for (int i = 0, n = fontlib::get_font_count(); i < n; i++)
 			{
 				font*	f = fontlib::get_font(i);
@@ -1068,34 +1163,34 @@ namespace gameswf
 				}
 			}
 
-			if (m_def->m_font != newfont)
+			if (m_font != newfont)
 			{
 				log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
-					fontlib::get_font_name(m_def->m_font),
+					fontlib::get_font_name(m_font.get_ptr()),
 					fontlib::get_font_name(newfont));
 
-				m_def->m_font = newfont;
+				m_font = newfont;
 			}
 		}
 
 
-		float	scale = m_def->m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+		float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
 
 		// Flash 8
 		// All the EMSquare coordinates are multiplied by 20 at export,
 		// allowing fractional resolution to 1/20 of a unit.
-		if (m_def->m_font->has_zones())
+		if (m_font->has_zones())
 		{
 			scale /= 20.0f;
 		}
 
 		text_glyph_record	rec;	// one to work on
-		rec.m_style.m_font = m_def->m_font;
-		rec.m_style.m_color = m_def->m_color;
+		rec.m_style.m_font = m_font.get_ptr();
+		rec.m_style.m_color = m_color;
 		rec.m_style.m_x_offset = fmax(0, m_def->m_left_margin + m_def->m_indent);
-		rec.m_style.m_y_offset = m_def->m_text_height
-			+ (m_def->m_font->get_leading() - m_def->m_font->get_descent()) * scale;
-		rec.m_style.m_text_height = m_def->m_text_height;
+		rec.m_style.m_y_offset = m_text_height
+			+ (m_font->get_leading() - m_font->get_descent()) * scale;
+		rec.m_style.m_text_height = m_text_height;
 		rec.m_style.m_has_x_offset = true;
 		rec.m_style.m_has_y_offset = true;
 
@@ -1103,10 +1198,10 @@ namespace gameswf
 		float	y = rec.m_style.m_y_offset;
 
 		// Start the bbox at the upper-left corner of the first glyph.
-		reset_bounding_box(x, y - m_def->m_font->get_descent() * scale + m_def->m_text_height);
+		reset_bounding_box(x, y - m_font->get_descent() * scale + m_text_height);
 
 		float	leading = m_def->m_leading;
-		leading += m_def->m_font->get_leading() * scale;
+		leading += m_font->get_leading() * scale;
 
 		int	last_code = -1;
 		int	last_space_glyph = -1;
@@ -1120,7 +1215,7 @@ namespace gameswf
 		{
 			// @@ try to truncate overflow text??
 #if 0
-			if (y + m_def->m_font->get_descent() * scale > m_def->m_rect.height())
+			if (y + m_font->get_descent() * scale > m_def->m_rect.height())
 			{
 				// Text goes below the bottom of our bounding box.
 				rec.m_glyphs.resize(0);
@@ -1130,12 +1225,12 @@ namespace gameswf
 
 			//Uint16	code = m_text[j];
 
-			x += m_def->m_font->get_kerning_adjustment(last_code, (int) code) * scale;
+			x += m_font->get_kerning_adjustment(last_code, (int) code) * scale;
 			last_code = (int) code;
 
 			// Expand the bounding-box to the lower-right corner of each glyph as
 			// we generate it.
-			m_text_bounding_box.expand_to_point(x, y + m_def->m_font->get_descent() * scale);
+			m_text_bounding_box.expand_to_point(x, y + m_font->get_descent() * scale);
 
 			if (code == 13 || code == 10)
 			{
@@ -1148,18 +1243,18 @@ namespace gameswf
 
 				// Close out this stretch of glyphs.
 				m_text_glyph_records.push_back(rec);
-				align_line(m_def->m_alignment, last_line_start_record, x);
+				align_line(m_alignment, last_line_start_record, x);
 
 				x = fmax(0, m_def->m_left_margin + m_def->m_indent);	// new paragraphs get the indent.
-				y += m_def->m_text_height + leading;
+				y += m_text_height + leading;
 
 				// Start a new record on the next line.
 				rec.m_glyphs.resize(0);
-				rec.m_style.m_font = m_def->m_font;
-				rec.m_style.m_color = m_def->m_color;
+				rec.m_style.m_font = m_font.get_ptr();
+				rec.m_style.m_color = m_color;
 				rec.m_style.m_x_offset = x;
 				rec.m_style.m_y_offset = y;
-				rec.m_style.m_text_height = m_def->m_text_height;
+				rec.m_style.m_text_height = m_text_height;
 				rec.m_style.m_has_x_offset = true;
 				rec.m_style.m_has_y_offset = true;
 
@@ -1201,12 +1296,12 @@ namespace gameswf
 				last_space_glyph = rec.m_glyphs.size();
 			}
 
-			int	index = m_def->m_font->get_glyph_index((Uint16) code);
+			int	index = m_font->get_glyph_index((Uint16) code);
 			if (index == -1)
 			{
 
 				// try OS font
-				index = m_def->m_font->add_glyph_index(code);
+				index = m_font->add_glyph_index(code);
 				if (index == -1)
 				{
 					// error -- missing glyph!
@@ -1220,7 +1315,7 @@ namespace gameswf
 							"-- make sure character shapes for font %s are being exported "
 							"into your SWF file!\n",
 							code,
-							m_def->m_font->get_name());
+							m_font->get_name());
 					}
 					// Drop through and use index == -1; this will display
 					// using the empty-box glyph
@@ -1229,7 +1324,7 @@ namespace gameswf
 
 			text_glyph_record::glyph_entry	ge;
 			ge.m_glyph_index = index;
-			ge.m_glyph_advance = scale * m_def->m_font->get_advance(index);
+			ge.m_glyph_advance = scale * m_font->get_advance(index);
 
 			rec.m_glyphs.push_back(ge);
 
@@ -1247,15 +1342,15 @@ namespace gameswf
 				float	previous_x = x;
 
 				x = m_def->m_left_margin;
-				y += m_def->m_text_height + leading;
+				y += m_text_height + leading;
 
 				// Start a new record on the next line.
 				rec.m_glyphs.resize(0);
-				rec.m_style.m_font = m_def->m_font;
-				rec.m_style.m_color = m_def->m_color;
+				rec.m_style.m_font = m_font.get_ptr();
+				rec.m_style.m_color = m_color;
 				rec.m_style.m_x_offset = x;
 				rec.m_style.m_y_offset = y;
-				rec.m_style.m_text_height = m_def->m_text_height;
+				rec.m_style.m_text_height = m_text_height;
 				rec.m_style.m_has_x_offset = true;
 				rec.m_style.m_has_y_offset = true;
 
@@ -1287,7 +1382,7 @@ namespace gameswf
 					last_line.m_glyphs.resize(last_space_glyph);
 				}
 
-				align_line(m_def->m_alignment, last_line_start_record, previous_x);
+				align_line(m_alignment, last_line_start_record, previous_x);
 
 				last_space_glyph = -1;
 				last_line_start_record = m_text_glyph_records.size();
@@ -1301,13 +1396,13 @@ namespace gameswf
 
 			// TODO: HTML markup
 		}
-		m_xcursor += m_def->m_font->get_leading() * scale; 
-		m_ycursor -= m_def->m_text_height + 
-			(m_def->m_font->get_leading() - m_def->m_font->get_descent()) * scale; 
+		m_xcursor += m_font->get_leading() * scale; 
+		m_ycursor -= m_text_height + 
+			(m_font->get_leading() - m_font->get_descent()) * scale; 
 
 		// Add this line to our output.
 		m_text_glyph_records.push_back(rec);
-		align_line(m_def->m_alignment, last_line_start_record, x);
+		align_line(m_alignment, last_line_start_record, x);
 	}
 
 	character*	edit_text_character_def::create_character_instance(character* parent, int id)

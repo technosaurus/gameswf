@@ -71,6 +71,12 @@ namespace gameswf
 		void	wipe_texture_glyphs();
 
 		const char*	get_name() const { return m_fontname.c_str(); }
+		void	set_name(const char* name) { m_fontname = name; }
+		bool	is_bold() const { return m_is_bold; }
+		void	set_bold(bool bold) { m_is_bold = bold; }
+		bool	is_italic() const { return m_is_italic; }
+		void	set_italic(bool italic) { m_is_italic = italic; }
+
 		movie_definition_sub*	get_owning_movie() const { return m_owning_movie; }
 
 		const texture_glyph&	get_texture_glyph(int glyph_index) const;

@@ -174,7 +174,7 @@ namespace gameswf
 	struct as_environment;
 	struct as_xmlsock;
 	struct tu_string_as_object;
-	struct textformat_as_object;
+	struct as_textformat;
 	struct x3ds_instance;
 	struct edit_text_character;
 
@@ -209,7 +209,7 @@ namespace gameswf
 		virtual as_timer* cast_to_as_timer() { return 0; }
 		virtual sprite_instance* cast_to_sprite() { return 0; }
 		virtual as_mcloader* cast_to_as_mcloader() { return 0; }
-		virtual textformat_as_object* cast_to_as_textformat() { return 0; }
+		virtual as_textformat* cast_to_as_textformat() { return 0; }
 		virtual as_xmlsock* cast_to_as_xmlsock() { return 0; }
 		virtual x3ds_instance* cast_to_3ds() { return 0; }
 		virtual as_object* cast_to_as_object() { return 0; }

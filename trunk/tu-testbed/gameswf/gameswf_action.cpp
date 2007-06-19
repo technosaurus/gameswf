@@ -552,7 +552,7 @@ namespace gameswf
 			s_global->set_member("Array", as_value(as_global_array_ctor));
 			s_global->set_member("MovieClip", as_value(as_global_movieclip_ctor));
 
-			s_global->set_member("TextFormat", as_value(textformat_new));
+			s_global->set_member("TextFormat", as_value(as_global_textformat_ctor));
 
 			//			s_global->set_member("XML", as_value(xml_new));
 			s_global->set_member("XMLSocket", as_value(as_global_xmlsock_ctor));
