@@ -19,7 +19,7 @@ namespace gameswf
 
 	struct as_mcloader : public as_object
 	{
-		hash< smart_ptr<as_object>, int > m_listener;
+		hash< weak_ptr<as_object_interface>, int > m_listener;
 
 		as_mcloader();
 		~as_mcloader();

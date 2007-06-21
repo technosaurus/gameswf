@@ -128,8 +128,7 @@ namespace gameswf
 	{
 		if (listener.to_object())
 		{
-			assert(listener.to_object()->cast_to_as_object());
-			m_listener[listener.to_object()->cast_to_as_object()] = 0;
+			m_listener[listener.to_object()] = 0;
 			return true;
 		}
 		return false;
@@ -144,7 +143,7 @@ namespace gameswf
 	{
 		if (listener.to_object())
 		{
-			m_listener.erase(listener.to_object()->cast_to_as_object());
+			m_listener.erase(listener.to_object());
 			return true;
 		}
 		return false;
@@ -152,11 +151,19 @@ namespace gameswf
 
 	bool	as_mcloader::on_event(const event_id& id)
 	{
-		for (hash< smart_ptr<as_object>, int >::iterator it = m_listener.begin();
-			it != m_listener.end(); ++it)
+		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listener.begin(); it != m_listener.end(); )
 		{
 			as_value function;
-			if (it->first->get_member(id.get_function_name(), &function))
+			
+			smart_ptr<as_object_interface> listener = it->first;
+			if (listener == NULL)
+			{
+				// cleanup the garbage
+				m_listener.erase(it);
+				continue;
+			}
+
+			if (listener->get_member(id.get_function_name(), &function))
 			{
 				as_environment* env = function.to_as_function()->m_env;
 				assert(env);
@@ -208,6 +215,7 @@ namespace gameswf
 				call_method(function, env, NULL, param_count, env->get_top_index());
 				env->drop(param_count);
 			}
+			++it;
 		}
 		return false;
 	}

@@ -199,8 +199,17 @@ public:
 	bool	operator==(T* ptr) { check_proxy(); return m_ptr == ptr; }
 	bool	operator==(const smart_ptr<T>& ptr) { check_proxy(); return m_ptr == ptr.get_ptr(); }
 
+	// for hash< weak_ptr<...>, ...>
+	bool	operator==(const weak_ptr<T>& ptr) const
+	{
+		check_proxy();
+		ptr.check_proxy();
+		return m_ptr == ptr.m_ptr; 
+	}
+
 private:
-	void check_proxy()
+
+	void check_proxy() const
 	// Set m_ptr to NULL if the object died.
 	{
 		if (m_ptr)
@@ -209,8 +218,9 @@ private:
 			if (m_proxy->is_alive() == false)
 			{
 				// Underlying object went away.
-				m_proxy = NULL;
-				m_ptr = NULL;
+				// Remove the const attribute
+				*(const_cast<smart_ptr<weak_proxy>*>(&m_proxy)) = NULL;
+				const_cast<T*>(m_ptr) = NULL;
 			}
 		}
 	}
