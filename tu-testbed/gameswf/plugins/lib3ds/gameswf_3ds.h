@@ -24,7 +24,6 @@ namespace gameswf
 		~x3ds_definition();
 
 		virtual character* create_character_instance(character* parent, int id);
-		virtual void	display(character* inst);
 
 		Lib3dsCamera* create_camera();
 		void remove_camera(Lib3dsCamera* camera);
@@ -38,22 +37,6 @@ namespace gameswf
 		float m_size;
 		float	m_cx, m_cy, m_cz; // bounding box center
 		int m_lightList;
-		GLuint m_mesh_list;
-
-		// textures required for 3D model
-		string_hash< smart_ptr<bitmap_info> > m_texture;
-
-		// load image & create texture or get bitmap_info pointer to loaded texture
-		bitmap_info* get_texture(const char* finame);
-
-		// enables texture if there is material & loaded image
-		void set_material(Lib3dsMaterial* mat);
-
-		// binds texture to triangle (from mesh)
-		void bind_material(Lib3dsMaterial* mat, float U, float V);
-
-		void create_mesh_list(Lib3dsMesh* mesh);
-		void render_node(Lib3dsNode* node);
 	};
 
 	struct x3ds_instance : public character
@@ -72,12 +55,27 @@ namespace gameswf
 		Lib3dsCamera* m_camera;
 		int m_texture_id;
 
+		// textures required for 3D model
+		string_hash< smart_ptr<bitmap_info> > m_texture;
+
 		private:
 		
 		smart_ptr<x3ds_definition>	m_def;
 		Lib3dsFloat m_current_frame;
 		Lib3dsMatrix m_matrix;
+		GLuint m_mesh_list;
 
+		// binds texture to triangle (from mesh)
+		void bind_material(Lib3dsMaterial* mat, float U, float V);
+
+		// enables texture if there is material & loaded image
+		void set_material(Lib3dsMaterial* mat);
+
+		// load image & create texture or get bitmap_info pointer to loaded texture
+		bitmap_info* get_texture(const char* finame);
+
+		void create_mesh_list(Lib3dsMesh* mesh);
+		void render_node(Lib3dsNode* node);
 	};
 
 }	// end namespace gameswf

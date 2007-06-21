@@ -37,7 +37,6 @@ namespace gameswf
 	struct as_key : public as_object
 	{
 		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
-//		array<weak_ptr<as_object_interface> >	m_listeners;
 		int	m_last_key_pressed;
 
 		as_key();

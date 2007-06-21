@@ -54,6 +54,7 @@ namespace gameswf
 
 		movie_root::~movie_root()
 		{
+			m_listeners.clear();
 			assert(m_def != NULL);
 			m_movie = NULL;
 			m_def = NULL;
@@ -248,14 +249,19 @@ namespace gameswf
 			notify_key_object(k, down);
 
 			// Notify keypress listeners.
-			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-				it != m_listeners.end(); ++it)
+			for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+				it != m_listeners.end(); )
 			{
+				smart_ptr<as_object_interface> obj = it->first;
+				if (obj == NULL)
+				{
+					// cleanup the garbage
+					m_listeners.erase(it);
+					continue;
+				}
+
 				if (it->second == KEYPRESS)
 				{
-					// protect from deleting in Action Script
-					smart_ptr<as_object_interface> obj = it->first;
-
 					if (down)
 					{
 						obj->on_event(event_id(event_id::KEY_DOWN));
@@ -266,22 +272,29 @@ namespace gameswf
 						obj->on_event(event_id(event_id::KEY_UP));
 					}
 				}
+				++it;
 			}
 		}
 
 		void	movie_root::advance_listeners(float delta_time)
 		{
 			// Notify network listeners.
-			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-				it != m_listeners.end(); ++it)
+			for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+				it != m_listeners.end(); )
 			{
+				smart_ptr<as_object_interface> obj = it->first;
+				if (obj == NULL)
+				{
+					// cleanup the garbage
+					m_listeners.erase(it);
+					continue;
+				}
+
 				if (it->second == ADVANCE)
 				{
-					// protect from deleting in Action Script
-					smart_ptr<as_object_interface> obj = it->first;
-
 					obj->advance(delta_time);
 				}
+				++it;
 			}
 		}
 

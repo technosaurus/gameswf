@@ -219,6 +219,10 @@ namespace gameswf
 		float m_text_height;
 		smart_ptr<font> m_font;
 		edit_text_character_def::alignment	m_alignment;
+		float	m_left_margin;
+		float	m_right_margin;
+		float	m_indent;
+		float	m_leading;
 
 		edit_text_character(character* parent, edit_text_character_def* def, int id);
 		~edit_text_character();

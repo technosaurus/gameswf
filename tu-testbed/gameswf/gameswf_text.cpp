@@ -558,6 +558,10 @@ namespace gameswf
 		m_text_height = m_def->m_text_height;
 		m_font = m_def->m_font;
 		m_alignment = m_def->m_alignment;
+		m_left_margin = m_def->m_left_margin;
+		m_right_margin = m_def->m_right_margin;
+		m_indent = m_def->m_indent;
+		m_leading = m_def->m_leading;
 
 		// first set default text value
 		set_text(def->m_default_text.c_str());
@@ -579,6 +583,26 @@ namespace gameswf
 	{
 		assert(tf);
 		as_value val;
+
+		if (tf->get_member("leftMargin", &val))
+		{
+			m_left_margin = PIXELS_TO_TWIPS((float) val.to_number());
+		}
+
+		if (tf->get_member("indent", &val))
+		{
+			m_indent = PIXELS_TO_TWIPS((float) val.to_number());
+		}
+
+		if (tf->get_member("rightMargin", &val))
+		{
+			m_right_margin = PIXELS_TO_TWIPS((float) val.to_number());
+		}
+
+		if (tf->get_member("leading", &val))
+		{
+			m_leading = PIXELS_TO_TWIPS((float) val.to_number());
+		}
 
 		if (tf->get_member("color", &val))
 		{
@@ -1092,7 +1116,7 @@ namespace gameswf
 	// last_line_start_record and going through the end of
 	// m_text_glyph_records.
 	{
-		float	extra_space = (m_def->m_rect.width() - m_def->m_right_margin) - x - WIDTH_FUDGE;
+		float	extra_space = (m_def->m_rect.width() - m_right_margin) - x - WIDTH_FUDGE;
 
 		// extra_space may be < 0
 		// assert(extra_space >= 0.0f);
@@ -1187,7 +1211,7 @@ namespace gameswf
 		text_glyph_record	rec;	// one to work on
 		rec.m_style.m_font = m_font.get_ptr();
 		rec.m_style.m_color = m_color;
-		rec.m_style.m_x_offset = fmax(0, m_def->m_left_margin + m_def->m_indent);
+		rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
 		rec.m_style.m_y_offset = m_text_height
 			+ (m_font->get_leading() - m_font->get_descent()) * scale;
 		rec.m_style.m_text_height = m_text_height;
@@ -1200,7 +1224,7 @@ namespace gameswf
 		// Start the bbox at the upper-left corner of the first glyph.
 		reset_bounding_box(x, y - m_font->get_descent() * scale + m_text_height);
 
-		float	leading = m_def->m_leading;
+		float	leading = m_leading;
 		leading += m_font->get_leading() * scale;
 
 		int	last_code = -1;
@@ -1245,7 +1269,7 @@ namespace gameswf
 				m_text_glyph_records.push_back(rec);
 				align_line(m_alignment, last_line_start_record, x);
 
-				x = fmax(0, m_def->m_left_margin + m_def->m_indent);	// new paragraphs get the indent.
+				x = fmax(0, m_left_margin + m_indent);	// new paragraphs get the indent.
 				y += m_text_height + leading;
 
 				// Start a new record on the next line.
@@ -1331,7 +1355,7 @@ namespace gameswf
 			x += ge.m_glyph_advance;
 
 
-			if (x >= m_def->m_rect.width() - m_def->m_right_margin - WIDTH_FUDGE)
+			if (x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE)
 			{
 				// Whoops, we just exceeded the box width.  Do word-wrap.
 
@@ -1341,7 +1365,7 @@ namespace gameswf
 				m_text_glyph_records.push_back(rec);
 				float	previous_x = x;
 
-				x = m_def->m_left_margin;
+				x = m_left_margin;
 				y += m_text_height + leading;
 
 				// Start a new record on the next line.
