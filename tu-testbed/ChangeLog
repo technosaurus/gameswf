@@ -1,3 +1,7 @@
+2007-06-23  Thatcher Ulrich <tu@tulrich.com>
+	* base/tu_random.*: fixed determinism, added comments for
+	4096-seed version of CMWC
+
 2007-06-21  Vitaly Alexeev <tishka92@yahoo.com>
 
 	smart_ptr() ==> tweak_ptr() in listeners.
@@ -83,6 +87,9 @@
 	* gameswf/gameswf_freetype.*:
 	Work with dynamic fonts
 	
+2007-06-03  Thatcher Ulrich <tu@tulrich.com>
+	* fix some minor spelling & indents
+
 2007-06-03  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_font.cpp,
