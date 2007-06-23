@@ -49,6 +49,7 @@ namespace tu_random
 	// random number generator.  _Statistics and Probability Letters
 	// 8_ (1990), 35-39.
 
+//	const Uint64	a = 18782;	// for SEED_COUNT=4096, period approx 2^131104 (from Marsaglia usenet post 2003-05-13)
 //	const Uint64	a = 123471786;	// for SEED_COUNT=1024, period approx 2^32794
 //	const Uint64	a = 123554632;	// for SEED_COUNT=512, period approx 2^16410
 //	const Uint64	a = 8001634;	// for SEED_COUNT=256, period approx 2^8182
@@ -60,9 +61,6 @@ namespace tu_random
 
 
 	generator::generator()
-		:
-		c(362436),
-		i(SEED_COUNT - 1)
 	{
 		seed_random(987654321);
 	}
@@ -84,8 +82,11 @@ namespace tu_random
 			j = j ^ (j << 13);
 			j = j ^ (j >> 17);
 			j = j ^ (j << 5);
-			Q[i] = j;
+			m_Q[i] = j;
 		}
+
+		m_c = 362436;
+		m_i = SEED_COUNT - 1;
 	}
 
 
@@ -99,18 +100,18 @@ namespace tu_random
 		//static Uint32	i = SEED_COUNT - 1;
 		const Uint32	r = 0xFFFFFFFE;
 
-		i = (i+1) & (SEED_COUNT - 1);
-		t = a * Q[i] + c;
-		c = (Uint32) (t >> 32);
-		x = (Uint32) (t + c);
-		if (x < c)
+		m_i = (m_i + 1) & (SEED_COUNT - 1);
+		t = a * m_Q[m_i] + m_c;
+		m_c = (Uint32) (t >> 32);
+		x = (Uint32) (t + m_c);
+		if (x < m_c)
 		{
 			x++;
-			c++;
+			m_c++;
 		}
 		
 		Uint32	val = r - x;
-		Q[i] = val;
+		m_Q[m_i] = val;
 		return val;
 	}
 
@@ -130,6 +131,7 @@ namespace tu_random
 
 #include "base/tu_timer.h"
 #include <math.h>
+#include <assert.h>
 
 
 int count_ones(uint32 i)
@@ -236,6 +238,37 @@ int	main()
 		}
 	}
 #endif // FIND_BAD_SEEDS
+
+#ifdef TEST_DETERMINISM
+	// Two generators seeded with the same value should produce
+	// the same sequence.
+	tu_random::generator a;
+	tu_random::generator b;
+	for (int i = 0; i < 100; i++) {
+		assert(a.next_random() == b.next_random());
+	}
+	b.next_random();
+	b.next_random();
+	b.next_random();
+	b.next_random();
+	b.seed_random(456);
+	b.next_random();
+	b.next_random();
+	b.next_random();
+	b.next_random();
+	// a and b should be out of sync now.
+	assert(a.next_random() != b.next_random());
+
+	a.seed_random(123);
+	b.seed_random(123);
+	// a and b should be back in sync.
+	for (int i = 0; i < 100; i++) {
+		assert(a.next_random() == b.next_random());
+	}
+	for (int i = 0; i < 10; i++) {
+		printf("%08x %08x\n", a.next_random(), b.next_random());
+	}
+#endif // TEST_DETERMINISM
 
 	return 0;
 }

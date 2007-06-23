@@ -33,9 +33,9 @@ namespace tu_random
 		float	get_unit_float();
 
 	private:
-		Uint32	Q[SEED_COUNT];
-		Uint32	c;
-		Uint32	i;
+		Uint32	m_Q[SEED_COUNT];
+		Uint32	m_c;
+		Uint32	m_i;
 	};
 
 }	// end namespace tu_random
