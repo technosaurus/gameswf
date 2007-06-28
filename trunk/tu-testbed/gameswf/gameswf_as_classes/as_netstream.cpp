@@ -72,7 +72,15 @@ namespace gameswf
 
 	void as_netstream::play(const char* url)
 	{
-		m_url = url;
+		// is path relative ?
+		tu_string infile = get_workdir();
+		if (strstr(url, ":") || url[0] == '/')
+		{
+			infile = "";
+		}
+		infile += url;
+		m_url = infile;
+
 		m_break = true;
 		m_decoder.signal();
 	}
