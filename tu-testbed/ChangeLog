@@ -1,5 +1,14 @@
 2007-06-28  Vitaly Alexeev <tishka92@yahoo.com>
 
+	_width & _height property of characters. A bit cleanup
+	* gameswf/gameswf_button.cpp
+	* gameswf/gameswf_character.cpp
+	* gameswf/gameswf_character.h
+	* gameswf/gameswf_sprite.cpp
+	* gameswf/gameswf_types.cpp
+
+2007-06-28  Vitaly Alexeev <tishka92@yahoo.com>
+
 	Fixed _width & _height property of characters. For calculation of the width & height is used
 	the bound that covers this character. 
 	* gameswf/gameswf.h

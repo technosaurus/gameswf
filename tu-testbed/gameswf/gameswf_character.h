@@ -387,8 +387,6 @@ namespace gameswf
 			return false;
 		}
 
-
-
 		virtual bool can_handle_mouse_event() { return false; }
 		virtual void set_mcloader(as_mcloader* mcl) { assert(0); }
 	

@@ -150,31 +150,40 @@ namespace gameswf
 				{
 					bound.m_x_max = ch_bound.m_x_max;
 				}
+				if (ch_bound.m_x_min > bound.m_x_max)
+				{
+					bound.m_x_max = ch_bound.m_x_min;
+				}
+
 				if (ch_bound.m_y_max > bound.m_y_max)
 				{
 					bound.m_y_max = ch_bound.m_y_max;
 				}
+				if (ch_bound.m_y_min > bound.m_y_max)
+				{
+					bound.m_y_max = ch_bound.m_y_min;
+				}
+
 				if (ch_bound.m_x_min < bound.m_x_min)
 				{
 					bound.m_x_min = ch_bound.m_x_min;
 				}
+				if (ch_bound.m_x_max < bound.m_x_min)
+				{
+					bound.m_x_min = ch_bound.m_x_max;
+				}
+
 				if (ch_bound.m_y_min < bound.m_y_min)
 				{
 					bound.m_y_min = ch_bound.m_y_min;
 				}
+				if (ch_bound.m_y_max < bound.m_y_min)
+				{
+					bound.m_y_min = ch_bound.m_y_max;
+				}
 			}
 		}
 		
-		// Vitaly: is it correct ?
-		if (bound.m_x_min == FLT_MAX ||	bound.m_x_max == FLT_MAX ||
-			bound.m_y_min == FLT_MAX ||	bound.m_y_max != - FLT_MAX)
-		{
-			bound.m_x_min = 0;
-			bound.m_x_max = 0;
-			bound.m_y_min = 0;
-			bound.m_y_max = 0;
-		}
-
 		matrix m = get_matrix();
 		m.transform(bound);
 	}
