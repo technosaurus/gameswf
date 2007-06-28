@@ -886,6 +886,7 @@ namespace gameswf
 		void	transform(rect& bound) const;
 		void	transform_vector(point* result, const point& p) const;
 		void	transform_by_inverse(point* result, const point& p) const;
+		void	transform_by_inverse(rect& bound) const;
 		void	set_inverse(const matrix& m);
 		bool	does_flip() const;	// return true if we flip handedness
 		float	get_determinant() const;	// determinant of the 2x2 rotation/scale part only
@@ -918,6 +919,9 @@ namespace gameswf
 		bool operator==(const point& p) const { return m_x == p.m_x && m_y == p.m_y; }
 
 		bool	bitwise_equal(const point& p) const;
+
+		void twips_to_pixels();
+		void pixels_to_twips();
 	};
 
 
@@ -942,6 +946,9 @@ namespace gameswf
 		void	enclose_transformed_rect(const matrix& m, const rect& r);
 
 		void	set_lerp(const rect& a, const rect& b, float t);
+
+		void twips_to_pixels();
+		void pixels_to_twips();
 	};
 
 

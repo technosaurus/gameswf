@@ -47,8 +47,22 @@ namespace gameswf
 		// overloads from movie_definition
 		virtual float	get_width_pixels() const { return 1; }
 		virtual float	get_height_pixels() const { return 1; }
-		virtual float	get_frame_rate() const { return m_movie_def->get_frame_rate(); }
-		virtual int	get_version() const { return m_movie_def->get_version(); }
+		virtual float	get_frame_rate() const
+		{
+			if (m_movie_def)
+			{
+				return m_movie_def->get_frame_rate(); 
+			}
+			return 0;
+		}
+		virtual int	get_version() const
+		{
+			if (m_movie_def)
+			{
+				return m_movie_def->get_version();
+			}
+			return 0;
+		}
 		virtual void	add_character(int id, character_def* ch) { log_error("add_character tag appears in sprite tags!\n"); }
 		virtual void	add_font(int id, font* ch) { log_error("add_font tag appears in sprite tags!\n"); }
 		virtual font*	get_font(int id) { return m_movie_def->get_font(id); }

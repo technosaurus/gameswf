@@ -20,7 +20,7 @@ namespace gameswf
 {
 
 	// url=="" means that the load_file() works as unloadMovie(target)
-	sprite_instance* as_environment::load_file(const char* url, as_value& target_value)
+	character* as_environment::load_file(const char* url, as_value& target_value)
 	{
 		sprite_instance* target = NULL;
 		{
@@ -186,25 +186,38 @@ namespace gameswf
 			log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
 			return NULL;
 #else
+			if (parent == NULL)
+			{
+				log_error("can't load 3DS as _root\n");
+				return NULL;
+			}
 
 			x3ds_definition* x3ds = new x3ds_definition(infile.c_str());
+			character* new_ch = x3ds->create_character_instance(parent, 1);
 
-			// clear target display list
-			target->clear_display_objects();
+			const char* name = target->get_name();
+			Uint16 depth = target->get_depth();
+			bool use_cxform = false;
+			cxform color_transform = target->get_cxform();
+			bool use_matrix = false;
+			matrix mat = target->get_matrix();
+			float ratio = target->get_ratio();
+			Uint16 clip_depth = target->get_clip_depth();
 
-			// add new 3DS character into empty sprite
-			cxform color_transform;
-			matrix matrix;
-			target->m_display_list.add_display_object(
-				x3ds->create_character_instance(target, 1),
-				target->get_highest_depth(),
-				true,
+			new_ch->set_parent(parent);
+			parent->replace_display_object(
+				new_ch,
+				name,
+				depth,
+				use_cxform,
 				color_transform,
-				matrix,
-				0.0f,
-				0); 
+				use_matrix,
+				mat,
+				ratio,
+				clip_depth);
 
-			return target;
+			return new_ch;
+
 
 #endif
 

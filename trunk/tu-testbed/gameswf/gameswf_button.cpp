@@ -544,22 +544,10 @@ namespace gameswf
 					rect ch_bound;
 					m_record_character[i]->get_bound(ch_bound);
 
-					if (ch_bound.m_x_max > bound.m_x_max)
-					{
-						bound.m_x_max = ch_bound.m_x_max;
-					}
-					if (ch_bound.m_y_max > bound.m_y_max)
-					{
-						bound.m_y_max = ch_bound.m_y_max;
-					}
-					if (ch_bound.m_x_min < bound.m_x_min)
-					{
-						bound.m_x_min = ch_bound.m_x_min;
-					}
-					if (ch_bound.m_y_min < bound.m_y_min)
-					{
-						bound.m_y_min = ch_bound.m_y_min;
-					}
+					bound.m_x_max = fmax(ch_bound.m_x_max, bound.m_x_max);
+					bound.m_y_max = fmax(ch_bound.m_y_max, bound.m_y_max);
+					bound.m_x_min = fmin(ch_bound.m_x_min, bound.m_x_min);
+					bound.m_y_min = fmin(ch_bound.m_y_min, bound.m_y_min);
 				}
 			}
 

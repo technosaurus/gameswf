@@ -370,8 +370,6 @@ namespace gameswf
 			return bi.get_ptr();
 		}
 
-		character* ch = find_target("xxx");
-
 		static int n = 0;
 		if (n < 1)
 		{

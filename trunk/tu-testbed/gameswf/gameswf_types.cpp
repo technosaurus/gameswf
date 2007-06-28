@@ -29,6 +29,17 @@ namespace gameswf
 		return memcmp(this, &p, sizeof(p)) == 0;
 	}
 
+	void point::twips_to_pixels()
+	{
+		m_x = TWIPS_TO_PIXELS(m_x);
+		m_y = TWIPS_TO_PIXELS(m_y);
+	}
+
+	void point::pixels_to_twips()
+	{
+		m_x = PIXELS_TO_TWIPS(m_x);
+		m_y = PIXELS_TO_TWIPS(m_y);
+	}
 
 	//
 	// matrix
@@ -191,6 +202,17 @@ namespace gameswf
 		y = bound.m_y_max;
 		bound.m_x_max = m_[0][0] * x + m_[0][1] * y + m_[0][2];
 		bound.m_y_max = m_[1][0] * x + m_[1][1] * y + m_[1][2];
+
+		// swap, if necessary
+		if (bound.m_x_min > bound.m_x_max)
+		{
+			swap(&bound.m_x_min, &bound.m_x_max);
+		}
+		if (bound.m_y_min > bound.m_y_max)
+		{
+			swap(&bound.m_y_min, &bound.m_y_max);
+		}
+
 	}
 	
 	void	matrix::transform_vector(point* result, const point& v) const
@@ -213,6 +235,14 @@ namespace gameswf
 		m.transform(result, p);
 	}
 
+	void	matrix::transform_by_inverse(rect& bound) const
+	// Transform point 'p' by the inverse of our matrix.  Put result in *result.
+	{
+		// @@ TODO optimize this!
+		matrix	m;
+		m.set_inverse(*this);
+		m.transform(bound);
+	}
 
 	void	matrix::set_inverse(const matrix& m)
 	// Set this matrix to the inverse of the given matrix.
@@ -584,6 +614,22 @@ namespace gameswf
 		m_y_min = flerp(a.m_y_min, b.m_y_min, t);
 		m_x_max = flerp(a.m_x_max, b.m_x_max, t);
 		m_y_max = flerp(a.m_y_max, b.m_y_max, t);
+	}
+
+	void rect::twips_to_pixels()
+	{
+		m_x_min = TWIPS_TO_PIXELS(m_x_min);
+		m_y_min = TWIPS_TO_PIXELS(m_y_min);
+		m_x_max = TWIPS_TO_PIXELS(m_x_max);
+		m_y_max = TWIPS_TO_PIXELS(m_y_max);
+	}
+
+	void rect::pixels_to_twips()
+	{
+		m_x_min = PIXELS_TO_TWIPS(m_x_min);
+		m_y_min = PIXELS_TO_TWIPS(m_y_min);
+		m_x_max = PIXELS_TO_TWIPS(m_x_max);
+		m_y_max = PIXELS_TO_TWIPS(m_y_max);
 	}
 
 
