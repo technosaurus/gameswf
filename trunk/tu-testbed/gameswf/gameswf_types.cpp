@@ -172,6 +172,7 @@ namespace gameswf
 	// *result.
 	{
 		assert(result);
+		assert(&p != result);
 
 		result->m_x = m_[0][0] * p.m_x + m_[0][1] * p.m_y + m_[0][2];
 		result->m_y = m_[1][0] * p.m_x + m_[1][1] * p.m_y + m_[1][2];
@@ -197,6 +198,7 @@ namespace gameswf
 	// Put the result in *result.
 	{
 		assert(result);
+		assert(&v != result);
 
 		result->m_x = m_[0][0] * v.m_x + m_[0][1] * v.m_y;
 		result->m_y = m_[1][0] * v.m_x + m_[1][1] * v.m_y;

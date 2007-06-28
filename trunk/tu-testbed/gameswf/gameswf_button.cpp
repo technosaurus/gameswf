@@ -563,16 +563,6 @@ namespace gameswf
 				}
 			}
 
-			// Vitaly: is it correct ?
-			if (bound.m_x_min == FLT_MAX ||	bound.m_x_max == FLT_MAX ||
-				bound.m_y_min == FLT_MAX ||	bound.m_y_max != - FLT_MAX)
-			{
-				bound.m_x_min = 0;
-				bound.m_x_max = 0;
-				bound.m_y_min = 0;
-				bound.m_y_max = 0;
-			}
-
 			matrix m = get_matrix();
 			m.transform(bound);
 		}

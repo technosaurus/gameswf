@@ -437,8 +437,12 @@ namespace gameswf
 		rect bound;
 		get_bound(bound);
 		float w = bound.m_x_max - bound.m_x_min;
-		assert(w >= 0);
-		return w;
+		if (isfinitef(w))
+		{
+			assert(w >= 0);
+			return w;
+		}
+		return 0;
 	}
 
 	float	character::get_height()
@@ -446,8 +450,12 @@ namespace gameswf
 		rect bound;
 		get_bound(bound);
 		float h = bound.m_y_max - bound.m_y_min;
-		assert(h >= 0);
-		return h;
+		if (isfinitef(h))
+		{
+			assert(h >= 0);
+			return h;
+		}
+		return 0;
 	}
 
 }
