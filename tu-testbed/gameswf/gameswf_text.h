@@ -195,6 +195,8 @@ namespace gameswf
 		character*	create_character_instance(character* parent, int id);
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	csm_textsetting(stream* in, int tag_type);
+
+		virtual void get_bound(rect& bound) { bound = m_rect; }
 	};
 
 	//
@@ -241,13 +243,12 @@ namespace gameswf
 		virtual const char*	get_text_value();
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
-		virtual float	get_width();
-		virtual float	get_height();
 		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x);
 		void	format_text();
 
 		virtual void advance(float delta_time);
 		virtual edit_text_character* cast_to_edit_text_character() { return this; }
+		virtual void get_bound(rect& bound);
 
 	private:
 

@@ -522,8 +522,13 @@ namespace gameswf
 			return false;
 		}
 
-		virtual float	get_width()
+		virtual void	get_bound(rect& bound)
 		{
+			bound.m_x_min = FLT_MAX;
+			bound.m_x_max = - FLT_MAX;
+			bound.m_y_min = FLT_MAX;
+			bound.m_y_max = - FLT_MAX;
+
 			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
@@ -535,33 +540,41 @@ namespace gameswf
 				    || (m_mouse_state == DOWN && rec.m_down)
 				    || (m_mouse_state == OVER && rec.m_over))
 				{
-					return m_record_character[i]->get_width();
+
+					rect ch_bound;
+					m_record_character[i]->get_bound(ch_bound);
+
+					if (ch_bound.m_x_max > bound.m_x_max)
+					{
+						bound.m_x_max = ch_bound.m_x_max;
+					}
+					if (ch_bound.m_y_max > bound.m_y_max)
+					{
+						bound.m_y_max = ch_bound.m_y_max;
+					}
+					if (ch_bound.m_x_min < bound.m_x_min)
+					{
+						bound.m_x_min = ch_bound.m_x_min;
+					}
+					if (ch_bound.m_y_min < bound.m_y_min)
+					{
+						bound.m_y_min = ch_bound.m_y_min;
+					}
 				}
 			}
 
-			// from the experiments with macromedia flash player
-			return 0;
-		}
-
-		virtual float	get_height()
-		{
-			for (int i = 0; i < m_def->m_button_records.size(); i++)
+			// Vitaly: is it correct ?
+			if (bound.m_x_min == FLT_MAX ||	bound.m_x_max == FLT_MAX ||
+				bound.m_y_min == FLT_MAX ||	bound.m_y_max != - FLT_MAX)
 			{
-				button_record&	rec = m_def->m_button_records[i];
-				if (m_record_character[i] == NULL)
-				{
-					continue;
-				}
-				if ((m_mouse_state == UP && rec.m_up)
-				    || (m_mouse_state == DOWN && rec.m_down)
-				    || (m_mouse_state == OVER && rec.m_over))
-				{
-					return m_record_character[i]->get_height();
-				}
+				bound.m_x_min = 0;
+				bound.m_x_max = 0;
+				bound.m_y_min = 0;
+				bound.m_y_max = 0;
 			}
 
-			// from the experiments with macromedia flash player
-			return 0;
+			matrix m = get_matrix();
+			m.transform(bound);
 		}
 
 		// not sure if we need to override this one.

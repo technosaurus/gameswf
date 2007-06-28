@@ -350,8 +350,9 @@ namespace gameswf
 
 		// Movie interfaces.  By default do nothing.  sprite_instance and some others override these.
 		virtual void	display() {}
-		virtual float	get_height() { return 0; }
-		virtual float	get_width() { return 0; }
+		virtual float	get_height();
+		virtual float	get_width();
+		virtual void get_bound(rect& bound) { assert(0); }
 
 		virtual character*	get_root_movie() { return m_parent->get_root_movie(); }
 

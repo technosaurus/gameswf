@@ -1095,14 +1095,11 @@ namespace gameswf
 		return false;
 	}
 
-	float	edit_text_character::get_width()
+	void	edit_text_character::get_bound(rect& bound)
 	{
-		return m_def->m_rect.width();
-	}
-
-	float	edit_text_character::get_height()
-	{
-		return m_def->m_rect.height();
+		m_def->get_bound(bound);
+		matrix m = get_matrix();
+		m.transform(bound);
 	}
 
 	// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe

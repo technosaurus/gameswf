@@ -129,9 +129,13 @@ namespace gameswf
 		return false;
 	}
 
-	float	sprite_instance::get_width()
+	void sprite_instance::get_bound(rect& bound)
 	{
-		float	w = 0;
+		bound.m_x_min = FLT_MAX;
+		bound.m_x_max = - FLT_MAX;
+		bound.m_y_min = FLT_MAX;
+		bound.m_y_max = - FLT_MAX;
+
 		int i, n = m_display_list.get_character_count();
 		character* ch;
 		for (i = 0; i < n; i++)
@@ -139,35 +143,40 @@ namespace gameswf
 			ch = m_display_list.get_character(i);
 			if (ch != NULL)
 			{
-				float ch_w = ch->get_width();
-				if (ch_w > w)
+				rect ch_bound;
+				ch->get_bound(ch_bound);
+
+				if (ch_bound.m_x_max > bound.m_x_max)
 				{
-					w = ch_w;
+					bound.m_x_max = ch_bound.m_x_max;
+				}
+				if (ch_bound.m_y_max > bound.m_y_max)
+				{
+					bound.m_y_max = ch_bound.m_y_max;
+				}
+				if (ch_bound.m_x_min < bound.m_x_min)
+				{
+					bound.m_x_min = ch_bound.m_x_min;
+				}
+				if (ch_bound.m_y_min < bound.m_y_min)
+				{
+					bound.m_y_min = ch_bound.m_y_min;
 				}
 			}
 		}
-
-		return w;
-	}
-
-	float	sprite_instance::get_height()
-	{
-		float	h = 0; 
-		int i, n = m_display_list.get_character_count();
-		character* ch;
-		for (i=0; i < n; i++)
+		
+		// Vitaly: is it correct ?
+		if (bound.m_x_min == FLT_MAX ||	bound.m_x_max == FLT_MAX ||
+			bound.m_y_min == FLT_MAX ||	bound.m_y_max != - FLT_MAX)
 		{
-			ch = m_display_list.get_character(i);
-			if (ch != NULL)
-			{
-				float	ch_h = ch->get_height();
-				if (ch_h > h)
-				{
-					h = ch_h;
-				}
-			}
+			bound.m_x_min = 0;
+			bound.m_x_max = 0;
+			bound.m_y_min = 0;
+			bound.m_y_max = 0;
 		}
-		return h;
+
+		matrix m = get_matrix();
+		m.transform(bound);
 	}
 
 	character* sprite_instance::add_empty_movieclip(const char* name, int depth)
