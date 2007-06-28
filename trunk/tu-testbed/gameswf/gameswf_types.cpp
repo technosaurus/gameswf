@@ -176,6 +176,21 @@ namespace gameswf
 		result->m_x = m_[0][0] * p.m_x + m_[0][1] * p.m_y + m_[0][2];
 		result->m_y = m_[1][0] * p.m_x + m_[1][1] * p.m_y + m_[1][2];
 	}
+
+	void	matrix::transform(rect& bound) const
+	// Transform point 'p' by our matrix.  Put the result in
+	// *result.
+	{
+		float x, y;
+		x = bound.m_x_min;
+		y = bound.m_y_min;
+		bound.m_x_min = m_[0][0] * x + m_[0][1] * y + m_[0][2];
+		bound.m_y_min = m_[1][0] * x + m_[1][1] * y + m_[1][2];
+		x = bound.m_x_max;
+		y = bound.m_y_max;
+		bound.m_x_max = m_[0][0] * x + m_[0][1] * y + m_[0][2];
+		bound.m_y_max = m_[1][0] * x + m_[1][1] * y + m_[1][2];
+	}
 	
 	void	matrix::transform_vector(point* result, const point& v) const
 	// Transform vector 'v' by our matrix. Doesn't apply translation.

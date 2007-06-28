@@ -166,8 +166,8 @@ namespace gameswf
 		virtual void	display(character* inst);
 		bool	point_test_local(float x, float y);
 
-		float	get_height_local();
-		float	get_width_local();
+		void get_bound(rect& bound);
+		const rect&	get_bound_local() const { return m_bound; }
 
 		void	read(stream* in, int tag_type, bool with_style, movie_definition_sub* m);
 		void	display(
@@ -178,7 +178,6 @@ namespace gameswf
 			const array<line_style>& line_styles) const;
 		virtual void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
 		virtual void	tesselate_new(float error_tolerance, tesselate_new::mesh_accepter* accepter) const;
-		const rect&	get_bound() const { return m_bound; }
 		void	compute_bound(rect* r) const;	// @@ what's the difference between this and get_bound?
 
 		void	output_cached_data(tu_file* out, const cache_options& options);

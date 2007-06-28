@@ -54,6 +54,7 @@ namespace gameswf
 	struct event_id;
 	struct movie_root;
 	struct movie_def_impl;
+	struct rect;
 
 	movie_interface* get_current_root();
 
@@ -256,8 +257,7 @@ namespace gameswf
 
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
-		virtual float	get_height_local() { return 0.0f; }
-		virtual float	get_width_local() { return 0.0f; }
+		virtual void get_bound(rect& bound) { assert(0); }
 
 		// Should stick the result in a smart_ptr immediately.
 		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character
@@ -883,6 +883,7 @@ namespace gameswf
 		void	read(stream* in);
 		void	print() const;
 		void	transform(point* result, const point& p) const;
+		void	transform(rect& bound) const;
 		void	transform_vector(point* result, const point& p) const;
 		void	transform_by_inverse(point* result, const point& p) const;
 		void	set_inverse(const matrix& m);

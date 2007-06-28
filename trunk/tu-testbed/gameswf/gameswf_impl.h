@@ -109,22 +109,11 @@ namespace gameswf
 			do_display_callback();
 		}
 
-		// @@ tulrich: these are used for finding bounds; TODO
-		// need to do this using enclose_transformed_rect(),
-		// not by scaling the local height/width!
-
-		virtual float	get_height()
+		void get_bound(rect& bound)
 		{
-			matrix	m = get_world_matrix();
-			float	h = m_def->get_height_local();
-			return h;
-		}
-
-		virtual float	get_width()
-		{
-			matrix	m = get_world_matrix();
-			float	w = m_def->get_width_local();
-			return w;
+			m_def->get_bound(bound);
+			matrix m = get_matrix();
+			m.transform(bound);
 		}
 
 		virtual character*	get_topmost_mouse_entity(float x, float y)
@@ -155,16 +144,6 @@ namespace gameswf
 	{
 		bitmap_character(bitmap_info* bi) :	m_bitmap_info(bi)
 		{
-		}
-
-		virtual float	get_width_local()
-		{
-			return PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
-		}
-
-		virtual float	get_height_local()
-		{
-			return PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
 		}
 
 		bool	point_test_local(float x, float y)

@@ -1311,7 +1311,7 @@ namespace gameswf
 		shape_character_def*	ch = new shape_character_def;
 		ch->read(in, tag_type, true, m);
 
-		IF_VERBOSE_PARSE(log_msg("  bound rect:"); ch->get_bound().print());
+		IF_VERBOSE_PARSE(log_msg("  bound rect:"); ch->get_bound_local().print());
 
 		m->add_character(character_id, ch);
 	}

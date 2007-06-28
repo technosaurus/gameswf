@@ -34,7 +34,7 @@ namespace gameswf
 
 		// bounds
 		rect	new_bound;
-		new_bound.set_lerp(m_shape1->get_bound(), m_shape2->get_bound(), ratio);
+		new_bound.set_lerp(m_shape1->get_bound_local(), m_shape2->get_bound_local(), ratio);
 		set_bound(new_bound);
 
 		// fill styles

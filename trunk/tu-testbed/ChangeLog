@@ -1,3 +1,22 @@
+2007-06-28  Vitaly Alexeev <tishka92@yahoo.com>
+
+	Fixed _width & _height property of characters. For calculation of the width & height is used
+	the bound that covers this character. 
+	* gameswf/gameswf.h
+	* gameswf/gameswf_button.cpp
+	* gameswf/gameswf_character.cpp
+	* gameswf/gameswf_character.h
+	* gameswf/gameswf_impl.cpp
+	* gameswf/gameswf_impl.h
+	* gameswf/gameswf_morph2.cpp
+	* gameswf/gameswf_shape.cpp
+	* gameswf/gameswf_shape.h
+	* gameswf/gameswf_sprite.cpp
+	* gameswf/gameswf_sprite.h
+	* gameswf/gameswf_text.cpp
+	* gameswf/gameswf_text.h
+	* gameswf/gameswf_types.cpp
+
 2007-06-23  Thatcher Ulrich <tu@tulrich.com>
 	* base/tu_random.*: fixed determinism, added comments for
 	4096-seed version of CMWC

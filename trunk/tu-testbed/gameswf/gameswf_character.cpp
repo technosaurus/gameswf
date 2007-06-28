@@ -112,29 +112,13 @@ namespace gameswf
 		case M_WIDTH:
 			//else if (name == "_width")
 			{
-				rect	transformed_rect;
-				rect	source_rect;
-				source_rect.m_x_min = 0;
-				source_rect.m_y_min = 0;
-				source_rect.m_x_max = (float) get_width();
-				source_rect.m_y_max = (float) get_height();
-
-				transformed_rect.enclose_transformed_rect(get_matrix(), source_rect);
-				val->set_double(TWIPS_TO_PIXELS(transformed_rect.width()));
+				val->set_double(TWIPS_TO_PIXELS(get_width()));
 				return true;
 			}
 		case M_HEIGHT:
 			//else if (name == "_height")
 			{
-				rect	transformed_rect;
-				rect	source_rect;
-				source_rect.m_x_min = 0;
-				source_rect.m_y_min = 0;
-				source_rect.m_x_max = (float) get_width();
-				source_rect.m_y_max = (float) get_height();
-
-				transformed_rect.enclose_transformed_rect(get_matrix(), source_rect);
-				val->set_double(TWIPS_TO_PIXELS(transformed_rect.height()));
+				val->set_double(TWIPS_TO_PIXELS(get_height()));
 				return true;
 			}
 		case M_ROTATION:
@@ -446,6 +430,24 @@ namespace gameswf
 	character*	character::find_target(const tu_string& path) const
 	{
 		return get_parent()->find_target(path);
+	}
+
+	float	character::get_width()
+	{
+		rect bound;
+		get_bound(bound);
+		float w = bound.m_x_max - bound.m_x_min;
+		assert(w >= 0);
+		return w;
+	}
+
+	float	character::get_height()
+	{
+		rect bound;
+		get_bound(bound);
+		float h = bound.m_y_max - bound.m_y_min;
+		assert(h >= 0);
+		return h;
 	}
 
 }

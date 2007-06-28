@@ -71,10 +71,10 @@ namespace gameswf
 		uint32	get_loaded_bytes() const;
 
 		character*	get_root_movie() { return m_root->get_root_movie(); }
-
 		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
-		virtual float	get_width();
-		virtual float	get_height();
+
+		virtual void get_bound(rect& bound);
+
 		virtual int	get_current_frame() const { return m_current_frame; }
 		virtual int	get_frame_count() const { return m_def->get_frame_count(); }
 		virtual int get_loading_frame() const { return m_def->get_loading_frame(); }
