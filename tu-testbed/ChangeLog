@@ -1,5 +1,20 @@
 2007-06-28  Vitaly Alexeev <tishka92@yahoo.com>
 
+	Added misc transform_by_inverse(rect), added twips_to_pixels() & pixels_to_twips() methods
+	to rect & point struct, added find_target(as_value) to struct character, fixed 3DS file loader:
+	new instance replaces target now, optimized _width & _height stuff
+ 	* gameswf/gameswf.h:
+	* gameswf/gameswf_button.cpp
+	* gameswf/gameswf_character.cpp
+	* gameswf/gameswf_character.h
+	* gameswf/gameswf_environment.cpp
+	* gameswf/gameswf_environment.h
+	* gameswf/gameswf_sprite.cpp
+	* gameswf/gameswf_sprite_def.h
+	* gameswf/gameswf_types.cpp
+
+2007-06-28  Vitaly Alexeev <tishka92@yahoo.com>
+
 	_width & _height property of characters. A bit cleanup
 	* gameswf/gameswf_button.cpp
 	* gameswf/gameswf_character.cpp

@@ -432,6 +432,33 @@ namespace gameswf
 		return get_parent()->find_target(path);
 	}
 
+	character*	character::find_target(const as_value& val) const
+	// Find the sprite/movie represented by the given value.  The
+	// value might be a reference to the object itself, or a
+	// string giving a relative path name to the object.
+	{
+		if (val.get_type() == as_value::OBJECT)
+		{
+			if (val.to_object() != NULL)
+			{
+				return val.to_object()->cast_to_character();
+			}
+			else
+			{
+				return NULL;
+			}
+		}
+		else if (val.get_type() == as_value::STRING)
+		{
+			return find_target(val.to_tu_string());
+		}
+		else
+		{
+//			log_error("error: invalid path; neither string nor object\n");
+			return NULL;
+		}
+	}
+
 	float	character::get_width()
 	{
 		rect bound;
