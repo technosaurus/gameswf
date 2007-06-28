@@ -10,7 +10,7 @@
 
 #if TU_CONFIG_LINK_TO_LIB3DS == 1
 
-#include "../../gameswf_impl.h"
+#include "gameswf/gameswf_impl.h"
 #include "base/tu_opengl_includes.h"
 
 #include <lib3ds/types.h>
@@ -49,14 +49,14 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual x3ds_instance* cast_to_3ds() { return this; }
-
 		void	apply_matrix(float* target, float* camera_pos);
 
 		Lib3dsCamera* m_camera;
-		int m_texture_id;
 
 		// textures required for 3D model
-		string_hash< smart_ptr<bitmap_info> > m_texture;
+		stringi_hash< smart_ptr<bitmap_info> > m_material;
+		// <material, movieclip> map
+		stringi_hash<as_value> m_map;
 
 		private:
 		
@@ -72,10 +72,11 @@ namespace gameswf
 		void set_material(Lib3dsMaterial* mat);
 
 		// load image & create texture or get bitmap_info pointer to loaded texture
-		bitmap_info* get_texture(const char* finame);
+		void bind_texture(const char* finame);
 
 		void create_mesh_list(Lib3dsMesh* mesh);
 		void render_node(Lib3dsNode* node);
+		void	update_material();
 	};
 
 }	// end namespace gameswf

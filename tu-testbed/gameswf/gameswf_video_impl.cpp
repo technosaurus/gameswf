@@ -116,5 +116,13 @@ namespace gameswf
 		return false;
 	}
 
+	void video_stream_instance::get_bound(rect& bound)
+	{
+		bound.m_x_min = 0;
+		bound.m_y_min = 0;
+		bound.m_x_max = PIXELS_TO_TWIPS(m_def->m_width);
+		bound.m_y_max = PIXELS_TO_TWIPS(m_def->m_height);
+	}
+
 } // end of namespace gameswf
 

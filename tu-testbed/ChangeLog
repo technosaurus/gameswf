@@ -1,5 +1,19 @@
 2007-06-28  Vitaly Alexeev <tishka92@yahoo.com>
 
+	Snapshot of movieclip is used as texture for 3D model !
+	(see /gameswf/plugins/lib3ds/test.fla)
+ 	* gameswf/gameswf_as_classes/as_netstream.cpp
+ 	* gameswf/gameswf_text.cpp
+ 	* gameswf/gameswf_text.h
+ 	* gameswf/gameswf_video_impl.cpp
+ 	* gameswf/gameswf_video_impl.h
+ 	* gameswf/plugins/lib3ds/gameswf_3ds.cpp
+ 	* gameswf/plugins/lib3ds/gameswf_3ds.h
+ 	* gameswf/plugins/lib3ds/test.fla
+ 	* gameswf/plugins/lib3ds/test.swf
+
+2007-06-28  Vitaly Alexeev <tishka92@yahoo.com>
+
 	Added misc transform_by_inverse(rect), added twips_to_pixels() & pixels_to_twips() methods
 	to rect & point struct, added find_target(as_value) to struct character, fixed 3DS file loader:
 	new instance replaces target now, optimized _width & _height stuff

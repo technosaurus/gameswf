@@ -5,8 +5,6 @@
 
 // Lib3ds plugin implementation for gameswf library
 
-// TODO: the using movieclip as texture for 3D model
-
 #include "base/tu_config.h"
 
 #if TU_CONFIG_LINK_TO_LIB3DS == 1
@@ -24,6 +22,15 @@
 
 namespace gameswf
 {
+	void	as_map_material(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
+		if (x3ds && fn.nargs == 2)
+		{
+			x3ds->m_map[fn.arg(0).to_tu_string()] = fn.arg(1);
+		}
+	}
 
 	x3ds_definition::x3ds_definition(const char* url) : m_file(NULL)
 	{
@@ -146,23 +153,21 @@ namespace gameswf
 		m_def(def),
 		m_current_frame(0.0f)
 	{
+
+		// create empty bitmaps for movieclip's snapshots
+	  for (Lib3dsMaterial* p = m_def->m_file->materials; p != 0; p = p->next)
+		{
+			if (p->texture1_map.name)
+			{
+				m_material[p->texture1_map.name] = new bitmap_info();
+			}
+	  }
+
 		m_mesh_list  = glGenLists(1);
 		assert(m_mesh_list);
 
 		assert(m_def != NULL);
 		m_camera = m_def->create_camera();
-
-		glEnable(GL_TEXTURE_2D);
-		glGenTextures(1, (GLuint*)&m_texture_id);
-		glBindTexture(GL_TEXTURE_2D, m_texture_id);
-	
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-		glDisable(GL_TEXTURE_2D);
-
 		lib3ds_matrix_identity(m_matrix);
 
 		// aply gameswf matrix
@@ -186,15 +191,14 @@ namespace gameswf
 	x3ds_instance::~x3ds_instance()
 	{
 		glDeleteLists(m_mesh_list, 1);
-		glDeleteTextures(1, (GLuint*) &m_texture_id);
 		m_def->remove_camera(m_camera);
 	}
 
 	void	x3ds_instance::advance(float delta_time)
 	{
-//		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
-//		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
-//		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
+		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
+		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
+		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
 
 		m_current_frame = fmod(m_current_frame + 1.0f, (float) m_def->m_file->frames);
 		lib3ds_file_eval(m_def->m_file, m_current_frame);
@@ -202,16 +206,19 @@ namespace gameswf
 
 	bool	x3ds_instance::get_member(const tu_stringi& name, as_value* val)
 	{
-		// TODO handle character properties like _x, _y, _z, _zoom, ...
-		log_error("error: x3ds_instance::get_member('%s') is't implemented yet\n", name.c_str());
-		return false;
+		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
+		if (name == "mapMaterial")
+		{
+			val->set_as_c_function_ptr(as_map_material);
+			return true;
+		}
+		return character::get_member(name, val);
 	}
 
 	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
-		// TODO handle character properties like _x, _y, _z, _zoom, ...
-		log_error("error: x3ds_instance::set_member('%s', '%s') is't implemented yet\n", name.c_str(), val.to_string());
-		return false;
+		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
+		return character::set_member(name, val);
 	}
 
 	void	x3ds_instance::apply_matrix(float* target, float* camera_pos)
@@ -225,6 +232,112 @@ namespace gameswf
 		glTranslatef(0., -dist, 0.);
 	}
 
+	void	x3ds_instance::update_material()
+	{
+		GLint aux_buffers;
+		glGetIntegerv(GL_AUX_BUFFERS, &aux_buffers);
+		if (aux_buffers < 1)
+		{
+			static int n = 0;
+			if (n < 1)
+			{
+				n++;
+				log_error("Your video card does not have AUX buffers, can't snapshot movieclips\n");
+			}
+			return;
+		}
+
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+		// update textures
+		for (stringi_hash<smart_ptr <bitmap_info> >::iterator it = 
+			m_material.begin(); it != m_material.end(); ++it)
+		{
+			as_value target = m_map[it->first];
+			character* ch = find_target(target);
+			if (ch)
+			{
+				glDrawBuffer(GL_AUX0);
+				glReadBuffer(GL_AUX0);
+
+				// save "ch" matrix
+				matrix ch_matrix = ch->get_matrix();
+
+				float ch_width = TWIPS_TO_PIXELS(ch->get_width());
+				float ch_height = TWIPS_TO_PIXELS(ch->get_height());
+
+				// get viewport size
+        GLint vp[4]; 
+        glGetIntegerv(GL_VIEWPORT, vp); 
+				int vp_width = vp[2];
+				int vp_height = vp[3];
+
+				// get texture size
+				int	tw = 1; while (tw < ch_width) { tw <<= 1; }
+				int	th = 1; while (th < ch_height) { th <<= 1; }
+
+				// texture size must be <= viewport size
+				if (tw > vp_width)
+				{
+					tw = vp_width;
+				}
+				if (th > vp_height)
+				{
+					th = vp_height;
+				}
+
+				ch->set_member("_width", tw);
+				ch->set_member("_height", th);
+
+				rect bound;
+				ch->get_bound(bound);
+				
+				matrix m = ch->get_matrix();
+				float xt = (0 - bound.m_x_min) / m.get_x_scale();
+				float yt = (0 - bound.m_y_min) / m.get_y_scale();
+
+				// move "ch" to left-bottom corner
+				yt += PIXELS_TO_TWIPS(vp_height - th) / m.get_y_scale();
+				m.concatenate_translation(xt, yt);
+
+				ch->set_matrix(m);
+
+				glClearColor(1, 1, 1, 1);
+				glClear(GL_COLOR_BUFFER_BIT);
+
+				ch->display();
+
+				// restore "ch" matrix
+				ch->set_matrix(ch_matrix);
+
+				smart_ptr<bitmap_info> bi = it->second;
+				if (bi->m_texture_id == 0)
+				{
+					glGenTextures(1, (GLuint*) &bi->m_texture_id);
+					bi->m_original_height = (int) ch_height;
+					bi->m_original_width = (int) ch_width;
+				}
+				glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+				glEnable(GL_TEXTURE_2D);
+				glDisable(GL_TEXTURE_GEN_S);
+				glDisable(GL_TEXTURE_GEN_T);				
+
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+				glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0,0, tw, th, 0);
+
+				glDisable(GL_TEXTURE_2D);
+
+				glDrawBuffer(GL_BACK);
+				glReadBuffer(GL_BACK);
+			}
+		}
+		glPopAttrib();
+	}
+
 	void	x3ds_instance::display()
 	{
 		assert(m_def != NULL);
@@ -233,6 +346,8 @@ namespace gameswf
 		{
 			return;
 		}
+
+		update_material();
 
 		// save GL state
 		glPushAttrib (GL_ALL_ATTRIB_BITS);	
@@ -335,48 +450,55 @@ namespace gameswf
 
 	}
 
-	bitmap_info* x3ds_instance::get_texture(const char* infile)
+	void x3ds_instance::bind_texture(const char* infile)
 	{
+		glDisable(GL_TEXTURE_2D);
+
 		if (infile == NULL)
 		{
-			return NULL;
+			return;
 		}
 
-		// is path relative ?
-		tu_string url = get_workdir();
-		if (strstr(infile, ":") || infile[0] == '/')
-		{
-			url = "";
-		}
-		url += infile;
-
-		// is already loaded ?
 		smart_ptr<bitmap_info> bi = NULL;
-		if (m_texture.get(url, &bi))
+		m_material.get(infile, &bi);
+		if (bi == NULL || bi->m_texture_id == 0)
 		{
-			return bi.get_ptr();
+			// try to load & create texture from file
+
+			// is path relative ?
+			tu_string url = get_workdir();
+			if (strstr(infile, ":") || infile[0] == '/')
+			{
+				url = "";
+			}
+			url += infile;
+
+			image::rgb* im = image::read_jpeg(url.c_str());
+			if (im)
+			{
+				bi = get_render_handler()->create_bitmap_info_rgb(im);
+				delete im;
+				bi->layout_image(bi->m_suspended_image);
+				delete bi->m_suspended_image;
+				bi->m_suspended_image = NULL;
+				m_material[infile] = bi;
+			}
+			else
+			{
+				static int n = 0;
+				if (n < 1)
+				{
+					n++;
+					log_error("can't load jpeg file %s\n", url.c_str());
+				}
+				return;
+			}
 		}
 
-		// load image & create texture
-		image::rgb* im = image::read_jpeg(url.c_str());
-		if (im)
-		{
-			bi = get_render_handler()->create_bitmap_info_rgb(im);
-			delete im;
-			bi->layout_image(bi->m_suspended_image);
-			delete bi->m_suspended_image;
-			bi->m_suspended_image = NULL;
-			m_texture.add(url, bi);
-			return bi.get_ptr();
-		}
-
-		static int n = 0;
-		if (n < 1)
-		{
-			n++;
-			log_error("can't load jpeg file %s\n", url.c_str());
-		}
-		return NULL;
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
 	}
 
 	void x3ds_instance::set_material(Lib3dsMaterial* mat)
@@ -404,16 +526,7 @@ namespace gameswf
 			}
 			glMaterialf(GL_FRONT, GL_SHININESS, s);
 
-			// try to bind texture
-			bitmap_info* bi = get_texture(mat->texture1_map.name);
-			if (bi)
-			{
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
-				glDisable(GL_TEXTURE_GEN_S);
-				glDisable(GL_TEXTURE_GEN_T);
-			}
-
+			bind_texture(mat->texture1_map.name);
 		}
 		else
 		{
@@ -431,16 +544,16 @@ namespace gameswf
 	{
 		if (mat)
 		{
-			bitmap_info* bi = get_texture(mat->texture1_map.name);
-			if (bi)
+			smart_ptr<bitmap_info> bi = NULL;
+			if (m_material.get(mat->texture1_map.name, &bi))
 			{
-
 				// get texture size
 				int	tw = 1; while (tw < bi->m_original_width) { tw <<= 1; }
 				int	th = 1; while (th < bi->m_original_height) { th <<= 1; }
 
 				float scale_x = (float) bi->m_original_width / (float) tw;
 				float scale_y = (float) bi->m_original_height / (float) th;
+
 				float x = U * scale_x;
 				float y = scale_y - V * scale_y;
 				glTexCoord2f(x, y);
@@ -466,6 +579,7 @@ namespace gameswf
 			Lib3dsFace* f = &mesh->faceL[p];
 			Lib3dsMaterial* mat = f->material[0] ? 
 				lib3ds_file_material_by_name(m_def->m_file, f->material) : NULL;
+
 			set_material(mat);
 
 			glBegin(GL_TRIANGLES);

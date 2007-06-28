@@ -111,6 +111,7 @@ namespace gameswf
 		void	display(character* inst);
 		void	csm_textsetting(stream* in, int tag_type);
 
+		virtual void get_bound(rect& bound);
 	};
 
 	//

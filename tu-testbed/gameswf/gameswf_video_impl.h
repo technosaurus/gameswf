@@ -22,10 +22,6 @@ namespace gameswf
 
 		character* create_character_instance(character* parent, int id);
 		void	read(stream* in, int tag, movie_definition* m);
-		const rect&	get_bound() const
-		{
-			return m_unused_rect;
-		}
 
 		Uint16 m_width;
 		Uint16 m_height;
@@ -42,7 +38,6 @@ namespace gameswf
 		// 4: VP6
 		Uint8 m_codec_id;
 		array<void*>	m_frames;
-		rect m_unused_rect;
 	};
 
 	struct video_stream_instance : public character
@@ -50,6 +45,7 @@ namespace gameswf
 		video_stream_instance(video_stream_definition* def,	character* parent, int id);
 		~video_stream_instance();
 
+		virtual void get_bound(rect& bound);
 		virtual video_stream_instance* cast_to_video_stream_instance()
 		{
 			return this;

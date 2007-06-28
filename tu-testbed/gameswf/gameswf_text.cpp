@@ -336,6 +336,11 @@ namespace gameswf
 
 	}
 
+	void text_character_def::get_bound(rect& bound)
+	{
+		bound = m_rect;
+	}
+
 	void	define_text_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Read a DefineText tag.
 	{
