@@ -113,6 +113,18 @@ crater_data_files =					\
 	tu-testbed/demos/chunklod/crater/crater.chu	\
 	tu-testbed/demos/chunklod/crater/crater.jpg
 
+zlib_files =					\
+	zlib-1.2.2/zlib.h			\
+	zlib-1.2.2/zconf.h			\
+	zlib-1.2.2/zlib.lib
+
+jpeg_files =					\
+	jpeg-6b/jpeglib.h			\
+	jpeg-6b/jconfig.h			\
+	jpeg-6b/jmorecfg.h			\
+	jpeg-6b/libjpeg.lib
+
+
 chunkdemo.zip:
 	cd ..; zip tu-testbed/chunkdemo.zip						\
 		$(basic_files) $(engine_files) $(chunklod_files) $(crater_data_files)
@@ -147,3 +159,7 @@ luaSDL.src.tar.gz:
 tu_triangulate.zip:
 	cd ..; zip tu-testbed/tu_triangulate.zip	\
 		$(basic_files) $(base_files) $(net_files) $(test_triangulate_files)
+
+win32_dependencies.zip:
+	cd ../../..; zip tu-testbed/trunk/tu-testbed/win32_dependencies.zip \
+		$(zlib_files) $(jpeg_files)
