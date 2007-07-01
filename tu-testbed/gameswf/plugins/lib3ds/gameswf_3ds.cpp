@@ -236,7 +236,7 @@ namespace gameswf
 	{
 		GLint aux_buffers;
 		glGetIntegerv(GL_AUX_BUFFERS, &aux_buffers);
-		if (aux_buffers < 1)
+		if (aux_buffers < 2)
 		{
 			static int n = 0;
 			if (n < 1)
@@ -257,8 +257,17 @@ namespace gameswf
 			character* ch = find_target(target);
 			if (ch)
 			{
-				glDrawBuffer(GL_AUX0);
-				glReadBuffer(GL_AUX0);
+				if (ch->get_parent() == NULL)
+				{
+					log_error("Can't snapshot _root movieclip, material '%s'\n", it->first.c_str());
+					continue;
+				}
+
+				GLint draw_buffer;
+				glGetIntegerv(GL_DRAW_BUFFER, &draw_buffer);
+
+				glDrawBuffer(GL_AUX1);
+				glReadBuffer(GL_AUX1);
 
 				// save "ch" matrix
 				matrix ch_matrix = ch->get_matrix();
@@ -291,12 +300,21 @@ namespace gameswf
 
 				rect bound;
 				ch->get_bound(bound);
-				
-				matrix m = ch->get_matrix();
-				float xt = (0 - bound.m_x_min) / m.get_x_scale();
-				float yt = (0 - bound.m_y_min) / m.get_y_scale();
 
-				// move "ch" to left-bottom corner
+				// parent world matrix moves point(0,0) to "pzero"
+				matrix mparent = ch->get_parent()->get_world_matrix();
+				point pzero;
+				mparent.transform_by_inverse(&pzero, point(0, 0));
+
+				// after transformation of "ch" matrix left-top corner is in point(bound.m_x_min, bound.m_y_min),
+				// therefore we need to move point(bound.m_x_min, bound.m_y_min) to point(pzero.m_x, pzero.m_y)
+				// that "ch" movieclip's left-top corner will be in point(0,0) of screen
+				matrix m = ch->get_matrix();
+				float xt = (pzero.m_x - bound.m_x_min) / m.get_x_scale();
+				float yt = (pzero.m_y - bound.m_y_min) / m.get_y_scale();
+
+				// move "ch" to left-bottom corner (as point of origin of OpenGL is in left-bottom)
+				// later glCopyTexImage2D will copy snapshot of "ch" into texture
 				yt += PIXELS_TO_TWIPS(vp_height - th) / m.get_y_scale();
 				m.concatenate_translation(xt, yt);
 
@@ -331,8 +349,8 @@ namespace gameswf
 
 				glDisable(GL_TEXTURE_2D);
 
-				glDrawBuffer(GL_BACK);
-				glReadBuffer(GL_BACK);
+				glDrawBuffer(draw_buffer);
+				glReadBuffer(draw_buffer);
 			}
 		}
 		glPopAttrib();

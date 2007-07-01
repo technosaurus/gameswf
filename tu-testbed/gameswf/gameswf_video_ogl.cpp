@@ -79,6 +79,9 @@ void YUV_video_ogl_NV::draw()
 
 	glViewport(0, 0, planes[T].w, planes[T].h);
 
+	GLint draw_buffer;
+	glGetIntegerv(GL_DRAW_BUFFER, &draw_buffer);
+	
 	glDrawBuffer(GL_AUX0);
 	glReadBuffer(GL_AUX0);
 
@@ -120,7 +123,8 @@ void YUV_video_ogl_NV::draw()
 	fquad[4] = d.m_x; fquad[5] = d.m_y;
 	fquad[6] = c.m_x; fquad[7] = c.m_y;
 
-	glDrawBuffer(GL_BACK);
+	glDrawBuffer(draw_buffer);
+	glReadBuffer(draw_buffer);
 
 	ogl::active_texture(planes[Y].unit);
 	glBindTexture(GL_TEXTURE_2D, planes[Y].id);
