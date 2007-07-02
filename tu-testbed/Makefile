@@ -118,11 +118,16 @@ zlib_files =					\
 	zlib-1.2.2/zconf.h			\
 	zlib-1.2.2/zlib.lib
 
-jpeg_files =					\
+libjpeg_files =					\
 	jpeg-6b/jpeglib.h			\
 	jpeg-6b/jconfig.h			\
 	jpeg-6b/jmorecfg.h			\
 	jpeg-6b/libjpeg.lib
+
+libpng_files = 					\
+	libpng-1.2.8/png.h			\
+	libpng-1.2.8/pngconf.h			\
+	libpng-1.2.8/libpng.lib
 
 
 chunkdemo.zip:
@@ -162,4 +167,4 @@ tu_triangulate.zip:
 
 win32_dependencies.zip:
 	cd ../../..; zip tu-testbed/trunk/tu-testbed/win32_dependencies.zip \
-		$(zlib_files) $(jpeg_files)
+		$(zlib_files) $(libjpeg_files) $(libpng_files)

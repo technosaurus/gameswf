@@ -1,0 +1,38 @@
+samples/test_frame1.swf
+frame 1 actions (1)
+onLoad
+onEnterFrame 2
+onEnterFrame 3
+onEnterFrame 4
+onEnterFrame 5
+onEnterFrame 6
+onEnterFrame 7
+onEnterFrame 8
+onEnterFrame 9
+onEnterFrame 10
+frame 10 actions pre
+frame 5 actions post
+onEnterFrame 6
+onEnterFrame 7
+onEnterFrame 8
+onEnterFrame 9
+onEnterFrame 10
+frame 10 actions pre
+frame 1 actions post
+frame 1 actions (1)
+onEnterFrame 2
+onEnterFrame 3
+onEnterFrame 4
+onEnterFrame 5
+onEnterFrame 6
+onEnterFrame 7
+onEnterFrame 8
+onEnterFrame 9
+onEnterFrame 10
+frame 10 actions pre
+frame 15 actions post
+frame 15 actions (15)
+onEnterFrame 15
+onEnterFrame 15
+onEnterFrame 15
+frame 20 actions (20)
