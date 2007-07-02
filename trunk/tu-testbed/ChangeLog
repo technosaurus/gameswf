@@ -1,3 +1,14 @@
+2007-01-02  Thatcher Ulrich <tu@tulrich.com>
+	* Makefile: add libpng files to win32_dependencies.zip
+	* gameswf/gameswf_batch_test.py: update the automated test suite.
+	Move the tests to separate files under tests/, and define a list
+	of known passing tests.
+	* gameswf/gameswf_test_ogl.cpp: Remove some extra output that cause
+	tests to fail.
+	* gameswf/tests/*.txt: new test definition files.  First line is
+	the .swf to load, and the rest of the file is the expected trace
+	output.
+
 2007-07-01  Thatcher Ulrich <tu@tulrich.com>
 	* Makefile: initial rule for win32_dependencies.zip.  Needs to be
 	tested, also add freetype, etc.

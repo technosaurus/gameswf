@@ -502,7 +502,6 @@ int	main(int argc, char *argv[])
 	{
 
 		// Load the actual movie.
-		fprintf(stdout, "Loading ... Wait some seconds\n");
 		smart_ptr<gameswf::movie_definition>	md = gameswf::create_library_movie(infile);
 		if (md == NULL)
 		{
@@ -520,7 +519,7 @@ int	main(int argc, char *argv[])
 		gameswf::set_current_root(m.get_ptr());
 
 		int	movie_version = m->get_movie_version();
-		fprintf(stdout, "Playing %s, swf version %d\n", infile, movie_version);
+		IF_VERBOSE_PARSE(gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version));
 		int	movie_width = m->get_movie_width();
 		int	movie_height = m->get_movie_height();
 		float	movie_fps = m->get_movie_fps();

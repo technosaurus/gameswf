@@ -56,7 +56,6 @@ LIB_OBJS = \
 	gameswf_log.$(OBJ_EXT)		\
 	gameswf_morph2.$(OBJ_EXT)	\
 	gameswf_movie_def.$(OBJ_EXT)	\
-	gameswf_mutex.$(OBJ_EXT)	\
 	gameswf_object.$(OBJ_EXT)	\
 	gameswf_render.$(OBJ_EXT)	\
 	gameswf_root.$(OBJ_EXT)		\
