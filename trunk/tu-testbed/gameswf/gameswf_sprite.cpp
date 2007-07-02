@@ -301,7 +301,32 @@ namespace gameswf
 	}
 
 
-	// Very-very "thin" thing. 100 times think before updating
+	// This code is very tricky and hard to get right.  It should
+	// only be changed when verified by an automated test.  Here
+	// is the procedure:
+	//
+	// 1. Identify a bug or desired feature.
+	//
+	// 2. Create a .swf file that isolates the bug or new feature.
+	// The .swf should use trace() statements to log what it is
+	// doing and define the correct behavior.
+	//
+	// 3. Collect the contents of flashlog.txt from the standalone
+	// Macromedia flash player.  Create a new test file under
+	// tests/ where the first line is the name of the new test
+	// .swf, and the rest of the file is the correct trace()
+	// output.
+	//
+	// 4. Verify that gameswf fails the new test (by running
+	// ./gameswf_batch_test.py tests/name_of_new_test.txt)
+	//
+	// 5. Fix gameswf behavior.  Add the new test to
+	// passing_tests[] in gameswf_batch_test.py.
+	//
+	// 6. Verify that all the other passing tests still pass!
+	// (Run ./gameswf_batch_test.py and make sure all tests are
+	// OK!  If not, then the new behavior is actually a
+	// regression.)
 	void sprite_instance::advance(float delta_time) 
 	{ 
 		// Vitaly: 
@@ -407,8 +432,7 @@ namespace gameswf
 		}
 
 		m_on_event_load_called = true; 
-
-	} 
+	}
 
 
 	void	sprite_instance::execute_frame_tags(int frame, bool state_only)
