@@ -327,28 +327,23 @@ namespace gameswf
 	// (Run ./gameswf_batch_test.py and make sure all tests are
 	// OK!  If not, then the new behavior is actually a
 	// regression.)
-	void sprite_instance::advance(float delta_time) 
-	{ 
-		// Vitaly: 
-		// child movieclip frame rate is the same the root movieclip frame rate 
-		// that's why it is not needed to analyze 'm_time_remainder' 
-		if (m_on_event_load_called == false) 
-		{ 
+	void sprite_instance::advance(float delta_time)
+	{
+		// Vitaly:
+		// child movieclip frame rate is the same the root movieclip frame rate
+		// that's why it is not needed to analyze 'm_time_remainder'
+		if (m_on_event_load_called == false)
+		{
 			// clip sprite onload 
 			// Vitaly:
 			// _root.onLoad() will not be executed since do_actions()
 			// for frame(0) has not executed yet.
 			// _root.onLoad() will be executed later in movie_root::advance()
 			on_event(event_id::LOAD);
-		} 
+		}
 
 		// mouse drag. 
-		character::do_mouse_drag(); 
-
-		if (m_on_event_load_called) 
-		{ 
-			on_event(event_id::ENTER_FRAME); 
-		} 
+		character::do_mouse_drag();
 
 		// execute actions from gotoAndPlay(n) or gotoAndStop(n) frame
 		if (m_goto_frame_action_list.size() > 0)
@@ -357,20 +352,20 @@ namespace gameswf
 			m_goto_frame_action_list.clear();
 		}
 
-		// Update current and next frames. 
-		if (m_play_state == PLAY) 
-		{ 
+		// Update current and next frames.
+		if (m_play_state == PLAY)
+		{
 			int prev_frame = m_current_frame;
-			if (m_on_event_load_called) 
-			{ 
+			if (m_on_event_load_called)
+			{
 				m_current_frame++;
 				if (m_current_frame >= m_def->get_frame_count())
 				{
 					m_current_frame = 0;
 				}
-			} 
+			}
 
-			// Execute the current frame's tags. 
+			// Execute the current frame's tags.
 			// execute_frame_tags(0) already executed in dlist.cpp 
 			if (m_current_frame != prev_frame) 
 			{ 
@@ -393,22 +388,26 @@ namespace gameswf
 
 					if (affected_depths.size() > 0)
 					{
-						m_display_list.clear_unaffected(affected_depths);					
+						m_display_list.clear_unaffected(affected_depths);
 					}
 					else
 					{
 						m_display_list.clear();
 					}
-
 				}
-				execute_frame_tags(m_current_frame); 
-			} 
-		} 
+				execute_frame_tags(m_current_frame);
+			}
+		}
 
-		do_actions(); 
+		if (m_on_event_load_called)
+		{
+			on_event(event_id::ENTER_FRAME);
+		}
 
-		// Advance everything in the display list. 
-		m_display_list.advance(delta_time); 
+		do_actions();
+
+		// Advance everything in the display list.
+		m_display_list.advance(delta_time);
 
 		// send events to MovieClipLoader object (if it there is)
 		if (m_mcloader != NULL)
@@ -431,7 +430,7 @@ namespace gameswf
 			}
 		}
 
-		m_on_event_load_called = true; 
+		m_on_event_load_called = true;
 	}
 
 

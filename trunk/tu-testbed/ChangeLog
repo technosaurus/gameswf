@@ -1,4 +1,15 @@
 2007-07-02  Thatcher Ulrich <tu@tulrich.com>
+	* gameswf/gameswf_sprite.cpp: move on_event(ENTER_FRAME) to after
+	the update of m_current_frame.  Based on tests, this seems to be
+	correct.  If this breaks other movies, then we need to devise more
+	automated tests and fix them.
+	* gameswf/*/test_motion_exec_order.*: a new test to verify that
+	objects are moved after onEnterFrame() is called.
+	* gameswf/gameswf_batch_test.py: we now pass tests frame1, frame2,
+	and test_motion_exec_order.
+	* gameswf/tests/frame*.txt: tweak the tests and add comments
+
+2007-07-02  Thatcher Ulrich <tu@tulrich.com>
 	* gameswf/gameswf_batch_test.py: ignore comment lines (starting
 	with '#') in test files.  Add test_currentframe.txt to the list
 	of passing tests.

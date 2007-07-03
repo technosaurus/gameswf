@@ -139,9 +139,12 @@ def do_tests(filenames):
 # These tests should all pass.  If you break one of these, it's a
 # regression.
 passing_tests = [
+  'tests/frame1.txt',
+  'tests/frame2.txt',
   'tests/test_basic_types.txt',
   'tests/test_currentframe.txt',
   'tests/test_forin_array.txt',
+  'tests/test_motion_exec_order.txt',
   'tests/test_string.txt',
   'tests/test_undefined_v6.txt',
   'tests/test_undefined_v7.txt',

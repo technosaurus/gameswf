@@ -9,4 +9,3 @@ onEnterFrame 8
 onEnterFrame 9
 onEnterFrame 10
 frame 10 actions
-
