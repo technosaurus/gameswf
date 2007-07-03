@@ -192,25 +192,22 @@ namespace gameswf
 	void	matrix::transform(rect& bound) const
 	// Transform bound our matrix.
 	{
-		float x, y;
-		x = bound.m_x_min;
-		y = bound.m_y_min;
-		bound.m_x_min = m_[0][0] * x + m_[0][1] * y + m_[0][2];
-		bound.m_y_min = m_[1][0] * x + m_[1][1] * y + m_[1][2];
-		x = bound.m_x_max;
-		y = bound.m_y_max;
-		bound.m_x_max = m_[0][0] * x + m_[0][1] * y + m_[0][2];
-		bound.m_y_max = m_[1][0] * x + m_[1][1] * y + m_[1][2];
+		// original width & height
+		float w = bound.m_x_max - bound.m_x_min;
+		float h = bound.m_y_max - bound.m_y_min;
 
-		// swap, if necessary
-		if (bound.m_x_min > bound.m_x_max)
-		{
-			swap(&bound.m_x_min, &bound.m_x_max);
-		}
-		if (bound.m_y_min > bound.m_y_max)
-		{
-			swap(&bound.m_y_min, &bound.m_y_max);
-		}
+		// get corners of transformed bound
+		point p[4];
+		transform(p + 0, point(bound.m_x_min, bound.m_y_min));
+		transform(p + 1, point(bound.m_x_min + w, bound.m_y_min));
+		transform(p + 2, point(bound.m_x_min + w, bound.m_y_min + h));
+		transform(p + 3, point(bound.m_x_min, bound.m_y_min + h));
+
+		// Build bound that covers transformed bound
+		bound.m_x_min = fmin(p[0].m_x, fmin(p[1].m_x, fmin(p[2].m_x, p[3].m_x)));
+		bound.m_y_min = fmin(p[0].m_y, fmin(p[1].m_y, fmin(p[2].m_y, p[3].m_y)));
+		bound.m_x_max = fmax(p[0].m_x, fmax(p[1].m_x, fmax(p[2].m_x, p[3].m_x)));
+		bound.m_y_max = fmax(p[0].m_y, fmax(p[1].m_y, fmax(p[2].m_y, p[3].m_y)));
 
 	}
 	
