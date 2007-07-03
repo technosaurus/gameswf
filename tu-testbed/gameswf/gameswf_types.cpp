@@ -192,16 +192,12 @@ namespace gameswf
 	void	matrix::transform(rect& bound) const
 	// Transform bound our matrix.
 	{
-		// original width & height
-		float w = bound.m_x_max - bound.m_x_min;
-		float h = bound.m_y_max - bound.m_y_min;
-
 		// get corners of transformed bound
 		point p[4];
-		transform(p + 0, point(bound.m_x_min, bound.m_y_min));
-		transform(p + 1, point(bound.m_x_min + w, bound.m_y_min));
-		transform(p + 2, point(bound.m_x_min + w, bound.m_y_min + h));
-		transform(p + 3, point(bound.m_x_min, bound.m_y_min + h));
+		transform(p + 0, point(bound.get_corner(0)));
+		transform(p + 1, point(bound.get_corner(1)));
+		transform(p + 2, point(bound.get_corner(2)));
+		transform(p + 3, point(bound.get_corner(3)));
 
 		// Build bound that covers transformed bound
 		bound.m_x_min = fmin(p[0].m_x, fmin(p[1].m_x, fmin(p[2].m_x, p[3].m_x)));
@@ -595,6 +591,7 @@ namespace gameswf
 		m.transform(&p2, r.get_corner(2));
 		m.transform(&p3, r.get_corner(3));
 
+		// Vitaly: It is necessary to test the case when p0 is not min(p1, p2, p3)
 		m_x_min = m_x_max = p0.m_x;
 		m_y_min = m_y_max = p0.m_y;
 		expand_to_point(p1.m_x, p1.m_y);
