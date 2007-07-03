@@ -562,6 +562,8 @@ namespace gameswf
 		{
 			return true;
 		}
+		
+		virtual character_def* get_character_def() { return m_def;	}
 
 	};
 

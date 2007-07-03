@@ -2113,8 +2113,7 @@ namespace gameswf
 		Uint16 character_id = in->read_u16();
 		character_def* chdef = m->get_character_def(character_id);
 
-		assert ( dynamic_cast<video_stream_definition*> (chdef) );
-		video_stream_definition* ch = static_cast<video_stream_definition*> (chdef);
+		video_stream_definition* ch = chdef->cast_to_video_stream_definition();
 		assert(ch != NULL);
 
 		ch->read(in, tag, m);

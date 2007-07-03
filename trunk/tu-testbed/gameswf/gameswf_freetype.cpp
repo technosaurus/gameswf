@@ -78,10 +78,7 @@ namespace gameswf
 		}
 
 		// Get the value of the 'windir' environment variable.
-		size_t requiredSize = MAX_PATH - 1;
-		char buf[MAX_PATH];
-		getenv_s(&requiredSize, buf, requiredSize, "WINDIR");
-		tu_string windir(buf);
+		tu_string windir(getenv("WINDIR"));
 
 		// Get value count. 
 		DWORD    cValues;              // number of values for key 

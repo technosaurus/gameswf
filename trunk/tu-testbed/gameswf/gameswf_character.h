@@ -352,7 +352,8 @@ namespace gameswf
 		virtual void	display() {}
 		virtual float	get_height();
 		virtual float	get_width();
-		virtual void get_bound(rect& bound) { assert(0); }
+		virtual void get_bound(rect& bound);
+		virtual character_def* get_character_def() = 0;
 
 		virtual character*	get_root_movie() { return m_parent->get_root_movie(); }
 

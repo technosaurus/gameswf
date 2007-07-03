@@ -485,4 +485,12 @@ namespace gameswf
 		return 0;
 	}
 
+	void character::get_bound(rect& bound)
+	{
+		character_def* def = get_character_def();
+		assert(def);
+		def->get_bound(bound);
+		matrix m = get_matrix();
+		m.transform(bound);
+	}
 }

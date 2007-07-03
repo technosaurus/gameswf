@@ -190,8 +190,7 @@ namespace gameswf
 	}
 
 	void	matrix::transform(rect& bound) const
-	// Transform point 'p' by our matrix.  Put the result in
-	// *result.
+	// Transform bound our matrix.
 	{
 		float x, y;
 		x = bound.m_x_min;

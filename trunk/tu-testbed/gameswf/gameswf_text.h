@@ -230,6 +230,8 @@ namespace gameswf
 		edit_text_character(character* parent, edit_text_character_def* def, int id);
 		~edit_text_character();
 
+		virtual character_def* get_character_def() { return m_def;	}
+
 		void reset_format(as_textformat* tf);
 
 		movie_root* get_root();
@@ -249,7 +251,6 @@ namespace gameswf
 
 		virtual void advance(float delta_time);
 		virtual edit_text_character* cast_to_edit_text_character() { return this; }
-		virtual void get_bound(rect& bound);
 
 	private:
 
