@@ -841,6 +841,7 @@ namespace gameswf
 				 int size, int channels, int freq) {};
 
 		virtual ~sound_handler() {};
+		virtual bool is_open() { return false; };
 	};
 
 	// tu_float is used in matrix & cxform because
