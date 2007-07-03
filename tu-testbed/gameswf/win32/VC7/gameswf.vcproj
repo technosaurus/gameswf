@@ -92,10 +92,10 @@
 				Optimization="0"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;USE_STACKWALKER"
+				PreprocessorDefinitions="WIN32;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1"
 				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				BasicRuntimeChecks="0"
+				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=""
 				AssemblerListingLocation=".\swfvc___Win32_Debug/"
@@ -103,18 +103,19 @@
 				ProgramDataBaseFileName=".\swfvc___Win32_Debug/"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"/>
+				DebugInformationFormat="0"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/force"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib wms_random.obj libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib glew32.lib WinMM.lib ws2_32.lib libxml2.lib lib3ds-130sd.lib"
+				AdditionalOptions="/force
+"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib wms_random.obj libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib glew32.lib WinMM.lib ws2_32.lib libxml2.lib freetype.lib lib3ds-130s.lib"
 				OutputFile=".\swfvc___Win32_Debug/swfvc.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories=""
-				IgnoreDefaultLibraryNames="LIBCMT.lib"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\swfvc___Win32_Debug/swfvc.pdb"
 				SubSystem="1"
@@ -177,6 +178,9 @@
 				RelativePath="..\..\gameswf_fontlib.cpp">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_freetype.cpp">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_function.cpp">
 			</File>
 			<File
@@ -190,9 +194,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_movie_def.cpp">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_mutex.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_object.cpp">
@@ -289,6 +290,9 @@
 				RelativePath="..\..\gameswf_fontlib.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_freetype.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_function.h">
 			</File>
 			<File
@@ -341,6 +345,9 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_tesselate.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_text.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_timers.h">

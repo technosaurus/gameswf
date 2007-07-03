@@ -24,6 +24,10 @@ namespace gameswf
 		~x3ds_definition();
 
 		virtual character* create_character_instance(character* parent, int id);
+		virtual void get_bound(rect& bound)
+		{
+			// TODO
+		}
 
 		Lib3dsCamera* create_camera();
 		void remove_camera(Lib3dsCamera* camera);
@@ -44,6 +48,7 @@ namespace gameswf
 		x3ds_instance(x3ds_definition* def,	character* parent, int id);
 		~x3ds_instance();
 
+		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		virtual void	display();
 		virtual void	advance(float delta_time);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);

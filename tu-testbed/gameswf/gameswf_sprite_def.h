@@ -151,12 +151,11 @@ namespace gameswf
 		}
 
 		const array<execute_tag*>&	get_playlist(int frame_number)
-			// frame_number is 0-based
+		// frame_number is 0-based
 		{
 			return m_playlist[frame_number];
 		}
 
-		/* sprite_definition */
 		virtual const array<execute_tag*>*	get_init_actions(int frame_number)
 		{
 			// Sprites do not have init actions in their
@@ -164,7 +163,6 @@ namespace gameswf
 			// (movie_def_impl) does (@@ correct?)
 			return NULL;
 		}
-
 
 		void	read(stream* in);
 		// Read the sprite info.  Consists of a series of tags.

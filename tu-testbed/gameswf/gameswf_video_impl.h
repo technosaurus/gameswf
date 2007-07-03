@@ -22,6 +22,7 @@ namespace gameswf
 
 		character* create_character_instance(character* parent, int id);
 		void	read(stream* in, int tag, movie_definition* m);
+		virtual void get_bound(rect& bound);
 
 		Uint16 m_width;
 		Uint16 m_height;
@@ -45,13 +46,13 @@ namespace gameswf
 		video_stream_instance(video_stream_definition* def,	character* parent, int id);
 		~video_stream_instance();
 
-		virtual void get_bound(rect& bound);
 		virtual video_stream_instance* cast_to_video_stream_instance()
 		{
 			return this;
 		}
 
 		void	display();
+		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 
 		//
 		// ActionScript overrides

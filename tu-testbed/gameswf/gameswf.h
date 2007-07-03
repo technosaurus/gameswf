@@ -144,6 +144,7 @@ namespace gameswf
 	struct font;
 	struct character_def;
 	struct sound_sample;
+	struct video_stream_definition;
 
 	// An interface for casting to different types of
 	// resources.
@@ -155,6 +156,7 @@ namespace gameswf
 		virtual font* cast_to_font() { return 0; }
 		virtual character_def* cast_to_character_def() { return 0; }
 		virtual sound_sample* cast_to_sound_sample() { return 0; }
+		virtual video_stream_definition* cast_to_video_stream_definition() { return 0; }
 	};
 
 	// Forward decls for cast_to_*
@@ -257,7 +259,7 @@ namespace gameswf
 
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
-		virtual void get_bound(rect& bound) { assert(0); }
+		virtual void get_bound(rect& bound) { assert(0); };
 
 		// Should stick the result in a smart_ptr immediately.
 		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character

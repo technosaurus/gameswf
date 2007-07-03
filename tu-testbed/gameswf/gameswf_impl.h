@@ -103,17 +103,12 @@ namespace gameswf
 			assert(m_def);
 		}
 
+		virtual character_def* get_character_def() { return m_def;	}
+
 		virtual void	display()
 		{
 			m_def->display(this);	// pass in transform info
 			do_display_callback();
-		}
-
-		void get_bound(rect& bound)
-		{
-			m_def->get_bound(bound);
-			matrix m = get_matrix();
-			m.transform(bound);
 		}
 
 		virtual character*	get_topmost_mouse_entity(float x, float y)
@@ -160,6 +155,14 @@ namespace gameswf
 				return true;
 			}
 			return false;
+		}
+
+		virtual void get_bound(rect& bound)
+		{
+			bound.m_x_min  = 0.0f;
+			bound.m_x_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
+			bound.m_y_min  = 0.0f;
+			bound.m_y_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
 		}
 
 		virtual void	display(character* ch)

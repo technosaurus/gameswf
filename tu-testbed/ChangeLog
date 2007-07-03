@@ -1,3 +1,25 @@
+2007-07-03  Vitaly Alexeev <tishka92@yahoo.com>
+		
+	Cleanup of get_bound() stuff
+	* gameswf/gameswf.h
+	* gameswf/gameswf_button.cpp
+	* gameswf/gameswf_button.h
+	* gameswf/gameswf_character.cpp
+	* gameswf/gameswf_character.h
+	* gameswf/gameswf_freetype.cpp
+	* gameswf/gameswf_impl.cpp
+	* gameswf/gameswf_impl.h
+	* gameswf/gameswf_sprite.h
+	* gameswf/gameswf_sprite_def.h
+	* gameswf/gameswf_text.cpp
+	* gameswf/gameswf_text.h
+	* gameswf/gameswf_types.cpp
+	* gameswf/gameswf_video_impl.cpp
+	* gameswf/gameswf_video_impl.h
+	* gameswf/plugins/lib3ds/gameswf_3ds.h
+	* gameswf/win32/VC7/gameswf.vcproj
+	* gameswf/win32/VC8/gameswf.vcproj
+
 2007-07-02  Thatcher Ulrich <tu@tulrich.com>
 	* gameswf/gameswf_sprite.cpp: move on_event(ENTER_FRAME) to after
 	the update of m_current_frame.  Based on tests, this seems to be

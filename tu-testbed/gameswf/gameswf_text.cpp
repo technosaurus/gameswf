@@ -1100,13 +1100,6 @@ namespace gameswf
 		return false;
 	}
 
-	void	edit_text_character::get_bound(rect& bound)
-	{
-		m_def->get_bound(bound);
-		matrix m = get_matrix();
-		m.transform(bound);
-	}
-
 	// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
 	// we have a bug?
 #define WIDTH_FUDGE 80.0f

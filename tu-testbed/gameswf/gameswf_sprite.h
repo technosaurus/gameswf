@@ -61,6 +61,7 @@ namespace gameswf
 		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
 		virtual ~sprite_instance();
 
+		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		virtual bool has_keypress_event();
 		movie_interface*	get_root_interface() { return m_root; }
 		movie_root*	get_root() { return m_root; }
