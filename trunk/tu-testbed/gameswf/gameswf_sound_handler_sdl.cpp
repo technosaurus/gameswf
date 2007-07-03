@@ -17,7 +17,7 @@ namespace gameswf
 
 	SDL_sound_handler::SDL_sound_handler():
 		m_defvolume(100),
-		soundOpened(true)
+		m_is_open(true)
 	{
 		// This is our sound settings
 		m_audioSpec.freq = 44100;
@@ -27,25 +27,25 @@ namespace gameswf
 		m_audioSpec.userdata = this;
 		m_audioSpec.samples = 4096;
 
-		if (SDL_OpenAudio(&m_audioSpec, NULL) < 0 )
-		{
-			log_error("Unable to start sound handler: %s\n", SDL_GetError());
-			soundOpened = false;
-			return;
-		}
-
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 		avcodec_init();
 		avcodec_register_all();
 		m_MP3_codec = avcodec_find_decoder(CODEC_ID_MP3);
 #endif
 
+		if (SDL_OpenAudio(&m_audioSpec, NULL) < 0 )
+		{
+			log_error("Unable to start sound handler: %s\n", SDL_GetError());
+			m_is_open = false;
+			return;
+		}
+
 		SDL_PauseAudio(1);
 	}
 
 	SDL_sound_handler::~SDL_sound_handler()
 	{
-		if (soundOpened) SDL_CloseAudio();
+		if (m_is_open) SDL_CloseAudio();
 		m_sound.clear();
 	}
 

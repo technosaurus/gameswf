@@ -37,7 +37,15 @@ namespace gameswf
 
 	sound_handler*	get_sound_handler()
 	{
-		return s_sound_handler;
+		if (s_sound_handler)
+		{
+			if (s_sound_handler->is_open() == false)
+			{
+				return NULL;
+			}
+			return s_sound_handler;
+		}
+		return NULL;
 	}
 
 

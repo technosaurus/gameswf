@@ -45,10 +45,12 @@ namespace gameswf
 		SDL_AudioSpec m_audioSpec;
 
 		// Is sound device opened?
-		bool soundOpened;
+		bool m_is_open;
 
 		SDL_sound_handler();
 		virtual ~SDL_sound_handler();
+
+		virtual bool is_open() { return m_is_open; };
 
 		// Called to create a sample.
 		virtual int	create_sound(void* data, int data_bytes,
@@ -132,10 +134,16 @@ namespace gameswf
 		m_parent(parent),
 		m_size(0),
 		m_data(NULL),
-		m_decoded(0)
+		m_decoded(0),
+		m_cc(NULL),
+		m_parser(NULL)
 	{
 		m_handler = (SDL_sound_handler*) get_sound_handler();
-		assert(m_handler);
+
+		if (m_handler == NULL)
+		{
+			return;
+		}
 		
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 		if (m_parent->m_format == sound_handler::FORMAT_MP3)
@@ -168,9 +176,16 @@ namespace gameswf
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 		if (m_parent->m_format == sound_handler::FORMAT_MP3)
 		{
-			avcodec_close(m_cc);
-			av_free(m_cc);
-			av_parser_close(m_parser);
+			if (m_cc)
+			{
+				avcodec_close(m_cc);
+				av_free(m_cc);
+			}
+
+			if (m_parser)
+			{
+				av_parser_close(m_parser);
+			}
 		}
 #endif
 	}

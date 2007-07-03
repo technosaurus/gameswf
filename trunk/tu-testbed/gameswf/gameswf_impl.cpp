@@ -2159,7 +2159,12 @@ namespace gameswf
 	void sound_stream_block_loader(stream* in, int tag, movie_definition_sub* m)
 	{
 		assert(tag == 19);
-		assert(m->m_ss_id >= 0);
+
+		// no sound
+		if (m->m_ss_id < 0)
+		{
+			return;
+		}
 
 		if (m->m_ss_start == -1)
 		{
