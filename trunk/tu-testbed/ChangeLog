@@ -1,4 +1,9 @@
 2007-07-03  Vitaly Alexeev <tishka92@yahoo.com>
+
+	Fixed get_bound() bug that show one's worth during rotation
+	* gameswf/gameswf_types.cpp
+
+2007-07-03  Vitaly Alexeev <tishka92@yahoo.com>
 		
 	Cleanup of get_bound() stuff
 	* gameswf/gameswf.h
