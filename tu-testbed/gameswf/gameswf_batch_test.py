@@ -61,6 +61,16 @@ def fix_string(s):
   '''strip trailing whitespace, add consistent newline'''
   return (string.rstrip(s) + '\n')
 
+def next_non_comment_line(f):
+  '''Read and return the next non-comment line from the given file.  If
+  there are no more lines to read, return the empty string.'''
+  while 1:
+    line = f.readline()
+    if len(line) == 0:
+      # end of file.
+      return line
+    if line[0] != '#':
+      return line
 
 def parse_testfile(testfile):
   '''Given a test filename, returns the name of the test, the SWF
@@ -71,6 +81,9 @@ def parse_testfile(testfile):
   The SWF filename is taken from the first line of testfile.
 
   The expected output is taken from the remainder of testfile.
+
+  Any lines in the testfile that start with '#' are comments, and are
+  ignored.
 
   Returns [None,None,None] if the testfile couldn't be parsed.'''
 
@@ -83,8 +96,17 @@ def parse_testfile(testfile):
   f = file(testfile, "r")
   if not f:
     return [None, None, None]
-  swf_file = f.readline().rstrip()
-  expected = f.readlines()
+
+  # The first non-comment line gives the swf file to run.
+  swf_file = next_non_comment_line(f).rstrip()
+  # The rest of the file gives the expected output.
+  expected = []
+  while 1:
+    line = next_non_comment_line(f)
+    if len(line) > 0:
+      expected.append(line)
+    else:
+      break
   f.close()
 
   return testname, swf_file, expected
@@ -118,6 +140,7 @@ def do_tests(filenames):
 # regression.
 passing_tests = [
   'tests/test_basic_types.txt',
+  'tests/test_currentframe.txt',
   'tests/test_forin_array.txt',
   'tests/test_string.txt',
   'tests/test_undefined_v6.txt',

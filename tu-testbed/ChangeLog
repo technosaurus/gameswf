@@ -1,4 +1,13 @@
-2007-01-02  Thatcher Ulrich <tu@tulrich.com>
+2007-07-02  Thatcher Ulrich <tu@tulrich.com>
+	* gameswf/gameswf_batch_test.py: ignore comment lines (starting
+	with '#') in test files.  Add test_currentframe.txt to the list
+	of passing tests.
+	* gameswf/samples/test_currentframe.fla,swf: very simple test of
+	_currentFrame.
+	* gameswf/tests/test_currentframe.txt: new test to verify
+	_currentFrame
+
+2007-07-02  Thatcher Ulrich <tu@tulrich.com>
 	* Makefile: add libpng files to win32_dependencies.zip
 	* gameswf/gameswf_batch_test.py: update the automated test suite.
 	Move the tests to separate files under tests/, and define a list
