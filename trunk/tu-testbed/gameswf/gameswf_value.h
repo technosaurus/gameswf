@@ -59,14 +59,14 @@ namespace gameswf
 
 		as_value()
 			:
-		m_type(UNDEFINED),
+			m_type(UNDEFINED),
 			m_number_value(0.0)
 		{
 		}
 
 		as_value(const as_value& v)
 			:
-		m_type(UNDEFINED),
+			m_type(UNDEFINED),
 			m_number_value(0.0)
 		{
 			*this = v;
@@ -74,7 +74,7 @@ namespace gameswf
 
 		as_value(const char* str)
 			:
-		m_type(STRING),
+			m_type(STRING),
 			m_string_value(str),
 			m_number_value(0.0)
 		{
@@ -82,7 +82,7 @@ namespace gameswf
 
 		as_value(const wchar_t* wstr)
 			:
-		m_type(STRING),
+			m_type(STRING),
 			m_string_value(""),
 			m_number_value(0.0)
 		{
@@ -117,28 +117,28 @@ namespace gameswf
 
 		as_value(bool val)
 			:
-		m_type(BOOLEAN),
+			m_type(BOOLEAN),
 			m_boolean_value(val)
 		{
 		}
 
 		as_value(int val)
 			:
-		m_type(NUMBER),
+			m_type(NUMBER),
 			m_number_value(double(val))
 		{
 		}
 
 		as_value(float val)
 			:
-		m_type(NUMBER),
+			m_type(NUMBER),
 			m_number_value(double(val))
 		{
 		}
 
 		as_value(double val)
 			:
-		m_type(NUMBER),
+			m_type(NUMBER),
 			m_number_value(val)
 		{
 		}
@@ -147,7 +147,7 @@ namespace gameswf
 
 		as_value(as_c_function_ptr func)
 			:
-		m_type(C_FUNCTION),
+			m_type(C_FUNCTION),
 			m_c_function_value(func)
 		{
 			m_c_function_value = func;
@@ -179,6 +179,7 @@ namespace gameswf
 		as_object_interface*	to_object() const;
 		as_c_function_ptr	to_c_function() const;
 		as_as_function*	to_as_function() const;
+		const tu_string& call_to_string(as_environment* env) const;
 
 		void	convert_to_number();
 		void	convert_to_string();

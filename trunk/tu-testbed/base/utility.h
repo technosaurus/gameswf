@@ -87,6 +87,8 @@ void	operator delete[](void* ptr);
 #endif // M_PI
 
 
+
+
 //
 // some misc handy math functions
 //

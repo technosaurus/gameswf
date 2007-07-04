@@ -112,7 +112,7 @@ namespace gameswf
 	}
 
 	character*	as_object::cast_to_character()
-		// This object is not a movie; no conversion.
+	// This object is not a movie; no conversion.
 	{
 		return NULL;
 	}

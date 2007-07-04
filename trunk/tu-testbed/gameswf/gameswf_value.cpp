@@ -5,9 +5,13 @@
 
 // ActionScript value type.
 
-#include "gameswf/gameswf.h"
 #include "gameswf/gameswf_value.h"
+#include "gameswf/gameswf.h"
+#include "gameswf/gameswf_action.h"
+#include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_movie_def.h"
+#include <float.h>
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -92,9 +96,13 @@ namespace gameswf
 			// @@ Moock says if value is a NAN, then result is "NaN"
 			// INF goes to "Infinity"
 			// -INF goes to "-Infinity"
-			char buffer[50];
-			snprintf(buffer, 50, "%.14g", m_number_value);
-			m_string_value = buffer;
+			if (_isnan(m_number_value)) {
+				m_string_value = "NaN";
+			} else {
+				char buffer[50];
+				snprintf(buffer, 50, "%.14g", m_number_value);
+				m_string_value = buffer;
+			}
 		}
 		else if (m_type == UNDEFINED)
 		{
@@ -117,13 +125,17 @@ namespace gameswf
 		}
 		else if (m_type == OBJECT)
 		{
-			// @@ Moock says, "the value that results from
+			// Moock says, "the value that results from
 			// calling toString() on the object".
 			//
 			// The default toString() returns "[object
 			// Object]" but may be customized.
 			//
 			// A Movieclip returns the absolute path of the object.
+			//
+			// call_to_string() should have checked for a
+			// toString() method, before we get down here,
+			// so we just handle the default cases here.
 
 			const char*	val = NULL;
 			if (m_object_value)
@@ -137,10 +149,6 @@ namespace gameswf
 			}
 			else
 			{
-				// Do we have a "toString" method?
-				//
-				// TODO: we need an environment in order to call toString()!
-
 				// This is the default.
 				m_string_value = "[object Object]";
 			}
@@ -170,6 +178,25 @@ namespace gameswf
 		return m_string_value;
 	}
 
+	const tu_string& as_value::call_to_string(as_environment* env) const
+	// Handles the case of this being an object, and calls our
+	// toString() method if available.
+	{
+		assert(env);
+		
+		if (m_type == OBJECT && m_object_value) {
+			as_value method;
+			if (m_object_value->get_member("toString", &method)) {
+				as_value result = call_method0(method, env, m_object_value);
+				m_string_value = result.to_tu_string();  // TODO: Should we recurse here?  Need to experiment.
+				return m_string_value;
+			}
+		}
+
+		// Default behavior.
+		int version = env->get_target()->get_movie_definition()->get_version();
+		return to_tu_string_versioned(version);
+	}
 
 	const tu_string&	as_value::to_tu_string_versioned(int version) const
 	// Conversion to const tu_string&.
