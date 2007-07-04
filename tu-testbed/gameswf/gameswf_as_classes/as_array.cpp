@@ -88,6 +88,7 @@ namespace gameswf
 
 		set_member("toString", &as_array_tostring);
 		set_member_flags("toString", -1);	// hack
+		set_member_flags("addProperty", -1);
 	}
 
 	bool as_array::get_member(const tu_stringi& name, as_value* val)

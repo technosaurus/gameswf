@@ -1108,8 +1108,10 @@ public:
 
 	void	operator=(const tu_string& str)
 	{
-		resize(str.size());
-		strcpy(get_buffer(), str.get_buffer());
+		if (this != &str) {
+			resize(str.size());
+			strcpy(get_buffer(), str.get_buffer());
+		}
 	}
 
 	bool	operator==(const char* str) const

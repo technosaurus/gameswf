@@ -38,6 +38,10 @@ void	tu_string::resize(int new_size)
 {
 	assert(new_size >= 0);
 
+	if (new_size == size()) {
+		return;
+	}
+
 	if (using_heap() == false)
 	{
 		if (new_size < 15)

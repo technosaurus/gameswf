@@ -152,7 +152,7 @@ namespace gameswf
 		}
 		else
 		{
-			log_error("error in call_method(): method is not a function\n");
+			IF_VERBOSE_ACTION(log_error("error in call_method(): method is not a function\n"));
 		}
 
 		return val;
@@ -367,35 +367,17 @@ namespace gameswf
 	{
 		assert(fn.nargs >= 1);
 
-		// Special case for objects: try the toString() method.
-		if (fn.arg(0).get_type() == as_value::OBJECT)
-		{
-			as_object_interface* obj = fn.arg(0).to_object();
-
-			if (obj == NULL)
-			{
-				log_msg("The attempt to trace of NULL object\n");
-				return;
-			}
-
-			as_value method;
-			if (obj->get_member("toString", &method)
-			    && method.is_function())
-			{
-				as_value result = call_method0(method, fn.env, obj);
-				log_msg("%s\n", result.to_string());
-
-				return;
-			}
-		}
-
 		// Log our argument.
 		//
 		// @@ what if we get extra args?
-		//
-		// @@ Array gets special treatment.
-		const char* arg0 = fn.arg(0).to_string();
-		log_msg("%s\n", arg0);
+
+		const char* val = "";
+		if (fn.arg(0).get_type() == as_value::UNDEFINED) {
+			val = "undefined";
+		} else {
+			val = fn.arg(0).call_to_string(fn.env).c_str();
+		}
+		log_msg("%s\n", val);
 	}
 
 	void	as_global_object_ctor(const fn_call& fn)
@@ -1627,8 +1609,8 @@ namespace gameswf
 					if (env->top(0).get_type() == as_value::STRING
 					    || env->top(1).get_type() == as_value::STRING)
 					{
-						env->top(1).convert_to_string_versioned(version);
-						env->top(1).string_concat(env->top(0).to_tu_string_versioned(version));
+						env->top(1).set_tu_string(env->top(1).call_to_string(env));
+						env->top(1).string_concat(env->top(0).call_to_string(env));
 					}
 					else
 					{
@@ -1756,21 +1738,12 @@ namespace gameswf
 						as_value	method;
 						if (obj->get_member(method_name, &method))
 						{
-							if (method.get_type() != as_value::C_FUNCTION
-							    && method.get_type() != as_value::AS_FUNCTION)
-							{
-								log_error("error: call_method: '%s' is not a method\n",
-									  method_name.c_str());
-							}
-							else
-							{
-								result = call_method(
-									method,
-									env,
-									obj,
-									nargs,
-									env->get_top_index() - 3);
-							}
+							result = call_method(
+								method,
+								env,
+								obj,
+								nargs,
+								env->get_top_index() - 3);
 						}
 						else
 						{
