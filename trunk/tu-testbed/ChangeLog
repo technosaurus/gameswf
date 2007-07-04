@@ -1,4 +1,7 @@
 2007-07-04  Thatcher Ulrich <tu@tulrich.com>
+	* gameswf/gameswf_sound_handler_sdl.h: Small compile fix.
+
+2007-07-04  Thatcher Ulrich <tu@tulrich.com>
 	Implemented the remaining String methods.  Fixed the String method
 	dispatch.  Made test_string much more comprehensive and fixed a
 	bunch of corner cases.
