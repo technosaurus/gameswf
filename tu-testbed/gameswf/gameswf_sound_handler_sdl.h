@@ -134,9 +134,12 @@ namespace gameswf
 		m_parent(parent),
 		m_size(0),
 		m_data(NULL),
-		m_decoded(0),
+		m_decoded(0)
+#if TU_CONFIG_LINK_TO_FFMPEG == 1
+		,
 		m_cc(NULL),
 		m_parser(NULL)
+#endif
 	{
 		m_handler = (SDL_sound_handler*) get_sound_handler();
 
