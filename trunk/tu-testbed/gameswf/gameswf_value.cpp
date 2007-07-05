@@ -468,10 +468,12 @@ namespace gameswf
 		{
 			return m_boolean_value == v.to_bool();
 		}
+		else if (m_type == OBJECT)
+		{
+			return m_object_value == v.to_object();
+		}
 		else
 		{
-			// Evan: what about objects???
-			// TODO
 			return m_type == v.m_type;
 		}
 	}

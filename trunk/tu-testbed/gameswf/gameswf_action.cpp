@@ -30,6 +30,7 @@
 #include "gameswf/gameswf_as_classes/as_string.h"
 #include "gameswf/gameswf_as_classes/as_color.h"
 #include "gameswf/gameswf_as_classes/as_xmlsocket.h"
+#include "gameswf/gameswf_as_classes/as_broadcaster.h"
 #include "gameswf/gameswf_as_classes/as_db.h"	// mysql db extension
 
 #ifdef _WIN32
@@ -555,10 +556,12 @@ namespace gameswf
 
 			s_global->set_member("math", math_init());
 			s_global->set_member("Key", key_init());
+			s_global->set_member("AsBroadcaster", broadcaster_init());
 
 			// global builtins functions
 			s_global->set_member("setInterval",  as_value(as_global_setinterval));
 			s_global->set_member("clearInterval",  as_value(as_global_clearinterval));
+
 		}
 	}
 

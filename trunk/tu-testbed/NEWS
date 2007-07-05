@@ -1,3 +1,32 @@
+2007-07-03  Vitaly Alexeev <tishka92@yahoo.com>
+
+The gameswf-2007-07-03 release of GameSWF is coming. Improvements since
+the gameswf-2006-03-29 release are:
+
+* Allow use of network to open resource URLs (using HTTP protocol)
+* Loading of a file is accelerated
+* Added dynamic TTF font support in text fileds
+* Added the following Action script classes support:
+- XMLSocket()
+- TextFormat()
+- MovieClipLoader()
+- Color(): getTransform() & setTransform() methods are added
+* Added the following Action script function:
+- unloadMovie()
+- getter() & setter() support
+- addProperty()
+* Added the mouse cursor that is changed when points to the active object
+* Added 3DS plugin that allow to render & advance 3D MAX files
+- snapshot of movieclip may be used as texture(material) for 3D model
+* Added support of the following tags:
+- DefineFont3
+- DefineShape4
+- DefineFileAttribute
+- DefineFontAlignZones
+* Work on maintenance of compatibility with Flash 8 is done
+* Fixed a lot of bugs
+* Added new bugs :)
+
 2007-03-29  Vitaly Alexeev <tishka92@yahoo.com>
 
 The gameswf-2007-03-25 release of GameSWF is coming. Improvements since
