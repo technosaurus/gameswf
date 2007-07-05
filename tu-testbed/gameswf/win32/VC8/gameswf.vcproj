@@ -727,6 +727,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_broadcaster.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_broadcaster.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_color.cpp"
 				>
 			</File>

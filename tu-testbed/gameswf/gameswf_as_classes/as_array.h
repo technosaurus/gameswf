@@ -26,6 +26,9 @@ namespace gameswf
 
 		tu_string to_string();
 
+		void push_back(const as_value& val);
+		void erase(const tu_stringi& index);
+		int size();
 	};
 
 }	// end namespace gameswf

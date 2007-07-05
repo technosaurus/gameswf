@@ -74,6 +74,8 @@ namespace gameswf
 
 	as_array::as_array()
 	{
+		as_prop_flags f(true, true, true);
+
 		//			this->set_member("join", &array_not_impl);
 		//			this->set_member("concat", &array_not_impl);
 		//			this->set_member("slice", &array_not_impl);
@@ -85,26 +87,15 @@ namespace gameswf
 		//			this->set_member("sort", &array_not_impl);
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
-
 		set_member("toString", &as_array_tostring);
-		set_member_flags("toString", -1);	// hack
-		set_member_flags("addProperty", -1);
+		set_member_flags("toString", f.get_flags());
 	}
 
 	bool as_array::get_member(const tu_stringi& name, as_value* val)
 	{
 		if (name == "length")
 		{
-			// exclude own methods
-			int n = 0;
-			for (stringi_hash<as_member>::iterator it = m_members.begin(); it != m_members.end(); ++it)
-			{
-				if (it->second.get_member_flags().get_flags() != -1)
-				{
-					n++;
-				}
-			}
-			val->set_int(n);
+			val->set_int(size());
 			return true;
 		}
 		
@@ -128,7 +119,7 @@ namespace gameswf
 		array<tu_stringi> idx;
 		for (stringi_hash<as_member>::iterator it = m_members.begin(); it != m_members.end(); ++it)
 		{
-			if (it->second.get_member_flags().get_flags() != -1)
+			if (it->second.get_member_flags().get_dont_enum() == false)
 			{
 				idx.push_back(it->first);
 			}
@@ -165,6 +156,33 @@ namespace gameswf
 		}
 
 		return s;
+	}
+
+	int as_array::size()
+	// get array size, excluding own methods
+	{
+		int n = 0;
+		for (stringi_hash<as_member>::iterator it = m_members.begin(); it != m_members.end(); ++it)
+		{
+			if (it->second.get_member_flags().get_dont_enum() == false)
+			{
+				n++;
+			}
+		}
+		return n;
+	}
+
+	void as_array::push_back(const as_value& val)
+	// Insert the given value at the end of the array.
+	{
+		as_value index(size());
+		set_member(index.to_tu_stringi(), val);
+	}
+
+	void as_array::erase(const tu_stringi& index)
+	// erases one member from array
+	{
+		m_members.erase(index);
 	}
 
 };

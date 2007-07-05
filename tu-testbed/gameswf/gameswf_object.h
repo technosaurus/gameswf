@@ -27,6 +27,8 @@ namespace gameswf
 		as_object() : m_prototype(NULL)
 		{
 			set_member("addProperty", as_object_addproperty);
+			as_prop_flags f(true, true, true);
+			set_member_flags("addProperty", f.get_flags());
 		}
 
 		as_object(as_object_interface* proto) : m_prototype(proto)
