@@ -304,9 +304,8 @@ namespace gameswf
 				return false;
 			}
 
-			matrix	m = get_matrix();
 			point	p;
-			m.transform_by_inverse(&p, point(x, y));
+			get_matrix().transform_by_inverse(&p, point(x, y));
 
 			{for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
@@ -522,12 +521,12 @@ namespace gameswf
 			return false;
 		}
 
-		virtual void	get_bound(rect& bound)
+		virtual void	get_bound(rect* bound)
 		{
-			bound.m_x_min = FLT_MAX;
-			bound.m_x_max = - FLT_MAX;
-			bound.m_y_min = FLT_MAX;
-			bound.m_y_max = - FLT_MAX;
+			bound->m_x_min = FLT_MAX;
+			bound->m_x_max = - FLT_MAX;
+			bound->m_y_min = FLT_MAX;
+			bound->m_y_max = - FLT_MAX;
 
 			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
@@ -542,17 +541,12 @@ namespace gameswf
 				{
 
 					rect ch_bound;
-					m_record_character[i]->get_bound(ch_bound);
-
-					bound.m_x_max = fmax(ch_bound.m_x_max, bound.m_x_max);
-					bound.m_y_max = fmax(ch_bound.m_y_max, bound.m_y_max);
-					bound.m_x_min = fmin(ch_bound.m_x_min, bound.m_x_min);
-					bound.m_y_min = fmin(ch_bound.m_y_min, bound.m_y_min);
+					m_record_character[i]->get_bound(&ch_bound);
+					bound->expand_to_rect(ch_bound);
 				}
 			}
 
-			matrix m = get_matrix();
-			m.transform(bound);
+			get_matrix().transform(bound);
 		}
 
 		// not sure if we need to override this one.

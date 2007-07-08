@@ -40,21 +40,21 @@ namespace gameswf
 		case M_X:
 			//if (name == "_x")
 			{
-				matrix	m = get_matrix();
+				const matrix&	m = get_matrix();
 				val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
 				return true;
 			}
 		case M_Y:
 			//else if (name == "_y")
 			{
-				matrix	m = get_matrix();
+				const matrix&	m = get_matrix();
 				val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
 				return true;
 			}
 		case M_XSCALE:
 			//else if (name == "_xscale")
 			{
-				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
+				const matrix& m = get_matrix();	// @@ or get_world_matrix()?  Test this.
 				float xscale = m.get_x_scale();
 				val->set_double(xscale * 100);		// result in percent
 				return true;
@@ -62,7 +62,7 @@ namespace gameswf
 		case M_YSCALE:
 			//else if (name == "_yscale")
 			{
-				matrix m = get_matrix();	// @@ or get_world_matrix()?  Test this.
+				const matrix& m = get_matrix();	// @@ or get_world_matrix()?  Test this.
 				float yscale = m.get_y_scale();
 				val->set_double(yscale * 100);		// result in percent
 				return true;
@@ -462,7 +462,7 @@ namespace gameswf
 	float	character::get_width()
 	{
 		rect bound;
-		get_bound(bound);
+		get_bound(&bound);
 		float w = bound.m_x_max - bound.m_x_min;
 		if (isfinitef(w))
 		{
@@ -475,7 +475,7 @@ namespace gameswf
 	float	character::get_height()
 	{
 		rect bound;
-		get_bound(bound);
+		get_bound(&bound);
 		float h = bound.m_y_max - bound.m_y_min;
 		if (isfinitef(h))
 		{
@@ -485,12 +485,11 @@ namespace gameswf
 		return 0;
 	}
 
-	void character::get_bound(rect& bound)
+	void character::get_bound(rect* bound)
 	{
 		character_def* def = get_character_def();
 		assert(def);
 		def->get_bound(bound);
-		matrix m = get_matrix();
-		m.transform(bound);
+		get_matrix().transform(bound);
 	}
 }

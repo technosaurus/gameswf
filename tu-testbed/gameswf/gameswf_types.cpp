@@ -189,22 +189,21 @@ namespace gameswf
 		result->m_y = m_[1][0] * p.m_x + m_[1][1] * p.m_y + m_[1][2];
 	}
 
-	void	matrix::transform(rect& bound) const
+	void	matrix::transform(rect* bound) const
 	// Transform bound our matrix.
 	{
 		// get corners of transformed bound
 		point p[4];
-		transform(p + 0, point(bound.get_corner(0)));
-		transform(p + 1, point(bound.get_corner(1)));
-		transform(p + 2, point(bound.get_corner(2)));
-		transform(p + 3, point(bound.get_corner(3)));
+		transform(p + 0, point(bound->get_corner(0)));
+		transform(p + 1, point(bound->get_corner(1)));
+		transform(p + 2, point(bound->get_corner(2)));
+		transform(p + 3, point(bound->get_corner(3)));
 
 		// Build bound that covers transformed bound
-		bound.m_x_min = fmin(p[0].m_x, fmin(p[1].m_x, fmin(p[2].m_x, p[3].m_x)));
-		bound.m_y_min = fmin(p[0].m_y, fmin(p[1].m_y, fmin(p[2].m_y, p[3].m_y)));
-		bound.m_x_max = fmax(p[0].m_x, fmax(p[1].m_x, fmax(p[2].m_x, p[3].m_x)));
-		bound.m_y_max = fmax(p[0].m_y, fmax(p[1].m_y, fmax(p[2].m_y, p[3].m_y)));
-
+		bound->set_to_point(p[0]);
+		bound->expand_to_point(p[1]);
+		bound->expand_to_point(p[2]);
+		bound->expand_to_point(p[3]);
 	}
 	
 	void	matrix::transform_vector(point* result, const point& v) const
@@ -227,7 +226,7 @@ namespace gameswf
 		m.transform(result, p);
 	}
 
-	void	matrix::transform_by_inverse(rect& bound) const
+	void	matrix::transform_by_inverse(rect* bound) const
 	// Transform point 'p' by the inverse of our matrix.  Put result in *result.
 	{
 		// @@ TODO optimize this!
@@ -558,6 +557,16 @@ namespace gameswf
 		}
 	}
 
+	void rect::set_to_point(float x, float y)
+	{
+		m_x_min = m_x_max = x;
+		m_y_min = m_y_max = y;
+	}
+
+	void rect::set_to_point(const point& p)
+	{
+		set_to_point(p.m_x, p.m_y);
+	}
 
 	void	rect::expand_to_point(float x, float y)
 	// Expand this rectangle to enclose the given point.
@@ -568,6 +577,17 @@ namespace gameswf
 		m_y_max = fmax(m_y_max, y);
 	}
 
+	void	rect::expand_to_point(const point& p)
+	{
+		expand_to_point(p.m_x, p.m_y);
+	}
+
+	void rect::expand_to_rect(const rect& r)
+	// Expand to enclose the given rectangle.
+	{
+		expand_to_point(r.m_x_min, r.m_y_min);
+		expand_to_point(r.m_x_max, r.m_y_max);
+	}
 
 	point	rect::get_corner(int i) const
 	// Get one of the rect verts.
@@ -577,7 +597,6 @@ namespace gameswf
 			(i == 0 || i == 3) ? m_x_min : m_x_max,
 			(i < 2) ? m_y_min : m_y_max);
 	}
-
 
 	void	rect::enclose_transformed_rect(const matrix& m, const rect& r)
 	// Set ourself to bound a rectangle that has been transformed

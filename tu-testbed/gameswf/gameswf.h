@@ -259,7 +259,7 @@ namespace gameswf
 
 		virtual void	display(character* instance_info) {}
 		virtual bool	point_test_local(float x, float y) { return false; }
-		virtual void get_bound(rect& bound) { assert(0); };
+		virtual void get_bound(rect* bound) { assert(0); };
 
 		// Should stick the result in a smart_ptr immediately.
 		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character
@@ -886,10 +886,10 @@ namespace gameswf
 		void	read(stream* in);
 		void	print() const;
 		void	transform(point* result, const point& p) const;
-		void	transform(rect& bound) const;
+		void	transform(rect* bound) const;
 		void	transform_vector(point* result, const point& p) const;
 		void	transform_by_inverse(point* result, const point& p) const;
-		void	transform_by_inverse(rect& bound) const;
+		void	transform_by_inverse(rect* bound) const;
 		void	set_inverse(const matrix& m);
 		bool	does_flip() const;	// return true if we flip handedness
 		float	get_determinant() const;	// determinant of the 2x2 rotation/scale part only
@@ -940,7 +940,11 @@ namespace gameswf
 		void	read(stream* in);
 		void	print() const;
 		bool	point_test(float x, float y) const;
+		void	set_to_point(float x, float y);
+		void	set_to_point(const point& p);
 		void	expand_to_point(float x, float y);
+		void	expand_to_point(const point& p);
+		void	expand_to_rect(const rect& r);
 		float	width() const { return m_x_max - m_x_min; }
 		float	height() const { return m_y_max - m_y_min; }
 

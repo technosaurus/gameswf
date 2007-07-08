@@ -111,7 +111,7 @@ namespace gameswf
 		void	display(character* inst);
 		void	csm_textsetting(stream* in, int tag_type);
 
-		virtual void get_bound(rect& bound);
+		virtual void get_bound(rect* bound);
 	};
 
 	//
@@ -197,7 +197,9 @@ namespace gameswf
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	csm_textsetting(stream* in, int tag_type);
 
-		virtual void get_bound(rect& bound) { bound = m_rect; }
+		virtual void get_bound(rect* bound) {
+			*bound = m_rect;
+		}
 	};
 
 	//

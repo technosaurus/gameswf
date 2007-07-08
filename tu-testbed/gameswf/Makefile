@@ -29,6 +29,7 @@ all: base_lib net_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 LIB_OBJS = \
 	gameswf_as_classes/as_array.$(OBJ_EXT) \
+	gameswf_as_classes/as_broadcaster.$(OBJ_EXT) \
 	gameswf_as_classes/as_color.$(OBJ_EXT) \
 	gameswf_as_classes/as_db.$(OBJ_EXT) \
 	gameswf_as_classes/as_key.$(OBJ_EXT) \

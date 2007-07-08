@@ -129,12 +129,12 @@ namespace gameswf
 		return false;
 	}
 
-	void sprite_instance::get_bound(rect& bound)
+	void sprite_instance::get_bound(rect* bound)
 	{
-		bound.m_x_min = FLT_MAX;
-		bound.m_x_max = - FLT_MAX;
-		bound.m_y_min = FLT_MAX;
-		bound.m_y_max = - FLT_MAX;
+		bound->m_x_min = FLT_MAX;
+		bound->m_x_max = - FLT_MAX;
+		bound->m_y_min = FLT_MAX;
+		bound->m_y_max = - FLT_MAX;
 
 		int i, n = m_display_list.get_character_count();
 		character* ch;
@@ -144,12 +144,8 @@ namespace gameswf
 			if (ch != NULL)
 			{
 				rect ch_bound;
-				ch->get_bound(ch_bound);
-
-				bound.m_x_max = fmax(ch_bound.m_x_max, bound.m_x_max);
-				bound.m_y_max = fmax(ch_bound.m_y_max, bound.m_y_max);
-				bound.m_x_min = fmin(ch_bound.m_x_min, bound.m_x_min);
-				bound.m_y_min = fmin(ch_bound.m_y_min, bound.m_y_min);
+				ch->get_bound(&ch_bound);
+				bound->expand_to_rect(ch_bound);
 			}
 		}
 
@@ -181,7 +177,7 @@ namespace gameswf
 	}
 
 	void	sprite_instance::set_play_state(play_state s)
-		// Stop or play the sprite.
+	// Stop or play the sprite.
 	{
 		//			if (m_play_state != s)
 		//			{
@@ -210,7 +206,7 @@ namespace gameswf
 	};
 
 	bool sprite_instance::can_handle_mouse_event()
-		// Return true if we have any mouse event handlers.
+	// Return true if we have any mouse event handlers.
 	{
 
 		as_value dummy;
@@ -245,9 +241,9 @@ namespace gameswf
 
 
 	character*	sprite_instance::get_topmost_mouse_entity(float x, float y)
-		// Return the topmost entity that the given point
-		// covers that can receive mouse events.  NULL if
-		// none.  Coords are in parent's frame.
+	// Return the topmost entity that the given point
+	// covers that can receive mouse events.  NULL if
+	// none.  Coords are in parent's frame.
 	{
 		if (get_visible() == false) {
 			return NULL;
@@ -499,11 +495,11 @@ namespace gameswf
 	}
 
 	void	sprite_instance::execute_frame_tags_reverse(int frame)
-		// Execute the tags associated with the specified frame, IN REVERSE.
-		// I.e. if it's an "add" tag, then we do a "remove" instead.
-		// Only relevant to the display-list manipulation tags: add, move, remove, replace.
-		//
-		// frame is 0-based
+	// Execute the tags associated with the specified frame, IN REVERSE.
+	// I.e. if it's an "add" tag, then we do a "remove" instead.
+	// Only relevant to the display-list manipulation tags: add, move, remove, replace.
+	//
+	// frame is 0-based
 	{
 		// Keep this (particularly m_as_environment) alive during execution!
 		smart_ptr<as_object_interface>	this_ptr(this);
@@ -542,8 +538,8 @@ namespace gameswf
 
 
 	void	sprite_instance::execute_remove_tags(int frame)
-		// Execute any remove-object tags associated with the specified frame.
-		// frame is 0-based
+	// Execute any remove-object tags associated with the specified frame.
+	// frame is 0-based
 	{
 		assert(frame >= 0);
 		assert(frame < m_def->get_frame_count());
@@ -1062,8 +1058,8 @@ namespace gameswf
 	}
 
 	void	sprite_instance::call_frame_actions(const as_value& frame_spec)
-		// Execute the actions for the specified frame.	 The
-		// frame_spec could be an integer or a string.
+	// Execute the actions for the specified frame.	 The
+	// frame_spec could be an integer or a string.
 	{
 		int	frame_number = -1;
 
@@ -1133,8 +1129,8 @@ namespace gameswf
 
 
 	character*	sprite_instance::clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object)
-		// Duplicate the object with the specified name and add it with a new name 
-		// at a new depth.
+	// Duplicate the object with the specified name and add it with a new name 
+	// at a new depth.
 	{
 
 		// Create the copy event handlers from sprite 
@@ -1198,7 +1194,7 @@ namespace gameswf
 	}
 
 	bool	sprite_instance::on_event(const event_id& id)
-		// Dispatch event handler(s), if any.
+	// Dispatch event handler(s), if any.
 	{
 		// Keep m_as_environment alive during any method calls!
 		smart_ptr<as_object_interface>	this_ptr(this);
