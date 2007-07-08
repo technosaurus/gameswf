@@ -74,8 +74,6 @@ namespace gameswf
 
 	as_array::as_array()
 	{
-		as_prop_flags f(true, true, true);
-
 		//			this->set_member("join", &array_not_impl);
 		//			this->set_member("concat", &array_not_impl);
 		//			this->set_member("slice", &array_not_impl);
@@ -88,7 +86,7 @@ namespace gameswf
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
 		set_member("toString", &as_array_tostring);
-		set_member_flags("toString", f.get_flags());
+		set_member_flags("toString", as_prop_flags::DONT_ENUM);
 	}
 
 	bool as_array::get_member(const tu_stringi& name, as_value* val)

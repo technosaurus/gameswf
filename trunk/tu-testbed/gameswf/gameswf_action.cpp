@@ -1333,34 +1333,29 @@ namespace gameswf
 				case 0x3A:	// delete
 				{
 					tu_string varname(env->top(0).to_tu_string());
-					as_object obj(env->top(1).to_object());
+					as_object_interface* obj_interface = env->top(1).to_object();
 					env->drop(1);
 
-					as_value val;
-					obj.get_member(varname, &val);
-
-					// drop refs
-					val.set_undefined();
-
-					// Vitaly:
-					// finally to remove it we need set varname to undefined
-					if (obj.m_prototype != NULL)		
+					bool retcode = false;
+					if (obj_interface)
 					{
-						as_object* prototype = obj.m_prototype->cast_to_as_object();
-						character* movie = obj.m_prototype->cast_to_character();
-						if (movie)
+						smart_ptr<as_object> obj = obj_interface->cast_to_as_object();
+						if (obj != NULL)
 						{
-							movie->set_member(varname, val);
+							as_value val;
+							if (obj->get_member(varname, &val))
+							{
+								// drop refs
+								val.set_undefined();
+
+								// finally to remove it we need set varname to undefined
+								obj->set_member(varname, val);
+								retcode = true;
+							}
 						}
-						else
-						{
-							prototype->m_members.set(varname, val);
-						}
-						env->top(0).set_bool(true);
-						break;
 					}
 
-					env->top(0).set_bool(false);
+					env->top(0).set_bool(retcode);
 					break;
 				}
 				case 0x3B:	// delete2
@@ -1495,7 +1490,7 @@ namespace gameswf
 
 						// Set up the constructor member.
 						new_obj_ptr->set_member("constructor", constructor);
-						new_obj_ptr->set_member_flags("constructor", 1);
+						new_obj_ptr->set_member_flags("constructor", as_prop_flags::DONT_ENUM);
 						
 						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
 
@@ -1868,7 +1863,36 @@ namespace gameswf
 					break;
 
 				case 0x69:	// extends
-					log_error("todo opcode: %02X\n", action_id);
+
+					// These steps are the equivalent to the following ActionScript:
+					// Subclass.prototype = new Object();
+					// Subclass.prototype.__proto__ = Superclass.prototype;
+					// Subclass.prototype.__constructor__ = Superclass;
+
+					as_as_function* super = env->top(0).to_as_function();
+					as_as_function* sub = env->top(1).to_as_function();
+
+					if (super == NULL)
+					{
+						IF_VERBOSE_ACTION(log_msg("Superclass is NULL\n"));
+						break;
+					}
+					if (sub == NULL)
+					{
+						IF_VERBOSE_ACTION(log_msg("Subclass is NULL\n"));
+						break;
+					}
+
+					as_value super_prototype;
+					super->m_properties->get_member("prototype", &super_prototype);
+
+					as_object* new_prototype = new as_object();
+					new_prototype->set_member("__proto__", super_prototype);
+					new_prototype->set_member("__constructor__", super);
+
+					sub->m_properties->set_member("prototype", new_prototype);
+
+					env->drop(2);
 					break;
 
 				}
@@ -2640,6 +2664,7 @@ namespace gameswf
 			{ 0x66, "eq_strict", ARG_NONE },
 			{ 0x67, "gt_t", ARG_NONE },
 			{ 0x68, "gt_str", ARG_NONE },
+			{ 0x69, "extends", ARG_NONE },
 			
 			{ 0x81, "goto_frame", ARG_U16 },
 			{ 0x83, "get_url", ARG_STR },

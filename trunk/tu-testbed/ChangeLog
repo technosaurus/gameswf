@@ -1,5 +1,14 @@
 2007-07-08  Vitaly Alexeev <tishka92@yahoo.com>
 
+	* gameswf/gameswf_action.cpp: simplified delete opcode(0x3A),
+	added 'extends' opcode(0x69) implementation
+	* gameswf/gameswf_as_classes/as_array.cpp,
+	* gameswf/gameswf_object.h,
+	* gameswf/gameswf_value.h:
+	as_prop_flags: numeric const ==> symbolic const
+
+2007-07-08  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/gameswf_button.cpp,
 	* gameswf/gameswf_sprite.cpp: fixed one more _width & _heigth bug
 	* gameswf/plugins/lib3ds/gameswf_3ds.cpp: typo

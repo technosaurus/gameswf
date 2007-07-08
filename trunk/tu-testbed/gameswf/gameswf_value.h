@@ -253,41 +253,39 @@ namespace gameswf
 	// flags defining the level of protection of a member
 	struct as_prop_flags
 	{
+		enum flag
+		{
+			DONT_ENUM = 0x01,
+			DONT_DELETE = 0x02,
+			READ_ONLY = 0x04
+		};
+
 		// Numeric flags
 		int m_flags;
 		// if true, this value is protected (internal to gameswf)
 		bool m_is_protected;
 
 		// mask for flags
-		const static int as_prop_flags_mask = 0x7;
+		const static int as_prop_flags_mask = DONT_ENUM | DONT_DELETE | READ_ONLY;
 
 		// Default constructor
 		as_prop_flags() : m_flags(0), m_is_protected(false)
 		{
 		}
 
-		// Constructor
-		as_prop_flags(const bool read_only, const bool dont_delete, const bool dont_enum)
-			:
-		m_flags(((read_only) ? 0x4 : 0) | ((dont_delete) ? 0x2 : 0) | ((dont_enum) ? 0x1 : 0)),
-			m_is_protected(false)
-		{
-		}
-
 		// Constructor, from numerical value
-		as_prop_flags(const int flags)
-			: m_flags(flags), m_is_protected(false)
+		as_prop_flags(int flags) : m_flags(flags), m_is_protected(false)
 		{
 		}
 
 		// accessor to m_readOnly
-		bool get_read_only() const { return (((this->m_flags & 0x4)!=0)?true:false); }
+		bool get_read_only() const { return (((this->m_flags & READ_ONLY) != 0) ? true : false); }
 
 		// accessor to m_dontDelete
-		bool get_dont_delete() const { return (((this->m_flags & 0x2)!=0)?true:false); }
+		bool get_dont_delete() const { return (((this->m_flags & DONT_DELETE) != 0) ? true : false); }
 
 		// accessor to m_dontEnum
-		bool get_dont_enum() const { return (((this->m_flags & 0x1)!=0)?true:false);	}
+		bool get_dont_enum() const { return (((this->m_flags & DONT_ENUM) != 0) ? true : false);	}
 
 		// accesor to the numerical flags value
 		int get_flags() const { return this->m_flags; }
