@@ -74,7 +74,7 @@ namespace gameswf
 		character*	get_root_movie() { return m_root->get_root_movie(); }
 		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
 
-		virtual void get_bound(rect& bound);
+		virtual void get_bound(rect* bound);
 
 		virtual int	get_current_frame() const { return m_current_frame; }
 		virtual int	get_frame_count() const { return m_def->get_frame_count(); }

@@ -336,9 +336,9 @@ namespace gameswf
 
 	}
 
-	void text_character_def::get_bound(rect& bound)
+	void text_character_def::get_bound(rect* bound)
 	{
-		bound = m_rect;
+		*bound = m_rect;
 	}
 
 	void	define_text_loader(stream* in, int tag_type, movie_definition_sub* m)
@@ -863,7 +863,7 @@ namespace gameswf
 			return NULL; 
 		} 
 
-		matrix  m = get_matrix(); 
+		const matrix&  m = get_matrix();
 
 		point   p; 
 		m.transform_by_inverse(&p, point(x, y)); 

@@ -115,7 +115,7 @@ namespace gameswf
 		{
 			assert(get_visible());	// caller should check this.
 
-			matrix	m = get_matrix();
+			const matrix&	m = get_matrix();
 			point	p;
 			m.transform_by_inverse(&p, point(x, y));
 
@@ -146,10 +146,10 @@ namespace gameswf
 		// Incoming coords are local coords.
 		{
 			rect coords;
-			coords.m_x_min  = 0.0f;
-			coords.m_x_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
-			coords.m_y_min  = 0.0f;
-			coords.m_y_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
+			coords.m_x_min = 0.0f;
+			coords.m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
+			coords.m_y_min = 0.0f;
+			coords.m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
 			if (coords.point_test(x, y))
 			{
 				return true;
@@ -157,28 +157,28 @@ namespace gameswf
 			return false;
 		}
 
-		virtual void get_bound(rect& bound)
+		virtual void get_bound(rect* bound)
 		{
-			bound.m_x_min  = 0.0f;
-			bound.m_x_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
-			bound.m_y_min  = 0.0f;
-			bound.m_y_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
+			bound->m_x_min = 0.0f;
+			bound->m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
+			bound->m_y_min = 0.0f;
+			bound->m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
 		}
 
 		virtual void	display(character* ch)
 		{
 			rect coords;
-			coords.m_x_min  = 0.0f;
-			coords.m_x_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
-			coords.m_y_min  = 0.0f;
-			coords.m_y_max  = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
+			coords.m_x_min = 0.0f;
+			coords.m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->m_original_width);
+			coords.m_y_min = 0.0f;
+			coords.m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->m_original_height);
 
 			// show whole picture
 			rect uv_coords;
-			uv_coords.m_x_min  = 0.0f;
-			uv_coords.m_x_max  = 1.0f;
-			uv_coords.m_y_min  = 0.0f;
-			uv_coords.m_y_max  = 1.0f;
+			uv_coords.m_x_min = 0.0f;
+			uv_coords.m_x_max = 1.0f;
+			uv_coords.m_y_min = 0.0f;
+			uv_coords.m_y_max = 1.0f;
 
 			cxform cx = ch->get_world_cxform();
 			rgba color = cx.transform(gameswf::rgba());

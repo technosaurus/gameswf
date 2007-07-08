@@ -108,7 +108,7 @@ namespace gameswf
 			bool use_cxform = false;
 			cxform color_transform =  target->get_cxform();
 			bool use_matrix = false;
-			matrix mat = target->get_matrix();
+			const matrix& mat = target->get_matrix();
 			float ratio = target->get_ratio();
 			Uint16 clip_depth = target->get_clip_depth();
 
@@ -200,7 +200,7 @@ namespace gameswf
 			bool use_cxform = false;
 			cxform color_transform = target->get_cxform();
 			bool use_matrix = false;
-			matrix mat = target->get_matrix();
+			const matrix& mat = target->get_matrix();
 			float ratio = target->get_ratio();
 			Uint16 clip_depth = target->get_clip_depth();
 

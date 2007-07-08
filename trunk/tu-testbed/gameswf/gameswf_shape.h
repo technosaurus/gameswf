@@ -166,7 +166,7 @@ namespace gameswf
 		virtual void	display(character* inst);
 		bool	point_test_local(float x, float y);
 
-		void get_bound(rect& bound);
+		void get_bound(rect* bound);
 		const rect&	get_bound_local() const { return m_bound; }
 
 		void	read(stream* in, int tag_type, bool with_style, movie_definition_sub* m);

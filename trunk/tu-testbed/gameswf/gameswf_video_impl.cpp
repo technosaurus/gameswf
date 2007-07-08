@@ -12,12 +12,12 @@
 
 namespace gameswf
 {
-	void video_stream_definition::get_bound(rect& bound)
+	void video_stream_definition::get_bound(rect* bound)
 	{
-		bound.m_x_min = 0;
-		bound.m_y_min = 0;
-		bound.m_x_max = PIXELS_TO_TWIPS(m_width);
-		bound.m_y_max = PIXELS_TO_TWIPS(m_height);
+		bound->m_x_min = 0;
+		bound->m_y_min = 0;
+		bound->m_x_max = PIXELS_TO_TWIPS(m_width);
+		bound->m_y_max = PIXELS_TO_TWIPS(m_height);
 	}
 
 	void video_stream_definition::read(stream* in, int tag, movie_definition* m)

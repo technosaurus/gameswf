@@ -1671,9 +1671,9 @@ namespace gameswf
 		return false;
 	}
 
-	void shape_character_def::get_bound(rect& bound)
+	void shape_character_def::get_bound(rect* bound)
 	{
-		bound = m_bound;
+		*bound = m_bound;
 	}
 
 	void	shape_character_def::compute_bound(rect* r) const
