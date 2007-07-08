@@ -528,6 +528,8 @@ namespace gameswf
 			bound->m_y_min = FLT_MAX;
 			bound->m_y_max = - FLT_MAX;
 
+			matrix m = get_matrix();
+
 			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
@@ -542,11 +544,12 @@ namespace gameswf
 
 					rect ch_bound;
 					m_record_character[i]->get_bound(&ch_bound);
+
+					m.transform(&ch_bound);
+
 					bound->expand_to_rect(ch_bound);
 				}
 			}
-
-			get_matrix().transform(bound);
 		}
 
 		// not sure if we need to override this one.
