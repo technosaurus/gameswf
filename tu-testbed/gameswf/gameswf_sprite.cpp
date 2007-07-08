@@ -136,6 +136,8 @@ namespace gameswf
 		bound->m_y_min = FLT_MAX;
 		bound->m_y_max = - FLT_MAX;
 
+		matrix m = get_matrix();
+
 		int i, n = m_display_list.get_character_count();
 		character* ch;
 		for (i = 0; i < n; i++)
@@ -145,12 +147,12 @@ namespace gameswf
 			{
 				rect ch_bound;
 				ch->get_bound(&ch_bound);
+
+				m.transform(&ch_bound);
+
 				bound->expand_to_rect(ch_bound);
 			}
 		}
-
-		matrix m = get_matrix();
-		m.transform(bound);
 	}
 
 	character* sprite_instance::add_empty_movieclip(const char* name, int depth)

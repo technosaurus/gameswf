@@ -299,7 +299,7 @@ namespace gameswf
 				ch->set_member("_height", th);
 
 				rect bound;
-				ch->get_bound(bound);
+				ch->get_bound(&bound);
 
 				// parent world matrix moves point(0,0) to "pzero"
 				matrix mparent = ch->get_parent()->get_world_matrix();
