@@ -60,7 +60,7 @@ namespace gameswf
 			// Flash 8
 			// All the EMSquare coordinates are multiplied by 20 at export,
 			// allowing fractional resolution to 1/20 of a unit.
-			if (fnt->has_zones())
+			if (fnt->is_define_font3())
 			{
 				scale /= 20.0f;
 			}
@@ -145,6 +145,13 @@ namespace gameswf
 						float s_EM_scale = 1024.0f / nominal_glyph_height;
 						float	xscale = tg.m_bitmap_info->get_width() * s_EM_scale;
 						float yscale = tg.m_bitmap_info->get_height() * s_EM_scale;
+
+						if (fnt->is_define_font3())
+						{
+							xscale *= 20.0f;
+							yscale *= 20.0f;
+						}
+
 						bounds.m_x_min *= xscale;
 						bounds.m_x_max *= xscale;
 						bounds.m_y_min *= yscale;
@@ -1198,7 +1205,7 @@ namespace gameswf
 		// Flash 8
 		// All the EMSquare coordinates are multiplied by 20 at export,
 		// allowing fractional resolution to 1/20 of a unit.
-		if (m_font->has_zones())
+		if (m_font->is_define_font3())
 		{
 			scale /= 20.0f;
 		}
