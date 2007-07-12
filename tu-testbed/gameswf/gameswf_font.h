@@ -92,7 +92,7 @@ namespace gameswf
 		float	get_kerning_adjustment(int last_code, int this_code) const;
 		float	get_leading() const { return m_leading; }
 		float	get_descent() const { return m_descent; }
-		bool	has_zones() const { return m_zone_table.size() == 0 ? false : true; }
+		bool	is_define_font3() const { return m_zone_table.size() == 0 ? false : true; }
 
 	private:
 		void	read_code_table(stream* in);

@@ -482,6 +482,11 @@ namespace gameswf
 			m_advance_table[glyph_index] = advance;
 		}
 
+		if (is_define_font3())
+		{
+			advance *= 20;
+		}
+
 		return advance;
 	}
 

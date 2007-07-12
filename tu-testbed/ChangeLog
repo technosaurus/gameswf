@@ -1,3 +1,11 @@
+2007-07-12  Vitaly Alexeev <tishka92@yahoo.com>
+
+	Static & dynamic text bug is fixed. The reason of this bug is the fact that 
+	all the EMSquare coordinates in Flas8 are multiplied by 20 at export.
+	* gameswf/gameswf_font.cpp
+	* gameswf/gameswf_font.h
+	* gameswf/gameswf_text.cpp
+
 2007-07-08  Vitaly Alexeev <tishka92@yahoo.com>
 
 	* gameswf/gameswf_action.cpp: simplified delete opcode(0x3A),
