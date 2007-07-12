@@ -702,4 +702,27 @@ namespace gameswf
 		}
 		return env;
 	}
+
+	void as_environment::dump()
+	// for debugging
+	// retrieves vars & print them
+	{
+		printf("\n*** environment %08X ***\n", this);
+
+		printf("*** variables\n");
+		for (stringi_hash<as_value>::const_iterator it = m_variables.begin(); 
+			it != m_variables.end(); ++it)
+		{
+			printf("%s: %s\n", it->first.c_str(), it->second.to_string());
+		}
+
+		printf("*** stack\n");
+		for (int i = m_stack.size() - 1; i >= 0; i--)
+		{
+			printf("%s\n", m_stack[i].to_string());
+		}
+
+		printf("***\n");
+	}
+
 }

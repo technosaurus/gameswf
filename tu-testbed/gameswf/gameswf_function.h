@@ -40,7 +40,7 @@ namespace gameswf
 		// ActionScript functions have a property namespace!
 		// Typically used for class constructors, for "prototype", "constructor",
 		// and class properties.
-		as_object*	m_properties;
+		as_object	m_properties;
 
 		// NULL environment is allowed -- if so, then
 		// functions will be executed in the caller's
@@ -55,10 +55,10 @@ namespace gameswf
 			m_length(0),
 			m_is_function2(false),
 			m_local_register_count(0),
-			m_function2_flags(0),
-			m_properties(NULL)
+			m_function2_flags(0)
 		{
 			assert(m_action_buffer);
+			m_properties.set_member("prototype", new as_object());
 		}
 
 		void	set_is_function2() { m_is_function2 = true; }
@@ -77,24 +77,6 @@ namespace gameswf
 
 		// Dispatch.
 		void	operator()(const fn_call& fn);
-
-		void	lazy_create_properties()
-		// This ensures that this as_function has a valid
-		// prototype in its properties.	 This is done lazily
-		// so that functions/methods which are not used as
-		// constructors don't carry along extra unnecessary
-		// baggage.
-		{
-			if (m_properties == NULL)
-			{
-				m_properties = new as_object();
-				m_properties->add_ref();
-
-				// Create new empty prototype
-				as_value	proto(new as_object());
-				m_properties->set_member("prototype", proto);
-			}
-		}
 	};
 
 }

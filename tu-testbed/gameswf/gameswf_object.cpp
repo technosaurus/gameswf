@@ -36,54 +36,53 @@ namespace gameswf
 	bool	as_object::set_member(const tu_stringi& name, const as_value& val )
 	{
 		//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
-		if (name == "prototype")
+		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
+
+		if (it != this->m_members.end())
 		{
-			if (m_prototype) m_prototype->drop_ref();
-			m_prototype = val.to_object();
-			if (m_prototype) m_prototype->add_ref();
+			const as_prop_flags flags = (it.get_value()).get_member_flags();
+
+			// is the member read-only ?
+			if (!flags.get_read_only())
+			{
+				m_members.set(name, as_member(val, flags));
+			}
 		}
 		else
 		{
-			stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
-
-			if ( it != this->m_members.end() ) {
-
-				const as_prop_flags flags = (it.get_value()).get_member_flags();
-
-				// is the member read-only ?
-				if (!flags.get_read_only()) {
-					m_members.set(name, as_member(val, flags));
-				}
-
-			} else {
-				m_members.set(name, as_member(val));
-			}
+			m_members.set(name, as_member(val));
 		}
+
 		return true;
+	}
+
+	as_object_interface* as_object::get_proto()
+	{
+		as_member m;
+		if (m_members.get("__proto__", &m))
+		{
+			return m.get_member_value().to_object();
+		}
+		return NULL;
 	}
 
 	bool	as_object::get_member(const tu_stringi& name, as_value* val)
 	{
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
-		if (name == "prototype")
+		as_member m;
+		if (m_members.get(name, &m) == false)
 		{
-			val->set_as_object_interface(m_prototype);
-			return true;
-		}
-		else {
-			as_member m;
-
-			if (m_members.get(name, &m) == false)
+			as_object_interface* proto = get_proto();
+			if (proto)
 			{
-				if (m_prototype != NULL)
-				{
-					return m_prototype->get_member(name, val);
-				}
-				return false;
-			} else {
-				*val=m.get_member_value();
-				return true;
+				return proto->get_member(name, val);
 			}
+			return false;
+		}
+		else
+		{
+			*val = m.get_member_value();
+			return true;
 		}
 		return true;
 	}
@@ -120,11 +119,6 @@ namespace gameswf
 	void	as_object::clear()
 	{
 		m_members.clear();
-		if (m_prototype)
-		{
-			m_prototype->drop_ref();
-			m_prototype = NULL;
-		}
 	}
 
 	bool	as_object::on_event(const event_id& id)
@@ -169,28 +163,24 @@ namespace gameswf
 			++it;
 		}
 
-		if (m_prototype)
+		as_object_interface* proto = get_proto();
+		if (proto)
 		{
-			const as_object* prototype = m_prototype->cast_to_as_object();
-			if (prototype != NULL)
-			{
-				stringi_hash<as_member>::const_iterator it = prototype->m_members.begin();
-				while (it != prototype->m_members.end())
-				{
-					const as_member member = (it.get_value());
-
-					if (! member.get_member_flags().get_dont_enum())
-					{
-						env->push(as_value(it.get_key()));
-
-						IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
-							it.get_key().c_str()));
-					}
-
-					++it;
-				};
-			}
+			proto->enumerate(env);
 		}
+	}
+
+	void as_object::dump()
+	// for debugging
+	// retrieves members & print them
+	{
+		printf("\n*** object %08X ***\n", this);
+		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
+			it != m_members.end(); ++it)
+		{
+			printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
+		}
+		printf("***\n");
 	}
 
 }

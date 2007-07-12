@@ -59,10 +59,8 @@ namespace gameswf
 		};
 		array<frame_slot>	m_local_frames;
 
-
-		as_environment()
-			:
-			m_target(0)
+		as_environment() :
+			m_target(NULL)
 		{
 		}
 
@@ -123,6 +121,8 @@ namespace gameswf
 		character*	find_target(const as_value& val) const;
 
 		character* load_file(const char* url, as_value& target);
+
+		void dump();
 	};
 
 
