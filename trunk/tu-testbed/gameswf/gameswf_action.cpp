@@ -406,13 +406,8 @@ namespace gameswf
 
 		// The second argument is a list of child names,
 		// may be in the form array(like ["abc", "def", "ggggg"]) or in the form a string(like "abc, def, ggggg")
+		// the NULL second parameter means that assetpropflags is applied to all children
 		as_object_interface* props = fn.arg(1).to_object();
-		// Vitaly; the NULL second parameter means that assetpropflags is applied to all children
-//		if (props == NULL)
-//		{
-			// tulrich: this fires in test_ASSetPropFlags -- is it correct?
-			// assert(fn.arg(1).get_type() == as_value::NULLTYPE);
-//		}
 
 		// a number which represents three bitwise flags which
 		// are used to determine whether the list of child names should be hidden,
@@ -444,9 +439,8 @@ namespace gameswf
 			// Take all the members of the object
 
 			as_object* object = obj->cast_to_as_object();
-
-			stringi_hash<as_member>::const_iterator it = object->m_members.begin();
-			while (it != object->m_members.end())
+			for (stringi_hash<as_member>::const_iterator it = object->m_members.begin(); 
+				it != object->m_members.end(); ++it)
 			{
 				as_member member = it.get_value();
 
@@ -456,30 +450,10 @@ namespace gameswf
 				member.set_member_flags(f);
 
 				object->m_members.set(it.get_key(), member);
-
-				++it;
 			}
-
-			if (object->m_prototype != NULL)
-			{
-				const as_object* prototype = object->m_prototype->cast_to_as_object();
-
-				it = prototype->m_members.begin();
-				while (it != prototype->m_members.end())
-				{
-					as_member member = it.get_value();
-
-					as_prop_flags f = member.get_member_flags();
-					const int oldflags = f.get_flags();
-					const int newflags = f.set_flags(set_true, set_false);
-					member.set_member_flags(f);
-
-					object->m_members.set(it.get_key(), member);
-
-					++it;
-				}
-			}
-		} else {
+		}
+		else
+		{
 			as_object* object = obj->cast_to_as_object();
 			as_object* object_props = props->cast_to_as_object();
 
@@ -1414,6 +1388,17 @@ namespace gameswf
 						const tu_string&	function_name = env->top(0).to_tu_string();
 						function = env->get_variable(function_name, with_stack);
 
+						// super constructor, Flash 6 
+						if (function.get_type() == as_value::OBJECT)
+						{
+							as_object_interface* obj = function.to_object();
+							if (obj)
+							{
+								assert(function_name == "super");
+								obj->get_member("constructor", &function);
+							}
+						}
+
 						if (function.get_type() != as_value::C_FUNCTION
 						    && function.get_type() != as_value::AS_FUNCTION)
 						{
@@ -1474,29 +1459,32 @@ namespace gameswf
 					}
 					else if (as_as_function* ctor_as_func = constructor.to_as_function())
 					{
-						// This function is being used as a constructor; make sure
-						// it has a prototype object.
-						ctor_as_func->lazy_create_properties();
-						assert(ctor_as_func->m_properties);
-
-						// Set up the prototype.
-						as_value	proto;
-						ctor_as_func->m_properties->get_member("prototype", &proto);
-
-						assert(proto.to_object() != NULL);
 
 						// Create an empty object, with a ref to the constructor's prototype.
-						smart_ptr<as_object>	new_obj_ptr(new as_object(proto.to_object()));
+						smart_ptr<as_object>	new_obj_ptr = new as_object();
 
 						// Set up the constructor member.
+						// Reference to the constructor function for a given object instance.
 						new_obj_ptr->set_member("constructor", constructor);
 						new_obj_ptr->set_member_flags("constructor", as_prop_flags::DONT_ENUM);
-						
-						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
 
+						// Set up the __proto__ member.
+						// it refers to the prototype property of the class (ActionScript 2.0) 
+						// or constructor function
+						as_value	proto;
+						ctor_as_func->m_properties.get_member("prototype", &proto);
+						assert(proto.to_object() != NULL);
+						new_obj_ptr->set_member("__proto__", proto);
+						new_obj_ptr->set_member_flags("__proto__", as_prop_flags::DONT_ENUM);
+
+						// Set up the methods
+						new_obj_ptr->set_member("addProperty", as_object_addproperty);
+						new_obj_ptr->set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
+						
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
 						call_method(constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
+						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
 					}
 					else
 					{
@@ -1510,9 +1498,6 @@ namespace gameswf
 
 					env->drop(nargs);
 					env->push(new_obj);
-#if 0
-					log_msg("new object %s at %p\n", classname.to_tu_string().c_str(), new_obj);
-#endif
 					break;
 				}
 				case 0x41:	// declare local
@@ -1730,9 +1715,10 @@ namespace gameswf
 					int	nargs = (int) env->top(2).to_number();
 					as_value	result;
 					const tu_string&	method_name = env->top(0).to_tu_string();
-					as_object_interface*	obj = env->top(1).to_object();
-					if (obj)
+					
+					if (env->top(1).get_type() == as_value::OBJECT)
 					{
+						as_object_interface*	obj = env->top(1).to_object();
 						as_value	method;
 						if (obj->get_member(method_name, &method))
 						{
@@ -1745,8 +1731,32 @@ namespace gameswf
 						}
 						else
 						{
-							log_error("error: call_method can't find method %s\n",
-								  method_name.c_str());
+							if (method_name == "undefined" || method_name == "")
+							{
+								// Flash help says:
+								// If the method name is blank or undefined, the object is taken to be 
+								// a function object that should be invoked, 
+								// rather than the container object of a method. For example, if
+								// CallMethod is invoked with object obj and method name blank,
+								// it's equivalent to using the syntax:
+								// obj();
+
+								as_value constructor;
+								if (obj->get_member("__constructor__", &constructor))
+								{
+									result = call_method(
+									constructor,
+									env,
+									obj,
+									nargs,
+									env->get_top_index() - 3);
+								}
+							}
+							else
+							{
+								log_error("error: call_method can't find method %s\n",
+										method_name.c_str());
+							}
 						}
 					}
 					else if (env->top(1).get_type() == as_value::STRING)
@@ -1884,13 +1894,13 @@ namespace gameswf
 					}
 
 					as_value super_prototype;
-					super->m_properties->get_member("prototype", &super_prototype);
+					super->m_properties.get_member("prototype", &super_prototype);
 
 					as_object* new_prototype = new as_object();
 					new_prototype->set_member("__proto__", super_prototype);
 					new_prototype->set_member("__constructor__", super);
 
-					sub->m_properties->set_member("prototype", new_prototype);
+					sub->m_properties.set_member("prototype", new_prototype);
 
 					env->drop(2);
 					break;
@@ -2158,9 +2168,10 @@ namespace gameswf
 							{
 								env->push(*(env->local_register_ptr(reg)));
 								IF_VERBOSE_ACTION(
-									log_msg("-------------- pushed local register[%d] = '%s'\n",
+									log_msg("-------------- pushed local register[%d] = '%s' at %08X\n",
 										reg,
-										env->top(0).to_string()));
+										env->top(0).to_string(),
+										env->top(0).to_object()));
 							}
 							else if (reg < 0 || reg >= 4)
 							{

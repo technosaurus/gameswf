@@ -42,6 +42,9 @@ namespace gameswf
 			if (fn.this_ptr)
 			{
 				our_env->set_local("this", fn.this_ptr);
+
+				// Put 'super' in a local var.
+				our_env->add_local("super", fn.this_ptr->get_proto());
 			}
 		}
 		else
@@ -124,8 +127,7 @@ namespace gameswf
 			if (m_function2_flags & 0x10)
 			{
 				// Put 'super' in a register.
-				log_error("TODO: implement 'super' in function2 dispatch (reg)\n");
-
+				(*(our_env->local_register_ptr(current_reg))) = fn.this_ptr->get_proto();
 				current_reg++;
 			}
 
@@ -136,7 +138,7 @@ namespace gameswf
 			else
 			{
 				// Put 'super' in a local var.
-				log_error("TODO: implement 'super' in function2 dispatch (var)\n");
+				our_env->add_local("super", fn.this_ptr->get_proto());
 			}
 
 			if (m_function2_flags & 0x40)
@@ -176,5 +178,4 @@ namespace gameswf
 			our_env->drop_local_registers(m_local_register_count);
 		}
 	}
-
 }

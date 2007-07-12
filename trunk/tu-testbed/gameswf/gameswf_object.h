@@ -22,28 +22,13 @@ namespace gameswf
 	struct as_object : public as_object_interface
 	{
 		stringi_hash<as_member>	m_members;
-		as_object_interface*	m_prototype;
 
-		as_object() : m_prototype(NULL)
+		as_object()
 		{
-			set_member("addProperty", as_object_addproperty);
-			set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
-		}
-
-		as_object(as_object_interface* proto) : m_prototype(proto)
-		{
-			if (m_prototype)
-			{
-				m_prototype->add_ref();
-			}
 		}
 
 		virtual ~as_object()
 		{
-			if (m_prototype)
-			{
-				m_prototype->drop_ref();
-			}
 		}
 		
 		virtual const char*	get_text_value() const { return NULL; }
@@ -56,6 +41,8 @@ namespace gameswf
 		virtual bool	on_event(const event_id& id);
 		virtual as_object* cast_to_as_object() { return this; }
 		virtual	void enumerate(as_environment* env);
+		virtual as_object_interface* get_proto();
+		void dump();
 	};
 }
 

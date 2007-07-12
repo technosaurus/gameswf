@@ -220,6 +220,15 @@ namespace gameswf
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
+
+		// retrieves the reference(__proto__ ) to the prototype property of the class
+		// (ActionScript 2.0) or constructor function
+		// __proto__ is a function object !!!
+		virtual as_object_interface* get_proto() { return 0; }
+
+		// for debugging
+		// dumps the object
+		virtual void dump() {};
 	};
 
 

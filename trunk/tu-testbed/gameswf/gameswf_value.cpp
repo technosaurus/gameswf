@@ -150,7 +150,10 @@ namespace gameswf
 			else
 			{
 				// This is the default.
-				m_string_value = "[object Object]";
+//				m_string_value = "[object Object]";
+				char buffer[50];
+				snprintf(buffer, 50, "<object 0x%X>", (void*) (m_object_value));
+				m_string_value = buffer;
 			}
 		}
 		else if (m_type == C_FUNCTION)
@@ -346,13 +349,7 @@ namespace gameswf
 		}
 		else if (m_type == AS_FUNCTION && m_as_function_value != NULL)
 		{
-			// Make sure this as_function has properties &
-			// a prototype object attached to it, since those
-			// may be about to be referenced.
-			m_as_function_value->lazy_create_properties();
-			assert(m_as_function_value->m_properties);
-
-			return m_as_function_value->m_properties;
+			return &m_as_function_value->m_properties;
 		}
 		else
 		{
