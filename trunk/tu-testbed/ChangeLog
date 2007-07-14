@@ -1,5 +1,15 @@
 2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
 
+	Fixed bug that shows one's worth in Flash8 dynamic text fields,
+	updated superclass test
+	* gameswf/gameswf_font.cpp
+	* gameswf/samples/test_superclass/circle.as
+	* gameswf/samples/test_superclass/shape.as
+	* gameswf/samples/test_superclass/test.fla
+	* gameswf/samples/test_superclass/test.swf
+
+2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
+
 	Oops, fixed compilation error
 	* gameswf/gameswf_environment.cpp
 	* gameswf/gameswf_environment.h

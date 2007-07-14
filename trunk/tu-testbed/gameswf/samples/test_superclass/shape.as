@@ -1,14 +1,14 @@
 ﻿// Shape class defined in external file named Shape.as
 class shape
 {
-	var i : Number;
+	var i : String;
 	var j : Number;
 	
 	function shape(param)
 	{
 		trace("shape constructor:" + param);
-		i = param-100;
-		j = param-100;
+		i = param;
+		j = param == "one" ? 1 : 2;
 	}
 	
 	function drawshape()
