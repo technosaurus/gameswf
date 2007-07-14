@@ -1,7 +1,8 @@
 ﻿// Circle class defined in external file named Circle.as
 class circle extends shape
 {
-	var i : Number;
+	var i : String;
+	
 	function circle(param)
 	{
 		super(param);
@@ -11,7 +12,9 @@ class circle extends shape
 	function drawshape()
 	{
 		trace("drawshape from circle is called: i=" + i);
-//		super.drawshape();
+
+		// 'super.' is not implemented for now		
+		//	super.drawshape();
 	}
 	function drawcircle()
 	{

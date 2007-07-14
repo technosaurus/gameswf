@@ -411,6 +411,10 @@ namespace gameswf
 				m_advance_table.push_back(0);	
 			}
 
+			if (is_define_font3())
+			{
+				advance *= 20.0f;
+			}
 			m_advance_table.push_back(advance);
 
 			m_glyphs.resize(glyph_index + 1);
@@ -479,12 +483,12 @@ namespace gameswf
 				}
 			}
 			advance = m_os_font->get_advance_x(code);
-			m_advance_table[glyph_index] = advance;
-		}
+			if (is_define_font3())
+			{
+				advance *= 20.0f;
+			}
 
-		if (is_define_font3())
-		{
-			advance *= 20;
+			m_advance_table[glyph_index] = advance;
 		}
 
 		return advance;
