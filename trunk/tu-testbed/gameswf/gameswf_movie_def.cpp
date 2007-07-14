@@ -114,7 +114,6 @@ namespace gameswf
 		m_origin_in(NULL),
 		m_thread(NULL)
 	{
-//		printf("movie_def_impl %08X\n", this);
 	}
 
 	movie_def_impl::~movie_def_impl()

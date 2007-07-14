@@ -327,7 +327,7 @@ namespace gameswf
 		if (target.get_type() == as_value::STRING)
 		{
 			tu_string path = target.to_tu_string();
-			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", path.c_str()));
+			IF_VERBOSE_ACTION(log_msg("-------------- ActionSetTarget2: %s", path.c_str()));
 			if (path.size() > 0)
 			{
 				character* tar = find_target(path);
@@ -346,7 +346,7 @@ namespace gameswf
 		else
 		if (target.get_type() == as_value::OBJECT)
 		{
-			IF_VERBOSE_ACTION(log_msg("-- ActionSetTarget2: %s", target.to_string()));
+			IF_VERBOSE_ACTION(log_msg("-------------- ActionSetTarget2: %s", target.to_string()));
 			character* tar = find_target(target);
 			if (tar)
 			{
@@ -478,6 +478,19 @@ namespace gameswf
 		return true;
 	}
 
+	as_value* as_environment::get_register(int reg) const
+	{
+		as_value* val = local_register_ptr(reg);
+		IF_VERBOSE_ACTION(log_msg("-------------- get_register(%d): %s \n", reg, val->to_string()));
+		return val;
+	}
+
+	void as_environment::set_register(int reg, const as_value& val)
+	{
+		IF_VERBOSE_ACTION(log_msg("-------------- set_register(%d): %s\n", reg, val.to_string()));
+		*local_register_ptr(reg) = val;
+	}
+
 	as_value*	as_environment::local_register_ptr(int reg)
 	// Return a pointer to the specified local register.
 	// Local registers are numbered starting with 1.
@@ -499,7 +512,6 @@ namespace gameswf
 			// Fallback: use global 0.
 			return &m_global_register[0];
 		}
-
 		return &m_local_register[m_local_register.size() - reg];
 	}
 
@@ -707,7 +719,7 @@ namespace gameswf
 	// for debugging
 	// retrieves vars & print them
 	{
-		printf("\n*** environment %08X ***\n", this);
+		printf("\n*** environment 0x%X ***\n", this);
 
 		printf("*** variables\n");
 		for (stringi_hash<as_value>::const_iterator it = m_variables.begin(); 

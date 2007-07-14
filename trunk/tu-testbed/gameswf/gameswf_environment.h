@@ -117,7 +117,9 @@ namespace gameswf
 		{
 			m_local_register.resize(m_local_register.size() - register_count);
 		}
-		as_value*	local_register_ptr(int reg);
+
+		as_value* get_register(int reg) const;
+		void set_register(int reg, const as_value& val);
 
 		// may be used in outside of class instance
 		static bool	parse_path(const tu_string& var_path, tu_string* path, tu_string* var);
@@ -130,6 +132,11 @@ namespace gameswf
 		character* load_file(const char* url, as_value& target);
 
 		void dump();
+
+		private:
+
+		as_value*	local_register_ptr(int reg);
+
 	};
 
 

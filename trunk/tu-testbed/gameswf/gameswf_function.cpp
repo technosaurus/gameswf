@@ -67,7 +67,7 @@ namespace gameswf
 				{
 					// Pass argument into a register.
 					int	reg = m_args[i].m_register;
-					*(our_env->local_register_ptr(reg)) = fn.arg(i);
+					our_env->set_register(reg, fn.arg(i));
 				}
 			}
 
@@ -78,7 +78,7 @@ namespace gameswf
 			if (m_function2_flags & 0x01)
 			{
 				// preload 'this' into a register.
-				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(this_ptr);
+				our_env->set_register(current_reg, this_ptr);
 				current_reg++;
 
 			}
@@ -110,7 +110,7 @@ namespace gameswf
 			if (m_function2_flags & 0x04)
 			{
 				// preload 'arguments' into a register.
-				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(arg_array.get_ptr());
+				our_env->set_register(current_reg, arg_array.get_ptr());
 				current_reg++;
 			}
 
@@ -127,7 +127,7 @@ namespace gameswf
 			if (m_function2_flags & 0x10)
 			{
 				// Put 'super' in a register.
-				(*(our_env->local_register_ptr(current_reg))) = fn.this_ptr->get_proto();
+				our_env->set_register(current_reg, fn.this_ptr->get_proto());
 				current_reg++;
 			}
 
@@ -144,8 +144,7 @@ namespace gameswf
 			if (m_function2_flags & 0x40)
 			{
 				// Put '_root' in a register.
-				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(
-					our_env->m_target->get_root_movie());
+				our_env->set_register(current_reg, our_env->m_target->get_root_movie());
 				current_reg++;
 			}
 
@@ -154,14 +153,14 @@ namespace gameswf
 				// Put '_parent' in a register.
 				array<with_stack_entry>	dummy;
 				as_value	parent = our_env->get_variable("_parent", dummy);
-				(*(our_env->local_register_ptr(current_reg))) = parent;
+				our_env->set_register(current_reg, parent);
 				current_reg++;
 			}
 
 			if (m_function2_flags & 0x100)
 			{
 				// Put '_global' in a register.
-				(*(our_env->local_register_ptr(current_reg))).set_as_object_interface(get_global());
+				our_env->set_register(current_reg, get_global());
 				current_reg++;
 			}
 		}

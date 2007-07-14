@@ -543,7 +543,7 @@ namespace gameswf
 			if (it->second->get_ref_count() > 1)
 			{
 				printf("memory leaks is found out: on exit movie_interface ref_count > 1\n");
-				printf("this = %08X, ref_count = %d\n", it->second.get_ptr(),
+				printf("this = 0x%X, ref_count = %d\n", it->second.get_ptr(),
 					it->second->get_ref_count());
 
 				// to detect memory leaks
@@ -558,7 +558,7 @@ namespace gameswf
 			if (it->second->get_ref_count() > 1)
 			{
 				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
-				printf("this = %08X, ref_count = %d\n", it->second.get_ptr(),
+				printf("this = 0x%X, ref_count = %d\n", it->second.get_ptr(),
 					it->second->get_ref_count());
 
 				// to detect memory leaks
