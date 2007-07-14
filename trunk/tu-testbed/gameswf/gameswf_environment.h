@@ -118,7 +118,7 @@ namespace gameswf
 			m_local_register.resize(m_local_register.size() - register_count);
 		}
 
-		as_value* get_register(int reg) const;
+		as_value* get_register(int reg);
 		void set_register(int reg, const as_value& val);
 
 		// may be used in outside of class instance

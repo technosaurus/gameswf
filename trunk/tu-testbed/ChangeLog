@@ -1,5 +1,11 @@
 2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
 
+	Oops, fixed compilation error
+	* gameswf/gameswf_environment.cpp
+	* gameswf/gameswf_environment.h
+
+2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
+
 	Added get_register() & set_register(), 
 	local_register_ptr is private now,
 	unified log messages
