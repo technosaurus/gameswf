@@ -1,3 +1,7 @@
+2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
+
+	* gameswf/win32/VC8/gameswf.vcproj: removed unused linker input
+
 2007-07-12  Vitaly Alexeev <tishka92@yahoo.com>
 
 	The first attempt to implement the supporting of Subclass/Superclass

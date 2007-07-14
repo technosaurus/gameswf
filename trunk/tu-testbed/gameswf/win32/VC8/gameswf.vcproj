@@ -166,7 +166,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib wms_random.obj libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib glew32.lib WinMM.lib ws2_32.lib libxml2.lib lib3ds-130s.lib freetype.lib"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib WinMM.lib ws2_32.lib lib3ds-130s.lib freetype.lib"
 				OutputFile=".\swfvc___Win32_Debug/swfvc.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
