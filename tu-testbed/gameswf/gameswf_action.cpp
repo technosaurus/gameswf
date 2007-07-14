@@ -1483,7 +1483,11 @@ namespace gameswf
 						
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
+						// env->m_instance is used to pass object pointer to constructor chain
+						env->m_instance = new_obj_ptr.get_ptr();
 						call_method(constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
+						env->m_instance = NULL;
+
 						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
 					}
 					else
@@ -1747,7 +1751,7 @@ namespace gameswf
 									result = call_method(
 									constructor,
 									env,
-									obj,
+									env->m_instance,
 									nargs,
 									env->get_top_index() - 3);
 								}
