@@ -1335,7 +1335,7 @@ namespace gameswf
 			{
 				env->push(as_value(it.get_key()));
 
-				IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
+				IF_VERBOSE_ACTION(log_msg("-------------- enumerate - push: %s\n",
 					it.get_key().c_str()));
 			}
 

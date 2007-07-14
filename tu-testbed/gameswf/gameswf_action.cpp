@@ -664,7 +664,7 @@ namespace gameswf
 	{
 		IF_VERBOSE_PARSE(log_msg("tag %d: do_action_loader\n", tag_type));
 
-		IF_VERBOSE_ACTION(log_msg("-- actions in frame %d\n", m->get_loading_frame()));
+		IF_VERBOSE_ACTION(log_msg("-------------- actions in frame %d\n", m->get_loading_frame()));
 
 		assert(in);
 		assert(tag_type == 12);
@@ -861,7 +861,7 @@ namespace gameswf
 		as_value nullvalue;
 		nullvalue.set_null();
 		env->push(nullvalue);
-		IF_VERBOSE_ACTION(log_msg("---enumerate - push: NULL\n"));
+		IF_VERBOSE_ACTION(log_msg("-------------- enumerate - push: NULL\n"));
 
 		if (obj == NULL)
 		{
@@ -1067,11 +1067,11 @@ namespace gameswf
 					as_value variable = env->get_variable(var_string, with_stack);
 					env->push(variable);
 					if (variable.to_object() == NULL) {
-						IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s\n",
+						IF_VERBOSE_ACTION(log_msg("-------------- get var: %s=%s\n",
 									  var_string.c_str(),
 									  variable.to_tu_string().c_str()));
 					} else {
-						IF_VERBOSE_ACTION(log_msg("-- get var: %s=%s at %p\n",
+						IF_VERBOSE_ACTION(log_msg("-------------- get var: %s=%s at %p\n",
 									  var_string.c_str(),
 									  variable.to_tu_string().c_str(), variable.to_object()));
 					}
@@ -1082,7 +1082,7 @@ namespace gameswf
 				case 0x1D:	// set variable
 				{
 					env->set_variable(env->top(1).to_tu_string(), env->top(0), with_stack);
-					IF_VERBOSE_ACTION(log_msg("-- set var: %s \n",
+					IF_VERBOSE_ACTION(log_msg("-------------- set var: %s \n",
 								  env->top(1).to_tu_string().c_str()));
 
 					env->drop(2);
@@ -1447,7 +1447,7 @@ namespace gameswf
 				case 0x40:	// new
 				{
 					as_value	classname = env->pop();
-					IF_VERBOSE_ACTION(log_msg("---new object: %s\n",
+					IF_VERBOSE_ACTION(log_msg("-------------- new object: %s\n",
 								  classname.to_tu_string().c_str()));
 					int	nargs = (int) env->pop().to_number();
 					as_value constructor = env->get_variable(classname.to_tu_string(), with_stack);
@@ -1666,11 +1666,11 @@ namespace gameswf
 						if (obj) {
 							obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
 							if (env->top(1).to_object() == NULL) {
-								IF_VERBOSE_ACTION(log_msg("-- get_member %s=%s\n",
+								IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s\n",
 											  env->top(0).to_tu_string().c_str(),
 											  env->top(1).to_tu_string().c_str()));
 							} else {
-								IF_VERBOSE_ACTION(log_msg("-- get_member %s=%s at %p\n",
+								IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s at %p\n",
 											  env->top(0).to_tu_string().c_str(),
 											  env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
 							}
@@ -1690,7 +1690,7 @@ namespace gameswf
 					{
 						obj->set_member(env->top(1).to_tu_string(), env->top(0));
 						IF_VERBOSE_ACTION(
-							log_msg("-- set_member [%08X].%s=%s\n",
+							log_msg("-------------- set_member [%08X].%s=%s\n",
 //								env->top(2).to_tu_string().c_str(),
 								obj,
 								env->top(1).to_tu_string().c_str(),
@@ -1700,7 +1700,7 @@ namespace gameswf
 					{
 						// Invalid object, can't set.
 						IF_VERBOSE_ACTION(
-							log_msg("-- set_member %s.%s=%s on invalid object!\n",
+							log_msg("-------------- set_member %s.%s=%s on invalid object!\n",
 								env->top(2).to_tu_string().c_str(),
 								env->top(1).to_tu_string().c_str(),
 								env->top(0).to_tu_string().c_str()));
@@ -1969,7 +1969,7 @@ namespace gameswf
 					// Save top of stack in specified register.
 					if (is_function2)
 					{
-						*(env->local_register_ptr(reg)) = env->top(0);
+						env->set_register(reg, env->top(0));
 
 						IF_VERBOSE_ACTION(
 							log_msg("-------------- local register[%d] = '%s'\n",
@@ -2170,9 +2170,9 @@ namespace gameswf
 							i++;
 							if (is_function2)
 							{
-								env->push(*(env->local_register_ptr(reg)));
+								env->push(*env->get_register(reg));
 								IF_VERBOSE_ACTION(
-									log_msg("-------------- pushed local register[%d] = '%s' at %08X\n",
+									log_msg("-------------- pushed local register[%d] = '%s'\n",
 										reg,
 										env->top(0).to_string(),
 										env->top(0).to_object()));

@@ -1,5 +1,20 @@
 2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
 
+	Added get_register() & set_register(), 
+	local_register_ptr is private now,
+	unified log messages
+	* gameswf/gameswf_action.cpp
+	* gameswf/gameswf_button.cpp
+	* gameswf/gameswf_environment.cpp
+	* gameswf/gameswf_environment.h
+	* gameswf/gameswf_function.cpp
+	* gameswf/gameswf_impl.cpp
+	* gameswf/gameswf_movie_def.cpp
+	* gameswf/gameswf_object.cpp
+	* gameswf/gameswf_sprite.cpp
+
+2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
+
 	The semantic of Flash class differs from semantic of C++.
 	Flash instance variables is not private but public,
 	all variables of new created object is therein,

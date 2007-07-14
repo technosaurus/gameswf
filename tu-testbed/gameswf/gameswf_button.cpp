@@ -624,7 +624,7 @@ namespace gameswf
 		}
 
 		// Read actions.
-		IF_VERBOSE_ACTION(log_msg("-- actions in button\n")); // @@ need more info about which actions
+		IF_VERBOSE_ACTION(log_msg("-------------- actions in button\n")); // @@ need more info about which actions
 		action_buffer*	a = new action_buffer;
 		a->read(in);
 		m_actions.push_back(a);

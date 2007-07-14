@@ -156,7 +156,7 @@ namespace gameswf
 			{
 				env->push(as_value(it.get_key()));
 
-				IF_VERBOSE_ACTION(log_msg("---enumerate - push: %s\n",
+				IF_VERBOSE_ACTION(log_msg("-------------- enumerate - push: %s\n",
 					it.get_key().c_str()));
 			}
 
@@ -174,7 +174,7 @@ namespace gameswf
 	// for debugging
 	// retrieves members & print them
 	{
-		printf("\n*** object %08X ***\n", this);
+		printf("\n*** object 0x%X ***\n", this);
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
 			it != m_members.end(); ++it)
 		{
