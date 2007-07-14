@@ -14,6 +14,7 @@ namespace gameswf
 {
 	struct character;
 	struct sprite_instance;
+	struct as_object;
 
 	//
 	// with_stack_entry
@@ -46,6 +47,11 @@ namespace gameswf
 		as_value	m_global_register[4];
 		array<as_value>	m_local_register;	// function2 uses this
 		character*	m_target;
+
+		// this is used in 'new' (0x40 opcode) to pass
+		// new created object pointer to constructor chain
+		as_object*	m_instance;
+
 		stringi_hash<as_value>	m_variables;
 
 		// For local vars.  Use empty names to separate frames.
@@ -60,7 +66,8 @@ namespace gameswf
 		array<frame_slot>	m_local_frames;
 
 		as_environment() :
-			m_target(NULL)
+			m_target(NULL),
+			m_instance(NULL)
 		{
 		}
 

@@ -15,7 +15,7 @@ class circle extends shape
 	}
 	function drawcircle()
 	{
-		drawsbox();
-		trace("drawcircle is called: i=" + i);
+		drawbox();
+		trace("drawcircle is called: i=" + i +", j=" + j);
 	}
 }

@@ -1,5 +1,18 @@
 2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
 
+	The semantic of Flash class differs from semantic of C++.
+	Flash instance variables is not private but public,
+	all variables of new created object is therein,
+	'private' keyword is meaningless
+	* gameswf/gameswf_action.cpp
+	* gameswf/gameswf_environment.h
+	* gameswf/samples/test_superclass/circle.as
+	* gameswf/samples/test_superclass/shape.as
+	* gameswf/samples/test_superclass/test.fla
+	* gameswf/samples/test_superclass/test.swf
+
+2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
+
 	* gameswf/win32/VC8/gameswf.vcproj: removed unused linker input
 
 2007-07-12  Vitaly Alexeev <tishka92@yahoo.com>
