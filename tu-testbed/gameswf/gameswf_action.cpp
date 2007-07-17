@@ -15,8 +15,10 @@
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_freetype.h"
+#include "gameswf/gameswf_plugin.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
+#include "base/tu_loadlib.h"
 
 // action script classes
 #include "gameswf/gameswf_as_classes/as_array.h"
@@ -208,6 +210,8 @@ namespace gameswf
 				else if (c == in_quote)
 				{
 					// End of quotation.
+
+
 					assert(in_arg);
 					*p = 0;
 					in_quote = 0;
@@ -386,6 +390,7 @@ namespace gameswf
 	{
 		fn.result->set_as_object_interface(new as_object);
 	}
+
 
 	void	as_global_assetpropflags(const fn_call& fn)
 	// Undocumented ASSetPropFlags function
@@ -689,6 +694,7 @@ namespace gameswf
 		int	sprite_character_id = in->read_u16();
 
 		IF_VERBOSE_PARSE(log_msg("  tag %d: do_init_action_loader\n", tag_type));
+
 		IF_VERBOSE_ACTION(log_msg("  -- init actions for sprite %d\n", sprite_character_id));
 
 		do_action*	da = new do_action;
@@ -716,6 +722,7 @@ namespace gameswf
 		// Read action bytes.
 		for (;;)
 		{
+
 			int	instruction_start = m_buffer.size();
 
 			int	pc = m_buffer.size();
@@ -765,6 +772,7 @@ namespace gameswf
 	//          ... "protected" code here, including the real decl_dict opcode ...
 	//          <end of the dummy decl_dict [0] opcode>
 	//
+
 	// So we just interpret the first decl_dict we come to, and
 	// cache the results.  If we ever hit a different decl_dict in
 	// the same action_buffer, then we log an error and ignore it.
@@ -802,6 +810,7 @@ namespace gameswf
 		assert(start_pc + 3 + length == stop_pc);
 
 		m_dictionary.resize(count);
+
 
 		// Index the strings.
 		for (int ct = 0; ct < count; ct++)
@@ -844,6 +853,7 @@ namespace gameswf
 		// sanity check
 		assert(env->m_local_frames.size() < 1000);
 
+
 		array<with_stack_entry>	empty_with_stack;
 		execute(env, 0, m_buffer.size(), NULL, empty_with_stack, false /* not function2 */);
 
@@ -869,6 +879,17 @@ namespace gameswf
 		}
 
 		obj->enumerate(env);
+	}
+
+	as_object* action_buffer::load_as_plugin(const tu_string& classname)
+	// loads user defined class from DLL / shared library
+	{
+		tu_loadlib* ll = tu_loadlib::load(classname.c_str());
+		if (ll)
+		{
+			return new as_plugin(ll);
+		}
+		return NULL;
 	}
 
 	void	action_buffer::execute(
@@ -1038,6 +1059,7 @@ namespace gameswf
 
 					// Truncate if necessary.
 					size = imin(str.length() - base, size);
+
 
 					// @@ This can be done without new allocations if we get dirtier w/ internals
 					// of as_value and tu_string...
@@ -1239,6 +1261,7 @@ namespace gameswf
 				case 0x2B:	// cast_object
 				{
 					// TODO
+
 					//
 					// Pop o1, pop s2
 					// Make sure o1 is an instance of s2.
@@ -1492,10 +1515,22 @@ namespace gameswf
 					}
 					else
 					{
-						if (classname != "String") {
-							log_error("can't create object with unknown class '%s'\n",
-								  classname.to_tu_string().c_str());
-						} else {
+						if (classname != "String")
+						{
+							// try to load user defined class from library
+							as_object* plugin = load_as_plugin(classname.to_tu_string());
+							if (plugin)
+							{
+								new_obj.set_as_object_interface(plugin);
+							}
+							else
+							{
+								log_error("can't create object with unknown class '%s'\n",
+									  classname.to_tu_string().c_str());
+							}
+						}
+						else
+						{
 							log_msg("Created special String class\n");
 						}
 					}
@@ -1906,6 +1941,7 @@ namespace gameswf
 
 					sub->m_properties.set_member("prototype", new_prototype);
 
+
 					env->drop(2);
 					break;
 
@@ -2235,6 +2271,7 @@ namespace gameswf
 						
 							env->push(val);
 
+
 							IF_VERBOSE_ACTION(log_msg("-------------- pushed int32 %d\n", val));
 						}
 						else if (type == 8)
@@ -2471,6 +2508,7 @@ namespace gameswf
 	//
 	// event_id
 	//
+
 
 	const tu_string&	event_id::get_function_name() const
 	{
@@ -2778,6 +2816,7 @@ namespace gameswf
 			{
 				log_msg("\n");
 				int i = 0;
+
 				while (i < length)
 				{
 					int	type = instruction_data[3 + i];
@@ -2849,6 +2888,7 @@ namespace gameswf
 						memcpy(&u.sub.lo, instruction_data + 3 + i + 4, 4);
 						u.i = swap_le64(u.i);
 						i += 8;
+
 
 						log_msg("(double) %f\n", u.d);
 					}
@@ -2930,6 +2970,7 @@ namespace gameswf
 				bool	preload_global = (flags & 0x100) != 0;
 				bool	preload_parent = (flags & 0x80) != 0;
 				bool	preload_root   = (flags & 0x40) != 0;
+
 				bool	suppress_super = (flags & 0x20) != 0;
 				bool	preload_super  = (flags & 0x10) != 0;
 				bool	suppress_args  = (flags & 0x08) != 0;

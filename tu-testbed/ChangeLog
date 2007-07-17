@@ -1,3 +1,26 @@
+2007-07-17  Vitaly Alexeev <tishka92@yahoo.com>
+
+	The supporting of loadable plugins is added (unimplemented for now)
+	* base/tu_loadlib.cpp
+	* base/tu_loadlib.h
+	* gameswf/gameswf_action.cpp
+	* gameswf/gameswf_action.h
+	* gameswf/gameswf_as_sprite.cpp
+	* gameswf/gameswf_character.cpp
+	* gameswf/gameswf_environment.cpp
+	* gameswf/gameswf_environment.h
+	* gameswf/gameswf_font.cpp
+	* gameswf/gameswf_sprite.cpp
+	* gameswf/gameswf_value.cpp
+	* gameswf/gameswf_value.h
+	* gameswf/plugins/sample
+	* gameswf/plugins/sample/sample.cpp
+	* gameswf/plugins/sample/test.fla
+	* gameswf/plugins/sample/test.swf
+	* gameswf/plugins/sample/win32
+	* gameswf/plugins/sample/win32/sample.vcproj
+	* gameswf/win32/VC8/gameswf.vcproj
+
 2007-07-14  Vitaly Alexeev <tishka92@yahoo.com>
 
 	Fixed bug that shows one's worth in Flash8 dynamic text fields,

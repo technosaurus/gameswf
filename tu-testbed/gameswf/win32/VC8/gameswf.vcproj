@@ -273,6 +273,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_plugin.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_plugin.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_render.cpp"
 				>
 			</File>
@@ -644,6 +652,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\base\tu_file_SDL.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\base\tu_loadlib.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\base\tu_loadlib.h"
 				>
 			</File>
 			<File

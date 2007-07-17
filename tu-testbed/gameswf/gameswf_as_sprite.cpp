@@ -247,7 +247,7 @@ namespace gameswf
 	{ 
 		if (fn.nargs >= 1)
 		{
-			fn.env->load_file(fn.arg(0).to_string(), as_value(fn.this_ptr));
+			fn.env->load_file(fn.arg(0).to_string(), fn.this_ptr);
 		}
 
 	} 
@@ -256,7 +256,7 @@ namespace gameswf
 	void sprite_unloadmovie(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
-		fn.env->load_file("", as_value(fn.this_ptr));
+		fn.env->load_file("", fn.this_ptr);
 	} 
 
 	// getNextHighestDepth() : Number

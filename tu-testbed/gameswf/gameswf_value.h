@@ -266,7 +266,7 @@ namespace gameswf
 		bool m_is_protected;
 
 		// mask for flags
-		const static int as_prop_flags_mask = DONT_ENUM | DONT_DELETE | READ_ONLY;
+		static const int as_prop_flags_mask = DONT_ENUM | DONT_DELETE | READ_ONLY;
 
 		// Default constructor
 		as_prop_flags() : m_flags(0), m_is_protected(false)

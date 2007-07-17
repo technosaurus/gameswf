@@ -13,14 +13,15 @@
 #include "plugins/lib3ds/gameswf_3ds.h"
 
 #ifdef _WIN32
-#define snprintf _snprintf
+	#define snprintf _snprintf
+	#define strncasecmp strnicmp
 #endif // _WIN32
 
 namespace gameswf
 {
 
 	// url=="" means that the load_file() works as unloadMovie(target)
-	character* as_environment::load_file(const char* url, as_value& target_value)
+	character* as_environment::load_file(const char* url, const as_value& target_value)
 	{
 		sprite_instance* target = NULL;
 		{
@@ -76,7 +77,7 @@ namespace gameswf
 
 		// SWF loader
 
-		if (strnicmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
+		if (strncasecmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
 		{
 			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
 			if (md == NULL)
@@ -115,6 +116,7 @@ namespace gameswf
 			assert(parent != NULL);
 			new_ch->set_parent(parent);
 
+
 			if (new_ch->cast_to_sprite())
 			{
 				new_ch->cast_to_sprite()->set_root(mroot);
@@ -138,7 +140,7 @@ namespace gameswf
 
 		// JPEG loader
 
-		if (strnicmp(infile.c_str() + infile.size() - 4, ".jpg", 4) == 0)
+		if (strncasecmp(infile.c_str() + infile.size() - 4, ".jpg", 4) == 0)
 		{
 #if TU_CONFIG_LINK_TO_JPEGLIB == 0
 			log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
@@ -180,7 +182,7 @@ namespace gameswf
 
 		// 3DS loader
 
-		if (strnicmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
+		if (strncasecmp(infile.c_str() + infile.size() - 4, ".3ds", 4) == 0)
 		{
 #if TU_CONFIG_LINK_TO_LIB3DS == 0
 			log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
@@ -302,6 +304,7 @@ namespace gameswf
 		{
 			return val;
 		}
+
 
 		// Check built-in constants.
 		if (varname == "_root" || varname == "_level0")

@@ -15,6 +15,7 @@
 
 #ifdef _WIN32
 #define snprintf _snprintf
+#define isnan _isnan
 #endif // _WIN32
 
 namespace gameswf
@@ -96,7 +97,7 @@ namespace gameswf
 			// @@ Moock says if value is a NAN, then result is "NaN"
 			// INF goes to "Infinity"
 			// -INF goes to "-Infinity"
-			if (_isnan(m_number_value)) {
+			if (isnan(m_number_value)) {
 				m_string_value = "NaN";
 			} else {
 				char buffer[50];
@@ -289,6 +290,7 @@ namespace gameswf
 		if (m_type == STRING)
 		{
 			if (m_string_value == "false")
+
 			{
 				return false;
 			}

@@ -152,6 +152,8 @@ namespace gameswf
 			const array<with_stack_entry>& initial_with_stack,
 			bool is_function2);
 
+		as_object* load_as_plugin(const tu_string& classname);
+
 		bool	is_null()
 		{
 			return m_buffer.size() < 1 || m_buffer[0] == 0;
