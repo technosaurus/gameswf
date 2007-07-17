@@ -422,7 +422,8 @@ namespace gameswf
 			int loaded = get_loaded_bytes();
 			if (8 + loaded - total >= 0 || total == 0)
 			{
-				m_mcloader->remove_listener(as_value(this));
+				as_value val(this);
+				m_mcloader->remove_listener(val);
 				m_mcloader->on_event(event_id(event_id::ONLOAD_COMPLETE, this));
 				m_mcloader = NULL;
 			}
@@ -560,6 +561,8 @@ namespace gameswf
 	void	sprite_instance::do_actions()
 		// Take care of this frame's actions.
 	{
+
+
 		// Keep m_as_environment alive during any method calls!
 		smart_ptr<as_object_interface>	this_ptr(this);
 
@@ -1236,6 +1239,8 @@ namespace gameswf
 
 		return called;
 	}
+
+
 
 	/*sprite_instance*/
 	const char*	sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)

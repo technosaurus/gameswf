@@ -281,7 +281,7 @@ namespace gameswf
 
 					// Remember this adjustment; we can look it up quickly
 					// later using the character pair as the key.
-					m_kerning_pairs.add(k, adjustment);
+					m_kerning_pairs[k] = adjustment;
 				}}
 			}
 		}

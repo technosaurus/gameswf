@@ -220,6 +220,7 @@ namespace gameswf
 				val->set_double(0.0);
 				return true;
 			}
+
 		case M_XMOUSE:
 			//else if (name == "_xmouse")
 			{
@@ -464,7 +465,7 @@ namespace gameswf
 		rect bound;
 		get_bound(&bound);
 		float w = bound.m_x_max - bound.m_x_min;
-		if (isfinitef(w))
+		if (isfinite(w))
 		{
 			assert(w >= 0);
 			return w;
@@ -477,7 +478,7 @@ namespace gameswf
 		rect bound;
 		get_bound(&bound);
 		float h = bound.m_y_max - bound.m_y_min;
-		if (isfinitef(h))
+		if (isfinite(h))
 		{
 			assert(h >= 0);
 			return h;
