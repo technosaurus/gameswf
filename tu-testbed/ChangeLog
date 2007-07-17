@@ -1,5 +1,11 @@
 2007-07-17  Vitaly Alexeev <tishka92@yahoo.com>
 
+	tweak_ptr ==> smart_ptr, we should protect active entity from deleting,
+	on_event() may delete it
+	* gameswf/gameswf_root.h
+
+2007-07-17  Vitaly Alexeev <tishka92@yahoo.com>
+
 	The supporting of loadable plugins is added (unimplemented for now)
 	* base/tu_loadlib.cpp
 	* base/tu_loadlib.h
