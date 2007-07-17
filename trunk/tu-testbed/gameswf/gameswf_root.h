@@ -34,8 +34,8 @@ namespace gameswf
 
 	struct mouse_button_state
 	{
-		weak_ptr<character>	m_active_entity;	// entity that currently owns the mouse pointer
-		weak_ptr<character>	m_topmost_entity;	// what's underneath the mouse right now
+		smart_ptr<character>	m_active_entity;	// entity that currently owns the mouse pointer
+		smart_ptr<character>	m_topmost_entity;	// what's underneath the mouse right now
 
 		bool	m_mouse_button_state_last;		// previous state of mouse button
 		bool	m_mouse_button_state_current;		// current state of mouse button
