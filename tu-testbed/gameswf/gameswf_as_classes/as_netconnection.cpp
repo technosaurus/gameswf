@@ -25,6 +25,7 @@ namespace gameswf
 		assert(fn.this_ptr);
 		as_netconnection* nc = fn.this_ptr->cast_to_as_netconnection();
 		assert(nc);
+                UNUSED(nc);
 
 		if (fn.nargs == 1)
 		{

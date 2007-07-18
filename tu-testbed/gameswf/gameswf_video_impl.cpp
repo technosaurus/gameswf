@@ -35,6 +35,7 @@ namespace gameswf
 			m_width = in->read_u16();
 			m_height = in->read_u16();
 			Uint8 reserved_flags = in->read_uint(5);
+                        UNUSED(reserved_flags);
 			m_deblocking_flags = in->read_uint(2);
 			m_smoothing_flags = in->read_uint(1) ? true : false;
 	
@@ -125,4 +126,3 @@ namespace gameswf
 
 
 } // end of namespace gameswf
-

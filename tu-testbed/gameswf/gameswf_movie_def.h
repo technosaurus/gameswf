@@ -42,11 +42,11 @@ namespace gameswf
 	struct movie_definition_sub : public movie_definition 
 	{
 		movie_definition_sub() :
-			m_frame_count(0),
-			m_loading_frame(0),
 			m_ss_id(-1),
 			m_ss_format(sound_handler::FORMAT_RAW),
-			m_ss_start(-1)
+			m_ss_start(-1),
+			m_frame_count(0),
+			m_loading_frame(0)
 		{
 		}
 
@@ -119,24 +119,22 @@ namespace gameswf
 		virtual create_bitmaps_flag	get_create_bitmaps() const = 0;
 		virtual create_font_shapes_flag	get_create_font_shapes() const = 0;
 
+                // TODO: make these private!
 		// stream sound variables
 		int m_ss_id;	// stream sound handler_id
 		sound_handler::format_type m_ss_format;	// used in tag 19
 		int m_ss_start;	// start frame
 
-		private:
-
-		int	m_frame_count;
-		int	m_loading_frame;
-		tu_condition m_frame;
-
+	private:
 		void	signal()
 		{
 			// printf("signal %d frames is loaded\n", m_loading_frame);
 			m_frame.signal();
 		}
 
-
+                int	m_frame_count;
+		int	m_loading_frame;
+		tu_condition m_frame;
 	};
 
 	//

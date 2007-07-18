@@ -64,7 +64,8 @@ namespace gameswf
 
 		as_value method;
 		if (s_static_string_instance->get_member(method_name, &method)) {
-			*(fn.result) = call_method(method, fn.env, &tu_string_as_object(this_string), fn.nargs, fn.first_arg_bottom_index);
+			tu_string_as_object tsao(this_string);
+			*(fn.result) = call_method(method, fn.env, &tsao, fn.nargs, fn.first_arg_bottom_index);
 		} else {
 			log_error("error: string_method can't find method %s\n", method_name.c_str());
 		}

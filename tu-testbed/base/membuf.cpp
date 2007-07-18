@@ -89,8 +89,8 @@ membuf::membuf(read_only_enum e, const void* data, int size)
 
 membuf::~membuf()
 {
-	if (!m_read_only) {
-		delete [] m_data;
+	if (!m_read_only && m_capacity) {
+		tu_free(m_data, m_capacity);
 	}
 	m_data = NULL;
 }

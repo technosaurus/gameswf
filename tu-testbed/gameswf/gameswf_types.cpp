@@ -174,8 +174,8 @@ namespace gameswf
 	void	matrix::print() const
 	// Debug log.
 	{
-		log_msg("| %4.4f %4.4f %4.4f |\n", m_[0][0], m_[0][1], TWIPS_TO_PIXELS(m_[0][2]));
-		log_msg("| %4.4f %4.4f %4.4f |\n", m_[1][0], m_[1][1], TWIPS_TO_PIXELS(m_[1][2]));
+		log_msg("| %4.4f %4.4f %4.4f |\n", float(m_[0][0]), float(m_[0][1]), TWIPS_TO_PIXELS(m_[0][2]));
+		log_msg("| %4.4f %4.4f %4.4f |\n", float(m_[1][0]), float(m_[1][1]), TWIPS_TO_PIXELS(m_[1][2]));
 	}
 
 	void	matrix::transform(point* result, const point& p) const
@@ -460,10 +460,10 @@ namespace gameswf
 	// Debug log.
 	{
 		log_msg("    *         +\n");
-		log_msg("| %4.4f %4.4f|\n", m_[0][0], m_[0][1]);
-		log_msg("| %4.4f %4.4f|\n", m_[1][0], m_[1][1]);
-		log_msg("| %4.4f %4.4f|\n", m_[2][0], m_[2][1]);
-		log_msg("| %4.4f %4.4f|\n", m_[3][0], m_[3][1]);
+		log_msg("| %4.4f %4.4f|\n", float(m_[0][0]), float(m_[0][1]));
+		log_msg("| %4.4f %4.4f|\n", float(m_[1][0]), float(m_[1][1]));
+		log_msg("| %4.4f %4.4f|\n", float(m_[2][0]), float(m_[2][1]));
+		log_msg("| %4.4f %4.4f|\n", float(m_[3][0]), float(m_[3][1]));
 	}
 
 

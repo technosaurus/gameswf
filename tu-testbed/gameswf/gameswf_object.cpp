@@ -174,7 +174,7 @@ namespace gameswf
 	// for debugging
 	// retrieves members & print them
 	{
-		printf("\n*** object 0x%X ***\n", this);
+		printf("\n*** object 0x%X ***\n", (Uint32) this);
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
 			it != m_members.end(); ++it)
 		{
@@ -184,4 +184,3 @@ namespace gameswf
 	}
 
 }
-

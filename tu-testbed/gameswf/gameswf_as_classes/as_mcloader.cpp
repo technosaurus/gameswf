@@ -70,6 +70,7 @@ namespace gameswf
 		assert(fn.this_ptr);
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
+                UNUSED(mcl);
 
 		if (fn.nargs == 1)
 		{
@@ -85,6 +86,7 @@ namespace gameswf
 		assert(fn.this_ptr);
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
+                UNUSED(mcl);
 
 		if (fn.nargs == 1)
 		{
@@ -154,7 +156,7 @@ namespace gameswf
 		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listener.begin(); it != m_listener.end(); )
 		{
 			as_value function;
-			
+
 			smart_ptr<as_object_interface> listener = it->first;
 			if (listener == NULL)
 			{

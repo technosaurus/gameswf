@@ -368,6 +368,7 @@ namespace gameswf
 			while ((Uint32) str.get_position() < file_end_pos)
 			{
 				int tag_type = str.open_tag();
+				UNUSED(tag_type);
 				str.close_tag();
 				local_tag_count++;
 			}
@@ -543,7 +544,7 @@ namespace gameswf
 			if (it->second->get_ref_count() > 1)
 			{
 				printf("memory leaks is found out: on exit movie_interface ref_count > 1\n");
-				printf("this = 0x%X, ref_count = %d\n", it->second.get_ptr(),
+				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
 					it->second->get_ref_count());
 
 				// to detect memory leaks
@@ -558,7 +559,7 @@ namespace gameswf
 			if (it->second->get_ref_count() > 1)
 			{
 				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
-				printf("this = 0x%X, ref_count = %d\n", it->second.get_ptr(),
+				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
 					it->second->get_ref_count());
 
 				// to detect memory leaks
@@ -1390,9 +1391,11 @@ namespace gameswf
 
 		Uint32 attr = in->read_u32();
 
-		// now attr is't used
+		// now attr isn't used
 		bool has_metadata =  attr & 0x10000000 ? true : false;
 		bool use_network =  attr & 0x01000000 ? true : false;
+		UNUSED(has_metadata);
+		UNUSED(use_network);
 	}
 
 	void	define_font_alignzones(stream* in, int tag_type, movie_definition_sub* m)
@@ -1601,9 +1604,9 @@ namespace gameswf
 						action_buffer action;
 						action.read(in);
 
-						if (action.get_length() != event_length)
+						if (action.get_length() != static_cast<int>(event_length))
 						{
-							log_error("swf_event::read(), event_length = %d, but read %lu\n",
+							log_error("swf_event::read(), event_length = %d, but read %d\n",
 								event_length, action.get_length());
 							break;
 						}

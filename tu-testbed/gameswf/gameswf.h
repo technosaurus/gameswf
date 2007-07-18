@@ -327,6 +327,7 @@ namespace gameswf
 		// of each imported movie.
 		struct import_visitor
 		{
+			virtual ~import_visitor() {}
 			virtual void	visit(const char* imported_movie_filename) = 0;
 		};
 		virtual void	visit_imported_movies(import_visitor* visitor) = 0;

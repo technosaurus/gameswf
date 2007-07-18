@@ -76,7 +76,7 @@ namespace gameswf
 
 		IF_VERBOSE_PARSE(log_msg("  frames = %d\n", get_frame_count()));
 
-		while ((Uint32) in->get_position() < (Uint32) tag_end && 	get_break_loading() == false)
+		while ((Uint32) in->get_position() < (Uint32) tag_end && get_break_loading() == false)
 		{
 			int	tag_type = in->open_tag();
 			loader_function lf = NULL;

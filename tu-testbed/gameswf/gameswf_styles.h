@@ -30,6 +30,7 @@ namespace gameswf
 
 	struct base_fill_style
 	{
+		virtual ~base_fill_style() {}
 		virtual void apply(int fill_side, float ratio) const = 0;
 	};
 
@@ -88,6 +89,7 @@ namespace gameswf
 
 	struct base_line_style
 	{
+		virtual ~base_line_style() {}
 		virtual void apply(float ratio) const = 0;
 	};
 
@@ -95,6 +97,7 @@ namespace gameswf
 	// For the outside of outline shapes, or just bare lines.
 	{
 		line_style();
+		virtual ~line_style() {}
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		virtual void	apply(float ratio) const;
 
@@ -122,10 +125,11 @@ namespace gameswf
 	{
 		morph_line_style();
 		morph_line_style(stream* in);
+		virtual ~morph_line_style() {}
 
 		void read(stream* in);
 		virtual void apply(float morph) const;
-		
+
 	private:
 		Uint16 m_width[2];
 		rgba   m_color[2];

@@ -82,14 +82,13 @@ void dump_memory_stats(const char *from, int line, const char *label)
 		freeb = mi.fordblks;
 	}
 
+        UNUSED(allocated);
 	//if (allocated != mi.uordblks) {
 	//  printf("\t%d bytes difference in allocated space.\n", mi.uordblks - allocated);
 	//  allocated = mi.uordblks;
 	//}  
 
-// USE_DMALLOC
-#endif
+#endif  // not USE_DMALLOC
 
-// _WIN32
-#endif
+#endif  // not _WIN32
 }
