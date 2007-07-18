@@ -50,7 +50,7 @@ namespace logger
 
 	// Toggle this to enable verbose logging by the standard log
 	// handlers.
-	extern bool FLAG_verbose_log = false;
+	bool FLAG_verbose_log = false;
 
 
 #ifdef _WIN32
@@ -107,4 +107,3 @@ namespace logger
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
-

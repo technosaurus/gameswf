@@ -183,6 +183,7 @@ namespace gameswf
 
 	struct as_property_interface
 	{
+		virtual ~as_property_interface() {}
 		virtual bool	set_property(int index, const as_value& val) = 0;
 	};
 

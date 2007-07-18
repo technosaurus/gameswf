@@ -15,7 +15,10 @@
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_freetype.h"
+// TODO: remove these guards once gameswf_plugin.h is checked in.
+#ifdef PLUGIN
 #include "gameswf/gameswf_plugin.h"
+#endif // PLUGIN
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 #include "base/tu_loadlib.h"
@@ -450,8 +453,6 @@ namespace gameswf
 				as_member member = it.get_value();
 
 				as_prop_flags f = member.get_member_flags();
-				const int oldflags = f.get_flags();
-				const int newflags = f.set_flags(set_true, set_false);
 				member.set_member_flags(f);
 
 				object->m_members.set(it.get_key(), member);
@@ -473,8 +474,6 @@ namespace gameswf
 					as_member member = it2.get_value();
 
 					as_prop_flags f = member.get_member_flags();
-					const int oldflags = f.get_flags();
-					const int newflags = f.set_flags(set_true, set_false);
 					member.set_member_flags(f);
 
 					object->m_members.set((it.get_value()).get_member_value().to_string(), member);
@@ -881,6 +880,7 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
+#ifdef PLUGIN
 	as_object* action_buffer::load_as_plugin(const tu_string& classname)
 	// loads user defined class from DLL / shared library
 	{
@@ -891,6 +891,7 @@ namespace gameswf
 		}
 		return NULL;
 	}
+#endif // PLUGIN
 
 	void	action_buffer::execute(
 		as_environment* env,
@@ -1517,6 +1518,7 @@ namespace gameswf
 					{
 						if (classname != "String")
 						{
+#ifdef PLUGIN
 							// try to load user defined class from library
 							as_object* plugin = load_as_plugin(classname.to_tu_string());
 							if (plugin)
@@ -1524,6 +1526,7 @@ namespace gameswf
 								new_obj.set_as_object_interface(plugin);
 							}
 							else
+#endif  // PLUGIN
 							{
 								log_error("can't create object with unknown class '%s'\n",
 									  classname.to_tu_string().c_str());
@@ -1553,6 +1556,7 @@ namespace gameswf
  					as_global_array_ctor(fn_call(&result, NULL, env, -1, -1));
  					as_object_interface* ao = result.to_object();
  					assert(ao);
+					UNUSED(ao);
  					env->push(result);
 					break;
 				}
@@ -1725,7 +1729,7 @@ namespace gameswf
 					{
 						obj->set_member(env->top(1).to_tu_string(), env->top(0));
 						IF_VERBOSE_ACTION(
-							log_msg("-------------- set_member [%08X].%s=%s\n",
+							log_msg("-------------- set_member [%p].%s=%s\n",
 //								env->top(2).to_tu_string().c_str(),
 								obj,
 								env->top(1).to_tu_string().c_str(),
@@ -2210,8 +2214,7 @@ namespace gameswf
 								IF_VERBOSE_ACTION(
 									log_msg("-------------- pushed local register[%d] = '%s'\n",
 										reg,
-										env->top(0).to_string(),
-										env->top(0).to_object()));
+										env->top(0).to_string()));
 							}
 							else if (reg < 0 || reg >= 4)
 							{

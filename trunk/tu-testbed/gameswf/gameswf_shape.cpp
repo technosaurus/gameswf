@@ -188,7 +188,6 @@ namespace gameswf
 
 					// x_intercept = x0 + (x1 - x0) * (y - y0) / dy;
 					float x_intercept_times_dy = x0 * dy + (x1 - x0) * (y - y0);
-					float x_times_dy = x * dy;
 
 					// text x_intercept > x
 				
@@ -1439,7 +1438,6 @@ namespace gameswf
 
 			glEnd();
 
-#if 0
 			// Draw arrowheads.
 			point	dir, right, p0, p1;
 			glBegin(GL_LINES);
@@ -1478,14 +1476,13 @@ namespace gameswf
 				}
 			}}
 			glEnd();
-#endif // 0
 
 			glPopMatrix();
 		}
 	}
 #endif // DEBUG_DISPLAY_SHAPE_PATHS
 
-		
+
 	void	shape_character_def::display(
 		const matrix& mat,
 		const cxform& cx,

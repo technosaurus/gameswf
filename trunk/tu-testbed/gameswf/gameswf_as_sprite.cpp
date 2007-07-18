@@ -256,6 +256,7 @@ namespace gameswf
 	void sprite_unloadmovie(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
+                UNUSED(sprite);
 		fn.env->load_file("", fn.this_ptr);
 	} 
 

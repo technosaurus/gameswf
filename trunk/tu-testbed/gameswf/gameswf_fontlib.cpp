@@ -527,7 +527,7 @@ namespace fontlib
 			software_trapezoid(y0, y2, x0, x2, x1, x2);
 		}
 	}
-	
+
 
 	struct draw_into_software_buffer_old : tesselate::trapezoid_accepter
 	// A trapezoid accepter that does B&W rendering into our

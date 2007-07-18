@@ -121,7 +121,7 @@ inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm 
 
 
 // Handy macro to quiet compiler warnings about unused parameters/variables.
-#define UNUSED(x) (x) = (x)
+#define UNUSED(x) (void) (x)
 
 
 // Compile-time constant size of array.

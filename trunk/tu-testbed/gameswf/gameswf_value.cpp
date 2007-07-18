@@ -151,22 +151,19 @@ namespace gameswf
 			else
 			{
 				// This is the default.
-//				m_string_value = "[object Object]";
-				char buffer[50];
-				snprintf(buffer, 50, "<object 0x%X>", (void*) (m_object_value));
-				m_string_value = buffer;
+				m_string_value = "[object Object]";
 			}
 		}
 		else if (m_type == C_FUNCTION)
 		{
 			char buffer[50];
-			snprintf(buffer, 50, "<c_function 0x%X>", (void*) (m_c_function_value));
+			snprintf(buffer, 50, "<c_function 0x%p>", (void*) (m_c_function_value));
 			m_string_value = buffer;
 		}
 		else if (m_type == AS_FUNCTION)
 		{
 			char buffer[50];
-			snprintf(buffer, 50, "<as_function 0x%X>", (void*) (m_as_function_value));
+			snprintf(buffer, 50, "<as_function 0x%p>", (void*) (m_as_function_value));
 			m_string_value = buffer;
 		}
 		else if (m_type == PROPERTY)
@@ -178,7 +175,7 @@ namespace gameswf
 			m_string_value = "<bad type>";
 			assert(0);
 		}
-		
+
 		return m_string_value;
 	}
 

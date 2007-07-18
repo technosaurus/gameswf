@@ -220,7 +220,7 @@ private:
 				// Underlying object went away.
 				// Remove the const attribute
 				*(const_cast<smart_ptr<weak_proxy>*>(&m_proxy)) = NULL;
-				const_cast<T*>(m_ptr) = NULL;
+				*(const_cast<T**>(&m_ptr)) = NULL;
 			}
 		}
 	}

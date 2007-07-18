@@ -1,4 +1,4 @@
-#!python
+#!/usr/bin/python
 
 # gameswf_batch_test.py -Thatcher Ulrich <tu@tulrich.com> 2005
 

@@ -28,7 +28,7 @@ namespace gameswf
 			character* ch = find_target(target_value);
 			if (ch == NULL)
 			{
-				IF_VERBOSE_ACTION(("load_file: target %s is't found\n", target_value.to_string()));
+				IF_VERBOSE_ACTION(log_msg("load_file: target %s is't found\n", target_value.to_string()));
 				return NULL;
 			}
 			target = ch->cast_to_sprite();
@@ -36,7 +36,7 @@ namespace gameswf
 
 		if (target == NULL)
 		{
-			IF_VERBOSE_ACTION(("load_file: target %s is't movieclip\n", target_value.to_string()));
+			IF_VERBOSE_ACTION(log_msg("load_file: target %s is't movieclip\n", target_value.to_string()));
 			return NULL;
 		}
 
@@ -71,7 +71,7 @@ namespace gameswf
 
 		if (infile.size() < 4)	// need at least the file extension 
 		{
-			IF_VERBOSE_ACTION(("loadMovie: invalid path '%s'\n", infile.c_str()));
+			IF_VERBOSE_ACTION(log_msg("loadMovie: invalid path '%s'\n", infile.c_str()));
 			return NULL;
 		}
 
@@ -82,7 +82,7 @@ namespace gameswf
 			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
 			if (md == NULL)
 			{
-				IF_VERBOSE_ACTION(("can't create movie from %s\n", infile.c_str()));
+				IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", infile.c_str()));
 				return NULL;
 			}
 
@@ -248,7 +248,7 @@ namespace gameswf
 			}
 			else
 			{
-				IF_VERBOSE_ACTION(("find_target(\"%s\") failed\n", path.c_str()));
+				IF_VERBOSE_ACTION(log_msg("find_target(\"%s\") failed\n", path.c_str()));
 				return as_value();
 			}
 		}
@@ -357,7 +357,7 @@ namespace gameswf
 				return;
 			}
 		}
-		IF_VERBOSE_ACTION(("can't set target %s\n", target.to_string()));
+		IF_VERBOSE_ACTION(log_msg("can't set target %s\n", target.to_string()));
 	}
 
 	void	as_environment::set_variable(
@@ -722,7 +722,7 @@ namespace gameswf
 	// for debugging
 	// retrieves vars & print them
 	{
-		printf("\n*** environment 0x%X ***\n", this);
+		printf("\n*** environment 0x%p ***\n", this);
 
 		printf("*** variables\n");
 		for (stringi_hash<as_value>::const_iterator it = m_variables.begin(); 

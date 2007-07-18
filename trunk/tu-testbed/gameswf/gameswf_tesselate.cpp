@@ -722,6 +722,7 @@ namespace tesselate_new
 		for (int i = 0, n = s_path_parts.size(); i < n; i++) {
 			int lstyle = s_path_parts[i].m_left_style;
 			int rstyle = s_path_parts[i].m_right_style;
+			UNUSED(rstyle);
 			if (lstyle >= 0) {
 				// Move the data into a new
 				// proxy right path.
@@ -924,5 +925,3 @@ namespace tesselate_new
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
-
-

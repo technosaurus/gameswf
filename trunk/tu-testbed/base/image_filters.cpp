@@ -346,11 +346,10 @@ enum filter_type {
 	FILTER_COUNT
 };
 
-struct {
+struct filter_table_t {
 	float	(*filter_function)(float);
 	float	support;
-} filter_table[] =
-{
+} filter_table[] = {
 	{ box_filter, box_support },
 	{ triangle_filter, triangle_support },
 	{ bell_filter, bell_support },
@@ -820,4 +819,3 @@ void	zoom(image::rgba* src, image::rgba* dst)
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
-

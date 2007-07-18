@@ -29,6 +29,7 @@ namespace gameswf
 		// trapezoidation.
 		struct trapezoid_accepter
 		{
+			virtual ~trapezoid_accepter() {}
 			virtual void accept_trapezoid(int style, const trapezoid& tr) = 0;
 			virtual void accept_line_strip(int style, const point coords[], int coord_count) = 0;
 			virtual void end_shape() = 0;
@@ -57,6 +58,7 @@ namespace gameswf
 
 	namespace tesselate_new {
 		struct mesh_accepter {
+			virtual ~mesh_accepter() {}
 			// Caller begins a trilist of a particular
 			// style, then passes in batches of individual
 			// triangles, then ends the trilist.  The idea

@@ -1034,6 +1034,9 @@ static bool find_and_clip_ear(tristate* ts)
 			const poly_vert& pvi0 = ts->m_verts[vi0];
 			const poly_vert& pvi1 = ts->m_verts[vi1];
 			const poly_vert& pvi2 = ts->m_verts[vi2];
+                        UNUSED(pvi0);
+                        UNUSED(pvi1);
+                        UNUSED(pvi2);
 
 			// Update m_next_dirty, in case we modified a
 			// vert earlier in the array.
@@ -1295,4 +1298,3 @@ http://www.amanith.org/forum/viewtopic.php?pid=43
 
 
 #endif // EAR_CLIP_TRIANGULATE_IMPL_H
-
