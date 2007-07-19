@@ -183,4 +183,62 @@ namespace gameswf
 		printf("***\n");
 	}
 
+	//
+	// plugin object
+	//
+
+	as_plugin::as_plugin(tu_loadlib* ll) :
+		m_module_init(NULL),
+		m_module_close(NULL),
+		m_module_getmember(NULL),
+		m_module_setmember(NULL)
+	{
+		assert(ll);
+
+		// get module interface
+		m_module_init = (gameswf_module_init) ll->get_function("gameswf_module_init");
+		m_module_close = (gameswf_module_close) ll->get_function("gameswf_module_close");
+		m_module_getmember = (gameswf_module_getmember) ll->get_function("gameswf_module_getmember");
+		m_module_setmember = (gameswf_module_setmember) ll->get_function("gameswf_module_setmember");
+
+		// init module
+		if (m_module_init)
+		{
+			(m_module_init)();
+		}
+
+	}
+
+	as_plugin::~as_plugin()
+	{
+		if (m_module_close)
+		{
+			(m_module_close)();
+		}
+	}
+
+	bool	as_plugin::get_member(const tu_stringi& name, as_value* val)
+	{
+		if (m_module_getmember)
+		{
+			plugin_value pval;
+			if ((m_module_getmember)(name, &pval))
+			{
+				*val = pval;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool	as_plugin::set_member(const tu_stringi& name, const as_value& val)
+	{
+		if (m_module_setmember)
+		{
+			plugin_value pval;
+			return (m_module_setmember)(name, pval);
+		}
+		return false;
+	}
+
 }

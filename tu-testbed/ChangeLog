@@ -1,3 +1,23 @@
+2007-07-19  Vitaly Alexeev <tishka92@yahoo.com>
+	Added missing gameswf_plugin.h,
+	added struct plugin_object that is the bridge between core of gameswf
+	and the plugin,
+	added plugin_value that is common for gameswf & plugin and is used to
+	pass data to/from plugin
+	* gameswf/gameswf_action.cpp
+	* gameswf/gameswf_as_classes/as_color.cpp
+	* gameswf/gameswf_as_classes/as_table.cpp
+	* gameswf/gameswf_object.cpp
+	* gameswf/gameswf_object.h
+	* gameswf/gameswf_plugin.h
+	* gameswf/gameswf_value.cpp
+	* gameswf/gameswf_value.h
+	* gameswf/plugins/sample/sample.cpp
+	* gameswf/plugins/sample/test.fla
+	* gameswf/plugins/sample/test.swf
+	* gameswf/plugins/sample/win32/sample.vcproj
+	* gameswf/win32/VC8/gameswf.vcproj
+
 2007-07-17  Vitaly Alexeev <tishka92@yahoo.com>
 
 	tweak_ptr ==> smart_ptr, we should protect active entity from deleting,

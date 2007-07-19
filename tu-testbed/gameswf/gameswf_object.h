@@ -12,8 +12,10 @@
 #include "gameswf/gameswf_value.h"
 #include "gameswf/gameswf_environment.h"
 #include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_plugin.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
+#include "base/tu_loadlib.h"
 
 namespace gameswf
 {
@@ -44,6 +46,33 @@ namespace gameswf
 		virtual as_object_interface* get_proto();
 		void dump();
 	};
+
+	//
+	// plugin object
+	//
+
+	typedef bool (*gameswf_module_init)();
+	typedef bool (*gameswf_module_close)();
+	typedef bool (*gameswf_module_getmember)(const tu_stringi& name, plugin_value* pval);
+	typedef bool (*gameswf_module_setmember)(const tu_stringi& name, const plugin_value& pval);
+
+	struct as_plugin : public as_object
+	{
+		as_plugin(tu_loadlib* ll);
+		~as_plugin();
+
+		virtual bool	get_member(const tu_stringi& name, as_value* val);
+		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+
+	private:
+
+		gameswf_module_init m_module_init;
+		gameswf_module_close m_module_close;
+		gameswf_module_getmember m_module_getmember;
+		gameswf_module_setmember m_module_setmember;
+	};
+
+
 }
 
 #endif

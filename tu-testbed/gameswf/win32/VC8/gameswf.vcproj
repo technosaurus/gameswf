@@ -273,14 +273,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_plugin.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_plugin.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_render.cpp"
 				>
 			</File>
@@ -435,6 +427,10 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_object.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_plugin.h"
 				>
 			</File>
 			<File
