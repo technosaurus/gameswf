@@ -82,7 +82,7 @@ namespace gameswf
 		tobj->set_member("bb", b);	// value	(-255..255)
 		tobj->set_member("aa", a / 255.0f * 100.0f);	// percent (-100..100)
 		tobj->set_member("ab", a);	// value	(-255..255)
-		*fn.result = tobj;
+		fn.result->set_as_object_interface(tobj);
 	}
 
 	void	as_color_settransform(const fn_call& fn)

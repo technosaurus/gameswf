@@ -9,8 +9,7 @@
 #ifndef GAMESWF_VALUE_H
 #define GAMESWF_VALUE_H
 
-//#include "gameswf/gameswf.h"
-
+#include "gameswf/gameswf_plugin.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
 #include <wchar.h>
@@ -38,7 +37,8 @@ namespace gameswf
 			OBJECT,
 			C_FUNCTION,
 			AS_FUNCTION,	// ActionScript function.
-			PROPERTY
+			PROPERTY,
+			PLUGIN_FUNCTION
 		};
 		type	m_type;
 		mutable tu_string	m_string_value;
@@ -50,6 +50,7 @@ namespace gameswf
 			as_object_interface*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_as_function*	m_as_function_value;
+			plugin_function_ptr	m_plugin_function_value;
 			struct
 			{
 				as_as_function*	m_getter;
@@ -145,12 +146,18 @@ namespace gameswf
 
 		as_value(as_object_interface* obj);
 
-		as_value(as_c_function_ptr func)
-			:
+		as_value(as_c_function_ptr func) :
 			m_type(C_FUNCTION),
 			m_c_function_value(func)
 		{
 			m_c_function_value = func;
+		}
+
+		as_value(plugin_function_ptr func) :
+			m_type(PLUGIN_FUNCTION),
+			m_plugin_function_value(func)
+		{
+			m_plugin_function_value = func;
 		}
 
 		as_value(as_as_function* func);
@@ -167,7 +174,7 @@ namespace gameswf
 		// Return true if this value is callable.
 		bool is_function() const
 		{
-			return m_type == C_FUNCTION || m_type == AS_FUNCTION;
+			return m_type == C_FUNCTION || m_type == AS_FUNCTION || m_type == PLUGIN_FUNCTION;
 		}
 
 		const char*	to_string() const;
@@ -178,8 +185,10 @@ namespace gameswf
 		bool	to_bool() const;
 		as_object_interface*	to_object() const;
 		as_c_function_ptr	to_c_function() const;
+		plugin_function_ptr	to_plugin_function() const;
 		as_as_function*	to_as_function() const;
 		const tu_string& call_to_string(as_environment* env) const;
+		plugin_value to_plugin_value() const;
 
 		void	convert_to_number();
 		void	convert_to_string();
@@ -205,6 +214,10 @@ namespace gameswf
 		{
 			drop_refs(); m_type = C_FUNCTION; m_c_function_value = func;
 		}
+		void	set_plugin_function_ptr(plugin_function_ptr func)
+		{
+			drop_refs(); m_type = PLUGIN_FUNCTION; m_plugin_function_value = func;
+		}
 		void	set_as_as_function(as_as_function* func);
 		void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
 		void	set_null() { drop_refs(); m_type = NULLTYPE; }
@@ -225,6 +238,30 @@ namespace gameswf
 			else if (v.m_type == AS_FUNCTION) set_as_as_function(v.m_as_function_value);
 			else if (v.m_type == PROPERTY) set_as_property(v.m_getter, v.m_setter);
 			else assert(0);
+		}
+
+		void	operator=(const plugin_value& pv)
+		{
+			switch (pv.m_type)
+			{
+				case UNDEFINED:
+					set_undefined();
+					break;
+				case BOOLEAN:
+					set_bool(pv.m_boolean_value);
+					break;
+				case STRING:
+					set_tu_string(pv.m_string_value);
+					break;
+				case NUMBER:
+					set_double(pv.m_number_value);
+					break;
+				case PLUGIN_FUNCTION:
+					set_plugin_function_ptr(pv.m_plugin_function_value);
+					break;
+				default:
+					assert(0);
+			}
 		}
 
 		bool	operator==(const as_value& v) const;

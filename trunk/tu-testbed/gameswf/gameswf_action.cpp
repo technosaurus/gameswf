@@ -15,10 +15,7 @@
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_freetype.h"
-// TODO: remove these guards once gameswf_plugin.h is checked in.
-#ifdef PLUGIN
 #include "gameswf/gameswf_plugin.h"
-#endif // PLUGIN
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 #include "base/tu_loadlib.h"
@@ -155,6 +152,17 @@ namespace gameswf
 		{
 			// It's an ActionScript function.  Call it.
 			(*as_func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
+		}
+		else if (plugin_function_ptr plugin = method.to_plugin_function())
+		{
+			plugin_value result;
+			array<plugin_value> params;
+			for (int i = 0; i < nargs; i++)
+			{
+				params.push_back(env->bottom(first_arg_bottom_index - i).to_plugin_value());
+			}
+
+			(*plugin)(&result, params);
 		}
 		else
 		{
@@ -880,7 +888,6 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
-#ifdef PLUGIN
 	as_object* action_buffer::load_as_plugin(const tu_string& classname)
 	// loads user defined class from DLL / shared library
 	{
@@ -891,7 +898,6 @@ namespace gameswf
 		}
 		return NULL;
 	}
-#endif // PLUGIN
 
 	void	action_buffer::execute(
 		as_environment* env,
@@ -1463,7 +1469,7 @@ namespace gameswf
 					double	x = env->pop().to_number();
 					if (y != 0)
 					{
-						result = fmod(x, y);
+						result.set_double(fmod(x, y));
 					}
 					env->push(result);
 					break;
@@ -1518,15 +1524,13 @@ namespace gameswf
 					{
 						if (classname != "String")
 						{
-#ifdef PLUGIN
-							// try to load user defined class from library
+							// try to load user defined class from DLL / shared library
 							as_object* plugin = load_as_plugin(classname.to_tu_string());
 							if (plugin)
 							{
 								new_obj.set_as_object_interface(plugin);
 							}
 							else
-#endif  // PLUGIN
 							{
 								log_error("can't create object with unknown class '%s'\n",
 									  classname.to_tu_string().c_str());

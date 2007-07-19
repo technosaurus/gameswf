@@ -19,7 +19,7 @@ namespace gameswf
 	{
 		assert(fn.this_ptr);	assert(fn.env);
 		as_table* tbl = fn.this_ptr->cast_to_as_table();
-		*fn.result = tbl->size();
+		fn.result->set_int(tbl->size());
 	}
 
 	void	next_method(const fn_call& fn)
@@ -51,7 +51,7 @@ namespace gameswf
 	{
 		assert(fn.this_ptr);	assert(fn.env);
 		as_table* tbl = fn.this_ptr->cast_to_as_table();
-		*fn.result = tbl->fld_count();
+		fn.result->set_int(tbl->fld_count());
 	}
 
 	void	goto_record_method(const fn_call& fn)
@@ -69,7 +69,7 @@ namespace gameswf
 		assert(fn.this_ptr);	assert(fn.env);
 		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		assert(fn.nargs == 1);
-		*fn.result = tbl->get_field_title((int) fn.arg(0).to_number());
+		fn.result->set_string(tbl->get_field_title((int) fn.arg(0).to_number()));
 	}
 
 	as_table::as_table():
