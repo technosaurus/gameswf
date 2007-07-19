@@ -187,56 +187,47 @@ namespace gameswf
 	// plugin object
 	//
 
-	as_plugin::as_plugin(tu_loadlib* ll) :
-		m_module_init(NULL),
-		m_module_close(NULL),
-		m_module_getmember(NULL),
-		m_module_setmember(NULL)
+	as_plugin::as_plugin(tu_loadlib* ll, const array<plugin_value>& params) :
+		m_plugin(NULL)
 	{
 		assert(ll);
 
 		// get module interface
-		m_module_init = (gameswf_module_init) ll->get_function("gameswf_module_init");
-		m_module_close = (gameswf_module_close) ll->get_function("gameswf_module_close");
-		m_module_getmember = (gameswf_module_getmember) ll->get_function("gameswf_module_getmember");
-		m_module_setmember = (gameswf_module_setmember) ll->get_function("gameswf_module_setmember");
+		gameswf_module_init module_init = (gameswf_module_init) ll->get_function("gameswf_module_init");
 
-		// init module
-		if (m_module_init)
+		// create plugin instance
+		if (module_init)
 		{
-			(m_module_init)();
+			m_plugin = (module_init)();
 		}
-
 	}
 
 	as_plugin::~as_plugin()
 	{
-		if (m_module_close)
+		if (m_plugin)
 		{
-			(m_module_close)();
+			delete m_plugin;
 		}
 	}
 
 	bool	as_plugin::get_member(const tu_stringi& name, as_value* val)
 	{
-		if (m_module_getmember)
+		if (m_plugin)
 		{
 			plugin_value pval;
-			if ((m_module_getmember)(name, &pval))
-			{
-				*val = pval;
-				return true;
-			}
+			m_plugin->get_member(name, &pval);
+			*val = pval;
+			return true;
 		}
 		return false;
 	}
 
 	bool	as_plugin::set_member(const tu_stringi& name, const as_value& val)
 	{
-		if (m_module_setmember)
+		if (m_plugin)
 		{
-			plugin_value pval;
-			return (m_module_setmember)(name, pval);
+			plugin_value pval = val.to_plugin_value();
+			return m_plugin->set_member(name, pval);
 		}
 		return false;
 	}

@@ -152,7 +152,7 @@ namespace gameswf
 			const array<with_stack_entry>& initial_with_stack,
 			bool is_function2);
 
-		as_object* load_as_plugin(const tu_string& classname);
+		as_object* load_as_plugin(const tu_string& classname, const array<plugin_value>& params);
 
 		bool	is_null()
 		{

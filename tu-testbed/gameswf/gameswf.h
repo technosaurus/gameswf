@@ -34,6 +34,7 @@ class tu_stringi;
 struct IDirect3DDevice9;
 struct IDirect3DDevice8;
 
+struct gameswf_plugin;
 
 namespace gameswf
 {
@@ -217,6 +218,7 @@ namespace gameswf
 		virtual x3ds_instance* cast_to_3ds() { return 0; }
 		virtual as_object* cast_to_as_object() { return 0; }
 		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
+		virtual gameswf_plugin* cast_to_plugin() { return 0; }
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
