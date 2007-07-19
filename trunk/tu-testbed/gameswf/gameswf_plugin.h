@@ -11,13 +11,20 @@
 #include "base/container.h"
 
 #ifdef _WIN32
-#define snprintf _snprintf
-#define isnan _isnan
+
+	#define snprintf _snprintf
+	#define isnan _isnan
+
+	#define gameswf_module __declspec(dllexport)
+
 #endif // _WIN32
 
 struct plugin_value;
+struct gameswf_plugin;
 
-typedef void (*plugin_function_ptr)(plugin_value* result, const array<plugin_value>& params);
+typedef void (*plugin_function_ptr)(plugin_value* result, 
+																		gameswf_plugin* this_ptr, 
+																		const array<plugin_value>& params);
 
 struct plugin_value
 {
@@ -43,6 +50,7 @@ struct plugin_value
 		bool m_boolean_value;
 		// @@ hm, what about PS2, where double is bad?	should maybe have int&float types.
 		mutable	double	m_number_value;
+		gameswf_plugin* m_object_value;
 		plugin_function_ptr	m_plugin_function_value;
 	};
 
@@ -51,31 +59,44 @@ struct plugin_value
 		m_number_value(0.0)
 	{
 	}
-	plugin_value(bool val)
-		:
+
+	plugin_value(bool val) :
 		m_type(BOOLEAN),
 		m_boolean_value(val)
 	{
 	}
 
-	plugin_value(int val)
-		:
+	plugin_value(int val)	:
 		m_type(NUMBER),
 		m_number_value(double(val))
 	{
 	}
 
-	plugin_value(float val)
-		:
+	plugin_value(float val) :
 		m_type(NUMBER),
 		m_number_value(double(val))
 	{
 	}
 
-	plugin_value(double val)
-		:
+	plugin_value(double val) :
 		m_type(NUMBER),
 		m_number_value(val)
+	{
+	}
+
+	plugin_value(gameswf_plugin* obj)	:
+		m_type(OBJECT),
+		m_object_value(obj)
+	{
+		if (m_object_value)
+		{
+//			m_object_value->add_ref();
+		}
+	}
+
+	plugin_value(plugin_function_ptr func)	:
+		m_type(PLUGIN_FUNCTION),
+		m_plugin_function_value(func)
 	{
 	}
 
@@ -87,6 +108,7 @@ struct plugin_value
 	{
 		m_type = PLUGIN_FUNCTION; m_plugin_function_value = func;
 	}
+	void	set_object(gameswf_plugin* obj) { m_type = OBJECT; m_object_value = obj; }
 
 	const tu_string&	to_tu_string() const
 	// Conversion to const tu_string&.
@@ -142,8 +164,40 @@ struct plugin_value
 		return to_tu_string().c_str();
 	}
 
+	gameswf_plugin*	to_object() const
+	// Return value as an object.
+	{
+		if (m_type == OBJECT)
+		{
+			// OK.
+			return m_object_value;
+		}
+		return NULL;
+	}
+
 };
 
+
+struct gameswf_plugin
+// base class for gameswf plugin
+{
+	stringi_hash<plugin_value>	m_members;
+
+	gameswf_plugin() {};
+	virtual ~gameswf_plugin() {};
+
+	virtual bool	get_member(const tu_stringi& varname, plugin_value* val) const
+	{
+		return m_members.get(varname, val);
+	}
+
+	virtual bool	set_member(const tu_stringi& varname, const plugin_value& val)
+	{
+		m_members.set(varname, val);
+		return true;
+	}
+
+};
 
 
 #endif

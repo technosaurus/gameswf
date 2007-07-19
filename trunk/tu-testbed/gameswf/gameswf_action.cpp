@@ -161,8 +161,8 @@ namespace gameswf
 			{
 				params.push_back(env->bottom(first_arg_bottom_index - i).to_plugin_value());
 			}
-
-			(*plugin)(&result, params);
+ 
+			(*plugin)(&result, this_ptr->cast_to_plugin(), params);
 		}
 		else
 		{
@@ -888,13 +888,14 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
-	as_object* action_buffer::load_as_plugin(const tu_string& classname)
+	as_object* action_buffer::load_as_plugin(const tu_string& classname,
+						const array<plugin_value>& params)
 	// loads user defined class from DLL / shared library
 	{
 		tu_loadlib* ll = tu_loadlib::load(classname.c_str());
 		if (ll)
 		{
-			return new as_plugin(ll);
+			return new as_plugin(ll, params);
 		}
 		return NULL;
 	}
@@ -1525,7 +1526,14 @@ namespace gameswf
 						if (classname != "String")
 						{
 							// try to load user defined class from DLL / shared library
-							as_object* plugin = load_as_plugin(classname.to_tu_string());
+							array<plugin_value> params;
+							int first_arg_bottom_index = env->get_top_index();
+							for (int i = 0; i < nargs; i++)
+							{
+								params.push_back(env->bottom(first_arg_bottom_index - i).to_plugin_value());
+							}
+
+							as_object* plugin = load_as_plugin(classname.to_tu_string(), params);
 							if (plugin)
 							{
 								new_obj.set_as_object_interface(plugin);

@@ -51,25 +51,21 @@ namespace gameswf
 	// plugin object
 	//
 
-	typedef bool (*gameswf_module_init)();
-	typedef bool (*gameswf_module_close)();
-	typedef bool (*gameswf_module_getmember)(const tu_stringi& name, plugin_value* pval);
-	typedef bool (*gameswf_module_setmember)(const tu_stringi& name, const plugin_value& pval);
+	typedef gameswf_plugin* (*gameswf_module_init)();
 
 	struct as_plugin : public as_object
 	{
-		as_plugin(tu_loadlib* ll);
+		as_plugin(tu_loadlib* ll, const array<plugin_value>& params);
 		~as_plugin();
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+		virtual gameswf_plugin* cast_to_plugin() { return m_plugin; }
 
 	private:
 
-		gameswf_module_init m_module_init;
-		gameswf_module_close m_module_close;
-		gameswf_module_getmember m_module_getmember;
-		gameswf_module_setmember m_module_setmember;
+		gameswf_plugin* m_plugin;
+
 	};
 
 
