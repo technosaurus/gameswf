@@ -1,5 +1,13 @@
 2007-07-21  Vitaly Alexeev <tishka92@yahoo.com>
 
+	The idea with hash<weak_ptr<..>, ...> has appeared bad. 
+	weak_ptr may be updated outside and therefore we'll have lost hash key
+	tweak_ptr ==> smart_ptr in listener
+	* gameswf/gameswf_root.cpp: reverted
+	* gameswf/gameswf_root.h: reverted
+
+2007-07-21  Vitaly Alexeev <tishka92@yahoo.com>
+
 	character* m_parent ==> weak_ptr<character> m_parent
 	the parent of character may be dead because of Action Script
 	* base/smart_ptr.h
