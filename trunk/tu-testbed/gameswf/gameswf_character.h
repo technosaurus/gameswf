@@ -61,7 +61,7 @@ namespace gameswf
 	struct character : public movie_interface
 	{
 		int		m_id;
-		character*		m_parent;
+		weak_ptr<character>		m_parent;
 		tu_string	m_name;
 		int		m_depth;
 		cxform		m_color_transform;
@@ -218,7 +218,7 @@ namespace gameswf
 
 		virtual void	remove_display_object(const tu_string& name) { assert(0); }
 
-		virtual void	get_drag_state(drag_state* st) { assert(m_parent); m_parent->get_drag_state(st); }
+		virtual void	get_drag_state(drag_state* st) { assert(m_parent != 0); m_parent->get_drag_state(st); }
 		virtual void	set_drag_state(const drag_state& st) { assert(0); }
 		virtual void	stop_drag() { assert(0); }
 		virtual movie_interface*	get_root_interface() { return NULL; }
@@ -271,7 +271,7 @@ namespace gameswf
 		// Accessors for basic display info.
 
 		int	get_id() const { return m_id; }
-		character*	get_parent() const { return m_parent; }
+		character*	get_parent() const { return m_parent.get_ptr(); }
 		void set_parent(character* parent) { m_parent = parent; }  // for extern movie
 		int	get_depth() const { return m_depth; }
 		void	set_depth(int d) { m_depth = d; }
@@ -309,7 +309,7 @@ namespace gameswf
 			// from our local space into "world" space (i.e. root movie space).
 		{
 			matrix	m;
-			if (m_parent)
+			if (m_parent != NULL)
 			{
 				m = m_parent->get_world_matrix();
 			}
@@ -323,7 +323,7 @@ namespace gameswf
 		// times our cxform).  Maps from our local space into normal color space.
 		{
 			cxform	m;
-			if (m_parent)
+			if (m_parent != NULL)
 			{
 				m = m_parent->get_world_cxform();
 			}
