@@ -103,7 +103,7 @@ namespace gameswf
 							{
 								as_environment* env = function.to_as_function()->m_env;
 								assert(env);
-								call_method(function, env, NULL, 0, env->get_top_index());
+								call_method(function, env, listener, fn.nargs - 1, fn.first_arg_bottom_index - 1);
 							}
 						}
 					}

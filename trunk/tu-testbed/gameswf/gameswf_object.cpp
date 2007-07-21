@@ -135,7 +135,7 @@ namespace gameswf
 					as_environment* env = method.to_as_function()->m_env;
 					assert(env);
 
-					call_method(method, env, NULL, 0, env->get_top_index());
+					call_method(method, env, this, 0, env->get_top_index());
 					called = true;
 				}
 			}

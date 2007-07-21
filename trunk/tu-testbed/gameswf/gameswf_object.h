@@ -27,6 +27,8 @@ namespace gameswf
 
 		as_object()
 		{
+			set_member("addProperty", as_object_addproperty);
+			set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
 		}
 
 		virtual ~as_object()
