@@ -249,27 +249,28 @@ namespace gameswf
 			notify_key_object(k, down);
 
 			// Notify keypress listeners.
-			for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
 				it != m_listeners.end(); )
 			{
 				smart_ptr<as_object_interface> obj = it->first;
-				if (obj == NULL)
+				if (obj->get_ref_count() == 2)	// 'obj' is only in listener
 				{
 					// cleanup the garbage
 					m_listeners.erase(it);
-					continue;
 				}
-
-				if (it->second == KEYPRESS)
+				else
 				{
-					if (down)
+					if (it->second == KEYPRESS)
 					{
-						obj->on_event(event_id(event_id::KEY_DOWN));
-						obj->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
-					}
-					else
-					{
-						obj->on_event(event_id(event_id::KEY_UP));
+						if (down)
+						{
+							obj->on_event(event_id(event_id::KEY_DOWN));
+							obj->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
+						}
+						else
+						{
+							obj->on_event(event_id(event_id::KEY_UP));
+						}
 					}
 				}
 				++it;
@@ -279,20 +280,21 @@ namespace gameswf
 		void	movie_root::advance_listeners(float delta_time)
 		{
 			// Notify network listeners.
-			for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+			for (hash< smart_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
 				it != m_listeners.end(); )
 			{
 				smart_ptr<as_object_interface> obj = it->first;
-				if (obj == NULL)
+				if (obj->get_ref_count() == 2)	// 'obj' is only in listener
 				{
 					// cleanup the garbage
 					m_listeners.erase(it);
-					continue;
 				}
-
-				if (it->second == ADVANCE)
+				else
 				{
-					obj->advance(delta_time);
+					if (it->second == ADVANCE)
+					{
+						obj->advance(delta_time);
+					}
 				}
 				++it;
 			}
@@ -305,7 +307,7 @@ namespace gameswf
 
 			// sanity check
 //			printf("add_keypress_listener=%08X (%d)\n", listener, m_keypress_listeners.size());
-			assert(m_listeners.size() < 100);
+			assert(m_listeners.size() <= 1000);
 		} 
 
 		void movie_root::remove_listener(as_object_interface* listener) 

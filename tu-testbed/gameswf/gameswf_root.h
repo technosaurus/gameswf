@@ -77,7 +77,7 @@ namespace gameswf
 		mouse_button_state m_mouse_button_state;
 		bool			m_on_event_load_called;
 
-		hash< weak_ptr<as_object_interface>, int > m_listeners;
+		hash< smart_ptr<as_object_interface>, int > m_listeners;
 		smart_ptr<character> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
