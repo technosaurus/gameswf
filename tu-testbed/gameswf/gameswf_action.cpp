@@ -1508,10 +1508,6 @@ namespace gameswf
 						new_obj_ptr->set_member("__proto__", proto);
 						new_obj_ptr->set_member_flags("__proto__", as_prop_flags::DONT_ENUM);
 
-						// Set up the methods
-						new_obj_ptr->set_member("addProperty", as_object_addproperty);
-						new_obj_ptr->set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
-						
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
 						// env->m_instance is used to pass object pointer to constructor chain

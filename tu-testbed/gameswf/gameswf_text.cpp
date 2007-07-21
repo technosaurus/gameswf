@@ -972,16 +972,12 @@ namespace gameswf
 	// We have a "text" member.
 	{
 		// first try standart properties
-		if (character::set_member(name, val))
-		{
-			return true;
-		}
-
+		if (character::set_member(name, val)) {}
+		else
 		if (name == "text")
 		{
 			int version = get_parent()->get_movie_definition()->get_version();
 			set_text_value(val.to_tu_string_versioned(version));
-			return true;
 		}
 		else if (name == "textColor")
 		{	
@@ -993,23 +989,18 @@ namespace gameswf
 			cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
 			cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
 			set_cxform(cx);
-
-			return true;
 		}
 		else if (name == "border")
 		{	
 			m_def->m_border = val.to_bool();
-			return true;
 		}
 		else if (name == "multiline")
 		{	
 			m_def->m_multiline = val.to_bool();
-			return true;
 		}
 		else if (name == "wordWrap")
 		{	
 			m_def->m_word_wrap = val.to_bool();
-			return true;
 		}
 		else if (name == "type")
 		{
@@ -1030,15 +1021,13 @@ namespace gameswf
 			{
 				// log_error("not input &  dynamic");
 			}
-
-			return true;
 		}
 
 		// @@ TODO see TextField members in Flash MX docs
-		log_error("edit_text_character: set_member(%s, %s) is't implemented yet\n",
-			name.c_str(), val.to_string());
 
-		return false;
+		// TextField can serve as container 
+		m_variables[name] = val;
+		return true;
 	}
 
 
@@ -1101,10 +1090,8 @@ namespace gameswf
 			return true;
 		}
 
-		log_error("edit_text_character: get_member(%s) is't implemented yet\n",
-			name.c_str());
-
-		return false;
+		// TextField can serve as container 
+		return m_variables.get(name, val);
 	}
 
 	// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
