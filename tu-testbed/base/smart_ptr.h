@@ -189,6 +189,43 @@ public:
 
 	void	operator=(const smart_ptr<T>& ptr) { operator=(ptr.get_ptr()); }
 
+	bool	operator==(const smart_ptr<T>& ptr) const
+	{
+		check_proxy();
+		return m_ptr == ptr.get_ptr();
+	}
+
+	bool	operator!=(const smart_ptr<T>& ptr) const
+	{
+		check_proxy();
+		return m_ptr != ptr.get_ptr();
+	}
+
+	bool	operator==(T* ptr) const 
+	{
+		check_proxy();
+		return m_ptr == ptr; 
+	}
+
+	bool	operator!=(T* ptr) const 
+	{
+		check_proxy();
+		return m_ptr != ptr;
+	}
+
+	T*	operator->() const
+	{
+		check_proxy();
+		assert(m_ptr);
+		return m_ptr;
+	}
+
+	T*	get_ptr() const 
+	{
+		check_proxy();
+		return m_ptr; 
+	}
+
 	// Conversion to smart_ptr.
 	operator smart_ptr<T>()
 	{

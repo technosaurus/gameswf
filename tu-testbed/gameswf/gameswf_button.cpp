@@ -333,6 +333,16 @@ namespace gameswf
 
 		virtual bool	on_event(const event_id& id)
 		{
+			// Keep this & parent alive during execution!
+			const smart_ptr<character> this_ptr(this);
+			const smart_ptr<character> parent(get_parent());
+
+			// the parent object is died
+			if (parent == NULL)
+			{
+				return false;
+			}
+
 			bool called = false;
 			if (id.m_id == event_id::KEY_PRESS)
 			{
@@ -364,20 +374,16 @@ namespace gameswf
 
 				// actions can delete THIS through execute_frame_tags()
 				// therefore we need to protect THIS from deleting
-				add_ref();
-
 				for (int i = 0; i < m_def->m_button_actions.size(); i++)
 				{
 					int keycode = (m_def->m_button_actions[i].m_conditions & 0xFE00) >> 9;
 					event_id key_event = keycode < 32 ? s_key[keycode] : event_id(event_id::KEY_PRESS, (key::code) keycode);
 					if (key_event == id)
 					{
-						get_parent()->do_actions(m_def->m_button_actions[i].m_actions);
+						parent->do_actions(m_def->m_button_actions[i].m_actions);
 						called = true;
 					}
 				}
-
-				drop_ref();
 			}
 			else
 			{
@@ -467,10 +473,6 @@ namespace gameswf
 
 				// actions can delete THIS & PARENT through execute_frame_tags()
 				// therefore we need to protect THIS & PARENT from deleting
-				add_ref();
-				character* parent = get_parent();
-				assert(parent);
-				parent->add_ref();
 				{
 					for (int i = 0; i < m_def->m_button_actions.size(); i++)
 					{
@@ -481,8 +483,6 @@ namespace gameswf
 						}
 					}
 				}
-				parent->drop_ref();
-				drop_ref();
 			}
 			return called;
 		}

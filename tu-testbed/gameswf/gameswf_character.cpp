@@ -257,7 +257,7 @@ namespace gameswf
 			}
 		case M_PARENT:
 			{
-				val->set_as_object_interface(static_cast<as_object_interface*>(m_parent));
+				val->set_as_object_interface(static_cast<as_object_interface*>(m_parent.get_ptr()));
 				return true;
 			}
 		}	// end switch

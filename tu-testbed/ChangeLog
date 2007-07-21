@@ -1,5 +1,16 @@
 2007-07-21  Vitaly Alexeev <tishka92@yahoo.com>
 
+	character* m_parent ==> weak_ptr<character> m_parent
+	the parent of character may be dead because of Action Script
+	* base/smart_ptr.h
+	* gameswf/gameswf_button.cpp
+	* gameswf/gameswf_character.cpp
+	* gameswf/gameswf_character.h
+	* gameswf/gameswf_impl.cpp
+	* gameswf/gameswf_sprite.cpp
+
+2007-07-21  Vitaly Alexeev <tishka92@yahoo.com>
+
 	Fixed some bugs:
 	any as_object should have addProperty member,
 	broadcastMessage can have parameters,

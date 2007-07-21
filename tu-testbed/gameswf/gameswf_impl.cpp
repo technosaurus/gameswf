@@ -154,7 +154,10 @@ namespace gameswf
 
 	weak_proxy* ref_counted::get_weak_proxy() const
 	{
-		assert(m_ref_count > 0);	// By rights, somebody should be holding a ref to us.
+		// By rights, somebody should be holding a ref to us.
+		// Vitaly: Sometimes it not so, for example in the constructor of character
+		// where this->ref_counted == 0
+		//		assert(m_ref_count > 0);
 
 		if (m_weak_proxy == NULL)
 		{
@@ -199,7 +202,7 @@ namespace gameswf
 				world_mat.transform_by_inverse(&local_mouse, world_mouse);
 
 				matrix	parent_world_mat;
-				if (m_parent)
+				if (m_parent != NULL)
 				{
 					parent_world_mat = m_parent->get_world_matrix();
 				}

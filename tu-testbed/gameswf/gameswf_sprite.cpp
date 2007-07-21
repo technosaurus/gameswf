@@ -111,7 +111,7 @@ namespace gameswf
 
 	sprite_instance::~sprite_instance()
 	{
-		m_display_list.clear();
+//		m_display_list.clear();
 		//m_root->drop_ref();
 //		printf("~sprite_instance %08X\n", this);
 	}
