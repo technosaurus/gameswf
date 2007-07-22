@@ -1,4 +1,12 @@
 2007-07-22  Vitaly Alexeev <tishka92@yahoo.com>
+	
+	A bit cleanup
+	* gameswf/gameswf.h
+	* gameswf/gameswf_button.cpp
+	* gameswf/gameswf_dlist.cpp
+	* gameswf/gameswf_object.h
+
+2007-07-22  Vitaly Alexeev <tishka92@yahoo.com>
 
 	Struggle against memory leak that is become apparent from code like
 	myclip.my_var = myclip,

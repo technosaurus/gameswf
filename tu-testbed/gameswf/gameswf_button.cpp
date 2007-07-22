@@ -338,11 +338,13 @@ namespace gameswf
 			const smart_ptr<character> this_ptr(this);
 			const smart_ptr<character> parent(get_parent());
 
-			// the parent object is died
-			if (parent == NULL)
+			// 'this or 'parent' object is died
+			if (parent == NULL || m_def == NULL)
 			{
 				return false;
 			}
+
+			const smart_ptr<button_character_definition> def(m_def);
 
 			bool called = false;
 			if (id.m_id == event_id::KEY_PRESS)
@@ -374,14 +376,13 @@ namespace gameswf
 				// Execute appropriate actions
 
 				// actions can delete THIS through execute_frame_tags()
-				// therefore we need to protect THIS from deleting
-				for (int i = 0; i < m_def->m_button_actions.size(); i++)
+				for (int i = 0; i < def->m_button_actions.size(); i++)
 				{
-					int keycode = (m_def->m_button_actions[i].m_conditions & 0xFE00) >> 9;
+					int keycode = (def->m_button_actions[i].m_conditions & 0xFE00) >> 9;
 					event_id key_event = keycode < 32 ? s_key[keycode] : event_id(event_id::KEY_PRESS, (key::code) keycode);
 					if (key_event == id)
 					{
-						parent->do_actions(m_def->m_button_actions[i].m_actions);
+						parent->do_actions(def->m_button_actions[i].m_actions);
 						called = true;
 					}
 				}
@@ -412,7 +413,7 @@ namespace gameswf
 				};
 
 				// Button transition sounds.
-				if (m_def->m_sound != NULL)
+				if (def->m_sound != NULL)
 				{
 					int bi; // button sound array index [0..3]
 					sound_handler* s = get_sound_handler();
@@ -439,11 +440,11 @@ namespace gameswf
 						}
 						if (bi >= 0)
 						{
-							button_character_definition::button_sound_info& bs = m_def->m_sound->m_button_sounds[bi];
+							button_character_definition::button_sound_info& bs = def->m_sound->m_button_sounds[bi];
 							// character zero is considered as null character
 							if (bs.m_sound_id > 0)
 							{
-								assert(m_def->m_sound->m_button_sounds[bi].m_sam != NULL);
+								assert(def->m_sound->m_button_sounds[bi].m_sam != NULL);
 								if (bs.m_sound_style.m_stop_playback)
 								{
 									s->stop_sound(bs.m_sam->m_sound_handler_id);
@@ -473,15 +474,12 @@ namespace gameswf
 				// Execute appropriate actions
 
 				// actions can delete THIS & PARENT through execute_frame_tags()
-				// therefore we need to protect THIS & PARENT from deleting
+				for (int i = 0; i < def->m_button_actions.size(); i++)
 				{
-					for (int i = 0; i < m_def->m_button_actions.size(); i++)
+					if (def->m_button_actions[i].m_conditions & c)
 					{
-						if (m_def->m_button_actions[i].m_conditions & c)
-						{
-							parent->do_actions(m_def->m_button_actions[i].m_actions);
-							called = true;
-						}
+						parent->do_actions(def->m_button_actions[i].m_actions);
+						called = true;
 					}
 				}
 			}
