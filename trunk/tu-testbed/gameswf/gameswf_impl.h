@@ -95,15 +95,24 @@ namespace gameswf
 	{
 		character_def*	m_def;
 
-		generic_character(character_def* def, character* parent, int id)
-			:
-		character(parent, id),
+		generic_character(character_def* def, character* parent, int id) :
+			character(parent, id),
 			m_def(def)
 		{
 			assert(m_def);
 		}
 
+		~generic_character()
+		{
+			clear();
+		}
+
 		virtual character_def* get_character_def() { return m_def;	}
+
+		virtual void clear() 
+		{
+			m_def = NULL;
+		}
 
 		virtual void	display()
 		{

@@ -52,6 +52,13 @@ namespace gameswf
 		}
 
 		void	display();
+
+		virtual void	clear()
+		{
+			m_def = NULL;
+			m_ns = NULL;
+		};
+
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 
 		//

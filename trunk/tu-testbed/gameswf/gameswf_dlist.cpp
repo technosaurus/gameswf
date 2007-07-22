@@ -437,7 +437,7 @@ namespace gameswf
 		{
 			if (ch->get_root())
 			{
-				ch->get_root()->add_listener(ch, movie_root::KEYPRESS);
+				ch->get_root()->add_listener(ch, listener::KEYPRESS);
 			}
 		}
 	}

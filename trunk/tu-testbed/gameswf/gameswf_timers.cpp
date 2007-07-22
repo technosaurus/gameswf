@@ -61,7 +61,7 @@ namespace gameswf
 			m_param.push_back(fn.arg(i));
 		}
 
-		get_root()->add_listener(this, movie_root::ADVANCE);
+		get_root()->add_listener(this, listener::ADVANCE);
 	}
 
 	as_timer::~as_timer()

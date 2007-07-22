@@ -111,9 +111,8 @@ namespace gameswf
 
 	sprite_instance::~sprite_instance()
 	{
-//		m_display_list.clear();
-		//m_root->drop_ref();
 //		printf("~sprite_instance %08X\n", this);
+		clear();
 	}
 
 	bool sprite_instance::has_keypress_event()
@@ -139,10 +138,9 @@ namespace gameswf
 		matrix m = get_matrix();
 
 		int i, n = m_display_list.get_character_count();
-		character* ch;
 		for (i = 0; i < n; i++)
 		{
-			ch = m_display_list.get_character(i);
+			character* ch = m_display_list.get_character(i);
 			if (ch != NULL)
 			{
 				rect ch_bound;
@@ -153,6 +151,27 @@ namespace gameswf
 				bound->expand_to_rect(ch_bound);
 			}
 		}
+	}
+
+	void sprite_instance::clear()
+	{
+		m_as_environment.clear();
+
+		int i, n = m_display_list.get_character_count();
+		for (i = 0; i < n; i++)
+		{
+			character* ch = m_display_list.get_character(i);
+			if (ch != NULL)
+			{
+				ch->clear();
+			}
+		}
+
+		m_def = NULL;
+		m_root = NULL;
+		m_action_list.clear();
+		m_goto_frame_action_list.clear();
+		m_mcloader = NULL;
 	}
 
 	character* sprite_instance::add_empty_movieclip(const char* name, int depth)

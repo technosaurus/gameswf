@@ -80,6 +80,7 @@ namespace gameswf
 
 	video_stream_instance::~video_stream_instance()
 	{
+		clear();
 	}
 
 	void video_stream_instance::display()

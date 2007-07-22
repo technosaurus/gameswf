@@ -54,6 +54,14 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual x3ds_instance* cast_to_3ds() { return this; }
+
+		virtual void	clear()
+		{
+			m_camera = NULL;
+			m_material.clear();
+			m_map.clear();
+		};
+
 		void	apply_matrix(float* target, float* camera_pos);
 
 		Lib3dsCamera* m_camera;

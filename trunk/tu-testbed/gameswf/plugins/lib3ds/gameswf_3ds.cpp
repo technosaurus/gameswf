@@ -190,6 +190,7 @@ namespace gameswf
 
 	x3ds_instance::~x3ds_instance()
 	{
+		clear();
 		glDeleteLists(m_mesh_list, 1);
 		m_def->remove_camera(m_camera);
 	}

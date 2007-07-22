@@ -51,6 +51,27 @@ namespace gameswf
 		}
 	};
 
+
+	// helper
+	struct listener
+	{
+		enum type
+		{
+			KEYPRESS,
+			ADVANCE
+		};
+
+		void add_listener(as_object_interface* listener, type lt);
+		void remove_listener(as_object_interface* listener);
+
+		void notify(key::code k, bool down);	// keypress
+		void notify(float delta_time);	// advance
+
+		private:
+
+		hash< weak_ptr<as_object_interface>, int > m_listeners;
+	};
+
 	//
 	// movie_root
 	//
@@ -58,29 +79,22 @@ namespace gameswf
 	//
 	struct movie_root : public movie_interface
 	{
-		enum listener_type
-		{
-			KEYPRESS,
-			ADVANCE
-		};
-
 		smart_ptr<movie_def_impl>	m_def;
 		smart_ptr<character>	m_movie;
 		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
 		float			m_pixel_scale;
 
-		rgba			m_background_color;
-//		float			m_timer;
+		rgba		m_background_color;
 		int			m_mouse_x, m_mouse_y, m_mouse_buttons;
-		void *			m_userdata;
+		void*		m_userdata;
 		character::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
 		mouse_button_state m_mouse_button_state;
 		bool			m_on_event_load_called;
 
-		hash< smart_ptr<as_object_interface>, int > m_listeners;
 		smart_ptr<character> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
+		listener m_listener;
 
 		movie_root(movie_def_impl* def);
 		~movie_root();
@@ -140,11 +154,8 @@ namespace gameswf
 		virtual float	get_movie_fps();
 
 		virtual void	notify_key_event(key::code k, bool down);
-		void add_listener(as_object_interface* listener, listener_type lt);
+		void add_listener(as_object_interface* listener, listener::type lt);
 		void remove_listener(as_object_interface* listener);
-
-		void	advance_listeners(float delta_time);
-
 	};
 }
 
