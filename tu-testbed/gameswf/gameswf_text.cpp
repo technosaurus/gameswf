@@ -589,6 +589,7 @@ namespace gameswf
 	{ 
 		// on_event(event_id::KILLFOCUS) will be executed
 		// during remove_display_object()
+		clear();
 	} 
 
 	void edit_text_character::reset_format(as_textformat* tf)
@@ -773,7 +774,7 @@ namespace gameswf
 			{ 
 				if (m_has_focus == false) 
 				{ 
-					get_root()->add_listener(this, movie_root::KEYPRESS); 
+					get_root()->add_listener(this, listener::KEYPRESS); 
 					m_has_focus = true; 
 					m_cursor = m_text.size(); 
 					format_text(); 

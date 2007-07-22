@@ -93,6 +93,11 @@ namespace gameswf
 
 		character(character* parent, int id);
 
+		// Cleans environment and members which can cause memory leaks
+		// that is the effect of code like:
+		// _root.my_var = _root;		
+		virtual void clear() {};
+
 		//
 		// Mouse/Button interface.
 		//

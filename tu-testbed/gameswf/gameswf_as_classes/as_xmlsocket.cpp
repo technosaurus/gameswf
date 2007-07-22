@@ -99,7 +99,7 @@ namespace gameswf
 		// add to net listener
 		if (is_connected)
 		{
-			get_root()->add_listener(this, movie_root::ADVANCE);
+			get_root()->add_listener(this, listener::ADVANCE);
 		}
 
 		return is_connected;

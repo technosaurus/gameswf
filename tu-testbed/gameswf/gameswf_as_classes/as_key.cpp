@@ -28,7 +28,7 @@ namespace gameswf
 			return;
 		}
 
-		listener->get_root()->add_listener(listener, movie_root::KEYPRESS);
+		listener->get_root()->add_listener(listener, listener::KEYPRESS);
 	}
 
 	void	key_remove_listener(const fn_call& fn)
