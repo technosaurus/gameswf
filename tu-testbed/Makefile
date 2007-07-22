@@ -85,9 +85,11 @@ psm_vistool_files =					\
 	tu-testbed/demos/psm_vistool/*.dll
 
 test_triangulate_files =				\
+	tu-testbed/go_build_generic_test_triangulate.sh	\
 	tu-testbed/demos/test_triangulate/Makefile	\
 	tu-testbed/demos/test_triangulate/*.cpp		\
 	tu-testbed/demos/test_triangulate/*.h		\
+	tu-testbed/demos/test_triangulate/testdata/*	\
 	tu-testbed/demos/test_triangulate/*.txt		\
 	tu-testbed/demos/test_triangulate/*.dll
 
