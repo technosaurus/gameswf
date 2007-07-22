@@ -33,6 +33,7 @@ namespace gameswf
 
 		virtual ~as_object()
 		{
+			clear();
 		}
 		
 		virtual const char*	get_text_value() const { return NULL; }
@@ -41,7 +42,7 @@ namespace gameswf
 		virtual bool get_member(const tu_stringi& name, as_member* member) const;
 		virtual bool	set_member_flags(const tu_stringi& name, const int flags);
 		virtual character*	cast_to_character();
-		void	clear();
+		virtual void	clear();
 		virtual bool	on_event(const event_id& id);
 		virtual as_object* cast_to_as_object() { return this; }
 		virtual	void enumerate(as_environment* env);

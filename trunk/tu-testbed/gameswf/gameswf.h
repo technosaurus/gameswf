@@ -228,6 +228,9 @@ namespace gameswf
 		// __proto__ is a function object !!!
 		virtual as_object_interface* get_proto() { return 0; }
 
+		// Releases resurces
+		virtual void clear() { assert(0); }
+
 		// for debugging
 		// dumps the object
 		virtual void dump() {};
@@ -612,7 +615,6 @@ namespace gameswf
 		virtual int	get_movie_width() { return 0; }
 		virtual int	get_movie_height() { return 0; }
 		virtual float	get_movie_fps() { return 0.0f; }
-
 	};
 
 	// Try to grab movie info from the header of the given .swf
