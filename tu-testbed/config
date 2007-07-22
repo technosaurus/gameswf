@@ -123,7 +123,7 @@ SDL_LDFLAGS := $(shell sdl-config --libs)
 SDL_MIXER_INCLUDE := 
 SDL_MIXER_LIB := -lSDL_mixer
 CFLAGS := $(CFLAGS) $(SDL_CFLAGS) -fpic -Wall $(GAMESWF_MP3_SUPPORT)
-LDFLAGS := -lGL -lGLU
+LDFLAGS := -lGL -lGLU -lstdc++
 MAKE_DLL := gcc -shared
 
 # On Unix-like machines, these libraries are usually installed in
@@ -144,7 +144,7 @@ JPEGLIB := -ljpeg
 ifeq ($(DEBUG), 1)
 	# gcc debug flags
 	CC_DEBUG_FLAGS := -g
-	LDFLAGS := -g
+	LDFLAGS := $(LDFLAGS) -g
 else
 	# gcc non-debug flags
 	CC_DEBUG_FLAGS := -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
@@ -191,7 +191,7 @@ JPEGLIB := $(JPEGLIB_DIR)/libjpeg.$(LIB_EXT)
 ifeq ($(DEBUG), 1)
 	# gcc debug flags
 	CC_DEBUG_FLAGS := -g
-	LDFLAGS := -g
+	LDFLAGS := $(LDFLAGS) -g
 else
 	# gcc non-debug flags
 	CC_DEBUG_FLAGS :=  -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
