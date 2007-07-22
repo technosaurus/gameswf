@@ -147,7 +147,7 @@ ifeq ($(DEBUG), 1)
 	LDFLAGS := $(LDFLAGS) -g
 else
 	# gcc non-debug flags
-	CC_DEBUG_FLAGS := -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
+	CC_DEBUG_FLAGS := -O2 -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
 endif
 
 endif # GCC
@@ -194,7 +194,7 @@ ifeq ($(DEBUG), 1)
 	LDFLAGS := $(LDFLAGS) -g
 else
 	# gcc non-debug flags
-	CC_DEBUG_FLAGS :=  -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
+	CC_DEBUG_FLAGS := -O2 -DNDEBUG=1 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
 endif
 endif  # gcc3
 
