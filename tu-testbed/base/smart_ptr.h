@@ -255,15 +255,14 @@ private:
 			if (m_proxy->is_alive() == false)
 			{
 				// Underlying object went away.
-				// Remove the const attribute
-				*(const_cast<smart_ptr<weak_proxy>*>(&m_proxy)) = NULL;
-				*(const_cast<T**>(&m_ptr)) = NULL;
+				m_proxy = NULL;
+				m_ptr = NULL;
 			}
 		}
 	}
 
-	smart_ptr<weak_proxy>	m_proxy;
-	T*	m_ptr;
+	mutable smart_ptr<weak_proxy>	m_proxy;
+	mutable T*	m_ptr;
 };
 
 
