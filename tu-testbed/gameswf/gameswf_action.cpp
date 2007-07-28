@@ -1350,11 +1350,17 @@ namespace gameswf
 							as_value val;
 							if (obj->get_member(varname, &val))
 							{
+								// null out object's members
+								if (val.to_object())
+								{
+									val.to_object()->clear();
+								}
+
 								// drop refs
 								val.set_undefined();
 
 								// finally to remove it we need set varname to undefined
-								obj->set_member(varname, val);
+								obj->set_member(varname, as_value());
 								retcode = true;
 							}
 						}
@@ -1370,6 +1376,12 @@ namespace gameswf
 
 					if (obj.get_type() != as_value::UNDEFINED)
 					{
+						// null out object's members
+						if (obj.to_object())
+						{
+							obj.to_object()->clear();
+						}
+
 						// drop refs
 						obj.set_undefined();
 
