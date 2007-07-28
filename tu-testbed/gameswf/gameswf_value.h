@@ -365,15 +365,15 @@ namespace gameswf
 		// Constructor
 		as_member(const as_value &value,const as_prop_flags flags=as_prop_flags())
 			:
-		m_value(value),
+			m_value(value),
 			m_flags(flags)
 		{
 		}
 
 		// accessor to the value
-		as_value get_member_value() const { return m_value; }
+		const as_value& get_member_value() const { return m_value; }
 		// accessor to the properties flags
-		as_prop_flags get_member_flags() const { return m_flags; }
+		const as_prop_flags& get_member_flags() const { return m_flags; }
 
 		// set the value
 		void set_member_value(const as_value &value)  { m_value = value; }
