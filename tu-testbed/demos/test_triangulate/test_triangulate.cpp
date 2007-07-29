@@ -962,6 +962,36 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 		}
 		break;
 	}
+		
+	case 19: {
+		// Large spiral.
+		paths.resize(paths.size() + 1);
+		make_spiral(&paths.back(), 10, 220);
+		break;
+	}
+	
+	case 20: {
+		// Large star.
+		paths.resize(paths.size() + 1);
+		make_star(&paths.back(), 100, 1000, 10000);
+		break;
+	}
+	
+	case 21: {
+		// Lots of circles.
+		const int	TEST_DIM = 100;
+		{for (int x = 0; x < TEST_DIM; x++)
+		{
+			for (int y = 0; y < TEST_DIM; y++)
+			{
+				paths.resize(paths.size() + 1);
+				make_star(&paths.back(), 10, 10, 10);	// (... 9, 9, 10)
+				offset_path(&paths.back(), float(x) * 20, float(y) * 20);
+			}
+		}}
+
+		break;
+	}
 	
 	} // end switch
 }

@@ -63,7 +63,7 @@ namespace gameswf
 
 
 	void	set_verbose_parse(bool verbose)
-		// Enable/disable log messages re: parsing the movie.
+	// Enable/disable log messages re: parsing the movie.
 	{
 		s_verbose_parse = verbose;
 	}
@@ -72,8 +72,8 @@ namespace gameswf
 	static bool	s_use_cache_files = false;
 
 	void	set_use_cache_files(bool use_cache)
-		// Enable/disable attempts to read cache files when loading
-		// movies.
+	// Enable/disable attempts to read cache files when loading
+	// movies.
 	{
 		s_use_cache_files = use_cache;
 	}
@@ -85,8 +85,8 @@ namespace gameswf
 	static file_opener_callback	s_opener_function = NULL;
 
 	void	register_file_opener_callback(file_opener_callback opener)
-		// Host calls this to register a function for opening files,
-		// for loading movies.
+	// Host calls this to register a function for opening files,
+	// for loading movies.
 	{
 		s_opener_function = opener;
 	}
@@ -96,8 +96,8 @@ namespace gameswf
 	//
 
 	void	execute_actions(as_environment* env, const array<action_buffer*>& action_list)
-		// Execute the actions in the action list, in the given
-		// environment.
+	// Execute the actions in the action list, in the given
+	// environment.
 	{
 		for (int i = 0; i < action_list.size(); i++)
 		{
@@ -106,7 +106,7 @@ namespace gameswf
 	}
 
 	character*	character_def::create_character_instance(character* parent, int id)
-		// Default.  Make a generic_character.
+	// Default.  Make a generic_character.
 	{
 		return new generic_character(this, parent, id);
 	}
@@ -119,7 +119,7 @@ namespace gameswf
 
 	ref_counted::ref_counted()
 		:
-	m_ref_count(0),
+		m_ref_count(0),
 		m_weak_proxy(0)
 	{
 	}

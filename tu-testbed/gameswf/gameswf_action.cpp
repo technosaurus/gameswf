@@ -1517,7 +1517,7 @@ namespace gameswf
 						// it refers to the prototype property of the class (ActionScript 2.0) 
 						// or constructor function
 						as_value	proto;
-						ctor_as_func->m_properties.get_member("prototype", &proto);
+						ctor_as_func->m_properties->get_member("prototype", &proto);
 						assert(proto.to_object() != NULL);
 						new_obj_ptr->set_member("__proto__", proto);
 						new_obj_ptr->set_member_flags("__proto__", as_prop_flags::DONT_ENUM);
@@ -1780,10 +1780,9 @@ namespace gameswf
 					int	nargs = (int) env->top(2).to_number();
 					as_value	result;
 					const tu_string&	method_name = env->top(0).to_tu_string();
-					
-					if (env->top(1).get_type() == as_value::OBJECT)
-					{
-						as_object_interface*	obj = env->top(1).to_object();
+
+					as_object_interface* obj = env->top(1).to_object();
+					if (obj) {
 						as_value	method;
 						if (obj->get_member(method_name, &method))
 						{
@@ -1959,13 +1958,13 @@ namespace gameswf
 					}
 
 					as_value super_prototype;
-					super->m_properties.get_member("prototype", &super_prototype);
+					super->m_properties->get_member("prototype", &super_prototype);
 
 					as_object* new_prototype = new as_object();
 					new_prototype->set_member("__proto__", super_prototype);
 					new_prototype->set_member("__constructor__", super);
 
-					sub->m_properties.set_member("prototype", new_prototype);
+					sub->m_properties->set_member("prototype", new_prototype);
 
 
 					env->drop(2);

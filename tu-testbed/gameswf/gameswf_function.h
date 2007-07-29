@@ -40,7 +40,7 @@ namespace gameswf
 		// ActionScript functions have a property namespace!
 		// Typically used for class constructors, for "prototype", "constructor",
 		// and class properties.
-		as_object	m_properties;
+		smart_ptr<as_object>	m_properties;
 
 		// NULL environment is allowed -- if so, then
 		// functions will be executed in the caller's
@@ -58,7 +58,8 @@ namespace gameswf
 			m_function2_flags(0)
 		{
 			assert(m_action_buffer);
-			m_properties.set_member("prototype", new as_object());
+			m_properties = new as_object();
+			m_properties->set_member("prototype", new as_object());
 		}
 
 		void	set_is_function2() { m_is_function2 = true; }
