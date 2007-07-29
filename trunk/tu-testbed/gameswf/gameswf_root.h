@@ -156,6 +156,7 @@ namespace gameswf
 		virtual void	notify_key_event(key::code k, bool down);
 		void add_listener(as_object_interface* listener, listener::type lt);
 		void remove_listener(as_object_interface* listener);
+		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr) {};
 	};
 }
 

@@ -557,8 +557,6 @@ namespace gameswf
 		if (s_inited)
 		{
 			s_inited = false;
-
-			s_global->clear();
 			s_global = NULL;
 			tu_freetype::close();
 		}
@@ -1351,9 +1349,11 @@ namespace gameswf
 							if (obj->get_member(varname, &val))
 							{
 								// null out object's members
-								if (val.to_object())
+								as_object_interface* as_obj = val.to_object();
+								if (as_obj)
 								{
-									val.to_object()->clear();
+									hash<as_object_interface*, int> trace;
+									as_obj->clear_ref(trace, as_obj);
 								}
 
 								// drop refs
@@ -1376,10 +1376,12 @@ namespace gameswf
 
 					if (obj.get_type() != as_value::UNDEFINED)
 					{
-						// null out object's members
-						if (obj.to_object())
+						// clear self refs
+						as_object_interface* as_obj = obj.to_object();
+						if (as_obj)
 						{
-							obj.to_object()->clear();
+							hash<as_object_interface*, int> trace;
+							as_obj->clear_ref(trace, as_obj);
 						}
 
 						// drop refs

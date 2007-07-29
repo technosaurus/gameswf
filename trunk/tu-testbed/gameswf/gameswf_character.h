@@ -96,7 +96,7 @@ namespace gameswf
 		// Cleans environment and members which can cause memory leaks
 		// that is the effect of code like:
 		// _root.my_var = _root;		
-		virtual void clear() {};
+		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr) = 0;
 
 		//
 		// Mouse/Button interface.

@@ -15,6 +15,7 @@
 #include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
 #include <assert.h>
 #include "base/image.h"	// for delete m_suspended_image
+#include "base/container.h"	// for hash<...>
 
 class tu_file;
 class render_handler;
@@ -229,7 +230,7 @@ namespace gameswf
 		virtual as_object_interface* get_proto() { return 0; }
 
 		// Releases resurces
-		virtual void clear() { assert(0); }
+		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr) = 0;
 
 		// for debugging
 		// dumps the object
@@ -727,7 +728,7 @@ namespace gameswf
 	// heap, with the exception of any objects that are still
 	// referenced by the host program and haven't had drop_ref()
 	// called on them.
-	void	clear();
+	void	clear_gameswf();
 
 
 	//

@@ -104,12 +104,13 @@ namespace gameswf
 
 		~generic_character()
 		{
-			clear();
+			hash<as_object_interface*, int> trace;
+			clear_ref(trace, this);
 		}
 
 		virtual character_def* get_character_def() { return m_def;	}
 
-		virtual void clear() 
+		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr) 
 		{
 			m_def = NULL;
 		}

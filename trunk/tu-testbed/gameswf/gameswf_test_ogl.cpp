@@ -753,7 +753,7 @@ int	main(int argc, char *argv[])
 								// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 								//						if (md) md->drop_ref();
 								//						if (m) m->drop_ref();
-								gameswf::clear();
+								gameswf::clear_gameswf();
 
 								gameswf::set_sound_handler(NULL);
 								delete sound;
@@ -1018,7 +1018,7 @@ done:
 //	gameswf::notify_key_event(gameswf::key::C, true);
 
 	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
-	gameswf::clear();
+	gameswf::clear_gameswf();
 
 	tu_memdebug::close();
 

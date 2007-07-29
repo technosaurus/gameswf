@@ -111,8 +111,8 @@ namespace gameswf
 
 	sprite_instance::~sprite_instance()
 	{
-//		printf("~sprite_instance %08X\n", this);
-		clear();
+		hash<as_object_interface*, int> trace;
+		clear_ref(trace, this);
 	}
 
 	bool sprite_instance::has_keypress_event()
@@ -153,9 +153,17 @@ namespace gameswf
 		}
 	}
 
-	void sprite_instance::clear()
+	void sprite_instance::clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
 	{
-		m_as_environment.clear();
+		// We were here ?
+		int unused;
+		if (trace.get(this, &unused))
+		{
+			return;
+		}
+		trace.add(this, 0);
+
+		m_as_environment.clear_ref(trace, this_ptr);
 
 		int i, n = m_display_list.get_character_count();
 		for (i = 0; i < n; i++)
@@ -163,7 +171,7 @@ namespace gameswf
 			character* ch = m_display_list.get_character(i);
 			if (ch != NULL)
 			{
-				ch->clear();
+				ch->clear_ref(trace, this_ptr);
 			}
 		}
 

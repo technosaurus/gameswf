@@ -76,25 +76,11 @@ namespace gameswf
 
 		~as_environment()
 		{
-			clear();
 		}
 
 		character*	get_target() { return m_target; }
 		
-		void clear()
-		{
-			m_stack.clear();
-			m_variables.clear();
-			m_local_frames.clear();
-			m_target = NULL;
-			m_local_register.clear();
-
-			for (int i = 0; i < GLOBAL_REGISTER_COUNT; i++)
-			{
-				m_global_register[i].set_undefined();
-			}
-		}
-
+		void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr);
 		void set_target(character* target) { m_target = target; }
 		void set_target(as_value& target, character* original_target);
 

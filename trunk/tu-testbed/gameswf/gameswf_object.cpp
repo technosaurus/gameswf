@@ -33,6 +33,18 @@ namespace gameswf
 		fn.result->set_bool(false);
 	}
 
+	as_object::as_object()
+	{
+		set_member("addProperty", as_object_addproperty);
+		set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
+	}
+
+	as_object::~as_object()
+	{
+		hash<as_object_interface*, int> trace;
+		clear_ref(trace, this);
+	}
+
 	bool	as_object::set_member(const tu_stringi& name, const as_value& val )
 	{
 		//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
@@ -83,7 +95,15 @@ namespace gameswf
 			as_object_interface* proto = get_proto();
 			if (proto)
 			{
-				return proto->get_member(name, val);
+				if (proto->get_member(name, val))
+				{
+					if (val->get_type() == as_value::PROPERTY)
+					{
+						// changes the target
+						val->set_as_property(this, val->m_getter, val->m_setter);
+					}
+					return true;
+				}
 			}
 			return false;
 		}
@@ -120,15 +140,31 @@ namespace gameswf
 		return NULL;
 	}
 
-	void	as_object::clear()
+	void	as_object::clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
 	{
+		// We were here ?
+		int unused;
+		if (trace.get(this, &unused))
+		{
+			return;
+		}
+		trace.add(this, 0);
+
+		as_value undef;
 		for (stringi_hash<as_member>::iterator it = m_members.begin();
 			it != m_members.end(); ++it)
 		{
 			as_object_interface* obj = it->second.get_member_value().to_object();
 			if (obj)
 			{
-				obj->clear();
+				if (obj == this_ptr)
+				{
+					it->second.set_member_value(undef);
+				}
+				else
+				{
+					obj->clear_ref(trace, this_ptr);
+				}
 			}
 		}
 		m_members.clear();

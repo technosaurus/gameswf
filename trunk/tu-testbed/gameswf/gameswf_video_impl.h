@@ -53,7 +53,7 @@ namespace gameswf
 
 		void	display();
 
-		virtual void	clear()
+		virtual void	clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
 		{
 			m_def = NULL;
 			m_ns = NULL;
