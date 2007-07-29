@@ -1,3 +1,22 @@
+2007-07-29  Thatcher Ulrich <tu@tulrich.com>
+	* gameswf/samples/test_delete_references.as
+	* gameswf/samples/test_delete_references.swf
+	* gameswf/tests/test_delete_references.txt
+	Added a test to demonstrate that 'delete' operator is wrong -- it
+	should only clear the reference; it should not clear the objects
+	pointed to by the deleted reference.  Will fix in a subsequent
+	change.
+
+	* gameswf/gameswf_action.cpp: Fixed call_method opcode; method
+	calls should work on functions.
+
+	* gameswf/gameswf_function.h: Fixed memory bug with as_as_function
+	-- m_properties cannot be of type as_object, it must be a pointer
+	to as_object.  Otherwise, the as_object ref_counted destructor
+	tries to delete itself, which is invalid.
+
+	* base/Makefile: compile fix, add tu_loadlib.cpp
+
 2007-07-29  Vitaly Alexeev <tishka92@yahoo.com>
 	
 	Continuation of struggle against memory leaks

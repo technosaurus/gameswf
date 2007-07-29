@@ -354,7 +354,7 @@ namespace gameswf
 		}
 		else if (m_type == AS_FUNCTION && m_as_function_value != NULL)
 		{
-			return &m_as_function_value->m_properties;
+			return m_as_function_value->m_properties.get_ptr();
 		}
 //		else if (m_type == PROPERTY)
 //		{

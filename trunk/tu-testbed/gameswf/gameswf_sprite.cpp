@@ -586,7 +586,7 @@ namespace gameswf
 	}
 
 	void	sprite_instance::do_actions()
-		// Take care of this frame's actions.
+	// Take care of this frame's actions.
 	{
 
 
