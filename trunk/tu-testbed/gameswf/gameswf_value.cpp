@@ -59,12 +59,18 @@ namespace gameswf
 		}
 	}
 
-	as_value::as_value(as_as_function* getter, as_as_function* setter)
+	as_value::as_value(as_object_interface*	target,	
+		as_as_function* getter, as_as_function* setter)
 		:
 		m_type(PROPERTY),
+		m_target(target),
 		m_getter(getter),
 		m_setter(setter)
 	{
+		if (m_target)
+		{
+			m_target->add_ref();
+		}
 		if (m_getter)
 		{
 			m_getter->add_ref();
@@ -350,6 +356,10 @@ namespace gameswf
 		{
 			return &m_as_function_value->m_properties;
 		}
+//		else if (m_type == PROPERTY)
+//		{
+//			return get_property().to_object();
+//		}
 		else
 		{
 			return NULL;
@@ -484,6 +494,33 @@ namespace gameswf
 		}
 	}
 
+	void	as_value::set_as_property(as_object_interface* target, 
+		as_as_function* getter, as_as_function* setter)
+	{
+		if (m_type != PROPERTY || m_getter != getter || m_setter != setter || m_target != target)
+		{
+			drop_refs(); 
+			m_type = PROPERTY;
+
+			m_target = target;
+			if (m_target)
+			{
+				m_target->add_ref();
+			}
+
+			m_setter = setter;
+			if (m_setter)
+			{
+				m_setter->add_ref();
+			}
+
+			m_getter = getter;
+			if (m_getter)
+			{
+				m_getter->add_ref();
+			}
+		}
+	}
 
 	bool	as_value::operator==(const as_value& v) const
 	// Return true if operands are equal.
@@ -552,19 +589,44 @@ namespace gameswf
 				m_object_value = 0;
 			}
 		}
+		else if (m_type == PROPERTY)
+		{
+			if (m_target)
+			{
+				m_target->drop_ref();
+				m_target = 0;
+			}
+			if (m_getter)
+			{
+				m_getter->drop_ref();
+				m_getter = 0;
+			}
+			if (m_setter)
+			{
+				m_setter->drop_ref();
+				m_setter = 0;
+			}
+		}
 	}
 
 	void	as_value::set_property(const as_value& v)
 	{
-		m_setter->m_env->push(v);
-		(*m_setter)(fn_call(NULL, NULL, m_setter->m_env, 1, m_setter->m_env->get_top_index()));
-		m_setter->m_env->drop(1);
+		if (m_setter)
+		{
+			assert(m_setter->m_env);
+			m_setter->m_env->push(v);
+			(*m_setter)(fn_call(NULL, m_target, m_setter->m_env, 1, m_setter->m_env->get_top_index()));
+			m_setter->m_env->drop(1);
+		}
 	}
 
 	as_value as_value::get_property() const
 	{
 		as_value val;
-		(*m_getter)(fn_call(&val, NULL, m_getter->m_env, 0, m_getter->m_env->get_top_index()));
+		if (m_getter)
+		{
+			(*m_getter)(fn_call(&val, m_target, m_getter->m_env, 0, m_getter->m_env->get_top_index()));
+		}
 		return val;
 	}
 

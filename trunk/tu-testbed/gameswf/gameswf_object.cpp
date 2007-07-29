@@ -25,7 +25,7 @@ namespace gameswf
 			as_as_function* setter = fn.arg(2).to_as_function();
 			if (getter || setter)
 			{
-				obj->set_member(fn.arg(0).to_string(), as_value(getter, setter));
+				obj->set_member(fn.arg(0).to_string(), as_value(obj, getter, setter));
 				fn.result->set_bool(true);
 				return;
 			}
@@ -36,8 +36,17 @@ namespace gameswf
 	bool	as_object::set_member(const tu_stringi& name, const as_value& val )
 	{
 		//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
-		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
+		as_value v;
+		if (get_member(name, &v))
+		{
+			if (v.get_type() == as_value::PROPERTY)
+			{
+				v.set_property(val);
+				return true;
+			}
+		}
 
+		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
 		if (it != this->m_members.end())
 		{
 			const as_prop_flags flags = (it.get_value()).get_member_flags();
@@ -52,7 +61,6 @@ namespace gameswf
 		{
 			m_members.set(name, as_member(val));
 		}
-
 		return true;
 	}
 
@@ -79,11 +87,8 @@ namespace gameswf
 			}
 			return false;
 		}
-		else
-		{
-			*val = m.get_member_value();
-			return true;
-		}
+
+		*val = m.get_member_value();
 		return true;
 	}
 
@@ -106,7 +111,6 @@ namespace gameswf
 
 			return true;
 		}
-
 		return false;
 	}
 
@@ -118,6 +122,11 @@ namespace gameswf
 
 	void	as_object::clear()
 	{
+		as_object_interface* proto = get_proto();
+		if (proto)
+		{
+			return proto->clear();
+		}
 		m_members.clear();
 	}
 
