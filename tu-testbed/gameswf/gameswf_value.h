@@ -53,6 +53,7 @@ namespace gameswf
 			plugin_function_ptr	m_plugin_function_value;
 			struct
 			{
+				as_object_interface*	m_target;
 				as_as_function*	m_getter;
 				as_as_function*	m_setter;
 			};
@@ -162,7 +163,7 @@ namespace gameswf
 
 		as_value(as_as_function* func);
 
-		as_value(as_as_function* getter, as_as_function* setter);
+		as_value(as_object_interface*	target,	as_as_function* getter, as_as_function* setter);
 
 		~as_value() { drop_refs(); }
 
@@ -201,13 +202,7 @@ namespace gameswf
 		void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
 		void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
-		void	set_as_property(as_as_function* getter, as_as_function* setter)
-		{
-			drop_refs(); 
-			m_type = PROPERTY;
-			m_setter = setter;
-			m_getter = getter;
-		}
+		void	set_as_property(as_object_interface* target, as_as_function* getter, as_as_function* setter);
 		void	set_int(int val) { set_double(val); }
 		void	set_as_object_interface(as_object_interface* obj);
 		void	set_as_c_function_ptr(as_c_function_ptr func)
@@ -227,8 +222,7 @@ namespace gameswf
 
 		void	operator=(const as_value& v)
 		{
-			if (m_type == PROPERTY && v.m_type != PROPERTY) set_property(v);
-			else if (v.m_type == UNDEFINED) set_undefined();
+			if (v.m_type == UNDEFINED) set_undefined();
 			else if (v.m_type == NULLTYPE) set_null();
 			else if (v.m_type == BOOLEAN) set_bool(v.m_boolean_value);
 			else if (v.m_type == STRING) set_tu_string(v.m_string_value);
@@ -236,7 +230,7 @@ namespace gameswf
 			else if (v.m_type == OBJECT) set_as_object_interface(v.m_object_value);
 			else if (v.m_type == C_FUNCTION) set_as_c_function_ptr(v.m_c_function_value);
 			else if (v.m_type == AS_FUNCTION) set_as_as_function(v.m_as_function_value);
-			else if (v.m_type == PROPERTY) set_as_property(v.m_getter, v.m_setter);
+			else if (v.m_type == PROPERTY) set_as_property(v.m_target, v.m_getter, v.m_setter);
 			else assert(0);
 		}
 
