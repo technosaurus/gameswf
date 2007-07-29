@@ -122,10 +122,14 @@ namespace gameswf
 
 	void	as_object::clear()
 	{
-		as_object_interface* proto = get_proto();
-		if (proto)
+		for (stringi_hash<as_member>::iterator it = m_members.begin();
+			it != m_members.end(); ++it)
 		{
-			return proto->clear();
+			as_object_interface* obj = it->second.get_member_value().to_object();
+			if (obj)
+			{
+				obj->clear();
+			}
 		}
 		m_members.clear();
 	}
