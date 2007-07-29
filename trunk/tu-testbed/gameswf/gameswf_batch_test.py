@@ -143,6 +143,7 @@ passing_tests = [
   'tests/frame2.txt',
   'tests/test_basic_types.txt',
   'tests/test_currentframe.txt',
+  'tests/test_delete_references.txt',
   'tests/test_forin_array.txt',
   'tests/test_motion_exec_order.txt',
   'tests/test_string.txt',

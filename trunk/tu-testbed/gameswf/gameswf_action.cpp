@@ -1340,29 +1340,11 @@ namespace gameswf
 					env->drop(1);
 
 					bool retcode = false;
-					if (obj_interface)
-					{
-						smart_ptr<as_object> obj = obj_interface->cast_to_as_object();
-						if (obj != NULL)
-						{
-							as_value val;
-							if (obj->get_member(varname, &val))
-							{
-								// null out object's members
-								as_object_interface* as_obj = val.to_object();
-								if (as_obj)
-								{
-									hash<as_object_interface*, int> trace;
-									as_obj->clear_ref(trace, as_obj);
-								}
-
-								// drop refs
-								val.set_undefined();
-
-								// finally to remove it we need set varname to undefined
-								obj->set_member(varname, as_value());
-								retcode = true;
-							}
+					if (obj_interface) {
+						as_value val;
+						if (obj_interface->get_member(varname, &val)) {
+							obj_interface->set_member(varname, as_value());
+							retcode = true;
 						}
 					}
 
