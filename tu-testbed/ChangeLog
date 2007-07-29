@@ -1,4 +1,12 @@
 2007-07-29  Thatcher Ulrich <tu@tulrich.com>
+	* gameswf/gameswf_action.cpp: Fix delete operator.  Should only
+	clear the specified object member; it should not affect the object
+	pointed to by that member.
+
+	* gameswf/gameswf_batch_test.py: Add
+	tests/test_delete_references.txt to the list of passing tests.
+
+2007-07-29  Thatcher Ulrich <tu@tulrich.com>
 	* gameswf/samples/test_delete_references.as
 	* gameswf/samples/test_delete_references.swf
 	* gameswf/tests/test_delete_references.txt
