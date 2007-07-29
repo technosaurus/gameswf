@@ -485,8 +485,8 @@ namespace gameswf
 	// global gameswf management
 	//
 
-	void	clear()
-		// Maximum release of resources.
+	void	clear_gameswf()
+	// Maximum release of resources.
 	{
 		clear_library();
 		sprite_builtins_clear();

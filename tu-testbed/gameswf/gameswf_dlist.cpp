@@ -190,7 +190,6 @@ namespace gameswf
 		// remove this character from listener
 		remove_keypress_listener(di.m_character.get_ptr());
 
-//vv		di.m_character->clear();
 		di.set_character(NULL);
 		m_display_object_array.remove(index);
 	}

@@ -625,6 +625,7 @@ namespace gameswf
 		as_value val;
 		if (m_getter)
 		{
+			assert(m_getter->m_env);
 			(*m_getter)(fn_call(&val, m_target, m_getter->m_env, 0, m_getter->m_env->get_top_index()));
 		}
 		return val;

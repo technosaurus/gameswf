@@ -55,7 +55,7 @@ namespace gameswf
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual x3ds_instance* cast_to_3ds() { return this; }
 
-		virtual void	clear()
+		virtual void	clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
 		{
 			m_camera = NULL;
 			m_material.clear();
