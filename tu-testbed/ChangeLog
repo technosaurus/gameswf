@@ -1,3 +1,9 @@
+2007-07-30  Vitaly Alexeev <tishka92@yahoo.com>
+	
+		* gameswf/gameswf_dlist.cpp: Fixed cross-link memory leak bug
+		that is the effect of code like
+		clip.myvar = clip;
+
 2007-07-29  Thatcher Ulrich <tu@tulrich.com>
 	* gameswf/gameswf_action.cpp: Fix delete operator.  Should only
 	clear the specified object member; it should not affect the object
