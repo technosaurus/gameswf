@@ -190,6 +190,11 @@ namespace gameswf
 		// remove this character from listener
 		remove_keypress_listener(di.m_character.get_ptr());
 
+		// to avoid cross-link memory leaks that is the effect of code like
+		// clip.myvar = clip;
+		hash<as_object_interface*, int> trace;
+		di.m_character->clear_ref(trace, di.m_character.get_ptr());
+
 		di.set_character(NULL);
 		m_display_object_array.remove(index);
 	}
