@@ -73,7 +73,7 @@ namespace gameswf
 		}
 	}
 
-	// (eventName:String) : Void
+	// (eventName:String, ...) : Void
 	void	as_broadcast_sendmessage(const fn_call& fn)
 	// Sends an event message to each object in the list of listeners.
 	// When the message is received by the listening object,
@@ -101,9 +101,8 @@ namespace gameswf
 							as_value function;
 							if (listener->get_member(ovent_name, &function))
 							{
-								as_environment* env = function.to_as_function()->m_env;
-								assert(env);
-								call_method(function, env, listener, fn.nargs - 1, fn.first_arg_bottom_index - 1);
+								call_method(function, fn.env, listener,
+									fn.nargs - 1, fn.first_arg_bottom_index - 1);
 							}
 						}
 					}
