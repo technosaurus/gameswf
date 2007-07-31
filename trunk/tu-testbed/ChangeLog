@@ -1,3 +1,11 @@
+2007-07-31  Vitaly Alexeev <tishka92@yahoo.com>
+	
+		* gameswf/gameswf.h
+		* gameswf/gameswf_action.cpp
+		* gameswf/gameswf_object.cpp
+		* gameswf/gameswf_object.h: Added
+		__resolve, hasOwnProperty(), watch(), unwatch() implementation
+		
 2007-07-30  Vitaly Alexeev <tishka92@yahoo.com>
 	
 		* gameswf/gameswf_as_classes/as_broadcaster.cpp: fixed sendmessage()

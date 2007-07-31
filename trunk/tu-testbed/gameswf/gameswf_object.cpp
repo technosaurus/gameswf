@@ -33,10 +33,76 @@ namespace gameswf
 		fn.result->set_bool(false);
 	}
 
+	// public hasOwnProperty(name:String) : Boolean
+	// Indicates whether an object has a specified property defined. 
+	// This method returns true if the target object has a property that
+	// matches the string specified by the name parameter, and false otherwise.
+	// This method does not check the object's prototype chain and returns true only 
+	// if the property exists on the object itself.
+	void	as_object_hasownproperty(const fn_call& fn)
+	{
+		if (fn.nargs == 1)
+		{
+			assert(fn.this_ptr);
+			as_object* obj = fn.this_ptr->cast_to_as_object();
+			assert(obj);
+			as_member m;
+			if (obj->m_members.get(fn.arg(0).to_tu_stringi(), &m))
+			{
+				fn.result->set_bool(true);
+				return;
+			}
+		}
+		fn.result->set_bool(false);
+	}
+
+
+	// public watch(name:String, callback:Function, [userData:Object]) : Boolean
+	// Registers an event handler to be invoked when a specified property of
+	// an ActionScript object changes. When the property changes,
+	// the event handler is invoked with myObject as the containing object. 
+	void	as_object_watch(const fn_call& fn)
+	{
+		bool ret = false;
+		if (fn.nargs >= 2)
+		{
+			assert(fn.this_ptr);
+			as_object* obj = fn.this_ptr->cast_to_as_object();
+			assert(obj);
+
+			ret = obj->watch(fn.arg(0).to_tu_string(), fn.arg(1).to_as_function(), 
+				fn.nargs > 2 ? fn.arg(2) : as_value());
+		}
+		fn.result->set_bool(ret);
+	}
+
+	//public unwatch(name:String) : Boolean
+	// Removes a watchpoint that Object.watch() created.
+	// This method returns a value of true if the watchpoint is successfully removed,
+	// false otherwise.
+	void	as_object_unwatch(const fn_call& fn)
+	{
+		bool ret = false;
+		if (fn.nargs == 1)
+		{
+			assert(fn.this_ptr);
+			as_object* obj = fn.this_ptr->cast_to_as_object();
+			assert(obj);
+			ret = obj->unwatch(fn.arg(0).to_tu_string());
+		}
+		fn.result->set_bool(ret);
+	}
+
 	as_object::as_object()
 	{
 		set_member("addProperty", as_object_addproperty);
 		set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
+		set_member("hasOwnProperty", as_object_hasownproperty);
+		set_member_flags("hasOwnProperty", as_prop_flags::DONT_ENUM);
+		set_member("watch", as_object_watch);
+		set_member_flags("watch", as_prop_flags::DONT_ENUM);
+		set_member("unwatch", as_object_unwatch);
+		set_member_flags("unwatch", as_prop_flags::DONT_ENUM);
 	}
 
 	as_object::~as_object()
@@ -66,6 +132,20 @@ namespace gameswf
 			// is the member read-only ?
 			if (!flags.get_read_only())
 			{
+				as_value watch_val;
+				watch_t watch;
+				if (m_watch.get(name, &watch))
+				{
+					watch.m_func->m_env->push(watch.m_user_data);	// params
+					watch.m_func->m_env->push(val);		// newVal
+					watch.m_func->m_env->push(it->second.get_member_value());	// oldVal
+					watch.m_func->m_env->push(name);	// property
+
+					(*watch.m_func)(fn_call(&watch_val, this, watch.m_func->m_env, 4,
+						watch.m_func->m_env->get_top_index()));
+
+					watch.m_func->m_env->drop(4);
+				}
 				m_members.set(name, as_member(val, flags));
 			}
 		}
@@ -217,6 +297,32 @@ namespace gameswf
 		{
 			proto->enumerate(env);
 		}
+	}
+
+	bool as_object::watch(const tu_string& name, as_as_function* callback,
+		const as_value& user_data)
+	{
+		if (callback == NULL)
+		{
+			return false;
+		}
+
+		watch_t watch;
+		watch.m_func = callback;
+		watch.m_user_data = user_data;
+		m_watch.add(name, watch);
+		return true;
+	}
+
+	bool as_object::unwatch(const tu_string& name)
+	{
+		watch_t watch;
+		if (m_watch.get(name, &watch))
+		{
+			m_watch.erase(name);
+			return true;
+		}
+		return false;
 	}
 
 	void as_object::dump()
