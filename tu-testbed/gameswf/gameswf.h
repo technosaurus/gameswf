@@ -182,6 +182,7 @@ namespace gameswf
 	struct as_textformat;
 	struct x3ds_instance;
 	struct edit_text_character;
+	struct as_as_function;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -231,6 +232,17 @@ namespace gameswf
 
 		// Releases resurces
 		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr) = 0;
+
+		// Registers an event handler to be invoked when a specified property changes.
+		virtual bool watch(const tu_string& name,	as_as_function* callback, const as_value& user_data)
+		{
+			return false; 
+		}
+
+		// Removes a watchpoint that Object.watch() created.
+		// This method returns a value of true if the watchpoint is successfully removed,
+		// false otherwise.
+		virtual bool unwatch(const tu_string& name) { return false; }
 
 		// for debugging
 		// dumps the object

@@ -25,6 +25,17 @@ namespace gameswf
 	{
 		stringi_hash<as_member>	m_members;
 
+		// It is used to register an event handler to be invoked when
+		// a specified property of object changes.
+		// TODO: create container based on stringi_hash<as_value>
+		// watch should be coomon
+		typedef struct watch_t
+		{
+			as_as_function* m_func;
+			as_value m_user_data;
+		};
+		stringi_hash<watch_t>	m_watch;
+
 		as_object();
 		virtual ~as_object();
 		
@@ -39,6 +50,10 @@ namespace gameswf
 		virtual as_object* cast_to_as_object() { return this; }
 		virtual	void enumerate(as_environment* env);
 		virtual as_object_interface* get_proto();
+
+		virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
+		virtual bool unwatch(const tu_string& name);
+
 		void dump();
 	};
 

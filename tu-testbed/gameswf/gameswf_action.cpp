@@ -1705,17 +1705,32 @@ namespace gameswf
 					else
 					{
 						env->top(1).set_undefined();
-						// int	nargs = (int) env->top(1).to_number();
-						if (obj) {
-							obj->get_member(env->top(0).to_tu_string(), &(env->top(1)));
+						if (obj)
+						{
+							if (obj->get_member(env->top(0).to_tu_string(), &(env->top(1))) == false)
+							{
+								// try '__resolve' property
+								as_value val;
+								if (obj->get_member("__resolve", &val))
+								{
+									// call __resolve
+									as_as_function* resolve = val.to_as_function();
+									if (resolve)
+									{
+										(*resolve)(fn_call(&val, obj, env, 1, env->get_top_index()));
+										env->top(1) = val;
+									}
+								}
+							}
+
 							if (env->top(1).to_object() == NULL) {
 								IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s\n",
-											  env->top(0).to_tu_string().c_str(),
-											  env->top(1).to_tu_string().c_str()));
+												env->top(0).to_tu_string().c_str(),
+												env->top(1).to_tu_string().c_str()));
 							} else {
 								IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s at %p\n",
-											  env->top(0).to_tu_string().c_str(),
-											  env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
+												env->top(0).to_tu_string().c_str(),
+												env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
 							}
 						}
 						else
