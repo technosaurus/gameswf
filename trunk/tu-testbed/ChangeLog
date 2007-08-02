@@ -1,5 +1,10 @@
 2007-08-02  Vitaly Alexeev <tishka92@yahoo.com>
 	
+		* gameswf/gameswf_as_classes/as_broadcaster.cpp:
+		has forgotten to clear the debug stuff
+
+2007-08-02  Vitaly Alexeev <tishka92@yahoo.com>
+	
 		* base/container.h: fixed tu_string::operator=
 		* gameswf/gameswf.h
 		* gameswf/gameswf_action.cpp
