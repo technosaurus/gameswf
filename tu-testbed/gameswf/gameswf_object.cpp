@@ -93,7 +93,9 @@ namespace gameswf
 		fn.result->set_bool(ret);
 	}
 
-	as_object::as_object()
+	as_object::as_object() :
+		m_is_get_called(false),
+		m_is_clear_called(false)
 	{
 		set_member("addProperty", as_object_addproperty);
 		set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
@@ -107,8 +109,6 @@ namespace gameswf
 
 	as_object::~as_object()
 	{
-		hash<as_object_interface*, int> trace;
-		clear_ref(trace, this);
 	}
 
 	bool	as_object::set_member(const tu_stringi& name, const as_value& val )
@@ -220,15 +220,44 @@ namespace gameswf
 		return NULL;
 	}
 
-	void	as_object::clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
+	int as_object::get_self_refs(ref_counted* this_ptr)
 	{
 		// We were here ?
-		int unused;
-		if (trace.get(this, &unused))
+		if (m_is_get_called)
+		{
+			return 0;
+		}
+		m_is_get_called = true;
+
+		int refs = 0;
+		for (stringi_hash<as_member>::const_iterator it = m_members.begin();
+			it != m_members.end(); ++it)
+		{
+			as_object_interface* obj = it->second.get_member_value().to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					refs++;
+				}
+				else
+				{
+					refs += obj->get_self_refs(this_ptr);
+				}
+			}
+		}
+		m_is_get_called = false;
+		return refs;
+	}
+
+	void	as_object::clear_refs(ref_counted* this_ptr)
+	{
+		// We were here ?
+		if (m_is_clear_called)
 		{
 			return;
 		}
-		trace.add(this, 0);
+		m_is_clear_called = true;
 
 		as_value undef;
 		for (stringi_hash<as_member>::iterator it = m_members.begin();
@@ -243,11 +272,12 @@ namespace gameswf
 				}
 				else
 				{
-					obj->clear_ref(trace, this_ptr);
+					obj->clear_refs(this_ptr);
 				}
 			}
 		}
 		m_members.clear();
+		m_is_clear_called = false;
 	}
 
 	bool	as_object::on_event(const event_id& id)

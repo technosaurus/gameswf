@@ -234,7 +234,6 @@ namespace gameswf
 		~edit_text_character();
 
 		virtual character_def* get_character_def() { return m_def;	}
-		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr);
 		void reset_format(as_textformat* tf);
 
 		movie_root* get_root();

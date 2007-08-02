@@ -1358,14 +1358,6 @@ namespace gameswf
 
 					if (obj.get_type() != as_value::UNDEFINED)
 					{
-						// clear self refs
-						as_object_interface* as_obj = obj.to_object();
-						if (as_obj)
-						{
-							hash<as_object_interface*, int> trace;
-							as_obj->clear_ref(trace, as_obj);
-						}
-
 						// drop refs
 						obj.set_undefined();
 
@@ -1808,7 +1800,7 @@ namespace gameswf
 									result = call_method(
 									constructor,
 									env,
-									env->m_instance,
+									env->m_instance.get_ptr(),
 									nargs,
 									env->get_top_index() - 3);
 								}
@@ -1957,11 +1949,11 @@ namespace gameswf
 					as_value super_prototype;
 					super->m_properties->get_member("prototype", &super_prototype);
 
-					as_object* new_prototype = new as_object();
+					smart_ptr<as_object> new_prototype = new as_object();
 					new_prototype->set_member("__proto__", super_prototype);
 					new_prototype->set_member("__constructor__", super);
 
-					sub->m_properties->set_member("prototype", new_prototype);
+					sub->m_properties->set_member("prototype", new_prototype.get_ptr());
 
 
 					env->drop(2);

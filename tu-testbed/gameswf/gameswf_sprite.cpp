@@ -92,7 +92,9 @@ namespace gameswf
 		m_accept_anim_moves(true),
 		m_mouse_state(UP),
 		m_enabled(true),
-		m_on_event_load_called(false)
+		m_on_event_load_called(false),
+		m_is_get_called(false),
+		m_is_clear_called(false)
 	{
 		assert(m_def != NULL);
 		assert(m_root != NULL);
@@ -111,8 +113,6 @@ namespace gameswf
 
 	sprite_instance::~sprite_instance()
 	{
-		hash<as_object_interface*, int> trace;
-		clear_ref(trace, this);
 	}
 
 	bool sprite_instance::has_keypress_event()
@@ -151,35 +151,6 @@ namespace gameswf
 				bound->expand_to_rect(ch_bound);
 			}
 		}
-	}
-
-	void sprite_instance::clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
-	{
-		// We were here ?
-		int unused;
-		if (trace.get(this, &unused))
-		{
-			return;
-		}
-		trace.add(this, 0);
-
-		m_as_environment.clear_ref(trace, this_ptr);
-
-		int i, n = m_display_list.get_character_count();
-		for (i = 0; i < n; i++)
-		{
-			character* ch = m_display_list.get_character(i);
-			if (ch != NULL)
-			{
-				ch->clear_ref(trace, this_ptr);
-			}
-		}
-
-		m_def = NULL;
-		m_root = NULL;
-		m_action_list.clear();
-		m_goto_frame_action_list.clear();
-		m_mcloader = NULL;
 	}
 
 	character* sprite_instance::add_empty_movieclip(const char* name, int depth)
@@ -588,10 +559,9 @@ namespace gameswf
 	void	sprite_instance::do_actions()
 	// Take care of this frame's actions.
 	{
-
-
 		// Keep m_as_environment alive during any method calls!
 		smart_ptr<as_object_interface>	this_ptr(this);
+			int n = get_self_refs(this);
 
 		execute_actions(&m_as_environment, m_action_list);
 		m_action_list.resize(0);
@@ -1397,6 +1367,38 @@ namespace gameswf
 	character*	sprite_instance::find_target(const tu_string& path) const
 	{
 		return m_as_environment.find_target(path);
+	}
+
+	int sprite_instance::get_self_refs(ref_counted* this_ptr)
+	{
+
+		// We were here ?
+		if (m_is_get_called)
+		{
+			return 0;
+		}
+		m_is_get_called = true;
+
+		int refs = m_display_list.get_self_refs(this_ptr);
+		refs += m_as_environment.get_self_refs(this_ptr);
+
+		m_is_get_called = false;
+		return refs;
+	}
+
+	void	sprite_instance::clear_refs(ref_counted* this_ptr)
+	{
+		// We were here ?
+		if (m_is_clear_called)
+		{
+			return;
+		}
+		m_is_clear_called = true;
+
+		m_display_list.clear_refs(this_ptr);
+		m_as_environment.clear_refs(this_ptr);
+		
+		m_is_clear_called = false;
 	}
 
 }

@@ -52,11 +52,6 @@ namespace gameswf
 	movie_root::~movie_root()
 	{
 		assert(m_movie != NULL);
-		// it is necessary to prevent memory leaks that is
-		// the effect of code like:
-		// _root.my_var = _root;
-		hash<as_object_interface*, int> trace;
-		m_movie->clear_ref(trace, m_movie.get_ptr());
 		m_movie = NULL;
 
 		assert(m_def != NULL);

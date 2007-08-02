@@ -1,3 +1,36 @@
+2007-08-02  Vitaly Alexeev <tishka92@yahoo.com>
+	
+		* base/container.h: fixed tu_string::operator=
+		* gameswf/gameswf.h
+		* gameswf/gameswf_action.cpp
+		* gameswf/gameswf_as_classes/as_broadcaster.cpp
+		* gameswf/gameswf_button.cpp
+		* gameswf/gameswf_character.h
+		* gameswf/gameswf_dlist.cpp
+		* gameswf/gameswf_dlist.h
+		* gameswf/gameswf_environment.cpp
+		* gameswf/gameswf_environment.h
+		* gameswf/gameswf_font.cpp
+		* gameswf/gameswf_impl.cpp
+		* gameswf/gameswf_impl.h
+		* gameswf/gameswf_object.cpp
+		* gameswf/gameswf_object.h
+		* gameswf/gameswf_root.cpp
+		* gameswf/gameswf_root.h
+		* gameswf/gameswf_sprite.cpp
+		* gameswf/gameswf_sprite.h
+		* gameswf/gameswf_text.cpp
+		* gameswf/gameswf_text.h
+		* gameswf/gameswf_video_impl.cpp
+		* gameswf/gameswf_video_impl.h
+		* gameswf/plugins/lib3ds/gameswf_3ds.cpp
+		* gameswf/plugins/lib3ds/gameswf_3ds.h
+		Implemented garbage collector, some tests may be fault,
+		we should not use operators like
+		as_object* x = new as_object()
+		we should use smart_ptr like
+		smart_ptr<as_object> x = new as_object()
+
 2007-07-31  Vitaly Alexeev <tishka92@yahoo.com>
 	
 		* gameswf/gameswf.h

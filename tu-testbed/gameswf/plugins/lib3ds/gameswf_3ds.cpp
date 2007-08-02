@@ -190,8 +190,6 @@ namespace gameswf
 
 	x3ds_instance::~x3ds_instance()
 	{
-		hash<as_object_interface*, int> trace;
-		clear_ref(trace, this);
 		glDeleteLists(m_mesh_list, 1);
 		m_def->remove_camera(m_camera);
 	}

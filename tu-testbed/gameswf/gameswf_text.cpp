@@ -589,8 +589,6 @@ namespace gameswf
 	{ 
 		// on_event(event_id::KILLFOCUS) will be executed
 		// during remove_display_object()
-		hash<as_object_interface*, int> trace;
-		clear_ref(trace, this);
 	} 
 
 	void edit_text_character::reset_format(as_textformat* tf)
@@ -708,35 +706,6 @@ namespace gameswf
 		render::line_style_color(rgba(255, 0, 0, 255));   // red cursor 
 		render::draw_line_strip(box, 2);        // draw line 
 	} 
-
-	void edit_text_character::clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
-	{
-		// We were here ?
-		int unused;
-		if (trace.get(this, &unused))
-		{
-			return;
-		}
-		trace.add(this, 0);
-
-		for (stringi_hash<as_value>::iterator it = m_variables.begin();
-			it != m_variables.end(); ++it)
-		{
-			as_object_interface* obj = it->second.to_object();
-			if (obj)
-			{
-				if (obj == this_ptr)
-				{
-					it->second.set_undefined();
-				}
-				else
-				{
-					obj->clear_ref(trace, this_ptr);
-				}
-			}
-		}
-		m_variables.clear();
-	}
 
 	void edit_text_character::display() 
 	{ 

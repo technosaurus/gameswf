@@ -133,9 +133,15 @@ namespace gameswf
 		ref_counted();
 		virtual ~ref_counted();
 		void	add_ref() const;
-		void	drop_ref() const;
+		void	drop_ref();
 		int	get_ref_count() const { return m_ref_count; }
 		weak_proxy*	get_weak_proxy() const;
+
+		virtual int get_self_refs(ref_counted* this_ptr) { return 0; }
+		virtual void clear_refs(ref_counted* this_ptr) {}
+
+		// this is used to avoid circular calls
+		mutable bool m_is_drop_called;
 
 	private:
 		mutable int	m_ref_count;
@@ -229,9 +235,6 @@ namespace gameswf
 		// (ActionScript 2.0) or constructor function
 		// __proto__ is a function object !!!
 		virtual as_object_interface* get_proto() { return 0; }
-
-		// Releases resurces
-		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr) = 0;
 
 		// Registers an event handler to be invoked when a specified property changes.
 		virtual bool watch(const tu_string& name,	as_as_function* callback, const as_value& user_data)

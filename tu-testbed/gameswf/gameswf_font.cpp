@@ -202,8 +202,10 @@ namespace gameswf
 				{
 					// Seek to the start of the shape data.
 					int	new_pos = table_base + offsets[i];
+
 					// if we're seeking backwards, then that looks like a bug.
-					assert(new_pos >= in->get_position());
+					// Vitaly: I think that it not so
+					// assert(new_pos >= in->get_position());
 					in->set_position(new_pos);
 
 					// Create & read the shape.
@@ -353,7 +355,7 @@ namespace gameswf
 			// Code table is made of Uint16's.
 			for (int i = 0; i < m_glyphs.size(); i++)
 			{
-				m_code_table.add(in->read_u16(), i);
+				m_code_table[in->read_u16()] = i;
 			}
 		}
 		else
