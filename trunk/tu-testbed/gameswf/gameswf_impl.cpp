@@ -168,12 +168,15 @@ namespace gameswf
 				m_is_drop_called = true;
 				m_ref_count++;	// protect from deleting in clear_refs()
 				clear_refs(this);
-				assert(m_ref_count == 1);
-				m_ref_count--;
 				m_is_drop_called = false;
-
-				// Delete me!
-				delete this;
+				if (m_ref_count == 1)
+				{
+					drop_ref();
+				}
+				else
+				{
+					// probably a bug ?
+				}
 			}
 		}
 	}
