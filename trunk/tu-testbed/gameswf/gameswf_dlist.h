@@ -126,10 +126,11 @@ namespace gameswf
 		}
 
 		void clear_unaffected(array<Uint16>& affected_depths);
-		
 		void swap_characters(character* ch, character* ch2);
-
 		int get_highest_depth();
+
+		int get_self_refs(ref_counted* this_ptr);
+		void clear_refs(ref_counted* this_ptr);
 
 	private:
 

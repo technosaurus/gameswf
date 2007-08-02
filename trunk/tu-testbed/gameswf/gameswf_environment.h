@@ -8,6 +8,7 @@
 #ifndef GAMESWF_ENVIRONMENT_H
 #define GAMESWF_ENVIRONMENT_H
 
+#include "gameswf/gameswf.h"
 #include "gameswf/gameswf_value.h"
 
 namespace gameswf
@@ -53,7 +54,7 @@ namespace gameswf
 
 		// this is used in 'new' (0x40 opcode) to pass
 		// new created object pointer to constructor chain
-		as_object*	m_instance;
+		smart_ptr<as_object>	m_instance;
 
 		stringi_hash<as_value>	m_variables;
 
@@ -80,7 +81,6 @@ namespace gameswf
 
 		character*	get_target() { return m_target; }
 		
-		void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr);
 		void set_target(character* target) { m_target = target; }
 		void set_target(as_value& target, character* original_target);
 
@@ -138,6 +138,9 @@ namespace gameswf
 		character*	find_target(const as_value& val) const;
 
 		character* load_file(const char* url, const as_value& target);
+
+		int get_self_refs(ref_counted* this_ptr);
+		void clear_refs(ref_counted* this_ptr);
 
 		void dump();
 

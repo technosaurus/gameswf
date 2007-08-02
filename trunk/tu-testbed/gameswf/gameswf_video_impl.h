@@ -53,12 +53,6 @@ namespace gameswf
 
 		void	display();
 
-		virtual void	clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
-		{
-			m_def = NULL;
-			m_ns = NULL;
-		};
-
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 
 		//

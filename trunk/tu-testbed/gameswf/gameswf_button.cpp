@@ -207,8 +207,6 @@ namespace gameswf
 
 		~button_character_instance()
 		{
-			hash<as_object_interface*, int> trace;
-			clear_ref(trace, this);
 		}
 
 		virtual	void	execute_frame_tags(int frame, bool state_only)
@@ -548,18 +546,6 @@ namespace gameswf
 					m.transform(&ch_bound);
 
 					bound->expand_to_rect(ch_bound);
-				}
-			}
-		}
-
-		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
-		{
-			m_def = NULL;
-			for (int i = 0, n = m_record_character.size(); i < n; i++)
-			{
-				if (m_record_character[i] != NULL)
-				{
-					m_record_character[i]->clear_ref(trace, this_ptr);
 				}
 			}
 		}

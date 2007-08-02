@@ -718,32 +718,6 @@ namespace gameswf
 		return env;
 	}
 
-	void as_environment::clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr)
-	{
-		m_stack.clear();
-		m_local_frames.clear();
-		m_target = NULL;
-		m_local_register.clear();
-
-		for (stringi_hash<as_value>::iterator it = m_variables.begin();
-			it != m_variables.end(); ++it)
-		{
-			as_object_interface* obj = it->second.to_object();
-			if (obj)
-			{
-				if (obj == this_ptr)
-				{
-					it->second.set_undefined();
-				}
-				else
-				{
-					obj->clear_ref(trace, this_ptr);
-				}
-			}
-		}
-		m_variables.clear();
-	}
-
 	void as_environment::dump()
 	// for debugging
 	// retrieves vars & print them
@@ -764,6 +738,49 @@ namespace gameswf
 		}
 
 		printf("***\n");
+	}
+
+	int as_environment::get_self_refs(ref_counted* this_ptr)
+	{
+		int refs = 0;
+		for (stringi_hash<as_value>::const_iterator it = m_variables.begin();
+			it != m_variables.end(); ++it)
+		{
+			as_object_interface* obj = it->second.to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					refs++;
+				}
+				else
+				{
+					refs += obj->get_self_refs(this_ptr);
+				}
+			}
+		}
+		return refs;
+	}
+
+	void	as_environment::clear_refs(ref_counted* this_ptr)
+	{
+		for (stringi_hash<as_value>::iterator it = m_variables.begin();
+			it != m_variables.end(); ++it)
+		{
+			as_object_interface* obj = it->second.to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					it->second.set_undefined();
+				}
+				else
+				{
+					obj->clear_refs(this_ptr);
+				}
+			}
+		}
+		m_variables.clear();
 	}
 
 }

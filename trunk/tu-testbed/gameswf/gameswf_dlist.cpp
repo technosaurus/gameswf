@@ -190,11 +190,6 @@ namespace gameswf
 		// remove this character from listener
 		remove_keypress_listener(di.m_character.get_ptr());
 
-		// to avoid cross-link memory leaks that is the effect of code like
-		// clip.myvar = clip;
-//		hash<as_object_interface*, int> trace;
-//		di.m_character->clear_ref(trace, di.m_character.get_ptr());
-
 		di.set_character(NULL);
 		m_display_object_array.remove(index);
 	}
@@ -607,12 +602,35 @@ namespace gameswf
 		for (int i = 0, n = get_character_count(); i < n; i++)
 		{
 			character*	ch = get_character(i);
+			assert(ch);
 			if (ch->get_depth() > depth)
 			{
 				depth = ch->get_depth();
 			}
 		}
 		return depth;
+	}
+
+	int display_list::get_self_refs(ref_counted* this_ptr)
+	{
+		int refs = 0;
+		for (int i = 0, n = get_character_count(); i < n; i++)
+		{
+			character*	ch = get_character(i);
+			assert(ch);
+			refs += ch->get_self_refs(this_ptr);
+		}
+		return refs;
+	}
+
+	void	display_list::clear_refs(ref_counted* this_ptr)
+	{
+		for (int i = 0, n = get_character_count(); i < n; i++)
+		{
+			character*	ch = get_character(i);
+			assert(ch);
+			ch->clear_refs(this_ptr);
+		}
 	}
 
 }

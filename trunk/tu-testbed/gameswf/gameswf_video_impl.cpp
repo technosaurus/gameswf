@@ -80,8 +80,6 @@ namespace gameswf
 
 	video_stream_instance::~video_stream_instance()
 	{
-		hash<as_object_interface*, int> trace;
-		clear_ref(trace, this);
 	}
 
 	void video_stream_instance::display()

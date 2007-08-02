@@ -35,6 +35,9 @@ namespace gameswf
 			as_value m_user_data;
 		};
 		stringi_hash<watch_t>	m_watch;
+		
+		bool m_is_get_called;
+		bool m_is_clear_called;
 
 		as_object();
 		virtual ~as_object();
@@ -45,7 +48,6 @@ namespace gameswf
 		virtual bool get_member(const tu_stringi& name, as_member* member) const;
 		virtual bool	set_member_flags(const tu_stringi& name, const int flags);
 		virtual character*	cast_to_character();
-		virtual void	clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr);
 		virtual bool	on_event(const event_id& id);
 		virtual as_object* cast_to_as_object() { return this; }
 		virtual	void enumerate(as_environment* env);
@@ -53,6 +55,9 @@ namespace gameswf
 
 		virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
 		virtual bool unwatch(const tu_string& name);
+
+		virtual int get_self_refs(ref_counted* this_ptr);
+		virtual void clear_refs(ref_counted* this_ptr);
 
 		void dump();
 	};

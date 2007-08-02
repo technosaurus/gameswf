@@ -58,10 +58,11 @@ namespace gameswf
 		bool m_on_event_load_called;
 		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
 
+		bool m_is_get_called;
+		bool m_is_clear_called;
+
 		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
 		virtual ~sprite_instance();
-
-		virtual void clear_ref(hash<as_object_interface*, int>& trace, as_object_interface* this_ptr);
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		virtual bool has_keypress_event();
@@ -219,6 +220,9 @@ namespace gameswf
 		character* create_text_field(const char* name, int depth, int x, int y, int width, int height);
 
 		virtual character*	find_target(const tu_string& path) const;
+
+		virtual int get_self_refs(ref_counted* this_ptr);
+		virtual void clear_refs(ref_counted* this_ptr);
 
 	};
 }

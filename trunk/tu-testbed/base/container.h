@@ -1102,8 +1102,11 @@ public:
 	// (executive summary: a = b = c is an invitation to bad code)
 	void	operator=(const char* str)
 	{
-		resize(strlen(str));
-		strcpy(get_buffer(), str);
+		if (str)
+		{
+			resize(strlen(str));
+			strcpy(get_buffer(), str);
+		}
 	}
 
 	void	operator=(const tu_string& str)
