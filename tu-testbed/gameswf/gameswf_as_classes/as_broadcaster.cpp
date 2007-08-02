@@ -27,7 +27,6 @@ namespace gameswf
 		if (fn.this_ptr->get_member("_listeners", &val))
 		{
 			as_object_interface* obj = val.to_object();
-			int n=obj->get_self_refs(obj);
 			if (obj)
 			{
 				as_array* a = obj->cast_to_as_array();
@@ -40,8 +39,6 @@ namespace gameswf
 					}
 				}
 			}
-			n=obj->get_self_refs(obj);
-			n++;
 		}
 	}
 
