@@ -24,6 +24,8 @@ namespace gameswf
 	{
 		// loadMovieClip() requires that the following will be commented out
 		// assert((parent == NULL && m_id == -1)	|| (parent != NULL && m_id >= 0));
+
+		get_garbage()->add(this, false);
 	}
 
 	bool	character::get_member(const tu_stringi& name, as_value* val)
@@ -493,4 +495,15 @@ namespace gameswf
 		def->get_bound(bound);
 		get_matrix().transform(bound);
 	}
+
+	void character::collect_garbage()
+	{
+		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
+		bool unused;
+		if (garbage->get(this, &unused))
+		{
+			garbage->set(this, true);
+		}
+	}
+
 }

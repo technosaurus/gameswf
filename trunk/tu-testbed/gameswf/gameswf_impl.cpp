@@ -484,10 +484,10 @@ namespace gameswf
 	//
 	// global gameswf management
 	//
-
 	void	clear_gameswf()
 	// Maximum release of resources.
 	{
+		clear_garbage();
 		clear_library();
 		sprite_builtins_clear();
 		fontlib::clear();

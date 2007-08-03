@@ -113,11 +113,21 @@ namespace gameswf
 	smart_ptr<as_object>	s_global;
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
-	hash<smart_ptr<as_object_interface>, int> s_allocated;
 
-	hash<smart_ptr<as_object_interface>, int>& get_allocated()
+	hash<smart_ptr<as_object_interface>, bool> s_garbage;
+	hash<smart_ptr<as_object_interface>, bool>* get_garbage()
 	{
-		return s_allocated;
+		return &s_garbage;
+	}
+
+	void clear_garbage()
+	{
+		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = s_garbage.begin();
+			it != s_garbage.end(); ++it)
+		{
+			it->first->clear_refs(it->first.get_ptr());
+		}
+		s_garbage.clear();
 	}
 
 	void	register_fscommand_callback(fscommand_callback handler)
@@ -1542,7 +1552,7 @@ namespace gameswf
 
 					if (new_obj.to_object())
 					{
-						s_allocated.add(new_obj.to_object(), 0);
+						get_garbage()->add(new_obj.to_object(), false);
 					}
 
 					env->drop(nargs);

@@ -94,7 +94,7 @@ namespace gameswf
 	}
 
 	as_object::as_object() :
-		m_is_get_called(false),
+		m_is_collector_called(false),
 		m_is_clear_called(false)
 	{
 		set_member("addProperty", as_object_addproperty);
@@ -220,34 +220,33 @@ namespace gameswf
 		return NULL;
 	}
 
-	int as_object::get_refs(as_object_interface* this_ptr)
+	void as_object::collect_garbage()
 	{
 		// We were here ?
-		if (m_is_get_called)
+		if (m_is_collector_called)
 		{
-			return 0;
+			return;
 		}
-		m_is_get_called = true;
+		m_is_collector_called = true;
 
-		int refs = 0;
+		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
+		bool unused;
+		if (garbage->get(this, &unused))
+		{
+			garbage->set(this, true);
+		}
+
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin();
 			it != m_members.end(); ++it)
 		{
 			as_object_interface* obj = it->second.get_member_value().to_object();
 			if (obj)
 			{
-				if (obj == this_ptr)
-				{
-					refs++;
-				}
-				else
-				{
-					refs += obj->get_refs(this_ptr);
-				}
+				obj->collect_garbage();
 			}
 		}
-		m_is_get_called = false;
-		return refs;
+
+		m_is_collector_called = false;
 	}
 
 	void	as_object::clear_refs(as_object_interface* this_ptr)

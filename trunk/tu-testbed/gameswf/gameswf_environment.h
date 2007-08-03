@@ -139,7 +139,7 @@ namespace gameswf
 
 		character* load_file(const char* url, const as_value& target);
 
-		int get_refs(as_object_interface* this_ptr);
+		void collect_garbage();
 		void clear_refs(as_object_interface* this_ptr);
 
 		void dump();
