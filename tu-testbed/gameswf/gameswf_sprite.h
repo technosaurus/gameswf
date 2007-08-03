@@ -58,7 +58,7 @@ namespace gameswf
 		bool m_on_event_load_called;
 		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
 
-		bool m_is_get_called;
+		bool m_is_collector_called;
 		bool m_is_clear_called;
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
@@ -221,7 +221,7 @@ namespace gameswf
 
 		virtual character*	find_target(const tu_string& path) const;
 
-		virtual int get_refs(as_object_interface* this_ptr);
+		virtual void collect_garbage();
 		virtual void clear_refs(as_object_interface* this_ptr);
 
 	};

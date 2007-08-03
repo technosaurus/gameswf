@@ -14,7 +14,6 @@
 #include "gameswf/gameswf_render.h"
 #include "gameswf/gameswf_root.h"
 #include "base/tu_random.h"
-#include "base/tu_timer.h"
 
 namespace gameswf
 {
@@ -352,26 +351,27 @@ namespace gameswf
 
 	void movie_root::collect_garbage()
 	{
-//		uint64 t = tu_timer::get_ticks();
+		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
 
-		hash<smart_ptr<as_object_interface>, int>& allocated = get_allocated();
-		for (hash<smart_ptr<as_object_interface>, int>::iterator it = allocated.begin();
-			it != allocated.end(); ++it)
+		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
+			it != garbage->end(); ++it)
 		{
-			// Whether is used 'obj' somewhere in gameswf ?
-			as_object_interface* obj = it->first.get_ptr();
-			int n = m_movie->get_refs(obj);
-			n += get_global()->get_refs(obj);
-			if (n == 0)
-			{
-//				printf("allocated object = %d, 0x%X is garbage\n", allocated.size(), obj);
-				it->first->clear_refs(obj);
-				assert(obj->get_ref_count() == 1);
-				allocated.erase(obj);
-			}
+			it->second = false;
 		}
 
-//		printf("collect_garbage time = %d\n", tu_timer::get_ticks() - t);
+		m_movie->collect_garbage();
+
+		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
+			it != garbage->end(); ++it)
+		{
+			if (it->second == false)
+			{
+				as_object_interface* obj = it->first.get_ptr();
+//				printf("allocated objects = %d, 0x%X is garbage\n", garbage->size(), obj);
+				obj->clear_refs(obj);
+				garbage->erase(obj);
+			}
+		}
 	}
 
 	void	movie_root::advance(float delta_time)
@@ -409,7 +409,6 @@ namespace gameswf
 				m_on_event_load_called = true;
 				m_movie->on_event(event_id::LOAD);
 			}
-
 			m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
 		}
 		else

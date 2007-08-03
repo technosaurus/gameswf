@@ -245,8 +245,8 @@ namespace gameswf
 		// dumps the object
 		virtual void dump() {};
 
-		virtual int get_refs(as_object_interface* this_ptr) { return 0; }
 		virtual void clear_refs(as_object_interface* this_ptr) {}
+		virtual void	collect_garbage() = 0;
 
 	};
 

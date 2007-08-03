@@ -167,6 +167,7 @@ namespace gameswf
 			OVER
 		};
 		e_mouse_state m_mouse_state;
+		bool m_is_collector_called;
 
 		button_character_instance(button_character_definition* def, character* parent, int id)
 			:
@@ -174,7 +175,8 @@ namespace gameswf
 			m_def(def),
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
-			m_mouse_state(UP)
+			m_mouse_state(UP),
+			m_is_collector_called(false)
 		{
 			assert(m_def);
 
@@ -207,6 +209,30 @@ namespace gameswf
 
 		~button_character_instance()
 		{
+		}
+
+
+		virtual void collect_garbage()
+		{
+
+			// We were here ?
+			if (m_is_collector_called)
+			{
+				return;
+			}
+			m_is_collector_called = true;
+
+			character::collect_garbage();
+
+			for (int i = 0; i < m_def->m_button_records.size(); i++)
+			{
+				if (m_record_character[i] != NULL)
+				{
+					m_record_character[i]->collect_garbage();
+				}
+			}
+
+			m_is_collector_called = false;
 		}
 
 		virtual	void	execute_frame_tags(int frame, bool state_only)

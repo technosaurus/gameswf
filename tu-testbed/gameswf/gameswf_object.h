@@ -36,7 +36,7 @@ namespace gameswf
 		};
 		stringi_hash<watch_t>	m_watch;
 		
-		bool m_is_get_called;
+		bool m_is_collector_called;
 		bool m_is_clear_called;
 
 		as_object();
@@ -56,7 +56,7 @@ namespace gameswf
 		virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
 		virtual bool unwatch(const tu_string& name);
 
-		virtual int get_refs(as_object_interface* this_ptr);
+		virtual	void collect_garbage();
 		virtual void clear_refs(as_object_interface* this_ptr);
 
 		void dump();
