@@ -611,19 +611,19 @@ namespace gameswf
 		return depth;
 	}
 
-	int display_list::get_self_refs(ref_counted* this_ptr)
+	int display_list::get_refs(as_object_interface* this_ptr)
 	{
 		int refs = 0;
 		for (int i = 0, n = get_character_count(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			assert(ch);
-			refs += ch->get_self_refs(this_ptr);
+			refs += ch->get_refs(this_ptr);
 		}
 		return refs;
 	}
 
-	void	display_list::clear_refs(ref_counted* this_ptr)
+	void	display_list::clear_refs(as_object_interface* this_ptr)
 	{
 		for (int i = 0, n = get_character_count(); i < n; i++)
 		{

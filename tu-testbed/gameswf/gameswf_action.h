@@ -26,6 +26,8 @@ namespace gameswf
 	// Clean up any stray heap stuff we've allocated.
 	void	action_clear();
 
+	hash<smart_ptr<as_object_interface>, int>& get_allocated();
+
 	// Dispatching methods from C++.
 	as_value	call_method(
 		const as_value& method,	as_environment* env, as_object_interface* this_ptr,

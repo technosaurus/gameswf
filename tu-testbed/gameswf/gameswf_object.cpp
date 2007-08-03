@@ -220,7 +220,7 @@ namespace gameswf
 		return NULL;
 	}
 
-	int as_object::get_self_refs(ref_counted* this_ptr)
+	int as_object::get_refs(as_object_interface* this_ptr)
 	{
 		// We were here ?
 		if (m_is_get_called)
@@ -242,7 +242,7 @@ namespace gameswf
 				}
 				else
 				{
-					refs += obj->get_self_refs(this_ptr);
+					refs += obj->get_refs(this_ptr);
 				}
 			}
 		}
@@ -250,7 +250,7 @@ namespace gameswf
 		return refs;
 	}
 
-	void	as_object::clear_refs(ref_counted* this_ptr)
+	void	as_object::clear_refs(as_object_interface* this_ptr)
 	{
 		// We were here ?
 		if (m_is_clear_called)

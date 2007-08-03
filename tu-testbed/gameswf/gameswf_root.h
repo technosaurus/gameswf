@@ -122,6 +122,7 @@ namespace gameswf
 		void	set_background_color(const rgba& color);
 		void	set_background_alpha(float alpha);
 		float	get_background_alpha() const;
+		void	collect_garbage();
 		void	advance(float delta_time);
 
 		void	goto_frame(int target_frame_number);

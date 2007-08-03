@@ -120,8 +120,7 @@ namespace gameswf
 	ref_counted::ref_counted()
 		:
 		m_ref_count(0),
-		m_weak_proxy(0),
-		m_is_drop_called(false)
+		m_weak_proxy(0)
 	{
 	}
 
@@ -144,43 +143,12 @@ namespace gameswf
 
 	void	ref_counted::drop_ref()
 	{
-
-		// NOT THREAD SAFE!!!
-
 		assert(m_ref_count > 0);
 		m_ref_count--;
 		if (m_ref_count == 0)
 		{
 			// Delete me!
 			delete this;
-		}
-		else
-		{
-			return;	// TODO
-			if (m_is_drop_called)
-			{
-				return;
-			}
-
-			int n = get_self_refs(this);
-			if (n == m_ref_count)
-			{
-				// this object is garbage
-				printf("0x%X is garbage, deleted\n", this);
-				m_is_drop_called = true;
-				m_ref_count++;	// protect from deleting in clear_refs()
-				clear_refs(this);
-				m_is_drop_called = false;
-				if (m_ref_count == 1)
-				{
-					drop_ref();
-				}
-				else
-				{
-					// probably a bug ?
-					printf("self_refs=%d, refs=%d\n", n, m_ref_count);
-				}
-			}
 		}
 	}
 
