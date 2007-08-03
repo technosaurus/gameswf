@@ -156,15 +156,17 @@ namespace gameswf
 		}
 		else
 		{
+			return;	// TODO
 			if (m_is_drop_called)
 			{
 				return;
 			}
 
-			if (get_self_refs(this) == m_ref_count)
+			int n = get_self_refs(this);
+			if (n == m_ref_count)
 			{
 				// this object is garbage
-//				printf("0x%X is garbage, deleted\n", this);
+				printf("0x%X is garbage, deleted\n", this);
 				m_is_drop_called = true;
 				m_ref_count++;	// protect from deleting in clear_refs()
 				clear_refs(this);
@@ -176,6 +178,7 @@ namespace gameswf
 				else
 				{
 					// probably a bug ?
+					printf("self_refs=%d, refs=%d\n", n, m_ref_count);
 				}
 			}
 		}
