@@ -221,8 +221,8 @@ namespace gameswf
 
 		virtual character*	find_target(const tu_string& path) const;
 
-		virtual int get_self_refs(ref_counted* this_ptr);
-		virtual void clear_refs(ref_counted* this_ptr);
+		virtual int get_refs(as_object_interface* this_ptr);
+		virtual void clear_refs(as_object_interface* this_ptr);
 
 	};
 }

@@ -561,7 +561,7 @@ namespace gameswf
 	{
 		// Keep m_as_environment alive during any method calls!
 		smart_ptr<as_object_interface>	this_ptr(this);
-			int n = get_self_refs(this);
+			int n = get_refs(this);
 
 		execute_actions(&m_as_environment, m_action_list);
 		m_action_list.resize(0);
@@ -1369,7 +1369,7 @@ namespace gameswf
 		return m_as_environment.find_target(path);
 	}
 
-	int sprite_instance::get_self_refs(ref_counted* this_ptr)
+	int sprite_instance::get_refs(as_object_interface* this_ptr)
 	{
 
 		// We were here ?
@@ -1379,14 +1379,14 @@ namespace gameswf
 		}
 		m_is_get_called = true;
 
-		int refs = m_display_list.get_self_refs(this_ptr);
-		refs += m_as_environment.get_self_refs(this_ptr);
+		int refs = m_display_list.get_refs(this_ptr);
+		refs += m_as_environment.get_refs(this_ptr);
 
 		m_is_get_called = false;
 		return refs;
 	}
 
-	void	sprite_instance::clear_refs(ref_counted* this_ptr)
+	void	sprite_instance::clear_refs(as_object_interface* this_ptr)
 	{
 		// We were here ?
 		if (m_is_clear_called)

@@ -56,8 +56,8 @@ namespace gameswf
 		virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
 		virtual bool unwatch(const tu_string& name);
 
-		virtual int get_self_refs(ref_counted* this_ptr);
-		virtual void clear_refs(ref_counted* this_ptr);
+		virtual int get_refs(as_object_interface* this_ptr);
+		virtual void clear_refs(as_object_interface* this_ptr);
 
 		void dump();
 	};

@@ -113,6 +113,12 @@ namespace gameswf
 	smart_ptr<as_object>	s_global;
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
+	hash<smart_ptr<as_object_interface>, int> s_allocated;
+
+	hash<smart_ptr<as_object_interface>, int>& get_allocated()
+	{
+		return s_allocated;
+	}
 
 	void	register_fscommand_callback(fscommand_callback handler)
 	// External interface.
@@ -1532,6 +1538,11 @@ namespace gameswf
 						{
 							log_msg("Created special String class\n");
 						}
+					}
+
+					if (new_obj.to_object())
+					{
+						s_allocated.add(new_obj.to_object(), 0);
 					}
 
 					env->drop(nargs);

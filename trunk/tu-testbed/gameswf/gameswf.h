@@ -137,12 +137,6 @@ namespace gameswf
 		int	get_ref_count() const { return m_ref_count; }
 		weak_proxy*	get_weak_proxy() const;
 
-		virtual int get_self_refs(ref_counted* this_ptr) { return 0; }
-		virtual void clear_refs(ref_counted* this_ptr) {}
-
-		// this is used to avoid circular calls
-		mutable bool m_is_drop_called;
-
 	private:
 		mutable int	m_ref_count;
 		mutable weak_proxy*	m_weak_proxy;
@@ -250,6 +244,10 @@ namespace gameswf
 		// for debugging
 		// dumps the object
 		virtual void dump() {};
+
+		virtual int get_refs(as_object_interface* this_ptr) { return 0; }
+		virtual void clear_refs(as_object_interface* this_ptr) {}
+
 	};
 
 

@@ -740,7 +740,7 @@ namespace gameswf
 		printf("***\n");
 	}
 
-	int as_environment::get_self_refs(ref_counted* this_ptr)
+	int as_environment::get_refs(as_object_interface* this_ptr)
 	{
 		int refs = 0;
 		for (stringi_hash<as_value>::const_iterator it = m_variables.begin();
@@ -755,14 +755,14 @@ namespace gameswf
 				}
 				else
 				{
-					refs += obj->get_self_refs(this_ptr);
+					refs += obj->get_refs(this_ptr);
 				}
 			}
 		}
 		return refs;
 	}
 
-	void	as_environment::clear_refs(ref_counted* this_ptr)
+	void	as_environment::clear_refs(as_object_interface* this_ptr)
 	{
 		for (stringi_hash<as_value>::iterator it = m_variables.begin();
 			it != m_variables.end(); ++it)
