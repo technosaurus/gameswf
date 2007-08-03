@@ -1,3 +1,8 @@
+2007-08-03  Vitaly Alexeev <tishka92@yahoo.com>
+	
+		* gameswf/gameswf_impl.cpp: garbage collector is switched 
+		temporarily off
+
 2007-08-02  Vitaly Alexeev <tishka92@yahoo.com>
 	
 		* gameswf/gameswf_impl.cpp: a bit cleanup
