@@ -771,7 +771,6 @@ namespace gameswf
 				}
 			}
 		}
-		m_variables.clear();
 	}
 
 }

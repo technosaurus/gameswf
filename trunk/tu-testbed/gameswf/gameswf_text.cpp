@@ -560,8 +560,7 @@ namespace gameswf
 		m_has_focus(false), 
 		m_cursor(0), 
 		m_xcursor(0.0f), 
-		m_ycursor(0.0f),
-		m_is_collector_called(false)
+		m_ycursor(0.0f)
 	{
 		assert(parent);
 		assert(m_def);
@@ -1143,31 +1142,6 @@ namespace gameswf
 		// This fix the cursor position with centered texts
 		// Thanks Francois Guibert
 		m_xcursor += shift_right; 
-	}
-
-	void	edit_text_character::collect_garbage()
-	{
-
-		// We were here ?
-		if (m_is_collector_called)
-		{
-			return;
-		}
-		m_is_collector_called = true;
-
-		character::collect_garbage();
-
-		for (stringi_hash<as_value>::const_iterator it = m_variables.begin();
-			it != m_variables.end(); ++it)
-		{
-			as_object_interface* obj = it->second.to_object();
-			if (obj)
-			{
-				obj->collect_garbage();
-			}
-		}
-
-		m_is_collector_called = false;
 	}
 
 	// Convert the characters in m_text into a series of

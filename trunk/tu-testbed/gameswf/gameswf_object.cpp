@@ -222,18 +222,16 @@ namespace gameswf
 
 	void as_object::collect_garbage()
 	{
-		// We were here ?
+		// Is it a reentrance ?
 		if (m_is_collector_called)
 		{
 			return;
 		}
 		m_is_collector_called = true;
 
-		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
-		bool unused;
-		if (garbage->get(this, &unused))
+		if (get_garbage()->get(this, NULL))
 		{
-			garbage->set(this, true);
+			get_garbage()->set(this, false);
 		}
 
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin();
@@ -251,14 +249,13 @@ namespace gameswf
 
 	void	as_object::clear_refs(as_object_interface* this_ptr)
 	{
-		// We were here ?
+		// Is it a reentrance ?
 		if (m_is_clear_called)
 		{
 			return;
 		}
 		m_is_clear_called = true;
 
-		as_value undef;
 		for (stringi_hash<as_member>::iterator it = m_members.begin();
 			it != m_members.end(); ++it)
 		{
@@ -267,7 +264,7 @@ namespace gameswf
 			{
 				if (obj == this_ptr)
 				{
-					it->second.set_member_value(undef);
+					it->second.set_member_value(as_value());
 				}
 				else
 				{
@@ -275,7 +272,7 @@ namespace gameswf
 				}
 			}
 		}
-		m_members.clear();
+
 		m_is_clear_called = false;
 	}
 

@@ -86,9 +86,7 @@ namespace gameswf
 		m_root(r),
 		m_play_state(PLAY),
 		m_current_frame(0),
-		//			m_time_remainder(0),
 		m_update_frame(true),
-		//			m_has_looped(false),
 		m_accept_anim_moves(true),
 		m_mouse_state(UP),
 		m_enabled(true),
@@ -108,7 +106,9 @@ namespace gameswf
 		m_init_actions_executed.resize(m_def->get_frame_count());
 		memset(&m_init_actions_executed[0], 0,
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
-//		printf("sprite_instance %08X\n", this);
+
+		get_garbage()->add(this, false);
+
 	}
 
 	sprite_instance::~sprite_instance()
@@ -1370,15 +1370,17 @@ namespace gameswf
 
 	void sprite_instance::collect_garbage()
 	{
-
-		// We were here ?
+		// Is it a reentrance ?
 		if (m_is_collector_called)
 		{
 			return;
 		}
 		m_is_collector_called = true;
 
-		character::collect_garbage();
+		if (get_garbage()->get(this, NULL))
+		{
+			get_garbage()->set(this, false);
+		}
 
 		m_display_list.collect_garbage();
 		m_as_environment.collect_garbage();
@@ -1388,7 +1390,7 @@ namespace gameswf
 
 	void	sprite_instance::clear_refs(as_object_interface* this_ptr)
 	{
-		// We were here ?
+		// Is it a reentrance ?
 		if (m_is_clear_called)
 		{
 			return;
