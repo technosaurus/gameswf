@@ -254,11 +254,8 @@ namespace gameswf
 		virtual void advance(float delta_time);
 		virtual edit_text_character* cast_to_edit_text_character() { return this; }
 
-		virtual void collect_garbage();
-
 	private:
 
-		bool m_is_collector_called;
 		void	set_text(const char* new_text);
 
 	};

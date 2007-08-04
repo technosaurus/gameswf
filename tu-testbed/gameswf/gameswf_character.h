@@ -396,8 +396,6 @@ namespace gameswf
 
 		virtual character*	find_target(const tu_string& path) const;
 		virtual character*	find_target(const as_value& target) const;
-
-		virtual void collect_garbage();
 	};
 
 }

@@ -245,8 +245,13 @@ namespace gameswf
 		// dumps the object
 		virtual void dump() {};
 
+		// Nulls out object's members that links to 'this_ptr'
+		// to avoid cross-link memory leak
 		virtual void clear_refs(as_object_interface* this_ptr) {}
-		virtual void	collect_garbage() = 0;
+
+		// Creates the markers to the object which are used in gameswf engine
+		// Objects which have no marker is a garbage and will be deleted in advance()
+		virtual void	collect_garbage() {}
 
 	};
 

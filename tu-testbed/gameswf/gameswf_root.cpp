@@ -13,6 +13,7 @@
 #include "gameswf/gameswf_movie_def.h"
 #include "gameswf/gameswf_render.h"
 #include "gameswf/gameswf_root.h"
+#include "gameswf/gameswf_sprite.h"
 #include "base/tu_random.h"
 
 namespace gameswf
@@ -349,6 +350,7 @@ namespace gameswf
 		return m_background_color.m_a / 255.0f;
 	}
 
+	// TODO: garbage collector for multifile games
 	void movie_root::collect_garbage()
 	{
 		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
@@ -356,19 +358,34 @@ namespace gameswf
 		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
 			it != garbage->end(); ++it)
 		{
-			it->second = false;
+			it->second = true;
 		}
 
+		// Throw GameSWF object that serve as container
+		get_global()->collect_garbage();
 		m_movie->collect_garbage();
 
 		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
 			it != garbage->end(); ++it)
 		{
-			if (it->second == false)
+			if (it->second)
 			{
 				as_object_interface* obj = it->first.get_ptr();
-//				printf("allocated objects = %d, 0x%X is garbage\n", garbage->size(), obj);
+
+				// clear self refs to avoid cross-link memory leaks
 				obj->clear_refs(obj);
+
+//				if (obj->get_ref_count() > 1)
+//				{
+//					obj->dump();
+//					printf("allocated objects = %d\n", garbage->size());
+//					printf("error: 0x%X is not garbage, ref_count = %d\n", obj, obj->get_ref_count());
+//					if (obj->cast_to_sprite())
+//					{
+//						printf("name: %s\n", obj->cast_to_sprite()->get_name().c_str());
+//					}
+//				}
+
 				garbage->erase(obj);
 			}
 		}
@@ -413,7 +430,7 @@ namespace gameswf
 		}
 		else
 		{
-			// we have free time
+			// we have free time to coolect garbage
 			collect_garbage();
 		}
 
