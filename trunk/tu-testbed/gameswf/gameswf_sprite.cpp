@@ -107,7 +107,7 @@ namespace gameswf
 		memset(&m_init_actions_executed[0], 0,
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
-		get_garbage()->add(this, false);
+		(*get_garbage())[this] = false;
 
 	}
 
