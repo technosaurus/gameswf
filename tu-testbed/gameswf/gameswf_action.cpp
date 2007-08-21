@@ -1552,7 +1552,7 @@ namespace gameswf
 
 					if (new_obj.to_object())
 					{
-						get_garbage()->add(new_obj.to_object(), false);
+						(*get_garbage())[new_obj.to_object()] = false;
 					}
 
 					env->drop(nargs);
