@@ -650,10 +650,6 @@ namespace gameswf
 		// The previous operator has added already the ref
 //		mov->add_ref();
 
-		// create dlist
-		// movie is ready for momentaly reaction
-		character* m = mov->get_root_movie();
-		m->execute_frame_tags(0);		
 		return mov;
 	}
 
@@ -1843,6 +1839,10 @@ namespace gameswf
 		// More correctly to do so:
 		// smart_ptr<movie_interface> m = md->create_instance()
 		//		m->add_ref();
+
+		// create dlist
+		root_movie->execute_frame_tags(0);		
+
 		return m;
 	}
 
