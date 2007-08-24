@@ -502,14 +502,14 @@ int	main(int argc, char *argv[])
 	{
 
 		// Load the actual movie.
-		smart_ptr<gameswf::movie_definition>	md = gameswf::create_library_movie(infile);
+		smart_ptr<gameswf::movie_definition>	md = gameswf::create_movie(infile);
 		if (md == NULL)
 		{
 			fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
 			exit(1);
 		}
 
-		smart_ptr<gameswf::movie_interface>	m = create_library_movie_inst(md.get_ptr());
+		smart_ptr<gameswf::movie_interface>	m = md->create_instance();
 		if (m == NULL)
 		{
 			fprintf(stderr, "error: can't create movie instance\n");
@@ -773,13 +773,13 @@ int	main(int argc, char *argv[])
 								}
 
 								// Load the actual movie.
-								md = gameswf::create_library_movie(infile);
+								md = gameswf::create_movie(infile);
 								if (md == NULL)
 								{
 									fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
 									exit(1);
 								}
-								m = create_library_movie_inst(md.get_ptr());
+								m = md->create_instance();
 								if (m == NULL)
 								{
 									fprintf(stderr, "error: can't create movie instance\n");
@@ -998,9 +998,6 @@ int	main(int argc, char *argv[])
 done:
 
 		//SDL_Quit();
-
-		//	if (md) md->drop_ref();
-		//	if (m) m->drop_ref();
 
 		gameswf::set_sound_handler(NULL);
 		delete sound;

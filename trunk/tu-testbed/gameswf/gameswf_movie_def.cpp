@@ -38,6 +38,12 @@ namespace gameswf
 
 	// Keep a table of loader functions for the different tag types.
 	static hash<int, loader_function>	s_tag_loaders;
+
+	void clears_tag_loaders()
+	{
+		s_tag_loaders.clear();
+	}
+
 	bool get_tag_loader(int tag_type, loader_function* lf)
 	{
 		return s_tag_loaders.get(tag_type, lf);
@@ -178,8 +184,8 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::add_bitmap_info(bitmap_info* bi)
-		// All bitmap_info's used by this movie should be
-		// registered with this API.
+	// All bitmap_info's used by this movie should be
+	// registered with this API.
 	{
 		m_bitmap_list.push_back(bi);
 	}
@@ -192,16 +198,16 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::export_resource(const tu_string& symbol, resource* res)
-		// Expose one of our resources under the given symbol,
-		// for export.	Other movies can import it.
+	// Expose one of our resources under the given symbol,
+	// for export.	Other movies can import it.
 	{
 		// SWF sometimes exports the same thing more than once!
 		m_exports.set(symbol, res);
 	}
 
 	smart_ptr<resource>	movie_def_impl::get_exported_resource(const tu_string& symbol)
-		// Get the named exported resource, if we expose it.
-		// Otherwise return NULL.
+	// Get the named exported resource, if we expose it.
+	// Otherwise return NULL.
 	{
 		smart_ptr<resource>	res;
 		m_exports.get(symbol, &res);
@@ -209,11 +215,11 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::add_import(const char* source_url, int id, const char* symbol)
-		// Adds an entry to a table of resources that need to
-		// be imported from other movies.  Client code must
-		// call resolve_import() later, when the source movie
-		// has been loaded, so that the actual resource can be
-		// used.
+	// Adds an entry to a table of resources that need to
+	// be imported from other movies.  Client code must
+	// call resolve_import() later, when the source movie
+	// has been loaded, so that the actual resource can be
+	// used.
 	{
 		assert(in_import_table(id) == false);
 
@@ -221,8 +227,8 @@ namespace gameswf
 	}
 
 	bool	movie_def_impl::in_import_table(int character_id)
-		// Debug helper; returns true if the given
-		// character_id is listed in the import table.
+	// Debug helper; returns true if the given
+	// character_id is listed in the import table.
 	{
 		for (int i = 0, n = m_imports.size(); i < n; i++)
 		{
@@ -235,8 +241,8 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::visit_imported_movies(import_visitor* visitor)
-		// Calls back the visitor for each movie that we
-		// import symbols from.
+	// Calls back the visitor for each movie that we
+	// import symbols from.
 	{
 		stringi_hash<bool>	visited;	// ugh!
 

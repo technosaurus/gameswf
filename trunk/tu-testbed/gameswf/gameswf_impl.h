@@ -48,16 +48,7 @@ namespace gameswf
 	struct stream;
 	struct swf_event;
 
-	void save_extern_movie(movie_interface* m);
-
-
-	// For internal use.
-	movie_definition_sub*	create_movie_sub(const char* filename);
-	movie_definition_sub*	create_library_movie_sub(const char* filename);
-	movie_interface*	create_library_movie_inst_sub(movie_definition_sub* md);
-
 	// for extern movies
-	movie_interface*	create_library_movie_inst(movie_definition* md);
 	movie_interface*	get_current_root();
 	void set_current_root(movie_interface* m);
 	const char* get_workdir();

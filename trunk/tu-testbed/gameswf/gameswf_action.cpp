@@ -2544,58 +2544,61 @@ namespace gameswf
 	//
 
 
+	static tu_string	s_function_names[event_id::EVENT_COUNT] =
+	{
+		"INVALID",		 // INVALID
+		"onPress",		 // PRESS
+		"onRelease",		 // RELEASE
+		"onRelease_Outside",	 // RELEASE_OUTSIDE
+		"onRoll_Over",		 // ROLL_OVER
+		"onRoll_Out",		 // ROLL_OUT
+		"onDrag_Over",		 // DRAG_OVER
+		"onDrag_Out",		 // DRAG_OUT
+		"onKeyPress",		 // KEY_PRESS
+		"onInitialize",		 // INITIALIZE
+
+		"onLoad",		 // LOAD
+		"onUnload",		 // UNLOAD
+		"onEnterFrame",		 // ENTER_FRAME
+		"onMouseDown",		 // MOUSE_DOWN
+		"onMouseUp",		 // MOUSE_UP
+		"onMouseMove",		 // MOUSE_MOVE
+		"onKeyDown",		 // KEY_DOWN
+		"onKeyUp",		 // KEY_UP
+		"onData",		 // DATA
+
+		"onConstruct",
+		"onSetFocus",
+		"onKillFocus",
+
+		// MovieClipLoader events
+		"onLoadComplete",
+		"onLoadError",
+		"onLoadInit",
+		"onLoadProgress",
+		"onLoadStart"
+
+	};
+
 	const tu_string&	event_id::get_function_name() const
 	{
-		static tu_string	s_function_names[EVENT_COUNT] =
-		{
-			"INVALID",		 // INVALID
-			"onPress",		 // PRESS
-			"onRelease",		 // RELEASE
-			"onRelease_Outside",	 // RELEASE_OUTSIDE
-			"onRoll_Over",		 // ROLL_OVER
-			"onRoll_Out",		 // ROLL_OUT
-			"onDrag_Over",		 // DRAG_OVER
-			"onDrag_Out",		 // DRAG_OUT
-			"onKeyPress",		 // KEY_PRESS
-			"onInitialize",		 // INITIALIZE
-
-			"onLoad",		 // LOAD
-			"onUnload",		 // UNLOAD
-			"onEnterFrame",		 // ENTER_FRAME
-			"onMouseDown",		 // MOUSE_DOWN
-			"onMouseUp",		 // MOUSE_UP
-			"onMouseMove",		 // MOUSE_MOVE
-			"onKeyDown",		 // KEY_DOWN
-			"onKeyUp",		 // KEY_UP
-			"onData",		 // DATA
-
-	    "onConstruct",
-			"onSetFocus",
-			"onKillFocus",
-
-			// MovieClipLoader events
-			"onLoadComplete",
-			"onLoadError",
-			"onLoadInit",
-			"onLoadProgress",
-			"onLoadStart"
-
-		};
-
 		assert(m_id > INVALID && m_id < EVENT_COUNT);
 		return s_function_names[m_id];
 	}
 
 
 	// Standard member lookup.
+	static stringi_hash<as_standard_member>	s_standard_member_map;
+
+	void clear_standard_member_map()
+	{
+		s_standard_member_map.clear();
+	}
+
 	as_standard_member	get_standard_member(const tu_stringi& name)
 	{
-		static bool	s_inited = false;
-		static stringi_hash<as_standard_member>	s_standard_member_map;
-		if (!s_inited)
+		if (s_standard_member_map.size() == 0)
 		{
-			s_inited = true;
-
 			s_standard_member_map.set_capacity(int(AS_STANDARD_MEMBER_COUNT));
 
 			s_standard_member_map.add("_x", M_X);

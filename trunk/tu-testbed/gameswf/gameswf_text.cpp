@@ -24,9 +24,9 @@ namespace gameswf
 		const array<text_glyph_record>& records,
 		movie_definition_sub* root_def)
 	{
-		static array<fill_style>	s_dummy_style;	// used to pass a color on to shape_character::display()
-		static array<line_style>	s_dummy_line_style;
-		s_dummy_style.resize(1);
+		array<fill_style>	dummy_style;	// used to pass a color on to shape_character::display()
+		array<line_style>	dummy_line_style;
+		dummy_style.resize(1);
 
 		matrix	mat = inst->get_world_matrix();
 		mat.concatenate(this_mat);
@@ -89,7 +89,7 @@ namespace gameswf
 				y = rec.m_style.m_y_offset;
 			}
 
-			s_dummy_style[0].set_color(rec.m_style.m_color);
+			dummy_style[0].set_color(rec.m_style.m_color);
 
 			rgba	transformed_color = cx.transform(rec.m_style.m_color);
 
@@ -170,7 +170,7 @@ namespace gameswf
 						// Draw the character using the filled outline.
 						if (glyph)
 						{
-							glyph->display(mat, cx, pixel_scale, s_dummy_style, s_dummy_line_style);
+							glyph->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
 						}
 					}
 				}

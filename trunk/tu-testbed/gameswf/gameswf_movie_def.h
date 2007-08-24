@@ -132,7 +132,7 @@ namespace gameswf
 			m_frame.signal();
 		}
 
-                int	m_frame_count;
+		int	m_frame_count;
 		int	m_loading_frame;
 		tu_condition m_frame;
 	};
@@ -206,11 +206,13 @@ namespace gameswf
 		tu_file*	m_zlib_in;
 		tu_file*	m_origin_in;
 		tu_thread* m_thread;
+		smart_ptr<movie_interface> m_instance;	// cached movie instance.
 
 		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
 
 		movie_interface*	create_instance();
+		void clear_instance();
 
 		float	get_frame_rate() const;
 		float	get_width_pixels() const;

@@ -46,21 +46,8 @@ namespace gameswf
 		// functions will be executed in the caller's
 		// environment, rather than the environment where they
 		// were defined.
-		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack)
-			:
-			m_action_buffer(ab),
-			m_env(env),
-			m_with_stack(with_stack),
-			m_start_pc(start),
-			m_length(0),
-			m_is_function2(false),
-			m_local_register_count(0),
-			m_function2_flags(0)
-		{
-			assert(m_action_buffer);
-			m_properties = new as_object();
-			m_properties->set_member("prototype", new as_object());
-		}
+		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack);
+		~as_as_function();
 
 		void	set_is_function2() { m_is_function2 = true; }
 		void	set_local_register_count(uint8 ct) { assert(m_is_function2); m_local_register_count = ct; }
