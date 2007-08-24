@@ -329,6 +329,7 @@ namespace gameswf
 		// Call drop_ref() on the movie_interface when you're done with it.
 		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 		virtual movie_interface*	create_instance() = 0;
+		virtual void clear_instance() {};
 
 		virtual void	output_cached_data(tu_file* out, const cache_options& options) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
@@ -705,25 +706,6 @@ namespace gameswf
 		tu_file*		input_stream,
 		create_bitmaps_flag	cbf,
 		create_font_shapes_flag cfs);
-
-	// Create a gameswf::movie_definition from the given file name.
-	// This is just like create_movie(), except that it checks the
-	// "library" to see if a movie of this name has already been
-	// created, and returns that movie if so.  Also, if it creates
-	// a new movie, it adds it back into the library.
-	//
-	// The "library" is used when importing symbols from external
-	// movies, so this call might be useful if you want to
-	// explicitly load a movie that you know exports symbols
-	// (e.g. fonts) to other movies as well.
-	//
-	// @@ this explanation/functionality could be clearer!
-	//
-	// This calls add_ref() on the newly created definition; call
-	// drop_ref() when you're done with it.
-	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
-	movie_definition*	create_library_movie(const char* filename);
-
 
 	// Helper to pregenerate cached data (basically, shape
 	// tesselations).  Does this by running through each frame of

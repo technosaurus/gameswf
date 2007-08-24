@@ -162,7 +162,12 @@ namespace gameswf
 			// Inhibit warning.
 			reserved = reserved;
 
-			m_fontname = in->read_string_with_length();
+			const char* str = in->read_string_with_length();
+			if (str)
+			{
+				m_fontname = str;
+				delete [] str;
+			}
 
 			int	glyph_count = in->read_u16();
 			
@@ -295,7 +300,12 @@ namespace gameswf
 	// DefineFontInfo tag.  The caller has already read the tag
 	// type and font id.
 	{
-		m_fontname = in->read_string_with_length();
+		const char* str = in->read_string_with_length();
+		if (str)
+		{
+			m_fontname = str;
+			delete [] str;
+		}
 
 		unsigned char	flags = in->read_u8();
 		m_unicode_chars = (flags & 0x20) != 0;

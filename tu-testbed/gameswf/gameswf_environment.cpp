@@ -79,7 +79,7 @@ namespace gameswf
 
 		if (strncasecmp(infile.c_str() + infile.size() - 4, ".swf", 4) == 0)
 		{
-			movie_definition_sub*	md = create_library_movie_sub(infile.c_str());
+			movie_definition*	md = create_movie(infile.c_str());
 			if (md == NULL)
 			{
 				IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", infile.c_str()));
@@ -90,9 +90,8 @@ namespace gameswf
 
 			if (target == target->get_root_movie())
 			{
-				movie_interface* new_inst = create_library_movie_inst_sub(md);			
+				movie_interface* new_inst = md->create_instance();
 				assert(new_inst);
-				save_extern_movie(new_inst);
 
 				sprite_instance* new_root = new_inst->get_root_movie()->cast_to_sprite();
 				set_current_root(new_inst);
@@ -102,7 +101,7 @@ namespace gameswf
 
 			// SWF loader into container
 
-			sprite_instance* new_ch = new sprite_instance(md, mroot, parent, -1);
+			sprite_instance* new_ch = new sprite_instance(md->cast_to_movie_def_impl(), mroot, parent, -1);
 
 			const char* name = target->get_name();
 			Uint16 depth = target->get_depth();

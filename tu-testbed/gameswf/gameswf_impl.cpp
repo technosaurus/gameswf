@@ -42,11 +42,11 @@
 #include <zlib.h>
 #endif // TU_CONFIG_LINK_TO_ZLIB
 
-
 namespace gameswf
 {
 	bool	s_verbose_action = false;
 	bool	s_verbose_parse = false;
+	bool	s_use_cached_movie = true;
 
 #ifndef NDEBUG
 	bool	s_verbose_debug = true;
@@ -382,17 +382,121 @@ namespace gameswf
 		delete original_in;
 	}
 
+	static bool	s_no_recurse_while_loading = false;	// @@ TODO get rid of this; make it the normal mode.
 
-
-	movie_definition*	create_movie(const char* filename)
-		// Create the movie definition from the specified .swf file.
+	movie_definition*	create_movie_no_recurse(
+		tu_file* in,
+		create_bitmaps_flag cbf,
+		create_font_shapes_flag cfs)
 	{
-		return create_movie_sub(filename);
+		ensure_loaders_registered();
+
+		// @@ TODO make no_recurse the standard way to load.
+		// In create_movie(), use the visit_ API to keep
+		// visiting dependent movies, until everything is
+		// loaded.  That way we only have one code path and
+		// the resource_proxy stuff gets tested.
+		s_no_recurse_while_loading = true;
+
+		movie_def_impl*	m = new movie_def_impl(cbf, cfs);
+		m->read(in);
+
+		s_no_recurse_while_loading = false;
+
+		m->add_ref();
+		return m;
 	}
 
 
-	movie_definition_sub*	create_movie_sub(const char* filename)
+	//
+	// global gameswf management
+	//
+	void clears_tag_loaders();
+	void clear_standard_member_map();
+
+	void	clear_gameswf()
+	// Maximum release of resources.
 	{
+		clear_standard_member_map();
+		clears_tag_loaders();
+		clear_garbage();
+		clear_library();
+		sprite_builtins_clear();
+		fontlib::clear();
+		action_clear();
+	}
+
+
+	//
+	// library stuff, for sharing resources among different movies.
+	//
+
+
+	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
+	static movie_interface* s_current_root;
+	static tu_string s_workdir;
+
+	movie_interface* get_current_root()
+	{
+		assert(s_current_root != NULL);
+		return s_current_root;
+	}
+
+	void set_current_root(movie_interface* m)
+	{
+		assert(m != NULL);
+		s_current_root = m;
+	}
+
+	const char* get_workdir()
+	{
+		return s_workdir.c_str();
+	}
+
+	void set_workdir(const char* dir)
+	{
+		assert(dir != NULL);
+		s_workdir = dir;
+	}
+
+	void	clear_library()
+	// Drop all library references to movie_definitions, so they
+	// can be cleaned up.
+	{
+		for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = 
+			s_movie_library.begin(); it != s_movie_library.end(); ++it)
+		{
+			it->second->clear_instance();
+			if (it->second->get_ref_count() > 1)
+			{
+				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
+				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
+					it->second->get_ref_count());
+
+				// to detect memory leaks
+				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
+			}
+		}
+		s_movie_library.clear();
+	}
+
+	movie_definition*	create_movie(const char* filename)
+	{
+
+		tu_string	fn(filename);
+
+		// Is the movie already in the library?
+		if (s_use_cached_movie)
+		{
+			smart_ptr<movie_definition_sub>	m;
+			s_movie_library.get(fn, &m);
+			if (m != NULL)
+			{
+				// Return cached movie.
+				return m.get_ptr();
+			}
+		}
+
 		if (s_opener_function == NULL)
 		{
 			// Don't even have a way to open the file.
@@ -450,209 +554,13 @@ namespace gameswf
 		// smart_ptr<movie_definition_sub> md = create_movie_sub("my.swf")
 		//		m->add_ref();
 
+		if (s_use_cached_movie)
+		{
+			s_movie_library.add(fn, m);
+		}
+
 		return m;
 	}
-
-
-	static bool	s_no_recurse_while_loading = false;	// @@ TODO get rid of this; make it the normal mode.
-
-
-	movie_definition*	create_movie_no_recurse(
-		tu_file* in,
-		create_bitmaps_flag cbf,
-		create_font_shapes_flag cfs)
-	{
-		ensure_loaders_registered();
-
-		// @@ TODO make no_recurse the standard way to load.
-		// In create_movie(), use the visit_ API to keep
-		// visiting dependent movies, until everything is
-		// loaded.  That way we only have one code path and
-		// the resource_proxy stuff gets tested.
-		s_no_recurse_while_loading = true;
-
-		movie_def_impl*	m = new movie_def_impl(cbf, cfs);
-		m->read(in);
-
-		s_no_recurse_while_loading = false;
-
-		m->add_ref();
-		return m;
-	}
-
-
-	//
-	// global gameswf management
-	//
-	void	clear_gameswf()
-	// Maximum release of resources.
-	{
-		clear_garbage();
-		clear_library();
-		sprite_builtins_clear();
-		fontlib::clear();
-		action_clear();
-	}
-
-
-	//
-	// library stuff, for sharing resources among different movies.
-	//
-
-
-	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
-	static hash< movie_definition_sub*, smart_ptr<movie_interface> >	s_movie_library_inst;
-	static array<movie_interface*> s_extern_sprites;
-	static movie_interface* s_current_root;
-
-	static tu_string s_workdir;
-
-	void save_extern_movie(movie_interface* m)
-	{
-		s_extern_sprites.push_back(m);
-	}
-
-	movie_interface* get_current_root()
-	{
-		assert(s_current_root != NULL);
-		return s_current_root;
-	}
-
-	void set_current_root(movie_interface* m)
-	{
-		assert(m != NULL);
-		s_current_root = m;
-	}
-
-	const char* get_workdir()
-	{
-		return s_workdir.c_str();
-	}
-
-	void set_workdir(const char* dir)
-	{
-		assert(dir != NULL);
-		s_workdir = dir;
-	}
-
-	void	clear_library()
-	// Drop all library references to movie_definitions, so they
-	// can be cleaned up.
-	{
-		// First it is necessary to clean s_movie_library_inst since
-		// s_movie_library refers on s_movie_library_inst
-		for (hash< movie_definition_sub*, smart_ptr<movie_interface> >::iterator it = 
-			s_movie_library_inst.begin(); it != s_movie_library_inst.end(); ++it)
-		{
-			if (it->second->get_ref_count() > 1)
-			{
-				printf("memory leaks is found out: on exit movie_interface ref_count > 1\n");
-				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
-					it->second->get_ref_count());
-
-				// to detect memory leaks
-				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
-			}
-		}
-		s_movie_library_inst.clear();
-
-		for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = 
-			s_movie_library.begin(); it != s_movie_library.end(); ++it)
-		{
-			if (it->second->get_ref_count() > 1)
-			{
-				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
-				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
-					it->second->get_ref_count());
-
-				// to detect memory leaks
-				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
-			}
-		}
-		s_movie_library.clear();
-	}
-
-	movie_definition*	create_library_movie(const char* filename)
-		// Try to load a movie from the given url, if we haven't
-		// loaded it already.  Add it to our library on success, and
-		// return a pointer to it.
-	{
-		return create_library_movie_sub(filename);
-	}
-
-
-	movie_definition_sub*	create_library_movie_sub(const char* filename)
-	{
-		tu_string	fn(filename);
-
-		// Is the movie already in the library?
-		{
-			smart_ptr<movie_definition_sub>	m;
-			s_movie_library.get(fn, &m);
-			if (m != NULL)
-			{
-				// Return cached movie.
-
-				// ref_count will be incremented after x=create_library_movie_sub(...)
-//				m->add_ref();
-
-				return m.get_ptr();
-			}
-		}
-
-		// Try to open a file under the filename.
-		movie_definition_sub*	mov = create_movie_sub(filename);
-
-		if (mov == NULL)
-		{
-			log_error("error: couldn't load library movie '%s'\n", filename);
-			return NULL;
-		}
-
-		s_movie_library.add(fn, mov);
-
-		// The previous operator has added already the ref
-//		mov->add_ref();
-		return mov;
-	}
-
-	movie_interface*	create_library_movie_inst(movie_definition* md)
-	{
-		return create_library_movie_inst_sub((movie_definition_sub*)md);
-	}
-
-
-	movie_interface*	create_library_movie_inst_sub(movie_definition_sub* md)
-	{
-		// Is the movie instance already in the library?
-		{
-			smart_ptr<movie_interface>	m;
-			s_movie_library_inst.get(md, &m);
-			if (m != NULL)
-			{
-				// Return cached movie instance.
-				m->add_ref();
-				return m.get_ptr();
-			}
-		}
-
-		// Try to create movie interface
-		movie_interface* mov = md->create_instance();
-
-		if (mov == NULL)
-		{
-			log_error("error: couldn't create instance\n");
-			return NULL;
-		}
-
-		s_movie_library_inst.add(md, mov);
-
-		// The previous operator has added already the ref
-//		mov->add_ref();
-
-		return mov;
-	}
-
 
 	void	precompute_cached_data(movie_definition* movie_def)
 		// Fill in cached data in movie_def.
@@ -1822,11 +1730,33 @@ namespace gameswf
 	}
 
 
-	movie_interface*	movie_def_impl::create_instance()
-		// Create a playable movie instance from a def.
+	void movie_def_impl::clear_instance()
 	{
+		m_instance = NULL;
+	}
+
+	movie_interface*	movie_def_impl::create_instance()
+	// Create a playable movie instance from a def.
+	{
+
+		// Is the movie instance already in the library?
+		if (s_use_cached_movie)
+		{
+			if (m_instance != NULL)
+			{
+				// Return cached movie instance.
+				m_instance->add_ref();
+				return m_instance.get_ptr();
+			}
+		}
+
 		movie_root*	m = new movie_root(this);
 		assert(m);
+
+		if (s_use_cached_movie)
+		{
+			m_instance = m;
+		}
 
 		sprite_instance*	root_movie = new sprite_instance(this, m, NULL, -1);
 		assert(root_movie);
@@ -2032,11 +1962,11 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("  import: source_url = %s, count = %d\n", source_url, count));
 
 		// Try to load the source movie into the movie library.
-		movie_definition_sub*	source_movie = NULL;
+		movie_definition*	source_movie = NULL;
 
 		if (s_no_recurse_while_loading == false)
 		{
-			source_movie = create_library_movie_sub(source_url);
+			source_movie = create_movie(source_url);
 			if (source_movie == NULL)
 			{
 				// If workdir is set, try again with
@@ -2044,7 +1974,7 @@ namespace gameswf
 				tu_string relative_url = get_workdir();
 				if (relative_url.length()) {
 					relative_url += source_url;
-					source_movie = create_library_movie_sub(relative_url);
+					source_movie = create_movie(relative_url);
 				}
 
 				if (source_movie == NULL) {
@@ -2072,7 +2002,8 @@ namespace gameswf
 				// s_no_recurse_while_loading, change
 				// create_movie_sub().
 
-				smart_ptr<resource> res = source_movie->get_exported_resource(symbol_name);
+				assert(source_movie->cast_to_movie_def_impl());
+				smart_ptr<resource> res = source_movie->cast_to_movie_def_impl()->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
 					log_error("import error: resource '%s' is not exported from movie '%s'\n",
