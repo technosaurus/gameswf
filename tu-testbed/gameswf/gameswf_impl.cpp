@@ -1745,7 +1745,6 @@ namespace gameswf
 			if (m_instance != NULL)
 			{
 				// Return cached movie instance.
-				m_instance->add_ref();
 				return m_instance.get_ptr();
 			}
 		}
