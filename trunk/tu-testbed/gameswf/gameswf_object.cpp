@@ -214,12 +214,6 @@ namespace gameswf
 		return false;
 	}
 
-	character*	as_object::cast_to_character()
-	// This object is not a movie; no conversion.
-	{
-		return NULL;
-	}
-
 	void as_object::collect_garbage()
 	{
 		// Is it a reentrance ?

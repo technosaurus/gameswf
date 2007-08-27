@@ -47,7 +47,6 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool get_member(const tu_stringi& name, as_member* member) const;
 		virtual bool	set_member_flags(const tu_stringi& name, const int flags);
-		virtual character*	cast_to_character();
 		virtual bool	on_event(const event_id& id);
 		virtual as_object* cast_to_as_object() { return this; }
 		virtual	void enumerate(as_environment* env);
