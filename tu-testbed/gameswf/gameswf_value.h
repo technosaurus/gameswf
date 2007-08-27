@@ -9,7 +9,6 @@
 #ifndef GAMESWF_VALUE_H
 #define GAMESWF_VALUE_H
 
-#include "gameswf/gameswf_plugin.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
 #include <wchar.h>
@@ -37,8 +36,7 @@ namespace gameswf
 			OBJECT,
 			C_FUNCTION,
 			AS_FUNCTION,	// ActionScript function.
-			PROPERTY,
-			PLUGIN_FUNCTION
+			PROPERTY
 		};
 		type	m_type;
 		mutable tu_string	m_string_value;
@@ -50,7 +48,6 @@ namespace gameswf
 			as_object_interface*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_as_function*	m_as_function_value;
-			plugin_function_ptr	m_plugin_function_value;
 			struct
 			{
 				as_object_interface*	m_target;
@@ -154,13 +151,6 @@ namespace gameswf
 			m_c_function_value = func;
 		}
 
-		as_value(plugin_function_ptr func) :
-			m_type(PLUGIN_FUNCTION),
-			m_plugin_function_value(func)
-		{
-			m_plugin_function_value = func;
-		}
-
 		as_value(as_as_function* func);
 
 		as_value(as_object_interface*	target,	as_as_function* getter, as_as_function* setter);
@@ -168,59 +158,53 @@ namespace gameswf
 		~as_value() { drop_refs(); }
 
 		// Useful when changing types/values.
-		void	drop_refs();
+		exported_module void	drop_refs();
 
-		type	get_type() const { return m_type; }
+		exported_module type	get_type() const { return m_type; }
 
 		// Return true if this value is callable.
-		bool is_function() const
+		exported_module bool is_function() const
 		{
-			return m_type == C_FUNCTION || m_type == AS_FUNCTION || m_type == PLUGIN_FUNCTION;
+			return m_type == C_FUNCTION || m_type == AS_FUNCTION;
 		}
 
-		const char*	to_string() const;
-		const tu_string&	to_tu_string() const;
-		const tu_string&	to_tu_string_versioned(int version) const;
-		const tu_stringi&	to_tu_stringi() const;
-		double	to_number() const;
-		bool	to_bool() const;
-		as_object_interface*	to_object() const;
-		as_c_function_ptr	to_c_function() const;
-		plugin_function_ptr	to_plugin_function() const;
-		as_as_function*	to_as_function() const;
-		const tu_string& call_to_string(as_environment* env) const;
-		plugin_value to_plugin_value() const;
+		exported_module const char*	to_string() const;
+		exported_module const tu_string&	to_tu_string() const;
+		exported_module const tu_string&	to_tu_string_versioned(int version) const;
+		exported_module const tu_stringi&	to_tu_stringi() const;
+		exported_module double	to_number() const;
+		exported_module bool	to_bool() const;
+		exported_module as_object_interface*	to_object() const;
+		exported_module as_c_function_ptr	to_c_function() const;
+		exported_module as_as_function*	to_as_function() const;
+		exported_module const tu_string& call_to_string(as_environment* env) const;
 
-		void	convert_to_number();
-		void	convert_to_string();
-		void	convert_to_string_versioned(int version);
+		exported_module void	convert_to_number();
+		exported_module void	convert_to_string();
+		exported_module void	convert_to_string_versioned(int version);
 
 		// These set_*()'s are more type-safe; should be used
 		// in preference to generic overloaded set().  You are
 		// more likely to get a warning/error if misused.
-		void	set_tu_string(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
-		void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
-		void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
-		void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
-		void	set_as_property(as_object_interface* target, as_as_function* getter, as_as_function* setter);
-		void	set_int(int val) { set_double(val); }
-		void	set_as_object_interface(as_object_interface* obj);
-		void	set_as_c_function_ptr(as_c_function_ptr func)
+		exported_module void	set_tu_string(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
+		exported_module void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
+		exported_module void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
+		exported_module void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
+		exported_module void	set_as_property(as_object_interface* target, as_as_function* getter, as_as_function* setter);
+		exported_module void	set_int(int val) { set_double(val); }
+		exported_module void	set_as_object_interface(as_object_interface* obj);
+		exported_module void	set_as_c_function_ptr(as_c_function_ptr func)
 		{
 			drop_refs(); m_type = C_FUNCTION; m_c_function_value = func;
 		}
-		void	set_plugin_function_ptr(plugin_function_ptr func)
-		{
-			drop_refs(); m_type = PLUGIN_FUNCTION; m_plugin_function_value = func;
-		}
-		void	set_as_as_function(as_as_function* func);
-		void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
-		void	set_null() { drop_refs(); m_type = NULLTYPE; }
+		exported_module void	set_as_as_function(as_as_function* func);
+		exported_module void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
+		exported_module void	set_null() { drop_refs(); m_type = NULLTYPE; }
 
 		void	set_property(const as_value& v);
 		as_value get_property() const;
 
-		void	operator=(const as_value& v)
+		exported_module void	operator=(const as_value& v)
 		{
 			if (v.m_type == UNDEFINED) set_undefined();
 			else if (v.m_type == NULLTYPE) set_null();
@@ -234,47 +218,23 @@ namespace gameswf
 			else assert(0);
 		}
 
-		void	operator=(const plugin_value& pv)
-		{
-			switch (pv.m_type)
-			{
-				case UNDEFINED:
-					set_undefined();
-					break;
-				case BOOLEAN:
-					set_bool(pv.m_boolean_value);
-					break;
-				case STRING:
-					set_tu_string(pv.m_string_value);
-					break;
-				case NUMBER:
-					set_double(pv.m_number_value);
-					break;
-				case PLUGIN_FUNCTION:
-					set_plugin_function_ptr(pv.m_plugin_function_value);
-					break;
-				default:
-					assert(0);
-			}
-		}
+		exported_module bool	operator==(const as_value& v) const;
+		exported_module bool	operator!=(const as_value& v) const;
+		exported_module bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
+		exported_module void	operator+=(const as_value& v) { set_double(this->to_number() + v.to_number()); }
+		exported_module void	operator-=(const as_value& v) { set_double(this->to_number() - v.to_number()); }
+		exported_module void	operator*=(const as_value& v) { set_double(this->to_number() * v.to_number()); }
+		exported_module void	operator/=(const as_value& v) { set_double(this->to_number() / v.to_number()); }  // @@ check for div/0
+		exported_module void	operator&=(const as_value& v) { set_int(int(this->to_number()) & int(v.to_number())); }
+		exported_module void	operator|=(const as_value& v) { set_int(int(this->to_number()) | int(v.to_number())); }
+		exported_module void	operator^=(const as_value& v) { set_int(int(this->to_number()) ^ int(v.to_number())); }
+		exported_module void	shl(const as_value& v) { set_int(int(this->to_number()) << int(v.to_number())); }
+		exported_module void	asr(const as_value& v) { set_int(int(this->to_number()) >> int(v.to_number())); }
+		exported_module void	lsr(const as_value& v) { set_int((Uint32(this->to_number()) >> int(v.to_number()))); }
 
-		bool	operator==(const as_value& v) const;
-		bool	operator!=(const as_value& v) const;
-		bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
-		void	operator+=(const as_value& v) { set_double(this->to_number() + v.to_number()); }
-		void	operator-=(const as_value& v) { set_double(this->to_number() - v.to_number()); }
-		void	operator*=(const as_value& v) { set_double(this->to_number() * v.to_number()); }
-		void	operator/=(const as_value& v) { set_double(this->to_number() / v.to_number()); }  // @@ check for div/0
-		void	operator&=(const as_value& v) { set_int(int(this->to_number()) & int(v.to_number())); }
-		void	operator|=(const as_value& v) { set_int(int(this->to_number()) | int(v.to_number())); }
-		void	operator^=(const as_value& v) { set_int(int(this->to_number()) ^ int(v.to_number())); }
-		void	shl(const as_value& v) { set_int(int(this->to_number()) << int(v.to_number())); }
-		void	asr(const as_value& v) { set_int(int(this->to_number()) >> int(v.to_number())); }
-		void	lsr(const as_value& v) { set_int((Uint32(this->to_number()) >> int(v.to_number()))); }
+		exported_module void	string_concat(const tu_string& str);
 
-		void	string_concat(const tu_string& str);
-
-		tu_string* get_mutable_tu_string() { assert(m_type == STRING); return &m_string_value; }
+		exported_module tu_string* get_mutable_tu_string() { assert(m_type == STRING); return &m_string_value; }
 	};
 
 

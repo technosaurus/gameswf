@@ -10,10 +10,12 @@
 
 #include "base/tu_config.h"
 #include "base/tu_opengl_includes.h"
+#include "base/container.h"
 
-namespace ogl {
-	void	open();
-	void	close();
+namespace ogl
+{
+	exported_module void	open();
+	exported_module void	close();
 
 	// Return true if the specified extension is available.
 	bool	check_extension(const char* extension);

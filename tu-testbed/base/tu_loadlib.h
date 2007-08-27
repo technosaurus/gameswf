@@ -15,8 +15,6 @@
 	#define lib_t int
 #endif
 
-struct as_object;
-
 struct tu_loadlib
 {
 	typedef void (*init_module) (const char* function_name);

@@ -12,7 +12,6 @@
 #include "gameswf/gameswf_value.h"
 #include "gameswf/gameswf_environment.h"
 #include "gameswf/gameswf_types.h"
-#include "gameswf/gameswf_plugin.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
 #include "base/tu_loadlib.h"
@@ -39,49 +38,27 @@ namespace gameswf
 		bool m_is_collector_called;
 		bool m_is_clear_called;
 
-		as_object();
-		virtual ~as_object();
+		exported_module as_object();
+		exported_module virtual ~as_object();
 		
-		virtual const char*	get_text_value() const { return NULL; }
-		virtual bool	set_member(const tu_stringi& name, const as_value& val);
-		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual bool get_member(const tu_stringi& name, as_member* member) const;
-		virtual bool	set_member_flags(const tu_stringi& name, const int flags);
-		virtual bool	on_event(const event_id& id);
-		virtual as_object* cast_to_as_object() { return this; }
-		virtual	void enumerate(as_environment* env);
-		virtual as_object_interface* get_proto();
+		exported_module virtual const char*	get_text_value() const { return NULL; }
+		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
+		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
+		exported_module virtual bool get_member(const tu_stringi& name, as_member* member) const;
+		exported_module virtual bool	set_member_flags(const tu_stringi& name, const int flags);
+		exported_module virtual bool	on_event(const event_id& id);
+		exported_module virtual as_object* cast_to_as_object() { return this; }
+		exported_module virtual	void enumerate(as_environment* env);
+		exported_module virtual as_object_interface* get_proto();
 
-		virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
-		virtual bool unwatch(const tu_string& name);
+		exported_module virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
+		exported_module virtual bool unwatch(const tu_string& name);
 
-		virtual	void collect_garbage();
-		virtual void clear_refs(as_object_interface* this_ptr);
+		exported_module virtual	void collect_garbage();
+		exported_module virtual void clear_refs(as_object_interface* this_ptr);
 
-		void dump();
+		exported_module void dump();
 	};
-
-	//
-	// plugin object
-	//
-
-	typedef gameswf_plugin* (*gameswf_module_init)();
-
-	struct as_plugin : public as_object
-	{
-		as_plugin(tu_loadlib* ll, const array<plugin_value>& params);
-		~as_plugin();
-
-		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual bool	set_member(const tu_stringi& name, const as_value& val);
-		virtual gameswf_plugin* cast_to_plugin() { return m_plugin; }
-
-	private:
-
-		gameswf_plugin* m_plugin;
-
-	};
-
 
 }
 

@@ -11,6 +11,8 @@
 
 #include "base/tu_config.h"
 #include "base/tu_types.h"
+#include "base/container.h"
+
 class tu_file;
 namespace jpeg { struct input; };
 
@@ -96,8 +98,8 @@ namespace image
 	void	write_jpeg(tu_file* out, rgb* image, int quality);
 	void	write_tga(tu_file* out, rgba* image);
 
-	rgb*	read_jpeg(const char* filename);
-	rgb*	read_jpeg(tu_file* in);
+	exported_module rgb*	read_jpeg(const char* filename);
+	exported_module rgb*	read_jpeg(tu_file* in);
 
 	// For reading SWF JPEG2-style image data (slight variation on
 	// ordinary JPEG).

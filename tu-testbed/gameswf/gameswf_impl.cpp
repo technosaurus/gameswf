@@ -54,6 +54,20 @@ namespace gameswf
 	bool	s_verbose_debug = false;
 #endif
 
+	bool get_verbose_parse()
+	{
+		return s_verbose_parse;
+	}
+
+	bool get_verbose_debug()
+	{
+		return s_verbose_debug;
+	}
+
+	bool get_verbose_action()
+	{
+		return s_verbose_action;
+	}
 
 	void	set_verbose_action(bool verbose)
 		// Enable/disable log messages re: actions.

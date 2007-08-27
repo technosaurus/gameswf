@@ -15,7 +15,6 @@
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_freetype.h"
-#include "gameswf/gameswf_plugin.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 #include "base/tu_loadlib.h"
@@ -168,17 +167,6 @@ namespace gameswf
 		{
 			// It's an ActionScript function.  Call it.
 			(*as_func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
-		}
-		else if (plugin_function_ptr plugin = method.to_plugin_function())
-		{
-			plugin_value result;
-			array<plugin_value> params;
-			for (int i = 0; i < nargs; i++)
-			{
-				params.push_back(env->bottom(first_arg_bottom_index - i).to_plugin_value());
-			}
- 
-			(*plugin)(&result, this_ptr->cast_to_plugin(), params);
 		}
 		else
 		{
@@ -902,14 +890,25 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
+	typedef as_object* (*gameswf_module_init)(const array<as_value>& params);
+
 	as_object* action_buffer::load_as_plugin(const tu_string& classname,
-						const array<plugin_value>& params)
+						const array<as_value>& params)
 	// loads user defined class from DLL / shared library
 	{
 		tu_loadlib* ll = tu_loadlib::load(classname.c_str());
 		if (ll)
 		{
-			return new as_plugin(ll, params);
+
+			// get module interface
+			gameswf_module_init module_init = (gameswf_module_init) ll->get_function("gameswf_module_init");
+
+			// create plugin instance
+			if (module_init)
+			{
+				as_object* plugin = (module_init)(params);
+				return plugin;
+			}
 		}
 		return NULL;
 	}
@@ -1526,11 +1525,11 @@ namespace gameswf
 						if (classname != "String")
 						{
 							// try to load user defined class from DLL / shared library
-							array<plugin_value> params;
+							array<as_value> params;
 							int first_arg_bottom_index = env->get_top_index();
 							for (int i = 0; i < nargs; i++)
 							{
-								params.push_back(env->bottom(first_arg_bottom_index - i).to_plugin_value());
+								params.push_back(env->bottom(first_arg_bottom_index - i));
 							}
 
 							as_object* plugin = load_as_plugin(classname.to_tu_string(), params);

@@ -10,8 +10,9 @@
 #define TU_NET_FILE_H
 
 #include "base/tu_file.h"
+#include "base/container.h"
 
-tu_file* new_tu_net_file(const char* filename_or_url, const char* mode);
+exported_module tu_file* new_tu_net_file(const char* filename_or_url, const char* mode);
 
 #endif // TU_NET_FILE_H
 

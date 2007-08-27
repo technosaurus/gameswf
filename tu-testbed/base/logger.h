@@ -9,6 +9,7 @@
 #ifndef BASE_LOGGER_H
 #define BASE_LOGGER_H
 
+#include "base/container.h"
 
 namespace logger
 {
@@ -26,7 +27,7 @@ namespace logger
 		NORMAL,
 		ERROR,
 	};
-	void	register_log_callback(void (*callback)(log_type e, const char* message));
+	exported_module void	register_log_callback(void (*callback)(log_type e, const char* message));
 
 
 	// gcc has some nice printf arg checking stuff.

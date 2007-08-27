@@ -35,8 +35,6 @@ class tu_stringi;
 struct IDirect3DDevice9;
 struct IDirect3DDevice8;
 
-struct gameswf_plugin;
-
 namespace gameswf
 {
 	// Forward declarations.
@@ -58,23 +56,26 @@ namespace gameswf
 	struct movie_def_impl;
 	struct rect;
 
-	movie_interface* get_current_root();
+	exported_module movie_interface* get_current_root();
 
 	//
 	// Log & error reporting control.
 	//
 
 	// Supply a function pointer to receive log & error messages.
-	void	register_log_callback(void (*callback)(bool error, const char* message));
+	exported_module void	register_log_callback(void (*callback)(bool error, const char* message));
 
 	// Control verbosity of specific categories.
-	void	set_verbose_action(bool verbose);
-	void	set_verbose_parse(bool verbose);
+	exported_module bool get_verbose_parse();
+	exported_module bool get_verbose_debug();
+	exported_module bool get_verbose_action();
+	exported_module void	set_verbose_action(bool verbose);
+	exported_module void	set_verbose_parse(bool verbose);
 
 	// Get and set the render handler.  This is one of the first
 	// things you should do to initialise the player (assuming you
 	// want to display anything).
-	void	set_render_handler(render_handler* s);
+	exported_module void	set_render_handler(render_handler* s);
 
 	// Pass in a sound handler, so you can handle audio on behalf of
 	// gameswf.  This is optional; if you don't set a handler, or set
@@ -82,10 +83,10 @@ namespace gameswf
 	//
 	// If you want sound support, you should set this at startup,
 	// before loading or playing any movies!
-	void	set_sound_handler(sound_handler* s);
+	exported_module void	set_sound_handler(sound_handler* s);
 
 	// You probably don't need this. (@@ make it private?)
-	sound_handler*	get_sound_handler();
+	exported_module sound_handler*	get_sound_handler();
 
 	// Register a callback to the host, for providing a file,
 	// given a "URL" (i.e. a path name).  This is the only means
@@ -98,7 +99,7 @@ namespace gameswf
 	// when it is done using it.  Your file_opener_function may
 	// return NULL in case the requested file can't be opened.
 	typedef tu_file* (*file_opener_callback)(const char* url_or_path);
-	void	register_file_opener_callback(file_opener_callback opener);
+	exported_module void	register_file_opener_callback(file_opener_callback opener);
 
 	// ActionScripts embedded in a movie can use the built-in
 	// fscommand() function to send data back to the host
@@ -110,21 +111,21 @@ namespace gameswf
 	// embedded in, and the two string arguments passed by the
 	// script to fscommand().
 	typedef void (*fscommand_callback)(movie_interface* movie, const char* command, const char* arg);
-	void	register_fscommand_callback(fscommand_callback handler);
+	exported_module void	register_fscommand_callback(fscommand_callback handler);
 
 	// Use this to control how finely curves are subdivided.  1.0
 	// is the default; it's a pretty good value.  Larger values
 	// result in coarser, more angular curves with fewer vertices.
-	void	set_curve_max_pixel_error(float pixel_error);
-	float	get_curve_max_pixel_error();
+	exported_module void	set_curve_max_pixel_error(float pixel_error);
+	exported_module float	get_curve_max_pixel_error();
 
 	// Some helpers that may or may not be compiled into your
 	// version of the library, depending on platform etc.
-	render_handler*	create_render_handler_xbox();
-	render_handler*	create_render_handler_ogl();
-	render_handler* create_render_handler_d3d(IDirect3DDevice9* _pDevice);
-	render_handler* create_render_handler_d3d(IDirect3DDevice8* _pDevice);
-	sound_handler*	create_sound_handler_sdl();
+	exported_module render_handler*	create_render_handler_xbox();
+	exported_module render_handler*	create_render_handler_ogl();
+	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice9* _pDevice);
+	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice8* _pDevice);
+	exported_module sound_handler*	create_sound_handler_sdl();
 
 
 	// For stuff that's tricky to keep track of w/r/t ownership & cleanup.
@@ -132,8 +133,8 @@ namespace gameswf
 	{
 		ref_counted();
 		virtual ~ref_counted();
-		void	add_ref() const;
-		void	drop_ref();
+		exported_module void	add_ref() const;
+		exported_module void	drop_ref();
 		int	get_ref_count() const { return m_ref_count; }
 		weak_proxy*	get_weak_proxy() const;
 
@@ -220,7 +221,6 @@ namespace gameswf
 		virtual x3ds_instance* cast_to_3ds() { return 0; }
 		virtual as_object* cast_to_as_object() { return 0; }
 		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
-		virtual gameswf_plugin* cast_to_plugin() { return 0; }
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
@@ -675,7 +675,7 @@ namespace gameswf
 	// This calls add_ref() on the newly created definition; call
 	// drop_ref() when you're done with it.
 	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
-	movie_definition*	create_movie(const char* filename);
+	exported_module movie_definition*	create_movie(const char* filename);
 
 	// Creates the movie from the given input stream.  Only reads
 	// from the given stream; does not open files.	If the movie
@@ -728,7 +728,7 @@ namespace gameswf
 	// heap, with the exception of any objects that are still
 	// referenced by the host program and haven't had drop_ref()
 	// called on them.
-	void	clear_gameswf();
+	exported_module void	clear_gameswf();
 
 
 	//
@@ -890,9 +890,9 @@ namespace gameswf
 
 		static matrix	identity;
 
-		matrix();
+		exported_module matrix();
 //		bool	is_valid() const;
-		void	set_identity();
+		exported_module void	set_identity();
 		void	concatenate(const matrix& m);
 		void	concatenate_translation(float tx, float ty);
 		void	concatenate_scale(float s);
