@@ -68,7 +68,11 @@ typedef Sint64 int64;
 
 
 // A function to run some validation checks.
+#ifdef _WIN32
+__declspec(dllexport) bool	tu_types_validate();
+#else // _WIN32
 bool	tu_types_validate();
+#endif
 
 
 #endif // TU_TYPES_H

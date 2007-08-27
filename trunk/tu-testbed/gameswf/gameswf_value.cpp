@@ -382,48 +382,6 @@ namespace gameswf
 		}
 	}
 
-	plugin_function_ptr	as_value::to_plugin_function() const
-	// Return value as a C function ptr.  Returns NULL if value is
-	// not a C function.
-	{
-		if (m_type == PLUGIN_FUNCTION)
-		{
-			// OK.
-			return m_plugin_function_value;
-		}
-		else
-		{
-			return NULL;
-		}
-	}
-
-	plugin_value as_value::to_plugin_value() const
-	// Return value as a C function ptr.  Returns NULL if value is
-	// not a C function.
-	{
-		plugin_value pval;
-		switch (m_type)
-		{
-			case NUMBER:
-				pval.m_type = plugin_value::NUMBER;
-				pval.m_number_value = m_number_value;
-				break;
-			case BOOLEAN:
-				pval.m_type = plugin_value::BOOLEAN;
-				pval.m_boolean_value = m_boolean_value;
-				break;
-			case STRING:
-				pval.m_type = plugin_value::STRING;
-				pval.m_string_value = m_string_value;
-				break;
-			case PLUGIN_FUNCTION:
-				pval.m_type = plugin_value::PLUGIN_FUNCTION;
-				pval.m_plugin_function_value = m_plugin_function_value;
-				break;
-		}
-		return pval;
-	}
-
 	as_as_function*	as_value::to_as_function() const
 	// Return value as an ActionScript function.  Returns NULL if value is
 	// not an ActionScript function.

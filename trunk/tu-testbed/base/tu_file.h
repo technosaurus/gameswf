@@ -15,6 +15,7 @@
 #include "base/tu_types.h"
 #include "base/tu_swap.h"
 #include "base/utility.h"
+#include "base/container.h"
 
 struct membuf;
 struct SDL_RWops;
@@ -47,7 +48,7 @@ public:
 	typedef int (* close_func)(void* appdata);
 
 	// The generic constructor; supply functions for the implementation.
-	tu_file(
+	exported_module tu_file(
 		void * appdata,
 		read_func rf,
 		write_func wf,
@@ -58,22 +59,22 @@ public:
 		close_func cf=NULL);
 
 	// Make a file from an ordinary FILE*.
-	tu_file(FILE* fp, bool autoclose);
+	exported_module tu_file(FILE* fp, bool autoclose);
 
 	// Optional: if you're using SDL, this is a constructor to create
 	// a tu_file from an SDL_RWops* stream.
-	tu_file(SDL_RWops* sdl_stream, bool autoclose);
+	exported_module tu_file(SDL_RWops* sdl_stream, bool autoclose);
 
 	// Open a file using ordinary fopen().  Automatically closes the
 	// file when we are destroyed.
-	tu_file(const char* name, const char* mode);
+	exported_module tu_file(const char* name, const char* mode);
 
 	// Make a memory-buffer file for read/write.
 	enum memory_buffer_enum { memory_buffer };
-	tu_file(memory_buffer_enum m);
+	exported_module tu_file(memory_buffer_enum m);
 
 	// A read-only memory-buffer with predefined data.
-	tu_file(memory_buffer_enum m, int size, void* data);
+	exported_module tu_file(memory_buffer_enum m, int size, void* data);
 
 	~tu_file();
 

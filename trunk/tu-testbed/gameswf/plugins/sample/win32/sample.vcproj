@@ -61,10 +61,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="container.obj utf8.obj"
+				AdditionalDependencies="libgameswf.lib"
 				OutputFile="../sample.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="C:\gameswf\gameswf\win32\VC8\swfvc___Win32_Debug"
+				AdditionalLibraryDirectories="C:\gameswf\gameswf\win32\VC8\Debug"
 				ModuleDefinitionFile=""
 				GenerateDebugInformation="true"
 				SubSystem="2"

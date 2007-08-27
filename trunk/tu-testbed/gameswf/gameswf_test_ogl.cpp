@@ -78,12 +78,6 @@ static float s_scale = 1.0f;
 static bool s_antialiased = false;
 static int s_bit_depth = 16;
 
-#ifdef _DEBUG
-static bool s_verbose = true;
-#else
-static bool s_verbose = false;
-#endif
-
 static bool s_background = true;
 static bool s_measure_performance = false;
 // Controls whether we will try to load things over the net or not.
@@ -92,7 +86,7 @@ static bool s_allow_http = false;
 static void	message_log(const char* message)
 // Process a log message.
 {
-	if (s_verbose)
+	if (gameswf::get_verbose_parse())
 	{
 		fputs(message, stdout);
 		fflush(stdout);
@@ -415,7 +409,7 @@ int	main(int argc, char *argv[])
 			else if (argv[arg][1] == 'v')
 			{
 				// Be verbose; i.e. print log messages to stdout.
-				s_verbose = true;
+				gameswf::set_verbose_parse(true);
 
 				if (argv[arg][2] == 'a')
 				{
@@ -478,7 +472,8 @@ int	main(int argc, char *argv[])
 
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_fscommand_callback(fs_callback);
-	if (s_verbose == true) {
+	if (gameswf::get_verbose_parse())
+	{
 		gameswf::register_log_callback(log_callback);
 	}
 	//gameswf::set_antialiased(s_antialiased);
@@ -841,11 +836,11 @@ int	main(int argc, char *argv[])
 								// toggle background color.
 								s_background = !s_background;
 							}
-							else if (ctrl && key == SDLK_f)	//xxxxxx
-							{
-								extern bool gameswf_debug_show_paths;
-								gameswf_debug_show_paths = !gameswf_debug_show_paths;
-							}
+//							else if (ctrl && key == SDLK_f)	//xxxxxx
+//							{
+//								extern bool gameswf_debug_show_paths;
+//								gameswf_debug_show_paths = !gameswf_debug_show_paths;
+//							}
 							else if (ctrl && key == SDLK_EQUALS)
 							{
 								float	f = gameswf::get_curve_max_pixel_error();

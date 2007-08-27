@@ -349,62 +349,13 @@ namespace gameswf
 	// for debugging
 	// retrieves members & print them
 	{
-		printf("\n*** object 0x%X ***\n", (Uint32) this);
+		printf("\n*** object 0x%X ***\n", this);
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
 			it != m_members.end(); ++it)
 		{
 			printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
 		}
 		printf("***\n");
-	}
-
-	//
-	// plugin object
-	//
-
-	as_plugin::as_plugin(tu_loadlib* ll, const array<plugin_value>& params) :
-		m_plugin(NULL)
-	{
-		assert(ll);
-
-		// get module interface
-		gameswf_module_init module_init = (gameswf_module_init) ll->get_function("gameswf_module_init");
-
-		// create plugin instance
-		if (module_init)
-		{
-			m_plugin = (module_init)();
-		}
-	}
-
-	as_plugin::~as_plugin()
-	{
-		if (m_plugin)
-		{
-			delete m_plugin;
-		}
-	}
-
-	bool	as_plugin::get_member(const tu_stringi& name, as_value* val)
-	{
-		if (m_plugin)
-		{
-			plugin_value pval;
-			m_plugin->get_member(name, &pval);
-			*val = pval;
-			return true;
-		}
-		return false;
-	}
-
-	bool	as_plugin::set_member(const tu_stringi& name, const as_value& val)
-	{
-		if (m_plugin)
-		{
-			plugin_value pval = val.to_plugin_value();
-			return m_plugin->set_member(name, pval);
-		}
-		return false;
 	}
 
 }

@@ -12,6 +12,9 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
+#ifdef _WIN32
+#	define exported_module __declspec(dllexport)
+#endif // _WIN32
 
 #include "base/tu_config.h"
 #include "base/utility.h"
@@ -1242,7 +1245,7 @@ public:
 	
 	// Sets buffer size to new_size+1 (i.e. enough room for
 	// new_size chars, plus terminating 0).
-	void	resize(int new_size);
+	exported_module void	resize(int new_size);
 
 	// Set *result to the UTF-8 encoded version of wstr[].
 	// Both version of wchar_t.

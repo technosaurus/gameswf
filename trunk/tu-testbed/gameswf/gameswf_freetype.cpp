@@ -114,7 +114,7 @@ namespace gameswf
 
 			if (retCode == ERROR_SUCCESS) 
 			{ 
-				if (fontname == achValue)
+				if (fontname == (char*) achValue)
 				{
 					file_name = windir + tu_string("\\Fonts\\") + (char*) szValueData;
 					RegCloseKey(hKey);

@@ -9,6 +9,7 @@
 #ifndef GAMESWF_LOG_H
 #define GAMESWF_LOG_H
 
+#include "gameswf/gameswf.h"
 
 namespace gameswf
 {
@@ -19,8 +20,8 @@ namespace gameswf
 	void	log_msg(const char* fmt, ...) __attribute__((format (printf, 1, 2)));
 	void	log_error(const char* fmt, ...) __attribute__((format (printf, 1, 2)));
 #else	// not __GNUC__
-	void	log_msg(const char* fmt, ...);
-	void	log_error(const char* fmt, ...);
+	exported_module void	log_msg(const char* fmt, ...);
+	exported_module void	log_error(const char* fmt, ...);
 #endif	// not __GNUC__
 
 }

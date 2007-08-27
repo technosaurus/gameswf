@@ -1,5 +1,42 @@
 2007-08-27  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* base/container.h
+		* base/image.h
+		* base/logger.h
+		* base/ogl.h
+		* base/tu_file.h
+		* base/tu_loadlib.h
+		* base/tu_types.h
+		* gameswf/gameswf.h
+		* gameswf/gameswf_action.cpp
+		* gameswf/gameswf_action.h
+		* gameswf/gameswf_freetype.cpp
+		* gameswf/gameswf_impl.cpp
+		* gameswf/gameswf_impl.h
+		* gameswf/gameswf_log.h
+		* gameswf/gameswf_object.cpp
+		* gameswf/gameswf_object.h
+		* gameswf/gameswf_plugin.h
+		* gameswf/gameswf_test_ogl.cpp
+		* gameswf/gameswf_types.h
+		* gameswf/gameswf_value.cpp
+		* gameswf/gameswf_value.h
+		* gameswf/plugins/sample/sample.cpp
+		* gameswf/plugins/sample/sample.h
+		* gameswf/plugins/sample/test.fla
+		* gameswf/plugins/sample/test.swf
+		* gameswf/plugins/sample/win32/sample.vcproj
+		* gameswf/win32/VC8/gameswf.sln
+		* gameswf/win32/VC8/gameswf.vcproj
+		* gameswf/win32/VC8/libgameswf.vcproj
+		* net/tu_net_file.h
+		Simplified plugin interface(removed plugin_value, 
+		as_object & as_value is exposed to plugin). Added gameswf.sln that 
+		contains libgameswf.dll project & gameswf.exe project.
+		gameswf.exe and plugins uses libgameswf.lib & libgameswf.dll
+		
+2007-08-27  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf_object.*: removed useless code
 		
 2007-08-26  Vitaly Alexeev <tishka92@yahoo.com>
