@@ -1252,8 +1252,8 @@ public:
 	//
 	// Could add operator= overloads, but maybe it's better to
 	// keep this very explicit.
-	static void	encode_utf8_from_wchar(tu_string* result, const uint32* wstr);
-	static void	encode_utf8_from_wchar(tu_string* result, const uint16* wstr);
+	exported_module static void	encode_utf8_from_wchar(tu_string* result, const uint32* wstr);
+	exported_module static void	encode_utf8_from_wchar(tu_string* result, const uint16* wstr);
 
 	// Utility: case-insensitive string compare.  stricmp() is not
 	// ANSI or POSIX, doesn't seem to appear in Linux.

@@ -18,7 +18,7 @@
 
 namespace gameswf
 {
-	void	as_object_addproperty(const fn_call& fn);
+	exported_module void	as_object_addproperty(const fn_call& fn);
 
 	struct as_object : public as_object_interface
 	{
@@ -56,6 +56,8 @@ namespace gameswf
 
 		exported_module virtual	void collect_garbage();
 		exported_module virtual void clear_refs(as_object_interface* this_ptr);
+
+		exported_module bool add_property(const tu_string& name, const as_value& val);
 
 		exported_module void dump();
 	};
