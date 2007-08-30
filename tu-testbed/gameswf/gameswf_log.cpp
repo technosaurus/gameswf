@@ -15,8 +15,22 @@
 
 namespace gameswf
 {
+
+	void standard_logger(bool error, const char* message)
+	{
+		if (error)
+		{
+			fprintf(stderr, message);
+		}
+		else
+		{
+			// NORMAL or VERBOSE
+			printf(message);
+		}
+	}
+
 	// Function pointer to log callback.
-	static void (*s_log_callback)(bool error, const char* message) = NULL;
+	static void (*s_log_callback)(bool error, const char* message) = standard_logger;
 
 	// Workspace for vsnprintf formatting.
 	static const int	BUFFER_SIZE = 500;

@@ -54,7 +54,9 @@ namespace gameswf
 	{
 		// We keep a static string instance to hold a table of
 		// string methods.
+		// TODO: s_static_string_instance.drop_ref() on exit from gameswf
 		static smart_ptr<as_object_interface> s_static_string_instance;
+
 		if (!s_static_string_instance.get_ptr()) {
 			as_value result;
 			string_ctor(fn_call(&result, NULL, fn.env, 0, 0));

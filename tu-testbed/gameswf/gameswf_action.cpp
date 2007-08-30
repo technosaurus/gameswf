@@ -1549,6 +1549,7 @@ namespace gameswf
 						}
 					}
 
+					// places new object to check list
 					if (new_obj.to_object())
 					{
 						(*get_garbage())[new_obj.to_object()] = false;

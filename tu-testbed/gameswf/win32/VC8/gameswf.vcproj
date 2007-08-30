@@ -77,7 +77,7 @@
 				OutputFile=".\Release/swfvc.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\libgame\lib"
+				AdditionalLibraryDirectories=""
 				IgnoreDefaultLibraryNames=""
 				ProgramDatabaseFile=".\Release/swfvc.pdb"
 				SubSystem="1"

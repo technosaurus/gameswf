@@ -59,26 +59,13 @@ namespace gameswf
 		}
 	}
 
-	as_value::as_value(as_object_interface*	target,	
-		as_as_function* getter, as_as_function* setter)
+	as_value::as_value(const as_value& getter, const as_value& setter)
 		:
-		m_type(PROPERTY),
-		m_target(target),
-		m_getter(getter),
-		m_setter(setter)
+		m_target(NULL),
+		m_type(PROPERTY)
 	{
-		if (m_target)
-		{
-			m_target->add_ref();
-		}
-		if (m_getter)
-		{
-			m_getter->add_ref();
-		}
-		if (m_setter)
-		{
-			m_setter->add_ref();
-		}
+		m_property = new as_property(getter, setter);
+		m_property->add_ref();
 	}
 
 	const char*	as_value::to_string() const
@@ -174,7 +161,9 @@ namespace gameswf
 		}
 		else if (m_type == PROPERTY)
 		{
-			m_string_value = get_property().to_tu_string();
+			as_value val;
+			get_property(&val);
+			m_string_value = val.to_tu_string();
 		}
 		else
 		{
@@ -277,7 +266,9 @@ namespace gameswf
 		}
 		else if (m_type == PROPERTY)
 		{
-			return get_property().to_number();
+			as_value val;
+			get_property(&val);
+			return val.to_number();
 		}
 		else
 		{
@@ -334,7 +325,9 @@ namespace gameswf
 		}
 		else if (m_type == PROPERTY)
 		{
-			return get_property().to_bool();
+			as_value val;
+			get_property(&val);
+			return val.to_bool();
 		}
 		else
 		{
@@ -452,32 +445,13 @@ namespace gameswf
 		}
 	}
 
-	void	as_value::set_as_property(as_object_interface* target, 
-		as_as_function* getter, as_as_function* setter)
+	void	as_value::set_as_property(as_property* prop) 
 	{
-		if (m_type != PROPERTY || m_getter != getter || m_setter != setter || m_target != target)
-		{
-			drop_refs(); 
-			m_type = PROPERTY;
-
-			m_target = target;
-			if (m_target)
-			{
-				m_target->add_ref();
-			}
-
-			m_setter = setter;
-			if (m_setter)
-			{
-				m_setter->add_ref();
-			}
-
-			m_getter = getter;
-			if (m_getter)
-			{
-				m_getter->add_ref();
-			}
-		}
+		drop_refs(); 
+		m_type = PROPERTY;
+		m_property = prop;
+		m_property->add_ref();
+		m_target = NULL; // unbinded
 	}
 
 	bool	as_value::operator==(const as_value& v) const
@@ -549,44 +523,111 @@ namespace gameswf
 		}
 		else if (m_type == PROPERTY)
 		{
-			if (m_target)
+			if (m_property)
 			{
-				m_target->drop_ref();
-				m_target = 0;
-			}
-			if (m_getter)
-			{
-				m_getter->drop_ref();
-				m_getter = 0;
-			}
-			if (m_setter)
-			{
-				m_setter->drop_ref();
-				m_setter = 0;
+				m_property->drop_ref();
+				m_property = NULL;
+				if (m_target)
+				{
+					m_target->drop_ref();
+					m_target = NULL;
+				}
 			}
 		}
 	}
 
-	void	as_value::set_property(const as_value& v)
+	void	as_value::set_property(const as_value& val)
 	{
-		if (m_setter)
+		assert(m_property);
+		m_property->set(m_target, val);
+	}
+
+	void as_value::get_property(as_value* val) const
+	{
+		assert(m_property);
+		m_property->get(m_target, val);
+	}
+
+	//
+	//	as_property
+	//
+
+	as_property::as_property(const as_value& getter,	const as_value& setter)
+		:
+		m_getter_type(UNDEFINED),
+		m_setter_type(UNDEFINED),
+		m_getter(NULL),
+		m_setter(NULL)
+	{
+		if (getter.get_type() == as_value::AS_FUNCTION && getter.to_as_function())
+		{
+			m_getter_type = AS_FUNCTION;
+			m_getter = getter.to_as_function();
+			assert(m_getter);
+			m_getter->add_ref();
+		}
+		else
+		if (getter.get_type() == as_value::C_FUNCTION && getter.to_c_function())
+		{
+			m_getter_type = C_FUNCTION;
+			m_c_getter = getter.to_c_function();
+		}
+
+		if (setter.get_type() == as_value::AS_FUNCTION && setter.to_as_function())
+		{
+			m_setter_type = AS_FUNCTION;
+			m_setter = setter.to_as_function();
+			m_setter->add_ref();
+		}
+		else
+		if (getter.get_type() == as_value::C_FUNCTION && setter.to_c_function())
+		{
+			m_setter_type = as_property::C_FUNCTION;
+			m_c_setter = setter.to_c_function();
+		}
+	}
+
+	as_property::~as_property()
+	{
+		if (m_getter_type == AS_FUNCTION && m_getter)
+		{
+			m_getter->drop_ref();
+		}
+		if (m_setter_type == as_property::AS_FUNCTION && m_setter)
+		{
+			m_setter->drop_ref();
+		}
+	}
+
+	void	as_property::set(as_object_interface* target, const as_value& val)
+	{
+		if (m_setter && m_setter_type == AS_FUNCTION)
 		{
 			assert(m_setter->m_env);
-			m_setter->m_env->push(v);
-			(*m_setter)(fn_call(NULL, m_target, m_setter->m_env, 1, m_setter->m_env->get_top_index()));
+			m_setter->m_env->push(val);
+			(*m_setter)(fn_call(NULL, target,	NULL, 1, m_setter->m_env->get_top_index()));
 			m_setter->m_env->drop(1);
+		}
+		else
+		if (m_c_setter && m_setter_type == as_property::C_FUNCTION)
+		{
+			as_environment env;
+			env.push(val);
+			(m_c_setter)(fn_call(NULL, target, &env, 1, env.get_top_index()));
 		}
 	}
 
-	as_value as_value::get_property() const
+	void as_property::get(as_object_interface* target, as_value* val) const
 	{
-		as_value val;
-		if (m_getter)
+		if (m_getter && m_getter_type == AS_FUNCTION)
 		{
-			assert(m_getter->m_env);
-			(*m_getter)(fn_call(&val, m_target, m_getter->m_env, 0, m_getter->m_env->get_top_index()));
+			(*m_getter)(fn_call(val, target, NULL, 0,	m_getter->m_env->get_top_index()));
 		}
-		return val;
+		else
+		if (m_c_getter && m_getter_type == C_FUNCTION)
+		{
+			(m_c_getter)(fn_call(val, target, NULL, 0,	0));
+		}
 	}
 
 }

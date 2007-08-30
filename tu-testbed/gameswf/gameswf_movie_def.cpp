@@ -128,8 +128,11 @@ namespace gameswf
 		// terminate thread
 		// it is used when user has pressed Esc button
 		s_break_loading = true;
-		m_thread->wait();
-		delete m_thread;
+		if (m_thread)
+		{
+			m_thread->wait();
+			delete m_thread;
+		}
 
 		// Release our playlist data.
 		{for (int i = 0, n = m_playlist.size(); i < n; i++)
@@ -498,6 +501,7 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, get_frame_count()));
 
 		m_thread = new tu_thread(movie_def_loader, this);
+//		read_tags();
 	}
 
 	// is running in loader thread

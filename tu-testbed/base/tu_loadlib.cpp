@@ -17,10 +17,7 @@ tu_loadlib* tu_loadlib::load(const char* library_name)
 {
 	tu_loadlib* ll = NULL;
 
-	tu_string path = "/gameswf/gameswf/plugins/";	// hack
-	path += library_name;
-	path += "/";
-	path +=	library_name;
+	tu_string path = library_name;
 	path += ".dll";
 
 	HINSTANCE hlib = LoadLibrary(path.c_str());

@@ -25,7 +25,9 @@ namespace gameswf
 			as_as_function* setter = fn.arg(2).to_as_function();
 			if (getter || setter)
 			{
-				obj->set_member(fn.arg(0).to_string(), as_value(obj, getter, setter));
+				// creates unbinded property
+				// 'obj' is a __proto__
+				obj->set_member(fn.arg(0).to_string(), as_value(getter, setter));
 				fn.result->set_bool(true);
 				return;
 			}
@@ -111,6 +113,17 @@ namespace gameswf
 	{
 	}
 
+	bool as_object::add_property(const tu_string& name, const as_value& val)
+	{
+		as_object_interface* proto = get_proto();
+		if (proto && val.get_type() == as_value::PROPERTY)
+		{
+			proto->set_member(name, val);
+			return true;
+		}
+		return false;
+	}
+
 	bool	as_object::set_member(const tu_stringi& name, const as_value& val )
 	{
 		//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
@@ -179,8 +192,10 @@ namespace gameswf
 				{
 					if (val->get_type() == as_value::PROPERTY)
 					{
-						// changes the target
-						val->set_as_property(this, val->m_getter, val->m_setter);
+						// binds property (sets the target)
+						assert(val->m_target == NULL);
+						val->m_target = this;
+						add_ref();
 					}
 					return true;
 				}
