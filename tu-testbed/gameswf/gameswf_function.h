@@ -23,7 +23,16 @@ namespace gameswf
 	struct as_as_function : public ref_counted
 	{
 		action_buffer*	m_action_buffer;
-		as_environment*	m_env;	// @@ might need some kind of ref count here, but beware cycles
+
+		// We need to watch m_env
+		// testcase:
+		// the movie executes the following opcodes
+		// _global.x=new Object();
+		// loadMovie("another.swf", _root);
+		// the result of this:
+		// current movie will be deleted and it environment too
+		weak_ptr<as_environment>	m_env;
+		
 		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
 		int	m_start_pc;
 		int	m_length;

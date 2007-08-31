@@ -78,7 +78,7 @@ namespace gameswf
 
 			assert(m_func.get_type() == as_value::AS_FUNCTION);
 
-			as_environment* env = m_func.to_as_function()->m_env;
+			as_environment* env = m_func.to_as_function()->m_env.get_ptr();
 			assert(env);
 
 			int n = m_param.size();

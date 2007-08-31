@@ -154,7 +154,7 @@ namespace gameswf
 					watch.m_func->m_env->push(it->second.get_member_value());	// oldVal
 					watch.m_func->m_env->push(name);	// property
 
-					(*watch.m_func)(fn_call(&watch_val, this, watch.m_func->m_env, 4,
+					(*watch.m_func)(fn_call(&watch_val, this, watch.m_func->m_env.get_ptr(), 4,
 						watch.m_func->m_env->get_top_index()));
 
 					watch.m_func->m_env->drop(4);
@@ -296,7 +296,7 @@ namespace gameswf
 				as_value	method;
 				if (get_member(method_name, &method))
 				{
-					as_environment* env = method.to_as_function()->m_env;
+					as_environment* env = method.to_as_function()->m_env.get_ptr();
 					assert(env);
 
 					call_method(method, env, this, 0, env->get_top_index());
