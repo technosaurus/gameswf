@@ -46,7 +46,7 @@ namespace gameswf
 {
 	bool	s_verbose_action = false;
 	bool	s_verbose_parse = false;
-	bool	s_use_cached_movie = true;
+	bool	s_use_cached_movie = false;
 
 #ifndef NDEBUG
 	bool	s_verbose_debug = true;

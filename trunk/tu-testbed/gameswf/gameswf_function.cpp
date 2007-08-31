@@ -36,7 +36,7 @@ namespace gameswf
 	void	as_as_function::operator()(const fn_call& fn)
 	// Dispatch.
 	{
-		as_environment*	our_env = m_env;
+		as_environment*	our_env = m_env.get_ptr();
 		if (our_env == NULL)
 		{
 			our_env = fn.env;

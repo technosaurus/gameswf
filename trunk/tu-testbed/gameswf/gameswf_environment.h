@@ -45,7 +45,7 @@ namespace gameswf
 		}
 	};
 
-	struct as_environment
+	struct as_environment : public ref_counted
 	{
 		array<as_value>	m_stack;
 		as_value	m_global_register[GLOBAL_REGISTER_COUNT];

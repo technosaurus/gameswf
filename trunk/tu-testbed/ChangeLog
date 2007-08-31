@@ -1,3 +1,23 @@
+2007-08-31  Vitaly Alexeev <tishka92@yahoo.com>
+
+		* gameswf/gameswf_as_classes/as_mcloader.cpp
+		* gameswf/gameswf_as_classes/as_netstream.cpp
+		* gameswf/gameswf_as_classes/as_xmlsocket.cpp
+		* gameswf/gameswf_environment.h
+		* gameswf/gameswf_function.cpp
+		* gameswf/gameswf_function.h
+		* gameswf/gameswf_impl.cpp
+		* gameswf/gameswf_object.cpp
+		* gameswf/gameswf_timers.cpp
+		* gameswf/gameswf_value.cpp
+		as_environment* ==> weak_ptr<as_environment>	m_env
+		We need to watch m_env, testcase:
+		the movie executes the following opcodes
+		_global.x = new Object();
+		loadMovie("another.swf", _root);
+		the result of this:
+		current movie will be deleted and it environment too
+
 2007-08-30  Vitaly Alexeev <tishka92@yahoo.com>
 
 		* base/container.h

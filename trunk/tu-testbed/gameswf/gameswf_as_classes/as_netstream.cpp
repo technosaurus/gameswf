@@ -131,7 +131,7 @@ namespace gameswf
 				infoObject->set_member("level", level);
 				infoObject->set_member("code", code);
 
-				as_environment* env = function.to_as_function()->m_env;
+				as_environment* env = function.to_as_function()->m_env.get_ptr();
 				assert(env);
 
 				env->push_val(infoObject.get_ptr());

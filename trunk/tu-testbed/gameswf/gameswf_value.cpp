@@ -603,7 +603,7 @@ namespace gameswf
 	{
 		if (m_setter && m_setter_type == AS_FUNCTION)
 		{
-			assert(m_setter->m_env);
+			assert(m_setter->m_env != NULL);
 			m_setter->m_env->push(val);
 			(*m_setter)(fn_call(NULL, target,	NULL, 1, m_setter->m_env->get_top_index()));
 			m_setter->m_env->drop(1);

@@ -167,7 +167,7 @@ namespace gameswf
 
 			if (listener->get_member(id.get_function_name(), &function))
 			{
-				as_environment* env = function.to_as_function()->m_env;
+				as_environment* env = function.to_as_function()->m_env.get_ptr();
 				assert(env);
 
 				int param_count = 0;
