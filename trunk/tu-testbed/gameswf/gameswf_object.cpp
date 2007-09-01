@@ -193,8 +193,8 @@ namespace gameswf
 					if (val->get_type() == as_value::PROPERTY)
 					{
 						// binds property (sets the target)
-						assert(val->m_target == NULL);
-						val->m_target = this;
+						assert(val->m_property_target == NULL);
+						val->m_property_target = this;
 						add_ref();
 					}
 					return true;
