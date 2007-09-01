@@ -637,18 +637,16 @@ namespace gameswf
 	void	as_property::set(as_object_interface* target, const as_value& val)
 	{
 		assert(target);
+
+		as_environment env;
+		env.push(val);
 		if (m_setter && m_setter_type == AS_FUNCTION)
 		{
-			assert(m_setter->m_env != NULL);
-			m_setter->m_env->push(val);
-			(*m_setter)(fn_call(NULL, target,	NULL, 1, m_setter->m_env->get_top_index()));
-			m_setter->m_env->drop(1);
+			(*m_setter)(fn_call(NULL, target,	&env, 1, env.get_top_index()));
 		}
 		else
 		if (m_c_setter && m_setter_type == as_property::C_FUNCTION)
 		{
-			as_environment env;
-			env.push(val);
 			(m_c_setter)(fn_call(NULL, target, &env, 1, env.get_top_index()));
 		}
 	}
@@ -656,14 +654,17 @@ namespace gameswf
 	void as_property::get(as_object_interface* target, as_value* val) const
 	{
 		assert(target);
+
+		// env is used when m_getter->m_env is NULL
+		as_environment env;
 		if (m_getter && m_getter_type == AS_FUNCTION)
 		{
-			(*m_getter)(fn_call(val, target, NULL, 0,	m_getter->m_env->get_top_index()));
+			(*m_getter)(fn_call(val, target, &env, 0,	0));
 		}
 		else
 		if (m_c_getter && m_getter_type == C_FUNCTION)
 		{
-			(m_c_getter)(fn_call(val, target, NULL, 0,	0));
+			(m_c_getter)(fn_call(val, target, &env, 0,	0));
 		}
 	}
 

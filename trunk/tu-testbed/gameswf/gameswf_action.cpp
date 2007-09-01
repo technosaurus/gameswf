@@ -934,7 +934,8 @@ namespace gameswf
 		array<with_stack_entry>	with_stack(initial_with_stack);
 
 		// Some corner case behaviors depend on the SWF file version.
-		int version = env->get_target()->get_movie_definition()->get_version();
+//		int version = env->get_target()->get_movie_definition()->get_version();
+		int version = get_current_root()->get_movie_version();
 
 #if 0
 		// Check the time
