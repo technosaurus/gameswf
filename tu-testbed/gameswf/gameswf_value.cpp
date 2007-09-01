@@ -61,7 +61,7 @@ namespace gameswf
 
 	as_value::as_value(const as_value& getter, const as_value& setter)
 		:
-		m_target(NULL),
+		m_property_target(NULL),
 		m_type(PROPERTY)
 	{
 		m_property = new as_property(getter, setter);
@@ -445,13 +445,48 @@ namespace gameswf
 		}
 	}
 
-	void	as_value::set_as_property(as_property* prop) 
+	void	as_value::operator=(const as_value& v)
 	{
-		drop_refs(); 
-		m_type = PROPERTY;
-		m_property = prop;
-		m_property->add_ref();
-		m_target = NULL; // unbinded
+		switch (v.m_type)
+		{
+		case UNDEFINED:
+			set_undefined();
+			break;
+		case NULLTYPE:
+			set_null();
+			break;
+		case BOOLEAN:
+			set_bool(v.m_boolean_value);
+			break;
+		case STRING:
+			set_tu_string(v.m_string_value);
+			break;
+		case NUMBER:
+			set_double(v.m_number_value);
+			break;
+		case OBJECT:
+			set_as_object_interface(v.m_object_value);
+			break;
+		case C_FUNCTION:
+			set_as_c_function_ptr(v.m_c_function_value);
+			break;
+		case AS_FUNCTION:
+			set_as_as_function(v.m_as_function_value);
+			break;
+		case PROPERTY:
+			drop_refs(); 
+			m_type = PROPERTY;
+			m_property = v.m_property;
+			m_property->add_ref();
+			m_property_target = v.m_property_target;
+			if (m_property_target)
+			{
+				m_property_target->add_ref();
+			}
+			break;
+		default:
+			assert(0);
+		}
 	}
 
 	bool	as_value::operator==(const as_value& v) const
@@ -527,10 +562,10 @@ namespace gameswf
 			{
 				m_property->drop_ref();
 				m_property = NULL;
-				if (m_target)
+				if (m_property_target)
 				{
-					m_target->drop_ref();
-					m_target = NULL;
+					m_property_target->drop_ref();
+					m_property_target = NULL;
 				}
 			}
 		}
@@ -539,13 +574,13 @@ namespace gameswf
 	void	as_value::set_property(const as_value& val)
 	{
 		assert(m_property);
-		m_property->set(m_target, val);
+		m_property->set(m_property_target, val);
 	}
 
 	void as_value::get_property(as_value* val) const
 	{
 		assert(m_property);
-		m_property->get(m_target, val);
+		m_property->get(m_property_target, val);
 	}
 
 	//
@@ -601,6 +636,7 @@ namespace gameswf
 
 	void	as_property::set(as_object_interface* target, const as_value& val)
 	{
+		assert(target);
 		if (m_setter && m_setter_type == AS_FUNCTION)
 		{
 			assert(m_setter->m_env != NULL);
@@ -619,6 +655,7 @@ namespace gameswf
 
 	void as_property::get(as_object_interface* target, as_value* val) const
 	{
+		assert(target);
 		if (m_getter && m_getter_type == AS_FUNCTION)
 		{
 			(*m_getter)(fn_call(val, target, NULL, 0,	m_getter->m_env->get_top_index()));

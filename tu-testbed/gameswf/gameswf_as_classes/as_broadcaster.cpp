@@ -89,7 +89,7 @@ namespace gameswf
 				as_array* a = obj->cast_to_as_array();
 				if (a)
 				{
-					tu_string ovent_name = fn.arg(0).to_tu_string();
+					tu_string event_name = fn.arg(0).to_tu_string();
 					for (int i = 0; i < a->size(); i++)
 					{
 						as_value index(i);
@@ -99,7 +99,7 @@ namespace gameswf
 						if (listener)
 						{
 							as_value function;
-							if (listener->get_member(ovent_name, &function))
+							if (listener->get_member(event_name, &function))
 							{
 								call_method(function, fn.env, listener,
 									fn.nargs - 1, fn.first_arg_bottom_index - 1);

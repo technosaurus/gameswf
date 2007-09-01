@@ -81,7 +81,7 @@ namespace gameswf
 			as_as_function*	m_as_function_value;
 			struct
 			{
-				as_object_interface*	m_target;
+				as_object_interface*	m_property_target;
 				as_property* m_property;
 			};
 		};
@@ -219,7 +219,6 @@ namespace gameswf
 		exported_module void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		exported_module void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
 		exported_module void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
-		exported_module void	set_as_property(as_property* prop);
 		exported_module void	set_int(int val) { set_double(val); }
 		exported_module void	set_as_object_interface(as_object_interface* obj);
 		exported_module void	set_as_c_function_ptr(as_c_function_ptr func)
@@ -233,42 +232,7 @@ namespace gameswf
 		void	set_property(const as_value& val);
 		void	get_property(as_value* val) const;
 
-		exported_module void	operator=(const as_value& v)
-		{
-			switch (v.m_type)
-			{
-				case UNDEFINED:
-					set_undefined();
-					break;
-				case NULLTYPE:
-					set_null();
-					break;
-				case BOOLEAN:
-					set_bool(v.m_boolean_value);
-					break;
-				case STRING:
-					set_tu_string(v.m_string_value);
-					break;
-				case NUMBER:
-					set_double(v.m_number_value);
-					break;
-				case OBJECT:
-					set_as_object_interface(v.m_object_value);
-					break;
-				case C_FUNCTION:
-					set_as_c_function_ptr(v.m_c_function_value);
-					break;
-				case AS_FUNCTION:
-					set_as_as_function(v.m_as_function_value);
-					break;
-				case PROPERTY:
-					set_as_property(v.m_property);
-					break;
-				default:
-					assert(0);
-			}
-		}
-
+		exported_module void	operator=(const as_value& v);
 		exported_module bool	operator==(const as_value& v) const;
 		exported_module bool	operator!=(const as_value& v) const;
 		exported_module bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
