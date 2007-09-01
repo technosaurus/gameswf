@@ -85,6 +85,7 @@ namespace gameswf
 		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, int size, 
 			int channels, int freq);
 
+		virtual void pause(int sound_handle, bool paused);
 	};
 
 	// Used to hold the sounddata
@@ -112,6 +113,7 @@ namespace gameswf
 		void append(void* data, int size, SDL_sound_handler* handler);
 		void play(int loops, SDL_sound_handler* handler);
 		bool mix(Uint8* stream, int len);
+		void pause(bool paused);
 
 //	private:
 
@@ -123,6 +125,7 @@ namespace gameswf
 		int m_sample_rate;
 		bool m_stereo;
 		array < smart_ptr<active_sound> > m_playlist;
+		bool m_is_paused;
 	};
 
 
@@ -352,7 +355,6 @@ namespace gameswf
 
 		int m_decoded;
 		SDL_sound_handler* m_handler;
-
 	};
 
 }

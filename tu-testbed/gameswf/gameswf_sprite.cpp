@@ -179,11 +179,15 @@ namespace gameswf
 	void	sprite_instance::set_play_state(play_state s)
 	// Stop or play the sprite.
 	{
-		//			if (m_play_state != s)
-		//			{
-		//				m_time_remainder = 0;
-		//			}
-
+		// pauses stream sound
+		sound_handler* sound = get_sound_handler();
+		if (sound)
+		{
+			if (m_def->m_ss_id >= 0)
+			{
+				sound->pause(m_def->m_ss_id, m_play_state == PLAY ? true : false);
+			}
+		}
 		m_play_state = s;
 	}
 
