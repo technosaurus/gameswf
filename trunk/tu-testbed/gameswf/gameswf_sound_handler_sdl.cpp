@@ -89,6 +89,19 @@ namespace gameswf
 		m_mutex.unlock();
 	}
 
+	void SDL_sound_handler::pause(int sound_handle, bool paused)
+	{
+		m_mutex.lock();
+
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			it->second->pause(paused);
+		}
+
+		m_mutex.unlock();
+	}
+
 	void	SDL_sound_handler::play_sound(int sound_handle, int loops)
 	// Play the index'd sample.
 	{
@@ -229,7 +242,8 @@ namespace gameswf
 		m_format(format),
 		m_sample_count(sample_count),
 		m_sample_rate(sample_rate),
-		m_stereo(stereo)
+		m_stereo(stereo),
+		m_is_paused(false)
 	{
 		if (data != NULL && size > 0)
 		{
@@ -248,6 +262,11 @@ namespace gameswf
 		m_data = (Uint8*) realloc(m_data, size + m_size);
 		memcpy(m_data + m_size, data, size);
 		m_size += size;
+	}
+
+	void sound::pause(bool paused)
+	{
+		m_is_paused = paused;
 	}
 
 	void sound::play(int loops, SDL_sound_handler* handler)
@@ -277,6 +296,11 @@ namespace gameswf
 	// called from audio callback
 	bool sound::mix(Uint8* stream, int len)
 	{
+		if (m_is_paused)
+		{
+			return true;
+		}
+
 		Uint8* buf = new Uint8[len];
 
 		bool play = false;
