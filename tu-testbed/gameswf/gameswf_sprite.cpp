@@ -60,7 +60,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("nextFrame", &sprite_next_frame);
 		s_sprite_builtins->set_member("prevFrame", &sprite_prev_frame);
 		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
-		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_loaded);
+		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_total);
 		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
 		s_sprite_builtins->set_member("duplicateMovieClip", &sprite_duplicate_movieclip);
 		s_sprite_builtins->set_member("getDepth", &sprite_get_depth);
