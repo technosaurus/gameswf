@@ -1,5 +1,10 @@
 2007-09-11  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* gameswf/gameswf_movie_def.cpp: fixed m_loaded_length,
+		it should be increased on 8 (file start position(4) + file header length(4))
+		
+2007-09-11  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf_impl.*: added SetTabIndex tag reader
 
 2007-09-11  Vitaly Alexeev <tishka92@yahoo.com>
