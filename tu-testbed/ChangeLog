@@ -1,5 +1,9 @@
 2007-09-11  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* gameswf/gameswf_impl.*: added SetTabIndex tag reader
+
+2007-09-11  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf_shape.cpp: commented out 
 		#define DEBUG_DISPLAY_SHAPE_PATH
 		it is used for debugging only

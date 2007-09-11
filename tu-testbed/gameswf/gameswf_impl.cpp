@@ -290,6 +290,7 @@ namespace gameswf
 
 //			register_tag_loader(63, define_font_info_loader);
 			register_tag_loader(64, define_enable_debugger_loader);
+			register_tag_loader(66, define_tabindex_loader);
 			register_tag_loader(69, define_file_attribute_loader);	// Flash 8
 			register_tag_loader(73, define_font_alignzones);	// DefineFontAlignZones - Flash 8
 			register_tag_loader(74, define_csm_textsetting_loader); // CSMTextSetting - Flash 8
@@ -1305,6 +1306,15 @@ namespace gameswf
 		tu_string md5_password = in->read_string();
 	}
 
+	void	define_tabindex_loader(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 66);
+
+		// for now this tag is not implemented
+		Uint16 depth = in->read_u16();
+		Uint16 tabindex = in->read_u16();
+	}
+
 	void	define_file_attribute_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// this tag defines characteristics of the SWF file (Flash 8)
 	{
@@ -1791,7 +1801,7 @@ namespace gameswf
 
 
 	void	sprite_loader(stream* in, int tag_type, movie_definition_sub* m)
-		// Create and initialize a sprite, and add it to the movie.
+	// Create and initialize a sprite, and add it to the movie.
 	{
 		assert(tag_type == 39);
 
