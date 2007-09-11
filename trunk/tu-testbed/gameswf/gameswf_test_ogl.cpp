@@ -514,7 +514,13 @@ int	main(int argc, char *argv[])
 		gameswf::set_current_root(m.get_ptr());
 
 		int	movie_version = m->get_movie_version();
+
+#ifdef _DEBUG
+		gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version);
+#else
 		IF_VERBOSE_PARSE(gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version));
+#endif
+
 		int	movie_width = m->get_movie_width();
 		int	movie_height = m->get_movie_height();
 		float	movie_fps = m->get_movie_fps();
