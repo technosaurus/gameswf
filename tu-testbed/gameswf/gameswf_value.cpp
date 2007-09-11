@@ -636,7 +636,7 @@ namespace gameswf
 
 	void	as_property::set(as_object_interface* target, const as_value& val)
 	{
-		assert(target);
+//		assert(target);
 
 		as_environment env;
 		env.push(val);
@@ -653,7 +653,7 @@ namespace gameswf
 
 	void as_property::get(as_object_interface* target, as_value* val) const
 	{
-		assert(target);
+//		assert(target);
 
 		// env is used when m_getter->m_env is NULL
 		as_environment env;

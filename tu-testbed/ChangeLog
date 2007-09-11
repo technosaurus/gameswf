@@ -1,3 +1,11 @@
+2007-09-11  Vitaly Alexeev <tishka92@yahoo.com>
+
+		* gameswf/gameswf_shape.cpp: commented out 
+		#define DEBUG_DISPLAY_SHAPE_PATH
+		it is used for debugging only
+		* gameswf/gameswf_object.cpp: fixed the target of property
+		* gameswf/gameswf_value.cpp: removed assert(..), target of property can be NULL
+		
 2007-09-09  Vitaly Alexeev <tishka92@yahoo.com>
 
 		* gameswf/gameswf_sprite.cpp: fixed typo
