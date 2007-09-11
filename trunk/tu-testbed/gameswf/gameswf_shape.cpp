@@ -25,7 +25,7 @@
 //	#define USE_NEW_TESSELATOR
 
 
-#define DEBUG_DISPLAY_SHAPE_PATHS
+//#define DEBUG_DISPLAY_SHAPE_PATHS
 #ifdef DEBUG_DISPLAY_SHAPE_PATHS
 	// For debugging only!
 	bool	gameswf_debug_show_paths = false;

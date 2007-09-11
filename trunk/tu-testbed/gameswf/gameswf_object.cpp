@@ -193,7 +193,7 @@ namespace gameswf
 					if (val->get_type() == as_value::PROPERTY)
 					{
 						// binds property (sets the target)
-						assert(val->m_property_target == NULL);
+						// target is the parent of a chain of __proto__
 						val->m_property_target = this;
 						add_ref();
 					}
