@@ -548,7 +548,9 @@ namespace gameswf
 				}
 			}
 
-			m_loaded_length = m_str->get_position();
+			// 8 is (file_start_pos(4 bytes) + header(4 bytes))
+			m_loaded_length = m_str->get_position() + 8;
+
 		}
 
 		if (m_jpeg_in)
