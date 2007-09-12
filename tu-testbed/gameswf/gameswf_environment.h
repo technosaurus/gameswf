@@ -119,11 +119,13 @@ namespace gameswf
 		// Local registers.
 		void	add_local_registers(int register_count)
 		{
-			m_local_register.resize(m_local_register.size() + register_count);
+			// Flash 8 can have zero register (+1 for zero)
+			m_local_register.resize(m_local_register.size() + register_count + 1);
 		}
 		void	drop_local_registers(int register_count)
 		{
-			m_local_register.resize(m_local_register.size() - register_count);
+			// Flash 8 can have zero register (-1 for zero)
+			m_local_register.resize(m_local_register.size() - register_count - 1);
 		}
 
 		as_value* get_register(int reg);
