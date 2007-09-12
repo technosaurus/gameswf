@@ -506,15 +506,10 @@ namespace gameswf
 		// array, so we don't have to keep base/frame
 		// pointers.
 
-		if (reg <= 0 || reg > m_local_register.size())
-		{
-			log_error("Invalid local register %d, stack only has %d entries\n",
-				  reg, m_local_register.size());
+		assert(reg >=0 && reg <= m_local_register.size());
 
-			// Fallback: use global 0.
-			return &m_global_register[0];
-		}
-		return &m_local_register[m_local_register.size() - reg];
+		// Flash 8 can have zero register (-1 for zero)
+		return &m_local_register[m_local_register.size() - reg - 1];
 	}
 
 
