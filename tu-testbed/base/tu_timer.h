@@ -7,13 +7,13 @@
 
 
 #ifndef TU_TIMER_H
-
+#define TU_TIMER_H
 
 #include "base/tu_types.h"
 
-
 namespace tu_timer
 {
+
 	// General-purpose wall-clock timer.  May not be hi-res enough
 	// for profiling.
 	uint64 get_ticks();
@@ -35,6 +35,40 @@ namespace tu_timer
 
 	// Convert a hi-res ticks value into seconds.
 	double	profile_ticks_to_seconds(uint64 profile_ticks);
+
+	// Returns the systime
+	Uint64 get_systime();
+
+	// Returns the day of the month (an integer from 1 to 31)
+	int get_date(Uint64 t);
+
+	// Returns the day of the week (0 for Sunday, 1 for Monday, and so on)
+	int get_day(Uint64 t);
+
+	// Returns the hour (an integer from 0 to 23)
+	int get_hours(Uint64 t);
+
+	// Returns the full year (a four-digit number, such as 2000)
+	int get_fullyear(Uint64 t);
+
+	// Returns the year - 1900
+	int get_year(Uint64 t);
+	
+	// Returns the milliseconds (an integer from 0 to 999)
+	int get_milli(Uint64 t);
+
+	// Returns the month (0 for January, 1 for February, and so on)
+	int get_month(Uint64 t);
+
+	// Returns the minutes (an integer from 0 to 59)
+	int get_minutes(Uint64 t);
+
+	// Returns the seconds (an integer from 0 to 59)
+	int get_seconds(Uint64 t);
+
+	// Returns the number of milliseconds since midnight January 1, 1970, universal time
+	Uint64 get_time(Uint64 t);
+
 };
 
 
