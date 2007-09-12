@@ -30,9 +30,10 @@
 #include "gameswf/gameswf_as_classes/as_textformat.h"
 #include "gameswf/gameswf_as_classes/as_string.h"
 #include "gameswf/gameswf_as_classes/as_color.h"
+#include "gameswf/gameswf_as_classes/as_date.h"
 #include "gameswf/gameswf_as_classes/as_xmlsocket.h"
 #include "gameswf/gameswf_as_classes/as_broadcaster.h"
-#include "gameswf/gameswf_as_classes/as_db.h"	// mysql db extension
+#include "gameswf/gameswf_as_classes/as_db.h"	// mysql plugin
 
 #ifdef _WIN32
 #define snprintf _snprintf
@@ -533,6 +534,7 @@ namespace gameswf
 			s_global->set_member("MovieClipLoader", as_value(as_global_mcloader_ctor));
 			s_global->set_member("String", as_value(string_ctor));
 			s_global->set_member("Color", as_value(as_global_color_ctor));
+			s_global->set_member("Date", as_value(as_global_date_ctor));
 
 			// ASSetPropFlags
 			s_global->set_member("ASSetPropFlags", as_value(as_global_assetpropflags));

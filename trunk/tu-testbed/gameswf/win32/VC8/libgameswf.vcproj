@@ -205,6 +205,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_date.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_date.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_db.cpp"
 				>
 			</File>
