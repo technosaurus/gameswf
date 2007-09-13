@@ -190,7 +190,8 @@ namespace gameswf
 		}
 
 		// Default behavior.
-		int version = env->get_target()->get_movie_definition()->get_version();
+//		int version = env->get_target()->get_movie_definition()->get_version();
+		int version = get_current_root()->get_movie_version();
 		return to_tu_string_versioned(version);
 	}
 
