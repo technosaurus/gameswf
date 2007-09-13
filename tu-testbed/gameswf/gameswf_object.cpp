@@ -194,6 +194,10 @@ namespace gameswf
 					{
 						// binds property (sets the target)
 						// target is the parent of a chain of __proto__
+						if (val->m_property_target)
+						{
+							val->m_property_target->drop_ref();
+						}
 						val->m_property_target = this;
 						add_ref();
 					}
