@@ -210,17 +210,14 @@ struct grid_index_point
 	
 	~grid_index_point()
 	{
-		for (int y = 0; y < m_y_cells; y++)
+		for (int i = 0, n = m_x_cells * m_y_cells; i < n; i++)
 		{
-			for (int x = 0; x < m_x_cells; x++)
+			grid_entry_t*	e = m_grid[i];
+			while (e)
 			{
-				grid_entry_t*	e = get_cell(x, y);
-				while (e)
-				{
-					grid_entry_t*	next = e->m_next;
-					delete e;
-					e = next;
-				}
+				grid_entry_t*	next = e->m_next;
+				delete e;
+				e = next;
 			}
 		}
 
@@ -538,17 +535,15 @@ struct grid_index_box
 		// Need to delete all entries (be careful to only
 		// delete each entry once, even though entries may be
 		// repeated many times).
-		for (iterator it = begin_all(); ! it.at_end(); ++it)
+		array<grid_entry_t*>&	cell_array = m_grid[0];
+		for (int i = 0, n = cell_array.size(); i < n; i++)
 		{
-			index_point<int>	ip = get_containing_cell_clamped(it->bound.max);
-			if (ip.x == it.m_current_cell_x && ip.y == it.m_current_cell_y)
+			grid_entry_t*	e = cell_array[i];
+			if (e)
 			{
-				// This is the last time this entry
-				// appears in the index.  Delete it.
-				delete it.m_current_entry;
+				delete e;
 			}
 		}
-
 		delete [] m_grid;
 	}
 
@@ -747,13 +742,10 @@ struct grid_index_box
 		new_entry->value = p;
 
 		// Add it to all cells it overlaps with.
-		for (int iy = ib.min.y; iy <= ib.max.y; iy++)
+		for (int i = 0, n = m_x_cells * m_y_cells; i < n; i++)
 		{
-			for (int ix = ib.min.x; ix <= ib.max.x; ix++)
-			{
-				array<grid_entry_t*>*	cell_array = get_cell(ix, iy);
-				cell_array->push_back(new_entry);
-			}
+			array<grid_entry_t*>&	cell_array = m_grid[i];
+			cell_array.push_back(new_entry);
 		}
 	}
 
