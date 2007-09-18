@@ -299,17 +299,24 @@ namespace gameswf
 		}
 
 		// Check movie members.
-		if (m_target->get_member(varname, &val))
+		if (m_target)
 		{
-			return val;
+			if (m_target->get_member(varname, &val))
+			{
+				return val;
+			}
 		}
 
 
 		// Check built-in constants.
-		if (varname == "_root" || varname == "_level0")
+		if (m_target)
 		{
-			return as_value(m_target->get_root_movie());
+			if (varname == "_root" || varname == "_level0")
+			{
+				return as_value(m_target->get_root_movie());
+			}
 		}
+
 		if (varname == "_global")
 		{
 			return as_value(get_global());
