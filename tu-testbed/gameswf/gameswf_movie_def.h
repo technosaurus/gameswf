@@ -36,8 +36,6 @@ namespace gameswf
 	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
 	bool get_tag_loader(int tag_type, loader_function* lf);
 
-	bool get_break_loading();
-
 	// Extra internal interfaces added to movie_definition
 	struct movie_definition_sub : public movie_definition 
 	{
@@ -46,12 +44,14 @@ namespace gameswf
 			m_ss_format(sound_handler::FORMAT_RAW),
 			m_ss_start(-1),
 			m_frame_count(0),
-			m_loading_frame(0)
+			m_loading_frame(0),
+			m_break_loading(false)
 		{
 		}
 
 		~movie_definition_sub()
 		{
+			break_loading();
 			sound_handler* sound = get_sound_handler();
 			if (sound)
 			{
@@ -61,10 +61,13 @@ namespace gameswf
 
 		void	wait_frame(int frame)
 		{
-			while (frame > m_loading_frame - 1)
+			if (is_multithread())
 			{
-//				printf("wait for frame %d, loaded %d\n", frame + 1, m_loading_frame);
-				m_frame.wait();
+				while (frame > m_loading_frame - 1)
+				{
+//					printf("wait for frame %d, loaded %d\n", frame + 1, m_loading_frame);
+					m_frame.wait();
+				}
 			}
 		}
 
@@ -73,10 +76,15 @@ namespace gameswf
 			assert(m_loading_frame >= 0 && m_loading_frame <= m_frame_count);
 			return m_loading_frame; 
 		}
+
 		void	inc_loading_frame() 
 		{ 
 			m_loading_frame++;
-			signal();
+			if (is_multithread())
+			{
+//				printf("signal for frame %d\n", m_loading_frame);
+				signal();
+			}
 		}
 
 		inline int	get_frame_count() const { return m_frame_count; }
@@ -118,6 +126,11 @@ namespace gameswf
 
 		virtual create_bitmaps_flag	get_create_bitmaps() const = 0;
 		virtual create_font_shapes_flag	get_create_font_shapes() const = 0;
+		virtual bool is_multithread() const { return false; }
+
+		// it's used when user has pressed Esc button to break the loading of the .swf file
+		bool get_break_loading() const { return m_break_loading; }
+		void break_loading() { m_break_loading = true; }
 
                 // TODO: make these private!
 		// stream sound variables
@@ -126,6 +139,7 @@ namespace gameswf
 		int m_ss_start;	// start frame
 
 	private:
+
 		void	signal()
 		{
 			// printf("signal %d frames is loaded\n", m_loading_frame);
@@ -135,6 +149,7 @@ namespace gameswf
 		int	m_frame_count;
 		int	m_loading_frame;
 		tu_condition m_frame;
+		bool m_break_loading;
 	};
 
 	//
@@ -259,7 +274,7 @@ namespace gameswf
 		void	input_cached_data(tu_file* in);
 
 		virtual movie_def_impl* cast_to_movie_def_impl() { return this; }
-
+		virtual bool is_multithread() const { return m_thread != NULL; }
 	};
 
 }

@@ -18,7 +18,6 @@
 #include "base/container.h"
 #include "base/tu_file.h"
 #include "base/tu_types.h"
-#include "base/image.h"	// for logo
 #include "net/tu_net_file.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
@@ -194,50 +193,6 @@ static gameswf::key::code	translate_key(SDLKey key)
 	}
 
 	return c;
-}
-
-static void show_logo(gameswf::render_handler* render,
-											gameswf::bitmap_info* logo, int width, int height)
-{
-	glViewport(0, 0, width, height);
-	if (logo && render)
-	{
-		gameswf::matrix m;
-		gameswf::rect coords;
-		gameswf::rect uv_coords;
-		gameswf::rgba color;
-
-		m.set_identity();
-
-		coords.m_x_min  = -1.0f;
-		coords.m_x_max  = 1.0f;
-		coords.m_y_min  = -1.0f;
-		coords.m_y_max  = 1.0f;
-
-		uv_coords.m_x_min  = 0.0f;
-		uv_coords.m_x_max  = 1.0f;
-		uv_coords.m_y_min  = 0.0f;
-		uv_coords.m_y_max  = 1.0f;
-
-		color.m_a = 255;
-		color.m_r = 255;
-		color.m_g = 255;
-		color.m_b = 255;
-
-		render->draw_bitmap(m, logo, coords,	uv_coords,	color);
-		glDisable(GL_TEXTURE_2D);
-	}
-	else
-	{
-		glBegin(GL_QUADS);
-		glColor4ub(0, 0, 255, 255);
-		glVertex2f(-1.0, -1.0);
-		glVertex2f(1.0, -1.0);            
-		glColor4ub(0, 0, 0, 255);
-		glVertex2f(1.0, 1.0);
-		glVertex2f(-1.0, 1.0);
-		glEnd();
-	}
 }
 
 // TODO: clean up this interface and re-enable.
@@ -490,9 +445,9 @@ int	main(int argc, char *argv[])
 		gameswf::set_render_handler(render);
 	}
 
-
-
+	//
 	//	set_proxy("192.168.1.201", 8080);
+	//
 
 	{
 
@@ -637,21 +592,6 @@ int	main(int argc, char *argv[])
 			glPushAttrib (GL_ALL_ATTRIB_BITS);		
 		}
 
-		// show logo
-		gameswf::bitmap_info* logo = NULL;
-		image::rgb* im = image::read_jpeg("gameswf_logo.jpg");
-		if (im != NULL)
-		{
-			logo = render->create_bitmap_info_rgb(im);
-		}
-
-		if (do_render) 
-		{
-			show_logo(render, logo, width, height);
-			glDrawBuffer(GL_BACK);
-			SDL_GL_SwapBuffers();
-		}
-
 		// Mouse state.
 		int	mouse_x = 0;
 		int	mouse_y = 0;
@@ -750,10 +690,8 @@ int	main(int argc, char *argv[])
 							else if (ctrl && key == SDLK_i)
 							{
 								// Init library, for detection of memory leaks (for testing purposes)
-
+/*
 								// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
-								//						if (md) md->drop_ref();
-								//						if (m) m->drop_ref();
 								gameswf::clear_gameswf();
 
 								gameswf::set_sound_handler(NULL);
@@ -772,7 +710,7 @@ int	main(int argc, char *argv[])
 									render = gameswf::create_render_handler_ogl();
 									gameswf::set_render_handler(render);
 								}
-
+*/
 								// Load the actual movie.
 								md = gameswf::create_movie(infile);
 								if (md == NULL)
@@ -787,7 +725,6 @@ int	main(int argc, char *argv[])
 									exit(1);
 								}
 								gameswf::set_current_root(m.get_ptr());
-
 							}
 							else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))
 							{
