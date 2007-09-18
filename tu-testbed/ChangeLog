@@ -1,5 +1,9 @@
 2007-09-18  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* gameswf/gameswf_environment.cpp: target maybe NULL
+
+2007-09-18  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf_action.cpp
 		* gameswf/gameswf_movie_def.cpp
 		* gameswf/gameswf_movie_def.h
