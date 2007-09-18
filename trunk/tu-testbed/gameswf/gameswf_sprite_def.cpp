@@ -37,7 +37,8 @@
 namespace gameswf
 {
 
-	sprite_definition::sprite_definition(movie_definition_sub* m) : m_movie_def(m)
+	sprite_definition::sprite_definition(movie_definition_sub* m) : 
+		m_movie_def(m)
 	{
 		// create empty sprite_definition (it is used for createEmptyMovieClip() method)
 		if (m == NULL)
@@ -55,6 +56,7 @@ namespace gameswf
 
 	sprite_definition::~sprite_definition()
 	{
+		break_loading();
 		// Release our playlist data.
 		{for (int i = 0, n = m_playlist.size(); i < n; i++)
 		{

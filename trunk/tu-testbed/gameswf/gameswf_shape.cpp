@@ -18,7 +18,8 @@
 
 #include <float.h>
 
-#define USE_NEW_TESSELATOR
+// TODO: fix a some bugs
+// #define USE_NEW_TESSELATOR
 
 //#define DEBUG_DISPLAY_SHAPE_PATHS
 #ifdef DEBUG_DISPLAY_SHAPE_PATHS

@@ -1,3 +1,16 @@
+2007-09-18  Vitaly Alexeev <tishka92@yahoo.com>
+
+		* gameswf/gameswf_action.cpp
+		* gameswf/gameswf_movie_def.cpp
+		* gameswf/gameswf_movie_def.h
+		* gameswf/gameswf_shape.cpp
+		* gameswf/gameswf_sprite_def.cpp
+		* gameswf/gameswf_test_ogl.cpp
+		Fixed bug concerned with nonexpendable calls of create_movie()
+		(thanks Francois Guibert for bug report)
+		removed useless show_logo() stuff (it is better to use progress bar),
+		USE_NEW_TESSELATOR is switched off (there are some bugs)
+
 2007-09-16  Vitaly Alexeev <tishka92@yahoo.com>
 
 		* base/grid_index.h

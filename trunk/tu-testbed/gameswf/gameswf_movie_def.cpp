@@ -49,13 +49,6 @@ namespace gameswf
 		return s_tag_loaders.get(tag_type, lf);
 	}
 
-	// it's used when user has pressed Esc button to break the loading of the .swf file
-	static bool s_break_loading = false;
-	bool get_break_loading()
-	{
-		return s_break_loading;
-	}
-
 	void	register_tag_loader(int tag_type, loader_function lf)
 		// Associate the specified tag type with the given tag loader
 		// function.
@@ -124,10 +117,7 @@ namespace gameswf
 
 	movie_def_impl::~movie_def_impl()
 	{
-
-		// terminate thread
-		// it is used when user has pressed Esc button
-		s_break_loading = true;
+		break_loading();
 		if (m_thread)
 		{
 			m_thread->wait();
@@ -500,7 +490,10 @@ namespace gameswf
 		IF_VERBOSE_PARSE(m_frame_size.print());
 		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, get_frame_count()));
 
+		// if you want to use multithread movie loader
 		m_thread = new tu_thread(movie_def_loader, this);
+
+		// if you does not want to use multithread movie loader
 //		read_tags();
 	}
 

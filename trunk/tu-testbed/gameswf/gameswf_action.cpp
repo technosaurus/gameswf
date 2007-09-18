@@ -572,6 +572,8 @@ namespace gameswf
 	{
 		static tu_string	key_obj_name("Key");
 
+		action_init();
+
 		as_value	kval;
 		s_global->get_member(key_obj_name, &kval);
 		if (kval.get_type() == as_value::OBJECT)
