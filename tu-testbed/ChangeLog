@@ -1,5 +1,13 @@
 2007-09-21  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* gameswf/gameswf_dlist.cpp
+		* gameswf/gameswf_dlist.h
+		* gameswf/gameswf_sprite.cpp
+		* gameswf/gameswf_sprite.h
+		added dump() stuff for debugging
+
+2007-09-21  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf.h
 		* gameswf/gameswf_action.cpp
 		* gameswf/gameswf_action.h

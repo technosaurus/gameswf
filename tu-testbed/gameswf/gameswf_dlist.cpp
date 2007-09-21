@@ -631,6 +631,17 @@ namespace gameswf
 		}
 	}
 
+	void display_list::dump()
+	{
+		for (int i = 0, n = get_character_count(); i < n; i++)
+		{
+			character*	ch = get_character(i);
+			if (ch->get_name().c_str())
+			{
+				printf("%s\n", ch->get_name().c_str());
+			}
+		}
+	}
 }
 
 
