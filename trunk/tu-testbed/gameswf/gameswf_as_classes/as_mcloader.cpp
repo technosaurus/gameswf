@@ -167,31 +167,29 @@ namespace gameswf
 
 			if (listener->get_member(id.get_function_name(), &function))
 			{
-				as_environment* env = function.to_as_function()->m_env.get_ptr();
-				assert(env);
-
+				as_environment env;
 				int param_count = 0;
 				switch (id.m_id)
 				{
 					case event_id::ONLOAD_START:
 						param_count = 1;
-						env->push(id.m_target);
+						env.push(id.m_target);
 						break;
 
 					case event_id::ONLOAD_INIT:
 						param_count = 1;
-						env->push(id.m_target);
+						env.push(id.m_target);
 						break;
 
 					case event_id::ONLOAD_ERROR:
 						param_count = 2;
-						env->push("URLNotFound");	// 2-d param
-						env->push(id.m_target);	// 1-st param
+						env.push("URLNotFound");	// 2-d param
+						env.push(id.m_target);	// 1-st param
 						break;
 
 					case event_id::ONLOAD_COMPLETE:
 						param_count = 1;
-						env->push(id.m_target);
+						env.push(id.m_target);
 						break;
 
 					case event_id::ONLOAD_PROGRESS:
@@ -203,9 +201,9 @@ namespace gameswf
 						int total = m->get_file_bytes() - 8;
 						int loaded = m->get_loaded_bytes();
 						param_count = 3;	
-						env->push(total);
-						env->push(loaded);
-						env->push(id.m_target);	// 1-st param
+						env.push(total);
+						env.push(loaded);
+						env.push(id.m_target);	// 1-st param
 						break;
 					}
 
@@ -214,8 +212,7 @@ namespace gameswf
 
 				}
 
-				call_method(function, env, NULL, param_count, env->get_top_index());
-				env->drop(param_count);
+				call_method(function, &env, NULL, param_count, env.get_top_index());
 			}
 			++it;
 		}

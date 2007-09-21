@@ -364,8 +364,6 @@ int	main(int argc, char *argv[])
 			else if (argv[arg][1] == 'v')
 			{
 				// Be verbose; i.e. print log messages to stdout.
-				gameswf::set_verbose_parse(true);
-
 				if (argv[arg][2] == 'a')
 				{
 					// Enable spew re: action.

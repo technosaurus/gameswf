@@ -131,12 +131,9 @@ namespace gameswf
 				infoObject->set_member("level", level);
 				infoObject->set_member("code", code);
 
-				as_environment* env = function.to_as_function()->m_env.get_ptr();
-				assert(env);
-
-				env->push_val(infoObject.get_ptr());
-				call_method(function, env, NULL, 1, env->get_top_index());
-				env->drop(1);
+				as_environment env;
+				env.push_val(infoObject.get_ptr());
+				call_method(function, &env, NULL, 1, env.get_top_index());
 			}
 			gameswf_engine_mutex().unlock();
 		}

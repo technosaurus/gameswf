@@ -916,6 +916,14 @@ namespace gameswf
 		}
 		return NULL;
 	}
+	
+	void action_buffer::operator=(const action_buffer& ab)
+	{
+		// TODO: optimize
+		m_buffer = ab.m_buffer;
+		m_dictionary = ab.m_dictionary;
+		m_decl_dict_processed_at = ab.m_decl_dict_processed_at;
+	}
 
 	void	action_buffer::execute(
 		as_environment* env,
@@ -1099,7 +1107,14 @@ namespace gameswf
 				}
 				case 0x17:	// pop
 				{
-					env->drop(1);
+					if (env->m_stack.size() > 0)
+					{
+						env->drop(1);
+					}
+					else
+					{
+						log_error("error: empty stack\n");
+					}
 					break;
 				}
 				case 0x18:	// int
@@ -2117,7 +2132,7 @@ namespace gameswf
 
 				case 0x8E:	// function2
 				{
-					as_as_function*	func = new as_as_function(this, env, next_pc, with_stack);
+					as_as_function*	func = new as_as_function(this, next_pc, with_stack);
 					func->set_is_function2();
 
 					int	i = pc;
@@ -2321,7 +2336,7 @@ namespace gameswf
 							{
 								env->push(m_dictionary[id]);
 
-								IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", m_dictionary[id]));
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", m_dictionary[id].c_str()));
 							}
 							else
 							{
@@ -2337,7 +2352,7 @@ namespace gameswf
 							if (id < m_dictionary.size())
 							{
 								env->push(m_dictionary[id]);
-								IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", m_dictionary[id]));
+								IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", m_dictionary[id].c_str()));
 							}
 							else
 							{
@@ -2386,7 +2401,7 @@ namespace gameswf
 
 				case 0x9B:	// declare function
 				{
-					as_as_function*	func = new as_as_function(this, env, next_pc, with_stack);
+					as_as_function*	func = new as_as_function(this, next_pc, with_stack);
 
 					int	i = pc;
 					i += 3;

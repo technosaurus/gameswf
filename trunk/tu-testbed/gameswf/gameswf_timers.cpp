@@ -78,16 +78,13 @@ namespace gameswf
 
 			assert(m_func.get_type() == as_value::AS_FUNCTION);
 
-			as_environment* env = m_func.to_as_function()->m_env.get_ptr();
-			assert(env);
-
+			as_environment env;
 			int n = m_param.size();
 			for (int i = 0; i < n; i++)
 			{
-				env->push(m_param[i]);
+				env.push(m_param[i]);
 			}
-			call_method(m_func, env, NULL, n, env->get_top_index());
-			env->drop(n);
+			call_method(m_func, &env, NULL, n, env.get_top_index());
 		}
 	}
 

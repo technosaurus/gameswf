@@ -164,20 +164,21 @@ namespace gameswf
 
 		int	get_length() const { return m_buffer.size(); }
 
+		void operator=(const action_buffer& ab);
+
 	private:
 		// Don't put these as values in array<>!  They contain
 		// internal pointers and cannot be moved or copied.
 		// If you need to keep an array of them, keep pointers
 		// to new'd instances.
-		action_buffer(const action_buffer& a) { assert(0); }
-//		void operator=(const action_buffer& a) { assert(0); }
+		//action_buffer(const action_buffer& a) { assert(0); }
 
 		void	process_decl_dict(int start_pc, int stop_pc);
 		void	enumerate(as_environment* env, as_object_interface* object);
 
 		// data:
-		array<unsigned char>	m_buffer;
-		array<const char*>	m_dictionary;
+		array<Uint8>	m_buffer;
+		array<tu_string>	m_dictionary;
 		int	m_decl_dict_processed_at;
 	};
 
