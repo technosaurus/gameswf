@@ -1407,4 +1407,14 @@ namespace gameswf
 		m_is_clear_called = false;
 	}
 
+	void	sprite_instance::dump()
+	{
+		printf("\n*** sprite 0x%X ***\n", this);
+		m_as_environment.dump();
+		printf("*** displaylist\n");
+		m_display_list.dump();
+		printf("***\n");
+	}
+
+
 }

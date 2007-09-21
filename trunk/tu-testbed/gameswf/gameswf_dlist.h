@@ -131,7 +131,7 @@ namespace gameswf
 
 		void collect_garbage();
 		void clear_refs(as_object_interface* this_ptr);
-
+		void dump();
 	private:
 
 		void remove(int index);
