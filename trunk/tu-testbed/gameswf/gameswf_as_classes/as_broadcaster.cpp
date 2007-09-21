@@ -29,13 +29,13 @@ namespace gameswf
 			as_object_interface* obj = val.to_object();
 			if (obj)
 			{
-				as_array* a = obj->cast_to_as_array();
-				if (a)
+				as_listener* asl = obj->cast_to_as_listener();
+				if (asl)
 				{
-					as_value& listener = fn.arg(0);
-					if (listener.get_type() == as_value::OBJECT)
+					as_object_interface* listener = fn.arg(0).to_object();
+					if (listener)
 					{
-						a->push_back(listener);
+						asl->add(listener);
 					}
 				}
 			}
@@ -53,21 +53,10 @@ namespace gameswf
 			as_object_interface* obj = val.to_object();
 			if (obj)
 			{
-				as_array* a = obj->cast_to_as_array();
-				if (a)
+				as_listener* asl = obj->cast_to_as_listener();
+				if (asl)
 				{
-					as_value& listener = fn.arg(0);
-					for (int i = 0; i < a->size(); i++)
-					{
-						as_value index(i);
-						as_value ilistener;
-						a->get_member(index.to_tu_stringi(), &ilistener);
-						if (ilistener == listener)
-						{
-							// Decrement array length 
-							a->erase(index.to_tu_stringi());
-						}
-					}
+					asl->remove(fn.arg(0).to_object());
 				}
 			}
 		}
@@ -86,26 +75,10 @@ namespace gameswf
 			as_object_interface* obj = val.to_object();
 			if (obj)
 			{
-				as_array* a = obj->cast_to_as_array();
-				if (a)
+				as_listener* asl = obj->cast_to_as_listener();
+				if (asl)
 				{
-					tu_string event_name = fn.arg(0).to_tu_string();
-					for (int i = 0; i < a->size(); i++)
-					{
-						as_value index(i);
-						as_value val;
-						a->get_member(index.to_tu_stringi(), &val);
-						as_object_interface* listener = val.to_object();
-						if (listener)
-						{
-							as_value function;
-							if (listener->get_member(event_name, &function))
-							{
-								call_method(function, fn.env, listener,
-									fn.nargs - 1, fn.first_arg_bottom_index - 1);
-							}
-						}
-					}
+					asl->broadcast(fn);
 				}
 			}
 		}
@@ -121,7 +94,7 @@ namespace gameswf
 			as_object_interface* obj = fn.arg(0).to_object();
 			if (obj)
 			{
-				obj->set_member("_listeners", new as_array());
+				obj->set_member("_listeners", new as_listener());
 				obj->set_member("addListener", &as_broadcast_addlistener);
 				obj->set_member("removeListener", &as_broadcast_removelistener);
 				obj->set_member("broadcastMessage", &as_broadcast_sendmessage);
@@ -137,6 +110,63 @@ namespace gameswf
 		bc->set_member("initialize", &as_broadcaster_initialize);
 
 		return bc;
+	}
+
+	bool	as_listener::get_member(const tu_stringi& name, as_value* val)
+	{
+		if (name == "length")
+		{
+			val->set_int(m_listener.size());
+			return true;
+		}
+		
+		int index = atoi(name.c_str());
+		if (index >= 0 && index < m_listener.size())
+		{
+			val->set_as_object_interface(m_listener[index].get_ptr());
+			return true;
+		}
+		return false;
+	}
+
+	void as_listener::add(as_object_interface* listener)
+	{
+		m_listener.push_back(listener);
+	}
+
+	void as_listener::remove(as_object_interface* listener)
+	{
+		for (int i = 0; i < m_listener.size(); )
+		{
+			if (m_listener[i].get_ptr() == listener)
+			{
+				m_listener.remove(i);
+				continue;
+			}
+			i++;
+		}
+	}
+
+	void	as_listener::broadcast(const fn_call& fn)
+	{
+		tu_string event_name = fn.arg(0).to_tu_string();
+		for (int i = 0; i < m_listener.size(); )
+		{
+			// listener was deleted
+			if (m_listener[i].get_ptr() == NULL)
+			{
+				m_listener.remove(i);
+				continue;
+			}
+
+			as_value function;
+			if (m_listener[i]->get_member(event_name, &function))
+			{
+				call_method(function, fn.env, m_listener[i].get_ptr(),
+					fn.nargs - 1, fn.first_arg_bottom_index - 1);
+			}
+			i++;
+		}
 	}
 
 };
