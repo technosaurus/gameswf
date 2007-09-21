@@ -17,6 +17,18 @@ namespace gameswf
 	// Create built-in broadcaster object.
 	as_object* broadcaster_init();
 
+	struct as_listener : public as_object
+	{
+		array< weak_ptr<as_object_interface> > m_listener;
+
+		virtual bool	get_member(const tu_stringi& name, as_value* val);
+		virtual as_listener* cast_to_as_listener() { return this; }
+		void add(as_object_interface* listener);
+		void remove(as_object_interface* listener);
+		void	broadcast(const fn_call& fn);
+
+	};
+
 }	// end namespace gameswf
 
 
