@@ -149,15 +149,13 @@ namespace gameswf
 				watch_t watch;
 				if (m_watch.get(name, &watch))
 				{
-					watch.m_func->m_env->push(watch.m_user_data);	// params
-					watch.m_func->m_env->push(val);		// newVal
-					watch.m_func->m_env->push(it->second.get_member_value());	// oldVal
-					watch.m_func->m_env->push(name);	// property
+					as_environment env;
+					env.push(watch.m_user_data);	// params
+					env.push(val);		// newVal
+					env.push(it->second.get_member_value());	// oldVal
+					env.push(name);	// property
 
-					(*watch.m_func)(fn_call(&watch_val, this, watch.m_func->m_env.get_ptr(), 4,
-						watch.m_func->m_env->get_top_index()));
-
-					watch.m_func->m_env->drop(4);
+					(*watch.m_func)(fn_call(&watch_val, this, &env, 4, env.get_top_index()));
 				}
 				m_members.set(name, as_member(val, flags));
 			}
@@ -300,10 +298,8 @@ namespace gameswf
 				as_value	method;
 				if (get_member(method_name, &method))
 				{
-					as_environment* env = method.to_as_function()->m_env.get_ptr();
-					assert(env);
-
-					call_method(method, env, this, 0, env->get_top_index());
+					as_environment env;
+					call_method(method, &env, this, 0, env.get_top_index());
 					called = true;
 				}
 			}

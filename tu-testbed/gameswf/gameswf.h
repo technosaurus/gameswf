@@ -185,6 +185,7 @@ namespace gameswf
 	struct edit_text_character;
 	struct as_as_function;
 	struct as_date;
+	struct as_listener;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -223,6 +224,8 @@ namespace gameswf
 		virtual as_object* cast_to_as_object() { return 0; }
 		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
 		virtual as_date* cast_to_as_date() { return 0; }
+		virtual as_listener* cast_to_as_listener() { return 0; }
+
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }

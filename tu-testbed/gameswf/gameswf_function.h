@@ -11,6 +11,7 @@
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_environment.h"
 #include "gameswf/gameswf_object.h"
+#include "gameswf/gameswf_action.h"
 
 #include "base/container.h"
 #include "base/smart_ptr.h"
@@ -22,17 +23,8 @@ namespace gameswf
 
 	struct as_as_function : public ref_counted
 	{
-		action_buffer*	m_action_buffer;
+		action_buffer	m_action_buffer;
 
-		// We need to watch m_env
-		// testcase:
-		// the movie executes the following opcodes
-		// _global.x=new Object();
-		// loadMovie("another.swf", _root);
-		// the result of this:
-		// current movie will be deleted and it environment too
-		weak_ptr<as_environment>	m_env;
-		
 		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
 		int	m_start_pc;
 		int	m_length;
@@ -51,11 +43,7 @@ namespace gameswf
 		// and class properties.
 		smart_ptr<as_object>	m_properties;
 
-		// NULL environment is allowed -- if so, then
-		// functions will be executed in the caller's
-		// environment, rather than the environment where they
-		// were defined.
-		as_as_function(action_buffer* ab, as_environment* env, int start, const array<with_stack_entry>& with_stack);
+		as_as_function(action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
 		~as_as_function();
 
 		void	set_is_function2() { m_is_function2 = true; }

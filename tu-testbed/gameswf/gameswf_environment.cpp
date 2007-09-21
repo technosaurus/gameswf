@@ -490,13 +490,15 @@ namespace gameswf
 	as_value* as_environment::get_register(int reg)
 	{
 		as_value* val = local_register_ptr(reg);
-		IF_VERBOSE_ACTION(log_msg("-------------- get_register(%d): %s \n", reg, val->to_string()));
+		IF_VERBOSE_ACTION(log_msg("-------------- get_register(%d): %s at 0x%X\n", 
+			reg, val->to_string(), val->to_object()));
 		return val;
 	}
 
 	void as_environment::set_register(int reg, const as_value& val)
 	{
-		IF_VERBOSE_ACTION(log_msg("-------------- set_register(%d): %s\n", reg, val.to_string()));
+		IF_VERBOSE_ACTION(log_msg("-------------- set_register(%d): %s at 0x%X\n",
+			reg, val.to_string(), val.to_object()));
 		*local_register_ptr(reg) = val;
 	}
 
