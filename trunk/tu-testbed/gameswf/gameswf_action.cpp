@@ -466,6 +466,7 @@ namespace gameswf
 				as_member member = it.get_value();
 
 				as_prop_flags f = member.get_member_flags();
+				f.set_flags(set_true, set_false);
 				member.set_member_flags(f);
 
 				object->m_members.set(it.get_key(), member);
@@ -487,6 +488,7 @@ namespace gameswf
 					as_member member = it2.get_value();
 
 					as_prop_flags f = member.get_member_flags();
+					f.set_flags(set_true, set_false);
 					member.set_member_flags(f);
 
 					object->m_members.set((it.get_value()).get_member_value().to_string(), member);

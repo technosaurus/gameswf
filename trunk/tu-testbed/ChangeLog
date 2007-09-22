@@ -1,3 +1,12 @@
+2007-09-22  Vitaly Alexeev <tishka92@yahoo.com>
+
+		* gameswf/gameswf.h
+		* gameswf/gameswf_action.cpp
+		* gameswf/gameswf_function.cpp
+		* gameswf/gameswf_sprite.h
+		Fixed ASSetPropFlags,
+		as_as_function should use the environment of 'this_ptr' if it is
+
 2007-09-21  Vitaly Alexeev <tishka92@yahoo.com>
 
 		* gameswf/gameswf_dlist.cpp
