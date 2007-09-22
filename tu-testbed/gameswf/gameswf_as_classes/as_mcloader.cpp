@@ -67,11 +67,6 @@ namespace gameswf
 
 	void	as_mcloader_unloadclip(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
-		assert(mcl);
-                UNUSED(mcl);
-
 		if (fn.nargs == 1)
 		{
 			fn.env->load_file("", fn.arg(0));
@@ -83,11 +78,6 @@ namespace gameswf
 
 	void	as_mcloader_getprogress(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
-		assert(mcl);
-                UNUSED(mcl);
-
 		if (fn.nargs == 1)
 		{
 			as_object_interface* obj = fn.arg(0).to_object();
@@ -108,7 +98,7 @@ namespace gameswf
 	}
 
 	void	as_global_mcloader_ctor(const fn_call& fn)
-	// Constructor for ActionScript class XMLSocket
+	// Constructor for ActionScript class MovieClipLoader
 	{
 		fn.result->set_as_object_interface(new as_mcloader);
 	}
@@ -168,42 +158,30 @@ namespace gameswf
 			if (listener->get_member(id.get_function_name(), &function))
 			{
 				as_environment env;
-				int param_count = 0;
+				int param_count = 1;
 				switch (id.m_id)
 				{
 					case event_id::ONLOAD_START:
-						param_count = 1;
-						env.push(id.m_target);
-						break;
-
 					case event_id::ONLOAD_INIT:
-						param_count = 1;
-						env.push(id.m_target);
+					case event_id::ONLOAD_COMPLETE:
 						break;
 
 					case event_id::ONLOAD_ERROR:
 						param_count = 2;
 						env.push("URLNotFound");	// 2-d param
-						env.push(id.m_target);	// 1-st param
-						break;
-
-					case event_id::ONLOAD_COMPLETE:
-						param_count = 1;
-						env.push(id.m_target);
 						break;
 
 					case event_id::ONLOAD_PROGRESS:
 					{
+						param_count = 3;	
 						assert(id.m_target);
 						sprite_instance* m = id.m_target->cast_to_sprite();
 
 						// 8 is (file_start_pos(4 bytes) + header(4 bytes))
 						int total = m->get_file_bytes() - 8;
 						int loaded = m->get_loaded_bytes();
-						param_count = 3;	
 						env.push(total);
 						env.push(loaded);
-						env.push(id.m_target);	// 1-st param
 						break;
 					}
 
@@ -212,6 +190,7 @@ namespace gameswf
 
 				}
 
+				env.push(id.m_target);	// 1-st param
 				call_method(function, &env, NULL, param_count, env.get_top_index());
 			}
 			++it;

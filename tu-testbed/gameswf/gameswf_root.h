@@ -65,7 +65,7 @@ namespace gameswf
 		void remove_listener(as_object_interface* listener);
 
 		void notify(key::code k, bool down);	// keypress
-		void notify(float delta_time);	// advance
+		void advance(float delta_time);	// advance
 
 		private:
 

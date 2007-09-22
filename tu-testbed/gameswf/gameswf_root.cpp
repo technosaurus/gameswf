@@ -408,7 +408,7 @@ namespace gameswf
 		generate_mouse_button_events(&m_mouse_button_state);
 
 		// advance Action script objects
-		m_listener.notify(delta_time);
+		m_listener.advance(delta_time);
 
 		m_time_remainder += delta_time;
 		if (m_time_remainder >= m_frame_time)
@@ -537,7 +537,7 @@ namespace gameswf
 			it != m_listeners.end(); )
 		{
 			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener is dead
+			if (obj == NULL)	// listener was destroyed
 			{
 				// cleanup the garbage
 				m_listeners.erase(it);
@@ -561,13 +561,13 @@ namespace gameswf
 		}
 	}
 
-	void	listener::notify(float delta_time)
+	void	listener::advance(float delta_time)
 	{
 		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
 			it != m_listeners.end(); )
 		{
 			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener is dead
+			if (obj == NULL)	// listener was destroyed
 			{
 				// cleanup the garbage
 				m_listeners.erase(it);
