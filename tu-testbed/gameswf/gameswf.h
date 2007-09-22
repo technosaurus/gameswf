@@ -258,6 +258,8 @@ namespace gameswf
 		// Objects which have no marker is a garbage and will be deleted in advance()
 		virtual void	collect_garbage() {}
 
+		virtual as_environment*	get_environment() { return 0; }
+
 	};
 
 
