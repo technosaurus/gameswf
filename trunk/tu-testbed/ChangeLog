@@ -1,5 +1,12 @@
 2007-09-22  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* gameswf/gameswf_as_classes/as_mcloader.cpp
+		* gameswf/gameswf_root.cpp
+		* gameswf/gameswf_root.h
+		A bit cleanup
+		
+2007-09-22  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf.h
 		* gameswf/gameswf_action.cpp
 		* gameswf/gameswf_function.cpp
