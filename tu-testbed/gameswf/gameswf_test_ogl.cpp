@@ -447,6 +447,8 @@ int	main(int argc, char *argv[])
 	//	set_proxy("192.168.1.201", 8080);
 	//
 
+	// gameswf::set_use_cache_files(true);
+
 	{
 
 		// Load the actual movie.

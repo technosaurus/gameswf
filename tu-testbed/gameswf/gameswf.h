@@ -661,7 +661,7 @@ namespace gameswf
 
 	// Enable/disable attempts to read cache files (.gsc) when
 	// loading movies.
-	void	set_use_cache_files(bool use_cache);
+	exported_module void	set_use_cache_files(bool use_cache);
 
 	// @@ Hm, need to think about these creation API's.  Perhaps
 	// divide it into "low level" and "high level" calls.  Also,

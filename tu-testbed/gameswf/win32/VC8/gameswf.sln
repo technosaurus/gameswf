@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gameswf", "gameswf.vcproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgameswf", "libgameswf.vcproj", "{4EFB79AD-644B-42BF-ACE5-57CFB699E236}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gameswf_processor", "gameswf_processor.vcproj", "{CC23B8B1-4095-41AB-9758-C82A1472CB11}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,10 @@ Global
 		{4EFB79AD-644B-42BF-ACE5-57CFB699E236}.Debug|Win32.Build.0 = Debug|Win32
 		{4EFB79AD-644B-42BF-ACE5-57CFB699E236}.Release|Win32.ActiveCfg = Release|Win32
 		{4EFB79AD-644B-42BF-ACE5-57CFB699E236}.Release|Win32.Build.0 = Release|Win32
+		{CC23B8B1-4095-41AB-9758-C82A1472CB11}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CC23B8B1-4095-41AB-9758-C82A1472CB11}.Debug|Win32.Build.0 = Debug|Win32
+		{CC23B8B1-4095-41AB-9758-C82A1472CB11}.Release|Win32.ActiveCfg = Release|Win32
+		{CC23B8B1-4095-41AB-9758-C82A1472CB11}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

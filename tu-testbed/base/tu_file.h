@@ -76,7 +76,7 @@ public:
 	// A read-only memory-buffer with predefined data.
 	exported_module tu_file(memory_buffer_enum m, int size, void* data);
 
-	~tu_file();
+	exported_module ~tu_file();
 
 	// Copy remaining contents of *in into *this.
 	void copy_from(tu_file* in);

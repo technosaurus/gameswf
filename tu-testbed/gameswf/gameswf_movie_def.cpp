@@ -50,8 +50,8 @@ namespace gameswf
 	}
 
 	void	register_tag_loader(int tag_type, loader_function lf)
-		// Associate the specified tag type with the given tag loader
-		// function.
+	// Associate the specified tag type with the given tag loader
+	// function.
 	{
 		assert(s_tag_loaders.get(tag_type, NULL) == false);
 		assert(lf != NULL);
@@ -60,7 +60,7 @@ namespace gameswf
 	}
 
 	static void	dump_tag_bytes(stream* in)
-		// Log the contents of the current tag, in hex.
+	// Log the contents of the current tag, in hex.
 	{
 		static const int	ROW_BYTES = 16;
 		char	row_buf[ROW_BYTES];
@@ -101,7 +101,7 @@ namespace gameswf
 
 	movie_def_impl::movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs)
 		:
-	m_create_bitmaps(cbf),
+		m_create_bitmaps(cbf),
 		m_create_font_shapes(cfs),
 		m_frame_rate(30.0f),
 		m_version(0),
@@ -154,18 +154,16 @@ namespace gameswf
 	uint32	movie_def_impl::get_file_bytes() const { return m_file_length; }
 	uint32	movie_def_impl::get_loaded_bytes() const { return m_loaded_length; }
 
-	/* movie_def_impl */
 	create_bitmaps_flag	movie_def_impl::get_create_bitmaps() const
-		// Returns DO_CREATE_BITMAPS if we're supposed to
-		// initialize our bitmap infos, or DO_NOT_INIT_BITMAPS
-		// if we're supposed to create blank placeholder
-		// bitmaps (to be init'd later explicitly by the host
-		// program).
+	// Returns DO_CREATE_BITMAPS if we're supposed to
+	// initialize our bitmap infos, or DO_NOT_INIT_BITMAPS
+	// if we're supposed to create blank placeholder
+	// bitmaps (to be init'd later explicitly by the host
+	// program).
 	{
 		return m_create_bitmaps;
 	}
 
-	/* movie_def_impl */
 	create_font_shapes_flag	movie_def_impl::get_create_font_shapes() const
 		// Returns DO_LOAD_FONT_SHAPES if we're supposed to
 		// initialize our font shape info, or
@@ -252,7 +250,7 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::resolve_import(const char* source_url, movie_definition* source_movie)
-		// Grabs the stuff we want from the source movie.
+	// Grabs the stuff we want from the source movie.
 	{
 		// @@ should be safe, but how can we verify
 		// it?	Compare a member function pointer, or
@@ -393,19 +391,19 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::add_init_action(int sprite_id, execute_tag* e)
-		// Need to execute the given tag before entering the
-		// currently-loading frame for the first time.
-		//
-		// @@ AFAIK, the sprite_id is totally pointless -- correct?
+	// Need to execute the given tag before entering the
+	// currently-loading frame for the first time.
+	//
+	// @@ AFAIK, the sprite_id is totally pointless -- correct?
 	{
 		assert(e);
 		m_init_action_list[get_loading_frame()].push_back(e);
 	}
 
 	void	movie_def_impl::add_frame_name(const char* name)
-		// Labels the frame currently being loaded with the
-		// given name.	A copy of the name string is made and
-		// kept in this object.
+	// Labels the frame currently being loaded with the
+	// given name.	A copy of the name string is made and
+	// kept in this object.
 	{
 		tu_string	n = name;
 		assert(m_named_frames.get(n, NULL) == false);	// frame should not already have a name (?)
@@ -413,16 +411,16 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::set_jpeg_loader(jpeg::input* j_in)
-		// Set an input object for later loading DefineBits
-		// images (JPEG images without the table info).
+	// Set an input object for later loading DefineBits
+	// images (JPEG images without the table info).
 	{
 		assert(m_jpeg_in == NULL);
 		m_jpeg_in = j_in;
 	}
 
 	jpeg::input*	movie_def_impl::get_jpeg_loader()
-		// Get the jpeg input loader, to load a DefineBits
-		// image (one without table info).
+	// Get the jpeg input loader, to load a DefineBits
+	// image (one without table info).
 	{
 		return m_jpeg_in;
 	}
@@ -435,7 +433,6 @@ namespace gameswf
 		return &m_init_action_list[frame_number];
 	}
 
-	/* movie_def_impl */
 	void	movie_def_impl::read(tu_file* in)
 		// Read a .SWF movie.
 	{
@@ -598,8 +595,6 @@ namespace gameswf
 		}
 	}
 
-
-	/* movie_def_impl */
 	void	movie_def_impl::generate_font_bitmaps()
 		// Generate bitmaps for our fonts, if necessary.
 	{
@@ -613,10 +608,8 @@ namespace gameswf
 	// Increment this when the cache data format changes.
 #define CACHE_FILE_VERSION 6
 
-
-	/* movie_def_impl */
 	void	movie_def_impl::output_cached_data(tu_file* out, const cache_options& options)
-		// Dump our cached data into the given stream.
+	// Dump our cached data into the given stream.
 	{
 		// Write a little header.
 		char	header[5];
@@ -643,10 +636,8 @@ namespace gameswf
 		out->write_le16((Sint16) -1);	// end of characters marker
 	}
 
-
-	/* movie_def_impl */
 	void	movie_def_impl::input_cached_data(tu_file* in)
-		// Read in cached data and use it to prime our loaded characters.
+	// Read in cached data and use it to prime our loaded characters.
 	{
 		// Read the header & check version.
 		unsigned char	header[4];

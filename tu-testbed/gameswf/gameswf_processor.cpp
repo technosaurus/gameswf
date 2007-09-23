@@ -13,6 +13,7 @@
 #include "base/tu_file.h"
 #include "base/container.h"
 #include "gameswf/gameswf.h"
+#include "gameswf/gameswf_impl.h"
 
 
 static bool	s_verbose = false;
@@ -205,7 +206,7 @@ gameswf::movie_definition*	play_movie(const char* filename)
 //
 // Return the movie definition.
 {
-	gameswf::movie_definition*	md = gameswf::create_library_movie(filename);
+	gameswf::movie_definition*	md = gameswf::create_movie(filename);
 	if (md == NULL)
 	{
 		fprintf(stderr, "error: can't play movie '%s'\n", filename);
@@ -221,6 +222,7 @@ gameswf::movie_definition*	play_movie(const char* filename)
 	int	kick_count = 0;
 
 	// Run through the movie.
+	gameswf::set_current_root(m);
 	for (;;)
 	{
 		// @@ do we also have to run through all sprite frames
