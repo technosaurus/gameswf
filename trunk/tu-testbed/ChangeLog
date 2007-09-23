@@ -1,5 +1,16 @@
 2007-09-22  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* base/tu_file.h
+		* gameswf/gameswf.h
+		* gameswf/gameswf_movie_def.cpp
+		* gameswf/gameswf_processor.cpp
+		* gameswf/gameswf_test_ogl.cpp
+		* gameswf/win32/VC8/gameswf.sln
+		* gameswf/win32/VC8/gameswf_processor.vcproj
+		Reanimeted gameswf_processor
+
+2007-09-22  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf_as_classes/as_mcloader.cpp
 		* gameswf/gameswf_root.cpp
 		* gameswf/gameswf_root.h
