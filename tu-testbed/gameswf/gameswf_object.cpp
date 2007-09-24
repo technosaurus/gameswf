@@ -128,7 +128,7 @@ namespace gameswf
 	{
 		//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
 		as_value v;
-		if (get_member(name, &v))
+		if (as_object::get_member(name, &v))
 		{
 			if (v.get_type() == as_value::PROPERTY)
 			{
@@ -219,7 +219,7 @@ namespace gameswf
 	bool	as_object::set_member_flags(const tu_stringi& name, const int flags)
 	{
 		as_member member;
-		if (this->get_member(name, &member)) {
+		if (as_object::get_member(name, &member)) {
 			as_prop_flags f = member.get_member_flags();
 			f.set_flags(flags);
 			member.set_member_flags(f);
