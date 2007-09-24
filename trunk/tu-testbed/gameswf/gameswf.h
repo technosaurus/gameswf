@@ -131,11 +131,11 @@ namespace gameswf
 	// For stuff that's tricky to keep track of w/r/t ownership & cleanup.
 	struct ref_counted
 	{
-		ref_counted();
-		virtual ~ref_counted();
+		exported_module ref_counted();
+		exported_module virtual ~ref_counted();
 		exported_module void	add_ref() const;
 		exported_module void	drop_ref();
-		int	get_ref_count() const { return m_ref_count; }
+		exported_module int	get_ref_count() const { return m_ref_count; }
 		weak_proxy*	get_weak_proxy() const;
 
 	private:
