@@ -30,7 +30,7 @@ namespace gameswf
 	void clear_garbage();
 
 	// Dispatching methods from C++.
-	as_value	call_method(
+	exported_module as_value	call_method(
 		const as_value& method,	as_environment* env, as_object_interface* this_ptr,
 		int nargs, int first_arg_bottom_index);
 
