@@ -115,13 +115,20 @@ namespace gameswf
 
 	bool as_object::add_property(const tu_string& name, const as_value& val)
 	{
-		as_object_interface* proto = get_proto();
-		if (proto && val.get_type() == as_value::PROPERTY)
+		if (val.get_type() != as_value::PROPERTY)
 		{
-			proto->set_member(name, val);
-			return true;
+			return false;
 		}
-		return false;
+
+		as_object_interface* proto = get_proto();
+		if (proto == NULL)
+		{
+			proto = new as_object();
+			set_member("__proto__", proto);
+		}
+
+		proto->set_member(name, val);
+		return true;
 	}
 
 	bool	as_object::set_member(const tu_stringi& name, const as_value& val )
