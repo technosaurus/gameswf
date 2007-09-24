@@ -14,6 +14,13 @@
 namespace gameswf
 {
 
+	void	to_string_method(const fn_call& fn)
+	// Returns amount of the rows in the table
+	{
+		assert(fn.this_ptr);	assert(fn.env);
+		fn.result->set_string("[as_table]");
+	}
+
 	void	size_method(const fn_call& fn)
 	// Returns amount of the rows in the table
 	{
@@ -82,6 +89,7 @@ namespace gameswf
 		as_object::set_member("fields", &field_count_method);
 		as_object::set_member("goto", &goto_record_method);
 		as_object::set_member("title", &get_title_method);
+		as_object::set_member("toString", &to_string_method);
 	}
 
 	as_table::~as_table()
