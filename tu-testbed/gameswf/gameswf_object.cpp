@@ -238,33 +238,6 @@ namespace gameswf
 		return false;
 	}
 
-	void as_object::collect_garbage()
-	{
-		// Is it a reentrance ?
-		if (m_is_collector_called)
-		{
-			return;
-		}
-		m_is_collector_called = true;
-
-		if (get_garbage()->get(this, NULL))
-		{
-			get_garbage()->set(this, false);
-		}
-
-		for (stringi_hash<as_member>::const_iterator it = m_members.begin();
-			it != m_members.end(); ++it)
-		{
-			as_object_interface* obj = it->second.get_member_value().to_object();
-			if (obj)
-			{
-				obj->collect_garbage();
-			}
-		}
-
-		m_is_collector_called = false;
-	}
-
 	void	as_object::clear_refs(as_object_interface* this_ptr)
 	{
 		// Is it a reentrance ?

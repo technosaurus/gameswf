@@ -129,7 +129,6 @@ namespace gameswf
 		void swap_characters(character* ch, character* ch2);
 		int get_highest_depth();
 
-		void collect_garbage();
 		void clear_refs(as_object_interface* this_ptr);
 		void dump();
 	private:

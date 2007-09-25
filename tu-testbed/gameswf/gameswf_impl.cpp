@@ -529,6 +529,7 @@ namespace gameswf
 		else if (in->get_error())
 		{
 			log_error("error: file opener can't open '%s'\n", filename);
+			delete in;
 			return NULL;
 		}
 

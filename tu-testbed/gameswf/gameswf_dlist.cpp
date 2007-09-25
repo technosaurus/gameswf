@@ -611,16 +611,6 @@ namespace gameswf
 		return depth;
 	}
 
-	void display_list::collect_garbage()
-	{
-		for (int i = 0, n = get_character_count(); i < n; i++)
-		{
-			character*	ch = get_character(i);
-			assert(ch);
-			ch->collect_garbage();
-		}
-	}
-
 	void	display_list::clear_refs(as_object_interface* this_ptr)
 	{
 		for (int i = 0, n = get_character_count(); i < n; i++)

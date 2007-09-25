@@ -350,47 +350,6 @@ namespace gameswf
 		return m_background_color.m_a / 255.0f;
 	}
 
-	// TODO: garbage collector for multifile games
-	void movie_root::collect_garbage()
-	{
-		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
-
-		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
-			it != garbage->end(); ++it)
-		{
-			it->second = true;
-		}
-
-		// Throw GameSWF object that serve as container
-		get_global()->collect_garbage();
-		m_movie->collect_garbage();
-
-		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
-			it != garbage->end(); ++it)
-		{
-			if (it->second)
-			{
-				as_object_interface* obj = it->first.get_ptr();
-
-				// clear self refs to avoid cross-link memory leaks
-				obj->clear_refs(obj);
-
-//				if (obj->get_ref_count() > 1)
-//				{
-//					obj->dump();
-//					printf("allocated objects = %d\n", garbage->size());
-//					printf("error: 0x%X is not garbage, ref_count = %d\n", obj, obj->get_ref_count());
-//					if (obj->cast_to_sprite())
-//					{
-//						printf("name: %s\n", obj->cast_to_sprite()->get_name().c_str());
-//					}
-//				}
-
-				garbage->erase(obj);
-			}
-		}
-	}
-
 	void	movie_root::advance(float delta_time)
 	{
 		// Lock gameswf engine. Video is running in separate thread and
@@ -413,6 +372,15 @@ namespace gameswf
 		m_time_remainder += delta_time;
 		if (m_time_remainder >= m_frame_time)
 		{
+
+			// mark all as garbage
+			hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
+			for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
+				it != garbage->end(); ++it)
+			{
+				it->second = true;
+			}
+
 			// this should be called infinitely to not repeat
 			// the game situation after restart
 			tu_random::next_random();
@@ -427,11 +395,26 @@ namespace gameswf
 				m_movie->on_event(event_id::LOAD);
 			}
 			m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
-		}
-		else
-		{
-			// we have free time to coolect garbage
-			collect_garbage();
+
+			// clear garbage
+			for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
+				it != garbage->end(); ++it)
+			{
+				if (it->second)
+				{
+					as_object_interface* obj = it->first.get_ptr();
+//					printf("total %d, 0x%X, ref_count=%d, %s\n",
+//						garbage->size(),
+//						obj, 
+//						obj->get_ref_count(),
+//						obj->cast_to_sprite() ? "sprite" : "object");
+
+					// clear self refs to avoid cross-link memory leaks
+					obj->clear_refs(obj);
+					garbage->erase(obj);
+				}
+			}
+
 		}
 
 		gameswf_engine_mutex().unlock();
