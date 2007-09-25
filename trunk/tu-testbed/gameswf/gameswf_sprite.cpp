@@ -107,7 +107,7 @@ namespace gameswf
 		memset(&m_init_actions_executed[0], 0,
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
-		(*get_garbage())[this] = false;
+		get_garbage()->set(this, false);
 
 	}
 
@@ -432,6 +432,20 @@ namespace gameswf
 		}
 
 		m_on_event_load_called = true;
+
+		// 'this' and its variables is not garbage
+		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
+		garbage->set(this, false);
+		for (stringi_hash<as_value>::const_iterator it = m_as_environment.m_variables.begin();
+			it != m_as_environment.m_variables.end(); ++it)
+		{
+			as_object_interface* obj = it->second.to_object();
+			if (obj)
+			{
+				garbage->set(obj, false);
+			}
+		}
+
 	}
 
 
@@ -1370,26 +1384,6 @@ namespace gameswf
 	character*	sprite_instance::find_target(const tu_string& path) const
 	{
 		return m_as_environment.find_target(path);
-	}
-
-	void sprite_instance::collect_garbage()
-	{
-		// Is it a reentrance ?
-		if (m_is_collector_called)
-		{
-			return;
-		}
-		m_is_collector_called = true;
-
-		if (get_garbage()->get(this, NULL))
-		{
-			get_garbage()->set(this, false);
-		}
-
-		m_display_list.collect_garbage();
-		m_as_environment.collect_garbage();
-
-		m_is_collector_called = false;
 	}
 
 	void	sprite_instance::clear_refs(as_object_interface* this_ptr)

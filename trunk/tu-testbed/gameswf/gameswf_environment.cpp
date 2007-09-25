@@ -743,19 +743,6 @@ namespace gameswf
 		printf("***\n");
 	}
 
-	void as_environment::collect_garbage()
-	{
-		for (stringi_hash<as_value>::const_iterator it = m_variables.begin();
-			it != m_variables.end(); ++it)
-		{
-			as_object_interface* obj = it->second.to_object();
-			if (obj)
-			{
-				obj->collect_garbage();
-			}
-		}
-	}
-
 	void	as_environment::clear_refs(as_object_interface* this_ptr)
 	{
 		for (stringi_hash<as_value>::iterator it = m_variables.begin();
