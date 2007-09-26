@@ -148,6 +148,7 @@ namespace gameswf
 	struct character_def;
 	struct sound_sample;
 	struct video_stream_definition;
+	struct sprite_definition;
 
 	// An interface for casting to different types of
 	// resources.
@@ -158,6 +159,7 @@ namespace gameswf
 		// Override in derived classes that implement corresponding interfaces.
 		virtual font* cast_to_font() { return 0; }
 		virtual character_def* cast_to_character_def() { return 0; }
+		virtual sprite_definition* cast_to_sprite_definition() { return 0; }
 		virtual sound_sample* cast_to_sound_sample() { return 0; }
 		virtual video_stream_definition* cast_to_video_stream_definition() { return 0; }
 	};

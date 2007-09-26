@@ -294,4 +294,29 @@ namespace gameswf
 		));
 	} 
 
+	// public attachMovie(id:String, name:String, depth:Number, [initObject:Object]) : MovieClip
+	// Takes a symbol from the library and attaches it to the movie clip.
+	void sprite_attach_movie(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = sprite_getptr(fn);
+
+		if (fn.nargs >= 3)
+		{
+			tu_string id = fn.arg(0).to_string();	// the exported name (sprite_definition)
+			tu_string name = fn.arg(1).to_string();	// instance name
+			int depth = (int) fn.arg(2).to_number();
+			as_object* init_obj = NULL;
+			if (fn.nargs >= 4)
+			{
+				if (fn.arg(3).to_object())
+				{
+					init_obj = fn.arg(3).to_object()->cast_to_as_object();
+				}
+			}
+			fn.result->set_as_object_interface(sprite->attach_movie(id, name, depth, init_obj));
+		}
+		fn.result->set_as_object_interface(NULL);
+	} 
+
+
 }

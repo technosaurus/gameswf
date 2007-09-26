@@ -71,6 +71,7 @@ namespace gameswf
 		s_sprite_builtins->set_member("unloadMovie", &sprite_unloadmovie);
 		s_sprite_builtins->set_member("getNextHighestDepth", &sprite_getnexthighestdepth);
 		s_sprite_builtins->set_member("createTextField", &sprite_create_text_field);
+		s_sprite_builtins->set_member("attachMovie", &sprite_attach_movie);
 
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
@@ -1399,6 +1400,53 @@ namespace gameswf
 		m_as_environment.clear_refs(this_ptr);
 		
 		m_is_clear_called = false;
+	}
+
+	sprite_instance* sprite_instance::attach_movie(const tu_string& id, 
+		const tu_string name, 
+		int depth,
+		as_object* init_obj)
+	{
+
+		// check the import.
+		movie_definition_sub*	def = get_root_movie()->get_movie_definition()->cast_to_movie_def_impl();
+		assert(def);
+		smart_ptr<resource> res = def->get_exported_resource(id);
+		if (res == NULL)
+		{
+			log_error("import error: resource '%s' is not exported\n", id.c_str());
+			return NULL;
+		}
+
+		sprite_definition* sdef = res->cast_to_sprite_definition();
+		if (sdef == NULL)
+		{
+			return NULL;
+		}
+
+		sprite_instance* sprite = new sprite_instance(sdef, get_root(), this, -1);
+
+		m_display_list.add_display_object(
+			sprite,
+			depth,
+			true,
+			m_color_transform,
+			m_matrix,
+			0.0f,
+			0); 
+
+
+		// Copy members from initObject 
+		if (init_obj)
+		{
+			for (stringi_hash<as_member>::const_iterator it = init_obj->m_members.begin(); 
+				it != init_obj->m_members.end(); ++it ) 
+			{ 
+				sprite->set_member(it->first, it->second.get_member_value()); 
+			} 
+		}
+
+		return sprite;
 	}
 
 	void	sprite_instance::dump()

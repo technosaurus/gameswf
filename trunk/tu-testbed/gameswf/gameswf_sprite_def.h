@@ -45,6 +45,7 @@ namespace gameswf
 		~sprite_definition();
 
 		// overloads from movie_definition
+		virtual sprite_definition* cast_to_sprite_definition() { return this; }
 		virtual float	get_width_pixels() const { return 1; }
 		virtual float	get_height_pixels() const { return 1; }
 		virtual float	get_frame_rate() const
