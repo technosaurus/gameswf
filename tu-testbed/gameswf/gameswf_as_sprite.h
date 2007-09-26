@@ -38,6 +38,7 @@ namespace gameswf
 	void sprite_unloadmovie(const fn_call& fn);
 	void sprite_getnexthighestdepth(const fn_call& fn);
 	void sprite_create_text_field(const fn_call& fn);
+	void sprite_attach_movie(const fn_call& fn);
 
 }
 

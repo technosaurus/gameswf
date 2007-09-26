@@ -212,6 +212,12 @@ namespace gameswf
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);
 
+		sprite_instance* attach_movie(
+			const tu_string& id,
+			const tu_string name,
+			int depth,
+			as_object* init_obj);
+
 		virtual void set_mcloader(as_mcloader* mcl);
 		virtual sprite_instance* cast_to_sprite();
 
@@ -223,7 +229,6 @@ namespace gameswf
 
 		virtual void clear_refs(as_object_interface* this_ptr);
 		virtual as_environment*	get_environment() { return &m_as_environment; }
-
 		virtual void dump();
 	};
 }
