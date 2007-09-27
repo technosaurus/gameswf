@@ -1148,7 +1148,7 @@ namespace gameswf
 	}
 
 
-	character*	sprite_instance::clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object)
+	character*	sprite_instance::clone_display_object(const tu_string& newname, Uint16 depth)
 	// Duplicate the object with the specified name and add it with a new name 
 	// at a new depth.
 	{
@@ -1180,16 +1180,6 @@ namespace gameswf
 				get_matrix(), 
 				get_ratio(), 
 				get_clip_depth()); 
-
-			// Copy members from initObject 
-			if (init_object)
-			{
-				for (stringi_hash<as_member>::const_iterator it = init_object->m_members.begin(); 
-					it != init_object->m_members.end(); ++it ) 
-				{ 
-					ch->set_member(it->first, it->second.get_member_value()); 
-				} 
-			}
 
 		} 
 		return ch;
@@ -1404,8 +1394,7 @@ namespace gameswf
 
 	sprite_instance* sprite_instance::attach_movie(const tu_string& id, 
 		const tu_string name, 
-		int depth,
-		as_object* init_obj)
+		int depth)
 	{
 
 		// check the import.
@@ -1434,17 +1423,6 @@ namespace gameswf
 			m_matrix,
 			0.0f,
 			0); 
-
-
-		// Copy members from initObject 
-		if (init_obj)
-		{
-			for (stringi_hash<as_member>::const_iterator it = init_obj->m_members.begin(); 
-				it != init_obj->m_members.end(); ++it ) 
-			{ 
-				sprite->set_member(it->first, it->second.get_member_value()); 
-			} 
-		}
 
 		return sprite;
 	}

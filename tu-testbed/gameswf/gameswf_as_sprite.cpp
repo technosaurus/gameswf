@@ -190,24 +190,24 @@ namespace gameswf
 	void sprite_duplicate_movieclip(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
-		if (fn.nargs < 2) 
+		if (fn.nargs >= 2) 
 		{ 
-			log_error("duplicateMovieClip needs 2 or 3 args\n"); 
-			return; 
+			character* ch = sprite->clone_display_object(
+				fn.arg(0).to_tu_string(), 
+				(int) fn.arg(1).to_number());
+
+			if (fn.nargs == 3) 
+			{ 
+				as_object_interface* init_object = fn.arg(2).to_object();
+				if (init_object)
+				{
+					init_object->copy_members(ch);
+				}
+			} 
+			fn.result->set_as_object_interface(ch); 
+			return;
 		} 
-
-		as_object* init_object = NULL;
-		if (fn.nargs == 3) 
-		{ 
-			init_object = fn.arg(2).to_object()->cast_to_as_object(); 
-		} 
-
-		character* ch = sprite->clone_display_object(
-			fn.arg(0).to_tu_string(), 
-			(int) fn.arg(1).to_number(),
-			init_object);
-
-		fn.result->set_as_object_interface(ch); 
+		log_error("duplicateMovieClip needs 2 or 3 args\n"); 
 	} 
 
 	void sprite_get_depth(const fn_call& fn)
@@ -305,18 +305,20 @@ namespace gameswf
 			tu_string id = fn.arg(0).to_string();	// the exported name (sprite_definition)
 			tu_string name = fn.arg(1).to_string();	// instance name
 			int depth = (int) fn.arg(2).to_number();
-			as_object* init_obj = NULL;
+			sprite_instance* ch = sprite->attach_movie(id, name, depth);
+
 			if (fn.nargs >= 4)
 			{
-				if (fn.arg(3).to_object())
+				as_object_interface* init_object = fn.arg(3).to_object();
+				if (init_object)
 				{
-					init_obj = fn.arg(3).to_object()->cast_to_as_object();
+					init_object->copy_members(ch);
 				}
 			}
-			fn.result->set_as_object_interface(sprite->attach_movie(id, name, depth, init_obj));
+			fn.result->set_as_object_interface(ch);
+			return;
 		}
-		fn.result->set_as_object_interface(NULL);
+		log_error("attachMovie needs 3 or 4 args\n"); 
 	} 
-
 
 }

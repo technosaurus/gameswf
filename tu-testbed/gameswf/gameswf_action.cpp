@@ -1224,8 +1224,7 @@ namespace gameswf
 					{
 						target->clone_display_object(
 							env->top(1).to_tu_string(),
-							(int) env->top(0).to_number(),
-							NULL);
+							(int) env->top(0).to_number());
 					}
 
 					env->drop(3);

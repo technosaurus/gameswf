@@ -340,6 +340,19 @@ namespace gameswf
 		return false;
 	}
 
+	void as_object::copy_members(as_object_interface* target)
+	// Copy members from initObject 
+	{
+		if (target)
+		{
+			for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
+				it != m_members.end(); ++it ) 
+			{ 
+				target->set_member(it->first, it->second.get_member_value()); 
+			} 
+		}
+	}
+
 	void as_object::dump()
 	// for debugging
 	// retrieves members & print them
