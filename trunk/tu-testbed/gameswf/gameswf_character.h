@@ -210,7 +210,7 @@ namespace gameswf
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 		virtual void	do_actions(const array<action_buffer*>& action_list) { assert(0); }
 
-		virtual character*	clone_display_object(const tu_string& newname, Uint16 depth, as_object* init_object)
+		virtual character*	clone_display_object(const tu_string& newname, Uint16 depth)
 		{
 			assert(0);
 			return NULL; 

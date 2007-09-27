@@ -257,6 +257,7 @@ namespace gameswf
 		virtual void clear_refs(as_object_interface* this_ptr) {}
 
 		virtual as_environment*	get_environment() { return 0; }
+		virtual void copy_members(as_object_interface* target) {}
 
 	};
 
