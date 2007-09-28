@@ -52,6 +52,20 @@ namespace gameswf
 			}
 		}
 
+		as_object_interface* this_ptr = env->m_target;
+		if (fn.this_ptr)
+		{
+			if (env->m_instance.get_ptr())
+			{
+				this_ptr = env->m_instance.get_ptr();
+			}
+			else
+			{
+				this_ptr = fn.this_ptr;
+			}
+		}
+
+
 		// Set up local stack frame, for parameters and locals.
 		int	local_stack_top = env->get_local_frame_top();
 		env->add_frame_barrier();
@@ -68,11 +82,11 @@ namespace gameswf
 				env->add_local(m_args[i].m_name, fn.arg(i));
 			}
 
+			env->set_local("this", this_ptr);
+
+			// Put 'super' in a local var.
 			if (fn.this_ptr)
 			{
-				env->set_local("this", fn.this_ptr);
-
-				// Put 'super' in a local var.
 				env->add_local("super", fn.this_ptr->get_proto());
 			}
 		}
@@ -103,11 +117,11 @@ namespace gameswf
 			// Handle the implicit args.
 			int	current_reg = 1;
 
-			as_object_interface* this_ptr = fn.this_ptr ? fn.this_ptr : env->m_target;
 			if (m_function2_flags & 0x01)
 			{
 				// preload 'this' into a register.
-				IF_VERBOSE_ACTION(log_msg("-------------- preload this=0x%X to register %d\n", this_ptr, current_reg));
+				IF_VERBOSE_ACTION(log_msg("-------------- preload this=0x%X to register %d\n",
+					this_ptr, current_reg));
 				env->set_register(current_reg, this_ptr);
 				current_reg++;
 
@@ -157,7 +171,8 @@ namespace gameswf
 			if (m_function2_flags & 0x10)
 			{
 				// Put 'super' in a register.
-				IF_VERBOSE_ACTION(log_msg("-------------- preload super=0x%X to register %d\n", fn.this_ptr->get_proto(), current_reg));
+				IF_VERBOSE_ACTION(log_msg("-------------- preload super=0x%X to register %d\n",
+					fn.this_ptr->get_proto(), current_reg));
 				env->set_register(current_reg, fn.this_ptr->get_proto());
 				current_reg++;
 			}

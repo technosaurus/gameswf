@@ -1842,7 +1842,7 @@ namespace gameswf
 									result = call_method(
 									constructor,
 									env,
-									env->m_instance.get_ptr(),
+									obj,
 									nargs,
 									env->get_top_index() - 3);
 								}

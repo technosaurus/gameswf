@@ -58,7 +58,6 @@ namespace gameswf
 		bool m_on_event_load_called;
 		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
 
-		bool m_is_collector_called;
 		bool m_is_clear_called;
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
