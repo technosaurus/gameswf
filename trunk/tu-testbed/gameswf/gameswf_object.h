@@ -28,12 +28,17 @@ namespace gameswf
 		// a specified property of object changes.
 		// TODO: create container based on stringi_hash<as_value>
 		// watch should be coomon
-		typedef struct watch_t
+		struct as_watch
 		{
+			as_watch() :	m_func(NULL)
+			{
+			}
+
 			as_as_function* m_func;
 			as_value m_user_data;
 		};
-		stringi_hash<watch_t>	m_watch;
+
+		stringi_hash<as_watch>	m_watch;
 		
 		bool m_is_collector_called;
 		bool m_is_clear_called;

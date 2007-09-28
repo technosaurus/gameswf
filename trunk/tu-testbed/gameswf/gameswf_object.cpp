@@ -131,39 +131,45 @@ namespace gameswf
 		return true;
 	}
 
-	bool	as_object::set_member(const tu_stringi& name, const as_value& val )
+	bool	as_object::set_member(const tu_stringi& name, const as_value& new_val)
 	{
-		//printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
-		as_value v;
-		if (as_object::get_member(name, &v))
+//		printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
+		as_value val(new_val);
+		as_value old_val;
+		if (as_object::get_member(name, &old_val))
 		{
-			if (v.get_type() == as_value::PROPERTY)
+			if (old_val.get_type() == as_value::PROPERTY)
 			{
-				v.set_property(val);
+				old_val.set_property(val);
 				return true;
 			}
+		}
+
+		// try watch
+		as_watch watch;
+		if (m_watch.get(name, &watch) == false)
+		{
+			// Whether there is a watcher of all ? gameSWF extension!
+			m_watch.get("*", &watch);	
+		}
+
+		if (watch.m_func)
+		{
+			as_environment env;
+			env.push(watch.m_user_data);	// params
+			env.push(val);		// newVal
+			env.push(old_val);	// oldVal
+			env.push(name);	// property
+			val.set_undefined();
+			(*watch.m_func)(fn_call(&val, this, &env, 4, env.get_top_index()));
 		}
 
 		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
 		if (it != this->m_members.end())
 		{
 			const as_prop_flags flags = (it.get_value()).get_member_flags();
-
 			// is the member read-only ?
-			if (!flags.get_read_only())
 			{
-				as_value watch_val;
-				watch_t watch;
-				if (m_watch.get(name, &watch))
-				{
-					as_environment env;
-					env.push(watch.m_user_data);	// params
-					env.push(val);		// newVal
-					env.push(it->second.get_member_value());	// oldVal
-					env.push(name);	// property
-
-					(*watch.m_func)(fn_call(&watch_val, this, &env, 4, env.get_top_index()));
-				}
 				m_members.set(name, as_member(val, flags));
 			}
 		}
@@ -322,7 +328,7 @@ namespace gameswf
 			return false;
 		}
 
-		watch_t watch;
+		as_watch watch;
 		watch.m_func = callback;
 		watch.m_user_data = user_data;
 		m_watch.add(name, watch);
@@ -331,7 +337,7 @@ namespace gameswf
 
 	bool as_object::unwatch(const tu_string& name)
 	{
-		watch_t watch;
+		as_watch watch;
 		if (m_watch.get(name, &watch))
 		{
 			m_watch.erase(name);
