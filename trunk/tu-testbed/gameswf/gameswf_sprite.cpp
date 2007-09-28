@@ -92,7 +92,6 @@ namespace gameswf
 		m_mouse_state(UP),
 		m_enabled(true),
 		m_on_event_load_called(false),
-		m_is_collector_called(false),
 		m_is_clear_called(false)
 	{
 		assert(m_def != NULL);

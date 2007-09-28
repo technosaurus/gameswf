@@ -96,7 +96,6 @@ namespace gameswf
 	}
 
 	as_object::as_object() :
-		m_is_collector_called(false),
 		m_is_clear_called(false)
 	{
 		set_member("addProperty", as_object_addproperty);
