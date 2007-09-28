@@ -1414,6 +1414,7 @@ namespace gameswf
 		}
 
 		sprite_instance* sprite = new sprite_instance(sdef, get_root(), this, -1);
+		sprite->set_name(name.c_str());
 
 		m_display_list.add_display_object(
 			sprite,

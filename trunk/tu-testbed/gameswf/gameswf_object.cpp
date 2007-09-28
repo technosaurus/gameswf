@@ -147,12 +147,7 @@ namespace gameswf
 
 		// try watch
 		as_watch watch;
-		if (m_watch.get(name, &watch) == false)
-		{
-			// Whether there is a watcher of all ? gameSWF extension!
-			m_watch.get("*", &watch);	
-		}
-
+		m_watch.get(name, &watch);
 		if (watch.m_func)
 		{
 			as_environment env;
