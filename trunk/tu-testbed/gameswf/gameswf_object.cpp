@@ -184,6 +184,16 @@ namespace gameswf
 		return NULL;
 	}
 
+	as_object_interface* as_object::get_this()
+	{
+		as_member m;
+		if (m_members.get("__this__", &m))
+		{
+			return m.get_member_value().to_object();
+		}
+		return NULL;
+	}
+
 	bool	as_object::get_member(const tu_stringi& name, as_value* val)
 	{
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
@@ -350,6 +360,17 @@ namespace gameswf
 			{ 
 				target->set_member(it->first, it->second.get_member_value()); 
 			} 
+		}
+	}
+
+	// for passing the pointer of new instance of class to constructor chain
+	void as_object::set_this(as_object* this_ptr)
+	{
+		as_object_interface* proto = get_proto();
+		if (proto)
+		{
+			proto->set_member("__this__", this_ptr);
+			proto->cast_to_as_object()->set_this(this_ptr);
 		}
 	}
 

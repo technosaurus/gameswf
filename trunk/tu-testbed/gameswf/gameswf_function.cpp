@@ -55,11 +55,8 @@ namespace gameswf
 		as_object_interface* this_ptr = env->m_target;
 		if (fn.this_ptr)
 		{
-			if (env->m_instance.get_ptr())
-			{
-				this_ptr = env->m_instance.get_ptr();
-			}
-			else
+			this_ptr = fn.this_ptr->get_this();
+			if (this_ptr == NULL)
 			{
 				this_ptr = fn.this_ptr;
 			}

@@ -237,6 +237,10 @@ namespace gameswf
 		// __proto__ is a function object !!!
 		virtual as_object_interface* get_proto() { return 0; }
 
+		// retrieves the reference(__this__ ) to the pointer of new instance of class
+		// for prototype object only
+		virtual as_object_interface* get_this() { return 0; }
+
 		// Registers an event handler to be invoked when a specified property changes.
 		virtual bool watch(const tu_string& name,	as_as_function* callback, const as_value& user_data)
 		{
