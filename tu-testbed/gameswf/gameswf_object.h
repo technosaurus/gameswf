@@ -55,11 +55,13 @@ namespace gameswf
 		exported_module virtual as_object* cast_to_as_object() { return this; }
 		exported_module virtual	void enumerate(as_environment* env);
 		exported_module virtual as_object_interface* get_proto();
+		exported_module virtual as_object_interface* get_this();
 		exported_module virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
 		exported_module virtual bool unwatch(const tu_string& name);
 		exported_module virtual void clear_refs(as_object_interface* this_ptr);
 		exported_module virtual void copy_members(as_object_interface* target);
 		exported_module bool add_property(const tu_string& name, const as_value& val);
+		exported_module void set_this(as_object* this_ptr);
 		exported_module void dump();
 	};
 
