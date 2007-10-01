@@ -23,7 +23,7 @@ namespace gameswf
 		as_color(character* target);
 		virtual as_color* cast_to_as_color() { return this; }
 
-		smart_ptr<character> m_target;
+		weak_ptr<character> m_target;
 		cxform	m_cxform;	// original cxform
 	};
 

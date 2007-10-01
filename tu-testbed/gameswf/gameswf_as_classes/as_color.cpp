@@ -30,35 +30,53 @@ namespace gameswf
 	{
 		assert(fn.this_ptr);
 		as_color* obj = fn.this_ptr->cast_to_as_color();
-		assert(obj);
-		assert(obj->m_target != NULL);
+		if (obj == NULL)
+		{
+			return;
+		}
+		
+		if (obj->m_target == NULL)
+		{
+			return;
+		}
 
 		cxform	cx = obj->m_target->get_cxform();
 		Uint8 r = (Uint8) ceil(cx.m_[0][0] * 255.0f);
 		Uint8 g = (Uint8) ceil(cx.m_[1][0] * 255.0f);
 		Uint8 b = (Uint8) ceil(cx.m_[2][0] * 255.0f);
+
 		fn.result->set_int(r << 16 | g << 8 | b);
 	}
 
 	void	as_color_setRGB(const fn_call& fn)
 	{
-		if (fn.nargs == 1)
+		if (fn.nargs < 1)
 		{
-			assert(fn.this_ptr);
-			as_color* obj = fn.this_ptr->cast_to_as_color();
-			assert(obj);
-			assert(obj->m_target != NULL);
+			return;
+		}
 
-			cxform	cx = obj->m_target->get_cxform();
-			int rgb = (int) fn.arg(0).to_number();
-			Uint8 r = (rgb >> 16) & 0xFF;
-			Uint8 g = (rgb >> 8) & 0xFF;
-			Uint8 b = rgb & 0xFF;
-			cx.m_[0][0] = float(r) / 255.0f;
-			cx.m_[1][0] = float(g) / 255.0f;
-			cx.m_[2][0] = float(b) / 255.0f;
-			obj->m_target->set_cxform(cx);
-		}		
+		assert(fn.this_ptr);
+		as_color* obj = fn.this_ptr->cast_to_as_color();
+
+		if (obj == NULL)
+		{
+			return;
+		}
+			
+		if (obj->m_target == NULL)
+		{
+			return;
+		}
+
+		cxform	cx = obj->m_target->get_cxform();
+		int rgb = (int) fn.arg(0).to_number();
+		Uint8 r = (rgb >> 16) & 0xFF;
+		Uint8 g = (rgb >> 8) & 0xFF;
+		Uint8 b = rgb & 0xFF;
+		cx.m_[0][0] = float(r) / 255.0f;
+		cx.m_[1][0] = float(g) / 255.0f;
+		cx.m_[2][0] = float(b) / 255.0f;
+		obj->m_target->set_cxform(cx);
 	}
 
 	// TODO: Fix gettransform()
@@ -66,8 +84,16 @@ namespace gameswf
 	{
 		assert(fn.this_ptr);
 		as_color* obj = fn.this_ptr->cast_to_as_color();
-		assert(obj);
-		assert(obj->m_target != NULL);
+
+		if (obj == NULL)
+		{
+			return;
+		}
+			
+		if (obj->m_target == NULL)
+		{
+			return;
+		}
 
 		cxform	cx = obj->m_target->get_cxform();
 		Uint8 r = (Uint8) ceil(cx.m_[0][0] * 255.0f);
@@ -84,67 +110,78 @@ namespace gameswf
 		tobj->set_member("bb", b);	// value	(-255..255)
 		tobj->set_member("aa", a / 255.0f * 100.0f);	// percent (-100..100)
 		tobj->set_member("ab", a);	// value	(-255..255)
+
 		fn.result->set_as_object_interface(tobj);
 	}
 
 	void	as_color_settransform(const fn_call& fn)
 	{
-		if (fn.nargs == 1)
+		if (fn.nargs < 1)
 		{
-			assert(fn.this_ptr);
-			as_color* obj = fn.this_ptr->cast_to_as_color();
-			assert(obj);
-			assert(obj->m_target != NULL);
+			return;
+		}
 
-			assert(fn.arg(0).to_object());
-			as_object* tobj = fn.arg(0).to_object()->cast_to_as_object();
-			if (tobj)
+		assert(fn.this_ptr);
+		as_color* obj = fn.this_ptr->cast_to_as_color();
+
+		if (obj == NULL)
+		{
+			return;
+		}
+			
+		if (obj->m_target == NULL)
+		{
+			return;
+		}
+
+		assert(fn.arg(0).to_object());
+		as_object* tobj = fn.arg(0).to_object()->cast_to_as_object();
+		if (tobj)
+		{
+			cxform	cx = obj->m_cxform;
+			as_value v;
+
+			if (tobj->get_member("ra", &v))
 			{
-				cxform	cx = obj->m_cxform;
-				as_value v;
-
-				if (tobj->get_member("ra", &v))
-				{
-					cx.m_[0][0] *= float(v.to_number()) / 100.0f;
-				}
-				else
-				if (tobj->get_member("rb", &v))
-				{
-					cx.m_[0][0] = float(v.to_number()) / 255.0f;
-				}
-
-				if (tobj->get_member("ga", &v))
-				{
-					cx.m_[1][0] *= float(v.to_number()) / 100.0f;
-				}
-				else
-				if (tobj->get_member("gb", &v))
-				{
-					cx.m_[1][0] = float(v.to_number()) / 255.0f;
-				}
-
-				if (tobj->get_member("ba", &v))
-				{
-					cx.m_[2][0] *= float(v.to_number()) / 100.0f;
-				}
-				else
-				if (tobj->get_member("bb", &v))
-				{
-					cx.m_[2][0] = float(v.to_number()) / 255.0f;
-				}
-
-				if (tobj->get_member("aa", &v))
-				{
-					cx.m_[3][0] *= float(v.to_number()) / 100.0f;
-				}
-				else
-				if (tobj->get_member("ab", &v))
-				{
-					cx.m_[3][0] = float(v.to_number()) / 255.0f;
-				}
-
-				obj->m_target->set_cxform(cx);
+				cx.m_[0][0] *= float(v.to_number()) / 100.0f;
 			}
+			else
+			if (tobj->get_member("rb", &v))
+			{
+				cx.m_[0][0] = float(v.to_number()) / 255.0f;
+			}
+
+			if (tobj->get_member("ga", &v))
+			{
+				cx.m_[1][0] *= float(v.to_number()) / 100.0f;
+			}
+			else
+			if (tobj->get_member("gb", &v))
+			{
+				cx.m_[1][0] = float(v.to_number()) / 255.0f;
+			}
+
+			if (tobj->get_member("ba", &v))
+			{
+				cx.m_[2][0] *= float(v.to_number()) / 100.0f;
+			}
+			else
+			if (tobj->get_member("bb", &v))
+			{
+				cx.m_[2][0] = float(v.to_number()) / 255.0f;
+			}
+
+			if (tobj->get_member("aa", &v))
+			{
+				cx.m_[3][0] *= float(v.to_number()) / 100.0f;
+			}
+			else
+			if (tobj->get_member("ab", &v))
+			{
+				cx.m_[3][0] = float(v.to_number()) / 255.0f;
+			}
+
+			obj->m_target->set_cxform(cx);
 		}		
 	}
 
@@ -159,4 +196,6 @@ namespace gameswf
 		set_member("getTransform", &as_color_gettransform);
 		set_member("setTransform", &as_color_settransform);
 	}
+
+
 };
