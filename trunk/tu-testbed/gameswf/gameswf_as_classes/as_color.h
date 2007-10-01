@@ -20,10 +20,11 @@ namespace gameswf
 
 	struct as_color : public as_object
 	{
-		as_color();
+		as_color(character* target);
 		virtual as_color* cast_to_as_color() { return this; }
 
 		smart_ptr<character> m_target;
+		cxform	m_cxform;	// original cxform
 	};
 
 }	// end namespace gameswf

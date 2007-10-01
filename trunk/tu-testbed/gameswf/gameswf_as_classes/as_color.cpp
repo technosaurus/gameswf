@@ -10,16 +10,17 @@
 
 namespace gameswf
 {
+
+	// Color(target:Object)
 	void	as_global_color_ctor(const fn_call& fn)
 	{
 		if (fn.nargs == 1)
 		{
-			smart_ptr<as_color>	obj = new as_color;
-
-			assert(fn.arg(0).get_type() == as_value::OBJECT);
-			assert(fn.arg(0).to_object());
-			obj->m_target = fn.arg(0).to_object()->cast_to_character();
-			assert(obj->m_target != NULL);
+			smart_ptr<as_color>	obj;
+			if (fn.arg(0).to_object())
+			{
+				obj = new as_color(fn.arg(0).to_object()->cast_to_character());
+			}
 			fn.result->set_as_object_interface(obj.get_ptr());
 		}
 	}
@@ -60,6 +61,7 @@ namespace gameswf
 		}		
 	}
 
+	// TODO: Fix gettransform()
 	void	as_color_gettransform(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
@@ -98,7 +100,7 @@ namespace gameswf
 			as_object* tobj = fn.arg(0).to_object()->cast_to_as_object();
 			if (tobj)
 			{
-				cxform	cx = obj->m_target->get_cxform();
+				cxform	cx = obj->m_cxform;
 				as_value v;
 
 				if (tobj->get_member("ra", &v))
@@ -146,8 +148,12 @@ namespace gameswf
 		}		
 	}
 
-	as_color::as_color()
+	as_color::as_color(character* target) :
+		m_target(target)
 	{
+		assert(target);
+		m_cxform = target->get_cxform();
+
 		set_member("getRGB", &as_color_getRGB);
 		set_member("setRGB", &as_color_setRGB);
 		set_member("getTransform", &as_color_gettransform);
