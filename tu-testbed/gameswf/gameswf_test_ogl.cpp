@@ -870,22 +870,21 @@ int	main(int argc, char *argv[])
 
 			m->notify_mouse_state(mouse_x, mouse_y, mouse_buttons);
 
-			{
-				//			Uint32 t = SDL_GetTicks();
-				m->advance(delta_t * speed_scale);
-				//			printf("advance time %d\n", SDL_GetTicks()-t);
-			}
+			Uint32 t_advance = SDL_GetTicks();
+			m->advance(delta_t * speed_scale);
+			t_advance = SDL_GetTicks() - t_advance;
 
 			if (do_render)
 			{
 				glDisable(GL_DEPTH_TEST);	// Disable depth testing.
 				glDrawBuffer(GL_BACK);
 			}
-			{
-				//			Uint32 t = SDL_GetTicks();
-				m->display();
-				//			printf("display time %d\n", SDL_GetTicks()-t);
-			}
+
+			Uint32 t_display = SDL_GetTicks();
+			m->display();
+			t_display = SDL_GetTicks() - t_display;
+
+			//printf("advance time: %d, display time %d\n", t_advance, t_display);
 
 			frame_counter++;
 

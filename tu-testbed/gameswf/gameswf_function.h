@@ -21,7 +21,7 @@ namespace gameswf
 	struct as_environment;
 	struct as_object;
 
-	struct as_as_function : public ref_counted
+	struct as_as_function : public resource
 	{
 		action_buffer	m_action_buffer;
 
@@ -60,8 +60,11 @@ namespace gameswf
 
 		void	set_length(int len) { assert(len >= 0); m_length = len; }
 
+		virtual as_as_function* cast_to_as_function() { return this; }
+
 		// Dispatch.
 		void	operator()(const fn_call& fn);
+
 	};
 
 }
