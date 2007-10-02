@@ -1638,7 +1638,16 @@ namespace gameswf
 						env->top(0).set_string("boolean");
 						break;
 					case as_value::OBJECT:
+						if (env->top(0).to_object())
+						{
+							if (env->top(0).to_object()->cast_to_sprite())
+							{
+								env->top(0).set_string("movieclip");
+								break;
+							}
+						}
 						env->top(0).set_string("object");
+
 						break;
 					case as_value::NULLTYPE:
 						env->top(0).set_string("null");
