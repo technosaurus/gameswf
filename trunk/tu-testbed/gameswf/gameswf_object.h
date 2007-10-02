@@ -39,8 +39,6 @@ namespace gameswf
 		};
 
 		stringi_hash<as_watch>	m_watch;
-		
-		bool m_is_collector_called;
 		bool m_is_clear_called;
 
 		exported_module as_object();
