@@ -12,6 +12,34 @@
 
 namespace gameswf
 {
+	// Invokes the function represented by a Function object.
+	// public call(thisObject:Object, [parameter1:Object]) : Object
+	void	as_as_function_call(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		if (fn.nargs > 0)
+		{
+			as_object* properties = fn.this_ptr->cast_to_as_object();
+			if (properties->m_creator != NULL)
+			{
+				as_as_function* func = properties->m_creator->cast_to_as_function();
+				if (func)
+				{
+					as_environment env;
+					int nargs = 0;
+					if (fn.nargs > 1)
+					{
+						nargs = 1;
+						env.push(fn.arg(1));
+					}
+
+					*fn.result = call_method(func, &env, fn.arg(0).to_object(),
+						nargs, env.get_top_index());
+				}
+			}
+		}
+	}
+
 	as_as_function::as_as_function(action_buffer* ab, int start, 
 		const array<with_stack_entry>& with_stack)
 		:
@@ -31,7 +59,9 @@ namespace gameswf
 		m_action_buffer = *ab;
 
 		m_properties = new as_object();
+		m_properties->m_creator = this;
 		m_properties->set_member("prototype", new as_object());
+		m_properties->set_member("call", as_as_function_call);
 	}
 
 	as_as_function::~as_as_function()

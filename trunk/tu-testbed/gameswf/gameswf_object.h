@@ -40,6 +40,7 @@ namespace gameswf
 
 		stringi_hash<as_watch>	m_watch;
 		bool m_is_clear_called;
+		weak_ptr<resource> m_creator;
 
 		exported_module as_object();
 		exported_module virtual ~as_object();

@@ -149,6 +149,7 @@ namespace gameswf
 	struct sound_sample;
 	struct video_stream_definition;
 	struct sprite_definition;
+	struct as_as_function;
 
 	// An interface for casting to different types of
 	// resources.
@@ -162,6 +163,7 @@ namespace gameswf
 		virtual sprite_definition* cast_to_sprite_definition() { return 0; }
 		virtual sound_sample* cast_to_sound_sample() { return 0; }
 		virtual video_stream_definition* cast_to_video_stream_definition() { return 0; }
+		virtual as_as_function* cast_to_as_function() { return 0; }
 	};
 
 	// Forward decls for cast_to_*
