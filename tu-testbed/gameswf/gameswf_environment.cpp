@@ -421,9 +421,15 @@ namespace gameswf
 			return;
 		}
 
-		assert(m_target);
-
-		m_target->set_member(varname, val);
+		if (m_target)
+		{
+			m_target->set_member(varname, val);
+		}
+		else
+		{
+			log_error("can't set_variable_raw '%s'='%s', target is NULL\n",
+				varname.c_str(), val.to_string());
+		}
 	}
 
 
