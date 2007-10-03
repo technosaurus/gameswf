@@ -515,6 +515,12 @@ namespace gameswf
 		{
 			return m_object_value == v.to_object();
 		}
+		else if (m_type == PROPERTY)
+		{
+			as_value prop;
+			get_property(&prop);
+			return prop == v;
+		}
 		else
 		{
 			return m_type == v.m_type;
