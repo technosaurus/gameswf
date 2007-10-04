@@ -272,6 +272,39 @@ namespace gameswf
 		fn.result->set_as_object_interface(arr.get_ptr());
 	}
 
+	// public substr(start:Number, length:Number) : String
+	void string_substr(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		assert(this_ptr);
+		const tu_string& this_str = this_ptr->m_string;
+
+		if (fn.nargs < 1)
+		{
+			return;
+		}
+
+		// Pull a slice out of this_string.
+		int	utf8_len = this_str.utf8_length();
+		int	len = utf8_len;
+
+		int start = (int) fn.arg(0).to_number();
+		start = iclamp(start, 0, utf8_len);
+
+		if (fn.nargs >= 2)
+		{
+			len = (int) fn.arg(1).to_number();
+			len = iclamp(len, 0, utf8_len);
+		}
+
+		int end = start + len - 1;
+		if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
+		assert(end >= start);
+
+		fn.result->set_tu_string(this_str.utf8_substring(start, end));
+	}
+
 	void string_substring(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
@@ -347,6 +380,7 @@ namespace gameswf
 		str->set_member("slice", &string_slice);
 		str->set_member("split", &string_split);
 		str->set_member("substring", &string_substring);
+		str->set_member("substr", &string_substr);
 		str->set_member("toLowerCase", &string_to_lowercase);
 		str->set_member("toUpperCase", &string_to_uppercase);
     
