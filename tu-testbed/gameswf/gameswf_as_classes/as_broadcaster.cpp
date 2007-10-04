@@ -112,6 +112,11 @@ namespace gameswf
 		return bc;
 	}
 
+	as_listener::as_listener() :
+		m_reentrance(false)
+	{
+	}
+
 	bool	as_listener::get_member(const tu_stringi& name, as_value* val)
 	{
 		if (name == "length")
@@ -149,24 +154,56 @@ namespace gameswf
 
 	void	as_listener::broadcast(const fn_call& fn)
 	{
-		tu_string event_name = fn.arg(0).to_tu_string();
-		for (int i = 0; i < m_listener.size(); )
+		array<as_value>* ev = new array<as_value>;
+		for (int i = 0; i < fn.nargs; i++)
 		{
-			// listener was deleted
-			if (m_listener[i].get_ptr() == NULL)
+			ev->push_back(fn.arg(i));
+		}
+		m_event.push(ev);
+
+		if (m_reentrance)
+		{
+			return;
+		}
+
+		m_reentrance = true;
+
+		while (m_event.size() > 0)
+		{
+			ev = m_event.front();
+			m_event.pop();
+
+			tu_string event_name = (*ev)[0].to_tu_string();
+			for (int i = 0; i < m_listener.size(); )
 			{
-				m_listener.remove(i);
-				continue;
+				// listener was deleted
+				if (m_listener[i].get_ptr() == NULL)
+				{
+					m_listener.remove(i);
+					continue;
+				}
+
+				as_environment env;
+				for (int j = ev->size() - 1; j > 0; j--)
+				{
+					env.push((*ev)[j]);
+				}
+
+				as_value function;
+				if (m_listener[i]->get_member(event_name, &function))
+				{
+					call_method(function, &env, m_listener[i].get_ptr(),
+						ev->size() - 1, env.get_top_index());
+				}
+				i++;
 			}
 
-			as_value function;
-			if (m_listener[i]->get_member(event_name, &function))
-			{
-				call_method(function, fn.env, m_listener[i].get_ptr(),
-					fn.nargs - 1, fn.first_arg_bottom_index - 1);
-			}
-			i++;
+			delete ev;
+
 		}
+
+		m_reentrance = false;
+
 	}
 
 };

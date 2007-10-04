@@ -10,6 +10,7 @@
 #define GAMESWF_AS_BROADCASTER_H
 
 #include "gameswf/gameswf_action.h"	// for as_object
+#include "base/tu_queue.h"
 
 namespace gameswf
 {
@@ -19,6 +20,8 @@ namespace gameswf
 
 	struct as_listener : public as_object
 	{
+		as_listener();
+
 		array< weak_ptr<as_object_interface> > m_listener;
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
@@ -26,6 +29,13 @@ namespace gameswf
 		void add(as_object_interface* listener);
 		void remove(as_object_interface* listener);
 		void	broadcast(const fn_call& fn);
+	
+		private :
+
+		bool m_reentrance;
+		tu_queue< array <as_value>* > m_event;
+
+		void	notify(const fn_call& fn);
 
 	};
 
