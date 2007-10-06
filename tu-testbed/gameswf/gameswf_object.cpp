@@ -335,7 +335,7 @@ namespace gameswf
 		as_watch watch;
 		watch.m_func = callback;
 		watch.m_user_data = user_data;
-		m_watch.add(name, watch);
+		m_watch.set(name, watch);
 		return true;
 	}
 
@@ -378,10 +378,16 @@ namespace gameswf
 	// for debugging
 	// retrieves members & print them
 	{
-		printf("\n*** object 0x%X ***\n", this);
+		printf("\n*** object 0x%p ***\n", this);
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
 			it != m_members.end(); ++it)
 		{
+			as_value val = it->second.get_member_value();
+			if (val.get_type() == as_value::OBJECT)
+			{
+				printf("%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
+				continue;
+			}
 			printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
 		}
 		printf("***\n");
