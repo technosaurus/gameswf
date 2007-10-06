@@ -24,7 +24,7 @@
 
 namespace gameswf
 {
-	tu_mutex& gameswf_engine_mutex();
+	exported_module tu_mutex& gameswf_engine_mutex();
 
 	struct movie_def_impl;
 

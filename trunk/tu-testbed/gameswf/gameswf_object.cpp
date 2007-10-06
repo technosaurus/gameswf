@@ -350,8 +350,8 @@ namespace gameswf
 		return false;
 	}
 
-	void as_object::copy_members(as_object_interface* target)
-	// Copy members from initObject 
+	void as_object::copy_to(as_object_interface* target)
+	// Copy all members from 'this' to target
 	{
 		if (target)
 		{
