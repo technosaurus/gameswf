@@ -136,7 +136,7 @@ namespace gameswf
 		exported_module void	add_ref() const;
 		exported_module void	drop_ref();
 		exported_module int	get_ref_count() const { return m_ref_count; }
-		weak_proxy*	get_weak_proxy() const;
+		exported_module weak_proxy*	get_weak_proxy() const;
 
 	private:
 		mutable int	m_ref_count;
@@ -263,7 +263,7 @@ namespace gameswf
 		virtual void clear_refs(as_object_interface* this_ptr) {}
 
 		virtual as_environment*	get_environment() { return 0; }
-		virtual void copy_members(as_object_interface* target) {}
+		virtual void copy_to(as_object_interface* target) {}
 
 	};
 

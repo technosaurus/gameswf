@@ -201,7 +201,7 @@ namespace gameswf
 				as_object_interface* init_object = fn.arg(2).to_object();
 				if (init_object)
 				{
-					init_object->copy_members(ch);
+					init_object->copy_to(ch);
 				}
 			} 
 			fn.result->set_as_object_interface(ch); 
@@ -312,7 +312,7 @@ namespace gameswf
 				as_object_interface* init_object = fn.arg(3).to_object();
 				if (init_object)
 				{
-					init_object->copy_members(ch);
+					init_object->copy_to(ch);
 				}
 			}
 			fn.result->set_as_object_interface(ch);
