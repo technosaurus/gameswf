@@ -184,16 +184,6 @@ namespace gameswf
 		return NULL;
 	}
 
-	as_object_interface* as_object::get_this()
-	{
-		as_member m;
-		if (m_members.get("__this__", &m))
-		{
-			return m.get_member_value().to_object();
-		}
-		return NULL;
-	}
-
 	bool	as_object::get_member(const tu_stringi& name, as_value* val)
 	{
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
@@ -203,26 +193,24 @@ namespace gameswf
 			as_object_interface* proto = get_proto();
 			if (proto)
 			{
-				if (proto->get_member(name, val))
-				{
-					if (val->get_type() == as_value::PROPERTY)
-					{
-						// binds property (sets the target)
-						// target is the parent of a chain of __proto__
-						if (val->m_property_target)
-						{
-							val->m_property_target->drop_ref();
-						}
-						val->m_property_target = this;
-						add_ref();
-					}
-					return true;
-				}
+				return proto->get_member(name, val);
 			}
 			return false;
 		}
 
 		*val = m.get_member_value();
+
+		if (val->get_type() == as_value::PROPERTY)
+		{
+			// binds property (sets the target)
+			if (val->m_property_target)
+			{
+				val->m_property_target->drop_ref();
+			}
+			val->m_property_target = this;
+			add_ref();
+		}
+
 		return true;
 	}
 
@@ -317,11 +305,11 @@ namespace gameswf
 			++it;
 		}
 
-		as_object_interface* proto = get_proto();
-		if (proto)
-		{
-			proto->enumerate(env);
-		}
+//		as_object_interface* proto = get_proto();
+//		if (proto)
+//		{
+//			proto->enumerate(env);
+//		}
 	}
 
 	bool as_object::watch(const tu_string& name, as_as_function* callback,
@@ -363,17 +351,6 @@ namespace gameswf
 		}
 	}
 
-	// for passing the pointer of new instance of class to constructor chain
-	void as_object::set_this(as_object* this_ptr)
-	{
-		as_object_interface* proto = get_proto();
-		if (proto)
-		{
-			proto->set_member("__this__", this_ptr);
-			proto->cast_to_as_object()->set_this(this_ptr);
-		}
-	}
-
 	void as_object::dump()
 	// for debugging
 	// retrieves members & print them
@@ -388,6 +365,14 @@ namespace gameswf
 				printf("%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
 				continue;
 			}
+			if (val.get_type() == as_value::PROPERTY)
+			{
+				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
+					it->first.c_str(), val.m_property, val.m_property_target,
+					val.m_property->m_getter, val.m_property->m_setter);
+				continue;
+			}
+
 			printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
 		}
 		printf("***\n");

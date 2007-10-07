@@ -166,6 +166,8 @@ namespace gameswf
 
 		void operator=(const action_buffer& ab);
 
+		as_object* create_proto(as_object* obj, const as_value& constructor);
+
 	private:
 		// Don't put these as values in array<>!  They contain
 		// internal pointers and cannot be moved or copied.

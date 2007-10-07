@@ -1,24 +1,21 @@
 ﻿// Circle class defined in external file named Circle.as
 class circle extends shape
 {
-	var i : String;
+	var i : Number;
+	var j : Number;
 	
 	function circle(param)
 	{
 		super(param);
 		i = param;
-		trace("circle constructor: " + param);
+		j = 10*param;
+		trace("circle constructor: " + i + ", j=" + j);
 	}
-	function drawshape()
-	{
-		trace("drawshape from circle is called: i=" + i);
 
-		// 'super.' is not implemented for now		
-		//	super.drawshape();
-	}
-	function drawcircle()
+	function draw()
 	{
-		drawbox();
-		trace("drawcircle is called: i=" + i +", j=" + j);
+		trace("CIRCLE: draw is called: i=" + i + ", j=" + j);
+		super.draw();
 	}
+	
 }

@@ -150,6 +150,7 @@ namespace gameswf
 	struct video_stream_definition;
 	struct sprite_definition;
 	struct as_as_function;
+	struct as_object_interface;
 
 	// An interface for casting to different types of
 	// resources.
@@ -164,6 +165,7 @@ namespace gameswf
 		virtual sound_sample* cast_to_sound_sample() { return 0; }
 		virtual video_stream_definition* cast_to_video_stream_definition() { return 0; }
 		virtual as_as_function* cast_to_as_function() { return 0; }
+		virtual as_object_interface* cast_to_as_object_interface() { return 0; }
 	};
 
 	// Forward decls for cast_to_*
@@ -229,7 +231,7 @@ namespace gameswf
 		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
 		virtual as_date* cast_to_as_date() { return 0; }
 		virtual as_listener* cast_to_as_listener() { return 0; }
-
+		virtual as_object_interface* cast_to_as_object_interface() { return this; }
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
@@ -238,10 +240,6 @@ namespace gameswf
 		// (ActionScript 2.0) or constructor function
 		// __proto__ is a function object !!!
 		virtual as_object_interface* get_proto() { return 0; }
-
-		// retrieves the reference(__this__ ) to the pointer of new instance of class
-		// for prototype object only
-		virtual as_object_interface* get_this() { return 0; }
 
 		// Registers an event handler to be invoked when a specified property changes.
 		virtual bool watch(const tu_string& name,	as_as_function* callback, const as_value& user_data)

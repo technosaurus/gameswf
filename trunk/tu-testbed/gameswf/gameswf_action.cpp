@@ -927,6 +927,25 @@ namespace gameswf
 		m_decl_dict_processed_at = ab.m_decl_dict_processed_at;
 	}
 
+	as_object* action_buffer::create_proto(as_object* obj, const as_value& constructor)
+	{
+		as_value	prototype_val;
+		constructor.to_object()->get_member("prototype", &prototype_val);
+		as_object_interface* prototype = prototype_val.to_object();
+		assert(prototype);
+		prototype->copy_to(obj);
+
+		as_object* proto = new as_object();
+		proto->m_this_ptr = obj->cast_to_as_object()->m_this_ptr;
+
+		as_value prototype_constructor;
+		prototype->get_member("__constructor__", &prototype_constructor);
+		proto->set_member("__constructor__", prototype_constructor);
+
+		obj->set_member("__proto__", proto);
+		return proto;
+	}
+
 	void	action_buffer::execute(
 		as_environment* env,
 		int start_pc,
@@ -1515,29 +1534,14 @@ namespace gameswf
 					else if (as_as_function* ctor_as_func = constructor.to_as_function())
 					{
 
-						// Create an empty object, with a ref to the constructor's prototype.
+						// Create an empty object
 						smart_ptr<as_object>	new_obj_ptr = new as_object();
-
-						// Set up the constructor member.
-						// Reference to the constructor function for a given object instance.
-						new_obj_ptr->set_member("constructor", constructor);
-						new_obj_ptr->set_member_flags("constructor", as_prop_flags::DONT_ENUM);
-
-						// Set up the __proto__ member.
-						// it refers to the prototype property of the class (ActionScript 2.0) 
-						// or constructor function
-						as_value	proto;
-						ctor_as_func->m_properties->get_member("prototype", &proto);
-						assert(proto.to_object() != NULL);
-						new_obj_ptr->set_member("__proto__", proto);
-						new_obj_ptr->set_member_flags("__proto__", as_prop_flags::DONT_ENUM);
+						as_object* proto = create_proto(new_obj_ptr.get_ptr(), constructor);
+						proto->m_this_ptr = new_obj_ptr.get_ptr();
 
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
-						// pass the pointer of new instance of class to constructor chain
-						new_obj_ptr->set_this(new_obj_ptr.get_ptr());
 						call_method(constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
-						new_obj_ptr->set_this(NULL);
 						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
 					}
 					else
@@ -1854,15 +1858,20 @@ namespace gameswf
 								// it's equivalent to using the syntax:
 								// obj();
 
-								as_value constructor;
-								if (obj->get_member("__constructor__", &constructor))
+								assert(obj->cast_to_as_object());
+								if (obj->cast_to_as_object()->m_this_ptr != NULL)
 								{
-									result = call_method(
-									constructor,
-									env,
-									obj,
-									nargs,
-									env->get_top_index() - 3);
+									as_value constructor;
+									if (obj->get_member("__constructor__", &constructor))
+									{
+										create_proto(obj->cast_to_as_object(), constructor);
+										result = call_method(
+										constructor,
+										env,
+										obj,
+										nargs,
+										env->get_top_index() - 3);
+									}
 								}
 							}
 							else
@@ -2014,7 +2023,6 @@ namespace gameswf
 					new_prototype->set_member("__constructor__", super);
 
 					sub->m_properties->set_member("prototype", new_prototype.get_ptr());
-
 
 					env->drop(2);
 					break;
