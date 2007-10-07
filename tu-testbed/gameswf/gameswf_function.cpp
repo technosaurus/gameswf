@@ -20,9 +20,9 @@ namespace gameswf
 		if (fn.nargs > 0)
 		{
 			as_object* properties = fn.this_ptr->cast_to_as_object();
-			if (properties->m_creator != NULL)
+			if (properties->m_this_ptr != NULL)
 			{
-				as_as_function* func = properties->m_creator->cast_to_as_function();
+				as_as_function* func = properties->m_this_ptr->cast_to_as_function();
 				if (func)
 				{
 					as_environment env;
@@ -59,7 +59,7 @@ namespace gameswf
 		m_action_buffer = *ab;
 
 		m_properties = new as_object();
-		m_properties->m_creator = this;
+		m_properties->m_this_ptr = this;
 		m_properties->set_member("prototype", new as_object());
 		m_properties->set_member("call", as_as_function_call);
 	}
@@ -82,17 +82,21 @@ namespace gameswf
 			}
 		}
 
+		// set 'this'
 		as_object_interface* this_ptr = env->m_target;
 		if (fn.this_ptr)
 		{
-			this_ptr = fn.this_ptr->get_this();
-			if (this_ptr == NULL)
+			this_ptr = fn.this_ptr;
+			as_object* obj = fn.this_ptr->cast_to_as_object();
+			if (obj)
 			{
-				this_ptr = fn.this_ptr;
+				if (obj->m_this_ptr != NULL)
+				{
+					this_ptr = obj->m_this_ptr->cast_to_as_object_interface();
+				}
 			}
 		}
-
-
+		
 		// Set up local stack frame, for parameters and locals.
 		int	local_stack_top = env->get_local_frame_top();
 		env->add_frame_barrier();

@@ -1,25 +1,19 @@
 ﻿// Shape class defined in external file named Shape.as
-class shape
+class shape extends box
 {
-	var i : String;
-	var j : Number;
+	var i : Number;
 	
 	function shape(param)
 	{
-		trace("shape constructor:" + param);
+		super(param);
+		trace("shape constructor:" + i + ", j=" + j);
 		i = param;
-		j = param == "one" ? 1 : 2;
 	}
 	
-	function drawshape()
+	function draw()
 	{
-		trace("drawshape is called: i=" + i);
-		drawbox();
+		trace("SHAPE: draw is called: i=" + i + ", j=" + j);
+		super.draw();
 	}
 
-	function drawbox()
-	{
-		trace("drawbox is called: i=" + i + ", j=" + j);
-	}
-	
 }
