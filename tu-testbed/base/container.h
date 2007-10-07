@@ -12,10 +12,6 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
-#ifdef _WIN32
-#	define exported_module __declspec(dllexport)
-#endif // _WIN32
-
 #include "base/tu_config.h"
 #include "base/utility.h"
 #include <stdlib.h>
