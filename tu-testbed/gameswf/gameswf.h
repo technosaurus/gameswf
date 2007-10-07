@@ -239,7 +239,7 @@ namespace gameswf
 		// retrieves the reference(__proto__ ) to the prototype property of the class
 		// (ActionScript 2.0) or constructor function
 		// __proto__ is a function object !!!
-		virtual as_object_interface* get_proto() { return 0; }
+		virtual as_object_interface* get_proto() const { return 0; }
 
 		// Registers an event handler to be invoked when a specified property changes.
 		virtual bool watch(const tu_string& name,	as_as_function* callback, const as_value& user_data)
