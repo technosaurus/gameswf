@@ -23,6 +23,7 @@ namespace gameswf
 		character* create_character_instance(character* parent, int id);
 		void	read(stream* in, int tag, movie_definition* m);
 		virtual void get_bound(rect* bound);
+		virtual video_stream_definition* cast_to_video_stream_definition() { return this; }
 
 		Uint16 m_width;
 		Uint16 m_height;
