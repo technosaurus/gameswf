@@ -16,13 +16,13 @@ namespace tu_timer
 
 	// General-purpose wall-clock timer.  May not be hi-res enough
 	// for profiling.
-	uint64 get_ticks();
-	double ticks_to_seconds(uint64 ticks);
+	exported_module uint64 get_ticks();
+	exported_module double ticks_to_seconds(uint64 ticks);
 
 	// Sleep the current thread for the given number of
 	// milliseconds.  Don't rely on the sleep period being very
 	// accurate.
-	void sleep(int milliseconds);
+	exported_module void sleep(int milliseconds);
 	
 	// Hi-res timer for CPU profiling.
 
@@ -31,13 +31,13 @@ namespace tu_timer
 	// operation, and pass the difference to
 	// profile_ticks_to_seconds() to find out how long the
 	// operation took.
-	uint64	get_profile_ticks();
+	exported_module uint64	get_profile_ticks();
 
 	// Convert a hi-res ticks value into seconds.
-	double	profile_ticks_to_seconds(uint64 profile_ticks);
+	exported_module double	profile_ticks_to_seconds(uint64 profile_ticks);
 
 	// Returns the systime
-	Uint64 get_systime();
+	exported_module Uint64 get_systime();
 
 	// Returns the day of the month (an integer from 1 to 31)
 	int get_date(Uint64 t);

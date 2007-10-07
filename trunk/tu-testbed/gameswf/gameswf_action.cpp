@@ -905,7 +905,7 @@ namespace gameswf
 		tu_loadlib* ll = tu_loadlib::load(classname.c_str());
 		if (ll)
 		{
-
+			//TODO: delete ll(memory leaks)
 			// get module interface
 			gameswf_module_init module_init = (gameswf_module_init) ll->get_function("gameswf_module_init");
 

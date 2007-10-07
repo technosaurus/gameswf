@@ -91,4 +91,8 @@
 #error video & MP3 requires multi thread support
 #endif
 
+#ifdef _WIN32
+#	define exported_module __declspec(dllexport)
+#endif // _WIN32
+
 #endif // TU_CONFIG_H
