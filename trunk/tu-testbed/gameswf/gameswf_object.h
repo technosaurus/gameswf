@@ -53,7 +53,7 @@ namespace gameswf
 		exported_module virtual bool	on_event(const event_id& id);
 		exported_module virtual as_object* cast_to_as_object() { return this; }
 		exported_module virtual	void enumerate(as_environment* env);
-		exported_module virtual as_object_interface* get_proto();
+		exported_module virtual as_object_interface* get_proto() const;
 		exported_module virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
 		exported_module virtual bool unwatch(const tu_string& name);
 		exported_module virtual void clear_refs(as_object_interface* this_ptr);

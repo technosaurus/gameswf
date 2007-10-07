@@ -174,7 +174,7 @@ namespace gameswf
 		return true;
 	}
 
-	as_object_interface* as_object::get_proto()
+	as_object_interface* as_object::get_proto() const
 	{
 		as_member m;
 		if (m_members.get("__proto__", &m))
