@@ -896,26 +896,26 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
-	typedef as_object* (*gameswf_module_init)(const array<as_value>& params);
+	typedef exported_module as_plugin* (*gameswf_module_init)(const array<as_value>& params);
 
-	as_object* action_buffer::load_as_plugin(const tu_string& classname,
+	as_plugin* action_buffer::load_as_plugin(const tu_string& classname,
 						const array<as_value>& params)
 	// loads user defined class from DLL / shared library
 	{
-		tu_loadlib* ll = tu_loadlib::load(classname.c_str());
-		if (ll)
-		{
-			//TODO: delete ll(memory leaks)
-			// get module interface
-			gameswf_module_init module_init = (gameswf_module_init) ll->get_function("gameswf_module_init");
+		tu_loadlib* lib = new tu_loadlib(classname.c_str());
 
-			// create plugin instance
-			if (module_init)
-			{
-				as_object* plugin = (module_init)(params);
-				return plugin;
-			}
+		// get module interface
+		gameswf_module_init module_init = (gameswf_module_init) lib->get_function("gameswf_module_init");
+
+		// create plugin instance
+		if (module_init)
+		{
+			as_plugin* plugin = (module_init)(params);
+			plugin->m_lib = lib;
+			return plugin;
 		}
+
+		delete lib;
 		return NULL;
 	}
 	
@@ -942,7 +942,7 @@ namespace gameswf
 		prototype->get_member("__constructor__", &prototype_constructor);
 		proto->set_member("__constructor__", prototype_constructor);
 
-		obj->set_member("__proto__", proto);
+		obj->m_proto = proto;
 		return proto;
 	}
 
@@ -1556,7 +1556,7 @@ namespace gameswf
 								params.push_back(env->bottom(first_arg_bottom_index - i));
 							}
 
-							as_object* plugin = load_as_plugin(classname.to_tu_string(), params);
+							as_plugin* plugin = load_as_plugin(classname.to_tu_string(), params);
 							if (plugin)
 							{
 								new_obj.set_as_object_interface(plugin);
@@ -2019,7 +2019,7 @@ namespace gameswf
 					super->m_properties->get_member("prototype", &super_prototype);
 
 					smart_ptr<as_object> new_prototype = new as_object();
-					new_prototype->set_member("__proto__", super_prototype);
+					new_prototype->m_proto = super_prototype.to_object();
 					new_prototype->set_member("__constructor__", super);
 
 					sub->m_properties->set_member("prototype", new_prototype.get_ptr());

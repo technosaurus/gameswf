@@ -42,6 +42,10 @@ namespace gameswf
 		bool m_is_clear_called;
 		weak_ptr<resource> m_this_ptr;
 
+		// We can place reference to __proto__ into members but it used very often
+		// so for optimization we place it into instance
+		smart_ptr<as_object_interface> m_proto;	// for optimization
+
 		exported_module as_object();
 		exported_module virtual ~as_object();
 		
@@ -60,6 +64,22 @@ namespace gameswf
 		exported_module virtual void copy_to(as_object_interface* target);
 		exported_module bool add_property(const tu_string& name, const as_value& val);
 		exported_module void dump();
+	};
+
+	struct as_plugin : public as_object
+	{
+		tu_loadlib* m_lib;
+
+		as_plugin() :
+			m_lib(NULL)
+		{
+		}
+
+		~as_plugin() 
+		{
+			delete m_lib;
+		}
+
 	};
 
 }

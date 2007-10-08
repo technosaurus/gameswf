@@ -13,30 +13,18 @@
 
 #include <windows.h>
 
-tu_loadlib* tu_loadlib::load(const char* library_name)
+tu_loadlib::tu_loadlib(const char* library_name) :
+	m_hlib(NULL)
 {
-	tu_loadlib* ll = NULL;
-
 	tu_string path = library_name;
 	path += ".dll";
 
-	HINSTANCE hlib = LoadLibrary(path.c_str());
-	if (hlib != NULL)
-	{
-		ll = new tu_loadlib(hlib);
-	}
-	return ll;
-}
-
-tu_loadlib::tu_loadlib(lib_t hlib)
-{
-	assert(hlib);
-	m_hlib = hlib;
+	m_hlib = LoadLibrary(path.c_str());
 }
 
 tu_loadlib::~tu_loadlib()
 {
-	assert(FreeLibrary(m_hlib));
+//	FreeLibrary(m_hlib);
 }
 
 void* tu_loadlib::get_function(const char* function_name)
