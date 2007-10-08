@@ -17,13 +17,10 @@
 
 struct tu_loadlib
 {
-	typedef void (*init_module) (const char* function_name);
+	exported_module tu_loadlib(const char* library_name);
+	exported_module ~tu_loadlib();
 
-	tu_loadlib(lib_t hlib);
-	~tu_loadlib();
-
-	static tu_loadlib* load(const char* library_name);
-	void* get_function(const char* function_name);
+	exported_module void* get_function(const char* function_name);
 	
 	private:
 
