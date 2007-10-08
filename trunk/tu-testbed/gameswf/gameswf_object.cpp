@@ -180,17 +180,23 @@ namespace gameswf
 	{
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
 		as_member m;
-		if (m_members.get(name, &m) == false)
+		if (m_members.get(name, &m))
+		{
+			*val = m.get_member_value();
+		}
+		else
 		{
 			as_object_interface* proto = get_proto();
-			if (proto)
+			if (proto == NULL)
 			{
-				return proto->get_member(name, val);
+				return false;
 			}
-			return false;
-		}
 
-		*val = m.get_member_value();
+			if (proto->get_member(name, val) == false)
+			{
+				return false;
+			}
+		}
 
 		if (val->get_type() == as_value::PROPERTY)
 		{
