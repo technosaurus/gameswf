@@ -432,6 +432,7 @@ namespace gameswf
 	void	clear_gameswf()
 	// Maximum release of resources.
 	{
+		gameswf_engine_mutex().lock();
 		clear_standard_member_map();
 		clears_tag_loaders();
 		clear_garbage();
@@ -439,6 +440,7 @@ namespace gameswf
 		sprite_builtins_clear();
 		fontlib::clear();
 		action_clear();
+		gameswf_engine_mutex().unlock();
 	}
 
 
@@ -448,13 +450,13 @@ namespace gameswf
 
 
 	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
-	static movie_interface* s_current_root;
+	static weak_ptr<movie_interface> s_current_root;
 	static tu_string s_workdir;
 
 	movie_interface* get_current_root()
 	{
 		assert(s_current_root != NULL);
-		return s_current_root;
+		return s_current_root.get_ptr();
 	}
 
 	void set_current_root(movie_interface* m)
