@@ -284,8 +284,12 @@ namespace gameswf
 		// From Moock
 		if (m_type == STRING)
 		{
-			if (m_string_value == "false")
+			if (get_current_root()->get_movie_version() >= 7)
+			{
+				return m_string_value.size() > 0 ? true : false;
+			}
 
+			if (m_string_value == "false")
 			{
 				return false;
 			}
