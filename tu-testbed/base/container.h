@@ -1083,23 +1083,23 @@ public:
 		}
 	}
 
-	operator const char*() const
+	exported_module operator const char*() const
 	{
 		return get_buffer();
 	}
 
-	const char*	c_str() const
+	exported_module const char*	c_str() const
 	{
 		return (const char*) (*this);
 	}
 
 	// If you need a const tu_stringi, don't create a new object;
 	// these things have the same internal representation.
-	const tu_stringi&	to_tu_stringi() const { return *(tu_stringi*) this; }
+	exported_module const tu_stringi&	to_tu_stringi() const { return *(tu_stringi*) this; }
 
 	// operator= returns void; if you want to know why, ask Charles Bloom :)
 	// (executive summary: a = b = c is an invitation to bad code)
-	void	operator=(const char* str)
+	exported_module void	operator=(const char* str)
 	{
 		if (str)
 		{
@@ -1108,7 +1108,7 @@ public:
 		}
 	}
 
-	void	operator=(const tu_string& str)
+	exported_module void	operator=(const tu_string& str)
 	{
 		if (this != &str) {
 			resize(str.size());
@@ -1116,27 +1116,27 @@ public:
 		}
 	}
 
-	bool	operator==(const char* str) const
+	exported_module bool	operator==(const char* str) const
 	{
 		return strcmp(*this, str) == 0;
 	}
 
-	bool	operator!=(const char* str) const
+	exported_module bool	operator!=(const char* str) const
 	{
 		return strcmp(*this, str) != 0;
 	}
 
-	bool	operator==(const tu_string& str) const
+	exported_module bool	operator==(const tu_string& str) const
 	{
 		return strcmp(*this, str) == 0;
 	}
 
-	bool	operator!=(const tu_string& str) const
+	exported_module bool	operator!=(const tu_string& str) const
 	{
 		return strcmp(*this, str) != 0;
 	}
 
-	int	length() const
+	exported_module int	length() const
 	{
 		if (using_heap() == false)
 		{
@@ -1147,10 +1147,11 @@ public:
 			return m_heap.m_size - 1;
 		}
 	}
-	int	size() const { return length(); }
+
+	exported_module int	size() const { return length(); }
 
 	// index >=0
-	void erase(int index, int count)
+	exported_module void erase(int index, int count)
 	{
 		assert(index + count <= length());
 		strcpy(get_buffer() + index, get_buffer() + index + count);
@@ -1158,7 +1159,7 @@ public:
 	}
 
 	// insert char before index
-	void insert(int index, char ch)
+	exported_module void insert(int index, char ch)
 	{
 		assert(index >= 0 && index <= size());
 		int len = length();
@@ -1169,17 +1170,18 @@ public:
 		*(buf + index) = ch;
 	}
 
-	char&	operator[](int index)
+	exported_module char&	operator[](int index)
 	{
 		assert(index >= 0 && index <= size());
 		return get_buffer()[index];
 	}
-	const char&	operator[](int index) const
+
+	exported_module const char&	operator[](int index) const
 	{
 		return (*(const_cast<tu_string*>(this)))[index];
 	}
 
-	void	operator+=(const char* str)
+	exported_module void	operator+=(const char* str)
 	{
 		int	str_length = strlen(str);
 		int	old_length = length();
@@ -1188,7 +1190,7 @@ public:
 		strcpy(get_buffer() + old_length, str);
 	}
 
-	void	operator+=(char ch)
+	exported_module void	operator+=(char ch)
 	{
 		int	old_length = length();
 		assert(old_length >= 0);
@@ -1197,10 +1199,10 @@ public:
 	}
 
 	// Append wide char.  Both versions of wide char.
-	void	append_wide_char(uint16 ch);
-	void	append_wide_char(uint32 ch);
+	exported_module void	append_wide_char(uint16 ch);
+	exported_module void	append_wide_char(uint32 ch);
 
-	void	operator+=(const tu_string& str)
+	exported_module void	operator+=(const tu_string& str)
 	{
 		int	str_length = str.length();
 		int	old_length = length();
@@ -1209,7 +1211,7 @@ public:
 		strcpy(get_buffer() + old_length, str.c_str());
 	}
 
-	tu_string	operator+(const char* str) const
+	exported_module tu_string	operator+(const char* str) const
 	// NOT EFFICIENT!  But convenient.
 	{
 		tu_string	new_string(*this);
@@ -1217,24 +1219,27 @@ public:
 		return new_string;
 	}
 
-	bool	operator<(const char* str) const
+	exported_module bool	operator<(const char* str) const
 	{
 		return strcmp(c_str(), str) < 0;
 	}
-	bool	operator<(const tu_string& str) const
+
+	exported_module bool	operator<(const tu_string& str) const
 	{
 		return *this < str.c_str();
 	}
-	bool	operator>(const char* str) const
+
+	exported_module bool	operator>(const char* str) const
 	{
 		return strcmp(c_str(), str) > 0;
 	}
-	bool	operator>(const tu_string& str) const
+
+	exported_module bool	operator>(const tu_string& str) const
 	{
 		return *this > str.c_str();
 	}
 
-	void clear()
+	exported_module void clear()
 	{
 		resize(0);
 	}
@@ -1253,24 +1258,24 @@ public:
 
 	// Utility: case-insensitive string compare.  stricmp() is not
 	// ANSI or POSIX, doesn't seem to appear in Linux.
-	static int	stricmp(const char* a, const char* b);
+	exported_module static int	stricmp(const char* a, const char* b);
 
 	// Return the Unicode char at the specified character
 	// position.  index is in UTF-8 chars, NOT bytes.
-	uint32	utf8_char_at(int index) const;
+	exported_module uint32	utf8_char_at(int index) const;
 
 	// Return the string in this container as all upper case letters
-	tu_string utf8_to_upper() const;
+	exported_module tu_string utf8_to_upper() const;
 
 	// Return the string in this container as all lower case letters
-	tu_string utf8_to_lower() const;
+	exported_module tu_string utf8_to_lower() const;
 
 	// Return the number of UTF-8 characters in the given
 	// substring buffer.  You must pass in a valid buffer length;
 	// this routine does not look for a terminating \0.
-	static int	utf8_char_count(const char* buf, int buflen);
+	exported_module static int	utf8_char_count(const char* buf, int buflen);
 
-	int	utf8_length() const { return utf8_char_count(get_buffer(), length()); }
+	exported_module int	utf8_length() const { return utf8_char_count(get_buffer(), length()); }
 
 	// Returns a tu_string that's a substring of this.  start and
 	// end are in UTF-8 character positions (NOT bytes).
@@ -1278,7 +1283,7 @@ public:
 	// start is the index of the first character you want to include.
 	//
 	// end is the index one past the last character you want to include.
-	tu_string	utf8_substring(int start, int end) const;
+	exported_module tu_string	utf8_substring(int start, int end) const;
 
 private:
 	char*	get_buffer()

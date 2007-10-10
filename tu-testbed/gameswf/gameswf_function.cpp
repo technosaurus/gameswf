@@ -221,7 +221,7 @@ namespace gameswf
 			if (m_function2_flags & 0x40)
 			{
 				// Put '_root' in a register.
-				env->set_register(current_reg, get_current_root());
+				env->set_register(current_reg, get_current_root()->get_root_movie());
 				current_reg++;
 			}
 
