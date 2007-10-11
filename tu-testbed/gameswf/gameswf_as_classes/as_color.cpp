@@ -134,7 +134,11 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.arg(0).to_object());
+		if (fn.arg(0).to_object() == NULL)
+		{
+			return;
+		}
+
 		as_object* tobj = fn.arg(0).to_object()->cast_to_as_object();
 		if (tobj)
 		{
