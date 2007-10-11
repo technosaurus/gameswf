@@ -201,9 +201,9 @@ namespace gameswf
 		return NULL;
 	}
 
-	void as_db::set_autocommit(bool turn_off)
+	void as_db::set_autocommit(bool autocommit)
 	{
-		mysql_autocommit(m_db, turn_off ? 0 : 1);
+		mysql_autocommit(m_db, autocommit ? 1 : 0);
 	}
 
 	void as_db::commit()
