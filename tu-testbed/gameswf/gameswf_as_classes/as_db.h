@@ -29,7 +29,7 @@ namespace gameswf
 		void disconnect();
 		as_table* open(const char* sql);
 		int run(const char *sql);
-		void set_autocommit(bool mode);
+		void set_autocommit(bool autocommit);
 		void commit();
 
 	private:
