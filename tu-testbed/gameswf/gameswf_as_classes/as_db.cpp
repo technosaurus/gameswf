@@ -98,6 +98,17 @@ namespace gameswf
 		}
 	}
 
+	void as_db_autocommit_setter(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		as_db* db = fn.this_ptr->cast_to_as_db();
+
+		if (db)
+		{
+			db->set_autocommit(fn.arg(0).to_bool());
+		}
+	}
+
 	void	as_global_mysqldb_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetStream.
 	{
@@ -109,6 +120,7 @@ namespace gameswf
 		db->set_member("open", &as_db_open);
 		db->set_member("run", &as_db_run);
 		db->set_member("commit", &as_db_commit);
+		db->set_member("auto_commit", as_value(NULL, &as_db_autocommit_setter));
 
 		fn.result->set_as_object_interface(db.get_ptr());
 	}
@@ -216,28 +228,6 @@ namespace gameswf
 		}
 		return true;
 	}
-
-
-	bool as_db::get_member(const tu_stringi& name, as_value* val)
-	{
-		if (name == "auto_commit")
-		{
-			val->set_bool(true);	//todo
-			return true;
-		}
-		return as_object::get_member(name, val);
-	}
-
-	bool as_db::set_member(const tu_stringi& name, const as_value& val)
-	{
-		if (name == "auto_commit")
-		{
-			set_autocommit(val.to_bool());
-			return true;
-		}
-		return as_object::set_member(name, val);
-	}
-
 
 }
 
