@@ -626,7 +626,7 @@ namespace gameswf
 			m_setter->add_ref();
 		}
 		else
-		if (getter.get_type() == as_value::C_FUNCTION && setter.to_c_function())
+		if (setter.get_type() == as_value::C_FUNCTION && setter.to_c_function())
 		{
 			m_setter_type = as_property::C_FUNCTION;
 			m_c_setter = setter.to_c_function();
