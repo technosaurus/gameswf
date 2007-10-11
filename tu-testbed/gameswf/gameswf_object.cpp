@@ -14,6 +14,8 @@
 namespace gameswf
 {
 
+	const char*	next_slash_or_dot(const char* word);
+
 	void	as_object_addproperty(const fn_call& fn)
 	{
 		if (fn.nargs == 3)
@@ -375,5 +377,48 @@ namespace gameswf
 		}
 		printf("***\n");
 	}
+
+	as_object_interface*	as_object::find_target(const tu_string& path)
+	// Find the object referenced by the given path.
+	{
+		if (path.length() <= 0)
+		{
+			return NULL;
+		}
+
+		as_object_interface*	obj = this;
+		
+		const char*	p = path.c_str();
+		tu_string	subpart;
+
+		for (;;)
+		{
+			const char*	next_slash = next_slash_or_dot(p);
+			subpart = p;
+			if (next_slash == p)
+			{
+				log_error("error: invalid path '%s'\n", path.c_str());
+				break;
+			}
+			else if (next_slash)
+			{
+				// Cut off the slash and everything after it.
+				subpart.resize(next_slash - p);
+			}
+
+			as_value val;
+			obj->get_member(subpart, &val);
+			obj = val.to_object();
+
+			if (obj == NULL || next_slash == NULL)
+			{
+				break;
+			}
+
+			p = next_slash + 1;
+		}
+		return obj;
+	}
+
 
 }

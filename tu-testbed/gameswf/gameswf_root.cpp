@@ -243,11 +243,11 @@ namespace gameswf
 	void	movie_root::notify_key_event(key::code k, bool down)
 	{
 		// First notify global Key object
-		// listeners uses the last keypressed code
+		// listeners that uses the last keypressed code
 		notify_key_object(k, down);
 
 		// Notify keypress listeners.
-		m_listener.notify(k, down);
+		m_listener.notify(k);
 	}
 
 	void movie_root::add_listener(as_object_interface* listener, listener::type lt)
@@ -513,7 +513,7 @@ namespace gameswf
 	// listener
 	//
 
-	void listener::notify(key::code k, bool down)
+	void listener::notify(key::code k)
 	{
 
 		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
@@ -529,17 +529,10 @@ namespace gameswf
 			{
 				if (it->second == KEYPRESS)
 				{
-					if (down)
-					{
-						obj->on_event(event_id(event_id::KEY_DOWN));
-						obj->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
-					}
-					else
-					{
-						obj->on_event(event_id(event_id::KEY_UP));
-					}
+					obj->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
 				}
 			}
+
 			++it;
 		}
 	}

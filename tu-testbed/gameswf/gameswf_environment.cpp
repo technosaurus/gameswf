@@ -10,7 +10,10 @@
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_render.h"
-#include "plugins/lib3ds/gameswf_3ds.h"
+
+#if TU_CONFIG_LINK_TO_LIB3DS
+	#include "plugins/lib3ds/gameswf_3ds.h"
+#endif
 
 #ifdef _WIN32
 	#define snprintf _snprintf
@@ -656,7 +659,7 @@ namespace gameswf
 	}
 
 
-	static const char*	next_slash_or_dot(const char* word)
+	const char*	next_slash_or_dot(const char* word)
 	// Search for next '.' or '/' character in this word.  Return
 	// a pointer to it, or to NULL if it wasn't found.
 	{

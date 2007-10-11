@@ -38,19 +38,20 @@ namespace gameswf
 	{
 		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
 		int	m_last_key_pressed;
+		hash< weak_ptr<as_object_interface>, int > m_listeners;
 
 		as_key();
-
 		bool	is_key_down(int code);
 		void	set_key_down(int code);
 		void	set_key_up(int code);
 		int	get_last_key_pressed() const;
-
+		void notify(bool down);
+		void clear_garbage();
 		virtual as_key* cast_to_as_key() { return this; }
 	};
 
+	// creates 'Key' object
 	as_key* key_init();
-	// Create built-in key object.
 
 }	// namespace gameswf
 
