@@ -13,6 +13,11 @@
 #include "gameswf/gameswf_text.h"
 #include "gameswf/gameswf_sprite.h"
 
+#ifdef _WIN32
+	#define snprintf _snprintf
+	#define strncasecmp strnicmp
+#endif // _WIN32
+
 namespace gameswf
 {
 
@@ -959,6 +964,28 @@ namespace gameswf
 					if (val.to_tu_string() != m_text)
 					{
 						set_text(val.to_tu_string().c_str());
+					}
+				}
+			}
+			else
+			{
+				// try _global
+				if (path.size() > 8)
+				{
+					if (strncasecmp(path.c_str(), "_global.", 8) == 0)
+					{
+						as_object_interface* target = get_global()->find_target(path.c_str() + 8);
+						if (target)
+						{
+							as_value val;
+							if (target->get_member(var, &val))
+							{
+								if (val.to_tu_string() != m_text)
+								{
+									set_text(val.to_tu_string().c_str());
+								}
+							}
+						}				
 					}
 				}
 			}

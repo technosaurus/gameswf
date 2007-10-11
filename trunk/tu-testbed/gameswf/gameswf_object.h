@@ -64,6 +64,8 @@ namespace gameswf
 		exported_module virtual void copy_to(as_object_interface* target);
 		exported_module bool add_property(const tu_string& name, const as_value& val);
 		exported_module void dump();
+		exported_module as_object_interface* find_target(const tu_string& path);
+
 	};
 
 	struct as_plugin : public as_object

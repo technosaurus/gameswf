@@ -15,6 +15,10 @@ namespace gameswf
 	// Listeners will have "onKeyDown" and "onKeyUp" methods
 	// called on them when a key changes state.
 	{
+		assert(fn.this_ptr);
+		as_key*	ko = fn.this_ptr->cast_to_as_key();
+		assert(ko);
+
 		if (fn.nargs < 1)
 		{
 			log_error("key_add_listener needs one argument (the listener object)\n");
@@ -28,12 +32,17 @@ namespace gameswf
 			return;
 		}
 
-		listener->get_root()->add_listener(listener, listener::KEYPRESS);
+		ko->clear_garbage();
+		ko->m_listeners.set(listener, 0);
 	}
 
 	void	key_remove_listener(const fn_call& fn)
 	// Remove a previously-added listener.
 	{
+		assert(fn.this_ptr);
+		as_key*	ko = fn.this_ptr->cast_to_as_key();
+		assert(ko);
+
 		if (fn.nargs < 1)
 		{
 			log_error("key_remove_listener needs one argument (the listener object)\n");
@@ -47,7 +56,8 @@ namespace gameswf
 			return;
 		}
 
-		listener->get_root()->remove_listener(listener);
+		ko->clear_garbage();
+		ko->m_listeners.erase(listener);
 	}
 
 	void	key_get_ascii(const fn_call& fn)
@@ -182,6 +192,8 @@ namespace gameswf
 
 		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 		m_keymap[byte_index] |= mask;
+
+		notify(true);
 	}
 
 	void	as_key::set_key_up(int code)
@@ -194,11 +206,55 @@ namespace gameswf
 
 		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 		m_keymap[byte_index] &= ~mask;
+
+		notify(false);
 	}
 
 	int	as_key::get_last_key_pressed() const
 	{
 		return m_last_key_pressed; 
+	}
+
+	void as_key::notify(bool down)
+	{
+
+		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+			it != m_listeners.end(); )
+		{
+			smart_ptr<as_object_interface> obj = it->first;
+			if (obj == NULL)	// listener was destroyed
+			{
+				// cleanup the garbage
+				m_listeners.erase(it);
+			}
+			else
+			{
+				if (down)
+				{
+					obj->on_event(event_id(event_id::KEY_DOWN));
+				}
+				else
+				{
+					obj->on_event(event_id(event_id::KEY_UP));
+				}
+			}
+			++it;
+		}
+	}
+
+	void as_key::clear_garbage()
+	{
+		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+			it != m_listeners.end(); )
+		{
+			smart_ptr<as_object_interface> obj = it->first;
+			if (obj == NULL)	// listener was destroyed
+			{
+				// cleanup the garbage
+				m_listeners.erase(it);
+			}
+			++it;
+		}
 	}
 
 }
