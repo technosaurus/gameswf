@@ -38,25 +38,36 @@ void* tu_loadlib::get_function(const char* function_name)
 
 #else	// not _WIN32
 
-// TODO using dlopen()
 
-tu_loadlib* tu_loadlib::load(const char* library_name)
-{
-	return NULL;
-}
+#include <dlfcn.h>
 
-tu_loadlib::tu_loadlib(lib_t hlib)
+tu_loadlib::tu_loadlib(const char* library_name) :
+	m_hlib(NULL)
 {
-	assert(hlib);
-	m_hlib = hlib;
+	tu_string path = library_name;
+	path += ".so";
+
+	m_hlib = dlopen(path.c_str(), RTLD_LAZY);
+	if (m_hlib == NULL)
+	{
+		printf("can't load shared library '%s'\n", path.c_str());
+	}
 }
 
 tu_loadlib::~tu_loadlib()
 {
+	if (m_hlib)
+	{
+		dlclose(m_hlib);
+	}
 }
 
 void* tu_loadlib::get_function(const char* function_name)
 {
+	if (m_hlib)
+	{
+		return dlsym(m_hlib, function_name);
+	}
 	return NULL;
 }
 
