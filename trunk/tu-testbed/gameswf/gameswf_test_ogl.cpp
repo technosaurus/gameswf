@@ -55,6 +55,7 @@ void	print_usage()
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
 		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
 		"  -n          Allow use of network to try to open resource URLs\n"
+		"  -u          Allow pass the user bootup options to Flash (through _global._bootup)\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -217,7 +218,8 @@ int	main(int argc, char *argv[])
 
 	// -1.0 tends to look good.
 	tex_lod_bias = -1.2f;
-	
+	tu_string bootup_options;
+
 	for (int arg = 1; arg < argc; arg++)
 	{
 		if (argv[arg][0] == '-')
@@ -230,7 +232,22 @@ int	main(int argc, char *argv[])
 				print_usage();
 				exit(1);
 			}
-			if (argv[arg][1] == 'c')
+			if (argv[arg][1] == 'u')
+			{
+				arg++;
+				if (arg < argc)
+				{
+					bootup_options =argv[arg];
+				}
+				else
+				{
+					fprintf(stderr, "-u arg must be followed string like myvar=x,myvar2=y and so on\n");
+					print_usage();
+					exit(1);
+				}
+
+			}
+			else if (argv[arg][1] == 'c')
 			{
 				sdl_abort = false;
 			}
@@ -448,6 +465,14 @@ int	main(int argc, char *argv[])
 	//
 
 	// gameswf::set_use_cache_files(true);
+
+
+	// gameSWF extension
+	// pass bootup options to Flash
+	if (bootup_options.size() > 0)
+	{
+		gameswf::set_bootup_options(bootup_options.c_str());
+	}
 
 	{
 

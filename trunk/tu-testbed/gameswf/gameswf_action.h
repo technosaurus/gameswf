@@ -21,7 +21,8 @@ namespace gameswf
 	struct as_environment;
 	struct as_as_function;
 
-	as_object* get_global();
+	exported_module as_object* get_global();
+	exported_module void set_bootup_options(const char* param);
 
 	// Clean up any stray heap stuff we've allocated.
 	void	action_clear();
