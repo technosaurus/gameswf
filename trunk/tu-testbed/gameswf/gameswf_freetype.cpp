@@ -145,8 +145,29 @@ namespace gameswf
 		return true;
 
 #else
-		log_error("get_fontfile() is not implemented yet\n");
-		return false;	//TODO for Linux
+
+	//TODO for Linux
+
+	// hack
+	file_name = "/usr/share/fonts/truetype/times";
+	if (is_bold && is_italic)
+	{
+		file_name += "BI";
+	}
+	else
+	if (is_bold)
+	{
+		file_name +=  "B";
+	}
+	else
+	if (is_italic)
+	{
+		file_name +=  "I";
+	}
+	file_name += ".ttf";
+
+	return true;
+
 #endif
 	}
 

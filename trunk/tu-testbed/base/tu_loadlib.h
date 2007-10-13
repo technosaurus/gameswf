@@ -12,7 +12,7 @@
 	#include <windows.h>
 	#define lib_t HINSTANCE
 #else
-	#define lib_t int
+	#define lib_t void*
 #endif
 
 struct tu_loadlib
