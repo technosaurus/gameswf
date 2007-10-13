@@ -468,22 +468,29 @@ namespace gameswf
 			// Take all the members of the object
 
 			as_object* object = obj->cast_to_as_object();
-			for (stringi_hash<as_member>::const_iterator it = object->m_members.begin(); 
-				it != object->m_members.end(); ++it)
+			if (object)
 			{
-				as_member member = it.get_value();
+				for (stringi_hash<as_member>::const_iterator it = object->m_members.begin(); 
+					it != object->m_members.end(); ++it)
+				{
+					as_member member = it.get_value();
 
-				as_prop_flags f = member.get_member_flags();
-				f.set_flags(set_true, set_false);
-				member.set_member_flags(f);
+					as_prop_flags f = member.get_member_flags();
+					f.set_flags(set_true, set_false);
+					member.set_member_flags(f);
 
-				object->m_members.set(it.get_key(), member);
+					object->m_members.set(it.get_key(), member);
+				}
 			}
 		}
 		else
 		{
 			as_object* object = obj->cast_to_as_object();
 			as_object* object_props = props->cast_to_as_object();
+			if (object == NULL || object_props == NULL)
+			{
+				return;
+			}
 
 			stringi_hash<as_member>::iterator it = object_props->m_members.begin();
 			while(it != object_props->m_members.end())
