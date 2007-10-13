@@ -141,6 +141,14 @@ namespace gameswf
 		return s_global.get_ptr();
 	}
 
+	void set_bootup_options(const char* param)
+	// gameSWF extension
+	// Allow pass the user bootup options to Flash (through _global._bootup)
+	{
+		action_init();
+		s_global->set_member("_bootup", param);
+	}
+
 	//
 	// Function/method dispatch.
 	//
