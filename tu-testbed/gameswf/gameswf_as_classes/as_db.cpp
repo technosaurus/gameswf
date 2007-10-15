@@ -22,9 +22,9 @@ namespace gameswf
 		assert(fn.this_ptr);
 		as_db* db = fn.this_ptr->cast_to_as_db();
 
-		if (fn.nargs < 4)
+		if (fn.nargs < 5)
 		{
-			log_error("Db.Connect needs host, dbname, user, pwd args\n");
+			log_error("Db.Connect needs host, dbname, user, pwd, socket args\n");
 			return;
 		}
 
@@ -33,7 +33,8 @@ namespace gameswf
 			fn.result->set_bool(db->connect(fn.arg(0).to_string(),	// host
 				fn.arg(1).to_string(),	// dbname
 				fn.arg(2).to_string(),	// user
-				fn.arg(3).to_string()));	// pwd
+				fn.arg(3).to_string(),	// pwd
+				fn.arg(4).to_string()));	// socket
 		}
 	}
 
@@ -144,7 +145,11 @@ namespace gameswf
 		}
 	}
 
-	bool as_db::connect(const char* host, const char* dbname, const char* user, const char* pwd)
+	bool as_db::connect(const char* host,
+		const char* dbname, 
+		const char* user, 
+		const char* pwd,
+		const char* socket)
 	{
 		// Closes a previously opened connection &
 		// also deallocates the connection handle
@@ -158,12 +163,15 @@ namespace gameswf
 		}
 
 		// real connect
-		if (mysql_real_connect(m_db,
+		if (mysql_real_connect(
+			m_db,
 			strlen(host) > 0 ? host : NULL,
 			strlen(user) > 0 ? user : NULL,
 			strlen(pwd) > 0 ? pwd : NULL,
 			strlen(dbname) > 0 ? dbname : NULL,
-			0, NULL, CLIENT_MULTI_STATEMENTS) == NULL)
+			0,
+			strlen(socket) > 0 ? socket : NULL,
+			CLIENT_MULTI_STATEMENTS) == NULL)
 		{
 			log_error("%s\n", mysql_error(m_db));
 			return false;

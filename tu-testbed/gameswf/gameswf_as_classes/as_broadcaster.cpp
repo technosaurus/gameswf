@@ -136,19 +136,27 @@ namespace gameswf
 
 	void as_listener::add(as_object_interface* listener)
 	{
+		// if listener is in array then return
+		for (int i = 0, n = m_listener.size(); i < n; i++)
+		{
+			if (m_listener[i].get_ptr() == listener)
+			{
+				return;
+			}
+		}
+
 		m_listener.push_back(listener);
 	}
 
 	void as_listener::remove(as_object_interface* listener)
 	{
-		for (int i = 0; i < m_listener.size(); )
+		for (int i = 0, n = m_listener.size(); i < n; i++)
 		{
 			if (m_listener[i].get_ptr() == listener)
 			{
 				m_listener.remove(i);
-				continue;
+				return;
 			}
-			i++;
 		}
 	}
 
