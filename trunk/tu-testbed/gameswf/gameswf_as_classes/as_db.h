@@ -25,7 +25,8 @@ namespace gameswf
 		~as_db();
 
 		virtual as_db* cast_to_as_db() { return this; }
-		bool connect(const char* host, const char* dbname, const char* user, const char* pwd);
+		bool connect(const char* host, const char* dbname, const char* user,
+			const char* pwd, const char* socket);
 		void disconnect();
 		as_table* open(const char* sql);
 		int run(const char *sql);

@@ -44,7 +44,8 @@ void* tu_loadlib::get_function(const char* function_name)
 tu_loadlib::tu_loadlib(const char* library_name) :
 	m_hlib(NULL)
 {
-	tu_string path = library_name;
+	tu_string path = "lib";
+	path += library_name;
 	path += ".so";
 
 	m_hlib = dlopen(path.c_str(), RTLD_LAZY);
