@@ -5,7 +5,7 @@
 
 using namespace gameswf;
 
-struct my_plugin : public as_object
+struct my_plugin : public as_plugin
 {
 
 	my_plugin(double param);

@@ -18,7 +18,7 @@ void	hello(const fn_call& fn)
 
 extern "C"
 {
-	exported_module as_object* gameswf_module_init(const array<as_value>& params)
+	exported_module as_plugin* gameswf_module_init(const array<as_value>& params)
 	{
 		printf("gameswf_init\n");
 		my_plugin* plugin = new my_plugin(params[0].to_number());
