@@ -10,6 +10,7 @@
 #define GAMESWF_AS_KEY_H
 
 #include "gameswf/gameswf_action.h"	// for as_object
+#include "gameswf/gameswf_root.h"	// for listener
 
 namespace gameswf
 {
@@ -38,15 +39,13 @@ namespace gameswf
 	{
 		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
 		int	m_last_key_pressed;
-		hash< weak_ptr<as_object_interface>, int > m_listeners;
+		listener m_listeners;
 
 		as_key();
 		bool	is_key_down(int code);
 		void	set_key_down(int code);
 		void	set_key_up(int code);
 		int	get_last_key_pressed() const;
-		void notify(bool down);
-		void clear_garbage();
 		virtual as_key* cast_to_as_key() { return this; }
 	};
 
