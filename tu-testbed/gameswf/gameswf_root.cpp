@@ -252,12 +252,12 @@ namespace gameswf
 
 	void movie_root::add_listener(as_object_interface* listener, listener::type lt)
 	{
-		m_listener.add_listener(listener, lt);
+		m_listener.add(listener, lt);
 	}
 
 	void movie_root::remove_listener(as_object_interface* listener)
 	{
-		m_listener.remove_listener(listener);
+		m_listener.remove(listener);
 	}
 
 	// @@ should these delegate to m_movie?	 Probably...
@@ -513,6 +513,7 @@ namespace gameswf
 	// listener
 	//
 
+	// for KeyPress
 	void listener::notify(key::code k)
 	{
 
@@ -537,6 +538,60 @@ namespace gameswf
 		}
 	}
 
+	// for asBroadcaster
+	void listener::notify(const tu_string& event_name, const fn_call& fn)
+	{
+		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+			it != m_listeners.end(); )
+		{
+			smart_ptr<as_object_interface> obj = it->first;
+			if (obj == NULL)	// listener was destroyed
+			{
+				// cleanup the garbage
+				m_listeners.erase(it);
+			}
+			else
+			{
+				as_value function;
+				if (it->first->get_member(event_name, &function))
+				{
+					call_method(function, fn.env, it->first.get_ptr(),
+						fn.nargs, fn.env->get_top_index());
+				}
+			}
+			++it;
+		}
+	}
+
+	// for Key object
+	void listener::notify(bool down)
+	{
+
+		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+			it != m_listeners.end(); )
+		{
+			smart_ptr<as_object_interface> obj = it->first;
+			if (obj == NULL)	// listener was destroyed
+			{
+				// cleanup the garbage
+				m_listeners.erase(it);
+			}
+			else
+			{
+				if (down)
+				{
+					obj->on_event(event_id(event_id::KEY_DOWN));
+				}
+				else
+				{
+					obj->on_event(event_id(event_id::KEY_UP));
+				}
+			}
+			++it;
+		}
+	}
+
+	// for video
 	void	listener::advance(float delta_time)
 	{
 		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
@@ -559,15 +614,15 @@ namespace gameswf
 		}
 	}
 
-	void listener::add_listener(as_object_interface* listener, type lt) 
+	void listener::add(as_object_interface* listener, type lt) 
 	{
-		m_listeners[listener] = lt;
+		m_listeners.set(listener, lt);
 
 		// sanity check
-		assert(m_listeners.size() < 100);
+		assert(m_listeners.size() < 1000);
 	} 
 
-	void listener::remove_listener(as_object_interface* listener) 
+	void listener::remove(as_object_interface* listener) 
 	{
 		// Do not delete this "if", it is necessary for prevention
 		// of an infinite loop

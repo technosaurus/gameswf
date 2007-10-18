@@ -32,8 +32,7 @@ namespace gameswf
 			return;
 		}
 
-		ko->clear_garbage();
-		ko->m_listeners.set(listener, 0);
+		ko->m_listeners.add(listener);
 	}
 
 	void	key_remove_listener(const fn_call& fn)
@@ -49,15 +48,7 @@ namespace gameswf
 			return;
 		}
 
-		as_object_interface*	listener = fn.arg(0).to_object();
-		if (listener == NULL)
-		{
-			log_error("key_remove_listener passed a NULL object; ignored\n");
-			return;
-		}
-
-		ko->clear_garbage();
-		ko->m_listeners.erase(listener);
+		ko->m_listeners.remove(fn.arg(0).to_object());
 	}
 
 	void	key_get_ascii(const fn_call& fn)
@@ -193,7 +184,7 @@ namespace gameswf
 		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 		m_keymap[byte_index] |= mask;
 
-		notify(true);
+		m_listeners.notify(true);
 	}
 
 	void	as_key::set_key_up(int code)
@@ -209,54 +200,12 @@ namespace gameswf
 		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 		m_keymap[byte_index] &= ~mask;
 
-		notify(false);
+		m_listeners.notify(false);
 	}
 
 	int	as_key::get_last_key_pressed() const
 	{
 		return m_last_key_pressed; 
-	}
-
-	void as_key::notify(bool down)
-	{
-
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-			it != m_listeners.end(); )
-		{
-			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.erase(it);
-			}
-			else
-			{
-				if (down)
-				{
-					obj->on_event(event_id(event_id::KEY_DOWN));
-				}
-				else
-				{
-					obj->on_event(event_id(event_id::KEY_UP));
-				}
-			}
-			++it;
-		}
-	}
-
-	void as_key::clear_garbage()
-	{
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-			it != m_listeners.end(); )
-		{
-			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.erase(it);
-			}
-			++it;
-		}
 	}
 
 }

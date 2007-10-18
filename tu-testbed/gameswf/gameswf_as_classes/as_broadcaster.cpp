@@ -121,43 +121,28 @@ namespace gameswf
 	{
 		if (name == "length")
 		{
-			val->set_int(m_listener.size());
+			val->set_int(m_listeners.size());
 			return true;
 		}
 		
-		int index = atoi(name.c_str());
-		if (index >= 0 && index < m_listener.size())
+		//TODO
+/*		int index = atoi(name.c_str());
+		if (index >= 0 && index < m_listeners.size())
 		{
 			val->set_as_object_interface(m_listener[index].get_ptr());
 			return true;
-		}
+		}*/
 		return false;
 	}
 
 	void as_listener::add(as_object_interface* listener)
 	{
-		// if listener is in array then return
-		for (int i = 0, n = m_listener.size(); i < n; i++)
-		{
-			if (m_listener[i].get_ptr() == listener)
-			{
-				return;
-			}
-		}
-
-		m_listener.push_back(listener);
+		m_listeners.add(listener);
 	}
 
 	void as_listener::remove(as_object_interface* listener)
 	{
-		for (int i = 0, n = m_listener.size(); i < n; i++)
-		{
-			if (m_listener[i].get_ptr() == listener)
-			{
-				m_listener.remove(i);
-				return;
-			}
-		}
+		m_listeners.remove(listener);
 	}
 
 	void	as_listener::broadcast(const fn_call& fn)
@@ -182,29 +167,15 @@ namespace gameswf
 			m_event.pop();
 
 			tu_string event_name = (*ev)[0].to_tu_string();
-			for (int i = 0; i < m_listener.size(); )
+
+			as_environment env;
+			for (int j = ev->size() - 1; j > 0; j--)
 			{
-				// listener was deleted
-				if (m_listener[i].get_ptr() == NULL)
-				{
-					m_listener.remove(i);
-					continue;
-				}
-
-				as_environment env;
-				for (int j = ev->size() - 1; j > 0; j--)
-				{
-					env.push((*ev)[j]);
-				}
-
-				as_value function;
-				if (m_listener[i]->get_member(event_name, &function))
-				{
-					call_method(function, &env, m_listener[i].get_ptr(),
-						ev->size() - 1, env.get_top_index());
-				}
-				i++;
+				env.push((*ev)[j]);
 			}
+			
+			m_listeners.notify(event_name, 
+				fn_call(NULL, NULL, &env, ev->size() - 1, env.get_top_index()));
 
 			delete ev;
 

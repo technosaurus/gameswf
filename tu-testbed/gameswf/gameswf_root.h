@@ -57,15 +57,20 @@ namespace gameswf
 	{
 		enum type
 		{
+			UNUSED,
 			KEYPRESS,
 			ADVANCE
 		};
 
-		void add_listener(as_object_interface* listener, type lt);
-		void remove_listener(as_object_interface* listener);
+		void add(as_object_interface* listener, type lt = UNUSED);
+		void remove(as_object_interface* listener);
 
 		void notify(key::code k);	// keypress
+		void notify(const tu_string& event_name, const fn_call& fn);
+		void notify(bool down);	// key events
 		void advance(float delta_time);	// advance
+
+		int size() const { return m_listeners.size(); }
 
 		private:
 
