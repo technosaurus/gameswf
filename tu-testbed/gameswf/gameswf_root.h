@@ -62,6 +62,7 @@ namespace gameswf
 			ADVANCE
 		};
 
+		void clear_garbage();
 		void add(as_object_interface* listener, type lt = UNUSED);
 		void remove(as_object_interface* listener);
 
@@ -71,6 +72,7 @@ namespace gameswf
 		void advance(float delta_time);	// advance
 
 		int size() const { return m_listeners.size(); }
+		void clear() { m_listeners.clear(); }
 
 		private:
 

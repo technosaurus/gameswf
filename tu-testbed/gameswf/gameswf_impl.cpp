@@ -46,7 +46,8 @@ namespace gameswf
 {
 	bool	s_verbose_action = false;
 	bool	s_verbose_parse = false;
-	bool	s_use_cached_movie = false;
+	bool	s_use_cached_movie_def = true;
+	bool	s_use_cached_movie_instance = false;
 
 #ifndef NDEBUG
 	bool	s_verbose_debug = true;
@@ -503,7 +504,7 @@ namespace gameswf
 		tu_string	fn(filename);
 
 		// Is the movie already in the library?
-		if (s_use_cached_movie)
+		if (s_use_cached_movie_def)
 		{
 			smart_ptr<movie_definition_sub>	m;
 			s_movie_library.get(fn, &m);
@@ -572,7 +573,7 @@ namespace gameswf
 		// smart_ptr<movie_definition_sub> md = create_movie_sub("my.swf")
 		//		m->add_ref();
 
-		if (s_use_cached_movie)
+		if (s_use_cached_movie_def)
 		{
 			s_movie_library.add(fn, m);
 		}
@@ -1759,7 +1760,7 @@ namespace gameswf
 
 	void movie_def_impl::clear_instance()
 	{
-		m_instance = NULL;
+//		m_instance = NULL;
 	}
 
 	movie_interface*	movie_def_impl::create_instance()
@@ -1767,7 +1768,7 @@ namespace gameswf
 	{
 
 		// Is the movie instance already in the library?
-		if (s_use_cached_movie)
+		if (s_use_cached_movie_instance)
 		{
 			if (m_instance != NULL)
 			{
@@ -1779,7 +1780,7 @@ namespace gameswf
 		movie_root*	m = new movie_root(this);
 		assert(m);
 
-		if (s_use_cached_movie)
+		if (s_use_cached_movie_instance)
 		{
 			m_instance = m;
 		}

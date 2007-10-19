@@ -24,7 +24,8 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			fn.result->set_bool(mcl->add_listener(fn.arg(0)));
+			mcl->add_listener(fn.arg(0));
+			fn.result->set_bool(true);
 			return;
 		}
 		fn.result->set_bool(false);
@@ -38,7 +39,8 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			fn.result->set_bool(mcl->remove_listener(fn.arg(0)));
+			mcl->remove_listener(fn.arg(0));
+			fn.result->set_bool(true);
 			return;
 		}
 		fn.result->set_bool(false);
@@ -116,85 +118,61 @@ namespace gameswf
 	{
 	}
 
-	bool as_mcloader::add_listener(as_value& listener)
+	void as_mcloader::add_listener(as_value& listener)
 	{
-		if (listener.to_object())
-		{
-			m_listener[listener.to_object()] = 0;
-			return true;
-		}
-		return false;
+		m_listeners.add(listener.to_object());
 	}
 
 	void as_mcloader::clear_listener()
 	{
-		m_listener.clear();
+		m_listeners.clear();
 	}
 
-	bool as_mcloader::remove_listener(as_value& listener)
+	void as_mcloader::remove_listener(as_value& listener)
 	{
-		if (listener.to_object())
-		{
-			m_listener.erase(listener.to_object());
-			return true;
-		}
-		return false;
+		m_listeners.remove(listener.to_object());
 	}
 
 	bool	as_mcloader::on_event(const event_id& id)
 	{
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listener.begin(); it != m_listener.end(); )
+		as_environment env;
+		int nargs = 1;
+		switch (id.m_id)
 		{
-			as_value function;
+			case event_id::ONLOAD_START:
+			case event_id::ONLOAD_INIT:
+			case event_id::ONLOAD_COMPLETE:
+				break;
 
-			smart_ptr<as_object_interface> listener = it->first;
-			if (listener == NULL)
-			{
-				// cleanup the garbage
-				m_listener.erase(it);
-				continue;
-			}
+			case event_id::ONLOAD_ERROR:
+				nargs = 2;
+				env.push("URLNotFound");	// 2-d param
+				break;
 
-			if (listener->get_member(id.get_function_name(), &function))
-			{
-				as_environment env;
-				int param_count = 1;
-				switch (id.m_id)
+			case event_id::ONLOAD_PROGRESS:
 				{
-					case event_id::ONLOAD_START:
-					case event_id::ONLOAD_INIT:
-					case event_id::ONLOAD_COMPLETE:
-						break;
+					nargs = 3;	
+					assert(id.m_target);
+					sprite_instance* m = id.m_target->cast_to_sprite();
 
-					case event_id::ONLOAD_ERROR:
-						param_count = 2;
-						env.push("URLNotFound");	// 2-d param
-						break;
-
-					case event_id::ONLOAD_PROGRESS:
-					{
-						param_count = 3;	
-						assert(id.m_target);
-						sprite_instance* m = id.m_target->cast_to_sprite();
-
-						// 8 is (file_start_pos(4 bytes) + header(4 bytes))
-						int total = m->get_file_bytes() - 8;
-						int loaded = m->get_loaded_bytes();
-						env.push(total);
-						env.push(loaded);
-						break;
-					}
-
-					default:
-						assert(0);
-
+					// 8 is (file_start_pos(4 bytes) + header(4 bytes))
+					int total = m->get_file_bytes() - 8;
+					int loaded = m->get_loaded_bytes();
+					env.push(total);
+					env.push(loaded);
+					break;
 				}
 
-				env.push(id.m_target);	// 1-st param
-				call_method(function, &env, NULL, param_count, env.get_top_index());
-			}
-			++it;
+			default:
+				assert(0);
+
 		}
+
+		env.push(id.m_target);	// 1-st param
+
+		m_listeners.notify(id.get_function_name(), 
+			fn_call(NULL, NULL, &env, nargs, env.get_top_index()));
+
 		return false;
 	}
 

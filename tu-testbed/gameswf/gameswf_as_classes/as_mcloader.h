@@ -10,6 +10,7 @@
 #define GAMESWF_AS_MCLOADER_H
 
 #include "gameswf/gameswf_action.h"	// for as_object
+#include "gameswf/gameswf_root.h"	// for listener
 #include "net/http_client.h"
 
 namespace gameswf
@@ -19,7 +20,7 @@ namespace gameswf
 
 	struct as_mcloader : public as_object
 	{
-		hash< weak_ptr<as_object_interface>, int > m_listener;
+		listener m_listeners;
 
 		as_mcloader();
 		~as_mcloader();
@@ -27,8 +28,8 @@ namespace gameswf
 		virtual bool	on_event(const event_id& id);
 		virtual as_mcloader* cast_to_as_mcloader() { return this; }
 
-		bool add_listener(as_value& listener);
-		bool remove_listener(as_value& listener);
+		void add_listener(as_value& listener);
+		void remove_listener(as_value& listener);
 		void clear_listener();
 	};
 
