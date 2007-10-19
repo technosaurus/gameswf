@@ -614,16 +614,39 @@ namespace gameswf
 		}
 	}
 
+	// removes the destroyed listener
+	void listener::clear_garbage() 
+	{
+		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
+			it != m_listeners.end(); )
+		{
+			smart_ptr<as_object_interface> obj = it->first;
+			if (obj == NULL)	// listener was destroyed
+			{
+				// cleanup the garbage
+				m_listeners.erase(it);
+			}
+			++it;
+		}
+	} 
+
 	void listener::add(as_object_interface* listener, type lt) 
 	{
-		m_listeners.set(listener, lt);
-
 		// sanity check
 		assert(m_listeners.size() < 1000);
+
+		clear_garbage();
+
+		if (listener)
+		{
+			m_listeners.add(listener, lt);
+		}
 	} 
 
 	void listener::remove(as_object_interface* listener) 
 	{
+		clear_garbage();
+
 		// Do not delete this "if", it is necessary for prevention
 		// of an infinite loop
 		if (m_listeners.size() > 0)
