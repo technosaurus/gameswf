@@ -149,6 +149,7 @@ namespace gameswf
 			int nframe = m_movie[i].m_movie->get_loading_frame();
 			if (nframe == 1 && m_movie[i].m_init_event_issued == false)
 			{
+				place_instance(ch, m_movie[i].m_target.get_ptr());
 				m_listeners.notify(event_id(event_id::ONLOAD_INIT, &event_args));
 			}
 
@@ -166,31 +167,7 @@ namespace gameswf
 				event_args.push_back(loaded);
 				event_args.push_back(total);
 				m_listeners.notify(event_id(event_id::ONLOAD_PROGRESS, &event_args));
-
 				m_listeners.notify(event_id(event_id::ONLOAD_COMPLETE, &event_args));
-
-				if (m_movie[i].m_target != NULL)
-				{
-					const char* name = m_movie[i].m_target->get_name();
-					Uint16 depth = m_movie[i].m_target->get_depth();
-					bool use_cxform = false;
-					cxform color_transform =  m_movie[i].m_target->get_cxform();
-					bool use_matrix = false;
-					const matrix& mat = m_movie[i].m_target->get_matrix();
-					float ratio = m_movie[i].m_target->get_ratio();
-					Uint16 clip_depth = m_movie[i].m_target->get_clip_depth();
-
-					ch->get_parent()->replace_display_object(
-						ch,
-						name,
-						depth,
-						use_cxform,
-						color_transform,
-						use_matrix,
-						mat,
-						ratio,
-						clip_depth);
-				}
 
 				m_movie.remove(i);
 				continue;
@@ -198,6 +175,43 @@ namespace gameswf
 
 			i++;
 
+		}
+	}
+
+	void	as_mcloader::place_instance(sprite_instance* ch, sprite_instance* target)
+	{
+		if (target)
+		{
+			if (target == target->get_root_movie())
+			{
+				// mcLoader can't replace 
+				ch->execute_frame_tags(0);
+				set_current_root(ch->get_root());
+				ch->on_event(event_id::LOAD);
+			}
+			else
+			{
+				// container
+				const char* name = target->get_name();
+				Uint16 depth = target->get_depth();
+				bool use_cxform = false;
+				cxform color_transform = target->get_cxform();
+				bool use_matrix = false;
+				const matrix& mat = target->get_matrix();
+				float ratio = target->get_ratio();
+				Uint16 clip_depth = target->get_clip_depth();
+
+				ch->get_parent()->replace_display_object(
+					ch,
+					name,
+					depth,
+					use_cxform,
+					color_transform,
+					use_matrix,
+					mat,
+					ratio,
+					clip_depth);
+			}
 		}
 	}
 

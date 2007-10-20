@@ -62,14 +62,14 @@ namespace gameswf
 		smart_ptr<movie_def_impl>	m_def;
 		smart_ptr<character>	m_movie;
 		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
-		float			m_pixel_scale;
+		float		m_pixel_scale;
 
 		rgba		m_background_color;
 		int			m_mouse_x, m_mouse_y, m_mouse_buttons;
 		void*		m_userdata;
 		character::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
 		mouse_button_state m_mouse_button_state;
-		bool			m_on_event_load_called;
+		bool		m_on_event_load_called;
 
 		smart_ptr<character> m_current_active_entity;
 		float	m_time_remainder;

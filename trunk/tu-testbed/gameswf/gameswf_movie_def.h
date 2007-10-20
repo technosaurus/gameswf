@@ -227,6 +227,7 @@ namespace gameswf
 		~movie_def_impl();
 
 		movie_interface*	create_instance();
+		movie_interface*	create_root();
 		void clear_instance();
 
 		float	get_frame_rate() const;

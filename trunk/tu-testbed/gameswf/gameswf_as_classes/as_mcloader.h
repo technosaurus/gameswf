@@ -41,6 +41,8 @@ namespace gameswf
 		virtual void	advance(float delta_time);
 		virtual as_mcloader* cast_to_as_mcloader() { return this; }
 
+		void	place_instance(sprite_instance* ch, sprite_instance* target);
+
 	};
 
 }	// end namespace gameswf
