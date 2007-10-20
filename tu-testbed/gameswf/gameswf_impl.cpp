@@ -1766,6 +1766,16 @@ namespace gameswf
 	movie_interface*	movie_def_impl::create_instance()
 	// Create a playable movie instance from a def.
 	{
+		movie_interface*	root = create_root();
+
+		// create dlist
+		root->get_root_movie()->execute_frame_tags(0);		
+
+		return root;
+	}
+
+	movie_interface*	movie_def_impl::create_root()
+	{
 
 		// Is the movie instance already in the library?
 		if (s_use_cached_movie_instance)
@@ -1791,14 +1801,6 @@ namespace gameswf
 		// By default _root has no name
 		//		root_movie->set_name("_root");
 		m->set_root_movie(root_movie);
-
-		// We should not do m->add_ref() in order to prevent memory leaks
-		// More correctly to do so:
-		// smart_ptr<movie_interface> m = md->create_instance()
-		//		m->add_ref();
-
-		// create dlist
-		root_movie->execute_frame_tags(0);		
 
 		return m;
 	}

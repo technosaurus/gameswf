@@ -25,7 +25,7 @@ namespace gameswf
 
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, const as_value& target_value,
-		sprite_instance** finded_target,	// for mcloader
+		sprite_instance** found_target,	// for mcloader
 		bool place)	// for mcloader
 	{
 		sprite_instance* target = NULL;
@@ -45,9 +45,9 @@ namespace gameswf
 			return NULL;
 		}
 
-		if (finded_target)
+		if (found_target)
 		{
-			*finded_target = target;
+			*found_target = target;
 		}
 
 		movie_root* mroot = target->get_root();
@@ -100,12 +100,23 @@ namespace gameswf
 
 			if (target == target->get_root_movie())
 			{
-				movie_interface* new_inst = md->create_instance();
-				assert(new_inst);
-
-				sprite_instance* new_root = new_inst->get_root_movie()->cast_to_sprite();
-				set_current_root(new_inst);
-				new_root->on_event(event_id::LOAD);
+				sprite_instance* new_root = NULL;
+				// mcLoader calls this function with place = false
+				if (place)
+				{
+					movie_interface* new_inst = md->create_instance();
+					assert(new_inst);
+					new_root = new_inst->get_root_movie()->cast_to_sprite();
+		
+					set_current_root(new_inst);
+					new_root->on_event(event_id::LOAD);
+				}
+				else
+				{
+					movie_interface* new_inst = md->cast_to_movie_def_impl()->create_root();
+					assert(new_inst);
+					new_root = new_inst->get_root_movie()->cast_to_sprite();
+				}
 				return new_root;
 			}
 
