@@ -152,17 +152,17 @@ namespace gameswf
 	file_name = "/usr/share/fonts/truetype/times";
 	if (is_bold && is_italic)
 	{
-		file_name += "BI";
+		file_name += "bi";
 	}
 	else
 	if (is_bold)
 	{
-		file_name +=  "B";
+		file_name +=  "b";
 	}
 	else
 	if (is_italic)
 	{
-		file_name +=  "I";
+		file_name +=  "b";
 	}
 	file_name += ".ttf";
 

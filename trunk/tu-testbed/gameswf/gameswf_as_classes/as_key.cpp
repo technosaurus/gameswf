@@ -183,8 +183,7 @@ namespace gameswf
 
 		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 		m_keymap[byte_index] |= mask;
-
-		m_listeners.notify(true);
+		m_listeners.notify(event_id(event_id::KEY_DOWN));
 	}
 
 	void	as_key::set_key_up(int code)
@@ -200,7 +199,7 @@ namespace gameswf
 		assert(byte_index >= 0 && byte_index < int(sizeof(m_keymap)/sizeof(m_keymap[0])));
 		m_keymap[byte_index] &= ~mask;
 
-		m_listeners.notify(false);
+		m_listeners.notify(event_id(event_id::KEY_UP));
 	}
 
 	int	as_key::get_last_key_pressed() const

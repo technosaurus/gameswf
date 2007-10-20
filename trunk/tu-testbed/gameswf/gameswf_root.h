@@ -16,6 +16,7 @@
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_mutex.h"
+#include "gameswf/gameswf_listener.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -51,34 +52,6 @@ namespace gameswf
 		}
 	};
 
-
-	// helper
-	struct listener
-	{
-		enum type
-		{
-			UNUSED,
-			KEYPRESS,
-			ADVANCE
-		};
-
-		void clear_garbage();
-		void add(as_object_interface* listener, type lt = UNUSED);
-		void remove(as_object_interface* listener);
-
-		void notify(key::code k);	// keypress
-		void notify(const tu_string& event_name, const fn_call& fn);
-		void notify(bool down);	// key events
-		void advance(float delta_time);	// advance
-
-		int size() const { return m_listeners.size(); }
-		void clear() { m_listeners.clear(); }
-
-		private:
-
-		hash< weak_ptr<as_object_interface>, int > m_listeners;
-	};
-
 	//
 	// movie_root
 	//
@@ -101,7 +74,10 @@ namespace gameswf
 		smart_ptr<character> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
-		listener m_listener;
+
+		// listeners
+		listener m_keypress_listener;
+		listener m_advance_listener;
 
 		movie_root(movie_def_impl* def);
 		~movie_root();
@@ -161,8 +137,7 @@ namespace gameswf
 		virtual float	get_movie_fps();
 
 		virtual void	notify_key_event(key::code k, bool down);
-		void add_listener(as_object_interface* listener, listener::type lt);
-		void remove_listener(as_object_interface* listener);
+
 	};
 }
 
