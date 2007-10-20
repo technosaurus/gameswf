@@ -118,4 +118,13 @@ namespace gameswf
 		}
 	}
 
+	as_object_interface*	listener::operator[](const tu_stringi& name) const
+	{
+		int index = atoi(name.c_str());
+		if (index >= 0 && index < m_listeners.size())
+		{
+			return m_listeners[index].get_ptr();
+		}
+		return NULL;
+	}
 }
