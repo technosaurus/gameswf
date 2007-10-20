@@ -125,13 +125,12 @@ namespace gameswf
 			return true;
 		}
 		
-		//TODO
-/*		int index = atoi(name.c_str());
-		if (index >= 0 && index < m_listeners.size())
+		as_object_interface* listener = m_listeners[name];
+		if (listener)
 		{
-			val->set_as_object_interface(m_listener[index].get_ptr());
+			val->set_as_object_interface(listener);
 			return true;
-		}*/
+		}
 		return false;
 	}
 
@@ -147,12 +146,12 @@ namespace gameswf
 
 	void	as_listener::broadcast(const fn_call& fn)
 	{
-		array<as_value>* ev = new array<as_value>;
+		array<as_value>* fn_args = new array<as_value>;
 		for (int i = 0; i < fn.nargs; i++)
 		{
-			ev->push_back(fn.arg(i));
+			fn_args->push_back(fn.arg(i));
 		}
-		m_event.push(ev);
+		m_suspended_event.push(fn_args);
 
 		if (m_reentrance)
 		{
@@ -161,23 +160,25 @@ namespace gameswf
 
 		m_reentrance = true;
 
-		while (m_event.size() > 0)
+		while (m_suspended_event.size() > 0)
 		{
-			ev = m_event.front();
-			m_event.pop();
+			fn_args = m_suspended_event.front();
+			m_suspended_event.pop();
 
-			tu_string event_name = (*ev)[0].to_tu_string();
+			tu_string event_name = (*fn_args)[0].to_tu_string();
 
-			as_environment env;
-			for (int j = ev->size() - 1; j > 0; j--)
+			assert(fn.env);
+			for (int j = fn_args->size() - 1; j > 0; j--)
 			{
-				env.push((*ev)[j]);
+				fn.env->push((*fn_args)[j]);
 			}
 			
 			m_listeners.notify(event_name, 
-				fn_call(NULL, NULL, &env, ev->size() - 1, env.get_top_index()));
+				fn_call(NULL, NULL, fn.env, fn_args->size() - 1, fn.env->get_top_index()));
 
-			delete ev;
+			fn.env->drop(fn_args->size() - 1);
+
+			delete fn_args;
 
 		}
 

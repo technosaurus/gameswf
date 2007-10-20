@@ -31,6 +31,7 @@ namespace gameswf
 
 		int size() const { return m_listeners.size(); }
 		void clear() { m_listeners.clear(); }
+		as_object_interface*	operator[](const tu_stringi& name) const;
 	};
 
 }
