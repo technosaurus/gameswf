@@ -20,17 +20,27 @@ namespace gameswf
 
 	struct as_mcloader : public as_object
 	{
+		struct loadable_movie
+		{
+			loadable_movie() :
+				m_init_event_issued(false)
+			{
+			}
+
+			smart_ptr<sprite_instance> m_movie;
+			weak_ptr<sprite_instance> m_target;
+			bool m_init_event_issued;
+		};
+
 		listener m_listeners;
+		array<loadable_movie> m_movie;
 
 		as_mcloader();
 		~as_mcloader();
 		
-		virtual bool	on_event(const event_id& id);
+		virtual void	advance(float delta_time);
 		virtual as_mcloader* cast_to_as_mcloader() { return this; }
 
-		void add_listener(as_value& listener);
-		void remove_listener(as_value& listener);
-		void clear_listener();
 	};
 
 }	// end namespace gameswf

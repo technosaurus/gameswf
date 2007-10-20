@@ -389,7 +389,6 @@ namespace gameswf
 		}
 
 		virtual bool can_handle_mouse_event() { return false; }
-		virtual void set_mcloader(as_mcloader* mcl) { assert(0); }
 	
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);

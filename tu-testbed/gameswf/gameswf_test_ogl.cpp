@@ -21,6 +21,7 @@
 #include "net/tu_net_file.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_player.h"
 
 void	print_usage()
 // Brief instructions.
@@ -632,6 +633,11 @@ int	main(int argc, char *argv[])
 		Uint32	last_ticks = start_ticks;
 		int	frame_counter = 0;
 		int	last_logged_fps = last_ticks;
+
+		//TODO
+//		gameswf::player* p = gameswf::create_player();
+//		p.run();
+
 
 		for (;;)
 		{

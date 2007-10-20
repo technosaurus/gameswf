@@ -92,7 +92,7 @@ namespace gameswf
 			EVENT_COUNT
 		};
 
-		// Vitaly: I add m_unused because of problem with hash<event_id, ...>
+		// 'm_unused' was added because of problem with hash<event_id, ...>
 		// the reason: sizeof(unsigned char+unsigned char+character*)  == 8 
 		// and
 		//						 sizeof(unsigned char+unsigned char+Uint16+character*)  == 8
@@ -100,21 +100,21 @@ namespace gameswf
 		unsigned char	m_id;
 		unsigned char	m_key_code;
 		Uint16	m_unused;
-		character* m_target;
+		array<as_value>* m_args;
 
 		event_id() :
 			m_id(INVALID),
 			m_key_code(key::INVALID),
 			m_unused(0),
-			m_target(NULL)
+			m_args(NULL)
 		{
 		}
 
-		event_id(id_code id, character* target) :
+		event_id(id_code id, array<as_value>* args) :
 			m_id((unsigned char) id),
 			m_key_code(key::INVALID),
 			m_unused(0),
-			m_target(target)
+			m_args(args)
 		{
 		}
 
@@ -122,7 +122,7 @@ namespace gameswf
 			m_id((unsigned char) id),
 			m_key_code((unsigned char) c),
 			m_unused(0),
-			m_target(NULL)
+			m_args(NULL)
 		{
 			// For the button key events, you must supply a keycode.
 			// Otherwise, don't.
@@ -134,7 +134,7 @@ namespace gameswf
 		{
 			return m_id == id.m_id &&
 				m_key_code == id.m_key_code &&
-				m_target == id.m_target;
+				m_args == id.m_args;
 		}
 
 		// Return the name of a method-handler function corresponding to this event.

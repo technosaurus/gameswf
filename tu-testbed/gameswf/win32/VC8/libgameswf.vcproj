@@ -369,6 +369,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_player.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_render.cpp"
 				>
 			</File>
@@ -738,6 +742,10 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_object.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_player.h"
 				>
 			</File>
 			<File
