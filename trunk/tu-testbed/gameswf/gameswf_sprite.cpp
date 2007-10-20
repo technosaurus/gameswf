@@ -329,13 +329,11 @@ namespace gameswf
 	// regression.)
 	void sprite_instance::advance(float delta_time)
 	{
-		// Vitaly:
 		// child movieclip frame rate is the same the root movieclip frame rate
 		// that's why it is not needed to analyze 'm_time_remainder'
 		if (m_on_event_load_called == false)
 		{
 			// clip sprite onload 
-			// Vitaly:
 			// _root.onLoad() will not be executed since do_actions()
 			// for frame(0) has not executed yet.
 			// _root.onLoad() will be executed later in movie_root::advance()
@@ -369,7 +367,6 @@ namespace gameswf
 			// execute_frame_tags(0) already executed in dlist.cpp 
 			if (m_current_frame != prev_frame) 
 			{ 
-				//Vitaly:
 				// Macromedia Flash does not call remove display object tag
 				// for 1-st frame therefore we should do it for it :-)
 				if (m_current_frame == 0 && m_def->get_frame_count() > 1)
@@ -408,28 +405,6 @@ namespace gameswf
 
 		// Advance everything in the display list.
 		m_display_list.advance(delta_time);
-
-		// send events to MovieClipLoader object (if it there is)
-		if (m_mcloader != NULL)
-		{
-			if (m_on_event_load_called == false)
-			{
-				m_mcloader->on_event(event_id(event_id::ONLOAD_INIT, this));
-			}
-
-			m_mcloader->on_event(event_id(event_id::ONLOAD_PROGRESS, this));
-
-			// 8 is (file_start_pos(4 bytes) + header(4 bytes))
-			int total = get_file_bytes();
-			int loaded = get_loaded_bytes();
-			if (8 + loaded - total >= 0 || total == 0)
-			{
-				as_value val(this);
-				m_mcloader->remove_listener(val);
-				m_mcloader->on_event(event_id(event_id::ONLOAD_COMPLETE, this));
-				m_mcloader = NULL;
-			}
-		}
 
 		m_on_event_load_called = true;
 
@@ -1300,11 +1275,6 @@ namespace gameswf
 		}
 
 		return false;
-	}
-
-	void sprite_instance::set_mcloader(as_mcloader* mcl)
-	{
-		m_mcloader = mcl;
 	}
 
 	sprite_instance* sprite_instance::cast_to_sprite()

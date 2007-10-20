@@ -1,5 +1,26 @@
 2007-10-20  Vitaly Alexeev <tishka92@yahoo.com>
 
+		* gameswf/gameswf_action.h
+		* gameswf/gameswf_as_classes/as_mcloader.cpp
+		* gameswf/gameswf_as_classes/as_mcloader.h
+		* gameswf/gameswf_character.h
+		* gameswf/gameswf_dlist.cpp
+		* gameswf/gameswf_environment.cpp
+		* gameswf/gameswf_environment.h
+		* gameswf/gameswf_object.cpp
+		* gameswf/gameswf_player.cpp: added struct player (uncompleted)
+		* gameswf/gameswf_player.h: added struct player (uncompleted)
+		* gameswf/gameswf_sound_handler_mp3.cpp : removed(outdated)
+		* gameswf/gameswf_sprite.cpp
+		* gameswf/gameswf_sprite.h
+		* gameswf/gameswf_test_ogl.cpp
+		* gameswf/samples/test_moviecliploader.fla: testcase
+		* gameswf/samples/test_moviecliploader.swf: testcase
+		* gameswf/win32/VC8/libgameswf.vcproj
+		rewritten mcLoader to provide the loading single frame movie
+
+2007-10-20  Vitaly Alexeev <tishka92@yahoo.com>
+
 		* gameswf/gameswf_as_classes/as_broadcaster.h
 		* gameswf/gameswf_as_classes/as_key.cpp
 		* gameswf/gameswf_as_classes/as_mcloader.h

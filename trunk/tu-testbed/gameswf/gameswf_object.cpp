@@ -277,7 +277,16 @@ namespace gameswf
 				if (get_member(method_name, &method))
 				{
 					as_environment env;
-					call_method(method, &env, this, 0, env.get_top_index());
+					int nargs = 0;
+					if (id.m_args)
+					{
+						nargs = id.m_args->size();
+						for (int i = nargs - 1; i >=0; i--)
+						{
+							env.push((*id.m_args)[i]);
+						}
+					}
+					call_method(method, &env, this, nargs, env.get_top_index());
 					called = true;
 				}
 			}

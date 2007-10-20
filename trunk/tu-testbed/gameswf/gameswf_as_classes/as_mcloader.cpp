@@ -24,8 +24,9 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			mcl->add_listener(fn.arg(0));
+			mcl->m_listeners.add(fn.arg(0).to_object());
 			fn.result->set_bool(true);
+			mcl->get_root()->m_advance_listener.add(mcl);
 			return;
 		}
 		fn.result->set_bool(false);
@@ -39,7 +40,7 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			mcl->remove_listener(fn.arg(0));
+			mcl->m_listeners.remove(fn.arg(0).to_object());
 			fn.result->set_bool(true);
 			return;
 		}
@@ -54,15 +55,24 @@ namespace gameswf
 
 		if (fn.nargs == 2)
 		{
-			character* loading_movie = fn.env->load_file(fn.arg(0).to_string(), fn.arg(1));
-			if (loading_movie != NULL)
+			sprite_instance* target;
+			character* ch = fn.env->load_file(fn.arg(0).to_string(), fn.arg(1),	&target, false);
+			array<as_value> event_args;
+			event_args.push_back(ch);
+			if (ch != NULL)
 			{
-				loading_movie->set_mcloader(mcl);
-				mcl->on_event(event_id(event_id::ONLOAD_START, loading_movie));
+				as_mcloader::loadable_movie lm;
+				lm.m_movie = ch->cast_to_sprite();
+				assert(lm.m_movie != NULL);
+				lm.m_target = target;
+				mcl->m_movie.push_back(lm);
+
+				mcl->m_listeners.notify(event_id(event_id::ONLOAD_START, &event_args));
 				fn.result->set_bool(true);
 				return;
 			}
-			mcl->on_event(event_id(event_id::ONLOAD_ERROR, loading_movie));
+			event_args.push_back("URLNotFound");	// 2-d param
+			mcl->m_listeners.notify(event_id(event_id::ONLOAD_ERROR, &event_args));
 		}
 		fn.result->set_bool(false);
 	}
@@ -117,63 +127,78 @@ namespace gameswf
 	as_mcloader::~as_mcloader()
 	{
 	}
-
-	void as_mcloader::add_listener(as_value& listener)
+	
+	void	as_mcloader::advance(float delta_time)
 	{
-		m_listeners.add(listener.to_object());
-	}
-
-	void as_mcloader::clear_listener()
-	{
-		m_listeners.clear();
-	}
-
-	void as_mcloader::remove_listener(as_value& listener)
-	{
-		m_listeners.remove(listener.to_object());
-	}
-
-	bool	as_mcloader::on_event(const event_id& id)
-	{
-		as_environment env;
-		int nargs = 1;
-		switch (id.m_id)
+		if (m_movie.size() == 0)
 		{
-			case event_id::ONLOAD_START:
-			case event_id::ONLOAD_INIT:
-			case event_id::ONLOAD_COMPLETE:
-				break;
-
-			case event_id::ONLOAD_ERROR:
-				nargs = 2;
-				env.push("URLNotFound");	// 2-d param
-				break;
-
-			case event_id::ONLOAD_PROGRESS:
-				{
-					nargs = 3;	
-					assert(id.m_target);
-					sprite_instance* m = id.m_target->cast_to_sprite();
-
-					// 8 is (file_start_pos(4 bytes) + header(4 bytes))
-					int total = m->get_file_bytes() - 8;
-					int loaded = m->get_loaded_bytes();
-					env.push(total);
-					env.push(loaded);
-					break;
-				}
-
-			default:
-				assert(0);
-
+			get_root()->m_advance_listener.remove(this);
+			return;
 		}
 
-		env.push(id.m_target);	// 1-st param
+		for (int i = 0; i < m_movie.size();)
+		{
 
-		m_listeners.notify(id.get_function_name(), 
-			fn_call(NULL, NULL, &env, nargs, env.get_top_index()));
+			sprite_instance* ch = m_movie[i].m_movie.get_ptr();
+			assert(ch);
 
-		return false;
+			array<as_value> event_args;
+			event_args.push_back(ch);
+
+
+			int nframe = m_movie[i].m_movie->get_loading_frame();
+			if (nframe == 1 && m_movie[i].m_init_event_issued == false)
+			{
+				m_listeners.notify(event_id(event_id::ONLOAD_INIT, &event_args));
+			}
+
+			int loaded = ch->get_loaded_bytes();
+			int total = ch->get_file_bytes();
+
+			if (loaded < total)
+			{
+				event_args.push_back(loaded);
+				event_args.push_back(total);
+				m_listeners.notify(event_id(event_id::ONLOAD_PROGRESS, &event_args));
+			}
+			else
+			{
+				event_args.push_back(loaded);
+				event_args.push_back(total);
+				m_listeners.notify(event_id(event_id::ONLOAD_PROGRESS, &event_args));
+
+				m_listeners.notify(event_id(event_id::ONLOAD_COMPLETE, &event_args));
+
+				if (m_movie[i].m_target != NULL)
+				{
+					const char* name = m_movie[i].m_target->get_name();
+					Uint16 depth = m_movie[i].m_target->get_depth();
+					bool use_cxform = false;
+					cxform color_transform =  m_movie[i].m_target->get_cxform();
+					bool use_matrix = false;
+					const matrix& mat = m_movie[i].m_target->get_matrix();
+					float ratio = m_movie[i].m_target->get_ratio();
+					Uint16 clip_depth = m_movie[i].m_target->get_clip_depth();
+
+					ch->get_parent()->replace_display_object(
+						ch,
+						name,
+						depth,
+						use_cxform,
+						color_transform,
+						use_matrix,
+						mat,
+						ratio,
+						clip_depth);
+				}
+
+				m_movie.remove(i);
+				continue;
+			}
+
+			i++;
+
+		}
 	}
 
 };

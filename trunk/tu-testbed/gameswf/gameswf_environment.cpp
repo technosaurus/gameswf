@@ -24,7 +24,9 @@ namespace gameswf
 {
 
 	// url=="" means that the load_file() works as unloadMovie(target)
-	character* as_environment::load_file(const char* url, const as_value& target_value)
+	character* as_environment::load_file(const char* url, const as_value& target_value,
+		sprite_instance** finded_target,	// for mcloader
+		bool place)	// for mcloader
 	{
 		sprite_instance* target = NULL;
 		{
@@ -41,6 +43,11 @@ namespace gameswf
 		{
 			IF_VERBOSE_ACTION(log_msg("load_file: target %s is't movieclip\n", target_value.to_string()));
 			return NULL;
+		}
+
+		if (finded_target)
+		{
+			*finded_target = target;
 		}
 
 		movie_root* mroot = target->get_root();
@@ -124,17 +131,20 @@ namespace gameswf
 				new_ch->cast_to_sprite()->set_root(mroot);
 			}
 
-			parent->replace_display_object(
-				new_ch->cast_to_character(),
-				name,
-				depth,
-				use_cxform,
-				color_transform,
-				use_matrix,
-				mat,
-				ratio,
-				clip_depth);
-
+			// mcLoader calls this function with place = false
+			if (place)
+			{
+				parent->replace_display_object(
+					new_ch->cast_to_character(),
+					name,
+					depth,
+					use_cxform,
+					color_transform,
+					use_matrix,
+					mat,
+					ratio,
+					clip_depth);
+			}
 			return new_ch;
 
 		}

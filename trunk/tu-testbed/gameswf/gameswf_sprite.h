@@ -56,7 +56,7 @@ namespace gameswf
 		mouse_state m_mouse_state;
 		bool m_enabled;
 		bool m_on_event_load_called;
-		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
+//		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
 
 		bool m_is_clear_called;
 
@@ -211,7 +211,6 @@ namespace gameswf
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
-		virtual void set_mcloader(as_mcloader* mcl);
 		virtual sprite_instance* cast_to_sprite();
 
 		virtual	void enumerate(as_environment* env);
