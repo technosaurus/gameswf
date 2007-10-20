@@ -778,7 +778,7 @@ namespace gameswf
 			{ 
 				if (m_has_focus == false) 
 				{ 
-					get_root()->add_listener(this, listener::KEYPRESS); 
+					get_root()->m_keypress_listener.add(this);
 					m_has_focus = true; 
 					m_cursor = m_text.size(); 
 					format_text(); 
@@ -791,7 +791,7 @@ namespace gameswf
 				if (m_has_focus == true) 
 				{ 
 					m_has_focus = false; 
-					get_root()->remove_listener(this); 
+					get_root()->m_keypress_listener.remove(this); 
 					format_text(); 
 				} 
 				break; 

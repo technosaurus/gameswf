@@ -349,6 +349,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_listener.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_log.cpp"
 				>
 			</File>
@@ -706,6 +710,10 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_impl.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_listener.h"
 				>
 			</File>
 			<File

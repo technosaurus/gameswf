@@ -61,7 +61,7 @@ namespace gameswf
 			m_param.push_back(fn.arg(i));
 		}
 
-		get_root()->add_listener(this, listener::ADVANCE);
+		get_root()->m_advance_listener.add(this);
 	}
 
 	as_timer::~as_timer()
@@ -90,7 +90,7 @@ namespace gameswf
 
 	void as_timer::clear()
 	{
-		get_root()->remove_listener(this);
+		get_root()->m_advance_listener.remove(this);
 	}
 
 }

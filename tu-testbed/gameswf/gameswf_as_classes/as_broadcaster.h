@@ -10,7 +10,7 @@
 #define GAMESWF_AS_BROADCASTER_H
 
 #include "gameswf/gameswf_action.h"	// for as_object
-#include "gameswf/gameswf_root.h"	// for listener
+#include "gameswf/gameswf_listener.h"
 #include "base/tu_queue.h"
 
 namespace gameswf

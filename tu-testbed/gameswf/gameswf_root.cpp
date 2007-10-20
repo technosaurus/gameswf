@@ -247,17 +247,7 @@ namespace gameswf
 		notify_key_object(k, down);
 
 		// Notify keypress listeners.
-		m_listener.notify(k);
-	}
-
-	void movie_root::add_listener(as_object_interface* listener, listener::type lt)
-	{
-		m_listener.add(listener, lt);
-	}
-
-	void movie_root::remove_listener(as_object_interface* listener)
-	{
-		m_listener.remove(listener);
+		m_keypress_listener.notify(event_id(event_id::KEY_PRESS, (key::code) k));
 	}
 
 	// @@ should these delegate to m_movie?	 Probably...
@@ -367,7 +357,7 @@ namespace gameswf
 		generate_mouse_button_events(&m_mouse_button_state);
 
 		// advance Action script objects
-		m_listener.advance(delta_time);
+		m_advance_listener.advance(delta_time);
 
 		m_time_remainder += delta_time;
 		if (m_time_remainder >= m_frame_time)
@@ -508,151 +498,5 @@ namespace gameswf
 	{
 		m_movie->attach_display_callback(path_to_object, callback, user_ptr);
 	}
-
-	//
-	// listener
-	//
-
-	// for KeyPress
-	void listener::notify(key::code k)
-	{
-
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-			it != m_listeners.end(); )
-		{
-			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.erase(it);
-			}
-			else
-			{
-				if (it->second == KEYPRESS)
-				{
-					obj->on_event(event_id(event_id::KEY_PRESS, (key::code) k));
-				}
-			}
-
-			++it;
-		}
-	}
-
-	// for asBroadcaster
-	void listener::notify(const tu_string& event_name, const fn_call& fn)
-	{
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-			it != m_listeners.end(); )
-		{
-			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.erase(it);
-			}
-			else
-			{
-				as_value function;
-				if (it->first->get_member(event_name, &function))
-				{
-					call_method(function, fn.env, it->first.get_ptr(),
-						fn.nargs, fn.env->get_top_index());
-				}
-			}
-			++it;
-		}
-	}
-
-	// for Key object
-	void listener::notify(bool down)
-	{
-
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-			it != m_listeners.end(); )
-		{
-			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.erase(it);
-			}
-			else
-			{
-				if (down)
-				{
-					obj->on_event(event_id(event_id::KEY_DOWN));
-				}
-				else
-				{
-					obj->on_event(event_id(event_id::KEY_UP));
-				}
-			}
-			++it;
-		}
-	}
-
-	// for video
-	void	listener::advance(float delta_time)
-	{
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-			it != m_listeners.end(); )
-		{
-			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.erase(it);
-			}
-			else
-			{
-				if (it->second == ADVANCE)
-				{
-					obj->advance(delta_time);
-				}
-			}
-			++it;
-		}
-	}
-
-	// removes the destroyed listener
-	void listener::clear_garbage() 
-	{
-		for (hash< weak_ptr<as_object_interface>, int >::iterator it = m_listeners.begin();
-			it != m_listeners.end(); )
-		{
-			smart_ptr<as_object_interface> obj = it->first;
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.erase(it);
-			}
-			++it;
-		}
-	} 
-
-	void listener::add(as_object_interface* listener, type lt) 
-	{
-		// sanity check
-		assert(m_listeners.size() < 1000);
-
-		clear_garbage();
-
-		if (listener)
-		{
-			m_listeners.add(listener, lt);
-		}
-	} 
-
-	void listener::remove(as_object_interface* listener) 
-	{
-		clear_garbage();
-
-		// Do not delete this "if", it is necessary for prevention
-		// of an infinite loop
-		if (m_listeners.size() > 0)
-		{
-			m_listeners.erase(listener);
-		}
-	} 
 
 }

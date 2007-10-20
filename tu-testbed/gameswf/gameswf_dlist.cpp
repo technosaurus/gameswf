@@ -437,7 +437,7 @@ namespace gameswf
 		{
 			if (ch->get_root())
 			{
-				ch->get_root()->add_listener(ch, listener::KEYPRESS);
+				ch->get_root()->m_keypress_listener.add(ch);
 			}
 		}
 	}
@@ -448,7 +448,7 @@ namespace gameswf
 		{
 			if (ch->get_root())
 			{
-				ch->get_root()->remove_listener(ch);
+				ch->get_root()->m_keypress_listener.remove(ch);
 			}
 		}
 	}
@@ -466,7 +466,7 @@ namespace gameswf
 	// advance referenced characters.
 	{
 
-		//Vitaly:  That there was no crash because of actions script
+		// That there was no crash because of actions script
 		// we iterate through the copy
 		array<display_object_info> tmp_list = m_display_object_array;
 		int n = tmp_list.size();
