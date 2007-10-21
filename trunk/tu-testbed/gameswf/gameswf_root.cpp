@@ -469,24 +469,24 @@ namespace gameswf
 		return m_movie->get_variable(path_to_var);
 	}
 
-	// For ActionScript interfacing convenience.
-	const char*	movie_root::call_method(const char* method_name, const char* method_arg_fmt, ...)
-	{
-		assert(m_movie != NULL);
+	//// For ActionScript interfacing convenience.
+	//const char*	movie_root::call_method(const char* method_name, const char* method_arg_fmt, ...)
+	//{
+	//	assert(m_movie != NULL);
 
-		va_list	args;
-		va_start(args, method_arg_fmt);
-		const char*	result = m_movie->call_method_args(method_name, method_arg_fmt, args);
-		va_end(args);
+	//	va_list	args;
+	//	va_start(args, method_arg_fmt);
+	//	const char*	result = m_movie->call_method_args(method_name, method_arg_fmt, args);
+	//	va_end(args);
 
-		return result;
-	}
+	//	return result;
+	//}
 
-	const char*	movie_root::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
-	{
-		assert(m_movie != NULL);
-		return m_movie->call_method_args(method_name, method_arg_fmt, args);
-	}
+	//const char*	movie_root::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
+	//{
+	//	assert(m_movie != NULL);
+	//	return m_movie->call_method_args(method_name, method_arg_fmt, args);
+	//}
 
 	void	movie_root::set_visible(bool visible) { m_movie->set_visible(visible); }
 	bool	movie_root::get_visible() const { return m_movie->get_visible(); }

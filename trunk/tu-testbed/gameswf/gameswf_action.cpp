@@ -120,6 +120,12 @@ namespace gameswf
 		return &s_garbage;
 	}
 
+	static tu_string s_gameswf_version("gameSWF");
+	const char* get_gameswf_version()
+	{
+		return s_gameswf_version.c_str();
+	}
+	
 	void clear_garbage()
 	{
 		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = s_garbage.begin();
@@ -185,16 +191,7 @@ namespace gameswf
 		return val;
 	}
 
-
-	as_value	call_method0(
-		const as_value& method,
-		as_environment* env,
-		as_object_interface* this_ptr)
-	{
-		return call_method(method, env, this_ptr, 0, env->get_top_index() + 1);
-	}
-		
-	const char*	call_method_parsed(
+/*	const char*	call_method_parsed(
 		as_environment* env,
 		as_object_interface* this_ptr,
 		const char* method_name,
@@ -382,6 +379,7 @@ namespace gameswf
 		s_retval = result.to_tu_string();
 		return s_retval.c_str();
 	}
+*/
 
 	//
 	// Built-in objects
@@ -522,6 +520,13 @@ namespace gameswf
 		fn.result->set_as_object_interface(ch);
 	}
 
+	// getVersion() : String
+	void	as_global_get_version(const fn_call& fn)
+	// Returns a string containing Flash Player version and platform information.
+	{
+		fn.result->set_tu_string(get_gameswf_version());
+	}
+
 	void	action_init()
 	// Create/hook built-ins.
 	{
@@ -570,7 +575,8 @@ namespace gameswf
 			// global builtins functions
 			s_global->set_member("setInterval",  as_value(as_global_setinterval));
 			s_global->set_member("clearInterval",  as_value(as_global_clearinterval));
-
+			s_global->set_member("getVersion",  as_value(as_global_get_version));
+			s_global->set_member("/:$version",  "gameSWF");
 		}
 	}
 

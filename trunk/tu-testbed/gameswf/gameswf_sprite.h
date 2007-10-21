@@ -207,7 +207,7 @@ namespace gameswf
 		virtual void	get_drag_state(drag_state* st);
 		character*	clone_display_object(const tu_string& newname, Uint16 depth);
 		virtual bool	on_event(const event_id& id);
-		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args);
+//		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args);
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
