@@ -30,19 +30,12 @@ namespace gameswf
 	hash<smart_ptr<as_object_interface>, bool>* get_garbage();
 	void clear_garbage();
 
+	const char* get_gameswf_version();
+
 	// Dispatching methods from C++.
 	exported_module as_value	call_method(
 		const as_value& method,	as_environment* env, as_object_interface* this_ptr,
 		int nargs, int first_arg_bottom_index);
-
-	as_value	call_method0(const as_value& method, as_environment* env, as_object_interface* this_ptr);
-
-	const char*	call_method_parsed(
-		as_environment* env,
-		as_object_interface* this_ptr,
-		const char* method_name,
-		const char* method_arg_fmt,
-		va_list args);
 
 	//
 	// event_id

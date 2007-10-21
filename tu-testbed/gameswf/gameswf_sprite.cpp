@@ -1191,7 +1191,7 @@ namespace gameswf
 			if (get_event_handler(id, &method))
 			{
 				// Dispatch.
-				call_method0(method, &m_as_environment, this);
+				call_method(method, &m_as_environment, this, 0, m_as_environment.get_top_index());
 
 				called = true;
 				// Fall through and call the function also, if it's defined!
@@ -1210,7 +1210,19 @@ namespace gameswf
 				as_value	method;
 				if (get_member(method_name, &method))
 				{
-					call_method0(method, &m_as_environment, this);
+					int nargs = 0;
+					if (id.m_args)
+					{
+						nargs = id.m_args->size();
+						for (int i = nargs - 1; i >=0; i--)
+						{
+							m_as_environment.push((*id.m_args)[i]);
+						}
+					}
+					call_method(method, &m_as_environment, this, nargs, 
+						m_as_environment.get_top_index());
+					m_as_environment.drop(nargs);
+
 					called = true;
 				}
 			}
@@ -1219,16 +1231,13 @@ namespace gameswf
 		return called;
 	}
 
-
-
-	/*sprite_instance*/
-	const char*	sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
-	{
+//	const char*	sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
+//	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object_interface>	this_ptr(this);
+//		smart_ptr<as_object_interface>	this_ptr(this);
 
-		return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
-	}
+//		return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
+//	}
 
 	void	sprite_instance::attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr)
 	{

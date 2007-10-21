@@ -1800,6 +1800,8 @@ namespace gameswf
 
 		// By default _root has no name
 		//		root_movie->set_name("_root");
+		root_movie->set_member("$version", get_gameswf_version());	// Flash 8
+		
 		m->set_root_movie(root_movie);
 
 		return m;

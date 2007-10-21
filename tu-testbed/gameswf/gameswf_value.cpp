@@ -183,7 +183,7 @@ namespace gameswf
 		if (m_type == OBJECT && m_object_value) {
 			as_value method;
 			if (m_object_value->get_member("toString", &method)) {
-				as_value result = call_method0(method, env, m_object_value);
+				as_value result = call_method(method, env, m_object_value, 0, env->get_top_index());
 				m_string_value = result.to_tu_string();  // TODO: Should we recurse here?  Need to experiment.
 				return m_string_value;
 			}

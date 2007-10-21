@@ -12,7 +12,7 @@
 
 
 #include <ctype.h>	// for poxy wchar_t
-#include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
+//#include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
 #include <assert.h>
 #include "base/image.h"	// for delete m_suspended_image
 #include "base/container.h"	// for hash<...>
@@ -606,14 +606,15 @@ namespace gameswf
 		//
 		// This is not an ActionScript language parser, it
 		// doesn't recognize expressions or anything tricky.
-#ifdef __GNUC__
+
+//#ifdef __GNUC__
 		// use the following to catch errors: (only with gcc)
-		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
-			__attribute__((format (printf, 3, 4))) = 0;	// "this" is an implied param, so fmt is 3 and ... is 4!
-#else	// not __GNUC__
-		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
-#endif	// not __GNUC__
-		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args) = 0;
+//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+//			__attribute__((format (printf, 3, 4))) = 0;	// "this" is an implied param, so fmt is 3 and ... is 4!
+//#else	// not __GNUC__
+//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
+//#endif	// not __GNUC__
+//		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args) = 0;
 
 
 		// Make the movie visible/invisible.  An invisible

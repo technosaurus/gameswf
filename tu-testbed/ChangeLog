@@ -1,3 +1,21 @@
+2007-10-21  Vitaly Alexeev <tishka92@yahoo.com>
+
+		* gameswf/gameswf.h
+		* gameswf/gameswf_action.cpp
+		* gameswf/gameswf_action.h
+		* gameswf/gameswf_character.h
+		* gameswf/gameswf_impl.cpp
+		* gameswf/gameswf_root.cpp
+		* gameswf/gameswf_root.h
+		* gameswf/gameswf_sprite.cpp
+		* gameswf/gameswf_sprite.h
+		* gameswf/gameswf_test_ogl.cpp
+		* gameswf/gameswf_value.cpp
+		added getVersion() global function,
+		removed the deprecated call_method(), call_method0(),
+		call_method_args(), call_method_parsed()
+		better to use the user defined gameswf plugin
+
 2007-10-20  Vitaly Alexeev <tishka92@yahoo.com>
 
 		* gameswf/gameswf_action.h
