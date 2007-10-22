@@ -932,7 +932,10 @@ namespace gameswf
 		if (module_init)
 		{
 			as_plugin* plugin = (module_init)(params);
-			plugin->m_lib = lib;
+			if (plugin)
+			{
+				plugin->m_lib = lib;
+			}
 			return plugin;
 		}
 
