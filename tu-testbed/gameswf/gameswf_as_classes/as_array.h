@@ -18,17 +18,17 @@ namespace gameswf
 
 	struct as_array : public as_object
 	{
-		as_array();
+		exported_module as_array();
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual as_array* cast_to_as_array() { return this; }
 
-		tu_string to_string();
+		exported_module tu_string to_string();
 
-		void push_back(const as_value& val);
-		void erase(const tu_stringi& index);
-		int size();
+		exported_module void push_back(const as_value& val);
+		exported_module void erase(const tu_stringi& index);
+		exported_module int size();
 	};
 
 }	// end namespace gameswf
