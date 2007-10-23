@@ -57,7 +57,7 @@ namespace gameswf
 		if (fn.nargs == 2)
 		{
 			array<as_value> event_args;	// for event handler args
-			event_args.push_back(NULL);
+			event_args.push_back(as_value());	// undefined
 
 			movie_definition*	md = create_movie(fn.arg(0).to_string());
 			if (md == NULL)
@@ -70,7 +70,7 @@ namespace gameswf
 
 			as_mcloader::loadable_movie lm;
 			lm.m_def = md->cast_to_movie_def_impl();
-			lm.m_target = fn.env->find_target(fn.arg(0));
+			lm.m_target = fn.env->find_target(fn.arg(1));
 			mcl->m_lm.push_back(lm);
 
 			mcl->m_listeners.notify(event_id(event_id::ONLOAD_START, &event_args));
@@ -143,7 +143,7 @@ namespace gameswf
 			event_args.push_back(m_lm[i].m_ch);
 
 			int nframe = m_lm[i].m_def->get_loading_frame();
-			if (nframe == 1 && m_lm[i].m_ch == NULL)
+			if (nframe > 0 && m_lm[i].m_ch == NULL)
 			{
 				if (m_lm[i].m_target != NULL)
 				{

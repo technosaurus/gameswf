@@ -504,8 +504,20 @@ namespace gameswf
 
 	movie_definition*	create_movie(const char* filename)
 	{
+		assert(filename);
 
-		tu_string	fn(filename);
+		// is path relative ?
+		tu_string fn;
+		if (filename[1] == ':' || filename[0] == '/')	// like c:\my.swf or /home/my.swf
+		{
+			fn = "";
+		}
+		else
+		{
+			fn = get_workdir();
+		}
+		fn += filename;
+
 		if (fn.size() < 5)	// At least 5 symbols
 		{
 			return NULL;
@@ -514,17 +526,17 @@ namespace gameswf
 
 		if (fn_ext == ".swf")
 		{
-			return create_movie_swf(filename);
+			return create_movie_swf(fn.c_str());
 		}
 		else
 		if (fn_ext == ".jpg")
 		{
-			return create_movie_jpg(filename);
+			return create_movie_jpg(fn.c_str());
 		}
 		else
 		if (fn_ext == ".3ds")
 		{
-			return create_movie_3ds(filename);
+			return create_movie_3ds(fn.c_str());
 		}
 
 		log_error("loadMovie: Not supported format of a file '%s'\n", fn.c_str());
