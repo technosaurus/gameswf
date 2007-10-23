@@ -16,6 +16,7 @@ namespace gameswf
 
 	const char*	next_slash_or_dot(const char* word);
 
+	//TODO: the same for sprite_instance
 	void	as_object_addproperty(const fn_call& fn)
 	{
 		if (fn.nargs == 3)

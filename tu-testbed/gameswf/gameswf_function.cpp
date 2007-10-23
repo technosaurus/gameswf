@@ -50,7 +50,7 @@ namespace gameswf
 		m_local_register_count(0),
 		m_function2_flags(0)
 	{
-		// Flash stores a body(function) of a class in _global,
+		// Flash stores a body(functions) of a class in _global,
 		// action_buffer is in movie_def, therefore when we load another _root
 		// action_buffer will be deleted and _global.MyClass will keep
 		// the pointer to the removed object(action_buffer).
@@ -73,6 +73,9 @@ namespace gameswf
 	{
 
 		assert(fn.env);
+
+		// try to use caller environment
+		// if the caller object has own environment then we use its environment
 		as_environment* env = fn.env;
 		if (fn.this_ptr)
 		{
@@ -95,6 +98,14 @@ namespace gameswf
 					this_ptr = obj->m_this_ptr->cast_to_as_object_interface();
 				}
 			}
+		}
+
+		// Function has been declared in moviclip ==> we should use its environment
+		// At the same time 'this_ptr' may refers to another object
+		// see testcase in .h file
+		if (m_target != NULL)
+		{
+			env = m_target->get_environment();
 		}
 		
 		// Set up local stack frame, for parameters and locals.
