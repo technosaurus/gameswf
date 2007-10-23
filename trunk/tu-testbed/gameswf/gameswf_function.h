@@ -43,6 +43,13 @@ namespace gameswf
 		// and class properties.
 		smart_ptr<as_object>	m_properties;
 
+		// if function has been declared in moviclip then we should use its environment
+		// And for this purpose it is necessary to keep target that has created 'this'
+		// testcase:
+		// _root.myclip.onEnterFrame = _root.myfunc;
+		// myfunc should use _root environment
+		weak_ptr<as_object_interface>	m_target;
+
 		as_as_function(action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
 		~as_as_function();
 
@@ -59,8 +66,11 @@ namespace gameswf
 		}
 
 		void	set_length(int len) { assert(len >= 0); m_length = len; }
-
 		virtual as_as_function* cast_to_as_function() { return this; }
+		void set_target(as_object_interface* target)
+		{
+			m_target = target;
+		}
 
 		// Dispatch.
 		void	operator()(const fn_call& fn);

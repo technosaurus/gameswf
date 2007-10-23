@@ -2184,6 +2184,7 @@ namespace gameswf
 				case 0x8E:	// function2
 				{
 					as_as_function*	func = new as_as_function(this, next_pc, with_stack);
+					func->set_target(env->get_target());
 					func->set_is_function2();
 
 					int	i = pc;
@@ -2453,6 +2454,7 @@ namespace gameswf
 				case 0x9B:	// declare function
 				{
 					as_as_function*	func = new as_as_function(this, next_pc, with_stack);
+					func->set_target(env->get_target());
 
 					int	i = pc;
 					i += 3;
