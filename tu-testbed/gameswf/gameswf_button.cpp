@@ -521,14 +521,19 @@ namespace gameswf
 
 		virtual void	get_bound(rect* bound)
 		{
+			int i, n = m_def->m_button_records.size();
+			if (n == 0)
+			{
+				return;
+			}
+
 			bound->m_x_min = FLT_MAX;
 			bound->m_x_max = - FLT_MAX;
 			bound->m_y_min = FLT_MAX;
 			bound->m_y_max = - FLT_MAX;
 
 			matrix m = get_matrix();
-
-			for (int i = 0; i < m_def->m_button_records.size(); i++)
+			for (int i = 0; i < n; i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
 				if (m_record_character[i] == NULL)
