@@ -130,14 +130,18 @@ namespace gameswf
 
 	void sprite_instance::get_bound(rect* bound)
 	{
+		int i, n = m_display_list.get_character_count();
+		if (n == 0)
+		{
+			return;
+		}
+
 		bound->m_x_min = FLT_MAX;
 		bound->m_x_max = - FLT_MAX;
 		bound->m_y_min = FLT_MAX;
 		bound->m_y_max = - FLT_MAX;
 
 		matrix m = get_matrix();
-
-		int i, n = m_display_list.get_character_count();
 		for (i = 0; i < n; i++)
 		{
 			character* ch = m_display_list.get_character(i);
