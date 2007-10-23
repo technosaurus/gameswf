@@ -53,28 +53,29 @@ namespace gameswf
 		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
 		assert(mcl);
 
+		fn.result->set_bool(false);	// on default
 		if (fn.nargs == 2)
 		{
-			sprite_instance* target;
-			character* ch = fn.env->load_file(fn.arg(0).to_string(), fn.arg(1),	&target, false);
-			array<as_value> event_args;
-			event_args.push_back(ch);
-			if (ch != NULL)
-			{
-				as_mcloader::loadable_movie lm;
-				lm.m_movie = ch->cast_to_sprite();
-				assert(lm.m_movie != NULL);
-				lm.m_target = target;
-				mcl->m_movie.push_back(lm);
+			array<as_value> event_args;	// for event handler args
+			event_args.push_back(NULL);
 
-				mcl->m_listeners.notify(event_id(event_id::ONLOAD_START, &event_args));
-				fn.result->set_bool(true);
+			movie_definition*	md = create_movie(fn.arg(0).to_string());
+			if (md == NULL)
+			{
+				IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", fn.arg(0).to_string()));
+				event_args.push_back("URLNotFound");	// 2-d param
+				mcl->m_listeners.notify(event_id(event_id::ONLOAD_ERROR, &event_args));
 				return;
 			}
-			event_args.push_back("URLNotFound");	// 2-d param
-			mcl->m_listeners.notify(event_id(event_id::ONLOAD_ERROR, &event_args));
+
+			as_mcloader::loadable_movie lm;
+			lm.m_def = md->cast_to_movie_def_impl();
+			lm.m_target = fn.env->find_target(fn.arg(0));
+			mcl->m_lm.push_back(lm);
+
+			mcl->m_listeners.notify(event_id(event_id::ONLOAD_START, &event_args));
+			fn.result->set_bool(true);
 		}
-		fn.result->set_bool(false);
 	}
 
 	void	as_mcloader_unloadclip(const fn_call& fn)
@@ -130,31 +131,29 @@ namespace gameswf
 	
 	void	as_mcloader::advance(float delta_time)
 	{
-		if (m_movie.size() == 0)
+		if (m_lm.size() == 0)
 		{
 			get_root()->m_advance_listener.remove(this);
 			return;
 		}
 
-		for (int i = 0; i < m_movie.size();)
+		for (int i = 0; i < m_lm.size();)
 		{
+			array<as_value> event_args;		// for event handler args
+			event_args.push_back(m_lm[i].m_ch);
 
-			sprite_instance* ch = m_movie[i].m_movie.get_ptr();
-			assert(ch);
-
-			array<as_value> event_args;
-			event_args.push_back(ch);
-
-
-			int nframe = m_movie[i].m_movie->get_loading_frame();
-			if (nframe == 1 && m_movie[i].m_init_event_issued == false)
+			int nframe = m_lm[i].m_def->get_loading_frame();
+			if (nframe == 1 && m_lm[i].m_ch == NULL)
 			{
-				place_instance(ch, m_movie[i].m_target.get_ptr());
+				if (m_lm[i].m_target != NULL)
+				{
+					m_lm[i].m_ch = m_lm[i].m_target->replace_me(m_lm[i].m_def.get_ptr());
+				}
 				m_listeners.notify(event_id(event_id::ONLOAD_INIT, &event_args));
 			}
 
-			int loaded = ch->get_loaded_bytes();
-			int total = ch->get_file_bytes();
+			int loaded = m_lm[i].m_def->get_loaded_bytes();
+			int total = m_lm[i].m_def->get_file_bytes();
 
 			if (loaded < total)
 			{
@@ -169,49 +168,12 @@ namespace gameswf
 				m_listeners.notify(event_id(event_id::ONLOAD_PROGRESS, &event_args));
 				m_listeners.notify(event_id(event_id::ONLOAD_COMPLETE, &event_args));
 
-				m_movie.remove(i);
+				m_lm.remove(i);
 				continue;
 			}
 
 			i++;
 
-		}
-	}
-
-	void	as_mcloader::place_instance(sprite_instance* ch, sprite_instance* target)
-	{
-		if (target)
-		{
-			if (target == target->get_root_movie())
-			{
-				// mcLoader can't replace 
-				ch->execute_frame_tags(0);
-				set_current_root(ch->get_root());
-				ch->on_event(event_id::LOAD);
-			}
-			else
-			{
-				// container
-				const char* name = target->get_name();
-				Uint16 depth = target->get_depth();
-				bool use_cxform = false;
-				cxform color_transform = target->get_cxform();
-				bool use_matrix = false;
-				const matrix& mat = target->get_matrix();
-				float ratio = target->get_ratio();
-				Uint16 clip_depth = target->get_clip_depth();
-
-				ch->get_parent()->replace_display_object(
-					ch,
-					name,
-					depth,
-					use_cxform,
-					color_transform,
-					use_matrix,
-					mat,
-					ratio,
-					clip_depth);
-			}
 		}
 	}
 

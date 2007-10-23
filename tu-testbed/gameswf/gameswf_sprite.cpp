@@ -823,8 +823,42 @@ namespace gameswf
 			clip_depth);
 	}
 
+	character* sprite_instance::replace_me(movie_definition*	md)
+	{
+		assert(md);
+		character* parent = get_parent();
 
-	/*sprite_instance*/
+		// is 'this' root ?
+		if (parent == NULL)
+		{
+			movie_interface* new_inst = md->create_instance();
+			character* ch = new_inst->get_root_movie();
+			set_current_root(new_inst);
+
+//			ch->on_event(event_id::LOAD);
+			return ch;
+		}
+
+		sprite_instance* sprite = new sprite_instance(md->cast_to_movie_def_impl(), 
+			get_root(),	parent,	-1);
+
+		sprite->set_parent(parent);
+		sprite->set_root(get_root());
+
+		parent->replace_display_object(
+			sprite,
+			get_name(),
+			get_depth(),
+			false,
+			get_cxform(),
+			false,
+			get_matrix(),
+			get_ratio(),
+			get_clip_depth());
+
+		return sprite;
+	}
+
 	void	sprite_instance::replace_display_object(
 		character* ch,
 		const char* name,

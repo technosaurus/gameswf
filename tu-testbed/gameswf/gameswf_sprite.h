@@ -186,6 +186,8 @@ namespace gameswf
 		void	remove_display_object(character* ch);
 		void	clear_display_objects();
 
+		virtual character* replace_me(movie_definition*	md);
+
 		void	add_action_buffer(action_buffer* a);
 		int	get_id_at_depth(int depth);
 		int	get_highest_depth();

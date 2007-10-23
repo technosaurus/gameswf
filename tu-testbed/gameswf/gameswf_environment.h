@@ -132,9 +132,7 @@ namespace gameswf
 		character*	find_target(const tu_string& path) const;
 		character*	find_target(const as_value& val) const;
 
-		character* load_file(const char* url, const as_value& target, 
-			sprite_instance** found_target = NULL,	// for mcloader
-			bool place = true);	// for mcloader
+		character* load_file(const char* url, const as_value& target);
 
 		void clear_refs(as_object_interface* this_ptr);
 

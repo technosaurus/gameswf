@@ -21,6 +21,8 @@
 #ifdef _WIN32
 
 #define __PRETTY_FUNCTION__ __FUNCDNAME__
+#define snprintf _snprintf
+#define strncasecmp strnicmp
 
 #ifdef SVN_RELEASE
 

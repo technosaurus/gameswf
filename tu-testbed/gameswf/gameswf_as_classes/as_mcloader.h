@@ -23,26 +23,23 @@ namespace gameswf
 		struct loadable_movie
 		{
 			loadable_movie() :
-				m_init_event_issued(false)
+				m_ch(NULL)
 			{
 			}
 
-			smart_ptr<sprite_instance> m_movie;
-			weak_ptr<sprite_instance> m_target;
-			bool m_init_event_issued;
+			smart_ptr<movie_def_impl> m_def;
+			weak_ptr<character> m_target;
+			character* m_ch;
 		};
 
 		listener m_listeners;
-		array<loadable_movie> m_movie;
+		array<loadable_movie> m_lm;
 
 		as_mcloader();
 		~as_mcloader();
 		
 		virtual void	advance(float delta_time);
 		virtual as_mcloader* cast_to_as_mcloader() { return this; }
-
-		void	place_instance(sprite_instance* ch, sprite_instance* target);
-
 	};
 
 }	// end namespace gameswf
