@@ -42,6 +42,10 @@
 #include <zlib.h>
 #endif // TU_CONFIG_LINK_TO_ZLIB
 
+#if TU_CONFIG_LINK_TO_LIB3DS
+	#include "plugins/lib3ds/gameswf_3ds.h"
+#endif
+
 namespace gameswf
 {
 	bool	s_verbose_action = false;
@@ -502,12 +506,128 @@ namespace gameswf
 	{
 
 		tu_string	fn(filename);
+		if (fn.size() < 5)	// At least 5 symbols
+		{
+			return NULL;
+		}
+		tu_stringi fn_ext = fn.utf8_substring(fn.size() - 4, fn.size());
+
+		if (fn_ext == ".swf")
+		{
+			return create_movie_swf(filename);
+		}
+		else
+		if (fn_ext == ".jpg")
+		{
+			return create_movie_jpg(filename);
+		}
+		else
+		if (fn_ext == ".3ds")
+		{
+			return create_movie_3ds(filename);
+		}
+
+		log_error("loadMovie: Not supported format of a file '%s'\n", fn.c_str());
+		return NULL;
+	}
+
+	movie_definition*	create_movie_jpg(const char* filename)
+	{
+
+		return NULL;	//TODO
+
+#if TU_CONFIG_LINK_TO_JPEGLIB == 0
+
+		log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
+		return NULL;
+
+#else
+
+		image::rgb* im = image::read_jpeg(filename);
+		if (im)
+		{
+			bitmap_info* bi = render::create_bitmap_info_rgb(im);
+			delete im;
+
+			bitmap_character*	jpg_def = new bitmap_character(bi);
+
+			// clear target display list
+/*			target->clear_display_objects();
+
+			// add new jpeg character into empty sprite
+			cxform color_transform;
+			matrix matrix;
+			target->m_display_list.add_display_object(
+				jpg_def->create_character_instance(target, 1),
+				target->get_highest_depth(),
+				true,
+				color_transform,
+				matrix,
+				0.0f,
+				0); */
+
+//			return jpg_def;
+		}
+		return NULL;
+
+#endif
+
+	}
+
+	movie_definition*	create_movie_3ds(const char* filename)
+	{
+		return NULL;	//TODO
+
+#if TU_CONFIG_LINK_TO_LIB3DS == 0
+
+		log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
+		return NULL;
+
+#else
+/*		if (parent == NULL)
+		{
+			log_error("can't load 3DS as _root\n");
+			return NULL;
+		}
+
+		x3ds_definition* x3ds = new x3ds_definition(infile.c_str());
+		character* new_ch = x3ds->create_character_instance(parent, 1);
+
+		const char* name = target->get_name();
+		Uint16 depth = target->get_depth();
+		bool use_cxform = false;
+		cxform color_transform = target->get_cxform();
+		bool use_matrix = false;
+		const matrix& mat = target->get_matrix();
+		float ratio = target->get_ratio();
+		Uint16 clip_depth = target->get_clip_depth();
+
+		new_ch->set_parent(parent);
+		parent->replace_display_object(
+			new_ch,
+			name,
+			depth,
+			use_cxform,
+			color_transform,
+			use_matrix,
+			mat,
+			ratio,
+			clip_depth);
+
+		return new_ch;
+*/
+
+#endif
+	}
+
+	movie_definition*	create_movie_swf(const char* filename)
+	{
 
 		// Is the movie already in the library?
 		if (s_use_cached_movie_def)
 		{
 			smart_ptr<movie_definition_sub>	m;
-			s_movie_library.get(fn, &m);
+			s_movie_library.get(filename, &m);
 			if (m != NULL)
 			{
 				// Return cached movie.
@@ -575,7 +695,7 @@ namespace gameswf
 
 		if (s_use_cached_movie_def)
 		{
-			s_movie_library.add(fn, m);
+			s_movie_library.add(filename, m);
 		}
 
 		return m;

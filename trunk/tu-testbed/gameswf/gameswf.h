@@ -687,6 +687,9 @@ namespace gameswf
 	// drop_ref() when you're done with it.
 	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 	exported_module movie_definition*	create_movie(const char* filename);
+	exported_module movie_definition*	create_movie_jpg(const char* filename);
+	exported_module movie_definition*	create_movie_3ds(const char* filename);
+	exported_module movie_definition*	create_movie_swf(const char* filename);
 
 	// Creates the movie from the given input stream.  Only reads
 	// from the given stream; does not open files.	If the movie

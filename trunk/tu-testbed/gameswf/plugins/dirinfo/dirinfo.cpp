@@ -48,7 +48,7 @@ void dirinfo::get_info(as_object* info, const tu_string& path)
 	while (dirent* de = readdir(dir))
 	{
 		tu_string name = de->d_name;
-		if (name == "." || name == "..")
+		if (*name.c_str() == '.' || name == "..")
 		{
 			continue;
 		}

@@ -13,11 +13,6 @@
 #include "gameswf/gameswf_text.h"
 #include "gameswf/gameswf_sprite.h"
 
-#ifdef _WIN32
-	#define snprintf _snprintf
-	#define strncasecmp strnicmp
-#endif // _WIN32
-
 namespace gameswf
 {
 
