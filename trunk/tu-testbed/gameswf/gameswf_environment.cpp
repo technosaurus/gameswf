@@ -39,18 +39,10 @@ namespace gameswf
 			return NULL;
 		}
 
-		// is path relative ?
-		tu_string infile = get_workdir();
-		if (strstr(url, ":") || url[0] == '/')
-		{
-			infile = "";
-		}
-		infile += url;
-
-		movie_definition*	md = create_movie(infile.c_str());
+		movie_definition*	md = create_movie(url);
 		if (md == NULL)
 		{
-			IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", infile.c_str()));
+			IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", url));
 			return NULL;
 		}
 
