@@ -5,6 +5,11 @@
 
 // gameSWF plugin, gets dir entity
 
+#ifndef WIN32
+	#include <sys/stat.h>
+	#include <dirent.h>
+#endif
+
 #include <stdio.h>
 #include "dirinfo.h"
 
@@ -53,11 +58,21 @@ void dirinfo::get_info(as_object* info, const tu_string& path)
 			continue;
 		}
 
+#ifdef WIN32
 		bool is_readonly = de->data.dwFileAttributes & 0x01;
 		bool is_hidden = de->data.dwFileAttributes & 0x02;
 //??		bool b2 = de->data.dwFileAttributes & 0x04;
 //??		bool b3 = de->data.dwFileAttributes & 0x08;
 		bool is_dir = de->data.dwFileAttributes & 0x10;
+#else
+		struct stat buf;
+		stat(tu_string(path + de->d_name).c_str(), &buf);
+		bool is_readonly = false;	//TODO
+		bool is_hidden = false; //TODO
+    bool is_dir = S_ISDIR(buf.st_mode);
+#endif
+
+		// printf("%s, %d\n", name.c_str(), is_dir);
 
 		as_object* item = new as_object();
 		info->set_member(name, item);
