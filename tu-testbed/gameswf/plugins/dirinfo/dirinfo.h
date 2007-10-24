@@ -8,7 +8,7 @@
 #ifndef GAMESWF_DIRINFO_PLUGIN_H
 #define GAMESWF_DIRINFO_PLUGIN_H
 
-#include "dirent.h"
+#include <dirent.h>
 #include "gameswf/gameswf_object.h"
 
 using namespace gameswf;

@@ -36,6 +36,8 @@ namespace tu_timer
 	// Convert a hi-res ticks value into seconds.
 	exported_module double	profile_ticks_to_seconds(uint64 profile_ticks);
 
+	exported_module double	profile_ticks_to_milliseconds(uint64 ticks);
+
 	// Returns the systime
 	exported_module Uint64 get_systime();
 

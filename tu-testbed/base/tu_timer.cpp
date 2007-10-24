@@ -154,7 +154,7 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 
 uint64 tu_timer::get_ticks()
 {
-	return get_profile_ticks();
+	return profile_ticks_to_milliseconds(get_profile_ticks());
 }
 
 
@@ -191,6 +191,12 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 {
 	// ticks is microseconds.  Convert to seconds.
 	return ticks / 1000000.0;
+}
+
+double	tu_timer::profile_ticks_to_milliseconds(uint64 ticks)
+{
+	// ticks is microseconds.  Convert to milliseconds.
+	return ticks / 1000.0;
 }
 
 #endif	// not _WIN32

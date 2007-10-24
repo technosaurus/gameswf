@@ -21,7 +21,7 @@
 #include "net/tu_net_file.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
-#include "gameswf/gameswf_player.h"
+//#include "gameswf/gameswf_player.h"
 
 void	print_usage()
 // Brief instructions.
