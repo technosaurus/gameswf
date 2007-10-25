@@ -149,6 +149,7 @@ namespace gameswf
 		virtual void	remove_display_object(character* ch) { assert(0); }
 
 		// replaces 'this' on md->create_instance()
+		virtual character* replace_me(character_def*	def) { assert(0); return NULL; }
 		virtual character* replace_me(movie_definition*	md) { assert(0); return NULL; }
 
 		virtual character*	add_display_object(

@@ -196,9 +196,9 @@ namespace gameswf
 
 	void	x3ds_instance::advance(float delta_time)
 	{
-		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
-		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
-		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
+//		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
+//		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
+//		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
 
 		m_current_frame = fmod(m_current_frame + 1.0f, (float) m_def->m_file->frames);
 		lib3ds_file_eval(m_def->m_file, m_current_frame);
@@ -605,7 +605,10 @@ namespace gameswf
 			for (int i = 0; i < 3; ++i)
 			{
 				glNormal3fv(normalL[3 * p + i]);
-				bind_material(mat, mesh->texelL[f->points[i]][1], mesh->texelL[f->points[i]][0]);
+				if (mesh->texelL)
+				{
+					bind_material(mat, mesh->texelL[f->points[i]][1], mesh->texelL[f->points[i]][0]);
+				}
 				glVertex3fv(mesh->pointL[f->points[i]].pos);
 			}
 			glEnd();

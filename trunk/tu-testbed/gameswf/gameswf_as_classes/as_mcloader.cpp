@@ -59,7 +59,7 @@ namespace gameswf
 			array<as_value> event_args;	// for event handler args
 			event_args.push_back(as_value());	// undefined
 
-			movie_definition*	md = create_movie(fn.arg(0).to_string());
+			movie_definition*	md = create_movie(get_full_url(fn.arg(0).to_string()));
 			if (md == NULL)
 			{
 				IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", fn.arg(0).to_string()));

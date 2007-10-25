@@ -827,6 +827,35 @@ namespace gameswf
 			clip_depth);
 	}
 
+	character* sprite_instance::replace_me(character_def*	def)
+	{
+		assert(def);
+		character* parent = get_parent();
+
+		// is 'this' root ?
+		if (parent == NULL)
+		{
+			log_error("character can't replace _root\n");
+			return NULL;
+		}
+
+		character* ch = def->create_character_instance(parent, 0);
+
+		ch->set_parent(parent);
+		parent->replace_display_object(
+			ch,
+			get_name(),
+			get_depth(),
+			false,
+			get_cxform(),
+			false,
+			get_matrix(),
+			get_ratio(),
+			get_clip_depth());
+
+		return ch;
+	}
+
 	character* sprite_instance::replace_me(movie_definition*	md)
 	{
 		assert(md);

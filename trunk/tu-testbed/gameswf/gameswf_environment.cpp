@@ -11,8 +11,65 @@
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_render.h"
 
+#if TU_CONFIG_LINK_TO_LIB3DS
+	#include "plugins/lib3ds/gameswf_3ds.h"
+#endif
+
 namespace gameswf
 {
+	// misc
+	enum file_type
+	{
+		UNKNOWN,
+		SWF,
+		JPG,
+		X3DS
+	};
+
+	file_type get_file_type(const char* url)
+	{
+		tu_string fn = url;
+		if (fn.size() < 5)	// At least 5 symbols
+		{
+			return UNKNOWN;
+		}
+
+		tu_stringi fn_ext = fn.utf8_substring(fn.size() - 4, fn.size());
+
+		if (fn_ext == ".swf")
+		{
+			return SWF;
+		}
+		else
+		if (fn_ext == ".jpg")
+		{
+			return JPG;
+		}
+		else
+		if (fn_ext == ".3ds")
+		{
+			return X3DS;
+		}
+		return UNKNOWN;
+	}
+
+	tu_string get_full_url(const char* url)
+	{
+		 tu_string fn;
+
+		// is path relative ?
+		if (url[1] == ':' || url[0] == '/')	// like c:\my.swf or /home/my.swf
+		{
+			fn = "";
+		}
+		else
+		{
+			fn = get_workdir();
+		}
+		fn += url;
+
+		return fn;
+	}
 
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, const as_value& target_value)
@@ -39,15 +96,55 @@ namespace gameswf
 			return NULL;
 		}
 
-		movie_definition*	md = create_movie(url);
-		if (md == NULL)
+		// is path relative ?
+		tu_string fn = get_full_url(url);
+		switch (get_file_type(fn.c_str()))
 		{
-			IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", url));
-			return NULL;
+			case SWF:
+			{
+				movie_definition*	md = create_movie(fn.c_str());
+				if (md)
+				{
+					return target->replace_me(md);
+				}
+				break;
+			}
+
+			case X3DS:
+			{
+#if TU_CONFIG_LINK_TO_LIB3DS == 0
+				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
+#else
+				x3ds_definition* x3ds = new x3ds_definition(fn.c_str());
+				if (x3ds && x3ds->m_file)
+				{
+					return target->replace_me(x3ds);
+				}
+#endif
+				break;
+			}
+
+			case JPG:
+			{
+#if TU_CONFIG_LINK_TO_JPEGLIB == 0
+				log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
+#else
+				image::rgb* im = image::read_jpeg(fn.c_str());
+				if (im)
+				{
+					bitmap_info* bi = render::create_bitmap_info_rgb(im);
+					delete im;
+
+					bitmap_character*	jpeg = new bitmap_character(bi);
+					return target->replace_me(jpeg);
+				}
+#endif
+				break;
+			}
 		}
 
-		character* ch = target->replace_me(md);
-		return ch->cast_to_sprite();
+		return NULL;
+
 	}
 
 
