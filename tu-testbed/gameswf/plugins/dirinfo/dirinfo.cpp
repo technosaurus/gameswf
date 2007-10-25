@@ -34,7 +34,6 @@ extern "C"
 {
 	exported_module as_plugin* gameswf_module_init(const array<as_value>& params)
 	{
-		printf("gameswf_init\n");
 		dirinfo* di = new dirinfo();
 		di->set_member("getInfo", getInfo);
 		return di;

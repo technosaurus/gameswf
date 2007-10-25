@@ -18,6 +18,19 @@ namespace gameswf
 		fn.result->set_tu_string(a->to_string());
 	}
 
+	void	as_array_push(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		as_array* a = fn.this_ptr->cast_to_as_array();
+		assert(a);
+
+		if (fn.nargs > 0)
+		{
+			a->push_back(fn.arg(0));
+		}
+		fn.result->set_int(a->size());
+	}
+
 
 	void	as_global_array_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Array.
@@ -77,7 +90,6 @@ namespace gameswf
 		//			this->set_member("join", &array_not_impl);
 		//			this->set_member("concat", &array_not_impl);
 		//			this->set_member("slice", &array_not_impl);
-		//			this->set_member("push", &array_not_impl);
 		//			this->set_member("unshift", &array_not_impl);
 		//			this->set_member("pop", &array_not_impl);
 		//			this->set_member("shift", &array_not_impl);
@@ -87,6 +99,8 @@ namespace gameswf
 		//			this->set_member("reverse", &array_not_impl);
 		set_member("toString", &as_array_tostring);
 		set_member_flags("toString", as_prop_flags::DONT_ENUM);
+		set_member("push", &as_array_push);
+		set_member_flags("push", as_prop_flags::DONT_ENUM);
 	}
 
 	bool as_array::get_member(const tu_stringi& name, as_value* val)

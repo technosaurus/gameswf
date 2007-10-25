@@ -20,6 +20,8 @@ namespace gameswf
 	struct sprite_instance;
 	struct as_object;
 
+	tu_string get_full_url(const char* url);
+
 	//
 	// with_stack_entry
 	//

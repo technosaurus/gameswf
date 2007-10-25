@@ -187,6 +187,7 @@ namespace gameswf
 		void	clear_display_objects();
 
 		virtual character* replace_me(movie_definition*	md);
+		virtual character* replace_me(character_def*	def);
 
 		void	add_action_buffer(action_buffer* a);
 		int	get_id_at_depth(int depth);
