@@ -1107,7 +1107,7 @@ namespace gameswf
 				}
 				case 0x11:	// logical or
 				{
-					env->top(1).set_bool(env->top(1).to_bool() && env->top(0).to_bool());
+					env->top(1).set_bool(env->top(1).to_bool() || env->top(0).to_bool());
 					env->drop(1);
 					break;
 				}
