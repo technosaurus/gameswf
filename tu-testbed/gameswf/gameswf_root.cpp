@@ -242,12 +242,18 @@ namespace gameswf
 
 	void	movie_root::notify_key_event(key::code k, bool down)
 	{
+		// multithread plugins can call gameswf core therefore we should 
+		// use gameswf mutex to lock gameswf engine
+		gameswf_engine_mutex().lock();
+
 		// First notify global Key object
 		// listeners that uses the last keypressed code
 		notify_key_object(k, down);
 
 		// Notify keypress listeners.
 		m_keypress_listener.notify(event_id(event_id::KEY_PRESS, (key::code) k));
+
+		gameswf_engine_mutex().unlock();
 	}
 
 	// @@ should these delegate to m_movie?	 Probably...
