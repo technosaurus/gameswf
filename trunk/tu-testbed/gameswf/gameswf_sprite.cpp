@@ -672,6 +672,12 @@ namespace gameswf
 			return;
 		}
 
+		// force advance just loaded (by loadMovie(...)) movie
+		if (m_on_event_load_called == false)
+		{
+			advance(1);
+		}
+
 		m_display_list.display();
 
 		do_display_callback();

@@ -11,6 +11,13 @@ namespace gameswf
 	// for Key, keyPress, ...
 	void listener::notify(const event_id& ev)
 	{
+		// may be called from multithread plugin ==>
+		// we should check current root
+		if (get_current_root() == NULL)
+		{
+			return;
+		}
+
 		int n = m_listeners.size();
 		if (n > 0)
 		{
@@ -30,6 +37,13 @@ namespace gameswf
 	// for asBroadcaster, ...
 	void listener::notify(const tu_string& event_name, const fn_call& fn)
 	{
+		// may be called from multithread plugin ==>
+		// we should check current root
+		if (get_current_root() == NULL)
+		{
+			return;
+		}
+
 		int n = m_listeners.size();
 		if (n > 0)
 		{
@@ -71,8 +85,11 @@ namespace gameswf
 
 	void listener::add(as_object_interface* listener) 
 	{
+		clear_garbage();
+
 		// sanity check
 		assert(m_listeners.size() < 1000);
+//		printf("m_listeners size=%d\n", m_listeners.size());
 
 		if (listener)
 		{
@@ -90,13 +107,14 @@ namespace gameswf
 
 	void listener::remove(as_object_interface* listener) 
 	{
+		// to null out but to not delete since 'remove' may be called
+		// from notify and consequently the size of 'm_listeners' cannot be changed	
+
 		for (int i = 0, n = m_listeners.size(); i < n; i++)
 		{
 			smart_ptr<as_object_interface> obj = m_listeners[i];
 			if (obj == listener)
 			{
-				// to null out but to not delete since 'remove' may be called
-				// from notify and consequently the size of 'm_listeners' cannot be changed	
 				m_listeners[i] = NULL;
 			}
 		}

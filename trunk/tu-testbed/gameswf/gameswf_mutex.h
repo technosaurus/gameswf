@@ -62,12 +62,12 @@ namespace gameswf
 			SDL_DestroyMutex(m_mutex);
 		}
 
-		void lock() 
+		inline void lock() 
 		{
 			SDL_LockMutex(m_mutex);
 		}
 
-		void unlock() 
+		inline void unlock() 
 		{
 			SDL_UnlockMutex(m_mutex);
 		}
