@@ -26,9 +26,20 @@ namespace gameswf
 
 		if (fn.nargs > 0)
 		{
-			a->push_back(fn.arg(0));
+			a->push(fn.arg(0));
 		}
 		fn.result->set_int(a->size());
+	}
+
+	void	as_array_pop(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		as_array* a = fn.this_ptr->cast_to_as_array();
+		assert(a);
+	
+		as_value val;
+		a->pop(&val);
+		*fn.result = val;
 	}
 
 
@@ -91,7 +102,6 @@ namespace gameswf
 		//			this->set_member("concat", &array_not_impl);
 		//			this->set_member("slice", &array_not_impl);
 		//			this->set_member("unshift", &array_not_impl);
-		//			this->set_member("pop", &array_not_impl);
 		//			this->set_member("shift", &array_not_impl);
 		//			this->set_member("splice", &array_not_impl);
 		//			this->set_member("sort", &array_not_impl);
@@ -101,6 +111,8 @@ namespace gameswf
 		set_member_flags("toString", as_prop_flags::DONT_ENUM);
 		set_member("push", &as_array_push);
 		set_member_flags("push", as_prop_flags::DONT_ENUM);
+		set_member("pop", &as_array_pop);
+		set_member_flags("pop", as_prop_flags::DONT_ENUM);
 	}
 
 	bool as_array::get_member(const tu_stringi& name, as_value* val)
@@ -184,11 +196,22 @@ namespace gameswf
 		return n;
 	}
 
-	void as_array::push_back(const as_value& val)
+	void as_array::push(const as_value& val)
 	// Insert the given value at the end of the array.
 	{
 		as_value index(size());
 		set_member(index.to_tu_stringi(), val);
+	}
+
+	void as_array::pop(as_value* val)
+	// Removes the last element from an array and returns the value of that element.
+	{
+		assert(val);
+		as_value index(size() - 1);
+		if (get_member(index.to_tu_stringi(), val))
+		{
+			erase(index.to_tu_stringi());
+		}
 	}
 
 	void as_array::erase(const tu_stringi& index)
