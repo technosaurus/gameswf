@@ -520,6 +520,17 @@ namespace gameswf
 		fn.result->set_as_object_interface(ch);
 	}
 
+	void as_global_boolean_ctor(const fn_call& fn)
+	{
+		if (fn.nargs > 0)
+		{
+			fn.result->set_bool(fn.arg(0).to_bool());
+			return;
+		}
+		fn.result->set_undefined();
+	}
+
+
 	// getVersion() : String
 	void	as_global_get_version(const fn_call& fn)
 	// Returns a string containing Flash Player version and platform information.
@@ -555,6 +566,7 @@ namespace gameswf
 
 			s_global->set_member("MovieClipLoader", as_value(as_global_mcloader_ctor));
 			s_global->set_member("String", as_value(string_ctor));
+			s_global->set_member("Boolean", as_value(as_global_boolean_ctor));
 			s_global->set_member("Color", as_value(as_global_color_ctor));
 			s_global->set_member("Date", as_value(as_global_date_ctor));
 
