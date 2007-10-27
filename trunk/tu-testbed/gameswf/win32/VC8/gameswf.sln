@@ -7,9 +7,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgameswf", "libgameswf.vc
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gameswf_processor", "gameswf_processor.vcproj", "{CC23B8B1-4095-41AB-9758-C82A1472CB11}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libdirinfo", "libdirinfo.vcproj", "{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsample", "libsample.vcproj", "{77F21668-F2A9-4619-B13C-C2F2ADFAEA59}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsysinfo", "libsysinfo.vcproj", "{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -29,14 +29,14 @@ Global
 		{CC23B8B1-4095-41AB-9758-C82A1472CB11}.Debug|Win32.Build.0 = Debug|Win32
 		{CC23B8B1-4095-41AB-9758-C82A1472CB11}.Release|Win32.ActiveCfg = Release|Win32
 		{CC23B8B1-4095-41AB-9758-C82A1472CB11}.Release|Win32.Build.0 = Release|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Debug|Win32.ActiveCfg = Debug|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Debug|Win32.Build.0 = Debug|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Release|Win32.ActiveCfg = Release|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Release|Win32.Build.0 = Release|Win32
 		{77F21668-F2A9-4619-B13C-C2F2ADFAEA59}.Debug|Win32.ActiveCfg = Debug|Win32
 		{77F21668-F2A9-4619-B13C-C2F2ADFAEA59}.Debug|Win32.Build.0 = Debug|Win32
 		{77F21668-F2A9-4619-B13C-C2F2ADFAEA59}.Release|Win32.ActiveCfg = Release|Win32
 		{77F21668-F2A9-4619-B13C-C2F2ADFAEA59}.Release|Win32.Build.0 = Release|Win32
+		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Debug|Win32.Build.0 = Debug|Win32
+		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Release|Win32.ActiveCfg = Release|Win32
+		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
