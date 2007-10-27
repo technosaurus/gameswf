@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="libdirinfo"
+	Name="libsysinfo"
 	ProjectGUID="{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
 	RootNamespace="randomIndex"
 	Keyword="Win32Proj"
@@ -63,7 +63,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgameswf.lib"
-				OutputFile="/WINDOWS/system32/dirinfo.dll"
+				OutputFile="/WINDOWS/system32/sysinfo.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				ModuleDefinitionFile=""
@@ -182,11 +182,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\plugins\dirinfo\dirinfo.cpp"
+				RelativePath="..\..\plugins\sysinfo\sysinfo.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\dirinfo\dirinfo.h"
+				RelativePath="..\..\plugins\sysinfo\sysinfo.h"
 				>
 			</File>
 		</Filter>
