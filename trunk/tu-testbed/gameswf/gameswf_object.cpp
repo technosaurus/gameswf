@@ -97,6 +97,15 @@ namespace gameswf
 		fn.result->set_bool(ret);
 	}
 
+	// for debugging
+	void	as_object_dump(const fn_call& fn)
+	{
+		if (fn.this_ptr)
+		{
+			fn.this_ptr->dump();
+		}
+	}
+
 	as_object::as_object() :
 		m_is_clear_called(false)
 	{
@@ -108,6 +117,10 @@ namespace gameswf
 		set_member_flags("watch", as_prop_flags::DONT_ENUM);
 		set_member("unwatch", as_object_unwatch);
 		set_member_flags("unwatch", as_prop_flags::DONT_ENUM);
+
+		// for debugging
+		set_member("dump", as_object_dump);
+		set_member_flags("dump", as_prop_flags::DONT_ENUM);
 	}
 
 	as_object::~as_object()
