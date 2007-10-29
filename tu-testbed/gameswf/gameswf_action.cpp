@@ -530,6 +530,16 @@ namespace gameswf
 		fn.result->set_undefined();
 	}
 
+	void as_global_number_ctor(const fn_call& fn)
+	{
+		if (fn.nargs > 0)
+		{
+			fn.result->set_double(fn.arg(0).to_number());
+			return;
+		}
+		fn.result->set_undefined();
+	}
+
 
 	// getVersion() : String
 	void	as_global_get_version(const fn_call& fn)
@@ -566,6 +576,7 @@ namespace gameswf
 
 			s_global->set_member("MovieClipLoader", as_value(as_global_mcloader_ctor));
 			s_global->set_member("String", as_value(string_ctor));
+			s_global->set_member("Number", as_value(as_global_number_ctor));
 			s_global->set_member("Boolean", as_value(as_global_boolean_ctor));
 			s_global->set_member("Color", as_value(as_global_color_ctor));
 			s_global->set_member("Date", as_value(as_global_date_ctor));
@@ -748,6 +759,27 @@ namespace gameswf
 		do_action*	da = new do_action;
 		da->read(in);
 		m->add_init_action(sprite_character_id, da);
+	}
+
+	// radix:Number - Specifies the numeric base (from 2 to 36) to use for 
+	// the number-to-string conversion. 
+	// If you do not specify the radix parameter, the default value is 10.
+	static const char s_hex[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZW";
+	tu_string number_to_string(int radix, int val)
+	{
+		tu_string res;
+		if (radix >=2 && radix <= strlen(s_hex))
+		{
+			while (val > 0)
+			{
+				int k = val % radix;
+				val = (int) (val / radix);
+				tu_string digit;
+				digit += s_hex[k];
+				res = digit + res;
+			}
+		}
+		return res;
 	}
 
 
@@ -1951,7 +1983,15 @@ namespace gameswf
 						    && method_name == "toString")
 						{
 							// Numbers have a .toString() method.
-							result.set_tu_string(env->top(1).to_tu_string());
+							if (nargs > 0)
+							{
+								result.set_tu_string(number_to_string((int) env->top(3).to_number(),
+								(int) env->top(1).to_number()));
+							}
+							else
+							{
+								result.set_tu_string(env->top(1).to_tu_string());
+							}
 						}
 						else
 						{

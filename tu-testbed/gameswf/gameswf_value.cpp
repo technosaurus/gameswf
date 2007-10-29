@@ -584,22 +584,14 @@ namespace gameswf
 
 	void	as_value::set_property(const as_value& val)
 	{
-		if (m_property)
-		{
-			m_property->set(m_property_target, val);
-		}
+		assert(m_property);
+		m_property->set(m_property_target, val);
 	}
 
 	void as_value::get_property(as_value* val) const
 	{
-		if (m_property)
-		{
-			m_property->get(m_property_target, val);
-		}
-		else
-		{
-			val->set_undefined();
-		}
+		assert(m_property);
+		m_property->get(m_property_target, val);
 	}
 
 	//
