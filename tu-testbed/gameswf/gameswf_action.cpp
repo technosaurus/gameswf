@@ -114,28 +114,12 @@ namespace gameswf
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
 
-	hash<smart_ptr<as_object_interface>, bool> s_garbage;
-	hash<smart_ptr<as_object_interface>, bool>* get_garbage()
-	{
-		return &s_garbage;
-	}
+	static heap s_heap;
+	heap* get_heap() { return &s_heap; }
 
 	static tu_string s_gameswf_version("gameSWF");
-	const char* get_gameswf_version()
-	{
-		return s_gameswf_version.c_str();
-	}
+	const char* get_gameswf_version() {	return s_gameswf_version.c_str(); }
 	
-	void clear_garbage()
-	{
-		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = s_garbage.begin();
-			it != s_garbage.end(); ++it)
-		{
-			it->first->clear_refs(it->first.get_ptr());
-		}
-		s_garbage.clear();
-	}
-
 	void	register_fscommand_callback(fscommand_callback handler)
 	// External interface.
 	{
@@ -1644,7 +1628,7 @@ namespace gameswf
 					// places new object to check list
 					if (new_obj.to_object())
 					{
-						get_garbage()->set(new_obj.to_object(), false);
+						get_heap()->set(new_obj.to_object(), false);
 					}
 
 					env->drop(nargs);
@@ -3179,6 +3163,65 @@ namespace gameswf
 	}
 
 #endif // COMPILE_DISASM
+
+
+	// garbage collector
+
+	void heap::clear()
+	{
+		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = m_heap.begin();
+			it != m_heap.end(); ++it)
+		{
+			as_object_interface* obj = it->first.get_ptr();
+			if (obj)
+			{
+				if (obj->get_ref_count() > 1)
+				{
+					obj->clear_refs(obj);
+				}
+			}
+		}
+		m_heap.clear();
+	}
+
+	void heap::set(as_object_interface* obj, bool is_garbage)
+	{
+		m_heap.set(obj, is_garbage);
+	}
+
+	void heap::set_as_garbage()
+	{
+		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = m_heap.begin();
+			it != m_heap.end(); ++it)
+		{
+			as_object_interface* obj = it->first.get_ptr();
+			if (obj)
+			{
+				m_heap.set(obj, true);
+			}
+		}
+	}
+
+	void heap::clear_garbage()
+	{
+		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = m_heap.begin();
+			it != m_heap.end(); ++it)
+		{
+			as_object_interface* obj = it->first.get_ptr();
+			if (obj)
+			{
+				if (it->second)	// is garbage ?
+				{
+					if (obj->get_ref_count() > 1)	// is in heap only ?
+					{
+						obj->clear_refs(obj);
+					}
+					m_heap.erase(obj);
+				}
+			}
+		}
+	}
+
 
 };
 

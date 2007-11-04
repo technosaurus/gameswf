@@ -436,7 +436,7 @@ namespace gameswf
 		gameswf_engine_mutex().lock();
 		clear_standard_member_map();
 		clears_tag_loaders();
-		clear_garbage();
+		get_heap()->clear();
 		clear_library();
 		sprite_builtins_clear();
 		fontlib::clear();
