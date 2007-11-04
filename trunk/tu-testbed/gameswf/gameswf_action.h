@@ -27,8 +27,19 @@ namespace gameswf
 	// Clean up any stray heap stuff we've allocated.
 	void	action_clear();
 
-	hash<smart_ptr<as_object_interface>, bool>* get_garbage();
-	void clear_garbage();
+
+	struct heap
+	{
+		hash<smart_ptr<as_object_interface>, bool> m_heap;
+
+		void clear();
+		void set(as_object_interface* obj, bool garbage);
+		void set_as_garbage();
+		void clear_garbage();
+
+	};
+
+	heap* get_heap();
 
 	const char* get_gameswf_version();
 

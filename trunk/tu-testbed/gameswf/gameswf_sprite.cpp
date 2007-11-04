@@ -107,7 +107,7 @@ namespace gameswf
 		memset(&m_init_actions_executed[0], 0,
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
-		get_garbage()->set(this, false);
+		get_heap()->set(this, false);
 
 	}
 
@@ -413,15 +413,14 @@ namespace gameswf
 		m_on_event_load_called = true;
 
 		// 'this' and its variables is not garbage
-		hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
-		garbage->set(this, false);
+		get_heap()->set(this, false);
 		for (stringi_hash<as_value>::const_iterator it = m_as_environment.m_variables.begin();
 			it != m_as_environment.m_variables.end(); ++it)
 		{
 			as_object_interface* obj = it->second.to_object();
 			if (obj)
 			{
-				garbage->set(obj, false);
+				get_heap()->set(obj, false);
 			}
 		}
 

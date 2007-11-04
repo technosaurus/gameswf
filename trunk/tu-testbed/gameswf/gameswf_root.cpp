@@ -370,12 +370,7 @@ namespace gameswf
 		{
 
 			// mark all as garbage
-			hash<smart_ptr<as_object_interface>, bool>* garbage = get_garbage();
-			for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
-				it != garbage->end(); ++it)
-			{
-				it->second = true;
-			}
+			get_heap()->set_as_garbage();
 
 			// this should be called infinitely to not repeat
 			// the game situation after restart
@@ -392,24 +387,7 @@ namespace gameswf
 			}
 			m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
 
-			// clear garbage
-			for (hash<smart_ptr<as_object_interface>, bool>::iterator it = garbage->begin();
-				it != garbage->end(); ++it)
-			{
-				if (it->second)
-				{
-					as_object_interface* obj = it->first.get_ptr();
-//					printf("total %d, 0x%X, ref_count=%d, %s\n",
-//						garbage->size(),
-//						obj, 
-//						obj->get_ref_count(),
-//						obj->cast_to_sprite() ? "sprite" : "object");
-
-					// clear self refs to avoid cross-link memory leaks
-					obj->clear_refs(obj);
-					garbage->erase(obj);
-				}
-			}
+			get_heap()->clear_garbage();
 
 		}
 
