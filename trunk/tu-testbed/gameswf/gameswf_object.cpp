@@ -443,5 +443,24 @@ namespace gameswf
 		return obj;
 	}
 
+	// marks 'this' as 'not garbage'
+	void as_object::not_garbage()
+	{
+		// Whether there were we here already ?
+		if (get_heap()->is_garbage(this))
+		{
+			// 'this' and its members is not garbage
+			get_heap()->set(this, false);
+			for (stringi_hash<as_member>::iterator it = m_members.begin();
+				it != m_members.end(); ++it)
+			{
+				as_object_interface* obj = it->second.get_member_value().to_object();
+				if (obj)
+				{
+					obj->not_garbage();
+				}
+			}
+		}
+	}
 
 }

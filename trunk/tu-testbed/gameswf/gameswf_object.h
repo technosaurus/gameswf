@@ -61,6 +61,7 @@ namespace gameswf
 		exported_module virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
 		exported_module virtual bool unwatch(const tu_string& name);
 		exported_module virtual void clear_refs(as_object_interface* this_ptr);
+		exported_module virtual void not_garbage();
 		exported_module virtual void copy_to(as_object_interface* target);
 		exported_module bool add_property(const tu_string& name, const as_value& val);
 		exported_module void dump();

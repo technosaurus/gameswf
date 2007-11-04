@@ -260,6 +260,9 @@ namespace gameswf
 		// to avoid cross-link memory leak
 		virtual void clear_refs(as_object_interface* this_ptr) {}
 
+		// Marks object as 'not garbage'
+		virtual void not_garbage() {}
+
 		virtual as_environment*	get_environment() { return 0; }
 		virtual void copy_to(as_object_interface* target) {}
 

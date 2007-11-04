@@ -420,7 +420,7 @@ namespace gameswf
 			as_object_interface* obj = it->second.to_object();
 			if (obj)
 			{
-				get_heap()->set(obj, false);
+				obj->not_garbage();
 			}
 		}
 

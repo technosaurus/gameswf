@@ -3184,6 +3184,13 @@ namespace gameswf
 		m_heap.clear();
 	}
 
+	bool heap::is_garbage(as_object_interface* obj)
+	{
+		bool is_garbage = false;
+		m_heap.get(obj, &is_garbage);
+		return is_garbage;
+	}
+
 	void heap::set(as_object_interface* obj, bool is_garbage)
 	{
 		m_heap.set(obj, is_garbage);
