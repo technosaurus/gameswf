@@ -33,6 +33,7 @@ namespace gameswf
 		hash<smart_ptr<as_object_interface>, bool> m_heap;
 
 		void clear();
+		bool is_garbage(as_object_interface* obj);
 		void set(as_object_interface* obj, bool garbage);
 		void set_as_garbage();
 		void clear_garbage();
