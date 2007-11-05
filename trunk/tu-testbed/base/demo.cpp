@@ -10,7 +10,7 @@
 #include "base/tu_config.h"
 #include "base/demo.h"
 #include "base/ogl.h"
-#include "SDL.h"
+#include "SDL/SDL.h"
 
 
 namespace demo
@@ -131,4 +131,5 @@ namespace demo
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
+
 

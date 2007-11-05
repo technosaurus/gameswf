@@ -14,14 +14,21 @@ ifndef TU_TESTBED_COMPILER
 	OSTYPE := $(patsubst Linux, linux, $(OSTYPE))
 	OSTYPE := $(patsubst Darwin, darwin, $(OSTYPE))
 
-	# default to msvc
+# default to msvc
 	TU_TESTBED_COMPILER = msvc
 
 	ifneq (,$(findstring linux, $(OSTYPE)))
-		TU_TESTBED_COMPILER = gcc
+		HAVE_GCC_3 := 1
+#		If Command-Line specified-compiler...
+		ifdef $(CC)
+			TU_TESTBED_COMPILER = $(CC)
+		else
+			TU_TESTBED_COMPILER = gcc
+		endif
 	endif
 
 	ifneq (,$(findstring darwin, $(OSTYPE)))
+		HAVE_GCC_DARVIN := 1
 		TU_TESTBED_COMPILER = gcc3
 	endif
 endif
@@ -105,7 +112,7 @@ else
 endif
 endif
 
-ifeq ($(TU_TESTBED_COMPILER), gcc)
+ifeq ($(HAVE_GCC_3),1)
 
 # GCC
 CC := $(TU_TESTBED_COMPILER)
@@ -152,7 +159,8 @@ endif
 
 endif # GCC
 
-ifeq ($(TU_TESTBED_COMPILER), gcc3)
+
+ifeq ($(HAVE_GCC_DARVIN),1)
 # make configuration for the tu-testbed engine library
 # use this if compiling for linux
 
