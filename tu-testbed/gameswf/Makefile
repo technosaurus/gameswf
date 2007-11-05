@@ -8,6 +8,7 @@
 TOP = ..
 include $(TOP)/config
 
+
 INCLUDE_PATHS := $(ENGINE_INCLUDE) $(ZLIB_INCLUDE) $(SDL_MIXER_INCLUDE) $(LIBMAD_INCLUDE) # $(XML2_INCLUDE) 
 
 CFLAGS := $(CFLAGS) $(INCLUDE_PATHS) $(CC_DEBUG_FLAGS)
@@ -31,6 +32,7 @@ LIB_OBJS = \
 	gameswf_as_classes/as_array.$(OBJ_EXT) \
 	gameswf_as_classes/as_broadcaster.$(OBJ_EXT) \
 	gameswf_as_classes/as_color.$(OBJ_EXT) \
+	gameswf_as_classes/as_date.$(OBJ_EXT) \
 	gameswf_as_classes/as_db.$(OBJ_EXT) \
 	gameswf_as_classes/as_key.$(OBJ_EXT) \
 	gameswf_as_classes/as_mcloader.$(OBJ_EXT) \
@@ -73,14 +75,17 @@ LIB_OBJS = \
 	gameswf_types.$(OBJ_EXT)	\
 	gameswf_value.$(OBJ_EXT)	\
 	gameswf_video_base.$(OBJ_EXT)	\
-	gameswf_video_impl.$(OBJ_EXT)
+	gameswf_video_impl.$(OBJ_EXT)	\
+	gameswf_listener.$(OBJ_EXT) \
+
 
 TEST_PROGRAM_OBJS = \
 	gameswf_test_ogl.$(OBJ_EXT)             \
 	gameswf_render_handler_ogl.$(OBJ_EXT)	\
 	gameswf_sound_handler_sdl.$(OBJ_EXT)	\
-	gameswf_sound_handler_mp3.$(OBJ_EXT)    \
 	gameswf_video_ogl.$(OBJ_EXT)
+
+#	gameswf_sound_handler_mp3.$(OBJ_EXT)    \
 
 PARSER_OBJS = \
 	gameswf_parser.$(OBJ_EXT) 

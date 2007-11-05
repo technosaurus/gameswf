@@ -6,8 +6,8 @@
 // Some OpenGL helpers; mainly to generically deal with extensions.
 
 
-#include <SDL.h>
-#include <SDL_opengl.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_opengl.h>
 #include "base/ogl.h"
 #include "base/utility.h"
 #include <stdlib.h>
