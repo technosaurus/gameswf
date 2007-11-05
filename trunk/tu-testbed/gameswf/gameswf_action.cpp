@@ -547,6 +547,7 @@ namespace gameswf
 			// in as an app-global mutable object :(
 			assert(s_global == NULL);
 			s_global = new as_object;
+			get_heap()->set(s_global.get_ptr(), false);
 			s_global->set_member("trace", as_value(as_global_trace));
 			s_global->set_member("Object", as_value(as_global_object_ctor));
 			s_global->set_member("Sound", as_value(as_global_sound_ctor));
@@ -3211,6 +3212,7 @@ namespace gameswf
 
 	void heap::clear_garbage()
 	{
+		s_global->not_garbage();
 		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{
