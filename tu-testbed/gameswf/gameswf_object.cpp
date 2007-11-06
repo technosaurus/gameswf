@@ -22,14 +22,12 @@ namespace gameswf
 		if (fn.nargs == 3)
 		{
 			assert(fn.this_ptr);
-			as_object* obj = fn.this_ptr->cast_to_as_object();
-			assert(obj);
 			as_as_function* getter = fn.arg(1).to_as_function();
 			as_as_function* setter = fn.arg(2).to_as_function();
 			if (getter || setter)
 			{
 				// creates unbinded property
-				obj->set_member(fn.arg(0).to_string(), as_value(getter, setter));
+				fn.this_ptr->set_member(fn.arg(0).to_string(), as_value(getter, setter));
 				fn.result->set_bool(true);
 				return;
 			}
