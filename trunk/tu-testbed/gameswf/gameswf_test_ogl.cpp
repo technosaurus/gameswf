@@ -915,7 +915,7 @@ int	main(int argc, char *argv[])
 			m->display();
 			t_display = SDL_GetTicks() - t_display;
 
-			printf("advance time: %d, display time %d\n", t_advance, t_display);
+			//printf("advance time: %d, display time %d\n", t_advance, t_display);
 
 			frame_counter++;
 
