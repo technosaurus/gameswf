@@ -3178,7 +3178,8 @@ namespace gameswf
 			{
 				if (obj->get_ref_count() > 1)
 				{
-					obj->clear_refs(obj);
+					hash<as_object_interface*, bool> visited_objects;
+					obj->clear_refs(&visited_objects, obj);
 				}
 			}
 		}
@@ -3223,7 +3224,8 @@ namespace gameswf
 				{
 					if (obj->get_ref_count() > 1)	// is in heap only ?
 					{
-						obj->clear_refs(obj);
+						hash<as_object_interface*, bool> visited_objects;
+						obj->clear_refs(&visited_objects, obj);
 					}
 					m_heap.erase(obj);
 				}

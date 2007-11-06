@@ -56,9 +56,6 @@ namespace gameswf
 		mouse_state m_mouse_state;
 		bool m_enabled;
 		bool m_on_event_load_called;
-//		smart_ptr<as_mcloader> m_mcloader;	// ref to MovieClipLoader (if it's present)
-
-		bool m_is_clear_called;
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
 		virtual ~sprite_instance();
@@ -222,7 +219,8 @@ namespace gameswf
 
 		virtual character*	find_target(const tu_string& path) const;
 
-		virtual void clear_refs(as_object_interface* this_ptr);
+		virtual void clear_refs(hash<as_object_interface*, bool>* visited_objects, 
+			as_object_interface* this_ptr);
 		virtual as_environment*	get_environment() { return &m_as_environment; }
 		virtual void dump();
 	};

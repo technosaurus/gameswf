@@ -39,7 +39,6 @@ namespace gameswf
 		};
 
 		stringi_hash<as_watch>	m_watch;
-		bool m_is_clear_called;
 		weak_ptr<resource> m_this_ptr;
 
 		// We can place reference to __proto__ into members but it used very often
@@ -60,7 +59,8 @@ namespace gameswf
 		exported_module virtual as_object_interface* get_proto() const;
 		exported_module virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
 		exported_module virtual bool unwatch(const tu_string& name);
-		exported_module virtual void clear_refs(as_object_interface* this_ptr);
+		exported_module virtual void clear_refs(hash<as_object_interface*, bool>* visited_objects,
+			as_object_interface* this_ptr);
 		exported_module virtual void not_garbage();
 		exported_module virtual void copy_to(as_object_interface* target);
 		exported_module bool add_property(const tu_string& name, const as_value& val);
