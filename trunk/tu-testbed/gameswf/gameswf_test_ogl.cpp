@@ -498,6 +498,10 @@ int	main(int argc, char *argv[])
 
 #ifdef _DEBUG
 		gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version);
+		if (movie_version > 8)
+		{
+			gameswf::log_msg("gameSWF supports up to Flash 8 for now\n");
+		}
 #else
 		IF_VERBOSE_PARSE(gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version));
 #endif
