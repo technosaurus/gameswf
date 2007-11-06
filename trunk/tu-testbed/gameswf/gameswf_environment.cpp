@@ -668,7 +668,8 @@ namespace gameswf
 		printf("***\n");
 	}
 
-	void	as_environment::clear_refs(as_object_interface* this_ptr)
+	void	as_environment::clear_refs(hash<as_object_interface*, bool>* visited_objects, 
+		as_object_interface* this_ptr)
 	{
 		for (stringi_hash<as_value>::iterator it = m_variables.begin();
 			it != m_variables.end(); ++it)
@@ -682,7 +683,7 @@ namespace gameswf
 				}
 				else
 				{
-					obj->clear_refs(this_ptr);
+					obj->clear_refs(visited_objects, this_ptr);
 				}
 			}
 		}

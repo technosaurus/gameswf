@@ -80,7 +80,8 @@ namespace gameswf
 	}
 
 
-	sprite_instance::sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id)
+	sprite_instance::sprite_instance(movie_definition_sub* def,
+		movie_root* r, character* parent, int id)
 		:
 		character(parent, id),
 		m_def(def),
@@ -91,8 +92,7 @@ namespace gameswf
 		m_accept_anim_moves(true),
 		m_mouse_state(UP),
 		m_enabled(true),
-		m_on_event_load_called(false),
-		m_is_clear_called(false)
+		m_on_event_load_called(false)
 	{
 		assert(m_def != NULL);
 		assert(m_root != NULL);
@@ -1427,19 +1427,18 @@ namespace gameswf
 		return m_as_environment.find_target(path);
 	}
 
-	void	sprite_instance::clear_refs(as_object_interface* this_ptr)
+	void	sprite_instance::clear_refs(hash<as_object_interface*, bool>* visited_objects,
+		as_object_interface* this_ptr)
 	{
 		// Is it a reentrance ?
-		if (m_is_clear_called)
+		if (visited_objects->get(this, NULL))
 		{
 			return;
 		}
-		m_is_clear_called = true;
+		visited_objects->set(this, true);
 
-		m_display_list.clear_refs(this_ptr);
-		m_as_environment.clear_refs(this_ptr);
-		
-		m_is_clear_called = false;
+		m_display_list.clear_refs(visited_objects, this_ptr);
+		m_as_environment.clear_refs(visited_objects, this_ptr);
 	}
 
 	sprite_instance* sprite_instance::attach_movie(const tu_string& id, 

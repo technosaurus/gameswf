@@ -258,7 +258,8 @@ namespace gameswf
 
 		// Nulls out object's members that links to 'this_ptr'
 		// to avoid cross-link memory leak
-		virtual void clear_refs(as_object_interface* this_ptr) {}
+		virtual void clear_refs(hash<as_object_interface*, bool>* visited_objects,
+			as_object_interface* this_ptr) {}
 
 		// Marks object as 'not garbage'
 		virtual void not_garbage() {}

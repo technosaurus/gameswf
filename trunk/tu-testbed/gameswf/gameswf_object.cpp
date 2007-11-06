@@ -106,8 +106,7 @@ namespace gameswf
 		}
 	}
 
-	as_object::as_object() :
-		m_is_clear_called(false)
+	as_object::as_object()
 	{
 		set_member("addProperty", as_object_addproperty);
 		set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
@@ -250,15 +249,17 @@ namespace gameswf
 		return false;
 	}
 
-	void	as_object::clear_refs(as_object_interface* this_ptr)
+	void	as_object::clear_refs(hash<as_object_interface*, bool>* visited_objects,
+		as_object_interface* this_ptr)
 	{
 		// Is it a reentrance ?
-		if (m_is_clear_called)
+		if (visited_objects->get(this, NULL))
 		{
 			return;
 		}
-		m_is_clear_called = true;
+		visited_objects->set(this, true);
 
+		as_value undefined;
 		for (stringi_hash<as_member>::iterator it = m_members.begin();
 			it != m_members.end(); ++it)
 		{
@@ -267,16 +268,14 @@ namespace gameswf
 			{
 				if (obj == this_ptr)
 				{
-					it->second.set_member_value(as_value());
+					it->second.set_member_value(undefined);
 				}
 				else
 				{
-					obj->clear_refs(this_ptr);
+					obj->clear_refs(visited_objects, this_ptr);
 				}
 			}
 		}
-
-		m_is_clear_called = false;
 	}
 
 	bool	as_object::on_event(const event_id& id)
