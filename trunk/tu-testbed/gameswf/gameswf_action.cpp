@@ -2139,28 +2139,21 @@ namespace gameswf
 					// Subclass.prototype.__proto__ = Superclass.prototype;
 					// Subclass.prototype.__constructor__ = Superclass;
 
-					as_as_function* super = env->top(0).to_as_function();
-					as_as_function* sub = env->top(1).to_as_function();
+					as_value& super = env->top(0);
+					as_value& sub = env->top(1);
 
-					if (super == NULL)
-					{
-						IF_VERBOSE_ACTION(log_msg("Superclass is NULL\n"));
-						break;
-					}
-					if (sub == NULL)
-					{
-						IF_VERBOSE_ACTION(log_msg("Subclass is NULL\n"));
-						break;
-					}
+					// TODO: extends MovieClip, ...
+					assert(super.to_object());
+					assert(sub.to_object());
 
 					as_value super_prototype;
-					super->m_properties->get_member("prototype", &super_prototype);
+					super.to_object()->get_member("prototype", &super_prototype);
 
 					smart_ptr<as_object> new_prototype = new as_object();
 					new_prototype->m_proto = super_prototype.to_object();
 					new_prototype->set_member("__constructor__", super);
 
-					sub->m_properties->set_member("prototype", new_prototype.get_ptr());
+					sub.to_object()->set_member("prototype", new_prototype.get_ptr());
 
 					env->drop(2);
 					break;
