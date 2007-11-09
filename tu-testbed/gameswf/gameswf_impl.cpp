@@ -2033,7 +2033,7 @@ namespace gameswf
 				// create_movie_sub().
 
 				assert(source_movie->cast_to_movie_def_impl());
-				smart_ptr<resource> res = source_movie->cast_to_movie_def_impl()->get_exported_resource(symbol_name);
+				resource* res = source_movie->cast_to_movie_def_impl()->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
 					log_error("import error: resource '%s' is not exported from movie '%s'\n",

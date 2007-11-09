@@ -225,22 +225,9 @@ namespace gameswf
 		
 	}
 
-
-	// void	define_button_sound(...) ???
-
-
-// @@ currently not implemented
-//	void	sound_stream_loader(stream* in, int tag_type, movie_definition_sub* m)
-//	// Load the various stream-related tags: SoundStreamHead,
-//	// SoundStreamHead2, SoundStreamBlock.
-//	{
-//	}
-
-
 	//
 	// ADPCM
 	//
-
 
 	// Data from Alexis' SWF reference
 	static int	s_index_update_table_2bits[2] = { -1,  2 };

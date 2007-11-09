@@ -223,6 +223,8 @@ namespace gameswf
 			as_object_interface* this_ptr);
 		virtual as_environment*	get_environment() { return &m_as_environment; }
 		virtual void dump();
+
+		virtual resource*	find_exported_resource(const tu_string& symbol);
 	};
 }
 

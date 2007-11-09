@@ -102,7 +102,7 @@ namespace gameswf
 
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) = 0;
 		virtual const array<execute_tag*>*	get_init_actions(int frame_number) = 0;
-		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol) = 0;
+		virtual resource*	get_exported_resource(const tu_string& symbol) = 0;
 		virtual character_def*	get_character_def(int id) = 0;
 
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
@@ -242,7 +242,7 @@ namespace gameswf
 		virtual int	get_bitmap_info_count() const;
 		virtual bitmap_info*	get_bitmap_info(int i) const;
 		virtual void	export_resource(const tu_string& symbol, resource* res);
-		virtual smart_ptr<resource>	get_exported_resource(const tu_string& symbol);
+		virtual resource*	get_exported_resource(const tu_string& symbol);
 		virtual void	add_import(const char* source_url, int id, const char* symbol);
 		bool	in_import_table(int character_id);
 		virtual void	visit_imported_movies(import_visitor* visitor);

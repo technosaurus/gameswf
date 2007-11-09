@@ -18,8 +18,17 @@ namespace gameswf
 		{
 			assert(fn.this_ptr);
 			as_sound*	so = fn.this_ptr->cast_to_as_sound();
-			assert(so);
-			s->play_sound(so->sound_id, 0);
+			if (so)
+			{
+				int offset = 0;
+				int loops = 0;
+				if (fn.nargs >= 2)
+				{
+					offset = (int) fn.arg(0).to_number();
+					loops = (int) fn.arg(1).to_number();
+				}
+				s->play_sound(so->sound_id, loops);
+			}
 		}
 	}
 
@@ -51,10 +60,7 @@ namespace gameswf
 		so->sound = fn.arg(0).to_tu_string();
 
 		// check the import.
-		movie_definition_sub*	def = (movie_definition_sub*)
-			fn.env->get_target()->get_root_movie()->get_movie_definition();
-		assert(def);
-		smart_ptr<resource> res = def->get_exported_resource(so->sound);
+		resource* res = fn.env->get_target()->find_exported_resource(so->sound);
 		if (res == NULL)
 		{
 			log_error("import error: resource '%s' is not exported\n", so->sound.c_str());

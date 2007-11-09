@@ -322,6 +322,13 @@ namespace gameswf
 			else
 			{
 				m_decoded = 0;
+
+				// infinitive
+				if (m_loops == -1)
+				{
+					break;
+				}
+
 				if (m_loops == 0)
 				{
 					is_playing = false;

@@ -196,13 +196,13 @@ namespace gameswf
 		m_exports.set(symbol, res);
 	}
 
-	smart_ptr<resource>	movie_def_impl::get_exported_resource(const tu_string& symbol)
+	resource*	movie_def_impl::get_exported_resource(const tu_string& symbol)
 	// Get the named exported resource, if we expose it.
 	// Otherwise return NULL.
 	{
 		smart_ptr<resource>	res;
 		m_exports.get(symbol, &res);
-		return res;
+		return res.get_ptr();
 	}
 
 	void	movie_def_impl::add_import(const char* source_url, int id, const char* symbol)
@@ -265,7 +265,7 @@ namespace gameswf
 			if (inf.m_source_url == source_url)
 			{
 				// Do the import.
-				smart_ptr<resource> res = def->get_exported_resource(inf.m_symbol);
+				resource* res = def->get_exported_resource(inf.m_symbol);
 				bool	 imported = true;
 
 				if (res == NULL)
