@@ -112,13 +112,13 @@ namespace gameswf
 		case M_WIDTH:
 			//else if (name == "_width")
 			{
-				val->set_double(TWIPS_TO_PIXELS(get_width()));
+				val->set_double((int) TWIPS_TO_PIXELS(get_width()));
 				return true;
 			}
 		case M_HEIGHT:
 			//else if (name == "_height")
 			{
-				val->set_double(TWIPS_TO_PIXELS(get_height()));
+				val->set_double((int) TWIPS_TO_PIXELS(get_height()));
 				return true;
 			}
 		case M_ROTATION:
