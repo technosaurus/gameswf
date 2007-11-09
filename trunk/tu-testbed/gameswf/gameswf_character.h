@@ -124,6 +124,17 @@ namespace gameswf
 			return NULL;
 		}
 
+		virtual resource*	find_exported_resource(const tu_string& symbol)
+		{
+			character* ch = get_parent();
+			if (ch)
+			{
+				return ch->find_exported_resource(symbol);
+			}
+			return NULL;
+		}
+
+
 //		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		// Override this if you implement call_method.
 //		{

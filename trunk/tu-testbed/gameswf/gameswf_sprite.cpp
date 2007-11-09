@@ -1447,9 +1447,7 @@ namespace gameswf
 	{
 
 		// check the import.
-		movie_definition_sub*	def = get_root_movie()->get_movie_definition()->cast_to_movie_def_impl();
-		assert(def);
-		smart_ptr<resource> res = def->get_exported_resource(id);
+		resource* res = find_exported_resource(id);
 		if (res == NULL)
 		{
 			log_error("import error: resource '%s' is not exported\n", id.c_str());
@@ -1486,5 +1484,22 @@ namespace gameswf
 		printf("***\n");
 	}
 
+	resource*	sprite_instance::find_exported_resource(const tu_string& symbol)
+	{
+		movie_definition_sub*	def = get_movie_definition()->cast_to_movie_def_impl();
+		assert(def);
 
+		resource* res = def->get_exported_resource(symbol);
+		if (res)
+		{
+			return res;
+		}
+
+		character* parent = get_parent();
+		if (parent)
+		{
+			return parent->find_exported_resource(symbol);
+		}
+		return NULL;
+	}
 }
