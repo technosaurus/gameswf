@@ -91,6 +91,8 @@ namespace gameswf
 			}
 		};
 
+		bool m_is_alive;
+
 		character(character* parent, int id);
 
 		//

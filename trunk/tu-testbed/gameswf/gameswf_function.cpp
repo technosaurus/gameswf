@@ -8,6 +8,7 @@
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_character.h"
+#include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_as_classes/as_array.h"
 
 namespace gameswf
@@ -105,7 +106,14 @@ namespace gameswf
 		// see testcase in .h file
 		if (m_target != NULL)
 		{
-			env = m_target->get_environment();
+			character* ch = m_target->cast_to_character();
+			if (ch)
+			{
+				if (ch->m_is_alive)
+				{
+					env = m_target->get_environment();
+				}
+			}
 		}
 		
 		// Set up local stack frame, for parameters and locals.
