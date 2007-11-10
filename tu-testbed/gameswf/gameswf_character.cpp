@@ -20,7 +20,8 @@ namespace gameswf
 		m_clip_depth(0),
 		m_visible(true),
 		m_display_callback(NULL),
-		m_display_callback_user_ptr(NULL)
+		m_display_callback_user_ptr(NULL),
+		m_is_alive(false)
 	{
 		// loadMovieClip() requires that the following will be commented out
 		// assert((parent == NULL && m_id == -1)	|| (parent != NULL && m_id >= 0));
