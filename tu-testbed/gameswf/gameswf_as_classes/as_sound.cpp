@@ -60,7 +60,13 @@ namespace gameswf
 		so->sound = fn.arg(0).to_tu_string();
 
 		// check the import.
-		resource* res = fn.env->get_target()->find_exported_resource(so->sound);
+		assert(fn.env);
+		resource* res = NULL;
+		if (fn.env->get_target())
+		{
+			res = fn.env->get_target()->find_exported_resource(so->sound);
+		}
+
 		if (res == NULL)
 		{
 			log_error("import error: resource '%s' is not exported\n", so->sound.c_str());
