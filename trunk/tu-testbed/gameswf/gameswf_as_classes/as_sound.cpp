@@ -17,8 +17,8 @@ namespace gameswf
 		if (s != NULL)
 		{
 			assert(fn.this_ptr);
-			as_sound*	so = fn.this_ptr->cast_to_as_sound();
-			if (so)
+			as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+			if (snd)
 			{
 				int offset = 0;
 				int loops = 0;
@@ -27,7 +27,7 @@ namespace gameswf
 					offset = (int) fn.arg(0).to_number();
 					loops = (int) fn.arg(1).to_number();
 				}
-				s->play_sound(so->sound_id, loops);
+				s->play_sound(snd->m_id, loops);
 			}
 		}
 	}
@@ -39,9 +39,9 @@ namespace gameswf
 		if (s != NULL)
 		{
 			assert(fn.this_ptr);
-			as_sound*	so = fn.this_ptr->cast_to_as_sound();
-			assert(so);
-			s->stop_sound(so->sound_id);
+			as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+			assert(snd);
+			s->stop_sound(snd->m_id);
 		}
 	}
 
@@ -54,22 +54,26 @@ namespace gameswf
 		}
 
 		assert(fn.this_ptr);
-		as_sound*	so = fn.this_ptr->cast_to_as_sound();
-		assert(so);
+		as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+		assert(snd);
 
-		so->sound = fn.arg(0).to_tu_string();
+		snd->m_name = fn.arg(0).to_tu_string();
 
-		// check the import.
 		assert(fn.env);
+
+		// find target movieclip
+		character* target = snd->m_target == NULL ? fn.env->get_target() : snd->m_target.get_ptr();
+			
+		// find resource
 		resource* res = NULL;
-		if (fn.env->get_target())
+		if (target)
 		{
-			res = fn.env->get_target()->find_exported_resource(so->sound);
+			res = target->find_exported_resource(snd->m_name);
 		}
 
 		if (res == NULL)
 		{
-			log_error("import error: resource '%s' is not exported\n", so->sound.c_str());
+			log_error("import error: resource '%s' is not exported\n", snd->m_name.c_str());
 			return;
 		}
 
@@ -88,7 +92,7 @@ namespace gameswf
 
 		// sanity check
 		assert(si >= 0 && si < 1000);
-		so->sound_id = si;
+		snd->m_id = si;
 	}
 
 	void	sound_volume(const fn_call& fn)
@@ -108,25 +112,31 @@ namespace gameswf
 			if (s != NULL)
 			{
 				assert(fn.this_ptr);
-				as_sound*	so = fn.this_ptr->cast_to_as_sound();
-				assert(so);
-				s->set_volume(so->sound_id, volume);
+				as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+				assert(snd);
+				s->set_volume(snd->m_id, volume);
 			}
 		}
 	}
 
+	// Sound([target:Object])
+	//  Creates a new Sound object for a specified movie clip.
 	void	as_global_sound_ctor(const fn_call& fn)
-	// Constructor for ActionScript class Sound.
 	{
-		smart_ptr<as_object>	sound_obj(new as_sound);
+		smart_ptr<as_sound> snd = new as_sound();
+		if (fn.nargs > 0)
+		{
+			assert(fn.env);
+			snd->m_target = fn.env->find_target(fn.arg(0));
+		}
 
 		// methods
-		sound_obj->set_member("attachSound", &sound_attach);
-		sound_obj->set_member("start", &sound_start);
-		sound_obj->set_member("stop", &sound_stop);
-		sound_obj->set_member("setVolume", &sound_volume);
+		snd->set_member("attachSound", &sound_attach);
+		snd->set_member("start", &sound_start);
+		snd->set_member("stop", &sound_stop);
+		snd->set_member("setVolume", &sound_volume);
 
-		fn.result->set_as_object_interface(sound_obj.get_ptr());
+		fn.result->set_as_object_interface(snd.get_ptr());
 	}
 
 }

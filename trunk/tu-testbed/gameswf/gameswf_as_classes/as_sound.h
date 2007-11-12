@@ -18,8 +18,9 @@ namespace gameswf
 
 	struct as_sound : public as_object
 	{
-		tu_string sound;
-		int sound_id;
+		tu_string m_name;
+		int m_id;
+		weak_ptr<character> m_target;
 
 		virtual as_sound* cast_to_as_sound() { return this; }
 	};
