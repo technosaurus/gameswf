@@ -18,20 +18,16 @@ namespace gameswf
 			return;
 		}
 
-		int n = m_listeners.size();
-		if (n > 0)
+		// event handler may affects m_listeners using addListener & removeListener
+		for (int i = 0; i < m_listeners.size(); i++)
 		{
-			// event handler may affects m_listeners using addListener & removeListener
-			for (int i = 0; i < n; i++)
+			smart_ptr<as_object_interface> obj = m_listeners[i];
+			if (obj != NULL)
 			{
-				smart_ptr<as_object_interface> obj = m_listeners[i];
-				if (obj != NULL)
-				{
-					obj->on_event(ev);
-				}
+				obj->on_event(ev);
 			}
-			clear_garbage();
 		}
+		clear_garbage();
 	}
 
 	// for asBroadcaster, ...
@@ -44,43 +40,35 @@ namespace gameswf
 			return;
 		}
 
-		int n = m_listeners.size();
-		if (n > 0)
+		// event handler may affects m_listeners using addListener & removeListener
+		for (int i = 0; i < m_listeners.size(); i++)
 		{
-			// event handler may affects m_listeners using addListener & removeListener
-			for (int i = 0; i < n; i++)
+			smart_ptr<as_object_interface> obj = m_listeners[i];
+			if (obj != NULL)	// is listener destroyed ?
 			{
-				smart_ptr<as_object_interface> obj = m_listeners[i];
-				if (obj != NULL)	// is listener destroyed ?
+				as_value function;
+				if (obj->get_member(event_name, &function))
 				{
-					as_value function;
-					if (obj->get_member(event_name, &function))
-					{
-						call_method(function, fn.env, obj.get_ptr(),
-							fn.nargs, fn.env->get_top_index());
-					}
+					call_method(function, fn.env, obj.get_ptr(),
+						fn.nargs, fn.env->get_top_index());
 				}
 			}
-			clear_garbage();
 		}
+		clear_garbage();
 	}
 
 	// for video, timer, ...
 	void	listener::advance(float delta_time)
 	{
-		int n = m_listeners.size();
-		if (n > 0)
+		for (int i = 0; i < m_listeners.size(); i++)
 		{
-			for (int i = 0; i < n; i++)
+			smart_ptr<as_object_interface> obj = m_listeners[i];
+			if (obj != NULL)
 			{
-				smart_ptr<as_object_interface> obj = m_listeners[i];
-				if (obj != NULL)
-				{
-					obj->advance(delta_time);
-				}
+				obj->advance(delta_time);
 			}
-			clear_garbage();
 		}
+		clear_garbage();
 	}
 
 	void listener::add(as_object_interface* listener) 
