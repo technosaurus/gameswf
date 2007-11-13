@@ -244,7 +244,9 @@ namespace gameswf
 		// Open codec
 		if (avcodec_open(m_VCodecCtx, pCodec) < 0)
 		{
+			m_VCodecCtx = NULL;
 			log_error("Could not open codec\n");
+			return false;
 		}
 
 		// Allocate a frame to store the decoded frame in
@@ -443,6 +445,7 @@ namespace gameswf
 				if (m_VCodecCtx->pix_fmt != PIX_FMT_YUV420P)
 				{
 					//				img_convert((AVPicture*) pFrameYUV, PIX_FMT_YUV420P, (AVPicture*) pFrame, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height);
+					printf("unsupported pixel format, try to use another video codec\n");
 					assert(0);	// TODO
 				}
 
