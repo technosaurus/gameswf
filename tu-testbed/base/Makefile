@@ -33,6 +33,7 @@ SRCS :=						\
 	triangulate_sint32.cpp			\
 	tu_file.cpp				\
 	tu_file_SDL.cpp				\
+	tu_gc_singlethreaded_marksweep.cpp	\
 	tu_loadlib.cpp				\
 	tu_random.cpp				\
 	tu_timer.cpp				\
