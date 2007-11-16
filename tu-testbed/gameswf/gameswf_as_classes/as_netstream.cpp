@@ -51,8 +51,8 @@ namespace gameswf
 	{
 		av_register_all();
 
-		m_yuv = render::create_YUV_video();
-		if (m_yuv == NULL)
+		m_video = render::create_video();
+		if (m_video == NULL)
 		{
 			log_error("No available video render\n");
 			return;
@@ -65,7 +65,7 @@ namespace gameswf
 	{
 		m_is_alive = false;
 		m_decoder.signal();
-		delete m_yuv;
+		delete m_video;
 		m_thread->wait();
 		delete m_thread;
 	}
@@ -253,9 +253,9 @@ namespace gameswf
 		m_Frame = avcodec_alloc_frame();
 
 		// Determine required buffer size and allocate buffer
-		m_yuv_mutex.lock();
-		m_yuv->resize(m_VCodecCtx->width,	m_VCodecCtx->height);
-		m_yuv_mutex.unlock();
+		m_video_mutex.lock();
+		m_video->resize(m_VCodecCtx->width,	m_VCodecCtx->height);
+		m_video_mutex.unlock();
 
 		if (m_audio_index >= 0 && get_sound_handler() != NULL)
 		{
@@ -335,13 +335,13 @@ namespace gameswf
 
 					if (m_qvideo.size() > 0)
 					{
-						smart_ptr<av_data>& video = m_qvideo.front();
+						smart_ptr<av_data>& video_frame = m_qvideo.front();
 						double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
-						double video_clock = video->m_pts;
+						double video_clock = video_frame->m_pts;
 
 						if (clock >= video_clock)
 						{
-							m_yuv->update(video->m_data);
+							m_video->update(video_frame->m_data);
 							m_qvideo.pop();
 							delay = 0;
 						}
@@ -442,30 +442,92 @@ namespace gameswf
 			avcodec_decode_video(m_VCodecCtx, m_Frame, &got, packet.data, packet.size);
 			if (got)
 			{
-				if (m_VCodecCtx->pix_fmt != PIX_FMT_YUV420P)
-				{
-					//				img_convert((AVPicture*) pFrameYUV, PIX_FMT_YUV420P, (AVPicture*) pFrame, pCodecCtx->pix_fmt, pCodecCtx->width, pCodecCtx->height);
-					printf("unsupported pixel format, try to use another video codec\n");
-					assert(0);	// TODO
-				}
+				int n = m_video->size();
+				av_data* video_frame = new av_data(m_video_index, (Uint8*) malloc(n), n);
 
-				int n = m_yuv->size();
-				av_data* video = new av_data(m_video_index, (Uint8*) malloc(n), n);
+				switch (m_VCodecCtx->pix_fmt)
+				{
+					case PIX_FMT_YUV420P :
+					{
+						int copied = 0;
+						uint8_t* ptr = video_frame->m_data;
+						for (int i = 0; i < 3 ; i++)
+						{
+							int shift = (i == 0 ? 0 : 1);
+							uint8_t* yuv_factor = m_Frame->data[i];
+							int h = m_VCodecCtx->height >> shift;
+							int w = m_VCodecCtx->width >> shift;
+							for (int j = 0; j < h; j++)
+							{
+								copied += w;
+								assert(copied <= m_video->size());
+								memcpy(ptr, yuv_factor, w);
+								yuv_factor += m_Frame->linesize[i];
+								ptr += w;
+							}
+						}
+						video_frame->m_size = copied;
+
+						break;
+					}
+
+					case PIX_FMT_RGB555 :
+/*
+
+				//vv
+				AVPicture rgb;
+				rgb.data[0] = (uint8_t*) malloc(1000000);
+				rgb.data[1] = 0;
+				rgb.data[2] = 0;
+				rgb.data[3] = 0;
+				rgb.linesize[0] = 0;
+				img_convert(&rgb, PIX_FMT_RGB32, (AVPicture*) m_Frame, m_VCodecCtx->pix_fmt, m_VCodecCtx->width, m_VCodecCtx->height);
+				
+
+				glEnable(GL_TEXTURE_2D);
+				static GLuint id=-1;
+				if (id==-1)
+				{
+					glGenTextures(1, &id);
+				}
+				glBindTexture(GL_TEXTURE_2D, id);
+				glDisable(GL_TEXTURE_GEN_S);
+				glDisable(GL_TEXTURE_GEN_T);				
+
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_VCodecCtx->width, 
+					m_VCodecCtx->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgb.data[0]);
+
+				glDisable(GL_TEXTURE_2D);
+
+
+				free(rgb.data[0]);
+*/
+						break;
+
+					default :
+						printf("unsupported pixel format, try to use another video codec\n");
+						break;
+				}
 
 				// set presentation timestamp
 				if (packet.dts != AV_NOPTS_VALUE)
 				{
-					video->m_pts = as_double(m_video_stream->time_base) * packet.dts;
+					video_frame->m_pts = as_double(m_video_stream->time_base) * packet.dts;
 				}
 
-				if (video->m_pts != 0)
+				if (video_frame->m_pts != 0)
 				{	
 					// update video clock with pts, if present
-					m_video_clock = video->m_pts;
+					m_video_clock = video_frame->m_pts;
 				}
 				else
 				{
-					video->m_pts = m_video_clock;
+					video_frame->m_pts = m_video_clock;
 				}
 
 				// update video clock for next frame
@@ -476,25 +538,7 @@ namespace gameswf
 
 				m_video_clock += frame_delay;
 
-				int copied = 0;
-				uint8_t* ptr = video->m_data;
-				for (int i = 0; i < 3 ; i++)
-				{
-					int shift = (i == 0 ? 0 : 1);
-					uint8_t* yuv_factor = m_Frame->data[i];
-					int h = m_VCodecCtx->height >> shift;
-					int w = m_VCodecCtx->width >> shift;
-					for (int j = 0; j < h; j++)
-					{
-						copied += w;
-						assert(copied <= m_yuv->size());
-						memcpy(ptr, yuv_factor, w);
-						yuv_factor += m_Frame->linesize[i];
-						ptr += w;
-					}
-				}
-				video->m_size = copied;
-				m_unqueued_data = video;
+				m_unqueued_data = video_frame;
 			}
 		}
 		av_free_packet(&packet);
@@ -502,18 +546,18 @@ namespace gameswf
 		return true;
 	}
 
-	YUV_video* as_netstream::get_video()
+	video* as_netstream::get_video()
 	{
-		YUV_video* tmp = NULL;
-		m_yuv_mutex.lock();
-		if (m_yuv != NULL)
+		video* tmp = NULL;
+		m_video_mutex.lock();
+		if (m_video != NULL)
 		{
-			if (m_yuv->is_updated())
+			if (m_video->is_updated())
 			{
-				tmp = m_yuv;
+				tmp = m_video;
 			}
 		}
-		m_yuv_mutex.unlock();
+		m_video_mutex.unlock();
 		return tmp;
 	}
 

@@ -528,13 +528,13 @@ struct render_handler_ogl : public gameswf::render_handler
 		return new bitmap_info_ogl(w, h, data);
 	}
 
-	gameswf::YUV_video*	create_YUV_video()
+	gameswf::video*	create_video()
 	{
 		if (ogl::is_combiner())
 		{
-			return new YUV_video_ogl_NV();
+			return new video_ogl_NV();
 		}
-		return new YUV_video_ogl();
+		return new video_ogl();
 	}
 
 	void	begin_display(

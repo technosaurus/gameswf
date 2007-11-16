@@ -8,12 +8,12 @@
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_video_ogl.h"
 
-// YUV_video_ogl implementation
+// video_ogl implementation
 
 static GLfloat yuv2rgb[2][4] = {{0.500000f, 0.413650f, 0.944700f, 0.f},	{0.851850f, 0.320550f, 0.500000f, 1.f}};
 static GLint iquad[] = {-1, 1, 1, 1, 1, -1, -1, -1};
 
-YUV_video_ogl_NV::YUV_video_ogl_NV()
+video_ogl_NV::video_ogl_NV()
 {
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(NB_TEXS, texids);
@@ -26,12 +26,12 @@ YUV_video_ogl_NV::YUV_video_ogl_NV()
 	}
 };
 
-YUV_video_ogl_NV::~YUV_video_ogl_NV()
+video_ogl_NV::~video_ogl_NV()
 {
 	glDeleteTextures(NB_TEXS, texids);
 }
 
-void YUV_video_ogl_NV::YUV_tex_params()
+void video_ogl_NV::YUV_tex_params()
 {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -40,7 +40,7 @@ void YUV_video_ogl_NV::YUV_tex_params()
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 
-void YUV_video_ogl_NV::bind_tex()
+void video_ogl_NV::bind_tex()
 {
 	glDisable(GL_TEXTURE_GEN_S);
 	glDisable(GL_TEXTURE_GEN_T);
@@ -71,7 +71,7 @@ void YUV_video_ogl_NV::bind_tex()
 	ogl::combine_color(yuv2rgb[0], yuv2rgb[1]);
 }
 
-void YUV_video_ogl_NV::draw()
+void video_ogl_NV::draw()
 {
 	glPushAttrib(GL_VIEWPORT_BIT);
 	glPushMatrix();
@@ -143,7 +143,7 @@ void YUV_video_ogl_NV::draw()
 	glEnd();
 }
 
-void YUV_video_ogl_NV::upload_data()
+void video_ogl_NV::upload_data()
 {
 	unsigned char*   ptr = m_data;
 	for (int i = 0; i < 3; ++i)
@@ -161,7 +161,7 @@ void YUV_video_ogl_NV::upload_data()
 	}
 }
 
-void YUV_video_ogl_NV::display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color)
+void video_ogl_NV::display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color)
 {
 	glPushAttrib(GL_ENABLE_BIT);
 	//		glPushAttrib(GL_ALL_ATTRIB_BITS);
@@ -180,7 +180,7 @@ void YUV_video_ogl_NV::display(const gameswf::matrix* mat, const gameswf::rect* 
 
 
 
-YUV_video_ogl::YUV_video_ogl()
+video_ogl::video_ogl()
 {
 	for (int i = 0; i < 3; ++i)
 	{
@@ -189,11 +189,11 @@ YUV_video_ogl::YUV_video_ogl()
 	}
 }
 
-YUV_video_ogl::~YUV_video_ogl()
+video_ogl::~video_ogl()
 {
 }
 
-void YUV_video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color)
+void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color)
 {
 	glPushAttrib(GL_ENABLE_BIT | GL_COLOR_BUFFER_BIT);
 	static GLfloat yuv_rgb[16] = {

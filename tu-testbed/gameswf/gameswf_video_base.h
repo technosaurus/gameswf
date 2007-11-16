@@ -13,12 +13,12 @@
 
 namespace gameswf
 {
-	struct YUV_video : public ref_counted
+	struct video : public ref_counted
 	{
 		enum {Y, U, V, T, NB_TEXS};
 
-		YUV_video();
-		~YUV_video();
+		video();
+		~video();
 
 		void resize(int w, int h);
 		void update(Uint8* data);
