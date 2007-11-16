@@ -61,7 +61,7 @@ namespace gameswf
 
 		virtual as_netstream* cast_to_as_netstream() { return this; }
 
-		YUV_video* get_video();
+		video* get_video();
 		void run();
 		void pause(int mode);
 		void seek(double seek_time);
@@ -109,8 +109,8 @@ namespace gameswf
 		tu_thread* m_thread;
 		tu_condition m_decoder;
 
-		YUV_video* m_yuv;
-		tu_mutex m_yuv_mutex;
+		video* m_video;
+		tu_mutex m_video_mutex;
 		smart_ptr<av_data> m_unqueued_data;
 
 		size_t m_queue_size;
@@ -128,7 +128,7 @@ namespace gameswf
 
 	struct as_netstream : public as_object
 	{
-		YUV_video* get_video() { return NULL; }
+		video* get_video() { return NULL; }
 	};
 
 }

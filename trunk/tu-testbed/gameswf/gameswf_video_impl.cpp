@@ -86,7 +86,7 @@ namespace gameswf
 	{
 		if (m_ns != NULL)	// is attached video ?
 		{
-			YUV_video* video_frame = m_ns->get_video();
+			video* video_frame = m_ns->get_video();
 			if (video_frame != NULL)
 			{
 				// Uint32 t = SDL_GetTicks();

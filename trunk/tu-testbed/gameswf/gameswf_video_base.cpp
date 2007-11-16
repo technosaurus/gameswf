@@ -18,7 +18,7 @@
 namespace gameswf
 {
 
-	YUV_video::YUV_video():
+	video::video():
 		m_data(NULL),
 		m_width(0),
 		m_height(0),
@@ -29,7 +29,7 @@ namespace gameswf
 
 	// We should save planes[i].id & planes[i].unit
 	// because they are already inited
-	void YUV_video::resize(int w, int h)
+	void video::resize(int w, int h)
 	{
 		delete [] m_data;
 
@@ -77,12 +77,12 @@ namespace gameswf
 
 	}	
 
-	YUV_video::~YUV_video()
+	video::~video()
 	{
 		delete [] m_data;
 	}
 
-	Uint32 YUV_video::video_nlpo2(Uint32 x) const
+	Uint32 video::video_nlpo2(Uint32 x) const
 	{
 		x |= (x >> 1);
 		x |= (x >> 2);
@@ -92,23 +92,23 @@ namespace gameswf
 		return x + 1;
 	}
 
-	void YUV_video::update(Uint8* data)
+	void video::update(Uint8* data)
 	{
 		m_is_updated = true;
 		memcpy(m_data, data, m_size);
 	}
 
-	bool YUV_video::is_updated() const
+	bool video::is_updated() const
 	{
 		return m_is_updated;
 	}
 
-	int YUV_video::size() const
+	int video::size() const
 	{
 		return m_size;
 	}
 
-	void YUV_video::display(const matrix* m, const rect* bounds, const rgba& cx)
+	void video::display(const matrix* m, const rect* bounds, const rgba& cx)
 	{
 	}
 
