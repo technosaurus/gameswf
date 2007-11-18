@@ -47,10 +47,6 @@ namespace ogl {
 	PFNGLMULTITEXCOORD2FARBPROC	glMultiTexCoord2fARB = 0;
 	PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB = 0;
 
-	PFNGLCOMBINERINPUTNVPROC	glCombinerInputNV = 0;
-	PFNGLCOMBINERPARAMETERINVPROC	glCombinerParameteriNV = 0;
-	PFNGLCOMBINERPARAMETERFVNVPROC	glCombinerParameterfvNV = 0;
-
 	// GL_CLAMP or GL_CLAMP_TO_EDGE, depending on which is available.
 	int	s_clamp_to_edge = GL_CLAMP;
 
@@ -102,10 +98,6 @@ namespace ogl {
 		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
 		glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
 		glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
-
-		glCombinerInputNV = (PFNGLCOMBINERINPUTNVPROC) SDL_GL_GetProcAddress("glCombinerInputNV");
-		glCombinerParameteriNV = (PFNGLCOMBINERPARAMETERINVPROC) SDL_GL_GetProcAddress("glCombinerParameteriNV");
-		glCombinerParameterfvNV = (PFNGLCOMBINERPARAMETERFVNVPROC) SDL_GL_GetProcAddress("glCombinerParameterfvNV");
 
 		if (check_extension("GL_SGIS_texture_edge_clamp")
 		    || check_extension("GL_EXT_texture_edge_clamp"))
@@ -441,59 +433,6 @@ namespace ogl {
 			glMultiTexCoord2fvARB(stage, st);
 		}
 	}
-
-	void combine_UV()
-	{
-		//Combiner 1
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE0_ARB, GL_HALF_BIAS_NORMAL_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_CONSTANT_COLOR0_NV, GL_EXPAND_NORMAL_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_TEXTURE1_ARB, GL_HALF_BIAS_NORMAL_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_CONSTANT_COLOR1_NV, GL_EXPAND_NORMAL_NV, GL_RGB);
-
-		//Combiner 2
-		glCombinerInputNV (GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_A_NV, GL_SPARE0_NV, GL_SIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_B_NV, GL_ZERO, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_C_NV, GL_ZERO, GL_HALF_BIAS_NEGATE_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER1_NV, GL_RGB, GL_VARIABLE_D_NV, GL_ZERO, GL_UNSIGNED_INVERT_NV, GL_RGB);
-
-		// Total number of combiner registers...
-		glCombinerParameteriNV (GL_NUM_GENERAL_COMBINERS_NV, 2);
-	}
-
-	void combine_final()
-	{
-		//Combiner 1
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_A_NV, GL_TEXTURE0_ARB, GL_UNSIGNED_IDENTITY_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_B_NV, GL_ZERO, GL_UNSIGNED_INVERT_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_C_NV, GL_TEXTURE1_ARB, GL_EXPAND_NORMAL_NV, GL_RGB);
-		glCombinerInputNV (GL_COMBINER0_NV, GL_RGB, GL_VARIABLE_D_NV, GL_ZERO, GL_UNSIGNED_INVERT_NV, GL_RGB);
-
-		// Total number of combiner registers...
-		glCombinerParameteriNV (GL_NUM_GENERAL_COMBINERS_NV, 1);
-	}
-
-	void combine_color(float* c0, float* c1)
-	{
-		//Enable Combiner registers
-		glEnable(GL_REGISTER_COMBINERS_NV);
-
-		glCombinerParameterfvNV(GL_CONSTANT_COLOR0_NV, c0);
-		glCombinerParameterfvNV(GL_CONSTANT_COLOR1_NV, c1);
-	}
-
-	bool is_combiner()
-	{
-		GLint aux_buffers;
-		glGetIntegerv(GL_AUX_BUFFERS, &aux_buffers);
-
-		if (glCombinerInputNV && glCombinerParameteriNV && glMultiTexCoord2fvARB 
-			&& glActiveTextureARB && glCombinerParameterfvNV && aux_buffers > 0)
-		{
-			return true;
-		}
-		return false;
-	}
-
 
 };
 

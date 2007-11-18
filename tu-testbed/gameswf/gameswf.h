@@ -50,7 +50,7 @@ namespace gameswf
 	struct rgba;
 	struct sound_handler;
 	struct stream;
-	struct video;
+	struct video_handler;
 	struct event_id;
 	struct movie_root;
 	struct movie_def_impl;
@@ -1063,7 +1063,7 @@ namespace gameswf
 		virtual bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data) = 0;
 		virtual bitmap_info*	create_bitmap_info_rgb(image::rgb* im) = 0;
 		virtual bitmap_info*	create_bitmap_info_rgba(image::rgba* im) = 0;
-		virtual video*	create_video() = 0;
+		virtual video_handler*	create_video_handler() = 0;
 
 		// Bracket the displaying of a frame from a movie.
 		// Fill the background color, and set up default

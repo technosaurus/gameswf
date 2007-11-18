@@ -45,13 +45,6 @@ namespace ogl
 	void	client_active_texture(int stage);
 	void	multi_tex_coord_2f(int stage, float s, float t);
 	void	multi_tex_coord_2fv(int stage, float* st);
-
-	// for video
-	void combine_UV();
-	void combine_final();
-	void combine_color(float* c0, float* c1);
-	bool is_combiner();
-
 };
 
 
