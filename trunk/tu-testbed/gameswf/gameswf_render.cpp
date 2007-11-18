@@ -56,9 +56,9 @@ namespace gameswf
 			else return new bogus_bi;
 		}
 
-		video*	create_video()
+		video_handler*	create_video_handler()
 		{
-			if (s_render_handler) return s_render_handler->create_video();
+			if (s_render_handler) return s_render_handler->create_video_handler();
 			else return NULL; //hack new bogus_bi;
 		}
 

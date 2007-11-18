@@ -528,12 +528,8 @@ struct render_handler_ogl : public gameswf::render_handler
 		return new bitmap_info_ogl(w, h, data);
 	}
 
-	gameswf::video*	create_video()
+	gameswf::video_handler*	create_video_handler()
 	{
-		if (ogl::is_combiner())
-		{
-			return new video_ogl_NV();
-		}
 		return new video_ogl();
 	}
 

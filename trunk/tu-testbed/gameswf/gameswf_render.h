@@ -25,7 +25,7 @@ namespace gameswf
 		bitmap_info*	create_bitmap_info_alpha(int w, int h, unsigned char* data);
 		bitmap_info*	create_bitmap_info_rgb(image::rgb* im);
 		bitmap_info*	create_bitmap_info_rgba(image::rgba* im);
-		video*	create_video();
+		video_handler*	create_video_handler();
 
 		// Bracket the displaying of a frame from a movie.
 		// Fill the background color, and set up default

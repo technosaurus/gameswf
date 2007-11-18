@@ -12,10 +12,12 @@
 
 #include "base/tu_queue.h"
 #include "gameswf/gameswf_video_impl.h"
+#include "gameswf/gameswf_video_base.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
 #include <ffmpeg/avformat.h>
+#include <ffmpeg/swscale.h>
 
 namespace gameswf
 {
@@ -28,32 +30,6 @@ namespace gameswf
 	void netstream_seek(const fn_call& fn);
 	void netstream_setbuffertime(const fn_call& fn);
 
-	// With these data are filled audio & video queues. 
-	// They the common both for audio and for video
-	struct av_data : public ref_counted
-	{
-		av_data(int stream, Uint8* data, int size) :
-			m_stream_index(stream),
-			m_size(size),
-			m_data(data),
-			m_ptr(data),
-			m_pts(0)
-		{
-			assert(data);
-		};
-
-		~av_data()
-		{
-			delete m_data;
-		};
-
-		int m_stream_index;
-		Uint32 m_size;
-		Uint8* m_data;
-		Uint8* m_ptr;
-		double m_pts;	// presentation timestamp in sec
-	};
-
 	struct as_netstream : public as_object
 	{
 		as_netstream();
@@ -61,7 +37,7 @@ namespace gameswf
 
 		virtual as_netstream* cast_to_as_netstream() { return this; }
 
-		video* get_video();
+		video_handler* get_video_handler();
 		void run();
 		void pause(int mode);
 		void seek(double seek_time);
@@ -101,17 +77,19 @@ namespace gameswf
 		volatile bool m_break;
 		volatile bool m_pause;
 
-		tu_queue< smart_ptr<av_data> > m_qvideo;
+		// this is used only in decoder thread
+		tu_queue< smart_ptr<video_data> > m_qvideo;
 
+		// this is used in decoder & sound threads
 		tu_mutex m_audio_mutex;
-		tu_queue< smart_ptr<av_data> > m_qaudio;
+		tu_queue< smart_ptr<audio_data> > m_qaudio;
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;
 
-		video* m_video;
-		tu_mutex m_video_mutex;
-		smart_ptr<av_data> m_unqueued_data;
+		smart_ptr<video_handler> m_video_handler;
+
+		smart_ptr<audio_video_data> m_unqueued_data;
 
 		size_t m_queue_size;
 	};
@@ -128,7 +106,7 @@ namespace gameswf
 
 	struct as_netstream : public as_object
 	{
-		video* get_video() { return NULL; }
+		video_handler* get_video_handler() { return NULL; }
 	};
 
 }

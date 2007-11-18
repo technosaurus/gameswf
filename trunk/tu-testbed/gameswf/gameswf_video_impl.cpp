@@ -84,13 +84,15 @@ namespace gameswf
 
 	void video_stream_instance::display()
 	{
-		if (m_ns != NULL)	// is attached video ?
+		if (m_ns != NULL)	// is video attached ?
 		{
-			video* video_frame = m_ns->get_video();
-			if (video_frame != NULL)
-			{
-				// Uint32 t = SDL_GetTicks();
+			video_handler* vi = m_ns->get_video_handler();
+			assert(vi != NULL);
+			
+			vi->lock();
 
+			if (vi->is_updated())
+			{
 				rect bounds;
 				bounds.m_x_min = 0.0f;
 				bounds.m_y_min = 0.0f;
@@ -101,10 +103,11 @@ namespace gameswf
 				gameswf::rgba color = cx.transform(gameswf::rgba());
 
 				matrix m = get_world_matrix();
-				video_frame->display(&m, &bounds, color);
-
-				// printf("video time %d\n", SDL_GetTicks() - t);
+				vi->display(&m, &bounds, color);
 			}
+
+			vi->unlock();
+
 		}
 	}
 

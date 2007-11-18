@@ -51,8 +51,8 @@ namespace gameswf
 	{
 		av_register_all();
 
-		m_video = render::create_video();
-		if (m_video == NULL)
+		m_video_handler = render::create_video_handler();
+		if (m_video_handler == NULL)
 		{
 			log_error("No available video render\n");
 			return;
@@ -65,7 +65,6 @@ namespace gameswf
 	{
 		m_is_alive = false;
 		m_decoder.signal();
-		delete m_video;
 		m_thread->wait();
 		delete m_thread;
 	}
@@ -100,7 +99,7 @@ namespace gameswf
 		m_audio_mutex.lock();
 		while (len > 0 && m_qaudio.size() > 0)
 		{
-			smart_ptr<av_data>& samples = m_qaudio.front();
+			smart_ptr<audio_data>& samples = m_qaudio.front();
 
 			int n = imin(samples->m_size, len);
 			memcpy(stream, samples->m_ptr, n);
@@ -252,11 +251,6 @@ namespace gameswf
 		// Allocate a frame to store the decoded frame in
 		m_Frame = avcodec_alloc_frame();
 
-		// Determine required buffer size and allocate buffer
-		m_video_mutex.lock();
-		m_video->resize(m_VCodecCtx->width,	m_VCodecCtx->height);
-		m_video_mutex.unlock();
-
 		if (m_audio_index >= 0 && get_sound_handler() != NULL)
 		{
 			// Get a pointer to the audio codec context for the video stream
@@ -335,13 +329,13 @@ namespace gameswf
 
 					if (m_qvideo.size() > 0)
 					{
-						smart_ptr<av_data>& video_frame = m_qvideo.front();
+						video_data* video_frame = m_qvideo.front().get_ptr();
 						double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
 						double video_clock = video_frame->m_pts;
 
 						if (clock >= video_clock)
 						{
-							m_video->update(video_frame->m_data);
+							m_video_handler->update_frame(video_frame);
 							m_qvideo.pop();
 							delay = 0;
 						}
@@ -378,7 +372,7 @@ namespace gameswf
 	{
 		if (m_unqueued_data != NULL)
 		{
-			if (m_unqueued_data->m_stream_index == m_audio_index)
+			if (m_unqueued_data->cast_to_audio())
 			{
 				sound_handler* s = get_sound_handler();
 				if (s)
@@ -386,27 +380,30 @@ namespace gameswf
 					m_audio_mutex.lock();
 					if (m_qaudio.size() < m_queue_size)
 					{
-						m_qaudio.push(m_unqueued_data);
+						smart_ptr<audio_data> item = m_unqueued_data->cast_to_audio();
+						assert(item != NULL);
+						m_qaudio.push(item);
 						m_unqueued_data = NULL;
 					}
 					m_audio_mutex.unlock();
 				}
 			}
 			else
-				if (m_unqueued_data->m_stream_index == m_video_index)
+			if (m_unqueued_data->cast_to_video())
+			{
+				if (m_qvideo.size() < m_queue_size)
 				{
-					if (m_qvideo.size() < m_queue_size)
-					{
-						m_qvideo.push(m_unqueued_data);
-						m_unqueued_data = NULL;
-					}
+					smart_ptr<video_data> item = m_unqueued_data->cast_to_video();
+					assert(item != NULL);
+					m_qvideo.push(item);
+					m_unqueued_data = NULL;
 				}
-				else
-				{
-					log_error("read_frame: not audio & video stream\n");
-				}
-
-				return true;
+			}
+			else
+			{
+				log_error("read_frame: not audio & video stream\n");
+			}
+			return true;
 		}
 
 		AVPacket packet;
@@ -430,7 +427,7 @@ namespace gameswf
 					int n = 0;
 					s->cvt(&adjusted_data, &n, decoder_buf, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
 
-					m_unqueued_data = new av_data(m_audio_index, (Uint8*) adjusted_data, n);
+					m_unqueued_data = new audio_data((Uint8*) adjusted_data, n);
 				}
 				free(decoder_buf);
 			}
@@ -442,77 +439,47 @@ namespace gameswf
 			avcodec_decode_video(m_VCodecCtx, m_Frame, &got, packet.data, packet.size);
 			if (got)
 			{
-				int n = m_video->size();
-				av_data* video_frame = new av_data(m_video_index, (Uint8*) malloc(n), n);
+				// gets buf size for rgba picture
+				int w = m_VCodecCtx->width;
+				int h = m_VCodecCtx->height;
+				Uint8* buf = (Uint8*) malloc(avpicture_get_size(PIX_FMT_RGBA32, w, h));
+				smart_ptr<video_data> video_frame = new video_data(buf, w, h);
 
-				switch (m_VCodecCtx->pix_fmt)
+			  AVPicture picture1;
+				avpicture_fill(&picture1, video_frame->m_data, PIX_FMT_RGBA32, w, h);
+
+        struct SwsContext* toRGB_convert_ctx = sws_getContext(
+																		w, h, m_VCodecCtx->pix_fmt,
+                                    w, h, PIX_FMT_RGBA32,
+                                    SWS_FAST_BILINEAR, NULL, NULL, NULL);
+        assert(toRGB_convert_ctx);
+
+				AVPicture* picture = (AVPicture*) m_Frame;
+        int ret = sws_scale(toRGB_convert_ctx,
+                 picture->data, picture->linesize, 0, 0,
+                 picture1.data, picture1.linesize);
+
+        sws_freeContext(toRGB_convert_ctx);
+
+				// clear video background
+				Uint8* ptr = video_frame->m_data;
+				for (int y=0; y<h; y++)
 				{
-					case PIX_FMT_YUV420P :
+					for (int x=0; x<w; x++)
 					{
-						int copied = 0;
-						uint8_t* ptr = video_frame->m_data;
-						for (int i = 0; i < 3 ; i++)
+						swap(ptr, ptr + 2);	// BGR ==> RGB
+//#define CLEAR_BLUE_VIDEO_BACKGROUND
+#ifdef CLEAR_BLUE_VIDEO_BACKGROUND
+						if (ptr[2] >= 0xf0)
 						{
-							int shift = (i == 0 ? 0 : 1);
-							uint8_t* yuv_factor = m_Frame->data[i];
-							int h = m_VCodecCtx->height >> shift;
-							int w = m_VCodecCtx->width >> shift;
-							for (int j = 0; j < h; j++)
-							{
-								copied += w;
-								assert(copied <= m_video->size());
-								memcpy(ptr, yuv_factor, w);
-								yuv_factor += m_Frame->linesize[i];
-								ptr += w;
-							}
+							ptr[3] = 0;
 						}
-						video_frame->m_size = copied;
-
-						break;
+#endif
+						ptr +=4;
 					}
-
-					case PIX_FMT_RGB555 :
-/*
-
-				//vv
-				AVPicture rgb;
-				rgb.data[0] = (uint8_t*) malloc(1000000);
-				rgb.data[1] = 0;
-				rgb.data[2] = 0;
-				rgb.data[3] = 0;
-				rgb.linesize[0] = 0;
-				img_convert(&rgb, PIX_FMT_RGB32, (AVPicture*) m_Frame, m_VCodecCtx->pix_fmt, m_VCodecCtx->width, m_VCodecCtx->height);
-				
-
-				glEnable(GL_TEXTURE_2D);
-				static GLuint id=-1;
-				if (id==-1)
-				{
-					glGenTextures(1, &id);
 				}
-				glBindTexture(GL_TEXTURE_2D, id);
-				glDisable(GL_TEXTURE_GEN_S);
-				glDisable(GL_TEXTURE_GEN_T);				
 
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-				glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_VCodecCtx->width, 
-					m_VCodecCtx->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, rgb.data[0]);
-
-				glDisable(GL_TEXTURE_2D);
-
-
-				free(rgb.data[0]);
-*/
-						break;
-
-					default :
-						printf("unsupported pixel format, try to use another video codec\n");
-						break;
-				}
+				//printf("video advance time: %d\n", SDL_GetTicks()-t);
 
 				// set presentation timestamp
 				if (packet.dts != AV_NOPTS_VALUE)
@@ -538,7 +505,7 @@ namespace gameswf
 
 				m_video_clock += frame_delay;
 
-				m_unqueued_data = video_frame;
+				m_unqueued_data = video_frame.get_ptr();
 			}
 		}
 		av_free_packet(&packet);
@@ -546,19 +513,9 @@ namespace gameswf
 		return true;
 	}
 
-	video* as_netstream::get_video()
+	video_handler* as_netstream::get_video_handler()
 	{
-		video* tmp = NULL;
-		m_video_mutex.lock();
-		if (m_video != NULL)
-		{
-			if (m_video->is_updated())
-			{
-				tmp = m_video;
-			}
-		}
-		m_video_mutex.unlock();
-		return tmp;
+		return m_video_handler.get_ptr();
 	}
 
 	void as_netstream::seek(double seek_time)
