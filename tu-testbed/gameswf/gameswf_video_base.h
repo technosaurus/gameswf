@@ -84,8 +84,7 @@ namespace gameswf
 		virtual void display(const matrix* m, const rect* bounds, const rgba& cx) = 0;
 		bool is_updated() const;
 		void update_frame(video_data* data);
-		void lock() { m_mutex.lock(); }
-		void unlock() { m_mutex.unlock(); }
+		smart_ptr<video_data> get_video_data();
 
 	protected:
 

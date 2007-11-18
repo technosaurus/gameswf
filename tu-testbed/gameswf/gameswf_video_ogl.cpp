@@ -7,6 +7,7 @@
 
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_video_ogl.h"
+#include "gameswf/gameswf_video_base.h"
 
 video_ogl::video_ogl()
 {
@@ -34,13 +35,16 @@ void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds,
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 	glEnable(GL_TEXTURE_2D);
 
-	int w = m_data->m_width;
-	int h = m_data->m_height;
+	smart_ptr<gameswf::video_data> vd = get_video_data();
+
+	int w = vd->m_width;
+	int h = vd->m_height;
 	int	w2p = 1; while (w2p < w) { w2p <<= 1; }
 	int	h2p = 1; while (h2p < h) { h2p <<= 1; }
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w2p, h2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, m_data->m_data);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, vd->m_data);
+	
 
 	m = mat;
 	m_bounds = bounds;

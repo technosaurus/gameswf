@@ -36,6 +36,15 @@ namespace gameswf
 		m_mutex.unlock();
 	}
 
+	smart_ptr<video_data> video_handler::get_video_data()
+	{
+		smart_ptr<video_data> vd;
+		m_mutex.lock();
+		vd = m_data;
+		m_mutex.unlock();
+		return vd;
+	}
+
 	bool video_handler::is_updated() const
 	{
 		return m_is_updated;
