@@ -45,6 +45,7 @@ namespace gameswf
 		void audio_callback(Uint8* stream, int len);
 		void close();
 		void play(const char* url);
+		float time() const;
 
 	private:
 
@@ -66,7 +67,7 @@ namespace gameswf
 
 		AVFrame* m_Frame;
 
-		double m_video_clock;
+		volatile double m_video_clock;
 		double m_start_clock;
 
 		int m_video_index;
