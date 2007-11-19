@@ -13,11 +13,7 @@ video_ogl::video_ogl()
 {
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &m_texture);
-
 	glBindTexture(GL_TEXTURE_2D, m_texture);
-
-	glDisable(GL_TEXTURE_GEN_S);
-	glDisable(GL_TEXTURE_GEN_T);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
@@ -34,6 +30,8 @@ void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds,
 {
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_TEXTURE_GEN_S);
+	glDisable(GL_TEXTURE_GEN_T);
 
 	smart_ptr<gameswf::video_data> vd;
 	get_video(&vd);
@@ -71,6 +69,8 @@ void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds,
 		glVertex2f(d.m_x, d.m_y);
 	}
 	glEnd();
+
+	glDisable(GL_TEXTURE_2D);
 }
 
 
