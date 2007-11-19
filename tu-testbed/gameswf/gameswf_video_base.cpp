@@ -19,8 +19,8 @@ namespace gameswf
 {
 
 	video_handler::video_handler():
-		m_data(NULL),
-		m_is_updated(false)
+		m_is_drawn(true),
+		m_data(NULL)
 	{
 	}
 
@@ -28,26 +28,28 @@ namespace gameswf
 	{
 	}
 
-	void video_handler::update_frame(video_data* data)
+	void video_handler::update_video(video_data* data)
 	{
 		m_mutex.lock();
-		m_is_updated = true;
 		m_data = data;
+		m_is_drawn = false;
 		m_mutex.unlock();
 	}
 
-	smart_ptr<video_data> video_handler::get_video_data()
+	bool video_handler::is_video_data()
 	{
-		smart_ptr<video_data> vd;
 		m_mutex.lock();
-		vd = m_data;
+		bool ret = m_data == NULL ? false : true;
 		m_mutex.unlock();
-		return vd;
+		return ret;
 	}
 
-	bool video_handler::is_updated() const
+	void video_handler::get_video(smart_ptr<video_data>* vd)
 	{
-		return m_is_updated;
+		m_mutex.lock();
+		*vd = m_data;
+		m_is_drawn = true;
+		m_mutex.unlock();
 	}
 
 }  // namespace gameswf

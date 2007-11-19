@@ -35,7 +35,8 @@ void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds,
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 	glEnable(GL_TEXTURE_2D);
 
-	smart_ptr<gameswf::video_data> vd = get_video_data();
+	smart_ptr<gameswf::video_data> vd;
+	get_video(&vd);
 
 	int w = vd->m_width;
 	int h = vd->m_height;

@@ -335,9 +335,23 @@ namespace gameswf
 
 						if (clock >= video_clock)
 						{
-							m_video_handler->update_frame(video_frame);
-							m_qvideo.pop();
-							delay = 0;
+							if (m_video_handler->m_is_drawn)
+							{
+								m_video_handler->update_video(video_frame);
+								m_qvideo.pop();
+								delay = 0;
+							}
+							else
+							{
+								// Wait for video render, pause
+								// What is it better ? 
+								// To show all frames but slowly or
+								// according to FPS but with the miss of the some frames
+								double t = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+								tu_timer::sleep(20);
+								m_start_clock += tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - t;
+								continue;
+							}
 						}
 						else
 						{
@@ -463,18 +477,21 @@ namespace gameswf
 
 				// clear video background
 				Uint8* ptr = video_frame->m_data;
-				for (int y=0; y<h; y++)
+				for (int y = 0; y < h; y++)
 				{
-					for (int x=0; x<w; x++)
+					for (int x = 0; x < w; x++)
 					{
 						swap(ptr, ptr + 2);	// BGR ==> RGB
-//#define CLEAR_BLUE_VIDEO_BACKGROUND
+
+#define CLEAR_BLUE_VIDEO_BACKGROUND
 #ifdef CLEAR_BLUE_VIDEO_BACKGROUND
-						if (ptr[2] >= 0xf0)
+						Uint16 rg = *(Uint16*) ptr;	// abgr
+						if (ptr[3] >= 0xF0 && rg == 0)
 						{
 							ptr[3] = 0;
 						}
 #endif
+
 						ptr +=4;
 					}
 				}
