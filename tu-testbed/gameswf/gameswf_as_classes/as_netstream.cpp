@@ -521,7 +521,6 @@ namespace gameswf
 				frame_delay += m_Frame->repeat_pict * (frame_delay * 0.5);
 
 				m_video_clock += frame_delay;
-
 				m_unqueued_data = video_frame.get_ptr();
 			}
 		}
@@ -549,9 +548,16 @@ namespace gameswf
 		}
 	}
 
+	// Specifies how long to buffer messages before starting to display the stream.
 	void as_netstream::setBufferTime()
 	{
 		log_msg("%s:unimplemented \n", __FUNCTION__);
+	}
+
+	//	The position of the playhead, in seconds.
+	float as_netstream::time() const
+	{
+		return m_video_clock;
 	}
 
 	void netstream_close(const fn_call& fn)
@@ -592,6 +598,8 @@ namespace gameswf
 		ns->play(fn.arg(0).to_tu_string());
 	}
 
+	// Seeks the keyframe closest to the specified number of seconds from the beginning
+	// of the stream.
 	void netstream_seek(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
@@ -607,21 +615,34 @@ namespace gameswf
 		ns->seek(fn.arg(0).to_number());
 	}
 
-	void netstream_setbuffertime(const fn_call& /*fn*/) {
+	void netstream_setbuffertime(const fn_call& /*fn*/)
+	{
 		log_msg("%s:unimplemented \n", __FUNCTION__);
 	}
+
+	void netstream_time(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		assert(ns);
+		fn.result->set_double(ns->time());
+	}
+
 
 	void	as_global_netstream_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetStream.
 	{
 		smart_ptr<as_object>	netstream_obj(new as_netstream);
 
+		// properties
+		netstream_obj->set_member("time", as_value(netstream_time, NULL));
+
 		// methods
-		netstream_obj->set_member("close", &netstream_close);
-		netstream_obj->set_member("pause", &netstream_pause);
-		netstream_obj->set_member("play", &netstream_play);
-		netstream_obj->set_member("seek", &netstream_seek);
-		netstream_obj->set_member("setbuffertime", &netstream_setbuffertime);
+		netstream_obj->set_member("close", netstream_close);
+		netstream_obj->set_member("pause", netstream_pause);
+		netstream_obj->set_member("play", netstream_play);
+		netstream_obj->set_member("seek", netstream_seek);
+		netstream_obj->set_member("setbuffertime", netstream_setbuffertime);
 
 		fn.result->set_as_object_interface(netstream_obj.get_ptr());
 	}
