@@ -82,9 +82,11 @@ namespace gameswf
 		~video_handler();
 
 		virtual void display(const matrix* m, const rect* bounds, const rgba& cx) = 0;
-		bool is_updated() const;
-		void update_frame(video_data* data);
-		smart_ptr<video_data> get_video_data();
+		bool is_video_data();
+		void get_video(smart_ptr<video_data>* vd);
+		void update_video(video_data* data);
+
+		volatile bool m_is_drawn;
 
 	protected:
 
@@ -95,8 +97,6 @@ namespace gameswf
 
 		const matrix* m;
 		const rect* m_bounds;
-		volatile bool m_is_updated;
-
 	};
 }
 

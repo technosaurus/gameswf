@@ -89,9 +89,8 @@ namespace gameswf
 			video_handler* vi = m_ns->get_video_handler();
 			assert(vi != NULL);
 			
-			if (vi->is_updated())
+			if (vi->is_video_data())
 			{
-//				Uint32 t = SDL_GetTicks();
 				rect bounds;
 				bounds.m_x_min = 0.0f;
 				bounds.m_y_min = 0.0f;
@@ -103,7 +102,6 @@ namespace gameswf
 
 				matrix m = get_world_matrix();
 				vi->display(&m, &bounds, color);
-//				printf("video diplay time: %d\n", SDL_GetTicks()-t);
 			}
 		}
 	}
