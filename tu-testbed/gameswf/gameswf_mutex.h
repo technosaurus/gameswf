@@ -82,6 +82,22 @@ namespace gameswf
 			SDL_mutex* m_mutex;
 	};
 
+	// like autoptr
+	struct tu_autolock
+	{
+		tu_mutex& m_mutex;
+		tu_autolock(tu_mutex& mutex) :
+			m_mutex(mutex)
+		{
+			m_mutex.lock();
+		}
+
+		~tu_autolock()
+		{
+			m_mutex.unlock();
+		}
+	};
+
 	struct tu_condition
 	{
 		tu_condition()

@@ -16,6 +16,8 @@
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
+//#define CLEAR_BLUE_VIDEO_BACKGROUND
+
 namespace gameswf
 {
 
@@ -39,15 +41,13 @@ namespace gameswf
 		m_FormatCtx(NULL),
 		m_VCodecCtx(NULL),
 		m_ACodecCtx(NULL),
-		m_Frame(NULL),
 		m_video_clock(0),
 		m_video_index(-1),              
 		m_audio_index(-1),
 		m_url(""),
 		m_is_alive(true),
 		m_pause(false),
-		m_thread(NULL),
-		m_queue_size(20)	//hack
+		m_thread(NULL)
 	{
 		av_register_all();
 
@@ -67,6 +67,9 @@ namespace gameswf
 		m_decoder.signal();
 		m_thread->wait();
 		delete m_thread;
+
+		m_audio_queue.clear();
+		m_video_queue.clear();
 	}
 
 	void as_netstream::play(const char* url)
@@ -89,6 +92,7 @@ namespace gameswf
 		m_break = true;
 	}
 
+	// it is running in sound mixer thread
 	void as_netstream::audio_callback(Uint8* stream, int len)
 	{
 		if (m_pause)
@@ -96,24 +100,40 @@ namespace gameswf
 			return;
 		}
 
-		m_audio_mutex.lock();
-		while (len > 0 && m_qaudio.size() > 0)
+		while (len > 0)
 		{
-			smart_ptr<audio_data>& samples = m_qaudio.front();
-
-			int n = imin(samples->m_size, len);
-			memcpy(stream, samples->m_ptr, n);
-			stream += n;
-			samples->m_ptr += n;
-			samples->m_size -= n;
-			len -= n;
-
-			if (samples->m_size == 0)
+			// decode sound
+			if (m_sound == NULL)
 			{
-				m_qaudio.pop();
+				m_audio_queue.lock();
+				if (m_audio_queue.size() > 0)
+				{
+					const smart_ptr<av_packet>& audio = m_audio_queue.front();
+					
+					Sint16* sample;
+					int size;
+					decode_audio(audio.get_ptr(), &sample, &size);
+					m_audio_queue.pop();
+					m_sound = new decoded_sound(sample, size);
+				}
+				else
+				{
+					m_audio_queue.unlock();
+					break;
+				}
+
+				m_audio_queue.unlock();
+			}
+			else
+			{
+				m_sound->take(stream, len);
+				if (m_sound->size() == 0)
+				{
+					m_sound = NULL;
+				}
 			}
 		}
-		m_audio_mutex.unlock();
+
 	}
 
 	// it is running in decoder thread
@@ -153,8 +173,8 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::close_stream()
 	{
-		if (m_Frame) av_free(m_Frame);
-		m_Frame = NULL;
+		if (m_frame) av_free(m_frame);
+		m_frame = NULL;
 
 		if (m_VCodecCtx) avcodec_close(m_VCodecCtx);
 		m_VCodecCtx = NULL;
@@ -203,18 +223,23 @@ namespace gameswf
 			switch (enc->codec_type)
 			{
 			case CODEC_TYPE_AUDIO:
-				if (m_audio_index < 0) {
+
+				if (m_audio_index < 0)
+				{
 					m_audio_index = i;
 					m_audio_stream = m_FormatCtx->streams[i];
 				}
 				break;
 
 			case CODEC_TYPE_VIDEO:
-				if (m_video_index < 0) {
+
+				if (m_video_index < 0) 
+				{
 					m_video_index = i;
 					m_video_stream = m_FormatCtx->streams[i];
 				}
 				break;
+
 			case CODEC_TYPE_DATA:
 			case CODEC_TYPE_SUBTITLE:
 			case CODEC_TYPE_UNKNOWN:
@@ -249,7 +274,7 @@ namespace gameswf
 		}
 
 		// Allocate a frame to store the decoded frame in
-		m_Frame = avcodec_alloc_frame();
+		m_frame = avcodec_alloc_frame();
 
 		if (m_audio_index >= 0 && get_sound_handler() != NULL)
 		{
@@ -270,6 +295,78 @@ namespace gameswf
 				log_error("Could not open AUDIO codec\n");
 				return false;
 			}
+		}
+		return true;
+	}
+
+
+	// it is running in sound mixer thread
+	bool as_netstream::decode_audio(av_packet* packet, Sint16** data, int* size)
+	{
+		bool ok = false;
+		int frame_size;
+		Uint8* decoder_buf = (Uint8*) malloc((AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2);
+		if (avcodec_decode_audio(m_ACodecCtx, (Sint16*) decoder_buf, &frame_size,
+			packet->m_data, packet->m_size) >= 0)
+		{
+			sound_handler* sh = get_sound_handler();
+			assert(sh);
+			sh->cvt(data, size, decoder_buf, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
+			ok = true;
+		}
+		free(decoder_buf);
+		return ok;
+	}
+
+	// it is running in decoder thread
+	bool as_netstream::decode_video(av_packet* packet, Uint8** data, int* w, int* h)
+	{
+		int got = 0;
+		avcodec_decode_video(m_VCodecCtx, m_frame, &got, packet->m_data, packet->m_size);
+		if (got)
+		{
+			// gets buf size for rgba picture
+			*w = m_VCodecCtx->width;
+			*h = m_VCodecCtx->height;
+			*data = (Uint8*) malloc(avpicture_get_size(PIX_FMT_RGBA32, *w, *h));
+
+			AVPicture picture1;
+			avpicture_fill(&picture1, *data, PIX_FMT_RGBA32, *w, *h);
+
+			struct SwsContext* toRGB_convert_ctx = sws_getContext(
+				*w, *h, m_VCodecCtx->pix_fmt,
+				*w, *h, PIX_FMT_RGBA32,
+				SWS_FAST_BILINEAR, NULL, NULL, NULL);
+			assert(toRGB_convert_ctx);
+
+			AVPicture* picture = (AVPicture*) m_frame;
+			int ret = sws_scale(toRGB_convert_ctx,
+				picture->data, picture->linesize, 0, 0,
+				picture1.data, picture1.linesize);
+
+			sws_freeContext(toRGB_convert_ctx);
+
+			// clear video background
+			Uint8* ptr = *data;
+			for (int y = 0; y < *h; y++)
+			{
+				for (int x = 0; x < *w; x++)
+				{
+					swap(ptr, ptr + 2);	// BGR ==> RGB
+
+#ifdef CLEAR_BLUE_VIDEO_BACKGROUND
+
+					Uint16 rg = *(Uint16*) ptr;	// abgr
+					if (ptr[3] >= 0xF0 && rg == 0)
+					{
+						ptr[3] = 0;
+					}
+#endif
+
+					ptr +=4;
+				}
+			}
+			//printf("video advance time: %d\n", SDL_GetTicks()-t);
 		}
 		return true;
 	}
@@ -300,80 +397,90 @@ namespace gameswf
 					}
 				}
 
-				m_video_clock = 0;
-
+				m_start_time = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+				m_video_clock = m_start_time;
 				int delay = 0;
-				m_start_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-
 				m_break = false;
 				m_pause = false;
+
 				while (m_break == false && m_is_alive)
 				{
 					if (m_pause)
 					{
-						double t = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
 						tu_timer::sleep(100);
-						m_start_clock += tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - t;
+						m_video_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
 						continue;
 					}
 
-					bool rc = read_frame();
-					if (rc == false)
+					if (read_frame() == false)
 					{
-						if (m_qvideo.size() == 0)
+						if (m_video_queue.size() == 0)
 						{
 							set_status("status", "NetStream.Play.Stop");
 							break;
 						}
 					}
 
-					if (m_qvideo.size() > 0)
-					{
-						video_data* video_frame = m_qvideo.front().get_ptr();
-						double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
-						double video_clock = video_frame->m_pts;
+					m_current_clock = tu_timer::ticks_to_seconds();
 
-						if (clock >= video_clock)
+					// it is time
+					if (m_current_clock >= m_video_clock)
+					{
+						if (m_video_queue.size() > 0)
 						{
-							if (m_video_handler->m_is_drawn)
+							if (m_video_handler->m_data == NULL)
 							{
-								m_video_handler->update_video(video_frame);
-								m_qvideo.pop();
+								const smart_ptr<av_packet>& packet = m_video_queue.front();
+
+								// update video clock with pts, if present
+								if (packet->m_dts != AV_NOPTS_VALUE)
+								{
+									double pts = as_double(m_video_stream->time_base) * packet->m_dts;
+									m_video_clock = m_start_time + pts;
+								}
+
+								// update video clock for next frame
+								double frame_delay = as_double(m_video_stream->codec->time_base);
+								m_video_clock += frame_delay;
+
+								Uint8* data = NULL;
+								int width = 0;
+								int height = 0;
+								decode_video(packet.get_ptr(), &data, &width, &height);
+
+								m_video_queue.pop();
+
+								if (data)
+								{
+									m_video_handler->update_video(data, width, height);
+								}
 								delay = 0;
 							}
 							else
 							{
-								// Wait for video render, pause
-								// What is it better ? 
-								// To show all frames but slowly or
-								// according to FPS but with the miss of the some frames
-								double t = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-								tu_timer::sleep(20);
-								m_start_clock += tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - t;
-								continue;
+								// printf("wait for video render\n");
+								m_video_clock += tu_timer::ticks_to_seconds(20);
 							}
 						}
-						else
-						{
-							delay = int(1000 * (video_clock - clock));
-						}
+					}
+					else
+					{
+						delay = int(1000 * (m_video_clock - m_current_clock));
+					}
 
-						// Don't hog the CPU.
-						// Queues have filled, video frame have shown
-						// now it is possible and to have a rest
-						if (m_unqueued_data != NULL && delay > 0)
-						{
-							tu_timer::sleep(delay);
-						}
+					// Don't hog the CPU.
+					// Queues have filled, video frame have shown
+					// now it is possible and to have a rest
+					if (m_unqueued_data != NULL && delay > 0)
+					{
+						tu_timer::sleep(delay);
 					}
 				}
 
+				sound_handler* sound = get_sound_handler();
+				if (sound)
 				{
-					sound_handler* sound = get_sound_handler();
-					if (sound)
-					{
-						sound->detach_aux_streamer(this);
-					}
+					sound->detach_aux_streamer(this);
 				}
 	
 				close_stream();
@@ -382,151 +489,49 @@ namespace gameswf
 	}
 
 	// it is running in decoder thread
+	// reads audio/video frame from stream and keeps it in queue
 	bool as_netstream::read_frame()
 	{
 		if (m_unqueued_data != NULL)
 		{
-			if (m_unqueued_data->cast_to_audio())
+			if (m_unqueued_data->get_stream_index() == m_video_index)
 			{
-				sound_handler* s = get_sound_handler();
-				if (s)
+				if (m_video_queue.push(m_unqueued_data))
 				{
-					m_audio_mutex.lock();
-					if (m_qaudio.size() < m_queue_size)
-					{
-						smart_ptr<audio_data> item = m_unqueued_data->cast_to_audio();
-						assert(item != NULL);
-						m_qaudio.push(item);
-						m_unqueued_data = NULL;
-					}
-					m_audio_mutex.unlock();
-				}
-			}
-			else
-			if (m_unqueued_data->cast_to_video())
-			{
-				if (m_qvideo.size() < m_queue_size)
-				{
-					smart_ptr<video_data> item = m_unqueued_data->cast_to_video();
-					assert(item != NULL);
-					m_qvideo.push(item);
 					m_unqueued_data = NULL;
 				}
+				return true;
+			}
+			else
+			if (m_unqueued_data->get_stream_index() == m_audio_index)
+			{
+				if (m_audio_queue.push(m_unqueued_data))
+				{
+					m_unqueued_data = NULL;
+				}
+				return true;
 			}
 			else
 			{
-				log_error("read_frame: not audio & video stream\n");
+				assert(0);
 			}
-			return true;
 		}
 
 		AVPacket packet;
-		int rc = av_read_frame(m_FormatCtx, &packet);
-		if (rc < 0)
+		while (true)
 		{
-			return false;
-		}
-
-		if (packet.stream_index == m_audio_index)
-		{
-			sound_handler* s = get_sound_handler();
-			if (s)
+			int rc = av_read_frame(m_FormatCtx, &packet);
+			if (rc < 0)
 			{
-				int frame_size;
-				Uint8* decoder_buf = (Uint8*) malloc((AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2);
-				if (avcodec_decode_audio(m_ACodecCtx, (Sint16*) decoder_buf, &frame_size, packet.data, packet.size) >= 0)
-				{
+				return false;
+			}
 
-					int16_t*	adjusted_data = 0;
-					int n = 0;
-					s->cvt(&adjusted_data, &n, decoder_buf, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
-
-					m_unqueued_data = new audio_data((Uint8*) adjusted_data, n);
-				}
-				free(decoder_buf);
+			if (packet.stream_index == m_video_index || packet.stream_index == m_audio_index)
+			{
+				m_unqueued_data = new av_packet(packet);
+				return read_frame();
 			}
 		}
-		else
-		if (packet.stream_index == m_video_index)
-		{
-			int got = 0;
-			avcodec_decode_video(m_VCodecCtx, m_Frame, &got, packet.data, packet.size);
-			if (got)
-			{
-				// gets buf size for rgba picture
-				int w = m_VCodecCtx->width;
-				int h = m_VCodecCtx->height;
-				Uint8* buf = (Uint8*) malloc(avpicture_get_size(PIX_FMT_RGBA32, w, h));
-				smart_ptr<video_data> video_frame = new video_data(buf, w, h);
-
-			  AVPicture picture1;
-				avpicture_fill(&picture1, video_frame->m_data, PIX_FMT_RGBA32, w, h);
-
-        struct SwsContext* toRGB_convert_ctx = sws_getContext(
-																		w, h, m_VCodecCtx->pix_fmt,
-                                    w, h, PIX_FMT_RGBA32,
-                                    SWS_FAST_BILINEAR, NULL, NULL, NULL);
-        assert(toRGB_convert_ctx);
-
-				AVPicture* picture = (AVPicture*) m_Frame;
-        int ret = sws_scale(toRGB_convert_ctx,
-                 picture->data, picture->linesize, 0, 0,
-                 picture1.data, picture1.linesize);
-
-        sws_freeContext(toRGB_convert_ctx);
-
-				// clear video background
-				Uint8* ptr = video_frame->m_data;
-				for (int y = 0; y < h; y++)
-				{
-					for (int x = 0; x < w; x++)
-					{
-						swap(ptr, ptr + 2);	// BGR ==> RGB
-
-#define CLEAR_BLUE_VIDEO_BACKGROUND
-#ifdef CLEAR_BLUE_VIDEO_BACKGROUND
-						Uint16 rg = *(Uint16*) ptr;	// abgr
-						if (ptr[3] >= 0xF0 && rg == 0)
-						{
-							ptr[3] = 0;
-						}
-#endif
-
-						ptr +=4;
-					}
-				}
-
-				//printf("video advance time: %d\n", SDL_GetTicks()-t);
-
-				// set presentation timestamp
-				if (packet.dts != AV_NOPTS_VALUE)
-				{
-					video_frame->m_pts = as_double(m_video_stream->time_base) * packet.dts;
-				}
-
-				if (video_frame->m_pts != 0)
-				{	
-					// update video clock with pts, if present
-					m_video_clock = video_frame->m_pts;
-				}
-				else
-				{
-					video_frame->m_pts = m_video_clock;
-				}
-
-				// update video clock for next frame
-				double frame_delay = as_double(m_video_stream->codec->time_base);
-
-				// for MPEG2, the frame can be repeated, so we update the clock accordingly
-				frame_delay += m_Frame->repeat_pict * (frame_delay * 0.5);
-
-				m_video_clock += frame_delay;
-				m_unqueued_data = video_frame.get_ptr();
-			}
-		}
-		av_free_packet(&packet);
-
-		return true;
 	}
 
 	video_handler* as_netstream::get_video_handler()
@@ -536,7 +541,9 @@ namespace gameswf
 
 	void as_netstream::seek(double seek_time)
 	{
-		double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
+		return;
+		//TODO
+/*		double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
 		clock += seek_time;
 //		int64_t timestamp = (int64_t) clock * AV_TIME_BASE;
 
@@ -545,7 +552,7 @@ namespace gameswf
 		if (rc < 0)
 		{
 			log_error("could not seek to position rc=%d\n", rc);
-		}
+		}*/
 	}
 
 	// Specifies how long to buffer messages before starting to display the stream.
@@ -555,9 +562,9 @@ namespace gameswf
 	}
 
 	//	The position of the playhead, in seconds.
-	float as_netstream::time() const
+	double as_netstream::time() const
 	{
-		return m_video_clock;
+		return (double) m_video_clock;
 	}
 
 	void netstream_close(const fn_call& fn)

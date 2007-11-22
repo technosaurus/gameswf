@@ -113,6 +113,11 @@ double tu_timer::ticks_to_seconds(uint64 ticks)
 	return ticks * (1.0f / 1000.f);
 }
 
+double tu_timer::ticks_to_seconds()
+{
+	return get_ticks() * (1.0f / 1000.f);
+}
+
 
 void tu_timer::sleep(int milliseconds)
 {

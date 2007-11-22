@@ -9,7 +9,12 @@
 #include "gameswf/gameswf_video_ogl.h"
 #include "gameswf/gameswf_video_base.h"
 
-video_ogl::video_ogl()
+video_ogl::video_ogl():
+	m_texture(0),
+	m_scoord(0),
+	m_tcoord(0),
+	m_width2p(0),
+	m_height2p(0)
 {
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &m_texture);
@@ -26,24 +31,48 @@ video_ogl::~video_ogl()
 	glDeleteTextures(1, &m_texture);
 }
 
+void video_ogl::update_video(Uint8* data, int width, int height)
+{
+	gameswf::tu_autolock locker(m_mutex);
+	if (m_data)
+	{
+		delete m_data;
+	}
+	m_data = data;
+	m_width = width;
+	m_height = height;
+
+	m_width2p = 1; while (m_width2p < m_width) { m_width2p <<= 1; }
+	m_height2p = 1; while (m_height2p < m_height) { m_height2p <<= 1; }
+	m_scoord = (float) m_width / m_width2p;
+	m_tcoord = (float) m_height / m_height2p;
+}
+
 void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color)
 {
+	if (m_width == 0 && m_height == 0)
+	{
+		return;
+	}
+
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 	glEnable(GL_TEXTURE_2D);
+
 	glDisable(GL_TEXTURE_GEN_S);
 	glDisable(GL_TEXTURE_GEN_T);
 
-	smart_ptr<gameswf::video_data> vd;
-	get_video(&vd);
+	{
+		// lock m_data
+		gameswf::tu_autolock locker(m_mutex);
 
-	int w = vd->m_width;
-	int h = vd->m_height;
-	int	w2p = 1; while (w2p < w) { w2p <<= 1; }
-	int	h2p = 1; while (h2p < h) { h2p <<= 1; }
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w2p, h2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGBA, GL_UNSIGNED_BYTE, vd->m_data);
-	
+		if (m_data)
+		{
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width2p, m_height2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, m_data);
+			delete m_data;
+			m_data = NULL;
+		}
+	}
 
 	m = mat;
 	m_bounds = bounds;
@@ -54,22 +83,19 @@ void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds,
 	d.m_x = b.m_x + c.m_x - a.m_x;
 	d.m_y = b.m_y + c.m_y - a.m_y;
 
-	float s_coord = (float) w / w2p;
-	float t_coord = (float) h / h2p;
 	glColor4ub(color.m_r, color.m_g, color.m_b, color.m_a);
 	glBegin(GL_TRIANGLE_STRIP);
 	{
 		glTexCoord2f(0, 0);
 		glVertex2f(a.m_x, a.m_y);
-		glTexCoord2f(s_coord, 0);
+		glTexCoord2f(m_scoord, 0);
 		glVertex2f(b.m_x, b.m_y);
-		glTexCoord2f(0, t_coord);
+		glTexCoord2f(0, m_tcoord);
 		glVertex2f(c.m_x, c.m_y);
-		glTexCoord2f(s_coord, t_coord);
+		glTexCoord2f(m_scoord, m_tcoord);
 		glVertex2f(d.m_x, d.m_y);
 	}
 	glEnd();
-
 	glDisable(GL_TEXTURE_2D);
 }
 
