@@ -24,6 +24,11 @@ public:
 
 	~tu_queue()
 	{
+		clear();
+	}
+
+	void clear()
+	{
 		while (size() > 0)
 		{
 			pop();

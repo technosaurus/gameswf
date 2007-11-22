@@ -12,10 +12,15 @@
 struct video_ogl : public gameswf::video_handler
 {
 	GLuint m_texture;
+	float m_scoord;
+	float m_tcoord;
+	int m_width2p;
+	int m_height2p;
 
 	video_ogl();
 	~video_ogl();
 
+	void update_video(Uint8* data, int width, int height);
 	void display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color);
 
 };

@@ -86,23 +86,20 @@ namespace gameswf
 	{
 		if (m_ns != NULL)	// is video attached ?
 		{
-			video_handler* vi = m_ns->get_video_handler();
-			assert(vi != NULL);
-			
-			if (vi->is_video_data())
-			{
-				rect bounds;
-				bounds.m_x_min = 0.0f;
-				bounds.m_y_min = 0.0f;
-				bounds.m_x_max = PIXELS_TO_TWIPS(m_def->m_width);
-				bounds.m_y_max = PIXELS_TO_TWIPS(m_def->m_height);
+			video_handler* vh = m_ns->get_video_handler();
+			assert(vh != NULL);
+		
+			rect bounds;
+			bounds.m_x_min = 0.0f;
+			bounds.m_y_min = 0.0f;
+			bounds.m_x_max = PIXELS_TO_TWIPS(m_def->m_width);
+			bounds.m_y_max = PIXELS_TO_TWIPS(m_def->m_height);
 
-				cxform cx = get_world_cxform();
-				gameswf::rgba color = cx.transform(gameswf::rgba());
+			cxform cx = get_world_cxform();
+			gameswf::rgba color = cx.transform(gameswf::rgba());
 
-				matrix m = get_world_matrix();
-				vi->display(&m, &bounds, color);
-			}
+			matrix m = get_world_matrix();
+			vh->display(&m, &bounds, color);
 		}
 	}
 

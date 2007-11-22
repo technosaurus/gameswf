@@ -19,6 +19,9 @@ namespace tu_timer
 	exported_module uint64 get_ticks();
 	exported_module double ticks_to_seconds(uint64 ticks);
 
+	// current ticks to seconds
+	exported_module double ticks_to_seconds();
+
 	// Sleep the current thread for the given number of
 	// milliseconds.  Don't rely on the sleep period being very
 	// accurate.
