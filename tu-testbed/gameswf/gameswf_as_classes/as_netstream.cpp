@@ -310,9 +310,11 @@ namespace gameswf
 			packet->m_data, packet->m_size) >= 0)
 		{
 			sound_handler* sh = get_sound_handler();
-			assert(sh);
-			sh->cvt(data, size, decoder_buf, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
-			ok = true;
+			if (sh)
+			{
+				sh->cvt(data, size, decoder_buf, frame_size, m_ACodecCtx->channels, m_ACodecCtx->sample_rate);
+				ok = true;
+			}
 		}
 		free(decoder_buf);
 		return ok;
