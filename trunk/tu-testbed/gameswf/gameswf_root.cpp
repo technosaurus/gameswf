@@ -251,7 +251,10 @@ namespace gameswf
 		notify_key_object(k, down);
 
 		// Notify keypress listeners.
-		m_keypress_listener.notify(event_id(event_id::KEY_PRESS, (key::code) k));
+		if (down)
+		{
+			m_keypress_listener.notify(event_id(event_id::KEY_PRESS, (key::code) k));
+		}
 
 		gameswf_engine_mutex().unlock();
 	}
