@@ -9,13 +9,11 @@
 //
 // This differs from the boost gc_ptr proposals I've seen in that it
 // is "intrusive" -- any classes that you want garbage-collected must
-// derive from gc_object_base.  Any instances that are dynamically
-// allocated must be allocated via gc_object_base::new (but C++ will
-// handle this automatically).
-//
-// It's not really recommended practice, but gc_objects can be put on
-// the stack or kept as members inside other objects -- with the
-// caveat that you should not point gc_ptrs at such instances.
+// derive from gc_object_base.  All gc_objects must be allocated on
+// the heap via gc_object_base::new.  C++ will handle this
+// automatically when you use ordinary 'new' syntax.  The
+// implementation may assert if you accidentally try to create a
+// gc_object on the stack or inside another object.
 //
 // gc_ptr's can live anywhere; on the stack, on the garbage-collected
 // heap, on the regular heap.  They are the same size as native
@@ -52,9 +50,13 @@
 // };
 //
 // ...
-//   my_object local_instance;
-//   gc_ptr<my_object> obj = new my_object;
-//   local_instance.m_ptr = obj;
+//   gc_ptr<my_object> obj1 = new my_object;
+//   gc_ptr<my_object> obj2 = new my_object;
+//   obj1->m_ptr2 = obj2;
+//   obj2->m_ptr = obj2;
+//   obj2->m_ptr2 = obj1;
+// ...
+//   gc_collector::collect_garbage();  // optional
 //
 // // etc.
 
@@ -63,39 +65,28 @@
 // http://home.elka.pw.edu.pl/~pkolaczk/papers/gc-prodialog.pdf
 
 
-// idea from cppgc:  "block lock" to register when construction finishes:
-//    void* allocate(size_t sz, const gc_block_lock& lock);
-//    inline void* operator new(size_t size, cppgc::gc_tag_t tag, const cppgc::gc_block_lock &lock = cppgc::gc_block_lock()) { return allocate(size, lock); }
-//    struct gc_block_lock {
-//      void* block;
-//      ~gc_block_lock() { gc::unlock_block(block); }
-//    };
-//
-// what this is for: the C++ standard guarantees that the temporary
-// block_block object is destructed at the end of the full statement
-// it's contained in.  So in a statement like:
-//
-// gc_ptr<MyType> p = new MyType();
-//
-// the block_lock won't be destructed until p is safely constructed.
-
-
 // TODO:
 //
-// test multiple inheritance; i.e. T* may not be the head of the block
-//
-// test arrays (or forbid them)
+// implement gc_weak_ptr
 
+#ifndef TU_GC_H
+#define TU_GC_H
 
 #include <assert.h>
 
 namespace tu_gc {
 
 	class collector_access;
-
+	
 	// Used by the collector to help keep blocks alive during
 	// construction (between allocation and when they are finally
 	// assigned to a gc_ptr).
+	//
+	// Relies on standard C++ guarantee: temporary objects are not
+	// destroyed until the end of the full statement in which they
+	// appear.
+	//
+	// Thanks to cppgc (boost gc_ptr proposal by ...) for the idea.
 	class block_construction_locker_base {
 	public:
 		block_construction_locker_base() : m_block(0) {
@@ -105,54 +96,59 @@ namespace tu_gc {
 		void* m_block;
 	};
 
-	template<class gc_collector>
+	template<class garbage_collector>
 	class block_construction_locker : public block_construction_locker_base {
 	public:
 		~block_construction_locker() {
-			gc_collector::block_construction_finished(m_block);
+			garbage_collector::block_construction_finished(m_block);
 		}
 	};
-	
-	template<class gc_collector>
-	class gc_object_base {
+
+	class gc_object_generic_base {
 	public:
-		virtual ~gc_object_base() {}
-		static void* operator new(size_t sz, block_construction_locker_base* lock = &block_construction_locker<gc_collector>()) {
-			return gc_collector::allocate(sz, lock);
+		virtual ~gc_object_generic_base() {}
+	};
+
+	// (The collector defines gc_object_generic_base which
+	// inherits from gc_object_generic_base and optionally adds
+	// collector-specific properties.)
+
+	template<class garbage_collector>
+	class gc_object_base : public garbage_collector::gc_object_collector_base {
+	public:
+		gc_object_base() {
+			garbage_collector::constructing_gc_object_base(this);
+		}
+		
+		static void* operator new(size_t sz, block_construction_locker_base* lock = &block_construction_locker<garbage_collector>()) {
+			return garbage_collector::allocate(sz, lock);
 		}
 		static void operator delete(void* p, block_construction_locker_base* lock) {
-			return gc_collector::deallocate(p);
+			return garbage_collector::deallocate(p);
 		}
 		static void operator delete(void* p) {
-			return gc_collector::deallocate(p);
+			return garbage_collector::deallocate(p);
 		}
 
 	private:
+		// TODO: are arrays worth implementing?
 		static void* operator new[](size_t sz) {
 			assert(0);
 		}
 	};
 
-	class gc_ptr_base {
-	protected:
-		friend class collector_access;
-		gc_ptr_base(void* p) : m_ptr(p) {
-		}
-		void* m_ptr;
-	};
-
 	// The smart pointer.
 	template<class T, class garbage_collector>
-	class gc_ptr : public gc_ptr_base {
+	class gc_ptr {
 	public:
-		gc_ptr() : gc_ptr_base(0) {
+		gc_ptr() : m_ptr(0) {
 			garbage_collector::construct_pointer(this);
 		}
-		gc_ptr(T* p) : gc_ptr_base(0) {
+		gc_ptr(T* p) : m_ptr(0) {
 			garbage_collector::construct_pointer(this);
 			reset(p);
 		}
-		gc_ptr(const gc_ptr& p) : gc_ptr_base(0) {
+		gc_ptr(const gc_ptr& p) : m_ptr(0) {
 			garbage_collector::construct_pointer(this);
 			reset((T*) p.m_ptr);
 		}
@@ -178,11 +174,11 @@ namespace tu_gc {
 			reset(p);
 		}
 
-		bool operator==(const gc_ptr& p) {
+		bool operator==(const gc_ptr& p) const {
 			return m_ptr == p.m_ptr;
 		}
 
-		bool operator==(const T* p) {
+		bool operator==(const T* p) const {
 			return m_ptr == p;
 		}
 
@@ -193,26 +189,36 @@ namespace tu_gc {
 		void reset(T* p) {
 			garbage_collector::write_barrier(this, p);
 		}
+
+		// This is only for use by the garbage collector.  Don't use it!
+		// TODO: figure out how to protect it.
+		void raw_set_ptr_gc_access_only(T* p) {
+			m_ptr = p;
+		}
+	private:
+// 		// Cast T* to gc_object_generic_base*.
+// 		gc_object_generic_base* object_ptr() {
+// 			return m_ptr;
+// 		}
+
+		T* m_ptr;
 	};
 
 	// TODO: gc_weak_ptr
 
 
-	// Garbage collectors inherit from this to get direct access
-	// to gc_ptr_base::m_ptr and block_construction_locker_base::m_block.
+	// Garbage collectors can inherit from this to get access
+	// block_construction_locker_base::m_block.
 	class collector_access {
 	protected:
-		static void*& ptr(gc_ptr_base* p) {
-			return p->m_ptr;
-		}
-
 		static void*& block_ref(block_construction_locker_base* lock) {
 			return lock->m_block;
 		}
 	};
 	
-	// Use this to declare gc_ptr<T>, gc_objectusing your chosen collector,
-	// in whatever namespace is convenient for you.
+	// Use this to declare the types gc_ptr<T>, gc_object, and
+	// gc_collector using your chosen collector, in whatever
+	// namespace is convenient for you.
 	//
 	// E.g.:
 	//
@@ -226,10 +232,10 @@ namespace tu_gc {
 		typedef collector_classname gc_collector;		\
 		typedef tu_gc::gc_object_base<gc_collector> gc_object;  \
 		template<class T>					\
-		class gc_ptr : public tu_gc::gc_ptr<T, gc_collector> {	\
+		class gc_ptr : public tu_gc::gc_ptr<T, collector_classname> {	\
 		public:							\
 			gc_ptr() {}					\
-			gc_ptr(T* p) : tu_gc::gc_ptr<T, gc_collector>(p) {} \
+			gc_ptr(T* p) : tu_gc::gc_ptr<T, collector_classname>(p) {} \
 		};							\
 
 	// TODO: arrays of gc_objects?
@@ -243,3 +249,5 @@ namespace tu_gc {
 	// TODO: multithreaded variants
 
 }  // tu_gc
+
+#endif  // TU_GC_H
