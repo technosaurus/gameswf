@@ -14,21 +14,37 @@
 // optimized for space or time.
 //
 // Performance: it's much slower and uses much more space than manual
-// explicit memory management.  Using GCBench.cpp (from
-// http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_bench/), it
-// measures about 10x slower and 4x fatter than explicit memory
-// management (with an initial spike of 7x size).  That's actually not
-// too terrible, and there is room for optimization.  See notes at the
-// end of the .cpp file.
+// explicit memory management.  I did some sanity tests using
+// GCBench.cpp (from
+// http://www.hpl.hp.com/personal/Hans_Boehm/gc/gc_bench/) which
+// creates large binary trees.  It's a small synthetic benchmark that
+// probably doesn't resemble your program but it does highlight the
+// overheads of GC.
 //
-// TODO: compare against a pure ref-counting collector using GCBench.
+// Sample results, on a 2.13GHz Pentium M laptop running Windows XP:
+//
+// Collector                            Peak Mem    Typical Mem     Time
+// ---------------------------------------------------------------------
+// explicit (no gc)                         13 M          6.3 M    5.0 s
+// singlethreaded refcount                  17 M          8   M    5.5 s
+// singlethreaded marksweep                 95 M         30   M   56   s
+
 
 #include "base/tu_gc.h"
 
 namespace tu_gc {
 
-	class singlethreaded_marksweep : public collector_access {
+	class singlethreaded_marksweep {
 	public:
+		typedef singlethreaded_marksweep this_class;
+
+		// This is a base class of gc_object_base.  Different
+		// collectors can use it to add properties to gc_object_base.
+		//
+		// We don't do anything with it.
+		class gc_object_collector_base : public tu_gc::gc_object_generic_base {
+		};
+		
 		// Client interfaces.
 		struct stats {
 			size_t live_heap_bytes;
@@ -68,20 +84,28 @@ namespace tu_gc {
 		// new() expression completes (presumably after the
 		// new block has been assigned to a gc_ptr).
 		static void block_construction_finished(void* block);
+
+		// Called from gc_object_base constructor.  Helps us
+		// associate a gc_object_generic_base* with its
+		// containing heap block (in case of gnarly multiple
+		// inheritance).
+		static void constructing_gc_object_base(gc_object_generic_base* obj);
 		
 		// Called by the smart ptr during construction.
 		//
 		// This collector doesn't care, until the pointer
 		// takes a non-null value, which is notified via
 		// write_barrier().
-		static void construct_pointer(gc_ptr_base* gc_ptr_p) {}
+		template<class T>
+		static void construct_pointer(gc_ptr<T, this_class>* gc_ptr_p) {}
 		
 		// Called by the smart ptr during destruction.
 		//
 		// This collector doesn't care.  What it does care
 		// about is when the pointer is cleared, which is
 		// notified via write_barrier().
-		static void destruct_pointer(gc_ptr_base* gc_ptr_p) {}
+		template<class T>
+		static void destruct_pointer(gc_ptr<T, this_class>* gc_ptr_p) {}
 		
 		// Used by the smart ptr to change the value of the
 		// pointer.
@@ -89,18 +113,22 @@ namespace tu_gc {
 		// We take notice whenever the pointer changes from
 		// null to a value or vice-versa.  The collector
 		// doesn't care about null pointers.
-		static void write_barrier(gc_ptr_base* gc_ptr_p, void* new_val_p) {
+		template<class T>
+		static void write_barrier(gc_ptr<T, this_class>* gc_ptr_p, T* new_val_p) {
 			assert(gc_ptr_p);
-			if (ptr(gc_ptr_p)) {
+			if (new_val_p == gc_ptr_p->get()) {
+				return;
+			}
+			if (gc_ptr_p->get()) {
 				if (!new_val_p) {
 					clearing_pointer(gc_ptr_p);
 				} else {
-					// change of value, no-op
+					changing_pointer(gc_ptr_p, new_val_p);
 				}
 			} else if (new_val_p) {
-				setting_pointer(gc_ptr_p, new_val_p);
+				initing_pointer(gc_ptr_p, new_val_p);
 			}
-			ptr(gc_ptr_p) = new_val_p;
+			gc_ptr_p->raw_set_ptr_gc_access_only(new_val_p);
 		}
 		
 	private:
@@ -111,8 +139,8 @@ namespace tu_gc {
 		static void deallocate(void* p);
 
 		// Notifications from write_barrier().
-		static void clearing_pointer(gc_ptr_base*);
-		static void setting_pointer(gc_ptr_base*, void* new_val_p);
+		static void clearing_pointer(void* address_of_gc_ptr);
+		static void initing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to);
+		static void changing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to);
 	};
 }  // tu_gc
-

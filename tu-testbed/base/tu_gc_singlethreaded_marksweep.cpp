@@ -14,12 +14,22 @@
 namespace tu_gc {
 
 	struct blockinfo {
+		bool mark;
+		// start of the object memory block
 		void* p;
+		// size of the object memory block
 		size_t sz;
+		// This is somewhere inside the block (usually at the
+		// very beginning, but not if there is multiple
+		// inheritance going on).
+		//
+		// We need it in order to call the object's virtual
+		// destructor.
+		gc_object_generic_base* obj;
 
-		blockinfo() : p(0), sz(0) {
+		blockinfo() : mark(false), p(0), sz(0), obj(0) {
 		}
-		blockinfo(void* p_in, size_t sz_in) : p(p_in), sz(sz_in) {
+		blockinfo(void* p_in, size_t sz_in) : mark(false), p(p_in), sz(sz_in), obj(0) {
 		}
 
 		void* end() const {
@@ -29,17 +39,20 @@ namespace tu_gc {
 		bool operator<(const blockinfo& bi) const {
 			return p < bi.p;
 		}
+
+		bool is_address_inside(void* ptr) const {
+			return (ptr >= p && ptr < end());
+		}
 	};
 
 	struct singlethreaded_marksweep_state : public collector_access {
 		// Convenience typedefs.
-		typedef std::set<gc_ptr_base*>::iterator ptr_iterator;
+		typedef std::map<void*, gc_object_generic_base*>::iterator ptr_iterator;
 		typedef std::set<void*>::iterator floating_blocks_iterator;
-		typedef std::map<blockinfo, bool>::iterator heap_block_iterator;
-		typedef std::map<blockinfo, bool>::reverse_iterator heap_block_reverse_iterator;
+		typedef std::map<void*, blockinfo>::iterator heap_block_iterator;
 
 		// roots
-		std::set<gc_ptr_base*> m_roots;
+		std::map<void*, gc_object_generic_base*> m_roots;
 
 		// A set of blocks that are not yet under the control
 		// of a gc_ptr.  Typically this happens between the
@@ -56,10 +69,10 @@ namespace tu_gc {
 		std::set<void*> m_floating_blocks;
 
 		// non-roots
-		std::set<gc_ptr_base*> m_heap_ptrs;
+		std::map<void*, gc_object_generic_base*> m_heap_ptrs;
 
 		// heap blocks
-		std::map<blockinfo, bool> m_heap_blocks;
+		std::map<void*, blockinfo> m_heap_blocks;
 
 		// Stats & control values.
 		int m_percent_growth;
@@ -91,8 +104,8 @@ namespace tu_gc {
 				collect_garbage(NULL);
 			}
 		
-			void* block = operator new(sz /* + overhead? */);
-			m_heap_blocks.insert(std::make_pair(blockinfo(block, sz), false));
+			gc_object_generic_base* block = static_cast<gc_object_generic_base*>(operator new(sz /* + overhead? */));
+			m_heap_blocks.insert(std::make_pair(block, blockinfo(block, sz)));
 			m_current_heap_bytes += sz;
 
 			// Keep this block from being collected during
@@ -118,6 +131,13 @@ namespace tu_gc {
 			floating_blocks_iterator it = m_floating_blocks.find(block);
 			assert(it != m_floating_blocks.end());
 			m_floating_blocks.erase(it);
+		}
+
+		void constructing_gc_object_base(gc_object_generic_base* obj) {
+			heap_block_iterator it = find_containing_block(obj);
+			assert(it != m_heap_blocks.end());  // gc_objects must be constructed on the heap
+			assert(it->second.obj == NULL);
+			it->second.obj = obj;
 		}
 
 		void get_stats(singlethreaded_marksweep::stats* s) {
@@ -147,14 +167,14 @@ namespace tu_gc {
 
 
 		void mark_live_objects() {
-			std::vector<void*> to_mark;
+			std::vector<gc_object_generic_base*> to_mark;
 			to_mark.reserve(m_heap_blocks.size() /* heuristic */);
 
 			// Mark all blocks pointed to by roots.
 			for (ptr_iterator it = m_roots.begin();
 			     it != m_roots.end();
 			     ++it) {
-				void* p = ptr(*it);
+				gc_object_generic_base* p = it->second;
 				assert(p);
 				to_mark.push_back(p);
 				//push_heap(to_mark);
@@ -165,30 +185,32 @@ namespace tu_gc {
 			     it != m_floating_blocks.end();
 			     ++it) {
 				assert(*it);
-				to_mark.push_back(*it);
+				to_mark.push_back(static_cast<gc_object_generic_base*>(*it));
 			}
 
+			// Flood-fill all reachable objects.
 			while (to_mark.size()) {
 				//pop_heap(to_mark);
-				void* b = to_mark.back();
+				gc_object_generic_base* b = to_mark.back();
 				to_mark.resize(to_mark.size() - 1);
 
-				heap_block_iterator it = m_heap_blocks.find(blockinfo(b, 0));
+				heap_block_iterator it = find_containing_block(b);
 				assert(it != m_heap_blocks.end());
-				if (it->second == false) {
+				assert(it->second.is_address_inside(b));
+				if (it->second.mark == false) {
 					// Mark this block.
-					it->second = true;
+					it->second.mark = true;
 
 					// Find all gc pointers that are inside this heap block.
 					// Mark the blocks that they point to.
-					ptr_iterator it_ptr = m_heap_ptrs.lower_bound(static_cast<gc_ptr_base*>(it->first.p));
-					void* block_end = it->first.end();
-					while (it_ptr != m_heap_ptrs.end() && (*it_ptr) < block_end) {
-						void* p = ptr(*it_ptr);
+					ptr_iterator it_ptr = m_heap_ptrs.lower_bound(it->second.p);
+					void* block_end = it->second.end();
+					while (it_ptr != m_heap_ptrs.end() && it_ptr->first < block_end) {
+						gc_object_generic_base* p = it_ptr->second;
 						assert(p);
 						to_mark.push_back(p);
 						//push_heap(to_mark);
-						it_ptr++;
+						++it_ptr;
 					}
 				}
 			}
@@ -202,14 +224,15 @@ namespace tu_gc {
 			size_t heap_bytes = 0;
 
 			for (heap_block_iterator it = m_heap_blocks.begin(); it != m_heap_blocks.end(); ) {
-				if (it->second == true) {
+				if (it->second.mark == true) {
 					// Ham.
-					heap_bytes += it->first.sz;
-					it->second = false;
+					heap_bytes += it->second.sz;
+					it->second.mark = false;
 					++it;
 				} else {
 					// Spam.
-					gc_object_base<singlethreaded_marksweep>* block = static_cast<gc_object_base<singlethreaded_marksweep>* >(it->first.p);
+					gc_object_generic_base* block = it->second.obj;
+					assert(block);
 					delete block;
 					m_heap_blocks.erase(it++);
 				}
@@ -218,43 +241,65 @@ namespace tu_gc {
 			m_current_heap_bytes = heap_bytes;
 		}
 
-		void clearing_pointer(gc_ptr_base* gcp) {
-			assert(gcp);
+		void clearing_pointer(void* address_of_gc_ptr) {
+			assert(address_of_gc_ptr);
 			// remove gcp from pointer list
-			ptr_iterator it = m_heap_ptrs.find(gcp);
+			ptr_iterator it = m_heap_ptrs.find(address_of_gc_ptr);
 			if (it != m_heap_ptrs.end()) {
 				m_heap_ptrs.erase(it);
 			} else {
-				it = m_roots.find(gcp);
+				it = m_roots.find(address_of_gc_ptr);
 				assert(it != m_roots.end());
 				m_roots.erase(it);
 			}
 		}
 
-		// Return true if gcp is inside a heap block.
-		bool inside_heap_block(gc_ptr_base* gcp) {
-			heap_block_iterator it(m_heap_blocks.upper_bound(blockinfo(gcp, 0)));
+		heap_block_iterator find_containing_block(void* p) {
+			heap_block_iterator it(m_heap_blocks.upper_bound(p));
 			if (it != m_heap_blocks.begin()) {
 				--it;
-				if (gcp < it->first.end()) {
-					assert(gcp >= it->first.p);
-					// Inside a heap block.
-					return true;
+				if (p < it->second.end()) {
+					assert(p >= it->second.p);
+					// p is inside this heap block.
+					return it;
 				}
+			}
+			return m_heap_blocks.end();
+		}
+		
+		// Return true if gcp is inside a heap block.
+		bool inside_heap_block(void* gcp) {
+			heap_block_iterator it = find_containing_block(gcp);
+			if (it != m_heap_blocks.end()) {
+				return true;
 			}
 			return false;
 		}
 
-		void setting_pointer(gc_ptr_base* gcp, void* val) {
-			assert(gcp);
-			assert(m_roots.find(gcp) == m_roots.end());
-			assert(m_heap_ptrs.find(gcp) == m_heap_ptrs.end());
+		void initing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to) {
+			assert(address_of_gc_ptr);
+			assert(object_pointed_to);
+			assert(m_roots.find(address_of_gc_ptr) == m_roots.end());
+			assert(m_heap_ptrs.find(address_of_gc_ptr) == m_heap_ptrs.end());
 		
 			// Inside a heap block?
-			if (inside_heap_block(gcp)) {
-				m_heap_ptrs.insert(gcp);
+			if (inside_heap_block(address_of_gc_ptr)) {
+				m_heap_ptrs.insert(std::make_pair(address_of_gc_ptr, object_pointed_to));
 			} else {
-				m_roots.insert(gcp);
+				m_roots.insert(std::make_pair(address_of_gc_ptr, object_pointed_to));
+			}
+		}
+
+		void changing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to) {
+			assert(address_of_gc_ptr);
+			// remove gcp from pointer list
+			ptr_iterator it = m_heap_ptrs.find(address_of_gc_ptr);
+			if (it != m_heap_ptrs.end()) {
+				it->second = object_pointed_to;
+			} else {
+				it = m_roots.find(address_of_gc_ptr);
+				assert(it != m_roots.end());
+				it->second = object_pointed_to;
 			}
 		}
 
@@ -285,22 +330,23 @@ namespace tu_gc {
 		sm_state.block_construction_finished(block);
 	}
 
-	/*static*/ void singlethreaded_marksweep::clearing_pointer(gc_ptr_base* gcp) {
-		sm_state.clearing_pointer(gcp);
+	/*static*/ void singlethreaded_marksweep::constructing_gc_object_base(gc_object_generic_base* obj) {
+		sm_state.constructing_gc_object_base(obj);
 	}
 
-	/*static*/ void singlethreaded_marksweep::setting_pointer(gc_ptr_base* gcp, void* new_val) {
-		sm_state.setting_pointer(gcp, new_val);
+	/*static*/ void singlethreaded_marksweep::clearing_pointer(void* address_of_gc_ptr) {
+		sm_state.clearing_pointer(address_of_gc_ptr);
+	}
+
+	/*static*/ void singlethreaded_marksweep::initing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to) {
+		sm_state.initing_pointer(address_of_gc_ptr, object_pointed_to);
+	}
+
+	/*static*/ void singlethreaded_marksweep::changing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to) {
+		sm_state.changing_pointer(address_of_gc_ptr, object_pointed_to);
 	}
 
 	// In the initial implementation, overhead is pretty high.
-	// Using GCBench:
-	//
-	// * Real storage runs around 2x to 4x of live storage, and
-	//   peaks at ~10x of live storage (though this includes all
-	//   overheads, internal and external).
-	//
-	// * Time is 10x slower than explicit mem management.
 	//
 	// Tempting optimizations:
 	//
@@ -314,14 +360,17 @@ namespace tu_gc {
 	//
 	// * maybe not much of a win -- have to scan the heap to get
 	//   the root blocks, instead of walking an internal set.
+	//   Though we could keep a linked list of root blocks, and
+	//   add/remove blocks when their ref counts change to/from
+	//   zero.
 	//
 	// * not free -- adds a ref count to each block, adds
 	//   ref-count inc/dec to each root ptr change, and we still
 	//   need a fast way to decide if a gc_ptr is a root.
 	//
-	// Decide if a gc_ptr is a root at construction time -- if
-	// it's inside a heap block, it's a heap ptr until the block
-	// is deleted; otherwise it's a root.
+	// Decide if a gc_ptr is a root at construction time and cache
+	// the info -- if it's inside a heap block, it's a heap ptr
+	// until the block is deleted; otherwise it's a root.
 	//
 	// * adds a bit to the gc_ptr.  Bloats the ptr, or else we
 	//   stash it in the low bit or something; requires unmasking
@@ -333,85 +382,98 @@ namespace tu_gc {
 	// Conservative determination of root ptrs -- bloom filter?
 	// Still need a way for initial marking.
 	//
-	// Use doubly-linked list for m_roots & m_heap_ptrs?  Might be
-	// a win.  Intrudes into the gc_ptr (ideally), so maybe the
-	// thing to do is subclass gc_ptr and require that this
-	// collector use the subclassed version.
+	// Use doubly-linked list for m_roots?  Should be an easy win.
+	// Intrudes into the gc_ptr (ideally), so the thing to do is
+	// inject some fields into gc_ptr via a collector-specific
+	// base class.
 	//
-	// Put the mark bits in the block headers.
+	// How to represent m_heap_ptrs?  The main problem with
+	// m_heap_ptrs is: when marking, how to quickly find all heap
+	// ptrs inside a newly-marked block?  Currently we use
+	// set::lower_bound, which wouldn't work with the linked-list.
+	// One good approach is to have a type spec for each block,
+	// with a list of pointer offsets for each type spec.  The
+	// type spec could be built during object construction and
+	// stored in a hash map.  Most type specs would be reused by
+	// many object instances, so the storage should be much
+	// smaller than currently.  The trick would be making sure
+	// it's cheap to create the type specs, though I suppose it
+	// would be hard to do worse than what we're already doing.
 	//
-	// Put the floating_block bits in the block headers.
+	// Put the mark bits in the block headers (duh).
+	//
+	// Put the floating_block bits in the block headers (duh).
 	//
 	// Replace the m_heap_blocks map with links in the block
-	// headers (e.g. maybe a skip list).
+	// headers (e.g. maybe a skip list).  This probably saves a
+	// good bit of memory compared to using std::map<>.  Also,
+	// then some of the searches can cache the last position and
+	// proceed from there; this could be a huge win if done right.
+
+
+	// Sketch of an alternative design:
+	//
+	// set<memblock*> m_heap_blocks;
+	// set<pointer_offset_list> m_pointer_lists;
+	// memblock* m_root_list;
+	//
+	// class memblock {
+	//   bool m_mark;
+	//   bool m_under_construction;
+	//   int m_root_ref_count;
+	//   memblock* m_prev_root;
+	//   memblock* m_next_root;
+	//   pointer_offset_list* m_internal_ptrs;
+	//   char data[0];
+	// };
+	//
+	// class gc_ptr {
+	//   bool m_is_root;
+	//   T* m_ptr;
+	// };
+	//
+	// write_barrier(ptr, new_val) {
+	//   if (ptr->m_is_root) {
+	//     increment_ref_count(new_val);
+	//     decrement_ref_count(ptr->get());
+	//   }
+	//   ptr->m_ptr = new_val;
+	// }
+	//
+	// block_construction_finished(block) {
+	//   add m_internal_ptrs to m_pointer_lists;  // share identical instances
+	//   block->m_under_construction = false;
+	// }
+	//
+	// increment_ref_count(block) {
+	//   if (block->m_root_ref_count == 0) {
+	//     link into root blocks;
+	//   }
+	//   block->m_root_ref_count++;
+	// }
+	//
+	// decrement_ref_count(block) {
+	//   block->m_root_ref_count--;
+	//   if (block->m_root_ref_count == 0) {
+	//     unlink from root blocks;
+	//   }
+	// }
+	//
+	// mark() {
+	//   to_mark = addresses of root blocks;
+	//   while (to_mark) {
+	//     memblock* b = get_containing_block(to_mark.pop_back());
+	//     if (!b->m_mark) {
+	//       b->m_mark = true;
+	//       for (p in b->m_internal_ptrs(b)) {
+	//         if (*p) {
+	//           to_mark.push_back(*p);
+	//         }
+	//       }
+	//     }
+	//   }
+	// }
 	
 }  // tu_gc
 
 
-#ifdef TEST_GC_SINGLETHREADED_MARKSWEEP
-
-// cl -GX tu_gc_singlethreaded_marksweep.cpp -I.. -DTEST_GC_SINGLETHREADED_MARKSWEEP
-#include <stdio.h>
-
-DECLARE_GC_TYPES(tu_gc::singlethreaded_marksweep);
-
-struct cons : public gc_object {
-public:
-	cons() : value(0) {
-	}
-	cons(int val, cons* cdr_in) : value(val), cdr(cdr_in) {
-	}
-	cons(cons* car_in, cons* cdr_in) : value(0), car(car_in), cdr(cdr_in) {
-	}
-
-	int value;
-	gc_ptr<cons> car;
-	gc_ptr<cons> cdr;
-};
-
-gc_ptr<cons> build_list_of_numbers(int low, int high) {
-	if (low <= high) {
-		return new cons(low, build_list_of_numbers(low + 1, high).get());
-	} else {
-		return NULL;
-	}
-}
-
-int main() {
-	gc_ptr<cons> root;
-
-	root = build_list_of_numbers(1, 10);
-
-	tu_gc::singlethreaded_marksweep::stats s;
-	gc_collector::get_stats(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
-
- 	printf("collecting...\n");
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
-
-	root = NULL;
-
- 	printf("collecting...\n");
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
-
-	// Try putting a gc_object on the stack...
-	{
-		cons cell;
-		cell.car = build_list_of_numbers(3, 8);
-
-		printf("collecting...\n");
-		gc_collector::collect_garbage(&s);
-		printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
-	}
-
-	printf("collecting...\n");
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
-
-	return 0;
-}
-
-
-#endif  // TEST_GC_SINGLETHREADED_MARKSWEEP
