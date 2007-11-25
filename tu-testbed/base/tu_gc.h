@@ -68,6 +68,10 @@
 // TODO:
 //
 // implement gc_weak_ptr
+//
+// Need a solution for gc objects holding containers of gc_ptr.  As
+// is, if you do "vector<gc_ptr> v", all the gc_ptr's inside v will
+// act like roots, even if v is a member of a gc_ptr.
 
 #ifndef TU_GC_H
 #define TU_GC_H
@@ -196,11 +200,6 @@ namespace tu_gc {
 			m_ptr = p;
 		}
 	private:
-// 		// Cast T* to gc_object_generic_base*.
-// 		gc_object_generic_base* object_ptr() {
-// 			return m_ptr;
-// 		}
-
 		T* m_ptr;
 	};
 
