@@ -722,23 +722,34 @@ namespace tesselate_new
 		for (int i = 0, n = s_path_parts.size(); i < n; i++) {
 			int lstyle = s_path_parts[i].m_left_style;
 			int rstyle = s_path_parts[i].m_right_style;
-			UNUSED(rstyle);
-			if (lstyle >= 0) {
-				// Move the data into a new
-				// proxy right path.
-				s_path_parts.resize(s_path_parts.size() + 1);
-				path_part* pold = &s_path_parts[i];
-				path_part* pnew = &s_path_parts.back();
 
-				// Copy path, in reverse, into a new right-fill path_part.
-				pnew->m_right_style = lstyle;
-				pnew->m_verts.reserve(pold->m_verts.size());
-				for (int k = pold->m_verts.size() - 1; k >= 0; k--) {
-					pnew->m_verts.push_back(pold->m_verts[k]);
+			if (lstyle >= 0)
+			{
+				if (rstyle == -1)
+				{
+					s_path_parts[i].m_right_style = s_path_parts[i].m_left_style;
+					s_path_parts[i].m_left_style = -1;
+					int n = s_path_parts[i].m_verts.size();
+					for (int j = 0, k = n >> 1; j < k; j++)
+					{
+						swap(&s_path_parts[i].m_verts[j], &s_path_parts[i].m_verts[n - j - 1]);
+					}
 				}
-				pold->m_left_style = -1;
-				if (pold->m_right_style == -1) {
-					pold->m_verts.resize(0);
+				else
+				{
+					// Move the data into a new
+					// proxy right path.
+					s_path_parts.resize(s_path_parts.size() + 1);
+					path_part* pold = &s_path_parts[i];
+					path_part* pnew = &s_path_parts.back();
+
+					// Copy path, in reverse, into a new right-fill path_part.
+					pnew->m_right_style = lstyle;
+					pnew->m_verts.reserve(pold->m_verts.size());
+					for (int k = pold->m_verts.size() - 1; k >= 0; k--) {
+						pnew->m_verts.push_back(pold->m_verts[k]);
+					}
+					pold->m_left_style = -1;
 				}
 			}
 		}
