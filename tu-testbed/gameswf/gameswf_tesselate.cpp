@@ -322,7 +322,7 @@ namespace tesselate
 			int	base = 0;
 			while (base < s_current_segments.size())
 			{
-				float	ytop = s_current_segments[base].m_begin.m_y;
+				float	        ytop = s_current_segments[base].m_begin.m_y;
 				int	next_base = base + 1;
 				for (;;)
 				{
@@ -369,7 +369,7 @@ namespace tesselate
 			}
 		}
 		
-		s_current_segments.release();
+		s_current_segments.clear();
 	}
 
 
@@ -459,10 +459,8 @@ namespace tesselate
 	void	end_shape()
 	{
 		output_current_segments();
-		s_accepter->end_shape();
 		s_accepter = NULL;
-
-		s_current_path.release();
+		s_current_path.clear();
 	}
 
 
@@ -572,9 +570,9 @@ namespace tesselate
 			// Early-out for degenerate straight segments.
 			add_line_segment(ax, ay);
 		} else {
-			// Subdivide, and add line segments...
-			curve(s_last_point.m_x, s_last_point.m_y, cx, cy, ax, ay);
-		}
+		// Subdivide, and add line segments...
+		curve(s_last_point.m_x, s_last_point.m_y, cx, cy, ax, ay);
+	}
 	}
 
 

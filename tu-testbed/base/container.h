@@ -254,8 +254,6 @@ public:
 		resize(0);
 	}
 
-	void	release() { clear(); }
-
 	void	operator=(const array<T>& a)
 	// Array copy.  Copies the contents of a into this array.
 	{
