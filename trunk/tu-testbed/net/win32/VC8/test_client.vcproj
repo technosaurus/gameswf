@@ -188,6 +188,10 @@
 				RelativePath="..\..\test_client.cpp"
 				>
 			</File>
+			<File
+				RelativePath="..\..\tu_net_file.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

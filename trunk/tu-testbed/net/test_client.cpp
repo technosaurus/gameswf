@@ -7,6 +7,7 @@
 // net file grubber
 
 #include "base/tu_file.h"
+#include "net/tu_net_file.h"
 
 // arg1: source file, like "http://www.my.com/swf/my.swf"
 // arg2: dest file, like "c:\my.swf"
@@ -18,9 +19,17 @@ int main(int argc, const char** argv)
 		exit(0);
 	}
 
-	tu_file source(argv[1], "rb");
-	tu_file target(argv[2], "wb"); 
-	target.copy_from(&source);
+	tu_file* source = new_tu_net_file(argv[1], "rb");
+	if (source)
+	{
+		tu_file target(argv[2], "wb"); 
+		target.copy_from(source);
+		delete source;
+	}
+	else
+	{
+		printf("can't open '%s'\n", argv[1]);
+	}
 }
 
 
