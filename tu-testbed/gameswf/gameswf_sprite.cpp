@@ -1487,7 +1487,11 @@ namespace gameswf
 	resource*	sprite_instance::find_exported_resource(const tu_string& symbol)
 	{
 		movie_definition_sub*	def = get_movie_definition()->cast_to_movie_def_impl();
-		assert(def);
+		if (def == NULL)
+		{
+			log_error("can't find exported resource '%s'\n", symbol.c_str());
+			return NULL;
+		}
 
 		resource* res = def->get_exported_resource(symbol);
 		if (res)
