@@ -1236,9 +1236,10 @@ namespace gameswf
 				}
 				case 0x21:	// string concat
 				{
-					env->top(1).convert_to_string_versioned(version);
-					env->top(1).string_concat(env->top(0).to_tu_string_versioned(version));
+					tu_string str = env->top(1).to_tu_string_versioned(version);
+					str += env->top(0).to_tu_string_versioned(version);
 					env->drop(1);
+					env->top(0).set_tu_string(str);
 					break;
 				}
 				case 0x22:	// get property
@@ -1780,12 +1781,14 @@ namespace gameswf
 				}
 				case 0x4A:	// to number
 				{
-					env->top(0).convert_to_number();
+					double n = env->top(0).to_number();
+					env->top(0).set_double(n);
 					break;
 				}
 				case 0x4B:	// to string
 				{
-					env->top(0).convert_to_string_versioned(version);
+					tu_string str = env->top(0).to_tu_string_versioned(version);
+					env->top(0).set_tu_string(str);
 					break;
 				}
 				case 0x4C:	// dup

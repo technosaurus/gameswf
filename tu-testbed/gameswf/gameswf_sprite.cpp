@@ -570,29 +570,22 @@ namespace gameswf
 		}
 	}
 
-	void	sprite_instance::goto_frame(const as_value& target_frame)
+	void	sprite_instance::goto_frame(const tu_string& target_frame)
 	{
 		// Flash tries to convert STRING to NUMBER,
 		// if the conversion is OK then Flash uses this NUMBER as target_frame.
 		// else uses arg as label of target_frame
 		// Thanks Francois Guibert
+		double number_value;
 
-		if (target_frame.get_type() == as_value::STRING)
+		// try string as number
+		if (string_to_number(&number_value, target_frame.c_str()))
 		{
-			double number_value;
-			// try as string as number
-			if (string_to_number(&number_value, target_frame.to_string()))
-			{
-				goto_frame((int) number_value - 1);    // Convert to 0-based
-			}
-			else
-			{
-				goto_labeled_frame(target_frame.to_string());
-			}
+			goto_frame((int) number_value - 1);    // Convert to 0-based
 		}
 		else
 		{
-			goto_frame(int(target_frame.to_number() - 1));    // Convert to 0-based
+			goto_labeled_frame(target_frame.c_str());
 		}
 
 	}
