@@ -208,10 +208,6 @@ namespace gameswf
 		exported_module as_as_function*	to_as_function() const;
 		exported_module const tu_string& call_to_string(as_environment* env) const;
 
-		exported_module void	convert_to_number();
-		exported_module void	convert_to_string();
-		exported_module void	convert_to_string_versioned(int version);
-
 		// These set_*()'s are more type-safe; should be used
 		// in preference to generic overloaded set().  You are
 		// more likely to get a warning/error if misused.

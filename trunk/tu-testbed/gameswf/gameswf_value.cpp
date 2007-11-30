@@ -395,33 +395,6 @@ namespace gameswf
 		}
 	}
 
-
-	void	as_value::convert_to_number()
-	// Force type to number.
-	{
-		set_double(to_number());
-	}
-
-
-	void	as_value::convert_to_string()
-	// Force type to string.
-	{
-		drop_refs();
-		to_tu_string();	// init our string data.
-		m_type = STRING;	// force type.
-	}
-
-
-	// 
-	void	as_value::convert_to_string_versioned(int version)
-	// Force type to string.
-	{
-		drop_refs();
-		to_tu_string_versioned(version);	// init our string data.
-		m_type = STRING;	// force type.
-	}
-
-
 	void	as_value::set_as_object_interface(as_object_interface* obj)
 	{
 		if (m_type != OBJECT || m_object_value != obj)
