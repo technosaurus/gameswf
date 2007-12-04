@@ -50,6 +50,7 @@ namespace gameswf
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		virtual void	display();
+		void	set_light();
 		virtual void	advance(float delta_time);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
