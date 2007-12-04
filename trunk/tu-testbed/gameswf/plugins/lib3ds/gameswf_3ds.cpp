@@ -46,7 +46,7 @@ namespace gameswf
 			return;
 		}
 
-		lib3ds_file_bounding_box(m_file, m_bmin, m_bmax);
+		lib3ds_file_bounding_box_of_objects(m_file, LIB3DS_TRUE, LIB3DS_FALSE, LIB3DS_FALSE, m_bmin, m_bmax);
 		m_sx = m_bmax[0] - m_bmin[0];
 		m_sy = m_bmax[1] - m_bmin[1];
 		m_sz = m_bmax[2] - m_bmin[2];
@@ -365,7 +365,9 @@ namespace gameswf
 			return;
 		}
 
-		update_material();
+		Uint32 t = SDL_GetTicks();
+
+		//update_material();
 
 		// save GL state
 		glPushAttrib (GL_ALL_ATTRIB_BITS);	
@@ -377,10 +379,6 @@ namespace gameswf
 		glClear(GL_DEPTH_BUFFER_BIT);
 
 		// set 3D params
-		glShadeModel(GL_SMOOTH);
-		glEnable(GL_LIGHTING);
-		glEnable(GL_LIGHT0);
-		glDisable(GL_LIGHT1);
 		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);
@@ -443,7 +441,31 @@ namespace gameswf
 		glLoadIdentity();
 		glRotatef(-90., 1.0, 0., 0.);
 
-		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_def->m_file->ambient);
+		// apply light
+		{
+			glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_def->m_file->ambient);
+			glShadeModel(GL_SMOOTH);
+			int light = GL_LIGHT0;
+			for (Lib3dsLight* p = m_def->m_file->lights; p != 0; p = p->next)
+			{
+				assert(light <= GL_LIGHT7);
+
+				static GLfloat glfLightAmbient[] = {0.0, 0.0, 0.0, 1.0};
+				static GLfloat glfLightDiffuse[] = {1.0, 1.0, 1.0, 0.0};
+				static GLfloat glfLightSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};
+
+		//		glLightf (light, GL_SPOT_EXPONENT, 128.0f);
+		//		glLightfv(light, GL_AMBIENT, glfLightAmbient);
+		//		glLightfv(light, GL_SPECULAR, glfLightSpecular);
+		//		glLightfv(light, GL_DIFFUSE, p->color);
+				glLightfv(light, GL_POSITION, p->position);
+				glEnable(light);
+
+				light++;
+			}
+			glEnable(GL_LIGHTING);
+		}
+
 
 		// apply gameswf matrix
 		apply_matrix(target, camera_pos);
@@ -465,6 +487,9 @@ namespace gameswf
 		glMatrixMode(GL_MODELVIEW);
 		glPopMatrix();
 		glPopAttrib();
+
+		//printf("3ds display time: %d\n", SDL_GetTicks() - t);
+
 
 	}
 
@@ -517,32 +542,33 @@ namespace gameswf
 		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
 		glDisable(GL_TEXTURE_GEN_S);
 		glDisable(GL_TEXTURE_GEN_T);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
 	}
 
 	void x3ds_instance::set_material(Lib3dsMaterial* mat)
 	{
 		if (mat)
 		{
-			float s;
-			if (mat->two_sided)
-			{
-				glDisable(GL_CULL_FACE);
-			}
-			else
-			{
-				glEnable(GL_CULL_FACE);
-			}
+//			if (mat->two_sided)
+//			{
+//				glDisable(GL_CULL_FACE);
+//			}
+//			else
+//			{
+//				glEnable(GL_CULL_FACE);
+//			}
+			glDisable(GL_CULL_FACE);
 
 			glMaterialfv(GL_FRONT, GL_AMBIENT, mat->ambient);
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, mat->diffuse);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, mat->specular);
-
-			s = pow(2.0f, 10.0f * mat->shininess);
-			if (s > 128.0f)
-			{
-				s = 128.0f;
-			}
-			glMaterialf(GL_FRONT, GL_SHININESS, s);
+			glMaterialf(GL_FRONT, GL_SHININESS, pow(2, 10.0 * mat->shininess));
 
 			bind_texture(mat->texture1_map.name);
 		}
@@ -555,6 +581,7 @@ namespace gameswf
 			glMaterialfv(GL_FRONT, GL_AMBIENT, a);
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, d);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, s);
+      glMaterialf(GL_FRONT, GL_SHININESS, pow(2, 10.0 * 0.5));
 		}
 	}
 
@@ -569,12 +596,12 @@ namespace gameswf
 				int	tw = 1; while (tw < bi->m_original_width) { tw <<= 1; }
 				int	th = 1; while (th < bi->m_original_height) { th <<= 1; }
 
-				float scale_x = (float) bi->m_original_width / (float) tw;
-				float scale_y = (float) bi->m_original_height / (float) th;
+				float scale_x = (float) bi->m_original_width / tw;
+				float scale_y = (float) bi->m_original_height / th;
 
-				float x = U * scale_x;
-				float y = scale_y - V * scale_y;
-				glTexCoord2f(x, y);
+				float s = scale_y * (1 - V);
+				float t = U * scale_x;
+				glTexCoord2f(s, t);
 			}
 		}
 	}
