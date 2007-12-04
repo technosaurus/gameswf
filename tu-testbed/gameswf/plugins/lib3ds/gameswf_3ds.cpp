@@ -148,90 +148,8 @@ namespace gameswf
 	// x3ds_instance
 	//
 
-	x3ds_instance::x3ds_instance(x3ds_definition* def, character* parent, int id)	:
-		character(parent, id),
-		m_def(def),
-		m_current_frame(0.0f)
-	{
-
-		// create empty bitmaps for movieclip's snapshots
-	  for (Lib3dsMaterial* p = m_def->m_file->materials; p != 0; p = p->next)
-		{
-			if (p->texture1_map.name)
-			{
-				m_material[p->texture1_map.name] = new bitmap_info();
-			}
-	  }
-
-		m_mesh_list  = glGenLists(1);
-		assert(m_mesh_list);
-
-		assert(m_def != NULL);
-		m_camera = m_def->create_camera();
-		lib3ds_matrix_identity(m_matrix);
-
-		// aply gameswf matrix
-/*		matrix m = get_world_matrix();
-		float	mat[16];
-		memset(&mat[0], 0, sizeof(mat));
-		mat[0] = m.m_[0][0];
-		mat[1] = m.m_[1][0];
-		mat[4] = m.m_[0][1];
-		mat[5] = m.m_[1][1];
-		mat[10] = 1;
-		float w = 1024 * 20;	// hack, twips
-		float h = 768 * 20;	// hack, twips
-		mat[12] = -1.0f + 2.0f * m.m_[0][2] / w - m_def->m_sx;
-		mat[13] = 1.0f  - 2.0f * m.m_[1][2] / h - m_def->m_sy;
-		mat[15] = 1;
-	//	glMultMatrixf(mat);*/
-		
-	}
-
-	x3ds_instance::~x3ds_instance()
-	{
-		glDeleteLists(m_mesh_list, 1);
-		m_def->remove_camera(m_camera);
-	}
-
-	void	x3ds_instance::advance(float delta_time)
-	{
-//		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
-//		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
-//		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
-
-		m_current_frame = fmod(m_current_frame + 1.0f, (float) m_def->m_file->frames);
-		lib3ds_file_eval(m_def->m_file, m_current_frame);
-	}
-
-	bool	x3ds_instance::get_member(const tu_stringi& name, as_value* val)
-	{
-		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
-		if (name == "mapMaterial")
-		{
-			val->set_as_c_function_ptr(as_map_material);
-			return true;
-		}
-		return character::get_member(name, val);
-	}
-
-	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
-	{
-		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
-		return character::set_member(name, val);
-	}
-
-	void	x3ds_instance::apply_matrix(float* target, float* camera_pos)
-	{
-		Lib3dsVector v;
-		lib3ds_vector_sub(v, target, camera_pos);
-		float dist = lib3ds_vector_length(v);
-
-		glTranslatef(0., dist, 0.);
-		glMultMatrixf(&m_matrix[0][0]);
-		glTranslatef(0., -dist, 0.);
-	}
-
+#if 0
+	// useless stuff ?
 	void	x3ds_instance::update_material()
 	{
 		GLint aux_buffers;
@@ -356,6 +274,93 @@ namespace gameswf
 		glPopAttrib();
 	}
 
+#endif
+
+	x3ds_instance::x3ds_instance(x3ds_definition* def, character* parent, int id)	:
+		character(parent, id),
+		m_def(def),
+		m_current_frame(0.0f)
+	{
+
+		// create empty bitmaps for movieclip's snapshots
+	  for (Lib3dsMaterial* p = m_def->m_file->materials; p != 0; p = p->next)
+		{
+			if (p->texture1_map.name)
+			{
+				m_material[p->texture1_map.name] = new bitmap_info();
+			}
+	  }
+
+		assert(m_def != NULL);
+		m_camera = m_def->create_camera();
+		lib3ds_matrix_identity(m_matrix);
+
+		// aply gameswf matrix
+/*		matrix m = get_world_matrix();
+		float	mat[16];
+		memset(&mat[0], 0, sizeof(mat));
+		mat[0] = m.m_[0][0];
+		mat[1] = m.m_[1][0];
+		mat[4] = m.m_[0][1];
+		mat[5] = m.m_[1][1];
+		mat[10] = 1;
+		float w = 1024 * 20;	// hack, twips
+		float h = 768 * 20;	// hack, twips
+		mat[12] = -1.0f + 2.0f * m.m_[0][2] / w - m_def->m_sx;
+		mat[13] = 1.0f  - 2.0f * m.m_[1][2] / h - m_def->m_sy;
+		mat[15] = 1;
+	//	glMultMatrixf(mat);*/
+		
+	}
+
+	x3ds_instance::~x3ds_instance()
+	{
+		for (hash<Lib3dsNode*, GLuint>::iterator it = m_mesh_list.begin();
+			it != m_mesh_list.end(); ++it)
+		{
+			glDeleteLists(it->second, 1);
+		}
+
+		m_def->remove_camera(m_camera);
+	}
+
+	void	x3ds_instance::advance(float delta_time)
+	{
+//		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
+//		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
+//		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
+
+		m_current_frame = fmod(m_current_frame + 1.0f, (float) m_def->m_file->frames);
+		lib3ds_file_eval(m_def->m_file, m_current_frame);
+	}
+
+	bool	x3ds_instance::get_member(const tu_stringi& name, as_value* val)
+	{
+		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
+		if (name == "mapMaterial")
+		{
+			val->set_as_c_function_ptr(as_map_material);
+			return true;
+		}
+		return character::get_member(name, val);
+	}
+
+	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
+	{
+		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
+		return character::set_member(name, val);
+	}
+
+	void	x3ds_instance::apply_matrix(float* target, float* camera_pos)
+	{
+		Lib3dsVector v;
+		lib3ds_vector_sub(v, target, camera_pos);
+		float dist = lib3ds_vector_length(v);
+
+		glTranslatef(0., dist, 0.);
+		glMultMatrixf(&m_matrix[0][0]);
+		glTranslatef(0., -dist, 0.);
+	}
 
 	// apply light
 	// Set them from light nodes if possible.
@@ -429,8 +434,6 @@ namespace gameswf
 		{
 			return;
 		}
-
-		Uint32 t = SDL_GetTicks();
 
 		//update_material();
 
@@ -530,10 +533,6 @@ namespace gameswf
 		glMatrixMode(GL_MODELVIEW);
 		glPopMatrix();
 		glPopAttrib();
-
-		//printf("3ds display time: %d\n", SDL_GetTicks() - t);
-
-
 	}
 
 	void x3ds_instance::bind_texture(const char* infile)
@@ -710,16 +709,22 @@ namespace gameswf
 			assert(mesh);
 			
 			// build mesh list
-			glNewList(m_mesh_list, GL_COMPILE);
-			create_mesh_list(mesh);
-			glEndList();
+			GLuint m;
+			if (m_mesh_list.get(node, &m) == false)
+			{
+				m = glGenLists(1);
+				glNewList(m, GL_COMPILE);
+				create_mesh_list(mesh);
+				glEndList();
+				m_mesh_list.add(node, m);
+			}
 
 			// exec mesh list
 			glPushMatrix();
 			Lib3dsObjectData* d = &node->data.object;
 			glMultMatrixf(&node->matrix[0][0]);
 			glTranslatef( - d->pivot[0], - d->pivot[1], - d->pivot[2]);
-			glCallList(m_mesh_list);
+			glCallList(m);
 			glPopMatrix();
 		}
 	}
