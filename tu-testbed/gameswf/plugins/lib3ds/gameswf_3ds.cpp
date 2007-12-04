@@ -356,6 +356,71 @@ namespace gameswf
 		glPopAttrib();
 	}
 
+
+	// apply light
+	// Set them from light nodes if possible.
+	// If not, use the light objects directly.
+	void	x3ds_instance::set_light()
+	{
+		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_def->m_file->ambient);
+		glShadeModel(GL_SMOOTH);
+		int gl_light = GL_LIGHT0;
+		for (Lib3dsLight* l = m_def->m_file->lights; l != 0; l = l->next)
+		{
+			assert(gl_light <= GL_LIGHT7);
+			glEnable(gl_light);
+
+			// default we use light objects directly
+			GLfloat color[4];
+			color[0] = l->color[0];
+			color[1] = l->color[1];
+			color[2] = l->color[2];
+			color[3] = 1;
+
+			// default position
+			GLfloat position[4];
+			position[0] = l->position[0];
+			position[1] = l->position[1];
+			position[2] = l->position[2];
+			position[3] = 1;
+
+			// try nodes if possible
+			Lib3dsNode* ln = lib3ds_file_node_by_name(m_def->m_file, l->name, LIB3DS_LIGHT_NODE);
+			if (ln != NULL)
+			{
+				color[0] = ln->data.light.col[0];
+				color[1] = ln->data.light.col[1];
+				color[2] = ln->data.light.col[2];
+				position[0] = ln->data.light.pos[0];
+				position[1] = ln->data.light.pos[1];
+				position[2] = ln->data.light.pos[2];
+			}
+
+			Lib3dsNode* sn = lib3ds_file_node_by_name(m_def->m_file, l->name, LIB3DS_SPOT_NODE);
+			if( sn != NULL )
+			{
+				memcpy(l->spot, sn->data.spot.pos, sizeof(Lib3dsVector));
+			}
+
+			static const GLfloat a[] = {0.0f, 0.0f, 0.0f, 1.0f};
+			glLightfv(gl_light, GL_AMBIENT, a);
+			glLightfv(gl_light, GL_DIFFUSE, color);
+			glLightfv(gl_light, GL_SPECULAR, color);
+			glLightfv(gl_light, GL_POSITION, position);
+
+			if (l->spot_light)
+			{
+				position[0] = l->spot[0] - l->position[0];
+				position[1] = l->spot[1] - l->position[1];
+				position[2] = l->spot[2] - l->position[2];
+				glLightfv(gl_light, GL_SPOT_DIRECTION, position);
+			}
+
+			gl_light++;
+		}
+		glEnable(GL_LIGHTING);
+	}
+
 	void	x3ds_instance::display()
 	{
 		assert(m_def != NULL);
@@ -383,9 +448,10 @@ namespace gameswf
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);
 
-//		glEnable(GL_POLYGON_SMOOTH);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_POLYGON_SMOOTH);
+//		glEnable(GL_BLEND);
+//		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glDisable(GL_BLEND);
 
 		// set GL matrix to identity
 		glMatrixMode(GL_PROJECTION);
@@ -441,32 +507,6 @@ namespace gameswf
 		glLoadIdentity();
 		glRotatef(-90., 1.0, 0., 0.);
 
-		// apply light
-		{
-			glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_def->m_file->ambient);
-			glShadeModel(GL_SMOOTH);
-			int light = GL_LIGHT0;
-			for (Lib3dsLight* p = m_def->m_file->lights; p != 0; p = p->next)
-			{
-				assert(light <= GL_LIGHT7);
-
-				static GLfloat glfLightAmbient[] = {0.0, 0.0, 0.0, 1.0};
-				static GLfloat glfLightDiffuse[] = {1.0, 1.0, 1.0, 0.0};
-				static GLfloat glfLightSpecular[] = {1.0f, 1.0f, 1.0f, 1.0f};
-
-		//		glLightf (light, GL_SPOT_EXPONENT, 128.0f);
-		//		glLightfv(light, GL_AMBIENT, glfLightAmbient);
-		//		glLightfv(light, GL_SPECULAR, glfLightSpecular);
-		//		glLightfv(light, GL_DIFFUSE, p->color);
-				glLightfv(light, GL_POSITION, p->position);
-				glEnable(light);
-
-				light++;
-			}
-			glEnable(GL_LIGHTING);
-		}
-
-
 		// apply gameswf matrix
 		apply_matrix(target, camera_pos);
 
@@ -474,6 +514,9 @@ namespace gameswf
 		Lib3dsMatrix cmatrix;
 		lib3ds_matrix_camera(cmatrix, camera_pos, target, roll);
 		glMultMatrixf(&cmatrix[0][0]);
+
+		// apply light
+		set_light();
 
 		// draw 3D model
 		for (Lib3dsNode* p = m_def->m_file->nodes; p != 0; p = p->next)
