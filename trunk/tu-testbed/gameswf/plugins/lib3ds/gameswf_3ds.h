@@ -70,7 +70,7 @@ namespace gameswf
 		smart_ptr<x3ds_definition>	m_def;
 		Lib3dsFloat m_current_frame;
 		Lib3dsMatrix m_matrix;
-		GLuint m_mesh_list;
+		hash<Lib3dsNode*, GLuint> m_mesh_list;
 
 		// binds texture to triangle (from mesh)
 		void bind_material(Lib3dsMaterial* mat, float U, float V);
@@ -83,7 +83,7 @@ namespace gameswf
 
 		void create_mesh_list(Lib3dsMesh* mesh);
 		void render_node(Lib3dsNode* node);
-		void	update_material();
+//		void	update_material();
 	};
 
 }	// end namespace gameswf
