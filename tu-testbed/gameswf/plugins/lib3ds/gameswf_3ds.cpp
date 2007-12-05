@@ -22,6 +22,25 @@
 
 namespace gameswf
 {
+
+	void	as_3d_play(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
+		assert(x3ds);
+
+//		fn.result->set_tu_string(a->to_string());
+	}
+
+	void	as_3d_stop(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
+		assert(x3ds);
+
+//		fn.result->set_tu_string(a->to_string());
+	}
+
 	void	as_map_material(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
@@ -293,24 +312,14 @@ namespace gameswf
 
 		assert(m_def != NULL);
 		m_camera = m_def->create_camera();
-		lib3ds_matrix_identity(m_matrix);
 
-		// aply gameswf matrix
-/*		matrix m = get_world_matrix();
-		float	mat[16];
-		memset(&mat[0], 0, sizeof(mat));
-		mat[0] = m.m_[0][0];
-		mat[1] = m.m_[1][0];
-		mat[4] = m.m_[0][1];
-		mat[5] = m.m_[1][1];
-		mat[10] = 1;
-		float w = 1024 * 20;	// hack, twips
-		float h = 768 * 20;	// hack, twips
-		mat[12] = -1.0f + 2.0f * m.m_[0][2] / w - m_def->m_sx;
-		mat[13] = 1.0f  - 2.0f * m.m_[1][2] / h - m_def->m_sy;
-		mat[15] = 1;
-	//	glMultMatrixf(mat);*/
-		
+		set_member("mapMaterial", as_map_material);
+		set_member("play", as_3d_play);
+		set_member("stop", as_3d_stop);
+//		set_member("gotoAndStop", &x3D_goto_and_stop);
+//		set_member("gotoAndPlay", &v_goto_and_play);
+//		set_member("nextFrame", &x3D_next_frame);
+//		set_member("prevFrame", &x3D_prev_frame);
 	}
 
 	x3ds_instance::~x3ds_instance()
@@ -337,30 +346,34 @@ namespace gameswf
 	bool	x3ds_instance::get_member(const tu_stringi& name, as_value* val)
 	{
 		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
-		if (name == "mapMaterial")
+		if (character::get_member(name, val) == false)
 		{
-			val->set_as_c_function_ptr(as_map_material);
-			return true;
+			return m_variables.get(name, val);
 		}
-		return character::get_member(name, val);
+		return false;
 	}
 
 	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
 		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
-		return character::set_member(name, val);
+		if (character::set_member(name, val) == false)
+		{
+			m_variables.set(name, val);
+		};
+		return true;
 	}
 
-	void	x3ds_instance::apply_matrix(float* target, float* camera_pos)
-	{
-		Lib3dsVector v;
-		lib3ds_vector_sub(v, target, camera_pos);
-		float dist = lib3ds_vector_length(v);
 
-		glTranslatef(0., dist, 0.);
-		glMultMatrixf(&m_matrix[0][0]);
-		glTranslatef(0., -dist, 0.);
-	}
+//	void	x3ds_instance::apply_matrix(float* target, float* camera_pos)
+//	{
+//		Lib3dsVector v;
+//		lib3ds_vector_sub(v, target, camera_pos);
+//		float dist = lib3ds_vector_length(v);
+
+//		glTranslatef(0., dist, 0.);
+//		glMultMatrixf(&m_matrix[0][0]);
+//		glTranslatef(0., -dist, 0.);
+//	}
 
 	// apply light
 	// Set them from light nodes if possible.
@@ -529,9 +542,6 @@ namespace gameswf
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glRotatef(-90., 1.0, 0., 0.);
-
-		// apply gameswf matrix
-		apply_matrix(target, camera_pos);
 
 		// apply camera matrix
 		Lib3dsMatrix cmatrix;

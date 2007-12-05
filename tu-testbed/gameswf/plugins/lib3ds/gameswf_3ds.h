@@ -59,8 +59,10 @@ namespace gameswf
 		
 		smart_ptr<x3ds_definition>	m_def;
 		Lib3dsFloat m_current_frame;
-		Lib3dsMatrix m_matrix;
 		hash<Lib3dsNode*, GLuint> m_mesh_list;
+
+		play_state	m_play_state;
+		stringi_hash<as_value>	m_variables;
 
 		x3ds_instance(x3ds_definition* def,	character* parent, int id);
 		~x3ds_instance();
@@ -72,8 +74,6 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual x3ds_instance* cast_to_3ds() { return this; }
-
-		void	apply_matrix(float* target, float* camera_pos);
 
 		// binds texture to triangle (from mesh)
 		void bind_material(Lib3dsMaterial* mat, float U, float V);
