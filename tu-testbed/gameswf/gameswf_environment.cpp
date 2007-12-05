@@ -118,6 +118,9 @@ namespace gameswf
 				x3ds_definition* x3ds = new x3ds_definition(fn.c_str());
 				if (x3ds && x3ds->m_file)
 				{
+					rect bound;
+					target->get_bound(&bound);
+					x3ds->set_bound(bound);
 					return target->replace_me(x3ds);
 				}
 #endif
