@@ -444,9 +444,29 @@ namespace gameswf
 		glMatrixMode(GL_PROJECTION);
 		glPushMatrix();
 
-		glClear(GL_DEPTH_BUFFER_BIT);
+		// apply gameSWF matrix
+
+		rect bound;
+		m_def->get_bound(&bound);
+
+		matrix m = get_parent()->get_world_matrix();
+		m.transform(&bound);
+
+		// get viewport size
+		GLint vp[4]; 
+		glGetIntegerv(GL_VIEWPORT, vp); 
+		int vp_width = vp[2];
+		int vp_height = vp[3];
+
+		bound.twips_to_pixels();
+		int w = (int) (bound.m_x_max - bound.m_x_min);
+		int h = (int) (bound.m_y_max - bound.m_y_min);
+		int x = (int) bound.m_x_min;
+		int y = (int) bound.m_y_min;
+		glViewport(x, vp_height - y - h, w, h);
 
 		// set 3D params
+		glClear(GL_DEPTH_BUFFER_BIT);
 		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_DEPTH_TEST);
 		glCullFace(GL_BACK);

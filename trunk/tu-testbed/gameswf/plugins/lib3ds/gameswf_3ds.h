@@ -20,31 +20,48 @@ namespace gameswf
 
 	struct x3ds_definition : public character_def
 	{
-		x3ds_definition(const char* url);
-		~x3ds_definition();
-
-		virtual character* create_character_instance(character* parent, int id);
-		virtual void get_bound(rect& bound)
-		{
-			// TODO
-		}
-
-		Lib3dsCamera* create_camera();
-		void remove_camera(Lib3dsCamera* camera);
-
 		Lib3dsFile* m_file;
 		float	m_sx, m_sy, m_sz; // bounding box dimensions
-
-	private:
-
 		Lib3dsVector m_bmin, m_bmax;
 		float m_size;
 		float	m_cx, m_cy, m_cz; // bounding box center
 		int m_lightList;
+		rect	m_rect;
+
+		x3ds_definition(const char* url);
+		~x3ds_definition();
+
+		virtual character* create_character_instance(character* parent, int id);
+		virtual void get_bound(rect* bound)
+		{
+			*bound = m_rect;
+		}
+
+		void set_bound(const rect& bound)
+		{
+			m_rect = bound;
+		}
+
+		Lib3dsCamera* create_camera();
+		void remove_camera(Lib3dsCamera* camera);
 	};
 
 	struct x3ds_instance : public character
 	{
+		Lib3dsCamera* m_camera;
+
+		// textures required for 3D model
+		// <texture name, bitmap> m_material
+		stringi_hash< smart_ptr<bitmap_info> > m_material;
+
+		// <material, movieclip> map
+		stringi_hash<as_value> m_map;
+		
+		smart_ptr<x3ds_definition>	m_def;
+		Lib3dsFloat m_current_frame;
+		Lib3dsMatrix m_matrix;
+		hash<Lib3dsNode*, GLuint> m_mesh_list;
+
 		x3ds_instance(x3ds_definition* def,	character* parent, int id);
 		~x3ds_instance();
 
@@ -58,20 +75,6 @@ namespace gameswf
 
 		void	apply_matrix(float* target, float* camera_pos);
 
-		Lib3dsCamera* m_camera;
-
-		// textures required for 3D model
-		stringi_hash< smart_ptr<bitmap_info> > m_material;
-		// <material, movieclip> map
-		stringi_hash<as_value> m_map;
-
-		private:
-		
-		smart_ptr<x3ds_definition>	m_def;
-		Lib3dsFloat m_current_frame;
-		Lib3dsMatrix m_matrix;
-		hash<Lib3dsNode*, GLuint> m_mesh_list;
-
 		// binds texture to triangle (from mesh)
 		void bind_material(Lib3dsMaterial* mat, float U, float V);
 
@@ -83,6 +86,7 @@ namespace gameswf
 
 		void create_mesh_list(Lib3dsMesh* mesh);
 		void render_node(Lib3dsNode* node);
+
 //		void	update_material();
 	};
 
