@@ -29,7 +29,7 @@ namespace gameswf
 		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
 		assert(x3ds);
 
-//		fn.result->set_tu_string(a->to_string());
+		x3ds->m_play_state = movie_interface::PLAY;
 	}
 
 	void	as_3d_stop(const fn_call& fn)
@@ -38,7 +38,7 @@ namespace gameswf
 		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
 		assert(x3ds);
 
-//		fn.result->set_tu_string(a->to_string());
+		x3ds->m_play_state = movie_interface::STOP;
 	}
 
 	void	as_map_material(const fn_call& fn)
@@ -298,7 +298,8 @@ namespace gameswf
 	x3ds_instance::x3ds_instance(x3ds_definition* def, character* parent, int id)	:
 		character(parent, id),
 		m_def(def),
-		m_current_frame(0.0f)
+		m_current_frame(0.0f),
+		m_play_state(PLAY)
 	{
 
 		// create empty bitmaps for movieclip's snapshots
@@ -316,10 +317,10 @@ namespace gameswf
 		set_member("mapMaterial", as_map_material);
 		set_member("play", as_3d_play);
 		set_member("stop", as_3d_stop);
-//		set_member("gotoAndStop", &x3D_goto_and_stop);
-//		set_member("gotoAndPlay", &v_goto_and_play);
-//		set_member("nextFrame", &x3D_next_frame);
-//		set_member("prevFrame", &x3D_prev_frame);
+//		set_member("gotoAndStop", &as_3d_goto_and_stop);
+//		set_member("gotoAndPlay", &as_3d_goto_and_play);
+//		set_member("nextFrame", &as_3d_next_frame);
+//		set_member("prevFrame", &as_3d_prev_frame);
 	}
 
 	x3ds_instance::~x3ds_instance()
@@ -335,27 +336,25 @@ namespace gameswf
 
 	void	x3ds_instance::advance(float delta_time)
 	{
-//		lib3ds_matrix_rotate_x(m_matrix, 0.01f);
-//		lib3ds_matrix_rotate_y(m_matrix, 0.01f);
-//		lib3ds_matrix_rotate_z(m_matrix, 0.01f);
-
-		m_current_frame = fmod(m_current_frame + 1.0f, (float) m_def->m_file->frames);
-		lib3ds_file_eval(m_def->m_file, m_current_frame);
+		on_event(event_id::ENTER_FRAME);
+		if (m_play_state == PLAY)
+		{
+			m_current_frame = fmod(m_current_frame + 1.0f, (float) m_def->m_file->frames);
+			lib3ds_file_eval(m_def->m_file, m_current_frame);
+		}
 	}
 
 	bool	x3ds_instance::get_member(const tu_stringi& name, as_value* val)
 	{
-		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
 		if (character::get_member(name, val) == false)
 		{
 			return m_variables.get(name, val);
 		}
-		return false;
+		return true;
 	}
 
 	bool	x3ds_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
-		// TODO handle 3D character properties like _x, _y, _z, _zoom, ...
 		if (character::set_member(name, val) == false)
 		{
 			m_variables.set(name, val);
@@ -758,6 +757,30 @@ namespace gameswf
 			glPopMatrix();
 		}
 	}
+
+	bool	x3ds_instance::on_event(const event_id& id)
+	// Dispatch event handler(s), if any.
+	{
+		// Keep m_as_environment alive during any method calls!
+		smart_ptr<as_object_interface>	this_ptr(this);
+
+		bool called = false;
+
+		// Check for member function.
+		const tu_stringi&	method_name = id.get_function_name().to_tu_stringi();
+		if (method_name.length() > 0)
+		{
+			as_value	method;
+			if (get_member(method_name, &method))
+			{
+				as_environment env;
+				call_method(method, &env, this, 0, env.get_top_index());
+				called = true;
+			}
+		}
+		return called;
+	}
+
 
 } // end of namespace gameswf
 
