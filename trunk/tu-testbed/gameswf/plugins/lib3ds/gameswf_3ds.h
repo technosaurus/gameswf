@@ -74,6 +74,7 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual x3ds_instance* cast_to_3ds() { return this; }
+		virtual bool	on_event(const event_id& id);
 
 		// binds texture to triangle (from mesh)
 		void bind_material(Lib3dsMaterial* mat, float U, float V);
