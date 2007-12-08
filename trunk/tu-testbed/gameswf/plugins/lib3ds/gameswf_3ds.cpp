@@ -78,6 +78,13 @@ namespace gameswf
 		m_cy = (m_bmin[1] + m_bmax[1]) / 2;
 		m_cz = (m_bmin[2] + m_bmax[2]) / 2;
 
+		// load textures
+	  for (Lib3dsMaterial* p = m_file->materials; p != 0; p = p->next)
+		{
+			load_texture(p->texture1_map.name);
+			load_texture(p->bump_map.name);
+		}
+
 		lib3ds_file_eval(m_file, 0.);
 	}
 
@@ -86,6 +93,45 @@ namespace gameswf
 		if (m_file)
 		{
 			lib3ds_file_free(m_file);
+		}
+	}
+
+	void x3ds_definition::load_texture(const char* infile)
+	{
+		if (infile == NULL)
+		{
+			return;
+		}			
+
+		if (m_material.get(infile, NULL))
+		{
+			// loaded already
+			return;
+		}
+
+		// try to load & create texture from file
+
+		// is path relative ?
+		tu_string url = get_workdir();
+		if (strstr(infile, ":") || infile[0] == '/')
+		{
+			url = "";
+		}
+		url += infile;
+
+		image::rgb* im = image::read_jpeg(url.c_str());
+		if (im)
+		{
+			bitmap_info* bi = get_render_handler()->create_bitmap_info_rgb(im);
+			delete im;
+			bi->layout_image(bi->m_suspended_image);
+			delete bi->m_suspended_image;
+			bi->m_suspended_image = NULL;
+			m_material[infile] = bi;
+		}
+		else
+		{
+			log_error("can't load '%s'\n", infile);
 		}
 	}
 
@@ -301,16 +347,6 @@ namespace gameswf
 		m_current_frame(0.0f),
 		m_play_state(PLAY)
 	{
-
-		// create empty bitmaps for movieclip's snapshots
-	  for (Lib3dsMaterial* p = m_def->m_file->materials; p != 0; p = p->next)
-		{
-			if (p->texture1_map.name)
-			{
-				m_material[p->texture1_map.name] = new bitmap_info();
-			}
-	  }
-
 		assert(m_def != NULL);
 		m_camera = m_def->create_camera();
 
@@ -567,59 +603,23 @@ namespace gameswf
 	void x3ds_instance::bind_texture(const char* infile)
 	{
 		glDisable(GL_TEXTURE_2D);
-
-		if (infile == NULL)
+		if (infile)
 		{
-			return;
-		}
-
-		smart_ptr<bitmap_info> bi = NULL;
-		m_material.get(infile, &bi);
-		if (bi == NULL || bi->m_texture_id == 0)
-		{
-			// try to load & create texture from file
-
-			// is path relative ?
-			tu_string url = get_workdir();
-			if (strstr(infile, ":") || infile[0] == '/')
+			smart_ptr<bitmap_info> bi;
+			if (m_def->m_material.get(infile, &bi))
 			{
-				url = "";
-			}
-			url += infile;
+				glEnable(GL_TEXTURE_2D);
+				glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+				glDisable(GL_TEXTURE_GEN_S);
+				glDisable(GL_TEXTURE_GEN_T);
 
-			image::rgb* im = image::read_jpeg(url.c_str());
-			if (im)
-			{
-				bi = get_render_handler()->create_bitmap_info_rgb(im);
-				delete im;
-				bi->layout_image(bi->m_suspended_image);
-				delete bi->m_suspended_image;
-				bi->m_suspended_image = NULL;
-				m_material[infile] = bi;
-			}
-			else
-			{
-				static int n = 0;
-				if (n < 1)
-				{
-					n++;
-					log_error("can't load jpeg file %s\n", url.c_str());
-				}
-				return;
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 			}
 		}
-
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
 	}
 
 	void x3ds_instance::set_material(Lib3dsMaterial* mat)
@@ -661,7 +661,7 @@ namespace gameswf
 		if (mat)
 		{
 			smart_ptr<bitmap_info> bi = NULL;
-			if (m_material.get(mat->texture1_map.name, &bi))
+			if (m_def->m_material.get(mat->texture1_map.name, &bi))
 			{
 				// get texture size
 				int	tw = 1; while (tw < bi->m_original_width) { tw <<= 1; }
