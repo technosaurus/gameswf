@@ -28,6 +28,11 @@ namespace gameswf
 		int m_lightList;
 		rect	m_rect;
 
+		// textures required for 3D model
+		// <texture name, bitmap> m_material
+		stringi_hash< smart_ptr<bitmap_info> > m_material;
+
+
 		x3ds_definition(const char* url);
 		~x3ds_definition();
 
@@ -44,15 +49,12 @@ namespace gameswf
 
 		Lib3dsCamera* create_camera();
 		void remove_camera(Lib3dsCamera* camera);
+		void load_texture(const char* infile);
 	};
 
 	struct x3ds_instance : public character
 	{
 		Lib3dsCamera* m_camera;
-
-		// textures required for 3D model
-		// <texture name, bitmap> m_material
-		stringi_hash< smart_ptr<bitmap_info> > m_material;
 
 		// <material, movieclip> map
 		stringi_hash<as_value> m_map;
