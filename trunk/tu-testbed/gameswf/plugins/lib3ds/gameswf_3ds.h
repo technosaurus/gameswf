@@ -21,10 +21,6 @@ namespace gameswf
 	struct x3ds_definition : public character_def
 	{
 		Lib3dsFile* m_file;
-		float	m_sx, m_sy, m_sz; // bounding box dimensions
-		Lib3dsVector m_bmin, m_bmax;
-		float m_size;
-		float	m_cx, m_cy, m_cz; // bounding box center
 		int m_lightList;
 		rect	m_rect;
 
@@ -47,9 +43,14 @@ namespace gameswf
 			m_rect = bound;
 		}
 
-		Lib3dsCamera* create_camera();
 		void remove_camera(Lib3dsCamera* camera);
 		void load_texture(const char* infile);
+
+		void get_bounding_center(Lib3dsVector bmin, Lib3dsVector bmax, Lib3dsVector center, float* size);
+		void ensure_camera();
+		void ensure_lights();
+		void ensure_nodes();
+
 	};
 
 	struct x3ds_instance : public character

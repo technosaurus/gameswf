@@ -65,25 +65,16 @@ namespace gameswf
 			return;
 		}
 
-		lib3ds_file_bounding_box_of_objects(m_file, LIB3DS_TRUE, LIB3DS_FALSE, LIB3DS_FALSE, m_bmin, m_bmax);
-		m_sx = m_bmax[0] - m_bmin[0];
-		m_sy = m_bmax[1] - m_bmin[1];
-		m_sz = m_bmax[2] - m_bmin[2];
-
-		m_size = fmax(m_sx, m_sy); 
-		m_size = fmax(m_size, m_sz);
-
-		// used in create_camera()
-		m_cx = (m_bmin[0] + m_bmax[0]) / 2;
-		m_cy = (m_bmin[1] + m_bmax[1]) / 2;
-		m_cz = (m_bmin[2] + m_bmax[2]) / 2;
-
 		// load textures
 	  for (Lib3dsMaterial* p = m_file->materials; p != 0; p = p->next)
 		{
 			load_texture(p->texture1_map.name);
 			load_texture(p->bump_map.name);
 		}
+
+		ensure_camera();
+		ensure_lights();
+		ensure_nodes();
 
 		lib3ds_file_eval(m_file, 0.);
 	}
@@ -141,47 +132,83 @@ namespace gameswf
 		return ch;
 	}
 
-	Lib3dsCamera* x3ds_definition::create_camera()
+	void x3ds_definition::get_bounding_center(Lib3dsVector bmin, Lib3dsVector bmax, Lib3dsVector center, float* size)
 	{
-		Lib3dsCamera* camera = NULL;
+		lib3ds_file_bounding_box_of_objects(m_file, LIB3DS_TRUE, LIB3DS_FALSE, LIB3DS_FALSE, bmin, bmax);
+
+		// bounding box dimensions
+		float	sx, sy, sz;
+		sx = bmax[0] - bmin[0];
+		sy = bmax[1] - bmin[1];
+		sz = bmax[2] - bmin[2];
+
+		*size = fmax(sx, sy); 
+		*size = fmax(*size, sz);
+
+		center[0] = (bmin[0] + bmax[0]) / 2;
+		center[1] = (bmin[1] + bmax[1]) / 2;
+		center[2] = (bmin[2] + bmax[2]) / 2;
+	}
+
+	void x3ds_definition::ensure_camera()
+	{
 		if (m_file->cameras == NULL)
 		{
-			// Add camera
-			camera = lib3ds_camera_new("Camera_ISO");
-			camera->target[0] = m_cx;
-			camera->target[1] = m_cy;
-			camera->target[2] = m_cz;
+			// Fabricate camera
+
+			Lib3dsCamera* camera = lib3ds_camera_new("Perscpective");
+
+			float size;
+			Lib3dsVector bmin, bmax;
+			get_bounding_center(bmin, bmax, camera->target, &size);
+
 			memcpy(camera->position, camera->target, sizeof(camera->position));
-			camera->position[0] = m_bmax[0] + 0.75f * m_size;
-			camera->position[1] = m_bmin[1] - 0.75f * m_size;
-			camera->position[2] = m_bmax[2] + 0.75f * m_size;
-			camera->near_range = ( camera->position[0] - m_bmax[0] ) * 0.5f;
-			camera->far_range = ( camera->position[0] - m_bmin[0] ) * 3.0f;
+			camera->position[0] = bmax[0] + 0.75f * size;
+			camera->position[1] = bmin[1] - 0.75f * size;
+			camera->position[2] = bmax[2] + 0.75f * size;
+
+			// hack
+			Lib3dsMatrix m;
+			lib3ds_matrix_identity(m);
+			lib3ds_matrix_rotate_z(m, 1.6f);	// PI/2
+			lib3ds_matrix_rotate_y(m, 0.3f);
+			
+			lib3ds_vector_transform(camera->position, m, camera->position);
+
+			camera->near_range = (camera->position[0] - bmax[0] ) * 0.5f;
+			camera->far_range = (camera->position[0] - bmin[0] ) * 3.0f;
 			lib3ds_file_insert_camera(m_file, camera);
 		}
-		else
-		{
-			// take the first camera
-			camera = m_file->cameras;
-		}
+	}
 
+
+	void x3ds_definition::ensure_lights()
+	{
 		// No lights in the file?  Add one. 
 		if (m_file->lights == NULL)
 		{
 			Lib3dsLight* light = lib3ds_light_new("light0");
+
+			float size;
+			Lib3dsVector bmin, bmax;
+			get_bounding_center(bmin, bmax, light->position, &size);
+
 			light->spot_light = 0;
 			light->see_cone = 0;
 			light->color[0] = light->color[1] = light->color[2] = .6f;
-			light->position[0] = m_cx + m_size * .75f;
-			light->position[1] = m_cy - m_size * 1.f;
-			light->position[2] = m_cz + m_size * 1.5f;
-			light->position[3] = 0.;
+			light->position[0] += size * 0.75f;
+			light->position[1] -= size * 1.f;
+			light->position[2] += size * 1.5f;
+			light->position[3] = 0.f;
 			light->outer_range = 100;
 			light->inner_range = 10;
 			light->multiplier = 1;
 			lib3ds_file_insert_light(m_file, light);
 		}
+	}
 
+	void x3ds_definition::ensure_nodes()
+	{
 		// No nodes?  Fabricate nodes to display all the meshes.
 		if (m_file->nodes == NULL)
 		{
@@ -199,8 +226,6 @@ namespace gameswf
 				lib3ds_file_insert_node(m_file, node);
 			}
 		}
-
-		return camera;
 	}
 
 	void x3ds_definition::remove_camera(Lib3dsCamera* camera)
@@ -348,7 +373,9 @@ namespace gameswf
 		m_play_state(PLAY)
 	{
 		assert(m_def != NULL);
-		m_camera = m_def->create_camera();
+
+		// take the first camera
+		m_camera = m_def->m_file->cameras;
 
 		set_member("mapMaterial", as_map_material);
 		set_member("play", as_3d_play);
