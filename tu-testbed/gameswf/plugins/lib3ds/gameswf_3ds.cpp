@@ -416,60 +416,76 @@ namespace gameswf
 	void	x3ds_instance::set_light()
 	{
 		glLightModelfv(GL_LIGHT_MODEL_AMBIENT, m_def->m_file->ambient);
+		glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
 		glShadeModel(GL_SMOOTH);
-		int gl_light = GL_LIGHT0;
-		for (Lib3dsLight* l = m_def->m_file->lights; l != 0; l = l->next)
+
+		Lib3dsLight* l = m_def->m_file->lights;
+		for (int gl_light = GL_LIGHT0; gl_light <= GL_LIGHT7; gl_light++)
 		{
-			assert(gl_light <= GL_LIGHT7);
-			glEnable(gl_light);
-
-			// default we use light objects directly
-			GLfloat color[4];
-			color[0] = l->color[0];
-			color[1] = l->color[1];
-			color[2] = l->color[2];
-			color[3] = 1;
-
-			// default position
-			GLfloat position[4];
-			position[0] = l->position[0];
-			position[1] = l->position[1];
-			position[2] = l->position[2];
-			position[3] = 1;
-
-			// try nodes if possible
-			Lib3dsNode* ln = lib3ds_file_node_by_name(m_def->m_file, l->name, LIB3DS_LIGHT_NODE);
-			if (ln != NULL)
+			if (l)
 			{
-				color[0] = ln->data.light.col[0];
-				color[1] = ln->data.light.col[1];
-				color[2] = ln->data.light.col[2];
-				position[0] = ln->data.light.pos[0];
-				position[1] = ln->data.light.pos[1];
-				position[2] = ln->data.light.pos[2];
-			}
+				glEnable(gl_light);
 
-			Lib3dsNode* sn = lib3ds_file_node_by_name(m_def->m_file, l->name, LIB3DS_SPOT_NODE);
-			if( sn != NULL )
+				// default we use light objects directly
+				GLfloat color[4];
+				color[0] = l->color[0];
+				color[1] = l->color[1];
+				color[2] = l->color[2];
+				color[3] = 1;
+
+				// default position
+				GLfloat position[4];
+				position[0] = l->position[0];
+				position[1] = l->position[1];
+				position[2] = l->position[2];
+				position[3] = 1;
+
+				// try light nodes if possible
+				Lib3dsNode* ln = lib3ds_file_node_by_name(m_def->m_file, l->name, LIB3DS_LIGHT_NODE);
+				if (ln)
+				{
+					color[0] = ln->data.light.col[0];
+					color[1] = ln->data.light.col[1];
+					color[2] = ln->data.light.col[2];
+					position[0] = ln->data.light.pos[0];
+					position[1] = ln->data.light.pos[1];
+					position[2] = ln->data.light.pos[2];
+				}
+
+				// try spot nodes if possible
+				Lib3dsNode* sn = lib3ds_file_node_by_name(m_def->m_file, l->name, LIB3DS_SPOT_NODE);
+				if (sn)
+				{
+					l->spot[0] = sn->data.spot.pos[0];
+					l->spot[1] = sn->data.spot.pos[1];
+					l->spot[2] = sn->data.spot.pos[2];
+				}
+
+				static const GLfloat a[] = {0.0f, 0.0f, 0.0f, 1.0f};
+				glLightfv(gl_light, GL_AMBIENT, a);
+				glLightfv(gl_light, GL_DIFFUSE, color);
+				glLightfv(gl_light, GL_SPECULAR, color);
+				glLightfv(gl_light, GL_POSITION, position);
+				glLightf(gl_light, GL_LINEAR_ATTENUATION, l->attenuation);
+//				glLightf(gl_light, GL_CONSTANT_ATTENUATION, 0);
+//				glLightf(gl_light, GL_QUADRATIC_ATTENUATION, 0);
+
+				if (l->spot_light)
+				{
+					position[0] = l->spot[0];
+					position[1] = l->spot[1];
+					position[2] = l->spot[2];
+					glLightfv(gl_light, GL_SPOT_DIRECTION, position);
+					glLightf(gl_light, GL_SPOT_CUTOFF, l->fall_off);
+					glLightf(gl_light, GL_SPOT_EXPONENT, 0);	// hack
+				}
+
+				l = l->next;
+			}
+			else
 			{
-				memcpy(l->spot, sn->data.spot.pos, sizeof(Lib3dsVector));
+				glDisable(gl_light);
 			}
-
-			static const GLfloat a[] = {0.0f, 0.0f, 0.0f, 1.0f};
-			glLightfv(gl_light, GL_AMBIENT, a);
-			glLightfv(gl_light, GL_DIFFUSE, color);
-			glLightfv(gl_light, GL_SPECULAR, color);
-			glLightfv(gl_light, GL_POSITION, position);
-
-			if (l->spot_light)
-			{
-				position[0] = l->spot[0] - l->position[0];
-				position[1] = l->spot[1] - l->position[1];
-				position[2] = l->spot[2] - l->position[2];
-				glLightfv(gl_light, GL_SPOT_DIRECTION, position);
-			}
-
-			gl_light++;
 		}
 		glEnable(GL_LIGHTING);
 	}
