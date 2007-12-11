@@ -75,14 +75,22 @@ namespace gameswf
 //		set_member("prevFrame", &as_3d_prev_frame);
 	}
 
+	void x3ds_instance::clear_dlist(Lib3dsNode* node)
+	{
+		for (Lib3dsNode* p = node; p != 0; p = p->next)
+		{
+			if (p->user.i)
+			{
+				glDeleteLists(p->user.i, 1);
+			}
+
+			clear_dlist(node->childs);
+		}
+	}
+
 	x3ds_instance::~x3ds_instance()
 	{
-		for (hash<Lib3dsNode*, GLuint>::iterator it = m_mesh_list.begin();
-			it != m_mesh_list.end(); ++it)
-		{
-			glDeleteLists(it->second, 1);
-		}
-
+		clear_dlist(m_def->m_file->nodes);
 		m_def->remove_camera(m_camera);
 	}
 
@@ -320,6 +328,7 @@ namespace gameswf
 		set_light();
 
 		// draw 3D model
+
 		for (Lib3dsNode* p = m_def->m_file->nodes; p != 0; p = p->next)
 		{
 			render_node(p);
@@ -413,23 +422,24 @@ namespace gameswf
 	void x3ds_instance::create_mesh_list(Lib3dsMesh* mesh)
 	{
 		Lib3dsVector* normalL = (Lib3dsVector*) malloc(3 * sizeof(Lib3dsVector) * mesh->faces);
-		{
-			Lib3dsMatrix m;
-			lib3ds_matrix_copy(m, mesh->matrix);
-			lib3ds_matrix_inv(m);
-			glMultMatrixf(&m[0][0]);
-		}
+		Lib3dsMatrix m;
+		lib3ds_matrix_copy(m, mesh->matrix);
+		lib3ds_matrix_inv(m);
+		glMultMatrixf(&m[0][0]);
 
 		lib3ds_mesh_calculate_normals(mesh, normalL);
 
-		Lib3dsMaterial* oldmat = NULL;
+		Lib3dsMaterial* prev_mat = NULL;
 		for (Uint32 p = 0; p < mesh->faces; ++p)
 		{
 			Lib3dsFace* f = &mesh->faceL[p];
 			Lib3dsMaterial* mat = f->material[0] ? 
 				lib3ds_file_material_by_name(m_def->m_file, f->material) : NULL;
 
-			set_material(mat);
+			if (prev_mat != mat)
+			{
+				set_material(mat);
+			}
 
 			glBegin(GL_TRIANGLES);
 			glNormal3fv(f->normal);
@@ -471,14 +481,12 @@ namespace gameswf
 			assert(mesh);
 			
 			// build mesh list
-			GLuint m;
-			if (m_mesh_list.get(node, &m) == false)
+			if (node->user.i == 0)
 			{
-				m = glGenLists(1);
-				glNewList(m, GL_COMPILE);
+				node->user.i = glGenLists(1);
+				glNewList(node->user.i, GL_COMPILE);
 				create_mesh_list(mesh);
 				glEndList();
-				m_mesh_list.add(node, m);
 			}
 
 			// exec mesh list
@@ -486,7 +494,7 @@ namespace gameswf
 			Lib3dsObjectData* d = &node->data.object;
 			glMultMatrixf(&node->matrix[0][0]);
 			glTranslatef( - d->pivot[0], - d->pivot[1], - d->pivot[2]);
-			glCallList(m);
+			glCallList(node->user.i);
 			glPopMatrix();
 		}
 	}
