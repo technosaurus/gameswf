@@ -857,11 +857,19 @@
 			Name="plugins"
 			>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds.cpp"
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_def.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds.h"
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_def.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_inst.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_inst.h"
 				>
 			</File>
 		</Filter>

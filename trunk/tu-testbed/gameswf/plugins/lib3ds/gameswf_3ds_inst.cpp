@@ -18,7 +18,7 @@
 #include <lib3ds/vector.h>
 #include <lib3ds/light.h>
 
-#include "gameswf_3ds.h"
+#include "gameswf_3ds_inst.h"
 
 namespace gameswf
 {
@@ -51,320 +51,9 @@ namespace gameswf
 		}
 	}
 
-	x3ds_definition::x3ds_definition(const char* url) : m_file(NULL)
-	{
-		m_file = lib3ds_file_load(url);
-		if (m_file == NULL)
-		{
-			static int n = 0;
-			if (n < 1)
-			{
-				n++;
-				log_error("can't load '%s'\n", url);
-			}
-			return;
-		}
-
-		// load textures
-	  for (Lib3dsMaterial* p = m_file->materials; p != 0; p = p->next)
-		{
-			load_texture(p->texture1_map.name);
-			load_texture(p->bump_map.name);
-		}
-
-		ensure_camera();
-		ensure_lights();
-		ensure_nodes();
-
-		lib3ds_file_eval(m_file, 0.);
-	}
-
-	x3ds_definition::~x3ds_definition()
-	{
-		if (m_file)
-		{
-			lib3ds_file_free(m_file);
-		}
-	}
-
-	void x3ds_definition::load_texture(const char* infile)
-	{
-		if (infile == NULL)
-		{
-			return;
-		}			
-
-		if (m_material.get(infile, NULL))
-		{
-			// loaded already
-			return;
-		}
-
-		// try to load & create texture from file
-
-		// is path relative ?
-		tu_string url = get_workdir();
-		if (strstr(infile, ":") || infile[0] == '/')
-		{
-			url = "";
-		}
-		url += infile;
-
-		image::rgb* im = image::read_jpeg(url.c_str());
-		if (im)
-		{
-			bitmap_info* bi = get_render_handler()->create_bitmap_info_rgb(im);
-			delete im;
-			bi->layout_image(bi->m_suspended_image);
-			delete bi->m_suspended_image;
-			bi->m_suspended_image = NULL;
-			m_material[infile] = bi;
-		}
-		else
-		{
-			log_error("can't load '%s'\n", infile);
-		}
-	}
-
-	character* x3ds_definition::create_character_instance(character* parent, int id)
-	{
-		character* ch = new x3ds_instance(this, parent, id);
-		return ch;
-	}
-
-	void x3ds_definition::get_bounding_center(Lib3dsVector bmin, Lib3dsVector bmax, Lib3dsVector center, float* size)
-	{
-		lib3ds_file_bounding_box_of_objects(m_file, LIB3DS_TRUE, LIB3DS_FALSE, LIB3DS_FALSE, bmin, bmax);
-
-		// bounding box dimensions
-		float	sx, sy, sz;
-		sx = bmax[0] - bmin[0];
-		sy = bmax[1] - bmin[1];
-		sz = bmax[2] - bmin[2];
-
-		*size = fmax(sx, sy); 
-		*size = fmax(*size, sz);
-
-		center[0] = (bmin[0] + bmax[0]) / 2;
-		center[1] = (bmin[1] + bmax[1]) / 2;
-		center[2] = (bmin[2] + bmax[2]) / 2;
-	}
-
-	void x3ds_definition::ensure_camera()
-	{
-		if (m_file->cameras == NULL)
-		{
-			// Fabricate camera
-
-			Lib3dsCamera* camera = lib3ds_camera_new("Perscpective");
-
-			float size;
-			Lib3dsVector bmin, bmax;
-			get_bounding_center(bmin, bmax, camera->target, &size);
-
-			memcpy(camera->position, camera->target, sizeof(camera->position));
-			camera->position[0] = bmax[0] + 0.75f * size;
-			camera->position[1] = bmin[1] - 0.75f * size;
-			camera->position[2] = bmax[2] + 0.75f * size;
-
-			// hack
-			Lib3dsMatrix m;
-			lib3ds_matrix_identity(m);
-			lib3ds_matrix_rotate_z(m, 1.6f);	// PI/2
-			lib3ds_matrix_rotate_y(m, 0.3f);
-			
-			lib3ds_vector_transform(camera->position, m, camera->position);
-
-			camera->near_range = (camera->position[0] - bmax[0] ) * 0.5f;
-			camera->far_range = (camera->position[0] - bmin[0] ) * 3.0f;
-			lib3ds_file_insert_camera(m_file, camera);
-		}
-	}
-
-
-	void x3ds_definition::ensure_lights()
-	{
-		// No lights in the file?  Add one. 
-		if (m_file->lights == NULL)
-		{
-			Lib3dsLight* light = lib3ds_light_new("light0");
-
-			float size;
-			Lib3dsVector bmin, bmax;
-			get_bounding_center(bmin, bmax, light->position, &size);
-
-			light->spot_light = 0;
-			light->see_cone = 0;
-			light->color[0] = light->color[1] = light->color[2] = .6f;
-			light->position[0] += size * 0.75f;
-			light->position[1] -= size * 1.f;
-			light->position[2] += size * 1.5f;
-			light->position[3] = 0.f;
-			light->outer_range = 100;
-			light->inner_range = 10;
-			light->multiplier = 1;
-			lib3ds_file_insert_light(m_file, light);
-		}
-	}
-
-	void x3ds_definition::ensure_nodes()
-	{
-		// No nodes?  Fabricate nodes to display all the meshes.
-		if (m_file->nodes == NULL)
-		{
-			Lib3dsMesh *mesh;
-			Lib3dsNode *node;
-			for (mesh = m_file->meshes; mesh != NULL; mesh = mesh->next)
-			{
-				node = lib3ds_node_new_object();
-				strcpy(node->name, mesh->name);
-				node->parent_id = LIB3DS_NO_PARENT;
-				node->data.object.scl_track.keyL = lib3ds_lin3_key_new();
-				node->data.object.scl_track.keyL->value[0] = 1.;
-				node->data.object.scl_track.keyL->value[1] = 1.;
-				node->data.object.scl_track.keyL->value[2] = 1.;
-				lib3ds_file_insert_node(m_file, node);
-			}
-		}
-	}
-
-	void x3ds_definition::remove_camera(Lib3dsCamera* camera)
-	{
-		lib3ds_file_remove_camera(m_file, camera);
-	}
-
-
 	//
 	// x3ds_instance
 	//
-
-#if 0
-	// useless stuff ?
-	void	x3ds_instance::update_material()
-	{
-		GLint aux_buffers;
-		glGetIntegerv(GL_AUX_BUFFERS, &aux_buffers);
-		if (aux_buffers < 2)
-		{
-			static int n = 0;
-			if (n < 1)
-			{
-				n++;
-				log_error("Your video card does not have AUX buffers, can't snapshot movieclips\n");
-			}
-			return;
-		}
-
-		glPushAttrib(GL_ALL_ATTRIB_BITS);
-
-		// update textures
-		for (stringi_hash<smart_ptr <bitmap_info> >::iterator it = 
-			m_material.begin(); it != m_material.end(); ++it)
-		{
-			as_value target = m_map[it->first];
-			character* ch = find_target(target);
-			if (ch)
-			{
-				if (ch->get_parent() == NULL)
-				{
-					log_error("Can't snapshot _root movieclip, material '%s'\n", it->first.c_str());
-					continue;
-				}
-
-				GLint draw_buffer;
-				glGetIntegerv(GL_DRAW_BUFFER, &draw_buffer);
-
-				glDrawBuffer(GL_AUX1);
-				glReadBuffer(GL_AUX1);
-
-				// save "ch" matrix
-				matrix ch_matrix = ch->get_matrix();
-
-				float ch_width = TWIPS_TO_PIXELS(ch->get_width());
-				float ch_height = TWIPS_TO_PIXELS(ch->get_height());
-
-				// get viewport size
-        GLint vp[4]; 
-        glGetIntegerv(GL_VIEWPORT, vp); 
-				int vp_width = vp[2];
-				int vp_height = vp[3];
-
-				// get texture size
-				int	tw = 1; while (tw < ch_width) { tw <<= 1; }
-				int	th = 1; while (th < ch_height) { th <<= 1; }
-
-				// texture size must be <= viewport size
-				if (tw > vp_width)
-				{
-					tw = vp_width;
-				}
-				if (th > vp_height)
-				{
-					th = vp_height;
-				}
-
-				ch->set_member("_width", tw);
-				ch->set_member("_height", th);
-
-				rect bound;
-				ch->get_bound(&bound);
-
-				// parent world matrix moves point(0,0) to "pzero"
-				matrix mparent = ch->get_parent()->get_world_matrix();
-				point pzero;
-				mparent.transform_by_inverse(&pzero, point(0, 0));
-
-				// after transformation of "ch" matrix left-top corner is in point(bound.m_x_min, bound.m_y_min),
-				// therefore we need to move point(bound.m_x_min, bound.m_y_min) to point(pzero.m_x, pzero.m_y)
-				// that "ch" movieclip's left-top corner will be in point(0,0) of screen
-				matrix m = ch->get_matrix();
-				float xt = (pzero.m_x - bound.m_x_min) / m.get_x_scale();
-				float yt = (pzero.m_y - bound.m_y_min) / m.get_y_scale();
-
-				// move "ch" to left-bottom corner (as point of origin of OpenGL is in left-bottom)
-				// later glCopyTexImage2D will copy snapshot of "ch" into texture
-				yt += PIXELS_TO_TWIPS(vp_height - th) / m.get_y_scale();
-				m.concatenate_translation(xt, yt);
-
-				ch->set_matrix(m);
-
-				glClearColor(1, 1, 1, 1);
-				glClear(GL_COLOR_BUFFER_BIT);
-
-				ch->display();
-
-				// restore "ch" matrix
-				ch->set_matrix(ch_matrix);
-
-				smart_ptr<bitmap_info> bi = it->second;
-				if (bi->m_texture_id == 0)
-				{
-					glGenTextures(1, (GLuint*) &bi->m_texture_id);
-					bi->m_original_height = (int) ch_height;
-					bi->m_original_width = (int) ch_width;
-				}
-				glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
-				glEnable(GL_TEXTURE_2D);
-				glDisable(GL_TEXTURE_GEN_S);
-				glDisable(GL_TEXTURE_GEN_T);				
-
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-				glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0,0, tw, th, 0);
-
-				glDisable(GL_TEXTURE_2D);
-
-				glDrawBuffer(draw_buffer);
-				glReadBuffer(draw_buffer);
-			}
-		}
-		glPopAttrib();
-	}
-
-#endif
 
 	x3ds_instance::x3ds_instance(x3ds_definition* def, character* parent, int id)	:
 		character(parent, id),
@@ -557,6 +246,7 @@ namespace gameswf
 		glViewport(x, vp_height - y - h, w, h);
 
 		// set 3D params
+
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_DEPTH_TEST);
@@ -824,6 +514,133 @@ namespace gameswf
 		return called;
 	}
 
+#if 0
+	// useless stuff ?
+	void	x3ds_instance::update_material()
+	{
+		GLint aux_buffers;
+		glGetIntegerv(GL_AUX_BUFFERS, &aux_buffers);
+		if (aux_buffers < 2)
+		{
+			static int n = 0;
+			if (n < 1)
+			{
+				n++;
+				log_error("Your video card does not have AUX buffers, can't snapshot movieclips\n");
+			}
+			return;
+		}
+
+		glPushAttrib(GL_ALL_ATTRIB_BITS);
+
+		// update textures
+		for (stringi_hash<smart_ptr <bitmap_info> >::iterator it = 
+			m_material.begin(); it != m_material.end(); ++it)
+		{
+			as_value target = m_map[it->first];
+			character* ch = find_target(target);
+			if (ch)
+			{
+				if (ch->get_parent() == NULL)
+				{
+					log_error("Can't snapshot _root movieclip, material '%s'\n", it->first.c_str());
+					continue;
+				}
+
+				GLint draw_buffer;
+				glGetIntegerv(GL_DRAW_BUFFER, &draw_buffer);
+
+				glDrawBuffer(GL_AUX1);
+				glReadBuffer(GL_AUX1);
+
+				// save "ch" matrix
+				matrix ch_matrix = ch->get_matrix();
+
+				float ch_width = TWIPS_TO_PIXELS(ch->get_width());
+				float ch_height = TWIPS_TO_PIXELS(ch->get_height());
+
+				// get viewport size
+        GLint vp[4]; 
+        glGetIntegerv(GL_VIEWPORT, vp); 
+				int vp_width = vp[2];
+				int vp_height = vp[3];
+
+				// get texture size
+				int	tw = 1; while (tw < ch_width) { tw <<= 1; }
+				int	th = 1; while (th < ch_height) { th <<= 1; }
+
+				// texture size must be <= viewport size
+				if (tw > vp_width)
+				{
+					tw = vp_width;
+				}
+				if (th > vp_height)
+				{
+					th = vp_height;
+				}
+
+				ch->set_member("_width", tw);
+				ch->set_member("_height", th);
+
+				rect bound;
+				ch->get_bound(&bound);
+
+				// parent world matrix moves point(0,0) to "pzero"
+				matrix mparent = ch->get_parent()->get_world_matrix();
+				point pzero;
+				mparent.transform_by_inverse(&pzero, point(0, 0));
+
+				// after transformation of "ch" matrix left-top corner is in point(bound.m_x_min, bound.m_y_min),
+				// therefore we need to move point(bound.m_x_min, bound.m_y_min) to point(pzero.m_x, pzero.m_y)
+				// that "ch" movieclip's left-top corner will be in point(0,0) of screen
+				matrix m = ch->get_matrix();
+				float xt = (pzero.m_x - bound.m_x_min) / m.get_x_scale();
+				float yt = (pzero.m_y - bound.m_y_min) / m.get_y_scale();
+
+				// move "ch" to left-bottom corner (as point of origin of OpenGL is in left-bottom)
+				// later glCopyTexImage2D will copy snapshot of "ch" into texture
+				yt += PIXELS_TO_TWIPS(vp_height - th) / m.get_y_scale();
+				m.concatenate_translation(xt, yt);
+
+				ch->set_matrix(m);
+
+				glClearColor(1, 1, 1, 1);
+				glClear(GL_COLOR_BUFFER_BIT);
+
+				ch->display();
+
+				// restore "ch" matrix
+				ch->set_matrix(ch_matrix);
+
+				smart_ptr<bitmap_info> bi = it->second;
+				if (bi->m_texture_id == 0)
+				{
+					glGenTextures(1, (GLuint*) &bi->m_texture_id);
+					bi->m_original_height = (int) ch_height;
+					bi->m_original_width = (int) ch_width;
+				}
+				glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+				glEnable(GL_TEXTURE_2D);
+				glDisable(GL_TEXTURE_GEN_S);
+				glDisable(GL_TEXTURE_GEN_T);				
+
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+				glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0,0, tw, th, 0);
+
+				glDisable(GL_TEXTURE_2D);
+
+				glDrawBuffer(draw_buffer);
+				glReadBuffer(draw_buffer);
+			}
+		}
+		glPopAttrib();
+	}
+
+#endif
 
 } // end of namespace gameswf
 
