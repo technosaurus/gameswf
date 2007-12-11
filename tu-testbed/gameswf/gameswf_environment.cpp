@@ -12,7 +12,7 @@
 #include "gameswf/gameswf_render.h"
 
 #if TU_CONFIG_LINK_TO_LIB3DS
-	#include "plugins/lib3ds/gameswf_3ds.h"
+	#include "plugins/lib3ds/gameswf_3ds_inst.h"
 #endif
 
 namespace gameswf
