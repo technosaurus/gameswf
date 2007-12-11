@@ -28,7 +28,6 @@ namespace gameswf
 		
 		smart_ptr<x3ds_definition>	m_def;
 		Lib3dsFloat m_current_frame;
-		hash<Lib3dsNode*, GLuint> m_mesh_list;
 
 		play_state	m_play_state;
 		stringi_hash<as_value>	m_variables;
@@ -56,6 +55,7 @@ namespace gameswf
 
 		void create_mesh_list(Lib3dsMesh* mesh);
 		void render_node(Lib3dsNode* node);
+		void clear_dlist(Lib3dsNode* nodes);
 
 //		void	update_material();
 	};
