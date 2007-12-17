@@ -1681,17 +1681,7 @@ namespace gameswf
 				}
 				case 0x44:	// type of
 				{
-					as_value val;
-					if (env->top(0).get_type() == as_value::PROPERTY)
-					{
-						env->top(0).get_property(&val);
-					}
-					else
-					{
-						val = env->top(0);
-					}
-
-					switch(val.get_type())
+					switch(env->top(0).get_type())
 					{
 					case as_value::UNDEFINED:
 						env->top(0).set_string("undefined");

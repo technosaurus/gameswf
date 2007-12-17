@@ -20,9 +20,28 @@ namespace gameswf
 {
 	exported_module void	as_object_addproperty(const fn_call& fn);
 
+
+	// helper
+	struct as_property
+	{
+		smart_ptr<as_as_function>	m_as_getter;
+		as_c_function_ptr	m_c_getter;
+
+		smart_ptr<as_as_function>	m_as_setter;
+		as_c_function_ptr	m_c_setter;
+
+		as_property();
+		as_property(const as_value& getter,	const as_value& setter);
+		~as_property();
+	
+		void	set(as_object_interface* target, const as_value& val);
+		void	get(as_object_interface* target, as_value* val) const;
+	};
+
 	struct as_object : public as_object_interface
 	{
 		stringi_hash<as_member>	m_members;
+		stringi_hash<as_property>	m_properties;
 
 		// It is used to register an event handler to be invoked when
 		// a specified property of object changes.
@@ -63,9 +82,11 @@ namespace gameswf
 			as_object_interface* this_ptr);
 		exported_module virtual void not_garbage();
 		exported_module virtual void copy_to(as_object_interface* target);
-		exported_module bool add_property(const tu_string& name, const as_value& val);
 		exported_module void dump();
 		exported_module as_object_interface* find_target(const tu_string& path);
+
+		exported_module virtual bool add_property(const tu_stringi& name,
+			const as_value& getter, const as_value& setter);
 
 	};
 

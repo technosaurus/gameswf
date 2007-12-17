@@ -19,20 +19,12 @@ namespace gameswf
 	//TODO: the same for sprite_instance
 	void	as_object_addproperty(const fn_call& fn)
 	{
+		bool ret = false;
 		if (fn.nargs == 3)
 		{
-			assert(fn.this_ptr);
-			as_as_function* getter = fn.arg(1).to_as_function();
-			as_as_function* setter = fn.arg(2).to_as_function();
-			if (getter || setter)
-			{
-				// creates unbinded property
-				fn.this_ptr->set_member(fn.arg(0).to_string(), as_value(getter, setter));
-				fn.result->set_bool(true);
-				return;
-			}
+			ret = fn.this_ptr->add_property(fn.arg(0).to_string(), fn.arg(1), fn.arg(2));
 		}
-		fn.result->set_bool(false);
+		fn.result->set_bool(ret);
 	}
 
 	// public hasOwnProperty(name:String) : Boolean
@@ -124,35 +116,33 @@ namespace gameswf
 	{
 	}
 
-	bool as_object::add_property(const tu_string& name, const as_value& val)
-	{
-		if (val.get_type() != as_value::PROPERTY)
-		{
-			return false;
-		}
-
-		if (m_proto == NULL)
-		{
-			m_proto = new as_object();
-		}
-
-		m_proto->set_member(name, val);
-		return true;
-	}
-
-	bool	as_object::set_member(const tu_stringi& name, const as_value& new_val)
+	bool	as_object::set_member(const tu_stringi& name, const as_value& val)
 	{
 //		printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
-		as_value val(new_val);
-		as_value old_val;
-		if (as_object::get_member(name, &old_val))
+
+		// first try properties
+
+		as_property prop;
+		if (m_properties.get(name, &prop))
 		{
-			if (old_val.get_type() == as_value::PROPERTY)
+			prop.set(this, val);
+			return true;
+		}
+
+
+		// is the member read-only ?
+
+		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
+		if (it != this->m_members.end())
+		{
+			const as_prop_flags flags = (it.get_value()).get_member_flags();
+
+			if (flags.get_read_only())
 			{
-				old_val.set_property(val);
-				return true;
+				return true;	// is it correct ?
 			}
 		}
+
 
 		// try watch
 		as_watch watch;
@@ -162,20 +152,11 @@ namespace gameswf
 			as_environment env;
 			env.push(watch.m_user_data);	// params
 			env.push(val);		// newVal
-			env.push(old_val);	// oldVal
-			env.push(name);	// property
-			val.set_undefined();
-			(*watch.m_func)(fn_call(&val, this, &env, 4, env.get_top_index()));
-		}
-
-		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
-		if (it != this->m_members.end())
-		{
-			const as_prop_flags flags = (it.get_value()).get_member_flags();
-			// is the member read-only ?
-			{
-				m_members.set(name, as_member(val, flags));
-			}
+			env.push(it == this->m_members.end() ? as_value() : it->second.get_member_value());	// oldVal
+			env.push(name);	// property name
+			as_value watch_val;
+			(*watch.m_func)(fn_call(&watch_val, this, &env, 4, env.get_top_index()));
+			m_members.set(name, as_member(watch_val));
 		}
 		else
 		{
@@ -192,10 +173,19 @@ namespace gameswf
 	bool	as_object::get_member(const tu_stringi& name, as_value* val)
 	{
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
-		as_member m;
-		if (m_members.get(name, &m))
+
+		// first try properties
+		as_property prop;
+		if (m_properties.get(name, &prop))
 		{
-			*val = m.get_member_value();
+			prop.get(this, val);
+			return true;
+		}
+
+		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
+		if (it != this->m_members.end())
+		{
+			*val = it->second.get_member_value();
 		}
 		else
 		{
@@ -209,17 +199,6 @@ namespace gameswf
 			{
 				return false;
 			}
-		}
-
-		if (val->get_type() == as_value::PROPERTY)
-		{
-			// binds property (sets the target)
-			if (val->m_property_target)
-			{
-				val->m_property_target->drop_ref();
-			}
-			val->m_property_target = this;
-			add_ref();
 		}
 
 		return true;
@@ -361,12 +340,19 @@ namespace gameswf
 	void as_object::copy_to(as_object_interface* target)
 	// Copy all members from 'this' to target
 	{
-		if (target)
+		as_object* tar = target->cast_to_as_object();
+		if (tar)
 		{
 			for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
 				it != m_members.end(); ++it ) 
 			{ 
-				target->set_member(it->first, it->second.get_member_value()); 
+				tar->set_member(it->first, it->second.get_member_value()); 
+			} 
+
+			for (stringi_hash<as_property>::const_iterator it = m_properties.begin(); 
+				it != m_properties.end(); ++it ) 
+			{ 
+				tar->m_properties.add(it->first, it->second); 
 			} 
 		}
 	}
@@ -385,14 +371,6 @@ namespace gameswf
 				printf("%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
 				continue;
 			}
-			if (val.get_type() == as_value::PROPERTY)
-			{
-				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
-					it->first.c_str(), val.m_property, val.m_property_target,
-					val.m_property->m_getter, val.m_property->m_setter);
-				continue;
-			}
-
 			printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
 		}
 		printf("***\n");
@@ -457,6 +435,74 @@ namespace gameswf
 					obj->not_garbage();
 				}
 			}
+		}
+	}
+
+	bool as_object::add_property(const tu_stringi& name, const as_value& getter, const as_value& setter)
+	{
+		if (getter.to_c_function() || getter.to_as_function() ||
+			setter.to_c_function() || setter.to_as_function())
+		{
+			m_properties.set(name, as_property(getter, setter));
+			return true;
+		}
+		return false;
+	}
+
+	//
+	//	as_property
+	//
+	as_property::as_property()
+		:
+		m_c_getter(NULL),
+		m_c_setter(NULL)
+	{
+	}
+
+	as_property::as_property(const as_value& getter,	const as_value& setter)
+	{
+		m_as_getter = getter.to_as_function();
+		m_c_getter = getter.to_c_function();
+
+		m_as_setter = setter.to_as_function();
+		m_c_setter = setter.to_c_function();
+	}
+
+	as_property::~as_property()
+	{
+	}
+
+	void	as_property::set(as_object_interface* target, const as_value& val)
+	{
+		assert(m_as_setter == NULL || m_c_setter == NULL);
+
+		as_environment env;
+		env.push(val);
+		if (m_as_setter != NULL)
+		{
+			(*m_as_setter.get_ptr())(fn_call(NULL, target,	&env, 1, env.get_top_index()));
+		}
+		else
+		if (m_c_setter)
+		{
+			(m_c_setter)(fn_call(NULL, target, &env, 1, env.get_top_index()));
+		}
+	}
+
+	void as_property::get(as_object_interface* target, as_value* val) const
+	{
+		assert(m_as_setter == NULL || m_c_setter == NULL);
+
+		// env is used when m_getter->m_env is NULL
+		as_environment env;
+		if (m_as_getter != NULL)
+		{
+			(*m_as_getter.get_ptr())(fn_call(val, target, &env, 0,	0));
+		}
+		else
+		if (m_c_getter)
+		{
+			(m_c_getter)(fn_call(val, target, &env, 0,	0));
 		}
 	}
 

@@ -59,15 +59,6 @@ namespace gameswf
 		}
 	}
 
-	as_value::as_value(const as_value& getter, const as_value& setter)
-		:
-		m_property_target(NULL),
-		m_type(PROPERTY)
-	{
-		m_property = new as_property(getter, setter);
-		m_property->add_ref();
-	}
-
 	const char*	as_value::to_string() const
 	// Conversion to string.
 	{
@@ -158,12 +149,6 @@ namespace gameswf
 			char buffer[50];
 			snprintf(buffer, 50, "<as_function 0x%p>", (void*) (m_as_function_value));
 			m_string_value = buffer;
-		}
-		else if (m_type == PROPERTY)
-		{
-			as_value val;
-			get_property(&val);
-			m_string_value = val.to_tu_string();
 		}
 		else
 		{
@@ -265,12 +250,6 @@ namespace gameswf
 
 			return 0.0;
 		}
-		else if (m_type == PROPERTY)
-		{
-			as_value val;
-			get_property(&val);
-			return val.to_number();
-		}
 		else
 		{
 			return 0.0;
@@ -328,12 +307,6 @@ namespace gameswf
 		{
 			return m_as_function_value != NULL;
 		}
-		else if (m_type == PROPERTY)
-		{
-			as_value val;
-			get_property(&val);
-			return val.to_bool();
-		}
 		else
 		{
 			assert(m_type == UNDEFINED || m_type == NULLTYPE);
@@ -354,10 +327,6 @@ namespace gameswf
 		{
 			return m_as_function_value->m_properties.get_ptr();
 		}
-//		else if (m_type == PROPERTY)
-//		{
-//			return get_property().to_object();
-//		}
 		else
 		{
 			return NULL;
@@ -451,17 +420,6 @@ namespace gameswf
 		case AS_FUNCTION:
 			set_as_as_function(v.m_as_function_value);
 			break;
-		case PROPERTY:
-			drop_refs(); 
-			m_type = PROPERTY;
-			m_property = v.m_property;
-			m_property->add_ref();
-			m_property_target = v.m_property_target;
-			if (m_property_target)
-			{
-				m_property_target->add_ref();
-			}
-			break;
 		default:
 			assert(0);
 		}
@@ -491,12 +449,6 @@ namespace gameswf
 		else if (m_type == OBJECT)
 		{
 			return m_object_value == v.to_object();
-		}
-		else if (m_type == PROPERTY)
-		{
-			as_value prop;
-			get_property(&prop);
-			return prop == v;
 		}
 		else
 		{
@@ -539,116 +491,6 @@ namespace gameswf
 				m_object_value->drop_ref();
 				m_object_value = 0;
 			}
-		}
-		else if (m_type == PROPERTY)
-		{
-			if (m_property)
-			{
-				m_property->drop_ref();
-				m_property = NULL;
-				if (m_property_target)
-				{
-					m_property_target->drop_ref();
-					m_property_target = NULL;
-				}
-			}
-		}
-	}
-
-	void	as_value::set_property(const as_value& val)
-	{
-		assert(m_property);
-		m_property->set(m_property_target, val);
-	}
-
-	void as_value::get_property(as_value* val) const
-	{
-		assert(m_property);
-		m_property->get(m_property_target, val);
-	}
-
-	//
-	//	as_property
-	//
-
-	as_property::as_property(const as_value& getter,	const as_value& setter)
-		:
-		m_getter_type(UNDEFINED),
-		m_setter_type(UNDEFINED),
-		m_getter(NULL),
-		m_setter(NULL)
-	{
-		if (getter.get_type() == as_value::AS_FUNCTION && getter.to_as_function())
-		{
-			m_getter_type = AS_FUNCTION;
-			m_getter = getter.to_as_function();
-			assert(m_getter);
-			m_getter->add_ref();
-		}
-		else
-		if (getter.get_type() == as_value::C_FUNCTION && getter.to_c_function())
-		{
-			m_getter_type = C_FUNCTION;
-			m_c_getter = getter.to_c_function();
-		}
-
-		if (setter.get_type() == as_value::AS_FUNCTION && setter.to_as_function())
-		{
-			m_setter_type = AS_FUNCTION;
-			m_setter = setter.to_as_function();
-			m_setter->add_ref();
-		}
-		else
-		if (setter.get_type() == as_value::C_FUNCTION && setter.to_c_function())
-		{
-			m_setter_type = as_property::C_FUNCTION;
-			m_c_setter = setter.to_c_function();
-		}
-	}
-
-	as_property::~as_property()
-	{
-		if (m_getter_type == AS_FUNCTION && m_getter)
-		{
-			m_getter->drop_ref();
-		}
-		if (m_setter_type == as_property::AS_FUNCTION && m_setter)
-		{
-			m_setter->drop_ref();
-		}
-	}
-
-	void	as_property::set(as_object_interface* target, const as_value& val)
-	{
-//		assert(target);
-
-		as_environment env;
-		env.push(val);
-		if (m_setter && m_setter_type == AS_FUNCTION)
-		{
-			(*m_setter)(fn_call(NULL, target,	&env, 1, env.get_top_index()));
-		}
-		else
-		if (m_c_setter && m_setter_type == as_property::C_FUNCTION)
-		{
-			(m_c_setter)(fn_call(NULL, target, &env, 1, env.get_top_index()));
-		}
-	}
-
-	void as_property::get(as_object_interface* target, as_value* val) const
-	{
-//		assert(target);
-
-		// env is used when m_getter->m_env is NULL
-		as_environment env;
-		if (m_getter && m_getter_type == AS_FUNCTION)
-		{
-			(*m_getter)(fn_call(val, target, &env, 0,	0));
-		}
-		else
-		if (m_c_getter && m_getter_type == C_FUNCTION)
-		{
-			(m_c_getter)(fn_call(val, target, &env, 0,	0));
 		}
 	}
 
