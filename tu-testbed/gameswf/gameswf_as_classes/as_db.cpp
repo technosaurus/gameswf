@@ -116,12 +116,12 @@ namespace gameswf
 		smart_ptr<as_object>	db(new as_db);
 
 		// methods
-		db->set_member("connect", &as_db_connect);
-		db->set_member("disconnect", &as_db_disconnect);
-		db->set_member("open", &as_db_open);
-		db->set_member("run", &as_db_run);
-		db->set_member("commit", &as_db_commit);
-		db->set_member("auto_commit", as_value(NULL, &as_db_autocommit_setter));
+		db->set_member("connect", as_db_connect);
+		db->set_member("disconnect", as_db_disconnect);
+		db->set_member("open", as_db_open);
+		db->set_member("run", as_db_run);
+		db->set_member("commit", as_db_commit);
+		db->add_property("auto_commit", NULL, as_db_autocommit_setter);
 
 		fn.result->set_as_object_interface(db.get_ptr());
 	}
