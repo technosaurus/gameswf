@@ -747,7 +747,12 @@ namespace gameswf
 	static const char s_hex[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZW";
 	tu_string number_to_string(int radix, int val)
 	{
-		tu_string res = "0";
+		if (val == 0)
+		{
+			return "0";
+		}
+
+		tu_string res;
 		if (radix >= 2 && radix <= strlen(s_hex))
 		{
 			while (val > 0)
