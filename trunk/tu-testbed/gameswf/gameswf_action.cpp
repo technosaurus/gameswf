@@ -82,14 +82,9 @@
 
 // TODO builtins
 //
-// Number.toString() -- takes an optional arg that specifies the base
-//
 // parseInt(), parseFloat()
 //
 // Boolean() type cast
-//
-// typeof operator --> "number", "string", "boolean", "object" (also
-// for arrays), "null", "movieclip", "function", "undefined"
 //
 // isNaN()
 //
@@ -752,8 +747,8 @@ namespace gameswf
 	static const char s_hex[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZW";
 	tu_string number_to_string(int radix, int val)
 	{
-		tu_string res;
-		if (radix >=2 && radix <= strlen(s_hex))
+		tu_string res = "0";
+		if (radix >= 2 && radix <= strlen(s_hex))
 		{
 			while (val > 0)
 			{
