@@ -40,6 +40,7 @@ namespace gameswf
 	void sprite_create_text_field(const fn_call& fn);
 	void sprite_attach_movie(const fn_call& fn);
 
+	void sprite_set_fps(const fn_call& fn);
 }
 
 #endif

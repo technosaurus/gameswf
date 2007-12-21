@@ -98,6 +98,7 @@ namespace gameswf
 
 		virtual int	get_current_frame() const;
 		float	get_frame_rate() const;
+		void	set_frame_rate(float rate);
 
 		virtual float	get_pixel_scale() const;
 

@@ -73,10 +73,17 @@ namespace gameswf
 		s_sprite_builtins->set_member("createTextField", &sprite_create_text_field);
 		s_sprite_builtins->set_member("attachMovie", &sprite_attach_movie);
 
+		// gameSWF extension
+		// reset root FPS
+		s_sprite_builtins->set_member("setFPS", &sprite_set_fps);
+
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
 		//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
 		//		s_sprite_builtins->set_member("getURL", &sprite_get_url);
+
+
+
 	}
 
 
@@ -1499,4 +1506,10 @@ namespace gameswf
 		}
 		return NULL;
 	}
+
+	void	sprite_instance::set_fps(float fps)
+	{
+		get_root()->set_frame_rate(fps);
+	}
+
 }
