@@ -225,6 +225,10 @@ namespace gameswf
 		virtual void dump();
 
 		virtual resource*	find_exported_resource(const tu_string& symbol);
+
+		// gameSWF extension
+		void	sprite_instance::set_fps(float fps);
+
 	};
 }
 

@@ -65,12 +65,12 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avformat-50.lib avcodec-51.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib swscale-0.lib"
-				OutputFile="/WINDOWS/system32/libgameswf.dll"
+				OutputFile="/WINDOWS/system32/libgameswf-d.dll"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
-				ImportLibrary="/libgame/lib/libgameswf.lib"
+				ImportLibrary="/libgame/lib/libgameswf-d.lib"
 				TargetMachine="1"
 			/>
 			<Tool

@@ -231,6 +231,7 @@ namespace gameswf
 		void clear_instance();
 
 		float	get_frame_rate() const;
+		void	set_frame_rate(float rate);
 		float	get_width_pixels() const;
 		float	get_height_pixels() const;
 		virtual int	get_version() const;

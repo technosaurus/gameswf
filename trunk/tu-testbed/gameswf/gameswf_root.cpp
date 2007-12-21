@@ -319,6 +319,14 @@ namespace gameswf
 	// 0-based!!
 	int	movie_root::get_current_frame() const { return m_movie->get_current_frame(); }
 	float	movie_root::get_frame_rate() const { return m_def->get_frame_rate(); }
+	void	movie_root::set_frame_rate(float rate)
+	{
+		if (rate >= 1 && rate <= 120)
+		{
+			m_frame_time = 1.0f / rate;
+			m_def->set_frame_rate(rate); 
+		}
+	}
 
 	float	movie_root::get_pixel_scale() const
 	// Return the size of a logical movie pixel as

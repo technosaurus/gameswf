@@ -16,8 +16,8 @@
 	<Configurations>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\swfvc___Win32_Debug"
-			IntermediateDirectory=".\swfvc___Win32_Debug"
+			OutputDirectory=".\Release"
+			IntermediateDirectory=".\Release"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -53,9 +53,9 @@
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=""
-				AssemblerListingLocation=".\swfvc___Win32_Debug/"
-				ObjectFile=".\swfvc___Win32_Debug/"
-				ProgramDataBaseFileName=".\swfvc___Win32_Debug/"
+				AssemblerListingLocation=".\Release/"
+				ObjectFile=".\Release/"
+				ProgramDataBaseFileName=".\Release/"
 				WarningLevel="2"
 				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
@@ -74,13 +74,13 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib libgameswf.lib"
-				OutputFile=".\swfvc___Win32_Debug/swfvc.exe"
+				OutputFile=".\Release/swfplayer.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=""
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\swfvc___Win32_Debug/swfvc.pdb"
+				ProgramDatabaseFile=".\Release/swfvc.pdb"
 				SubSystem="1"
 				StackReserveSize="0"
 				StackCommitSize="0"
@@ -113,8 +113,8 @@
 		</Configuration>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\swfvc___Win32_Debug"
-			IntermediateDirectory=".\swfvc___Win32_Debug"
+			OutputDirectory=".\Debug"
+			IntermediateDirectory=".\Debug"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC71.vsprops"
 			UseOfMFC="0"
@@ -144,15 +144,15 @@
 				Optimization="0"
 				OmitFramePointers="true"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1;USE_STACKWALKER"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
 				PrecompiledHeaderFile=""
-				AssemblerListingLocation=".\swfvc___Win32_Debug/"
-				ObjectFile=".\swfvc___Win32_Debug/"
-				ProgramDataBaseFileName=".\swfvc___Win32_Debug/"
+				AssemblerListingLocation=".\Debug/"
+				ObjectFile=".\Debug/"
+				ProgramDataBaseFileName=".\Debug/"
 				WarningLevel="2"
 				SuppressStartupBanner="true"
 				Detect64BitPortabilityProblems="true"
@@ -170,14 +170,14 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib libgameswf.lib"
-				OutputFile=".\swfvc___Win32_Debug/swfvc.exe"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib libgameswf-d.lib"
+				OutputFile=".\Debug/swfplayer-d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories=""
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\swfvc___Win32_Debug/swfvc.pdb"
+				ProgramDatabaseFile=".\Debug/swfvc.pdb"
 				SubSystem="1"
 				StackReserveSize="0"
 				StackCommitSize="0"
@@ -222,7 +222,7 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="memory_leaker"
+			Name="StackWalker"
 			>
 			<File
 				RelativePath="..\..\..\base\Stackwalker.cpp"

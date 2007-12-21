@@ -147,6 +147,7 @@ namespace gameswf
 
 	// ...
 	float	movie_def_impl::get_frame_rate() const { return m_frame_rate; }
+	void	movie_def_impl::set_frame_rate(float rate) { m_frame_rate = rate; }
 	float	movie_def_impl::get_width_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.width())); }
 	float	movie_def_impl::get_height_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
 

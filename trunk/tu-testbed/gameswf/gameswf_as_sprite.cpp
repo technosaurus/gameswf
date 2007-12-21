@@ -321,4 +321,15 @@ namespace gameswf
 		log_error("attachMovie needs 3 or 4 args\n"); 
 	} 
 
+	void sprite_set_fps(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = sprite_getptr(fn);
+
+		if (fn.nargs == 1)
+		{
+			float fps = (float) fn.arg(0).to_number();
+			sprite->set_fps(fps);
+		}
+	} 
+
 }
