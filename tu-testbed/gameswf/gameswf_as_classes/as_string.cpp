@@ -350,6 +350,23 @@ namespace gameswf
 
 		fn.result->set_tu_string(this_str.utf8_to_upper());
 	}
+
+	void string_char_at(const fn_call& fn)
+	{
+		assert(fn.this_ptr);
+		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		assert(this_ptr);
+		const tu_string& this_str = this_ptr->m_string;
+
+		int	index = (int) fn.arg(0).to_number();
+		if (index >= 0 && index < this_ptr->m_string.utf8_length()) 
+		{
+			char c[2];
+			c[0] = this_str.utf8_char_at(index);
+			c[1] = 0;
+			fn.result->set_tu_string(c);
+		}
+	}
 	
 
 	void string_to_string(const fn_call& fn)
@@ -383,6 +400,7 @@ namespace gameswf
 		str->set_member("substr", &string_substr);
 		str->set_member("toLowerCase", &string_to_lowercase);
 		str->set_member("toUpperCase", &string_to_uppercase);
+		str->set_member("charAt", &string_char_at);
     
 		fn.result->set_as_object_interface(str.get_ptr());
 	}
