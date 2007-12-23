@@ -266,13 +266,6 @@ namespace gameswf
 
 		virtual as_environment*	get_environment() { return 0; }
 		virtual void copy_to(as_object_interface* target) {}
-
-		virtual bool add_property(const tu_stringi& name,
-			const as_value& getter, const as_value& setter)
-		{
-			assert(0);
-			return false;
-		}
 	};
 
 

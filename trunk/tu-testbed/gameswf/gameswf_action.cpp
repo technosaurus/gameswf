@@ -82,9 +82,14 @@
 
 // TODO builtins
 //
+// Number.toString() -- takes an optional arg that specifies the base
+//
 // parseInt(), parseFloat()
 //
 // Boolean() type cast
+//
+// typeof operator --> "number", "string", "boolean", "object" (also
+// for arrays), "null", "movieclip", "function", "undefined"
 //
 // isNaN()
 //
@@ -747,13 +752,8 @@ namespace gameswf
 	static const char s_hex[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZW";
 	tu_string number_to_string(int radix, int val)
 	{
-		if (val == 0)
-		{
-			return "0";
-		}
-
 		tu_string res;
-		if (radix >= 2 && radix <= strlen(s_hex))
+		if (radix >=2 && radix <= strlen(s_hex))
 		{
 			while (val > 0)
 			{
@@ -1681,7 +1681,17 @@ namespace gameswf
 				}
 				case 0x44:	// type of
 				{
-					switch(env->top(0).get_type())
+					as_value val;
+					if (env->top(0).get_type() == as_value::PROPERTY)
+					{
+						env->top(0).get_property(&val);
+					}
+					else
+					{
+						val = env->top(0);
+					}
+
+					switch(val.get_type())
 					{
 					case as_value::UNDEFINED:
 						env->top(0).set_string("undefined");

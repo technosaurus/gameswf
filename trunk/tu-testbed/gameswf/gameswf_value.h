@@ -25,6 +25,36 @@ namespace gameswf
 
 	bool string_to_number(double* result, const char* str);
 
+
+	// helper, used in as_value
+	struct as_property : public ref_counted
+	{
+		enum getter_setter_type
+		{
+			UNDEFINED,
+			C_FUNCTION,
+			AS_FUNCTION
+		};
+		getter_setter_type m_getter_type;
+		getter_setter_type m_setter_type;
+		union
+		{
+			as_as_function*	m_getter;
+			as_c_function_ptr	m_c_getter;
+		};
+		union
+		{
+			as_as_function*	m_setter;
+			as_c_function_ptr	m_c_setter;
+		};
+
+		as_property(const as_value& getter,	const as_value& setter);
+		~as_property();
+	
+		void	set(as_object_interface* target, const as_value& val);
+		void	get(as_object_interface* target, as_value* val) const;
+	};
+
 	struct as_value
 	{
 		enum type
@@ -36,7 +66,8 @@ namespace gameswf
 			NUMBER,
 			OBJECT,
 			C_FUNCTION,
-			AS_FUNCTION	// ActionScript function.
+			AS_FUNCTION,	// ActionScript function.
+			PROPERTY
 		};
 		type	m_type;
 		mutable tu_string	m_string_value;
@@ -48,6 +79,11 @@ namespace gameswf
 			as_object_interface*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_as_function*	m_as_function_value;
+			struct
+			{
+				as_object_interface*	m_property_target;
+				as_property* m_property;
+			};
 		};
 
 		exported_module as_value()
@@ -146,6 +182,7 @@ namespace gameswf
 		}
 
 		exported_module as_value(as_as_function* func);
+		exported_module as_value(const as_value& getter, const as_value& setter);
 
 		~as_value() { drop_refs(); }
 
@@ -187,6 +224,9 @@ namespace gameswf
 		exported_module void	set_as_as_function(as_as_function* func);
 		exported_module void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
 		exported_module void	set_null() { drop_refs(); m_type = NULLTYPE; }
+
+		void	set_property(const as_value& val);
+		void	get_property(as_value* val) const;
 
 		exported_module void	operator=(const as_value& v);
 		exported_module bool	operator==(const as_value& v) const;
