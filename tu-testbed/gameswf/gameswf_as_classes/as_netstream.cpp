@@ -644,7 +644,7 @@ namespace gameswf
 		smart_ptr<as_object>	netstream_obj(new as_netstream);
 
 		// properties
-		netstream_obj->add_property("time", netstream_time, NULL);
+		netstream_obj->set_member("time", as_value(netstream_time, NULL));
 
 		// methods
 		netstream_obj->set_member("close", netstream_close);

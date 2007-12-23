@@ -664,6 +664,13 @@ namespace gameswf
 				printf("%s: <as_object 0x%p>\n", it->first.c_str(), it->second.to_object());
 				continue;
 			}
+			if (it->second.get_type() == as_value::PROPERTY)
+			{
+				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
+					it->first.c_str(), it->second.m_property, it->second.m_property_target,
+					it->second.m_property->m_getter, it->second.m_property->m_setter);
+				continue;
+			}
 			printf("%s: %s\n", it->first.c_str(), it->second.to_string());
 		}
 
@@ -673,6 +680,13 @@ namespace gameswf
 			if (m_stack[i].get_type() == as_value::OBJECT)
 			{
 				printf("<as_object 0x%p>\n", m_stack[i].to_object());
+				continue;
+			}
+			if (m_stack[i].get_type() == as_value::PROPERTY)
+			{
+				printf("<as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
+					m_stack[i].m_property, m_stack[i].m_property_target,
+					m_stack[i].m_property->m_getter, m_stack[i].m_property->m_setter);
 				continue;
 			}
 			printf("%s\n", m_stack[i].to_string());
