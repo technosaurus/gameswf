@@ -381,7 +381,7 @@ namespace gameswf
 			glMaterialfv(GL_FRONT, GL_AMBIENT, mat->ambient);
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, mat->diffuse);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, mat->specular);
-			glMaterialf(GL_FRONT, GL_SHININESS, pow(2, 10.0 * mat->shininess));
+			glMaterialf(GL_FRONT, GL_SHININESS, pow(2.0, 10.0 * mat->shininess));
 
 			bind_texture(mat->texture1_map.name);
 		}
@@ -394,7 +394,7 @@ namespace gameswf
 			glMaterialfv(GL_FRONT, GL_AMBIENT, a);
 			glMaterialfv(GL_FRONT, GL_DIFFUSE, d);
 			glMaterialfv(GL_FRONT, GL_SPECULAR, s);
-      glMaterialf(GL_FRONT, GL_SHININESS, pow(2, 10.0 * 0.5));
+      glMaterialf(GL_FRONT, GL_SHININESS, pow(2.0, 10.0 * 0.5));
 		}
 	}
 

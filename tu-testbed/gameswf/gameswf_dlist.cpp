@@ -282,7 +282,7 @@ namespace gameswf
 		if (index < 0 || index >= size)
 		{
 			// error.
-			log_error("error: move_display_object() -- can't find object at depth %d\n", depth);
+			// log_error("error: move_display_object() -- can't find object at depth %d\n", depth);
 			//			assert(0);
 			return;
 		}
