@@ -310,7 +310,7 @@ namespace gameswf
 		}
 		else
 		{
-			this->set_variable_raw(varname, val, with_stack);
+			set_variable_raw(varname, val, with_stack);
 		}
 	}
 
@@ -325,8 +325,7 @@ namespace gameswf
 		for (int i = with_stack.size() - 1; i >= 0; i--)
 		{
 			as_object_interface*	obj = with_stack[i].m_object.get_ptr();
-			as_value	dummy;
-			if (obj && obj->get_member(varname, &dummy))
+			if (obj && obj->get_member(varname, NULL))
 			{
 				// This object has the member; so set it here.
 				obj->set_member(varname, val);
@@ -349,8 +348,22 @@ namespace gameswf
 		}
 		else
 		{
-			log_error("can't set_variable_raw '%s'='%s', target is NULL\n",
+			// assume local var
+			// This case happens for example so
+			// class myclass
+			// {
+			//		function myfunc()
+			//		{
+			//			for (i=0;...)		should be for (var i=0; ...)
+			//			{
+			//			}
+			//		}
+			//	}
+			add_local(varname, val);
+			log_error("can't set_variable_raw %s=%s, target is NULL, it's assumed as local\n",
 				varname.c_str(), val.to_string());
+			log_error("probably you forgot to declare variable '%s'\n", varname.c_str());
+
 		}
 	}
 
