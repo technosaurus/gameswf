@@ -1199,7 +1199,7 @@ namespace gameswf
 	// at a new depth.
 	{
 
-		// Create the copy event handlers from sprite 
+		// Create the copy of 'this' event handlers
 		// We should not copy 'm_action_buffer' since the 'm_method' already contains it 
 		array<swf_event*> event_handlers; 
 		const hash<event_id, as_value>* sprite_events = get_event_handlers(); 
@@ -1212,22 +1212,53 @@ namespace gameswf
 			event_handlers.push_back(e); 
 		} 
 
-		character* parent = (character*) get_parent(); 
+		sprite_instance* parent = get_parent()->cast_to_sprite(); 
 		character* ch = NULL; 
 		if (parent != NULL) 
 		{ 
-			ch = parent->add_display_object( 
-				get_id(), 
-				newname.c_str(), 
-				event_handlers, 
-				depth, 
-				true, // replace if depth is occupied (to drop) 
-				get_cxform(), 
-				get_matrix(), 
-				get_ratio(), 
-				get_clip_depth()); 
+			// clone a previous external loaded movie ?
+			if (get_id() == -1)	
+			{
+				ch = new sprite_instance(m_def->cast_to_movie_def_impl(), 
+				get_root(),	parent,	-1);
+
+				ch->set_parent(parent);
+				ch->cast_to_sprite()->set_root(get_root());
+				ch->set_name(newname.c_str());
+
+				parent->m_display_list.add_display_object(
+					ch, 
+					depth,
+					true,		// replace_if_depth_is_occupied
+					get_cxform(), 
+					get_matrix(), 
+					get_ratio(), 
+					get_clip_depth()); 
+
+				// Attach event handlers (if any).
+				//TODO: test it
+				for (int i = 0, n = event_handlers.size(); i < n; i++)
+				{
+					event_handlers[i]->attach_to(ch);
+				}
+			}
+			else
+			{
+				ch = parent->add_display_object( 
+					get_id(), 
+					newname.c_str(), 
+					event_handlers, 
+					depth, 
+					true, // replace if depth is occupied (to drop) 
+					get_cxform(), 
+					get_matrix(), 
+					get_ratio(), 
+					get_clip_depth()); 
+			}
 
 		} 
+
+
 		return ch;
 	}
 
