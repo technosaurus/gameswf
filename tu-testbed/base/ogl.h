@@ -45,6 +45,8 @@ namespace ogl
 	void	client_active_texture(int stage);
 	void	multi_tex_coord_2f(int stage, float s, float t);
 	void	multi_tex_coord_2fv(int stage, float* st);
+
+	void create_texture(int format, int w, int h, void* data, int level = 0);
 };
 
 

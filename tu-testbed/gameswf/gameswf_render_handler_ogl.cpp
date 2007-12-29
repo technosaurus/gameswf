@@ -956,6 +956,7 @@ struct render_handler_ogl : public gameswf::render_handler
 // bitmap_info_ogl implementation
 
 
+#if (RESAMPLE_METHOD == 1)
 
 void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8* src_data, int dst_width, int dst_height)
 // Code from Alex Streit
@@ -1006,6 +1007,7 @@ void	hardware_resample(int bytes_per_pixel, int src_width, int src_height, uint8
 	glPopMatrix();
 }
 
+#endif
 
 void	generate_mipmaps(unsigned int internal_format, unsigned int input_format, int bytes_per_pixel, image::image_base* im)
 // DESTRUCTIVELY generate mipmaps of the given image.  The image data
@@ -1023,8 +1025,9 @@ void	generate_mipmaps(unsigned int internal_format, unsigned int input_format, i
 			image::make_next_miplevel((image::rgba*) im);
 		}
 
-		glTexImage2D(GL_TEXTURE_2D, level, internal_format, im->m_width, im->m_height, 0,
-			     input_format, GL_UNSIGNED_BYTE, im->m_data);
+//		glTexImage2D(GL_TEXTURE_2D, level, internal_format, im->m_width, im->m_height, 0,
+//			     input_format, GL_UNSIGNED_BYTE, im->m_data);
+		ogl::create_texture(input_format, im->m_width, im->m_height, im->m_data, level);
 		level++;
 	}
 }
@@ -1146,7 +1149,8 @@ void	software_resample(
 		}
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, dst_width, dst_height, 0, input_format, GL_UNSIGNED_BYTE, rescaled);
+//	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, dst_width, dst_height, 0, input_format, GL_UNSIGNED_BYTE, rescaled);
+	ogl::create_texture(input_format, dst_width, dst_height, rescaled);
 
 #if GENERATE_MIPMAPS
 	// Build mipmaps.
@@ -1207,14 +1211,17 @@ void bitmap_info_ogl::layout_alpha(int width, int height, Uint8* data)
 	assert(h == height);
 	#endif // not NDEBUG
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+//	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+	ogl::create_texture(GL_ALPHA, width, height, data);
+
 
 	// Build mips.
 	int	level = 1;
 	while (width > 1 || height > 1)
 	{
 		render_handler_ogl::make_next_miplevel(&width, &height, data);
-		glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+//		glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
+		ogl::create_texture(GL_ALPHA, width, height, data, level);
 		level++;
 	}
 }
@@ -1297,7 +1304,8 @@ void bitmap_info_ogl::layout_rgb(image::rgb* im)
 	else
 	{
 		// Use original image directly.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, im->m_data);
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, im->m_data);
+		ogl::create_texture(GL_RGB, w, h, im->m_data);
 #if GENERATE_MIPMAPS
 		generate_mipmaps(GL_RGB, GL_RGB, 3, im);
 #endif // GENERATE_MIPMAPS
@@ -1382,7 +1390,8 @@ void bitmap_info_ogl::layout_rgba(image::rgba* im)
 	else
 	{
 		// Use original image directly.
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
+		ogl::create_texture(GL_RGBA, w, h, im->m_data);
 #if GENERATE_MIPMAPS
 		generate_mipmaps(GL_RGBA, GL_RGBA, 4, im);
 #endif // GENERATE_MIPMAPS

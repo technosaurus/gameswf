@@ -67,7 +67,12 @@ void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds,
 
 		if (m_data)
 		{
+
+			// don't use compressed texture for video
+			// it slows down video
+//			ogl::create_texture(GL_RGBA, m_width2p, m_height2p, NULL);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_width2p, m_height2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
 			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, m_width, m_height, GL_RGBA, GL_UNSIGNED_BYTE, m_data);
 			delete m_data;
 			m_data = NULL;

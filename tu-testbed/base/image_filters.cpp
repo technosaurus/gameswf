@@ -703,7 +703,7 @@ void	resample(image::rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 // fold that stuff directly into the pixel loops, to get rid of the
 // mallocs.
 
-void	zoom(image::rgba* src, image::rgba* dst)
+void	zoom(image_base* src, image_base* dst)
 {
   typedef struct
   {
