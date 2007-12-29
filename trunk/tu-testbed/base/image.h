@@ -95,6 +95,8 @@ namespace image
 	void	resample(rgba* out, int out_x0, int out_y0, int out_x1, int out_y1,
 			 rgba* in, float in_x0, float in_y0, float in_x1, float in_y1);
 
+	void	zoom(image_base* src, image_base* dst);
+
 	void	write_jpeg(tu_file* out, rgb* image, int quality);
 	void	write_tga(tu_file* out, rgba* image);
 

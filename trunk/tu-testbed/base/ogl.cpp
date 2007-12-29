@@ -59,6 +59,9 @@ namespace ogl {
 
 	const int	STREAM_SUB_BUFFER_COUNT = 2;
 
+	GLint s_num_compressed_format = 0;
+
+
 	class vertex_stream
 	{
 	// Class to facilitate streaming verts to the video card.  Takes
@@ -105,6 +108,8 @@ namespace ogl {
 			// Use CLAMP_TO_EDGE, since it's available.
 			s_clamp_to_edge = GL_CLAMP_TO_EDGE;
 		}
+
+		glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS_ARB, &s_num_compressed_format);
 	}
 
 
@@ -433,6 +438,32 @@ namespace ogl {
 			glMultiTexCoord2fvARB(stage, st);
 		}
 	}
+
+	void create_texture(int format, int w, int h, void* data, int level)
+	{
+		int internal_format = format;
+		if (s_num_compressed_format > 0)
+		{
+			switch (format)
+			{
+				case GL_RGB :
+					internal_format = GL_COMPRESSED_RGB_ARB;
+					break;
+				case GL_RGBA :
+					internal_format = GL_COMPRESSED_RGBA_ARB;
+					break;
+				case GL_ALPHA :
+					internal_format = GL_COMPRESSED_ALPHA_ARB;
+					break;
+				case GL_LUMINANCE :
+					internal_format = GL_COMPRESSED_LUMINANCE_ARB;
+					break;
+			}
+		}
+		glTexImage2D(GL_TEXTURE_2D, level, internal_format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
+	}
+
+
 
 };
 
