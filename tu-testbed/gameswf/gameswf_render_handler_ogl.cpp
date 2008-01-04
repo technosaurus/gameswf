@@ -310,6 +310,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		gameswf::matrix	m_bitmap_matrix;
 		gameswf::cxform	m_bitmap_color_transform;
 		bool	m_has_nonzero_bitmap_additive_color;
+		float m_width;	// for line style
 		
 		fill_style()
 			:
@@ -328,8 +329,8 @@ struct render_handler_ogl : public gameswf::render_handler
 				apply_color(m_color);
 				glDisable(GL_TEXTURE_2D);
 			}
-			else if (m_mode == BITMAP_WRAP
-				 || m_mode == BITMAP_CLAMP)
+			else
+			if (m_mode == BITMAP_WRAP || m_mode == BITMAP_CLAMP)
 			{
 				assert(m_bitmap_info != NULL);
 
@@ -711,7 +712,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	
 	void	line_style_width(float width)
 	{
-		// WK: what to do here???
+		m_current_styles[LINE_STYLE].m_width = width;
 	}
 
 
@@ -848,6 +849,22 @@ struct render_handler_ogl : public gameswf::render_handler
 		// Set up current style.
 		m_current_styles[LINE_STYLE].apply();
 
+		// apply line width
+
+		float scale = fabsf(m_current_matrix.get_x_scale()) + fabsf(m_current_matrix.get_y_scale());
+		float w = m_current_styles[LINE_STYLE].m_width * scale / 2.0f;
+    w = TWIPS_TO_PIXELS(w);
+
+		GLfloat width_info[2];
+		glGetFloatv(GL_LINE_WIDTH_RANGE, width_info); 
+		if (w > width_info[1])
+		{
+			printf("Your OpenGL implementation does not support the line width" \
+				" requested. Lines will be drawn with reduced width.");
+		}
+
+		glLineWidth(w <= 1.0f ? 1.0f : w);
+
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
 		apply_matrix(m_current_matrix);
@@ -856,7 +873,19 @@ struct render_handler_ogl : public gameswf::render_handler
 		glEnableClientState(GL_VERTEX_ARRAY);
 		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
 		glDrawArrays(GL_LINE_STRIP, 0, vertex_count);
+
+    // Draw a round dot on the beginning and end coordinates to lines.
+    glPointSize(w);
+		glEnable(GL_POINT_SMOOTH);
+    glDrawArrays(GL_POINTS, 0, vertex_count);
+    glDisable(GL_POINT_SMOOTH);
+    glPointSize(1);
+
 		glDisableClientState(GL_VERTEX_ARRAY);
+
+		// restore defaults
+		glPointSize(1);
+    glLineWidth(1);
 
 		glPopMatrix();
 	}

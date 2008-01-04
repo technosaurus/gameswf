@@ -151,6 +151,7 @@ namespace gameswf
 	struct sprite_definition;
 	struct as_as_function;
 	struct as_object_interface;
+	struct canvas;
 
 	// An interface for casting to different types of
 	// resources.
@@ -166,6 +167,7 @@ namespace gameswf
 		virtual video_stream_definition* cast_to_video_stream_definition() { return 0; }
 		virtual as_as_function* cast_to_as_function() { return 0; }
 		virtual as_object_interface* cast_to_as_object_interface() { return 0; }
+		virtual canvas* cast_to_canvas() { return 0; }
 	};
 
 	// Forward decls for cast_to_*

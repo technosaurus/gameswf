@@ -54,6 +54,7 @@ namespace gameswf
 
 	private:
 		friend struct morph2_character_def;
+		friend struct canvas;
 
 		int	m_type;
 		rgba	m_color;
@@ -106,6 +107,7 @@ namespace gameswf
 
 	private:
 		friend struct morph2_character_def;
+		friend struct canvas;
 
 		Uint16	m_width;	// in TWIPS
 		rgba	m_color;

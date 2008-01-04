@@ -79,8 +79,19 @@ namespace gameswf
 		fn.result->set_string(tbl->get_field_title((int) fn.arg(0).to_number()));
 	}
 
+	void	to_get_recno_method(const fn_call& fn)
+	// Returns the current record number
+	{
+		assert(fn.this_ptr);	assert(fn.env);
+		as_table* tbl = fn.this_ptr->cast_to_as_table();
+		if (tbl->size() > 0)
+		{
+			fn.result->set_int(tbl->get_recno() + 1);
+		}
+	}
+
 	as_table::as_table():
-	m_index(0)
+		m_index(0)
 	{
 		as_object::set_member("size", &size_method);
 		as_object::set_member("next", &next_method);
@@ -90,6 +101,7 @@ namespace gameswf
 		as_object::set_member("goto", &goto_record_method);
 		as_object::set_member("title", &get_title_method);
 		as_object::set_member("toString", &to_string_method);
+		as_object::set_member("getRecNo", &to_get_recno_method);
 	}
 
 	as_table::~as_table()
@@ -128,9 +140,14 @@ namespace gameswf
 		return true;
 	}
 
-	int as_table::size()
+	int as_table::size() const
 	{
 		return m_data.size();
+	}
+
+	int as_table::get_recno() const
+	{
+		return m_index;
 	}
 
 	void as_table::prev()

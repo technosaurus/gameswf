@@ -73,6 +73,16 @@ namespace gameswf
 		s_sprite_builtins->set_member("createTextField", &sprite_create_text_field);
 		s_sprite_builtins->set_member("attachMovie", &sprite_attach_movie);
 
+		// drawing API
+		s_sprite_builtins->set_member("beginFill", sprite_begin_fill);
+		s_sprite_builtins->set_member("endFill", sprite_end_fill);
+		s_sprite_builtins->set_member("lineTo", sprite_line_to);
+		s_sprite_builtins->set_member("moveTo", sprite_move_to);
+		s_sprite_builtins->set_member("curveTo", sprite_curve_to);
+		s_sprite_builtins->set_member("clear", sprite_clear);
+		s_sprite_builtins->set_member("lineStyle", sprite_line_style);
+
+
 		// gameSWF extension
 		// reset root FPS
 		s_sprite_builtins->set_member("setFPS", &sprite_set_fps);
@@ -1199,6 +1209,12 @@ namespace gameswf
 	// at a new depth.
 	{
 
+		if (get_parent() == NULL)
+		{
+			log_error("can't clone _root\n");
+			return NULL;
+		}
+
 		// Create the copy of 'this' event handlers
 		// We should not copy 'm_action_buffer' since the 'm_method' already contains it 
 		array<swf_event*> event_handlers; 
@@ -1541,6 +1557,24 @@ namespace gameswf
 	void	sprite_instance::set_fps(float fps)
 	{
 		get_root()->set_frame_rate(fps);
+	}
+
+	canvas* sprite_instance::get_canvas()
+	{
+		if (m_canvas == NULL)
+		{
+			canvas* canvas_def = new canvas();
+			m_canvas = canvas_def->create_character_instance(this, -1);
+
+			m_display_list.add_display_object(
+				m_canvas.get_ptr(),
+				get_highest_depth() + 1,
+				true,
+				m_color_transform,
+				m_matrix,
+				0.0f, 0); 
+		}
+		return m_canvas->get_character_def()->cast_to_canvas();
 	}
 
 }

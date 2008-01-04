@@ -30,10 +30,15 @@ namespace gameswf
 
 		rgba() : m_r(255), m_g(255), m_b(255), m_a(255) {}
 
-		rgba(Uint8 r, Uint8 g, Uint8 b, Uint8 a)
-			:
+		rgba(Uint8 r, Uint8 g, Uint8 b, Uint8 a) :
 			m_r(r), m_g(g), m_b(b), m_a(a)
 		{
+		}
+
+		// For convenience.
+		rgba(double color)
+		{
+			set(color);
 		}
 
 		void	read(stream* in, int tag_type);
@@ -46,6 +51,15 @@ namespace gameswf
 			m_g = g;
 			m_b = b;
 			m_a = a;
+		}
+
+		void	set(double color)
+		{
+			int rgb = int(color);
+			m_r = (rgb >> 16) & 0xFF;
+			m_g = (rgb >> 8) & 0xFF;
+			m_b = rgb & 0xFF;
+			m_a = 255;
 		}
 
 		void	set_lerp(const rgba& a, const rgba& b, float f);

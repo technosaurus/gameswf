@@ -544,7 +544,10 @@ namespace gameswf
 		// Make the subparts.
 
 		// Var.
-		*var = &var_path[colon_index + 1];
+		if (var)
+		{
+			*var = &var_path[colon_index + 1];
+		}
 
 		// Path.
 		if (colon_index > 0)

@@ -84,20 +84,20 @@ namespace gameswf
 	// For characters that don't store unusual state in their instances.
 	struct generic_character : public character
 	{
-		character_def*	m_def;
+		smart_ptr<character_def>	m_def;
 
 		generic_character(character_def* def, character* parent, int id) :
 			character(parent, id),
 			m_def(def)
 		{
-			assert(m_def);
+			assert(m_def != NULL);
 		}
 
 		~generic_character()
 		{
 		}
 
-		virtual character_def* get_character_def() { return m_def;	}
+		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 
 		virtual void	display()
 		{

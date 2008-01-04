@@ -40,6 +40,16 @@ namespace gameswf
 	void sprite_create_text_field(const fn_call& fn);
 	void sprite_attach_movie(const fn_call& fn);
 
+	// drawing API
+	void sprite_begin_fill(const fn_call& fn);
+	void sprite_end_fill(const fn_call& fn);
+	void sprite_clear(const fn_call& fn);
+	void sprite_move_to(const fn_call& fn);
+	void sprite_line_to(const fn_call& fn);
+	void sprite_curve_to(const fn_call& fn);
+	void sprite_line_style(const fn_call& fn);
+
+	// gameSWF extension
 	void sprite_set_fps(const fn_call& fn);
 }
 

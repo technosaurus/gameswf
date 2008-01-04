@@ -193,6 +193,7 @@ namespace gameswf
 
 	protected:
 		friend struct morph2_character_def;
+		friend struct canvas;
 
 		// derived morph classes changes these
 		array<fill_style>	m_fill_styles;
