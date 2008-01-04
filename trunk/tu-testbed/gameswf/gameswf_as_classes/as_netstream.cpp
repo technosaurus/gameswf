@@ -507,7 +507,15 @@ namespace gameswf
 			else
 			if (m_unqueued_data->get_stream_index() == m_audio_index)
 			{
-				if (m_audio_queue.push(m_unqueued_data))
+				sound_handler* sound = get_sound_handler();
+				if (sound)
+				{
+					if (m_audio_queue.push(m_unqueued_data))
+					{
+						m_unqueued_data = NULL;
+					}
+				}
+				else
 				{
 					m_unqueued_data = NULL;
 				}
