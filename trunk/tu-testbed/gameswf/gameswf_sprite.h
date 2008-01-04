@@ -19,6 +19,8 @@
 #include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_sprite_def.h"
 #include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_canvas.h"
+
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/smart_ptr.h"
@@ -56,6 +58,7 @@ namespace gameswf
 		mouse_state m_mouse_state;
 		bool m_enabled;
 		bool m_on_event_load_called;
+		smart_ptr<character> m_canvas;
 
 		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
 		virtual ~sprite_instance();
@@ -228,6 +231,9 @@ namespace gameswf
 
 		// gameSWF extension
 		void	sprite_instance::set_fps(float fps);
+
+		// drawing API
+		canvas* get_canvas();
 
 	};
 }

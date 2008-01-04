@@ -25,7 +25,7 @@ namespace gameswf
 		virtual as_table* cast_to_as_table() { return this; }
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 
-		int size();
+		int size() const;
 		void prev();
 		void next();
 		void first();
@@ -33,6 +33,8 @@ namespace gameswf
 		void goto_record(int index);
 		const char* get_field_title(int n);
 		void retrieve_data(MYSQL_RES* result);
+		int get_recno() const;
+
 
 	private:
 		int m_index;

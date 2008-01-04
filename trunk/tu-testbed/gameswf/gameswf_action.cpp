@@ -1295,9 +1295,11 @@ namespace gameswf
 
 					if (target)
 					{
+						// Flash automatically adds 16384 to depth therefore
+						// we should subtract 16384 from depth
 						target->clone_display_object(
 							env->top(1).to_tu_string(),
-							(int) env->top(0).to_number());
+							(int) env->top(0).to_number() - 16384);
 					}
 
 					env->drop(3);

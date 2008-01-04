@@ -332,4 +332,121 @@ namespace gameswf
 		}
 	} 
 
+
+	// drawing API
+
+	//	public beginFill(rgb:Number, [alpha:Number]) : Void
+	void sprite_begin_fill(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		canvas* canva = sprite->get_canvas();
+		assert(canva);
+
+		rgba color(0, 0, 0, 255);
+		if (fn.nargs > 0)
+		{
+			color.set(fn.arg(0).to_number());
+		}
+		canva->begin_fill(color);
+	}
+
+	//	public endFill() : Void
+	void sprite_end_fill(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		canvas* canva = sprite->get_canvas();
+		assert(canva);
+		canva->end_fill();
+	}
+
+	//	public clear() : Void
+	void sprite_clear(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		if (sprite->m_canvas != NULL)
+		{
+			sprite->remove_display_object(sprite->m_canvas.get_ptr());
+			sprite->m_canvas = NULL;
+		}
+	}
+
+	// public moveTo(x:Number, y:Number) : Void
+	void sprite_move_to(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		canvas* canva = sprite->get_canvas();
+		assert(canva);
+
+		if (fn.nargs >= 2)
+		{
+			float x = PIXELS_TO_TWIPS(fn.arg(0).to_number());
+			float y = PIXELS_TO_TWIPS(fn.arg(1).to_number());
+			canva->move_to(x, y);
+		}
+	}
+
+	//	public lineTo(x:Number, y:Number) : Void
+	void sprite_line_to(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		canvas* canva = sprite->get_canvas();
+		assert(canva);
+
+		if (fn.nargs >= 2)
+		{
+			float x = PIXELS_TO_TWIPS(fn.arg(0).to_number());
+			float y = PIXELS_TO_TWIPS(fn.arg(1).to_number());
+			canva->line_to(x, y);
+		}
+	}
+
+	//	public curveTo(controlX:Number, controlY:Number, anchorX:Number, anchorY:Number) : Void
+	void sprite_curve_to(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		canvas* canva = sprite->get_canvas();
+		assert(canva);
+
+		if (fn.nargs >= 4)
+		{
+			float cx = PIXELS_TO_TWIPS(fn.arg(0).to_number());
+			float cy = PIXELS_TO_TWIPS(fn.arg(1).to_number());
+			float ax = PIXELS_TO_TWIPS(fn.arg(2).to_number());
+			float ay = PIXELS_TO_TWIPS(fn.arg(3).to_number());
+			canva->curve_to(cx, cy, ax, ay);
+		}
+	}
+
+	// public lineStyle(thickness:Number, rgb:Number, alpha:Number, pixelHinting:Boolean,
+	// noScale:String, capsStyle:String, jointStyle:String, miterLimit:Number) : Void
+	void sprite_line_style(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		canvas* canva = sprite->get_canvas();
+		assert(canva);
+
+		// If a thickness is not specified, or if the parameter is undefined, a line is not drawn
+		if (fn.nargs == 0)
+		{
+			canva->m_current_line = 0;
+			canva->add_path(false);
+			return;
+		}
+
+		Uint16 width = (Uint16) PIXELS_TO_TWIPS(fclamp(fn.arg(0).to_number(), 0, 255));
+		rgba color(0, 0, 0, 255);
+
+		if (fn.nargs > 1)
+		{
+			color.set(fn.arg(1).to_number());
+			if (fn.nargs > 2)
+			{
+				float alpha = fclamp(fn.arg(2).to_number(), 0, 100);
+				color.m_a = Uint8(255 * (alpha/100));
+			}
+		}
+
+		canva->set_line_style(width, color);
+	}
+
 }

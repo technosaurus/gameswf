@@ -72,13 +72,10 @@ namespace gameswf
 		}
 
 		cxform	cx = obj->m_target->get_cxform();
-		int rgb = (int) fn.arg(0).to_number();
-		Uint8 r = (rgb >> 16) & 0xFF;
-		Uint8 g = (rgb >> 8) & 0xFF;
-		Uint8 b = rgb & 0xFF;
-		cx.m_[0][0] = float(r) / 255.0f;
-		cx.m_[1][0] = float(g) / 255.0f;
-		cx.m_[2][0] = float(b) / 255.0f;
+		rgba color(fn.arg(0).to_number());
+		cx.m_[0][0] = float(color.m_r) / 255.0f;
+		cx.m_[1][0] = float(color.m_g) / 255.0f;
+		cx.m_[2][0] = float(color.m_b) / 255.0f;
 		obj->m_target->set_cxform(cx);
 	}
 
