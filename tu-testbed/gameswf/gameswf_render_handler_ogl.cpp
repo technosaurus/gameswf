@@ -857,11 +857,11 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		GLfloat width_info[2];
 		glGetFloatv(GL_LINE_WIDTH_RANGE, width_info); 
-		if (w > width_info[1])
-		{
-			printf("Your OpenGL implementation does not support the line width" \
-				" requested. Lines will be drawn with reduced width.");
-		}
+//		if (w > width_info[1])
+//		{
+//		printf("Your OpenGL implementation does not support the line width" \
+//				" requested. Lines will be drawn with reduced width.");
+//		}
 
 		glLineWidth(w <= 1.0f ? 1.0f : w);
 
