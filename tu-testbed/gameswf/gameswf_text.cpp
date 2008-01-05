@@ -704,6 +704,7 @@ namespace gameswf
 		matrix mat = get_world_matrix(); 
 		render::set_matrix(mat); 
 		render::line_style_color(rgba(255, 0, 0, 255));   // red cursor 
+		render::line_style_width(PIXELS_TO_TWIPS(3));
 		render::draw_line_strip(box, 2);        // draw line 
 	} 
 
