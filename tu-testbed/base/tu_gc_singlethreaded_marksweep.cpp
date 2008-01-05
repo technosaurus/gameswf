@@ -50,6 +50,7 @@ namespace tu_gc {
 		typedef std::map<void*, gc_object_generic_base*>::iterator ptr_iterator;
 		typedef std::set<void*>::iterator floating_blocks_iterator;
 		typedef std::map<void*, blockinfo>::iterator heap_block_iterator;
+		typedef std::set<singlethreaded_marksweep::gc_container_base*>::iterator container_iterator;
 
 		// roots
 		std::map<void*, gc_object_generic_base*> m_roots;
@@ -73,6 +74,12 @@ namespace tu_gc {
 
 		// heap blocks
 		std::map<void*, blockinfo> m_heap_blocks;
+
+		// containers
+		std::set<singlethreaded_marksweep::gc_container_base*> m_containers;
+
+		// mark state
+		std::vector<gc_object_generic_base*> m_to_mark;
 
 		// Stats & control values.
 		int m_percent_growth;
@@ -109,7 +116,7 @@ namespace tu_gc {
 			m_current_heap_bytes += sz;
 
 			// Keep this block from being collected during
-			// construction, before it has a change to be
+			// construction, before it has a chance to be
 			// assigned to a gc_ptr.
 			m_floating_blocks.insert(block);
 			block_ref(lock) = block;
@@ -167,8 +174,8 @@ namespace tu_gc {
 
 
 		void mark_live_objects() {
-			std::vector<gc_object_generic_base*> to_mark;
-			to_mark.reserve(m_heap_blocks.size() /* heuristic */);
+			assert(m_to_mark.size() == 0);
+			m_to_mark.reserve(m_heap_blocks.size() /* heuristic */);
 
 			// Mark all blocks pointed to by roots.
 			for (ptr_iterator it = m_roots.begin();
@@ -176,8 +183,8 @@ namespace tu_gc {
 			     ++it) {
 				gc_object_generic_base* p = it->second;
 				assert(p);
-				to_mark.push_back(p);
-				//push_heap(to_mark);
+				m_to_mark.push_back(p);
+				//push_heap(m_to_mark);
 			}
 
 			// Mark all the floating blocks.
@@ -185,14 +192,14 @@ namespace tu_gc {
 			     it != m_floating_blocks.end();
 			     ++it) {
 				assert(*it);
-				to_mark.push_back(static_cast<gc_object_generic_base*>(*it));
+				m_to_mark.push_back(static_cast<gc_object_generic_base*>(*it));
 			}
 
 			// Flood-fill all reachable objects.
-			while (to_mark.size()) {
-				//pop_heap(to_mark);
-				gc_object_generic_base* b = to_mark.back();
-				to_mark.resize(to_mark.size() - 1);
+			while (m_to_mark.size()) {
+				//pop_heap(m_to_mark);
+				gc_object_generic_base* b = m_to_mark.back();
+				m_to_mark.resize(m_to_mark.size() - 1);
 
 				heap_block_iterator it = find_containing_block(b);
 				assert(it != m_heap_blocks.end());
@@ -208,9 +215,19 @@ namespace tu_gc {
 					while (it_ptr != m_heap_ptrs.end() && it_ptr->first < block_end) {
 						gc_object_generic_base* p = it_ptr->second;
 						assert(p);
-						to_mark.push_back(p);
-						//push_heap(to_mark);
+						m_to_mark.push_back(p);
+						//push_heap(m_to_mark);
 						++it_ptr;
+					}
+
+					// Find all gc containers that are inside this heap block.
+					{
+						container_iterator it_cnt = m_containers.lower_bound((singlethreaded_marksweep::gc_container_base*) it->second.p);
+						void* block_end = it->second.end();
+						while (it_cnt != m_containers.end() && *it_cnt < block_end) {
+							(*it_cnt)->visit_contained_ptrs();
+							++it_cnt;
+						}
 					}
 				}
 			}
@@ -303,6 +320,20 @@ namespace tu_gc {
 			}
 		}
 
+		void construct_container(singlethreaded_marksweep::gc_container_base* c) {
+			m_containers.insert(c);
+		}
+
+		void destruct_container(singlethreaded_marksweep::gc_container_base* c) {
+			container_iterator it = m_containers.find(c);
+			assert(it != m_containers.end());
+			m_containers.erase(it);
+		}
+
+		void visit_contained_ptr(gc_object_generic_base* obj) {
+			m_to_mark.push_back(obj);
+		}
+
 	} sm_state;
 	
 	/*static*/ void singlethreaded_marksweep::get_stats(singlethreaded_marksweep::stats* s) {
@@ -344,6 +375,18 @@ namespace tu_gc {
 
 	/*static*/ void singlethreaded_marksweep::changing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to) {
 		sm_state.changing_pointer(address_of_gc_ptr, object_pointed_to);
+	}
+
+	/*static*/ void singlethreaded_marksweep::construct_container(gc_container_base* c) {
+		sm_state.construct_container(c);
+	}
+
+	/*static*/ void singlethreaded_marksweep::destruct_container(gc_container_base* c) {
+		sm_state.destruct_container(c);
+	}
+
+	/*static*/ void singlethreaded_marksweep::visit_contained_ptr(gc_object_generic_base* obj) {
+		sm_state.visit_contained_ptr(obj);
 	}
 
 	// In the initial implementation, overhead is pretty high.

@@ -122,6 +122,35 @@ namespace tu_gc {
 			}
 			gc_ptr_p->raw_set_ptr_gc_access_only(new_val_p);
 		}
+
+		template<class T>
+		static void contained_pointer_write_barrier(contained_gc_ptr<T, this_class>* gc_ptr_p, T* new_val_p) {
+			// TODO de-dupe; this is same as write_barrier()
+			assert(gc_ptr_p);
+			if (new_val_p == gc_ptr_p->get()) {
+				return;
+			}
+			if (new_val_p) {
+				increment_ref(new_val_p);
+			}
+			if (gc_ptr_p->get()) {
+				decrement_ref(gc_ptr_p->get());
+			}
+			gc_ptr_p->raw_set_ptr_gc_access_only(new_val_p);
+		}
+		
+		template<class T>
+		static void construct_contained_pointer(contained_gc_ptr<T, this_class>* gc_ptr_p) {}
+		template<class T>
+		static void destruct_contained_pointer(contained_gc_ptr<T, this_class>* gc_ptr_p) {}
+
+		template<class container_type>
+		class gc_container : public container_type {
+		public:
+			gc_container() {
+				(container_type::value_type::i_am_a_contained_gc_ptr) 0;  // assert that we contain contained_gc_ptr.
+			}
+		};
 		
 	private:
 		friend class gc_object_base<singlethreaded_refcount>;

@@ -7,7 +7,6 @@
 // This is designed to be a nested include, parameterized by the macro
 // GC_COLLECTOR.
 
-
 DECLARE_GC_TYPES(GC_COLLECTOR);
 
 struct cons : public gc_object {
@@ -161,8 +160,39 @@ void test_multiple_inheritance() {
 	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
 }
 
+// test gc_container
+
+struct bag : public gc_object {
+	GC_CONTAINER(std::vector, bag) m_ptrs;
+	// or, without the helper macro:
+	//   gc_container<std::vector<contained_gc_ptr<bag> > > m_ptrs;
+};
+
+void test_gc_container() {
+	printf("\ncontainer\n");
+	
+	gc_ptr<bag> b = new bag;
+	b->m_ptrs.push_back(new bag);
+	b->m_ptrs.push_back(new bag);
+	b->m_ptrs.push_back(new bag);
+	b->m_ptrs[1]->m_ptrs.push_back(new bag);
+	b->m_ptrs[1]->m_ptrs[0]->m_ptrs.push_back(b.get());
+
+	gc_collector::stats s;
+	gc_collector::collect_garbage(&s);
+	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+
+	// mark-sweep should correctly collect the group of objects here.
+	// ref-counted should leak, because there is a cycle.
+	b = NULL;
+
+	gc_collector::collect_garbage(&s);
+	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+}
+
 void run_tests() {
 	test_basic_stuff();
 	test_multiple_inheritance();
+	test_gc_container();
 }
 
