@@ -130,7 +130,57 @@ namespace tu_gc {
 			}
 			gc_ptr_p->raw_set_ptr_gc_access_only(new_val_p);
 		}
+
+		// Containers
 		
+		template<class T>
+		static void contained_pointer_write_barrier(contained_gc_ptr<T, this_class>* gc_ptr_p, T* new_val_p) {
+			gc_ptr_p->raw_set_ptr_gc_access_only(new_val_p);
+		}
+		
+		template<class T>
+		static void construct_contained_pointer(contained_gc_ptr<T, this_class>* gc_ptr_p) {}
+		template<class T>
+		static void destruct_contained_pointer(contained_gc_ptr<T, this_class>* gc_ptr_p) {}
+		
+		class gc_container_base {
+		    public:
+			gc_container_base() {
+				construct_container(this);
+			}
+			virtual ~gc_container_base() {
+				destruct_container(this);
+			}
+		
+			virtual void visit_contained_ptrs() = 0;
+		};
+
+		// gc_container, for collections of pointers
+		//
+		// Work in progress -- the declaration syntax is subject to change!
+		//
+		// class my_class : public gc_object {
+		//   gc_container<std::vector<contained_gc_ptr<my_class> > > m_other_objects;
+		//     // or
+		//   GC_CONTAINER(std::vector, myclass) m_other_objects;
+		//     ...
+		//     m_other_objects.push_back(ptr);
+		//     ...
+		//     m_other_objects[i]->do_something();
+		// };
+		template<class container_type>
+		class gc_container : public gc_container_base, public container_type {
+		public:
+			// visit contained pointers
+			virtual void visit_contained_ptrs() {
+				(container_type::value_type::i_am_a_contained_gc_ptr) 0;  // ensure contained type is a contained_ptr.
+				for (container_type::const_iterator it = this->begin();
+				     it != this->end();
+				     ++it) {
+					visit_contained_ptr(it->get());
+				}
+			}
+		};
 	private:
 		friend class gc_object_base<singlethreaded_marksweep>;
 
@@ -142,5 +192,10 @@ namespace tu_gc {
 		static void clearing_pointer(void* address_of_gc_ptr);
 		static void initing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to);
 		static void changing_pointer(void* address_of_gc_ptr, gc_object_generic_base* object_pointed_to);
+
+		// Notifications from gc_container
+		static void construct_container(gc_container_base* c);
+		static void destruct_container(gc_container_base* c);
+		static void visit_contained_ptr(gc_object_generic_base* obj);
 	};
 }  // tu_gc

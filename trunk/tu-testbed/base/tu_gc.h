@@ -16,12 +16,10 @@
 // gc_object on the stack or inside another object.
 //
 // gc_ptr's can live anywhere; on the stack, on the garbage-collected
-// heap, on the regular heap.  They are the same size as native
-// pointers (but there may be substantial per-pointer overhead inside
-// the collector, for bookkeeping).  gc_ptr's outside the
-// garbage-collected heap are "roots"; i.e. they cannot be collected
-// by the garbage collector.  Objects on the gc heap are collected
-// automatically.
+// heap, on the regular heap.  gc_ptr's outside the garbage-collected
+// heap are "roots"; i.e. they cannot be collected by the garbage
+// collector.  Objects on the gc heap are collected automatically,
+// according to the policy of the specific collector being used.
 //
 // gc_ptr's are parameterized by garbage collector type.  Different gc
 // types have different characteristics.
@@ -33,7 +31,7 @@
 // Usage:
 //
 // #include <base/tu_gc.h>
-// #include <base/tu_gc_singlthreaded_marksweep.h>  // specific collector
+// #include <base/tu_gc_singlethreaded_marksweep.h>  // specific collector
 //
 // // Declare the types gc_ptr<T>, gc_object, and gc_collector,
 // // parameterized by the specific garbage collector you are using.
@@ -69,9 +67,10 @@
 //
 // implement gc_weak_ptr
 //
-// Need a solution for gc objects holding containers of gc_ptr.  As
-// is, if you do "vector<gc_ptr> v", all the gc_ptr's inside v will
-// act like roots, even if v is a member of a gc_ptr.
+// implement GC_CONTAINER for associative containers like map<>.
+//
+// improve type-inference & safety for GC_CONTAINER, it's pretty ugly
+// right now.  Need it to be less verbose and more foolproof.
 
 #ifndef TU_GC_H
 #define TU_GC_H
@@ -187,7 +186,7 @@ namespace tu_gc {
 		}
 
 		T* get() const {
-			return reinterpret_cast<T*>(m_ptr);
+			return m_ptr;
 		}
 
 		void reset(T* p) {
@@ -205,6 +204,69 @@ namespace tu_gc {
 
 	// TODO: gc_weak_ptr
 
+	// For pointers to gc_object that are kept in containers.
+	// NOTE: work in progress, subject to change.
+	template<class T, class garbage_collector>
+	class contained_gc_ptr {
+	public:
+		typedef void i_am_a_contained_gc_ptr;  // For asserting type; I gotta re-read Modern C++ Design :(
+		contained_gc_ptr() : m_ptr(0) {
+			garbage_collector::construct_contained_pointer(this);
+		}
+		contained_gc_ptr(T* p) : m_ptr(0) {
+			garbage_collector::construct_contained_pointer(this);
+			reset(p);
+		}
+		contained_gc_ptr(const contained_gc_ptr& p) : m_ptr(0) {
+			garbage_collector::construct_contained_pointer(this);
+			reset((T*) p.m_ptr);
+		}
+
+		~contained_gc_ptr() {
+			reset(0);
+			garbage_collector::destruct_contained_pointer(this);
+		}
+
+		T* operator->() const {
+			return (T*) m_ptr;
+		}
+
+		T& operator*() const {
+			return *(T*) m_ptr;
+		}
+
+		void operator=(const contained_gc_ptr& p) {
+			reset(p.get());
+		}
+
+		void operator=(T* p) {
+			reset(p);
+		}
+
+		bool operator==(const contained_gc_ptr& p) const {
+			return m_ptr == p.m_ptr;
+		}
+
+		bool operator==(const T* p) const {
+			return m_ptr == p;
+		}
+
+		T* get() const {
+			return m_ptr;
+		}
+
+		void reset(T* p) {
+			garbage_collector::contained_pointer_write_barrier(this, p);
+		}
+
+		// This is only for use by the garbage collector.  Don't use it!
+		// TODO: figure out how to protect it.
+		void raw_set_ptr_gc_access_only(T* p) {
+			m_ptr = p;
+		}
+	private:
+		T* m_ptr;
+	};
 
 	// Garbage collectors can inherit from this to get access
 	// block_construction_locker_base::m_block.
@@ -214,7 +276,7 @@ namespace tu_gc {
 			return lock->m_block;
 		}
 	};
-	
+
 	// Use this to declare the types gc_ptr<T>, gc_object, and
 	// gc_collector using your chosen collector, in whatever
 	// namespace is convenient for you.
@@ -230,17 +292,46 @@ namespace tu_gc {
 	#define DECLARE_GC_TYPES(collector_classname) 			\
 		typedef collector_classname gc_collector;		\
 		typedef tu_gc::gc_object_base<gc_collector> gc_object;  \
+									\
 		template<class T>					\
 		class gc_ptr : public tu_gc::gc_ptr<T, collector_classname> {	\
 		public:							\
 			gc_ptr() {}					\
 			gc_ptr(T* p) : tu_gc::gc_ptr<T, collector_classname>(p) {} \
 		};							\
+									\
+		template<class T>					\
+		class contained_gc_ptr : public tu_gc::contained_gc_ptr<T, collector_classname> {	\
+		public:							\
+			contained_gc_ptr() {}				\
+			contained_gc_ptr(T* p) : tu_gc::contained_gc_ptr<T, collector_classname>(p) {} \
+		};							\
+									\
+		template<class T>					\
+		class gc_container : public collector_classname::gc_container<T> { \
+		public:							\
+			gc_container() {}				\
+		};
 
-	// TODO: arrays of gc_objects?
-
-	// TODO: simple refcounted gc
-
+	// For STL containers inside gc_objects whose values point at
+	// other gc_objects.  Use like:
+	//
+	// class my_class : public gc_object {
+	//   ...
+	//   GC_CONTAINER(std::vector, my_class) m_pointers;
+	//   ...
+	//     // Use m_pointers just like a regular std::vector.
+	//     for (int i = 0; i < m_pointers.size(); i++) {
+	//       m_pointers[i]->something();
+	//     }
+	// };
+	//
+	// TODO: not sure about this macro, maybe not easy enough to
+	// use, and need to work on better ways to infer the container
+	// types, like for associative containers, containers of
+	// containers, etc.
+	#define GC_CONTAINER(container_type, T) gc_container<container_type<contained_gc_ptr<T> > >
+	
 	// TODO: incremental gc
 
 	// TODO: incremental generational gc
