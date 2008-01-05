@@ -436,13 +436,22 @@ namespace gameswf
 		Uint16 width = (Uint16) PIXELS_TO_TWIPS(fclamp(fn.arg(0).to_number(), 0, 255));
 		rgba color(0, 0, 0, 255);
 
-		if (fn.nargs > 1)
+		if (fn.nargs >= 2)
 		{
 			color.set(fn.arg(1).to_number());
-			if (fn.nargs > 2)
+			if (fn.nargs >= 3)
 			{
 				float alpha = fclamp(fn.arg(2).to_number(), 0, 100);
 				color.m_a = Uint8(255 * (alpha/100));
+
+				// capsStyle:String - Added in Flash Player 8. 
+				// A string that specifies the type of caps at the end of lines.
+				// Valid values are: "round", "square", and "none". 
+				// If a value is not indicated, Flash uses round caps. 
+				if (fn.nargs >= 6)
+				{
+					//TODO
+				}
 			}
 		}
 
