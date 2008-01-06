@@ -1307,9 +1307,23 @@ namespace gameswf
 				}
 
 				case 0x25:	// remove clip
-					env->get_target()->remove_display_object(env->top(0).to_tu_string());
+				{
+					//	removeMovieClip(target:Object), deletes the specified movie clip.
+					character*	target = env->find_target(env->top(0));
+					if (target)
+					{
+						if (target->get_parent())
+						{
+							sprite_instance* parent = target->get_parent()->cast_to_sprite();
+							if (parent)
+							{
+								parent->remove_display_object(target);
+							}
+						}
+					}
 					env->drop(1);
 					break;
+				}
 
 				case 0x26:	// trace
 				{

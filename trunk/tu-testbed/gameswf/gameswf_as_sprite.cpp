@@ -237,7 +237,7 @@ namespace gameswf
 		sprite_instance* parent = sprite->get_parent()->cast_to_sprite(); 
 		if (parent) 
 		{ 
-			parent->remove_display_object(sprite->get_depth(), -1); 
+			parent->remove_display_object(sprite); 
 		} 
 	} 
 
