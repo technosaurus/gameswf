@@ -298,11 +298,16 @@ namespace gameswf
 			len = iclamp(len, 0, utf8_len);
 		}
 
-		int end = start + len - 1;
-		if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
-		assert(end >= start);
+		int end = start + len;
+		if (end > utf8_len)
+		{
+			end = utf8_len - start + 1;
+		}
 
-		fn.result->set_tu_string(this_str.utf8_substring(start, end));
+		if (start < end)
+		{
+			fn.result->set_tu_string(this_str.utf8_substring(start, end));
+		}
 	}
 
 	void string_substring(const fn_call& fn)
