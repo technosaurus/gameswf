@@ -26,11 +26,11 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 
 		int size() const;
-		void prev();
-		void next();
+		bool prev();
+		bool next();
 		void first();
 		int fld_count();
-		void goto_record(int index);
+		bool goto_record(int index);
 		const char* get_field_title(int n);
 		void retrieve_data(MYSQL_RES* result);
 		int get_recno() const;
