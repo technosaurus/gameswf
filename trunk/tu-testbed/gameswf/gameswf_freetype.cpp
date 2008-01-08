@@ -235,6 +235,11 @@ namespace gameswf
 
 	tu_freetype::~tu_freetype()
 	{
+		if (m_face)
+		{
+			// Discards a given face object, as well as all of its child slots and sizes.
+			FT_Done_Face(m_face);
+		}
 	}
 
 	image::alpha* tu_freetype::draw_bitmap(const FT_Bitmap& bitmap)
