@@ -145,7 +145,7 @@ namespace gameswf
 {
 	struct button_character_instance : public character
 	{
-		button_character_definition*	m_def;
+		smart_ptr<button_character_definition>	m_def;
 		array< smart_ptr<character> >	m_record_character;
 
 		enum mouse_flags
@@ -176,7 +176,7 @@ namespace gameswf
 			m_mouse_flags(IDLE),
 			m_mouse_state(UP)
 		{
-			assert(m_def);
+			assert(m_def != NULL);
 
 			int r, r_num =  m_def->m_button_records.size();
 			m_record_character.resize(r_num);
@@ -563,7 +563,7 @@ namespace gameswf
 			return true;
 		}
 		
-		virtual character_def* get_character_def() { return m_def;	}
+		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 
 	};
 

@@ -208,7 +208,7 @@ namespace gameswf
 
 	struct edit_text_character : public character
 	{
-		edit_text_character_def*	m_def;
+		smart_ptr<edit_text_character_def>	m_def;
 		array<text_glyph_record>	m_text_glyph_records;
 		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
 		array<line_style>	m_dummy_line_style;
@@ -233,7 +233,7 @@ namespace gameswf
 		edit_text_character(character* parent, edit_text_character_def* def, int id);
 		~edit_text_character();
 
-		virtual character_def* get_character_def() { return m_def;	}
+		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		void reset_format(as_textformat* tf);
 
 		movie_root* get_root();

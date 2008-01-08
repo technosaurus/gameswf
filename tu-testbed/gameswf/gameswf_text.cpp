@@ -563,7 +563,7 @@ namespace gameswf
 		m_ycursor(0.0f)
 	{
 		assert(parent);
-		assert(m_def);
+		assert(m_def != NULL);
 
 		// defaults
 		m_color = m_def->m_color;
