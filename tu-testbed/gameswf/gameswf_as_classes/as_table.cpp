@@ -34,7 +34,7 @@ namespace gameswf
 	{
 		assert(fn.this_ptr);	assert(fn.env);
 		as_table* tbl = fn.this_ptr->cast_to_as_table();
-		tbl->next();
+		fn.result->set_bool(tbl->next());
 	}
 
 	void	prev_method(const fn_call& fn)
@@ -42,7 +42,7 @@ namespace gameswf
 	{
 		assert(fn.this_ptr);	assert(fn.env);
 		as_table* tbl = fn.this_ptr->cast_to_as_table();
-		tbl->prev();
+		fn.result->set_bool(tbl->prev());
 	}
 
 	void	first_method(const fn_call& fn)
@@ -67,7 +67,7 @@ namespace gameswf
 		assert(fn.this_ptr);	assert(fn.env);
 		as_table* tbl = fn.this_ptr->cast_to_as_table();
 		assert(fn.nargs == 1);
-		tbl->goto_record((int) fn.arg(0).to_number());
+		fn.result->set_bool(tbl->goto_record((int) fn.arg(0).to_number()));
 	}
 
 	void	get_title_method(const fn_call& fn)
@@ -150,20 +150,24 @@ namespace gameswf
 		return m_index;
 	}
 
-	void as_table::prev()
+	bool as_table::prev()
 	{
 		if (m_index > 0)
 		{
 			m_index--;
+			return true;
 		}
+		return false;
 	}
 
-	void as_table::next()
+	bool as_table::next()
 	{
 		if (m_index < m_data.size() - 1)
 		{
 			m_index++;
+			return true;
 		}
+		return false;
 	}
 
 	void as_table::first()
@@ -176,12 +180,14 @@ namespace gameswf
 		return m_title.size();
 	}
 
-	void as_table::goto_record(int index)
+	bool as_table::goto_record(int index)
 	{
 		if (index < (int) m_data.size() && index >= 0)
 		{
 			m_index = index;
+			return true;
 		}
+		return false;
 	}
 
 	const char* as_table::get_field_title(int n)
