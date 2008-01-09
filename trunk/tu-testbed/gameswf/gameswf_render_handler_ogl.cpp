@@ -686,7 +686,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 
 
-	void	fill_style_color(int fill_side, gameswf::rgba color)
+	void	fill_style_color(int fill_side, const gameswf::rgba& color)
 	// Set fill style for the left interior of the shape.  If
 	// enable is false, turn off fill for the left interior.
 	{

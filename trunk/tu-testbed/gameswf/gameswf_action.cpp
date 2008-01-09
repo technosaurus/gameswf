@@ -33,6 +33,7 @@
 #include "gameswf/gameswf_as_classes/as_date.h"
 #include "gameswf/gameswf_as_classes/as_xmlsocket.h"
 #include "gameswf/gameswf_as_classes/as_broadcaster.h"
+#include "gameswf/gameswf_as_classes/as_selection.h"
 #include "gameswf/gameswf_as_classes/as_db.h"	// mysql plugin
 
 #ifdef _WIN32
@@ -565,6 +566,7 @@ namespace gameswf
 			s_global->set_member("Boolean", as_value(as_global_boolean_ctor));
 			s_global->set_member("Color", as_value(as_global_color_ctor));
 			s_global->set_member("Date", as_value(as_global_date_ctor));
+			s_global->set_member("Selection", selection_init());
 
 			// ASSetPropFlags
 			s_global->set_member("ASSetPropFlags", as_value(as_global_assetpropflags));

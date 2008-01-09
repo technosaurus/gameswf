@@ -229,6 +229,7 @@ namespace gameswf
 		float	m_indent;
 		float	m_leading;
 		stringi_hash<as_value>	m_variables;
+		rgba m_background_color;
 
 		edit_text_character(character* parent, edit_text_character_def* def, int id);
 		~edit_text_character();

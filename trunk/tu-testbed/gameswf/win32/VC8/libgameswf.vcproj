@@ -269,6 +269,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_selection.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_selection.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_sound.cpp"
 				>
 			</File>

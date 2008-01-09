@@ -140,7 +140,7 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->fill_style_disable(fill_side);
 		}
 
-		void	fill_style_color(int fill_side, rgba color)
+		void	fill_style_color(int fill_side, const rgba& color)
 		{
 			if (s_render_handler) s_render_handler->fill_style_color(fill_side, color);
 		}
