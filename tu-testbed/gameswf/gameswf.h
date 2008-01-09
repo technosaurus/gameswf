@@ -194,6 +194,7 @@ namespace gameswf
 	struct as_as_function;
 	struct as_date;
 	struct as_listener;
+	struct as_selection;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -234,6 +235,8 @@ namespace gameswf
 		virtual as_date* cast_to_as_date() { return 0; }
 		virtual as_listener* cast_to_as_listener() { return 0; }
 		virtual as_object_interface* cast_to_as_object_interface() { return this; }
+		virtual as_selection* cast_to_as_selection() { return 0; }
+		
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
@@ -1105,7 +1108,7 @@ namespace gameswf
 			WRAP_CLAMP
 		};
 		virtual void	fill_style_disable(int fill_side) = 0;
-		virtual void	fill_style_color(int fill_side, rgba color) = 0;
+		virtual void	fill_style_color(int fill_side, const rgba& color) = 0;
 		virtual void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm) = 0;
 
 		virtual void	line_style_disable() = 0;

@@ -574,6 +574,7 @@ namespace gameswf
 		m_right_margin = m_def->m_right_margin;
 		m_indent = m_def->m_indent;
 		m_leading = m_def->m_leading;
+		m_background_color.set(255, 255, 255, 255);
 
 		// first set default text value
 		set_text(def->m_default_text.c_str());
@@ -704,7 +705,7 @@ namespace gameswf
 		matrix mat = get_world_matrix(); 
 		render::set_matrix(mat); 
 		render::line_style_color(rgba(255, 0, 0, 255));   // red cursor 
-		render::line_style_width(PIXELS_TO_TWIPS(3));
+		render::line_style_width(PIXELS_TO_TWIPS(2));
 		render::draw_line_strip(box, 2);        // draw line 
 	} 
 
@@ -742,10 +743,11 @@ namespace gameswf
 				(Sint16) coords[0].m_x, (Sint16) coords[0].m_y, 
 			}; 
 
-			render::fill_style_color(0, rgba(255, 255, 255, 255)); 
+			render::fill_style_color(0,	m_background_color);
 			render::draw_mesh_strip(&icoords[0], 4); 
 
 			render::line_style_color(rgba(0,0,0,255)); 
+			render::line_style_width(0);
 			render::draw_line_strip(&icoords[8], 5); 
 		} 
 
@@ -774,6 +776,15 @@ namespace gameswf
 			{ 
 				if (m_has_focus == false) 
 				{ 
+					// Invoke user defined event handler
+					as_value function;
+					if (get_member("onSetFocus", &function))
+					{
+						as_environment env;
+						env.push(as_value());	// oldfocus, TODO
+						call_method(function, &env, this, 1, env.get_top_index());
+					}
+
 					get_root()->m_keypress_listener.add(this);
 					m_has_focus = true; 
 					m_cursor = m_text.size(); 
@@ -786,6 +797,15 @@ namespace gameswf
 			{ 
 				if (m_has_focus == true) 
 				{ 
+					// Invoke user defined event handler
+					as_value function;
+					if (get_member("onKillFocus", &function))
+					{
+						as_environment env;
+						env.push(as_value());	// newfocus, TODO
+						call_method(function, &env, this, 1, env.get_top_index());
+					}
+
 					m_has_focus = false; 
 					get_root()->m_keypress_listener.remove(this); 
 					format_text(); 
@@ -1045,6 +1065,11 @@ namespace gameswf
 				// log_error("not input &  dynamic");
 			}
 		}
+		else if (name == "backgroundColor")
+		{
+			m_background_color = rgba(val.to_number());
+		}
+
 
 		// @@ TODO see TextField members in Flash MX docs
 
@@ -1110,6 +1135,12 @@ namespace gameswf
 		else if (name == "setTextFormat")
 		{
 			val->set_as_c_function_ptr(&set_textformat);
+			return true;
+		}
+		else if (name == "backgroundColor")
+		{
+			val->set_int(m_background_color.m_r << 16 | m_background_color.m_g << 8 |
+				m_background_color.m_b);
 			return true;
 		}
 

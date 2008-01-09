@@ -65,7 +65,7 @@ namespace gameswf
 		void	draw_line_strip(const Sint16 coords[], int vertex_count);
 
 		void	fill_style_disable(int fill_side);
-		void	fill_style_color(int fill_side, rgba color);
+		void	fill_style_color(int fill_side, const rgba& color);
 		void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, render_handler::bitmap_wrap_mode wm);
 
 		void	line_style_disable();
