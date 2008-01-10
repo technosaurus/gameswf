@@ -772,8 +772,9 @@ namespace gameswf
 
 		switch (id.m_id) 
 		{ 
-		case event_id::SETFOCUS: 
+			case event_id::SETFOCUS: 
 			{ 
+				get_root()->set_active_entity(this);
 				if (m_has_focus == false) 
 				{ 
 					// Invoke user defined event handler
