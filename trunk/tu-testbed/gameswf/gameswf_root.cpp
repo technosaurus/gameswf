@@ -59,6 +59,11 @@ namespace gameswf
 		m_def = NULL;
 	}
 
+	void movie_root::set_active_entity(character* ch)
+	{
+		m_current_active_entity = ch;
+	}
+
 	void	movie_root::generate_mouse_button_events(mouse_button_state* ms)
 	{
 		smart_ptr<character>	active_entity = ms->m_active_entity;

@@ -82,6 +82,7 @@ namespace gameswf
 		movie_root(movie_def_impl* def);
 		~movie_root();
 
+		void set_active_entity(character* ch);
 		void	generate_mouse_button_events(mouse_button_state* ms);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
