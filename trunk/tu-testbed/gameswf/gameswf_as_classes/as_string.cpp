@@ -85,8 +85,7 @@ namespace gameswf
 			return;
 		}
 
-		double zero = 0.0;
-		fn.result->set_double(zero / zero);  // Return NaN.  TODO: encapsulate the NaN somewhere.
+		fn.result->set_nan();
 	}
   
 	void string_concat(const fn_call& fn)

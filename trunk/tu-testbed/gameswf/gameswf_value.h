@@ -25,6 +25,7 @@ namespace gameswf
 
 	bool string_to_number(double* result, const char* str);
 
+	exported_module double get_nan();
 
 	// helper, used in as_value
 	struct as_property : public ref_counted
@@ -216,6 +217,7 @@ namespace gameswf
 		exported_module void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
 		exported_module void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
 		exported_module void	set_int(int val) { set_double(val); }
+		exported_module void	set_nan()	{	set_double(get_nan()); }
 		exported_module void	set_as_object_interface(as_object_interface* obj);
 		exported_module void	set_as_c_function_ptr(as_c_function_ptr func)
 		{
