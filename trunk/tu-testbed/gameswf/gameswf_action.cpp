@@ -526,6 +526,22 @@ namespace gameswf
 	}
 
 
+	void as_global_parse_float(const fn_call& fn)
+	{
+		if (fn.nargs == 1)  
+		{
+			double res;
+			if (string_to_number(&res, fn.arg(0).to_string()))
+			{
+				fn.result->set_double(res);
+			}
+			else
+			{
+				fn.result->set_undefined(); //TODO NaN
+			}
+		}
+	}
+
 	// getVersion() : String
 	void	as_global_get_version(const fn_call& fn)
 	// Returns a string containing Flash Player version and platform information.
@@ -586,7 +602,9 @@ namespace gameswf
 			s_global->set_member("setInterval",  as_value(as_global_setinterval));
 			s_global->set_member("clearInterval",  as_value(as_global_clearinterval));
 			s_global->set_member("getVersion",  as_value(as_global_get_version));
+			s_global->set_member("parseFloat",  as_value(as_global_parse_float));
 			s_global->set_member("/:$version",  "gameSWF");
+
 		}
 	}
 
