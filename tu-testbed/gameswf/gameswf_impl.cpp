@@ -293,6 +293,7 @@ namespace gameswf
 			register_tag_loader(64, define_enable_debugger_loader);
 			register_tag_loader(66, define_tabindex_loader);
 			register_tag_loader(69, define_file_attribute_loader);	// Flash 8
+			register_tag_loader(70, place_object_2_loader);
 			register_tag_loader(73, define_font_alignzones);	// DefineFontAlignZones - Flash 8
 			register_tag_loader(74, define_csm_textsetting_loader); // CSMTextSetting - Flash 8
 			register_tag_loader(75, define_font_loader);	// DefineFont3 - Flash 8
@@ -1422,7 +1423,7 @@ namespace gameswf
 
 		void	read(stream* in, int tag_type, int movie_version)
 		{
-			assert(tag_type == 4 || tag_type == 26);
+			assert(tag_type == 4 || tag_type == 26 || tag_type == 70);
 
 			m_tag_type = tag_type;
 
@@ -1447,7 +1448,8 @@ namespace gameswf
 					IF_VERBOSE_PARSE(log_msg("  cxform:\n"); m_color_transform.print());
 				}
 			}
-			else if (tag_type == 26)
+			else
+			if (tag_type == 26 || tag_type == 70)
 			{
 				in->align();
 
@@ -1459,6 +1461,17 @@ namespace gameswf
 				bool	has_matrix = in->read_uint(1) ? true : false;
 				bool	has_char = in->read_uint(1) ? true : false;
 				bool	flag_move = in->read_uint(1) ? true : false;
+
+				bool	has_cache_asbitmap = false;
+				bool	has_blend_mode = false;
+				bool	has_filter_list = false;
+				if (tag_type == 70)
+				{
+					in->read_uint(5); // unused
+					has_cache_asbitmap = in->read_uint(1) ? true : false;
+					has_blend_mode = in->read_uint(1) ? true : false;
+					has_filter_list = in->read_uint(1) ? true : false;
+				}
 
 				m_depth = in->read_u16();
 				IF_VERBOSE_PARSE(log_msg("  depth = %d\n", m_depth));
@@ -1492,6 +1505,166 @@ namespace gameswf
 					m_clip_depth = in->read_u16(); 
 					IF_VERBOSE_PARSE(log_msg("  clip_depth = %d\n", m_clip_depth));
 				}
+
+				if (has_filter_list)
+				{
+
+					// TODO, test has_filter_list
+					assert(0);
+
+					// reads FILTERLIST
+					int filters = in->read_u8();
+					for (int i = 0; i < filters; i++)
+					{
+						int filter_id = in->read_u8();
+						switch (filter_id)
+						{
+							case 0 : // DropShadowFilter
+							{
+								rgba drop_shadow_color;
+								drop_shadow_color.read_rgba(in);	// RGBA Color of the shadow
+								float blur_x = in->read_fixed();	// Horizontal blur amount
+								float blur_y = in->read_fixed();	// Vertical blur amount
+								float angle = in->read_fixed();	// Radian angle of the drop shadow
+								float distance = in->read_fixed();	// Distance of the drop shadow
+								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
+								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
+								bool knockout = in->read_uint(1);	// Knockout mode
+								bool composite_source = in->read_uint(1);	// Composite source Always 1
+								int passes = in->read_uint(5); // passes
+								break;
+							}
+
+							case 1 : // BlurFilter
+							{
+								float blur_x = in->read_fixed(); // Horizontal blur amount
+								float blur_y = in->read_fixed(); // Vertical blur amount
+								int passes = in->read_uint(5);	// Number of blur passes
+								in->read_uint(3);	// Reserved UB[3] Must be 0
+								break;
+							}
+
+							case 2 : // GlowFilter
+							{
+								rgba glow_color;
+								glow_color.read_rgba(in);	//RGBA Color of the shadow
+								float blur_x = in->read_fixed();	// Horizontal blur amount
+								float blur_y = in->read_fixed();	// Vertical blur amount
+								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
+								bool inner_glow = in->read_uint(1);	// Inner glow mode
+								bool knockout = in->read_uint(1);	// Knockout mode
+								bool composite_source = in->read_uint(1);	// Composite source Always 1
+								int passes = in->read_uint(5); // passes
+								break;
+							}
+
+							case 3 : // BevelFilter
+							{
+								rgba shadow_color;
+								shadow_color.read_rgba(in);	//RGBA Color of the shadow
+								rgba highlight_color;
+								highlight_color.read_rgba(in);	//RGBA Color of the highlight
+								float blur_x = in->read_fixed();	// Horizontal blur amount
+								float blur_y = in->read_fixed();	// Vertical blur amount
+								float angle = in->read_fixed();	// Radian angle of the drop shadow
+								float distance = in->read_fixed();	// Distance of the drop shadow
+								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
+								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
+								bool knockout = in->read_uint(1);	// Knockout mode
+								bool composite_source = in->read_uint(1);	// Composite source Always 1
+								bool on_top = in->read_uint(1);	// Composite source Always 1
+								int passes = in->read_uint(4); // passes
+								break;
+							}
+
+							case 4 : // GradientGlowFilter
+							{
+								int num_colors = in->read_u8();		// Number of colors in the gradient
+								for (int i = 0; i < num_colors; i++)
+								{
+									rgba gradient_colors;
+									gradient_colors.read_rgba(in);	// RGBA[NumColors] Gradient colors
+								}
+								for (int i = 0; i < num_colors; i++)
+								{
+									int gradient_ratio = in->read_u8();	// UI8[NumColors] Gradient ratios
+								}
+								float blur_x = in->read_fixed();	// Horizontal blur amount
+								float blur_y = in->read_fixed();	// Vertical blur amount
+								float angle = in->read_fixed();	// Radian angle of the drop shadow
+								float distance = in->read_fixed();	// Distance of the drop shadow
+								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
+								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
+								bool knockout = in->read_uint(1);	// Knockout mode
+								bool composite_source = in->read_uint(1);	// Composite source Always 1
+								bool on_top = in->read_uint(1);	// Composite source Always 1
+								int passes = in->read_uint(4); // passes
+								break;
+							}
+
+							case 5 : // ConvolutionFilter
+							{
+								int matrix_x = in->read_u8();	// Horizontal matrix size
+								int matrix_y = in->read_u8();	// Vertical matrix size
+								float divisor = in->read_float();	// Divisor applied to the matrix values
+								float bias = in->read_float();	// Bias applied to the matrix values
+								for (int k = 0; k < matrix_x * matrix_y; k++)
+								{
+									in->read_float();	// Matrix values
+								}
+								rgba default_color;
+								default_color.read_rgba(in);	// RGBA Default color for pixels outside the image
+								in->read_uint(6);		// Reserved UB[6] Must be 0
+								bool clamp = in->read_uint(1);	// UB[1] Clamp mode
+								bool preserve_alpha = in->read_uint(1);	// UB[1]
+								break;
+							}
+
+							case 6 : // ColorMatrixFilter
+								// matrix is float[20]
+								for (int k = 0; k < 20; k++)
+								{
+									in->read_float();
+								}
+								break;
+
+							case 7 : // GradientBevelFilter
+							{
+								int num_colors = in->read_u8();		// Number of colors in the gradient
+								for (int i = 0; i < num_colors; i++)
+								{
+									rgba gradient_colors;
+									gradient_colors.read_rgba(in);	// RGBA[NumColors] Gradient colors
+								}
+								for (int i = 0; i < num_colors; i++)
+								{
+									int gradient_ratio = in->read_u8();	// UI8[NumColors] Gradient ratios
+								}
+								float blur_x = in->read_fixed();	// Horizontal blur amount
+								float blur_y = in->read_fixed();	// Vertical blur amount
+								float angle = in->read_fixed();	// Radian angle of the drop shadow
+								float distance = in->read_fixed();	// Distance of the drop shadow
+								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
+								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
+								bool knockout = in->read_uint(1);	// Knockout mode
+								bool composite_source = in->read_uint(1);	// Composite source Always 1
+								bool on_top = in->read_uint(1);	// Composite source Always 1
+								int passes = in->read_uint(4); // passes
+								break;
+							}
+
+							default:
+								assert(0);	// invalid input
+						}
+					}
+				}	
+				
+				if (has_blend_mode)
+				{
+					// TODO, implement blend_mode
+					Uint8 blend_mode = in->read_u8();
+				}
+
 				if (has_actions)
 				{
 					Uint16	reserved = in->read_u16();
@@ -1736,7 +1909,7 @@ namespace gameswf
 
 	void	place_object_2_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
-		assert(tag_type == 4 || tag_type == 26);
+		assert(tag_type == 4 || tag_type == 26 || tag_type == 70);
 
 		IF_VERBOSE_PARSE(log_msg("  place_object_2\n"));
 
