@@ -13,11 +13,6 @@
 #include "gameswf/gameswf_movie_def.h"
 #include <float.h>
 
-#ifdef _WIN32
-#define snprintf _snprintf
-#define isnan _isnan
-#endif // _WIN32
-
 namespace gameswf
 {
 
@@ -34,6 +29,13 @@ namespace gameswf
 			return false;
 		}
 		return true;
+	}
+
+	// utility
+	double get_nan()
+	{
+		double zero = 0.0;
+		return zero / zero;
 	}
 
 	as_value::as_value(as_object_interface* obj)

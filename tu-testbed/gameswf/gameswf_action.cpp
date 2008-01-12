@@ -36,10 +36,6 @@
 #include "gameswf/gameswf_as_classes/as_selection.h"
 #include "gameswf/gameswf_as_classes/as_db.h"	// mysql plugin
 
-#ifdef _WIN32
-#define snprintf _snprintf
-#endif // _WIN32
-
 // NOTES:
 //
 // Buttons
@@ -85,14 +81,13 @@
 //
 // Number.toString() -- takes an optional arg that specifies the base
 //
-// parseInt(), parseFloat()
+// parseInt()
 //
 // Boolean() type cast
 //
 // typeof operator --> "number", "string", "boolean", "object" (also
 // for arrays), "null", "movieclip", "function", "undefined"
 //
-// isNaN()
 //
 // Number.MAX_VALUE, Number.MIN_VALUE
 //
@@ -120,7 +115,7 @@ namespace gameswf
 
 	static tu_string s_gameswf_version("gameSWF");
 	const char* get_gameswf_version() {	return s_gameswf_version.c_str(); }
-	
+
 	void	register_fscommand_callback(fscommand_callback handler)
 	// External interface.
 	{
@@ -139,6 +134,7 @@ namespace gameswf
 		action_init();
 		s_global->set_member("_bootup", param);
 	}
+
 
 	//
 	// Function/method dispatch.
@@ -534,12 +530,26 @@ namespace gameswf
 			if (string_to_number(&res, fn.arg(0).to_string()))
 			{
 				fn.result->set_double(res);
-			}
-			else
-			{
-				fn.result->set_undefined(); //TODO NaN
+				return;
 			}
 		}
+		fn.result->set_nan();
+	}
+
+	void as_global_isnan(const fn_call& fn)
+	{
+		if (fn.nargs == 1)  
+		{
+			if (fn.arg(0).get_type() == as_value::NUMBER)
+			{
+				if (isnan(fn.arg(0).to_number()) == false)
+				{
+					fn.result->set_bool(false);
+					return;
+				}
+			}
+		}
+		fn.result->set_bool(true);
 	}
 
 	// getVersion() : String
@@ -603,6 +613,7 @@ namespace gameswf
 			s_global->set_member("clearInterval",  as_value(as_global_clearinterval));
 			s_global->set_member("getVersion",  as_value(as_global_get_version));
 			s_global->set_member("parseFloat",  as_value(as_global_parse_float));
+			s_global->set_member("isNaN",  as_value(as_global_isnan));
 			s_global->set_member("/:$version",  "gameSWF");
 
 		}
@@ -1842,13 +1853,22 @@ namespace gameswf
 				{
 					as_object_interface*	obj = env->top(1).to_object();
 
-					// Special case: String has a member "length"
-					if (obj == NULL
-					    && env->top(1).get_type() == as_value::STRING
-					    && env->top(0).to_tu_stringi() == "length")
+					// Special cases:
+					// String.length, Number.Nan
+					if (obj == NULL)
 					{
-						int	len = env->top(1).to_tu_string_versioned(version).utf8_length();
-						env->top(1).set_int(len);
+						if (env->top(1).get_type() == as_value::STRING
+							  && env->top(0).to_tu_stringi() == "length")
+						{
+							int	len = env->top(1).to_tu_string_versioned(version).utf8_length();
+							env->top(1).set_int(len);
+						}
+						else
+						if (env->top(1).get_type() == as_value::NUMBER
+							  && env->top(0).to_tu_stringi() == "NaN")
+						{
+							env->top(1).set_nan();
+						}
 					}
 					else
 					{
@@ -2508,7 +2528,14 @@ namespace gameswf
 							u.i = swap_le64(u.i);
 							i += 8;
 
+//							if (i == 9)	// spec case, NaN constant
+//							{
+//								env->push(get_nan());
+//							}
+//							else
+//							{
 							env->push(u.d);
+//							}
 
 							IF_VERBOSE_ACTION(log_msg("-------------- pushed double %f\n", u.d));
 						}
@@ -3341,7 +3368,6 @@ namespace gameswf
 			}
 		}
 	}
-
 
 };
 
