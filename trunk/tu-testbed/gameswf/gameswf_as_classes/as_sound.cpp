@@ -57,23 +57,25 @@ namespace gameswf
 		as_sound*	snd = fn.this_ptr->cast_to_as_sound();
 		assert(snd);
 
-		snd->m_name = fn.arg(0).to_tu_string();
-
 		assert(fn.env);
 
 		// find target movieclip
-		character* target = snd->m_target == NULL ? fn.env->get_target() : snd->m_target.get_ptr();
+		character* target = snd->m_target.get_ptr();
+		if (target == NULL)
+		{
+			target = fn.env->get_target();
+		}
 			
 		// find resource
 		resource* res = NULL;
 		if (target)
 		{
-			res = target->find_exported_resource(snd->m_name);
+			res = target->find_exported_resource(fn.arg(0).to_string());
 		}
 
 		if (res == NULL)
 		{
-			log_error("import error: resource '%s' is not exported\n", snd->m_name.c_str());
+			log_error("import error: resource '%s' is not exported\n", fn.arg(0).to_string());
 			return;
 		}
 
@@ -90,9 +92,13 @@ namespace gameswf
 			return;
 		}
 
+		snd->clear();
+
 		// sanity check
 		assert(si >= 0 && si < 1000);
 		snd->m_id = si;
+
+		snd->m_is_loaded_sound = false;
 	}
 
 	void	sound_volume(const fn_call& fn)
@@ -119,6 +125,30 @@ namespace gameswf
 		}
 	}
 
+	// public loadSound(url:String, isStreaming:Boolean) : Void
+	void	sound_load(const fn_call& fn)
+	{
+		if (fn.nargs > 1)
+		{
+			sound_handler* s = get_sound_handler();
+			if (s != NULL)
+			{
+				assert(fn.this_ptr);
+				as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+				assert(snd);
+
+				tu_string full_url = get_full_url(fn.arg(0).to_string());
+				int id = s->load_sound(full_url.c_str());
+				if (id >= 0)
+				{
+					snd->clear();
+					snd->m_id = id;
+					snd->m_is_loaded_sound = true;
+				}
+			}
+		}
+	}
+
 	// Sound([target:Object])
 	//  Creates a new Sound object for a specified movie clip.
 	void	as_global_sound_ctor(const fn_call& fn)
@@ -135,6 +165,7 @@ namespace gameswf
 		snd->set_member("start", &sound_start);
 		snd->set_member("stop", &sound_stop);
 		snd->set_member("setVolume", &sound_volume);
+		snd->set_member("loadSound", &sound_load);
 
 		fn.result->set_as_object_interface(snd.get_ptr());
 	}

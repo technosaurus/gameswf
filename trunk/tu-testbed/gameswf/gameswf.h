@@ -849,6 +849,9 @@ namespace gameswf
 			int		sample_rate,	/* one of 5512, 11025, 22050, 44100 */
 			bool		stereo) = 0;
 
+		// loads external sound file
+		virtual int	load_sound(const char* url) = 0;
+
 		virtual void append_sound(int sound_handle, void* data, int data_bytes) = 0;
 
 		// gameswf calls this when it wants you to play the defined sound.

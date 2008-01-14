@@ -49,6 +49,33 @@ namespace gameswf
 		m_sound.clear();
 	}
 
+	// loads external sound file
+	// TODO: load MP3, ...
+	int	SDL_sound_handler::load_sound(const char* url)
+	{
+		SDL_AudioSpec wav_spec;
+		Uint32	data_bytes;
+		Uint8*	data;
+
+		if (SDL_LoadWAV(url, &wav_spec, &data, &data_bytes) == NULL)
+		{
+		  // printf("Could not open test.wav: %s\n", SDL_GetError());
+			return -1;
+		}
+
+		int id = create_sound(
+			data,
+			data_bytes,
+			wav_spec.samples,
+			FORMAT_NATIVE16,
+			wav_spec.freq, 
+			wav_spec.channels < 2 ? false : true);
+
+		SDL_FreeWAV(data);
+
+		return id;
+	}
+
 	// may be used for the creation stream sound head with data_bytes=0 
 	int	SDL_sound_handler::create_sound(
 		void* data,

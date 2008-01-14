@@ -18,11 +18,38 @@ namespace gameswf
 
 	struct as_sound : public as_object
 	{
-		tu_string m_name;
-		int m_id;
-		weak_ptr<character> m_target;
+
+		as_sound() :
+			m_id(-1),
+			m_is_loaded_sound(false)
+		{
+		}
+
+		~as_sound()
+		{
+			clear();
+		}
+
+		void clear()
+		{
+			if (m_is_loaded_sound && m_id >= 0)
+			{
+				sound_handler* sh = get_sound_handler();
+				if (sh)
+				{
+					sh->delete_sound(m_id);
+				}
+			}
+			m_is_loaded_sound = false;
+			m_id = -1;
+		}
 
 		virtual as_sound* cast_to_as_sound() { return this; }
+
+		int m_id;
+
+		bool m_is_loaded_sound;
+		weak_ptr<character> m_target;
 	};
 
 }	// end namespace gameswf
