@@ -52,6 +52,9 @@ namespace gameswf
 
 		virtual bool is_open() { return m_is_open; };
 
+		// loads external sound file, only .WAV for now
+		virtual int	load_sound(const char* url);
+
 		// Called to create a sample.
 		virtual int	create_sound(void* data, int data_bytes,
 			int sample_count, format_type format,
