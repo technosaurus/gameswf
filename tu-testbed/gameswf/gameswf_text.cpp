@@ -1026,25 +1026,27 @@ namespace gameswf
 		else if (name == "textColor")
 		{	
 			// The arg is 0xRRGGBB format.
-			Uint32	rgb = (Uint32) val.to_number();
-
-			cxform	cx = get_cxform();
-			cx.m_[0][0] = fclamp(((rgb >> 16) & 255) / 255.0f, 0, 1);
-			cx.m_[1][0] = fclamp(((rgb >>  8) & 255) / 255.0f, 0, 1);
-			cx.m_[2][0] = fclamp(((rgb      ) & 255) / 255.0f, 0, 1);
-			set_cxform(cx);
+			rgba color(val.to_number());
+			m_color.m_r = color.m_r;
+			m_color.m_g = color.m_g;
+			m_color.m_b = color.m_b;
+			m_color.m_a = color.m_a;
+			format_text();
 		}
 		else if (name == "border")
 		{	
 			m_def->m_border = val.to_bool();
+			format_text();
 		}
 		else if (name == "multiline")
 		{	
 			m_def->m_multiline = val.to_bool();
+			format_text();
 		}
 		else if (name == "wordWrap")
 		{	
 			m_def->m_word_wrap = val.to_bool();
+			format_text();
 		}
 		else if (name == "type")
 		{
@@ -1069,6 +1071,7 @@ namespace gameswf
 		else if (name == "backgroundColor")
 		{
 			m_background_color = rgba(val.to_number());
+			format_text();
 		}
 
 
@@ -1096,11 +1099,7 @@ namespace gameswf
 		else if (name == "textColor")
 		{
 			// Return color in 0xRRGGBB format
-			const cxform&	cx = get_cxform();
-			int	r = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-			int	g = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-			int	b = iclamp(int(cx.m_[0][0] * 255), 0, 255);
-			val->set_int((r << 16) + (g << 8) + b);
+			val->set_int((m_color.m_r << 16) + (m_color.m_g << 8) + m_color.m_b);
 			return true;
 		}
 		else if (name == "textWidth")
