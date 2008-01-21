@@ -346,11 +346,10 @@ namespace gameswf
 					float	rotation = m.get_rotation();
 
 					// get current width
-					as_value w;
-					get_member("_width", &w);
+					float current_width = TWIPS_TO_PIXELS(get_width());
 
 					// set new scale
-					x_scale /= float(w.to_number() / val.to_number());
+					x_scale /= current_width / val.to_number();
 
 					m.set_scale_rotation(x_scale, y_scale, rotation);
 					set_matrix(m);
@@ -369,12 +368,11 @@ namespace gameswf
 					float	y_scale = m.get_y_scale();
 					float	rotation = m.get_rotation();
 
-					// get current width
-					as_value w;
-					get_member("_height", &w);
+					// get current height
+					float current_height = TWIPS_TO_PIXELS(get_height());
 
 					// set new scale
-					y_scale /= float(w.to_number() / val.to_number());
+					y_scale /= current_height / val.to_number();
 
 					m.set_scale_rotation(x_scale, y_scale, rotation);
 					set_matrix(m);

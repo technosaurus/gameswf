@@ -485,14 +485,15 @@ void tu_file::write_string(const char* src)
 }
 
 
-int tu_file::read_string(char* dst, int max_length) 
+int tu_file::read_string(char* dst, int max_length, char eol) 
 {
-	int i=0;
-	while (i<max_length)
+	int i = 0;
+	while (i < max_length)
 	{
 		dst[i] = read8();
-		if (dst[i]=='\0')
+		if (dst[i] == eol)
 		{
+			dst[i] = 0;
 			return i;
 		}
 		i++;
