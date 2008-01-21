@@ -79,13 +79,13 @@ public:
 	exported_module ~tu_file();
 
 	// Copy remaining contents of *in into *this.
-	void copy_from(tu_file* in);
+	exported_module void copy_from(tu_file* in);
 	// Copy remaining contents of *this into *out.
-	void copy_to(membuf* out);
+	exported_module void copy_to(membuf* out);
 
 	// Copy a fixed number of bytes from *in to *this.
 	// Returns number of bytes copied.
-	int	copy_bytes(tu_file* in, int bytes);
+	exported_module int	copy_bytes(tu_file* in, int bytes);
 
 	Uint64	read_le64();
 	Uint32 	read_le32();
@@ -101,16 +101,16 @@ public:
 	void 	write_be16(Uint16 u);
 
 	// read/write a single byte
-	Uint8 	read_byte() { return read8(); }
-	void	write_byte(Uint8 u) { write8(u); }
+	exported_module Uint8 	read_byte() { return read8(); }
+	exported_module void	write_byte(Uint8 u) { write8(u); }
 	
 	// Read/write a byte buffer.
 	// Returns number of bytes read/written.
-	int 	read_bytes(void* dst, int num) { return m_read(dst, num, m_data); }
-	int 	write_bytes(const void* src, int num) { return m_write(src, num, m_data); }
+	exported_module int 	read_bytes(void* dst, int num) { return m_read(dst, num, m_data); }
+	exported_module int 	write_bytes(const void* src, int num) { return m_write(src, num, m_data); }
 	
 	// write a 0-terminated string.
-	void 	write_string(const char* src);
+	exported_module void 	write_string(const char* src);
 	
 	// Read up to max_length characters, returns the number of characters 
 	// read, or -1 if the string length is longer than max_length.
@@ -118,21 +118,21 @@ public:
 	// Stops at the first \0 character if it comes before max_length.
 	//
 	// Guarantees termination of the string.
-	int	read_string(char* dst, int max_length);
+	exported_module int	read_string(char* dst, int max_length, char eol = '\0');
 
 	// float/double IO
-	void	write_float32(float value);
-	void	write_double64(double value);
-	float	read_float32();
-	double	read_double64();
+	exported_module void	write_float32(float value);
+	exported_module void	write_double64(double value);
+	exported_module float	read_float32();
+	exported_module double	read_double64();
 
 	// get/set pos
-	int	get_position() const { return m_tell(m_data); }
-	void 	set_position(int p) { m_seek(p, m_data); }
-	void	go_to_end() { m_seek_to_end(m_data); }
-	bool	get_eof() { return m_get_eof(m_data); }
+	exported_module int	get_position() const { return m_tell(m_data); }
+	exported_module void 	set_position(int p) { m_seek(p, m_data); }
+	exported_module void	go_to_end() { m_seek_to_end(m_data); }
+	exported_module bool	get_eof() { return m_get_eof(m_data); }
 
-	int	get_error() { return m_error; }
+	exported_module int	get_error() { return m_error; }
 
 	// printf-style convenience function.
 	int	printf(const char* fmt, ...);

@@ -6,6 +6,9 @@
 // gameSWF plugin, some useful misc programs
 
 #include <stdio.h>
+#include <dirent.h>
+
+#include "base/tu_file.h"
 #include "sysinfo.h"
 
 #ifndef WIN32
@@ -129,19 +132,18 @@ void sysinfo::get_dir(as_object* info, const tu_string& path)
 	closedir(dir);
 }
 
-void sysinfo::get_hdd_serno(tu_string* sn, const char* dev)
+bool sysinfo::get_hdd_serno(tu_string* sn, const char* dev)
 {
 	assert(sn);
 
 	if (dev == NULL)
 	{
-		return;
+		return false;
 	}
 
 #ifdef WIN32
-
 	//TODO
-
+	return false;
 #else
 
 	struct hd_driveid id;
@@ -158,8 +160,9 @@ void sysinfo::get_hdd_serno(tu_string* sn, const char* dev)
 	if (rc != 0)
 	{
 //		printf("can't get info about '%s'\n", dev);
-		return;
+		return false;
 	}
+
 
 	//  printf("serial no %s\n", id.serial_no);
 	//  printf("model number %s\n", id.model);
@@ -168,50 +171,50 @@ void sysinfo::get_hdd_serno(tu_string* sn, const char* dev)
 	//  printf("heads %s\n", id.heads);
 	//  printf("sectors per track %s\n", id.sectors);
 
-	sn = (char*) id.serial_no;
+	*sn = (char*) id.serial_no;
 
 #endif
 
 }
 
+// gets free memory size in KB
 int sysinfo::get_freemem()
 {
-
 #ifdef WIN32
-
 	return 0;		//TODO
-
 #else
 
-	ifstream meminfo("/proc/meminfo");
-	if (meminfo.is_open() == false)
+	int free_mem = 0;
+	FILE* fi = fopen("/proc/meminfo", "r");
+	if (fi)
 	{
-		return -1;
-	}
-
-	char szTmp[256];
-	char szMem[256];
-
-	string s0("MemFree:");
-	string s1("kB");
-
-	while (meminfo.eof() == false)
-	{
-		meminfo.getline(szTmp, 256);
-		string s2(szTmp);
-		string::size_type pos0 = s2.find(s0);
-
-		if (pos0 != string::npos)
+		char s[256];
+		while (true)
 		{
-			string::size_type pos1 = s2.find(s1);
-			if (pos1 != string::npos)
+			// read one line
+			int i = 0;
+			while (i < 255)
 			{
-				string s3 = s2.substr(pos0 + s0.size(), pos1 - (pos0 + s0.size()));
-				strncpy(szMem, s3.c_str(), s3.size());
-				return (int(atoi(szMem) / 1024.0f)) ;	// MB
+				int n = fread(s + i, 1, 1, fi);
+				if (n == 0 || s[i] == 0x0A)	// eol ? eof ?
+				{
+					break;
+				}
+				i++;
+			}
+			s[i] = 0;
+
+			const char* p = strstr(s, "MemFree:");
+			if (p)
+			{
+				p = p + 8;
+				free_mem = atoi(p);
+				break;
 			}
 		}
+		fclose(fi);
 	}
-	return -1;
+	return free_mem;
+
 #endif
 }

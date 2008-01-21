@@ -423,7 +423,7 @@ namespace gameswf
 						}
 					}
 
-					m_current_clock = tu_timer::ticks_to_seconds();
+					m_current_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
 
 					// it is time
 					if (m_current_clock >= m_video_clock)
