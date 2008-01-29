@@ -71,7 +71,7 @@ void	getFreeMem(const fn_call& fn)
 
 extern "C"
 {
-	exported_module as_plugin* gameswf_module_init(const array<as_value>& params)
+	exported_module as_object* gameswf_module_init(const array<as_value>& params)
 	{
 		sysinfo* si = new sysinfo();
 		si->set_member("getDir", getDir);

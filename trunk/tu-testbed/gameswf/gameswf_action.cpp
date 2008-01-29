@@ -116,6 +116,18 @@ namespace gameswf
 	static tu_string s_gameswf_version("gameSWF");
 	const char* get_gameswf_version() {	return s_gameswf_version.c_str(); }
 
+	// for cashed shared library
+	static string_hash<tu_loadlib*> s_shared_libs;
+	void clear_shared_libs()
+	{
+		for (string_hash<tu_loadlib*>::iterator it = s_shared_libs.begin();
+			it != s_shared_libs.end(); ++it)
+		{
+			delete it->second;
+		}
+		s_shared_libs.clear();
+	}
+
 	void	register_fscommand_callback(fscommand_callback handler)
 	// External interface.
 	{
@@ -977,13 +989,21 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
-	typedef exported_module as_plugin* (*gameswf_module_init)(const array<as_value>& params);
+	typedef exported_module as_object* (*gameswf_module_init)(const array<as_value>& params);
 
-	as_plugin* action_buffer::load_as_plugin(const tu_string& classname,
+	as_object* action_buffer::load_as_plugin(const tu_string& classname,
 						const array<as_value>& params)
 	// loads user defined class from DLL / shared library
 	{
-		tu_loadlib* lib = new tu_loadlib(classname.c_str());
+
+		tu_loadlib* lib = NULL;
+		if (s_shared_libs.get(classname, &lib) == false)
+		{
+			lib = new tu_loadlib(classname.c_str());
+			s_shared_libs.add(classname, lib);
+		}
+	
+		assert(lib);
 
 		// get module interface
 		gameswf_module_init module_init = (gameswf_module_init) lib->get_function("gameswf_module_init");
@@ -991,15 +1011,9 @@ namespace gameswf
 		// create plugin instance
 		if (module_init)
 		{
-			as_plugin* plugin = (module_init)(params);
-			if (plugin)
-			{
-				plugin->m_lib = lib;
-			}
-			return plugin;
+			return (module_init)(params);
 		}
 
-		delete lib;
 		return NULL;
 	}
 	
@@ -1657,7 +1671,7 @@ namespace gameswf
 								params.push_back(env->bottom(first_arg_bottom_index - i));
 							}
 
-							as_plugin* plugin = load_as_plugin(classname.to_tu_string(), params);
+							as_object* plugin = load_as_plugin(classname.to_tu_string(), params);
 							if (plugin)
 							{
 								new_obj.set_as_object_interface(plugin);
