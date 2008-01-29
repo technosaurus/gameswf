@@ -67,22 +67,6 @@ namespace gameswf
 		exported_module as_object_interface* find_target(const tu_string& path);
 	};
 
-	struct as_plugin : public as_object
-	{
-		tu_loadlib* m_lib;
-
-		as_plugin() :
-			m_lib(NULL)
-		{
-		}
-
-		~as_plugin() 
-		{
-			delete m_lib;
-		}
-
-	};
-
 }
 
 #endif

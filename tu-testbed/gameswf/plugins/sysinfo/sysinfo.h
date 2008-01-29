@@ -5,14 +5,14 @@
 
 // gameSWF plugin, gets dir entity
 
-#ifndef GAMESWF_sysinfo_PLUGIN_H
-#define GAMESWF_sysinfo_PLUGIN_H
+#ifndef GAMESWF_SYSINFO_PLUGIN_H
+#define GAMESWF_SYSINFO_PLUGIN_H
 
 #include "gameswf/gameswf_object.h"
 
 using namespace gameswf;
 
-struct sysinfo : public as_plugin
+struct sysinfo : public as_object
 {                                      
 
 	exported_module void get_dir(as_object* info, const tu_string& path);
@@ -21,5 +21,5 @@ struct sysinfo : public as_plugin
 
 };
 
-#endif	// GAMESWF_sysinfo_PLUGIN_H
+#endif	// GAMESWF_SYSINFO_PLUGIN_H
 

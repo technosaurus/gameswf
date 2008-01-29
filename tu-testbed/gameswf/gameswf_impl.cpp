@@ -430,6 +430,7 @@ namespace gameswf
 	//
 	void clears_tag_loaders();
 	void clear_standard_member_map();
+	void clear_shared_libs();
 
 	void	clear_gameswf()
 	// Maximum release of resources.
@@ -442,6 +443,7 @@ namespace gameswf
 		sprite_builtins_clear();
 		fontlib::clear();
 		action_clear();
+		clear_shared_libs();
 		gameswf_engine_mutex().unlock();
 	}
 

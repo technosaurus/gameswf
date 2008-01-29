@@ -24,7 +24,10 @@ tu_loadlib::tu_loadlib(const char* library_name) :
 
 tu_loadlib::~tu_loadlib()
 {
-//	FreeLibrary(m_hlib);	// segfault ???
+	if (m_hlib)
+	{
+		FreeLibrary(m_hlib);
+	}
 }
 
 void* tu_loadlib::get_function(const char* function_name)
