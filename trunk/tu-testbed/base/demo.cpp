@@ -10,7 +10,7 @@
 #include "base/tu_config.h"
 #include "base/demo.h"
 #include "base/ogl.h"
-#include "SDL/SDL.h"
+#include "SDL.h"
 
 
 namespace demo

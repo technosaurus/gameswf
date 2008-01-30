@@ -1,4 +1,4 @@
-// config.cpp	-- by Thatcher Ulrich <tu@tulrich.com> 22 July 2001
+// configvars.cpp	-- by Thatcher Ulrich <tu@tulrich.com> 22 July 2001
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -9,7 +9,7 @@
 #if 0
 
 
-#include "config.h"
+#include "configvars.h"
 extern "C" {
 #include <lualib.h>
 }
