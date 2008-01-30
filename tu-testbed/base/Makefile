@@ -14,7 +14,7 @@ all: $(BASE_LIB)
 
 # Source files.
 SRCS :=						\
-	config.cpp				\
+	configvars.cpp				\
 	ear_clip_triangulate_float.cpp		\
 	ear_clip_triangulate_sint16.cpp		\
 	container.cpp				\

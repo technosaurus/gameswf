@@ -1,4 +1,4 @@
-// config.h	-- by Thatcher Ulrich <tu@tulrich.com> 22 July 2001
+// configvars.h	-- by Thatcher Ulrich <tu@tulrich.com> 22 July 2001
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -6,8 +6,8 @@
 // Configuration glue.  C++ interface to Lua scripting library, plus utilities.
 
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef CONFIGVARS_H
+#define CONFIGVARS_H
 
 
 // @@ this probably doesn't belong in "base"... move it somewhere and
@@ -306,4 +306,4 @@ END_PREFS
 
 #endif // 0
 
-#endif // CONFIG_H
+#endif // CONFIGVARS_H
