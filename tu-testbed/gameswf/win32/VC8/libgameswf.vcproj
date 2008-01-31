@@ -473,14 +473,6 @@
 			Name="base"
 			>
 			<File
-				RelativePath="..\..\..\base\config.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\base\config.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\base\container.cpp"
 				>
 			</File>

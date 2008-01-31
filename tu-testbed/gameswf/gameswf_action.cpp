@@ -113,7 +113,12 @@ namespace gameswf
 	static heap s_heap;
 	heap* get_heap() { return &s_heap; }
 
-	static tu_string s_gameswf_version("gameSWF");
+#ifdef WIN32
+	static tu_string s_gameswf_version("WIN");
+#else
+	static tu_string s_gameswf_version("LINUX");
+#endif
+
 	const char* get_gameswf_version() {	return s_gameswf_version.c_str(); }
 
 	// for cashed shared library

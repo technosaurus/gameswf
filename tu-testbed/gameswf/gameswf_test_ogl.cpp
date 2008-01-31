@@ -57,6 +57,7 @@ void	print_usage()
 		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
 		"  -n          Allow use of network to try to open resource URLs\n"
 		"  -u          Allow pass the user bootup options to Flash (through _global._bootup)\n"
+		"  -k          Disables cursor\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -214,6 +215,7 @@ int	main(int argc, char *argv[])
 	bool    do_sound = true;
 	bool	do_loop = true;
 	bool	sdl_abort = true;
+	bool	sdl_cursor = true;
 	int     delay = 10;
 	float	tex_lod_bias;
 
@@ -251,6 +253,10 @@ int	main(int argc, char *argv[])
 			else if (argv[arg][1] == 'c')
 			{
 				sdl_abort = false;
+			}
+			else if (argv[arg][1] == 'k')
+			{
+				sdl_cursor = false;
 			}
 			else if (argv[arg][1] == 's')
 			{
@@ -545,7 +551,7 @@ int	main(int argc, char *argv[])
 			atexit(SDL_Quit);
 
 			SDL_EnableKeyRepeat(250, 33);
-
+			SDL_ShowCursor(sdl_cursor ? SDL_ENABLE : SDL_DISABLE);
 
 			if (s_bit_depth == 16)
 			{

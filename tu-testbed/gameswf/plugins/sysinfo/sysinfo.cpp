@@ -48,16 +48,6 @@ void	getHDDSerNo(const fn_call& fn)
 	}
 }
 
-// gets OS name, like "Linux", "Windows"
-void	getOS(const fn_call& fn)
-{
-#ifdef WIN32
-	fn.result->set_tu_string("WINDOWS");
-#else
-	fn.result->set_tu_string("LINUX");
-#endif
-}
-
 // gets available free memory
 void	getFreeMem(const fn_call& fn)
 {
@@ -75,7 +65,6 @@ extern "C"
 	{
 		sysinfo* si = new sysinfo();
 		si->set_member("getDir", getDir);
-		si->set_member("getOS", getOS);
 		si->set_member("getHDDSerNo", getHDDSerNo);
 		si->set_member("getFreeMem", getFreeMem);
 		return si;
