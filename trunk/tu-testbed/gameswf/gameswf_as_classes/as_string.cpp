@@ -300,7 +300,7 @@ namespace gameswf
 		int end = start + len;
 		if (end > utf8_len)
 		{
-			end = utf8_len - start + 1;
+			end = utf8_len;
 		}
 
 		if (start < end)
