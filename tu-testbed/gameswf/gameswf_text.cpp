@@ -676,7 +676,23 @@ namespace gameswf
 				bold  != m_font->is_bold() ||
 				fontname  != m_font->get_name())
 		{
-			m_font = new font();
+			// try to find embedded font
+			resource* res = find_exported_resource(fontname);
+			font* embedded_font = NULL;
+			if (res)
+			{
+				embedded_font = res->cast_to_font();
+			}
+
+			if (embedded_font)
+			{
+				// we have embedded font
+				m_font = embedded_font->cast_to_font();
+			}
+			else
+			{
+				m_font = new font();
+			}
 			m_font->set_bold(bold);
 			m_font->set_italic(italic);
 			m_font->set_name(fontname.c_str());
