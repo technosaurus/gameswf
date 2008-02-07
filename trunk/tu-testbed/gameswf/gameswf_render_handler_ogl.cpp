@@ -235,7 +235,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	render_handler_ogl()
 		:
-		m_enable_antialias(false),
+		m_enable_antialias(true),
 		m_display_width(0),
 		m_display_height(0)
 	{
@@ -740,6 +740,15 @@ struct render_handler_ogl : public gameswf::render_handler
 			m_current_styles[LEFT_STYLE].apply_second_pass();
 			glDrawArrays(primitive_type, 0, vertex_count);
 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
+		}
+
+		// the antialiasing of polygon edges
+		if (m_enable_antialias)
+		{
+			glEnable(GL_POLYGON_SMOOTH);
+			glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);	// GL_NICEST, GL_FASTEST, GL_DONT_CARE
+			glDrawArrays(primitive_type, 0, vertex_count);
+			glDisable(GL_POLYGON_SMOOTH);
 		}
 
 		glDisableClientState(GL_VERTEX_ARRAY);

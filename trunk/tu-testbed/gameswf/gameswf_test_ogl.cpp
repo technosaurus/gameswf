@@ -66,7 +66,7 @@ void	print_usage()
 		"  CTRL-P          Toggle Pause\n"
 		"  CTRL-[ or kp-   Step back one frame\n"
 		"  CTRL-] or kp+   Step forward one frame\n"
-		"  CTRL-A          Toggle antialiasing (doesn't work)\n"
+		"  CTRL-A          Toggle antialiasing\n"
 		"  CTRL-T          Debug.  Test the set_variable() function\n"
 		"  CTRL-G          Debug.  Test the get_variable() function\n"
 		"  CTRL-M          Debug.  Test the call_method() function\n"
@@ -77,7 +77,7 @@ void	print_usage()
 #define OVERSIZE	1.0f
 
 static float s_scale = 1.0f;
-static bool s_antialiased = false;
+static bool s_antialiased = true;
 static int s_bit_depth = 16;
 
 static bool s_background = true;
@@ -453,8 +453,7 @@ int	main(int argc, char *argv[])
 	{
 		gameswf::register_log_callback(log_callback);
 	}
-	//gameswf::set_antialiased(s_antialiased);
-
+	
 	gameswf::sound_handler*	sound = NULL;
 	gameswf::render_handler*	render = NULL;
 	if (do_render)
@@ -464,6 +463,7 @@ int	main(int argc, char *argv[])
 			gameswf::set_sound_handler(sound);
 		}
 		render = gameswf::create_render_handler_ogl();
+		render->set_antialiased(s_antialiased);
 		gameswf::set_render_handler(render);
 	}
 
@@ -779,7 +779,10 @@ int	main(int argc, char *argv[])
 							{
 								// Toggle antialiasing.
 								s_antialiased = !s_antialiased;
-								//gameswf::set_antialiased(s_antialiased);
+								if (render)
+								{
+									render->set_antialiased(s_antialiased);
+								}
 							}
 							else if (ctrl && key == SDLK_t)
 							{
