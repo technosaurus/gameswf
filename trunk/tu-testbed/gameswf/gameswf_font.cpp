@@ -405,6 +405,9 @@ namespace gameswf
 		int glyph_index = -1;
 		rect box;
 		float advance;
+
+#define USE_IMAGE_OF_CHARACTER
+#ifdef USE_IMAGE_OF_CHARACTER
 		bitmap_info* bi = m_os_font->get_char_image(code, box, &advance);
 		if (bi)
 		{
@@ -446,6 +449,36 @@ namespace gameswf
 			tg.set_bitmap_info(bi);
 			add_texture_glyph(glyph_index, tg);
 		}
+#else
+		// FIXME
+		shape_character_def* sh = m_os_font->get_char_def(code, box, &advance);
+		if (sh)
+		{
+			assert(m_code_table.get(code, &glyph_index) == false);
+			glyph_index = m_glyphs.size();
+			m_code_table.add(code, glyph_index);
+
+			// Advance table; i.e. how wide each character is.
+			int n = m_code_table.size() - m_advance_table.size() - 1;
+			assert(n >= 0);
+
+			// characters from static text is in m_code_table and not is in m_advance_table
+			// to fill m_advance_table for them
+			for (int i = 0; i < n; i++)
+			{
+				m_advance_table.push_back(0);	
+			}
+
+			if (is_define_font3())
+			{
+				advance *= 20.0f;
+			}
+			m_advance_table.push_back(advance);
+
+			m_glyphs.push_back(sh);
+		}
+
+#endif
 		return glyph_index;
 	}
 

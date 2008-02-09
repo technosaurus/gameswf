@@ -689,7 +689,7 @@ int	main(int argc, char *argv[])
 					switch (event.type)
 					{
 					case SDL_VIDEORESIZE:
-						//todo
+						//	TODO
 						//					s_scale = (float) event.resize.w / (float) width;
 						//					width = event.resize.w;
 						//					height = event.resize.h;
@@ -796,28 +796,28 @@ int	main(int argc, char *argv[])
 								message_log(m->get_variable("test.text"));
 								message_log("'\n");
 							}
-							//else if (ctrl && key == SDLK_m)
-							//{
-							//	// Test call_method.
-							//	const char* result = m->call_method(
-							//		"test_call",
-							//		"%d, %f, %s, %ls",
-							//		200,
-							//		1.0f,
-							//		"Test string",
-							//		L"Test long string");
+							else if (ctrl && key == SDLK_m)
+							{
+								// Test call_method.
+								const char* result = m->call_method(
+									"test_call",
+									"%d, %f, %s, %ls",
+									200,
+									1.0f,
+									"Test string",
+									L"Test long string");
 
-							//	if (result)
-							//	{
-							//		message_log("call_method: result = ");
-							//		message_log(result);
-							//		message_log("\n");
-							//	}
-							//	else
-							//	{
-							//		message_log("call_method: null result\n");
-							//	}
-							//}
+								if (result)
+								{
+									message_log("call_method: result = ");
+									message_log(result);
+									message_log("\n");
+								}
+								else
+								{
+									message_log("call_method: null result\n");
+								}
+							}
 							else if (ctrl && key == SDLK_b)
 							{
 								// toggle background color.

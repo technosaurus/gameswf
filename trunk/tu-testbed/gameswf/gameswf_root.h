@@ -120,9 +120,9 @@ namespace gameswf
 		virtual void	set_variable(const char* path_to_var, const char* new_value);
 		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value);
 		virtual const char*	get_variable(const char* path_to_var) const;
-//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...);
-//		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, 
-//			va_list args);
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...);
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, 
+			va_list args);
 
 		virtual void	set_visible(bool visible);
 		virtual bool	get_visible() const;
