@@ -189,7 +189,7 @@ namespace gameswf
 		return val;
 	}
 
-/*	const char*	call_method_parsed(
+	const char*	call_method_parsed(
 		as_environment* env,
 		as_object_interface* this_ptr,
 		const char* method_name,
@@ -198,7 +198,7 @@ namespace gameswf
 	// Printf-like vararg interface for calling ActionScript.
 	// Handy for external binding.
 	{
-		log_msg("FIXME(%d): %s\n", __LINE__, __FUNCTION__);
+//		log_msg("FIXME(%d): %s\n", __LINE__, __FUNCTION__);
 
 #if 0
 		static const int	BUFSIZE = 1000;
@@ -377,7 +377,7 @@ namespace gameswf
 		s_retval = result.to_tu_string();
 		return s_retval.c_str();
 	}
-*/
+
 
 	//
 	// Built-in objects

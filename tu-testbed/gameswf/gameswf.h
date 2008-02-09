@@ -590,7 +590,11 @@ namespace gameswf
 		// ActionScript method call.  Return value points to a
 		// static string buffer with the result; caller should
 		// use the value immediately before making more calls
-		// to gameswf.	NOT THREAD SAFE!!!
+		// to gameswf.
+
+		// NOT THREAD SAFE!!!
+		//
+		// DO NOT USE TO CALL CLASS MEMBER!!!
 		//
 		// method_name is the name of the method (possibly namespaced).
 		//
@@ -615,14 +619,14 @@ namespace gameswf
 		// This is not an ActionScript language parser, it
 		// doesn't recognize expressions or anything tricky.
 
-//#ifdef __GNUC__
+#ifdef __GNUC__
 		// use the following to catch errors: (only with gcc)
-//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
-//			__attribute__((format (printf, 3, 4))) = 0;	// "this" is an implied param, so fmt is 3 and ... is 4!
-//#else	// not __GNUC__
-//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
-//#endif	// not __GNUC__
-//		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args) = 0;
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+			__attribute__((format (printf, 3, 4))) = 0;	// "this" is an implied param, so fmt is 3 and ... is 4!
+#else	// not __GNUC__
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
+#endif	// not __GNUC__
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args) = 0;
 
 
 		// Make the movie visible/invisible.  An invisible

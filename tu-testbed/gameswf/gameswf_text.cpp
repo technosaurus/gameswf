@@ -799,7 +799,7 @@ namespace gameswf
 					{
 						as_environment env;
 						env.push(as_value());	// oldfocus, TODO
-						call_method(function, &env, this, 1, env.get_top_index());
+						gameswf::call_method(function, &env, this, 1, env.get_top_index());
 					}
 
 					get_root()->m_keypress_listener.add(this);
@@ -820,7 +820,7 @@ namespace gameswf
 					{
 						as_environment env;
 						env.push(as_value());	// newfocus, TODO
-						call_method(function, &env, this, 1, env.get_top_index());
+						gameswf::call_method(function, &env, this, 1, env.get_top_index());
 					}
 
 					m_has_focus = false; 

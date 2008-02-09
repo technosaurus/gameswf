@@ -24,6 +24,12 @@ namespace gameswf
 	exported_module as_object* get_global();
 	exported_module void set_bootup_options(const char* param);
 
+	exported_module const char*	call_method_parsed(
+		as_environment* env,
+		as_object_interface* this_ptr,
+		const char* method_name,
+		const char* method_arg_fmt,
+		va_list args);
 
 	// Clean up any stray heap stuff we've allocated.
 	void	action_clear();

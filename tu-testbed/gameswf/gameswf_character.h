@@ -137,12 +137,12 @@ namespace gameswf
 		}
 
 
-//		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
+		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		// Override this if you implement call_method.
-//		{
-//			assert(0);
-//			return NULL;
-//		}
+		{
+			assert(0);
+			return NULL;
+		}
 
 		virtual void	set_play_state(play_state s) {}
 		virtual play_state	get_play_state() const { assert(0); return STOP; }
@@ -250,15 +250,15 @@ namespace gameswf
 		virtual void	set_display_viewport(int x0, int y0, int width, int height) {}
 
 		// Forward vararg call to version taking va_list.
-//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
-//		{
-//			va_list	args;
-//			va_start(args, method_arg_fmt);
-//			const char*	result = call_method_args(method_name, method_arg_fmt, args);
-//			va_end(args);
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+		{
+			va_list	args;
+			va_start(args, method_arg_fmt);
+			const char*	result = call_method_args(method_name, method_arg_fmt, args);
+			va_end(args);
 
-//			return result;
-//		}
+			return result;
+		}
 
 		//
 		// external

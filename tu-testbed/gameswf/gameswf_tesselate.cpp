@@ -306,7 +306,7 @@ namespace tesselate
 	void	output_current_segments()
 	// Draw our shapes and lines, then clear the segment list.
 	{
-		if (s_shape_has_fill)
+		if (s_shape_has_fill && s_current_segments.size() > 0)
 		{
 			//
 			// Output the trapezoids making up the filled shape.

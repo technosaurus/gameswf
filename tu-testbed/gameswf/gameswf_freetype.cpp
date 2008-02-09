@@ -11,6 +11,7 @@
 #include "gameswf/gameswf_render.h"
 #include "gameswf_freetype.h"
 #include "gameswf_log.h"
+#include "gameswf_canvas.h"
 #include "base/utility.h"
 #include "base/container.h"
 
@@ -266,6 +267,45 @@ namespace gameswf
 		return alpha;
 	}
 
+	// static
+	int tu_freetype::move_to_callback(FT_CONST FT_Vector* to, void* user)
+	{
+		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		_this->m_canvas->move_to(to->x * _this->m_scale, - to->y * _this->m_scale);
+		return 0;
+	}
+	
+	// static 
+	int tu_freetype::line_to_callback(FT_CONST FT_Vector* to, void* user)
+	{
+		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		_this->m_canvas->line_to(to->x * _this->m_scale, - to->y * _this->m_scale);
+		return 0;
+	}
+
+	//static
+	int tu_freetype::conic_to_callback(FT_CONST FT_Vector* ctrl, FT_CONST FT_Vector* to,
+		void* user)
+	{
+		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		_this->m_canvas->curve_to(ctrl->x * _this->m_scale, - ctrl->y * _this->m_scale, 
+				to->x * _this->m_scale, - to->y * _this->m_scale);
+		return 0;
+	}
+
+	//static
+	int tu_freetype::cubic_to_callback(FT_CONST FT_Vector* ctrl1, FT_CONST FT_Vector* ctrl2,
+			FT_CONST FT_Vector* to, void* user)
+	{
+		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		float x = ctrl1->x + ((ctrl2->x - ctrl1->x) * 0.5);
+		float y = ctrl1->y + ((ctrl2->y - ctrl1->y) * 0.5);
+		_this->m_canvas->curve_to(x * _this->m_scale, - y * _this->m_scale, 
+				to->x * _this->m_scale, - to->y * _this->m_scale);
+		return 0;
+	}
+
+	// Get image of character as bitmap
 	bitmap_info* tu_freetype::get_char_image(Uint16 code, rect& box, float* advance)
 	{
 		FT_Set_Pixel_Sizes(m_face, 0, FREETYPE_MAX_FONTSIZE);
@@ -289,8 +329,41 @@ namespace gameswf
 		box.m_y_min *= box.m_y_max;
 		
 		*advance = (float) m_face->glyph->metrics.horiAdvance * s_advance_scale;
-
 		return bi;
+	}
+
+	// Get image of character as shape
+	// FIXME
+	shape_character_def* tu_freetype::get_char_def(Uint16 code, rect& box, float* advance)
+	{
+		if (FT_Load_Char(m_face, code, FT_LOAD_NO_BITMAP | FT_LOAD_NO_SCALE))
+		{
+			return NULL;
+		}
+
+		if (m_face->glyph->format != FT_GLYPH_FORMAT_OUTLINE)
+		{
+			return NULL;
+		}
+
+
+		m_canvas = new canvas();
+		m_canvas->begin_fill(rgba(255, 255, 255, 255));
+
+		FT_Outline_Funcs callback_func;
+ 		callback_func.move_to = move_to_callback;
+		callback_func.line_to = line_to_callback;
+		callback_func.conic_to = conic_to_callback;
+		callback_func.cubic_to = cubic_to_callback;
+
+		m_scale = 1024.0f / m_face->units_per_EM;
+		*advance = (float) m_face->glyph->metrics.horiAdvance * m_scale;
+
+		FT_Outline_Decompose(&m_face->glyph->outline, &callback_func, this);
+
+		m_canvas->end_fill();
+
+		return m_canvas.get_ptr();
 	}
 
 	float tu_freetype::get_advance_x(Uint16 code)
@@ -300,7 +373,6 @@ namespace gameswf
 		{
 			return 0;
 		}
-
 		return (float) m_face->glyph->metrics.horiAdvance * s_advance_scale;
 	}
 
