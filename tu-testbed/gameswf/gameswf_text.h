@@ -67,20 +67,10 @@ namespace gameswf
 
 	// Helper structs.
 
-	struct glyph_entry
-	{
-		int m_glyph_index;
-		float	m_glyph_advance;
-		smart_ptr<shape_character_def>	m_shape_glyph;
-		smart_ptr<bitmap_info> m_fontlib_glyph;
-		rect m_bounds;
-		int m_fontsize;
-	};
-
 	struct text_glyph_record
 	{
 		text_style	m_style;
-		array<glyph_entry>	m_glyphs;
+		array<glyph>	m_glyphs;
 
 		void	read(stream* in, int glyph_count, int glyph_bits, int advance_bits)
 		{
