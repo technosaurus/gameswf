@@ -271,7 +271,7 @@ namespace gameswf
 		void	read_tags();
 		void	get_owned_fonts(array<font*>* fonts);
 
-		void	generate_font_bitmaps();
+//		void	generate_font_bitmaps();
 		void	output_cached_data(tu_file* out, const cache_options& options);
 		void	input_cached_data(tu_file* in);
 

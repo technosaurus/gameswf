@@ -71,15 +71,6 @@ namespace gameswf
 				/ 20.0f
 				* pixel_scale;
 
-			int	nominal_glyph_height = fnt->get_texture_glyph_nominal_size();
-			float	max_glyph_height = fontlib::get_texture_glyph_max_height(fnt);
-#ifdef GAMESWF_ALWAYS_USE_TEXTURES_FOR_TEXT_WHEN_POSSIBLE
-			const bool	use_glyph_textures = true;
-#else
-			bool	use_glyph_textures =
-				text_screen_height <= max_glyph_height * 1.0f;
-#endif
-
 			if (rec.m_style.m_has_x_offset)
 			{
 				x = rec.m_style.m_x_offset;
@@ -95,13 +86,13 @@ namespace gameswf
 
 			for (int j = 0; j < rec.m_glyphs.size(); j++)
 			{
-				int	index = rec.m_glyphs[j].m_glyph_index;
+				const glyph_entry& ge = rec.m_glyphs[j];
 
 				mat = base_matrix;
 				mat.concatenate_translation(x, y);
 				mat.concatenate_scale(scale);
 
-				if (index == -1)
+				if (ge.m_glyph_index == -1 && ge.m_fontlib_glyph == NULL)
 				{
 					// Invalid glyph; render it as an empty box.
 					render::set_matrix(mat);
@@ -120,58 +111,59 @@ namespace gameswf
 						32,   32
 					};
 					render::draw_line_strip(s_empty_char_box, 5);
+					x += rec.m_glyphs[j].m_glyph_advance;
+					continue;
+				}
+
+				if (ge.m_fontlib_glyph != NULL)
+				{
+					rect uv_bounds;
+					uv_bounds.m_x_min = 0;
+					uv_bounds.m_y_min = 0;
+					uv_bounds.m_x_max = ge.m_bounds.m_x_max;
+					uv_bounds.m_y_max = ge.m_bounds.m_y_max;
+
+					rect bounds;
+					bounds.m_x_max = ge.m_bounds.m_x_max - ge.m_bounds.m_x_min; 
+					bounds.m_y_max = ge.m_bounds.m_y_max - ge.m_bounds.m_y_min;
+					bounds.m_x_min = - ge.m_bounds.m_x_min; 
+					bounds.m_y_min = - ge.m_bounds.m_y_min;
+
+					float s_EM_scale = 1024.0f / ge.m_fontsize;
+					float	xscale = ge.m_fontlib_glyph->get_width() * s_EM_scale;
+					float yscale = ge.m_fontlib_glyph->get_height() * s_EM_scale;
+
+					if (fnt->is_define_font3())
+					{
+						xscale *= 20.0f;
+						yscale *= 20.0f;
+					}
+
+					bounds.m_x_min *= xscale;
+					bounds.m_x_max *= xscale;
+					bounds.m_y_min *= yscale;
+					bounds.m_y_max *= yscale;
+
+					render::draw_bitmap(mat,
+						ge.m_fontlib_glyph.get_ptr(),
+						bounds,
+						uv_bounds,
+						transformed_color);
+
 				}
 				else
+				if (ge.m_shape_glyph != NULL)
 				{
-					const texture_glyph&	tg = fnt->get_texture_glyph(index);
-					shape_character_def*	glyph = fnt->get_glyph(index);
-
-					if (tg.is_renderable() && (use_glyph_textures || glyph == NULL))
+					ge.m_shape_glyph->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
+				}
+				else
+				if (ge.m_glyph_index >= 0)
+				{
+					// static text
+					shape_character_def* sh = fnt->get_glyph_by_index(ge.m_glyph_index);
+					if (sh)
 					{
-//					fontlib::draw_glyph(mat, tg, transformed_color, nominal_glyph_height);
-
-						rect uv_bounds;
-						uv_bounds.m_x_min = 0;
-						uv_bounds.m_y_min = 0;
-						uv_bounds.m_x_max = tg.m_uv_bounds.m_x_max; 
-						uv_bounds.m_y_max = tg.m_uv_bounds.m_y_max;
-
-						rect bounds;
-						bounds.m_x_max = tg.m_uv_bounds.m_x_max - tg.m_uv_origin.m_x;
-						bounds.m_y_max = tg.m_uv_bounds.m_y_max - tg.m_uv_origin.m_y;
-						bounds.m_x_min = - tg.m_uv_origin.m_x;
-						bounds.m_y_min = - tg.m_uv_origin.m_y;
-
-						float s_EM_scale = 1024.0f / nominal_glyph_height;
-						float	xscale = tg.m_bitmap_info->get_width() * s_EM_scale;
-						float yscale = tg.m_bitmap_info->get_height() * s_EM_scale;
-
-						if (fnt->is_define_font3())
-						{
-							xscale *= 20.0f;
-							yscale *= 20.0f;
-						}
-
-						bounds.m_x_min *= xscale;
-						bounds.m_x_max *= xscale;
-						bounds.m_y_min *= yscale;
-						bounds.m_y_max *= yscale;
-
-						render::draw_bitmap(mat,
-							tg.m_bitmap_info.get_ptr(),
-							bounds,
-							uv_bounds,
-							transformed_color);
-
-					}
-					else
-					{
-
-						// Draw the character using the filled outline.
-						if (glyph)
-						{
-							glyph->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
-						}
+						sh->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
 					}
 				}
 
@@ -1229,32 +1221,32 @@ namespace gameswf
 		// @@ mostly for debugging
 		// Font substitution -- if the font has no
 		// glyphs, try some other defined font!
-		if (m_font->get_glyph_count() == 0)
-		{
+//		if (m_font->get_glyph_count() == 0)
+//		{
 			// Find a better font.
-			font*	newfont = m_font.get_ptr();
-			for (int i = 0, n = fontlib::get_font_count(); i < n; i++)
-			{
-				font*	f = fontlib::get_font(i);
-				assert(f);
+//			font*	newfont = m_font.get_ptr();
+//			for (int i = 0, n = fontlib::get_font_count(); i < n; i++)
+//			{
+//				font*	f = fontlib::get_font(i);
+//				assert(f);
 
-				if (f->get_glyph_count() > 0)
-				{
+//				if (f->get_glyph_count() > 0)
+//				{
 					// This one looks good.
-					newfont = f;
-					break;
-				}
-			}
+//					newfont = f;
+//					break;
+//				}
+//			}
 
-			if (m_font != newfont)
-			{
-				log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
-					fontlib::get_font_name(m_font.get_ptr()),
-					fontlib::get_font_name(newfont));
+//			if (m_font != newfont)
+//			{
+//				log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
+//					fontlib::get_font_name(m_font.get_ptr()),
+//					fontlib::get_font_name(newfont));
 
-				m_font = newfont;
-			}
-		}
+//				m_font = newfont;
+//			}
+//		}
 
 
 		float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
@@ -1379,41 +1371,35 @@ namespace gameswf
 				last_space_glyph = rec.m_glyphs.size();
 			}
 
-			int	index = m_font->get_glyph_index((Uint16) code);
-			if (index == -1)
+			// find glyph
+			glyph	g;
+			if (m_font->get_glyph(&g, (Uint16) code, (int) TWIPS_TO_PIXELS(m_text_height)) == false)
 			{
-
-				// try OS font
-				index = m_font->add_glyph_index(code);
-				if (index == -1)
+				// error -- missing glyph!
+				// Log an error, but don't log too many times.
+				static int	s_log_count = 0;
+				if (s_log_count < 10)
 				{
-					// error -- missing glyph!
-
-					// Log an error, but don't log too many times.
-					static int	s_log_count = 0;
-					if (s_log_count < 10)
-					{
-						s_log_count++;
-						log_error("edit_text_character::display() -- missing glyph for char %d "
-							"-- make sure character shapes for font %s are being exported "
-							"into your SWF file!\n",
-							code,
-							m_font->get_name());
-					}
-					// Drop through and use index == -1; this will display
-					// using the empty-box glyph
+					s_log_count++;
+					log_error("edit_text_character::display() -- missing glyph for char %d "
+						"-- make sure character shapes for font %s are being exported "
+						"into your SWF file!\n",
+						code,
+						m_font->get_name());
 				}
 			}
 
-			text_glyph_record::glyph_entry	ge;
-			ge.m_glyph_index = index;
-			ge.m_glyph_advance = scale * m_font->get_advance(index);
+			glyph_entry ge;
+			ge.m_glyph_index = g.m_glyph_index;
+			ge.m_glyph_advance = scale * g.m_glyph_advance;
+			ge.m_fontlib_glyph = g.m_fontlib_glyph;
+			ge.m_shape_glyph = g.m_shape_glyph;
+			ge.m_bounds = g.m_bounds;
+			ge.m_fontsize = (int) TWIPS_TO_PIXELS(m_text_height);
 
 			rec.m_glyphs.push_back(ge);
 
 			x += ge.m_glyph_advance;
-
-
 			if (x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE)
 			{
 				// Whoops, we just exceeded the box width.  Do word-wrap.

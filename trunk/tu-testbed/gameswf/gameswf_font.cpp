@@ -18,9 +18,7 @@
 
 namespace gameswf
 {
-	font::font()
-		:
-		m_texture_glyph_nominal_size(96),	// Default is not important; gets overridden during glyph generation
+	font::font() :
 		m_fontname("Times New Roman"),	// default
 		m_owning_movie(NULL),
 		m_unicode_chars(false),
@@ -40,62 +38,6 @@ namespace gameswf
 	{
 		m_glyphs.resize(0);
 	}
-
-	shape_character_def*	font::get_glyph(int index) const
-	{
-		if (index >= 0 && index < m_glyphs.size())
-		{
-			return m_glyphs[index].get_ptr();
-		}
-		else
-		{
-			return NULL;
-		}
-	}
-
-
-	const texture_glyph&	font::get_texture_glyph(int glyph_index) const
-	// Return a pointer to a texture_glyph struct corresponding to
-	// the given glyph_index, if we have one.  Otherwise return NULL.
-	{
-		if (glyph_index < 0 || glyph_index >= m_texture_glyphs.size())
-		{
-			static const texture_glyph	s_dummy_texture_glyph;
-			return s_dummy_texture_glyph;
-		}
-
-		return m_texture_glyphs[glyph_index];
-	}
-
-
-	void	font::add_texture_glyph(int glyph_index, const texture_glyph& glyph)
-	// Register some texture info for the glyph at the specified
-	// index.  The texture_glyph can be used later to render the
-	// glyph.
-	{
-		assert(glyph_index >= 0 && glyph_index < m_glyphs.size());
-		assert(m_texture_glyphs.size() == m_glyphs.size());
-		assert(glyph.is_renderable());
-
-		assert(m_texture_glyphs[glyph_index].is_renderable() == false);
-
-		m_texture_glyphs[glyph_index] = glyph;
-	}
-
-
-	void	font::wipe_texture_glyphs()
-	// Delete all our texture glyph info.
-	{
-		assert(m_texture_glyphs.size() == m_glyphs.size());
-
-		// Replace with default (empty) glyph info.
-		texture_glyph	default_tg;
-		for (int i = 0, n = m_texture_glyphs.size(); i < n; i++)
-		{
-			m_texture_glyphs[i] = default_tg;
-		}
-	}
-
 
 	void	font::read(stream* in, int tag_type, movie_definition_sub* m)
 	{
@@ -124,8 +66,6 @@ namespace gameswf
 			}
 
 			m_glyphs.resize(count);
-			m_texture_glyphs.resize(m_glyphs.size());
-
 			if (m->get_create_font_shapes() == DO_LOAD_FONT_SHAPES)
 			{
 				// Read the glyph shapes.
@@ -198,8 +138,6 @@ namespace gameswf
 			}
 
 			m_glyphs.resize(glyph_count);
-			m_texture_glyphs.resize(m_glyphs.size());
-
 			if (m->get_create_font_shapes() == DO_LOAD_FONT_SHAPES)
 			{
 				// Read the glyph shapes.
@@ -378,167 +316,53 @@ namespace gameswf
 		}
 	}
 
-	int	font::get_glyph_index(Uint16 code) const
+	bool	font::get_glyph(glyph* g, Uint16 code, int fontsize) const
 	{
-		int glyph_index;
-		if (m_code_table.get(code, &glyph_index))
+		// defaults
+		g->m_glyph_index = -1;
+		g->m_glyph_advance = 512;
+
+		// first try font device
+		glyph_provider* fp = get_glyph_provider();
+		if (fp)
 		{
-			return glyph_index;
-		}
-		return -1;
-	}
-
-	// for dynamic text fields
-	int	font::add_glyph_index(Uint16 code)
-	{
-		if (m_os_font == NULL)
-		{
-			// try to create face of system font
-			IF_VERBOSE_ACTION(log_msg("create_face for font %s \n", get_name()));
-			m_os_font = tu_freetype::create_face(get_name(), m_is_bold, m_is_italic);
-			if (m_os_font == NULL)
+			g->m_fontlib_glyph = fp->get_char_image(code, m_fontname, m_is_bold, m_is_italic, 
+				fontsize,	&g->m_bounds, &g->m_glyph_advance);
+			if (g->m_fontlib_glyph != NULL)
 			{
-				return -1;
-			}
-		}
-
-		int glyph_index = -1;
-		rect box;
-		float advance;
-
-#define USE_IMAGE_OF_CHARACTER
-#ifdef USE_IMAGE_OF_CHARACTER
-		bitmap_info* bi = m_os_font->get_char_image(code, box, &advance);
-		if (bi)
-		{
-			assert(m_code_table.get(code, &glyph_index) == false);
-			glyph_index = m_glyphs.size();
-			m_code_table.add(code, glyph_index);
-
-			// Advance table; i.e. how wide each character is.
-			int n = m_code_table.size() - m_advance_table.size() - 1;
-			assert(n >= 0);
-
-			// characters from static text is in m_code_table and not is in m_advance_table
-			// to fill m_advance_table for them
-			for (int i = 0; i < n; i++)
-			{
-				m_advance_table.push_back(0);	
-			}
-
-			if (is_define_font3())
-			{
-				advance *= 20.0f;
-			}
-			m_advance_table.push_back(advance);
-
-			m_glyphs.resize(glyph_index + 1);
-			m_texture_glyphs.resize(m_glyphs.size());
-
-			texture_glyph tg;
-
-			tg.m_uv_bounds.m_x_min = 0;
-			tg.m_uv_bounds.m_y_min = 0;
-			tg.m_uv_bounds.m_x_max = box.m_x_max; 
-			tg.m_uv_bounds.m_y_max = box.m_y_max;
-
-			// the origin
-			tg.m_uv_origin.m_x = box.m_x_min;
-			tg.m_uv_origin.m_y = box.m_y_min;
-			
-			tg.set_bitmap_info(bi);
-			add_texture_glyph(glyph_index, tg);
-		}
-#else
-		// FIXME
-		shape_character_def* sh = m_os_font->get_char_def(code, box, &advance);
-		if (sh)
-		{
-			assert(m_code_table.get(code, &glyph_index) == false);
-			glyph_index = m_glyphs.size();
-			m_code_table.add(code, glyph_index);
-
-			// Advance table; i.e. how wide each character is.
-			int n = m_code_table.size() - m_advance_table.size() - 1;
-			assert(n >= 0);
-
-			// characters from static text is in m_code_table and not is in m_advance_table
-			// to fill m_advance_table for them
-			for (int i = 0; i < n; i++)
-			{
-				m_advance_table.push_back(0);	
-			}
-
-			if (is_define_font3())
-			{
-				advance *= 20.0f;
-			}
-			m_advance_table.push_back(advance);
-
-			m_glyphs.push_back(sh);
-		}
-
-#endif
-		return glyph_index;
-	}
-
-	float	font::get_advance(int glyph_index)
-	{
-		if (glyph_index == -1)
-		{
-			// Default advance.
-			return 512.0f;
-		}
-
-		assert(glyph_index >= 0);
-
-		if (glyph_index >= m_advance_table.size())
-		{
-			for (int n = glyph_index - m_advance_table.size(); n >= 0; n--)
-			{
-				m_advance_table.push_back(0);
-			}
-		}
-
-		// the char declared in 'static text' has zero advance value
-		// the 'dynamic text' requires advance value therefore we need to calculate it
-		float advance = m_advance_table[glyph_index];
-
-		if (advance == 0)
-		{
-			if (m_os_font == NULL)
-			{
-				// try to create face of system font
-				IF_VERBOSE_ACTION(log_msg("create_face for font %s \n", get_name()));
-				m_os_font = tu_freetype::create_face(get_name(), m_is_bold, m_is_italic);
-				if (m_os_font == NULL)
+				if (is_define_font3())
 				{
-					return 0;
+					g->m_glyph_advance *= 20.0f;
+				}
+				return true;
+			}
+		}
+
+		// then try the embedded character
+		if (m_code_table.get(code, &g->m_glyph_index))
+		{
+			g->m_shape_glyph = m_glyphs[g->m_glyph_index];
+			if (g->m_glyph_index < m_advance_table.size())
+			{
+				g->m_glyph_advance = m_advance_table[g->m_glyph_index];
+			}
+			else
+			{
+				if (is_define_font3())
+				{
+					g->m_glyph_advance *= 20.0f;
 				}
 			}
-
-			Uint16 code = 0;
-			for (hash<Uint16, int, simple_code_hash<Uint16> >::const_iterator it = m_code_table.begin();
-				it != m_code_table.end(); ++it)
-			{
-				if (it->second == glyph_index)
-				{
-					code = it->first;
-					break;
-				}
-			}
-			advance = m_os_font->get_advance_x(code);
-			if (is_define_font3())
-			{
-				advance *= 20.0f;
-			}
-
-			m_advance_table[glyph_index] = advance;
+			return true;
 		}
 
-		return advance;
+		return false;
 	}
 
+	shape_character_def*	font::get_glyph_by_index(int glyph_index) const
+	{
+		return glyph_index < m_glyphs.size() ? m_glyphs[glyph_index].get_ptr() : NULL;
+	}
 
 	float	font::get_kerning_adjustment(int last_code, int code) const
 	// Return the adjustment in advance between the given two
@@ -599,6 +423,17 @@ namespace gameswf
 		}
 #endif // 0
 	}
+
+	glyph::glyph() :
+		m_glyph_index(-1),
+		m_glyph_advance(512)
+	{
+	}
+	
+	glyph::~glyph()
+	{
+	}
+
 
 };	// end namespace gameswf
 

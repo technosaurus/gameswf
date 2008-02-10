@@ -3,8 +3,8 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// TrueType font rasterizer based on freetype library,
-// used code from demos/font_output/font_output.cpp
+// TrueType font rasterizer based on freetype library
+// Also serve as fontlib
 
 #include "base/tu_config.h"
 
@@ -20,15 +20,16 @@
 #else
 #endif
 
-
-#if TU_CONFIG_LINK_TO_FREETYPE == 1
-
-#define FREETYPE_MAX_FONTSIZE 96
-
 namespace gameswf
 {
 
-	static float s_advance_scale = 0.16666666f;	//vv hack
+	static glyph_provider* s_glyph_provider = NULL;
+	glyph_provider* get_glyph_provider()
+	{
+		return s_glyph_provider;
+	}
+
+#if TU_CONFIG_LINK_TO_FREETYPE == 1
 
 	bool get_fontfile(const char* font_name, tu_string& file_name, bool is_bold, bool is_italic)
 	// gets font file name by font name
@@ -172,78 +173,147 @@ namespace gameswf
 #endif
 	}
 
-	// static
-	FT_Library	tu_freetype::m_lib;
 
-	// static
-	void tu_freetype::init()
+	// 
+	//	glyph provider implementation
+	//
+
+	static FT_Library	s_freetype_lib;
+
+	void create_glyph_provider()
 	{
-		int	error = FT_Init_FreeType(&m_lib);
+		int	error = FT_Init_FreeType(&s_freetype_lib);
 		if (error)
 		{
 			fprintf(stderr, "can't init FreeType!  error = %d\n", error);
 			exit(1);
 		}
+		s_glyph_provider = new glyph_provider(s_freetype_lib);
 	}
 
-	// static
-	void tu_freetype::close()
+	void close_glyph_provider()
 	{
-		int error = FT_Done_FreeType(m_lib);
+		delete s_glyph_provider;
+
+		int error = FT_Done_FreeType(s_freetype_lib);
 		if (error)
 		{
 			fprintf(stderr, "can't close FreeType!  error = %d\n", error);
 		}
+		s_freetype_lib = NULL;
 	}
 
-	tu_freetype* tu_freetype::create_face(const char* fontname, bool is_bold, bool is_italic)
+	glyph_provider::glyph_provider(FT_Library	lib) :
+		m_lib(lib),
+		m_scale(0)
 	{
-		return new tu_freetype(fontname, is_bold, is_italic);
 	}
 
-	tu_freetype::tu_freetype(const char* fontname, bool is_bold, bool is_italic) :
-		m_face(NULL)
+	glyph_provider::~glyph_provider()
 	{
-		if (m_lib == NULL)
+		for (string_hash<face_entity*>::iterator it = m_face_entity.begin();
+			it != m_face_entity.end(); ++it)
 		{
-			init();
+			delete it->second;
+		}
+	}
+
+	//
+	// Get image of character as bitmap
+	//
+
+	bitmap_info* glyph_provider::get_char_image(Uint16 code, 
+		const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
+		rect* bounds, float* advance)
+	{
+		face_entity* fe = get_face_entity(fontname, is_bold, is_italic);
+		assert(fe);
+
+		// form hash key
+		int key = (fontsize << 16) | code;
+
+		// try to find the stored image of character
+		glyph_entity* ge = NULL;
+		if (fe->m_ge.get(key, &ge) == false)
+		{
+			FT_Set_Pixel_Sizes(fe->m_face, 0, fontsize);
+			if (FT_Load_Char(fe->m_face, code, FT_LOAD_RENDER))
+			{
+				return NULL;
+			}
+
+			ge = new glyph_entity();
+
+			image::alpha* im = draw_bitmap(fe->m_face->glyph->bitmap);
+			ge->m_bi = render::create_bitmap_info_alpha(im->m_width, im->m_height, im->m_data);
+			delete im;
+
+			ge->m_bounds.m_x_max = float(fe->m_face->glyph->bitmap.width) /
+				float(ge->m_bi->m_suspended_image->m_width);
+			ge->m_bounds.m_y_max = float(fe->m_face->glyph->bitmap.rows) /
+				float(ge->m_bi->m_suspended_image->m_height);
+
+			ge->m_bounds.m_x_min = float(fe->m_face->glyph->metrics.horiBearingX) / float(fe->m_face->glyph->metrics.width);
+			ge->m_bounds.m_y_min = float(fe->m_face->glyph->metrics.horiBearingY) / float(fe->m_face->glyph->metrics.height);
+			ge->m_bounds.m_x_min *= - ge->m_bounds.m_x_max;
+			ge->m_bounds.m_y_min *= ge->m_bounds.m_y_max;
+
+			float scale = 16.0f / fontsize;	// hack
+			ge->m_advance = (float) fe->m_face->glyph->metrics.horiAdvance * scale;
+
+			// keep image of character
+			fe->m_ge.add(key, ge);
+		}
+
+		*bounds = ge->m_bounds;
+		*advance = ge->m_advance;
+		return ge->m_bi.get_ptr();
+	}
+
+	face_entity* glyph_provider::get_face_entity(const tu_string& fontname, 
+		bool is_bold, bool is_italic)
+	{
+
+		// form hash key
+		tu_string key = fontname;
+		if (is_bold)
+		{
+			key += "B";
+		}
+		if (is_italic)
+		{
+			key += "I";
+		}
+
+		// first try to find from hash
+		face_entity* fe = NULL;
+		if (m_face_entity.get(key, &fe))
+		{
+			return fe;
 		}
 
 		tu_string font_filename;
 		if (get_fontfile(fontname, font_filename, is_bold, is_italic) == false)
 		{
 			log_error("can't found font file for font '%s'\n", fontname);
-			return;
+			return NULL;
 		}
 
-		int error = FT_New_Face(m_lib, font_filename.c_str(), 0, &m_face);
-		switch (error)
+		FT_Face face = NULL;
+		FT_New_Face(m_lib, font_filename.c_str(), 0, &face);
+		if (face)
 		{
-			case 0:
-				break;
-
-			case FT_Err_Unknown_File_Format:
-				log_error("file '%s' has bad format\n", font_filename.c_str());
-				return;
-				break;
-
-			default:
-				log_error("some error opening font '%s'\n", font_filename.c_str());
-				return;
-				break;
+			fe = new face_entity(face);
+			m_face_entity.add(key, fe);
 		}
+		else
+		{
+			log_error("some error opening font '%s'\n", font_filename.c_str());
+		}
+		return fe;
 	}
 
-	tu_freetype::~tu_freetype()
-	{
-		if (m_face)
-		{
-			// Discards a given face object, as well as all of its child slots and sizes.
-			FT_Done_Face(m_face);
-		}
-	}
-
-	image::alpha* tu_freetype::draw_bitmap(const FT_Bitmap& bitmap)
+	image::alpha* glyph_provider::draw_bitmap(const FT_Bitmap& bitmap)
 	{
 		// You must use power-of-two dimensions!!
 		int	w = 1; while (w < bitmap.pitch) { w <<= 1; }
@@ -267,37 +337,41 @@ namespace gameswf
 		return alpha;
 	}
 
+	//
+	// freetype callbacks, called from freetype lib  through get_char_def()
+	//
+
 	// static
-	int tu_freetype::move_to_callback(FT_CONST FT_Vector* to, void* user)
+	int glyph_provider::move_to_callback(FT_CONST FT_Vector* to, void* user)
 	{
-		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		glyph_provider* _this = static_cast<glyph_provider*>(user);
 		_this->m_canvas->move_to(to->x * _this->m_scale, - to->y * _this->m_scale);
 		return 0;
 	}
 	
 	// static 
-	int tu_freetype::line_to_callback(FT_CONST FT_Vector* to, void* user)
+	int glyph_provider::line_to_callback(FT_CONST FT_Vector* to, void* user)
 	{
-		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		glyph_provider* _this = static_cast<glyph_provider*>(user);
 		_this->m_canvas->line_to(to->x * _this->m_scale, - to->y * _this->m_scale);
 		return 0;
 	}
 
 	//static
-	int tu_freetype::conic_to_callback(FT_CONST FT_Vector* ctrl, FT_CONST FT_Vector* to,
+	int glyph_provider::conic_to_callback(FT_CONST FT_Vector* ctrl, FT_CONST FT_Vector* to,
 		void* user)
 	{
-		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		glyph_provider* _this = static_cast<glyph_provider*>(user);
 		_this->m_canvas->curve_to(ctrl->x * _this->m_scale, - ctrl->y * _this->m_scale, 
 				to->x * _this->m_scale, - to->y * _this->m_scale);
 		return 0;
 	}
 
 	//static
-	int tu_freetype::cubic_to_callback(FT_CONST FT_Vector* ctrl1, FT_CONST FT_Vector* ctrl2,
+	int glyph_provider::cubic_to_callback(FT_CONST FT_Vector* ctrl1, FT_CONST FT_Vector* ctrl2,
 			FT_CONST FT_Vector* to, void* user)
 	{
-		tu_freetype* _this = static_cast<tu_freetype*>(user);
+		glyph_provider* _this = static_cast<glyph_provider*>(user);
 		float x = ctrl1->x + ((ctrl2->x - ctrl1->x) * 0.5);
 		float y = ctrl1->y + ((ctrl2->y - ctrl1->y) * 0.5);
 		_this->m_canvas->curve_to(x * _this->m_scale, - y * _this->m_scale, 
@@ -305,43 +379,28 @@ namespace gameswf
 		return 0;
 	}
 
-	// Get image of character as bitmap
-	bitmap_info* tu_freetype::get_char_image(Uint16 code, rect& box, float* advance)
-	{
-		FT_Set_Pixel_Sizes(m_face, 0, FREETYPE_MAX_FONTSIZE);
-		if (FT_Load_Char(m_face, code, FT_LOAD_RENDER))
-		{
-			return NULL;
-		}
-
-//		bool use_kerning = static_cast<FT_Bool>(FT_HAS_KERNING(m_face));
-
-		image::alpha* im = draw_bitmap(m_face->glyph->bitmap);
-		bitmap_info* bi = render::create_bitmap_info_alpha(im->m_width, im->m_height, im->m_data);
-		delete im;;
-
-		box.m_x_max = float(m_face->glyph->bitmap.width) / float(bi->m_suspended_image->m_width);
-		box.m_y_max = float(m_face->glyph->bitmap.rows) / float(bi->m_suspended_image->m_height);
-
-		box.m_x_min = float(m_face->glyph->metrics.horiBearingX) / float(m_face->glyph->metrics.width);
-		box.m_y_min = float(m_face->glyph->metrics.horiBearingY) / float(m_face->glyph->metrics.height);
-		box.m_x_min *= -box.m_x_max;
-		box.m_y_min *= box.m_y_max;
-		
-		*advance = (float) m_face->glyph->metrics.horiAdvance * s_advance_scale;
-		return bi;
-	}
-
+	//
 	// Get image of character as shape
-	// FIXME
-	shape_character_def* tu_freetype::get_char_def(Uint16 code, rect& box, float* advance)
+	//
+
+	shape_character_def* glyph_provider::get_char_def(Uint16 code, 
+		const char* fontname, bool is_bold, bool is_italic, int fontsize,
+		rect* box, float* advance)
 	{
-		if (FT_Load_Char(m_face, code, FT_LOAD_NO_BITMAP | FT_LOAD_NO_SCALE))
+		assert(0);	// FIXME
+/*
+		FT_Face face = 0; //get_face(fontname, is_bold, is_italic);
+		if (face == NULL)
 		{
 			return NULL;
 		}
 
-		if (m_face->glyph->format != FT_GLYPH_FORMAT_OUTLINE)
+		if (FT_Load_Char(face, code, FT_LOAD_NO_BITMAP | FT_LOAD_NO_SCALE))
+		{
+			return NULL;
+		}
+
+		if (face->glyph->format != FT_GLYPH_FORMAT_OUTLINE)
 		{
 			return NULL;
 		}
@@ -356,26 +415,23 @@ namespace gameswf
 		callback_func.conic_to = conic_to_callback;
 		callback_func.cubic_to = cubic_to_callback;
 
-		m_scale = 1024.0f / m_face->units_per_EM;
-		*advance = (float) m_face->glyph->metrics.horiAdvance * m_scale;
+		m_scale = 1024.0f / face->units_per_EM;
+		*advance = (float) face->glyph->metrics.horiAdvance * m_scale;
 
-		FT_Outline_Decompose(&m_face->glyph->outline, &callback_func, this);
+		FT_Outline_Decompose(&face->glyph->outline, &callback_func, this);
 
 		m_canvas->end_fill();
 
 		return m_canvas.get_ptr();
+		*/
+		return 0;
 	}
 
-	float tu_freetype::get_advance_x(Uint16 code)
-	{
-		FT_Set_Pixel_Sizes(m_face, 0, FREETYPE_MAX_FONTSIZE);
-		if (FT_Load_Char(m_face, code, FT_LOAD_RENDER))
-		{
-			return 0;
-		}
-		return (float) m_face->glyph->metrics.horiAdvance * s_advance_scale;
-	}
+#else	// TU_CONFIG_LINK_TO_FREETYPE == 1
 
-}
+	void create_glyph_provider() {}
+	void close_glyph_provider() {}
 
 #endif
+
+}	// end of namespace gameswf

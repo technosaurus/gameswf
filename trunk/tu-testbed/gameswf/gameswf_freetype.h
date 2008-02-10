@@ -24,14 +24,44 @@
 namespace gameswf
 {
 
-	struct tu_freetype : public ref_counted
+	// helper
+
+	struct glyph_entity
 	{
-		tu_freetype(const char* fontname, bool is_bold, bool is_italic);
-		~tu_freetype();
+		smart_ptr<bitmap_info> m_bi;
+		float m_advance;
+		rect m_bounds;
+	};
+
+	struct face_entity
+	{
+		FT_Face m_face;
+		hash<int, glyph_entity*> m_ge;	// <code, glyph_entity>
+
+		face_entity(FT_Face face) :
+			m_face(face)
+		{
+			assert(face);
+		}
+
+		~face_entity()
+		{
+			FT_Done_Face(m_face);
+			for (hash<int, glyph_entity*>::iterator it = m_ge.begin(); it != m_ge.end(); ++it)
+			{
+				delete it->second;
+			}
+		}
+
+	};
+
+	struct glyph_provider
+	{
+		glyph_provider(FT_Library	lib);
+		~glyph_provider();
 		
-		static void init();
-		static void close();
-		static tu_freetype* create_face(const char* fontname, bool is_bold, bool is_italic);
+		face_entity* glyph_provider::get_face_entity(const tu_string& fontname,
+			bool is_bold, bool is_italic);
 
 		// callbacks
 		static int move_to_callback(FT_CONST FT_Vector* vec, void* ptr);
@@ -42,17 +72,19 @@ namespace gameswf
 			FT_CONST FT_Vector* vec, void* ptr);
 
 		image::alpha* draw_bitmap(const FT_Bitmap& bitmap);
-		bitmap_info* get_char_image(Uint16 code, rect& box, float* advance);
-		shape_character_def* get_char_def(Uint16 code, rect& box, float* advance);
-
-		float get_advance_x(Uint16 code);
+		bitmap_info* glyph_provider::get_char_image(Uint16 code, 
+			const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
+			rect* bounds, float* advance);
+		shape_character_def* get_char_def(Uint16 code,
+			const char* fontname, bool is_bold, bool is_italic, int fontsize,
+			rect* bounds, float* advance);
 
 	private:
 		
-		static FT_Library	m_lib;
-		FT_Face	m_face;
+		FT_Library	m_lib;
 		float m_scale;
 		smart_ptr<canvas> m_canvas;
+		string_hash<face_entity*> m_face_entity;
 	};
 
 }
@@ -62,24 +94,28 @@ namespace gameswf
 namespace gameswf
 {
 
-	struct tu_freetype : public ref_counted
+	struct glyph_provider
 	{
-		tu_freetype(const char* fontname) {}
-		~tu_freetype() {}
+		glyph_provider(void*	lib) {}
+		~glyph_provider() {}
 		
-		static void init() {}
-		static void close() {}
-		static tu_freetype* create_face(const char* fontname, bool is_bold, bool is_italic) { return NULL; }
-
-		bitmap_info* get_char_image(Uint16 code, rect& box, float* advance)
+		bitmap_info* glyph_provider::get_char_image(Uint16 code, 
+			const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
+			rect* bounds, float* advance)
 		{
 			return NULL;
 		}
-		float get_advance_x(Uint16 code) { return 0.0f; }
 
 	};
 }
 
 #endif		// TU_CONFIG_LINK_TO_FREETYPE
+
+namespace gameswf
+{
+	exported_module glyph_provider* get_glyph_provider();
+	exported_module void create_glyph_provider();
+	exported_module void close_glyph_provider();
+}
 
 #endif	// GAMESWF_FREETYPE_H

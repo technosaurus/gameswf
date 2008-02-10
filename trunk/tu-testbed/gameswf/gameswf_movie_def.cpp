@@ -15,7 +15,7 @@
 
 #include "base/tu_file.h"
 #include "gameswf/gameswf_font.h"
-#include "gameswf/gameswf_fontlib.h"
+//#include "gameswf/gameswf_fontlib.h"
 #include "gameswf/gameswf_stream.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
@@ -596,14 +596,15 @@ namespace gameswf
 		}
 	}
 
-	void	movie_def_impl::generate_font_bitmaps()
+
+//	void	movie_def_impl::generate_font_bitmaps()
 		// Generate bitmaps for our fonts, if necessary.
-	{
+//	{
 		// Collect list of fonts.
-		array<font*>	fonts;
-		get_owned_fonts(&fonts);
-		fontlib::generate_font_bitmaps(fonts, this);
-	}
+//		array<font*>	fonts;
+//		get_owned_fonts(&fonts);
+//		fontlib::generate_font_bitmaps(fonts, this);
+//	}
 
 
 	// Increment this when the cache data format changes.
@@ -621,9 +622,9 @@ namespace gameswf
 		out->write_bytes(header, 4);
 
 		// Write font data.
-		array<font*>	fonts;
-		get_owned_fonts(&fonts);
-		fontlib::output_cached_data(out, fonts, this, options);
+//		array<font*>	fonts;
+//		get_owned_fonts(&fonts);
+//		fontlib::output_cached_data(out, fonts, this, options);
 
 		// Write character data.
 		{for (hash<int, smart_ptr<character_def> >::iterator it = m_characters.begin();
@@ -657,9 +658,9 @@ namespace gameswf
 		}
 
 		// Read the cached font data.
-		array<font*>	fonts;
-		get_owned_fonts(&fonts);
-		fontlib::input_cached_data(in, fonts, this);
+//		array<font*>	fonts;
+//		get_owned_fonts(&fonts);
+//		fontlib::input_cached_data(in, fonts, this);
 
 		// Read the cached character data.
 		for (;;)
