@@ -424,17 +424,6 @@ namespace gameswf
 #endif // 0
 	}
 
-	glyph::glyph() :
-		m_glyph_index(-1),
-		m_glyph_advance(512)
-	{
-	}
-	
-	glyph::~glyph()
-	{
-	}
-
-
 };	// end namespace gameswf
 
 

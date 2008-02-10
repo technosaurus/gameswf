@@ -86,13 +86,13 @@ namespace gameswf
 
 			for (int j = 0; j < rec.m_glyphs.size(); j++)
 			{
-				const glyph_entry& ge = rec.m_glyphs[j];
+				const glyph& g = rec.m_glyphs[j];
 
 				mat = base_matrix;
 				mat.concatenate_translation(x, y);
 				mat.concatenate_scale(scale);
 
-				if (ge.m_glyph_index == -1 && ge.m_fontlib_glyph == NULL)
+				if (g.m_glyph_index == -1 && g.m_fontlib_glyph == NULL)
 				{
 					// Invalid glyph; render it as an empty box.
 					render::set_matrix(mat);
@@ -115,23 +115,23 @@ namespace gameswf
 					continue;
 				}
 
-				if (ge.m_fontlib_glyph != NULL)
+				if (g.m_fontlib_glyph != NULL)
 				{
 					rect uv_bounds;
 					uv_bounds.m_x_min = 0;
 					uv_bounds.m_y_min = 0;
-					uv_bounds.m_x_max = ge.m_bounds.m_x_max;
-					uv_bounds.m_y_max = ge.m_bounds.m_y_max;
+					uv_bounds.m_x_max = g.m_bounds.m_x_max;
+					uv_bounds.m_y_max = g.m_bounds.m_y_max;
 
 					rect bounds;
-					bounds.m_x_max = ge.m_bounds.m_x_max - ge.m_bounds.m_x_min; 
-					bounds.m_y_max = ge.m_bounds.m_y_max - ge.m_bounds.m_y_min;
-					bounds.m_x_min = - ge.m_bounds.m_x_min; 
-					bounds.m_y_min = - ge.m_bounds.m_y_min;
+					bounds.m_x_max = g.m_bounds.m_x_max - g.m_bounds.m_x_min; 
+					bounds.m_y_max = g.m_bounds.m_y_max - g.m_bounds.m_y_min;
+					bounds.m_x_min = - g.m_bounds.m_x_min; 
+					bounds.m_y_min = - g.m_bounds.m_y_min;
 
-					float s_EM_scale = 1024.0f / ge.m_fontsize;
-					float	xscale = ge.m_fontlib_glyph->get_width() * s_EM_scale;
-					float yscale = ge.m_fontlib_glyph->get_height() * s_EM_scale;
+					float s_EM_scale = 1024.0f / g.m_fontsize;
+					float	xscale = g.m_fontlib_glyph->get_width() * s_EM_scale;
+					float yscale = g.m_fontlib_glyph->get_height() * s_EM_scale;
 
 					if (fnt->is_define_font3())
 					{
@@ -145,22 +145,22 @@ namespace gameswf
 					bounds.m_y_max *= yscale;
 
 					render::draw_bitmap(mat,
-						ge.m_fontlib_glyph.get_ptr(),
+						g.m_fontlib_glyph.get_ptr(),
 						bounds,
 						uv_bounds,
 						transformed_color);
 
 				}
 				else
-				if (ge.m_shape_glyph != NULL)
+				if (g.m_shape_glyph != NULL)
 				{
-					ge.m_shape_glyph->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
+					g.m_shape_glyph->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
 				}
 				else
-				if (ge.m_glyph_index >= 0)
+				if (g.m_glyph_index >= 0)
 				{
 					// static text
-					shape_character_def* sh = fnt->get_glyph_by_index(ge.m_glyph_index);
+					shape_character_def* sh = fnt->get_glyph_by_index(g.m_glyph_index);
 					if (sh)
 					{
 						sh->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
@@ -1389,17 +1389,12 @@ namespace gameswf
 				}
 			}
 
-			glyph_entry ge;
-			ge.m_glyph_index = g.m_glyph_index;
-			ge.m_glyph_advance = scale * g.m_glyph_advance;
-			ge.m_fontlib_glyph = g.m_fontlib_glyph;
-			ge.m_shape_glyph = g.m_shape_glyph;
-			ge.m_bounds = g.m_bounds;
-			ge.m_fontsize = (int) TWIPS_TO_PIXELS(m_text_height);
+			g.m_glyph_advance *= scale;
+			g.m_fontsize = (int) TWIPS_TO_PIXELS(m_text_height);
 
-			rec.m_glyphs.push_back(ge);
+			rec.m_glyphs.push_back(g);
 
-			x += ge.m_glyph_advance;
+			x += g.m_glyph_advance;
 			if (x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE)
 			{
 				// Whoops, we just exceeded the box width.  Do word-wrap.

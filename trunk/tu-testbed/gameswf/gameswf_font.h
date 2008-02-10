@@ -27,13 +27,21 @@ namespace gameswf
 	struct glyph : public ref_counted
 	{
 		int m_glyph_index;
-		float m_glyph_advance;
-		smart_ptr<shape_character_def> m_shape_glyph;
+		float	m_glyph_advance;
+		smart_ptr<shape_character_def>	m_shape_glyph;
 		smart_ptr<bitmap_info> m_fontlib_glyph;
 		rect m_bounds;
+		int m_fontsize;
 
-		glyph();
-		~glyph();
+		glyph() :
+			m_glyph_index(-1),
+			m_glyph_advance(512)
+		{
+		}
+	
+		~glyph()
+		{
+		}
 
 	};
 
