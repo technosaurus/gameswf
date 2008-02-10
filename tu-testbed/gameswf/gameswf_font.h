@@ -24,32 +24,18 @@ namespace gameswf
 	struct stream;
 	struct bitmap_info;
 
-	
-	// Struct for holding (cached) textured glyph info.
-	struct texture_glyph : public ref_counted
+	struct glyph : public ref_counted
 	{
-		smart_ptr<bitmap_info>	m_bitmap_info;
-		rect	m_uv_bounds;
-		point	m_uv_origin;	// the origin of the glyph box, in uv coords
+		int m_glyph_index;
+		float m_glyph_advance;
+		smart_ptr<shape_character_def> m_shape_glyph;
+		smart_ptr<bitmap_info> m_fontlib_glyph;
+		rect m_bounds;
 
-		texture_glyph() : m_bitmap_info(NULL) {}
+		glyph();
+		~glyph();
 
-		~texture_glyph()
-		{
-		}
-
-		bool	is_renderable() const
-		// Return true if this can be used for rendering.
-		{
-			return m_bitmap_info != NULL;
-		}
-
-		void	set_bitmap_info(bitmap_info* bi)
-		{
-			m_bitmap_info = bi;
-		}
 	};
-
 
 	struct font : public resource
 	{
@@ -60,15 +46,13 @@ namespace gameswf
 		virtual font*	cast_to_font() { return this; }
 
 		int	get_glyph_count() const { return m_glyphs.size(); }
-		shape_character_def*	get_glyph(int glyph_index) const;
+		shape_character_def*	get_glyph_by_index(int glyph_index) const;
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	read_font_info(stream* in, int tag_type);
 		void	read_font_alignzones(stream* in, int tag_type);
 
 		void	output_cached_data(tu_file* out, const cache_options& options);
 		void	input_cached_data(tu_file* in);
-
-		void	wipe_texture_glyphs();
 
 		const char*	get_name() const { return m_fontname.c_str(); }
 		void	set_name(const char* name) { m_fontname = name; }
@@ -79,16 +63,7 @@ namespace gameswf
 
 		movie_definition_sub*	get_owning_movie() const { return m_owning_movie; }
 
-		const texture_glyph&	get_texture_glyph(int glyph_index) const;
-		void	add_texture_glyph(int glyph_index, const texture_glyph& glyph);
-
-		void	set_texture_glyph_nominal_size(int size) { m_texture_glyph_nominal_size = imax(1, size); }
-		int	get_texture_glyph_nominal_size() const { return m_texture_glyph_nominal_size; }
-
-		int	get_glyph_index(Uint16 code) const;
-		int	add_glyph_index(Uint16 code);
-
-		float	get_advance(int glyph_index);
+		bool	get_glyph(glyph* g, Uint16 code, int fontsize) const;
 		float	get_kerning_adjustment(int last_code, int this_code) const;
 		float	get_leading() const { return m_leading; }
 		float	get_descent() const { return m_descent; }
@@ -98,8 +73,6 @@ namespace gameswf
 		void	read_code_table(stream* in);
 
 		array< smart_ptr<shape_character_def> >	m_glyphs;
-		array< texture_glyph >	m_texture_glyphs;	// cached info, built by gameswf_fontlib.
-		int	m_texture_glyph_nominal_size;
 
 		tu_string	m_fontname;
 		movie_definition_sub*	m_owning_movie;
@@ -162,8 +135,6 @@ namespace gameswf
 		};
 
 		array<zone_record> m_zone_table;
-
-		smart_ptr<tu_freetype> m_os_font;
 	};
 
 }	// end namespace gameswf

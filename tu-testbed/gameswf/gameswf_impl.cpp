@@ -441,9 +441,9 @@ namespace gameswf
 		get_heap()->clear();
 		clear_library();
 		sprite_builtins_clear();
-		fontlib::clear();
 		action_clear();
 		clear_shared_libs();
+		close_glyph_provider();
 		gameswf_engine_mutex().unlock();
 	}
 
@@ -559,7 +559,7 @@ namespace gameswf
 				// Can't open cache file; don't sweat it.
 				IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
 
-				m->generate_font_bitmaps();	// can't read cache, so generate font texture data.
+//				m->generate_font_bitmaps();	// can't read cache, so generate font texture data.
 			}
 			else
 			{

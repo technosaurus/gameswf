@@ -21,6 +21,7 @@
 #include "net/tu_net_file.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_freetype.h"
 //#include "gameswf/gameswf_player.h"
 
 void	print_usage()
@@ -465,6 +466,7 @@ int	main(int argc, char *argv[])
 		render = gameswf::create_render_handler_ogl();
 		render->set_antialiased(s_antialiased);
 		gameswf::set_render_handler(render);
+		gameswf::create_glyph_provider();
 	}
 
 	//

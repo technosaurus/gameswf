@@ -582,6 +582,7 @@ namespace gameswf
 		if (s_inited == false)
 		{
 			s_inited = true;
+
 			s_start_time = tu_timer::get_ticks();
 
 			// @@ s_global should really be a
@@ -643,7 +644,6 @@ namespace gameswf
 		{
 			s_inited = false;
 			s_global = NULL;
-			tu_freetype::close();
 		}
 	}
 
