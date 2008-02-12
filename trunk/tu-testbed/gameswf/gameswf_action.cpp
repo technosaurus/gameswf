@@ -2676,17 +2676,23 @@ namespace gameswf
 					// Skip the function body (don't interpret it now).
 					next_pc += length;
 
-					// If we have a name, then save the function in this
-					// environment under that name.
+					// ActionDefineFunction can be used in the following ways:
+					// Usage #1. Pushes an anonymous function on the stack that does not persist.
+					// Usage #2. Sets a variable with a given FunctionName and a given function definition.
+					// Thanks to Julien Hamaide
 					as_value	function_value(func);
 					if (name.length() > 0)
 					{
 						// @@ NOTE: should this be m_target->set_variable()???
+						// Usage #1. If we have a name, then save the function in this
+						// environment under that name.
 						env->set_member(name, function_value);
 					}
-
-					// Also leave it on the stack.
-					env->push_val(function_value);
+					else
+					{
+						// Usage #2. Leave it on the stack
+						env->push_val(function_value);
+					}
 
 					break;
 				}
