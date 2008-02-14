@@ -192,6 +192,12 @@
 				RelativePath="..\..\gameswf_as_classes\as_netstream.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_selection.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_selection.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_sound.cpp">
 			</File>
 			<File
@@ -247,9 +253,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_font.cpp">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_fontlib.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_freetype.cpp">
@@ -335,9 +338,6 @@
 		</Filter>
 		<Filter
 			Name="base">
-			<File
-				RelativePath="..\..\..\base\config.cpp">
-			</File>
 			<File
 				RelativePath="..\..\..\base\config.h">
 			</File>
@@ -523,9 +523,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_font.h">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_fontlib.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_freetype.h">

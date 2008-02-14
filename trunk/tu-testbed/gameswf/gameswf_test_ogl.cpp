@@ -1,4 +1,4 @@
-// gameswf_test_ogl.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003 -*- coding: utf-8;-*-
+﻿// gameswf_test_ogl.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003 -*- coding: utf-8;-*-
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -7,8 +7,8 @@
 
 #include "base/tu_memdebug.h"	// must be the first in the include list
 
-#include "SDL.h"
-#include "SDL_thread.h"
+#include <SDL.h>
+#include <SDL_thread.h>
 
 #include "gameswf/gameswf.h"
 #include <stdlib.h>
@@ -80,6 +80,7 @@ void	print_usage()
 static float s_scale = 1.0f;
 static bool s_antialiased = true;
 static int s_bit_depth = 16;
+static int s_aa_level = 8;	// full screen antialiasing level, may be 0,2,4,8,16, ...
 
 static bool s_background = true;
 static bool s_measure_performance = false;
@@ -464,7 +465,6 @@ int	main(int argc, char *argv[])
 			gameswf::set_sound_handler(sound);
 		}
 		render = gameswf::create_render_handler_ogl();
-		render->set_antialiased(s_antialiased);
 		gameswf::set_render_handler(render);
 		gameswf::create_glyph_provider();
 	}
@@ -581,6 +581,13 @@ int	main(int argc, char *argv[])
 				SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
 			}
 
+			// try to enable FSAA
+			if (s_aa_level > 0)
+			{
+				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, s_aa_level);
+			}
+
 			// Change the LOD BIAS values to tweak blurriness.
 			if (tex_lod_bias != 0.0f) {
 #ifdef FIX_I810_LOD_BIAS	
@@ -608,6 +615,8 @@ int	main(int argc, char *argv[])
 			}
 
 			ogl::open();
+
+			render->set_antialiased(s_antialiased);
 
 			// Turn on alpha blending.
 			glEnable(GL_BLEND);
@@ -789,7 +798,7 @@ int	main(int argc, char *argv[])
 							else if (ctrl && key == SDLK_t)
 							{
 								// test text replacement / variable setting:
-								m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box\nSome UTF-8: ñö£ç°ÄÀÔ¿");
+								m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box");
 							}
 							else if (ctrl && key == SDLK_g)
 							{
