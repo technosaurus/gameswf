@@ -227,7 +227,10 @@ namespace gameswf
 		rect* bounds, float* advance)
 	{
 		face_entity* fe = get_face_entity(fontname, is_bold, is_italic);
-		assert(fe);
+		if (fe == NULL)
+		{
+			return NULL;
+		}
 
 		// form hash key
 		int key = (fontsize << 16) | code;

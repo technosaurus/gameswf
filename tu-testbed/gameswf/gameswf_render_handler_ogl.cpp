@@ -18,6 +18,7 @@
 
 #ifdef SDL_CURSOR_HANDLING
 #include <SDL.h>  // for cursor handling
+#include <SDL_opengl.h>	// for opengl const
 
 // XPM
 static const char *s_hand_image[] = {
@@ -233,9 +234,8 @@ struct render_handler_ogl : public gameswf::render_handler
 	gameswf::matrix	m_current_matrix;
 	gameswf::cxform	m_current_cxform;
 
-	render_handler_ogl()
-		:
-		m_enable_antialias(true),
+	render_handler_ogl() :
+		m_enable_antialias(false),
 		m_display_width(0),
 		m_display_height(0)
 	{
@@ -247,6 +247,24 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	void set_antialiased(bool enable)
 	{
+		// first try hardware FSAA (full screen antialiasing)
+		int aa_samples;
+		SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &aa_samples);
+		if (aa_samples > 0)
+		{
+			if (enable)
+			{
+				glEnable(GL_MULTISAMPLE_ARB);
+			}
+			else
+			{
+				glDisable(GL_MULTISAMPLE_ARB);
+			}
+			return;
+		}
+
+		// there are no hardware antialiasing
+		// use edge antialiasing
 		m_enable_antialias = enable;
 	}
 
