@@ -44,7 +44,7 @@ void	print_usage()
 		"  -s <factor> Scale the movie up/down by the specified factor\n"
 		"  -c          Produce a core file instead of letting SDL trap it\n"
 		"  -d num      Number of milli-seconds to delay in main loop\n"
-		"  -a          Turn antialiasing on/off.  (obsolete)\n"
+		"  -a <level>  Specify the antialiasing level (0,2,4,8,16,...)\n"
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
 		"  -vp         Be verbose about parsing the movie\n"
@@ -281,11 +281,13 @@ int	main(int argc, char *argv[])
 				arg++;
 				if (arg < argc)
 				{
-					s_antialiased = atoi(argv[arg]) ? true : false;
+					s_aa_level = atoi(argv[arg]);
+					s_antialiased = s_aa_level > 0 ? true : false;
+
 				}
 				else
 				{
-					fprintf(stderr, "-a arg must be followed by 0 or 1 to disable/enable antialiasing\n");
+					fprintf(stderr, "-a arg must be followed by the antialiasing level\n");
 					print_usage();
 					exit(1);
 				}
