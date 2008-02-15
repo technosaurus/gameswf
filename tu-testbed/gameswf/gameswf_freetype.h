@@ -72,7 +72,7 @@ namespace gameswf
 			FT_CONST FT_Vector* vec, void* ptr);
 
 		image::alpha* draw_bitmap(const FT_Bitmap& bitmap);
-		bitmap_info* glyph_provider::get_char_image(Uint16 code, 
+		bitmap_info* get_char_image(Uint16 code, 
 			const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
 			rect* bounds, float* advance);
 		shape_character_def* get_char_def(Uint16 code,

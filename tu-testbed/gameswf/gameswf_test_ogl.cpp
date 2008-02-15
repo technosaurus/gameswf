@@ -1,4 +1,4 @@
-﻿// gameswf_test_ogl.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003 -*- coding: utf-8;-*-
+// gameswf_test_ogl.cpp	-- Thatcher Ulrich <tu@tulrich.com> 2003 -*- coding: utf-8;-*-
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -44,7 +44,7 @@ void	print_usage()
 		"  -s <factor> Scale the movie up/down by the specified factor\n"
 		"  -c          Produce a core file instead of letting SDL trap it\n"
 		"  -d num      Number of milli-seconds to delay in main loop\n"
-		"  -a <level>  Specify the antialiasing level (0,2,4,8,16,...)\n"
+		"  -a <level>  Specify the antialiasing level (0,1,2,4,8,16,...)\n"
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
 		"  -vp         Be verbose about parsing the movie\n"
@@ -80,7 +80,11 @@ void	print_usage()
 static float s_scale = 1.0f;
 static bool s_antialiased = true;
 static int s_bit_depth = 16;
-static int s_aa_level = 8;	// full screen antialiasing level, may be 0,2,4,8,16, ...
+
+// by default it's used the simplest and the fastest edge antialiasing method
+// if you have modern video card you can use full screen antialiasing
+// full screen antialiasing level may be 2,4,8,16, ...
+static int s_aa_level = 1;
 
 static bool s_background = true;
 static bool s_measure_performance = false;
@@ -283,7 +287,6 @@ int	main(int argc, char *argv[])
 				{
 					s_aa_level = atoi(argv[arg]);
 					s_antialiased = s_aa_level > 0 ? true : false;
-
 				}
 				else
 				{
@@ -584,7 +587,7 @@ int	main(int argc, char *argv[])
 			}
 
 			// try to enable FSAA
-			if (s_aa_level > 0)
+			if (s_aa_level > 1)
 			{
 				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
 				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, s_aa_level);
