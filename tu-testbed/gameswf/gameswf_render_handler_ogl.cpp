@@ -210,6 +210,9 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 	void layout_rgb(image::rgb* im);
 	void layout_rgba(image::rgba* im);
 
+	// misc
+	int p2(int n);
+
 	~bitmap_info_ogl()
 	{
 		if (m_texture_id > 0)
@@ -1103,10 +1106,13 @@ void	software_resample(
 // resampled version of the given src image.  Does a bilinear
 // resampling to create the dst image.
 {
+//	printf("original bitmap %dx%d, resampled bitmap %dx%d\n",
+//		src_width, src_height, dst_width, dst_height);
+
 	assert(bytes_per_pixel == 3 || bytes_per_pixel == 4);
 
-	assert(dst_width >= src_width);
-	assert(dst_height >= src_height);
+//	assert(dst_width >= src_width);
+//	assert(dst_height >= src_height);
 
 	unsigned int	internal_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
 	unsigned int	input_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
@@ -1290,6 +1296,19 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 	memcpy(m_suspended_image->m_data, im->m_data, im->m_pitch * im->m_height);
 }
 
+int bitmap_info_ogl::p2(int n)
+{
+	int	p = 1; while (p < n) { p <<= 1; }
+
+	// There is no sense to do 2048 from 1025
+	// it is better to take 1024 instead of 1025, for example
+	if ((float) n / (float) p < 0.6f)
+	{
+		p >>= 1;
+	}
+	return p;
+}
+
 void bitmap_info_ogl::layout_rgb(image::rgb* im)
 // NOTE: This function destroys im's data in the process of making mipmaps.
 {
@@ -1313,11 +1332,9 @@ void bitmap_info_ogl::layout_rgb(image::rgb* im)
 	m_original_width = im->m_width;
 	m_original_height = im->m_height;
 
-	int	w = 1; while (w < im->m_width) { w <<= 1; }
-	int	h = 1; while (h < im->m_height) { h <<= 1; }
-
-	if (w != im->m_width
-	    || h != im->m_height)
+	int	w = p2(im->m_width);
+	int	h = p2(im->m_height);
+	if (w != im->m_width || h != im->m_height)
 	{
 #if (RESAMPLE_METHOD == 1)
 		int	viewport_dim[2] = { 0, 0 };
@@ -1399,11 +1416,9 @@ void bitmap_info_ogl::layout_rgba(image::rgba* im)
 	m_original_width = im->m_width;
 	m_original_height = im->m_height;
 
-	int	w = 1; while (w < im->m_width) { w <<= 1; }
-	int	h = 1; while (h < im->m_height) { h <<= 1; }
-
-	if (w != im->m_width
-	    || h != im->m_height)
+	int	w = p2(im->m_width);
+	int	h = p2(im->m_height);
+	if (w != im->m_width || h != im->m_height)
 	{
 #if (RESAMPLE_METHOD == 1)
 		int	viewport_dim[2] = { 0, 0 };
