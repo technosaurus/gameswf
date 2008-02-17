@@ -63,12 +63,6 @@
 #define TU_CONFIG_LINK_TO_LIB3DS 0
 #endif
 
-// define TU_CONFIG_LINK_TO_MYSQL to 1 to include MYSQL database support in
-// gameswf, depending on the libMYSQL library
-#ifndef TU_CONFIG_LINK_TO_MYSQL
-#define TU_CONFIG_LINK_TO_MYSQL 0
-#endif
-
 // define TU_CONFIG_LINK_TO_FFMPEG to 1 to include MP3 & video support in
 // gameswf, depending on the libavcode, libavutil & libavformat libraries
 #ifndef TU_CONFIG_LINK_TO_FFMPEG

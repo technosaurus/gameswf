@@ -14,6 +14,7 @@ using namespace gameswf;
 
 struct sysinfo : public as_object
 {                                      
+	sysinfo();
 
 	exported_module void get_dir(as_object* info, const tu_string& path);
 	exported_module bool get_hdd_serno(tu_string* sn, const char* dev);

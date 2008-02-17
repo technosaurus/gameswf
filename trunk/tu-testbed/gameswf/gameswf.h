@@ -173,10 +173,8 @@ namespace gameswf
 	// Forward decls for cast_to_*
 	struct as_array;
 	struct as_color;
-	struct as_db;
 	struct as_netstream;
 	struct as_netconnection;
-	struct as_table;
 	struct as_key;
 	struct as_sound;
 	struct video_stream_instance;
@@ -217,12 +215,10 @@ namespace gameswf
 		virtual as_array* cast_to_as_array() { return 0; }
 		virtual as_color* cast_to_as_color() { return 0; }
 		virtual as_key* cast_to_as_key() { return 0; }
-		virtual as_db* cast_to_as_db() { return 0; }
 		virtual tu_string_as_object* cast_to_as_string() { return 0; }
 		virtual as_sound* cast_to_as_sound() { return 0; }
 		virtual as_netstream* cast_to_as_netstream() { return 0; }
 		virtual as_netconnection* cast_to_as_netconnection() { return 0; }
-		virtual as_table* cast_to_as_table() { return 0; }
 		virtual character* cast_to_character() { return 0; }
 		virtual as_timer* cast_to_as_timer() { return 0; }
 		virtual sprite_instance* cast_to_sprite() { return 0; }
@@ -236,7 +232,6 @@ namespace gameswf
 		virtual as_listener* cast_to_as_listener() { return 0; }
 		virtual as_object_interface* cast_to_as_object_interface() { return this; }
 		virtual as_selection* cast_to_as_selection() { return 0; }
-		
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
