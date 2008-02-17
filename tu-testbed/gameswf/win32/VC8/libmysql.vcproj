@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="libsysinfo"
-	ProjectGUID="{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
+	Name="libmysql"
+	ProjectGUID="{224BCA8B-374B-4844-99B7-4DE009912271}"
 	RootNamespace="randomIndex"
 	Keyword="Win32Proj"
 	>
@@ -62,8 +62,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgameswf-d.lib"
-				OutputFile="/WINDOWS/system32/sysinfo.dll"
+				AdditionalDependencies="libgameswf-d.lib libmysql.lib"
+				OutputFile="/WINDOWS/system32/mydb.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				ModuleDefinitionFile=""
@@ -184,15 +184,19 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\plugins\dirinfo\dirent.h"
+				RelativePath="..\..\plugins\mysql\db.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\sysinfo\sysinfo.cpp"
+				RelativePath="..\..\plugins\mysql\db.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\sysinfo\sysinfo.h"
+				RelativePath="..\..\plugins\mysql\table.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\plugins\mysql\table.h"
 				>
 			</File>
 		</Filter>

@@ -34,7 +34,6 @@
 #include "gameswf/gameswf_as_classes/as_xmlsocket.h"
 #include "gameswf/gameswf_as_classes/as_broadcaster.h"
 #include "gameswf/gameswf_as_classes/as_selection.h"
-#include "gameswf/gameswf_as_classes/as_db.h"	// mysql plugin
 
 // NOTES:
 //
@@ -618,9 +617,6 @@ namespace gameswf
 			// for video
 			s_global->set_member("NetStream", as_value(as_global_netstream_ctor));
 			s_global->set_member("NetConnection", as_value(as_global_netconnection_ctor));
-
-			// MYSQL extensions
-			s_global->set_member("MyDb", as_value(as_global_mysqldb_ctor));
 
 			s_global->set_member("math", math_init());
 			s_global->set_member("Key", key_init());

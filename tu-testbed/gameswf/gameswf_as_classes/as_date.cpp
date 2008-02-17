@@ -125,7 +125,7 @@ namespace gameswf
 		assert(dt);
 
 		Uint64 t = dt->get_time();
-		fn.result->set_double(tu_timer::get_time(t));
+		fn.result->set_double((double) tu_timer::get_time(t));
 	}
 
 	// getYear() : Number

@@ -21,40 +21,56 @@
 
 // methods that is called from Action Scirpt
 
+sysinfo* get_sysinfo(as_object_interface* obj)
+// gets plugin pointer
+{
+	if (obj)
+	{
+		// TODO: safe pointer conversion
+		return (sysinfo*) obj->cast_to_as_object();
+	}
+	return NULL;
+}
+
+
 // gets dir entity. It is useful for a preloading of the SWF files
 void	getDir(const fn_call& fn)
 {
-	assert(fn.this_ptr);
-	sysinfo* di = (sysinfo*) fn.this_ptr; //hack
-	assert(di);
-	if (fn.nargs > 0)
+	sysinfo* si = get_sysinfo(fn.this_ptr);
+	if (si)
 	{
-		as_object* info = new as_object();
-		di->get_dir(info, fn.arg(0).to_string());
-		*fn.result = info;
+		if (fn.nargs > 0)
+		{
+			as_object* dir = new as_object();
+			si->get_dir(dir, fn.arg(0).to_string());
+			fn.result->set_as_object_interface(dir);
+		}
 	}
+
 }
 // gets HDD serial NO. It is useful for a binding the program to HDD
 void	getHDDSerNo(const fn_call& fn)
 {
-	assert(fn.this_ptr);
-	sysinfo* di = (sysinfo*) fn.this_ptr; //hack
-	assert(di);
-	if (fn.nargs > 0)
+	sysinfo* si = get_sysinfo(fn.this_ptr);
+	if (si)
 	{
-		tu_string sn;
-		di->get_hdd_serno(&sn, fn.arg(0).to_string());
-		fn.result->set_tu_string(sn);
+		if (fn.nargs > 0)
+		{
+			tu_string sn;
+			si->get_hdd_serno(&sn, fn.arg(0).to_string());
+			fn.result->set_tu_string(sn);
+		}
 	}
 }
 
 // gets available free memory
 void	getFreeMem(const fn_call& fn)
 {
-	assert(fn.this_ptr);
-	sysinfo* di = (sysinfo*) fn.this_ptr; //hack
-	assert(di);
-	fn.result->set_int(di->get_freemem());
+	sysinfo* si = get_sysinfo(fn.this_ptr);
+	if (si)
+	{
+		fn.result->set_int(si->get_freemem());
+	}
 }
 
 // DLL interface
@@ -63,12 +79,15 @@ extern "C"
 {
 	exported_module as_object* gameswf_module_init(const array<as_value>& params)
 	{
-		sysinfo* si = new sysinfo();
-		si->set_member("getDir", getDir);
-		si->set_member("getHDDSerNo", getHDDSerNo);
-		si->set_member("getFreeMem", getFreeMem);
-		return si;
+		return new sysinfo();
 	}
+}
+
+sysinfo::sysinfo()
+{
+	as_object::set_member("getDir", getDir);
+	as_object::set_member("getHDDSerNo", getHDDSerNo);
+	as_object::set_member("getFreeMem", getFreeMem);
 }
 
 void sysinfo::get_dir(as_object* info, const tu_string& path)

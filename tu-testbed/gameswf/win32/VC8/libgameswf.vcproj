@@ -64,7 +64,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avformat-50.lib avcodec-51.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib swscale-0.lib"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib avutil-49.lib avformat-50.lib avcodec-51.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib swscale-0.lib"
 				OutputFile="/WINDOWS/system32/libgameswf-d.dll"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
@@ -221,14 +221,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_db.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_as_classes\as_db.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_as_classes\as_key.cpp"
 				>
 			</File>
@@ -290,14 +282,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_string.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_as_classes\as_table.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_as_classes\as_table.h"
 				>
 			</File>
 			<File
