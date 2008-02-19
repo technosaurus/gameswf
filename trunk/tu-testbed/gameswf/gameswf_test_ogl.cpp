@@ -41,7 +41,6 @@ void	print_usage()
 		"options:\n"
 		"\n"
 		"  -h          Print this info.\n"
-		"  -s <factor> Scale the movie up/down by the specified factor\n"
 		"  -c          Produce a core file instead of letting SDL trap it\n"
 		"  -d num      Number of milli-seconds to delay in main loop\n"
 		"  -a <level>  Specify the antialiasing level (0,1,2,4,8,16,...)\n"
@@ -59,6 +58,7 @@ void	print_usage()
 		"  -n          Allow use of network to try to open resource URLs\n"
 		"  -u          Allow pass the user bootup options to Flash (through _global._bootup)\n"
 		"  -k          Disables cursor\n"
+		"  -w <w>x<h>  Specify the window size, for example 1024x768\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -77,7 +77,6 @@ void	print_usage()
 
 #define OVERSIZE	1.0f
 
-static float s_scale = 1.0f;
 static bool s_antialiased = true;
 static int s_bit_depth = 16;
 
@@ -229,6 +228,9 @@ int	main(int argc, char *argv[])
 	tex_lod_bias = -1.2f;
 	tu_string bootup_options;
 
+	int	width = 0;
+	int	height = 0;
+
 	for (int arg = 1; arg < argc; arg++)
 	{
 		if (argv[arg][0] == '-')
@@ -256,6 +258,26 @@ int	main(int argc, char *argv[])
 				}
 
 			}
+			else if (argv[arg][1] == 'w')
+			{
+				arg++;
+				if (arg < argc)
+				{
+					width = atoi(argv[arg]);
+					const char* x = strstr(argv[arg], "x");
+					if (x)
+					{
+						height = atoi(x + 1);
+					}
+				}
+
+				if (width <=0 || height <= 0)
+				{
+					fprintf(stderr, "-w arg must be followed by the window size\n");
+					print_usage();
+					exit(1);
+				}
+			}
 			else if (argv[arg][1] == 'c')
 			{
 				sdl_abort = false;
@@ -263,21 +285,6 @@ int	main(int argc, char *argv[])
 			else if (argv[arg][1] == 'k')
 			{
 				sdl_cursor = false;
-			}
-			else if (argv[arg][1] == 's')
-			{
-				// Scale.
-				arg++;
-				if (arg < argc)
-				{
-					s_scale = fclamp((float) atof(argv[arg]), 0.01f, 100.f);
-				}
-				else
-				{
-					fprintf(stderr, "-s arg must be followed by a scale value\n");
-					print_usage();
-					exit(1);
-				}
 			}
 			else if (argv[arg][1] == 'a')
 			{
@@ -519,12 +526,15 @@ int	main(int argc, char *argv[])
 		IF_VERBOSE_PARSE(gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version));
 #endif
 
-		int	movie_width = m->get_movie_width();
-		int	movie_height = m->get_movie_height();
-		float	movie_fps = m->get_movie_fps();
+		if (width == 0 || height == 0)
+		{
+			width = m->get_movie_width();
+			height = m->get_movie_height();
+		}
+		float scale_x = (float) width / m->get_movie_width();
+		float scale_y = (float) height / m->get_movie_height();
 
-		int	width = int(movie_width * s_scale);
-		int	height = int(movie_height * s_scale);
+		float	movie_fps = m->get_movie_fps();
 
 		if (do_render)
 		{
@@ -895,8 +905,8 @@ int	main(int argc, char *argv[])
 						}
 
 					case SDL_MOUSEMOTION:
-						mouse_x = (int) (event.motion.x / s_scale);
-						mouse_y = (int) (event.motion.y / s_scale);
+						mouse_x = (int) (event.motion.x / scale_x);
+						mouse_y = (int) (event.motion.y / scale_y);
 						break;
 
 					case SDL_MOUSEBUTTONDOWN:
