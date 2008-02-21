@@ -797,9 +797,9 @@ namespace gameswf
 	tu_string number_to_string(int radix, int val)
 	{
 		tu_string res;
-		if (radix >=2 && radix <= strlen(s_hex))
+		if (radix >= 2 && radix <= strlen(s_hex))
 		{
-			while (val > 0)
+			do
 			{
 				int k = val % radix;
 				val = (int) (val / radix);
@@ -807,6 +807,7 @@ namespace gameswf
 				digit += s_hex[k];
 				res = digit + res;
 			}
+			while (val > 0);
 		}
 		return res;
 	}
