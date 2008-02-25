@@ -125,8 +125,11 @@ namespace gameswf
 			} 
 		}
 
+		RegCloseKey(hKey);
+		return false;
+ 
 		// font file is not found, take default value - 'Times New Roman'
-		file_name = windir + tu_string("\\Fonts\\Times");
+/*		file_name = windir + tu_string("\\Fonts\\Times");
 		if (is_bold && is_italic)
 		{
 			file_name += "BI";
@@ -143,8 +146,8 @@ namespace gameswf
 		}
 		file_name += ".ttf";
 		log_error("can't find font file for '%s'\nit's used '%s' file\n", fontname.c_str(), file_name.c_str());
-		RegCloseKey(hKey);
-		return true;
+
+		return true;*/
 
 #else
 
@@ -298,7 +301,7 @@ namespace gameswf
 		tu_string font_filename;
 		if (get_fontfile(fontname, font_filename, is_bold, is_italic) == false)
 		{
-			log_error("can't found font file for font '%s'\n", fontname);
+			log_error("can't find font file '%s'\n", fontname.c_str());
 			return NULL;
 		}
 
