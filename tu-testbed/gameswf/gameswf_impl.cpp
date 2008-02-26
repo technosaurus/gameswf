@@ -2211,8 +2211,8 @@ namespace gameswf
 				resource* res = source_movie->cast_to_movie_def_impl()->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
-					log_error("import error: resource '%s' is not exported from movie '%s'\n",
-						symbol_name, source_url);
+					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",
+						symbol_name, source_url));
 				}
 				else if (font* f = res->cast_to_font())
 				{
@@ -2226,8 +2226,8 @@ namespace gameswf
 				}
 				else
 				{
-					log_error("import error: resource '%s' from movie '%s' has unknown type\n",
-						symbol_name, source_url);
+					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' from movie '%s' has unknown type\n",
+						symbol_name, source_url));
 				}
 			}
 

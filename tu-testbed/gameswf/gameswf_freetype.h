@@ -60,7 +60,7 @@ namespace gameswf
 		glyph_provider(FT_Library	lib);
 		~glyph_provider();
 		
-		face_entity* glyph_provider::get_face_entity(const tu_string& fontname,
+		face_entity* get_face_entity(const tu_string& fontname,
 			bool is_bold, bool is_italic);
 
 		// callbacks
@@ -99,7 +99,7 @@ namespace gameswf
 		glyph_provider(void*	lib) {}
 		~glyph_provider() {}
 		
-		bitmap_info* glyph_provider::get_char_image(Uint16 code, 
+		bitmap_info* get_char_image(Uint16 code, 
 			const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
 			rect* bounds, float* advance)
 		{

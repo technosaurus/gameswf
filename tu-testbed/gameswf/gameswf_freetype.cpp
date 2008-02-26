@@ -154,24 +154,30 @@ namespace gameswf
 	//TODO for Linux
 
 	// hack
-	file_name = "/usr/share/fonts/truetype/times";
-	if (is_bold && is_italic)
+	if (strstr(font_name, "Times New Roman"))
 	{
-		file_name += "bi";
-	}
-	else
-	if (is_bold)
-	{
-		file_name +=  "b";
-	}
-	else
-	if (is_italic)
-	{
-		file_name +=  "b";
-	}
-	file_name += ".ttf";
+		file_name = "/usr/share/fonts/truetype/times";
+		if (is_bold && is_italic)
+		{
+			file_name += "bi";
+		}
+		else
+		if (is_bold)
+		{
+			file_name +=  "b";
+		}
+		else
+		if (is_italic)
+		{
+			file_name +=  "b";
+		}
+		file_name += ".ttf";
 
-	return true;
+		return true;
+	}
+
+	return false;
+
 
 #endif
 	}

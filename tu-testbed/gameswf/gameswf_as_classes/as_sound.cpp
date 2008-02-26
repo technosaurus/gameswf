@@ -75,7 +75,8 @@ namespace gameswf
 
 		if (res == NULL)
 		{
-			log_error("import error: resource '%s' is not exported\n", fn.arg(0).to_string());
+			IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported\n",
+				fn.arg(0).to_string()));
 			return;
 		}
 
