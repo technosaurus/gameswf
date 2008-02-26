@@ -1497,7 +1497,7 @@ namespace gameswf
 		resource* res = find_exported_resource(id);
 		if (res == NULL)
 		{
-			log_error("import error: resource '%s' is not exported\n", id.c_str());
+			IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported\n", id.c_str()));
 			return NULL;
 		}
 
@@ -1550,7 +1550,7 @@ namespace gameswf
 			return parent->find_exported_resource(symbol);
 		}
 
-		log_error("can't find exported resource '%s'\n", symbol.c_str());
+		IF_VERBOSE_ACTION(log_msg("can't find exported resource '%s'\n", symbol.c_str()));
 		return NULL;
 	}
 

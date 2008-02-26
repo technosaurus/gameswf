@@ -271,8 +271,8 @@ namespace gameswf
 
 				if (res == NULL)
 				{
-					log_error("import error: resource '%s' is not exported from movie '%s'\n",
-						inf.m_symbol.c_str(), source_url);
+					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",
+						inf.m_symbol.c_str(), source_url));
 				}
 				else if (font* f = res->cast_to_font())
 				{
@@ -288,8 +288,8 @@ namespace gameswf
 				}
 				else
 				{
-					log_error("import error: resource '%s' from movie '%s' has unknown type\n",
-						inf.m_symbol.c_str(), source_url);
+					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' from movie '%s' has unknown type\n",
+						inf.m_symbol.c_str(), source_url));
 				}
 
 				if (imported)
