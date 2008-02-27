@@ -89,6 +89,7 @@ namespace gameswf
 			int channels, int freq);
 
 		virtual void pause(int sound_handle, bool paused);
+		virtual int get_position(int sound_handle);
 	};
 
 	// Used to hold the sounddata
@@ -117,6 +118,7 @@ namespace gameswf
 		void play(int loops, SDL_sound_handler* handler);
 		bool mix(Uint8* stream, int len);
 		void pause(bool paused);
+		int  get_played_bytes();
 
 //	private:
 
@@ -136,6 +138,7 @@ namespace gameswf
 	{
 		active_sound(sound* parent, int loops):
 		m_pos(0),
+		m_played_bytes(0),
 		m_loops(loops),
 		m_size(0),
 		m_data(NULL),
@@ -199,6 +202,13 @@ namespace gameswf
 #endif
 	}
 
+
+	// returns the current sound position
+	inline int get_played_bytes()
+	{
+		return m_played_bytes;
+	}
+
 	// returns true if the sound is played
 	bool mix(Uint8* mixbuf , int mixbuf_len)
 	{
@@ -217,6 +227,7 @@ namespace gameswf
 			memcpy(mixbuf_ptr, m_data + m_pos, n);
 			mixbuf_ptr += n;
 			m_pos += n;
+			m_played_bytes += n;
 
 			// there are decoded data
 			if (m_pos < m_size)
@@ -325,6 +336,7 @@ namespace gameswf
 			else
 			{
 				m_decoded = 0;
+				m_played_bytes = 0;
 
 				// infinitive
 				if (m_loops == -1)
@@ -350,6 +362,7 @@ namespace gameswf
 	private:
 
 		int m_pos;
+		int m_played_bytes;	// total played bytes, it's used in get_position()
 		int m_loops;
 		int m_size;
 		Uint8* m_data;

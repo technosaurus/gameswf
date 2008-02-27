@@ -150,6 +150,22 @@ namespace gameswf
 		}
 	}
 
+	// The number of milliseconds a sound has been playing. 
+	// If the sound is looped, the position is reset to 0 at the beginning of each loop.
+	void	get_position(const fn_call& fn)
+	{
+		sound_handler* s = get_sound_handler();
+		if (s != NULL)
+		{
+			assert(fn.this_ptr);
+			as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+			assert(snd);
+
+			int ms = s->get_position(snd->m_id);
+			fn.result->set_int(ms);
+		}
+	}
+
 	// Sound([target:Object])
 	//  Creates a new Sound object for a specified movie clip.
 	void	as_global_sound_ctor(const fn_call& fn)
@@ -162,11 +178,12 @@ namespace gameswf
 		}
 
 		// methods
-		snd->set_member("attachSound", &sound_attach);
-		snd->set_member("start", &sound_start);
-		snd->set_member("stop", &sound_stop);
-		snd->set_member("setVolume", &sound_volume);
-		snd->set_member("loadSound", &sound_load);
+		snd->set_member("attachSound", sound_attach);
+		snd->set_member("start", sound_start);
+		snd->set_member("stop", sound_stop);
+		snd->set_member("setVolume", sound_volume);
+		snd->set_member("loadSound", sound_load);
+		snd->set_member("position", as_value(get_position, NULL));
 
 		fn.result->set_as_object_interface(snd.get_ptr());
 	}

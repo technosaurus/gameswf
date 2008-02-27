@@ -46,6 +46,7 @@ namespace gameswf
 
 		virtual as_sound* cast_to_as_sound() { return this; }
 
+		// id of the sound
 		int m_id;
 
 		bool m_is_loaded_sound;

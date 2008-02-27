@@ -829,6 +829,10 @@ namespace gameswf
 		virtual ~sound_handler() {};
 		virtual bool is_open() { return false; };
 		virtual void pause(int sound_handle, bool paused) {};
+
+		// The number of milliseconds a sound has been playing. 
+		// If the sound is looped, the position is reset to 0 at the beginning of each loop.
+		virtual int get_position(int sound_handle) { return 0; };
 	};
 
 	// tu_float is used in matrix & cxform because

@@ -261,6 +261,24 @@ namespace gameswf
 		*adjusted_size = size * wav_cvt.len_mult;
 	}
 
+	int SDL_sound_handler::get_position(int sound_handle)
+	{
+		int ms = 0;
+		m_mutex.lock();
+
+		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		if (it != m_sound.end())
+		{
+			int bytes = it->second->get_played_bytes();
+
+			// convert to the time in ms
+			ms = bytes / (m_audioSpec.freq *(m_audioSpec.channels > 1 ? 4 : 2) / 1000);
+		}
+
+		m_mutex.unlock();
+		return ms;
+	}
+
 	sound::sound(int size, Uint8* data, sound_handler::format_type format, int sample_count, 
 		int sample_rate, bool stereo, int vol):
 		m_data(data),
@@ -296,11 +314,22 @@ namespace gameswf
 		m_is_paused = paused;
 	}
 
+	// returns the current sound position in ms
+	int  sound::get_played_bytes()
+	{
+		// What to do if m_playlist.size() > 1 ???
+		if (m_playlist.size() > 0)
+		{
+			return m_playlist[0]->get_played_bytes();
+		}
+		return 0;
+	}
+
 	void sound::play(int loops, SDL_sound_handler* handler)
 	{
 		if (m_size == 0)
 		{
-			log_error("the attempt to play empty sound\n");
+			log_error("the attempt to play the empty sound\n");
 			return;
 		}
 
@@ -334,7 +363,7 @@ namespace gameswf
 		for (int i = 0; i < m_playlist.size(); )
 		{
 			play = true;
-			if ((*m_playlist[i].get_ptr()).mix(buf, len))
+			if (m_playlist[i]->mix(buf, len))
 			{
 				i++;
 			}
