@@ -503,10 +503,10 @@ namespace gameswf
 				continue;
 			}
 
-			if (ch->get_clip_depth() > 0)
-			{
+//			if (ch->get_clip_depth() > 0)
+//			{
 //				log_msg("depth %i, clip_depth %i\n", dobj.m_depth, dobj.m_clip_depth);
-			}
+//			}
 
 			// check whether a previous mask should be disabled
 			if (masked)
@@ -515,6 +515,7 @@ namespace gameswf
 				{
 //					log_msg("disabled mask before drawing depth %i\n", ch->get_depth());
 					masked = false;
+	
 					// turn off mask
 					render::disable_mask();
 				}
@@ -525,14 +526,34 @@ namespace gameswf
 			{
 				//log_msg("begin submit mask\n");
 				render::begin_submit_mask();
-			}
-			
-			ch->display();
 
-			if (ch->get_clip_depth() > 0)
-			{
-//				log_msg("object drawn\n");
+				// keep the bound of mask in static 
+				rect bound;
+				ch->get_bound(&bound);
+				render::set_mask_bound(bound);
 			}
+
+			// If 'ch' sit under a mask and 'ch' does not have intersection with a mask
+			// then we should skip ch->display(). Thanks to Julien Hamaide
+			if (masked)
+			{
+				rect bound;
+				ch->get_bound(&bound);
+				
+				if (bound.bound_test(render::get_mask_bound()))
+				{
+					ch->display();
+				}
+			}
+			else
+			{
+				ch->display();
+			}
+
+//			if (ch->get_clip_depth() > 0)
+//			{
+//				log_msg("object drawn\n");
+//			}
 			
 			// if this object should have become a mask,
 			// inform the renderer that it now has all

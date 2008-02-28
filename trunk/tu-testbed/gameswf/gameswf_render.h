@@ -75,6 +75,8 @@ namespace gameswf
 		void	begin_submit_mask();
 		void	end_submit_mask();
 		void	disable_mask();
+		void	set_mask_bound(const rect& bound);
+		const rect&	get_mask_bound();
 
 		// Special function to draw a rectangular bitmap;
 		// intended for textured glyph rendering.  Ignores

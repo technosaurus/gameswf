@@ -931,6 +931,7 @@ namespace gameswf
 		void	read(stream* in);
 		void	print() const;
 		bool	point_test(float x, float y) const;
+		bool	bound_test(const rect& bound) const;
 		void	set_to_point(float x, float y);
 		void	set_to_point(const point& p);
 		void	expand_to_point(float x, float y);

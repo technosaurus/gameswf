@@ -179,6 +179,18 @@ namespace gameswf
 		{
 			if (s_render_handler) s_render_handler->disable_mask();
 		}
+		
+		static rect s_mask_bound;
+
+		void	set_mask_bound(const rect& bound)
+		{
+			s_mask_bound = bound;
+		}
+
+		const rect& get_mask_bound()
+		{
+			return s_mask_bound;
+		}
 
 		// Special function to draw a rectangular bitmap;
 		// intended for textured glyph rendering.  Ignores

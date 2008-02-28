@@ -556,6 +556,22 @@ namespace gameswf
 			return true;
 		}
 	}
+	
+	bool	rect::bound_test(const rect& bound) const
+	// Return true if the specified rect intersect this rect
+	{
+		if (m_x_max < bound.m_x_min
+			|| m_x_min > bound.m_x_max 
+			|| m_y_min > bound.m_y_max 
+			|| m_y_max < bound.m_y_min)
+		{
+			return false;
+		}
+		else
+		{
+			return true;
+		}
+	}
 
 	void rect::set_to_point(float x, float y)
 	{
