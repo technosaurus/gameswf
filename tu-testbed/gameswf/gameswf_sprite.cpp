@@ -681,6 +681,12 @@ namespace gameswf
 			return;
 		}
 
+		if (is_visible() == false)
+		{
+			// We're invisible, so don't display!
+			return;
+		}
+
 		// force advance just loaded (by loadMovie(...)) movie
 		if (m_on_event_load_called == false)
 		{
@@ -692,7 +698,6 @@ namespace gameswf
 		do_display_callback();
 	}
 
-	/*sprite_instance*/
 	character*	sprite_instance::add_display_object(
 		Uint16 character_id,
 		const char* name,

@@ -84,6 +84,7 @@ namespace gameswf
 		void	draw_bitmap(const matrix& m, bitmap_info* bi, const rect& coords, const rect& uv_coords, rgba color);
 
 		void set_cursor(render_handler::cursor_type cursor);
+		bool is_visible(const rect& bound);
 	};	// end namespace render
 };	// end namespace gameswf
 
