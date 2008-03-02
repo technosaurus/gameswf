@@ -7,6 +7,7 @@
 
 
 #include "gameswf/gameswf_character.h"
+#include "gameswf/gameswf_render.h"
 
 namespace gameswf
 {
@@ -481,6 +482,26 @@ namespace gameswf
 		assert(def);
 		def->get_bound(bound);
 		get_matrix().transform(bound);
+	}
+
+	bool	character::is_visible()
+	{
+		// The increase of performance that gives the skipping of invisible characters
+		// less than expenses for performance of test of visibility
+		// get_bound() & get_world_matrix() are heavy recursive operations
+		return true;
+
+		rect bound;
+		get_bound(&bound);
+		
+		matrix m;
+		m.set_inverse(get_matrix());
+		m.transform(&bound);
+
+		m = get_world_matrix();
+		m.transform(&bound);
+
+		return render::is_visible(bound);
 	}
 
 }

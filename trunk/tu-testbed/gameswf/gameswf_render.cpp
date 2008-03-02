@@ -180,6 +180,11 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->disable_mask();
 		}
 		
+		bool is_visible(const rect& bound)
+		{
+			return s_render_handler ? s_render_handler->is_visible(bound) : true;
+		}
+
 		static rect s_mask_bound;
 
 		void	set_mask_bound(const rect& bound)

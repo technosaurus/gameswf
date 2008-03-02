@@ -998,6 +998,15 @@ struct render_handler_ogl : public gameswf::render_handler
 	    glDisable(GL_STENCIL_TEST); 
 	}
 
+	bool is_visible(const gameswf::rect& bound)
+	{
+		gameswf::rect viewport;
+		viewport.m_x_min = 0;
+		viewport.m_y_min = 0;
+		viewport.m_x_max = m_display_width;
+		viewport.m_y_max = m_display_height;
+		return viewport.bound_test(bound);
+	}
 
 #ifdef SDL_CURSOR_HANDLING
 	// SDL cursor handling.
