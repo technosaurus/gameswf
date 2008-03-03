@@ -237,10 +237,14 @@ struct render_handler_ogl : public gameswf::render_handler
 	gameswf::matrix	m_current_matrix;
 	gameswf::cxform	m_current_cxform;
 
+	int m_mask_level;	// nested mask level
+
+
 	render_handler_ogl() :
 		m_enable_antialias(false),
 		m_display_width(0),
-		m_display_height(0)
+		m_display_height(0),
+		m_mask_level(0)
 	{
 	}
 
@@ -975,27 +979,58 @@ struct render_handler_ogl : public gameswf::render_handler
 	
 	void begin_submit_mask()
 	{
-	    glEnable(GL_STENCIL_TEST); 
-	    glClearStencil(0);
-	    glClear(GL_STENCIL_BUFFER_BIT);
-	    glColorMask(0,0,0,0);	// disable framebuffer writes
-	    glEnable(GL_STENCIL_TEST);	// enable stencil buffer for "marking" the mask
-	    glStencilFunc(GL_ALWAYS, 1, 1);	// always passes, 1 bit plane, 1 as mask
-	    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);	// we set the stencil buffer to 1 where we draw any polygon
-							// keep if test fails, keep if test passes but buffer test fails
-							// replace if test passes 
+		if (m_mask_level == 0)
+		{
+			glEnable(GL_STENCIL_TEST);
+			glClearStencil(0);
+			glClear(GL_STENCIL_BUFFER_BIT);
+		}
+
+		// disable framebuffer writes
+		glColorMask(0, 0, 0, 0);
+
+		// we set the stencil buffer to 'm_mask_level+1' 
+		// where we draw any polygon and stencil buffer is 'm_mask_level'
+		glStencilFunc(GL_EQUAL, m_mask_level++, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR); 
 	}
-	
+
+	// called after begin_submit_mask and the drawing of mask polygons
 	void end_submit_mask()
 	{	     
-	    glColorMask(1,1,1,1);	// enable framebuffer writes
-	    glStencilFunc(GL_EQUAL, 1, 1);	// we draw only where the stencil is 1 (where the mask was drawn)
-	    glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);	// don't change the stencil buffer    
+		// enable framebuffer writes
+		glColorMask(1, 1, 1, 1);
+
+		// we draw only where the stencil is m_mask_level (where the current mask was drawn)
+		glStencilFunc(GL_EQUAL, m_mask_level, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);	
 	}
-	
+
 	void disable_mask()
-	{	       
-	    glDisable(GL_STENCIL_TEST); 
+	{	     
+		assert(m_mask_level > 0);
+
+		glColorMask(0, 0, 0, 0);
+
+		// we set the stencil buffer to 'm_mask_level-1' 
+		// where the stencil buffer m_mask_level
+		glStencilFunc(GL_EQUAL, m_mask_level, 0xFF);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR); 
+
+		// draw the quad to fill stencil buffer
+		glBegin(GL_QUADS);
+		glVertex2f(0, 0);
+		glVertex2f(m_display_width, 0);
+		glVertex2f(m_display_width, m_display_height);
+		glVertex2f(0, m_display_height);
+		glEnd();
+
+		glColorMask(1, 1, 1, 1);
+
+		if (--m_mask_level == 0)
+		{
+			glDisable(GL_STENCIL_TEST); 
+		}
 	}
 
 	bool is_visible(const gameswf::rect& bound)

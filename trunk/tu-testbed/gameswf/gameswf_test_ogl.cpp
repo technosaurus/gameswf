@@ -578,7 +578,7 @@ int	main(int argc, char *argv[])
 				SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
 				SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
 				SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-				SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+				SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 5);
 			}
 			else
 			{
@@ -593,7 +593,7 @@ int	main(int argc, char *argv[])
 				SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 				SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 				SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-				SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+				SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 			}
 
 			// try to enable FSAA
