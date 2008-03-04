@@ -981,6 +981,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	{
 		if (m_mask_level == 0)
 		{
+			assert(glIsEnabled(GL_STENCIL_TEST) == false);
 			glEnable(GL_STENCIL_TEST);
 			glClearStencil(0);
 			glClear(GL_STENCIL_BUFFER_BIT);
@@ -1009,12 +1010,19 @@ struct render_handler_ogl : public gameswf::render_handler
 	void disable_mask()
 	{	     
 		assert(m_mask_level > 0);
+		if (--m_mask_level == 0)
+		{
+			glDisable(GL_STENCIL_TEST); 
+			return;
+		}
+
+		// begin submit previous mask
 
 		glColorMask(0, 0, 0, 0);
 
-		// we set the stencil buffer to 'm_mask_level-1' 
-		// where the stencil buffer m_mask_level
-		glStencilFunc(GL_EQUAL, m_mask_level, 0xFF);
+		// we set the stencil buffer to 'm_mask_level' 
+		// where the stencil buffer m_mask_level + 1
+		glStencilFunc(GL_EQUAL, m_mask_level + 1, 0xFF);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR); 
 
 		// draw the quad to fill stencil buffer
@@ -1025,12 +1033,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		glVertex2f(0, m_display_height);
 		glEnd();
 
-		glColorMask(1, 1, 1, 1);
-
-		if (--m_mask_level == 0)
-		{
-			glDisable(GL_STENCIL_TEST); 
-		}
+		end_submit_mask();
 	}
 
 	bool is_visible(const gameswf::rect& bound)
