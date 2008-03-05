@@ -28,6 +28,11 @@ namespace gameswf
 	{
 		return memcmp(this, &p, sizeof(p)) == 0;
 	}
+	
+	float point::get_length() const
+	{
+		return sqrt( m_x * m_x + m_y * m_y );
+	}
 
 	void point::twips_to_pixels()
 	{

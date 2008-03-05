@@ -193,6 +193,8 @@ namespace gameswf
 	struct as_date;
 	struct as_listener;
 	struct as_selection;
+	struct as_matrix;
+	struct as_point;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -230,6 +232,8 @@ namespace gameswf
 		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
 		virtual as_date* cast_to_as_date() { return 0; }
 		virtual as_listener* cast_to_as_listener() { return 0; }
+		virtual as_matrix* cast_to_as_matrix() { return 0; }
+		virtual as_point* cast_to_as_point() { return 0; }
 		virtual as_object_interface* cast_to_as_object_interface() { return this; }
 		virtual as_selection* cast_to_as_selection() { return 0; }
 
@@ -913,6 +917,8 @@ namespace gameswf
 		bool operator==(const point& p) const { return m_x == p.m_x && m_y == p.m_y; }
 
 		bool	bitwise_equal(const point& p) const;
+		
+		float get_length() const;
 
 		void twips_to_pixels();
 		void pixels_to_twips();
