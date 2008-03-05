@@ -13,6 +13,8 @@ Alexander Streit -- faster image resampling code for gameswf
 Rob Savoye -- lots of XML work for ActionScript, plus misc gameswf
 Paul Kelly, Bob Ives -- gameswf_render_handler_d3d.cpp
 Thomas Vissieres -- fixes to gameswf line & shape rendering order
+Julien Hamaide -- flash.geom.Point and flash.geom.Matrix implementation, renderer optimization
+
 
 Bug reports, small patches & testing
 ====================================
@@ -27,4 +29,3 @@ Kostas Pataridis
 Bryan Perfetto
 Adam Moss
 Francois Guibert
-Julien Hamaide
