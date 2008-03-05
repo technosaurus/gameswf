@@ -32,6 +32,7 @@
 #include "gameswf/gameswf_as_classes/as_color.h"
 #include "gameswf/gameswf_as_classes/as_date.h"
 #include "gameswf/gameswf_as_classes/as_xmlsocket.h"
+#include "gameswf/gameswf_as_classes/as_flash.h"
 #include "gameswf/gameswf_as_classes/as_broadcaster.h"
 #include "gameswf/gameswf_as_classes/as_selection.h"
 
@@ -621,6 +622,7 @@ namespace gameswf
 			s_global->set_member("math", math_init());
 			s_global->set_member("Key", key_init());
 			s_global->set_member("AsBroadcaster", broadcaster_init());
+            s_global->set_member( "flash", flash_init());
 
 			// global builtins functions
 			s_global->set_member("setInterval",  as_value(as_global_setinterval));
@@ -2091,9 +2093,6 @@ namespace gameswf
 					as_object_interface*	obj = env->pop().to_object();
 					int	nargs = (int) env->pop().to_number();
 
-					// @@ TODO
-					log_error("todo opcode: %02X\n", action_id);
-/*
 					// Create an empty object
 					smart_ptr<as_object>	new_obj = new as_object();
 
@@ -2118,18 +2117,38 @@ namespace gameswf
 						if (obj->get_member(constructor.to_string(), &val))
 						{
 							as_as_function* func = val.to_as_function();
-							assert(func);
-							as_value prototype;
-							func->m_properties->get_member("prototype", &prototype);
-							prototype.to_object()->set_member("__constructor__", func);
+							as_c_function_ptr c_func;
+							
+							if( func )
+							{
+								as_value prototype;
+								func->m_properties->get_member("prototype", &prototype);
+								prototype.to_object()->set_member("__constructor__", func);
 
-							as_object* proto = create_proto(new_obj.get_ptr(), func);
+								as_object* proto = create_proto(new_obj.get_ptr(), func);
 
-							proto->m_this_ptr = new_obj.get_ptr();
+								proto->m_this_ptr = new_obj.get_ptr();
 
-							// Call the actual constructor function; new_obj is its 'this'.
-							// We don't need the function result.
-							call_method(func, env, new_obj.get_ptr(), nargs, env->get_top_index());
+								// Call the actual constructor function; new_obj is its 'this'.
+								// We don't need the function result.
+								call_method(func, env, new_obj.get_ptr(), nargs, env->get_top_index());
+							}
+							else if( c_func = val.to_c_function() )
+							{
+								// TODO: I don't get this prototype stuff, need to implement it
+								
+								// Result contains the new output.
+								(*c_func)(fn_call(&val, NULL, env, nargs, env->get_top_index()));
+								
+								if( val.to_object() )
+								{
+									new_obj = val.to_object()->cast_to_as_object();
+								}
+							}
+							else
+							{
+								assert( false && "not a function" );
+							}
 						}
 
 					}
@@ -2137,10 +2156,9 @@ namespace gameswf
 
 					// places new object to heap
 					get_heap()->set(new_obj.get_ptr(), false);
-*/
+
 					env->drop(nargs);
-//					env->push(new_obj.get_ptr());
-					env->push(as_value());	// hack
+					env->push(new_obj.get_ptr());
 					break;
 				}
 

@@ -221,6 +221,22 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_flash.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_flash.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_geom.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_geom.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_key.cpp"
 				>
 			</File>
@@ -234,6 +250,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_math.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_matrix.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_matrix.h"
 				>
 			</File>
 			<File
@@ -258,6 +282,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_netstream.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_point.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_point.h"
 				>
 			</File>
 			<File
