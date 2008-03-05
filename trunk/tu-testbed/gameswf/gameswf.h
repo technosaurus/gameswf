@@ -168,7 +168,33 @@ namespace gameswf
 		virtual as_as_function* cast_to_as_function() { return 0; }
 		virtual as_object_interface* cast_to_as_object_interface() { return 0; }
 		virtual canvas* cast_to_canvas() { return 0; }
+
+		virtual bool is(int class_id) { return false; }
 	};
+
+	// Unique id of all classes
+	enum as_classes
+	{
+		AS_KEY,
+		AS_COLOR,
+		AS_SOUND,
+		AS_OBJECT,
+		//TODO: and so far
+	};
+
+	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)
+	template <typename cast_class>
+	cast_class* cast_to(resource* object)
+	{
+		if (object->is(cast_class::m_class_id))
+		{
+			return static_cast<cast_class*>(object);
+		}
+		else
+		{
+			return 0;
+		}
+	}
 
 	// Forward decls for cast_to_*
 	struct as_array;
@@ -215,10 +241,7 @@ namespace gameswf
 		// that implement the corresponding interfaces.
 		virtual video_stream_instance* cast_to_video_stream_instance() { return 0; }
 		virtual as_array* cast_to_as_array() { return 0; }
-		virtual as_color* cast_to_as_color() { return 0; }
-		virtual as_key* cast_to_as_key() { return 0; }
 		virtual tu_string_as_object* cast_to_as_string() { return 0; }
-		virtual as_sound* cast_to_as_sound() { return 0; }
 		virtual as_netstream* cast_to_as_netstream() { return 0; }
 		virtual as_netconnection* cast_to_as_netconnection() { return 0; }
 		virtual character* cast_to_character() { return 0; }

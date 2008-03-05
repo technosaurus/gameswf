@@ -32,7 +32,7 @@ namespace gameswf
 	void	as_color_getRGB(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
-		as_color* obj = fn.this_ptr->cast_to_as_color();
+		as_color* obj = cast_to<as_color>(fn.this_ptr);
 		if (obj == NULL)
 		{
 			return;
@@ -59,7 +59,7 @@ namespace gameswf
 		}
 
 		assert(fn.this_ptr);
-		as_color* obj = fn.this_ptr->cast_to_as_color();
+		as_color* obj = cast_to<as_color>(fn.this_ptr);
 
 		if (obj == NULL)
 		{
@@ -83,7 +83,7 @@ namespace gameswf
 	void	as_color_gettransform(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
-		as_color* obj = fn.this_ptr->cast_to_as_color();
+		as_color* obj = cast_to<as_color>(fn.this_ptr);
 
 		if (obj == NULL)
 		{
@@ -122,7 +122,7 @@ namespace gameswf
 		}
 
 		assert(fn.this_ptr);
-		as_color* obj = fn.this_ptr->cast_to_as_color();
+		as_color* obj = cast_to<as_color>(fn.this_ptr);
 
 		if (obj == NULL)
 		{

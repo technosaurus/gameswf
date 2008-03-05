@@ -19,6 +19,12 @@ namespace gameswf
 	struct as_sound : public as_object
 	{
 
+		// Unique id of a gameswf resource
+		enum
+		{
+			m_class_id = AS_SOUND
+		};
+
 		as_sound() :
 			m_id(-1),
 			m_is_loaded_sound(false)
@@ -44,7 +50,8 @@ namespace gameswf
 			m_id = -1;
 		}
 
-		virtual as_sound* cast_to_as_sound() { return this; }
+		virtual bool is(int class_id) { return m_class_id == class_id; }
+
 
 		// id of the sound
 		int m_id;

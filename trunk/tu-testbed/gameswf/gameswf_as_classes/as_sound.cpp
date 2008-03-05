@@ -17,7 +17,7 @@ namespace gameswf
 		if (s != NULL)
 		{
 			assert(fn.this_ptr);
-			as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+			as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 			if (snd)
 			{
 				int offset = 0;
@@ -39,7 +39,7 @@ namespace gameswf
 		if (s != NULL)
 		{
 			assert(fn.this_ptr);
-			as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+			as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 			assert(snd);
 			s->stop_sound(snd->m_id);
 		}
@@ -54,7 +54,7 @@ namespace gameswf
 		}
 
 		assert(fn.this_ptr);
-		as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+		as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 		assert(snd);
 
 		assert(fn.env);
@@ -119,7 +119,7 @@ namespace gameswf
 			if (s != NULL)
 			{
 				assert(fn.this_ptr);
-				as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+				as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 				assert(snd);
 				s->set_volume(snd->m_id, volume);
 			}
@@ -135,7 +135,7 @@ namespace gameswf
 			if (s != NULL)
 			{
 				assert(fn.this_ptr);
-				as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+				as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 				assert(snd);
 
 				tu_string full_url = get_full_url(fn.arg(0).to_string());
@@ -158,7 +158,7 @@ namespace gameswf
 		if (s != NULL)
 		{
 			assert(fn.this_ptr);
-			as_sound*	snd = fn.this_ptr->cast_to_as_sound();
+			as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 			assert(snd);
 
 			int ms = s->get_position(snd->m_id);

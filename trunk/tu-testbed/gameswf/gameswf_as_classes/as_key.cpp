@@ -16,7 +16,7 @@ namespace gameswf
 	// called on them when a key changes state.
 	{
 		assert(fn.this_ptr);
-		as_key*	ko = fn.this_ptr->cast_to_as_key();
+		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
 		if (fn.nargs < 1)
@@ -39,7 +39,7 @@ namespace gameswf
 	// Remove a previously-added listener.
 	{
 		assert(fn.this_ptr);
-		as_key*	ko = fn.this_ptr->cast_to_as_key();
+		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
 		if (fn.nargs < 1)
@@ -55,7 +55,7 @@ namespace gameswf
 	// Return the ascii value of the last key pressed.
 	{
 		assert(fn.this_ptr);
-		as_key*	ko = fn.this_ptr->cast_to_as_key();
+		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
 		fn.result->set_undefined();
@@ -77,7 +77,7 @@ namespace gameswf
 	// Returns the keycode of the last key pressed.
 	{
 		assert(fn.this_ptr);
-		as_key*	ko = fn.this_ptr->cast_to_as_key();
+		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
 		fn.result->set_int(ko->get_last_key_pressed());
@@ -95,7 +95,7 @@ namespace gameswf
 		int	code = (int) fn.arg(0).to_number();
 
 		assert(fn.this_ptr);
-		as_key*	ko = fn.this_ptr->cast_to_as_key();
+		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
 		fn.result->set_bool(ko->is_key_down(code));
