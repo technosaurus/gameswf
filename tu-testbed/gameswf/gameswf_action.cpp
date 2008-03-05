@@ -655,7 +655,7 @@ namespace gameswf
 		s_global->get_member(key_obj_name, &kval);
 		if (kval.get_type() == as_value::OBJECT)
 		{
-			as_key*	ko = kval.to_object()->cast_to_as_key();
+			as_key*	ko = cast_to<as_key>(kval.to_object());
 			assert(ko);
 
 			if (down) ko->set_key_down(k);

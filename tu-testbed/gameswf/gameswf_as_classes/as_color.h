@@ -20,8 +20,15 @@ namespace gameswf
 
 	struct as_color : public as_object
 	{
+
+		// Unique id of a gameswf resource
+		enum
+		{
+			m_class_id = AS_COLOR
+		};
+
 		as_color(character* target);
-		virtual as_color* cast_to_as_color() { return this; }
+		virtual bool is(int class_id) { return m_class_id == class_id; }
 
 		weak_ptr<character> m_target;
 		cxform	m_cxform;	// original cxform

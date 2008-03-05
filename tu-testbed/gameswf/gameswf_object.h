@@ -22,6 +22,12 @@ namespace gameswf
 
 	struct as_object : public as_object_interface
 	{
+		// Unique id of a gameswf resource
+		enum
+		{
+			m_class_id = AS_OBJECT
+		};
+
 		stringi_hash<as_member>	m_members;
 
 		// It is used to register an event handler to be invoked when
@@ -65,6 +71,9 @@ namespace gameswf
 		exported_module virtual void copy_to(as_object_interface* target);
 		exported_module void dump();
 		exported_module as_object_interface* find_target(const tu_string& path);
+
+		exported_module virtual bool is(int class_id) { return m_class_id == class_id; }
+
 	};
 
 }
