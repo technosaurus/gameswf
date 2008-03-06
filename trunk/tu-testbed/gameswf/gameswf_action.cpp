@@ -653,11 +653,9 @@ namespace gameswf
 
 		as_value	kval;
 		s_global->get_member(key_obj_name, &kval);
-		if (kval.get_type() == as_value::OBJECT)
+		as_key*	ko = cast_to<as_key>(kval.to_object());
+		if (ko)
 		{
-			as_key*	ko = cast_to<as_key>(kval.to_object());
-			assert(ko);
-
 			if (down) ko->set_key_down(k);
 			else ko->set_key_up(k);
 		}
@@ -2130,10 +2128,7 @@ namespace gameswf
 								// Result contains the new output.
 								(*c_func)(fn_call(&val, NULL, env, nargs, env->get_top_index()));
 								
-								if( val.to_object() )
-								{
-									new_obj = cast_to<as_object>(val.to_object());
-								}
+								new_obj = cast_to<as_object>(val.to_object());
 							}
 							else
 							{

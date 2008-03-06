@@ -41,7 +41,6 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			assert(fn.this_ptr);
 			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			assert(obj);
 			as_member m;
@@ -64,7 +63,6 @@ namespace gameswf
 		bool ret = false;
 		if (fn.nargs >= 2)
 		{
-			assert(fn.this_ptr);
 			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			assert(obj);
 
@@ -83,7 +81,6 @@ namespace gameswf
 		bool ret = false;
 		if (fn.nargs == 1)
 		{
-			assert(fn.this_ptr);
 			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			assert(obj);
 			ret = obj->unwatch(fn.arg(0).to_tu_string());

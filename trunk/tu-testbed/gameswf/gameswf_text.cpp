@@ -542,12 +542,8 @@ namespace gameswf
 		assert(et);
 		if (fn.nargs == 1)
 		{
-			as_object_interface* obj = fn.arg(0).to_object();
-			if (obj)
-			{
-				as_textformat* tf = cast_to<as_textformat>(obj);
-				et->reset_format(tf);
-			}
+			as_textformat* tf = cast_to<as_textformat>(fn.arg(0).to_object());
+			et->reset_format(tf);
 		}
 	}
 

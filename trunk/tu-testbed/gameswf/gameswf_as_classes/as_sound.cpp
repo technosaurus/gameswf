@@ -16,7 +16,6 @@ namespace gameswf
 		sound_handler* s = get_sound_handler();
 		if (s != NULL)
 		{
-			assert(fn.this_ptr);
 			as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 			if (snd)
 			{
@@ -38,7 +37,6 @@ namespace gameswf
 		sound_handler* s = get_sound_handler();
 		if (s != NULL)
 		{
-			assert(fn.this_ptr);
 			as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 			assert(snd);
 			s->stop_sound(snd->m_id);
@@ -53,7 +51,6 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
 		as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 		assert(snd);
 
@@ -118,7 +115,6 @@ namespace gameswf
 			sound_handler* s = get_sound_handler();
 			if (s != NULL)
 			{
-				assert(fn.this_ptr);
 				as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 				assert(snd);
 				s->set_volume(snd->m_id, volume);
@@ -134,7 +130,6 @@ namespace gameswf
 			sound_handler* s = get_sound_handler();
 			if (s != NULL)
 			{
-				assert(fn.this_ptr);
 				as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 				assert(snd);
 
@@ -157,7 +152,6 @@ namespace gameswf
 		sound_handler* s = get_sound_handler();
 		if (s != NULL)
 		{
-			assert(fn.this_ptr);
 			as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 			assert(snd);
 

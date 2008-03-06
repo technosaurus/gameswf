@@ -15,7 +15,6 @@ namespace gameswf
 	// Listeners will have "onKeyDown" and "onKeyUp" methods
 	// called on them when a key changes state.
 	{
-		assert(fn.this_ptr);
 		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
@@ -38,7 +37,6 @@ namespace gameswf
 	void	key_remove_listener(const fn_call& fn)
 	// Remove a previously-added listener.
 	{
-		assert(fn.this_ptr);
 		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
@@ -54,7 +52,6 @@ namespace gameswf
 	void	key_get_ascii(const fn_call& fn)
 	// Return the ascii value of the last key pressed.
 	{
-		assert(fn.this_ptr);
 		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
@@ -76,7 +73,6 @@ namespace gameswf
 	void	key_get_code(const fn_call& fn)
 	// Returns the keycode of the last key pressed.
 	{
-		assert(fn.this_ptr);
 		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
@@ -94,7 +90,6 @@ namespace gameswf
 
 		int	code = (int) fn.arg(0).to_number();
 
-		assert(fn.this_ptr);
 		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
 
