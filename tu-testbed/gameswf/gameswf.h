@@ -46,7 +46,6 @@ namespace gameswf
 	struct font;
 	struct movie_interface;
 	struct render_handler;
-	struct resource;
 	struct rgba;
 	struct sound_handler;
 	struct stream;
@@ -153,32 +152,21 @@ namespace gameswf
 	struct as_object_interface;
 	struct canvas;
 
-	// An interface for casting to different types of
-	// resources.
-	struct resource : public ref_counted
-	{
-		virtual ~resource() {}
-
-		// Override in derived classes that implement corresponding interfaces.
-		virtual font* cast_to_font() { return 0; }
-		virtual character_def* cast_to_character_def() { return 0; }
-		virtual sprite_definition* cast_to_sprite_definition() { return 0; }
-		virtual sound_sample* cast_to_sound_sample() { return 0; }
-		virtual video_stream_definition* cast_to_video_stream_definition() { return 0; }
-		virtual as_as_function* cast_to_as_function() { return 0; }
-		virtual canvas* cast_to_canvas() { return 0; }
-
-		virtual bool is(int class_id) { assert(0); return false; }
-	};
-
 	// Unique id of all gameswf resources
 	enum as_classes
 	{
+		AS_OBJECT_INTERFACE,
+		AS_OBJECT,
+		AS_AS_FUNCTION,
+		AS_CHARACTER_DEF,
+		AS_SPRITE_DEF,
+		AS_VIDEO_DEF,
+		AS_SOUND_SAMPLE,
 		AS_KEY,
 		AS_COLOR,
 		AS_SOUND,
-		AS_OBJECT,
-		AS_OBJECT_INTERFACE,
+		AS_FONT,
+		AS_CANVAS,
 		AS_PLUGIN_MYDB,
 		AS_PLUGIN_MYTABLE,
 		AS_PLUGIN_SYSINFO
@@ -187,7 +175,7 @@ namespace gameswf
 
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)
 	template <typename cast_class>
-	cast_class* cast_to(resource* object)
+	cast_class* cast_to(as_object_interface* object)
 	{
 		if (object)
 		{
@@ -224,7 +212,7 @@ namespace gameswf
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
-	struct as_object_interface : public resource
+	struct as_object_interface : public ref_counted
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_OBJECT_INTERFACE };
@@ -235,8 +223,17 @@ namespace gameswf
 		// So that text_character's can return something reasonable.
 		virtual const char*	get_text_value() const { return 0; }
 
-		virtual bool	set_member(const tu_stringi& name, const as_value& val) = 0;
-		virtual bool	get_member(const tu_stringi& name, as_value* val) = 0;
+		virtual bool	set_member(const tu_stringi& name, const as_value& val)
+		{
+			assert(0);
+			return false;
+		}
+		virtual bool	get_member(const tu_stringi& name, as_value* val)
+		{
+			assert(0);
+			return false;
+		}
+
 		virtual bool	on_event(const event_id& id) { return false; }
 		virtual void advance(float delta_time) { assert(0); }
 		virtual movie_root*		get_root() { return (movie_root*) get_current_root(); }
@@ -318,14 +315,16 @@ namespace gameswf
 	// @@ This is not really a public interface.  It's here so it
 	// can be mixed into movie_definition, movie_definition_sub,
 	// and sprite_definition, without using multiple inheritance.
-	struct character_def : public resource
+	struct character_def : public as_object_interface
 	{
-	private:
-		int	m_id;
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_CHARACTER_DEF };
+		virtual bool is(int class_id)
+		{
+			return m_class_id == class_id;
+		}
 
-	public:
-		character_def()
-			:
+		character_def()	:
 			m_id(-1)
 		{
 		}
@@ -340,7 +339,6 @@ namespace gameswf
 		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character
 
 		// From resource interface.
-		virtual character_def*	cast_to_character_def() { return this; }
 		virtual movie_def_impl* cast_to_movie_def_impl() { return 0; }
 		//
 		// Caching.
@@ -351,6 +349,10 @@ namespace gameswf
 
 		// for definetext, definetext2 & defineedittext tags
 		virtual void	csm_textsetting(stream* in, int tag_type) { assert(0); };
+
+		private:
+
+		int	m_id;
 
 	};
 

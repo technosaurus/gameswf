@@ -1499,14 +1499,14 @@ namespace gameswf
 	{
 
 		// check the import.
-		resource* res = find_exported_resource(id);
+		as_object_interface* res = find_exported_resource(id);
 		if (res == NULL)
 		{
 			IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported\n", id.c_str()));
 			return NULL;
 		}
 
-		sprite_definition* sdef = res->cast_to_sprite_definition();
+		sprite_definition* sdef = cast_to<sprite_definition>(res);
 		if (sdef == NULL)
 		{
 			return NULL;
@@ -1536,12 +1536,12 @@ namespace gameswf
 		printf("***\n");
 	}
 
-	resource*	sprite_instance::find_exported_resource(const tu_string& symbol)
+	as_object_interface*	sprite_instance::find_exported_resource(const tu_string& symbol)
 	{
 		movie_definition_sub*	def = get_movie_definition()->cast_to_movie_def_impl();
 		if (def)
 		{
-			resource* res = def->get_exported_resource(symbol);
+			as_object_interface* res = def->get_exported_resource(symbol);
 			if (res)
 			{
 				return res;
@@ -1579,7 +1579,7 @@ namespace gameswf
 				m_matrix,
 				0.0f, 0); 
 		}
-		return m_canvas->get_character_def()->cast_to_canvas();
+		return cast_to<canvas>(m_canvas->get_character_def());
 	}
 
 }

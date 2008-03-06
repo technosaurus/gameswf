@@ -675,17 +675,17 @@ namespace gameswf
 				fontname  != m_font->get_name())
 		{
 			// try to find embedded font
-			resource* res = find_exported_resource(fontname);
+			as_object_interface* res = find_exported_resource(fontname);
 			font* embedded_font = NULL;
 			if (res)
 			{
-				embedded_font = res->cast_to_font();
+				embedded_font = cast_to<font>(res);
 			}
 
 			if (embedded_font)
 			{
 				// we have embedded font
-				m_font = embedded_font->cast_to_font();
+				m_font = cast_to<font>(embedded_font);
 			}
 			else
 			{

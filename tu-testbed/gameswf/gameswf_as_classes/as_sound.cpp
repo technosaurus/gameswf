@@ -67,7 +67,7 @@ namespace gameswf
 		}
 			
 		// find resource
-		resource* res = NULL;
+		as_object_interface* res = NULL;
 		if (target)
 		{
 			res = target->find_exported_resource(fn.arg(0).to_string());
@@ -81,7 +81,7 @@ namespace gameswf
 		}
 
 		int si = 0;
-		sound_sample_impl* ss = (sound_sample_impl*) res->cast_to_sound_sample();
+		sound_sample* ss = cast_to<sound_sample>(res);
 
 		if (ss != NULL)
 		{

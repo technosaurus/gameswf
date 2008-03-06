@@ -49,7 +49,7 @@ namespace gameswf
 	}
 
 
-	sound_sample_impl::~sound_sample_impl()
+	sound_sample::~sound_sample()
 	{
 		if (s_sound_handler)
 		{
@@ -130,7 +130,7 @@ namespace gameswf
 				format,
 				get_sample_rate(sample_rate),
 				stereo);
-			sound_sample*	sam = new sound_sample_impl(handler_id);
+			sound_sample*	sam = new sound_sample(handler_id);
 			m->add_sound_sample(character_id, sam);
 
 			delete [] data;
@@ -153,7 +153,7 @@ namespace gameswf
 		}
 
 
-		void	read(stream* in, int tag_type, movie_definition_sub* m, const sound_sample_impl* sam)
+		void	read(stream* in, int tag_type, movie_definition_sub* m, const sound_sample* sam)
 		// Initialize this StartSound tag from the stream & given sample.
 		// Insert ourself into the movie.
 		{
@@ -206,7 +206,7 @@ namespace gameswf
 
 		Uint16	sound_id = in->read_u16();
 
-		sound_sample_impl*	sam = (sound_sample_impl*) m->get_sound_sample(sound_id);
+		sound_sample*	sam = m->get_sound_sample(sound_id);
 		if (sam)
 		{
 			start_sound_tag*	sst = new start_sound_tag();

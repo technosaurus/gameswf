@@ -23,7 +23,7 @@ namespace gameswf
 			as_object* properties = cast_to<as_object>(fn.this_ptr);
 			if (properties->m_this_ptr != NULL)
 			{
-				as_as_function* func = properties->m_this_ptr->cast_to_as_function();
+				as_as_function* func = cast_to<as_as_function>(properties->m_this_ptr.get_ptr());
 				if (func)
 				{
 					as_environment env;

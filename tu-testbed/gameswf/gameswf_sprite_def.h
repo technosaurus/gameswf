@@ -37,6 +37,14 @@ namespace gameswf
 
 	struct sprite_definition : public movie_definition_sub
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_SPRITE_DEF };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return movie_definition_sub::is(class_id);
+		}
+
 		movie_definition_sub*	     m_movie_def;		// parent movie.
 		array<array<execute_tag*> >  m_playlist;	// movie control events for each frame.
 		stringi_hash<int>	     m_named_frames;	// stores 0-based frame #'s
@@ -45,7 +53,6 @@ namespace gameswf
 		~sprite_definition();
 
 		// overloads from movie_definition
-		virtual sprite_definition* cast_to_sprite_definition() { return this; }
 		virtual float	get_width_pixels() const { return 1; }
 		virtual float	get_height_pixels() const { return 1; }
 		virtual float	get_frame_rate() const
@@ -81,8 +88,8 @@ namespace gameswf
 		virtual bitmap_info*	get_bitmap_info(int i) const { assert(0); return NULL; }
 		virtual void	add_bitmap_info(bitmap_info* bi) { assert(0); }
 
-		virtual void	export_resource(const tu_string& symbol, resource* res) { log_error("can't export from sprite\n"); }
-		virtual resource*	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
+		virtual void	export_resource(const tu_string& symbol, as_object_interface* res) { log_error("can't export from sprite\n"); }
+		virtual as_object_interface*	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
 		virtual void	add_import(const char* source_url, int id, const char* symbol) { assert(0); }
 		virtual void	visit_imported_movies(import_visitor* v) { assert(0); }
 		virtual void	resolve_import(const char* source_url, movie_definition* d) { assert(0); }

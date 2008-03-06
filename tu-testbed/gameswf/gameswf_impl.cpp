@@ -2208,18 +2208,18 @@ namespace gameswf
 				// create_movie_sub().
 
 				assert(source_movie->cast_to_movie_def_impl());
-				resource* res = source_movie->cast_to_movie_def_impl()->get_exported_resource(symbol_name);
+				as_object_interface* res = source_movie->cast_to_movie_def_impl()->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
 					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",
 						symbol_name, source_url));
 				}
-				else if (font* f = res->cast_to_font())
+				else if (font* f = cast_to<font>(res))
 				{
 					// Add this shared font to the currently-loading movie.
 					m->add_font(id, f);
 				}
-				else if (character_def* ch = res->cast_to_character_def())
+				else if (character_def* ch = cast_to<character_def>(res))
 				{
 					// Add this character to the loading movie.
 					m->add_character(id, ch);
@@ -2255,7 +2255,7 @@ namespace gameswf
 		Uint16 character_id = in->read_u16();
 		character_def* chdef = m->get_character_def(character_id);
 
-		video_stream_definition* ch = chdef->cast_to_video_stream_definition();
+		video_stream_definition* ch = cast_to<video_stream_definition>(chdef);
 		assert(ch != NULL);
 
 		ch->read(in, tag, m);
