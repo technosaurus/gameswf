@@ -54,6 +54,13 @@ namespace gameswf
 	struct movie_root;
 	struct movie_def_impl;
 	struct rect;
+	struct as_environment;
+	struct character_def;
+	struct sound_sample;
+	struct video_stream_definition;
+	struct sprite_definition;
+	struct as_as_function;
+	struct as_object_interface;
 
 	exported_module movie_interface* get_current_root();
 
@@ -142,35 +149,46 @@ namespace gameswf
 		mutable weak_proxy*	m_weak_proxy;
 	};
 
-
-	struct font;
-	struct character_def;
-	struct sound_sample;
-	struct video_stream_definition;
-	struct sprite_definition;
-	struct as_as_function;
-	struct as_object_interface;
-	struct canvas;
-
 	// Unique id of all gameswf resources
 	enum as_classes
 	{
 		AS_OBJECT_INTERFACE,
 		AS_OBJECT,
+		AS_CHARACTER,
+		AS_SPRITE,
 		AS_AS_FUNCTION,
+		AS_MOVIE_DEF,
+		AS_MOVIE_DEF_SUB,
 		AS_CHARACTER_DEF,
 		AS_SPRITE_DEF,
 		AS_VIDEO_DEF,
 		AS_SOUND_SAMPLE,
+		AS_VIDEO_INST,
 		AS_KEY,
+		AS_ARRAY,
 		AS_COLOR,
 		AS_SOUND,
 		AS_FONT,
 		AS_CANVAS,
+		AS_NETSTREAM,
+		AS_STRING,
+		AS_SELECTION,
+		AS_POINT,
+		AS_MATRIX,
+		AS_NETCONNECTION,
+		AS_LISTENER,
+		AS_DATE,
+		AS_EDIT_TEXT,
+		AS_XML_SOCKET,
+		AS_TEXTFORMAT,
+		AS_MCLOADER,
+		AS_TIMER,
+
+		// plugins
 		AS_PLUGIN_MYDB,
 		AS_PLUGIN_MYTABLE,
-		AS_PLUGIN_SYSINFO
-		//TODO: and so far
+		AS_PLUGIN_SYSINFO,
+		AS_PLUGIN_3DS
 	};
 
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)
@@ -183,32 +201,6 @@ namespace gameswf
 		}
 		return 0;
 	}
-
-	// Forward decls for cast_to_*
-	struct as_array;
-	struct as_color;
-	struct as_netstream;
-	struct as_netconnection;
-	struct as_key;
-	struct as_sound;
-	struct video_stream_instance;
-	struct sprite_instance;
-	struct as_timer;
-	struct sprite_instance;
-	struct as_mcloader;
-	struct as_object;
-	struct as_environment;
-	struct as_xmlsock;
-	struct tu_string_as_object;
-	struct as_textformat;
-	struct x3ds_instance;
-	struct edit_text_character;
-	struct as_as_function;
-	struct as_date;
-	struct as_listener;
-	struct as_selection;
-	struct as_matrix;
-	struct as_point;
 
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
@@ -237,27 +229,6 @@ namespace gameswf
 		virtual bool	on_event(const event_id& id) { return false; }
 		virtual void advance(float delta_time) { assert(0); }
 		virtual movie_root*		get_root() { return (movie_root*) get_current_root(); }
-
-		// Replacements for dynamic_cast<>.  Override in subclasses
-		// that implement the corresponding interfaces.
-		virtual video_stream_instance* cast_to_video_stream_instance() { return 0; }
-		virtual as_array* cast_to_as_array() { return 0; }
-		virtual tu_string_as_object* cast_to_as_string() { return 0; }
-		virtual as_netstream* cast_to_as_netstream() { return 0; }
-		virtual as_netconnection* cast_to_as_netconnection() { return 0; }
-		virtual character* cast_to_character() { return 0; }
-		virtual as_timer* cast_to_as_timer() { return 0; }
-		virtual sprite_instance* cast_to_sprite() { return 0; }
-		virtual as_mcloader* cast_to_as_mcloader() { return 0; }
-		virtual as_textformat* cast_to_as_textformat() { return 0; }
-		virtual as_xmlsock* cast_to_as_xmlsock() { return 0; }
-		virtual x3ds_instance* cast_to_3ds() { return 0; }
-		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
-		virtual as_date* cast_to_as_date() { return 0; }
-		virtual as_listener* cast_to_as_listener() { return 0; }
-		virtual as_matrix* cast_to_as_matrix() { return 0; }
-		virtual as_point* cast_to_as_point() { return 0; }
-		virtual as_selection* cast_to_as_selection() { return 0; }
 
 		// retrieves members/variables from THIS & pushes them into env
 		virtual	void enumerate(as_environment* env) { assert(0); }
@@ -338,8 +309,6 @@ namespace gameswf
 		// Should stick the result in a smart_ptr immediately.
 		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character
 
-		// From resource interface.
-		virtual movie_def_impl* cast_to_movie_def_impl() { return 0; }
 		//
 		// Caching.
 		//

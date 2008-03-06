@@ -267,7 +267,6 @@ namespace gameswf
 	// @@ should these delegate to m_movie?	 Probably...
 	bool	movie_root::set_member(const tu_stringi& name, const as_value& val) { return false; }
 	bool	movie_root::get_member(const tu_stringi& name, as_value* val) { return false; }
-	character*	movie_root::cast_to_character() { return m_movie.get_ptr(); } 
 
 	void	movie_root::set_root_movie(character* root_movie)
 	{

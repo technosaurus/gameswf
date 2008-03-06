@@ -17,8 +17,15 @@ namespace gameswf
 
 	struct as_matrix : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_MATRIX };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		as_matrix();
-		virtual as_matrix* cast_to_as_matrix() { return this; }
 
 		matrix m_matrix;
 	};

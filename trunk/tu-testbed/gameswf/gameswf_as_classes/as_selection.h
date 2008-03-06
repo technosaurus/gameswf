@@ -22,7 +22,13 @@ namespace gameswf
 
 	struct as_selection : public as_object
 	{
-		virtual as_selection* cast_to_as_selection() { return this; }
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_SELECTION };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
 	};
 
 }	// end namespace gameswf

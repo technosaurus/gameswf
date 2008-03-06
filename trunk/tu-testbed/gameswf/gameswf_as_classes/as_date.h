@@ -21,8 +21,15 @@ namespace gameswf
 
 	struct as_date : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_DATE };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		as_date(const fn_call& fn);
-		virtual as_date* cast_to_as_date() { return this; }
 		Uint64 get_time() const;
 
 		private:

@@ -21,6 +21,14 @@ namespace gameswf
 
 	struct x3ds_instance : public character
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_PLUGIN_3DS };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return character::is(class_id);
+		}
+
 		Lib3dsCamera* m_camera;
 
 		// <material, movieclip> map
@@ -41,7 +49,6 @@ namespace gameswf
 		virtual void	advance(float delta_time);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
-		virtual x3ds_instance* cast_to_3ds() { return this; }
 		virtual bool	on_event(const event_id& id);
 
 		// binds texture to triangle (from mesh)

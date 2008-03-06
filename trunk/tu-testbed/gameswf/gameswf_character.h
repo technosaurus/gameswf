@@ -61,6 +61,15 @@ namespace gameswf
 	// internal interface
 	struct character : public movie_interface
 	{
+
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_CHARACTER };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return movie_interface::is(class_id);
+		}
+
 		int		m_id;
 		weak_ptr<character>		m_parent;
 		tu_string	m_name;
@@ -226,8 +235,6 @@ namespace gameswf
 		}
 
 		virtual void	execute_frame_tags(int frame, bool state_only = false) {}
-		virtual character* cast_to_character() { return this; }
-
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 		virtual void	do_actions(const array<action_buffer*>& action_list) { assert(0); }
 

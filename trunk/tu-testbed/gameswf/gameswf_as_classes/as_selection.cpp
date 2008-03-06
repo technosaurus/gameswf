@@ -11,8 +11,7 @@ namespace gameswf
 
 	void	as_selection_setfocus(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_selection* obj = fn.this_ptr->cast_to_as_selection();
+		as_selection* obj = cast_to<as_selection>(fn.this_ptr);
 		if (obj)
 		{
 			if (fn.nargs > 0)

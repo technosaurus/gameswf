@@ -39,13 +39,10 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			if (fn.arg(0).to_object())
+			as_timer* timer = cast_to<as_timer>(fn.arg(0).to_object());
+			if (timer)
 			{
-				as_timer* timer = fn.arg(0).to_object()->cast_to_as_timer();
-				if (timer)
-				{
-					timer->clear();
-				}
+				timer->clear();
 			}
 		}
 	}

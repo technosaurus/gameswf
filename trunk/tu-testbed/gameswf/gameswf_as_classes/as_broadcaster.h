@@ -21,9 +21,16 @@ namespace gameswf
 
 	struct as_listener : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_LISTENER };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		as_listener();
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual as_listener* cast_to_as_listener() { return this; }
 		void add(as_object_interface* listener);
 		void remove(as_object_interface* listener);
 		void	broadcast(const fn_call& fn);

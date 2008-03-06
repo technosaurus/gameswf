@@ -16,11 +16,19 @@ namespace gameswf
 	// pointer.
 	struct tu_string_as_object : public gameswf::as_object
 	{
-		const tu_string& m_string;
-		tu_string_as_object(const tu_string& str)
-			: m_string(str) {
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_STRING };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
 		}
-		virtual tu_string_as_object* cast_to_as_string() { return this; }
+
+		const tu_string& m_string;
+		tu_string_as_object(const tu_string& str)	:
+			m_string(str)
+		{
+		}
 
 		virtual bool get_member(const tu_stringi& name, as_value* val)
 		// Overload this, to catch references to "length".
@@ -75,8 +83,7 @@ namespace gameswf
 
 	void string_char_code_at(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 
 		int	index = (int) fn.arg(0).to_number();
@@ -90,8 +97,7 @@ namespace gameswf
   
 	void string_concat(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 
 		tu_string result(this_ptr->m_string);
@@ -118,8 +124,7 @@ namespace gameswf
 
 	void string_index_of(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 
 		if (fn.nargs < 1)
@@ -146,8 +151,7 @@ namespace gameswf
 
 	void string_last_index_of(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 
 		if (fn.nargs < 1)
@@ -179,8 +183,7 @@ namespace gameswf
 	
 	void string_slice(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 		const tu_string& this_str = this_ptr->m_string;
 
@@ -208,8 +211,7 @@ namespace gameswf
 
 	void string_split(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 		const tu_string& this_str = this_ptr->m_string;
 
@@ -274,8 +276,7 @@ namespace gameswf
 	// public substr(start:Number, length:Number) : String
 	void string_substr(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 		const tu_string& this_str = this_ptr->m_string;
 
@@ -311,8 +312,7 @@ namespace gameswf
 
 	void string_substring(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 		const tu_string& this_str = this_ptr->m_string;
 
@@ -337,18 +337,18 @@ namespace gameswf
 		fn.result->set_tu_string(this_str.utf8_substring(start, end));
 	}
 
-	void string_to_lowercase(const fn_call& fn) {
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+	void string_to_lowercase(const fn_call& fn)
+	{
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 		const tu_string& this_str = this_ptr->m_string;
 
 		fn.result->set_tu_string(this_str.utf8_to_lower());
 	}
 	
-	void string_to_uppercase(const fn_call& fn) {
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+	void string_to_uppercase(const fn_call& fn) 
+	{
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 		const tu_string& this_str = this_ptr->m_string;
 
@@ -357,8 +357,7 @@ namespace gameswf
 
 	void string_char_at(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		const tu_string_as_object* this_ptr = fn.this_ptr->cast_to_as_string();
+		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_ptr);
 		const tu_string& this_str = this_ptr->m_string;
 
@@ -375,8 +374,7 @@ namespace gameswf
 
 	void string_to_string(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		tu_string_as_object* this_string_ptr = fn.this_ptr->cast_to_as_string();
+		tu_string_as_object* this_string_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
 		assert(this_string_ptr);
 
 		fn.result->set_tu_string(this_string_ptr->m_string);

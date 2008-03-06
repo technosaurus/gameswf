@@ -24,8 +24,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_xmlsock* xmls = fn.this_ptr->cast_to_as_xmlsock();
+		as_xmlsock* xmls = cast_to<as_xmlsock>(fn.this_ptr);
 		assert(xmls);
 
 		fn.result->set_bool(xmls->connect(fn.arg(0).to_string(), (int) fn.arg(1).to_number()));
@@ -33,8 +32,7 @@ namespace gameswf
 
 	void	as_xmlsock_close(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_xmlsock* xmls = fn.this_ptr->cast_to_as_xmlsock();
+		as_xmlsock* xmls = cast_to<as_xmlsock>(fn.this_ptr);
 		assert(xmls);
 
 		xmls->close();
@@ -47,8 +45,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_xmlsock* xmls = fn.this_ptr->cast_to_as_xmlsock();
+		as_xmlsock* xmls = cast_to<as_xmlsock>(fn.this_ptr);
 		assert(xmls);
 
 		xmls->send(fn.arg(0));

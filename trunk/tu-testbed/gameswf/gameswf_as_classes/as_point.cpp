@@ -30,9 +30,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_point* point = fn.this_ptr->cast_to_as_point();
-
+		as_point* point = cast_to<as_point>(fn.this_ptr);
 		if (point == NULL)
 		{
 			return;
@@ -43,7 +41,7 @@ namespace gameswf
 			return;
 		}
 
-		as_point* other_point = fn.arg(0).to_object()->cast_to_as_point();
+		as_point* other_point = cast_to<as_point>(fn.arg(0).to_object());
 		if (other_point)
 		{
 			smart_ptr<as_point>	obj;
@@ -59,9 +57,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_point* point = fn.this_ptr->cast_to_as_point();
-
+		as_point* point = cast_to<as_point>(fn.this_ptr);
 		if (point == NULL)
 		{
 			return;
@@ -72,7 +68,7 @@ namespace gameswf
 			return;
 		}
 
-		as_point* other_point = fn.arg(0).to_object()->cast_to_as_point();
+		as_point* other_point = cast_to<as_point>(fn.arg(0).to_object());
 		if (other_point)
 		{
 			smart_ptr<as_point>	obj;
@@ -88,9 +84,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_point* point = fn.this_ptr->cast_to_as_point();
-
+		as_point* point = cast_to<as_point>(fn.this_ptr);
 		if (point == NULL)
 		{
 			return;

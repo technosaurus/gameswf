@@ -20,6 +20,14 @@ namespace gameswf
 
 	struct as_mcloader : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_MCLOADER };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		struct loadable_movie
 		{
 			loadable_movie() :
@@ -39,7 +47,6 @@ namespace gameswf
 		~as_mcloader();
 		
 		virtual void	advance(float delta_time);
-		virtual as_mcloader* cast_to_as_mcloader() { return this; }
 	};
 
 }	// end namespace gameswf

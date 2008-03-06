@@ -1327,15 +1327,12 @@ namespace gameswf
 					switch (env->top(2).get_type())
 					{
 						case as_value::OBJECT:
-							target = env->top(2).to_object()->cast_to_character();
+							target = cast_to<character>(env->top(2).to_object());
 							break;
 						case as_value::STRING:
 							{
 								as_value val = env->get_variable(env->top(2).to_string(), with_stack);
-								if (val.to_object() != NULL)
-								{
-									target = val.to_object()->cast_to_character();
-								}
+								target = cast_to<character>(val.to_object());
 							}
 							break;
 						default:
@@ -1361,13 +1358,10 @@ namespace gameswf
 					character*	target = env->find_target(env->top(0));
 					if (target)
 					{
-						if (target->get_parent())
+						sprite_instance* parent = cast_to<sprite_instance>(target->get_parent());
+						if (parent)
 						{
-							sprite_instance* parent = target->get_parent()->cast_to_sprite();
-							if (parent)
-							{
-								parent->remove_display_object(target);
-							}
+							parent->remove_display_object(target);
 						}
 					}
 					env->drop(1);
@@ -1771,16 +1765,12 @@ namespace gameswf
 						env->top(0).set_string("boolean");
 						break;
 					case as_value::OBJECT:
-						if (env->top(0).to_object())
+						if (cast_to<sprite_instance>(env->top(0).to_object()))
 						{
-							if (env->top(0).to_object()->cast_to_sprite())
-							{
-								env->top(0).set_string("movieclip");
-								break;
-							}
+							env->top(0).set_string("movieclip");
+							break;
 						}
 						env->top(0).set_string("object");
-
 						break;
 					case as_value::NULLTYPE:
 						env->top(0).set_string("null");

@@ -16,8 +16,15 @@ namespace gameswf
 
 	struct as_point : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_POINT };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		as_point(float x, float y);
-		virtual as_point* cast_to_as_point() { return this; }
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);

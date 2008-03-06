@@ -2207,8 +2207,8 @@ namespace gameswf
 				// s_no_recurse_while_loading, change
 				// create_movie_sub().
 
-				assert(source_movie->cast_to_movie_def_impl());
-				as_object_interface* res = source_movie->cast_to_movie_def_impl()->get_exported_resource(symbol_name);
+				assert(cast_to<movie_def_impl>(source_movie));
+				as_object_interface* res = cast_to<movie_def_impl>(source_movie)->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
 					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",

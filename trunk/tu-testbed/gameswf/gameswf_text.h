@@ -203,6 +203,14 @@ namespace gameswf
 
 	struct edit_text_character : public character
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_EDIT_TEXT };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return character::is(class_id);
+		}
+
 		smart_ptr<edit_text_character_def>	m_def;
 		array<text_glyph_record>	m_text_glyph_records;
 		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
@@ -248,7 +256,6 @@ namespace gameswf
 		void	format_text();
 
 		virtual void advance(float delta_time);
-		virtual edit_text_character* cast_to_edit_text_character() { return this; }
 
 	private:
 

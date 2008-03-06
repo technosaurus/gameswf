@@ -18,11 +18,18 @@ namespace gameswf
 
 	struct as_array : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_ARRAY };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		exported_module as_array();
 
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
-		virtual as_array* cast_to_as_array() { return this; }
 
 		exported_module tu_string to_string();
 

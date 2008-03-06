@@ -34,6 +34,14 @@ namespace gameswf
 
 	struct sprite_instance : public character
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_SPRITE };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return character::is(class_id);
+		}
+
 		smart_ptr<movie_definition_sub>	m_def;
 		movie_root*	m_root;
 
@@ -214,7 +222,6 @@ namespace gameswf
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
-		virtual sprite_instance* cast_to_sprite();
 
 		virtual	void enumerate(as_environment* env);
 

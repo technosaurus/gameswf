@@ -13,6 +13,8 @@
 namespace gameswf
 {
 
+	struct as_netstream;
+
 	struct video_stream_definition : public character_def
 	{
 		// Unique id of a gameswf resource
@@ -50,16 +52,18 @@ namespace gameswf
 
 	struct video_stream_instance : public character
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_VIDEO_INST };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return character::is(class_id);
+		}
+
 		video_stream_instance(video_stream_definition* def,	character* parent, int id);
 		~video_stream_instance();
 
-		virtual video_stream_instance* cast_to_video_stream_instance()
-		{
-			return this;
-		}
-
 		void	display();
-
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 
 		//
