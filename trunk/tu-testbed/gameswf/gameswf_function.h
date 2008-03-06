@@ -21,8 +21,15 @@ namespace gameswf
 	struct as_environment;
 	struct as_object;
 
-	struct as_as_function : public resource
+	struct as_as_function : public as_object_interface
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_AS_FUNCTION };
+		virtual bool is(int class_id)
+		{
+			return m_class_id == class_id;
+		}
+
 		action_buffer	m_action_buffer;
 
 		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
@@ -66,7 +73,6 @@ namespace gameswf
 		}
 
 		void	set_length(int len) { assert(len >= 0); m_length = len; }
-		virtual as_as_function* cast_to_as_function() { return this; }
 		void set_target(as_object_interface* target)
 		{
 			m_target = target;

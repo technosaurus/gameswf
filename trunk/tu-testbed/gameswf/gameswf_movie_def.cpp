@@ -15,7 +15,7 @@
 
 #include "base/tu_file.h"
 #include "gameswf/gameswf_font.h"
-//#include "gameswf/gameswf_fontlib.h"
+#include "gameswf/gameswf_sound.h"
 #include "gameswf/gameswf_stream.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
@@ -189,7 +189,7 @@ namespace gameswf
 		return m_bitmap_list[i].get_ptr();
 	}
 
-	void	movie_def_impl::export_resource(const tu_string& symbol, resource* res)
+	void	movie_def_impl::export_resource(const tu_string& symbol, as_object_interface* res)
 	// Expose one of our resources under the given symbol,
 	// for export.	Other movies can import it.
 	{
@@ -197,11 +197,11 @@ namespace gameswf
 		m_exports.set(symbol, res);
 	}
 
-	resource*	movie_def_impl::get_exported_resource(const tu_string& symbol)
+	as_object_interface*	movie_def_impl::get_exported_resource(const tu_string& symbol)
 	// Get the named exported resource, if we expose it.
 	// Otherwise return NULL.
 	{
-		smart_ptr<resource>	res;
+		smart_ptr<as_object_interface>	res;
 		m_exports.get(symbol, &res);
 		return res.get_ptr();
 	}
@@ -266,7 +266,7 @@ namespace gameswf
 			if (inf.m_source_url == source_url)
 			{
 				// Do the import.
-				resource* res = def->get_exported_resource(inf.m_symbol);
+				as_object_interface* res = def->get_exported_resource(inf.m_symbol);
 				bool	 imported = true;
 
 				if (res == NULL)
@@ -274,13 +274,13 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",
 						inf.m_symbol.c_str(), source_url));
 				}
-				else if (font* f = res->cast_to_font())
+				else if (font* f = cast_to<font>(res))
 				{
 					// Add this shared font to our fonts.
 					add_font(inf.m_character_id, f);
 					imported = true;
 				}
-				else if (character_def* ch = res->cast_to_character_def())
+				else if (character_def* ch = cast_to<character_def>(res))
 				{
 					// Add this character to our characters.
 					add_character(inf.m_character_id, ch);

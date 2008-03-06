@@ -47,7 +47,7 @@ namespace gameswf
 		};
 
 		stringi_hash<as_watch>	m_watch;
-		weak_ptr<resource> m_this_ptr;
+		weak_ptr<as_object_interface> m_this_ptr;
 
 		// We can place reference to __proto__ into members but it used very often
 		// so for optimization we place it into instance

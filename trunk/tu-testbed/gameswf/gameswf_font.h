@@ -45,13 +45,17 @@ namespace gameswf
 
 	};
 
-	struct font : public resource
+	struct font : public as_object_interface
 	{
 		font();
 		~font();
 
-		// override from resource.
-		virtual font*	cast_to_font() { return this; }
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_FONT };
+		virtual bool is(int class_id)
+		{
+			return m_class_id == class_id;
+		}
 
 		int	get_glyph_count() const { return m_glyphs.size(); }
 		shape_character_def*	get_glyph_by_index(int glyph_index) const;

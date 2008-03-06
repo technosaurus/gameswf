@@ -736,11 +736,11 @@ namespace gameswf
 				bs.m_sound_id = in->read_u16();
 				if (bs.m_sound_id > 0)
 				{
-					bs.m_sam = (sound_sample_impl*) m->get_sound_sample(bs.m_sound_id);
-					if (bs.m_sam == NULL)
-					{
+					bs.m_sam = m->get_sound_sample(bs.m_sound_id);
+//					if (bs.m_sam == NULL)
+//					{
 //						printf("sound tag not found, sound_id=%d, button state #=%i", bs.sound_id, i);
-					}
+//					}
 					IF_VERBOSE_PARSE(log_msg("\n	sound_id = %d\n", bs.m_sound_id));
 					bs.m_sound_style.read(in);
 				}

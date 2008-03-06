@@ -92,7 +92,7 @@ namespace gameswf
 		struct button_sound_info
 		{
 			Uint16 m_sound_id;
-			sound_sample_impl*	m_sam;
+			sound_sample*	m_sam;
 			sound_info m_sound_style;
 		};
 

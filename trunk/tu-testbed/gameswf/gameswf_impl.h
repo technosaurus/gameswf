@@ -40,11 +40,6 @@ namespace gameswf
 	struct movie_root;
 	struct movie_definition_sub;
 
-	struct sound_sample : public resource //virtual public ref_counted
-	{
-		virtual sound_sample*	cast_to_sound_sample() { return this; }
-	};
-
 	struct stream;
 	struct swf_event;
 

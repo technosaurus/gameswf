@@ -127,7 +127,7 @@ namespace gameswf
 			return NULL;
 		}
 
-		virtual resource*	find_exported_resource(const tu_string& symbol)
+		virtual as_object_interface*	find_exported_resource(const tu_string& symbol)
 		{
 			character* ch = get_parent();
 			if (ch)

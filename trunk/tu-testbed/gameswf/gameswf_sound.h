@@ -14,17 +14,22 @@ namespace gameswf
 {
 	int get_sample_rate(int index);
 
-	struct sound_sample_impl : public sound_sample
+	struct sound_sample : public as_object_interface
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_SOUND_SAMPLE };
+		virtual bool is(int class_id)
+		{
+			return m_class_id == class_id;
+		}
+
 		int	m_sound_handler_id;
 
-		sound_sample_impl(int id)
-			:
-			m_sound_handler_id(id)
+		sound_sample(int id) : m_sound_handler_id(id)
 		{
 		}
 
-		virtual ~sound_sample_impl();
+		virtual ~sound_sample();
 	};
 }
 

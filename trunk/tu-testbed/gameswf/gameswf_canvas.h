@@ -16,6 +16,14 @@ namespace gameswf
 
 	struct canvas : public shape_character_def
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_CANVAS };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return shape_character_def::is(class_id);
+		}
+
 		float m_current_x;
 		float m_current_y;
 		int m_current_fill;
@@ -24,7 +32,6 @@ namespace gameswf
 
 		canvas();
 		~canvas();
-		virtual canvas* cast_to_canvas() { return this; }
 
 		void begin_fill(const rgba& color);
 		void end_fill();
