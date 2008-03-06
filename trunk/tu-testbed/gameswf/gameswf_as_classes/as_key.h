@@ -38,10 +38,12 @@ namespace gameswf
 	struct as_key : public as_object
 	{
 		// Unique id of a gameswf resource
-		enum
+		enum { m_class_id = AS_KEY };
+		virtual bool is(int class_id)
 		{
-			m_class_id = AS_KEY
-		};
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
 
 		Uint8	m_keymap[key::KEYCOUNT / 8 + 1];	// bit-array
 		int	m_last_key_pressed;
@@ -52,7 +54,6 @@ namespace gameswf
 		void	set_key_down(int code);
 		void	set_key_up(int code);
 		int	get_last_key_pressed() const;
-		virtual bool is(int class_id) { return m_class_id == class_id; }
 	};
 
 	// creates 'Key' object

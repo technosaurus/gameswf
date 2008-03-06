@@ -42,7 +42,7 @@ namespace gameswf
 		if (fn.nargs == 1)
 		{
 			assert(fn.this_ptr);
-			as_object* obj = fn.this_ptr->cast_to_as_object();
+			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			assert(obj);
 			as_member m;
 			if (obj->m_members.get(fn.arg(0).to_tu_stringi(), &m))
@@ -65,7 +65,7 @@ namespace gameswf
 		if (fn.nargs >= 2)
 		{
 			assert(fn.this_ptr);
-			as_object* obj = fn.this_ptr->cast_to_as_object();
+			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			assert(obj);
 
 			ret = obj->watch(fn.arg(0).to_tu_string(), fn.arg(1).to_as_function(), 
@@ -84,7 +84,7 @@ namespace gameswf
 		if (fn.nargs == 1)
 		{
 			assert(fn.this_ptr);
-			as_object* obj = fn.this_ptr->cast_to_as_object();
+			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			assert(obj);
 			ret = obj->unwatch(fn.arg(0).to_tu_string());
 		}

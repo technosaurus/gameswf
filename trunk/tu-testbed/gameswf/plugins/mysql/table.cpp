@@ -9,21 +9,10 @@
 #include "gameswf/gameswf_action.h"
 #include "table.h"
 
-mytable* get_mytable(as_object_interface* obj)
-// gets plugin pointer
-{
-	if (obj)
-	{
-		// TODO: safe pointer conversion
-		return (mytable*) obj->cast_to_as_object();
-	}
-	return NULL;
-}
-
 void	to_string_method(const fn_call& fn)
 // Returns amount of the rows in the table
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		fn.result->set_string("[mytable]");
@@ -33,7 +22,7 @@ void	to_string_method(const fn_call& fn)
 void	size_method(const fn_call& fn)
 // Returns amount of the rows in the table
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		fn.result->set_int(tbl->size());
@@ -43,7 +32,7 @@ void	size_method(const fn_call& fn)
 void	next_method(const fn_call& fn)
 // Moves row pointer to next row
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		fn.result->set_bool(tbl->next());
@@ -53,7 +42,7 @@ void	next_method(const fn_call& fn)
 void	prev_method(const fn_call& fn)
 // Moves row pointer to prev row
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		fn.result->set_bool(tbl->prev());
@@ -63,7 +52,7 @@ void	prev_method(const fn_call& fn)
 void	first_method(const fn_call& fn)
 // Moves row pointer to the first row
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		tbl->first();
@@ -73,7 +62,7 @@ void	first_method(const fn_call& fn)
 void	field_count_method(const fn_call& fn)
 // Returns amount of the fields in the table
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		fn.result->set_int(tbl->fld_count());
@@ -83,7 +72,7 @@ void	field_count_method(const fn_call& fn)
 void	goto_record_method(const fn_call& fn)
 // Moves row pointer to the fn.arg(0).to_number()
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		assert(fn.nargs == 1);
@@ -94,7 +83,7 @@ void	goto_record_method(const fn_call& fn)
 void	get_title_method(const fn_call& fn)
 // Returns the name of fn.arg(0).to_number() field
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		assert(fn.nargs == 1);
@@ -105,7 +94,7 @@ void	get_title_method(const fn_call& fn)
 void	to_get_recno_method(const fn_call& fn)
 // Returns the current record number
 {
-	mytable* tbl = get_mytable(fn.this_ptr);
+	mytable* tbl = cast_to<mytable>(fn.this_ptr);
 	if (tbl)
 	{
 		if (tbl->size() > 0)

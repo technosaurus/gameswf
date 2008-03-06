@@ -20,7 +20,7 @@ namespace gameswf
 		assert(fn.this_ptr);
 		if (fn.nargs > 0)
 		{
-			as_object* properties = fn.this_ptr->cast_to_as_object();
+			as_object* properties = cast_to<as_object>(fn.this_ptr);
 			if (properties->m_this_ptr != NULL)
 			{
 				as_as_function* func = properties->m_this_ptr->cast_to_as_function();
@@ -91,12 +91,12 @@ namespace gameswf
 		if (fn.this_ptr)
 		{
 			this_ptr = fn.this_ptr;
-			as_object* obj = fn.this_ptr->cast_to_as_object();
+			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			if (obj)
 			{
 				if (obj->m_this_ptr != NULL)
 				{
-					this_ptr = obj->m_this_ptr->cast_to_as_object_interface();
+					this_ptr = cast_to<as_object_interface>(obj->m_this_ptr.get_ptr());
 				}
 			}
 		}
