@@ -139,7 +139,7 @@ namespace gameswf
 			return;
 		}
 
-		as_object* tobj = fn.arg(0).to_object()->cast_to_as_object();
+		as_object* tobj = cast_to<as_object>(fn.arg(0).to_object());
 		if (tobj)
 		{
 			cxform	cx = obj->m_cxform;

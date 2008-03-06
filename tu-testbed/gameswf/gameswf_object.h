@@ -23,10 +23,12 @@ namespace gameswf
 	struct as_object : public as_object_interface
 	{
 		// Unique id of a gameswf resource
-		enum
+		enum	{ m_class_id = AS_OBJECT };
+		exported_module virtual bool is(int class_id)
 		{
-			m_class_id = AS_OBJECT
-		};
+			if (m_class_id == class_id) return true;
+			else return as_object_interface::is(class_id);
+		}
 
 		stringi_hash<as_member>	m_members;
 
@@ -60,7 +62,6 @@ namespace gameswf
 		exported_module virtual bool get_member(const tu_stringi& name, as_member* member) const;
 		exported_module virtual bool	set_member_flags(const tu_stringi& name, const int flags);
 		exported_module virtual bool	on_event(const event_id& id);
-		exported_module virtual as_object* cast_to_as_object() { return this; }
 		exported_module virtual	void enumerate(as_environment* env);
 		exported_module virtual as_object_interface* get_proto() const;
 		exported_module virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
@@ -71,9 +72,6 @@ namespace gameswf
 		exported_module virtual void copy_to(as_object_interface* target);
 		exported_module void dump();
 		exported_module as_object_interface* find_target(const tu_string& path);
-
-		exported_module virtual bool is(int class_id) { return m_class_id == class_id; }
-
 	};
 
 }

@@ -21,22 +21,10 @@
 
 // methods that is called from Action Scirpt
 
-sysinfo* get_sysinfo(as_object_interface* obj)
-// gets plugin pointer
-{
-	if (obj)
-	{
-		// TODO: safe pointer conversion
-		return (sysinfo*) obj->cast_to_as_object();
-	}
-	return NULL;
-}
-
-
 // gets dir entity. It is useful for a preloading of the SWF files
 void	getDir(const fn_call& fn)
 {
-	sysinfo* si = get_sysinfo(fn.this_ptr);
+	sysinfo* si = cast_to<sysinfo>(fn.this_ptr);
 	if (si)
 	{
 		if (fn.nargs > 0)
@@ -51,7 +39,7 @@ void	getDir(const fn_call& fn)
 // gets HDD serial NO. It is useful for a binding the program to HDD
 void	getHDDSerNo(const fn_call& fn)
 {
-	sysinfo* si = get_sysinfo(fn.this_ptr);
+	sysinfo* si = cast_to<sysinfo>(fn.this_ptr);
 	if (si)
 	{
 		if (fn.nargs > 0)
@@ -66,7 +54,7 @@ void	getHDDSerNo(const fn_call& fn)
 // gets available free memory
 void	getFreeMem(const fn_call& fn)
 {
-	sysinfo* si = get_sysinfo(fn.this_ptr);
+	sysinfo* si = cast_to<sysinfo>(fn.this_ptr);
 	if (si)
 	{
 		fn.result->set_int(si->get_freemem());

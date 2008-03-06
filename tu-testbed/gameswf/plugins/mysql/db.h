@@ -16,6 +16,14 @@ using namespace gameswf;
 struct mydb : public as_object
 {
 
+	// Unique id of a gameswf resource
+	enum { m_class_id = AS_PLUGIN_MYDB };
+	virtual bool is(int class_id)
+	{
+		if (m_class_id == class_id) return true;
+		else return as_object::is(class_id);
+	}
+
 	mydb();
 	~mydb();
 

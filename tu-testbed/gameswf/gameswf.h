@@ -166,19 +166,22 @@ namespace gameswf
 		virtual sound_sample* cast_to_sound_sample() { return 0; }
 		virtual video_stream_definition* cast_to_video_stream_definition() { return 0; }
 		virtual as_as_function* cast_to_as_function() { return 0; }
-		virtual as_object_interface* cast_to_as_object_interface() { return 0; }
 		virtual canvas* cast_to_canvas() { return 0; }
 
-		virtual bool is(int class_id) { return false; }
+		virtual bool is(int class_id) { assert(0); return false; }
 	};
 
-	// Unique id of all classes
+	// Unique id of all gameswf resources
 	enum as_classes
 	{
 		AS_KEY,
 		AS_COLOR,
 		AS_SOUND,
 		AS_OBJECT,
+		AS_OBJECT_INTERFACE,
+		AS_PLUGIN_MYDB,
+		AS_PLUGIN_MYTABLE,
+		AS_PLUGIN_SYSINFO
 		//TODO: and so far
 	};
 
@@ -186,14 +189,11 @@ namespace gameswf
 	template <typename cast_class>
 	cast_class* cast_to(resource* object)
 	{
-		if (object->is(cast_class::m_class_id))
+		if (object)
 		{
-			return static_cast<cast_class*>(object);
+			return object->is(cast_class::m_class_id) ? static_cast<cast_class*>(object) : 0;
 		}
-		else
-		{
-			return 0;
-		}
+		return 0;
 	}
 
 	// Forward decls for cast_to_*
@@ -226,6 +226,10 @@ namespace gameswf
 	// ("as_" stands for ActionScript).
 	struct as_object_interface : public resource
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_OBJECT_INTERFACE };
+		virtual bool is(int class_id) { return m_class_id == class_id; }
+
 		virtual ~as_object_interface() {}
 
 		// So that text_character's can return something reasonable.
@@ -251,13 +255,11 @@ namespace gameswf
 		virtual as_textformat* cast_to_as_textformat() { return 0; }
 		virtual as_xmlsock* cast_to_as_xmlsock() { return 0; }
 		virtual x3ds_instance* cast_to_3ds() { return 0; }
-		virtual as_object* cast_to_as_object() { return 0; }
 		virtual edit_text_character* cast_to_edit_text_character() { return 0; }
 		virtual as_date* cast_to_as_date() { return 0; }
 		virtual as_listener* cast_to_as_listener() { return 0; }
 		virtual as_matrix* cast_to_as_matrix() { return 0; }
 		virtual as_point* cast_to_as_point() { return 0; }
-		virtual as_object_interface* cast_to_as_object_interface() { return this; }
 		virtual as_selection* cast_to_as_selection() { return 0; }
 
 		// retrieves members/variables from THIS & pushes them into env

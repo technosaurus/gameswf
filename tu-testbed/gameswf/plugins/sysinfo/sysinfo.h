@@ -14,6 +14,14 @@ using namespace gameswf;
 
 struct sysinfo : public as_object
 {                                      
+	// Unique id of a gameswf resource
+	enum { m_class_id = AS_PLUGIN_SYSINFO };
+	virtual bool is(int class_id)
+	{
+		if (m_class_id == class_id) return true;
+		else return as_object::is(class_id);
+	}
+
 	sysinfo();
 
 	exported_module void get_dir(as_object* info, const tu_string& path);

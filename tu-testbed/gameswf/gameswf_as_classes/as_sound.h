@@ -20,10 +20,12 @@ namespace gameswf
 	{
 
 		// Unique id of a gameswf resource
-		enum
+		enum { m_class_id = AS_SOUND };
+		virtual bool is(int class_id)
 		{
-			m_class_id = AS_SOUND
-		};
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
 
 		as_sound() :
 			m_id(-1),
@@ -49,9 +51,6 @@ namespace gameswf
 			m_is_loaded_sound = false;
 			m_id = -1;
 		}
-
-		virtual bool is(int class_id) { return m_class_id == class_id; }
-
 
 		// id of the sound
 		int m_id;

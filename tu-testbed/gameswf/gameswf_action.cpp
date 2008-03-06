@@ -463,7 +463,7 @@ namespace gameswf
 		{
 			// Take all the members of the object
 
-			as_object* object = obj->cast_to_as_object();
+			as_object* object = cast_to<as_object>(obj);
 			if (object)
 			{
 				for (stringi_hash<as_member>::const_iterator it = object->m_members.begin(); 
@@ -481,8 +481,8 @@ namespace gameswf
 		}
 		else
 		{
-			as_object* object = obj->cast_to_as_object();
-			as_object* object_props = props->cast_to_as_object();
+			as_object* object = cast_to<as_object>(obj);
+			as_object* object_props = cast_to<as_object>(props);
 			if (object == NULL || object_props == NULL)
 			{
 				return;
@@ -1038,7 +1038,7 @@ namespace gameswf
 		prototype->copy_to(obj);
 
 		as_object* proto = new as_object();
-		proto->m_this_ptr = obj->cast_to_as_object()->m_this_ptr;
+		proto->m_this_ptr = cast_to<as_object>(obj)->m_this_ptr;
 
 		as_value prototype_constructor;
 		prototype->get_member("__constructor__", &prototype_constructor);
@@ -1988,13 +1988,13 @@ namespace gameswf
 								// it's equivalent to using the syntax:
 								// obj();
 
-								assert(obj->cast_to_as_object());
-								if (obj->cast_to_as_object()->m_this_ptr != NULL)
+								assert(cast_to<as_object>(obj));
+								if (cast_to<as_object>(obj)->m_this_ptr != NULL)
 								{
 									as_value constructor;
 									if (obj->get_member("__constructor__", &constructor))
 									{
-										create_proto(obj->cast_to_as_object(), constructor);
+										create_proto(cast_to<as_object>(obj), constructor);
 										result = call_method(
 										constructor,
 										env,
@@ -2142,7 +2142,7 @@ namespace gameswf
 								
 								if( val.to_object() )
 								{
-									new_obj = val.to_object()->cast_to_as_object();
+									new_obj = cast_to<as_object>(val.to_object());
 								}
 							}
 							else

@@ -11,21 +11,10 @@
 
 #define ulong Uint32
 
-mydb* get_mydb(as_object_interface* obj)
-// gets plugin pointer
-{
-	if (obj)
-	{
-		// TODO: safe pointer conversion
-		return (mydb*) obj->cast_to_as_object();
-	}
-	return NULL;
-}
-
 void	mydb_connect(const fn_call& fn)
 //  Closes a previously opened connection & create new connection to db
 {
-	mydb* db = get_mydb(fn.this_ptr);
+	mydb* db = cast_to<mydb>(fn.this_ptr);
 	if (db)
 	{
 		if (fn.nargs < 5)
@@ -47,7 +36,7 @@ void	mydb_connect(const fn_call& fn)
 
 void	mydb_disconnect(const fn_call& fn)
 {
-	mydb* db = get_mydb(fn.this_ptr);
+	mydb* db = cast_to<mydb>(fn.this_ptr);
 	if (db)
 	{
 		db->disconnect();
@@ -57,7 +46,7 @@ void	mydb_disconnect(const fn_call& fn)
 void	mydb_open(const fn_call& fn)
 // Creates new table from sql statement & returns pointer to it
 {
-	mydb* db = get_mydb(fn.this_ptr);
+	mydb* db = cast_to<mydb>(fn.this_ptr);
 	if (db)
 	{
 		if (fn.nargs < 1)
@@ -78,7 +67,7 @@ void	mydb_open(const fn_call& fn)
 void	mydb_run(const fn_call& fn)
 // Executes sql statement & returns affected rows
 {
-	mydb* db = get_mydb(fn.this_ptr);
+	mydb* db = cast_to<mydb>(fn.this_ptr);
 	if (db)
 	{
 		if (fn.nargs < 1)
@@ -93,7 +82,7 @@ void	mydb_run(const fn_call& fn)
 
 void	mydb_commit(const fn_call& fn)
 {
-	mydb* db = get_mydb(fn.this_ptr);
+	mydb* db = cast_to<mydb>(fn.this_ptr);
 	if (db)
 	{
 		db->commit();
@@ -102,7 +91,7 @@ void	mydb_commit(const fn_call& fn)
 
 void mydb_autocommit_setter(const fn_call& fn)
 {
-	mydb* db = get_mydb(fn.this_ptr);
+	mydb* db = cast_to<mydb>(fn.this_ptr);
 	if (db)
 	{
 		db->set_autocommit(fn.arg(0).to_bool());
