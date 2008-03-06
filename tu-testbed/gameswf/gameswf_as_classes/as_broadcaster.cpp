@@ -26,17 +26,13 @@ namespace gameswf
 		as_value val;
 		if (fn.this_ptr->get_member("_listeners", &val))
 		{
-			as_object_interface* obj = val.to_object();
-			if (obj)
+			as_listener* asl = cast_to<as_listener>(val.to_object());
+			if (asl)
 			{
-				as_listener* asl = obj->cast_to_as_listener();
-				if (asl)
+				as_object_interface* listener = fn.arg(0).to_object();
+				if (listener)
 				{
-					as_object_interface* listener = fn.arg(0).to_object();
-					if (listener)
-					{
-						asl->add(listener);
-					}
+					asl->add(listener);
 				}
 			}
 		}
@@ -50,14 +46,10 @@ namespace gameswf
 		as_value val;
 		if (fn.this_ptr->get_member("_listeners", &val))
 		{
-			as_object_interface* obj = val.to_object();
-			if (obj)
+			as_listener* asl = cast_to<as_listener>(val.to_object());
+			if (asl)
 			{
-				as_listener* asl = obj->cast_to_as_listener();
-				if (asl)
-				{
-					asl->remove(fn.arg(0).to_object());
-				}
+				asl->remove(fn.arg(0).to_object());
 			}
 		}
 	}
@@ -72,14 +64,10 @@ namespace gameswf
 		as_value val;
 		if (fn.this_ptr->get_member("_listeners", &val))
 		{
-			as_object_interface* obj = val.to_object();
-			if (obj)
+			as_listener* asl = cast_to<as_listener>(val.to_object());
+			if (asl)
 			{
-				as_listener* asl = obj->cast_to_as_listener();
-				if (asl)
-				{
-					asl->broadcast(fn);
-				}
+				asl->broadcast(fn);
 			}
 		}
 	}

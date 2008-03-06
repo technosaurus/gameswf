@@ -11,8 +11,7 @@ namespace gameswf
 
 	void	as_array_tostring(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_array* a = fn.this_ptr->cast_to_as_array();
+		as_array* a = cast_to<as_array>(fn.this_ptr);
 		assert(a);
 
 		fn.result->set_tu_string(a->to_string());
@@ -20,8 +19,7 @@ namespace gameswf
 
 	void	as_array_push(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_array* a = fn.this_ptr->cast_to_as_array();
+		as_array* a = cast_to<as_array>(fn.this_ptr);
 		assert(a);
 
 		if (fn.nargs > 0)
@@ -33,8 +31,7 @@ namespace gameswf
 
 	void	as_array_pop(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_array* a = fn.this_ptr->cast_to_as_array();
+		as_array* a = cast_to<as_array>(fn.this_ptr);
 		assert(a);
 	
 		as_value val;

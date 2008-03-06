@@ -195,10 +195,16 @@ namespace gameswf
 
 	struct as_netstream : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_NETSTREAM };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		as_netstream();
 		~as_netstream();
-
-		virtual as_netstream* cast_to_as_netstream() { return this; }
 
 		video_handler* get_video_handler();
 		bool decode_audio(av_packet* packet, Sint16** data, int* size);

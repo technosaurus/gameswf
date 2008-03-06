@@ -22,9 +22,15 @@ namespace gameswf
 
 	struct as_textformat : public as_object
 	{
-		as_textformat();
-		virtual as_textformat* cast_to_as_textformat() { return this; }
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_TEXTFORMAT };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
 
+		as_textformat();
 	};
 
 }	// end namespace gameswf

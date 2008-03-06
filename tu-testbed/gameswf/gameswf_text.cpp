@@ -538,15 +538,14 @@ namespace gameswf
 
 	void	set_textformat(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		edit_text_character* et = fn.this_ptr->cast_to_edit_text_character();
+		edit_text_character* et = cast_to<edit_text_character>(fn.this_ptr);
 		assert(et);
 		if (fn.nargs == 1)
 		{
 			as_object_interface* obj = fn.arg(0).to_object();
 			if (obj)
 			{
-				as_textformat* tf = obj->cast_to_as_textformat();
+				as_textformat* tf = cast_to<as_textformat>(obj);
 				et->reset_format(tf);
 			}
 		}

@@ -892,7 +892,7 @@ namespace gameswf
 			return ch;
 		}
 
-		sprite_instance* sprite = new sprite_instance(md->cast_to_movie_def_impl(), 
+		sprite_instance* sprite = new sprite_instance(cast_to<movie_def_impl>(md), 
 			get_root(),	parent,	-1);
 
 		sprite->set_parent(parent);
@@ -1233,18 +1233,18 @@ namespace gameswf
 			event_handlers.push_back(e); 
 		} 
 
-		sprite_instance* parent = get_parent()->cast_to_sprite(); 
+		sprite_instance* parent = cast_to<sprite_instance>(get_parent());
 		character* ch = NULL; 
 		if (parent != NULL) 
 		{ 
 			// clone a previous external loaded movie ?
 			if (get_id() == -1)	
 			{
-				ch = new sprite_instance(m_def->cast_to_movie_def_impl(), 
-				get_root(),	parent,	-1);
+				ch = new sprite_instance(cast_to<movie_def_impl>(m_def.get_ptr()), 
+					get_root(),	parent,	-1);
 
 				ch->set_parent(parent);
-				ch->cast_to_sprite()->set_root(get_root());
+				cast_to<sprite_instance>(ch)->set_root(get_root());
 				ch->set_name(newname.c_str());
 
 				parent->m_display_list.add_display_object(
@@ -1369,14 +1369,11 @@ namespace gameswf
 
 		array<with_stack_entry>	dummy;
 		as_value	obj = m_as_environment.get_variable(tu_string(path_to_object), dummy);
-		as_object_interface*	as_obj = obj.to_object();
-		if (as_obj)
+
+		character*	m = cast_to<character>(obj.to_object());
+		if (m)
 		{
-			character*	m = as_obj->cast_to_character();
-			if (m)
-			{
-				m->set_display_callback(callback, user_ptr);
-			}
+			m->set_display_callback(callback, user_ptr);
 		}
 	}
 
@@ -1410,14 +1407,9 @@ namespace gameswf
 		return false;
 	}
 
-	sprite_instance* sprite_instance::cast_to_sprite()
-	{
-		return this;
-	}
-
 	uint32	sprite_instance::get_file_bytes() const
 	{
-		movie_def_impl* root_def = m_def->cast_to_movie_def_impl();
+		movie_def_impl* root_def = cast_to<movie_def_impl>(m_def.get_ptr());
 		if (root_def)
 		{
 			return root_def->get_file_bytes();
@@ -1427,7 +1419,7 @@ namespace gameswf
 
 	uint32	sprite_instance::get_loaded_bytes() const
 	{
-		movie_def_impl* root_def = m_def->cast_to_movie_def_impl();
+		movie_def_impl* root_def = cast_to<movie_def_impl>(m_def.get_ptr());
 		if (root_def)
 		{
 			return root_def->get_loaded_bytes();
@@ -1538,7 +1530,7 @@ namespace gameswf
 
 	as_object_interface*	sprite_instance::find_exported_resource(const tu_string& symbol)
 	{
-		movie_definition_sub*	def = get_movie_definition()->cast_to_movie_def_impl();
+		movie_definition_sub*	def = cast_to<movie_def_impl>(get_movie_definition());
 		if (def)
 		{
 			as_object_interface* res = def->get_exported_resource(symbol);

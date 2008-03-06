@@ -15,6 +15,14 @@ namespace gameswf
 
 	struct as_timer : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_TIMER };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		float m_interval;	// sec
 		as_value m_func;
 		float m_delta_time;
@@ -24,7 +32,6 @@ namespace gameswf
 		~as_timer();
 
 		virtual void advance(float delta_time);
-		virtual as_timer* cast_to_as_timer() { return this; }
 
 		void clear();
 	};

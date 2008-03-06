@@ -57,7 +57,7 @@ namespace gameswf
 
 	void attach_video(const fn_call& fn)
 	{
-		video_stream_instance* video = fn.this_ptr->cast_to_video_stream_instance();
+		video_stream_instance* video = cast_to<video_stream_instance>(fn.this_ptr);
 		assert(video);
 
 		if (fn.nargs != 1)

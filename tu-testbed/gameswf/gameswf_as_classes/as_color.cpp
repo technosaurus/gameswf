@@ -17,12 +17,10 @@ namespace gameswf
 		if (fn.nargs == 1)
 		{
 			smart_ptr<as_color>	obj;
-			if (fn.arg(0).to_object())
+			character* target = cast_to<character>(fn.arg(0).to_object());
+			if (target)
 			{
-				if (fn.arg(0).to_object()->cast_to_character())
-				{
-					obj = new as_color(fn.arg(0).to_object()->cast_to_character());
-				}
+				obj = new as_color(target);
 			}
 			fn.result->set_as_object_interface(obj.get_ptr());
 		}

@@ -18,8 +18,7 @@ namespace gameswf
 
 	void	as_mcloader_addlistener(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
+		as_mcloader* mcl = cast_to<as_mcloader>(fn.this_ptr);
 		assert(mcl);
 
 		if (fn.nargs == 1)
@@ -34,8 +33,7 @@ namespace gameswf
 
 	void	as_mcloader_removelistener(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
+		as_mcloader* mcl = cast_to<as_mcloader>(fn.this_ptr);
 		assert(mcl);
 
 		if (fn.nargs == 1)
@@ -49,8 +47,7 @@ namespace gameswf
 
 	void	as_mcloader_loadclip(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_mcloader* mcl = fn.this_ptr->cast_to_as_mcloader();
+		as_mcloader* mcl = cast_to<as_mcloader>(fn.this_ptr);
 		assert(mcl);
 
 		fn.result->set_bool(false);	// on default
@@ -69,7 +66,7 @@ namespace gameswf
 			}
 
 			as_mcloader::loadable_movie lm;
-			lm.m_def = md->cast_to_movie_def_impl();
+			lm.m_def = cast_to<movie_def_impl>(md);
 			lm.m_target = fn.env->find_target(fn.arg(1));
 			mcl->m_lm.push_back(lm);
 
@@ -93,18 +90,14 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			as_object_interface* obj = fn.arg(0).to_object();
-			if (obj)
+			sprite_instance* m = cast_to<sprite_instance>(fn.arg(0).to_object());
+			if (m)
 			{
-				sprite_instance* m = obj->cast_to_sprite();
-				if (m)
-				{
-					as_object* info = new as_object();
-					info->set_member("bytesLoaded", (int) m->get_loaded_bytes());
-					info->set_member("bytesTotal", (int) m->get_file_bytes());
-					fn.result->set_as_object_interface(info);
-					return;
-				}
+				as_object* info = new as_object();
+				info->set_member("bytesLoaded", (int) m->get_loaded_bytes());
+				info->set_member("bytesTotal", (int) m->get_file_bytes());
+				fn.result->set_as_object_interface(info);
+				return;
 			}
 		}
 		fn.result->set_as_object_interface(NULL);

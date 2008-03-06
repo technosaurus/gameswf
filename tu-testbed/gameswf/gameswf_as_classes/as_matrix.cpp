@@ -70,9 +70,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_matrix* matrix = fn.this_ptr->cast_to_as_matrix();
-
+		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
 		if (matrix == NULL)
 		{
 			return;
@@ -97,9 +95,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_matrix* matrix = fn.this_ptr->cast_to_as_matrix();
-
+		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
 		if (matrix == NULL)
 		{
 			return;
@@ -126,9 +122,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_matrix* matrix = fn.this_ptr->cast_to_as_matrix();
-
+		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
 		if (matrix == NULL)
 		{
 			return;
@@ -155,9 +149,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_matrix* matrix = fn.this_ptr->cast_to_as_matrix();
-
+		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
 		if (matrix == NULL)
 		{
 			return;
@@ -168,7 +160,7 @@ namespace gameswf
 			return;
 		}
 
-		as_matrix* other_matrix = fn.arg(0).to_object()->cast_to_as_matrix();
+		as_matrix* other_matrix = cast_to<as_matrix>(fn.arg(0).to_object());
 		if (other_matrix)
 		{
 			gameswf::matrix
@@ -188,9 +180,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
-		as_matrix* matrix = fn.this_ptr->cast_to_as_matrix();
-
+		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
 		if (matrix == NULL)
 		{
 			return;
@@ -201,7 +191,7 @@ namespace gameswf
 			return;
 		}
 
-		as_point* point = fn.arg(0).to_object()->cast_to_as_point();
+		as_point* point = cast_to<as_point>(fn.arg(0).to_object());
 		if (point)
 		{
 			smart_ptr<as_point>	result;

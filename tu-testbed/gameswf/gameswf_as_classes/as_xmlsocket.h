@@ -19,6 +19,14 @@ namespace gameswf
 
 	struct as_xmlsock : public as_object
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_XML_SOCKET };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
 		net_interface_tcp* m_iface;
 		net_socket* m_ns;
 
@@ -26,7 +34,6 @@ namespace gameswf
 		~as_xmlsock();
 
 		virtual void advance(float delta_time);
-		virtual as_xmlsock* cast_to_as_xmlsock() { return this; }
 
 		bool connect(const char* host, int port);
 		void close();

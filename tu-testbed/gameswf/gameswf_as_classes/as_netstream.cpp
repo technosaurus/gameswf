@@ -32,7 +32,7 @@ namespace gameswf
 	// audio callback is running in sound handler thread
 	static void audio_streamer(as_object_interface* netstream, Uint8* stream, int len)
 	{
-		as_netstream* ns = netstream->cast_to_as_netstream();
+		as_netstream* ns = cast_to<as_netstream>(netstream);
 		assert(ns);
 		ns->audio_callback(stream, len);
 	}
@@ -579,16 +579,14 @@ namespace gameswf
 
 	void netstream_close(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
 		assert(ns);
 		ns->close();
 	}
 
 	void netstream_pause(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
 		assert(ns);
 
 		// mode: -1 ==> toogle, 0==> pause, 1==> play
@@ -602,8 +600,7 @@ namespace gameswf
 
 	void netstream_play(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
 		assert(ns);
 
 		if (fn.nargs < 1)
@@ -619,8 +616,7 @@ namespace gameswf
 	// of the stream.
 	void netstream_seek(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
 		assert(ns);
 
 		if (fn.nargs < 1)
@@ -639,8 +635,7 @@ namespace gameswf
 
 	void netstream_time(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_netstream* ns = fn.this_ptr->cast_to_as_netstream();
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
 		assert(ns);
 		fn.result->set_double(ns->time());
 	}

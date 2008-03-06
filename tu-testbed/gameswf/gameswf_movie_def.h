@@ -39,6 +39,14 @@ namespace gameswf
 	// Extra internal interfaces added to movie_definition
 	struct movie_definition_sub : public movie_definition 
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_MOVIE_DEF_SUB };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return movie_definition::is(class_id);
+		}
+
 		movie_definition_sub() :
 			m_ss_id(-1),
 			m_ss_format(sound_handler::FORMAT_RAW),
@@ -185,6 +193,14 @@ namespace gameswf
 	//
 	struct movie_def_impl : public movie_definition_sub
 	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_MOVIE_DEF };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return movie_definition_sub::is(class_id);
+		}
+
 		hash<int, smart_ptr<character_def> >	m_characters;
 		hash<int, smart_ptr<font> >	 m_fonts;
 		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
@@ -275,7 +291,6 @@ namespace gameswf
 		void	output_cached_data(tu_file* out, const cache_options& options);
 		void	input_cached_data(tu_file* in);
 
-		virtual movie_def_impl* cast_to_movie_def_impl() { return this; }
 		virtual bool is_multithread() const { return m_thread != NULL; }
 	};
 

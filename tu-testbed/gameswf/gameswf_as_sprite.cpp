@@ -22,14 +22,10 @@ namespace gameswf
 
 	sprite_instance* sprite_getptr(const fn_call& fn)
 	{
-		sprite_instance* sprite = NULL;
-		if (fn.this_ptr)
-		{
-			sprite = fn.this_ptr->cast_to_sprite();
-		}
+		sprite_instance* sprite = cast_to<sprite_instance>(fn.this_ptr);
 		if (sprite == NULL)
 		{
-			sprite = fn.env->get_target()->cast_to_sprite();
+			sprite = cast_to<sprite_instance>(fn.env->get_target());
 		}
 		assert(sprite);
 		return sprite;
@@ -43,7 +39,7 @@ namespace gameswf
 		{
 			// Evaluates the bounding boxes of the target and specified instance,
 			// and returns true if they overlap or intersect at any point.
-			character* ch = fn.env->find_target(fn.arg(0))->cast_to_character();
+			character* ch = cast_to<character>(fn.env->find_target(fn.arg(0)));
 			if (ch)
 			{
 				fn.result->set_bool(sprite->hit_test(ch));
@@ -141,18 +137,18 @@ namespace gameswf
 		sprite_instance* target = NULL; 
 		if (fn.arg(0).get_type() == as_value::OBJECT) 
 		{ 
-			target = fn.arg(0).to_object()->cast_to_sprite(); 
+			target = cast_to<sprite_instance>(fn.arg(0).to_object());
 		} 
 		else 
 			if (fn.arg(0).get_type() == as_value::NUMBER) 
 			{ 
 				int target_depth = int(fn.arg(0).to_number()); 
-				sprite_instance* parent = sprite->get_parent()->cast_to_sprite(); 
+				sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
 				
 				character* ch = parent->m_display_list.get_character_at_depth(target_depth);
 				if (ch)
 				{
-					target = parent->m_display_list.get_character_at_depth(target_depth)->cast_to_sprite();
+					target = cast_to<sprite_instance>(parent->m_display_list.get_character_at_depth(target_depth));
 				}
 				else
 				{
@@ -177,7 +173,7 @@ namespace gameswf
 				target->set_depth(sprite->get_depth()); 
 				sprite->set_depth(target_depth); 
 
-				sprite_instance* parent = sprite->get_parent()->cast_to_sprite(); 
+				sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
 				parent->m_display_list.swap_characters(sprite, target); 
 			} 
 			else 
@@ -234,7 +230,7 @@ namespace gameswf
 	void sprite_remove_movieclip(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
-		sprite_instance* parent = sprite->get_parent()->cast_to_sprite(); 
+		sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
 		if (parent) 
 		{ 
 			parent->remove_display_object(sprite); 

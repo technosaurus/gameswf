@@ -86,7 +86,6 @@ namespace gameswf
 		void	generate_mouse_button_events(mouse_button_state* ms);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual character*	cast_to_character();
 		void	set_root_movie(character* root_movie);
 
 		void	set_display_viewport(int x0, int y0, int w, int h);

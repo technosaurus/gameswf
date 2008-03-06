@@ -25,8 +25,7 @@ namespace gameswf
 
 	void	as_3d_play(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
+		x3ds_instance* x3ds = cast_to<x3ds_instance>(fn.this_ptr);
 		assert(x3ds);
 
 		x3ds->m_play_state = movie_interface::PLAY;
@@ -34,8 +33,7 @@ namespace gameswf
 
 	void	as_3d_stop(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
+		x3ds_instance* x3ds = cast_to<x3ds_instance>(fn.this_ptr);
 		assert(x3ds);
 
 		x3ds->m_play_state = movie_interface::STOP;
@@ -43,8 +41,7 @@ namespace gameswf
 
 	void	as_map_material(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		x3ds_instance* x3ds = fn.this_ptr->cast_to_3ds();
+		x3ds_instance* x3ds = cast_to<x3ds_instance>(fn.this_ptr);
 		if (x3ds && fn.nargs == 2)
 		{
 			x3ds->m_map[fn.arg(0).to_tu_string()] = fn.arg(1);

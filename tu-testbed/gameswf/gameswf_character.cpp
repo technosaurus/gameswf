@@ -440,16 +440,10 @@ namespace gameswf
 	{
 		if (val.get_type() == as_value::OBJECT)
 		{
-			if (val.to_object() != NULL)
-			{
-				return val.to_object()->cast_to_character();
-			}
-			else
-			{
-				return NULL;
-			}
+			return cast_to<character>(val.to_object());
 		}
-		else if (val.get_type() == as_value::STRING)
+		else 
+		if (val.get_type() == as_value::STRING)
 		{
 			return find_target(val.to_tu_string());
 		}

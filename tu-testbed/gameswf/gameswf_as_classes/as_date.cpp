@@ -24,8 +24,7 @@ namespace gameswf
 	// Returns the day of the month (an integer from 1 to 31)
 	void	as_date_getdate(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -36,8 +35,7 @@ namespace gameswf
 	// Returns the day of the week (0 for Sunday, 1 for Monday, and so on)
 	void	as_date_getday(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -48,8 +46,7 @@ namespace gameswf
 	// Returns the full year (a four-digit number, such as 2000)
 	void	as_date_getfullyear(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -60,8 +57,7 @@ namespace gameswf
 	// Returns the hour (an integer from 0 to 23)
 	void	as_date_gethours(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -72,8 +68,7 @@ namespace gameswf
 	// Returns the milliseconds (an integer from 0 to 999)
 	void	as_date_getmilli(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -84,8 +79,7 @@ namespace gameswf
 	// Returns the minutes (an integer from 0 to 59)
  	void	as_date_getminutes(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -96,8 +90,7 @@ namespace gameswf
 	// Returns the month (0 for January, 1 for February, and so on)
 	void	as_date_getmonth(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -108,8 +101,7 @@ namespace gameswf
 	// Returns the seconds (an integer from 0 to 59)
 	void	as_date_getseconds(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -120,8 +112,7 @@ namespace gameswf
 	// Returns the number of milliseconds since midnight January 1, 1970, universal time
 	void	as_date_gettime(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();
@@ -132,8 +123,7 @@ namespace gameswf
 	// Returns the year - 1900
 	void	as_date_getyear(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
-		as_date* dt = fn.this_ptr->cast_to_as_date();
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
 		Uint64 t = dt->get_time();

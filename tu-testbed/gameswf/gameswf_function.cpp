@@ -106,7 +106,7 @@ namespace gameswf
 		// see testcase in .h file
 		if (m_target != NULL)
 		{
-			character* ch = m_target->cast_to_character();
+			character* ch = cast_to<character>(m_target.get_ptr());
 			if (ch)
 			{
 				if (ch->m_is_alive)
