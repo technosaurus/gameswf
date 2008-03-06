@@ -16,20 +16,17 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			smart_ptr<as_color>	obj;
 			character* target = cast_to<character>(fn.arg(0).to_object());
 			if (target)
 			{
-				obj = new as_color(target);
+				fn.result->set_as_object_interface(new as_color(target));
 			}
-			fn.result->set_as_object_interface(obj.get_ptr());
 		}
 	}
 
 
 	void	as_color_getRGB(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
 		as_color* obj = cast_to<as_color>(fn.this_ptr);
 		if (obj == NULL)
 		{
@@ -56,9 +53,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
 		as_color* obj = cast_to<as_color>(fn.this_ptr);
-
 		if (obj == NULL)
 		{
 			return;
@@ -80,9 +75,7 @@ namespace gameswf
 	// TODO: Fix gettransform()
 	void	as_color_gettransform(const fn_call& fn)
 	{
-		assert(fn.this_ptr);
 		as_color* obj = cast_to<as_color>(fn.this_ptr);
-
 		if (obj == NULL)
 		{
 			return;
@@ -119,9 +112,7 @@ namespace gameswf
 			return;
 		}
 
-		assert(fn.this_ptr);
 		as_color* obj = cast_to<as_color>(fn.this_ptr);
-
 		if (obj == NULL)
 		{
 			return;
