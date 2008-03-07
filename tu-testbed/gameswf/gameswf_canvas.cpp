@@ -76,6 +76,8 @@ namespace gameswf
 		p.m_new_shape = new_path;
 		m_paths.push_back(p);
 		m_current_path = m_paths.size() - 1;
+		
+		flush_cache();
 	}
 
 	void canvas::set_line_style(Uint16 width, const rgba& color)
@@ -110,6 +112,7 @@ namespace gameswf
 
 		edge ed(x, y, x, y);
 		m_paths[m_current_path].m_edges.push_back(ed); 
+		flush_cache();
 
 	}
 
@@ -124,6 +127,7 @@ namespace gameswf
 		m_current_y = ay;
 
 		m_paths[m_current_path].m_edges.push_back(edge(cx, cy, ax, ay)); 
+		flush_cache();
 	}
 
 }	// end namespace gameswf

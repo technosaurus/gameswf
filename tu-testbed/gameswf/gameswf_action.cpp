@@ -622,7 +622,7 @@ namespace gameswf
 			s_global->set_member("math", math_init());
 			s_global->set_member("Key", key_init());
 			s_global->set_member("AsBroadcaster", broadcaster_init());
-            s_global->set_member( "flash", flash_init());
+			s_global->set_member( "flash", flash_init());
 
 			// global builtins functions
 			s_global->set_member("setInterval",  as_value(as_global_setinterval));
@@ -1052,7 +1052,7 @@ namespace gameswf
 		int exec_bytes,
 		as_value* retval,
 		const array<with_stack_entry>& initial_with_stack,
-		bool is_function2)
+		bool is_function2) const
 	// Interpret the specified subset of the actions in our
 	// buffer.  Caller is responsible for cleaning up our local
 	// stack frame (it may have passed its arguments in via the
@@ -2326,7 +2326,7 @@ namespace gameswf
 					//int	count = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
 					i += 2;
 
-					process_decl_dict(pc, next_pc);
+					const_cast<action_buffer*>( this )->process_decl_dict(pc, next_pc);
 
 					break;
 				}
@@ -2368,10 +2368,6 @@ namespace gameswf
 
 				case 0x8E:	// function2
 				{
-					as_as_function*	func = new as_as_function(this, next_pc, with_stack);
-					func->set_target(env->get_target());
-					func->set_is_function2();
-
 					int	i = pc;
 					i += 3;
 
@@ -2380,51 +2376,102 @@ namespace gameswf
 					tu_string	name = (const char*) &m_buffer[i];
 					i += name.length() + 1;
 
-					// Get number of arguments.
-					int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
-					i += 2;
+					bool function_exists = false;
 
-					// Get the count of local registers used by this function.
-					uint8	register_count = m_buffer[i];
-					i += 1;
-					func->set_local_register_count(register_count);
-
-					// Flags, for controlling register assignment of implicit args.
-					uint16	flags = m_buffer[i] | (m_buffer[i + 1] << 8);
-					i += 2;
-					func->set_function2_flags(flags);
-
-					// Get the register assignments and names of the arguments.
-					for (int n = 0; n < nargs; n++)
+					if( name.length() > 0 )
 					{
-						int	arg_register = m_buffer[i];
-						i++;
+						as_value value;
+						as_as_function* existing_function;
 
-						// @@ security: watch out for possible missing terminator here!
-						func->add_arg(arg_register, (const char*) &m_buffer[i]);
-						i += func->m_args.back().m_name.length() + 1;
+						if( env->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
+						{
+							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
+								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
+								&& existing_function->m_start_pc == next_pc )
+							{ 
+								function_exists = true;
+							}
+						}
 					}
 
-					// Get the length of the actual function code.
-					int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
-					i += 2;
-					func->set_length(length);
-
-					// Skip the function body (don't interpret it now).
-					next_pc += length;
-
-					// If we have a name, then save the function in this
-					// environment under that name.
-					as_value	function_value(func);
-					if (name.length() > 0)
+					if( !function_exists )
 					{
-						// @@ NOTE: should this be m_target->set_variable()???
-						env->set_member(name, function_value);
+						as_as_function*	func = new as_as_function(this, next_pc, with_stack);
+						func->set_target(env->get_target());
+						func->set_is_function2();
+
+						// Get number of arguments.
+						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						i += 2;
+
+						// Get the count of local registers used by this function.
+						uint8	register_count = m_buffer[i];
+						i += 1;
+						func->set_local_register_count(register_count);
+
+						// Flags, for controlling register assignment of implicit args.
+						uint16	flags = m_buffer[i] | (m_buffer[i + 1] << 8);
+						i += 2;
+						func->set_function2_flags(flags);
+
+						// Get the register assignments and names of the arguments.
+						for (int n = 0; n < nargs; n++)
+						{
+							int	arg_register = m_buffer[i];
+							i++;
+
+							// @@ security: watch out for possible missing terminator here!
+							func->add_arg(arg_register, (const char*) &m_buffer[i]);
+							i += func->m_args.back().m_name.length() + 1;
+						}
+
+						// Get the length of the actual function code.
+						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+						i += 2;
+						func->set_length(length);
+
+						// Skip the function body (don't interpret it now).
+						next_pc += length;
+
+						// If we have a name, then save the function in this
+						// environment under that name.
+						as_value	function_value(func);
+						if (name.length() > 0)
+						{
+							// @@ NOTE: should this be m_target->set_variable()???
+							env->set_member(name, function_value);
+						}
+						else
+						{
+							// Also leave it on the stack.
+							env->push_val(function_value);
+						}
 					}
+					else
+					{
+						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						i += 2;
 
-					// Also leave it on the stack.
-					env->push_val(function_value);
+						// Get the count of local registers used by this function.
+						i += 1;
 
+						// Flags, for controlling register assignment of implicit args.
+						i += 2;
+
+						// Get the register assignments and names of the arguments.
+						for (int n = 0; n < nargs; n++)
+						{
+							i++;
+							// @@ security: watch out for possible missing terminator here!
+							i += strlen( (const char*) &m_buffer[i] ) + 1;
+						}
+
+						// Skip the length of the actual function code.
+						i += 2;
+
+						// Skip the function body (don't interpret it now).
+						next_pc += length;
+					}
 					break;
 				}
 
@@ -2645,9 +2692,6 @@ namespace gameswf
 
 				case 0x9B:	// declare function
 				{
-					as_as_function*	func = new as_as_function(this, next_pc, with_stack);
-					func->set_target(env->get_target());
-
 					int	i = pc;
 					i += 3;
 
@@ -2656,42 +2700,85 @@ namespace gameswf
 					tu_string	name = (const char*) &m_buffer[i];
 					i += name.length() + 1;
 
-					// Get number of arguments.
-					int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
-					i += 2;
+					bool function_exists = false;
 
-					// Get the names of the arguments.
-					for (int n = 0; n < nargs; n++)
+					if( name.length() > 0 )
 					{
-						// @@ security: watch out for possible missing terminator here!
-						func->add_arg(0, (const char*) &m_buffer[i]);
-						i += func->m_args.back().m_name.length() + 1;
+						as_value value;
+						as_as_function* existing_function;
+
+						if( env->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
+						{
+							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
+								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
+								&& existing_function->m_start_pc == next_pc )
+							{ 
+								function_exists = true;
+							}
+						}
 					}
 
-					// Get the length of the actual function code.
-					int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
-					i += 2;
-					func->set_length(length);
-
-					// Skip the function body (don't interpret it now).
-					next_pc += length;
-
-					// ActionDefineFunction can be used in the following ways:
-					// Usage #1. Pushes an anonymous function on the stack that does not persist.
-					// Usage #2. Sets a variable with a given FunctionName and a given function definition.
-					// Thanks to Julien Hamaide
-					as_value	function_value(func);
-					if (name.length() > 0)
+					if( !function_exists )
 					{
-						// @@ NOTE: should this be m_target->set_variable()???
-						// Usage #1. If we have a name, then save the function in this
-						// environment under that name.
-						env->set_member(name, function_value);
+						as_as_function*	func = new as_as_function(this, next_pc, with_stack);
+						func->set_target(env->get_target());
+
+						// Get number of arguments.
+						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						i += 2;
+
+						// Get the names of the arguments.
+						for (int n = 0; n < nargs; n++)
+						{
+							// @@ security: watch out for possible missing terminator here!
+							func->add_arg(0, (const char*) &m_buffer[i]);
+							i += func->m_args.back().m_name.length() + 1;
+						}
+
+						// Get the length of the actual function code.
+						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+						i += 2;
+						func->set_length(length);
+
+						// Skip the function body (don't interpret it now).
+						next_pc += length;
+
+						// ActionDefineFunction can be used in the following ways:
+						// Usage #1. Pushes an anonymous function on the stack that does not persist.
+						// Usage #2. Sets a variable with a given FunctionName and a given function definition.
+						// Thanks to Julien Hamaide
+						as_value	function_value(func);
+						if (name.length() > 0)
+						{
+							// @@ NOTE: should this be m_target->set_variable()???
+							// Usage #1. If we have a name, then save the function in this
+							// environment under that name.
+							env->set_member(name, function_value);
+						}
+						else
+						{
+							// Usage #2. Leave it on the stack
+							env->push_val(function_value);
+						}
 					}
 					else
 					{
-						// Usage #2. Leave it on the stack
-						env->push_val(function_value);
+						// Get number of arguments.
+						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						i += 2;
+
+						// Get the names of the arguments.
+						for (int n = 0; n < nargs; n++)
+						{
+							// @@ security: watch out for possible missing terminator here!
+							i += strlen( (const char*) &m_buffer[i] ) + 1;
+						}
+
+						// Get the length of the actual function code.
+						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+
+						// Skip the function body (don't interpret it now).
+						next_pc += length;
 					}
 
 					break;

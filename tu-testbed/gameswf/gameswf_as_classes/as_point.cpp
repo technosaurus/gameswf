@@ -110,7 +110,7 @@ namespace gameswf
 	as_point::as_point(float x, float y) :
 	   m_point( x, y )
 	{
-		set_member("subtract", &as_point_add);
+		set_member("add", &as_point_add);
 		set_member("subtract", &as_point_subtract);
 		set_member("normalize", &as_point_normalize);
 		//set_member("getTransform", &as_color_gettransform);
