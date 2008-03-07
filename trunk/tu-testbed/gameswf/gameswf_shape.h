@@ -190,6 +190,8 @@ namespace gameswf
 
 		// morph uses this
 		void	set_bound(const rect& r) { m_bound = r; /* should do some verifying */ }
+		
+		void	flush_cache();
 
 	protected:
 		friend struct morph2_character_def;

@@ -188,7 +188,12 @@ namespace gameswf
 		AS_PLUGIN_MYDB,
 		AS_PLUGIN_MYTABLE,
 		AS_PLUGIN_SYSINFO,
-		AS_PLUGIN_3DS
+		AS_PLUGIN_3DS,
+
+		// user defined plugins
+		// should be the last in this enum
+		AS_USER_PLUGIN = 1000
+
 	};
 
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)

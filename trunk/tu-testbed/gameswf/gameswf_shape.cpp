@@ -1716,6 +1716,16 @@ namespace gameswf
 			m_cached_meshes[i] = ms;
 		}
 	}
+	
+	void    shape_character_def::flush_cache()
+	{
+		for (int i = 0; i < m_cached_meshes.size(); i++) {
+			delete m_cached_meshes[i];
+			}
+
+		m_cached_meshes.resize( 0 );
+	}
+
 
 	
 }	// end namespace gameswf

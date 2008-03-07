@@ -405,6 +405,298 @@ private:
 	int	m_buffer_size;
 };
 
+template<class T>
+class shared_array {
+	// Resizable array.  Don't put anything in here that can't be moved
+	// around by bitwise copy.  Don't keep the address of an element; the
+	// array contents will move around as it gets resized.
+	//
+	// Default constructor and destructor get called on the elements as
+	// they are added or removed from the active part of the array.
+public:
+	shared_array() : m_buffer(0), m_size(0), m_buffer_size(0) {}
+	shared_array(int size_hint) : m_buffer(0), m_size(0), m_buffer_size(0) { resize(size_hint); }
+	shared_array(const shared_array<T>& a)
+		:
+		m_buffer(0),
+		m_buffer(0),
+		m_size(0),
+		m_buffer_size(0)
+	{
+		operator=(a);
+	}
+	~shared_array() {
+		clear();
+	}
+
+	// Basic array access.
+	T&	operator[](int index) { assert(index >= 0 && index < m_size); create_own_copy(); return m_buffer[index]; }
+	const T&	operator[](int index) const { assert(index >= 0 && index < m_size); return m_buffer[index]; }
+	int	size() const { return m_size; }
+
+	void	push_back(const T& val)
+		// Insert the given element at the end of the array.
+	{
+		// DO NOT pass elements of your own vector into
+		// push_back()!  Since we're using references,
+		// resize() may munge the element storage!
+		assert(&val < &m_buffer[0] || &val > &m_buffer[m_buffer_size]);
+
+		int	new_size = m_size + 1;
+		resize(new_size);
+		(*this)[new_size-1] = val;
+	}
+
+	void	pop_back()
+		// Remove the last element.
+	{
+		assert(m_size > 0);
+		resize(m_size - 1);
+	}
+
+	// Access the first element.
+	T&	front() { create_own_copy();return (*this)[0]; }
+	const T&	front() const { return (*this)[0]; }
+
+	// Access the last element.
+	T&	back() { create_own_copy(); return (*this)[m_size-1]; }
+	const T&	back() const { return (*this)[m_size-1]; }
+
+	void	clear()
+		// Empty and destruct all elements.
+	{
+		resize( 0 );
+	}
+
+	void	operator=(const shared_array<T>& a)
+		// Array copy.  Copies the contents of a into this array.
+	{
+
+		m_buffer = a.m_buffer;
+		m_size = a.m_size;
+		m_buffer_size = a.m_buffer_size;
+		
+		int * counter;
+		counter = reinterpret_cast<int*>( m_buffer ) - 1;
+
+		(*counter)++;
+	}
+
+
+	void	remove(int index)
+		// Removing an element from the array is an expensive operation!
+		// It compacts only after removing the last element.
+	{
+		create_own_copy();
+		assert(index >= 0 && index < m_size);
+
+		if (m_size == 1)
+		{
+			clear();
+		}
+		else
+		{
+			m_buffer[index].~T();	// destructor
+
+			memmove(m_buffer+index, m_buffer+index+1, sizeof(T) * (m_size - 1 - index));
+			m_size--;
+		}
+	}
+
+
+	void	insert(int index, const T& val = T())
+		// Insert the given object at the given index shifting all the elements up.
+	{
+		create_own_copy();
+		assert(index >= 0 && index <= m_size);
+
+		resize(m_size + 1);
+
+		if (index < m_size - 1)
+		{
+			// is it safe to use memmove?
+			memmove(m_buffer+index+1, m_buffer+index, sizeof(T) * (m_size - 1 - index));
+		}
+
+		// Copy-construct into the newly opened slot.
+		new (m_buffer + index) T(val);
+	}
+
+
+	void	append(const shared_array<T>& other)
+		// Append the given data to our array.
+	{
+		append(other.m_buffer, other.size());
+	}
+
+
+	void	append(const T other[], int count)
+		// Append the given data to our array.
+	{
+		create_own_copy();
+		if (count > 0)
+		{
+			int	size0 = m_size;
+			resize(m_size + count);
+			// Must use operator=() to copy elements, in case of side effects (e.g. ref-counting).
+			for (int i = 0; i < count; i++)
+			{
+				m_buffer[i + size0] = other[i];
+			}
+		}
+	}
+
+
+	void	resize(int new_size)
+		// Preserve existing elements via realloc.
+		// 
+		// Newly created elements are initialized with default element
+		// of T.  Removed elements are destructed.
+	{
+		private_resize( new_size );
+	}
+
+	void	reserve(int rsize)
+		// @@ TODO change this to use ctor, dtor, and operator=
+		// instead of preserving existing elements via binary copy via
+		// realloc?
+	{
+		assert(m_size >= 0);
+		assert( owns_buffer() );
+
+		int	old_size = m_buffer_size;
+		old_size = old_size;	// don't warn that this is unused.
+		m_buffer_size = rsize;
+
+		// Resize the buffer.
+		if (m_buffer_size == 0) {
+			if (m_buffer) {
+				tu_free(get_buffer(), sizeof(T) * old_size + sizeof(int));
+			}
+			m_buffer = 0;
+		} else {
+			if (m_buffer) {
+				set_buffer( tu_realloc( get_buffer(), sizeof(T) * m_buffer_size + sizeof(int), sizeof(T) * old_size  + sizeof(int) ) );
+			} else {
+				set_buffer( tu_malloc(sizeof(T) * m_buffer_size + sizeof(int)) );
+				memset(m_buffer, 0, (sizeof(T) * m_buffer_size));
+			}
+			assert(m_buffer);	// need to throw (or something) on malloc failure!
+
+			*( reinterpret_cast<int*>( m_buffer ) - 1 ) = 1;
+		}			
+	}
+
+private:
+
+	inline void *get_buffer() 
+	{
+		return reinterpret_cast<int*>( m_buffer ) - 1;
+	}
+
+	inline void set_buffer( void * buffer ) 
+	{
+		m_buffer = reinterpret_cast<T*>( reinterpret_cast<int*>( buffer ) + 1 );
+	}
+
+	bool	owns_buffer()
+	{
+		return m_buffer == NULL || ( *( reinterpret_cast<int*>( m_buffer ) - 1 ) == 1 );
+	}
+
+	void	create_own_copy()
+	{
+		if( m_buffer )
+		{
+			int * counter;
+
+			counter = reinterpret_cast<int*>( m_buffer ) - 1;
+			assert( *counter != 0 );
+
+			if( *counter != 1 )
+			{
+				T*	old_buffer;
+				int	old_size;
+
+				old_buffer = m_buffer;
+				old_size = m_size;			
+
+				m_buffer = 0;
+				m_size = 0;
+				m_buffer_size = 0;
+
+				private_resize( old_size );
+
+				// copy
+				{for (int i = 0; i < old_size; i++) {
+					m_buffer[i] = old_buffer[ i ];
+				}}
+
+				( *counter )--;
+			}
+		}
+	}
+
+	void	private_resize(int new_size)
+		// Preserve existing elements via realloc.
+		// 
+		// Newly created elements are initialized with default element
+		// of T.  Removed elements are destructed.
+	{
+		assert( new_size >= 0 );
+
+		if( !owns_buffer() )
+		{
+			if( new_size )
+			{
+				create_own_copy();
+				private_resize( new_size );
+			}
+			else
+			{
+				int * counter;
+
+				counter = reinterpret_cast<int*>( m_buffer ) - 1;
+
+				( *counter )--;
+
+				m_buffer = 0;
+				m_buffer_size = 0;
+				m_size = 0;
+			}
+		}
+		else
+		{
+			int	old_size = m_size;
+			m_size = new_size;
+
+			// Destruct old elements (if we're shrinking).
+			{for (int i = new_size; i < old_size; i++) {
+				(m_buffer + i)->~T();
+			}}
+
+			if (new_size == 0) {
+				m_buffer_size = 0;
+				reserve(m_buffer_size);
+			} else if (m_size <= m_buffer_size && m_size > m_buffer_size >> 1) {
+				// don't compact yet.
+				assert(m_buffer != 0);
+			} else {
+				int	new_buffer_size = m_size + (m_size >> 2);
+				reserve(new_buffer_size);
+			}
+
+			// Copy default T into new elements.
+			{for (int i = old_size; i < new_size; i++) {
+				new (m_buffer + i) T();	// placement new
+			}}
+		}
+	}
+
+	T*	m_buffer;
+	int	m_size;
+	int	m_buffer_size;
+};
 
 template<class T, class U, class hash_functor = fixed_size_hash<T> >
 class hash {
@@ -723,7 +1015,7 @@ public:
 			{
 				m_index++;
 				while (m_index <= m_hash->m_table->m_size_mask
-				       && (m_hash->E(m_index).is_empty() || m_hash->E(m_index).is_tombstone()))
+					   && (m_hash->E(m_index).is_empty() || m_hash->E(m_index).is_tombstone()))
 				{
 					m_index++;
 				}
@@ -896,7 +1188,7 @@ private:
 		const entry*	e = &E(index);
 		if (e->is_empty()) return -1;
 		if (e->is_tombstone() == false
-		    && int(e->m_hash_value & m_table->m_size_mask) != index) {
+			&& int(e->m_hash_value & m_table->m_size_mask) != index) {
 			// occupied by a collider
 			return -1;
 		}
@@ -904,7 +1196,7 @@ private:
 		for (;;)
 		{
 			assert(e->is_tombstone()
-			       || (e->m_hash_value & m_table->m_size_mask) == (hash_value & m_table->m_size_mask));
+				   || (e->m_hash_value & m_table->m_size_mask) == (hash_value & m_table->m_size_mask));
 
 			if (e->m_hash_value == hash_value && e->first == key)
 			{

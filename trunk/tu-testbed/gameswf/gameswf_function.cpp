@@ -41,7 +41,7 @@ namespace gameswf
 		}
 	}
 
-	as_as_function::as_as_function(action_buffer* ab, int start, 
+	as_as_function::as_as_function( const action_buffer* ab, int start, 
 		const array<with_stack_entry>& with_stack)
 		:
 		m_with_stack(with_stack),

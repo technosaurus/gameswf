@@ -166,9 +166,9 @@ namespace gameswf
 			int exec_bytes,
 			as_value* retval,
 			const array<with_stack_entry>& initial_with_stack,
-			bool is_function2);
+			bool is_function2) const;
 
-		as_object* load_as_plugin(const tu_string& classname, const array<as_value>& params);
+		static as_object* load_as_plugin(const tu_string& classname, const array<as_value>& params);
 
 		bool	is_null()
 		{
@@ -179,7 +179,7 @@ namespace gameswf
 
 		void operator=(const action_buffer& ab);
 
-		as_object* create_proto(as_object* obj, const as_value& constructor);
+		static as_object* create_proto(as_object* obj, const as_value& constructor);
 
 	private:
 		// Don't put these as values in array<>!  They contain
@@ -189,10 +189,10 @@ namespace gameswf
 		//action_buffer(const action_buffer& a) { assert(0); }
 
 		void	process_decl_dict(int start_pc, int stop_pc);
-		void	enumerate(as_environment* env, as_object_interface* object);
+		static void	enumerate(as_environment* env, as_object_interface* object);
 
 		// data:
-		array<Uint8>	m_buffer;
+		shared_array<Uint8>	m_buffer;
 		array<tu_string>	m_dictionary;
 		int	m_decl_dict_processed_at;
 	};
