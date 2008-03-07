@@ -1068,6 +1068,17 @@ namespace gameswf
 		}
 	}
 
+	const shape_character_def &     shape_character_def::operator =( const shape_character_def & def )
+	{
+		m_fill_styles = def.m_fill_styles;
+		m_line_styles = def.m_line_styles;
+		m_paths = def.m_paths;
+		m_bound = def.m_bound;
+		m_edge_bounds = def.m_edge_bounds;
+		m_uses_nonscaling_strokes = def.m_uses_nonscaling_strokes;
+		m_uses_scaling_strokes = def.m_uses_scaling_strokes;
+		return *this;
+	}
 
 	void	shape_character_def::read(stream* in, int tag_type, bool with_style, movie_definition_sub* m)
 	{

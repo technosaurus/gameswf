@@ -1263,6 +1263,28 @@ namespace gameswf
 					event_handlers[i]->attach_to(ch);
 				}
 			}
+			else if( get_id() == 0 )
+			{
+				smart_ptr<sprite_instance> sprite;
+
+				sprite = new sprite_instance(m_def.get_ptr(), 
+					get_root(),	parent,	0);
+
+				sprite->set_parent(parent);
+				sprite->set_root(get_root());
+				sprite->set_name(newname.c_str());
+
+				*sprite->get_canvas() = *get_canvas();
+
+				parent->m_display_list.add_display_object(
+					sprite.get_ptr(), 
+					depth,
+					true,		// replace_if_depth_is_occupied
+					get_cxform(), 
+					get_matrix(), 
+					get_ratio(), 
+					get_clip_depth()); 
+			}
 			else
 			{
 				ch = parent->add_display_object( 

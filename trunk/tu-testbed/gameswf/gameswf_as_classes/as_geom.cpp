@@ -6,6 +6,8 @@
 #include "gameswf/gameswf_as_classes/as_geom.h"
 #include "gameswf/gameswf_as_classes/as_point.h"
 #include "gameswf/gameswf_as_classes/as_matrix.h"
+#include "gameswf/gameswf_as_classes/as_transform.h"
+#include "gameswf/gameswf_as_classes/as_color_transform.h"
 
 namespace gameswf
 {
@@ -21,6 +23,8 @@ namespace gameswf
 		// constant
 		geom_obj->set_member("Point", as_value(as_global_point_ctor));
 		geom_obj->set_member("Matrix", as_value(as_global_matrix_ctor));
+		geom_obj->set_member("Transform", as_value(as_global_transform_ctor));
+		geom_obj->set_member("ColorTransform", as_value(as_global_color_transform_ctor));
 
 		return geom_obj;
 	}
