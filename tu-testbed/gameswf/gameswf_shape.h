@@ -164,6 +164,8 @@ namespace gameswf
 		shape_character_def();
 		virtual ~shape_character_def();
 
+		const 	shape_character_def & operator =( const shape_character_def & def );
+
 		virtual void	display(character* inst);
 		bool	point_test_local(float x, float y);
 
