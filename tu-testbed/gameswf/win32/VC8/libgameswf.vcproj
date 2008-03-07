@@ -213,6 +213,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_color_transform.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_color_transform.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_date.cpp"
 				>
 			</File>
@@ -322,6 +330,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_textformat.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_transform.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_transform.h"
 				>
 			</File>
 			<File
