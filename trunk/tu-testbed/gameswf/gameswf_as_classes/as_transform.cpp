@@ -28,6 +28,7 @@ namespace gameswf
 	{
 	}
 
+	//TODO: we should use a switch() instead of string compares.
 	bool	as_transform::set_member(const tu_stringi& name, const as_value& val)
 	{
 		if( name == "colorTransform" )
