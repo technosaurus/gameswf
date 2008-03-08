@@ -2985,10 +2985,16 @@ namespace gameswf
 			s_standard_member_map.add("_xmouse", M_XMOUSE);
 			s_standard_member_map.add("_ymouse", M_YMOUSE);
 			s_standard_member_map.add("_parent", M_PARENT);
-//			s_standard_member_map.add("text", M_TEXT);
-//			s_standard_member_map.add("textWidth", M_TEXTWIDTH);
-//			s_standard_member_map.add("textColor", M_TEXTCOLOR);
-//			s_standard_member_map.add("onLoad", M_ONLOAD);
+			s_standard_member_map.add("text", M_TEXT);
+			s_standard_member_map.add("textWidth", M_TEXTWIDTH);
+			s_standard_member_map.add("textColor", M_TEXTCOLOR);
+			s_standard_member_map.add("border", M_BORDER);
+			s_standard_member_map.add("multiline", M_MULTILINE);
+			s_standard_member_map.add("wordWrap", M_WORDWRAP);
+			s_standard_member_map.add("type", M_TYPE);
+			s_standard_member_map.add("backgroundColor", M_BACKGROUNDCOLOR);
+				
+
 			s_standard_member_map.add("_this", M_THIS);
 			s_standard_member_map.add("this", MTHIS);
 			s_standard_member_map.add("_root", M_ROOT);

@@ -569,6 +569,8 @@ namespace gameswf
 		m_leading = m_def->m_leading;
 		m_background_color.set(255, 255, 255, 255);
 
+		set_member("setTextFormat", set_textformat);
+
 		// first set default text value
 		set_text(def->m_default_text.c_str());
 
@@ -1031,69 +1033,79 @@ namespace gameswf
 	// We have a "text" member.
 	{
 		// first try standart properties
-		if (character::set_member(name, val)) {}
-		else
-		if (name == "text")
+		if (character::set_member(name, val))
 		{
-			int version = get_parent()->get_movie_definition()->get_version();
-			set_text_value(val.to_tu_string_versioned(version));
-		}
-		else if (name == "textColor")
-		{	
-			// The arg is 0xRRGGBB format.
-			rgba color(val.to_number());
-			m_color.m_r = color.m_r;
-			m_color.m_g = color.m_g;
-			m_color.m_b = color.m_b;
-			m_color.m_a = color.m_a;
-			format_text();
-		}
-		else if (name == "border")
-		{	
-			m_def->m_border = val.to_bool();
-			format_text();
-		}
-		else if (name == "multiline")
-		{	
-			m_def->m_multiline = val.to_bool();
-			format_text();
-		}
-		else if (name == "wordWrap")
-		{	
-			m_def->m_word_wrap = val.to_bool();
-			format_text();
-		}
-		else if (name == "type")
-		{
-			// Specifies the type of text field.
-			// There are two values: "dynamic", which specifies a dynamic text field
-			// that cannot be edited by the user, and "input", 
-			// which specifies an input text field.
-			if (val.to_tu_stringi() == "input")
-			{
-				m_def->m_readonly = false;
-			}
-			else
-			if (val.to_tu_stringi() == "dynamic")
-			{
-				m_def->m_readonly = true;
-			}
-			else
-			{
-				// log_error("not input &  dynamic");
-			}
-		}
-		else if (name == "backgroundColor")
-		{
-			m_background_color = rgba(val.to_number());
-			format_text();
+			return true;
 		}
 
+		as_standard_member	std_member = get_standard_member(name);
+		switch (std_member)
+		{
+			default:
+				// TextField can serve as container 
+				m_variables[name] = val;
+				break;
 
-		// @@ TODO see TextField members in Flash MX docs
+			case M_TEXT:
+			{
+				int version = get_parent()->get_movie_definition()->get_version();
+				set_text_value(val.to_tu_string_versioned(version));
+				break;
+			}
 
-		// TextField can serve as container 
-		m_variables[name] = val;
+			case M_TEXTCOLOR:
+			{
+				// The arg is 0xRRGGBB format.
+				rgba color(val.to_number());
+				m_color.m_r = color.m_r;
+				m_color.m_g = color.m_g;
+				m_color.m_b = color.m_b;
+				m_color.m_a = color.m_a;
+				format_text();
+				break;
+			}
+
+			case M_BORDER:
+				m_def->m_border = val.to_bool();
+				format_text();
+				break;
+
+			case M_MULTILINE:
+				m_def->m_multiline = val.to_bool();
+				format_text();
+				break;
+
+			case M_WORDWRAP:
+				m_def->m_word_wrap = val.to_bool();
+				format_text();
+				break;
+
+			case M_TYPE:
+				// Specifies the type of text field.
+				// There are two values: "dynamic", which specifies a dynamic text field
+				// that cannot be edited by the user, and "input", 
+				// which specifies an input text field.
+				if (val.to_tu_stringi() == "input")
+				{
+					m_def->m_readonly = false;
+				}
+				else
+				if (val.to_tu_stringi() == "dynamic")
+				{
+					m_def->m_readonly = true;
+				}
+				else
+				{
+					// log_error("not input &  dynamic");
+				}
+				break;
+
+			case M_BACKGROUNDCOLOR:
+				m_background_color = rgba(val.to_number());
+				format_text();
+				break;
+		}
+
 		return true;
 	}
 
@@ -1106,61 +1118,55 @@ namespace gameswf
 			return true;
 		}
 
-		if (name == "text")
+		as_standard_member	std_member = get_standard_member(name);
+		switch (std_member)
 		{
-			val->set_tu_string(m_text);
-			return true;
-		}
-		else if (name == "textColor")
-		{
-			// Return color in 0xRRGGBB format
-			val->set_int((m_color.m_r << 16) + (m_color.m_g << 8) + m_color.m_b);
-			return true;
-		}
-		else if (name == "textWidth")
-		{
-			// Return the width, in pixels, of the text as laid out.
-			// (I.e. the actual text content, not our defined
-			// bounding box.)
-			//
-			// In local coords.  Verified against Macromedia Flash.
-			val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
-			return true;
-		}
-		else if (name == "border")
-		{	
-			val->set_bool(m_def->m_border);
-			return true;
-		}
-		else if (name == "multiline")
-		{	
-			val->set_bool(m_def->m_multiline);
-			return true;
-		}
-		else if (name == "wordWrap")
-		{	
-			val->set_bool(m_def->m_word_wrap);
-			return true;
-		}
-		else if (name == "type")
-		{
-			val->set_tu_string(m_def->m_readonly ? "dynamic" : "input");
-			return true;
-		}
-		else if (name == "setTextFormat")
-		{
-			val->set_as_c_function_ptr(&set_textformat);
-			return true;
-		}
-		else if (name == "backgroundColor")
-		{
-			val->set_int(m_background_color.m_r << 16 | m_background_color.m_g << 8 |
-				m_background_color.m_b);
-			return true;
+			default:
+				// TextField can serve as container 
+				return m_variables.get(name, val);
+
+			case M_TEXT:
+				val->set_tu_string(m_text);
+				break;
+
+			case M_TEXTCOLOR:
+				// Return color in 0xRRGGBB format
+				val->set_int((m_color.m_r << 16) + (m_color.m_g << 8) + m_color.m_b);
+				break;
+		
+			case M_TEXTWIDTH:
+				// Return the width, in pixels, of the text as laid out.
+				// (I.e. the actual text content, not our defined
+				// bounding box.)
+				//
+				// In local coords.  Verified against Macromedia Flash.
+				val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
+				break;
+
+			case M_BORDER:
+				val->set_bool(m_def->m_border);
+				break;
+
+			case M_MULTILINE:
+				val->set_bool(m_def->m_multiline);
+				break;
+		
+			case M_WORDWRAP:
+				val->set_bool(m_def->m_word_wrap);
+				break;
+
+			case M_TYPE:
+				val->set_tu_string(m_def->m_readonly ? "dynamic" : "input");
+				break;
+
+			case M_BACKGROUNDCOLOR:
+				val->set_int(m_background_color.m_r << 16 | m_background_color.m_g << 8 |
+					m_background_color.m_b);
+				break;
+
 		}
 
-		// TextField can serve as container 
-		return m_variables.get(name, val);
+		return true;
 	}
 
 	// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe
