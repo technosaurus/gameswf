@@ -29,48 +29,42 @@ namespace gameswf
 	}
 
 	bool	character::get_member(const tu_stringi& name, as_value* val)
-		// Set *val to the value of the named member and
-		// return true, if we have the named member.
-		// Otherwise leave *val alone and return false.
+	// Set *val to the value of the named member and
+	// return true, if we have the named member.
+	// Otherwise leave *val alone and return false.
 	{
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
-		default:
-		case M_INVALID_MEMBER:
-			break;
-		case M_X:
-			//if (name == "_x")
+			default:
+				break;
+			case M_X:
 			{
 				const matrix&	m = get_matrix();
 				val->set_double(TWIPS_TO_PIXELS(m.m_[0][2]));
 				return true;
 			}
-		case M_Y:
-			//else if (name == "_y")
+			case M_Y:
 			{
 				const matrix&	m = get_matrix();
 				val->set_double(TWIPS_TO_PIXELS(m.m_[1][2]));
 				return true;
 			}
-		case M_XSCALE:
-			//else if (name == "_xscale")
+			case M_XSCALE:
 			{
 				const matrix& m = get_matrix();	// @@ or get_world_matrix()?  Test this.
 				float xscale = m.get_x_scale();
 				val->set_double(xscale * 100);		// result in percent
 				return true;
 			}
-		case M_YSCALE:
-			//else if (name == "_yscale")
+			case M_YSCALE:
 			{
 				const matrix& m = get_matrix();	// @@ or get_world_matrix()?  Test this.
 				float yscale = m.get_y_scale();
 				val->set_double(yscale * 100);		// result in percent
 				return true;
 			}
-		case M_CURRENTFRAME:
-			//else if (name == "_currentframe")
+			case M_CURRENTFRAME:
 			{
 				int n = get_current_frame();
 				if (n >= 0)
@@ -83,8 +77,7 @@ namespace gameswf
 				}
 				return true;
 			}
-		case M_TOTALFRAMES:
-			//else if (name == "_totalframes")
+			case M_TOTALFRAMES:
 			{
 				// number of frames.  Read only.
 				int n = get_frame_count();
@@ -98,33 +91,28 @@ namespace gameswf
 				}
 				return true;
 			}
-		case M_ALPHA:
-			//else if (name == "_alpha")
+			case M_ALPHA:
 			{
 				// Alpha units are in percent.
 				val->set_double(get_cxform().m_[3][0] * 100.f);
 				return true;
 			}
-		case M_VISIBLE:
-			//else if (name == "_visible")
+			case M_VISIBLE:
 			{
 				val->set_bool(get_visible());
 				return true;
 			}
-		case M_WIDTH:
-			//else if (name == "_width")
+			case M_WIDTH:
 			{
 				val->set_double((int) TWIPS_TO_PIXELS(get_width()));
 				return true;
 			}
-		case M_HEIGHT:
-			//else if (name == "_height")
+			case M_HEIGHT:
 			{
 				val->set_double((int) TWIPS_TO_PIXELS(get_height()));
 				return true;
 			}
-		case M_ROTATION:
-			//else if (name == "_rotation")
+			case M_ROTATION:
 			{
 				// Verified against Macromedia player using samples/test_rotation.swf
 				float	angle = get_matrix().get_rotation();
@@ -135,8 +123,7 @@ namespace gameswf
 				val->set_double(angle);
 				return true;
 			}
-		case M_TARGET:
-			//else if (name == "_target")
+			case M_TARGET:
 			{
 				// Full path to this object; e.g. "/_level0/sprite1/sprite2/ourSprite"
 				character* parent = get_parent();
@@ -149,7 +136,7 @@ namespace gameswf
 				as_value target;
 				parent->get_member("_target", &target);
 
-				// if s != "/"(root) add "/"
+					// if s != "/"(root) add "/"
 				tu_string s = target.to_tu_string();
 				s += s == "/" ? "" : "/";
 
@@ -166,8 +153,7 @@ namespace gameswf
 				val->set_tu_string(s);
 				return true;
 			}
-		case M_FRAMESLOADED:
-			//else if (name == "_framesloaded")
+			case M_FRAMESLOADED:
 			{
 				int n = get_loading_frame();
 				if (n >= 0)
@@ -180,51 +166,43 @@ namespace gameswf
 				}
 				return true;
 			}
-		case M_NAME:
-			//else if (name == "_name")
+			case M_NAME:
 			{
 				val->set_tu_string(get_name());
 				return true;
 			}
-		case M_DROPTARGET:
-			//else if (name == "_droptarget")
+			case M_DROPTARGET:
 			{
 				// Absolute path in slash syntax where we were last dropped (?)
 				// @@ TODO
 				val->set_string("/_root");
 				return true;
 			}
-		case M_URL:
-			//else if (name == "_url")
+			case M_URL:
 			{
 				// our URL.
 				val->set_string("gameswf");
 				return true;
 			}
-		case M_HIGHQUALITY:
-			//else if (name == "_highquality")
+			case M_HIGHQUALITY:
 			{
 				// Whether we're in high quality mode or not.
 				val->set_bool(true);
 				return true;
 			}
-		case M_FOCUSRECT:
-			//else if (name == "_focusrect")
+			case M_FOCUSRECT:
 			{
 				// Is a yellow rectangle visible around a focused movie clip (?)
 				val->set_bool(false);
 				return true;
 			}
-		case M_SOUNDBUFTIME:
-			//else if (name == "_soundbuftime")
+			case M_SOUNDBUFTIME:
 			{
 				// Number of seconds before sound starts to stream.
 				val->set_double(0.0);
 				return true;
 			}
-
-		case M_XMOUSE:
-			//else if (name == "_xmouse")
+			case M_XMOUSE:
 			{
 				// Local coord of mouse IN PIXELS.
 				int	x, y, buttons;
@@ -240,8 +218,7 @@ namespace gameswf
 				val->set_double(TWIPS_TO_PIXELS(b.m_x));
 				return true;
 			}
-		case M_YMOUSE:
-			//else if (name == "_ymouse")
+			case M_YMOUSE:
 			{
 				// Local coord of mouse IN PIXELS.
 				int	x, y, buttons;
@@ -257,7 +234,7 @@ namespace gameswf
 				val->set_double(TWIPS_TO_PIXELS(b.m_y));
 				return true;
 			}
-		case M_PARENT:
+			case M_PARENT:
 			{
 				val->set_as_object_interface(static_cast<as_object_interface*>(m_parent.get_ptr()));
 				return true;
@@ -272,27 +249,23 @@ namespace gameswf
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
-		default:
-		case M_INVALID_MEMBER:
-			break;
-		case M_X:
-			//if (name == "_x")
+			default:
+				break;
+			case M_X:
 			{
 				matrix	m = get_matrix();
 				m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
 				set_matrix(m);
 				return true;
 			}
-		case M_Y:
-			//else if (name == "_y")
+			case M_Y:
 			{
 				matrix	m = get_matrix();
 				m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
 				set_matrix(m);
 				return true;
 			}
-		case M_XSCALE:
-			//else if (name == "_xscale")
+			case M_XSCALE:
 			{
 				matrix	m = get_matrix();
 
@@ -305,8 +278,7 @@ namespace gameswf
 				set_matrix(m);
 				return true;
 			}
-		case M_YSCALE:
-			//else if (name == "_yscale")
+			case M_YSCALE:
 			{
 				matrix	m = get_matrix();
 
@@ -319,8 +291,7 @@ namespace gameswf
 				set_matrix(m);
 				return true;
 			}
-		case M_ALPHA:
-			//else if (name == "_alpha")
+			case M_ALPHA:
 			{
 				// Set alpha modulate, in percent.
 				cxform	cx = get_cxform();
@@ -328,14 +299,12 @@ namespace gameswf
 				set_cxform(cx);
 				return true;
 			}
-		case M_VISIBLE:
-			//else if (name == "_visible")
+			case M_VISIBLE:
 			{
 				set_visible(val.to_bool());
 				return true;
 			}
-		case M_WIDTH:
-			//else if (name == "_width")
+			case M_WIDTH:
 			{
 				if (val.to_number() > 0)
 				{
@@ -357,8 +326,7 @@ namespace gameswf
 				}
 				return true;
 			}
-		case M_HEIGHT:
-			//else if (name == "_height")
+			case M_HEIGHT:
 			{
 				if (val.to_number() > 0)
 				{
@@ -380,8 +348,7 @@ namespace gameswf
 				}
 				return true;
 			}
-		case M_ROTATION:
-			//else if (name == "_rotation")
+			case M_ROTATION:
 			{
 				matrix	m = get_matrix();
 
@@ -394,29 +361,25 @@ namespace gameswf
 				set_matrix(m);
 				return true;
 			}
-		case M_NAME:
-			//else if (name == "_name")
+			case M_NAME:
 			{
 				set_name(val.to_string());
 				return true;
 			}
-		case M_HIGHQUALITY:
-			//else if (name == "_highquality")
+			case M_HIGHQUALITY:
 			{
 				// @@ global { 0, 1, 2 }
 				//				// Whether we're in high quality mode or not.
 				//				val->set(true);
 				return true;
 			}
-		case M_FOCUSRECT:
-			//else if (name == "_focusrect")
+			case M_FOCUSRECT:
 			{
 				//				// Is a yellow rectangle visible around a focused movie clip (?)
 				//				val->set(false);
 				return true;
 			}
-		case M_SOUNDBUFTIME:
-			//else if (name == "_soundbuftime")
+			case M_SOUNDBUFTIME:
 			{
 				// @@ global
 				//				// Number of seconds before sound starts to stream.

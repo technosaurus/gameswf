@@ -1121,17 +1121,23 @@ namespace gameswf
 		// In ActionScript 1.0, everything seems to be CASE
 		// INSENSITIVE.
 	{
-		if (name == "." || name == "this")
+		as_standard_member	std_member = get_standard_member(name);
+		switch (std_member)
 		{
-			return this;
-		}
-		else if (name == ".." || name == "_parent")
-		{
-			return get_parent();
-		}
-		else if (name == "_level0" || name == "_root")
-		{
-			return m_root->m_movie.get_ptr();
+			case MDOT:
+			case M_THIS:
+				return this;
+
+			case MDOT2:	// ".."
+			case M_PARENT:
+				return get_parent();
+
+			case M_LEVEL0:
+			case M_ROOT:
+				return m_root->m_movie.get_ptr();
+
+			default:
+				break;
 		}
 
 		// See if we have a match on the display list.

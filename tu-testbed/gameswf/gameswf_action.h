@@ -278,6 +278,14 @@ namespace gameswf
 //		M_TEXTCOLOR,
 //		M_ONLOAD,
 
+		M_THIS,
+		MTHIS,
+		M_ROOT,
+		MDOT,
+		MDOT2,
+		M_LEVEL0,
+		M_GLOBAL,
+
 		AS_STANDARD_MEMBER_COUNT
 	};
 	// Return the standard enum, if the arg names a standard member.
