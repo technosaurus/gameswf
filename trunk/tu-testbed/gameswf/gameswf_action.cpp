@@ -583,6 +583,9 @@ namespace gameswf
 		{
 			s_inited = true;
 
+			// setup standart member
+
+
 			s_start_time = tu_timer::get_ticks();
 
 			// @@ s_global should really be a
@@ -1579,7 +1582,7 @@ namespace gameswf
 							as_object_interface* obj = function.to_object();
 							if (obj)
 							{
-								assert(function_name == "super");
+								// assert(function_name == "super");
 								obj->get_member("constructor", &function);
 							}
 						}
@@ -1953,7 +1956,8 @@ namespace gameswf
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
 					as_object_interface* obj = env->top(1).to_object();
-					if (obj) {
+					if (obj) 
+					{
 						as_value	method;
 						if (obj->get_member(method_name, &method))
 						{
@@ -2985,6 +2989,14 @@ namespace gameswf
 //			s_standard_member_map.add("textWidth", M_TEXTWIDTH);
 //			s_standard_member_map.add("textColor", M_TEXTCOLOR);
 //			s_standard_member_map.add("onLoad", M_ONLOAD);
+			s_standard_member_map.add("_this", M_THIS);
+			s_standard_member_map.add("this", MTHIS);
+			s_standard_member_map.add("_root", M_ROOT);
+			s_standard_member_map.add(".", MDOT);
+			s_standard_member_map.add("..", MDOT2);
+			s_standard_member_map.add("_level0", M_LEVEL0);
+			s_standard_member_map.add("_global", M_GLOBAL);
+
 		}
 
 		as_standard_member	result = M_INVALID_MEMBER;

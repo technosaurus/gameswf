@@ -213,8 +213,11 @@ namespace gameswf
 			return m_local_frames[local_index].m_value;
 		}
 
+
+		as_standard_member	varname_id = get_standard_member(varname);
+
 		// Looking for "this"?
-		if (varname == "this")
+		if (varname_id == MTHIS)
 		{
 			val.set_as_object_interface(m_target);
 			return val;
@@ -233,13 +236,13 @@ namespace gameswf
 		// Check built-in constants.
 		if (m_target)
 		{
-			if (varname == "_root" || varname == "_level0")
+			if (varname_id == M_ROOT || varname_id == M_LEVEL0)
 			{
 				return as_value(m_target->get_root_movie());
 			}
 		}
 
-		if (varname == "_global")
+		if (varname_id == M_GLOBAL)
 		{
 			return as_value(get_global());
 		}
