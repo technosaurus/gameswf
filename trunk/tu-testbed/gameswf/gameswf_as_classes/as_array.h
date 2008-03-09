@@ -28,8 +28,8 @@ namespace gameswf
 
 		exported_module as_array();
 
-		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+//		virtual bool	get_member(const tu_stringi& name, as_value* val);
+//		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 
 		exported_module tu_string to_string();
 

@@ -414,6 +414,7 @@ namespace gameswf
 
 	void	as_global_assetpropflags(const fn_call& fn)
 	// Undocumented ASSetPropFlags function
+	// Works only for as_object for now
 	{
 		const int version = fn.env->get_target()->get_movie_definition()->get_version();
 
@@ -422,7 +423,7 @@ namespace gameswf
 		assert((version == 5) ? (fn.nargs == 3) : true);
 
 		// object
-		as_object_interface* const obj = fn.arg(0).to_object();
+		as_object* obj = cast_to<as_object>(fn.arg(0).to_object());
 		if (obj == NULL)
 		{
 			log_error("error: assetpropflags for NULL object\n");
@@ -432,7 +433,7 @@ namespace gameswf
 		// The second argument is a list of child names,
 		// may be in the form array(like ["abc", "def", "ggggg"]) or in the form a string(like "abc, def, ggggg")
 		// the NULL second parameter means that assetpropflags is applied to all children
-		as_object_interface* props = fn.arg(1).to_object();
+		as_object* props = cast_to<as_object>(fn.arg(1).to_object());
 
 		// a number which represents three bitwise flags which
 		// are used to determine whether the list of child names should be hidden,
@@ -461,51 +462,38 @@ namespace gameswf
 
 		if (props == NULL)
 		{
-			// Take all the members of the object
-
-			as_object* object = cast_to<as_object>(obj);
-			if (object)
+			// Takes all members of the object and sets its property flags
+			for (stringi_hash<as_member>::const_iterator it = obj->m_members.begin(); 
+				it != obj->m_members.end(); ++it)
 			{
-				for (stringi_hash<as_member>::const_iterator it = object->m_members.begin(); 
-					it != object->m_members.end(); ++it)
-				{
-					as_member member = it.get_value();
+				as_member member = it.get_value();
 
-					as_prop_flags f = member.get_member_flags();
-					f.set_flags(set_true, set_false);
-					member.set_member_flags(f);
+				as_prop_flags f = member.get_member_flags();
+				f.set_flags(set_true, set_false);
+				member.set_member_flags(f);
 
-					object->m_members.set(it.get_key(), member);
-				}
+				obj->m_members.set(it.get_key(), member);
 			}
 		}
 		else
 		{
-			as_object* object = cast_to<as_object>(obj);
-			as_object* object_props = cast_to<as_object>(props);
-			if (object == NULL || object_props == NULL)
+			// Takes all string type prop and sets property flags of obj[prop]
+			for (stringi_hash<as_member>::const_iterator it = props->m_members.begin(); 
+				it != props->m_members.end(); ++it)
 			{
-				return;
-			}
-
-			stringi_hash<as_member>::iterator it = object_props->m_members.begin();
-			while(it != object_props->m_members.end())
-			{
-				const tu_stringi key = (it.get_value()).get_member_value().to_string();
-				stringi_hash<as_member>::iterator it2 = object->m_members.find(key);
-
-				if (it2 != object->m_members.end())
+				const as_value& key = it->second.get_member_value();
+				if (key.get_type() == as_value::STRING)
 				{
-					as_member member = it2.get_value();
+					stringi_hash<as_member>::iterator obj_it = obj->m_members.find(key.to_tu_string());
+					if (obj_it != obj->m_members.end())
+					{
+						as_member& member = obj_it->second;
 
-					as_prop_flags f = member.get_member_flags();
-					f.set_flags(set_true, set_false);
-					member.set_member_flags(f);
-
-					object->m_members.set((it.get_value()).get_member_value().to_string(), member);
+						as_prop_flags f = member.get_member_flags();
+						f.set_flags(set_true, set_false);
+						member.set_member_flags(f);
+					}
 				}
-
-				++it;
 			}
 		}
 	}
