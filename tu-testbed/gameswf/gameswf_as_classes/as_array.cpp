@@ -39,6 +39,12 @@ namespace gameswf
 		*fn.result = val;
 	}
 
+	void	as_array_length(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		assert(a);
+		fn.result->set_int(a->size());
+	}
 
 	void	as_global_array_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Array.
@@ -104,33 +110,14 @@ namespace gameswf
 		//			this->set_member("sort", &array_not_impl);
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
-		set_member("toString", &as_array_tostring);
+		set_member("toString", as_array_tostring);
 		set_member_flags("toString", as_prop_flags::DONT_ENUM);
-		set_member("push", &as_array_push);
+		set_member("push", as_array_push);
 		set_member_flags("push", as_prop_flags::DONT_ENUM);
-		set_member("pop", &as_array_pop);
+		set_member("pop", as_array_pop);
 		set_member_flags("pop", as_prop_flags::DONT_ENUM);
-	}
-
-	bool as_array::get_member(const tu_stringi& name, as_value* val)
-	{
-		if (name == "length")
-		{
-			val->set_int(size());
-			return true;
-		}
-		
-		return as_object::get_member(name, val);
-	}
-
-	bool as_array::set_member(const tu_stringi& name, const as_value& val)
-	{
-		if (name == "length")
-		{
-			// can't set length property
-			return true;
-		}
-		return as_object::set_member(name, val);
+		set_member("length", as_value(as_array_length, NULL));
+		set_member_flags("length", as_prop_flags::DONT_ENUM);
 	}
 
 	tu_string as_array::to_string()
