@@ -1850,19 +1850,18 @@ namespace gameswf
 				{
 					as_object_interface*	obj = env->top(1).to_object();
 
-					// Special cases:
+					// Special cases: similar to
 					// String.length, Number.Nan
 					if (obj == NULL)
 					{
-						if (env->top(1).get_type() == as_value::STRING
-							  && env->top(0).to_tu_stringi() == "length")
+						as_standard_member	std_member = get_standard_member(env->top(0).to_tu_string());
+						if (env->top(1).get_type() == as_value::STRING && std_member == M_LENGTH)
 						{
 							int	len = env->top(1).to_tu_string_versioned(version).utf8_length();
 							env->top(1).set_int(len);
 						}
 						else
-						if (env->top(1).get_type() == as_value::NUMBER
-							  && env->top(0).to_tu_stringi() == "NaN")
+						if (env->top(1).get_type() == as_value::NUMBER && std_member == M_NAN)
 						{
 							env->top(1).set_nan();
 						}
@@ -2990,6 +2989,8 @@ namespace gameswf
 			s_standard_member_map.add("..", MDOT2);
 			s_standard_member_map.add("_level0", M_LEVEL0);
 			s_standard_member_map.add("_global", M_GLOBAL);
+			s_standard_member_map.add("length", M_LENGTH);
+			s_standard_member_map.add("NaN", M_NAN);
 
 		}
 
