@@ -98,25 +98,24 @@ namespace gameswf
 		math_obj->set_member("sqrt2", 1.4142135623730950488);
 
 		// math methods
-		math_obj->set_member("abs", &math_fabs);
-		math_obj->set_member("acos", &math_acos);
-		math_obj->set_member("asin", &math_asin);
-		math_obj->set_member("atan", &math_atan);
-		math_obj->set_member("ceil", &math_ceil);
-		math_obj->set_member("cos", &math_cos);
-		math_obj->set_member("exp", &math_exp);
-		math_obj->set_member("floor", &math_floor);
-		math_obj->set_member("log", &math_log);
-		math_obj->set_member("random", &math_random);
-		math_obj->set_member("round", &math_round);
-		math_obj->set_member("sin", &math_sin);
-		math_obj->set_member("sqrt", &math_sqrt);
-		math_obj->set_member("tan", &math_tan);
-
-		math_obj->set_member("atan2", &math_atan2);
-		math_obj->set_member("max", &math_max);
-		math_obj->set_member("min", &math_min);
-		math_obj->set_member("pow", &math_pow);
+		math_obj->set_member("abs", math_fabs);
+		math_obj->set_member("acos", math_acos);
+		math_obj->set_member("asin", math_asin);
+		math_obj->set_member("atan", math_atan);
+		math_obj->set_member("ceil", math_ceil);
+		math_obj->set_member("cos", math_cos);
+		math_obj->set_member("exp", math_exp);
+		math_obj->set_member("floor", math_floor);
+		math_obj->set_member("log", math_log);
+		math_obj->set_member("random", math_random);
+		math_obj->set_member("round", math_round);
+		math_obj->set_member("sin", math_sin);
+		math_obj->set_member("sqrt", math_sqrt);
+		math_obj->set_member("tan", math_tan);
+		math_obj->set_member("atan2", math_atan2);
+		math_obj->set_member("max", math_max);
+		math_obj->set_member("min", math_min);
+		math_obj->set_member("pow", math_pow);
 
 		return math_obj;
 	}

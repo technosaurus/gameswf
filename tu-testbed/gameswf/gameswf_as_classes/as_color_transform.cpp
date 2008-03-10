@@ -8,7 +8,7 @@
 
 namespace gameswf
 {
-	enum ColorTransformConstructorArgument
+	enum as_color_transform_member
 	{
 		redMultiplier = 1, 
 		greenMultiplier, 
@@ -17,8 +17,15 @@ namespace gameswf
 		redOffset, 
 		greenOffset,
 		blueOffset, 
-		alphaOffset
+		alphaOffset,
+		rgb,
+		invalidMember,
+		AS_COLOR_TRANSFORM_MEMBER_COUNT,
 	};
+
+	static stringi_hash<as_color_transform_member>	s_color_transform_member_map;
+	static as_color_transform_member   get_color_transform_member(const tu_stringi& name);
+
 
 	// ColorTranform([redMultiplier:Number], [greenMultiplier:Number], [blueMultiplier:Number], [alphaMultiplier:Number], [redOffset:Number], [greenOffset:Number], [blueOffset:Number], [alphaOffset:Number])
 	void	as_global_color_transform_ctor(const fn_call& fn)
@@ -53,63 +60,75 @@ namespace gameswf
 	{
 	}
 
-	//TODO: we should use a switch() instead of string compares.
 	bool	as_color_transform::set_member(const tu_stringi& name, const as_value& val)
 	{
-		if( name == "alphaOffset" )
-		{
-			m_color_transform.m_[ 3 ][ 1 ] = val.to_number();
-			return true;
-		}
-		else if( name == "blueOffset" )
-		{
-			m_color_transform.m_[ 2 ][ 1 ] = val.to_number();
-			return true;
-		}
-		else if( name == "greenOffset" )
-		{
-			m_color_transform.m_[ 1 ][ 1 ] = val.to_number();
-			return true;
-		}
-		else if( name == "redOffset" )
-		{
-			m_color_transform.m_[ 0 ][ 1 ] = val.to_number();
-			return true;
-		}
-		else if( name == "alphaMultiplier" )
-		{
-			m_color_transform.m_[ 3 ][ 0 ] = val.to_number();
-			return true;
-		}
-		else if( name == "blueMultiplier" )
-		{
-			m_color_transform.m_[ 2 ][ 0 ] = val.to_number();
-			return true;
-		}
-		else if( name == "greenMultiplier" )
-		{
-			m_color_transform.m_[ 1 ][ 0 ] = val.to_number();
-			return true;
-		}
-		else if( name == "redMultiplier" )
-		{
-			m_color_transform.m_[ 0 ][ 0 ] = val.to_number();
-			return true;
-		}
-		else if( name == "rgb" )
-		{
-			int rgb;
+		as_color_transform_member member = get_color_transform_member( name );
 
-			rgb = static_cast<int>( val.to_number() );
-			m_color_transform.m_[ 0 ][ 0 ] = 0.0f;
-			m_color_transform.m_[ 1 ][ 0 ] = 0.0f;
-			m_color_transform.m_[ 2 ][ 0 ] = 0.0f;
-			m_color_transform.m_[ 3 ][ 0 ] = 0.0f;
-			m_color_transform.m_[ 0 ][ 1 ] = static_cast<float>( ( rgb >> 16 ) & 0xFF );
-			m_color_transform.m_[ 1 ][ 1 ] = static_cast<float>( ( rgb >> 8 ) & 0xFF );
-			m_color_transform.m_[ 2 ][ 1 ] = static_cast<float>( rgb & 0xFF );
-			m_color_transform.m_[ 3 ][ 1 ] = 255.0f;
-			return true;
+		switch( member )
+		{
+			case alphaOffset:
+			{
+				m_color_transform.m_[ 3 ][ 1 ] = val.to_number();
+				return true;
+			}
+
+			case blueOffset:
+			{
+				m_color_transform.m_[ 2 ][ 1 ] = val.to_number();
+				return true;
+			}
+
+			case greenOffset:
+			{
+				m_color_transform.m_[ 1 ][ 1 ] = val.to_number();
+				return true;
+			}
+
+			case redOffset:
+			{
+				m_color_transform.m_[ 0 ][ 1 ] = val.to_number();
+				return true;
+			}
+
+			case alphaMultiplier:
+			{
+				m_color_transform.m_[ 3 ][ 0 ] = val.to_number();
+				return true;
+			}
+
+			case blueMultiplier:
+			{
+				m_color_transform.m_[ 2 ][ 0 ] = val.to_number();
+				return true;
+			}
+
+			case greenMultiplier:
+			{
+				m_color_transform.m_[ 1 ][ 0 ] = val.to_number();
+				return true;
+			}
+
+			case redMultiplier:
+			{
+				m_color_transform.m_[ 0 ][ 0 ] = val.to_number();
+				return true;
+			}
+
+			case rgb:
+			{
+				int rgb;
+
+				rgb = static_cast<int>( val.to_number() );
+				m_color_transform.m_[ 0 ][ 0 ] = 0.0f;
+				m_color_transform.m_[ 1 ][ 0 ] = 0.0f;
+				m_color_transform.m_[ 2 ][ 0 ] = 0.0f;
+				m_color_transform.m_[ 3 ][ 0 ] = 0.0f;
+				m_color_transform.m_[ 0 ][ 1 ] = static_cast<float>( ( rgb >> 16 ) & 0xFF );
+				m_color_transform.m_[ 1 ][ 1 ] = static_cast<float>( ( rgb >> 8 ) & 0xFF );
+				m_color_transform.m_[ 2 ][ 1 ] = static_cast<float>( rgb & 0xFF );
+				m_color_transform.m_[ 3 ][ 1 ] = 255.0f;
+				return true;
+			}
 		}
 
 		return as_object::set_member( name, val );
@@ -117,54 +136,72 @@ namespace gameswf
 
 	bool	as_color_transform::get_member(const tu_stringi& name, as_value* val)
 	{
-		if( name == "alphaOffset" )
+		as_color_transform_member member = get_color_transform_member( name );
+
+		switch( member )
 		{
-			val->set_double( m_color_transform.m_[ 3 ][ 1 ] );
-			return true;
-		}
-		else if( name == "blueOffset" )
-		{
-			val->set_double( m_color_transform.m_[ 2 ][ 1 ] );
-			return true;
-		}
-		else if( name == "greenOffset" )
-		{
-			val->set_double( m_color_transform.m_[ 1 ][ 1 ] );
-			return true;
-		}
-		else if( name == "redOffset" )
-		{
-			val->set_double( m_color_transform.m_[ 0 ][ 1 ] );
-			return true;
-		}
-		else if( name == "alphaMultiplier" )
-		{
-			val->set_double( m_color_transform.m_[ 3 ][ 0 ] );
-			return true;
-		}
-		else if( name == "blueMultiplier" )
-		{
-			val->set_double( m_color_transform.m_[ 2 ][ 0 ] );
-			return true;
-		}
-		else if( name == "greenMultiplier" )
-		{
-			val->set_double( m_color_transform.m_[ 1 ][ 0 ] );
-			return true;
-		}
-		else if( name == "redMultiplier" )
-		{
-			val->set_double( m_color_transform.m_[ 0 ][ 0 ] );
-			return true;
-		}
-		else if( name == "rgb" )
-		{
-			// TODO: Check behavior
-			val->set_undefined();
-			return true;
+			case alphaOffset:
+				val->set_double( m_color_transform.m_[ 3 ][ 1 ] );
+				return true;
+
+			case blueOffset:
+				val->set_double( m_color_transform.m_[ 2 ][ 1 ] );
+				return true;
+		
+			case greenOffset:
+				val->set_double( m_color_transform.m_[ 1 ][ 1 ] );
+				return true;
+
+			case redOffset:
+				val->set_double( m_color_transform.m_[ 0 ][ 1 ] );
+				return true;
+		
+			case alphaMultiplier:
+				val->set_double( m_color_transform.m_[ 3 ][ 0 ] );
+				return true;
+		
+			case blueMultiplier:
+				val->set_double( m_color_transform.m_[ 2 ][ 0 ] );
+				return true;
+
+			case greenMultiplier:
+				val->set_double( m_color_transform.m_[ 1 ][ 0 ] );
+				return true;
+			
+			case redMultiplier:
+				val->set_double( m_color_transform.m_[ 0 ][ 0 ] );
+				return true;
+
+			case rgb:
+				// TODO: Check behavior
+				val->set_undefined();
+				return true;
 		}
 
 		return as_object::get_member( name, val );
 	}
 
+	as_color_transform_member	get_color_transform_member(const tu_stringi& name)
+	{
+		if (s_color_transform_member_map.size() == 0)
+		{
+			s_color_transform_member_map.set_capacity(int(AS_COLOR_TRANSFORM_MEMBER_COUNT));
+			s_color_transform_member_map.add("redMultiplier", redMultiplier);
+			s_color_transform_member_map.add("greenMultiplier", greenMultiplier);
+			s_color_transform_member_map.add("blueMultiplier", blueMultiplier);
+			s_color_transform_member_map.add("alphaMultiplier", alphaMultiplier);
+			s_color_transform_member_map.add("redOffset", redOffset);
+			s_color_transform_member_map.add("greenOffset", greenOffset);
+			s_color_transform_member_map.add("blueOffset", blueOffset);
+			s_color_transform_member_map.add("alphaOffset", alphaOffset);
+			s_color_transform_member_map.add("rgb", rgb);
+		}
+
+		as_color_transform_member	result = invalidMember;
+		s_color_transform_member_map.get(name, &result);
+
+		return result;
+	}
+
 }
+

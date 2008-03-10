@@ -83,9 +83,9 @@ namespace gameswf
 			if (obj)
 			{
 				obj->set_member("_listeners", new as_listener());
-				obj->set_member("addListener", &as_broadcast_addlistener);
-				obj->set_member("removeListener", &as_broadcast_removelistener);
-				obj->set_member("broadcastMessage", &as_broadcast_sendmessage);
+				obj->set_member("addListener", as_broadcast_addlistener);
+				obj->set_member("removeListener", as_broadcast_removelistener);
+				obj->set_member("broadcastMessage", as_broadcast_sendmessage);
 			}
 		}
 	}
@@ -95,7 +95,7 @@ namespace gameswf
 		as_object* bc = new as_object();
 
 		// methods
-		bc->set_member("initialize", &as_broadcaster_initialize);
+		bc->set_member("initialize", as_broadcaster_initialize);
 
 		return bc;
 	}

@@ -584,31 +584,29 @@ namespace gameswf
 			assert(s_global == NULL);
 			s_global = new as_object;
 			get_heap()->set(s_global.get_ptr(), false);
-			s_global->set_member("trace", as_value(as_global_trace));
-			s_global->set_member("Object", as_value(as_global_object_ctor));
-			s_global->set_member("Sound", as_value(as_global_sound_ctor));
-			s_global->set_member("Array", as_value(as_global_array_ctor));
-			s_global->set_member("MovieClip", as_value(as_global_movieclip_ctor));
-
-			s_global->set_member("TextFormat", as_value(as_global_textformat_ctor));
+			s_global->set_member("trace", as_global_trace);
+			s_global->set_member("Object", as_global_object_ctor);
+			s_global->set_member("Sound", as_global_sound_ctor);
+			s_global->set_member("Array", as_global_array_ctor);
+			s_global->set_member("MovieClip", as_global_movieclip_ctor);
+			s_global->set_member("TextFormat", as_global_textformat_ctor);
 
 			//			s_global->set_member("XML", as_value(xml_new));
-			s_global->set_member("XMLSocket", as_value(as_global_xmlsock_ctor));
-
-			s_global->set_member("MovieClipLoader", as_value(as_global_mcloader_ctor));
-			s_global->set_member("String", as_value(string_ctor));
-			s_global->set_member("Number", as_value(as_global_number_ctor));
-			s_global->set_member("Boolean", as_value(as_global_boolean_ctor));
-			s_global->set_member("Color", as_value(as_global_color_ctor));
-			s_global->set_member("Date", as_value(as_global_date_ctor));
+			s_global->set_member("XMLSocket", as_global_xmlsock_ctor);
+			s_global->set_member("MovieClipLoader", as_global_mcloader_ctor);
+			s_global->set_member("String", string_ctor);
+			s_global->set_member("Number", as_global_number_ctor);
+			s_global->set_member("Boolean", as_global_boolean_ctor);
+			s_global->set_member("Color", as_global_color_ctor);
+			s_global->set_member("Date", as_global_date_ctor);
 			s_global->set_member("Selection", selection_init());
 
 			// ASSetPropFlags
-			s_global->set_member("ASSetPropFlags", as_value(as_global_assetpropflags));
+			s_global->set_member("ASSetPropFlags", as_global_assetpropflags);
 
 			// for video
-			s_global->set_member("NetStream", as_value(as_global_netstream_ctor));
-			s_global->set_member("NetConnection", as_value(as_global_netconnection_ctor));
+			s_global->set_member("NetStream", as_global_netstream_ctor);
+			s_global->set_member("NetConnection", as_global_netconnection_ctor);
 
 			s_global->set_member("math", math_init());
 			s_global->set_member("Key", key_init());
@@ -616,11 +614,11 @@ namespace gameswf
 			s_global->set_member( "flash", flash_init());
 
 			// global builtins functions
-			s_global->set_member("setInterval",  as_value(as_global_setinterval));
-			s_global->set_member("clearInterval",  as_value(as_global_clearinterval));
-			s_global->set_member("getVersion",  as_value(as_global_get_version));
-			s_global->set_member("parseFloat",  as_value(as_global_parse_float));
-			s_global->set_member("isNaN",  as_value(as_global_isnan));
+			s_global->set_member("setInterval",  as_global_setinterval);
+			s_global->set_member("clearInterval",  as_global_clearinterval);
+			s_global->set_member("getVersion",  as_global_get_version);
+			s_global->set_member("parseFloat",  as_global_parse_float);
+			s_global->set_member("isNaN",  as_global_isnan);
 			s_global->set_member("/:$version",  "gameSWF");
 
 		}
@@ -2458,6 +2456,7 @@ namespace gameswf
 						}
 
 						// Skip the length of the actual function code.
+						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
 						i += 2;
 
 						// Skip the function body (don't interpret it now).

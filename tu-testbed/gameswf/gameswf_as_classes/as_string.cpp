@@ -390,19 +390,19 @@ namespace gameswf
 		}
 		
 		// TODO fill in the rest
-		str->set_member("toString", &string_to_string);
-		str->set_member("fromCharCode", &string_from_char_code);
-		str->set_member("charCodeAt", &string_char_code_at);
-		str->set_member("concat", &string_concat);
-		str->set_member("indexOf", &string_index_of);
-		str->set_member("lastIndexOf", &string_last_index_of);
-		str->set_member("slice", &string_slice);
-		str->set_member("split", &string_split);
-		str->set_member("substring", &string_substring);
-		str->set_member("substr", &string_substr);
-		str->set_member("toLowerCase", &string_to_lowercase);
-		str->set_member("toUpperCase", &string_to_uppercase);
-		str->set_member("charAt", &string_char_at);
+		str->set_member("toString", string_to_string);
+		str->set_member("fromCharCode", string_from_char_code);
+		str->set_member("charCodeAt", string_char_code_at);
+		str->set_member("concat", string_concat);
+		str->set_member("indexOf", string_index_of);
+		str->set_member("lastIndexOf", string_last_index_of);
+		str->set_member("slice", string_slice);
+		str->set_member("split", string_split);
+		str->set_member("substring", string_substring);
+		str->set_member("substr", string_substr);
+		str->set_member("toLowerCase", string_to_lowercase);
+		str->set_member("toUpperCase", string_to_uppercase);
+		str->set_member("charAt", string_char_at);
     
 		fn.result->set_as_object_interface(str.get_ptr());
 	}
