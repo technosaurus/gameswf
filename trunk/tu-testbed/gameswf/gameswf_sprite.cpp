@@ -53,25 +53,25 @@ namespace gameswf
 		}
 
 		s_sprite_builtins = new as_object;
-		s_sprite_builtins->set_member("play", &sprite_play);
-		s_sprite_builtins->set_member("stop", &sprite_stop);
-		s_sprite_builtins->set_member("gotoAndStop", &sprite_goto_and_stop);
-		s_sprite_builtins->set_member("gotoAndPlay", &sprite_goto_and_play);
-		s_sprite_builtins->set_member("nextFrame", &sprite_next_frame);
-		s_sprite_builtins->set_member("prevFrame", &sprite_prev_frame);
-		s_sprite_builtins->set_member("getBytesLoaded", &sprite_get_bytes_loaded);
-		s_sprite_builtins->set_member("getBytesTotal", &sprite_get_bytes_total);
-		s_sprite_builtins->set_member("swapDepths", &sprite_swap_depths);
-		s_sprite_builtins->set_member("duplicateMovieClip", &sprite_duplicate_movieclip);
-		s_sprite_builtins->set_member("getDepth", &sprite_get_depth);
-		s_sprite_builtins->set_member("createEmptyMovieClip", &sprite_create_empty_movieclip);
-		s_sprite_builtins->set_member("removeMovieClip", &sprite_remove_movieclip);
-		s_sprite_builtins->set_member("hitTest", &sprite_hit_test);
-		s_sprite_builtins->set_member("loadMovie", &sprite_loadmovie);
-		s_sprite_builtins->set_member("unloadMovie", &sprite_unloadmovie);
-		s_sprite_builtins->set_member("getNextHighestDepth", &sprite_getnexthighestdepth);
-		s_sprite_builtins->set_member("createTextField", &sprite_create_text_field);
-		s_sprite_builtins->set_member("attachMovie", &sprite_attach_movie);
+		s_sprite_builtins->set_member("play", sprite_play);
+		s_sprite_builtins->set_member("stop", sprite_stop);
+		s_sprite_builtins->set_member("gotoAndStop", sprite_goto_and_stop);
+		s_sprite_builtins->set_member("gotoAndPlay", sprite_goto_and_play);
+		s_sprite_builtins->set_member("nextFrame", sprite_next_frame);
+		s_sprite_builtins->set_member("prevFrame", sprite_prev_frame);
+		s_sprite_builtins->set_member("getBytesLoaded", sprite_get_bytes_loaded);
+		s_sprite_builtins->set_member("getBytesTotal", sprite_get_bytes_total);
+		s_sprite_builtins->set_member("swapDepths", sprite_swap_depths);
+		s_sprite_builtins->set_member("duplicateMovieClip", sprite_duplicate_movieclip);
+		s_sprite_builtins->set_member("getDepth", sprite_get_depth);
+		s_sprite_builtins->set_member("createEmptyMovieClip", sprite_create_empty_movieclip);
+		s_sprite_builtins->set_member("removeMovieClip", sprite_remove_movieclip);
+		s_sprite_builtins->set_member("hitTest", sprite_hit_test);
+		s_sprite_builtins->set_member("loadMovie", sprite_loadmovie);
+		s_sprite_builtins->set_member("unloadMovie", sprite_unloadmovie);
+		s_sprite_builtins->set_member("getNextHighestDepth", sprite_getnexthighestdepth);
+		s_sprite_builtins->set_member("createTextField", sprite_create_text_field);
+		s_sprite_builtins->set_member("attachMovie", sprite_attach_movie);
 
 		// drawing API
 		s_sprite_builtins->set_member("beginFill", sprite_begin_fill);
@@ -85,7 +85,7 @@ namespace gameswf
 
 		// gameSWF extension
 		// reset root FPS
-		s_sprite_builtins->set_member("setFPS", &sprite_set_fps);
+		s_sprite_builtins->set_member("setFPS", sprite_set_fps);
 
 		// @TODO
 		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
