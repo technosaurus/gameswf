@@ -85,10 +85,21 @@
 #error video & MP3 requires multi thread support
 #endif
 
-#ifdef _WIN32
-#	define exported_module __declspec(dllexport)
-#else
-#	define exported_module
-#endif // _WIN32
+// define TU_CONFIG_LINK_STATIC to 1 to link gameswf statically 
+#ifndef TU_CONFIG_LINK_STATIC
+#	define TU_CONFIG_LINK_STATIC 0
+#endif // TU_CONFIG_LINK_STATIC
+
+#ifndef exported_module
+#	ifdef _WIN32
+#		if TU_CONFIG_LINK_STATIC == 0
+#			define exported_module __declspec(dllexport)
+#		else
+#			define exported_module
+#		endif // TU_CONFIG_LINK_STATIC == 0
+#	else
+#		define exported_module
+#	endif // _WIN32
+#endif // exported_module
 
 #endif // TU_CONFIG_H
