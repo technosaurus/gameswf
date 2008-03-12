@@ -577,14 +577,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\base\ogl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\..\base\ogl.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\..\base\png_helper.cpp"
 				>
 			</File>

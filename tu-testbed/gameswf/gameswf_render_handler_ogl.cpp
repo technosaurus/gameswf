@@ -5,20 +5,50 @@
 
 // A gameswf::render_handler that uses SDL & OpenGL
 
+#include <SDL.h>  // for cursor handling & the scanning for extensions.
+#include <SDL_opengl.h>	// for opengl const
+
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_video_ogl.h"
 #include "base/image.h"
-#include "base/ogl.h"
 #include "base/utility.h"
 
 #include <string.h>	// for memset()
 
-#define SDL_CURSOR_HANDLING
+// Pointers to opengl extension functions.
+PFNGLACTIVETEXTUREARBPROC	glActiveTextureARB = 0;
+PFNGLCLIENTACTIVETEXTUREARBPROC	glClientActiveTextureARB = 0;
+PFNGLMULTITEXCOORD2FARBPROC	glMultiTexCoord2fARB = 0;
+PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB = 0;
 
+static GLint s_num_compressed_format = 0;
+void create_texture(int format, int w, int h, void* data, int level)
+{
+	int internal_format = format;
+	if (s_num_compressed_format > 0)
+	{
+		switch (format)
+		{
+		case GL_RGB :
+			internal_format = GL_COMPRESSED_RGB_ARB;
+			break;
+		case GL_RGBA :
+			internal_format = GL_COMPRESSED_RGBA_ARB;
+			break;
+		case GL_ALPHA :
+			internal_format = GL_COMPRESSED_ALPHA_ARB;
+			break;
+		case GL_LUMINANCE :
+			internal_format = GL_COMPRESSED_LUMINANCE_ARB;
+			break;
+		}
+	}
+	glTexImage2D(GL_TEXTURE_2D, level, internal_format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
+}
+
+#define SDL_CURSOR_HANDLING
 #ifdef SDL_CURSOR_HANDLING
-#include <SDL.h>  // for cursor handling
-#include <SDL_opengl.h>	// for opengl const
 
 // XPM
 static const char *s_hand_image[] = {
@@ -69,15 +99,15 @@ struct sdl_cursor_handler {
 	SDL_Cursor* m_system_cursor;
 	SDL_Cursor* m_active_cursor;
 
-	sdl_cursor_handler()
-		:
+	sdl_cursor_handler() :
 		m_inited(false),
 		m_system_cursor(NULL),
 		m_active_cursor(NULL)
 	{
 	}
 
-	void init() {
+	void init()
+	{
 		assert(!m_inited);
 		m_inited = true;
 		
@@ -146,7 +176,8 @@ struct sdl_cursor_handler {
 
 
 	void set_cursor(gameswf::render_handler::cursor_type cursor) {
-		if (!m_inited) {
+		if (!m_inited)
+		{
 			init();
 		}
 		
@@ -250,6 +281,17 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	~render_handler_ogl()
 	{
+	}
+
+	void open()
+	{
+		// Scan for extensions used by gameswf
+		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glActiveTextureARB");
+		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
+		glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
+		glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
+
+		glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS_ARB, &s_num_compressed_format);
 	}
 
 	void set_antialiased(bool enable)
@@ -1133,7 +1175,7 @@ void	generate_mipmaps(unsigned int internal_format, unsigned int input_format, i
 
 //		glTexImage2D(GL_TEXTURE_2D, level, internal_format, im->m_width, im->m_height, 0,
 //			     input_format, GL_UNSIGNED_BYTE, im->m_data);
-		ogl::create_texture(input_format, im->m_width, im->m_height, im->m_data, level);
+		create_texture(input_format, im->m_width, im->m_height, im->m_data, level);
 		level++;
 	}
 }
@@ -1259,7 +1301,7 @@ void	software_resample(
 	}
 
 //	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, dst_width, dst_height, 0, input_format, GL_UNSIGNED_BYTE, rescaled);
-	ogl::create_texture(input_format, dst_width, dst_height, rescaled);
+	create_texture(input_format, dst_width, dst_height, rescaled, 0);
 
 #if GENERATE_MIPMAPS
 	// Build mipmaps.
@@ -1321,7 +1363,7 @@ void bitmap_info_ogl::layout_alpha(int width, int height, Uint8* data)
 	#endif // not NDEBUG
 
 //	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
-	ogl::create_texture(GL_ALPHA, width, height, data);
+	create_texture(GL_ALPHA, width, height, data, 0);
 
 
 	// Build mips.
@@ -1330,7 +1372,7 @@ void bitmap_info_ogl::layout_alpha(int width, int height, Uint8* data)
 	{
 		render_handler_ogl::make_next_miplevel(&width, &height, data);
 //		glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
-		ogl::create_texture(GL_ALPHA, width, height, data, level);
+		create_texture(GL_ALPHA, width, height, data, level);
 		level++;
 	}
 }
@@ -1425,7 +1467,7 @@ void bitmap_info_ogl::layout_rgb(image::rgb* im)
 	{
 		// Use original image directly.
 //		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, im->m_data);
-		ogl::create_texture(GL_RGB, w, h, im->m_data);
+		create_texture(GL_RGB, w, h, im->m_data, 0);
 #if GENERATE_MIPMAPS
 		generate_mipmaps(GL_RGB, GL_RGB, 3, im);
 #endif // GENERATE_MIPMAPS
@@ -1509,7 +1551,7 @@ void bitmap_info_ogl::layout_rgba(image::rgba* im)
 	{
 		// Use original image directly.
 //		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
-		ogl::create_texture(GL_RGBA, w, h, im->m_data);
+		create_texture(GL_RGBA, w, h, im->m_data, 0);
 #if GENERATE_MIPMAPS
 		generate_mipmaps(GL_RGBA, GL_RGBA, 4, im);
 #endif // GENERATE_MIPMAPS

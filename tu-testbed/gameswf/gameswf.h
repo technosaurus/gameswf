@@ -1104,6 +1104,7 @@ namespace gameswf
 		};
 		virtual void set_cursor(cursor_type cursor) {}
 		virtual bool is_visible(const rect& bound) = 0;
+		virtual void open() = 0;
 	};
 
 	// Key events are global throughout gameswf.
