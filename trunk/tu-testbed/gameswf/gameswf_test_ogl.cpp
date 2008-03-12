@@ -9,11 +9,11 @@
 
 #include <SDL.h>
 #include <SDL_thread.h>
+#include <SDL_opengl.h>
 
 #include "gameswf/gameswf.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include "base/ogl.h"
 #include "base/utility.h"
 #include "base/container.h"
 #include "base/tu_file.h"
@@ -629,8 +629,7 @@ int	main(int argc, char *argv[])
 				exit(1);
 			}
 
-			ogl::open();
-
+			render->open();
 			render->set_antialiased(s_antialiased);
 
 			// Turn on alpha blending.

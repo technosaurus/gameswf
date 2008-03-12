@@ -1319,9 +1319,6 @@ namespace gameswf
 
 #ifdef DEBUG_DISPLAY_SHAPE_PATHS
 
-#include "base/ogl.h"
-
-
 	static void	point_normalize(point* p)
 	{
 		float	mag2 = p->m_x * p->m_x + p->m_y * p->m_y;

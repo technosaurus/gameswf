@@ -6,8 +6,8 @@
 #ifndef GAMESWF_VIDEO_OGL_H
 #define GAMESWF_VIDEO_OGL_H
 
+#include "base/tu_opengl_includes.h"
 #include "gameswf_video_base.h"
-#include "base/ogl.h"
 
 struct video_ogl : public gameswf::video_handler
 {
