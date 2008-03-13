@@ -99,22 +99,25 @@ namespace gameswf
 
 	as_object::as_object()
 	{
-		set_member("addProperty", as_object_addproperty);
-		set_member_flags("addProperty", as_prop_flags::DONT_ENUM);
-		set_member("hasOwnProperty", as_object_hasownproperty);
-		set_member_flags("hasOwnProperty", as_prop_flags::DONT_ENUM);
-		set_member("watch", as_object_watch);
-		set_member_flags("watch", as_prop_flags::DONT_ENUM);
-		set_member("unwatch", as_object_unwatch);
-		set_member_flags("unwatch", as_prop_flags::DONT_ENUM);
+		builtin_member("addProperty", as_object_addproperty, as_prop_flags::DONT_ENUM);
+		builtin_member("hasOwnProperty", as_object_hasownproperty, as_prop_flags::DONT_ENUM);
+		builtin_member("watch", as_object_watch, as_prop_flags::DONT_ENUM);
+		builtin_member("unwatch", as_object_unwatch, as_prop_flags::DONT_ENUM);
 
 		// for debugging
-		set_member("dump", as_object_dump);
-		set_member_flags("dump", as_prop_flags::DONT_ENUM);
+#ifdef _DEBUG
+		builtin_member("dump", as_object_dump, as_prop_flags::DONT_ENUM);
+#endif
 	}
 
 	as_object::~as_object()
 	{
+	}
+
+	// called from constructors only
+	void	as_object::builtin_member(const tu_stringi& name, const as_value& val, as_prop_flags flags)
+	{
+		m_members.set(name, as_member(val, flags));
 	}
 
 	bool	as_object::set_member(const tu_stringi& name, const as_value& new_val)

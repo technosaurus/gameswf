@@ -7,6 +7,7 @@
 
 #include "gameswf/gameswf_value.h"
 #include "gameswf/gameswf.h"
+#include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_action.h"
 #include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_function.h"

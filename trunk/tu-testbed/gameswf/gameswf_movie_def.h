@@ -11,6 +11,7 @@
 
 
 #include "gameswf/gameswf.h"
+#include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_mutex.h"
 #include "base/container.h"
 #include "base/utility.h"
@@ -237,13 +238,13 @@ namespace gameswf
 		tu_file*	m_zlib_in;
 		tu_file*	m_origin_in;
 		tu_thread* m_thread;
-		smart_ptr<movie_interface> m_instance;	// cached movie instance.
+		smart_ptr<movie_root> m_instance;	// cached movie instance.
 
 		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
 
-		movie_interface*	create_instance();
-		movie_interface*	create_root();
+		movie_root*	create_instance();
+		movie_root*	create_root();
 		void clear_instance();
 
 		float	get_frame_rate() const;

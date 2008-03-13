@@ -57,7 +57,7 @@ namespace gameswf
 	//
 	// Global, shared root state for a movie and all its characters.
 	//
-	struct movie_root : public movie_interface
+	struct movie_root : public ref_counted
 	{
 		smart_ptr<movie_def_impl>	m_def;
 		smart_ptr<character>	m_movie;
@@ -88,8 +88,8 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		void	set_root_movie(character* root_movie);
 
-		void	set_display_viewport(int x0, int y0, int w, int h);
-		void	notify_mouse_state(int x, int y, int buttons);
+		exported_module void	set_display_viewport(int x0, int y0, int w, int h);
+		exported_module void	notify_mouse_state(int x, int y, int buttons);
 		virtual void	get_mouse_state(int* x, int* y, int* buttons);
 		character*	get_root_movie();
 
@@ -103,19 +103,19 @@ namespace gameswf
 		virtual float	get_pixel_scale() const;
 
 		character*	get_character(int character_id);
-		void	set_background_color(const rgba& color);
-		void	set_background_alpha(float alpha);
+		exported_module void	set_background_color(const rgba& color);
+		exported_module void	set_background_alpha(float alpha);
 		float	get_background_alpha() const;
-		void	advance(float delta_time);
+		exported_module void	advance(float delta_time);
 
-		void	goto_frame(int target_frame_number);
+		exported_module void	goto_frame(int target_frame_number);
 		virtual bool	has_looped() const;
 
-		void	display();
+		exported_module void	display();
 
 		virtual bool	goto_labeled_frame(const char* label);
-		virtual void	set_play_state(play_state s);
-		virtual play_state	get_play_state() const;
+		virtual void	set_play_state(character::play_state s);
+		virtual character::play_state	get_play_state() const;
 		virtual void	set_variable(const char* path_to_var, const char* new_value);
 		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value);
 		virtual const char*	get_variable(const char* path_to_var) const;

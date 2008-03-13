@@ -21,6 +21,7 @@
 #include "net/tu_net_file.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
+#include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_freetype.h"
 //#include "gameswf/gameswf_player.h"
 
@@ -129,7 +130,7 @@ static tu_file*	file_opener(const char* url)
 }
 
 
-static void	fs_callback(gameswf::movie_interface* movie, const char* command, const char* args)
+static void	fs_callback(gameswf::character* movie, const char* command, const char* args)
 // For handling notification callbacks from ActionScript.
 {
 //	message_log("fs_callback: '");
@@ -505,7 +506,7 @@ int	main(int argc, char *argv[])
 			exit(1);
 		}
 
-		smart_ptr<gameswf::movie_interface>	m = md->create_instance();
+		smart_ptr<gameswf::movie_root>	m = md->create_instance();
 		if (m == NULL)
 		{
 			fprintf(stderr, "error: can't create movie instance\n");
@@ -744,13 +745,13 @@ int	main(int argc, char *argv[])
 							else if (ctrl && key == SDLK_p)
 							{
 								// Toggle paused state.
-								if (m->get_play_state() == gameswf::movie_interface::STOP)
+								if (m->get_play_state() == gameswf::character::STOP)
 								{
-									m->set_play_state(gameswf::movie_interface::PLAY);
+									m->set_play_state(gameswf::character::PLAY);
 								}
 								else
 								{
-									m->set_play_state(gameswf::movie_interface::STOP);
+									m->set_play_state(gameswf::character::STOP);
 								}
 							}
 							else if (ctrl && key == SDLK_i)

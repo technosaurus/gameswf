@@ -59,7 +59,7 @@ namespace gameswf
 	// character is a live, stateful instance of a character_def.
 	// It represents a single active element in a movie.
 	// internal interface
-	struct character : public movie_interface
+	struct character : public as_object
 	{
 
 		// Unique id of a gameswf resource
@@ -67,7 +67,7 @@ namespace gameswf
 		virtual bool is(int class_id)
 		{
 			if (m_class_id == class_id) return true;
-			else return movie_interface::is(class_id);
+			else return as_object::is(class_id);
 		}
 
 		int		m_id;
@@ -102,6 +102,12 @@ namespace gameswf
 		};
 
 		bool m_is_alive;
+
+		enum play_state
+		{
+			PLAY,
+			STOP
+		};
 
 		character(character* parent, int id);
 
@@ -249,7 +255,7 @@ namespace gameswf
 		virtual void	get_drag_state(drag_state* st) { assert(m_parent != 0); m_parent->get_drag_state(st); }
 		virtual void	set_drag_state(const drag_state& st) { assert(0); }
 		virtual void	stop_drag() { assert(0); }
-		virtual movie_interface*	get_root_interface() { return NULL; }
+//		virtual character*	get_root_interface() { return NULL; }
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
 
 		virtual void	set_background_color(const rgba& color) {}
@@ -381,7 +387,7 @@ namespace gameswf
 		virtual float	get_height();
 		virtual float	get_width();
 		virtual void get_bound(rect* bound);
-		virtual character_def* get_character_def() = 0;
+		virtual character_def* get_character_def() { assert(0); return 0; }
 
 		virtual character*	get_root_movie() { return m_parent->get_root_movie(); }
 
@@ -426,6 +432,14 @@ namespace gameswf
 
 		virtual bool	is_visible();
 
+		// External interface for the host to report key events.
+		virtual void	notify_key_event(key::code k, bool down) { assert(0); }
+
+		// Movie info
+		virtual int	get_movie_version() { return 0; }
+		virtual int	get_movie_width() { return 0; }
+		virtual int	get_movie_height() { return 0; }
+		virtual float	get_movie_fps() { return 0.0f; }
 	};
 
 }

@@ -44,8 +44,8 @@ namespace gameswf
 	struct swf_event;
 
 	// for extern movies
-	exported_module movie_interface*	get_current_root();
-	exported_module void set_current_root(movie_interface* m);
+	exported_module movie_root*	get_current_root();
+	exported_module void set_current_root(movie_root* m);
 	exported_module const char* get_workdir();
 	exported_module void set_workdir(const char* dir);
 

@@ -57,6 +57,7 @@ namespace gameswf
 		exported_module virtual ~as_object();
 		
 		exported_module virtual const char*	get_text_value() const { return NULL; }
+		exported_module void	builtin_member(const tu_stringi& name, const as_value& val, as_prop_flags flags);
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
 		exported_module virtual bool get_member(const tu_stringi& name, as_member* member) const;

@@ -450,8 +450,8 @@ namespace gameswf
 		}
 	}
 
-	void	movie_root::set_play_state(play_state s) { m_movie->set_play_state(s); }
-	movie_root::play_state	movie_root::get_play_state() const { return m_movie->get_play_state(); }
+	void	movie_root::set_play_state(character::play_state s) { m_movie->set_play_state(s); }
+	character::play_state	movie_root::get_play_state() const { return m_movie->get_play_state(); }
 
 	void	movie_root::set_variable(const char* path_to_var, const char* new_value)
 	{

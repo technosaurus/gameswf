@@ -54,13 +54,13 @@ namespace gameswf
 	void	sprite_play(const fn_call& fn)
 	{
 		sprite_instance* sprite = sprite_getptr(fn);
-		sprite->set_play_state(movie_interface::PLAY);
+		sprite->set_play_state(character::PLAY);
 	}
 
 	void	sprite_stop(const fn_call& fn)
 	{
 		sprite_instance* sprite = sprite_getptr(fn);
-		sprite->set_play_state(movie_interface::STOP);
+		sprite->set_play_state(character::STOP);
 	}
 
 	void	sprite_goto_and_play(const fn_call& fn)
@@ -73,7 +73,7 @@ namespace gameswf
 		}
 
 		sprite->goto_frame(fn.arg(0).to_tu_string());
-		sprite->set_play_state(movie_interface::PLAY);
+		sprite->set_play_state(character::PLAY);
 	}
 
 	void	sprite_goto_and_stop(const fn_call& fn)
@@ -86,7 +86,7 @@ namespace gameswf
 		}
 
 		sprite->goto_frame(fn.arg(0).to_tu_string());
-		sprite->set_play_state(movie_interface::STOP);
+		sprite->set_play_state(character::STOP);
 	}
 
 	void	sprite_next_frame(const fn_call& fn)
@@ -98,7 +98,7 @@ namespace gameswf
 		{
 			sprite->goto_frame(current_frame + 1);
 		}
-		sprite->set_play_state(movie_interface::STOP);
+		sprite->set_play_state(character::STOP);
 	}
 
 	void	sprite_prev_frame(const fn_call& fn)
@@ -109,7 +109,7 @@ namespace gameswf
 		{
 			sprite->goto_frame(current_frame - 1);
 		}
-		sprite->set_play_state(movie_interface::STOP);
+		sprite->set_play_state(character::STOP);
 	}
 
 	void	sprite_get_bytes_loaded(const fn_call& fn)

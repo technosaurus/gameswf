@@ -330,8 +330,7 @@ namespace gameswf
 		}
 
 		// Constructor
-		as_member(const as_value &value,const as_prop_flags flags=as_prop_flags())
-			:
+		as_member(const as_value &value,const as_prop_flags flags=as_prop_flags()) :
 			m_value(value),
 			m_flags(flags)
 		{

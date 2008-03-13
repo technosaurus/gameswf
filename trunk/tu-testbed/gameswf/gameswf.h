@@ -12,7 +12,7 @@
 
 
 #include <ctype.h>	// for poxy wchar_t
-//#include <stdarg.h>	// for va_list arg to movie_interface::call_method_args()
+//#include <stdarg.h>	// for va_list arg to character::call_method_args()
 #include <assert.h>
 #include "base/image.h"	// for delete m_suspended_image
 #include "base/container.h"	// for hash<...>
@@ -44,7 +44,7 @@ namespace gameswf
 	struct character;
 	struct execute_tag;
 	struct font;
-	struct movie_interface;
+	struct character;
 	struct render_handler;
 	struct rgba;
 	struct sound_handler;
@@ -62,7 +62,7 @@ namespace gameswf
 	struct as_as_function;
 	struct as_object_interface;
 
-	exported_module movie_interface* get_current_root();
+	exported_module movie_root* get_current_root();
 
 	//
 	// Log & error reporting control.
@@ -113,10 +113,10 @@ namespace gameswf
 	// a handler, which will be called when the embedded scripts
 	// call fscommand().
 	//
-	// The handler gets the movie_interface* that the script is
+	// The handler gets the character* that the script is
 	// embedded in, and the two string arguments passed by the
 	// script to fscommand().
-	typedef void (*fscommand_callback)(movie_interface* movie, const char* command, const char* arg);
+	typedef void (*fscommand_callback)(character* movie, const char* command, const char* arg);
 	exported_module void	register_fscommand_callback(fscommand_callback handler);
 
 	// Use this to control how finely curves are subdivided.  1.0
@@ -345,10 +345,10 @@ namespace gameswf
 		virtual int	get_frame_count() const = 0;
 		virtual float	get_frame_rate() const = 0;
 
-		// This calls add_ref() on the movie_interface internally.
-		// Call drop_ref() on the movie_interface when you're done with it.
+		// This calls add_ref() on the character internally.
+		// Call drop_ref() on the character when you're done with it.
 		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
-		virtual movie_interface*	create_instance() = 0;
+		virtual movie_root*	create_instance() = 0;
 		virtual void clear_instance() {};
 
 		virtual void	output_cached_data(tu_file* out, const cache_options& options) = 0;
@@ -533,7 +533,7 @@ namespace gameswf
 	// This is the client program's interface to an instance of a
 	// movie (i.e. an independent stateful live movie).
 	//
-	struct movie_interface : public as_object_interface
+/*	struct character : public as_object_interface
 	{
 		virtual movie_definition*	get_movie_definition() = 0;
 
@@ -653,7 +653,7 @@ namespace gameswf
 		virtual character*	get_root_movie() = 0;
 
 		// External interface for the host to report key events.
-		virtual void	notify_key_event(key::code k, bool down) { /*assert(0);*/ }
+		virtual void	notify_key_event(key::code k, bool down) { assert(0); }
 
 		// Movie info
 		virtual int	get_movie_version() { return 0; }
@@ -661,6 +661,7 @@ namespace gameswf
 		virtual int	get_movie_height() { return 0; }
 		virtual float	get_movie_fps() { return 0.0f; }
 	};
+*/
 
 	// Try to grab movie info from the header of the given .swf
 	// file.
@@ -1108,7 +1109,7 @@ namespace gameswf
 	};
 
 	// Key events are global throughout gameswf.
-	// @@ Maybe someday make these local to the movie_interface?
+	// @@ Maybe someday make these local to the character?
 	// Vitaly: I do not see the sense to send events inactive movie
 	// in multifile games
 //	void	notify_key_event(key::code k, bool down);

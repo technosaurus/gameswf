@@ -884,7 +884,7 @@ namespace gameswf
 		// is 'this' root ?
 		if (parent == NULL)
 		{
-			movie_interface* new_inst = md->create_instance();
+			movie_root* new_inst = md->create_instance();
 			character* ch = new_inst->get_root_movie();
 			set_current_root(new_inst);
 
