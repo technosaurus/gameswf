@@ -454,16 +454,16 @@ namespace gameswf
 
 
 	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
-	static weak_ptr<movie_interface> s_current_root;
+	static weak_ptr<movie_root> s_current_root;
 	static tu_string s_workdir;
 
-	movie_interface* get_current_root()
+	movie_root* get_current_root()
 	{
 		assert(s_current_root != NULL);
 		return s_current_root.get_ptr();
 	}
 
-	void set_current_root(movie_interface* m)
+	void set_current_root(movie_root* m)
 	{
 		assert(m != NULL);
 		s_current_root = m;
@@ -617,7 +617,7 @@ namespace gameswf
 		} save_stuff_instance;
 
 		// Need an instance.
-		gameswf::movie_interface*	m = movie_def->create_instance();
+		gameswf::movie_root*	m = movie_def->create_instance();
 		if (m == NULL)
 		{
 			log_error("error: precompute_cached_data can't create instance of movie\n");
@@ -652,12 +652,12 @@ namespace gameswf
 				break;
 			}
 
-			if (m->get_play_state() == gameswf::movie_interface::STOP)
+			if (m->get_play_state() == gameswf::character::STOP)
 			{
 				// Kick the movie.
 				//printf("kicking movie, kick ct = %d\n", kick_count);
 				m->goto_frame(last_frame + 1);
-				m->set_play_state(gameswf::movie_interface::PLAY);
+				m->set_play_state(gameswf::character::PLAY);
 				kick_count++;
 
 				if (kick_count > 10)
@@ -1937,10 +1937,10 @@ namespace gameswf
 //		m_instance = NULL;
 	}
 
-	movie_interface*	movie_def_impl::create_instance()
+	movie_root*	movie_def_impl::create_instance()
 	// Create a playable movie instance from a def.
 	{
-		movie_interface*	root = create_root();
+		movie_root*	root = create_root();
 
 		// create dlist
 		root->get_root_movie()->execute_frame_tags(0);		
@@ -1948,7 +1948,7 @@ namespace gameswf
 		return root;
 	}
 
-	movie_interface*	movie_def_impl::create_root()
+	movie_root*	movie_def_impl::create_root()
 	{
 
 		// Is the movie instance already in the library?

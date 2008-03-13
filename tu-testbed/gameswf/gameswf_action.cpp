@@ -502,7 +502,7 @@ namespace gameswf
 	// Constructor for ActionScript class XMLSocket
 	{
 		sprite_definition* empty_sprite_def = new sprite_definition(NULL);
-		character* ch = new sprite_instance(empty_sprite_def, get_current_root()->get_root(), get_current_root()->get_root_movie(), 0);
+		character* ch = new sprite_instance(empty_sprite_def, get_current_root(), get_current_root()->get_root_movie(), 0);
 		fn.result->set_as_object_interface(ch);
 	}
 
@@ -2268,7 +2268,7 @@ namespace gameswf
 						if (s_fscommand_handler)
 						{
 							// Call into the app.
-							(*s_fscommand_handler)(env->get_target()->get_root_interface(), url + 10, target);
+							(*s_fscommand_handler)(env->get_target()->get_root_movie(), url + 10, target);
 						}
 					}
 					else
@@ -2669,7 +2669,7 @@ namespace gameswf
 						if (s_fscommand_handler)
 						{
 							// Call into the app.
-							(*s_fscommand_handler)(env->get_target()->get_root_interface(), url + 10, target);
+							(*s_fscommand_handler)(env->get_target()->get_root_movie(), url + 10, target);
 						}
 					}
 					else
