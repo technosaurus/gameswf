@@ -17,10 +17,32 @@
 #include <string.h>	// for memset()
 
 // Pointers to opengl extension functions.
+PFNGLACTIVETEXTUREPROC glActiveTexture = 0;
 PFNGLACTIVETEXTUREARBPROC	glActiveTextureARB = 0;
 PFNGLCLIENTACTIVETEXTUREARBPROC	glClientActiveTextureARB = 0;
 PFNGLMULTITEXCOORD2FARBPROC	glMultiTexCoord2fARB = 0;
 PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB = 0;
+PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = 0;
+PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = 0;
+PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = 0;
+PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = 0;
+PFNGLDELETEPROGRAMPROC glDeleteProgram = 0;
+PFNGLDELETESHADERPROC glDeleteShader = 0;
+PFNGLCREATESHADERPROC glCreateShader = 0;
+PFNGLSHADERSOURCEPROC glShaderSource = 0;
+PFNGLCOMPILESHADERPROC glCompileShader = 0;
+PFNGLGETSHADERIVPROC glGetShaderiv = 0;
+PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = 0;
+PFNGLCREATEPROGRAMPROC glCreateProgram = 0;
+PFNGLATTACHSHADERPROC glAttachShader = 0;
+PFNGLLINKPROGRAMPROC glLinkProgram = 0;
+PFNGLGETPROGRAMIVPROC glGetProgramiv = 0;
+PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = 0;
+PFNGLVALIDATEPROGRAMPROC glValidateProgram = 0;
+PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = 0;
+PFNGLUNIFORM1FPROC glUniform1f = 0;
+PFNGLUNIFORM1IPROC glUniform1i = 0;
+PFNGLUSEPROGRAMPROC glUseProgram = 0;
 
 static GLint s_num_compressed_format = 0;
 void create_texture(int format, int w, int h, void* data, int level)
@@ -46,6 +68,30 @@ void create_texture(int format, int w, int h, void* data, int level)
 	}
 	glTexImage2D(GL_TEXTURE_2D, level, internal_format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
 }
+
+// gluPerspective ==> glFrustum
+void gluPerspective(float fov, float aspect, float znear, float zfar)
+{
+	//	gluPerspective(fov, aspect, nnear, ffar) ==> glFrustum(left, right, bottom, top, nnear, ffar);
+	//	fov * 0.5 = arctan ((top-bottom)*0.5 / near)
+	//	Since bottom == -top for the symmetrical projection that gluPerspective() produces, then:
+	//	top = tan(fov * 0.5) * near
+	//	bottom = -top
+	//	Note: fov must be in radians for the above formulae to work with the C math library. 
+	//	If you have comnputer your fov in degrees (as in the call to gluPerspective()), 
+	//	then calculate top as follows:
+	//	top = tan(fov*3.14159/360.0) * near
+	//	The left and right parameters are simply functions of the top, bottom, and aspect:
+	//	left = aspect * bottom
+	//	right = aspect * top
+
+	float top = tan(fov * 3.141592f / 360.0f) * znear;
+	float bottom = - top;
+	float left = aspect* bottom;
+	float right = aspect * top;
+	glFrustum(left, right, bottom, top, znear, zfar);
+}
+
 
 #define SDL_CURSOR_HANDLING
 #ifdef SDL_CURSOR_HANDLING
@@ -235,11 +281,7 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 	bitmap_info_ogl(int width, int height, Uint8* data);
 	bitmap_info_ogl(image::rgb* im);
 	bitmap_info_ogl(image::rgba* im);
-	virtual void layout_image(image::image_base* im);
-
-	void layout_alpha(int width, int height, Uint8* data);
-	void layout_rgb(image::rgb* im);
-	void layout_rgba(image::rgba* im);
+	virtual void layout();
 
 	// misc
 	int p2(int n);
@@ -286,10 +328,32 @@ struct render_handler_ogl : public gameswf::render_handler
 	void open()
 	{
 		// Scan for extensions used by gameswf
+		glActiveTexture =  (PFNGLACTIVETEXTUREPROC) SDL_GL_GetProcAddress("glActiveTexture");
 		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glActiveTextureARB");
 		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
 		glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
 		glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
+		glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC) SDL_GL_GetProcAddress("glGenFramebuffersEXT");
+		glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC) SDL_GL_GetProcAddress("glBindFramebufferEXT");
+		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) SDL_GL_GetProcAddress("glFramebufferTexture2DEXT");
+		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) SDL_GL_GetProcAddress("glCheckFramebufferStatusEXT");
+		glDeleteProgram = (PFNGLDELETEPROGRAMPROC) SDL_GL_GetProcAddress("glDeleteProgram");
+		glDeleteShader = (PFNGLDELETESHADERPROC) SDL_GL_GetProcAddress("glDeleteShader");
+		glCreateShader = (PFNGLCREATESHADERPROC) SDL_GL_GetProcAddress("glCreateShader");
+		glShaderSource = (PFNGLSHADERSOURCEPROC) SDL_GL_GetProcAddress("glShaderSource");
+		glCompileShader = (PFNGLCOMPILESHADERPROC) SDL_GL_GetProcAddress("glCompileShader");
+		glGetShaderiv = (PFNGLGETSHADERIVPROC) SDL_GL_GetProcAddress("glGetShaderiv");
+		glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC) SDL_GL_GetProcAddress("glGetShaderInfoLog");
+		glCreateProgram = (PFNGLCREATEPROGRAMPROC) SDL_GL_GetProcAddress("glCreateProgram");
+		glAttachShader = (PFNGLATTACHSHADERPROC) SDL_GL_GetProcAddress("glAttachShader");
+		glLinkProgram = (PFNGLLINKPROGRAMPROC) SDL_GL_GetProcAddress("glLinkProgram");
+		glGetProgramiv = (PFNGLGETPROGRAMIVPROC) SDL_GL_GetProcAddress("glGetProgramiv");
+		glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC) SDL_GL_GetProcAddress("glGetProgramInfoLog");
+		glValidateProgram = (PFNGLVALIDATEPROGRAMPROC) SDL_GL_GetProcAddress("glValidateProgram");
+		glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) SDL_GL_GetProcAddress("glGetUniformLocation");
+		glUniform1f = (PFNGLUNIFORM1FPROC) SDL_GL_GetProcAddress("glUniform1f");
+		glUniform1i = (PFNGLUNIFORM1IPROC) SDL_GL_GetProcAddress("glUniform1i");
+		glUseProgram = (PFNGLUSEPROGRAMPROC) SDL_GL_GetProcAddress("glUseProgram");
 
 		glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS_ARB, &s_num_compressed_format);
 	}
@@ -424,9 +488,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 					if (m_bitmap_info->m_texture_id == 0 && m_bitmap_info->m_suspended_image != NULL)
 					{
-						m_bitmap_info->layout_image(m_bitmap_info->m_suspended_image);
-						delete m_bitmap_info->m_suspended_image;
-						m_bitmap_info->m_suspended_image = NULL;
+						m_bitmap_info->layout();
 					}
 
 					glBindTexture(GL_TEXTURE_2D, m_bitmap_info->m_texture_id);
@@ -992,9 +1054,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		if (bi->m_texture_id == 0 && bi->m_suspended_image != NULL)
 		{
-			bi->layout_image(bi->m_suspended_image);
-			delete bi->m_suspended_image;
-			bi->m_suspended_image = NULL;
+			bi->layout();
 		}
 
 		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
@@ -1331,53 +1391,6 @@ bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* data)
 	memcpy(m_suspended_image->m_data, data, m_suspended_image->m_pitch * m_suspended_image->m_height);
 }
 
-void bitmap_info_ogl::layout_alpha(int width, int height, Uint8* data)
-// Initialize this bitmap_info to an alpha image
-// containing the specified data (1 byte per texel).
-//
-// !! Munges *data in order to create mipmaps !!
-{
-
-	m_texture_id = 0;
-	
-	// Create the texture.
-
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, (GLuint*)&m_texture_id);
-	glBindTexture(GL_TEXTURE_2D, m_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-	m_original_width = width;
-	m_original_height = height;
-
-	#ifndef NDEBUG
-	// You must use power-of-two dimensions!!
-	int	w = 1; while (w < width) { w <<= 1; }
-	int	h = 1; while (h < height) { h <<= 1; }
-	assert(w == width);
-	assert(h == height);
-	#endif // not NDEBUG
-
-//	glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
-	create_texture(GL_ALPHA, width, height, data, 0);
-
-
-	// Build mips.
-	int	level = 1;
-	while (width > 1 || height > 1)
-	{
-		render_handler_ogl::make_next_miplevel(&width, &height, data);
-//		glTexImage2D(GL_TEXTURE_2D, level, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
-		create_texture(GL_ALPHA, width, height, data, level);
-		level++;
-	}
-}
-
-
 bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
 {
 	assert(im);
@@ -1398,82 +1411,6 @@ int bitmap_info_ogl::p2(int n)
 	return p;
 }
 
-void bitmap_info_ogl::layout_rgb(image::rgb* im)
-// NOTE: This function destroys im's data in the process of making mipmaps.
-{
-	assert(im);
-
-	// Create the texture.
-
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, (GLuint*)&m_texture_id);
-	glBindTexture(GL_TEXTURE_2D, m_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-#if GENERATE_MIPMAPS
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-#else
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-#endif
-
-	m_original_width = im->m_width;
-	m_original_height = im->m_height;
-
-	int	w = p2(im->m_width);
-	int	h = p2(im->m_height);
-	if (w != im->m_width || h != im->m_height)
-	{
-#if (RESAMPLE_METHOD == 1)
-		int	viewport_dim[2] = { 0, 0 };
-		glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &viewport_dim[0]);
-		if (w > viewport_dim[0]
-		    || h > viewport_dim[1]
-		    || im->m_width * 3 != im->m_pitch)
-		{
-			// Can't use hardware resample.  Either frame
-			// buffer isn't big enough to fit the source
-			// texture, or the source data isn't padded
-			// quite right.
-			software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
-		}
-		else
-		{
-			hardware_resample(3, im->m_width, im->m_height, im->m_data, w, h);
-		}
-#elif (RESAMPLE_METHOD == 2)
-		{
-			// Faster/simpler software bilinear rescale.
-			software_resample(3, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
-		}
-#else
-		{
-			// Fancy but slow software resampling.
-			image::rgb*	rescaled = image::create_rgb(w, h);
-			image::resample(rescaled, 0, 0, w - 1, h - 1,
-					im, 0, 0, (float) im->m_width, (float) im->m_height);
-
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, rescaled->m_data);
-#if GENERATE_MIPMAPS
-			generate_mipmaps(GL_RGB, GL_RGB, 3, rescaled);
-#endif // GENERATE_MIPMAPS
-
-			delete rescaled;
-		}
-#endif
-	}
-	else
-	{
-		// Use original image directly.
-//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, im->m_data);
-		create_texture(GL_RGB, w, h, im->m_data, 0);
-#if GENERATE_MIPMAPS
-		generate_mipmaps(GL_RGB, GL_RGB, 3, im);
-#endif // GENERATE_MIPMAPS
-	}
-}
-
 bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 {
 	assert(im);
@@ -1481,100 +1418,79 @@ bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
 	memcpy(m_suspended_image->m_data, im->m_data, im->m_pitch * im->m_height);
 }
 
-void bitmap_info_ogl::layout_rgba(image::rgba* im)
-// Version of the constructor that takes an image with alpha.
-// NOTE: This function destroys im's data in the process of making mipmaps.
+// layout image to opengl texture memory
+void bitmap_info_ogl::layout()
 {
-	assert(im);
+	assert(m_suspended_image);
 
 	// Create the texture.
-
 	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, (GLuint*)&m_texture_id);
+	glGenTextures(1, (GLuint*) &m_texture_id);
 	glBindTexture(GL_TEXTURE_2D, m_texture_id);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-#if GENERATE_MIPMAPS
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-#else
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-#endif
 
-	m_original_width = im->m_width;
-	m_original_height = im->m_height;
+	m_original_width = m_suspended_image->m_width;
+	m_original_height = m_suspended_image->m_height;
 
-	int	w = p2(im->m_width);
-	int	h = p2(im->m_height);
-	if (w != im->m_width || h != im->m_height)
-	{
-#if (RESAMPLE_METHOD == 1)
-		int	viewport_dim[2] = { 0, 0 };
-		glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &viewport_dim[0]);
-		if (w > viewport_dim[0]
-		    || h > viewport_dim[1]
-		    || im->m_width * 4 != im->m_pitch)
-		{
-			// Can't use hardware resample.  Either frame
-			// buffer isn't big enough to fit the source
-			// texture, or the source data isn't padded
-			// quite right.
-			software_resample(4, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
-		}
-		else
-		{
-			hardware_resample(4, im->m_width, im->m_height, im->m_data, w, h);
-		}
-#elif (RESAMPLE_METHOD == 2)
-		{
-			// Faster/simpler software bilinear rescale.
-			software_resample(4, im->m_width, im->m_height, im->m_pitch, im->m_data, w, h);
-		}
-#else
-		{
-			// Fancy but slow software resampling.
-			image::rgba*	rescaled = image::create_rgba(w, h);
-			image::resample(rescaled, 0, 0, w - 1, h - 1,
-					im, 0, 0, (float) im->m_width, (float) im->m_height);
+	int bpp = 4;
+	int format = GL_RGBA;
 
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, rescaled->m_data);
-#if GENERATE_MIPMAPS
-			generate_mipmaps(GL_RGBA, GL_RGBA, 4, rescaled);
-#endif // GENERATE_MIPMAPS
-
-			delete rescaled;
-		}
-#endif
-	}
-	else
-	{
-		// Use original image directly.
-//		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, im->m_data);
-		create_texture(GL_RGBA, w, h, im->m_data, 0);
-#if GENERATE_MIPMAPS
-		generate_mipmaps(GL_RGBA, GL_RGBA, 4, im);
-#endif // GENERATE_MIPMAPS
-	}
-}
-
-void bitmap_info_ogl::layout_image(image::image_base* im)
-{
-	assert(im);
-	switch (im->m_type)
+	switch (m_suspended_image->m_type)
 	{
 		case image::image_base::RGB:
-			layout_rgb((image::rgb*) im);
-			break;
+		{
+			bpp = 3;
+			format = GL_RGB;
+		}
+
 		case image::image_base::RGBA:
-			layout_rgba((image::rgba*) im);
+		{
+			int	w = p2(m_suspended_image->m_width);
+			int	h = p2(m_suspended_image->m_height);
+			if (w != m_suspended_image->m_width || h != m_suspended_image->m_height)
+			{
+				// Faster/simpler software bilinear rescale.
+				software_resample(bpp, m_suspended_image->m_width, m_suspended_image->m_height,
+					m_suspended_image->m_pitch, m_suspended_image->m_data, w, h);
+			}
+			else
+			{
+				// Use original image directly.
+				create_texture(format, w, h, m_suspended_image->m_data, 0);
+			}
 			break;
+		}
+
 		case image::image_base::ALPHA:
-			layout_alpha(im->m_width, im->m_height, im->m_data);
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+			int	w = m_suspended_image->m_width;
+			int	h = m_suspended_image->m_height;
+			create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, 0);
+
+			// Build mips.
+			int	level = 1;
+			while (w > 1 || h > 1)
+			{
+				render_handler_ogl::make_next_miplevel(&w, &h, m_suspended_image->m_data);
+				create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, level);
+				level++;
+			}
+
 			break;
+		}
+
 		default:
 			assert(0);
 	}
+
+	delete m_suspended_image;
+	m_suspended_image = NULL;
 }
 
 gameswf::render_handler*	gameswf::create_render_handler_ogl()

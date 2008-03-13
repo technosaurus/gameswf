@@ -993,7 +993,7 @@ namespace gameswf
 		int		m_original_width;	// nuke?
 		int		m_original_height;	// nuke?
 
-		virtual void layout_image(image::image_base* im) { };
+		virtual void layout() {};
 		image::image_base* m_suspended_image;
 		
 		bitmap_info()
