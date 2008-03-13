@@ -37,8 +37,7 @@ namespace gameswf
 		bool	m_has_x_offset;
 		bool	m_has_y_offset;
 
-		text_style()
-			:
+		text_style() :
 			m_font_id(-1),
 			m_font(NULL),
 			m_x_offset(0),
@@ -231,7 +230,6 @@ namespace gameswf
 		float	m_right_margin;
 		float	m_indent;
 		float	m_leading;
-		stringi_hash<as_value>	m_variables;
 		rgba m_background_color;
 
 		edit_text_character(character* parent, edit_text_character_def* def, int id);

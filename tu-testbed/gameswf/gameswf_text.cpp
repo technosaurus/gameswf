@@ -1032,18 +1032,11 @@ namespace gameswf
 	bool	edit_text_character::set_member(const tu_stringi& name, const as_value& val)
 	// We have a "text" member.
 	{
-		// first try standart properties
-		if (character::set_member(name, val))
-		{
-			return true;
-		}
-
+		// first try text field properties
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
 			default:
-				// TextField can serve as container 
-				m_variables[name] = val;
 				break;
 
 			case M_TEXT:
@@ -1106,24 +1099,18 @@ namespace gameswf
 				break;
 		}
 
-		return true;
+		return character::set_member(name, val);
 	}
 
 
 	bool	edit_text_character::get_member(const tu_stringi& name, as_value* val)
 	{
-		// first try standart properties
-		if (character::get_member(name, val))
-		{
-			return true;
-		}
-
+		// first try text field properties
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
 			default:
-				// TextField can serve as container 
-				return m_variables.get(name, val);
+				break;
 
 			case M_TEXT:
 				val->set_tu_string(m_text);
@@ -1166,7 +1153,7 @@ namespace gameswf
 
 		}
 
-		return true;
+		return character::get_member(name, val);
 	}
 
 	// @@ WIDTH_FUDGE is a total fudge to make it match the Flash player!  Maybe

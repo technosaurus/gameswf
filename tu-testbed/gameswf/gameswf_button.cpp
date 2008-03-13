@@ -500,30 +500,30 @@ namespace gameswf
 		// ActionScript overrides
 		//
 
-		virtual bool	set_member(const tu_stringi& name, const as_value& val)
-		{
-			// first try standart properties
-			if (character::set_member(name, val))
-			{
-				return true;
-			}
+		//virtual bool	set_member(const tu_stringi& name, const as_value& val)
+		//{
+		//	// first try standart properties
+		//	if (character::set_member(name, val))
+		//	{
+		//		return true;
+		//	}
 
-			log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
-					  name.c_str(), val.to_string());
+		//	log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
+		//			  name.c_str(), val.to_string());
 
-			return false;
-		}
+		//	return false;
+		//}
 
-		virtual bool	get_member(const tu_stringi& name, as_value* val)
-		{
-			// first try standart properties
-			if (character::get_member(name, val))
-			{
-				return true;
-			}
+		//virtual bool	get_member(const tu_stringi& name, as_value* val)
+		//{
+		//	// first try standart properties
+		//	if (character::get_member(name, val))
+		//	{
+		//		return true;
+		//	}
 
-			return false;
-		}
+		//	return false;
+		//}
 
 		virtual void	get_bound(rect* bound)
 		{
