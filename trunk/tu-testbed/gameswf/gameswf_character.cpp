@@ -33,6 +33,7 @@ namespace gameswf
 	// return true, if we have the named member.
 	// Otherwise leave *val alone and return false.
 	{
+		// first try character members
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
@@ -241,11 +242,14 @@ namespace gameswf
 			}
 		}	// end switch
 
+		// FIXME
+//		return as_object::get_member(name, val);
 		return false;
 	}
 
 	bool	character::set_member(const tu_stringi& name, const as_value& val)
 	{
+		// first try chaharcter members
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
@@ -388,6 +392,8 @@ namespace gameswf
 			}
 		}	// end switch
 
+		//FIXME
+//		return as_object::set_member(name, val);
 		return false;
 	}
 
