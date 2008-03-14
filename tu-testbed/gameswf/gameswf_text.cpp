@@ -487,7 +487,7 @@ namespace gameswf
 		}
 
 		char*	name = in->read_string();
-		m_default_name = name;
+		m_var_name = name;
 		delete [] name;
 
 		if (has_text)
@@ -498,7 +498,7 @@ namespace gameswf
 		}
 
 		IF_VERBOSE_PARSE(log_msg("edit_text_char, varname = %s, text = %s\n",
-			m_default_name.c_str(), m_default_text.c_str()));
+			m_var_name.c_str(), m_default_text.c_str()));
 	}
 
 	void	edit_text_character_def::csm_textsetting(stream* in, int tag_type)
@@ -923,7 +923,7 @@ namespace gameswf
 
 	const char*	edit_text_character::get_text_name() const
 	{
-		return m_def->m_default_name.c_str(); 
+		return m_def->m_var_name.c_str(); 
 	}
 
 	void	edit_text_character::reset_bounding_box(float x, float y)
@@ -959,8 +959,10 @@ namespace gameswf
 	void	edit_text_character::set_text_value(const char* new_text)
 	// Set our text to the given string.
 	{
+		// set our text
 		set_text(new_text);
 
+		// set VAR
 		if (strlen(get_text_name()) > 0)
 		{
 			character* ch = get_parent();	// target, default is parent
@@ -980,6 +982,7 @@ namespace gameswf
 
 	const char*	edit_text_character::get_text_value()
 	{
+		// get text from VAR
 		if (strlen(get_text_name()) > 0)
 		{
 			character* ch = get_parent();	// target, default is parent
@@ -1491,7 +1494,10 @@ namespace gameswf
 		}
 
 		edit_text_character*	ch = new edit_text_character(parent, this, id);
-		ch->set_name(m_default_name.c_str());
+
+		//	m_var_name is not instance name !
+		//	ch->set_name(m_var_name.c_str());
+
 		return ch;
 	}
 

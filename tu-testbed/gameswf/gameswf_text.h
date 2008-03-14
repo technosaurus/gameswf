@@ -118,7 +118,7 @@ namespace gameswf
 	{
 		movie_definition_sub*	m_root_def;
 		rect			m_rect;
-		tu_string		m_default_name;
+		tu_string		m_var_name;
 		bool			m_word_wrap;
 		bool			m_multiline;
 		bool			m_password;	// show asterisks instead of actual characters
