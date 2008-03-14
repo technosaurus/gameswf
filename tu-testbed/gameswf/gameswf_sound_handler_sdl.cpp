@@ -211,7 +211,7 @@ namespace gameswf
 		m_mutex.unlock();
 	}
 
-	void	SDL_sound_handler::attach_aux_streamer(aux_streamer_ptr ptr, as_object_interface* netstream)
+	void	SDL_sound_handler::attach_aux_streamer(aux_streamer_ptr ptr, as_object* netstream)
 	{
 		assert(netstream);
 		assert(ptr);
@@ -224,7 +224,7 @@ namespace gameswf
 		m_mutex.unlock();
 	}
 
-	void SDL_sound_handler::detach_aux_streamer(as_object_interface* netstream)
+	void SDL_sound_handler::detach_aux_streamer(as_object* netstream)
 	{
 		m_mutex.lock();
 		m_aux_streamer.erase(netstream);
@@ -416,7 +416,7 @@ namespace gameswf
 		if (handler->m_aux_streamer.size() > 0)
 		{
 			Uint8* mix_buf = new Uint8[len];
-			for (hash< as_object_interface*, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it = handler->m_aux_streamer.begin();
+			for (hash< as_object*, gameswf::sound_handler::aux_streamer_ptr>::const_iterator it = handler->m_aux_streamer.begin();
 			     it != handler->m_aux_streamer.end();
 			     ++it)
 			{

@@ -39,8 +39,7 @@ namespace gameswf
 		return zero / zero;
 	}
 
-	as_value::as_value(as_object_interface* obj)
-		:
+	as_value::as_value(as_object* obj) :
 		m_type(OBJECT),
 		m_object_value(obj)
 	{
@@ -345,7 +344,7 @@ namespace gameswf
 	}
 
 	
-	as_object_interface*	as_value::to_object() const
+	as_object*	as_value::to_object() const
 	// Return value as an object.
 	{
 		if (m_type == OBJECT)
@@ -398,7 +397,7 @@ namespace gameswf
 		}
 	}
 
-	void	as_value::set_as_object_interface(as_object_interface* obj)
+	void	as_value::set_as_object(as_object* obj)
 	{
 		if (m_type != OBJECT || m_object_value != obj)
 		{
@@ -447,7 +446,7 @@ namespace gameswf
 			set_double(v.m_number_value);
 			break;
 		case OBJECT:
-			set_as_object_interface(v.m_object_value);
+			set_as_object(v.m_object_value);
 			break;
 		case C_FUNCTION:
 			set_as_c_function_ptr(v.m_c_function_value);
@@ -632,7 +631,7 @@ namespace gameswf
 		}
 	}
 
-	void	as_property::set(as_object_interface* target, const as_value& val)
+	void	as_property::set(as_object* target, const as_value& val)
 	{
 		assert(target);
 
@@ -649,7 +648,7 @@ namespace gameswf
 		}
 	}
 
-	void as_property::get(as_object_interface* target, as_value* val) const
+	void as_property::get(as_object* target, as_value* val) const
 	{
 		assert(target);
 

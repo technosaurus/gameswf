@@ -95,7 +95,7 @@ namespace gameswf
 			}
 		}
 
-		fn.result->set_as_object_interface(ao.get_ptr());
+		fn.result->set_as_object(ao.get_ptr());
 	}
 
 

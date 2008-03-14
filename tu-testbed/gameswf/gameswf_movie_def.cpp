@@ -189,7 +189,7 @@ namespace gameswf
 		return m_bitmap_list[i].get_ptr();
 	}
 
-	void	movie_def_impl::export_resource(const tu_string& symbol, as_object_interface* res)
+	void	movie_def_impl::export_resource(const tu_string& symbol, character_def* res)
 	// Expose one of our resources under the given symbol,
 	// for export.	Other movies can import it.
 	{
@@ -197,11 +197,11 @@ namespace gameswf
 		m_exports.set(symbol, res);
 	}
 
-	as_object_interface*	movie_def_impl::get_exported_resource(const tu_string& symbol)
+	character_def*	movie_def_impl::get_exported_resource(const tu_string& symbol)
 	// Get the named exported resource, if we expose it.
 	// Otherwise return NULL.
 	{
-		smart_ptr<as_object_interface>	res;
+		smart_ptr<character_def>	res;
 		m_exports.get(symbol, &res);
 		return res.get_ptr();
 	}
@@ -266,7 +266,7 @@ namespace gameswf
 			if (inf.m_source_url == source_url)
 			{
 				// Do the import.
-				as_object_interface* res = def->get_exported_resource(inf.m_symbol);
+				character_def* res = def->get_exported_resource(inf.m_symbol);
 				bool	 imported = true;
 
 				if (res == NULL)

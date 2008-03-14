@@ -96,17 +96,17 @@ namespace gameswf
 				as_object* info = new as_object();
 				info->set_member("bytesLoaded", (int) m->get_loaded_bytes());
 				info->set_member("bytesTotal", (int) m->get_file_bytes());
-				fn.result->set_as_object_interface(info);
+				fn.result->set_as_object(info);
 				return;
 			}
 		}
-		fn.result->set_as_object_interface(NULL);
+		fn.result->set_as_object(NULL);
 	}
 
 	void	as_global_mcloader_ctor(const fn_call& fn)
 	// Constructor for ActionScript class MovieClipLoader
 	{
-		fn.result->set_as_object_interface(new as_mcloader);
+		fn.result->set_as_object(new as_mcloader);
 	}
 
 	as_mcloader::as_mcloader()

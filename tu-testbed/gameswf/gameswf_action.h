@@ -26,7 +26,7 @@ namespace gameswf
 
 	exported_module const char*	call_method_parsed(
 		as_environment* env,
-		as_object_interface* this_ptr,
+		as_object* this_ptr,
 		const char* method_name,
 		const char* method_arg_fmt,
 		va_list args);
@@ -37,11 +37,11 @@ namespace gameswf
 
 	struct heap
 	{
-		hash<smart_ptr<as_object_interface>, bool> m_heap;
+		hash<smart_ptr<as_object>, bool> m_heap;
 
 		void clear();
-		bool is_garbage(as_object_interface* obj);
-		void set(as_object_interface* obj, bool garbage);
+		bool is_garbage(as_object* obj);
+		void set(as_object* obj, bool garbage);
 		void set_as_garbage();
 		void clear_garbage();
 
@@ -53,7 +53,7 @@ namespace gameswf
 
 	// Dispatching methods from C++.
 	exported_module as_value	call_method(
-		const as_value& method,	as_environment* env, as_object_interface* this_ptr,
+		const as_value& method,	as_environment* env, as_object* this_ptr,
 		int nargs, int first_arg_bottom_index);
 
 	//
@@ -189,7 +189,7 @@ namespace gameswf
 		//action_buffer(const action_buffer& a) { assert(0); }
 
 		void	process_decl_dict(int start_pc, int stop_pc);
-		static void	enumerate(as_environment* env, as_object_interface* object);
+		static void	enumerate(as_environment* env, as_object* object);
 
 		// data:
 		shared_array<Uint8>	m_buffer;
@@ -296,6 +296,16 @@ namespace gameswf
 	// Return the standard enum, if the arg names a standard member.
 	// Returns M_INVALID_MEMBER if there's no match.
 	as_standard_member	get_standard_member(const tu_stringi& name);
+
+	enum builtin_object
+	{
+		BUILTIN_OBJECT_METHOD,
+		BUILTIN_SPRITE_METHOD,
+		// and so far
+		BUILTIN_COUNT
+	};
+
+	stringi_hash<as_c_function_ptr>* get_standard_method_map(builtin_object obj);
 
 }	// end namespace gameswf
 

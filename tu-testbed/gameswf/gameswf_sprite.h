@@ -29,9 +29,6 @@
 namespace gameswf
 {
 
-	inline as_object* get_sprite_builtins();
-	void	sprite_builtins_clear();
-
 	struct sprite_instance : public character
 	{
 		// Unique id of a gameswf resource
@@ -52,7 +49,6 @@ namespace gameswf
 		play_state	m_play_state;
 		int		m_current_frame;
 		bool		m_update_frame;
-		bool		m_accept_anim_moves;	// once we've been moved by ActionScript, don't accept moves from anim tags.
 		array<bool>	m_init_actions_executed;	// a bit-array class would be ideal for this
 
 		as_environment	m_as_environment;
@@ -121,8 +117,6 @@ namespace gameswf
 		}
 
 //		virtual bool	has_looped() const { return m_has_looped; }
-
-		virtual bool	get_accept_anim_moves() const { return m_accept_anim_moves; }
 
 		inline int	transition(int a, int b) const
 			// Combine the flags to avoid a conditional. It would be faster with a macro.
@@ -209,7 +203,7 @@ namespace gameswf
 		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value);
 		virtual const char*	get_variable(const char* path_to_var) const;
 
-		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+//		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual character*	get_relative_target(const tu_string& name);
 		virtual void	call_frame_actions(const as_value& frame_spec);
@@ -229,12 +223,11 @@ namespace gameswf
 
 		virtual character*	find_target(const tu_string& path) const;
 
-		virtual void clear_refs(hash<as_object_interface*, bool>* visited_objects, 
-			as_object_interface* this_ptr);
+		virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		virtual as_environment*	get_environment() { return &m_as_environment; }
 		virtual void dump();
 
-		virtual as_object_interface*	find_exported_resource(const tu_string& symbol);
+		virtual character_def*	find_exported_resource(const tu_string& symbol);
 
 		// gameSWF extension
 		void	sprite_instance::set_fps(float fps);

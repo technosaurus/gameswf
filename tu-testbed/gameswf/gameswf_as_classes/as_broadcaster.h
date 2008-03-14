@@ -31,8 +31,8 @@ namespace gameswf
 
 		as_listener();
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		void add(as_object_interface* listener);
-		void remove(as_object_interface* listener);
+		void add(as_object* listener);
+		void remove(as_object* listener);
 		void	broadcast(const fn_call& fn);
 		void	notify(const fn_call& fn);
 	

@@ -624,14 +624,15 @@ namespace gameswf
 		return depth;
 	}
 
-	void	display_list::clear_refs(hash<as_object_interface*, bool>* visited_objects,
-		as_object_interface* this_ptr)
+	void	display_list::clear_refs(hash<as_object*, bool>* visited_objects,	as_object* this_ptr)
 	{
 		for (int i = 0, n = get_character_count(); i < n; i++)
 		{
 			character*	ch = get_character(i);
-			assert(ch);
-			ch->clear_refs(visited_objects, this_ptr);
+			if (ch)
+			{
+				ch->clear_refs(visited_objects, this_ptr);
+			}
 		}
 	}
 

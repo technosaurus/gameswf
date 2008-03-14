@@ -97,16 +97,22 @@ namespace gameswf
 		}
 	}
 
+	// this stuff should be high optimized
+	// thus I can't use here set_member(...);	as_object::as_object()
 	as_object::as_object()
 	{
-		builtin_member("addProperty", as_object_addproperty, as_prop_flags::DONT_ENUM);
-		builtin_member("hasOwnProperty", as_object_hasownproperty, as_prop_flags::DONT_ENUM);
-		builtin_member("watch", as_object_watch, as_prop_flags::DONT_ENUM);
-		builtin_member("unwatch", as_object_unwatch, as_prop_flags::DONT_ENUM);
+		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_OBJECT_METHOD);
+		if (std->size() == 0)
+		{
+			std->add("addProperty", as_object_addproperty);
+			std->add("hasOwnProperty", as_object_hasownproperty);
+			std->add("watch", as_object_watch);
+			std->add("unwatch", as_object_unwatch);
 
 		// for debugging
 #ifdef _DEBUG
-		builtin_member("dump", as_object_dump, as_prop_flags::DONT_ENUM);
+			std->add("dump", as_object_dump);
+		}
 #endif
 	}
 
@@ -164,7 +170,7 @@ namespace gameswf
 		return true;
 	}
 
-	as_object_interface* as_object::get_proto() const
+	as_object* as_object::get_proto() const
 	{
 		return m_proto.get_ptr();
 	}
@@ -172,6 +178,16 @@ namespace gameswf
 	bool	as_object::get_member(const tu_stringi& name, as_value* val)
 	{
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
+		
+		// first try built-ins object methods
+		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_OBJECT_METHOD);
+		as_c_function_ptr builtin;
+		if (std->get(name, &builtin))
+		{
+			val->set_as_c_function_ptr(builtin);
+			return true;
+		}
+
 		as_member m;
 		if (m_members.get(name, &m))
 		{
@@ -179,7 +195,7 @@ namespace gameswf
 		}
 		else
 		{
-			as_object_interface* proto = get_proto();
+			as_object* proto = get_proto();
 			if (proto == NULL)
 			{
 				return false;
@@ -227,8 +243,7 @@ namespace gameswf
 		return false;
 	}
 
-	void	as_object::clear_refs(hash<as_object_interface*, bool>* visited_objects,
-		as_object_interface* this_ptr)
+	void	as_object::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
 		// Is it a reentrance ?
 		if (visited_objects->get(this, NULL))
@@ -241,7 +256,7 @@ namespace gameswf
 		for (stringi_hash<as_member>::iterator it = m_members.begin();
 			it != m_members.end(); ++it)
 		{
-			as_object_interface* obj = it->second.get_member_value().to_object();
+			as_object* obj = it->second.get_member_value().to_object();
 			if (obj)
 			{
 				if (obj == this_ptr)
@@ -338,7 +353,7 @@ namespace gameswf
 		return false;
 	}
 
-	void as_object::copy_to(as_object_interface* target)
+	void as_object::copy_to(as_object* target)
 	// Copy all members from 'this' to target
 	{
 		if (target)
@@ -378,7 +393,7 @@ namespace gameswf
 		printf("***\n");
 	}
 
-	as_object_interface*	as_object::find_target(const tu_string& path)
+	as_object*	as_object::find_target(const tu_string& path)
 	// Find the object referenced by the given path.
 	{
 		if (path.length() <= 0)
@@ -386,7 +401,7 @@ namespace gameswf
 			return NULL;
 		}
 
-		as_object_interface*	obj = this;
+		as_object*	obj = this;
 		
 		const char*	p = path.c_str();
 		tu_string	subpart;
@@ -431,7 +446,7 @@ namespace gameswf
 			for (stringi_hash<as_member>::iterator it = m_members.begin();
 				it != m_members.end(); ++it)
 			{
-				as_object_interface* obj = it->second.get_member_value().to_object();
+				as_object* obj = it->second.get_member_value().to_object();
 				if (obj)
 				{
 					obj->not_garbage();

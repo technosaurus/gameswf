@@ -14,7 +14,7 @@ namespace gameswf
 {
 	int get_sample_rate(int index);
 
-	struct sound_sample : public as_object_interface
+	struct sound_sample : public character_def
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_SOUND_SAMPLE };

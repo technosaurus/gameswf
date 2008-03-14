@@ -31,7 +31,7 @@ void	getDir(const fn_call& fn)
 		{
 			as_object* dir = new as_object();
 			si->get_dir(dir, fn.arg(0).to_string());
-			fn.result->set_as_object_interface(dir);
+			fn.result->set_as_object(dir);
 		}
 	}
 

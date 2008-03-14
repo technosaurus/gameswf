@@ -20,11 +20,11 @@ namespace gameswf
 
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object_interface> > listeners;
+		array< weak_ptr<as_object> > listeners;
 		listeners = m_listeners;
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object_interface> obj = listeners[i];
+			smart_ptr<as_object> obj = listeners[i];
 			if (obj != NULL)
 			{
 				obj->on_event(ev);
@@ -45,11 +45,11 @@ namespace gameswf
 
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object_interface> > listeners;
+		array< weak_ptr<as_object> > listeners;
 		listeners = m_listeners;
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object_interface> obj = listeners[i];
+			smart_ptr<as_object> obj = listeners[i];
 			if (obj != NULL)	// is listener destroyed ?
 			{
 				as_value function;
@@ -68,11 +68,11 @@ namespace gameswf
 	{
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object_interface> > listeners;
+		array< weak_ptr<as_object> > listeners;
 		listeners = m_listeners;
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object_interface> obj = listeners[i];
+			smart_ptr<as_object> obj = listeners[i];
 			if (obj != NULL)
 			{
 				obj->advance(delta_time);
@@ -81,7 +81,7 @@ namespace gameswf
 		clear_garbage();
 	}
 
-	void listener::add(as_object_interface* listener) 
+	void listener::add(as_object* listener) 
 	{
 		clear_garbage();
 
@@ -93,7 +93,7 @@ namespace gameswf
 		{
 			for (int i = 0, n = m_listeners.size(); i < n; i++)
 			{
-				smart_ptr<as_object_interface> obj = m_listeners[i];
+				smart_ptr<as_object> obj = m_listeners[i];
 				if (obj == listener)
 				{
 					return;
@@ -103,14 +103,14 @@ namespace gameswf
 		}
 	} 
 
-	void listener::remove(as_object_interface* listener) 
+	void listener::remove(as_object* listener) 
 	{
 		// to null out but to not delete since 'remove' may be called
 		// from notify and consequently the size of 'm_listeners' cannot be changed	
 
 		for (int i = 0, n = m_listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object_interface> obj = m_listeners[i];
+			smart_ptr<as_object> obj = m_listeners[i];
 			if (obj == listener)
 			{
 				m_listeners[i] = NULL;
@@ -123,7 +123,7 @@ namespace gameswf
 		int i = 0;
 		while (i < m_listeners.size())
 		{
-			smart_ptr<as_object_interface> obj = m_listeners[i];
+			smart_ptr<as_object> obj = m_listeners[i];
 			if (obj == NULL)	// listener was destroyed
 			{
 				// cleanup the garbage
@@ -134,7 +134,7 @@ namespace gameswf
 		}
 	}
 
-	as_object_interface*	listener::operator[](const tu_stringi& name) const
+	as_object*	listener::operator[](const tu_stringi& name) const
 	{
 		int index = atoi(name.c_str());
 		if (index >= 0 && index < m_listeners.size())

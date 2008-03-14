@@ -194,13 +194,13 @@ namespace gameswf
 
 			if (fn.nargs == 3) 
 			{ 
-				as_object_interface* init_object = fn.arg(2).to_object();
+				as_object* init_object = fn.arg(2).to_object();
 				if (init_object)
 				{
 					init_object->copy_to(ch);
 				}
 			} 
-			fn.result->set_as_object_interface(ch); 
+			fn.result->set_as_object(ch); 
 			return;
 		} 
 		log_error("duplicateMovieClip needs 2 or 3 args\n"); 
@@ -223,7 +223,7 @@ namespace gameswf
 		}
 
 		character* ch = sprite->add_empty_movieclip(fn.arg(0).to_string(), int(fn.arg(1).to_number()));
-		fn.result->set_as_object_interface(ch);
+		fn.result->set_as_object(ch);
 	}
 
 	// removeMovieClip() : Void 
@@ -273,14 +273,14 @@ namespace gameswf
 	void sprite_create_text_field(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
-		fn.result->set_as_object_interface(NULL);
+		fn.result->set_as_object(NULL);
 		if (fn.nargs != 6)
 		{
 			log_error("createTextField: the number of arguments must be 6\n");
 			return;
 		}
 
-		fn.result->set_as_object_interface(sprite->create_text_field(
+		fn.result->set_as_object(sprite->create_text_field(
 			fn.arg(0).to_string(),	// field name
 			(int) fn.arg(1).to_number(),	// depth
 			(int) fn.arg(2).to_number(),	// x
@@ -305,13 +305,13 @@ namespace gameswf
 
 			if (fn.nargs >= 4)
 			{
-				as_object_interface* init_object = fn.arg(3).to_object();
+				as_object* init_object = fn.arg(3).to_object();
 				if (init_object)
 				{
 					init_object->copy_to(ch);
 				}
 			}
-			fn.result->set_as_object_interface(ch);
+			fn.result->set_as_object(ch);
 			return;
 		}
 		log_error("attachMovie needs 3 or 4 args\n"); 

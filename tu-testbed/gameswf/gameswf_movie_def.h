@@ -111,7 +111,7 @@ namespace gameswf
 
 		virtual const array<execute_tag*>&	get_playlist(int frame_number) = 0;
 		virtual const array<execute_tag*>*	get_init_actions(int frame_number) = 0;
-		virtual as_object_interface*	get_exported_resource(const tu_string& symbol) = 0;
+		virtual character_def*	get_exported_resource(const tu_string& symbol) = 0;
 		virtual character_def*	get_character_def(int id) = 0;
 
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
@@ -129,7 +129,7 @@ namespace gameswf
 		virtual void	add_bitmap_character(int character_id, bitmap_character_def* ch) = 0;
 		virtual sound_sample*	get_sound_sample(int character_id) = 0;
 		virtual void	add_sound_sample(int character_id, sound_sample* sam) = 0;
-		virtual void	export_resource(const tu_string& symbol, as_object_interface* res) = 0;
+		virtual void	export_resource(const tu_string& symbol, character_def* res) = 0;
 		virtual void	add_import(const char* source_url, int id, const char* symbol_name) = 0;
 		virtual void	add_bitmap_info(bitmap_info* ch) = 0;
 
@@ -209,7 +209,7 @@ namespace gameswf
 		array<array<execute_tag*> >	   m_playlist;	// A list of movie control events for each frame.
 		array<array<execute_tag*> >	   m_init_action_list;	// Init actions for each frame.
 		stringi_hash<int>		   m_named_frames;	// 0-based frame #'s
-		stringi_hash<smart_ptr<as_object_interface> > m_exports;
+		stringi_hash<smart_ptr<character_def> > m_exports;
 
 		// Items we import.
 		array<import_info>	m_imports;
@@ -259,8 +259,8 @@ namespace gameswf
 		virtual void	add_bitmap_info(bitmap_info* bi);
 		virtual int	get_bitmap_info_count() const;
 		virtual bitmap_info*	get_bitmap_info(int i) const;
-		virtual void	export_resource(const tu_string& symbol, as_object_interface* res);
-		virtual as_object_interface*	get_exported_resource(const tu_string& symbol);
+		virtual void	export_resource(const tu_string& symbol, character_def* res);
+		virtual character_def*	get_exported_resource(const tu_string& symbol);
 		virtual void	add_import(const char* source_url, int id, const char* symbol);
 		bool	in_import_table(int character_id);
 		virtual void	visit_imported_movies(import_visitor* visitor);

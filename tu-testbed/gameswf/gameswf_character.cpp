@@ -39,6 +39,7 @@ namespace gameswf
 		{
 			default:
 				break;
+
 			case M_X:
 			{
 				const matrix&	m = get_matrix();
@@ -63,33 +64,6 @@ namespace gameswf
 				const matrix& m = get_matrix();	// @@ or get_world_matrix()?  Test this.
 				float yscale = m.get_y_scale();
 				val->set_double(yscale * 100);		// result in percent
-				return true;
-			}
-			case M_CURRENTFRAME:
-			{
-				int n = get_current_frame();
-				if (n >= 0)
-				{
-					val->set_int(n + 1);
-				}
-				else
-				{
-					val->set_undefined();
-				}
-				return true;
-			}
-			case M_TOTALFRAMES:
-			{
-				// number of frames.  Read only.
-				int n = get_frame_count();
-				if (n >= 0)
-				{
-					val->set_int(n);
-				}
-				else
-				{
-					val->set_undefined();
-				}
 				return true;
 			}
 			case M_ALPHA:
@@ -152,19 +126,6 @@ namespace gameswf
 				}
 
 				val->set_tu_string(s);
-				return true;
-			}
-			case M_FRAMESLOADED:
-			{
-				int n = get_loading_frame();
-				if (n >= 0)
-				{
-					val->set_int(n);
-				}
-				else
-				{
-					val->set_undefined();
-				}
 				return true;
 			}
 			case M_NAME:
@@ -237,24 +198,23 @@ namespace gameswf
 			}
 			case M_PARENT:
 			{
-				val->set_as_object_interface(static_cast<as_object_interface*>(m_parent.get_ptr()));
+				val->set_as_object(static_cast<as_object*>(m_parent.get_ptr()));
 				return true;
 			}
 		}	// end switch
 
-		// FIXME
-//		return as_object::get_member(name, val);
-		return false;
+		return as_object::get_member(name, val);
 	}
 
 	bool	character::set_member(const tu_stringi& name, const as_value& val)
 	{
-		// first try chaharcter members
+		// first try character members
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
 			default:
 				break;
+
 			case M_X:
 			{
 				matrix	m = get_matrix();
@@ -392,9 +352,7 @@ namespace gameswf
 			}
 		}	// end switch
 
-		//FIXME
-//		return as_object::set_member(name, val);
-		return false;
+		return as_object::set_member(name, val);
 	}
 
 	character*	character::find_target(const tu_string& path) const

@@ -87,7 +87,7 @@ namespace gameswf
 		}
 
 		// set 'this'
-		as_object_interface* this_ptr = env->m_target;
+		as_object* this_ptr = env->m_target;
 		if (fn.this_ptr)
 		{
 			this_ptr = fn.this_ptr;
@@ -96,7 +96,7 @@ namespace gameswf
 			{
 				if (obj->m_this_ptr != NULL)
 				{
-					this_ptr = cast_to<as_object_interface>(obj->m_this_ptr.get_ptr());
+					this_ptr = cast_to<as_object>(obj->m_this_ptr.get_ptr());
 				}
 			}
 		}

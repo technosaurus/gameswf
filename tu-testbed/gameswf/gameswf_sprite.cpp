@@ -22,81 +22,10 @@ namespace gameswf
 {
 
 	struct as_mcloader;
-
-	// For built-in sprite ActionScript methods.
-	static as_object*	s_sprite_builtins = NULL;	// shared among all sprites.
-	static void	sprite_builtins_init();
-	void	sprite_builtins_clear();
-
 	void	execute_actions(as_environment* env, const array<action_buffer*>& action_list);
 
-	as_object* get_sprite_builtins()
-	{
-		return s_sprite_builtins;
-	}
-
-	void	sprite_builtins_clear()
-	{
-		if (s_sprite_builtins)
-		{
-			delete s_sprite_builtins;
-			s_sprite_builtins = 0;
-		}
-	}
-
-
-	static void	sprite_builtins_init()
-	{
-		if (get_sprite_builtins())
-		{
-			return;
-		}
-
-		s_sprite_builtins = new as_object;
-		s_sprite_builtins->set_member("play", sprite_play);
-		s_sprite_builtins->set_member("stop", sprite_stop);
-		s_sprite_builtins->set_member("gotoAndStop", sprite_goto_and_stop);
-		s_sprite_builtins->set_member("gotoAndPlay", sprite_goto_and_play);
-		s_sprite_builtins->set_member("nextFrame", sprite_next_frame);
-		s_sprite_builtins->set_member("prevFrame", sprite_prev_frame);
-		s_sprite_builtins->set_member("getBytesLoaded", sprite_get_bytes_loaded);
-		s_sprite_builtins->set_member("getBytesTotal", sprite_get_bytes_total);
-		s_sprite_builtins->set_member("swapDepths", sprite_swap_depths);
-		s_sprite_builtins->set_member("duplicateMovieClip", sprite_duplicate_movieclip);
-		s_sprite_builtins->set_member("getDepth", sprite_get_depth);
-		s_sprite_builtins->set_member("createEmptyMovieClip", sprite_create_empty_movieclip);
-		s_sprite_builtins->set_member("removeMovieClip", sprite_remove_movieclip);
-		s_sprite_builtins->set_member("hitTest", sprite_hit_test);
-		s_sprite_builtins->set_member("loadMovie", sprite_loadmovie);
-		s_sprite_builtins->set_member("unloadMovie", sprite_unloadmovie);
-		s_sprite_builtins->set_member("getNextHighestDepth", sprite_getnexthighestdepth);
-		s_sprite_builtins->set_member("createTextField", sprite_create_text_field);
-		s_sprite_builtins->set_member("attachMovie", sprite_attach_movie);
-
-		// drawing API
-		s_sprite_builtins->set_member("beginFill", sprite_begin_fill);
-		s_sprite_builtins->set_member("endFill", sprite_end_fill);
-		s_sprite_builtins->set_member("lineTo", sprite_line_to);
-		s_sprite_builtins->set_member("moveTo", sprite_move_to);
-		s_sprite_builtins->set_member("curveTo", sprite_curve_to);
-		s_sprite_builtins->set_member("clear", sprite_clear);
-		s_sprite_builtins->set_member("lineStyle", sprite_line_style);
-
-
-		// gameSWF extension
-		// reset root FPS
-		s_sprite_builtins->set_member("setFPS", sprite_set_fps);
-
-		// @TODO
-		//		s_sprite_builtins->set_member("startDrag", &sprite_start_drag);
-		//		s_sprite_builtins->set_member("stopDrag", &sprite_stop_drag);
-		//		s_sprite_builtins->set_member("getURL", &sprite_get_url);
-
-
-
-	}
-
-
+	// this stuff should be high optimized
+	// thus I can't use here set_member(...);
 	sprite_instance::sprite_instance(movie_definition_sub* def,
 		movie_root* r, character* parent, int id)
 		:
@@ -106,7 +35,6 @@ namespace gameswf
 		m_play_state(PLAY),
 		m_current_frame(0),
 		m_update_frame(true),
-		m_accept_anim_moves(true),
 		m_mouse_state(UP),
 		m_enabled(true),
 		m_on_event_load_called(false)
@@ -116,8 +44,44 @@ namespace gameswf
 
 		//m_root->add_ref();	// @@ circular!
 		m_as_environment.set_target(this);
+		
+		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_SPRITE_METHOD);
+		if (std->size() == 0)
+		{
+			std->add("play", sprite_play);
+			std->add("stop", sprite_stop);
+			std->add("gotoAndStop", sprite_goto_and_stop);
+			std->add("gotoAndPlay", sprite_goto_and_play);
+			std->add("nextFrame", sprite_next_frame);
+			std->add("prevFrame", sprite_prev_frame);
+			std->add("getBytesLoaded", sprite_get_bytes_loaded);
+			std->add("getBytesTotal", sprite_get_bytes_total);
+			std->add("swapDepths", sprite_swap_depths);
+			std->add("duplicateMovieClip", sprite_duplicate_movieclip);
+			std->add("getDepth", sprite_get_depth);
+			std->add("createEmptyMovieClip", sprite_create_empty_movieclip);
+			std->add("removeMovieClip", sprite_remove_movieclip);
+			std->add("hitTest", sprite_hit_test);
+			std->add("loadMovie", sprite_loadmovie);
+			std->add("unloadMovie", sprite_unloadmovie);
+			std->add("getNextHighestDepth", sprite_getnexthighestdepth);
+			std->add("createTextField", sprite_create_text_field);
+			std->add("attachMovie", sprite_attach_movie);
 
-		sprite_builtins_init();
+			// drawing API
+			std->add("beginFill", sprite_begin_fill);
+			std->add("endFill", sprite_end_fill);
+			std->add("lineTo", sprite_line_to);
+			std->add("moveTo", sprite_move_to);
+			std->add("curveTo", sprite_curve_to);
+			std->add("clear", sprite_clear);
+			std->add("lineStyle", sprite_line_style);
+
+			// gameSWF extension
+			// reset root FPS
+			std->add("setFPS", sprite_set_fps);
+		}
+
 
 		// Initialize the flags for init action executed.
 		m_init_actions_executed.resize(m_def->get_frame_count());
@@ -130,6 +94,7 @@ namespace gameswf
 
 	sprite_instance::~sprite_instance()
 	{
+//		printf("delete sprite 0x%p\n", this);
 	}
 
 	bool sprite_instance::has_keypress_event()
@@ -430,26 +395,17 @@ namespace gameswf
 		m_on_event_load_called = true;
 
 		// 'this' and its variables is not garbage
+		not_garbage();
 		get_heap()->set(this, false);
-		for (stringi_hash<as_value>::const_iterator it = m_as_environment.m_variables.begin();
-			it != m_as_environment.m_variables.end(); ++it)
-		{
-			as_object_interface* obj = it->second.to_object();
-			if (obj)
-			{
-				obj->not_garbage();
-			}
-		}
 
 	}
-
 
 	void	sprite_instance::execute_frame_tags(int frame, bool state_only)
 	// Execute the tags associated with the specified frame.
 	// frame is 0-based
 	{
 		// Keep this (particularly m_as_environment) alive during execution!
-		smart_ptr<as_object_interface>	this_ptr(this);
+		smart_ptr<as_object>	this_ptr(this);
 
 		assert(frame >= 0);
 		assert(frame < m_def->get_frame_count());
@@ -516,7 +472,7 @@ namespace gameswf
 	// frame is 0-based
 	{
 		// Keep this (particularly m_as_environment) alive during execution!
-		smart_ptr<as_object_interface>	this_ptr(this);
+		smart_ptr<as_object>	this_ptr(this);
 
 		assert(frame >= 0);
 		assert(frame < m_def->get_frame_count());
@@ -573,7 +529,7 @@ namespace gameswf
 	// Take care of this frame's actions.
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object_interface>	this_ptr(this);
+		smart_ptr<as_object>	this_ptr(this);
 
 		execute_actions(&m_as_environment, m_action_list);
 		m_action_list.resize(0);
@@ -629,7 +585,6 @@ namespace gameswf
 			}
 			m_action_list.clear();
 			execute_frame_tags(target_frame_number, false);
-			//				m_display_list.update();
 		}
 		else if (target_frame_number > m_current_frame)
 		{
@@ -639,7 +594,6 @@ namespace gameswf
 			}
 			m_action_list.clear();
 			execute_frame_tags(target_frame_number, false);
-			//				m_display_list.update();
 		}
 
 		m_current_frame = target_frame_number;	    
@@ -1049,56 +1003,80 @@ namespace gameswf
 		return val.to_string();	// ack!
 	}
 
-	bool	sprite_instance::set_member(const tu_stringi& name, const as_value& val)
-	// Set the named member to the value.  Return true if we have
-	// that member; false otherwise.
-	{
-		// first try standart properties
-		if (character::set_member(name, val))
-		{
-			m_accept_anim_moves = false;
-			return true;
-		}
-
-		// set a variable within this environment.
-		return m_as_environment.set_member(name, val);
-	}
-
 	bool	sprite_instance::get_member(const tu_stringi& name, as_value* val)
 	// Set *val to the value of the named member and
 	// return true, if we have the named member.
 	// Otherwise leave *val alone and return false.
 	{
-		// first try standart properties
-		if (character::get_member(name, val))
+
+		// first try built-ins sprite methods
+		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_SPRITE_METHOD);
+		as_c_function_ptr builtin;
+		if (std->get(name, &builtin))
 		{
+			val->set_as_c_function_ptr(builtin);
 			return true;
 		}
 
-		// Try variables.
-		if (m_as_environment.get_member(name, val))
+		// then try built-ins sprite properties
+		as_standard_member	std_member = get_standard_member(name);
+		switch (std_member)
 		{
-			return true;
+			case M_CURRENTFRAME:
+			{
+				int n = get_current_frame();
+				if (n >= 0)
+				{
+					val->set_int(n + 1);
+				}
+				else
+				{
+					val->set_undefined();
+				}
+				return true;
+			}
+			case M_TOTALFRAMES:
+			{
+				// number of frames.  Read only.
+				int n = get_frame_count();
+				if (n >= 0)
+				{
+					val->set_int(n);
+				}
+				else
+				{
+					val->set_undefined();
+				}
+				return true;
+			}
+			case M_FRAMESLOADED:
+			{
+				int n = get_loading_frame();
+				if (n >= 0)
+				{
+					val->set_int(n);
+				}
+				else
+				{
+					val->set_undefined();
+				}
+				return true;
+			}
+			default:
+				break;
 		}
 
-		// Not a built-in property.  Check items on our
-		// display list.
+		// Not a built-in property.  Check items on our display list.
 		character*	ch = m_display_list.get_character_by_name_i(name);
 		if (ch)
 		{
 			// Found object.
-			val->set_as_object_interface(static_cast<as_object_interface*>(ch));
+			val->set_as_object(static_cast<as_object*>(ch));
 			return true;
 		}
 
-		// Try static builtin functions.
-		assert(s_sprite_builtins);
-		if (s_sprite_builtins->get_member(name, val))
-		{
-			return true;
-		}
-
-		return false;
+		// finally try standart character properties & movieclip variables
+		return character::get_member(name, val);
 	}
 
 	character*	sprite_instance::get_relative_target(const tu_string& name)
@@ -1333,7 +1311,7 @@ namespace gameswf
 	// Dispatch event handler(s), if any.
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object_interface>	this_ptr(this);
+		smart_ptr<as_object>	this_ptr(this);
 
 		bool called = false;
 
@@ -1386,7 +1364,7 @@ namespace gameswf
 	const char*	sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object_interface>	this_ptr(this);
+		smart_ptr<as_object>	this_ptr(this);
 
 		return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
 	}
@@ -1458,8 +1436,10 @@ namespace gameswf
 	void sprite_instance::enumerate(as_environment* env)
 	// retrieves variables & pushes them into env
 	{
-		stringi_hash<as_value>::const_iterator it = m_as_environment.m_variables.begin();
-		while (it != m_as_environment.m_variables.end())
+		assert(0);	//TODO
+//vv
+/*		stringi_hash<as_value>::const_iterator it = m_as_environment.m_variables->begin();
+		while (it != m_as_environment.m_variables->end())
 		{
 			const as_member member = (it.get_value());
 
@@ -1473,7 +1453,7 @@ namespace gameswf
 
 			++it;
 		}
-
+*/
 	}
 
 	character* sprite_instance::create_text_field(const char* name, int depth, int x, int y, int width, int height)
@@ -1499,18 +1479,28 @@ namespace gameswf
 		return m_as_environment.find_target(path);
 	}
 
-	void	sprite_instance::clear_refs(hash<as_object_interface*, bool>* visited_objects,
-		as_object_interface* this_ptr)
+	void	sprite_instance::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
-		// Is it a reentrance ?
-		if (visited_objects->get(this, NULL))
-		{
-			return;
-		}
-		visited_objects->set(this, true);
-
 		m_display_list.clear_refs(visited_objects, this_ptr);
-		m_as_environment.clear_refs(visited_objects, this_ptr);
+		as_object::clear_refs(visited_objects, this_ptr);
+
+		// clear self-refs from environment
+		for (int i = 0, n = m_as_environment.m_local_frames.size(); i < n; i++)
+		{
+			as_object* obj = m_as_environment.m_local_frames[i].m_value.to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					m_as_environment.m_local_frames[i].m_value.set_undefined();
+				}
+				else
+				{
+					obj->clear_refs(visited_objects, this_ptr);
+				}
+			}
+		}
+
 	}
 
 	sprite_instance* sprite_instance::attach_movie(const tu_string& id, 
@@ -1519,7 +1509,7 @@ namespace gameswf
 	{
 
 		// check the import.
-		as_object_interface* res = find_exported_resource(id);
+		character_def* res = find_exported_resource(id);
 		if (res == NULL)
 		{
 			IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported\n", id.c_str()));
@@ -1550,18 +1540,18 @@ namespace gameswf
 	void	sprite_instance::dump()
 	{
 		printf("\n*** sprite 0x%p ***\n", this);
-		m_as_environment.dump();
+
 		printf("*** displaylist\n");
 		m_display_list.dump();
 		printf("***\n");
 	}
 
-	as_object_interface*	sprite_instance::find_exported_resource(const tu_string& symbol)
+	character_def*	sprite_instance::find_exported_resource(const tu_string& symbol)
 	{
 		movie_definition_sub*	def = cast_to<movie_def_impl>(get_movie_definition());
 		if (def)
 		{
-			as_object_interface* res = def->get_exported_resource(symbol);
+			character_def* res = def->get_exported_resource(symbol);
 			if (res)
 			{
 				return res;

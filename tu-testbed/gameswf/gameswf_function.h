@@ -21,7 +21,7 @@ namespace gameswf
 	struct as_environment;
 	struct as_object;
 
-	struct as_as_function : public as_object_interface
+	struct as_as_function : public as_object
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_AS_FUNCTION };
@@ -55,7 +55,7 @@ namespace gameswf
 		// testcase:
 		// _root.myclip.onEnterFrame = _root.myfunc;
 		// myfunc should use _root environment
-		weak_ptr<as_object_interface>	m_target;
+		weak_ptr<as_object>	m_target;
 
 		as_as_function( const action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
 		~as_as_function();
@@ -73,7 +73,7 @@ namespace gameswf
 		}
 
 		void	set_length(int len) { assert(len >= 0); m_length = len; }
-		void set_target(as_object_interface* target)
+		void set_target(as_object* target)
 		{
 			m_target = target;
 		}

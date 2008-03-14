@@ -15,7 +15,7 @@ namespace gameswf
 	void	as_global_netconnection_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetConnection.
 	{
-		fn.result->set_as_object_interface(new as_netconnection);
+		fn.result->set_as_object(new as_netconnection);
 	}
 
 	void	as_netconnection_connect(const fn_call& fn)

@@ -60,7 +60,7 @@ namespace gameswf
 	struct video_stream_definition;
 	struct sprite_definition;
 	struct as_as_function;
-	struct as_object_interface;
+	struct as_object;
 
 	exported_module movie_root* get_current_root();
 
@@ -152,7 +152,6 @@ namespace gameswf
 	// Unique id of all gameswf resources
 	enum as_classes
 	{
-		AS_OBJECT_INTERFACE,
 		AS_OBJECT,
 		AS_CHARACTER,
 		AS_SPRITE,
@@ -200,7 +199,7 @@ namespace gameswf
 
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)
 	template <typename cast_class>
-	cast_class* cast_to(as_object_interface* object)
+	cast_class* cast_to(as_object* object)
 	{
 		if (object)
 		{
@@ -209,8 +208,20 @@ namespace gameswf
 		return 0;
 	}
 
+	template <typename cast_class>
+	cast_class* cast_to(character_def* def)
+	{
+		if (def)
+		{
+			return def->is(cast_class::m_class_id) ? static_cast<cast_class*>(def) : 0;
+		}
+		return 0;
+	}
+
+
 	// This is the base class for all ActionScript-able objects
 	// ("as_" stands for ActionScript).
+/*
 	struct as_object_interface : public ref_counted
 	{
 		// Unique id of a gameswf resource
@@ -271,7 +282,7 @@ namespace gameswf
 		virtual as_environment*	get_environment() { return 0; }
 		virtual void copy_to(as_object_interface* target) {}
 	};
-
+*/
 
 	// For caching precomputed stuff.  Generally of
 	// interest to gameswf_processor and programs like it.
@@ -293,7 +304,7 @@ namespace gameswf
 	// @@ This is not really a public interface.  It's here so it
 	// can be mixed into movie_definition, movie_definition_sub,
 	// and sprite_definition, without using multiple inheritance.
-	struct character_def : public as_object_interface
+	struct character_def : public ref_counted
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_CHARACTER_DEF };
@@ -774,7 +785,7 @@ namespace gameswf
 	struct sound_handler
 	{
 		// audio for video
-		typedef void (*aux_streamer_ptr)(as_object_interface* netstream, unsigned char* stream, int len);
+		typedef void (*aux_streamer_ptr)(as_object* netstream, unsigned char* stream, int len);
 
 		enum format_type
 		{
@@ -829,8 +840,8 @@ namespace gameswf
 		virtual void	delete_sound(int sound_handle) = 0;
 
 		// They are called from netstream when it wishes to sound video
-		virtual void attach_aux_streamer(aux_streamer_ptr ptr, as_object_interface* netstream) {};
-		virtual void detach_aux_streamer(as_object_interface* netstream) {};
+		virtual void attach_aux_streamer(aux_streamer_ptr ptr, as_object* netstream) {};
+		virtual void detach_aux_streamer(as_object* netstream) {};
 		virtual void cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data,
 				 int size, int channels, int freq) {};
 

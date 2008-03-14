@@ -18,7 +18,7 @@ namespace gameswf
 {
 	struct fn_call;
 	struct as_as_function;
-	struct as_object_interface;
+	struct as_object;
 	struct as_environment;
 
 	typedef void (*as_c_function_ptr)(const fn_call& fn);
@@ -52,8 +52,8 @@ namespace gameswf
 		as_property(const as_value& getter,	const as_value& setter);
 		~as_property();
 	
-		void	set(as_object_interface* target, const as_value& val);
-		void	get(as_object_interface* target, as_value* val) const;
+		void	set(as_object* target, const as_value& val);
+		void	get(as_object* target, as_value* val) const;
 	};
 
 	struct as_value
@@ -77,12 +77,12 @@ namespace gameswf
 			bool m_boolean_value;
 			// @@ hm, what about PS2, where double is bad?	should maybe have int&float types.
 			mutable	double	m_number_value;
-			as_object_interface*	m_object_value;
+			as_object*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_as_function*	m_as_function_value;
 			struct
 			{
-				as_object_interface*	m_property_target;
+				as_object*	m_property_target;
 				as_property* m_property;
 			};
 		};
@@ -173,7 +173,7 @@ namespace gameswf
 		{
 		}
 
-		exported_module as_value(as_object_interface* obj);
+		exported_module as_value(as_object* obj);
 
 		exported_module as_value(as_c_function_ptr func) :
 			m_type(C_FUNCTION),
@@ -204,7 +204,7 @@ namespace gameswf
 		exported_module const tu_stringi&	to_tu_stringi() const;
 		exported_module double	to_number() const;
 		exported_module bool	to_bool() const;
-		exported_module as_object_interface*	to_object() const;
+		exported_module as_object*	to_object() const;
 		exported_module as_c_function_ptr	to_c_function() const;
 		exported_module as_as_function*	to_as_function() const;
 		exported_module const tu_string& call_to_string(as_environment* env) const;
@@ -218,7 +218,7 @@ namespace gameswf
 		exported_module void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
 		exported_module void	set_int(int val) { set_double(val); }
 		exported_module void	set_nan()	{	set_double(get_nan()); }
-		exported_module void	set_as_object_interface(as_object_interface* obj);
+		exported_module void	set_as_object(as_object* obj);
 		exported_module void	set_as_c_function_ptr(as_c_function_ptr func)
 		{
 			drop_refs(); m_type = C_FUNCTION; m_c_function_value = func;

@@ -29,7 +29,7 @@ namespace gameswf
 
 	struct with_stack_entry
 	{
-		smart_ptr<as_object_interface>	m_object;
+		smart_ptr<as_object>	m_object;
 		int	m_block_end_pc;
 		
 		with_stack_entry()
@@ -39,7 +39,7 @@ namespace gameswf
 		{
 		}
 
-		with_stack_entry(as_object_interface* obj, int end)
+		with_stack_entry(as_object* obj, int end)
 			:
 			m_object(obj),
 			m_block_end_pc(end)
@@ -53,7 +53,6 @@ namespace gameswf
 		as_value	m_global_register[GLOBAL_REGISTER_COUNT];
 		array<as_value>	m_local_register;	// function2 uses this
 		character*	m_target;
-		stringi_hash<as_value>	m_variables;
 
 		// For local vars.  Use empty names to separate frames.
 		struct frame_slot
@@ -66,16 +65,10 @@ namespace gameswf
 		};
 		array<frame_slot>	m_local_frames;
 
-		as_environment() : m_target(NULL)
-		{
-		}
-
-		~as_environment()
-		{
-		}
+		as_environment() : m_target(NULL)	{}
+		~as_environment() {}
 
 		character*	get_target() { return m_target; }
-		
 		void set_target(character* target) { m_target = target; }
 		void set_target(as_value& target, character* original_target);
 
@@ -133,13 +126,7 @@ namespace gameswf
 		int	find_local(const tu_string& varname, bool ignore_barrier) const;
 		character*	find_target(const tu_string& path) const;
 		character*	find_target(const as_value& val) const;
-
 		character* load_file(const char* url, const as_value& target);
-
-		void clear_refs(hash<as_object_interface*, bool>* visited_objects,
-			as_object_interface* this_ptr);
-
-		void dump();
 
 		private:
 
@@ -152,12 +139,12 @@ namespace gameswf
 	struct fn_call
 	{
 		as_value* result;
-		as_object_interface* this_ptr;
+		as_object* this_ptr;
 		as_environment* env;
 		int nargs;
 		int first_arg_bottom_index;
 
-		fn_call(as_value* res_in, as_object_interface* this_in, as_environment* env_in, int nargs_in, int first_in)
+		fn_call(as_value* res_in, as_object* this_in, as_environment* env_in, int nargs_in, int first_in)
 			:
 			result(res_in),
 			this_ptr(this_in),

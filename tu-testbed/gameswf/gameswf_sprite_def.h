@@ -88,8 +88,8 @@ namespace gameswf
 		virtual bitmap_info*	get_bitmap_info(int i) const { assert(0); return NULL; }
 		virtual void	add_bitmap_info(bitmap_info* bi) { assert(0); }
 
-		virtual void	export_resource(const tu_string& symbol, as_object_interface* res) { log_error("can't export from sprite\n"); }
-		virtual as_object_interface*	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
+		virtual void	export_resource(const tu_string& symbol, character_def* res) { log_error("can't export from sprite\n"); }
+		virtual character_def*	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
 		virtual void	add_import(const char* source_url, int id, const char* symbol) { assert(0); }
 		virtual void	visit_imported_movies(import_visitor* v) { assert(0); }
 		virtual void	resolve_import(const char* source_url, movie_definition* d) { assert(0); }
