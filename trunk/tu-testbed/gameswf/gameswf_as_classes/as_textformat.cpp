@@ -29,7 +29,7 @@ namespace gameswf
 			obj->set_member(as_global_textformat_ctor_paramnames[i], fn.arg(i));
 		}
 
-		fn.result->set_as_object_interface(obj.get_ptr());
+		fn.result->set_as_object(obj.get_ptr());
 	}
 
 	as_textformat::as_textformat()

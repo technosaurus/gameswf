@@ -64,7 +64,7 @@ namespace gameswf
 		}
 			
 		// find resource
-		as_object_interface* res = NULL;
+		character_def* res = NULL;
 		if (target)
 		{
 			res = target->find_exported_resource(fn.arg(0).to_string());
@@ -179,7 +179,7 @@ namespace gameswf
 		snd->set_member("loadSound", sound_load);
 		snd->set_member("position", as_value(get_position, NULL));
 
-		fn.result->set_as_object_interface(snd.get_ptr());
+		fn.result->set_as_object(snd.get_ptr());
 	}
 
 }

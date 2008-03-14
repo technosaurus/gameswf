@@ -33,7 +33,7 @@ namespace gameswf
 			{
 				obj = new as_transform( movie );
 			}
-			fn.result->set_as_object_interface(obj.get_ptr());
+			fn.result->set_as_object(obj.get_ptr());
 		}
 	}
 
@@ -87,7 +87,7 @@ namespace gameswf
 		{
 			case colorTransform:
 			{
-				val->set_as_object_interface( m_color_transform.get_ptr() );
+				val->set_as_object( m_color_transform.get_ptr() );
 				return true;
 			}
 			case concatenatedColorTransform:

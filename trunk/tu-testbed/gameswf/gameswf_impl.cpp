@@ -429,18 +429,19 @@ namespace gameswf
 	// global gameswf management
 	//
 	void clears_tag_loaders();
-	void clear_standard_member_map();
+	void clear_standard_property_map();
+	void clear_standard_method_map();
 	void clear_shared_libs();
 
 	void	clear_gameswf()
 	// Maximum release of resources.
 	{
 		gameswf_engine_mutex().lock();
-		clear_standard_member_map();
+		clear_standard_property_map();
+		clear_standard_method_map();
 		clears_tag_loaders();
 		get_heap()->clear();
 		clear_library();
-		sprite_builtins_clear();
 		action_clear();
 		clear_shared_libs();
 		close_glyph_provider();
@@ -2208,7 +2209,7 @@ namespace gameswf
 				// create_movie_sub().
 
 				assert(cast_to<movie_def_impl>(source_movie));
-				as_object_interface* res = cast_to<movie_def_impl>(source_movie)->get_exported_resource(symbol_name);
+				character_def* res = cast_to<movie_def_impl>(source_movie)->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
 					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",

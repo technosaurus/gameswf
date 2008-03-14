@@ -19,7 +19,7 @@ namespace gameswf
 			{
 				obj = new as_point(fn.arg(0).to_number(), fn.arg(1).to_number());
 			}
-			fn.result->set_as_object_interface(obj.get_ptr());
+			fn.result->set_as_object(obj.get_ptr());
 		}
 	}
 	
@@ -46,7 +46,7 @@ namespace gameswf
 		{
 			smart_ptr<as_point>	obj;
 			obj = new as_point( point->m_point.m_x + other_point->m_point.m_x, point->m_point.m_y + other_point->m_point.m_y );
-			fn.result->set_as_object_interface(obj.get_ptr());   
+			fn.result->set_as_object(obj.get_ptr());   
 		}
 	}
 
@@ -73,7 +73,7 @@ namespace gameswf
 		{
 			smart_ptr<as_point>	obj;
 			obj = new as_point( point->m_point.m_x - other_point->m_point.m_x, point->m_point.m_y - other_point->m_point.m_y );
-			fn.result->set_as_object_interface(obj.get_ptr());   
+			fn.result->set_as_object(obj.get_ptr());   
 		}
 	}
 

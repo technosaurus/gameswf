@@ -53,7 +53,7 @@ namespace gameswf
 				obj->m_color_transform.m_[ 0 ][ 0 ] = fn.arg(0).to_number();
 		}
 
-		 fn.result->set_as_object_interface(obj.get_ptr());
+		 fn.result->set_as_object(obj.get_ptr());
 	}
 
 	as_color_transform::as_color_transform()

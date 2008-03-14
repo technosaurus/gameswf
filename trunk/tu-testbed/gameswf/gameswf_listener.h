@@ -18,10 +18,10 @@ namespace gameswf
 
 	struct listener
 	{
-		array< weak_ptr<as_object_interface> > m_listeners;
+		array< weak_ptr<as_object> > m_listeners;
 
-		exported_module void add(as_object_interface* listener);
-		exported_module void remove(as_object_interface* listener);
+		exported_module void add(as_object* listener);
+		exported_module void remove(as_object* listener);
 
 		exported_module void notify(const event_id& ev);
 		exported_module void notify(const tu_string& event_name, const fn_call& fn);
@@ -31,7 +31,7 @@ namespace gameswf
 
 		exported_module int size() const { return m_listeners.size(); }
 		exported_module void clear() { m_listeners.clear(); }
-		exported_module as_object_interface*	operator[](const tu_stringi& name) const;
+		exported_module as_object*	operator[](const tu_stringi& name) const;
 	};
 
 }

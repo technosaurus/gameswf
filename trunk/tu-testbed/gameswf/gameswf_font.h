@@ -45,7 +45,7 @@ namespace gameswf
 
 	};
 
-	struct font : public as_object_interface
+	struct font : public character_def
 	{
 		font();
 		~font();

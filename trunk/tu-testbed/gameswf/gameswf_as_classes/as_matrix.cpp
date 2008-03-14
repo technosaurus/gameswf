@@ -60,7 +60,7 @@ namespace gameswf
 			case 0:
 				break;
 		}
-		fn.result->set_as_object_interface(matrix.get_ptr());
+		fn.result->set_as_object(matrix.get_ptr());
 	}
 
 	void	as_matrix_translate(const fn_call& fn)
@@ -197,7 +197,7 @@ namespace gameswf
 			smart_ptr<as_point>	result;
 			result = new as_point(0.0f, 0.0f);
 			matrix->m_matrix.transform( &result->m_point, point->m_point);
-			fn.result->set_as_object_interface(result.get_ptr());
+			fn.result->set_as_object(result.get_ptr());
 		}
 	}
 

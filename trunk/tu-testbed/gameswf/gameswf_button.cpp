@@ -212,7 +212,7 @@ namespace gameswf
 		virtual	void	execute_frame_tags(int frame, bool state_only)
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
-			smart_ptr<as_object_interface>	this_ptr(this);
+			smart_ptr<as_object>	this_ptr(this);
 			assert(frame == 0);
 			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
@@ -560,9 +560,6 @@ namespace gameswf
 				}
 			}
 		}
-
-		// not sure if we need to override this one.
-		//virtual const char*	get_text_value() const { return NULL; }	// edit_text_character overrides this
 
 		virtual bool can_handle_mouse_event()
 		{

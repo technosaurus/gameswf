@@ -30,7 +30,7 @@ namespace gameswf
 	}
 
 	// audio callback is running in sound handler thread
-	static void audio_streamer(as_object_interface* netstream, Uint8* stream, int len)
+	static void audio_streamer(as_object* netstream, Uint8* stream, int len)
 	{
 		as_netstream* ns = cast_to<as_netstream>(netstream);
 		assert(ns);
@@ -656,7 +656,7 @@ namespace gameswf
 		netstream_obj->set_member("seek", netstream_seek);
 		netstream_obj->set_member("setbuffertime", netstream_setbuffertime);
 
-		fn.result->set_as_object_interface(netstream_obj.get_ptr());
+		fn.result->set_as_object(netstream_obj.get_ptr());
 	}
 
 } // end of gameswf namespace

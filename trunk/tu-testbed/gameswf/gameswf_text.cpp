@@ -672,7 +672,7 @@ namespace gameswf
 				fontname  != m_font->get_name())
 		{
 			// try to find embedded font
-			as_object_interface* res = find_exported_resource(fontname);
+			character_def* res = find_exported_resource(fontname);
 			font* embedded_font = NULL;
 			if (res)
 			{
@@ -995,9 +995,12 @@ namespace gameswf
 				as_value val;
 				if (ch->get_member(var, &val))
 				{
-					if (val.to_tu_string() != m_text)
+					if (val.to_object() != this)
 					{
-						set_text(val.to_tu_string().c_str());
+						if (val.to_tu_string() != m_text)
+						{
+							set_text(val.to_tu_string().c_str());
+						}
 					}
 				}
 			}
@@ -1008,15 +1011,18 @@ namespace gameswf
 				{
 					if (strncasecmp(path.c_str(), "_global.", 8) == 0)
 					{
-						as_object_interface* target = get_global()->find_target(path.c_str() + 8);
+						as_object* target = get_global()->find_target(path.c_str() + 8);
 						if (target)
 						{
 							as_value val;
 							if (target->get_member(var, &val))
 							{
-								if (val.to_tu_string() != m_text)
+								if (val.to_object() != this)
 								{
-									set_text(val.to_tu_string().c_str());
+									if (val.to_tu_string() != m_text)
+									{
+										set_text(val.to_tu_string().c_str());
+									}
 								}
 							}
 						}				

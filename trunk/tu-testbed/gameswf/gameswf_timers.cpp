@@ -32,7 +32,7 @@ namespace gameswf
 				timer = new as_timer(func, fn.arg(2).to_number(), fn);
 			}
 		}
-		fn.result->set_as_object_interface(timer);
+		fn.result->set_as_object(timer);
 	}
 
 	void  as_global_clearinterval(const fn_call& fn)

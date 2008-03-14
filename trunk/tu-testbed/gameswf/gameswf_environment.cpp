@@ -175,7 +175,7 @@ namespace gameswf
 		}
 		else
 		{
-			return this->get_variable_raw(varname, with_stack);
+			return get_variable_raw(varname, with_stack);
 		}
 	}
 
@@ -197,7 +197,7 @@ namespace gameswf
 		// Check the with-stack.
 		for (int i = with_stack.size() - 1; i >= 0; i--)
 		{
-			as_object_interface*	obj = with_stack[i].m_object.get_ptr();
+			as_object*	obj = with_stack[i].m_object.get_ptr();
 			if (obj && obj->get_member(varname, &val))
 			{
 				// Found the var in this context.
@@ -219,7 +219,7 @@ namespace gameswf
 		// Looking for "this"?
 		if (varname_id == MTHIS)
 		{
-			val.set_as_object_interface(m_target);
+			val.set_as_object(m_target);
 			return val;
 		}
 
@@ -327,7 +327,7 @@ namespace gameswf
 		// Check the with-stack.
 		for (int i = with_stack.size() - 1; i >= 0; i--)
 		{
-			as_object_interface*	obj = with_stack[i].m_object.get_ptr();
+			as_object*	obj = with_stack[i].m_object.get_ptr();
 			if (obj && obj->get_member(varname, NULL))
 			{
 				// This object has the member; so set it here.
@@ -421,14 +421,13 @@ namespace gameswf
 	
 	bool	as_environment::get_member(const tu_stringi& varname, as_value* val) const
 	{
-		return m_variables.get(varname, val);
+		return m_target->get_member(varname, val);
 	}
 
 
 	bool	as_environment::set_member(const tu_stringi& varname, const as_value& val)
 	{
-		m_variables.set(varname, val);
-		return true;
+		return m_target->set_member(varname, val);
 	}
 
 	as_value* as_environment::get_register(int reg)
@@ -660,74 +659,6 @@ namespace gameswf
 			p = next_slash + 1;
 		}
 		return env;
-	}
-
-	void as_environment::dump()
-	// for debugging
-	// retrieves vars & print them
-	{
-		printf("\n*** environment 0x%p ***\n", this);
-
-		printf("*** variables\n");
-		for (stringi_hash<as_value>::const_iterator it = m_variables.begin(); 
-			it != m_variables.end(); ++it)
-		{
-			if (it->second.get_type() == as_value::OBJECT)
-			{
-				printf("%s: <as_object 0x%p>\n", it->first.c_str(), it->second.to_object());
-				continue;
-			}
-			if (it->second.get_type() == as_value::PROPERTY)
-			{
-				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
-					it->first.c_str(), it->second.m_property, it->second.m_property_target,
-					it->second.m_property->m_getter, it->second.m_property->m_setter);
-				continue;
-			}
-			printf("%s: %s\n", it->first.c_str(), it->second.to_string());
-		}
-
-		printf("*** stack\n");
-		for (int i = m_stack.size() - 1; i >= 0; i--)
-		{
-			if (m_stack[i].get_type() == as_value::OBJECT)
-			{
-				printf("<as_object 0x%p>\n", m_stack[i].to_object());
-				continue;
-			}
-			if (m_stack[i].get_type() == as_value::PROPERTY)
-			{
-				printf("<as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
-					m_stack[i].m_property, m_stack[i].m_property_target,
-					m_stack[i].m_property->m_getter, m_stack[i].m_property->m_setter);
-				continue;
-			}
-			printf("%s\n", m_stack[i].to_string());
-
-		}
-
-		printf("***\n");
-	}
-
-	void	as_environment::clear_refs(hash<as_object_interface*, bool>* visited_objects, 
-		as_object_interface* this_ptr)
-	{
-		for (stringi_hash<as_value>::iterator it = m_variables.begin();
-			it != m_variables.end(); ++it)
-		{
-			as_object_interface* obj = it->second.to_object();
-			if (obj)
-			{
-				if (obj == this_ptr)
-				{
-					it->second.set_undefined();
-				}
-				else
-				{
-					obj->clear_refs(visited_objects, this_ptr);
-				}
-			}
-		}
 	}
 
 }

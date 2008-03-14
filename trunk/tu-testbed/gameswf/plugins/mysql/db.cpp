@@ -58,7 +58,7 @@ void	mydb_open(const fn_call& fn)
 		mytable* tbl = db == NULL ? NULL : db->open(fn.arg(0).to_string());
 		if (tbl)
 		{
-			fn.result->set_as_object_interface(tbl);
+			fn.result->set_as_object(tbl);
 			return;
 		}
 	}

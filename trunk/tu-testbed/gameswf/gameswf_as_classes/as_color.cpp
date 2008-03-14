@@ -19,7 +19,7 @@ namespace gameswf
 			character* target = cast_to<character>(fn.arg(0).to_object());
 			if (target)
 			{
-				fn.result->set_as_object_interface(new as_color(target));
+				fn.result->set_as_object(new as_color(target));
 			}
 		}
 	}
@@ -102,7 +102,7 @@ namespace gameswf
 		tobj->set_member("aa", a / 255.0f * 100.0f);	// percent (-100..100)
 		tobj->set_member("ab", a);	// value	(-255..255)
 
-		fn.result->set_as_object_interface(tobj);
+		fn.result->set_as_object(tobj);
 	}
 
 	void	as_color_settransform(const fn_call& fn)

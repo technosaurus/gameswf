@@ -24,7 +24,7 @@ namespace gameswf
 			return;
 		}
 
-		as_object_interface*	listener = fn.arg(0).to_object();
+		as_object*	listener = fn.arg(0).to_object();
 		if (listener == NULL)
 		{
 			log_error("key_add_listener passed a NULL object; ignored\n");

@@ -63,7 +63,7 @@ namespace gameswf
 		// We keep a static string instance to hold a table of
 		// string methods.
 		// TODO: s_static_string_instance.drop_ref() on exit from gameswf
-		static smart_ptr<as_object_interface> s_static_string_instance;
+		static smart_ptr<as_object> s_static_string_instance;
 
 		if (!s_static_string_instance.get_ptr()) {
 			as_value result;
@@ -270,7 +270,7 @@ namespace gameswf
 			}
 		}
 
-		fn.result->set_as_object_interface(arr.get_ptr());
+		fn.result->set_as_object(arr.get_ptr());
 	}
 
 	// public substr(start:Number, length:Number) : String
@@ -404,7 +404,7 @@ namespace gameswf
 		str->set_member("toUpperCase", string_to_uppercase);
 		str->set_member("charAt", string_char_at);
     
-		fn.result->set_as_object_interface(str.get_ptr());
+		fn.result->set_as_object(str.get_ptr());
 	}
 
 } // namespace gameswf

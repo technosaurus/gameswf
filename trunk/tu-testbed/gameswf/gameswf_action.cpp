@@ -161,7 +161,7 @@ namespace gameswf
 	as_value	call_method(
 		const as_value& method,
 		as_environment* env,
-		as_object_interface* this_ptr,
+		as_object* this_ptr,
 		int nargs,
 		int first_arg_bottom_index)
 	// first_arg_bottom_index is the stack index, from the bottom, of the first argument.
@@ -191,7 +191,7 @@ namespace gameswf
 
 	const char*	call_method_parsed(
 		as_environment* env,
-		as_object_interface* this_ptr,
+		as_object* this_ptr,
 		const char* method_name,
 		const char* method_arg_fmt,
 		va_list args)
@@ -408,7 +408,7 @@ namespace gameswf
 	void	as_global_object_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Object.
 	{
-		fn.result->set_as_object_interface(new as_object);
+		fn.result->set_as_object(new as_object);
 	}
 
 
@@ -503,7 +503,7 @@ namespace gameswf
 	{
 		sprite_definition* empty_sprite_def = new sprite_definition(NULL);
 		character* ch = new sprite_instance(empty_sprite_def, get_current_root(), get_current_root()->get_root_movie(), 0);
-		fn.result->set_as_object_interface(ch);
+		fn.result->set_as_object(ch);
 	}
 
 	void as_global_boolean_ctor(const fn_call& fn)
@@ -584,42 +584,42 @@ namespace gameswf
 			assert(s_global == NULL);
 			s_global = new as_object;
 			get_heap()->set(s_global.get_ptr(), false);
-			s_global->set_member("trace", as_global_trace);
-			s_global->set_member("Object", as_global_object_ctor);
-			s_global->set_member("Sound", as_global_sound_ctor);
-			s_global->set_member("Array", as_global_array_ctor);
-			s_global->set_member("MovieClip", as_global_movieclip_ctor);
-			s_global->set_member("TextFormat", as_global_textformat_ctor);
+			s_global->builtin_member("trace", as_global_trace);
+			s_global->builtin_member("Object", as_global_object_ctor);
+			s_global->builtin_member("Sound", as_global_sound_ctor);
+			s_global->builtin_member("Array", as_global_array_ctor);
+			s_global->builtin_member("MovieClip", as_global_movieclip_ctor);
+			s_global->builtin_member("TextFormat", as_global_textformat_ctor);
 
 			//			s_global->set_member("XML", as_value(xml_new));
-			s_global->set_member("XMLSocket", as_global_xmlsock_ctor);
-			s_global->set_member("MovieClipLoader", as_global_mcloader_ctor);
-			s_global->set_member("String", string_ctor);
-			s_global->set_member("Number", as_global_number_ctor);
-			s_global->set_member("Boolean", as_global_boolean_ctor);
-			s_global->set_member("Color", as_global_color_ctor);
-			s_global->set_member("Date", as_global_date_ctor);
-			s_global->set_member("Selection", selection_init());
+			s_global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
+			s_global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);
+			s_global->builtin_member("String", string_ctor);
+			s_global->builtin_member("Number", as_global_number_ctor);
+			s_global->builtin_member("Boolean", as_global_boolean_ctor);
+			s_global->builtin_member("Color", as_global_color_ctor);
+			s_global->builtin_member("Date", as_global_date_ctor);
+			s_global->builtin_member("Selection", selection_init());
 
 			// ASSetPropFlags
-			s_global->set_member("ASSetPropFlags", as_global_assetpropflags);
+			s_global->builtin_member("ASSetPropFlags", as_global_assetpropflags);
 
 			// for video
-			s_global->set_member("NetStream", as_global_netstream_ctor);
-			s_global->set_member("NetConnection", as_global_netconnection_ctor);
+			s_global->builtin_member("NetStream", as_global_netstream_ctor);
+			s_global->builtin_member("NetConnection", as_global_netconnection_ctor);
 
-			s_global->set_member("math", math_init());
-			s_global->set_member("Key", key_init());
-			s_global->set_member("AsBroadcaster", broadcaster_init());
-			s_global->set_member( "flash", flash_init());
+			s_global->builtin_member("math", math_init());
+			s_global->builtin_member("Key", key_init());
+			s_global->builtin_member("AsBroadcaster", broadcaster_init());
+			s_global->builtin_member( "flash", flash_init());
 
 			// global builtins functions
-			s_global->set_member("setInterval",  as_global_setinterval);
-			s_global->set_member("clearInterval",  as_global_clearinterval);
-			s_global->set_member("getVersion",  as_global_get_version);
-			s_global->set_member("parseFloat",  as_global_parse_float);
-			s_global->set_member("isNaN",  as_global_isnan);
-			s_global->set_member("/:$version",  "gameSWF");
+			s_global->builtin_member("setInterval",  as_global_setinterval);
+			s_global->builtin_member("clearInterval",  as_global_clearinterval);
+			s_global->builtin_member("getVersion",  as_global_get_version);
+			s_global->builtin_member("parseFloat",  as_global_parse_float);
+			s_global->builtin_member("isNaN",  as_global_isnan);
+			s_global->builtin_member("/:$version",  "gameSWF");
 
 		}
 	}
@@ -685,7 +685,7 @@ namespace gameswf
 	};
 
 
-	static as_value	get_property(as_object_interface* obj, int prop_number)
+	static as_value	get_property(as_object* obj, int prop_number)
 	{
 		as_value	val;
 		if (prop_number >= 0 && prop_number < int(sizeof(s_property_names)/sizeof(s_property_names[0])))
@@ -699,7 +699,7 @@ namespace gameswf
 		return val;
 	}
 
-	static void	set_property(as_object_interface* obj, int prop_number, const as_value& val)
+	static void	set_property(as_object* obj, int prop_number, const as_value& val)
 	{
 		if (prop_number >= 0 && prop_number < int(sizeof(s_property_names)/sizeof(s_property_names[0])))
 		{
@@ -962,7 +962,7 @@ namespace gameswf
 
 
 	// local function, called from 0x46 & 0x55 opcode implementation only
-	void action_buffer::enumerate(as_environment* env, as_object_interface* obj)
+	void action_buffer::enumerate(as_environment* env, as_object* obj)
 	{
 		assert(env);
 
@@ -1020,7 +1020,7 @@ namespace gameswf
 	{
 		as_value	prototype_val;
 		constructor.to_object()->get_member("prototype", &prototype_val);
-		as_object_interface* prototype = prototype_val.to_object();
+		as_object* prototype = prototype_val.to_object();
 		assert(prototype);
 		prototype->copy_to(obj);
 
@@ -1491,7 +1491,7 @@ namespace gameswf
 				case 0x3A:	// delete
 				{
 					tu_string varname(env->top(0).to_tu_string());
-					as_object_interface* obj_interface = env->top(1).to_object();
+					as_object* obj_interface = env->top(1).to_object();
 					env->drop(1);
 
 					bool retcode = false;
@@ -1531,9 +1531,9 @@ namespace gameswf
 						{
 							// check var in m_variables
 							as_value val;
-							if (env->m_variables.get(varname, &val))
+							if (env->get_member(varname, &val))
 							{
-								env->m_variables.set(varname, obj);
+								env->set_member(varname, obj);
 								env->top(0).set_bool(true);
 								break;
 							}
@@ -1565,7 +1565,7 @@ namespace gameswf
 						// super constructor, Flash 6 
 						if (function.get_type() == as_value::OBJECT)
 						{
-							as_object_interface* obj = function.to_object();
+							as_object* obj = function.to_object();
 							if (obj)
 							{
 								// assert(function_name == "super");
@@ -1642,7 +1642,7 @@ namespace gameswf
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
 						call_method(constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
-						new_obj.set_as_object_interface(new_obj_ptr.get_ptr());
+						new_obj.set_as_object(new_obj_ptr.get_ptr());
 					}
 					else
 					{
@@ -1659,7 +1659,7 @@ namespace gameswf
 							as_object* plugin = load_as_plugin(classname.to_tu_string(), params);
 							if (plugin)
 							{
-								new_obj.set_as_object_interface(plugin);
+								new_obj.set_as_object(plugin);
 							}
 							else
 							{
@@ -1695,7 +1695,7 @@ namespace gameswf
  					// Call the array constructor
  					as_value	result;
  					as_global_array_ctor(fn_call(&result, NULL, env, -1, -1));
- 					as_object_interface* ao = result.to_object();
+ 					as_object* ao = result.to_object();
  					assert(ao);
 					UNUSED(ao);
  					env->push(result);
@@ -1846,7 +1846,7 @@ namespace gameswf
 				}
 				case 0x4E:	// get member
 				{
-					as_object_interface*	obj = env->top(1).to_object();
+					as_object*	obj = env->top(1).to_object();
 
 					// Special cases: similar to
 					// String.length, Number.Nan
@@ -1905,7 +1905,7 @@ namespace gameswf
 				}
 				case 0x4F:	// set member
 				{
-					as_object_interface*	obj = env->top(2).to_object();
+					as_object*	obj = env->top(2).to_object();
 					if (obj)
 					{
 						obj->set_member(env->top(1).to_tu_string(), env->top(0));
@@ -1940,7 +1940,7 @@ namespace gameswf
 					as_value	result;
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
-					as_object_interface* obj = env->top(1).to_object();
+					as_object* obj = env->top(1).to_object();
 					if (obj) 
 					{
 						as_value	method;
@@ -2067,7 +2067,7 @@ namespace gameswf
 				// The “undefined” return value should be popped off the stack.
 
 					as_value	constructor = env->pop();
-					as_object_interface*	obj = env->pop().to_object();
+					as_object*	obj = env->pop().to_object();
 					int	nargs = (int) env->pop().to_number();
 
 					// Create an empty object
@@ -2372,7 +2372,7 @@ namespace gameswf
 						as_value value;
 						as_as_function* existing_function;
 
-						if( env->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
+						if (env->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
 						{
 							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
 								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
@@ -2474,7 +2474,7 @@ namespace gameswf
 					{
  						int	block_length = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
  						int	block_end = next_pc + block_length;
- 						as_object_interface*	with_obj = env->top(0).to_object();
+ 						as_object*	with_obj = env->top(0).to_object();
  						with_stack.push_back(with_stack_entry(with_obj, block_end));
 					}
 					env->drop(1);
@@ -2936,65 +2936,87 @@ namespace gameswf
 
 
 	// Standard member lookup.
-	static stringi_hash<as_standard_member>	s_standard_member_map;
 
-	void clear_standard_member_map()
+	// s_standard_method_map stuff should be high optimized
+	static stringi_hash<as_c_function_ptr>*	s_standard_method_map[BUILTIN_COUNT];
+	void clear_standard_method_map()
 	{
-		s_standard_member_map.clear();
+		for (int i = 0; i < BUILTIN_COUNT; i++)
+		{
+			if (s_standard_method_map[i])
+			{
+				s_standard_method_map[i]->clear();
+			}
+		}
+	}
+
+	stringi_hash<as_c_function_ptr>* get_standard_method_map(builtin_object obj)
+	{
+		if (s_standard_method_map[obj] == NULL)
+		{
+			s_standard_method_map[obj] = new stringi_hash<as_c_function_ptr>;
+		}
+		return s_standard_method_map[obj];
+	}
+
+	static stringi_hash<as_standard_member>	s_standard_property_map;
+	void clear_standard_property_map()
+	{
+		s_standard_property_map.clear();
 	}
 
 	as_standard_member	get_standard_member(const tu_stringi& name)
 	{
-		if (s_standard_member_map.size() == 0)
+		if (s_standard_property_map.size() == 0)
 		{
-			s_standard_member_map.set_capacity(int(AS_STANDARD_MEMBER_COUNT));
+			s_standard_property_map.set_capacity(int(AS_STANDARD_MEMBER_COUNT));
 
-			s_standard_member_map.add("_x", M_X);
-			s_standard_member_map.add("_y", M_Y);
-			s_standard_member_map.add("_xscale", M_XSCALE);
-			s_standard_member_map.add("_yscale", M_YSCALE);
-			s_standard_member_map.add("_currentframe", M_CURRENTFRAME);
-			s_standard_member_map.add("_totalframes", M_TOTALFRAMES);
-			s_standard_member_map.add("_alpha", M_ALPHA);
-			s_standard_member_map.add("_visible", M_VISIBLE);
-			s_standard_member_map.add("_width", M_WIDTH);
-			s_standard_member_map.add("_height", M_HEIGHT);
-			s_standard_member_map.add("_rotation", M_ROTATION);
-			s_standard_member_map.add("_target", M_TARGET);
-			s_standard_member_map.add("_framesloaded", M_FRAMESLOADED);
-			s_standard_member_map.add("_name", M_NAME);
-			s_standard_member_map.add("_droptarget", M_DROPTARGET);
-			s_standard_member_map.add("_url", M_URL);
-			s_standard_member_map.add("_highquality", M_HIGHQUALITY);
-			s_standard_member_map.add("_focusrect", M_FOCUSRECT);
-			s_standard_member_map.add("_soundbuftime", M_SOUNDBUFTIME);
-			s_standard_member_map.add("_xmouse", M_XMOUSE);
-			s_standard_member_map.add("_ymouse", M_YMOUSE);
-			s_standard_member_map.add("_parent", M_PARENT);
-			s_standard_member_map.add("text", M_TEXT);
-			s_standard_member_map.add("textWidth", M_TEXTWIDTH);
-			s_standard_member_map.add("textColor", M_TEXTCOLOR);
-			s_standard_member_map.add("border", M_BORDER);
-			s_standard_member_map.add("multiline", M_MULTILINE);
-			s_standard_member_map.add("wordWrap", M_WORDWRAP);
-			s_standard_member_map.add("type", M_TYPE);
-			s_standard_member_map.add("backgroundColor", M_BACKGROUNDCOLOR);
+			s_standard_property_map.add("_x", M_X);
+			s_standard_property_map.add("_y", M_Y);
+			s_standard_property_map.add("_xscale", M_XSCALE);
+			s_standard_property_map.add("_yscale", M_YSCALE);
+			s_standard_property_map.add("_currentframe", M_CURRENTFRAME);
+			s_standard_property_map.add("_totalframes", M_TOTALFRAMES);
+			s_standard_property_map.add("_alpha", M_ALPHA);
+			s_standard_property_map.add("_visible", M_VISIBLE);
+			s_standard_property_map.add("_width", M_WIDTH);
+			s_standard_property_map.add("_height", M_HEIGHT);
+			s_standard_property_map.add("_rotation", M_ROTATION);
+			s_standard_property_map.add("_target", M_TARGET);
+			s_standard_property_map.add("_framesloaded", M_FRAMESLOADED);
+			s_standard_property_map.add("_name", M_NAME);
+			s_standard_property_map.add("_droptarget", M_DROPTARGET);
+			s_standard_property_map.add("_url", M_URL);
+			s_standard_property_map.add("_highquality", M_HIGHQUALITY);
+			s_standard_property_map.add("_focusrect", M_FOCUSRECT);
+			s_standard_property_map.add("_soundbuftime", M_SOUNDBUFTIME);
+			s_standard_property_map.add("_xmouse", M_XMOUSE);
+			s_standard_property_map.add("_ymouse", M_YMOUSE);
+			s_standard_property_map.add("_parent", M_PARENT);
+			s_standard_property_map.add("text", M_TEXT);
+			s_standard_property_map.add("textWidth", M_TEXTWIDTH);
+			s_standard_property_map.add("textColor", M_TEXTCOLOR);
+			s_standard_property_map.add("border", M_BORDER);
+			s_standard_property_map.add("multiline", M_MULTILINE);
+			s_standard_property_map.add("wordWrap", M_WORDWRAP);
+			s_standard_property_map.add("type", M_TYPE);
+			s_standard_property_map.add("backgroundColor", M_BACKGROUNDCOLOR);
 				
 
-			s_standard_member_map.add("_this", M_THIS);
-			s_standard_member_map.add("this", MTHIS);
-			s_standard_member_map.add("_root", M_ROOT);
-			s_standard_member_map.add(".", MDOT);
-			s_standard_member_map.add("..", MDOT2);
-			s_standard_member_map.add("_level0", M_LEVEL0);
-			s_standard_member_map.add("_global", M_GLOBAL);
-			s_standard_member_map.add("length", M_LENGTH);
-			s_standard_member_map.add("NaN", M_NAN);
+			s_standard_property_map.add("_this", M_THIS);
+			s_standard_property_map.add("this", MTHIS);
+			s_standard_property_map.add("_root", M_ROOT);
+			s_standard_property_map.add(".", MDOT);
+			s_standard_property_map.add("..", MDOT2);
+			s_standard_property_map.add("_level0", M_LEVEL0);
+			s_standard_property_map.add("_global", M_GLOBAL);
+			s_standard_property_map.add("length", M_LENGTH);
+			s_standard_property_map.add("NaN", M_NAN);
 
 		}
 
 		as_standard_member	result = M_INVALID_MEMBER;
-		s_standard_member_map.get(name, &result);
+		s_standard_property_map.get(name, &result);
 
 		return result;
 	}
@@ -3424,15 +3446,15 @@ namespace gameswf
 
 	void heap::clear()
 	{
-		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = m_heap.begin();
+		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{
-			as_object_interface* obj = it->first.get_ptr();
+			as_object* obj = it->first.get_ptr();
 			if (obj)
 			{
 				if (obj->get_ref_count() > 1)
 				{
-					hash<as_object_interface*, bool> visited_objects;
+					hash<as_object*, bool> visited_objects;
 					obj->clear_refs(&visited_objects, obj);
 				}
 			}
@@ -3440,24 +3462,24 @@ namespace gameswf
 		m_heap.clear();
 	}
 
-	bool heap::is_garbage(as_object_interface* obj)
+	bool heap::is_garbage(as_object* obj)
 	{
 		bool is_garbage = false;
 		m_heap.get(obj, &is_garbage);
 		return is_garbage;
 	}
 
-	void heap::set(as_object_interface* obj, bool is_garbage)
+	void heap::set(as_object* obj, bool is_garbage)
 	{
 		m_heap.set(obj, is_garbage);
 	}
 
 	void heap::set_as_garbage()
 	{
-		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = m_heap.begin();
+		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{
-			as_object_interface* obj = it->first.get_ptr();
+			as_object* obj = it->first.get_ptr();
 			if (obj)
 			{
 				m_heap.set(obj, true);
@@ -3468,17 +3490,17 @@ namespace gameswf
 	void heap::clear_garbage()
 	{
 		s_global->not_garbage();
-		for (hash<smart_ptr<as_object_interface>, bool>::iterator it = m_heap.begin();
+		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{
-			as_object_interface* obj = it->first.get_ptr();
+			as_object* obj = it->first.get_ptr();
 			if (obj)
 			{
 				if (it->second)	// is garbage ?
 				{
 					if (obj->get_ref_count() > 1)	// is in heap only ?
 					{
-						hash<as_object_interface*, bool> visited_objects;
+						hash<as_object*, bool> visited_objects;
 						obj->clear_refs(&visited_objects, obj);
 					}
 					m_heap.erase(obj);
