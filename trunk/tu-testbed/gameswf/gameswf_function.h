@@ -21,10 +21,10 @@ namespace gameswf
 	struct as_environment;
 	struct as_object;
 
-	struct as_as_function : public as_object
+	struct as_function : public as_object
 	{
 		// Unique id of a gameswf resource
-		enum { m_class_id = AS_AS_FUNCTION };
+		enum { m_class_id = AS_FUNCTION };
 		virtual bool is(int class_id)
 		{
 			if (m_class_id == class_id) return true;
@@ -58,8 +58,8 @@ namespace gameswf
 		// myfunc should use _root environment
 		weak_ptr<as_object>	m_target;
 
-		as_as_function( const action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
-		~as_as_function();
+		as_function( const action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
+		~as_function();
 
 		void	set_is_function2() { m_is_function2 = true; }
 		void	set_local_register_count(uint8 ct) { assert(m_is_function2); m_local_register_count = ct; }

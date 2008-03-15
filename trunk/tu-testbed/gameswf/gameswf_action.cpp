@@ -176,7 +176,7 @@ namespace gameswf
 			// It's a C function.  Call it.
 			(*func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
 		}
-		else if (as_as_function* as_func = method.to_as_function())
+		else if (as_function* as_func = method.to_as_function())
 		{
 			// It's an ActionScript function.  Call it.
 			(*as_func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
@@ -1631,7 +1631,7 @@ namespace gameswf
 						// C function is responsible for creating the new object and setting members.
 						(constructor.to_c_function())(fn_call(&new_obj, NULL, env, nargs, env->get_top_index()));
 					}
-					else if (as_as_function* ctor_as_func = constructor.to_as_function())
+					else if (as_function* ctor_as_func = constructor.to_as_function())
 					{
 
 						// Create an empty object
@@ -1876,7 +1876,7 @@ namespace gameswf
 								if (obj->get_member("__resolve", &val))
 								{
 									// call __resolve
-									as_as_function* resolve = val.to_as_function();
+									as_function* resolve = val.to_as_function();
 									if (resolve)
 									{
 										(*resolve)(fn_call(&val, obj, env, 1, env->get_top_index()));
@@ -2079,7 +2079,7 @@ namespace gameswf
 						// TODO: test
 						(constructor.to_c_function())(fn_call(NULL, new_obj.get_ptr(), env, nargs, env->get_top_index()));
 					}
-					else if (as_as_function* ctor_as_func = constructor.to_as_function())
+					else if (as_function* ctor_as_func = constructor.to_as_function())
 					{
 						as_object* proto = create_proto(new_obj.get_ptr(), constructor);
 						proto->m_this_ptr = new_obj.get_ptr();
@@ -2093,7 +2093,7 @@ namespace gameswf
 						as_value val;
 						if (obj->get_member(constructor.to_string(), &val))
 						{
-							as_as_function* func = val.to_as_function();
+							as_function* func = val.to_as_function();
 							as_c_function_ptr c_func;
 							
 							if( func )
@@ -2370,7 +2370,7 @@ namespace gameswf
 					if( name.length() > 0 )
 					{
 						as_value value;
-						as_as_function* existing_function;
+						as_function* existing_function;
 
 						if (env->m_target->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
 						{
@@ -2385,7 +2385,7 @@ namespace gameswf
 
 					if( !function_exists )
 					{
-						as_as_function*	func = new as_as_function(this, next_pc, with_stack);
+						as_function*	func = new as_function(this, next_pc, with_stack);
 						func->set_target(env->get_target());
 						func->set_is_function2();
 
@@ -2695,7 +2695,7 @@ namespace gameswf
 					if( name.length() > 0 )
 					{
 						as_value value;
-						as_as_function* existing_function;
+						as_function* existing_function;
 
 						if( env->m_target->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
 						{
@@ -2710,7 +2710,7 @@ namespace gameswf
 
 					if( !function_exists )
 					{
-						as_as_function*	func = new as_as_function(this, next_pc, with_stack);
+						as_function*	func = new as_function(this, next_pc, with_stack);
 						func->set_target(env->get_target());
 
 						// Get number of arguments.

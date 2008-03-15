@@ -50,7 +50,7 @@ namespace gameswf
 	}
 
 
-	as_value::as_value(as_as_function* func)
+	as_value::as_value(as_function* func)
 		:
 		m_type(AS_FUNCTION),
 		m_as_function_value(func)
@@ -376,7 +376,7 @@ namespace gameswf
 		}
 	}
 
-	as_as_function*	as_value::to_as_function() const
+	as_function*	as_value::to_as_function() const
 	// Return value as an ActionScript function.  Returns NULL if value is
 	// not an ActionScript function.
 	{
@@ -405,7 +405,7 @@ namespace gameswf
 		}
 	}
 
-	void	as_value::set_as_as_function(as_as_function* func)
+	void	as_value::set_as_function(as_function* func)
 	{
 		if (m_type != AS_FUNCTION || m_as_function_value != func)
 		{
@@ -446,7 +446,7 @@ namespace gameswf
 			set_as_c_function_ptr(v.m_c_function_value);
 			break;
 		case AS_FUNCTION:
-			set_as_as_function(v.m_as_function_value);
+			set_as_function(v.m_as_function_value);
 			break;
 		case PROPERTY:
 			drop_refs(); 

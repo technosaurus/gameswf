@@ -59,7 +59,7 @@ namespace gameswf
 	struct sound_sample;
 	struct video_stream_definition;
 	struct sprite_definition;
-	struct as_as_function;
+	struct as_function;
 	struct as_object;
 
 	exported_module root* get_current_root();
@@ -155,7 +155,7 @@ namespace gameswf
 		AS_OBJECT,
 		AS_CHARACTER,
 		AS_SPRITE,
-		AS_AS_FUNCTION,
+		AS_FUNCTION,
 		AS_MOVIE_DEF,
 		AS_MOVIE_DEF_SUB,
 		AS_CHARACTER_DEF,
