@@ -15,7 +15,7 @@ namespace gameswf
 {
 	// Invokes the function represented by a Function object.
 	// public call(thisObject:Object, [parameter1:Object]) : Object
-	void	as_as_function_call(const fn_call& fn)
+	void	as_function_call(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
 		if (fn.nargs > 0)
@@ -23,7 +23,7 @@ namespace gameswf
 			as_object* properties = cast_to<as_object>(fn.this_ptr);
 			if (properties->m_this_ptr != NULL)
 			{
-				as_as_function* func = cast_to<as_as_function>(properties->m_this_ptr.get_ptr());
+				as_function* func = cast_to<as_function>(properties->m_this_ptr.get_ptr());
 				if (func)
 				{
 					as_environment env;
@@ -41,7 +41,7 @@ namespace gameswf
 		}
 	}
 
-	as_as_function::as_as_function( const action_buffer* ab, int start, 
+	as_function::as_function( const action_buffer* ab, int start, 
 		const array<with_stack_entry>& with_stack)
 		:
 		m_with_stack(with_stack),
@@ -55,20 +55,20 @@ namespace gameswf
 		// action_buffer is in movie_def, therefore when we load another _root
 		// action_buffer will be deleted and _global.MyClass will keep
 		// the pointer to the removed object(action_buffer).
-		// Therefore we have updated action_buffer* ==> action_buffer in as_as_function
+		// Therefore we have updated action_buffer* ==> action_buffer in as_function
 		assert(ab);
 		m_action_buffer = *ab;
 
 		m_this_ptr = this;
 		builtin_member("prototype", new as_object());
-		builtin_member("call", as_as_function_call);
+		builtin_member("call", as_function_call);
 	}
 
-	as_as_function::~as_as_function()
+	as_function::~as_function()
 	{
 	}
 
-	void	as_as_function::operator()(const fn_call& fn)
+	void	as_function::operator()(const fn_call& fn)
 	// Dispatch.
 	{
 

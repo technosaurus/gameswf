@@ -41,7 +41,7 @@ namespace gameswf
 			{
 			}
 
-			as_as_function* m_func;
+			as_function* m_func;
 			as_value m_user_data;
 		};
 
@@ -65,7 +65,7 @@ namespace gameswf
 		exported_module virtual bool	on_event(const event_id& id);
 		exported_module virtual	void enumerate(as_environment* env);
 		exported_module virtual as_object* get_proto() const;
-		exported_module virtual bool watch(const tu_string& name, as_as_function* callback, const as_value& user_data);
+		exported_module virtual bool watch(const tu_string& name, as_function* callback, const as_value& user_data);
 		exported_module virtual bool unwatch(const tu_string& name);
 		exported_module virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		exported_module virtual void not_garbage();

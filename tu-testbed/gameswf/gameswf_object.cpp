@@ -327,7 +327,7 @@ namespace gameswf
 //		}
 	}
 
-	bool as_object::watch(const tu_string& name, as_as_function* callback,
+	bool as_object::watch(const tu_string& name, as_function* callback,
 		const as_value& user_data)
 	{
 		if (callback == NULL)

@@ -17,7 +17,7 @@
 namespace gameswf
 {
 	struct fn_call;
-	struct as_as_function;
+	struct as_function;
 	struct as_object;
 	struct as_environment;
 
@@ -40,12 +40,12 @@ namespace gameswf
 		getter_setter_type m_setter_type;
 		union
 		{
-			as_as_function*	m_getter;
+			as_function*	m_getter;
 			as_c_function_ptr	m_c_getter;
 		};
 		union
 		{
-			as_as_function*	m_setter;
+			as_function*	m_setter;
 			as_c_function_ptr	m_c_setter;
 		};
 
@@ -79,7 +79,7 @@ namespace gameswf
 			mutable	double	m_number_value;
 			as_object*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
-			as_as_function*	m_as_function_value;
+			as_function*	m_as_function_value;
 			struct
 			{
 				as_object*	m_property_target;
@@ -182,7 +182,7 @@ namespace gameswf
 			m_c_function_value = func;
 		}
 
-		exported_module as_value(as_as_function* func);
+		exported_module as_value(as_function* func);
 		exported_module as_value(const as_value& getter, const as_value& setter);
 
 		~as_value() { drop_refs(); }
@@ -206,7 +206,7 @@ namespace gameswf
 		exported_module bool	to_bool() const;
 		exported_module as_object*	to_object() const;
 		exported_module as_c_function_ptr	to_c_function() const;
-		exported_module as_as_function*	to_as_function() const;
+		exported_module as_function*	to_as_function() const;
 		exported_module const tu_string& call_to_string(as_environment* env) const;
 
 		// These set_*()'s are more type-safe; should be used
@@ -223,7 +223,7 @@ namespace gameswf
 		{
 			drop_refs(); m_type = C_FUNCTION; m_c_function_value = func;
 		}
-		exported_module void	set_as_as_function(as_as_function* func);
+		exported_module void	set_as_function(as_function* func);
 		exported_module void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
 		exported_module void	set_null() { drop_refs(); m_type = NULLTYPE; }
 
