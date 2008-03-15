@@ -455,16 +455,16 @@ namespace gameswf
 
 
 	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
-	static weak_ptr<movie_root> s_current_root;
+	static weak_ptr<root> s_current_root;
 	static tu_string s_workdir;
 
-	movie_root* get_current_root()
+	root* get_current_root()
 	{
 		assert(s_current_root != NULL);
 		return s_current_root.get_ptr();
 	}
 
-	void set_current_root(movie_root* m)
+	void set_current_root(root* m)
 	{
 		assert(m != NULL);
 		s_current_root = m;
@@ -618,7 +618,7 @@ namespace gameswf
 		} save_stuff_instance;
 
 		// Need an instance.
-		gameswf::movie_root*	m = movie_def->create_instance();
+		gameswf::root*	m = movie_def->create_instance();
 		if (m == NULL)
 		{
 			log_error("error: precompute_cached_data can't create instance of movie\n");
@@ -1938,10 +1938,10 @@ namespace gameswf
 //		m_instance = NULL;
 	}
 
-	movie_root*	movie_def_impl::create_instance()
+	root*	movie_def_impl::create_instance()
 	// Create a playable movie instance from a def.
 	{
-		movie_root*	root = create_root();
+		root*	root = create_root();
 
 		// create dlist
 		root->get_root_movie()->execute_frame_tags(0);		
@@ -1949,7 +1949,7 @@ namespace gameswf
 		return root;
 	}
 
-	movie_root*	movie_def_impl::create_root()
+	root*	movie_def_impl::create_root()
 	{
 
 		// Is the movie instance already in the library?
@@ -1962,7 +1962,7 @@ namespace gameswf
 			}
 		}
 
-		movie_root*	m = new movie_root(this);
+		root*	m = new root(this);
 		assert(m);
 
 		if (s_use_cached_movie_instance)
@@ -1975,7 +1975,7 @@ namespace gameswf
 
 		// By default _root has no name
 		//		root_movie->set_name("_root");
-		root_movie->set_member("$version", get_gameswf_version());	// Flash 8
+		root_movie->builtin_member("$version", get_gameswf_version());	// Flash 8
 		
 		m->set_root_movie(root_movie);
 

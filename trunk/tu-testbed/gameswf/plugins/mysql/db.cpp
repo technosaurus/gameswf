@@ -110,12 +110,12 @@ extern "C"
 mydb::mydb(): m_db(NULL)
 {
 	// methods
-	as_object::set_member("connect", mydb_connect);
-	as_object::set_member("disconnect", mydb_disconnect);
-	as_object::set_member("open", mydb_open);
-	as_object::set_member("run", mydb_run);
-	as_object::set_member("commit", mydb_commit);
-	as_object::set_member("auto_commit", as_value(NULL, mydb_autocommit_setter));
+	builtin_member("connect", mydb_connect);
+	builtin_member("disconnect", mydb_disconnect);
+	builtin_member("open", mydb_open);
+	builtin_member("run", mydb_run);
+	builtin_member("commit", mydb_commit);
+	builtin_member("auto_commit", as_value(NULL, mydb_autocommit_setter));
 }
 
 mydb::~mydb()

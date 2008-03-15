@@ -172,12 +172,12 @@ namespace gameswf
 		}
 
 		// methods
-		snd->set_member("attachSound", sound_attach);
-		snd->set_member("start", sound_start);
-		snd->set_member("stop", sound_stop);
-		snd->set_member("setVolume", sound_volume);
-		snd->set_member("loadSound", sound_load);
-		snd->set_member("position", as_value(get_position, NULL));
+		snd->builtin_member("attachSound", sound_attach);
+		snd->builtin_member("start", sound_start);
+		snd->builtin_member("stop", sound_stop);
+		snd->builtin_member("setVolume", sound_volume);
+		snd->builtin_member("loadSound", sound_load);
+		snd->builtin_member("position", as_value(get_position, NULL));
 
 		fn.result->set_as_object(snd.get_ptr());
 	}

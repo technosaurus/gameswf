@@ -21,10 +21,10 @@ namespace gameswf
 		as_object*	geom_obj = new as_object;
 
 		// constant
-		geom_obj->set_member("Point", as_global_point_ctor);
-		geom_obj->set_member("Matrix", as_global_matrix_ctor);
-		geom_obj->set_member("Transform", as_global_transform_ctor);
-		geom_obj->set_member("ColorTransform", as_global_color_transform_ctor);
+		geom_obj->builtin_member("Point", as_global_point_ctor);
+		geom_obj->builtin_member("Matrix", as_global_matrix_ctor);
+		geom_obj->builtin_member("Transform", as_global_transform_ctor);
+		geom_obj->builtin_member("ColorTransform", as_global_color_transform_ctor);
 
 		return geom_obj;
 	}

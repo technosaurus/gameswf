@@ -21,7 +21,7 @@
 
 namespace gameswf
 {
-	struct movie_root;
+	struct root;
 	struct swf_event;
 	struct as_mcloader;
 
@@ -153,6 +153,59 @@ namespace gameswf
 		}
 
 
+		// @@ do we want a version that returns a number?
+
+		// ActionScript method call.  Return value points to a
+		// static string buffer with the result; caller should
+		// use the value immediately before making more calls
+		// to gameswf.
+
+		// NOT THREAD SAFE!!!
+		//
+		// DO NOT USE TO CALL CLASS MEMBER!!!
+		//
+		// method_name is the name of the method (possibly namespaced).
+		//
+		// method_arg_fmt is a printf-style declaration of
+		// the method call, where the arguments are
+		// represented by { %d, %s, %f, %ls }, followed by the
+		// vararg list of actual arguments.
+		//
+		// E.g.
+		//
+		// m->call_method("path.to.method_name", "%d, %s, %f", i, "hello", 2.7f);
+		//
+		// The format args are a small subset of printf, namely:
+		//
+		// %d -- integer arg
+		// %s -- 0-terminated char* string arg
+		// %ls -- 0-terminated wchar_t* string arg
+		// %f -- float/double arg
+		//
+		// Whitespace and commas in the format string are ignored.
+		//
+		// This is not an ActionScript language parser, it
+		// doesn't recognize expressions or anything tricky.
+
+//#ifdef __GNUC__
+		// use the following to catch errors: (only with gcc)
+//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+//			__attribute__((format (printf, 3, 4))) = 0;	// "this" is an implied param, so fmt is 3 and ... is 4!
+//#else	// not __GNUC__
+//		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
+//#endif	// not __GNUC__
+
+		// Forward vararg call to version taking va_list.
+		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
+		{
+			va_list	args;
+			va_start(args, method_arg_fmt);
+			const char*	result = call_method_args(method_name, method_arg_fmt, args);
+			va_end(args);
+
+			return result;
+		}
+
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 		// Override this if you implement call_method.
 		{
@@ -163,6 +216,7 @@ namespace gameswf
 		virtual void	set_play_state(play_state s) {}
 		virtual play_state	get_play_state() const { assert(0); return STOP; }
 
+		// Returns true if labeled frame is found.
 		virtual bool	goto_labeled_frame(const char* label) { assert(0); return false; }
 
 		//
@@ -259,44 +313,60 @@ namespace gameswf
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
 
 		virtual void	set_background_color(const rgba& color) {}
+
+		// Set to 0 if you don't want the movie to render its
+		// background at all.  1 == full opacity.
 		virtual void	set_background_alpha(float alpha) {}
+
 		virtual float	get_background_alpha() const { return 1.0f; }
+
+		// move/scale the movie...
 		virtual void	set_display_viewport(int x0, int y0, int width, int height) {}
-
-		// Forward vararg call to version taking va_list.
-		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
-		{
-			va_list	args;
-			va_start(args, method_arg_fmt);
-			const char*	result = call_method_args(method_name, method_arg_fmt, args);
-			va_end(args);
-
-			return result;
-		}
 
 		//
 		// external
 		//
 
+		// Set and get userdata, that's useful for the fs_command handler.
 		virtual void * get_userdata() { assert(0); return NULL; }
 		virtual void set_userdata(void *) { assert(0); }
 
+		// Set an ActionScript variable within this movie.
+		// You can use this to set the value of text fields,
+		// ordinary variables, or properties of characters
+		// within the script.
+		//
+		// This version accepts UTF-8
 		virtual void	set_variable(const char* path_to_var, const char* new_value)
 		{
 			assert(0);
 		}
 
+		// This version accepts UCS-2 or UCS-4, depending on sizeof(wchar_t)
 		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value)
 		{
 			assert(0);
 		}
 
+		// @@ do we want versions that take a number?
+
+		// Get the value of an ActionScript variable.
+		//
+		// Value is ephemeral & not thread safe!!!  Use it or
+		// copy it immediately.
+		//
+		// Returns UTF-8
 		virtual const char*	get_variable(const char* path_to_var) const
 		{
 			assert(0);
 			return "";
 		}
 
+		// Display callbacks, for client rendering.  Callback
+		// is called after rendering the object it's attached
+		// to.
+		//
+		// Attach NULL to disable the callback.
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr)
 		{
 			assert(0);
@@ -391,7 +461,9 @@ namespace gameswf
 
 		virtual character*	get_root_movie() { return m_parent->get_root_movie(); }
 
+		// Frame counts in this API are 0-based (unlike ActionScript)
 		virtual int	get_current_frame() const { return -1; }
+
 		virtual int	get_frame_count() const { return -1; }
 		virtual int get_loading_frame() const { return -1; }
 
@@ -400,7 +472,11 @@ namespace gameswf
 		virtual void	goto_frame(int target_frame) {}
 		virtual bool	get_accept_anim_moves() const { return true; }
 
+		// Make the movie visible/invisible.  An invisible
+		// movie does not advance and does not render.
 		virtual void	set_visible(bool visible) { m_visible = visible; }
+
+		// Return visibility status.
 		virtual bool	get_visible() const { return m_visible; }
 
 		virtual void	set_display_callback(void (*callback)(void*), void* user_ptr)

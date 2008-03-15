@@ -382,7 +382,7 @@ namespace gameswf
 
 	void string_ctor(const fn_call& fn)
 	{
-		smart_ptr<tu_string_as_object_instance> str = new tu_string_as_object_instance;
+		tu_string_as_object_instance* str = new tu_string_as_object_instance();
 
 		if (fn.nargs > 0)
 		{
@@ -390,21 +390,21 @@ namespace gameswf
 		}
 		
 		// TODO fill in the rest
-		str->set_member("toString", string_to_string);
-		str->set_member("fromCharCode", string_from_char_code);
-		str->set_member("charCodeAt", string_char_code_at);
-		str->set_member("concat", string_concat);
-		str->set_member("indexOf", string_index_of);
-		str->set_member("lastIndexOf", string_last_index_of);
-		str->set_member("slice", string_slice);
-		str->set_member("split", string_split);
-		str->set_member("substring", string_substring);
-		str->set_member("substr", string_substr);
-		str->set_member("toLowerCase", string_to_lowercase);
-		str->set_member("toUpperCase", string_to_uppercase);
-		str->set_member("charAt", string_char_at);
+		str->builtin_member("toString", string_to_string);
+		str->builtin_member("fromCharCode", string_from_char_code);
+		str->builtin_member("charCodeAt", string_char_code_at);
+		str->builtin_member("concat", string_concat);
+		str->builtin_member("indexOf", string_index_of);
+		str->builtin_member("lastIndexOf", string_last_index_of);
+		str->builtin_member("slice", string_slice);
+		str->builtin_member("split", string_split);
+		str->builtin_member("substring", string_substring);
+		str->builtin_member("substr", string_substr);
+		str->builtin_member("toLowerCase", string_to_lowercase);
+		str->builtin_member("toUpperCase", string_to_uppercase);
+		str->builtin_member("charAt", string_char_at);
     
-		fn.result->set_as_object(str.get_ptr());
+		fn.result->set_as_object(str);
 	}
 
 } // namespace gameswf

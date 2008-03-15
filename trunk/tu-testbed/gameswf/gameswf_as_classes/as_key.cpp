@@ -131,12 +131,12 @@ namespace gameswf
 		KEY_CONST(UP);
 
 		// methods
-		key_obj->set_member("addListener", key_add_listener);
-		key_obj->set_member("getAscii", key_get_ascii);
-		key_obj->set_member("getCode", key_get_code);
-		key_obj->set_member("isDown", key_is_down);
-		key_obj->set_member("isToggled", key_is_toggled);
-		key_obj->set_member("removeListener", key_remove_listener);
+		key_obj->builtin_member("addListener", key_add_listener);
+		key_obj->builtin_member("getAscii", key_get_ascii);
+		key_obj->builtin_member("getCode", key_get_code);
+		key_obj->builtin_member("isDown", key_is_down);
+		key_obj->builtin_member("isToggled", key_is_toggled);
+		key_obj->builtin_member("removeListener", key_remove_listener);
 
 		return key_obj;
 	}

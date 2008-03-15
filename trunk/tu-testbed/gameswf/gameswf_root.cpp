@@ -25,7 +25,7 @@ namespace gameswf
 		return s_gameswf_engine;
 	}
 
-	movie_root::movie_root(movie_def_impl* def)	:
+	root::root(movie_def_impl* def)	:
 		m_def(def),
 		m_movie(NULL),
 		m_viewport_x0(0),
@@ -50,7 +50,7 @@ namespace gameswf
 		m_frame_time = 1.0f / get_frame_rate();
 	}
 
-	movie_root::~movie_root()
+	root::~root()
 	{
 		assert(m_movie != NULL);
 		m_movie = NULL;
@@ -59,12 +59,12 @@ namespace gameswf
 		m_def = NULL;
 	}
 
-	void movie_root::set_active_entity(character* ch)
+	void root::set_active_entity(character* ch)
 	{
 		m_current_active_entity = ch;
 	}
 
-	void	movie_root::generate_mouse_button_events(mouse_button_state* ms)
+	void	root::generate_mouse_button_events(mouse_button_state* ms)
 	{
 		smart_ptr<character>	active_entity = ms->m_active_entity;
 		smart_ptr<character>	topmost_entity = ms->m_topmost_entity;
@@ -224,20 +224,20 @@ namespace gameswf
 
 	// movie info
 
-	int	movie_root::get_movie_version()
+	int	root::get_movie_version()
 	{
 		return m_def->get_version();
 	}
 
-	int	movie_root::get_movie_width()
+	int	root::get_movie_width()
 	{
 		return (int) m_def->get_width_pixels();
 	}
-	int	movie_root::get_movie_height()
+	int	root::get_movie_height()
 	{
 		return (int) m_def->get_height_pixels();
 	}
-	float	movie_root::get_movie_fps()
+	float	root::get_movie_fps()
 	{
 		return m_def->get_frame_rate();
 	}
@@ -245,7 +245,7 @@ namespace gameswf
 	void	action_init();
 	void notify_key_object(key::code k, bool down);
 
-	void	movie_root::notify_key_event(key::code k, bool down)
+	void	root::notify_key_event(key::code k, bool down)
 	{
 		// multithread plugins can call gameswf core therefore we should 
 		// use gameswf mutex to lock gameswf engine
@@ -265,16 +265,16 @@ namespace gameswf
 	}
 
 	// @@ should these delegate to m_movie?	 Probably...
-	bool	movie_root::set_member(const tu_stringi& name, const as_value& val) { return false; }
-	bool	movie_root::get_member(const tu_stringi& name, as_value* val) { return false; }
+	bool	root::set_member(const tu_stringi& name, const as_value& val) { return false; }
+	bool	root::get_member(const tu_stringi& name, as_value* val) { return false; }
 
-	void	movie_root::set_root_movie(character* root_movie)
+	void	root::set_root_movie(character* root_movie)
 	{
 		m_movie = root_movie;
 		assert(m_movie != NULL);
 	}
 
-	void	movie_root::set_display_viewport(int x0, int y0, int w, int h)
+	void	root::set_display_viewport(int x0, int y0, int w, int h)
 	{
 		m_viewport_x0 = x0;
 		m_viewport_y0 = y0;
@@ -288,7 +288,7 @@ namespace gameswf
 	}
 
 
-	void	movie_root::notify_mouse_state(int x, int y, int buttons)
+	void	root::notify_mouse_state(int x, int y, int buttons)
 	// The host app uses this to tell the movie where the
 	// user's mouse pointer is.
 	{
@@ -297,7 +297,7 @@ namespace gameswf
 		m_mouse_buttons = buttons;
 	}
 
-	void	movie_root::get_mouse_state(int* x, int* y, int* buttons)
+	void	root::get_mouse_state(int* x, int* y, int* buttons)
 	// Use this to retrieve the last state of the mouse, as set via
 	// notify_mouse_state().  Coordinates are in PIXELS, NOT TWIPS.
 	{
@@ -310,20 +310,20 @@ namespace gameswf
 		*buttons = m_mouse_buttons;
 	}
 
-	character*	movie_root::get_root_movie() { return m_movie.get_ptr(); }
+	character*	root::get_root_movie() { return m_movie.get_ptr(); }
 
 
-	void	movie_root::stop_drag()
+	void	root::stop_drag()
 	{
 		m_drag_state.m_character = NULL;
 	}
 
-	movie_definition*	movie_root::get_movie_definition() { return m_movie->get_movie_definition(); }
+	movie_definition*	root::get_movie_definition() { return m_movie->get_movie_definition(); }
 
 	// 0-based!!
-	int	movie_root::get_current_frame() const { return m_movie->get_current_frame(); }
-	float	movie_root::get_frame_rate() const { return m_def->get_frame_rate(); }
-	void	movie_root::set_frame_rate(float rate)
+	int	root::get_current_frame() const { return m_movie->get_current_frame(); }
+	float	root::get_frame_rate() const { return m_def->get_frame_rate(); }
+	void	root::set_frame_rate(float rate)
 	{
 		if (rate >= 1 && rate <= 120)
 		{
@@ -332,7 +332,7 @@ namespace gameswf
 		}
 	}
 
-	float	movie_root::get_pixel_scale() const
+	float	root::get_pixel_scale() const
 	// Return the size of a logical movie pixel as
 	// displayed on-screen, with the current device
 	// coordinates.
@@ -341,27 +341,27 @@ namespace gameswf
 	}
 
 	// @@ Is this one necessary?
-	character*	movie_root::get_character(int character_id)
+	character*	root::get_character(int character_id)
 	{
 		return m_movie->get_character(character_id);
 	}
 
-	void	movie_root::set_background_color(const rgba& color)
+	void	root::set_background_color(const rgba& color)
 	{
 		m_background_color = color;
 	}
 
-	void	movie_root::set_background_alpha(float alpha)
+	void	root::set_background_alpha(float alpha)
 	{
 		m_background_color.m_a = iclamp(frnd(alpha * 255.0f), 0, 255);
 	}
 
-	float	movie_root::get_background_alpha() const
+	float	root::get_background_alpha() const
 	{
 		return m_background_color.m_a / 255.0f;
 	}
 
-	void	movie_root::advance(float delta_time)
+	void	root::advance(float delta_time)
 	{
 		// Lock gameswf engine. Video is running in separate thread and
 		// it calls gameswf functions from separate thread to set
@@ -410,11 +410,11 @@ namespace gameswf
 	}
 
 	// 0-based!!
-	void	movie_root::goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
+	void	root::goto_frame(int target_frame_number) { m_movie->goto_frame(target_frame_number); }
 
-	bool	movie_root::has_looped() const { return m_movie->has_looped(); }
+	bool	root::has_looped() const { return m_movie->has_looped(); }
 
-	void	movie_root::display()
+	void	root::display()
 	{
 		if (m_movie->get_visible() == false)
 		{
@@ -434,7 +434,7 @@ namespace gameswf
 		gameswf::render::end_display();
 	}
 
-	bool	movie_root::goto_labeled_frame(const char* label)
+	bool	root::goto_labeled_frame(const char* label)
 	{
 		int	target_frame = -1;
 		if (m_def->get_labeled_frame(label, &target_frame))
@@ -450,26 +450,26 @@ namespace gameswf
 		}
 	}
 
-	void	movie_root::set_play_state(character::play_state s) { m_movie->set_play_state(s); }
-	character::play_state	movie_root::get_play_state() const { return m_movie->get_play_state(); }
+	void	root::set_play_state(character::play_state s) { m_movie->set_play_state(s); }
+	character::play_state	root::get_play_state() const { return m_movie->get_play_state(); }
 
-	void	movie_root::set_variable(const char* path_to_var, const char* new_value)
+	void	root::set_variable(const char* path_to_var, const char* new_value)
 	{
 		m_movie->set_variable(path_to_var, new_value);
 	}
 
-	void	movie_root::set_variable(const char* path_to_var, const wchar_t* new_value)
+	void	root::set_variable(const char* path_to_var, const wchar_t* new_value)
 	{
 		m_movie->set_variable(path_to_var, new_value);
 	}
 
-	const char*	movie_root::get_variable(const char* path_to_var) const
+	const char*	root::get_variable(const char* path_to_var) const
 	{
 		return m_movie->get_variable(path_to_var);
 	}
 
 	// For ActionScript interfacing convenience.
-	const char*	movie_root::call_method(const char* method_name, const char* method_arg_fmt, ...)
+	const char*	root::call_method(const char* method_name, const char* method_arg_fmt, ...)
 	{
 		assert(m_movie != NULL);
 
@@ -481,19 +481,19 @@ namespace gameswf
 		return result;
 	}
 
-	const char*	movie_root::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
+	const char*	root::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 	{
 		assert(m_movie != NULL);
 		return m_movie->call_method_args(method_name, method_arg_fmt, args);
 	}
 
-	void	movie_root::set_visible(bool visible) { m_movie->set_visible(visible); }
-	bool	movie_root::get_visible() const { return m_movie->get_visible(); }
+	void	root::set_visible(bool visible) { m_movie->set_visible(visible); }
+	bool	root::get_visible() const { return m_movie->get_visible(); }
 
-	void* movie_root::get_userdata() { return m_userdata; }
-	void movie_root::set_userdata(void * ud ) { m_userdata = ud;  }
+	void* root::get_userdata() { return m_userdata; }
+	void root::set_userdata(void * ud ) { m_userdata = ud;  }
 
-	void	movie_root::attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr)
+	void	root::attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr)
 	{
 		m_movie->attach_display_callback(path_to_object, callback, user_ptr);
 	}

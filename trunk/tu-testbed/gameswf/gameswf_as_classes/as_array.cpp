@@ -110,14 +110,10 @@ namespace gameswf
 		//			this->set_member("sort", &array_not_impl);
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
-		set_member("toString", as_array_tostring);
-		set_member_flags("toString", as_prop_flags::DONT_ENUM);
-		set_member("push", as_array_push);
-		set_member_flags("push", as_prop_flags::DONT_ENUM);
-		set_member("pop", as_array_pop);
-		set_member_flags("pop", as_prop_flags::DONT_ENUM);
-		set_member("length", as_value(as_array_length, NULL));
-		set_member_flags("length", as_prop_flags::DONT_ENUM);
+		builtin_member("toString", as_array_tostring);
+		builtin_member("push", as_array_push);
+		builtin_member("pop", as_array_pop);
+		builtin_member("length", as_value(as_array_length, NULL));
 	}
 
 	tu_string as_array::to_string()

@@ -18,7 +18,7 @@ namespace gameswf
 		as_object*	flash_obj = new as_object;
 
 		// constant
-		flash_obj->set_member("geom", geom_init());
+		flash_obj->builtin_member("geom", geom_init());
 
 		return flash_obj;
 	}

@@ -111,7 +111,7 @@ namespace gameswf
 			return;
 		}
 
-		virtual movie_root*	create_instance()
+		virtual root*	create_instance()
 		{
 			return NULL;
 		}

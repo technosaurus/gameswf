@@ -238,7 +238,7 @@ namespace gameswf
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		void reset_format(as_textformat* tf);
 
-		movie_root* get_root();
+		root* get_root();
 		void show_cursor();
 		void display();
 		virtual bool on_event(const event_id& id);

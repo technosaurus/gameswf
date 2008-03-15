@@ -37,15 +37,15 @@ namespace gameswf
 	struct display_info;
 	struct execute_tag;
 	struct font;
-	struct movie_root;
+	struct root;
 	struct movie_definition_sub;
 
 	struct stream;
 	struct swf_event;
 
 	// for extern movies
-	exported_module movie_root*	get_current_root();
-	exported_module void set_current_root(movie_root* m);
+	exported_module root*	get_current_root();
+	exported_module void set_current_root(root* m);
 	exported_module const char* get_workdir();
 	exported_module void set_workdir(const char* dir);
 

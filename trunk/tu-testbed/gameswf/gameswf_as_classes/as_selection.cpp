@@ -32,7 +32,7 @@ namespace gameswf
 		as_object* sel = new as_selection();
 
 		// methods
-		sel->set_member("setFocus", as_selection_setfocus);
+		sel->builtin_member("setFocus", as_selection_setfocus);
 
 // TODO
 //		sel->set_member("getFocus", as_selection_setfocus);

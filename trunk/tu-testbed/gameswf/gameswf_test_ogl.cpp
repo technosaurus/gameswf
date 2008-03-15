@@ -506,7 +506,7 @@ int	main(int argc, char *argv[])
 			exit(1);
 		}
 
-		smart_ptr<gameswf::movie_root>	m = md->create_instance();
+		smart_ptr<gameswf::root>	m = md->create_instance();
 		if (m == NULL)
 		{
 			fprintf(stderr, "error: can't create movie instance\n");

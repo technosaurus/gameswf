@@ -26,8 +26,8 @@ namespace gameswf
 
 	// this stuff should be high optimized
 	// thus I can't use here set_member(...);
-	sprite_instance::sprite_instance(movie_definition_sub* def,
-		movie_root* r, character* parent, int id)
+	sprite_instance::sprite_instance(movie_definition_sub* def,	root* r, 
+		character* parent, int id)
 		:
 		character(parent, id),
 		m_def(def),
@@ -200,7 +200,8 @@ namespace gameswf
 	{
 
 		as_value dummy;
-		for (unsigned int i = 0; i < ARRAYSIZE(FN_NAMES); i++)
+		int i;
+		for (i = 0; i < ARRAYSIZE(FN_NAMES); i++)
 		{
 			if (get_member(FN_NAMES[i], &dummy)) 
 			{
@@ -218,14 +219,14 @@ namespace gameswf
 			event_id::DRAG_OVER,
 			event_id::DRAG_OUT,
 		};
-		{for (unsigned int i = 0; i < ARRAYSIZE(EH_IDS); i++)
+
+		for (i = 0; i < ARRAYSIZE(EH_IDS); i++)
 		{
 			if (get_event_handler(EH_IDS[i], &dummy))
 			{
 				return true;
 			}
-		}}
-
+		}
 		return false;
 	}
 
@@ -322,7 +323,7 @@ namespace gameswf
 			// clip sprite onload 
 			// _root.onLoad() will not be executed since do_actions()
 			// for frame(0) has not executed yet.
-			// _root.onLoad() will be executed later in movie_root::advance()
+			// _root.onLoad() will be executed later in root::advance()
 			on_event(event_id::LOAD);
 		}
 
@@ -838,7 +839,7 @@ namespace gameswf
 		// is 'this' root ?
 		if (parent == NULL)
 		{
-			movie_root* new_inst = md->create_instance();
+			root* new_inst = md->create_instance();
 			character* ch = new_inst->get_root_movie();
 			set_current_root(new_inst);
 

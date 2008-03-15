@@ -418,18 +418,6 @@ namespace gameswf
 		}
 	}
 
-	
-	bool	as_environment::get_member(const tu_stringi& varname, as_value* val) const
-	{
-		return m_target->get_member(varname, val);
-	}
-
-
-	bool	as_environment::set_member(const tu_stringi& varname, const as_value& val)
-	{
-		return m_target->set_member(varname, val);
-	}
-
 	as_value* as_environment::get_register(int reg)
 	{
 		as_value* val = local_register_ptr(reg);

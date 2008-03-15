@@ -107,15 +107,15 @@ void	to_get_recno_method(const fn_call& fn)
 mytable::mytable() :
 	m_index(0)
 {
-	as_object::set_member("size", &size_method);
-	as_object::set_member("next", &next_method);
-	as_object::set_member("prev", &prev_method);
-	as_object::set_member("first", &first_method);
-	as_object::set_member("fields", &field_count_method);
-	as_object::set_member("goto", &goto_record_method);
-	as_object::set_member("title", &get_title_method);
-	as_object::set_member("toString", &to_string_method);
-	as_object::set_member("getRecNo", &to_get_recno_method);
+	builtin_member("size", size_method);
+	builtin_member("next", next_method);
+	builtin_member("prev", prev_method);
+	builtin_member("first", first_method);
+	builtin_member("fields", field_count_method);
+	builtin_member("goto", goto_record_method);
+	builtin_member("title", get_title_method);
+	builtin_member("toString", to_string_method);
+	builtin_member("getRecNo", to_get_recno_method);
 }
 
 mytable::~mytable()

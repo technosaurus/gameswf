@@ -96,9 +96,6 @@ namespace gameswf
 		void	add_local(const tu_string& varname, const as_value& val);	// when you know it doesn't exist.
 		void	declare_local(const tu_string& varname);	// Declare varname; undefined unless it already exists.
 
-		bool	get_member(const tu_stringi& varname, as_value* val) const;
-		bool	set_member(const tu_stringi& varname, const as_value& val);
-
 		// Parameter/local stack frame management.
 		int	get_local_frame_top() const { return m_local_frames.size(); }
 		void	set_local_frame_top(int t) { assert(t <= m_local_frames.size()); m_local_frames.resize(t); }

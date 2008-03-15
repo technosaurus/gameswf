@@ -98,7 +98,7 @@ namespace gameswf
 	}
 
 	// this stuff should be high optimized
-	// thus I can't use here set_member(...);	as_object::as_object()
+	// thus I can't use here set_member(...)
 	as_object::as_object()
 	{
 		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_OBJECT_METHOD);
