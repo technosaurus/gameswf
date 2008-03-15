@@ -54,7 +54,8 @@ namespace gameswf
 		enum { m_class_id = AS_FONT };
 		virtual bool is(int class_id)
 		{
-			return m_class_id == class_id;
+			if (m_class_id == class_id) return true;
+			else return character_def::is(class_id);
 		}
 
 		int	get_glyph_count() const { return m_glyphs.size(); }
