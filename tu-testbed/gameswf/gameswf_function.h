@@ -46,11 +46,6 @@ namespace gameswf
 		uint8	m_local_register_count;
 		uint16	m_function2_flags;	// used by function2 to control implicit arg register assignments
 
-		// ActionScript functions have a property namespace!
-		// Typically used for class constructors, for "prototype", "constructor",
-		// and class properties.
-//		smart_ptr<as_object>	m_properties;
-
 		// if function has been declared in moviclip then we should use its environment
 		// And for this purpose it is necessary to keep target that has created 'this'
 		// testcase:
