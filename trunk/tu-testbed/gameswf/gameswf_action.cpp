@@ -1018,20 +1018,24 @@ namespace gameswf
 
 	as_object* action_buffer::create_proto(as_object* obj, const as_value& constructor)
 	{
-		as_value	prototype_val;
-		constructor.to_object()->get_member("prototype", &prototype_val);
-		as_object* prototype = prototype_val.to_object();
-		assert(prototype);
-		prototype->copy_to(obj);
-
 		as_object* proto = new as_object();
 		proto->m_this_ptr = cast_to<as_object>(obj)->m_this_ptr;
-
-		as_value prototype_constructor;
-		prototype->get_member("__constructor__", &prototype_constructor);
-		proto->set_member("__constructor__", prototype_constructor);
-
 		obj->m_proto = proto;
+
+		if (constructor.to_object())
+		{
+			// constructor is AS_FUNCTION
+			as_value	val;
+			constructor.to_object()->get_member("prototype", &val);
+			as_object* prototype = val.to_object();
+			assert(prototype);
+			prototype->copy_to(obj);
+
+			as_value prototype_constructor;
+			prototype->get_member("__constructor__", &prototype_constructor);
+			proto->set_member("__constructor__", prototype_constructor);
+		}
+
 		return proto;
 	}
 
@@ -2209,19 +2213,22 @@ namespace gameswf
 					as_value& super = env->top(0);
 					as_value& sub = env->top(1);
 
-					// TODO: extends MovieClip, ...
-					assert(super.to_object());
 					assert(sub.to_object());
+					assert(super.get_type() == as_value::C_FUNCTION ||
+						super.get_type() == as_value::AS_FUNCTION);
 
 					as_value super_prototype;
-					super.to_object()->get_member("prototype", &super_prototype);
+					as_object* new_prototype = new as_object();
 
-					smart_ptr<as_object> new_prototype = new as_object();
+					if (super.to_object())
+					{
+						// AS_FUNCTION, we have prototype
+						super.to_object()->get_member("prototype", &super_prototype);
+					}
+
 					new_prototype->m_proto = super_prototype.to_object();
 					new_prototype->set_member("__constructor__", super);
-
-					sub.to_object()->set_member("prototype", new_prototype.get_ptr());
-
+					sub.to_object()->set_member("prototype", new_prototype);
 					env->drop(2);
 					break;
 
