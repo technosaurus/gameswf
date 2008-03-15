@@ -352,18 +352,12 @@ namespace gameswf
 			// OK.
 			return m_object_value;
 		}
-		else if (m_type == AS_FUNCTION && m_as_function_value != NULL)
+		else 
+		if (m_type == AS_FUNCTION)
 		{
-			return m_as_function_value->m_properties.get_ptr();
+			return m_as_function_value;
 		}
-//		else if (m_type == PROPERTY)
-//		{
-//			return get_property().to_object();
-//		}
-		else
-		{
-			return NULL;
-		}
+		return NULL;
 	}
 
 

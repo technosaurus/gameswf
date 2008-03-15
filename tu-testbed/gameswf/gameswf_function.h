@@ -27,7 +27,8 @@ namespace gameswf
 		enum { m_class_id = AS_AS_FUNCTION };
 		virtual bool is(int class_id)
 		{
-			return m_class_id == class_id;
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
 		}
 
 		action_buffer	m_action_buffer;
@@ -48,7 +49,7 @@ namespace gameswf
 		// ActionScript functions have a property namespace!
 		// Typically used for class constructors, for "prototype", "constructor",
 		// and class properties.
-		smart_ptr<as_object>	m_properties;
+//		smart_ptr<as_object>	m_properties;
 
 		// if function has been declared in moviclip then we should use its environment
 		// And for this purpose it is necessary to keep target that has created 'this'

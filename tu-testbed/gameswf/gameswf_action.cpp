@@ -2099,7 +2099,7 @@ namespace gameswf
 							if( func )
 							{
 								as_value prototype;
-								func->m_properties->get_member("prototype", &prototype);
+								func->get_member("prototype", &prototype);
 								prototype.to_object()->set_member("__constructor__", func);
 
 								as_object* proto = create_proto(new_obj.get_ptr(), func);
