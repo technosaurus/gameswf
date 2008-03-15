@@ -62,9 +62,9 @@ namespace gameswf
 		m_iface(NULL),
 		m_ns(NULL)
 	{
-		set_member("connect", &as_xmlsock_connect);
-		set_member("close", &as_xmlsock_close);
-		set_member("send", &as_xmlsock_send);
+		builtin_member("connect", as_xmlsock_connect);
+		builtin_member("close", as_xmlsock_close);
+		builtin_member("send", as_xmlsock_send);
 		m_iface = new net_interface_tcp();
 	}
 
@@ -112,7 +112,7 @@ namespace gameswf
 		}
 	}
 
-	// called from movie_root
+	// called from root
 	// To check up presence of data which have come from a network
 	void	as_xmlsock::advance(float delta_time)
 	{

@@ -203,11 +203,11 @@ namespace gameswf
 
 	as_matrix::as_matrix()
 	{
-		set_member("translate", as_matrix_translate);
-		set_member("rotate", as_matrix_rotate);
-		set_member("scale", as_matrix_scale);
-		set_member("concat", as_matrix_concat);
-		set_member("transformPoint", as_matrix_transformPoint);
+		builtin_member("translate", as_matrix_translate);
+		builtin_member("rotate", as_matrix_rotate);
+		builtin_member("scale", as_matrix_scale);
+		builtin_member("concat", as_matrix_concat);
+		builtin_member("transformPoint", as_matrix_transformPoint);
 	}
 
 };

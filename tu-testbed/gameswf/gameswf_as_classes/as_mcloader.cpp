@@ -111,11 +111,11 @@ namespace gameswf
 
 	as_mcloader::as_mcloader()
 	{
-		set_member("addListener", &as_mcloader_addlistener);
-		set_member("removeListener", &as_mcloader_removelistener);
-		set_member("loadClip", &as_mcloader_loadclip);
-		set_member("unloadClip", &as_mcloader_unloadclip);
-		set_member("getProgress", &as_mcloader_getprogress);
+		builtin_member("addListener", as_mcloader_addlistener);
+		builtin_member("removeListener", as_mcloader_removelistener);
+		builtin_member("loadClip", as_mcloader_loadclip);
+		builtin_member("unloadClip", as_mcloader_unloadclip);
+		builtin_member("getProgress", as_mcloader_getprogress);
 	}
 
 	as_mcloader::~as_mcloader()

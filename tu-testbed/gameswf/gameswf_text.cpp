@@ -569,7 +569,7 @@ namespace gameswf
 		m_leading = m_def->m_leading;
 		m_background_color.set(255, 255, 255, 255);
 
-		set_member("setTextFormat", set_textformat);
+		builtin_member("setTextFormat", set_textformat);
 
 		// first set default text value
 		set_text(def->m_default_text.c_str());
@@ -696,7 +696,7 @@ namespace gameswf
 		format_text();
 	}
 
-	movie_root* edit_text_character::get_root()
+	root* edit_text_character::get_root()
 	{
 		return get_parent()->get_root(); 
 	} 

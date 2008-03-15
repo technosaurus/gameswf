@@ -73,9 +73,9 @@ extern "C"
 
 sysinfo::sysinfo()
 {
-	as_object::set_member("getDir", getDir);
-	as_object::set_member("getHDDSerNo", getHDDSerNo);
-	as_object::set_member("getFreeMem", getFreeMem);
+	builtin_member("getDir", getDir);
+	builtin_member("getHDDSerNo", getHDDSerNo);
+	builtin_member("getFreeMem", getFreeMem);
 }
 
 void sysinfo::get_dir(as_object* info, const tu_string& path)

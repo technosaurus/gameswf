@@ -40,7 +40,7 @@ namespace gameswf
 		}
 
 		smart_ptr<movie_definition_sub>	m_def;
-		movie_root*	m_root;
+		root*	m_root;
 
 		display_list	m_display_list;
 		array<action_buffer*>	m_action_list;
@@ -64,16 +64,16 @@ namespace gameswf
 		bool m_on_event_load_called;
 		smart_ptr<character> m_canvas;
 
-		sprite_instance(movie_definition_sub* def, movie_root* r, character* parent, int id);
+		sprite_instance(movie_definition_sub* def, root* r, character* parent, int id);
 		virtual ~sprite_instance();
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		virtual bool has_keypress_event();
 //		character*	get_root_interface() { return m_root; }
-		movie_root*	get_root() { return m_root; }
+		root*	get_root() { return m_root; }
 
 		// used in loadMovieClip()
-		void	set_root(movie_root* mroot) { m_root = mroot; }
+		void	set_root(root* mroot) { m_root = mroot; }
 		uint32	get_file_bytes() const;
 		uint32	get_loaded_bytes() const;
 

@@ -28,7 +28,7 @@ namespace gameswf
 	struct display_info;
 	struct execute_tag;
 	struct font;
-	struct movie_root;
+	struct root;
 	struct movie_definition_sub;
 
 	
@@ -238,13 +238,13 @@ namespace gameswf
 		tu_file*	m_zlib_in;
 		tu_file*	m_origin_in;
 		tu_thread* m_thread;
-		smart_ptr<movie_root> m_instance;	// cached movie instance.
+		smart_ptr<root> m_instance;	// cached movie instance.
 
 		movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
 
-		movie_root*	create_instance();
-		movie_root*	create_root();
+		root*	create_instance();
+		root*	create_root();
 		void clear_instance();
 
 		float	get_frame_rate() const;

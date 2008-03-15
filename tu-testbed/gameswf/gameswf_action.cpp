@@ -1531,9 +1531,9 @@ namespace gameswf
 						{
 							// check var in m_variables
 							as_value val;
-							if (env->get_member(varname, &val))
+							if (env->m_target->get_member(varname, &val))
 							{
-								env->set_member(varname, obj);
+								env->m_target->set_member(varname, obj);
 								env->top(0).set_bool(true);
 								break;
 							}
@@ -2372,7 +2372,7 @@ namespace gameswf
 						as_value value;
 						as_as_function* existing_function;
 
-						if (env->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
+						if (env->m_target->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
 						{
 							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
 								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
@@ -2428,7 +2428,7 @@ namespace gameswf
 						if (name.length() > 0)
 						{
 							// @@ NOTE: should this be m_target->set_variable()???
-							env->set_member(name, function_value);
+							env->m_target->set_member(name, function_value);
 						}
 						else
 						{
@@ -2697,7 +2697,7 @@ namespace gameswf
 						as_value value;
 						as_as_function* existing_function;
 
-						if( env->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
+						if( env->m_target->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
 						{
 							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
 								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
@@ -2743,7 +2743,7 @@ namespace gameswf
 							// @@ NOTE: should this be m_target->set_variable()???
 							// Usage #1. If we have a name, then save the function in this
 							// environment under that name.
-							env->set_member(name, function_value);
+							env->m_target->set_member(name, function_value);
 						}
 						else
 						{

@@ -51,7 +51,7 @@ namespace gameswf
 	struct stream;
 	struct video_handler;
 	struct event_id;
-	struct movie_root;
+	struct root;
 	struct movie_def_impl;
 	struct rect;
 	struct as_environment;
@@ -62,7 +62,7 @@ namespace gameswf
 	struct as_as_function;
 	struct as_object;
 
-	exported_module movie_root* get_current_root();
+	exported_module root* get_current_root();
 
 	//
 	// Log & error reporting control.
@@ -197,9 +197,16 @@ namespace gameswf
 
 	};
 
+	// This is the base class for all ActionScript-able objects
+	// ("as_" stands for ActionScript).
+	struct as_object_interface : public ref_counted
+	{
+		virtual bool is(int class_id) = 0;
+	};
+
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)
 	template <typename cast_class>
-	cast_class* cast_to(as_object* object)
+	cast_class* cast_to(as_object_interface* object)
 	{
 		if (object)
 		{
@@ -207,82 +214,6 @@ namespace gameswf
 		}
 		return 0;
 	}
-
-	template <typename cast_class>
-	cast_class* cast_to(character_def* def)
-	{
-		if (def)
-		{
-			return def->is(cast_class::m_class_id) ? static_cast<cast_class*>(def) : 0;
-		}
-		return 0;
-	}
-
-
-	// This is the base class for all ActionScript-able objects
-	// ("as_" stands for ActionScript).
-/*
-	struct as_object_interface : public ref_counted
-	{
-		// Unique id of a gameswf resource
-		enum { m_class_id = AS_OBJECT_INTERFACE };
-		virtual bool is(int class_id) { return m_class_id == class_id; }
-
-		virtual ~as_object_interface() {}
-
-		// So that text_character's can return something reasonable.
-		virtual const char*	get_text_value() const { return 0; }
-
-		virtual bool	set_member(const tu_stringi& name, const as_value& val)
-		{
-			assert(0);
-			return false;
-		}
-		virtual bool	get_member(const tu_stringi& name, as_value* val)
-		{
-			assert(0);
-			return false;
-		}
-
-		virtual bool	on_event(const event_id& id) { return false; }
-		virtual void advance(float delta_time) { assert(0); }
-		virtual movie_root*		get_root() { return (movie_root*) get_current_root(); }
-
-		// retrieves members/variables from THIS & pushes them into env
-		virtual	void enumerate(as_environment* env) { assert(0); }
-
-		// retrieves the reference(__proto__ ) to the prototype property of the class
-		// (ActionScript 2.0) or constructor function
-		// __proto__ is a function object !!!
-		virtual as_object_interface* get_proto() const { return 0; }
-
-		// Registers an event handler to be invoked when a specified property changes.
-		virtual bool watch(const tu_string& name,	as_as_function* callback, const as_value& user_data)
-		{
-			return false; 
-		}
-
-		// Removes a watchpoint that Object.watch() created.
-		// This method returns a value of true if the watchpoint is successfully removed,
-		// false otherwise.
-		virtual bool unwatch(const tu_string& name) { return false; }
-
-		// for debugging
-		// dumps the object
-		virtual void dump() {};
-
-		// Nulls out object's members that links to 'this_ptr'
-		// to avoid cross-link memory leak
-		virtual void clear_refs(hash<as_object_interface*, bool>* visited_objects,
-			as_object_interface* this_ptr) {}
-
-		// Marks object as 'not garbage'
-		virtual void not_garbage() {}
-
-		virtual as_environment*	get_environment() { return 0; }
-		virtual void copy_to(as_object_interface* target) {}
-	};
-*/
 
 	// For caching precomputed stuff.  Generally of
 	// interest to gameswf_processor and programs like it.
@@ -304,7 +235,7 @@ namespace gameswf
 	// @@ This is not really a public interface.  It's here so it
 	// can be mixed into movie_definition, movie_definition_sub,
 	// and sprite_definition, without using multiple inheritance.
-	struct character_def : public ref_counted
+	struct character_def : public as_object_interface
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_CHARACTER_DEF };
@@ -359,7 +290,7 @@ namespace gameswf
 		// This calls add_ref() on the character internally.
 		// Call drop_ref() on the character when you're done with it.
 		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
-		virtual movie_root*	create_instance() = 0;
+		virtual root*	create_instance() = 0;
 		virtual void clear_instance() {};
 
 		virtual void	output_cached_data(tu_file* out, const cache_options& options) = 0;
@@ -371,7 +302,6 @@ namespace gameswf
 		// texture-map data is serialized in the
 		// output/input_cached_data() calls, so you can
 		// preprocess this if you load cached data.
-//		virtual void	generate_font_bitmaps() = 0;
 
 		//
 		// (optional) API to support gameswf::create_movie_no_recurse().
@@ -539,140 +469,6 @@ namespace gameswf
 			KEYCOUNT
 		};
 	}	// end namespace key
-
-	//
-	// This is the client program's interface to an instance of a
-	// movie (i.e. an independent stateful live movie).
-	//
-/*	struct character : public as_object_interface
-	{
-		virtual movie_definition*	get_movie_definition() = 0;
-
-		// Frame counts in this API are 0-based (unlike ActionScript)
-		virtual int	get_current_frame() const = 0;
-		virtual bool	has_looped() const = 0;
-
-		virtual void	advance(float delta_time) = 0;
-		virtual void	goto_frame(int frame_number) = 0;
-
-		// Returns true if labeled frame is found.
-		virtual bool	goto_labeled_frame(const char* label) = 0;
-		virtual void	display() = 0;
-
-		enum play_state
-		{
-			PLAY,
-			STOP
-		};
-		virtual void	set_play_state(play_state s) = 0;
-		virtual play_state	get_play_state() const = 0;
-
-		virtual void	set_background_color(const rgba& bg_color) = 0;
-
-		// Set to 0 if you don't want the movie to render its
-		// background at all.  1 == full opacity.
-		virtual void	set_background_alpha(float alpha) = 0;
-		virtual float	get_background_alpha() const = 0;
-
-		// move/scale the movie...
-		virtual void	set_display_viewport(int x0, int y0, int w, int h) = 0;
-
-		// Input.
-		virtual void	notify_mouse_state(int x, int y, int buttons) = 0;
-
-		// Set an ActionScript variable within this movie.
-		// You can use this to set the value of text fields,
-		// ordinary variables, or properties of characters
-		// within the script.
-		//
-		// This version accepts UTF-8
-		virtual void	set_variable(const char* path_to_var, const char* new_value) = 0;
-		// This version accepts UCS-2 or UCS-4, depending on sizeof(wchar_t)
-		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value) = 0;
-		// @@ do we want versions that take a number?
-
-		// Get the value of an ActionScript variable.
-		//
-		// Value is ephemeral & not thread safe!!!  Use it or
-		// copy it immediately.
-		//
-		// Returns UTF-8
-		virtual const char*	get_variable(const char* path_to_var) const = 0;
-		// @@ do we want a version that returns a number?
-
-		// ActionScript method call.  Return value points to a
-		// static string buffer with the result; caller should
-		// use the value immediately before making more calls
-		// to gameswf.
-
-		// NOT THREAD SAFE!!!
-		//
-		// DO NOT USE TO CALL CLASS MEMBER!!!
-		//
-		// method_name is the name of the method (possibly namespaced).
-		//
-		// method_arg_fmt is a printf-style declaration of
-		// the method call, where the arguments are
-		// represented by { %d, %s, %f, %ls }, followed by the
-		// vararg list of actual arguments.
-		//
-		// E.g.
-		//
-		// m->call_method("path.to.method_name", "%d, %s, %f", i, "hello", 2.7f);
-		//
-		// The format args are a small subset of printf, namely:
-		//
-		// %d -- integer arg
-		// %s -- 0-terminated char* string arg
-		// %ls -- 0-terminated wchar_t* string arg
-		// %f -- float/double arg
-		//
-		// Whitespace and commas in the format string are ignored.
-		//
-		// This is not an ActionScript language parser, it
-		// doesn't recognize expressions or anything tricky.
-
-#ifdef __GNUC__
-		// use the following to catch errors: (only with gcc)
-		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...)
-			__attribute__((format (printf, 3, 4))) = 0;	// "this" is an implied param, so fmt is 3 and ... is 4!
-#else	// not __GNUC__
-		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...) = 0;
-#endif	// not __GNUC__
-		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args) = 0;
-
-
-		// Make the movie visible/invisible.  An invisible
-		// movie does not advance and does not render.
-		virtual void	set_visible(bool visible) = 0;
-
-		// Return visibility status.
-		virtual bool	get_visible() const = 0;
-
-		// Set and get userdata, that's useful for the fs_command handler.
-		virtual void   *get_userdata() = 0;
-		virtual void   set_userdata(void *) = 0;
-
-		// Display callbacks, for client rendering.  Callback
-		// is called after rendering the object it's attached
-		// to.
-		//
-		// Attach NULL to disable the callback.
-		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr) = 0;
-
-		// for external movies
-		virtual character*	get_root_movie() = 0;
-
-		// External interface for the host to report key events.
-		virtual void	notify_key_event(key::code k, bool down) { assert(0); }
-
-		// Movie info
-		virtual int	get_movie_version() { return 0; }
-		virtual int	get_movie_width() { return 0; }
-		virtual int	get_movie_height() { return 0; }
-		virtual float	get_movie_fps() { return 0.0f; }
-	};
-*/
 
 	// Try to grab movie info from the header of the given .swf
 	// file.
@@ -886,7 +682,6 @@ namespace gameswf
 		static matrix	identity;
 
 		exported_module matrix();
-//		bool	is_valid() const;
 		exported_module void	set_identity();
 		void	concatenate(const matrix& m);
 		void	concatenate_translation(float tx, float ty);

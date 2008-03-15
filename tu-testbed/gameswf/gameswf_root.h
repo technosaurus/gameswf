@@ -53,11 +53,11 @@ namespace gameswf
 	};
 
 	//
-	// movie_root
+	// root
 	//
 	// Global, shared root state for a movie and all its characters.
 	//
-	struct movie_root : public ref_counted
+	struct root : public ref_counted
 	{
 		smart_ptr<movie_def_impl>	m_def;
 		smart_ptr<character>	m_movie;
@@ -79,8 +79,8 @@ namespace gameswf
 		listener m_keypress_listener;
 		listener m_advance_listener;
 
-		movie_root(movie_def_impl* def);
-		~movie_root();
+		root(movie_def_impl* def);
+		~root();
 
 		void set_active_entity(character* ch);
 		void	generate_mouse_button_events(mouse_button_state* ms);
@@ -137,6 +137,7 @@ namespace gameswf
 		virtual int	get_movie_height();
 		virtual float	get_movie_fps();
 
+		// External interface for the host to report key events.
 		virtual void	notify_key_event(key::code k, bool down);
 
 	};

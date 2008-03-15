@@ -8,6 +8,7 @@
 // or relative to the operating system on which Flash Player is running
 
 #include "gameswf/gameswf_as_classes/as_date.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {
@@ -140,18 +141,19 @@ namespace gameswf
 	{
 		if (fn.nargs > 0)
 		{
-			printf("Additional parameters are not supported yet\n");
+			log_error("Additional parameters are not supported yet\n");
 		}
-		set_member("getDate", &as_date_getdate);
-		set_member("getDay", &as_date_getday);
-		set_member("getFullYear", &as_date_getfullyear);
-		set_member("getHours", &as_date_gethours);
-		set_member("getMilliseconds", &as_date_getmilli);
-		set_member("getMinutes", &as_date_getminutes);
-		set_member("getMonth", &as_date_getmonth);
-		set_member("getSeconds", &as_date_getseconds);
-		set_member("getTime", &as_date_gettime);
-		set_member("getYear", &as_date_getyear);
+
+		builtin_member("getDate", as_date_getdate);
+		builtin_member("getDay", as_date_getday);
+		builtin_member("getFullYear", as_date_getfullyear);
+		builtin_member("getHours", as_date_gethours);
+		builtin_member("getMilliseconds", as_date_getmilli);
+		builtin_member("getMinutes", as_date_getminutes);
+		builtin_member("getMonth", as_date_getmonth);
+		builtin_member("getSeconds", as_date_getseconds);
+		builtin_member("getTime", as_date_gettime);
+		builtin_member("getYear", as_date_getyear);
 
 
 /*

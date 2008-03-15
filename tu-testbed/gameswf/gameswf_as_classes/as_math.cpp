@@ -88,34 +88,34 @@ namespace gameswf
 		as_object*	math_obj = new as_object;
 
 		// constant
-		math_obj->set_member("e", 2.7182818284590452354);
-		math_obj->set_member("ln2", 0.69314718055994530942);
-		math_obj->set_member("log2e", 1.4426950408889634074);
-		math_obj->set_member("ln10", 2.30258509299404568402);
-		math_obj->set_member("log10e", 0.43429448190325182765);
-		math_obj->set_member("pi", 3.14159265358979323846);
-		math_obj->set_member("sqrt1_2", 0.7071067811865475244);
-		math_obj->set_member("sqrt2", 1.4142135623730950488);
+		math_obj->builtin_member("e", 2.7182818284590452354);
+		math_obj->builtin_member("ln2", 0.69314718055994530942);
+		math_obj->builtin_member("log2e", 1.4426950408889634074);
+		math_obj->builtin_member("ln10", 2.30258509299404568402);
+		math_obj->builtin_member("log10e", 0.43429448190325182765);
+		math_obj->builtin_member("pi", 3.14159265358979323846);
+		math_obj->builtin_member("sqrt1_2", 0.7071067811865475244);
+		math_obj->builtin_member("sqrt2", 1.4142135623730950488);
 
 		// math methods
-		math_obj->set_member("abs", math_fabs);
-		math_obj->set_member("acos", math_acos);
-		math_obj->set_member("asin", math_asin);
-		math_obj->set_member("atan", math_atan);
-		math_obj->set_member("ceil", math_ceil);
-		math_obj->set_member("cos", math_cos);
-		math_obj->set_member("exp", math_exp);
-		math_obj->set_member("floor", math_floor);
-		math_obj->set_member("log", math_log);
-		math_obj->set_member("random", math_random);
-		math_obj->set_member("round", math_round);
-		math_obj->set_member("sin", math_sin);
-		math_obj->set_member("sqrt", math_sqrt);
-		math_obj->set_member("tan", math_tan);
-		math_obj->set_member("atan2", math_atan2);
-		math_obj->set_member("max", math_max);
-		math_obj->set_member("min", math_min);
-		math_obj->set_member("pow", math_pow);
+		math_obj->builtin_member("abs", math_fabs);
+		math_obj->builtin_member("acos", math_acos);
+		math_obj->builtin_member("asin", math_asin);
+		math_obj->builtin_member("atan", math_atan);
+		math_obj->builtin_member("ceil", math_ceil);
+		math_obj->builtin_member("cos", math_cos);
+		math_obj->builtin_member("exp", math_exp);
+		math_obj->builtin_member("floor", math_floor);
+		math_obj->builtin_member("log", math_log);
+		math_obj->builtin_member("random", math_random);
+		math_obj->builtin_member("round", math_round);
+		math_obj->builtin_member("sin", math_sin);
+		math_obj->builtin_member("sqrt", math_sqrt);
+		math_obj->builtin_member("tan", math_tan);
+		math_obj->builtin_member("atan2", math_atan2);
+		math_obj->builtin_member("max", math_max);
+		math_obj->builtin_member("min", math_min);
+		math_obj->builtin_member("pow", math_pow);
 
 		return math_obj;
 	}

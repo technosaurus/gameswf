@@ -61,8 +61,8 @@ namespace gameswf
 
 		m_properties = new as_object();
 		m_properties->m_this_ptr = this;
-		m_properties->set_member("prototype", new as_object());
-		m_properties->set_member("call", as_as_function_call);
+		m_properties->builtin_member("prototype", new as_object());
+		m_properties->builtin_member("call", as_as_function_call);
 	}
 
 	as_as_function::~as_as_function()

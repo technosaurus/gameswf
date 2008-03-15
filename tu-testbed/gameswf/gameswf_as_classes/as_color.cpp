@@ -184,10 +184,10 @@ namespace gameswf
 		assert(target);
 		m_cxform = target->get_cxform();
 
-		set_member("getRGB", &as_color_getRGB);
-		set_member("setRGB", &as_color_setRGB);
-		set_member("getTransform", &as_color_gettransform);
-		set_member("setTransform", &as_color_settransform);
+		builtin_member("getRGB", as_color_getRGB);
+		builtin_member("setRGB", as_color_setRGB);
+		builtin_member("getTransform", as_color_gettransform);
+		builtin_member("setTransform", as_color_settransform);
 	}
 
 

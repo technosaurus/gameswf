@@ -20,7 +20,7 @@ namespace gameswf
 {
 	exported_module void	as_object_addproperty(const fn_call& fn);
 
-	struct as_object : public ref_counted
+	struct as_object : public as_object_interface
 	{
 		// Unique id of a gameswf resource
 		enum	{ m_class_id = AS_OBJECT };
@@ -57,7 +57,7 @@ namespace gameswf
 		
 		exported_module virtual const char*	get_text_value() { return NULL; }
 		exported_module void	builtin_member(const tu_stringi& name, const as_value& val, 
-			as_prop_flags flags = as_prop_flags::DONT_ENUM);
+			as_prop_flags flags = as_prop_flags::DONT_ENUM | as_prop_flags::READ_ONLY);
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
 		exported_module virtual bool get_member(const tu_stringi& name, as_member* member) const;
@@ -72,7 +72,7 @@ namespace gameswf
 		exported_module virtual void copy_to(as_object* target);
 		exported_module void dump();
 		exported_module as_object* find_target(const tu_string& path);
-		exported_module virtual movie_root* get_root() { return get_current_root(); }
+		exported_module virtual root* get_root() { return get_current_root(); }
 		exported_module	virtual as_environment*	get_environment() { return 0; }
 		exported_module virtual void advance(float delta_time) { assert(0); }
 	};

@@ -110,9 +110,9 @@ namespace gameswf
 	as_point::as_point(float x, float y) :
 	   m_point( x, y )
 	{
-		set_member("add", as_point_add);
-		set_member("subtract", as_point_subtract);
-		set_member("normalize", as_point_normalize);
+		builtin_member("add", as_point_add);
+		builtin_member("subtract", as_point_subtract);
+		builtin_member("normalize", as_point_normalize);
 	}
 
 	//TODO: we should use a switch() instead of string compares.
