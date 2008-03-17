@@ -301,6 +301,7 @@ namespace gameswf
 	{
 		BUILTIN_OBJECT_METHOD,
 		BUILTIN_SPRITE_METHOD,
+		BUILTIN_NUMBER_METHOD,
 		// and so far
 		BUILTIN_COUNT
 	};

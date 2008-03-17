@@ -12,6 +12,7 @@
 
 #include "gameswf/gameswf_action.h"	// for as_object
 #include "gameswf/gameswf_sprite.h"
+#include "gameswf/gameswf_as_classes/as_number.h"
 
 namespace gameswf
 {
@@ -140,46 +141,45 @@ namespace gameswf
 			target = cast_to<sprite_instance>(fn.arg(0).to_object());
 		} 
 		else 
-			if (fn.arg(0).get_type() == as_value::NUMBER) 
-			{ 
-				int target_depth = int(fn.arg(0).to_number()); 
-				sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
-				
-				character* ch = parent->m_display_list.get_character_at_depth(target_depth);
-				if (ch)
-				{
-					target = cast_to<sprite_instance>(parent->m_display_list.get_character_at_depth(target_depth));
-				}
-				else
-				{
-					log_error("swapDepths: no character in depth #%d\n", target_depth); 
-				}
-			} 
-			else 
-			{ 
-				log_error("swapDepths has received invalid arg\n"); 
-				return; 
-			} 
+		if (cast_to<as_number>(fn.arg(0).to_object()))
+		{ 
+			int target_depth = int(fn.arg(0).to_number()); 
+			sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
+			
+			character* ch = parent->m_display_list.get_character_at_depth(target_depth);
+			if (ch)
+			{
+				target = cast_to<sprite_instance>(parent->m_display_list.get_character_at_depth(target_depth));
+			}
+			else
+			{
+				log_error("swapDepths: no character in depth #%d\n", target_depth); 
+			}
+		} 
+		else 
+		{ 
+			log_error("swapDepths has received invalid arg\n"); 
+			return; 
+		} 
 
-			if (sprite == NULL || target == NULL) 
-			{ 
-				log_error("It is impossible to swap NULL character\n"); 
-				return; 
-			} 
+		if (sprite == NULL || target == NULL) 
+		{ 
+			log_error("It is impossible to swap NULL character\n"); 
+			return; 
+		} 
 
-			if (sprite->get_parent() == target->get_parent() && sprite->get_parent() != NULL) 
-			{ 
-				int target_depth = target->get_depth(); 
-				target->set_depth(sprite->get_depth()); 
-				sprite->set_depth(target_depth); 
-
-				sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
-				parent->m_display_list.swap_characters(sprite, target); 
-			} 
-			else 
-			{ 
-				log_error("MovieClips should have the same parent\n"); 
-			} 
+		if (sprite->get_parent() == target->get_parent() && sprite->get_parent() != NULL) 
+		{ 
+			int target_depth = target->get_depth(); 
+			target->set_depth(sprite->get_depth()); 
+			sprite->set_depth(target_depth); 
+			sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
+			parent->m_display_list.swap_characters(sprite, target); 
+		} 
+		else 
+		{ 
+			log_error("MovieClips should have the same parent\n"); 
+		} 
 	} 
 
 	//duplicateMovieClip(name:String, depth:Number, [initObject:Object]) : MovieClip 

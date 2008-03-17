@@ -22,40 +22,22 @@ namespace gameswf
 
 	// TODO: symbolic constants instead of 6,5 ,...
 			case 6:
-				if (fn.arg(5).m_type == as_value::NUMBER)
-				{
-					matrix->m_matrix.m_[1][2] = fn.arg(5).to_number();
-				}
+				matrix->m_matrix.m_[1][2] = fn.arg(5).to_number();
 
 			case 5:
-				if (fn.arg(4).m_type == as_value::NUMBER )
-				{
-					matrix->m_matrix.m_[0][2] = fn.arg(4).to_number();
-				}
+				matrix->m_matrix.m_[0][2] = fn.arg(4).to_number();
 
 			case 4:
-				if (fn.arg(3).m_type == as_value::NUMBER )
-				{
-					matrix->m_matrix.m_[1][1] = fn.arg(3).to_number();
-				}
+				matrix->m_matrix.m_[1][1] = fn.arg(3).to_number();
 
 			case 3:
-				if (fn.arg(2).m_type == as_value::NUMBER )
-				{
-					matrix->m_matrix.m_[1][0] = fn.arg(2).to_number();
-				}
+				matrix->m_matrix.m_[1][0] = fn.arg(2).to_number();
 
 			case 2:
-				if (fn.arg(1).m_type == as_value::NUMBER )
-				{
-					matrix->m_matrix.m_[0][1] = fn.arg(1).to_number();
-				}
+				matrix->m_matrix.m_[0][1] = fn.arg(1).to_number();
 
 			case 1:
-				if (fn.arg(0).m_type == as_value::NUMBER )
-				{
-					matrix->m_matrix.m_[0][0] = fn.arg(0).to_number();
-				}
+				matrix->m_matrix.m_[0][0] = fn.arg(0).to_number();
 
 			case 0:
 				break;
@@ -72,11 +54,6 @@ namespace gameswf
 
 		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
 		if (matrix == NULL)
-		{
-			return;
-		}
-
-		if (fn.arg(0).m_type != as_value::NUMBER || fn.arg(1).m_type != as_value::NUMBER)
 		{
 			return;
 		}
@@ -101,17 +78,9 @@ namespace gameswf
 			return;
 		}
 
-		if (fn.arg(0).m_type != as_value::NUMBER)
-		{
-			return;
-		}
-
 		gameswf::matrix rotation_matrix;
-
 		rotation_matrix.set_scale_rotation( 1, 1, fn.arg(0).to_number() );
-
 		rotation_matrix.concatenate( matrix->m_matrix );
-
 		matrix->m_matrix = rotation_matrix;
 	}
 
@@ -128,17 +97,9 @@ namespace gameswf
 			return;
 		}
 
-		if (fn.arg(0).m_type != as_value::NUMBER || fn.arg(1).m_type != as_value::NUMBER )
-		{
-			return;
-		}
-
 		gameswf::matrix scale_matrix;
-
 		scale_matrix.set_scale_rotation(fn.arg(0).to_number(), fn.arg(1).to_number(), 0);
-
 		scale_matrix.concatenate(matrix->m_matrix);
-
 		matrix->m_matrix = scale_matrix;
 	}
 

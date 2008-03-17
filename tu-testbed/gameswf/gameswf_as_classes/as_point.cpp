@@ -15,10 +15,7 @@ namespace gameswf
 		if (fn.nargs == 2)
 		{
 			smart_ptr<as_point>	obj;
-			if (fn.arg(0).m_type == as_value::NUMBER && fn.arg(1).m_type == as_value::NUMBER)
-			{
-				obj = new as_point(fn.arg(0).to_number(), fn.arg(1).to_number());
-			}
+			obj = new as_point(fn.arg(0).to_number(), fn.arg(1).to_number());
 			fn.result->set_as_object(obj.get_ptr());
 		}
 	}
@@ -86,11 +83,6 @@ namespace gameswf
 
 		as_point* point = cast_to<as_point>(fn.this_ptr);
 		if (point == NULL)
-		{
-			return;
-		}
-
-		if (fn.arg(0).m_type != as_value::NUMBER )
 		{
 			return;
 		}

@@ -1437,8 +1437,8 @@ namespace gameswf
 	void sprite_instance::enumerate(as_environment* env)
 	// retrieves variables & pushes them into env
 	{
-		assert(0);	//TODO
-//vv
+		assert(0);
+//vv		//TODO: enumerate
 /*		stringi_hash<as_value>::const_iterator it = m_as_environment.m_variables->begin();
 		while (it != m_as_environment.m_variables->end())
 		{

@@ -293,6 +293,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_number.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_number.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_point.cpp"
 				>
 			</File>
