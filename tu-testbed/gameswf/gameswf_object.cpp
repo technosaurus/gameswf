@@ -113,8 +113,8 @@ namespace gameswf
 		// for debugging
 #ifdef _DEBUG
 			std->add("dump", as_object_dump);
-		}
 #endif
+		}
 	}
 
 	as_object::~as_object()

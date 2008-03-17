@@ -17,31 +17,84 @@
 #include <string.h>	// for memset()
 
 // Pointers to opengl extension functions.
+typedef char GLchar;
+
+typedef void (APIENTRY* PFNGLACTIVETEXTUREPROC) (GLenum texture);
 PFNGLACTIVETEXTUREPROC glActiveTexture = 0;
+
+typedef void (APIENTRY* PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
 PFNGLACTIVETEXTUREARBPROC	glActiveTextureARB = 0;
+
+typedef void (APIENTRY* PFNGLCLIENTACTIVETEXTUREARBPROC) (GLenum texture);
 PFNGLCLIENTACTIVETEXTUREARBPROC	glClientActiveTextureARB = 0;
+
+typedef void (APIENTRY* PFNGLMULTITEXCOORD2FARBPROC) (GLenum target, GLfloat s, GLfloat t);
 PFNGLMULTITEXCOORD2FARBPROC	glMultiTexCoord2fARB = 0;
+
+typedef void (APIENTRY* PFNGLMULTITEXCOORD2FVARBPROC) (GLenum target, const GLfloat *v);
 PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB = 0;
+
+typedef void (APIENTRY* PFNGLGENFRAMEBUFFERSEXTPROC) (GLsizei n, GLuint *framebuffers);
 PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = 0;
+
+typedef void (APIENTRY* PFNGLBINDFRAMEBUFFEREXTPROC) (GLenum target, GLuint framebuffer);
 PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = 0;
+
+typedef void (APIENTRY* PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
 PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = 0;
+
+typedef GLenum (APIENTRY* PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) (GLenum target);
 PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = 0;
+
+typedef void (APIENTRY* PFNGLDELETEPROGRAMPROC) (GLuint program);
 PFNGLDELETEPROGRAMPROC glDeleteProgram = 0;
+
+typedef void (APIENTRY* PFNGLDELETESHADERPROC) (GLuint shader);
 PFNGLDELETESHADERPROC glDeleteShader = 0;
+
+typedef GLuint (APIENTRY* PFNGLCREATESHADERPROC) (GLenum type);
 PFNGLCREATESHADERPROC glCreateShader = 0;
+
+typedef void (APIENTRY* PFNGLSHADERSOURCEPROC) (GLuint shader, GLsizei count, const GLchar* *string, const GLint *length);
 PFNGLSHADERSOURCEPROC glShaderSource = 0;
+
+typedef void (APIENTRY* PFNGLCOMPILESHADERPROC) (GLuint shader);
 PFNGLCOMPILESHADERPROC glCompileShader = 0;
+
+typedef void (APIENTRY* PFNGLGETSHADERIVPROC) (GLuint shader, GLenum pname, GLint *params);
 PFNGLGETSHADERIVPROC glGetShaderiv = 0;
+
+typedef void (APIENTRY* PFNGLGETSHADERINFOLOGPROC) (GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
 PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = 0;
+
+typedef GLuint (APIENTRY* PFNGLCREATEPROGRAMPROC) (void);
 PFNGLCREATEPROGRAMPROC glCreateProgram = 0;
+
+typedef void (APIENTRY* PFNGLATTACHSHADERPROC) (GLuint program, GLuint shader);
 PFNGLATTACHSHADERPROC glAttachShader = 0;
+
+typedef void (APIENTRY* PFNGLLINKPROGRAMPROC) (GLuint program);
 PFNGLLINKPROGRAMPROC glLinkProgram = 0;
+
+typedef void (APIENTRY* PFNGLGETPROGRAMIVPROC) (GLuint program, GLenum pname, GLint *params);
 PFNGLGETPROGRAMIVPROC glGetProgramiv = 0;
+
+typedef void (APIENTRY* PFNGLGETPROGRAMINFOLOGPROC) (GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
 PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = 0;
+
+typedef void (APIENTRY* PFNGLVALIDATEPROGRAMPROC) (GLuint program);
 PFNGLVALIDATEPROGRAMPROC glValidateProgram = 0;
+
+typedef GLint (APIENTRY* PFNGLGETUNIFORMLOCATIONPROC) (GLuint program, const GLchar *name);
 PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = 0;
+
+typedef void (APIENTRY* PFNGLUNIFORM1FPROC) (GLint location, GLfloat v0);
 PFNGLUNIFORM1FPROC glUniform1f = 0;
+
+typedef void (APIENTRY* PFNGLUNIFORM1IPROC) (GLint location, GLint v0);
 PFNGLUNIFORM1IPROC glUniform1i = 0;
+
+typedef void (APIENTRY* PFNGLUSEPROGRAMPROC) (GLuint program);
 PFNGLUSEPROGRAMPROC glUseProgram = 0;
 
 static GLint s_num_compressed_format = 0;
