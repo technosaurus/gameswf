@@ -45,7 +45,7 @@ namespace gameswf
 			as_value m_user_data;
 		};
 
-		stringi_hash<as_watch>	m_watch;
+		stringi_hash<as_watch>*	m_watch;
 		weak_ptr<as_object> m_this_ptr;
 
 		// We can place reference to __proto__ into members but it used very often

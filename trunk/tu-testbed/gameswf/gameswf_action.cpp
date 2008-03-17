@@ -35,6 +35,7 @@
 #include "gameswf/gameswf_as_classes/as_flash.h"
 #include "gameswf/gameswf_as_classes/as_broadcaster.h"
 #include "gameswf/gameswf_as_classes/as_selection.h"
+#include "gameswf/gameswf_as_classes/as_number.h"
 
 // NOTES:
 //
@@ -516,17 +517,6 @@ namespace gameswf
 		fn.result->set_undefined();
 	}
 
-	void as_global_number_ctor(const fn_call& fn)
-	{
-		if (fn.nargs > 0)
-		{
-			fn.result->set_double(fn.arg(0).to_number());
-			return;
-		}
-		fn.result->set_undefined();
-	}
-
-
 	void as_global_parse_float(const fn_call& fn)
 	{
 		if (fn.nargs == 1)  
@@ -545,13 +535,10 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)  
 		{
-			if (fn.arg(0).get_type() == as_value::NUMBER)
+			if (isnan(fn.arg(0).to_number()) == false)
 			{
-				if (isnan(fn.arg(0).to_number()) == false)
-				{
-					fn.result->set_bool(false);
-					return;
-				}
+				fn.result->set_bool(false);
+				return;
 			}
 		}
 		fn.result->set_bool(true);
@@ -778,29 +765,6 @@ namespace gameswf
 		da->read(in);
 		m->add_init_action(sprite_character_id, da);
 	}
-
-	// radix:Number - Specifies the numeric base (from 2 to 36) to use for 
-	// the number-to-string conversion. 
-	// If you do not specify the radix parameter, the default value is 10.
-	static const char s_hex[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZW";
-	tu_string number_to_string(int radix, int val)
-	{
-		tu_string res;
-		if (radix >= 2 && radix <= strlen(s_hex))
-		{
-			do
-			{
-				int k = val % radix;
-				val = (int) (val / radix);
-				tu_string digit;
-				digit += s_hex[k];
-				res = digit + res;
-			}
-			while (val > 0);
-		}
-		return res;
-	}
-
 
 	//
 	// action_buffer
@@ -1741,6 +1705,13 @@ namespace gameswf
 						val = env->top(0);
 					}
 
+					//vv TODO: virtual typeof() 
+					if (cast_to<as_number>(val.to_object()))
+					{
+						env->top(0).set_string("number");
+						break;
+					}
+
 					switch(val.get_type())
 					{
 					case as_value::UNDEFINED:
@@ -1748,9 +1719,6 @@ namespace gameswf
 						break;
 					case as_value::STRING:
 						env->top(0).set_string("string");
-						break;
-					case as_value::NUMBER:
-						env->top(0).set_string("number");
 						break;
 					case as_value::BOOLEAN:
 						env->top(0).set_string("boolean");
@@ -1862,46 +1830,34 @@ namespace gameswf
 							int	len = env->top(1).to_tu_string_versioned(version).utf8_length();
 							env->top(1).set_int(len);
 						}
-						else
-						if (env->top(1).get_type() == as_value::NUMBER && std_member == M_NAN)
-						{
-							env->top(1).set_nan();
-						}
 					}
 					else
 					{
 						env->top(1).set_undefined();
-						if (obj)
+						if (obj->get_member(env->top(0).to_tu_string(), &(env->top(1))) == false)
 						{
-							if (obj->get_member(env->top(0).to_tu_string(), &(env->top(1))) == false)
+							// try '__resolve' property
+							as_value val;
+							if (obj->get_member("__resolve", &val))
 							{
-								// try '__resolve' property
-								as_value val;
-								if (obj->get_member("__resolve", &val))
+								// call __resolve
+								as_function* resolve = val.to_as_function();
+								if (resolve)
 								{
-									// call __resolve
-									as_function* resolve = val.to_as_function();
-									if (resolve)
-									{
-										(*resolve)(fn_call(&val, obj, env, 1, env->get_top_index()));
-										env->top(1) = val;
-									}
+									(*resolve)(fn_call(&val, obj, env, 1, env->get_top_index()));
+									env->top(1) = val;
 								}
 							}
-
-							if (env->top(1).to_object() == NULL) {
-								IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s\n",
-												env->top(0).to_tu_string().c_str(),
-												env->top(1).to_tu_string().c_str()));
-							} else {
-								IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s at %p\n",
-												env->top(0).to_tu_string().c_str(),
-												env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
-							}
 						}
-						else
-						{
-							// @@ log error?
+
+						if (env->top(1).to_object() == NULL) {
+							IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s\n",
+											env->top(0).to_tu_string().c_str(),
+											env->top(1).to_tu_string().c_str()));
+						} else {
+							IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s at %p\n",
+											env->top(0).to_tu_string().c_str(),
+											env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
 						}
 					}
 					env->drop(1);
@@ -2022,25 +1978,8 @@ namespace gameswf
 					}
 					else
 					{
-						if (env->top(1).get_type() == as_value::NUMBER
-						    && method_name == "toString")
-						{
-							// Numbers have a .toString() method.
-							if (nargs > 0)
-							{
-								result.set_tu_string(number_to_string((int) env->top(3).to_number(),
-								(int) env->top(1).to_number()));
-							}
-							else
-							{
-								result.set_tu_string(env->top(1).to_tu_string());
-							}
-						}
-						else
-						{
-							log_error("error: call_method '%s' on invalid object.\n",
-								  method_name.c_str());
-						}
+						log_error("error: call_method '%s' on invalid object.\n",
+							  method_name.c_str());
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;
@@ -2864,11 +2803,7 @@ namespace gameswf
 							// else no-op.
 						}
 					}
-					else if (env->top(0).get_type() == as_value::OBJECT)
-					{
-						// This is a no-op; see test_goto_frame.swf
-					}
-					else if (env->top(0).get_type() == as_value::NUMBER)
+					else if (cast_to<as_number>(env->top(0).to_object()))
 					{
 						// Frame numbers appear to be 0-based!  @@ Verify.
 						int frame_number = int(env->top(0).to_number());

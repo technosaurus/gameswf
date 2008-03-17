@@ -72,7 +72,7 @@ namespace gameswf
 		if (fn.nargs == 1)
 		{
 			// Create an empty array with the given number of undefined elements.
-			int size = fn.arg(0).get_type() == as_value::NUMBER ? (int) fn.arg(0).to_number() : 0;
+			int size = fn.arg(0).to_int();
 			as_value	index_number;
 			for (int i = 0; i < size; i++)
 			{

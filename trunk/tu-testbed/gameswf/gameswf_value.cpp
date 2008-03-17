@@ -12,6 +12,7 @@
 #include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_movie_def.h"
+#include "gameswf/gameswf_as_classes/as_number.h"
 #include <float.h>
 
 namespace gameswf
@@ -86,19 +87,9 @@ namespace gameswf
 	const tu_string&	as_value::to_tu_string() const
 	// Conversion to const tu_string&.
 	{
-		if (m_type == STRING) { /* don't need to do anything */ }
-		else if (m_type == NUMBER)
+		if (m_type == STRING)
 		{
-			// @@ Moock says if value is a NAN, then result is "NaN"
-			// INF goes to "Infinity"
-			// -INF goes to "-Infinity"
-			if (isnan(m_number_value)) {
-				m_string_value = "NaN";
-			} else {
-				char buffer[50];
-				snprintf(buffer, 50, "%.14g", m_number_value);
-				m_string_value = buffer;
-			}
+			// don't need to do anything
 		}
 		else if (m_type == UNDEFINED)
 		{
@@ -136,7 +127,15 @@ namespace gameswf
 			const char*	val = NULL;
 			if (m_object_value)
 			{
-				val = m_object_value->get_text_value();
+				as_number* num = cast_to<as_number>(m_object_value);
+				if (num)
+				{
+					val = num->to_string();
+				}
+				else
+				{
+					val = m_object_value->get_text_value();
+				}
 			}
 
 			if (val)
@@ -228,12 +227,13 @@ namespace gameswf
 			//
 			// Also, "Infinity", "-Infinity", and "NaN"
 			// are recognized.
-			if (! string_to_number(&m_number_value, m_string_value.c_str()))
+			double val;
+			if (! string_to_number(&val, m_string_value.c_str()))
 			{
 				// Failed conversion to Number.
-				m_number_value = 0.0;	// TODO should be NaN
+				val = 0.0;	// TODO should be NaN
 			}
-			return m_number_value;
+			return val;
 		}
 		else if (m_type == NULLTYPE)
 		{
@@ -245,12 +245,14 @@ namespace gameswf
 			// Evan: from my tests
 			return (this->m_boolean_value) ? 1 : 0;
 		}
-		else if (m_type == NUMBER)
-		{
-			return m_number_value;
-		}
 		else if (m_type == OBJECT && m_object_value != NULL)
 		{
+			as_number* num = cast_to<as_number>(m_object_value);
+			if (num)
+			{
+				return num->m_val;
+			}
+
 			// @@ Moock says the result here should be
 			// "the return value of the object's valueOf()
 			// method".
@@ -309,17 +311,18 @@ namespace gameswf
 				return to_number() != 0.0;
 			}
 		}
-		else if (m_type == NUMBER)
-		{
-			// @@ Moock says, NaN --> false
-			return m_number_value != 0.0;
-		}
 		else if (m_type == BOOLEAN)
 		{
 			return this->m_boolean_value;
 		}
 		else if (m_type == OBJECT)
 		{
+			as_number* num = cast_to<as_number>(m_object_value);
+			if (num)
+			{
+				// @@ Moock says, NaN --> false
+				return num->m_val != 0.0;
+			}
 			return m_object_value != NULL;
 		}
 		else if (m_type == C_FUNCTION)
@@ -421,6 +424,13 @@ namespace gameswf
 
 	void	as_value::operator=(const as_value& v)
 	{
+		as_number* num = cast_to<as_number>(v.to_object());
+		if (num)
+		{
+			set_double(num->m_val);
+			return;
+		}
+
 
 		switch (v.m_type)
 		{
@@ -435,9 +445,6 @@ namespace gameswf
 			break;
 		case STRING:
 			set_tu_string(v.m_string_value);
-			break;
-		case NUMBER:
-			set_double(v.m_number_value);
 			break;
 		case OBJECT:
 			set_as_object(v.m_object_value);
@@ -487,16 +494,21 @@ namespace gameswf
 		{
 			return m_string_value == v.to_tu_string();
 		}
-		else if (m_type == NUMBER)
-		{
-			return m_number_value == v.to_number();
-		}
+//		else if (m_type == NUMBER)
+//		{
+//			return m_number_value == v.to_number();
+//		}
 		else if (m_type == BOOLEAN)
 		{
 			return m_boolean_value == v.to_bool();
 		}
 		else if (m_type == OBJECT)
 		{
+			as_number* num = cast_to<as_number>(m_object_value);
+			if (num)
+			{
+				return num->m_val == v.to_number();
+			}
 			return m_object_value == v.to_object();
 		}
 		else if (m_type == PROPERTY)
@@ -573,6 +585,43 @@ namespace gameswf
 		assert(m_property);
 		m_property->get(m_property_target, val);
 	}
+
+	as_value::as_value(float val) :
+		m_type(UNDEFINED)
+	{
+		set_double(val);
+	}
+
+	as_value::as_value(int val) :
+		m_type(UNDEFINED)
+	{
+		set_double(val);
+	}
+
+	as_value::as_value(double val) :
+		m_type(UNDEFINED)
+	{
+		set_double(val);
+	}
+
+	void	as_value::set_double(double val)
+	{
+		if (m_type == OBJECT)
+		{
+			as_number* num = cast_to<as_number>(m_object_value);
+			if (num)
+			{
+				num->m_val = val;
+				return;
+			}
+		}
+
+		drop_refs();
+		m_type = OBJECT;
+		m_object_value = new as_number(val);
+		m_object_value->add_ref();
+	}
+
 
 	//
 	//	as_property

@@ -64,7 +64,6 @@ namespace gameswf
 			NULLTYPE,
 			BOOLEAN,
 			STRING,
-			NUMBER,
 			OBJECT,
 			C_FUNCTION,
 			AS_FUNCTION,	// ActionScript function.
@@ -75,8 +74,6 @@ namespace gameswf
 		union
 		{
 			bool m_boolean_value;
-			// @@ hm, what about PS2, where double is bad?	should maybe have int&float types.
-			mutable	double	m_number_value;
 			as_object*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_function*	m_as_function_value;
@@ -87,34 +84,26 @@ namespace gameswf
 			};
 		};
 
-		exported_module as_value()
-			:
-			m_type(UNDEFINED),
-			m_number_value(0.0)
+		exported_module as_value() :
+			m_type(UNDEFINED)
 		{
 		}
 
-		exported_module as_value(const as_value& v)
-			:
-			m_type(UNDEFINED),
-			m_number_value(0.0)
+		exported_module as_value(const as_value& v) :
+			m_type(UNDEFINED)
 		{
 			*this = v;
 		}
 
-		exported_module as_value(const char* str)
-			:
+		exported_module as_value(const char* str) :
 			m_type(STRING),
-			m_string_value(str),
-			m_number_value(0.0)
+			m_string_value(str)
 		{
 		}
 
-		exported_module as_value(const wchar_t* wstr)
-			:
+		exported_module as_value(const wchar_t* wstr)	:
 			m_type(STRING),
-			m_string_value(""),
-			m_number_value(0.0)
+			m_string_value("")
 		{
 			// Encode the string value as UTF-8.
 			//
@@ -152,26 +141,9 @@ namespace gameswf
 		{
 		}
 
-		exported_module as_value(int val)
-			:
-			m_type(NUMBER),
-			m_number_value(double(val))
-		{
-		}
-
-		exported_module as_value(float val)
-			:
-			m_type(NUMBER),
-			m_number_value(double(val))
-		{
-		}
-
-		exported_module as_value(double val)
-			:
-			m_type(NUMBER),
-			m_number_value(val)
-		{
-		}
+		exported_module as_value(int val);
+		exported_module as_value(float val);
+		exported_module as_value(double val);
 
 		exported_module as_value(as_object* obj);
 
@@ -203,6 +175,7 @@ namespace gameswf
 		exported_module const tu_string&	to_tu_string_versioned(int version) const;
 		exported_module const tu_stringi&	to_tu_stringi() const;
 		exported_module double	to_number() const;
+		exported_module int	to_int() const { return (int) to_number(); };
 		exported_module bool	to_bool() const;
 		exported_module as_object*	to_object() const;
 		exported_module as_c_function_ptr	to_c_function() const;
@@ -214,7 +187,7 @@ namespace gameswf
 		// more likely to get a warning/error if misused.
 		exported_module void	set_tu_string(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		exported_module void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
-		exported_module void	set_double(double val) { drop_refs(); m_type = NUMBER; m_number_value = val; }
+		exported_module void	set_double(double val);
 		exported_module void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
 		exported_module void	set_int(int val) { set_double(val); }
 		exported_module void	set_nan()	{	set_double(get_nan()); }

@@ -99,7 +99,8 @@ namespace gameswf
 
 	// this stuff should be high optimized
 	// thus I can't use here set_member(...)
-	as_object::as_object()
+	as_object::as_object() :
+		m_watch(NULL)
 	{
 		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_OBJECT_METHOD);
 		if (std->size() == 0)
@@ -118,6 +119,7 @@ namespace gameswf
 
 	as_object::~as_object()
 	{
+		delete m_watch;
 	}
 
 	// called from constructors only
@@ -141,17 +143,20 @@ namespace gameswf
 		}
 
 		// try watch
-		as_watch watch;
-		m_watch.get(name, &watch);
-		if (watch.m_func)
+		if (m_watch)
 		{
-			as_environment env;
-			env.push(watch.m_user_data);	// params
-			env.push(val);		// newVal
-			env.push(old_val);	// oldVal
-			env.push(name);	// property
-			val.set_undefined();
-			(*watch.m_func)(fn_call(&val, this, &env, 4, env.get_top_index()));
+			as_watch watch;
+			m_watch->get(name, &watch);
+			if (watch.m_func)
+			{
+				as_environment env;
+				env.push(watch.m_user_data);	// params
+				env.push(val);		// newVal
+				env.push(old_val);	// oldVal
+				env.push(name);	// property
+				val.set_undefined();
+				(*watch.m_func)(fn_call(&val, this, &env, 4, env.get_top_index()));
+			}
 		}
 
 		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
@@ -338,17 +343,25 @@ namespace gameswf
 		as_watch watch;
 		watch.m_func = callback;
 		watch.m_user_data = user_data;
-		m_watch.set(name, watch);
+		
+		if (m_watch == NULL)
+		{
+			m_watch = new stringi_hash<as_watch>;
+		}
+		m_watch->set(name, watch);
 		return true;
 	}
 
 	bool as_object::unwatch(const tu_string& name)
 	{
-		as_watch watch;
-		if (m_watch.get(name, &watch))
+		if (m_watch)
 		{
-			m_watch.erase(name);
-			return true;
+			as_watch watch;
+			if (m_watch->get(name, &watch))
+			{
+				m_watch->erase(name);
+				return true;
+			}
 		}
 		return false;
 	}
