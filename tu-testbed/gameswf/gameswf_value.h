@@ -62,7 +62,6 @@ namespace gameswf
 		{
 			UNDEFINED,
 			NULLTYPE,
-			BOOLEAN,
 			STRING,
 			OBJECT,
 			C_FUNCTION,
@@ -73,7 +72,6 @@ namespace gameswf
 		mutable tu_string	m_string_value;
 		union
 		{
-			bool m_boolean_value;
 			as_object*	m_object_value;
 			as_c_function_ptr	m_c_function_value;
 			as_function*	m_as_function_value;
@@ -134,13 +132,7 @@ namespace gameswf
 #endif
 		}
 
-		exported_module as_value(bool val)
-			:
-			m_type(BOOLEAN),
-			m_boolean_value(val)
-		{
-		}
-
+		exported_module as_value(bool val);
 		exported_module as_value(int val);
 		exported_module as_value(float val);
 		exported_module as_value(double val);
@@ -188,7 +180,7 @@ namespace gameswf
 		exported_module void	set_tu_string(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		exported_module void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
 		exported_module void	set_double(double val);
-		exported_module void	set_bool(bool val) { drop_refs(); m_type = BOOLEAN; m_boolean_value = val; }
+		exported_module void	set_bool(bool val);
 		exported_module void	set_int(int val) { set_double(val); }
 		exported_module void	set_nan()	{	set_double(get_nan()); }
 		exported_module void	set_as_object(as_object* obj);

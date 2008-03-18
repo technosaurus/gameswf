@@ -36,6 +36,7 @@
 #include "gameswf/gameswf_as_classes/as_broadcaster.h"
 #include "gameswf/gameswf_as_classes/as_selection.h"
 #include "gameswf/gameswf_as_classes/as_number.h"
+#include "gameswf/gameswf_as_classes/as_boolean.h"
 
 // NOTES:
 //
@@ -505,16 +506,6 @@ namespace gameswf
 		sprite_definition* empty_sprite_def = new sprite_definition(NULL);
 		character* ch = new sprite_instance(empty_sprite_def, get_current_root(), get_current_root()->get_root_movie(), 0);
 		fn.result->set_as_object(ch);
-	}
-
-	void as_global_boolean_ctor(const fn_call& fn)
-	{
-		if (fn.nargs > 0)
-		{
-			fn.result->set_bool(fn.arg(0).to_bool());
-			return;
-		}
-		fn.result->set_undefined();
 	}
 
 	void as_global_parse_float(const fn_call& fn)
@@ -1705,10 +1696,9 @@ namespace gameswf
 						val = env->top(0);
 					}
 
-					//vv TODO: virtual typeof() 
-					if (cast_to<as_number>(val.to_object()))
+					if (cast_to<as_object>(val.to_object()))
 					{
-						env->top(0).set_string("number");
+						env->top(0).set_string(val.to_object()->typeof());
 						break;
 					}
 
@@ -1719,17 +1709,6 @@ namespace gameswf
 						break;
 					case as_value::STRING:
 						env->top(0).set_string("string");
-						break;
-					case as_value::BOOLEAN:
-						env->top(0).set_string("boolean");
-						break;
-					case as_value::OBJECT:
-						if (cast_to<sprite_instance>(env->top(0).to_object()))
-						{
-							env->top(0).set_string("movieclip");
-							break;
-						}
-						env->top(0).set_string("object");
 						break;
 					case as_value::NULLTYPE:
 						env->top(0).set_string("null");

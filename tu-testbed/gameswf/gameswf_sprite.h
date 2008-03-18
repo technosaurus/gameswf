@@ -235,6 +235,9 @@ namespace gameswf
 		// drawing API
 		canvas* get_canvas();
 
+		virtual const char*	typeof() { return "movieclip"; }
+
+
 	};
 }
 

@@ -185,6 +185,7 @@ namespace gameswf
 		AS_MCLOADER,
 		AS_TIMER,
 		AS_NUMBER,
+		AS_BOOLEAN,
 
 		// plugins
 		AS_PLUGIN_MYDB,

@@ -45,7 +45,9 @@ namespace gameswf
 			as_value m_user_data;
 		};
 
+		// primitive data type has no dynamic members
 		stringi_hash<as_watch>*	m_watch;
+
 		weak_ptr<as_object> m_this_ptr;
 
 		// We can place reference to __proto__ into members but it used very often
@@ -55,7 +57,11 @@ namespace gameswf
 		exported_module as_object();
 		exported_module virtual ~as_object();
 		
-		exported_module virtual const char*	get_text_value() { return NULL; }
+		exported_module virtual const char*	to_string() { return "[object Object]"; }
+		exported_module virtual double	to_number();
+		exported_module virtual bool to_bool() { return true; }
+		exported_module virtual const char*	typeof() { return "object"; }
+
 		exported_module void	builtin_member(const tu_stringi& name, const as_value& val, 
 			as_prop_flags flags = as_prop_flags::DONT_ENUM | as_prop_flags::READ_ONLY);
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);

@@ -95,7 +95,7 @@ namespace gameswf
 		{
 			bitmap_info* bi = get_render_handler()->create_bitmap_info_rgb(im);
 			delete im;
-			bi->layout_image(bi->m_suspended_image);
+			bi->layout();
 			delete bi->m_suspended_image;
 			bi->m_suspended_image = NULL;
 			m_material[infile] = bi;

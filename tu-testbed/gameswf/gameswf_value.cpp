@@ -13,6 +13,7 @@
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_movie_def.h"
 #include "gameswf/gameswf_as_classes/as_number.h"
+#include "gameswf/gameswf_as_classes/as_boolean.h"
 #include <float.h>
 
 namespace gameswf
@@ -106,10 +107,6 @@ namespace gameswf
 		{ 
 			m_string_value = "null";
 		}
-		else if (m_type == BOOLEAN)
-		{
-			m_string_value = this->m_boolean_value ? "true" : "false";
-		}
 		else if (m_type == OBJECT)
 		{
 			// Moock says, "the value that results from
@@ -124,28 +121,9 @@ namespace gameswf
 			// toString() method, before we get down here,
 			// so we just handle the default cases here.
 
-			const char*	val = NULL;
 			if (m_object_value)
 			{
-				as_number* num = cast_to<as_number>(m_object_value);
-				if (num)
-				{
-					val = num->to_string();
-				}
-				else
-				{
-					val = m_object_value->get_text_value();
-				}
-			}
-
-			if (val)
-			{
-				m_string_value = val;
-			}
-			else
-			{
-				// This is the default.
-				m_string_value = "[object Object]";
+				m_string_value = m_object_value->to_string();
 			}
 		}
 		else if (m_type == C_FUNCTION)
@@ -240,34 +218,9 @@ namespace gameswf
  			// Evan: from my tests
 			return 0;
 		}
-		else if (m_type == BOOLEAN)
-		{
-			// Evan: from my tests
-			return (this->m_boolean_value) ? 1 : 0;
-		}
 		else if (m_type == OBJECT && m_object_value != NULL)
 		{
-			as_number* num = cast_to<as_number>(m_object_value);
-			if (num)
-			{
-				return num->m_val;
-			}
-
-			// @@ Moock says the result here should be
-			// "the return value of the object's valueOf()
-			// method".
-			//
-			// Arrays and Movieclips should return NaN.
-
-			// Text characters with var names could get in
-			// here.
-			const char* textval = m_object_value->get_text_value();
-			if (textval)
-			{
-				return atof(textval);
-			}
-
-			return 0.0;
+			return m_object_value->to_number();
 		}
 		else if (m_type == PROPERTY)
 		{
@@ -311,19 +264,9 @@ namespace gameswf
 				return to_number() != 0.0;
 			}
 		}
-		else if (m_type == BOOLEAN)
-		{
-			return this->m_boolean_value;
-		}
 		else if (m_type == OBJECT)
 		{
-			as_number* num = cast_to<as_number>(m_object_value);
-			if (num)
-			{
-				// @@ Moock says, NaN --> false
-				return num->m_val != 0.0;
-			}
-			return m_object_value != NULL;
+			return m_object_value ? m_object_value->to_bool() : false;
 		}
 		else if (m_type == C_FUNCTION)
 		{
@@ -424,13 +367,19 @@ namespace gameswf
 
 	void	as_value::operator=(const as_value& v)
 	{
+		//vv hack
 		as_number* num = cast_to<as_number>(v.to_object());
 		if (num)
 		{
 			set_double(num->m_val);
 			return;
 		}
-
+		as_boolean* bol = cast_to<as_boolean>(v.to_object());
+		if (bol)
+		{
+			set_bool(bol->m_val);
+			return;
+		}
 
 		switch (v.m_type)
 		{
@@ -439,9 +388,6 @@ namespace gameswf
 			break;
 		case NULLTYPE:
 			set_null();
-			break;
-		case BOOLEAN:
-			set_bool(v.m_boolean_value);
 			break;
 		case STRING:
 			set_tu_string(v.m_string_value);
@@ -498,16 +444,22 @@ namespace gameswf
 //		{
 //			return m_number_value == v.to_number();
 //		}
-		else if (m_type == BOOLEAN)
-		{
-			return m_boolean_value == v.to_bool();
-		}
+//		else if (m_type == BOOLEAN)
+//		{
+//			return m_boolean_value == v.to_bool();
+//		}
 		else if (m_type == OBJECT)
 		{
+			//vv hack
 			as_number* num = cast_to<as_number>(m_object_value);
 			if (num)
 			{
 				return num->m_val == v.to_number();
+			}
+			as_boolean* bol = cast_to<as_boolean>(m_object_value);
+			if (bol)
+			{
+				return bol->m_val == v.to_bool();
 			}
 			return m_object_value == v.to_object();
 		}
@@ -619,6 +571,30 @@ namespace gameswf
 		drop_refs();
 		m_type = OBJECT;
 		m_object_value = new as_number(val);
+		m_object_value->add_ref();
+	}
+
+	as_value::as_value(bool val) :
+		m_type(UNDEFINED)
+	{
+		set_bool(val);
+	}
+		
+	void	as_value::set_bool(bool val)
+	{
+		if (m_type == OBJECT)
+		{
+			as_boolean* bol = cast_to<as_boolean>(m_object_value);
+			if (bol)
+			{
+				bol->m_val = val;
+				return;
+			}
+		}
+
+		drop_refs();
+		m_type = OBJECT;
+		m_object_value = new as_boolean(val);
 		m_object_value->add_ref();
 	}
 
