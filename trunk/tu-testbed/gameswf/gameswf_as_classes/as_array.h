@@ -31,7 +31,7 @@ namespace gameswf
 //		virtual bool	get_member(const tu_stringi& name, as_value* val);
 //		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 
-		exported_module tu_string to_string();
+		exported_module virtual const char* to_string();
 
 		exported_module void push(const as_value& val);
 		exported_module void pop(as_value* val);

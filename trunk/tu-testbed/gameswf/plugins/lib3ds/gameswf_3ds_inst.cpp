@@ -28,7 +28,7 @@ namespace gameswf
 		x3ds_instance* x3ds = cast_to<x3ds_instance>(fn.this_ptr);
 		assert(x3ds);
 
-		x3ds->m_play_state = movie_interface::PLAY;
+		x3ds->m_play_state = character::PLAY;
 	}
 
 	void	as_3d_stop(const fn_call& fn)
@@ -36,7 +36,7 @@ namespace gameswf
 		x3ds_instance* x3ds = cast_to<x3ds_instance>(fn.this_ptr);
 		assert(x3ds);
 
-		x3ds->m_play_state = movie_interface::STOP;
+		x3ds->m_play_state = character::STOP;
 	}
 
 	void	as_map_material(const fn_call& fn)

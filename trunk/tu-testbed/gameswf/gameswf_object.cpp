@@ -468,4 +468,14 @@ namespace gameswf
 		}
 	}
 
+	double	as_object::to_number()
+	{
+		const char* str = to_string();
+		if (str)
+		{
+			return atof(str);
+		}
+		return 0;
+	}
+
 }

@@ -247,7 +247,7 @@ namespace gameswf
 		virtual const char*	get_text_name() const;
 		void	reset_bounding_box(float x, float y);
 		virtual void	set_text_value(const char* new_text);
-		virtual const char*	get_text_value();
+		virtual const char*	to_string();
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
 		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x);

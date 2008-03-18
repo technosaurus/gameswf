@@ -197,6 +197,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_boolean.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_boolean.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_broadcaster.cpp"
 				>
 			</File>

@@ -575,7 +575,7 @@ namespace gameswf
 		set_text(def->m_default_text.c_str());
 
 		// then reset VAR / TEXT_FIELD value
-		set_text_value(get_text_value());
+		set_text_value(to_string());
 
 		m_dummy_style.push_back(fill_style());
 		reset_bounding_box(0, 0);
@@ -937,7 +937,7 @@ namespace gameswf
 
 	void edit_text_character::advance(float delta_time) 
 	{ 
-		get_text_value();
+		to_string();
 	}
 
 	void	edit_text_character::set_text(const char* new_text)
@@ -980,7 +980,7 @@ namespace gameswf
 		}
 	}
 
-	const char*	edit_text_character::get_text_value()
+	const char*	edit_text_character::to_string()
 	{
 		// get text from VAR
 		if (strlen(get_text_name()) > 0)

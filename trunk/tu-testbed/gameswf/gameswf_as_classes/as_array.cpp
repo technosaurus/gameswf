@@ -116,7 +116,7 @@ namespace gameswf
 		builtin_member("length", as_value(as_array_length, NULL));
 	}
 
-	tu_string as_array::to_string()
+	const char* as_array::to_string()
 	{
 		// receive indexes
 		// array may contain not numerical indexes
@@ -146,7 +146,10 @@ namespace gameswf
 		}
 
 		// form string
-		tu_string s;
+
+		// NOT THREAD SAFE!!!
+		static tu_string s;
+		s = "";
 		for (int i = 0; i < n; i++)
 		{
 			as_value val;
