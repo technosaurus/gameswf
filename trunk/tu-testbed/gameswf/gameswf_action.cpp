@@ -171,17 +171,11 @@ namespace gameswf
 	// then arg1 is at env->bottom(7), arg2 is at env->bottom(6), etc.
 	{
 		as_value	val;
-
-		as_c_function_ptr	func = method.to_c_function();
+		as_function*	func = cast_to<as_function>(method.to_object());
 		if (func)
 		{
-			// It's a C function.  Call it.
+			// It's a function.  Call it.
 			(*func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
-		}
-		else if (as_function* as_func = method.to_as_function())
-		{
-			// It's an ActionScript function.  Call it.
-			(*as_func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
 		}
 		else
 		{
@@ -979,7 +973,7 @@ namespace gameswf
 
 		if (constructor.to_object())
 		{
-			// constructor is AS_FUNCTION
+			// constructor is as_s_function
 			as_value	val;
 			constructor.to_object()->get_member("prototype", &val);
 			as_object* prototype = val.to_object();
@@ -1532,8 +1526,7 @@ namespace gameswf
 							}
 						}
 
-						if (function.get_type() != as_value::C_FUNCTION
-						    && function.get_type() != as_value::AS_FUNCTION)
+						if (function.is_function() == false)
 						{
 							log_error("error in call_function: '%s' is not a function\n",
 								  function_name.c_str());
@@ -1585,22 +1578,23 @@ namespace gameswf
 					int	nargs = (int) env->pop().to_number();
 					as_value constructor = env->get_variable(classname.to_tu_string(), with_stack);
 					as_value new_obj;
-					if (constructor.get_type() == as_value::C_FUNCTION)
+
+					if (as_c_function* c_constructor = cast_to<as_c_function>(constructor.to_object()))
 					{
 						// C function is responsible for creating the new object and setting members.
-						(constructor.to_c_function())(fn_call(&new_obj, NULL, env, nargs, env->get_top_index()));
+						(*c_constructor)(fn_call(&new_obj, NULL, env, nargs, env->get_top_index()));
 					}
-					else if (as_function* ctor_as_func = constructor.to_as_function())
+					else if (as_s_function* s_constructor = cast_to<as_s_function>(constructor.to_object()))
 					{
 
 						// Create an empty object
 						smart_ptr<as_object>	new_obj_ptr = new as_object();
-						as_object* proto = create_proto(new_obj_ptr.get_ptr(), constructor);
+						as_object* proto = create_proto(new_obj_ptr.get_ptr(), s_constructor);
 						proto->m_this_ptr = new_obj_ptr.get_ptr();
 
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
-						call_method(constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
+						call_method(s_constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
 						new_obj.set_as_object(new_obj_ptr.get_ptr());
 					}
 					else
@@ -1713,10 +1707,6 @@ namespace gameswf
 					case as_value::NULLTYPE:
 						env->top(0).set_string("null");
 						break;
-					case as_value::AS_FUNCTION:
-					case as_value::C_FUNCTION:
-						env->top(0).set_string("function");
-						break;
 					default:
 						log_error("typeof unknown type: %02X\n", env->top(0).get_type());
 						break;
@@ -1820,7 +1810,7 @@ namespace gameswf
 							if (obj->get_member("__resolve", &val))
 							{
 								// call __resolve
-								as_function* resolve = val.to_as_function();
+								as_function* resolve = cast_to<as_function>(val.to_object());
 								if (resolve)
 								{
 									(*resolve)(fn_call(&val, obj, env, 1, env->get_top_index()));
@@ -1935,14 +1925,15 @@ namespace gameswf
 							method_name.to_tu_stringi(),
 							env->top(1).to_tu_string_versioned(version));
 					}
-					else if (env->top(1).get_type() == as_value::C_FUNCTION)
+					else if (cast_to<as_c_function>(env->top(1).to_object()))
 					{
 						// Catch method calls on String
 						// constructor.  There may be a cleaner
 						// way to do this. Perhaps we call the
 						// constructor function with a special flag, to
 						// indicate that it's a method call?
-						if (env->top(1).to_c_function() == string_ctor)
+						as_c_function* func = cast_to<as_c_function>(env->top(1).to_object());
+						if (func && func->m_func == string_ctor)	// hack
 						{
 							tu_string dummy;
 							string_method(
@@ -1995,13 +1986,7 @@ namespace gameswf
 					// Create an empty object
 					smart_ptr<as_object>	new_obj = new as_object();
 
-					if (constructor.get_type() == as_value::C_FUNCTION)
-					{
-						// C function is responsible for creating the new object and setting members.
-						// TODO: test
-						(constructor.to_c_function())(fn_call(NULL, new_obj.get_ptr(), env, nargs, env->get_top_index()));
-					}
-					else if (as_function* ctor_as_func = constructor.to_as_function())
+					if (constructor.is_function())
 					{
 						as_object* proto = create_proto(new_obj.get_ptr(), constructor);
 						proto->m_this_ptr = new_obj.get_ptr();
@@ -2015,10 +2000,8 @@ namespace gameswf
 						as_value val;
 						if (obj->get_member(constructor.to_string(), &val))
 						{
-							as_function* func = val.to_as_function();
-							as_c_function_ptr c_func;
-							
-							if( func )
+							as_function* func = cast_to<as_function>(val.to_object());
+							if (func)
 							{
 								as_value prototype;
 								func->get_member("prototype", &prototype);
@@ -2031,15 +2014,6 @@ namespace gameswf
 								// Call the actual constructor function; new_obj is its 'this'.
 								// We don't need the function result.
 								call_method(func, env, new_obj.get_ptr(), nargs, env->get_top_index());
-							}
-							else if( c_func = val.to_c_function() )
-							{
-								// TODO: I don't get this prototype stuff, need to implement it
-								
-								// Result contains the new output.
-								(*c_func)(fn_call(&val, NULL, env, nargs, env->get_top_index()));
-								
-								new_obj = cast_to<as_object>(val.to_object());
 							}
 							else
 							{
@@ -2132,15 +2106,14 @@ namespace gameswf
 					as_value& sub = env->top(1);
 
 					assert(sub.to_object());
-					assert(super.get_type() == as_value::C_FUNCTION ||
-						super.get_type() == as_value::AS_FUNCTION);
+					assert(super.is_function());
 
 					as_value super_prototype;
 					as_object* new_prototype = new as_object();
 
 					if (super.to_object())
 					{
-						// AS_FUNCTION, we have prototype
+						// as_s_function, we have prototype
 						super.to_object()->get_member("prototype", &super_prototype);
 					}
 
@@ -2295,9 +2268,10 @@ namespace gameswf
 					if( name.length() > 0 )
 					{
 						as_value value;
-						as_function* existing_function;
+						as_s_function* existing_function;
 
-						if (env->m_target->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
+						if (env->m_target->get_member(name, &value) && 
+							( existing_function = cast_to<as_s_function>(value.to_object())))
 						{
 							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
 								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
@@ -2310,7 +2284,7 @@ namespace gameswf
 
 					if( !function_exists )
 					{
-						as_function*	func = new as_function(this, next_pc, with_stack);
+						as_s_function*	func = new as_s_function(this, next_pc, with_stack);
 						func->set_target(env->get_target());
 						func->set_is_function2();
 
@@ -2620,9 +2594,10 @@ namespace gameswf
 					if( name.length() > 0 )
 					{
 						as_value value;
-						as_function* existing_function;
+						as_s_function* existing_function;
 
-						if( env->m_target->get_member(name, &value) && ( existing_function = value.to_as_function() ) )
+						if (env->m_target->get_member(name, &value) 
+							&& ( existing_function = cast_to<as_s_function>(value.to_object())))
 						{
 							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
 								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
@@ -2635,7 +2610,7 @@ namespace gameswf
 
 					if( !function_exists )
 					{
-						as_function*	func = new as_function(this, next_pc, with_stack);
+						as_s_function*	func = new as_s_function(this, next_pc, with_stack);
 						func->set_target(env->get_target());
 
 						// Get number of arguments.
@@ -2866,7 +2841,7 @@ namespace gameswf
 		{
 			if (s_standard_method_map[i])
 			{
-				s_standard_method_map[i]->clear();
+				delete s_standard_method_map[i];
 			}
 		}
 	}

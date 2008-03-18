@@ -30,24 +30,8 @@ namespace gameswf
 	// helper, used in as_value
 	struct as_property : public ref_counted
 	{
-		enum getter_setter_type
-		{
-			UNDEFINED,
-			C_FUNCTION,
-			AS_FUNCTION
-		};
-		getter_setter_type m_getter_type;
-		getter_setter_type m_setter_type;
-		union
-		{
-			as_function*	m_getter;
-			as_c_function_ptr	m_c_getter;
-		};
-		union
-		{
-			as_function*	m_setter;
-			as_c_function_ptr	m_c_setter;
-		};
+		as_function*	m_getter;
+		as_function*	m_setter;
 
 		as_property(const as_value& getter,	const as_value& setter);
 		~as_property();
@@ -64,8 +48,6 @@ namespace gameswf
 			NULLTYPE,
 			STRING,
 			OBJECT,
-			C_FUNCTION,
-			AS_FUNCTION,	// ActionScript function.
 			PROPERTY
 		};
 		type	m_type;
@@ -73,8 +55,6 @@ namespace gameswf
 		union
 		{
 			as_object*	m_object_value;
-			as_c_function_ptr	m_c_function_value;
-			as_function*	m_as_function_value;
 			struct
 			{
 				as_object*	m_property_target;
@@ -139,14 +119,8 @@ namespace gameswf
 
 		exported_module as_value(as_object* obj);
 
-		exported_module as_value(as_c_function_ptr func) :
-			m_type(C_FUNCTION),
-			m_c_function_value(func)
-		{
-			m_c_function_value = func;
-		}
-
-		exported_module as_value(as_function* func);
+		exported_module as_value(as_c_function_ptr func);
+		exported_module as_value(as_s_function* func);
 		exported_module as_value(const as_value& getter, const as_value& setter);
 
 		~as_value() { drop_refs(); }
@@ -157,11 +131,7 @@ namespace gameswf
 		exported_module type	get_type() const { return m_type; }
 
 		// Return true if this value is callable.
-		exported_module bool is_function() const
-		{
-			return m_type == C_FUNCTION || m_type == AS_FUNCTION;
-		}
-
+		exported_module bool is_function() const;
 		exported_module const char*	to_string() const;
 		exported_module const tu_string&	to_tu_string() const;
 		exported_module const tu_string&	to_tu_string_versioned(int version) const;
@@ -170,8 +140,6 @@ namespace gameswf
 		exported_module int	to_int() const { return (int) to_number(); };
 		exported_module bool	to_bool() const;
 		exported_module as_object*	to_object() const;
-		exported_module as_c_function_ptr	to_c_function() const;
-		exported_module as_function*	to_as_function() const;
 		exported_module const tu_string& call_to_string(as_environment* env) const;
 
 		// These set_*()'s are more type-safe; should be used
@@ -184,11 +152,8 @@ namespace gameswf
 		exported_module void	set_int(int val) { set_double(val); }
 		exported_module void	set_nan()	{	set_double(get_nan()); }
 		exported_module void	set_as_object(as_object* obj);
-		exported_module void	set_as_c_function_ptr(as_c_function_ptr func)
-		{
-			drop_refs(); m_type = C_FUNCTION; m_c_function_value = func;
-		}
-		exported_module void	set_as_function(as_function* func);
+		exported_module void	set_as_c_function_ptr(as_c_function_ptr func);
+		exported_module void	set_as_s_function(as_s_function* func);
 		exported_module void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
 		exported_module void	set_null() { drop_refs(); m_type = NULLTYPE; }
 

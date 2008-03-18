@@ -27,7 +27,7 @@ namespace gameswf
 				func = fn.arg(0);
 			}
 
-			if (func.get_type() == as_value::AS_FUNCTION)
+			if (func.is_function())
 			{
 				timer = new as_timer(func, fn.arg(2).to_number(), fn);
 			}
@@ -73,7 +73,7 @@ namespace gameswf
 		{
 			m_delta_time = 0.0f;
 
-			assert(m_func.get_type() == as_value::AS_FUNCTION);
+			assert(m_func.is_function());
 
 			as_environment env;
 			int n = m_param.size();

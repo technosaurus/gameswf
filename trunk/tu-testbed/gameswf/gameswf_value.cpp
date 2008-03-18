@@ -52,15 +52,10 @@ namespace gameswf
 	}
 
 
-	as_value::as_value(as_function* func)
-		:
-		m_type(AS_FUNCTION),
-		m_as_function_value(func)
+	as_value::as_value(as_s_function* func)	:
+		m_type(UNDEFINED)
 	{
-		if (m_as_function_value)
-		{
-			m_as_function_value->add_ref();
-		}
+		set_as_object(func);
 	}
 
 	as_value::as_value(const as_value& getter, const as_value& setter)
@@ -125,18 +120,6 @@ namespace gameswf
 			{
 				m_string_value = m_object_value->to_string();
 			}
-		}
-		else if (m_type == C_FUNCTION)
-		{
-			char buffer[50];
-			snprintf(buffer, 50, "<c_function 0x%p>", (void*) (m_c_function_value));
-			m_string_value = buffer;
-		}
-		else if (m_type == AS_FUNCTION)
-		{
-			char buffer[50];
-			snprintf(buffer, 50, "<as_function 0x%p>", (void*) (m_as_function_value));
-			m_string_value = buffer;
 		}
 		else if (m_type == PROPERTY)
 		{
@@ -268,14 +251,6 @@ namespace gameswf
 		{
 			return m_object_value ? m_object_value->to_bool() : false;
 		}
-		else if (m_type == C_FUNCTION)
-		{
-			return m_c_function_value != NULL;
-		}
-		else if (m_type == AS_FUNCTION)
-		{
-			return m_as_function_value != NULL;
-		}
 		else if (m_type == PROPERTY)
 		{
 			as_value val;
@@ -298,43 +273,7 @@ namespace gameswf
 			// OK.
 			return m_object_value;
 		}
-		else 
-		if (m_type == AS_FUNCTION)
-		{
-			return m_as_function_value;
-		}
 		return NULL;
-	}
-
-
-	as_c_function_ptr	as_value::to_c_function() const
-	// Return value as a C function ptr.  Returns NULL if value is
-	// not a C function.
-	{
-		if (m_type == C_FUNCTION)
-		{
-			// OK.
-			return m_c_function_value;
-		}
-		else
-		{
-			return NULL;
-		}
-	}
-
-	as_function*	as_value::to_as_function() const
-	// Return value as an ActionScript function.  Returns NULL if value is
-	// not an ActionScript function.
-	{
-		if (m_type == AS_FUNCTION)
-		{
-			// OK.
-			return m_as_function_value;
-		}
-		else
-		{
-			return NULL;
-		}
 	}
 
 	void	as_value::set_as_object(as_object* obj)
@@ -351,18 +290,9 @@ namespace gameswf
 		}
 	}
 
-	void	as_value::set_as_function(as_function* func)
+	void	as_value::set_as_s_function(as_s_function* func)
 	{
-		if (m_type != AS_FUNCTION || m_as_function_value != func)
-		{
-			drop_refs();
-			m_type = AS_FUNCTION;
-			m_as_function_value = func;
-			if (m_as_function_value)
-			{
-				m_as_function_value->add_ref();
-			}
-		}
+		set_as_object(func);
 	}
 
 	void	as_value::operator=(const as_value& v)
@@ -394,12 +324,6 @@ namespace gameswf
 			break;
 		case OBJECT:
 			set_as_object(v.m_object_value);
-			break;
-		case C_FUNCTION:
-			set_as_c_function_ptr(v.m_c_function_value);
-			break;
-		case AS_FUNCTION:
-			set_as_function(v.m_as_function_value);
 			break;
 		case PROPERTY:
 			drop_refs(); 
@@ -440,14 +364,6 @@ namespace gameswf
 		{
 			return m_string_value == v.to_tu_string();
 		}
-//		else if (m_type == NUMBER)
-//		{
-//			return m_number_value == v.to_number();
-//		}
-//		else if (m_type == BOOLEAN)
-//		{
-//			return m_boolean_value == v.to_bool();
-//		}
 		else if (m_type == OBJECT)
 		{
 			//vv hack
@@ -495,15 +411,7 @@ namespace gameswf
 	void	as_value::drop_refs()
 	// Drop any ref counts we have; this happens prior to changing our value.
 	{
-		if (m_type == AS_FUNCTION)
-		{
-			if (m_as_function_value)
-			{
-				m_as_function_value->drop_ref();
-				m_as_function_value = 0;
-			}
-		}
-		else if (m_type == OBJECT)
+		if (m_type == OBJECT)
 		{
 			if (m_object_value)
 			{
@@ -599,52 +507,54 @@ namespace gameswf
 	}
 
 
+	bool as_value::is_function() const
+	{
+		if (m_type == OBJECT)
+		{
+			return cast_to<as_function>(m_object_value);
+		}
+		return false;
+	}
+
+	as_value::as_value(as_c_function_ptr func) :
+		m_type(UNDEFINED)
+	{
+		set_as_object(new as_c_function(func));
+	}
+
+	void	as_value::set_as_c_function_ptr(as_c_function_ptr func)
+	{
+		set_as_object(new as_c_function(func));
+	}
+
 	//
 	//	as_property
 	//
 
-	as_property::as_property(const as_value& getter,	const as_value& setter)
-		:
-		m_getter_type(UNDEFINED),
-		m_setter_type(UNDEFINED),
+	as_property::as_property(const as_value& getter,	const as_value& setter) :
 		m_getter(NULL),
 		m_setter(NULL)
 	{
-		if (getter.get_type() == as_value::AS_FUNCTION && getter.to_as_function())
+		m_getter = cast_to<as_function>(getter.to_object());
+		if (m_getter)
 		{
-			m_getter_type = AS_FUNCTION;
-			m_getter = getter.to_as_function();
-			assert(m_getter);
 			m_getter->add_ref();
 		}
-		else
-		if (getter.get_type() == as_value::C_FUNCTION && getter.to_c_function())
-		{
-			m_getter_type = C_FUNCTION;
-			m_c_getter = getter.to_c_function();
-		}
 
-		if (setter.get_type() == as_value::AS_FUNCTION && setter.to_as_function())
+		m_setter = cast_to<as_function>(setter.to_object());
+		if (m_setter)
 		{
-			m_setter_type = AS_FUNCTION;
-			m_setter = setter.to_as_function();
 			m_setter->add_ref();
-		}
-		else
-		if (setter.get_type() == as_value::C_FUNCTION && setter.to_c_function())
-		{
-			m_setter_type = as_property::C_FUNCTION;
-			m_c_setter = setter.to_c_function();
 		}
 	}
 
 	as_property::~as_property()
 	{
-		if (m_getter_type == AS_FUNCTION && m_getter)
+		if (m_getter)
 		{
 			m_getter->drop_ref();
 		}
-		if (m_setter_type == as_property::AS_FUNCTION && m_setter)
+		if (m_setter)
 		{
 			m_setter->drop_ref();
 		}
@@ -656,14 +566,9 @@ namespace gameswf
 
 		as_environment env;
 		env.push(val);
-		if (m_setter && m_setter_type == AS_FUNCTION)
+		if (m_setter)
 		{
 			(*m_setter)(fn_call(NULL, target,	&env, 1, env.get_top_index()));
-		}
-		else
-		if (m_c_setter && m_setter_type == as_property::C_FUNCTION)
-		{
-			(m_c_setter)(fn_call(NULL, target, &env, 1, env.get_top_index()));
 		}
 	}
 
@@ -673,14 +578,9 @@ namespace gameswf
 
 		// env is used when m_getter->m_env is NULL
 		as_environment env;
-		if (m_getter && m_getter_type == AS_FUNCTION)
+		if (m_getter)
 		{
 			(*m_getter)(fn_call(val, target, &env, 0,	0));
-		}
-		else
-		if (m_c_getter && m_getter_type == C_FUNCTION)
-		{
-			(m_c_getter)(fn_call(val, target, &env, 0,	0));
 		}
 	}
 
