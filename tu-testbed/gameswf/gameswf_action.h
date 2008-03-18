@@ -19,7 +19,7 @@
 namespace gameswf
 {
 	struct as_environment;
-	struct as_function;
+	struct as_s_function;
 
 	exported_module as_object* get_global();
 	exported_module void set_bootup_options(const char* param);

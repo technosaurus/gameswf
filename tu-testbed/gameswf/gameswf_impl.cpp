@@ -1766,10 +1766,10 @@ namespace gameswf
 
 								// Create a function to execute the actions.
 								array<with_stack_entry>	empty_with_stack;
-								as_function*	func = new as_function(&ev->m_action_buffer, 0, empty_with_stack);
+								as_s_function*	func = new as_s_function(&ev->m_action_buffer, 0, empty_with_stack);
 								func->set_length(ev->m_action_buffer.get_length());
 
-								ev->m_method.set_as_function(func);
+								ev->m_method.set_as_s_function(func);
 
 								m_event_handlers.push_back(ev);
 							}

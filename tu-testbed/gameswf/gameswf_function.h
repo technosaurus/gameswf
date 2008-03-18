@@ -31,6 +31,49 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
+		virtual const char*	typeof() { return "function"; }
+		virtual const char*	to_string()
+		{
+			// NOT THREAD SAFE!!!
+			static char buffer[50];
+			snprintf(buffer, 50, "<function 0x%p>", this);
+			return buffer; 
+		}
+
+		// Dispatch.
+		virtual void	operator()(const fn_call& fn) = 0;
+
+	};
+		
+	struct as_c_function : public as_function
+	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_C_FUNCTION };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_function::is(class_id);
+		}
+
+		as_c_function(as_c_function_ptr func);
+
+		// Dispatch.
+		virtual void	operator()(const fn_call& fn);
+
+		as_c_function_ptr m_func;
+		weak_ptr<as_object> m_this_ptr;
+	};
+
+	struct as_s_function : public as_function
+	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_S_FUNCTION };
+		virtual bool is(int class_id)
+		{
+			if (m_class_id == class_id) return true;
+			else return as_function::is(class_id);
+		}
+
 		action_buffer	m_action_buffer;
 
 		array<with_stack_entry>	m_with_stack;	// initial with-stack on function entry.
@@ -53,8 +96,8 @@ namespace gameswf
 		// myfunc should use _root environment
 		weak_ptr<as_object>	m_target;
 
-		as_function( const action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
-		~as_function();
+		as_s_function( const action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
+		~as_s_function();
 
 		void	set_is_function2() { m_is_function2 = true; }
 		void	set_local_register_count(uint8 ct) { assert(m_is_function2); m_local_register_count = ct; }
@@ -75,7 +118,7 @@ namespace gameswf
 		}
 
 		// Dispatch.
-		void	operator()(const fn_call& fn);
+		virtual void	operator()(const fn_call& fn);
 
 	};
 

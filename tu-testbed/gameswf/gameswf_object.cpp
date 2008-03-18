@@ -66,7 +66,7 @@ namespace gameswf
 			as_object* obj = cast_to<as_object>(fn.this_ptr);
 			assert(obj);
 
-			ret = obj->watch(fn.arg(0).to_tu_string(), fn.arg(1).to_as_function(), 
+			ret = obj->watch(fn.arg(0).to_tu_string(), cast_to<as_s_function>(fn.arg(1).to_object()), 
 				fn.nargs > 2 ? fn.arg(2) : as_value());
 		}
 		fn.result->set_bool(ret);
@@ -332,7 +332,7 @@ namespace gameswf
 //		}
 	}
 
-	bool as_object::watch(const tu_string& name, as_function* callback,
+	bool as_object::watch(const tu_string& name, as_s_function* callback,
 		const as_value& user_data)
 	{
 		if (callback == NULL)

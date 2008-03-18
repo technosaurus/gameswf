@@ -15,7 +15,7 @@ namespace gameswf
 {
 	// Invokes the function represented by a Function object.
 	// public call(thisObject:Object, [parameter1:Object]) : Object
-	void	as_function_call(const fn_call& fn)
+	void	as_s_function_call(const fn_call& fn)
 	{
 		assert(fn.this_ptr);
 		if (fn.nargs > 0)
@@ -23,7 +23,7 @@ namespace gameswf
 			as_object* properties = cast_to<as_object>(fn.this_ptr);
 			if (properties->m_this_ptr != NULL)
 			{
-				as_function* func = cast_to<as_function>(properties->m_this_ptr.get_ptr());
+				as_object* func = properties->m_this_ptr.get_ptr();
 				if (func)
 				{
 					as_environment env;
@@ -41,7 +41,7 @@ namespace gameswf
 		}
 	}
 
-	as_function::as_function( const action_buffer* ab, int start, 
+	as_s_function::as_s_function( const action_buffer* ab, int start, 
 		const array<with_stack_entry>& with_stack)
 		:
 		m_with_stack(with_stack),
@@ -55,20 +55,20 @@ namespace gameswf
 		// action_buffer is in movie_def, therefore when we load another _root
 		// action_buffer will be deleted and _global.MyClass will keep
 		// the pointer to the removed object(action_buffer).
-		// Therefore we have updated action_buffer* ==> action_buffer in as_function
+		// Therefore we have updated action_buffer* ==> action_buffer in as_s_function
 		assert(ab);
 		m_action_buffer = *ab;
 
 		m_this_ptr = this;
 		builtin_member("prototype", new as_object());
-		builtin_member("call", as_function_call);
+		builtin_member("call", as_s_function_call);
 	}
 
-	as_function::~as_function()
+	as_s_function::~as_s_function()
 	{
 	}
 
-	void	as_function::operator()(const fn_call& fn)
+	void	as_s_function::operator()(const fn_call& fn)
 	// Dispatch.
 	{
 
@@ -272,6 +272,23 @@ namespace gameswf
 		{
 			// Clean up the local registers.
 			env->drop_local_registers(m_local_register_count);
+		}
+	}
+
+	as_c_function::as_c_function(as_c_function_ptr func) :
+		m_func(func)
+	{
+		//vv FIXME
+//		m_this_ptr = this;
+//		m_members.set("prototype", as_member(new as_object(), as_prop_flags::DONT_ENUM | as_prop_flags::READ_ONLY));
+//		m_members.set("call", as_member(new as_object(), as_prop_flags::DONT_ENUM | as_prop_flags::READ_ONLY));
+	}
+
+	void	as_c_function::operator()(const fn_call& fn)
+	{
+		if (m_func)
+		{
+			(*m_func)(fn);
 		}
 	}
 }
