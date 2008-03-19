@@ -113,7 +113,7 @@ namespace gameswf
 
 		if (name == "attachVideo")
 		{
-			val->set_as_c_function_ptr(attach_video);
+			*val = as_value(attach_video);
 			return true;
 		}
 		return false;

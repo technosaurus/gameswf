@@ -137,7 +137,7 @@ namespace gameswf
 
 		sprite_instance* target = NULL;
 
-		if (cast_to<as_number>(fn.arg(0).to_object()))
+		if (fn.arg(0).is_number())
 		{ 
 			int target_depth = int(fn.arg(0).to_number());
 			int corrected_target_depth = target_depth + 16384;  //adjust depth

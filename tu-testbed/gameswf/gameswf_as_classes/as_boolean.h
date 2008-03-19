@@ -13,27 +13,8 @@ namespace gameswf
 {
 
 	void	as_global_boolean_ctor(const fn_call& fn);
-
-	struct as_boolean : public as_object
-	{
-		// Unique id of a gameswf resource
-		enum { m_class_id = AS_BOOLEAN };
-		virtual bool is(int class_id)
-		{
-			if (m_class_id == class_id) return true;
-			else return as_object::is(class_id);
-		}
-
-		as_boolean(double val);
-
-		virtual	bool get_member(const tu_stringi& name, as_value* val);
-		virtual const char*	to_string();
-		virtual const char*	typeof() { return "boolean"; }
-		virtual double	to_number() { return m_val ? 1 : 0; }
-		virtual bool to_bool() { return m_val; }
-
-		bool m_val;
-	};
+	void	as_boolean_to_string(const fn_call& fn);
+	void	as_boolean_valueof(const fn_call& fn);
 
 }	// end namespace gameswf
 

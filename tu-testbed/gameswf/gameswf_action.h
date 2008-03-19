@@ -19,6 +19,7 @@
 namespace gameswf
 {
 	struct as_environment;
+	struct as_c_function;
 	struct as_s_function;
 
 	exported_module as_object* get_global();
@@ -53,7 +54,7 @@ namespace gameswf
 
 	// Dispatching methods from C++.
 	exported_module as_value	call_method(
-		const as_value& method,	as_environment* env, as_object* this_ptr,
+		const as_value& method,	as_environment* env, const as_value& this_ptr,
 		int nargs, int first_arg_bottom_index);
 
 	//
@@ -303,11 +304,14 @@ namespace gameswf
 		BUILTIN_SPRITE_METHOD,
 		BUILTIN_NUMBER_METHOD,
 		BUILTIN_BOOLEAN_METHOD,
+		BUILTIN_STRING_METHOD,
 		// and so far
+
 		BUILTIN_COUNT
 	};
 
-	stringi_hash<as_c_function_ptr>* get_standard_method_map(builtin_object obj);
+	stringi_hash<as_value>* get_standard_method_map(builtin_object obj);
+	stringi_hash<as_value>* new_standard_method_map(builtin_object obj);
 
 }	// end namespace gameswf
 

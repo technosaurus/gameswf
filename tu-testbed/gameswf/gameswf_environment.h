@@ -137,18 +137,19 @@ namespace gameswf
 	{
 		as_value* result;
 		as_object* this_ptr;
+		const as_value& this_value;	// Number or String or Boolean value
 		as_environment* env;
 		int nargs;
 		int first_arg_bottom_index;
 
-		fn_call(as_value* res_in, as_object* this_in, as_environment* env_in, int nargs_in, int first_in)
-			:
+		fn_call(as_value* res_in, const as_value& this_in, as_environment* env_in, int nargs_in, int first_in) :
 			result(res_in),
-			this_ptr(this_in),
+			this_value(this_in),
 			env(env_in),
 			nargs(nargs_in),
 			first_arg_bottom_index(first_in)
 		{
+			this_ptr = this_in.to_object();
 		}
 
 		as_value& arg(int n) const

@@ -83,54 +83,73 @@ namespace gameswf
 	const tu_string&	as_value::to_tu_string() const
 	// Conversion to const tu_string&.
 	{
-		if (m_type == STRING)
+		switch (m_type)
 		{
-			// don't need to do anything
-		}
-		else if (m_type == UNDEFINED)
-		{
-			// Behavior depends on file version.  In
-			// version 7+, it's "undefined", in versions
-			// 6-, it's "".
-			//
-			// We'll go with the v7 behavior by default,
-			// and conditionalize via _versioned()
-			// functions.
-			m_string_value = "undefined";
-		}
-		else if (m_type == NULLTYPE)
-		{ 
-			m_string_value = "null";
-		}
-		else if (m_type == OBJECT)
-		{
-			// Moock says, "the value that results from
-			// calling toString() on the object".
-			//
-			// The default toString() returns "[object
-			// Object]" but may be customized.
-			//
-			// A Movieclip returns the absolute path of the object.
-			//
-			// call_to_string() should have checked for a
-			// toString() method, before we get down here,
-			// so we just handle the default cases here.
+			case STRING:
+				// don't need to do anything
+				break;
 
-			if (m_object_value)
-			{
+			case UNDEFINED:
+				// Behavior depends on file version.  In
+				// version 7+, it's "undefined", in versions
+				// 6-, it's "".
+				//
+				// We'll go with the v7 behavior by default,
+				// and conditionalize via _versioned()
+				// functions.
+				m_string_value = "undefined";
+				break;
+
+			case NULLTYPE:
+				m_string_value = "null";
+				break;
+
+			case BOOLEAN:
+				m_string_value = m_bool ? "true" : "false";
+				break;
+
+			case NUMBER:
+				// @@ Moock says if value is a NAN, then result is "NaN"
+				// INF goes to "Infinity"
+				// -INF goes to "-Infinity"
+				if (isnan(m_number))
+				{
+					m_string_value = "NaN";
+				} 
+				else
+				{
+					char buffer[50];
+					snprintf(buffer, 50, "%.14g", m_number);
+					m_string_value = buffer;
+				}
+				break;
+
+			case OBJECT:
+				// Moock says, "the value that results from
+				// calling toString() on the object".
+				//
+				// The default toString() returns "[object
+				// Object]" but may be customized.
+				//
+				// A Movieclip returns the absolute path of the object.
+				//
+				// call_to_string() should have checked for a
+				// toString() method, before we get down here,
+				// so we just handle the default cases here.
+
 				m_string_value = m_object_value->to_string();
+				break;
+	
+			case PROPERTY:
+			{
+				as_value val;
+				get_property(&val);
+				m_string_value = val.to_tu_string();
+				break;
 			}
-		}
-		else if (m_type == PROPERTY)
-		{
-			as_value val;
-			get_property(&val);
-			m_string_value = val.to_tu_string();
-		}
-		else
-		{
-			m_string_value = "<bad type>";
-			assert(0);
+
+			default:
+				assert(0);
 		}
 
 		return m_string_value;
@@ -180,40 +199,47 @@ namespace gameswf
 	double	as_value::to_number() const
 	// Conversion to double.
 	{
-		if (m_type == STRING)
+		switch (m_type)
 		{
-			// @@ Moock says the rule here is: if the
-			// string is a valid float literal, then it
-			// gets converted; otherwise it is set to NaN.
-			//
-			// Also, "Infinity", "-Infinity", and "NaN"
-			// are recognized.
-			double val;
-			if (! string_to_number(&val, m_string_value.c_str()))
+			case STRING:
 			{
-				// Failed conversion to Number.
-				val = 0.0;	// TODO should be NaN
+				// @@ Moock says the rule here is: if the
+				// string is a valid float literal, then it
+				// gets converted; otherwise it is set to NaN.
+				//
+				// Also, "Infinity", "-Infinity", and "NaN"
+				// are recognized.
+				double val;
+				if (! string_to_number(&val, m_string_value.c_str()))
+				{
+					// Failed conversion to Number.
+					val = 0.0;	// TODO should be NaN
+				}
+				return val;
 			}
-			return val;
-		}
-		else if (m_type == NULLTYPE)
-		{
- 			// Evan: from my tests
-			return 0;
-		}
-		else if (m_type == OBJECT && m_object_value != NULL)
-		{
-			return m_object_value->to_number();
-		}
-		else if (m_type == PROPERTY)
-		{
-			as_value val;
-			get_property(&val);
-			return val.to_number();
-		}
-		else
-		{
-			return 0.0;
+
+			case NULLTYPE:
+	 			// Evan: from my tests
+				return 0;
+
+			case NUMBER:
+				return m_number;
+
+			case BOOLEAN:
+				return m_bool ? 1 : 0;
+
+			case OBJECT:
+				return m_object_value->to_number();
+	
+			case PROPERTY:
+			{
+				as_value val;
+				get_property(&val);
+				return val.to_number();
+			}
+
+			default:
+				return 0.0;
 		}
 	}
 
@@ -221,46 +247,53 @@ namespace gameswf
 	bool	as_value::to_bool() const
 	// Conversion to boolean.
 	{
-		// From Moock
-		if (m_type == STRING)
+		switch (m_type)
 		{
-			if (get_current_root()->get_movie_version() >= 7)
+			case STRING:
+				// From Moock
+				if (get_current_root()->get_movie_version() >= 7)
+				{
+					return m_string_value.size() > 0 ? true : false;
+				}
+
+				if (m_string_value == "false")
+				{
+					return false;
+				}
+				else
+				if (m_string_value == "true")
+				{
+					return true;
+				}
+				else
+				{
+					// @@ Moock: "true if the string can
+					// be converted to a valid nonzero
+					// number".
+					//
+					// Empty string --> false
+					return to_number() != 0.0;
+				}
+
+			case OBJECT:
+				return m_object_value->to_bool();
+
+			case PROPERTY:
 			{
-				return m_string_value.size() > 0 ? true : false;
+				as_value val;
+				get_property(&val);
+				return val.to_bool();
 			}
 
-			if (m_string_value == "false")
-			{
+			case NUMBER:
+				return m_number != 0;
+
+			case BOOLEAN:
+				return m_bool;
+
+			default:
+				assert(m_type == UNDEFINED || m_type == NULLTYPE);
 				return false;
-			}
-			else if (m_string_value == "true")
-			{
-				return true;
-			}
-			else
-			{
-				// @@ Moock: "true if the string can
-				// be converted to a valid nonzero
-				// number".
-				//
-				// Empty string --> false
-				return to_number() != 0.0;
-			}
-		}
-		else if (m_type == OBJECT)
-		{
-			return m_object_value ? m_object_value->to_bool() : false;
-		}
-		else if (m_type == PROPERTY)
-		{
-			as_value val;
-			get_property(&val);
-			return val.to_bool();
-		}
-		else
-		{
-			assert(m_type == UNDEFINED || m_type == NULLTYPE);
-			return false;
 		}
 	}
 
@@ -276,78 +309,82 @@ namespace gameswf
 		return NULL;
 	}
 
+	as_function*	as_value::to_function() const
+	// Return value as an function.
+	{
+		if (m_type == OBJECT)
+		{
+			// OK.
+			return cast_to<as_function>(m_object_value);
+		}
+		return NULL;
+	}
+
 	void	as_value::set_as_object(as_object* obj)
 	{
 		if (m_type != OBJECT || m_object_value != obj)
 		{
 			drop_refs();
-			m_type = OBJECT;
-			m_object_value = obj;
-			if (m_object_value)
+			if (obj)
 			{
+				m_type = OBJECT;
+				m_object_value = obj;
 				m_object_value->add_ref();
 			}
+			else
+			{
+				m_type = NULLTYPE;
+			}
 		}
-	}
-
-	void	as_value::set_as_s_function(as_s_function* func)
-	{
-		set_as_object(func);
 	}
 
 	void	as_value::operator=(const as_value& v)
 	{
-		//vv hack
-		as_number* num = cast_to<as_number>(v.to_object());
-		if (num)
-		{
-			set_double(num->m_val);
-			return;
-		}
-		as_boolean* bol = cast_to<as_boolean>(v.to_object());
-		if (bol)
-		{
-			set_bool(bol->m_val);
-			return;
-		}
-
 		switch (v.m_type)
 		{
-		case UNDEFINED:
-			set_undefined();
-			break;
-		case NULLTYPE:
-			set_null();
-			break;
-		case STRING:
-			set_tu_string(v.m_string_value);
-			break;
-		case OBJECT:
-			set_as_object(v.m_object_value);
-			break;
-		case PROPERTY:
-			drop_refs(); 
-			
-			// is binded property ?
-			if (v.m_property_target == NULL)
-			{
-				m_type = PROPERTY;
-				m_property = v.m_property;
-				m_property->add_ref();
-				m_property_target = v.m_property_target;
-				if (m_property_target)
-				{
-					m_property_target->add_ref();
-				}
-			}
-			else
-			{
-				v.get_property(this);
-			}
+			case UNDEFINED:
+				set_undefined();
+				break;
+			case NUMBER:
+				set_double(v.m_number);
+				break;
+			case BOOLEAN:
+				set_bool(v.m_bool);
+				break;
+			case NULLTYPE:
+				set_null();
+				break;
+			case STRING:
+				set_tu_string(v.m_string_value);
+				break;
+			case OBJECT:
+				set_as_object(v.m_object_value);
+				break;
 
-			break;
-		default:
-			assert(0);
+			case PROPERTY:
+				drop_refs(); 
+				
+				// is binded property ?
+				if (v.m_property_target == NULL)
+				{
+					m_type = PROPERTY;
+					m_property = v.m_property;
+					m_property->add_ref();
+					m_property_target = v.m_property_target;
+					if (m_property_target)
+					{
+						m_property_target->add_ref();
+					}
+				}
+				else
+				{
+					v.get_property(this);
+				}
+
+				break;
+
+			default:
+				assert(0);
 		}
 	}
 
@@ -360,34 +397,30 @@ namespace gameswf
 		{
 			return this_nulltype == v_nulltype;
 		}
-		else if (m_type == STRING)
+
+		switch (m_type)
 		{
-			return m_string_value == v.to_tu_string();
-		}
-		else if (m_type == OBJECT)
-		{
-			//vv hack
-			as_number* num = cast_to<as_number>(m_object_value);
-			if (num)
+			case STRING:
+				return m_string_value == v.to_tu_string();
+
+			case NUMBER:
+				return m_number == v.to_number();
+
+			case BOOLEAN:
+				return m_bool == v.to_bool();
+
+			case OBJECT:
+				return m_object_value == v.to_object();
+
+			case PROPERTY:
 			{
-				return num->m_val == v.to_number();
+				as_value prop;
+				get_property(&prop);
+				return prop == v;
 			}
-			as_boolean* bol = cast_to<as_boolean>(m_object_value);
-			if (bol)
-			{
-				return bol->m_val == v.to_bool();
-			}
-			return m_object_value == v.to_object();
-		}
-		else if (m_type == PROPERTY)
-		{
-			as_value prop;
-			get_property(&prop);
-			return prop == v;
-		}
-		else
-		{
-			return m_type == v.m_type;
+
+			default:
+				return m_type == v.m_type;
 		}
 	}
 
@@ -459,55 +492,29 @@ namespace gameswf
 	}
 
 	as_value::as_value(double val) :
-		m_type(UNDEFINED)
+		m_type(NUMBER),
+		m_number(val)
 	{
-		set_double(val);
 	}
 
 	void	as_value::set_double(double val)
 	{
-		if (m_type == OBJECT)
-		{
-			as_number* num = cast_to<as_number>(m_object_value);
-			if (num)
-			{
-				num->m_val = val;
-				return;
-			}
-		}
-
-		drop_refs();
-		m_type = OBJECT;
-		m_object_value = new as_number(val);
-		m_object_value->add_ref();
+		drop_refs(); m_type = NUMBER; m_number = val;
 	}
 
 	as_value::as_value(bool val) :
-		m_type(UNDEFINED)
+		m_type(BOOLEAN),
+		m_bool(val)
 	{
-		set_bool(val);
 	}
-		
+
 	void	as_value::set_bool(bool val)
 	{
-		if (m_type == OBJECT)
-		{
-			as_boolean* bol = cast_to<as_boolean>(m_object_value);
-			if (bol)
-			{
-				bol->m_val = val;
-				return;
-			}
-		}
-
-		drop_refs();
-		m_type = OBJECT;
-		m_object_value = new as_boolean(val);
-		m_object_value->add_ref();
+		drop_refs(); m_type = BOOLEAN; m_bool = val;
 	}
 
 
-	bool as_value::is_function() const
+	bool as_value::is_function()
 	{
 		if (m_type == OBJECT)
 		{
@@ -522,7 +529,7 @@ namespace gameswf
 		set_as_object(new as_c_function(func));
 	}
 
-	void	as_value::set_as_c_function_ptr(as_c_function_ptr func)
+	void	as_value::set_as_c_function(as_c_function_ptr func)
 	{
 		set_as_object(new as_c_function(func));
 	}
@@ -561,6 +568,36 @@ namespace gameswf
 		return 0;
 	}
 
+
+	bool as_value::get_method(as_value* func, const tu_string& name)
+	{
+		switch (m_type)
+		{
+			case STRING:
+			{
+				stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_STRING_METHOD);
+				return map->get(name, func);
+			}
+
+			case NUMBER:
+			{
+				stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_NUMBER_METHOD);
+				return map->get(name, func);
+			}
+
+			case BOOLEAN:
+			{
+				stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_BOOLEAN_METHOD);
+				return map->get(name, func);
+			}
+
+			case OBJECT:
+			{
+				return m_object_value->get_member(name, func);
+			}
+		}
+		return false;
+	}
 
 	//
 	//	as_property

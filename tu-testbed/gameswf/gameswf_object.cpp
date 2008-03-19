@@ -102,17 +102,18 @@ namespace gameswf
 	as_object::as_object() :
 		m_watch(NULL)
 	{
-		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_OBJECT_METHOD);
-		if (std->size() == 0)
+		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_OBJECT_METHOD);
+		if (map == NULL)
 		{
-			std->add("addProperty", as_object_addproperty);
-			std->add("hasOwnProperty", as_object_hasownproperty);
-			std->add("watch", as_object_watch);
-			std->add("unwatch", as_object_unwatch);
+			map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
+			map->add("addProperty", as_object_addproperty);
+			map->add("hasOwnProperty", as_object_hasownproperty);
+			map->add("watch", as_object_watch);
+			map->add("unwatch", as_object_unwatch);
 
 		// for debugging
 #ifdef _DEBUG
-			std->add("dump", as_object_dump);
+			map->add("dump", as_object_dump);
 #endif
 		}
 	}
@@ -185,11 +186,9 @@ namespace gameswf
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
 		
 		// first try built-ins object methods
-		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_OBJECT_METHOD);
-		as_c_function_ptr builtin;
-		if (std->get(name, &builtin))
+		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_OBJECT_METHOD);
+		if (map->get(name, val))
 		{
-			val->set_as_c_function_ptr(builtin);
 			return true;
 		}
 
