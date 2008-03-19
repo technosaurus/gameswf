@@ -42,25 +42,34 @@ namespace gameswf
 
 	struct as_value
 	{
+	
+		private:
+
 		enum type
 		{
 			UNDEFINED,
 			NULLTYPE,
+			BOOLEAN,
+			NUMBER,
 			STRING,
 			OBJECT,
 			PROPERTY
 		};
 		type	m_type;
+
 		mutable tu_string	m_string_value;
 		union
 		{
 			as_object*	m_object_value;
+			double m_number;
 			struct
 			{
 				as_object*	m_property_target;
 				as_property* m_property;
 			};
 		};
+
+		public:
 
 		exported_module as_value() :
 			m_type(UNDEFINED)
@@ -177,7 +186,15 @@ namespace gameswf
 
 		exported_module void	string_concat(const tu_string& str);
 
-		exported_module tu_string* get_mutable_tu_string() { assert(m_type == STRING); return &m_string_value; }
+		inline bool is_bool() const { return m_type == BOOLEAN; }
+		inline bool is_string() const { return m_type == STRING; }
+		inline bool is_number() const { return m_type == NUMBER; }
+		inline bool is_object() const { return m_type == OBJECT; }
+		inline bool is_property() const { return m_type == PROPERTY; }
+		inline bool is_null() const { return m_type == NULLTYPE; }
+		inline bool is_undefined() const { return m_type == UNDEFINED; }
+		const char*	typeof() const;
+
 	};
 
 

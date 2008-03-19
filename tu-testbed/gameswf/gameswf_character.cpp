@@ -365,12 +365,12 @@ namespace gameswf
 	// value might be a reference to the object itself, or a
 	// string giving a relative path name to the object.
 	{
-		if (val.get_type() == as_value::OBJECT)
+		if (val.is_object())
 		{
 			return cast_to<character>(val.to_object());
 		}
 		else 
-		if (val.get_type() == as_value::STRING)
+		if (val.is_string())
 		{
 			return find_target(val.to_tu_string());
 		}

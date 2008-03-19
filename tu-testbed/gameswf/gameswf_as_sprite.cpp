@@ -156,7 +156,7 @@ namespace gameswf
 				return;
 			}
 		}
-		else if (fn.arg(0).get_type() == as_value::OBJECT) 
+		else if (fn.arg(0).is_object()) 
 		{ 
 			target = cast_to<sprite_instance>(fn.arg(0).to_object());
 		}
@@ -266,6 +266,7 @@ namespace gameswf
 	// to ensure that Flash renders the movie clip in front of all other objects
 	// on the same level and layer in the current movie clip.
 	// The value returned is 0 or larger (that is, negative numbers are not returned).
+	// Content created at design time (in the authoring tool) starts at depth -16383.
 	void sprite_getnexthighestdepth(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);

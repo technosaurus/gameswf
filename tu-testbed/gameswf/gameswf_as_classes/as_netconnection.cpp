@@ -30,7 +30,7 @@ namespace gameswf
 		{
 			assert(fn.env);
 			
-			if (fn.arg(0).get_type() == as_value::NULLTYPE)
+			if (fn.arg(0).is_null())
 			// local file system
 			{
 				fn.result->set_bool(true);
