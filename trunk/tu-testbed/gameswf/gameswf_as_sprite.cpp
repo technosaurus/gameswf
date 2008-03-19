@@ -135,27 +135,31 @@ namespace gameswf
 			return; 
 		} 
 
-		sprite_instance* target = NULL; 
-		if (fn.arg(0).get_type() == as_value::OBJECT) 
-		{ 
-			target = cast_to<sprite_instance>(fn.arg(0).to_object());
-		} 
-		else 
+		sprite_instance* target = NULL;
+
 		if (cast_to<as_number>(fn.arg(0).to_object()))
 		{ 
-			int target_depth = int(fn.arg(0).to_number()); 
+			int target_depth = int(fn.arg(0).to_number());
+			int corrected_target_depth = target_depth + 16384;  //adjust depth
 			sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
-			
-			character* ch = parent->m_display_list.get_character_at_depth(target_depth);
+
+			character* ch = parent->m_display_list.get_character_at_depth(corrected_target_depth);
 			if (ch)
 			{
-				target = cast_to<sprite_instance>(parent->m_display_list.get_character_at_depth(target_depth));
+				target = cast_to<sprite_instance>(ch);
 			}
 			else
 			{
-				log_error("swapDepths: no character in depth #%d\n", target_depth); 
+				// no character at depth
+				sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
+				parent->m_display_list.change_character_depth(sprite, corrected_target_depth);
+				return;
 			}
-		} 
+		}
+		else if (fn.arg(0).get_type() == as_value::OBJECT) 
+		{ 
+			target = cast_to<sprite_instance>(fn.arg(0).to_object());
+		}
 		else 
 		{ 
 			log_error("swapDepths has received invalid arg\n"); 
@@ -209,7 +213,7 @@ namespace gameswf
 	void sprite_get_depth(const fn_call& fn)
 	{
 		sprite_instance* sprite = sprite_getptr(fn);
-		fn.result->set_int(sprite->get_depth());
+		fn.result->set_int(sprite->get_depth() - 16384);
 	}
 
 	//createEmptyMovieClip(name:String, depth:Number) : MovieClip
@@ -222,7 +226,7 @@ namespace gameswf
 			return;
 		}
 
-		character* ch = sprite->add_empty_movieclip(fn.arg(0).to_string(), int(fn.arg(1).to_number()));
+		character* ch = sprite->add_empty_movieclip(fn.arg(0).to_string(), int(fn.arg(1).to_number() + 16384));
 		fn.result->set_as_object(ch);
 	}
 
@@ -265,7 +269,7 @@ namespace gameswf
 	void sprite_getnexthighestdepth(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
-		fn.result->set_int(sprite->get_highest_depth() + 1);
+		fn.result->set_int(sprite->get_highest_depth() + 1 - 16384);
 	} 
 
 	// public createTextField(instanceName:String, depth:Number,
@@ -282,7 +286,7 @@ namespace gameswf
 
 		fn.result->set_as_object(sprite->create_text_field(
 			fn.arg(0).to_string(),	// field name
-			(int) fn.arg(1).to_number(),	// depth
+			(int) fn.arg(1).to_number() + 16384,	// depth
 			(int) fn.arg(2).to_number(),	// x
 			(int) fn.arg(3).to_number(),	// y
 			(int) fn.arg(4).to_number(),	// width
@@ -300,7 +304,7 @@ namespace gameswf
 		{
 			tu_string id = fn.arg(0).to_string();	// the exported name (sprite_definition)
 			tu_string name = fn.arg(1).to_string();	// instance name
-			int depth = (int) fn.arg(2).to_number();
+			int depth = (int) fn.arg(2).to_number() + 16384;
 			sprite_instance* ch = sprite->attach_movie(id, name, depth);
 
 			if (fn.nargs >= 4)

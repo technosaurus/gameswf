@@ -360,11 +360,11 @@ namespace gameswf
 				{
 					// affected depths
 					const array<execute_tag*>& playlist = m_def->get_playlist(0);
-					array<Uint16> affected_depths;
+					array<int> affected_depths;
 					for (int i = 0; i < playlist.size(); i++)
 					{
-						Uint16 depth = (playlist[i]->get_depth_id_of_replace_or_add_tag()) >> 16;
-						if (depth != static_cast<uint16>(-1))
+						int depth = (playlist[i]->get_depth_id_of_replace_or_add_tag()) >> 16;
+						if (depth != -1)
 						{
 							affected_depths.push_back(depth);
 						}
@@ -555,7 +555,7 @@ namespace gameswf
 		// try string as number
 		if (string_to_number(&number_value, target_frame.c_str()))
 		{
-			goto_frame((int) number_value - 1);    // Convert to 0-based
+			goto_frame((int) number_value - 1);	// Convert to 0-based
 		}
 		else
 		{
@@ -597,7 +597,7 @@ namespace gameswf
 			execute_frame_tags(target_frame_number, false);
 		}
 
-		m_current_frame = target_frame_number;	    
+		m_current_frame = target_frame_number;		
 
 		// goto_frame stops by default.
 		m_play_state = STOP;
@@ -657,7 +657,7 @@ namespace gameswf
 		Uint16 character_id,
 		const char* name,
 		const array<swf_event*>& event_handlers,
-		Uint16 depth,
+		int depth,
 		bool replace_if_depth_is_occupied,
 		const cxform& color_transform,
 		const matrix& matrix,
@@ -747,7 +747,7 @@ namespace gameswf
 
 	/*sprite_instance*/
 	void	sprite_instance::move_display_object(
-		Uint16 depth,
+		int depth,
 		bool use_cxform,
 		const cxform& color_xform,
 		bool use_matrix,
@@ -765,7 +765,7 @@ namespace gameswf
 	void	sprite_instance::replace_display_object(
 		Uint16 character_id,
 		const char* name,
-		Uint16 depth,
+		int depth,
 		bool use_cxform,
 		const cxform& color_transform,
 		bool use_matrix,
@@ -870,7 +870,7 @@ namespace gameswf
 	void	sprite_instance::replace_display_object(
 		character* ch,
 		const char* name,
-		Uint16 depth,
+		int depth,
 		bool use_cxform,
 		const cxform& color_transform,
 		bool use_matrix,
@@ -897,7 +897,7 @@ namespace gameswf
 			clip_depth);
 	}
 
-	void	sprite_instance::remove_display_object(Uint16 depth, int id)
+	void	sprite_instance::remove_display_object(int depth, int id)
 	// Remove the object at the specified depth.
 	// If id != -1, then only remove the object at depth with matching id.
 	{
@@ -1194,7 +1194,7 @@ namespace gameswf
 	}
 
 
-	character*	sprite_instance::clone_display_object(const tu_string& newname, Uint16 depth)
+	character*	sprite_instance::clone_display_object(const tu_string& newname, int depth)
 	// Duplicate the object with the specified name and add it with a new name 
 	// at a new depth.
 	{

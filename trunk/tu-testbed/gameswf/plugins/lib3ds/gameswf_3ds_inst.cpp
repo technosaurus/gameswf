@@ -500,7 +500,7 @@ namespace gameswf
 	// Dispatch event handler(s), if any.
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object_interface>	this_ptr(this);
+		smart_ptr<as_object>	this_ptr(this);
 
 		bool called = false;
 

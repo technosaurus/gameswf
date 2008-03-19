@@ -122,10 +122,9 @@ namespace gameswf
 		if (index != -1)
 		{
 			character*	ch = m_display_object_array[index].m_character.get_ptr();
-			if (ch->get_depth() == depth)
-			{
-				return ch;
-			}
+			assert(ch->get_depth() == depth);
+
+			return ch;
 		}
 
 		return NULL;
@@ -197,7 +196,7 @@ namespace gameswf
 
 	void	display_list::add_display_object(
 		character* ch, 
-		Uint16 depth,
+		int depth,
 		bool replace_if_depth_is_occupied,
 		const cxform& color_xform, 
 		const matrix& mat, 
@@ -257,7 +256,7 @@ namespace gameswf
 	}
 	
 	void	display_list::move_display_object(
-		Uint16 depth,
+		int depth,
 		bool use_cxform,
 		const cxform& color_xform,
 		bool use_matrix,
@@ -319,7 +318,7 @@ namespace gameswf
 	
 	void	display_list::replace_display_object(
 		character* ch,
-		Uint16 depth,
+		int depth,
 		bool use_cxform,
 		const cxform& color_xform,
 		bool use_matrix,
@@ -379,7 +378,7 @@ namespace gameswf
 		} 
 	}
 
-	void	display_list::remove_display_object(Uint16 depth, int id)
+	void	display_list::remove_display_object(int depth, int id)
 	// Removes the object at the specified depth.
 	{
 //		IF_VERBOSE_DEBUG(log_msg("dl::remove(%d)\n", depth));//xxxxx
@@ -568,7 +567,7 @@ namespace gameswf
 		}
 	}
 
-	void display_list::clear_unaffected(array<Uint16>& affected_depths) 
+	void display_list::clear_unaffected(array<int>& affected_depths) 
 	{ 
 		for (int i = 0; i < m_display_object_array.size(); )
 		{
@@ -608,6 +607,26 @@ namespace gameswf
 			m_display_object_array[i1] = tmp;
 		} 
 	} 
+
+
+	void display_list::change_character_depth(character* ch, int depth)
+	{
+		int ch_index = get_character_by_ptr( ch );
+		assert( get_display_index( depth ) == -1 );
+
+		ch->set_depth(depth);
+
+		display_object_info	di;
+		di.set_character(ch);
+
+		m_display_object_array.remove( ch_index );
+
+		// Insert into the display list...
+		int new_index = find_display_index(depth);
+
+		m_display_object_array.insert(new_index, di);
+
+	}
 
 	int display_list::get_highest_depth() 
 	{ 

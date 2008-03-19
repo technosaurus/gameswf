@@ -168,6 +168,21 @@ namespace gameswf
 		void signal() {}
 	};
 
+    struct tu_autolock
+    {
+        tu_mutex& m_mutex;
+        tu_autolock(tu_mutex& mutex) :
+        m_mutex(mutex)
+        {
+            m_mutex.lock();
+        }
+
+        ~tu_autolock()
+        {
+            m_mutex.unlock();
+        }
+    };
+
 }
 
 #endif	// TU_CONFIG_LINK_TO_THREAD

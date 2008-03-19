@@ -61,14 +61,14 @@ namespace gameswf
 		
 		void	add_display_object(
 			character* ch,
-			Uint16 depth,
+			int depth,
 			bool replace_if_depth_is_occupied,
 			const cxform& color_xform,
 			const matrix& mat,
 			float ratio,
 			Uint16 clip_depth);
 		void	move_display_object(
-			Uint16 depth,
+			int depth,
 			bool use_cxform,
 			const cxform& color_xform,
 			bool use_matrix,
@@ -77,7 +77,7 @@ namespace gameswf
 			Uint16 clip_depth);
 		void	replace_display_object(
 			character* ch,
-			Uint16 depth,
+			int depth,
 			bool use_cxform,
 			const cxform& color_xform,
 			bool use_matrix,
@@ -87,7 +87,7 @@ namespace gameswf
 
 
 		void	remove_display_object(character* ch);
-		void	remove_display_object(Uint16 depth, int id);
+		void	remove_display_object(int depth, int id);
 
 		void add_keypress_listener(character* ch);
 		void remove_keypress_listener(character* ch);
@@ -125,8 +125,9 @@ namespace gameswf
 			return m_display_object_array[idx];
 		}
 
-		void clear_unaffected(array<Uint16>& affected_depths);
+		void clear_unaffected(array<int>& affected_depths);
 		void swap_characters(character* ch, character* ch2);
+		void change_character_depth(character* ch, int depth);
 		int get_highest_depth();
 
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
