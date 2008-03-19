@@ -12,96 +12,27 @@
 
 namespace gameswf
 {
-	// An as_object that is just a thin wrapper around a string
-	// pointer.
-	struct tu_string_as_object : public gameswf::as_object
-	{
-		// Unique id of a gameswf resource
-		enum { m_class_id = AS_STRING };
-		virtual bool is(int class_id)
-		{
-			if (m_class_id == class_id) return true;
-			else return as_object::is(class_id);
-		}
-
-		const tu_string& m_string;
-		tu_string_as_object(const tu_string& str)	:
-			m_string(str)
-		{
-		}
-
-		virtual bool get_member(const tu_stringi& name, as_value* val)
-		// Overload this, to catch references to "length".
-		{
-			if (name == "length") {
-				val->set_int(m_string.length());
-				return true;
-			}
-			return as_object::get_member(name, val);
-		}
-	};
-
-	// Subclass that holds an actual string value.  This is the
-	// implementation of the ActionScript String class.
-	struct tu_string_as_object_instance : public tu_string_as_object {
-		tu_string_as_object_instance()
-			: tu_string_as_object(m_string_value) {
-		}
-		
-		void set_value(const tu_string& str) {
-			m_string_value = str;
-		}
-
-	private:
-		tu_string m_string_value;
-	};
-
-
-	void string_method(const fn_call& fn, const tu_stringi& method_name, const tu_string& this_string)
-	// Executes the string method named by method_name.
-	{
-		// We keep a static string instance to hold a table of
-		// string methods.
-		// TODO: s_static_string_instance.drop_ref() on exit from gameswf
-		static smart_ptr<as_object> s_static_string_instance;
-
-		if (!s_static_string_instance.get_ptr()) {
-			as_value result;
-			string_ctor(fn_call(&result, NULL, fn.env, 0, 0));
-			s_static_string_instance = result.to_object();
-		}
-		assert(s_static_string_instance.get_ptr());
-
-		as_value method;
-		if (s_static_string_instance->get_member(method_name, &method)) {
-			tu_string_as_object tsao(this_string);
-			*(fn.result) = call_method(method, fn.env, &tsao, fn.nargs, fn.first_arg_bottom_index);
-		} else {
-			log_error("error: string_method can't find method %s\n", method_name.c_str());
-		}
-	}
 
 	void string_char_code_at(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
+		const tu_string& str = fn.this_value.to_tu_string();
 
 		int	index = (int) fn.arg(0).to_number();
-		if (index >= 0 && index < this_ptr->m_string.utf8_length()) {
-			fn.result->set_double(this_ptr->m_string.utf8_char_at(index));
+		if (index >= 0 && index < str.utf8_length())
+		{
+			fn.result->set_double(str.utf8_char_at(index));
 			return;
 		}
-
 		fn.result->set_nan();
 	}
   
 	void string_concat(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
+		const tu_string& str = fn.this_value.to_tu_string();
 
-		tu_string result(this_ptr->m_string);
-		for (int i = 0; i < fn.nargs; i++) {
+		tu_string result(str);
+		for (int i = 0; i < fn.nargs; i++)
+		{
 			result += fn.arg(i).call_to_string(fn.env);
 		}
 
@@ -114,7 +45,8 @@ namespace gameswf
 		// is a numeric character code.  Construct the
 		// string from the character codes.
 		tu_string result;
-		for (int i = 0; i < fn.nargs; i++) {
+		for (int i = 0; i < fn.nargs; i++)
+		{
 			uint32 c = (uint32) fn.arg(i).to_number();
 			result.append_wide_char(c);
 		}
@@ -124,26 +56,28 @@ namespace gameswf
 
 	void string_index_of(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
+		const tu_string& sstr = fn.this_value.to_tu_string();
 
 		if (fn.nargs < 1)
 		{
 			fn.result->set_double(-1);
-		} else {
+		}
+		else
+		{
 			int	start_index = 0;
-			if (fn.nargs > 1) {
+			if (fn.nargs > 1)
+			{
 				start_index = (int) fn.arg(1).to_number();
 			}
-			const char*	str = this_ptr->m_string.c_str();
+			const char*	str = sstr.c_str();
 			const char*	p = strstr(
 				str + start_index,	// FIXME: not UTF-8 correct!
 				fn.arg(0).to_string());
-			if (p == NULL) {
+			if (p == NULL)
+			{
 				fn.result->set_double(-1);
 				return;
 			}
-
 			fn.result->set_double(tu_string::utf8_char_count(str, p - str));
 		}
 	}
@@ -151,8 +85,7 @@ namespace gameswf
 
 	void string_last_index_of(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
+		const tu_string& sstr = fn.this_value.to_tu_string();
 
 		if (fn.nargs < 1)
 		{
@@ -162,7 +95,7 @@ namespace gameswf
 			if (fn.nargs > 1) {
 				start_index = (int) fn.arg(1).to_number();
 			}
-			const char* str = this_ptr->m_string.c_str();
+			const char* str = sstr.c_str();
 			const char* last_hit = NULL;
 			const char* haystack = str + start_index;	// FIXME: not UTF-8 correct!
 			for (;;) {
@@ -183,9 +116,7 @@ namespace gameswf
 	
 	void string_slice(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
-		const tu_string& this_str = this_ptr->m_string;
+		const tu_string& this_str = fn.this_value.to_tu_string();
 
 		int len = this_str.utf8_length();
 		int start = 0;
@@ -211,9 +142,7 @@ namespace gameswf
 
 	void string_split(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
-		const tu_string& this_str = this_ptr->m_string;
+		const tu_string& this_str = fn.this_value.to_tu_string();
 
 		smart_ptr<as_array> arr(new as_array);
 
@@ -276,9 +205,7 @@ namespace gameswf
 	// public substr(start:Number, length:Number) : String
 	void string_substr(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
-		const tu_string& this_str = this_ptr->m_string;
+		const tu_string& this_str = fn.this_value.to_tu_string();
 
 		if (fn.nargs < 1)
 		{
@@ -312,9 +239,7 @@ namespace gameswf
 
 	void string_substring(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
-		const tu_string& this_str = this_ptr->m_string;
+		const tu_string& this_str = fn.this_value.to_tu_string();
 
 		// Pull a slice out of this_string.
 		int	start = 0;
@@ -339,30 +264,22 @@ namespace gameswf
 
 	void string_to_lowercase(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
-		const tu_string& this_str = this_ptr->m_string;
-
+		const tu_string& this_str = fn.this_value.to_tu_string();
 		fn.result->set_tu_string(this_str.utf8_to_lower());
 	}
 	
 	void string_to_uppercase(const fn_call& fn) 
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
-		const tu_string& this_str = this_ptr->m_string;
-
+		const tu_string& this_str = fn.this_value.to_tu_string();
 		fn.result->set_tu_string(this_str.utf8_to_upper());
 	}
 
 	void string_char_at(const fn_call& fn)
 	{
-		const tu_string_as_object* this_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_ptr);
-		const tu_string& this_str = this_ptr->m_string;
+		const tu_string& this_str = fn.this_value.to_tu_string();
 
 		int	index = (int) fn.arg(0).to_number();
-		if (index >= 0 && index < this_ptr->m_string.utf8_length()) 
+		if (index >= 0 && index < this_str.utf8_length()) 
 		{
 			char c[2];
 			c[0] = this_str.utf8_char_at(index);
@@ -371,40 +288,28 @@ namespace gameswf
 		}
 	}
 	
-
 	void string_to_string(const fn_call& fn)
 	{
-		tu_string_as_object* this_string_ptr = cast_to<tu_string_as_object>(fn.this_ptr);
-		assert(this_string_ptr);
+		const tu_string& str = fn.this_value.to_tu_string();
+		fn.result->set_tu_string(str);
+	}
 
-		fn.result->set_tu_string(this_string_ptr->m_string);
+	void string_length(const fn_call& fn)
+	{
+		const tu_string& str = fn.this_value.to_tu_string();
+		fn.result->set_int(str.size());
 	}
 
 	void string_ctor(const fn_call& fn)
 	{
-		tu_string_as_object_instance* str = new tu_string_as_object_instance();
-
-		if (fn.nargs > 0)
+		if (fn.nargs == 1)
 		{
-			str->set_value(fn.arg(0).call_to_string(fn.env));
+			fn.result->set_string(fn.arg(0).to_string());
+		}	
+		else
+		{
+			fn.result->set_string("");
 		}
-		
-		// TODO fill in the rest
-		str->builtin_member("toString", string_to_string);
-		str->builtin_member("fromCharCode", string_from_char_code);
-		str->builtin_member("charCodeAt", string_char_code_at);
-		str->builtin_member("concat", string_concat);
-		str->builtin_member("indexOf", string_index_of);
-		str->builtin_member("lastIndexOf", string_last_index_of);
-		str->builtin_member("slice", string_slice);
-		str->builtin_member("split", string_split);
-		str->builtin_member("substring", string_substring);
-		str->builtin_member("substr", string_substr);
-		str->builtin_member("toLowerCase", string_to_lowercase);
-		str->builtin_member("toUpperCase", string_to_uppercase);
-		str->builtin_member("charAt", string_char_at);
-    
-		fn.result->set_as_object(str);
 	}
 
 } // namespace gameswf

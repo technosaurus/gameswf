@@ -163,7 +163,7 @@ namespace gameswf
 	as_value	call_method(
 		const as_value& method,
 		as_environment* env,
-		as_object* this_ptr,
+		const as_value& this_ptr,
 		int nargs,
 		int first_arg_bottom_index)
 	// first_arg_bottom_index is the stack index, from the bottom, of the first argument.
@@ -171,7 +171,7 @@ namespace gameswf
 	// then arg1 is at env->bottom(7), arg2 is at env->bottom(6), etc.
 	{
 		as_value	val;
-		as_function*	func = cast_to<as_function>(method.to_object());
+		as_function*	func = method.to_function();
 		if (func)
 		{
 			// It's a function.  Call it.
@@ -546,8 +546,43 @@ namespace gameswf
 		{
 			s_inited = true;
 
-			// setup standart member
+			// setup standart memthods
 
+			stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_NUMBER_METHOD);
+			if (map == NULL)
+			{
+				map = new_standard_method_map(BUILTIN_NUMBER_METHOD);
+				map->add("toString", as_number_to_string);
+				map->add("valueOf", as_number_valueof);
+			}
+
+			map = get_standard_method_map(BUILTIN_BOOLEAN_METHOD);
+			if (map == NULL)
+			{
+				map = new_standard_method_map(BUILTIN_BOOLEAN_METHOD);
+				map->add("toString", as_boolean_to_string);
+				map->add("valueOf", as_boolean_valueof);
+			}
+
+			map = get_standard_method_map(BUILTIN_STRING_METHOD);
+			if (map == NULL)
+			{
+				map = new_standard_method_map(BUILTIN_STRING_METHOD);
+				map->add("toString", string_to_string);
+				map->add("fromCharCode", string_from_char_code);
+				map->add("charCodeAt", string_char_code_at);
+				map->add("concat", string_concat);
+				map->add("indexOf", string_index_of);
+				map->add("lastIndexOf", string_last_index_of);
+				map->add("slice", string_slice);
+				map->add("split", string_split);
+				map->add("substring", string_substring);
+				map->add("substr", string_substr);
+				map->add("toLowerCase", string_to_lowercase);
+				map->add("toUpperCase", string_to_uppercase);
+				map->add("charAt", string_char_at);
+				map->add("length", string_length);
+			}
 
 			s_start_time = tu_timer::get_ticks();
 
@@ -1834,87 +1869,47 @@ namespace gameswf
 					as_value	result;
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
-					as_object* obj = env->top(1).to_object();
-					if (obj) 
+					as_value func;
+					if (env->top(1).get_method(&func, method_name))
 					{
-						as_value	method;
-						if (obj->get_member(method_name, &method))
-						{
-							result = call_method(
-								method,
-								env,
-								obj,
-								nargs,
-								env->get_top_index() - 3);
-						}
-						else
-						{
-							if (method_name == "undefined" || method_name == "")
-							{
-								// Flash help says:
-								// If the method name is blank or undefined, the object is taken to be 
-								// a function object that should be invoked, 
-								// rather than the container object of a method. For example, if
-								// CallMethod is invoked with object obj and method name blank,
-								// it's equivalent to using the syntax:
-								// obj();
+						result = call_method(
+							func,
+							env,
+							env->top(1),
+							nargs,
+							env->get_top_index() - 3);
+					}
+					else
+					if (method_name == "undefined" || method_name == "")
+					{
+						// Flash help says:
+						// If the method name is blank or undefined, the object is taken to be 
+						// a function object that should be invoked, 
+						// rather than the container object of a method. For example, if
+						// CallMethod is invoked with object obj and method name blank,
+						// it's equivalent to using the syntax:
+						// obj();
 
-								assert(cast_to<as_object>(obj));
-								if (cast_to<as_object>(obj)->m_this_ptr != NULL)
-								{
-									as_value constructor;
-									if (obj->get_member("__constructor__", &constructor))
-									{
-										create_proto(cast_to<as_object>(obj), constructor);
-										result = call_method(
-										constructor,
-										env,
-										obj,
-										nargs,
-										env->get_top_index() - 3);
-									}
-								}
-							}
-							else
+						as_object* obj = env->top(1).to_object();
+						assert(obj);
+						if (obj->m_this_ptr != NULL)
+						{
+							as_value constructor;
+							if (obj->get_member("__constructor__", &constructor))
 							{
-								log_error("error: call_method can't find method %s\n",
-										method_name.c_str());
+								create_proto(obj, constructor);
+								result = call_method(
+									constructor,
+									env,
+									obj,
+									nargs,
+									env->get_top_index() - 3);
 							}
-						}
-					}
-					else if (env->top(1).is_string())
-					{
-						// Handle methods on literal strings.
-						string_method(
-							fn_call(&result, NULL, env, nargs, env->get_top_index() - 3),
-							method_name.to_tu_stringi(),
-							env->top(1).to_tu_string_versioned(version));
-					}
-					else if (cast_to<as_c_function>(env->top(1).to_object()))
-					{
-						// Catch method calls on String
-						// constructor.  There may be a cleaner
-						// way to do this. Perhaps we call the
-						// constructor function with a special flag, to
-						// indicate that it's a method call?
-						as_c_function* func = cast_to<as_c_function>(env->top(1).to_object());
-						if (func && func->m_func == string_ctor)	// hack
-						{
-							tu_string dummy;
-							string_method(
-								fn_call(&result, NULL, env, nargs, env->get_top_index() - 3),
-								method_name.to_tu_stringi(),
-								dummy);
-						}
-						else
-						{
-							log_error("error: method call on unknown c function.\n");
 						}
 					}
 					else
 					{
-						log_error("error: call_method '%s' on invalid object.\n",
-							  method_name.c_str());
+						log_error("error: call_method can't find method %s\n", method_name.c_str());
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;
@@ -2722,7 +2717,7 @@ namespace gameswf
 							// else no-op.
 						}
 					}
-					else if (cast_to<as_number>(env->top(0).to_object()))
+					else if (env->top(0).is_number())
 					{
 						// Frame numbers appear to be 0-based!  @@ Verify.
 						int frame_number = int(env->top(0).to_number());
@@ -2799,7 +2794,7 @@ namespace gameswf
 	// Standard member lookup.
 
 	// s_standard_method_map stuff should be high optimized
-	static stringi_hash<as_c_function_ptr>*	s_standard_method_map[BUILTIN_COUNT];
+	static stringi_hash<as_value>*	s_standard_method_map[BUILTIN_COUNT];
 	void clear_standard_method_map()
 	{
 		for (int i = 0; i < BUILTIN_COUNT; i++)
@@ -2811,11 +2806,16 @@ namespace gameswf
 		}
 	}
 
-	stringi_hash<as_c_function_ptr>* get_standard_method_map(builtin_object obj)
+	stringi_hash<as_value>* get_standard_method_map(builtin_object obj)
+	{
+		return s_standard_method_map[obj];
+	}
+
+	stringi_hash<as_value>* new_standard_method_map(builtin_object obj)
 	{
 		if (s_standard_method_map[obj] == NULL)
 		{
-			s_standard_method_map[obj] = new stringi_hash<as_c_function_ptr>;
+			s_standard_method_map[obj] = new stringi_hash<as_value>;
 		}
 		return s_standard_method_map[obj];
 	}

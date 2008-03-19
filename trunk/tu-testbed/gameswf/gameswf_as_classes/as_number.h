@@ -13,7 +13,10 @@ namespace gameswf
 {
 
 	void	as_global_number_ctor(const fn_call& fn);
+	void	as_number_to_string(const fn_call& fn);
+	void	as_number_valueof(const fn_call& fn);
 
+	/*
 	struct as_number : public as_object
 	{
 		// Unique id of a gameswf resource
@@ -35,6 +38,7 @@ namespace gameswf
 
 		double m_val;
 	};
+	*/
 
 }	// end namespace gameswf
 

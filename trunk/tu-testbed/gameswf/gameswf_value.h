@@ -17,6 +17,7 @@
 namespace gameswf
 {
 	struct fn_call;
+	struct as_c_function;
 	struct as_function;
 	struct as_object;
 	struct as_environment;
@@ -62,6 +63,7 @@ namespace gameswf
 		{
 			as_object*	m_object_value;
 			double m_number;
+			bool m_bool;
 			struct
 			{
 				as_object*	m_property_target;
@@ -125,9 +127,7 @@ namespace gameswf
 		exported_module as_value(int val);
 		exported_module as_value(float val);
 		exported_module as_value(double val);
-
 		exported_module as_value(as_object* obj);
-
 		exported_module as_value(as_c_function_ptr func);
 		exported_module as_value(as_s_function* func);
 		exported_module as_value(const as_value& getter, const as_value& setter);
@@ -139,8 +139,6 @@ namespace gameswf
 
 		exported_module type	get_type() const { return m_type; }
 
-		// Return true if this value is callable.
-		exported_module bool is_function() const;
 		exported_module const char*	to_string() const;
 		exported_module const tu_string&	to_tu_string() const;
 		exported_module const tu_string&	to_tu_string_versioned(int version) const;
@@ -148,6 +146,7 @@ namespace gameswf
 		exported_module double	to_number() const;
 		exported_module int	to_int() const { return (int) to_number(); };
 		exported_module bool	to_bool() const;
+		exported_module as_function*	to_function() const;
 		exported_module as_object*	to_object() const;
 		exported_module const tu_string& call_to_string(as_environment* env) const;
 
@@ -161,8 +160,7 @@ namespace gameswf
 		exported_module void	set_int(int val) { set_double(val); }
 		exported_module void	set_nan()	{	set_double(get_nan()); }
 		exported_module void	set_as_object(as_object* obj);
-		exported_module void	set_as_c_function_ptr(as_c_function_ptr func);
-		exported_module void	set_as_s_function(as_s_function* func);
+		exported_module void	set_as_c_function(as_c_function_ptr func);
 		exported_module void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
 		exported_module void	set_null() { drop_refs(); m_type = NULLTYPE; }
 
@@ -186,6 +184,7 @@ namespace gameswf
 
 		exported_module void	string_concat(const tu_string& str);
 
+		bool is_function();
 		inline bool is_bool() const { return m_type == BOOLEAN; }
 		inline bool is_string() const { return m_type == STRING; }
 		inline bool is_number() const { return m_type == NUMBER; }
@@ -193,7 +192,9 @@ namespace gameswf
 		inline bool is_property() const { return m_type == PROPERTY; }
 		inline bool is_null() const { return m_type == NULLTYPE; }
 		inline bool is_undefined() const { return m_type == UNDEFINED; }
+
 		const char*	typeof() const;
+		bool get_method(as_value* func, const tu_string& method_name);
 
 	};
 

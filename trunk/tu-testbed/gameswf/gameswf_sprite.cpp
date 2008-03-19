@@ -45,41 +45,42 @@ namespace gameswf
 		//m_root->add_ref();	// @@ circular!
 		m_as_environment.set_target(this);
 		
-		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_SPRITE_METHOD);
-		if (std->size() == 0)
+		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_SPRITE_METHOD);
+		if (map == NULL)
 		{
-			std->add("play", sprite_play);
-			std->add("stop", sprite_stop);
-			std->add("gotoAndStop", sprite_goto_and_stop);
-			std->add("gotoAndPlay", sprite_goto_and_play);
-			std->add("nextFrame", sprite_next_frame);
-			std->add("prevFrame", sprite_prev_frame);
-			std->add("getBytesLoaded", sprite_get_bytes_loaded);
-			std->add("getBytesTotal", sprite_get_bytes_total);
-			std->add("swapDepths", sprite_swap_depths);
-			std->add("duplicateMovieClip", sprite_duplicate_movieclip);
-			std->add("getDepth", sprite_get_depth);
-			std->add("createEmptyMovieClip", sprite_create_empty_movieclip);
-			std->add("removeMovieClip", sprite_remove_movieclip);
-			std->add("hitTest", sprite_hit_test);
-			std->add("loadMovie", sprite_loadmovie);
-			std->add("unloadMovie", sprite_unloadmovie);
-			std->add("getNextHighestDepth", sprite_getnexthighestdepth);
-			std->add("createTextField", sprite_create_text_field);
-			std->add("attachMovie", sprite_attach_movie);
+			map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
+			map->add("play", sprite_play);
+			map->add("stop", sprite_stop);
+			map->add("gotoAndStop", sprite_goto_and_stop);
+			map->add("gotoAndPlay", sprite_goto_and_play);
+			map->add("nextFrame", sprite_next_frame);
+			map->add("prevFrame", sprite_prev_frame);
+			map->add("getBytesLoaded", sprite_get_bytes_loaded);
+			map->add("getBytesTotal", sprite_get_bytes_total);
+			map->add("swapDepths", sprite_swap_depths);
+			map->add("duplicateMovieClip", sprite_duplicate_movieclip);
+			map->add("getDepth", sprite_get_depth);
+			map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
+			map->add("removeMovieClip", sprite_remove_movieclip);
+			map->add("hitTest", sprite_hit_test);
+			map->add("loadMovie", sprite_loadmovie);
+			map->add("unloadMovie", sprite_unloadmovie);
+			map->add("getNextHighestDepth", sprite_getnexthighestdepth);
+			map->add("createTextField", sprite_create_text_field);
+			map->add("attachMovie", sprite_attach_movie);
 
 			// drawing API
-			std->add("beginFill", sprite_begin_fill);
-			std->add("endFill", sprite_end_fill);
-			std->add("lineTo", sprite_line_to);
-			std->add("moveTo", sprite_move_to);
-			std->add("curveTo", sprite_curve_to);
-			std->add("clear", sprite_clear);
-			std->add("lineStyle", sprite_line_style);
+			map->add("beginFill", sprite_begin_fill);
+			map->add("endFill", sprite_end_fill);
+			map->add("lineTo", sprite_line_to);
+			map->add("moveTo", sprite_move_to);
+			map->add("curveTo", sprite_curve_to);
+			map->add("clear", sprite_clear);
+			map->add("lineStyle", sprite_line_style);
 
 			// gameSWF extension
 			// reset root FPS
-			std->add("setFPS", sprite_set_fps);
+			map->add("setFPS", sprite_set_fps);
 		}
 
 
@@ -1011,11 +1012,9 @@ namespace gameswf
 	{
 
 		// first try built-ins sprite methods
-		stringi_hash<as_c_function_ptr>* std = get_standard_method_map(BUILTIN_SPRITE_METHOD);
-		as_c_function_ptr builtin;
-		if (std->get(name, &builtin))
+		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_SPRITE_METHOD);
+		if (map->get(name, val))
 		{
-			val->set_as_c_function_ptr(builtin);
 			return true;
 		}
 
