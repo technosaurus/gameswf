@@ -239,7 +239,7 @@ namespace gameswf
 			Uint16 character_id,
 			const char*		 name,
 			const array<swf_event*>& event_handlers,
-			Uint16			 depth,
+			int			 depth,
 			bool			 replace_if_depth_is_occupied,
 			const cxform&		 color_transform,
 			const matrix&		 mat,
@@ -250,7 +250,7 @@ namespace gameswf
 		}
 
 		virtual void	move_display_object(
-			Uint16		depth,
+			int		depth,
 			bool		use_cxform,
 			const cxform&	color_transform,
 			bool		use_matrix,
@@ -263,7 +263,7 @@ namespace gameswf
 		virtual void	replace_display_object(
 			Uint16		character_id,
 			const char*	name,
-			Uint16		depth,
+			int		depth,
 			bool		use_cxform,
 			const cxform&	color_transform,
 			bool		use_matrix,
@@ -276,7 +276,7 @@ namespace gameswf
 		virtual void	replace_display_object(
 			character*	ch,
 			const char*	name,
-			Uint16		depth,
+			int		depth,
 			bool		use_cxform,
 			const cxform&	color_transform,
 			bool		use_matrix,
@@ -286,7 +286,7 @@ namespace gameswf
 		{
 		}
 
-		virtual void	remove_display_object(Uint16 depth, int id)	{}
+		virtual void	remove_display_object(int depth, int id)	{}
 
 		virtual character*	get_relative_target(const tu_string& name)
 		{
@@ -298,7 +298,7 @@ namespace gameswf
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 		virtual void	do_actions(const array<action_buffer*>& action_list) { assert(0); }
 
-		virtual character*	clone_display_object(const tu_string& newname, Uint16 depth)
+		virtual character*	clone_display_object(const tu_string& newname, int depth)
 		{
 			assert(0);
 			return NULL; 

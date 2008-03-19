@@ -1388,7 +1388,7 @@ namespace gameswf
 		matrix	m_matrix;
 		bool	m_has_matrix;
 		bool	m_has_cxform;
-		Uint16	m_depth;
+		int 	m_depth;
 		Uint16	m_character_id;
 		Uint16	m_clip_depth;
 		enum place_type {
