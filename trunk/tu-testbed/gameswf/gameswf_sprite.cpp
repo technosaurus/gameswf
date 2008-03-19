@@ -1130,7 +1130,7 @@ namespace gameswf
 		int	frame_number = -1;
 
 		// Figure out what frame to call.
-		if (frame_spec.get_type() == as_value::STRING)
+		if (frame_spec.is_string())
 		{
 			if (m_def->get_labeled_frame(frame_spec.to_string(), &frame_number) == false)
 			{

@@ -18,7 +18,7 @@ namespace gameswf
 		if (fn.nargs >= 3)
 		{
 			as_value func;
-			if (fn.arg(0).get_type() == as_value::OBJECT)
+			if (fn.arg(0).is_object())
 			{
 				fn.arg(0).to_object()->get_member(fn.arg(1).to_tu_string(), &func);
 			}

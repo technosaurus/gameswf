@@ -393,9 +393,12 @@ namespace gameswf
 		// @@ what if we get extra args?
 
 		const char* val = "";
-		if (fn.arg(0).get_type() == as_value::UNDEFINED) {
+		if (fn.arg(0).is_undefined())
+		{
 			val = "undefined";
-		} else {
+		} 
+		else
+		{
 			val = fn.arg(0).call_to_string(fn.env).c_str();
 		}
 		log_msg("%s\n", val);
@@ -478,7 +481,7 @@ namespace gameswf
 				it != props->m_members.end(); ++it)
 			{
 				const as_value& key = it->second.get_member_value();
-				if (key.get_type() == as_value::STRING)
+				if (key.is_string())
 				{
 					stringi_hash<as_member>::iterator obj_it = obj->m_members.find(key.to_tu_string());
 					if (obj_it != obj->m_members.end())
@@ -1263,20 +1266,13 @@ namespace gameswf
 				// duplicateMovieClip(target:String, newname:String, depth:Number) : Void
 				// duplicateMovieClip(target:MovieClip, newname:String, depth:Number) : Void
 				{
-					character* target = NULL;
-					switch (env->top(2).get_type())
+					character* target = cast_to<character>(env->top(2).to_object());
+
+					// try string
+					if (target == NULL)
 					{
-						case as_value::OBJECT:
-							target = cast_to<character>(env->top(2).to_object());
-							break;
-						case as_value::STRING:
-							{
-								as_value val = env->get_variable(env->top(2).to_string(), with_stack);
-								target = cast_to<character>(val.to_object());
-							}
-							break;
-						default:
-							break;
+						as_value val = env->get_variable(env->top(2).to_string(), with_stack);
+						target = cast_to<character>(val.to_object());
 					}
 
 					if (target)
@@ -1464,7 +1460,7 @@ namespace gameswf
 					tu_string varname(env->top(0).to_tu_string());
 					as_value obj(env->get_variable_raw(varname, with_stack));
 
-					if (obj.get_type() != as_value::UNDEFINED)
+					if (obj.is_undefined() == false)
 					{
 						// drop refs
 						obj.set_undefined();
@@ -1509,14 +1505,14 @@ namespace gameswf
 				case 0x3D:	// call function
 				{
 					as_value	function;
-					if (env->top(0).get_type() == as_value::STRING)
+					if (env->top(0).is_string())
 					{
 						// Function is a string; lookup the function.
 						const tu_string&	function_name = env->top(0).to_tu_string();
 						function = env->get_variable(function_name, with_stack);
 
 						// super constructor, Flash 6 
-						if (function.get_type() == as_value::OBJECT)
+						if (function.is_object())
 						{
 							as_object* obj = function.to_object();
 							if (obj)
@@ -1680,37 +1676,7 @@ namespace gameswf
 				}
 				case 0x44:	// type of
 				{
-					as_value val;
-					if (env->top(0).get_type() == as_value::PROPERTY)
-					{
-						env->top(0).get_property(&val);
-					}
-					else
-					{
-						val = env->top(0);
-					}
-
-					if (cast_to<as_object>(val.to_object()))
-					{
-						env->top(0).set_string(val.to_object()->typeof());
-						break;
-					}
-
-					switch(val.get_type())
-					{
-					case as_value::UNDEFINED:
-						env->top(0).set_string("undefined");
-						break;
-					case as_value::STRING:
-						env->top(0).set_string("string");
-						break;
-					case as_value::NULLTYPE:
-						env->top(0).set_string("null");
-						break;
-					default:
-						log_error("typeof unknown type: %02X\n", env->top(0).get_type());
-						break;
-					}
+					env->top(0).set_string(env->top(0).typeof());
 					break;
 				}
 				case 0x45:	// get target
@@ -1729,8 +1695,7 @@ namespace gameswf
 				}
 				case 0x47:	// add_t (typed)
 				{
-					if (env->top(0).get_type() == as_value::STRING
-					    || env->top(1).get_type() == as_value::STRING)
+					if (env->top(0).is_string() || env->top(1).is_string())
 					{
 						env->top(1).set_tu_string(env->top(1).call_to_string(env));
 						env->top(1).string_concat(env->top(0).call_to_string(env));
@@ -1744,7 +1709,7 @@ namespace gameswf
 				}
 				case 0x48:	// less than (typed)
 				{
-					if (env->top(1).get_type() == as_value::STRING)
+					if (env->top(1).is_string())
 					{
 						env->top(1).set_bool(env->top(1).to_tu_string() < env->top(0).to_tu_string());
 					}
@@ -1794,7 +1759,7 @@ namespace gameswf
 					if (obj == NULL)
 					{
 						as_standard_member	std_member = get_standard_member(env->top(0).to_tu_string());
-						if (env->top(1).get_type() == as_value::STRING && std_member == M_LENGTH)
+						if (env->top(1).is_string() && std_member == M_LENGTH)
 						{
 							int	len = env->top(1).to_tu_string_versioned(version).utf8_length();
 							env->top(1).set_int(len);
@@ -1917,7 +1882,7 @@ namespace gameswf
 							}
 						}
 					}
-					else if (env->top(1).get_type() == as_value::STRING)
+					else if (env->top(1).is_string())
 					{
 						// Handle methods on literal strings.
 						string_method(
@@ -2080,7 +2045,7 @@ namespace gameswf
 					}
 					break;
 				case 0x67:	// gt (typed)
-					if (env->top(1).get_type() == as_value::STRING)
+					if (env->top(1).is_string())
 					{
 						env->top(1).set_bool(env->top(1).to_tu_string() > env->top(0).to_tu_string());
 					}
@@ -2728,11 +2693,11 @@ namespace gameswf
 					character* target = env->get_target();
 					bool success = false;
 
-					if (env->top(0).get_type() == as_value::UNDEFINED)
+					if (env->top(0).is_undefined())
 					{
 						// No-op.
 					}
-					else if (env->top(0).get_type() == as_value::STRING)
+					else if (env->top(0).is_string())
 					{
 						// @@ TODO: parse possible sprite path...
 						

@@ -258,7 +258,7 @@ namespace gameswf
 
 	void as_environment::set_target(as_value& target, character* original_target)
 	{
-		if (target.get_type() == as_value::STRING)
+		if (target.is_string())
 		{
 			tu_string path = target.to_tu_string();
 			IF_VERBOSE_ACTION(log_msg("-------------- ActionSetTarget2: %s", path.c_str()));
@@ -278,7 +278,7 @@ namespace gameswf
 			}
 		}
 		else
-		if (target.get_type() == as_value::OBJECT)
+		if (target.is_object())
 		{
 			IF_VERBOSE_ACTION(log_msg("-------------- ActionSetTarget2: %s", target.to_string()));
 			character* tar = find_target(target);
@@ -561,12 +561,12 @@ namespace gameswf
 	// value might be a reference to the object itself, or a
 	// string giving a relative path name to the object.
 	{
-		if (val.get_type() == as_value::OBJECT)
+		if (val.is_object())
 		{
 			return cast_to<character>(val.to_object());
 		}
 		else
-		if (val.get_type() == as_value::STRING)
+		if (val.is_string())
 		{
 			return find_target(val.to_tu_string());
 		}

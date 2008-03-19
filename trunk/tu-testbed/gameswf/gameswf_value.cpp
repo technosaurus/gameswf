@@ -527,6 +527,41 @@ namespace gameswf
 		set_as_object(new as_c_function(func));
 	}
 
+	const char*	as_value::typeof() const
+	{
+		switch (m_type)
+		{
+			case UNDEFINED:
+				return "undefined";
+
+			case STRING:
+				return "string";
+
+			case NULLTYPE:
+				return "null";
+
+			case NUMBER:
+				return "number";
+
+			case BOOLEAN:
+				return "boolean";
+
+			case OBJECT:
+				return m_object_value->typeof();
+				break;
+
+			case PROPERTY:
+			{
+				as_value val;
+				get_property(&val);
+				return val.typeof();
+			}
+		}
+		assert(0);
+		return 0;
+	}
+
+
 	//
 	//	as_property
 	//

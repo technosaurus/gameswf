@@ -135,7 +135,7 @@ namespace gameswf
 		as_value old_val;
 		if (as_object::get_member(name, &old_val))
 		{
-			if (old_val.get_type() == as_value::PROPERTY)
+			if (old_val.is_property())
 			{
 				old_val.set_property(val);
 				return true;
@@ -212,7 +212,7 @@ namespace gameswf
 			}
 		}
 
-		if (val->get_type() == as_value::PROPERTY)
+		if (val->is_property())
 		{
 			// binds property (sets the target)
 			if (val->m_property_target)
@@ -388,12 +388,12 @@ namespace gameswf
 			it != m_members.end(); ++it)
 		{
 			as_value val = it->second.get_member_value();
-			if (val.get_type() == as_value::OBJECT)
+			if (val.is_object())
 			{
 				printf("%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
 				continue;
 			}
-			if (val.get_type() == as_value::PROPERTY)
+			if (val.is_property())
 			{
 				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
 					it->first.c_str(), val.m_property, val.m_property_target,
