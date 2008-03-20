@@ -146,23 +146,20 @@ namespace gameswf
 		}
 
 		// form string
-
-		// NOT THREAD SAFE!!!
-		static tu_string s;
-		s = "";
+		m_string_value = "";
 		for (int i = 0; i < n; i++)
 		{
 			as_value val;
 			as_object::get_member(idx[i], &val);
-			s += val.to_string();
+			m_string_value += val.to_string();
 
 			if (i < n - 1)
 			{
-				s +=  ",";
+				m_string_value +=  ",";
 			}
 		}
 
-		return s;
+		return m_string_value.c_str();
 	}
 
 	int as_array::size()

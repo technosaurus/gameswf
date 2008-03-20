@@ -25,7 +25,7 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_FUNCTION };
-		virtual bool is(int class_id)
+		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
 			else return as_object::is(class_id);
@@ -49,7 +49,7 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_C_FUNCTION };
-		virtual bool is(int class_id)
+		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
 			else return as_function::is(class_id);
@@ -68,7 +68,7 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_S_FUNCTION };
-		virtual bool is(int class_id)
+		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
 			else return as_function::is(class_id);
