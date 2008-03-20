@@ -25,7 +25,7 @@ namespace gameswf
 	void	as_number_to_string(const fn_call& fn)
 	{
 		double number = fn.this_value.to_number();
-		if (fn.nargs == 1)
+		if (fn.nargs >= 1)
 		{
 			// radix:Number - Specifies the numeric base (from 2 to 36) to use for 
 			// the number-to-string conversion. 

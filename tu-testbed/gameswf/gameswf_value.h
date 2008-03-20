@@ -24,10 +24,6 @@ namespace gameswf
 
 	typedef void (*as_c_function_ptr)(const fn_call& fn);
 
-	bool string_to_number(double* result, const char* str);
-
-	exported_module double get_nan();
-
 	// helper, used in as_value
 	struct as_property : public ref_counted
 	{
@@ -48,7 +44,6 @@ namespace gameswf
 		enum type
 		{
 			UNDEFINED,
-			NULLTYPE,
 			BOOLEAN,
 			NUMBER,
 			STRING,
@@ -57,10 +52,10 @@ namespace gameswf
 		};
 		type	m_type;
 
-		mutable tu_string	m_string_value;
+		mutable tu_string	m_string;
 		union
 		{
-			as_object*	m_object_value;
+			as_object*	m_object;
 			double m_number;
 			bool m_bool;
 			struct
@@ -102,7 +97,6 @@ namespace gameswf
 		exported_module bool	to_bool() const;
 		exported_module as_function*	to_function() const;
 		exported_module as_object*	to_object() const;
-		exported_module const tu_string& call_to_string(as_environment* env) const;
 
 		// These set_*()'s are more type-safe; should be used
 		// in preference to generic overloaded set().  You are
@@ -116,7 +110,7 @@ namespace gameswf
 		exported_module void	set_as_object(as_object* obj);
 		exported_module void	set_as_c_function(as_c_function_ptr func);
 		exported_module void	set_undefined() { drop_refs(); m_type = UNDEFINED; }
-		exported_module void	set_null() { drop_refs(); m_type = NULLTYPE; }
+		exported_module void	set_null() { set_as_object(NULL); }
 
 		void	set_property(const as_value& val);
 		void	get_property(as_value* val) const;
@@ -136,116 +130,17 @@ namespace gameswf
 		exported_module void	asr(const as_value& v) { set_int(int(to_number()) >> int(v.to_number())); }
 		exported_module void	lsr(const as_value& v) { set_int((Uint32(to_number()) >> int(v.to_number()))); }
 
-		exported_module void	string_concat(const tu_string& str);
-
 		bool is_function() const;
 		inline bool is_bool() const { return m_type == BOOLEAN; }
 		inline bool is_string() const { return m_type == STRING; }
 		inline bool is_number() const { return m_type == NUMBER; }
 		inline bool is_object() const { return m_type == OBJECT; }
 		inline bool is_property() const { return m_type == PROPERTY; }
-		inline bool is_null() const { return m_type == NULLTYPE; }
+		inline bool is_null() const { return m_type == OBJECT && m_object == NULL; }
 		inline bool is_undefined() const { return m_type == UNDEFINED; }
 
 		const char*	typeof() const;
 		bool get_method(as_value* func, const tu_string& method_name);
-	};
-
-
-	//
-	// as_prop_flags
-	//
-	// flags defining the level of protection of a member
-	struct as_prop_flags
-	{
-		enum flag
-		{
-			DONT_ENUM = 0x01,
-			DONT_DELETE = 0x02,
-			READ_ONLY = 0x04
-		};
-
-		// Numeric flags
-		int m_flags;
-		// if true, this value is protected (internal to gameswf)
-		bool m_is_protected;
-
-		// mask for flags
-		static const int as_prop_flags_mask = DONT_ENUM | DONT_DELETE | READ_ONLY;
-
-		// Default constructor
-		as_prop_flags() : m_flags(0), m_is_protected(false)
-		{
-		}
-
-		// Constructor, from numerical value
-		as_prop_flags(int flags) : m_flags(flags), m_is_protected(false)
-		{
-		}
-
-		// accessor to m_readOnly
-		bool get_read_only() const { return (((this->m_flags & READ_ONLY) != 0) ? true : false); }
-
-		// accessor to m_dontDelete
-		bool get_dont_delete() const { return (((this->m_flags & DONT_DELETE) != 0) ? true : false); }
-
-		// accessor to m_dontEnum
-		bool get_dont_enum() const { return (((this->m_flags & DONT_ENUM) != 0) ? true : false);	}
-
-		// accesor to the numerical flags value
-		int get_flags() const { return this->m_flags; }
-
-		// accessor to m_is_protected
-		bool get_is_protected() const { return this->m_is_protected; }
-		// setter to m_is_protected
-		void set_get_is_protected(const bool is_protected) { this->m_is_protected = is_protected; }
-
-		// set the numerical flags value (return the new value )
-		// If unlocked is false, you cannot un-protect from over-write,
-		// you cannot un-protect from deletion and you cannot
-		// un-hide from the for..in loop construct
-		int set_flags(const int setTrue, const int set_false = 0)
-		{
-			if (!this->get_is_protected())
-			{
-				this->m_flags = this->m_flags & (~set_false);
-				this->m_flags |= setTrue;
-			}
-
-			return get_flags();
-		}
-	};
-
-	//
-	// as_member
-	//
-	// member for as_object: value + flags
-	struct as_member {
-		// value
-		as_value m_value;
-		// Properties flags
-		as_prop_flags m_flags;
-
-		// Default constructor
-		as_member() {
-		}
-
-		// Constructor
-		as_member(const as_value &value,const as_prop_flags flags=as_prop_flags()) :
-			m_value(value),
-			m_flags(flags)
-		{
-		}
-
-		// accessor to the value
-		const as_value& get_member_value() const { return m_value; }
-		// accessor to the properties flags
-		const as_prop_flags& get_member_flags() const { return m_flags; }
-
-		// set the value
-		void set_member_value(const as_value &value)  { m_value = value; }
-		// accessor to the properties flags
-		void set_member_flags(const as_prop_flags &flags)  { m_flags = flags; }
 	};
 
 }

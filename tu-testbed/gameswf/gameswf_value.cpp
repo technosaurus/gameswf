@@ -14,40 +14,19 @@
 #include "gameswf/gameswf_movie_def.h"
 #include "gameswf/gameswf_as_classes/as_number.h"
 #include "gameswf/gameswf_as_classes/as_boolean.h"
+#include "gameswf/gameswf_as_classes/as_string.h"
 #include <float.h>
 
 namespace gameswf
 {
 
-	bool string_to_number(double* result, const char* str)
-	// Utility.  Try to convert str to a number.  If successful,
-	// put the result in *result, and return true.  If not
-	// successful, put 0 in *result, and return false.
-	{
-		char* tail = 0;
-		*result = strtod(str, &tail);
-		if (tail == str || *tail != 0)
-		{
-			// Failed conversion to Number.
-			return false;
-		}
-		return true;
-	}
-
-	// utility
-	double get_nan()
-	{
-		double zero = 0.0;
-		return zero / zero;
-	}
-
 	as_value::as_value(as_object* obj) :
 		m_type(OBJECT),
-		m_object_value(obj)
+		m_object(obj)
 	{
-		if (m_object_value)
+		if (m_object)
 		{
-			m_object_value->add_ref();
+			m_object->add_ref();
 		}
 	}
 
@@ -97,15 +76,11 @@ namespace gameswf
 				// We'll go with the v7 behavior by default,
 				// and conditionalize via _versioned()
 				// functions.
-				m_string_value = "undefined";
-				break;
-
-			case NULLTYPE:
-				m_string_value = "null";
+				m_string = "undefined";
 				break;
 
 			case BOOLEAN:
-				m_string_value = m_bool ? "true" : "false";
+				m_string = m_bool ? "true" : "false";
 				break;
 
 			case NUMBER:
@@ -114,13 +89,13 @@ namespace gameswf
 				// -INF goes to "-Infinity"
 				if (isnan(m_number))
 				{
-					m_string_value = "NaN";
+					m_string = "NaN";
 				} 
 				else
 				{
 					char buffer[50];
 					snprintf(buffer, 50, "%.14g", m_number);
-					m_string_value = buffer;
+					m_string = buffer;
 				}
 				break;
 
@@ -130,21 +105,21 @@ namespace gameswf
 				//
 				// The default toString() returns "[object
 				// Object]" but may be customized.
-				//
-				// A Movieclip returns the absolute path of the object.
-				//
-				// call_to_string() should have checked for a
-				// toString() method, before we get down here,
-				// so we just handle the default cases here.
-
-				m_string_value = m_object_value->to_string();
+				if (m_object == NULL)
+				{
+					m_string = "null";
+				}
+				else
+				{
+					m_string = m_object->to_string();
+				}
 				break;
 	
 			case PROPERTY:
 			{
 				as_value val;
 				get_property(&val);
-				m_string_value = val.to_tu_string();
+				m_string = val.to_tu_string();
 				break;
 			}
 
@@ -152,28 +127,7 @@ namespace gameswf
 				assert(0);
 		}
 
-		return m_string_value;
-	}
-
-	const tu_string& as_value::call_to_string(as_environment* env) const
-	// Handles the case of this being an object, and calls our
-	// toString() method if available.
-	{
-		assert(env);
-		
-		if (m_type == OBJECT && m_object_value) {
-			as_value method;
-			if (m_object_value->get_member("toString", &method)) {
-				as_value result = call_method(method, env, m_object_value, 0, env->get_top_index());
-				m_string_value = result.to_tu_string();  // TODO: Should we recurse here?  Need to experiment.
-				return m_string_value;
-			}
-		}
-
-		// Default behavior.
-//		int version = env->get_target()->get_movie_definition()->get_version();
-		int version = get_current_root()->get_movie_version();
-		return to_tu_string_versioned(version);
+		return m_string;
 	}
 
 	const tu_string&	as_value::to_tu_string_versioned(int version) const
@@ -184,13 +138,13 @@ namespace gameswf
 			// Version-dependent behavior.
 			if (version <= 6)
 			{
-				m_string_value = "";
+				m_string = "";
 			}
 			else
 			{
-				m_string_value = "undefined";
+				m_string = "undefined";
 			}
-			return m_string_value;
+			return m_string;
 		}
 		
 		return to_tu_string();
@@ -210,17 +164,13 @@ namespace gameswf
 				// Also, "Infinity", "-Infinity", and "NaN"
 				// are recognized.
 				double val;
-				if (! string_to_number(&val, m_string_value.c_str()))
+				if (! string_to_number(&val, m_string.c_str()))
 				{
 					// Failed conversion to Number.
 					val = 0.0;	// TODO should be NaN
 				}
 				return val;
 			}
-
-			case NULLTYPE:
-	 			// Evan: from my tests
-				return 0;
 
 			case NUMBER:
 				return m_number;
@@ -229,7 +179,12 @@ namespace gameswf
 				return m_bool ? 1 : 0;
 
 			case OBJECT:
-				return m_object_value->to_number();
+				if (m_object)
+				{
+					return m_object->to_number();
+				}
+	 			// Evan: from my tests
+				return 0;
 	
 			case PROPERTY:
 			{
@@ -253,15 +208,15 @@ namespace gameswf
 				// From Moock
 				if (get_current_root()->get_movie_version() >= 7)
 				{
-					return m_string_value.size() > 0 ? true : false;
+					return m_string.size() > 0 ? true : false;
 				}
 
-				if (m_string_value == "false")
+				if (m_string == "false")
 				{
 					return false;
 				}
 				else
-				if (m_string_value == "true")
+				if (m_string == "true")
 				{
 					return true;
 				}
@@ -276,7 +231,7 @@ namespace gameswf
 				}
 
 			case OBJECT:
-				return m_object_value->to_bool();
+				return m_object->to_bool();
 
 			case PROPERTY:
 			{
@@ -291,10 +246,13 @@ namespace gameswf
 			case BOOLEAN:
 				return m_bool;
 
-			default:
-				assert(m_type == UNDEFINED || m_type == NULLTYPE);
+			case UNDEFINED:
 				return false;
+
+			default:
+				assert(0);
 		}
+		return false;
 	}
 
 	
@@ -304,7 +262,7 @@ namespace gameswf
 		if (m_type == OBJECT)
 		{
 			// OK.
-			return m_object_value;
+			return m_object;
 		}
 		return NULL;
 	}
@@ -315,25 +273,21 @@ namespace gameswf
 		if (m_type == OBJECT)
 		{
 			// OK.
-			return cast_to<as_function>(m_object_value);
+			return cast_to<as_function>(m_object);
 		}
 		return NULL;
 	}
 
 	void	as_value::set_as_object(as_object* obj)
 	{
-		if (m_type != OBJECT || m_object_value != obj)
+		if (m_type != OBJECT || m_object != obj)
 		{
 			drop_refs();
+			m_type = OBJECT;
+			m_object = obj;
 			if (obj)
 			{
-				m_type = OBJECT;
-				m_object_value = obj;
-				m_object_value->add_ref();
-			}
-			else
-			{
-				m_type = NULLTYPE;
+				m_object->add_ref();
 			}
 		}
 	}
@@ -351,14 +305,11 @@ namespace gameswf
 			case BOOLEAN:
 				set_bool(v.m_bool);
 				break;
-			case NULLTYPE:
-				set_null();
-				break;
 			case STRING:
-				set_tu_string(v.m_string_value);
+				set_tu_string(v.m_string);
 				break;
 			case OBJECT:
-				set_as_object(v.m_object_value);
+				set_as_object(v.m_object);
 				break;
 
 			case PROPERTY:
@@ -391,17 +342,10 @@ namespace gameswf
 	bool	as_value::operator==(const as_value& v) const
 	// Return true if operands are equal.
 	{
-		bool this_nulltype = (m_type == UNDEFINED || m_type == NULLTYPE);
-		bool v_nulltype = (v.get_type() == UNDEFINED || v.get_type() == NULLTYPE);
-		if (this_nulltype || v_nulltype)
-		{
-			return this_nulltype == v_nulltype;
-		}
-
 		switch (m_type)
 		{
 			case STRING:
-				return m_string_value == v.to_tu_string();
+				return m_string == v.to_tu_string();
 
 			case NUMBER:
 				return m_number == v.to_number();
@@ -410,7 +354,7 @@ namespace gameswf
 				return m_bool == v.to_bool();
 
 			case OBJECT:
-				return m_object_value == v.to_object();
+				return m_object == v.to_object();
 
 			case PROPERTY:
 			{
@@ -431,25 +375,15 @@ namespace gameswf
 		return ! (*this == v);
 	}
 
-	
-	void	as_value::string_concat(const tu_string& str)
-	// Sets *this to this string plus the given string.
-	{
-		drop_refs();
-		to_tu_string();	// make sure our m_string_value is initialized
-		m_type = STRING;
-		m_string_value += str;
-	}
-
 	void	as_value::drop_refs()
 	// Drop any ref counts we have; this happens prior to changing our value.
 	{
 		if (m_type == OBJECT)
 		{
-			if (m_object_value)
+			if (m_object)
 			{
-				m_object_value->drop_ref();
-				m_object_value = 0;
+				m_object->drop_ref();
+				m_object = 0;
 			}
 		}
 		else if (m_type == PROPERTY)
@@ -518,7 +452,7 @@ namespace gameswf
 	{
 		if (m_type == OBJECT)
 		{
-			return cast_to<as_function>(m_object_value);
+			return cast_to<as_function>(m_object);
 		}
 		return false;
 	}
@@ -526,6 +460,7 @@ namespace gameswf
 	as_value::as_value(as_c_function_ptr func) :
 		m_type(UNDEFINED)
 	{
+	//	printf("xxxxx\n");
 		set_as_object(new as_c_function(func));
 	}
 
@@ -544,9 +479,6 @@ namespace gameswf
 			case STRING:
 				return "string";
 
-			case NULLTYPE:
-				return "null";
-
 			case NUMBER:
 				return "number";
 
@@ -554,8 +486,11 @@ namespace gameswf
 				return "boolean";
 
 			case OBJECT:
-				return m_object_value->typeof();
-				break;
+				if (m_object)
+				{
+					return m_object->typeof();
+				}
+				return "null";
 
 			case PROPERTY:
 			{
@@ -563,8 +498,11 @@ namespace gameswf
 				get_property(&val);
 				return val.typeof();
 			}
+
+			default:
+				assert(0);
+
 		}
-		assert(0);
 		return 0;
 	}
 
@@ -593,7 +531,7 @@ namespace gameswf
 
 			case OBJECT:
 			{
-				return m_object_value->get_member(name, func);
+				return m_object->get_member(name, func);
 			}
 		}
 		return false;
@@ -601,17 +539,17 @@ namespace gameswf
 
 	void	as_value::set_tu_string(const tu_string& str)
 	{
-		drop_refs(); m_type = STRING; m_string_value = str; 
+		drop_refs(); m_type = STRING; m_string = str; 
 	}
 	
 	void	as_value::set_string(const char* str)
 	{
-		drop_refs(); m_type = STRING; m_string_value = str; 
+		drop_refs(); m_type = STRING; m_string = str; 
 	}
 	
 	as_value::as_value(const char* str) :
 		m_type(STRING),
-		m_string_value(str)
+		m_string(str)
 	{
 	}
 
@@ -637,12 +575,12 @@ namespace gameswf
 		// continues to work.
 
 #if (WCHAR_MAX != MAXINT)
-		tu_string::encode_utf8_from_wchar(&m_string_value, (const uint16 *)wstr);
+		tu_string::encode_utf8_from_wchar(&m_string, (const uint16 *)wstr);
 #else
 # if (WCHAR_MAX != MAXSHORT)
 # error "Can't determine the size of wchar_t"
 # else
-			tu_string::encode_utf8_from_wchar(&m_string_value, (const uint32 *)wstr);
+			tu_string::encode_utf8_from_wchar(&m_string, (const uint32 *)wstr);
 # endif
 #endif
 	}
