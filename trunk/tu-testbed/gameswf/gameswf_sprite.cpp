@@ -1544,7 +1544,7 @@ namespace gameswf
 
 			m_display_list.add_display_object(
 				m_canvas.get_ptr(),
-				get_highest_depth() + 1,
+				get_highest_depth(),
 				true,
 				m_color_transform,
 				m_matrix,

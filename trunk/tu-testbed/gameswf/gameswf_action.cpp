@@ -1452,7 +1452,7 @@ namespace gameswf
 						// we should subtract 16384 from depth
 						target->clone_display_object(
 							env->top(1).to_tu_string(),
-							env->top(0).to_int() - 16384);
+							env->top(0).to_int() - ADJUST_DEPTH_VALUE);
 					}
 
 					env->drop(3);
