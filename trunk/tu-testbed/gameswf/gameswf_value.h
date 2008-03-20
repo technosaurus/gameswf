@@ -94,6 +94,7 @@ namespace gameswf
 		exported_module const tu_stringi&	to_tu_stringi() const;
 		exported_module double	to_number() const;
 		exported_module int	to_int() const { return (int) to_number(); };
+		exported_module float	to_float() const { return (float) to_number(); };
 		exported_module bool	to_bool() const;
 		exported_module as_function*	to_function() const;
 		exported_module as_object*	to_object() const;

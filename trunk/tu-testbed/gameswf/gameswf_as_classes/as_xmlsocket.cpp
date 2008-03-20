@@ -27,7 +27,7 @@ namespace gameswf
 		as_xmlsock* xmls = cast_to<as_xmlsock>(fn.this_ptr);
 		assert(xmls);
 
-		fn.result->set_bool(xmls->connect(fn.arg(0).to_string(), (int) fn.arg(1).to_number()));
+		fn.result->set_bool(xmls->connect(fn.arg(0).to_string(), fn.arg(1).to_int()));
 	}
 
 	void	as_xmlsock_close(const fn_call& fn)

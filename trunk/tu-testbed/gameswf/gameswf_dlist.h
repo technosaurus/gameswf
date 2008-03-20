@@ -18,10 +18,11 @@
 namespace gameswf
 {
 
+	#define ADJUST_DEPTH_VALUE 16384
+
 	// A struct to serve as an entry in the display list.
 	struct display_object_info
 	{
-//		bool	m_ref;
 		smart_ptr<character>	m_character;	// state is held in here
 
 		display_object_info()
@@ -132,10 +133,10 @@ namespace gameswf
 
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		void dump();
+
 	private:
 
 		void remove(int index);
-
 		array<display_object_info> m_display_object_array;
 	};
 

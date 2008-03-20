@@ -76,7 +76,7 @@ void	goto_record_method(const fn_call& fn)
 	if (tbl)
 	{
 		assert(fn.nargs == 1);
-		fn.result->set_bool(tbl->goto_record((int) fn.arg(0).to_number()));
+		fn.result->set_bool(tbl->goto_record(fn.arg(0).to_int()));
 	}
 }
 
@@ -87,7 +87,7 @@ void	get_title_method(const fn_call& fn)
 	if (tbl)
 	{
 		assert(fn.nargs == 1);
-		fn.result->set_string(tbl->get_field_title((int) fn.arg(0).to_number()));
+		fn.result->set_string(tbl->get_field_title(fn.arg(0).to_int()));
 	}
 }
 

@@ -32,7 +32,7 @@ namespace gameswf
 	{
 		const tu_string& str = fn.this_value.to_tu_string();
 
-		int	index = (int) fn.arg(0).to_number();
+		int	index = fn.arg(0).to_int();
 		if (index >= 0 && index < str.utf8_length())
 		{
 			fn.result->set_double(str.utf8_char_at(index));
@@ -82,7 +82,7 @@ namespace gameswf
 			int	start_index = 0;
 			if (fn.nargs > 1)
 			{
-				start_index = (int) fn.arg(1).to_number();
+				start_index = fn.arg(1).to_int();
 			}
 			const char*	str = sstr.c_str();
 			const char*	p = strstr(
@@ -107,8 +107,9 @@ namespace gameswf
 			fn.result->set_double(-1);
 		} else {
 			int	start_index = 0;
-			if (fn.nargs > 1) {
-				start_index = (int) fn.arg(1).to_number();
+			if (fn.nargs > 1)
+			{
+				start_index = fn.arg(1).to_int();
 			}
 			const char* str = sstr.c_str();
 			const char* last_hit = NULL;
@@ -135,16 +136,20 @@ namespace gameswf
 
 		int len = this_str.utf8_length();
 		int start = 0;
-		if (fn.nargs >= 1) {
-			start = (int) fn.arg(0).to_number();
-			if (start < 0) {
+		if (fn.nargs >= 1) 
+		{
+			start = fn.arg(0).to_int();
+			if (start < 0)
+			{
 				start = len + start;
 			}
 		}
 		int end = len;
-		if (fn.nargs >= 2) {
-			end = (int) fn.arg(1).to_number();
-			if (end < 0) {
+		if (fn.nargs >= 2)
+		{
+			end = fn.arg(1).to_int();
+			if (end < 0)
+			{
 				end = len + end;
 			}
 		}
@@ -243,12 +248,12 @@ namespace gameswf
 		int	utf8_len = this_str.utf8_length();
 		int	len = utf8_len;
 
-		int start = (int) fn.arg(0).to_number();
+		int start = fn.arg(0).to_int();
 		start = iclamp(start, 0, utf8_len);
 
 		if (fn.nargs >= 2)
 		{
-			len = (int) fn.arg(1).to_number();
+			len = fn.arg(1).to_int();
 			len = iclamp(len, 0, utf8_len);
 		}
 
@@ -274,12 +279,12 @@ namespace gameswf
 		int	end = utf8_len;
 		if (fn.nargs >= 1)
 		{
-			start = (int) fn.arg(0).to_number();
+			start = fn.arg(0).to_int();
 			start = iclamp(start, 0, utf8_len);
 		}
 		if (fn.nargs >= 2)
 		{
-			end = (int) fn.arg(1).to_number();
+			end = fn.arg(1).to_int();
 			end = iclamp(end, 0, utf8_len);
 		}
 
@@ -305,7 +310,7 @@ namespace gameswf
 	{
 		const tu_string& this_str = fn.this_value.to_tu_string();
 
-		int	index = (int) fn.arg(0).to_number();
+		int	index = fn.arg(0).to_int();
 		if (index >= 0 && index < this_str.utf8_length()) 
 		{
 			char c[2];

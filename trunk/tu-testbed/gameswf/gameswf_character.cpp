@@ -234,7 +234,7 @@ namespace gameswf
 				matrix	m = get_matrix();
 
 				// Decompose matrix and insert the desired value.
-				float	x_scale = (float) val.to_number() / 100.f;	// input is in percent
+				float	x_scale = val.to_float() / 100.f;	// input is in percent
 				float	y_scale = m.get_y_scale();
 				float	rotation = m.get_rotation();
 				m.set_scale_rotation(x_scale, y_scale, rotation);
@@ -248,7 +248,7 @@ namespace gameswf
 
 				// Decompose matrix and insert the desired value.
 				float	x_scale = m.get_x_scale();
-				float	y_scale = (float) val.to_number() / 100.f;	// input is in percent
+				float	y_scale = val.to_float() / 100.f;	// input is in percent
 				float	rotation = m.get_rotation();
 				m.set_scale_rotation(x_scale, y_scale, rotation);
 
@@ -259,7 +259,7 @@ namespace gameswf
 			{
 				// Set alpha modulate, in percent.
 				cxform	cx = get_cxform();
-				cx.m_[3][0] = float(val.to_number()) / 100.f;
+				cx.m_[3][0] = val.to_float() / 100.f;
 				set_cxform(cx);
 				return true;
 			}
@@ -319,7 +319,7 @@ namespace gameswf
 				// Decompose matrix and insert the desired value.
 				float	x_scale = m.get_x_scale();
 				float	y_scale = m.get_y_scale();
-				float	rotation = (float) val.to_number() * float(M_PI) / 180.f;	// input is in degrees
+				float	rotation = val.to_float() * float(M_PI) / 180.f;	// input is in degrees
 				m.set_scale_rotation(x_scale, y_scale, rotation);
 
 				set_matrix(m);

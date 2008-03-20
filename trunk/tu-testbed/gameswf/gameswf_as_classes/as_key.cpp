@@ -88,7 +88,7 @@ namespace gameswf
 			return;
 		}
 
-		int	code = (int) fn.arg(0).to_number();
+		int	code = fn.arg(0).to_int();
 
 		as_key*	ko = cast_to<as_key>(fn.this_ptr);
 		assert(ko);
