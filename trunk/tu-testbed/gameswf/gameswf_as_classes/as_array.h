@@ -20,23 +20,21 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_ARRAY };
-		virtual bool is(int class_id)
+		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
 			else return as_object::is(class_id);
 		}
 
 		exported_module as_array();
-
-//		virtual bool	get_member(const tu_stringi& name, as_value* val);
-//		virtual bool	set_member(const tu_stringi& name, const as_value& val);
-
 		exported_module virtual const char* to_string();
 
 		exported_module void push(const as_value& val);
 		exported_module void pop(as_value* val);
 		exported_module void erase(const tu_stringi& index);
 		exported_module int size();
+
+		tu_string m_string_value;
 	};
 
 }	// end namespace gameswf

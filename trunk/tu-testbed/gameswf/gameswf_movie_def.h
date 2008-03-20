@@ -42,7 +42,7 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_MOVIE_DEF_SUB };
-		virtual bool is(int class_id)
+		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
 			else return movie_definition::is(class_id);
@@ -196,7 +196,7 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_MOVIE_DEF };
-		virtual bool is(int class_id)
+		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
 			else return movie_definition_sub::is(class_id);

@@ -18,7 +18,7 @@ struct mytable: public as_object
 
 	// Unique id of a gameswf resource
 	enum { m_class_id = AS_PLUGIN_MYTABLE };
-	virtual bool is(int class_id)
+	virtual bool is(int class_id) const
 	{
 		if (m_class_id == class_id) return true;
 		else return as_object::is(class_id);

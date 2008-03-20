@@ -24,7 +24,7 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum	{ m_class_id = AS_OBJECT };
-		exported_module virtual bool is(int class_id)
+		exported_module virtual bool is(int class_id) const
 		{
 			return m_class_id == class_id;
 		}

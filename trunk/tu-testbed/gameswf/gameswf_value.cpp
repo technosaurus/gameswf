@@ -514,7 +514,7 @@ namespace gameswf
 	}
 
 
-	bool as_value::is_function()
+	bool as_value::is_function() const
 	{
 		if (m_type == OBJECT)
 		{
@@ -598,6 +598,66 @@ namespace gameswf
 		}
 		return false;
 	}
+
+	void	as_value::set_tu_string(const tu_string& str)
+	{
+		drop_refs(); m_type = STRING; m_string_value = str; 
+	}
+	
+	void	as_value::set_string(const char* str)
+	{
+		drop_refs(); m_type = STRING; m_string_value = str; 
+	}
+	
+	as_value::as_value(const char* str) :
+		m_type(STRING),
+		m_string_value(str)
+	{
+	}
+
+	as_value::as_value(const wchar_t* wstr)	:
+		m_type(STRING)
+	{
+		// Encode the string value as UTF-8.
+		//
+		// Is this dumb?  Alternatives:
+		//
+		// 1. store a tu_wstring instead of tu_string?
+		// Bloats typical ASCII strings, needs a
+		// tu_wstring type, and conversion back the
+		// other way to interface with char[].
+		// 
+		// 2. store a tu_wstring as a union with
+		// tu_string?  Extra complexity.
+		//
+		// 3. ??
+		//
+		// Storing UTF-8 seems like a pretty decent
+		// way to do it.  Everything else just
+		// continues to work.
+
+#if (WCHAR_MAX != MAXINT)
+		tu_string::encode_utf8_from_wchar(&m_string_value, (const uint16 *)wstr);
+#else
+# if (WCHAR_MAX != MAXSHORT)
+# error "Can't determine the size of wchar_t"
+# else
+			tu_string::encode_utf8_from_wchar(&m_string_value, (const uint32 *)wstr);
+# endif
+#endif
+	}
+
+	as_value::as_value() :
+		m_type(UNDEFINED)
+	{
+	}
+
+	as_value::as_value(const as_value& v) :
+		m_type(UNDEFINED)
+	{
+		*this = v;
+	}
+
 
 	//
 	//	as_property

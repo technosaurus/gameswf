@@ -43,8 +43,7 @@ namespace gameswf
 
 	struct as_value
 	{
-	
-		private:
+	private:
 
 		enum type
 		{
@@ -71,58 +70,13 @@ namespace gameswf
 			};
 		};
 
-		public:
+	public:
 
-		exported_module as_value() :
-			m_type(UNDEFINED)
-		{
-		}
-
-		exported_module as_value(const as_value& v) :
-			m_type(UNDEFINED)
-		{
-			*this = v;
-		}
-
-		exported_module as_value(const char* str) :
-			m_type(STRING),
-			m_string_value(str)
-		{
-		}
-
-		exported_module as_value(const wchar_t* wstr)	:
-			m_type(STRING),
-			m_string_value("")
-		{
-			// Encode the string value as UTF-8.
-			//
-			// Is this dumb?  Alternatives:
-			//
-			// 1. store a tu_wstring instead of tu_string?
-			// Bloats typical ASCII strings, needs a
-			// tu_wstring type, and conversion back the
-			// other way to interface with char[].
-			// 
-			// 2. store a tu_wstring as a union with
-			// tu_string?  Extra complexity.
-			//
-			// 3. ??
-			//
-			// Storing UTF-8 seems like a pretty decent
-			// way to do it.  Everything else just
-			// continues to work.
-
-#if (WCHAR_MAX != MAXINT)
-			tu_string::encode_utf8_from_wchar(&m_string_value, (const uint16 *)wstr);
-#else
-# if (WCHAR_MAX != MAXSHORT)
-# error "Can't determine the size of wchar_t"
-# else
-			tu_string::encode_utf8_from_wchar(&m_string_value, (const uint32 *)wstr);
-# endif
-#endif
-		}
-
+		// constructors
+		exported_module as_value();
+		exported_module as_value(const as_value& v);
+		exported_module as_value(const char* str);
+		exported_module as_value(const wchar_t* wstr);
 		exported_module as_value(bool val);
 		exported_module as_value(int val);
 		exported_module as_value(float val);
@@ -153,8 +107,8 @@ namespace gameswf
 		// These set_*()'s are more type-safe; should be used
 		// in preference to generic overloaded set().  You are
 		// more likely to get a warning/error if misused.
-		exported_module void	set_tu_string(const tu_string& str) { drop_refs(); m_type = STRING; m_string_value = str; }
-		exported_module void	set_string(const char* str) { drop_refs(); m_type = STRING; m_string_value = str; }
+		exported_module void	set_tu_string(const tu_string& str);
+		exported_module void	set_string(const char* str);
 		exported_module void	set_double(double val);
 		exported_module void	set_bool(bool val);
 		exported_module void	set_int(int val) { set_double(val); }
@@ -171,20 +125,20 @@ namespace gameswf
 		exported_module bool	operator==(const as_value& v) const;
 		exported_module bool	operator!=(const as_value& v) const;
 		exported_module bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
-		exported_module void	operator+=(const as_value& v) { set_double(this->to_number() + v.to_number()); }
-		exported_module void	operator-=(const as_value& v) { set_double(this->to_number() - v.to_number()); }
-		exported_module void	operator*=(const as_value& v) { set_double(this->to_number() * v.to_number()); }
-		exported_module void	operator/=(const as_value& v) { set_double(this->to_number() / v.to_number()); }  // @@ check for div/0
-		exported_module void	operator&=(const as_value& v) { set_int(int(this->to_number()) & int(v.to_number())); }
-		exported_module void	operator|=(const as_value& v) { set_int(int(this->to_number()) | int(v.to_number())); }
-		exported_module void	operator^=(const as_value& v) { set_int(int(this->to_number()) ^ int(v.to_number())); }
-		exported_module void	shl(const as_value& v) { set_int(int(this->to_number()) << int(v.to_number())); }
-		exported_module void	asr(const as_value& v) { set_int(int(this->to_number()) >> int(v.to_number())); }
-		exported_module void	lsr(const as_value& v) { set_int((Uint32(this->to_number()) >> int(v.to_number()))); }
+		exported_module void	operator+=(const as_value& v) { set_double(to_number() + v.to_number()); }
+		exported_module void	operator-=(const as_value& v) { set_double(to_number() - v.to_number()); }
+		exported_module void	operator*=(const as_value& v) { set_double(to_number() * v.to_number()); }
+		exported_module void	operator/=(const as_value& v) { set_double(to_number() / v.to_number()); }  // @@ check for div/0
+		exported_module void	operator&=(const as_value& v) { set_int(int(to_number()) & int(v.to_number())); }
+		exported_module void	operator|=(const as_value& v) { set_int(int(to_number()) | int(v.to_number())); }
+		exported_module void	operator^=(const as_value& v) { set_int(int(to_number()) ^ int(v.to_number())); }
+		exported_module void	shl(const as_value& v) { set_int(int(to_number()) << int(v.to_number())); }
+		exported_module void	asr(const as_value& v) { set_int(int(to_number()) >> int(v.to_number())); }
+		exported_module void	lsr(const as_value& v) { set_int((Uint32(to_number()) >> int(v.to_number()))); }
 
 		exported_module void	string_concat(const tu_string& str);
 
-		bool is_function();
+		bool is_function() const;
 		inline bool is_bool() const { return m_type == BOOLEAN; }
 		inline bool is_string() const { return m_type == STRING; }
 		inline bool is_number() const { return m_type == NUMBER; }
@@ -195,7 +149,6 @@ namespace gameswf
 
 		const char*	typeof() const;
 		bool get_method(as_value* func, const tu_string& method_name);
-
 	};
 
 

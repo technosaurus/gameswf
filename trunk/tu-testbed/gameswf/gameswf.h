@@ -205,7 +205,7 @@ namespace gameswf
 	// ("as_" stands for ActionScript).
 	struct as_object_interface : public ref_counted
 	{
-		virtual bool is(int class_id) = 0;
+		virtual bool is(int class_id) const = 0;
 	};
 
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)
@@ -243,7 +243,7 @@ namespace gameswf
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_CHARACTER_DEF };
-		virtual bool is(int class_id)
+		virtual bool is(int class_id) const
 		{
 			return m_class_id == class_id;
 		}
