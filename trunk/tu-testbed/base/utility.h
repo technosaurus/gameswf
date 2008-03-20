@@ -198,6 +198,9 @@ inline size_t	bernstein_hash_case_insensitive(const void* data_in, int size, uns
 // Dump the internal statistics from malloc() so we can track memory leaks
 void dump_memory_stats(const char *from, int line, const char *label);
 
+// return NaN
+inline double get_nan() { double zero = 0.0; return zero / zero; }
+
 #endif // UTILITY_H
 
 

@@ -399,7 +399,7 @@ namespace gameswf
 		} 
 		else
 		{
-			val = fn.arg(0).call_to_string(fn.env).c_str();
+			val = fn.arg(0).to_string();
 		}
 		log_msg("%s\n", val);
 	}
@@ -1732,8 +1732,9 @@ namespace gameswf
 				{
 					if (env->top(0).is_string() || env->top(1).is_string())
 					{
-						env->top(1).set_tu_string(env->top(1).call_to_string(env));
-						env->top(1).string_concat(env->top(0).call_to_string(env));
+						tu_string str = env->top(1).to_string();
+						str += env->top(0).to_string();
+						env->top(1).set_tu_string(str);
 					}
 					else
 					{

@@ -17,6 +17,7 @@
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_as_sprite.h"
 #include "gameswf/gameswf_text.h"
+#include "gameswf/gameswf_as_classes/as_string.h"
 
 namespace gameswf
 {

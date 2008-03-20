@@ -13,6 +13,21 @@
 namespace gameswf
 {
 
+	bool string_to_number(double* result, const char* str)
+	// Utility.  Try to convert str to a number.  If successful,
+	// put the result in *result, and return true.  If not
+	// successful, put 0 in *result, and return false.
+	{
+		char* tail = 0;
+		*result = strtod(str, &tail);
+		if (tail == str || *tail != 0)
+		{
+			// Failed conversion to Number.
+			return false;
+		}
+		return true;
+	}
+
 	void string_char_code_at(const fn_call& fn)
 	{
 		const tu_string& str = fn.this_value.to_tu_string();
@@ -33,7 +48,7 @@ namespace gameswf
 		tu_string result(str);
 		for (int i = 0; i < fn.nargs; i++)
 		{
-			result += fn.arg(i).call_to_string(fn.env);
+			result += fn.arg(i).to_string();
 		}
 
 		fn.result->set_tu_string(result);
@@ -144,28 +159,33 @@ namespace gameswf
 	{
 		const tu_string& this_str = fn.this_value.to_tu_string();
 
-		smart_ptr<as_array> arr(new as_array);
+		smart_ptr<as_array> arr = new as_array();
 
-		const tu_string* delimiter = NULL;
-		int delimiter_len = 0;
-		if (fn.nargs >= 1) {
-			delimiter = &(fn.arg(0).call_to_string(fn.env));
-			delimiter_len = delimiter->length();
+		tu_string delimiter;
+		if (fn.nargs >= 1)
+		{
+			delimiter = fn.arg(0).to_string();
 		}
+
 		int max_count = this_str.utf8_length();
-		if (fn.nargs >= 2) {
-			max_count = (int) fn.arg(1).to_number();
+		if (fn.nargs >= 2)
+		{
+			max_count = fn.arg(1).to_int();
 		}
 
 		const char* p = this_str.c_str();
 		const char* word_start = p;
-		for (int i = 0; i < max_count; ) {
+		for (int i = 0; i < max_count; )
+		{
 			const char* n = p;
-			if (delimiter_len == 0) {
+			if (delimiter.size() == 0)
+			{
 				utf8::decode_next_unicode_character(&n);
-				if (n == p) {
+				if (n == p)
+				{
 					break;
 				}
+
 				tu_string word(p, n - p);
 				as_value val;
 				as_value index(i);
@@ -173,9 +193,12 @@ namespace gameswf
 				arr->set_member(index.to_tu_string(), val);
 				p = n;
 				i++;
-			} else {
-				bool match = strncmp(p, delimiter->c_str(), delimiter_len) == 0;
-				if (*p == 0 || match) {
+			}
+			else
+			{
+				bool match = strncmp(p, delimiter.c_str(), delimiter.size()) == 0;
+				if (*p == 0 || match)
+				{
 					// Emit the previous word.
 					tu_string word(word_start, p - word_start);
 					as_value val;
@@ -184,16 +207,20 @@ namespace gameswf
 					arr->set_member(index.to_tu_string(), val);
 					i++;
 
-					if (match) {
+					if (match)
+					{
 						// Skip the delimiter.
-						p += delimiter_len;
+						p += delimiter.size();
 						word_start = p;
 					}
 
-					if (*p == 0) {
+					if (*p == 0)
+					{
 						break;
 					}
-				} else {
+				} 
+				else
+				{
 					utf8::decode_next_unicode_character(&p);
 				}
 			}
