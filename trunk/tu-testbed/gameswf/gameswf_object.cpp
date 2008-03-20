@@ -16,7 +16,6 @@ namespace gameswf
 
 	const char*	next_slash_or_dot(const char* word);
 
-	//TODO: the same for sprite_instance
 	void	as_object_addproperty(const fn_call& fn)
 	{
 		if (fn.nargs == 3)
@@ -102,20 +101,6 @@ namespace gameswf
 	as_object::as_object() :
 		m_watch(NULL)
 	{
-		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_OBJECT_METHOD);
-		if (map == NULL)
-		{
-			map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
-			map->add("addProperty", as_object_addproperty);
-			map->add("hasOwnProperty", as_object_hasownproperty);
-			map->add("watch", as_object_watch);
-			map->add("unwatch", as_object_unwatch);
-
-		// for debugging
-#ifdef _DEBUG
-			map->add("dump", as_object_dump);
-#endif
-		}
 	}
 
 	as_object::~as_object()
@@ -186,8 +171,7 @@ namespace gameswf
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
 		
 		// first try built-ins object methods
-		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_OBJECT_METHOD);
-		if (map->get(name, val))
+		if (get_builtin(BUILTIN_OBJECT_METHOD, name, val))
 		{
 			return true;
 		}

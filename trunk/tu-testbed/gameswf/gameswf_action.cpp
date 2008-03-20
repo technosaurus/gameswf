@@ -15,6 +15,7 @@
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_freetype.h"
+#include "gameswf/gameswf_as_sprite.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 #include "base/tu_loadlib.h"
@@ -539,6 +540,99 @@ namespace gameswf
 		fn.result->set_tu_string(get_gameswf_version());
 	}
 
+
+	// s_standard_method_map stuff should be high optimized
+	static stringi_hash<as_value>*	s_standard_method_map[BUILTIN_COUNT];
+	void clear_standard_method_map()
+	{
+		for (int i = 0; i < BUILTIN_COUNT; i++)
+		{
+			if (s_standard_method_map[i])
+			{
+				delete s_standard_method_map[i];
+			}
+		}
+	}
+
+	bool get_builtin(builtin_object id, const tu_stringi& name, as_value* val)
+	{
+		if (s_standard_method_map[id])
+		{
+			return s_standard_method_map[id]->get(name, val);
+		}
+		return false;
+	}
+
+	stringi_hash<as_value>* new_standard_method_map(builtin_object id)
+	{
+		if (s_standard_method_map[id] == NULL)
+		{
+			s_standard_method_map[id] = new stringi_hash<as_value>;
+		}
+		return s_standard_method_map[id];
+	}
+
+	// Standard property lookup.
+
+	static stringi_hash<as_standard_member>	s_standard_property_map;
+	void clear_standard_property_map()
+	{
+		s_standard_property_map.clear();
+	}
+
+	as_standard_member	get_standard_member(const tu_stringi& name)
+	{
+		if (s_standard_property_map.size() == 0)
+		{
+			s_standard_property_map.set_capacity(int(AS_STANDARD_MEMBER_COUNT));
+
+			s_standard_property_map.add("_x", M_X);
+			s_standard_property_map.add("_y", M_Y);
+			s_standard_property_map.add("_xscale", M_XSCALE);
+			s_standard_property_map.add("_yscale", M_YSCALE);
+			s_standard_property_map.add("_currentframe", M_CURRENTFRAME);
+			s_standard_property_map.add("_totalframes", M_TOTALFRAMES);
+			s_standard_property_map.add("_alpha", M_ALPHA);
+			s_standard_property_map.add("_visible", M_VISIBLE);
+			s_standard_property_map.add("_width", M_WIDTH);
+			s_standard_property_map.add("_height", M_HEIGHT);
+			s_standard_property_map.add("_rotation", M_ROTATION);
+			s_standard_property_map.add("_target", M_TARGET);
+			s_standard_property_map.add("_framesloaded", M_FRAMESLOADED);
+			s_standard_property_map.add("_name", M_NAME);
+			s_standard_property_map.add("_droptarget", M_DROPTARGET);
+			s_standard_property_map.add("_url", M_URL);
+			s_standard_property_map.add("_highquality", M_HIGHQUALITY);
+			s_standard_property_map.add("_focusrect", M_FOCUSRECT);
+			s_standard_property_map.add("_soundbuftime", M_SOUNDBUFTIME);
+			s_standard_property_map.add("_xmouse", M_XMOUSE);
+			s_standard_property_map.add("_ymouse", M_YMOUSE);
+			s_standard_property_map.add("_parent", M_PARENT);
+			s_standard_property_map.add("text", M_TEXT);
+			s_standard_property_map.add("textWidth", M_TEXTWIDTH);
+			s_standard_property_map.add("textColor", M_TEXTCOLOR);
+			s_standard_property_map.add("border", M_BORDER);
+			s_standard_property_map.add("multiline", M_MULTILINE);
+			s_standard_property_map.add("wordWrap", M_WORDWRAP);
+			s_standard_property_map.add("type", M_TYPE);
+			s_standard_property_map.add("backgroundColor", M_BACKGROUNDCOLOR);
+			s_standard_property_map.add("_this", M_THIS);
+			s_standard_property_map.add("this", MTHIS);
+			s_standard_property_map.add("_root", M_ROOT);
+			s_standard_property_map.add(".", MDOT);
+			s_standard_property_map.add("..", MDOT2);
+			s_standard_property_map.add("_level0", M_LEVEL0);
+			s_standard_property_map.add("_global", M_GLOBAL);
+			s_standard_property_map.add("length", M_LENGTH);
+			s_standard_property_map.add("NaN", M_NAN);
+		}
+
+		as_standard_member	result = M_INVALID_MEMBER;
+		s_standard_property_map.get(name, &result);
+
+		return result;
+	}
+
 	void	action_init()
 	// Create/hook built-ins.
 	{
@@ -546,43 +640,83 @@ namespace gameswf
 		{
 			s_inited = true;
 
-			// setup standart memthods
+			// setup builtin methods
+			stringi_hash<as_value>* map;
 
-			stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_NUMBER_METHOD);
-			if (map == NULL)
-			{
-				map = new_standard_method_map(BUILTIN_NUMBER_METHOD);
-				map->add("toString", as_number_to_string);
-				map->add("valueOf", as_number_valueof);
-			}
+			// as_object builtins
+			map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
+			map->add("addProperty", as_object_addproperty);
+			map->add("hasOwnProperty", as_object_hasownproperty);
+			map->add("watch", as_object_watch);
+			map->add("unwatch", as_object_unwatch);
 
-			map = get_standard_method_map(BUILTIN_BOOLEAN_METHOD);
-			if (map == NULL)
-			{
-				map = new_standard_method_map(BUILTIN_BOOLEAN_METHOD);
-				map->add("toString", as_boolean_to_string);
-				map->add("valueOf", as_boolean_valueof);
-			}
+		// for debugging
+#ifdef _DEBUG
+			map->add("dump", as_object_dump);
+#endif
 
-			map = get_standard_method_map(BUILTIN_STRING_METHOD);
-			if (map == NULL)
-			{
-				map = new_standard_method_map(BUILTIN_STRING_METHOD);
-				map->add("toString", string_to_string);
-				map->add("fromCharCode", string_from_char_code);
-				map->add("charCodeAt", string_char_code_at);
-				map->add("concat", string_concat);
-				map->add("indexOf", string_index_of);
-				map->add("lastIndexOf", string_last_index_of);
-				map->add("slice", string_slice);
-				map->add("split", string_split);
-				map->add("substring", string_substring);
-				map->add("substr", string_substr);
-				map->add("toLowerCase", string_to_lowercase);
-				map->add("toUpperCase", string_to_uppercase);
-				map->add("charAt", string_char_at);
-				map->add("length", string_length);
-			}
+			// as_number builtins
+			map = new_standard_method_map(BUILTIN_NUMBER_METHOD);
+			map->add("toString", as_number_to_string);
+			map->add("valueOf", as_number_valueof);
+
+			// as_boolean builtins
+			map = new_standard_method_map(BUILTIN_BOOLEAN_METHOD);
+			map->add("toString", as_boolean_to_string);
+			map->add("valueOf", as_boolean_valueof);
+
+			// as_string builtins
+			map = new_standard_method_map(BUILTIN_STRING_METHOD);
+			map->add("toString", string_to_string);
+			map->add("fromCharCode", string_from_char_code);
+			map->add("charCodeAt", string_char_code_at);
+			map->add("concat", string_concat);
+			map->add("indexOf", string_index_of);
+			map->add("lastIndexOf", string_last_index_of);
+			map->add("slice", string_slice);
+			map->add("split", string_split);
+			map->add("substring", string_substring);
+			map->add("substr", string_substr);
+			map->add("toLowerCase", string_to_lowercase);
+			map->add("toUpperCase", string_to_uppercase);
+			map->add("charAt", string_char_at);
+			map->add("length", string_length);
+
+			// sprite_instance builtins
+			map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
+			map->add("play", sprite_play);
+			map->add("stop", sprite_stop);
+			map->add("gotoAndStop", sprite_goto_and_stop);
+			map->add("gotoAndPlay", sprite_goto_and_play);
+			map->add("nextFrame", sprite_next_frame);
+			map->add("prevFrame", sprite_prev_frame);
+			map->add("getBytesLoaded", sprite_get_bytes_loaded);
+			map->add("getBytesTotal", sprite_get_bytes_total);
+			map->add("swapDepths", sprite_swap_depths);
+			map->add("duplicateMovieClip", sprite_duplicate_movieclip);
+			map->add("getDepth", sprite_get_depth);
+			map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
+			map->add("removeMovieClip", sprite_remove_movieclip);
+			map->add("hitTest", sprite_hit_test);
+			map->add("loadMovie", sprite_loadmovie);
+			map->add("unloadMovie", sprite_unloadmovie);
+			map->add("getNextHighestDepth", sprite_getnexthighestdepth);
+			map->add("createTextField", sprite_create_text_field);
+			map->add("attachMovie", sprite_attach_movie);
+
+			// drawing API
+			map->add("beginFill", sprite_begin_fill);
+			map->add("endFill", sprite_end_fill);
+			map->add("lineTo", sprite_line_to);
+			map->add("moveTo", sprite_move_to);
+			map->add("curveTo", sprite_curve_to);
+			map->add("clear", sprite_clear);
+			map->add("lineStyle", sprite_line_style);
+
+			// gameSWF extension
+			// reset root FPS
+			map->add("setFPS", sprite_set_fps);
+
 
 			s_start_time = tu_timer::get_ticks();
 
@@ -639,6 +773,8 @@ namespace gameswf
 	{
 		if (s_inited)
 		{
+			clear_standard_property_map();
+			clear_standard_method_map();
 			s_inited = false;
 			s_global = NULL;
 		}
@@ -1871,7 +2007,7 @@ namespace gameswf
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
 					as_value func;
-					if (env->top(1).get_method(&func, method_name))
+					if (env->top(1).get_method(method_name, &func))
 					{
 						result = call_method(
 							func,
@@ -2790,99 +2926,6 @@ namespace gameswf
 		assert(m_id > INVALID && m_id < EVENT_COUNT);
 		return s_function_names[m_id];
 	}
-
-
-	// Standard member lookup.
-
-	// s_standard_method_map stuff should be high optimized
-	static stringi_hash<as_value>*	s_standard_method_map[BUILTIN_COUNT];
-	void clear_standard_method_map()
-	{
-		for (int i = 0; i < BUILTIN_COUNT; i++)
-		{
-			if (s_standard_method_map[i])
-			{
-				delete s_standard_method_map[i];
-			}
-		}
-	}
-
-	stringi_hash<as_value>* get_standard_method_map(builtin_object obj)
-	{
-		return s_standard_method_map[obj];
-	}
-
-	stringi_hash<as_value>* new_standard_method_map(builtin_object obj)
-	{
-		if (s_standard_method_map[obj] == NULL)
-		{
-			s_standard_method_map[obj] = new stringi_hash<as_value>;
-		}
-		return s_standard_method_map[obj];
-	}
-
-	static stringi_hash<as_standard_member>	s_standard_property_map;
-	void clear_standard_property_map()
-	{
-		s_standard_property_map.clear();
-	}
-
-	as_standard_member	get_standard_member(const tu_stringi& name)
-	{
-		if (s_standard_property_map.size() == 0)
-		{
-			s_standard_property_map.set_capacity(int(AS_STANDARD_MEMBER_COUNT));
-
-			s_standard_property_map.add("_x", M_X);
-			s_standard_property_map.add("_y", M_Y);
-			s_standard_property_map.add("_xscale", M_XSCALE);
-			s_standard_property_map.add("_yscale", M_YSCALE);
-			s_standard_property_map.add("_currentframe", M_CURRENTFRAME);
-			s_standard_property_map.add("_totalframes", M_TOTALFRAMES);
-			s_standard_property_map.add("_alpha", M_ALPHA);
-			s_standard_property_map.add("_visible", M_VISIBLE);
-			s_standard_property_map.add("_width", M_WIDTH);
-			s_standard_property_map.add("_height", M_HEIGHT);
-			s_standard_property_map.add("_rotation", M_ROTATION);
-			s_standard_property_map.add("_target", M_TARGET);
-			s_standard_property_map.add("_framesloaded", M_FRAMESLOADED);
-			s_standard_property_map.add("_name", M_NAME);
-			s_standard_property_map.add("_droptarget", M_DROPTARGET);
-			s_standard_property_map.add("_url", M_URL);
-			s_standard_property_map.add("_highquality", M_HIGHQUALITY);
-			s_standard_property_map.add("_focusrect", M_FOCUSRECT);
-			s_standard_property_map.add("_soundbuftime", M_SOUNDBUFTIME);
-			s_standard_property_map.add("_xmouse", M_XMOUSE);
-			s_standard_property_map.add("_ymouse", M_YMOUSE);
-			s_standard_property_map.add("_parent", M_PARENT);
-			s_standard_property_map.add("text", M_TEXT);
-			s_standard_property_map.add("textWidth", M_TEXTWIDTH);
-			s_standard_property_map.add("textColor", M_TEXTCOLOR);
-			s_standard_property_map.add("border", M_BORDER);
-			s_standard_property_map.add("multiline", M_MULTILINE);
-			s_standard_property_map.add("wordWrap", M_WORDWRAP);
-			s_standard_property_map.add("type", M_TYPE);
-			s_standard_property_map.add("backgroundColor", M_BACKGROUNDCOLOR);
-				
-
-			s_standard_property_map.add("_this", M_THIS);
-			s_standard_property_map.add("this", MTHIS);
-			s_standard_property_map.add("_root", M_ROOT);
-			s_standard_property_map.add(".", MDOT);
-			s_standard_property_map.add("..", MDOT2);
-			s_standard_property_map.add("_level0", M_LEVEL0);
-			s_standard_property_map.add("_global", M_GLOBAL);
-			s_standard_property_map.add("length", M_LENGTH);
-			s_standard_property_map.add("NaN", M_NAN);
-
-		}
-
-		as_standard_member	result = M_INVALID_MEMBER;
-		s_standard_property_map.get(name, &result);
-
-		return result;
-	}
-
 
 	//
 	// Disassembler
