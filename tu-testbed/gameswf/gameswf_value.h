@@ -140,7 +140,7 @@ namespace gameswf
 		inline bool is_undefined() const { return m_type == UNDEFINED; }
 
 		const char*	typeof() const;
-		bool get_method(as_value* func, const tu_string& method_name);
+		bool get_method(const tu_string& name, as_value* func);
 	};
 
 }

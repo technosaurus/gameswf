@@ -429,16 +429,12 @@ namespace gameswf
 	// global gameswf management
 	//
 	void clears_tag_loaders();
-	void clear_standard_property_map();
-	void clear_standard_method_map();
 	void clear_shared_libs();
 
 	void	clear_gameswf()
 	// Maximum release of resources.
 	{
 		gameswf_engine_mutex().lock();
-		clear_standard_property_map();
-		clear_standard_method_map();
 		clears_tag_loaders();
 		get_heap()->clear();
 		clear_library();

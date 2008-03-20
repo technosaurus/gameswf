@@ -19,6 +19,10 @@
 namespace gameswf
 {
 	exported_module void	as_object_addproperty(const fn_call& fn);
+	exported_module void	as_object_hasownproperty(const fn_call& fn);
+	exported_module void	as_object_watch(const fn_call& fn);
+	exported_module void	as_object_unwatch(const fn_call& fn);
+	exported_module void	as_object_dump(const fn_call& fn);
 
 	//
 	// as_prop_flags
@@ -95,8 +99,7 @@ namespace gameswf
 		as_prop_flags m_flags;
 
 		// Default constructor
-		as_member() {
-		}
+		as_member() {}
 
 		// Constructor
 		as_member(const as_value &value,const as_prop_flags flags=as_prop_flags()) :

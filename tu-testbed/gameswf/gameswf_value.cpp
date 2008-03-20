@@ -507,26 +507,23 @@ namespace gameswf
 	}
 
 
-	bool as_value::get_method(as_value* func, const tu_string& name)
+	bool as_value::get_method(const tu_string& name, as_value* func)
 	{
 		switch (m_type)
 		{
 			case STRING:
 			{
-				stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_STRING_METHOD);
-				return map->get(name, func);
+				return get_builtin(BUILTIN_STRING_METHOD, name, func);
 			}
 
 			case NUMBER:
 			{
-				stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_NUMBER_METHOD);
-				return map->get(name, func);
+				return get_builtin(BUILTIN_NUMBER_METHOD, name, func);
 			}
 
 			case BOOLEAN:
 			{
-				stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_BOOLEAN_METHOD);
-				return map->get(name, func);
+				return get_builtin(BUILTIN_BOOLEAN_METHOD, name, func);
 			}
 
 			case OBJECT:

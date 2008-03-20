@@ -46,45 +46,6 @@ namespace gameswf
 		//m_root->add_ref();	// @@ circular!
 		m_as_environment.set_target(this);
 		
-		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_SPRITE_METHOD);
-		if (map == NULL)
-		{
-			map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
-			map->add("play", sprite_play);
-			map->add("stop", sprite_stop);
-			map->add("gotoAndStop", sprite_goto_and_stop);
-			map->add("gotoAndPlay", sprite_goto_and_play);
-			map->add("nextFrame", sprite_next_frame);
-			map->add("prevFrame", sprite_prev_frame);
-			map->add("getBytesLoaded", sprite_get_bytes_loaded);
-			map->add("getBytesTotal", sprite_get_bytes_total);
-			map->add("swapDepths", sprite_swap_depths);
-			map->add("duplicateMovieClip", sprite_duplicate_movieclip);
-			map->add("getDepth", sprite_get_depth);
-			map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
-			map->add("removeMovieClip", sprite_remove_movieclip);
-			map->add("hitTest", sprite_hit_test);
-			map->add("loadMovie", sprite_loadmovie);
-			map->add("unloadMovie", sprite_unloadmovie);
-			map->add("getNextHighestDepth", sprite_getnexthighestdepth);
-			map->add("createTextField", sprite_create_text_field);
-			map->add("attachMovie", sprite_attach_movie);
-
-			// drawing API
-			map->add("beginFill", sprite_begin_fill);
-			map->add("endFill", sprite_end_fill);
-			map->add("lineTo", sprite_line_to);
-			map->add("moveTo", sprite_move_to);
-			map->add("curveTo", sprite_curve_to);
-			map->add("clear", sprite_clear);
-			map->add("lineStyle", sprite_line_style);
-
-			// gameSWF extension
-			// reset root FPS
-			map->add("setFPS", sprite_set_fps);
-		}
-
-
 		// Initialize the flags for init action executed.
 		m_init_actions_executed.resize(m_def->get_frame_count());
 		memset(&m_init_actions_executed[0], 0,
@@ -1013,8 +974,7 @@ namespace gameswf
 	{
 
 		// first try built-ins sprite methods
-		stringi_hash<as_value>* map = get_standard_method_map(BUILTIN_SPRITE_METHOD);
-		if (map->get(name, val))
+		if (get_builtin(BUILTIN_SPRITE_METHOD, name, val))
 		{
 			return true;
 		}

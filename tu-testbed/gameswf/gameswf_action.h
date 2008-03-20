@@ -310,8 +310,8 @@ namespace gameswf
 		BUILTIN_COUNT
 	};
 
-	stringi_hash<as_value>* get_standard_method_map(builtin_object obj);
-	stringi_hash<as_value>* new_standard_method_map(builtin_object obj);
+	bool get_builtin(builtin_object id, const tu_stringi& name, as_value* val);
+	stringi_hash<as_value>* new_standard_method_map(builtin_object id);
 
 }	// end namespace gameswf
 
