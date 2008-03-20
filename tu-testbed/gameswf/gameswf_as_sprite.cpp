@@ -139,7 +139,7 @@ namespace gameswf
 
 		if (fn.arg(0).is_number())
 		{ 
-			int target_depth = int(fn.arg(0).to_number());
+			int target_depth = fn.arg(0).to_int();
 			int corrected_target_depth = target_depth + 16384;  //adjust depth
 			sprite_instance* parent = cast_to<sprite_instance>(sprite->get_parent());
 
@@ -194,7 +194,7 @@ namespace gameswf
 		{ 
 			character* ch = sprite->clone_display_object(
 				fn.arg(0).to_tu_string(), 
-				(int) fn.arg(1).to_number());
+				fn.arg(1).to_int());
 
 			if (fn.nargs == 3) 
 			{ 
@@ -226,7 +226,7 @@ namespace gameswf
 			return;
 		}
 
-		character* ch = sprite->add_empty_movieclip(fn.arg(0).to_string(), int(fn.arg(1).to_number() + 16384));
+		character* ch = sprite->add_empty_movieclip(fn.arg(0).to_string(), fn.arg(1).to_int() + 16384);
 		fn.result->set_as_object(ch);
 	}
 
@@ -287,11 +287,11 @@ namespace gameswf
 
 		fn.result->set_as_object(sprite->create_text_field(
 			fn.arg(0).to_string(),	// field name
-			(int) fn.arg(1).to_number() + 16384,	// depth
-			(int) fn.arg(2).to_number(),	// x
-			(int) fn.arg(3).to_number(),	// y
-			(int) fn.arg(4).to_number(),	// width
-			(int) fn.arg(5).to_number()	// height
+			fn.arg(1).to_int() + 16384,	// depth
+			fn.arg(2).to_int(),	// x
+			fn.arg(3).to_int(),	// y
+			fn.arg(4).to_int(),	// width
+			fn.arg(5).to_int()	// height
 		));
 	} 
 
@@ -305,7 +305,7 @@ namespace gameswf
 		{
 			tu_string id = fn.arg(0).to_string();	// the exported name (sprite_definition)
 			tu_string name = fn.arg(1).to_string();	// instance name
-			int depth = (int) fn.arg(2).to_number() + 16384;
+			int depth = fn.arg(2).to_int() + 16384;
 			sprite_instance* ch = sprite->attach_movie(id, name, depth);
 
 			if (fn.nargs >= 4)
@@ -328,7 +328,7 @@ namespace gameswf
 
 		if (fn.nargs == 1)
 		{
-			float fps = (float) fn.arg(0).to_number();
+			float fps = fn.arg(0).to_float();
 			sprite->set_fps(fps);
 		}
 	} 

@@ -439,7 +439,7 @@ namespace gameswf
 		// are used to determine whether the list of child names should be hidden,
 		// un-hidden, protected from over-write, un-protected from over-write,
 		// protected from deletion and un-protected from deletion
-		int set_true = int(fn.arg(2).to_number()) & as_prop_flags::as_prop_flags_mask;
+		int set_true = fn.arg(2).to_int() & as_prop_flags::as_prop_flags_mask;
 
 		// Is another integer bitmask that works like set_true,
 		// except it sets the attributes to false. The
@@ -448,7 +448,7 @@ namespace gameswf
 		// ASSetPropFlags was exposed in Flash 5, however the fourth argument 'set_false'
 		// was not required as it always defaulted to the value '~0'. 
 		int set_false = (fn.nargs == 3 ? 
-				 (version == 5 ? ~0 : 0) : int(fn.arg(3).to_number()))
+				 (version == 5 ? ~0 : 0) : fn.arg(3).to_int())
 			& as_prop_flags::as_prop_flags_mask;
 
 		// Evan: it seems that if set_true == 0 and set_false == 0, this function
@@ -1321,8 +1321,8 @@ namespace gameswf
 				}
 				case 0x15:	// substring
 				{
-					int	size = int(env->top(0).to_number());
-					int	base = int(env->top(1).to_number()) - 1;  // 1-based indices
+					int	size = env->top(0).to_int();
+					int	base = env->top(1).to_int() - 1;  // 1-based indices
 					const tu_string&	str = env->top(2).to_tu_string_versioned(version);
 
 					// Keep base within range.
@@ -1411,7 +1411,7 @@ namespace gameswf
 					character*	target = env->find_target(env->top(1));
 					if (target)
 					{
-						env->top(1) = get_property(target, (int) env->top(0).to_number());
+						env->top(1) = get_property(target, env->top(0).to_int());
 					}
 					else
 					{
@@ -1427,7 +1427,7 @@ namespace gameswf
 					character*	target = env->find_target(env->top(2));
 					if (target)
 					{
-						set_property(target, (int) env->top(1).to_number(), env->top(0));
+						set_property(target, env->top(1).to_int(), env->top(0));
 					}
 					env->drop(3);
 					break;
@@ -1452,7 +1452,7 @@ namespace gameswf
 						// we should subtract 16384 from depth
 						target->clone_display_object(
 							env->top(1).to_tu_string(),
-							(int) env->top(0).to_number() - 16384);
+							env->top(0).to_int() - 16384);
 					}
 
 					env->drop(3);
@@ -1498,10 +1498,10 @@ namespace gameswf
 					st.m_bound = env->top(2).to_bool();
 					if (st.m_bound)
 					{
-						st.m_bound_x0 = (float) env->top(6).to_number();
-						st.m_bound_y0 = (float) env->top(5).to_number();
-						st.m_bound_x1 = (float) env->top(4).to_number();
-						st.m_bound_y1 = (float) env->top(3).to_number();
+						st.m_bound_x0 = env->top(6).to_float();
+						st.m_bound_y0 = env->top(5).to_float();
+						st.m_bound_x1 = env->top(4).to_float();
+						st.m_bound_y1 = env->top(3).to_float();
 						env->drop(4);
 					}
 					env->drop(3);
@@ -1565,7 +1565,7 @@ namespace gameswf
 
 				case 0x30:	// random
 				{
-					int	max = int(env->top(0).to_number());
+					int	max = env->top(0).to_int();
 					if (max < 1) max = 1;
 					env->top(0).set_int(tu_random::next_random() % max);
 					break;
@@ -1585,7 +1585,7 @@ namespace gameswf
 				case 0x33:	// chr
 				{
 					char	buf[2];
-					buf[0] = int(env->top(0).to_number());
+					buf[0] = env->top(0).to_int();
 					buf[1] = 0;
 					env->top(0).set_string(buf);
 					break;
@@ -1704,7 +1704,7 @@ namespace gameswf
 						// Hopefully the actual function object is here.
 						function = env->top(0);
 					}
-					int	nargs = (int) env->top(1).to_number();
+					int	nargs = env->top(1).to_int();
 					as_value	result = call_method(function, env, NULL, nargs, env->get_top_index() - 2);
 					env->drop(nargs + 1);
 					env->top(0) = result;
@@ -1742,7 +1742,7 @@ namespace gameswf
 					as_value	classname = env->pop();
 					IF_VERBOSE_ACTION(log_msg("-------------- new object: %s\n",
 								  classname.to_tu_string().c_str()));
-					int	nargs = (int) env->pop().to_number();
+					int	nargs = env->pop().to_int();
 					as_value constructor = env->get_variable(classname.to_tu_string(), with_stack);
 					as_value new_obj;
 
@@ -1832,7 +1832,7 @@ namespace gameswf
 				// popped off the stack, then the name of the property is popped off the stack. The name of the
 				// property is converted to a string. The value may be of any type.				{
 
-					int n = (int) env->pop().to_number();
+					int n = env->pop().to_int();
 					as_object* obj = new as_object();
 
 					// Set members
@@ -2002,7 +2002,7 @@ namespace gameswf
 					break;
 				case 0x52:	// call method
 				{
-					int	nargs = (int) env->top(2).to_number();
+					int	nargs = env->top(2).to_int();
 					as_value	result;
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
@@ -2078,7 +2078,7 @@ namespace gameswf
 
 					as_value	constructor = env->pop();
 					as_object*	obj = env->pop().to_object();
-					int	nargs = (int) env->pop().to_number();
+					int	nargs = env->pop().to_int();
 
 					// Create an empty object
 					smart_ptr<as_object>	new_obj = new as_object();
@@ -2857,7 +2857,7 @@ namespace gameswf
 					else if (env->top(0).is_number())
 					{
 						// Frame numbers appear to be 0-based!  @@ Verify.
-						int frame_number = int(env->top(0).to_number());
+						int frame_number = env->top(0).to_int();
 						target->goto_frame(frame_number);
 						success = true;
 					}

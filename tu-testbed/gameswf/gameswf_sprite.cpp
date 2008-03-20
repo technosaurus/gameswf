@@ -1095,13 +1095,13 @@ namespace gameswf
 			if (m_def->get_labeled_frame(frame_spec.to_string(), &frame_number) == false)
 			{
 				// Try converting to integer.
-				frame_number = (int) frame_spec.to_number();
+				frame_number = frame_spec.to_int();
 			}
 		}
 		else
 		{
 			// convert from 1-based to 0-based
-			frame_number = (int) frame_spec.to_number() - 1;
+			frame_number = frame_spec.to_int() - 1;
 		}
 
 		if (frame_number < 0 || frame_number >= m_def->get_frame_count())

@@ -594,27 +594,27 @@ namespace gameswf
 
 		if (tf->get_member("leftMargin", &val))
 		{
-			m_left_margin = PIXELS_TO_TWIPS((float) val.to_number());
+			m_left_margin = PIXELS_TO_TWIPS(val.to_float());
 		}
 
 		if (tf->get_member("indent", &val))
 		{
-			m_indent = PIXELS_TO_TWIPS((float) val.to_number());
+			m_indent = PIXELS_TO_TWIPS(val.to_float());
 		}
 
 		if (tf->get_member("rightMargin", &val))
 		{
-			m_right_margin = PIXELS_TO_TWIPS((float) val.to_number());
+			m_right_margin = PIXELS_TO_TWIPS(val.to_float());
 		}
 
 		if (tf->get_member("leading", &val))
 		{
-			m_leading = PIXELS_TO_TWIPS((float) val.to_number());
+			m_leading = PIXELS_TO_TWIPS(val.to_float());
 		}
 
 		if (tf->get_member("color", &val))
 		{
-			int rgb = (int) val.to_number();
+			int rgb = val.to_int();
 			Uint8 r = (rgb >> 16) & 0xFF;
 			Uint8 g = (rgb >> 8) & 0xFF;
 			Uint8 b = rgb & 0xFF;
@@ -623,7 +623,7 @@ namespace gameswf
 
 		if (tf->get_member("size", &val))
 		{
-			m_text_height = PIXELS_TO_TWIPS((float) val.to_number());
+			m_text_height = PIXELS_TO_TWIPS(val.to_float());
 		}
 
 		if (tf->get_member("align", &val))

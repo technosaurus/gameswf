@@ -118,7 +118,7 @@ namespace gameswf
 			{
 				int rgb;
 
-				rgb = static_cast<int>( val.to_number() );
+				rgb = val.to_int();
 				m_color_transform.m_[ 0 ][ 0 ] = 0.0f;
 				m_color_transform.m_[ 1 ][ 0 ] = 0.0f;
 				m_color_transform.m_[ 2 ][ 0 ] = 0.0f;

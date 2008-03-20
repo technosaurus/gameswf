@@ -231,7 +231,11 @@ namespace gameswf
 				}
 
 			case OBJECT:
-				return m_object->to_bool();
+				if (m_object)
+				{
+					return m_object->to_bool();
+				}
+				return false;
 
 			case PROPERTY:
 			{
@@ -528,7 +532,10 @@ namespace gameswf
 
 			case OBJECT:
 			{
-				return m_object->get_member(name, func);
+				if (m_object)
+				{
+					return m_object->get_member(name, func);
+				}
 			}
 		}
 		return false;

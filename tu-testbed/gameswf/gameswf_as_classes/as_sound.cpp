@@ -23,8 +23,8 @@ namespace gameswf
 				int loops = 0;
 				if (fn.nargs >= 2)
 				{
-					offset = (int) fn.arg(0).to_number();
-					loops = (int) fn.arg(1).to_number();
+					offset = fn.arg(0).to_int();
+					loops = fn.arg(1).to_int();
 				}
 				s->play_sound(snd->m_id, loops);
 			}
@@ -107,7 +107,7 @@ namespace gameswf
 			return;
 		}
 		
-		int volume = (int) fn.arg(0).to_number();
+		int volume = fn.arg(0).to_int();
 
 		// sanity check
 		if (volume >= 0 && volume <= 100)

@@ -58,7 +58,7 @@ namespace gameswf
 			assert(fn.env);
 
 			// Use the arguments as initializers.
-			int	size = (int) fn.env->pop().to_number();
+			int	size = fn.env->pop().to_int();
 			as_value	index_number;
 			for (int i = 0; i < size; i++)
 			{

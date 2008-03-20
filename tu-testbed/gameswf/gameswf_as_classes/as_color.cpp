@@ -136,42 +136,42 @@ namespace gameswf
 
 			if (tobj->get_member("ra", &v))
 			{
-				cx.m_[0][0] *= float(v.to_number()) / 100.0f;
+				cx.m_[0][0] *= v.to_float() / 100.0f;
 			}
 			else
 			if (tobj->get_member("rb", &v))
 			{
-				cx.m_[0][0] = float(v.to_number()) / 255.0f;
+				cx.m_[0][0] = v.to_float() / 255.0f;
 			}
 
 			if (tobj->get_member("ga", &v))
 			{
-				cx.m_[1][0] *= float(v.to_number()) / 100.0f;
+				cx.m_[1][0] *= v.to_float() / 100.0f;
 			}
 			else
 			if (tobj->get_member("gb", &v))
 			{
-				cx.m_[1][0] = float(v.to_number()) / 255.0f;
+				cx.m_[1][0] = v.to_float() / 255.0f;
 			}
 
 			if (tobj->get_member("ba", &v))
 			{
-				cx.m_[2][0] *= float(v.to_number()) / 100.0f;
+				cx.m_[2][0] *= v.to_float() / 100.0f;
 			}
 			else
 			if (tobj->get_member("bb", &v))
 			{
-				cx.m_[2][0] = float(v.to_number()) / 255.0f;
+				cx.m_[2][0] = v.to_float() / 255.0f;
 			}
 
 			if (tobj->get_member("aa", &v))
 			{
-				cx.m_[3][0] *= float(v.to_number()) / 100.0f;
+				cx.m_[3][0] *= v.to_float() / 100.0f;
 			}
 			else
 			if (tobj->get_member("ab", &v))
 			{
-				cx.m_[3][0] = float(v.to_number()) / 255.0f;
+				cx.m_[3][0] = v.to_float() / 255.0f;
 			}
 
 			obj->m_target->set_cxform(cx);
