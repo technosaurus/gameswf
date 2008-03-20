@@ -628,9 +628,10 @@ namespace gameswf
 
 	}
 
+	// return next FREE depth number
 	int display_list::get_highest_depth() 
 	{ 
-		int depth = 0;
+		int depth = ADJUST_DEPTH_VALUE - 1;
 		for (int i = 0, n = get_character_count(); i < n; i++)
 		{
 			character*	ch = get_character(i);
@@ -640,7 +641,7 @@ namespace gameswf
 				depth = ch->get_depth();
 			}
 		}
-		return depth;
+		return depth - ADJUST_DEPTH_VALUE + 1;
 	}
 
 	void	display_list::clear_refs(hash<as_object*, bool>* visited_objects,	as_object* this_ptr)
