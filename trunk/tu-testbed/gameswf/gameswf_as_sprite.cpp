@@ -262,8 +262,8 @@ namespace gameswf
 	// public unloadMovie() : Void
 	void sprite_unloadmovie(const fn_call& fn) 
 	{ 
-		sprite_instance* sprite = sprite_getptr(fn);
-                UNUSED(sprite);
+//		sprite_instance* sprite = sprite_getptr(fn);
+//                UNUSED(sprite);
 		fn.env->load_file("", fn.this_ptr);
 	} 
 
@@ -278,9 +278,12 @@ namespace gameswf
 	{ 
 		int highest_depth;
 		sprite_instance* sprite = sprite_getptr(fn);
-		highest_depth = sprite->get_highest_depth() + 1 - ADJUST_DEPTH_VALUE;
-		highest_depth = max( highest_depth, 0 );
-		fn.result->set_int( highest_depth );
+		highest_depth = sprite->get_highest_depth() - ADJUST_DEPTH_VALUE;
+
+		// highest_depth must be 0 or larger !!!
+		//highest_depth = max( highest_depth, 0 );
+		assert(highest_depth >= 0);
+		fn.result->set_int(highest_depth);
 	} 
 
 	// public createTextField(instanceName:String, depth:Number,

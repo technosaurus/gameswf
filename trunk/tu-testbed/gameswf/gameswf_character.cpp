@@ -16,7 +16,7 @@ namespace gameswf
 		:
 		m_id(id),
 		m_parent(parent),
-		m_depth(-1),
+		m_depth(0),
 		m_ratio(0.0f),
 		m_clip_depth(0),
 		m_visible(true),
