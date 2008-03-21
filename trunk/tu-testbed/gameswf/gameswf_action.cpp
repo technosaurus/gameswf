@@ -623,8 +623,6 @@ namespace gameswf
 			s_standard_property_map.add("..", MDOT2);
 			s_standard_property_map.add("_level0", M_LEVEL0);
 			s_standard_property_map.add("_global", M_GLOBAL);
-			s_standard_property_map.add("length", M_LENGTH);
-			s_standard_property_map.add("NaN", M_NAN);
 		}
 
 		as_standard_member	result = M_INVALID_MEMBER;
@@ -681,7 +679,7 @@ namespace gameswf
 			map->add("toLowerCase", string_to_lowercase);
 			map->add("toUpperCase", string_to_uppercase);
 			map->add("charAt", string_char_at);
-			map->add("length", string_length);
+			map->add("length", as_value(string_length, NULL));
 
 			// sprite_instance builtins
 			map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
@@ -1924,17 +1922,16 @@ namespace gameswf
 				case 0x4E:	// get member
 				{
 					as_object*	obj = env->top(1).to_object();
-
-					// Special cases: similar to
-					// String.length, Number.Nan
 					if (obj == NULL)
 					{
-						as_standard_member	std_member = get_standard_member(env->top(0).to_tu_string());
-						if (env->top(1).is_string() && std_member == M_LENGTH)
+						// try property/method of a primitive type, like String.length
+						as_value val;
+						env->top(1).get_member(env->top(0).to_tu_string(), &val);
+						if (val.is_property())
 						{
-							int	len = env->top(1).to_tu_string_versioned(version).utf8_length();
-							env->top(1).set_int(len);
+							val.get_property(env->top(1), &val);
 						}
+						env->top(1) = val;
 					}
 					else
 					{
@@ -2006,7 +2003,7 @@ namespace gameswf
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
 					as_value func;
-					if (env->top(1).get_method(method_name, &func))
+					if (env->top(1).get_member(method_name, &func))
 					{
 						result = call_method(
 							func,
@@ -2169,17 +2166,8 @@ namespace gameswf
 					env->drop(1);
 					break;
 				case 0x66:	// strict equal
-					if (env->top(1).get_type() != env->top(0).get_type())
-					{
-						// Types don't match.
-						env->top(1).set_bool(false);
-						env->drop(1);
-					}
-					else
-					{
-						env->top(1).set_bool(env->top(1) == env->top(0));
-						env->drop(1);
-					}
+					env->top(1).set_bool(env->top(1) == env->top(0));
+					env->drop(1);
 					break;
 				case 0x67:	// gt (typed)
 					if (env->top(1).is_string())

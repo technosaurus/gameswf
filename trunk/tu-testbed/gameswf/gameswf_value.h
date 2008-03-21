@@ -35,6 +35,7 @@ namespace gameswf
 	
 		void	set(as_object* target, const as_value& val);
 		void	get(as_object* target, as_value* val) const;
+		void	get(const as_value& primitive, as_value* val) const;
 	};
 
 	struct as_value
@@ -86,8 +87,6 @@ namespace gameswf
 		// Useful when changing types/values.
 		exported_module void	drop_refs();
 
-		exported_module type	get_type() const { return m_type; }
-
 		exported_module const char*	to_string() const;
 		exported_module const tu_string&	to_tu_string() const;
 		exported_module const tu_string&	to_tu_string_versioned(int version) const;
@@ -115,6 +114,7 @@ namespace gameswf
 
 		void	set_property(const as_value& val);
 		void	get_property(as_value* val) const;
+		void	get_property(const as_value& primitive, as_value* val) const;
 
 		exported_module void	operator=(const as_value& v);
 		exported_module bool	operator==(const as_value& v) const;
@@ -141,7 +141,7 @@ namespace gameswf
 		inline bool is_undefined() const { return m_type == UNDEFINED; }
 
 		const char*	typeof() const;
-		bool get_method(const tu_string& name, as_value* func);
+		bool get_member(const tu_string& name, as_value* val);
 	};
 
 }
