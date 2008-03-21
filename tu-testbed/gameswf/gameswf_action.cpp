@@ -42,25 +42,25 @@
 // NOTES:
 //
 // Buttons
-// on (press)                 onPress
-// on (release)               onRelease
-// on (releaseOutside)        onReleaseOutside
-// on (rollOver)              onRollOver
-// on (rollOut)               onRollOut
-// on (dragOver)              onDragOver
-// on (dragOut)               onDragOut
-// on (keyPress"...")         onKeyDown, onKeyUp      <----- IMPORTANT
+// on (press)				 onPress
+// on (release)			   onRelease
+// on (releaseOutside)		onReleaseOutside
+// on (rollOver)			  onRollOver
+// on (rollOut)			   onRollOut
+// on (dragOver)			  onDragOver
+// on (dragOut)			   onDragOut
+// on (keyPress"...")		 onKeyDown, onKeyUp	  <----- IMPORTANT
 //
 // Sprites
-// onClipEvent (load)         onLoad
-// onClipEvent (unload)       onUnload                Hm.
+// onClipEvent (load)		 onLoad
+// onClipEvent (unload)	   onUnload				Hm.
 // onClipEvent (enterFrame)   onEnterFrame
-// onClipEvent (mouseDown)    onMouseDown
-// onClipEvent (mouseUp)      onMouseUp
-// onClipEvent (mouseMove)    onMouseMove
-// onClipEvent (keyDown)      onKeyDown
-// onClipEvent (keyUp)        onKeyUp
-// onClipEvent (data)         onData
+// onClipEvent (mouseDown)	onMouseDown
+// onClipEvent (mouseUp)	  onMouseUp
+// onClipEvent (mouseMove)	onMouseMove
+// onClipEvent (keyDown)	  onKeyDown
+// onClipEvent (keyUp)		onKeyUp
+// onClipEvent (data)		 onData
 
 // Text fields have event handlers too!
 
@@ -646,6 +646,7 @@ namespace gameswf
 			// as_object builtins
 			map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
 			map->add("addProperty", as_object_addproperty);
+			map->add("registerClass", as_object_registerclass);
 			map->add("hasOwnProperty", as_object_hasownproperty);
 			map->add("watch", as_object_watch);
 			map->add("unwatch", as_object_unwatch);
@@ -2079,10 +2080,16 @@ namespace gameswf
 					int	nargs = env->pop().to_int();
 
 					// Create an empty object
-					smart_ptr<as_object>	new_obj = new as_object();
+					smart_ptr<as_object>	new_obj;
 
-					if (constructor.is_function())
+					if (as_c_function* c_constructor = cast_to<as_c_function>(constructor.to_object()))
 					{
+						// C function is responsible for creating the new object and setting members.
+						new_obj = call_method( constructor, env, NULL, nargs, env->get_top_index()).to_object();
+					}
+					else if (as_s_function* s_constructor = cast_to<as_s_function>(constructor.to_object()))
+					{
+						new_obj = new as_object();
 						as_object* proto = create_proto(new_obj.get_ptr(), constructor);
 						proto->m_this_ptr = new_obj.get_ptr();
 

@@ -10,6 +10,7 @@
 #include "gameswf/gameswf_action.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_movie_def.h"
 
 namespace gameswf
 {
@@ -28,6 +29,37 @@ namespace gameswf
 			return;
 		}
 		fn.result->set_bool(false);
+	}
+	
+	//static registerClass(name:String, theClass:Function) : Boolean
+	void	as_object_registerclass( const fn_call& fn )
+	{
+		fn.result->set_bool(false);
+		if (fn.nargs == 2)
+		{
+			root * current_root = get_current_root();
+			
+			if( current_root )
+			{
+				movie_definition_sub * movie_def = ( movie_definition_sub *) current_root->get_movie_definition();
+
+				if( movie_def )
+				{
+					character_def *def = movie_def->get_exported_resource( fn.arg(0).to_tu_string() );
+
+					if( def )
+					{
+						as_function* func = cast_to<as_function>(fn.arg(1).to_object());
+
+						if( func )
+						{
+							fn.result->set_bool(true);
+							def->set_registered_class_constructor( func );
+						}
+					}
+				}
+			}
+		}
 	}
 
 	// public hasOwnProperty(name:String) : Boolean

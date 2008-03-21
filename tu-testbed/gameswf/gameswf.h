@@ -16,6 +16,7 @@
 #include <assert.h>
 #include "base/image.h"	// for delete m_suspended_image
 #include "base/container.h"	// for hash<...>
+#include "base/smart_ptr.h"
 
 class tu_file;
 class render_handler;
@@ -272,9 +273,16 @@ namespace gameswf
 		// for definetext, definetext2 & defineedittext tags
 		virtual void	csm_textsetting(stream* in, int tag_type) { assert(0); };
 
+		void set_registered_class_constructor( const as_value & value );
+
+		protected:
+
+		void instanciate_registered_class( character * ch );
+
 		private:
 
 		int	m_id;
+		smart_ptr<as_object_interface> m_registered_class_constructor; // Must be a function
 
 	};
 

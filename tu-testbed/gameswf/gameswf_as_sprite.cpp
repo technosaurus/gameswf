@@ -276,8 +276,11 @@ namespace gameswf
 	// Content created at design time (in the authoring tool) starts at depth -16383.
 	void sprite_getnexthighestdepth(const fn_call& fn) 
 	{ 
+		int highest_depth;
 		sprite_instance* sprite = sprite_getptr(fn);
-		fn.result->set_int(sprite->get_highest_depth() - ADJUST_DEPTH_VALUE);
+		highest_depth = sprite->get_highest_depth() + 1 - ADJUST_DEPTH_VALUE;
+		highest_depth = max( highest_depth, 0 );
+		fn.result->set_int( highest_depth );
 	} 
 
 	// public createTextField(instanceName:String, depth:Number,

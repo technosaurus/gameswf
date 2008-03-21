@@ -1498,6 +1498,8 @@ namespace gameswf
 		//	m_var_name is not instance name !
 		//	ch->set_name(m_var_name.c_str());
 
+		instanciate_registered_class(ch);
+
 		return ch;
 	}
 
