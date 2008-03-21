@@ -1245,36 +1245,36 @@ namespace gameswf
 					break;
 
 				case 0x09:	// stop sounds
+				{
+					sound_handler* s = get_sound_handler();
+					if (s != NULL)
 					{
-						sound_handler* s = get_sound_handler();
-						if (s != NULL)
-						{
-							s->stop_all_sounds();
-						}
+						s->stop_all_sounds();
 					}
 					break;
+				}
 
 				case 0x0A:	// add
 				{
-					env->top(1) += env->top(0);
+					env->top(1) += env->top(0).to_number();
 					env->drop(1);
 					break;
 				}
 				case 0x0B:	// subtract
 				{
-					env->top(1) -= env->top(0);
+					env->top(1) -= env->top(0).to_number();
 					env->drop(1);
 					break;
 				}
 				case 0x0C:	// multiply
 				{
-					env->top(1) *= env->top(0);
+					env->top(1) *= env->top(0).to_number();
 					env->drop(1);
 					break;
 				}
 				case 0x0D:	// divide
 				{
-					env->top(1) /= env->top(0);
+					env->top(1) /= env->top(0).to_number();
 					env->drop(1);
 					break;
 				}
@@ -1286,7 +1286,7 @@ namespace gameswf
 				}
 				case 0x0F:	// less than
 				{
-					env->top(1).set_bool(env->top(1) < env->top(0));
+					env->top(1).set_bool(env->top(1) < env->top(0).to_number());
 					env->drop(1);
 					break;
 				}
@@ -1360,22 +1360,24 @@ namespace gameswf
 				}
 				case 0x1C:	// get variable
 				{
-					as_value var_name = env->pop();
-					tu_string var_string = var_name.to_tu_string();
+					as_value& var_name = env->top(0);
+					const tu_string& var_string = var_name.to_tu_string();
 
 					as_value variable = env->get_variable(var_string, with_stack);
-					env->push(variable);
-					if (variable.to_object() == NULL) {
+					env->top(0) = variable;
+
+					if (variable.to_object() == NULL) 
+					{
 						IF_VERBOSE_ACTION(log_msg("-------------- get var: %s=%s\n",
 									  var_string.c_str(),
 									  variable.to_tu_string().c_str()));
-					} else {
+					} 
+					else
+					{
 						IF_VERBOSE_ACTION(log_msg("-------------- get var: %s=%s at %p\n",
 									  var_string.c_str(),
 									  variable.to_tu_string().c_str(), variable.to_object()));
 					}
-					
-
 					break;
 				}
 				case 0x1D:	// set variable
@@ -1607,14 +1609,16 @@ namespace gameswf
 				}
 				case 0x3A:	// delete
 				{
-					tu_string varname(env->top(0).to_tu_string());
+					const tu_string& varname = env->top(0).to_tu_string();
 					as_object* obj_interface = env->top(1).to_object();
 					env->drop(1);
 
 					bool retcode = false;
-					if (obj_interface) {
+					if (obj_interface)
+					{
 						as_value val;
-						if (obj_interface->get_member(varname, &val)) {
+						if (obj_interface->get_member(varname, &val))
+						{
 							obj_interface->set_member(varname, as_value());
 							retcode = true;
 						}
@@ -1664,9 +1668,8 @@ namespace gameswf
 
 				case 0x3C:	// set local
 				{
-					as_value	value = env->pop();
-					as_value	varname = env->pop();
-					env->set_local(varname.to_tu_string(), value);
+					env->set_local(env->top(1).to_tu_string(), env->top(0));
+					env->drop(2);
 					break;
 				}
 
@@ -1812,9 +1815,6 @@ namespace gameswf
  					// Call the array constructor
  					as_value	result;
  					as_global_array_ctor(fn_call(&result, NULL, env, -1, -1));
- 					as_object* ao = result.to_object();
- 					assert(ao);
-					UNUSED(ao);
  					env->push(result);
 					break;
 				}
@@ -1835,7 +1835,7 @@ namespace gameswf
 					// Set members
 					for (int i = 0; i < n; i++)
 					{
-						obj->set_member(env->top(1).to_tu_string(), env->top(0));
+						obj->builtin_member(env->top(1).to_tu_string(), env->top(0));
 						env->drop(2);
 					}
 
@@ -1855,10 +1855,9 @@ namespace gameswf
 				}
 				case 0x46:	// enumerate
 				{
-					as_value var_name = env->pop();
-					const tu_string& var_string = var_name.to_tu_string();
-					as_value variable = env->get_variable(var_string, with_stack);
+					as_value variable = env->get_variable(env->top(0).to_tu_string(), with_stack);
 					enumerate(env, variable.to_object());
+					env->drop(1);
 					break;
 				}
 				case 0x47:	// add_t (typed)
@@ -1871,7 +1870,7 @@ namespace gameswf
 					}
 					else
 					{
-						env->top(1) += env->top(0);
+						env->top(1) += env->top(0).to_number();
 					}
 					env->drop(1);
 					break;
@@ -1884,7 +1883,7 @@ namespace gameswf
 					}
 					else
 					{
-						env->top(1).set_bool(env->top(1) < env->top(0));
+						env->top(1).set_bool(env->top(1) < env->top(0).to_number());
 					}
 					env->drop(1);
 					break;
@@ -2142,27 +2141,27 @@ namespace gameswf
 					break;
 				}
 				case 0x60:	// bitwise and
-					env->top(1) &= env->top(0);
+					env->top(1) &= env->top(0).to_int();
 					env->drop(1);
 					break;
 				case 0x61:	// bitwise or
-					env->top(1) |= env->top(0);
+					env->top(1) |= env->top(0).to_int();
 					env->drop(1);
 					break;
 				case 0x62:	// bitwise xor
-					env->top(1) ^= env->top(0);
+					env->top(1) ^= env->top(0).to_int();
 					env->drop(1);
 					break;
 				case 0x63:	// shift left
-					env->top(1).shl(env->top(0));
+					env->top(1).shl(env->top(0).to_int());
 					env->drop(1);
 					break;
 				case 0x64:	// shift right (signed)
-					env->top(1).asr(env->top(0));
+					env->top(1).asr(env->top(0).to_int());
 					env->drop(1);
 					break;
 				case 0x65:	// shift right (unsigned)
-					env->top(1).lsr(env->top(0));
+					env->top(1).lsr(env->top(0).to_int());
 					env->drop(1);
 					break;
 				case 0x66:	// strict equal

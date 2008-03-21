@@ -119,17 +119,17 @@ namespace gameswf
 		exported_module void	operator=(const as_value& v);
 		exported_module bool	operator==(const as_value& v) const;
 		exported_module bool	operator!=(const as_value& v) const;
-		exported_module bool	operator<(const as_value& v) const { return to_number() < v.to_number(); }
-		exported_module void	operator+=(const as_value& v) { set_double(to_number() + v.to_number()); }
-		exported_module void	operator-=(const as_value& v) { set_double(to_number() - v.to_number()); }
-		exported_module void	operator*=(const as_value& v) { set_double(to_number() * v.to_number()); }
-		exported_module void	operator/=(const as_value& v) { set_double(to_number() / v.to_number()); }  // @@ check for div/0
-		exported_module void	operator&=(const as_value& v) { set_int(int(to_number()) & int(v.to_number())); }
-		exported_module void	operator|=(const as_value& v) { set_int(int(to_number()) | int(v.to_number())); }
-		exported_module void	operator^=(const as_value& v) { set_int(int(to_number()) ^ int(v.to_number())); }
-		exported_module void	shl(const as_value& v) { set_int(int(to_number()) << int(v.to_number())); }
-		exported_module void	asr(const as_value& v) { set_int(int(to_number()) >> int(v.to_number())); }
-		exported_module void	lsr(const as_value& v) { set_int((Uint32(to_number()) >> int(v.to_number()))); }
+		exported_module bool	operator<(double v) const { return to_number() < v; }
+		exported_module void	operator+=(double v) { set_double(to_number() + v); }
+		exported_module void	operator-=(double v) { set_double(to_number() - v); }
+		exported_module void	operator*=(double v) { set_double(to_number() * v); }
+		exported_module void	operator/=(double v) { set_double(to_number() / v); }  // @@ check for div/0
+		exported_module void	operator&=(int v) { set_int(int(to_number()) & v); }
+		exported_module void	operator|=(int v) { set_int(int(to_number()) | v); }
+		exported_module void	operator^=(int v) { set_int(int(to_number()) ^ v); }
+		exported_module void	shl(int v) { set_int(int(to_number()) << v); }
+		exported_module void	asr(int v) { set_int(int(to_number()) >> v); }
+		exported_module void	lsr(int v) { set_int((Uint32(to_number()) >> v)); }
 
 		bool is_function() const;
 		inline bool is_bool() const { return m_type == BOOLEAN; }
