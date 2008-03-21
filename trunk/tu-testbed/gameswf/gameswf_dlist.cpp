@@ -641,7 +641,7 @@ namespace gameswf
 				depth = ch->get_depth();
 			}
 		}
-		return depth - ADJUST_DEPTH_VALUE + 1;
+		return depth + 1;
 	}
 
 	void	display_list::clear_refs(hash<as_object*, bool>* visited_objects,	as_object* this_ptr)
