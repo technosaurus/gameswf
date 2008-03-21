@@ -346,8 +346,17 @@ namespace gameswf
 	bool	as_value::operator==(const as_value& v) const
 	// Return true if operands are equal.
 	{
+		// types don't match
+		if (m_type != PROPERTY && v.m_type != PROPERTY && m_type != v.m_type)
+		{
+			return false;
+		}
+
 		switch (m_type)
 		{
+			case UNDEFINED:
+				return v.m_type == UNDEFINED;
+
 			case STRING:
 				return m_string == v.to_tu_string();
 
@@ -368,7 +377,8 @@ namespace gameswf
 			}
 
 			default:
-				return m_type == v.m_type;
+				assert(0);
+				return false;
 		}
 	}
 
@@ -409,6 +419,13 @@ namespace gameswf
 	{
 		assert(m_property);
 		m_property->set(m_property_target, val);
+	}
+
+	// get property of primitive value, like Number
+	void as_value::get_property(const as_value& primitive, as_value* val) const
+	{
+		assert(m_property);
+		m_property->get(primitive, val);
 	}
 
 	void as_value::get_property(as_value* val) const
@@ -511,30 +528,30 @@ namespace gameswf
 	}
 
 
-	bool as_value::get_method(const tu_string& name, as_value* func)
+	bool as_value::get_member(const tu_string& name, as_value* val)
 	{
 		switch (m_type)
 		{
 			case STRING:
 			{
-				return get_builtin(BUILTIN_STRING_METHOD, name, func);
+				return get_builtin(BUILTIN_STRING_METHOD, name, val);
 			}
 
 			case NUMBER:
 			{
-				return get_builtin(BUILTIN_NUMBER_METHOD, name, func);
+				return get_builtin(BUILTIN_NUMBER_METHOD, name, val);
 			}
 
 			case BOOLEAN:
 			{
-				return get_builtin(BUILTIN_BOOLEAN_METHOD, name, func);
+				return get_builtin(BUILTIN_BOOLEAN_METHOD, name, val);
 			}
 
 			case OBJECT:
 			{
 				if (m_object)
 				{
-					return m_object->get_member(name, func);
+					return m_object->get_member(name, val);
 				}
 			}
 		}
@@ -655,6 +672,15 @@ namespace gameswf
 		if (m_getter)
 		{
 			(*m_getter)(fn_call(val, target, &env, 0,	0));
+		}
+	}
+
+	// call static method
+	void as_property::get(const as_value& primitive, as_value* val) const
+	{
+		if (m_getter)
+		{
+			(*m_getter)(fn_call(val, primitive, NULL, 0,	0));
 		}
 	}
 
