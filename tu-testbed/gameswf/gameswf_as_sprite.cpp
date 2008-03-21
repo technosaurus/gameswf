@@ -277,7 +277,7 @@ namespace gameswf
 	void sprite_getnexthighestdepth(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
-		fn.result->set_int(sprite->get_highest_depth());
+		fn.result->set_int(sprite->get_highest_depth() - ADJUST_DEPTH_VALUE);
 	} 
 
 	// public createTextField(instanceName:String, depth:Number,
