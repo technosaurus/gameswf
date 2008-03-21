@@ -123,7 +123,70 @@ namespace gameswf
 	character*	character_def::create_character_instance(character* parent, int id)
 	// Default.  Make a generic_character.
 	{
-		return new generic_character(this, parent, id);
+		character * ch = new generic_character(this, parent, id);
+		instanciate_registered_class( ch );
+		return ch;
+	}
+
+	void character_def::set_registered_class_constructor( const as_value & value )
+	{
+		assert( value.is_function() );
+
+		m_registered_class_constructor = value.to_object();
+	}
+
+	// :TODO: factorize all this "new" code with action buffer
+	static as_object* create_proto(as_object* obj, const as_value& constructor)
+	{
+		as_object* proto = new as_object();
+		proto->m_this_ptr = cast_to<as_object>(obj)->m_this_ptr;
+		obj->m_proto = proto;
+
+		if (constructor.to_object())
+		{
+			// constructor is as_s_function
+			as_value	val;
+			constructor.to_object()->get_member("prototype", &val);
+			as_object* prototype = val.to_object();
+			assert(prototype);
+			prototype->copy_to(obj);
+
+			as_value prototype_constructor;
+			prototype->get_member("__constructor__", &prototype_constructor);
+			proto->set_member("__constructor__", prototype_constructor);
+		}
+
+		return proto;
+	}
+
+	void character_def::instanciate_registered_class( character * ch )
+	{
+		smart_ptr<as_object> new_obj;
+
+		if (as_s_function* func = cast_to<as_s_function>(m_registered_class_constructor.get_ptr()))
+		{
+			as_value prototype;
+			as_environment env;
+			func->get_member("prototype", &prototype);
+			prototype.to_object()->set_member("__constructor__", func);
+
+			as_object* proto = create_proto( ch, func);
+
+			proto->m_this_ptr = ch;
+
+			// Call the actual constructor function; ch is its 'this'.
+			// We don't need the function result.
+			call_method(func, &env, ch, 0, 0);
+		}
+		else if (as_c_function* c_func = cast_to<as_c_function>(m_registered_class_constructor.get_ptr()) )
+		{
+			// Call the actual constructor function; new_obj is its 'this'.
+			// We don't need the function result.
+			as_value new_object;
+			as_environment env;
+			new_object = call_method(func, &env, NULL, 0, 0).to_object();
+			ch->set_member("prototype", new_object );
+		}
 	}
 
 
@@ -1924,6 +1987,7 @@ namespace gameswf
 		// the parent movie's display list.
 	{
 		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
+		instanciate_registered_class(si);
 
 		return si;
 	}
