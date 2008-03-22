@@ -187,9 +187,32 @@ namespace gameswf
 	{
 		as_value	val;
 
-		if (strchr(varname.c_str(), ':') != NULL ||
-			strchr(varname.c_str(), '/') != NULL ||
-			strchr(varname.c_str(), '.') != NULL)
+		// Check movie members.
+		if (m_target && m_target->get_member(varname, &val))
+		{
+			return val;
+		}
+
+		// Check this, _global, _root
+		as_standard_member	varname_id = get_standard_member(varname);
+		switch (varname_id)
+		{
+			case M_GLOBAL:
+				val.set_as_object(get_global());
+				return val;
+
+			case MTHIS:
+				val.set_as_object(m_target);
+				return val;
+
+			case M_ROOT:
+			case M_LEVEL0:
+				val.set_as_object(get_current_root()->get_root_movie());
+				return val;
+		}
+
+		// check _global.member
+		if (get_global()->get_member(varname, &val))
 		{
 			return val;
 		}
@@ -213,47 +236,9 @@ namespace gameswf
 			return m_local_frames[local_index].m_value;
 		}
 
-
-		as_standard_member	varname_id = get_standard_member(varname);
-
-		// Looking for "this"?
-		if (varname_id == MTHIS)
-		{
-			val.set_as_object(m_target);
-			return val;
-		}
-
-		// Check movie members.
-		if (m_target)
-		{
-			if (m_target->get_member(varname, &val))
-			{
-				return val;
-			}
-		}
-
-
-		// Check built-in constants.
-		if (m_target)
-		{
-			if (varname_id == M_ROOT || varname_id == M_LEVEL0)
-			{
-				return as_value(m_target->get_root_movie());
-			}
-		}
-
-		if (varname_id == M_GLOBAL)
-		{
-			return as_value(get_global());
-		}
-		if (get_global()->get_member(varname, &val))
-		{
-			return val;
-		}
-	
 		// Fallback.
 		IF_VERBOSE_ACTION(log_msg("get_variable_raw(\"%s\") failed, returning UNDEFINED.\n", varname.c_str()));
-		return as_value();
+		return val;
 	}
 
 	void as_environment::set_target(as_value& target, character* original_target)
@@ -363,9 +348,9 @@ namespace gameswf
 			//		}
 			//	}
 			add_local(varname, val);
-			log_error("can't set_variable_raw %s=%s, target is NULL, it's assumed as local\n",
-				varname.c_str(), val.to_string());
-			log_error("probably you forgot to declare variable '%s'\n", varname.c_str());
+			IF_VERBOSE_ACTION(log_error("can't set_variable_raw %s=%s, target is NULL, it's assumed as local\n",
+				varname.c_str(), val.to_string()));
+			IF_VERBOSE_ACTION(log_error("probably you forgot to declare variable '%s'\n", varname.c_str()));
 
 		}
 	}
@@ -379,8 +364,7 @@ namespace gameswf
 		if (index < 0)
 		{
 			// Not in frame; create a new local var.
-			assert(varname.length() > 0);	// null varnames are invalid!
-			m_local_frames.push_back(frame_slot(varname, val));
+			add_local(varname, val);
 		}
 		else
 		{
@@ -409,8 +393,7 @@ namespace gameswf
 		if (index < 0)
 		{
 			// Not in frame; create a new local var.
-			assert(varname.length() > 0);	// null varnames are invalid!
- 			m_local_frames.push_back(frame_slot(varname, as_value()));
+			add_local(varname, as_value());
 		}
 		else
 		{
@@ -486,6 +469,7 @@ namespace gameswf
 	}
 
 
+	// Should be highly optimized !!!
 	bool	as_environment::parse_path(const tu_string& var_path, tu_string* path, tu_string* var)
 	// See if the given variable name is actually a sprite path
 	// followed by a variable name.  These come in the format:
@@ -504,54 +488,21 @@ namespace gameswf
 	// If no colon, returns false and leaves *path & *var alone.
 	{
 		// Search for colon.
-		int	colon_index = 0;
-		int	var_path_length = var_path.length();
-		for ( ; colon_index < var_path_length; colon_index++)
+		const char* colon = strrchr(var_path.c_str(), '.');
+		if (colon == NULL)
 		{
-			if (var_path[colon_index] == ':')
+			// Is there a ':'?  Find the last one, if any.
+			colon = strrchr(var_path.c_str(), ':');
+			if (colon == NULL)
 			{
-				// Found it.
-				break;
+				return false;
 			}
-		}
-
-		if (colon_index >= var_path_length)
-		{
-			// No colon.  Is there a '.'?  Find the last
-			// one, if any.
-			for (colon_index = var_path_length - 1; colon_index >= 0; colon_index--)
-			{
-				if (var_path[colon_index] == '.'	||
-					var_path[colon_index] == '/')		// ActionScript 1.0
-				{
-					// Found it.
-					break;
-				}
-			}
-			if (colon_index < 0) return false;
 		}
 
 		// Make the subparts.
-
-		// Var.
-		if (var)
-		{
-			*var = &var_path[colon_index + 1];
-		}
-
-		// Path.
-		if (colon_index > 0)
-		{
-			if (var_path[colon_index - 1] == '/')
-			{
-				// Trim off the extraneous trailing slash.
-				colon_index--;
-			}
-		}
-		// @@ could be better.  This whole usage of tu_string is very flabby...
+		*var = colon + 1;
 		*path = var_path;
-		path->resize(colon_index);
-
+		path->resize(colon - var_path.c_str() - 1);
 		return true;
 	}
 
