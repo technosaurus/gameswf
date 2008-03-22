@@ -20,8 +20,7 @@ namespace gameswf
 
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object> > listeners;
-		listeners = m_listeners;
+		array< weak_ptr<as_object> > listeners(m_listeners);
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
 			smart_ptr<as_object> obj = listeners[i];
@@ -30,7 +29,6 @@ namespace gameswf
 				obj->on_event(ev);
 			}
 		}
-		clear_garbage();
 	}
 
 	// for asBroadcaster, ...
@@ -45,8 +43,7 @@ namespace gameswf
 
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object> > listeners;
-		listeners = m_listeners;
+		array< weak_ptr<as_object> > listeners(m_listeners);
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
 			smart_ptr<as_object> obj = listeners[i];
@@ -60,7 +57,6 @@ namespace gameswf
 				}
 			}
 		}
-		clear_garbage();
 	}
 
 	// for video, timer, ...
@@ -78,69 +74,83 @@ namespace gameswf
 				obj->advance(delta_time);
 			}
 		}
-		clear_garbage();
 	}
 
 	void listener::add(as_object* listener) 
 	{
-		clear_garbage();
-
 		// sanity check
 		assert(m_listeners.size() < 1000);
-//		printf("m_listeners size=%d\n", m_listeners.size());
+		//printf("m_listeners size=%d\n", m_listeners.size());
 
 		if (listener)
 		{
+			int free_item = -1;
 			for (int i = 0, n = m_listeners.size(); i < n; i++)
 			{
-				smart_ptr<as_object> obj = m_listeners[i];
-				if (obj == listener)
+				if (m_listeners[i] == listener)
 				{
 					return;
 				}
+				if (m_listeners[i] == NULL)
+				{
+					free_item = i;
+				}
 			}
-			m_listeners.push_back(listener);
+
+			if (free_item >= 0)
+			{
+				m_listeners[free_item] = listener;
+			}
+			else
+			{
+				m_listeners.push_back(listener);
+			}
 		}
 	} 
 
 	void listener::remove(as_object* listener) 
 	{
-		// to null out but to not delete since 'remove' may be called
-		// from notify and consequently the size of 'm_listeners' cannot be changed	
-
+		// null out a item
 		for (int i = 0, n = m_listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object> obj = m_listeners[i];
-			if (obj == listener)
+			if (m_listeners[i] == listener)
 			{
 				m_listeners[i] = NULL;
 			}
 		}
 	} 
 
-	void listener::clear_garbage()
-	{
-		int i = 0;
-		while (i < m_listeners.size())
-		{
-			smart_ptr<as_object> obj = m_listeners[i];
-			if (obj == NULL)	// listener was destroyed
-			{
-				// cleanup the garbage
-				m_listeners.remove(i);
-				continue;
-			}
-			i++;
-		}
-	}
-
 	as_object*	listener::operator[](const tu_stringi& name) const
 	{
 		int index = atoi(name.c_str());
 		if (index >= 0 && index < m_listeners.size())
 		{
-			return m_listeners[index].get_ptr();
+			int nonzero = 0;
+			for (int i = 0, n = m_listeners.size(); i < n; i++)
+			{
+				if (m_listeners[i] != NULL)
+				{
+					if (nonzero = index)
+					{
+						return m_listeners[i].get_ptr();
+					}
+					nonzero++;
+				}
+			}
 		}
 		return NULL;
+	}
+	
+	int	listener::size() const
+	{
+		int nonzero = 0;
+		for (int i = 0, n = m_listeners.size(); i < n; i++)
+		{
+			if (m_listeners[i] != NULL)
+			{
+				nonzero++;
+			}
+		}
+		return nonzero;
 	}
 }
