@@ -36,21 +36,21 @@ namespace gameswf
 		switch ( fn.nargs )
 		{
 			case alphaOffset:
-				obj->m_color_transform.m_[ 3 ][ 1 ] = fn.arg(7).to_number();
+				obj->m_color_transform.m_[3][1] = fn.arg(7).to_float();
 			case blueOffset:
-				obj->m_color_transform.m_[ 2 ][ 1 ] = fn.arg(6).to_number();
+				obj->m_color_transform.m_[2][1] = fn.arg(6).to_float();
 			case greenOffset:
-				obj->m_color_transform.m_[ 1 ][ 1 ] = fn.arg(5).to_number();
+				obj->m_color_transform.m_[1][1] = fn.arg(5).to_float();
 			case redOffset:
-				obj->m_color_transform.m_[ 0 ][ 1 ] = fn.arg(4).to_number();
+				obj->m_color_transform.m_[0][1] = fn.arg(4).to_float();
 			case alphaMultiplier:
-				obj->m_color_transform.m_[ 3 ][ 0 ] = fn.arg(3).to_number();
+				obj->m_color_transform.m_[3][0] = fn.arg(3).to_float();
 			case blueMultiplier:
-				obj->m_color_transform.m_[ 2 ][ 0 ] = fn.arg(2).to_number();
+				obj->m_color_transform.m_[2][0] = fn.arg(2).to_float();
 			case greenMultiplier:
-				obj->m_color_transform.m_[ 1 ][ 0 ] = fn.arg(1).to_number();
+				obj->m_color_transform.m_[1][0] = fn.arg(1).to_float();
 			case redMultiplier:
-				obj->m_color_transform.m_[ 0 ][ 0 ] = fn.arg(0).to_number();
+				obj->m_color_transform.m_[0][0] = fn.arg(0).to_float();
 		}
 
 		 fn.result->set_as_object(obj.get_ptr());
@@ -68,49 +68,49 @@ namespace gameswf
 		{
 			case alphaOffset:
 			{
-				m_color_transform.m_[ 3 ][ 1 ] = val.to_number();
+				m_color_transform.m_[ 3 ][ 1 ] = val.to_float();
 				return true;
 			}
 
 			case blueOffset:
 			{
-				m_color_transform.m_[ 2 ][ 1 ] = val.to_number();
+				m_color_transform.m_[ 2 ][ 1 ] = val.to_float();
 				return true;
 			}
 
 			case greenOffset:
 			{
-				m_color_transform.m_[ 1 ][ 1 ] = val.to_number();
+				m_color_transform.m_[ 1 ][ 1 ] = val.to_float();
 				return true;
 			}
 
 			case redOffset:
 			{
-				m_color_transform.m_[ 0 ][ 1 ] = val.to_number();
+				m_color_transform.m_[ 0 ][ 1 ] = val.to_float();
 				return true;
 			}
 
 			case alphaMultiplier:
 			{
-				m_color_transform.m_[ 3 ][ 0 ] = val.to_number();
+				m_color_transform.m_[ 3 ][ 0 ] = val.to_float();
 				return true;
 			}
 
 			case blueMultiplier:
 			{
-				m_color_transform.m_[ 2 ][ 0 ] = val.to_number();
+				m_color_transform.m_[ 2 ][ 0 ] = val.to_float();
 				return true;
 			}
 
 			case greenMultiplier:
 			{
-				m_color_transform.m_[ 1 ][ 0 ] = val.to_number();
+				m_color_transform.m_[ 1 ][ 0 ] = val.to_float();
 				return true;
 			}
 
 			case redMultiplier:
 			{
-				m_color_transform.m_[ 0 ][ 0 ] = val.to_number();
+				m_color_transform.m_[ 0 ][ 0 ] = val.to_float();
 				return true;
 			}
 

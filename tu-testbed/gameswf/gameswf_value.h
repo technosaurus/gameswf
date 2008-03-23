@@ -105,7 +105,7 @@ namespace gameswf
 		exported_module void	set_double(double val);
 		exported_module void	set_bool(bool val);
 		exported_module void	set_int(int val) { set_double(val); }
-		exported_module void	set_nan()	{	set_double(get_nan()); }
+		exported_module void	set_nan() { set_double(get_nan()); }
 		exported_module void	set_as_object(as_object* obj);
 		exported_module void	set_as_c_function(as_c_function_ptr func);
 		exported_module void	set_undefined() { drop_refs(); m_type = UNDEFINED; }

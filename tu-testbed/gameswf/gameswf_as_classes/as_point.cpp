@@ -15,7 +15,7 @@ namespace gameswf
 		if (fn.nargs == 2)
 		{
 			smart_ptr<as_point>	obj;
-			obj = new as_point(fn.arg(0).to_number(), fn.arg(1).to_number());
+			obj = new as_point(fn.arg(0).to_float(), fn.arg(1).to_float());
 			fn.result->set_as_object(obj.get_ptr());
 		}
 	}
@@ -87,14 +87,12 @@ namespace gameswf
 			return;
 		}
 
-		double targeted_length = fn.arg(0).to_number();
+		float targeted_length = fn.arg(0).to_float();
 		if (targeted_length != 0.0)
 		{
-			double ratio;
+			float ratio = targeted_length / sqrtf(point->m_point.m_x * point->m_point.m_x + point->m_point.m_y * point->m_point.m_y);
 
-			ratio =  targeted_length / sqrt( point->m_point.m_x * point->m_point.m_x + point->m_point.m_y * point->m_point.m_y );
-
-			point->m_point.m_x *= ratio;  
+			point->m_point.m_x *= ratio;
 			point->m_point.m_y *= ratio;
 		}
 	}
@@ -112,12 +110,12 @@ namespace gameswf
 	{
 		if( name == "x" )
 		{
-			m_point.m_x = val.to_number();
+			m_point.m_x = val.to_float();
 			return true;
 		}
 		else if( name == "y" )
 		{
-			m_point.m_y = val.to_number();
+			m_point.m_y = val.to_float();
 			return true;
 		}
 

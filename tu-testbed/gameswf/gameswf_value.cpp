@@ -497,7 +497,7 @@ namespace gameswf
 	{
 		if (m_type == OBJECT)
 		{
-			return cast_to<as_function>(m_object);
+			return cast_to<as_function>(m_object) ? true : false;
 		}
 		return false;
 	}

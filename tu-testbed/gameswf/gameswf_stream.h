@@ -22,6 +22,7 @@ namespace gameswf
 		stream(tu_file* input);
 		~stream();
 
+		bool	read_bool();
 		int	read_uint(int bitcount);
 		int	read_sint(int bitcount);
 		float	read_fixed();

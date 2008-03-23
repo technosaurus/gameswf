@@ -18,29 +18,29 @@ namespace gameswf
 		matrix = new as_matrix;
 		switch(fn.nargs)
 		{
-			default:
+		default:
 
-	// TODO: symbolic constants instead of 6,5 ,...
-			case 6:
-				matrix->m_matrix.m_[1][2] = fn.arg(5).to_number();
+		// TODO: symbolic constants instead of 6,5 ,...
+		case 6:
+			matrix->m_matrix.m_[1][2] = fn.arg(5).to_float();
 
-			case 5:
-				matrix->m_matrix.m_[0][2] = fn.arg(4).to_number();
+		case 5:
+			matrix->m_matrix.m_[0][2] = fn.arg(4).to_float();
 
-			case 4:
-				matrix->m_matrix.m_[1][1] = fn.arg(3).to_number();
+		case 4:
+			matrix->m_matrix.m_[1][1] = fn.arg(3).to_float();
 
-			case 3:
-				matrix->m_matrix.m_[1][0] = fn.arg(2).to_number();
+		case 3:
+			matrix->m_matrix.m_[1][0] = fn.arg(2).to_float();
 
-			case 2:
-				matrix->m_matrix.m_[0][1] = fn.arg(1).to_number();
+		case 2:
+			matrix->m_matrix.m_[0][1] = fn.arg(1).to_float();
 
-			case 1:
-				matrix->m_matrix.m_[0][0] = fn.arg(0).to_number();
+		case 1:
+			matrix->m_matrix.m_[0][0] = fn.arg(0).to_float();
 
-			case 0:
-				break;
+		case 0:
+			break;
 		}
 		fn.result->set_as_object(matrix.get_ptr());
 	}
@@ -60,7 +60,7 @@ namespace gameswf
 
 		gameswf::matrix temp;
 
-		temp.concatenate_translation(fn.arg(0).to_number(), fn.arg(1).to_number());
+		temp.concatenate_translation(fn.arg(0).to_float(), fn.arg(1).to_float());
 		temp.concatenate(matrix->m_matrix);
 		matrix->m_matrix = temp;
 	}
@@ -79,8 +79,8 @@ namespace gameswf
 		}
 
 		gameswf::matrix rotation_matrix;
-		rotation_matrix.set_scale_rotation( 1, 1, fn.arg(0).to_number() );
-		rotation_matrix.concatenate( matrix->m_matrix );
+		rotation_matrix.set_scale_rotation(1, 1, fn.arg(0).to_float());
+		rotation_matrix.concatenate(matrix->m_matrix);
 		matrix->m_matrix = rotation_matrix;
 	}
 
@@ -98,7 +98,7 @@ namespace gameswf
 		}
 
 		gameswf::matrix scale_matrix;
-		scale_matrix.set_scale_rotation(fn.arg(0).to_number(), fn.arg(1).to_number(), 0);
+		scale_matrix.set_scale_rotation(fn.arg(0).to_float(), fn.arg(1).to_float(), 0);
 		scale_matrix.concatenate(matrix->m_matrix);
 		matrix->m_matrix = scale_matrix;
 	}

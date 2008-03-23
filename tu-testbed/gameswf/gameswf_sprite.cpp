@@ -164,7 +164,7 @@ namespace gameswf
 
 		as_value dummy;
 		int i;
-		for (i = 0; i < ARRAYSIZE(FN_NAMES); i++)
+		for (i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
 		{
 			if (get_member(FN_NAMES[i], &dummy)) 
 			{
@@ -183,7 +183,7 @@ namespace gameswf
 			event_id::DRAG_OUT,
 		};
 
-		for (i = 0; i < ARRAYSIZE(EH_IDS); i++)
+		for (i = 0; i < TU_ARRAYSIZE(EH_IDS); i++)
 		{
 			if (get_event_handler(EH_IDS[i], &dummy))
 			{
