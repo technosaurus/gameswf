@@ -393,8 +393,8 @@ namespace gameswf
 
 		if (fn.nargs >= 2)
 		{
-			float x = PIXELS_TO_TWIPS(fn.arg(0).to_number());
-			float y = PIXELS_TO_TWIPS(fn.arg(1).to_number());
+			float x = PIXELS_TO_TWIPS(fn.arg(0).to_float());
+			float y = PIXELS_TO_TWIPS(fn.arg(1).to_float());
 			canva->move_to(x, y);
 		}
 	}
@@ -408,8 +408,8 @@ namespace gameswf
 
 		if (fn.nargs >= 2)
 		{
-			float x = PIXELS_TO_TWIPS(fn.arg(0).to_number());
-			float y = PIXELS_TO_TWIPS(fn.arg(1).to_number());
+			float x = PIXELS_TO_TWIPS(fn.arg(0).to_float());
+			float y = PIXELS_TO_TWIPS(fn.arg(1).to_float());
 			canva->line_to(x, y);
 		}
 	}
@@ -423,10 +423,10 @@ namespace gameswf
 
 		if (fn.nargs >= 4)
 		{
-			float cx = PIXELS_TO_TWIPS(fn.arg(0).to_number());
-			float cy = PIXELS_TO_TWIPS(fn.arg(1).to_number());
-			float ax = PIXELS_TO_TWIPS(fn.arg(2).to_number());
-			float ay = PIXELS_TO_TWIPS(fn.arg(3).to_number());
+			float cx = PIXELS_TO_TWIPS(fn.arg(0).to_float());
+			float cy = PIXELS_TO_TWIPS(fn.arg(1).to_float());
+			float ax = PIXELS_TO_TWIPS(fn.arg(2).to_float());
+			float ay = PIXELS_TO_TWIPS(fn.arg(3).to_float());
 			canva->curve_to(cx, cy, ax, ay);
 		}
 	}
@@ -447,15 +447,15 @@ namespace gameswf
 			return;
 		}
 
-		Uint16 width = (Uint16) PIXELS_TO_TWIPS(fclamp(fn.arg(0).to_number(), 0, 255));
+		Uint16 width = (Uint16) PIXELS_TO_TWIPS(fclamp(fn.arg(0).to_float(), 0, 255));
 		rgba color(0, 0, 0, 255);
 
 		if (fn.nargs >= 2)
 		{
-			color.set(fn.arg(1).to_number());
+			color.set(fn.arg(1).to_float());
 			if (fn.nargs >= 3)
 			{
-				float alpha = fclamp(fn.arg(2).to_number(), 0, 100);
+				float alpha = fclamp(fn.arg(2).to_float(), 0, 100);
 				color.m_a = Uint8(255 * (alpha/100));
 
 				// capsStyle:String - Added in Flash Player 8. 

@@ -270,7 +270,7 @@ namespace gameswf
 			}
 			case M_WIDTH:
 			{
-				if (val.to_number() > 0)
+				if (val.to_float() > 0)
 				{
 					matrix	m = get_matrix();
 
@@ -283,7 +283,7 @@ namespace gameswf
 					float current_width = TWIPS_TO_PIXELS(get_width());
 
 					// set new scale
-					x_scale /= current_width / val.to_number();
+					x_scale /= current_width / val.to_float();
 
 					m.set_scale_rotation(x_scale, y_scale, rotation);
 					set_matrix(m);
@@ -292,7 +292,7 @@ namespace gameswf
 			}
 			case M_HEIGHT:
 			{
-				if (val.to_number() > 0)
+				if (val.to_float() > 0)
 				{
 					matrix	m = get_matrix();
 
@@ -305,7 +305,7 @@ namespace gameswf
 					float current_height = TWIPS_TO_PIXELS(get_height());
 
 					// set new scale
-					y_scale /= current_height / val.to_number();
+					y_scale /= current_height / val.to_float();
 
 					m.set_scale_rotation(x_scale, y_scale, rotation);
 					set_matrix(m);

@@ -1590,9 +1590,9 @@ namespace gameswf
 								float angle = in->read_fixed();	// Radian angle of the drop shadow
 								float distance = in->read_fixed();	// Distance of the drop shadow
 								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
-								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
-								bool knockout = in->read_uint(1);	// Knockout mode
-								bool composite_source = in->read_uint(1);	// Composite source Always 1
+								bool inner_shadow = in->read_bool();	// Inner shadow mode
+								bool knockout = in->read_bool();	// Knockout mode
+								bool composite_source = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(5); // passes
 								break;
 							}
@@ -1613,9 +1613,9 @@ namespace gameswf
 								float blur_x = in->read_fixed();	// Horizontal blur amount
 								float blur_y = in->read_fixed();	// Vertical blur amount
 								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
-								bool inner_glow = in->read_uint(1);	// Inner glow mode
-								bool knockout = in->read_uint(1);	// Knockout mode
-								bool composite_source = in->read_uint(1);	// Composite source Always 1
+								bool inner_glow = in->read_bool();	// Inner glow mode
+								bool knockout = in->read_bool();	// Knockout mode
+								bool composite_source = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(5); // passes
 								break;
 							}
@@ -1631,10 +1631,10 @@ namespace gameswf
 								float angle = in->read_fixed();	// Radian angle of the drop shadow
 								float distance = in->read_fixed();	// Distance of the drop shadow
 								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
-								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
-								bool knockout = in->read_uint(1);	// Knockout mode
-								bool composite_source = in->read_uint(1);	// Composite source Always 1
-								bool on_top = in->read_uint(1);	// Composite source Always 1
+								bool inner_shadow = in->read_bool();	// Inner shadow mode
+								bool knockout = in->read_bool();	// Knockout mode
+								bool composite_source = in->read_bool();	// Composite source Always 1
+								bool on_top = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(4); // passes
 								break;
 							}
@@ -1656,10 +1656,10 @@ namespace gameswf
 								float angle = in->read_fixed();	// Radian angle of the drop shadow
 								float distance = in->read_fixed();	// Distance of the drop shadow
 								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
-								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
-								bool knockout = in->read_uint(1);	// Knockout mode
-								bool composite_source = in->read_uint(1);	// Composite source Always 1
-								bool on_top = in->read_uint(1);	// Composite source Always 1
+								bool inner_shadow = in->read_bool();	// Inner shadow mode
+								bool knockout = in->read_bool();	// Knockout mode
+								bool composite_source = in->read_bool();	// Composite source Always 1
+								bool on_top = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(4); // passes
 								break;
 							}
@@ -1677,8 +1677,8 @@ namespace gameswf
 								rgba default_color;
 								default_color.read_rgba(in);	// RGBA Default color for pixels outside the image
 								in->read_uint(6);		// Reserved UB[6] Must be 0
-								bool clamp = in->read_uint(1);	// UB[1] Clamp mode
-								bool preserve_alpha = in->read_uint(1);	// UB[1]
+								bool clamp = in->read_bool();	// UB[1] Clamp mode
+								bool preserve_alpha = in->read_bool();	// UB[1]
 								break;
 							}
 
@@ -1707,10 +1707,10 @@ namespace gameswf
 								float angle = in->read_fixed();	// Radian angle of the drop shadow
 								float distance = in->read_fixed();	// Distance of the drop shadow
 								float strength = in->read_s8();	// hack, must be FIXED8 Strength of the drop shadow
-								bool inner_shadow = in->read_uint(1);	// Inner shadow mode
-								bool knockout = in->read_uint(1);	// Knockout mode
-								bool composite_source = in->read_uint(1);	// Composite source Always 1
-								bool on_top = in->read_uint(1);	// Composite source Always 1
+								bool inner_shadow = in->read_bool();	// Inner shadow mode
+								bool knockout = in->read_bool();	// Knockout mode
+								bool composite_source = in->read_bool();	// Composite source Always 1
+								bool on_top = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(4); // passes
 								break;
 							}
@@ -1805,7 +1805,7 @@ namespace gameswf
 						};
 
 						// Let's see if the event flag we received is for an event that we know of
-						if (1 << (ARRAYSIZE(s_code_bits)) < flags)
+						if (1 << (TU_ARRAYSIZE(s_code_bits)) < flags)
 						{
 							log_error("swf_event::read() -- unknown event type received, flags = 0x%x\n", flags);
 						}

@@ -21,7 +21,7 @@ namespace gameswf
 	{
 		smart_ptr<as_textformat>	obj = new as_textformat;
 
-		assert(fn.nargs <= ARRAYSIZE(as_global_textformat_ctor_paramnames));
+		assert(fn.nargs <= TU_ARRAYSIZE(as_global_textformat_ctor_paramnames));
 
 		// TODO: check parameters type
 		for (int i = 0; i < fn.nargs; i++)

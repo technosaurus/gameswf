@@ -35,7 +35,7 @@ namespace gameswf
 			tu_string res;
 			int val = (int) number;
 			int radix = fn.arg(0).to_int();
-			if (radix >= 2 && radix <= strlen(s_hex_digits))
+			if (radix >= 2 && radix <= (int) strlen(s_hex_digits))
 			{
 				do
 				{

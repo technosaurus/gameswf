@@ -31,6 +31,9 @@ namespace gameswf
 	{
 	}
 
+	bool stream::read_bool() {
+		return read_uint(1) ? true : false;
+	}
 
 // @@ better?
 // 	int	stream::read_uint(int bitcount)

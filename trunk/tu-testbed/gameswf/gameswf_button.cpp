@@ -527,7 +527,7 @@ namespace gameswf
 
 		virtual void	get_bound(rect* bound)
 		{
-			int i, n = m_def->m_button_records.size();
+			int n = m_def->m_button_records.size();
 			if (n == 0)
 			{
 				return;
