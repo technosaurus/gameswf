@@ -229,13 +229,7 @@ namespace gameswf
 
 		if (val->is_property())
 		{
-			// binds property (sets the target)
-			if (val->m_property_target)
-			{
-				val->m_property_target->drop_ref();
-			}
-			val->m_property_target = this;
-			add_ref();
+			val->set_property_target(this);
 		}
 
 		return true;
@@ -411,8 +405,8 @@ namespace gameswf
 			if (val.is_property())
 			{
 				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
-					it->first.c_str(), val.m_property, val.m_property_target,
-					val.m_property->m_getter, val.m_property->m_setter);
+				       it->first.c_str(), val.get_as_property(), val.get_property_target(),
+				       val.get_as_property()->m_getter, val.get_as_property()->m_setter);
 				continue;
 			}
 

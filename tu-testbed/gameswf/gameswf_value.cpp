@@ -434,6 +434,30 @@ namespace gameswf
 		m_property->get(m_property_target, val);
 	}
 
+	const as_property* as_value::get_as_property() const
+	{
+		assert(is_property());
+		return m_property;
+	}
+
+	const as_object* as_value::get_property_target() const
+	{
+		assert(is_property());
+		return m_property_target;
+	}
+
+	void as_value::set_property_target(as_object* new_target)
+	// Sets the target to the given object.
+	{
+		assert(is_property());
+		if (m_property_target)
+		{
+			m_property_target->drop_ref();
+		}
+		m_property_target = new_target;
+		new_target->add_ref();
+	}
+
 	as_value::as_value(float val) :
 		m_type(UNDEFINED)
 	{

@@ -41,7 +41,6 @@ namespace gameswf
 	struct as_value
 	{
 	private:
-
 		enum type
 		{
 			UNDEFINED,
@@ -115,6 +114,9 @@ namespace gameswf
 		void	set_property(const as_value& val);
 		void	get_property(as_value* val) const;
 		void	get_property(const as_value& primitive, as_value* val) const;
+		const as_property*	get_as_property() const;  // for debugging
+		const as_object*	get_property_target() const;  // for debugging
+		void	set_property_target(as_object* new_target);
 
 		exported_module void	operator=(const as_value& v);
 		exported_module bool	operator==(const as_value& v) const;

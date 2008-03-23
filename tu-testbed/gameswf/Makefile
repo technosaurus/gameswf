@@ -30,20 +30,26 @@ all: base_lib net_lib $(LIB_OUT) $(EXE_OUT) $(PARSER_OUT) $(PROCESSOR_OUT)
 
 LIB_OBJS = \
 	gameswf_as_classes/as_array.$(OBJ_EXT) \
+	gameswf_as_classes/as_boolean.$(OBJ_EXT) \
 	gameswf_as_classes/as_broadcaster.$(OBJ_EXT) \
 	gameswf_as_classes/as_color.$(OBJ_EXT) \
+	gameswf_as_classes/as_color_transform.$(OBJ_EXT) \
 	gameswf_as_classes/as_date.$(OBJ_EXT) \
-	gameswf_as_classes/as_db.$(OBJ_EXT) \
+	gameswf_as_classes/as_flash.$(OBJ_EXT) \
+	gameswf_as_classes/as_geom.$(OBJ_EXT) \
 	gameswf_as_classes/as_key.$(OBJ_EXT) \
-	gameswf_as_classes/as_mcloader.$(OBJ_EXT) \
 	gameswf_as_classes/as_math.$(OBJ_EXT)	\
+	gameswf_as_classes/as_matrix.$(OBJ_EXT)	\
 	gameswf_as_classes/as_mcloader.$(OBJ_EXT)	\
 	gameswf_as_classes/as_netconnection.$(OBJ_EXT)	\
 	gameswf_as_classes/as_netstream.$(OBJ_EXT)	\
+	gameswf_as_classes/as_number.$(OBJ_EXT)	\
+	gameswf_as_classes/as_point.$(OBJ_EXT) \
+	gameswf_as_classes/as_selection.$(OBJ_EXT) \
 	gameswf_as_classes/as_sound.$(OBJ_EXT) \
 	gameswf_as_classes/as_string.$(OBJ_EXT) \
-	gameswf_as_classes/as_table.$(OBJ_EXT) \
 	gameswf_as_classes/as_textformat.$(OBJ_EXT) \
+	gameswf_as_classes/as_transform.$(OBJ_EXT) \
 	gameswf_as_classes/as_xml.$(OBJ_EXT) \
 	gameswf_as_classes/as_xmlsocket.$(OBJ_EXT) \
 	gameswf_action.$(OBJ_EXT)	\
@@ -54,9 +60,10 @@ LIB_OBJS = \
 	gameswf_dlist.$(OBJ_EXT)	\
 	gameswf_environment.$(OBJ_EXT)	\
 	gameswf_font.$(OBJ_EXT)		\
-	gameswf_fontlib.$(OBJ_EXT)	\
+	gameswf_freetype.$(OBJ_EXT)	\
 	gameswf_function.$(OBJ_EXT)	\
 	gameswf_impl.$(OBJ_EXT)		\
+	gameswf_listener.$(OBJ_EXT)	\
 	gameswf_log.$(OBJ_EXT)		\
 	gameswf_morph2.$(OBJ_EXT)	\
 	gameswf_movie_def.$(OBJ_EXT)	\
@@ -77,7 +84,6 @@ LIB_OBJS = \
 	gameswf_value.$(OBJ_EXT)	\
 	gameswf_video_base.$(OBJ_EXT)	\
 	gameswf_video_impl.$(OBJ_EXT)	\
-	gameswf_listener.$(OBJ_EXT) \
 
 
 TEST_PROGRAM_OBJS = \
