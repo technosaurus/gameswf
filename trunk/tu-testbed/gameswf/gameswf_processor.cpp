@@ -212,7 +212,7 @@ gameswf::movie_definition*	play_movie(const char* filename)
 		fprintf(stderr, "error: can't play movie '%s'\n", filename);
 		exit(1);
 	}
-	gameswf::movie_interface*	m = md->create_instance();
+	gameswf::root*	m = md->create_instance();
 	if (m == NULL)
 	{
 		fprintf(stderr, "error: can't create instance of movie '%s'\n", filename);
@@ -245,12 +245,12 @@ gameswf::movie_definition*	play_movie(const char* filename)
 			break;
 		}
 
-		if (m->get_play_state() == gameswf::movie_interface::STOP)
+		if (m->get_play_state() == gameswf::character::STOP)
 		{
 			// Kick the movie.
 			printf("kicking movie, kick ct = %d\n", kick_count);
 			m->goto_frame(last_frame + 1);
-			m->set_play_state(gameswf::movie_interface::PLAY);
+			m->set_play_state(gameswf::character::PLAY);
 			kick_count++;
 
 			if (kick_count > 10)
