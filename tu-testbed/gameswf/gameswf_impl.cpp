@@ -124,15 +124,13 @@ namespace gameswf
 	// Default.  Make a generic_character.
 	{
 		character * ch = new generic_character(this, parent, id);
-		instanciate_registered_class( ch );
+		instanciate_registered_class(ch);
 		return ch;
 	}
 
-	void character_def::set_registered_class_constructor( const as_value & value )
+	void character_def::set_registered_class_constructor(const as_value& value)
 	{
-		assert( value.is_function() );
-
-		m_registered_class_constructor = value.to_object();
+		m_registered_class_constructor = value.to_function();
 	}
 
 	// :TODO: factorize all this "new" code with action buffer
@@ -159,33 +157,32 @@ namespace gameswf
 		return proto;
 	}
 
-	void character_def::instanciate_registered_class( character * ch )
+	void character_def::instanciate_registered_class (character* ch)
 	{
-		smart_ptr<as_object> new_obj;
-
 		if (as_s_function* func = cast_to<as_s_function>(m_registered_class_constructor.get_ptr()))
 		{
 			as_value prototype;
-			as_environment env;
 			func->get_member("prototype", &prototype);
+			assert(prototype.to_object());
 			prototype.to_object()->set_member("__constructor__", func);
 
-			as_object* proto = create_proto( ch, func);
-
-			proto->m_this_ptr = ch;
+			// must be NULL to avoid recursive constructor call
+			// see \gameswf\samples\test_extends_movieclip\test.fla
+			ch->m_this_ptr = NULL;
+			as_object* proto = create_proto(ch, func);
 
 			// Call the actual constructor function; ch is its 'this'.
 			// We don't need the function result.
+			as_environment env;
 			call_method(func, &env, ch, 0, 0);
 		}
 		else if (as_c_function* c_func = cast_to<as_c_function>(m_registered_class_constructor.get_ptr()) )
 		{
 			// Call the actual constructor function; new_obj is its 'this'.
 			// We don't need the function result.
-			as_value new_object;
 			as_environment env;
-			new_object = call_method(func, &env, NULL, 0, 0).to_object();
-			ch->set_member("prototype", new_object );
+			smart_ptr<as_object> new_object = call_method(func, &env, NULL, 0, 0).to_object();
+			ch->set_member("prototype", new_object.get_ptr());
 		}
 	}
 
@@ -559,6 +556,7 @@ namespace gameswf
 			}
 		}
 		s_movie_library.clear();
+		s_workdir.clear();
 	}
 
 	movie_definition*	create_movie(const char* filename)

@@ -273,11 +273,8 @@ namespace gameswf
 		// for definetext, definetext2 & defineedittext tags
 		virtual void	csm_textsetting(stream* in, int tag_type) { assert(0); };
 
-		void set_registered_class_constructor( const as_value & value );
-
-		protected:
-
-		void instanciate_registered_class( character * ch );
+		void set_registered_class_constructor(const as_value & value);
+		void instanciate_registered_class(character * ch);
 
 		private:
 

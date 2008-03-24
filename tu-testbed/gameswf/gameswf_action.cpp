@@ -1540,16 +1540,17 @@ namespace gameswf
 
 				case 0x2B:	// cast_object
 				{
-					// TODO
+					as_object* obj = env->top(0).to_object();
+					as_function* constructor = env->top(1).to_function();
 
-					//
-					// Pop o1, pop s2
-					// Make sure o1 is an instance of s2.
-					// If the cast succeeds, push o1, else push NULL.
-					//
-					// The cast doesn't appear to coerce at all, it's more
-					// like a dynamic_cast<> in C++ I think.
+					//TODO:
+					//Determines if object is an instance of constructor 
+					// (doing the same comparison as ActionInstanceOf).
+
 					log_error("todo opcode: %02X\n", action_id);
+
+					env->drop(1);
+					env->top(0).set_as_object(obj);
 					break;
 				}
 
@@ -1757,6 +1758,8 @@ namespace gameswf
 						// Create an empty object
 						smart_ptr<as_object>	new_obj_ptr = new as_object();
 						as_object* proto = create_proto(new_obj_ptr.get_ptr(), s_constructor);
+
+						// override m_this_ptr with just new created object
 						proto->m_this_ptr = new_obj_ptr.get_ptr();
 
 						// Call the actual constructor function; new_obj is its 'this'.
