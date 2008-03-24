@@ -90,36 +90,38 @@ namespace gameswf
 		}
 	}
 
+	void	as_broadcaster_length(const fn_call& fn)
+	{
+		as_listener* ls = cast_to<as_listener>(fn.this_ptr);
+		if (ls)
+		{
+			fn.result->set_int(ls->size());
+		}
+	}
+		
 	as_object* broadcaster_init()
 	{
 		as_object* bc = new as_object();
-
-		// methods
-		bc->set_member("initialize", as_broadcaster_initialize);
-
+		bc->builtin_member("initialize", as_broadcaster_initialize);
 		return bc;
 	}
 
 	as_listener::as_listener() :
 		m_reentrance(false)
 	{
+		builtin_member("length", as_value(as_broadcaster_length, NULL));
 	}
 
 	bool	as_listener::get_member(const tu_stringi& name, as_value* val)
 	{
-		if (name == "length")
-		{
-			val->set_int(m_listeners.size());
-			return true;
-		}
-		
 		as_object* listener = m_listeners[name];
 		if (listener)
 		{
 			val->set_as_object(listener);
 			return true;
 		}
-		return false;
+
+		return as_object::get_member(name, val);
 	}
 
 	void as_listener::add(as_object* listener)
@@ -132,46 +134,62 @@ namespace gameswf
 		m_listeners.remove(listener);
 	}
 
+	int as_listener::size() const
+	{
+		return m_listeners.size();
+	}
+
 	void	as_listener::broadcast(const fn_call& fn)
 	{
-		array<as_value>* fn_args = new array<as_value>;
-		for (int i = 0; i < fn.nargs; i++)
-		{
-			fn_args->push_back(fn.arg(i));
-		}
-		m_suspended_event.push(fn_args);
+		assert(fn.env);
 
 		if (m_reentrance)
 		{
+			// keep call args
+			// we must process one event completely then another
+			array<as_value> arg;
+			for (int i = 0; i < fn.nargs; i++)
+			{
+				arg.push_back(fn.arg(i));
+			}
+			m_suspended_event.push(arg);
 			return;
 		}
-
 		m_reentrance = true;
 
+		// event handler may affects 'fn.arg' using broadcastMessage
+		// so we iterate through the copy of args
+		tu_string event_name = fn.arg(0).to_tu_string();
+		for (int j = fn.nargs - 1; j > 0; j--)
+		{
+			fn.env->push(fn.arg(j));
+		}
+			
+		m_listeners.notify(event_name, 
+			fn_call(NULL, NULL, fn.env, fn.nargs - 1, fn.env->get_top_index()));
+
+		fn.env->drop(fn.nargs - 1);
+
+		// check reentrances
 		while (m_suspended_event.size() > 0)
 		{
-			fn_args = m_suspended_event.front();
-			m_suspended_event.pop();
-
-			tu_string event_name = (*fn_args)[0].to_tu_string();
-
-			assert(fn.env);
-			for (int j = fn_args->size() - 1; j > 0; j--)
+			// event handler may affects m_suspended_event using broadcastMessage
+			// so we iterate through the copy of args
+			array<as_value>& arg = m_suspended_event.front();
+			tu_string event_name = arg[0].to_tu_string();
+			for (int j = arg.size() - 1; j > 0; j--)
 			{
-				fn.env->push((*fn_args)[j]);
+				fn.env->push(arg[j]);
 			}
-			
+				
 			m_listeners.notify(event_name, 
-				fn_call(NULL, NULL, fn.env, fn_args->size() - 1, fn.env->get_top_index()));
+				fn_call(NULL, NULL, fn.env, arg.size() - 1, fn.env->get_top_index()));
 
-			fn.env->drop(fn_args->size() - 1);
-
-			delete fn_args;
-
+			fn.env->drop(fn.nargs - 1);
+			m_suspended_event.pop();
 		}
 
 		m_reentrance = false;
-
 	}
 
 };

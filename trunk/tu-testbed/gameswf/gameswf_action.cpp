@@ -1950,13 +1950,17 @@ namespace gameswf
 								}
 							}
 						}
-
-						if (env->top(1).to_object() == NULL) {
-							IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s\n",
+						
+						IF_VERBOSE_ACTION(
+							if (env->top(1).to_object() == NULL)
+							{
+								log_msg("-------------- get_member %s=%s\n",
 											env->top(0).to_tu_string().c_str(),
-											env->top(1).to_tu_string().c_str()));
-						} else {
-							IF_VERBOSE_ACTION(log_msg("-------------- get_member %s=%s at %p\n",
+											env->top(1).to_tu_string().c_str());
+							}
+							else
+							{
+								log_msg("-------------- get_member %s=%s at %p\n",
 											env->top(0).to_tu_string().c_str(),
 											env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
 						}
