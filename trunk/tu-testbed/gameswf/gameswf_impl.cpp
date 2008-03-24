@@ -544,7 +544,6 @@ namespace gameswf
 		for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = 
 			s_movie_library.begin(); it != s_movie_library.end(); ++it)
 		{
-			it->second->clear_instance();
 			if (it->second->get_ref_count() > 1)
 			{
 				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
@@ -1988,12 +1987,6 @@ namespace gameswf
 		instanciate_registered_class(si);
 
 		return si;
-	}
-
-
-	void movie_def_impl::clear_instance()
-	{
-//		m_instance = NULL;
 	}
 
 	root*	movie_def_impl::create_instance()

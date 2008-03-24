@@ -300,7 +300,6 @@ namespace gameswf
 		// Call drop_ref() on the character when you're done with it.
 		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 		virtual root*	create_instance() = 0;
-		virtual void clear_instance() {};
 
 		virtual void	output_cached_data(tu_file* out, const cache_options& options) = 0;
 		virtual void	input_cached_data(tu_file* in) = 0;
