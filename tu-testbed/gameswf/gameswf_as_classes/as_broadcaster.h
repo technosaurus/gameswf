@@ -33,14 +33,14 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		void add(as_object* listener);
 		void remove(as_object* listener);
+		int size() const;
 		void	broadcast(const fn_call& fn);
-		void	notify(const fn_call& fn);
 	
 		private :
 
 		listener m_listeners;
 		bool m_reentrance;
-		tu_queue< array <as_value>* > m_suspended_event;
+		tu_queue< array<as_value> > m_suspended_event;
 	};
 
 }	// end namespace gameswf
