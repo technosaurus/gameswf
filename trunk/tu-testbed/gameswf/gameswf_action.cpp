@@ -76,27 +76,10 @@
 // getBytesLoaded()
 // getBytesTotal()
 
-// Built-in functions: (do these actually exist in the VM, or are they just opcodes?)
-// Number()
-// String()
-
-
 // TODO builtins
-//
-// Number.toString() -- takes an optional arg that specifies the base
-//
 // parseInt()
-//
-// Boolean() type cast
-//
-// typeof operator --> "number", "string", "boolean", "object" (also
-// for arrays), "null", "movieclip", "function", "undefined"
-//
-//
 // Number.MAX_VALUE, Number.MIN_VALUE
-//
 // String.fromCharCode()
-
 
 
 namespace gameswf
@@ -1772,30 +1755,23 @@ namespace gameswf
 					}
 					else
 					{
-						if (classname != "String")
+						// try to load user defined class from DLL / shared library
+						array<as_value> params;
+						int first_arg_bottom_index = env->get_top_index();
+						for (int i = 0; i < nargs; i++)
 						{
-							// try to load user defined class from DLL / shared library
-							array<as_value> params;
-							int first_arg_bottom_index = env->get_top_index();
-							for (int i = 0; i < nargs; i++)
-							{
-								params.push_back(env->bottom(first_arg_bottom_index - i));
-							}
+							params.push_back(env->bottom(first_arg_bottom_index - i));
+						}
 
-							as_object* plugin = load_as_plugin(classname.to_tu_string(), params);
-							if (plugin)
-							{
-								new_obj.set_as_object(plugin);
-							}
-							else
-							{
-								log_error("can't create object with unknown class '%s'\n",
-									  classname.to_tu_string().c_str());
-							}
+						as_object* plugin = load_as_plugin(classname.to_tu_string(), params);
+						if (plugin)
+						{
+							new_obj.set_as_object(plugin);
 						}
 						else
 						{
-							log_msg("Created special String class\n");
+							log_error("can't create object with unknown class '%s'\n",
+								  classname.to_tu_string().c_str());
 						}
 					}
 
@@ -2111,10 +2087,12 @@ namespace gameswf
 							as_function* func = cast_to<as_function>(val.to_object());
 							if (func)
 							{
-								as_value prototype;
-								func->get_member("prototype", &prototype);
-								prototype.to_object()->set_member("__constructor__", func);
+								// there is already _constructor_ in prototype 
+//								as_value prototype;
+//								func->get_member("prototype", &prototype);
+//								prototype.to_object()->set_member("__constructor__", func);
 
+								new_obj = new as_object();
 								as_object* proto = create_proto(new_obj.get_ptr(), func);
 
 								proto->m_this_ptr = new_obj.get_ptr();
