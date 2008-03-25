@@ -177,7 +177,7 @@ namespace gameswf
 		exported_module virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		exported_module virtual void not_garbage();
 		exported_module virtual void copy_to(as_object* target);
-		exported_module void dump();
+		exported_module virtual void dump();
 		exported_module as_object* find_target(const tu_string& path);
 		exported_module virtual root* get_root() { return get_current_root(); }
 		exported_module	virtual as_environment*	get_environment() { return 0; }

@@ -386,27 +386,33 @@ namespace gameswf
 	// for debugging
 	// retrieves members & print them
 	{
-		printf("\n*** object 0x%p ***\n", this);
+		printf("*** dump of object 0x%p ***\n", this);
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
 			it != m_members.end(); ++it)
 		{
 			as_value val = it->second.get_member_value();
-			if (val.is_object())
-			{
-				printf("%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
-				continue;
-			}
 			if (val.is_property())
 			{
 				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
 				       it->first.c_str(), val.get_as_property(), val.get_property_target(),
 				       val.get_as_property()->m_getter, val.get_as_property()->m_setter);
-				continue;
 			}
-
-			printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
+			else
+			if (val.is_function())
+			{
+				printf("%s: <as_function 0x%p>\n", it->first.c_str(), val.to_object());
+			}
+			else
+			if (val.is_object())
+			{
+				printf("%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
+			}
+			else
+			{
+				printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
+			}
 		}
-		printf("***\n");
+		printf("*** end of object dump ***\n");
 	}
 
 	as_object*	as_object::find_target(const tu_string& path)

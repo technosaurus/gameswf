@@ -163,6 +163,7 @@ namespace gameswf
 
 	void character_def::instanciate_registered_class (character* ch)
 	{
+		assert(ch);
 		as_function* func = cast_to<as_function>(m_registered_class_constructor.get_ptr());
 		if (func)
 		{
