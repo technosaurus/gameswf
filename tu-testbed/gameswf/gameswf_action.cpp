@@ -423,7 +423,7 @@ namespace gameswf
 		assert((version == 5) ? (fn.nargs == 3) : true);
 
 		// object
-		as_object* obj = cast_to<as_object>(fn.arg(0).to_object());
+		as_object* obj = fn.arg(0).to_object();
 		if (obj == NULL)
 		{
 			log_error("error: assetpropflags for NULL object\n");
@@ -433,7 +433,7 @@ namespace gameswf
 		// The second argument is a list of child names,
 		// may be in the form array(like ["abc", "def", "ggggg"]) or in the form a string(like "abc, def, ggggg")
 		// the NULL second parameter means that assetpropflags is applied to all children
-		as_object* props = cast_to<as_object>(fn.arg(1).to_object());
+		as_object* props = fn.arg(1).to_object();
 
 		// a number which represents three bitwise flags which
 		// are used to determine whether the list of child names should be hidden,

@@ -70,10 +70,9 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			as_object* obj = cast_to<as_object>(fn.this_ptr);
-			assert(obj);
+			assert(fn.this_ptr);
 			as_member m;
-			if (obj->m_members.get(fn.arg(0).to_tu_stringi(), &m))
+			if (fn.this_ptr->m_members.get(fn.arg(0).to_tu_stringi(), &m))
 			{
 				fn.result->set_bool(true);
 				return;
@@ -92,11 +91,10 @@ namespace gameswf
 		bool ret = false;
 		if (fn.nargs >= 2)
 		{
-			as_object* obj = cast_to<as_object>(fn.this_ptr);
-			assert(obj);
+			assert(fn.this_ptr);
 
-			ret = obj->watch(fn.arg(0).to_tu_string(), cast_to<as_s_function>(fn.arg(1).to_object()), 
-				fn.nargs > 2 ? fn.arg(2) : as_value());
+			ret = fn.this_ptr->watch(fn.arg(0).to_tu_string(),
+							fn.arg(1).to_function(), fn.nargs > 2 ? fn.arg(2) : as_value());
 		}
 		fn.result->set_bool(ret);
 	}
@@ -110,9 +108,8 @@ namespace gameswf
 		bool ret = false;
 		if (fn.nargs == 1)
 		{
-			as_object* obj = cast_to<as_object>(fn.this_ptr);
-			assert(obj);
-			ret = obj->unwatch(fn.arg(0).to_tu_string());
+			assert(fn.this_ptr);
+			ret = fn.this_ptr->unwatch(fn.arg(0).to_tu_string());
 		}
 		fn.result->set_bool(ret);
 	}
@@ -138,7 +135,7 @@ namespace gameswf
 		delete m_watch;
 	}
 
-	// called from constructors only
+	// called from a object constructor only
 	void	as_object::builtin_member(const tu_stringi& name, const as_value& val, as_prop_flags flags)
 	{
 		m_members.set(name, as_member(val, flags));
@@ -338,7 +335,7 @@ namespace gameswf
 //		}
 	}
 
-	bool as_object::watch(const tu_string& name, as_s_function* callback,
+	bool as_object::watch(const tu_string& name, as_function* callback,
 		const as_value& user_data)
 	{
 		if (callback == NULL)

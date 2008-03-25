@@ -256,8 +256,8 @@ namespace gameswf
 		// @@ should be safe, but how can we verify
 		// it?	Compare a member function pointer, or
 		// something?
-		movie_def_impl*	def_impl = static_cast<movie_def_impl*>(source_movie);
-		movie_definition_sub*	def = static_cast<movie_definition_sub*>(def_impl);
+		movie_def_impl*	def_impl = cast_to<movie_def_impl>(source_movie);
+		movie_definition_sub*	def = cast_to<movie_definition_sub>(def_impl);
 
 		// Iterate in reverse, since we remove stuff along the way.
 		for (int i = m_imports.size() - 1; i >= 0; i--)

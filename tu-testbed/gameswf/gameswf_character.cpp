@@ -198,7 +198,7 @@ namespace gameswf
 			}
 			case M_PARENT:
 			{
-				val->set_as_object(static_cast<as_object*>(m_parent.get_ptr()));
+				val->set_as_object(cast_to<as_object>(m_parent.get_ptr()));
 				return true;
 			}
 		}	// end switch

@@ -1032,7 +1032,7 @@ namespace gameswf
 		if (ch)
 		{
 			// Found object.
-			val->set_as_object(static_cast<as_object*>(ch));
+			val->set_as_object(ch);
 			return true;
 		}
 
