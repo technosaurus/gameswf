@@ -148,6 +148,7 @@ namespace gameswf
 		// primitive data type has no dynamic members
 		stringi_hash<as_watch>*	m_watch;
 
+		// it's used for passing new created object pointer to constructors chain
 		weak_ptr<as_object> m_this_ptr;
 
 		// We can place reference to __proto__ into members but it used very often

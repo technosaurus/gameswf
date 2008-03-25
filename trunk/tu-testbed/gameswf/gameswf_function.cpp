@@ -60,7 +60,10 @@ namespace gameswf
 		m_action_buffer = *ab;
 
 		m_this_ptr = this;
+
+		// any function MUST have prototype
 		builtin_member("prototype", new as_object());
+
 		builtin_member("call", as_s_function_call);
 	}
 
@@ -90,13 +93,9 @@ namespace gameswf
 		if (fn.this_ptr)
 		{
 			this_ptr = fn.this_ptr;
-			as_object* obj = cast_to<as_object>(fn.this_ptr);
-			if (obj)
+			if (this_ptr->m_this_ptr != NULL)
 			{
-				if (obj->m_this_ptr != NULL)
-				{
-					this_ptr = cast_to<as_object>(obj->m_this_ptr.get_ptr());
-				}
+				this_ptr = this_ptr->m_this_ptr.get_ptr();
 			}
 		}
 
@@ -278,10 +277,10 @@ namespace gameswf
 	as_c_function::as_c_function(as_c_function_ptr func) :
 		m_func(func)
 	{
-		//vv FIXME
 //		m_this_ptr = this;
-//		m_members.set("prototype", as_member(new as_object(), as_prop_flags::DONT_ENUM | as_prop_flags::READ_ONLY));
-//		m_members.set("call", as_member(new as_object(), as_prop_flags::DONT_ENUM | as_prop_flags::READ_ONLY));
+
+		// any function MUST have prototype
+		builtin_member("prototype", new as_object());
 	}
 
 	void	as_c_function::operator()(const fn_call& fn)
