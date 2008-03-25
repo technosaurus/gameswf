@@ -131,9 +131,6 @@ inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm 
 //
 // (Some windows header defines a work-alike ARRAYSIZE, so avoid
 // re-defining)
-#ifndef ARRAYSIZE
-#define ARRAYSIZE(x) (sizeof(x)/sizeof(x[0]))
-#endif
 
 #ifndef TU_ARRAYSIZE
 #define TU_ARRAYSIZE(x) (sizeof(x)/sizeof(x[0]))

@@ -169,6 +169,12 @@ int net_socket_tcp::read_line(tu_string* data, int maxbytes, float timeout_secon
 				return 0;
 			}
 		} else if (bytes_read == 0) {
+
+			if( is_readable() && recv(m_sock, &c, 1, 0) == 0 )
+			{
+				// Socket must close
+				return total_bytes_read? total_bytes_read:-1;
+			}
 			waiting = true;
 		}
 
