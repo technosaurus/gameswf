@@ -203,7 +203,7 @@ namespace gameswf
 		virtual void	set_variable(const char* path_to_var, const wchar_t* new_value);
 		virtual const char*	get_variable(const char* path_to_var) const;
 
-//		virtual bool	set_member(const tu_stringi& name, const as_value& val);
+		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual character*	get_relative_target(const tu_string& name);
 		virtual void	call_frame_actions(const as_value& frame_spec);

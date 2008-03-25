@@ -967,6 +967,12 @@ namespace gameswf
 		return val.to_string();	// ack!
 	}
 
+	// useful for catching of the calls
+	bool	sprite_instance::set_member(const tu_stringi& name, const as_value& val)
+	{
+		return character::set_member(name, val);
+	}
+
 	bool	sprite_instance::get_member(const tu_stringi& name, as_value* val)
 	// Set *val to the value of the named member and
 	// return true, if we have the named member.
@@ -1461,8 +1467,6 @@ namespace gameswf
 		}
 
 		sprite_instance* sprite = new sprite_instance(sdef, get_root(), this, -1);
-		sdef->instanciate_registered_class(sprite);
-
 		sprite->set_name(name.c_str());
 
 		m_display_list.add_display_object(
@@ -1474,16 +1478,20 @@ namespace gameswf
 			0.0f,
 			0); 
 
+		// a instanciate must be after add_display_object because
+		// constructor may change a some properties of movieclip
+		sdef->instanciate_registered_class(sprite);
+
 		return sprite;
 	}
 
 	void	sprite_instance::dump()
 	{
-		printf("\n*** sprite 0x%p ***\n", this);
-
-		printf("*** displaylist\n");
+		printf("*** dump of sprite 0x%p ***\n", this);
+		as_object::dump();
+		printf("*** dump of sprite displaylist ***\n");
 		m_display_list.dump();
-		printf("***\n");
+		printf("*** end of sprite dump ***\n");
 	}
 
 	character_def*	sprite_instance::find_exported_resource(const tu_string& symbol)
