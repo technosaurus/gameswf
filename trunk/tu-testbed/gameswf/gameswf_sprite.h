@@ -217,8 +217,6 @@ namespace gameswf
 		bool	hit_test(character* target);
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
 
-		virtual	void enumerate(as_environment* env);
-
 		character* create_text_field(const char* name, int depth, int x, int y, int width, int height);
 
 		virtual character*	find_target(const tu_string& path) const;
