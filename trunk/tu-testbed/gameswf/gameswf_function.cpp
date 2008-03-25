@@ -20,7 +20,7 @@ namespace gameswf
 		assert(fn.this_ptr);
 		if (fn.nargs > 0)
 		{
-			as_object* properties = cast_to<as_object>(fn.this_ptr);
+			as_object* properties = fn.this_ptr;
 			if (properties->m_this_ptr != NULL)
 			{
 				as_object* func = properties->m_this_ptr.get_ptr();

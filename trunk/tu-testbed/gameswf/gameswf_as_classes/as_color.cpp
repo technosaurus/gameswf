@@ -113,22 +113,12 @@ namespace gameswf
 		}
 
 		as_color* obj = cast_to<as_color>(fn.this_ptr);
-		if (obj == NULL)
+		if (obj == NULL || obj->m_target == NULL)
 		{
 			return;
 		}
 			
-		if (obj->m_target == NULL)
-		{
-			return;
-		}
-
-		if (fn.arg(0).to_object() == NULL)
-		{
-			return;
-		}
-
-		as_object* tobj = cast_to<as_object>(fn.arg(0).to_object());
+		as_object* tobj = fn.arg(0).to_object();
 		if (tobj)
 		{
 			cxform	cx = obj->m_cxform;
