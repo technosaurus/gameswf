@@ -1084,6 +1084,7 @@ namespace gameswf
 
 
 	// local function, called from 0x46 & 0x55 opcode implementation only
+	// static
 	void action_buffer::enumerate(as_environment* env, as_object* obj)
 	{
 		assert(env);

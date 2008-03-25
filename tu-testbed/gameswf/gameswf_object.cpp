@@ -319,9 +319,8 @@ namespace gameswf
 		stringi_hash<as_member>::const_iterator it = m_members.begin();
 		while (it != m_members.end())
 		{
-			const as_member member = (it.get_value());
-
-			if (! member.get_member_flags().get_dont_enum())
+			const as_member& member = it.get_value();
+			if (member.get_member_flags().get_dont_enum() == false)
 			{
 				env->push(as_value(it.get_key()));
 

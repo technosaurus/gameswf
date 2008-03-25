@@ -1394,29 +1394,6 @@ namespace gameswf
 		return 0;
 	}
 
-	void sprite_instance::enumerate(as_environment* env)
-	// retrieves variables & pushes them into env
-	{
-		assert(0);
-//vv		//TODO: enumerate
-/*		stringi_hash<as_value>::const_iterator it = m_as_environment.m_variables->begin();
-		while (it != m_as_environment.m_variables->end())
-		{
-			const as_member member = (it.get_value());
-
-			if (! member.get_member_flags().get_dont_enum())
-			{
-				env->push(as_value(it.get_key()));
-
-				IF_VERBOSE_ACTION(log_msg("-------------- enumerate - push: %s\n",
-					it.get_key().c_str()));
-			}
-
-			++it;
-		}
-*/
-	}
-
 	character* sprite_instance::create_text_field(const char* name, int depth, int x, int y, int width, int height)
 	// Creates a new, empty text field as a child of the movie clip
 	{
