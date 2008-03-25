@@ -1141,7 +1141,7 @@ namespace gameswf
 	as_object* action_buffer::create_proto(as_object* obj, const as_value& constructor)
 	{
 		as_object* proto = new as_object();
-		proto->m_this_ptr = cast_to<as_object>(obj)->m_this_ptr;
+		proto->m_this_ptr = obj->m_this_ptr;
 		obj->m_proto = proto;
 
 		if (constructor.to_object())
@@ -2205,13 +2205,9 @@ namespace gameswf
 					assert(super.is_function());
 
 					as_value super_prototype;
-					as_object* new_prototype = new as_object();
+					super.to_object()->get_member("prototype", &super_prototype);
 
-					if (super.to_object())
-					{
-						// as_s_function, we have prototype
-						super.to_object()->get_member("prototype", &super_prototype);
-					}
+					as_object* new_prototype = new as_object();
 
 					new_prototype->m_proto = super_prototype.to_object();
 					new_prototype->set_member("__constructor__", super);

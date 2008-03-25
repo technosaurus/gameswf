@@ -137,21 +137,25 @@ namespace gameswf
 	static as_object* create_proto(as_object* obj, const as_value& constructor)
 	{
 		as_object* proto = new as_object();
-		proto->m_this_ptr = cast_to<as_object>(obj)->m_this_ptr;
+		proto->m_this_ptr = obj->m_this_ptr;
 		obj->m_proto = proto;
 
 		if (constructor.to_object())
 		{
 			// constructor is as_s_function
 			as_value	val;
-			constructor.to_object()->get_member("prototype", &val);
-			as_object* prototype = val.to_object();
-			assert(prototype);
-			prototype->copy_to(obj);
+			if (constructor.to_object()->get_member("prototype", &val))
+			{
+				as_object* prototype = val.to_object();
+				assert(prototype);
+				prototype->copy_to(obj);
 
-			as_value prototype_constructor;
-			prototype->get_member("__constructor__", &prototype_constructor);
-			proto->set_member("__constructor__", prototype_constructor);
+				as_value prototype_constructor;
+				if (prototype->get_member("__constructor__", &prototype_constructor))
+				{
+					proto->set_member("__constructor__", prototype_constructor);
+				}
+			}
 		}
 
 		return proto;
@@ -159,30 +163,26 @@ namespace gameswf
 
 	void character_def::instanciate_registered_class (character* ch)
 	{
-		if (as_s_function* func = cast_to<as_s_function>(m_registered_class_constructor.get_ptr()))
+		as_function* func = cast_to<as_function>(m_registered_class_constructor.get_ptr());
+		if (func)
 		{
-			as_value prototype;
-			func->get_member("prototype", &prototype);
-			assert(prototype.to_object());
-			prototype.to_object()->set_member("__constructor__", func);
+			// as far as I remember
+			// any function must have a prototype
+			// action script class definition is a function and its
+			// prototype contains set of function/methods of that class
+			// any object must can have a proto
+			// while creating new object as instance of class
+			// all functions from prototype are copied to proto of object
+			// so, proto of object contains all functions from all prototypes of
+			// all super classes
 
-			// must be NULL to avoid recursive constructor call
-			// see \gameswf\samples\test_extends_movieclip\test.fla
-			ch->m_this_ptr = NULL;
+			// we does not create prototype for func, it is exist already
+			// But we must create proto for a object a call its constructor
+			ch->m_this_ptr = ch;
 			as_object* proto = create_proto(ch, func);
 
-			// Call the actual constructor function; ch is its 'this'.
-			// We don't need the function result.
 			as_environment env;
 			call_method(func, &env, ch, 0, 0);
-		}
-		else if (as_c_function* c_func = cast_to<as_c_function>(m_registered_class_constructor.get_ptr()) )
-		{
-			// Call the actual constructor function; new_obj is its 'this'.
-			// We don't need the function result.
-			as_environment env;
-			smart_ptr<as_object> new_object = call_method(func, &env, NULL, 0, 0).to_object();
-			ch->set_member("prototype", new_object.get_ptr());
 		}
 	}
 
@@ -192,8 +192,7 @@ namespace gameswf
 	//
 
 
-	ref_counted::ref_counted()
-		:
+	ref_counted::ref_counted() :
 		m_ref_count(0),
 		m_weak_proxy(0)
 	{
