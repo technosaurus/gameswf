@@ -187,6 +187,7 @@ namespace gameswf
 		AS_TEXTFORMAT,
 		AS_MCLOADER,
 		AS_TIMER,
+		AS_LOADVARS,
 //		AS_NUMBER,
 //		AS_BOOLEAN,
 

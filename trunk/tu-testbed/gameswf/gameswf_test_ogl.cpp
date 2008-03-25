@@ -225,6 +225,15 @@ int	main(int argc, char *argv[])
 	int     delay = 10;
 	float	tex_lod_bias;
 
+#ifdef _WIN32
+	WSADATA wsaData;
+
+	int iResult = WSAStartup( MAKEWORD(2,2), &wsaData );
+	if ( iResult != NO_ERROR )
+		printf("Error at WSAStartup()\n");
+#endif
+
+
 	// -1.0 tends to look good.
 	tex_lod_bias = -1.2f;
 	tu_string bootup_options;

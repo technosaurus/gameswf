@@ -33,6 +33,7 @@
 #include "gameswf/gameswf_as_classes/as_color.h"
 #include "gameswf/gameswf_as_classes/as_date.h"
 #include "gameswf/gameswf_as_classes/as_xmlsocket.h"
+#include "gameswf/gameswf_as_classes/as_loadvars.h"
 #include "gameswf/gameswf_as_classes/as_flash.h"
 #include "gameswf/gameswf_as_classes/as_broadcaster.h"
 #include "gameswf/gameswf_as_classes/as_selection.h"
@@ -743,6 +744,7 @@ namespace gameswf
 			s_global->builtin_member("Color", as_global_color_ctor);
 			s_global->builtin_member("Date", as_global_date_ctor);
 			s_global->builtin_member("Selection", selection_init());
+			s_global->builtin_member("LoadVars", as_global_loadvars_ctor);
 
 			// ASSetPropFlags
 			s_global->builtin_member("ASSetPropFlags", as_global_assetpropflags);
