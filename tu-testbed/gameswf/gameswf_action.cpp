@@ -1162,14 +1162,8 @@ namespace gameswf
 	// The is_function2 flag determines whether to use global or local registers.
 	{
 		action_init();	// @@ stick this somewhere else; need some global static init function
-
 		assert(env);
-
 		array<with_stack_entry>	with_stack(initial_with_stack);
-
-		// Some corner case behaviors depend on the SWF file version.
-//		int version = env->get_target()->get_movie_definition()->get_version();
-		int version = get_current_root()->get_movie_version();
 
 #if 0
 		// Check the time
@@ -1301,14 +1295,14 @@ namespace gameswf
 				}
 				case 0x14:	// string length
 				{
-					env->top(0).set_int(env->top(0).to_tu_string_versioned(version).utf8_length());
+					env->top(0).set_int(env->top(0).to_tu_string().utf8_length());
 					break;
 				}
 				case 0x15:	// substring
 				{
 					int	size = env->top(0).to_int();
 					int	base = env->top(1).to_int() - 1;  // 1-based indices
-					const tu_string&	str = env->top(2).to_tu_string_versioned(version);
+					const tu_string&	str = env->top(2).to_tu_string();
 
 					// Keep base within range.
 					base = iclamp(base, 0, str.length());
@@ -1386,8 +1380,8 @@ namespace gameswf
 				}
 				case 0x21:	// string concat
 				{
-					tu_string str = env->top(1).to_tu_string_versioned(version);
-					str += env->top(0).to_tu_string_versioned(version);
+					tu_string str = env->top(1).to_tu_string();
+					str += env->top(0).to_tu_string();
 					env->drop(1);
 					env->top(0).set_tu_string(str);
 					break;
@@ -1885,7 +1879,7 @@ namespace gameswf
 				}
 				case 0x4B:	// to string
 				{
-					tu_string str = env->top(0).to_tu_string_versioned(version);
+					const tu_string& str = env->top(0).to_tu_string();
 					env->top(0).set_tu_string(str);
 					break;
 				}
