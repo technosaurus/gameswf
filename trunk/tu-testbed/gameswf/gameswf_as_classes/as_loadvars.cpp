@@ -62,7 +62,17 @@ namespace gameswf
 	//load(url:String) : Boolean
 	void	as_loadvars_load(const fn_call& fn)
 	{
-		assert( 0 && "todo" );
+		if (fn.nargs < 1)
+		{
+			fn.result->set_bool(false);
+			return;
+		}
+
+		as_loadvars* loadvars = cast_to<as_loadvars>(fn.this_ptr);
+
+		assert(loadvars);
+
+		fn.result->set_bool(loadvars->load( fn.arg(0).to_string()));
 	}
 
 	//send(url:String, target:String, [method:String]) : Boolean
@@ -92,19 +102,20 @@ namespace gameswf
 
 		assert(loadvars);
 
-		fn.result->set_bool( loadvars->send_and_load( fn.arg(0).to_string(), fn.arg(1).to_object(), method) );
+		fn.result->set_bool(loadvars->send_and_load( fn.arg(0).to_string(), fn.arg(1).to_object(), method));
 	}
    
 	//toString() : String
 	void	as_loadvars_tostring(const fn_call& fn)
 	{
-		assert( 0 && "todo" );
+		as_loadvars* loadvars = cast_to<as_loadvars>(fn.this_ptr);
+
+		assert(loadvars);
+
+		fn.result->set_tu_string(loadvars->override_to_string());
 	}
 
-	as_loadvars::as_loadvars():
-		m_iface(NULL),
-		m_ns(NULL),
-		m_target(NULL)
+	as_loadvars::as_loadvars()
 	{
 		builtin_member( "addRequestHeader" , as_loadvars_addrequestheader );
 		builtin_member( "decode" , as_loadvars_decode );
@@ -115,67 +126,111 @@ namespace gameswf
 		builtin_member( "sendAndLoad" , as_loadvars_sendandload );
 		builtin_member( "toString" , as_loadvars_tostring );
 
-		m_iface = new net_interface_tcp();
-
-		m_headers.set("Host", ""); //Force it to be in the first place
+		// default values
 		m_headers.set("Content-Type", "application/x-www-form-urlencoded");
 		m_headers.set("Cache-Control", "no-cache");
 		m_headers.set("User-Agent", "gameswf");
-		m_headers.set("Content-Length", "0");
 	}
 
 	bool	as_loadvars::send_and_load(const char * c_url, as_object * target, const tu_string & method)
 	{
-		char* url = strdup(c_url);
+		tu_string host, uri;
+		request_data request;
 
-		// remove the http:// if it exists
-
-		int start = 0;
-		if( memcmp( url, "http://", 7 ) == 0 )
+		if( parse_url(c_url, host, uri) )
 		{
-			start = 7;
+			request.m_iface = new net_interface_tcp();
+			request.m_ns = request.m_iface->connect(host, 80);
 		}
 
-		// get host name from url
-		// find the first '/'
-		int i, n;
-		for (i = start, n = strlen(url); url[i] != '/' && i < n; i++);
-		if (i == n)
-		{
-			// '/' is not found
-			fprintf(stderr, "invalid url '%s'\n", url);
-			free(url);
-			return NULL;
-		}
-
-		tu_string uri = url + i;
-		url[i] = 0;
-		tu_string host = url + start;
-		free(url);
-		url = NULL;
-
-		m_ns = m_iface->connect(host, 80);
-		bool is_connected = m_ns ? true : false;
+		bool is_connected = request.m_ns ? true : false;
 
 		if( !is_connected )
 		{
 			as_value function;
-			if (m_target && m_target->get_member("onLoad", &function))
+			if (target && target->get_member("onLoad", &function))
 			{
 				as_environment env;
 				env.push(false);
-				call_method(function, &env, m_target, 1, env.get_top_index());
+				call_method(function, &env, target, 1, env.get_top_index());
 			}
+			
+			delete request.m_iface;
+			
 			return false;
 		}
 
-		m_target = target;
+		request.m_target = cast_to<as_loadvars>(target);
 		get_root()->m_advance_listener.add(this);
 
+		m_headers.set("Host", host);
+
+		tu_string request_string = create_request( method, uri, true );
+
+		printf( request_string.c_str() );
+		request.m_ns->write_string(request_string, 1);
+		request.m_state = PARSE_REQUEST;
+
+		m_requests.push_back( request );
+
+		return true;
+	}
+
+	bool	as_loadvars::load(const char * c_url)
+	{
+		tu_string host, uri;
+		request_data request;
+
+		if( parse_url(c_url, host, uri) )
+		{
+			request.m_iface = new net_interface_tcp();
+			request.m_ns = request.m_iface->connect(host, 80);
+		}
+
+		bool is_connected = request.m_ns ? true : false;
+
+		if( !is_connected )
+		{
+			as_value function;
+			if (get_member("onLoad", &function))
+			{
+				as_environment env;
+				env.push(false);
+				call_method(function, &env, this, 1, env.get_top_index());
+			}
+
+			delete request.m_iface;
+
+			return false;
+		}
+
+		request.m_target = this;
+		get_root()->m_advance_listener.add(this);
+
+		m_headers.set("Host", host);
+
+		tu_string request_string = create_request( "GET", uri, true );
+
+		printf( request_string.c_str() );
+		request.m_ns->write_string(request_string, 1);
+		request.m_state = PARSE_REQUEST;
+
+		m_requests.push_back( request );
+
+		return true;
+	}
+
+	void	as_loadvars::add_header(const tu_string& name, const tu_string& value)
+	{
+		m_headers.set(name, value);
+	}
+
+	tu_string	as_loadvars::override_to_string()
+	{
 		tu_string information;
 		//create information in the form of name=value (urlencoded)
-		string_hash<tu_string>::iterator it = m_values.begin();
-		for(bool first = true; it != m_values.end(); ++it)
+		string_hash<tu_string>::iterator it = m_received_values.begin();
+		for(bool first = true; it != m_received_values.end(); ++it)
 		{
 			tu_string name, value;
 
@@ -184,92 +239,79 @@ namespace gameswf
 
 			url_encode( &name );
 			url_encode( &value );
-			information += string_printf("%s%s= %s", first? "":"\r\n",name.c_str(), value.c_str() );
+			information += string_printf("%s%s=%s", first? "":"&",name.c_str(), value.c_str() );
 			first = false;
 		}
 
-		tu_string request = string_printf( "%s %s HTTP/1.1\r\n", method.c_str(), uri.c_str() );
-
-		m_headers.set("Host", host);
-		m_headers.set("Content-Length", string_printf( "%i", information.size()));
-		// Process header
-		for( string_hash<tu_string>::iterator it2 = m_headers.begin(); it2 != m_headers.end(); ++it2 )
-		{
-			request += string_printf( "%s: %s\r\n", it2->first.c_str(), it2->second.c_str() );
-		}
-		request += "\r\n";
-		request += information;
-
-		printf( request.c_str() );
-		m_ns->write_string(request, 1);
-		m_state = PARSE_REQUEST;
-
-		return is_connected;
-	}
-
-	void	as_loadvars::add_header(const tu_string& name, const tu_string& value)
-	{
-		m_headers.set(name, value);
+		return information;
 	}
 
 	void	as_loadvars::advance(float delta_time)
 	{
-		assert(m_ns);
-
 		tu_string str;
 
-		while(m_ns->is_readable())
+		for(int i=0;i<m_requests.size();++i)
 		{
-			int byte_read = m_ns->read_line(&str, 100000, 0);
+			request_data & request = m_requests[i];
 
-			if( byte_read == -1 || m_state == PARSE_END )
+			while(request.m_ns->is_readable())
 			{
-				//Handle end of connection
-				if( m_target )
+				int byte_read = request.m_ns->read_line(&str, 100000, 0);
+
+				if( byte_read == -1 || request.m_state == PARSE_END )
 				{
-					as_value function;
-					if (m_target->get_member("onHttpStatus", &function))
+					//Handle end of connection
+					if( request.m_target )
 					{
-						as_environment env;
-						env.push(m_http_status);
-						call_method(function, &env, m_target, 0, env.get_top_index());
+						as_value function;
+						if (request.m_target->get_member("onHttpStatus", &function))
+						{
+							as_environment env;
+							env.push(request.m_http_status);
+							call_method(function, &env, request.m_target, 0, env.get_top_index());
+						}
+
+						if (request.m_target->get_member("onLoad", &function))
+						{
+							as_environment env;
+							env.push(request.m_state != PARSE_END);
+							call_method(function, &env, request.m_target, 1, env.get_top_index());
+						}
+
+						if (request.m_target->get_member("onData", &function))
+						{
+							as_environment env;
+							env.push(request.m_rawdata);
+							call_method(function, &env, request.m_target, 1, env.get_top_index());
+						}
 					}
 
-					if (m_target->get_member("onLoad", &function))
-					{
-						as_environment env;
-						env.push(m_state != PARSE_END);
-						call_method(function, &env, m_target, 1, env.get_top_index());
-					}
+					get_root()->m_advance_listener.remove(this);
 
-					if (m_target->get_member("onData", &function))
-					{
-						as_environment env;
-						env.push(""); //todo: gather raw data and provide it to the function
-						call_method(function, &env, m_target, 1, env.get_top_index());
-					}
+					delete request.m_ns;
+					delete request.m_iface;
+					m_requests.remove(i);
+					i--;
+					return;
 				}
 
-				get_root()->m_advance_listener.remove(this);
-				return;
+				switch(request.m_state)
+				{
+					case PARSE_REQUEST:
+						parse_request(str, request);
+						break;
+
+					case PARSE_HEADER:
+						parse_header(str, request);
+						break;
+
+					case PARSE_CONTENT:
+						parse_content(str, request);
+						break;
+				}
+
+				str.clear();
 			}
-
-			switch(m_state)
-			{
-				case PARSE_REQUEST:
-					parse_request(str);
-					break;
-
-				case PARSE_HEADER:
-					parse_header(str);
-					break;
-
-				case PARSE_CONTENT:
-					parse_content(str);
-					break;
-			}
-
-			str.clear();
 		}
 	}
 
@@ -299,54 +341,172 @@ namespace gameswf
 			return true;
 		}
 
+		string_hash<tu_string>::iterator it2 = m_received_values.find( name.to_tu_string() );
+		if( it2 != m_received_values.end() )
+		{
+			val->set_string( it2->second );
+			return true;
+		}
+
 		return as_object::get_member( name, val );
 	}
 
-	void	as_loadvars::parse_request(const tu_string& line)
+	tu_string as_loadvars::create_request(const tu_string& method, const tu_string& uri, bool send_data)
 	{
-		assert(m_state == PARSE_REQUEST);
+		tu_string information;
+		//create information in the form of name=value (urlencoded)
+		string_hash<tu_string>::iterator it = m_values.begin();
+		for(bool first = true; it != m_values.end(); ++it)
+		{
+			tu_string name, value;
+
+			name = it->first;
+			value = it->second;
+
+			url_encode( &name );
+			url_encode( &value );
+			information += string_printf("%s%s=%s", first? "":"&",name.c_str(), value.c_str() );
+			first = false;
+		}
+
+		if( method == "POST")
+		{
+			tu_string request = string_printf( "POST %s HTTP/1.1\r\n", uri.c_str() );
+
+			m_headers.set("Content-Length", string_printf( "%i", information.size()));
+
+			request += create_header();
+			request += "\r\n";
+			request += information;
+
+			return request;
+		}
+		else if(method == "GET")
+		{
+			tu_string request = string_printf( "GET %s?%s HTTP/1.1\r\n", uri.c_str(), information.c_str() );
+			request += create_header();
+			request += "\r\n";
+
+			return request;
+		}
+		else
+		{
+			assert(0 && "unsupported");
+		}
+
+		return "";
+	}
+
+	tu_string 	as_loadvars::create_header()
+	{
+		tu_string header;
+
+		// Process header
+		for( string_hash<tu_string>::iterator it2 = m_headers.begin(); it2 != m_headers.end(); ++it2 )
+		{
+			header += string_printf( "%s: %s\r\n", it2->first.c_str(), it2->second.c_str() );
+		}
+
+		return header;
+	}
+
+	void	as_loadvars::parse_request(const tu_string& line, request_data& request)
+	{
+		assert(request.m_state == PARSE_REQUEST);
 		
 		// Method.
 		const char* first_space = strchr(line.c_str(), ' ');
 		if (first_space == NULL || first_space == line.c_str())
 		{
-			m_state = PARSE_END;
+			request.m_state = PARSE_END;
 			return;
 		}
 
 		// URI.
 		const char* second_space = strchr(first_space + 1, ' ');
 		assert( second_space );
-		m_http_status = atoi(first_space + 1);
+		request.m_http_status = atoi(first_space + 1);
 		// todo use http status to trigger a onLoad(false)
 
-		m_state = PARSE_HEADER;
+		request.m_state = PARSE_HEADER;
 	}
 
-	void	as_loadvars::parse_header(const tu_string& line)
+	void	as_loadvars::parse_header(const tu_string& line, request_data& request)
 	{
 		if( line == "\r\n" )
 		{
-			m_state = PARSE_CONTENT;
+			request.m_state = PARSE_CONTENT;
 		}
 	}
 
-	void	as_loadvars::parse_content(const tu_string& line)
+	void	as_loadvars::parse_content(const tu_string& line, request_data& request)
 	{
-		const char *after_name = strstr(line.c_str(), "=");
+		request.m_rawdata += line;
 
-		if( after_name == NULL )
-			return;
+		char *start, *end;
+		start = (char*)line.c_str();
+		end = start;
 
-		tu_string name = tu_string(line.c_str(), after_name - line.c_str());
-		tu_string value = tu_string( after_name + 1 ); //Skip the "= "
-
-		url_decode( &name );
-		url_decode( &value );
-
-		if( m_target )
+		while( start < line.c_str() + line.size() )
 		{
-			m_target->set_member(name, as_value(value));
+			while( *end!='&' && *end!=0 ) ++end;
+
+			if( end == start )
+			{
+				//empty pair
+				++start;
+				continue;
+			}
+
+			*end=0;
+
+			const char *after_name = strstr(start, "=");
+
+			if( after_name == NULL )
+				return;
+
+			tu_string name = tu_string(start, after_name - start);
+			tu_string value = tu_string( after_name + 1 ); //Skip the "="
+
+			url_decode( &name );
+			url_decode( &value );
+
+			request.m_target->m_received_values.set(name,value);
+
+			start = end+1;
+			++end;
 		}
+	}
+
+	bool as_loadvars::parse_url(const char* c_url, tu_string& host, tu_string& uri)
+	{
+		char* url = strdup(c_url);
+
+		// remove the http:// if it exists
+
+		int start = 0;
+		if( memcmp( url, "http://", 7 ) == 0 )
+		{
+			start = 7;
+		}
+
+		// get host name from url
+		// find the first '/'
+		int i, n;
+		for (i = start, n = strlen(url); url[i] != '/' && i < n; i++);
+		if (i == n)
+		{
+			// '/' is not found
+			fprintf(stderr, "invalid url '%s'\n", url);
+			free(url);
+			return false;
+		}
+
+		uri = url + i;
+		url[i] = 0;
+		host = url + start;
+		free(url);
+		url = NULL;
+		return true;
 	}
 };

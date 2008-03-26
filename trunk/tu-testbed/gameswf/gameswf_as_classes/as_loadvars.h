@@ -33,17 +33,29 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		net_interface_tcp* m_iface;
-		net_socket* m_ns;
-		as_object* m_target;
+		struct request_data
+		{
+			request_data() : m_iface(NULL), m_ns(NULL), m_target(NULL)
+			{
+			}
+			net_interface_tcp* m_iface;
+			net_socket* m_ns;
+			as_loadvars* m_target; // todo, should work with Xml object too. Think of a hierarchy here
+			loadvars_state m_state;
+			int m_http_status;
+			tu_string m_rawdata;
+		};
+
 		string_hash<tu_string> m_headers;
 		string_hash<tu_string> m_values;
-		loadvars_state m_state;
-		int m_http_status;
+		string_hash<tu_string> m_received_values;
+		array<request_data> m_requests;
 
 		as_loadvars();
 		bool	send_and_load(const char * url, as_object * target, const tu_string & method);
+		bool	load(const char * url);
 		void	add_header(const tu_string& name, const tu_string& value);
+		tu_string	override_to_string();
 		void	advance(float delta_time);
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
@@ -51,9 +63,12 @@ namespace gameswf
 
 	private:
 
-		void parse_request(const tu_string& line);
-		void parse_header(const tu_string& line);
-		void parse_content(const tu_string& line);
+		tu_string create_request(const tu_string& method, const tu_string& uri, bool send_data);
+		tu_string create_header();
+		void parse_request(const tu_string& line, request_data& request);
+		void parse_header(const tu_string& line, request_data& request);
+		void parse_content(const tu_string& line, request_data& request);
+		bool parse_url(const char* url, tu_string& host, tu_string& uri);
 	};
 
 }	// end namespace gameswf
