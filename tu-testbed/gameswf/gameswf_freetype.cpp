@@ -384,8 +384,8 @@ namespace gameswf
 			FT_CONST FT_Vector* to, void* user)
 	{
 		glyph_provider* _this = static_cast<glyph_provider*>(user);
-		float x = ctrl1->x + ((ctrl2->x - ctrl1->x) * 0.5);
-		float y = ctrl1->y + ((ctrl2->y - ctrl1->y) * 0.5);
+		float x = float(ctrl1->x + ((ctrl2->x - ctrl1->x) * 0.5));
+		float y = float(ctrl1->y + ((ctrl2->y - ctrl1->y) * 0.5));
 		_this->m_canvas->curve_to(x * _this->m_scale, - y * _this->m_scale, 
 				to->x * _this->m_scale, - to->y * _this->m_scale);
 		return 0;

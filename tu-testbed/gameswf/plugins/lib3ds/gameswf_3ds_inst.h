@@ -10,14 +10,26 @@
 
 #if TU_CONFIG_LINK_TO_LIB3DS == 1
 
+#include <SDL_opengl.h>
 #include "gameswf/gameswf_impl.h"
 #include "base/tu_opengl_includes.h"
 #include "gameswf_3ds_def.h"
 
 #include <lib3ds/types.h>
 
+#define SHADOW_SIZE 1024
+#define MAX_INFO_LOG_SIZE 2048
+
 namespace gameswf
 {
+
+	struct x3ds_object
+	{
+		GLfloat	m_tex_percent;
+		GLfloat m_bump_percent;
+		GLuint	m_glist_id;
+		GLuint	m_flist_id;
+	};
 
 	struct x3ds_instance : public character
 	{
@@ -40,12 +52,29 @@ namespace gameswf
 		play_state	m_play_state;
 		stringi_hash<as_value>	m_variables;
 
+		GLuint m_shadow_id, m_shadow_fb;
+		GLuint m_program_id, m_vshader_id, m_fshader_id;
+		GLboolean m_needs_validation;
+		GLfloat m_light_pos[3];
+		GLfloat	m_light_dir[3];
+		GLfloat m_center[3];
+		GLfloat	m_radius;
+		GLfloat m_light_projection[16];
+		GLfloat	m_light_modelview[16];
+
 		x3ds_instance(x3ds_definition* def,	character* parent, int id);
 		~x3ds_instance();
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		virtual void	display();
+		void	update_light();
 		void	set_light();
+		bool	upload_shaders(GLuint &program_id, GLuint &vshader_id, GLuint &fshader_id);
+		void	validate_shader();
+		void	set_shader_args(GLfloat tex_p, GLfloat bump_p);
+		void	generate_shadow();
+		bool	invert_matrix(float dst[16], float src[16]);
+		void	goto_frame(float frame);
 		virtual void	advance(float delta_time);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
@@ -55,14 +84,12 @@ namespace gameswf
 		void bind_material(Lib3dsMaterial* mat, float U, float V);
 
 		// enables texture if there is material & loaded image
-		void set_material(Lib3dsMaterial* mat);
+		void set_material(Lib3dsMaterial* mat, x3ds_object *obj);
 
-		// load image & create texture or get bitmap_info pointer to loaded texture
-		void bind_texture(const char* finame);
-
-		void create_mesh_list(Lib3dsMesh* mesh);
-		void render_node(Lib3dsNode* node);
-		void clear_dlist(Lib3dsNode* nodes);
+		void create_mesh_glist(Lib3dsMesh* mesh);
+		void create_mesh_flist(Lib3dsMesh* mesh, x3ds_object *obj);
+		void render_node(Lib3dsNode* node, bool full);
+		void clear_obj(Lib3dsNode* nodes);
 
 //		void	update_material();
 	};

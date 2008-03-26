@@ -71,7 +71,7 @@ struct net_socket
 
 	int write_string(const char* str, float timeout_seconds)
 	{
-		return write(str, strlen(str), timeout_seconds);
+		return write(str, (int) strlen(str), timeout_seconds);
 	}
 
 	int write_string(const tu_string& str, float timeout_seconds)

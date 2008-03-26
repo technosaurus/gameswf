@@ -244,42 +244,45 @@ void mytable::retrieve_data(MYSQL_RES* result)
 			{
 				switch (fld[j].type)
 				{
-				case MYSQL_TYPE_TINY:
-				case MYSQL_TYPE_SHORT:
-				case MYSQL_TYPE_INT24:
-					val.set_int(atoi(row[j]));
-					break;
+					default:
+						break;
 
-				case MYSQL_TYPE_DECIMAL:
-				case MYSQL_TYPE_LONG:
-				case MYSQL_TYPE_FLOAT:
-				case MYSQL_TYPE_DOUBLE:
-				case MYSQL_TYPE_LONGLONG:
-					val.set_double(atof(row[j]));
-					break;
+					case MYSQL_TYPE_TINY:
+					case MYSQL_TYPE_SHORT:
+					case MYSQL_TYPE_INT24:
+						val.set_int(atoi(row[j]));
+						break;
 
-				case MYSQL_TYPE_NULL:
-				case MYSQL_TYPE_TIMESTAMP:
-				case MYSQL_TYPE_DATE:
-				case MYSQL_TYPE_TIME:
-				case MYSQL_TYPE_DATETIME:
-				case MYSQL_TYPE_YEAR:
-				case MYSQL_TYPE_NEWDATE:
-				case MYSQL_TYPE_VARCHAR:
-				case MYSQL_TYPE_BIT:
-				case MYSQL_TYPE_NEWDECIMAL:
-				case MYSQL_TYPE_ENUM:
-				case MYSQL_TYPE_SET:
-				case MYSQL_TYPE_TINY_BLOB:
-				case MYSQL_TYPE_MEDIUM_BLOB:
-				case MYSQL_TYPE_LONG_BLOB:
-				case MYSQL_TYPE_BLOB:
-				case MYSQL_TYPE_VAR_STRING:
-				case MYSQL_TYPE_STRING:
-				case MYSQL_TYPE_GEOMETRY:
-					val.set_string(row[j]);
-					break;
-				}
+					case MYSQL_TYPE_DECIMAL:
+					case MYSQL_TYPE_LONG:
+					case MYSQL_TYPE_FLOAT:
+					case MYSQL_TYPE_DOUBLE:
+					case MYSQL_TYPE_LONGLONG:
+						val.set_double(atof(row[j]));
+						break;
+
+					case MYSQL_TYPE_NULL:
+					case MYSQL_TYPE_TIMESTAMP:
+					case MYSQL_TYPE_DATE:
+					case MYSQL_TYPE_TIME:
+					case MYSQL_TYPE_DATETIME:
+					case MYSQL_TYPE_YEAR:
+					case MYSQL_TYPE_NEWDATE:
+					case MYSQL_TYPE_VARCHAR:
+					case MYSQL_TYPE_BIT:
+					case MYSQL_TYPE_NEWDECIMAL:
+					case MYSQL_TYPE_ENUM:
+					case MYSQL_TYPE_SET:
+					case MYSQL_TYPE_TINY_BLOB:
+					case MYSQL_TYPE_MEDIUM_BLOB:
+					case MYSQL_TYPE_LONG_BLOB:
+					case MYSQL_TYPE_BLOB:
+					case MYSQL_TYPE_VAR_STRING:
+					case MYSQL_TYPE_STRING:
+					case MYSQL_TYPE_GEOMETRY:
+						val.set_string(row[j]);
+						break;
+					}
 			}
 			m_data[i]->set_member(fld[j].name, val);
 		}

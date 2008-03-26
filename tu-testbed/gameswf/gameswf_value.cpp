@@ -541,6 +541,9 @@ namespace gameswf
 	{
 		switch (m_type)
 		{
+			default:
+				break;
+
 			case STRING:
 			{
 				return get_builtin(BUILTIN_STRING_METHOD, name, val);

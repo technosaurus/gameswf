@@ -780,7 +780,7 @@ public:
 		assert(m_table);
 		m_table->m_entry_count++;
 
-		unsigned int	hash_value = compute_hash(key);
+		unsigned int	hash_value = (unsigned int) compute_hash(key);
 		int	index = hash_value & m_table->m_size_mask;
 
 		entry*	natural_entry = &(E(index));
@@ -823,7 +823,7 @@ public:
 				// entry must be moved.
 
 				// Find natural location of collided element (i.e. root of chain)
-				int	collided_index = natural_entry->m_hash_value & m_table->m_size_mask;
+				int	collided_index = (int) (natural_entry->m_hash_value & m_table->m_size_mask);
 				for (;;)
 				{
 					entry*	e = &E(collided_index);
@@ -1094,7 +1094,7 @@ public:
 		}
 		assert(m_table);
 
-		int natural_index = pos->m_hash_value & m_table->m_size_mask;
+		int natural_index = (int) (pos->m_hash_value & m_table->m_size_mask);
 
 		if (pos.m_index != natural_index) {
 			// We're not the head of our chain, so we can
@@ -1183,7 +1183,7 @@ private:
 		if (m_table == NULL) return -1;
 
 		size_t	hash_value = compute_hash(key);
-		int	index = hash_value & m_table->m_size_mask;
+		int	index = (int) (hash_value & m_table->m_size_mask);
 
 		const entry*	e = &E(index);
 		if (e->is_empty()) return -1;
@@ -1328,7 +1328,7 @@ public:
 		m_local.m_size = 1;
 		m_local.m_buffer[0] = 0;
 
-		int	new_size = strlen(str);
+		int	new_size = (int) strlen(str);
 		resize(new_size);
 		strcpy(get_buffer(), str);
 	}
@@ -1393,7 +1393,7 @@ public:
 	{
 		if (str)
 		{
-			resize(strlen(str));
+			resize((int) strlen(str));
 			strcpy(get_buffer(), str);
 		}
 	}
@@ -1473,7 +1473,7 @@ public:
 
 	exported_module void	operator+=(const char* str)
 	{
-		int	str_length = strlen(str);
+		int	str_length = (int) strlen(str);
 		int	old_length = length();
 		assert(old_length >= 0);
 		resize(old_length + str_length);

@@ -93,7 +93,7 @@ namespace gameswf
 				fn.result->set_double(-1);
 				return;
 			}
-			fn.result->set_double(tu_string::utf8_char_count(str, p - str));
+			fn.result->set_double(tu_string::utf8_char_count(str, (int) (p - str)));
 		}
 	}
 
@@ -125,7 +125,7 @@ namespace gameswf
 			if (last_hit == NULL) {
 				fn.result->set_double(-1);
 			} else {
-				fn.result->set_double(tu_string::utf8_char_count(str, last_hit - str));
+				fn.result->set_double(tu_string::utf8_char_count(str, (int) (last_hit - str)));
 			}
 		}
 	}
@@ -191,7 +191,7 @@ namespace gameswf
 					break;
 				}
 
-				tu_string word(p, n - p);
+				tu_string word(p, (int) (n - p));
 				as_value val;
 				as_value index(i);
 				val.set_tu_string(word);
@@ -205,7 +205,7 @@ namespace gameswf
 				if (*p == 0 || match)
 				{
 					// Emit the previous word.
-					tu_string word(word_start, p - word_start);
+					tu_string word(word_start, int(p - word_start));
 					as_value val;
 					as_value index(i);
 					val.set_tu_string(word);

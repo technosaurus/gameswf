@@ -348,7 +348,7 @@ namespace gameswf
 			if( after_name == NULL )
 				return;
 
-			tu_string name = tu_string(start, after_name - start);
+			tu_string name = tu_string(start, int(after_name - start));
 			tu_string value = tu_string( after_name + 1 ); //Skip the "="
 
 			url_decode( &name );
@@ -507,7 +507,7 @@ namespace gameswf
 		// get host name from url
 		// find the first '/'
 		int i, n;
-		for (i = start, n = strlen(url); url[i] != '/' && i < n; i++);
+		for (i = start, n = (int) strlen(url); url[i] != '/' && i < n; i++);
 		if (i == n)
 		{
 			// '/' is not found

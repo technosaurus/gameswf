@@ -228,7 +228,7 @@ namespace gameswf
 		virtual character_def*	find_exported_resource(const tu_string& symbol);
 
 		// gameSWF extension
-		void	sprite_instance::set_fps(float fps);
+		void	set_fps(float fps);
 
 		// drawing API
 		canvas* get_canvas();
