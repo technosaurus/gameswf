@@ -44,7 +44,16 @@ namespace gameswf
 	//decode(queryString:String) : Void
 	void	as_loadvars_decode(const fn_call& fn)
 	{
-		assert( 0 && "todo" );
+		if( fn.nargs < 1 )
+		{
+			return;
+		}
+
+		as_loadvars * loadvars = cast_to<as_loadvars>( fn.this_ptr );
+
+		assert( loadvars );
+
+		loadvars->decode(fn.arg(0).to_tu_string());
 	}
 
 	//getBytesLoaded() : Number
@@ -62,7 +71,7 @@ namespace gameswf
 	//load(url:String) : Boolean
 	void	as_loadvars_load(const fn_call& fn)
 	{
-		if (fn.nargs < 1)
+		if (fn.nargs < 1 || fn.arg(0).is_null())
 		{
 			fn.result->set_bool(false);
 			return;
@@ -315,6 +324,43 @@ namespace gameswf
 		}
 	}
 
+	void	as_loadvars::decode(const tu_string& query_string)
+	{
+		char *start, *end;
+		start = (char*)query_string.c_str();
+		end = start;
+
+		while( start < query_string.c_str() + query_string.size() )
+		{
+			while( *end!='&' && *end!=0 ) ++end;
+
+			if( end == start )
+			{
+				//empty pair
+				++start;
+				continue;
+			}
+
+			*end=0;
+
+			const char *after_name = strstr(start, "=");
+
+			if( after_name == NULL )
+				return;
+
+			tu_string name = tu_string(start, after_name - start);
+			tu_string value = tu_string( after_name + 1 ); //Skip the "="
+
+			url_decode( &name );
+			url_decode( &value );
+
+			m_received_values.set(name,value);
+
+			start = end+1;
+			++end;
+		}
+	}
+
 	bool	as_loadvars::set_member(const tu_stringi& name, const as_value& val)
 	{
 		// todo: check for callbacks
@@ -443,39 +489,7 @@ namespace gameswf
 	{
 		request.m_rawdata += line;
 
-		char *start, *end;
-		start = (char*)line.c_str();
-		end = start;
-
-		while( start < line.c_str() + line.size() )
-		{
-			while( *end!='&' && *end!=0 ) ++end;
-
-			if( end == start )
-			{
-				//empty pair
-				++start;
-				continue;
-			}
-
-			*end=0;
-
-			const char *after_name = strstr(start, "=");
-
-			if( after_name == NULL )
-				return;
-
-			tu_string name = tu_string(start, after_name - start);
-			tu_string value = tu_string( after_name + 1 ); //Skip the "="
-
-			url_decode( &name );
-			url_decode( &value );
-
-			request.m_target->m_received_values.set(name,value);
-
-			start = end+1;
-			++end;
-		}
+		request.m_target->decode( line );
 	}
 
 	bool as_loadvars::parse_url(const char* c_url, tu_string& host, tu_string& uri)
