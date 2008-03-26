@@ -57,6 +57,7 @@ namespace gameswf
 		void	add_header(const tu_string& name, const tu_string& value);
 		tu_string	override_to_string();
 		void	advance(float delta_time);
+		void	decode(const tu_string& query_string);
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
