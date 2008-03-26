@@ -88,7 +88,6 @@ namespace gameswf
 
 		exported_module const char*	to_string() const;
 		exported_module const tu_string&	to_tu_string() const;
-		exported_module const tu_string&	to_tu_string_versioned(int version) const;
 		exported_module const tu_stringi&	to_tu_stringi() const;
 		exported_module double	to_number() const;
 		exported_module int	to_int() const { return (int) to_number(); };

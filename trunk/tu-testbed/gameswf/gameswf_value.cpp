@@ -69,15 +69,21 @@ namespace gameswf
 				break;
 
 			case UNDEFINED:
+			{
 				// Behavior depends on file version.  In
 				// version 7+, it's "undefined", in versions
 				// 6-, it's "".
-				//
-				// We'll go with the v7 behavior by default,
-				// and conditionalize via _versioned()
-				// functions.
-				m_string = "undefined";
+				int version = get_current_root()->get_movie_version();
+				if (version <= 6)
+				{
+					m_string = "";
+				}
+				else
+				{
+					m_string = "undefined";
+				}
 				break;
+			}
 
 			case BOOLEAN:
 				m_string = m_bool ? "true" : "false";
@@ -126,28 +132,7 @@ namespace gameswf
 			default:
 				assert(0);
 		}
-
 		return m_string;
-	}
-
-	const tu_string&	as_value::to_tu_string_versioned(int version) const
-	// Conversion to const tu_string&.
-	{
-		if (m_type == UNDEFINED)
-		{
-			// Version-dependent behavior.
-			if (version <= 6)
-			{
-				m_string = "";
-			}
-			else
-			{
-				m_string = "undefined";
-			}
-			return m_string;
-		}
-		
-		return to_tu_string();
 	}
 
 	double	as_value::to_number() const
