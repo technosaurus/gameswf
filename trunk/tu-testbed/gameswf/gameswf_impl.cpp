@@ -1859,43 +1859,46 @@ namespace gameswf
 		{
 			switch (m_place_type)
 			{
-			case PLACE:
-				m->add_display_object(
-					m_character_id,
-					m_name,
-					m_event_handlers,
-					m_depth,
-					m_tag_type != 4,	// original place_object doesn't do replacement
-					m_color_transform,
-					m_matrix,
-					m_ratio,
-					m_clip_depth);
-				break;
+				default:
+					break;
 
-			case MOVE:
-				m->move_display_object(
-					m_depth,
-					m_has_cxform,
-					m_color_transform,
-					m_has_matrix,
-					m_matrix,
-					m_ratio,
-					m_clip_depth);
-				break;
+				case PLACE:
+					m->add_display_object(
+						m_character_id,
+						m_name,
+						m_event_handlers,
+						m_depth,
+						m_tag_type != 4,	// original place_object doesn't do replacement
+						m_color_transform,
+						m_matrix,
+						m_ratio,
+						m_clip_depth);
+					break;
 
-			case REPLACE:
-				m->replace_display_object(
-					m_character_id,
-					m_name,
-					m_depth,
-					m_has_cxform,
-					m_color_transform,
-					m_has_matrix,
-					m_matrix,
-					m_ratio,
-					m_clip_depth);
-				break;
-			}
+				case MOVE:
+					m->move_display_object(
+						m_depth,
+						m_has_cxform,
+						m_color_transform,
+						m_has_matrix,
+						m_matrix,
+						m_ratio,
+						m_clip_depth);
+					break;
+
+				case REPLACE:
+					m->replace_display_object(
+						m_character_id,
+						m_name,
+						m_depth,
+						m_has_cxform,
+						m_color_transform,
+						m_has_matrix,
+						m_matrix,
+						m_ratio,
+						m_clip_depth);
+					break;
+				}
 		}
 
 		void	execute_state(character* m)
@@ -1907,39 +1910,42 @@ namespace gameswf
 		{
 			switch (m_place_type)
 			{
-			case PLACE:
-				// reverse of add is remove
-				m->remove_display_object(m_depth, m_tag_type == 4 ? m_character_id : -1);
-				break;
-
-			case MOVE:
-				// reverse of move is move
-				m->move_display_object(
-					m_depth,
-					m_has_cxform,
-					m_color_transform,
-					m_has_matrix,
-					m_matrix,
-					m_ratio,
-					m_clip_depth);
-				break;
-
-			case REPLACE:
-				{
-					// reverse of replace is to re-add the previous object.
-					execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, -1);
-					if (last_add)
-					{
-						last_add->execute_state(m);
-					}
-					else
-					{
-						log_error("reverse REPLACE can't find previous replace or add tag(%d, %d)\n",
-							frame, m_depth);
-
-					}
+				default:
 					break;
-				}
+
+				case PLACE:
+					// reverse of add is remove
+					m->remove_display_object(m_depth, m_tag_type == 4 ? m_character_id : -1);
+					break;
+
+				case MOVE:
+					// reverse of move is move
+					m->move_display_object(
+						m_depth,
+						m_has_cxform,
+						m_color_transform,
+						m_has_matrix,
+						m_matrix,
+						m_ratio,
+						m_clip_depth);
+					break;
+
+				case REPLACE:
+					{
+						// reverse of replace is to re-add the previous object.
+						execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, -1);
+						if (last_add)
+						{
+							last_add->execute_state(m);
+						}
+						else
+						{
+							log_error("reverse REPLACE can't find previous replace or add tag(%d, %d)\n",
+								frame, m_depth);
+
+						}
+						break;
+					}
 			}
 		}
 

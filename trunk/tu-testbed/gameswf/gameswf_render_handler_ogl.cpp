@@ -105,18 +105,20 @@ void create_texture(int format, int w, int h, void* data, int level)
 	{
 		switch (format)
 		{
-		case GL_RGB :
-			internal_format = GL_COMPRESSED_RGB_ARB;
-			break;
-		case GL_RGBA :
-			internal_format = GL_COMPRESSED_RGBA_ARB;
-			break;
-		case GL_ALPHA :
-			internal_format = GL_COMPRESSED_ALPHA_ARB;
-			break;
-		case GL_LUMINANCE :
-			internal_format = GL_COMPRESSED_LUMINANCE_ARB;
-			break;
+			default:
+				break;
+			case GL_RGB :
+				internal_format = GL_COMPRESSED_RGB_ARB;
+				break;
+			case GL_RGBA :
+				internal_format = GL_COMPRESSED_RGBA_ARB;
+				break;
+			case GL_ALPHA :
+				internal_format = GL_COMPRESSED_ALPHA_ARB;
+				break;
+			case GL_LUMINANCE :
+				internal_format = GL_COMPRESSED_LUMINANCE_ARB;
+				break;
 		}
 	}
 	glTexImage2D(GL_TEXTURE_2D, level, internal_format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
@@ -301,6 +303,9 @@ struct sdl_cursor_handler {
 
 				switch (s_hand_image[4 + row][col])
 				{
+					default:
+						break;
+
 					case 'X':
 						// black
 						data[i] |= 0x01;

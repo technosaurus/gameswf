@@ -2223,7 +2223,7 @@ namespace gameswf
 
 					// Two strings as args.
 					const char*	url = (const char*) &(m_buffer[pc + 3]);
-					int	url_len = strlen(url);
+					int	url_len = int(strlen(url));
 					const char*	target = (const char*) &(m_buffer[pc + 3 + url_len + 1]);
 
 					// If the url starts with "FSCommand:", then this is
@@ -2418,7 +2418,7 @@ namespace gameswf
 						{
 							i++;
 							// @@ security: watch out for possible missing terminator here!
-							i += strlen( (const char*) &m_buffer[i] ) + 1;
+							i += (int) strlen((const char*) &m_buffer[i]) + 1;
 						}
 
 						// Skip the length of the actual function code.
@@ -2457,7 +2457,7 @@ namespace gameswf
 						{
 							// string
 							const char*	str = (const char*) &m_buffer[3 + i];
-							i += strlen(str) + 1;
+							i += int(strlen(str)) + 1;
 							env->push(str);
 
 							IF_VERBOSE_ACTION(log_msg("-------------- pushed '%s'\n", str));
@@ -2728,7 +2728,7 @@ namespace gameswf
 						for (int n = 0; n < nargs; n++)
 						{
 							// @@ security: watch out for possible missing terminator here!
-							i += strlen( (const char*) &m_buffer[i] ) + 1;
+							i += (int) strlen((const char*) &m_buffer[i]) + 1;
 						}
 
 						// Get the length of the actual function code.
@@ -3249,7 +3249,7 @@ namespace gameswf
 				// Signature info for a function2 opcode.
 				int	i = 0;
 				const char*	function_name = (const char*) &instruction_data[3 + i];
-				i += strlen(function_name) + 1;
+				i += (int) strlen(function_name) + 1;
 
 				int	arg_count = instruction_data[3 + i] | (instruction_data[3 + i + 1] << 8);
 				i += 2;
@@ -3297,7 +3297,7 @@ namespace gameswf
 					int	arg_register = instruction_data[3 + i];
 					i++;
 					const char*	arg_name = (const char*) &instruction_data[3 + i];
-					i += strlen(arg_name) + 1;
+					i += (int) strlen(arg_name) + 1;
 
 					log_msg("\t\targ[%d] - reg[%d] - '%s'\n", argi, arg_register, arg_name);
 				}

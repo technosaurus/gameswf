@@ -440,7 +440,7 @@ namespace gameswf
 			else if (next_slash)
 			{
 				// Cut off the slash and everything after it.
-				subpart.resize(next_slash - p);
+				subpart.resize(int(next_slash - p));
 			}
 
 			as_value val;

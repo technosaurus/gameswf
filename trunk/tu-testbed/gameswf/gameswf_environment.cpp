@@ -11,7 +11,7 @@
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_render.h"
 
-#if TU_CONFIG_LINK_TO_LIB3DS
+#if TU_CONFIG_LINK_TO_LIB3DS == 1
 	#include "plugins/lib3ds/gameswf_3ds_inst.h"
 #endif
 
@@ -100,6 +100,9 @@ namespace gameswf
 		tu_string fn = get_full_url(url);
 		switch (get_file_type(fn.c_str()))
 		{
+			default:
+				break;
+
 			case SWF:
 			{
 				movie_definition*	md = create_movie(fn.c_str());
@@ -197,6 +200,9 @@ namespace gameswf
 		as_standard_member	varname_id = get_standard_member(varname);
 		switch (varname_id)
 		{
+			default:
+				break;
+
 			case M_GLOBAL:
 				val.set_as_object(get_global());
 				return val;
@@ -502,7 +508,7 @@ namespace gameswf
 		// Make the subparts.
 		*var = colon + 1;
 		*path = var_path;
-		path->resize(colon - var_path.c_str() - 1);
+		path->resize(int(colon - var_path.c_str()) - 1);
 		return true;
 	}
 
@@ -584,7 +590,7 @@ namespace gameswf
 			else if (next_slash)
 			{
 				// Cut off the slash and everything after it.
-				subpart.resize(next_slash - p);
+				subpart.resize(int(next_slash - p));
 			}
 
 			env = env->get_relative_target(subpart);

@@ -86,7 +86,7 @@ namespace gameswf
 		int size()
 		{
 			tu_autolock locker(m_mutex);
-			return m_queue.size();
+			return int(m_queue.size());
 		}
 
 		const T& front()
@@ -136,7 +136,7 @@ namespace gameswf
 
 		int size()
 		{
-			return m_queue.size();
+			return int(m_queue.size());
 		}
 
 		const T& front()

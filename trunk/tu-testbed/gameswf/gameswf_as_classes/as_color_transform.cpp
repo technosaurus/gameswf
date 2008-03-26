@@ -35,6 +35,8 @@ namespace gameswf
 
 		switch ( fn.nargs )
 		{
+			default:
+				break;
 			case alphaOffset:
 				obj->m_color_transform.m_[3][1] = fn.arg(7).to_float();
 			case blueOffset:

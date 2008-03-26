@@ -222,28 +222,31 @@ namespace gameswf
 
 			switch (enc->codec_type)
 			{
-			case CODEC_TYPE_AUDIO:
+				default:
+					break;
 
-				if (m_audio_index < 0)
-				{
-					m_audio_index = i;
-					m_audio_stream = m_FormatCtx->streams[i];
-				}
-				break;
+				case CODEC_TYPE_AUDIO:
 
-			case CODEC_TYPE_VIDEO:
+					if (m_audio_index < 0)
+					{
+						m_audio_index = i;
+						m_audio_stream = m_FormatCtx->streams[i];
+					}
+					break;
 
-				if (m_video_index < 0) 
-				{
-					m_video_index = i;
-					m_video_stream = m_FormatCtx->streams[i];
-				}
-				break;
+				case CODEC_TYPE_VIDEO:
 
-			case CODEC_TYPE_DATA:
-			case CODEC_TYPE_SUBTITLE:
-			case CODEC_TYPE_UNKNOWN:
-				break;
+					if (m_video_index < 0) 
+					{
+						m_video_index = i;
+						m_video_stream = m_FormatCtx->streams[i];
+					}
+					break;
+
+				case CODEC_TYPE_DATA:
+				case CODEC_TYPE_SUBTITLE:
+				case CODEC_TYPE_UNKNOWN:
+					break;
 			}
 		}
 
