@@ -75,7 +75,7 @@ namespace gameswf
 
 	void sprite_instance::get_bound(rect* bound)
 	{
-		int i, n = m_display_list.get_character_count();
+		int i, n = m_display_list.size();
 		if (n == 0)
 		{
 			return;
@@ -210,7 +210,7 @@ namespace gameswf
 		character*	top_te = NULL;
 		character* te = NULL;
 		bool this_has_focus = false;
-		int i, n = m_display_list.get_character_count();
+		int i, n = m_display_list.size();
 
 		// Go backwards, to check higher objects first.
 		for (i = n - 1; i >= 0; i--)
@@ -1540,4 +1540,25 @@ namespace gameswf
 		return cast_to<canvas>(m_canvas->get_character_def());
 	}
 
+	void sprite_instance::enumerate(as_environment* env)
+	{
+		assert(env);
+
+		// enumerate variables
+		character::enumerate(env);
+
+		// enumerate characters
+		for (int i = 0, n = m_display_list.size(); i<n; i++)
+		{
+			character* ch = m_display_list.get_character(i);
+			if (ch)
+			{
+				const tu_string& name = ch->get_name();
+				if (name.size() > 0)
+				{
+					env->push(name);
+				}
+			}
+		}
+	}
 }

@@ -103,7 +103,7 @@ namespace gameswf
 		void	display();
 		void	display(const display_info& di);
 
-		int	get_character_count() { return m_display_object_array.size(); }
+		int	size() { return m_display_object_array.size(); }
 		character*	get_character(int index) { return m_display_object_array[index].m_character.get_ptr(); }
 
 		// May return NULL.
