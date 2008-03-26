@@ -134,7 +134,7 @@ namespace gameswf
 	character*	display_list::get_character_by_name(const tu_string& name)
 	{
 		// See if we have a match on the display list.
-		for (int i = 0, n = get_character_count(); i < n; i++)
+		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			if (ch->get_name() == name.c_str())
@@ -149,7 +149,7 @@ namespace gameswf
 	int	display_list::get_character_by_ptr(const character* ch_search)
 	{
 		// See if we have a match on the display list.
-		for (int i = 0, n = get_character_count(); i < n; i++)
+		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			if (ch == ch_search)
@@ -165,7 +165,7 @@ namespace gameswf
 	// Return first character with matching (case insensitive) name, if any.
 	{
 		// Search through dlist for a match.
-		for (int i = 0, n = get_character_count(); i < n; i++)
+		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			if (name == ch->get_name().c_str())
@@ -632,7 +632,7 @@ namespace gameswf
 	int display_list::get_highest_depth() 
 	{ 
 		int depth = ADJUST_DEPTH_VALUE - 1;
-		for (int i = 0, n = get_character_count(); i < n; i++)
+		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			assert(ch);
@@ -646,7 +646,7 @@ namespace gameswf
 
 	void	display_list::clear_refs(hash<as_object*, bool>* visited_objects,	as_object* this_ptr)
 	{
-		for (int i = 0, n = get_character_count(); i < n; i++)
+		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			if (ch)
@@ -658,7 +658,7 @@ namespace gameswf
 
 	void display_list::dump()
 	{
-		for (int i = 0, n = get_character_count(); i < n; i++)
+		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			if (ch->get_name().c_str())

@@ -425,4 +425,8 @@ namespace gameswf
 		return render::is_visible(bound);
 	}
 
+	void character::enumerate(as_environment* env)
+	{
+		as_object::enumerate(env);
+	}
 }

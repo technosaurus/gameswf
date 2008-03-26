@@ -516,6 +516,8 @@ namespace gameswf
 		virtual int	get_movie_width() { return 0; }
 		virtual int	get_movie_height() { return 0; }
 		virtual float	get_movie_fps() { return 0.0f; }
+
+		virtual	void enumerate(as_environment* env);
 	};
 
 }
