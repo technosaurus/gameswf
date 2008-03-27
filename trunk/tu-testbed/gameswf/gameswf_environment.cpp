@@ -119,7 +119,7 @@ namespace gameswf
 				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
 #else
 				x3ds_definition* x3ds = new x3ds_definition(fn.c_str());
-				if (x3ds && x3ds->m_file)
+				if (x3ds->is_loaded())
 				{
 					rect bound;
 					target->get_bound(&bound);

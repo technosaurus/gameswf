@@ -48,6 +48,8 @@ namespace gameswf
 		void ensure_lights();
 		void ensure_nodes();
 
+		bool is_loaded() const { return m_file != NULL; }
+
 	};
 
 }	// end namespace gameswf
