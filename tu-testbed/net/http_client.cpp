@@ -59,7 +59,7 @@ net_socket* http_connection::connect(const char* c_url, int port)
 	// get host name from url
 	// find the first '/'
 	int i, n;
-	for (i = 0, n = strlen(url); url[i] != '/' && i < n; i++);
+	for (i = 0, n = (int) strlen(url); url[i] != '/' && i < n; i++);
 	if (i == n)
 	{
 		// '/' is not found

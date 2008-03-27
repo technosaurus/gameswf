@@ -164,8 +164,7 @@ namespace gameswf
 	void character_def::instanciate_registered_class (character* ch)
 	{
 		assert(ch);
-		as_function* func = cast_to<as_function>(m_registered_class_constructor.get_ptr());
-		if (func)
+		if (m_registered_class_constructor != NULL)
 		{
 			// as far as I remember
 			// any function must have a prototype
@@ -180,10 +179,10 @@ namespace gameswf
 			// we does not create prototype for func, it is exist already
 			// But we must create proto for a object a call its constructor
 			ch->m_this_ptr = ch;
-			as_object* proto = create_proto(ch, func);
+			as_object* proto = create_proto(ch, m_registered_class_constructor.get_ptr());
 
 			as_environment env;
-			call_method(func, &env, ch, 0, 0);
+			call_method(m_registered_class_constructor.get_ptr(), &env, ch, 0, 0);
 		}
 	}
 
