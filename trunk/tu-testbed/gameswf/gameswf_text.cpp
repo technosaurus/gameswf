@@ -970,7 +970,7 @@ namespace gameswf
 			tu_string var = get_text_name();
 			if (as_environment::parse_path(get_text_name(), &path, &var))
 			{
-				ch = find_target(path);
+				ch = find_target(path.c_str());
 			}
 
 			if (ch)
@@ -990,7 +990,7 @@ namespace gameswf
 			tu_string var = get_text_name();
 			if (as_environment::parse_path(get_text_name(), &path, &var))
 			{
-				ch = find_target(path);
+				ch = find_target(path.c_str());
 			}
 
 			if (ch)
