@@ -412,6 +412,13 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 
 	virtual void layout();
 
+	virtual void activate()
+	{
+		assert(m_texture_id > 0);
+		glEnable(GL_TEXTURE_2D);
+		glBindTexture(GL_TEXTURE_2D, m_texture_id);
+	}
+
 	// misc
 	int p2(int n);
 

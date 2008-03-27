@@ -21,7 +21,7 @@ static int std_read_func(void* dst, int bytes, void* appdata)
 {
 	assert(appdata);
 	assert(dst);
-	return fread( dst, 1, bytes, (FILE *)appdata );
+	return (int) fread( dst, 1, bytes, (FILE *)appdata );
 }
 
 static int std_write_func(const void* src, int bytes, void* appdata)
@@ -29,7 +29,7 @@ static int std_write_func(const void* src, int bytes, void* appdata)
 {
 	assert(appdata);
 	assert(src);
-	return fwrite( src, 1, bytes, (FILE *)appdata );
+	return (int) fwrite( src, 1, bytes, (FILE *)appdata );
 }
 
 static int std_seek_func(int pos, void *appdata)
@@ -526,7 +526,7 @@ int	tu_file::printf(const char* fmt, ...)
 	vsnprintf(buffer, BUFFER_SIZE, fmt, ap);
 	va_end(ap);
 
-	return write_bytes(buffer, strlen(buffer));
+	return (int) write_bytes(buffer, strlen(buffer));
 }
 
 

@@ -670,6 +670,7 @@ namespace gameswf
 	struct bitmap_info : public ref_counted
 	{
 		virtual void layout() {};
+		virtual void activate() {};
 		virtual int get_width() const { return 0; }
 		virtual int get_height() const { return 0; }
 	};

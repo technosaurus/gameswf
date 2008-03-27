@@ -347,8 +347,8 @@ namespace gameswf
 			smart_ptr<bitmap_info> bi;
 			if (m_def->m_material.get(infile, &bi))
 			{
-				glEnable(GL_TEXTURE_2D);
-				glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+				bi->activate();
+
 				glDisable(GL_TEXTURE_GEN_S);
 				glDisable(GL_TEXTURE_GEN_T);
 
@@ -403,11 +403,11 @@ namespace gameswf
 			if (m_def->m_material.get(mat->texture1_map.name, &bi))
 			{
 				// get texture size
-				int	tw = 1; while (tw < bi->m_original_width) { tw <<= 1; }
-				int	th = 1; while (th < bi->m_original_height) { th <<= 1; }
+				int	tw = 1; while (tw < bi->get_width()) { tw <<= 1; }
+				int	th = 1; while (th < bi->get_height()) { th <<= 1; }
 
-				float scale_x = (float) bi->m_original_width / tw;
-				float scale_y = (float) bi->m_original_height / th;
+				float scale_x = (float) bi->get_width() / tw;
+				float scale_y = (float) bi->get_height() / th;
 
 				float s = scale_y * (1 - V);
 				float t = U * scale_x;
