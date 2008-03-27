@@ -261,9 +261,9 @@ namespace gameswf
 			delete im;
 
 			ge->m_bounds.m_x_max = float(fe->m_face->glyph->bitmap.width) /
-				float(ge->m_bi->m_suspended_image->m_width);
+				float(ge->m_bi->get_width());
 			ge->m_bounds.m_y_max = float(fe->m_face->glyph->bitmap.rows) /
-				float(ge->m_bi->m_suspended_image->m_height);
+				float(ge->m_bi->get_height());
 
 			ge->m_bounds.m_x_min = float(fe->m_face->glyph->metrics.horiBearingX) / float(fe->m_face->glyph->metrics.width);
 			ge->m_bounds.m_y_min = float(fe->m_face->glyph->metrics.horiBearingY) / float(fe->m_face->glyph->metrics.height);

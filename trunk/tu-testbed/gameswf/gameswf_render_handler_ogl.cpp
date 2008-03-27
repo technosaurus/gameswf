@@ -400,10 +400,16 @@ struct sdl_cursor_handler {
 // bitmap_info_ogl declaration
 struct bitmap_info_ogl : public gameswf::bitmap_info
 {
+	unsigned int	m_texture_id;
+	int m_width;
+	int m_height;
+	image::image_base* m_suspended_image;
+
 	bitmap_info_ogl();
 	bitmap_info_ogl(int width, int height, Uint8* data);
 	bitmap_info_ogl(image::rgb* im);
 	bitmap_info_ogl(image::rgba* im);
+
 	virtual void layout();
 
 	// misc
@@ -416,7 +422,12 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 			glDeleteTextures(1, (GLuint*) &m_texture_id);
 			m_texture_id = 0;	// for debuging
 		}
+		delete m_suspended_image;
 	}
+		
+	virtual int get_width() const { return m_width; }
+	virtual int get_height() const { return m_height; }
+
 };
 
 struct render_handler_ogl : public gameswf::render_handler
@@ -566,8 +577,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		bool	m_has_nonzero_bitmap_additive_color;
 		float m_width;	// for line style
 		
-		fill_style()
-			:
+		fill_style() :
 			m_mode(INVALID),
 			m_has_nonzero_bitmap_additive_color(false)
 		{
@@ -609,13 +619,9 @@ struct render_handler_ogl : public gameswf::render_handler
 							  );
 					}
 
-					if (m_bitmap_info->m_texture_id == 0 && m_bitmap_info->m_suspended_image != NULL)
-					{
-						m_bitmap_info->layout();
-					}
-
-					glBindTexture(GL_TEXTURE_2D, m_bitmap_info->m_texture_id);
-					glEnable(GL_TEXTURE_2D);
+					m_bitmap_info->layout();
+//					glBindTexture(GL_TEXTURE_2D, m_bitmap_info->m_texture_id);
+//					glEnable(GL_TEXTURE_2D);
 					glEnable(GL_TEXTURE_GEN_S);
 					glEnable(GL_TEXTURE_GEN_T);
 				
@@ -633,8 +639,8 @@ struct render_handler_ogl : public gameswf::render_handler
 
 					// Set up the bitmap matrix for texgen.
 
-					float	inv_width = 1.0f / m_bitmap_info->m_original_width;
-					float	inv_height = 1.0f / m_bitmap_info->m_original_height;
+					float	inv_width = 1.0f / m_bitmap_info->get_width();
+					float	inv_height = 1.0f / m_bitmap_info->get_height();
 
 					const gameswf::matrix&	m = m_bitmap_matrix;
 					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
@@ -1175,13 +1181,10 @@ struct render_handler_ogl : public gameswf::render_handler
 		d.m_x = b.m_x + c.m_x - a.m_x;
 		d.m_y = b.m_y + c.m_y - a.m_y;
 
-		if (bi->m_texture_id == 0 && bi->m_suspended_image != NULL)
-		{
-			bi->layout();
-		}
+		bi->layout();
+//		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
+//		glEnable(GL_TEXTURE_2D);
 
-		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
-		glEnable(GL_TEXTURE_2D);
 		glDisable(GL_TEXTURE_GEN_S);
 		glDisable(GL_TEXTURE_GEN_T);
 
@@ -1495,32 +1498,6 @@ void	software_resample(
 	delete [] rescaled;
 }
 
-
-bitmap_info_ogl::bitmap_info_ogl()
-// Make a placeholder bitmap_info.  Must be filled in later before
-// using.
-{
-	m_texture_id = 0;
-	m_original_width = 0;
-	m_original_height = 0;
-}
-
-bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* data)
-{
-	assert(width > 0);
-	assert(height > 0);
-	assert(data);
-	m_suspended_image = image::create_alpha(width, height);
-	memcpy(m_suspended_image->m_data, data, m_suspended_image->m_pitch * m_suspended_image->m_height);
-}
-
-bitmap_info_ogl::bitmap_info_ogl(image::rgb* im)
-{
-	assert(im);
-	m_suspended_image = image::create_rgb(im->m_width, im->m_height);
-	memcpy(m_suspended_image->m_data, im->m_data, im->m_pitch * im->m_height);
-}
-
 int bitmap_info_ogl::p2(int n)
 {
 	int	p = 1; while (p < n) { p <<= 1; }
@@ -1534,86 +1511,125 @@ int bitmap_info_ogl::p2(int n)
 	return p;
 }
 
-bitmap_info_ogl::bitmap_info_ogl(image::rgba* im)
+bitmap_info_ogl::bitmap_info_ogl() :
+	m_texture_id(0),
+	m_width(0),
+	m_height(0),
+	m_suspended_image(0)
+{
+}
+
+bitmap_info_ogl::bitmap_info_ogl(image::rgba* im) :
+	m_texture_id(0),
+	m_width(im->m_width),
+	m_height(im->m_height)
 {
 	assert(im);
 	m_suspended_image = image::create_rgba(im->m_width, im->m_height);
 	memcpy(m_suspended_image->m_data, im->m_data, im->m_pitch * im->m_height);
 }
 
+bitmap_info_ogl::bitmap_info_ogl(int width, int height, Uint8* data) :
+	m_texture_id(0),
+	m_width(width),
+	m_height(height)
+{
+	assert(width > 0 && height > 0 && data);
+	m_suspended_image = image::create_alpha(width, height);
+	memcpy(m_suspended_image->m_data, data, m_suspended_image->m_pitch * m_suspended_image->m_height);
+}
+
+bitmap_info_ogl::bitmap_info_ogl(image::rgb* im) :
+	m_texture_id(0),
+	m_width(im->m_width),
+	m_height(im->m_height)
+{
+	assert(im);
+	m_suspended_image = image::create_rgb(im->m_width, im->m_height);
+	memcpy(m_suspended_image->m_data, im->m_data, im->m_pitch * im->m_height);
+}
+
 // layout image to opengl texture memory
 void bitmap_info_ogl::layout()
 {
-	assert(m_suspended_image);
-
-	// Create the texture.
-	glEnable(GL_TEXTURE_2D);
-	glGenTextures(1, (GLuint*) &m_texture_id);
-	glBindTexture(GL_TEXTURE_2D, m_texture_id);
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-	m_original_width = m_suspended_image->m_width;
-	m_original_height = m_suspended_image->m_height;
-
-	int bpp = 4;
-	int format = GL_RGBA;
-
-	switch (m_suspended_image->m_type)
+	if (m_texture_id == 0)
 	{
-		case image::image_base::RGB:
+		assert(m_suspended_image);
+
+		// Create the texture.
+		glEnable(GL_TEXTURE_2D);
+		glGenTextures(1, (GLuint*) &m_texture_id);
+		glBindTexture(GL_TEXTURE_2D, m_texture_id);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+		m_width = m_suspended_image->m_width;
+		m_height = m_suspended_image->m_height;
+
+		int bpp = 4;
+		int format = GL_RGBA;
+
+		switch (m_suspended_image->m_type)
 		{
-			bpp = 3;
-			format = GL_RGB;
-		}
-
-		case image::image_base::RGBA:
-		{
-			int	w = p2(m_suspended_image->m_width);
-			int	h = p2(m_suspended_image->m_height);
-			if (w != m_suspended_image->m_width || h != m_suspended_image->m_height)
+			case image::image_base::RGB:
 			{
-				// Faster/simpler software bilinear rescale.
-				software_resample(bpp, m_suspended_image->m_width, m_suspended_image->m_height,
-					m_suspended_image->m_pitch, m_suspended_image->m_data, w, h);
-			}
-			else
-			{
-				// Use original image directly.
-				create_texture(format, w, h, m_suspended_image->m_data, 0);
-			}
-			break;
-		}
-
-		case image::image_base::ALPHA:
-		{
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-
-			int	w = m_suspended_image->m_width;
-			int	h = m_suspended_image->m_height;
-			create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, 0);
-
-			// Build mips.
-			int	level = 1;
-			while (w > 1 || h > 1)
-			{
-				render_handler_ogl::make_next_miplevel(&w, &h, m_suspended_image->m_data);
-				create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, level);
-				level++;
+				bpp = 3;
+				format = GL_RGB;
 			}
 
-			break;
+			case image::image_base::RGBA:
+			{
+				int	w = p2(m_suspended_image->m_width);
+				int	h = p2(m_suspended_image->m_height);
+				if (w != m_suspended_image->m_width || h != m_suspended_image->m_height)
+				{
+					// Faster/simpler software bilinear rescale.
+					software_resample(bpp, m_suspended_image->m_width, m_suspended_image->m_height,
+						m_suspended_image->m_pitch, m_suspended_image->m_data, w, h);
+				}
+				else
+				{
+					// Use original image directly.
+					create_texture(format, w, h, m_suspended_image->m_data, 0);
+				}
+				break;
+			}
+
+			case image::image_base::ALPHA:
+			{
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+				int	w = m_suspended_image->m_width;
+				int	h = m_suspended_image->m_height;
+				create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, 0);
+
+				// Build mips.
+				int	level = 1;
+				while (w > 1 || h > 1)
+				{
+					render_handler_ogl::make_next_miplevel(&w, &h, m_suspended_image->m_data);
+					create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, level);
+					level++;
+				}
+
+				break;
+			}
+
+			default:
+				assert(0);
 		}
 
-		default:
-			assert(0);
+		delete m_suspended_image;
+		m_suspended_image = NULL;
 	}
-
-	delete m_suspended_image;
-	m_suspended_image = NULL;
+	else
+	{
+		glBindTexture(GL_TEXTURE_2D, m_texture_id);
+		glEnable(GL_TEXTURE_2D);
+	}
 }
 
 gameswf::render_handler*	gameswf::create_render_handler_ogl()
