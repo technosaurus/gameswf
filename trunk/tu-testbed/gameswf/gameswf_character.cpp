@@ -12,8 +12,7 @@
 namespace gameswf
 {
 
-	character::character(character* parent, int id)
-		:
+	character::character(character* parent, int id)	:
 		m_id(id),
 		m_parent(parent),
 		m_depth(0),

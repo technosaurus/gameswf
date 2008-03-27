@@ -13,6 +13,7 @@
 #include "gameswf/gameswf_action.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_function.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
@@ -25,6 +26,55 @@ namespace gameswf
 	struct swf_event;
 	struct as_mcloader;
 
+	// A character_def is the immutable data representing the template of a
+	// movie element.
+	//
+	// @@ This is not really a public interface.  It's here so it
+	// can be mixed into movie_definition, movie_definition_sub,
+	// and sprite_definition, without using multiple inheritance.
+	struct character_def : public as_object_interface
+	{
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_CHARACTER_DEF };
+		virtual bool is(int class_id) const
+		{
+			return m_class_id == class_id;
+		}
+
+		character_def()	:
+			m_id(-1)
+		{
+		}
+
+		virtual ~character_def() {}
+
+		virtual void	display(character* instance_info) {}
+		virtual bool	point_test_local(float x, float y) { return false; }
+		virtual void get_bound(rect* bound) { assert(0); };
+
+		// Should stick the result in a smart_ptr immediately.
+		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character
+
+		//
+		// Caching.
+		//
+
+		virtual void	output_cached_data(tu_file* out, const cache_options& options) {}
+		virtual void	input_cached_data(tu_file* in) {}
+
+		// for definetext, definetext2 & defineedittext tags
+		virtual void	csm_textsetting(stream* in, int tag_type) { assert(0); };
+
+		void set_registered_class_constructor(const as_value & value);
+		void instanciate_registered_class(character * ch);
+
+		private:
+
+		int	m_id;
+		smart_ptr<as_function> m_registered_class_constructor;
+
+	};
+
 	// Information about how to display a character.
 	struct display_info
 	{
@@ -35,8 +85,7 @@ namespace gameswf
 		float	m_ratio;
 		Uint16	m_clip_depth;
 
-		display_info()
-			:
+		display_info() :
 			m_parent(NULL),
 			m_depth(0),
 			m_ratio(0.0f),
