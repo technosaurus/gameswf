@@ -26,6 +26,7 @@ namespace gameswf
 		X3DS
 	};
 
+	// static
 	file_type get_file_type(const char* url)
 	{
 		tu_string fn = url;
@@ -53,6 +54,7 @@ namespace gameswf
 		return UNKNOWN;
 	}
 
+	// static
 	tu_string get_full_url(const char* url)
 	{
 		 tu_string fn;
@@ -70,6 +72,27 @@ namespace gameswf
 
 		return fn;
 	}
+
+	// static
+	const char*	next_slash_or_dot(const char* word)
+	// Search for next '.' or '/' character in this word.  Return
+	// a pointer to it, or to NULL if it wasn't found.
+	{
+		for (const char* p = word; *p; p++)
+		{
+			if (*p == '.' && p[1] == '.')
+			{
+				p++;
+			}
+			else if (*p == '.' || *p == '/')
+			{
+				return p;
+			}
+		}
+
+		return NULL;
+	}
+
 
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, const as_value& target_value)
@@ -163,7 +186,7 @@ namespace gameswf
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
 		{
-			target = find_target(path);	// @@ Use with_stack here too???  Need to test.
+			target = find_target(path.c_str());	// @@ Use with_stack here too???  Need to test.
 			if (target)
 			{
 				as_value	val;
@@ -255,7 +278,7 @@ namespace gameswf
 			IF_VERBOSE_ACTION(log_msg("-------------- ActionSetTarget2: %s", path.c_str()));
 			if (path.size() > 0)
 			{
-				character* tar = find_target(path);
+				character* tar = find_target(path.c_str());
 				if (tar)
 				{
 					set_target(tar);
@@ -296,7 +319,7 @@ namespace gameswf
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
 		{
-			target = find_target(path);
+			target = find_target(path.c_str());
 			if (target)
 			{
 				target->set_member(var, val);
@@ -319,7 +342,8 @@ namespace gameswf
 		for (int i = with_stack.size() - 1; i >= 0; i--)
 		{
 			as_object*	obj = with_stack[i].m_object.get_ptr();
-			if (obj && obj->get_member(varname, NULL))
+			as_value unused;
+			if (obj && obj->get_member(varname, &unused))
 			{
 				// This object has the member; so set it here.
 				obj->set_member(varname, val);
@@ -512,98 +536,13 @@ namespace gameswf
 		return true;
 	}
 
-
-	character*	as_environment::find_target(const as_value& val) const
-	// Find the sprite/movie represented by the given value.  The
-	// value might be a reference to the object itself, or a
-	// string giving a relative path name to the object.
+	character*	as_environment::find_target(const as_value& target) const
 	{
-		if (val.is_object())
+		if (m_target)
 		{
-			return cast_to<character>(val.to_object());
+			return m_target->find_target(target);
 		}
-		else
-		if (val.is_string())
-		{
-			return find_target(val.to_tu_string());
-		}
-		else
-		{
-			IF_VERBOSE_ACTION(log_msg("error: invalid path; neither string nor object\n"));
-			return NULL;
-		}
-	}
-
-
-	const char*	next_slash_or_dot(const char* word)
-	// Search for next '.' or '/' character in this word.  Return
-	// a pointer to it, or to NULL if it wasn't found.
-	{
-		for (const char* p = word; *p; p++)
-		{
-			if (*p == '.' && p[1] == '.')
-			{
-				p++;
-			}
-			else if (*p == '.' || *p == '/')
-			{
-				return p;
-			}
-		}
-
 		return NULL;
-	}
-
-
-	character*	as_environment::find_target(const tu_string& path) const
-	// Find the sprite/movie referenced by the given path.
-	{
-		if (path.length() <= 0)
-		{
-			return m_target;
-		}
-
-		assert(path.length() > 0);
-
-		character*	env = m_target;
-		assert(env);
-		
-		const char*	p = path.c_str();
-		tu_string	subpart;
-
-		if (*p == '/')
-		{
-			// Absolute path.  Start at the root.
-			env = env->get_relative_target("_level0");
-			p++;
-		}
-
-		for (;;)
-		{
-			const char*	next_slash = next_slash_or_dot(p);
-			subpart = p;
-			if (next_slash == p)
-			{
-				log_error("error: invalid path '%s'\n", path.c_str());
-				break;
-			}
-			else if (next_slash)
-			{
-				// Cut off the slash and everything after it.
-				subpart.resize(int(next_slash - p));
-			}
-
-			env = env->get_relative_target(subpart);
-			//@@   _level0 --> root, .. --> parent, . --> this, other == character
-
-			if (env == NULL || next_slash == NULL)
-			{
-				break;
-			}
-
-			p = next_slash + 1;
-		}
-		return env;
 	}
 
 }

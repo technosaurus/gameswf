@@ -219,7 +219,7 @@ namespace gameswf
 
 		character* create_text_field(const char* name, int depth, int x, int y, int width, int height);
 
-		virtual character*	find_target(const tu_string& path) const;
+		virtual character*	find_target(const as_value& target);
 
 		virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		virtual as_environment*	get_environment() { return &m_as_environment; }

@@ -121,9 +121,8 @@ namespace gameswf
 
 		// Internal.
 		int	find_local(const tu_string& varname, bool ignore_barrier) const;
-		character*	find_target(const tu_string& path) const;
-		character*	find_target(const as_value& val) const;
 		character* load_file(const char* url, const as_value& target);
+		character*	find_target(const as_value& target) const;
 
 		private:
 

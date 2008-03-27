@@ -23,6 +23,8 @@ namespace gameswf
 {
 
 	struct as_mcloader;
+
+	const char*	next_slash_or_dot(const char* word);
 	void	execute_actions(as_environment* env, const array<action_buffer*>& action_list);
 
 	// this stuff should be high optimized
@@ -1423,9 +1425,63 @@ namespace gameswf
 		return textfield;
 	}
 
-	character*	sprite_instance::find_target(const tu_string& path) const
+	character*	sprite_instance::find_target(const as_value& target)
+	// Find the sprite/movie referenced by the given path.
 	{
-		return m_as_environment.find_target(path);
+		if (target.is_string())
+		{
+			const tu_string& path = target.to_tu_string();
+			if (path.length() == 0)
+			{
+				return this;
+			}
+
+			assert(path.length() > 0);
+
+			character*	tar = this;
+			
+			const char*	p = path.c_str();
+			tu_string	subpart;
+
+			if (*p == '/')
+			{
+				// Absolute path.  Start at the root.
+				tar = get_root_movie();
+				p++;
+			}
+
+			for (;;)
+			{
+				const char*	next_slash = next_slash_or_dot(p);
+				subpart = p;
+				if (next_slash == p)
+				{
+					log_error("error: invalid path '%s'\n", path.c_str());
+					break;
+				}
+				else if (next_slash)
+				{
+					// Cut off the slash and everything after it.
+					subpart.resize(int(next_slash - p));
+				}
+
+				tar = tar->get_relative_target(subpart);
+				//@@   _level0 --> root, .. --> parent, . --> this, other == character
+
+				if (tar == NULL || next_slash == NULL)
+				{
+					break;
+				}
+
+				p = next_slash + 1;
+			}
+			return tar;
+		}
+		else
+		{
+			return cast_to<character>(target.to_object());
+		}
+
 	}
 
 	void	sprite_instance::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
