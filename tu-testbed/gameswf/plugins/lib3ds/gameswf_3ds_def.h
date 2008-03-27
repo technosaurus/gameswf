@@ -15,21 +15,16 @@
 
 namespace gameswf
 {
-	struct x3ds_texture
-	{
-		GLuint m_tex_id;
-		GLfloat m_scale_x, m_scale_y;
-	};
-
 	struct x3ds_definition : public character_def
 	{
 		Lib3dsFile* m_file;
-		//int m_lightList;
+		int m_lightList;
 		rect	m_rect;
 
 		// textures required for 3D model
-		stringi_hash< x3ds_texture * > m_texture;
-		stringi_hash< x3ds_texture * > m_bump;
+		// <texture name, bitmap> m_material
+		stringi_hash< smart_ptr<bitmap_info> > m_material;
+
 
 		x3ds_definition(const char* url);
 		~x3ds_definition();
@@ -47,7 +42,6 @@ namespace gameswf
 
 		void remove_camera(Lib3dsCamera* camera);
 		void load_texture(const char* infile);
-		void load_bump(const char* infile);
 
 		void get_bounding_center(Lib3dsVector bmin, Lib3dsVector bmax, Lib3dsVector center, float* size);
 		void ensure_camera();

@@ -23,8 +23,6 @@
 #include "gameswf_3ds_def.h"
 #include "gameswf_3ds_inst.h"
 
-extern PFNGLACTIVETEXTUREPROC glActiveTexture;
-
 namespace gameswf
 {
 
@@ -46,7 +44,7 @@ namespace gameswf
 	  for (Lib3dsMaterial* p = m_file->materials; p != 0; p = p->next)
 		{
 			load_texture(p->texture1_map.name);
-			load_bump(p->bump_map.name);
+			load_texture(p->bump_map.name);
 		}
 
 		ensure_camera();
@@ -58,19 +56,6 @@ namespace gameswf
 
 	x3ds_definition::~x3ds_definition()
 	{
-		x3ds_texture *tex;
-		for (Lib3dsMaterial* p = m_file->materials; p != 0; p = p->next)
-		{
-			if (m_texture.get(p->texture1_map.name, &tex))
-			{
-				free(tex);
-			}
-			if (m_bump.get(p->bump_map.name, &tex))
-			{
-				free(tex);
-			}
-		}
-
 		if (m_file)
 		{
 			lib3ds_file_free(m_file);
@@ -89,7 +74,7 @@ namespace gameswf
 			return;
 		}			
 
-		if (m_texture.get(infile, NULL))
+		if (m_material.get(infile, NULL))
 		{
 			// loaded already
 			return;
@@ -108,137 +93,16 @@ namespace gameswf
 		image::rgb* im = image::read_jpeg(url.c_str());
 		if (im)
 		{
-			int width = im->m_width;
-			int height = im->m_height;
-			int size = im->m_height * im->m_pitch; //width * height * bpp;
-
-			unsigned char* data = new unsigned char[size];
-			unsigned char* copy_data = im->m_data; //ilGetData();
-			memcpy(data, copy_data, size);
-			x3ds_texture *tex = new x3ds_texture;
-			glGenTextures(1, &tex->m_tex_id);
-			glBindTexture(GL_TEXTURE_2D, tex->m_tex_id);
-			GLint	tex_size = 1;
-			while (tex_size < width)	{ tex_size <<= 1; }
-			while (tex_size < height)	{ tex_size <<= 1; }
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex_size, tex_size, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-			tex->m_scale_x = (GLfloat)width / (GLfloat)tex_size;
-			tex->m_scale_y = (GLfloat)height / (GLfloat)tex_size;
-			m_texture[infile] = tex;
-
+			bitmap_info* bi = get_render_handler()->create_bitmap_info_rgb(im);
 			delete im;
-			delete [] data;
+			bi->layout();
+			delete bi->m_suspended_image;
+			bi->m_suspended_image = NULL;
+			m_material[infile] = bi;
 		}
-	}
-
-	void x3ds_definition::load_bump(const char* infile)
-	{
-		if (infile == NULL)
+		else
 		{
-			return;
-		}			
-
-		if (strlen(infile) == 0)
-		{
-			return;
-		}			
-
-		if (m_bump.get(infile, NULL))
-		{
-			// loaded already
-			return;
-		}
-
-		// try to load & create texture from file
-
-		// is path relative ?
-		tu_string url = get_workdir();
-		if (strstr(infile, ":") || infile[0] == '/')
-		{
-			url = "";
-		}
-		url += infile;
-
-		image::rgb* im = image::read_jpeg(url.c_str());
-		if (im)
-		{
-			int width = im->m_width; //ilGetInteger(IL_IMAGE_WIDTH); 
-			int height = im->m_height; //ilGetInteger(IL_IMAGE_HEIGHT);
-//			int bpp = ilGetInteger(IL_IMAGE_BYTES_PER_PIXEL);
-			int size = im->m_height * im->m_pitch; //width * height * bpp;
-			int bpp = 3; //hack
-
-			unsigned char* data = im->m_data; //ilGetData();
-			GLfloat *texels = new GLfloat[width * height * 4];
-			GLfloat nx, ny, nz, scale, nx1, nx2, ny1, ny2;
-			GLint u, v, du1, dv1, du2, dv2;
-
-			for (v = 0; v < height; v++)
-			{
-				for (u = 0; u < width; u++)
-				{
-					du1 = (u > 0) ? u - 1 : u; // u - 1
-					dv1 = (v > 0) ? v - 1 : v; // v - 1
-					du2 = (u < width - 1) ? u + 1 : u; // u + 1
-					dv2 = (v < height - 1) ? v + 1 : v; // v + 1
-					// NTSC grayscale conversion
-					nx1 = 0.299*data[(v*width*bpp)+(du1*bpp)+0]
-						+ 0.587*data[(v*width*bpp)+(du1*bpp)+1]
-						+ 0.114*data[(v*width*bpp)+(du1*bpp)+2];
-					nx2 = 0.299*data[(v*width*bpp)+(du2*bpp)+0]
-						+ 0.587*data[(v*width*bpp)+(du2*bpp)+1]
-						+ 0.114*data[(v*width*bpp)+(du2*bpp)+2];
-					ny1 = 0.299*data[(dv1*width*bpp)+(u*bpp)+0]
-						+ 0.587*data[(dv1*width*bpp)+(u*bpp)+1]
-						+ 0.114*data[(dv1*width*bpp)+(u*bpp)+2];
-					ny2 = 0.299*data[(dv2*width*bpp)+(u*bpp)+0]
-						+ 0.587*data[(dv2*width*bpp)+(u*bpp)+1]
-						+ 0.114*data[(dv2*width*bpp)+(u*bpp)+2];
-					nx = nx1 - nx2;
-					ny = ny1 - ny2;
-					nz = 1.0f;
-		            
-					scale = 1.0f / sqrt((nx*nx) + (ny*ny) + (nz*nz));
-
-					texels[(v*width*4)+(u*4)+0] = (nx * scale * 0.5f) + 0.5f;
-					texels[(v*width*4)+(u*4)+1] = (ny * scale * 0.5f) + 0.5f;
-					texels[(v*width*4)+(u*4)+2] = (nz * scale * 0.5f) + 0.5f;
-					texels[(v*width*4)+(u*4)+3] = 1.0f;
-				}
-			}
-			x3ds_texture *tex = new x3ds_texture;
-			glGenTextures(1, &tex->m_tex_id);
-			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, tex->m_tex_id);
-			GLint	tex_size = 1;
-			while (tex_size < width)	{ tex_size <<= 1; }
-			while (tex_size < height)	{ tex_size <<= 1; }
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16, tex_size, tex_size, 0, GL_RGBA, GL_FLOAT, NULL);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_FLOAT, texels);
-			tex->m_scale_x = (GLfloat)width / (GLfloat)tex_size;
-			tex->m_scale_y = (GLfloat)height / (GLfloat)tex_size;
-			m_bump[infile] = tex;
-			glActiveTexture(GL_TEXTURE0);
-
-			delete im;
-			delete [] texels;
-
-			//if (glGetError() != GL_NO_ERROR)
-			//{
-			//	log_error("Load bump GL Error!\n");
-			//}
-
+			log_error("can't load '%s'\n", infile);
 		}
 	}
 
@@ -273,7 +137,7 @@ namespace gameswf
 		{
 			// Fabricate camera
 
-			Lib3dsCamera* camera = lib3ds_camera_new("Perspective");
+			Lib3dsCamera* camera = lib3ds_camera_new("Perscpective");
 
 			float size;
 			Lib3dsVector bmin, bmax;
