@@ -669,37 +669,9 @@ namespace gameswf
 	// using textures.
 	struct bitmap_info : public ref_counted
 	{
-		unsigned int	m_texture_id;		// nuke?
-		int		m_original_width;	// nuke?
-		int		m_original_height;	// nuke?
-
 		virtual void layout() {};
-		image::image_base* m_suspended_image;
-		
-		bitmap_info()
-			:
-			m_texture_id(0),
-			m_original_width(0),
-			m_original_height(0),
-			m_suspended_image(0)
-		{
-		}
-		
-		~bitmap_info()
-		{
-			delete m_suspended_image;
-		}
-
-		int get_width() const
-		{
-			return m_suspended_image ? m_suspended_image->m_width : m_original_width;
-		}
-
-		int get_height() const
-		{
-			return m_suspended_image ? m_suspended_image->m_height : m_original_height;
-		}
-
+		virtual int get_width() const { return 0; }
+		virtual int get_height() const { return 0; }
 	};
 
 	// You must define a subclass of render_handler, and pass an
