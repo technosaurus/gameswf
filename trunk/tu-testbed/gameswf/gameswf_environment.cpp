@@ -508,7 +508,7 @@ namespace gameswf
 		// Make the subparts.
 		*var = colon + 1;
 		*path = var_path;
-		path->resize(int(colon - var_path.c_str()) - 1);
+		path->resize(int(colon - var_path.c_str()));
 		return true;
 	}
 

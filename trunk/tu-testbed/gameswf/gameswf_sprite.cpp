@@ -1066,6 +1066,11 @@ namespace gameswf
 		// In ActionScript 1.0, everything seems to be CASE
 		// INSENSITIVE.
 	{
+		if (name.size() == 0)
+		{
+			return this;
+		}
+
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{

@@ -747,7 +747,7 @@ namespace gameswf
 			s_global->builtin_member("getVersion",  as_global_get_version);
 			s_global->builtin_member("parseFloat",  as_global_parse_float);
 			s_global->builtin_member("isNaN",  as_global_isnan);
-			s_global->builtin_member("/:$version",  "gameSWF");
+			s_global->builtin_member("$version",  "gameSWF");
 
 		}
 	}
