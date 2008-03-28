@@ -46,10 +46,27 @@ namespace gameswf
 				fn.result->set_bool(sprite->hit_test(ch));
 				return;
 			}
-			log_error("hiTest: can't find target\n");
+			log_error("hitTest: can't find target\n");
 			return;
 		}
-		log_error("hiTest(x,y,flag) is't implemented yet\n");
+		log_error("hitTest(x,y,flag) is't implemented yet\n");
+	}
+
+	void	sprite_start_drag(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+
+		get_current_root()->start_drag(sprite);
+	}
+
+	void	sprite_stop_drag(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+
+		if( get_current_root()->m_drag_state.m_character == sprite )
+		{
+			get_current_root()->stop_drag();
+		}
 	}
 
 	void	sprite_play(const fn_call& fn)

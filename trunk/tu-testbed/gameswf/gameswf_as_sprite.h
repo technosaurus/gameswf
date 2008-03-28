@@ -21,6 +21,8 @@ namespace gameswf
 	//
 
 	void	sprite_hit_test(const fn_call& fn);
+	void	sprite_start_drag(const fn_call& fn);
+	void	sprite_stop_drag(const fn_call& fn);
 	void	sprite_play(const fn_call& fn);
 	void	sprite_stop(const fn_call& fn);
 	void	sprite_goto_and_play(const fn_call& fn);

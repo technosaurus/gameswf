@@ -1520,12 +1520,17 @@ namespace gameswf
 				bool	has_char = in->read_uint(1) ? true : false;
 				bool	flag_move = in->read_uint(1) ? true : false;
 
+                bool    has_image = false;
+                bool    has_class_name = false;
 				bool	has_cache_asbitmap = false;
 				bool	has_blend_mode = false;
 				bool	has_filter_list = false;
 				if (tag_type == 70)
 				{
-					in->read_uint(5); // unused
+					in->read_uint(3); // unused
+
+                    has_image = in->read_uint(1) ? true : false;
+                    has_class_name = in->read_uint(1) ? true : false;
 					has_cache_asbitmap = in->read_uint(1) ? true : false;
 					has_blend_mode = in->read_uint(1) ? true : false;
 					has_filter_list = in->read_uint(1) ? true : false;
@@ -1568,7 +1573,7 @@ namespace gameswf
 				{
 
 					// TODO, test has_filter_list
-					assert(0);
+					//assert(0);
 
 					// reads FILTERLIST
 					int filters = in->read_u8();
@@ -1590,6 +1595,7 @@ namespace gameswf
 								bool knockout = in->read_bool();	// Knockout mode
 								bool composite_source = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(5); // passes
+								IF_VERBOSE_PARSE(log_msg("  filter = DropShadowFilter\n" ));
 								break;
 							}
 
@@ -1599,6 +1605,7 @@ namespace gameswf
 								float blur_y = in->read_fixed(); // Vertical blur amount
 								int passes = in->read_uint(5);	// Number of blur passes
 								in->read_uint(3);	// Reserved UB[3] Must be 0
+								IF_VERBOSE_PARSE(log_msg("  filter = BlurFilter\n" ));
 								break;
 							}
 
@@ -1612,7 +1619,9 @@ namespace gameswf
 								bool inner_glow = in->read_bool();	// Inner glow mode
 								bool knockout = in->read_bool();	// Knockout mode
 								bool composite_source = in->read_bool();	// Composite source Always 1
-								int passes = in->read_uint(5); // passes
+								in->read_uint(5); // passes
+								in->read_u8();// If not present, when parsing several filters, filter type is not correct
+								IF_VERBOSE_PARSE(log_msg("  filter = GlowFilter\n" ));
 								break;
 							}
 
@@ -1632,6 +1641,8 @@ namespace gameswf
 								bool composite_source = in->read_bool();	// Composite source Always 1
 								bool on_top = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(4); // passes
+								in->read_u8();// If not present, when parsing several filters, filter type is not correct
+								IF_VERBOSE_PARSE(log_msg("  filter = BevelFilter\n" ));
 								break;
 							}
 
@@ -1657,6 +1668,7 @@ namespace gameswf
 								bool composite_source = in->read_bool();	// Composite source Always 1
 								bool on_top = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(4); // passes
+								IF_VERBOSE_PARSE(log_msg("  filter = GradientGlowFilter\n" ));
 								break;
 							}
 
@@ -1675,6 +1687,7 @@ namespace gameswf
 								in->read_uint(6);		// Reserved UB[6] Must be 0
 								bool clamp = in->read_bool();	// UB[1] Clamp mode
 								bool preserve_alpha = in->read_bool();	// UB[1]
+								IF_VERBOSE_PARSE(log_msg("  filter = ConvolutionFilter\n" ));
 								break;
 							}
 
@@ -1684,6 +1697,7 @@ namespace gameswf
 								{
 									in->read_float();
 								}
+								IF_VERBOSE_PARSE(log_msg("  filter = ColorMatrixFilter\n" ));
 								break;
 
 							case 7 : // GradientBevelFilter
@@ -1708,6 +1722,7 @@ namespace gameswf
 								bool composite_source = in->read_bool();	// Composite source Always 1
 								bool on_top = in->read_bool();	// Composite source Always 1
 								int passes = in->read_uint(4); // passes
+								IF_VERBOSE_PARSE(log_msg("  filter = GradientBevelFilter\n" ));
 								break;
 							}
 

@@ -312,6 +312,18 @@ namespace gameswf
 
 	character*	root::get_root_movie() { return m_movie.get_ptr(); }
 
+	void	root::start_drag(character* ch)
+	{
+		assert(ch);
+
+		if( m_drag_state.m_character != NULL )
+		{
+			stop_drag();
+		}
+
+		m_drag_state.m_character = ch;
+		m_drag_state.m_lock_center = true; //TODO
+	}
 
 	void	root::stop_drag()
 	{
