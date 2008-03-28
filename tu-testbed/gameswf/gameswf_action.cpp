@@ -77,7 +77,6 @@
 // getBytesTotal()
 
 // TODO builtins
-// parseInt()
 // Number.MAX_VALUE, Number.MIN_VALUE
 // String.fromCharCode()
 
@@ -504,6 +503,25 @@ namespace gameswf
 		fn.result->set_nan();
 	}
 
+	void as_global_parse_int(const fn_call& fn)
+	{
+		if( fn.nargs == 2 )
+		{
+			log_error( "parseInt: radix is not yet supported\n" );
+		}
+
+		if (fn.nargs > 1)
+		{
+			int res;
+			if (string_to_number(&res, fn.arg(0).to_string()))
+			{
+				fn.result->set_int(res);
+				return;
+			}
+		}
+		fn.result->set_nan();
+	}
+
 	void as_global_isnan(const fn_call& fn)
 	{
 		if (fn.nargs == 1)  
@@ -681,6 +699,8 @@ namespace gameswf
 			map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
 			map->add("removeMovieClip", sprite_remove_movieclip);
 			map->add("hitTest", sprite_hit_test);
+			map->add("startDrag", sprite_start_drag);
+			map->add("stopDrag", sprite_stop_drag);
 			map->add("loadMovie", sprite_loadmovie);
 			map->add("unloadMovie", sprite_unloadmovie);
 			map->add("getNextHighestDepth", sprite_getnexthighestdepth);
@@ -746,6 +766,7 @@ namespace gameswf
 			s_global->builtin_member("clearInterval",  as_global_clearinterval);
 			s_global->builtin_member("getVersion",  as_global_get_version);
 			s_global->builtin_member("parseFloat",  as_global_parse_float);
+			s_global->builtin_member("parseInt",  as_global_parse_int);
 			s_global->builtin_member("isNaN",  as_global_isnan);
 			s_global->builtin_member("$version",  "gameSWF");
 

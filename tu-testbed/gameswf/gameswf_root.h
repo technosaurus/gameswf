@@ -93,6 +93,7 @@ namespace gameswf
 		virtual void	get_mouse_state(int* x, int* y, int* buttons);
 		character*	get_root_movie();
 
+		void	start_drag(character* ch);
 		void	stop_drag();
 		movie_definition*	get_movie_definition();
 
