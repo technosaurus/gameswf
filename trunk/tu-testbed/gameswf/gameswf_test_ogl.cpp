@@ -504,10 +504,7 @@ int	main(int argc, char *argv[])
 
 		// gameSWF extension
 		// pass bootup options to Flash
-		if (bootup_options.size() > 0)
-		{
-			gameswf::set_bootup_options(bootup_options.c_str());
-		}
+		player.set_bootup_options(bootup_options);
 
 		{
 

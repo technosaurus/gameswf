@@ -17,6 +17,7 @@
 #include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_listener.h"
+#include "gameswf/gameswf_player.h"
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"

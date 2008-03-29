@@ -242,7 +242,6 @@ namespace gameswf
 		return m_def->get_frame_rate();
 	}
 
-	void	action_init();
 	void notify_key_object(key::code k, bool down);
 
 	void	root::notify_key_event(key::code k, bool down)
@@ -379,8 +378,6 @@ namespace gameswf
 		// it calls gameswf functions from separate thread to set
 		// status of netstream object
 		gameswf_engine_mutex().lock();
-
-		action_init();	// @@ put this in some global init somewhere else...
 
 		// Handle the mouse.
 		m_mouse_button_state.m_topmost_entity =

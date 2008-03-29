@@ -16,6 +16,7 @@
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_freetype.h"
 #include "gameswf/gameswf_as_sprite.h"
+#include "gameswf/gameswf_player.h"
 #include "base/tu_random.h"
 #include "base/tu_timer.h"
 #include "base/tu_loadlib.h"
@@ -88,11 +89,7 @@ namespace gameswf
 	// action stuff
 	//
 
-	void	action_init();
-
 	// Statics.
-	bool	s_inited = false;
-	smart_ptr<as_object>	s_global;
 	fscommand_callback	s_fscommand_handler = NULL;
 	Uint64 s_start_time = 0;
 
@@ -124,20 +121,6 @@ namespace gameswf
 	{
 		s_fscommand_handler = handler;
 	}
-
-	as_object* get_global()
-	{
-		return s_global.get_ptr();
-	}
-
-	void set_bootup_options(const char* param)
-	// gameSWF extension
-	// Allow pass the user bootup options to Flash (through _global._bootup)
-	{
-		action_init();
-		s_global->set_member("_bootup", param);
-	}
-
 
 	//
 	// Function/method dispatch.
@@ -633,166 +616,153 @@ namespace gameswf
 		return result;
 	}
 
-	void	action_init()
+	void	gameswf_player::action_init()
 	// Create/hook built-ins.
 	{
-		if (s_inited == false)
-		{
-			s_inited = true;
 
-			// setup builtin methods
-			stringi_hash<as_value>* map;
+		// setup builtin methods
+		stringi_hash<as_value>* map;
 
-			// as_object builtins
-			map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
-			map->add("addProperty", as_object_addproperty);
-			map->add("registerClass", as_object_registerclass);
-			map->add("hasOwnProperty", as_object_hasownproperty);
-			map->add("watch", as_object_watch);
-			map->add("unwatch", as_object_unwatch);
+		// as_object builtins
+		map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
+		map->add("addProperty", as_object_addproperty);
+		map->add("registerClass", as_object_registerclass);
+		map->add("hasOwnProperty", as_object_hasownproperty);
+		map->add("watch", as_object_watch);
+		map->add("unwatch", as_object_unwatch);
 
 		// for debugging
 #ifdef _DEBUG
-			map->add("dump", as_object_dump);
+		map->add("dump", as_object_dump);
 #endif
 
-			// as_number builtins
-			map = new_standard_method_map(BUILTIN_NUMBER_METHOD);
-			map->add("toString", as_number_to_string);
-			map->add("valueOf", as_number_valueof);
+		// as_number builtins
+		map = new_standard_method_map(BUILTIN_NUMBER_METHOD);
+		map->add("toString", as_number_to_string);
+		map->add("valueOf", as_number_valueof);
 
-			// as_boolean builtins
-			map = new_standard_method_map(BUILTIN_BOOLEAN_METHOD);
-			map->add("toString", as_boolean_to_string);
-			map->add("valueOf", as_boolean_valueof);
+		// as_boolean builtins
+		map = new_standard_method_map(BUILTIN_BOOLEAN_METHOD);
+		map->add("toString", as_boolean_to_string);
+		map->add("valueOf", as_boolean_valueof);
 
-			// as_string builtins
-			map = new_standard_method_map(BUILTIN_STRING_METHOD);
-			map->add("toString", string_to_string);
-			map->add("fromCharCode", string_from_char_code);
-			map->add("charCodeAt", string_char_code_at);
-			map->add("concat", string_concat);
-			map->add("indexOf", string_index_of);
-			map->add("lastIndexOf", string_last_index_of);
-			map->add("slice", string_slice);
-			map->add("split", string_split);
-			map->add("substring", string_substring);
-			map->add("substr", string_substr);
-			map->add("toLowerCase", string_to_lowercase);
-			map->add("toUpperCase", string_to_uppercase);
-			map->add("charAt", string_char_at);
-			map->add("length", as_value(string_length, NULL));
+		// as_string builtins
+		map = new_standard_method_map(BUILTIN_STRING_METHOD);
+		map->add("toString", string_to_string);
+		map->add("fromCharCode", string_from_char_code);
+		map->add("charCodeAt", string_char_code_at);
+		map->add("concat", string_concat);
+		map->add("indexOf", string_index_of);
+		map->add("lastIndexOf", string_last_index_of);
+		map->add("slice", string_slice);
+		map->add("split", string_split);
+		map->add("substring", string_substring);
+		map->add("substr", string_substr);
+		map->add("toLowerCase", string_to_lowercase);
+		map->add("toUpperCase", string_to_uppercase);
+		map->add("charAt", string_char_at);
+		map->add("length", as_value(string_length, NULL));
 
-			// sprite_instance builtins
-			map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
-			map->add("play", sprite_play);
-			map->add("stop", sprite_stop);
-			map->add("gotoAndStop", sprite_goto_and_stop);
-			map->add("gotoAndPlay", sprite_goto_and_play);
-			map->add("nextFrame", sprite_next_frame);
-			map->add("prevFrame", sprite_prev_frame);
-			map->add("getBytesLoaded", sprite_get_bytes_loaded);
-			map->add("getBytesTotal", sprite_get_bytes_total);
-			map->add("swapDepths", sprite_swap_depths);
-			map->add("duplicateMovieClip", sprite_duplicate_movieclip);
-			map->add("getDepth", sprite_get_depth);
-			map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
-			map->add("removeMovieClip", sprite_remove_movieclip);
-			map->add("hitTest", sprite_hit_test);
-			map->add("startDrag", sprite_start_drag);
-			map->add("stopDrag", sprite_stop_drag);
-			map->add("loadMovie", sprite_loadmovie);
-			map->add("unloadMovie", sprite_unloadmovie);
-			map->add("getNextHighestDepth", sprite_getnexthighestdepth);
-			map->add("createTextField", sprite_create_text_field);
-			map->add("attachMovie", sprite_attach_movie);
+		// sprite_instance builtins
+		map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
+		map->add("play", sprite_play);
+		map->add("stop", sprite_stop);
+		map->add("gotoAndStop", sprite_goto_and_stop);
+		map->add("gotoAndPlay", sprite_goto_and_play);
+		map->add("nextFrame", sprite_next_frame);
+		map->add("prevFrame", sprite_prev_frame);
+		map->add("getBytesLoaded", sprite_get_bytes_loaded);
+		map->add("getBytesTotal", sprite_get_bytes_total);
+		map->add("swapDepths", sprite_swap_depths);
+		map->add("duplicateMovieClip", sprite_duplicate_movieclip);
+		map->add("getDepth", sprite_get_depth);
+		map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
+		map->add("removeMovieClip", sprite_remove_movieclip);
+		map->add("hitTest", sprite_hit_test);
+		map->add("startDrag", sprite_start_drag);
+		map->add("stopDrag", sprite_stop_drag);
+		map->add("loadMovie", sprite_loadmovie);
+		map->add("unloadMovie", sprite_unloadmovie);
+		map->add("getNextHighestDepth", sprite_getnexthighestdepth);
+		map->add("createTextField", sprite_create_text_field);
+		map->add("attachMovie", sprite_attach_movie);
 
-			// drawing API
-			map->add("beginFill", sprite_begin_fill);
-			map->add("endFill", sprite_end_fill);
-			map->add("lineTo", sprite_line_to);
-			map->add("moveTo", sprite_move_to);
-			map->add("curveTo", sprite_curve_to);
-			map->add("clear", sprite_clear);
-			map->add("lineStyle", sprite_line_style);
+		// drawing API
+		map->add("beginFill", sprite_begin_fill);
+		map->add("endFill", sprite_end_fill);
+		map->add("lineTo", sprite_line_to);
+		map->add("moveTo", sprite_move_to);
+		map->add("curveTo", sprite_curve_to);
+		map->add("clear", sprite_clear);
+		map->add("lineStyle", sprite_line_style);
 
-			// gameSWF extension
-			// reset root FPS
-			map->add("setFPS", sprite_set_fps);
+		// gameSWF extension
+		// reset root FPS
+		map->add("setFPS", sprite_set_fps);
 
 
-			s_start_time = tu_timer::get_ticks();
+		s_start_time = tu_timer::get_ticks();
 
-			// @@ s_global should really be a
-			// client-visible player object, which
-			// contains one or more actual movie
-			// instances.  We're currently just hacking it
-			// in as an app-global mutable object :(
-			assert(s_global == NULL);
-			s_global = new as_object;
-			get_heap()->set(s_global.get_ptr(), false);
-			s_global->builtin_member("trace", as_global_trace);
-			s_global->builtin_member("Object", as_global_object_ctor);
-			s_global->builtin_member("Sound", as_global_sound_ctor);
-			s_global->builtin_member("Array", as_global_array_ctor);
-			s_global->builtin_member("MovieClip", as_global_movieclip_ctor);
-			s_global->builtin_member("TextFormat", as_global_textformat_ctor);
+		// @@ s_global should really be a
+		// client-visible player object, which
+		// contains one or more actual movie
+		// instances.  We're currently just hacking it
+		// in as an app-global mutable object :(
+		as_object* global = get_global();
+		get_heap()->set(global, false);
+		global->builtin_member("trace", as_global_trace);
+		global->builtin_member("Object", as_global_object_ctor);
+		global->builtin_member("Sound", as_global_sound_ctor);
+		global->builtin_member("Array", as_global_array_ctor);
+		global->builtin_member("MovieClip", as_global_movieclip_ctor);
+		global->builtin_member("TextFormat", as_global_textformat_ctor);
 
-			//			s_global->set_member("XML", as_value(xml_new));
-			s_global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
-			s_global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);
-			s_global->builtin_member("String", string_ctor);
-			s_global->builtin_member("Number", as_global_number_ctor);
-			s_global->builtin_member("Boolean", as_global_boolean_ctor);
-			s_global->builtin_member("Color", as_global_color_ctor);
-			s_global->builtin_member("Date", as_global_date_ctor);
-			s_global->builtin_member("Selection", selection_init());
-			s_global->builtin_member("LoadVars", as_global_loadvars_ctor);
+		//			s_global->set_member("XML", as_value(xml_new));
+		global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
+		global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);
+		global->builtin_member("String", string_ctor);
+		global->builtin_member("Number", as_global_number_ctor);
+		global->builtin_member("Boolean", as_global_boolean_ctor);
+		global->builtin_member("Color", as_global_color_ctor);
+		global->builtin_member("Date", as_global_date_ctor);
+		global->builtin_member("Selection", selection_init());
+		global->builtin_member("LoadVars", as_global_loadvars_ctor);
 
-			// ASSetPropFlags
-			s_global->builtin_member("ASSetPropFlags", as_global_assetpropflags);
+		// ASSetPropFlags
+		global->builtin_member("ASSetPropFlags", as_global_assetpropflags);
 
-			// for video
-			s_global->builtin_member("NetStream", as_global_netstream_ctor);
-			s_global->builtin_member("NetConnection", as_global_netconnection_ctor);
+		// for video
+		global->builtin_member("NetStream", as_global_netstream_ctor);
+		global->builtin_member("NetConnection", as_global_netconnection_ctor);
 
-			s_global->builtin_member("math", math_init());
-			s_global->builtin_member("Key", key_init());
-			s_global->builtin_member("AsBroadcaster", broadcaster_init());
-			s_global->builtin_member( "flash", flash_init());
+		global->builtin_member("math", math_init());
+		global->builtin_member("Key", key_init());
+		global->builtin_member("AsBroadcaster", broadcaster_init());
+		global->builtin_member( "flash", flash_init());
 
-			// global builtins functions
-			s_global->builtin_member("setInterval",  as_global_setinterval);
-			s_global->builtin_member("clearInterval",  as_global_clearinterval);
-			s_global->builtin_member("getVersion",  as_global_get_version);
-			s_global->builtin_member("parseFloat",  as_global_parse_float);
-			s_global->builtin_member("parseInt",  as_global_parse_int);
-			s_global->builtin_member("isNaN",  as_global_isnan);
-			s_global->builtin_member("$version",  "gameSWF");
+		// global builtins functions
+		global->builtin_member("setInterval",  as_global_setinterval);
+		global->builtin_member("clearInterval",  as_global_clearinterval);
+		global->builtin_member("getVersion",  as_global_get_version);
+		global->builtin_member("parseFloat",  as_global_parse_float);
+		global->builtin_member("parseInt",  as_global_parse_int);
+		global->builtin_member("isNaN",  as_global_isnan);
+		global->builtin_member("$version",  "gameSWF");
 
-		}
 	}
 
 
-	void	action_clear()
+	void	gameswf_player::action_clear()
 	{
-		if (s_inited)
-		{
-			clear_standard_property_map();
-			clear_standard_method_map();
-			s_inited = false;
-			s_global = NULL;
-		}
+		clear_standard_property_map();
+		clear_standard_method_map();
 	}
 
 	void notify_key_object(key::code k, bool down)
 	{
-		static tu_string	key_obj_name("Key");
-
-		action_init();
-
 		as_value	kval;
-		s_global->get_member(key_obj_name, &kval);
+		as_object* s_global = get_global();
+		s_global->get_member("Key", &kval);
 		as_key*	ko = cast_to<as_key>(kval.to_object());
 		if (ko)
 		{
@@ -1182,7 +1152,6 @@ namespace gameswf
 	// 
 	// The is_function2 flag determines whether to use global or local registers.
 	{
-		action_init();	// @@ stick this somewhere else; need some global static init function
 		assert(env);
 		array<with_stack_entry>	with_stack(initial_with_stack);
 
@@ -3385,6 +3354,7 @@ namespace gameswf
 
 	void heap::clear_garbage()
 	{
+		as_object* s_global = get_global();
 		s_global->not_garbage();
 		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
