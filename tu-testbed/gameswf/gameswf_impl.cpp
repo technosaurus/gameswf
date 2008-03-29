@@ -497,7 +497,6 @@ namespace gameswf
 		clears_tag_loaders();
 		get_heap()->clear();
 		clear_library();
-		action_clear();
 		clear_shared_libs();
 		close_glyph_provider();
 		gameswf_engine_mutex().unlock();
