@@ -212,830 +212,822 @@ int	main(int argc, char *argv[])
 
 	tu_memdebug::open(tu_memdebug::ALLOCCHECK);
 
-	assert(tu_types_validate());
+	{	// for testing memory leaks
 
-	const char* infile = NULL;
+		assert(tu_types_validate());
 
-	float	exit_timeout = 0;
-	bool	do_render = true;
-	bool    do_sound = true;
-	bool	do_loop = true;
-	bool	sdl_abort = true;
-	bool	sdl_cursor = true;
-	int     delay = 10;
-	float	tex_lod_bias;
+		const char* infile = NULL;
 
-#ifdef _WIN32
-	WSADATA wsaData;
+		float	exit_timeout = 0;
+		bool	do_render = true;
+		bool    do_sound = true;
+		bool	do_loop = true;
+		bool	sdl_abort = true;
+		bool	sdl_cursor = true;
+		int     delay = 10;
+		float	tex_lod_bias;
 
-	int iResult = WSAStartup( MAKEWORD(2,2), &wsaData );
-	if ( iResult != NO_ERROR )
-		printf("Error at WSAStartup()\n");
-#endif
+	#ifdef _WIN32
+		WSADATA wsaData;
+
+		int iResult = WSAStartup( MAKEWORD(2,2), &wsaData );
+		if ( iResult != NO_ERROR )
+			printf("Error at WSAStartup()\n");
+	#endif
 
 
-	// -1.0 tends to look good.
-	tex_lod_bias = -1.2f;
-	tu_string bootup_options;
+		// -1.0 tends to look good.
+		tex_lod_bias = -1.2f;
+		tu_string bootup_options;
 
-	int	width = 0;
-	int	height = 0;
+		int	width = 0;
+		int	height = 0;
 
-	smart_ptr<gameswf::gameswf_player> player = new gameswf::gameswf_player();
+		gameswf::gameswf_player player;
 
-	for (int arg = 1; arg < argc; arg++)
-	{
-		if (argv[arg][0] == '-')
+		for (int arg = 1; arg < argc; arg++)
 		{
-			// Looks like an option.
-
-			if (argv[arg][1] == 'h')
+			if (argv[arg][0] == '-')
 			{
-				// Help.
-				print_usage();
+				// Looks like an option.
+
+				if (argv[arg][1] == 'h')
+				{
+					// Help.
+					print_usage();
+					exit(1);
+				}
+				if (argv[arg][1] == 'u')
+				{
+					arg++;
+					if (arg < argc)
+					{
+						bootup_options =argv[arg];
+					}
+					else
+					{
+						fprintf(stderr, "-u arg must be followed string like myvar=x,myvar2=y and so on\n");
+						print_usage();
+						exit(1);
+					}
+
+				}
+				else if (argv[arg][1] == 'w')
+				{
+					arg++;
+					if (arg < argc)
+					{
+						width = atoi(argv[arg]);
+						const char* x = strstr(argv[arg], "x");
+						if (x)
+						{
+							height = atoi(x + 1);
+						}
+					}
+
+					if (width <=0 || height <= 0)
+					{
+						fprintf(stderr, "-w arg must be followed by the window size\n");
+						print_usage();
+						exit(1);
+					}
+				}
+				else if (argv[arg][1] == 'c')
+				{
+					sdl_abort = false;
+				}
+				else if (argv[arg][1] == 'k')
+				{
+					sdl_cursor = false;
+				}
+				else if (argv[arg][1] == 'a')
+				{
+					// Set antialiasing on or off.
+					arg++;
+					if (arg < argc)
+					{
+						s_aa_level = atoi(argv[arg]);
+						s_antialiased = s_aa_level > 0 ? true : false;
+					}
+					else
+					{
+						fprintf(stderr, "-a arg must be followed by the antialiasing level\n");
+						print_usage();
+						exit(1);
+					}
+				}
+				else if (argv[arg][1] == 'b')
+				{
+					// Set default bit depth.
+					arg++;
+					if (arg < argc)
+					{
+						s_bit_depth = atoi(argv[arg]);
+						if (s_bit_depth != 16 && s_bit_depth != 32)
+						{
+							fprintf(stderr, "Command-line supplied bit depth %d, but it must be 16 or 32", s_bit_depth);
+							print_usage();
+							exit(1);
+						}
+					}
+					else
+					{
+						fprintf(stderr, "-b arg must be followed by 16 or 32 to set bit depth\n");
+						print_usage();
+						exit(1);
+					}
+				}
+				else if (argv[arg][1] == 'd')
+				{
+					// Set a delay
+					arg++;
+					if (arg < argc)
+					{
+						delay = atoi(argv[arg]);
+					}
+					else
+					{
+						fprintf(stderr, "-d arg must be followed by number of milli-seconds to del in the main loop\n");
+						print_usage();
+						exit(1);
+					}
+				}
+				else if (argv[arg][1] == 'p')
+				{
+					// Enable frame-rate/performance logging.
+					s_measure_performance = true;
+				}
+				else if (argv[arg][1] == '1')
+				{
+					// Play once; don't loop.
+					do_loop = false;
+				}
+				else if (argv[arg][1] == 'r')
+				{
+					// Set rendering on/off.
+					arg++;
+					if (arg < argc)
+					{
+						const int render_arg = atoi(argv[arg]);
+						switch (render_arg) {
+						case 0:
+							// Disable both
+							do_render = false;
+							do_sound = false;
+							break;
+						case 1:
+							// Enable both
+							do_render = true;
+							do_sound = true;
+							break;
+						case 2:
+							// Disable just sound
+							do_render = true;
+							do_sound = false;
+							break;
+						default:
+							fprintf(stderr, "-r must be followed by 0, 1 or 2 (%d is invalid)\n",
+								render_arg);
+							print_usage();
+							exit(1);
+							break;
+						}
+					} else {
+						fprintf(stderr, "-r must be followed by 0 an argument to disable/enable rendering\n");
+						print_usage();
+						exit(1);
+					}
+				}
+				else if (argv[arg][1] == 't')
+				{
+					// Set timeout.
+					arg++;
+					if (arg < argc)
+					{
+						exit_timeout = (float) atof(argv[arg]);
+					}
+					else
+					{
+						fprintf(stderr, "-t must be followed by an exit timeout, in seconds\n");
+						print_usage();
+						exit(1);
+					}
+				}
+				else if (argv[arg][1] == 'v')
+				{
+					// Be verbose; i.e. print log messages to stdout.
+					if (argv[arg][2] == 'a')
+					{
+						// Enable spew re: action.
+						player.verbose_action(true);
+					}
+					else if (argv[arg][2] == 'p')
+					{
+						// Enable parse spew.
+						player.verbose_parse(true);
+					}
+					// ...
+				}
+				else if (argv[arg][1] == 'm')
+				{
+					if (argv[arg][2] == 'l') {
+						arg++;
+						tex_lod_bias = (float) atof(argv[arg]);
+						//printf("Texture LOD Bais is no %f\n", tex_lod_bias);
+					}
+					else
+					{
+						fprintf(stderr, "unknown variant of -m arg\n");
+						print_usage();
+						exit(1);
+					}
+				}
+				else if (argv[arg][1] == 'n')
+				{
+					s_allow_http = true;
+				}
+			}
+			else
+			{
+				infile = argv[arg];
+			}
+		}
+
+		if (infile == NULL)
+		{
+			printf("no input file\n");
+			print_usage();
+			exit(1);
+		}
+
+		// use this for multifile games
+		// workdir is used when LoadMovie("myfile.swf", _root) is called
+		{
+			tu_string workdir;
+			// Find last slash or backslash.
+ 			const char* ptr = infile + strlen(infile);
+			for (; ptr >= infile && *ptr != '/' && *ptr != '\\'; ptr--) {}
+			// Use everything up to last slash as the "workdir".
+			int len = ptr - infile + 1;
+			if (len > 0) {
+				tu_string workdir(infile, len);
+				gameswf::set_workdir(workdir.c_str());
+			}
+		}
+
+		gameswf::register_file_opener_callback(file_opener);
+		gameswf::register_fscommand_callback(fs_callback);
+		if (gameswf::get_verbose_parse())
+		{
+			gameswf::register_log_callback(log_callback);
+		}
+		
+		gameswf::sound_handler*	sound = NULL;
+		gameswf::render_handler*	render = NULL;
+		if (do_render)
+		{
+			if (do_sound) {
+				sound = gameswf::create_sound_handler_sdl();
+				gameswf::set_sound_handler(sound);
+			}
+			render = gameswf::create_render_handler_ogl();
+			gameswf::set_render_handler(render);
+			gameswf::create_glyph_provider();
+		}
+
+		//
+		//	set_proxy("192.168.1.201", 8080);
+		//
+
+		// gameswf::set_use_cache_files(true);
+
+
+		// gameSWF extension
+		// pass bootup options to Flash
+		if (bootup_options.size() > 0)
+		{
+			gameswf::set_bootup_options(bootup_options.c_str());
+		}
+
+		{
+
+			// Load the actual movie.
+			smart_ptr<gameswf::movie_definition>	md = gameswf::create_movie(infile);
+			if (md == NULL)
+			{
+				fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
 				exit(1);
 			}
-			if (argv[arg][1] == 'u')
-			{
-				arg++;
-				if (arg < argc)
-				{
-					bootup_options =argv[arg];
-				}
-				else
-				{
-					fprintf(stderr, "-u arg must be followed string like myvar=x,myvar2=y and so on\n");
-					print_usage();
-					exit(1);
-				}
 
-			}
-			else if (argv[arg][1] == 'w')
+			smart_ptr<gameswf::root>	m = md->create_instance();
+			if (m == NULL)
 			{
-				arg++;
-				if (arg < argc)
-				{
-					width = atoi(argv[arg]);
-					const char* x = strstr(argv[arg], "x");
-					if (x)
-					{
-						height = atoi(x + 1);
-					}
-				}
+				fprintf(stderr, "error: can't create movie instance\n");
+				exit(1);
+			}
 
-				if (width <=0 || height <= 0)
-				{
-					fprintf(stderr, "-w arg must be followed by the window size\n");
-					print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 'c')
+			gameswf::set_current_root(m.get_ptr());
+
+			int	movie_version = m->get_movie_version();
+
+	#ifdef _DEBUG
+			gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version);
+			if (movie_version > 8)
 			{
-				sdl_abort = false;
+				gameswf::log_msg("gameSWF supports up to Flash 8 for now\n");
 			}
-			else if (argv[arg][1] == 'k')
+	#else
+			IF_VERBOSE_PARSE(gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version));
+	#endif
+
+			if (width == 0 || height == 0)
 			{
-				sdl_cursor = false;
+				width = m->get_movie_width();
+				height = m->get_movie_height();
 			}
-			else if (argv[arg][1] == 'a')
+			float scale_x = (float) width / m->get_movie_width();
+			float scale_y = (float) height / m->get_movie_height();
+
+			float	movie_fps = m->get_movie_fps();
+
+			if (do_render)
 			{
-				// Set antialiasing on or off.
-				arg++;
-				if (arg < argc)
-				{
-					s_aa_level = atoi(argv[arg]);
-					s_antialiased = s_aa_level > 0 ? true : false;
-				}
-				else
-				{
-					fprintf(stderr, "-a arg must be followed by the antialiasing level\n");
-					print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 'b')
-			{
-				// Set default bit depth.
-				arg++;
-				if (arg < argc)
-				{
-					s_bit_depth = atoi(argv[arg]);
-					if (s_bit_depth != 16 && s_bit_depth != 32)
+				// Initialize the SDL subsystems we're using. Linux
+				// and Darwin use Pthreads for SDL threads, Win32
+				// doesn't. Otherwise the SDL event loop just polls.
+				if (sdl_abort) {
+					//  Other flags are SDL_INIT_JOYSTICK | SDL_INIT_CDROM
+	#ifdef _WIN32
+					if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
+	#else
+					if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTTHREAD ))
+	#endif
 					{
-						fprintf(stderr, "Command-line supplied bit depth %d, but it must be 16 or 32", s_bit_depth);
-						print_usage();
+						fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 						exit(1);
-					}
-				}
-				else
-				{
-					fprintf(stderr, "-b arg must be followed by 16 or 32 to set bit depth\n");
-					print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 'd')
-			{
-				// Set a delay
-				arg++;
-				if (arg < argc)
-				{
-					delay = atoi(argv[arg]);
-				}
-				else
-				{
-					fprintf(stderr, "-d arg must be followed by number of milli-seconds to del in the main loop\n");
-					print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 'p')
-			{
-				// Enable frame-rate/performance logging.
-				s_measure_performance = true;
-			}
-			else if (argv[arg][1] == '1')
-			{
-				// Play once; don't loop.
-				do_loop = false;
-			}
-			else if (argv[arg][1] == 'r')
-			{
-				// Set rendering on/off.
-				arg++;
-				if (arg < argc)
-				{
-					const int render_arg = atoi(argv[arg]);
-					switch (render_arg) {
-					case 0:
-						// Disable both
-						do_render = false;
-						do_sound = false;
-						break;
-					case 1:
-						// Enable both
-						do_render = true;
-						do_sound = true;
-						break;
-					case 2:
-						// Disable just sound
-						do_render = true;
-						do_sound = false;
-						break;
-					default:
-						fprintf(stderr, "-r must be followed by 0, 1 or 2 (%d is invalid)\n",
-							render_arg);
-						print_usage();
-						exit(1);
-						break;
 					}
 				} else {
-					fprintf(stderr, "-r must be followed by 0 an argument to disable/enable rendering\n");
-					print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 't')
-			{
-				// Set timeout.
-				arg++;
-				if (arg < argc)
-				{
-					exit_timeout = (float) atof(argv[arg]);
-				}
-				else
-				{
-					fprintf(stderr, "-t must be followed by an exit timeout, in seconds\n");
-					print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 'v')
-			{
-				// Be verbose; i.e. print log messages to stdout.
-				if (argv[arg][2] == 'a')
-				{
-					// Enable spew re: action.
-					player->verbose_action(true);
-				}
-				else if (argv[arg][2] == 'p')
-				{
-					// Enable parse spew.
-					player->verbose_parse(true);
-				}
-				// ...
-			}
-			else if (argv[arg][1] == 'm')
-			{
-				if (argv[arg][2] == 'l') {
-					arg++;
-					tex_lod_bias = (float) atof(argv[arg]);
-					//printf("Texture LOD Bais is no %f\n", tex_lod_bias);
-				}
-				else
-				{
-					fprintf(stderr, "unknown variant of -m arg\n");
-					print_usage();
-					exit(1);
-				}
-			}
-			else if (argv[arg][1] == 'n')
-			{
-				s_allow_http = true;
-			}
-		}
-		else
-		{
-			infile = argv[arg];
-		}
-	}
-
-	if (infile == NULL)
-	{
-		printf("no input file\n");
-		print_usage();
-		exit(1);
-	}
-
-	// use this for multifile games
-	// workdir is used when LoadMovie("myfile.swf", _root) is called
-	{
-		tu_string workdir;
-		// Find last slash or backslash.
- 		const char* ptr = infile + strlen(infile);
-		for (; ptr >= infile && *ptr != '/' && *ptr != '\\'; ptr--) {}
-		// Use everything up to last slash as the "workdir".
-		int len = ptr - infile + 1;
-		if (len > 0) {
-			tu_string workdir(infile, len);
-			gameswf::set_workdir(workdir.c_str());
-		}
-	}
-
-	gameswf::register_file_opener_callback(file_opener);
-	gameswf::register_fscommand_callback(fs_callback);
-	if (gameswf::get_verbose_parse())
-	{
-		gameswf::register_log_callback(log_callback);
-	}
-	
-	gameswf::sound_handler*	sound = NULL;
-	gameswf::render_handler*	render = NULL;
-	if (do_render)
-	{
-		if (do_sound) {
-			sound = gameswf::create_sound_handler_sdl();
-			gameswf::set_sound_handler(sound);
-		}
-		render = gameswf::create_render_handler_ogl();
-		gameswf::set_render_handler(render);
-		gameswf::create_glyph_provider();
-	}
-
-	//
-	//	set_proxy("192.168.1.201", 8080);
-	//
-
-	// gameswf::set_use_cache_files(true);
-
-
-	// gameSWF extension
-	// pass bootup options to Flash
-	if (bootup_options.size() > 0)
-	{
-		gameswf::set_bootup_options(bootup_options.c_str());
-	}
-
-	{
-
-		// Load the actual movie.
-		smart_ptr<gameswf::movie_definition>	md = gameswf::create_movie(infile);
-		if (md == NULL)
-		{
-			fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
-			exit(1);
-		}
-
-		smart_ptr<gameswf::root>	m = md->create_instance();
-		if (m == NULL)
-		{
-			fprintf(stderr, "error: can't create movie instance\n");
-			exit(1);
-		}
-
-		gameswf::set_current_root(m.get_ptr());
-
-		int	movie_version = m->get_movie_version();
-
-#ifdef _DEBUG
-		gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version);
-		if (movie_version > 8)
-		{
-			gameswf::log_msg("gameSWF supports up to Flash 8 for now\n");
-		}
-#else
-		IF_VERBOSE_PARSE(gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version));
-#endif
-
-		if (width == 0 || height == 0)
-		{
-			width = m->get_movie_width();
-			height = m->get_movie_height();
-		}
-		float scale_x = (float) width / m->get_movie_width();
-		float scale_y = (float) height / m->get_movie_height();
-
-		float	movie_fps = m->get_movie_fps();
-
-		if (do_render)
-		{
-			// Initialize the SDL subsystems we're using. Linux
-			// and Darwin use Pthreads for SDL threads, Win32
-			// doesn't. Otherwise the SDL event loop just polls.
-			if (sdl_abort) {
-				//  Other flags are SDL_INIT_JOYSTICK | SDL_INIT_CDROM
-#ifdef _WIN32
-				if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
-#else
-				if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTTHREAD ))
-#endif
-				{
-					fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
-					exit(1);
-				}
-			} else {
-				fprintf(stderr, "warning: SDL won't trap core dumps \n");
-#ifdef _WIN32
-				if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE  | SDL_INIT_EVENTTHREAD))
-#else
-				if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE))
-#endif
-				{
-					fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
-					exit(1);
-				}
-			}
-
-			atexit(SDL_Quit);
-
-			SDL_EnableKeyRepeat(250, 33);
-			SDL_ShowCursor(sdl_cursor ? SDL_ENABLE : SDL_DISABLE);
-
-			if (s_bit_depth == 16)
-			{
-				// 16-bit color, surface creation is likely to succeed.
-				SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-				SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-				SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-				SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
-				SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-				SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 5);
-			}
-			else
-			{
-				assert(s_bit_depth == 32);
-
-				// 32-bit color etc, for getting dest alpha,
-				// for MULTIPASS_ANTIALIASING (see
-				// gameswf_render_handler_ogl.cpp).
-				SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-				SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-				SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-				SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-				SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-				SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-				SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-			}
-
-			// try to enable FSAA
-			if (s_aa_level > 1)
-			{
-				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-				SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, s_aa_level);
-			}
-
-			// Change the LOD BIAS values to tweak blurriness.
-			if (tex_lod_bias != 0.0f) {
-#ifdef FIX_I810_LOD_BIAS	
-				// If 2D textures weren't previously enabled, enable
-				// them now and force the driver to notice the update,
-				// then disable them again.
-				if (!glIsEnabled(GL_TEXTURE_2D)) {
-					// Clearing a mask of zero *should* have no
-					// side effects, but coupled with enbling
-					// GL_TEXTURE_2D it works around a segmentation
-					// fault in the driver for the Intel 810 chip.
-					glEnable(GL_TEXTURE_2D);
-					glClear(0);
-					glDisable(GL_TEXTURE_2D);
-				}
-#endif // FIX_I810_LOD_BIAS
-				glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
-			}
-
-			// Set the video mode.
-			if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL | SDL_RESIZABLE) == 0)
-			{
-				fprintf(stderr, "SDL_SetVideoMode() failed.");
-				exit(1);
-			}
-
-			render->open();
-			render->set_antialiased(s_antialiased);
-
-			// Turn on alpha blending.
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-			// Turn on line smoothing.  Antialiased lines can be used to
-			// smooth the outsides of shapes.
-			glEnable(GL_LINE_SMOOTH);
-			glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);	// GL_NICEST, GL_FASTEST, GL_DONT_CARE
-
-			glMatrixMode(GL_PROJECTION);
-			glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
-			glMatrixMode(GL_MODELVIEW);
-			glLoadIdentity();
-
-			// We don't need lighting effects
-			glDisable(GL_LIGHTING);
-			// glColorPointer(4, GL_UNSIGNED_BYTE, 0, *);
-			// glInterleavedArrays(GL_T2F_N3F_V3F, 0, *)
-			glPushAttrib (GL_ALL_ATTRIB_BITS);		
-		}
-
-		// Mouse state.
-		int	mouse_x = 0;
-		int	mouse_y = 0;
-		int	mouse_buttons = 0;
-
-		float	speed_scale = 1.0f;
-		Uint32	start_ticks = 0;
-		if (do_render)
-		{
-			start_ticks = SDL_GetTicks();
-
-		}
-		Uint32	last_ticks = start_ticks;
-		int	frame_counter = 0;
-		int	last_logged_fps = last_ticks;
-
-		//TODO
-//		gameswf::player* p = gameswf::create_player();
-//		p.run();
-
-
-		for (;;)
-		{
-			Uint32	ticks;
-			if (do_render)
-			{
-				ticks = SDL_GetTicks();
-			}
-			else
-			{
-				// Simulate time.
-				ticks = last_ticks + (Uint32) (1000.0f / movie_fps);
-			}
-			int	delta_ticks = ticks - last_ticks;
-			float	delta_t = delta_ticks / 1000.f;
-			last_ticks = ticks;
-
-			// Check auto timeout counter.
-			if (exit_timeout > 0
-				&& ticks - start_ticks > (Uint32) (exit_timeout * 1000))
-			{
-				// Auto exit now.
-				break;
-			}
-
-			bool ret = true;
-			if (do_render)
-			{
-				SDL_Event	event;
-				// Handle input.
-				while (ret)
-				{
-					if (SDL_PollEvent(&event) == 0)
+					fprintf(stderr, "warning: SDL won't trap core dumps \n");
+	#ifdef _WIN32
+					if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE  | SDL_INIT_EVENTTHREAD))
+	#else
+					if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE))
+	#endif
 					{
-						break;
+						fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
+						exit(1);
 					}
+				}
 
-					//printf("EVENT Type is %d\n", event.type);
-					switch (event.type)
+				atexit(SDL_Quit);
+
+				SDL_EnableKeyRepeat(250, 33);
+				SDL_ShowCursor(sdl_cursor ? SDL_ENABLE : SDL_DISABLE);
+
+				if (s_bit_depth == 16)
+				{
+					// 16-bit color, surface creation is likely to succeed.
+					SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+					SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+					SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+					SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
+					SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+					SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 5);
+				}
+				else
+				{
+					assert(s_bit_depth == 32);
+
+					// 32-bit color etc, for getting dest alpha,
+					// for MULTIPASS_ANTIALIASING (see
+					// gameswf_render_handler_ogl.cpp).
+					SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+					SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+					SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+					SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+					SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+					SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+					SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+				}
+
+				// try to enable FSAA
+				if (s_aa_level > 1)
+				{
+					SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+					SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, s_aa_level);
+				}
+
+				// Change the LOD BIAS values to tweak blurriness.
+				if (tex_lod_bias != 0.0f) {
+	#ifdef FIX_I810_LOD_BIAS	
+					// If 2D textures weren't previously enabled, enable
+					// them now and force the driver to notice the update,
+					// then disable them again.
+					if (!glIsEnabled(GL_TEXTURE_2D)) {
+						// Clearing a mask of zero *should* have no
+						// side effects, but coupled with enbling
+						// GL_TEXTURE_2D it works around a segmentation
+						// fault in the driver for the Intel 810 chip.
+						glEnable(GL_TEXTURE_2D);
+						glClear(0);
+						glDisable(GL_TEXTURE_2D);
+					}
+	#endif // FIX_I810_LOD_BIAS
+					glTexEnvf(GL_TEXTURE_FILTER_CONTROL_EXT, GL_TEXTURE_LOD_BIAS_EXT, tex_lod_bias);
+				}
+
+				// Set the video mode.
+				if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL | SDL_RESIZABLE) == 0)
+				{
+					fprintf(stderr, "SDL_SetVideoMode() failed.");
+					exit(1);
+				}
+
+				render->open();
+				render->set_antialiased(s_antialiased);
+
+				// Turn on alpha blending.
+				glEnable(GL_BLEND);
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+				// Turn on line smoothing.  Antialiased lines can be used to
+				// smooth the outsides of shapes.
+				glEnable(GL_LINE_SMOOTH);
+				glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);	// GL_NICEST, GL_FASTEST, GL_DONT_CARE
+
+				glMatrixMode(GL_PROJECTION);
+				glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
+				glMatrixMode(GL_MODELVIEW);
+				glLoadIdentity();
+
+				// We don't need lighting effects
+				glDisable(GL_LIGHTING);
+				// glColorPointer(4, GL_UNSIGNED_BYTE, 0, *);
+				// glInterleavedArrays(GL_T2F_N3F_V3F, 0, *)
+				glPushAttrib (GL_ALL_ATTRIB_BITS);		
+			}
+
+			// Mouse state.
+			int	mouse_x = 0;
+			int	mouse_y = 0;
+			int	mouse_buttons = 0;
+
+			float	speed_scale = 1.0f;
+			Uint32	start_ticks = 0;
+			if (do_render)
+			{
+				start_ticks = SDL_GetTicks();
+
+			}
+			Uint32	last_ticks = start_ticks;
+			int	frame_counter = 0;
+			int	last_logged_fps = last_ticks;
+
+			//TODO
+	//		gameswf::player* p = gameswf::create_player();
+	//		p.run();
+
+
+			for (;;)
+			{
+				Uint32	ticks;
+				if (do_render)
+				{
+					ticks = SDL_GetTicks();
+				}
+				else
+				{
+					// Simulate time.
+					ticks = last_ticks + (Uint32) (1000.0f / movie_fps);
+				}
+				int	delta_ticks = ticks - last_ticks;
+				float	delta_t = delta_ticks / 1000.f;
+				last_ticks = ticks;
+
+				// Check auto timeout counter.
+				if (exit_timeout > 0
+					&& ticks - start_ticks > (Uint32) (exit_timeout * 1000))
+				{
+					// Auto exit now.
+					break;
+				}
+
+				bool ret = true;
+				if (do_render)
+				{
+					SDL_Event	event;
+					// Handle input.
+					while (ret)
 					{
-					case SDL_VIDEORESIZE:
-						//	TODO
-						//					s_scale = (float) event.resize.w / (float) width;
-						//					width = event.resize.w;
-						//					height = event.resize.h;
-						//					if (SDL_SetVideoMode(event.resize.w, event.resize.h, 0, SDL_OPENGL | SDL_RESIZABLE) == 0)
-						//					{
-						//						fprintf(stderr, "SDL_SetVideoMode() failed.");
-						//						exit(1);
-						//					}
-						//					glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
-						break;
-
-					case SDL_USEREVENT:
-						//printf("SDL_USER_EVENT at %s, code %d%d\n", __FUNCTION__, __LINE__, event.user.code);
-						ret = false;
-						break;
-					case SDL_KEYDOWN:
+						if (SDL_PollEvent(&event) == 0)
 						{
-							SDLKey	key = event.key.keysym.sym;
-							bool	ctrl = (event.key.keysym.mod & KMOD_CTRL) != 0;
+							break;
+						}
 
-							if (key == SDLK_ESCAPE
-								|| (ctrl && key == SDLK_q)
-								|| (ctrl && key == SDLK_w))
+						//printf("EVENT Type is %d\n", event.type);
+						switch (event.type)
+						{
+						case SDL_VIDEORESIZE:
+							//	TODO
+							//					s_scale = (float) event.resize.w / (float) width;
+							//					width = event.resize.w;
+							//					height = event.resize.h;
+							//					if (SDL_SetVideoMode(event.resize.w, event.resize.h, 0, SDL_OPENGL | SDL_RESIZABLE) == 0)
+							//					{
+							//						fprintf(stderr, "SDL_SetVideoMode() failed.");
+							//						exit(1);
+							//					}
+							//					glOrtho(-OVERSIZE, OVERSIZE, OVERSIZE, -OVERSIZE, -1, 1);
+							break;
+
+						case SDL_USEREVENT:
+							//printf("SDL_USER_EVENT at %s, code %d%d\n", __FUNCTION__, __LINE__, event.user.code);
+							ret = false;
+							break;
+						case SDL_KEYDOWN:
 							{
-								goto done;
-							}
-							else if (ctrl && key == SDLK_p)
-							{
-								// Toggle paused state.
-								if (m->get_play_state() == gameswf::character::STOP)
+								SDLKey	key = event.key.keysym.sym;
+								bool	ctrl = (event.key.keysym.mod & KMOD_CTRL) != 0;
+
+								if (key == SDLK_ESCAPE
+									|| (ctrl && key == SDLK_q)
+									|| (ctrl && key == SDLK_w))
 								{
-									m->set_play_state(gameswf::character::PLAY);
+									goto done;
 								}
-								else
+								else if (ctrl && key == SDLK_p)
 								{
-									m->set_play_state(gameswf::character::STOP);
-								}
-							}
-							else if (ctrl && key == SDLK_i)
-							{
-								// Init library, for detection of memory leaks (for testing purposes)
-/*
-								// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
-								gameswf::clear_gameswf();
-
-								gameswf::set_sound_handler(NULL);
-								delete sound;
-
-								gameswf::set_render_handler(NULL);
-								delete render;
-
-								if (do_render)
-								{
-									if (do_sound)
+									// Toggle paused state.
+									if (m->get_play_state() == gameswf::character::STOP)
 									{
-										sound = gameswf::create_sound_handler_sdl();
-										gameswf::set_sound_handler(sound);
+										m->set_play_state(gameswf::character::PLAY);
 									}
-									render = gameswf::create_render_handler_ogl();
-									gameswf::set_render_handler(render);
+									else
+									{
+										m->set_play_state(gameswf::character::STOP);
+									}
 								}
-*/
-								// Load the actual movie.
-								md = gameswf::create_movie(infile);
-								if (md == NULL)
+								else if (ctrl && key == SDLK_i)
 								{
-									fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
-									exit(1);
-								}
-								m = md->create_instance();
-								if (m == NULL)
-								{
-									fprintf(stderr, "error: can't create movie instance\n");
-									exit(1);
-								}
-								gameswf::set_current_root(m.get_ptr());
-							}
-							else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))
-							{
-								m->goto_frame(m->get_current_frame()-1);
-							}
-							else if (ctrl && (key == SDLK_RIGHTBRACKET || key == SDLK_KP_PLUS))
-							{
-								m->goto_frame(m->get_current_frame()+1);
-							}
-							else if (ctrl && key == SDLK_a)
-							{
-								// Toggle antialiasing.
-								s_antialiased = !s_antialiased;
-								if (render)
-								{
-									render->set_antialiased(s_antialiased);
-								}
-							}
-							else if (ctrl && key == SDLK_t)
-							{
-								// test text replacement / variable setting:
-								m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box");
-							}
-							else if (ctrl && key == SDLK_g)
-							{
-								// test get_variable.
-								message_log("testing get_variable: '");
-								message_log(m->get_variable("test.text"));
-								message_log("'\n");
-							}
-							else if (ctrl && key == SDLK_m)
-							{
-								// Test call_method.
-								const char* result = m->call_method(
-									"test_call",
-									"%d, %f, %s, %ls",
-									200,
-									1.0f,
-									"Test string",
-									L"Test long string");
+									// Init library, for detection of memory leaks (for testing purposes)
+	/*
+									// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
+									gameswf::clear_gameswf();
 
-								if (result)
+									gameswf::set_sound_handler(NULL);
+									delete sound;
+
+									gameswf::set_render_handler(NULL);
+									delete render;
+
+									if (do_render)
+									{
+										if (do_sound)
+										{
+											sound = gameswf::create_sound_handler_sdl();
+											gameswf::set_sound_handler(sound);
+										}
+										render = gameswf::create_render_handler_ogl();
+										gameswf::set_render_handler(render);
+									}
+	*/
+									// Load the actual movie.
+									md = gameswf::create_movie(infile);
+									if (md == NULL)
+									{
+										fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
+										exit(1);
+									}
+									m = md->create_instance();
+									if (m == NULL)
+									{
+										fprintf(stderr, "error: can't create movie instance\n");
+										exit(1);
+									}
+									gameswf::set_current_root(m.get_ptr());
+								}
+								else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))
 								{
-									message_log("call_method: result = ");
-									message_log(result);
-									message_log("\n");
+									m->goto_frame(m->get_current_frame()-1);
+								}
+								else if (ctrl && (key == SDLK_RIGHTBRACKET || key == SDLK_KP_PLUS))
+								{
+									m->goto_frame(m->get_current_frame()+1);
+								}
+								else if (ctrl && key == SDLK_a)
+								{
+									// Toggle antialiasing.
+									s_antialiased = !s_antialiased;
+									if (render)
+									{
+										render->set_antialiased(s_antialiased);
+									}
+								}
+								else if (ctrl && key == SDLK_t)
+								{
+									// test text replacement / variable setting:
+									m->set_variable("test.text", "set_edit_text was here...\nanother line of text for you to see in the text box");
+								}
+								else if (ctrl && key == SDLK_g)
+								{
+									// test get_variable.
+									message_log("testing get_variable: '");
+									message_log(m->get_variable("test.text"));
+									message_log("'\n");
+								}
+								else if (ctrl && key == SDLK_m)
+								{
+									// Test call_method.
+									const char* result = m->call_method(
+										"test_call",
+										"%d, %f, %s, %ls",
+										200,
+										1.0f,
+										"Test string",
+										L"Test long string");
+
+									if (result)
+									{
+										message_log("call_method: result = ");
+										message_log(result);
+										message_log("\n");
+									}
+									else
+									{
+										message_log("call_method: null result\n");
+									}
+								}
+								else if (ctrl && key == SDLK_b)
+								{
+									// toggle background color.
+									s_background = !s_background;
+								}
+	//							else if (ctrl && key == SDLK_f)	//xxxxxx
+	//							{
+	//								extern bool gameswf_debug_show_paths;
+	//								gameswf_debug_show_paths = !gameswf_debug_show_paths;
+	//							}
+								else if (ctrl && key == SDLK_EQUALS)
+								{
+									float	f = gameswf::get_curve_max_pixel_error();
+									f *= 1.1f;
+									gameswf::set_curve_max_pixel_error(f);
+									printf("curve error tolerance = %f\n", f);
+								}
+								else if (ctrl && key == SDLK_MINUS)
+								{
+									float	f = gameswf::get_curve_max_pixel_error();
+									f *= 0.9f;
+									gameswf::set_curve_max_pixel_error(f);
+									printf("curve error tolerance = %f\n", f);
+								} else if (ctrl && key == SDLK_F2) {
+									// Toggle wireframe.
+									static bool wireframe_mode = false;
+									wireframe_mode = !wireframe_mode;
+									if (wireframe_mode) {
+										glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+									} else {
+										glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+									}
+									// TODO: clean up this interafce and re-enable.
+									// 					} else if (ctrl && key == SDLK_d) {
+									// 						// Flip a special debug flag.
+									// 						gameswf_tesselate_dump_shape = true;
+								}
+
+								gameswf::key::code c = translate_key(key);
+								if (c != gameswf::key::INVALID)
+								{
+									gameswf::get_current_root()->notify_key_event(c, true);
+								}
+
+								break;
+							}
+
+						case SDL_KEYUP:
+							{
+								SDLKey	key = event.key.keysym.sym;
+
+								gameswf::key::code c = translate_key(key);
+								if (c != gameswf::key::INVALID)
+								{
+									gameswf::get_current_root()->notify_key_event(c, false);
+								}
+
+								break;
+							}
+
+						case SDL_MOUSEMOTION:
+							mouse_x = (int) (event.motion.x / scale_x);
+							mouse_y = (int) (event.motion.y / scale_y);
+							break;
+
+						case SDL_MOUSEBUTTONDOWN:
+						case SDL_MOUSEBUTTONUP:
+							{
+								int	mask = 1 << (event.button.button - 1);
+								if (event.button.state == SDL_PRESSED)
+								{
+									mouse_buttons |= mask;
 								}
 								else
 								{
-									message_log("call_method: null result\n");
+									mouse_buttons &= ~mask;
 								}
-							}
-							else if (ctrl && key == SDLK_b)
-							{
-								// toggle background color.
-								s_background = !s_background;
-							}
-//							else if (ctrl && key == SDLK_f)	//xxxxxx
-//							{
-//								extern bool gameswf_debug_show_paths;
-//								gameswf_debug_show_paths = !gameswf_debug_show_paths;
-//							}
-							else if (ctrl && key == SDLK_EQUALS)
-							{
-								float	f = gameswf::get_curve_max_pixel_error();
-								f *= 1.1f;
-								gameswf::set_curve_max_pixel_error(f);
-								printf("curve error tolerance = %f\n", f);
-							}
-							else if (ctrl && key == SDLK_MINUS)
-							{
-								float	f = gameswf::get_curve_max_pixel_error();
-								f *= 0.9f;
-								gameswf::set_curve_max_pixel_error(f);
-								printf("curve error tolerance = %f\n", f);
-							} else if (ctrl && key == SDLK_F2) {
-								// Toggle wireframe.
-								static bool wireframe_mode = false;
-								wireframe_mode = !wireframe_mode;
-								if (wireframe_mode) {
-									glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-								} else {
-									glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-								}
-								// TODO: clean up this interafce and re-enable.
-								// 					} else if (ctrl && key == SDLK_d) {
-								// 						// Flip a special debug flag.
-								// 						gameswf_tesselate_dump_shape = true;
+								break;
 							}
 
-							gameswf::key::code c = translate_key(key);
-							if (c != gameswf::key::INVALID)
-							{
-								gameswf::get_current_root()->notify_key_event(c, true);
-							}
+						case SDL_QUIT:
+							goto done;
+							break;
 
+						default:
 							break;
 						}
+					}
+				}
 
-					case SDL_KEYUP:
+				m = gameswf::get_current_root();
+				m->set_display_viewport(0, 0, width, height);
+				m->set_background_alpha(s_background ? 1.0f : 0.05f);
+
+				m->notify_mouse_state(mouse_x, mouse_y, mouse_buttons);
+
+				Uint32 t_advance = SDL_GetTicks();
+				m->advance(delta_t * speed_scale);
+				t_advance = SDL_GetTicks() - t_advance;
+
+				if (do_render)
+				{
+					glDisable(GL_DEPTH_TEST);	// Disable depth testing.
+					glDrawBuffer(GL_BACK);
+				}
+
+				Uint32 t_display = SDL_GetTicks();
+				m->display();
+				t_display = SDL_GetTicks() - t_display;
+
+				//printf("advance time: %d, display time %d\n", t_advance, t_display);
+
+				frame_counter++;
+
+				if (do_render)
+				{
+					SDL_GL_SwapBuffers();
+					//glPopAttrib ();
+
+					if (s_measure_performance == false)
+					{
+						// Don't hog the CPU.
+						SDL_Delay(delay);
+					}
+					else
+					{
+						// Log the frame rate every second or so.
+						if (last_ticks - last_logged_fps > 1000)
 						{
-							SDLKey	key = event.key.keysym.sym;
+							float	delta = (last_ticks - last_logged_fps) / 1000.f;
 
-							gameswf::key::code c = translate_key(key);
-							if (c != gameswf::key::INVALID)
+							if (delta > 0)
 							{
-								gameswf::get_current_root()->notify_key_event(c, false);
-							}
-
-							break;
-						}
-
-					case SDL_MOUSEMOTION:
-						mouse_x = (int) (event.motion.x / scale_x);
-						mouse_y = (int) (event.motion.y / scale_y);
-						break;
-
-					case SDL_MOUSEBUTTONDOWN:
-					case SDL_MOUSEBUTTONUP:
-						{
-							int	mask = 1 << (event.button.button - 1);
-							if (event.button.state == SDL_PRESSED)
-							{
-								mouse_buttons |= mask;
+								printf("fps = %3.1f\n", frame_counter / delta);
 							}
 							else
 							{
-								mouse_buttons &= ~mask;
+								printf("fps = *inf*\n");
 							}
-							break;
+
+							last_logged_fps = last_ticks;
+							frame_counter = 0;
 						}
-
-					case SDL_QUIT:
-						goto done;
-						break;
-
-					default:
-						break;
 					}
 				}
-			}
 
-			m = gameswf::get_current_root();
-			m->set_display_viewport(0, 0, width, height);
-			m->set_background_alpha(s_background ? 1.0f : 0.05f);
+				// TODO: clean up this interface and re-enable.
+				//		gameswf_tesselate_dump_shape = false;  ///xxxxx
 
-			m->notify_mouse_state(mouse_x, mouse_y, mouse_buttons);
-
-			Uint32 t_advance = SDL_GetTicks();
-			m->advance(delta_t * speed_scale);
-			t_advance = SDL_GetTicks() - t_advance;
-
-			if (do_render)
-			{
-				glDisable(GL_DEPTH_TEST);	// Disable depth testing.
-				glDrawBuffer(GL_BACK);
-			}
-
-			Uint32 t_display = SDL_GetTicks();
-			m->display();
-			t_display = SDL_GetTicks() - t_display;
-
-			//printf("advance time: %d, display time %d\n", t_advance, t_display);
-
-			frame_counter++;
-
-			if (do_render)
-			{
-				SDL_GL_SwapBuffers();
-				//glPopAttrib ();
-
-				if (s_measure_performance == false)
+				// See if we should exit.
+				if (do_loop == false
+					&& m->get_current_frame() + 1 == md->get_frame_count())
 				{
-					// Don't hog the CPU.
-					SDL_Delay(delay);
-				}
-				else
-				{
-					// Log the frame rate every second or so.
-					if (last_ticks - last_logged_fps > 1000)
-					{
-						float	delta = (last_ticks - last_logged_fps) / 1000.f;
-
-						if (delta > 0)
-						{
-							printf("fps = %3.1f\n", frame_counter / delta);
-						}
-						else
-						{
-							printf("fps = *inf*\n");
-						}
-
-						last_logged_fps = last_ticks;
-						frame_counter = 0;
-					}
+					// We're reached the end of the movie; exit.
+					break;
 				}
 			}
 
-			// TODO: clean up this interface and re-enable.
-			//		gameswf_tesselate_dump_shape = false;  ///xxxxx
+	done:
 
-			// See if we should exit.
-			if (do_loop == false
-				&& m->get_current_frame() + 1 == md->get_frame_count())
-			{
-				// We're reached the end of the movie; exit.
-				break;
-			}
+			//SDL_Quit();
+
+			gameswf::set_sound_handler(NULL);
+			delete sound;
+
+			gameswf::set_render_handler(NULL);
+			delete render;
+
 		}
 
-done:
-
-		//SDL_Quit();
-
-		gameswf::set_sound_handler(NULL);
-		delete sound;
-
-		gameswf::set_render_handler(NULL);
-		delete render;
-
-	}
-
-	// For testing purposes, throw some keypresses into gameswf,
-	// to make sure the key handler is properly using weak
-	// references to listeners.
-//	gameswf::notify_key_event(gameswf::key::A, true);
-//	gameswf::notify_key_event(gameswf::key::B, true);
-//	gameswf::notify_key_event(gameswf::key::C, true);
-
-	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
-	gameswf::clear_gameswf();
-
-	player = NULL;
+	}	// for testing memory leaks
 
 	tu_memdebug::close();
 
