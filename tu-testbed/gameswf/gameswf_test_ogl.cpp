@@ -23,7 +23,7 @@
 #include "gameswf/gameswf_impl.h"
 #include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_freetype.h"
-//#include "gameswf/gameswf_player.h"
+#include "gameswf/gameswf_player.h"
 
 void	print_usage()
 // Brief instructions.
@@ -241,6 +241,8 @@ int	main(int argc, char *argv[])
 	int	width = 0;
 	int	height = 0;
 
+	smart_ptr<gameswf::gameswf_player> player = new gameswf::gameswf_player();
+
 	for (int arg = 1; arg < argc; arg++)
 	{
 		if (argv[arg][0] == '-')
@@ -415,12 +417,12 @@ int	main(int argc, char *argv[])
 				if (argv[arg][2] == 'a')
 				{
 					// Enable spew re: action.
-					gameswf::set_verbose_action(true);
+					player->verbose_action(true);
 				}
 				else if (argv[arg][2] == 'p')
 				{
 					// Enable parse spew.
-					gameswf::set_verbose_parse(true);
+					player->verbose_parse(true);
 				}
 				// ...
 			}
@@ -1032,6 +1034,8 @@ done:
 
 	// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 	gameswf::clear_gameswf();
+
+	player = NULL;
 
 	tu_memdebug::close();
 
