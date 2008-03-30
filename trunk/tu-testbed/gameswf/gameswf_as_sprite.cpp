@@ -21,6 +21,14 @@ namespace gameswf
 	// sprite built-in ActionScript methods
 	//
 
+	void	as_global_movieclip_ctor(const fn_call& fn)
+	// Constructor for ActionScript class XMLSocket
+	{
+		sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+		character* ch = new sprite_instance(empty_sprite_def, get_current_root(), get_current_root()->get_root_movie(), 0);
+		fn.result->set_as_object(ch);
+	}
+
 	sprite_instance* sprite_getptr(const fn_call& fn)
 	{
 		sprite_instance* sprite = cast_to<sprite_instance>(fn.this_ptr);

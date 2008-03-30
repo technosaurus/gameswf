@@ -24,6 +24,7 @@ namespace gameswf
 	exported_module void	as_object_watch(const fn_call& fn);
 	exported_module void	as_object_unwatch(const fn_call& fn);
 	exported_module void	as_object_dump(const fn_call& fn);
+	exported_module void	as_global_object_ctor(const fn_call& fn);
 
 	//
 	// as_prop_flags

@@ -22,8 +22,6 @@ namespace gameswf
 	struct as_c_function;
 	struct as_s_function;
 
-	exported_module as_object* get_global();
-
 	exported_module const char*	call_method_parsed(
 		as_environment* env,
 		as_object* this_ptr,

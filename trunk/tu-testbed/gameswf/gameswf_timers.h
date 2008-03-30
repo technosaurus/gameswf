@@ -10,9 +10,6 @@
 
 namespace gameswf 
 {
-  void  as_global_setinterval(const fn_call& fn);
-  void  as_global_clearinterval(const fn_call& fn);
-
 	struct as_timer : public as_object
 	{
 		// Unique id of a gameswf resource
