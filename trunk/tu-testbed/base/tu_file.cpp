@@ -526,7 +526,7 @@ int	tu_file::printf(const char* fmt, ...)
 	vsnprintf(buffer, BUFFER_SIZE, fmt, ap);
 	va_end(ap);
 
-	return (int) write_bytes(buffer, strlen(buffer));
+	return write_bytes(buffer, (int) strlen(buffer));
 }
 
 
