@@ -4,11 +4,60 @@
 // whatever you want with it.
 
 #include "gameswf/gameswf_as_classes/as_number.h"
+#include "gameswf/gameswf_as_classes/as_string.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {
 
 	// static builtins methods of Number class
+
+	void as_global_parse_float(const fn_call& fn)
+	{
+		if (fn.nargs == 1)  
+		{
+			double res;
+			if (string_to_number(&res, fn.arg(0).to_string()))
+			{
+				fn.result->set_double(res);
+				return;
+			}
+		}
+		fn.result->set_nan();
+	}
+
+	void as_global_parse_int(const fn_call& fn)
+	{
+		if( fn.nargs == 2 )
+		{
+			log_error( "parseInt: radix is not yet supported\n" );
+		}
+
+		if (fn.nargs > 1)
+		{
+			int res;
+			if (string_to_number(&res, fn.arg(0).to_string()))
+			{
+				fn.result->set_int(res);
+				return;
+			}
+		}
+		fn.result->set_nan();
+	}
+
+	void as_global_isnan(const fn_call& fn)
+	{
+		if (fn.nargs == 1)  
+		{
+			if (isnan(fn.arg(0).to_number()) == false)
+			{
+				fn.result->set_bool(false);
+				return;
+			}
+		}
+		fn.result->set_bool(true);
+	}
+
 	// Number(num:Object)
 	void	as_global_number_ctor(const fn_call& fn)
 	{

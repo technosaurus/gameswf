@@ -20,6 +20,7 @@ namespace gameswf
 	// sprite built-in ActionScript methods
 	//
 
+	void	as_global_movieclip_ctor(const fn_call& fn);
 	void	sprite_hit_test(const fn_call& fn);
 	void	sprite_start_drag(const fn_call& fn);
 	void	sprite_stop_drag(const fn_call& fn);

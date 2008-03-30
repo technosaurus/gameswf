@@ -14,6 +14,8 @@
 
 namespace gameswf
 {
+	void notify_key_object(key::code k, bool down);
+
 	void	key_add_listener(const fn_call& fn);
 	// Add a listener (first arg is object reference) to our list.
 	// Listeners will have "onKeyDown" and "onKeyUp" methods

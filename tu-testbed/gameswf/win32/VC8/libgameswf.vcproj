@@ -253,6 +253,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_global.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_global.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_key.cpp"
 				>
 			</File>
