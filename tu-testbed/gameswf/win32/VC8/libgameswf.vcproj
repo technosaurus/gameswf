@@ -365,6 +365,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_timer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_timer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_transform.cpp"
 				>
 			</File>
@@ -498,10 +506,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_text.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_timers.cpp"
 				>
 			</File>
 			<File
@@ -854,10 +858,6 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_text.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_timers.h"
 				>
 			</File>
 			<File

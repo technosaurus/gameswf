@@ -11,7 +11,6 @@
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_stream.h"
 #include "gameswf/gameswf_movie_def.h"
-#include "gameswf/gameswf_timers.h"
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_freetype.h"
@@ -22,6 +21,7 @@
 
 #include "gameswf/gameswf_as_classes/as_array.h"
 #include "gameswf/gameswf_as_classes/as_string.h"
+#include "gameswf/gameswf_as_classes/as_timer.h"
 
 // NOTES:
 //

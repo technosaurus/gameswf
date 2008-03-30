@@ -5,7 +5,7 @@
 // Action Script global functions implementation
 
 #include "gameswf/gameswf_action.h"	// for as_object
-#include "gameswf/gameswf_timers.h"
+#include "gameswf/gameswf_as_classes/as_timer.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_root.h"
 
