@@ -38,6 +38,7 @@ namespace gameswf
 		bool connect(const char* host, int port);
 		void close();
 		void send(const as_value& val) const;
+		exported_module virtual bool is_instance_of(as_function& constructor) const;
 	};
 
 }	// end namespace gameswf

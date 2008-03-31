@@ -234,6 +234,7 @@ namespace gameswf
 		canvas* get_canvas();
 
 		virtual const char*	typeof() { return "movieclip"; }
+		virtual bool is_instance_of(as_function& constructor) const;
 		virtual	void enumerate(as_environment* env);
 	};
 }

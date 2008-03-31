@@ -9,6 +9,7 @@
 
 #include "gameswf/gameswf_as_classes/as_date.h"
 #include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_function.h"
 
 namespace gameswf
 {
@@ -134,6 +135,18 @@ namespace gameswf
 	Uint64 as_date::get_time() const
 	{
 		return m_time;
+	}
+
+
+	bool as_date::is_instance_of(as_function& constructor) const
+	{
+		as_c_function * function = cast_to<as_c_function>(&constructor);
+		if( function && function->m_func == as_global_date_ctor )
+		{
+			return true;
+		}
+
+		return as_object::is_instance_of(constructor);
 	}
 
 	as_date::as_date(const fn_call& fn) :

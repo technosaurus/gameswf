@@ -662,6 +662,18 @@ namespace gameswf
 		fn.result->set_as_object(netstream);
 	}
 
+
+	bool as_netstream::is_instance_of(as_function& constructor) const
+	{
+		as_c_function * function = cast_to<as_c_function>(&constructor);
+		if( function && function->m_func == as_global_netstream_ctor )
+		{
+			return true;
+		}
+
+		return as_object::is_instance_of(constructor);
+	}
+
 } // end of gameswf namespace
 
 #else
