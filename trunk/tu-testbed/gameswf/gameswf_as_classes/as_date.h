@@ -31,6 +31,7 @@ namespace gameswf
 
 		as_date(const fn_call& fn);
 		Uint64 get_time() const;
+		exported_module virtual bool is_instance_of(as_function& constructor) const;
 
 		private:
 

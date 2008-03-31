@@ -1562,9 +1562,22 @@ namespace gameswf
 				}
 
 				case 0x54:	// instance of
-					// @@ TODO
-					log_error("todo opcode: %02X\n", action_id);
+				{
+					as_function * constructor = env->pop().to_function();
+					as_object * object = env->pop().to_object();
+
+					if( object )
+					{
+						env->push( object->is_instance_of( *constructor ) );
+					}
+					else
+					{
+						env->push(false);
+					}
+
 					break;
+				}
+
 				case 0x55:	// enumerate object
 				{
 					as_value variable = env->pop();

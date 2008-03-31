@@ -61,6 +61,7 @@ namespace gameswf
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
+		exported_module virtual bool    is_instance_of(as_function& constructor) const;
 
 	private:
 

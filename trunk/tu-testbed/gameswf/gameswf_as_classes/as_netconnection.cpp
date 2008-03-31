@@ -8,6 +8,7 @@
 #endif
 
 #include "gameswf/gameswf_as_classes/as_netconnection.h"
+#include "gameswf/gameswf_function.h"
 
 namespace gameswf
 {
@@ -50,6 +51,17 @@ namespace gameswf
 	as_netconnection::as_netconnection()
 	{
 		set_member("connect", &as_netconnection_connect);
+	}
+
+	bool    as_netconnection::is_instance_of(as_function& constructor) const
+	{
+		as_c_function * function = cast_to<as_c_function>(&constructor);
+		if( function && function->m_func == as_global_netconnection_ctor )
+		{
+			return true;
+		}
+
+		return as_object::is_instance_of(constructor);
 	}
 
 

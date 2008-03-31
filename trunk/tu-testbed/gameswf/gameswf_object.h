@@ -183,6 +183,7 @@ namespace gameswf
 		exported_module virtual root* get_root() { return get_current_root(); }
 		exported_module	virtual as_environment*	get_environment() { return 0; }
 		exported_module virtual void advance(float delta_time) { assert(0); }
+		exported_module virtual bool is_instance_of(as_function& constructor) const;
 	};
 
 }
