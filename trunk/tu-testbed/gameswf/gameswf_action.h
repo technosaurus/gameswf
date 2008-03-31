@@ -29,21 +29,6 @@ namespace gameswf
 		const char* method_arg_fmt,
 		va_list args);
 
-
-	struct heap
-	{
-		hash<smart_ptr<as_object>, bool> m_heap;
-
-		void clear();
-		bool is_garbage(as_object* obj);
-		void set(as_object* obj, bool garbage);
-		void set_as_garbage();
-		void clear_garbage();
-
-	};
-
-	heap* get_heap();
-
 	const char* get_gameswf_version();
 
 	// Dispatching methods from C++.

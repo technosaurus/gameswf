@@ -73,42 +73,9 @@ namespace gameswf
 
 	void	as_global_trace(const fn_call& fn);
 
-	// Statics.
-	fscommand_callback	s_fscommand_handler = NULL;
-
-	static heap s_heap;
-	heap* get_heap() { return &s_heap; }
-
-#ifdef WIN32
-	static tu_string s_gameswf_version("WIN");
-#else
-	static tu_string s_gameswf_version("LINUX");
-#endif
-
-	const char* get_gameswf_version() {	return s_gameswf_version.c_str(); }
-
-	// for cashed shared library
-	static string_hash<tu_loadlib*> s_shared_libs;
-	void clear_shared_libs()
-	{
-		for (string_hash<tu_loadlib*>::iterator it = s_shared_libs.begin();
-			it != s_shared_libs.end(); ++it)
-		{
-			delete it->second;
-		}
-		s_shared_libs.clear();
-	}
-
-	void	register_fscommand_callback(fscommand_callback handler)
-	// External interface.
-	{
-		s_fscommand_handler = handler;
-	}
-
 	//
 	// Function/method dispatch.
 	//
-
 
 	as_value	call_method(
 		const as_value& method,
@@ -579,10 +546,10 @@ namespace gameswf
 	{
 
 		tu_loadlib* lib = NULL;
-		if (s_shared_libs.get(classname, &lib) == false)
+		if (get_shared_libs()->get(classname, &lib) == false)
 		{
 			lib = new tu_loadlib(classname.c_str());
-			s_shared_libs.add(classname, lib);
+			get_shared_libs()->add(classname, lib);
 		}
 	
 		assert(lib);
@@ -1712,10 +1679,10 @@ namespace gameswf
 					// a message for the host app.
 					if (strncmp(url, "FSCommand:", 10) == 0)
 					{
-						if (s_fscommand_handler)
+						if (get_fscommand_callback())
 						{
 							// Call into the app.
-							(*s_fscommand_handler)(env->get_target()->get_root_movie(), url + 10, target);
+							(*get_fscommand_callback())(env->get_target()->get_root_movie(), url + 10, target);
 						}
 					}
 					else
@@ -2114,10 +2081,10 @@ namespace gameswf
 					// a message for the host app.
 					if (strncmp(url, "FSCommand:", 10) == 0)
 					{
-						if (s_fscommand_handler)
+						if (get_fscommand_callback())
 						{
 							// Call into the app.
-							(*s_fscommand_handler)(env->get_target()->get_root_movie(), url + 10, target);
+							(*get_fscommand_callback())(env->get_target()->get_root_movie(), url + 10, target);
 						}
 					}
 					else
@@ -2797,75 +2764,6 @@ namespace gameswf
 	}
 
 #endif // COMPILE_DISASM
-
-
-	// garbage collector
-
-	void heap::clear()
-	{
-		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
-			it != m_heap.end(); ++it)
-		{
-			as_object* obj = it->first.get_ptr();
-			if (obj)
-			{
-				if (obj->get_ref_count() > 1)
-				{
-					hash<as_object*, bool> visited_objects;
-					obj->clear_refs(&visited_objects, obj);
-				}
-			}
-		}
-		m_heap.clear();
-	}
-
-	bool heap::is_garbage(as_object* obj)
-	{
-		bool is_garbage = false;
-		m_heap.get(obj, &is_garbage);
-		return is_garbage;
-	}
-
-	void heap::set(as_object* obj, bool is_garbage)
-	{
-		m_heap.set(obj, is_garbage);
-	}
-
-	void heap::set_as_garbage()
-	{
-		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
-			it != m_heap.end(); ++it)
-		{
-			as_object* obj = it->first.get_ptr();
-			if (obj)
-			{
-				m_heap.set(obj, true);
-			}
-		}
-	}
-
-	void heap::clear_garbage()
-	{
-		as_object* global = get_global();
-		global->not_garbage();
-		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
-			it != m_heap.end(); ++it)
-		{
-			as_object* obj = it->first.get_ptr();
-			if (obj)
-			{
-				if (it->second)	// is garbage ?
-				{
-					if (obj->get_ref_count() > 1)	// is in heap only ?
-					{
-						hash<as_object*, bool> visited_objects;
-						obj->clear_refs(&visited_objects, obj);
-					}
-					m_heap.erase(obj);
-				}
-			}
-		}
-	}
 
 };
 
