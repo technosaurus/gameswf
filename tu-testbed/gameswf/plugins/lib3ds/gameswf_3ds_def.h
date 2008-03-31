@@ -52,6 +52,8 @@ namespace gameswf
 
 	};
 
+	x3ds_definition* create_3ds_definition(const char* url);
+
 }	// end namespace gameswf
 
 #else

@@ -26,6 +26,21 @@
 namespace gameswf
 {
 
+	x3ds_definition* create_3ds_definition(const char* url)
+	{
+		smart_ptr<character_def>	m;
+		get_chardef_library()->get(url, &m);
+		if (m != NULL)
+		{
+			// Return cached movie.
+			return cast_to<x3ds_definition>(m.get_ptr());
+		}
+
+		x3ds_definition* def = new x3ds_definition(url);
+		get_chardef_library()->add(url, def);
+		return def;
+	}
+
 	x3ds_definition::x3ds_definition(const char* url) : m_file(NULL)
 	{
 		m_file = lib3ds_file_load(url);
