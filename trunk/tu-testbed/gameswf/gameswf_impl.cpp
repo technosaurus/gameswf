@@ -503,59 +503,6 @@ namespace gameswf
 	}
 
 
-	//
-	// library stuff, for sharing resources among different movies.
-	//
-
-
-	static stringi_hash< smart_ptr<movie_definition_sub> >	s_movie_library;
-	static weak_ptr<root> s_current_root;
-	static tu_string s_workdir;
-
-	root* get_current_root()
-	{
-		assert(s_current_root != NULL);
-		return s_current_root.get_ptr();
-	}
-
-	void set_current_root(root* m)
-	{
-		assert(m != NULL);
-		s_current_root = m;
-	}
-
-	const char* get_workdir()
-	{
-		return s_workdir.c_str();
-	}
-
-	void set_workdir(const char* dir)
-	{
-		assert(dir != NULL);
-		s_workdir = dir;
-	}
-
-	void	clear_library()
-	// Drop all library references to movie_definitions, so they
-	// can be cleaned up.
-	{
-		for (stringi_hash< smart_ptr<movie_definition_sub> >::iterator it = 
-			s_movie_library.begin(); it != s_movie_library.end(); ++it)
-		{
-			if (it->second->get_ref_count() > 1)
-			{
-				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
-				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
-					it->second->get_ref_count());
-
-				// to detect memory leaks
-				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
-			}
-		}
-		s_movie_library.clear();
-		s_workdir.clear();
-	}
-
 	movie_definition*	create_movie(const char* filename)
 	{
 		assert(filename);
@@ -563,12 +510,12 @@ namespace gameswf
 		// Is the movie already in the library?
 		if (s_use_cached_movie_def)
 		{
-			smart_ptr<movie_definition_sub>	m;
-			s_movie_library.get(filename, &m);
+			smart_ptr<character_def>	m;
+			get_movie_library()->get(filename, &m);
 			if (m != NULL)
 			{
 				// Return cached movie.
-				return m.get_ptr();
+				return cast_to<movie_definition>(m.get_ptr());
 			}
 		}
 
@@ -632,7 +579,7 @@ namespace gameswf
 
 		if (s_use_cached_movie_def)
 		{
-			s_movie_library.add(filename, m);
+			get_movie_library()->add(filename, m);
 		}
 
 		return m;
