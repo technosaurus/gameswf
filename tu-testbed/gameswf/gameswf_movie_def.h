@@ -29,14 +29,7 @@ namespace gameswf
 	struct execute_tag;
 	struct font;
 	struct root;
-	struct movie_definition_sub;
-
 	
-	int movie_def_loader(void* arg);
-
-	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
-	bool get_tag_loader(int tag_type, loader_function* lf);
-
 	//
 	// This is the client program's interface to the definition of
 	// a movie (i.e. the shared constant source info).
@@ -380,6 +373,11 @@ namespace gameswf
 
 		virtual bool is_multithread() const { return m_thread != NULL; }
 	};
+
+	int movie_def_loader(void* arg);
+
+	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
+	bool get_tag_loader(int tag_type, loader_function* lf);
 
 }
 
