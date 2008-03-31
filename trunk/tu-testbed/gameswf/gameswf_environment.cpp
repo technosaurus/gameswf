@@ -141,13 +141,16 @@ namespace gameswf
 #if TU_CONFIG_LINK_TO_LIB3DS == 0
 				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
 #else
-				x3ds_definition* x3ds = new x3ds_definition(fn.c_str());
-				if (x3ds->is_loaded())
+				x3ds_definition* x3ds = create_3ds_definition(fn.c_str());
+				if (x3ds)
 				{
-					rect bound;
-					target->get_bound(&bound);
-					x3ds->set_bound(bound);
-					return target->replace_me(x3ds);
+					if (x3ds->is_loaded())
+					{
+						rect bound;
+						target->get_bound(&bound);
+						x3ds->set_bound(bound);
+						return target->replace_me(x3ds);
+					}
 				}
 #endif
 				break;

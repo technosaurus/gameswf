@@ -511,7 +511,7 @@ namespace gameswf
 		if (s_use_cached_movie_def)
 		{
 			smart_ptr<character_def>	m;
-			get_movie_library()->get(filename, &m);
+			get_chardef_library()->get(filename, &m);
 			if (m != NULL)
 			{
 				// Return cached movie.
@@ -579,7 +579,7 @@ namespace gameswf
 
 		if (s_use_cached_movie_def)
 		{
-			get_movie_library()->add(filename, m);
+			get_chardef_library()->add(filename, m);
 		}
 
 		return m;
