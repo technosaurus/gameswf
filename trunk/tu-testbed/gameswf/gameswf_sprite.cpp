@@ -289,6 +289,7 @@ namespace gameswf
 			// _root.onLoad() will not be executed since do_actions()
 			// for frame(0) has not executed yet.
 			// _root.onLoad() will be executed later in root::advance()
+			m_def->instanciate_registered_class(this);
 			on_event(event_id::LOAD);
 		}
 
@@ -1539,10 +1540,7 @@ namespace gameswf
 			0.0f,
 			0); 
 
-		// a instanciate must be after add_display_object because
-		// constructor may change a some properties of movieclip
-		sdef->instanciate_registered_class(sprite);
-
+		sprite->advance(1);	// force advance
 		return sprite;
 	}
 
