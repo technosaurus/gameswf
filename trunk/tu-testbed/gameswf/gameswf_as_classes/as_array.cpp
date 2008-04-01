@@ -162,9 +162,9 @@ namespace gameswf
 		return m_string_value.c_str();
 	}
 
-	bool as_array::is_instance_of(as_function& constructor) const
+	bool as_array::is_instance_of(const as_function& constructor) const
 	{
-		as_c_function * function = cast_to<as_c_function>(&constructor);
+		const as_c_function * function = cast_to<as_c_function>(&constructor);
 		if( function && function->m_func == as_global_array_ctor )
 		{
 			return true;

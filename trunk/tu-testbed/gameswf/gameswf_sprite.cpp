@@ -1599,9 +1599,9 @@ namespace gameswf
 		return cast_to<canvas>(m_canvas->get_character_def());
 	}
 
-	bool sprite_instance::is_instance_of(as_function& constructor) const
+	bool sprite_instance::is_instance_of(const as_function& constructor) const
 	{
-		as_c_function * function = cast_to<as_c_function>(&constructor);
+		const as_c_function * function = cast_to<as_c_function>(&constructor);
 		if( function && function->m_func == as_global_movieclip_ctor )
 		{
 			return true;

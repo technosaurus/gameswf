@@ -220,6 +220,16 @@ namespace gameswf
 		return 0;
 	}
 
+	template <typename cast_class>
+	const cast_class* cast_to(const as_object_interface* object)
+	{
+		if (object)
+		{
+			return object->is(cast_class::m_class_id) ? static_cast<const cast_class*>(object) : 0;
+		}
+		return 0;
+	}
+
 	// For caching precomputed stuff.  Generally of
 	// interest to gameswf_processor and programs like it.
 	struct cache_options

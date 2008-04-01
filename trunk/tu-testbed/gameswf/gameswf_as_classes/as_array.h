@@ -28,7 +28,7 @@ namespace gameswf
 
 		exported_module as_array();
 		exported_module virtual const char* to_string();
-		exported_module virtual bool is_instance_of(as_function& constructor) const;
+		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 
 		exported_module void push(const as_value& val);
 		exported_module void pop(as_value* val);

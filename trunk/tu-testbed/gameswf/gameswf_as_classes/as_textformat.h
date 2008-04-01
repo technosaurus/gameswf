@@ -31,7 +31,7 @@ namespace gameswf
 		}
 
 		as_textformat();
-		exported_module virtual bool is_instance_of(as_function& constructor) const;
+		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 	};
 
 }	// end namespace gameswf

@@ -488,9 +488,9 @@ namespace gameswf
 		return 0;
 	}
 
-	bool    as_object::is_instance_of(as_function& constructor) const
+	bool    as_object::is_instance_of(const as_function& constructor) const
 	{
-		as_c_function * function = cast_to<as_c_function>(&constructor);
+		const as_c_function * function = cast_to<as_c_function>(&constructor);
 		return function && function->m_func == as_global_object_ctor;
 	}
 

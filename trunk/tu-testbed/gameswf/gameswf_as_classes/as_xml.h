@@ -362,7 +362,7 @@ struct xml_as_object : public gameswf::as_object
   }
 };
 
-exported_module virtual bool is_instance_of(as_function& constructor) const;
+exported_module virtual bool is_instance_of(const as_function& constructor) const;
 void xml_load(const fn_call& fn);
 void xml_set_current(const fn_call& fn);
 void xml_new(const fn_call& fn);
