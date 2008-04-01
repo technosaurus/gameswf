@@ -217,7 +217,7 @@ namespace gameswf
 		void close();
 		void play(const char* url);
 		double time() const;
-		exported_module virtual bool is_instance_of(as_function& constructor) const;
+		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 
 	private:
 
@@ -277,7 +277,7 @@ namespace gameswf
 	struct as_netstream : public as_object
 	{
 		video_handler* get_video_handler() { return NULL; }
-        exported_module virtual bool is_instance_of(as_function& constructor) const;
+        exported_module virtual bool is_instance_of(const as_function& constructor) const;
 	};
 
 }

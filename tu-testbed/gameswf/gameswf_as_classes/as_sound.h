@@ -52,7 +52,7 @@ namespace gameswf
 			m_id = -1;
 		}
 
-		exported_module virtual bool is_instance_of(as_function& constructor) const;
+		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 
 		// id of the sound
 		int m_id;

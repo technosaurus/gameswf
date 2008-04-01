@@ -29,7 +29,7 @@ namespace gameswf
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
-		exported_module virtual bool    is_instance_of(as_function& constructor) const;
+		exported_module virtual bool    is_instance_of(const as_function& constructor) const;
 
 		smart_ptr<as_color_transform> m_color_transform;
 		smart_ptr<character> m_movie;
