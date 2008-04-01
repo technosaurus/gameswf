@@ -795,7 +795,7 @@ namespace gameswf
 	// Create a mutable instance of our definition.
 	{
 		character*	ch = new button_character_instance(this, parent, id);
-		instanciate_registered_class( ch );
+		instanciate_registered_class( ch );	//TODO: test it
 		return ch;
 	}
 };

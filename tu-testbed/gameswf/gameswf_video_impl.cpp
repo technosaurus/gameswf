@@ -52,7 +52,7 @@ namespace gameswf
 	character* video_stream_definition::create_character_instance(character* parent, int id)
 	{
 		character* ch = new video_stream_instance(this, parent, id);
-		instanciate_registered_class(ch);
+		instanciate_registered_class(ch);	//TODO: test it
 		return ch;
 	}
 

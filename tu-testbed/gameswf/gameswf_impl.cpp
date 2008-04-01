@@ -124,7 +124,7 @@ namespace gameswf
 	// Default.  Make a generic_character.
 	{
 		character * ch = new generic_character(this, parent, id);
-		instanciate_registered_class(ch);
+		instanciate_registered_class(ch);	//TODO: test it
 		return ch;
 	}
 
@@ -178,6 +178,7 @@ namespace gameswf
 
 			// we does not create prototype for func, it is exist already
 			// But we must create proto for a object a call its constructor
+
 			ch->m_this_ptr = ch;
 			as_object* proto = create_proto(ch, m_registered_class_constructor.get_ptr());
 
@@ -1950,8 +1951,6 @@ namespace gameswf
 		// the parent movie's display list.
 	{
 		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
-		instanciate_registered_class(si);
-
 		return si;
 	}
 
