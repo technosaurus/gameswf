@@ -54,7 +54,6 @@ namespace gameswf
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
 		get_heap()->set(this, false);
-
 	}
 
 	sprite_instance::~sprite_instance()
@@ -706,6 +705,9 @@ namespace gameswf
 			ratio,
 			clip_depth);
 
+		// child clip only
+		ch->on_event(event_id::CONSTRUCT);	// tested, ok
+
 		assert(ch == NULL || ch->get_ref_count() > 1);
 		return ch.get_ptr();
 	}
@@ -766,6 +768,8 @@ namespace gameswf
 			mat,
 			ratio,
 			clip_depth);
+
+		ch->on_event(event_id::CONSTRUCT);	// isn't tested
 	}
 
 	character* sprite_instance::replace_me(character_def*	def)
@@ -793,6 +797,8 @@ namespace gameswf
 			get_matrix(),
 			get_ratio(),
 			get_clip_depth());
+
+		ch->on_event(event_id::CONSTRUCT);	// isn't tested
 
 		return ch;
 	}
@@ -1414,7 +1420,6 @@ namespace gameswf
 		edit_text_character_def* textdef = new edit_text_character_def(width, height);
 
 		character* textfield = textdef->create_character_instance(this, 0);
-
 		textfield->set_name(name);
 
 		matrix m;
@@ -1423,6 +1428,7 @@ namespace gameswf
 		cxform color_transform;
 		m_display_list.add_display_object(textfield, depth, true, color_transform, m, 0.0f, 0); 
 
+		textfield->on_event(event_id::CONSTRUCT);	// isn't tested
 		return textfield;
 	}
 

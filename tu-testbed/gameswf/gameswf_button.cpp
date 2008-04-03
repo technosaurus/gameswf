@@ -202,6 +202,8 @@ namespace gameswf
 				m_record_character[r] = ch;
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
+
+				ch->on_event(event_id::CONSTRUCT);	// isn't tested
 			}
 		}
 
