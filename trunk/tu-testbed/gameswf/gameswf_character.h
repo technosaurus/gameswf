@@ -450,12 +450,6 @@ namespace gameswf
 		void	set_name(const tu_string& name) { m_name = name; }
 		const tu_string&	get_name() const { return m_name; }
 
-		// For edit_text support (Flash 5).  More correct way
-		// is to do "text_character.text = whatever", via
-		// set_member().
-		virtual const char*	get_text_name() const { return ""; }
-		virtual void	set_text_value(const char* new_text) { assert(0); }
-
 		virtual matrix	get_world_matrix() const
 			// Get our concatenated matrix (all our ancestor transforms, times our matrix).	 Maps
 			// from our local space into "world" space (i.e. root movie space).

@@ -206,7 +206,7 @@ namespace gameswf
 		return res.get_ptr();
 	}
 
-	void	movie_def_impl::add_import(const char* source_url, int id, const char* symbol)
+	void	movie_def_impl::add_import(const tu_string& source_url, int id, const tu_string& symbol)
 	// Adds an entry to a table of resources that need to
 	// be imported from other movies.  Client code must
 	// call resolve_import() later, when the source movie
@@ -250,7 +250,8 @@ namespace gameswf
 		}
 	}
 
-	void	movie_def_impl::resolve_import(const char* source_url, movie_definition* source_movie)
+	/*
+	void	movie_def_impl::resolve_import(const tu_string& source_url, movie_definition* source_movie)
 	// Grabs the stuff we want from the source movie.
 	{
 		// @@ should be safe, but how can we verify
@@ -301,7 +302,7 @@ namespace gameswf
 				}
 			}
 		}
-	}
+	}*/
 
 	void	movie_def_impl::add_character(int character_id, character_def* c)
 	{

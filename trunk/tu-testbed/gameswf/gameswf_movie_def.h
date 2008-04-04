@@ -75,7 +75,7 @@ namespace gameswf
 		// Call this to resolve an import of the given movie.
 		// Replaces the dummy placeholder with the real
 		// movie_definition* given.
-		virtual void	resolve_import(const char* name, movie_definition* def) = 0;
+//		virtual void	resolve_import(const tu_string& name, movie_definition* def) = 0;
 
 		//
 		// (optional) API to support host-driven creation of textures.
@@ -209,7 +209,7 @@ namespace gameswf
 		virtual sound_sample*	get_sound_sample(int character_id) = 0;
 		virtual void	add_sound_sample(int character_id, sound_sample* sam) = 0;
 		virtual void	export_resource(const tu_string& symbol, character_def* res) = 0;
-		virtual void	add_import(const char* source_url, int id, const char* symbol_name) = 0;
+		virtual void	add_import(const tu_string& source_url, int id, const tu_string& symbol_name) = 0;
 		virtual void	add_bitmap_info(bitmap_info* ch) = 0;
 
 		virtual create_bitmaps_flag	get_create_bitmaps() const = 0;
@@ -250,11 +250,11 @@ namespace gameswf
 		tu_string	m_symbol;
 
 		import_info():
-		m_character_id(-1)
+			m_character_id(-1)
 		{
 		}
 
-		import_info(const char* source, int id, const char* symbol):
+		import_info(const tu_string& source, int id, const tu_string& symbol):
 			m_source_url(source),
 			m_character_id(id),
 			m_symbol(symbol)
@@ -340,10 +340,10 @@ namespace gameswf
 		virtual bitmap_info*	get_bitmap_info(int i) const;
 		virtual void	export_resource(const tu_string& symbol, character_def* res);
 		virtual character_def*	get_exported_resource(const tu_string& symbol);
-		virtual void	add_import(const char* source_url, int id, const char* symbol);
+		virtual void	add_import(const tu_string& source_url, int id, const tu_string& symbol);
 		bool	in_import_table(int character_id);
 		virtual void	visit_imported_movies(import_visitor* visitor);
-		virtual void	resolve_import(const char* source_url, movie_definition* source_movie);
+//		virtual void	resolve_import(const tu_string& source_url, movie_definition* source_movie);
 		void	add_character(int character_id, character_def* c);
 		character_def*	get_character_def(int character_id);
 		bool	get_labeled_frame(const char* label, int* frame_number);
