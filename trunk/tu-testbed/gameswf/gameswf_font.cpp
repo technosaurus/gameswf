@@ -97,20 +97,12 @@ namespace gameswf
 			m_wide_codes = (in->read_uint(1) != 0);
 			m_is_italic = (in->read_uint(1) != 0);
 			m_is_bold = (in->read_uint(1) != 0);
-			Uint8	reserved = in->read_u8();
 
-			// Inhibit warning.
-			reserved = reserved;
+			//Uint8	reserved = 
+			in->read_u8();
 
-			const char* str = in->read_string_with_length();
-			if (str)
-			{
-				m_fontname = str;
-				delete [] str;
-			}
-
+			in->read_string_with_length(&m_fontname);
 			int	glyph_count = in->read_u16();
-			
 			int	table_base = in->get_position();
 
 			// Read the glyph offsets.  Offsets
@@ -238,13 +230,7 @@ namespace gameswf
 	// DefineFontInfo tag.  The caller has already read the tag
 	// type and font id.
 	{
-		const char* str = in->read_string_with_length();
-		if (str)
-		{
-			m_fontname = str;
-			delete [] str;
-		}
-
+		in->read_string_with_length(&m_fontname);
 		unsigned char	flags = in->read_u8();
 		m_unicode_chars = (flags & 0x20) != 0;
 		m_shift_jis_chars = (flags & 0x10) != 0;

@@ -1482,10 +1482,13 @@ public:
 
 	exported_module void	operator+=(char ch)
 	{
-		int	old_length = length();
-		assert(old_length >= 0);
-		resize(old_length + 1);
-		strncpy(get_buffer() + old_length, (char *)&ch, 1);
+		if (ch)
+		{
+			int	old_length = length();
+			assert(old_length >= 0);
+			resize(old_length + 1);
+			strncpy(get_buffer() + old_length, (char *)&ch, 1);
+		}
 	}
 
 	// Append wide char.  Both versions of wide char.

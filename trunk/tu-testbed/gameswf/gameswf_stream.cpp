@@ -216,32 +216,17 @@ namespace gameswf
 		}
 	}
 
-	char*	stream::read_string_with_length()
-	// Reads *and new[]'s* the string from the given file.
-	// Ownership passes to the caller; caller must delete[] the
-	// string when it is done with it.
+	void	stream::read_string_with_length(tu_string* str)
 	{
 		align();
+		str->resize(0);
 
 		int	len = read_u8();
-		if (len <= 0)
+		for (int i = 0; i < len; i++)
 		{
-			return NULL;
-		}
-		else
-		{
-			char*	buffer = new char[len + 1];
-			int	i;
-			for (i = 0; i < len; i++)
-			{
-				buffer[i] = read_u8();
-			}
-			buffer[i] = 0;	// terminate.
-
-			return buffer;
+			*str += read_u8();
 		}
 	}
-
 
 	int	stream::get_position()
 	// Return our current (byte) position in the input stream.

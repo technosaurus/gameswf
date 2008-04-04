@@ -49,7 +49,7 @@ namespace gameswf
 		void	read_string(tu_string* str);	
 
 		// For string that begins with an 8-bit length code.
-		char*	read_string_with_length();	// reads *and new[]'s* the string -- ownership passes to caller!
+		void	read_string_with_length(tu_string* str);
 
 		int	get_position();
 		void	set_position(int pos);

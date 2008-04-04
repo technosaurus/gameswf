@@ -181,8 +181,8 @@ namespace gameswf
 			int r, r_num =  m_def->m_button_records.size();
 			m_record_character.resize(r_num);
 
-			movie_definition_sub*	movie_def = (movie_definition_sub*) get_movie_definition();
-			assert(movie_def);
+			movie_definition_sub*	movie_def = cast_to<movie_definition_sub>(get_movie_definition());
+ 			assert(movie_def);
 
 			for (r = 0; r < r_num; r++)
 			{
@@ -203,7 +203,7 @@ namespace gameswf
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
 
-				ch->on_event(event_id::CONSTRUCT);	// isn't tested
+	//			ch->on_event(event_id::CONSTRUCT);	// isn't tested
 			}
 		}
 
@@ -797,7 +797,7 @@ namespace gameswf
 	// Create a mutable instance of our definition.
 	{
 		character*	ch = new button_character_instance(this, parent, id);
-		instanciate_registered_class( ch );	//TODO: test it
+		// instanciate_registered_class( ch );	//TODO: test it
 		return ch;
 	}
 };

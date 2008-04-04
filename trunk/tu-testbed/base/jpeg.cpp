@@ -223,7 +223,7 @@ namespace jpeg
 			assert(dest);
 
 			// Write any remaining data.
-			int	datacount = IO_BUF_SIZE - dest->m_pub.free_in_buffer;
+			int	datacount = IO_BUF_SIZE - (int) dest->m_pub.free_in_buffer;
 			if (datacount > 0) {
 				if (dest->m_out_stream->write_bytes(dest->m_buffer, datacount) != datacount)
 				{

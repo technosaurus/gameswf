@@ -86,7 +86,6 @@ namespace gameswf
 		void	read_code_table(stream* in);
 
 		array< smart_ptr<shape_character_def> >	m_glyphs;
-
 		tu_string	m_fontname;
 		movie_definition_sub*	m_owning_movie;
 		bool	m_has_layout;

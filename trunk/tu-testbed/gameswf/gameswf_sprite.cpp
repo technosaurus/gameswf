@@ -706,7 +706,7 @@ namespace gameswf
 			ratio,
 			clip_depth);
 
-		ch->on_event(event_id::CONSTRUCT);	// isn't tested
+//		ch->on_event(event_id::CONSTRUCT);	// isn't tested
 	}
 
 	character* sprite_instance::replace_me(character_def*	def)
@@ -735,7 +735,7 @@ namespace gameswf
 			get_ratio(),
 			get_clip_depth());
 
-		ch->on_event(event_id::CONSTRUCT);	// isn't tested
+//		ch->on_event(event_id::CONSTRUCT);	// isn't tested
 
 		return ch;
 	}
@@ -1307,7 +1307,7 @@ namespace gameswf
 		cxform color_transform;
 		m_display_list.add_display_object(textfield, depth, true, color_transform, m, 0.0f, 0); 
 
-		textfield->on_event(event_id::CONSTRUCT);	// isn't tested
+//		textfield->on_event(event_id::CONSTRUCT);	// isn't tested
 		return textfield;
 	}
 
