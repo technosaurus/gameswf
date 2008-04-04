@@ -33,7 +33,7 @@ namespace gameswf
 		rect m_bounds;
 	};
 
-	struct face_entity
+	struct face_entity : public ref_counted
 	{
 		FT_Face m_face;
 		hash<int, glyph_entity*> m_ge;	// <code, glyph_entity>
@@ -84,7 +84,7 @@ namespace gameswf
 		FT_Library	m_lib;
 		float m_scale;
 		smart_ptr<canvas> m_canvas;
-		string_hash<face_entity*> m_face_entity;
+		string_hash< smart_ptr<face_entity> > m_face_entity;
 	};
 
 }

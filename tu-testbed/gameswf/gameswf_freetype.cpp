@@ -220,11 +220,6 @@ namespace gameswf
 
 	glyph_provider::~glyph_provider()
 	{
-		for (string_hash<face_entity*>::iterator it = m_face_entity.begin();
-			it != m_face_entity.end(); ++it)
-		{
-			delete it->second;
-		}
 	}
 
 	//
@@ -298,16 +293,17 @@ namespace gameswf
 		}
 
 		// first try to find from hash
-		face_entity* fe = NULL;
+		smart_ptr<face_entity> fe;
 		if (m_face_entity.get(key, &fe))
 		{
-			return fe;
+			return fe.get_ptr();
 		}
 
 		tu_string font_filename;
 		if (get_fontfile(fontname, font_filename, is_bold, is_italic) == false)
 		{
 			log_error("can't find font file '%s'\n", fontname.c_str());
+			m_face_entity.add(key, NULL);
 			return NULL;
 		}
 
@@ -322,7 +318,7 @@ namespace gameswf
 		{
 			log_error("some error opening font '%s'\n", font_filename.c_str());
 		}
-		return fe;
+		return fe.get_ptr();
 	}
 
 	image::alpha* glyph_provider::draw_bitmap(const FT_Bitmap& bitmap)

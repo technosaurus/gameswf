@@ -2213,7 +2213,7 @@ namespace gameswf
 
 			if (s_no_recurse_while_loading)
 			{
-				m->add_import(source_url.c_str(), id, symbol_name.c_str());
+				m->add_import(source_url, id, symbol_name);
 			}
 			else
 			{

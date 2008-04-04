@@ -841,7 +841,7 @@ namespace gameswf
 					{ 
 						s.erase(m_cursor - 1, 1); 
 						m_cursor--; 
-						set_text_value(s.c_str()); 
+						set_text_value(s); 
 					} 
 					break; 
 
@@ -849,7 +849,7 @@ namespace gameswf
 					if (s.size() > m_cursor) 
 					{ 
 						s.erase(m_cursor, 1); 
-						set_text_value(s.c_str()); 
+						set_text_value(s); 
 					} 
 					break; 
 
@@ -881,7 +881,7 @@ namespace gameswf
 					{ 
 						s.insert(m_cursor, id.m_key_code); 
 						m_cursor++; 
-						set_text_value(s.c_str()); 
+						set_text_value(s); 
 						break; 
 					} 
 				} 
@@ -917,9 +917,9 @@ namespace gameswf
 		return NULL; 
 	} 
 
-	const char*	edit_text_character::get_text_name() const
+	const tu_string&	edit_text_character::get_var_name() const
 	{
-		return m_def->m_var_name.c_str(); 
+		return m_def->m_var_name; 
 	}
 
 	void	edit_text_character::reset_bounding_box(float x, float y)
@@ -936,7 +936,7 @@ namespace gameswf
 		to_string();
 	}
 
-	void	edit_text_character::set_text(const char* new_text)
+	void	edit_text_character::set_text(const tu_string& new_text)
 	// Local. Set our text to the given string.
 	{
 		if (m_text == new_text)
@@ -952,26 +952,26 @@ namespace gameswf
 		format_text();
 	}
 
-	void	edit_text_character::set_text_value(const char* new_text)
+	void	edit_text_character::set_text_value(const tu_string& new_text)
 	// Set our text to the given string.
 	{
 		// set our text
 		set_text(new_text);
 
 		// set VAR
-		if (strlen(get_text_name()) > 0)
+		if (get_var_name().size() > 0)
 		{
 			character* ch = get_parent();	// target, default is parent
 			tu_string path;
-			tu_string var = get_text_name();
-			if (as_environment::parse_path(get_text_name(), &path, &var))
+			tu_string var = get_var_name();
+			if (as_environment::parse_path(get_var_name(), &path, &var))
 			{
 				ch = find_target(path.c_str());
 			}
 
 			if (ch)
 			{
-				ch->set_member(var, new_text);
+				ch->set_member(var, new_text.c_str());
 			}
 		}
 	}
@@ -979,12 +979,12 @@ namespace gameswf
 	const char*	edit_text_character::to_string()
 	{
 		// get text from VAR
-		if (strlen(get_text_name()) > 0)
+		if (get_var_name().size() > 0)
 		{
 			character* ch = get_parent();	// target, default is parent
 			tu_string path;
-			tu_string var = get_text_name();
-			if (as_environment::parse_path(get_text_name(), &path, &var))
+			tu_string var = get_var_name();
+			if (as_environment::parse_path(get_var_name(), &path, &var))
 			{
 				ch = find_target(path.c_str());
 			}
@@ -1046,7 +1046,7 @@ namespace gameswf
 
 			case M_TEXT:
 			{
-				set_text_value(val.to_string());
+				set_text_value(val.to_tu_string());
 				break;
 			}
 

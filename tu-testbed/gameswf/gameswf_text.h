@@ -244,9 +244,9 @@ namespace gameswf
 		virtual bool on_event(const event_id& id);
 		virtual bool can_handle_mouse_event();
 		character*  get_topmost_mouse_entity(float x, float y);
-		virtual const char*	get_text_name() const;
+		const tu_string&	get_var_name() const;
 		void	reset_bounding_box(float x, float y);
-		virtual void	set_text_value(const char* new_text);
+		void	set_text_value(const tu_string& new_text);
 		virtual const char*	to_string();
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
@@ -257,7 +257,7 @@ namespace gameswf
 
 	private:
 
-		void	set_text(const char* new_text);
+		void	set_text(const tu_string& new_text);
 
 	};
 
