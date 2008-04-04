@@ -285,7 +285,7 @@ namespace gameswf
 
 		virtual character*	add_display_object(
 			Uint16 character_id,
-			const char*		 name,
+			const tu_string& name,
 			const array<swf_event*>& event_handlers,
 			int			 depth,
 			bool			 replace_if_depth_is_occupied,
@@ -447,7 +447,7 @@ namespace gameswf
 		Uint16	get_clip_depth() const { return m_clip_depth; }
 		void	set_clip_depth(Uint16 d) { m_clip_depth = d; }
 
-		void	set_name(const char* name) { m_name = name; }
+		void	set_name(const tu_string& name) { m_name = name; }
 		const tu_string&	get_name() const { return m_name; }
 
 		// For edit_text support (Flash 5).  More correct way
