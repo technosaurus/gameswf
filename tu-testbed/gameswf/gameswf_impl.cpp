@@ -124,7 +124,7 @@ namespace gameswf
 	// Default.  Make a generic_character.
 	{
 		character * ch = new generic_character(this, parent, id);
-		instanciate_registered_class(ch);	//TODO: test it
+		// instanciate_registered_class(ch);	//TODO: test it
 		return ch;
 	}
 
@@ -700,7 +700,7 @@ namespace gameswf
 	{
 		tu_string n;
 		in->read_string(&n);
-		m->add_frame_name(n);
+		m->add_frame_name(n.c_str());
 	}
 
 	struct set_background_color : public execute_tag
@@ -1385,7 +1385,7 @@ namespace gameswf
 	struct place_object_2 : public execute_tag
 	{
 		int	m_tag_type;
-		tu_string	m_name;
+		tu_string	m_character_name;
 		float	m_ratio;
 		cxform	m_color_transform;
 		matrix	m_matrix;
@@ -1505,8 +1505,8 @@ namespace gameswf
 
 				if (has_name)
 				{
-					in->read_string(&m_name);
-					IF_VERBOSE_PARSE(log_msg("  name = %s\n", m_name ? m_name : "<null>"));
+					in->read_string(&m_character_name);
+					IF_VERBOSE_PARSE(log_msg("  name = %s\n", m_character_name.c_str()));
 				}
 				if (has_clip_bracket) {
 					m_clip_depth = in->read_u16(); 
@@ -1822,7 +1822,7 @@ namespace gameswf
 				case PLACE:
 					m->add_display_object(
 						m_character_id,
-						m_name,
+						m_character_name.c_str(),
 						m_event_handlers,
 						m_depth,
 						m_tag_type != 4,	// original place_object doesn't do replacement
@@ -1846,7 +1846,7 @@ namespace gameswf
 				case REPLACE:
 					m->replace_display_object(
 						m_character_id,
-						m_name,
+						m_character_name.c_str(),
 						m_depth,
 						m_has_cxform,
 						m_color_transform,
@@ -2134,27 +2134,27 @@ namespace gameswf
 		for (int i = 0; i < count; i++)
 		{
 			Uint16	id = in->read_u16();
-			tu_string name;
-			in->read_string(&name);
-			IF_VERBOSE_PARSE(log_msg("  export: id = %d, name = %s\n", id, name.c_str()));
+			tu_string resource_name;
+			in->read_string(&resource_name);
+			IF_VERBOSE_PARSE(log_msg("  export: id = %d, name = %s\n", id, resource_name.c_str()));
 
 			if (font* f = m->get_font(id))
 			{
 				// Expose this font for export.
-				m->export_resource(name, f);
+				m->export_resource(resource_name, f);
 			}
 			else if (character_def* ch = m->get_character_def(id))
 			{
 				// Expose this movie/button/whatever for export.
-				m->export_resource(name, ch);
+				m->export_resource(resource_name, ch);
 			}
 			else if (sound_sample* ch = m->get_sound_sample(id))
 			{
-				m->export_resource(name, ch);
+				m->export_resource(resource_name, ch);
 			}
 			else
 			{
-				log_error("export error: don't know how to export resource '%s'\n", name.c_str());
+				log_error("export error: don't know how to export resource '%s'\n", resource_name.c_str());
 			}
 		}
 	}
@@ -2170,19 +2170,19 @@ namespace gameswf
 	{
 		assert(tag_type == 57);
 
-		tu_string source;
-		in->read_string(&source);
+		tu_string source_url;
+		in->read_string(&source_url);
 		int	count = in->read_u16();
 
 		IF_VERBOSE_PARSE(log_msg("  import: source_url = %s, count = %d\n", 
-			source.c_str(), count));
+			source_url.c_str(), count));
 
 		// Try to load the source movie into the movie library.
 		movie_definition*	source_movie = NULL;
 
 		if (s_no_recurse_while_loading == false)
 		{
-			source_movie = create_movie(source.c_str());
+			source_movie = create_movie(source_url.c_str());
 			if (source_movie == NULL)
 			{
 				// If workdir is set, try again with
@@ -2190,14 +2190,14 @@ namespace gameswf
 				tu_string relative_url = get_workdir();
 				if (relative_url.length())
 				{
-					relative_url += source;
+					relative_url += source_url;
 					source_movie = create_movie(relative_url);
 				}
 
 				if (source_movie == NULL)
 				{
 					// Give up on imports.
-					log_error("can't import movie from url %s\n", source.c_str());
+					log_error("can't import movie from url %s\n", source_url.c_str());
 					return;
 				}
 			}
@@ -2207,13 +2207,13 @@ namespace gameswf
 		for (int i = 0; i < count; i++)
 		{
 			Uint16	id = in->read_u16();
-			tu_string name;
-			in->read_string(&name);
-			IF_VERBOSE_PARSE(log_msg("  import: id = %d, name = %s\n", id, name.c_str()));
+			tu_string symbol_name;
+			in->read_string(&symbol_name);
+			IF_VERBOSE_PARSE(log_msg("  import: id = %d, name = %s\n", id, symbol_name.c_str()));
 
 			if (s_no_recurse_while_loading)
 			{
-				m->add_import(source.c_str(), id, name.c_str());
+				m->add_import(source_url.c_str(), id, symbol_name.c_str());
 			}
 			else
 			{
@@ -2222,11 +2222,12 @@ namespace gameswf
 				// create_movie_sub().
 
 				assert(cast_to<movie_def_impl>(source_movie));
-				character_def* res = cast_to<movie_def_impl>(source_movie)->get_exported_resource(name);
+				character_def* res =
+					cast_to<movie_def_impl>(source_movie)->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
 					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",
-						name.c_str(), source.c_str()));
+						symbol_name.c_str(), source_url.c_str()));
 				}
 				else if (font* f = cast_to<font>(res))
 				{
@@ -2241,7 +2242,7 @@ namespace gameswf
 				else
 				{
 					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' from movie '%s' has unknown type\n",
-						name.c_str(), source.c_str()));
+						symbol_name.c_str(), source_url.c_str()));
 				}
 			}
 		}

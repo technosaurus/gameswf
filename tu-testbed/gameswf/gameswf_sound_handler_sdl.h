@@ -222,7 +222,7 @@ namespace gameswf
 		bool is_playing = true;
 		while (mixbuf_ptr - mixbuf < mixbuf_len)
 		{
-			int free_space = mixbuf_len - (mixbuf_ptr - mixbuf);
+			int free_space = mixbuf_len - int(mixbuf_ptr - mixbuf);
 			int n = imin(m_size - m_pos, free_space);
 			memcpy(mixbuf_ptr, m_data + m_pos, n);
 			mixbuf_ptr += n;

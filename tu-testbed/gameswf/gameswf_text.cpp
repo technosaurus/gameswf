@@ -1389,7 +1389,7 @@ namespace gameswf
 						"-- make sure character shapes for font %s are being exported "
 						"into your SWF file!\n",
 						code,
-						m_font->get_name());
+						m_font->get_name().c_str());
 				}
 			}
 
@@ -1489,7 +1489,7 @@ namespace gameswf
 		}
 
 		edit_text_character*	ch = new edit_text_character(parent, this, id);
-		instanciate_registered_class(ch);	//TODO: test it
+		// instanciate_registered_class(ch);	//TODO: test it
 
 		return ch;
 	}

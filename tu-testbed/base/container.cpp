@@ -311,7 +311,7 @@ tu_string	tu_string::utf8_substring(int start, int end) const
 		end_pointer = start_pointer;
 	}
 
-	return tu_string(start_pointer, end_pointer - start_pointer);
+	return tu_string(start_pointer, int(end_pointer - start_pointer));
 }
 
 

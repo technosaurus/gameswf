@@ -226,12 +226,12 @@ namespace image
 	// Compute a hash code based on image contents.  Can be useful
 	// for comparing images.
 	{
-		unsigned int	h = bernstein_hash(&m_width, sizeof(m_width));
-		h = bernstein_hash(&m_height, sizeof(m_height), h);
+		unsigned int	h = (unsigned int) bernstein_hash(&m_width, sizeof(m_width));
+		h = (unsigned int) bernstein_hash(&m_height, sizeof(m_height), h);
 
 		for (int i = 0, n = m_height; i < n; i++)
 		{
-			h = bernstein_hash(scanline(this, i), m_width, h);
+			h = (unsigned int) bernstein_hash(scanline(this, i), m_width, h);
 		}
 
 		return h;
