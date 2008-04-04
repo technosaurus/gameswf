@@ -186,34 +186,6 @@ namespace gameswf
 		virtual bool	set_property(int index, const as_value& val) = 0;
 	};
 
-// tulrich: I'm not too sure this is useful.  For things like
-// xml_as_object, is it sufficient to always store the event handlers
-// as ordinary members using their canonical names, instead of this
-// special table?  I have a feeling that's what Macromedia does
-// (though I'm not sure).
-#if 0
-	// This class is just as_object_interface, with an event
-	// handler table added.
-	struct as_object_with_handlers : public as_object_interface
-	{
-		// ActionScript event handler table.
-		hash<event_id, gameswf::as_value>	 m_event_handlers;
-
-		// ActionScript event handler.
-		void	set_event_handler(event_id id, const as_value& method)
-		{
-			// m_event_handlers.push_back(as);
-			//m_event_handlers.set(id, method);
-		}
-
-		bool	get_event_handler(event_id id, gameswf::as_value* result)
-		{
-			//return m_event_handlers.get(id, result);
-			return false;
-		}
-	};
-#endif // 0
-
 	//
 	// Some handy helpers
 	//

@@ -63,15 +63,8 @@ namespace gameswf
 
 	bool sprite_instance::has_keypress_event()
 	{
-		for (hash<event_id, as_value>::iterator it = m_event_handlers.begin();
-			it != m_event_handlers.end(); ++it)
-		{
-			if (it->first.m_id == event_id::KEY_PRESS)
-			{
-				return true;
-			}
-		}
-		return false;
+		as_value unused;
+		return get_member("onKeyPress", &unused);
 	}
 
 	void sprite_instance::get_bound(rect* bound)
@@ -162,31 +155,10 @@ namespace gameswf
 	bool sprite_instance::can_handle_mouse_event()
 	// Return true if we have any mouse event handlers.
 	{
-
-		as_value dummy;
-		int i;
-		for (i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
+		for (int i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
 		{
+			as_value dummy;
 			if (get_member(FN_NAMES[i], &dummy)) 
-			{
-				return true;
-			}
-		}
-
-		// Event handlers that qualify as mouse event handlers.
-		const event_id::id_code EH_IDS[] = {
-			event_id::PRESS,
-			event_id::RELEASE,
-			event_id::RELEASE_OUTSIDE,
-			event_id::ROLL_OVER,
-			event_id::ROLL_OUT,
-			event_id::DRAG_OVER,
-			event_id::DRAG_OUT,
-		};
-
-		for (i = 0; i < TU_ARRAYSIZE(EH_IDS); i++)
-		{
-			if (get_event_handler(EH_IDS[i], &dummy))
 			{
 				return true;
 			}
@@ -620,7 +592,7 @@ namespace gameswf
 
 	character*	sprite_instance::add_display_object(
 		Uint16 character_id,
-		const char* name,
+		const char* name,	//vv
 		const array<swf_event*>& event_handlers,
 		int depth,
 		bool replace_if_depth_is_occupied,
@@ -640,44 +612,15 @@ namespace gameswf
 		}
 
 		// If we already have this object on this
-		// plane, then move it instead of replacing
-		// it.
+		// plane, then move it instead of replacing it.
 		character*	existing_char = m_display_list.get_character_at_depth(depth);
 		if (existing_char
 			&& existing_char->get_id() == character_id
 			&& ((name == NULL && existing_char->get_name().length() == 0)
 			|| (name && existing_char->get_name() == name)))
 		{
-			//				IF_VERBOSE_DEBUG(log_msg("add changed to move on depth %d\n", depth));//xxxxxx
-
-			// compare events 
-			hash<event_id, as_value>* existing_events =
-				(hash<event_id, as_value>*) existing_char->get_event_handlers(); 
-			int n = event_handlers.size(); 
-			if (existing_events->size() == n) 
-			{ 
-				bool same_events = true; 
-				for (int i = 0; i < n; i++) 
-				{ 
-					as_value result; 
-					if (existing_events->get(event_handlers[i]->m_event, &result)) 
-					{ 
-						// compare actionscipt in event 
-						if (event_handlers[i]->m_method == result) 
-						{ 
-							continue; 
-						} 
-					} 
-					same_events = false; 
-					break; 
-				} 
-
-				if (same_events) 
-				{ 
-					move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
-					return NULL;
-				}
-			}
+			move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
+			return NULL;
 		}
 
 		assert(cdef);
@@ -689,11 +632,10 @@ namespace gameswf
 		}
 
 		// Attach event handlers (if any).
+		for (int i = 0, n = event_handlers.size(); i < n; i++)
 		{
-			for (int i = 0, n = event_handlers.size(); i < n; i++)
-			{
-				event_handlers[i]->attach_to(ch.get_ptr());
-			}
+			const tu_stringi& name = event_handlers[i]->m_event.get_function_name();
+			ch->set_member(name, event_handlers[i]->m_method);
 		}
 
 		m_display_list.add_display_object(
@@ -1178,29 +1120,9 @@ namespace gameswf
 	// Duplicate the object with the specified name and add it with a new name 
 	// at a new depth.
 	{
-
-		if (get_parent() == NULL)
-		{
-			log_error("can't clone _root\n");
-			return NULL;
-		}
-
-		// Create the copy of 'this' event handlers
-		// We should not copy 'm_action_buffer' since the 'm_method' already contains it 
-		array<swf_event*> event_handlers; 
-		const hash<event_id, as_value>* sprite_events = get_event_handlers(); 
-		for (hash<event_id, as_value>::const_iterator it = sprite_events->begin();
-			it != sprite_events->end(); ++it ) 
-		{ 
-			swf_event* e = new swf_event; 
-			e->m_event = it->first; 
-			e->m_method = it->second; 
-			event_handlers.push_back(e); 
-		} 
-
 		sprite_instance* parent = cast_to<sprite_instance>(get_parent());
-		character* ch = NULL; 
-		if (parent != NULL) 
+		sprite_instance* ch = NULL; 
+		if (parent) 
 		{ 
 			// clone a previous external loaded movie ?
 			if (get_id() == -1)	
@@ -1209,7 +1131,7 @@ namespace gameswf
 					get_root(),	parent,	-1);
 
 				ch->set_parent(parent);
-				cast_to<sprite_instance>(ch)->set_root(get_root());
+				ch->set_root(get_root());
 				ch->set_name(newname.c_str());
 
 				parent->m_display_list.add_display_object(
@@ -1220,29 +1142,22 @@ namespace gameswf
 					get_matrix(), 
 					get_ratio(), 
 					get_clip_depth()); 
-
-				// Attach event handlers (if any).
-				//TODO: test it
-				for (int i = 0, n = event_handlers.size(); i < n; i++)
-				{
-					event_handlers[i]->attach_to(ch);
-				}
 			}
-			else if( get_id() == 0 )
+			else
 			{
-				smart_ptr<sprite_instance> sprite;
+				ch = new sprite_instance(m_def.get_ptr(), get_root(),	parent,	0);
+				ch->set_parent(parent);
+				ch->set_root(get_root());
+				ch->set_name(newname.c_str());
 
-				sprite = new sprite_instance(m_def.get_ptr(), 
-					get_root(),	parent,	0);
-
-				sprite->set_parent(parent);
-				sprite->set_root(get_root());
-				sprite->set_name(newname.c_str());
-
-				*sprite->get_canvas() = *get_canvas();
+				//TODO: test
+				if (m_canvas != NULL)
+				{
+					*ch->get_canvas() = *get_canvas();
+				}
 
 				parent->m_display_list.add_display_object(
-					sprite.get_ptr(), 
+					ch, 
 					depth,
 					true,		// replace_if_depth_is_occupied
 					get_cxform(), 
@@ -1250,23 +1165,15 @@ namespace gameswf
 					get_ratio(), 
 					get_clip_depth()); 
 			}
-			else
-			{
-				ch = parent->add_display_object( 
-					get_id(), 
-					newname.c_str(), 
-					event_handlers, 
-					depth, 
-					true, // replace if depth is occupied (to drop) 
-					get_cxform(), 
-					get_matrix(), 
-					get_ratio(), 
-					get_clip_depth()); 
-			}
 
-		} 
+			// copy this's members to new created character
+			copy_to(ch);
 
-
+		}
+		else
+		{
+			log_error("can't clone _root\n");
+		}
 		return ch;
 	}
 
@@ -1294,52 +1201,29 @@ namespace gameswf
 		// Keep m_as_environment alive during any method calls!
 		smart_ptr<as_object>	this_ptr(this);
 
-		bool called = false;
-
-		// First, check for built-in event handler.
+		// In ActionScript 2.0, event method names are CASE SENSITIVE.
+		// In ActionScript 1.0, event method names are CASE INSENSITIVE.
+		const tu_stringi&	method_name = id.get_function_name().to_tu_stringi();
+		as_value	method;
+		if (get_member(method_name, &method))
 		{
-			as_value	method;
-			if (get_event_handler(id, &method))
+			int nargs = 0;
+			if (id.m_args)
 			{
-				// Dispatch.
-				gameswf::call_method(method, &m_as_environment, this, 0, m_as_environment.get_top_index());
-
-				called = true;
-				// Fall through and call the function also, if it's defined!
-				// (@@ Seems to be the behavior for mouse events; not tested & verified for
-				// every event type.)
-			}
-		}
-
-		// Check for member function.
-		{
-			// In ActionScript 2.0, event method names are CASE SENSITIVE.
-			// In ActionScript 1.0, event method names are CASE INSENSITIVE.
-			const tu_stringi&	method_name = id.get_function_name().to_tu_stringi();
-			if (method_name.length() > 0)
-			{
-				as_value	method;
-				if (get_member(method_name, &method))
+				nargs = id.m_args->size();
+				for (int i = nargs - 1; i >= 0; i--)
 				{
-					int nargs = 0;
-					if (id.m_args)
-					{
-						nargs = id.m_args->size();
-						for (int i = nargs - 1; i >=0; i--)
-						{
-							m_as_environment.push((*id.m_args)[i]);
-						}
-					}
-					gameswf::call_method(method, &m_as_environment, this, nargs, 
-						m_as_environment.get_top_index());
-					m_as_environment.drop(nargs);
-
-					called = true;
+					m_as_environment.push((*id.m_args)[i]);
 				}
 			}
-		}
 
-		return called;
+			gameswf::call_method(method, &m_as_environment, this, nargs, 
+				m_as_environment.get_top_index());
+
+			m_as_environment.drop(nargs);
+			return true;
+		}
+		return false;
 	}
 
 	const char*	sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)

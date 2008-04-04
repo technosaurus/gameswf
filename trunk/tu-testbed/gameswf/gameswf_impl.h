@@ -57,19 +57,12 @@ namespace gameswf
 		// against that.
 
 		event_id	m_event;
-		action_buffer	m_action_buffer;
 		as_value	m_method;
 
-		swf_event()
-		{
-		}
-
-		void	attach_to(character* ch) const
-		{
-			ch->set_event_handler(m_event, m_method);
-		}
+		swf_event() {}
 
 	private:
+
 		// DON'T USE THESE
 		swf_event(const swf_event& s) { assert(0); }
 		void	operator=(const swf_event& s) { assert(0); }

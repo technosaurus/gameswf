@@ -1774,7 +1774,6 @@ namespace gameswf
 							{
 								swf_event* ev = new swf_event;
 								ev->m_event = s_code_bits[i];
-								ev->m_action_buffer = action;
 
 								if (i == 17)	// has keypress event ?
 								{
@@ -1783,8 +1782,8 @@ namespace gameswf
 
 								// Create a function to execute the actions.
 								array<with_stack_entry>	empty_with_stack;
-								as_s_function*	func = new as_s_function(&ev->m_action_buffer, 0, empty_with_stack);
-								func->set_length(ev->m_action_buffer.get_length());
+								as_s_function*	func = new as_s_function(&action, 0, empty_with_stack);
+								func->set_length(action.get_length());
 
 								ev->m_method.set_as_object(func);
 
