@@ -486,15 +486,11 @@ namespace gameswf
 			m_leading = (float) in->read_s16();
 		}
 
-		char*	name = in->read_string();
-		m_var_name = name;
-		delete [] name;
+		in->read_string(&m_var_name);
 
 		if (has_text)
 		{
-			char*	str = in->read_string();
-			m_default_text = str;
-			delete [] str;
+			in->read_string(&m_default_text);
 		}
 
 		IF_VERBOSE_PARSE(log_msg("edit_text_char, varname = %s, text = %s\n",
@@ -690,7 +686,7 @@ namespace gameswf
 			}
 			m_font->set_bold(bold);
 			m_font->set_italic(italic);
-			m_font->set_name(fontname.c_str());
+			m_font->set_name(fontname);
 		}
 
 		format_text();
@@ -1493,10 +1489,6 @@ namespace gameswf
 		}
 
 		edit_text_character*	ch = new edit_text_character(parent, this, id);
-
-		//	m_var_name is not instance name !
-		//	ch->set_name(m_var_name.c_str());
-
 		instanciate_registered_class(ch);	//TODO: test it
 
 		return ch;

@@ -67,8 +67,8 @@ namespace gameswf
 		void	output_cached_data(tu_file* out, const cache_options& options);
 		void	input_cached_data(tu_file* in);
 
-		const char*	get_name() const { return m_fontname.c_str(); }
-		void	set_name(const char* name) { m_fontname = name; }
+		const tu_string& get_name() const { return m_fontname; }
+		void	set_name(const tu_string& name) { m_fontname = name; }
 		bool	is_bold() const { return m_is_bold; }
 		void	set_bold(bool bold) { m_is_bold = bold; }
 		bool	is_italic() const { return m_is_italic; }

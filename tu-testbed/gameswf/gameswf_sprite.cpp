@@ -592,7 +592,7 @@ namespace gameswf
 
 	character*	sprite_instance::add_display_object(
 		Uint16 character_id,
-		const char* name,	//vv
+		const tu_string& name,
 		const array<swf_event*>& event_handlers,
 		int depth,
 		bool replace_if_depth_is_occupied,
@@ -615,9 +615,8 @@ namespace gameswf
 		// plane, then move it instead of replacing it.
 		character*	existing_char = m_display_list.get_character_at_depth(depth);
 		if (existing_char
-			&& existing_char->get_id() == character_id
-			&& ((name == NULL && existing_char->get_name().length() == 0)
-			|| (name && existing_char->get_name() == name)))
+			&& character_id == existing_char->get_id()
+			&& name == existing_char->get_name())
 		{
 			move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
 			return NULL;
@@ -626,10 +625,7 @@ namespace gameswf
 		assert(cdef);
 		smart_ptr<character>	ch = cdef->create_character_instance(this, character_id);
 		assert(ch != NULL);
-		if (name != NULL && name[0] != 0)
-		{
-			ch->set_name(name);
-		}
+		ch->set_name(name);
 
 		// Attach event handlers (if any).
 		for (int i = 0, n = event_handlers.size(); i < n; i++)
@@ -655,7 +651,6 @@ namespace gameswf
 	}
 
 
-	/*sprite_instance*/
 	void	sprite_instance::move_display_object(
 		int depth,
 		bool use_cxform,
@@ -1132,7 +1127,7 @@ namespace gameswf
 
 				ch->set_parent(parent);
 				ch->set_root(get_root());
-				ch->set_name(newname.c_str());
+				ch->set_name(newname);
 
 				parent->m_display_list.add_display_object(
 					ch, 
@@ -1148,7 +1143,7 @@ namespace gameswf
 				ch = new sprite_instance(m_def.get_ptr(), get_root(),	parent,	0);
 				ch->set_parent(parent);
 				ch->set_root(get_root());
-				ch->set_name(newname.c_str());
+				ch->set_name(newname);
 
 				//TODO: test
 				if (m_canvas != NULL)
@@ -1419,7 +1414,7 @@ namespace gameswf
 		}
 
 		sprite_instance* sprite = new sprite_instance(sdef, get_root(), this, -1);
-		sprite->set_name(name.c_str());
+		sprite->set_name(name);
 
 		m_display_list.add_display_object(
 			sprite,

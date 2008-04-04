@@ -141,7 +141,7 @@ namespace gameswf
 
 		character*	add_display_object(
 			Uint16 character_id,
-			const char* name,
+			const tu_string& name,
 			const array<swf_event*>& event_handlers,
 			int depth,
 			bool replace_if_depth_is_occupied,

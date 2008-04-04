@@ -326,7 +326,7 @@ namespace gameswf
 			}
 			case M_NAME:
 			{
-				set_name(val.to_string());
+				set_name(val.to_tu_string());
 				return true;
 			}
 			case M_HIGHQUALITY:

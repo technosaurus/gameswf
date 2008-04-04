@@ -205,32 +205,16 @@ namespace gameswf
 	Sint32	stream::read_s32() { align(); return m_input->read_le32(); }
 
 
-	char*	stream::read_string()
-	// Reads *and new[]'s* the string from the given file.
-	// Ownership passes to the caller; caller must delete[] the
-	// string when it is done with it.
+	void stream::read_string(tu_string* str)
 	{
 		align();
+		str->resize(0);
 
-		array<char>	buffer;
-		char	c;
-		while ((c = read_u8()) != 0)
+		while (char c = read_u8())
 		{
-			buffer.push_back(c);
+			*str += c;
 		}
-		buffer.push_back(0);
-
-		if (buffer.size() == 0)
-		{
-			return NULL;
-		}
-
-		char*	retval = new char[buffer.size()];
-		strcpy(retval, &buffer[0]);
-
-		return retval;
 	}
-
 
 	char*	stream::read_string_with_length()
 	// Reads *and new[]'s* the string from the given file.
