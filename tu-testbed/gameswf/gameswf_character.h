@@ -128,7 +128,6 @@ namespace gameswf
 		float		m_ratio;
 		Uint16		m_clip_depth;
 		bool		m_visible;
-		hash<event_id, as_value>	m_event_handlers;
 		void		(*m_display_callback)(void*);
 		void*		m_display_callback_user_ptr;
 
@@ -483,22 +482,6 @@ namespace gameswf
 			m.concatenate(get_cxform());
 
 			return m;
-		}
-
-		// Event handler accessors.
-
-		const hash<event_id, as_value>* get_event_handlers() const 
-		{ 
-			return &m_event_handlers; 
-		} 
-
-		bool	get_event_handler(event_id id, as_value* result)
-		{
-			return m_event_handlers.get(id, result);
-		}
-		void	set_event_handler(event_id id, const as_value& method)
-		{
-			m_event_handlers.set(id, method);
 		}
 
 		// Movie interfaces.  By default do nothing.  sprite_instance and some others override these.

@@ -69,7 +69,6 @@ namespace gameswf
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		virtual bool has_keypress_event();
-//		character*	get_root_interface() { return m_root; }
 		root*	get_root() { return m_root; }
 
 		// used in loadMovieClip()
