@@ -394,25 +394,33 @@ namespace gameswf
 			as_value val = it->second.get_member_value();
 			if (val.is_property())
 			{
-				printf("%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
+				printf("	%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
 				       it->first.c_str(), val.get_as_property(), val.get_property_target(),
 				       val.get_as_property()->m_getter, val.get_as_property()->m_setter);
 			}
 			else
 			if (val.is_function())
 			{
-				printf("%s: <as_function 0x%p>\n", it->first.c_str(), val.to_object());
+				printf("	%s: <as_function 0x%p>\n", it->first.c_str(), val.to_object());
 			}
 			else
 			if (val.is_object())
 			{
-				printf("%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
+				printf("	%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
 			}
 			else
 			{
-				printf("%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
+				printf("	%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
 			}
 		}
+
+		// dump proto
+		if (m_proto != NULL)
+		{
+			printf("*** dump of proto 0x%p***\n", m_proto.get_ptr());
+			m_proto->dump();
+		}
+
 		printf("*** end of object dump ***\n");
 	}
 
