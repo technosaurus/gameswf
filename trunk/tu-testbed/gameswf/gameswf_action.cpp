@@ -1470,7 +1470,7 @@ namespace gameswf
 					}
 					else
 					{
-						log_error("error: call_method can't find method %s\n", method_name.c_str());
+						log_error("error: call_method can't find method 0x%p.%s\n", env->top(1).to_object(), method_name.c_str());
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;
