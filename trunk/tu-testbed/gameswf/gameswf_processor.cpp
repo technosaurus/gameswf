@@ -146,7 +146,7 @@ int	main(int argc, char *argv[])
 		print_usage();
 		exit(1);
 	}
-
+	gameswf::gameswf_player player;
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_log_callback(log_callback);
 	gameswf::set_use_cache_files(false);	// don't load old cache files!
