@@ -248,6 +248,7 @@ namespace gameswf
 			s_standard_property_map.add("..", MDOT2);
 			s_standard_property_map.add("_level0", M_LEVEL0);
 			s_standard_property_map.add("_global", M_GLOBAL);
+			s_standard_property_map.add("enabled", M_ENABLED);
 		}
 
 		as_standard_member	result = M_INVALID_MEMBER;
