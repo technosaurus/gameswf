@@ -240,6 +240,7 @@ namespace gameswf
 		MDOT2,
 		M_LEVEL0,
 		M_GLOBAL,
+		M_ENABLED,
 
 		AS_STANDARD_MEMBER_COUNT
 	};

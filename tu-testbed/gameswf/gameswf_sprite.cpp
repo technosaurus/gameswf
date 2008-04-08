@@ -155,12 +155,15 @@ namespace gameswf
 	bool sprite_instance::can_handle_mouse_event()
 	// Return true if we have any mouse event handlers.
 	{
-		for (int i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
+		if (m_enabled)
 		{
-			as_value dummy;
-			if (get_member(FN_NAMES[i], &dummy)) 
+			for (int i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
 			{
-				return true;
+				as_value dummy;
+				if (get_member(FN_NAMES[i], &dummy)) 
+				{
+					return true;
+				}
 			}
 		}
 		return false;
@@ -916,6 +919,20 @@ namespace gameswf
 	// useful for catching of the calls
 	bool	sprite_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
+		// first try built-ins sprite properties
+		as_standard_member	std_member = get_standard_member(name);
+		switch (std_member)
+		{
+			default:
+				break;
+
+			case M_ENABLED:
+			{
+				m_enabled = val.to_bool();
+				return true;
+			}
+		}
+
 		return character::set_member(name, val);
 	}
 
@@ -935,6 +952,12 @@ namespace gameswf
 		as_standard_member	std_member = get_standard_member(name);
 		switch (std_member)
 		{
+			case M_ENABLED:
+			{
+				val->set_bool(m_enabled);
+				return true;
+			}
+
 			case M_CURRENTFRAME:
 			{
 				int n = get_current_frame();
