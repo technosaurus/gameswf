@@ -155,7 +155,7 @@ namespace gameswf
 	bool sprite_instance::can_handle_mouse_event()
 	// Return true if we have any mouse event handlers.
 	{
-		if (m_enabled)
+		if (is_enabled())
 		{
 			for (int i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
 			{
@@ -1539,4 +1539,20 @@ namespace gameswf
 			}
 		}
 	}
+
+	bool sprite_instance::is_enabled() const
+	{
+		if (m_enabled)
+		{
+			// check parent
+			character* parent = get_parent();
+			if (parent)
+			{
+				return parent->is_enabled();
+			}
+			return true;
+		}
+		return false;
+	}
+
 }

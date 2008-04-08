@@ -543,6 +543,7 @@ namespace gameswf
 		virtual float	get_movie_fps() { return 0.0f; }
 
 		virtual	void enumerate(as_environment* env);
+		virtual	bool is_enabled() const { return true; }
 	};
 
 }
