@@ -71,7 +71,7 @@ namespace gameswf
 		private:
 
 		int	m_id;
-		smart_ptr<as_function> m_registered_class_constructor;
+		weak_ptr<as_function> m_registered_class_constructor;
 
 	};
 

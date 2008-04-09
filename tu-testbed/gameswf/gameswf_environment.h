@@ -29,7 +29,7 @@ namespace gameswf
 
 	struct with_stack_entry
 	{
-		smart_ptr<as_object>	m_object;
+		weak_ptr<as_object>	m_object;
 		int	m_block_end_pc;
 		
 		with_stack_entry()
@@ -52,7 +52,7 @@ namespace gameswf
 		array<as_value>	m_stack;
 		as_value	m_global_register[GLOBAL_REGISTER_COUNT];
 		array<as_value>	m_local_register;	// function2 uses this
-		character*	m_target;
+		weak_ptr<as_object>	m_target;
 
 		// For local vars.  Use empty names to separate frames.
 		struct frame_slot
@@ -68,8 +68,8 @@ namespace gameswf
 		as_environment() : m_target(NULL)	{}
 		~as_environment() {}
 
-		character*	get_target() { return m_target; }
-		void set_target(character* target) { m_target = target; }
+		character*	get_target() const;
+		void set_target(character* target);
 		void set_target(as_value& target, character* original_target);
 
 		// stack access/manipulation

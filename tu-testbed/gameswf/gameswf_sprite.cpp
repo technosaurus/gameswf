@@ -929,6 +929,14 @@ namespace gameswf
 			case M_ENABLED:
 			{
 				m_enabled = val.to_bool();
+
+				// gameswf extension, call onEnabled() method
+				as_value	method;
+				if (get_member("onEnabled", &method))
+				{
+					gameswf::call_method(method, &m_as_environment, this, 0, 
+						m_as_environment.get_top_index());
+				}
 				return true;
 			}
 		}

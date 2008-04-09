@@ -184,7 +184,7 @@ namespace gameswf
 	// Return the value of the given var, if it's defined.
 	{
 		// Path lookup rigamarole.
-		character*	target = m_target;
+		character*	target = get_target();
 		tu_string	path;
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
@@ -217,7 +217,7 @@ namespace gameswf
 		as_value	val;
 
 		// Check movie members.
-		if (m_target && m_target->get_member(varname, &val))
+		if (m_target != NULL && m_target->get_member(varname, &val))
 		{
 			return val;
 		}
@@ -234,7 +234,7 @@ namespace gameswf
 				return val;
 
 			case MTHIS:
-				val.set_as_object(m_target);
+				val.set_as_object(get_target());
 				return val;
 
 			case M_ROOT:
@@ -271,6 +271,17 @@ namespace gameswf
 		// Fallback.
 		IF_VERBOSE_ACTION(log_msg("get_variable_raw(\"%s\") failed, returning UNDEFINED.\n", varname.c_str()));
 		return val;
+	}
+
+
+	character*	as_environment::get_target() const
+	{
+		return cast_to<character>(m_target.get_ptr());
+	}
+
+	void as_environment::set_target(character* target)
+	{
+		m_target = target;
 	}
 
 	void as_environment::set_target(as_value& target, character* original_target)
@@ -317,7 +328,7 @@ namespace gameswf
 		IF_VERBOSE_ACTION(log_msg("-------------- %s = %s\n", varname.c_str(), val.to_string()));//xxxxxxxxxx
 
 		// Path lookup rigamarole.
-		character*	target = m_target;
+		character*	target = get_target();
 		tu_string	path;
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
@@ -363,7 +374,7 @@ namespace gameswf
 			return;
 		}
 
-		if (m_target)
+		if (m_target != NULL)
 		{
 			m_target->set_member(varname, val);
 		}
@@ -541,9 +552,9 @@ namespace gameswf
 
 	character*	as_environment::find_target(const as_value& target) const
 	{
-		if (m_target)
+		if (get_target())
 		{
-			return m_target->find_target(target);
+			return get_target()->find_target(target);
 		}
 		return NULL;
 	}

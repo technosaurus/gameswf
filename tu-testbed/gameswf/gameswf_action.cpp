@@ -2230,8 +2230,8 @@ namespace gameswf
 				case 0x9E:	// call frame
 				{
 					// Note: no extra data in this instruction!
-					assert(env->m_target);
-					env->m_target->call_frame_actions(env->top(0));
+					assert(env->get_target() != NULL);
+					env->get_target()->call_frame_actions(env->top(0));
 					env->drop(1);
 
 					break;
