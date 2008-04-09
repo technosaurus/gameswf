@@ -89,7 +89,7 @@ namespace gameswf
 		}
 
 		// set 'this'
-		as_object* this_ptr = env->m_target;
+		as_object* this_ptr = env->m_target.get_ptr();
 		if (fn.this_ptr)
 		{
 			this_ptr = fn.this_ptr;

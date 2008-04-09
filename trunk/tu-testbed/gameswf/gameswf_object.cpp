@@ -37,7 +37,7 @@ namespace gameswf
 		fn.result->set_bool(false);
 		if (fn.nargs == 2)
 		{
-			character_def* def = fn.env->m_target->find_exported_resource(fn.arg(0).to_tu_string());
+			character_def* def = fn.env->get_target()->find_exported_resource(fn.arg(0).to_tu_string());
 			if (def)
 			{
 				as_function* func = cast_to<as_function>(fn.arg(1).to_object());
