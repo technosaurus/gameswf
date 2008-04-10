@@ -559,4 +559,20 @@ namespace gameswf
 		return NULL;
 	}
 
+	bool	as_environment::set_member(const tu_stringi& name, const as_value& val)
+	{
+		if (m_target != NULL)
+		{
+			return m_target->set_member(name, val);
+		}
+	}
+
+	bool	as_environment::get_member(const tu_stringi& name, as_value* val)
+	{
+		if (m_target != NULL)
+		{
+			return m_target->get_member(name, val);
+		}
+	}
+
 }

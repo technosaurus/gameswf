@@ -1082,9 +1082,9 @@ namespace gameswf
 						{
 							// check var in m_variables
 							as_value val;
-							if (env->m_target->get_member(varname, &val))
+							if (env->get_member(varname, &val))
 							{
-								env->m_target->set_member(varname, obj);
+								env->set_member(varname, obj);
 								env->top(0).set_bool(true);
 								break;
 							}
@@ -1794,15 +1794,15 @@ namespace gameswf
 
 					bool function_exists = false;
 
-					if( name.length() > 0 )
+					if (name.length() > 0)
 					{
 						as_value value;
 						as_s_function* existing_function;
 
-						if (env->m_target->get_member(name, &value) && 
+						if (env->get_member(name, &value) && 
 							( existing_function = cast_to<as_s_function>(value.to_object())))
 						{
-							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
+							if (existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
 								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
 								&& existing_function->m_start_pc == next_pc )
 							{ 
@@ -1856,7 +1856,7 @@ namespace gameswf
 						if (name.length() > 0)
 						{
 							// @@ NOTE: should this be m_target->set_variable()???
-							env->m_target->set_member(name, function_value);
+							env->set_member(name, function_value);
 						}
 						else
 						{
@@ -2120,12 +2120,12 @@ namespace gameswf
 
 					bool function_exists = false;
 
-					if( name.length() > 0 )
+					if (name.length() > 0)
 					{
 						as_value value;
 						as_s_function* existing_function;
 
-						if (env->m_target->get_member(name, &value) 
+						if (env->get_member(name, &value) 
 							&& ( existing_function = cast_to<as_s_function>(value.to_object())))
 						{
 							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
@@ -2172,7 +2172,7 @@ namespace gameswf
 							// @@ NOTE: should this be m_target->set_variable()???
 							// Usage #1. If we have a name, then save the function in this
 							// environment under that name.
-							env->m_target->set_member(name, function_value);
+							env->set_member(name, function_value);
 						}
 						else
 						{

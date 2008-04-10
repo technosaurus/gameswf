@@ -78,7 +78,6 @@ namespace gameswf
 	// Information about how to display a character.
 	struct display_info
 	{
-		character*	m_parent;
 		int	m_depth;
 		cxform	m_color_transform;
 		matrix	m_matrix;
@@ -86,7 +85,6 @@ namespace gameswf
 		Uint16	m_clip_depth;
 
 		display_info() :
-			m_parent(NULL),
 			m_depth(0),
 			m_ratio(0.0f),
 			m_clip_depth(0)
