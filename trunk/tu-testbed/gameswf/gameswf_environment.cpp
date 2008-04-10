@@ -577,4 +577,81 @@ namespace gameswf
 		return false;
 	}
 
+	void as_environment::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
+	{
+		// target
+		if (m_target == this_ptr)
+		{
+			m_target = NULL;
+		}
+
+		// local vars
+		for (int i = 0, n = m_local_frames.size(); i < n; i++)
+		{
+			as_object* obj = m_local_frames[i].m_value.to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					m_local_frames[i].m_value.set_undefined();
+				}
+				else
+				{
+					obj->clear_refs(visited_objects, this_ptr);
+				}
+			}
+		}
+
+		// stack
+		for (int i = 0, n = m_stack.size(); i < n; i++)
+		{
+			as_object* obj = m_stack[i].to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					m_stack[i].set_undefined();
+				}
+				else
+				{
+					obj->clear_refs(visited_objects, this_ptr);
+				}
+			}
+		}
+
+		// global register
+		for (int i = 0, n = GLOBAL_REGISTER_COUNT; i < n; i++)
+		{
+			as_object* obj = m_global_register[i].to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					m_global_register[i].set_undefined();
+				}
+				else
+				{
+					obj->clear_refs(visited_objects, this_ptr);
+				}
+			}
+		}
+
+		// local register
+		for (int i = 0, n = m_local_register.size(); i < n; i++)
+		{
+			as_object* obj = m_local_register[i].to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					m_local_register[i].set_undefined();
+				}
+				else
+				{
+					obj->clear_refs(visited_objects, this_ptr);
+				}
+			}
+		}
+	}
+
 }
