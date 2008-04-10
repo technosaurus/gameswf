@@ -335,8 +335,37 @@ namespace gameswf
 
 	// Utility.
 
+	template<class T>
+	void	write_le(tu_file* out, T value);
 
-	void	write_coord_array(tu_file* out, const array<Sint16>& pt_array)
+	template<>
+	void	write_le<float>(tu_file* out, float value)
+	{
+		out->write_float32(value);
+	}
+
+	template<>
+	void	write_le<Sint16>(tu_file* out, Sint16 value)
+	{
+		out->write_le16(value);
+	}
+
+	template<class T>
+	T	read_le(tu_file* in);
+
+	template<>
+	float	read_le<float>(tu_file* in)
+	{
+		return in->read_float32();
+	}
+
+	template<>
+	Sint16    read_le<Sint16>(tu_file* in)
+	{
+		return in->read_le16();
+	}
+
+	void	write_coord_array(tu_file* out, const array<coord_component>& pt_array)
 	// Dump the given coordinate array into the given stream.
 	{
 		int	n = pt_array.size();
@@ -344,12 +373,12 @@ namespace gameswf
 		out->write_le32(n);
 		for (int i = 0; i < n; i++)
 		{
-			out->write_le16((Uint16) pt_array[i]);
+			write_le<coord_component>(out, pt_array[i]);
 		}
 	}
 
 
-	void	read_coord_array(tu_file* in, array<Sint16>* pt_array)
+	void	read_coord_array(tu_file* in, array<coord_component>* pt_array)
 	// Read the coordinate array data from the stream into *pt_array.
 	{
 		int	n = in->read_le32();
@@ -357,7 +386,7 @@ namespace gameswf
 		pt_array->resize(n);
 		for (int i = 0; i < n; i ++)
 		{
-			(*pt_array)[i] = (Sint16) in->read_le16();
+			(*pt_array)[i] = read_le<coord_component>(in);
 		}
 	}
 
@@ -378,8 +407,8 @@ namespace gameswf
 		// convert to ints.
 		for (int i = 0; i < count; i++)
 		{
-			m_triangle_strip[i * 2] = Sint16(pts[i].m_x);
-			m_triangle_strip[i * 2 + 1] = Sint16(pts[i].m_y);
+			m_triangle_strip[i * 2] = coord_component(pts[i].m_x);
+			m_triangle_strip[i * 2 + 1] = coord_component(pts[i].m_y);
 		}
 
 //		m_triangle_strip.resize(count);
@@ -392,7 +421,7 @@ namespace gameswf
 	}
 
 
-	void mesh::add_triangle(const sint16 pts[6])
+	void mesh::add_triangle(const coord_component pts[6])
 	{
 		m_triangle_list.append(pts, 6);
 	}
@@ -457,8 +486,8 @@ namespace gameswf
 		// convert to ints.
 		for (int i = 0; i < coord_count; i++)
 		{
-			m_coords[i * 2] = Sint16(coords[i].m_x);
-			m_coords[i * 2 + 1] = Sint16(coords[i].m_y);
+			m_coords[i * 2] = coord_component(coords[i].m_x);
+			m_coords[i * 2 + 1] = coord_component(coords[i].m_y);
 		}
 	}
 
@@ -754,15 +783,15 @@ namespace gameswf
 				assert(m != NULL);
 				
 				// Convert input from float coords to
-				// sint16 and add them to the mesh.
-				sint16 tri[6];
+				// coord_component and add them to the mesh.
+				coord_component tri[6];
 				for (int i = 0; i < point_count; i += 3) {
-					tri[0] = static_cast<sint16>(trilist[i].m_x);
-					tri[1] = static_cast<sint16>(trilist[i].m_y);
-					tri[2] = static_cast<sint16>(trilist[i + 1].m_x);
-					tri[3] = static_cast<sint16>(trilist[i + 1].m_y);
-					tri[4] = static_cast<sint16>(trilist[i + 2].m_x);
-					tri[5] = static_cast<sint16>(trilist[i + 2].m_y);
+					tri[0] = static_cast<coord_component>(trilist[i].m_x);
+					tri[1] = static_cast<coord_component>(trilist[i].m_y);
+					tri[2] = static_cast<coord_component>(trilist[i + 1].m_x);
+					tri[3] = static_cast<coord_component>(trilist[i + 1].m_y);
+					tri[4] = static_cast<coord_component>(trilist[i + 2].m_x);
+					tri[5] = static_cast<coord_component>(trilist[i + 2].m_y);
 					m->add_triangle(tri);
 				}
 			}

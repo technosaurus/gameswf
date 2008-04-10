@@ -102,7 +102,7 @@ namespace gameswf
 					// We'll use about half the width, and around 3/4 the height.
 					// Values adjusted by eye.
 					// The Y baseline is at 0; negative Y is up.
-					static const Sint16	s_empty_char_box[5 * 2] =
+					static const coord_component s_empty_char_box[5 * 2] =
 					{
 						32,   32,
 						480,   32,
@@ -699,11 +699,11 @@ namespace gameswf
 
 	void edit_text_character::show_cursor() 
 	{ 
-		Uint16 x = (int) m_xcursor; 
-		Uint16 y = (int) m_ycursor; 
-		Uint16 h = (int) m_text_height;
+		coord_component x = (int) m_xcursor; 
+		coord_component y = (int) m_ycursor; 
+		coord_component h = (int) m_text_height;
 
-		Sint16 box[4]; 
+		coord_component box[4]; 
 		box[0] = x; 
 		box[1] = y; 
 		box[2] = x; 
@@ -740,20 +740,20 @@ namespace gameswf
 			coords[2] = m_def->m_rect.get_corner(3); 
 			coords[3] = m_def->m_rect.get_corner(2); 
 
-			Sint16 icoords[18] = 
+			coord_component icoords[18] = 
 			{ 
 				// strip (fill in) 
-				(Sint16) coords[0].m_x, (Sint16) coords[0].m_y, 
-				(Sint16) coords[1].m_x, (Sint16) coords[1].m_y, 
-				(Sint16) coords[2].m_x, (Sint16) coords[2].m_y, 
-				(Sint16) coords[3].m_x, (Sint16) coords[3].m_y, 
+				(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
+				(coord_component) coords[1].m_x, (coord_component) coords[1].m_y, 
+				(coord_component) coords[2].m_x, (coord_component) coords[2].m_y, 
+				(coord_component) coords[3].m_x, (coord_component) coords[3].m_y, 
 
 				// outline 
-				(Sint16) coords[0].m_x, (Sint16) coords[0].m_y, 
-				(Sint16) coords[1].m_x, (Sint16) coords[1].m_y, 
-				(Sint16) coords[3].m_x, (Sint16) coords[3].m_y, 
-				(Sint16) coords[2].m_x, (Sint16) coords[2].m_y, 
-				(Sint16) coords[0].m_x, (Sint16) coords[0].m_y, 
+				(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
+				(coord_component) coords[1].m_x, (coord_component) coords[1].m_y, 
+				(coord_component) coords[3].m_x, (coord_component) coords[3].m_y, 
+				(coord_component) coords[2].m_x, (coord_component) coords[2].m_y, 
+				(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
 			}; 
 
 			render::fill_style_color(0,	m_background_color);

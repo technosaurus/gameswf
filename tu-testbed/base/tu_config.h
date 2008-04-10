@@ -85,6 +85,10 @@
 #error video & MP3 requires multi thread support
 #endif
 
+#ifndef TU_USES_FLOAT_AS_COORDINATE_COMPONENT
+#define TU_USES_FLOAT_AS_COORDINATE_COMPONENT 0
+#endif
+
 // define TU_CONFIG_LINK_STATIC to 1 to link gameswf statically 
 #ifndef TU_CONFIG_LINK_STATIC
 #	define TU_CONFIG_LINK_STATIC 0

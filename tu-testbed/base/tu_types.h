@@ -65,6 +65,11 @@ typedef Uint64 uint64;
 typedef Sint64 sint64;
 typedef Sint64 int64;
 
+#if TU_USES_FLOAT_AS_COORDINATE_COMPONENT
+	typedef float coord_component;
+#else
+	typedef Sint16 coord_component;
+#endif
 
 
 // A function to run some validation checks.
