@@ -997,7 +997,13 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		// Send the tris to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
+
+		#if TU_USES_FLOAT_AS_COORDINATE_COMPONENT
+			glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
+		#else
+			glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
+		#endif
+
 		glDrawArrays(primitive_type, 0, vertex_count);
 
 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
@@ -1072,7 +1078,11 @@ struct render_handler_ogl : public gameswf::render_handler
 		// antialiased alpha mask of the mesh shape, in the
 		// destination alpha channel.
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
+		#if TU_USES_FLOAT_AS_COORDINATE_COMPONENT
+			glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
+		#else
+			glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
+		#endif
 		glDrawArrays(primitive_type, 0, vertex_count);
 		glDisableClientState(GL_VERTEX_ARRAY);
 
@@ -1145,7 +1155,11 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		// Send the line-strip to OpenGL
 		glEnableClientState(GL_VERTEX_ARRAY);
-		glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
+		#if TU_USES_FLOAT_AS_COORDINATE_COMPONENT
+			glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
+		#else
+			glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
+		#endif
 		glDrawArrays(GL_LINE_STRIP, 0, vertex_count);
 
     // Draw a round dot on the beginning and end coordinates to lines.

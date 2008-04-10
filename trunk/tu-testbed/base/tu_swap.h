@@ -72,7 +72,7 @@ inline Uint64	swap_le64(Uint64 le_64)
 // integer in native endian-ness.  I.e., do a swap if we're on a
 // big-endian machine.
 {
-#ifdef _TU_LITTLE_ENDIAN_
+#if _TU_LITTLE_ENDIAN_
 	return le_64;
 #else	// not _TU_LITTLE_ENDIAN_
 	return swap64(le_64);	// convert to big-endian.

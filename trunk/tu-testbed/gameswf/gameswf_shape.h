@@ -80,15 +80,15 @@ namespace gameswf
 
 		void	set_tri_strip(const point pts[], int count); // TODO remove
 		void reserve_triangles(int expected_triangle_count);
-		void add_triangle(const sint16 pts[6]);
+		void add_triangle(const coord_component pts[6]);
 
 		void	display(const base_fill_style& style, float ratio) const;
 
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
 	private:
-		array<Sint16>	m_triangle_strip;// TODO remove
-		array<sint16> m_triangle_list;
+		array<coord_component>	m_triangle_strip;// TODO remove
+		array<coord_component> m_triangle_list;
 	};
 
 
@@ -105,7 +105,7 @@ namespace gameswf
 		void	input_cached_data(tu_file* in);
 	private:
 		int	m_style;
-		array<Sint16>	m_coords;
+		array<coord_component>	m_coords;
 	};
 
 
