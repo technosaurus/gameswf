@@ -29,7 +29,7 @@ namespace gameswf
 
 	struct with_stack_entry
 	{
-		weak_ptr<as_object>	m_object;
+		smart_ptr<as_object>	m_object;
 		int	m_block_end_pc;
 		
 		with_stack_entry()
@@ -52,7 +52,7 @@ namespace gameswf
 		array<as_value>	m_stack;
 		as_value	m_global_register[GLOBAL_REGISTER_COUNT];
 		array<as_value>	m_local_register;	// function2 uses this
-		weak_ptr<as_object>	m_target;
+		smart_ptr<as_object>	m_target;
 
 		// For local vars.  Use empty names to separate frames.
 		struct frame_slot
@@ -126,6 +126,7 @@ namespace gameswf
 		int	find_local(const tu_string& varname, bool ignore_barrier) const;
 		character* load_file(const char* url, const as_value& target);
 		character*	find_target(const as_value& target) const;
+		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 
 		private:
 

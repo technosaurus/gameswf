@@ -1409,22 +1409,7 @@ namespace gameswf
 		as_object::clear_refs(visited_objects, this_ptr);
 
 		// clear self-refs from environment
-		for (int i = 0, n = m_as_environment.m_local_frames.size(); i < n; i++)
-		{
-			as_object* obj = m_as_environment.m_local_frames[i].m_value.to_object();
-			if (obj)
-			{
-				if (obj == this_ptr)
-				{
-					m_as_environment.m_local_frames[i].m_value.set_undefined();
-				}
-				else
-				{
-					obj->clear_refs(visited_objects, this_ptr);
-				}
-			}
-		}
-
+		m_as_environment.clear_refs(visited_objects, this_ptr);
 	}
 
 	sprite_instance* sprite_instance::attach_movie(const tu_string& id, 
