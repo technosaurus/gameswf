@@ -65,8 +65,11 @@ namespace gameswf
 		};
 		array<frame_slot>	m_local_frames;
 
-		as_environment() : m_target(NULL)	{}
-		~as_environment() {}
+//		as_environment() {}
+//		~as_environment() {}
+		bool	set_member(const tu_stringi& name, const as_value& val);
+		bool	get_member(const tu_stringi& name, as_value* val);
+
 
 		character*	get_target() const;
 		void set_target(character* target);
