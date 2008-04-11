@@ -256,6 +256,9 @@ namespace gameswf
 					continue;
 				}
 
+				m_record_character[i]->not_garbage();
+				get_heap()->set(m_record_character[i].get_ptr(), false);
+
 				// Matrix
 				matrix sub_matrix = mat;
 				sub_matrix.concatenate(rec.m_button_matrix);
