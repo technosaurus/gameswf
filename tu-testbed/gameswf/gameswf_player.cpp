@@ -540,7 +540,7 @@ namespace gameswf
 	void heap::clear_garbage()
 	{
 		as_object* global = get_global();
-		global->not_garbage();
+		global->this_alive();
 		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{

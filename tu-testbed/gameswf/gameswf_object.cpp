@@ -467,7 +467,7 @@ namespace gameswf
 	}
 
 	// marks 'this' as 'not garbage'
-	void as_object::not_garbage()
+	void as_object::this_alive()
 	{
 		// Whether there were we here already ?
 		if (get_heap()->is_garbage(this))
@@ -480,7 +480,7 @@ namespace gameswf
 				as_object* obj = it->second.get_member_value().to_object();
 				if (obj)
 				{
-					obj->not_garbage();
+					obj->this_alive();
 				}
 			}
 		}

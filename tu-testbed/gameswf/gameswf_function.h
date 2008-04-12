@@ -61,7 +61,6 @@ namespace gameswf
 		virtual void	operator()(const fn_call& fn);
 
 		as_c_function_ptr m_func;
-		weak_ptr<as_object> m_this_ptr;
 	};
 
 	struct as_s_function : public as_function
