@@ -380,53 +380,60 @@ namespace gameswf
 				m_object = 0;
 			}
 		}
-		else if (m_type == PROPERTY)
+		else
+		if (m_type == PROPERTY)
 		{
 			if (m_property)
 			{
 				m_property->drop_ref();
 				m_property = NULL;
-				if (m_property_target)
-				{
-					m_property_target->drop_ref();
-					m_property_target = NULL;
-				}
+			}
+			if (m_property_target)
+			{
+				m_property_target->drop_ref();
+				m_property_target = NULL;
 			}
 		}
 	}
 
 	void	as_value::set_property(const as_value& val)
 	{
-		assert(m_property);
+		assert(is_property());
 		m_property->set(m_property_target, val);
 	}
 
 	// get property of primitive value, like Number
 	void as_value::get_property(const as_value& primitive, as_value* val) const
 	{
-		assert(m_property);
+		assert(is_property());
 		m_property->get(primitive, val);
 	}
 
 	void as_value::get_property(as_value* val) const
 	{
-		assert(m_property);
+		assert(is_property());
 		m_property->get(m_property_target, val);
 	}
 
-	const as_property* as_value::get_as_property() const
+	as_property* as_value::to_property() const
 	{
-		assert(is_property());
-		return m_property;
+		if (is_property())
+		{
+			return m_property;
+		}
+		return NULL;
 	}
 
 	const as_object* as_value::get_property_target() const
 	{
-		assert(is_property());
-		return m_property_target;
+		if (is_property())
+		{
+			return m_property_target;
+		}
+		return NULL;
 	}
 
-	void as_value::set_property_target(as_object* new_target)
+	void as_value::set_property_target(as_object* target)
 	// Sets the target to the given object.
 	{
 		assert(is_property());
@@ -434,8 +441,8 @@ namespace gameswf
 		{
 			m_property_target->drop_ref();
 		}
-		m_property_target = new_target;
-		new_target->add_ref();
+		m_property_target = target;
+		m_property_target->add_ref();
 	}
 
 	as_value::as_value(float val) :
@@ -629,33 +636,14 @@ namespace gameswf
 	//	as_property
 	//
 
-	as_property::as_property(const as_value& getter,	const as_value& setter) :
-		m_getter(NULL),
-		m_setter(NULL)
+	as_property::as_property(const as_value& getter,	const as_value& setter)
 	{
 		m_getter = cast_to<as_function>(getter.to_object());
-		if (m_getter)
-		{
-			m_getter->add_ref();
-		}
-
 		m_setter = cast_to<as_function>(setter.to_object());
-		if (m_setter)
-		{
-			m_setter->add_ref();
-		}
 	}
 
 	as_property::~as_property()
 	{
-		if (m_getter)
-		{
-			m_getter->drop_ref();
-		}
-		if (m_setter)
-		{
-			m_setter->drop_ref();
-		}
 	}
 
 	void	as_property::set(as_object* target, const as_value& val)
@@ -664,9 +652,10 @@ namespace gameswf
 
 		as_environment env;
 		env.push(val);
-		if (m_setter)
+		if (m_setter != NULL)
 		{
-			(*m_setter)(fn_call(NULL, target,	&env, 1, env.get_top_index()));
+			smart_ptr<as_object> tar = target;
+			(*m_setter.get_ptr())(fn_call(NULL, tar.get_ptr(),	&env, 1, env.get_top_index()));
 		}
 	}
 
@@ -676,18 +665,19 @@ namespace gameswf
 
 		// env is used when m_getter->m_env is NULL
 		as_environment env;
-		if (m_getter)
+		if (m_getter != NULL)
 		{
-			(*m_getter)(fn_call(val, target, &env, 0,	0));
+			smart_ptr<as_object> tar = target;
+			(*m_getter.get_ptr())(fn_call(val, tar.get_ptr(), &env, 0,	0));
 		}
 	}
 
 	// call static method
 	void as_property::get(const as_value& primitive, as_value* val) const
 	{
-		if (m_getter)
+		if (m_getter != NULL)
 		{
-			(*m_getter)(fn_call(val, primitive, NULL, 0,	0));
+			(*m_getter.get_ptr())(fn_call(val, primitive, NULL, 0,	0));
 		}
 	}
 
