@@ -107,7 +107,7 @@ namespace gameswf
 			character* ch = cast_to<character>(m_target.get_ptr());
 			if (ch)
 			{
-				if (ch->m_is_alive)
+				if (ch->m_depth > 0)
 				{
 					env = m_target->get_environment();
 				}
