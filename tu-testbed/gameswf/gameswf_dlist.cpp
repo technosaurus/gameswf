@@ -185,7 +185,7 @@ namespace gameswf
 
 		di.m_character->on_event(event_id::KILLFOCUS);
 		di.m_character->on_event(event_id::UNLOAD);
-		di.m_character->m_is_alive = false;
+		di.m_character->set_depth(0);	// is't alive
 		
 		// remove this character from listener
 		remove_keypress_listener(di.m_character.get_ptr());
@@ -235,7 +235,6 @@ namespace gameswf
 			// for legacy SWF compatibility anyway.)
 		}
 
-		ch->m_is_alive = true;
 		ch->set_depth(depth);
 
 		display_object_info	di;

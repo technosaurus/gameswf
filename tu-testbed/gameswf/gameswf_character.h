@@ -147,8 +147,6 @@ namespace gameswf
 			}
 		};
 
-		bool m_is_alive;
-
 		enum play_state
 		{
 			PLAY,
