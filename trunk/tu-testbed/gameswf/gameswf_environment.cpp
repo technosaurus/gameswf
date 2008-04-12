@@ -216,6 +216,24 @@ namespace gameswf
 	{
 		as_value	val;
 
+		// First check the with-stack.
+		for (int i = with_stack.size() - 1; i >= 0; i--)
+		{
+			as_object*	obj = with_stack[i].m_object.get_ptr();
+			if (obj && obj->get_member(varname, &val))
+			{
+				// Found the var in this context.
+				return val;
+			}
+		}
+
+		// Then check locals.
+		int	local_index = find_local(varname, true);
+		if (local_index >= 0)
+		{
+			return m_local_frames[local_index].m_value;
+		}
+
 		// Check movie members.
 		if (m_target != NULL && m_target->get_member(varname, &val))
 		{
@@ -247,25 +265,6 @@ namespace gameswf
 		if (get_global()->get_member(varname, &val))
 		{
 			return val;
-		}
-
-		// Check the with-stack.
-		for (int i = with_stack.size() - 1; i >= 0; i--)
-		{
-			as_object*	obj = with_stack[i].m_object.get_ptr();
-			if (obj && obj->get_member(varname, &val))
-			{
-				// Found the var in this context.
-				return val;
-			}
-		}
-
-		// Check locals.
-		int	local_index = find_local(varname, true);
-		if (local_index >= 0)
-		{
-			// Get local var.
-			return m_local_frames[local_index].m_value;
 		}
 
 		// Fallback.
