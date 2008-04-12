@@ -336,9 +336,27 @@ namespace gameswf
 		m_on_event_load_called = true;
 
 		// 'this' and its variables is not garbage
-		not_garbage();
+		this_alive();
 		get_heap()->set(this, false);
 
+	}
+
+	// this and all children (bush) is not garbage
+	// called from button instance only
+	void sprite_instance::alive()
+	{
+		this_alive();
+		get_heap()->set(this, false);
+
+		// mark display list as useful
+		for (int i = 0, n = m_display_list.size(); i < n; i++)
+		{
+			character*	ch = m_display_list.get_character(i);
+			if (ch)
+			{
+				ch->alive();
+			}
+		}
 	}
 
 	void	sprite_instance::execute_frame_tags(int frame, bool state_only)
@@ -1405,8 +1423,19 @@ namespace gameswf
 
 	void	sprite_instance::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
-		m_display_list.clear_refs(visited_objects, this_ptr);
+		// Is it a reentrance ?
+		if (visited_objects->get(this, NULL))
+		{
+			return;
+		}
+
+		// will be set in as_object::clear_refs
+//		visited_objects->set(this, true);
+
 		as_object::clear_refs(visited_objects, this_ptr);
+
+		// clear display list
+		m_display_list.clear_refs(visited_objects, this_ptr);
 
 		// clear self-refs from environment
 		m_as_environment.clear_refs(visited_objects, this_ptr);

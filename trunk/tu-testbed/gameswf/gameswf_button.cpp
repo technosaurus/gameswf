@@ -256,9 +256,6 @@ namespace gameswf
 					continue;
 				}
 
-				m_record_character[i]->not_garbage();
-				get_heap()->set(m_record_character[i].get_ptr(), false);
-
 				// Matrix
 				matrix sub_matrix = mat;
 				sub_matrix.concatenate(rec.m_button_matrix);
@@ -270,9 +267,12 @@ namespace gameswf
 				{
 					m_record_character[i]->advance(delta_time);
 				}
+				else
+				{
+					m_record_character[i]->alive();
+				}
 			}}
 		}
-
 
 		void	display()
 		{

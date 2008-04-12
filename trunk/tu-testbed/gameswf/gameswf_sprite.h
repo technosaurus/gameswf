@@ -127,6 +127,7 @@ namespace gameswf
 		virtual character*	get_topmost_mouse_entity(float x, float y);
 		void advance(float delta_time);
 
+		virtual void	alive();
 		void	execute_frame_tags(int frame, bool state_only = false);
 		void	execute_frame_tags_reverse(int frame);
 		execute_tag*	find_previous_replace_or_add_tag(int frame, int depth, int id);
