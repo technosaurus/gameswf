@@ -24,7 +24,10 @@ namespace gameswf
 			assert(fn.this_ptr);
 
 			// creates unbinded property
-			fn.this_ptr->set_member(fn.arg(0).to_string(), as_value(fn.arg(1), fn.arg(2)));
+			// fn.this_ptr->set_member(fn.arg(0).to_string(), as_value(fn.arg(1), fn.arg(2)));
+			// force direct rewriting of member
+			fn.this_ptr->builtin_member(fn.arg(0).to_string(), as_value(fn.arg(1), fn.arg(2)));
+			
 			fn.result->set_bool(true);
 			return;
 		}
@@ -266,7 +269,8 @@ namespace gameswf
 		for (stringi_hash<as_member>::iterator it = m_members.begin();
 			it != m_members.end(); ++it)
 		{
-			as_object* obj = it->second.get_member_value().to_object();
+			const as_value& val = it->second.get_member_value();
+			as_object* obj = val.to_object();
 			if (obj)
 			{
 				if (obj == this_ptr)
@@ -276,6 +280,16 @@ namespace gameswf
 				else
 				{
 					obj->clear_refs(visited_objects, this_ptr);
+				}
+				continue;
+			}
+
+			as_property* prop = val.to_property();
+			if (prop)
+			{
+				if (val.get_property_target() == this_ptr)
+				{
+					const_cast<as_value&>(val).set_property_target(NULL);
 				}
 			}
 		}
@@ -395,8 +409,8 @@ namespace gameswf
 			if (val.is_property())
 			{
 				printf("	%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
-				       it->first.c_str(), val.get_as_property(), val.get_property_target(),
-				       val.get_as_property()->m_getter, val.get_as_property()->m_setter);
+				       it->first.c_str(), val.to_property(), val.get_property_target(),
+				       val.to_property()->m_getter, val.to_property()->m_setter);
 			}
 			else
 			if (val.is_function())

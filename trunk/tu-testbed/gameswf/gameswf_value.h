@@ -27,8 +27,8 @@ namespace gameswf
 	// helper, used in as_value
 	struct as_property : public ref_counted
 	{
-		as_function*	m_getter;
-		as_function*	m_setter;
+		smart_ptr<as_function>	m_getter;
+		smart_ptr<as_function>	m_setter;
 
 		as_property(const as_value& getter,	const as_value& setter);
 		~as_property();
@@ -95,6 +95,7 @@ namespace gameswf
 		exported_module bool	to_bool() const;
 		exported_module as_function*	to_function() const;
 		exported_module as_object*	to_object() const;
+		exported_module as_property*	to_property() const;
 
 		// These set_*()'s are more type-safe; should be used
 		// in preference to generic overloaded set().  You are
@@ -113,7 +114,6 @@ namespace gameswf
 		void	set_property(const as_value& val);
 		void	get_property(as_value* val) const;
 		void	get_property(const as_value& primitive, as_value* val) const;
-		const as_property*	get_as_property() const;  // for debugging
 		const as_object*	get_property_target() const;  // for debugging
 		void	set_property_target(as_object* new_target);
 
