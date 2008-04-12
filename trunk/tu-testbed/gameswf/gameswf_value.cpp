@@ -37,8 +37,7 @@ namespace gameswf
 		set_as_object(func);
 	}
 
-	as_value::as_value(const as_value& getter, const as_value& setter)
-		:
+	as_value::as_value(const as_value& getter, const as_value& setter) :
 		m_property_target(NULL),
 		m_type(PROPERTY)
 	{
@@ -310,11 +309,7 @@ namespace gameswf
 					m_type = PROPERTY;
 					m_property = v.m_property;
 					m_property->add_ref();
-					m_property_target = v.m_property_target;
-					if (m_property_target)
-					{
-						m_property_target->add_ref();
-					}
+					m_property_target = NULL;
 				}
 				else
 				{

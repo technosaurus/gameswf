@@ -540,6 +540,7 @@ namespace gameswf
 
 		virtual	void enumerate(as_environment* env);
 		virtual	bool is_enabled() const { return true; }
+		bool is_alive() const { return m_depth > 0; }
 	};
 
 }

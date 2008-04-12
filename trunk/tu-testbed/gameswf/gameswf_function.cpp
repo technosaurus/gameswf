@@ -77,6 +77,9 @@ namespace gameswf
 
 		assert(fn.env);
 
+		// Keep target alive during execution!
+		smart_ptr<as_object> target = m_target;
+
 		// try to use caller environment
 		// if the caller object has own environment then we use its environment
 		as_environment* env = fn.env;
@@ -107,7 +110,7 @@ namespace gameswf
 			character* ch = cast_to<character>(m_target.get_ptr());
 			if (ch)
 			{
-				if (ch->m_depth > 0)
+				if (ch->is_alive())
 				{
 					env = m_target->get_environment();
 				}
