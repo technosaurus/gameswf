@@ -280,8 +280,6 @@ namespace gameswf
 	as_c_function::as_c_function(as_c_function_ptr func) :
 		m_func(func)
 	{
-//		m_this_ptr = this;
-
 		// any function MUST have prototype
 		builtin_member("prototype", new as_object());
 	}
