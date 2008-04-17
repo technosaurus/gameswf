@@ -1452,8 +1452,7 @@ namespace gameswf
 						// obj();
 
 						as_object* obj = env->top(1).to_object();
-						assert(obj);
-						if (obj->m_this_ptr != NULL)
+						if (obj && obj->m_this_ptr != NULL)
 						{
 							as_value constructor;
 							if (obj->get_member("__constructor__", &constructor))
@@ -1466,6 +1465,10 @@ namespace gameswf
 									nargs,
 									env->get_top_index() - 3);
 							}
+						}
+						else
+						{
+							log_error("error: call_method can't call constructor 0x%p.%s\n", env->top(1).to_object(), method_name.c_str());
 						}
 					}
 					else
@@ -1978,9 +1981,10 @@ namespace gameswf
 							{
 								env->push(env->m_global_register[reg]);
 								IF_VERBOSE_ACTION(
-									log_msg("-------------- pushed global register[%d] = '%s'\n",
+									log_msg("-------------- pushed global register[%d], '%s', 0x%p\n",
 										reg,
-										env->top(0).to_string()));
+										env->top(0).to_string(),
+										env->top(0).to_object()));
 							}
 
 						}
