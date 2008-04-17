@@ -152,7 +152,7 @@ namespace gameswf
 	float	movie_def_impl::get_height_pixels() const { return ceilf(TWIPS_TO_PIXELS(m_frame_size.height())); }
 
 	int	movie_def_impl::get_version() const { return m_version; }
-	uint32	movie_def_impl::get_file_bytes() const { return m_file_length; }
+	uint32	movie_def_impl::get_file_bytes() const { return m_file_end_pos; }
 	uint32	movie_def_impl::get_loaded_bytes() const { return m_loaded_length; }
 
 	create_bitmaps_flag	movie_def_impl::get_create_bitmaps() const
@@ -441,8 +441,8 @@ namespace gameswf
 		m_origin_in = in;
 		Uint32	file_start_pos = in->get_position();
 		Uint32	header = in->read_le32();
-		m_file_length = in->read_le32();
-		m_file_end_pos = file_start_pos + m_file_length;
+		Uint32	file_length = in->read_le32();
+		m_file_end_pos = file_start_pos + file_length;
 
 		m_version = (header >> 24) & 255;
 		if ((header & 0x0FFFFFF) != 0x00535746
@@ -454,7 +454,7 @@ namespace gameswf
 		}
 		bool	compressed = (header & 255) == 'C';
 
-		IF_VERBOSE_PARSE(log_msg("version = %d, file_length = %d\n", m_version, m_file_length));
+		IF_VERBOSE_PARSE(log_msg("version = %d, file_length = %d\n", m_version, file_length));
 
 		m_zlib_in = NULL;
 		if (compressed)
@@ -473,7 +473,7 @@ namespace gameswf
 			// Subtract the size of the 8-byte header, since
 			// it's not included in the compressed
 			// stream length.
-			m_file_end_pos = m_file_length - 8;
+			m_file_end_pos = file_length - 8;
 		}
 
 		m_str = new stream(in);
@@ -540,9 +540,7 @@ namespace gameswf
 				}
 			}
 
-			// 8 is (file_start_pos(4 bytes) + header(4 bytes))
-			m_loaded_length = m_str->get_position() + 8;
-
+			m_loaded_length = m_str->get_position();
 		}
 
 		if (m_jpeg_in)

@@ -306,8 +306,6 @@ namespace gameswf
 		rect	m_frame_size;
 		float	m_frame_rate;
 		int	m_version;
-
-		uint32	m_file_length;
 		volatile uint32	m_loaded_length;
 
 		jpeg::input*	m_jpeg_in;
