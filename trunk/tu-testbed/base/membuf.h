@@ -36,16 +36,22 @@ struct membuf
 
 	// Don't call these mutators on read-only membufs.
 	
-	// Return false if we couldn't resize (i.e. realloc failure).
-	bool resize(int new_size);
+	void resize(int new_size);
+	void append(const void* data, int size);
+	void append(const membuf& buf);
+	void append(Uint8 byte);
 
-	// Return false on realloc failure.
-	bool append(const void* data, int size);
-	bool append(const membuf& buf);
 	// We do not append the terminating '\0'.
-	bool append(const tu_string& str);
+	void append(const tu_string& str);
+
+	Uint8&	operator[](int index);
+	const Uint8&	operator[](int index) const;
+	void	operator=(const membuf& buf);
+	bool	operator==(const membuf& buf) const;
+	bool	operator!=(const membuf& buf) const;
 
 private:
+
 	int m_size;
 	int m_capacity;
 	void* m_data;

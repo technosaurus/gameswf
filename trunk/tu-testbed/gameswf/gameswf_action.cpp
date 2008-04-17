@@ -384,18 +384,18 @@ namespace gameswf
 			int	pc = m_buffer.size();
 
 			int	action_id = in->read_u8();
-			m_buffer.push_back(action_id);
+			m_buffer.append((Uint8) action_id);
 
 			if (action_id & 0x80)
 			{
 				// Action contains extra data.  Read it.
 				int	length = in->read_u16();
-				m_buffer.push_back(length & 0x0FF);
-				m_buffer.push_back((length >> 8) & 0x0FF);
+				m_buffer.append(Uint8(length & 0x0FF));
+				m_buffer.append(Uint8((length >> 8) & 0x0FF));
 				for (int i = 0; i < length; i++)
 				{
-					unsigned char	b = in->read_u8();
-					m_buffer.push_back(b);
+					Uint8	b = in->read_u8();
+					m_buffer.append(b);
 				}
 			}
 
@@ -1805,8 +1805,7 @@ namespace gameswf
 						if (env->get_member(name, &value) && 
 							( existing_function = cast_to<as_s_function>(value.to_object())))
 						{
-							if (existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
-								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
+							if (existing_function->m_action_buffer.m_buffer == m_buffer
 								&& existing_function->m_start_pc == next_pc )
 							{ 
 								function_exists = true;
@@ -2132,8 +2131,7 @@ namespace gameswf
 						if (env->get_member(name, &value) 
 							&& ( existing_function = cast_to<as_s_function>(value.to_object())))
 						{
-							if( existing_function->m_action_buffer.m_buffer.size() == m_buffer.size()
-								&& !memcmp( &existing_function->m_action_buffer.m_buffer[0], &m_buffer[0], m_buffer.size() )
+							if (existing_function->m_action_buffer.m_buffer == m_buffer
 								&& existing_function->m_start_pc == next_pc )
 							{ 
 								function_exists = true;
