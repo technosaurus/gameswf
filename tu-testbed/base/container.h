@@ -405,6 +405,8 @@ private:
 	int	m_buffer_size;
 };
 
+// there are problem with STL
+#if 0
 template<class T>
 class shared_array {
 	// Resizable array.  Don't put anything in here that can't be moved
@@ -697,6 +699,7 @@ private:
 	int	m_size;
 	int	m_buffer_size;
 };
+#endif
 
 template<class T, class U, class hash_functor = fixed_size_hash<T> >
 class hash {

@@ -15,6 +15,7 @@
 #include "gameswf/gameswf_types.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
+#include "base/membuf.h"
 
 namespace gameswf
 {
@@ -149,16 +150,8 @@ namespace gameswf
 			bool is_function2) const;
 
 		static as_object* load_as_plugin(const tu_string& classname, const array<as_value>& params);
-
-		bool	is_null()
-		{
-			return m_buffer.size() < 1 || m_buffer[0] == 0;
-		}
-
 		int	get_length() const { return m_buffer.size(); }
-
 		void operator=(const action_buffer& ab);
-
 		static as_object* create_proto(as_object* obj, const as_value& constructor);
 
 	private:
@@ -172,7 +165,7 @@ namespace gameswf
 		static void	enumerate(as_environment* env, as_object* object);
 
 		// data:
-		shared_array<Uint8>	m_buffer;
+		membuf	m_buffer;
 		array<tu_string>	m_dictionary;
 		int	m_decl_dict_processed_at;
 	};
