@@ -332,12 +332,6 @@ namespace gameswf
 
 		virtual void	remove_display_object(int depth, int id)	{}
 
-		virtual character*	get_relative_target(const tu_string& name)
-		{
-			assert(0);	
-			return NULL;
-		}
-
 		virtual void	execute_frame_tags(int frame, bool state_only = false) {}
 		virtual void	add_action_buffer(action_buffer* a) { assert(0); }
 		virtual void	do_actions(const array<action_buffer*>& action_list) { assert(0); }
@@ -524,8 +518,6 @@ namespace gameswf
 	
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
-
-		virtual character*	find_target(const as_value& target);
 
 		virtual bool	is_visible();
 

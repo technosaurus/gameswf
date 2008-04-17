@@ -168,7 +168,7 @@ namespace gameswf
 		if (fn.nargs > 0)
 		{
 			assert(fn.env);
-			snd->m_target = fn.env->find_target(fn.arg(0));
+			snd->m_target = cast_to<character>(fn.env->find_target(fn.arg(0)));
 		}
 
 		// methods

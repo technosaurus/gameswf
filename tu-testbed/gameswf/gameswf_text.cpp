@@ -961,12 +961,12 @@ namespace gameswf
 		// set VAR
 		if (get_var_name().size() > 0)
 		{
-			character* ch = get_parent();	// target, default is parent
+			as_object* ch = get_parent();	// target, default is parent
 			tu_string path;
 			tu_string var = get_var_name();
 			if (as_environment::parse_path(get_var_name(), &path, &var))
 			{
-				ch = find_target(path.c_str());
+				ch = ch->find_target(path.c_str());
 			}
 
 			if (ch)
@@ -981,50 +981,22 @@ namespace gameswf
 		// get text from VAR
 		if (get_var_name().size() > 0)
 		{
-			character* ch = get_parent();	// target, default is parent
+			as_object* ch = get_parent();	// target, default is parent
 			tu_string path;
 			tu_string var = get_var_name();
 			if (as_environment::parse_path(get_var_name(), &path, &var))
 			{
-				ch = find_target(path.c_str());
+				ch = ch->find_target(path.c_str());
 			}
 
 			if (ch)
 			{
 				as_value val;
-				if (ch->get_member(var, &val))
+				if (ch->get_member(var, &val) && val.to_object() != this)
 				{
-					if (val.to_object() != this)
+					if (val.to_tu_string() != m_text)
 					{
-						if (val.to_tu_string() != m_text)
-						{
-							set_text(val.to_tu_string().c_str());
-						}
-					}
-				}
-			}
-			else
-			{
-				// try _global
-				if (path.size() > 8)
-				{
-					if (strncasecmp(path.c_str(), "_global.", 8) == 0)
-					{
-						as_object* target = get_global()->find_target(path.c_str() + 8);
-						if (target)
-						{
-							as_value val;
-							if (target->get_member(var, &val))
-							{
-								if (val.to_object() != this)
-								{
-									if (val.to_tu_string() != m_text)
-									{
-										set_text(val.to_tu_string().c_str());
-									}
-								}
-							}
-						}				
+						set_text(val.to_tu_string().c_str());
 					}
 				}
 			}

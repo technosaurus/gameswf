@@ -180,7 +180,7 @@ namespace gameswf
 		exported_module virtual void alive() { return; }
 		exported_module virtual void copy_to(as_object* target);
 		exported_module virtual void dump();
-		exported_module as_object* find_target(const tu_string& path);
+		exported_module as_object* find_target(const as_value& target);
 		exported_module virtual root* get_root() { return get_current_root(); }
 		exported_module	virtual as_environment*	get_environment() { return 0; }
 		exported_module virtual void advance(float delta_time) { assert(0); }

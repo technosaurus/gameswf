@@ -97,7 +97,7 @@ namespace gameswf
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, const as_value& target_value)
 	{
-		character* target = find_target(target_value);
+		character* target = cast_to<character>(find_target(target_value));
 		if (target == NULL)
 		{
 			IF_VERBOSE_ACTION(log_msg("load_file: target %s is't found\n", target_value.to_string()));
@@ -189,7 +189,8 @@ namespace gameswf
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
 		{
-			target = find_target(path.c_str());	// @@ Use with_stack here too???  Need to test.
+			// @@ Use with_stack here too???  Need to test.
+			target = cast_to<character>(find_target(path.c_str()));
 			if (target)
 			{
 				as_value	val;
@@ -291,7 +292,7 @@ namespace gameswf
 			IF_VERBOSE_ACTION(log_msg("-------------- ActionSetTarget2: %s", path.c_str()));
 			if (path.size() > 0)
 			{
-				character* tar = find_target(path.c_str());
+				character* tar = cast_to<character>(find_target(path.c_str()));
 				if (tar)
 				{
 					set_target(tar);
@@ -308,7 +309,7 @@ namespace gameswf
 		if (target.is_object())
 		{
 			IF_VERBOSE_ACTION(log_msg("-------------- ActionSetTarget2: %s", target.to_string()));
-			character* tar = find_target(target);
+			character* tar = cast_to<character>(find_target(target));
 			if (tar)
 			{
 				set_target(tar);
@@ -332,7 +333,7 @@ namespace gameswf
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
 		{
-			target = find_target(path.c_str());
+			target = cast_to<character>(find_target(path.c_str()));
 			if (target)
 			{
 				target->set_member(var, val);
@@ -531,29 +532,42 @@ namespace gameswf
 	// If no colon, returns false and leaves *path & *var alone.
 	{
 		// Search for colon.
-		const char* colon = strrchr(var_path.c_str(), '.');
-		if (colon == NULL)
+		const char* colon = strrchr(var_path.c_str(), ':');
+		if (colon)
 		{
-			// Is there a ':'?  Find the last one, if any.
-			colon = strrchr(var_path.c_str(), ':');
-			if (colon == NULL)
+			// Make the subparts.
+			*var = colon + 1;
+
+			// check prev character on '/'
+			if (colon > var_path.c_str() && *(colon - 1) == '/')
 			{
-				return false;
+				colon--;
+			}
+			*path = var_path;
+			path->resize(int(colon - var_path.c_str()));
+			return true;
+		}
+		else
+		{
+			// Is there a dot?  Find the last one, if any.
+			colon = strrchr(var_path.c_str(), '.');
+			if (colon)
+			{
+				// Make the subparts.
+				*var = colon + 1;
+				*path = var_path;
+				path->resize(int(colon - var_path.c_str()));
+				return true;
 			}
 		}
-
-		// Make the subparts.
-		*var = colon + 1;
-		*path = var_path;
-		path->resize(int(colon - var_path.c_str()));
-		return true;
+		return false;
 	}
 
-	character*	as_environment::find_target(const as_value& target) const
+	as_object*	as_environment::find_target(const as_value& target) const
 	{
-		if (get_target())
+		if (m_target != NULL)
 		{
-			return get_target()->find_target(target);
+			return m_target->find_target(target);
 		}
 		return NULL;
 	}

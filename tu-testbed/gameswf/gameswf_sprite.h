@@ -205,7 +205,6 @@ namespace gameswf
 
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
-		virtual character*	get_relative_target(const tu_string& name);
 		virtual void	call_frame_actions(const as_value& frame_spec);
 		virtual void	set_drag_state(const drag_state& st);
 		virtual void	stop_drag();
@@ -218,8 +217,6 @@ namespace gameswf
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
 
 		character* create_text_field(const char* name, int depth, int x, int y, int width, int height);
-
-		virtual character*	find_target(const as_value& target);
 
 		virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		virtual as_environment*	get_environment() { return &m_as_environment; }

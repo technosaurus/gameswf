@@ -823,7 +823,7 @@ namespace gameswf
 					// Flash doc says:
 					// This action behaves exactly like the original ActionSetTarget from SWF 3, 
 					// but is stack-based to enable the target path to be the result of expression evaluation.
-					env->set_target(env->top(0),original_target);
+					env->set_target(env->top(0), original_target);
 					env->drop(1);
 					break;
 				}
@@ -838,7 +838,7 @@ namespace gameswf
 				case 0x22:	// get property
 				{
 
-					character*	target = env->find_target(env->top(1));
+					character*	target = cast_to<character>(env->find_target(env->top(1)));
 					if (target)
 					{
 						env->top(1) = get_property(target, env->top(0).to_int());
@@ -854,7 +854,7 @@ namespace gameswf
 				case 0x23:	// set property
 				{
 
-					character*	target = env->find_target(env->top(2));
+					character*	target = cast_to<character>(env->find_target(env->top(2)));
 					if (target)
 					{
 						set_property(target, env->top(1).to_int(), env->top(0));
@@ -890,7 +890,7 @@ namespace gameswf
 				case 0x25:	// remove clip
 				{
 					//	removeMovieClip(target:Object), deletes the specified movie clip.
-					character*	target = env->find_target(env->top(0));
+					character*	target = cast_to<character>(env->find_target(env->top(0)));
 					if (target)
 					{
 						sprite_instance* parent = cast_to<sprite_instance>(target->get_parent());
@@ -915,7 +915,7 @@ namespace gameswf
 				{
 					character::drag_state	st;
 
-					st.m_character = env->find_target(env->top(0));
+					st.m_character = cast_to<character>(env->find_target(env->top(0)));
 					if (st.m_character == NULL)
 					{
 						log_error("error: start_drag of invalid target '%s'.\n",
