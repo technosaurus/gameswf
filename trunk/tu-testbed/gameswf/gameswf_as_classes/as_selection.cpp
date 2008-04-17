@@ -16,7 +16,7 @@ namespace gameswf
 		{
 			if (fn.nargs > 0)
 			{
-				character* target = fn.env->find_target(fn.arg(0));
+				character* target = cast_to<character>(fn.env->find_target(fn.arg(0)));
 				if (target)
 				{
 					target->on_event(event_id::SETFOCUS);

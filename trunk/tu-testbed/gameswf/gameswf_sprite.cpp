@@ -1043,54 +1043,6 @@ namespace gameswf
 		return character::get_member(name, val);
 	}
 
-	character*	sprite_instance::get_relative_target(const tu_string& name)
-		// Find the movie which is one degree removed from us,
-		// given the relative pathname.
-		//
-		// If the pathname is "..", then return our parent.
-		// If the pathname is ".", then return ourself.	 If
-		// the pathname is "_level0" or "_root", then return
-		// the root movie.
-		//
-		// Otherwise, the name should refer to one our our
-		// named characters, so we return it.
-		//
-		// NOTE: In ActionScript 2.0, top level names (like
-		// "_root" and "_level0") are CASE SENSITIVE.
-		// Character names in a display list are CASE
-		// SENSITIVE. Member names are CASE INSENSITIVE.  Gah.
-		//
-		// In ActionScript 1.0, everything seems to be CASE
-		// INSENSITIVE.
-	{
-		if (name.size() == 0)
-		{
-			return this;
-		}
-
-		as_standard_member	std_member = get_standard_member(name);
-		switch (std_member)
-		{
-			case MDOT:
-			case M_THIS:
-				return this;
-
-			case MDOT2:	// ".."
-			case M_PARENT:
-				return get_parent();
-
-			case M_LEVEL0:
-			case M_ROOT:
-				return m_root->m_movie.get_ptr();
-
-			default:
-				break;
-		}
-
-		// See if we have a match on the display list.
-		return m_display_list.get_character_by_name(name);
-	}
-
 	void	sprite_instance::call_frame_actions(const as_value& frame_spec)
 	// Execute the actions for the specified frame.	 The
 	// frame_spec could be an integer or a string.
@@ -1360,65 +1312,6 @@ namespace gameswf
 
 //		textfield->on_event(event_id::CONSTRUCT);	// isn't tested
 		return textfield;
-	}
-
-	character*	sprite_instance::find_target(const as_value& target)
-	// Find the sprite/movie referenced by the given path.
-	{
-		if (target.is_string())
-		{
-			const tu_string& path = target.to_tu_string();
-			if (path.length() == 0)
-			{
-				return this;
-			}
-
-			assert(path.length() > 0);
-
-			character*	tar = this;
-			
-			const char*	p = path.c_str();
-			tu_string	subpart;
-
-			if (*p == '/')
-			{
-				// Absolute path.  Start at the root.
-				tar = get_root_movie();
-				p++;
-			}
-
-			for (;;)
-			{
-				const char*	next_slash = next_slash_or_dot(p);
-				subpart = p;
-				if (next_slash == p)
-				{
-					log_error("error: invalid path '%s'\n", path.c_str());
-					break;
-				}
-				else if (next_slash)
-				{
-					// Cut off the slash and everything after it.
-					subpart.resize(int(next_slash - p));
-				}
-
-				tar = tar->get_relative_target(subpart);
-				//@@   _level0 --> root, .. --> parent, . --> this, other == character
-
-				if (tar == NULL || next_slash == NULL)
-				{
-					break;
-				}
-
-				p = next_slash + 1;
-			}
-			return tar;
-		}
-		else
-		{
-			return cast_to<character>(target.to_object());
-		}
-
 	}
 
 	void	sprite_instance::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)

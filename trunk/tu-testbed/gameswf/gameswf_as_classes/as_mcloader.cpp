@@ -67,7 +67,7 @@ namespace gameswf
 
 			as_mcloader::loadable_movie lm;
 			lm.m_def = cast_to<movie_def_impl>(md);
-			lm.m_target = fn.env->find_target(fn.arg(1));
+			lm.m_target = cast_to<character>(fn.env->find_target(fn.arg(1)));
 			mcl->m_lm.push_back(lm);
 
 			mcl->m_listeners.notify(event_id(event_id::ONLOAD_START, &event_args));

@@ -438,46 +438,62 @@ namespace gameswf
 		printf("*** end of object dump ***\n");
 	}
 
-	as_object*	as_object::find_target(const tu_string& path)
-	// Find the object referenced by the given path.
+	as_object*	as_object::find_target(const as_value& target)
+	// Find the object referenced by the given target.
 	{
-		if (path.length() <= 0)
+		if (target.is_string() == false)
 		{
-			return NULL;
+			return target.to_object();
 		}
 
-		as_object*	obj = this;
-		
-		const char*	p = path.c_str();
-		tu_string	subpart;
-
-		for (;;)
+		const tu_string& path = target.to_tu_string();
+		if (path.length() == 0)
 		{
-			const char*	next_slash = next_slash_or_dot(p);
-			subpart = p;
-			if (next_slash == p)
-			{
-				log_error("error: invalid path '%s'\n", path.c_str());
-				break;
-			}
-			else if (next_slash)
-			{
-				// Cut off the slash and everything after it.
-				subpart.resize(int(next_slash - p));
-			}
-
-			as_value val;
-			obj->get_member(subpart, &val);
-			obj = val.to_object();
-
-			if (obj == NULL || next_slash == NULL)
-			{
-				break;
-			}
-
-			p = next_slash + 1;
+			return this;
 		}
-		return obj;
+
+		as_value val;
+		as_object* tar = NULL;
+
+		// absolute path ?
+		if (*path.c_str() == '/')
+		{
+			return get_current_root()->get_root_movie()->find_target(path.c_str() + 1);
+		}
+
+		const char* slash = strchr(path.c_str(), '/');
+		if (slash == NULL)
+		{
+			if (slash = strchr(path.c_str(), '.'))
+			{
+				if (slash[1] == '.')
+				{
+					slash = NULL;
+				}
+			}
+		}
+
+		if (slash)
+		{
+			tu_string name(path.c_str(), int(slash - path.c_str()));
+			get_member(name, &val);
+			tar = val.to_object();
+			if (tar)	
+			{
+				return tar->find_target(slash + 1);
+			}
+		}
+		else
+		{
+			get_member(path, &val);
+			tar = val.to_object();
+		}
+
+		if (tar == NULL)
+		{
+			log_error("can't find target %s\n", path.c_str());
+		}
+		return tar;
 	}
 
 	// marks 'this' as 'not garbage'

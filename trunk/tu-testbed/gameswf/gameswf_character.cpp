@@ -11,6 +11,7 @@
 
 namespace gameswf
 {
+	as_object* get_global();
 
 	character::character(character* parent, int id)	:
 		m_id(id),
@@ -37,6 +38,20 @@ namespace gameswf
 		{
 			default:
 				break;
+
+			case M_GLOBAL:
+				val->set_as_object(get_global());
+				return true;
+
+			case M_ROOT:
+			case M_LEVEL0:
+				val->set_as_object(get_root_movie());
+				return true;
+
+			case M_THIS:
+			case MDOT:
+				val->set_as_object(this);
+				return true;
 
 			case M_X:
 			{
@@ -195,6 +210,7 @@ namespace gameswf
 				return true;
 			}
 			case M_PARENT:
+			case MDOT2:
 			{
 				val->set_as_object(cast_to<as_object>(m_parent.get_ptr()));
 				return true;
@@ -400,12 +416,6 @@ namespace gameswf
 	void character::enumerate(as_environment* env)
 	{
 		as_object::enumerate(env);
-	}
-
-	character*	character::find_target(const as_value& target)
-	// text fields, buttons
-	{
-		return get_parent()->find_target(target);
 	}
 
 }
