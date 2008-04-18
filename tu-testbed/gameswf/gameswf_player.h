@@ -19,6 +19,11 @@ namespace gameswf
 {
 
 	struct heap;
+	struct gameswf_player;
+
+
+	exported_module void set_current_player(gameswf_player* p);
+	exported_module gameswf_player* set_current_player(void);
 
 	exported_module as_object* get_global();
 	heap* get_heap();
@@ -50,6 +55,10 @@ namespace gameswf
 
 	struct gameswf_player : public ref_counted
 	{
+		heap m_heap;
+		smart_ptr<as_object>	m_global;
+		Uint64 m_start_time;
+		weak_ptr<root> m_current_root;
 
 		exported_module  gameswf_player();
 		exported_module  ~gameswf_player();
