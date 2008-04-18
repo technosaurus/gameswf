@@ -40,30 +40,28 @@ namespace gameswf
 	//	gameswf's statics
 	//
 
+	smart_ptr<gameswf_player>	s_current_player;
 
-	// @@ s_global should really be a
-	// client-visible player object, which
-	// contains one or more actual movie
-	// instances.  We're currently just hacking it
-	// in as an app-global mutable object :(
-
-	// _global
-
-	smart_ptr<as_object>	s_global;
-	as_object* get_global()
+	gameswf_player * get_current_player()
 	{
-		return s_global.get_ptr();
+		return s_current_player.get_ptr();
 	}
 
-	// heap of garbage collector
+	void set_current_player(gameswf_player* p)
+	{
+		s_current_player = p;
+	}
+	
+	as_object* get_global()
+	{
+		return s_current_player->m_global.get_ptr();
+	}
 
-	static heap s_heap;
-	heap* get_heap() { return &s_heap; }
+	heap* get_heap() { return &s_current_player->m_heap; }
 
-	Uint64 s_start_time = 0;
 	Uint64 get_start_time()
 	{
-		return s_start_time;
+		return s_current_player->m_start_time;
 	}
 
 	// standard method map, this stuff should be high optimized
@@ -151,7 +149,7 @@ namespace gameswf
 	// library stuff, for sharing resources among different movies.
 
 	static stringi_hash< smart_ptr<character_def> >	s_chardef_library;
-	static weak_ptr<root> s_current_root;
+	
 	static tu_string s_workdir;
 
 	stringi_hash< smart_ptr<character_def> >* get_chardef_library()
@@ -161,14 +159,14 @@ namespace gameswf
 
 	root* get_current_root()
 	{
-		assert(s_current_root != NULL);
-		return s_current_root.get_ptr();
+		assert(s_current_player->m_current_root.get_ptr() != NULL);
+		return s_current_player->m_current_root.get_ptr();
 	}
 
 	void set_current_root(root* m)
 	{
 		assert(m != NULL);
-		s_current_root = m;
+		s_current_player->m_current_root = m;
 	}
 
 	const char* get_workdir()
@@ -320,14 +318,14 @@ namespace gameswf
 
 	gameswf_player::gameswf_player()
 	{
-		s_global = new as_object();
+		m_global = new as_object();
 		action_init();
 	}
 
 	gameswf_player::~gameswf_player()
 	{
 		// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
-		s_global = NULL;
+		m_global = NULL;
 		clear_gameswf();
 		action_clear();
 	}
@@ -336,7 +334,7 @@ namespace gameswf
 	// gameSWF extension
 	// Allow pass the user bootup options to Flash (through _global._bootup)
 	{
-		s_global->set_member("_bootup", param.c_str());
+		m_global->set_member("_bootup", param.c_str());
 	}
 
 	void gameswf_player::verbose_action(bool val)
@@ -435,52 +433,51 @@ namespace gameswf
 		map->add("setFPS", sprite_set_fps);
 
 
-		s_start_time = tu_timer::get_ticks();
+		m_start_time = tu_timer::get_ticks();
 
 		//
 		// global init
 		//
 
-		as_object* global = get_global();
-		get_heap()->set(global, false);
-		global->builtin_member("trace", as_global_trace);
-		global->builtin_member("Object", as_global_object_ctor);
-		global->builtin_member("Sound", as_global_sound_ctor);
-		global->builtin_member("Array", as_global_array_ctor);
-		global->builtin_member("MovieClip", as_global_movieclip_ctor);
-		global->builtin_member("TextFormat", as_global_textformat_ctor);
+		m_heap.set(m_global.get_ptr(), false);
+		m_global->builtin_member("trace", as_global_trace);
+		m_global->builtin_member("Object", as_global_object_ctor);
+		m_global->builtin_member("Sound", as_global_sound_ctor);
+		m_global->builtin_member("Array", as_global_array_ctor);
+		m_global->builtin_member("MovieClip", as_global_movieclip_ctor);
+		m_global->builtin_member("TextFormat", as_global_textformat_ctor);
 
-		//			s_global->set_member("XML", as_value(xml_new));
-		global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
-		global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);
-		global->builtin_member("String", string_ctor);
-		global->builtin_member("Number", as_global_number_ctor);
-		global->builtin_member("Boolean", as_global_boolean_ctor);
-		global->builtin_member("Color", as_global_color_ctor);
-		global->builtin_member("Date", as_global_date_ctor);
-		global->builtin_member("Selection", selection_init());
-		global->builtin_member("LoadVars", as_global_loadvars_ctor);
+		//			m_global->set_member("XML", as_value(xml_new));
+		m_global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
+		m_global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);
+		m_global->builtin_member("String", string_ctor);
+		m_global->builtin_member("Number", as_global_number_ctor);
+		m_global->builtin_member("Boolean", as_global_boolean_ctor);
+		m_global->builtin_member("Color", as_global_color_ctor);
+		m_global->builtin_member("Date", as_global_date_ctor);
+		m_global->builtin_member("Selection", selection_init());
+		m_global->builtin_member("LoadVars", as_global_loadvars_ctor);
 
 		// ASSetPropFlags
-		global->builtin_member("ASSetPropFlags", as_global_assetpropflags);
+		m_global->builtin_member("ASSetPropFlags", as_global_assetpropflags);
 
 		// for video
-		global->builtin_member("NetStream", as_global_netstream_ctor);
-		global->builtin_member("NetConnection", as_global_netconnection_ctor);
+		m_global->builtin_member("NetStream", as_global_netstream_ctor);
+		m_global->builtin_member("NetConnection", as_global_netconnection_ctor);
 
-		global->builtin_member("math", math_init());
-		global->builtin_member("Key", key_init());
-		global->builtin_member("AsBroadcaster", broadcaster_init());
-		global->builtin_member( "flash", flash_init());
+		m_global->builtin_member("math", math_init());
+		m_global->builtin_member("Key", key_init());
+		m_global->builtin_member("AsBroadcaster", broadcaster_init());
+		m_global->builtin_member( "flash", flash_init());
 
 		// global builtins functions
-		global->builtin_member("setInterval",  as_global_setinterval);
-		global->builtin_member("clearInterval",  as_global_clearinterval);
-		global->builtin_member("getVersion",  as_global_get_version);
-		global->builtin_member("parseFloat",  as_global_parse_float);
-		global->builtin_member("parseInt",  as_global_parse_int);
-		global->builtin_member("isNaN",  as_global_isnan);
-		global->builtin_member("$version",  "gameSWF");
+		m_global->builtin_member("setInterval",  as_global_setinterval);
+		m_global->builtin_member("clearInterval",  as_global_clearinterval);
+		m_global->builtin_member("getVersion",  as_global_get_version);
+		m_global->builtin_member("parseFloat",  as_global_parse_float);
+		m_global->builtin_member("parseInt",  as_global_parse_int);
+		m_global->builtin_member("isNaN",  as_global_isnan);
+		m_global->builtin_member("$version",  "gameSWF");
 
 	}
 

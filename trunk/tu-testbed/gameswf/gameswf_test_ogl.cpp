@@ -56,9 +56,9 @@ void	print_usage()
 		"              2 enables rendering & disables sound\n"
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
 		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
-		"  -n          Allow use of network to try to open resource URLs\n"
+		"  -n		  Allow use of network to try to open resource URLs\n"
 		"  -u          Allow pass the user bootup options to Flash (through _global._bootup)\n"
-		"  -k          Disables cursor\n"
+		"  -k		  Disables cursor\n"
 		"  -w <w>x<h>  Specify the window size, for example 1024x768\n"
 		"\n"
 		"keys:\n"
@@ -243,7 +243,8 @@ int	main(int argc, char *argv[])
 		int	width = 0;
 		int	height = 0;
 
-		gameswf::gameswf_player player;
+		smart_ptr<gameswf::gameswf_player> player = new gameswf::gameswf_player();
+		gameswf::set_current_player( player.get_ptr() );
 
 		for (int arg = 1; arg < argc; arg++)
 		{
@@ -419,12 +420,12 @@ int	main(int argc, char *argv[])
 					if (argv[arg][2] == 'a')
 					{
 						// Enable spew re: action.
-						player.verbose_action(true);
+						player->verbose_action(true);
 					}
 					else if (argv[arg][2] == 'p')
 					{
 						// Enable parse spew.
-						player.verbose_parse(true);
+						player->verbose_parse(true);
 					}
 					// ...
 				}
@@ -504,7 +505,7 @@ int	main(int argc, char *argv[])
 
 		// gameSWF extension
 		// pass bootup options to Flash
-		player.set_bootup_options(bootup_options);
+		player->set_bootup_options(bootup_options);
 
 		{
 
