@@ -51,7 +51,8 @@ namespace gameswf
 		int	m_last_key_pressed;
 		listener m_listeners;
 
-		as_key();
+		as_key(player* boss);
+
 		bool	is_key_down(int code);
 		void	set_key_down(int code);
 		void	set_key_up(int code);
@@ -59,7 +60,7 @@ namespace gameswf
 	};
 
 	// creates 'Key' object
-	as_key* key_init();
+	as_key* key_init(player* boss);
 
 }	// namespace gameswf
 

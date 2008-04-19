@@ -136,7 +136,7 @@ namespace gameswf
 	// :TODO: factorize all this "new" code with action buffer
 	static as_object* create_proto(as_object* obj, const as_value& constructor)
 	{
-		as_object* proto = new as_object();
+		as_object* proto = new as_object(obj->get_boss());
 		proto->m_this_ptr = obj->m_this_ptr;
 		obj->m_proto = proto;
 
@@ -460,6 +460,7 @@ namespace gameswf
 
 	static bool	s_no_recurse_while_loading = false;	// @@ TODO get rid of this; make it the normal mode.
 
+	/*
 	movie_definition*	create_movie_no_recurse(
 		tu_file* in,
 		create_bitmaps_flag cbf,
@@ -482,7 +483,7 @@ namespace gameswf
 		m->add_ref();
 		return m;
 	}
-
+*/
 
 	//
 	// global gameswf management
@@ -503,7 +504,7 @@ namespace gameswf
 	}
 
 
-	movie_definition*	create_movie(const char* filename)
+	movie_definition*	create_movie(player* boss, const char* filename)
 	{
 		assert(filename);
 
@@ -542,7 +543,7 @@ namespace gameswf
 
 		ensure_loaders_registered();
 
-		movie_def_impl*	m = new movie_def_impl(DO_LOAD_BITMAPS, DO_LOAD_FONT_SHAPES);
+		movie_def_impl*	m = new movie_def_impl(boss, DO_LOAD_BITMAPS, DO_LOAD_FONT_SHAPES);
 
 		m->read(in);
 
@@ -825,7 +826,7 @@ namespace gameswf
 
 		assert(bi->get_ref_count() == 0);
 
-		bitmap_character*	ch = new bitmap_character(bi);
+		bitmap_character*	ch = new bitmap_character(m->get_boss(), bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -863,7 +864,7 @@ namespace gameswf
 
 		assert(bi->get_ref_count() == 0);
 
-		bitmap_character*	ch = new bitmap_character(bi);
+		bitmap_character*	ch = new bitmap_character(m->get_boss(), bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -978,7 +979,7 @@ namespace gameswf
 		}
 
 		// Create bitmap character.
-		bitmap_character*	ch = new bitmap_character(bi);
+		bitmap_character*	ch = new bitmap_character(m->get_boss(), bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -1225,7 +1226,7 @@ namespace gameswf
 		}
 		assert(bi->get_ref_count() == 0);
 
-		bitmap_character*	ch = new bitmap_character(bi);
+		bitmap_character*	ch = new bitmap_character(m->get_boss(), bi);
 
 		// add image to movie, under character id.
 		m->add_bitmap_character(character_id, ch);
@@ -1239,7 +1240,7 @@ namespace gameswf
 		Uint16	character_id = in->read_u16();
 		IF_VERBOSE_PARSE(log_msg("  shape_loader: id = %d\n", character_id));
 
-		shape_character_def*	ch = new shape_character_def;
+		shape_character_def*	ch = new shape_character_def(m->get_boss());
 		ch->read(in, tag_type, true, m);
 
 		IF_VERBOSE_PARSE(log_msg("  bound rect:"); ch->get_bound_local().print());
@@ -1252,7 +1253,7 @@ namespace gameswf
 		assert(tag_type == 46);
 		Uint16 character_id = in->read_u16();
 		IF_VERBOSE_PARSE(log_msg("  shape_morph_loader: id = %d\n", character_id));
-		morph2_character_def* morph = new morph2_character_def;
+		morph2_character_def* morph = new morph2_character_def(m->get_boss());
 		morph->read(in, tag_type, true, m);
 		m->add_character(character_id, morph);
 	}
@@ -1269,7 +1270,7 @@ namespace gameswf
 
 		Uint16	font_id = in->read_u16();
 
-		font*	f = new font;
+		font*	f = new font(m->get_boss());
 		f->read(in, tag_type, m);
 
 		m->add_font(font_id, f);
@@ -1421,7 +1422,7 @@ namespace gameswf
 			m_event_handlers.resize(0);
 		}
 
-		void	read(stream* in, int tag_type, int movie_version)
+		void	read(player* boss, stream* in, int tag_type, int movie_version)
 		{
 			assert(tag_type == 4 || tag_type == 26 || tag_type == 70);
 
@@ -1778,7 +1779,7 @@ namespace gameswf
 
 								// Create a function to execute the actions.
 								array<with_stack_entry>	empty_with_stack;
-								as_s_function*	func = new as_s_function(&action, 0, empty_with_stack);
+								as_s_function*	func = new as_s_function(boss, &action, 0, empty_with_stack);
 								func->set_length(action.get_length());
 
 								ev->m_method.set_as_object(func);
@@ -1935,7 +1936,7 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("  place_object_2\n"));
 
 		place_object_2*	ch = new place_object_2;
-		ch->read(in, tag_type, m->get_version());
+		ch->read(m->get_boss(), in, tag_type, m->get_version());
 
 		m->add_execute_tag(ch);
 	}
@@ -2001,7 +2002,7 @@ namespace gameswf
 
 		IF_VERBOSE_PARSE(log_msg("  sprite\n  char id = %d\n", character_id));
 
-		sprite_definition*	ch = new sprite_definition(m);	// @@ combine sprite_definition with movie_def_impl
+		sprite_definition*	ch = new sprite_definition(m->get_boss(), m);	// @@ combine sprite_definition with movie_def_impl
 		ch->read(in);
 
 		m->add_character(character_id, ch);
@@ -2108,7 +2109,7 @@ namespace gameswf
 
 		IF_VERBOSE_PARSE(log_msg("  button character loader: char_id = %d\n", character_id));
 
-		button_character_definition*	ch = new button_character_definition;
+		button_character_definition*	ch = new button_character_definition(m->get_boss());
 		ch->read(in, tag_type, m);
 
 		m->add_character(character_id, ch);
@@ -2181,7 +2182,7 @@ namespace gameswf
 
 		if (s_no_recurse_while_loading == false)
 		{
-			source_movie = create_movie(source_url.c_str());
+			source_movie = create_movie(m->get_boss(), source_url.c_str());
 			if (source_movie == NULL)
 			{
 				// If workdir is set, try again with
@@ -2190,7 +2191,7 @@ namespace gameswf
 				if (relative_url.length())
 				{
 					relative_url += source_url;
-					source_movie = create_movie(relative_url);
+					source_movie = create_movie(m->get_boss(), relative_url);
 				}
 
 				if (source_movie == NULL)
@@ -2252,7 +2253,7 @@ namespace gameswf
 		assert(tag == 60); // 60
 		Uint16 character_id = in->read_u16();
 
-		video_stream_definition* ch = new video_stream_definition;
+		video_stream_definition* ch = new video_stream_definition(m->get_boss());
 		ch->read(in, tag, m);
 
 		m->add_character(character_id, ch);

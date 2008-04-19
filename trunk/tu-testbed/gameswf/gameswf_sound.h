@@ -26,7 +26,9 @@ namespace gameswf
 
 		int	m_sound_handler_id;
 
-		sound_sample(int id) : m_sound_handler_id(id)
+		sound_sample(player* boss, int id) :
+			character_def(boss),
+			m_sound_handler_id(id)
 		{
 		}
 

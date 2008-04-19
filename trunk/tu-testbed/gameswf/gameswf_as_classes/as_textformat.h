@@ -30,7 +30,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_textformat();
+		as_textformat(player* boss);
 		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 	};
 

@@ -37,8 +37,9 @@ namespace gameswf
 		}
 	}
 
-	as_transform::as_transform( character * movie_clip ) :
-		m_movie( movie_clip )
+	as_transform::as_transform(character* movie_clip) :
+		as_object(movie_clip->get_boss()),
+		m_movie(movie_clip)
 	{
 	}
 

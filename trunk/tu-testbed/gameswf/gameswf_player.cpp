@@ -41,15 +41,15 @@ namespace gameswf
 	//
 
 	// hack, temporary to avoid memory leak on exit from gameswf
-//	smart_ptr<gameswf_player>	s_current_player;
-	gameswf_player*	s_current_player = NULL;
+//	smart_ptr<player>	s_current_player;
+	player*	s_current_player = NULL;
 
-	gameswf_player * get_current_player()
+	player * get_current_player()
 	{
 		return s_current_player;
 	}
 
-	void set_current_player(gameswf_player* p)
+	void set_current_player(player* p)
 	{
 		s_current_player = p;
 	}
@@ -315,16 +315,16 @@ namespace gameswf
 
 
 	//
-	//	gameswf_player
+	//	player
 	//
 
-	gameswf_player::gameswf_player()
+	player::player()
 	{
-		m_global = new as_object();
+		m_global = new as_object(this);
 		action_init();
 	}
 
-	gameswf_player::~gameswf_player()
+	player::~player()
 	{
 		// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
 		m_global = NULL;
@@ -332,25 +332,25 @@ namespace gameswf
 		action_clear();
 	}
 
-	void gameswf_player::set_bootup_options(const tu_string& param)
+	void player::set_bootup_options(const tu_string& param)
 	// gameSWF extension
 	// Allow pass the user bootup options to Flash (through _global._bootup)
 	{
 		m_global->set_member("_bootup", param.c_str());
 	}
 
-	void gameswf_player::verbose_action(bool val)
+	void player::verbose_action(bool val)
 	{
 		set_verbose_action(val);
 	}
 
-	void gameswf_player::verbose_parse(bool val)
+	void player::verbose_parse(bool val)
 	{
 		set_verbose_parse(val);
 	}
 
 	void	as_global_trace(const fn_call& fn);
-	void	gameswf_player::action_init()
+	void	player::action_init()
 	// Create/hook built-ins.
 	{
 
@@ -457,7 +457,7 @@ namespace gameswf
 		m_global->builtin_member("Boolean", as_global_boolean_ctor);
 		m_global->builtin_member("Color", as_global_color_ctor);
 		m_global->builtin_member("Date", as_global_date_ctor);
-		m_global->builtin_member("Selection", selection_init());
+		m_global->builtin_member("Selection", selection_init(this));
 		m_global->builtin_member("LoadVars", as_global_loadvars_ctor);
 
 		// ASSetPropFlags
@@ -467,10 +467,10 @@ namespace gameswf
 		m_global->builtin_member("NetStream", as_global_netstream_ctor);
 		m_global->builtin_member("NetConnection", as_global_netconnection_ctor);
 
-		m_global->builtin_member("math", math_init());
-		m_global->builtin_member("Key", key_init());
-		m_global->builtin_member("AsBroadcaster", broadcaster_init());
-		m_global->builtin_member( "flash", flash_init());
+		m_global->builtin_member("math", math_init(this));
+		m_global->builtin_member("Key", key_init(this));
+		m_global->builtin_member("AsBroadcaster", broadcaster_init(this));
+		m_global->builtin_member( "flash", flash_init(this));
 
 		// global builtins functions
 		m_global->builtin_member("setInterval",  as_global_setinterval);
@@ -484,7 +484,7 @@ namespace gameswf
 	}
 
 
-	void	gameswf_player::action_clear()
+	void	player::action_clear()
 	{
 		clear_standard_property_map();
 		clear_standard_method_map();

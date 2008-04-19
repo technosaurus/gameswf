@@ -15,7 +15,7 @@ namespace gameswf
 	void	as_global_loadvars_ctor(const fn_call& fn)
 	{
 		smart_ptr<as_loadvars>	obj;
-		obj = new as_loadvars();
+		obj = new as_loadvars(fn.get_boss());
 		fn.result->set_as_object(obj.get_ptr());
 	}
 
@@ -124,7 +124,8 @@ namespace gameswf
 		fn.result->set_tu_string(loadvars->override_to_string());
 	}
 
-	as_loadvars::as_loadvars()
+	as_loadvars::as_loadvars(player* boss) :
+		as_object(boss)
 	{
 		builtin_member( "addRequestHeader" , as_loadvars_addrequestheader );
 		builtin_member( "decode" , as_loadvars_decode );

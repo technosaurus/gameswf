@@ -164,7 +164,7 @@ namespace gameswf
 	//  Creates a new Sound object for a specified movie clip.
 	void	as_global_sound_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_sound> snd = new as_sound();
+		smart_ptr<as_sound> snd = new as_sound(fn.get_boss());
 		if (fn.nargs > 0)
 		{
 			assert(fn.env);

@@ -18,7 +18,7 @@ namespace gameswf
 {
 
 	// Create built-in Selection object.
-	as_object* selection_init();
+	as_object* selection_init(player* boss);
 
 	struct as_selection : public as_object
 	{
@@ -29,6 +29,8 @@ namespace gameswf
 			if (m_class_id == class_id) return true;
 			else return as_object::is(class_id);
 		}
+
+		as_selection(player* boss);
 	};
 
 }	// end namespace gameswf

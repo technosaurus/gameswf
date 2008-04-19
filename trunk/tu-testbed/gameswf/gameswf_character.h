@@ -41,7 +41,8 @@ namespace gameswf
 			return m_class_id == class_id;
 		}
 
-		character_def()	:
+		character_def(player* boss)	:
+			as_object_interface(boss),
 			m_id(-1)
 		{
 		}
@@ -153,7 +154,7 @@ namespace gameswf
 			STOP
 		};
 
-		character(character* parent, int id);
+		character(player* boss, character* parent, int id);
 
 		//
 		// Mouse/Button interface.

@@ -15,10 +15,10 @@ namespace gameswf
 	// geom object
 	//
 
-	as_object* geom_init()
+	as_object* geom_init(player* boss)
 	{
 		// Create built-in geom object.
-		as_object*	geom_obj = new as_object;
+		as_object*	geom_obj = new as_object(boss);
 
 		// constant
 		geom_obj->builtin_member("Point", as_global_point_ctor);

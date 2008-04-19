@@ -130,7 +130,7 @@ namespace gameswf
 				format,
 				get_sample_rate(sample_rate),
 				stereo);
-			sound_sample*	sam = new sound_sample(handler_id);
+			sound_sample*	sam = new sound_sample(m->get_boss(), handler_id);
 			m->add_sound_sample(character_id, sam);
 
 			delete [] data;

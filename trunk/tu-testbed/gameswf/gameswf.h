@@ -39,6 +39,7 @@ struct IDirect3DDevice8;
 namespace gameswf
 {
 	// Forward declarations.
+	struct player;
 	struct as_value;
 	struct bitmap_info;
 	struct character;
@@ -206,7 +207,18 @@ namespace gameswf
 	// ("as_" stands for ActionScript).
 	struct as_object_interface : public ref_counted
 	{
+		// pointer to owner
+//vv		smart_ptr<player> m_boss;
+		player* m_boss;
+
+		as_object_interface(player* boss) :
+			m_boss(boss)
+		{
+//vv			assert(boss);
+		}
+
 		virtual bool is(int class_id) const = 0;
+		player* get_boss() const { return m_boss; }
 	};
 
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)
@@ -391,7 +403,7 @@ namespace gameswf
 	// This calls add_ref() on the newly created definition; call
 	// drop_ref() when you're done with it.
 	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
-	exported_module movie_definition*	create_movie(const char* filename);
+	exported_module movie_definition*	create_movie(player* boss, const char* filename);
 
 	// Creates the movie from the given input stream.  Only reads
 	// from the given stream; does not open files.	If the movie
@@ -418,10 +430,12 @@ namespace gameswf
 		DO_LOAD_FONT_SHAPES,
 		DO_NOT_LOAD_FONT_SHAPES
 	};
-	movie_definition*	create_movie_no_recurse(
-		tu_file*		input_stream,
-		create_bitmaps_flag	cbf,
-		create_font_shapes_flag cfs);
+
+	// unused
+//	movie_definition*	create_movie_no_recurse(
+//		tu_file*		input_stream,
+//		create_bitmaps_flag	cbf,
+//		create_font_shapes_flag cfs);
 
 	// Helper to pregenerate cached data (basically, shape
 	// tesselations).  Does this by running through each frame of

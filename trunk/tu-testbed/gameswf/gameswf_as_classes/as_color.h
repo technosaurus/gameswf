@@ -28,7 +28,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_color(character* target);
+		as_color(player* boss, character* target);
 		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 
 		weak_ptr<character> m_target;

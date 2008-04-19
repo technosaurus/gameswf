@@ -27,7 +27,8 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_sound() :
+		as_sound(player* boss) :
+			as_object(boss),
 			m_id(-1),
 			m_is_loaded_sound(false)
 		{

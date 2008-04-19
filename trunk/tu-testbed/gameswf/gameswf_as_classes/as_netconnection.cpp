@@ -16,7 +16,7 @@ namespace gameswf
 	void	as_global_netconnection_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetConnection.
 	{
-		fn.result->set_as_object(new as_netconnection);
+		fn.result->set_as_object(new as_netconnection(fn.get_boss()));
 	}
 
 	void	as_netconnection_connect(const fn_call& fn)
@@ -48,7 +48,8 @@ namespace gameswf
 		return;
 	}
 
-	as_netconnection::as_netconnection()
+	as_netconnection::as_netconnection(player* boss) :
+		as_object(boss)
 	{
 		set_member("connect", &as_netconnection_connect);
 	}

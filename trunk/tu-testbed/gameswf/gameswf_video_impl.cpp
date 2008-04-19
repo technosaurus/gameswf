@@ -71,9 +71,9 @@ namespace gameswf
 		video->attach_netstream((as_netstream*) fn.arg(0).to_object());
 	}
 
-	video_stream_instance::video_stream_instance(video_stream_definition* def, character* parent, int id)
-	:
-		character(parent, id),
+	video_stream_instance::video_stream_instance(video_stream_definition* def, 
+			character* parent, int id)	:
+		character(def->get_boss(), parent, id),
 		m_def(def)
 	{
 		assert(m_def != NULL);

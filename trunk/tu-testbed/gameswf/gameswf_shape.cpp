@@ -1081,7 +1081,8 @@ namespace gameswf
 	//
 
 
-	shape_character_def::shape_character_def() :
+	shape_character_def::shape_character_def(player* boss) :
+		character_def(boss),
 		m_uses_nonscaling_strokes(false),
 		m_uses_scaling_strokes(false)
 	{

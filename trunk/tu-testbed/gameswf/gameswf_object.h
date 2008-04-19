@@ -12,6 +12,7 @@
 #include "gameswf/gameswf_value.h"
 #include "gameswf/gameswf_environment.h"
 #include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_player.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
 #include "base/tu_loadlib.h"
@@ -156,7 +157,7 @@ namespace gameswf
 		// so for optimization we place it into instance
 		smart_ptr<as_object> m_proto;	// for optimization
 
-		exported_module as_object();
+		exported_module as_object(player* boss);
 		exported_module virtual ~as_object();
 		
 		exported_module virtual const char*	to_string() { return "[object Object]"; }

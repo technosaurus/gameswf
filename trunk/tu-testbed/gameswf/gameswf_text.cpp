@@ -175,6 +175,7 @@ namespace gameswf
 
 
 	text_character_def::text_character_def(movie_definition_sub* root_def) :
+		character_def(root_def->get_boss()),
 		m_root_def(root_def),
 		m_use_flashtype(false),
 		m_grid_fit(0),
@@ -368,7 +369,8 @@ namespace gameswf
 	//
 
 	// creates empty dynamic text field
-	edit_text_character_def::edit_text_character_def(int width, int height) :
+	edit_text_character_def::edit_text_character_def(player* boss, int width, int height) :
+		character_def(boss),
 		m_root_def(NULL),
 		m_word_wrap(false),
 		m_multiline(false),
@@ -399,10 +401,11 @@ namespace gameswf
 		m_rect.m_y_max = PIXELS_TO_TWIPS(height);
 
 		m_color.set(0, 0, 0, 255);
-		m_font = new font();
+		m_font = new font(boss);
 	}
 
 	edit_text_character_def::edit_text_character_def(movie_definition_sub* root_def) :
+		character_def(root_def->get_boss()),
 		m_root_def(root_def),
 		m_word_wrap(false),
 		m_multiline(false),
@@ -544,7 +547,7 @@ namespace gameswf
 	}
 
 	edit_text_character::edit_text_character(character* parent, edit_text_character_def* def, int id)	:
-		character(parent, id),
+		character(def->get_boss(), parent, id),
 		m_def(def),
 		m_has_focus(false), 
 		m_cursor(0), 
@@ -682,7 +685,7 @@ namespace gameswf
 			}
 			else
 			{
-				m_font = new font();
+				m_font = new font(get_boss());
 			}
 			m_font->set_bold(bold);
 			m_font->set_italic(italic);

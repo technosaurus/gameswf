@@ -54,11 +54,12 @@ namespace gameswf
 	void	as_global_xmlsock_ctor(const fn_call& fn)
 	// Constructor for ActionScript class XMLSocket
 	{
-		fn.result->set_as_object(new as_xmlsock);
+		fn.result->set_as_object(new as_xmlsock(fn.get_boss()));
 	}
 
 
-	as_xmlsock::as_xmlsock() :
+	as_xmlsock::as_xmlsock(player* boss) :
+		as_object(boss),
 		m_iface(NULL),
 		m_ns(NULL)
 	{

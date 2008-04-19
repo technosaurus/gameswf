@@ -108,7 +108,7 @@ namespace gameswf
 		array<button_action>	m_button_actions;
 		button_sound_def*	m_sound;
 
-		button_character_definition();
+		button_character_definition(player* boss);
 		virtual ~button_character_definition();
 		character*	create_character_instance(character* parent, int id);
 		void	read(stream* in, int tag_type, movie_definition_sub* m);

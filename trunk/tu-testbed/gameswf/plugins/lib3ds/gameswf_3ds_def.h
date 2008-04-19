@@ -26,7 +26,7 @@ namespace gameswf
 		stringi_hash< smart_ptr<bitmap_info> > m_material;
 
 
-		x3ds_definition(const char* url);
+		x3ds_definition(player* boss, const char* url);
 		~x3ds_definition();
 
 		virtual character* create_character_instance(character* parent, int id);
@@ -52,7 +52,7 @@ namespace gameswf
 
 	};
 
-	x3ds_definition* create_3ds_definition(const char* url);
+	x3ds_definition* create_3ds_definition(player* boss, const char* url);
 
 }	// end namespace gameswf
 

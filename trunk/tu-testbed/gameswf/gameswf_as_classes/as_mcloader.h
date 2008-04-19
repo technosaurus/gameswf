@@ -43,7 +43,7 @@ namespace gameswf
 		listener m_listeners;
 		array<loadable_movie> m_lm;
 
-		as_mcloader();
+		as_mcloader(player* boss);
 		~as_mcloader();
 		
 		virtual void	advance(float delta_time);

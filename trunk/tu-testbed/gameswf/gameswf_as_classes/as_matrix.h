@@ -25,7 +25,8 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_matrix();
+		as_matrix(player* boss);
+
 		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 
 		matrix m_matrix;

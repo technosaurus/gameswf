@@ -127,6 +127,7 @@ namespace gameswf
 		character* load_file(const char* url, const as_value& target);
 		as_object*	find_target(const as_value& target) const;
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
+		player* get_boss() const;
 
 		private:
 
@@ -161,6 +162,8 @@ namespace gameswf
 			assert(n < nargs);
 			return env->bottom(first_arg_bottom_index - n);
 		}
+
+		exported_module player* get_boss() const;
 	};
 
 }

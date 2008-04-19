@@ -25,7 +25,10 @@ namespace gameswf
 			else return character_def::is(class_id);
 		}
 
-		//	video_stream_definition();
+		video_stream_definition(player* boss) :
+			character_def(boss)
+		{
+		}
 		//	virtual ~video_stream_definition();
 
 

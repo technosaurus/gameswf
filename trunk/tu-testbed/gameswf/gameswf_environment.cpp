@@ -128,7 +128,7 @@ namespace gameswf
 
 			case SWF:
 			{
-				movie_definition*	md = create_movie(fn.c_str());
+				movie_definition*	md = create_movie(get_boss(), fn.c_str());
 				if (md)
 				{
 					return target->replace_me(md);
@@ -141,7 +141,7 @@ namespace gameswf
 #if TU_CONFIG_LINK_TO_LIB3DS == 0
 				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
 #else
-				x3ds_definition* x3ds = create_3ds_definition(fn.c_str());
+				x3ds_definition* x3ds = create_3ds_definition(get_boss(), fn.c_str());
 				if (x3ds)
 				{
 					if (x3ds->is_loaded())
@@ -167,7 +167,7 @@ namespace gameswf
 					bitmap_info* bi = render::create_bitmap_info_rgb(im);
 					delete im;
 
-					bitmap_character*	jpeg = new bitmap_character(bi);
+					bitmap_character*	jpeg = new bitmap_character(get_boss(), bi);
 					return target->replace_me(jpeg);
 				}
 #endif
@@ -665,6 +665,19 @@ namespace gameswf
 				}
 			}
 		}
+	}
+
+	player* as_environment::get_boss() const
+	{
+		assert(m_target != NULL);
+		return m_target->get_boss();
+	}
+
+	player* fn_call::get_boss() const
+	{
+		assert(env);
+		assert(env->m_target != NULL);
+		return env->m_target->get_boss();
 	}
 
 }
