@@ -157,6 +157,9 @@ namespace gameswf
 		// so for optimization we place it into instance
 		smart_ptr<as_object> m_proto;	// for optimization
 
+		// pointer to owner
+		weak_ptr<player> m_boss;
+
 		exported_module as_object(player* boss);
 		exported_module virtual ~as_object();
 		
@@ -186,6 +189,8 @@ namespace gameswf
 		exported_module	virtual as_environment*	get_environment() { return 0; }
 		exported_module virtual void advance(float delta_time) { assert(0); }
 		exported_module virtual bool is_instance_of(const as_function& constructor) const;
+
+		player* get_boss() const { return m_boss.get_ptr(); }
 	};
 
 }

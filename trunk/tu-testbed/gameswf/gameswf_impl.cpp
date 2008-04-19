@@ -123,7 +123,7 @@ namespace gameswf
 	character*	character_def::create_character_instance(character* parent, int id)
 	// Default.  Make a generic_character.
 	{
-		character * ch = new generic_character(this, parent, id);
+		character * ch = new generic_character(get_boss(), this, parent, id);
 		// instanciate_registered_class(ch);	//TODO: test it
 		return ch;
 	}
@@ -1946,7 +1946,7 @@ namespace gameswf
 		// instance is created to live (temporarily) on some level on
 		// the parent movie's display list.
 	{
-		sprite_instance*	si = new sprite_instance(this, parent->get_root(), parent, id);
+		sprite_instance*	si = new sprite_instance(get_boss(), this, parent->get_root(), parent, id);
 		return si;
 	}
 
@@ -1982,7 +1982,7 @@ namespace gameswf
 			m_instance = m;
 		}
 
-		sprite_instance*	root_movie = new sprite_instance(this, m, NULL, -1);
+		sprite_instance*	root_movie = new sprite_instance(get_boss(), this, m, NULL, -1);
 		assert(root_movie);
 
 		// By default _root has no name

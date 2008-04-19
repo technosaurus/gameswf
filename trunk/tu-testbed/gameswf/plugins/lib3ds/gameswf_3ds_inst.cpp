@@ -52,8 +52,8 @@ namespace gameswf
 	// x3ds_instance
 	//
 
-	x3ds_instance::x3ds_instance(x3ds_definition* def, character* parent, int id)	:
-		character(def->get_boss(), parent, id),
+	x3ds_instance::x3ds_instance(player* boss, x3ds_definition* def, character* parent, int id)	:
+		character(boss, parent, id),
 		m_def(def),
 		m_current_frame(0.0f),
 		m_play_state(PLAY)

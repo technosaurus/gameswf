@@ -63,7 +63,7 @@ namespace gameswf
 			else return character::is(class_id);
 		}
 
-		video_stream_instance(video_stream_definition* def,	character* parent, int id);
+		video_stream_instance(player* boss, video_stream_definition* def,	character* parent, int id);
 		~video_stream_instance();
 
 		void	display();
