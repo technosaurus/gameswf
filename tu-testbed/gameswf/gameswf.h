@@ -207,18 +207,7 @@ namespace gameswf
 	// ("as_" stands for ActionScript).
 	struct as_object_interface : public ref_counted
 	{
-		// pointer to owner
-//vv		smart_ptr<player> m_boss;
-		player* m_boss;
-
-		as_object_interface(player* boss) :
-			m_boss(boss)
-		{
-//vv			assert(boss);
-		}
-
 		virtual bool is(int class_id) const = 0;
-		player* get_boss() const { return m_boss; }
 	};
 
 	// cast_to<gameswf object>(obj) implementation (from Julien Hamaide)

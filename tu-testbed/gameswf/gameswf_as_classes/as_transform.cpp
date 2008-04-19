@@ -29,16 +29,16 @@ namespace gameswf
 		if (fn.nargs == 1)
 		{
 			smart_ptr<as_transform>	obj;
-			if ( character * movie = cast_to<character>( fn.arg(0).to_object() ) )
+			if (character* movie = cast_to<character>(fn.arg(0).to_object()))
 			{
-				obj = new as_transform( movie );
+				obj = new as_transform(fn.get_boss(), movie);
 			}
 			fn.result->set_as_object(obj.get_ptr());
 		}
 	}
 
-	as_transform::as_transform(character* movie_clip) :
-		as_object(movie_clip->get_boss()),
+	as_transform::as_transform(player* boss, character* movie_clip) :
+		as_object(boss),
 		m_movie(movie_clip)
 	{
 	}

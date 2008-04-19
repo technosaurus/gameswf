@@ -123,7 +123,7 @@ namespace gameswf
 
 	character* x3ds_definition::create_character_instance(character* parent, int id)
 	{
-		character* ch = new x3ds_instance(this, parent, id);
+		character* ch = new x3ds_instance(get_boss(), this, parent, id);
 		// instanciate_registered_class(ch);	//TODO: test it
 		return ch;
 	}

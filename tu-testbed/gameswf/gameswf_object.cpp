@@ -128,11 +128,13 @@ namespace gameswf
 	}
 
 	// this stuff should be high optimized
-	// thus I can't use here set_member(...)
+	// therefore we can't use here set_member(...)
 	as_object::as_object(player* boss) :
-		as_object_interface(boss),
+		m_boss(boss),
 		m_watch(NULL)
 	{
+		// as_c_function has no pointer to player
+//		assert(boss);
 	}
 
 	as_object::~as_object()

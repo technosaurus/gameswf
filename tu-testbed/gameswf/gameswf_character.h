@@ -42,9 +42,10 @@ namespace gameswf
 		}
 
 		character_def(player* boss)	:
-			as_object_interface(boss),
+			m_boss(boss),
 			m_id(-1)
 		{
+			assert(boss);
 		}
 
 		virtual ~character_def() {}
@@ -68,11 +69,13 @@ namespace gameswf
 
 		void set_registered_class_constructor(const as_value & value);
 		void instanciate_registered_class(character * ch);
+		player* get_boss() const { return m_boss.get_ptr(); }
 
 		private:
 
 		int	m_id;
 		weak_ptr<as_function> m_registered_class_constructor;
+		weak_ptr<player> m_boss;
 
 	};
 

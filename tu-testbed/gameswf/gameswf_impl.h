@@ -74,8 +74,8 @@ namespace gameswf
 	{
 		smart_ptr<character_def>	m_def;
 
-		generic_character(character_def* def, character* parent, int id) :
-			character(def->get_boss(), parent, id),
+		generic_character(player* boss, character_def* def, character* parent, int id) :
+			character(boss, parent, id),
 			m_def(def)
 		{
 			assert(m_def != NULL);

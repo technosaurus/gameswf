@@ -174,8 +174,8 @@ namespace gameswf
 	}
 
 
-	text_character_def::text_character_def(movie_definition_sub* root_def) :
-		character_def(root_def->get_boss()),
+	text_character_def::text_character_def(player* boss, movie_definition_sub* root_def) :
+		character_def(boss),
 		m_root_def(root_def),
 		m_use_flashtype(false),
 		m_grid_fit(0),
@@ -354,7 +354,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		text_character_def*	ch = new text_character_def(m);
+		text_character_def*	ch = new text_character_def(m->get_boss(), m);
 		IF_VERBOSE_PARSE(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
@@ -404,8 +404,8 @@ namespace gameswf
 		m_font = new font(boss);
 	}
 
-	edit_text_character_def::edit_text_character_def(movie_definition_sub* root_def) :
-		character_def(root_def->get_boss()),
+	edit_text_character_def::edit_text_character_def(player* boss, movie_definition_sub* root_def) :
+		character_def(boss),
 		m_root_def(root_def),
 		m_word_wrap(false),
 		m_multiline(false),
@@ -546,8 +546,9 @@ namespace gameswf
 		}
 	}
 
-	edit_text_character::edit_text_character(character* parent, edit_text_character_def* def, int id)	:
-		character(def->get_boss(), parent, id),
+	edit_text_character::edit_text_character(player* boss, character* parent,
+			edit_text_character_def* def, int id)	:
+		character(boss, parent, id),
 		m_def(def),
 		m_has_focus(false), 
 		m_cursor(0), 
@@ -1463,7 +1464,7 @@ namespace gameswf
 			}
 		}
 
-		edit_text_character*	ch = new edit_text_character(parent, this, id);
+		edit_text_character*	ch = new edit_text_character(get_boss(), parent, this, id);
 		// instanciate_registered_class(ch);	//TODO: test it
 
 		return ch;
@@ -1477,7 +1478,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		edit_text_character_def*	ch = new edit_text_character_def(m);
+		edit_text_character_def*	ch = new edit_text_character_def(m->get_boss(), m);
 		IF_VERBOSE_PARSE(log_msg("edit_text_char, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
