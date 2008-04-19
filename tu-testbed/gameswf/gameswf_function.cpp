@@ -41,9 +41,9 @@ namespace gameswf
 		}
 	}
 
-	as_s_function::as_s_function( const action_buffer* ab, int start, 
-		const array<with_stack_entry>& with_stack)
-		:
+	as_s_function::as_s_function(player* boss,
+		const action_buffer* ab, int start, const array<with_stack_entry>& with_stack) :
+		as_function(boss),
 		m_with_stack(with_stack),
 		m_start_pc(start),
 		m_length(0),
@@ -62,7 +62,7 @@ namespace gameswf
 		m_this_ptr = this;
 
 		// any function MUST have prototype
-		builtin_member("prototype", new as_object());
+		builtin_member("prototype", new as_object(boss));
 
 		builtin_member("call", as_s_function_call);
 	}
@@ -192,7 +192,7 @@ namespace gameswf
 			smart_ptr<as_array>	arg_array;
 			if ((m_function2_flags & 0x04) || ! (m_function2_flags & 0x08))
 			{
-				arg_array = new as_array;
+				arg_array = new as_array(env->get_boss());
 
 				as_value	index_number;
 				for (int i = 0; i < fn.nargs; i++)
@@ -277,11 +277,12 @@ namespace gameswf
 		}
 	}
 
-	as_c_function::as_c_function(as_c_function_ptr func) :
+	as_c_function::as_c_function(player* boss, as_c_function_ptr func) :
+		as_function(boss),
 		m_func(func)
 	{
 		// any function MUST have prototype
-		builtin_member("prototype", new as_object());
+		builtin_member("prototype", new as_object(boss));
 	}
 
 	void	as_c_function::operator()(const fn_call& fn)

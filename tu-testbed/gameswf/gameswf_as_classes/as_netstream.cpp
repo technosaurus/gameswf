@@ -37,7 +37,8 @@ namespace gameswf
 		ns->audio_callback(stream, len);
 	}
 
-	as_netstream::as_netstream():
+	as_netstream::as_netstream(player* boss):
+		as_object(boss),
 		m_FormatCtx(NULL),
 		m_VCodecCtx(NULL),
 		m_ACodecCtx(NULL),
@@ -146,7 +147,7 @@ namespace gameswf
 			as_value function;
 			if (get_member("onStatus", &function))
 			{
-				smart_ptr<as_object> infoObject = new as_object();
+				smart_ptr<as_object> infoObject = new as_object(get_boss());
 				infoObject->set_member("level", level);
 				infoObject->set_member("code", code);
 
@@ -647,7 +648,7 @@ namespace gameswf
 	void	as_global_netstream_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetStream.
 	{
-		as_object* netstream = new as_netstream();
+		as_object* netstream = new as_netstream(fn.get_boss());
 
 		// properties
 		netstream->builtin_member("time", as_value(netstream_time, NULL));

@@ -8,8 +8,8 @@
 // init_action() and clear_libray()
 
 
-#ifndef GAMESWF_PLAYER_H
-#define GAMESWF_PLAYER_H
+#ifndef player_H
+#define player_H
 
 #include "base/utility.h"
 #include "base/tu_loadlib.h"
@@ -19,11 +19,11 @@ namespace gameswf
 {
 
 	struct heap;
-	struct gameswf_player;
+	struct player;
 
 
-	exported_module void set_current_player(gameswf_player* p);
-	exported_module gameswf_player* set_current_player(void);
+	exported_module void set_current_player(player* p);
+	exported_module player* set_current_player(void);
 
 	exported_module as_object* get_global();
 	heap* get_heap();
@@ -53,15 +53,15 @@ namespace gameswf
 
 	};
 
-	struct gameswf_player : public ref_counted
+	struct player : public ref_counted
 	{
 		heap m_heap;
 		smart_ptr<as_object>	m_global;
 		Uint64 m_start_time;
 		weak_ptr<root> m_current_root;
 
-		exported_module  gameswf_player();
-		exported_module  ~gameswf_player();
+		exported_module  player();
+		exported_module  ~player();
 
 		exported_module void verbose_action(bool val);
 		exported_module void verbose_parse(bool val);

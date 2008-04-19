@@ -10,7 +10,8 @@
 namespace gameswf
 {
 
-	canvas::canvas() :
+	canvas::canvas(player* boss) :
+		shape_character_def(boss),
 		m_current_x(0),
 		m_current_y(0),
 		m_current_fill(0),

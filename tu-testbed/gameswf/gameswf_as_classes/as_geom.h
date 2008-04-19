@@ -10,7 +10,7 @@
 
 namespace gameswf
 {
-	as_object* geom_init();
+	as_object* geom_init(player* boss);
 }
 
 #endif	// GAMESWF_AS_GEOM_H

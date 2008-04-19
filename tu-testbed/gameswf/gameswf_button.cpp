@@ -168,9 +168,8 @@ namespace gameswf
 		};
 		e_mouse_state m_mouse_state;
 
-		button_character_instance(button_character_definition* def, character* parent, int id)
-			:
-			character(parent, id),
+		button_character_instance(button_character_definition* def, character* parent, int id) :
+			character(def->get_boss(), parent, id),
 			m_def(def),
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
@@ -646,8 +645,8 @@ namespace gameswf
 	// button_character_definition
 	//
 
-	button_character_definition::button_character_definition()
-		:
+	button_character_definition::button_character_definition(player* boss) :
+		character_def(boss),
 		m_sound(NULL)
 	// Constructor.
 	{

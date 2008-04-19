@@ -30,9 +30,8 @@ namespace gameswf
 	// this stuff should be high optimized
 	// thus I can't use here set_member(...);
 	sprite_instance::sprite_instance(movie_definition_sub* def,	root* r, 
-		character* parent, int id)
-		:
-		character(parent, id),
+			character* parent, int id) :
+		character(def->get_boss(), parent, id),
 		m_def(def),
 		m_root(r),
 		m_play_state(PLAY),
@@ -102,7 +101,7 @@ namespace gameswf
 		matrix matrix;
 
 		// empty_sprite_def will be deleted during deliting sprite
-		sprite_definition* empty_sprite_def = new sprite_definition(NULL);
+		sprite_definition* empty_sprite_def = new sprite_definition(get_boss(), NULL);
 
 		sprite_instance* sprite =	new sprite_instance(empty_sprite_def, m_root, this, 0);
 		sprite->set_name(name);
@@ -1299,7 +1298,7 @@ namespace gameswf
 	character* sprite_instance::create_text_field(const char* name, int depth, int x, int y, int width, int height)
 	// Creates a new, empty text field as a child of the movie clip
 	{
-		edit_text_character_def* textdef = new edit_text_character_def(width, height);
+		edit_text_character_def* textdef = new edit_text_character_def(get_boss(), width, height);
 
 		character* textfield = textdef->create_character_instance(this, 0);
 		textfield->set_name(name);
@@ -1410,7 +1409,7 @@ namespace gameswf
 	{
 		if (m_canvas == NULL)
 		{
-			canvas* canvas_def = new canvas();
+			canvas* canvas_def = new canvas(get_boss());
 			m_canvas = canvas_def->create_character_instance(this, -1);
 
 			m_display_list.add_display_object(

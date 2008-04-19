@@ -203,7 +203,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_netstream();
+		as_netstream(player* boss);
 		~as_netstream();
 
 		video_handler* get_video_handler();

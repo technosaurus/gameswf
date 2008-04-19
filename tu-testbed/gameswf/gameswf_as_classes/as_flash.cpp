@@ -12,13 +12,13 @@ namespace gameswf
 	// flash object
 	//
 
-	as_object* flash_init()
+	as_object* flash_init(player* boss)
 	{
 		// Create built-in flash object.
-		as_object*	flash_obj = new as_object;
+		as_object*	flash_obj = new as_object(boss);
 
 		// constant
-		flash_obj->builtin_member("geom", geom_init());
+		flash_obj->builtin_member("geom", geom_init(boss));
 
 		return flash_obj;
 	}

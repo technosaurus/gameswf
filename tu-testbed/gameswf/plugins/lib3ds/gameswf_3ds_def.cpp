@@ -26,7 +26,7 @@
 namespace gameswf
 {
 
-	x3ds_definition* create_3ds_definition(const char* url)
+	x3ds_definition* create_3ds_definition(player* boss, const char* url)
 	{
 		smart_ptr<character_def>	m;
 		get_chardef_library()->get(url, &m);
@@ -36,12 +36,14 @@ namespace gameswf
 			return cast_to<x3ds_definition>(m.get_ptr());
 		}
 
-		x3ds_definition* def = new x3ds_definition(url);
+		x3ds_definition* def = new x3ds_definition(boss, url);
 		get_chardef_library()->add(url, def);
 		return def;
 	}
 
-	x3ds_definition::x3ds_definition(const char* url) : m_file(NULL)
+	x3ds_definition::x3ds_definition(player* boss, const char* url) : 
+		character_def(boss),
+		m_file(NULL)
 	{
 		m_file = lib3ds_file_load(url);
 		if (m_file == NULL)

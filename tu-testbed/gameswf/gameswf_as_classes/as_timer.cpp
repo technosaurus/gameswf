@@ -12,7 +12,8 @@
 namespace gameswf 
 {
 
-	as_timer::as_timer(as_value& func, double interval, const fn_call& fn):
+	as_timer::as_timer(as_value& func, double interval, const fn_call& fn) :
+		as_object(fn.get_boss()),
 		m_interval((float) interval / 1000.0f),
 		m_func(func),
 		m_delta_time(0.0f)

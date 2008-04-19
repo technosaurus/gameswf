@@ -31,6 +31,11 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
+		as_function(player* boss) :	
+			as_object(boss)
+		{
+		}
+
 		virtual const char*	typeof() { return "function"; }
 		virtual const char*	to_string()
 		{
@@ -55,7 +60,7 @@ namespace gameswf
 			else return as_function::is(class_id);
 		}
 
-		as_c_function(as_c_function_ptr func);
+		as_c_function(player* boss, as_c_function_ptr func);
 
 		// Dispatch.
 		virtual void	operator()(const fn_call& fn);
@@ -95,7 +100,8 @@ namespace gameswf
 		// myfunc should use _root environment
 		weak_ptr<as_object>	m_target;
 
-		as_s_function( const action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
+		as_s_function(player* boss,
+			const action_buffer* ab, int start, const array<with_stack_entry>& with_stack);
 		~as_s_function();
 
 		void	set_is_function2() { m_is_function2 = true; }

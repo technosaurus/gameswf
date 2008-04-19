@@ -19,7 +19,7 @@ namespace gameswf
 
 	void	as_global_textformat_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_textformat>	obj = new as_textformat;
+		smart_ptr<as_textformat>	obj = new as_textformat(fn.get_boss());
 
 		assert(fn.nargs <= TU_ARRAYSIZE(as_global_textformat_ctor_paramnames));
 
@@ -32,7 +32,8 @@ namespace gameswf
 		fn.result->set_as_object(obj.get_ptr());
 	}
 
-	as_textformat::as_textformat()
+	as_textformat::as_textformat(player* boss) :
+		as_object(boss)
 	{
 	}
 

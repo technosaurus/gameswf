@@ -99,8 +99,9 @@ namespace gameswf
 		}
 	}
 
-	movie_def_impl::movie_def_impl(create_bitmaps_flag cbf, create_font_shapes_flag cfs)
-		:
+	movie_def_impl::movie_def_impl(player* boss, 
+		create_bitmaps_flag cbf, create_font_shapes_flag cfs)	:
+		movie_definition_sub(boss),
 		m_create_bitmaps(cbf),
 		m_create_font_shapes(cfs),
 		m_frame_rate(30.0f),

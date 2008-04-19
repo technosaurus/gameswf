@@ -75,7 +75,7 @@ namespace gameswf
 		smart_ptr<character_def>	m_def;
 
 		generic_character(character_def* def, character* parent, int id) :
-			character(parent, id),
+			character(def->get_boss(), parent, id),
 			m_def(def)
 		{
 			assert(m_def != NULL);
@@ -119,13 +119,20 @@ namespace gameswf
 
 	struct bitmap_character_def : public character_def
 	{
+		bitmap_character_def(player* boss) :
+			character_def(boss)
+		{
+		}
+
 		virtual gameswf::bitmap_info*	get_bitmap_info() = 0;
 	};
 
 	// Bitmap character
 	struct bitmap_character : public bitmap_character_def
 	{
-		bitmap_character(bitmap_info* bi) :	m_bitmap_info(bi)
+		bitmap_character(player* boss, bitmap_info* bi) :
+			bitmap_character_def(boss),
+			m_bitmap_info(bi)
 		{
 		}
 

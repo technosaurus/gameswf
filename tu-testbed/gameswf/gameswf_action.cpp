@@ -538,9 +538,10 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
-	typedef exported_module as_object* (*gameswf_module_init)(const array<as_value>& params);
+	typedef exported_module as_object* (*gameswf_module_init)(player* boss, 
+		const array<as_value>& params);
 
-	as_object* action_buffer::load_as_plugin(const tu_string& classname,
+	as_object* action_buffer::load_as_plugin(player* boss, const tu_string& classname,
 						const array<as_value>& params)
 	// loads user defined class from DLL / shared library
 	{
@@ -560,7 +561,7 @@ namespace gameswf
 		// create plugin instance
 		if (module_init)
 		{
-			return (module_init)(params);
+			return (module_init)(boss, params);
 		}
 
 		return NULL;
@@ -576,7 +577,7 @@ namespace gameswf
 
 	as_object* action_buffer::create_proto(as_object* obj, const as_value& constructor)
 	{
-		as_object* proto = new as_object();
+		as_object* proto = new as_object(obj->get_boss());
 		proto->m_this_ptr = obj->m_this_ptr;
 		obj->m_proto = proto;
 
@@ -1185,7 +1186,7 @@ namespace gameswf
 					{
 
 						// Create an empty object
-						smart_ptr<as_object>	new_obj_ptr = new as_object();
+						smart_ptr<as_object>	new_obj_ptr = new as_object(env->get_boss());
 						as_object* proto = create_proto(new_obj_ptr.get_ptr(), s_constructor);
 
 						// override m_this_ptr with just new created object
@@ -1206,7 +1207,7 @@ namespace gameswf
 							params.push_back(env->bottom(first_arg_bottom_index - i));
 						}
 
-						as_object* plugin = load_as_plugin(classname.to_tu_string(), params);
+						as_object* plugin = load_as_plugin(env->get_boss(), classname.to_tu_string(), params);
 						if (plugin)
 						{
 							new_obj.set_as_object(plugin);
@@ -1255,7 +1256,7 @@ namespace gameswf
 				// property is converted to a string. The value may be of any type.				{
 
 					int n = env->pop().to_int();
-					as_object* obj = new as_object();
+					as_object* obj = new as_object(env->get_boss());
 
 					// Set members
 					for (int i = 0; i < n; i++)
@@ -1517,7 +1518,7 @@ namespace gameswf
 					}
 					else if (as_s_function* s_constructor = cast_to<as_s_function>(constructor.to_object()))
 					{
-						new_obj = new as_object();
+						new_obj = new as_object(env->get_boss());
 						as_object* proto = create_proto(new_obj.get_ptr(), constructor);
 						proto->m_this_ptr = new_obj.get_ptr();
 
@@ -1538,7 +1539,7 @@ namespace gameswf
 //								func->get_member("prototype", &prototype);
 //								prototype.to_object()->set_member("__constructor__", func);
 
-								new_obj = new as_object();
+								new_obj = new as_object(env->get_boss());
 								as_object* proto = create_proto(new_obj.get_ptr(), func);
 
 								proto->m_this_ptr = new_obj.get_ptr();
@@ -1647,7 +1648,7 @@ namespace gameswf
 					as_value super_prototype;
 					super.to_object()->get_member("prototype", &super_prototype);
 
-					as_object* new_prototype = new as_object();
+					as_object* new_prototype = new as_object(env->get_boss());
 
 					new_prototype->m_proto = super_prototype.to_object();
 					new_prototype->set_member("__constructor__", super);
@@ -1815,7 +1816,7 @@ namespace gameswf
 
 					if( !function_exists )
 					{
-						as_s_function*	func = new as_s_function(this, next_pc, with_stack);
+						as_s_function*	func = new as_s_function(env->get_boss(), this, next_pc, with_stack);
 						func->set_target(env->get_target());
 						func->set_is_function2();
 
@@ -2141,7 +2142,7 @@ namespace gameswf
 
 					if( !function_exists )
 					{
-						as_s_function*	func = new as_s_function(this, next_pc, with_stack);
+						as_s_function*	func = new as_s_function(env->get_boss(), this, next_pc, with_stack);
 						func->set_target(env->get_target());
 
 						// Get number of arguments.

@@ -13,7 +13,7 @@ namespace gameswf
 {
 	struct morph2_character_def : public shape_character_def
 	{
-		morph2_character_def();
+		morph2_character_def(player* boss);
 		virtual ~morph2_character_def();
 		void	read(stream* in, int tag_type, bool with_style, movie_definition_sub* m);
 		virtual void	display(character* inst);

@@ -47,7 +47,7 @@ namespace gameswf
 
 	struct font : public character_def
 	{
-		font();
+		font(player* boss);
 		~font();
 
 		// Unique id of a gameswf resource

@@ -49,7 +49,7 @@ namespace gameswf
 		array<array<execute_tag*> >  m_playlist;	// movie control events for each frame.
 		stringi_hash<int>	     m_named_frames;	// stores 0-based frame #'s
 
-		sprite_definition(movie_definition_sub* m);
+		sprite_definition(player* boss, movie_definition_sub* m);
 		~sprite_definition();
 
 		// overloads from movie_definition

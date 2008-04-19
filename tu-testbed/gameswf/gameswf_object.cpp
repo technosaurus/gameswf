@@ -124,12 +124,13 @@ namespace gameswf
 	void	as_global_object_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Object.
 	{
-		fn.result->set_as_object(new as_object);
+		fn.result->set_as_object(new as_object(fn.get_boss()));
 	}
 
 	// this stuff should be high optimized
 	// thus I can't use here set_member(...)
-	as_object::as_object() :
+	as_object::as_object(player* boss) :
+		as_object_interface(boss),
 		m_watch(NULL)
 	{
 	}

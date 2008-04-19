@@ -13,11 +13,13 @@
 
 namespace gameswf
 {
-	morph2_character_def::morph2_character_def():
-		m_last_ratio(-1.0f), m_mesh(0)
+	morph2_character_def::morph2_character_def(player* boss) :
+		shape_character_def(boss),
+		m_last_ratio(-1.0f), 
+		m_mesh(0)
 	{
-		m_shape1 = new shape_character_def();
-		m_shape2 = new shape_character_def();
+		m_shape1 = new shape_character_def(boss);
+		m_shape2 = new shape_character_def(boss);
 	}
 
 

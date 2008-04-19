@@ -37,7 +37,8 @@
 namespace gameswf
 {
 
-	sprite_definition::sprite_definition(movie_definition_sub* m) : 
+	sprite_definition::sprite_definition(player* boss, movie_definition_sub* m) : 
+		movie_definition_sub(boss),
 		m_movie_def(m)
 	{
 		// create empty sprite_definition (it is used for createEmptyMovieClip() method)

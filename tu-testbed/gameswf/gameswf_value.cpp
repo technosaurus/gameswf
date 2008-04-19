@@ -492,13 +492,12 @@ namespace gameswf
 	as_value::as_value(as_c_function_ptr func) :
 		m_type(UNDEFINED)
 	{
-	//	printf("xxxxx\n");
-		set_as_object(new as_c_function(func));
+		set_as_c_function(func);
 	}
 
 	void	as_value::set_as_c_function(as_c_function_ptr func)
 	{
-		set_as_object(new as_c_function(func));
+		set_as_object(new as_c_function(NULL, func));
 	}
 
 	const char*	as_value::typeof() const

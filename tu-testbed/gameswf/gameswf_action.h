@@ -149,7 +149,8 @@ namespace gameswf
 			const array<with_stack_entry>& initial_with_stack,
 			bool is_function2) const;
 
-		static as_object* load_as_plugin(const tu_string& classname, const array<as_value>& params);
+		static as_object* load_as_plugin(player* boss,
+			const tu_string& classname, const array<as_value>& params);
 		int	get_length() const { return m_buffer.size(); }
 		void operator=(const action_buffer& ab);
 		static as_object* create_proto(as_object* obj, const as_value& constructor);
