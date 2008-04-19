@@ -40,11 +40,13 @@ namespace gameswf
 	//	gameswf's statics
 	//
 
-	smart_ptr<gameswf_player>	s_current_player;
+	// hack, temporary to avoid memory leak on exit from gameswf
+//	smart_ptr<gameswf_player>	s_current_player;
+	gameswf_player*	s_current_player = NULL;
 
 	gameswf_player * get_current_player()
 	{
-		return s_current_player.get_ptr();
+		return s_current_player;
 	}
 
 	void set_current_player(gameswf_player* p)
