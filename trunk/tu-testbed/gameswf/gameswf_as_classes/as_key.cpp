@@ -104,10 +104,10 @@ namespace gameswf
 		fn.result->set_bool(false);
 	}
 
-	as_key* key_init(player* boss)
+	as_key* key_init(player* player)
 	{
 		// Create built-in key object.
-		as_key*	key_obj = new as_key(boss);
+		as_key*	key_obj = new as_key(player);
 
 		// constants
 	#define KEY_CONST(k) key_obj->set_member(#k, key::k)
@@ -141,8 +141,8 @@ namespace gameswf
 		return key_obj;
 	}
 
-	as_key::as_key(player* boss) :
-		as_object(boss),
+	as_key::as_key(player* player) :
+		as_object(player),
 		m_last_key_pressed(0)
 	{
 		memset(m_keymap, 0, sizeof(m_keymap));

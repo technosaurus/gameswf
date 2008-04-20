@@ -649,7 +649,7 @@ namespace gameswf
 	{
 		assert(target);
 
-		as_environment env(target->get_boss());
+		as_environment env(target->get_player());
 		env.push(val);
 		if (m_setter != NULL)
 		{
@@ -663,7 +663,7 @@ namespace gameswf
 		assert(target);
 
 		// env is used when m_getter->m_env is NULL
-		as_environment env(target->get_boss());
+		as_environment env(target->get_player());
 		if (m_getter != NULL)
 		{
 			smart_ptr<as_object> tar = target;

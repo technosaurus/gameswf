@@ -36,8 +36,8 @@ namespace gameswf
 	//
 	struct movie_definition : public character_def
 	{
-		movie_definition(player* boss) :
-			character_def(boss)
+		movie_definition(player* player) :
+			character_def(player)
 		{
 		}
 
@@ -132,8 +132,8 @@ namespace gameswf
 			else return movie_definition::is(class_id);
 		}
 
-		movie_definition_sub(player* boss) :
-			movie_definition(boss),
+		movie_definition_sub(player* player) :
+			movie_definition(player),
 			m_ss_id(-1),
 			m_ss_format(sound_handler::FORMAT_RAW),
 			m_ss_start(-1),
@@ -323,7 +323,7 @@ namespace gameswf
 		tu_thread* m_thread;
 		smart_ptr<root> m_instance;	// cached movie instance.
 
-		movie_def_impl(player* boss, create_bitmaps_flag cbf, create_font_shapes_flag cfs);
+		movie_def_impl(player* player, create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
 
 		root*	create_instance();

@@ -133,7 +133,8 @@ namespace gameswf
 				as_sound*	snd = cast_to<as_sound>(fn.this_ptr);
 				assert(snd);
 
-				tu_string full_url = get_full_url(fn.arg(0).to_string());
+				tu_string full_url = get_full_url(fn.get_player()->get_workdir(), 
+					fn.arg(0).to_string());
 				int id = s->load_sound(full_url.c_str());
 				if (id >= 0)
 				{
@@ -164,7 +165,7 @@ namespace gameswf
 	//  Creates a new Sound object for a specified movie clip.
 	void	as_global_sound_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_sound> snd = new as_sound(fn.get_boss());
+		smart_ptr<as_sound> snd = new as_sound(fn.get_player());
 		if (fn.nargs > 0)
 		{
 			assert(fn.env);

@@ -49,7 +49,7 @@ namespace gameswf
 	void	as_global_array_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Array.
 	{
-		smart_ptr<as_array>	ao = new as_array(fn.get_boss());
+		smart_ptr<as_array>	ao = new as_array(fn.get_player());
 
 		// case of "var x = ["abc","def", 1,2,3,4,..];"
 		// called from "init array" operation only
@@ -98,8 +98,8 @@ namespace gameswf
 	}
 
 
-	as_array::as_array(player* boss) :
-		as_object(boss)
+	as_array::as_array(player* player) :
+		as_object(player)
 	{
 		//			this->set_member("join", &array_not_impl);
 		//			this->set_member("concat", &array_not_impl);

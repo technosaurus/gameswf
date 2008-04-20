@@ -43,10 +43,6 @@ namespace gameswf
 	struct stream;
 	struct swf_event;
 
-	// for extern movies
-	exported_module const char* get_workdir();
-	exported_module void set_workdir(const char* dir);
-
 	struct swf_event
 	{
 		// NOTE: DO NOT USE THESE AS VALUE TYPES IN AN
@@ -72,8 +68,8 @@ namespace gameswf
 	{
 		smart_ptr<character_def>	m_def;
 
-		generic_character(player* boss, character_def* def, character* parent, int id) :
-			character(boss, parent, id),
+		generic_character(player* player, character_def* def, character* parent, int id) :
+			character(player, parent, id),
 			m_def(def)
 		{
 			assert(m_def != NULL);
@@ -117,8 +113,8 @@ namespace gameswf
 
 	struct bitmap_character_def : public character_def
 	{
-		bitmap_character_def(player* boss) :
-			character_def(boss)
+		bitmap_character_def(player* player) :
+			character_def(player)
 		{
 		}
 
@@ -128,8 +124,8 @@ namespace gameswf
 	// Bitmap character
 	struct bitmap_character : public bitmap_character_def
 	{
-		bitmap_character(player* boss, bitmap_info* bi) :
-			bitmap_character_def(boss),
+		bitmap_character(player* player, bitmap_info* bi) :
+			bitmap_character_def(player),
 			m_bitmap_info(bi)
 		{
 		}

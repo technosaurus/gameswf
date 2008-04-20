@@ -469,9 +469,10 @@ int	main(int argc, char *argv[])
 			for (; ptr >= infile && *ptr != '/' && *ptr != '\\'; ptr--) {}
 			// Use everything up to last slash as the "workdir".
 			int len = ptr - infile + 1;
-			if (len > 0) {
+			if (len > 0)
+			{
 				tu_string workdir(infile, len);
-				gameswf::set_workdir(workdir.c_str());
+				player->set_workdir(workdir.c_str());
 			}
 		}
 

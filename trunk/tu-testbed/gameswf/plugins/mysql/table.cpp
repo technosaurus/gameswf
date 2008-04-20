@@ -104,8 +104,8 @@ void	to_get_recno_method(const fn_call& fn)
 	}
 }
 
-mytable::mytable(player* boss) :
-	as_object(boss),
+mytable::mytable(player* player) :
+	as_object(player),
 	m_index(0)
 {
 	builtin_member("size", size_method);
@@ -231,7 +231,7 @@ void mytable::retrieve_data(MYSQL_RES* result)
 	{
 		MYSQL_ROW row = mysql_fetch_row(result);
 
-		m_data[i] = new as_object(get_boss());
+		m_data[i] = new as_object(get_player());
 
 		for (int j = 0; j < num_fields; j++)
 		{

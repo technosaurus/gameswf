@@ -29,15 +29,15 @@ namespace gameswf
 
 	// this stuff should be high optimized
 	// thus I can't use here set_member(...);
-	sprite_instance::sprite_instance(player* boss, movie_definition_sub* def,	root* r, 
+	sprite_instance::sprite_instance(player* player, movie_definition_sub* def,	root* r, 
 			character* parent, int id) :
-		character(boss, parent, id),
+		character(player, parent, id),
 		m_def(def),
 		m_root(r),
 		m_play_state(PLAY),
 		m_current_frame(0),
 		m_update_frame(true),
-		m_as_environment(boss),
+		m_as_environment(player),
 		m_mouse_state(UP),
 		m_enabled(true),
 		m_on_event_load_called(false)
@@ -53,7 +53,7 @@ namespace gameswf
 		memset(&m_init_actions_executed[0], 0,
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
-		m_boss->set_alive(this);
+		m_player->set_alive(this);
 	}
 
 	sprite_instance::~sprite_instance()
@@ -102,9 +102,9 @@ namespace gameswf
 		matrix matrix;
 
 		// empty_sprite_def will be deleted during deliting sprite
-		sprite_definition* empty_sprite_def = new sprite_definition(get_boss(), NULL);
+		sprite_definition* empty_sprite_def = new sprite_definition(get_player(), NULL);
 
-		sprite_instance* sprite =	new sprite_instance(get_boss(), empty_sprite_def, m_root, this, 0);
+		sprite_instance* sprite =	new sprite_instance(get_player(), empty_sprite_def, m_root, this, 0);
 		sprite->set_name(name);
 
 		m_display_list.add_display_object(
@@ -337,7 +337,7 @@ namespace gameswf
 
 		// 'this' and its variables is not garbage
 		this_alive();
-		m_boss->set_alive(this);
+		m_player->set_alive(this);
 
 	}
 
@@ -346,7 +346,7 @@ namespace gameswf
 	void sprite_instance::alive()
 	{
 		this_alive();
-		m_boss->set_alive(this);
+		m_player->set_alive(this);
 
 		// mark display list as useful
 		for (int i = 0, n = m_display_list.size(); i < n; i++)
@@ -771,13 +771,13 @@ namespace gameswf
 		{
 			root* new_inst = md->create_instance();
 			character* ch = new_inst->get_root_movie();
-			m_boss->set_root(new_inst);
+			m_player->set_root(new_inst);
 
 //			ch->on_event(event_id::LOAD);
 			return ch;
 		}
 
-		sprite_instance* sprite = new sprite_instance(get_boss(), cast_to<movie_def_impl>(md), 
+		sprite_instance* sprite = new sprite_instance(get_player(), cast_to<movie_def_impl>(md), 
 			get_root(),	parent,	-1);
 
 		sprite->set_parent(parent);
@@ -1125,7 +1125,7 @@ namespace gameswf
 			// clone a previous external loaded movie ?
 			if (get_id() == -1)	
 			{
-				ch = new sprite_instance(get_boss(), cast_to<movie_def_impl>(m_def.get_ptr()), 
+				ch = new sprite_instance(get_player(), cast_to<movie_def_impl>(m_def.get_ptr()), 
 					get_root(),	parent,	-1);
 
 				ch->set_parent(parent);
@@ -1143,7 +1143,7 @@ namespace gameswf
 			}
 			else
 			{
-				ch = new sprite_instance(get_boss(), m_def.get_ptr(), get_root(),	parent,	0);
+				ch = new sprite_instance(get_player(), m_def.get_ptr(), get_root(),	parent,	0);
 				ch->set_parent(parent);
 				ch->set_root(get_root());
 				ch->set_name(newname);
@@ -1299,7 +1299,7 @@ namespace gameswf
 	character* sprite_instance::create_text_field(const char* name, int depth, int x, int y, int width, int height)
 	// Creates a new, empty text field as a child of the movie clip
 	{
-		edit_text_character_def* textdef = new edit_text_character_def(get_boss(), width, height);
+		edit_text_character_def* textdef = new edit_text_character_def(get_player(), width, height);
 
 		character* textfield = textdef->create_character_instance(this, 0);
 		textfield->set_name(name);
@@ -1353,7 +1353,7 @@ namespace gameswf
 			return NULL;
 		}
 
-		sprite_instance* sprite = new sprite_instance(get_boss(), sdef, get_root(), this, -1);
+		sprite_instance* sprite = new sprite_instance(get_player(), sdef, get_root(), this, -1);
 		sprite->set_name(name);
 
 		m_display_list.add_display_object(
@@ -1410,7 +1410,7 @@ namespace gameswf
 	{
 		if (m_canvas == NULL)
 		{
-			canvas* canvas_def = new canvas(get_boss());
+			canvas* canvas_def = new canvas(get_player());
 			m_canvas = canvas_def->create_character_instance(this, -1);
 
 			m_display_list.add_display_object(

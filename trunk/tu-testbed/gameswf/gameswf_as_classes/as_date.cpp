@@ -150,7 +150,7 @@ namespace gameswf
 	}
 
 	as_date::as_date(const fn_call& fn) :
-		as_object(fn.get_boss()),
+		as_object(fn.get_player()),
 		m_time(tu_timer::get_systime())
 	{
 		if (fn.nargs > 0)

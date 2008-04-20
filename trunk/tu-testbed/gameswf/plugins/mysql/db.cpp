@@ -101,14 +101,14 @@ void mydb_autocommit_setter(const fn_call& fn)
 // DLL interface
 extern "C"
 {
-	exported_module as_object* gameswf_module_init(player* boss, const array<as_value>& params)
+	exported_module as_object* gameswf_module_init(player* player, const array<as_value>& params)
 	{
-		return new mydb(boss);
+		return new mydb(player);
 	}
 }
 
-mydb::mydb(player* boss) :
-	as_object(boss),
+mydb::mydb(player* player) :
+	as_object(player),
 	m_db(NULL)
 {
 	// methods
@@ -184,7 +184,7 @@ mytable* mydb::open(const char* sql)
 		MYSQL_RES* result = mysql_store_result(m_db);
 		if (result)
 		{
-			mytable* tbl = new mytable(get_boss());
+			mytable* tbl = new mytable(get_player());
 			tbl->retrieve_data(result);
 			mysql_free_result(result);
 			return tbl;

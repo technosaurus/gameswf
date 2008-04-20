@@ -15,7 +15,7 @@ namespace gameswf
 	{
 		smart_ptr<as_matrix> matrix;
 
-		matrix = new as_matrix(fn.get_boss());
+		matrix = new as_matrix(fn.get_player());
 		switch(fn.nargs)
 		{
 		default:
@@ -156,14 +156,14 @@ namespace gameswf
 		if (point)
 		{
 			smart_ptr<as_point>	result;
-			result = new as_point(fn.get_boss(), .0f, 0.0f);
+			result = new as_point(fn.get_player(), .0f, 0.0f);
 			matrix->m_matrix.transform( &result->m_point, point->m_point);
 			fn.result->set_as_object(result.get_ptr());
 		}
 	}
 
-	as_matrix::as_matrix(player* boss) :
-		as_object(boss)
+	as_matrix::as_matrix(player* player) :
+		as_object(player)
 	{
 		builtin_member("translate", as_matrix_translate);
 		builtin_member("rotate", as_matrix_rotate);

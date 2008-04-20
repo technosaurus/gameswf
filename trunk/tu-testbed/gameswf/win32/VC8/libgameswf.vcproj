@@ -926,22 +926,22 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="plugins"
+			Name="lib3ds-extension"
 			>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_def.cpp"
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_def.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_def.h"
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_def.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_inst.cpp"
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_inst.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_inst.h"
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_inst.h"
 				>
 			</File>
 		</Filter>

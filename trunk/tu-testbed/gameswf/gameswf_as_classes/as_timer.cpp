@@ -13,7 +13,7 @@ namespace gameswf
 {
 
 	as_timer::as_timer(as_value& func, double interval, const fn_call& fn) :
-		as_object(fn.get_boss()),
+		as_object(fn.get_player()),
 		m_interval((float) interval / 1000.0f),
 		m_func(func),
 		m_delta_time(0.0f)
@@ -41,7 +41,7 @@ namespace gameswf
 
 			assert(m_func.is_function());
 
-			as_environment env(get_boss());
+			as_environment env(get_player());
 			int n = m_param.size();
 			for (int i = 0; i < n; i++)
 			{

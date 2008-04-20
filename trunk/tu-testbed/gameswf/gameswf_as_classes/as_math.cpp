@@ -82,10 +82,10 @@ namespace gameswf
 		fn.result->set_double(floor(arg0 + 0.5));
 	}
 	
-	as_object* math_init(player* boss)
+	as_object* math_init(player* player)
 	{
 		// Create built-in math object.
-		as_object*	math_obj = new as_object(boss);
+		as_object*	math_obj = new as_object(player);
 
 		// constant
 		math_obj->builtin_member("e", 2.7182818284590452354);

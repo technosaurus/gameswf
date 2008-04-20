@@ -25,8 +25,8 @@ namespace gameswf
 			else return character_def::is(class_id);
 		}
 
-		video_stream_definition(player* boss) :
-			character_def(boss)
+		video_stream_definition(player* player) :
+			character_def(player)
 		{
 		}
 		//	virtual ~video_stream_definition();
@@ -63,7 +63,7 @@ namespace gameswf
 			else return character::is(class_id);
 		}
 
-		video_stream_instance(player* boss, video_stream_definition* def,	character* parent, int id);
+		video_stream_instance(player* player, video_stream_definition* def,	character* parent, int id);
 		~video_stream_instance();
 
 		void	display();

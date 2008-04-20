@@ -128,23 +128,9 @@ namespace gameswf
 	// library stuff, for sharing resources among different movies.
 
 	static stringi_hash< smart_ptr<character_def> >	s_chardef_library;
-	
-	static tu_string s_workdir;
-
 	stringi_hash< smart_ptr<character_def> >* get_chardef_library()
 	{
 		return &s_chardef_library;
-	}
-
-	const char* get_workdir()
-	{
-		return s_workdir.c_str();
-	}
-
-	void set_workdir(const char* dir)
-	{
-		assert(dir != NULL);
-		s_workdir = dir;
 	}
 
 	void	clear_library()
@@ -165,7 +151,6 @@ namespace gameswf
 			}
 		}
 		s_chardef_library.clear();
-		s_workdir.clear();
 	}
 
 
@@ -510,6 +495,18 @@ namespace gameswf
 		assert(m != NULL);
 		m_current_root = m;
 	}
+
+	const char* player::get_workdir() const
+	{
+		return m_workdir.c_str();
+	}
+
+	void player::set_workdir(const char* dir)
+	{
+		assert(dir != NULL);
+		m_workdir = dir;
+	}
+
 
 	// garbage collector
 

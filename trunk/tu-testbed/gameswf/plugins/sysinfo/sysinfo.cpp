@@ -29,7 +29,7 @@ void	getDir(const fn_call& fn)
 	{
 		if (fn.nargs > 0)
 		{
-			as_object* dir = new as_object(fn.get_boss());
+			as_object* dir = new as_object(fn.get_player());
 			si->get_dir(dir, fn.arg(0).to_string());
 			fn.result->set_as_object(dir);
 		}
@@ -65,14 +65,14 @@ void	getFreeMem(const fn_call& fn)
 
 extern "C"
 {
-	exported_module as_object* gameswf_module_init(player* boss, const array<as_value>& params)
+	exported_module as_object* gameswf_module_init(player* player, const array<as_value>& params)
 	{
-		return new sysinfo(boss);
+		return new sysinfo(player);
 	}
 }
 
-sysinfo::sysinfo(player* boss) :
-	as_object(boss)
+sysinfo::sysinfo(player* player) :
+	as_object(player)
 {
 	builtin_member("getDir", getDir);
 	builtin_member("getHDDSerNo", getHDDSerNo);
@@ -112,7 +112,7 @@ void sysinfo::get_dir(as_object* info, const tu_string& path)
 
 		// printf("%s, %d\n", name.c_str(), is_dir);
 
-		as_object* item = new as_object(get_boss());
+		as_object* item = new as_object(get_player());
 		info->set_member(name, item);
 
 		item->set_member("is_dir", is_dir);
@@ -120,7 +120,7 @@ void sysinfo::get_dir(as_object* info, const tu_string& path)
 		item->set_member("is_hidden", is_hidden);
 		if (is_dir)
 		{
-			as_object* info = new as_object(get_boss());
+			as_object* info = new as_object(get_player());
 			item->set_member("dirinfo", info);
 			get_dir(info, path + de->d_name + "/");
 		}

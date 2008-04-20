@@ -15,7 +15,7 @@ namespace gameswf
 		if (fn.nargs == 2)
 		{
 			smart_ptr<as_point>	obj;
-			obj = new as_point(fn.get_boss(), fn.arg(0).to_float(), fn.arg(1).to_float());
+			obj = new as_point(fn.get_player(), fn.arg(0).to_float(), fn.arg(1).to_float());
 			fn.result->set_as_object(obj.get_ptr());
 		}
 	}
@@ -42,7 +42,7 @@ namespace gameswf
 		if (other_point)
 		{
 			smart_ptr<as_point>	obj;
-			obj = new as_point(fn.get_boss(),
+			obj = new as_point(fn.get_player(),
 				point->m_point.m_x + other_point->m_point.m_x,
 				point->m_point.m_y + other_point->m_point.m_y);
 
@@ -72,7 +72,7 @@ namespace gameswf
 		if (other_point)
 		{
 			smart_ptr<as_point>	obj;
-			obj = new as_point(fn.get_boss(),
+			obj = new as_point(fn.get_player(),
 				point->m_point.m_x - other_point->m_point.m_x, 
 				point->m_point.m_y - other_point->m_point.m_y);
 
@@ -103,8 +103,8 @@ namespace gameswf
 		}
 	}
 
-	as_point::as_point(player* boss, float x, float y) :
-		as_object(boss),
+	as_point::as_point(player* player, float x, float y) :
+		as_object(player),
 	   m_point( x, y )
 	{
 		builtin_member("add", as_point_add);

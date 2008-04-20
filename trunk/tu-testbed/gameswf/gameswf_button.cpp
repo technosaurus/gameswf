@@ -168,8 +168,8 @@ namespace gameswf
 		};
 		e_mouse_state m_mouse_state;
 
-		button_character_instance(player* boss, button_character_definition* def, character* parent, int id) :
-			character(boss, parent, id),
+		button_character_instance(player* player, button_character_definition* def, character* parent, int id) :
+			character(player, parent, id),
 			m_def(def),
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
@@ -645,8 +645,8 @@ namespace gameswf
 	// button_character_definition
 	//
 
-	button_character_definition::button_character_definition(player* boss) :
-		character_def(boss),
+	button_character_definition::button_character_definition(player* player) :
+		character_def(player),
 		m_sound(NULL)
 	// Constructor.
 	{
@@ -798,7 +798,7 @@ namespace gameswf
 	character*	button_character_definition::create_character_instance(character* parent, int id)
 	// Create a mutable instance of our definition.
 	{
-		character*	ch = new button_character_instance(get_boss(), this, parent, id);
+		character*	ch = new button_character_instance(get_player(), this, parent, id);
 		// instanciate_registered_class( ch );	//TODO: test it
 		return ch;
 	}

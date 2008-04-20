@@ -19,7 +19,7 @@ namespace gameswf
 			character* target = cast_to<character>(fn.arg(0).to_object());
 			if (target)
 			{
-				fn.result->set_as_object(new as_color(fn.get_boss(), target));
+				fn.result->set_as_object(new as_color(fn.get_player(), target));
 			}
 		}
 	}
@@ -92,7 +92,7 @@ namespace gameswf
 		Uint8 b = (Uint8) ceil(cx.m_[2][0] * 255.0f);
 		Uint8 a = (Uint8) ceil(cx.m_[3][0] * 255.0f);
 
-		as_object* tobj = new as_object(fn.get_boss());
+		as_object* tobj = new as_object(fn.get_player());
 		tobj->set_member("ra", r / 255.0f * 100.0f);	// percent (-100..100)
 		tobj->set_member("rb", r);	// value	(-255..255)
 		tobj->set_member("ga", g / 255.0f * 100.0f);	// percent (-100..100)
@@ -168,8 +168,8 @@ namespace gameswf
 		}		
 	}
 
-	as_color::as_color(player* boss, character* target) :
-		as_object(boss),
+	as_color::as_color(player* player, character* target) :
+		as_object(player),
 		m_target(target)
 	{
 		assert(target);

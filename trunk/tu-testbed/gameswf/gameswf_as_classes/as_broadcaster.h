@@ -17,7 +17,7 @@ namespace gameswf
 {
 
 	// Create built-in broadcaster object.
-	as_object* broadcaster_init(player* boss);
+	as_object* broadcaster_init(player* player);
 
 	struct as_listener : public as_object
 	{
@@ -29,7 +29,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_listener(player* boss);
+		as_listener(player* player);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		void add(as_object* listener);
 		void remove(as_object* listener);

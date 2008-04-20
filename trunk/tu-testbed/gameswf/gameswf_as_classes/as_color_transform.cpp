@@ -31,7 +31,7 @@ namespace gameswf
 	void	as_global_color_transform_ctor(const fn_call& fn)
 	{
 		smart_ptr<as_color_transform>	obj;
-		obj = new as_color_transform(fn.get_boss());
+		obj = new as_color_transform(fn.get_player());
 
 		switch ( fn.nargs )
 		{
@@ -58,8 +58,8 @@ namespace gameswf
 		 fn.result->set_as_object(obj.get_ptr());
 	}
 
-	as_color_transform::as_color_transform(player* boss) :
-		as_object(boss)
+	as_color_transform::as_color_transform(player* player) :
+		as_object(player)
 	{
 	}
 

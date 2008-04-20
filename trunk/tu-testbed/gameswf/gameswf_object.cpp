@@ -124,17 +124,17 @@ namespace gameswf
 	void	as_global_object_ctor(const fn_call& fn)
 	// Constructor for ActionScript class Object.
 	{
-		fn.result->set_as_object(new as_object(fn.get_boss()));
+		fn.result->set_as_object(new as_object(fn.get_player()));
 	}
 
 	// this stuff should be high optimized
 	// therefore we can't use here set_member(...)
-	as_object::as_object(player* boss) :
-		m_boss(boss),
+	as_object::as_object(player* player) :
+		m_player(player),
 		m_watch(NULL)
 	{
 		// as_c_function has no pointer to player
-//		assert(boss);
+//		assert(player);
 	}
 
 	as_object::~as_object()
@@ -169,7 +169,7 @@ namespace gameswf
 			m_watch->get(name, &watch);
 			if (watch.m_func)
 			{
-				as_environment env(get_boss());
+				as_environment env(get_player());
 				env.push(watch.m_user_data);	// params
 				env.push(val);		// newVal
 				env.push(old_val);	// oldVal
@@ -309,7 +309,7 @@ namespace gameswf
 				as_value	method;
 				if (get_member(method_name, &method))
 				{
-					as_environment env(get_boss());
+					as_environment env(get_player());
 					int nargs = 0;
 					if (id.m_args)
 					{
@@ -461,7 +461,7 @@ namespace gameswf
 		// absolute path ?
 		if (*path.c_str() == '/')
 		{
-			return m_boss->get_root()->get_root_movie()->find_target(path.c_str() + 1);
+			return m_player->get_root()->get_root_movie()->find_target(path.c_str() + 1);
 		}
 
 		const char* slash = strchr(path.c_str(), '/');
@@ -503,10 +503,10 @@ namespace gameswf
 	void as_object::this_alive()
 	{
 		// Whether there were we here already ?
-		if (m_boss != NULL && m_boss->is_garbage(this))
+		if (m_player != NULL && m_player->is_garbage(this))
 		{
 			// 'this' and its members is not garbage
-			m_boss->set_alive(this);
+			m_player->set_alive(this);
 			for (stringi_hash<as_member>::iterator it = m_members.begin();
 				it != m_members.end(); ++it)
 			{
@@ -537,14 +537,14 @@ namespace gameswf
 
 	as_object* as_object::get_global() const
 	{
-		assert(m_boss != NULL);
-		return m_boss->get_global();
+		assert(m_player != NULL);
+		return m_player->get_global();
 	}
 
 	root* as_object::get_root() const
 	{
-		assert(m_boss != NULL);
-		return m_boss->get_root(); 
+		assert(m_player != NULL);
+		return m_player->get_root(); 
 	}
 
 }

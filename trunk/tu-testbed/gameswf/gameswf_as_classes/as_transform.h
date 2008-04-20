@@ -25,7 +25,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_transform(player* boss, character* movie_clip);
+		as_transform(player* player, character* movie_clip);
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);

@@ -24,9 +24,9 @@ namespace gameswf
 	void	as_global_movieclip_ctor(const fn_call& fn)
 	// Constructor for ActionScript class XMLSocket
 	{
-		root* rm = fn.get_boss()->get_root();
-		sprite_definition* empty_sprite_def = new sprite_definition(fn.get_boss(), NULL);
-		character* ch = new sprite_instance(fn.get_boss(), empty_sprite_def,
+		root* rm = fn.get_player()->get_root();
+		sprite_definition* empty_sprite_def = new sprite_definition(fn.get_player(), NULL);
+		character* ch = new sprite_instance(fn.get_player(), empty_sprite_def,
 			rm, rm->get_root_movie(), 0);
 		fn.result->set_as_object(ch);
 	}

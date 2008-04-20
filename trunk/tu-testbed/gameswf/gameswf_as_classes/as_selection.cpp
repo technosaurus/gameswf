@@ -27,9 +27,9 @@ namespace gameswf
 		fn.result->set_bool(false);
 	}
 
-	as_object* selection_init(player* boss)
+	as_object* selection_init(player* player)
 	{
-		as_object* sel = new as_selection(boss);
+		as_object* sel = new as_selection(player);
 
 		// methods
 		sel->builtin_member("setFocus", as_selection_setfocus);
@@ -42,8 +42,8 @@ namespace gameswf
 		return sel;
 	}
 
-	as_selection::as_selection(player* boss) :
-		as_object(boss)
+	as_selection::as_selection(player* player) :
+		as_object(player)
 	{
 	}
 };

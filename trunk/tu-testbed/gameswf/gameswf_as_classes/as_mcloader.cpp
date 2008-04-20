@@ -56,7 +56,8 @@ namespace gameswf
 			array<as_value> event_args;	// for event handler args
 			event_args.push_back(as_value());	// undefined
 
-			movie_definition*	md = create_movie(fn.get_boss(), get_full_url(fn.arg(0).to_string()));
+			movie_definition*	md = create_movie(fn.get_player(),
+				get_full_url(fn.get_player()->get_workdir(), fn.arg(0).to_string()));
 			if (md == NULL)
 			{
 				IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", fn.arg(0).to_string()));
@@ -93,7 +94,7 @@ namespace gameswf
 			sprite_instance* m = cast_to<sprite_instance>(fn.arg(0).to_object());
 			if (m)
 			{
-				as_object* info = new as_object(fn.get_boss());
+				as_object* info = new as_object(fn.get_player());
 				info->set_member("bytesLoaded", (int) m->get_loaded_bytes());
 				info->set_member("bytesTotal", (int) m->get_file_bytes());
 				fn.result->set_as_object(info);
@@ -106,11 +107,11 @@ namespace gameswf
 	void	as_global_mcloader_ctor(const fn_call& fn)
 	// Constructor for ActionScript class MovieClipLoader
 	{
-		fn.result->set_as_object(new as_mcloader(fn.get_boss()));
+		fn.result->set_as_object(new as_mcloader(fn.get_player()));
 	}
 
-	as_mcloader::as_mcloader(player* boss) :
-		as_object(boss)
+	as_mcloader::as_mcloader(player* player) :
+		as_object(player)
 	{
 		builtin_member("addListener", as_mcloader_addlistener);
 		builtin_member("removeListener", as_mcloader_removelistener);

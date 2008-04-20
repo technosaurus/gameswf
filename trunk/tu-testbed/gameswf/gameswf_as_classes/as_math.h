@@ -13,7 +13,7 @@
 
 namespace gameswf
 {
-	as_object* math_init(player* boss);
+	as_object* math_init(player* player);
 }
 
 #endif

@@ -51,7 +51,7 @@ namespace gameswf
 		string_hash<tu_string> m_received_values;
 		array<request_data> m_requests;
 
-		as_loadvars(player* boss);
+		as_loadvars(player* player);
 
 		bool	send_and_load(const char * url, as_object * target, const tu_string & method);
 		bool	load(const char * url);

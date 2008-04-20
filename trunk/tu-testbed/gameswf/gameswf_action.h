@@ -149,7 +149,7 @@ namespace gameswf
 			const array<with_stack_entry>& initial_with_stack,
 			bool is_function2) const;
 
-		static as_object* load_as_plugin(player* boss,
+		static as_object* load_as_plugin(player* player,
 			const tu_string& classname, const array<as_value>& params);
 		int	get_length() const { return m_buffer.size(); }
 		void operator=(const action_buffer& ab);

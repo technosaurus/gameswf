@@ -99,7 +99,7 @@ namespace gameswf
 		float m_thickness;
 		float m_sharpness;
 
-		text_character_def(player* boss, movie_definition_sub* root_def);
+		text_character_def(player* player, movie_definition_sub* root_def);
 
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	display(character* inst);
@@ -183,8 +183,8 @@ namespace gameswf
 		float m_thickness;
 		float m_sharpness;
 
-		edit_text_character_def(player* boss, int width, int height);
-		edit_text_character_def(player* boss, movie_definition_sub* root_def);
+		edit_text_character_def(player* player, int width, int height);
+		edit_text_character_def(player* player, movie_definition_sub* root_def);
 		~edit_text_character_def();
 
 		character*	create_character_instance(character* parent, int id);
@@ -232,7 +232,7 @@ namespace gameswf
 		float	m_leading;
 		rgba m_background_color;
 
-		edit_text_character(player* boss, character* parent, edit_text_character_def* def, int id);
+		edit_text_character(player* player, character* parent, edit_text_character_def* def, int id);
 		~edit_text_character();
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}

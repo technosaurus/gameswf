@@ -82,7 +82,7 @@ namespace gameswf
 			as_object* obj = fn.arg(0).to_object();
 			if (obj)
 			{
-				obj->set_member("_listeners", new as_listener(fn.get_boss()));
+				obj->set_member("_listeners", new as_listener(fn.get_player()));
 				obj->set_member("addListener", as_broadcast_addlistener);
 				obj->set_member("removeListener", as_broadcast_removelistener);
 				obj->set_member("broadcastMessage", as_broadcast_sendmessage);
@@ -99,15 +99,15 @@ namespace gameswf
 		}
 	}
 		
-	as_object* broadcaster_init(player* boss)
+	as_object* broadcaster_init(player* player)
 	{
-		as_object* bc = new as_object(boss);
+		as_object* bc = new as_object(player);
 		bc->builtin_member("initialize", as_broadcaster_initialize);
 		return bc;
 	}
 
-	as_listener::as_listener(player* boss) :
-		as_object(boss),
+	as_listener::as_listener(player* player) :
+		as_object(player),
 		m_reentrance(false)
 	{
 		builtin_member("length", as_value(as_broadcaster_length, NULL));

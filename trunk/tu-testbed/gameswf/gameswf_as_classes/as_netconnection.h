@@ -27,7 +27,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_netconnection(player* boss);
+		as_netconnection(player* player);
 		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 	};
 

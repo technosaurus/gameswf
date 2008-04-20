@@ -52,8 +52,8 @@ namespace gameswf
 	// x3ds_instance
 	//
 
-	x3ds_instance::x3ds_instance(player* boss, x3ds_definition* def, character* parent, int id)	:
-		character(boss, parent, id),
+	x3ds_instance::x3ds_instance(player* player, x3ds_definition* def, character* parent, int id)	:
+		character(player, parent, id),
 		m_def(def),
 		m_current_frame(0.0f),
 		m_play_state(PLAY)
@@ -511,7 +511,7 @@ namespace gameswf
 			as_value	method;
 			if (get_member(method_name, &method))
 			{
-				as_environment env(get_boss());
+				as_environment env(get_player());
 				gameswf::call_method(method, &env, this, 0, env.get_top_index());
 				called = true;
 			}

@@ -26,7 +26,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		exported_module as_array(player* boss);
+		exported_module as_array(player* player);
 		exported_module virtual const char* to_string();
 		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 

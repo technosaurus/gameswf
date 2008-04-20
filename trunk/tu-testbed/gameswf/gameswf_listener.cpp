@@ -29,7 +29,7 @@ namespace gameswf
 	{
 		// may be called from multithread plugin ==>
 		// we should check current root
-		if (fn.get_boss()->get_root() == NULL)
+		if (fn.get_player()->get_root() == NULL)
 		{
 			return;
 		}

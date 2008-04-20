@@ -35,6 +35,7 @@ namespace gameswf
 		smart_ptr<as_object>	m_global;
 		Uint64 m_start_time;
 		weak_ptr<root> m_current_root;
+		tu_string m_workdir;
 
 		exported_module  player();
 		exported_module  ~player();
@@ -46,6 +47,8 @@ namespace gameswf
 		exported_module void verbose_action(bool val);
 		exported_module void verbose_parse(bool val);
 		exported_module void set_bootup_options(const tu_string& param);
+		exported_module const char* get_workdir() const;
+		exported_module void set_workdir(const char* dir);
 	
 		// Create/hook built-ins.
 		exported_module void action_init();
