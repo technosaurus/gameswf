@@ -41,7 +41,7 @@ namespace gameswf
 
 			assert(m_func.is_function());
 
-			as_environment env;
+			as_environment env(get_boss());
 			int n = m_param.size();
 			for (int i = 0; i < n; i++)
 			{

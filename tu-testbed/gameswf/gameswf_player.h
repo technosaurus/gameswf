@@ -18,17 +18,6 @@
 namespace gameswf
 {
 
-	struct heap;
-	struct player;
-
-
-	exported_module void set_current_player(player* p);
-	exported_module player* set_current_player(void);
-
-	exported_module as_object* get_global();
-	heap* get_heap();
-	Uint64 get_start_time();
-
 	stringi_hash< smart_ptr<character_def> >* get_chardef_library();
 
 	as_value	get_property(as_object* obj, int prop_number);
@@ -40,22 +29,9 @@ namespace gameswf
 	string_hash<tu_loadlib*>* get_shared_libs();
 	void clear_shared_libs();
 
-
-	struct heap
-	{
-		hash<smart_ptr<as_object>, bool> m_heap;
-
-		void clear();
-		bool is_garbage(as_object* obj);
-		void set(as_object* obj, bool garbage);
-		void set_as_garbage();
-		void clear_garbage();
-
-	};
-
 	struct player : public ref_counted
 	{
-		heap m_heap;
+		hash<smart_ptr<as_object>, bool> m_heap;
 		smart_ptr<as_object>	m_global;
 		Uint64 m_start_time;
 		weak_ptr<root> m_current_root;
@@ -63,6 +39,10 @@ namespace gameswf
 		exported_module  player();
 		exported_module  ~player();
 
+		// external interface
+		exported_module root* get_root();
+		exported_module void set_root(root* m);
+		exported_module void notify_key_event(key::code k, bool down);
 		exported_module void verbose_action(bool val);
 		exported_module void verbose_parse(bool val);
 		exported_module void set_bootup_options(const tu_string& param);
@@ -72,6 +52,18 @@ namespace gameswf
 	
 		// Clean up any stray heap stuff we've allocated.
 		exported_module void	action_clear();
+	
+		as_object* get_global() const;
+		void notify_key_object(key::code k, bool down);
+		Uint64 get_start_time()	{ return m_start_time; }
+
+		// the garbage manager
+		void set_alive(as_object* obj);
+		bool is_garbage(as_object* obj);
+		void clear_heap();
+		void set_as_garbage();
+		void clear_garbage();
+		
 
 	};
 }

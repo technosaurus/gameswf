@@ -37,6 +37,7 @@ namespace gameswf
 		m_play_state(PLAY),
 		m_current_frame(0),
 		m_update_frame(true),
+		m_as_environment(boss),
 		m_mouse_state(UP),
 		m_enabled(true),
 		m_on_event_load_called(false)
@@ -52,7 +53,7 @@ namespace gameswf
 		memset(&m_init_actions_executed[0], 0,
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
-		get_heap()->set(this, false);
+		m_boss->set_alive(this);
 	}
 
 	sprite_instance::~sprite_instance()
@@ -336,7 +337,7 @@ namespace gameswf
 
 		// 'this' and its variables is not garbage
 		this_alive();
-		get_heap()->set(this, false);
+		m_boss->set_alive(this);
 
 	}
 
@@ -345,7 +346,7 @@ namespace gameswf
 	void sprite_instance::alive()
 	{
 		this_alive();
-		get_heap()->set(this, false);
+		m_boss->set_alive(this);
 
 		// mark display list as useful
 		for (int i = 0, n = m_display_list.size(); i < n; i++)
@@ -770,7 +771,7 @@ namespace gameswf
 		{
 			root* new_inst = md->create_instance();
 			character* ch = new_inst->get_root_movie();
-			set_current_root(new_inst);
+			m_boss->set_root(new_inst);
 
 //			ch->on_event(event_id::LOAD);
 			return ch;

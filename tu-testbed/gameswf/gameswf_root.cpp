@@ -25,7 +25,7 @@ namespace gameswf
 		return s_gameswf_engine;
 	}
 
-	root::root(movie_def_impl* def)	:
+	root::root(player* boss, movie_def_impl* def)	:
 		m_def(def),
 		m_movie(NULL),
 		m_viewport_x0(0),
@@ -40,14 +40,18 @@ namespace gameswf
 		m_userdata(NULL),
 		m_on_event_load_called(false),
 		m_current_active_entity(NULL),
+
 		// the first time we needs do advance() and
 		// then display() certainly
 		m_time_remainder(1.0f),
-		m_frame_time(1.0f)
+
+		m_frame_time(1.0f),
+		m_boss(boss)
 	{
 		assert(m_def != NULL);
 		set_display_viewport(0, 0, (int) m_def->get_width_pixels(), (int) m_def->get_height_pixels());
 		m_frame_time = 1.0f / get_frame_rate();
+		boss->set_root(this);
 	}
 
 	root::~root()
@@ -242,9 +246,9 @@ namespace gameswf
 		return m_def->get_frame_rate();
 	}
 
-	void notify_key_object(key::code k, bool down);
+	void notify_key_object(player* boss, key::code k, bool down);
 
-	void	root::notify_key_event(key::code k, bool down)
+	void	root::notify_key_event(player* boss, key::code k, bool down)
 	{
 		// multithread plugins can call gameswf core therefore we should 
 		// use gameswf mutex to lock gameswf engine
@@ -252,7 +256,7 @@ namespace gameswf
 
 		// First notify global Key object
 		// listeners that uses the last keypressed code
-		notify_key_object(k, down);
+		boss->notify_key_object(k, down);
 
 		// Notify keypress listeners.
 		if (down)
@@ -394,7 +398,7 @@ namespace gameswf
 		{
 
 			// mark all as garbage
-			get_heap()->set_as_garbage();
+			m_boss->set_as_garbage();
 
 			// this should be called infinitely to not repeat
 			// the game situation after restart
@@ -411,7 +415,7 @@ namespace gameswf
 			}
 			m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
 
-			get_heap()->clear_garbage();
+			m_boss->clear_garbage();
 
 		}
 

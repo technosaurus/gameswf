@@ -63,8 +63,6 @@ namespace gameswf
 	struct as_object;
 	struct movie_definition;
 
-	exported_module root* get_current_root();
-
 	//
 	// Log & error reporting control.
 	//
@@ -440,16 +438,6 @@ namespace gameswf
 	// the halting problem).
 	void	precompute_cached_data(movie_definition* movie_def);
 
-	// Maximum release of resources.  Calls clear_library() and
-	// fontlib::clear(), and also clears some extra internal stuff
-	// that may have been allocated (e.g. global ActionScript
-	// objects).  This should get all gameswf structures off the
-	// heap, with the exception of any objects that are still
-	// referenced by the host program and haven't had drop_ref()
-	// called on them.
-	exported_module void	clear_gameswf();
-
-
 	//
 	// Library management
 	//
@@ -772,13 +760,6 @@ namespace gameswf
 		virtual bool is_visible(const rect& bound) = 0;
 		virtual void open() = 0;
 	};
-
-	// Key events are global throughout gameswf.
-	// @@ Maybe someday make these local to the character?
-	// Vitaly: I do not see the sense to send events inactive movie
-	// in multifile games
-//	void	notify_key_event(key::code k, bool down);
-
 
 	// Some optional helpers.
 	namespace tools

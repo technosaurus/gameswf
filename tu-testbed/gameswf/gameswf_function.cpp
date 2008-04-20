@@ -26,7 +26,7 @@ namespace gameswf
 				as_object* func = properties->m_this_ptr.get_ptr();
 				if (func)
 				{
-					as_environment env;
+					as_environment env(fn.get_boss());
 					int nargs = 0;
 					if (fn.nargs > 1)
 					{
@@ -241,7 +241,7 @@ namespace gameswf
 			if (m_function2_flags & 0x40)
 			{
 				// Put '_root' in a register.
-				env->set_register(current_reg, get_current_root()->get_root_movie());
+				env->set_register(current_reg, env->get_root()->get_root_movie());
 				current_reg++;
 			}
 
@@ -258,7 +258,8 @@ namespace gameswf
 			if (m_function2_flags & 0x100)
 			{
 				// Put '_global' in a register.
-				IF_VERBOSE_ACTION(log_msg("-------------- preload _global=0x%X to register %d\n", get_global(), current_reg));
+				IF_VERBOSE_ACTION(log_msg("-------------- preload _global=0x%X to register %d\n", 
+					get_global(), current_reg));
 				env->set_register(current_reg, get_global());
 				current_reg++;
 			}

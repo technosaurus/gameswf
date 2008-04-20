@@ -798,7 +798,7 @@ namespace gameswf
 					as_value function;
 					if (get_member("onSetFocus", &function))
 					{
-						as_environment env;
+						as_environment env(get_boss());
 						env.push(as_value());	// oldfocus, TODO
 						gameswf::call_method(function, &env, this, 1, env.get_top_index());
 					}
@@ -819,7 +819,7 @@ namespace gameswf
 					as_value function;
 					if (get_member("onKillFocus", &function))
 					{
-						as_environment env;
+						as_environment env(get_boss());
 						env.push(as_value());	// newfocus, TODO
 						gameswf::call_method(function, &env, this, 1, env.get_top_index());
 					}

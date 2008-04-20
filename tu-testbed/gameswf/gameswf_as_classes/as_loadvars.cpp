@@ -160,7 +160,7 @@ namespace gameswf
 			as_value function;
 			if (target && target->get_member("onLoad", &function))
 			{
-				as_environment env;
+				as_environment env(get_boss());
 				env.push(false);
 				call_method(function, &env, target, 1, env.get_top_index());
 			}
@@ -204,7 +204,7 @@ namespace gameswf
 			as_value function;
 			if (get_member("onLoad", &function))
 			{
-				as_environment env;
+				as_environment env(get_boss());
 				env.push(false);
 				call_method(function, &env, this, 1, env.get_top_index());
 			}
@@ -276,21 +276,21 @@ namespace gameswf
 						as_value function;
 						if (request.m_target->get_member("onHttpStatus", &function))
 						{
-							as_environment env;
+							as_environment env(get_boss());
 							env.push(request.m_http_status);
 							call_method(function, &env, request.m_target, 0, env.get_top_index());
 						}
 
 						if (request.m_target->get_member("onLoad", &function))
 						{
-							as_environment env;
+							as_environment env(get_boss());
 							env.push(request.m_state != PARSE_END);
 							call_method(function, &env, request.m_target, 1, env.get_top_index());
 						}
 
 						if (request.m_target->get_member("onData", &function))
 						{
-							as_environment env;
+							as_environment env(get_boss());
 							env.push(request.m_rawdata);
 							call_method(function, &env, request.m_target, 1, env.get_top_index());
 						}

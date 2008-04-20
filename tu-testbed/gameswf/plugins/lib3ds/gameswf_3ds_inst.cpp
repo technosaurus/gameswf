@@ -511,7 +511,7 @@ namespace gameswf
 			as_value	method;
 			if (get_member(method_name, &method))
 			{
-				as_environment env;
+				as_environment env(get_boss());
 				gameswf::call_method(method, &env, this, 0, env.get_top_index());
 				called = true;
 			}

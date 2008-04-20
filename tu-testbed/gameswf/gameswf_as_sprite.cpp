@@ -24,9 +24,10 @@ namespace gameswf
 	void	as_global_movieclip_ctor(const fn_call& fn)
 	// Constructor for ActionScript class XMLSocket
 	{
+		root* rm = fn.get_boss()->get_root();
 		sprite_definition* empty_sprite_def = new sprite_definition(fn.get_boss(), NULL);
 		character* ch = new sprite_instance(fn.get_boss(), empty_sprite_def,
-			get_current_root(), get_current_root()->get_root_movie(), 0);
+			rm, rm->get_root_movie(), 0);
 		fn.result->set_as_object(ch);
 	}
 
@@ -64,17 +65,16 @@ namespace gameswf
 	void	sprite_start_drag(const fn_call& fn)
 	{
 		sprite_instance* sprite = sprite_getptr(fn);
-
-		get_current_root()->start_drag(sprite);
+		fn.get_root()->start_drag(sprite);
 	}
 
 	void	sprite_stop_drag(const fn_call& fn)
 	{
 		sprite_instance* sprite = sprite_getptr(fn);
 
-		if( get_current_root()->m_drag_state.m_character == sprite )
+		if (fn.get_root()->m_drag_state.m_character == sprite )
 		{
-			get_current_root()->stop_drag();
+			fn.get_root()->stop_drag();
 		}
 	}
 

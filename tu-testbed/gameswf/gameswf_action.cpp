@@ -1023,7 +1023,7 @@ namespace gameswf
 
 				case 0x34:	// get timer
 					// Push milliseconds since we started playing.
-					env->push((double) (tu_timer::get_ticks() - get_start_time()));
+					env->push((double) (tu_timer::get_ticks() - env->get_boss()->get_start_time()));
 					break;
 
 				case 0x35:	// mb substring
@@ -1222,7 +1222,7 @@ namespace gameswf
 					// places new object to heap
 					if (new_obj.to_object())
 					{
-						get_heap()->set(new_obj.to_object(), false);
+						env->get_boss()->set_alive(new_obj.to_object());
 					}
 
 					env->drop(nargs);
@@ -1558,7 +1558,7 @@ namespace gameswf
 
 
 					// places new object to heap
-					get_heap()->set(new_obj.get_ptr(), false);
+					env->get_boss()->set_alive(new_obj.get_ptr());
 
 					env->drop(nargs);
 					env->push(new_obj.get_ptr());

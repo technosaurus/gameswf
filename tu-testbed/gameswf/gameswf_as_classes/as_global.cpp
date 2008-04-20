@@ -75,7 +75,7 @@ namespace gameswf
 	// Undocumented ASSetPropFlags function
 	// Works only for as_object for now
 	{
-		int version = get_current_root()->get_movie_version();
+		int version = fn.get_boss()->get_root()->get_movie_version();
 
 		// Check the arguments
 		assert(fn.nargs == 3 || fn.nargs == 4);

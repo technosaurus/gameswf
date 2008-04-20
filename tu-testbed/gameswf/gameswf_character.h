@@ -525,9 +525,6 @@ namespace gameswf
 
 		virtual bool	is_visible();
 
-		// External interface for the host to report key events.
-		virtual void	notify_key_event(key::code k, bool down) { assert(0); }
-
 		// Movie info
 		virtual int	get_movie_version() { return 0; }
 		virtual int	get_movie_width() { return 0; }

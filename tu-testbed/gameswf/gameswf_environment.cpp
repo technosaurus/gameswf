@@ -249,7 +249,7 @@ namespace gameswf
 				break;
 
 			case M_GLOBAL:
-				val.set_as_object(get_global());
+				val.set_as_object(get_boss()->get_global());
 				return val;
 
 			case MTHIS:
@@ -258,12 +258,12 @@ namespace gameswf
 
 			case M_ROOT:
 			case M_LEVEL0:
-				val.set_as_object(get_current_root()->get_root_movie());
+				val.set_as_object(get_root()->get_root_movie());
 				return val;
 		}
 
 		// check _global.member
-		if (get_global()->get_member(varname, &val))
+		if (get_boss()->get_global()->get_member(varname, &val))
 		{
 			return val;
 		}
@@ -669,15 +669,26 @@ namespace gameswf
 
 	player* as_environment::get_boss() const
 	{
-		assert(m_target != NULL);
-		return m_target->get_boss();
+		return m_boss.get_ptr();
 	}
+
+	root* as_environment::get_root() const
+	{
+		return m_boss->get_root();
+	}
+
+	//  fn_call 
 
 	player* fn_call::get_boss() const
 	{
 		assert(env);
-		assert(env->m_target != NULL);
-		return env->m_target->get_boss();
+		return env->get_boss();
+	}
+
+	root* fn_call::get_root() const
+	{
+		assert(env);
+		return env->get_boss()->get_root();
 	}
 
 }
