@@ -12,7 +12,7 @@
 #include "gameswf/gameswf_render.h"
 
 #if TU_CONFIG_LINK_TO_LIB3DS == 1
-	#include "plugins/lib3ds/gameswf_3ds_inst.h"
+	#include "extensions/lib3ds/gameswf_3ds_inst.h"
 #endif
 
 namespace gameswf
@@ -55,7 +55,7 @@ namespace gameswf
 	}
 
 	// static
-	tu_string get_full_url(const char* url)
+	tu_string get_full_url(const tu_string& workdir, const char* url)
 	{
 		 tu_string fn;
 
@@ -66,7 +66,7 @@ namespace gameswf
 		}
 		else
 		{
-			fn = get_workdir();
+			fn = workdir;
 		}
 		fn += url;
 
@@ -120,7 +120,7 @@ namespace gameswf
 		}
 
 		// is path relative ?
-		tu_string fn = get_full_url(url);
+		tu_string fn = get_full_url(get_player()->get_workdir(), url);
 		switch (get_file_type(fn.c_str()))
 		{
 			default:
@@ -128,7 +128,7 @@ namespace gameswf
 
 			case SWF:
 			{
-				movie_definition*	md = create_movie(get_boss(), fn.c_str());
+				movie_definition*	md = create_movie(get_player(), fn.c_str());
 				if (md)
 				{
 					return target->replace_me(md);
@@ -141,7 +141,7 @@ namespace gameswf
 #if TU_CONFIG_LINK_TO_LIB3DS == 0
 				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
 #else
-				x3ds_definition* x3ds = create_3ds_definition(get_boss(), fn.c_str());
+				x3ds_definition* x3ds = create_3ds_definition(get_player(), fn.c_str());
 				if (x3ds)
 				{
 					if (x3ds->is_loaded())
@@ -167,7 +167,7 @@ namespace gameswf
 					bitmap_info* bi = render::create_bitmap_info_rgb(im);
 					delete im;
 
-					bitmap_character*	jpeg = new bitmap_character(get_boss(), bi);
+					bitmap_character*	jpeg = new bitmap_character(get_player(), bi);
 					return target->replace_me(jpeg);
 				}
 #endif
@@ -249,7 +249,7 @@ namespace gameswf
 				break;
 
 			case M_GLOBAL:
-				val.set_as_object(get_boss()->get_global());
+				val.set_as_object(get_player()->get_global());
 				return val;
 
 			case MTHIS:
@@ -263,7 +263,7 @@ namespace gameswf
 		}
 
 		// check _global.member
-		if (get_boss()->get_global()->get_member(varname, &val))
+		if (get_player()->get_global()->get_member(varname, &val))
 		{
 			return val;
 		}
@@ -667,28 +667,28 @@ namespace gameswf
 		}
 	}
 
-	player* as_environment::get_boss() const
+	player* as_environment::get_player() const
 	{
-		return m_boss.get_ptr();
+		return m_player.get_ptr();
 	}
 
 	root* as_environment::get_root() const
 	{
-		return m_boss->get_root();
+		return m_player->get_root();
 	}
 
 	//  fn_call 
 
-	player* fn_call::get_boss() const
+	player* fn_call::get_player() const
 	{
 		assert(env);
-		return env->get_boss();
+		return env->get_player();
 	}
 
 	root* fn_call::get_root() const
 	{
 		assert(env);
-		return env->get_boss()->get_root();
+		return env->get_player()->get_root();
 	}
 
 }

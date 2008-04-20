@@ -51,7 +51,7 @@ namespace gameswf
 	
 	character* video_stream_definition::create_character_instance(character* parent, int id)
 	{
-		character* ch = new video_stream_instance(get_boss(), this, parent, id);
+		character* ch = new video_stream_instance(get_player(), this, parent, id);
 		// instanciate_registered_class(ch);	//TODO: test it
 		return ch;
 	}
@@ -71,9 +71,9 @@ namespace gameswf
 		video->attach_netstream((as_netstream*) fn.arg(0).to_object());
 	}
 
-	video_stream_instance::video_stream_instance(player* boss, video_stream_definition* def, 
+	video_stream_instance::video_stream_instance(player* player, video_stream_definition* def, 
 			character* parent, int id)	:
-		character(boss, parent, id),
+		character(player, parent, id),
 		m_def(def)
 	{
 		assert(m_def != NULL);

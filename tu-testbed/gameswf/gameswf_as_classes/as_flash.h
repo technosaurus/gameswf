@@ -11,7 +11,7 @@
 
 namespace gameswf
 {
-	as_object* flash_init(player* boss);
+	as_object* flash_init(player* player);
 }
 
 #endif

@@ -24,7 +24,7 @@ struct mytable: public as_object
 		else return as_object::is(class_id);
 	}
 
-	mytable(player* boss);
+	mytable(player* player);
 	~mytable();
 
 	virtual bool	get_member(const tu_stringi& name, as_value* val);

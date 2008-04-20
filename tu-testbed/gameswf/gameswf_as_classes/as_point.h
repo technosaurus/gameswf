@@ -24,7 +24,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_point(player* boss, float x, float y);
+		as_point(player* player, float x, float y);
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);

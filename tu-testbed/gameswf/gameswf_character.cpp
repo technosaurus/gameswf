@@ -12,8 +12,8 @@
 namespace gameswf
 {
 
-	character::character(player* boss, character* parent, int id)	:
-		as_object(boss),
+	character::character(player* player, character* parent, int id)	:
+		as_object(player),
 		m_id(id),
 		m_parent(parent),
 		m_depth(0),

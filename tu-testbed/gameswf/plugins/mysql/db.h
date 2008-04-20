@@ -24,7 +24,7 @@ struct mydb : public as_object
 		else return as_object::is(class_id);
 	}
 
-	mydb(player* boss);
+	mydb(player* player);
 	~mydb();
 
 	bool connect(const char* host, const char* dbname, const char* user,

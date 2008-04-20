@@ -64,7 +64,7 @@ namespace gameswf
 		bool m_on_event_load_called;
 		smart_ptr<character> m_canvas;
 
-		sprite_instance(player* boss, movie_definition_sub* def, root* r, character* parent, int id);
+		sprite_instance(player* player, movie_definition_sub* def, root* r, character* parent, int id);
 		virtual ~sprite_instance();
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}

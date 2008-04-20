@@ -41,11 +41,11 @@ namespace gameswf
 			return m_class_id == class_id;
 		}
 
-		character_def(player* boss)	:
-			m_boss(boss),
+		character_def(player* player)	:
+			m_player(player),
 			m_id(-1)
 		{
-			assert(boss);
+			assert(player);
 		}
 
 		virtual ~character_def() {}
@@ -69,13 +69,13 @@ namespace gameswf
 
 		void set_registered_class_constructor(const as_value & value);
 		void instanciate_registered_class(character * ch);
-		player* get_boss() const { return m_boss.get_ptr(); }
+		player* get_player() const { return m_player.get_ptr(); }
 
 		private:
 
 		int	m_id;
 		weak_ptr<as_function> m_registered_class_constructor;
-		weak_ptr<player> m_boss;
+		weak_ptr<player> m_player;
 
 	};
 
@@ -157,7 +157,7 @@ namespace gameswf
 			STOP
 		};
 
-		character(player* boss, character* parent, int id);
+		character(player* player, character* parent, int id);
 
 		//
 		// Mouse/Button interface.

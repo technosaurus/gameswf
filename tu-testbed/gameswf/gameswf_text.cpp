@@ -174,8 +174,8 @@ namespace gameswf
 	}
 
 
-	text_character_def::text_character_def(player* boss, movie_definition_sub* root_def) :
-		character_def(boss),
+	text_character_def::text_character_def(player* player, movie_definition_sub* root_def) :
+		character_def(player),
 		m_root_def(root_def),
 		m_use_flashtype(false),
 		m_grid_fit(0),
@@ -354,7 +354,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		text_character_def*	ch = new text_character_def(m->get_boss(), m);
+		text_character_def*	ch = new text_character_def(m->get_player(), m);
 		IF_VERBOSE_PARSE(log_msg("text_character, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 
@@ -369,8 +369,8 @@ namespace gameswf
 	//
 
 	// creates empty dynamic text field
-	edit_text_character_def::edit_text_character_def(player* boss, int width, int height) :
-		character_def(boss),
+	edit_text_character_def::edit_text_character_def(player* player, int width, int height) :
+		character_def(player),
 		m_root_def(NULL),
 		m_word_wrap(false),
 		m_multiline(false),
@@ -401,11 +401,11 @@ namespace gameswf
 		m_rect.m_y_max = PIXELS_TO_TWIPS(height);
 
 		m_color.set(0, 0, 0, 255);
-		m_font = new font(boss);
+		m_font = new font(player);
 	}
 
-	edit_text_character_def::edit_text_character_def(player* boss, movie_definition_sub* root_def) :
-		character_def(boss),
+	edit_text_character_def::edit_text_character_def(player* player, movie_definition_sub* root_def) :
+		character_def(player),
 		m_root_def(root_def),
 		m_word_wrap(false),
 		m_multiline(false),
@@ -546,9 +546,9 @@ namespace gameswf
 		}
 	}
 
-	edit_text_character::edit_text_character(player* boss, character* parent,
+	edit_text_character::edit_text_character(player* player, character* parent,
 			edit_text_character_def* def, int id)	:
-		character(boss, parent, id),
+		character(player, parent, id),
 		m_def(def),
 		m_has_focus(false), 
 		m_cursor(0), 
@@ -686,7 +686,7 @@ namespace gameswf
 			}
 			else
 			{
-				m_font = new font(get_boss());
+				m_font = new font(get_player());
 			}
 			m_font->set_bold(bold);
 			m_font->set_italic(italic);
@@ -798,7 +798,7 @@ namespace gameswf
 					as_value function;
 					if (get_member("onSetFocus", &function))
 					{
-						as_environment env(get_boss());
+						as_environment env(get_player());
 						env.push(as_value());	// oldfocus, TODO
 						gameswf::call_method(function, &env, this, 1, env.get_top_index());
 					}
@@ -819,7 +819,7 @@ namespace gameswf
 					as_value function;
 					if (get_member("onKillFocus", &function))
 					{
-						as_environment env(get_boss());
+						as_environment env(get_player());
 						env.push(as_value());	// newfocus, TODO
 						gameswf::call_method(function, &env, this, 1, env.get_top_index());
 					}
@@ -1464,7 +1464,7 @@ namespace gameswf
 			}
 		}
 
-		edit_text_character*	ch = new edit_text_character(get_boss(), parent, this, id);
+		edit_text_character*	ch = new edit_text_character(get_player(), parent, this, id);
 		// instanciate_registered_class(ch);	//TODO: test it
 
 		return ch;
@@ -1478,7 +1478,7 @@ namespace gameswf
 
 		Uint16	character_id = in->read_u16();
 
-		edit_text_character_def*	ch = new edit_text_character_def(m->get_boss(), m);
+		edit_text_character_def*	ch = new edit_text_character_def(m->get_player(), m);
 		IF_VERBOSE_PARSE(log_msg("edit_text_char, id = %d\n", character_id));
 		ch->read(in, tag_type, m);
 

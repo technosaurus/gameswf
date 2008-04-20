@@ -30,7 +30,7 @@ namespace gameswf
 		int m_current_line;
 		int m_current_path;
 
-		canvas(player* boss);
+		canvas(player* player);
 		~canvas();
 
 		void begin_fill(const rgba& color);

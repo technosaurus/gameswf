@@ -20,7 +20,7 @@ namespace gameswf
 	struct sprite_instance;
 	struct as_object;
 
-	tu_string get_full_url(const char* url);
+	tu_string get_full_url(const tu_string& workdir, const char* url);
 
 	//
 	// with_stack_entry
@@ -65,10 +65,10 @@ namespace gameswf
 		};
 		array<frame_slot>	m_local_frames;
 
-		weak_ptr<player> m_boss;
+		weak_ptr<player> m_player;
 
-		as_environment(player* boss) :
-			m_boss(boss)
+		as_environment(player* player) :
+			m_player(player)
 		{
 		}
 
@@ -133,7 +133,7 @@ namespace gameswf
 		character* load_file(const char* url, const as_value& target);
 		as_object*	find_target(const as_value& target) const;
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
-		player* get_boss() const;
+		player* get_player() const;
 		root* get_root() const;
 
 		private:
@@ -170,7 +170,7 @@ namespace gameswf
 			return env->bottom(first_arg_bottom_index - n);
 		}
 
-		exported_module player* get_boss() const;
+		exported_module player* get_player() const;
 		exported_module root* get_root() const;
 	};
 

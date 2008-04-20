@@ -54,12 +54,12 @@ namespace gameswf
 	void	as_global_xmlsock_ctor(const fn_call& fn)
 	// Constructor for ActionScript class XMLSocket
 	{
-		fn.result->set_as_object(new as_xmlsock(fn.get_boss()));
+		fn.result->set_as_object(new as_xmlsock(fn.get_player()));
 	}
 
 
-	as_xmlsock::as_xmlsock(player* boss) :
-		as_object(boss),
+	as_xmlsock::as_xmlsock(player* player) :
+		as_object(player),
 		m_iface(NULL),
 		m_ns(NULL)
 	{
@@ -86,7 +86,7 @@ namespace gameswf
 		as_value function;
 		if (get_member("onConnect", &function))
 		{
-			as_environment env(get_boss());
+			as_environment env(get_player());
 			env.push(is_connected);
 			call_method(function, &env, NULL, 1, env.get_top_index());
 		}
@@ -132,7 +132,7 @@ namespace gameswf
 				as_value function;
 				if (get_member("onClose", &function))
 				{
-					as_environment env(get_boss());
+					as_environment env(get_player());
 					call_method(function, &env, NULL, 0, env.get_top_index());
 				}
 			}
@@ -141,7 +141,7 @@ namespace gameswf
 				as_value function;
 				if (get_member("onData", &function))
 				{
-					as_environment env(get_boss());
+					as_environment env(get_player());
 					env.push(str);
 					call_method(function, &env, NULL, 1, env.get_top_index());
 				}

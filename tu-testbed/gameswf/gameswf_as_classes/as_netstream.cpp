@@ -37,8 +37,8 @@ namespace gameswf
 		ns->audio_callback(stream, len);
 	}
 
-	as_netstream::as_netstream(player* boss):
-		as_object(boss),
+	as_netstream::as_netstream(player* player):
+		as_object(player),
 		m_FormatCtx(NULL),
 		m_VCodecCtx(NULL),
 		m_ACodecCtx(NULL),
@@ -76,7 +76,7 @@ namespace gameswf
 	void as_netstream::play(const char* url)
 	{
 		// is path relative ?
-		tu_string infile = get_workdir();
+		tu_string infile = get_player()->get_workdir();
 		if (strstr(url, ":") || url[0] == '/')
 		{
 			infile = "";
@@ -147,11 +147,11 @@ namespace gameswf
 			as_value function;
 			if (get_member("onStatus", &function))
 			{
-				smart_ptr<as_object> infoObject = new as_object(get_boss());
+				smart_ptr<as_object> infoObject = new as_object(get_player());
 				infoObject->set_member("level", level);
 				infoObject->set_member("code", code);
 
-				as_environment env(get_boss());
+				as_environment env(get_player());
 				env.push_val(infoObject.get_ptr());
 				call_method(function, &env, NULL, 1, env.get_top_index());
 			}
@@ -648,7 +648,7 @@ namespace gameswf
 	void	as_global_netstream_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetStream.
 	{
-		as_object* netstream = new as_netstream(fn.get_boss());
+		as_object* netstream = new as_netstream(fn.get_player());
 
 		// properties
 		netstream->builtin_member("time", as_value(netstream_time, NULL));

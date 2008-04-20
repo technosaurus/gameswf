@@ -24,7 +24,7 @@ namespace gameswf
 			else return as_object::is(class_id);
 		}
 
-		as_color_transform(player* boss);
+		as_color_transform(player* player);
 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);

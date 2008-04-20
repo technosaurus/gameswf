@@ -40,7 +40,7 @@ namespace gameswf
 		play_state	m_play_state;
 		stringi_hash<as_value>	m_variables;
 
-		x3ds_instance(player* boss, x3ds_definition* def,	character* parent, int id);
+		x3ds_instance(player* player, x3ds_definition* def,	character* parent, int id);
 		~x3ds_instance();
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}

@@ -18,8 +18,8 @@
 
 namespace gameswf
 {
-	font::font(player* boss) :
-		character_def(boss),
+	font::font(player* player) :
+		character_def(player),
 		m_fontname("Times New Roman"),	// default
 		m_owning_movie(NULL),
 		m_unicode_chars(false),
@@ -77,7 +77,7 @@ namespace gameswf
 					in->set_position(new_pos);
 
 					// Create & read the shape.
-					shape_character_def* s = new shape_character_def(m->get_boss());
+					shape_character_def* s = new shape_character_def(m->get_player());
 					s->read(in, 2, false, m);
 
 					m_glyphs[i] = s;
@@ -145,7 +145,7 @@ namespace gameswf
 					in->set_position(new_pos);
 
 					// Create & read the shape.
-					shape_character_def* s = new shape_character_def(m->get_boss());
+					shape_character_def* s = new shape_character_def(m->get_player());
 					s->read(in, 22, false, m);
 
 					m_glyphs[i] = s;

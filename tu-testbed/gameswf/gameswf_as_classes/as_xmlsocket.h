@@ -30,7 +30,7 @@ namespace gameswf
 		net_interface_tcp* m_iface;
 		net_socket* m_ns;
 
-		as_xmlsock(player* boss);
+		as_xmlsock(player* player);
 		~as_xmlsock();
 
 		virtual void advance(float delta_time);

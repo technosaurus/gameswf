@@ -15,7 +15,7 @@ namespace gameswf
 	void	as_global_loadvars_ctor(const fn_call& fn)
 	{
 		smart_ptr<as_loadvars>	obj;
-		obj = new as_loadvars(fn.get_boss());
+		obj = new as_loadvars(fn.get_player());
 		fn.result->set_as_object(obj.get_ptr());
 	}
 
@@ -124,8 +124,8 @@ namespace gameswf
 		fn.result->set_tu_string(loadvars->override_to_string());
 	}
 
-	as_loadvars::as_loadvars(player* boss) :
-		as_object(boss)
+	as_loadvars::as_loadvars(player* player) :
+		as_object(player)
 	{
 		builtin_member( "addRequestHeader" , as_loadvars_addrequestheader );
 		builtin_member( "decode" , as_loadvars_decode );
@@ -160,7 +160,7 @@ namespace gameswf
 			as_value function;
 			if (target && target->get_member("onLoad", &function))
 			{
-				as_environment env(get_boss());
+				as_environment env(get_player());
 				env.push(false);
 				call_method(function, &env, target, 1, env.get_top_index());
 			}
@@ -204,7 +204,7 @@ namespace gameswf
 			as_value function;
 			if (get_member("onLoad", &function))
 			{
-				as_environment env(get_boss());
+				as_environment env(get_player());
 				env.push(false);
 				call_method(function, &env, this, 1, env.get_top_index());
 			}
@@ -276,21 +276,21 @@ namespace gameswf
 						as_value function;
 						if (request.m_target->get_member("onHttpStatus", &function))
 						{
-							as_environment env(get_boss());
+							as_environment env(get_player());
 							env.push(request.m_http_status);
 							call_method(function, &env, request.m_target, 0, env.get_top_index());
 						}
 
 						if (request.m_target->get_member("onLoad", &function))
 						{
-							as_environment env(get_boss());
+							as_environment env(get_player());
 							env.push(request.m_state != PARSE_END);
 							call_method(function, &env, request.m_target, 1, env.get_top_index());
 						}
 
 						if (request.m_target->get_member("onData", &function))
 						{
-							as_environment env(get_boss());
+							as_environment env(get_player());
 							env.push(request.m_rawdata);
 							call_method(function, &env, request.m_target, 1, env.get_top_index());
 						}

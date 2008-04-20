@@ -26,7 +26,7 @@
 namespace gameswf
 {
 
-	x3ds_definition* create_3ds_definition(player* boss, const char* url)
+	x3ds_definition* create_3ds_definition(player* player, const char* url)
 	{
 		smart_ptr<character_def>	m;
 		get_chardef_library()->get(url, &m);
@@ -36,13 +36,13 @@ namespace gameswf
 			return cast_to<x3ds_definition>(m.get_ptr());
 		}
 
-		x3ds_definition* def = new x3ds_definition(boss, url);
+		x3ds_definition* def = new x3ds_definition(player, url);
 		get_chardef_library()->add(url, def);
 		return def;
 	}
 
-	x3ds_definition::x3ds_definition(player* boss, const char* url) : 
-		character_def(boss),
+	x3ds_definition::x3ds_definition(player* player, const char* url) : 
+		character_def(player),
 		m_file(NULL)
 	{
 		m_file = lib3ds_file_load(url);
@@ -100,7 +100,7 @@ namespace gameswf
 		// try to load & create texture from file
 
 		// is path relative ?
-		tu_string url = get_workdir();
+		tu_string url = get_player()->get_workdir();
 		if (strstr(infile, ":") || infile[0] == '/')
 		{
 			url = "";
@@ -123,7 +123,7 @@ namespace gameswf
 
 	character* x3ds_definition::create_character_instance(character* parent, int id)
 	{
-		character* ch = new x3ds_instance(get_boss(), this, parent, id);
+		character* ch = new x3ds_instance(get_player(), this, parent, id);
 		// instanciate_registered_class(ch);	//TODO: test it
 		return ch;
 	}

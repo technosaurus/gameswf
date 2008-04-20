@@ -390,7 +390,7 @@ namespace gameswf
 	// This calls add_ref() on the newly created definition; call
 	// drop_ref() when you're done with it.
 	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
-	exported_module movie_definition*	create_movie(player* boss, const char* filename);
+	exported_module movie_definition*	create_movie(player* player, const char* filename);
 
 	// Creates the movie from the given input stream.  Only reads
 	// from the given stream; does not open files.	If the movie

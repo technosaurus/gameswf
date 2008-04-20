@@ -161,7 +161,7 @@ namespace gameswf
 	// Represents the outline of one or more shapes, along with
 	// information on fill and line styles.
 	{
-		shape_character_def(player* boss);
+		shape_character_def(player* player);
 		virtual ~shape_character_def();
 
 		const 	shape_character_def & operator =( const shape_character_def & def );
