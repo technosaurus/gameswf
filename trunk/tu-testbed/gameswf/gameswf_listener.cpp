@@ -11,13 +11,6 @@ namespace gameswf
 	// for Key, keyPress, ...
 	void listener::notify(const event_id& ev)
 	{
-		// may be called from multithread plugin ==>
-		// we should check current root
-		if (get_current_root() == NULL)
-		{
-			return;
-		}
-
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
 		array< weak_ptr<as_object> > listeners(m_listeners);
@@ -36,7 +29,7 @@ namespace gameswf
 	{
 		// may be called from multithread plugin ==>
 		// we should check current root
-		if (get_current_root() == NULL)
+		if (fn.get_boss()->get_root() == NULL)
 		{
 			return;
 		}

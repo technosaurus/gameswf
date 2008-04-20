@@ -80,7 +80,9 @@ namespace gameswf
 		listener m_keypress_listener;
 		listener m_advance_listener;
 
-		root(movie_def_impl* def);
+		weak_ptr<player> m_boss;
+
+		root(player* boss, movie_def_impl* def);
 		~root();
 
 		void set_active_entity(character* ch);
@@ -140,7 +142,7 @@ namespace gameswf
 		virtual float	get_movie_fps();
 
 		// External interface for the host to report key events.
-		virtual void	notify_key_event(key::code k, bool down);
+		void	notify_key_event(player* boss, key::code k, bool down);
 
 	};
 }

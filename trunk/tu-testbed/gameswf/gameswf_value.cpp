@@ -72,7 +72,7 @@ namespace gameswf
 				// Behavior depends on file version.  In
 				// version 7+, it's "undefined", in versions
 				// 6-, it's "".
-				int version = get_current_root()->get_movie_version();
+				int version = 8; //vv get_root()->get_movie_version();
 				if (version <= 6)
 				{
 					m_string = "";
@@ -190,7 +190,7 @@ namespace gameswf
 		{
 			case STRING:
 				// From Moock
-				if (get_current_root()->get_movie_version() >= 7)
+//vv				if (get_root()->get_movie_version() >= 7)
 				{
 					return m_string.size() > 0 ? true : false;
 				}
@@ -649,7 +649,7 @@ namespace gameswf
 	{
 		assert(target);
 
-		as_environment env;
+		as_environment env(target->get_boss());
 		env.push(val);
 		if (m_setter != NULL)
 		{
@@ -663,7 +663,7 @@ namespace gameswf
 		assert(target);
 
 		// env is used when m_getter->m_env is NULL
-		as_environment env;
+		as_environment env(target->get_boss());
 		if (m_getter != NULL)
 		{
 			smart_ptr<as_object> tar = target;

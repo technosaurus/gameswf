@@ -169,7 +169,7 @@ namespace gameswf
 			m_watch->get(name, &watch);
 			if (watch.m_func)
 			{
-				as_environment env;
+				as_environment env(get_boss());
 				env.push(watch.m_user_data);	// params
 				env.push(val);		// newVal
 				env.push(old_val);	// oldVal
@@ -309,7 +309,7 @@ namespace gameswf
 				as_value	method;
 				if (get_member(method_name, &method))
 				{
-					as_environment env;
+					as_environment env(get_boss());
 					int nargs = 0;
 					if (id.m_args)
 					{
@@ -461,7 +461,7 @@ namespace gameswf
 		// absolute path ?
 		if (*path.c_str() == '/')
 		{
-			return get_current_root()->get_root_movie()->find_target(path.c_str() + 1);
+			return m_boss->get_root()->get_root_movie()->find_target(path.c_str() + 1);
 		}
 
 		const char* slash = strchr(path.c_str(), '/');
@@ -503,10 +503,10 @@ namespace gameswf
 	void as_object::this_alive()
 	{
 		// Whether there were we here already ?
-		if (get_heap()->is_garbage(this))
+		if (m_boss != NULL && m_boss->is_garbage(this))
 		{
 			// 'this' and its members is not garbage
-			get_heap()->set(this, false);
+			m_boss->set_alive(this);
 			for (stringi_hash<as_member>::iterator it = m_members.begin();
 				it != m_members.end(); ++it)
 			{
@@ -533,6 +533,18 @@ namespace gameswf
 	{
 		const as_c_function * function = cast_to<as_c_function>(&constructor);
 		return function && function->m_func == as_global_object_ctor;
+	}
+
+	as_object* as_object::get_global() const
+	{
+		assert(m_boss != NULL);
+		return m_boss->get_global();
+	}
+
+	root* as_object::get_root() const
+	{
+		assert(m_boss != NULL);
+		return m_boss->get_root(); 
 	}
 
 }

@@ -36,35 +36,12 @@
 namespace gameswf
 {
 
+	void close_glyph_provider();
+	void clears_tag_loaders();
+
 	//
 	//	gameswf's statics
 	//
-
-	// hack, temporary to avoid memory leak on exit from gameswf
-//	smart_ptr<player>	s_current_player;
-	player*	s_current_player = NULL;
-
-	player * get_current_player()
-	{
-		return s_current_player;
-	}
-
-	void set_current_player(player* p)
-	{
-		s_current_player = p;
-	}
-	
-	as_object* get_global()
-	{
-		return s_current_player->m_global.get_ptr();
-	}
-
-	heap* get_heap() { return &s_current_player->m_heap; }
-
-	Uint64 get_start_time()
-	{
-		return s_current_player->m_start_time;
-	}
 
 	// standard method map, this stuff should be high optimized
 
@@ -157,18 +134,6 @@ namespace gameswf
 	stringi_hash< smart_ptr<character_def> >* get_chardef_library()
 	{
 		return &s_chardef_library;
-	}
-
-	root* get_current_root()
-	{
-		assert(s_current_player->m_current_root.get_ptr() != NULL);
-		return s_current_player->m_current_root.get_ptr();
-	}
-
-	void set_current_root(root* m)
-	{
-		assert(m != NULL);
-		s_current_player->m_current_root = m;
 	}
 
 	const char* get_workdir()
@@ -327,8 +292,25 @@ namespace gameswf
 	player::~player()
 	{
 		// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
+		// Maximum release of resources.  Calls clear_library() and
+		// fontlib::clear(), and also clears some extra internal stuff
+		// that may have been allocated (e.g. global ActionScript
+		// objects).  This should get all gameswf structures off the
+		// heap, with the exception of any objects that are still
+		// referenced by the host program and haven't had drop_ref()
+		// called on them.
+
+		m_current_root = NULL;
 		m_global = NULL;
-		clear_gameswf();
+		clear_heap();
+
+		gameswf_engine_mutex().lock();
+		clears_tag_loaders();
+		clear_library();
+		clear_shared_libs();
+		close_glyph_provider();
+		gameswf_engine_mutex().unlock();
+
 		action_clear();
 	}
 
@@ -490,10 +472,60 @@ namespace gameswf
 		clear_standard_method_map();
 	}
 
+	as_object* player::get_global() const
+	{
+		return m_global.get_ptr();
+	}
+
+	void player::notify_key_object(key::code k, bool down)
+	{
+		as_value	kval;
+		as_object* global = get_global();
+		global->get_member("Key", &kval);
+		as_key*	ko = cast_to<as_key>(kval.to_object());
+		if (ko)
+		{
+			if (down) ko->set_key_down(k);
+			else ko->set_key_up(k);
+		}
+		else
+		{
+			log_error("gameswf::notify_key_event(): no Key built-in\n");
+		}
+	}
+
+	root* player::get_root()
+	{
+		assert(m_current_root.get_ptr() != NULL);
+		return m_current_root.get_ptr();
+	}
+
+	void player::notify_key_event(key::code k, bool down)
+	{
+		m_current_root->notify_key_event(this, k, down);
+	}
+
+	void player::set_root(root* m)
+	{
+		assert(m != NULL);
+		m_current_root = m;
+	}
 
 	// garbage collector
 
-	void heap::clear()
+	void player::set_alive(as_object* obj)
+	{
+		m_heap.set(obj, false);
+	}
+
+	bool player::is_garbage(as_object* obj)
+	{
+		bool is_garbage = false;
+		m_heap.get(obj, &is_garbage);
+		return is_garbage;
+	}
+
+	void player::clear_heap()
 	{
 		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
@@ -511,19 +543,7 @@ namespace gameswf
 		m_heap.clear();
 	}
 
-	bool heap::is_garbage(as_object* obj)
-	{
-		bool is_garbage = false;
-		m_heap.get(obj, &is_garbage);
-		return is_garbage;
-	}
-
-	void heap::set(as_object* obj, bool is_garbage)
-	{
-		m_heap.set(obj, is_garbage);
-	}
-
-	void heap::set_as_garbage()
+	void player::set_as_garbage()
 	{
 		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
@@ -536,7 +556,7 @@ namespace gameswf
 		}
 	}
 
-	void heap::clear_garbage()
+	void player::clear_garbage()
 	{
 		as_object* global = get_global();
 		global->this_alive();

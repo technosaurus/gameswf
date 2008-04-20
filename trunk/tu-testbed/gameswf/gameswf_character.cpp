@@ -11,7 +11,6 @@
 
 namespace gameswf
 {
-	as_object* get_global();
 
 	character::character(player* boss, character* parent, int id)	:
 		as_object(boss),

@@ -244,7 +244,6 @@ int	main(int argc, char *argv[])
 		int	height = 0;
 
 		smart_ptr<gameswf::player> player = new gameswf::player();
-		gameswf::set_current_player( player.get_ptr() );
 
 		for (int arg = 1; arg < argc; arg++)
 		{
@@ -524,8 +523,6 @@ int	main(int argc, char *argv[])
 				exit(1);
 			}
 
-			gameswf::set_current_root(m.get_ptr());
-
 			int	movie_version = m->get_movie_version();
 
 	#ifdef _DEBUG
@@ -770,7 +767,6 @@ int	main(int argc, char *argv[])
 									// Init library, for detection of memory leaks (for testing purposes)
 	/*
 									// Clean up gameswf as much as possible, so valgrind will help find actual leaks.
-									gameswf::clear_gameswf();
 
 									gameswf::set_sound_handler(NULL);
 									delete sound;
@@ -802,7 +798,6 @@ int	main(int argc, char *argv[])
 										fprintf(stderr, "error: can't create movie instance\n");
 										exit(1);
 									}
-									gameswf::set_current_root(m.get_ptr());
 								}
 								else if (ctrl && (key == SDLK_LEFTBRACKET || key == SDLK_KP_MINUS))
 								{
@@ -896,7 +891,7 @@ int	main(int argc, char *argv[])
 								gameswf::key::code c = translate_key(key);
 								if (c != gameswf::key::INVALID)
 								{
-									gameswf::get_current_root()->notify_key_event(c, true);
+									player->notify_key_event(c, true);
 								}
 
 								break;
@@ -909,7 +904,7 @@ int	main(int argc, char *argv[])
 								gameswf::key::code c = translate_key(key);
 								if (c != gameswf::key::INVALID)
 								{
-									gameswf::get_current_root()->notify_key_event(c, false);
+									player->notify_key_event(c, false);
 								}
 
 								break;
@@ -945,7 +940,7 @@ int	main(int argc, char *argv[])
 					}
 				}
 
-				m = gameswf::get_current_root();
+				m = player->get_root();
 				m->set_display_viewport(0, 0, width, height);
 				m->set_background_alpha(s_background ? 1.0f : 0.05f);
 

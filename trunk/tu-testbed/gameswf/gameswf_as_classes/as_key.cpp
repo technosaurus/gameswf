@@ -10,23 +10,6 @@
 namespace gameswf
 {
 
-	void notify_key_object(key::code k, bool down)
-	{
-		as_value	kval;
-		as_object* global = get_global();
-		global->get_member("Key", &kval);
-		as_key*	ko = cast_to<as_key>(kval.to_object());
-		if (ko)
-		{
-			if (down) ko->set_key_down(k);
-			else ko->set_key_up(k);
-		}
-		else
-		{
-			log_error("gameswf::notify_key_event(): no Key built-in\n");
-		}
-	}
-
 	void	key_add_listener(const fn_call& fn)
 	// Add a listener (first arg is object reference) to our list.
 	// Listeners will have "onKeyDown" and "onKeyUp" methods

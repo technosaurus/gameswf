@@ -65,7 +65,13 @@ namespace gameswf
 		};
 		array<frame_slot>	m_local_frames;
 
-//		as_environment() {}
+		weak_ptr<player> m_boss;
+
+		as_environment(player* boss) :
+			m_boss(boss)
+		{
+		}
+
 //		~as_environment() {}
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
@@ -128,6 +134,7 @@ namespace gameswf
 		as_object*	find_target(const as_value& target) const;
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		player* get_boss() const;
+		root* get_root() const;
 
 		private:
 
@@ -164,6 +171,7 @@ namespace gameswf
 		}
 
 		exported_module player* get_boss() const;
+		exported_module root* get_root() const;
 	};
 
 }

@@ -182,7 +182,7 @@ namespace gameswf
 			ch->m_this_ptr = ch;
 			as_object* proto = create_proto(ch, m_registered_class_constructor.get_ptr());
 
-			as_environment env;
+			as_environment env(get_boss());
 			call_method(m_registered_class_constructor.get_ptr(), &env, ch, 0, 0);
 		}
 	}
@@ -490,19 +490,6 @@ namespace gameswf
 	//
 	void clears_tag_loaders();
 	void clear_shared_libs();
-
-	void	clear_gameswf()
-	// Maximum release of resources.
-	{
-		gameswf_engine_mutex().lock();
-		clears_tag_loaders();
-		get_heap()->clear();
-		clear_library();
-		clear_shared_libs();
-		close_glyph_provider();
-		gameswf_engine_mutex().unlock();
-	}
-
 
 	movie_definition*	create_movie(player* boss, const char* filename)
 	{
@@ -1954,7 +1941,7 @@ namespace gameswf
 	// Create a playable movie instance from a def.
 	{
 		root*	root = create_root();
-
+		
 		// create dlist
 		root->get_root_movie()->execute_frame_tags(0);		
 
@@ -1974,7 +1961,7 @@ namespace gameswf
 			}
 		}
 
-		root*	m = new root(this);
+		root*	m = new root(get_boss(), this);
 		assert(m);
 
 		if (s_use_cached_movie_instance)

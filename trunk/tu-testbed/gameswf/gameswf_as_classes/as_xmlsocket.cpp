@@ -86,7 +86,7 @@ namespace gameswf
 		as_value function;
 		if (get_member("onConnect", &function))
 		{
-			as_environment env;
+			as_environment env(get_boss());
 			env.push(is_connected);
 			call_method(function, &env, NULL, 1, env.get_top_index());
 		}
@@ -132,7 +132,7 @@ namespace gameswf
 				as_value function;
 				if (get_member("onClose", &function))
 				{
-					as_environment env;
+					as_environment env(get_boss());
 					call_method(function, &env, NULL, 0, env.get_top_index());
 				}
 			}
@@ -141,7 +141,7 @@ namespace gameswf
 				as_value function;
 				if (get_member("onData", &function))
 				{
-					as_environment env;
+					as_environment env(get_boss());
 					env.push(str);
 					call_method(function, &env, NULL, 1, env.get_top_index());
 				}
