@@ -220,7 +220,7 @@ namespace gameswf
 
 		virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		virtual as_environment*	get_environment() { return &m_as_environment; }
-		virtual void dump();
+		virtual void dump(tu_string& tabs);
 
 		virtual character_def*	find_exported_resource(const tu_string& symbol);
 
