@@ -538,8 +538,8 @@ namespace gameswf
 			// Make the subparts.
 			*var = colon + 1;
 
-			// check prev character on '/'
-			if (colon > var_path.c_str() && *(colon - 1) == '/')
+			// delete prev '/' if it is not first character
+			if (colon > var_path.c_str() + 1 && *(colon - 1) == '/')
 			{
 				colon--;
 			}

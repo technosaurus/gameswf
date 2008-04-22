@@ -662,7 +662,7 @@ namespace gameswf
 			character*	ch = get_character(i);
 			if (ch->get_name().c_str())
 			{
-				printf("%s\n", ch->get_name().c_str());
+				printf("	%s\n", ch->get_name().c_str());
 			}
 		}
 	}
