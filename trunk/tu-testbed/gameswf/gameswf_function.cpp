@@ -116,7 +116,10 @@ namespace gameswf
 				}
 			}
 		}
-		
+
+		// keep stack size
+		int stack_size = env->m_stack.size();
+
 		// Set up local stack frame, for parameters and locals.
 		int	local_stack_top = env->get_local_frame_top();
 		env->add_frame_barrier();
@@ -275,6 +278,12 @@ namespace gameswf
 		{
 			// Clean up the local registers.
 			env->drop_local_registers(m_local_register_count);
+		}
+				
+		// restore stack size
+		if (stack_size != env->m_stack.size())
+		{
+			env->m_stack.resize(stack_size);
 		}
 	}
 
