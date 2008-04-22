@@ -413,6 +413,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_disasm.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_dlist.cpp"
 				>
 			</File>
@@ -758,6 +762,10 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_character.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_disasm.h"
 				>
 			</File>
 			<File
