@@ -267,12 +267,13 @@ namespace gameswf
 
 		// keep stack size
 		int stack_size = env->m_stack.size();
-//		printf("on entry %d\n", stack_size);
+//		printf("***on entry*** %d\n", stack_size);
 
 		// Execute the actions.
 		m_action_buffer.execute(env, m_start_pc, m_length, fn.result, m_with_stack, m_is_function2);
 
 		// restore stack size
+		// it should not be but it happens
 		if (stack_size != env->m_stack.size())
 		{
 //			log_error("s_function: on entry stack size (%d) != on exit stack size (%d)\n", 

@@ -1853,7 +1853,7 @@ namespace gameswf
 						else
 						{
 							// Also leave it on the stack.
-							env->push_val(function_value);
+							env->push(function_value);
 						}
 					}
 					else
@@ -2169,7 +2169,7 @@ namespace gameswf
 						else
 						{
 							// Usage #2. Leave it on the stack
-							env->push_val(function_value);
+							env->push(function_value);
 						}
 					}
 					else
