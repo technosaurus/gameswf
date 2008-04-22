@@ -183,7 +183,7 @@ namespace gameswf
 		exported_module virtual void this_alive();
 		exported_module virtual void alive() { return; }
 		exported_module virtual void copy_to(as_object* target);
-		exported_module virtual void dump();
+		exported_module virtual void dump(tu_string& tabs);
 		exported_module as_object* find_target(const as_value& target);
 		exported_module virtual root* get_root() const;
 		exported_module	virtual as_environment*	get_environment() { return 0; }

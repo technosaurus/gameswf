@@ -117,7 +117,8 @@ namespace gameswf
 	{
 		if (fn.this_ptr)
 		{
-			fn.this_ptr->dump();
+			tu_string tabs;
+			fn.this_ptr->dump(tabs);
 		}
 	}
 
@@ -400,45 +401,51 @@ namespace gameswf
 		}
 	}
 
-	void as_object::dump()
+	void as_object::dump(tu_string& tabs)
 	// for debugging
 	// retrieves members & print them
 	{
-		printf("*** dump of object 0x%p ***\n", this);
+		tabs += "  ";
+		printf("%s*** object 0x%p ***\n", tabs.c_str(), this);
 		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
 			it != m_members.end(); ++it)
 		{
 			as_value val = it->second.get_member_value();
 			if (val.is_property())
 			{
-				printf("	%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
-				       it->first.c_str(), val.to_property(), val.get_property_target(),
-				       val.to_property()->m_getter, val.to_property()->m_setter);
+				printf("%s%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
+								tabs.c_str(), 
+								it->first.c_str(), val.to_property(), val.get_property_target(),
+								val.to_property()->m_getter, val.to_property()->m_setter);
 			}
 			else
 			if (val.is_function())
 			{
-				printf("	%s: <as_function 0x%p>\n", it->first.c_str(), val.to_object());
+				printf("%s%s: <as_function 0x%p>\n",
+					tabs.c_str(), 
+					it->first.c_str(), val.to_object());
 			}
 			else
 			if (val.is_object())
 			{
-				printf("	%s: <as_object 0x%p>\n", it->first.c_str(), val.to_object());
+				printf("%s%s: <as_object 0x%p>\n",
+					tabs.c_str(), 
+					it->first.c_str(), val.to_object());
 			}
 			else
 			{
-				printf("	%s: %s\n", it->first.c_str(), it->second.get_member_value().to_string());
+				printf("%s%s: %s\n", 
+					tabs.c_str(), 
+					it->first.c_str(), it->second.get_member_value().to_string());
 			}
 		}
 
 		// dump proto
 		if (m_proto != NULL)
 		{
-			printf("*** dump of proto 0x%p***\n", m_proto.get_ptr());
-			m_proto->dump();
+			m_proto->dump(tabs);
 		}
-
-		printf("*** end of object dump ***\n");
+		tabs.resize(tabs.size() - 2);
 	}
 
 	as_object*	as_object::find_target(const as_value& target)

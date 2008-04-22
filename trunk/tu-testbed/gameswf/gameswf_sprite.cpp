@@ -1369,13 +1369,13 @@ namespace gameswf
 		return sprite;
 	}
 
-	void	sprite_instance::dump()
+	void	sprite_instance::dump(tu_string& tabs)
 	{
-		printf("*** dump of sprite 0x%p ***\n", this);
-		as_object::dump();
-		printf("*** dump of sprite displaylist ***\n");
-		m_display_list.dump();
-		printf("*** end of sprite dump ***\n");
+		tabs += "  ";
+		printf("%s*** movieclip 0x%p ***\n", tabs.c_str(), this);
+		as_object::dump(tabs);
+		m_display_list.dump(tabs);
+		tabs.resize(tabs.size() - 2);
 	}
 
 	character_def*	sprite_instance::find_exported_resource(const tu_string& symbol)

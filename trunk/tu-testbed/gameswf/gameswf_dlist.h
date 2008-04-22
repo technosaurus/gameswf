@@ -132,7 +132,7 @@ namespace gameswf
 		int get_highest_depth();
 
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
-		void dump();
+		void dump(tu_string& tabs);
 
 	private:
 

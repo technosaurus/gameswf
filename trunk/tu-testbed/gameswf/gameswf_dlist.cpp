@@ -655,16 +655,19 @@ namespace gameswf
 		}
 	}
 
-	void display_list::dump()
+	void display_list::dump(tu_string& tabs)
 	{
+		tabs += "  ";
+		printf("%s*** displaylist ***\n", tabs.c_str());
 		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
 			if (ch->get_name().c_str())
 			{
-				printf("	%s\n", ch->get_name().c_str());
+				printf("%s%s\n", tabs.c_str(), ch->get_name().c_str());
 			}
 		}
+		tabs.resize(tabs.size() - 2);
 	}
 }
 
