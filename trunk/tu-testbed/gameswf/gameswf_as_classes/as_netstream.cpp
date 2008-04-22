@@ -152,7 +152,7 @@ namespace gameswf
 				infoObject->set_member("code", code);
 
 				as_environment env(get_player());
-				env.push_val(infoObject.get_ptr());
+				env.push(infoObject.get_ptr());
 				call_method(function, &env, NULL, 1, env.get_top_index());
 			}
 			gameswf_engine_mutex().unlock();

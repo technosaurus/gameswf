@@ -83,13 +83,33 @@ namespace gameswf
 
 		// stack access/manipulation
 		// @@ TODO do more checking on these
+
+		// changes size of stack
 		template<class T>
-		void	push(T val) { push_val(as_value(val)); }
-		void	push_val(const as_value& val) { m_stack.push_back(val); }
-		as_value	pop() { as_value result = m_stack.back(); m_stack.pop_back(); return result; }
+		void	push(T val) 
+		{
+			m_stack.push_back(as_value(val)); 
+//			printf("push: size of stack = %d\n", m_stack.size());
+		}
+
+		// changes size of stack
+		as_value	pop()
+		{
+			as_value result = m_stack.back();
+			m_stack.pop_back(); 
+//			printf("pop: size of stack = %d\n", m_stack.size());
+			return result; 
+		}
+
+		// changes size of stack
+		void	drop(int count)
+		{
+			m_stack.resize(m_stack.size() - count); 
+//			printf("pop: size of stack = %d\n", m_stack.size());
+		}
+
 		as_value&	top(int dist) { return m_stack[m_stack.size() - 1 - dist]; }
 		as_value&	bottom(int index) { return m_stack[index]; }
-		void	drop(int count) { m_stack.resize(m_stack.size() - count); }
 
 		int	get_top_index() const { return m_stack.size() - 1; }
 
