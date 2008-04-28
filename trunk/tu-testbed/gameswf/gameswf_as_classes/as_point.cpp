@@ -12,12 +12,18 @@ namespace gameswf
 	// Point(x:Number, y:Number)
 	void	as_global_point_ctor(const fn_call& fn)
 	{
+		smart_ptr<as_point>	obj;
+		float x = 0.0f;
+		float y = 0.0f;
+
 		if (fn.nargs == 2)
 		{
-			smart_ptr<as_point>	obj;
-			obj = new as_point(fn.get_player(), fn.arg(0).to_float(), fn.arg(1).to_float());
-			fn.result->set_as_object(obj.get_ptr());
+			y = fn.arg(1).to_float();
+			x = fn.arg(0).to_float();
 		}
+
+		obj = new as_point(fn.get_player(), x, y);
+		fn.result->set_as_object(obj.get_ptr());
 	}
 	
 	void	as_point_add(const fn_call& fn)
