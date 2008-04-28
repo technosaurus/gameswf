@@ -538,7 +538,7 @@ namespace gameswf
 	}
 
 
-	bool as_value::get_member(const tu_string& name, as_value* val)
+	bool as_value::get_member( const player * used_player, const tu_string& name, as_value* val)
 	{
 		switch (m_type)
 		{
@@ -547,17 +547,17 @@ namespace gameswf
 
 			case STRING:
 			{
-				return get_builtin(BUILTIN_STRING_METHOD, name, val);
+				return used_player->get_builtin(BUILTIN_STRING_METHOD, name, val);
 			}
 
 			case NUMBER:
 			{
-				return get_builtin(BUILTIN_NUMBER_METHOD, name, val);
+				return used_player->get_builtin(BUILTIN_NUMBER_METHOD, name, val);
 			}
 
 			case BOOLEAN:
 			{
-				return get_builtin(BUILTIN_BOOLEAN_METHOD, name, val);
+				return used_player->get_builtin(BUILTIN_BOOLEAN_METHOD, name, val);
 			}
 
 			case OBJECT:

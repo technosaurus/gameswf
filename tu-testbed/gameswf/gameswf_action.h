@@ -242,21 +242,6 @@ namespace gameswf
 	// Returns M_INVALID_MEMBER if there's no match.
 	as_standard_member	get_standard_member(const tu_stringi& name);
 
-	enum builtin_object
-	{
-		BUILTIN_OBJECT_METHOD,
-		BUILTIN_SPRITE_METHOD,
-		BUILTIN_NUMBER_METHOD,
-		BUILTIN_BOOLEAN_METHOD,
-		BUILTIN_STRING_METHOD,
-		// and so far
-
-		BUILTIN_COUNT
-	};
-
-	bool get_builtin(builtin_object id, const tu_stringi& name, as_value* val);
-	stringi_hash<as_value>* new_standard_method_map(builtin_object id);
-
 }	// end namespace gameswf
 
 

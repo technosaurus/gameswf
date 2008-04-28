@@ -43,37 +43,7 @@ namespace gameswf
 	//	gameswf's statics
 	//
 
-	// standard method map, this stuff should be high optimized
-
-	static stringi_hash<as_value>*	s_standard_method_map[BUILTIN_COUNT];
-	void clear_standard_method_map()
-	{
-		for (int i = 0; i < BUILTIN_COUNT; i++)
-		{
-			if (s_standard_method_map[i])
-			{
-				delete s_standard_method_map[i];
-			}
-		}
-	}
-
-	bool get_builtin(builtin_object id, const tu_stringi& name, as_value* val)
-	{
-		if (s_standard_method_map[id])
-		{
-			return s_standard_method_map[id]->get(name, val);
-		}
-		return false;
-	}
-
-	stringi_hash<as_value>* new_standard_method_map(builtin_object id)
-	{
-		if (s_standard_method_map[id] == NULL)
-		{
-			s_standard_method_map[id] = new stringi_hash<as_value>;
-		}
-		return s_standard_method_map[id];
-	}
+	int player::s_player_count = 0;
 
 	// Standard property lookup.
 
@@ -123,37 +93,6 @@ namespace gameswf
 	{
 		s_fscommand_handler = handler;
 	}
-
-
-	// library stuff, for sharing resources among different movies.
-
-	static stringi_hash< smart_ptr<character_def> >	s_chardef_library;
-	stringi_hash< smart_ptr<character_def> >* get_chardef_library()
-	{
-		return &s_chardef_library;
-	}
-
-	void	clear_library()
-	// Drop all library references to movie_definitions, so they
-	// can be cleaned up.
-	{
-		for (stringi_hash< smart_ptr<character_def> >::iterator it = 
-			s_chardef_library.begin(); it != s_chardef_library.end(); ++it)
-		{
-			if (it->second->get_ref_count() > 1)
-			{
-				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
-				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
-					it->second->get_ref_count());
-
-				// to detect memory leaks
-				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
-			}
-		}
-		s_chardef_library.clear();
-	}
-
-
 
 	as_standard_member	get_standard_member(const tu_stringi& name)
 	{
@@ -271,7 +210,10 @@ namespace gameswf
 	player::player()
 	{
 		m_global = new as_object(this);
+
 		action_init();
+
+		++s_player_count;
 	}
 
 	player::~player()
@@ -287,13 +229,22 @@ namespace gameswf
 
 		m_current_root = NULL;
 		m_global = NULL;
+		--s_player_count;
+
 		clear_heap();
 
 		gameswf_engine_mutex().lock();
-		clears_tag_loaders();
+
 		clear_library();
-		clear_shared_libs();
-		close_glyph_provider();
+
+		// Clear shared stuff only when all players are deleted
+		if ( 0 == s_player_count )
+		{
+			clears_tag_loaders();
+			clear_shared_libs();
+			close_glyph_provider();
+		}
+
 		gameswf_engine_mutex().unlock();
 
 		action_clear();
@@ -323,6 +274,15 @@ namespace gameswf
 
 		// setup builtin methods
 		stringi_hash<as_value>* map;
+
+		// clear array
+		for (int i = 0; i < BUILTIN_COUNT; i++)
+		{
+			if (m_standard_method_map[i])
+			{
+				m_standard_method_map[i] = NULL;
+			}
+		}
 
 		// as_object builtins
 		map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
@@ -453,7 +413,10 @@ namespace gameswf
 
 	void	player::action_clear()
 	{
-		clear_standard_property_map();
+		if ( 0 == s_player_count )
+		{
+			clear_standard_property_map();
+		}
 		clear_standard_method_map();
 	}
 
@@ -505,6 +468,63 @@ namespace gameswf
 	{
 		assert(dir != NULL);
 		m_workdir = dir;
+	}
+
+	// standard method map, this stuff should be high optimized
+
+	void player::clear_standard_method_map()
+	{
+		for (int i = 0; i < BUILTIN_COUNT; i++)
+		{
+			if (m_standard_method_map[i])
+			{
+				delete m_standard_method_map[i];
+			}
+		}
+	}
+
+	bool player::get_builtin(builtin_object id, const tu_stringi& name, as_value* val) const
+	{
+		if (m_standard_method_map[id])
+		{
+			return m_standard_method_map[id]->get(name, val);
+		}
+		return false;
+	}
+
+	stringi_hash<as_value>* player::new_standard_method_map(builtin_object id)
+	{
+		if (m_standard_method_map[id] == NULL)
+		{
+			m_standard_method_map[id] = new stringi_hash<as_value>;
+		}
+		return m_standard_method_map[id];
+	}
+
+	// library stuff, for sharing resources among different movies.
+	stringi_hash< smart_ptr<character_def> >* player::get_chardef_library()
+	{
+		return &m_chardef_library;
+	}
+
+	void player::clear_library()
+		// Drop all library references to movie_definitions, so they
+		// can be cleaned up.
+	{
+		for (stringi_hash< smart_ptr<character_def> >::iterator it = 
+			m_chardef_library.begin(); it != m_chardef_library.end(); ++it)
+		{
+			if (it->second->get_ref_count() > 1)
+			{
+				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
+				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
+					it->second->get_ref_count());
+
+				// to detect memory leaks
+				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
+			}
+		}
+		m_chardef_library.clear();
 	}
 
 

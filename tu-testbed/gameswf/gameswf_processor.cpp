@@ -85,7 +85,7 @@ struct movie_data
 };
 
 
-static gameswf::movie_definition*	play_movie(const char* filename);
+static gameswf::movie_definition*	play_movie(gameswf::player* player, const char* filename);
 static int	write_cache_file(const movie_data& md);
 
 
@@ -146,8 +146,7 @@ int	main(int argc, char *argv[])
 		print_usage();
 		exit(1);
 	}
-	smart_ptr<gameswf::gameswf_player> player = new gameswf::gameswf_player();
-	gameswf::set_current_player(player.get_ptr());
+	smart_ptr<gameswf::player> player = new gameswf::player();
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_log_callback(log_callback);
 	gameswf::set_use_cache_files(false);	// don't load old cache files!
@@ -157,7 +156,7 @@ int	main(int argc, char *argv[])
 	// Play through all the movies.
 	for (int i = 0, n = infiles.size(); i < n; i++)
 	{
-		gameswf::movie_definition*	m = play_movie(infiles[i]);
+		gameswf::movie_definition*	m = play_movie(player.get_ptr(), infiles[i]);
 		if (m == NULL)
 		{
 			if (s_stop_on_errors)
@@ -196,7 +195,7 @@ int	main(int argc, char *argv[])
 }
 
 
-gameswf::movie_definition*	play_movie(const char* filename)
+gameswf::movie_definition*	play_movie(gameswf::player* player, const char* filename)
 // Load the named movie, make an instance, and play it, virtually.
 // I.e. run through and render all the frames, even though we are not
 // actually doing any output (our output handlers are disabled).
@@ -207,7 +206,7 @@ gameswf::movie_definition*	play_movie(const char* filename)
 //
 // Return the movie definition.
 {
-	gameswf::movie_definition*	md = gameswf::create_movie(filename);
+	gameswf::movie_definition*	md = gameswf::create_movie(player, filename);
 	if (md == NULL)
 	{
 		fprintf(stderr, "error: can't play movie '%s'\n", filename);
@@ -223,7 +222,7 @@ gameswf::movie_definition*	play_movie(const char* filename)
 	int	kick_count = 0;
 
 	// Run through the movie.
-	gameswf::set_current_root(m);
+	player->set_root(m);
 	for (;;)
 	{
 		// @@ do we also have to run through all sprite frames
