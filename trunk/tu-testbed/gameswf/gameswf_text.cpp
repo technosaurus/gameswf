@@ -703,9 +703,9 @@ namespace gameswf
 
 	void edit_text_character::show_cursor() 
 	{ 
-		coord_component x = (int) m_xcursor; 
-		coord_component y = (int) m_ycursor; 
-		coord_component h = (int) m_text_height;
+		coord_component x = (coord_component) m_xcursor; 
+		coord_component y = (coord_component) m_ycursor; 
+		coord_component h = (coord_component) m_text_height;
 
 		coord_component box[4]; 
 		box[0] = x; 

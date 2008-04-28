@@ -142,7 +142,7 @@ namespace gameswf
 		inline bool is_undefined() const { return m_type == UNDEFINED; }
 
 		const char*	typeof() const;
-		bool get_member(const tu_string& name, as_value* val);
+		bool get_member(const player* used_player, const tu_string& name, as_value* val);
 	};
 
 }

@@ -1103,7 +1103,7 @@ namespace gameswf
 						function = env->get_variable(function_name, with_stack);
 
 						// super constructor, Flash 6 
-						if (function.is_object())
+						if (function.is_object() && !function.is_function() )
 						{
 							as_object* obj = function.to_object();
 							if (obj)
@@ -1340,7 +1340,7 @@ namespace gameswf
 					{
 						// try property/method of a primitive type, like String.length
 						as_value val;
-						env->top(1).get_member(env->top(0).to_tu_string(), &val);
+						env->top(1).get_member(env->m_player.get_ptr(), env->top(0).to_tu_string(), &val);
 						if (val.is_property())
 						{
 							val.get_property(env->top(1), &val);
@@ -1421,7 +1421,7 @@ namespace gameswf
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
 					as_value func;
-					if (env->top(1).get_member(method_name, &func))
+					if (env->top(1).get_member(env->m_player.get_ptr(), method_name, &func))
 					{
 						result = call_method(
 							func,
@@ -1520,8 +1520,7 @@ namespace gameswf
 						as_value val;
 						if (obj->get_member(constructor.to_string(), &val))
 						{
-							as_function* func = cast_to<as_function>(val.to_object());
-							if (func)
+							if ( as_s_function* func = cast_to<as_s_function>(val.to_object()))
 							{
 								// there is already _constructor_ in prototype 
 //								as_value prototype;
@@ -1536,6 +1535,13 @@ namespace gameswf
 								// Call the actual constructor function; new_obj is its 'this'.
 								// We don't need the function result.
 								call_method(func, env, new_obj.get_ptr(), nargs, env->get_top_index());
+							}
+							else if( as_c_function* c_func = cast_to<as_c_function>(val.to_object()) )
+							{
+								// TODO: I don't get this prototype stuff, need to implement it
+								
+								// Result contains the new output.
+								new_obj = call_method(c_func, env, NULL, nargs, env->get_top_index()).to_object();
 							}
 							else
 							{

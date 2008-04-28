@@ -971,7 +971,7 @@ namespace gameswf
 	{
 
 		// first try built-ins sprite methods
-		if (get_builtin(BUILTIN_SPRITE_METHOD, name, val))
+		if (m_player->get_builtin(BUILTIN_SPRITE_METHOD, name, val))
 		{
 			return true;
 		}
