@@ -17,17 +17,17 @@
 
 namespace gameswf
 {
-    enum builtin_object
-    {
-        BUILTIN_OBJECT_METHOD,
-        BUILTIN_SPRITE_METHOD,
-        BUILTIN_NUMBER_METHOD,
-        BUILTIN_BOOLEAN_METHOD,
-        BUILTIN_STRING_METHOD,
-        // and so far
+	enum builtin_object
+	{
+		BUILTIN_OBJECT_METHOD,
+		BUILTIN_SPRITE_METHOD,
+		BUILTIN_NUMBER_METHOD,
+		BUILTIN_BOOLEAN_METHOD,
+		BUILTIN_STRING_METHOD,
+		// and so far
 
-        BUILTIN_COUNT
-    };	
+		BUILTIN_COUNT
+	};	
 
 	as_value	get_property(as_object* obj, int prop_number);
 	void	set_property(as_object* obj, int prop_number, const as_value& val);
@@ -44,13 +44,13 @@ namespace gameswf
 		smart_ptr<as_object>	m_global;
 		Uint64 m_start_time;
 		weak_ptr<root> m_current_root;
-		tu_string m_workdir;        
-        stringi_hash<as_value>*	m_standard_method_map[BUILTIN_COUNT];
-        stringi_hash< smart_ptr<character_def> > m_chardef_library;
+		tu_string m_workdir;		
+		stringi_hash<as_value>*	m_standard_method_map[BUILTIN_COUNT];
+		stringi_hash< smart_ptr<character_def> > m_chardef_library;
 
-        // Players count to release all static stuff at the right time
-        static int s_player_count;
-        
+		// Players count to release all static stuff at the right time
+		static int s_player_count;
+		
 		exported_module  player();
 		exported_module  ~player();
 
@@ -70,14 +70,14 @@ namespace gameswf
 		// Clean up any stray heap stuff we've allocated.
 		exported_module void	action_clear();
 
-        // standard method map, this stuff should be high optimized
-        void clear_standard_method_map();
-        bool get_builtin(builtin_object id, const tu_stringi& name, as_value* val) const;
-        stringi_hash<as_value>* new_standard_method_map(builtin_object id);
+		// standard method map, this stuff should be high optimized
+		void clear_standard_method_map();
+		bool get_builtin(builtin_object id, const tu_stringi& name, as_value* val) const;
+		stringi_hash<as_value>* new_standard_method_map(builtin_object id);
 
-        // library stuff, for sharing resources among different movies.
-        stringi_hash< smart_ptr<character_def> >* get_chardef_library();
-        void clear_library();
+		// library stuff, for sharing resources among different movies.
+		stringi_hash< smart_ptr<character_def> >* get_chardef_library();
+		void clear_library();
 
 		as_object* get_global() const;
 		void notify_key_object(key::code k, bool down);
