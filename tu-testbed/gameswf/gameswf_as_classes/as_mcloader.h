@@ -11,7 +11,6 @@
 
 #include "gameswf/gameswf_action.h"	// for as_object
 #include "gameswf/gameswf_listener.h"	// for listener
-#include "net/http_client.h"
 
 namespace gameswf
 {
