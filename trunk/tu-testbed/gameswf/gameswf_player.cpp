@@ -7,6 +7,7 @@
 // init_library and clear_library implementation
 
 #include "base/tu_timer.h"
+#include "base/tu_file.h"
 #include "gameswf/gameswf_player.h"
 #include "gameswf/gameswf_object.h"
 #include "gameswf/gameswf_action.h"
@@ -42,6 +43,31 @@ namespace gameswf
 	//
 	//	gameswf's statics
 	//
+
+	bool	s_use_cached_movie_def = true;
+
+	//
+	// file_opener callback stuff
+	//
+
+	static file_opener_callback	s_opener_function = NULL;
+
+	void	register_file_opener_callback(file_opener_callback opener)
+	// Host calls this to register a function for opening files,
+	// for loading movies.
+	{
+		s_opener_function = opener;
+	}
+
+	static bool	s_use_cache_files = false;
+
+	void	set_use_cache_files(bool use_cache)
+	// Enable/disable attempts to read cache files when loading
+	// movies.
+	{
+		s_use_cache_files = use_cache;
+	}
+
 
 	int player::s_player_count = 0;
 
@@ -526,6 +552,88 @@ namespace gameswf
 		m_chardef_library.clear();
 	}
 
+	void	ensure_loaders_registered();
+	movie_definition*	player::create_movie(const char* filename)
+	{
+		assert(filename);
+
+		// Is the movie already in the library?
+		if (s_use_cached_movie_def)
+		{
+			smart_ptr<character_def>	m;
+			get_chardef_library()->get(filename, &m);
+			if (m != NULL)
+			{
+				// Return cached movie.
+				return cast_to<movie_definition>(m.get_ptr());
+			}
+		}
+
+		if (s_opener_function == NULL)
+		{
+			// Don't even have a way to open the file.
+			log_error("error: no file opener function; can't create movie.	"
+				"See gameswf::register_file_opener_callback\n");
+			return NULL;
+		}
+
+		tu_file* in = s_opener_function(filename);
+		if (in == NULL)
+		{
+			log_error("failed to open '%s'; can't create movie.\n", filename);
+			return NULL;
+		}
+		else if (in->get_error())
+		{
+			log_error("error: file opener can't open '%s'\n", filename);
+			delete in;
+			return NULL;
+		}
+
+		ensure_loaders_registered();
+
+		movie_def_impl*	m = new movie_def_impl(this, DO_LOAD_BITMAPS, DO_LOAD_FONT_SHAPES);
+
+		m->read(in);
+
+		// "in" will be deleted after termination of the loader thread
+		//	delete in;
+
+		if (m && s_use_cache_files)
+		{
+			// Try to load a .gsc file.
+			tu_string	cache_filename(filename);
+			cache_filename += ".gsc";
+			tu_file*	cache_in = s_opener_function(cache_filename.c_str());
+			if (cache_in == NULL
+				|| cache_in->get_error() != TU_FILE_NO_ERROR)
+			{
+				// Can't open cache file; don't sweat it.
+				IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
+
+//				m->generate_font_bitmaps();	// can't read cache, so generate font texture data.
+			}
+			else
+			{
+				// Load the cached data.
+				m->input_cached_data(cache_in);
+			}
+
+			delete cache_in;
+		}
+
+		// We should not do m->add_ref() in order to prevent memory leaks
+		// More correctly to do so:
+		// smart_ptr<movie_definition_sub> md = create_movie_sub("my.swf")
+		//		m->add_ref();
+
+		if (s_use_cached_movie_def)
+		{
+			get_chardef_library()->add(filename, m);
+		}
+
+		return m;
+	}
 
 	// garbage collector
 

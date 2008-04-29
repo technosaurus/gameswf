@@ -51,6 +51,27 @@ namespace gameswf
 		exported_module const char* get_workdir() const;
 		exported_module void set_workdir(const char* dir);
 	
+		// @@ Hm, need to think about these creation API's.  Perhaps
+		// divide it into "low level" and "high level" calls.  Also,
+		// perhaps we need a "context" object that contains all
+		// global-ish flags, libraries, callback pointers, font
+		// library, etc.
+		//
+		// Create a gameswf::movie_definition from the given file name.
+		// Normally, will also try to load any cached data file
+		// (".gsc") that corresponds to the given movie file.  This
+		// will still work even if there is no cache file.  You can
+		// disable the attempts to load cache files by calling
+		// gameswf::use_cache_files(false).
+		//
+		// Uses the registered file-opener callback to read the files
+		// themselves.
+		//
+		// This calls add_ref() on the newly created definition; call
+		// drop_ref() when you're done with it.
+		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
+		exported_module movie_definition*	create_movie(const char* filename);
+
 		// Create/hook built-ins.
 		exported_module void action_init();
 	

@@ -510,7 +510,7 @@ int	main(int argc, char *argv[])
 		{
 
 			// Load the actual movie.
-			smart_ptr<gameswf::movie_definition>	md = gameswf::create_movie(player.get_ptr(), infile);
+			smart_ptr<gameswf::movie_definition>	md = player->create_movie(infile);
 			if (md == NULL)
 			{
 				fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
@@ -787,7 +787,7 @@ int	main(int argc, char *argv[])
 									}
 	*/
 									// Load the actual movie.
-									md = gameswf::create_movie(player.get_ptr(), infile);
+									md = player->create_movie(infile);
 									if (md == NULL)
 									{
 										fprintf(stderr, "error: can't create a movie from '%s'\n", infile);

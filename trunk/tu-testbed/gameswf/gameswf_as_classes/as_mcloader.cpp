@@ -56,8 +56,8 @@ namespace gameswf
 			array<as_value> event_args;	// for event handler args
 			event_args.push_back(as_value());	// undefined
 
-			movie_definition*	md = create_movie(fn.get_player(),
-				get_full_url(fn.get_player()->get_workdir(), fn.arg(0).to_string()));
+			tu_string infile = get_full_url(fn.get_player()->get_workdir(), fn.arg(0).to_string());
+			movie_definition*	md = fn.get_player()->create_movie(infile.c_str());
 			if (md == NULL)
 			{
 				IF_VERBOSE_ACTION(log_msg("can't create movie from %s\n", fn.arg(0).to_string()));
