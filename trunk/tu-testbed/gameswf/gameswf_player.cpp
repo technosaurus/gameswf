@@ -635,6 +635,39 @@ namespace gameswf
 		return m;
 	}
 
+	smart_ptr<root> player::load_file(const char* infile)
+	// Load the actual movie.
+	{
+		smart_ptr<gameswf::movie_definition>	md = create_movie(infile);
+		if (md == NULL)
+		{
+			fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
+			return NULL;
+		}
+
+		smart_ptr<gameswf::root>	m = md->create_instance();
+		if (m == NULL)
+		{
+			fprintf(stderr, "error: can't create movie instance\n");
+			return NULL;
+		}
+
+		int	movie_version = m->get_movie_version();
+
+	#ifdef _DEBUG
+		log_msg("Playing %s, swf version %d\n", infile, movie_version);
+		if (movie_version > 8)
+		{
+			log_msg("gameSWF supports up to Flash 8 for now\n");
+		}
+	#else
+		IF_VERBOSE_PARSE(log_msg("Playing %s, swf version %d\n", infile, movie_version));
+	#endif
+
+		return m;
+	}
+
+
 	// garbage collector
 
 	void player::set_alive(as_object* obj)

@@ -506,35 +506,12 @@ int	main(int argc, char *argv[])
 		// gameSWF extension
 		// pass bootup options to Flash
 		player->set_bootup_options(bootup_options);
-
 		{
-
-			// Load the actual movie.
-			smart_ptr<gameswf::movie_definition>	md = player->create_movie(infile);
-			if (md == NULL)
-			{
-				fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
-				exit(1);
-			}
-
-			smart_ptr<gameswf::root>	m = md->create_instance();
+			smart_ptr<gameswf::root>	m = player->load_file(infile);
 			if (m == NULL)
 			{
-				fprintf(stderr, "error: can't create movie instance\n");
 				exit(1);
 			}
-
-			int	movie_version = m->get_movie_version();
-
-	#ifdef _DEBUG
-			gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version);
-			if (movie_version > 8)
-			{
-				gameswf::log_msg("gameSWF supports up to Flash 8 for now\n");
-			}
-	#else
-			IF_VERBOSE_PARSE(gameswf::log_msg("Playing %s, swf version %d\n", infile, movie_version));
-	#endif
 
 			if (width == 0 || height == 0)
 			{
@@ -551,7 +528,8 @@ int	main(int argc, char *argv[])
 				// Initialize the SDL subsystems we're using. Linux
 				// and Darwin use Pthreads for SDL threads, Win32
 				// doesn't. Otherwise the SDL event loop just polls.
-				if (sdl_abort) {
+				if (sdl_abort)
+				{
 					//  Other flags are SDL_INIT_JOYSTICK | SDL_INIT_CDROM
 	#ifdef _WIN32
 					if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
@@ -562,7 +540,9 @@ int	main(int argc, char *argv[])
 						fprintf(stderr, "Unable to init SDL: %s\n", SDL_GetError());
 						exit(1);
 					}
-				} else {
+				}
+				else
+				{
 					fprintf(stderr, "warning: SDL won't trap core dumps \n");
 	#ifdef _WIN32
 					if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_NOPARACHUTE  | SDL_INIT_EVENTTHREAD))
@@ -787,16 +767,9 @@ int	main(int argc, char *argv[])
 									}
 	*/
 									// Load the actual movie.
-									md = player->create_movie(infile);
-									if (md == NULL)
-									{
-										fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
-										exit(1);
-									}
-									m = md->create_instance();
+									m = player->load_file(infile);
 									if (m == NULL)
 									{
-										fprintf(stderr, "error: can't create movie instance\n");
 										exit(1);
 									}
 								}
@@ -1001,8 +974,7 @@ int	main(int argc, char *argv[])
 				//		gameswf_tesselate_dump_shape = false;  ///xxxxx
 
 				// See if we should exit.
-				if (do_loop == false
-					&& m->get_current_frame() + 1 == md->get_frame_count())
+				if (do_loop == false && m->get_current_frame() + 1 == m->get_frame_count())
 				{
 					// We're reached the end of the movie; exit.
 					break;

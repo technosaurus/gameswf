@@ -98,7 +98,8 @@ namespace gameswf
 		void	stop_drag();
 		movie_definition*	get_movie_definition();
 
-		virtual int	get_current_frame() const;
+		exported_module int	get_current_frame() const;
+		exported_module int	get_frame_count() { return get_root_movie()->get_frame_count(); }
 		float	get_frame_rate() const;
 		void	set_frame_rate(float rate);
 
