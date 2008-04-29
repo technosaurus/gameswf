@@ -292,6 +292,11 @@ namespace gameswf
 		return s_retval.c_str();
 	}
 
+	// for debugging action script
+	// keep the latest var name(to log it if call_method failure)
+#ifdef _DEBUG
+	static tu_string s_last_varname;
+#endif
 
 	//
 	// do_action
@@ -779,8 +784,12 @@ namespace gameswf
 				}
 				case 0x1C:	// get variable
 				{
-					as_value& var_name = env->top(0);
-					const tu_string& var_string = var_name.to_tu_string();
+					const tu_string& var_string = env->top(0).to_tu_string();
+					
+					// keep the latest var name(to log it if call_method failure)
+#ifdef _DEBUG
+					s_last_varname = var_string;
+#endif
 
 					as_value variable = env->get_variable(var_string, with_stack);
 					env->top(0) = variable;
@@ -1349,6 +1358,11 @@ namespace gameswf
 					}
 					else
 					{
+						// keep the latest var name(to log it if call_method failure)
+#ifdef _DEBUG
+						s_last_varname = env->top(0).to_tu_string();
+#endif
+
 						env->top(1).set_undefined();
 						if (obj->get_member(env->top(0).to_tu_string(), &(env->top(1))) == false)
 						{
@@ -1463,7 +1477,20 @@ namespace gameswf
 					}
 					else
 					{
-						log_error("error: call_method can't find method 0x%p.%s\n", env->top(1).to_object(), method_name.c_str());
+						if (env->top(1).to_object())
+						{
+							as_value val;
+							env->top(1).to_object()->get_member("_name", &val);
+							log_error("error: can't find method 0x%p(_name='%s').%s\n", 
+								env->top(1).to_object(), val.to_string(), method_name.c_str());
+						}
+						else
+						{
+#ifdef _DEBUG
+							log_error("error: can't find method %s.%s\n", 
+								s_last_varname.c_str(), method_name.c_str());
+#endif
+						}
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;

@@ -89,15 +89,6 @@ namespace gameswf
 			}
 		}
 	}
-
-	void	as_broadcaster_length(const fn_call& fn)
-	{
-		as_listener* ls = cast_to<as_listener>(fn.this_ptr);
-		if (ls)
-		{
-			fn.result->set_int(ls->size());
-		}
-	}
 		
 	as_object* broadcaster_init(player* player)
 	{
@@ -110,19 +101,20 @@ namespace gameswf
 		as_object(player),
 		m_reentrance(false)
 	{
-		builtin_member("length", as_value(as_broadcaster_length, NULL));
 	}
 
 	bool	as_listener::get_member(const tu_stringi& name, as_value* val)
 	{
-		as_object* listener = m_listeners[name];
-		if (listener)
+		if (name == "length")
 		{
-			val->set_as_object(listener);
-			return true;
+			val->set_int(m_listeners.size());
 		}
-
-		return as_object::get_member(name, val);
+		else
+		{
+			as_object* listener = m_listeners[name];
+			val->set_as_object(listener);
+		}
+		return true;
 	}
 
 	void as_listener::add(as_object* listener)
@@ -138,6 +130,12 @@ namespace gameswf
 	int as_listener::size() const
 	{
 		return m_listeners.size();
+	}
+
+	void as_listener::enumerate(as_environment* env)
+	// retrieves members & pushes them into env
+	{
+		m_listeners.enumerate(env);
 	}
 
 	void	as_listener::broadcast(const fn_call& fn)

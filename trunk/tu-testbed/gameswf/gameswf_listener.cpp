@@ -115,7 +115,11 @@ namespace gameswf
 
 	as_object*	listener::operator[](const tu_stringi& name) const
 	{
-		int index = atoi(name.c_str());
+		return operator[](atoi(name.c_str()));
+	}
+	
+	as_object*	listener::operator[](int index) const
+	{
 		if (index >= 0 && index < m_listeners.size())
 		{
 			int nonzero = 0;
@@ -123,7 +127,7 @@ namespace gameswf
 			{
 				if (m_listeners[i] != NULL)
 				{
-					if (nonzero = index)
+					if (nonzero == index)
 					{
 						return m_listeners[i].get_ptr();
 					}
@@ -133,7 +137,7 @@ namespace gameswf
 		}
 		return NULL;
 	}
-	
+
 	int	listener::size() const
 	{
 		int nonzero = 0;
@@ -146,4 +150,18 @@ namespace gameswf
 		}
 		return nonzero;
 	}
+
+	void listener::enumerate(as_environment* env) const
+	{
+		int nonzero = 0;
+		for (int i = 0, n = m_listeners.size(); i < n; i++)
+		{
+			if (m_listeners[i] != NULL)
+			{
+				env->push(nonzero);
+				nonzero++;
+			}
+		}
+	}
+
 }

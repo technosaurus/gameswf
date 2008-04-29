@@ -76,7 +76,7 @@ namespace gameswf
 		uint32	get_file_bytes() const;
 		uint32	get_loaded_bytes() const;
 
-		character*	get_root_movie() { return m_root->get_root_movie(); }
+		exported_module character*	get_root_movie() { return m_root->get_root_movie(); }
 		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
 
 		virtual void get_bound(rect* bound);
@@ -87,7 +87,7 @@ namespace gameswf
 
 		character* add_empty_movieclip(const char* name, int depth);
 
-		void	set_play_state(play_state s);
+		exported_module void	set_play_state(play_state s);
 		play_state	get_play_state() const;
 
 		character*	get_character(int character_id)
@@ -134,9 +134,9 @@ namespace gameswf
 		void	execute_remove_tags(int frame);
 		void	do_actions();
 		virtual void do_actions(const array<action_buffer*>& action_list);
-		void	goto_frame(const tu_string& target_frame);
-		void	goto_frame(int target_frame_number);
-		bool	goto_labeled_frame(const char* label);
+		exported_module void	goto_frame(const tu_string& target_frame);
+		exported_module void	goto_frame(int target_frame_number);
+		exported_module bool	goto_labeled_frame(const char* label);
 
 		void	display();
 

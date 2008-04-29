@@ -166,7 +166,6 @@ namespace gameswf
 
 		// The host app uses this to tell the movie where the
 		// user's mouse pointer is.
-		virtual void	notify_mouse_state(int x, int y, int buttons) {}
 		virtual void	get_mouse_state(int* x, int* y, int* buttons)
 		{
 			get_parent()->get_mouse_state(x, y, buttons); 
