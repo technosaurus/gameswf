@@ -71,6 +71,8 @@ namespace gameswf
 		// drop_ref() when you're done with it.
 		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 		exported_module movie_definition*	create_movie(const char* filename);
+		exported_module	smart_ptr<root>  load_file(const char* filename);
+
 
 		// Create/hook built-ins.
 		exported_module void action_init();
