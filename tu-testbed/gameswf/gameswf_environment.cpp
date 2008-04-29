@@ -128,7 +128,7 @@ namespace gameswf
 
 			case SWF:
 			{
-				movie_definition*	md = create_movie(get_player(), fn.c_str());
+				movie_definition*	md = get_player()->create_movie(fn.c_str());
 				if (md)
 				{
 					return target->replace_me(md);

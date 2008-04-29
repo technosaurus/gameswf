@@ -371,35 +371,6 @@ namespace gameswf
 	// loading movies.
 	exported_module void	set_use_cache_files(bool use_cache);
 
-	// @@ Hm, need to think about these creation API's.  Perhaps
-	// divide it into "low level" and "high level" calls.  Also,
-	// perhaps we need a "context" object that contains all
-	// global-ish flags, libraries, callback pointers, font
-	// library, etc.
-	//
-	// Create a gameswf::movie_definition from the given file name.
-	// Normally, will also try to load any cached data file
-	// (".gsc") that corresponds to the given movie file.  This
-	// will still work even if there is no cache file.  You can
-	// disable the attempts to load cache files by calling
-	// gameswf::use_cache_files(false).
-	//
-	// Uses the registered file-opener callback to read the files
-	// themselves.
-	//
-	// This calls add_ref() on the newly created definition; call
-	// drop_ref() when you're done with it.
-	// Or use smart_ptr<T> from base/smart_ptr.h if you want.
-	exported_module movie_definition*	create_movie(player* player, const char* filename);
-
-	// Creates the movie from the given input stream.  Only reads
-	// from the given stream; does not open files.	If the movie
-	// imports resources from other movies, the created movie
-	// inserts proxy stubs in place of those resources.  The list
-	// of imported movie filenames can be retrieved with
-	// movie_definition::visit_imported_movies().  The proxies can
-	// be replaced with actual movie_definition's via
-	// movie_definition::resolve_proxy(name,def).
 	//
 	// Use DO_NOT_LOAD_BITMAPS if you have pre-processed bitmaps
 	// stored externally somewhere, and you plan to install them
