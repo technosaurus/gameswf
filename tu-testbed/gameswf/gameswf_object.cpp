@@ -206,7 +206,7 @@ namespace gameswf
 		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
 		
 		// first try built-ins object methods
-		if (m_player.get_ptr() && m_player->get_builtin(BUILTIN_OBJECT_METHOD, name, val))
+		if (get_builtin(BUILTIN_OBJECT_METHOD, name, val))
 		{
 			return true;
 		}

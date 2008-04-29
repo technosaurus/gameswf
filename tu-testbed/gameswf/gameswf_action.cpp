@@ -1112,7 +1112,7 @@ namespace gameswf
 						function = env->get_variable(function_name, with_stack);
 
 						// super constructor, Flash 6 
-						if (function.is_object() && !function.is_function() )
+						if (function.is_object())
 						{
 							as_object* obj = function.to_object();
 							if (obj)
@@ -1349,7 +1349,7 @@ namespace gameswf
 					{
 						// try property/method of a primitive type, like String.length
 						as_value val;
-						env->top(1).get_member(env->m_player.get_ptr(), env->top(0).to_tu_string(), &val);
+						env->top(1).get_member(env->top(0).to_tu_string(), &val);
 						if (val.is_property())
 						{
 							val.get_property(env->top(1), &val);
@@ -1435,7 +1435,7 @@ namespace gameswf
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
 					as_value func;
-					if (env->top(1).get_member(env->m_player.get_ptr(), method_name, &func))
+					if (env->top(1).get_member(method_name, &func))
 					{
 						result = call_method(
 							func,
