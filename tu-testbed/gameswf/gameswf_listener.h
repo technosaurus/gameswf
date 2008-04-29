@@ -27,7 +27,9 @@ namespace gameswf
 
 		exported_module void clear() { m_listeners.clear(); }
 		exported_module as_object*	operator[](const tu_stringi& name) const;
+		exported_module as_object*	operator[](int index) const;
 		exported_module int	size() const;
+		exported_module void enumerate(as_environment* env) const;
 
 	private:
 

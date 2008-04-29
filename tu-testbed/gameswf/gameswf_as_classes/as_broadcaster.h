@@ -34,6 +34,7 @@ namespace gameswf
 		void add(as_object* listener);
 		void remove(as_object* listener);
 		int size() const;
+		virtual void enumerate(as_environment* env);
 		void	broadcast(const fn_call& fn);
 	
 		private :

@@ -267,10 +267,6 @@ namespace gameswf
 		gameswf_engine_mutex().unlock();
 	}
 
-	// @@ should these delegate to m_movie?	 Probably...
-	bool	root::set_member(const tu_stringi& name, const as_value& val) { return false; }
-	bool	root::get_member(const tu_stringi& name, as_value* val) { return false; }
-
 	void	root::set_root_movie(character* root_movie)
 	{
 		m_movie = root_movie;
