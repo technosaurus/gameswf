@@ -1477,20 +1477,33 @@ namespace gameswf
 					}
 					else
 					{
+#ifdef _DEBUG
+						// put as much as possible information
 						if (env->top(1).to_object())
 						{
-							as_value val;
-							env->top(1).to_object()->get_member("_name", &val);
-							log_error("error: can't find method 0x%p(_name='%s').%s\n", 
-								env->top(1).to_object(), val.to_string(), method_name.c_str());
+							sprite_instance* clip = cast_to<sprite_instance>(env->top(1).to_object());
+							if (clip)
+							{
+								as_value val;
+								clip->get_member("_name", &val);
+								log_error("error: can't find %s[0x%p, _name='%s'].%s\n", 
+									s_last_varname.c_str(), clip, val.to_string(), method_name.c_str());
+							}
+							else
+							{
+								log_error("error: can't find %s[0x%p].%s\n", 
+									s_last_varname.c_str(), env->top(1).to_object(), method_name.c_str());
+							}
 						}
 						else
 						{
-#ifdef _DEBUG
-							log_error("error: can't find method %s.%s\n", 
+							log_error("error: can't find %s[0x0].%s\n", 
 								s_last_varname.c_str(), method_name.c_str());
-#endif
 						}
+#else
+						log_error("error: can't find method %s\n", method_name.c_str());
+#endif
+
 					}
 					env->drop(nargs + 2);
 					env->top(0) = result;
