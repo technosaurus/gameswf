@@ -45,6 +45,122 @@ namespace gameswf
 
 	int player::s_player_count = 0;
 
+	// standard method map, this stuff should be high optimized
+
+	static stringi_hash<as_value>*	s_standard_method_map[BUILTIN_COUNT];
+	void clear_standard_method_map()
+	{
+		for (int i = 0; i < BUILTIN_COUNT; i++)
+		{
+			if (s_standard_method_map[i])
+			{
+				delete s_standard_method_map[i];
+			}
+		}
+	}
+
+	bool get_builtin(builtin_object id, const tu_stringi& name, as_value* val)
+	{
+		if (s_standard_method_map[id])
+		{
+			return s_standard_method_map[id]->get(name, val);
+		}
+		return false;
+	}
+
+	stringi_hash<as_value>* new_standard_method_map(builtin_object id)
+	{
+		if (s_standard_method_map[id] == NULL)
+		{
+			s_standard_method_map[id] = new stringi_hash<as_value>;
+		}
+		return s_standard_method_map[id];
+	}
+
+	void standard_method_map_init()
+	{
+		// setup builtin methods
+		stringi_hash<as_value>* map;
+
+		// as_object builtins
+		map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
+		map->add("addProperty", as_object_addproperty);
+		map->add("registerClass", as_object_registerclass);
+		map->add("hasOwnProperty", as_object_hasownproperty);
+		map->add("watch", as_object_watch);
+		map->add("unwatch", as_object_unwatch);
+
+		// for debugging
+#ifdef _DEBUG
+		map->add("dump", as_object_dump);
+#endif
+
+		// as_number builtins
+		map = new_standard_method_map(BUILTIN_NUMBER_METHOD);
+		map->add("toString", as_number_to_string);
+		map->add("valueOf", as_number_valueof);
+
+		// as_boolean builtins
+		map = new_standard_method_map(BUILTIN_BOOLEAN_METHOD);
+		map->add("toString", as_boolean_to_string);
+		map->add("valueOf", as_boolean_valueof);
+
+		// as_string builtins
+		map = new_standard_method_map(BUILTIN_STRING_METHOD);
+		map->add("toString", string_to_string);
+		map->add("fromCharCode", string_from_char_code);
+		map->add("charCodeAt", string_char_code_at);
+		map->add("concat", string_concat);
+		map->add("indexOf", string_index_of);
+		map->add("lastIndexOf", string_last_index_of);
+		map->add("slice", string_slice);
+		map->add("split", string_split);
+		map->add("substring", string_substring);
+		map->add("substr", string_substr);
+		map->add("toLowerCase", string_to_lowercase);
+		map->add("toUpperCase", string_to_uppercase);
+		map->add("charAt", string_char_at);
+		map->add("length", as_value(string_length, NULL));
+
+		// sprite_instance builtins
+		map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
+		map->add("play", sprite_play);
+		map->add("stop", sprite_stop);
+		map->add("gotoAndStop", sprite_goto_and_stop);
+		map->add("gotoAndPlay", sprite_goto_and_play);
+		map->add("nextFrame", sprite_next_frame);
+		map->add("prevFrame", sprite_prev_frame);
+		map->add("getBytesLoaded", sprite_get_bytes_loaded);
+		map->add("getBytesTotal", sprite_get_bytes_total);
+		map->add("swapDepths", sprite_swap_depths);
+		map->add("duplicateMovieClip", sprite_duplicate_movieclip);
+		map->add("getDepth", sprite_get_depth);
+		map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
+		map->add("removeMovieClip", sprite_remove_movieclip);
+		map->add("hitTest", sprite_hit_test);
+		map->add("startDrag", sprite_start_drag);
+		map->add("stopDrag", sprite_stop_drag);
+		map->add("loadMovie", sprite_loadmovie);
+		map->add("unloadMovie", sprite_unloadmovie);
+		map->add("getNextHighestDepth", sprite_getnexthighestdepth);
+		map->add("createTextField", sprite_create_text_field);
+		map->add("attachMovie", sprite_attach_movie);
+
+		// drawing API
+		map->add("beginFill", sprite_begin_fill);
+		map->add("endFill", sprite_end_fill);
+		map->add("lineTo", sprite_line_to);
+		map->add("moveTo", sprite_move_to);
+		map->add("curveTo", sprite_curve_to);
+		map->add("clear", sprite_clear);
+		map->add("lineStyle", sprite_line_style);
+
+		// gameSWF extension
+		// reset root FPS
+		map->add("setFPS", sprite_set_fps);
+
+	}
+
 	// Standard property lookup.
 
 	static stringi_hash<as_standard_member>	s_standard_property_map;
@@ -213,6 +329,11 @@ namespace gameswf
 
 		action_init();
 
+		if( s_player_count == 0 )
+		{
+			standard_method_map_init();
+		}
+
 		++s_player_count;
 	}
 
@@ -243,6 +364,7 @@ namespace gameswf
 			clears_tag_loaders();
 			clear_shared_libs();
 			close_glyph_provider();
+			clear_standard_method_map();
 		}
 
 		gameswf_engine_mutex().unlock();
@@ -271,97 +393,6 @@ namespace gameswf
 	void	player::action_init()
 	// Create/hook built-ins.
 	{
-
-		// setup builtin methods
-		stringi_hash<as_value>* map;
-
-		// clear array
-		for (int i = 0; i < BUILTIN_COUNT; i++)
-		{
-			if (m_standard_method_map[i])
-			{
-				m_standard_method_map[i] = NULL;
-			}
-		}
-
-		// as_object builtins
-		map = new_standard_method_map(BUILTIN_OBJECT_METHOD);
-		map->add("addProperty", as_object_addproperty);
-		map->add("registerClass", as_object_registerclass);
-		map->add("hasOwnProperty", as_object_hasownproperty);
-		map->add("watch", as_object_watch);
-		map->add("unwatch", as_object_unwatch);
-
-		// for debugging
-#ifdef _DEBUG
-		map->add("dump", as_object_dump);
-#endif
-
-		// as_number builtins
-		map = new_standard_method_map(BUILTIN_NUMBER_METHOD);
-		map->add("toString", as_number_to_string);
-		map->add("valueOf", as_number_valueof);
-
-		// as_boolean builtins
-		map = new_standard_method_map(BUILTIN_BOOLEAN_METHOD);
-		map->add("toString", as_boolean_to_string);
-		map->add("valueOf", as_boolean_valueof);
-
-		// as_string builtins
-		map = new_standard_method_map(BUILTIN_STRING_METHOD);
-		map->add("toString", string_to_string);
-		map->add("fromCharCode", string_from_char_code);
-		map->add("charCodeAt", string_char_code_at);
-		map->add("concat", string_concat);
-		map->add("indexOf", string_index_of);
-		map->add("lastIndexOf", string_last_index_of);
-		map->add("slice", string_slice);
-		map->add("split", string_split);
-		map->add("substring", string_substring);
-		map->add("substr", string_substr);
-		map->add("toLowerCase", string_to_lowercase);
-		map->add("toUpperCase", string_to_uppercase);
-		map->add("charAt", string_char_at);
-		map->add("length", as_value(string_length, NULL));
-
-		// sprite_instance builtins
-		map = new_standard_method_map(BUILTIN_SPRITE_METHOD);
-		map->add("play", sprite_play);
-		map->add("stop", sprite_stop);
-		map->add("gotoAndStop", sprite_goto_and_stop);
-		map->add("gotoAndPlay", sprite_goto_and_play);
-		map->add("nextFrame", sprite_next_frame);
-		map->add("prevFrame", sprite_prev_frame);
-		map->add("getBytesLoaded", sprite_get_bytes_loaded);
-		map->add("getBytesTotal", sprite_get_bytes_total);
-		map->add("swapDepths", sprite_swap_depths);
-		map->add("duplicateMovieClip", sprite_duplicate_movieclip);
-		map->add("getDepth", sprite_get_depth);
-		map->add("createEmptyMovieClip", sprite_create_empty_movieclip);
-		map->add("removeMovieClip", sprite_remove_movieclip);
-		map->add("hitTest", sprite_hit_test);
-		map->add("startDrag", sprite_start_drag);
-		map->add("stopDrag", sprite_stop_drag);
-		map->add("loadMovie", sprite_loadmovie);
-		map->add("unloadMovie", sprite_unloadmovie);
-		map->add("getNextHighestDepth", sprite_getnexthighestdepth);
-		map->add("createTextField", sprite_create_text_field);
-		map->add("attachMovie", sprite_attach_movie);
-
-		// drawing API
-		map->add("beginFill", sprite_begin_fill);
-		map->add("endFill", sprite_end_fill);
-		map->add("lineTo", sprite_line_to);
-		map->add("moveTo", sprite_move_to);
-		map->add("curveTo", sprite_curve_to);
-		map->add("clear", sprite_clear);
-		map->add("lineStyle", sprite_line_style);
-
-		// gameSWF extension
-		// reset root FPS
-		map->add("setFPS", sprite_set_fps);
-
-
 		m_start_time = tu_timer::get_ticks();
 
 		//
@@ -417,7 +448,6 @@ namespace gameswf
 		{
 			clear_standard_property_map();
 		}
-		clear_standard_method_map();
 	}
 
 	as_object* player::get_global() const
@@ -468,37 +498,6 @@ namespace gameswf
 	{
 		assert(dir != NULL);
 		m_workdir = dir;
-	}
-
-	// standard method map, this stuff should be high optimized
-
-	void player::clear_standard_method_map()
-	{
-		for (int i = 0; i < BUILTIN_COUNT; i++)
-		{
-			if (m_standard_method_map[i])
-			{
-				delete m_standard_method_map[i];
-			}
-		}
-	}
-
-	bool player::get_builtin(builtin_object id, const tu_stringi& name, as_value* val) const
-	{
-		if (m_standard_method_map[id])
-		{
-			return m_standard_method_map[id]->get(name, val);
-		}
-		return false;
-	}
-
-	stringi_hash<as_value>* player::new_standard_method_map(builtin_object id)
-	{
-		if (m_standard_method_map[id] == NULL)
-		{
-			m_standard_method_map[id] = new stringi_hash<as_value>;
-		}
-		return m_standard_method_map[id];
 	}
 
 	// library stuff, for sharing resources among different movies.
