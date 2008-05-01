@@ -121,9 +121,9 @@ namespace gameswf
 		// receive indexes
 		// array may contain not numerical indexes
 		array<tu_stringi> idx;
-		for (stringi_hash<as_member>::iterator it = m_members.begin(); it != m_members.end(); ++it)
+		for (stringi_hash<as_value>::iterator it = m_members.begin(); it != m_members.end(); ++it)
 		{
-			if (it->second.get_member_flags().get_dont_enum() == false)
+			if (it->second.is_enum())
 			{
 				idx.push_back(it->first);
 			}
@@ -177,9 +177,9 @@ namespace gameswf
 	// get array size, excluding own methods
 	{
 		int n = 0;
-		for (stringi_hash<as_member>::iterator it = m_members.begin(); it != m_members.end(); ++it)
+		for (stringi_hash<as_value>::iterator it = m_members.begin(); it != m_members.end(); ++it)
 		{
-			if (it->second.get_member_flags().get_dont_enum() == false)
+			if (it->second.is_enum())
 			{
 				n++;
 			}
