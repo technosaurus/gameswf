@@ -94,63 +94,62 @@ namespace gameswf
 		// the NULL second parameter means that assetpropflags is applied to all children
 		as_object* props = fn.arg(1).to_object();
 
+		int as_prop_flags_mask = 7; // DONT_ENUM | DONT_DELETE | READ_ONLY;
+
 		// a number which represents three bitwise flags which
 		// are used to determine whether the list of child names should be hidden,
 		// un-hidden, protected from over-write, un-protected from over-write,
 		// protected from deletion and un-protected from deletion
-		int set_true = fn.arg(2).to_int() & as_prop_flags::as_prop_flags_mask;
+		int true_flags = fn.arg(2).to_int() & as_prop_flags_mask;
 
-		// Is another integer bitmask that works like set_true,
+		// Is another integer bitmask that works like true_flags,
 		// except it sets the attributes to false. The
-		// set_false bitmask is applied before set_true is applied
+		// false_flags bitmask is applied before true_flags is applied
 
-		// ASSetPropFlags was exposed in Flash 5, however the fourth argument 'set_false'
+		// ASSetPropFlags was exposed in Flash 5, however the fourth argument 'false_flags'
 		// was not required as it always defaulted to the value '~0'. 
-		int set_false = (fn.nargs == 3 ? 
-				 (version == 5 ? ~0 : 0) : fn.arg(3).to_int())
-			& as_prop_flags::as_prop_flags_mask;
+		int false_flags = (fn.nargs == 3 ? 
+				 (version == 5 ? ~0 : 0) : fn.arg(3).to_int()) & as_prop_flags_mask;
 
-		// Evan: it seems that if set_true == 0 and set_false == 0, this function
+		// Evan: it seems that if true_flags == 0 and false_flags == 0, this function
 		// acts as if the parameters where (object, null, 0x1, 0) ...
-		if (set_false == 0 && set_true == 0)
+		if (false_flags == 0 && true_flags == 0)
 		{
 			props = NULL;
-			set_false = 0;
-			set_true = 0x1;
+			false_flags = 0;
+			true_flags = 0x1;
 		}
 
 		if (props == NULL)
 		{
 			// Takes all members of the object and sets its property flags
-			for (stringi_hash<as_member>::const_iterator it = obj->m_members.begin(); 
+			for (stringi_hash<as_value>::const_iterator it = obj->m_members.begin(); 
 				it != obj->m_members.end(); ++it)
 			{
-				as_member member = it.get_value();
-
-				as_prop_flags f = member.get_member_flags();
-				f.set_flags(set_true, set_false);
-				member.set_member_flags(f);
-
-				obj->m_members.set(it.get_key(), member);
+				const as_value& val = it->second;
+				int flags = val.get_flags();
+				flags = flags & (~false_flags);
+				flags |= true_flags;
+				val.set_flags(flags);
 			}
 		}
 		else
 		{
 			// Takes all string type prop and sets property flags of obj[prop]
-			for (stringi_hash<as_member>::const_iterator it = props->m_members.begin(); 
+			for (stringi_hash<as_value>::const_iterator it = props->m_members.begin(); 
 				it != props->m_members.end(); ++it)
 			{
-				const as_value& key = it->second.get_member_value();
+				const as_value& key = it->second;
 				if (key.is_string())
 				{
-					stringi_hash<as_member>::iterator obj_it = obj->m_members.find(key.to_tu_string());
+					stringi_hash<as_value>::iterator obj_it = obj->m_members.find(key.to_tu_string());
 					if (obj_it != obj->m_members.end())
 					{
-						as_member& member = obj_it->second;
-
-						as_prop_flags f = member.get_member_flags();
-						f.set_flags(set_true, set_false);
-						member.set_member_flags(f);
+						const as_value& val = obj_it->second;
+						int flags = val.get_flags();
+						flags = flags & (~false_flags);
+						flags |= true_flags;
+						val.set_flags(flags);
 					}
 				}
 			}

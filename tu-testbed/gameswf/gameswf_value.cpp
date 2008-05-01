@@ -22,7 +22,8 @@ namespace gameswf
 
 	as_value::as_value(as_object* obj) :
 		m_type(OBJECT),
-		m_object(obj)
+		m_object(obj),
+		m_flags(0)
 	{
 		if (m_object)
 		{
@@ -32,14 +33,16 @@ namespace gameswf
 
 
 	as_value::as_value(as_s_function* func)	:
-		m_type(UNDEFINED)
+		m_type(UNDEFINED),
+		m_flags(0)
 	{
 		set_as_object(func);
 	}
 
 	as_value::as_value(const as_value& getter, const as_value& setter) :
 		m_property_target(NULL),
-		m_type(PROPERTY)
+		m_type(PROPERTY),
+		m_flags(0)
 	{
 		m_property = new as_property(getter, setter);
 		m_property->add_ref();
@@ -72,7 +75,7 @@ namespace gameswf
 				// Behavior depends on file version.  In
 				// version 7+, it's "undefined", in versions
 				// 6-, it's "".
-				int version = 8; //vv get_root()->get_movie_version();
+				int version = 8; //vv fixme: get_root()->get_movie_version();
 				if (version <= 6)
 				{
 					m_string = "";
@@ -190,7 +193,7 @@ namespace gameswf
 		{
 			case STRING:
 				// From Moock
-//vv				if (get_root()->get_movie_version() >= 7)
+//vv fixme:				if (get_root()->get_movie_version() >= 7)
 				{
 					return m_string.size() > 0 ? true : false;
 				}
@@ -282,9 +285,11 @@ namespace gameswf
 
 	void	as_value::operator=(const as_value& v)
 	{
+		m_flags = v.m_flags;
 		switch (v.m_type)
 		{
 			case UNDEFINED:
+				m_flags = 0;
 				set_undefined();
 				break;
 			case NUMBER:
@@ -446,20 +451,23 @@ namespace gameswf
 	}
 
 	as_value::as_value(float val) :
-		m_type(UNDEFINED)
+		m_type(UNDEFINED),
+		m_flags(0)
 	{
 		set_double(val);
 	}
 
 	as_value::as_value(int val) :
-		m_type(UNDEFINED)
+		m_type(UNDEFINED),
+		m_flags(0)
 	{
 		set_double(val);
 	}
 
 	as_value::as_value(double val) :
 		m_type(NUMBER),
-		m_number(val)
+		m_number(val),
+		m_flags(0)
 	{
 	}
 
@@ -470,7 +478,8 @@ namespace gameswf
 
 	as_value::as_value(bool val) :
 		m_type(BOOLEAN),
-		m_bool(val)
+		m_bool(val),
+		m_flags(0)
 	{
 	}
 
@@ -490,14 +499,16 @@ namespace gameswf
 	}
 
 	as_value::as_value(as_c_function_ptr func) :
-		m_type(UNDEFINED)
+		m_type(UNDEFINED),
+		m_flags(0)
 	{
 		set_as_c_function(func);
 	}
 
 	void	as_value::set_as_c_function(as_c_function_ptr func)
 	{
-		set_as_object(new as_c_function(NULL, func));	//vv
+		//vv hack, c_function object has no pointer to player instance
+		set_as_object(new as_c_function(NULL, func));
 	}
 
 	const char*	as_value::typeof() const
@@ -583,12 +594,14 @@ namespace gameswf
 	
 	as_value::as_value(const char* str) :
 		m_type(STRING),
-		m_string(str)
+		m_string(str),
+		m_flags(0)
 	{
 	}
 
 	as_value::as_value(const wchar_t* wstr)	:
-		m_type(STRING)
+		m_type(STRING),
+		m_flags(0)
 	{
 		// Encode the string value as UTF-8.
 		//
@@ -620,12 +633,14 @@ namespace gameswf
 	}
 
 	as_value::as_value() :
-		m_type(UNDEFINED)
+		m_type(UNDEFINED),
+		m_flags(0)
 	{
 	}
 
 	as_value::as_value(const as_value& v) :
-		m_type(UNDEFINED)
+		m_type(UNDEFINED),
+		m_flags(0)
 	{
 		*this = v;
 	}

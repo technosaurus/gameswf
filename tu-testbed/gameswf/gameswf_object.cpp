@@ -69,7 +69,7 @@ namespace gameswf
 		if (fn.nargs == 1)
 		{
 			assert(fn.this_ptr);
-			as_member m;
+			as_value m;
 			if (fn.this_ptr->m_members.get(fn.arg(0).to_tu_stringi(), &m))
 			{
 				fn.result->set_bool(true);
@@ -144,9 +144,10 @@ namespace gameswf
 	}
 
 	// called from a object constructor only
-	void	as_object::builtin_member(const tu_stringi& name, const as_value& val, as_prop_flags flags)
+	void	as_object::builtin_member(const tu_stringi& name, const as_value& val)
 	{
-		m_members.set(name, as_member(val, flags));
+		val.set_flags(as_value::DONT_ENUM);
+		m_members.set(name, val);
 	}
 
 	bool	as_object::set_member(const tu_stringi& name, const as_value& new_val)
@@ -180,18 +181,20 @@ namespace gameswf
 			}
 		}
 
-		stringi_hash<as_member>::const_iterator it = this->m_members.find(name);
+		stringi_hash<as_value>::const_iterator it = this->m_members.find(name);
 		if (it != this->m_members.end())
 		{
-			const as_prop_flags flags = (it.get_value()).get_member_flags();
+			// update a old members
 			// is the member read-only ?
+			if (it->second.is_readonly() == false)
 			{
-				m_members.set(name, as_member(val, flags));
+				m_members.set(name, val);
 			}
 		}
 		else
 		{
-			m_members.set(name, as_member(val));
+			// create a new members
+			m_members.set(name, val);
 		}
 		return true;
 	}
@@ -211,12 +214,7 @@ namespace gameswf
 			return true;
 		}
 
-		as_member m;
-		if (m_members.get(name, &m))
-		{
-			*val = m.get_member_value();
-		}
-		else
+		if (m_members.get(name, val) == false)
 		{
 			as_object* proto = get_proto();
 			if (proto == NULL)
@@ -238,28 +236,6 @@ namespace gameswf
 		return true;
 	}
 
-	bool as_object::get_member(const tu_stringi& name, as_member* member) const
-	{
-		//printf("GET MEMBER: %s at %p for object %p\n", name.c_str(), val, this);
-		assert(member != NULL);
-		return m_members.get(name, member);
-	}
-
-	bool	as_object::set_member_flags(const tu_stringi& name, const int flags)
-	{
-		as_member member;
-		if (as_object::get_member(name, &member)) {
-			as_prop_flags f = member.get_member_flags();
-			f.set_flags(flags);
-			member.set_member_flags(f);
-
-			m_members.set(name, member);
-
-			return true;
-		}
-		return false;
-	}
-
 	void	as_object::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
 		// Is it a reentrance ?
@@ -270,16 +246,15 @@ namespace gameswf
 		visited_objects->set(this, true);
 
 		as_value undefined;
-		for (stringi_hash<as_member>::iterator it = m_members.begin();
+		for (stringi_hash<as_value>::iterator it = m_members.begin();
 			it != m_members.end(); ++it)
 		{
-			const as_value& val = it->second.get_member_value();
-			as_object* obj = val.to_object();
+			as_object* obj = it->second.to_object();
 			if (obj)
 			{
 				if (obj == this_ptr)
 				{
-					it->second.set_member_value(undefined);
+					it->second.set_undefined();
 				}
 				else
 				{
@@ -288,12 +263,12 @@ namespace gameswf
 				continue;
 			}
 
-			as_property* prop = val.to_property();
+			as_property* prop = it->second.to_property();
 			if (prop)
 			{
-				if (val.get_property_target() == this_ptr)
+				if (it->second.get_property_target() == this_ptr)
 				{
-					const_cast<as_value&>(val).set_property_target(NULL);
+					const_cast<as_value&>(it->second).set_property_target(NULL);
 				}
 			}
 		}
@@ -332,16 +307,15 @@ namespace gameswf
 	void as_object::enumerate(as_environment* env)
 	// retrieves members & pushes them into env
 	{
-		stringi_hash<as_member>::const_iterator it = m_members.begin();
+		stringi_hash<as_value>::const_iterator it = m_members.begin();
 		while (it != m_members.end())
 		{
-			const as_member& member = it.get_value();
-			if (member.get_member_flags().get_dont_enum() == false)
+			if (it->second.is_enum())
 			{
-				env->push(as_value(it.get_key()));
+				env->push(it->first);
 
 				IF_VERBOSE_ACTION(log_msg("-------------- enumerate - push: %s\n",
-					it.get_key().c_str()));
+					it->first.c_str()));
 			}
 
 			++it;
@@ -393,10 +367,10 @@ namespace gameswf
 	{
 		if (target)
 		{
-			for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
+			for (stringi_hash<as_value>::const_iterator it = m_members.begin(); 
 				it != m_members.end(); ++it ) 
 			{ 
-				target->set_member(it->first, it->second.get_member_value()); 
+				target->set_member(it->first, it->second); 
 			} 
 		}
 	}
@@ -407,10 +381,10 @@ namespace gameswf
 	{
 		tabs += "  ";
 		printf("%s*** object 0x%p ***\n", tabs.c_str(), this);
-		for (stringi_hash<as_member>::const_iterator it = m_members.begin(); 
+		for (stringi_hash<as_value>::const_iterator it = m_members.begin(); 
 			it != m_members.end(); ++it)
 		{
-			as_value val = it->second.get_member_value();
+			const as_value& val = it->second;
 			if (val.is_property())
 			{
 				printf("%s%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
@@ -436,7 +410,7 @@ namespace gameswf
 			{
 				printf("%s%s: %s\n", 
 					tabs.c_str(), 
-					it->first.c_str(), it->second.get_member_value().to_string());
+					it->first.c_str(), it->second.to_string());
 			}
 		}
 
@@ -506,18 +480,18 @@ namespace gameswf
 		return tar;
 	}
 
-	// marks 'this' as 'not garbage'
+	// mark 'this' as alive
 	void as_object::this_alive()
 	{
 		// Whether there were we here already ?
 		if (m_player != NULL && m_player->is_garbage(this))
 		{
-			// 'this' and its members is not garbage
+			// 'this' and its members is alive
 			m_player->set_alive(this);
-			for (stringi_hash<as_member>::iterator it = m_members.begin();
+			for (stringi_hash<as_value>::iterator it = m_members.begin();
 				it != m_members.end(); ++it)
 			{
-				as_object* obj = it->second.get_member_value().to_object();
+				as_object* obj = it->second.to_object();
 				if (obj)
 				{
 					obj->this_alive();

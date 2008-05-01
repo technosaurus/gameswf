@@ -40,7 +40,16 @@ namespace gameswf
 
 	struct as_value
 	{
-	private:
+		// flags defining the level of protection of a value
+		enum value_flag
+		{
+			DONT_ENUM = 0x01,
+			DONT_DELETE = 0x02,
+			READ_ONLY = 0x04
+		};
+
+		private:
+
 		enum type
 		{
 			UNDEFINED,
@@ -64,6 +73,9 @@ namespace gameswf
 				as_property* m_property;
 			};
 		};
+
+		// Numeric flags
+		mutable int m_flags;
 
 	public:
 
@@ -143,6 +155,14 @@ namespace gameswf
 
 		const char*	typeof() const;
 		bool get_member(const tu_string& name, as_value* val);
+
+		// flags
+		inline bool is_enum() const { return m_flags & DONT_ENUM ? false : true; }
+		inline bool is_readonly() const { return m_flags & READ_ONLY ? true : false; }
+		inline bool is_protected() const { return m_flags & DONT_DELETE ? true : false; }
+		inline int get_flags() const { return m_flags; }
+		inline void set_flags(int flags) const  { m_flags = flags; }
+
 	};
 
 }

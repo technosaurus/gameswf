@@ -115,7 +115,7 @@ public:
 //
 // @@ move this towards a strict subset of std::hash_map<> ?
 template<class T, class U, class hash_functor = fixed_size_hash<T> >
-class hash : public std::hash_map<T, U, hash_functor>
+class hash : public stdext::hash_map<T, U, hash_functor>
 {
 public:
 	// extra convenience interfaces
