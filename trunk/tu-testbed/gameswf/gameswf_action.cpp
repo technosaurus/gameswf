@@ -1050,14 +1050,18 @@ namespace gameswf
 
 				case 0x2B:	// cast_object
 				{
-					as_object* obj = env->top(0).to_object();
-					as_function* constructor = env->top(1).to_function();
-
-					//TODO:
 					//Determines if object is an instance of constructor 
 					// (doing the same comparison as ActionInstanceOf).
 
-					log_error("todo opcode: %02X\n", action_id);
+					as_object* obj = env->top(0).to_object();
+					as_function* constructor = env->top(1).to_function();
+
+					if ((obj && obj->is_instance_of(constructor)) == false)
+					{
+						obj = NULL;
+					}
+
+					//printf("cast_object 0x%p\n", obj);
 
 					env->drop(1);
 					env->top(0).set_as_object(obj);
