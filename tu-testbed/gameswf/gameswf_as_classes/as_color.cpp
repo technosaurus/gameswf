@@ -179,7 +179,7 @@ namespace gameswf
 		builtin_member("setRGB", as_color_setRGB);
 		builtin_member("getTransform", as_color_gettransform);
 		builtin_member("setTransform", as_color_settransform);
-		builtin_member("__constructor__", as_global_color_ctor);
+		set_ctor(as_global_color_ctor);
 	}
 
 };

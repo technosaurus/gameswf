@@ -517,7 +517,7 @@ namespace gameswf
 	{
 		// by default ctor is as_global_object_ctor
 		as_value ctor;
-		m_members.get("__constructor__", &ctor);
+		get_ctor(&ctor);
 		if (ctor.is_undefined())
 		{
 			ctor.set_as_c_function(as_global_object_ctor);
@@ -554,6 +554,17 @@ namespace gameswf
 	{
 		assert(m_player != NULL);
 		return m_player->get_root(); 
+	}
+
+	static tu_string s_constructor("__constructor__");
+	bool as_object::get_ctor(as_value* val) const
+	{
+		return m_members.get(s_constructor, val);
+	}
+
+	void as_object::set_ctor(const as_value& val)
+	{
+		builtin_member(s_constructor, val);
 	}
 
 }

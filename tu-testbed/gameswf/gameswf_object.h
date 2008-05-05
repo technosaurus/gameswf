@@ -94,6 +94,10 @@ namespace gameswf
 		player* get_player() const { return m_player.get_ptr(); }
 		bool	is_instance_of(const as_function* constructor) const;
 		as_object* get_global() const;
+
+		// get/set constructor of object
+		bool get_ctor(as_value* val) const;
+		void set_ctor(const as_value& val);
 	};
 
 }

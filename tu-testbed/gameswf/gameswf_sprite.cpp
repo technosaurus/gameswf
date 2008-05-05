@@ -54,7 +54,7 @@ namespace gameswf
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
 		m_player->set_alive(this);
-		builtin_member("__constructor__", as_global_movieclip_ctor);
+		set_ctor(as_global_movieclip_ctor);
 	}
 
 	sprite_instance::~sprite_instance()
