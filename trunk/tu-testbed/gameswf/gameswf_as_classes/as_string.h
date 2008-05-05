@@ -15,7 +15,7 @@ namespace gameswf
 {
 
 	// Constructor for creating ActionScript String object.
-	void string_ctor(const fn_call& fn);
+	void as_global_string_ctor(const fn_call& fn);
 
 	void string_char_code_at(const fn_call& fn);
 	void string_concat(const fn_call& fn);

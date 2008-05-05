@@ -516,6 +516,70 @@ namespace gameswf
 		set_as_object(new as_c_function(NULL, func));
 	}
 
+		
+	bool as_value::is_instance_of(const as_function* constructor) const
+	{
+		switch (m_type)
+		{
+			case UNDEFINED:
+				break;
+
+			case STRING:
+			{
+				const as_c_function* func = cast_to<as_c_function>(constructor);
+				if (func)
+				{
+					return 
+						(func->m_func == as_global_string_ctor) |
+						(func->m_func == as_global_object_ctor);
+				}
+				break;
+			}
+
+			case NUMBER:
+			{
+				const as_c_function* func = cast_to<as_c_function>(constructor);
+				if (func)
+				{
+					return 
+						(func->m_func == as_global_number_ctor) |
+						(func->m_func == as_global_object_ctor);
+				}
+				break;
+			}
+
+			case BOOLEAN:
+			{
+				const as_c_function* func = cast_to<as_c_function>(constructor);
+				if (func)
+				{
+					return 
+						(func->m_func == as_global_boolean_ctor) |
+						(func->m_func == as_global_object_ctor);
+				}
+				break;
+			}
+
+			case OBJECT:
+				if (m_object)
+				{
+					return m_object->is_instance_of(*constructor);
+				}
+				break;
+
+			case PROPERTY:
+			{
+				//vv fixme:	
+				break;
+			}
+
+			default:
+				break;
+
+		}
+		return false;
+	}
+
 	const char*	as_value::typeof() const
 	{
 		switch (m_type)
