@@ -46,7 +46,6 @@ namespace gameswf
 		~as_mcloader();
 		
 		virtual void	advance(float delta_time);
-		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 	};
 
 }	// end namespace gameswf

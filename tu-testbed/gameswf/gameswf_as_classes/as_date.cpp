@@ -137,18 +137,6 @@ namespace gameswf
 		return m_time;
 	}
 
-
-	bool as_date::is_instance_of(const as_function& constructor) const
-	{
-		const as_c_function * function = cast_to<as_c_function>(&constructor);
-		if( function && function->m_func == as_global_date_ctor )
-		{
-			return true;
-		}
-
-		return as_object::is_instance_of(constructor);
-	}
-
 	as_date::as_date(const fn_call& fn) :
 		as_object(fn.get_player()),
 		m_time(tu_timer::get_systime())

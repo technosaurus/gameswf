@@ -563,7 +563,7 @@ namespace gameswf
 			case OBJECT:
 				if (m_object)
 				{
-					return m_object->is_instance_of(*constructor);
+					return m_object->is_instance_of(constructor);
 				}
 				break;
 

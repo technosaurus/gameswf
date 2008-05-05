@@ -114,6 +114,7 @@ namespace gameswf
 		builtin_member("push", as_array_push);
 		builtin_member("pop", as_array_pop);
 		builtin_member("length", as_value(as_array_length, NULL));
+		builtin_member("__constructor__", as_global_array_ctor);
 	}
 
 	const char* as_array::to_string()
@@ -160,17 +161,6 @@ namespace gameswf
 		}
 
 		return m_string_value.c_str();
-	}
-
-	bool as_array::is_instance_of(const as_function& constructor) const
-	{
-		const as_c_function * function = cast_to<as_c_function>(&constructor);
-		if( function && function->m_func == as_global_array_ctor )
-		{
-			return true;
-		}
-
-		return as_object::is_instance_of(constructor);
 	}
 
 	int as_array::size()

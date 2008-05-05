@@ -184,17 +184,6 @@ namespace gameswf
 		return as_object::get_member( name, val );
 	}
 
-	bool    as_color_transform::is_instance_of(const as_function& constructor) const
-	{
-		const as_c_function * function = cast_to<as_c_function>(&constructor);
-		if( function && function->m_func == as_global_color_transform_ctor )
-		{
-			return true;
-		}
-
-		return as_object::is_instance_of(constructor);
-	}
-
 	as_color_transform_member	get_color_transform_member(const tu_stringi& name)
 	{
 		if (s_color_transform_member_map.size() == 0)

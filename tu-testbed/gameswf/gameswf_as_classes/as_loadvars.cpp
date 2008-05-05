@@ -398,17 +398,6 @@ namespace gameswf
 		return as_object::get_member( name, val );
 	}
 
-	bool as_loadvars::is_instance_of(const as_function& constructor) const
-	{
-		const as_c_function * function = cast_to<as_c_function>(&constructor);
-		if( function && function->m_func == as_global_loadvars_ctor )
-		{
-			return true;
-		}
-
-		return as_object::is_instance_of(constructor);
-	}
-
 	tu_string as_loadvars::create_request(const tu_string& method, const tu_string& uri, bool send_data)
 	{
 		tu_string information;
