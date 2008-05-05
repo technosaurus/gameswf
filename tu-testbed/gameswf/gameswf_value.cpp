@@ -180,6 +180,11 @@ namespace gameswf
 				return val.to_number();
 			}
 
+			case UNDEFINED:
+			{
+				return get_nan();
+			}
+
 			default:
 				return 0.0;
 		}
