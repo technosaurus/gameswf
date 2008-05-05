@@ -127,9 +127,9 @@ namespace gameswf
 				prototype->copy_to(obj);
 
 				as_value prototype_constructor;
-				if (prototype->get_member("__constructor__", &prototype_constructor))
+				if (prototype->get_ctor(&prototype_constructor))
 				{
-					proto->set_member("__constructor__", prototype_constructor);
+					proto->set_ctor(prototype_constructor);
 				}
 			}
 		}
@@ -159,6 +159,7 @@ namespace gameswf
 			as_object* proto = create_proto(ch, m_registered_class_constructor.get_ptr());
 
 			as_environment env(get_player());
+			ch->set_ctor(m_registered_class_constructor.get_ptr());
 			call_method(m_registered_class_constructor.get_ptr(), &env, ch, 0, 0);
 		}
 	}

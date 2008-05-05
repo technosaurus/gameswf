@@ -675,8 +675,8 @@ namespace gameswf
 			prototype->copy_to(obj);
 
 			as_value prototype_constructor;
-			prototype->get_member("__constructor__", &prototype_constructor);
-			proto->set_member("__constructor__", prototype_constructor);
+			prototype->get_ctor(&prototype_constructor);
+			proto->set_ctor(prototype_constructor);
 		}
 
 		return proto;
@@ -1276,8 +1276,7 @@ namespace gameswf
 						// We don't need the function result.
 						call_method(s_constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
 				
-						new_obj_ptr->set_member("__constructor__", s_constructor);
-
+						new_obj_ptr->set_ctor(s_constructor);
 						new_obj.set_as_object(new_obj_ptr.get_ptr());
 					}
 					else
@@ -1544,7 +1543,7 @@ namespace gameswf
 						if (obj && obj->m_this_ptr != NULL)
 						{
 							as_value constructor;
-							if (obj->get_member("__constructor__", &constructor))
+							if (obj->get_ctor(&constructor))
 							{
 								create_proto(obj, constructor);
 								result = call_method(
@@ -1763,7 +1762,7 @@ namespace gameswf
 					as_object* new_prototype = new as_object(env->get_player());
 
 					new_prototype->m_proto = super_prototype.to_object();
-					new_prototype->set_member("__constructor__", super);
+					new_prototype->set_ctor(super);
 					sub.to_object()->set_member("prototype", new_prototype);
 					env->drop(2);
 					break;
