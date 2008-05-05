@@ -29,7 +29,6 @@ namespace gameswf
 		}
 
 		as_color(player* player, character* target);
-		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 
 		weak_ptr<character> m_target;
 		cxform	m_cxform;	// original cxform

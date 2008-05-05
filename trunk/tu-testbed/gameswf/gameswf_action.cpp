@@ -1275,6 +1275,9 @@ namespace gameswf
 						// Call the actual constructor function; new_obj is its 'this'.
 						// We don't need the function result.
 						call_method(s_constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
+				
+						new_obj_ptr->set_member("__constructor__", s_constructor);
+
 						new_obj.set_as_object(new_obj_ptr.get_ptr());
 					}
 					else

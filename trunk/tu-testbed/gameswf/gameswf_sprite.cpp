@@ -54,6 +54,7 @@ namespace gameswf
 			sizeof(m_init_actions_executed[0]) * m_init_actions_executed.size());
 
 		m_player->set_alive(this);
+		builtin_member("__constructor__", as_global_movieclip_ctor);
 	}
 
 	sprite_instance::~sprite_instance()
@@ -1427,17 +1428,6 @@ namespace gameswf
 				0.0f, 0); 
 		}
 		return cast_to<canvas>(m_canvas->get_character_def());
-	}
-
-	bool sprite_instance::is_instance_of(const as_function& constructor) const
-	{
-		const as_c_function * function = cast_to<as_c_function>(&constructor);
-		if( function && function->m_func == as_global_movieclip_ctor )
-		{
-			return true;
-		}
-
-		return as_object::is_instance_of(constructor);
 	}
 
 	void sprite_instance::enumerate(as_environment* env)

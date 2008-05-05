@@ -28,7 +28,6 @@ namespace gameswf
 		}
 
 		as_netconnection(player* player);
-		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 	};
 
 } // end of gameswf namespace

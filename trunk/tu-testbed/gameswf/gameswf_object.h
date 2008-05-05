@@ -58,7 +58,7 @@ namespace gameswf
 		// it's used for passing new created object pointer to constructors chain
 		weak_ptr<as_object> m_this_ptr;
 
-		// We can place reference to __proto__ into members but it used very often
+		// We can place reference to __proto__ into members but it's used very often
 		// so for optimization we place it into instance
 		smart_ptr<as_object> m_proto;	// for optimization
 
@@ -90,9 +90,9 @@ namespace gameswf
 		exported_module virtual root* get_root() const;
 		exported_module	virtual as_environment*	get_environment() { return 0; }
 		exported_module virtual void advance(float delta_time) { assert(0); }
-		exported_module virtual bool is_instance_of(const as_function& constructor) const;
 
 		player* get_player() const { return m_player.get_ptr(); }
+		bool	is_instance_of(const as_function* constructor) const;
 		as_object* get_global() const;
 	};
 

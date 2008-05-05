@@ -27,8 +27,6 @@ namespace gameswf
 
 		as_matrix(player* player);
 
-		exported_module virtual bool is_instance_of(const as_function& constructor) const;
-
 		matrix m_matrix;
 	};
 

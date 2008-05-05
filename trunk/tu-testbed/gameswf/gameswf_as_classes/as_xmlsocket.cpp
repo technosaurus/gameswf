@@ -149,15 +149,4 @@ namespace gameswf
 		}
 	}
 
-	bool    as_xmlsock::is_instance_of(const as_function& constructor) const
-	{
-		const as_c_function * function = cast_to<as_c_function>(&constructor);
-		if( function && function->m_func == as_global_xmlsock_ctor )
-		{
-			return true;
-		}
-
-		return as_object::is_instance_of(constructor);
-	}
-
 };

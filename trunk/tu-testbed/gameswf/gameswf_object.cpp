@@ -510,10 +510,38 @@ namespace gameswf
 		return 0;
 	}
 
-	bool    as_object::is_instance_of(const as_function& constructor) const
+	// for optimization I don't want to put '__constructor__' into as_object
+	// so the missing of '__constructor__' in a object means 
+	// that it is a instance of as_object
+	bool	as_object::is_instance_of(const as_function* constructor) const
 	{
-		const as_c_function * function = cast_to<as_c_function>(&constructor);
-		return function && function->m_func == as_global_object_ctor;
+		// by default ctor is as_global_object_ctor
+		as_value ctor;
+		m_members.get("__constructor__", &ctor);
+		if (ctor.is_undefined())
+		{
+			ctor.set_as_c_function(as_global_object_ctor);
+		}
+
+		const as_s_function* sf = cast_to<as_s_function>(constructor);
+		if (sf && sf == cast_to<as_s_function>(ctor.to_function()))
+		{
+			return true;
+		}
+
+		const as_c_function* cf1 = cast_to<as_c_function>(constructor);
+		const as_c_function* cf2 = cast_to<as_c_function>(ctor.to_function());
+		if (cf1 && cf2 && cf1->m_func == cf2->m_func)
+		{
+			return true;
+		}
+
+		as_object* proto = get_proto();
+		if (proto)
+		{
+			return proto->is_instance_of(constructor);
+		}
+		return false;
 	}
 
 	as_object* as_object::get_global() const
