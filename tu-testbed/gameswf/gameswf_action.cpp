@@ -1684,18 +1684,10 @@ namespace gameswf
 
 				case 0x54:	// instance of
 				{
-					as_function * constructor = env->pop().to_function();
-					as_object * object = env->pop().to_object();
-
-					if( object )
-					{
-						env->push( object->is_instance_of( *constructor ) );
-					}
-					else
-					{
-						env->push(false);
-					}
-
+					const as_function* constructor = env->top(0).to_function();
+					bool ret = env->top(1).is_instance_of(constructor);
+					env->top(1).set_bool(ret);
+					env->drop(1);
 					break;
 				}
 

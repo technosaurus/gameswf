@@ -154,6 +154,7 @@ namespace gameswf
 		inline bool is_undefined() const { return m_type == UNDEFINED; }
 
 		const char*	typeof() const;
+		bool is_instance_of(const as_function* constructor) const;
 		bool get_member(const tu_string& name, as_value* val);
 
 		// flags

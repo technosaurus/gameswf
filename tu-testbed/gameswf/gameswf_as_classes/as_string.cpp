@@ -347,7 +347,7 @@ namespace gameswf
 		fn.result->set_int(str.size());
 	}
 
-	void string_ctor(const fn_call& fn)
+	void as_global_string_ctor(const fn_call& fn)
 	{
 		if (fn.nargs == 1)
 		{
