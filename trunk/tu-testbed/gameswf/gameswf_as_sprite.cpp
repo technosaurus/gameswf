@@ -99,8 +99,12 @@ namespace gameswf
 			return;
 		}
 
-		sprite->goto_frame(fn.arg(0).to_tu_string());
-		sprite->set_play_state(character::PLAY);
+		// gotoAndPlay(NaN) will be ignored
+		if (fn.arg(0).is_string() || fn.arg(0).is_number())
+		{
+			sprite->goto_frame(fn.arg(0).to_tu_string());
+			sprite->set_play_state(character::PLAY);
+		}
 	}
 
 	void	sprite_goto_and_stop(const fn_call& fn)
@@ -112,8 +116,12 @@ namespace gameswf
 			return;
 		}
 
-		sprite->goto_frame(fn.arg(0).to_tu_string());
-		sprite->set_play_state(character::STOP);
+		// gotoAndStop(NaN) will be ignored
+		if (fn.arg(0).is_string() || fn.arg(0).is_number())
+		{
+			sprite->goto_frame(fn.arg(0).to_tu_string());
+			sprite->set_play_state(character::STOP);
+		}
 	}
 
 	void	sprite_next_frame(const fn_call& fn)
