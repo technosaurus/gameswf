@@ -495,6 +495,12 @@ namespace gameswf
 		assert(m_movie != NULL);
 		return m_movie->call_method_args(method_name, method_arg_fmt, args);
 	}
+	
+	const char* root::call_method(const char* method_name, variant * arguments, int argument_count )
+	{
+		assert(m_movie != NULL);
+		return m_movie->call_method(method_name, arguments, argument_count);
+	}
 
 	void	root::set_visible(bool visible) { m_movie->set_visible(visible); }
 	bool	root::get_visible() const { return m_movie->get_visible(); }
