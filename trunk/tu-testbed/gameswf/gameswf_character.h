@@ -259,6 +259,13 @@ namespace gameswf
 			assert(0);
 			return NULL;
 		}
+		
+		virtual const char*	call_method(const char* method_name, variant * arguments, int argument_count )
+			// Override this if you implement call_method.
+		{
+			assert(0);
+			return NULL;
+		}
 
 		virtual void	set_play_state(play_state s) {}
 		virtual play_state	get_play_state() const { assert(0); return STOP; }

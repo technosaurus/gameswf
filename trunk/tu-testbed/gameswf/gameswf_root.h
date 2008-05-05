@@ -125,6 +125,7 @@ namespace gameswf
 		virtual const char*	call_method(const char* method_name, const char* method_arg_fmt, ...);
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, 
 			va_list args);
+		virtual const char*	call_method(const char* method_name, variant * arguments, int argument_count );
 
 		virtual void	set_visible(bool visible);
 		virtual bool	get_visible() const;

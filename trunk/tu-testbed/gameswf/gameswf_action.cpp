@@ -291,6 +291,88 @@ namespace gameswf
 		s_retval = result.to_tu_string();
 		return s_retval.c_str();
 	}
+	
+	const char*	call_method(
+		as_environment* env,
+		as_object* this_ptr,
+		const char* method_name,
+		const variant* arguments,
+		int argument_count
+		)
+	{
+		// Parse va_list args
+		int	starting_index = env->get_top_index();
+		for (int i = 0; i < argument_count; i++)
+		{
+			switch(arguments[ i ].m_type)
+			{
+				case variant::TYPE_INT:
+				{
+					env->push( arguments[ i ].m_int );
+				}
+				break;
+			   
+				case variant::TYPE_DOUBLE:
+				{
+					env->push( arguments[ i ].m_double );
+				} break;
+
+				case variant::TYPE_FLOAT:
+				{
+					env->push( arguments[ i ].m_float );
+				} break;
+				
+				case variant::TYPE_STRING:
+				{
+					env->push( arguments[ i ].m_string );
+				} break;
+
+				case variant::TYPE_BOOL:
+				{
+					env->push( arguments[ i ].m_bool );
+				}
+				break;
+				
+				case variant::TYPE_WIDE_STRING:
+				{
+					env->push( arguments[ i ].m_wide_string );
+				}
+				break;
+
+				default:
+
+					log_error("call_method_parsed('%s') -- invalid fmt for argument %i\n",
+							method_name,
+							i
+							);
+			}
+		}
+
+		array<with_stack_entry>	dummy_with_stack;
+		as_value	method = env->get_variable(method_name, dummy_with_stack);
+
+		// check method
+
+		// Reverse the order of pushed args
+		int	nargs = env->get_top_index() - starting_index;
+		for (int i = 0; i < (nargs >> 1); i++)
+		{
+			int	i0 = starting_index + 1 + i;
+			int	i1 = starting_index + nargs - i;
+			assert(i0 < i1);
+
+			swap(&(env->bottom(i0)), &(env->bottom(i1)));
+		}
+
+		// Do the call.
+		as_value	result = call_method(method, env, this_ptr, nargs, env->get_top_index());
+		env->drop(nargs);
+
+		// Return pointer to static string for return value.
+		static tu_string	s_retval;
+		s_retval = result.to_tu_string();
+		return s_retval.c_str();
+	}
 
 	// for debugging action script
 	// keep the latest var name(to log it if call_method failure)
