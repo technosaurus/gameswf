@@ -260,11 +260,11 @@ namespace gameswf
 			return NULL;
 		}
 		
-		virtual const char*	call_method(const char* method_name, variant * arguments, int argument_count )
+		virtual tu_string	call_method(const char* method_name, as_value * arguments, int argument_count )
 			// Override this if you implement call_method.
 		{
 			assert(0);
-			return NULL;
+			return tu_string();
 		}
 
 		virtual void	set_play_state(play_state s) {}

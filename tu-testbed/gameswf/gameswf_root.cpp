@@ -496,7 +496,7 @@ namespace gameswf
 		return m_movie->call_method_args(method_name, method_arg_fmt, args);
 	}
 	
-	const char* root::call_method(const char* method_name, variant * arguments, int argument_count )
+	tu_string root::call_method(const char* method_name, as_value * arguments, int argument_count )
 	{
 		assert(m_movie != NULL);
 		return m_movie->call_method(method_name, arguments, argument_count);

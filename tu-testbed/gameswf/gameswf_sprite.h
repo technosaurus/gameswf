@@ -212,7 +212,7 @@ namespace gameswf
 		character*	clone_display_object(const tu_string& newname, int depth);
 		virtual bool	on_event(const event_id& id);
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args);
-		virtual const char*	call_method(const char* method_name, variant * arguments, int argument_count );
+		virtual tu_string	call_method(const char* method_name, as_value * arguments, int argument_count );
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
