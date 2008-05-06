@@ -206,7 +206,7 @@ gameswf::movie_definition*	play_movie(gameswf::player* player, const char* filen
 //
 // Return the movie definition.
 {
-	gameswf::movie_definition*	md = gameswf::create_movie(player, filename);
+	gameswf::movie_definition*	md = player->create_movie(filename);
 	if (md == NULL)
 	{
 		fprintf(stderr, "error: can't play movie '%s'\n", filename);
