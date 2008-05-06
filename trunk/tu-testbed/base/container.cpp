@@ -175,7 +175,7 @@ void tu_string::encode_utf8_from_wchar(tu_string* result, const uint16* wstr)
 /*static*/ int	tu_string::stricmp(const char* a, const char* b)
 {
 #ifdef _WIN32
-	return ::stricmp(a, b);
+	return _stricmp(a, b);
 #else
 	return strcasecmp(a, b);
 #endif
