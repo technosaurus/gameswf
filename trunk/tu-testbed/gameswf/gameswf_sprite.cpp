@@ -1233,7 +1233,7 @@ namespace gameswf
 		return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
 	}
 	
-	const char*	sprite_instance::call_method(const char* method_name, variant * arguments, int argument_count )
+	tu_string	sprite_instance::call_method(const char* method_name, as_value * arguments, int argument_count )
 	{
 		return gameswf::call_method( &m_as_environment, this, method_name, arguments, argument_count );
 	}

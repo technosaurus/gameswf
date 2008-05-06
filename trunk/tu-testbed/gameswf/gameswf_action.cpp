@@ -292,60 +292,19 @@ namespace gameswf
 		return s_retval.c_str();
 	}
 	
-	const char*	call_method(
+	tu_string	call_method(
 		as_environment* env,
 		as_object* this_ptr,
 		const char* method_name,
-		const variant* arguments,
+		const as_value* arguments,
 		int argument_count
 		)
 	{
 		// Parse va_list args
 		int	starting_index = env->get_top_index();
-		for (int i = 0; i < argument_count; i++)
+		for (int i = argument_count - 1 ; i >= 0 ; i--)
 		{
-			switch(arguments[ i ].m_type)
-			{
-				case variant::TYPE_INT:
-				{
-					env->push( arguments[ i ].m_int );
-				}
-				break;
-			   
-				case variant::TYPE_DOUBLE:
-				{
-					env->push( arguments[ i ].m_double );
-				} break;
-
-				case variant::TYPE_FLOAT:
-				{
-					env->push( arguments[ i ].m_float );
-				} break;
-				
-				case variant::TYPE_STRING:
-				{
-					env->push( arguments[ i ].m_string );
-				} break;
-
-				case variant::TYPE_BOOL:
-				{
-					env->push( arguments[ i ].m_bool );
-				}
-				break;
-				
-				case variant::TYPE_WIDE_STRING:
-				{
-					env->push( arguments[ i ].m_wide_string );
-				}
-				break;
-
-				default:
-
-					log_error("call_method_parsed('%s') -- invalid fmt for argument %i\n",
-							method_name,
-							i
-							);
-			}
+			env->push( arguments[ i ] );
 		}
 
 		array<with_stack_entry>	dummy_with_stack;
@@ -353,32 +312,14 @@ namespace gameswf
 
 		// check method
 
-		// Reverse the order of pushed args
 		int	nargs = env->get_top_index() - starting_index;
-		for (int i = 0; i < (nargs >> 1); i++)
-		{
-			int	i0 = starting_index + 1 + i;
-			int	i1 = starting_index + nargs - i;
-			assert(i0 < i1);
-
-			swap(&(env->bottom(i0)), &(env->bottom(i1)));
-		}
 
 		// Do the call.
 		as_value	result = call_method(method, env, this_ptr, nargs, env->get_top_index());
 		env->drop(nargs);
 
-		// Return pointer to static string for return value.
-		static tu_string	s_retval;
-		s_retval = result.to_tu_string();
-		return s_retval.c_str();
+		return result.to_tu_string();
 	}
-
-	// for debugging action script
-	// keep the latest var name(to log it if call_method failure)
-#ifdef _DEBUG
-	static tu_string s_last_varname;
-#endif
 
 	//
 	// do_action
@@ -696,6 +637,11 @@ namespace gameswf
 	// 
 	// The is_function2 flag determines whether to use global or local registers.
 	{
+		// for debugging action script
+		// keep the latest var name(to log it if call_method failure)
+#ifdef _DEBUG
+		tu_string last_varname;
+#endif
 		assert(env);
 		array<with_stack_entry>	with_stack(initial_with_stack);
 	
@@ -870,7 +816,7 @@ namespace gameswf
 					
 					// keep the latest var name(to log it if call_method failure)
 #ifdef _DEBUG
-					s_last_varname = var_string;
+					last_varname = var_string;
 #endif
 
 					as_value variable = env->get_variable(var_string, with_stack);
@@ -1448,7 +1394,7 @@ namespace gameswf
 					{
 						// keep the latest var name(to log it if call_method failure)
 #ifdef _DEBUG
-						s_last_varname = env->top(0).to_tu_string();
+						last_varname = env->top(0).to_tu_string();
 #endif
 
 						env->top(1).set_undefined();
@@ -1575,18 +1521,18 @@ namespace gameswf
 								as_value val;
 								clip->get_member("_name", &val);
 								log_error("error: can't find %s[0x%p, _name='%s'].%s\n", 
-									s_last_varname.c_str(), clip, val.to_string(), method_name.c_str());
+									last_varname.c_str(), clip, val.to_string(), method_name.c_str());
 							}
 							else
 							{
 								log_error("error: can't find %s[0x%p].%s\n", 
-									s_last_varname.c_str(), env->top(1).to_object(), method_name.c_str());
+									last_varname.c_str(), env->top(1).to_object(), method_name.c_str());
 							}
 						}
 						else
 						{
 							log_error("error: can't find %s[0x0].%s\n", 
-								s_last_varname.c_str(), method_name.c_str());
+								last_varname.c_str(), method_name.c_str());
 						}
 #else
 						log_error("error: can't find method %s\n", method_name.c_str());

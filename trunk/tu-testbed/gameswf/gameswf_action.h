@@ -23,36 +23,6 @@ namespace gameswf
 	struct as_environment;
 	struct as_c_function;
 	struct as_s_function;
-	struct variant 
-	{
-		enum TYPE
-		{
-			TYPE_BOOL,
-			TYPE_INT,
-			TYPE_FLOAT,
-			TYPE_DOUBLE,
-			TYPE_STRING,
-			TYPE_WIDE_STRING
-		};
-
-		TYPE
-			m_type;
-		union
-		{
-			bool m_bool;
-			int m_int;
-			float m_float;
-			double m_double;
-			const char * m_string;
-			const wchar_t * m_wide_string;
-		};
-
-		void set_string( const char *string ){ m_string = string; m_type = TYPE_STRING; }
-		void set_wide_string( const wchar_t *string ){ m_wide_string = string; m_type = TYPE_WIDE_STRING; }
-		void set_float( const float number ){ m_float = number; m_type = TYPE_FLOAT; }
-		void set_int( const int number ){ m_int = number; m_type = TYPE_INT; }
-		void set_boolean( const bool boolean ){ m_bool = boolean; m_type = TYPE_BOOL; }
-	};
 
 	exported_module const char*	call_method_parsed(
 		as_environment* env,
@@ -61,11 +31,11 @@ namespace gameswf
 		const char* method_arg_fmt,
 		va_list args);
 		
-	exported_module const char*	call_method(
+	exported_module tu_string	call_method(
 		as_environment* env,
 		as_object* this_ptr,
 		const char* method_name,
-		const variant* arguments,
+		const as_value* arguments,
 		int argument_count
 		);
 
