@@ -334,7 +334,6 @@ public:
 		assert(new_size >= 0);
 
 		int	old_size = m_size;
-		m_size = new_size;
 
 		// Destruct old elements (if we're shrinking).
 		{for (int i = new_size; i < old_size; i++) {
@@ -343,12 +342,12 @@ public:
 
 		if (new_size == 0) {
 			m_buffer_size = 0;
-			reserve(m_buffer_size);
-		} else if (m_size <= m_buffer_size && m_size > m_buffer_size >> 1) {
+			reserve(0);
+		} else if (new_size <= m_buffer_size && new_size > m_buffer_size >> 1) {
 			// don't compact yet.
 			assert(m_buffer != 0);
 		} else {
-			int	new_buffer_size = m_size + (m_size >> 2);
+			int	new_buffer_size = new_size + (new_size >> 1);
 			reserve(new_buffer_size);
 		}
 
@@ -356,6 +355,8 @@ public:
 		{for (int i = old_size; i < new_size; i++) {
 			new (m_buffer + i) T();	// placement new
 		}}
+
+		m_size = new_size;
 	}
 
 	void	reserve(int rsize)
