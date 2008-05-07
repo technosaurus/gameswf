@@ -812,7 +812,7 @@ namespace gameswf
 				}
 				case 0x1C:	// get variable
 				{
-					const tu_string& var_string = env->top(0).to_tu_string();
+					const tu_string var_string = env->top(0).to_tu_string();
 					
 					// keep the latest var name(to log it if call_method failure)
 #ifdef _DEBUG

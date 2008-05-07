@@ -255,9 +255,8 @@ namespace jpeg
 	void	jpeg_error_exit(j_common_ptr cinfo)
 	// Called when jpeglib has a fatal error.
 	{
-		assert(0);
 		(*cinfo->err->output_message) (cinfo);
-		tu_error_exit(1, "internal error in jpeglib");
+		tu_error_exit(1, "internal error in jpeglib\n");
 	}
 
 
