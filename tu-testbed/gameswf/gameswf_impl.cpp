@@ -661,23 +661,32 @@ namespace gameswf
 #endif
 
 	void	jpeg_tables_loader(stream* in, int tag_type, movie_definition_sub* m)
-		// Load JPEG compression tables that can be used to load
-		// images further along in the stream.
+	// Load JPEG compression tables that can be used to load
+	// images further along in the stream.
 	{
 		assert(tag_type == 8);
 
-#if TU_CONFIG_LINK_TO_JPEGLIB
-		jpeg::input*	j_in = jpeg::input::create_swf_jpeg2_header_only(in->get_underlying_stream());
-		assert(j_in);
+    int curr_pos = in->get_position();
+    int end_pos = in->get_tag_end_position();
+    int header_size = end_pos - curr_pos;
+    assert(header_size >= 0);
 
+#if TU_CONFIG_LINK_TO_JPEGLIB
+
+		jpeg::input*	j_in = NULL;
+		if (header_size > 0)
+		{
+			j_in = jpeg::input::create_swf_jpeg2_header_only(in->get_underlying_stream());
+		}
 		m->set_jpeg_loader(j_in);
+
 #endif // TU_CONFIG_LINK_TO_JPEGLIB
 	}
 
 
 	void	define_bits_jpeg_loader(stream* in, int tag_type, movie_definition_sub* m)
-		// A JPEG image without included tables; those should be in an
-		// existing jpeg::input object stored in the movie.
+	// A JPEG image without included tables; those should be in an
+	// existing jpeg::input object stored in the movie.
 	{
 		assert(tag_type == 6);
 
@@ -690,14 +699,24 @@ namespace gameswf
 
 		if (m->get_create_bitmaps() == DO_LOAD_BITMAPS)
 		{
-#if TU_CONFIG_LINK_TO_JPEGLIB
-			jpeg::input*	j_in = m->get_jpeg_loader();
-			assert(j_in);
-			j_in->discard_partial_buffer();
 
-			image::rgb*	im = image::read_swf_jpeg2_with_tables(j_in);
+#if TU_CONFIG_LINK_TO_JPEGLIB
+
+			jpeg::input*	j_in = m->get_jpeg_loader();
+			image::rgb*	im = NULL;
+			if (j_in == NULL)
+			{
+				// there are no jpeg tables
+				im = image::read_jpeg(in->get_underlying_stream());
+			}
+			else
+			{
+				j_in->discard_partial_buffer();
+				im = image::read_swf_jpeg2_with_tables(j_in);
+			}
 			bi = render::create_bitmap_info_rgb(im);
 			delete im;
+
 #else
 			log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
 			bi = render::create_bitmap_info_empty();
