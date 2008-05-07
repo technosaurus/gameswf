@@ -1070,7 +1070,7 @@ namespace gameswf
 				}
 				case 0x3A:	// delete
 				{
-					const tu_string& varname = env->top(0).to_tu_string();
+					const tu_string varname = env->top(0).to_tu_string();
 					as_object* obj_interface = env->top(1).to_object();
 					env->drop(1);
 
