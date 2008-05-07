@@ -655,10 +655,6 @@ namespace gameswf
 
 	#ifdef _DEBUG
 		log_msg("Playing %s, swf version %d\n", infile, movie_version);
-		if (movie_version > 8)
-		{
-			log_msg("gameSWF supports up to Flash 8 for now\n");
-		}
 	#else
 		IF_VERBOSE_PARSE(log_msg("Playing %s, swf version %d\n", infile, movie_version));
 	#endif
