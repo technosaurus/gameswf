@@ -56,9 +56,9 @@ void	print_usage()
 		"              2 enables rendering & disables sound\n"
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
 		"  -b <bits>   Bit depth of output window (16 or 32, default is 16)\n"
-		"  -n		  Allow use of network to try to open resource URLs\n"
-		"  -u          Allow pass the user bootup options to Flash (through _global._bootup)\n"
-		"  -k		  Disables cursor\n"
+		"  -n          Allow use of network to try to open resource URLs\n"
+		"  -u          Allow pass user variables to Flash\n"
+		"  -k          Disables cursor\n"
 		"  -w <w>x<h>  Specify the window size, for example 1024x768\n"
 		"\n"
 		"keys:\n"
@@ -238,7 +238,7 @@ int	main(int argc, char *argv[])
 
 		// -1.0 tends to look good.
 		tex_lod_bias = -1.2f;
-		tu_string bootup_options;
+		tu_string flash_vars;
 
 		int	width = 0;
 		int	height = 0;
@@ -262,11 +262,11 @@ int	main(int argc, char *argv[])
 					arg++;
 					if (arg < argc)
 					{
-						bootup_options =argv[arg];
+						flash_vars = argv[arg];
 					}
 					else
 					{
-						fprintf(stderr, "-u arg must be followed string like myvar=x,myvar2=y and so on\n");
+						fprintf(stderr, "-u arg must be followed string like myvar=x&myvar2=y and so on\n");
 						print_usage();
 						exit(1);
 					}
@@ -502,10 +502,7 @@ int	main(int argc, char *argv[])
 
 		// gameswf::set_use_cache_files(true);
 
-
-		// gameSWF extension
-		// pass bootup options to Flash
-		player->set_bootup_options(bootup_options);
+		player->set_flash_vars(flash_vars);
 		{
 			smart_ptr<gameswf::root>	m = player->load_file(infile);
 			if (m == NULL)
@@ -934,14 +931,25 @@ int	main(int argc, char *argv[])
 				m->display();
 				t_display = SDL_GetTicks() - t_display;
 
-				//printf("advance time: %d, display time %d\n", t_advance, t_display);
-
 				frame_counter++;
 
 				if (do_render)
 				{
+					Uint32 t_swap = SDL_GetTicks();
 					SDL_GL_SwapBuffers();
+					t_swap = SDL_GetTicks() - t_swap;
 					//glPopAttrib ();
+
+					// for perfomance testing
+//					printf("advance time: %d, display time %d, swap buffers time = %d\n",
+//						t_advance, t_display, t_swap);
+//					char buffer[8];
+//					snprintf(buffer, 8, "%03d", t_advance);
+//					m->set_variable("t_Advance", buffer);
+//					snprintf(buffer, 8, "%03d", t_display);
+//					m->set_variable("t_Display", buffer);
+//					snprintf(buffer, 8, "%03d", t_swap);
+//					m->set_variable("t_SwapBuffers", buffer);
 
 					if (s_measure_performance == false)
 					{

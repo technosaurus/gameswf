@@ -398,11 +398,10 @@ namespace gameswf
 		action_clear();
 	}
 
-	void player::set_bootup_options(const tu_string& param)
-	// gameSWF extension
-	// Allow pass the user bootup options to Flash (through _global._bootup)
+	void player::set_flash_vars(const tu_string& param)
+	// Allow pass user variables to Flash
 	{
-		m_global->set_member("_bootup", param.c_str());
+		m_flash_vars = param;
 	}
 
 	void player::verbose_action(bool val)

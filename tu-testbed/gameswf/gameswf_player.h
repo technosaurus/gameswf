@@ -34,6 +34,7 @@ namespace gameswf
 		weak_ptr<root> m_current_root;
 		tu_string m_workdir;
 		stringi_hash< smart_ptr<character_def> > m_chardef_library;
+		tu_string m_flash_vars;
 
 		// Players count to release all static stuff at the right time
 		static int s_player_count;
@@ -47,7 +48,7 @@ namespace gameswf
 		exported_module void notify_key_event(key::code k, bool down);
 		exported_module void verbose_action(bool val);
 		exported_module void verbose_parse(bool val);
-		exported_module void set_bootup_options(const tu_string& param);
+		exported_module void set_flash_vars(const tu_string& param);
 		exported_module const char* get_workdir() const;
 		exported_module void set_workdir(const char* dir);
 	

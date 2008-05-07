@@ -144,6 +144,7 @@ namespace gameswf
 		// External interface for the host to report key events.
 		void	notify_key_event(player* player, key::code k, bool down);
 
+		void set_flash_vars(const tu_string& vars);
 	};
 }
 

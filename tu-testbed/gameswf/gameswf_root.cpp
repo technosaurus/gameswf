@@ -400,6 +400,11 @@ namespace gameswf
 			// the game situation after restart
 			tu_random::next_random();
 
+			if (m_on_event_load_called == false)
+			{
+				set_flash_vars(m_player->m_flash_vars);
+			}
+
 			m_movie->advance(delta_time); 
 			if (m_on_event_load_called == false)
 			{
@@ -511,6 +516,35 @@ namespace gameswf
 	void	root::attach_display_callback(const char* path_to_object, void (*callback)(void* user_ptr), void* user_ptr)
 	{
 		m_movie->attach_display_callback(path_to_object, callback, user_ptr);
+	}
+
+	// parse Flash vars and create _root variables
+	// Flash vars come in the format:
+	// myvar1=value1,myvar2=value2,myvar3=value3,...
+	void root::set_flash_vars(const tu_string& vars)
+	{
+		for (const char* word = vars.c_str(); *word; )
+		{
+			const char* delimiter = strchr(word, '=');
+			if (delimiter == NULL)
+			{
+				// no value
+				return;
+			}
+			tu_string varname(word, int(delimiter - word));
+
+			word = delimiter + 1;
+			delimiter = strchr(word, ',');
+			if (delimiter == NULL)
+			{
+				delimiter = vars.c_str() + vars.size();
+			}
+			tu_string value(word, int(delimiter - word));
+		
+			get_root_movie()->set_member(varname, value.c_str());
+			word = delimiter + 1;
+		}
+
 	}
 
 }
