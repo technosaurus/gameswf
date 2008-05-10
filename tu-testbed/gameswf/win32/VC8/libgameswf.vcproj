@@ -393,6 +393,14 @@
 			Name="Source Files"
 			>
 			<File
+				RelativePath="..\..\gameswf_abc.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_abc.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_action.cpp"
 				>
 			</File>
