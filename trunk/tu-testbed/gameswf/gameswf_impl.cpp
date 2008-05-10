@@ -29,6 +29,7 @@
 #include "gameswf/gameswf_sprite_def.h"
 #include "gameswf/gameswf_sprite.h"
 #include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_abc.h"
 #include "base/image.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
@@ -335,6 +336,7 @@ namespace gameswf
 			register_tag_loader(74, define_csm_textsetting_loader); // CSMTextSetting - Flash 8
 			register_tag_loader(75, define_font_loader);	// DefineFont3 - Flash 8
 			register_tag_loader(77, define_metadata_loader);	// MetaData - Flash 8
+			register_tag_loader(82, define_abc_loader);	// doABC - Flash 9
 			register_tag_loader(83, define_shape_loader);		// DefineShape4 - Flash 8
 		}
 	}
@@ -1135,6 +1137,21 @@ namespace gameswf
 		m->add_bitmap_character(character_id, ch);
 	}
 
+	void	define_abc_loader(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 82);
+
+		// if flags == 1 then parse only
+		Uint32 flags = in->read_u32();
+
+		tu_string name;
+		in->read_string(&name);
+
+		abc_def* abc = new abc_def(m->get_player());
+		abc->read(in, m);
+
+		m->add_abc(name, abc);
+	}
 
 	void	define_shape_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{

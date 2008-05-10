@@ -305,6 +305,11 @@ namespace gameswf
 		}
 	}*/
 
+	void	movie_def_impl::add_abc(tu_string& name, abc_def* abc)
+	{
+		m_abc.add(name, abc);
+	}
+
 	void	movie_def_impl::add_character(int character_id, character_def* c)
 	{
 		assert(c);
@@ -524,7 +529,7 @@ namespace gameswf
 			{
 				// no tag loader for this tag type.
 				log_msg("*** no tag loader for type %d\n", tag_type);
-				dump_tag_bytes(m_str);
+				IF_VERBOSE_PARSE(dump_tag_bytes(m_str));
 			}
 
 			m_str->close_tag();

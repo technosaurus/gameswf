@@ -662,9 +662,13 @@ namespace gameswf
 		for (int i = 0, n = size(); i < n; i++)
 		{
 			character*	ch = get_character(i);
-			if (ch->get_name().c_str())
+			if (ch->get_name().size() > 0)
 			{
 				printf("%s%s\n", tabs.c_str(), ch->get_name().c_str());
+			}
+			else
+			{
+				printf("%s<noname>\n", tabs.c_str());
 			}
 		}
 		tabs.resize(tabs.size() - 2);

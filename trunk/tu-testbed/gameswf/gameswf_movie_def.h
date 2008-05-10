@@ -22,6 +22,7 @@ namespace gameswf
 
 	struct action_buffer;
 	struct bitmap_character_def;
+	struct abc_def;
 	struct bitmap_info;
 	struct character;
 	struct character_def;
@@ -202,6 +203,7 @@ namespace gameswf
 		virtual bool	get_labeled_frame(const char* label, int* frame_number) = 0;
 
 		// For use during creation.
+		virtual void	add_abc(tu_string& name, abc_def* abc) = 0;
 		virtual void	add_character(int id, character_def* ch) = 0;
 		virtual void	add_font(int id, font* ch) = 0;
 		virtual font*	get_font(int id) = 0;
@@ -287,6 +289,7 @@ namespace gameswf
 			else return movie_definition_sub::is(class_id);
 		}
 
+		stringi_hash<abc_def*>	m_abc;	// hack, abc_def* ==> smart_ptr<abc_def>
 		hash<int, smart_ptr<character_def> >	m_characters;
 		hash<int, smart_ptr<font> >	 m_fonts;
 		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
@@ -347,7 +350,7 @@ namespace gameswf
 		virtual void	add_import(const tu_string& source_url, int id, const tu_string& symbol);
 		bool	in_import_table(int character_id);
 		virtual void	visit_imported_movies(import_visitor* visitor);
-//		virtual void	resolve_import(const tu_string& source_url, movie_definition* source_movie);
+		virtual void	add_abc(tu_string& name, abc_def* abc);
 		void	add_character(int character_id, character_def* c);
 		character_def*	get_character_def(int character_id);
 		bool	get_labeled_frame(const char* label, int* frame_number);
