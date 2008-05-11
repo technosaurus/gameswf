@@ -53,6 +53,45 @@ namespace gameswf
 // 		return result;
 // 	}
 
+
+	// The variable-length encoding for u30, u32, and s32 uses one to five bytes,
+	// depending on the magnitude of the value encoded.
+	// Each byte contributes its low seven bits to the value. 
+	// If the high (eighth) bit of a byte is set, then the next byte of the abcFile 
+	// is also part of the value. 
+	// In the case of s32, sign extension is applied: the
+	// seventh bit of the last byte of the encoding is propagated to fill out
+	// the 32 bits of the decoded value.
+
+	Uint32 stream::read_vu32()
+	{
+		Uint32 result = read_u8();
+		if ((result & 0x00000080) == 0)
+		{
+			return result;
+		}
+
+		result = (result & 0x0000007F) | read_u8() << 7;
+		if ((result & 0x00004000) == 0)
+		{
+			return result;
+		}
+
+		result = (result & 0x00003FFF) | read_u8() << 14;
+		if ((result & 0x00200000) == 0)
+		{
+			return result;
+		}
+
+		result = (result & 0x001FFFFF) | read_u8() << 21;
+		if ((result & 0x10000000) == 0)
+		{
+			return result;
+		}
+
+		result = (result & 0x0FFFFFFF) | read_u8() << 28;
+		return result;
+	}
 	
 	int	stream::read_uint(int bitcount)
 	// Reads a bit-packed unsigned integer from the stream
@@ -222,6 +261,17 @@ namespace gameswf
 		str->resize(0);
 
 		int	len = read_u8();
+		for (int i = 0; i < len; i++)
+		{
+			*str += read_u8();
+		}
+	}
+
+	void	stream::read_string_with_length(int len, tu_string* str)
+	{
+//???		align();
+		str->resize(0);
+
 		for (int i = 0; i < len; i++)
 		{
 			*str += read_u8();

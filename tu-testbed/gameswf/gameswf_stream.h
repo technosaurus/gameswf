@@ -37,6 +37,21 @@ namespace gameswf
 		Sint16	read_s16();
 		Uint32	read_u32();
 		Sint32	read_s32();
+
+		// flash9
+
+		Uint32 read_vu32();
+
+		inline int read_vs32()
+		{
+			return static_cast<int>(read_vu32());
+		}
+
+		inline int read_vu30()
+		{
+			return static_cast<int>(read_vu32());
+		}
+
 		int     read_variable_count()
 		{
 			int count = read_u8();
@@ -50,6 +65,9 @@ namespace gameswf
 
 		// For string that begins with an 8-bit length code.
 		void	read_string_with_length(tu_string* str);
+
+		// For variable-length string, flash9
+		void	read_string_with_length(int len, tu_string* str);
 
 		int	get_position();
 		void	set_position(int pos);
