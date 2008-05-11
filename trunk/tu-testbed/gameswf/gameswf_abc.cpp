@@ -89,21 +89,86 @@ namespace gameswf
 			}
 		}
 		
-		return;
-
 		// namespace pool
 		n = in->read_vu30();
 		if (n > 0)
 		{
-			m_string.resize(n);
-			m_string[0] = "";	// default value
+			m_namespace.resize(n);
+			namespac ns;
+			m_namespace[0] = ns;	// default value
+
 			for (int i = 1; i < n; i++)
 			{
-				int len = in->read_vs32();
-				in->read_string_with_length(len, &m_string[i]);
-				printf("%s\n", m_string[i].c_str());
+				ns.set_kind(in->read_u8());
+				ns.m_name = in->read_vu30();
+				m_namespace[i] = ns;
+				printf("namespace: kind=%02X, name=%d\n",ns.m_kind, ns.m_name);
 			}
 		}
+
+		// namespace sets pool
+		n = in->read_vu30();
+		if (n > 0)
+		{
+			m_ns_set.resize(n);
+			array<int> ns;
+			m_ns_set[0] = ns;	// default value
+			for (int i = 1; i < n; i++)
+			{
+				int count = in->read_vu30();
+				ns.resize(count);
+				for (int j = 0; j < count; j++)
+				{
+					ns[j] = in->read_vu30();
+				}
+				m_ns_set[i] = ns;
+			}
+		}
+
+		// multiname pool
+		n = in->read_vu30();
+		if (n > 0)
+		{
+			m_multiname.resize(n);
+//			m_multiname[0] = ;	// default value
+			assert(false && "todo");
+
+			Uint8 kind = in->read_u8();
+			switch (kind)
+			{
+				case multiname::CONSTANT_QName:
+					break;
+
+				case multiname::CONSTANT_QNameA:
+					break;
+
+				case multiname::CONSTANT_RTQName:
+					break;
+
+				case multiname::CONSTANT_RTQNameA:
+					break;
+
+				case multiname::CONSTANT_RTQNameL:
+					break;
+
+				case multiname::CONSTANT_RTQNameLA:
+					break;
+
+				case multiname::CONSTANT_Multiname:
+					break;
+
+				case multiname::CONSTANT_MultinameA:
+					break;
+
+				case multiname::CONSTANT_MultinameL:
+					break;
+
+				case multiname::CONSTANT_MultinameLA:
+					break;
+			}
+
+		}
+
 
 	}
 
@@ -145,8 +210,6 @@ namespace gameswf
 		// read constant pool
 		m_cpool.read(in);
 
-
-//		assert(false && "todo");
 	}
 
 };	// end namespace gameswf
