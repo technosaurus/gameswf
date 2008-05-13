@@ -3,8 +3,9 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// ActionScript 3.0 virtual machine implementaion
+// do_abc tag reader
 
+//TODO
 
 #include "gameswf/gameswf_abc.h"
 #include "gameswf/gameswf_stream.h"
@@ -12,9 +13,235 @@
 namespace gameswf
 {
 
-	//
-	// read constant pool
-	//
+	//	method_info
+	//	{
+	//		u30 param_count
+	//		u30 return_type
+	//		u30 param_type[param_count]
+	//		u30 name
+	//		u8 flags
+	//		option_info options
+	//		param_info param_names
+	//	}
+	void method_info::read(stream* in)
+	{
+		int param_count = in->read_vu30();
+		m_return_type = in->read_vu30();
+
+		m_param_type.resize(param_count);
+		for (int i = 0; i < param_count; i++)
+		{
+			m_param_type[i] = in->read_vu30();
+		}
+
+		m_name = in->read_vu30();
+		m_flags = in->read_u8();
+
+		if (m_flags & HAS_OPTIONAL)
+		{
+			assert(0 && "todo");
+//		option_info options
+		}
+
+		if (m_flags & HAS_PARAM_NAMES)
+		{
+			assert(0 && "todo");
+//		param_info param_names
+		}
+	}
+
+	void metadata_info::read(stream* in)
+	{
+	}
+
+	//	traits_info
+	//	{
+	//		u30 name
+	//		u8 kind
+	//		u8 data[]
+	//		u30 metadata_count
+	//		u30 metadata[metadata_count]
+	//	}
+	void traits_info::read(stream* in)
+	{
+		m_name = in->read_vu30();
+		
+		Uint8 b = in->read_u8();
+		m_kind = b & 0x0F;
+		m_attr = b >> 4;
+
+		switch (m_kind)
+		{
+			case Trait_Slot :
+			case Trait_Const :
+				trait_slot.m_slot_id = in->read_vu30();
+				trait_slot.m_type_name = in->read_vu30();
+				trait_slot.m_vindex = in->read_vu30();
+				trait_slot.m_vkind = in->read_u8();
+				break;
+
+			case Trait_Class :
+				trait_class.m_slot_id = in->read_vu30();
+				trait_class.m_classi = in->read_vu30();
+				break;
+
+			case Trait_Function :
+				trait_function.m_slot_id = in->read_vu30();
+				trait_function.m_function = in->read_vu30();
+				break;
+
+			case Trait_Method :
+			case Trait_Getter :
+			case Trait_Setter :
+				trait_method.m_disp_id = in->read_vu30();
+				trait_method.m_method = in->read_vu30();
+				break;
+
+			default:
+				assert(0);
+		}
+
+		int n = in->read_vu30();
+		m_metadata.resize(n);
+		for (int i = 0; i < n; i++)
+		{
+			m_metadata[i] = in->read_vu30();
+		}
+	}
+
+	//	instance_info
+	//		{
+	//		u30 name
+	//		u30 super_name
+	//		u8 flags
+	//		u30 protectedNs
+	//		u30 intrf_count
+	//		u30 interface[intrf_count]
+	//		u30 iinit
+	//		u30 trait_count
+	//		traits_info trait[trait_count]
+	//	}
+	void instance_info::read(stream* in)
+	{
+		m_name = in->read_vu30();
+		m_super_name = in->read_vu30();
+		m_flags = in->read_u8();
+		m_protectedNs = in->read_vu30();
+
+		int i, n;
+		n = in->read_vu30();
+		m_interface.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			m_interface[i] = in->read_vu30();
+		}
+
+		m_iinit = in->read_vu30();
+
+		n = in->read_vu30();
+		m_trait.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			traits_info* trait = new traits_info();
+			trait->read(in);
+			m_trait[i] = trait;
+		}
+	}
+
+	void class_info::read(stream* in)
+	{
+		m_cinit = in->read_vu30();
+
+		int n = in->read_vu30();
+		m_trait.resize(n);
+		for (int i = 0; i < n; i++)
+		{
+			traits_info* trait = new traits_info();
+			trait->read(in);
+			m_trait[i] = trait;
+		}
+	}
+
+	void script_info::read(stream* in)
+	{
+		m_init = in->read_vu30();
+
+		int n = in->read_vu30();
+		m_trait.resize(n);
+		for (int i = 0; i < n; i++)
+		{
+			traits_info* trait = new traits_info();
+			trait->read(in);
+			m_trait[i] = trait;
+		}
+	}
+
+	// exception_info
+	// {
+	//		u30 from
+	//		u30 to
+	//		u30 target
+	//		u30 exc_type
+	//		u30 var_name
+	// }
+	void exceptiin_info::read(stream* in)
+	{
+		m_from = in->read_vu30();
+		m_to = in->read_vu30();
+		m_target = in->read_vu30();
+		m_exc_type = in->read_vu30();
+		m_var_name = in->read_vu30();
+	}
+
+	//	method_body_info
+	//	{
+	//		u30 method
+	//		u30 max_stack
+	//		u30 local_count
+	//		u30 init_scope_depth
+	//		u30 max_scope_depth
+	//		u30 code_length
+	//		u8 code[code_length]
+	//		u30 exception_count
+	//		exception_info exception[exception_count]
+	//		u30 trait_count
+	//		traits_info trait[trait_count]
+	//	}
+	void body_info::read(stream* in)
+	{
+		m_method = in->read_vu30();
+		m_max_stack = in->read_vu30();
+		m_local_count = in->read_vu30();
+		m_init_scope_depth = in->read_vu30();
+		m_max_scope_depth = in->read_vu30();
+
+		int i, n;
+		n = in->read_vu30();	// code_length
+		m_code.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			m_code[i] = in->read_u8();
+		}
+
+		n = in->read_vu30();	// exception_count
+		m_exception.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			exceptiin_info* e = new exceptiin_info();
+			e->read(in);
+			m_exception[i] = e;
+		}
+
+		n = in->read_vu30();	// trait_count
+		m_trait.resize(n);
+		for (int i = 0; i < n; i++)
+		{
+			traits_info* trait = new traits_info();
+			trait->read(in);
+			m_trait[i] = trait;
+		}
+	}
+
 	//	cpool_info
 	//	{
 	//		u30 int_count
@@ -32,7 +259,7 @@ namespace gameswf
 	//		u30 multiname_count
 	//		multiname_info multiname[multiname_count]
 	//	}
-	void constant_pool::read(stream* in)
+	void cpool_info::read(stream* in)
 	{
 		int n;
 
@@ -45,8 +272,12 @@ namespace gameswf
 			for (int i = 1; i < n; i++)
 			{
 				m_integer[i] = in->read_vs32();
-				printf("integer: %d\n", m_integer[i]);
+				IF_VERBOSE_PARSE(log_msg("cpool_info: integer[%d]=%d\n", i, m_integer[i]));
 			}
+		}
+		else
+		{
+			IF_VERBOSE_PARSE(log_msg("cpool_info: no integer pool\n"));
 		}
 
 		// uinteger pool
@@ -58,8 +289,12 @@ namespace gameswf
 			for (int i = 1; i < n; i++)
 			{
 				m_uinteger[i] = in->read_vu32();
-				printf("uinteger: %d\n", m_uinteger[i]);
+				IF_VERBOSE_PARSE(log_msg("cpool_info: uinteger[%d]=%d\n", i, m_uinteger[i]));
 			}
+		}
+		else
+		{
+			IF_VERBOSE_PARSE(log_msg("cpool_info: no uinteger pool\n"));
 		}
 
 		// double pool
@@ -71,8 +306,12 @@ namespace gameswf
 			for (int i = 1; i < n; i++)
 			{
 				m_double[i] = in->read_double();
-				printf("double: %f\n", m_double[i]);
+				IF_VERBOSE_PARSE(log_msg("cpool_info: double[%d]=%d\n", i, m_double[i]));
 			}
+		}
+		else
+		{
+			IF_VERBOSE_PARSE(log_msg("cpool_info: no double pool\n"));
 		}
 
 		// string pool
@@ -85,8 +324,12 @@ namespace gameswf
 			{
 				int len = in->read_vs32();
 				in->read_string_with_length(len, &m_string[i]);
-				printf("string: '%s'\n", m_string[i].c_str());
+				IF_VERBOSE_PARSE(log_msg("cpool_info: string[%d]='%s'\n", i, m_string[i].c_str()));
 			}
+		}
+		else
+		{
+			IF_VERBOSE_PARSE(log_msg("cpool_info: no string pool\n"));
 		}
 		
 		// namespace pool
@@ -102,8 +345,13 @@ namespace gameswf
 				ns.set_kind(in->read_u8());
 				ns.m_name = in->read_vu30();
 				m_namespace[i] = ns;
-				printf("namespace: kind=%02X, name=%d\n",ns.m_kind, ns.m_name);
+				IF_VERBOSE_PARSE(log_msg("cpool_info: namespace[%d]='%s', kind=0x%02X\n", 
+					i, get_name(ns.m_name), ns.m_kind));
 			}
+		}
+		else
+		{
+			IF_VERBOSE_PARSE(log_msg("cpool_info: no namespace pool\n"));
 		}
 
 		// namespace sets pool
@@ -130,45 +378,64 @@ namespace gameswf
 		if (n > 0)
 		{
 			m_multiname.resize(n);
-//			m_multiname[0] = ;	// default value
-			assert(false && "todo");
-
-			Uint8 kind = in->read_u8();
-			switch (kind)
+			multiname mn;
+			m_multiname[0] = mn;	// default value
+			for (int i = 1; i < n; i++)
 			{
-				case multiname::CONSTANT_QName:
-					break;
+				Uint8 kind = in->read_u8();
+				mn.m_kind = kind;
+				switch (kind)
+				{
+					case multiname::CONSTANT_QName:
+					{
+						mn.m_ns = in->read_vu30();
+						mn.m_name = in->read_vu30();
+						break;
+					}
 
-				case multiname::CONSTANT_QNameA:
-					break;
+					case multiname::CONSTANT_QNameA:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_RTQName:
-					break;
+					case multiname::CONSTANT_RTQName:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_RTQNameA:
-					break;
+					case multiname::CONSTANT_RTQNameA:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_RTQNameL:
-					break;
+					case multiname::CONSTANT_RTQNameL:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_RTQNameLA:
-					break;
+					case multiname::CONSTANT_RTQNameLA:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_Multiname:
-					break;
+					case multiname::CONSTANT_Multiname:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_MultinameA:
-					break;
+					case multiname::CONSTANT_MultinameA:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_MultinameL:
-					break;
+					case multiname::CONSTANT_MultinameL:
+						assert(0&&"todo");
+						break;
 
-				case multiname::CONSTANT_MultinameLA:
-					break;
+					case multiname::CONSTANT_MultinameLA:
+						assert(0&&"todo");
+						break;
+
+					default:
+						assert(0);
+
+				}
+				m_multiname[i] = mn;
 			}
-
 		}
-
 
 	}
 
@@ -185,7 +452,7 @@ namespace gameswf
 	//	{
 	//		u16 minor_version
 	//		u16 major_version
-	//		cpool_info constant_pool
+	//		cpool_info cpool_info
 	//		u30 method_count
 	//		method_info method[method_count]
 	//		u30 metadata_count
@@ -198,10 +465,9 @@ namespace gameswf
 	//		u30 method_body_count
 	//		method_body_info method_body[method_body_count]
 	//	}
-
-	//TODO
 	void	abc_def::read(stream* in, movie_definition_sub* m)
 	{
+		int i, n;
 
 		Uint16 minor_version = in->read_u16();
 		Uint16 major_version = in->read_u16();
@@ -210,6 +476,65 @@ namespace gameswf
 		// read constant pool
 		m_cpool.read(in);
 
+		// read method_info
+		n = in->read_vu30();
+		m_method.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			method_info* info = new method_info();
+			info->read(in);
+			m_method[i] = info;
+		}
+
+		// read metadata_info
+		n = in->read_vu30();
+		m_metadata.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			assert(0 && "todo");
+			metadata_info* info = new metadata_info();
+			info->read(in);
+			m_metadata[i] = info;
+		}
+
+		// read instance_info & class_info
+		n = in->read_vu30();
+		m_instance.resize(n);
+		m_class.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			{
+				instance_info* info = new instance_info();
+				info->read(in);
+				m_instance[i] = info;
+			}
+
+			{
+				class_info* info = new class_info();
+				info->read(in);
+				m_class[i] = info;
+			}
+		}
+
+		// read script_info
+		n = in->read_vu30();
+		m_script.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			script_info* info = new script_info();
+			info->read(in);
+			m_script[i] = info;
+		}
+
+		// read body_info
+		n = in->read_vu30();
+		m_body.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			body_info* info = new body_info();
+			info->read(in);
+			m_body[i] = info;
+		}
 	}
 
 };	// end namespace gameswf
