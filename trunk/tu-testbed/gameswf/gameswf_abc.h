@@ -36,6 +36,7 @@ namespace gameswf
 		int m_kind;
 		int m_flags;
 		int m_ns;
+		int m_ns_set;
 		int m_name;
 
 		multiname() :
@@ -51,6 +52,7 @@ namespace gameswf
 	{
 		enum kind
 		{
+			CONSTANT_Undefined = 0,
 			CONSTANT_Namespace = 0x08,
 			CONSTANT_PackageNamespace = 0x16,
 			CONSTANT_PackageInternalNs = 0x17,
@@ -60,36 +62,15 @@ namespace gameswf
 			CONSTANT_PrivateNs = 0x05
 		};
 
-		int m_kind;
+		kind m_kind;
 		int	m_name;
 
 		namespac() :
-			m_kind(0),
+			m_kind(CONSTANT_Undefined),
 			m_name(0)
 		{
 		}
 
-		void set_kind(int kind)
-		{
-			assert(kind == 0x08 || kind == 0x16 || kind == 0x17 || kind == 0x18 ||
-				kind == 0x19 || kind == 0x1A || kind == 0x05);
-			m_kind = kind;
-		}
-
-	};
-
-	struct cpool_info
-	{
-		array<int> m_integer;
-		array<Uint32> m_uinteger;
-		array<double> m_double;
-		array<tu_string> m_string;
-		array<namespac> m_namespace;
-		array< array<int> > m_ns_set;
-		array<multiname> m_multiname;
-
-		void	read(stream* in);
-		inline const char* get_name(int name) const	{	return m_string[name].c_str(); }
 	};
 
 	struct method_info : public ref_counted
@@ -111,12 +92,12 @@ namespace gameswf
 //		option_info m_options;
 //		param_info m_param_names;
 
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
 	struct metadata_info : public ref_counted
 	{
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
 
@@ -175,7 +156,7 @@ namespace gameswf
 
 		array<int> m_metadata;
 
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
 	struct instance_info : public ref_counted
@@ -188,7 +169,7 @@ namespace gameswf
 		int m_iinit;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
 	struct class_info : public ref_counted
@@ -196,7 +177,7 @@ namespace gameswf
 		int m_cinit;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
 	struct script_info : public ref_counted
@@ -204,7 +185,7 @@ namespace gameswf
 		int m_init;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
 	struct exceptiin_info : public ref_counted
@@ -215,7 +196,7 @@ namespace gameswf
 		int m_exc_type;
 		int m_var_name;
 
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
 	struct body_info : public ref_counted
@@ -229,12 +210,20 @@ namespace gameswf
 		array< smart_ptr<exceptiin_info> > m_exception;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in);
+		void	read(stream* in, const abc_def* abc);
 	};
 
-	struct abc_def : public character_def
+	struct abc_def : public ref_counted
 	{
-		cpool_info m_cpool;
+		// constant pool
+		array<int> m_integer;
+		array<Uint32> m_uinteger;
+		array<double> m_double;
+		array<tu_string> m_string;
+		array<namespac> m_namespace;
+		array< array<int> > m_ns_set;
+		array<multiname> m_multiname;
+
 		array< smart_ptr<method_info> > m_method;
 		array< smart_ptr<metadata_info> > m_metadata;
 		array< smart_ptr<instance_info> > m_instance;
@@ -242,9 +231,26 @@ namespace gameswf
 		array< smart_ptr<script_info> > m_script;
 		array< smart_ptr<body_info> > m_body;
 
+		inline const char* get_string(int index) const
+		{
+			return m_string[index].c_str(); 
+		}
+
+		inline const char* get_namespace(int index) const
+		{
+			return get_string(m_namespace[index].m_name); 
+		}
+
+		inline const char* get_multiname(int index) const
+		{
+			return get_string(m_multiname[index].m_name); 
+		}
+
 		abc_def(player* player);
 		virtual ~abc_def();
-		void	read(stream* in, movie_definition_sub* m);
+
+		void	read(stream* in);
+		void	read_cpool(stream* in);
 
 	};
 }
