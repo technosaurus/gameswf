@@ -23,10 +23,13 @@ namespace gameswf
 	//		option_info options
 	//		param_info param_names
 	//	}
-	void method_info::read(stream* in)
+	void method_info::read(stream* in, const abc_def* abc)
 	{
 		int param_count = in->read_vu30();
+		
+		// The return_type field is an index into the multiname
 		m_return_type = in->read_vu30();
+
 
 		m_param_type.resize(param_count);
 		for (int i = 0; i < param_count; i++)
@@ -50,8 +53,9 @@ namespace gameswf
 		}
 	}
 
-	void metadata_info::read(stream* in)
+	void metadata_info::read(stream* in, const abc_def* abc)
 	{
+		assert(0&&"todo");
 	}
 
 	//	traits_info
@@ -62,9 +66,10 @@ namespace gameswf
 	//		u30 metadata_count
 	//		u30 metadata[metadata_count]
 	//	}
-	void traits_info::read(stream* in)
+	void traits_info::read(stream* in, const abc_def* abc)
 	{
 		m_name = in->read_vu30();
+		IF_VERBOSE_PARSE(log_msg("traits: name='%s'\n",	abc->get_string(m_name)));
 		
 		Uint8 b = in->read_u8();
 		m_kind = b & 0x0F;
@@ -98,7 +103,8 @@ namespace gameswf
 				break;
 
 			default:
-				assert(0);
+//				assert(0);
+				break;
 		}
 
 		int n = in->read_vu30();
@@ -121,7 +127,7 @@ namespace gameswf
 	//		u30 trait_count
 	//		traits_info trait[trait_count]
 	//	}
-	void instance_info::read(stream* in)
+	void instance_info::read(stream* in, const abc_def* abc)
 	{
 		m_name = in->read_vu30();
 		m_super_name = in->read_vu30();
@@ -143,12 +149,12 @@ namespace gameswf
 		for (i = 0; i < n; i++)
 		{
 			traits_info* trait = new traits_info();
-			trait->read(in);
+			trait->read(in, abc);
 			m_trait[i] = trait;
 		}
 	}
 
-	void class_info::read(stream* in)
+	void class_info::read(stream* in, const abc_def* abc)
 	{
 		m_cinit = in->read_vu30();
 
@@ -157,12 +163,12 @@ namespace gameswf
 		for (int i = 0; i < n; i++)
 		{
 			traits_info* trait = new traits_info();
-			trait->read(in);
+			trait->read(in, abc);
 			m_trait[i] = trait;
 		}
 	}
 
-	void script_info::read(stream* in)
+	void script_info::read(stream* in, const abc_def* abc)
 	{
 		m_init = in->read_vu30();
 
@@ -171,7 +177,7 @@ namespace gameswf
 		for (int i = 0; i < n; i++)
 		{
 			traits_info* trait = new traits_info();
-			trait->read(in);
+			trait->read(in, abc);
 			m_trait[i] = trait;
 		}
 	}
@@ -184,7 +190,7 @@ namespace gameswf
 	//		u30 exc_type
 	//		u30 var_name
 	// }
-	void exceptiin_info::read(stream* in)
+	void exceptiin_info::read(stream* in, const abc_def* abc)
 	{
 		m_from = in->read_vu30();
 		m_to = in->read_vu30();
@@ -207,9 +213,10 @@ namespace gameswf
 	//		u30 trait_count
 	//		traits_info trait[trait_count]
 	//	}
-	void body_info::read(stream* in)
+	void body_info::read(stream* in, const abc_def* abc)
 	{
 		m_method = in->read_vu30();
+
 		m_max_stack = in->read_vu30();
 		m_local_count = in->read_vu30();
 		m_init_scope_depth = in->read_vu30();
@@ -228,7 +235,7 @@ namespace gameswf
 		for (i = 0; i < n; i++)
 		{
 			exceptiin_info* e = new exceptiin_info();
-			e->read(in);
+			e->read(in, abc);
 			m_exception[i] = e;
 		}
 
@@ -237,9 +244,164 @@ namespace gameswf
 		for (int i = 0; i < n; i++)
 		{
 			traits_info* trait = new traits_info();
-			trait->read(in);
+			trait->read(in, abc);
 			m_trait[i] = trait;
 		}
+	}
+
+
+	abc_def::abc_def(player* player)
+	{
+	}
+
+	abc_def::~abc_def()
+	{
+	}
+
+	//	abcFile
+	//	{
+	//		u16 minor_version
+	//		u16 major_version
+	//		cpool_info cpool_info
+	//		u30 method_count
+	//		method_info method[method_count]
+	//		u30 metadata_count
+	//		metadata_info metadata[metadata_count]
+	//		u30 class_count
+	//		instance_info instance[class_count]
+	//		class_info class[class_count]
+	//		u30 script_count
+	//		script_info script[script_count]
+	//		u30 method_body_count
+	//		method_body_info method_body[method_body_count]
+	//	}
+	void	abc_def::read(stream* in)
+	{
+		int eof = in->get_tag_end_position();
+		int pos;
+
+		int i, n;
+
+		Uint16 minor_version = in->read_u16();
+		Uint16 major_version = in->read_u16();
+		assert(minor_version == 16 && major_version == 46);
+
+		// read constant pool
+		read_cpool(in);
+
+		// check eof
+		pos = in->get_position();
+		assert(pos <= eof);
+		if (pos == eof)
+		{
+			return;
+		};
+
+		// read method_info
+		n = in->read_vu30();
+		m_method.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			method_info* info = new method_info();
+			info->read(in, this);
+			m_method[i] = info;
+			IF_VERBOSE_PARSE(log_msg("method_info[%d]: name='%s', type='%s', params=%d\n",
+				i, get_string(info->m_name), get_multiname(info->m_return_type),
+				info->m_param_type.size()));
+		}
+
+		// check eof
+		pos = in->get_position();
+		assert(pos <= eof);
+		if (pos == eof)
+		{
+			return;
+		};
+
+		// read metadata_info
+		n = in->read_vu30();
+		m_metadata.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			assert(0 && "todo");
+			metadata_info* info = new metadata_info();
+			info->read(in, this);
+			m_metadata[i] = info;
+		}
+
+		// check eof
+		pos = in->get_position();
+		assert(pos <= eof);
+		if (pos == eof)
+		{
+			return;
+		};
+
+
+		// read instance_info & class_info
+		n = in->read_vu30();
+		m_instance.resize(n);
+		m_class.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			{
+				instance_info* info = new instance_info();
+				info->read(in, this);
+				m_instance[i] = info;
+				IF_VERBOSE_PARSE(log_msg("instance_info[%d]: name='%s', supername='%s'\n",
+					i, get_string(info->m_name), get_string(info->m_super_name)));
+			}
+
+			{
+				class_info* info = new class_info();
+				info->read(in, this);
+				m_class[i] = info;
+		//		IF_VERBOSE_PARSE(log_msg("method_info[%d]: name='%s'\n",
+			//		i, get_string(info->m_name)));
+			}
+		}
+
+		// check eof
+		pos = in->get_position();
+		assert(pos <= eof);
+		if (pos == eof)
+		{
+			return;
+		};
+
+
+		// read script_info
+		n = in->read_vu30();
+		m_script.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			script_info* info = new script_info();
+			info->read(in, this);
+			m_script[i] = info;
+		}
+
+		// check eof
+		pos = in->get_position();
+		assert(pos <= eof);
+		if (pos == eof)
+		{
+			return;
+		};
+
+
+		// read body_info
+		n = in->read_vu30();
+		m_body.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			body_info* info = new body_info();
+			info->read(in, this);
+			m_body[i] = info;
+		}
+
+		// check eof
+		pos = in->get_position();
+		assert(pos == eof);
 	}
 
 	//	cpool_info
@@ -259,7 +421,7 @@ namespace gameswf
 	//		u30 multiname_count
 	//		multiname_info multiname[multiname_count]
 	//	}
-	void cpool_info::read(stream* in)
+	void abc_def::read_cpool(stream* in)
 	{
 		int n;
 
@@ -306,7 +468,7 @@ namespace gameswf
 			for (int i = 1; i < n; i++)
 			{
 				m_double[i] = in->read_double();
-				IF_VERBOSE_PARSE(log_msg("cpool_info: double[%d]=%d\n", i, m_double[i]));
+				IF_VERBOSE_PARSE(log_msg("cpool_info: double[%d]=%f\n", i, m_double[i]));
 			}
 		}
 		else
@@ -342,11 +504,31 @@ namespace gameswf
 
 			for (int i = 1; i < n; i++)
 			{
-				ns.set_kind(in->read_u8());
+				ns.m_kind = static_cast<namespac::kind>(in->read_u8());
 				ns.m_name = in->read_vu30();
 				m_namespace[i] = ns;
+
+				// User-defined namespaces have kind CONSTANT_Namespace or
+				// CONSTANT_ExplicitNamespace and a non-empty name. 
+				// System namespaces have empty names and one of the other kinds
+				switch (ns.m_kind)
+				{
+					case namespac::CONSTANT_Namespace:
+					case namespac::CONSTANT_ExplicitNamespace:
+				//		assert(*get_string(ns.m_name) != 0);
+						break;
+					case namespac::CONSTANT_PackageNamespace:
+					case namespac::CONSTANT_PackageInternalNs:
+					case namespac::CONSTANT_ProtectedNamespace:
+					case namespac::CONSTANT_StaticProtectedNs:
+					case namespac::CONSTANT_PrivateNs:
+				//		assert(*get_string(ns.m_name) == 0);
+						break;
+					default:
+						assert(0);
+				}
 				IF_VERBOSE_PARSE(log_msg("cpool_info: namespace[%d]='%s', kind=0x%02X\n", 
-					i, get_name(ns.m_name), ns.m_kind));
+					i, get_string(ns.m_name), ns.m_kind));
 			}
 		}
 		else
@@ -372,6 +554,10 @@ namespace gameswf
 				m_ns_set[i] = ns;
 			}
 		}
+		else
+		{
+			IF_VERBOSE_PARSE(log_msg("cpool_info: no namespace sets\n"));
+		}
 
 		// multiname pool
 		n = in->read_vu30();
@@ -387,15 +573,14 @@ namespace gameswf
 				switch (kind)
 				{
 					case multiname::CONSTANT_QName:
+					case multiname::CONSTANT_QNameA:
 					{
 						mn.m_ns = in->read_vu30();
 						mn.m_name = in->read_vu30();
+						IF_VERBOSE_PARSE(log_msg("cpool_info: multiname[%d]='%s', ns='%s'\n", 
+							i, get_string(mn.m_name), get_namespace(mn.m_ns)));
 						break;
 					}
-
-					case multiname::CONSTANT_QNameA:
-						assert(0&&"todo");
-						break;
 
 					case multiname::CONSTANT_RTQName:
 						assert(0&&"todo");
@@ -414,11 +599,11 @@ namespace gameswf
 						break;
 
 					case multiname::CONSTANT_Multiname:
-						assert(0&&"todo");
-						break;
-
 					case multiname::CONSTANT_MultinameA:
-						assert(0&&"todo");
+						mn.m_ns_set = in->read_vu30();
+						mn.m_name = in->read_vu30();
+						IF_VERBOSE_PARSE(log_msg("cpool_info: multiname[%d]='%s', ns_set='%s'\n", 
+							i, get_string(mn.m_name), "todo"));
 						break;
 
 					case multiname::CONSTANT_MultinameL:
@@ -436,105 +621,12 @@ namespace gameswf
 				m_multiname[i] = mn;
 			}
 		}
-
-	}
-
-	abc_def::abc_def(player* player) :
-		character_def(player)
-	{
-	}
-
-	abc_def::~abc_def()
-	{
-	}
-
-	//	abcFile
-	//	{
-	//		u16 minor_version
-	//		u16 major_version
-	//		cpool_info cpool_info
-	//		u30 method_count
-	//		method_info method[method_count]
-	//		u30 metadata_count
-	//		metadata_info metadata[metadata_count]
-	//		u30 class_count
-	//		instance_info instance[class_count]
-	//		class_info class[class_count]
-	//		u30 script_count
-	//		script_info script[script_count]
-	//		u30 method_body_count
-	//		method_body_info method_body[method_body_count]
-	//	}
-	void	abc_def::read(stream* in, movie_definition_sub* m)
-	{
-		int i, n;
-
-		Uint16 minor_version = in->read_u16();
-		Uint16 major_version = in->read_u16();
-		assert(minor_version == 16 && major_version == 46);
-
-		// read constant pool
-		m_cpool.read(in);
-
-		// read method_info
-		n = in->read_vu30();
-		m_method.resize(n);
-		for (i = 0; i < n; i++)
+		else
 		{
-			method_info* info = new method_info();
-			info->read(in);
-			m_method[i] = info;
+			IF_VERBOSE_PARSE(log_msg("cpool_info: no multiname pool\n"));
 		}
 
-		// read metadata_info
-		n = in->read_vu30();
-		m_metadata.resize(n);
-		for (i = 0; i < n; i++)
-		{
-			assert(0 && "todo");
-			metadata_info* info = new metadata_info();
-			info->read(in);
-			m_metadata[i] = info;
-		}
 
-		// read instance_info & class_info
-		n = in->read_vu30();
-		m_instance.resize(n);
-		m_class.resize(n);
-		for (i = 0; i < n; i++)
-		{
-			{
-				instance_info* info = new instance_info();
-				info->read(in);
-				m_instance[i] = info;
-			}
-
-			{
-				class_info* info = new class_info();
-				info->read(in);
-				m_class[i] = info;
-			}
-		}
-
-		// read script_info
-		n = in->read_vu30();
-		m_script.resize(n);
-		for (i = 0; i < n; i++)
-		{
-			script_info* info = new script_info();
-			info->read(in);
-			m_script[i] = info;
-		}
-
-		// read body_info
-		n = in->read_vu30();
-		m_body.resize(n);
-		for (i = 0; i < n; i++)
-		{
-			body_info* info = new body_info();
-			info->read(in);
-			m_body[i] = info;
-		}
 	}
 
 };	// end namespace gameswf
