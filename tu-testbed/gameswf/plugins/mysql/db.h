@@ -13,33 +13,37 @@
 
 using namespace gameswf;
 
-struct mydb : public as_object
+namespace mysql_plugin
 {
 
-	// Unique id of a gameswf resource
-	enum { m_class_id = AS_PLUGIN_MYDB };
-	virtual bool is(int class_id) const
+	struct mydb : public as_object
 	{
-		if (m_class_id == class_id) return true;
-		else return as_object::is(class_id);
-	}
 
-	mydb(player* player);
-	~mydb();
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_PLUGIN_MYDB };
+		virtual bool is(int class_id) const
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
 
-	bool connect(const char* host, const char* dbname, const char* user,
-		const char* pwd, const char* socket);
-	void disconnect();
-	mytable* open(const char* sql);
-	int run(const char *sql);
-	void set_autocommit(bool autocommit);
-	void commit();
+		mydb(player* player);
+		~mydb();
 
-private:
+		bool connect(const char* host, const char* dbname, const char* user,
+			const char* pwd, const char* socket);
+		void disconnect();
+		mytable* open(const char* sql);
+		int run(const char *sql);
+		void set_autocommit(bool autocommit);
+		void commit();
 
-	bool runsql(const char* sql);
-	MYSQL* m_db;
-};
+	private:
 
+		bool runsql(const char* sql);
+		MYSQL* m_db;
+	};
+
+}
 
 #endif // GAMESWF_MYDB_H

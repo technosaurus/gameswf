@@ -12,23 +12,26 @@
 
 using namespace gameswf;
 
-struct sysinfo : public as_object
-{                                      
-	// Unique id of a gameswf resource
-	enum { m_class_id = AS_PLUGIN_SYSINFO };
-	virtual bool is(int class_id) const
-	{
-		if (m_class_id == class_id) return true;
-		else return as_object::is(class_id);
-	}
+namespace sysinfo_plugin
+{
 
-	sysinfo(player* player);
+	struct sysinfo : public as_object
+	{                                      
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_PLUGIN_SYSINFO };
+		virtual bool is(int class_id) const
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
 
-	exported_module void get_dir(as_object* info, const tu_string& path);
-	exported_module bool get_hdd_serno(tu_string* sn, const char* dev);
-	exported_module int get_freemem();
+		sysinfo(player* player);
 
-};
+		exported_module void get_dir(as_object* info, const tu_string& path);
+		exported_module bool get_hdd_serno(tu_string* sn, const char* dev);
+		exported_module int get_freemem();
 
+	};
+}
 #endif	// GAMESWF_SYSINFO_PLUGIN_H
 
