@@ -162,7 +162,6 @@ namespace gameswf
 			const tu_string& classname, const array<as_value>& params);
 		int	get_length() const { return m_buffer.size(); }
 		void operator=(const action_buffer& ab);
-		static as_object* create_proto(as_object* obj, const as_value& constructor);
 
 	private:
 		// Don't put these as values in array<>!  They contain

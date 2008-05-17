@@ -397,10 +397,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_abc.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_action.cpp"
 				>
 			</File>
@@ -750,6 +746,10 @@
 			>
 			<File
 				RelativePath="..\..\gameswf.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_abc.h"
 				>
 			</File>
 			<File

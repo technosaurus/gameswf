@@ -375,8 +375,15 @@ namespace gameswf
 		}
 	}
 
+	void as_object::dump()
+	// for internal using
+	{
+		tu_string tab;
+		dump(tab);
+	}
+
 	void as_object::dump(tu_string& tabs)
-	// for debugging
+	// for debugging, used from action script
 	// retrieves members & print them
 	{
 		tabs += "  ";
@@ -395,9 +402,16 @@ namespace gameswf
 			else
 			if (val.is_function())
 			{
-				printf("%s%s: <as_function 0x%p>\n",
-					tabs.c_str(), 
-					it->first.c_str(), val.to_object());
+				if (cast_to<as_s_function>(val.to_object()))
+				{
+					printf("%s%s: <as_s_function 0x%p>\n", tabs.c_str(), 
+						it->first.c_str(), val.to_object());
+				}
+				else
+				{
+					printf("%s%s: <as_c_function 0x%p>\n", tabs.c_str(), 
+						it->first.c_str(), val.to_object());
+				}
 			}
 			else
 			if (val.is_object())
@@ -565,6 +579,26 @@ namespace gameswf
 	void as_object::set_ctor(const as_value& val)
 	{
 		builtin_member(s_constructor, val);
+	}
+
+	as_object* as_object::create_proto(const as_value& constructor)
+	{
+		as_object* proto = new as_object(get_player());
+		proto->m_this_ptr = m_this_ptr;
+		m_proto = proto;
+		set_ctor(constructor);
+
+		if (constructor.to_object())
+		{
+			// constructor is as_s_function
+			as_value	val;
+			constructor.to_object()->get_member("prototype", &val);
+			as_object* prototype = val.to_object();
+			assert(prototype);
+			prototype->copy_to(proto);
+		}
+
+		return proto;
 	}
 
 }
