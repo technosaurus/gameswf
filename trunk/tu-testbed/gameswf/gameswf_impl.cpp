@@ -110,34 +110,6 @@ namespace gameswf
 		m_registered_class_constructor = value.to_function();
 	}
 
-	// :TODO: factorize all this "new" code with action buffer
-	static as_object* create_proto(as_object* obj, const as_value& constructor)
-	{
-		as_object* proto = new as_object(obj->get_player());
-		proto->m_this_ptr = obj->m_this_ptr;
-		obj->m_proto = proto;
-
-		if (constructor.to_object())
-		{
-			// constructor is as_s_function
-			as_value	val;
-			if (constructor.to_object()->get_member("prototype", &val))
-			{
-				as_object* prototype = val.to_object();
-				assert(prototype);
-				prototype->copy_to(obj);
-
-				as_value prototype_constructor;
-				if (prototype->get_ctor(&prototype_constructor))
-				{
-					proto->set_ctor(prototype_constructor);
-				}
-			}
-		}
-
-		return proto;
-	}
-
 	void character_def::instanciate_registered_class (character* ch)
 	{
 		assert(ch);
@@ -157,10 +129,9 @@ namespace gameswf
 			// But we must create proto for a object a call its constructor
 
 			ch->m_this_ptr = ch;
-			as_object* proto = create_proto(ch, m_registered_class_constructor.get_ptr());
+			as_object* proto = ch->create_proto(m_registered_class_constructor.get_ptr());
 
 			as_environment env(get_player());
-			ch->set_ctor(m_registered_class_constructor.get_ptr());
 			call_method(m_registered_class_constructor.get_ptr(), &env, ch, 0, 0);
 		}
 	}

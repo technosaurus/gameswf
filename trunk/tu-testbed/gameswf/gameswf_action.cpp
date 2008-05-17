@@ -600,29 +600,6 @@ namespace gameswf
 		m_decl_dict_processed_at = ab.m_decl_dict_processed_at;
 	}
 
-	as_object* action_buffer::create_proto(as_object* obj, const as_value& constructor)
-	{
-		as_object* proto = new as_object(obj->get_player());
-		proto->m_this_ptr = obj->m_this_ptr;
-		obj->m_proto = proto;
-
-		if (constructor.to_object())
-		{
-			// constructor is as_s_function
-			as_value	val;
-			constructor.to_object()->get_member("prototype", &val);
-			as_object* prototype = val.to_object();
-			assert(prototype);
-			prototype->copy_to(obj);
-
-			as_value prototype_constructor;
-			prototype->get_ctor(&prototype_constructor);
-			proto->set_ctor(prototype_constructor);
-		}
-
-		return proto;
-	}
-
 	void	action_buffer::execute(
 		as_environment* env,
 		int start_pc,
@@ -1217,7 +1194,7 @@ namespace gameswf
 
 						// Create an empty object
 						smart_ptr<as_object>	new_obj_ptr = new as_object(env->get_player());
-						as_object* proto = create_proto(new_obj_ptr.get_ptr(), s_constructor);
+						as_object* proto = new_obj_ptr->create_proto(s_constructor);
 
 						// override m_this_ptr with just new created object
 						proto->m_this_ptr = new_obj_ptr.get_ptr();
@@ -1226,7 +1203,6 @@ namespace gameswf
 						// We don't need the function result.
 						call_method(s_constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
 				
-						new_obj_ptr->set_ctor(s_constructor);
 						new_obj.set_as_object(new_obj_ptr.get_ptr());
 					}
 					else
@@ -1495,7 +1471,7 @@ namespace gameswf
 							as_value constructor;
 							if (obj->get_ctor(&constructor))
 							{
-								create_proto(obj, constructor);
+								obj->create_proto(constructor);
 								result = call_method(
 									constructor,
 									env,
@@ -1582,7 +1558,7 @@ namespace gameswf
 					else if (as_s_function* s_constructor = cast_to<as_s_function>(constructor.to_object()))
 					{
 						new_obj = new as_object(env->get_player());
-						as_object* proto = create_proto(new_obj.get_ptr(), constructor);
+						as_object* proto = new_obj->create_proto(constructor);
 						proto->m_this_ptr = new_obj.get_ptr();
 
 						// Call the actual constructor function; new_obj is its 'this'.
@@ -1602,7 +1578,7 @@ namespace gameswf
 //								prototype.to_object()->set_member("__constructor__", func);
 
 								new_obj = new as_object(env->get_player());
-								as_object* proto = create_proto(new_obj.get_ptr(), func);
+								as_object* proto = new_obj->create_proto(func);
 
 								proto->m_this_ptr = new_obj.get_ptr();
 
