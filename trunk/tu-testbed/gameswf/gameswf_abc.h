@@ -46,6 +46,11 @@ namespace gameswf
 			m_name(0)
 		{
 		}
+
+		inline bool is_qname() const
+		{
+			return m_kind == CONSTANT_QName;
+		}
 	};
 
 	struct namespac
@@ -92,12 +97,12 @@ namespace gameswf
 //		option_info m_options;
 //		param_info m_param_names;
 
-		void	read(stream* in, const abc_def* abc);
+		void	read(stream* in, abc_def* abc);
 	};
 
 	struct metadata_info : public ref_counted
 	{
-		void	read(stream* in, const abc_def* abc);
+		void	read(stream* in, abc_def* abc);
 	};
 
 
@@ -116,6 +121,13 @@ namespace gameswf
 			Trait_Class = 4,
 			Trait_Function = 5,
 			Trait_Const = 6
+		};
+
+		enum attr
+		{
+			ATTR_Final = 0x1,
+			ATTR_Override = 0x2,
+			ATTR_Metadata = 0x4
 		};
 
 		int m_name;
@@ -156,11 +168,20 @@ namespace gameswf
 
 		array<int> m_metadata;
 
-		void	read(stream* in, const abc_def* abc);
+		void	read(stream* in, abc_def* abc);
 	};
 
 	struct instance_info : public ref_counted
 	{
+
+		enum flags
+		{
+			CONSTANT_ClassSealed = 0x01,
+			CONSTANT_ClassFinal = 0x02,
+			CONSTANT_ClassInterface = 0x04,
+			CONSTANT_ClassProtectedNs = 0x08
+		};
+
 		int m_name;
 		int m_super_name;
 		Uint8 m_flags;
@@ -169,7 +190,16 @@ namespace gameswf
 		int m_iinit;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in, const abc_def* abc);
+		instance_info() :
+			m_name(0),
+			m_super_name(0),
+			m_flags(0),
+			m_protectedNs(0),
+			m_iinit(0)
+		{
+		}
+
+		void	read(stream* in, abc_def* abc);
 	};
 
 	struct class_info : public ref_counted
@@ -177,7 +207,7 @@ namespace gameswf
 		int m_cinit;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in, const abc_def* abc);
+		void	read(stream* in, abc_def* abc);
 	};
 
 	struct script_info : public ref_counted
@@ -185,7 +215,7 @@ namespace gameswf
 		int m_init;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in, const abc_def* abc);
+		void	read(stream* in, abc_def* abc);
 	};
 
 	struct exceptiin_info : public ref_counted
@@ -196,7 +226,7 @@ namespace gameswf
 		int m_exc_type;
 		int m_var_name;
 
-		void	read(stream* in, const abc_def* abc);
+		void	read(stream* in, abc_def* abc);
 	};
 
 	struct body_info : public ref_counted
@@ -210,7 +240,7 @@ namespace gameswf
 		array< smart_ptr<exceptiin_info> > m_exception;
 		array< smart_ptr<traits_info> > m_trait;
 
-		void	read(stream* in, const abc_def* abc);
+		void	read(stream* in, abc_def* abc);
 	};
 
 	struct abc_def : public ref_counted
