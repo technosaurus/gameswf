@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8,00"
+	Version="8.00"
 	Name="libsysinfo"
 	ProjectGUID="{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
 	RootNamespace="randomIndex"
@@ -41,7 +41,7 @@
 				Name="VCCLCompilerTool"
 				UseUnicodeResponseFiles="false"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\..\gameswf;..\..\..\..\"
+				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\;P:\COMMON\CODE\LIB\GAMESWF\dep\include;P:\COMMON\CODE\LIB\GAMESWF\dep\include\SDL"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -65,7 +65,7 @@
 				AdditionalDependencies="libgameswf-d.lib"
 				OutputFile="/WINDOWS/system32/sysinfo.dll"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories=""
+				AdditionalLibraryDirectories="P:\COMMON\CODE\LIB\GAMESWF\dep\lib"
 				ModuleDefinitionFile=""
 				GenerateDebugInformation="true"
 				SubSystem="2"
@@ -121,7 +121,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
+				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\;P:\COMMON\CODE\LIB\GAMESWF\dep\include;P:\COMMON\CODE\LIB\GAMESWF\dep\include\SDL"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;RANDOMINDEX_EXPORTS"
 				RuntimeLibrary="2"
 				UsePrecompiledHeader="0"

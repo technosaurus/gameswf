@@ -18,6 +18,10 @@
 #include "base/membuf.h"
 #include <wchar.h>
 
+#ifndef ACTION_BUFFER_PROFILLING
+#	define ACTION_BUFFER_PROFILLING 0
+#endif
+
 namespace gameswf
 {
 	struct as_environment;
@@ -162,6 +166,10 @@ namespace gameswf
 			const tu_string& classname, const array<as_value>& params);
 		int	get_length() const { return m_buffer.size(); }
 		void operator=(const action_buffer& ab);
+		
+#if ACTION_BUFFER_PROFILLING
+		static void log_and_reset_profiling( void );
+#endif
 
 	private:
 		// Don't put these as values in array<>!  They contain
@@ -177,6 +185,9 @@ namespace gameswf
 		membuf	m_buffer;
 		array<tu_string>	m_dictionary;
 		int	m_decl_dict_processed_at;
+#if ACTION_BUFFER_PROFILLING		
+		static hash<int, Uint64> profiling_table;
+#endif
 	};
 
 

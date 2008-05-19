@@ -634,6 +634,11 @@ namespace gameswf
 				// Drop this stack element
 				with_stack.resize(with_stack.size() - 1);
 			}
+			
+#if ACTION_BUFFER_PROFILLING
+			Uint64 start_time;
+			start_time = tu_timer::get_profile_ticks();
+#endif
 
 			// Get the opcode.
 			int	action_id = m_buffer[pc];
@@ -1401,8 +1406,8 @@ namespace gameswf
 							{
 								log_msg("-------------- get_member %s=%s at %p\n",
 											env->top(0).to_tu_string().c_str(),
-											env->top(1).to_tu_string().c_str(), env->top(1).to_object()));
-						}
+											env->top(1).to_tu_string().c_str(), env->top(1).to_object());
+						});
 					}
 					env->drop(1);
 					break;
@@ -2347,11 +2352,34 @@ namespace gameswf
 				}
 				pc = next_pc;
 			}
+			
+#if ACTION_BUFFER_PROFILLING
+			if( profiling_table.find( action_id ) != profiling_table.end() )
+			{
+				profiling_table.set( action_id, 0 );
+			}
+			profiling_table[ action_id ] += tu_timer::get_profile_ticks() - start_time;
+#endif
 		}
 
 		env->set_target(original_target);
 	}
 
+#if ACTION_BUFFER_PROFILLING
+	void action_buffer::log_and_reset_profiling( void )
+	{
+		log_msg( "--------------------\n" );
+		for( hash<int,Uint64>::iterator it = profiling_table.begin(); it != profiling_table.end(); ++it )
+		{
+			log_msg( "%d => %.2f millisecond \n", it.get_key(), (float)it.get_value()/1000.0f );
+		}
+		log_msg( "--------------------\n" );
+		profiling_table.clear();
+	}
+
+	hash<int, Uint64> action_buffer::profiling_table;
+#endif
+	
 	//
 	// event_id
 	//
