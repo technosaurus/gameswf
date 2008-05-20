@@ -13,9 +13,15 @@
 #include "gameswf/gameswf.h"
 #include "base/tu_types.h"
 
-#define IF_VERBOSE_ACTION(exp) if (gameswf::get_verbose_action()) { exp; }
-#define IF_VERBOSE_PARSE(exp) if (gameswf::get_verbose_parse()) { exp; }
-#define IF_VERBOSE_DEBUG(exp) if (gameswf::get_verbose_debug()) { exp; }
+#if TU_CONFIG_VERBOSE
+#	define IF_VERBOSE_ACTION(exp) if (gameswf::get_verbose_action()) { exp; }
+#	define IF_VERBOSE_PARSE(exp) if (gameswf::get_verbose_parse()) { exp; }
+#	define IF_VERBOSE_DEBUG(exp) if (gameswf::get_verbose_debug()) { exp; }
+#else
+#	define IF_VERBOSE_ACTION(exp) {}
+#	define IF_VERBOSE_PARSE(exp) {}
+#	define IF_VERBOSE_DEBUG(exp) {}
+#endif
 
 #define TWIPS_TO_PIXELS(x)	((x) / 20.f)
 #define PIXELS_TO_TWIPS(x)	((x) * 20.f)
