@@ -134,6 +134,35 @@ namespace gameswf
 		}
 	}
 
+	void as_matrix_clone(const fn_call& fn)
+	{
+		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
+		
+		if (matrix == NULL)
+		{
+			return;
+		}
+		
+		smart_ptr<as_matrix>	result;
+		result = new as_matrix(fn.get_player());
+		result->m_matrix = matrix->m_matrix;
+		fn.result->set_as_object(result.get_ptr());
+	}
+
+	void as_matrix_invert(const fn_call& fn)
+	{
+		as_matrix* matrix = cast_to<as_matrix>(fn.this_ptr);
+
+		if (matrix == NULL)
+		{
+			return;
+		}
+
+		gameswf::matrix temp;
+		temp.set_inverse( matrix->m_matrix );
+		matrix->m_matrix = temp;
+	}
+
 	void as_matrix_transformPoint(const fn_call& fn)
 	{
 		if (fn.nargs < 1)
@@ -169,6 +198,8 @@ namespace gameswf
 		builtin_member("rotate", as_matrix_rotate);
 		builtin_member("scale", as_matrix_scale);
 		builtin_member("concat", as_matrix_concat);
+		builtin_member("clone", as_matrix_clone);
+		builtin_member("invert", as_matrix_invert);
 		builtin_member("transformPoint", as_matrix_transformPoint);
 	}
 
