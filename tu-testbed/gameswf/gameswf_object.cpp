@@ -582,23 +582,28 @@ namespace gameswf
 	}
 
 	as_object* as_object::create_proto(const as_value& constructor)
-	{
-		as_object* proto = new as_object(get_player());
-		proto->m_this_ptr = m_this_ptr;
-		m_proto = proto;
-		set_ctor(constructor);
+	{ 	 
+		m_proto = new as_object(get_player()); 	 
+		m_proto->m_this_ptr = m_this_ptr; 	
 
-		if (constructor.to_object())
-		{
-			// constructor is as_s_function
-			as_value	val;
+		if (constructor.to_object()) 	 
+		{ 	 
+			// constructor is as_s_function 	 
+			as_value val; 	 
 			constructor.to_object()->get_member("prototype", &val);
-			as_object* prototype = val.to_object();
-			assert(prototype);
-			prototype->copy_to(proto);
-		}
+			as_object* prototype = val.to_object(); 	 
+			assert(prototype); 	 
+			prototype->copy_to(this); 	 
 
-		return proto;
+			as_value prototype_constructor; 	 
+			if (prototype->get_ctor(&prototype_constructor)) 	 
+			{ 	 
+				m_proto->set_ctor(prototype_constructor); 	 
+			} 	 
+		} 	 
+
+		set_ctor(constructor); 	 
+		return m_proto.get_ptr(); 	 
 	}
 
 }
