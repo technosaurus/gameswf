@@ -106,4 +106,9 @@
 #	endif // _WIN32
 #endif // exported_module
 
+// define TU_CONFIG_VERBOSE to 1 to allow verbose debugging
+#ifndef TU_CONFIG_VERBOSE
+#	define TU_CONFIG_VERBOSE 1
+#endif
+
 #endif // TU_CONFIG_H
