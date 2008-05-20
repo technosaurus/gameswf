@@ -520,7 +520,6 @@ namespace gameswf
 		}
 	}
 
-
 	void	action_buffer::execute(as_environment* env)
 	// Interpret the actions in this action buffer, and evaluate
 	// them in the given environment.  Execute our whole buffer,
@@ -1208,6 +1207,7 @@ namespace gameswf
 						// We don't need the function result.
 						call_method(s_constructor, env, new_obj_ptr.get_ptr(), nargs, env->get_top_index());
 				
+						new_obj_ptr->set_ctor(s_constructor);
 						new_obj.set_as_object(new_obj_ptr.get_ptr());
 					}
 					else
@@ -1584,7 +1584,6 @@ namespace gameswf
 
 								new_obj = new as_object(env->get_player());
 								as_object* proto = new_obj->create_proto(func);
-
 								proto->m_this_ptr = new_obj.get_ptr();
 
 								// Call the actual constructor function; new_obj is its 'this'.
