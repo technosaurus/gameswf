@@ -25,6 +25,63 @@ namespace gameswf
 
 #else // COMPILE_DISASM
 
+	void	log_disasm_avm2(const array<Uint8>& data)
+	// Disassemble one instruction to the log, AVM2
+	{
+		struct inst_info
+		{
+			int	m_length;
+			const char*	m_instruction;
+			
+			inst_info(int length, const char* opname) :
+				m_length(length),
+				m_instruction(opname)
+			{
+			}
+
+		};
+
+		static hash<int, inst_info> s_instr;
+		if (s_instr.size() == 0)
+		{
+			s_instr.add(0x30, inst_info(1, "pushscope"));
+			s_instr.add(0x47, inst_info(1, "returnvoid"));
+			s_instr.add(0xA0, inst_info(1, "add"));
+			s_instr.add(0xC5, inst_info(1, "add_i"));
+			s_instr.add(0xD0, inst_info(1, "getlocal_0"));
+			s_instr.add(0xD1, inst_info(1, "getlocal_1"));
+			s_instr.add(0xD2, inst_info(1, "getlocal_2"));
+			s_instr.add(0xD3, inst_info(1, "getlocal_3"));
+
+			s_instr.add(0x5E, inst_info(2, "findproperty"));
+	//		s_instr.add(0xD3, inst_info(1, "getlocal_3"));
+		//	s_instr.add(0xD3, inst_info(1, "getlocal_3"));
+
+			// TODO
+		}
+
+		assert(data.size() > 0);
+
+		int ip = 0;
+		do
+		{
+			int opcode = data[ip];
+			inst_info ii(0, 0);
+			if (s_instr.get(opcode, &ii))
+			{
+				printf(":	%s\n", ii.m_instruction);
+				ip += ii.m_length;
+			}
+			else
+			{
+				printf(":	unknown opcode 0x%02X\n", opcode);
+				ip++;
+			}
+
+		}
+		while (ip < data.size());
+	}
+
 	void	log_disasm(const unsigned char* instruction_data)
 	// Disassemble one instruction to the log.
 	{
