@@ -204,6 +204,8 @@ namespace gameswf
 
 		// For use during creation.
 		virtual void	add_symbol_class(int character_id, const tu_string& class_name) = 0;
+		virtual void	add_scene(int character_id, const tu_string& class_name) = 0;
+		virtual void	add_frame_label(int character_id, const tu_string& class_name) = 0;
 		virtual void	add_abc(tu_string& name, abc_def* abc) = 0;
 		virtual void	add_character(int id, character_def* ch) = 0;
 		virtual void	add_font(int id, font* ch) = 0;
@@ -326,10 +328,11 @@ namespace gameswf
 		tu_thread* m_thread;
 		smart_ptr<root> m_instance;	// cached movie instance.
 
-		// for AVM2
+		// for AVM2, Flash9
 		stringi_hash<abc_def*>	m_abc;	//vv hack, abc_def* ==> smart_ptr<abc_def>
 		hash<int, tu_string>	m_symbol_class;
-
+		hash<int, tu_string>	m_scene;
+		hash<int, tu_string>	m_frame_label;	// this is't labeled_frame !!!
 
 		movie_def_impl(player* player, create_bitmaps_flag cbf, create_font_shapes_flag cfs);
 		~movie_def_impl();
@@ -357,6 +360,8 @@ namespace gameswf
 		virtual void	visit_imported_movies(import_visitor* visitor);
 		virtual void	add_abc(tu_string& name, abc_def* abc);
 		virtual void	add_symbol_class(int character_id, const tu_string& class_name);
+		virtual void	add_scene(int character_id, const tu_string& class_name);
+		virtual void	add_frame_label(int character_id, const tu_string& class_name);
 		void	add_character(int character_id, character_def* c);
 		character_def*	get_character_def(int character_id);
 		bool	get_labeled_frame(const char* label, int* frame_number);

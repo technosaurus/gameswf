@@ -315,6 +315,16 @@ namespace gameswf
 		m_symbol_class.add(character_id, class_name);
 	};
 
+	void	movie_def_impl::add_scene(int scene, const tu_string& frame_name)
+	{
+		m_scene.add(scene, frame_name);
+	};
+
+	void	movie_def_impl::add_frame_label(int frame, const tu_string& frame_name)
+	{
+		m_frame_label.add(frame, frame_name);
+	};
+
 	void	movie_def_impl::add_character(int character_id, character_def* c)
 	{
 		assert(c);
