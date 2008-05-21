@@ -310,6 +310,11 @@ namespace gameswf
 		m_abc.add(name, abc);
 	}
 
+	void	movie_def_impl::add_symbol_class(int character_id, const tu_string& class_name)
+	{
+		m_symbol_class.add(character_id, class_name);
+	};
+
 	void	movie_def_impl::add_character(int character_id, character_def* c)
 	{
 		assert(c);
