@@ -310,6 +310,7 @@ namespace gameswf
 			register_tag_loader(77, define_metadata_loader);	// MetaData - Flash 8
 			register_tag_loader(82, define_abc_loader);	// doABC - Flash 9
 			register_tag_loader(83, define_shape_loader);		// DefineShape4 - Flash 8
+			register_tag_loader(86, define_scene_loader);		// DefineSceneAndFrameLabelData - Flash 9
 		}
 	}
 
@@ -1138,6 +1139,37 @@ namespace gameswf
 		abc_def* abc = new abc_def(m->get_player());
 		abc->read(in);
 		m->add_abc(name, abc);
+	}
+
+	void	define_scene_loader(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 86);
+
+		IF_VERBOSE_PARSE(log_msg("\n  define_scene_loader\n"));
+
+		int scene_count = in->read_vs32();
+		for (int i = 0; i < scene_count; i++)
+		{
+			int offset = in->read_vs32();
+			tu_string scene_name;
+			in->read_string(&scene_name);
+			m->add_scene(offset, scene_name);
+
+			IF_VERBOSE_PARSE(log_msg("  scene #%d, name='%s'\n", offset, scene_name.c_str()));
+		}
+		
+		int frame_label_count = in->read_vs32();
+		for (int i = 0; i < frame_label_count; i++)
+		{
+			assert(0 && "todo test");
+			int frame = in->read_vs32();
+			tu_string frame_label;
+			in->read_string(&frame_label);
+			m->add_frame_label(frame, frame_label);
+
+			IF_VERBOSE_PARSE(log_msg("  frame #%d, label='%s'\n", frame, frame_label.c_str()));
+		}
+
 	}
 
 	void	define_shape_loader(stream* in, int tag_type, movie_definition_sub* m)
