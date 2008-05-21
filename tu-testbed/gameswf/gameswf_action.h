@@ -147,6 +147,41 @@ namespace gameswf
 		const tu_string&	get_function_name() const;
 	};
 
+	// allows sharing of as byte code buffer
+	class counted_buffer : public membuf
+	{
+		mutable int	m_ref_count;
+
+	public:
+		counted_buffer()
+			:
+			m_ref_count(0)
+		{
+		}
+
+		~counted_buffer()
+		{
+			assert(m_ref_count == 0);
+		}
+
+		void	add_ref() const
+		{
+			assert(m_ref_count >= 0);
+			m_ref_count++;
+		}
+
+		void	drop_ref()
+		{
+			assert(m_ref_count > 0);
+			m_ref_count--;
+			if (m_ref_count == 0)
+			{
+				// Delete me!
+				delete this;
+			}
+		}
+	};
+
 
 	// Base class for actions.
 	struct action_buffer
@@ -164,7 +199,7 @@ namespace gameswf
 
 		static as_object* load_as_plugin(player* player,
 			const tu_string& classname, const array<as_value>& params);
-		int	get_length() const { return m_buffer.size(); }
+		int	get_length() const { return m_buffer->size(); }
 		void operator=(const action_buffer& ab);
 		
 #if ACTION_BUFFER_PROFILLING
@@ -182,7 +217,7 @@ namespace gameswf
 		static void	enumerate(as_environment* env, as_object* object);
 
 		// data:
-		membuf	m_buffer;
+		smart_ptr<counted_buffer>	m_buffer;
 		array<tu_string>	m_dictionary;
 		int	m_decl_dict_processed_at;
 #if ACTION_BUFFER_PROFILLING		

@@ -393,7 +393,8 @@ namespace gameswf
 	//
 
 	action_buffer::action_buffer() :
-		m_decl_dict_processed_at(-1)
+		m_decl_dict_processed_at(-1),
+		m_buffer(new counted_buffer)
 	{
 	}
 
@@ -404,27 +405,27 @@ namespace gameswf
 		for (;;)
 		{
 
-			int	instruction_start = m_buffer.size();
+			int	instruction_start = m_buffer->size();
 
-			int	pc = m_buffer.size();
+			int	pc = m_buffer->size();
 
 			int	action_id = in->read_u8();
-			m_buffer.append((Uint8) action_id);
+			m_buffer->append((Uint8) action_id);
 
 			if (action_id & 0x80)
 			{
 				// Action contains extra data.  Read it.
 				int	length = in->read_u16();
-				m_buffer.append(Uint8(length & 0x0FF));
-				m_buffer.append(Uint8((length >> 8) & 0x0FF));
+				m_buffer->append(Uint8(length & 0x0FF));
+				m_buffer->append(Uint8((length >> 8) & 0x0FF));
 				for (int i = 0; i < length; i++)
 				{
 					Uint8	b = in->read_u8();
-					m_buffer.append(b);
+					m_buffer->append(b);
 				}
 			}
 
-			IF_VERBOSE_ACTION(log_msg("%4d\t", pc); log_disasm(&m_buffer[instruction_start]); );
+			IF_VERBOSE_ACTION(log_msg("%4d\t", pc); log_disasm(&(*m_buffer.get_ptr())[instruction_start]); );
 
 			if (action_id == 0)
 			{
@@ -458,12 +459,14 @@ namespace gameswf
 	// cache the results.  If we ever hit a different decl_dict in
 	// the same action_buffer, then we log an error and ignore it.
 	{
-		assert(stop_pc <= m_buffer.size());
+		assert(stop_pc <= m_buffer->size());
+
+        membuf &buffer = *m_buffer.get_ptr();
 
 		if (m_decl_dict_processed_at == start_pc)
 		{
 			// We've already processed this decl_dict.
-			int	count = m_buffer[start_pc + 3] | (m_buffer[start_pc + 4] << 8);
+			int	count = buffer[start_pc + 3] | (buffer[start_pc + 4] << 8);
 			assert(m_dictionary.size() == count);
 			UNUSED(count);
 			return;
@@ -482,8 +485,8 @@ namespace gameswf
 
 		// Actual processing.
 		int	i = start_pc;
-		int	length = m_buffer[i + 1] | (m_buffer[i + 2] << 8);
-		int	count = m_buffer[i + 3] | (m_buffer[i + 4] << 8);
+		int	length = buffer[i + 1] | (buffer[i + 2] << 8);
+		int	count = buffer[i + 3] | (buffer[i + 4] << 8);
 		i += 2;
 
 		UNUSED(length);
@@ -497,9 +500,9 @@ namespace gameswf
 		for (int ct = 0; ct < count; ct++)
 		{
 			// Point into the current action buffer.
-			m_dictionary[ct] = (const char*) &m_buffer[3 + i];
+			m_dictionary[ct] = (const char*) &buffer[3 + i];
 
-			while (m_buffer[3 + i])
+			while (buffer[3 + i])
 			{
 				// safety check.
 				if (i >= stop_pc)
@@ -535,7 +538,7 @@ namespace gameswf
 
 
 		array<with_stack_entry>	empty_with_stack;
-		execute(env, 0, m_buffer.size(), NULL, empty_with_stack, false /* not function2 */);
+		execute(env, 0, m_buffer->size(), NULL, empty_with_stack, false /* not function2 */);
 
 //		env->set_local_frame_top(local_stack_top);
 
@@ -622,6 +625,7 @@ namespace gameswf
 		array<with_stack_entry>	with_stack(initial_with_stack);
 	
 		character*	original_target = env->get_target();
+        membuf & buffer = *m_buffer.get_ptr();
 
 		int	stop_pc = start_pc + exec_bytes;
 		for (int pc = start_pc; pc < stop_pc; )
@@ -639,11 +643,16 @@ namespace gameswf
 			start_time = tu_timer::get_profile_ticks();
 #endif
 
+#if ACTION_BUFFER_PROFILLING
+            Uint64 start_time;
+            start_time = tu_timer::get_profile_ticks();
+#endif
+
 			// Get the opcode.
-			int	action_id = m_buffer[pc];
+			int	action_id = buffer[pc];
 			if ((action_id & 0x80) == 0)
 			{
-				IF_VERBOSE_ACTION(log_msg("EX:\t"); log_disasm(&m_buffer[pc]));
+				IF_VERBOSE_ACTION(log_msg("EX:\t"); log_disasm(&buffer[pc]));
 
 				// IF_VERBOSE_ACTION(log_msg("Action ID is: 0x%x\n", action_id));
 			
@@ -1702,10 +1711,10 @@ namespace gameswf
 			}
 			else
 			{
-				IF_VERBOSE_ACTION(log_msg("EX:\t"); log_disasm(&m_buffer[pc]));
+				IF_VERBOSE_ACTION(log_msg("EX:\t"); log_disasm(&buffer[pc]));
 
 				// Action containing extra data.
-				int	length = m_buffer[pc + 1] | (m_buffer[pc + 2] << 8);
+				int	length = buffer[pc + 1] | (buffer[pc + 2] << 8);
 				int	next_pc = pc + length + 3;
 
 				switch (action_id)
@@ -1715,7 +1724,7 @@ namespace gameswf
 
 				case 0x81:	// goto frame
 				{
-					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					int	frame = buffer[pc + 3] | (buffer[pc + 4] << 8);
 					// 0-based already?
 					//// Convert from 1-based to 0-based
 					//frame--;
@@ -1729,9 +1738,9 @@ namespace gameswf
 					// handler, if any.
 
 					// Two strings as args.
-					const char*	url = (const char*) &(m_buffer[pc + 3]);
+					const char*	url = (const char*) &(buffer[pc + 3]);
 					int	url_len = int(strlen(url));
-					const char*	target = (const char*) &(m_buffer[pc + 3 + url_len + 1]);
+					const char*	target = (const char*) &(buffer[pc + 3 + url_len + 1]);
 
 					// If the url starts with "FSCommand:", then this is
 					// a message for the host app.
@@ -1753,7 +1762,7 @@ namespace gameswf
 
 				case 0x87:	// store_register
 				{
-					int	reg = m_buffer[pc + 3];
+					int	reg = buffer[pc + 3];
 					// Save top of stack in specified register.
 					if (is_function2)
 					{
@@ -1784,7 +1793,7 @@ namespace gameswf
 				case 0x88:	// decl_dict: declare dictionary
 				{
 					int	i = pc;
-					//int	count = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					//int	count = buffer[pc + 3] | (buffer[pc + 4] << 8);
 					i += 2;
 
 					const_cast<action_buffer*>( this )->process_decl_dict(pc, next_pc);
@@ -1804,14 +1813,14 @@ namespace gameswf
 				case 0x8B:	// set target
 				{
 					// Change the movie we're working on.
-					as_value val = (const char*) &m_buffer[pc + 3];
+					as_value val = (const char*) &buffer[pc + 3];
 					env->set_target(val, original_target);
 					break;
 				}
 
 				case 0x8C:	// go to labeled frame, goto_frame_lbl
 				{
-					char*	frame_label = (char*) &m_buffer[pc + 3];
+					char*	frame_label = (char*) &buffer[pc + 3];
 					env->get_target()->goto_labeled_frame(frame_label);
 					break;
 				}
@@ -1834,7 +1843,7 @@ namespace gameswf
 
 					// Extract name.
 					// @@ security: watch out for possible missing terminator here!
-					tu_string	name = (const char*) &m_buffer[i];
+					tu_string	name = (const char*) &buffer[i];
 					i += name.length() + 1;
 
 					bool function_exists = false;
@@ -1862,32 +1871,32 @@ namespace gameswf
 						func->set_is_function2();
 
 						// Get number of arguments.
-						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	nargs = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 
 						// Get the count of local registers used by this function.
-						uint8	register_count = m_buffer[i];
+						uint8	register_count = buffer[i];
 						i += 1;
 						func->set_local_register_count(register_count);
 
 						// Flags, for controlling register assignment of implicit args.
-						uint16	flags = m_buffer[i] | (m_buffer[i + 1] << 8);
+						uint16	flags = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 						func->set_function2_flags(flags);
 
 						// Get the register assignments and names of the arguments.
 						for (int n = 0; n < nargs; n++)
 						{
-							int	arg_register = m_buffer[i];
+							int	arg_register = buffer[i];
 							i++;
 
 							// @@ security: watch out for possible missing terminator here!
-							func->add_arg(arg_register, (const char*) &m_buffer[i]);
+							func->add_arg(arg_register, (const char*) &buffer[i]);
 							i += func->m_args.back().m_name.length() + 1;
 						}
 
 						// Get the length of the actual function code.
-						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	length = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 						func->set_length(length);
 
@@ -1910,7 +1919,7 @@ namespace gameswf
 					}
 					else
 					{
-						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	nargs = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 
 						// Get the count of local registers used by this function.
@@ -1924,11 +1933,11 @@ namespace gameswf
 						{
 							i++;
 							// @@ security: watch out for possible missing terminator here!
-							i += (int) strlen((const char*) &m_buffer[i]) + 1;
+							i += (int) strlen((const char*) &buffer[i]) + 1;
 						}
 
 						// Skip the length of the actual function code.
-						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	length = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 
 						// Skip the function body (don't interpret it now).
@@ -1939,12 +1948,10 @@ namespace gameswf
 
 				case 0x94:	// with
 				{
-					int	frame = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
-					UNUSED(frame);
 					IF_VERBOSE_ACTION(log_msg("-------------- with block start: stack size is %d\n", with_stack.size()));
-					if (with_stack.size() < 8)
+					if (with_stack.size() < 8) //todo, depends on flash version, could be 16
 					{
- 						int	block_length = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+ 						int	block_length = buffer[pc + 3] | (buffer[pc + 4] << 8);
  						int	block_end = next_pc + block_length;
  						as_object*	with_obj = env->top(0).to_object();
  						with_stack.push_back(with_stack_entry(with_obj, block_end));
@@ -1957,12 +1964,12 @@ namespace gameswf
 					int i = pc;
 					while (i - pc < length)
 					{
-						int	type = m_buffer[3 + i];
+						int	type = buffer[3 + i];
 						i++;
 						if (type == 0)
 						{
 							// string
-							const char*	str = (const char*) &m_buffer[3 + i];
+							const char*	str = (const char*) &buffer[3 + i];
 							i += int(strlen(str)) + 1;
 							env->push(str);
 
@@ -1977,7 +1984,7 @@ namespace gameswf
 							} u;
 							compiler_assert(sizeof(u) == sizeof(u.i));
 
-							memcpy(&u.i, &m_buffer[3 + i], 4);
+							memcpy(&u.i, &buffer[3 + i], 4);
 							u.i = swap_le32(u.i);
 							i += 4;
 
@@ -2002,7 +2009,7 @@ namespace gameswf
 						else if (type == 4)
 						{
 							// contents of register
-							int	reg = m_buffer[3 + i];
+							int	reg = buffer[3 + i];
 							UNUSED(reg);
 							i++;
 							if (is_function2)
@@ -2031,7 +2038,7 @@ namespace gameswf
 						}
 						else if (type == 5)
 						{
-							bool	bool_val = m_buffer[3 + i] ? true : false;
+							bool	bool_val = buffer[3 + i] ? true : false;
 							i++;
 //							log_msg("bool(%d)\n", bool_val);
 							env->push(bool_val);
@@ -2052,8 +2059,8 @@ namespace gameswf
 							} u;
 							compiler_assert(sizeof(u) == sizeof(u.i));
 
-							memcpy(&u.sub.hi, &m_buffer[3 + i], 4);
-							memcpy(&u.sub.lo, &m_buffer[3 + i + 4], 4);
+							memcpy(&u.sub.hi, &buffer[3 + i], 4);
+							memcpy(&u.sub.lo, &buffer[3 + i + 4], 4);
 							u.i = swap_le64(u.i);
 							i += 8;
 
@@ -2071,10 +2078,10 @@ namespace gameswf
 						else if (type == 7)
 						{
 							// int32
-							Sint32	val = m_buffer[3 + i]
-								| (m_buffer[3 + i + 1] << 8)
-								| (m_buffer[3 + i + 2] << 16)
-								| (m_buffer[3 + i + 3] << 24);
+							Sint32	val = buffer[3 + i]
+								| (buffer[3 + i + 1] << 8)
+								| (buffer[3 + i + 2] << 16)
+								| (buffer[3 + i + 3] << 24);
 							i += 4;
 						
 							env->push(val);
@@ -2084,7 +2091,7 @@ namespace gameswf
 						}
 						else if (type == 8)
 						{
-							int	id = m_buffer[3 + i];
+							int	id = buffer[3 + i];
 							i++;
 							if (id < m_dictionary.size())
 							{
@@ -2101,7 +2108,7 @@ namespace gameswf
 						}
 						else if (type == 9)
 						{
-							int	id = m_buffer[3 + i] | (m_buffer[4 + i] << 8);
+							int	id = buffer[3 + i] | (buffer[4 + i] << 8);
 							i += 2;
 							if (id < m_dictionary.size())
 							{
@@ -2122,14 +2129,14 @@ namespace gameswf
 				}
 				case 0x99:	// branch always (goto)
 				{
-					Sint16	offset = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					Sint16	offset = buffer[pc + 3] | (buffer[pc + 4] << 8);
 					next_pc += offset;
 					// @@ TODO range checks
 					break;
 				}
 				case 0x9A:	// get url 2
 				{
-					int	method = m_buffer[pc + 3];
+					int	method = buffer[pc + 3];
 					UNUSED(method);
 
 					const char*	target = env->top(0).to_string();
@@ -2160,7 +2167,7 @@ namespace gameswf
 
 					// Extract name.
 					// @@ security: watch out for possible missing terminator here!
-					tu_string	name = (const char*) &m_buffer[i];
+					tu_string	name = (const char*) &buffer[i];
 					i += name.length() + 1;
 
 					bool function_exists = false;
@@ -2187,19 +2194,19 @@ namespace gameswf
 						func->set_target(env->get_target());
 
 						// Get number of arguments.
-						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	nargs = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 
 						// Get the names of the arguments.
 						for (int n = 0; n < nargs; n++)
 						{
 							// @@ security: watch out for possible missing terminator here!
-							func->add_arg(0, (const char*) &m_buffer[i]);
+							func->add_arg(0, (const char*) &buffer[i]);
 							i += func->m_args.back().m_name.length() + 1;
 						}
 
 						// Get the length of the actual function code.
-						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	length = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 						func->set_length(length);
 
@@ -2227,18 +2234,18 @@ namespace gameswf
 					else
 					{
 						// Get number of arguments.
-						int	nargs = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	nargs = buffer[i] | (buffer[i + 1] << 8);
 						i += 2;
 
 						// Get the names of the arguments.
 						for (int n = 0; n < nargs; n++)
 						{
 							// @@ security: watch out for possible missing terminator here!
-							i += (int) strlen((const char*) &m_buffer[i]) + 1;
+							i += (int) strlen((const char*) &buffer[i]) + 1;
 						}
 
 						// Get the length of the actual function code.
-						int	length = m_buffer[i] | (m_buffer[i + 1] << 8);
+						int	length = buffer[i] | (buffer[i + 1] << 8);
 
 						// Skip the function body (don't interpret it now).
 						next_pc += length;
@@ -2249,7 +2256,7 @@ namespace gameswf
 
 				case 0x9D:	// branch if true
 				{
-					Sint16	offset = m_buffer[pc + 3] | (m_buffer[pc + 4] << 8);
+					Sint16	offset = buffer[pc + 3] | (buffer[pc + 4] << 8);
 					
 					bool	test = env->top(0).to_bool();
 					env->drop(1);
@@ -2295,7 +2302,7 @@ namespace gameswf
 					// that frame is reached. Otherwise, the
 					// frame is shown in stop mode.
 
-					unsigned char	play_flag = m_buffer[pc + 3];
+					unsigned char	play_flag = buffer[pc + 3];
 					character::play_state	state = play_flag ? character::PLAY : character::STOP;
 
 					character* target = env->get_target();
