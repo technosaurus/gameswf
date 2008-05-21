@@ -3,12 +3,11 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// do_abc tag reader
-
-//TODO
+// do_abc tag reader/parser
 
 #include "gameswf/gameswf_abc.h"
 #include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_disasm.h"
 
 namespace gameswf
 {
@@ -265,6 +264,7 @@ namespace gameswf
 		{
 			m_code[i] = in->read_u8();
 		}
+		log_disasm_avm2(m_code);
 
 		n = in->read_vu30();	// exception_count
 		m_exception.resize(n);
