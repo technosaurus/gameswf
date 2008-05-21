@@ -73,6 +73,7 @@ namespace gameswf
 		}
 
 		virtual void	add_abc(tu_string& name, abc_def* abc) { assert(0); };
+		virtual void	add_symbol_class(int character_id, const tu_string& class_name) { assert(0); };
 		virtual void	add_character(int id, character_def* ch) { log_error("add_character tag appears in sprite tags!\n"); }
 		virtual void	add_font(int id, font* ch) { log_error("add_font tag appears in sprite tags!\n"); }
 		virtual font*	get_font(int id) { return m_movie_def->get_font(id); }

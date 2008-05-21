@@ -306,6 +306,7 @@ namespace gameswf
 			register_tag_loader(73, define_font_alignzones);	// DefineFontAlignZones - Flash 8
 			register_tag_loader(74, define_csm_textsetting_loader); // CSMTextSetting - Flash 8
 			register_tag_loader(75, define_font_loader);	// DefineFont3 - Flash 8
+			register_tag_loader(76, symbol_class_loader);	// SymbolClass - Flash 9
 			register_tag_loader(77, define_metadata_loader);	// MetaData - Flash 8
 			register_tag_loader(82, define_abc_loader);	// doABC - Flash 9
 			register_tag_loader(83, define_shape_loader);		// DefineShape4 - Flash 8
@@ -707,6 +708,22 @@ namespace gameswf
 		m->add_bitmap_character(character_id, ch);
 	}
 
+	void	symbol_class_loader(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 76);
+
+		int num_symbols = in->read_u16();
+		for (int i = 0; i < num_symbols; i++)
+		{
+			Uint16	character_id = in->read_u16();
+			tu_string class_name;
+			in->read_string(&class_name);
+			m->add_symbol_class(character_id, class_name);
+
+			IF_VERBOSE_PARSE(log_msg("  symbol_class_loader: charid = %d class = '%s'\n",
+				character_id, class_name.c_str()));
+		}
+	}
 
 	void	define_bits_jpeg2_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{

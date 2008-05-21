@@ -246,6 +246,7 @@ namespace gameswf
 	void	define_enable_debugger_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_tabindex_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_abc_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	symbol_class_loader(stream* in, int tag_type, movie_definition_sub* m);
 
 }	// end namespace gameswf
 
