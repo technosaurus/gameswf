@@ -32,10 +32,21 @@ namespace gameswf
 		{
 			ARG_END=0,
 			ARG_MULTINAME,
+			ARG_NAMESPACE,
 			ARG_BYTE,
+			ARG_SHORT,
+			ARG_INT,
+			ARG_UINT,
+			ARG_DOUBLE,
 			ARG_STRING,
 			ARG_COUNT,
 			ARG_CLASSINFO,
+			ARG_FUNCTION,
+			ARG_EXCEPTION,
+			ARG_REGISTER,
+			ARG_SLOTINDEX,
+			ARG_OFFSET,
+			ARG_OFFSETLIST,
 		};
 
 		struct inst_info
@@ -78,10 +89,35 @@ namespace gameswf
 						printf( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str() );
 						break;
 
+					case ARG_NAMESPACE:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf( "\t\tnamespace: %s\n", def.m_string[ def.m_namespace[value].m_name ].c_str() );
+						break;
+
 					case ARG_BYTE:
 						value = args[byte_count];
 						printf("\t\tvalue: %i\n", value);
 						byte_count++;
+						break;
+
+					case ARG_SHORT:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf("\t\tvalue: %i\n", value);
+						break;
+
+					case ARG_INT:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf("\t\tvalue: %i\n", def.m_integer[value]);
+						break;
+
+					case ARG_UINT:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf("\t\tvalue: %ui\n", def.m_uinteger[value]);
+						break;
+
+					case ARG_DOUBLE:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf("\t\tvalue: %d\n", def.m_double[value]);
 						break;
 
 					case ARG_STRING:
@@ -99,6 +135,49 @@ namespace gameswf
 						printf( "\t\tclass: %i\n", value );
 						break;
 
+					case ARG_FUNCTION:
+						byte_count += read_vu30( value, &args[byte_count] );
+						//TODO: print signature
+						printf( "\t\tfunction: %s\n", def.m_string[def.m_method[value]->m_name].c_str() );
+						break;
+
+					case ARG_EXCEPTION:
+						byte_count += read_vu30( value, &args[byte_count] );
+						//TODO: print exception info
+						printf( "\t\texception: %i\n", value );
+						break;
+
+					case ARG_REGISTER:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf( "\t\tregister: %i\n", value );
+						break;
+
+					case ARG_SLOTINDEX:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf( "\t\tslot index: %i\n", value );
+						break;
+
+					case ARG_OFFSET:
+						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+						byte_count += 3;
+						printf( "\t\toffset: %i\n", value );
+						break;
+
+					case ARG_OFFSETLIST:
+						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+						printf( "\t\tdefault offset: %i\n", value );
+						byte_count += 3;
+						
+						int offset_count;
+						byte_count += read_vu30( offset_count, &args[byte_count] );
+
+						for(int i=0;i<offset_count;i++)
+						{
+							value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+							printf("\t\toffset %i: %i\n", i, value);
+							byte_count +=3;
+						}
+						break;
 					}
 				}
 
@@ -144,33 +223,166 @@ namespace gameswf
 		if (s_instr.size() == 0)
 		{
 			s_instr.add(0x03, inst_info("throw"));
+			s_instr.add(0x04, inst_info("getsuper", ARG_MULTINAME, ARG_END ));
 			s_instr.add(0x05, inst_info("setsuper" ));
 			s_instr.add(0x06, inst_info("dxns"));
 			s_instr.add(0x07, inst_info("dxnslate"));
+			s_instr.add(0x08, inst_info("kill", ARG_REGISTER, ARG_END));
 			s_instr.add(0x09, inst_info("label"));
-			s_instr.add(0x0D, inst_info("ifnle"));
+			// no inst for 0x0A, 0x0B
+			s_instr.add(0x0C, inst_info("ifnlt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x0D, inst_info("ifnle", ARG_OFFSET, ARG_END));
+			s_instr.add(0x0E, inst_info("ifngt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x0F, inst_info("ifnge", ARG_OFFSET, ARG_END));
+			s_instr.add(0x10, inst_info("jump", ARG_OFFSET, ARG_END));
+			s_instr.add(0x11, inst_info("iftrue", ARG_OFFSET, ARG_END));
+			s_instr.add(0x12, inst_info("iffalse", ARG_OFFSET, ARG_END));
+			s_instr.add(0x13, inst_info("ifeq", ARG_OFFSET, ARG_END));
+			s_instr.add(0x14, inst_info("ifne", ARG_OFFSET, ARG_END));
+			s_instr.add(0x15, inst_info("iflt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x16, inst_info("ifle", ARG_OFFSET, ARG_END));
+			s_instr.add(0x17, inst_info("ifgt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x18, inst_info("ifge", ARG_OFFSET, ARG_END));
+			s_instr.add(0x19, inst_info("ifstricteq", ARG_OFFSET, ARG_END));
+			s_instr.add(0x1A, inst_info("ifstrictne", ARG_OFFSET, ARG_END));
+			s_instr.add(0x1B, inst_info("lookupswitch", ARG_OFFSET, ARG_OFFSETLIST, ARG_END));
+			s_instr.add(0x1C, inst_info("pushwith"));
 			s_instr.add(0x1D, inst_info("popscope"));
+			s_instr.add(0x1E, inst_info("nextname"));
+			s_instr.add(0x1F, inst_info("hasnext"));
+			s_instr.add(0x20, inst_info("pushnull"));
+			s_instr.add(0x21, inst_info("pushundefined"));
+			// no inst for 0x22
+			s_instr.add(0x23, inst_info("nextvalue"));
 			s_instr.add(0x24, inst_info("pushbyte", ARG_BYTE, ARG_END));
-			s_instr.add(0x2C, inst_info("pushstring", ARG_STRING, ARG_END));
+			s_instr.add(0x25, inst_info("pushshort", ARG_BYTE, ARG_END));
+			s_instr.add(0x26, inst_info("pushtrue"));
+			s_instr.add(0x27, inst_info("pushfalse"));
+			s_instr.add(0x28, inst_info("pushnan"));
+			s_instr.add(0x29, inst_info("pop"));
+			s_instr.add(0x2A, inst_info("dup"));
+			s_instr.add(0x2B, inst_info("swap"));
+			s_instr.add(0x2C, inst_info("pushstring", ARG_SHORT, ARG_END));
+			s_instr.add(0x2D, inst_info("pushint", ARG_INT, ARG_END));
+			s_instr.add(0x2E, inst_info("pushuint", ARG_UINT, ARG_END));
+			s_instr.add(0x2F, inst_info("pushdouble", ARG_DOUBLE, ARG_END));
 			s_instr.add(0x30, inst_info("pushscope"));
+			s_instr.add(0x31, inst_info("pushnamespace", ARG_NAMESPACE, ARG_END));
+			s_instr.add(0x32, inst_info("hasnext2", ARG_REGISTER, ARG_REGISTER, ARG_END));
+			// no inst for 0x33 -> 0X3F
+			s_instr.add(0x40, inst_info("newfunction", ARG_FUNCTION, ARG_END));
+			s_instr.add(0x41, inst_info("call", ARG_COUNT, ARG_END));
+			s_instr.add(0x42, inst_info("construct", ARG_COUNT, ARG_END));
+			s_instr.add(0x43, inst_info("callmethod", ARG_SHORT, ARG_COUNT, ARG_END));
+			s_instr.add(0x44, inst_info("callstatic", ARG_FUNCTION, ARG_COUNT, ARG_END));
+			s_instr.add(0x45, inst_info("callsuper", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x46, inst_info("callproperty", ARG_MULTINAME, ARG_COUNT, ARG_END));
 			s_instr.add(0x47, inst_info("returnvoid"));
+			s_instr.add(0x48, inst_info("returnvalue"));
 			s_instr.add(0x49, inst_info("constructsuper", ARG_COUNT, ARG_END));
+			s_instr.add(0x4A, inst_info("constructprop", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			// no inst for 0x4B
+			s_instr.add(0x4C, inst_info("callproplex", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			// no inst for 0x4E
+			s_instr.add(0x4E, inst_info("callsupervoid", ARG_MULTINAME, ARG_COUNT, ARG_END));
 			s_instr.add(0x4F, inst_info("callpropvoid", ARG_MULTINAME, ARG_COUNT, ARG_END));
-			s_instr.add(0x58, inst_info("newclass", ARG_CLASSINFO));
+			// no inst for 0x50 -> 0x54
+			s_instr.add(0x55, inst_info("newobject", ARG_COUNT, ARG_END));
+			s_instr.add(0x56, inst_info("newarray", ARG_COUNT, ARG_END));
+			s_instr.add(0x57, inst_info("newactivation"));
+			s_instr.add(0x58, inst_info("newclass", ARG_CLASSINFO, ARG_END));
+			s_instr.add(0x59, inst_info("getdescendants", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x5A, inst_info("newcatch", ARG_EXCEPTION, ARG_END));
+			// no inst for 0x5B -> 0x5C
+			s_instr.add(0x5D, inst_info("findpropstrict", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x5E, inst_info("findproperty", ARG_MULTINAME, ARG_END));
+			// no inst for 0x5F
 			s_instr.add(0x60, inst_info("getlex", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x61, inst_info("setproperty", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x62, inst_info("getlocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x63, inst_info("setlocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x64, inst_info("getglobalscope"));
 			s_instr.add(0x65, inst_info("getscopeobject", ARG_BYTE, ARG_END));
+			s_instr.add(0x66, inst_info("getproperty", ARG_MULTINAME, ARG_END));
+			// no inst for 0x67
 			s_instr.add(0x68, inst_info("initproperty", ARG_MULTINAME, ARG_END));
+			// no inst for 0x69
+			s_instr.add(0x6A, inst_info("deleteproperty", ARG_MULTINAME, ARG_END));
+			// no inst for 0x6B
+			s_instr.add(0x6C, inst_info("getslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x6D, inst_info("setslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x6E, inst_info("getglobalslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x6F, inst_info("setglobalslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x70, inst_info("convert_s"));
+			s_instr.add(0x71, inst_info("esc_xelem"));
+			s_instr.add(0x72, inst_info("esc_xattr"));
+			s_instr.add(0x73, inst_info("convert_i"));
+			s_instr.add(0x74, inst_info("convert_u"));
+			s_instr.add(0x75, inst_info("convert_d"));
+			s_instr.add(0x76, inst_info("convert_b"));
+			s_instr.add(0x77, inst_info("convert_o"));
+			s_instr.add(0x78, inst_info("checkfilter"));
+			// no inst for 0x79 - 0x7F
+			s_instr.add(0x80, inst_info("coerce", ARG_MULTINAME, ARG_END));
+			// no inst for 0x81
+			s_instr.add(0x82, inst_info("coerce_a"));
+			// no inst for 0x83, 0x84
+			s_instr.add(0x85, inst_info("coerce_s"));
+			s_instr.add(0x86, inst_info("astype", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x87, inst_info("astypelate", ARG_MULTINAME, ARG_END));
+			// no inst for 0x88->0x8F
+			s_instr.add(0x90, inst_info("negate"));
+			s_instr.add(0x91, inst_info("increment"));
+			s_instr.add(0x92, inst_info("inclocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x93, inst_info("decrement"));
+			s_instr.add(0x94, inst_info("declocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x95, inst_info("typeof"));
+			s_instr.add(0x96, inst_info("not"));
+			s_instr.add(0x97, inst_info("bitnot"));
+			// no inst for 0x99->0x0x9F
 			s_instr.add(0xA0, inst_info("add"));
+			s_instr.add(0xA1, inst_info("subtract"));
+			s_instr.add(0xA2, inst_info("multiply"));
+			s_instr.add(0xA3, inst_info("divide"));
+			s_instr.add(0xA4, inst_info("modulo"));
+			s_instr.add(0xA5, inst_info("lshift"));
+			s_instr.add(0xA6, inst_info("rshift"));
+			s_instr.add(0xA7, inst_info("urshift"));
+			s_instr.add(0xA8, inst_info("bitand"));
+			s_instr.add(0xA9, inst_info("bitor"));
+			s_instr.add(0xAA, inst_info("bitxor"));
+			s_instr.add(0xAB, inst_info("equals"));
+			s_instr.add(0xAC, inst_info("strictequals"));
+			s_instr.add(0xAD, inst_info("lessthan"));
+			s_instr.add(0xAE, inst_info("lessequals"));
+			// no inst for 0xB0
+			s_instr.add(0xB1, inst_info("instanceof"));
+			s_instr.add(0xB2, inst_info("istype", ARG_MULTINAME, ARG_END));
+			s_instr.add(0xB3, inst_info("istypelate"));
+			s_instr.add(0xB4, inst_info("in"));
+			// no inst for 0xB5
+			s_instr.add(0xC0, inst_info("increment_i"));
+			s_instr.add(0xC1, inst_info("decrement_i"));
+			s_instr.add(0xC2, inst_info("inclocal_i", ARG_REGISTER, ARG_END));
+			s_instr.add(0xC3, inst_info("declocal_i", ARG_REGISTER, ARG_END));
+			s_instr.add(0xC4, inst_info("negate_i"));
 			s_instr.add(0xC5, inst_info("add_i"));
+			s_instr.add(0xC6, inst_info("subtract_i"));
+			s_instr.add(0xC7, inst_info("multiply_i"));
+			// no inst for 0xC8 - > 0xCF
 			s_instr.add(0xD0, inst_info("getlocal_0"));
 			s_instr.add(0xD1, inst_info("getlocal_1"));
 			s_instr.add(0xD2, inst_info("getlocal_2"));
 			s_instr.add(0xD3, inst_info("getlocal_3"));
+			s_instr.add(0xD4, inst_info("setlocal_0"));
+			s_instr.add(0xD5, inst_info("setlocal_1"));
+			s_instr.add(0xD6, inst_info("setlocal_2"));
+			s_instr.add(0xD7, inst_info("setlocal_3"));
+			// no inst for 0xD8 - > 0xEE
+			s_instr.add(0xEF, inst_info("debug", ARG_BYTE, ARG_STRING, ARG_BYTE, ARG_SHORT));
+			s_instr.add(0xF0, inst_info("debugline", ARG_SHORT, ARG_END));
+			s_instr.add(0xF1, inst_info("debugfile", ARG_STRING, ARG_END));
 
-			s_instr.add(0x5D, inst_info("findpropstrict", ARG_MULTINAME, ARG_END));
-			s_instr.add(0x5E, inst_info("findproperty", ARG_MULTINAME, ARG_END));
-
-			// TODO
 		}
 
 		assert(data.size() > 0);
