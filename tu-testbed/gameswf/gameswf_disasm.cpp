@@ -85,87 +85,87 @@ namespace gameswf
 					switch( m_arg_formats[i] )
 					{
 					case ARG_MULTINAME:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str() );
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str());
 						break;
 
 					case ARG_NAMESPACE:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf( "\t\tnamespace: %s\n", def.m_string[ def.m_namespace[value].m_name ].c_str() );
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg( "\t\tnamespace: %s\n", def.m_string[ def.m_namespace[value].m_name ].c_str());
 						break;
 
 					case ARG_BYTE:
 						value = args[byte_count];
-						printf("\t\tvalue: %i\n", value);
+						log_msg("\t\tvalue: %i\n", value);
 						byte_count++;
 						break;
 
 					case ARG_SHORT:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf("\t\tvalue: %i\n", value);
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg("\t\tvalue: %i\n", value);
 						break;
 
 					case ARG_INT:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf("\t\tvalue: %i\n", def.m_integer[value]);
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg("\t\tvalue: %i\n", def.m_integer[value]);
 						break;
 
 					case ARG_UINT:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf("\t\tvalue: %ui\n", def.m_uinteger[value]);
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg("\t\tvalue: %ui\n", def.m_uinteger[value]);
 						break;
 
 					case ARG_DOUBLE:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf("\t\tvalue: %d\n", def.m_double[value]);
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg("\t\tvalue: %d\n", def.m_double[value]);
 						break;
 
 					case ARG_STRING:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf( "\t\tstring: %s\n", def.m_string[value].c_str() );
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg( "\t\tstring: %s\n", def.m_string[value].c_str());
 						break;
 
 					case ARG_COUNT:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf( "\t\tcount: %i\n", value );
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg( "\t\tcount: %i\n", value);
 						break;
 
 					case ARG_CLASSINFO:
-						byte_count += read_vu30( value, &args[byte_count] );
-						printf( "\t\tclass: %i\n", value );
+						byte_count += read_vu30(value, &args[byte_count]);
+						log_msg( "\t\tclass: %i\n", value);
 						break;
 
 					case ARG_FUNCTION:
 						byte_count += read_vu30( value, &args[byte_count] );
 						//TODO: print signature
-						printf( "\t\tfunction: %s\n", def.m_string[def.m_method[value]->m_name].c_str() );
+						log_msg( "\t\tfunction: %s\n", def.m_string[def.m_method[value]->m_name].c_str());
 						break;
 
 					case ARG_EXCEPTION:
 						byte_count += read_vu30( value, &args[byte_count] );
 						//TODO: print exception info
-						printf( "\t\texception: %i\n", value );
+						log_msg( "\t\texception: %i\n", value);
 						break;
 
 					case ARG_REGISTER:
 						byte_count += read_vu30( value, &args[byte_count] );
-						printf( "\t\tregister: %i\n", value );
+						log_msg( "\t\tregister: %i\n", value);
 						break;
 
 					case ARG_SLOTINDEX:
 						byte_count += read_vu30( value, &args[byte_count] );
-						printf( "\t\tslot index: %i\n", value );
+						log_msg( "\t\tslot index: %i\n", value);
 						break;
 
 					case ARG_OFFSET:
 						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
 						byte_count += 3;
-						printf( "\t\toffset: %i\n", value );
+						log_msg( "\t\toffset: %i\n", value);
 						break;
 
 					case ARG_OFFSETLIST:
 						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
-						printf( "\t\tdefault offset: %i\n", value );
+						log_msg( "\t\tdefault offset: %i\n", value);
 						byte_count += 3;
 						
 						int offset_count;
@@ -174,7 +174,7 @@ namespace gameswf
 						for(int i=0;i<offset_count;i++)
 						{
 							value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
-							printf("\t\toffset %i: %i\n", i, value);
+							log_msg("\t\toffset %i: %i\n", i, value);
 							byte_count +=3;
 						}
 						break;
@@ -406,7 +406,7 @@ namespace gameswf
 			}
 			else
 			{
-				printf(":	unknown opcode 0x%02X\n", opcode);
+				log_msg(":	unknown opcode 0x%02X\n", opcode);
 				ip++;
 			}
 
