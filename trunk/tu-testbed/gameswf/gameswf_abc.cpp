@@ -405,8 +405,8 @@ namespace gameswf
 			info->read(in, this);
 			m_body[i] = info;
 
-			printf("method	%i\n",info->m_method);
-			log_disasm_avm2(info->m_code, *this);
+			IF_VERBOSE_PARSE(log_msg("method	%i\n",info->m_method));
+			IF_VERBOSE_PARSE(log_disasm_avm2(info->m_code, *this));
 		}
 
 		assert(in->get_position() == eof);
