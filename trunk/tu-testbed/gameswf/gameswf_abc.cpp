@@ -264,7 +264,6 @@ namespace gameswf
 		{
 			m_code[i] = in->read_u8();
 		}
-		log_disasm_avm2(m_code);
 
 		n = in->read_vu30();	// exception_count
 		m_exception.resize(n);
@@ -405,9 +404,13 @@ namespace gameswf
 			body_info* info = new body_info();
 			info->read(in, this);
 			m_body[i] = info;
+
+			printf("method	%i\n",info->m_method);
+			log_disasm_avm2(info->m_code, *this);
 		}
 
 		assert(in->get_position() == eof);
+
 	}
 
 	//	cpool_info
