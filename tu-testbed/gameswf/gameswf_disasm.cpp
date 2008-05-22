@@ -25,18 +25,117 @@ namespace gameswf
 
 #else // COMPILE_DISASM
 
-	void	log_disasm_avm2(const array<Uint8>& data)
+	void	log_disasm_avm2(const array<Uint8>& data, const abc_def & def)
 	// Disassemble one instruction to the log, AVM2
 	{
+		enum arg_format
+		{
+			ARG_END=0,
+			ARG_MULTINAME,
+			ARG_BYTE,
+			ARG_STRING,
+			ARG_COUNT,
+			ARG_CLASSINFO,
+		};
+
 		struct inst_info
 		{
-			int	m_length;
 			const char*	m_instruction;
-			
-			inst_info(int length, const char* opname) :
-				m_length(length),
-				m_instruction(opname)
+			array<arg_format> m_arg_formats;
+
+			inst_info(const char* opname) :
+				m_instruction(opname),
+				m_arg_formats()
 			{
+			}
+			
+			inst_info(const char* opname, const arg_format arg_format_0, ...) :
+				m_instruction(opname),
+				m_arg_formats()
+			{
+				va_list arg;
+
+				m_arg_formats.push_back( arg_format_0 );
+				va_start( arg, arg_format_0 );
+
+				arg_format current_format;
+				while( ( current_format = va_arg( arg, arg_format) ) != ARG_END )
+				{
+					m_arg_formats.push_back( current_format );
+				}
+			}
+
+			int process(const abc_def &def, const uint8 *args)
+			{
+				int byte_count = 1;
+				for( int i=0; i<m_arg_formats.size();++i)
+				{
+					int value;
+					switch( m_arg_formats[i] )
+					{
+					case ARG_MULTINAME:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str() );
+						break;
+
+					case ARG_BYTE:
+						value = args[byte_count];
+						printf("\t\tvalue: %i\n", value);
+						byte_count++;
+						break;
+
+					case ARG_STRING:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf( "\t\tstring: %s\n", def.m_string[value].c_str() );
+						break;
+
+					case ARG_COUNT:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf( "\t\tcount: %i\n", value );
+						break;
+
+					case ARG_CLASSINFO:
+						byte_count += read_vu30( value, &args[byte_count] );
+						printf( "\t\tclass: %i\n", value );
+						break;
+
+					}
+				}
+
+				return byte_count;
+			}
+
+			bool has_argument() const { return m_arg_formats.size() != 0;}
+
+			int read_vu30( int& result, const uint8 *args )
+			{
+				result = args[0];
+
+				if ((result & 0x00000080) == 0)
+				{
+					return 1;
+				}
+
+				result = (result & 0x0000007F) | args[1] << 7;
+				if ((result & 0x00004000) == 0)
+				{
+					return 2;
+				}
+
+				result = (result & 0x00003FFF) | args[2] << 14;
+				if ((result & 0x00200000) == 0)
+				{
+					return 3;
+				}
+
+				result = (result & 0x001FFFFF) | args[3] << 21;
+				if ((result & 0x10000000) == 0)
+				{
+					return 4;
+				}
+
+				result = (result & 0x0FFFFFFF) | args[4] << 28;
+				return 5;
 			}
 
 		};
@@ -44,18 +143,32 @@ namespace gameswf
 		static hash<int, inst_info> s_instr;
 		if (s_instr.size() == 0)
 		{
-			s_instr.add(0x30, inst_info(1, "pushscope"));
-			s_instr.add(0x47, inst_info(1, "returnvoid"));
-			s_instr.add(0xA0, inst_info(1, "add"));
-			s_instr.add(0xC5, inst_info(1, "add_i"));
-			s_instr.add(0xD0, inst_info(1, "getlocal_0"));
-			s_instr.add(0xD1, inst_info(1, "getlocal_1"));
-			s_instr.add(0xD2, inst_info(1, "getlocal_2"));
-			s_instr.add(0xD3, inst_info(1, "getlocal_3"));
+			s_instr.add(0x03, inst_info("throw"));
+			s_instr.add(0x05, inst_info("setsuper" ));
+			s_instr.add(0x06, inst_info("dxns"));
+			s_instr.add(0x07, inst_info("dxnslate"));
+			s_instr.add(0x09, inst_info("label"));
+			s_instr.add(0x0D, inst_info("ifnle"));
+			s_instr.add(0x1D, inst_info("popscope"));
+			s_instr.add(0x24, inst_info("pushbyte", ARG_BYTE, ARG_END));
+			s_instr.add(0x2C, inst_info("pushstring", ARG_STRING, ARG_END));
+			s_instr.add(0x30, inst_info("pushscope"));
+			s_instr.add(0x47, inst_info("returnvoid"));
+			s_instr.add(0x49, inst_info("constructsuper", ARG_COUNT, ARG_END));
+			s_instr.add(0x4F, inst_info("callpropvoid", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x58, inst_info("newclass", ARG_CLASSINFO));
+			s_instr.add(0x60, inst_info("getlex", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x65, inst_info("getscopeobject", ARG_BYTE, ARG_END));
+			s_instr.add(0x68, inst_info("initproperty", ARG_MULTINAME, ARG_END));
+			s_instr.add(0xA0, inst_info("add"));
+			s_instr.add(0xC5, inst_info("add_i"));
+			s_instr.add(0xD0, inst_info("getlocal_0"));
+			s_instr.add(0xD1, inst_info("getlocal_1"));
+			s_instr.add(0xD2, inst_info("getlocal_2"));
+			s_instr.add(0xD3, inst_info("getlocal_3"));
 
-			s_instr.add(0x5E, inst_info(2, "findproperty"));
-	//		s_instr.add(0xD3, inst_info(1, "getlocal_3"));
-		//	s_instr.add(0xD3, inst_info(1, "getlocal_3"));
+			s_instr.add(0x5D, inst_info("findpropstrict", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x5E, inst_info("findproperty", ARG_MULTINAME, ARG_END));
 
 			// TODO
 		}
@@ -66,11 +179,18 @@ namespace gameswf
 		do
 		{
 			int opcode = data[ip];
-			inst_info ii(0, 0);
+			inst_info ii(0);
 			if (s_instr.get(opcode, &ii))
 			{
 				printf(":	%s\n", ii.m_instruction);
-				ip += ii.m_length;
+				if( ii.has_argument() )
+				{
+					ip += ii.process( def, &data[ip] );
+				}
+				else
+				{
+					ip++;
+				}
 			}
 			else
 			{

@@ -4,6 +4,7 @@
 // whatever you want with it.
 
 #include "base/container.h"
+#include "gameswf/gameswf_abc.h"
 
 namespace gameswf
 {
@@ -12,6 +13,6 @@ namespace gameswf
 	void	log_disasm(const unsigned char* instruction_data);
 
 	// Disassemble one instruction to the log, AVM2
-	void	log_disasm_avm2(const array<Uint8>& m_code);
+	void	log_disasm_avm2(const array<Uint8>& m_code, const abc_def & def );
 
 }
