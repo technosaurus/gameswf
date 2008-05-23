@@ -49,7 +49,7 @@ static const char* lookup_content_type(const char* file_extension)
 		};
 
 		// Register the types.
-		for (int i = 0, n = ARRAYSIZE(types); i < n; i++) {
+		for (int i = 0, n = TU_ARRAYSIZE(types); i < n; i++) {
 			s_types.add(tu_stringi(types[i].extension), types[i].type);
 		}
 	}
