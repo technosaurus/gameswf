@@ -12,6 +12,7 @@
 #include "gameswf/gameswf_sound.h"
 #include "gameswf/gameswf_stream.h"
 #include "gameswf/gameswf_movie_def.h"
+#include "gameswf/gameswf_filters.h"
 
 /*
 
@@ -587,6 +588,8 @@ namespace gameswf
 		{
 			return false;
 		}
+		m_has_blend_mode = flags & 32 ? true : false;
+		m_has_filter_list = flags & 16 ? true : false;
 		m_hit_test = flags & 8 ? true : false;
 		m_down = flags & 4 ? true : false;
 		m_over = flags & 2 ? true : false;
@@ -600,6 +603,16 @@ namespace gameswf
 		if (tag_type == 34)
 		{
 			m_button_cxform.read_rgba(in);
+
+			if(m_has_filter_list)
+			{
+				read_filter_list(in);
+			}
+
+			if( m_has_blend_mode )
+			{
+				m_blend_mode = in->read_u8();
+			}
 		}
 
 		return true;

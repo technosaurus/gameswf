@@ -25,6 +25,9 @@
 namespace gameswf
 {
 
+
+	void	as_global_textfield_ctor(const fn_call& fn);
+
 	// Helper struct.
 	struct text_style
 	{

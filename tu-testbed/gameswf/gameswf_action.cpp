@@ -1140,7 +1140,7 @@ namespace gameswf
 							if (obj)
 							{
 								// assert(function_name == "super");
-								obj->get_member("constructor", &function);
+								obj->get_ctor(&function);
 							}
 						}
 
@@ -1582,7 +1582,7 @@ namespace gameswf
 					else
 					{
 						as_value val;
-						if (obj->get_member(constructor.to_string(), &val))
+						if (obj && obj->get_member(constructor.to_string(), &val))
 						{
 							if ( as_s_function* func = cast_to<as_s_function>(val.to_object()))
 							{
