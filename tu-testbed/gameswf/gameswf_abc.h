@@ -78,6 +78,12 @@ namespace gameswf
 
 	};
 
+	struct option_detail
+	{
+		int m_value;
+		uint8 m_kind;
+	};
+
 	struct method_info : public ref_counted
 	{
 		enum flags
@@ -94,7 +100,7 @@ namespace gameswf
 		array<int> m_param_type;
 		int m_name;
 		Uint8 m_flags;
-//		option_info m_options;
+		array<option_detail> m_options;
 //		param_info m_param_names;
 
 		void	read(stream* in, abc_def* abc);
