@@ -25,363 +25,366 @@ namespace gameswf
 
 #else // COMPILE_DISASM
 
+	//
+	// Action Script 3.0
+	//
+
+	enum arg_format_avm2
+	{
+		ARG_END=0,
+		ARG_MULTINAME,
+		ARG_NAMESPACE,
+		ARG_BYTE,
+		ARG_SHORT,
+		ARG_INT,
+		ARG_UINT,
+		ARG_DOUBLE,
+		ARG_STRING,
+		ARG_COUNT,
+		ARG_CLASSINFO,
+		ARG_FUNCTION,
+		ARG_EXCEPTION,
+		ARG_REGISTER,
+		ARG_SLOTINDEX,
+		ARG_OFFSET,
+		ARG_OFFSETLIST,
+	};
+
+	struct inst_info_avm2
+	{
+		const char*	m_instruction;
+		array<arg_format_avm2> m_arg_formats;
+
+		inst_info_avm2(const char* opname) :
+			m_instruction(opname)
+		{
+		}
+
+		inst_info_avm2(const char* opname, const arg_format_avm2 arg_format_0, ...) :
+			m_instruction(opname)
+		{
+			va_list arg;
+
+			m_arg_formats.push_back( arg_format_0 );
+			va_start( arg, arg_format_0 );
+
+			arg_format_avm2 current_format;
+			while( ( current_format = va_arg( arg, arg_format_avm2) ) != ARG_END )
+			{
+				m_arg_formats.push_back( current_format );
+			}
+		}
+
+		int process(const abc_def &def, const uint8 *args)
+		{
+			int byte_count = 1;
+			for( int i=0; i<m_arg_formats.size();++i)
+			{
+				int value;
+				switch( m_arg_formats[i] )
+				{
+				case ARG_MULTINAME:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str());
+					break;
+
+				case ARG_NAMESPACE:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg( "\t\tnamespace: %s\n", def.m_string[ def.m_namespace[value].m_name ].c_str());
+					break;
+
+				case ARG_BYTE:
+					value = args[byte_count];
+					log_msg("\t\tvalue: %i\n", value);
+					byte_count++;
+					break;
+
+				case ARG_SHORT:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg("\t\tvalue: %i\n", value);
+					break;
+
+				case ARG_INT:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg("\t\tvalue: %i\n", def.m_integer[value]);
+					break;
+
+				case ARG_UINT:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg("\t\tvalue: %ui\n", def.m_uinteger[value]);
+					break;
+
+				case ARG_DOUBLE:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg("\t\tvalue: %d\n", def.m_double[value]);
+					break;
+
+				case ARG_STRING:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg( "\t\tstring: %s\n", def.m_string[value].c_str());
+					break;
+
+				case ARG_COUNT:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg( "\t\tcount: %i\n", value);
+					break;
+
+				case ARG_CLASSINFO:
+					byte_count += read_vu30(value, &args[byte_count]);
+					log_msg( "\t\tclass: %i\n", value);
+					break;
+
+				case ARG_FUNCTION:
+					byte_count += read_vu30( value, &args[byte_count] );
+					//TODO: print signature
+					log_msg( "\t\tfunction: %s\n", def.m_string[def.m_method[value]->m_name].c_str());
+					break;
+
+				case ARG_EXCEPTION:
+					byte_count += read_vu30( value, &args[byte_count] );
+					//TODO: print exception info
+					log_msg( "\t\texception: %i\n", value);
+					break;
+
+				case ARG_REGISTER:
+					byte_count += read_vu30( value, &args[byte_count] );
+					log_msg( "\t\tregister: %i\n", value);
+					break;
+
+				case ARG_SLOTINDEX:
+					byte_count += read_vu30( value, &args[byte_count] );
+					log_msg( "\t\tslot index: %i\n", value);
+					break;
+
+				case ARG_OFFSET:
+					value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+					byte_count += 3;
+					log_msg( "\t\toffset: %i\n", value);
+					break;
+
+				case ARG_OFFSETLIST:
+					value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+					log_msg( "\t\tdefault offset: %i\n", value);
+					byte_count += 3;
+
+					int offset_count;
+					byte_count += read_vu30( offset_count, &args[byte_count] );
+
+					for(int i=0;i<offset_count;i++)
+					{
+						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+						log_msg("\t\toffset %i: %i\n", i, value);
+						byte_count +=3;
+					}
+					break;
+				}
+			}
+
+			return byte_count;
+		}
+
+		bool has_argument() const { return m_arg_formats.size() != 0;}
+
+		int read_vu30( int& result, const uint8 *args )
+		{
+			result = args[0];
+
+			if ((result & 0x00000080) == 0)
+			{
+				return 1;
+			}
+
+			result = (result & 0x0000007F) | args[1] << 7;
+			if ((result & 0x00004000) == 0)
+			{
+				return 2;
+			}
+
+			result = (result & 0x00003FFF) | args[2] << 14;
+			if ((result & 0x00200000) == 0)
+			{
+				return 3;
+			}
+
+			result = (result & 0x001FFFFF) | args[3] << 21;
+			if ((result & 0x10000000) == 0)
+			{
+				return 4;
+			}
+
+			result = (result & 0x0FFFFFFF) | args[4] << 28;
+			return 5;
+		}
+
+	};
+
+
 	void	log_disasm_avm2(const array<Uint8>& data, const abc_def & def)
 	// Disassemble one instruction to the log, AVM2
 	{
-		enum arg_format
-		{
-			ARG_END=0,
-			ARG_MULTINAME,
-			ARG_NAMESPACE,
-			ARG_BYTE,
-			ARG_SHORT,
-			ARG_INT,
-			ARG_UINT,
-			ARG_DOUBLE,
-			ARG_STRING,
-			ARG_COUNT,
-			ARG_CLASSINFO,
-			ARG_FUNCTION,
-			ARG_EXCEPTION,
-			ARG_REGISTER,
-			ARG_SLOTINDEX,
-			ARG_OFFSET,
-			ARG_OFFSETLIST,
-		};
-
-		struct inst_info
-		{
-			const char*	m_instruction;
-			array<arg_format> m_arg_formats;
-
-			inst_info(const char* opname) :
-				m_instruction(opname),
-				m_arg_formats()
-			{
-			}
-			
-			inst_info(const char* opname, const arg_format arg_format_0, ...) :
-				m_instruction(opname),
-				m_arg_formats()
-			{
-				va_list arg;
-
-				m_arg_formats.push_back( arg_format_0 );
-				va_start( arg, arg_format_0 );
-
-				arg_format current_format;
-				while( ( current_format = va_arg( arg, arg_format) ) != ARG_END )
-				{
-					m_arg_formats.push_back( current_format );
-				}
-			}
-
-			int process(const abc_def &def, const uint8 *args)
-			{
-				int byte_count = 1;
-				for( int i=0; i<m_arg_formats.size();++i)
-				{
-					int value;
-					switch( m_arg_formats[i] )
-					{
-					case ARG_MULTINAME:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str());
-						break;
-
-					case ARG_NAMESPACE:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg( "\t\tnamespace: %s\n", def.m_string[ def.m_namespace[value].m_name ].c_str());
-						break;
-
-					case ARG_BYTE:
-						value = args[byte_count];
-						log_msg("\t\tvalue: %i\n", value);
-						byte_count++;
-						break;
-
-					case ARG_SHORT:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg("\t\tvalue: %i\n", value);
-						break;
-
-					case ARG_INT:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg("\t\tvalue: %i\n", def.m_integer[value]);
-						break;
-
-					case ARG_UINT:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg("\t\tvalue: %ui\n", def.m_uinteger[value]);
-						break;
-
-					case ARG_DOUBLE:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg("\t\tvalue: %d\n", def.m_double[value]);
-						break;
-
-					case ARG_STRING:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg( "\t\tstring: %s\n", def.m_string[value].c_str());
-						break;
-
-					case ARG_COUNT:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg( "\t\tcount: %i\n", value);
-						break;
-
-					case ARG_CLASSINFO:
-						byte_count += read_vu30(value, &args[byte_count]);
-						log_msg( "\t\tclass: %i\n", value);
-						break;
-
-					case ARG_FUNCTION:
-						byte_count += read_vu30( value, &args[byte_count] );
-						//TODO: print signature
-						log_msg( "\t\tfunction: %s\n", def.m_string[def.m_method[value]->m_name].c_str());
-						break;
-
-					case ARG_EXCEPTION:
-						byte_count += read_vu30( value, &args[byte_count] );
-						//TODO: print exception info
-						log_msg( "\t\texception: %i\n", value);
-						break;
-
-					case ARG_REGISTER:
-						byte_count += read_vu30( value, &args[byte_count] );
-						log_msg( "\t\tregister: %i\n", value);
-						break;
-
-					case ARG_SLOTINDEX:
-						byte_count += read_vu30( value, &args[byte_count] );
-						log_msg( "\t\tslot index: %i\n", value);
-						break;
-
-					case ARG_OFFSET:
-						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
-						byte_count += 3;
-						log_msg( "\t\toffset: %i\n", value);
-						break;
-
-					case ARG_OFFSETLIST:
-						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
-						log_msg( "\t\tdefault offset: %i\n", value);
-						byte_count += 3;
-						
-						int offset_count;
-						byte_count += read_vu30( offset_count, &args[byte_count] );
-
-						for(int i=0;i<offset_count;i++)
-						{
-							value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
-							log_msg("\t\toffset %i: %i\n", i, value);
-							byte_count +=3;
-						}
-						break;
-					}
-				}
-
-				return byte_count;
-			}
-
-			bool has_argument() const { return m_arg_formats.size() != 0;}
-
-			int read_vu30( int& result, const uint8 *args )
-			{
-				result = args[0];
-
-				if ((result & 0x00000080) == 0)
-				{
-					return 1;
-				}
-
-				result = (result & 0x0000007F) | args[1] << 7;
-				if ((result & 0x00004000) == 0)
-				{
-					return 2;
-				}
-
-				result = (result & 0x00003FFF) | args[2] << 14;
-				if ((result & 0x00200000) == 0)
-				{
-					return 3;
-				}
-
-				result = (result & 0x001FFFFF) | args[3] << 21;
-				if ((result & 0x10000000) == 0)
-				{
-					return 4;
-				}
-
-				result = (result & 0x0FFFFFFF) | args[4] << 28;
-				return 5;
-			}
-
-		};
-
-		static hash<int, inst_info> s_instr;
+		static hash<int, inst_info_avm2> s_instr;
 		if (s_instr.size() == 0)
 		{
-			s_instr.add(0x03, inst_info("throw"));
-			s_instr.add(0x04, inst_info("getsuper", ARG_MULTINAME, ARG_END ));
-			s_instr.add(0x05, inst_info("setsuper" ));
-			s_instr.add(0x06, inst_info("dxns"));
-			s_instr.add(0x07, inst_info("dxnslate"));
-			s_instr.add(0x08, inst_info("kill", ARG_REGISTER, ARG_END));
-			s_instr.add(0x09, inst_info("label"));
+			s_instr.add(0x03, inst_info_avm2("throw"));
+			s_instr.add(0x04, inst_info_avm2("getsuper", ARG_MULTINAME, ARG_END ));
+			s_instr.add(0x05, inst_info_avm2("setsuper" ));
+			s_instr.add(0x06, inst_info_avm2("dxns"));
+			s_instr.add(0x07, inst_info_avm2("dxnslate"));
+			s_instr.add(0x08, inst_info_avm2("kill", ARG_REGISTER, ARG_END));
+			s_instr.add(0x09, inst_info_avm2("label"));
 			// no inst for 0x0A, 0x0B
-			s_instr.add(0x0C, inst_info("ifnlt", ARG_OFFSET, ARG_END));
-			s_instr.add(0x0D, inst_info("ifnle", ARG_OFFSET, ARG_END));
-			s_instr.add(0x0E, inst_info("ifngt", ARG_OFFSET, ARG_END));
-			s_instr.add(0x0F, inst_info("ifnge", ARG_OFFSET, ARG_END));
-			s_instr.add(0x10, inst_info("jump", ARG_OFFSET, ARG_END));
-			s_instr.add(0x11, inst_info("iftrue", ARG_OFFSET, ARG_END));
-			s_instr.add(0x12, inst_info("iffalse", ARG_OFFSET, ARG_END));
-			s_instr.add(0x13, inst_info("ifeq", ARG_OFFSET, ARG_END));
-			s_instr.add(0x14, inst_info("ifne", ARG_OFFSET, ARG_END));
-			s_instr.add(0x15, inst_info("iflt", ARG_OFFSET, ARG_END));
-			s_instr.add(0x16, inst_info("ifle", ARG_OFFSET, ARG_END));
-			s_instr.add(0x17, inst_info("ifgt", ARG_OFFSET, ARG_END));
-			s_instr.add(0x18, inst_info("ifge", ARG_OFFSET, ARG_END));
-			s_instr.add(0x19, inst_info("ifstricteq", ARG_OFFSET, ARG_END));
-			s_instr.add(0x1A, inst_info("ifstrictne", ARG_OFFSET, ARG_END));
-			s_instr.add(0x1B, inst_info("lookupswitch", ARG_OFFSET, ARG_OFFSETLIST, ARG_END));
-			s_instr.add(0x1C, inst_info("pushwith"));
-			s_instr.add(0x1D, inst_info("popscope"));
-			s_instr.add(0x1E, inst_info("nextname"));
-			s_instr.add(0x1F, inst_info("hasnext"));
-			s_instr.add(0x20, inst_info("pushnull"));
-			s_instr.add(0x21, inst_info("pushundefined"));
+			s_instr.add(0x0C, inst_info_avm2("ifnlt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x0D, inst_info_avm2("ifnle", ARG_OFFSET, ARG_END));
+			s_instr.add(0x0E, inst_info_avm2("ifngt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x0F, inst_info_avm2("ifnge", ARG_OFFSET, ARG_END));
+			s_instr.add(0x10, inst_info_avm2("jump", ARG_OFFSET, ARG_END));
+			s_instr.add(0x11, inst_info_avm2("iftrue", ARG_OFFSET, ARG_END));
+			s_instr.add(0x12, inst_info_avm2("iffalse", ARG_OFFSET, ARG_END));
+			s_instr.add(0x13, inst_info_avm2("ifeq", ARG_OFFSET, ARG_END));
+			s_instr.add(0x14, inst_info_avm2("ifne", ARG_OFFSET, ARG_END));
+			s_instr.add(0x15, inst_info_avm2("iflt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x16, inst_info_avm2("ifle", ARG_OFFSET, ARG_END));
+			s_instr.add(0x17, inst_info_avm2("ifgt", ARG_OFFSET, ARG_END));
+			s_instr.add(0x18, inst_info_avm2("ifge", ARG_OFFSET, ARG_END));
+			s_instr.add(0x19, inst_info_avm2("ifstricteq", ARG_OFFSET, ARG_END));
+			s_instr.add(0x1A, inst_info_avm2("ifstrictne", ARG_OFFSET, ARG_END));
+			s_instr.add(0x1B, inst_info_avm2("lookupswitch", ARG_OFFSET, ARG_OFFSETLIST, ARG_END));
+			s_instr.add(0x1C, inst_info_avm2("pushwith"));
+			s_instr.add(0x1D, inst_info_avm2("popscope"));
+			s_instr.add(0x1E, inst_info_avm2("nextname"));
+			s_instr.add(0x1F, inst_info_avm2("hasnext"));
+			s_instr.add(0x20, inst_info_avm2("pushnull"));
+			s_instr.add(0x21, inst_info_avm2("pushundefined"));
 			// no inst for 0x22
-			s_instr.add(0x23, inst_info("nextvalue"));
-			s_instr.add(0x24, inst_info("pushbyte", ARG_BYTE, ARG_END));
-			s_instr.add(0x25, inst_info("pushshort", ARG_BYTE, ARG_END));
-			s_instr.add(0x26, inst_info("pushtrue"));
-			s_instr.add(0x27, inst_info("pushfalse"));
-			s_instr.add(0x28, inst_info("pushnan"));
-			s_instr.add(0x29, inst_info("pop"));
-			s_instr.add(0x2A, inst_info("dup"));
-			s_instr.add(0x2B, inst_info("swap"));
-			s_instr.add(0x2C, inst_info("pushstring", ARG_SHORT, ARG_END));
-			s_instr.add(0x2D, inst_info("pushint", ARG_INT, ARG_END));
-			s_instr.add(0x2E, inst_info("pushuint", ARG_UINT, ARG_END));
-			s_instr.add(0x2F, inst_info("pushdouble", ARG_DOUBLE, ARG_END));
-			s_instr.add(0x30, inst_info("pushscope"));
-			s_instr.add(0x31, inst_info("pushnamespace", ARG_NAMESPACE, ARG_END));
-			s_instr.add(0x32, inst_info("hasnext2", ARG_REGISTER, ARG_REGISTER, ARG_END));
+			s_instr.add(0x23, inst_info_avm2("nextvalue"));
+			s_instr.add(0x24, inst_info_avm2("pushbyte", ARG_BYTE, ARG_END));
+			s_instr.add(0x25, inst_info_avm2("pushshort", ARG_BYTE, ARG_END));
+			s_instr.add(0x26, inst_info_avm2("pushtrue"));
+			s_instr.add(0x27, inst_info_avm2("pushfalse"));
+			s_instr.add(0x28, inst_info_avm2("pushnan"));
+			s_instr.add(0x29, inst_info_avm2("pop"));
+			s_instr.add(0x2A, inst_info_avm2("dup"));
+			s_instr.add(0x2B, inst_info_avm2("swap"));
+			s_instr.add(0x2C, inst_info_avm2("pushstring", ARG_SHORT, ARG_END));
+			s_instr.add(0x2D, inst_info_avm2("pushint", ARG_INT, ARG_END));
+			s_instr.add(0x2E, inst_info_avm2("pushuint", ARG_UINT, ARG_END));
+			s_instr.add(0x2F, inst_info_avm2("pushdouble", ARG_DOUBLE, ARG_END));
+			s_instr.add(0x30, inst_info_avm2("pushscope"));
+			s_instr.add(0x31, inst_info_avm2("pushnamespace", ARG_NAMESPACE, ARG_END));
+			s_instr.add(0x32, inst_info_avm2("hasnext2", ARG_REGISTER, ARG_REGISTER, ARG_END));
 			// no inst for 0x33 -> 0X3F
-			s_instr.add(0x40, inst_info("newfunction", ARG_FUNCTION, ARG_END));
-			s_instr.add(0x41, inst_info("call", ARG_COUNT, ARG_END));
-			s_instr.add(0x42, inst_info("construct", ARG_COUNT, ARG_END));
-			s_instr.add(0x43, inst_info("callmethod", ARG_SHORT, ARG_COUNT, ARG_END));
-			s_instr.add(0x44, inst_info("callstatic", ARG_FUNCTION, ARG_COUNT, ARG_END));
-			s_instr.add(0x45, inst_info("callsuper", ARG_MULTINAME, ARG_COUNT, ARG_END));
-			s_instr.add(0x46, inst_info("callproperty", ARG_MULTINAME, ARG_COUNT, ARG_END));
-			s_instr.add(0x47, inst_info("returnvoid"));
-			s_instr.add(0x48, inst_info("returnvalue"));
-			s_instr.add(0x49, inst_info("constructsuper", ARG_COUNT, ARG_END));
-			s_instr.add(0x4A, inst_info("constructprop", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x40, inst_info_avm2("newfunction", ARG_FUNCTION, ARG_END));
+			s_instr.add(0x41, inst_info_avm2("call", ARG_COUNT, ARG_END));
+			s_instr.add(0x42, inst_info_avm2("construct", ARG_COUNT, ARG_END));
+			s_instr.add(0x43, inst_info_avm2("callmethod", ARG_SHORT, ARG_COUNT, ARG_END));
+			s_instr.add(0x44, inst_info_avm2("callstatic", ARG_FUNCTION, ARG_COUNT, ARG_END));
+			s_instr.add(0x45, inst_info_avm2("callsuper", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x46, inst_info_avm2("callproperty", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x47, inst_info_avm2("returnvoid"));
+			s_instr.add(0x48, inst_info_avm2("returnvalue"));
+			s_instr.add(0x49, inst_info_avm2("constructsuper", ARG_COUNT, ARG_END));
+			s_instr.add(0x4A, inst_info_avm2("constructprop", ARG_MULTINAME, ARG_COUNT, ARG_END));
 			// no inst for 0x4B
-			s_instr.add(0x4C, inst_info("callproplex", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x4C, inst_info_avm2("callproplex", ARG_MULTINAME, ARG_COUNT, ARG_END));
 			// no inst for 0x4E
-			s_instr.add(0x4E, inst_info("callsupervoid", ARG_MULTINAME, ARG_COUNT, ARG_END));
-			s_instr.add(0x4F, inst_info("callpropvoid", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x4E, inst_info_avm2("callsupervoid", ARG_MULTINAME, ARG_COUNT, ARG_END));
+			s_instr.add(0x4F, inst_info_avm2("callpropvoid", ARG_MULTINAME, ARG_COUNT, ARG_END));
 			// no inst for 0x50 -> 0x54
-			s_instr.add(0x55, inst_info("newobject", ARG_COUNT, ARG_END));
-			s_instr.add(0x56, inst_info("newarray", ARG_COUNT, ARG_END));
-			s_instr.add(0x57, inst_info("newactivation"));
-			s_instr.add(0x58, inst_info("newclass", ARG_CLASSINFO, ARG_END));
-			s_instr.add(0x59, inst_info("getdescendants", ARG_MULTINAME, ARG_END));
-			s_instr.add(0x5A, inst_info("newcatch", ARG_EXCEPTION, ARG_END));
+			s_instr.add(0x55, inst_info_avm2("newobject", ARG_COUNT, ARG_END));
+			s_instr.add(0x56, inst_info_avm2("newarray", ARG_COUNT, ARG_END));
+			s_instr.add(0x57, inst_info_avm2("newactivation"));
+			s_instr.add(0x58, inst_info_avm2("newclass", ARG_CLASSINFO, ARG_END));
+			s_instr.add(0x59, inst_info_avm2("getdescendants", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x5A, inst_info_avm2("newcatch", ARG_EXCEPTION, ARG_END));
 			// no inst for 0x5B -> 0x5C
-			s_instr.add(0x5D, inst_info("findpropstrict", ARG_MULTINAME, ARG_END));
-			s_instr.add(0x5E, inst_info("findproperty", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x5D, inst_info_avm2("findpropstrict", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x5E, inst_info_avm2("findproperty", ARG_MULTINAME, ARG_END));
 			// no inst for 0x5F
-			s_instr.add(0x60, inst_info("getlex", ARG_MULTINAME, ARG_END));
-			s_instr.add(0x61, inst_info("setproperty", ARG_MULTINAME, ARG_END));
-			s_instr.add(0x62, inst_info("getlocal", ARG_REGISTER, ARG_END));
-			s_instr.add(0x63, inst_info("setlocal", ARG_REGISTER, ARG_END));
-			s_instr.add(0x64, inst_info("getglobalscope"));
-			s_instr.add(0x65, inst_info("getscopeobject", ARG_BYTE, ARG_END));
-			s_instr.add(0x66, inst_info("getproperty", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x60, inst_info_avm2("getlex", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x61, inst_info_avm2("setproperty", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x62, inst_info_avm2("getlocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x63, inst_info_avm2("setlocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x64, inst_info_avm2("getglobalscope"));
+			s_instr.add(0x65, inst_info_avm2("getscopeobject", ARG_BYTE, ARG_END));
+			s_instr.add(0x66, inst_info_avm2("getproperty", ARG_MULTINAME, ARG_END));
 			// no inst for 0x67
-			s_instr.add(0x68, inst_info("initproperty", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x68, inst_info_avm2("initproperty", ARG_MULTINAME, ARG_END));
 			// no inst for 0x69
-			s_instr.add(0x6A, inst_info("deleteproperty", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x6A, inst_info_avm2("deleteproperty", ARG_MULTINAME, ARG_END));
 			// no inst for 0x6B
-			s_instr.add(0x6C, inst_info("getslot", ARG_SLOTINDEX, ARG_END));
-			s_instr.add(0x6D, inst_info("setslot", ARG_SLOTINDEX, ARG_END));
-			s_instr.add(0x6E, inst_info("getglobalslot", ARG_SLOTINDEX, ARG_END));
-			s_instr.add(0x6F, inst_info("setglobalslot", ARG_SLOTINDEX, ARG_END));
-			s_instr.add(0x70, inst_info("convert_s"));
-			s_instr.add(0x71, inst_info("esc_xelem"));
-			s_instr.add(0x72, inst_info("esc_xattr"));
-			s_instr.add(0x73, inst_info("convert_i"));
-			s_instr.add(0x74, inst_info("convert_u"));
-			s_instr.add(0x75, inst_info("convert_d"));
-			s_instr.add(0x76, inst_info("convert_b"));
-			s_instr.add(0x77, inst_info("convert_o"));
-			s_instr.add(0x78, inst_info("checkfilter"));
+			s_instr.add(0x6C, inst_info_avm2("getslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x6D, inst_info_avm2("setslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x6E, inst_info_avm2("getglobalslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x6F, inst_info_avm2("setglobalslot", ARG_SLOTINDEX, ARG_END));
+			s_instr.add(0x70, inst_info_avm2("convert_s"));
+			s_instr.add(0x71, inst_info_avm2("esc_xelem"));
+			s_instr.add(0x72, inst_info_avm2("esc_xattr"));
+			s_instr.add(0x73, inst_info_avm2("convert_i"));
+			s_instr.add(0x74, inst_info_avm2("convert_u"));
+			s_instr.add(0x75, inst_info_avm2("convert_d"));
+			s_instr.add(0x76, inst_info_avm2("convert_b"));
+			s_instr.add(0x77, inst_info_avm2("convert_o"));
+			s_instr.add(0x78, inst_info_avm2("checkfilter"));
 			// no inst for 0x79 - 0x7F
-			s_instr.add(0x80, inst_info("coerce", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x80, inst_info_avm2("coerce", ARG_MULTINAME, ARG_END));
 			// no inst for 0x81
-			s_instr.add(0x82, inst_info("coerce_a"));
+			s_instr.add(0x82, inst_info_avm2("coerce_a"));
 			// no inst for 0x83, 0x84
-			s_instr.add(0x85, inst_info("coerce_s"));
-			s_instr.add(0x86, inst_info("astype", ARG_MULTINAME, ARG_END));
-			s_instr.add(0x87, inst_info("astypelate", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x85, inst_info_avm2("coerce_s"));
+			s_instr.add(0x86, inst_info_avm2("astype", ARG_MULTINAME, ARG_END));
+			s_instr.add(0x87, inst_info_avm2("astypelate", ARG_MULTINAME, ARG_END));
 			// no inst for 0x88->0x8F
-			s_instr.add(0x90, inst_info("negate"));
-			s_instr.add(0x91, inst_info("increment"));
-			s_instr.add(0x92, inst_info("inclocal", ARG_REGISTER, ARG_END));
-			s_instr.add(0x93, inst_info("decrement"));
-			s_instr.add(0x94, inst_info("declocal", ARG_REGISTER, ARG_END));
-			s_instr.add(0x95, inst_info("typeof"));
-			s_instr.add(0x96, inst_info("not"));
-			s_instr.add(0x97, inst_info("bitnot"));
+			s_instr.add(0x90, inst_info_avm2("negate"));
+			s_instr.add(0x91, inst_info_avm2("increment"));
+			s_instr.add(0x92, inst_info_avm2("inclocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x93, inst_info_avm2("decrement"));
+			s_instr.add(0x94, inst_info_avm2("declocal", ARG_REGISTER, ARG_END));
+			s_instr.add(0x95, inst_info_avm2("typeof"));
+			s_instr.add(0x96, inst_info_avm2("not"));
+			s_instr.add(0x97, inst_info_avm2("bitnot"));
 			// no inst for 0x99->0x0x9F
-			s_instr.add(0xA0, inst_info("add"));
-			s_instr.add(0xA1, inst_info("subtract"));
-			s_instr.add(0xA2, inst_info("multiply"));
-			s_instr.add(0xA3, inst_info("divide"));
-			s_instr.add(0xA4, inst_info("modulo"));
-			s_instr.add(0xA5, inst_info("lshift"));
-			s_instr.add(0xA6, inst_info("rshift"));
-			s_instr.add(0xA7, inst_info("urshift"));
-			s_instr.add(0xA8, inst_info("bitand"));
-			s_instr.add(0xA9, inst_info("bitor"));
-			s_instr.add(0xAA, inst_info("bitxor"));
-			s_instr.add(0xAB, inst_info("equals"));
-			s_instr.add(0xAC, inst_info("strictequals"));
-			s_instr.add(0xAD, inst_info("lessthan"));
-			s_instr.add(0xAE, inst_info("lessequals"));
+			s_instr.add(0xA0, inst_info_avm2("add"));
+			s_instr.add(0xA1, inst_info_avm2("subtract"));
+			s_instr.add(0xA2, inst_info_avm2("multiply"));
+			s_instr.add(0xA3, inst_info_avm2("divide"));
+			s_instr.add(0xA4, inst_info_avm2("modulo"));
+			s_instr.add(0xA5, inst_info_avm2("lshift"));
+			s_instr.add(0xA6, inst_info_avm2("rshift"));
+			s_instr.add(0xA7, inst_info_avm2("urshift"));
+			s_instr.add(0xA8, inst_info_avm2("bitand"));
+			s_instr.add(0xA9, inst_info_avm2("bitor"));
+			s_instr.add(0xAA, inst_info_avm2("bitxor"));
+			s_instr.add(0xAB, inst_info_avm2("equals"));
+			s_instr.add(0xAC, inst_info_avm2("strictequals"));
+			s_instr.add(0xAD, inst_info_avm2("lessthan"));
+			s_instr.add(0xAE, inst_info_avm2("lessequals"));
 			// no inst for 0xB0
-			s_instr.add(0xB1, inst_info("instanceof"));
-			s_instr.add(0xB2, inst_info("istype", ARG_MULTINAME, ARG_END));
-			s_instr.add(0xB3, inst_info("istypelate"));
-			s_instr.add(0xB4, inst_info("in"));
+			s_instr.add(0xB1, inst_info_avm2("instanceof"));
+			s_instr.add(0xB2, inst_info_avm2("istype", ARG_MULTINAME, ARG_END));
+			s_instr.add(0xB3, inst_info_avm2("istypelate"));
+			s_instr.add(0xB4, inst_info_avm2("in"));
 			// no inst for 0xB5
-			s_instr.add(0xC0, inst_info("increment_i"));
-			s_instr.add(0xC1, inst_info("decrement_i"));
-			s_instr.add(0xC2, inst_info("inclocal_i", ARG_REGISTER, ARG_END));
-			s_instr.add(0xC3, inst_info("declocal_i", ARG_REGISTER, ARG_END));
-			s_instr.add(0xC4, inst_info("negate_i"));
-			s_instr.add(0xC5, inst_info("add_i"));
-			s_instr.add(0xC6, inst_info("subtract_i"));
-			s_instr.add(0xC7, inst_info("multiply_i"));
+			s_instr.add(0xC0, inst_info_avm2("increment_i"));
+			s_instr.add(0xC1, inst_info_avm2("decrement_i"));
+			s_instr.add(0xC2, inst_info_avm2("inclocal_i", ARG_REGISTER, ARG_END));
+			s_instr.add(0xC3, inst_info_avm2("declocal_i", ARG_REGISTER, ARG_END));
+			s_instr.add(0xC4, inst_info_avm2("negate_i"));
+			s_instr.add(0xC5, inst_info_avm2("add_i"));
+			s_instr.add(0xC6, inst_info_avm2("subtract_i"));
+			s_instr.add(0xC7, inst_info_avm2("multiply_i"));
 			// no inst for 0xC8 - > 0xCF
-			s_instr.add(0xD0, inst_info("getlocal_0"));
-			s_instr.add(0xD1, inst_info("getlocal_1"));
-			s_instr.add(0xD2, inst_info("getlocal_2"));
-			s_instr.add(0xD3, inst_info("getlocal_3"));
-			s_instr.add(0xD4, inst_info("setlocal_0"));
-			s_instr.add(0xD5, inst_info("setlocal_1"));
-			s_instr.add(0xD6, inst_info("setlocal_2"));
-			s_instr.add(0xD7, inst_info("setlocal_3"));
+			s_instr.add(0xD0, inst_info_avm2("getlocal_0"));
+			s_instr.add(0xD1, inst_info_avm2("getlocal_1"));
+			s_instr.add(0xD2, inst_info_avm2("getlocal_2"));
+			s_instr.add(0xD3, inst_info_avm2("getlocal_3"));
+			s_instr.add(0xD4, inst_info_avm2("setlocal_0"));
+			s_instr.add(0xD5, inst_info_avm2("setlocal_1"));
+			s_instr.add(0xD6, inst_info_avm2("setlocal_2"));
+			s_instr.add(0xD7, inst_info_avm2("setlocal_3"));
 			// no inst for 0xD8 - > 0xEE
-			s_instr.add(0xEF, inst_info("debug", ARG_BYTE, ARG_STRING, ARG_BYTE, ARG_SHORT));
-			s_instr.add(0xF0, inst_info("debugline", ARG_SHORT, ARG_END));
-			s_instr.add(0xF1, inst_info("debugfile", ARG_STRING, ARG_END));
+			s_instr.add(0xEF, inst_info_avm2("debug", ARG_BYTE, ARG_STRING, ARG_BYTE, ARG_SHORT));
+			s_instr.add(0xF0, inst_info_avm2("debugline", ARG_SHORT, ARG_END));
+			s_instr.add(0xF1, inst_info_avm2("debugfile", ARG_STRING, ARG_END));
 
 		}
 
@@ -391,7 +394,7 @@ namespace gameswf
 		do
 		{
 			int opcode = data[ip];
-			inst_info ii(0);
+			inst_info_avm2 ii(0);
 			if (s_instr.get(opcode, &ii))
 			{
 				printf(":	%s\n", ii.m_instruction);
@@ -414,28 +417,36 @@ namespace gameswf
 		while (ip < data.size());
 	}
 
+
+	//
+	// Action Script 2.0
+	//
+
+	enum arg_format
+	{
+		ARG_NONE = 0,
+		ARG_STR,
+		ARG_HEX,	// default hex dump, in case the format is unknown or unsupported
+		ARG_U8,
+		ARG_U16,
+		ARG_S16,
+		ARG_PUSH_DATA,
+		ARG_DECL_DICT,
+		ARG_FUNCTION2
+	};
+
+	struct inst_info
+	{
+		int	m_action_id;
+		const char*	m_instruction;
+
+		arg_format	m_arg_format;
+	};
+
+
 	void	log_disasm(const unsigned char* instruction_data)
 	// Disassemble one instruction to the log.
 	{
-		enum arg_format {
-			ARG_NONE = 0,
-			ARG_STR,
-			ARG_HEX,	// default hex dump, in case the format is unknown or unsupported
-			ARG_U8,
-			ARG_U16,
-			ARG_S16,
-			ARG_PUSH_DATA,
-			ARG_DECL_DICT,
-			ARG_FUNCTION2
-		};
-		struct inst_info
-		{
-			int	m_action_id;
-			const char*	m_instruction;
-
-			arg_format	m_arg_format;
-		};
-
 		static inst_info	s_instruction_table[] = {
 			{ 0x04, "next_frame", ARG_NONE },
 			{ 0x05, "prev_frame", ARG_NONE },
