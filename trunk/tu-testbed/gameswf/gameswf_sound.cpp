@@ -143,6 +143,7 @@ namespace gameswf
 		Uint16	m_handler_id;
 		int	m_loop_count;
 		bool	m_stop_playback;
+		array<sound_envelope> m_envelopes;
 
 		start_sound_tag()
 			:
@@ -175,7 +176,19 @@ namespace gameswf
 			if (has_in_point) { in_point = in->read_u32(); }
 			if (has_out_point) { out_point = in->read_u32(); }
 			if (has_loops) { m_loop_count = in->read_u16(); }
-			// if (has_envelope) { env_count = read_uint8(); read envelope entries; }
+			if (has_envelope) 
+			{ 
+				int env_count = in->read_u8();
+				
+				m_envelopes.resize(env_count);
+
+				for(int i=0;i<env_count;++i)
+				{
+					m_envelopes[i].m_mark44 = in->read_u32();
+					m_envelopes[i].m_level0 = in->read_u16();
+					m_envelopes[i].m_level1 = in->read_u16();
+				}
+			}
 
 			m_handler_id = sam->m_sound_handler_id;
 			m->add_execute_tag(this);

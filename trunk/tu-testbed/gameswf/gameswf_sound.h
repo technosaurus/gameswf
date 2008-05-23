@@ -14,6 +14,13 @@ namespace gameswf
 {
 	int get_sample_rate(int index);
 
+	struct sound_envelope
+	{
+		Uint32 m_mark44;
+		Uint16 m_level0;
+		Uint16 m_level1;
+	};
+
 	struct sound_sample : public character_def
 	{
 		// Unique id of a gameswf resource

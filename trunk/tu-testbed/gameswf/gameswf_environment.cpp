@@ -184,14 +184,20 @@ namespace gameswf
 	// Return the value of the given var, if it's defined.
 	{
 		// Path lookup rigamarole.
-		character*	target = get_target();
+		as_object*	target = get_target();
 		tu_string	path;
 		tu_string	var;
 		if (parse_path(varname, &path, &var))
 		{
 			// @@ Use with_stack here too???  Need to test.
-			target = cast_to<character>(find_target(path.c_str()));
+			target = find_target(path.c_str());
 			if (target)
+			{
+				as_value	val;
+				target->get_member(var, &val);
+				return val;
+			}
+			else if(target=get_player()->get_global()->find_target(path.c_str()))
 			{
 				as_value	val;
 				target->get_member(var, &val);

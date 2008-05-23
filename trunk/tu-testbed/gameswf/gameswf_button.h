@@ -28,6 +28,8 @@ namespace gameswf
 
 	struct button_record
 	{
+		bool	m_has_blend_mode;
+		bool	m_has_filter_list;
 		bool	m_hit_test;
 		bool	m_down;
 		bool	m_over;
@@ -37,6 +39,7 @@ namespace gameswf
 		int	m_button_layer;
 		matrix	m_button_matrix;
 		cxform	m_button_cxform;
+		int	m_blend_mode;
 
 		bool	read(stream* in, int tag_type, movie_definition_sub* m);
 	};
@@ -66,13 +69,6 @@ namespace gameswf
 
 	struct button_character_definition : public character_def
 	{
-		struct sound_envelope
-		{
-			Uint32 m_mark44;
-			Uint16 m_level0;
-			Uint16 m_level1;
-		};
-
 		struct sound_info
 		{
 			void read(stream* in);

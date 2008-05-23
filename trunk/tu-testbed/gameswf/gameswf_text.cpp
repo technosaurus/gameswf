@@ -15,6 +15,15 @@
 
 namespace gameswf
 {
+	void	as_global_textfield_ctor(const fn_call& fn)
+	// Constructor for ActionScript class XMLSocket
+	{
+		root* rm = fn.get_player()->get_root();
+		edit_text_character_def* empty_text_def = new edit_text_character_def(fn.get_player(), 0, 0);
+		character* ch = new edit_text_character(fn.get_player(),
+			NULL, empty_text_def, 0);
+		fn.result->set_as_object(ch);
+	}
 
 	// Render the given glyph records.
 

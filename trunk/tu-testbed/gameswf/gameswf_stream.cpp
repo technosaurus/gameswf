@@ -341,6 +341,12 @@ namespace gameswf
 		assert(m_tag_stack.size() > 0);
 		int	end_pos = m_tag_stack.back();
 		m_tag_stack.pop_back();
+
+		if (end_pos != get_position())
+		{
+			IF_VERBOSE_PARSE( log_msg( "tag is not correctly read, tag length is not respected" ) );
+		}
+
 		m_input->set_position(end_pos);
 
 		m_unused_bits = 0;

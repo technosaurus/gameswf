@@ -111,7 +111,6 @@ namespace gameswf
   
 	void	morph2_character_def::read(stream* in, int tag_type, bool with_style, movie_definition_sub* md)
 	{
-		UNUSED(tag_type);
 		UNUSED(with_style);
 
 		rect	bound1, bound2;
@@ -120,11 +119,25 @@ namespace gameswf
 		m_shape1->set_bound(bound1);
 		m_shape2->set_bound(bound2);
 
-		offset = in->read_u32();
+		if(tag_type == 84)
+		{
+			rect edge_bound1, edge_bound2;
 
-		fill_style_count = in->read_variable_count();
+			edge_bound1.read(in);
+			edge_bound2.read(in);
+
+			int reserved = in->read_uint(6);
+			assert(reserved == 0);
+
+			m_uses_nonscaling_strokes = in->read_uint(1) == 1;
+			m_uses_scaling_strokes = in->read_uint(1) == 1;
+		}
+
+		m_offset = in->read_u32();
+
+		m_fill_style_count = in->read_variable_count();
 		int i;
-		for (i = 0; i < fill_style_count; i++) {
+		for (i = 0; i < m_fill_style_count; i++) {
 			fill_style fs1, fs2;
 
 			fs1.m_type = in->read_u8();
@@ -215,15 +228,143 @@ namespace gameswf
 			m_shape2->m_fill_styles.push_back(fs2);
 		}
 
-		line_style_count = in->read_variable_count();
-		for (i = 0; i < line_style_count; i++) {
-			line_style ls1, ls2;
-			ls1.m_width = in->read_u16();
-			ls2.m_width = in->read_u16();
-			ls1.m_color.read(in, tag_type);
-			ls2.m_color.read(in, tag_type);
-			m_shape1->m_line_styles.push_back(ls1);
-			m_shape2->m_line_styles.push_back(ls2);
+		m_line_style_count = in->read_variable_count();
+		
+
+		if(tag_type == 46)
+		{
+			for (i = 0; i < m_line_style_count; i++) {
+				line_style ls1, ls2;
+				ls1.m_width = in->read_u16();
+				ls2.m_width = in->read_u16();
+				ls1.m_color.read(in, tag_type);
+				ls2.m_color.read(in, tag_type);
+				m_shape1->m_line_styles.push_back(ls1);
+				m_shape2->m_line_styles.push_back(ls2);
+			}
+		}
+		else
+		{
+			assert(tag_type == 84);
+
+			for (i = 0; i < m_line_style_count; i++) {
+				line_style ls1, ls2;
+				ls1.m_width = in->read_u16();
+				ls2.m_width = in->read_u16();
+				int start_cap_style = in->read_uint(2);
+				int join_style = in->read_uint(2);
+				int has_fill_flag = in->read_uint(1);
+				int no_h_scale_flag = in->read_uint(1);
+				int no_v_scale_flag = in->read_uint(1);
+				int pixel_hinting_flag = in->read_uint(1);
+				int reserved = in->read_uint(1); assert( reserved == 0 );
+				int no_close = in->read_uint(1);
+				int end_cap_style = in->read_uint(2);
+
+				if( join_style == 2 )
+				{
+					int miter_limit_factor_fixed = in->read_u16(); // 8.8 fixed point format
+					float miter_limit_factor = (float) miter_limit_factor_fixed / 256.0f;
+				}
+
+				if( has_fill_flag == 0 )
+				{
+					rgba start_color; start_color.read_rgba( in );
+					rgba end_color; end_color.read_rgba( in );
+				}
+				else
+				{
+					// todo factorize fill_style read
+					fill_style fs1, fs2;
+
+					fs1.m_type = in->read_u8();
+					fs2.m_type = fs1.m_type;
+
+					IF_VERBOSE_PARSE(log_msg("morph fill style type = 0x%X\n", fs1.m_type));
+
+					if (fs1.m_type == 0x00)
+					{
+						fs1.m_color.read_rgba(in);
+						fs2.m_color.read_rgba(in);
+
+						IF_VERBOSE_PARSE(log_msg("morph fill style begin color: "); fs1.m_color.print());
+						IF_VERBOSE_PARSE(log_msg("morph fill style end color: "); fs2.m_color.print());
+					}
+					else if (fs1.m_type == 0x10 || fs1.m_type == 0x12)
+					{
+						matrix	input_matrix1, input_matrix2;
+
+						input_matrix1.read(in);
+						input_matrix2.read(in);
+
+						fs1.m_gradient_matrix.set_identity();
+						fs2.m_gradient_matrix.set_identity();
+						if (fs1.m_type == 0x10)
+						{
+							fs1.m_gradient_matrix.concatenate_translation(128.f, 0.f);
+							fs1.m_gradient_matrix.concatenate_scale(1.0f / 128.0f);
+							fs2.m_gradient_matrix.concatenate_translation(128.f, 0.f);
+							fs2.m_gradient_matrix.concatenate_scale(1.0f / 128.0f);
+						}
+						else
+						{
+							fs1.m_gradient_matrix.concatenate_translation(32.f, 32.f);
+							fs1.m_gradient_matrix.concatenate_scale(1.0f / 512.0f);
+							fs2.m_gradient_matrix.concatenate_translation(32.f, 32.f);
+							fs2.m_gradient_matrix.concatenate_scale(1.0f / 512.0f);
+						}
+
+						matrix	m1, m2;
+						m1.set_inverse(input_matrix1);
+						fs1.m_gradient_matrix.concatenate(m1);
+						m2.set_inverse(input_matrix2);
+						fs2.m_gradient_matrix.concatenate(m2);
+
+						// GRADIENT
+						int	num_gradients = in->read_u8();
+						assert(num_gradients >= 1 && num_gradients <= 8);
+
+						fs1.m_gradients.resize(num_gradients);
+						fs2.m_gradients.resize(num_gradients);
+
+						for (int j = 0; j < num_gradients; j++)
+						{
+							fs1.m_gradients[j].read(in, tag_type);
+							fs2.m_gradients[j].read(in, tag_type);
+						}
+
+						IF_VERBOSE_PARSE(log_msg("morph fsr: num_gradients = %d\n", num_gradients));
+
+						// @@ hack.
+						if (num_gradients > 0)
+						{
+							fs1.m_color = fs1.m_gradients[0].m_color;
+							fs2.m_color = fs2.m_gradients[0].m_color;
+						}
+					}
+					else if (fs1.m_type == 0x40 || fs1.m_type == 0x41)
+					{
+
+						int	bitmap_char_id = in->read_u16();
+						IF_VERBOSE_PARSE(log_msg("morph fsr bitmap_char = %d\n", bitmap_char_id));
+
+						// Look up the bitmap character.
+						fs1.m_bitmap_character = md->get_bitmap_character(bitmap_char_id);
+						fs2.m_bitmap_character = fs1.m_bitmap_character;
+
+						matrix	m1, m2;
+						m1.read(in);
+						m2.read(in);
+					}
+				}
+
+				/*
+				ls1.m_color.read(in, tag_type);
+				ls2.m_color.read(in, tag_type);
+				m_shape1->m_line_styles.push_back(ls1);
+				m_shape2->m_line_styles.push_back(ls2);
+				*/
+			}
 		}
 
 		m_shape1->read(in, tag_type, false, md);
@@ -263,8 +404,8 @@ namespace gameswf
 		}
 		assert(edges_count1 == edges_count2);
 	}
-}
 
+}
 
 
 // Local Variables:

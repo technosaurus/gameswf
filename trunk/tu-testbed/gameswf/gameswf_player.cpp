@@ -14,6 +14,7 @@
 
 // action script classes
 #include "gameswf/gameswf_as_sprite.h"
+#include "gameswf/gameswf_text.h"
 #include "gameswf/gameswf_as_classes/as_array.h"
 #include "gameswf/gameswf_as_classes/as_sound.h"
 #include "gameswf/gameswf_as_classes/as_key.h"
@@ -430,6 +431,7 @@ namespace gameswf
 		m_global->builtin_member("Sound", as_global_sound_ctor);
 		m_global->builtin_member("Array", as_global_array_ctor);
 		m_global->builtin_member("MovieClip", as_global_movieclip_ctor);
+		m_global->builtin_member("TextField", as_global_textfield_ctor);
 		m_global->builtin_member("TextFormat", as_global_textformat_ctor);
 
 		//			m_global->set_member("XML", as_value(xml_new));
@@ -453,7 +455,7 @@ namespace gameswf
 		m_global->builtin_member("math", math_init(this));
 		m_global->builtin_member("Key", key_init(this));
 		m_global->builtin_member("AsBroadcaster", broadcaster_init(this));
-		m_global->builtin_member( "flash", flash_init(this));
+		m_global->builtin_member("flash", flash_init(this));
 
 		// global builtins functions
 		m_global->builtin_member("setInterval",  as_global_setinterval);
