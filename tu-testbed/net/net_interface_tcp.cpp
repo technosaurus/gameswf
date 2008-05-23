@@ -58,8 +58,20 @@ bool net_socket_tcp::is_readable() const
 	FD_ZERO(&fds);
 	FD_SET(m_sock, &fds);
 	struct timeval tv = { 0, 0 };
+
+#ifdef WIN32
+	// the first arg to select in win32 is ignored.
+	// It's included only for compatibility with Berkeley sockets.
 	select(1, &fds, NULL, NULL, &tv);
-	if (FD_ISSET(m_sock, &fds)) {
+#else
+	// It should be the value of the highest numbered FD within any of the passed fd_sets,
+	// plus one... Because, the max FD value + 1 == the number of FDs
+	// that select() must concern itself with, from within the passed fd_sets...)
+	select(m_sock + 1, &fds, NULL, NULL, &tv);
+#endif
+
+	if (FD_ISSET(m_sock, &fds))
+	{
 		// Socket has data available.
 		return true;
 	}
