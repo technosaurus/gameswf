@@ -41,8 +41,14 @@ namespace gameswf
 
 		if (m_flags & HAS_OPTIONAL)
 		{
-			assert(0 && "todo");
-//		option_info options
+			int option_count = in->read_vu30();
+			m_options.resize(option_count);
+
+			for(int o=0;o<option_count;++o)
+			{
+				m_options[o].m_value = in->read_vu30();
+				m_options[o].m_kind = in->read_u8();
+			}
 		}
 
 		if (m_flags & HAS_PARAM_NAMES)
@@ -616,11 +622,10 @@ namespace gameswf
 						break;
 
 					case multiname::CONSTANT_MultinameL:
-						assert(0&&"todo");
-						break;
-
 					case multiname::CONSTANT_MultinameLA:
-						assert(0&&"todo");
+						mn.m_ns_set = in->read_vu30();
+						IF_VERBOSE_PARSE(log_msg("cpool_info: multiname[%d]=MultinameL, ns_set='%s'\n", 
+							i, get_string(mn.m_name), "todo"));
 						break;
 
 					default:

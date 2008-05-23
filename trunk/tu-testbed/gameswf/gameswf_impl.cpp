@@ -1163,7 +1163,6 @@ namespace gameswf
 		int frame_label_count = in->read_vs32();
 		for (int i = 0; i < frame_label_count; i++)
 		{
-			assert(0 && "todo test");
 			int frame = in->read_vs32();
 			tu_string frame_label;
 			in->read_string(&frame_label);

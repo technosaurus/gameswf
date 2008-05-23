@@ -344,7 +344,7 @@ namespace gameswf
 
 		if (end_pos != get_position())
 		{
-			IF_VERBOSE_PARSE( log_msg( "tag is not correctly read, tag length is not respected" ) );
+			IF_VERBOSE_PARSE( log_msg( "tag is not correctly read, tag length is not respected\n" ) );
 		}
 
 		m_input->set_position(end_pos);

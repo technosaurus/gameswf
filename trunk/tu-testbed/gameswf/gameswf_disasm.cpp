@@ -85,7 +85,14 @@ namespace gameswf
 				{
 				case ARG_MULTINAME:
 					byte_count += read_vu30(value, &args[byte_count]);
-					log_msg( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str());
+					if( value >= def.m_multiname.size() )
+					{
+						log_msg( "\t\tmultiname: runtime %i\n", value);
+					}
+					else
+					{
+						log_msg( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str());
+					}
 					break;
 
 				case ARG_NAMESPACE:
@@ -163,16 +170,16 @@ namespace gameswf
 					break;
 
 				case ARG_OFFSETLIST:
-					value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+					value = args[byte_count] | args[byte_count+1]<<8 | (*(int8*)&args[byte_count+2])<<16; //sign extend the high byte
 					log_msg( "\t\tdefault offset: %i\n", value);
 					byte_count += 3;
 
 					int offset_count;
 					byte_count += read_vu30( offset_count, &args[byte_count] );
 
-					for(int i=0;i<offset_count;i++)
+					for(int i=0;i<offset_count+1;i++)
 					{
-						value = args[byte_count] | args[byte_count+1]<<8 | args[byte_count+2]<<16;
+						value = args[byte_count] | args[byte_count+1]<<8 | (*(int8*)&args[byte_count+2])<<16;
 						log_msg("\t\toffset %i: %i\n", i, value);
 						byte_count +=3;
 					}
@@ -248,7 +255,7 @@ namespace gameswf
 			s_instr.add(0x18, inst_info_avm2("ifge", ARG_OFFSET, ARG_END));
 			s_instr.add(0x19, inst_info_avm2("ifstricteq", ARG_OFFSET, ARG_END));
 			s_instr.add(0x1A, inst_info_avm2("ifstrictne", ARG_OFFSET, ARG_END));
-			s_instr.add(0x1B, inst_info_avm2("lookupswitch", ARG_OFFSET, ARG_OFFSETLIST, ARG_END));
+			s_instr.add(0x1B, inst_info_avm2("lookupswitch", ARG_OFFSETLIST, ARG_END));
 			s_instr.add(0x1C, inst_info_avm2("pushwith"));
 			s_instr.add(0x1D, inst_info_avm2("popscope"));
 			s_instr.add(0x1E, inst_info_avm2("nextname"));
@@ -258,14 +265,14 @@ namespace gameswf
 			// no inst for 0x22
 			s_instr.add(0x23, inst_info_avm2("nextvalue"));
 			s_instr.add(0x24, inst_info_avm2("pushbyte", ARG_BYTE, ARG_END));
-			s_instr.add(0x25, inst_info_avm2("pushshort", ARG_BYTE, ARG_END));
+			s_instr.add(0x25, inst_info_avm2("pushshort", ARG_SHORT, ARG_END));
 			s_instr.add(0x26, inst_info_avm2("pushtrue"));
 			s_instr.add(0x27, inst_info_avm2("pushfalse"));
 			s_instr.add(0x28, inst_info_avm2("pushnan"));
 			s_instr.add(0x29, inst_info_avm2("pop"));
 			s_instr.add(0x2A, inst_info_avm2("dup"));
 			s_instr.add(0x2B, inst_info_avm2("swap"));
-			s_instr.add(0x2C, inst_info_avm2("pushstring", ARG_SHORT, ARG_END));
+			s_instr.add(0x2C, inst_info_avm2("pushstring", ARG_STRING, ARG_END));
 			s_instr.add(0x2D, inst_info_avm2("pushint", ARG_INT, ARG_END));
 			s_instr.add(0x2E, inst_info_avm2("pushuint", ARG_UINT, ARG_END));
 			s_instr.add(0x2F, inst_info_avm2("pushdouble", ARG_DOUBLE, ARG_END));
@@ -358,6 +365,7 @@ namespace gameswf
 			s_instr.add(0xAC, inst_info_avm2("strictequals"));
 			s_instr.add(0xAD, inst_info_avm2("lessthan"));
 			s_instr.add(0xAE, inst_info_avm2("lessequals"));
+			s_instr.add(0xAF, inst_info_avm2("greaterequals"));
 			// no inst for 0xB0
 			s_instr.add(0xB1, inst_info_avm2("instanceof"));
 			s_instr.add(0xB2, inst_info_avm2("istype", ARG_MULTINAME, ARG_END));

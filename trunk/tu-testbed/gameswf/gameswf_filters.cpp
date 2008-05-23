@@ -163,6 +163,7 @@ namespace gameswf
 					bool composite_source = in->read_bool();	// Composite source Always 1
 					bool on_top = in->read_bool();	// Composite source Always 1
 					int passes = in->read_uint(4); // passes
+					in->read_u8();// If not present, when parsing several filters, filter type is not correct
 					IF_VERBOSE_PARSE(log_msg("  filter = GradientBevelFilter\n" ));
 					break;
 				}
