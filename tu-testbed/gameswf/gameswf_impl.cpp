@@ -1270,13 +1270,12 @@ namespace gameswf
 	{
 		assert(tag_type == 69);
 
-		Uint32 attr = in->read_u32();
+		Uint8 attr = in->read_u8();
+		in->read_uint(24);	// reserved
 
-		// now attr isn't used
-		bool has_metadata =  attr & 0x10000000 ? true : false;
-		bool use_network =  attr & 0x01000000 ? true : false;
-		UNUSED(has_metadata);
-		UNUSED(use_network);
+		m->m_has_metadata =  attr & 0x10 ? true : false;
+		m->m_action_script3 =  attr & 0x08 ? true : false;
+		m->m_use_network =  attr & 0x010 ? true : false;
 	}
 
 	void	define_font_alignzones(stream* in, int tag_type, movie_definition_sub* m)
