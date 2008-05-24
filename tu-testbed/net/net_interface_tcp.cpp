@@ -145,7 +145,7 @@ int net_socket_tcp::read(void* data, int bytes, float timeout_seconds)
 }
 
 
-int net_socket_tcp::read_line(tu_string* data, int maxbytes, float timeout_seconds)
+int net_socket_tcp::read_line(tu_string* str, int maxbytes, float timeout_seconds)
 // Try to read a string, up to the next '\n' character.
 // Returns the actual bytes read.
 //
@@ -153,12 +153,13 @@ int net_socket_tcp::read_line(tu_string* data, int maxbytes, float timeout_secon
 // either we read maxbytes, or we timed out or the socket
 // closed or something.
 {
-	assert(data);
+	assert(str);
 
 	uint64 start = tu_timer::get_ticks();
+	int timeout = int(timeout_seconds * 1000);	// ticks, ms
 	int total_bytes_read = 0;
 
-	for (;;)
+	for (;;)       
 	{
 		// Read a byte at a time.  Probably slow!
 		char c;
@@ -180,44 +181,53 @@ int net_socket_tcp::read_line(tu_string* data, int maxbytes, float timeout_secon
 					WSAGetLastError());
 				return 0;
 			}
-		} else if (bytes_read == 0) {
-
-			if( is_readable() && recv(m_sock, &c, 1, 0) == 0 )
+		} 
+		else
+		if (bytes_read == 0)
+		{
+			if (is_readable() && recv(m_sock, &c, 1, 0) == 0)
 			{
 				// Socket must close
-				return total_bytes_read? total_bytes_read:-1;
+				return total_bytes_read ? total_bytes_read : -1;
+
 			}
 			waiting = true;
 		}
 
-		if (waiting) {
+		if (waiting) 
+		{
 			// Timeout?
-			uint64 now = tu_timer::get_ticks();
-			double elapsed = tu_timer::ticks_to_seconds(now - start);
-
-			if (elapsed < timeout_seconds)
+			if (tu_timer::get_ticks() - start >= timeout)
 			{
-				// TODO this spins; fix it by sleeping a bit?
-				// if (time_left > 0.010f) { sleep(...); }
-				continue;
+				// Timed out.
+				return 0;
 			}
 
-			// Timed out.
-			return 0;
+			// sleep a bit
+			if (timeout - (tu_timer::get_ticks() - start) >= 10)
+			{
+				tu_timer::sleep(10);
+			}
+			continue;
 		}
 
 		assert(bytes_read == 1);
-
-		(*data) += c;
-		total_bytes_read += 1;
+		total_bytes_read++;
 
 		if (c == '\n')
 		{
 			// Done.
+//			printf("recv: '%s'\n", str->c_str());
 			return total_bytes_read;
 		}
 
-		if (maxbytes && total_bytes_read >= maxbytes)
+		// '\n'(0x0D) and '\r'(0x0A) are not written into str
+		if (c != '\r')
+		{
+			(*str) += c;
+		}
+
+		if (maxbytes > 0 && total_bytes_read >= maxbytes)
 		{
 			// Caller doesn't want any more bytes.
 			return total_bytes_read;
@@ -291,6 +301,7 @@ m_socket(INVALID_SOCKET)
 	if (m_socket == INVALID_SOCKET)
 	{
 		fprintf(stderr, "can't open listen socket\n");
+
 		return;
 	}
 
