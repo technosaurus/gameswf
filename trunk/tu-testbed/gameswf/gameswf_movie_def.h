@@ -140,7 +140,10 @@ namespace gameswf
 			m_ss_start(-1),
 			m_frame_count(0),
 			m_loading_frame(0),
-			m_break_loading(false)
+			m_break_loading(false),
+			m_has_metadata(false),
+			m_action_script3(false),
+			m_use_network(false)
 		{
 		}
 
@@ -236,6 +239,11 @@ namespace gameswf
 		int m_ss_id;	// stream sound handler_id
 		sound_handler::format_type m_ss_format;	// used in tag 19
 		int m_ss_start;	// start frame
+
+		// flash9
+		bool m_has_metadata;
+		bool m_action_script3;
+		bool m_use_network;
 
 	private:
 
