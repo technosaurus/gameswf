@@ -92,7 +92,7 @@ namespace gameswf
 		}
 
 		// add to net listener
-		if (is_connected)
+		if (is_connected && get_root())
 		{
 			get_root()->m_advance_listener.add(this);
 		}
@@ -102,7 +102,10 @@ namespace gameswf
 
 	void as_xmlsock::close()
 	{
-		get_root()->m_advance_listener.remove(this);
+		if (get_root())
+		{
+			get_root()->m_advance_listener.remove(this);
+		}
 	}
 
 	void as_xmlsock::send(const as_value& val) const

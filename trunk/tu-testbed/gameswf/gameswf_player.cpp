@@ -501,7 +501,8 @@ namespace gameswf
 
 	root* player::get_root()
 	{
-		assert(m_current_root.get_ptr() != NULL);
+		// on exit m_current_root may be NULL
+//		assert(m_current_root.get_ptr() != NULL);
 		return m_current_root.get_ptr();
 	}
 
