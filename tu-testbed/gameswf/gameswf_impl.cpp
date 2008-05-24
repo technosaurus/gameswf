@@ -1403,17 +1403,18 @@ namespace gameswf
 				bool	has_char = in->read_uint(1) ? true : false;
 				bool	flag_move = in->read_uint(1) ? true : false;
 
-                bool    has_image = false;
-                bool    has_class_name = false;
+				bool	has_image = false;
+				bool	has_class_name = false;
 				bool	has_cache_asbitmap = false;
 				bool	has_blend_mode = false;
 				bool	has_filter_list = false;
+
 				if (tag_type == 70)
 				{
 					in->read_uint(3); // unused
 
-                    has_image = in->read_uint(1) ? true : false;
-                    has_class_name = in->read_uint(1) ? true : false;
+					has_image = in->read_uint(1) ? true : false;
+					has_class_name = in->read_uint(1) ? true : false;
 					has_cache_asbitmap = in->read_uint(1) ? true : false;
 					has_blend_mode = in->read_uint(1) ? true : false;
 					has_filter_list = in->read_uint(1) ? true : false;
@@ -1455,7 +1456,7 @@ namespace gameswf
 
 				if (has_filter_list)
 				{
-                    read_filter_list(in);
+					read_filter_list(in);
 				}	
 				
 				if (has_blend_mode)
