@@ -70,7 +70,7 @@
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="true"
 				SubSystem="2"
-				ImportLibrary="/libgame/lib/libgameswf-d.lib"
+				ImportLibrary="c:\libgame\lib\libgameswf-d.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -426,6 +426,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_environment.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_filters.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_filters.h"
 				>
 			</File>
 			<File
