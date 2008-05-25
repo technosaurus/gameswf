@@ -713,4 +713,19 @@ namespace gameswf
 			}
 		}
 	}
+
+	// flash9
+	as_function* movie_def_impl::get_class_constructor(int symbol_id) const
+	{
+		// If the character ID is zero, the class is associated with the main timeline 
+		int id = symbol_id == -1 ? 0 : id;
+
+		tu_string class_name;
+		if (m_symbol_class.get(id, &class_name))
+		{
+			// get function3 from abc
+		}
+		return NULL;
+	}
+
 }

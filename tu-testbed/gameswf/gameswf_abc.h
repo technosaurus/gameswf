@@ -8,13 +8,12 @@
 #ifndef GAMESWF_ABC_H
 #define GAMESWF_ABC_H
 
-
-#include "gameswf/gameswf_impl.h"
-
+#include "gameswf/gameswf_types.h"
 
 namespace gameswf
 {
-	struct movie_definition_sub;
+
+	struct abc_def;
 
 	struct multiname
 	{
@@ -81,7 +80,7 @@ namespace gameswf
 	struct option_detail
 	{
 		int m_value;
-		uint8 m_kind;
+		Uint8 m_kind;
 	};
 
 	struct method_info : public ref_counted

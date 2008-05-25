@@ -114,6 +114,14 @@ namespace gameswf
 	void character_def::instanciate_registered_class (character* ch)
 	{
 		assert(ch);
+
+		// flash9
+		// try SymbolClass tag
+		if (m_registered_class_constructor == NULL)
+		{
+			m_registered_class_constructor = get_class_constructor(ch->get_id());
+		}
+
 		if (m_registered_class_constructor != NULL)
 		{
 			// as far as I remember
@@ -712,6 +720,8 @@ namespace gameswf
 	}
 
 	void	symbol_class_loader(stream* in, int tag_type, movie_definition_sub* m)
+	// The SymbolClass tag creates associations between symbols in the SWF file
+	// and ActionScript 3.0 classes.
 	{
 		assert(tag_type == 76);
 
@@ -1274,7 +1284,7 @@ namespace gameswf
 		in->read_uint(24);	// reserved
 
 		m->m_has_metadata =  attr & 0x10 ? true : false;
-		m->m_action_script3 =  attr & 0x08 ? true : false;
+		m->m_is_action3 =  attr & 0x08 ? true : false;
 		m->m_use_network =  attr & 0x010 ? true : false;
 	}
 

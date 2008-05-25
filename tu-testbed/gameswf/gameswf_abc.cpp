@@ -8,6 +8,7 @@
 #include "gameswf/gameswf_abc.h"
 #include "gameswf/gameswf_stream.h"
 #include "gameswf/gameswf_disasm.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {

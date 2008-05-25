@@ -9,6 +9,7 @@
 
 #include "gameswf/gameswf_disasm.h"
 #include "gameswf/gameswf_log.h"
+#include <stdarg.h>
 
 namespace gameswf
 {
