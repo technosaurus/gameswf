@@ -13,6 +13,8 @@
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_mutex.h"
+#include "gameswf/gameswf_abc.h"
+
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/smart_ptr.h"
@@ -22,7 +24,6 @@ namespace gameswf
 
 	struct action_buffer;
 	struct bitmap_character_def;
-	struct abc_def;
 	struct bitmap_info;
 	struct character;
 	struct character_def;
@@ -142,7 +143,7 @@ namespace gameswf
 			m_loading_frame(0),
 			m_break_loading(false),
 			m_has_metadata(false),
-			m_action_script3(false),
+			m_is_action3(false),
 			m_use_network(false)
 		{
 		}
@@ -242,7 +243,7 @@ namespace gameswf
 
 		// flash9
 		bool m_has_metadata;
-		bool m_action_script3;
+		bool m_is_action3;
 		bool m_use_network;
 
 	private:
@@ -337,7 +338,7 @@ namespace gameswf
 		smart_ptr<root> m_instance;	// cached movie instance.
 
 		// for AVM2, Flash9
-		stringi_hash<abc_def*>	m_abc;	//vv hack, abc_def* ==> smart_ptr<abc_def>
+		stringi_hash< smart_ptr<abc_def> >	m_abc;
 		hash<int, tu_string>	m_symbol_class;
 		hash<int, tu_string>	m_scene;
 		hash<int, tu_string>	m_frame_label;	// this is't labeled_frame !!!
@@ -398,6 +399,9 @@ namespace gameswf
 		void	input_cached_data(tu_file* in);
 
 		virtual bool is_multithread() const { return m_thread != NULL; }
+
+		// flash9
+		virtual as_function* get_class_constructor(int symbol_id) const;
 	};
 
 	int movie_def_loader(void* arg);
