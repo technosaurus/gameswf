@@ -226,11 +226,17 @@ namespace gameswf
 
 	};
 
+	static hash<int, inst_info_avm2> s_instr;
+
+	// it's called on exit from player
+	void clear_disasm()
+	{
+		s_instr.clear();
+	}
 
 	void	log_disasm_avm2(const array<Uint8>& data, const abc_def & def)
 	// Disassemble one instruction to the log, AVM2
 	{
-		static hash<int, inst_info_avm2> s_instr;
 		if (s_instr.size() == 0)
 		{
 			s_instr.add(0x03, inst_info_avm2("throw"));
