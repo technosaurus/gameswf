@@ -405,6 +405,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_avm2.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_button.cpp"
 				>
 			</File>
@@ -766,6 +770,10 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_sprite.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_avm2.h"
 				>
 			</File>
 			<File

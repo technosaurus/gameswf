@@ -1149,7 +1149,7 @@ namespace gameswf
 		in->read_string(&name);
 
 		abc_def* abc = new abc_def(m->get_player());
-		abc->read(in);
+		abc->read(in, m);
 		m->add_abc(name, abc);
 	}
 

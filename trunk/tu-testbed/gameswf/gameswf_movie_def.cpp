@@ -724,6 +724,10 @@ namespace gameswf
 		if (m_symbol_class.get(id, &class_name))
 		{
 			// get function3 from abc
+			smart_ptr<abc_def> abc;
+			assert(m_abc.get("", &abc));	// hack, we should use abc name
+
+			return abc->get_class_constructor(class_name);
 		}
 		return NULL;
 	}

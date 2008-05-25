@@ -9,55 +9,10 @@
 #include "gameswf/gameswf_stream.h"
 #include "gameswf/gameswf_disasm.h"
 #include "gameswf/gameswf_log.h"
+#include "gameswf/gameswf_movie_def.h"
 
 namespace gameswf
 {
-
-	//	method_info
-	//	{
-	//		u30 param_count
-	//		u30 return_type
-	//		u30 param_type[param_count]
-	//		u30 name
-	//		u8 flags
-	//		option_info options
-	//		param_info param_names
-	//	}
-	void method_info::read(stream* in, abc_def* abc)
-	{
-		int param_count = in->read_vu30();
-		
-		// The return_type field is an index into the multiname
-		m_return_type = in->read_vu30();
-
-
-		m_param_type.resize(param_count);
-		for (int i = 0; i < param_count; i++)
-		{
-			m_param_type[i] = in->read_vu30();
-		}
-
-		m_name = in->read_vu30();
-		m_flags = in->read_u8();
-
-		if (m_flags & HAS_OPTIONAL)
-		{
-			int option_count = in->read_vu30();
-			m_options.resize(option_count);
-
-			for(int o=0;o<option_count;++o)
-			{
-				m_options[o].m_value = in->read_vu30();
-				m_options[o].m_kind = in->read_u8();
-			}
-		}
-
-		if (m_flags & HAS_PARAM_NAMES)
-		{
-			assert(0 && "todo");
-//		param_info param_names
-		}
-	}
 
 	void metadata_info::read(stream* in, abc_def* abc)
 	{
@@ -317,7 +272,7 @@ namespace gameswf
 	//		u30 method_body_count
 	//		method_body_info method_body[method_body_count]
 	//	}
-	void	abc_def::read(stream* in)
+	void	abc_def::read(stream* in, movie_definition_sub* m)
 	{
 		int eof = in->get_tag_end_position();
 		int i, n;
@@ -336,12 +291,9 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("method_info count: %d\n", n));
 		for (i = 0; i < n; i++)
 		{
-			method_info* info = new method_info();
+			as_avm2_function* info = new as_avm2_function(m->get_player());
 			info->read(in, this);
 			m_method[i] = info;
-			IF_VERBOSE_PARSE(log_msg("method_info[%d]: name='%s', type='%s', params=%d\n",
-				i, get_string(info->m_name), get_multiname(info->m_return_type),
-				info->m_param_type.size()));
 		}
 
 		assert(in->get_position() < eof);
@@ -642,6 +594,32 @@ namespace gameswf
 		}
 
 
+	}
+
+	// get class constructor
+	// 'name' is the fully-qualified name of the ActionScript 3.0 class 
+	// with which to associate this symbol.
+	// The class must have already been declared by a DoABC tag.
+	as_function* abc_def::get_class_constructor(tu_string& name) const
+	{
+
+		//TODO
+
+		// find instance by name
+		
+		instance_info* ii = m_instance[0].get_ptr(); //NULL;
+//		for (int i = 0; i < m_instance.size(); i++)
+//		{
+//			if (m_instance[i]->m_name == 0)
+//			{
+//			}
+//		}
+
+		// This is an index into the method array of the abcFile; 
+		// it references the method that is invoked whenever an object of this class is constructed.
+		int iinit = ii->m_iinit;
+		as_avm2_function* func = m_method[iinit].get_ptr();
+		return func;
 	}
 
 };	// end namespace gameswf

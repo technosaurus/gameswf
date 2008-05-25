@@ -9,11 +9,14 @@
 #define GAMESWF_ABC_H
 
 #include "gameswf/gameswf_types.h"
+#include "gameswf/gameswf_avm2.h"
 
 namespace gameswf
 {
 
 	struct abc_def;
+	struct as_function;
+	struct movie_definition_sub;
 
 	struct multiname
 	{
@@ -75,34 +78,6 @@ namespace gameswf
 		{
 		}
 
-	};
-
-	struct option_detail
-	{
-		int m_value;
-		Uint8 m_kind;
-	};
-
-	struct method_info : public ref_counted
-	{
-		enum flags
-		{
-			NEED_ARGUMENTS = 0x01,
-			NEED_ACTIVATION = 0x02,
-			NEED_REST = 0x04,
-			HAS_OPTIONAL = 0x08,
-			SET_DXNS = 0x40,
-			HAS_PARAM_NAMES = 0x80
-		};
-
-		int m_return_type;
-		array<int> m_param_type;
-		int m_name;
-		Uint8 m_flags;
-		array<option_detail> m_options;
-//		param_info m_param_names;
-
-		void	read(stream* in, abc_def* abc);
 	};
 
 	struct metadata_info : public ref_counted
@@ -259,7 +234,8 @@ namespace gameswf
 		array< array<int> > m_ns_set;
 		array<multiname> m_multiname;
 
-		array< smart_ptr<method_info> > m_method;
+//		array< smart_ptr<method_info> > m_method;
+		array< smart_ptr<as_avm2_function> > m_method;
 		array< smart_ptr<metadata_info> > m_metadata;
 		array< smart_ptr<instance_info> > m_instance;
 		array< smart_ptr<class_info> > m_class;
@@ -284,8 +260,11 @@ namespace gameswf
 		abc_def(player* player);
 		virtual ~abc_def();
 
-		void	read(stream* in);
+		void	read(stream* in, movie_definition_sub* m);
 		void	read_cpool(stream* in);
+
+		// get class constructor
+		as_function* get_class_constructor(tu_string& name) const;
 
 	};
 }
