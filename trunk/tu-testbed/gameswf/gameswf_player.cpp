@@ -40,6 +40,7 @@ namespace gameswf
 
 	void close_glyph_provider();
 	void clears_tag_loaders();
+	void clear_disasm();
 
 	//
 	//	gameswf's statics
@@ -386,12 +387,13 @@ namespace gameswf
 		clear_library();
 
 		// Clear shared stuff only when all players are deleted
-		if ( 0 == s_player_count )
+		if (s_player_count == 0)
 		{
 			clears_tag_loaders();
 			clear_shared_libs();
 			close_glyph_provider();
 			clear_standard_method_map();
+			clear_disasm();
 		}
 
 		gameswf_engine_mutex().unlock();
