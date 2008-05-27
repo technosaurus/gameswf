@@ -183,6 +183,9 @@ namespace gameswf
 	{
 		display_object_info&	di = m_display_object_array[index];
 
+		// indirect call onUnload & killFocus of children
+		di.m_character->clear_display_objects();
+
 		di.m_character->on_event(event_id::KILLFOCUS);
 		di.m_character->on_event(event_id::UNLOAD);
 		di.m_character->set_depth(0);	// is't alive
