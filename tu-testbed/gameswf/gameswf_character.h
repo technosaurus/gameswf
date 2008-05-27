@@ -285,7 +285,7 @@ namespace gameswf
 			return NULL;
 		}
 
-		virtual void	clear_display_objects() { assert(0); }
+		virtual void	clear_display_objects() { /* assert(0); */ }
 		virtual void	remove_display_object(character* ch) { assert(0); }
 
 		// replaces 'this' on md->create_instance()
