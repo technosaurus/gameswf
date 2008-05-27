@@ -8,6 +8,7 @@
 
 #include "base/tu_timer.h"
 #include "base/tu_file.h"
+#include "base/tu_random.h"
 #include "gameswf/gameswf_player.h"
 #include "gameswf/gameswf_object.h"
 #include "gameswf/gameswf_action.h"
@@ -363,6 +364,15 @@ namespace gameswf
 		}
 
 		++s_player_count;
+		
+		// set startup random position
+		Uint64 t = tu_timer::get_systime();
+		t &= 0xFF;	// truncate
+		for (int i = 0; i < t; i++)
+		{
+			tu_random::next_random();
+		}
+
 	}
 
 	player::~player()
