@@ -148,7 +148,7 @@ namespace gameswf
 		array<multiname> m_multiname;
 
 //		array< smart_ptr<method_info> > m_method;
-		array< smart_ptr<as_avm2_function> > m_method;
+		array< smart_ptr<as_3_function> > m_method;
 		array< smart_ptr<metadata_info> > m_metadata;
 		array< smart_ptr<instance_info> > m_instance;
 		array< smart_ptr<class_info> > m_class;
