@@ -7,7 +7,6 @@
 
 #include "gameswf/gameswf_abc.h"
 #include "gameswf/gameswf_stream.h"
-#include "gameswf/gameswf_disasm.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_movie_def.h"
 
@@ -187,7 +186,7 @@ namespace gameswf
 	//		u30 exc_type
 	//		u30 var_name
 	// }
-	void exceptiin_info::read(stream* in, abc_def* abc)
+	void except_info::read(stream* in, abc_def* abc)
 	{
 		m_from = in->read_vu30();
 		m_to = in->read_vu30();
@@ -195,57 +194,6 @@ namespace gameswf
 		m_exc_type = in->read_vu30();
 		m_var_name = in->read_vu30();
 	}
-
-	//	method_body_info
-	//	{
-	//		u30 method
-	//		u30 max_stack
-	//		u30 local_count
-	//		u30 init_scope_depth
-	//		u30 max_scope_depth
-	//		u30 code_length
-	//		u8 code[code_length]
-	//		u30 exception_count
-	//		exception_info exception[exception_count]
-	//		u30 trait_count
-	//		traits_info trait[trait_count]
-	//	}
-	void body_info::read(stream* in, abc_def* abc)
-	{
-		m_method = in->read_vu30();
-
-		m_max_stack = in->read_vu30();
-		m_local_count = in->read_vu30();
-		m_init_scope_depth = in->read_vu30();
-		m_max_scope_depth = in->read_vu30();
-
-		int i, n;
-		n = in->read_vu30();	// code_length
-		m_code.resize(n);
-		for (i = 0; i < n; i++)
-		{
-			m_code[i] = in->read_u8();
-		}
-
-		n = in->read_vu30();	// exception_count
-		m_exception.resize(n);
-		for (i = 0; i < n; i++)
-		{
-			exceptiin_info* e = new exceptiin_info();
-			e->read(in, abc);
-			m_exception[i] = e;
-		}
-
-		n = in->read_vu30();	// trait_count
-		m_trait.resize(n);
-		for (int i = 0; i < n; i++)
-		{
-			traits_info* trait = new traits_info();
-			trait->read(in, abc);
-			m_trait[i] = trait;
-		}
-	}
-
 
 	abc_def::abc_def(player* player)
 	{
@@ -291,8 +239,8 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("method_info count: %d\n", n));
 		for (i = 0; i < n; i++)
 		{
-			as_avm2_function* info = new as_avm2_function(m->get_player());
-			info->read(in, this);
+			as_avm2_function* info = new as_avm2_function(this, i, m->get_player());
+			info->read(in);
 			m_method[i] = info;
 		}
 
@@ -356,16 +304,9 @@ namespace gameswf
 
 		// read body_info
 		n = in->read_vu30();
-		m_body.resize(n);
 		for (i = 0; i < n; i++)
 		{
-			IF_VERBOSE_PARSE(log_msg("body_info[%d]\n", i));
-			body_info* info = new body_info();
-			info->read(in, this);
-			m_body[i] = info;
-
-			IF_VERBOSE_PARSE(log_msg("method	%i\n",info->m_method));
-			IF_VERBOSE_PARSE(log_disasm_avm2(info->m_code, *this));
+			m_method[i]->read_body(in);
 		}
 
 		assert(in->get_position() == eof);
@@ -602,24 +543,22 @@ namespace gameswf
 	// The class must have already been declared by a DoABC tag.
 	as_function* abc_def::get_class_constructor(tu_string& name) const
 	{
+		// find instance_info by name
+		instance_info* ii = find_instance(name);
+		if (ii != NULL)
+		{
+			// 'ii->m_iinit' is an index into the method array of the abcFile; 
+			// it references the method that is invoked whenever 
+			// an object of this class is constructed.
+			return m_method[ii->m_iinit].get_ptr();
+		}
+		return NULL;
+	}
 
+	instance_info* abc_def::find_instance(const tu_string& class_name) const
+	{
 		//TODO
-
-		// find instance by name
-		
-		instance_info* ii = m_instance[0].get_ptr(); //NULL;
-//		for (int i = 0; i < m_instance.size(); i++)
-//		{
-//			if (m_instance[i]->m_name == 0)
-//			{
-//			}
-//		}
-
-		// This is an index into the method array of the abcFile; 
-		// it references the method that is invoked whenever an object of this class is constructed.
-		int iinit = ii->m_iinit;
-		as_avm2_function* func = m_method[iinit].get_ptr();
-		return func;
+		return m_instance[0].get_ptr();
 	}
 
 };	// end namespace gameswf

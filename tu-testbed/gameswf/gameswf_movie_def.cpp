@@ -307,7 +307,9 @@ namespace gameswf
 
 	void	movie_def_impl::add_abc(tu_string& name, abc_def* abc)
 	{
-		m_abc.add(name, abc);
+		assert(m_abc == NULL);
+		m_abc = abc;
+		m_abc_name = name;
 	}
 
 	void	movie_def_impl::add_symbol_class(int character_id, const tu_string& class_name)
@@ -718,16 +720,15 @@ namespace gameswf
 	as_function* movie_def_impl::get_class_constructor(int symbol_id) const
 	{
 		// If the character ID is zero, the class is associated with the main timeline 
-		int id = symbol_id == -1 ? 0 : id;
+		// -1 means _root
+		int id = symbol_id == -1 ? 0 : symbol_id;
 
 		tu_string class_name;
 		if (m_symbol_class.get(id, &class_name))
 		{
 			// get function3 from abc
-			smart_ptr<abc_def> abc;
-			assert(m_abc.get("", &abc));	// hack, we should use abc name
-
-			return abc->get_class_constructor(class_name);
+			assert(m_abc != NULL);
+			return m_abc->get_class_constructor(class_name);
 		}
 		return NULL;
 	}

@@ -21,10 +21,82 @@ namespace gameswf
 		Uint8 m_kind;
 	};
 
+	struct traits_info : public ref_counted
+	{
+		enum kind
+		{
+			Trait_Slot = 0,
+			Trait_Method = 1,
+			Trait_Getter = 2,
+			Trait_Setter = 3,
+			Trait_Class = 4,
+			Trait_Function = 5,
+			Trait_Const = 6
+		};
+
+		enum attr
+		{
+			ATTR_Final = 0x1,
+			ATTR_Override = 0x2,
+			ATTR_Metadata = 0x4
+		};
+
+		int m_name;
+		Uint8 m_kind;
+		Uint8 m_attr;
+
+		// data
+		union
+		{
+			struct
+			{
+				int m_slot_id;
+				int m_type_name;
+				int m_vindex;
+				Uint8 m_vkind;
+			} trait_slot;
+
+			struct
+			{
+				int m_slot_id;
+				int m_classi;
+			} trait_class;
+
+			struct
+			{
+				int m_slot_id;
+				int m_function;
+			} trait_function;
+			
+			struct
+			{
+				int m_disp_id;
+				int m_method;
+			} trait_method;
+
+		};
+
+
+		array<int> m_metadata;
+
+		void	read(stream* in, abc_def* abc);
+	};
+
+	struct except_info : public ref_counted
+	{
+		int m_from;
+		int m_to;
+		int m_target;
+		int m_exc_type;
+		int m_var_name;
+
+		void	read(stream* in, abc_def* abc);
+	};
+
 	struct as_avm2_function : public as_function
 	{
 		// Unique id of a gameswf resource
-		enum { m_class_id = AS_S_FUNCTION };
+		enum { m_class_id = AS_3_FUNCTION };
 		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
@@ -42,21 +114,33 @@ namespace gameswf
 			HAS_PARAM_NAMES = 0x80
 		};
 
+		smart_ptr<abc_def> m_abc;
+
+		// method_info
 		int m_return_type;
 		array<int> m_param_type;
 		int m_name;
 		Uint8 m_flags;
 		array<option_detail> m_options;
-//		param_info m_param_names;
+		int m_method;	// index in method_info
 
+		// body_info
+		int m_max_stack;
+		int m_local_count;
+		int m_init_scope_depth;
+		int m_max_scope_depth;
+		array<Uint8> m_code;
+		array< smart_ptr<except_info> > m_exception;
+		array< smart_ptr<traits_info> > m_trait;
 
-		as_avm2_function(player* player);
+		as_avm2_function(abc_def* abc, int method, player* player);
 		~as_avm2_function();
 
 		// Dispatch.
 		virtual void	operator()(const fn_call& fn);
 
-		void	read(stream* in, abc_def* abc);
+		void	read(stream* in);
+		void	read_body(stream* in);
 
 	};
 
