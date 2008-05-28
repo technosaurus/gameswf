@@ -1148,6 +1148,8 @@ namespace gameswf
 		tu_string name;
 		in->read_string(&name);
 
+		IF_VERBOSE_PARSE(log_msg("\n doABC tag loader, abc_name = '%s'\n", name.c_str()));
+
 		abc_def* abc = new abc_def(m->get_player());
 		abc->read(in, m);
 		m->add_abc(name, abc);

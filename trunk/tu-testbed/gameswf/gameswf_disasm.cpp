@@ -76,7 +76,7 @@ namespace gameswf
 			}
 		}
 
-		int process(const abc_def &def, const uint8 *args)
+		int process(const abc_def* def, const uint8 *args)
 		{
 			int byte_count = 1;
 			for( int i=0; i<m_arg_formats.size();++i)
@@ -86,19 +86,19 @@ namespace gameswf
 				{
 				case ARG_MULTINAME:
 					byte_count += read_vu30(value, &args[byte_count]);
-					if( value >= def.m_multiname.size() )
+					if( value >= def->m_multiname.size() )
 					{
 						log_msg( "\t\tmultiname: runtime %i\n", value);
 					}
 					else
 					{
-						log_msg( "\t\tmultiname: %s\n", def.m_string[ def.m_multiname[value].m_name ].c_str());
+						log_msg( "\t\tmultiname: %s\n", def->m_string[def->m_multiname[value].m_name].c_str());
 					}
 					break;
 
 				case ARG_NAMESPACE:
 					byte_count += read_vu30(value, &args[byte_count]);
-					log_msg( "\t\tnamespace: %s\n", def.m_string[ def.m_namespace[value].m_name ].c_str());
+					log_msg( "\t\tnamespace: %s\n", def->m_string[ def->m_namespace[value].m_name ].c_str());
 					break;
 
 				case ARG_BYTE:
@@ -114,22 +114,22 @@ namespace gameswf
 
 				case ARG_INT:
 					byte_count += read_vu30(value, &args[byte_count]);
-					log_msg("\t\tvalue: %i\n", def.m_integer[value]);
+					log_msg("\t\tvalue: %i\n", def->m_integer[value]);
 					break;
 
 				case ARG_UINT:
 					byte_count += read_vu30(value, &args[byte_count]);
-					log_msg("\t\tvalue: %ui\n", def.m_uinteger[value]);
+					log_msg("\t\tvalue: %ui\n", def->m_uinteger[value]);
 					break;
 
 				case ARG_DOUBLE:
 					byte_count += read_vu30(value, &args[byte_count]);
-					log_msg("\t\tvalue: %d\n", def.m_double[value]);
+					log_msg("\t\tvalue: %d\n", def->m_double[value]);
 					break;
 
 				case ARG_STRING:
 					byte_count += read_vu30(value, &args[byte_count]);
-					log_msg( "\t\tstring: %s\n", def.m_string[value].c_str());
+					log_msg( "\t\tstring: %s\n", def->m_string[value].c_str());
 					break;
 
 				case ARG_COUNT:
@@ -145,7 +145,7 @@ namespace gameswf
 				case ARG_FUNCTION:
 					byte_count += read_vu30( value, &args[byte_count] );
 					//TODO: print signature
-					log_msg( "\t\tfunction: %s\n", def.m_string[def.m_method[value]->m_name].c_str());
+					log_msg( "\t\tfunction: %s\n", def->m_string[def->m_method[value]->m_name].c_str());
 					break;
 
 				case ARG_EXCEPTION:
@@ -234,7 +234,7 @@ namespace gameswf
 		s_instr.clear();
 	}
 
-	void	log_disasm_avm2(const array<Uint8>& data, const abc_def & def)
+	void	log_disasm_avm2(const array<Uint8>& data, const abc_def* def)
 	// Disassemble one instruction to the log, AVM2
 	{
 		if (s_instr.size() == 0)

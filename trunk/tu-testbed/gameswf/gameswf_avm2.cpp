@@ -9,12 +9,15 @@
 #include "gameswf/gameswf_stream.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_abc.h"
+#include "gameswf/gameswf_disasm.h"
 
 namespace gameswf
 {
 
-	as_avm2_function::as_avm2_function(player* player) :
-		as_function(player)
+	as_avm2_function::as_avm2_function(abc_def* abc, int method, player* player) :
+		as_function(player),
+		m_method(method),
+		m_abc(abc)
 	{
 		m_this_ptr = this;
 
@@ -28,23 +31,11 @@ namespace gameswf
 
 	void	as_avm2_function::operator()(const fn_call& fn)
 	{
-		//TODO
-
-		// find body
 		// execute it
 	}
 
-	//	method_info
-	//	{
-	//		u30 param_count
-	//		u30 return_type
-	//		u30 param_type[param_count]
-	//		u30 name
-	//		u8 flags
-	//		option_info options
-	//		param_info param_names
-	//	}
-	void as_avm2_function::read(stream* in, abc_def* abc)
+	void as_avm2_function::read(stream* in)
+	// read method_info
 	{
 		int param_count = in->read_vu30();
 		
@@ -80,7 +71,50 @@ namespace gameswf
 		}
 
 		IF_VERBOSE_PARSE(log_msg("method_info: name='%s', type='%s', params=%d\n",
-			abc->get_string(m_name), abc->get_multiname(m_return_type), m_param_type.size()));
+			m_abc->get_string(m_name), m_abc->get_multiname(m_return_type), m_param_type.size()));
+
+	}
+
+	void as_avm2_function::read_body(stream* in)
+	// read body_info
+	{
+		assert(m_method == in->read_vu30());
+
+		IF_VERBOSE_PARSE(log_msg("body_info[%d]\n", m_method));
+
+		m_max_stack = in->read_vu30();
+		m_local_count = in->read_vu30();
+		m_init_scope_depth = in->read_vu30();
+		m_max_scope_depth = in->read_vu30();
+
+		int i, n;
+		n = in->read_vu30();	// code_length
+		m_code.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			m_code[i] = in->read_u8();
+		}
+
+		n = in->read_vu30();	// exception_count
+		m_exception.resize(n);
+		for (i = 0; i < n; i++)
+		{
+			except_info* e = new except_info();
+			e->read(in, m_abc.get_ptr());
+			m_exception[i] = e;
+		}
+
+		n = in->read_vu30();	// trait_count
+		m_trait.resize(n);
+		for (int i = 0; i < n; i++)
+		{
+			traits_info* trait = new traits_info();
+			trait->read(in, m_abc.get_ptr());
+			m_trait[i] = trait;
+		}
+
+		IF_VERBOSE_PARSE(log_msg("method	%i\n", m_method));
+		IF_VERBOSE_PARSE(log_disasm_avm2(m_code, m_abc.get_ptr()));
 
 	}
 

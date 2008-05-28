@@ -338,7 +338,8 @@ namespace gameswf
 		smart_ptr<root> m_instance;	// cached movie instance.
 
 		// for AVM2, Flash9
-		stringi_hash< smart_ptr<abc_def> >	m_abc;
+		tu_string m_abc_name;
+		smart_ptr<abc_def> m_abc;
 		hash<int, tu_string>	m_symbol_class;
 		hash<int, tu_string>	m_scene;
 		hash<int, tu_string>	m_frame_label;	// this is't labeled_frame !!!

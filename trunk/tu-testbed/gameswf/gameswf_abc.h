@@ -89,68 +89,6 @@ namespace gameswf
 	//
 	// instance_info
 	//
-
-	struct traits_info : public ref_counted
-	{
-		enum kind
-		{
-			Trait_Slot = 0,
-			Trait_Method = 1,
-			Trait_Getter = 2,
-			Trait_Setter = 3,
-			Trait_Class = 4,
-			Trait_Function = 5,
-			Trait_Const = 6
-		};
-
-		enum attr
-		{
-			ATTR_Final = 0x1,
-			ATTR_Override = 0x2,
-			ATTR_Metadata = 0x4
-		};
-
-		int m_name;
-		Uint8 m_kind;
-		Uint8 m_attr;
-
-		// data
-		union
-		{
-			struct
-			{
-				int m_slot_id;
-				int m_type_name;
-				int m_vindex;
-				Uint8 m_vkind;
-			} trait_slot;
-
-			struct
-			{
-				int m_slot_id;
-				int m_classi;
-			} trait_class;
-
-			struct
-			{
-				int m_slot_id;
-				int m_function;
-			} trait_function;
-			
-			struct
-			{
-				int m_disp_id;
-				int m_method;
-			} trait_method;
-
-		};
-
-
-		array<int> m_metadata;
-
-		void	read(stream* in, abc_def* abc);
-	};
-
 	struct instance_info : public ref_counted
 	{
 
@@ -198,31 +136,6 @@ namespace gameswf
 		void	read(stream* in, abc_def* abc);
 	};
 
-	struct exceptiin_info : public ref_counted
-	{
-		int m_from;
-		int m_to;
-		int m_target;
-		int m_exc_type;
-		int m_var_name;
-
-		void	read(stream* in, abc_def* abc);
-	};
-
-	struct body_info : public ref_counted
-	{
-		int m_method;
-		int m_max_stack;
-		int m_local_count;
-		int m_init_scope_depth;
-		int m_max_scope_depth;
-		array<Uint8> m_code;
-		array< smart_ptr<exceptiin_info> > m_exception;
-		array< smart_ptr<traits_info> > m_trait;
-
-		void	read(stream* in, abc_def* abc);
-	};
-
 	struct abc_def : public ref_counted
 	{
 		// constant pool
@@ -240,7 +153,6 @@ namespace gameswf
 		array< smart_ptr<instance_info> > m_instance;
 		array< smart_ptr<class_info> > m_class;
 		array< smart_ptr<script_info> > m_script;
-		array< smart_ptr<body_info> > m_body;
 
 		inline const char* get_string(int index) const
 		{
@@ -266,6 +178,7 @@ namespace gameswf
 		// get class constructor
 		as_function* get_class_constructor(tu_string& name) const;
 
+		instance_info* find_instance(const tu_string& class_name) const;
 	};
 }
 

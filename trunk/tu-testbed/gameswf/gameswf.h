@@ -157,6 +157,7 @@ namespace gameswf
 		AS_FUNCTION,
 		AS_C_FUNCTION,
 		AS_S_FUNCTION,
+		AS_3_FUNCTION,	// action script 3 function
 		AS_MOVIE_DEF,
 		AS_MOVIE_DEF_SUB,
 		AS_CHARACTER_DEF,
