@@ -10,11 +10,12 @@
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_abc.h"
 #include "gameswf/gameswf_disasm.h"
+#include "gameswf/gameswf_character.h"
 
 namespace gameswf
 {
 
-	as_avm2_function::as_avm2_function(abc_def* abc, int method, player* player) :
+	as_3_function::as_3_function(abc_def* abc, int method, player* player) :
 		as_function(player),
 		m_method(method),
 		m_abc(abc)
@@ -25,16 +26,123 @@ namespace gameswf
 		builtin_member("prototype", new as_object(player));
 	}
 
-	as_avm2_function::~as_avm2_function()
+	as_3_function::~as_3_function()
 	{
 	}
 
-	void	as_avm2_function::operator()(const fn_call& fn)
+	void	as_3_function::operator()(const fn_call& fn)
+	// dispatch
 	{
-		// execute it
+		assert(fn.env);
+
+		// try to use caller environment
+		// if the caller object has own environment then we use its environment
+		as_environment* env = fn.env;
+		if (fn.this_ptr)
+		{
+			if (fn.this_ptr->get_environment())
+			{
+				env = fn.this_ptr->get_environment();
+			}
+		}
+
+		// set 'this'
+		as_object* this_ptr = env->get_target();
+		if (fn.this_ptr)
+		{
+			this_ptr = fn.this_ptr;
+			if (this_ptr->m_this_ptr != NULL)
+			{
+				this_ptr = this_ptr->m_this_ptr.get_ptr();
+			}
+		}
+
+		// Create local registers.
+		array<as_value>	local_register;
+		local_register.resize(m_local_count + 1);
+
+		//	Register 0 holds the “this” object. This value is never null.
+		assert(this_ptr);
+		local_register[0] = this_ptr;
+
+		// Create stack.
+		array<as_value>	stack;
+
+		// Create scope stack.
+		array<as_value>	scope;
+
+		// Execute the actions.
+		execute(local_register, stack, scope, fn.result);
+
 	}
 
-	void as_avm2_function::read(stream* in)
+	void	as_3_function::execute(array<as_value>& lregister,
+		array<as_value>& stack,
+		array<as_value>& scope,
+		as_value* result)
+	{
+		int ip = 0;
+		do
+		{
+			Uint8 opcode = m_code[ip];
+			ip++;
+
+			switch (opcode)
+			{
+				case 0x24:	// pushbyte
+				{
+					int byte_value;
+					ip += read_vu30(byte_value, &m_code[ip]);
+					stack.push_back(byte_value);
+					break;
+				}
+
+				case 0x30:	// pushscope
+					scope.push_back(stack.back());
+					stack.resize(stack.size() - 1); 
+					break;
+
+				case 0x49:	// constructsuper
+				{
+					// stack: object, arg1, arg2, ..., argn
+					int arg_count;
+					ip += read_vu30(arg_count, &m_code[ip]);
+
+					as_object* obj = stack.back().to_object();
+					//TODO, construct super of obj
+
+					stack.resize(stack.size() - 1 - arg_count); 
+					break;
+				}
+
+				case 0x5D:	// findpropstrict
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+
+					//TODO
+
+					break;
+				}
+
+				case 0xD0:	// getlocal_0
+				case 0xD1:	// getlocal_1
+				case 0xD2:	// getlocal_2
+				case 0xD3:	// getlocal_3
+					stack.push_back(lregister[opcode & 0x03]);
+					break;
+
+				default:
+					log_msg("TODO opcode 0x%02X\n", opcode);
+					break;
+			}
+
+		}
+		while (ip < m_code.size());
+
+	}
+
+	void as_3_function::read(stream* in)
 	// read method_info
 	{
 		int param_count = in->read_vu30();
@@ -75,7 +183,7 @@ namespace gameswf
 
 	}
 
-	void as_avm2_function::read_body(stream* in)
+	void as_3_function::read_body(stream* in)
 	// read body_info
 	{
 		assert(m_method == in->read_vu30());

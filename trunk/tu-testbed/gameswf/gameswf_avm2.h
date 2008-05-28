@@ -93,7 +93,7 @@ namespace gameswf
 		void	read(stream* in, abc_def* abc);
 	};
 
-	struct as_avm2_function : public as_function
+	struct as_3_function : public as_function
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_3_FUNCTION };
@@ -114,6 +114,7 @@ namespace gameswf
 			HAS_PARAM_NAMES = 0x80
 		};
 
+		weak_ptr<as_object>	m_target;
 		smart_ptr<abc_def> m_abc;
 
 		// method_info
@@ -126,18 +127,26 @@ namespace gameswf
 
 		// body_info
 		int m_max_stack;
+
+		// this is the index of the highest-numbered local register plus one.	
 		int m_local_count;
+
 		int m_init_scope_depth;
 		int m_max_scope_depth;
-		array<Uint8> m_code;
+		membuf m_code;
 		array< smart_ptr<except_info> > m_exception;
 		array< smart_ptr<traits_info> > m_trait;
 
-		as_avm2_function(abc_def* abc, int method, player* player);
-		~as_avm2_function();
+		as_3_function(abc_def* abc, int method, player* player);
+		~as_3_function();
 
 		// Dispatch.
 		virtual void	operator()(const fn_call& fn);
+
+		void	execute(array<as_value>& lregister,
+			array<as_value>& stack,
+			array<as_value>& scope,
+			as_value* result);
 
 		void	read(stream* in);
 		void	read_body(stream* in);

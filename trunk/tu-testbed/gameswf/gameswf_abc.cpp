@@ -239,7 +239,7 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("method_info count: %d\n", n));
 		for (i = 0; i < n; i++)
 		{
-			as_avm2_function* info = new as_avm2_function(this, i, m->get_player());
+			as_3_function* info = new as_3_function(this, i, m->get_player());
 			info->read(in);
 			m_method[i] = info;
 		}

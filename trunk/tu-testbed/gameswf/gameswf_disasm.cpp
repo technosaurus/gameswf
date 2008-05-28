@@ -51,6 +51,37 @@ namespace gameswf
 		ARG_OFFSETLIST,
 	};
 
+	int read_vu30( int& result, const uint8 *args )
+	{
+		result = args[0];
+
+		if ((result & 0x00000080) == 0)
+		{
+			return 1;
+		}
+
+		result = (result & 0x0000007F) | args[1] << 7;
+		if ((result & 0x00004000) == 0)
+		{
+			return 2;
+		}
+
+		result = (result & 0x00003FFF) | args[2] << 14;
+		if ((result & 0x00200000) == 0)
+		{
+			return 3;
+		}
+
+		result = (result & 0x001FFFFF) | args[3] << 21;
+		if ((result & 0x10000000) == 0)
+		{
+			return 4;
+		}
+
+		result = (result & 0x0FFFFFFF) | args[4] << 28;
+		return 5;
+	}
+
 	struct inst_info_avm2
 	{
 		const char*	m_instruction;
@@ -192,38 +223,6 @@ namespace gameswf
 		}
 
 		bool has_argument() const { return m_arg_formats.size() != 0;}
-
-		int read_vu30( int& result, const uint8 *args )
-		{
-			result = args[0];
-
-			if ((result & 0x00000080) == 0)
-			{
-				return 1;
-			}
-
-			result = (result & 0x0000007F) | args[1] << 7;
-			if ((result & 0x00004000) == 0)
-			{
-				return 2;
-			}
-
-			result = (result & 0x00003FFF) | args[2] << 14;
-			if ((result & 0x00200000) == 0)
-			{
-				return 3;
-			}
-
-			result = (result & 0x001FFFFF) | args[3] << 21;
-			if ((result & 0x10000000) == 0)
-			{
-				return 4;
-			}
-
-			result = (result & 0x0FFFFFFF) | args[4] << 28;
-			return 5;
-		}
-
 	};
 
 	static hash<int, inst_info_avm2> s_instr;
@@ -234,7 +233,7 @@ namespace gameswf
 		s_instr.clear();
 	}
 
-	void	log_disasm_avm2(const array<Uint8>& data, const abc_def* def)
+	void	log_disasm_avm2(const membuf& data, const abc_def* def)
 	// Disassemble one instruction to the log, AVM2
 	{
 		if (s_instr.size() == 0)
