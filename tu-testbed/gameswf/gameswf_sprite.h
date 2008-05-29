@@ -64,6 +64,9 @@ namespace gameswf
 		bool m_on_event_load_called;
 		smart_ptr<character> m_canvas;
 
+		// flash9
+		hash<int, smart_ptr<as_function> >* m_script;	// <frame, script>
+
 		sprite_instance(player* player, movie_definition_sub* def, root* r, character* parent, int id);
 		virtual ~sprite_instance();
 
@@ -234,6 +237,9 @@ namespace gameswf
 		virtual const char*	typeof() { return "movieclip"; }
 		virtual	void enumerate(as_environment* env);
 		virtual	bool is_enabled() const;
+
+		// flash9
+		void add_script(int frame, as_function* func);
 	};
 }
 

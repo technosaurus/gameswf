@@ -188,6 +188,9 @@ namespace gameswf
 		// reset root FPS
 		map->add("setFPS", sprite_set_fps);
 
+		// Flash9
+		map->add("addFrameScript", sprite_add_script);
+
 	}
 
 	// Standard property lookup.

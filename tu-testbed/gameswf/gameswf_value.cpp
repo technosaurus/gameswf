@@ -54,6 +54,18 @@ namespace gameswf
 		return to_tu_string().c_str();
 	}
 
+	const char*	as_value::to_xstring() const
+	// Conversion to string, for debuging
+	{
+		static char buf[16];
+		if (m_type == OBJECT)
+		{
+			snprintf(buf, 16, "0x%p", m_object);
+			return buf;
+		}
+		return to_tu_string().c_str();
+	}
+
 
 	const tu_stringi&	as_value::to_tu_stringi() const
 	{

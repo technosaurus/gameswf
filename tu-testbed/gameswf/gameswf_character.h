@@ -72,7 +72,7 @@ namespace gameswf
 		player* get_player() const { return m_player.get_ptr(); }
 
 		// flash9
-		virtual as_function* get_class_constructor(int symbol_id) const { return NULL; }
+		virtual as_function* instanciate_class(character* ch) const { return NULL; }
 
 		private:
 

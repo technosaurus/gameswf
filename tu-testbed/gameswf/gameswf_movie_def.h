@@ -402,7 +402,7 @@ namespace gameswf
 		virtual bool is_multithread() const { return m_thread != NULL; }
 
 		// flash9
-		virtual as_function* get_class_constructor(int symbol_id) const;
+		virtual as_function* instanciate_class(character* ch) const;
 	};
 
 	int movie_def_loader(void* arg);

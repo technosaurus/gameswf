@@ -98,6 +98,9 @@ namespace gameswf
 		// Useful when changing types/values.
 		exported_module void	drop_refs();
 
+		// for debuging
+		exported_module const char*	to_xstring() const;
+
 		exported_module const char*	to_string() const;
 		exported_module const tu_string&	to_tu_string() const;
 		exported_module const tu_stringi&	to_tu_stringi() const;
