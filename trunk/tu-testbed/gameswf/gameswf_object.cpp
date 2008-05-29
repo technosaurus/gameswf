@@ -408,6 +408,12 @@ namespace gameswf
 						it->first.c_str(), val.to_object());
 				}
 				else
+				if (cast_to<as_3_function>(val.to_object()))
+				{
+					printf("%s%s: <as_3_function 0x%p>\n", tabs.c_str(), 
+						it->first.c_str(), val.to_object());
+				}
+				else
 				{
 					printf("%s%s: <as_c_function 0x%p>\n", tabs.c_str(), 
 						it->first.c_str(), val.to_object());

@@ -40,7 +40,8 @@ namespace gameswf
 		m_as_environment(player),
 		m_mouse_state(UP),
 		m_enabled(true),
-		m_on_event_load_called(false)
+		m_on_event_load_called(false),
+		m_script(NULL)
 	{
 		assert(m_def != NULL);
 		assert(m_root != NULL);
@@ -60,6 +61,7 @@ namespace gameswf
 	sprite_instance::~sprite_instance()
 	{
 //		printf("delete sprite 0x%p\n", this);
+		delete m_script;
 	}
 
 	bool sprite_instance::has_keypress_event()
@@ -493,6 +495,16 @@ namespace gameswf
 
 		execute_actions(&m_as_environment, m_action_list);
 		m_action_list.resize(0);
+
+		// flash9
+		if (m_script)
+		{
+			smart_ptr<as_function> frame_script;
+			if (m_script->get(m_current_frame, &frame_script) && frame_script != NULL)
+			{
+				gameswf::call_method(frame_script.get_ptr(), &m_as_environment, this, 0, 0);
+			}
+		}
 	}
 
 	void sprite_instance::do_actions(const array<action_buffer*>& action_list)
@@ -1467,4 +1479,15 @@ namespace gameswf
 		return false;
 	}
 
+	// flash9
+	void sprite_instance::add_script(int frame, as_function* func)
+	// frame is 0-based
+	{
+		assert(frame >= 0 && frame < m_def->get_frame_count());
+		if (m_script == NULL)
+		{
+			m_script = new hash<int, smart_ptr<as_function> >;
+		}
+		m_script->set(frame, func);
+	}
 }

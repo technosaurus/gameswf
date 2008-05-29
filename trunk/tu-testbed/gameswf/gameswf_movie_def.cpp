@@ -717,17 +717,58 @@ namespace gameswf
 	}
 
 	// flash9
-	as_function* movie_def_impl::get_class_constructor(int symbol_id) const
+	as_function* movie_def_impl::instanciate_class(character* ch) const
 	{
 		// If the character ID is zero, the class is associated with the main timeline 
 		// -1 means _root
-		int id = symbol_id == -1 ? 0 : symbol_id;
+		int id = ch->get_id();
+		if (id == -1)
+		{
+			id = 0;
+		}
 
 		tu_string class_name;
 		if (m_symbol_class.get(id, &class_name))
 		{
-			// get function3 from abc
 			assert(m_abc != NULL);
+
+			// create traits
+			smart_ptr<instance_info>& ii = m_abc->m_instance[id];
+			for (int i = 0; i < ii->m_trait.size(); i++)
+			{
+				smart_ptr<traits_info>& ti = ii->m_trait[i];
+				const char* name = m_abc->get_multiname(ti->m_name);
+				as_value val;
+				switch (ti->m_kind)
+				{
+					case traits_info::Trait_Const:
+					case traits_info::Trait_Slot:
+						//TODO
+						val = 0;
+						break;
+
+					case traits_info::Trait_Getter:
+					case traits_info::Trait_Setter:
+					case traits_info::Trait_Method:
+					{
+						int index = ti->trait_method.m_method;
+						val.set_as_object(m_abc->m_method[index].get_ptr());
+						break;
+					}
+
+					case traits_info::Trait_Class:
+					case traits_info::Trait_Function:
+						assert(0&&"todo");
+						break;
+
+					default:
+						assert(0);
+				}
+
+				ch->set_member(name, val);
+			}
+
+			// get function3 from abc
 			return m_abc->get_class_constructor(class_name);
 		}
 		return NULL;

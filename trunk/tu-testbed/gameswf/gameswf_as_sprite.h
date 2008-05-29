@@ -54,6 +54,10 @@ namespace gameswf
 
 	// gameSWF extension
 	void sprite_set_fps(const fn_call& fn);
+
+	// flash9
+	void sprite_add_script(const fn_call& fn);
+
 }
 
 #endif

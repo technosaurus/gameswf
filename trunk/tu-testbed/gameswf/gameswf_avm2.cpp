@@ -72,7 +72,9 @@ namespace gameswf
 		array<as_value>	scope;
 
 		// Execute the actions.
+		IF_VERBOSE_ACTION(log_msg("\nEX: call method #%d\n", m_method));
 		execute(local_register, stack, scope, fn.result);
+		IF_VERBOSE_ACTION(log_msg("EX: ended. stack_size=%d, scope_size=%d\n", stack.size(), scope.size()));
 
 	}
 
@@ -84,9 +86,7 @@ namespace gameswf
 		int ip = 0;
 		do
 		{
-			Uint8 opcode = m_code[ip];
-			ip++;
-
+			Uint8 opcode = m_code[ip++];
 			switch (opcode)
 			{
 				case 0x24:	// pushbyte
@@ -94,13 +94,28 @@ namespace gameswf
 					int byte_value;
 					ip += read_vu30(byte_value, &m_code[ip]);
 					stack.push_back(byte_value);
+
+					IF_VERBOSE_ACTION(log_msg("EX: pushbyte\t %d\n", byte_value));
 					break;
 				}
 
 				case 0x30:	// pushscope
-					scope.push_back(stack.back());
+				{
+					as_value& val = stack.back();
+					scope.push_back(val);
+
+					IF_VERBOSE_ACTION(log_msg("EX: pushscope\t %s\n", val.to_xstring()));
+
 					stack.resize(stack.size() - 1); 
 					break;
+				}
+
+				case 0x47:	// returnvoid
+				{
+					IF_VERBOSE_ACTION(log_msg("EX: returnvoid\t\n"));
+					result->set_undefined();
+					break;
+				}
 
 				case 0x49:	// constructsuper
 				{
@@ -109,9 +124,49 @@ namespace gameswf
 					ip += read_vu30(arg_count, &m_code[ip]);
 
 					as_object* obj = stack.back().to_object();
-					//TODO, construct super of obj
+					stack.resize(stack.size() - 1);
+					for (int i = 0; i < arg_count; i++)
+					{
+						as_value& val = stack.back();
+						stack.resize(stack.size() - 1);
+					}
 
-					stack.resize(stack.size() - 1 - arg_count); 
+					//TODO: construct super of obj
+
+					IF_VERBOSE_ACTION(log_msg("EX: constructsuper\t 0x%p(args:%d)\n", obj, arg_count));
+
+					break;
+				}
+
+				case 0x4F:	// callpropvoid, Call a property, discarding the return value.
+				// Stack: …, obj, [ns], [name], arg1,...,argn => …
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					int arg_count;
+					ip += read_vu30(arg_count, &m_code[ip]);
+
+					as_environment env(get_player());
+					for (int i = 0; i < arg_count; i++)
+					{
+						as_value& val = stack[stack.size() - 1 - i];
+						env.push(val);
+					}
+					stack.resize(stack.size() - arg_count);
+
+					as_object* obj = stack.back().to_object();
+					stack.resize(stack.size() - 1);
+
+					as_value func;
+					if (obj->get_member(name, &func))
+					{
+						call_method(func, &env, obj,	arg_count, env.get_top_index());
+					}
+
+					IF_VERBOSE_ACTION(log_msg("EX: callpropvoid\t 0x%p.%s(args:%d)\n", obj, name, arg_count));
+
 					break;
 				}
 
@@ -119,9 +174,47 @@ namespace gameswf
 				{
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
 
-					//TODO
+					// search property in scope
+					as_object* obj = NULL;
+					for (int i = scope.size() - 1; i >= 0; i--)
+					{
+						as_value val;
+						if (scope[i].get_member(name, &val))
+						{
+							obj = scope[i].to_object();
+							break;
+						}
+					}
 
+					IF_VERBOSE_ACTION(log_msg("EX: findpropstrict\t %s, scope=0x%p\n", name, obj));
+
+					stack.push_back(obj);
+					break;
+				}
+
+				// This will find the object on the scope stack that contains the property,
+				// and then will get the value from that object
+				case 0x60:	// getlex, Find and get a property.
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					// search property in scope
+					as_value val;
+					for (int i = scope.size() - 1; i >= 0; i--)
+					{
+						if (scope[i].get_member(name, &val))
+						{
+							break;
+						}
+					}
+
+					IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
+
+					stack.push_back(val);
 					break;
 				}
 
@@ -129,17 +222,20 @@ namespace gameswf
 				case 0xD1:	// getlocal_1
 				case 0xD2:	// getlocal_2
 				case 0xD3:	// getlocal_3
-					stack.push_back(lregister[opcode & 0x03]);
+				{
+					as_value& val = lregister[opcode & 0x03];
+					stack.push_back(val);
+					IF_VERBOSE_ACTION(log_msg("EX: getlocal_%d\t %s\n", opcode & 0x03, val.to_xstring()));
 					break;
+				}
 
 				default:
 					log_msg("TODO opcode 0x%02X\n", opcode);
-					break;
+					return;
 			}
 
 		}
 		while (ip < m_code.size());
-
 	}
 
 	void as_3_function::read(stream* in)

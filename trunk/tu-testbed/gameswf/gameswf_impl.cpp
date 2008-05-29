@@ -119,7 +119,7 @@ namespace gameswf
 		// try SymbolClass tag
 		if (m_registered_class_constructor == NULL)
 		{
-			m_registered_class_constructor = get_class_constructor(ch->get_id());
+			m_registered_class_constructor = instanciate_class(ch);
 		}
 
 		if (m_registered_class_constructor != NULL)

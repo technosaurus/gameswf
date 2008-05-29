@@ -506,4 +506,16 @@ namespace gameswf
 		canva->set_line_style(width, color);
 	}
 
+	// flash9
+	void sprite_add_script(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		if (fn.nargs == 2) 
+		{
+			// arg #1 - frame number, 0 based
+			// arg #2 - function
+			sprite->add_script(fn.arg(0).to_int(), fn.arg(1).to_function());
+		}
+	}
+
 }
