@@ -66,6 +66,7 @@ namespace gameswf
 
 		// flash9
 		hash<int, smart_ptr<as_function> >* m_script;	// <frame, script>
+		smart_ptr<as_function> m_frame_script;	// current script
 
 		sprite_instance(player* player, movie_definition_sub* def, root* r, character* parent, int id);
 		virtual ~sprite_instance();
@@ -135,6 +136,7 @@ namespace gameswf
 		void	execute_frame_tags_reverse(int frame);
 		execute_tag*	find_previous_replace_or_add_tag(int frame, int depth, int id);
 		void	execute_remove_tags(int frame);
+		void	set_frame_script(int frame);	// flash9
 		void	do_actions();
 		virtual void do_actions(const array<action_buffer*>& action_list);
 		exported_module void	goto_frame(const tu_string& target_frame);

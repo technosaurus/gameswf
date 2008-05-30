@@ -424,6 +424,9 @@ namespace gameswf
 			}
 		}
 
+		// flash9
+		set_frame_script(frame);
+
 	}
 
 	void	sprite_instance::execute_frame_tags_reverse(int frame)
@@ -497,13 +500,20 @@ namespace gameswf
 		m_action_list.resize(0);
 
 		// flash9
+		if (m_frame_script != NULL)
+		{
+			// run frame script once per frame
+			gameswf::call_method(m_frame_script.get_ptr(), &m_as_environment, this, 0, 0);
+			m_frame_script = NULL;
+		}
+	}
+
+	void	sprite_instance::set_frame_script(int frame)
+	{
+		m_frame_script = NULL;
 		if (m_script)
 		{
-			smart_ptr<as_function> frame_script;
-			if (m_script->get(m_current_frame, &frame_script) && frame_script != NULL)
-			{
-				gameswf::call_method(frame_script.get_ptr(), &m_as_environment, this, 0, 0);
-			}
+			m_script->get(frame, &m_frame_script);
 		}
 	}
 
@@ -1489,5 +1499,10 @@ namespace gameswf
 			m_script = new hash<int, smart_ptr<as_function> >;
 		}
 		m_script->set(frame, func);
+
+		if (frame == m_current_frame)
+		{
+			set_frame_script(frame);
+		}
 	}
 }
