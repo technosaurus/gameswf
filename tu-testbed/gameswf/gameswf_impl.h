@@ -248,6 +248,7 @@ namespace gameswf
 	void	define_abc_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	symbol_class_loader(stream* in, int tag_type, movie_definition_sub* m);
 	void	define_scene_loader(stream* in, int tag_type, movie_definition_sub* m);
+	void	define_font_name(stream* in, int tag_type, movie_definition_sub* m);
 
 }	// end namespace gameswf
 

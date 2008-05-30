@@ -321,6 +321,7 @@ namespace gameswf
 			register_tag_loader(83, define_shape_loader);		// DefineShape4 - Flash 8
 			register_tag_loader(84, define_shape_morph_loader); //DefineMorphShape2 - Flash 9
 			register_tag_loader(86, define_scene_loader);		// DefineSceneAndFrameLabelData - Flash 9
+			register_tag_loader(88, define_font_name);		// DefineFontName - Flash 9
 		}
 	}
 
@@ -1153,6 +1154,32 @@ namespace gameswf
 		abc_def* abc = new abc_def(m->get_player());
 		abc->read(in, m);
 		m->add_abc(name, abc);
+	}
+
+	void	define_font_name(stream* in, int tag_type, movie_definition_sub* m)
+	{
+		assert(tag_type == 88);
+		IF_VERBOSE_PARSE(log_msg("\n  define_font_name\n"));
+
+		int font_id = in->read_u16();
+
+		tu_string font_name;
+		in->read_string(&font_name);
+
+		tu_string font_copyright;	// unused
+		in->read_string(&font_copyright);
+
+		font*	f = m->get_font(font_id);
+		if (f)
+		{
+			f->set_name(font_name);
+
+			// font name contains Bold/Italic keyword
+			// may be not correct !
+			f->set_bold(false);
+			f->set_italic(false);
+		}
+
 	}
 
 	void	define_scene_loader(stream* in, int tag_type, movie_definition_sub* m)
