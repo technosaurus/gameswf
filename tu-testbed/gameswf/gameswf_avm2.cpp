@@ -188,14 +188,37 @@ namespace gameswf
 						}
 					}
 
-					IF_VERBOSE_ACTION(log_msg("EX: findpropstrict\t %s, scope=0x%p\n", name, obj));
+					IF_VERBOSE_ACTION(log_msg("EX: findpropstrict\t %s, obj=0x%p\n", name, obj));
 
 					stack.push_back(obj);
 					break;
 				}
 
-				// This will find the object on the scope stack that contains the property,
-				// and then will get the value from that object
+				case 0x5E:	// findproperty, Search the scope stack for a property
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					// search property in scope
+					as_object* obj = NULL;
+					for (int i = scope.size() - 1; i >= 0; i--)
+					{
+						as_value val;
+						if (scope[i].get_member(name, &val))
+						{
+							obj = scope[i].to_object();
+							break;
+						}
+					}
+
+					IF_VERBOSE_ACTION(log_msg("EX: findproperty\t %s, obj=0x%p\n", name, obj));
+
+					stack.push_back(obj);
+					break;
+
+				}
+
 				case 0x60:	// getlex, Find and get a property.
 				{
 					int index;
@@ -215,6 +238,25 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
 
 					stack.push_back(val);
+					break;
+				}
+
+				case 0x68:	// initproperty, Initialize a property.
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					as_value& val = stack[stack.size() - 1];
+					as_object* obj = stack[stack.size() - 2].to_object();
+					if (obj)
+					{
+						obj->set_member(name, val);
+					}
+
+					IF_VERBOSE_ACTION(log_msg("EX: initproperty\t 0x%p.%s=%s\n", obj, name, val.to_xstring()));
+
+					stack.resize(stack.size() - 2);
 					break;
 				}
 
