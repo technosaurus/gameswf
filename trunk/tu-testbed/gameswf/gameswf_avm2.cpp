@@ -96,6 +96,43 @@ namespace gameswf
 					stack.push_back(byte_value);
 
 					IF_VERBOSE_ACTION(log_msg("EX: pushbyte\t %d\n", byte_value));
+
+					break;
+				}
+
+				case 0x2D:	// pushint
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					int val = m_abc->get_integer(index);
+					stack.push_back(val);
+
+					IF_VERBOSE_ACTION(log_msg("EX: pushint\t %d\n", val));
+
+					break;
+				}
+
+				case 0x2C:	// pushstring
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* val = m_abc->get_string(index);
+					stack.push_back(val);
+
+					IF_VERBOSE_ACTION(log_msg("EX: pushstring\t '%s'\n", val));
+
+					break;
+				}
+
+				case 0x2F:	// pushdouble
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					double val = m_abc->get_double(index);
+					stack.push_back(val);
+
+					IF_VERBOSE_ACTION(log_msg("EX: pushdouble\t %f\n", val));
+
 					break;
 				}
 
@@ -160,7 +197,7 @@ namespace gameswf
 					stack.resize(stack.size() - 1);
 
 					as_value func;
-					if (obj->get_member(name, &func))
+					if (obj && obj->get_member(name, &func))
 					{
 						call_method(func, &env, obj,	arg_count, env.get_top_index());
 					}
@@ -177,7 +214,13 @@ namespace gameswf
 					const char* name = m_abc->get_multiname(index);
 
 					// search property in scope
-					as_object* obj = NULL;
+
+					// If the property is resolved then the object it was resolved in is pushed
+					// onto the stack.
+					// If the property is unresolved in all objects on the scope stack then 
+					// the global object is pushed onto the stack.
+					as_object* obj = get_global();
+
 					for (int i = scope.size() - 1; i >= 0; i--)
 					{
 						as_value val;
@@ -200,8 +243,12 @@ namespace gameswf
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
 
-					// search property in scope
-					as_object* obj = NULL;
+					// If the property is resolved then the object it was resolved in is pushed
+					// onto the stack.
+					// If the property is unresolved in all objects on the scope stack then 
+					// the global object is pushed onto the stack.
+					as_object* obj = get_global();
+
 					for (int i = scope.size() - 1; i >= 0; i--)
 					{
 						as_value val;
