@@ -159,6 +159,16 @@ namespace gameswf
 			return m_string[index].c_str(); 
 		}
 
+		inline int get_integer(int index) const
+		{
+			return m_integer[index]; 
+		}
+
+		inline double get_double(int index) const
+		{
+			return m_double[index]; 
+		}
+
 		inline const char* get_namespace(int index) const
 		{
 			return get_string(m_namespace[index].m_name); 
