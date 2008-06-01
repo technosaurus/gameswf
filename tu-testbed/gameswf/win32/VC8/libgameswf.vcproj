@@ -237,6 +237,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_event.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_event.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_flash.cpp"
 				>
 			</File>
@@ -298,6 +306,14 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_mcloader.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_mouse_event.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_mouse_event.h"
 				>
 			</File>
 			<File

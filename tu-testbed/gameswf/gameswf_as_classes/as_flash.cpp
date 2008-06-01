@@ -5,6 +5,7 @@
 
 #include "gameswf/gameswf_as_classes/as_flash.h"
 #include "gameswf/gameswf_as_classes/as_geom.h"
+#include "gameswf/gameswf_as_classes/as_event.h"
 
 namespace gameswf
 {
@@ -19,6 +20,9 @@ namespace gameswf
 
 		// constant
 		flash_obj->builtin_member("geom", geom_init(player));
+
+		// flash9, events handler
+		flash_obj->builtin_member("Events",  event_init(player));
 
 		return flash_obj;
 	}

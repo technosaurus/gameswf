@@ -27,6 +27,9 @@ namespace gameswf
 	exported_module void	as_object_dump(const fn_call& fn);
 	exported_module void	as_global_object_ctor(const fn_call& fn);
 
+	// flash9
+	exported_module void	as_object_add_event_listener(const fn_call& fn);
+
 	struct as_object : public as_object_interface
 	{
 		// Unique id of a gameswf resource
