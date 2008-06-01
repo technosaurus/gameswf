@@ -128,6 +128,32 @@ namespace gameswf
 		fn.result->set_as_object(new as_object(fn.get_player()));
 	}
 
+	// flash9
+	void	as_object_add_event_listener(const fn_call& fn)
+	// add 'this' as listener of as_event object
+	{
+		if (fn.nargs >= 2)
+		{
+			// find event handler
+
+			assert(fn.this_ptr);
+			as_value val;
+			if (fn.this_ptr->get_global()->get_member("flash", &val) == false)
+			{
+				return;
+			}
+
+			as_object* flash_package = val.to_object();
+			if (flash_package->get_global()->get_member("MouseEvent", &val) == false)
+			{
+				return;
+			}
+
+
+		}
+	}
+		
+
 	// this stuff should be high optimized
 	// therefore we can't use here set_member(...)
 	as_object::as_object(player* player) :

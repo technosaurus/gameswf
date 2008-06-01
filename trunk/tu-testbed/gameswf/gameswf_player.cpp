@@ -119,6 +119,9 @@ namespace gameswf
 		map->add("watch", as_object_watch);
 		map->add("unwatch", as_object_unwatch);
 
+		// flash9
+		map->add("addEventListener", as_object_add_event_listener);
+
 		// for debugging
 #ifdef _DEBUG
 		map->add("dump", as_object_dump);

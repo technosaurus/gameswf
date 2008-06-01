@@ -187,8 +187,10 @@ namespace gameswf
 		AS_MCLOADER,
 		AS_TIMER,
 		AS_LOADVARS,
-//		AS_NUMBER,
-//		AS_BOOLEAN,
+
+		// flash9
+		AS_EVENT,
+		AS_MOUSE_EVENT,
 
 		// plugins
 		AS_PLUGIN_MYDB,

@@ -71,10 +71,23 @@ namespace gameswf
 		// Create scope stack.
 		array<as_value>	scope;
 
+		// push '_global' into scope
+		scope.push_back(get_global());
+
+		// get flash package
+		as_value val;
+		get_global()->get_member("flash", &val);
+		as_object* flash = val.to_object();
+		assert(flash);
+
+		// push 'Events'  into scope
+		flash->get_member("Events", &val);
+		scope.push_back(val);
+
 		// Execute the actions.
 		IF_VERBOSE_ACTION(log_msg("\nEX: call method #%d\n", m_method));
 		execute(local_register, stack, scope, fn.result);
-		IF_VERBOSE_ACTION(log_msg("EX: ended. stack_size=%d, scope_size=%d\n", stack.size(), scope.size()));
+		IF_VERBOSE_ACTION(log_msg("EX: ended. stack_size=%d\n", stack.size()));
 
 	}
 
@@ -214,13 +227,7 @@ namespace gameswf
 					const char* name = m_abc->get_multiname(index);
 
 					// search property in scope
-
-					// If the property is resolved then the object it was resolved in is pushed
-					// onto the stack.
-					// If the property is unresolved in all objects on the scope stack then 
-					// the global object is pushed onto the stack.
-					as_object* obj = get_global();
-
+					as_object* obj = NULL;
 					for (int i = scope.size() - 1; i >= 0; i--)
 					{
 						as_value val;
@@ -243,12 +250,7 @@ namespace gameswf
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
 
-					// If the property is resolved then the object it was resolved in is pushed
-					// onto the stack.
-					// If the property is unresolved in all objects on the scope stack then 
-					// the global object is pushed onto the stack.
-					as_object* obj = get_global();
-
+					as_object* obj = NULL;
 					for (int i = scope.size() - 1; i >= 0; i--)
 					{
 						as_value val;
@@ -285,6 +287,27 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
 
 					stack.push_back(val);
+					break;
+				}
+
+				case 0x66:	// getproperty
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					as_object* obj = stack.back().to_object();
+					if (obj)
+					{
+						obj->get_member(name, &stack.back());
+					}
+					else
+					{
+						stack.back().set_undefined();
+					}
+
+					IF_VERBOSE_ACTION(log_msg("EX: getproperty\t %s, value=%s\n", name, stack.back().to_xstring()));
+
 					break;
 				}
 
