@@ -24,25 +24,25 @@
 				Optimization="0"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBGAMESWF_EXPORTS;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1;USE_STACKWALKER"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;LIBGAMESWF_EXPORTS;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1;USE_STACKWALKER;HAVE_ON_ENABLED_EXTENSION"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="0"
 				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
-				WarningLevel="2"
+				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avformat-50.lib avcodec-51.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib swscale-0.lib"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib avutil-49.lib avformat-50.lib avcodec-51.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib swscale-0.lib"
 				OutputFile="/WINDOWS/system32/libgameswf-d.dll"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
 				GenerateDebugInformation="TRUE"
 				SubSystem="2"
-				ImportLibrary="/libgame/lib/libgameswf-d.lib"
+				ImportLibrary="c:\libgame\lib\libgameswf-d.lib"
 				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
@@ -76,14 +76,12 @@
 				AdditionalOptions="/D _CRT_SECURE_NO_DEPRECATE /D SLOT /D EMULATE_INTTYPES
 "
 				Optimization="4"
-				InlineFunctionExpansion="0"
-				EnableIntrinsicFunctions="FALSE"
-				ImproveFloatingPointConsistency="TRUE"
-				FavorSizeOrSpeed="1"
+				ImproveFloatingPointConsistency="FALSE"
+				FavorSizeOrSpeed="0"
 				OmitFramePointers="FALSE"
-				OptimizeForProcessor="0"
-				OptimizeForWindowsApplication="FALSE"
-				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
+				EnableFiberSafeOptimizations="FALSE"
+				OptimizeForProcessor="1"
+				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\;P:\COMMON\CODE\LIB\GAMESWF\dep\include;P:\COMMON\CODE\LIB\GAMESWF\dep\include\SDL"
 				PreprocessorDefinitions="WIN32;_WINDOWS;_USRDLL;LIBGAMESWF_EXPORTS;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1"
 				MinimalRebuild="FALSE"
 				BasicRuntimeChecks="0"
@@ -100,10 +98,10 @@
 				OutputFile="/WINDOWS/system32/libgameswf.dll"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
-				GenerateDebugInformation="FALSE"
+				GenerateDebugInformation="TRUE"
 				SubSystem="2"
-				ImportLibrary="/libgame/lib/libgameswf.lib"
-				TargetMachine="0"/>
+				ImportLibrary="c:/libgame/lib/libgameswf.lib"
+				TargetMachine="1"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -138,6 +136,12 @@
 				RelativePath="..\..\gameswf_as_classes\as_array.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_boolean.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_boolean.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_broadcaster.cpp">
 			</File>
 			<File
@@ -150,16 +154,40 @@
 				RelativePath="..\..\gameswf_as_classes\as_color.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_color_transform.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_color_transform.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_date.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_date.h">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_db.cpp">
+				RelativePath="..\..\gameswf_as_classes\as_event.cpp">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_db.h">
+				RelativePath="..\..\gameswf_as_classes\as_event.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_flash.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_flash.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_geom.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_geom.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_global.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_global.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_key.cpp">
@@ -168,16 +196,34 @@
 				RelativePath="..\..\gameswf_as_classes\as_key.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_loadvars.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_loadvars.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_math.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_math.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_matrix.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_matrix.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_mcloader.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_mcloader.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_mouse_event.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_mouse_event.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_netconnection.cpp">
@@ -190,6 +236,18 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_netstream.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_number.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_number.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_point.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_point.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_selection.cpp">
@@ -210,16 +268,22 @@
 				RelativePath="..\..\gameswf_as_classes\as_string.h">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_table.cpp">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_as_classes\as_table.h">
-			</File>
-			<File
 				RelativePath="..\..\gameswf_as_classes\as_textformat.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_textformat.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_timer.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_timer.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_transform.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_transform.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_classes\as_xmlsocket.cpp">
@@ -231,10 +295,16 @@
 		<Filter
 			Name="Source Files">
 			<File
+				RelativePath="..\..\gameswf_abc.cpp">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_action.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_sprite.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_avm2.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_button.cpp">
@@ -246,10 +316,19 @@
 				RelativePath="..\..\gameswf_character.cpp">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_disasm.cpp">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_dlist.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_environment.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_filters.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_filters.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_font.cpp">
@@ -277,6 +356,9 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_object.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_player.cpp">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_render.cpp">
@@ -315,9 +397,6 @@
 				RelativePath="..\..\gameswf_text.cpp">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_timers.cpp">
-			</File>
-			<File
 				RelativePath="..\..\gameswf_tools.cpp">
 			</File>
 			<File
@@ -338,9 +417,6 @@
 		</Filter>
 		<Filter
 			Name="base">
-			<File
-				RelativePath="..\..\..\base\config.h">
-			</File>
 			<File
 				RelativePath="..\..\..\base\container.cpp">
 			</File>
@@ -397,12 +473,6 @@
 			</File>
 			<File
 				RelativePath="..\..\..\base\membuf.h">
-			</File>
-			<File
-				RelativePath="..\..\..\base\ogl.cpp">
-			</File>
-			<File
-				RelativePath="..\..\..\base\ogl.h">
 			</File>
 			<File
 				RelativePath="..\..\..\base\png_helper.cpp">
@@ -501,10 +571,16 @@
 				RelativePath="..\..\gameswf.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_abc.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_action.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_as_sprite.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_avm2.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_button.h">
@@ -514,6 +590,9 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_character.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_disasm.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_dlist.h">
@@ -591,9 +670,6 @@
 				RelativePath="..\..\gameswf_text.h">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_timers.h">
-			</File>
-			<File
 				RelativePath="..\..\gameswf_types.h">
 			</File>
 			<File
@@ -621,6 +697,12 @@
 				RelativePath="..\..\..\net\http_client.h">
 			</File>
 			<File
+				RelativePath="..\..\..\net\http_helper.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\net\http_helper.h">
+			</File>
+			<File
 				RelativePath="..\..\..\net\net_interface.h">
 			</File>
 			<File
@@ -637,18 +719,18 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="plugins">
+			Name="lib3ds-extension">
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_def.cpp">
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_def.cpp">
 			</File>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_def.h">
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_def.h">
 			</File>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_inst.cpp">
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_inst.cpp">
 			</File>
 			<File
-				RelativePath="..\..\plugins\lib3ds\gameswf_3ds_inst.h">
+				RelativePath="..\..\extensions\lib3ds\gameswf_3ds_inst.h">
 			</File>
 		</Filter>
 		<Filter

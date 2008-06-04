@@ -25,6 +25,11 @@
 #include "gameswf/gameswf_freetype.h"
 #include "gameswf/gameswf_player.h"
 
+
+#ifdef _WIN32
+#	include <Winsock.h>
+#endif
+
 void	print_usage()
 // Brief instructions.
 {
@@ -228,6 +233,7 @@ int	main(int argc, char *argv[])
 		float	tex_lod_bias;
 
 	#ifdef _WIN32
+
 		WSADATA wsaData;
 
 		int iResult = WSAStartup( MAKEWORD(2,2), &wsaData );

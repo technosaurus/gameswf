@@ -24,7 +24,6 @@
 
 "
 				Optimization="0"
-				FavorSizeOrSpeed="1"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
 				PreprocessorDefinitions="WIN32;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1"
@@ -50,7 +49,7 @@
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories=""
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
-				GenerateDebugInformation="FALSE"
+				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Release/swfvc.pdb"
 				SubSystem="1"
 				StackReserveSize="0"
@@ -96,7 +95,7 @@
 				Optimization="0"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1;USE_STACKWALKER"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
@@ -113,7 +112,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib libgameswf-d.lib"
+				AdditionalDependencies="sdl.lib sdlmain.lib opengl32.lib WinMM.lib ws2_32.lib libgameswf-d.lib"
 				OutputFile=".\Debug/swfplayer-d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
