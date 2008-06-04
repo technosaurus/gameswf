@@ -1493,16 +1493,18 @@ namespace gameswf
 	void sprite_instance::add_script(int frame, as_function* func)
 	// frame is 0-based
 	{
-		assert(frame >= 0 && frame < m_def->get_frame_count());
-		if (m_script == NULL)
+		if (frame >= 0 && frame < m_def->get_frame_count())
 		{
-			m_script = new hash<int, smart_ptr<as_function> >;
-		}
-		m_script->set(frame, func);
+			if (m_script == NULL)
+			{
+				m_script = new hash<int, smart_ptr<as_function> >;
+			}
+			m_script->set(frame, func);
 
-		if (frame == m_current_frame)
-		{
-			set_frame_script(frame);
+			if (frame == m_current_frame)
+			{
+				set_frame_script(frame);
+			}
 		}
 	}
 }
