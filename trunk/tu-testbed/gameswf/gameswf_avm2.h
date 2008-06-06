@@ -10,6 +10,7 @@
 #define GAMESWF_AVM2_H
 
 #include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_jit.h"
 
 namespace gameswf
 {
@@ -136,6 +137,7 @@ namespace gameswf
 		membuf m_code;
 		array< smart_ptr<except_info> > m_exception;
 		array< smart_ptr<traits_info> > m_trait;
+        jit_function m_compiled_code;
 
 		as_3_function(abc_def* abc, int method, player* player);
 		~as_3_function();
@@ -147,6 +149,8 @@ namespace gameswf
 			array<as_value>& stack,
 			array<as_value>& scope,
 			as_value* result);
+
+        void    compile();
 
 		void	read(stream* in);
 		void	read_body(stream* in);

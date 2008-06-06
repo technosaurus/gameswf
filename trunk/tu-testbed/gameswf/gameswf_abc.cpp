@@ -306,7 +306,8 @@ namespace gameswf
 		n = in->read_vu30();
 		for (i = 0; i < n; i++)
 		{
-			m_method[i]->read_body(in);
+            int method_index = in->read_vu30();
+			m_method[method_index]->read_body(in);
 		}
 
 		assert(in->get_position() == eof);
