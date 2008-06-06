@@ -98,10 +98,12 @@ namespace gameswf
 			m_gradient_matrix.concatenate(m);
 				
 			// GRADIENT
-			int	num_gradients = in->read_u8();
+            int spread_mode = in->read_uint(2);
+            int interpolation_mode = in->read_uint(2);
+			int	num_gradients = in->read_uint(4);
 
 			// SWF 8 and later supports up to 15 gradient control points
-			assert(num_gradients >= 1 && num_gradients <= 15);
+			//assert(num_gradients >= 1 && num_gradients <= 15);
 
 			m_gradients.resize(num_gradients);
 			for (int i = 0; i < num_gradients; i++)
@@ -133,8 +135,19 @@ namespace gameswf
 		if (m_type == 0x13)
 		{
 			// 0x13: focal gradient fill	// Flash 8
-			// TODO
-			assert(0);
+			int spread_mode = in->read_uint(2);
+            int interpolation_mode = in->read_uint(2);
+            int gradient_count = in->read_uint(4);
+
+            in->align();
+
+            for(int i=0;i<gradient_count;i++)
+            {
+                int ratio = in->read_u8();
+                rgba color; color.read_rgba(in);
+            }
+
+            in->read_u8(); //Fixed 8
 		}
 		else
 		if (m_type >= 0x40 && m_type <= 0x43)

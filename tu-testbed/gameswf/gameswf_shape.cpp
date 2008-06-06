@@ -1121,6 +1121,7 @@ namespace gameswf
 			{
 				m_edge_bounds.read(in);
 				Uint8 b = in->read_u8();
+                assert( (b & 0xFC) == 0 );
 				m_uses_nonscaling_strokes = b & 0x02 ? true : false;
 				m_uses_scaling_strokes = b & 0x01 ? true : false;
 			}
