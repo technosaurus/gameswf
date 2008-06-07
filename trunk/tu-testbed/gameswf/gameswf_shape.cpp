@@ -48,17 +48,19 @@ namespace gameswf
 	// edge
 	//
 
-	edge::edge()
-		:
+	edge::edge() :
 		m_cx(0), m_cy(0),
 		m_ax(0), m_ay(0)
-	{}
+	{
+	}
 
 	edge::edge(float cx, float cy, float ax, float ay)
-		:
-		m_cx(cx), m_cy(cy),
-		m_ax(ax), m_ay(ay)
 	{
+		// edges can't be infinite
+		m_cx = cx >= -3.402823466e+38F && cx <= 3.402823466e+38F ? cx : 0.0f;
+		m_cy = cy >= -3.402823466e+38F && cy <= 3.402823466e+38F ? cy : 0.0f;
+		m_ax = ax >= -3.402823466e+38F && ax <= 3.402823466e+38F ? ax : 0.0f;
+		m_ay = ay >= -3.402823466e+38F && ay <= 3.402823466e+38F ? ay : 0.0f;
 	}
 
 	void	edge::tesselate_curve() const
