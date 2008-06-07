@@ -20,8 +20,7 @@ namespace gameswf
 	// gradient_record
 	//
 
-	gradient_record::gradient_record()
-		:
+	gradient_record::gradient_record() :
 		m_ratio(0)
 	{
 	}
@@ -39,8 +38,7 @@ namespace gameswf
 	//
 
 
-	fill_style::fill_style()
-		:
+	fill_style::fill_style() :
 		m_type(0),
 		m_gradient_bitmap_info(0),
 		m_bitmap_character(0)
@@ -98,12 +96,16 @@ namespace gameswf
 			m_gradient_matrix.concatenate(m);
 				
 			// GRADIENT
-            int spread_mode = in->read_uint(2);
-            int interpolation_mode = in->read_uint(2);
-			int	num_gradients = in->read_uint(4);
+
+			// 'spread_mode' and 'interpolation_mode' are not used for now
+			// and so they are commented out
+//			in->align();
+//			int spread_mode = in->read_uint(2);
+//			int interpolation_mode = in->read_uint(2);
+//			int num_gradients = in->read_uint(4);
 
 			// SWF 8 and later supports up to 15 gradient control points
-			//assert(num_gradients >= 1 && num_gradients <= 15);
+			int num_gradients = in->read_u8() & 0x0F;
 
 			m_gradients.resize(num_gradients);
 			for (int i = 0; i < num_gradients; i++)
@@ -134,20 +136,26 @@ namespace gameswf
 		else
 		if (m_type == 0x13)
 		{
-			// 0x13: focal gradient fill	// Flash 8
-			int spread_mode = in->read_uint(2);
-            int interpolation_mode = in->read_uint(2);
-            int gradient_count = in->read_uint(4);
+			// focal gradient fill, Flash 8
+			// parsed but not implemented yet
 
-            in->align();
+			// 'spread_mode' and 'interpolation_mode' are not used for now
+			// and so they are commented out
+//			in->align();
+//			int spread_mode = in->read_uint(2);
+//			int interpolation_mode = in->read_uint(2);
+//			int gradient_count = in->read_uint(4);
 
-            for(int i=0;i<gradient_count;i++)
-            {
-                int ratio = in->read_u8();
-                rgba color; color.read_rgba(in);
-            }
+			int num_gradients = in->read_u8() & 0x0F;
 
-            in->read_u8(); //Fixed 8
+			for (int i = 0; i < num_gradients; i++)
+			{
+				int ratio = in->read_u8();
+				rgba color;
+				color.read_rgba(in);
+			}
+
+			in->read_u8(); //Fixed 8
 		}
 		else
 		if (m_type >= 0x40 && m_type <= 0x43)
