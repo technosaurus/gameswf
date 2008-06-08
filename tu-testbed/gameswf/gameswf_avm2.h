@@ -150,7 +150,7 @@ namespace gameswf
 			array<as_value>& scope,
 			as_value* result);
 
-        void    compile();
+		void    compile();
 
 		void	read(stream* in);
 		void	read_body(stream* in);

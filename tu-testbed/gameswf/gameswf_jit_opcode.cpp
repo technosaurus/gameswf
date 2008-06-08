@@ -13,13 +13,13 @@
 
 #define jit_prologue( _function_ ) \
 {\
-    jit_push( jit_ebp );\
-    jit_mov( jit_ebp, jit_esp );\
+	jit_push( jit_ebp );\
+	jit_mov( jit_ebp, jit_esp );\
 }
 
 #define jit_epilogue( _function_ )\
 {\
-    jit_pop( jit_ebp );\
+	jit_pop( jit_ebp );\
 }
 
-#endif
+#endif	// __GAMESWF_ENABLE_JIT__
