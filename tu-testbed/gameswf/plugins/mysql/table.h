@@ -27,20 +27,20 @@ namespace mysql_plugin
 			else return as_object::is(class_id);
 		}
 
-		mytable(player* player);
-		~mytable();
+		exported_module mytable(player* player);
+		exported_module ~mytable();
 
-		virtual bool	get_member(const tu_stringi& name, as_value* val);
+		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
 
-		int size() const;
-		bool prev();
-		bool next();
-		void first();
-		int fld_count();
-		bool goto_record(int index);
-		const char* get_field_title(int n);
-		void retrieve_data(MYSQL_RES* result);
-		int get_recno() const;
+		exported_module int size() const;
+		exported_module bool prev();
+		exported_module bool next();
+		exported_module void first();
+		exported_module int fld_count();
+		exported_module bool goto_record(int index);
+		exported_module const char* get_field_title(int n);
+		exported_module void retrieve_data(MYSQL_RES* result);
+		exported_module int get_recno() const;
 
 
 	private:
