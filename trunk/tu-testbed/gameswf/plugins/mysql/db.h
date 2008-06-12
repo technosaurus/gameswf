@@ -27,16 +27,16 @@ namespace mysql_plugin
 			else return as_object::is(class_id);
 		}
 
-		mydb(player* player);
-		~mydb();
+		exported_module mydb(player* player);
+		exported_module ~mydb();
 
-		bool connect(const char* host, const char* dbname, const char* user,
+		exported_module bool connect(const char* host, const char* dbname, const char* user,
 			const char* pwd, const char* socket);
-		void disconnect();
-		mytable* open(const char* sql);
-		int run(const char *sql);
-		void set_autocommit(bool autocommit);
-		void commit();
+		exported_module void disconnect();
+		exported_module mytable* open(const char* sql);
+		exported_module int run(const char *sql);
+		exported_module void set_autocommit(bool autocommit);
+		exported_module void commit();
 
 	private:
 
