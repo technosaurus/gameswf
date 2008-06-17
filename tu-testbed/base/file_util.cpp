@@ -32,7 +32,7 @@ static const char* reverse_scan(const char* begin, const char* end, char c)
 
 const char* file_util::get_extension(const char* path)
 {
-	int len = strlen(path);
+	int len = (int) strlen(path);
 	const char* last_dot = reverse_scan(path, path + len, '.');
 	const char* last_slash = reverse_scan(last_dot, path + len, '/');
 

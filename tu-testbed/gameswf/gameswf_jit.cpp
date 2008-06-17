@@ -19,7 +19,8 @@ void jit_function::initialize()
 	for( patch_index = 0; patch_index < patch_count; ++patch_index )
 	{
 		patch_entry & entry = m_address_patches[ patch_index ];
-		uint32 offset = entry.m_address - &m_work_byte_code[ entry.m_byte_code_position ] - entry.m_byte_count;
+		uint32 offset = (Uint32)
+			(entry.m_address - &m_work_byte_code[entry.m_byte_code_position] - entry.m_byte_count);
 
 		assert( entry.m_byte_count == 4 );
 		*(uint32*)&m_work_byte_code[ entry.m_byte_code_position ] = offset;
