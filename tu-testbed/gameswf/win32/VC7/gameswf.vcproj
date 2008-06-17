@@ -23,7 +23,7 @@
 				AdditionalOptions="/D _CRT_SECURE_NO_DEPRECATE /D SLOT /D EMULATE_INTTYPES
 
 "
-				Optimization="0"
+				Optimization="2"
 				OmitFramePointers="TRUE"
 				AdditionalIncludeDirectories="..\..\libgame\include;..\..\..\"
 				PreprocessorDefinitions="WIN32;_CONSOLE;TU_CONFIG_LINK_TO_LIBPNG=0;TU_CONFIG_LINK_TO_FFMPEG=1;TU_CONFIG_LINK_TO_LIB3DS=1;TU_CONFIG_LINK_TO_MYSQL=1;TU_CONFIG_LINK_TO_FREETYPE=1;TU_CONFIG_LINK_TO_THREAD=1"
@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib libgameswf.lib"
-				OutputFile=".\Release/swfplayer.exe"
+				OutputFile=".\Release/gameswf.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories=""
@@ -157,15 +157,6 @@
 			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
 			<File
 				RelativePath="..\..\gameswf_test_ogl.cpp">
-			</File>
-		</Filter>
-		<Filter
-			Name="StackWalker">
-			<File
-				RelativePath="..\..\..\base\Stackwalker.cpp">
-			</File>
-			<File
-				RelativePath="..\..\..\base\Stackwalker.h">
 			</File>
 		</Filter>
 	</Files>
