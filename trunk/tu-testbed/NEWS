@@ -1,3 +1,28 @@
+2008-06-17  Vitaly Alexeev <tishka92@yahoo.com>
+
+The gameswf-2008-06-17 release of gameSWF is coming.
+Improvements since the gameswf-2008-01-05 release are:
+
+* gameSWF playes Flash9 with AS2.0
+* gameSWF supports user defined flash components
+* fixed detected memory leaks
+* implemented sendAndLoad of LoadVars (with sample)
+* implemented Sound.loadSound(url)
+* implemented FSAA (hardware full screen antialiasing)
+* Implemented the antialiasing of polygon edges. Very simple but quite pleasant
+* call_method_args() is reverted at the instance of users
+* reduced the texture memory usage
+* fixed nested mask bug for opengl renderer
+* implemented instanceof operator
+* implemented FlashVars support
+* started AVM2 implementation
+* added implementation of the following AS2.0 classes
+- Selection
+- flash.geom.Matrix
+- flash.geom.Point
+- ColorTransform and Transform.
+
+
 2008-01-05  Vitaly Alexeev <tishka92@yahoo.com>
 
 The gameswf-2008-01-05 release of gameSWF is coming.
