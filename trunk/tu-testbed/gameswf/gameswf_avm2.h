@@ -137,7 +137,7 @@ namespace gameswf
 		membuf m_code;
 		array< smart_ptr<except_info> > m_exception;
 		array< smart_ptr<traits_info> > m_trait;
-        jit_function m_compiled_code;
+		jit_function m_compiled_code;
 
 		as_3_function(abc_def* abc, int method, player* player);
 		~as_3_function();
@@ -150,8 +150,9 @@ namespace gameswf
 			array<as_value>& scope,
 			as_value* result);
 
-		void    compile();
+		void	compile();
 
+		void compile_stack_resize( int count );
 		void	read(stream* in);
 		void	read_body(stream* in);
 

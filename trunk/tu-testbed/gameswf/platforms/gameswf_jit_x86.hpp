@@ -94,6 +94,74 @@ void jit_sub_implementation( jit_function & function, const jit_register destina
 	}
 	else
 	{
-		assert( 0 )
+		jit_x86_modrm modrm;
+
+		function.push_byte( 0x81 );
+		modrm.m_register_opcode = (jit_register)5;
+		modrm.m_mode = RegisterDirect;
+		modrm.m_rm = destination;
+		function.push_byte( modrm );
+		//__asm sub esp, 4;
+		function.push_integer( value );
 	}
+}
+
+
+void jit_lea( jit_function & function, const jit_register destination, const jit_register_offset_address & address )
+{
+	function.push_byte( 0x8d ); //mov Gv, Ev
+	jit_x86_modrm modrm;
+
+	modrm.m_register_opcode = destination;
+	modrm.m_rm = address.m_register;
+	if( address.m_offset > 127 || address.m_offset < -128 )
+	{
+		modrm.m_mode = Indexed32BitDisplacement;
+		function.push_byte( modrm );
+		function.push_integer( address.m_offset );
+	}
+	else
+	{
+		modrm.m_mode = Indexed8BitDisplacement;
+		function.push_byte( modrm );
+		function.push_byte( address.m_offset );
+	}
+}
+
+void jit_pushi( jit_function & function, const void * pointer )
+{
+	jit_add_bytecode_u8( function, 0x68 ); 
+	jit_add_bytecode_u32( function, pointer );
+}
+
+void jit_pushi( jit_function & function, int value )
+{
+	jit_add_bytecode_u8( function, 0x68 ); 
+	jit_add_bytecode_u32( function, value );
+}
+
+void jit_pushi( jit_function & function, uint8 value )
+{
+	jit_add_bytecode_u8( function, 0x6A ); 
+	jit_add_bytecode_u8( function, value );
+}
+
+void jit_pushi( jit_function & function, double value )
+{
+	int * int_value = (int*)& value;
+	jit_pushi( function, int_value[ 1 ] );
+	jit_pushi( function, int_value[ 0 ] );
+}
+
+
+#define jit_pushi( _function_, _value_ ) \
+{ \
+	if( jit_is_8bit( _value_ ) ) \
+{ \
+	jit_add_bytecode_u8( _function_, 0x6A ); jit_add_bytecode_u8( _function_, _value_ ); \
+} \
+	else \
+{ \
+	jit_add_bytecode_u8( _function_, 0x68 ); jit_add_bytecode_u32( _function_, _value_ ); \
+} \
 }

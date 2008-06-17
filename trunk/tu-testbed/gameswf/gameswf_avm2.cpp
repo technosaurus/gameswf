@@ -97,8 +97,15 @@ namespace gameswf
 
 		if( m_compiled_code.is_valid() )
 		{
-			m_compiled_code.call< array<as_value>&, array<as_value>&, array<as_value>&, as_value* >
-				(local_register, stack, scope, fn.result );
+			try
+			{
+				m_compiled_code.call< array<as_value>&, array<as_value>&, array<as_value>&, as_value* >
+					(local_register, stack, scope, fn.result );
+			}
+			catch( ... )
+			{
+				log_msg( "jitted code crashed" );
+			}
 		}
 		else
 		{
@@ -387,9 +394,24 @@ namespace gameswf
 	typedef void (array<as_value>::*push_value_function )( as_value & );
 	typedef as_value & (array<as_value>::*index_function)(int);
 
-    
+	template<typename T> struct constructor_helper
+	{
+		static void construct( void * object )
+		{
+			new( object ) T;
+		}
+
+		static void destruct( T * object )
+		{
+			delete object;
+		}
+	};
+	
 	void as_3_function::compile()
 	{
+#define var_stack jit_getarg( 1 )
+#define var_scope jit_getarg( 2 )
+
 #ifdef __GAMESWF_ENABLE_JIT__
 		int ip = 0;
 		jit_prologue( m_compiled_code );
@@ -453,12 +475,18 @@ namespace gameswf
 
 				case 0x2F:	// pushdouble
 				{
-					//                     int index;
-					//                     ip += read_vu30(index, &m_code[ip]);
-					//                     double val = m_abc->get_double(index);
-					//                     stack.push_back(val);
-					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: pushdouble\t %f\n", val));
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					double val = m_abc->get_double(index);
+					
+					jit_pushargi( m_compiled_code, val );
+					jit_load( m_compiled_code, jit_esi, var_stack );
+					jit_pusharg( m_compiled_code, jit_esi );
+					jit_call( m_compiled_code, &(stack_push_back_value<double>) );
+					jit_popargs( m_compiled_code, 3 ); //double counts for 2;
+					//stack.push_back(val);
+
+					//IF_VERBOSE_ACTION(log_msg("EX: pushdouble\t %f\n", val));
 
 					break;
 				}
@@ -470,22 +498,17 @@ namespace gameswf
 					jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 1 ) );
 					jit_this_call( m_compiled_code, (back_function)&array<as_value>::back );
 
-					//scope.push_back(val);
+					jit_load( m_compiled_code, jit_this_pointer, var_scope );
 					jit_push( m_compiled_code, jit_result );
-					jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 2 ) );
-					jit_this_call( m_compiled_code, (push_value_function) &array<as_value>::push_back );
+					jit_call( m_compiled_code, (push_value_function)&array<as_value>::push_back );
 					jit_popargs( m_compiled_code, 1 );
+
 
 					//IF_VERBOSE_ACTION(log_msg("EX: pushscope\t %s\n", val.to_xstring()));
 					//TODO: Ecx is caller-saved, copy it to esi or edi before calling to prevent reload from memory
 					//stack.resize(stack.size() - 1); 
-					jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 1 ) );
-					jit_this_call( m_compiled_code, &array<as_value>::size );
-					jit_subi( m_compiled_code, jit_eax, 1 );
-					jit_pusharg( m_compiled_code, jit_eax );
-					jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 1 ) );
-					jit_this_call( m_compiled_code,  &array<as_value>::resize );
-					jit_popargs( m_compiled_code, 1 );
+					compile_stack_resize( 1 );
+
 					break;
 				}
 
@@ -503,20 +526,33 @@ namespace gameswf
 				case 0x49:	// constructsuper
 				{
 					// stack: object, arg1, arg2, ..., argn
-					//                     int arg_count;
-					//                     ip += read_vu30(arg_count, &m_code[ip]);
-					// 
-					//                     as_object* obj = stack.back().to_object();
-					//                     stack.resize(stack.size() - 1);
-					//                     for (int i = 0; i < arg_count; i++)
-					//                     {
-					//                         as_value& val = stack.back();
-					//                         stack.resize(stack.size() - 1);
-					//                     }
-					// 
-					//                     //TODO: construct super of obj
-					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: constructsuper\t 0x%p(args:%d)\n", obj, arg_count));
+					int arg_count;
+					ip += read_vu30(arg_count, &m_code[ip]);
+
+					struct constructsuper
+					{
+					
+						static void call( array<as_value> & stack, int arg_count )
+						{
+							as_object* obj = stack.back().to_object();
+							stack.resize(stack.size() - 1);
+							for (int i = 0; i < arg_count; i++)
+							{
+								as_value& val = stack.back();
+								stack.resize(stack.size() - 1);
+							}
+
+							//TODO: construct super of obj
+
+							IF_VERBOSE_ACTION(log_msg("EX: constructsuper\t 0x%p(args:%d)\n", obj, arg_count));
+						}
+					};
+
+					jit_pushi( m_compiled_code, arg_count );
+					jit_load( m_compiled_code, jit_esi, var_stack );
+					jit_push( m_compiled_code, jit_esi );
+					jit_call( m_compiled_code, &constructsuper::call );
+					jit_popargs( m_compiled_code, 2 );
 
 					break;
 				}
@@ -524,142 +560,288 @@ namespace gameswf
 				case 0x4F:	// callpropvoid, Call a property, discarding the return value.
 				// Stack: …, obj, [ns], [name], arg1,...,argn => …
 				{
-					//                     int index;
-					//                     ip += read_vu30(index, &m_code[ip]);
-					//                     const char* name = m_abc->get_multiname(index);
-					// 
-					//                     int arg_count;
-					//                     ip += read_vu30(arg_count, &m_code[ip]);
-					// 
-					//                     as_environment env(get_player());
-					//                     for (int i = 0; i < arg_count; i++)
-					//                     {
-					//                         as_value& val = stack[stack.size() - 1 - i];
-					//                         env.push(val);
-					//                     }
-					//                     stack.resize(stack.size() - arg_count);
-					// 
-					//                     as_object* obj = stack.back().to_object();
-					//                     stack.resize(stack.size() - 1);
-					// 
-					//                     as_value func;
-					//                     if (obj && obj->get_member(name, &func))
-					//                     {
-					//                         call_method(func, &env, obj,	arg_count, env.get_top_index());
-					//                     }
-					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: callpropvoid\t 0x%p.%s(args:%d)\n", obj, name, arg_count));
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
 
+					int arg_count;
+					ip += read_vu30(arg_count, &m_code[ip]);
+
+					struct callpropvoid
+					{
+						static void call( const as_object *_this, const char* name, int arg_count, array<as_value> & stack )
+						{
+							as_environment env(_this->get_player());
+							for (int i = 0; i < arg_count; i++)
+							{
+								as_value& val = stack[stack.size() - 1 - i];
+								env.push(val);
+							}
+							stack.resize(stack.size() - arg_count);
+
+							as_object* obj = stack.back().to_object();
+							stack.resize(stack.size() - 1);
+
+							as_value func;
+							if (obj && obj->get_member(name, &func))
+							{
+								call_method(func, &env, obj,	arg_count, env.get_top_index());
+							}
+
+							IF_VERBOSE_ACTION(log_msg("EX: callpropvoid\t 0x%p.%s(args:%d)\n", obj, name, arg_count));
+
+						}
+					};
+
+					jit_load( m_compiled_code, jit_esi, var_stack );
+					jit_pusharg( m_compiled_code, jit_esi );
+					jit_pushargi( m_compiled_code, arg_count );
+					jit_pushargi( m_compiled_code, name );
+					jit_pushargi( m_compiled_code, this );
+					jit_call( m_compiled_code, &callpropvoid::call );
+					jit_popargs( m_compiled_code, 4 );
+
+					/*
+					struct local
+					{
+						static void construct_env( as_environment *env, player * player )
+						{
+							new( env ) as_environment( player );
+						}
+
+						static void destruct_env( as_environment *env )
+						{
+							env->~as_environment();
+						}
+					};
+
+					//as_environment env(get_player());
+					int env_offset = jit_allocate_stack_object_memory( m_compiled_code, sizeof( as_environment ) );
+					//Do we query it each it or it won't change? I decided it won't change
+					jit_mov( m_compiled_code, jit_edi, jit_stack_pointer );
+					jit_pushi( m_compiled_code, (uint32)get_player() );
+					jit_push( m_compiled_code, jit_edi );
+					jit_call( m_compiled_code, &local::construct_env );
+					jit_popargs( m_compiled_code, 2 );
+
+					//as_value* val = stack.back();
+					jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 1 ) );
+					typedef as_value& ( array<as_value>::*back_function )();
+					jit_this_call( m_compiled_code, (back_function)&array<as_value>::back );
+					jit_mov( m_compiled_code, jit_esi, jit_result );
+
+					for (int i = 0; i < arg_count; i++)
+					{
+					 //env.push( *val);
+					 jit_mov( m_compiled_code, jit_this_pointer, jit_edi );
+					 jit_push( m_compiled_code, jit_esi );
+					 jit_this_call( m_compiled_code, & as_environment::push<as_value&> );
+					 
+					 //val--;
+					 jit_subi( m_compiled_code, jit_esi, sizeof( as_value ) );
+					}
+
+					//stack.resize(stack.size() - arg_count);
+					compile_stack_resize( arg_count );
+
+					//as_object* obj = stack.back().to_object();
+					jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 1 ) );
+					typedef as_value& ( array<as_value>::*back_function )();
+					jit_this_call( m_compiled_code, (back_function)&array<as_value>::back );
+					jit_mov( m_compiled_code, jit_this_pointer, jit_result );
+					jit_this_call( m_compiled_code, &as_value::to_object );
+					jit_mov( m_compiled_code, jit_esi, jit_result );
+
+					 //stack.resize(stack.size() - 1);
+					compile_stack_resize( 1 );
+
+
+					//as_value func;
+					//if (obj && obj->get_member(name, &func))
+					//{
+					//	call_method(func, &env, obj,	arg_count, env.get_top_index());
+					//}
+
+					// Destruct env
+					jit_getaddress( m_compiled_code, jit_result, jit_stack_pointer, env_offset );
+					jit_push( m_compiled_code ,jit_result );
+					jit_call( m_compiled_code, &local::destruct_env );
+					jit_popargs( m_compiled_code, 1 );
+
+ 
+					//IF_VERBOSE_ACTION(log_msg("EX: callpropvoid\t 0x%p.%s(args:%d)\n", obj, name, arg_count));
+					*/
 					break;
 				}
 
 				case 0x5D:	// findpropstrict
 				{
-					//                     int index;
-					//                     ip += read_vu30(index, &m_code[ip]);
-					//                     const char* name = m_abc->get_multiname(index);
-					// 
-					//                     // search property in scope
-					//                     as_object* obj = NULL;
-					//                     for (int i = scope.size() - 1; i >= 0; i--)
-					//                     {
-					//                         as_value val;
-					//                         if (scope[i].get_member(name, &val))
-					//                         {
-					//                             obj = scope[i].to_object();
-					//                             break;
-					//                         }
-					//                     }
-					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: findpropstrict\t %s, obj=0x%p\n", name, obj));
-					// 
-					//                     stack.push_back(obj);
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					// search property in scope
+					
+					// TODO: inline
+					struct findpropstrict
+					{
+						static as_object * call( char* name, array<as_value> & scope )
+						{
+							for (int i = scope.size() - 1; i >= 0; i--)
+							{
+								as_value val;
+								if (scope[i].get_member(name, &val))
+								{
+									return scope[i].to_object();
+								}
+							}
+
+							return NULL;
+						}
+					};
+
+					jit_load( m_compiled_code, jit_esi, var_scope );
+					jit_push( m_compiled_code, jit_esi );
+					jit_pushi( m_compiled_code, (int)name );
+					jit_call( m_compiled_code, &findpropstrict::call );
+					jit_popargs( m_compiled_code, 2 );
+
+					//IF_VERBOSE_ACTION(log_msg("EX: findpropstrict\t %s, obj=0x%p\n", name, obj));
+
+					//stack.push_back(obj);
+					jit_load( m_compiled_code, jit_esi, var_stack );
+					jit_push( m_compiled_code, jit_result );
+					jit_push( m_compiled_code, jit_esi );
+					jit_call( m_compiled_code, &stack_push_back_value<as_object*> );
+					jit_popargs( m_compiled_code, 2 );
+
 					break;
 				}
 
 				case 0x5E:	// findproperty, Search the scope stack for a property
 				{
-					//                     int index;
-					//                     ip += read_vu30(index, &m_code[ip]);
-					//                     const char* name = m_abc->get_multiname(index);
-					// 
-					//                     as_object* obj = NULL;
-					//                     for (int i = scope.size() - 1; i >= 0; i--)
-					//                     {
-					//                         as_value val;
-					//                         if (scope[i].get_member(name, &val))
-					//                         {
-					//                             obj = scope[i].to_object();
-					//                             break;
-					//                         }
-					//                     }
-					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: findproperty\t %s, obj=0x%p\n", name, obj));
-					// 
-					//                     stack.push_back(obj);
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					struct findproperty
+					{
+						static void call( const char* name, array<as_value> & scope, array<as_value> & stack )
+						{
+							as_object* obj = NULL;
+							for (int i = scope.size() - 1; i >= 0; i--)
+							{
+								as_value val;
+								if (scope[i].get_member(name, &val))
+								{
+									obj = scope[i].to_object();
+									break;
+								}
+							}
+
+							IF_VERBOSE_ACTION(log_msg("EX: findproperty\t %s, obj=0x%p\n", name, obj));
+
+							stack.push_back(obj);
+						}
+					};
+
+					jit_load( m_compiled_code, jit_esi, var_stack );
+					jit_push( m_compiled_code, jit_esi );
+					jit_load( m_compiled_code, jit_esi, var_scope );
+					jit_push( m_compiled_code, jit_esi );
+					jit_pushi( m_compiled_code, (int)name );
+					jit_call( m_compiled_code, &findproperty::call );
+					jit_popargs( m_compiled_code, 3 );
+
 					break;
 
 				}
 
 				case 0x60:	// getlex, Find and get a property.
 				{
-					//                     int index;
-					//                     ip += read_vu30(index, &m_code[ip]);
-					//                     const char* name = m_abc->get_multiname(index);
-					// 
-					//                     // search property in scope
-					//                     as_value val;
-					//                     for (int i = scope.size() - 1; i >= 0; i--)
-					//                     {
-					//                         if (scope[i].get_member(name, &val))
-					//                         {
-					//                             break;
-					//                         }
-					//                     }
-					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
-					// 
-					//                     stack.push_back(val);
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					struct getlex
+					{
+						static void call( const char* name, array<as_value> & scope, array<as_value> &stack )
+						{
+							// search property in scope
+							as_value val;
+							for (int i = scope.size() - 1; i >= 0; i--)
+							{
+								if (scope[i].get_member(name, &val))
+								{
+									break;
+								}
+							}
+
+							IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
+
+							stack.push_back(val);
+						}
+					};
+
+					jit_load( m_compiled_code, jit_esi, var_stack );
+					jit_push( m_compiled_code, jit_esi );
+					jit_load( m_compiled_code, jit_esi, var_scope );
+					jit_push( m_compiled_code, jit_esi );
+					jit_pushi( m_compiled_code, (int)name );
+					jit_call( m_compiled_code, &getlex::call );
+					jit_popargs( m_compiled_code, 2 );
 					break;
 				}
 
 				case 0x66:	// getproperty
 				{
-					//                     int index;
-					//                     ip += read_vu30(index, &m_code[ip]);
-					//                     const char* name = m_abc->get_multiname(index);
+					//					 int index;
+					//					 ip += read_vu30(index, &m_code[ip]);
+					//					 const char* name = m_abc->get_multiname(index);
 					// 
-					//                     as_object* obj = stack.back().to_object();
-					//                     if (obj)
-					//                     {
-					//                         obj->get_member(name, &stack.back());
-					//                     }
-					//                     else
-					//                     {
-					//                         stack.back().set_undefined();
-					//                     }
+					//					 as_object* obj = stack.back().to_object();
+					//					 if (obj)
+					//					 {
+					//						 obj->get_member(name, &stack.back());
+					//					 }
+					//					 else
+					//					 {
+					//						 stack.back().set_undefined();
+					//					 }
 					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: getproperty\t %s, value=%s\n", name, stack.back().to_xstring()));
+					//					 IF_VERBOSE_ACTION(log_msg("EX: getproperty\t %s, value=%s\n", name, stack.back().to_xstring()));
 					// 
 					break;
 				}
 
 				case 0x68:	// initproperty, Initialize a property.
 				{
-					//                     int index;
-					//                     ip += read_vu30(index, &m_code[ip]);
-					//                     const char* name = m_abc->get_multiname(index);
-					// 
-					//                     as_value& val = stack[stack.size() - 1];
-					//                     as_object* obj = stack[stack.size() - 2].to_object();
-					//                     if (obj)
-					//                     {
-					//                         obj->set_member(name, val);
-					//                     }
-					// 
-					//                     IF_VERBOSE_ACTION(log_msg("EX: initproperty\t 0x%p.%s=%s\n", obj, name, val.to_xstring()));
-					// 
-					//                     stack.resize(stack.size() - 2);
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					struct initproperty
+					{
+						static void call( const char * name, array<as_value> & stack )
+						{
+							as_value& val = stack[stack.size() - 1];
+							as_object* obj = stack[stack.size() - 2].to_object();
+							if (obj)
+							{
+								obj->set_member(name, val);
+							}
+
+							IF_VERBOSE_ACTION(log_msg("EX: initproperty\t 0x%p.%s=%s\n", obj, name, val.to_xstring()));
+
+							stack.resize(stack.size() - 2);
+						}
+					};
+
+					jit_load( m_compiled_code, jit_esi, var_stack );
+					jit_push( m_compiled_code, jit_esi );
+					jit_pushi( m_compiled_code, (int)name );
+					jit_call( m_compiled_code, &initproperty::call );
+					jit_popargs( m_compiled_code, 2 );
 					break;
 				}
 
@@ -779,4 +961,16 @@ namespace gameswf
 
 	}
 
+	void as_3_function::compile_stack_resize( int count )
+	{
+#ifdef __GAMESWF_ENABLE_JIT__
+		jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 1 ) );
+		jit_this_call( m_compiled_code, &array<as_value>::size );
+		jit_subi( m_compiled_code, jit_eax, count );
+		jit_pusharg( m_compiled_code, jit_eax );
+		jit_load( m_compiled_code, jit_this_pointer, jit_getarg( 1 ) );
+		jit_this_call( m_compiled_code,  &array<as_value>::resize );
+		jit_popargs( m_compiled_code, 1 );
+#endif
+	}
 }

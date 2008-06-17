@@ -55,4 +55,11 @@ void jit_function::add_address_patch( void * address, int byte_count )
 	m_address_patches.push_back( entry );
 }
 
+int jit_function::add_stack_offset( int size )
+{
+	m_current_stack_offset += size;
+
+	return m_current_stack_offset;
+}
+
 #endif	// __GAMESWF_ENABLE_JIT__

@@ -21,6 +21,7 @@ class jit_function
 		int m_byte_count;
 	};
 
+	int m_current_stack_offset;
 	array<uint8> m_work_byte_code;
 	array<patch_entry> m_address_patches;
 	void * m_executable_byte_code; // must allocate with execute rights
@@ -28,7 +29,8 @@ class jit_function
 public:
 
 	jit_function() :
-		m_executable_byte_code( NULL )
+		m_executable_byte_code( NULL ),
+		m_current_stack_offset( 4 )
 	{
 	}
 
@@ -48,6 +50,7 @@ public:
 	void push_integer( const uint32 value );
 	void add_address_patch( void * address, int byte_count );
 	void initialize();
+	int add_stack_offset( int size );
 
 };
 
