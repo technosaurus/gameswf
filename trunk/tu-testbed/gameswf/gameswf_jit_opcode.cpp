@@ -11,11 +11,11 @@
 
 #include "platforms/gameswf_jit_x86.hpp"
 
-#define jit_prologue( _function_ ) \
-{\
-	jit_push( jit_ebp );\
-	jit_mov( jit_ebp, jit_esp );\
-}
+//#define jit_prologue( _function_ ) \
+//{\
+//	jit_push( jit_ebp );\
+//	jit_mov( jit_ebp, jit_esp );\
+//}
 
 #define jit_epilogue( _function_ )\
 {\
