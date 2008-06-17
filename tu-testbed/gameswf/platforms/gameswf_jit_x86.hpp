@@ -1,3 +1,9 @@
+// gameswf_jit_x86.hpp	-- Julien Hamaide <julien.hamaide@gmail.com>	2008
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
+// Jit x86
 
 enum jit_x86_addressing_mode
 {
