@@ -123,6 +123,9 @@ namespace gameswf
 		array<as_value>& scope,
 		as_value* result)
 	{
+		// m_abc may be destroyed
+		assert(m_abc != NULL);
+
 		int ip = 0;
 		do
 		{

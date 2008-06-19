@@ -251,60 +251,6 @@ namespace gameswf
 		}
 	}
 
-	/*
-	void	movie_def_impl::resolve_import(const tu_string& source_url, movie_definition* source_movie)
-	// Grabs the stuff we want from the source movie.
-	{
-		// @@ should be safe, but how can we verify
-		// it?	Compare a member function pointer, or
-		// something?
-		movie_def_impl*	def_impl = cast_to<movie_def_impl>(source_movie);
-		movie_definition_sub*	def = cast_to<movie_definition_sub>(def_impl);
-
-		// Iterate in reverse, since we remove stuff along the way.
-		for (int i = m_imports.size() - 1; i >= 0; i--)
-		{
-			const import_info&	inf = m_imports[i];
-			if (inf.m_source_url == source_url)
-			{
-				// Do the import.
-				character_def* res = def->get_exported_resource(inf.m_symbol);
-				bool	 imported = true;
-
-				if (res == NULL)
-				{
-					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",
-						inf.m_symbol.c_str(), source_url));
-				}
-				else if (font* f = cast_to<font>(res))
-				{
-					// Add this shared font to our fonts.
-					add_font(inf.m_character_id, f);
-					imported = true;
-				}
-				else if (character_def* ch = cast_to<character_def>(res))
-				{
-					// Add this character to our characters.
-					add_character(inf.m_character_id, ch);
-					imported = true;
-				}
-				else
-				{
-					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' from movie '%s' has unknown type\n",
-						inf.m_symbol.c_str(), source_url));
-				}
-
-				if (imported)
-				{
-					m_imports.remove(i);
-
-					// Hold a ref, to keep this source movie_definition alive.
-					m_import_source_movies.push_back(source_movie);
-				}
-			}
-		}
-	}*/
-
 	void	movie_def_impl::add_abc(tu_string& name, abc_def* abc)
 	{
 		assert(m_abc == NULL);

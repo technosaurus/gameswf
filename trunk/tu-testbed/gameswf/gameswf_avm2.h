@@ -116,7 +116,7 @@ namespace gameswf
 		};
 
 		weak_ptr<as_object>	m_target;
-		smart_ptr<abc_def> m_abc;
+		weak_ptr<abc_def> m_abc;
 
 		// method_info
 		int m_return_type;

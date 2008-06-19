@@ -77,12 +77,8 @@ namespace gameswf
 			virtual ~import_visitor() {}
 			virtual void	visit(const char* imported_movie_filename) = 0;
 		};
-		virtual void	visit_imported_movies(import_visitor* visitor) = 0;
 
-		// Call this to resolve an import of the given movie.
-		// Replaces the dummy placeholder with the real
-		// movie_definition* given.
-//		virtual void	resolve_import(const tu_string& name, movie_definition* def) = 0;
+		virtual void	visit_imported_movies(import_visitor* visitor) = 0;
 
 		//
 		// (optional) API to support host-driven creation of textures.

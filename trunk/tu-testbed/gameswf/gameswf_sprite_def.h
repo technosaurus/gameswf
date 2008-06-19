@@ -97,7 +97,6 @@ namespace gameswf
 		virtual character_def*	get_exported_resource(const tu_string& sym) { return m_movie_def->get_exported_resource(sym); }
 		virtual void	add_import(const tu_string& source_url, int id, const tu_string& symbol) { assert(0); }
 		virtual void	visit_imported_movies(import_visitor* v) { assert(0); }
-//		virtual void	resolve_import(const tu_string& source_url, movie_definition* d) { assert(0); }
 		virtual character_def*	get_character_def(int id)
 		{
 			return m_movie_def->get_character_def(id);
