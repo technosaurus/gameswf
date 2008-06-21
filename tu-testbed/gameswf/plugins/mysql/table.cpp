@@ -6,11 +6,14 @@
 // Very simple and convenient MYSQL plugin
 // for the gameswf SWF player library.
 
+#include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_action.h"
 #include "table.h"
 
 namespace mysql_plugin
 {
+
+	tu_mutex s_mysql_plugin_mutex;
 
 	bool string_to_number(int* result, const char* str)
 	// Utility.  Try to convert str to a number.  If successful,
@@ -30,6 +33,8 @@ namespace mysql_plugin
 	void	to_string_method(const fn_call& fn)
 	// Returns amount of the rows in the table
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -40,6 +45,8 @@ namespace mysql_plugin
 	void	size_method(const fn_call& fn)
 	// Returns amount of the rows in the table
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -50,6 +57,8 @@ namespace mysql_plugin
 	void	next_method(const fn_call& fn)
 	// Moves row pointer to next row
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -60,6 +69,8 @@ namespace mysql_plugin
 	void	prev_method(const fn_call& fn)
 	// Moves row pointer to prev row
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -70,6 +81,8 @@ namespace mysql_plugin
 	void	first_method(const fn_call& fn)
 	// Moves row pointer to the first row
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -80,6 +93,8 @@ namespace mysql_plugin
 	void	field_count_method(const fn_call& fn)
 	// Returns amount of the fields in the table
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -90,6 +105,8 @@ namespace mysql_plugin
 	void	goto_record_method(const fn_call& fn)
 	// Moves row pointer to the fn.arg(0).to_number()
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -101,6 +118,8 @@ namespace mysql_plugin
 	void	get_title_method(const fn_call& fn)
 	// Returns the name of fn.arg(0).to_number() field
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -112,6 +131,8 @@ namespace mysql_plugin
 	void	to_get_recno_method(const fn_call& fn)
 	// Returns the current record number
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{

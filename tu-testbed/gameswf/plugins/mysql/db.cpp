@@ -7,16 +7,20 @@
 // for the gameswf SWF player library.
 
 #include "db.h"
+#include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_log.h"
 
 #define ulong Uint32
 
 namespace mysql_plugin
 {
+	extern tu_mutex s_mysql_plugin_mutex;
 
 	void	mydb_connect(const fn_call& fn)
 	//  Closes a previously opened connection & create new connection to db
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -39,6 +43,8 @@ namespace mysql_plugin
 
 	void	mydb_disconnect(const fn_call& fn)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -49,6 +55,8 @@ namespace mysql_plugin
 	void	mydb_open(const fn_call& fn)
 	// Creates new table from sql statement & returns pointer to it
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -70,6 +78,8 @@ namespace mysql_plugin
 	void	mydb_run(const fn_call& fn)
 	// Executes sql statement & returns affected rows
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -85,6 +95,8 @@ namespace mysql_plugin
 
 	void	mydb_commit(const fn_call& fn)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -94,6 +106,8 @@ namespace mysql_plugin
 
 	void mydb_autocommit_setter(const fn_call& fn)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
