@@ -81,6 +81,8 @@ namespace gameswf
 #ifdef __GAMESWF_ENABLE_JIT__
 		int ip = 0;
 		jit_prologue( m_compiled_code );
+
+		if( m_code.size() == 0 ) return;
 		do
 		{
 			Uint8 opcode = m_code[ip++];

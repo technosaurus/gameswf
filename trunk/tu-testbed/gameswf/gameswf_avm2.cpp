@@ -19,7 +19,14 @@ namespace gameswf
 	as_3_function::as_3_function(abc_def* abc, int method, player* player) :
 		as_function(player),
 		m_method(method),
-		m_abc(abc)
+		m_abc(abc),
+		m_return_type( -1 ),
+		m_name( -1 ),
+		m_flags( 0 ),
+		m_max_stack( 0 ),
+		m_local_count( 0 ),
+		m_init_scope_depth( 0 ),
+		m_max_scope_depth( 0 )
 	{
 		m_this_ptr = this;
 
@@ -126,6 +133,7 @@ namespace gameswf
 		// m_abc may be destroyed
 		assert(m_abc != NULL);
 
+		if( m_code.size() == 0 ) return; //some method have no body
 		int ip = 0;
 		do
 		{
