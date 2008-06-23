@@ -136,8 +136,13 @@ namespace gameswf
 		else
 		if (m_type == 0x13)
 		{
+			
+			assert( tag_type == 83 );
 			// focal gradient fill, Flash 8
 			// parsed but not implemented yet
+
+			matrix	input_matrix;
+			input_matrix.read(in);
 
 			// 'spread_mode' and 'interpolation_mode' are not used for now
 			// and so they are commented out
@@ -155,7 +160,7 @@ namespace gameswf
 				color.read_rgba(in);
 			}
 
-			in->read_u8(); //Fixed 8
+			in->read_u16(); //Fixed 8
 		}
 		else
 		if (m_type >= 0x40 && m_type <= 0x43)
