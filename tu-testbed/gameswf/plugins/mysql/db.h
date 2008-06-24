@@ -38,6 +38,8 @@ namespace mysql_plugin
 		exported_module void set_autocommit(bool autocommit);
 		exported_module void commit();
 
+		bool m_trace;
+
 	private:
 
 		bool runsql(const char* sql);
