@@ -109,9 +109,20 @@ namespace mysql_plugin
 		tu_autolock locker(s_mysql_plugin_mutex);
 
 		mydb* db = cast_to<mydb>(fn.this_ptr);
-		if (db)
+		if (db && fn.nargs == 1)
 		{
 			db->set_autocommit(fn.arg(0).to_bool());
+		}
+	}
+
+	void mydb_trace_setter(const fn_call& fn)
+	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
+		mydb* db = cast_to<mydb>(fn.this_ptr);
+		if (db && fn.nargs == 1)
+		{
+			db->m_trace = fn.arg(0).to_bool();
 		}
 	}
 
@@ -126,6 +137,7 @@ namespace mysql_plugin
 
 	mydb::mydb(player* player) :
 		as_object(player),
+		m_trace(false),
 		m_db(NULL)
 	{
 		// methods
@@ -135,6 +147,7 @@ namespace mysql_plugin
 		builtin_member("run", mydb_run);
 		builtin_member("commit", mydb_commit);
 		builtin_member("auto_commit", as_value(NULL, mydb_autocommit_setter));
+		builtin_member("trace", as_value(NULL, mydb_trace_setter));
 	}
 
 	mydb::~mydb()
@@ -186,6 +199,8 @@ namespace mysql_plugin
 
 	int mydb::run(const char *sql)
 	{
+		if (m_trace) log_msg("run: %s\n", sql);
+
 		if (runsql(sql))
 		{
 			return (int) mysql_affected_rows(m_db);
@@ -195,6 +210,8 @@ namespace mysql_plugin
 
 	mytable* mydb::open(const char* sql)
 	{
+		if (m_trace) log_msg("open: %s\n", sql);
+
 		if (runsql(sql))
 		{
 			// query succeeded, process any data returned by it
@@ -214,11 +231,15 @@ namespace mysql_plugin
 
 	void mydb::set_autocommit(bool autocommit)
 	{
+		if (m_trace) log_msg("set autocommit=%s\n", autocommit ? "true" : "false");
+
 		mysql_autocommit(m_db, autocommit ? 1 : 0);
 	}
 
 	void mydb::commit()
 	{
+		if (m_trace) log_msg("commit\n");
+
 		mysql_commit(m_db);
 	}
 
