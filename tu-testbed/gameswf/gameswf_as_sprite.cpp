@@ -369,6 +369,7 @@ namespace gameswf
 		log_error("attachMovie needs 3 or 4 args\n"); 
 	} 
 
+	// gameSWF extension
 	void sprite_set_fps(const fn_call& fn) 
 	{ 
 		sprite_instance* sprite = sprite_getptr(fn);
@@ -380,6 +381,13 @@ namespace gameswf
 		}
 	} 
 
+	// gameSWF extension
+	void sprite_get_play_state(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		bool state = sprite->get_play_state() == character::STOP ? false : true;
+		fn.result->set_bool(state);
+	}
 
 	// drawing API
 
