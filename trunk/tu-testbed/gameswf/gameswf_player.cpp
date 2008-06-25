@@ -191,6 +191,10 @@ namespace gameswf
 		// reset root FPS
 		map->add("setFPS", sprite_set_fps);
 
+		// gameSWF extension
+		// return true if movieclip is in PLAY state
+ 		map->add("getPlayState", sprite_get_play_state);
+
 		// Flash9
 		map->add("addFrameScript", sprite_add_script);
 
