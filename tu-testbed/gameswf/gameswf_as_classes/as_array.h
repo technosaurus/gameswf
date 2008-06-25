@@ -32,6 +32,8 @@ namespace gameswf
 		exported_module void push(const as_value& val);
 		exported_module void pop(as_value* val);
 		exported_module void erase(const tu_stringi& index);
+		exported_module void clear();
+
 		exported_module int size();
 
 		tu_string m_string_value;

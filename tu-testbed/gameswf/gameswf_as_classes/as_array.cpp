@@ -8,42 +8,79 @@
 
 namespace gameswf
 {
+	bool string_to_number(double* result, const char* str);
+
+	void	as_array_load_from_string(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		if (a && fn.nargs > 0)
+		{
+			// clear array
+			a->clear();
+
+			const char* str = fn.arg(0).to_string();
+			for (const char* p = str; *p; str = p + 1)
+			{
+				// seach for ','
+				for (p = str; *p != ',' && *p; p++) {}
+
+				// take substr
+				tu_string s(str, int(p - str));
+
+				// push into array
+				double res;
+				if (string_to_number(&res, s.c_str()))
+				{
+					a->push(res);
+				}
+				else
+				{
+					a->push(s.c_str());
+				}
+			}
+		}
+	}
 
 	void	as_array_tostring(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
-		assert(a);
-
-		fn.result->set_tu_string(a->to_string());
+		if (a)
+		{
+			fn.result->set_tu_string(a->to_string());
+		}
 	}
 
 	void	as_array_push(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
-		assert(a);
-
-		if (fn.nargs > 0)
+		if (a)
 		{
-			a->push(fn.arg(0));
+			if (fn.nargs > 0)
+			{
+				a->push(fn.arg(0));
+			}
+			fn.result->set_int(a->size());
 		}
-		fn.result->set_int(a->size());
 	}
 
 	void	as_array_pop(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
-		assert(a);
-	
-		as_value val;
-		a->pop(&val);
-		*fn.result = val;
+		if (a)
+		{
+			as_value val;
+			a->pop(&val);
+			*fn.result = val;
+		}
 	}
 
 	void	as_array_length(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
-		assert(a);
-		fn.result->set_int(a->size());
+		if (a)
+		{
+			fn.result->set_int(a->size());
+		}
 	}
 
 	void	as_global_array_ctor(const fn_call& fn)
@@ -114,6 +151,10 @@ namespace gameswf
 		builtin_member("push", as_array_push);
 		builtin_member("pop", as_array_pop);
 		builtin_member("length", as_value(as_array_length, NULL));
+
+		// gameswf extension, create array from string similar to "1,22,23,422,522,65,777"
+		builtin_member("loadFromString", as_array_load_from_string);
+
 		set_ctor(as_global_array_ctor);
 	}
 
@@ -199,6 +240,16 @@ namespace gameswf
 	// erases one member from array
 	{
 		m_members.erase(index);
+	}
+
+	void as_array::clear()
+	// erases all members from array
+	{
+		for (int i = 0, n = size(); i < n; i++)
+		{
+			as_value index(i);
+			m_members.erase(index.to_tu_stringi());
+		}
 	}
 
 };
