@@ -667,19 +667,20 @@ namespace gameswf
 	{
 		// If the character ID is zero, the class is associated with the main timeline 
 		// -1 means _root
-		int id = ch->get_id();
-		if (id == -1)
+		int symbol_id = ch->get_id();
+		if (symbol_id == -1)
 		{
-			id = 0;
+			symbol_id = 0;
 		}
 
 		tu_string class_name;
-		if (m_symbol_class.get(id, &class_name))
+		if (m_symbol_class.get(symbol_id, &class_name))
 		{
 			assert(m_abc != NULL);
 
+			instance_info* ii = m_abc->get_instance_info(class_name);
+
 			// create traits
-			smart_ptr<instance_info>& ii = m_abc->m_instance[id];
 			for (int i = 0; i < ii->m_trait.size(); i++)
 			{
 				smart_ptr<traits_info>& ti = ii->m_trait[i];

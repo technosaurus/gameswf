@@ -188,7 +188,8 @@ namespace gameswf
 		// get class constructor
 		as_function* get_class_constructor(tu_string& name) const;
 
-		instance_info* find_instance(const tu_string& class_name) const;
+		// find instance info by name
+		instance_info* get_instance_info(const tu_string& class_name) const;
 	};
 }
 

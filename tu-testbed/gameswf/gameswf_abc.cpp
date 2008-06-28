@@ -545,7 +545,7 @@ namespace gameswf
 	as_function* abc_def::get_class_constructor(tu_string& name) const
 	{
 		// find instance_info by name
-		instance_info* ii = find_instance(name);
+		instance_info* ii = get_instance_info(name);
 		if (ii != NULL)
 		{
 			// 'ii->m_iinit' is an index into the method array of the abcFile; 
@@ -556,10 +556,28 @@ namespace gameswf
 		return NULL;
 	}
 
-	instance_info* abc_def::find_instance(const tu_string& class_name) const
+	instance_info* abc_def::get_instance_info(const tu_string& full_class_name) const
 	{
-		//TODO
-		return m_instance[0].get_ptr();
+		//TODO: implement namespace
+
+		// find name
+		tu_string class_name = full_class_name;
+		const char* dot = strrchr(full_class_name.c_str(), '.');
+		if (dot)
+		{
+			class_name = dot + 1;
+		}
+
+		// maybe use hash instead of array for m_instance ?
+		for (int i = 0; i < m_instance.size(); i++)
+		{
+			const tu_string& name = get_multiname(m_instance[i]->m_name);
+			if (class_name == name)
+			{
+				return m_instance[i].get_ptr();
+			}
+		}
+		return NULL;
 	}
 
 };	// end namespace gameswf
