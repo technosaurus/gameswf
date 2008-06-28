@@ -1,6 +1,6 @@
 ﻿package
 {
-	class shape extends box
+	public class shape extends box
 	{
 		private var i : Number;
 

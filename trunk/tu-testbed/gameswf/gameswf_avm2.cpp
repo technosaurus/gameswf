@@ -69,9 +69,20 @@ namespace gameswf
 		array<as_value>	local_register;
 		local_register.resize(m_local_count + 1);
 
-		//	Register 0 holds the “this” object. This value is never null.
+		// Register 0 holds the “this” object. This value is never null.
 		assert(this_ptr);
 		local_register[0] = this_ptr;
+
+		// Registers 1 through method_info.param_count holds parameter values.
+		// If fewer than method_body_info.local_count values are supplied to the call then
+		// the remaining values are either the values provided by default value declarations 
+		// or the value undefined.
+		for (int i = 0; i < m_param_type.size(); i++)
+		{
+			// A zero value denotes the any (“*”) type.
+//			const char* name = m_abc->get_multiname(m_param_type[i]);
+//			local_register[i + 1] = 1;	// hack
+		}
 
 		// Create stack.
 		array<as_value>	stack;
@@ -299,7 +310,7 @@ namespace gameswf
 						}
 					}
 
-					IF_VERBOSE_ACTION(log_msg("EX: findproperty\t %s, obj=0x%p\n", name, obj));
+					IF_VERBOSE_ACTION(log_msg("EX: findproperty\t '%s', obj=0x%p\n", name, obj));
 
 					stack.push_back(obj);
 					break;
@@ -365,6 +376,30 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("EX: initproperty\t 0x%p.%s=%s\n", obj, name, val.to_xstring()));
 
 					stack.resize(stack.size() - 2);
+					break;
+				}
+
+				case 0xA0:	// Add two values
+				{
+					//TODO: test and optimize
+					as_value val1 = stack.back();
+					stack.resize(stack.size() - 1);
+					as_value val2 = stack.back();
+					stack.resize(stack.size() - 1);
+
+					if (val1.is_string() || val2.is_string())
+					{
+						tu_string str = val2.to_string();
+						str += val1.to_string();
+						val2.set_tu_string(str);
+					}
+					else
+					{
+						val2 += val1.to_number();
+					}
+
+					stack.push_back(val2);
+
 					break;
 				}
 

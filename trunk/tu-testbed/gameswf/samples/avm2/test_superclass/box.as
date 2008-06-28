@@ -1,6 +1,6 @@
 ﻿package 
 {
-	class box
+	public class box
 	{
 		private var i : Number;
 
@@ -12,7 +12,7 @@
 
 		public function draw()
 		{
-			trace("BOX: draw is called: i=" + i);
+	//		trace("BOX: draw is called: i=" + i);
 		}
 	}
 }
