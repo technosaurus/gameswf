@@ -6,12 +6,13 @@
 // AVM2 implementation
 
 #include "gameswf/gameswf_avm2.h"
-#include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_stream.h"<
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_abc.h"
 #include "gameswf/gameswf_disasm.h"
 #include "gameswf/gameswf_character.h"
 #include "gameswf_jit.h"
+#include "gameswf/gameswf_as_classes/as_array.h"
 
 namespace gameswf
 {
@@ -151,6 +152,22 @@ namespace gameswf
 			Uint8 opcode = m_code[ip++];
 			switch (opcode)
 			{
+				case 0x14: // ifne
+				{
+					bool taken;
+					//Follows ECMA-262 11.9.3
+					if( taken = !abstract_equality_comparison(scope[ scope.size() - 2 ], scope[ scope.size() - 1 ]) )
+					{
+						int offset = m_code[ip] | m_code[ip+1]<<8 | m_code[ip+2]<<16;
+						ip += offset;
+					}
+
+					ip += 3;
+
+					IF_VERBOSE_ACTION(log_msg("EX: ifne\t %s\n", taken? "taken": "not taken"));
+
+				} break;
+
 				case 0x24:	// pushbyte
 				{
 					int byte_value;
@@ -268,6 +285,28 @@ namespace gameswf
 
 					break;
 				}
+
+				case 0x56: //newarray
+				{
+					int arg_count;
+					
+					ip += read_vu30(arg_count, &m_code[ip]);
+
+					as_array * array = new as_array( get_player() );
+					
+					int offset = stack.size() - arg_count;
+
+					for( int arg_index = 0; arg_index < arg_count; ++arg_index )
+					{
+						array->push( stack[ offset + arg_index ] );
+					}
+
+					stack.resize( offset + 1 );
+					stack.back() = array;
+
+					IF_VERBOSE_ACTION(log_msg("EX: newarray\t arg_count:%i\n", arg_count));
+
+				} break;
 
 				case 0x5D:	// findpropstrict
 				{
@@ -503,4 +542,59 @@ namespace gameswf
 
 	}
 
+	bool as_3_function::abstract_equality_comparison( const as_value & first, const as_value & second )
+	{
+		if( first.typeof() == second.typeof() )
+		{
+			if( first.is_undefined() ) return true;
+			if( first.is_null() ) return true;
+
+			if( first.is_number() )
+			{
+				double first_number = first.to_number();
+				double second_number = second.to_number();
+				if( first_number == get_nan() || second_number == get_nan() )
+				{
+					return false;
+				}
+
+				return first_number == second_number;
+			}
+			else if( first.is_string() )
+			{
+				return first.to_tu_string() == second.to_tu_string();
+			}
+			else if( first.is_bool() )
+			{
+				return first.to_bool() == second.to_bool();
+			}
+
+			//13.Return true if x and y refer to the same object or if they refer to objects joined to each other (see
+			//13.1.2). Otherwise, return false.
+			// TODO: treat joined object
+
+			return first.to_object() == second.to_object();
+		}
+		else
+		{
+
+			if( first.is_null() && second.is_undefined() ) return true;
+			if( second.is_null() && first.is_undefined() ) return true;
+
+			if( ( first.is_number() && second.is_string() ) 
+				|| (second.is_number() && first.is_string() ) )
+			{
+				return first.to_number() == second.to_number();
+			}
+
+			if( first.is_bool() || second.is_bool() ) return first.to_number() == second.to_number();
+
+			// TODO:20.If Type(x) is either String or Number and Type(y) is Object,
+			//return the result of the comparison x == ToPrimitive(y).
+			//21.If Type(x) is Object and Type(y) is either String or Number,
+			//return the result of the comparison ToPrimitive(x) == y.
+
+			return false;
+		}
+	}
 }
