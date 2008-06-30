@@ -339,7 +339,7 @@ namespace gameswf
 				{
 					int class_index;
 					
-					ip += read_vu30( class_index, m_code[ip] );
+					ip += read_vu30( class_index, &m_code[ip] );
 
 					assert( 0&& "todo" ); 
 
