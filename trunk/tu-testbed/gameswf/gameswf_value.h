@@ -167,6 +167,8 @@ namespace gameswf
 		inline int get_flags() const { return m_flags; }
 		inline void set_flags(int flags) const  { m_flags = flags; }
 
+		static bool abstract_equality_comparison( const as_value & first, const as_value & second );
+
 	};
 
 }

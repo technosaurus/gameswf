@@ -365,6 +365,7 @@ namespace gameswf
 		bool	in_import_table(int character_id);
 		virtual void	visit_imported_movies(import_visitor* visitor);
 		virtual void	add_abc(tu_string& name, abc_def* abc);
+		const abc_def * get_abc() const{ return m_abc.get_ptr(); }
 		virtual void	add_symbol_class(int character_id, const tu_string& class_name);
 		virtual void	add_scene(int character_id, const tu_string& class_name);
 		virtual void	add_frame_label(int character_id, const tu_string& class_name);

@@ -726,6 +726,62 @@ namespace gameswf
 		*this = v;
 	}
 
+	bool as_value::abstract_equality_comparison( const as_value & first, const as_value & second )
+	{
+		if( first.typeof() == second.typeof() )
+		{
+			if( first.is_undefined() ) return true;
+			if( first.is_null() ) return true;
+
+			if( first.is_number() )
+			{
+				double first_number = first.to_number();
+				double second_number = second.to_number();
+				if( first_number == get_nan() || second_number == get_nan() )
+				{
+					return false;
+				}
+
+				return first_number == second_number;
+			}
+			else if( first.is_string() )
+			{
+				return first.to_tu_string() == second.to_tu_string();
+			}
+			else if( first.is_bool() )
+			{
+				return first.to_bool() == second.to_bool();
+			}
+
+			//13.Return true if x and y refer to the same object or if they refer to objects joined to each other (see
+			//13.1.2). Otherwise, return false.
+			// TODO: treat joined object
+
+			return first.to_object() == second.to_object();
+		}
+		else
+		{
+
+			if( first.is_null() && second.is_undefined() ) return true;
+			if( second.is_null() && first.is_undefined() ) return true;
+
+			if( ( first.is_number() && second.is_string() ) 
+				|| (second.is_number() && first.is_string() ) )
+			{
+				return first.to_number() == second.to_number();
+			}
+
+			if( first.is_bool() || second.is_bool() ) return first.to_number() == second.to_number();
+
+			// TODO:20.If Type(x) is either String or Number and Type(y) is Object,
+			//return the result of the comparison x == ToPrimitive(y).
+			//21.If Type(x) is Object and Type(y) is either String or Number,
+			//return the result of the comparison ToPrimitive(x) == y.
+
+			return false;
+		}
+	}
+
 
 	//
 	//	as_property
