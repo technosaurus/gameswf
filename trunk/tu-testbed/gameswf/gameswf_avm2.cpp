@@ -168,6 +168,14 @@ namespace gameswf
 
 				} break;
 
+				case 0x1D: // popscope
+				{
+					scope.pop_back();
+
+					IF_VERBOSE_ACTION(log_msg("EX: popscope\n"));
+				}
+				break;
+
 				case 0x24:	// pushbyte
 				{
 					int byte_value;
