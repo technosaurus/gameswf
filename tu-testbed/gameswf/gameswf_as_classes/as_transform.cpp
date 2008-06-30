@@ -23,7 +23,7 @@ namespace gameswf
 	static stringi_hash<as_transform_member>	s_transform_member_map;
 	static as_transform_member   get_transform_member(const tu_stringi& name);
 
-	// Tranform( mc:MovieClip )
+	// Transform( mc:MovieClip )
 	void	as_global_transform_ctor(const fn_call& fn)
 	{
 		if (fn.nargs == 1)

@@ -179,17 +179,30 @@ namespace gameswf
 			return get_string(m_multiname[index].m_name); 
 		}
 
+		inline as_function* get_script_method() const
+		{
+			return m_method[ m_script.back()->m_init ].get_ptr();
+		}
+
 		abc_def(player* player);
 		virtual ~abc_def();
 
 		void	read(stream* in, movie_definition_sub* m);
 		void	read_cpool(stream* in);
 
+		inline const char * get_super_class(tu_string& name) const
+		{
+			return get_multiname( get_instance_info( name )->m_super_name );
+		}
+
+		const char * get_class_from_constructor( int method );
+
 		// get class constructor
 		as_function* get_class_constructor(tu_string& name) const;
 
 		// find instance info by name
 		instance_info* get_instance_info(const tu_string& class_name) const;
+		class_info* get_class_info(const tu_string& full_class_name) const;
 	};
 }
 

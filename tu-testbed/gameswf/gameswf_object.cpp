@@ -621,21 +621,21 @@ namespace gameswf
 		if (constructor.to_object()) 	 
 		{ 	 
 			// constructor is as_s_function 	 
-			as_value val; 	 
+			as_value val;
 			constructor.to_object()->get_member("prototype", &val);
-			as_object* prototype = val.to_object(); 	 
-			assert(prototype); 	 
-			prototype->copy_to(this); 	 
+			as_object* prototype = val.to_object();
+			assert(prototype);
+			prototype->copy_to(this);
 
-			as_value prototype_constructor; 	 
-			if (prototype->get_ctor(&prototype_constructor)) 	 
-			{ 	 
-				m_proto->set_ctor(prototype_constructor); 	 
-			} 	 
-		} 	 
+			as_value prototype_constructor;
+			if (prototype->get_ctor(&prototype_constructor))
+			{
+				m_proto->set_ctor(prototype_constructor);
+			}
+		}
 
-		set_ctor(constructor); 	 
-		return m_proto.get_ptr(); 	 
+		set_ctor(constructor);
+		return m_proto.get_ptr();
 	}
 
 }

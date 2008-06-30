@@ -150,7 +150,6 @@ namespace gameswf
 			array<as_value>& scope,
 			as_value* result);
 
-		bool abstract_equality_comparison( const as_value & first, const as_value & second );
 		void	compile();
 
 		void compile_stack_resize( int count );

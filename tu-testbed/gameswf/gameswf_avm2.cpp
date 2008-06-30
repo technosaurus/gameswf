@@ -6,7 +6,7 @@
 // AVM2 implementation
 
 #include "gameswf/gameswf_avm2.h"
-#include "gameswf/gameswf_stream.h"<
+#include "gameswf/gameswf_stream.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_abc.h"
 #include "gameswf/gameswf_disasm.h"
@@ -156,7 +156,7 @@ namespace gameswf
 				{
 					bool taken;
 					//Follows ECMA-262 11.9.3
-					if( taken = !abstract_equality_comparison(scope[ scope.size() - 2 ], scope[ scope.size() - 1 ]) )
+					if( taken = !as_value::abstract_equality_comparison(scope[ scope.size() - 2 ], scope[ scope.size() - 1 ]) )
 					{
 						int offset = m_code[ip] | m_code[ip+1]<<8 | m_code[ip+2]<<16;
 						ip += offset;
@@ -241,13 +241,40 @@ namespace gameswf
 
 					as_object* obj = stack.back().to_object();
 					stack.resize(stack.size() - 1);
+					as_environment env(get_player());
 					for (int i = 0; i < arg_count; i++)
 					{
 						as_value& val = stack.back();
+
+						env.push( val );
 						stack.resize(stack.size() - 1);
 					}
 
-					//TODO: construct super of obj
+					// Assume we are in a constructor
+					tu_string class_name = m_abc->get_class_from_constructor( m_method );
+					tu_string super_class_name = m_abc->get_super_class( class_name );
+
+
+					as_object * super = obj;
+
+					while( super->get_proto() )
+					{
+						super = super->get_proto();
+					}
+
+					as_function * function = m_abc->get_class_constructor( super_class_name );
+					if( !function )
+					{
+						as_value value;
+						if( get_player()->get_global()->get_member( super_class_name, &value ) )
+						{
+							function = cast_to<as_function>( value.to_object() );
+						}
+					}
+					assert( function );
+					as_object* proto = super->create_proto( function );
+
+					call_method( function, &env, obj, arg_count, 0);
 
 					IF_VERBOSE_ACTION(log_msg("EX: constructsuper\t 0x%p(args:%d)\n", obj, arg_count));
 
@@ -307,6 +334,16 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("EX: newarray\t arg_count:%i\n", arg_count));
 
 				} break;
+
+				case 0x58: // newclass
+				{
+					int class_index;
+					
+					ip += read_vu30( class_index, m_code[ip] );
+
+					assert( 0&& "todo" ); 
+
+				}break;
 
 				case 0x5D:	// findpropstrict
 				{
@@ -377,6 +414,19 @@ namespace gameswf
 					stack.push_back(val);
 					break;
 				}
+
+				case 0x65: // getscopeobject
+				{
+					int index = m_code[ip];
+					++ip;
+
+					assert( index < scope.size() );
+
+					stack.push_back( scope[index] );
+
+					IF_VERBOSE_ACTION(log_msg("EX: getscopeobject\t index=%i, value=%s\n", index, stack.back().to_xstring()));
+
+				} break;
 
 				case 0x66:	// getproperty
 				{
@@ -540,61 +590,5 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_msg("method	%i\n", m_method));
 		IF_VERBOSE_PARSE(log_disasm_avm2(m_code, m_abc.get_ptr()));
 
-	}
-
-	bool as_3_function::abstract_equality_comparison( const as_value & first, const as_value & second )
-	{
-		if( first.typeof() == second.typeof() )
-		{
-			if( first.is_undefined() ) return true;
-			if( first.is_null() ) return true;
-
-			if( first.is_number() )
-			{
-				double first_number = first.to_number();
-				double second_number = second.to_number();
-				if( first_number == get_nan() || second_number == get_nan() )
-				{
-					return false;
-				}
-
-				return first_number == second_number;
-			}
-			else if( first.is_string() )
-			{
-				return first.to_tu_string() == second.to_tu_string();
-			}
-			else if( first.is_bool() )
-			{
-				return first.to_bool() == second.to_bool();
-			}
-
-			//13.Return true if x and y refer to the same object or if they refer to objects joined to each other (see
-			//13.1.2). Otherwise, return false.
-			// TODO: treat joined object
-
-			return first.to_object() == second.to_object();
-		}
-		else
-		{
-
-			if( first.is_null() && second.is_undefined() ) return true;
-			if( second.is_null() && first.is_undefined() ) return true;
-
-			if( ( first.is_number() && second.is_string() ) 
-				|| (second.is_number() && first.is_string() ) )
-			{
-				return first.to_number() == second.to_number();
-			}
-
-			if( first.is_bool() || second.is_bool() ) return first.to_number() == second.to_number();
-
-			// TODO:20.If Type(x) is either String or Number and Type(y) is Object,
-			//return the result of the comparison x == ToPrimitive(y).
-			//21.If Type(x) is Object and Type(y) is either String or Number,
-			//return the result of the comparison ToPrimitive(x) == y.
-
-			return false;
-		}
 	}
 }

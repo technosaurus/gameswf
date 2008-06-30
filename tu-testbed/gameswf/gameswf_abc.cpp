@@ -31,7 +31,7 @@ namespace gameswf
 		// The value can not be zero, and the multiname entry specified must be a QName.
 		m_name = in->read_vu30();
 		assert(m_name != 0 && abc->m_multiname[m_name].is_qname());
-		IF_VERBOSE_PARSE(log_msg("    traits: name='%s'\n",	abc->get_multiname(m_name)));
+		IF_VERBOSE_PARSE(log_msg("	traits: name='%s'\n",	abc->get_multiname(m_name)));
 		
 		Uint8 b = in->read_u8();
 		m_kind = b & 0x0F;
@@ -306,7 +306,7 @@ namespace gameswf
 		n = in->read_vu30();
 		for (i = 0; i < n; i++)
 		{
-            int method_index = in->read_vu30();
+			int method_index = in->read_vu30();
 			m_method[method_index]->read_body(in);
 		}
 
@@ -538,6 +538,20 @@ namespace gameswf
 
 	}
 
+	const char * abc_def::get_class_from_constructor( int method )
+	{
+		for( int instance_index = 0; instance_index < m_instance.size(); ++instance_index )
+		{
+			if( m_instance[ instance_index ]->m_iinit == method )
+			{
+				return get_multiname( m_instance[ instance_index ]->m_name );
+			}
+		}
+
+		return NULL;
+	}
+
+
 	// get class constructor
 	// 'name' is the fully-qualified name of the ActionScript 3.0 class 
 	// with which to associate this symbol.
@@ -575,6 +589,30 @@ namespace gameswf
 			if (class_name == name)
 			{
 				return m_instance[i].get_ptr();
+			}
+		}
+		return NULL;
+	}
+
+	class_info* abc_def::get_class_info(const tu_string& full_class_name) const
+	{
+		//TODO: implement namespace
+
+		// find name
+		tu_string class_name = full_class_name;
+		const char* dot = strrchr(full_class_name.c_str(), '.');
+		if (dot)
+		{
+			class_name = dot + 1;
+		}
+
+		// maybe use hash instead of array for m_instance ?
+		for (int i = 0; i < m_instance.size(); i++)
+		{
+			const tu_string& name = get_multiname(m_instance[i]->m_name);
+			if (class_name == name)
+			{
+				return m_class[i].get_ptr();
 			}
 		}
 		return NULL;
