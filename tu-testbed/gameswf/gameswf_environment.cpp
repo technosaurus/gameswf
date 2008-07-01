@@ -93,6 +93,26 @@ namespace gameswf
 		return NULL;
 	}
 
+	void vm_stack::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
+	{
+
+		for (int i = 0, n = array<as_value>::size(); i < n; i++)
+		{
+			as_object* obj = (*this)[i].to_object();
+			if (obj)
+			{
+				if (obj == this_ptr)
+				{
+					(*this)[i].set_undefined();
+				}
+				else
+				{
+					obj->clear_refs(visited_objects, this_ptr);
+				}
+			}
+		}
+	}
+
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, const as_value& target_value)
 	{
@@ -620,22 +640,8 @@ namespace gameswf
 			}
 		}
 
-		// clear refs from stack
-		for (int i = 0, n = size(); i < n; i++)
-		{
-			as_object* obj = (*this)[i].to_object();
-			if (obj)
-			{
-				if (obj == this_ptr)
-				{
-					(*this)[i].set_undefined();
-				}
-				else
-				{
-					obj->clear_refs(visited_objects, this_ptr);
-				}
-			}
-		}
+		// clear refs to 'this_ptr' from stack
+		vm_stack::clear_refs(visited_objects, this_ptr);
 
 		// global register
 		for (int i = 0, n = GLOBAL_REGISTER_COUNT; i < n; i++)
