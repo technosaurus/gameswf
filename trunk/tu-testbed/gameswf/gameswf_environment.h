@@ -46,41 +46,80 @@ namespace gameswf
 	};
 
 	// stack access/manipulation
-	struct vm_stack : public array<as_value>
+	// @@ TODO do more checking on these
+	struct vm_stack : private array<as_value>
 	{
-		// @@ TODO do more checking on these
+		vm_stack() :
+			m_stack_size(0)
+		{
+		}
+
+		as_value&	operator[](int index) 
+		{
+//			assert(index >= 0 && index < m_stack_size);
+			return array<as_value>::operator[](index);
+		}
+
+		const as_value&	operator[](int index) const 
+		{
+//			assert(index >= 0 && index < m_stack_size);
+			return array<as_value>::operator[](index);
+		}
 
 		template<class T>
 		void	push(T val) 
 		{
-			push_back(as_value(val)); 
+			if (m_stack_size < array<as_value>::size())
+			{
+				(*this)[m_stack_size] = as_value(val);
+			}
+			else
+			{
+				push_back(as_value(val)); 
+			}
+			m_stack_size++;
 		}
 
-		as_value	pop()
+		as_value&	pop()
 		{
-			as_value result = back();
-			pop_back(); 
-			return result; 
+			if (m_stack_size > 0)
+			{
+				m_stack_size--;
+				return (*this)[m_stack_size];
+			}
+
+			// empty stack
+			static as_value undefined;
+			return undefined; 
 		}
 
 		void	drop(int count)
 		{
-			int n = size() - count;
-			if (n < 0)
+			m_stack_size -= count;
+			if (m_stack_size < 0)
 			{
-				n = 0;
+				m_stack_size = 0;
 			}
-			resize(n); 
 		}
 
-		as_value&	top(int dist) { return (*this)[size() - 1 - dist]; }
+		as_value&	top(int dist) { return (*this)[m_stack_size - 1 - dist]; }
 		as_value&	bottom(int index) { return (*this)[index]; }
 
-		int	get_top_index() const { return size() - 1; }
+		inline int	get_top_index() const { return m_stack_size - 1; }
+		inline int	size() const { return m_stack_size; }
 
-//		int size() const { return array::size(); }
-//		void resize(int new_size) { array::resize(new_size); }
+		void resize(int new_size)
+		{
+			assert(new_size <= array<as_value>::size());
+			m_stack_size = new_size; 
+		}
 
+		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
+
+
+	private:
+
+		int m_stack_size;
 	};
 
 	struct as_environment : public vm_stack
@@ -112,7 +151,7 @@ namespace gameswf
 		bool	get_member(const tu_stringi& name, as_value* val);
 
 		int get_stack_size() const { return size(); }
-		void set_stack_size(int n) { return resize(n); }
+		void set_stack_size(int n) { resize(n); }
 
 		character*	get_target() const;
 		void set_target(character* target);

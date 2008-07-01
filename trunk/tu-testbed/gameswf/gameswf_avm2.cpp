@@ -118,7 +118,7 @@ namespace gameswf
 		{
 			try
 			{
-				m_compiled_code.call< array<as_value>&, array<as_value>&, array<as_value>&, as_value* >
+				m_compiled_code.call< array<as_value>&, vm_stack&, vm_stack&, as_value* >
 					(local_register, stack, scope, fn.result );
 			}
 			catch( ... )
