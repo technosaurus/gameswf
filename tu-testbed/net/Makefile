@@ -28,6 +28,7 @@ all: $(LIB_OUT) $(EXE_OUT)
 LIB_OBJS = \
 	http_client.$(OBJ_EXT)		\
 	http_file_handler.$(OBJ_EXT)		\
+	http_helper.$(OBJ_EXT)			\
 	http_server.$(OBJ_EXT)			\
 	net_interface_tcp.$(OBJ_EXT) 		\
 	tu_net_file.$(OBJ_EXT)			\

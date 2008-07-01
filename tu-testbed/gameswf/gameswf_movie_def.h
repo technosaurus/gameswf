@@ -135,12 +135,12 @@ namespace gameswf
 			m_ss_id(-1),
 			m_ss_format(sound_handler::FORMAT_RAW),
 			m_ss_start(-1),
-			m_frame_count(0),
-			m_loading_frame(0),
-			m_break_loading(false),
 			m_has_metadata(false),
 			m_is_avm2(false),
-			m_use_network(false)
+			m_use_network(false),
+			m_frame_count(0),
+			m_loading_frame(0),
+			m_break_loading(false)
 		{
 		}
 

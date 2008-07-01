@@ -336,7 +336,9 @@ namespace parser
 				log_msg("ratio: %i\n",input->read_u16());
 			}			
 			if (has_name) {
-				log_msg("name: %s\n",input->read_string());
+				tu_string name;
+				input->read_string(&name);
+				log_msg("name: %s\n",name.c_str());
 			}
 			if (has_clip_depth) {
 				log_msg("clipdepth: %i\n",input->read_u16());
@@ -474,8 +476,9 @@ namespace parser
 		assert(tag_type==43);
 		log_msg("current framelabel:\n");
 		ident++;
-		char* str = input->read_string();
-		log_msg("%s\n",str);
+		tu_string str;
+		input->read_string(&str);
+		log_msg("%s\n",str.c_str());
 		delete str;
 
 		if (input->get_position() < input->get_tag_end_position())

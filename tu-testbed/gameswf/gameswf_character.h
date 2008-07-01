@@ -42,8 +42,8 @@ namespace gameswf
 		}
 
 		character_def(player* player)	:
-			m_player(player),
-			m_id(-1)
+			m_id(-1),
+			m_player(player)
 		{
 			assert(player);
 		}

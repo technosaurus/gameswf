@@ -70,7 +70,7 @@ namespace gameswf
 		array<as_value>	local_register;
 		local_register.resize(m_local_count + 1);
 
-		// Register 0 holds the “this” object. This value is never null.
+		// Register 0 holds the ï¿½thisï¿½ object. This value is never null.
 		assert(this_ptr);
 		local_register[0] = this_ptr;
 
@@ -80,7 +80,7 @@ namespace gameswf
 		// or the value undefined.
 		for (int i = 0; i < m_param_type.size(); i++)
 		{
-			// A zero value denotes the any (“*”) type.
+			// A zero value denotes the any (ï¿½*ï¿½) type.
 //			const char* name = m_abc->get_multiname(m_param_type[i]);
 //			local_register[i + 1] = 1;	// hack
 		}
@@ -228,7 +228,7 @@ namespace gameswf
 
 				case 0x30:	// pushscope
 				{
-					as_value& val = stack.pop();
+					as_value val = stack.pop();
 					scope.push(val);
 
 					IF_VERBOSE_ACTION(log_msg("EX: pushscope\t %s\n", val.to_xstring()));
@@ -289,7 +289,7 @@ namespace gameswf
 				}
 
 				case 0x4F:	// callpropvoid, Call a property, discarding the return value.
-				// Stack: …, obj, [ns], [name], arg1,...,argn => …
+				// Stack: ï¿½, obj, [ns], [name], arg1,...,argn => ï¿½
 				{
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
@@ -342,7 +342,7 @@ namespace gameswf
 
 				case 0x58: // newclass
 				{
-					// stack:	…, basetype => …, newclass
+					// stack:	ï¿½, basetype => ï¿½, newclass
 					int class_index;
 					ip += read_vu30( class_index, &m_code[ip] );
 					as_object* basetype = stack.top(0).to_object();

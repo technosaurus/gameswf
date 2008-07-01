@@ -20,19 +20,19 @@
 typedef char GLchar;
 
 typedef void (APIENTRY* PFNGLACTIVETEXTUREPROC) (GLenum texture);
-PFNGLACTIVETEXTUREPROC glActiveTexture = 0;
+PFNGLACTIVETEXTUREPROC _glActiveTexture = 0;
 
 typedef void (APIENTRY* PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
-PFNGLACTIVETEXTUREARBPROC	glActiveTextureARB = 0;
+PFNGLACTIVETEXTUREARBPROC	_glActiveTextureARB = 0;
 
 typedef void (APIENTRY* PFNGLCLIENTACTIVETEXTUREARBPROC) (GLenum texture);
-PFNGLCLIENTACTIVETEXTUREARBPROC	glClientActiveTextureARB = 0;
+PFNGLCLIENTACTIVETEXTUREARBPROC	_glClientActiveTextureARB = 0;
 
 typedef void (APIENTRY* PFNGLMULTITEXCOORD2FARBPROC) (GLenum target, GLfloat s, GLfloat t);
-PFNGLMULTITEXCOORD2FARBPROC	glMultiTexCoord2fARB = 0;
+PFNGLMULTITEXCOORD2FARBPROC	_glMultiTexCoord2fARB = 0;
 
 typedef void (APIENTRY* PFNGLMULTITEXCOORD2FVARBPROC) (GLenum target, const GLfloat *v);
-PFNGLMULTITEXCOORD2FVARBPROC	glMultiTexCoord2fvARB = 0;
+PFNGLMULTITEXCOORD2FVARBPROC	_glMultiTexCoord2fvARB = 0;
 
 typedef void (APIENTRY* PFNGLGENFRAMEBUFFERSEXTPROC) (GLsizei n, GLuint *framebuffers);
 PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = 0;
@@ -469,11 +469,11 @@ struct render_handler_ogl : public gameswf::render_handler
 	void open()
 	{
 		// Scan for extensions used by gameswf
-		glActiveTexture =  (PFNGLACTIVETEXTUREPROC) SDL_GL_GetProcAddress("glActiveTexture");
-		glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glActiveTextureARB");
-		glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
-		glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
-		glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
+		_glActiveTexture =  (PFNGLACTIVETEXTUREPROC) SDL_GL_GetProcAddress("glActiveTexture");
+		_glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glActiveTextureARB");
+		_glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
+		_glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
+		_glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
 		glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC) SDL_GL_GetProcAddress("glGenFramebuffersEXT");
 		glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC) SDL_GL_GetProcAddress("glBindFramebufferEXT");
 		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) SDL_GL_GetProcAddress("glFramebufferTexture2DEXT");
