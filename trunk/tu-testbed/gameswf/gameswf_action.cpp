@@ -785,14 +785,7 @@ namespace gameswf
 				}
 				case 0x17:	// pop
 				{
-					if (env->m_stack.size() > 0)
-					{
-						env->drop(1);
-					}
-					else
-					{
-						log_error("error: empty stack\n");
-					}
+					env->drop(1);
 					break;
 				}
 				case 0x18:	// int

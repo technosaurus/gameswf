@@ -139,7 +139,7 @@ namespace gameswf
 			m_loading_frame(0),
 			m_break_loading(false),
 			m_has_metadata(false),
-			m_is_action3(false),
+			m_is_avm2(false),
 			m_use_network(false)
 		{
 		}
@@ -239,7 +239,7 @@ namespace gameswf
 
 		// flash9
 		bool m_has_metadata;
-		bool m_is_action3;
+		bool m_is_avm2;
 		bool m_use_network;
 
 	private:

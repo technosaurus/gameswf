@@ -47,9 +47,43 @@ namespace gameswf
 		}
 	};
 
-	struct as_environment
+	// stack access/manipulation
+	struct vm_stack : protected array<as_value>
 	{
-		array<as_value>	m_stack;
+		// @@ TODO do more checking on these
+
+		template<class T>
+		void	push(T val) 
+		{
+			push_back(as_value(val)); 
+		}
+
+		as_value	pop()
+		{
+			as_value result = back();
+			pop_back(); 
+			return result; 
+		}
+
+		void	drop(int count)
+		{
+			int n = size() - count;
+			if (n < 0)
+			{
+				n = 0;
+			}
+			resize(n); 
+		}
+
+		as_value&	top(int dist) { return (*this)[size() - 1 - dist]; }
+		as_value&	bottom(int index) { return (*this)[index]; }
+
+		int	get_top_index() const { return size() - 1; }
+
+	};
+
+	struct as_environment : public vm_stack
+	{
 		as_value	m_global_register[GLOBAL_REGISTER_COUNT];
 		array<as_value>	m_local_register;	// function2 uses this
 		smart_ptr<as_object>	m_target;
@@ -76,42 +110,12 @@ namespace gameswf
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
 
+		int get_stack_size() const { return size(); }
+		void set_stack_size(int n) { return resize(n); }
 
 		character*	get_target() const;
 		void set_target(character* target);
 		void set_target(as_value& target, character* original_target);
-
-		// stack access/manipulation
-		// @@ TODO do more checking on these
-
-		// changes size of stack
-		template<class T>
-		void	push(T val) 
-		{
-			m_stack.push_back(as_value(val)); 
-//			printf("push: size of stack = %d\n", m_stack.size());
-		}
-
-		// changes size of stack
-		as_value	pop()
-		{
-			as_value result = m_stack.back();
-			m_stack.pop_back(); 
-//			printf("pop: size of stack = %d\n", m_stack.size());
-			return result; 
-		}
-
-		// changes size of stack
-		void	drop(int count)
-		{
-			m_stack.resize(m_stack.size() - count); 
-//			printf("pop: size of stack = %d\n", m_stack.size());
-		}
-
-		as_value&	top(int dist) { return m_stack[m_stack.size() - 1 - dist]; }
-		as_value&	bottom(int index) { return m_stack[index]; }
-
-		int	get_top_index() const { return m_stack.size() - 1; }
 
 		as_value	get_variable(const tu_string& varname, const array<with_stack_entry>& with_stack) const;
 		// no path stuff:
