@@ -249,15 +249,12 @@ namespace gameswf
 					int arg_count;
 					ip += read_vu30(arg_count, &m_code[ip]);
 
-					as_object* obj = stack.top(0).to_object();
-					stack.resize(stack.size() - 1);
+					as_object* obj = stack.pop().to_object();
+
 					as_environment env(get_player());
 					for (int i = 0; i < arg_count; i++)
 					{
-						as_value& val = stack.top(0);
-
-						env.push( val );
-						stack.resize(stack.size() - 1);
+						env.push(stack.pop());
 					}
 
 					// Assume we are in a constructor
@@ -304,13 +301,11 @@ namespace gameswf
 					as_environment env(get_player());
 					for (int i = 0; i < arg_count; i++)
 					{
-						as_value& val = stack[stack.size() - 1 - i];
-						env.push(val);
+						env.push(stack.top(i));
 					}
-					stack.resize(stack.size() - arg_count);
+					stack.drop(arg_count);
 
-					as_object* obj = stack.top(0).to_object();
-					stack.resize(stack.size() - 1);
+					as_object* obj = stack.pop().to_object();
 
 					as_value func;
 					if (obj && obj->get_member(name, &func))
@@ -350,14 +345,14 @@ namespace gameswf
 					// stack:	…, basetype => …, newclass
 					int class_index;
 					ip += read_vu30( class_index, &m_code[ip] );
-			//		as_object* basetype = stack.top(0);
+					as_object* basetype = stack.top(0).to_object();
 
 					as_object* new_obj = NULL;
 
 			//		assert( 0&& "todo" ); 
 					printf("todo opcode newclass\n");
 
-		//			stack.top(0)->set_as_object(new_obj);
+					stack.top(0).set_as_object(new_obj);
 	
 					break;
 				}
@@ -472,8 +467,8 @@ namespace gameswf
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
 
-					as_value& val = stack[stack.size() - 1];
-					as_object* obj = stack[stack.size() - 2].to_object();
+					as_value& val = stack.top(0);
+					as_object* obj = stack.top(1).to_object();
 					if (obj)
 					{
 						obj->set_member(name, val);
@@ -481,30 +476,23 @@ namespace gameswf
 
 					IF_VERBOSE_ACTION(log_msg("EX: initproperty\t 0x%p.%s=%s\n", obj, name, val.to_xstring()));
 
-					stack.resize(stack.size() - 2);
+					stack.drop(2);
 					break;
 				}
 
 				case 0xA0:	// Add two values
 				{
-					//TODO: test and optimize
-					as_value val1 = stack.top(0);
-					stack.resize(stack.size() - 1);
-					as_value val2 = stack.top(0);
-					stack.resize(stack.size() - 1);
-
-					if (val1.is_string() || val2.is_string())
+					if (stack.top(0).is_string() || stack.top(1).is_string())
 					{
-						tu_string str = val2.to_string();
-						str += val1.to_string();
-						val2.set_tu_string(str);
+						tu_string str = stack.top(1).to_string();
+						str += stack.top(0).to_string();
+						stack.top(1).set_tu_string(str);
 					}
 					else
 					{
-						val2 += val1.to_number();
+						stack.top(1) += stack.top(0).to_number();
 					}
-
-					stack.push(val2);
+					stack.drop(1);
 
 					break;
 				}
