@@ -93,7 +93,6 @@ namespace gameswf
 		return NULL;
 	}
 
-
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, const as_value& target_value)
 	{

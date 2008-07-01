@@ -146,9 +146,7 @@ namespace gameswf
 		virtual void	operator()(const fn_call& fn);
 
 		void	execute(array<as_value>& lregister,
-			array<as_value>& stack,
-			array<as_value>& scope,
-			as_value* result);
+			vm_stack& stack, vm_stack& scope, as_value* result);
 
 		void	compile();
 

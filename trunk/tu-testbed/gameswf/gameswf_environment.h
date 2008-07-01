@@ -32,15 +32,13 @@ namespace gameswf
 		smart_ptr<as_object>	m_object;
 		int	m_block_end_pc;
 		
-		with_stack_entry()
-			:
+		with_stack_entry() :
 			m_object(NULL),
 			m_block_end_pc(0)
 		{
 		}
 
-		with_stack_entry(as_object* obj, int end)
-			:
+		with_stack_entry(as_object* obj, int end)	:
 			m_object(obj),
 			m_block_end_pc(end)
 		{
@@ -48,7 +46,7 @@ namespace gameswf
 	};
 
 	// stack access/manipulation
-	struct vm_stack : protected array<as_value>
+	struct vm_stack : public array<as_value>
 	{
 		// @@ TODO do more checking on these
 
@@ -79,6 +77,9 @@ namespace gameswf
 		as_value&	bottom(int index) { return (*this)[index]; }
 
 		int	get_top_index() const { return size() - 1; }
+
+//		int size() const { return array::size(); }
+//		void resize(int new_size) { array::resize(new_size); }
 
 	};
 

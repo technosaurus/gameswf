@@ -86,13 +86,13 @@ namespace gameswf
 		}
 
 		// Create stack.
-		array<as_value>	stack;
+		vm_stack	stack;
 
 		// Create scope stack.
-		array<as_value>	scope;
+		vm_stack	scope;
 
 		// push '_global' into scope
-		scope.push_back(get_global());
+		scope.push(get_global());
 
 		// get flash package
 		as_value val;
@@ -102,7 +102,7 @@ namespace gameswf
 
 		// push 'Events'  into scope
 		flash->get_member("Events", &val);
-		scope.push_back(val);
+		scope.push(val);
 
 #ifdef __GAMESWF_ENABLE_JIT__
 
@@ -138,14 +138,17 @@ namespace gameswf
 
 	// interperate action script bytecode
 	void	as_3_function::execute(array<as_value>& lregister,
-		array<as_value>& stack,
-		array<as_value>& scope,
-		as_value* result)
+		vm_stack& stack, vm_stack& scope, as_value* result)
 	{
 		// m_abc may be destroyed
 		assert(m_abc != NULL);
 
-		if( m_code.size() == 0 ) return; //some method have no body
+		// some method have no body
+		if (m_code.size() == 0)
+		{
+			return;
+		}
+
 		int ip = 0;
 		do
 		{
@@ -170,17 +173,17 @@ namespace gameswf
 
 				case 0x1D: // popscope
 				{
-					scope.pop_back();
+					scope.pop();
 
 					IF_VERBOSE_ACTION(log_msg("EX: popscope\n"));
+					break;
 				}
-				break;
 
 				case 0x24:	// pushbyte
 				{
 					int byte_value;
 					ip += read_vu30(byte_value, &m_code[ip]);
-					stack.push_back(byte_value);
+					stack.push(byte_value);
 
 					IF_VERBOSE_ACTION(log_msg("EX: pushbyte\t %d\n", byte_value));
 
@@ -192,7 +195,7 @@ namespace gameswf
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
 					int val = m_abc->get_integer(index);
-					stack.push_back(val);
+					stack.push(val);
 
 					IF_VERBOSE_ACTION(log_msg("EX: pushint\t %d\n", val));
 
@@ -204,7 +207,7 @@ namespace gameswf
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
 					const char* val = m_abc->get_string(index);
-					stack.push_back(val);
+					stack.push(val);
 
 					IF_VERBOSE_ACTION(log_msg("EX: pushstring\t '%s'\n", val));
 
@@ -216,7 +219,7 @@ namespace gameswf
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
 					double val = m_abc->get_double(index);
-					stack.push_back(val);
+					stack.push(val);
 
 					IF_VERBOSE_ACTION(log_msg("EX: pushdouble\t %f\n", val));
 
@@ -225,12 +228,11 @@ namespace gameswf
 
 				case 0x30:	// pushscope
 				{
-					as_value& val = stack.back();
-					scope.push_back(val);
+					as_value& val = stack.pop();
+					scope.push(val);
 
 					IF_VERBOSE_ACTION(log_msg("EX: pushscope\t %s\n", val.to_xstring()));
 
-					stack.resize(stack.size() - 1); 
 					break;
 				}
 
@@ -247,12 +249,12 @@ namespace gameswf
 					int arg_count;
 					ip += read_vu30(arg_count, &m_code[ip]);
 
-					as_object* obj = stack.back().to_object();
+					as_object* obj = stack.top(0).to_object();
 					stack.resize(stack.size() - 1);
 					as_environment env(get_player());
 					for (int i = 0; i < arg_count; i++)
 					{
-						as_value& val = stack.back();
+						as_value& val = stack.top(0);
 
 						env.push( val );
 						stack.resize(stack.size() - 1);
@@ -307,7 +309,7 @@ namespace gameswf
 					}
 					stack.resize(stack.size() - arg_count);
 
-					as_object* obj = stack.back().to_object();
+					as_object* obj = stack.top(0).to_object();
 					stack.resize(stack.size() - 1);
 
 					as_value func;
@@ -337,7 +339,7 @@ namespace gameswf
 					}
 
 					stack.resize( offset + 1 );
-					stack.back() = array;
+					stack.top(0) = array;
 
 					IF_VERBOSE_ACTION(log_msg("EX: newarray\t arg_count:%i\n", arg_count));
 
@@ -380,7 +382,7 @@ namespace gameswf
 
 					IF_VERBOSE_ACTION(log_msg("EX: findpropstrict\t %s, obj=0x%p\n", name, obj));
 
-					stack.push_back(obj);
+					stack.push(obj);
 					break;
 				}
 
@@ -403,7 +405,7 @@ namespace gameswf
 
 					IF_VERBOSE_ACTION(log_msg("EX: findproperty\t '%s', obj=0x%p\n", name, obj));
 
-					stack.push_back(obj);
+					stack.push(obj);
 					break;
 
 				}
@@ -426,7 +428,7 @@ namespace gameswf
 
 					IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
 
-					stack.push_back(val);
+					stack.push(val);
 					break;
 				}
 
@@ -437,9 +439,9 @@ namespace gameswf
 
 					assert( index < scope.size() );
 
-					stack.push_back( scope[index] );
+					stack.push( scope[index] );
 
-					IF_VERBOSE_ACTION(log_msg("EX: getscopeobject\t index=%i, value=%s\n", index, stack.back().to_xstring()));
+					IF_VERBOSE_ACTION(log_msg("EX: getscopeobject\t index=%i, value=%s\n", index, stack.top(0).to_xstring()));
 
 				} break;
 
@@ -449,17 +451,17 @@ namespace gameswf
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
 
-					as_object* obj = stack.back().to_object();
+					as_object* obj = stack.top(0).to_object();
 					if (obj)
 					{
-						obj->get_member(name, &stack.back());
+						obj->get_member(name, &stack.top(0));
 					}
 					else
 					{
-						stack.back().set_undefined();
+						stack.top(0).set_undefined();
 					}
 
-					IF_VERBOSE_ACTION(log_msg("EX: getproperty\t %s, value=%s\n", name, stack.back().to_xstring()));
+					IF_VERBOSE_ACTION(log_msg("EX: getproperty\t %s, value=%s\n", name, stack.top(0).to_xstring()));
 
 					break;
 				}
@@ -486,9 +488,9 @@ namespace gameswf
 				case 0xA0:	// Add two values
 				{
 					//TODO: test and optimize
-					as_value val1 = stack.back();
+					as_value val1 = stack.top(0);
 					stack.resize(stack.size() - 1);
-					as_value val2 = stack.back();
+					as_value val2 = stack.top(0);
 					stack.resize(stack.size() - 1);
 
 					if (val1.is_string() || val2.is_string())
@@ -502,7 +504,7 @@ namespace gameswf
 						val2 += val1.to_number();
 					}
 
-					stack.push_back(val2);
+					stack.push(val2);
 
 					break;
 				}
@@ -513,7 +515,7 @@ namespace gameswf
 				case 0xD3:	// getlocal_3
 				{
 					as_value& val = lregister[opcode & 0x03];
-					stack.push_back(val);
+					stack.push(val);
 					IF_VERBOSE_ACTION(log_msg("EX: getlocal_%d\t %s\n", opcode & 0x03, val.to_xstring()));
 					break;
 				}
