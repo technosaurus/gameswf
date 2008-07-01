@@ -70,7 +70,7 @@ namespace gameswf
 		array<as_value>	local_register;
 		local_register.resize(m_local_count + 1);
 
-		// Register 0 holds the �this� object. This value is never null.
+		// Register 0 holds the ?this? object. This value is never null.
 		assert(this_ptr);
 		local_register[0] = this_ptr;
 
@@ -80,7 +80,7 @@ namespace gameswf
 		// or the value undefined.
 		for (int i = 0; i < m_param_type.size(); i++)
 		{
-			// A zero value denotes the any (�*�) type.
+			// A zero value denotes the any (?*?) type.
 //			const char* name = m_abc->get_multiname(m_param_type[i]);
 //			local_register[i + 1] = 1;	// hack
 		}
@@ -190,6 +190,22 @@ namespace gameswf
 					break;
 				}
 
+				case 0x26:  // pushtrue
+				{
+					stack.push( true );
+
+					IF_VERBOSE_ACTION(log_msg("EX: pushtrue\n"));
+				}
+				break;
+
+				case 0x27:  // pushfalse
+				{
+					stack.push( false );
+
+					IF_VERBOSE_ACTION(log_msg("EX: pushfalse\n"));
+				}
+				break;
+
 				case 0x2D:	// pushint
 				{
 					int index;
@@ -289,7 +305,7 @@ namespace gameswf
 				}
 
 				case 0x4F:	// callpropvoid, Call a property, discarding the return value.
-				// Stack: �, obj, [ns], [name], arg1,...,argn => �
+				// Stack: ?, obj, [ns], [name], arg1,...,argn => ?
 				{
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
@@ -342,7 +358,7 @@ namespace gameswf
 
 				case 0x58: // newclass
 				{
-					// stack:	�, basetype => �, newclass
+					// stack:	?, basetype => ?, newclass
 					int class_index;
 					ip += read_vu30( class_index, &m_code[ip] );
 					as_object* basetype = stack.top(0).to_object();
@@ -505,6 +521,17 @@ namespace gameswf
 					as_value& val = lregister[opcode & 0x03];
 					stack.push(val);
 					IF_VERBOSE_ACTION(log_msg("EX: getlocal_%d\t %s\n", opcode & 0x03, val.to_xstring()));
+					break;
+				}
+
+				case 0xD4:	// setlocal_0
+				case 0xD5:	// setlocal_1
+				case 0xD6:	// setlocal_2
+				case 0xD7:	// setlocal_3
+				{
+					lregister[opcode & 0x03] = stack.pop();
+
+					IF_VERBOSE_ACTION(log_msg("EX: setlocal_%d\t %s\n", opcode & 0x03, lregister[opcode & 0x03].to_xstring()));
 					break;
 				}
 
