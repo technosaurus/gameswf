@@ -88,8 +88,8 @@ struct http_request
 
 	http_request()
 		:
-		m_status(HTTP_OK),
 		m_sock(NULL),
+		m_status(HTTP_OK),
 		m_http_version_x256(0x0101)
 	{
 	}

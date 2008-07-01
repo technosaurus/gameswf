@@ -28,9 +28,9 @@ public:
 	image::rgb*	load_image(int level, int col, int row) const;
 
 	// Static utility functions.
-	static bool	tqt::is_tqt_file(const char* filename);
-	static int	tqt::node_count(int depth);
-	static int	tqt::node_index(int level, int col, int row);
+	static bool	is_tqt_file(const char* filename);
+	static int	node_count(int depth);
+	static int	node_index(int level, int col, int row);
 	
 private:
 	array<unsigned int>	m_toc;

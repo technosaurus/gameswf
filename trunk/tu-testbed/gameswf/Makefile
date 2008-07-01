@@ -35,12 +35,16 @@ LIB_OBJS = \
 	gameswf_as_classes/as_color.$(OBJ_EXT) \
 	gameswf_as_classes/as_color_transform.$(OBJ_EXT) \
 	gameswf_as_classes/as_date.$(OBJ_EXT) \
+	gameswf_as_classes/as_event.$(OBJ_EXT) \
 	gameswf_as_classes/as_flash.$(OBJ_EXT) \
 	gameswf_as_classes/as_geom.$(OBJ_EXT) \
+	gameswf_as_classes/as_global.$(OBJ_EXT) \
 	gameswf_as_classes/as_key.$(OBJ_EXT) \
+	gameswf_as_classes/as_loadvars.$(OBJ_EXT) \
 	gameswf_as_classes/as_math.$(OBJ_EXT)	\
 	gameswf_as_classes/as_matrix.$(OBJ_EXT)	\
 	gameswf_as_classes/as_mcloader.$(OBJ_EXT)	\
+	gameswf_as_classes/as_mouse_event.$(OBJ_EXT)	\
 	gameswf_as_classes/as_netconnection.$(OBJ_EXT)	\
 	gameswf_as_classes/as_netstream.$(OBJ_EXT)	\
 	gameswf_as_classes/as_number.$(OBJ_EXT)	\
@@ -49,16 +53,21 @@ LIB_OBJS = \
 	gameswf_as_classes/as_sound.$(OBJ_EXT) \
 	gameswf_as_classes/as_string.$(OBJ_EXT) \
 	gameswf_as_classes/as_textformat.$(OBJ_EXT) \
+	gameswf_as_classes/as_timer.$(OBJ_EXT) \
 	gameswf_as_classes/as_transform.$(OBJ_EXT) \
 	gameswf_as_classes/as_xml.$(OBJ_EXT) \
 	gameswf_as_classes/as_xmlsocket.$(OBJ_EXT) \
+	gameswf_abc.$(OBJ_EXT)	\
 	gameswf_action.$(OBJ_EXT)	\
+	gameswf_avm2.$(OBJ_EXT)	\
 	gameswf_as_sprite.$(OBJ_EXT)	\
 	gameswf_button.$(OBJ_EXT)	\
 	gameswf_canvas.$(OBJ_EXT)	\
 	gameswf_character.$(OBJ_EXT)	\
 	gameswf_dlist.$(OBJ_EXT)	\
+	gameswf_disasm.$(OBJ_EXT)	\
 	gameswf_environment.$(OBJ_EXT)	\
+	gameswf_filters.$(OBJ_EXT)		\
 	gameswf_font.$(OBJ_EXT)		\
 	gameswf_freetype.$(OBJ_EXT)	\
 	gameswf_function.$(OBJ_EXT)	\
@@ -68,6 +77,7 @@ LIB_OBJS = \
 	gameswf_morph2.$(OBJ_EXT)	\
 	gameswf_movie_def.$(OBJ_EXT)	\
 	gameswf_object.$(OBJ_EXT)	\
+	gameswf_player.$(OBJ_EXT)	\
 	gameswf_render.$(OBJ_EXT)	\
 	gameswf_root.$(OBJ_EXT)		\
 	gameswf_shape.$(OBJ_EXT)	\
@@ -78,7 +88,6 @@ LIB_OBJS = \
 	gameswf_styles.$(OBJ_EXT)	\
 	gameswf_tesselate.$(OBJ_EXT)	\
 	gameswf_text.$(OBJ_EXT)		\
-	gameswf_timers.$(OBJ_EXT)	\
 	gameswf_tools.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)	\
 	gameswf_value.$(OBJ_EXT)	\

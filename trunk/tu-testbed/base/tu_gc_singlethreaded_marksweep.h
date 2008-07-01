@@ -173,8 +173,8 @@ namespace tu_gc {
 		public:
 			// visit contained pointers
 			virtual void visit_contained_ptrs() {
-				(container_type::value_type::i_am_a_contained_gc_ptr) 0;  // ensure contained type is a contained_ptr.
-				for (container_type::const_iterator it = this->begin();
+				(typename container_type::value_type::i_am_a_contained_gc_ptr) 0;  // ensure contained type is a contained_ptr.
+				for (typename container_type::const_iterator it = this->begin();
 				     it != this->end();
 				     ++it) {
 					visit_contained_ptr(it->get());

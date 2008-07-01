@@ -76,6 +76,7 @@
 #define TU_GC_H
 
 #include <assert.h>
+#include <stddef.h>
 
 namespace tu_gc {
 
@@ -95,7 +96,7 @@ namespace tu_gc {
 		block_construction_locker_base() : m_block(0) {
 		}
 	protected:
-		friend collector_access;
+		friend class collector_access;
 		void* m_block;
 	};
 
