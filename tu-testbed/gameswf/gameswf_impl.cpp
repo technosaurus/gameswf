@@ -1313,7 +1313,7 @@ namespace gameswf
 		in->read_uint(24);	// reserved
 
 		m->m_has_metadata =  attr & 0x10 ? true : false;
-		m->m_is_action3 =  attr & 0x08 ? true : false;
+		m->m_is_avm2 =  attr & 0x08 ? true : false;
 		m->m_use_network =  attr & 0x010 ? true : false;
 	}
 

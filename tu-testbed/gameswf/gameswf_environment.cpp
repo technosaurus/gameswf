@@ -621,15 +621,15 @@ namespace gameswf
 			}
 		}
 
-		// stack
-		for (int i = 0, n = m_stack.size(); i < n; i++)
+		// clear refs from stack
+		for (int i = 0, n = size(); i < n; i++)
 		{
-			as_object* obj = m_stack[i].to_object();
+			as_object* obj = (*this)[i].to_object();
 			if (obj)
 			{
 				if (obj == this_ptr)
 				{
-					m_stack[i].set_undefined();
+					(*this)[i].set_undefined();
 				}
 				else
 				{

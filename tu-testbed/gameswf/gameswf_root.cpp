@@ -403,8 +403,12 @@ namespace gameswf
 			if (m_on_event_load_called == false)
 			{
 				set_flash_vars(m_player->m_flash_vars);
-				as_environment env( m_player.get_ptr() );
-				gameswf::call_method( as_value(m_def->get_abc()->get_script_method()), &env, as_value( m_movie.get_ptr() ), 0, 0 );
+				if (m_def->m_is_avm2)
+				{
+					as_environment env(m_player.get_ptr());
+					gameswf::call_method(as_value(m_def->get_abc()->get_script_method()), 
+						&env, as_value(m_movie.get_ptr()), 0, 0);
+				}
 			}
 
 			m_movie->advance(delta_time); 

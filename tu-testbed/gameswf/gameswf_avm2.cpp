@@ -345,13 +345,20 @@ namespace gameswf
 
 				case 0x58: // newclass
 				{
+					// stack:	…, basetype => …, newclass
 					int class_index;
-					
 					ip += read_vu30( class_index, &m_code[ip] );
+			//		as_object* basetype = stack.top(0);
 
-					assert( 0&& "todo" ); 
+					as_object* new_obj = NULL;
 
-				}break;
+			//		assert( 0&& "todo" ); 
+					printf("todo opcode newclass\n");
+
+		//			stack.top(0)->set_as_object(new_obj);
+	
+					break;
+				}
 
 				case 0x5D:	// findpropstrict
 				{
