@@ -100,11 +100,11 @@ namespace sysinfo_plugin
 			}
 
 	#ifdef WIN32
-			bool is_readonly = de->data.dwFileAttributes & 0x01;
-			bool is_hidden = de->data.dwFileAttributes & 0x02;
+			bool is_readonly = de->data.dwFileAttributes & 0x01 ? true : false;
+			bool is_hidden = de->data.dwFileAttributes & 0x02 ? true : false;
 	//??		bool b2 = de->data.dwFileAttributes & 0x04;
 	//??		bool b3 = de->data.dwFileAttributes & 0x08;
-			bool is_dir = de->data.dwFileAttributes & 0x10;
+			bool is_dir = de->data.dwFileAttributes & 0x10 ? true : false;
 	#else
 			struct stat buf;
 			stat(tu_string(path + de->d_name).c_str(), &buf);
