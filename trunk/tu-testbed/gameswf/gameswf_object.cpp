@@ -152,13 +152,13 @@ namespace gameswf
 
 		}
 	}
-		
+
 
 	// this stuff should be high optimized
 	// therefore we can't use here set_member(...)
 	as_object::as_object(player* player) :
-		m_player(player),
-		m_watch(NULL)
+		m_watch(NULL),
+		m_player(player)
 	{
 		// as_c_function has no pointer to player
 //		assert(player);
@@ -423,7 +423,7 @@ namespace gameswf
 				printf("%s%s: <as_property 0x%p, target 0x%p, getter 0x%p, setter 0x%p>\n",
 								tabs.c_str(), 
 								it->first.c_str(), val.to_property(), val.get_property_target(),
-								val.to_property()->m_getter, val.to_property()->m_setter);
+								val.to_property()->m_getter.get_ptr(), val.to_property()->m_setter.get_ptr());
 			}
 			else
 			if (val.is_function())
