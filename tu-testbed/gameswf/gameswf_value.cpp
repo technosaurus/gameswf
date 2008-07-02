@@ -40,8 +40,8 @@ namespace gameswf
 	}
 
 	as_value::as_value(const as_value& getter, const as_value& setter) :
-		m_property_target(NULL),
 		m_type(PROPERTY),
+		m_property_target(NULL),
 		m_flags(0)
 	{
 		m_property = new as_property(getter, setter);
