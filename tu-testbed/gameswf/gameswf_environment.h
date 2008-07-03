@@ -54,16 +54,56 @@ namespace gameswf
 		{
 		}
 
-		as_value&	operator[](int index) 
+		inline as_value&	operator[](int index) 
 		{
 //			assert(index >= 0 && index < m_stack_size);
 			return array<as_value>::operator[](index);
 		}
 
-		const as_value&	operator[](int index) const 
+		inline const as_value&	operator[](int index) const 
 		{
 //			assert(index >= 0 && index < m_stack_size);
 			return array<as_value>::operator[](index);
+		}
+
+		void reset(const as_value& val)
+		{
+			(*this)[m_stack_size] = val;
+		}
+
+		void reset(const char* val)
+		{
+			(*this)[m_stack_size].set_string(val);
+		}
+
+		void reset(const wchar_t* val)
+		{
+			(*this)[m_stack_size] = as_value(val);
+		}
+
+		void reset(bool val)
+		{
+			(*this)[m_stack_size].set_bool(val);
+		}
+
+		void reset(int val)
+		{
+			(*this)[m_stack_size].set_int(val);
+		}
+
+		void reset(float val)
+		{
+			(*this)[m_stack_size].set_double(val);
+		}
+
+		void reset(double val)
+		{
+			(*this)[m_stack_size].set_double(val);
+		}
+
+		void reset(as_object* val)
+		{
+			(*this)[m_stack_size].set_as_object(val);
 		}
 
 		template<class T>
@@ -71,7 +111,9 @@ namespace gameswf
 		{
 			if (m_stack_size < array<as_value>::size())
 			{
-				(*this)[m_stack_size] = as_value(val);
+				// this reduces NEW operators
+//				(*this)[m_stack_size] = as_value(val);
+				reset(val);
 			}
 			else
 			{

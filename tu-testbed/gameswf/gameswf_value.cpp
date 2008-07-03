@@ -302,24 +302,30 @@ namespace gameswf
 
 	void	as_value::operator=(const as_value& v)
 	{
-		m_flags = v.m_flags;
 		switch (v.m_type)
 		{
 			case UNDEFINED:
-				m_flags = 0;
 				set_undefined();
 				break;
+
 			case NUMBER:
 				set_double(v.m_number);
+				m_flags = v.m_flags;
 				break;
+
 			case BOOLEAN:
 				set_bool(v.m_bool);
+				m_flags = v.m_flags;
 				break;
+
 			case STRING:
 				set_tu_string(v.m_string);
+				m_flags = v.m_flags;
 				break;
+
 			case OBJECT:
 				set_as_object(v.m_object);
+				m_flags = v.m_flags;
 				break;
 
 			case PROPERTY:
@@ -337,6 +343,7 @@ namespace gameswf
 				{
 					v.get_property(this);
 				}
+				m_flags = v.m_flags;
 
 				break;
 
@@ -416,6 +423,8 @@ namespace gameswf
 				m_property_target = NULL;
 			}
 		}
+
+		m_flags = 0;
 	}
 
 	void	as_value::set_property(const as_value& val)
@@ -524,7 +533,7 @@ namespace gameswf
 
 	void	as_value::set_as_c_function(as_c_function_ptr func)
 	{
-		//vv hack, c_function object has no pointer to player instance
+		// c_function object has no pointer to player instance
 		set_as_object(new as_c_function(NULL, func));
 	}
 
