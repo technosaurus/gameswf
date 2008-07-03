@@ -358,6 +358,10 @@ namespace gameswf
 		// types don't match
 		if (m_type != PROPERTY && v.m_type != PROPERTY && m_type != v.m_type)
 		{
+			if ((is_undefined() && v.is_null()) || (is_null() && v.is_undefined()))
+			{
+				return true;
+			}
 			return false;
 		}
 
