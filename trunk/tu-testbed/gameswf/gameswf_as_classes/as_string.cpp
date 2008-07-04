@@ -1,4 +1,4 @@
-// as_string.cpp      -- Rob Savoye <rob@welcomehome.org> 2005
+// as_string.cpp	  -- Rob Savoye <rob@welcomehome.org> 2005
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -9,6 +9,7 @@
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_as_classes/as_array.h"
 #include "base/utf8.h"
+#include "gameswf/gameswf_function.h"
 
 namespace gameswf
 {
@@ -357,6 +358,16 @@ namespace gameswf
 		{
 			fn.result->set_string("");
 		}
+	}
+
+	as_object * get_global_string_ctor(player * player)
+	{
+		as_object * string = new as_c_function( player, as_global_string_ctor );
+
+		string->builtin_member( "fromCharCode", string_from_char_code );
+		//string->builtin_member( "charCodeAt", string_char_at );
+
+		return string;
 	}
 
 } // namespace gameswf
