@@ -213,6 +213,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_class.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_class.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_color.cpp"
 				>
 			</File>

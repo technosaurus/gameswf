@@ -16,7 +16,7 @@
 namespace gameswf
 {
 
-	void standard_logger(bool error, const char* message)
+	void standard_logger(const bool error, const char* message)
 	{
 		if (error)
 		{

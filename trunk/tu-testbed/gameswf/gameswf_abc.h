@@ -10,6 +10,7 @@
 
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_avm2.h"
+#include "gameswf/gameswf_log.h"
 
 namespace gameswf
 {
@@ -179,9 +180,26 @@ namespace gameswf
 			return get_string(m_multiname[index].m_name); 
 		}
 
-		inline as_function* get_script_method() const
+		inline const char* get_multiname_namespace(int index) const
 		{
-			return m_method[ m_script.back()->m_init ].get_ptr();
+			const multiname & mn = m_multiname[index];
+
+			switch( mn.m_kind )
+			{
+				case multiname::CONSTANT_Multiname:
+				case multiname::CONSTANT_MultinameA:
+					return get_namespace( mn.m_ns );
+				default:
+					log_msg( "implement get_multiname_namespace for this kind %i", mn.m_kind );
+					return NULL;
+			} 
+		}
+
+		as_function* get_script_function( const tu_string & name = "" ) const;
+
+		inline as_function* get_class_function( const int class_index ) const
+		{
+			return m_method[ m_class[ class_index ]->m_cinit ].get_ptr();
 		}
 
 		abc_def(player* player);
@@ -195,10 +213,10 @@ namespace gameswf
 			return get_multiname( get_instance_info( name )->m_super_name );
 		}
 
-		const char * get_class_from_constructor( int method );
+		const char * get_class_from_constructor(int method);
 
 		// get class constructor
-		as_function* get_class_constructor(tu_string& name) const;
+		as_function* get_class_constructor(const tu_string& name) const;
 
 		// find instance info by name
 		instance_info* get_instance_info(const tu_string& class_name) const;

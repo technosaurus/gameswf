@@ -425,14 +425,14 @@ namespace gameswf
 				{
 					case namespac::CONSTANT_Namespace:
 					case namespac::CONSTANT_ExplicitNamespace:
-				//		assert(*get_string(ns.m_name) != 0);
+						//assert(*get_string(ns.m_name) != 0);
 						break;
 					case namespac::CONSTANT_PackageNamespace:
 					case namespac::CONSTANT_PackageInternalNs:
 					case namespac::CONSTANT_ProtectedNamespace:
 					case namespac::CONSTANT_StaticProtectedNs:
 					case namespac::CONSTANT_PrivateNs:
-				//		assert(*get_string(ns.m_name) == 0);
+						//assert(*get_string(ns.m_name) == 0);
 						break;
 					default:
 						assert(0);
@@ -510,8 +510,8 @@ namespace gameswf
 
 					case multiname::CONSTANT_Multiname:
 					case multiname::CONSTANT_MultinameA:
-						mn.m_ns_set = in->read_vu30();
 						mn.m_name = in->read_vu30();
+						mn.m_ns_set = in->read_vu30();
 						IF_VERBOSE_PARSE(log_msg("cpool_info: multiname[%d]='%s', ns_set='%s'\n", 
 							i, get_string(mn.m_name), "todo"));
 						break;
@@ -519,8 +519,9 @@ namespace gameswf
 					case multiname::CONSTANT_MultinameL:
 					case multiname::CONSTANT_MultinameLA:
 						mn.m_ns_set = in->read_vu30();
+						mn.m_name = -1;
 						IF_VERBOSE_PARSE(log_msg("cpool_info: multiname[%d]=MultinameL, ns_set='%s'\n", 
-							i, get_string(mn.m_name), "todo"));
+							i, "todo"));
 						break;
 
 					default:
@@ -556,7 +557,7 @@ namespace gameswf
 	// 'name' is the fully-qualified name of the ActionScript 3.0 class 
 	// with which to associate this symbol.
 	// The class must have already been declared by a DoABC tag.
-	as_function* abc_def::get_class_constructor(tu_string& name) const
+	as_function* abc_def::get_class_constructor(const tu_string& name) const
 	{
 		// find instance_info by name
 		instance_info* ii = get_instance_info(name);
@@ -618,6 +619,27 @@ namespace gameswf
 		return NULL;
 	}
 
+	as_function* abc_def::get_script_function( const tu_string & name ) const
+	{
+		if( name == "" )
+			return m_method[ m_script.back()->m_init ].get_ptr();
+		else
+		{
+			for( int script_index = 0; script_index < m_script.size(); ++script_index )
+			{
+				const script_info & info = *m_script[ script_index ].get_ptr();
+				for( int trait_index = 0; trait_index < info.m_trait.size(); ++trait_index )
+				{
+					if( m_string[ info.m_trait[ trait_index ]->m_name ] == name && info.m_trait[ trait_index ]->m_kind == traits_info::Trait_Class )
+					{
+						return m_method[ info.m_init ].get_ptr();
+					}
+				}
+			}
+		}
+
+		return NULL;
+	}
 };	// end namespace gameswf
 
 

@@ -13,6 +13,7 @@
 #include "gameswf/gameswf_character.h"
 #include "gameswf_jit.h"
 #include "gameswf/gameswf_as_classes/as_array.h"
+#include "gameswf/gameswf_as_classes/as_class.h"
 
 namespace gameswf
 {
@@ -81,8 +82,8 @@ namespace gameswf
 		for (int i = 0; i < m_param_type.size(); i++)
 		{
 			// A zero value denotes the any (?*?) type.
-//			const char* name = m_abc->get_multiname(m_param_type[i]);
-//			local_register[i + 1] = 1;	// hack
+			//const char* name = m_abc->get_multiname(m_param_type[i]);
+			local_register[i + 1] = fn.arg( i );	// hack
 		}
 
 		// Create stack.
@@ -265,20 +266,20 @@ namespace gameswf
 					int arg_count;
 					ip += read_vu30(arg_count, &m_code[ip]);
 
-					as_object* obj = stack.pop().to_object();
-
 					as_environment env(get_player());
 					for (int i = 0; i < arg_count; i++)
 					{
 						env.push(stack.pop());
 					}
 
+					smart_ptr<as_object> obj = stack.top(0).to_object();
+
 					// Assume we are in a constructor
 					tu_string class_name = m_abc->get_class_from_constructor( m_method );
 					tu_string super_class_name = m_abc->get_super_class( class_name );
 
 
-					as_object * super = obj;
+					as_object * super = obj.get_ptr();
 
 					while( super->get_proto() )
 					{
@@ -297,15 +298,53 @@ namespace gameswf
 					assert( function );
 					as_object* proto = super->create_proto( function );
 
-					call_method( function, &env, obj, arg_count, 0);
+					call_method( function, &env, obj.get_ptr(), arg_count, 0);
 
-					IF_VERBOSE_ACTION(log_msg("EX: constructsuper\t 0x%p(args:%d)\n", obj, arg_count));
+					//stack.top(0) = obj.get_ptr();
+
+					IF_VERBOSE_ACTION(log_msg("EX: constructsuper\t 0x%p(args:%d)\n", obj.get_ptr(), arg_count));
 
 					break;
 				}
 
+				case 0x4A: //constructprop
+				// Stack ..., obj, [ns], [name], arg1,...,argn => ..., value
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+					const char * name_space = m_abc->get_multiname_namespace(index);
+
+					int arg_count;
+					ip += read_vu30(arg_count, &m_code[ip]);
+
+					as_environment env(get_player());
+					for (int i = 0; i < arg_count; i++)
+					{
+						env.push(stack.top(i));
+					}
+					stack.drop(arg_count);
+
+					as_object* obj = stack.pop().to_object();
+
+					as_value func, func2;
+
+					smart_ptr<as_object> new_object;
+					if( obj && obj->get_member(name, &func))
+					{
+						new_object = new as_object(get_player());
+						//:TODO: create prototype .... ( move instanciate class from character -> as_object )
+						call_method( m_abc->get_class_constructor( name ), &env, new_object.get_ptr(), arg_count, 0 );
+					}
+
+					IF_VERBOSE_ACTION(log_msg("EX: constructprop\t 0x%p.%s(args:%d)\n", obj, name, arg_count));
+
+					stack.push( new_object.get_ptr() );
+				}
+				break;
+
 				case 0x4F:	// callpropvoid, Call a property, discarding the return value.
-				// Stack: ?, obj, [ns], [name], arg1,...,argn => ?
+				// Stack: ..., obj, [ns], [name], arg1,...,argn => ...
 				{
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
@@ -323,10 +362,19 @@ namespace gameswf
 
 					as_object* obj = stack.pop().to_object();
 
-					as_value func;
-					if (obj && obj->get_member(name, &func))
+					as_value func, func2;
+
+					if( obj &&  obj->get_member(name, &func))
 					{
-						call_method(func, &env, obj,	arg_count, env.get_top_index());
+						if( func.is_function() )
+						{
+							call_method(func, &env, obj, arg_count, env.get_top_index());
+						}
+						else if(func.to_object()->get_member( "__call__", &func2 ) )
+						{
+							//todo patch scope
+							call_method(func2, &env, obj, arg_count, env.get_top_index());
+						}
 					}
 
 					IF_VERBOSE_ACTION(log_msg("EX: callpropvoid\t 0x%p.%s(args:%d)\n", obj, name, arg_count));
@@ -361,14 +409,16 @@ namespace gameswf
 					// stack:	?, basetype => ?, newclass
 					int class_index;
 					ip += read_vu30( class_index, &m_code[ip] );
+
 					as_object* basetype = stack.top(0).to_object();
+					smart_ptr<as_object> new_obj = new as_class(get_player(), scope);
 
-					as_object* new_obj = NULL;
+					new_obj->set_member("__prototype__", basetype);
 
-			//		assert( 0&& "todo" ); 
-					printf("todo opcode newclass\n");
+					as_environment env( get_player() );
+					call_method( m_abc->get_class_function( class_index ), &env, new_obj.get_ptr(), 0, 0 );
 
-					stack.top(0).set_as_object(new_obj);
+					stack.top(0).set_as_object(new_obj.get_ptr());
 	
 					break;
 				}
@@ -391,6 +441,19 @@ namespace gameswf
 						}
 					}
 
+					//Search for a script entry to execute
+
+					as_function * func;
+					if( !obj && ( func = m_abc->get_script_function( name ) ) )
+					{
+						get_global()->set_member( name, new as_object( get_player() ) );
+
+						as_environment env( get_player() );
+
+						call_method( func, &env, get_global(), 0, 0 );
+
+						obj = get_global();
+					}
 					IF_VERBOSE_ACTION(log_msg("EX: findpropstrict\t %s, obj=0x%p\n", name, obj));
 
 					stack.push(obj);
@@ -402,6 +465,7 @@ namespace gameswf
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
+					const char * name_space = m_abc->get_multiname_namespace(index);
 
 					as_object* obj = NULL;
 					for (int i = scope.size() - 1; i >= 0; i--)
@@ -510,6 +574,16 @@ namespace gameswf
 					}
 					stack.drop(1);
 
+					break;
+				}
+
+				case 0xA2: // multiply
+				{
+					stack.top(1) = stack.top(1).to_number() * stack.top(0).to_number();
+					stack.drop(1);
+
+					IF_VERBOSE_ACTION(log_msg("EX: multiply\n"));
+					
 					break;
 				}
 
