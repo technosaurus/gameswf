@@ -152,7 +152,7 @@ namespace gameswf
 		map->add("toLowerCase", string_to_lowercase);
 		map->add("toUpperCase", string_to_uppercase);
 		map->add("charAt", string_char_at);
-		map->add("length", as_value(string_length, NULL));
+		map->add("length", as_value(string_length, as_value()));
 
 		// sprite_instance builtins
 		map = new_standard_method_map(BUILTIN_SPRITE_METHOD);

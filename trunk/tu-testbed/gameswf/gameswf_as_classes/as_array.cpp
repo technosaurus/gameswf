@@ -150,7 +150,7 @@ namespace gameswf
 		builtin_member("toString", as_array_tostring);
 		builtin_member("push", as_array_push);
 		builtin_member("pop", as_array_pop);
-		builtin_member("length", as_value(as_array_length, NULL));
+		builtin_member("length", as_value(as_array_length, as_value()));
 
 		// gameswf extension, create array from string similar to "1,22,23,422,522,65,777"
 		builtin_member("loadFromString", as_array_load_from_string);

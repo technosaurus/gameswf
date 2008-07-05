@@ -146,8 +146,8 @@ namespace mysql_plugin
 		builtin_member("open", mydb_open);
 		builtin_member("run", mydb_run);
 		builtin_member("commit", mydb_commit);
-		builtin_member("auto_commit", as_value(NULL, mydb_autocommit_setter));
-		builtin_member("trace", as_value(NULL, mydb_trace_setter));
+		builtin_member("auto_commit", as_value(as_value(), mydb_autocommit_setter));
+		builtin_member("trace", as_value(as_value(), mydb_trace_setter));
 	}
 
 	mydb::~mydb()

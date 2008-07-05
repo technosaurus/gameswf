@@ -1149,7 +1149,7 @@ namespace gameswf
 						function = env->top(0);
 					}
 					int	nargs = env->top(1).to_int();
-					as_value	result = call_method(function, env, NULL, nargs, env->get_top_index() - 2);
+					as_value	result = call_method(function, env, as_value(), nargs, env->get_top_index() - 2);
 					env->drop(nargs + 1);
 					env->top(0) = result;
 					break;
@@ -1560,7 +1560,7 @@ namespace gameswf
 					if (as_c_function* c_constructor = cast_to<as_c_function>(constructor.to_object()))
 					{
 						// C function is responsible for creating the new object and setting members.
-						new_obj = call_method( constructor, env, NULL, nargs, env->get_top_index()).to_object();
+						new_obj = call_method( constructor, env, as_value(), nargs, env->get_top_index()).to_object();
 					}
 					else if (as_s_function* s_constructor = cast_to<as_s_function>(constructor.to_object()))
 					{
@@ -1597,7 +1597,7 @@ namespace gameswf
 								// TODO: I don't get this prototype stuff, need to implement it
 								
 								// Result contains the new output.
-								new_obj = call_method(c_func, env, NULL, nargs, env->get_top_index()).to_object();
+								new_obj = call_method(c_func, env, as_value(), nargs, env->get_top_index()).to_object();
 							}
 							else
 							{
@@ -1844,10 +1844,10 @@ namespace gameswf
 					if (name.length() > 0)
 					{
 						as_value value;
-						as_s_function* existing_function;
+						env->get_member(name, &value);
+						as_s_function* existing_function = cast_to<as_s_function>(value.to_object());
 
-						if (env->get_member(name, &value) && 
-							( existing_function = cast_to<as_s_function>(value.to_object())))
+						if (existing_function)
 						{
 							if (existing_function->m_action_buffer.m_buffer == m_buffer
 								&& existing_function->m_start_pc == next_pc )
@@ -1857,7 +1857,7 @@ namespace gameswf
 						}
 					}
 
-					if( !function_exists )
+					if (function_exists == false)
 					{
 						as_s_function*	func = new as_s_function(env->get_player(), this, next_pc, with_stack);
 						func->set_target(env->get_target());
@@ -2168,10 +2168,10 @@ namespace gameswf
 					if (name.length() > 0)
 					{
 						as_value value;
-						as_s_function* existing_function;
+						env->get_member(name, &value);
+						as_s_function* existing_function = cast_to<as_s_function>(value.to_object());
 
-						if (env->get_member(name, &value) 
-							&& ( existing_function = cast_to<as_s_function>(value.to_object())))
+						if (existing_function)
 						{
 							if (existing_function->m_action_buffer.m_buffer == m_buffer
 								&& existing_function->m_start_pc == next_pc )
@@ -2181,7 +2181,7 @@ namespace gameswf
 						}
 					}
 
-					if( !function_exists )
+					if (function_exists == false)
 					{
 						as_s_function*	func = new as_s_function(env->get_player(), this, next_pc, with_stack);
 						func->set_target(env->get_target());

@@ -47,7 +47,7 @@ namespace gameswf
 			{
 				env.push(m_param[i]);
 			}
-			call_method(m_func, &env, NULL, n, env.get_top_index());
+			call_method(m_func, &env, as_value(), n, env.get_top_index());
 		}
 	}
 
