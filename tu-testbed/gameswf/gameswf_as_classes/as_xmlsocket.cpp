@@ -88,7 +88,7 @@ namespace gameswf
 		{
 			as_environment env(get_player());
 			env.push(is_connected);
-			call_method(function, &env, NULL, 1, env.get_top_index());
+			call_method(function, &env, as_value(), 1, env.get_top_index());
 		}
 
 		// add to net listener
@@ -136,7 +136,7 @@ namespace gameswf
 				if (get_member("onClose", &function))
 				{
 					as_environment env(get_player());
-					call_method(function, &env, NULL, 0, env.get_top_index());
+					call_method(function, &env, as_value(), 0, env.get_top_index());
 				}
 			}
 			else
@@ -146,7 +146,7 @@ namespace gameswf
 				{
 					as_environment env(get_player());
 					env.push(str);
-					call_method(function, &env, NULL, 1, env.get_top_index());
+					call_method(function, &env, as_value(), 1, env.get_top_index());
 				}
 			}
 		}

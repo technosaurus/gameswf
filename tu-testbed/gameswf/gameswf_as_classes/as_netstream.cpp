@@ -153,7 +153,7 @@ namespace gameswf
 
 				as_environment env(get_player());
 				env.push(infoObject.get_ptr());
-				call_method(function, &env, NULL, 1, env.get_top_index());
+				call_method(function, &env, as_value(), 1, env.get_top_index());
 			}
 			gameswf_engine_mutex().unlock();
 		}
@@ -651,7 +651,7 @@ namespace gameswf
 		as_object* netstream = new as_netstream(fn.get_player());
 
 		// properties
-		netstream->builtin_member("time", as_value(netstream_time, NULL));
+		netstream->builtin_member("time", as_value(netstream_time, as_value()));
 
 		// methods
 		netstream->builtin_member("close", netstream_close);

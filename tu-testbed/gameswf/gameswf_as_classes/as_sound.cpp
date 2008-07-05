@@ -178,7 +178,7 @@ namespace gameswf
 		snd->builtin_member("stop", sound_stop);
 		snd->builtin_member("setVolume", sound_volume);
 		snd->builtin_member("loadSound", sound_load);
-		snd->builtin_member("position", as_value(get_position, NULL));
+		snd->builtin_member("position", as_value(get_position, as_value()));
 
 		fn.result->set_as_object(snd.get_ptr());
 	}
