@@ -10,6 +10,8 @@
 #include "gameswf/gameswf_function.h"
 //#include "gameswf/gameswf_log.h"
 
+#if TU_ENABLE_NETWORK == 1
+
 #define XML_TIMEOUT 1 //sec
 #define XML_MAXDATASIZE 102400 //100KB
 
@@ -153,3 +155,5 @@ namespace gameswf
 	}
 
 };
+
+#endif

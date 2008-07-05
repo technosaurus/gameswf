@@ -9,7 +9,11 @@
 #ifndef GAMESWF_AS_XMLSOCKET_H
 #define GAMESWF_AS_XMLSOCKET_H
 
+#include "base/tu_config.h"
 #include "gameswf/gameswf_action.h"	// for as_object
+
+#if TU_ENABLE_NETWORK == 1
+
 #include "net/http_client.h"
 
 namespace gameswf
@@ -42,6 +46,7 @@ namespace gameswf
 
 }	// end namespace gameswf
 
+#endif	// TU_ENABLE_NETWORK
 
 #endif // GAMESWF_AS_XMLSOCKET_H
 

@@ -6,8 +6,12 @@
 #ifndef GAMESWF_AS_LOADVARS_H
 #define GAMESWF_AS_LOADVARS_H
 
+#include "base/tu_config.h"
 #include "gameswf/gameswf_action.h"	// for as_object
 #include "gameswf/gameswf_character.h"
+
+#if TU_ENABLE_NETWORK == 1
+
 #include "net/net_interface_tcp.h"
 
 namespace gameswf
@@ -35,15 +39,20 @@ namespace gameswf
 
 		struct request_data
 		{
-			request_data() : m_iface(NULL), m_ns(NULL), m_target(NULL)
+			request_data() :
+				m_iface(NULL),
+				m_ns(NULL),
+				m_target(NULL)
 			{
 			}
+
 			net_interface_tcp* m_iface;
 			net_socket* m_ns;
 			as_loadvars* m_target; // todo, should work with Xml object too. Think of a hierarchy here
 			loadvars_state m_state;
 			int m_http_status;
 			tu_string m_rawdata;
+
 		};
 
 		string_hash<tu_string> m_headers;
@@ -75,6 +84,7 @@ namespace gameswf
 
 }	// end namespace gameswf
 
+#endif	// TU_ENABLE_NETWORK ==1
 
 #endif // GAMESWF_AS_LOADVARS_H
 

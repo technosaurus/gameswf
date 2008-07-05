@@ -6,6 +6,9 @@
 #include "gameswf/gameswf_as_classes/as_loadvars.h"
 #include "gameswf/gameswf_root.h"
 #include "base/container.h"
+
+#if TU_ENABLE_NETWORK == 1
+
 #include "net/http_helper.h"
 
 namespace gameswf
@@ -525,3 +528,5 @@ namespace gameswf
 		return true;
 	}
 };
+
+#endif

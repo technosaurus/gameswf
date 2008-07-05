@@ -457,7 +457,6 @@ namespace gameswf
 		m_global->builtin_member("TextFormat", as_global_textformat_ctor);
 
 		//			m_global->set_member("XML", as_value(xml_new));
-		m_global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
 		m_global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);
 		m_global->builtin_member("String", get_global_string_ctor( this ));
 		m_global->builtin_member("Number", as_global_number_ctor);
@@ -465,7 +464,11 @@ namespace gameswf
 		m_global->builtin_member("Color", as_global_color_ctor);
 		m_global->builtin_member("Date", as_global_date_ctor);
 		m_global->builtin_member("Selection", selection_init(this));
+
+#if TU_ENABLE_NETWORK == 1
+		m_global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
 		m_global->builtin_member("LoadVars", as_global_loadvars_ctor);
+#endif
 
 		// ASSetPropFlags
 		m_global->builtin_member("ASSetPropFlags", as_global_assetpropflags);
