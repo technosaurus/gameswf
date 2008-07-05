@@ -94,6 +94,11 @@
 #	define TU_CONFIG_LINK_STATIC 0
 #endif // TU_CONFIG_LINK_STATIC
 
+// define TU_ENABLE_NETWORK to 1 to enable network supprt
+#ifndef TU_ENABLE_NETWORK
+#	define TU_ENABLE_NETWORK 0
+#endif // TU_ENABLE_NETWORK
+
 #ifndef exported_module
 #	ifdef _WIN32
 #		if TU_CONFIG_LINK_STATIC == 0

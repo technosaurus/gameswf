@@ -18,13 +18,15 @@
 #include "base/container.h"
 #include "base/tu_file.h"
 #include "base/tu_types.h"
-#include "net/tu_net_file.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
 #include "gameswf/gameswf_root.h"
 #include "gameswf/gameswf_freetype.h"
 #include "gameswf/gameswf_player.h"
 
+#if TU_ENABLE_NETWORK == 1
+#	include "net/tu_net_file.h"
+#endif
 
 #ifdef _WIN32
 #	include <Winsock.h>
@@ -127,9 +129,16 @@ static void	log_callback(bool error, const char* message)
 static tu_file*	file_opener(const char* url)
 // Callback function.  This opens files for the gameswf library.
 {
-	if (s_allow_http) {
+	if (s_allow_http) 
+	{
+#if TU_ENABLE_NETWORK == 1
 		return new_tu_net_file(url, "rb");
-	} else {
+#else
+		return NULL;
+#endif
+	}
+	else
+	{
 		return new tu_file(url, "rb");
 	}
 }
