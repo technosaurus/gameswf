@@ -145,12 +145,10 @@ namespace gameswf
 		// Dispatch.
 		virtual void	operator()(const fn_call& fn);
 
-		void	execute(array<as_value>& lregister,
-			vm_stack& stack, vm_stack& scope, as_value* result);
-
+		void	execute(array<as_value>& lregister, as_environment* env, as_value* result);
 		void	compile();
 
-		void compile_stack_resize( int count );
+		void	compile_stack_resize(int count);
 		void	read(stream* in);
 		void	read_body(stream* in);
 

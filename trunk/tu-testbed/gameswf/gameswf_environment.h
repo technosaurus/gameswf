@@ -166,6 +166,7 @@ namespace gameswf
 
 	struct as_environment : public vm_stack
 	{
+		vm_stack m_scope;	// scope stack for AVM2
 		as_value	m_global_register[GLOBAL_REGISTER_COUNT];
 		array<as_value>	m_local_register;	// function2 uses this
 		smart_ptr<as_object>	m_target;
@@ -183,12 +184,9 @@ namespace gameswf
 
 		weak_ptr<player> m_player;
 
-		as_environment(player* player) :
-			m_player(player)
-		{
-		}
+		exported_module as_environment(player* player);
+		exported_module ~as_environment();
 
-//		~as_environment() {}
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
 

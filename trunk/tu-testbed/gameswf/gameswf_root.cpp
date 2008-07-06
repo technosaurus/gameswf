@@ -553,4 +553,9 @@ namespace gameswf
 
 	}
 
+	bool root::is_avm2() const
+	{
+		return m_def->m_is_avm2;
+	}
+
 }

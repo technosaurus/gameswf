@@ -113,6 +113,33 @@ namespace gameswf
 		}
 	}
 
+
+	as_environment::as_environment(player* player) :
+		m_player(player)
+	{
+		if (player->get_root()->is_avm2())
+		{
+			// push '_global' into scope
+			m_scope.push(player->get_global());
+
+			// get flash package
+	//		as_value val;
+	//		get_global()->get_member("flash", &val);
+	//		as_object* flash = val.to_object();
+	//		assert(flash);
+
+			// push 'Events'  into scope
+	//		flash->get_member("Events", &val);
+	//		scope.push(val);
+		}
+
+	}
+
+	as_environment::~as_environment()
+	{
+	}
+
+
 	// url=="" means that the load_file() works as unloadMovie(target)
 	character* as_environment::load_file(const char* url, const as_value& target_value)
 	{
@@ -642,6 +669,9 @@ namespace gameswf
 
 		// clear refs to 'this_ptr' from stack
 		vm_stack::clear_refs(visited_objects, this_ptr);
+
+		// clear refs to 'this_ptr' from scope stack
+		m_scope.clear_refs(visited_objects, this_ptr);
 
 		// global register
 		for (int i = 0, n = GLOBAL_REGISTER_COUNT; i < n; i++)
