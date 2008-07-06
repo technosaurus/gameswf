@@ -158,6 +158,11 @@ namespace gameswf
 
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 
+		// return object that contains the property
+		as_object* find_property(const char* name);
+
+		// get value of property
+		bool get_property(const char* name, as_value* val);
 
 	private:
 

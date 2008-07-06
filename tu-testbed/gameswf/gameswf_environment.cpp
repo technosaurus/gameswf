@@ -113,6 +113,30 @@ namespace gameswf
 		}
 	}
 
+	as_object* vm_stack::find_property(const char* name)
+	{
+		for (int i = size() - 1; i >= 0; i--)
+		{
+			as_value val;
+			if ((*this)[i].get_member(name, &val))
+			{
+				return (*this)[i].to_object();
+			}
+		}
+		return NULL;
+	}
+
+	bool vm_stack::get_property(const char* name, as_value* val)
+	{
+		for (int i = size() - 1; i >= 0; i--)
+		{
+			if ((*this)[i].get_member(name, val))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	as_environment::as_environment(player* player) :
 		m_player(player)

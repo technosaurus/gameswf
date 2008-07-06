@@ -188,6 +188,15 @@ namespace gameswf
 					break;
 				}
 
+				case 0x25:  // pushshort
+				{
+					int val;
+					ip += read_vu30(val, &m_code[ip]);
+					stack.push(val);
+					IF_VERBOSE_ACTION(log_msg("EX: pushshort\t %d\n", val));
+					break;
+				}
+
 				case 0x26:  // pushtrue
 				{
 					stack.push( true );
@@ -203,6 +212,13 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("EX: pushfalse\n"));
 				}
 				break;
+
+				case 0x29:  // pop the value from stack and discard it
+				{
+					stack.pop();
+					IF_VERBOSE_ACTION(log_msg("EX: pop\n"));
+					break;
+				}
 
 				case 0x2D:	// pushint
 				{
@@ -429,16 +445,7 @@ namespace gameswf
 					const char* name = m_abc->get_multiname(index);
 
 					// search property in scope
-					as_object* obj = NULL;
-					for (int i = scope.size() - 1; i >= 0; i--)
-					{
-						as_value val;
-						if (scope[i].get_member(name, &val))
-						{
-							obj = scope[i].to_object();
-							break;
-						}
-					}
+					as_object* obj = scope.find_property(name);
 
 					//Search for a script entry to execute
 
@@ -466,16 +473,7 @@ namespace gameswf
 					const char* name = m_abc->get_multiname(index);
 					const char * name_space = m_abc->get_multiname_namespace(index);
 
-					as_object* obj = NULL;
-					for (int i = scope.size() - 1; i >= 0; i--)
-					{
-						as_value val;
-						if (scope[i].get_member(name, &val))
-						{
-							obj = scope[i].to_object();
-							break;
-						}
-					}
+					as_object* obj = scope.find_property(name);
 
 					IF_VERBOSE_ACTION(log_msg("EX: findproperty\t '%s', obj=0x%p\n", name, obj));
 
@@ -490,15 +488,9 @@ namespace gameswf
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
 
-					// search property in scope
+					// search and get property in scope
 					as_value val;
-					for (int i = scope.size() - 1; i >= 0; i--)
-					{
-						if (scope[i].get_member(name, &val))
-						{
-							break;
-						}
-					}
+					scope.get_property(name, &val);
 
 					IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
 
