@@ -118,7 +118,7 @@ namespace gameswf
 			// Execute the actions.
 			execute(local_register, env, fn.result);
 
-			IF_VERBOSE_ACTION(log_msg("\nEX: ended.\n"));
+			IF_VERBOSE_ACTION(log_msg("EX: ended #%d.\n\n", m_method));
 
 			if (stack_size != env->size())
 			{
@@ -269,7 +269,7 @@ namespace gameswf
 						env.push(stack.pop());
 					}
 
-					smart_ptr<as_object> obj = stack.top(0).to_object();
+					smart_ptr<as_object> obj = stack.pop().to_object();
 
 					// Assume we are in a constructor
 					tu_string class_name = m_abc->get_class_from_constructor( m_method );
