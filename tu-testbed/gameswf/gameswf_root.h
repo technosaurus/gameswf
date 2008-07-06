@@ -145,6 +145,8 @@ namespace gameswf
 		void	notify_key_event(player* player, key::code k, bool down);
 
 		void set_flash_vars(const tu_string& vars);
+		bool is_avm2() const;
+
 	};
 }
 

@@ -86,25 +86,6 @@ namespace gameswf
 			local_register[i + 1] = fn.arg( i );	// hack
 		}
 
-		// Create stack.
-		vm_stack	stack;
-
-		// Create scope stack.
-		vm_stack	scope;
-
-		// push '_global' into scope
-		scope.push(get_global());
-
-		// get flash package
-		as_value val;
-		get_global()->get_member("flash", &val);
-		as_object* flash = val.to_object();
-		assert(flash);
-
-		// push 'Events'  into scope
-		flash->get_member("Events", &val);
-		scope.push(val);
-
 #ifdef __GAMESWF_ENABLE_JIT__
 
 		if( !m_compiled_code.is_valid() )
@@ -120,7 +101,7 @@ namespace gameswf
 			try
 			{
 				m_compiled_code.call< array<as_value>&, vm_stack&, vm_stack&, as_value* >
-					(local_register, stack, scope, fn.result );
+					(local_register, *env, env->m_scope, fn.result );
 			}
 			catch( ... )
 			{
@@ -129,20 +110,36 @@ namespace gameswf
 		}
 		else
 		{
-			// Execute the actions.
+			// keep stack size on entry
+			int stack_size = env->size();
+
 			IF_VERBOSE_ACTION(log_msg("\nEX: call method #%d\n", m_method));
-			execute(local_register, stack, scope, fn.result);
-			IF_VERBOSE_ACTION(log_msg("EX: ended. stack_size=%d\n", stack.size()));
+
+			// Execute the actions.
+			execute(local_register, env, fn.result);
+
+			IF_VERBOSE_ACTION(log_msg("\nEX: ended.\n"));
+
+			if (stack_size != env->size())
+			{
+				log_error("error: stack size on exit must be same as on entry, %d:%d \n",
+					stack_size, env->size());
+
+				// restore stack size
+				env->resize(stack_size);
+			}
 		}
 
 	}
 
 	// interperate action script bytecode
-	void	as_3_function::execute(array<as_value>& lregister,
-		vm_stack& stack, vm_stack& scope, as_value* result)
+	void	as_3_function::execute(array<as_value>& lregister, as_environment* env, as_value* result)
 	{
 		// m_abc may be destroyed
 		assert(m_abc != NULL);
+
+		vm_stack& stack = *env;
+		vm_stack& scope = env->m_scope;
 
 		// some method have no body
 		if (m_code.size() == 0)
@@ -411,7 +408,9 @@ namespace gameswf
 					ip += read_vu30( class_index, &m_code[ip] );
 
 					as_object* basetype = stack.top(0).to_object();
-					smart_ptr<as_object> new_obj = new as_class(get_player(), scope);
+
+//					smart_ptr<as_object> new_obj = new as_class(get_player(), scope);
+					smart_ptr<as_object> new_obj = new as_object(get_player());
 
 					new_obj->set_member("__prototype__", basetype);
 

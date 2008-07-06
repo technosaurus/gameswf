@@ -84,18 +84,20 @@ namespace gameswf
 
 			case UNDEFINED:
 			{
+				// gameswf supports Flash9 only
+				m_string = "undefined";
+
 				// Behavior depends on file version.  In
 				// version 7+, it's "undefined", in versions
 				// 6-, it's "".
-				int version = 8; //vv fixme: get_root()->get_movie_version();
-				if (version <= 6)
-				{
-					m_string = "";
-				}
-				else
-				{
-					m_string = "undefined";
-				}
+//				if (version <= 6)
+//				{
+//					m_string = "";
+//				}
+//				else
+//				{
+//					m_string = "undefined";
+//				}
 				break;
 			}
 
@@ -209,8 +211,12 @@ namespace gameswf
 		switch (m_type)
 		{
 			case STRING:
+
+				// gameswf supports Flash9 only
+				return m_string.size() > 0 ? true : false;
+
 				// From Moock
-//vv fixme:				if (get_root()->get_movie_version() >= 7)
+/*				if (get_root()->get_movie_version() >= 7)
 				{
 					return m_string.size() > 0 ? true : false;
 				}
@@ -232,7 +238,7 @@ namespace gameswf
 					//
 					// Empty string --> false
 					return to_number() != 0.0;
-				}
+				}*/
 
 			case OBJECT:
 				if (m_object)
@@ -594,7 +600,7 @@ namespace gameswf
 
 			case PROPERTY:
 			{
-				//vv fixme:	
+				// FIXME:
 				break;
 			}
 

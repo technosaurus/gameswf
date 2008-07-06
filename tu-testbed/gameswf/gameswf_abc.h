@@ -190,7 +190,7 @@ namespace gameswf
 				case multiname::CONSTANT_MultinameA:
 					return get_namespace( mn.m_ns );
 				default:
-					log_msg( "implement get_multiname_namespace for this kind %i", mn.m_kind );
+					log_msg( "implement get_multiname_namespace for this kind %i\n", mn.m_kind );
 					return NULL;
 			} 
 		}
