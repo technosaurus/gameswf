@@ -132,6 +132,9 @@ namespace gameswf
 				m_color_transform.m_[ 3 ][ 1 ] = 255.0f;
 				return true;
 			}
+
+			default:
+				break;
 		}
 
 		return as_object::set_member( name, val );
@@ -179,6 +182,9 @@ namespace gameswf
 				// TODO: Check behavior
 				val->set_undefined();
 				return true;
+
+			default:
+				break;
 		}
 
 		return as_object::get_member( name, val );

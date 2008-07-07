@@ -165,7 +165,7 @@ namespace gameswf
 		}
 			
 		m_listeners.notify(event_name, 
-			fn_call(NULL, NULL, fn.env, fn.nargs - 1, fn.env->get_top_index()));
+			fn_call(NULL, 0, fn.env, fn.nargs - 1, fn.env->get_top_index()));
 
 		fn.env->drop(fn.nargs - 1);
 
@@ -182,7 +182,7 @@ namespace gameswf
 			}
 				
 			m_listeners.notify(event_name, 
-				fn_call(NULL, NULL, fn.env, arg.size() - 1, fn.env->get_top_index()));
+				fn_call(NULL, 0, fn.env, arg.size() - 1, fn.env->get_top_index()));
 
 			fn.env->drop(fn.nargs - 1);
 			m_suspended_event.pop();

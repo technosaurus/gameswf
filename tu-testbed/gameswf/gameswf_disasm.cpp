@@ -101,7 +101,7 @@ namespace gameswf
 			va_start( arg, arg_format_0 );
 
 			arg_format_avm2 current_format;
-			while( ( current_format = va_arg( arg, arg_format_avm2) ) != ARG_END )
+			while( ( current_format = (arg_format_avm2)va_arg( arg, int ) ) != ARG_END )
 			{
 				m_arg_formats.push_back( current_format );
 			}
@@ -155,7 +155,7 @@ namespace gameswf
 
 				case ARG_DOUBLE:
 					byte_count += read_vu30(value, &args[byte_count]);
-					log_msg("\t\tvalue: %d\n", def->m_double[value]);
+					log_msg("\t\tvalue: %f\n", def->m_double[value]);
 					break;
 
 				case ARG_STRING:
@@ -215,6 +215,10 @@ namespace gameswf
 						log_msg("\t\toffset %i: %i\n", i, value);
 						byte_count +=3;
 					}
+					break;
+
+				case ARG_END:
+					assert( 0&"forbidden" );
 					break;
 				}
 			}
