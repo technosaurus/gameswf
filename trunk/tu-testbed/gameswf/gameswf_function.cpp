@@ -171,7 +171,7 @@ namespace gameswf
 			if (m_function2_flags & 0x01)
 			{
 				// preload 'this' into a register.
-				IF_VERBOSE_ACTION(log_msg("-------------- preload this=0x%X to register %d\n",
+				IF_VERBOSE_ACTION(log_msg("-------------- preload this=%p to register %d\n",
 					this_ptr, current_reg));
 				env->set_register(current_reg, this_ptr);
 				current_reg++;
@@ -222,7 +222,7 @@ namespace gameswf
 			if (m_function2_flags & 0x10)
 			{
 				// Put 'super' in a register.
-				IF_VERBOSE_ACTION(log_msg("-------------- preload super=0x%X to register %d\n",
+				IF_VERBOSE_ACTION(log_msg("-------------- preload super=%p to register %d\n",
 					fn.this_ptr->get_proto(), current_reg));
 				env->set_register(current_reg, fn.this_ptr->get_proto());
 				current_reg++;
@@ -250,7 +250,7 @@ namespace gameswf
 				// Put '_parent' in a register.
 				array<with_stack_entry>	dummy;
 				as_value	parent = env->get_variable("_parent", dummy);
-				IF_VERBOSE_ACTION(log_msg("-------------- preload _parent=0x%X to register %d\n", parent, current_reg));
+				IF_VERBOSE_ACTION(log_msg("-------------- preload _parent=%p to register %d\n", parent.to_object(), current_reg));
 				env->set_register(current_reg, parent);
 				current_reg++;
 			}
@@ -258,7 +258,7 @@ namespace gameswf
 			if (m_function2_flags & 0x100)
 			{
 				// Put '_global' in a register.
-				IF_VERBOSE_ACTION(log_msg("-------------- preload _global=0x%X to register %d\n", 
+				IF_VERBOSE_ACTION(log_msg("-------------- preload _global=%p to register %d\n", 
 					get_global(), current_reg));
 				env->set_register(current_reg, get_global());
 				current_reg++;
