@@ -177,6 +177,8 @@ namespace gameswf
 		map->add("getNextHighestDepth", sprite_getnexthighestdepth);
 		map->add("createTextField", sprite_create_text_field);
 		map->add("attachMovie", sprite_attach_movie);
+		map->add("localToGlobal", sprite_local_global);
+		map->add("globalToLocal", sprite_global_local);
 
 		// drawing API
 		map->add("beginFill", sprite_begin_fill);

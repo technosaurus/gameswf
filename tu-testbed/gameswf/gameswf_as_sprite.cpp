@@ -381,6 +381,35 @@ namespace gameswf
 		}
 	} 
 
+	// public localToGlobal(pt:Object) : Void
+	void sprite_local_global(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = sprite_getptr(fn);
+		if (fn.nargs == 1)
+		{
+			as_object* pt = fn.arg(0).to_object();
+			if (pt)
+			{
+				sprite->local_to_global(pt);
+			}
+		}
+	}
+
+	// public globalToLocal(pt:Object) : Void
+	void sprite_global_local(const fn_call& fn) 
+	{ 
+		sprite_instance* sprite = sprite_getptr(fn);
+		if (fn.nargs == 1)
+		{
+			as_object* pt = fn.arg(0).to_object();
+			if (pt)
+			{
+				sprite->global_to_local(pt);
+			}
+		}
+	}
+
+
 	// gameSWF extension
 	void sprite_get_play_state(const fn_call& fn)
 	{

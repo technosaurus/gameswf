@@ -222,6 +222,9 @@ namespace gameswf
 		bool	hit_test(character* target);
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
 
+		void local_to_global(as_object* pt);
+		void global_to_local(as_object* pt);
+
 		character* create_text_field(const char* name, int depth, int x, int y, int width, int height);
 
 		virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
