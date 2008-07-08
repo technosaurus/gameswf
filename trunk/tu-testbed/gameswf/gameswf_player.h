@@ -35,6 +35,7 @@ namespace gameswf
 		tu_string m_workdir;
 		stringi_hash< smart_ptr<character_def> > m_chardef_library;
 		tu_string m_flash_vars;
+		bool m_force_realtime_framerate;
 
 		// Players count to release all static stuff at the right time
 		static int s_player_count;
@@ -88,6 +89,9 @@ namespace gameswf
 		as_object* get_global() const;
 		void notify_key_object(key::code k, bool down);
 		Uint64 get_start_time()	{ return m_start_time; }
+
+		exported_module const bool get_force_realtime_framerate() const;
+		exported_module void set_force_realtime_framerate(const bool force_realtime_framerate);
 
 		// the garbage manager
 		void set_alive(as_object* obj);
