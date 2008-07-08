@@ -411,7 +411,20 @@ namespace gameswf
 				}
 			}
 
-			m_movie->advance(delta_time); 
+			if (m_player->get_force_realtime_framerate() == true)
+			{
+				while (m_time_remainder >= m_frame_time)
+				{
+					m_movie->advance(m_frame_time);
+					m_time_remainder -= m_frame_time;
+				}
+			}
+			else
+			{
+				m_movie->advance(delta_time);
+				m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
+			}
+
 			if (m_on_event_load_called == false)
 			{
 				// Must do loading events.  For child sprites this is
@@ -420,7 +433,6 @@ namespace gameswf
 				m_on_event_load_called = true;
 				m_movie->on_event(event_id::LOAD);
 			}
-			m_time_remainder = fmod(m_time_remainder - m_frame_time, m_frame_time);
 
 			m_player->clear_garbage();
 

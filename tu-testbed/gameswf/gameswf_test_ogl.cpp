@@ -67,6 +67,7 @@ void	print_usage()
 		"  -u          Allow pass user variables to Flash\n"
 		"  -k          Disables cursor\n"
 		"  -w <w>x<h>  Specify the window size, for example 1024x768\n"
+        "  -f          Force realtime framerate\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -240,6 +241,7 @@ int	main(int argc, char *argv[])
 		bool	sdl_cursor = true;
 		int     delay = 10;
 		float	tex_lod_bias;
+        bool    force_realtime_framerate = false;
 
 	#ifdef _WIN32
 
@@ -311,6 +313,10 @@ int	main(int argc, char *argv[])
 				{
 					sdl_abort = false;
 				}
+                else if (argv[arg][1] == 'f')
+                {
+                    force_realtime_framerate = true;
+                }
 				else if (argv[arg][1] == 'k')
 				{
 					sdl_cursor = false;
@@ -474,6 +480,8 @@ int	main(int argc, char *argv[])
 			print_usage();
 			exit(1);
 		}
+
+        player->set_force_realtime_framerate(force_realtime_framerate);
 
 		// use this for multifile games
 		// workdir is used when LoadMovie("myfile.swf", _root) is called

@@ -364,7 +364,8 @@ namespace gameswf
 	//	player
 	//
 
-	player::player()
+	player::player() :
+		m_force_realtime_framerate(false)
 	{
 		m_global = new as_object(this);
 
@@ -692,6 +693,15 @@ namespace gameswf
 		return m;
 	}
 
+	const bool player::get_force_realtime_framerate() const
+	{
+		return m_force_realtime_framerate;
+	}
+
+	void player::set_force_realtime_framerate(const bool force_realtime_framerate)
+	{
+		m_force_realtime_framerate = force_realtime_framerate;
+	}
 
 	// garbage collector
 
