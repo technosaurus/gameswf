@@ -1434,6 +1434,51 @@ namespace gameswf
 		get_root()->set_frame_rate(fps);
 	}
 
+	void	sprite_instance::local_to_global(as_object* obj)
+	{
+		as_value x;
+		obj->get_member("x", &x);
+		as_value y;
+		obj->get_member("y", &y);
+		if (x.is_number() == false || y.is_number() == false)
+		{
+			return;
+		}
+
+		point pt(x.to_float(), y.to_float());
+		pt.pixels_to_twips();
+		point result;
+		matrix m = get_world_matrix();
+		m.transform(&result, pt);
+		result.twips_to_pixels();
+
+		obj->set_member("x", result.m_x);
+		obj->set_member("y", result.m_y);
+	}
+
+	void	sprite_instance::global_to_local(as_object* obj)
+	{
+		as_value x;
+		obj->get_member("x", &x);
+		as_value y;
+		obj->get_member("y", &y);
+		if (x.is_number() == false || y.is_number() == false)
+		{
+			return;
+		}
+
+		point pt(x.to_float(), y.to_float());
+		pt.pixels_to_twips();
+		point result;
+		matrix m;
+		m.set_inverse(get_world_matrix());
+		m.transform(&result, pt);
+		result.twips_to_pixels();
+
+		obj->set_member("x", result.m_x);
+		obj->set_member("y", result.m_y);
+	}
+
 	canvas* sprite_instance::get_canvas()
 	{
 		if (m_canvas == NULL)

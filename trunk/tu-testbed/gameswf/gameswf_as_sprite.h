@@ -42,6 +42,8 @@ namespace gameswf
 	void sprite_getnexthighestdepth(const fn_call& fn);
 	void sprite_create_text_field(const fn_call& fn);
 	void sprite_attach_movie(const fn_call& fn);
+	void sprite_local_global(const fn_call& fn);
+	void sprite_global_local(const fn_call& fn);
 
 	// drawing API
 	void sprite_begin_fill(const fn_call& fn);
