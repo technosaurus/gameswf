@@ -218,7 +218,7 @@ namespace gameswf
 					break;
 
 				case ARG_END:
-					assert( 0&"forbidden" );
+					assert(0 && "forbidden");
 					break;
 				}
 			}
