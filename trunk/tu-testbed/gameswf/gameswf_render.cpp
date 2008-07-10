@@ -165,6 +165,15 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->line_style_width(width);
 		}
 
+		bool test_stencil_buffer(Uint8 pattern)
+		{
+			if (s_render_handler)
+			{
+				return s_render_handler->test_stencil_buffer(pattern);
+			}
+			return false;
+		}
+
 		void	begin_submit_mask()
 		{
 			if (s_render_handler) s_render_handler->begin_submit_mask();
