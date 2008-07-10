@@ -1276,8 +1276,7 @@ namespace gameswf
 
 	bool	sprite_instance::hit_test(character* ch)
 	{
-//#define USE_FLASH_COMPATIBLE_HASTTEST
-#ifdef USE_FLASH_COMPATIBLE_HASTTEST
+#if TU_USE_FLASH_COMPATIBLE_HITTEST == 1
 
 		as_value val;
 		rect r;

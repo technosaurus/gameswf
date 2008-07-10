@@ -1228,10 +1228,13 @@ struct render_handler_ogl : public gameswf::render_handler
 	
 	bool test_stencil_buffer(Uint8 pattern)
 	{
-		int bufsize = m_display_width * m_display_height;
+		// get viewport size
+		GLint vp[4]; 
+		glGetIntegerv(GL_VIEWPORT, vp); 
+
+		int bufsize = vp[2] * vp[3];
 		Uint8* buf = (Uint8*) malloc(bufsize);
-		glReadPixels(0, 0, m_display_width, m_display_height,
-			GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, buf);
+		glReadPixels(0, 0, vp[2], vp[3], GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, buf);
 
 		for (int i = 0; i < bufsize; i++)
 		{
