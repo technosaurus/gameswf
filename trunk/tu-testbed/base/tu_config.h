@@ -116,4 +116,9 @@
 #	define TU_CONFIG_VERBOSE 1
 #endif
 
+// define TU_USE_FLASH_COMPATIBLE_HITTEST to 0 to allow verbose debugging
+#ifndef TU_USE_FLASH_COMPATIBLE_HITTEST
+#	define TU_USE_FLASH_COMPATIBLE_HITTEST 1
+#endif
+
 #endif // TU_CONFIG_H
