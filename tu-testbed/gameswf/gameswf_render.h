@@ -72,6 +72,7 @@ namespace gameswf
 		void	line_style_color(rgba color);
 		void	line_style_width(float width);
 
+		bool	test_stencil_buffer(Uint8 pattern);
 		void	begin_submit_mask();
 		void	end_submit_mask();
 		void	disable_mask();

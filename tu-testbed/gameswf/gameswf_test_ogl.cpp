@@ -934,6 +934,12 @@ int	main(int argc, char *argv[])
 					}
 				}
 
+				if (do_render)
+				{
+					glDisable(GL_DEPTH_TEST);	// Disable depth testing.
+					glDrawBuffer(GL_BACK);
+				}
+
 				m = player->get_root();
 				m->set_display_viewport(0, 0, width, height);
 				m->set_background_alpha(s_background ? 1.0f : 0.05f);
@@ -943,12 +949,6 @@ int	main(int argc, char *argv[])
 				Uint32 t_advance = SDL_GetTicks();
 				m->advance(delta_t * speed_scale);
 				t_advance = SDL_GetTicks() - t_advance;
-
-				if (do_render)
-				{
-					glDisable(GL_DEPTH_TEST);	// Disable depth testing.
-					glDrawBuffer(GL_BACK);
-				}
 
 				Uint32 t_display = SDL_GetTicks();
 				m->display();

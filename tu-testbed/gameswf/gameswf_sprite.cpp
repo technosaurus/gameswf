@@ -1276,6 +1276,9 @@ namespace gameswf
 
 	bool	sprite_instance::hit_test(character* ch)
 	{
+//#define USE_FLASH_COMPATIBLE_HASTTEST
+#ifdef USE_FLASH_COMPATIBLE_HASTTEST
+
 		as_value val;
 		rect r;
 
@@ -1300,8 +1303,39 @@ namespace gameswf
 		{
 			return true;
 		}
-
 		return false;
+
+#else
+
+		// this hitTest is not compatible with Flash but
+		// it works with absolutely accuracy 
+		// if you want hitTest two bitmaps you should trace they into shapes
+
+		rgba background_color(0, 0, 0, 0);
+		movie_def_impl* def = cast_to<movie_def_impl>(get_root()->get_movie_definition());
+
+		render::begin_display(background_color,
+			get_root()->m_viewport_x0, get_root()->m_viewport_y0,
+			get_root()->m_viewport_width, get_root()->m_viewport_height,
+			def->m_frame_size.m_x_min, def->m_frame_size.m_x_max,
+			def->m_frame_size.m_y_min, def->m_frame_size.m_y_max);
+
+		render::begin_submit_mask();
+		display();
+
+		render::begin_submit_mask();
+		ch->display();
+
+		bool hittest = render::test_stencil_buffer(2);
+
+		render::disable_mask();
+		render::disable_mask();
+
+		render::end_display();
+
+		return hittest;
+
+#endif
 	}
 
 	uint32	sprite_instance::get_file_bytes() const

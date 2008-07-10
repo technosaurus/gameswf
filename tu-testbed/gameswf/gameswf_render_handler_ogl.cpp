@@ -1226,6 +1226,26 @@ struct render_handler_ogl : public gameswf::render_handler
 		glEnd();
 	}
 	
+	bool test_stencil_buffer(Uint8 pattern)
+	{
+		int bufsize = m_display_width * m_display_height;
+		Uint8* buf = (Uint8*) malloc(bufsize);
+		glReadPixels(0, 0, m_display_width, m_display_height,
+			GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, buf);
+
+		for (int i = 0; i < bufsize; i++)
+		{
+			if (buf[i] == pattern)
+			{
+				free(buf);
+				return true;
+			}
+		}
+
+		free(buf);
+		return false;
+	}
+
 	void begin_submit_mask()
 	{
 		if (m_mask_level == 0)
@@ -1410,7 +1430,7 @@ void	software_resample(
 //	assert(dst_width >= src_width);
 //	assert(dst_height >= src_height);
 
-	unsigned int	internal_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
+//	unsigned int	internal_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
 	unsigned int	input_format = bytes_per_pixel == 3 ? GL_RGB : GL_RGBA;
 
 	// FAST bi-linear filtering
