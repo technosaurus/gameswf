@@ -165,11 +165,11 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->line_style_width(width);
 		}
 
-		bool test_stencil_buffer(Uint8 pattern)
+		bool test_stencil_buffer(const rect& bound, Uint8 pattern)
 		{
 			if (s_render_handler)
 			{
-				return s_render_handler->test_stencil_buffer(pattern);
+				return s_render_handler->test_stencil_buffer(bound, pattern);
 			}
 			return false;
 		}
