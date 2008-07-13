@@ -454,8 +454,8 @@ namespace gameswf
 		const tu_string&	get_name() const { return m_name; }
 
 		virtual matrix	get_world_matrix() const
-			// Get our concatenated matrix (all our ancestor transforms, times our matrix).	 Maps
-			// from our local space into "world" space (i.e. root movie space).
+		// Get our concatenated matrix (all our ancestor transforms, times our matrix).	 Maps
+		// from our local space into "world" space (i.e. root movie space).
 		{
 			matrix	m;
 			if (m_parent != NULL)

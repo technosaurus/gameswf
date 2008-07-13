@@ -1226,27 +1226,43 @@ struct render_handler_ogl : public gameswf::render_handler
 		glEnd();
 	}
 	
-	bool test_stencil_buffer(Uint8 pattern)
+	bool test_stencil_buffer(const gameswf::rect& bound, Uint8 pattern)
 	{
 		// get viewport size
 		GLint vp[4]; 
 		glGetIntegerv(GL_VIEWPORT, vp); 
+		int vp_width = vp[2];
+		int vp_height = vp[3];
 
-		int bufsize = vp[2] * vp[3];
-		Uint8* buf = (Uint8*) malloc(bufsize);
-		glReadPixels(0, 0, vp[2], vp[3], GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, buf);
+		bool ret = false;
 
-		for (int i = 0; i < bufsize; i++)
+		int x0 = (int) bound.m_x_min;
+		int y0 = (int) bound.m_y_min;
+		int width = (int) bound.m_x_max - x0;
+		int height = (int) bound.m_y_max - y0;
+
+		if (width > 0 && height > 0 &&
+			x0 >= 0 && x0 + width <= vp_width &&
+			y0 >= 0 && y0 + height <= vp_height)
 		{
-			if (buf[i] == pattern)
+			int bufsize = width * height;
+			Uint8* buf = (Uint8*) malloc(4 * bufsize);
+
+			glReadPixels(x0, vp[3] - y0 - height, width, height, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, buf);
+
+			for (int i = 0; i < bufsize; i++)
 			{
-				free(buf);
-				return true;
+				if (buf[i] == pattern)
+				{
+					ret = true;
+					break;
+				}
 			}
+
+			free(buf);
 		}
 
-		free(buf);
-		return false;
+		return ret;
 	}
 
 	void begin_submit_mask()

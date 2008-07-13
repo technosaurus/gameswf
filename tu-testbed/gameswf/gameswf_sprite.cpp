@@ -1276,65 +1276,65 @@ namespace gameswf
 
 	bool	sprite_instance::hit_test(character* ch)
 	{
-#if TU_USE_FLASH_COMPATIBLE_HITTEST == 1
-
-		as_value val;
-		rect r;
-
-		matrix	m = get_world_matrix();
-		r.m_x_min = m.m_[0][2];
-		r.m_y_min = m.m_[1][2];
-		r.m_x_max = r.m_x_min + get_width();
-		r.m_y_max = r.m_y_min + get_height();
-
-		rect ch_r;
-
-		m = ch->get_world_matrix();
-		ch_r.m_x_min = m.m_[0][2];
-		ch_r.m_y_min = m.m_[1][2];
-		ch_r.m_x_max = ch_r.m_x_min + ch->get_width();
-		ch_r.m_y_max = ch_r.m_y_min + ch->get_height();
-
-		if (r.point_test(ch_r.m_x_min, ch_r.m_y_min) ||
-			r.point_test(ch_r.m_x_min, ch_r.m_y_max) ||
-			r.point_test(ch_r.m_x_max, ch_r.m_y_min) ||
-			r.point_test(ch_r.m_x_max, ch_r.m_y_max))
+		rect this_bound;
+		get_bound(&this_bound);
+		if (m_parent != NULL)
 		{
-			return true;
+			m_parent->get_world_matrix().transform(&this_bound);
 		}
-		return false;
 
+		rect ch_bound;
+		ch->get_bound(&ch_bound);
+		if (ch->m_parent != NULL)
+		{
+			ch->m_parent->get_world_matrix().transform(&ch_bound);
+		}
+
+		rect r;		// intersection
+		r.m_x_min = fmax(this_bound.m_x_min, ch_bound.m_x_min);
+		r.m_y_min = fmax(this_bound.m_y_min, ch_bound.m_y_min);
+		r.m_x_max = fmin(this_bound.m_x_max, ch_bound.m_x_max);
+		r.m_y_max = fmin(this_bound.m_y_max, ch_bound.m_y_max);
+		r.twips_to_pixels();
+
+		if (r.m_x_min < r.m_x_max && r.m_y_min < r.m_y_max)
+		{
+#if TU_USE_FLASH_COMPATIBLE_HITTEST == 1
+			return true;
 #else
 
-		// this hitTest is not compatible with Flash but
-		// it works with absolutely accuracy 
-		// if you want hitTest two bitmaps you should trace they into shapes
+			// this hitTest is not compatible with Flash but
+			// it works with absolutely accuracy 
+			// if you want hitTest two bitmaps you should trace they into shapes
 
-		rgba background_color(0, 0, 0, 0);
-		movie_def_impl* def = cast_to<movie_def_impl>(get_root()->get_movie_definition());
+			rgba background_color(0, 0, 0, 0);
+			movie_def_impl* def = cast_to<movie_def_impl>(get_root()->get_movie_definition());
 
-		render::begin_display(background_color,
-			get_root()->m_viewport_x0, get_root()->m_viewport_y0,
-			get_root()->m_viewport_width, get_root()->m_viewport_height,
-			def->m_frame_size.m_x_min, def->m_frame_size.m_x_max,
-			def->m_frame_size.m_y_min, def->m_frame_size.m_y_max);
+			render::begin_display(background_color,
+				get_root()->m_viewport_x0, get_root()->m_viewport_y0,
+				get_root()->m_viewport_width, get_root()->m_viewport_height,
+				def->m_frame_size.m_x_min, def->m_frame_size.m_x_max,
+				def->m_frame_size.m_y_min, def->m_frame_size.m_y_max);
 
-		render::begin_submit_mask();
-		display();
+			render::begin_submit_mask();
+			display();
 
-		render::begin_submit_mask();
-		ch->display();
+			render::begin_submit_mask();
+			ch->display();
 
-		bool hittest = render::test_stencil_buffer(2);
+			bool hittest = render::test_stencil_buffer(r, 2);
 
-		render::disable_mask();
-		render::disable_mask();
+			render::disable_mask();
+			render::disable_mask();
 
-		render::end_display();
+			render::end_display();
 
-		return hittest;
+			return hittest;
 
 #endif
+
+		}
+		return false;
 	}
 
 	uint32	sprite_instance::get_file_bytes() const

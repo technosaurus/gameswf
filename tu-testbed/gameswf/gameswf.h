@@ -720,7 +720,7 @@ namespace gameswf
 			rgba			color) = 0;
 		virtual void	set_antialiased(bool enable) = 0;
 
-		virtual bool test_stencil_buffer(Uint8 pattern) = 0;
+		virtual bool test_stencil_buffer(const rect& bound, Uint8 pattern) = 0;
 		virtual void begin_submit_mask() = 0;
 		virtual void end_submit_mask() = 0;
 		virtual void disable_mask() = 0;
