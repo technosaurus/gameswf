@@ -445,8 +445,7 @@ namespace gameswf
 						it->first.c_str(), val.to_object());
 				}
 			}
-			else
-			if (val.is_object())
+			else if (val.is_object())
 			{
 				printf("%s%s: <as_object 0x%p>\n",
 					tabs.c_str(), 

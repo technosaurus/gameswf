@@ -69,7 +69,7 @@ void posterize(const char* input_file, const char* output_file) {
 			int g = 0;
 			int b = 0;
 			int a = 0;
-			for (int i = ARRAYSIZE(LEVELS) - 1; i >= 0; i--) {
+			for (int i = TU_ARRAYSIZE(LEVELS) - 1; i >= 0; i--) {
 				if (level > LEVELS[i].threshold) {
 					r = LEVELS[i].r;
 					g = LEVELS[i].g;

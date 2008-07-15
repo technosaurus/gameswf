@@ -232,6 +232,8 @@
 
 #ifdef WIN32
 
+#pragma warning(disable: 4308 4307 4047)  // @@ tulrich
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 

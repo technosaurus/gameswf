@@ -781,7 +781,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 			1,-1,
 			0,0,
 		};
-		set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		break;
 	}
 	
@@ -800,7 +800,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 			1,-1,
 			0,0,
 		};
-		set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 
 		paths.resize(paths.size() + 1);
 		static const float P2[] =
@@ -812,7 +812,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 			1,1,
 			0,0,
 		};
-		set_to_array(&paths.back(), ARRAYSIZE(P2), P2);
+		set_to_array(&paths.back(), TU_ARRAYSIZE(P2), P2);
 		
 		break;
 	}
@@ -833,7 +833,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 			0,0,
 			-100,100,
 		};
-		set_to_array(&paths.back(), ARRAYSIZE(P), P);
+		set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		//rotate_coord_order(&paths.back(), 5);
 		break;
 	}
@@ -852,7 +852,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 				0, 2,
 				0, 1,
 			};
-			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+			set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		}
 		{
 			paths.resize(paths.size() + 1);
@@ -862,7 +862,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 				1, 1,
 				1, 0,
 			};
-			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+			set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		}
 		{
 			paths.resize(paths.size() + 1);
@@ -872,7 +872,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 				2, 2,
 				2, 1,
 			};
-			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+			set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		}
 		break;
 	}
@@ -903,7 +903,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 				 2, -1,
 				 1, -1,
 			};
-			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+			set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		}
 		{
 			paths.resize(paths.size() + 1);
@@ -919,7 +919,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 				3.5, 4,
 				4, 3,
 			};
-			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+			set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		}
 		break;
 	}
@@ -942,7 +942,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 				 0,  2,
 				 0.5, 1,
 			};
-			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+			set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		}
 		{
 			paths.resize(paths.size() + 1);
@@ -958,7 +958,7 @@ void generate_test_shape(int shape_number, array<array<float> >* paths_out)
 				4.5, 4,
 				//5, 3,
 			};
-			set_to_array(&paths.back(), ARRAYSIZE(P), P);
+			set_to_array(&paths.back(), TU_ARRAYSIZE(P), P);
 		}
 		break;
 	}
