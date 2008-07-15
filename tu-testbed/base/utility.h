@@ -128,13 +128,7 @@ inline int	frnd(float f) { return fchop(f + 0.5f); }	// replace with inline asm 
 
 
 // Compile-time constant size of array.
-//
-// (Some windows header defines a work-alike ARRAYSIZE, so avoid
-// re-defining)
-
-#ifndef TU_ARRAYSIZE
 #define TU_ARRAYSIZE(x) (sizeof(x)/sizeof(x[0]))
-#endif
 
 
 inline size_t	bernstein_hash(const void* data_in, int size, unsigned int seed = 5381)
@@ -200,7 +194,10 @@ inline size_t	bernstein_hash_case_insensitive(const void* data_in, int size, uns
 void dump_memory_stats(const char *from, int line, const char *label);
 
 // return NaN
+#pragma warning(push)
+#pragma warning(disable:4723)  // The divide by zero is intentional.
 inline double get_nan() { double zero = 0.0; return zero / zero; }
+#pragma warning(pop)
 
 #endif // UTILITY_H
 

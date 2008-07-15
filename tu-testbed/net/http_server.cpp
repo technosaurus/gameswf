@@ -887,7 +887,7 @@ http_status http_server::http_request_state::parse_body()
 		{ "too many  spaces", HTTP_HTTP_VERSION_NOT_SUPPORTED, "", "", 0 },
 	};
 
-	for (int i = 0; i < ARRAYSIZE(tests); i++)
+	for (int i = 0; i < TU_ARRAYSIZE(tests); i++)
 	{
 		http_server::http_request_state state;
 		int status = state.parse_request_line(tests[i].reqline);
