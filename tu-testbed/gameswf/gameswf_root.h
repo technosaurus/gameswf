@@ -22,6 +22,7 @@
 #include "base/container.h"
 #include "base/utility.h"
 #include "base/smart_ptr.h"
+#include "base/weak_ptr.h"
 #include <stdarg.h>
 
 namespace gameswf

@@ -9,6 +9,7 @@
 #ifndef GAMESWF_AVM2_H
 #define GAMESWF_AVM2_H
 
+#include "base/weak_ptr.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_jit.h"
 

@@ -78,6 +78,9 @@
 #include <assert.h>
 #include <stddef.h>
 
+#include "base/weak_ptr.h"
+
+
 namespace tu_gc {
 
 	class collector_access;
@@ -184,6 +187,10 @@ namespace tu_gc {
 
 		bool operator==(const T* p) const {
 			return m_ptr == p;
+		}
+
+		operator T*() const {
+			return m_ptr;
 		}
 
 		T* get() const {
