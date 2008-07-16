@@ -17,6 +17,7 @@
 #include "base/image.h"	// for delete m_suspended_image
 #include "base/container.h"	// for hash<...>
 #include "base/smart_ptr.h"
+#include "base/weak_ptr.h"
 
 class tu_file;
 class render_handler;
@@ -134,18 +135,16 @@ namespace gameswf
 
 
 	// For stuff that's tricky to keep track of w/r/t ownership & cleanup.
-	struct ref_counted
+	struct ref_counted : public weak_pointee_mixin
 	{
 		exported_module ref_counted();
 		exported_module virtual ~ref_counted();
 		exported_module void	add_ref() const;
 		exported_module void	drop_ref();
 		exported_module int	get_ref_count() const { return m_ref_count; }
-		exported_module weak_proxy*	get_weak_proxy() const;
 
 	private:
 		mutable int	m_ref_count;
-		mutable weak_proxy*	m_weak_proxy;
 	};
 
 	// Unique id of all gameswf resources

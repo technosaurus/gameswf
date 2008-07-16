@@ -8,6 +8,7 @@
 #ifndef GAMESWF_ENVIRONMENT_H
 #define GAMESWF_ENVIRONMENT_H
 
+#include "base/weak_ptr.h"
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_value.h"
 

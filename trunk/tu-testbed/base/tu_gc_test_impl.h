@@ -190,9 +190,40 @@ void test_gc_container() {
 	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
 }
 
+struct weak_pointee : public gc_object, public weak_pointee_mixin {
+	weak_pointee() : m_x(0) {
+	}
+	
+	int m_x;
+};
+
+void test_weak_ptr() {
+	printf("\nweak_ptr\n");
+
+	gc_ptr<weak_pointee> p = new weak_pointee;
+	weak_ptr<weak_pointee> wp = p.get();
+	assert(wp.get_ptr());
+
+	if (gc_ptr<weak_pointee> p2 = wp.get_ptr()) {
+		assert(p2->m_x == 0);
+	} else {
+		assert(0);  // wp should not be NULL because p is a live reference.
+	}
+
+	p = NULL;
+	gc_collector::collect_garbage(NULL);
+
+	// The object should have been collected; weak pointer should
+	// now be NULL.
+	if (gc_ptr<weak_pointee> p2 = wp.get_ptr()) {
+		assert(0);
+	}
+}
+
 void run_tests() {
 	test_basic_stuff();
 	test_multiple_inheritance();
 	test_gc_container();
+	test_weak_ptr();
 }
 

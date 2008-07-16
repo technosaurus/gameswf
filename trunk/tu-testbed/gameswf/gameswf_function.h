@@ -15,6 +15,7 @@
 
 #include "base/container.h"
 #include "base/smart_ptr.h"
+#include "base/weak_ptr.h"
 
 namespace gameswf
 {

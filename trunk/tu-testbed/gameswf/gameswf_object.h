@@ -15,6 +15,7 @@
 #include "gameswf/gameswf_player.h"
 #include "base/container.h"
 #include "base/smart_ptr.h"
+#include "base/weak_ptr.h"
 #include "base/tu_loadlib.h"
 
 namespace gameswf

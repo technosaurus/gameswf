@@ -152,20 +152,13 @@ namespace gameswf
 
 
 	ref_counted::ref_counted() :
-		m_ref_count(0),
-		m_weak_proxy(0)
+		m_ref_count(0)
 	{
 	}
 
 	ref_counted::~ref_counted()
 	{
 		assert(m_ref_count == 0);
-
-		if (m_weak_proxy)
-		{
-			m_weak_proxy->notify_object_died();
-			m_weak_proxy->drop_ref();
-		}
 	}
 
 	void	ref_counted::add_ref() const
@@ -184,23 +177,6 @@ namespace gameswf
 			delete this;
 		}
 	}
-
-	weak_proxy* ref_counted::get_weak_proxy() const
-	{
-		// By rights, somebody should be holding a ref to us.
-		// Vitaly: Sometimes it not so, for example in the constructor of character
-		// where this->ref_counted == 0
-		//		assert(m_ref_count > 0);
-
-		if (m_weak_proxy == NULL)
-		{
-			m_weak_proxy = new weak_proxy;
-			m_weak_proxy->add_ref();
-		}
-
-		return m_weak_proxy;
-	}
-
 
 	//
 	// character
