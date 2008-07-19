@@ -15,10 +15,11 @@
 
 namespace gameswf
 {
+	bool string_to_number(double* result, const char* str);
+
 	void	as_global_textfield_ctor(const fn_call& fn)
 	// Constructor for ActionScript class XMLSocket
 	{
-		root* rm = fn.get_player()->get_root();
 		edit_text_character_def* empty_text_def = new edit_text_character_def(fn.get_player(), 0, 0);
 		character* ch = new edit_text_character(fn.get_player(),
 			NULL, empty_text_def, 0);
@@ -44,7 +45,7 @@ namespace gameswf
 		float	pixel_scale = inst->get_pixel_scale();
 
 		matrix	base_matrix = mat;
-		float	base_matrix_max_scale = base_matrix.get_max_scale();
+//		float	base_matrix_max_scale = base_matrix.get_max_scale();
 
 		float	scale = 1.0f;
 		float	x = 0.0f;
@@ -74,11 +75,11 @@ namespace gameswf
 				scale /= 20.0f;
 			}
 
-			float	text_screen_height = base_matrix_max_scale
-				* scale
-				* 1024.0f
-				/ 20.0f
-				* pixel_scale;
+//			float	text_screen_height = base_matrix_max_scale
+//				* scale
+//				* 1024.0f
+//				/ 20.0f
+//				* pixel_scale;
 
 			if (rec.m_style.m_has_x_offset)
 			{
@@ -949,6 +950,7 @@ namespace gameswf
 		to_string();
 	}
 
+
 	void	edit_text_character::set_text(const tu_string& new_text)
 	// Local. Set our text to the given string.
 	{
@@ -1199,7 +1201,148 @@ namespace gameswf
 	// text_glyph_records to be rendered.
 	void	edit_text_character::format_text()
 	{
+		if (m_def->m_html)
+		{
+			// try as HTML
+			format_html_text();
+		}
+		else
+		{
+			format_plain_text();
+		}
+	}
 
+	// HTML content
+	// <p> ... </p> Defines a paragraph.
+	//		The attribute align may be present, with value left, right, or center.
+	// <br> Inserts a line break.
+	// <a> ... </a> Defines a hyperlink.
+	// <font> ... </font> Defines a span of text that uses a given font. 
+	//		• face, which specifies a font name
+	//		• size, which is specified in twips, and may include a leading ‘+’ or ‘-’ for relative sizes
+	//		• color, which is specified as a #RRGGBB hex triplet
+	// <b> ... </b> Defines a span of bold text.
+	// <i> ... </i> Defines a span of italic text.
+	// <u> ... </u> Defines a span of underlined text.
+	// <li> ... </li> Defines a bulleted paragraph.
+	// <textformat> ... </textformat>
+	// <tab> Inserts a tab character
+	//
+	//	TODO: more safety
+	void	edit_text_character::format_html_text()
+	{
+		format_plain_text();
+		return;
+
+//TODO :
+		const char* html = m_text.c_str();
+		printf("%s\n", html);
+		const char* p = m_text.c_str();
+		if (html[0] == '<' && html[1] == 'p')
+		{
+			// new paragraph
+			html += 2;
+
+			// parse align=
+			p = strstr(html, "align=");
+			if (p)
+			{
+				p += 7;
+				if (strncmp(p, "left", 4) == 0)
+				{
+					m_alignment = edit_text_character_def::ALIGN_LEFT;
+					p += 5;
+				}
+				else
+				if (strncmp(p, "center", 6) == 0)
+				{
+					m_alignment = edit_text_character_def::ALIGN_CENTER;
+					p += 7;
+				}
+				else
+				if (strncmp(p, "right", 5) == 0)
+				{
+					m_alignment = edit_text_character_def::ALIGN_RIGHT;
+					p += 6;
+				}
+				else
+				{
+					assert(0 && "invalid align=");
+				}
+			}
+
+			assert(*p == '>');
+			p++;
+
+			// parse font
+			if (strncmp(p, "<font ", 5) == 0)
+			{
+				p += 6;
+				while (*p != '>')
+				{
+					if (strncmp(p, "face=", 5) == 0)
+					{
+						p +=6;
+						const char* end = strchr(p, '"');
+						int len = int(end - p);
+						tu_string face(p, len);
+						p += len + 1;
+
+						// TODO: implement
+	//					m_font = find face;
+					}
+					else
+					if (*p == ' ')
+					{
+						p++;
+					}
+					else
+					if (strncmp(p, "size=", 5) == 0)
+					{
+						p += 6;
+						const char* end = strchr(p, '"');
+						int len = int(end - p);
+						tu_string size(p, len);
+						p += len + 1;
+						
+						double res;
+						string_to_number(&res, size.c_str());
+						m_text_height = PIXELS_TO_TWIPS(res);
+					}
+					else
+					if (strncmp(p, "color=", 6) == 0)
+					{
+						p += 7;
+						assert(*p++ == '#');
+
+						// TODO: implement
+						p += 7;
+
+						m_color = 0;
+					}
+					else
+					{
+						// skip a rest
+						p = strchr(p, '>');
+						assert(p);
+					}
+				}
+
+			}
+
+			// parse a text value
+			p++;
+
+
+			return;
+		}
+
+		// error in html text or is't html text, format as plain text
+		format_plain_text();
+	}
+
+	void	edit_text_character::format_plain_text()
+	{
 		m_text_glyph_records.resize(0);
 
 		if (m_font == NULL)
