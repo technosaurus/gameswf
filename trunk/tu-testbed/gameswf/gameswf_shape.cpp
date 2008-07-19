@@ -1712,10 +1712,10 @@ namespace gameswf
 	// Find the bounds of this shape, and store them in
 	// the given rectangle.
 	{
-		r->m_x_min = 1e10f;
-		r->m_y_min = 1e10f;
-		r->m_x_max = -1e10f;
-		r->m_y_max = -1e10f;
+		r->m_x_min = FLT_MAX;
+		r->m_y_min = FLT_MAX;
+		r->m_x_max = -FLT_MAX;
+		r->m_y_max = -FLT_MAX;
 
 		for (int i = 0; i < m_paths.size(); i++)
 		{

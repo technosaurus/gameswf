@@ -179,6 +179,8 @@ namespace gameswf
 		map->add("attachMovie", sprite_attach_movie);
 		map->add("localToGlobal", sprite_local_global);
 		map->add("globalToLocal", sprite_global_local);
+		map->add("getBounds", sprite_get_bounds);
+		map->add("getRect", sprite_get_rect);
 
 		// drawing API
 		map->add("beginFill", sprite_begin_fill);

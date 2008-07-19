@@ -1519,12 +1519,13 @@ namespace gameswf
 			canvas* canvas_def = new canvas(get_player());
 			m_canvas = canvas_def->create_character_instance(this, -1);
 
+			matrix identity;
 			m_display_list.add_display_object(
 				m_canvas.get_ptr(),
 				get_highest_depth(),
 				true,
 				m_color_transform,
-				m_matrix,
+				identity,
 				0.0f, 0); 
 		}
 		return cast_to<canvas>(m_canvas->get_character_def());

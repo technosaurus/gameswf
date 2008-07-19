@@ -131,4 +131,9 @@ namespace gameswf
 		flush_cache();
 	}
 
+	void canvas::get_bound(rect* bound)
+	{
+		compute_bound(bound);
+	}
+
 }	// end namespace gameswf

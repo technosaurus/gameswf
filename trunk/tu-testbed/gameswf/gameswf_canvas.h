@@ -43,6 +43,8 @@ namespace gameswf
 
 		void add_path(bool new_path);
 		void set_line_style(Uint16 width, const rgba& color);
+
+		virtual void get_bound(rect* bound);
 	};
 
 
