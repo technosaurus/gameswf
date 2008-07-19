@@ -555,4 +555,53 @@ namespace gameswf
 		}
 	}
 
+	// public getBounds(target:Object) : Object
+	void	sprite_get_bounds(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		character* target = NULL;
+		if (fn.nargs > 0) 
+		{
+			target = cast_to<character>(fn.arg(0).to_object());
+		}
+
+		if (target == NULL)
+		{
+			target = sprite;
+		}
+
+		// bounds in the _parent coords
+		rect bound;
+		sprite->get_bound(&bound);
+
+		// _parent local coords ==> global coords
+		character* parent = sprite->get_parent();
+		matrix m;
+		if (parent)
+		{
+			m = parent->get_world_matrix();
+			m.transform(&bound);
+		}
+
+		// global coords ==> target local coords
+		m.set_inverse(target->get_world_matrix());
+		m.transform(&bound);
+
+		bound.twips_to_pixels();
+		as_object* obj = new as_object(sprite->get_player());
+		obj->set_member("xMin", bound.m_x_min);
+		obj->set_member("xMax", bound.m_x_max);
+		obj->set_member("yMin", bound.m_y_min);
+		obj->set_member("yMax", bound.m_y_max);
+
+		fn.result->set_as_object(obj);
+	}
+
+	// public getRect(target:Object) : Object
+	void	sprite_get_rect(const fn_call& fn)
+	{
+		// TODO: exclude any strokes on shapes
+		sprite_get_bounds(fn);
+	}
+
 }

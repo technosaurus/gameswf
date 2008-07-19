@@ -61,6 +61,9 @@ namespace gameswf
 	// flash9
 	void sprite_add_script(const fn_call& fn);
 
+	void	sprite_get_bounds(const fn_call& fn);
+	void	sprite_get_rect(const fn_call& fn);
+
 }
 
 #endif
