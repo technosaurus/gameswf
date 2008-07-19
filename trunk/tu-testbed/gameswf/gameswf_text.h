@@ -130,40 +130,12 @@ namespace gameswf
 		bool			m_no_select;
 		bool			m_border;	// forces white background and black border -- silly, but sometimes used
 		bool			m_html;
-
-		// Allowed HTML (from Alexi's SWF Reference):
-		//
-		// <a href=url target=targ>...</a> -- hyperlink
-		// <b>...</b> -- bold
-		// <br> -- line break
-		// <font face=name size=[+|-][0-9]+ color=#RRGGBB>...</font>  -- font change; size in TWIPS
-		// <i>...</i> -- italic
-		// <li>...</li> -- list item
-		// <p>...</p> -- paragraph
-		// <tab> -- insert tab
-		// <TEXTFORMAT>  </TEXTFORMAT>
-		//   [ BLOCKINDENT=[0-9]+ ]
-		//   [ INDENT=[0-9]+ ]
-		//   [ LEADING=[0-9]+ ]
-		//   [ LEFTMARGIN=[0-9]+ ]
-		//   [ RIGHTMARGIN=[0-9]+ ]
-		//   [ TABSTOPS=[0-9]+{,[0-9]+} ]
-		//
-		// Change the different parameters as indicated. The
-		// sizes are all in TWIPs. There can be multiple
-		// positions for the tab stops. These are seperated by
-		// commas.
-		// <U>...</U> -- underline
-
-
-		bool	m_use_outlines;	// when true, use specified SWF internal font.  Otherwise, renderer picks a default font
-
-		int	m_font_id;
-		font*	m_font;
-		float	m_text_height;
-
-		rgba	m_color;
-		int	m_max_length;
+		bool			m_use_outlines;	// when true, use specified SWF internal font.  Otherwise, renderer picks a default font
+		int				m_font_id;
+		font*			m_font;
+		float			m_text_height;
+		rgba			m_color;
+		int				m_max_length;
 
 		enum alignment
 		{
@@ -174,17 +146,17 @@ namespace gameswf
 		};
 		alignment	m_alignment;
 
-		float	m_left_margin;	// extra space between box border and text
-		float	m_right_margin;
-		float	m_indent;	// how much to indent the first line of multiline text
-		float	m_leading;	// extra space between lines (in addition to default font line spacing)
+		float			m_left_margin;	// extra space between box border and text
+		float			m_right_margin;
+		float			m_indent;	// how much to indent the first line of multiline text
+		float			m_leading;	// extra space between lines (in addition to default font line spacing)
 		tu_string	m_default_text;
 
 		// Flash 8
-		bool m_use_flashtype;
-		int m_grid_fit;
-		float m_thickness;
-		float m_sharpness;
+		bool			m_use_flashtype;
+		int				m_grid_fit;
+		float			m_thickness;
+		float			m_sharpness;
 
 		edit_text_character_def(player* player, int width, int height);
 		edit_text_character_def(player* player, movie_definition_sub* root_def);
@@ -194,9 +166,7 @@ namespace gameswf
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		void	csm_textsetting(stream* in, int tag_type);
 
-		virtual void get_bound(rect* bound) {
-			*bound = m_rect;
-		}
+		virtual void get_bound(rect* bound) {	*bound = m_rect; }
 	};
 
 	//
@@ -255,6 +225,8 @@ namespace gameswf
 		bool	get_member(const tu_stringi& name, as_value* val);
 		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x);
 		void	format_text();
+		void	format_html_text();
+		void	format_plain_text();
 
 		virtual void advance(float delta_time);
 
