@@ -225,8 +225,10 @@ namespace gameswf
 		bool	get_member(const tu_stringi& name, as_value* val);
 		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x);
 		void	format_text();
-		void	format_html_text();
-		void	format_plain_text();
+		bool	format_html_text(text_glyph_record* rec);
+		void	format_plain_text(const char* text, text_glyph_record*	grec);
+		const char* html_paragraph(const char* p, text_glyph_record* rec);
+		const char* html_font(const char* p, text_glyph_record* rec);
 
 		virtual void advance(float delta_time);
 

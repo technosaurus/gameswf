@@ -1201,14 +1201,31 @@ namespace gameswf
 	// text_glyph_records to be rendered.
 	void	edit_text_character::format_text()
 	{
+
+		float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+
+		text_glyph_record rec;	// holds current glyph
+		rec.m_style.m_font = m_font.get_ptr();
+		rec.m_style.m_color = m_color;
+		rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
+		rec.m_style.m_y_offset = m_text_height
+			+ (m_font->get_leading() - m_font->get_descent()) * scale;
+		rec.m_style.m_text_height = m_text_height;
+		rec.m_style.m_has_x_offset = true;
+		rec.m_style.m_has_y_offset = true;
+
+		bool is_html = false;
 		if (m_def->m_html)
 		{
+
 			// try as HTML
-			format_html_text();
+			is_html = format_html_text(&rec);
 		}
-		else
+
+		if (is_html == false)
 		{
-			format_plain_text();
+			// use default glypth record
+			format_plain_text(m_text.c_str(), &rec);
 		}
 	}
 
@@ -1228,24 +1245,30 @@ namespace gameswf
 	// <textformat> ... </textformat>
 	// <tab> Inserts a tab character
 	//
-	//	TODO: more safety
-	void	edit_text_character::format_html_text()
+	// sample:
+	// <p align="left"><font face="Times New Roman" size="74" color="#cccccc"
+	// letterSpacing="0.000000" kerning="0">aaa</font></p>
+	// <p align="left"><font face="Courier" size="74" color="#ff0000"
+	// letterSpacing="0.000000" kerning="0">bbb</font></p>
+
+	// paragraph parser
+	const char*	edit_text_character::html_paragraph(const char* p, text_glyph_record* rec)
 	{
-		format_plain_text();
-		return;
-
-//TODO :
-		const char* html = m_text.c_str();
-		printf("%s\n", html);
-		const char* p = m_text.c_str();
-		if (html[0] == '<' && html[1] == 'p')
+//		printf("html paragraph\n");
+		const char* pend = p + strlen(p);
+		while (p <= pend)
 		{
-			// new paragraph
-			html += 2;
-
-			// parse align=
-			p = strstr(html, "align=");
-			if (p)
+			if (strncmp(p, "<p", 2) == 0)
+			{
+				html_paragraph(p + 3, rec);
+			}
+			else
+			if (strncmp(p, "</p>", 4) == 0)
+			{
+				return p + 4;
+			}
+			else
+			if (strncmp(p, "align=", 6) == 0)
 			{
 				p += 7;
 				if (strncmp(p, "left", 4) == 0)
@@ -1267,81 +1290,148 @@ namespace gameswf
 				}
 				else
 				{
-					assert(0 && "invalid align=");
+					assert(0);	// invalid align
 				}
+
+				assert(*p == '>');
+				p++;
 			}
-
-			assert(*p == '>');
-			p++;
-
-			// parse font
+			else
 			if (strncmp(p, "<font ", 5) == 0)
 			{
-				p += 6;
-				while (*p != '>')
-				{
-					if (strncmp(p, "face=", 5) == 0)
-					{
-						p +=6;
-						const char* end = strchr(p, '"');
-						int len = int(end - p);
-						tu_string face(p, len);
-						p += len + 1;
-
-						// TODO: implement
-	//					m_font = find face;
-					}
-					else
-					if (*p == ' ')
-					{
-						p++;
-					}
-					else
-					if (strncmp(p, "size=", 5) == 0)
-					{
-						p += 6;
-						const char* end = strchr(p, '"');
-						int len = int(end - p);
-						tu_string size(p, len);
-						p += len + 1;
-						
-						double res;
-						string_to_number(&res, size.c_str());
-						m_text_height = PIXELS_TO_TWIPS(res);
-					}
-					else
-					if (strncmp(p, "color=", 6) == 0)
-					{
-						p += 7;
-						assert(*p++ == '#');
-
-						// TODO: implement
-						p += 7;
-
-						m_color = 0;
-					}
-					else
-					{
-						// skip a rest
-						p = strchr(p, '>');
-						assert(p);
-					}
-				}
-
+				p = html_font(p + 6, rec);
 			}
-
-			// parse a text value
-			p++;
-
-
-			return;
+			else
+			{
+				p++;
+			}
 		}
 
-		// error in html text or is't html text, format as plain text
-		format_plain_text();
+		assert(0);
+		return NULL;
 	}
 
-	void	edit_text_character::format_plain_text()
+	// font parser
+	const char*	edit_text_character::html_font(const char* p, text_glyph_record* rec)
+	{
+//		printf("html font\n");
+		const char* pend = p + strlen(p);
+		while (p <= pend)
+		{
+			if (*p == ' ')
+			{
+				p++;
+			}
+			else
+			if (*p == '>')	// begin of text
+			{
+				p++;	// p ==> text
+				const char* end = strchr(p, '<');
+				int len = int(end - p);
+				tu_string text(p, len);
+				p += len;
+
+				format_plain_text(text.c_str(), rec);
+			}
+			else
+			if (strncmp(p, "</font>", 7) == 0)
+			{
+				return p + 7;
+			}
+			else
+			if (strncmp(p, "face=", 5) == 0)
+			{
+				p +=6;
+				const char* end = strchr(p, '"');
+				assert(end);
+				int len = int(end - p);
+				tu_string face(p, len);
+				p += len + 1;
+
+				// TODO: implement
+				//					m_font = find face;
+			}
+			else
+			if (strncmp(p, "size=", 5) == 0)
+			{
+				p += 6;
+				const char* end = strchr(p, '"');
+				int len = int(end - p);
+				tu_string size(p, len);
+				p += len + 1;
+
+				double res;
+				string_to_number(&res, size.c_str());
+				m_text_height = PIXELS_TO_TWIPS(res);
+			}
+			else
+			if (strncmp(p, "color=", 6) == 0)
+			{
+				p += 7;
+				assert(*p++ == '#');
+				
+				Uint32 rgb = strtol(p, 0, 16);
+				rec->m_style.m_color.m_r = rgb >> 16;
+				rec->m_style.m_color.m_g = (rgb >> 8) & 0xFF;
+				rec->m_style.m_color.m_b = rgb & 0xFF;
+
+				p += 7;
+			}
+			else
+			if (strncmp(p, "letterSpacing=", 14) == 0)
+			{
+				p += 15;
+				const char* end = strchr(p, '"');
+				int len = int(end - p);
+				tu_string letterSpacing(p, len);
+				p += len + 1;
+			}
+			else
+			if (strncmp(p, "kerning=", 8) == 0)
+			{
+				p += 9;
+				const char* end = strchr(p, '"');
+				int len = int(end - p);
+				tu_string letterSpacing(p, len);
+				p += len + 1;
+			}
+			else
+			if (strncmp(p, "<font ", 5) == 0)
+			{
+				p = html_font(p + 6, rec);
+			}
+			else
+			{
+				log_error("html_font: unknown keyword %s\n", p);
+				assert(0);
+			}
+		}
+
+		assert(0);
+		return NULL;
+	}
+
+	bool	edit_text_character::format_html_text(text_glyph_record* rec)
+	{
+//		printf("%s\n", m_text.c_str());
+		const char* p = m_text.c_str();
+
+		if (strncmp(p, "<p", 2) != 0)
+		{
+			// it is not html text
+			return false;
+		}
+
+		do
+		{
+			p = html_paragraph(p + 3, rec);
+		}
+		while (strncmp(p, "<p", 2) == 0);
+
+		return true;
+	}
+
+	void	edit_text_character::format_plain_text(const char* text, text_glyph_record*	grec)
 	{
 		m_text_glyph_records.resize(0);
 
@@ -1417,7 +1507,7 @@ namespace gameswf
 		m_xcursor = x; 
 		m_ycursor = y; 
 
-		const char*	text = &m_text[0];
+//		const char*	text = &m_text[0];
 		while (Uint32 code = utf8::decode_next_unicode_character(&text))
 		{
 			// @@ try to truncate overflow text??
