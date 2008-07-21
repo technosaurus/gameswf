@@ -14,7 +14,6 @@
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_player.h"
 #include "base/container.h"
-#include "base/smart_ptr.h"
 #include "base/weak_ptr.h"
 #include "base/tu_loadlib.h"
 
@@ -64,7 +63,7 @@ namespace gameswf
 
 		// We can place reference to __proto__ into members but it's used very often
 		// so for optimization we place it into instance
-		smart_ptr<as_object> m_proto;	// for optimization
+		gc_ptr<as_object> m_proto;	// for optimization
 
 		// pointer to owner
 		weak_ptr<player> m_player;

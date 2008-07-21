@@ -12,7 +12,7 @@ namespace gameswf
 	// Point(x:Number, y:Number)
 	void	as_global_point_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_point>	obj;
+		gc_ptr<as_point>	obj;
 		float x = 0.0f;
 		float y = 0.0f;
 
@@ -47,7 +47,7 @@ namespace gameswf
 		as_point* other_point = cast_to<as_point>(fn.arg(0).to_object());
 		if (other_point)
 		{
-			smart_ptr<as_point>	obj;
+			gc_ptr<as_point>	obj;
 			obj = new as_point(fn.get_player(),
 				point->m_point.m_x + other_point->m_point.m_x,
 				point->m_point.m_y + other_point->m_point.m_y);
@@ -77,7 +77,7 @@ namespace gameswf
 		as_point* other_point = cast_to<as_point>(fn.arg(0).to_object());
 		if (other_point)
 		{
-			smart_ptr<as_point>	obj;
+			gc_ptr<as_point>	obj;
 			obj = new as_point(fn.get_player(),
 				point->m_point.m_x - other_point->m_point.m_x, 
 				point->m_point.m_y - other_point->m_point.m_y);

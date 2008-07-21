@@ -11,7 +11,6 @@
 
 #include "gameswf/gameswf.h"
 #include "base/container.h"
-#include "base/smart_ptr.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_mutex.h"
 
@@ -32,8 +31,8 @@ namespace gameswf
 	{
 
 		// NetStream audio callbacks
-		hash< as_object* /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
-		hash< int, smart_ptr<sound> > m_sound;
+		hash<as_object* /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
+		hash<int, gc_ptr<sound> > m_sound;
 		int m_defvolume;
 		tu_mutex m_mutex;
 
@@ -129,7 +128,7 @@ namespace gameswf
 		int m_sample_count;
 		int m_sample_rate;
 		bool m_stereo;
-		array < smart_ptr<active_sound> > m_playlist;
+		array<gc_ptr<active_sound> > m_playlist;
 		bool m_is_paused;
 	};
 

@@ -13,7 +13,7 @@ namespace gameswf
 	// Point(x:Number, y:Number)
 	void	as_global_matrix_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_matrix> matrix;
+		gc_ptr<as_matrix> matrix;
 
 		matrix = new as_matrix(fn.get_player());
 		switch(fn.nargs)
@@ -143,7 +143,7 @@ namespace gameswf
 			return;
 		}
 		
-		smart_ptr<as_matrix>	result;
+		gc_ptr<as_matrix>	result;
 		result = new as_matrix(fn.get_player());
 		result->m_matrix = matrix->m_matrix;
 		fn.result->set_as_object(result.get_ptr());
@@ -184,7 +184,7 @@ namespace gameswf
 		as_point* point = cast_to<as_point>(fn.arg(0).to_object());
 		if (point)
 		{
-			smart_ptr<as_point>	result;
+			gc_ptr<as_point>	result;
 			result = new as_point(fn.get_player(), .0f, 0.0f);
 			matrix->m_matrix.transform( &result->m_point, point->m_point);
 			fn.result->set_as_object(result.get_ptr());

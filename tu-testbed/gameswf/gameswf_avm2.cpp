@@ -285,7 +285,7 @@ namespace gameswf
 						env.push(stack.pop());
 					}
 
-					smart_ptr<as_object> obj = stack.pop().to_object();
+					gc_ptr<as_object> obj = stack.pop().to_object();
 
 					// Assume we are in a constructor
 					tu_string class_name = m_abc->get_class_from_constructor( m_method );
@@ -342,7 +342,7 @@ namespace gameswf
 
 					as_value func, func2;
 
-					smart_ptr<as_object> new_object;
+					gc_ptr<as_object> new_object;
 					if( obj && obj->get_member(name, &func))
 					{
 						new_object = new as_object(get_player());
@@ -425,8 +425,8 @@ namespace gameswf
 
 					as_object* basetype = stack.top(0).to_object();
 
-//					smart_ptr<as_object> new_obj = new as_class(get_player(), scope);
-					smart_ptr<as_object> new_obj = new as_object(get_player());
+//					gc_ptr<as_object> new_obj = new as_class(get_player(), scope);
+					gc_ptr<as_object> new_obj = new as_object(get_player());
 
 					new_obj->set_member("__prototype__", basetype);
 

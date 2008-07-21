@@ -1362,7 +1362,7 @@ namespace gameswf
 
 				double res;
 				string_to_number(&res, size.c_str());
-				m_text_height = PIXELS_TO_TWIPS(res);
+				m_text_height = PIXELS_TO_TWIPS(float(res));
 			}
 			else
 			if (strncmp(p, "color=", 6) == 0)

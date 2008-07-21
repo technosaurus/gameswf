@@ -108,7 +108,7 @@ namespace gameswf
 	void	SDL_sound_handler::append_sound(int sound_handle, void* data, int data_bytes)
 	{
 		m_mutex.lock();
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->append(data, data_bytes, this);
@@ -120,7 +120,7 @@ namespace gameswf
 	{
 		m_mutex.lock();
 
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->pause(paused);
@@ -134,7 +134,7 @@ namespace gameswf
 	{
 		m_mutex.lock();
 
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->play(loops, this);
@@ -147,7 +147,7 @@ namespace gameswf
 	{
 		m_mutex.lock();
 
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->clear_playlist();
@@ -172,7 +172,7 @@ namespace gameswf
 	{
 		m_mutex.lock();
 
-		for (hash< int, smart_ptr<sound> >::iterator it = m_sound.begin(); it != m_sound.end(); ++it)
+		for (hash<int, gc_ptr<sound> >::iterator it = m_sound.begin(); it != m_sound.end(); ++it)
 		{
 			it->second->clear_playlist();
 		}
@@ -186,7 +186,7 @@ namespace gameswf
 		m_mutex.lock();
 
 		int vol = 0;
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			vol = it->second->get_volume();
@@ -202,7 +202,7 @@ namespace gameswf
 	{
 		m_mutex.lock();
 
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			it->second->set_volume(volume);
@@ -266,7 +266,7 @@ namespace gameswf
 		int ms = 0;
 		m_mutex.lock();
 
-		hash< int, smart_ptr<sound> >::iterator it = m_sound.find(sound_handle);
+		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
 			int bytes = it->second->get_played_bytes();
@@ -405,7 +405,7 @@ namespace gameswf
 		memset(stream, 0, len);
 
 		// mix Flash audio
-		for (hash< int, smart_ptr<sound> >::iterator snd = handler->m_sound.begin();
+		for (hash<int, gc_ptr<sound> >::iterator snd = handler->m_sound.begin();
 			snd != handler->m_sound.end(); ++snd)
 		{
 			bool play = snd->second->mix(stream, len);

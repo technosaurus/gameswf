@@ -19,7 +19,7 @@ namespace gameswf
 
 	void	as_global_textformat_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_textformat>	obj = new as_textformat(fn.get_player());
+		gc_ptr<as_textformat>	obj = new as_textformat(fn.get_player());
 
 		assert(fn.nargs <= TU_ARRAYSIZE(as_global_textformat_ctor_paramnames));
 

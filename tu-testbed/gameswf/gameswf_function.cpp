@@ -78,7 +78,7 @@ namespace gameswf
 		assert(fn.env);
 
 		// Keep target alive during execution!
-		smart_ptr<as_object> target = m_target;
+		gc_ptr<as_object> target(m_target.get_ptr());
 
 		// try to use caller environment
 		// if the caller object has own environment then we use its environment
@@ -189,7 +189,7 @@ namespace gameswf
 			}
 
 			// Init arguments array, if it's going to be needed.
-			smart_ptr<as_array>	arg_array;
+			gc_ptr<as_array>	arg_array;
 			if ((m_function2_flags & 0x04) || ! (m_function2_flags & 0x08))
 			{
 				arg_array = new as_array(env->get_player());

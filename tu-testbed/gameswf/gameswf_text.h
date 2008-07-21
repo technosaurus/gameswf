@@ -183,7 +183,7 @@ namespace gameswf
 			else return character::is(class_id);
 		}
 
-		smart_ptr<edit_text_character_def>	m_def;
+		gc_ptr<edit_text_character_def>	m_def;
 		array<text_glyph_record>	m_text_glyph_records;
 		array<fill_style>	m_dummy_style;	// used to pass a color on to shape_character::display()
 		array<line_style>	m_dummy_line_style;
@@ -197,7 +197,7 @@ namespace gameswf
 		// instance specific
 		rgba m_color;
 		float m_text_height;
-		smart_ptr<font> m_font;
+		gc_ptr<font> m_font;
 		edit_text_character_def::alignment	m_alignment;
 		float	m_left_margin;
 		float	m_right_margin;

@@ -146,8 +146,8 @@ namespace gameswf
 {
 	struct button_character_instance : public character
 	{
-		smart_ptr<button_character_definition>	m_def;
-		array< smart_ptr<character> >	m_record_character;
+		gc_ptr<button_character_definition>	m_def;
+		array<gc_ptr<character> >	m_record_character;
 
 		enum mouse_flags
 		{
@@ -198,7 +198,7 @@ namespace gameswf
 				const matrix&	mat = m_def->m_button_records[r].m_button_matrix;
 				const cxform&	cx = m_def->m_button_records[r].m_button_cxform;
 
-				smart_ptr<character>	ch = bdef->m_character_def->create_character_instance(this, id);
+				gc_ptr<character>	ch = bdef->m_character_def->create_character_instance(this, id);
 				m_record_character[r] = ch;
 				ch->set_matrix(mat);
 				ch->set_cxform(cx);
@@ -214,7 +214,7 @@ namespace gameswf
 		virtual	void	execute_frame_tags(int frame, bool state_only)
 		{
 			// Keep this (particularly m_as_environment) alive during execution!
-			smart_ptr<as_object>	this_ptr(this);
+			gc_ptr<as_object>	this_ptr(this);
 			assert(frame == 0);
 			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
@@ -345,8 +345,8 @@ namespace gameswf
 		virtual bool	on_event(const event_id& id)
 		{
 			// Keep this & parent alive during execution!
-			const smart_ptr<character> this_ptr(this);
-			const smart_ptr<character> parent(get_parent());
+			const gc_ptr<character> this_ptr(this);
+			const gc_ptr<character> parent(get_parent());
 
 			// 'this or 'parent' object is died
 			if (parent == NULL || m_def == NULL)
@@ -354,7 +354,7 @@ namespace gameswf
 				return false;
 			}
 
-			const smart_ptr<button_character_definition> def(m_def);
+			const gc_ptr<button_character_definition> def(m_def);
 
 			bool called = false;
 			if (id.m_id == event_id::KEY_PRESS)

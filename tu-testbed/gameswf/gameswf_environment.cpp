@@ -669,7 +669,7 @@ namespace gameswf
 	void as_environment::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
 		// target
-		if (m_target == this_ptr)
+		if (m_target.get() == this_ptr)
 		{
 			m_target = NULL;
 		}

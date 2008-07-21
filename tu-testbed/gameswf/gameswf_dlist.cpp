@@ -343,7 +343,7 @@ namespace gameswf
 		}
 		
 		display_object_info&	di = m_display_object_array[index];
-		smart_ptr<character>	old_ch = di.m_character;
+		gc_ptr<character>	old_ch = di.m_character;
 
 		// Put the new character in its place.
 

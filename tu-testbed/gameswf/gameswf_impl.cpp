@@ -147,38 +147,6 @@ namespace gameswf
 
 
 	//
-	// ref_counted
-	//
-
-
-	ref_counted::ref_counted() :
-		m_ref_count(0)
-	{
-	}
-
-	ref_counted::~ref_counted()
-	{
-		assert(m_ref_count == 0);
-	}
-
-	void	ref_counted::add_ref() const
-	{
-		assert(m_ref_count >= 0);
-		m_ref_count++;
-	}
-
-	void	ref_counted::drop_ref()
-	{
-		assert(m_ref_count > 0);
-		m_ref_count--;
-		if (m_ref_count == 0)
-		{
-			// Delete me!
-			delete this;
-		}
-	}
-
-	//
 	// character
 	//
 
@@ -433,8 +401,8 @@ namespace gameswf
 	void clear_shared_libs();
 
 	void	precompute_cached_data(movie_definition* movie_def)
-		// Fill in cached data in movie_def.
-		// @@@@ NEEDS TESTING -- MIGHT BE BROKEN!!!
+	// Fill in cached data in movie_def.
+	// @@@@ NEEDS TESTING -- MIGHT BE BROKEN!!!
 	{
 		assert(movie_def != NULL);
 
@@ -466,7 +434,7 @@ namespace gameswf
 		} save_stuff_instance;
 
 		// Need an instance.
-		gameswf::root*	m = movie_def->create_instance();
+		gc_ptr<gameswf::root>	m = movie_def->create_instance();
 		if (m == NULL)
 		{
 			log_error("error: precompute_cached_data can't create instance of movie\n");
@@ -526,8 +494,6 @@ namespace gameswf
 				kick_count = 0;
 			}
 		}
-
-		m->drop_ref();
 	}
 
 
@@ -618,7 +584,7 @@ namespace gameswf
 		}
 
 	private:
-		smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
+		gc_ptr<gameswf::bitmap_info>	m_bitmap_info;
 	};
 #endif
 
@@ -689,8 +655,6 @@ namespace gameswf
 			bi = render::create_bitmap_info_empty();
 		}
 
-		assert(bi->get_ref_count() == 0);
-
 		bitmap_character*	ch = new bitmap_character(m->get_player(), bi);
 
 		m->add_bitmap_character(character_id, ch);
@@ -744,8 +708,6 @@ namespace gameswf
 		{
 			bi = render::create_bitmap_info_empty();
 		}
-
-		assert(bi->get_ref_count() == 0);
 
 		bitmap_character*	ch = new bitmap_character(m->get_player(), bi);
 
@@ -1107,7 +1069,6 @@ namespace gameswf
 		{
 			bi = render::create_bitmap_info_empty();
 		}
-		assert(bi->get_ref_count() == 0);
 
 		bitmap_character*	ch = new bitmap_character(m->get_player(), bi);
 

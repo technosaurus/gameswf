@@ -28,7 +28,7 @@ namespace gameswf
 	{
 		if (fn.nargs == 1)
 		{
-			smart_ptr<as_transform>	obj;
+			gc_ptr<as_transform>	obj;
 			if (character* movie = cast_to<character>(fn.arg(0).to_object()))
 			{
 				obj = new as_transform(fn.get_player(), movie);

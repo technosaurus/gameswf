@@ -30,7 +30,7 @@ namespace gameswf
 	// ColorTranform([redMultiplier:Number], [greenMultiplier:Number], [blueMultiplier:Number], [alphaMultiplier:Number], [redOffset:Number], [greenOffset:Number], [blueOffset:Number], [alphaOffset:Number])
 	void	as_global_color_transform_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_color_transform>	obj;
+		gc_ptr<as_color_transform>	obj;
 		obj = new as_color_transform(fn.get_player());
 
 		switch ( fn.nargs )

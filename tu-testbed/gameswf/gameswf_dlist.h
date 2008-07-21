@@ -23,7 +23,7 @@ namespace gameswf
 	// A struct to serve as an entry in the display list.
 	struct display_object_info
 	{
-		smart_ptr<character>	m_character;	// state is held in here
+		gc_ptr<character>	m_character;	// state is held in here
 
 		display_object_info()
 		{

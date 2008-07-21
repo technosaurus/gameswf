@@ -179,8 +179,6 @@ namespace gameswf
 		map->add("attachMovie", sprite_attach_movie);
 		map->add("localToGlobal", sprite_local_global);
 		map->add("globalToLocal", sprite_global_local);
-		map->add("getBounds", sprite_get_bounds);
-		map->add("getRect", sprite_get_rect);
 
 		// drawing API
 		map->add("beginFill", sprite_begin_fill);
@@ -559,26 +557,28 @@ namespace gameswf
 	}
 
 	// library stuff, for sharing resources among different movies.
-	stringi_hash< smart_ptr<character_def> >* player::get_chardef_library()
+	stringi_hash<gc_ptr<character_def> >* player::get_chardef_library()
 	{
 		return &m_chardef_library;
 	}
 
 	void player::clear_library()
-		// Drop all library references to movie_definitions, so they
-		// can be cleaned up.
+	// Drop all library references to movie_definitions, so they
+	// can be cleaned up.
 	{
-		for (stringi_hash< smart_ptr<character_def> >::iterator it = 
+		for (stringi_hash<gc_ptr<character_def> >::iterator it = 
 			m_chardef_library.begin(); it != m_chardef_library.end(); ++it)
 		{
-			if (it->second->get_ref_count() > 1)
+			if (gc_collector::debug_get_ref_count(it->second) > 1)
 			{
 				printf("memory leaks is found out: on exit movie_definition_sub ref_count > 1\n");
 				printf("this = 0x%p, ref_count = %d\n", it->second.get_ptr(),
-					it->second->get_ref_count());
+				       gc_collector::debug_get_ref_count(it->second));
 
 				// to detect memory leaks
-				while (it->second->get_ref_count() > 1)	it->second->drop_ref();
+				while (gc_collector::debug_get_ref_count(it->second) > 1) {
+					gc_collector::debug_decrement_ref_count(it->second);
+				}
 			}
 		}
 		m_chardef_library.clear();
@@ -592,7 +592,7 @@ namespace gameswf
 		// Is the movie already in the library?
 		if (s_use_cached_movie_def)
 		{
-			smart_ptr<character_def>	m;
+			gc_ptr<character_def>	m;
 			get_chardef_library()->get(filename, &m);
 			if (m != NULL)
 			{
@@ -656,7 +656,7 @@ namespace gameswf
 
 		// We should not do m->add_ref() in order to prevent memory leaks
 		// More correctly to do so:
-		// smart_ptr<movie_definition_sub> md = create_movie_sub("my.swf")
+		// gc_ptr<movie_definition_sub> md = create_movie_sub("my.swf")
 		//		m->add_ref();
 
 		if (s_use_cached_movie_def)
@@ -667,17 +667,17 @@ namespace gameswf
 		return m;
 	}
 
-	smart_ptr<root> player::load_file(const char* infile)
+	gc_ptr<root> player::load_file(const char* infile)
 	// Load the actual movie.
 	{
-		smart_ptr<gameswf::movie_definition>	md = create_movie(infile);
+		gc_ptr<gameswf::movie_definition>	md = create_movie(infile);
 		if (md == NULL)
 		{
 			fprintf(stderr, "error: can't create a movie from '%s'\n", infile);
 			return NULL;
 		}
 
-		smart_ptr<gameswf::root>	m = md->create_instance();
+		gc_ptr<gameswf::root>	m = md->create_instance();
 		if (m == NULL)
 		{
 			fprintf(stderr, "error: can't create movie instance\n");
@@ -721,13 +721,13 @@ namespace gameswf
 
 	void player::clear_heap()
 	{
-		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
+		for (hash<gc_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{
 			as_object* obj = it->first.get_ptr();
 			if (obj)
 			{
-				if (obj->get_ref_count() > 1)
+				if (gc_collector::debug_get_ref_count(obj) > 1)
 				{
 					hash<as_object*, bool> visited_objects;
 					obj->clear_refs(&visited_objects, obj);
@@ -739,7 +739,7 @@ namespace gameswf
 
 	void player::set_as_garbage()
 	{
-		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
+		for (hash<gc_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{
 			as_object* obj = it->first.get_ptr();
@@ -754,7 +754,7 @@ namespace gameswf
 	{
 		as_object* global = get_global();
 		global->this_alive();
-		for (hash<smart_ptr<as_object>, bool>::iterator it = m_heap.begin();
+		for (hash<gc_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{
 			as_object* obj = it->first.get_ptr();
@@ -762,7 +762,7 @@ namespace gameswf
 			{
 				if (it->second)	// is garbage ?
 				{
-					if (obj->get_ref_count() > 1)	// is in heap only ?
+					if (gc_collector::debug_get_ref_count(obj) > 1)	// is in heap only ?
 					{
 						hash<as_object*, bool> visited_objects;
 						obj->clear_refs(&visited_objects, obj);

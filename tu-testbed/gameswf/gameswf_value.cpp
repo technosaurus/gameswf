@@ -25,10 +25,6 @@ namespace gameswf
 		m_object(obj),
 		m_flags(0)
 	{
-		if (m_object)
-		{
-			m_object->add_ref();
-		}
 	}
 
 
@@ -45,7 +41,6 @@ namespace gameswf
 		m_flags(0)
 	{
 		m_property = new as_property(getter, setter);
-		m_property->add_ref();
 	}
 
 	const char*	as_value::to_string() const
@@ -60,7 +55,7 @@ namespace gameswf
 		static char buf[16];
 		if (m_type == OBJECT)
 		{
-			snprintf(buf, 16, "0x%p", m_object);
+			snprintf(buf, 16, "0x%p", m_object.get());
 			return buf;
 		}
 		return to_tu_string().c_str();
@@ -299,10 +294,6 @@ namespace gameswf
 			drop_refs();
 			m_type = OBJECT;
 			m_object = obj;
-			if (obj)
-			{
-				m_object->add_ref();
-			}
 		}
 	}
 
@@ -342,7 +333,6 @@ namespace gameswf
 				{
 					m_type = PROPERTY;
 					m_property = v.m_property;
-					m_property->add_ref();
 					m_property_target = NULL;
 				}
 				else
@@ -386,7 +376,7 @@ namespace gameswf
 				return m_bool == v.to_bool();
 
 			case OBJECT:
-				return m_object == v.to_object();
+				return m_object.get() == v.to_object();
 
 			case PROPERTY:
 			{
@@ -411,28 +401,9 @@ namespace gameswf
 	void	as_value::drop_refs()
 	// Drop any ref counts we have; this happens prior to changing our value.
 	{
-		if (m_type == OBJECT)
-		{
-			if (m_object)
-			{
-				m_object->drop_ref();
-				m_object = 0;
-			}
-		}
-		else
-		if (m_type == PROPERTY)
-		{
-			if (m_property)
-			{
-				m_property->drop_ref();
-				m_property = NULL;
-			}
-			if (m_property_target)
-			{
-				m_property_target->drop_ref();
-				m_property_target = NULL;
-			}
-		}
+		m_object = NULL;
+		m_property = NULL;
+		m_property_target = NULL;
 
 		m_flags = 0;
 	}
@@ -478,12 +449,7 @@ namespace gameswf
 	// Sets the target to the given object.
 	{
 		assert(is_property());
-		if (m_property_target)
-		{
-			m_property_target->drop_ref();
-		}
 		m_property_target = target;
-		m_property_target->add_ref();
 	}
 
 	as_value::as_value(float val) :
@@ -509,7 +475,9 @@ namespace gameswf
 
 	void	as_value::set_double(double val)
 	{
-		drop_refs(); m_type = NUMBER; m_number = val;
+		drop_refs();
+		m_type = NUMBER;
+		m_number = val;
 	}
 
 	as_value::as_value(bool val) :
@@ -521,7 +489,9 @@ namespace gameswf
 
 	void	as_value::set_bool(bool val)
 	{
-		drop_refs(); m_type = BOOLEAN; m_bool = val;
+		drop_refs();
+		m_type = BOOLEAN;
+		m_bool = val;
 	}
 
 
@@ -684,12 +654,16 @@ namespace gameswf
 
 	void	as_value::set_tu_string(const tu_string& str)
 	{
-		drop_refs(); m_type = STRING; m_string = str; 
+		drop_refs();
+		m_type = STRING;
+		m_string = str; 
 	}
 	
 	void	as_value::set_string(const char* str)
 	{
-		drop_refs(); m_type = STRING; m_string = str; 
+		drop_refs();
+		m_type = STRING;
+		m_string = str; 
 	}
 	
 	as_value::as_value(const char* str) :
@@ -824,7 +798,7 @@ namespace gameswf
 		env.push(val);
 		if (m_setter != NULL)
 		{
-			smart_ptr<as_object> tar = target;
+			gc_ptr<as_object> tar = target;
 			(*m_setter.get_ptr())(fn_call(NULL, tar.get_ptr(),	&env, 1, env.get_top_index()));
 		}
 	}
@@ -837,7 +811,7 @@ namespace gameswf
 		as_environment env(target->get_player());
 		if (m_getter != NULL)
 		{
-			smart_ptr<as_object> tar = target;
+			gc_ptr<as_object> tar = target;
 			(*m_getter.get_ptr())(fn_call(val, tar.get_ptr(), &env, 0,	0));
 		}
 	}

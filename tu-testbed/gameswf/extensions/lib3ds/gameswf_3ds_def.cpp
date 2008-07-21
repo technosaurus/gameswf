@@ -28,7 +28,7 @@ namespace gameswf
 
 	x3ds_definition* create_3ds_definition(player* player, const char* url)
 	{
-		smart_ptr<character_def>	m;
+		gc_ptr<character_def>	m;
 		player->get_chardef_library()->get(url, &m);
 		if (m != NULL)
 		{

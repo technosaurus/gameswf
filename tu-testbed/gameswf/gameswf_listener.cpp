@@ -13,10 +13,10 @@ namespace gameswf
 	{
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object> > listeners(m_listeners);
+		array<weak_ptr<as_object> > listeners(m_listeners);
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object> obj = listeners[i];
+			gc_ptr<as_object> obj(listeners[i].get_ptr());
 			if (obj != NULL)
 			{
 				obj->on_event(ev);
@@ -36,10 +36,10 @@ namespace gameswf
 
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object> > listeners(m_listeners);
+		array<weak_ptr<as_object> > listeners(m_listeners);
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object> obj = listeners[i];
+			gc_ptr<as_object> obj(listeners[i].get_ptr());
 			if (obj != NULL)	// is listener destroyed ?
 			{
 				as_value function;
@@ -57,11 +57,11 @@ namespace gameswf
 	{
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array< weak_ptr<as_object> > listeners;
+		array<weak_ptr<as_object> > listeners;
 		listeners = m_listeners;
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			smart_ptr<as_object> obj = listeners[i];
+			gc_ptr<as_object> obj(listeners[i].get_ptr());
 			if (obj != NULL)
 			{
 				obj->advance(delta_time);

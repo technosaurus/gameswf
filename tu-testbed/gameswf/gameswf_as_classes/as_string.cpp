@@ -180,7 +180,7 @@ namespace gameswf
 	{
 		const tu_string& this_str = fn.this_value.to_tu_string();
 
-		smart_ptr<as_array> arr = new as_array(fn.get_player());
+		gc_ptr<as_array> arr = new as_array(fn.get_player());
 
 		tu_string delimiter;
 		if (fn.nargs >= 1)

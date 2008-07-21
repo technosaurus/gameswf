@@ -11,7 +11,6 @@
 #include "gameswf/gameswf_action.h"
 #include "gameswf/gameswf_impl.h"
 #include "gameswf/gameswf_log.h"
-#include "base/smart_ptr.h"
 #include "gameswf/gameswf_as_classes/as_string.h"
 #include "base/tu_config.h"
 
@@ -153,7 +152,7 @@ bool
 XML::on_event(event_id id)
 {
   // Keep m_as_environment alive during any method calls!
-  //  smart_ptr<as_object_interface>	this_ptr(this);
+  //  gc_ptr<as_object_interface>	this_ptr(this);
   
 #if 0
   // First, check for built-in event handler.

@@ -10,7 +10,6 @@
 #define GAMESWF_VALUE_H
 
 #include "base/container.h"
-#include "base/smart_ptr.h"
 #include "gameswf/gameswf.h"	// for ref_counted
 #include <wchar.h>
 
@@ -27,8 +26,8 @@ namespace gameswf
 	// helper, used in as_value
 	struct as_property : public ref_counted
 	{
-		smart_ptr<as_function>	m_getter;
-		smart_ptr<as_function>	m_setter;
+		gc_ptr<as_function>	m_getter;
+		gc_ptr<as_function>	m_setter;
 
 		as_property(const as_value& getter,	const as_value& setter);
 		~as_property();
@@ -64,16 +63,14 @@ namespace gameswf
 		mutable tu_string	m_string;
 		union
 		{
-			as_object*	m_object;
 			double m_number;
 			bool m_bool;
-			struct
-			{
-				as_object*	m_property_target;
-				as_property* m_property;
-			};
 		};
 
+		gc_ptr<as_object> m_object;
+		gc_ptr<as_object> m_property_target;
+		gc_ptr<as_property> m_property;
+		
 		// Numeric flags
 		mutable int m_flags;
 

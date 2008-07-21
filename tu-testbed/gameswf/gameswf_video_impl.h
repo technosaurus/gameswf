@@ -84,10 +84,10 @@ namespace gameswf
 
 		private:
 
-		smart_ptr<video_stream_definition>	m_def;
+		gc_ptr<video_stream_definition>	m_def;
 
 		// A Camera object that is capturing video data or a NetStream object.
-		smart_ptr<as_netstream> m_ns;
+		gc_ptr<as_netstream> m_ns;
 	};
 
 }	// end namespace gameswf

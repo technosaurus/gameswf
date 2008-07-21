@@ -293,7 +293,7 @@ namespace gameswf
 		}
 
 		// first try to find from hash
-		smart_ptr<face_entity> fe;
+		gc_ptr<face_entity> fe;
 		if (m_face_entity.get(key, &fe))
 		{
 			return fe.get_ptr();

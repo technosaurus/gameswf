@@ -17,7 +17,6 @@
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
-#include "base/smart_ptr.h"
 #include "base/weak_ptr.h"
 #include <stdarg.h>
 
@@ -55,7 +54,7 @@ namespace gameswf
 		virtual bool	point_test_local(float x, float y) { return false; }
 		virtual void get_bound(rect* bound) { assert(0); };
 
-		// Should stick the result in a smart_ptr immediately.
+		// Should stick the result in a gc_ptr immediately.
 		virtual character*	create_character_instance(character* parent, int id);	// default is to make a generic_character
 
 		//

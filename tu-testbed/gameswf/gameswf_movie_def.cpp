@@ -202,7 +202,7 @@ namespace gameswf
 	// Get the named exported resource, if we expose it.
 	// Otherwise return NULL.
 	{
-		smart_ptr<character_def>	res;
+		gc_ptr<character_def>	res;
 		m_exports.get(symbol, &res);
 		return res.get_ptr();
 	}
@@ -290,9 +290,9 @@ namespace gameswf
 		}
 #endif // not NDEBUG
 
-		smart_ptr<character_def>	ch;
+		gc_ptr<character_def>	ch;
 		m_characters.get(character_id, &ch);
-		assert(ch == NULL || ch->get_ref_count() > 1);
+		assert(ch == NULL || gc_collector::debug_get_ref_count(ch) > 1);
 		return ch.get_ptr();
 	}
 
@@ -319,17 +319,17 @@ namespace gameswf
 		}
 #endif // not NDEBUG
 
-		smart_ptr<font>	f;
+		gc_ptr<font>	f;
 		m_fonts.get(font_id, &f);
-		assert(f == NULL || f->get_ref_count() > 1);
+		assert(f == NULL || gc_collector::debug_get_ref_count(f) > 1);
 		return f.get_ptr();
 	}
 
 	bitmap_character_def*	movie_def_impl::get_bitmap_character(int character_id)
 	{
-		smart_ptr<bitmap_character_def>	ch;
+		gc_ptr<bitmap_character_def>	ch;
 		m_bitmap_characters.get(character_id, &ch);
-		assert(ch == NULL || ch->get_ref_count() > 1);
+		assert(ch == NULL || gc_collector::debug_get_ref_count(ch) > 1);
 		return ch.get_ptr();
 	}
 
@@ -343,9 +343,9 @@ namespace gameswf
 
 	sound_sample*	movie_def_impl::get_sound_sample(int character_id)
 	{
-		smart_ptr<sound_sample>	ch;
+		gc_ptr<sound_sample>	ch;
 		m_sound_samples.get(character_id, &ch);
-		assert(ch == NULL || ch->get_ref_count() > 1);
+		assert(ch == NULL || gc_collector::debug_get_ref_count(ch) > 1);
 		return ch.get_ptr();
 	}
 
@@ -537,7 +537,7 @@ namespace gameswf
 
 		array<int>	font_ids;
 
-		for (hash<int, smart_ptr<font> >::iterator it = m_fonts.begin();
+		for (hash<int, gc_ptr<font> >::iterator it = m_fonts.begin();
 			it != m_fonts.end();
 			++it)
 		{
@@ -595,7 +595,7 @@ namespace gameswf
 //		fontlib::output_cached_data(out, fonts, this, options);
 
 		// Write character data.
-		{for (hash<int, smart_ptr<character_def> >::iterator it = m_characters.begin();
+		{for (hash<int, gc_ptr<character_def> >::iterator it = m_characters.begin();
 		it != m_characters.end();
 		++it)
 		{
@@ -647,7 +647,7 @@ namespace gameswf
 			Sint16	id = in->read_le16();
 			if (id == (Sint16) -1) { break; }	// done
 
-			smart_ptr<character_def> ch;
+			gc_ptr<character_def> ch;
 			m_characters.get(id, &ch);
 			if (ch != NULL)
 			{
@@ -683,7 +683,7 @@ namespace gameswf
 			// create traits
 			for (int i = 0; i < ii->m_trait.size(); i++)
 			{
-				smart_ptr<traits_info>& ti = ii->m_trait[i];
+				gc_ptr<traits_info>& ti = ii->m_trait[i];
 				const char* name = m_abc->get_multiname(ti->m_name);
 				as_value val;
 				switch (ti->m_kind)

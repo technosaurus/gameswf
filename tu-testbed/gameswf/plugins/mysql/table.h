@@ -45,8 +45,8 @@ namespace mysql_plugin
 
 	private:
 		int m_index;
-		array< smart_ptr<as_object> > m_data;	// [columns][rows]
-		array< tu_stringi > m_title;
+		array<gc_ptr<as_object> > m_data;	// [columns][rows]
+		array<tu_stringi> m_title;
 	};
 
 }

@@ -9,7 +9,6 @@
 #ifndef GAMESWF_VIDEO_BASE_H
 #define GAMESWF_VIDEO_BASE_H
 
-#include "base/smart_ptr.h"
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_mutex.h"
 

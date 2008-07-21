@@ -5,10 +5,10 @@
 
 // Some test code for garbage collectors.
 //
-// cl -Zi -GX -GR tu_gc_test.cpp tu_gc_singlethreaded_marksweep.cpp -I.. -DTEST_GC_SINGLETHREADED_MARKSWEEP
+// cl -Zi -GX -GR tu_gc_test.cpp tu_gc_singlethreaded_marksweep.cpp -I.. -DTEST_GC
 
 
-#ifdef TEST_GC_SINGLETHREADED_MARKSWEEP
+#ifdef TEST_GC
 
 #include "base/tu_gc_singlethreaded_marksweep.h"
 #include "base/tu_gc_singlethreaded_refcount.h"
@@ -39,4 +39,4 @@ int main() {
 }
 
 
-#endif  // TEST_GC_SINGLETHREADED_MARKSWEEP
+#endif  // TEST_GC
