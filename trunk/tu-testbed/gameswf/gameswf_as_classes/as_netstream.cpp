@@ -109,7 +109,7 @@ namespace gameswf
 				m_audio_queue.lock();
 				if (m_audio_queue.size() > 0)
 				{
-					const smart_ptr<av_packet>& audio = m_audio_queue.front();
+					const gc_ptr<av_packet>& audio = m_audio_queue.front();
 					
 					Sint16* sample;
 					int size;
@@ -147,7 +147,7 @@ namespace gameswf
 			as_value function;
 			if (get_member("onStatus", &function))
 			{
-				smart_ptr<as_object> infoObject = new as_object(get_player());
+				gc_ptr<as_object> infoObject = new as_object(get_player());
 				infoObject->set_member("level", level);
 				infoObject->set_member("code", code);
 
@@ -436,7 +436,7 @@ namespace gameswf
 						{
 							if (m_video_handler->m_data == NULL)
 							{
-								const smart_ptr<av_packet>& packet = m_video_queue.front();
+								const gc_ptr<av_packet>& packet = m_video_queue.front();
 
 								// update video clock with pts, if present
 								if (packet->m_dts != AV_NOPTS_VALUE)

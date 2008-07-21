@@ -260,7 +260,7 @@ int	main(int argc, char *argv[])
 		int	width = 0;
 		int	height = 0;
 
-		smart_ptr<gameswf::player> player = new gameswf::player();
+		gameswf::gc_ptr<gameswf::player> player = new gameswf::player();
 
 		for (int arg = 1; arg < argc; arg++)
 		{
@@ -527,7 +527,7 @@ int	main(int argc, char *argv[])
 
 		player->set_flash_vars(flash_vars);
 		{
-			smart_ptr<gameswf::root>	m = player->load_file(infile);
+			gameswf::gc_ptr<gameswf::root>	m = player->load_file(infile);
 			if (m == NULL)
 			{
 				exit(1);

@@ -70,8 +70,8 @@ namespace gameswf
 
 	void	root::generate_mouse_button_events(mouse_button_state* ms)
 	{
-		smart_ptr<character>	active_entity = ms->m_active_entity;
-		smart_ptr<character>	topmost_entity = ms->m_topmost_entity;
+		gc_ptr<character>	active_entity = ms->m_active_entity;
+		gc_ptr<character>	topmost_entity = ms->m_topmost_entity;
 
 		// set cursor as passive/active object
 		if (active_entity != NULL)
@@ -220,7 +220,7 @@ namespace gameswf
 			}
 		}
 
-		// Write the (possibly modified) smart_ptr copies back
+		// Write the (possibly modified) gc_ptr copies back
 		// into the state struct.
 		ms->m_active_entity = active_entity;
 		ms->m_topmost_entity = topmost_entity;
@@ -435,7 +435,6 @@ namespace gameswf
 			}
 
 			m_player->clear_garbage();
-
 		}
 
 		gameswf_engine_mutex().unlock();

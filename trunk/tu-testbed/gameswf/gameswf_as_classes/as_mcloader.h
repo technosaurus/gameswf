@@ -34,7 +34,7 @@ namespace gameswf
 			{
 			}
 
-			smart_ptr<movie_def_impl> m_def;
+			gc_ptr<movie_def_impl> m_def;
 			weak_ptr<character> m_target;
 			character* m_ch;
 		};

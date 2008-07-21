@@ -30,8 +30,8 @@ namespace gameswf
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
 
-		smart_ptr<as_color_transform> m_color_transform;
-		smart_ptr<character> m_movie;
+		gc_ptr<as_color_transform> m_color_transform;
+		gc_ptr<character> m_movie;
 	};
 
 }	// end namespace gameswf

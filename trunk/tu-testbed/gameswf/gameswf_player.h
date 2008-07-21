@@ -28,12 +28,12 @@ namespace gameswf
 
 	struct player : public ref_counted
 	{
-		hash<smart_ptr<as_object>, bool> m_heap;
-		smart_ptr<as_object>	m_global;
+		hash<gc_ptr<as_object>, bool> m_heap;
+		gc_ptr<as_object>	m_global;
 		Uint64 m_start_time;
 		weak_ptr<root> m_current_root;
 		tu_string m_workdir;
-		stringi_hash< smart_ptr<character_def> > m_chardef_library;
+		stringi_hash<gc_ptr<character_def> > m_chardef_library;
 		tu_string m_flash_vars;
 		bool m_force_realtime_framerate;
 
@@ -73,7 +73,7 @@ namespace gameswf
 		// drop_ref() when you're done with it.
 		// Or use smart_ptr<T> from base/smart_ptr.h if you want.
 		exported_module movie_definition*	create_movie(const char* filename);
-		exported_module	smart_ptr<root>  load_file(const char* filename);
+		exported_module	gc_ptr<root>  load_file(const char* filename);
 
 
 		// Create/hook built-ins.
@@ -83,7 +83,7 @@ namespace gameswf
 		exported_module void	action_clear();
 
 		// library stuff, for sharing resources among different movies.
-		stringi_hash< smart_ptr<character_def> >* get_chardef_library();
+		stringi_hash<gc_ptr<character_def> >* get_chardef_library();
 		void clear_library();
 
 		as_object* get_global() const;

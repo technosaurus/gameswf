@@ -14,7 +14,6 @@
 #include "gameswf/gameswf_object.h"
 #include "gameswf/gameswf_types.h"
 #include "base/container.h"
-#include "base/smart_ptr.h"
 #include "base/membuf.h"
 #include <wchar.h>
 
@@ -148,38 +147,8 @@ namespace gameswf
 	};
 
 	// allows sharing of as byte code buffer
-	class counted_buffer : public membuf
+	class counted_buffer : public membuf, public gc_object
 	{
-		mutable int	m_ref_count;
-
-	public:
-		counted_buffer()
-			:
-			m_ref_count(0)
-		{
-		}
-
-		~counted_buffer()
-		{
-			assert(m_ref_count == 0);
-		}
-
-		void	add_ref() const
-		{
-			assert(m_ref_count >= 0);
-			m_ref_count++;
-		}
-
-		void	drop_ref()
-		{
-			assert(m_ref_count > 0);
-			m_ref_count--;
-			if (m_ref_count == 0)
-			{
-				// Delete me!
-				delete this;
-			}
-		}
 	};
 
 
@@ -217,7 +186,7 @@ namespace gameswf
 		static void	enumerate(as_environment* env, as_object* object);
 
 		// data:
-		smart_ptr<counted_buffer>	m_buffer;
+		gc_ptr<counted_buffer>	m_buffer;
 		array<tu_string>	m_dictionary;
 		int	m_decl_dict_processed_at;
 #if ACTION_BUFFER_PROFILLING		

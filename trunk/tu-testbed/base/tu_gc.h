@@ -65,8 +65,6 @@
 
 // TODO:
 //
-// implement gc_weak_ptr
-//
 // implement GC_CONTAINER for associative containers like map<>.
 //
 // improve type-inference & safety for GC_CONTAINER, it's pretty ugly
@@ -151,11 +149,11 @@ namespace tu_gc {
 		gc_ptr() : m_ptr(0) {
 			garbage_collector::construct_pointer(this);
 		}
-		gc_ptr(T* p) : m_ptr(0) {
+		explicit gc_ptr(T* p) : m_ptr(0) {
 			garbage_collector::construct_pointer(this);
 			reset(p);
 		}
-		gc_ptr(const gc_ptr& p) : m_ptr(0) {
+		explicit gc_ptr(const gc_ptr& p) : m_ptr(0) {
 			garbage_collector::construct_pointer(this);
 			reset((T*) p.m_ptr);
 		}
@@ -197,6 +195,10 @@ namespace tu_gc {
 			return m_ptr;
 		}
 
+		T* get_ptr() const {
+			return get();
+		}
+
 		void reset(T* p) {
 			garbage_collector::write_barrier(this, p);
 		}
@@ -209,8 +211,6 @@ namespace tu_gc {
 	private:
 		T* m_ptr;
 	};
-
-	// TODO: gc_weak_ptr
 
 	// For pointers to gc_object that are kept in containers.
 	// NOTE: work in progress, subject to change.

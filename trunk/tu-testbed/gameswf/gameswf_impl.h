@@ -20,7 +20,6 @@
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
-#include "base/smart_ptr.h"
 #include <stdarg.h>
 
 
@@ -66,7 +65,7 @@ namespace gameswf
 	// For characters that don't store unusual state in their instances.
 	struct generic_character : public character
 	{
-		smart_ptr<character_def>	m_def;
+		gc_ptr<character_def>	m_def;
 
 		generic_character(player* player, character_def* def, character* parent, int id) :
 			character(player, parent, id),
@@ -181,7 +180,7 @@ namespace gameswf
 		}
 
 		private:
-			smart_ptr<gameswf::bitmap_info>	m_bitmap_info;
+			gc_ptr<gameswf::bitmap_info>	m_bitmap_info;
 	};
 
 	// Execute tags include things that control the operation of

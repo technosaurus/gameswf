@@ -146,7 +146,7 @@ int	main(int argc, char *argv[])
 		print_usage();
 		exit(1);
 	}
-	smart_ptr<gameswf::player> player = new gameswf::player();
+	gameswf::gc_ptr<gameswf::player> player = new gameswf::player();
 	gameswf::register_file_opener_callback(file_opener);
 	gameswf::register_log_callback(log_callback);
 	gameswf::set_use_cache_files(false);	// don't load old cache files!

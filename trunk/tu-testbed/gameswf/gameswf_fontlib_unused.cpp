@@ -24,7 +24,7 @@ namespace gameswf
 {
 namespace fontlib
 {
-	array< smart_ptr<font> >	s_fonts;
+	array<gc_ptr<font> >	s_fonts;
 
 	// Size (in TWIPS) of the box that the glyph should
 	// stay within.
@@ -272,7 +272,7 @@ namespace fontlib
 			}
 		}
 
-		smart_ptr<bitmap_info>	bi;
+		gc_ptr<bitmap_info>	bi;
 		if (owner->get_create_bitmaps() == DO_NOT_LOAD_BITMAPS)
 		{
 			bi = render::create_bitmap_info_empty();
@@ -1189,7 +1189,7 @@ namespace fontlib
 			int w = in->read_le16();
 			int h = in->read_le16();
 
-			smart_ptr<bitmap_info>	bi;
+			gc_ptr<bitmap_info>	bi;
 			if (owner->get_create_bitmaps() == DO_NOT_LOAD_BITMAPS)
 			{
 				// Skip image data bytes.

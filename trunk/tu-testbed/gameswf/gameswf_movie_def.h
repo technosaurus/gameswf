@@ -17,7 +17,6 @@
 
 #include "base/container.h"
 #include "base/utility.h"
-#include "base/smart_ptr.h"
 
 namespace gameswf
 {
@@ -297,24 +296,24 @@ namespace gameswf
 			else return movie_definition_sub::is(class_id);
 		}
 
-		hash<int, smart_ptr<character_def> >	m_characters;
-		hash<int, smart_ptr<font> >	 m_fonts;
-		hash<int, smart_ptr<bitmap_character_def> >	m_bitmap_characters;
-		hash<int, smart_ptr<sound_sample> >	m_sound_samples;
+		hash<int, gc_ptr<character_def> >	m_characters;
+		hash<int, gc_ptr<font> >	 m_fonts;
+		hash<int, gc_ptr<bitmap_character_def> >	m_bitmap_characters;
+		hash<int, gc_ptr<sound_sample> >	m_sound_samples;
 		array<array<execute_tag*> >	   m_playlist;	// A list of movie control events for each frame.
 		array<array<execute_tag*> >	   m_init_action_list;	// Init actions for each frame.
 		stringi_hash<int>		   m_named_frames;	// 0-based frame #'s
-		stringi_hash<smart_ptr<character_def> > m_exports;
+		stringi_hash<gc_ptr<character_def> > m_exports;
 
 		// Items we import.
 		array<import_info>	m_imports;
 
 		// Movies we import from; hold a ref on these, to keep them alive
-		array<smart_ptr<movie_definition> >	m_import_source_movies;
+		array<gc_ptr<movie_definition> >	m_import_source_movies;
 
 		// Bitmaps used in this movie; collected in one place to make
 		// it possible for the host to manage them as textures.
-		array<smart_ptr<bitmap_info> >	m_bitmap_list;
+		array<gc_ptr<bitmap_info> >	m_bitmap_list;
 
 		create_bitmaps_flag	m_create_bitmaps;
 		create_font_shapes_flag	m_create_font_shapes;
@@ -331,11 +330,11 @@ namespace gameswf
 		tu_file*	m_zlib_in;
 		tu_file*	m_origin_in;
 		tu_thread* m_thread;
-		smart_ptr<root> m_instance;	// cached movie instance.
+		gc_ptr<root> m_instance;	// cached movie instance.
 
 		// for AVM2, Flash9
 		tu_string m_abc_name;
-		smart_ptr<abc_def> m_abc;
+		gc_ptr<abc_def> m_abc;
 		hash<int, tu_string>	m_symbol_class;
 		hash<int, tu_string>	m_scene;
 		hash<int, tu_string>	m_frame_label;	// this is't labeled_frame !!!

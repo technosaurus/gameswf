@@ -367,7 +367,7 @@ namespace gameswf
 	// frame is 0-based
 	{
 		// Keep this (particularly m_as_environment) alive during execution!
-		smart_ptr<as_object>	this_ptr(this);
+		gc_ptr<as_object>	this_ptr(this);
 
 		assert(frame >= 0);
 		assert(frame < m_def->get_frame_count());
@@ -437,7 +437,7 @@ namespace gameswf
 	// frame is 0-based
 	{
 		// Keep this (particularly m_as_environment) alive during execution!
-		smart_ptr<as_object>	this_ptr(this);
+		gc_ptr<as_object>	this_ptr(this);
 
 		assert(frame >= 0);
 		assert(frame < m_def->get_frame_count());
@@ -494,7 +494,7 @@ namespace gameswf
 	// Take care of this frame's actions.
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object>	this_ptr(this);
+		gc_ptr<as_object>	this_ptr(this);
 
 		execute_actions(&m_as_environment, m_action_list);
 		m_action_list.resize(0);
@@ -667,7 +667,7 @@ namespace gameswf
 		}
 
 		assert(cdef);
-		smart_ptr<character>	ch = cdef->create_character_instance(this, character_id);
+		gc_ptr<character>	ch = cdef->create_character_instance(this, character_id);
 		assert(ch != NULL);
 		ch->set_name(name);
 
@@ -690,7 +690,7 @@ namespace gameswf
 		// child clip only
 		ch->on_event(event_id::CONSTRUCT);	// tested, ok
 
-		assert(ch == NULL || ch->get_ref_count() > 1);
+		assert(ch == NULL || gc_collector::debug_get_ref_count(ch) > 1);
 		return ch.get_ptr();
 	}
 
@@ -732,7 +732,7 @@ namespace gameswf
 		}
 		assert(cdef);
 
-		smart_ptr<character>	ch = cdef->create_character_instance(this, character_id);
+		gc_ptr<character>	ch = cdef->create_character_instance(this, character_id);
 		assert(ch != NULL);
 
 		if (name != NULL && name[0] != 0)
@@ -1220,7 +1220,7 @@ namespace gameswf
 	// Dispatch event handler(s), if any.
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object>	this_ptr(this);
+		gc_ptr<as_object>	this_ptr(this);
 
 		// In ActionScript 2.0, event method names are CASE SENSITIVE.
 		// In ActionScript 1.0, event method names are CASE INSENSITIVE.
@@ -1250,7 +1250,7 @@ namespace gameswf
 	const char*	sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object>	this_ptr(this);
+		gc_ptr<as_object>	this_ptr(this);
 
 		return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
 	}
@@ -1576,7 +1576,7 @@ namespace gameswf
 		{
 			if (m_script == NULL)
 			{
-				m_script = new hash<int, smart_ptr<as_function> >;
+				m_script = new hash<int, gc_ptr<as_function> >;
 			}
 			m_script->set(frame, func);
 

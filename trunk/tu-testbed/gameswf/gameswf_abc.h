@@ -107,7 +107,7 @@ namespace gameswf
 		int m_protectedNs;
 		array<int> m_interface;
 		int m_iinit;
-		array< smart_ptr<traits_info> > m_trait;
+		array<gc_ptr<traits_info> > m_trait;
 
 		instance_info() :
 			m_name(0),
@@ -124,7 +124,7 @@ namespace gameswf
 	struct class_info : public ref_counted
 	{
 		int m_cinit;
-		array< smart_ptr<traits_info> > m_trait;
+		array<gc_ptr<traits_info> > m_trait;
 
 		void	read(stream* in, abc_def* abc);
 	};
@@ -132,7 +132,7 @@ namespace gameswf
 	struct script_info : public ref_counted
 	{
 		int m_init;
-		array< smart_ptr<traits_info> > m_trait;
+		array<gc_ptr<traits_info> > m_trait;
 
 		void	read(stream* in, abc_def* abc);
 	};
@@ -148,12 +148,12 @@ namespace gameswf
 		array< array<int> > m_ns_set;
 		array<multiname> m_multiname;
 
-//		array< smart_ptr<method_info> > m_method;
-		array< smart_ptr<as_3_function> > m_method;
-		array< smart_ptr<metadata_info> > m_metadata;
-		array< smart_ptr<instance_info> > m_instance;
-		array< smart_ptr<class_info> > m_class;
-		array< smart_ptr<script_info> > m_script;
+//		array<gc_ptr<method_info> > m_method;
+		array<gc_ptr<as_3_function> > m_method;
+		array<gc_ptr<metadata_info> > m_metadata;
+		array<gc_ptr<instance_info> > m_instance;
+		array<gc_ptr<class_info> > m_class;
+		array<gc_ptr<script_info> > m_script;
 
 		inline const char* get_string(int index) const
 		{

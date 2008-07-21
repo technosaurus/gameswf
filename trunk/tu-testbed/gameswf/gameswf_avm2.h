@@ -136,8 +136,8 @@ namespace gameswf
 		int m_init_scope_depth;
 		int m_max_scope_depth;
 		membuf m_code;
-		array< smart_ptr<except_info> > m_exception;
-		array< smart_ptr<traits_info> > m_trait;
+		array<gc_ptr<except_info> > m_exception;
+		array<gc_ptr<traits_info> > m_trait;
 		jit_function m_compiled_code;
 
 		as_3_function(abc_def* abc, int method, player* player);

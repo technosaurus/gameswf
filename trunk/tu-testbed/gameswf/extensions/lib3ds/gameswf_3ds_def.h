@@ -23,7 +23,7 @@ namespace gameswf
 
 		// textures required for 3D model
 		// <texture name, bitmap> m_material
-		stringi_hash< smart_ptr<bitmap_info> > m_material;
+		stringi_hash<gc_ptr<bitmap_info> > m_material;
 
 
 		x3ds_definition(player* player, const char* url);

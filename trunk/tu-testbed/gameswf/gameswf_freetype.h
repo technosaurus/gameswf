@@ -28,7 +28,7 @@ namespace gameswf
 
 	struct glyph_entity
 	{
-		smart_ptr<bitmap_info> m_bi;
+		gc_ptr<bitmap_info> m_bi;
 		float m_advance;
 		rect m_bounds;
 	};
@@ -83,8 +83,8 @@ namespace gameswf
 		
 		FT_Library	m_lib;
 		float m_scale;
-		smart_ptr<canvas> m_canvas;
-		string_hash< smart_ptr<face_entity> > m_face_entity;
+		gc_ptr<canvas> m_canvas;
+		string_hash<gc_ptr<face_entity> > m_face_entity;
 	};
 
 }

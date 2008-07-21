@@ -151,6 +151,15 @@ namespace tu_gc {
 				(container_type::value_type::i_am_a_contained_gc_ptr) 0;  // assert that we contain contained_gc_ptr.
 			}
 		};
+
+		static int debug_get_ref_count(gc_object_collector_base* obj) {
+			assert(obj);
+			return obj->m_ref_count;
+		}
+		
+		static void debug_decrement_ref_count(gc_object_collector_base* obj) {
+			decrement_ref(obj);
+		}
 		
 	private:
 		friend class gc_object_base<singlethreaded_refcount>;

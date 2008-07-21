@@ -17,7 +17,7 @@ namespace gameswf
 	// Point(x:Number, y:Number)
 	void	as_global_loadvars_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_loadvars>	obj;
+		gc_ptr<as_loadvars>	obj;
 		obj = new as_loadvars(fn.get_player());
 		fn.result->set_as_object(obj.get_ptr());
 	}

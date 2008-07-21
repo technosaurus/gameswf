@@ -21,7 +21,6 @@
 #include <assert.h>
 #include "base/container.h"
 #include "base/utility.h"
-#include "base/smart_ptr.h"
 #include "base/weak_ptr.h"
 #include <stdarg.h>
 
@@ -37,8 +36,8 @@ namespace gameswf
 
 	struct mouse_button_state
 	{
-		smart_ptr<character>	m_active_entity;	// entity that currently owns the mouse pointer
-		smart_ptr<character>	m_topmost_entity;	// what's underneath the mouse right now
+		gc_ptr<character> m_active_entity;	// entity that currently owns the mouse pointer
+		gc_ptr<character> m_topmost_entity;	// what's underneath the mouse right now
 
 		bool	m_mouse_button_state_last;		// previous state of mouse button
 		bool	m_mouse_button_state_current;		// current state of mouse button
@@ -61,8 +60,8 @@ namespace gameswf
 	//
 	struct root : public ref_counted
 	{
-		smart_ptr<movie_def_impl>	m_def;
-		smart_ptr<character>	m_movie;
+		gc_ptr<movie_def_impl>	m_def;
+		gc_ptr<character>	m_movie;
 		int			m_viewport_x0, m_viewport_y0, m_viewport_width, m_viewport_height;
 		float		m_pixel_scale;
 
@@ -73,7 +72,7 @@ namespace gameswf
 		mouse_button_state m_mouse_button_state;
 		bool		m_on_event_load_called;
 
-		smart_ptr<character> m_current_active_entity;
+		gc_ptr<character> m_current_active_entity;
 		float	m_time_remainder;
 		float m_frame_time;
 

@@ -344,7 +344,7 @@ namespace gameswf
 		glDisable(GL_TEXTURE_2D);
 		if (infile)
 		{
-			smart_ptr<bitmap_info> bi;
+			gc_ptr<bitmap_info> bi;
 			if (m_def->m_material.get(infile, &bi))
 			{
 				bi->activate();
@@ -399,7 +399,7 @@ namespace gameswf
 	{
 		if (mat)
 		{
-			smart_ptr<bitmap_info> bi = NULL;
+			gc_ptr<bitmap_info> bi = NULL;
 			if (m_def->m_material.get(mat->texture1_map.name, &bi))
 			{
 				// get texture size
@@ -500,7 +500,7 @@ namespace gameswf
 	// Dispatch event handler(s), if any.
 	{
 		// Keep m_as_environment alive during any method calls!
-		smart_ptr<as_object>	this_ptr(this);
+		gc_ptr<as_object>	this_ptr(this);
 
 		bool called = false;
 
@@ -539,7 +539,7 @@ namespace gameswf
 		glPushAttrib(GL_ALL_ATTRIB_BITS);
 
 		// update textures
-		for (stringi_hash<smart_ptr <bitmap_info> >::iterator it = 
+		for (stringi_hash<gc_ptr <bitmap_info> >::iterator it = 
 			m_material.begin(); it != m_material.end(); ++it)
 		{
 			as_value target = m_map[it->first];
@@ -617,7 +617,7 @@ namespace gameswf
 				// restore "ch" matrix
 				ch->set_matrix(ch_matrix);
 
-				smart_ptr<bitmap_info> bi = it->second;
+				gc_ptr<bitmap_info> bi = it->second;
 				if (bi->m_texture_id == 0)
 				{
 					glGenTextures(1, (GLuint*) &bi->m_texture_id);

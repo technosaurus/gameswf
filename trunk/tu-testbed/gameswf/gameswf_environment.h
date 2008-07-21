@@ -30,7 +30,7 @@ namespace gameswf
 
 	struct with_stack_entry
 	{
-		smart_ptr<as_object>	m_object;
+		gc_ptr<as_object>	m_object;
 		int	m_block_end_pc;
 		
 		with_stack_entry() :
@@ -175,7 +175,7 @@ namespace gameswf
 		vm_stack m_scope;	// scope stack for AVM2
 		as_value	m_global_register[GLOBAL_REGISTER_COUNT];
 		array<as_value>	m_local_register;	// function2 uses this
-		smart_ptr<as_object>	m_target;
+		gc_ptr<as_object>	m_target;
 
 		// For local vars.  Use empty names to separate frames.
 		struct frame_slot

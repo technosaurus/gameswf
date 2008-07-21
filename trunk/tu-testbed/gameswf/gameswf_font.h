@@ -24,12 +24,12 @@ namespace gameswf
 	struct stream;
 	struct bitmap_info;
 
-	struct glyph : public ref_counted
+	struct glyph
 	{
 		int m_glyph_index;
 		float	m_glyph_advance;
-		smart_ptr<shape_character_def>	m_shape_glyph;
-		smart_ptr<bitmap_info> m_fontlib_glyph;
+		gc_ptr<shape_character_def>	m_shape_glyph;
+		gc_ptr<bitmap_info> m_fontlib_glyph;
 		rect m_bounds;
 		int m_fontsize;
 
@@ -85,7 +85,7 @@ namespace gameswf
 	private:
 		void	read_code_table(stream* in);
 
-		array< smart_ptr<shape_character_def> >	m_glyphs;
+		array<gc_ptr<shape_character_def> >	m_glyphs;
 		tu_string	m_fontname;
 		movie_definition_sub*	m_owning_movie;
 		bool	m_has_layout;

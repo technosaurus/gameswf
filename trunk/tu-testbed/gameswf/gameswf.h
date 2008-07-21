@@ -12,16 +12,15 @@
 
 
 #include <ctype.h>	// for poxy wchar_t
-//#include <stdarg.h>	// for va_list arg to character::call_method_args()
 #include <assert.h>
 #include "base/image.h"	// for delete m_suspended_image
 #include "base/container.h"	// for hash<...>
-#include "base/smart_ptr.h"
+#include "base/tu_gc.h"
+#include "base/tu_gc_singlethreaded_refcount.h"
 #include "base/weak_ptr.h"
 
 class tu_file;
 class render_handler;
-class weak_proxy;	// forward decl; defined in base/smart_ptr.h
 
 // @@ forward decl to avoid including base/image.h; TODO change the
 // render_handler interface to not depend on these structs at all.
@@ -39,6 +38,8 @@ struct IDirect3DDevice8;
 
 namespace gameswf
 {
+	DECLARE_GC_TYPES(tu_gc::singlethreaded_refcount);
+
 	// Forward declarations.
 	struct player;
 	struct as_value;
@@ -134,17 +135,9 @@ namespace gameswf
 	exported_module sound_handler*	create_sound_handler_sdl();
 
 
-	// For stuff that's tricky to keep track of w/r/t ownership & cleanup.
-	struct ref_counted : public weak_pointee_mixin
+	// For things that should be automatically garbage-collected.
+	struct ref_counted : public gc_object, public weak_pointee_mixin
 	{
-		exported_module ref_counted();
-		exported_module virtual ~ref_counted();
-		exported_module void	add_ref() const;
-		exported_module void	drop_ref();
-		exported_module int	get_ref_count() const { return m_ref_count; }
-
-	private:
-		mutable int	m_ref_count;
 	};
 
 	// Unique id of all gameswf resources

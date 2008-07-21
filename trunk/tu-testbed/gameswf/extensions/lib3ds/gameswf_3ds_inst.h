@@ -34,7 +34,7 @@ namespace gameswf
 		// <material, movieclip> map
 		stringi_hash<as_value> m_map;
 		
-		smart_ptr<x3ds_definition>	m_def;
+		gc_ptr<x3ds_definition>	m_def;
 		Lib3dsFloat m_current_frame;
 
 		play_state	m_play_state;

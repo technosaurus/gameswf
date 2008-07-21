@@ -236,7 +236,7 @@ namespace gameswf
 		// audio
 		AVCodecContext *m_ACodecCtx;
 		AVStream* m_audio_stream;
-		smart_ptr<decoded_sound> m_sound;
+		gc_ptr<decoded_sound> m_sound;
 
 		double m_start_time;
 		double m_video_clock;
@@ -250,17 +250,17 @@ namespace gameswf
 		volatile bool m_break;
 		volatile bool m_pause;
 
-		smart_ptr<av_packet> m_unqueued_data;
+		gc_ptr<av_packet> m_unqueued_data;
 
 		// this is used in the decoder & sound threads
-		audio_queue< smart_ptr<av_packet> > m_audio_queue;
+		audio_queue<gc_ptr<av_packet> > m_audio_queue;
 
 		// this is used in  the decoder thread only
-		video_queue< smart_ptr<av_packet> > m_video_queue;
+		video_queue<gc_ptr<av_packet> > m_video_queue;
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;
-		smart_ptr<video_handler> m_video_handler;
+		gc_ptr<video_handler> m_video_handler;
 	};
 
 } // end of gameswf namespace

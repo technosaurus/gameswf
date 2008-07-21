@@ -23,7 +23,6 @@
 
 #include "base/container.h"
 #include "base/utility.h"
-#include "base/smart_ptr.h"
 #include <stdarg.h>
 
 namespace gameswf
@@ -39,7 +38,7 @@ namespace gameswf
 			else return character::is(class_id);
 		}
 
-		smart_ptr<movie_definition_sub>	m_def;
+		gc_ptr<movie_definition_sub>	m_def;
 		root*	m_root;
 
 		display_list	m_display_list;
@@ -62,11 +61,11 @@ namespace gameswf
 		mouse_state m_mouse_state;
 		bool m_enabled;
 		bool m_on_event_load_called;
-		smart_ptr<character> m_canvas;
+		gc_ptr<character> m_canvas;
 
 		// flash9
-		hash<int, smart_ptr<as_function> >* m_script;	// <frame, script>
-		smart_ptr<as_function> m_frame_script;	// current script
+		hash<int, gc_ptr<as_function> >* m_script;	// <frame, script>
+		gc_ptr<as_function> m_frame_script;	// current script
 
 		sprite_instance(player* player, movie_definition_sub* def, root* r, character* parent, int id);
 		virtual ~sprite_instance();

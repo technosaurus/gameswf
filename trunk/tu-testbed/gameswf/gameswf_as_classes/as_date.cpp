@@ -18,7 +18,7 @@ namespace gameswf
 	// [hour:Number], [minute:Number], [second:Number], [millisecond:Number])
 	void	as_global_date_ctor(const fn_call& fn)
 	{
-		smart_ptr<as_date>	obj = new as_date(fn);
+		gc_ptr<as_date>	obj = new as_date(fn);
 		fn.result->set_as_object(obj.get_ptr());
 	}
 

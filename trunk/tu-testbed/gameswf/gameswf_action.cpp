@@ -1199,7 +1199,7 @@ namespace gameswf
 					{
 
 						// Create an empty object
-						smart_ptr<as_object>	new_obj_ptr = new as_object(env->get_player());
+						gc_ptr<as_object>	new_obj_ptr = new as_object(env->get_player());
 						as_object* proto = new_obj_ptr->create_proto(s_constructor);
 
 						// override m_this_ptr with just new created object
@@ -1555,7 +1555,7 @@ namespace gameswf
 					int	nargs = env->pop().to_int();
 
 					// Create an empty object
-					smart_ptr<as_object>	new_obj;
+					gc_ptr<as_object>	new_obj;
 
 					if (as_c_function* c_constructor = cast_to<as_c_function>(constructor.to_object()))
 					{
