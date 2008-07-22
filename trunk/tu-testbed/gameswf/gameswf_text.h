@@ -233,7 +233,7 @@ namespace gameswf
 
 		void	format_text();
 		bool	format_html_text(text_glyph_record& rec);
-		void	format_plain_text(const char* text, text_glyph_record& rec);
+		void	format_plain_text(const tu_string& text, text_glyph_record& rec);
 		const char* html_paragraph(const char* p, text_glyph_record& rec);
 		const char* html_font(const char* p, text_glyph_record& rec);
 		const char* html_text(const char* p, text_glyph_record& rec);

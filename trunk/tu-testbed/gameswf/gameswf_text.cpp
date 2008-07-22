@@ -1248,7 +1248,7 @@ namespace gameswf
 		if (is_html == false)
 		{
 			// use default glypth record
-			format_plain_text(m_text.c_str(), rec);
+			format_plain_text(m_text, rec);
 		}
 	}
 
@@ -1279,8 +1279,10 @@ namespace gameswf
 	{
 //		printf("html paragraph\n");
 		const char* pend = p + strlen(p);
-		while (p <= pend)
+		while (true)
 		{
+			assert(p <= pend);
+
 			if (strncmp(p, "<p", 2) == 0)
 			{
 				html_paragraph(p + 3, rec);
@@ -1368,7 +1370,7 @@ namespace gameswf
 			{
 				if (text.size() > 0)
 				{
-					format_plain_text(text.c_str(), rec);
+					format_plain_text(text, rec);
 					text = "";
 				}
 				p += 4;
@@ -1379,7 +1381,7 @@ namespace gameswf
 			{
 				if (text.size() > 0)
 				{
-					format_plain_text(text.c_str(), rec);
+					format_plain_text(text, rec);
 					text = "";
 				}
 				p += 4;
@@ -1390,7 +1392,7 @@ namespace gameswf
 			{
 				if (text.size() > 0)
 				{
-					format_plain_text(text.c_str(), rec);
+					format_plain_text(text, rec);
 					text = "";
 				}
 				return p;
@@ -1561,8 +1563,9 @@ namespace gameswf
 		return true;
 	}
 
-	void	edit_text_character::format_plain_text(const char* text, text_glyph_record&	rec)
+	void	edit_text_character::format_plain_text(const tu_string& text, text_glyph_record&	rec)
 	{
+
 		// Start the bbox at the upper-left corner of the first glyph.
 		reset_bounding_box(m_x, m_y - rec.m_style.m_font->get_descent() *
 			rec.m_style.m_scale + rec.m_style.m_text_height);
@@ -1574,8 +1577,8 @@ namespace gameswf
 		m_xcursor = m_x; 
 		m_ycursor = m_y; 
 
-//		const char*	text = &m_text[0];
-		while (Uint32 code = utf8::decode_next_unicode_character(&text))
+		const char*	text_ptr = &text[0];
+		while (Uint32 code = utf8::decode_next_unicode_character(&text_ptr))
 		{
 			// @@ try to truncate overflow text??
 #if 0
