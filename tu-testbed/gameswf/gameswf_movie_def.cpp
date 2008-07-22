@@ -325,6 +325,18 @@ namespace gameswf
 		return f.get_ptr();
 	}
 
+	font*	movie_def_impl::find_font(const char* name) const
+	{
+		for (hash<int, gc_ptr<font> >::const_iterator it = m_fonts.begin(); it != m_fonts.end(); ++it)
+		{
+			if (it->second->get_name() == name)
+			{
+				return it->second.get_ptr();
+			}
+		}
+		return NULL;
+	}
+
 	bitmap_character_def*	movie_def_impl::get_bitmap_character(int character_id)
 	{
 		gc_ptr<bitmap_character_def>	ch;

@@ -39,6 +39,8 @@ namespace gameswf
 		float	m_text_height;
 		bool	m_has_x_offset;
 		bool	m_has_y_offset;
+		float m_scale;
+		float m_leading;
 
 		text_style() :
 			m_font_id(-1),
@@ -47,7 +49,9 @@ namespace gameswf
 			m_y_offset(0),
 			m_text_height(1.0f),
 			m_has_x_offset(false),
-			m_has_y_offset(false)
+			m_has_y_offset(false),
+			m_scale(0),
+			m_leading(0)
 		{
 		}
 
@@ -193,6 +197,8 @@ namespace gameswf
 		int m_cursor;
 		float m_xcursor;
 		float m_ycursor;
+		float m_x;	// current X drawing position
+		float m_y;	// current Y drawing position
 
 		// instance specific
 		rgba m_color;
@@ -224,11 +230,13 @@ namespace gameswf
 		bool	set_member(const tu_stringi& name, const as_value& val);
 		bool	get_member(const tu_stringi& name, as_value* val);
 		void	align_line(edit_text_character_def::alignment align, int last_line_start_record, float x);
+
 		void	format_text();
-		bool	format_html_text(text_glyph_record* rec);
-		void	format_plain_text(const char* text, text_glyph_record*	grec);
-		const char* html_paragraph(const char* p, text_glyph_record* rec);
-		const char* html_font(const char* p, text_glyph_record* rec);
+		bool	format_html_text(text_glyph_record& rec);
+		void	format_plain_text(const char* text, text_glyph_record& rec);
+		const char* html_paragraph(const char* p, text_glyph_record& rec);
+		const char* html_font(const char* p, text_glyph_record& rec);
+		const char* html_text(const char* p, text_glyph_record& rec);
 
 		virtual void advance(float delta_time);
 
