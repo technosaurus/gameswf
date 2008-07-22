@@ -563,7 +563,9 @@ namespace gameswf
 		m_has_focus(false), 
 		m_cursor(0), 
 		m_xcursor(0.0f), 
-		m_ycursor(0.0f)
+		m_ycursor(0.0f),
+		m_x(0.0f), 
+		m_y(0.0f)
 	{
 		assert(parent);
 		assert(m_def != NULL);
@@ -1201,31 +1203,52 @@ namespace gameswf
 	// text_glyph_records to be rendered.
 	void	edit_text_character::format_text()
 	{
+//		printf("%s\n", m_text.c_str());
 
-		float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+		if (m_font == NULL)
+		{
+			return;
+		}
+
+		m_text_glyph_records.resize(0);
 
 		text_glyph_record rec;	// holds current glyph
+
+		rec.m_style.m_scale =  m_text_height / 1024.0f;	// the EM square is 1024 x 1024
+		if (m_font->is_define_font3())
+		{
+			// Flash 8: All the EMSquare coordinates are multiplied by 20 at export,
+			// allowing fractional resolution to 1/20 of a unit.
+			rec.m_style.m_scale /= 20.0f;
+		}
+
+		rec.m_style.m_leading = m_leading;
+		rec.m_style.m_leading += m_font->get_leading() * rec.m_style.m_scale;
+
 		rec.m_style.m_font = m_font.get_ptr();
 		rec.m_style.m_color = m_color;
 		rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
 		rec.m_style.m_y_offset = m_text_height
-			+ (m_font->get_leading() - m_font->get_descent()) * scale;
+			+ (m_font->get_leading() - m_font->get_descent()) * rec.m_style.m_scale;
 		rec.m_style.m_text_height = m_text_height;
 		rec.m_style.m_has_x_offset = true;
 		rec.m_style.m_has_y_offset = true;
+
+		m_x = rec.m_style.m_x_offset;
+		m_y = rec.m_style.m_y_offset;
 
 		bool is_html = false;
 		if (m_def->m_html)
 		{
 
 			// try as HTML
-			is_html = format_html_text(&rec);
+			is_html = format_html_text(rec);
 		}
 
 		if (is_html == false)
 		{
 			// use default glypth record
-			format_plain_text(m_text.c_str(), &rec);
+			format_plain_text(m_text.c_str(), rec);
 		}
 	}
 
@@ -1252,7 +1275,7 @@ namespace gameswf
 	// letterSpacing="0.000000" kerning="0">bbb</font></p>
 
 	// paragraph parser
-	const char*	edit_text_character::html_paragraph(const char* p, text_glyph_record* rec)
+	const char*	edit_text_character::html_paragraph(const char* p, text_glyph_record& rec)
 	{
 //		printf("html paragraph\n");
 		const char* pend = p + strlen(p);
@@ -1311,13 +1334,98 @@ namespace gameswf
 		return NULL;
 	}
 
-	// font parser
-	const char*	edit_text_character::html_font(const char* p, text_glyph_record* rec)
+	// text parser
+	const char*	edit_text_character::html_text(const char* p, text_glyph_record& rec)
 	{
-//		printf("html font\n");
+		// keep old values
+		bool saved_bold = m_font->is_bold();
+		bool saved_italic = m_font->is_italic();
+
+		// on default is 'false'
+		rec.m_style.m_font->set_bold(false);
+		rec.m_style.m_font->set_italic(false);
+
+		tu_string text;
+
 		const char* pend = p + strlen(p);
-		while (p <= pend)
+		while (true)
 		{
+			assert(p <= pend);
+
+			if (strncmp(p, "<b>", 3) == 0)
+			{
+				p += 3;
+				rec.m_style.m_font->set_bold(true);
+			}
+			else
+			if (strncmp(p, "<i>", 3) == 0)
+			{
+				p += 3;
+				rec.m_style.m_font->set_italic(true);
+			}
+			else
+			if (strncmp(p, "</i>", 4) == 0)
+			{
+				if (text.size() > 0)
+				{
+					format_plain_text(text.c_str(), rec);
+					text = "";
+				}
+				p += 4;
+				rec.m_style.m_font->set_italic(false);
+			}
+			else
+			if (strncmp(p, "</b>", 4) == 0)
+			{
+				if (text.size() > 0)
+				{
+					format_plain_text(text.c_str(), rec);
+					text = "";
+				}
+				p += 4;
+				rec.m_style.m_font->set_bold(false);
+			}
+			else
+			if (*p == '<')
+			{
+				if (text.size() > 0)
+				{
+					format_plain_text(text.c_str(), rec);
+					text = "";
+				}
+				return p;
+			}
+			else
+			{
+				// plain text
+				text += *p;
+				p++;
+			}
+		}
+
+		rec.m_style.m_font->set_bold(saved_bold);
+		rec.m_style.m_font->set_italic(saved_italic);
+
+		return p;
+	}
+
+	// font parser
+	const char*	edit_text_character::html_font(const char* p, text_glyph_record& rec)
+	{
+		// Start a new record with a new style
+		if (rec.m_glyphs.size() > 0)
+		{
+			m_text_glyph_records.push_back(rec);
+			rec.m_glyphs.resize(0);
+			rec.m_style.m_x_offset = m_x;
+			rec.m_style.m_y_offset = m_y;
+		}
+
+		const char* pend = p + strlen(p);
+		while (true)
+		{
+			assert(p <= pend);
+
 			if (*p == ' ')
 			{
 				p++;
@@ -1325,13 +1433,7 @@ namespace gameswf
 			else
 			if (*p == '>')	// begin of text
 			{
-				p++;	// p ==> text
-				const char* end = strchr(p, '<');
-				int len = int(end - p);
-				tu_string text(p, len);
-				p += len;
-
-				format_plain_text(text.c_str(), rec);
+				p = html_text(p + 1, rec);
 			}
 			else
 			if (strncmp(p, "</font>", 7) == 0)
@@ -1348,8 +1450,18 @@ namespace gameswf
 				tu_string face(p, len);
 				p += len + 1;
 
-				// TODO: implement
-				//					m_font = find face;
+				movie_def_impl* md = cast_to<movie_def_impl>(m_def->m_root_def);
+				assert(md);
+				font* f = md->find_font(face.c_str());
+				if (f)
+				{
+					rec.m_style.m_font = f;
+				}
+				else
+				{
+					log_error("html_font: can't find font, face = '%s'\n", face.c_str());
+				}
+
 			}
 			else
 			if (strncmp(p, "size=", 5) == 0)
@@ -1360,9 +1472,17 @@ namespace gameswf
 				tu_string size(p, len);
 				p += len + 1;
 
+				// reset size
 				double res;
 				string_to_number(&res, size.c_str());
-				m_text_height = PIXELS_TO_TWIPS(float(res));
+				rec.m_style.m_text_height = PIXELS_TO_TWIPS(res);
+
+				// reset advance
+				rec.m_style.m_scale =  rec.m_style.m_text_height / 1024.0f;
+				if (m_font->is_define_font3())
+				{
+					rec.m_style.m_scale /= 20.0f;
+				}
 			}
 			else
 			if (strncmp(p, "color=", 6) == 0)
@@ -1371,9 +1491,9 @@ namespace gameswf
 				assert(*p++ == '#');
 				
 				Uint32 rgb = strtol(p, 0, 16);
-				rec->m_style.m_color.m_r = rgb >> 16;
-				rec->m_style.m_color.m_g = (rgb >> 8) & 0xFF;
-				rec->m_style.m_color.m_b = rgb & 0xFF;
+				rec.m_style.m_color.m_r = rgb >> 16;
+				rec.m_style.m_color.m_g = (rgb >> 8) & 0xFF;
+				rec.m_style.m_color.m_b = rgb & 0xFF;
 
 				p += 7;
 			}
@@ -1401,6 +1521,16 @@ namespace gameswf
 				p = html_font(p + 6, rec);
 			}
 			else
+			if (strncmp(p, "<a ", 3) == 0)
+			{
+				p += 3;
+				log_error("html_font: Define a hyperlink is not implemented yet\n", p);
+
+				// skip
+				for (; strncmp(p, "</a>", 4); p++) {}
+				p += 4;
+			}
+			else
 			{
 				log_error("html_font: unknown keyword %s\n", p);
 				assert(0);
@@ -1411,7 +1541,7 @@ namespace gameswf
 		return NULL;
 	}
 
-	bool	edit_text_character::format_html_text(text_glyph_record* rec)
+	bool	edit_text_character::format_html_text(text_glyph_record& rec)
 	{
 //		printf("%s\n", m_text.c_str());
 		const char* p = m_text.c_str();
@@ -1431,81 +1561,18 @@ namespace gameswf
 		return true;
 	}
 
-	void	edit_text_character::format_plain_text(const char* text, text_glyph_record*	grec)
+	void	edit_text_character::format_plain_text(const char* text, text_glyph_record&	rec)
 	{
-		m_text_glyph_records.resize(0);
-
-		if (m_font == NULL)
-		{
-			return;
-		}
-
-		// @@ mostly for debugging
-		// Font substitution -- if the font has no
-		// glyphs, try some other defined font!
-//		if (m_font->get_glyph_count() == 0)
-//		{
-			// Find a better font.
-//			font*	newfont = m_font.get_ptr();
-//			for (int i = 0, n = fontlib::get_font_count(); i < n; i++)
-//			{
-//				font*	f = fontlib::get_font(i);
-//				assert(f);
-
-//				if (f->get_glyph_count() > 0)
-//				{
-					// This one looks good.
-//					newfont = f;
-//					break;
-//				}
-//			}
-
-//			if (m_font != newfont)
-//			{
-//				log_error("error: substituting font!  font '%s' has no glyphs, using font '%s'\n",
-//					fontlib::get_font_name(m_font.get_ptr()),
-//					fontlib::get_font_name(newfont));
-
-//				m_font = newfont;
-//			}
-//		}
-
-
-		float	scale = m_text_height / 1024.0f;	// the EM square is 1024 x 1024
-
-		// Flash 8
-		// All the EMSquare coordinates are multiplied by 20 at export,
-		// allowing fractional resolution to 1/20 of a unit.
-		if (m_font->is_define_font3())
-		{
-			scale /= 20.0f;
-		}
-
-		text_glyph_record	rec;	// one to work on
-		rec.m_style.m_font = m_font.get_ptr();
-		rec.m_style.m_color = m_color;
-		rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
-		rec.m_style.m_y_offset = m_text_height
-			+ (m_font->get_leading() - m_font->get_descent()) * scale;
-		rec.m_style.m_text_height = m_text_height;
-		rec.m_style.m_has_x_offset = true;
-		rec.m_style.m_has_y_offset = true;
-
-		float	x = rec.m_style.m_x_offset;
-		float	y = rec.m_style.m_y_offset;
-
 		// Start the bbox at the upper-left corner of the first glyph.
-		reset_bounding_box(x, y - m_font->get_descent() * scale + m_text_height);
-
-		float	leading = m_leading;
-		leading += m_font->get_leading() * scale;
+		reset_bounding_box(m_x, m_y - rec.m_style.m_font->get_descent() *
+			rec.m_style.m_scale + rec.m_style.m_text_height);
 
 		int	last_code = -1;
 		int	last_space_glyph = -1;
 		int	last_line_start_record = 0;
 		int character_idx = 0; 
-		m_xcursor = x; 
-		m_ycursor = y; 
+		m_xcursor = m_x; 
+		m_ycursor = m_y; 
 
 //		const char*	text = &m_text[0];
 		while (Uint32 code = utf8::decode_next_unicode_character(&text))
@@ -1522,12 +1589,12 @@ namespace gameswf
 
 			//Uint16	code = m_text[j];
 
-			x += m_font->get_kerning_adjustment(last_code, (int) code) * scale;
+			m_x += rec.m_style.m_font->get_kerning_adjustment(last_code, (int) code) * rec.m_style.m_scale;
 			last_code = (int) code;
 
 			// Expand the bounding-box to the lower-right corner of each glyph as
 			// we generate it.
-			m_text_bounding_box.expand_to_point(x, y + m_font->get_descent() * scale);
+			m_text_bounding_box.expand_to_point(m_x, m_y + rec.m_style.m_font->get_descent() * rec.m_style.m_scale);
 
 			if (code == 13 || code == 10)
 			{
@@ -1540,17 +1607,17 @@ namespace gameswf
 
 				// Close out this stretch of glyphs.
 				m_text_glyph_records.push_back(rec);
-				align_line(m_alignment, last_line_start_record, x);
+				align_line(m_alignment, last_line_start_record, m_x);
 
-				x = fmax(0, m_left_margin + m_indent);	// new paragraphs get the indent.
-				y += m_text_height + leading;
+				m_x = fmax(0, m_left_margin + m_indent);	// new paragraphs get the indent.
+				m_y += rec.m_style.m_text_height + rec.m_style.m_leading;
 
 				// Start a new record on the next line.
 				rec.m_glyphs.resize(0);
 				rec.m_style.m_font = m_font.get_ptr();
 				rec.m_style.m_color = m_color;
-				rec.m_style.m_x_offset = x;
-				rec.m_style.m_y_offset = y;
+				rec.m_style.m_x_offset = m_x;
+				rec.m_style.m_y_offset = m_y;
 				rec.m_style.m_text_height = m_text_height;
 				rec.m_style.m_has_x_offset = true;
 				rec.m_style.m_has_y_offset = true;
@@ -1581,7 +1648,7 @@ namespace gameswf
 					// Peek at the previous glyph, and zero out its advance
 					// value, so the next char overwrites it.
 					float	advance = rec.m_glyphs.back().m_glyph_advance;
-					x -= advance;	// maintain formatting
+					m_x -= advance;	// maintain formatting
 					rec.m_glyphs.back().m_glyph_advance = 0;	// do the BS effect
 				}
 				continue;
@@ -1595,7 +1662,8 @@ namespace gameswf
 
 			// find glyph
 			glyph	g;
-			if (m_font->get_glyph(&g, (Uint16) code, (int) TWIPS_TO_PIXELS(m_text_height)) == false)
+			if (rec.m_style.m_font->get_glyph(&g, (Uint16) code, 
+				(int) TWIPS_TO_PIXELS(rec.m_style.m_text_height)) == false)
 			{
 				// error -- missing glyph!
 				// Log an error, but don't log too many times.
@@ -1607,17 +1675,17 @@ namespace gameswf
 						"-- make sure character shapes for font %s are being exported "
 						"into your SWF file!\n",
 						code,
-						m_font->get_name().c_str());
+						rec.m_style.m_font->get_name().c_str());
 				}
 			}
 
-			g.m_glyph_advance *= scale;
-			g.m_fontsize = (int) TWIPS_TO_PIXELS(m_text_height);
+			g.m_glyph_advance *= rec.m_style.m_scale;
+			g.m_fontsize = (int) TWIPS_TO_PIXELS(rec.m_style.m_text_height);
 
 			rec.m_glyphs.push_back(g);
 
-			x += g.m_glyph_advance;
-			if (x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE)
+			m_x += g.m_glyph_advance;
+			if (m_x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE)
 			{
 				// Whoops, we just exceeded the box width.  Do word-wrap.
 
@@ -1625,17 +1693,17 @@ namespace gameswf
 
 				// Close out this stretch of glyphs.
 				m_text_glyph_records.push_back(rec);
-				float	previous_x = x;
+				float	previous_x = m_x;
 
-				x = m_left_margin;
-				y += m_text_height + leading;
+				m_x = m_left_margin;
+				m_y += rec.m_style.m_text_height + rec.m_style.m_leading;
 
 				// Start a new record on the next line.
 				rec.m_glyphs.resize(0);
 				rec.m_style.m_font = m_font.get_ptr();
 				rec.m_style.m_color = m_color;
-				rec.m_style.m_x_offset = x;
-				rec.m_style.m_y_offset = y;
+				rec.m_style.m_x_offset = m_x;
+				rec.m_style.m_y_offset = m_y;
 				rec.m_style.m_text_height = m_text_height;
 				rec.m_style.m_has_x_offset = true;
 				rec.m_style.m_has_y_offset = true;
@@ -1648,7 +1716,7 @@ namespace gameswf
 					if (last_line.m_glyphs.size() > 0)
 					{
 						rec.m_glyphs.push_back(last_line.m_glyphs.back());
-						x += last_line.m_glyphs.back().m_glyph_advance;
+						m_x += last_line.m_glyphs.back().m_glyph_advance;
 						previous_x -= last_line.m_glyphs.back().m_glyph_advance;
 						last_line.m_glyphs.resize(last_line.m_glyphs.size() - 1);
 					}
@@ -1662,7 +1730,7 @@ namespace gameswf
 					for (int i = last_space_glyph + 1; i < last_line.m_glyphs.size(); i++)
 					{
 						rec.m_glyphs.push_back(last_line.m_glyphs[i]);
-						x += last_line.m_glyphs[i].m_glyph_advance;
+						m_x += last_line.m_glyphs[i].m_glyph_advance;
 						previous_x -= last_line.m_glyphs[i].m_glyph_advance;
 					}
 					last_line.m_glyphs.resize(last_space_glyph);
@@ -1675,20 +1743,20 @@ namespace gameswf
 			}
 			if (m_cursor > character_idx) 
 			{ 
-				m_xcursor = x; 
-				m_ycursor = y; 
+				m_xcursor = m_x; 
+				m_ycursor = m_y; 
 			} 
 			character_idx++; 
 
 			// TODO: HTML markup
 		}
-		m_xcursor += m_font->get_leading() * scale; 
-		m_ycursor -= m_text_height + 
-			(m_font->get_leading() - m_font->get_descent()) * scale; 
+		m_xcursor += rec.m_style.m_font->get_leading() * rec.m_style.m_scale; 
+		m_ycursor -= rec.m_style.m_text_height + 
+			(rec.m_style.m_font->get_leading() - rec.m_style.m_font->get_descent()) * rec.m_style.m_scale; 
 
 		// Add this line to our output.
 		m_text_glyph_records.push_back(rec);
-		align_line(m_alignment, last_line_start_record, x);
+		align_line(m_alignment, last_line_start_record, m_x);
 	}
 
 	character*	edit_text_character_def::create_character_instance(character* parent, int id)

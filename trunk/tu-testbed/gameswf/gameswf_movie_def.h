@@ -373,6 +373,7 @@ namespace gameswf
 		bool	get_labeled_frame(const char* label, int* frame_number);
 		void	add_font(int font_id, font* f);
 		font*	get_font(int font_id);
+		font*	find_font(const char* name) const;
 		bitmap_character_def*	get_bitmap_character(int character_id);
 		void	add_bitmap_character(int character_id, bitmap_character_def* ch);
 		sound_sample*	get_sound_sample(int character_id);
