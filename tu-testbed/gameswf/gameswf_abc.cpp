@@ -566,7 +566,7 @@ namespace gameswf
 			// 'ii->m_iinit' is an index into the method array of the abcFile; 
 			// it references the method that is invoked whenever 
 			// an object of this class is constructed.
-			return m_method[ii->m_iinit].get_ptr();
+			return m_method[ii->m_iinit].get();
 		}
 		return NULL;
 	}
@@ -589,7 +589,7 @@ namespace gameswf
 			const tu_string& name = get_multiname(m_instance[i]->m_name);
 			if (class_name == name)
 			{
-				return m_instance[i].get_ptr();
+				return m_instance[i].get();
 			}
 		}
 		return NULL;
@@ -613,7 +613,7 @@ namespace gameswf
 			const tu_string& name = get_multiname(m_instance[i]->m_name);
 			if (class_name == name)
 			{
-				return m_class[i].get_ptr();
+				return m_class[i].get();
 			}
 		}
 		return NULL;
@@ -622,17 +622,17 @@ namespace gameswf
 	as_function* abc_def::get_script_function( const tu_string & name ) const
 	{
 		if( name == "" )
-			return m_method[ m_script.back()->m_init ].get_ptr();
+			return m_method[ m_script.back()->m_init ].get();
 		else
 		{
 			for( int script_index = 0; script_index < m_script.size(); ++script_index )
 			{
-				const script_info & info = *m_script[ script_index ].get_ptr();
+				const script_info & info = *m_script[ script_index ].get();
 				for( int trait_index = 0; trait_index < info.m_trait.size(); ++trait_index )
 				{
 					if( m_string[ info.m_trait[ trait_index ]->m_name ] == name && info.m_trait[ trait_index ]->m_kind == traits_info::Trait_Class )
 					{
-						return m_method[ info.m_init ].get_ptr();
+						return m_method[ info.m_init ].get();
 					}
 				}
 			}

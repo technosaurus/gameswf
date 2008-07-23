@@ -319,26 +319,73 @@ namespace tu_gc {
 		class gc_container : public collector_classname::gc_container<T> { \
 		public:							\
 			gc_container() {}				\
+		};							\
+		template<class T>					\
+		class gc_pair_container : public collector_classname::gc_pair_container<T> { \
+		public:							\
+			gc_pair_container() {}				\
 		};
 
 	// For STL containers inside gc_objects whose values point at
-	// other gc_objects.  Use like:
+	// other gc_objects.
+	
+	// Use like:
+	//
+	// SPECIALIZE_GC_CONTAINER(gc_vector, std::vector);
 	//
 	// class my_class : public gc_object {
 	//   ...
-	//   GC_CONTAINER(std::vector, my_class) m_pointers;
+	//   gc_vector<gc_ptr<my_class> > m_pointers;
 	//   ...
 	//     // Use m_pointers just like a regular std::vector.
 	//     for (int i = 0; i < m_pointers.size(); i++) {
 	//       m_pointers[i]->something();
 	//     }
 	// };
+	#define SPECIALIZE_GC_CONTAINER(generated_name, base_container) \
+		template<class T>					\
+		class generated_name;					\
+									\
+		template<class T>					\
+		class generated_name<gc_ptr<T> >			\
+			: public gc_container<base_container<contained_gc_ptr<T> > > { \
+		}
+
+	// Generate a pair container that can correctly contain gc_ptr's.
 	//
-	// TODO: not sure about this macro, maybe not easy enough to
-	// use, and need to work on better ways to infer the container
-	// types, like for associative containers, containers of
-	// containers, etc.
-	#define GC_CONTAINER(container_type, T) gc_container<container_type<contained_gc_ptr<T> > >
+	// This is important to make sure that contained pointers are
+	// known to be owned by their containers; otherwise the
+	// contained pointers look like roots, and the GC is too
+	// conservative.
+	//
+	// For example:
+	//
+	//   SPECIALIZE_GC_PAIR_CONTAINER(gc_map, std::map);
+	//
+	//   class my_class : public gc_object {
+	//     gc_map<int, gc_ptr<X> > m_1;
+	//     gc_map<gc_ptr<X>, int > m_2;
+	//     gc_map<gc_ptr<X>, gc_ptr<Y> > m_3;
+	//     // use the m_'s as if they were std::map.
+	//   };
+	#define SPECIALIZE_GC_PAIR_CONTAINER(generated_name, base_container)	\
+		template<class T, class U>					\
+		class generated_name;						\
+										\
+		template<class T, class U>					\
+		class generated_name<T, gc_ptr<U> >				\
+			: public gc_pair_container< base_container <T, contained_gc_ptr<U> > > { \
+		};								\
+		template<class T, class U>					\
+		class generated_name<gc_ptr<T>, U >				\
+			: public gc_pair_container< base_container <contained_gc_ptr<T>, U> > { \
+		};								\
+		template<class T, class U>					\
+		class generated_name<gc_ptr<T>, gc_ptr<U> >			\
+			: public gc_pair_container< base_container <contained_gc_ptr<T>, contained_gc_ptr<U> > > { \
+		}
+
+
 	
 	// TODO: incremental gc
 

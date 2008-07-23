@@ -9,6 +9,18 @@
 
 DECLARE_GC_TYPES(GC_COLLECTOR);
 
+void collect_and_dump_stats() {
+	gc_collector::stats s;
+	gc_collector::collect_garbage(&s);
+	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+}
+
+void dump_stats() {
+	gc_collector::stats s;
+	gc_collector::get_stats(&s);
+	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+}
+
 struct cons : public gc_object {
 public:
 	cons() : value(0) {
@@ -84,13 +96,9 @@ void test_basic_stuff() {
 	dump(root1);
 	dump(root2);
 
-	gc_collector::stats s;
-	gc_collector::get_stats(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
-
+	dump_stats();
  	printf("collecting...\n");
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 
 	dump(root1);
 	dump(root2);
@@ -98,8 +106,7 @@ void test_basic_stuff() {
 	root1 = NULL;
 
  	printf("collecting...\n");
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 
 	dump(root1);
 	dump(root2);
@@ -107,8 +114,7 @@ void test_basic_stuff() {
 	root2 = NULL;
 	
 	printf("collecting...\n");
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 }
 
 // test multiple inheritance (objects & mix-ins virtually inherit from gc_object)
@@ -138,57 +144,106 @@ struct tractor_beam : virtual public actor {
 void test_multiple_inheritance() {
 	printf("\nmultiple inheritance\n");
 
-	gc_collector::stats s;
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 
 	gc_ptr<actor> ship = new spaceship;
 	gc_ptr<tractor_beam> beam = new tractor_beam;
 	beam->m_target = dynamic_cast<vehicle*>(ship.get());
 
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 
 	ship = NULL;
 
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 
 	beam = NULL;
 
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 }
 
 // test gc_container
+SPECIALIZE_GC_CONTAINER(gc_vector, std::vector);
+SPECIALIZE_GC_CONTAINER(gc_array, array);
 
 struct bag : public gc_object {
-	GC_CONTAINER(std::vector, bag) m_ptrs;
-	// or, without the helper macro:
-	//   gc_container<std::vector<contained_gc_ptr<bag> > > m_ptrs;
+	gc_vector<gc_ptr<bag> > m_ptrs;
 };
 
+struct bag2 : public gc_object {
+	gc_array<gc_ptr<bag2> > m_ptrs;
+};
+
+template<class bag_type>
 void test_gc_container() {
 	printf("\ncontainer\n");
 	
-	gc_ptr<bag> b = new bag;
-	b->m_ptrs.push_back(new bag);
-	b->m_ptrs.push_back(new bag);
-	b->m_ptrs.push_back(new bag);
-	b->m_ptrs[1]->m_ptrs.push_back(new bag);
+	gc_ptr<bag_type> b = new bag_type;
+	b->m_ptrs.push_back(new bag_type);
+	b->m_ptrs.push_back(new bag_type);
+	b->m_ptrs.push_back(new bag_type);
+	b->m_ptrs[1]->m_ptrs.push_back(new bag_type);
 	b->m_ptrs[1]->m_ptrs[0]->m_ptrs.push_back(b.get());
 
-	gc_collector::stats s;
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 
 	// mark-sweep should correctly collect the group of objects here.
 	// ref-counted should leak, because there is a cycle.
 	b = NULL;
 
-	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	collect_and_dump_stats();
 }
+
+// test gc_pair_container
+
+SPECIALIZE_GC_PAIR_CONTAINER(gc_hash_map, hash);
+SPECIALIZE_GC_PAIR_CONTAINER(gc_map, std::map);
+
+struct pairbag : public gc_object {
+	gc_hash_map<int, gc_ptr<pairbag> > m_ptrs;
+};
+
+struct pairbag2 : public gc_object {
+	gc_map<int, gc_ptr<pairbag2> > m_ptrs;
+};
+
+template<class bag_type>
+void test_gc_map_container() {
+	printf("\nmap_container\n");
+
+	gc_ptr<bag_type> b = new bag_type;
+	b->m_ptrs[100] = new bag_type;
+	b->m_ptrs[200] = new bag_type;
+	b->m_ptrs[300] = new bag_type;
+	b->m_ptrs[200]->m_ptrs[27] = new bag_type;
+	b->m_ptrs[200]->m_ptrs[27]->m_ptrs[100] = b.get();
+
+	collect_and_dump_stats();
+
+	b = NULL;
+
+	collect_and_dump_stats();
+}
+
+struct pairbag3 : public gc_object {
+	gc_hash_map<gc_ptr<pairbag3>, int> m_ptrs;
+};
+
+template<class bag_type>
+void test_gc_map_container2() {
+	printf("\nmap_container2\n");
+
+	gc_ptr<bag_type> b = new bag_type;
+	b->m_ptrs[b.get()] = 27;
+	assert(b->m_ptrs[b.get()] == 27);
+
+	collect_and_dump_stats();
+
+	b = NULL;
+
+	collect_and_dump_stats();
+}
+
+// test weak_ptr
 
 struct weak_pointee : public gc_object, public weak_pointee_mixin {
 	weak_pointee() : m_x(0) {
@@ -223,7 +278,10 @@ void test_weak_ptr() {
 void run_tests() {
 	test_basic_stuff();
 	test_multiple_inheritance();
-	test_gc_container();
+	test_gc_container<bag>();
+	test_gc_container<bag2>();
+	test_gc_map_container<pairbag>();
+	test_gc_map_container<pairbag2>();
+	test_gc_map_container2<pairbag3>();
 	test_weak_ptr();
 }
-

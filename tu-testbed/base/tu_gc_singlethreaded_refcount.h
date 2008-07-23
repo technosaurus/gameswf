@@ -152,6 +152,10 @@ namespace tu_gc {
 			}
 		};
 
+		template<class container_type>
+		class gc_pair_container : public container_type {
+		};
+
 		static int debug_get_ref_count(gc_object_collector_base* obj) {
 			assert(obj);
 			return obj->m_ref_count;

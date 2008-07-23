@@ -181,6 +181,21 @@ namespace tu_gc {
 				}
 			}
 		};
+
+		template<class container_type>
+		class gc_pair_container : public gc_container_base, public container_type {
+		public:
+			// Visit values.
+			virtual void visit_contained_ptrs() {
+				for (typename container_type::const_iterator it = this->begin();
+				     it != this->end();
+				     ++it) {
+					visit_contained_value(it->first);
+					visit_contained_value(it->second);
+				}
+			}
+		};
+
 	private:
 		friend class gc_object_base<singlethreaded_marksweep>;
 
@@ -197,5 +212,15 @@ namespace tu_gc {
 		static void construct_container(gc_container_base* c);
 		static void destruct_container(gc_container_base* c);
 		static void visit_contained_ptr(gc_object_generic_base* obj);
+
+		template<class T>
+		static void visit_contained_value(T val) {
+			// Default action: do nothing.
+		}
+		// Specialize for gc objects.
+		template<typename T>
+		static void visit_contained_value(const contained_gc_ptr<T, this_class>& val) {
+			visit_contained_ptr(val.get());
+		}
 	};
 }  // tu_gc
