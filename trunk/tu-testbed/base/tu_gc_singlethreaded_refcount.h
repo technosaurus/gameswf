@@ -147,8 +147,10 @@ namespace tu_gc {
 		template<class container_type>
 		class gc_container : public container_type {
 		public:
-			gc_container() {
-				(container_type::value_type::i_am_a_contained_gc_ptr) 0;  // assert that we contain contained_gc_ptr.
+			gc_container()
+			{
+				// this causes gcc 3.2.2 compilation error
+//				(container_type::value_type::i_am_a_contained_gc_ptr) 0;  // assert that we contain contained_gc_ptr.
 			}
 		};
 
