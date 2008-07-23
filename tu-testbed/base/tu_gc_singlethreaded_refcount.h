@@ -33,7 +33,7 @@ namespace tu_gc {
 				return m_ref_count;
 			}
 		private:
-			friend this_class;
+			friend class this_class;
 			
 			int m_ref_count;
 		};
