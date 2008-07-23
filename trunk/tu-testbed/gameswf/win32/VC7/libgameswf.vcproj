@@ -504,6 +504,12 @@
 				RelativePath="..\..\..\base\tu_file_SDL.cpp">
 			</File>
 			<File
+				RelativePath="..\..\..\base\tu_gc.h">
+			</File>
+			<File
+				RelativePath="..\..\..\base\tu_gc_singlethreaded_refcount.h">
+			</File>
+			<File
 				RelativePath="..\..\..\base\tu_loadlib.cpp">
 			</File>
 			<File
