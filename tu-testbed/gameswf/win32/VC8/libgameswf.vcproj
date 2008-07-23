@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="8.00"
+	Version="8,00"
 	Name="libgameswf"
 	ProjectGUID="{4EFB79AD-644B-42BF-ACE5-57CFB699E236}"
 	RootNamespace="libgameswf"
@@ -699,6 +699,14 @@
 			</File>
 			<File
 				RelativePath="..\..\..\base\tu_file_SDL.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\base\tu_gc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\..\base\tu_gc_singlethreaded_refcount.h"
 				>
 			</File>
 			<File
