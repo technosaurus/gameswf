@@ -381,7 +381,7 @@ namespace gameswf
 		// set startup random position
 		Uint64 t = tu_timer::get_systime();
 		t &= 0xFF;	// truncate
-		for (int i = 0; i < t; i++)
+		for (unsigned int i = 0; i < t; i++)
 		{
 			tu_random::next_random();
 		}
@@ -784,4 +784,3 @@ namespace gameswf
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
-

@@ -20,11 +20,11 @@ namespace gameswf
 
 	as_3_function::as_3_function(abc_def* abc, int method, player* player) :
 		as_function(player),
-		m_method(method),
 		m_abc(abc),
 		m_return_type( -1 ),
 		m_name( -1 ),
 		m_flags( 0 ),
+		m_method(method),
 		m_max_stack( 0 ),
 		m_local_count( 0 ),
 		m_init_scope_depth( 0 ),
@@ -310,6 +310,7 @@ namespace gameswf
 					}
 					assert( function );
 					as_object* proto = super->create_proto( function );
+					UNUSED(proto);
 
 					call_method( function, &env, obj.get_ptr(), arg_count, 0);
 
@@ -327,6 +328,7 @@ namespace gameswf
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
 					const char * name_space = m_abc->get_multiname_namespace(index);
+					UNUSED(name_space);
 
 					int arg_count;
 					ip += read_vu30(arg_count, &m_code[ip]);
@@ -472,6 +474,7 @@ namespace gameswf
 					ip += read_vu30(index, &m_code[ip]);
 					const char* name = m_abc->get_multiname(index);
 					const char * name_space = m_abc->get_multiname_namespace(index);
+					UNUSED(name_space);
 
 					as_object* obj = scope.find_property(name);
 

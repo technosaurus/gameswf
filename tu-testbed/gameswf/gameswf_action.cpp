@@ -393,8 +393,8 @@ namespace gameswf
 	//
 
 	action_buffer::action_buffer() :
-		m_decl_dict_processed_at(-1),
-		m_buffer(new counted_buffer)
+		m_buffer(new counted_buffer),
+		m_decl_dict_processed_at(-1)
 	{
 	}
 
@@ -916,7 +916,7 @@ namespace gameswf
 				case 0x26:	// trace
 				{
 					// Log the stack val.
-					as_global_trace(fn_call(&env->top(0), NULL, env, 1, env->get_top_index()));
+					as_global_trace(fn_call(&env->top(0), as_value(), env, 1, env->get_top_index()));
 					env->drop(1);
 					break;
 				}
@@ -1193,7 +1193,7 @@ namespace gameswf
 					if (as_c_function* c_constructor = cast_to<as_c_function>(constructor.to_object()))
 					{
 						// C function is responsible for creating the new object and setting members.
-						(*c_constructor)(fn_call(&new_obj, NULL, env, nargs, env->get_top_index()));
+						(*c_constructor)(fn_call(&new_obj, as_value(), env, nargs, env->get_top_index()));
 					}
 					else if (as_s_function* s_constructor = cast_to<as_s_function>(constructor.to_object()))
 					{
@@ -1255,7 +1255,7 @@ namespace gameswf
 				{
  					// Call the array constructor
  					as_value	result;
- 					as_global_array_ctor(fn_call(&result, NULL, env, -1, -1));
+ 					as_global_array_ctor(fn_call(&result, as_value(), env, -1, -1));
  					env->push(result);
 					break;
 				}
@@ -1557,12 +1557,12 @@ namespace gameswf
 					// Create an empty object
 					gc_ptr<as_object>	new_obj;
 
-					if (as_c_function* c_constructor = cast_to<as_c_function>(constructor.to_object()))
+					if (cast_to<as_c_function>(constructor.to_object()))
 					{
 						// C function is responsible for creating the new object and setting members.
 						new_obj = call_method( constructor, env, as_value(), nargs, env->get_top_index()).to_object();
 					}
-					else if (as_s_function* s_constructor = cast_to<as_s_function>(constructor.to_object()))
+					else if (cast_to<as_s_function>(constructor.to_object()))
 					{
 						new_obj = new as_object(env->get_player());
 						as_object* proto = new_obj->create_proto(constructor);
@@ -2431,7 +2431,7 @@ namespace gameswf
 
 // Local Variables:
 // mode: C++
-// c-basic-offset: 8 
+// c-basic-offset: 8
 // tab-width: 8
 // indent-tabs-mode: t
 // End:

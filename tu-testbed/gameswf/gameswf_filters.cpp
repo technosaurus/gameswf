@@ -37,6 +37,17 @@ namespace gameswf
 					int passes = in->read_uint(5); // passes
 					in->read_u8();// If not present, when parsing several filters, filter type is not correct
 					IF_VERBOSE_PARSE(log_msg("  filter = DropShadowFilter\n" ));
+
+					UNUSED(blur_x);
+					UNUSED(blur_y);
+					UNUSED(angle);
+					UNUSED(distance);
+					UNUSED(strength);
+					UNUSED(inner_shadow);
+					UNUSED(knockout);
+					UNUSED(composite_source);
+					UNUSED(passes);
+
 					break;
 				}
 
@@ -47,6 +58,11 @@ namespace gameswf
 					int passes = in->read_uint(5);	// Number of blur passes
 					in->read_uint(3);	// Reserved UB[3] Must be 0
 					IF_VERBOSE_PARSE(log_msg("  filter = BlurFilter\n" ));
+
+					UNUSED(blur_x);
+					UNUSED(blur_y);
+					UNUSED(passes);
+
 					break;
 				}
 
@@ -63,6 +79,14 @@ namespace gameswf
 					in->read_uint(5); // passes
 					in->read_u8();// If not present, when parsing several filters, filter type is not correct
 					IF_VERBOSE_PARSE(log_msg("  filter = GlowFilter\n" ));
+
+					UNUSED(blur_x);
+					UNUSED(blur_y);
+					UNUSED(strength);
+					UNUSED(inner_glow);
+					UNUSED(knockout);
+					UNUSED(composite_source);
+
 					break;
 				}
 
@@ -84,6 +108,18 @@ namespace gameswf
 					int passes = in->read_uint(4); // passes
 					in->read_u8();// If not present, when parsing several filters, filter type is not correct
 					IF_VERBOSE_PARSE(log_msg("  filter = BevelFilter\n" ));
+
+					UNUSED(blur_x);
+					UNUSED(blur_y);
+					UNUSED(angle);
+					UNUSED(distance);
+					UNUSED(strength);
+					UNUSED(inner_shadow);
+					UNUSED(knockout);
+					UNUSED(composite_source);
+					UNUSED(on_top);
+					UNUSED(passes);
+
 					break;
 				}
 
@@ -98,6 +134,7 @@ namespace gameswf
 					for (int i = 0; i < num_colors; i++)
 					{
 						int gradient_ratio = in->read_u8();	// UI8[NumColors] Gradient ratios
+						UNUSED(gradient_ratio);
 					}
 					float blur_x = in->read_fixed();	// Horizontal blur amount
 					float blur_y = in->read_fixed();	// Vertical blur amount
@@ -109,6 +146,18 @@ namespace gameswf
 					bool composite_source = in->read_bool();	// Composite source Always 1
 					bool on_top = in->read_bool();	// Composite source Always 1
 					int passes = in->read_uint(4); // passes
+
+					UNUSED(blur_x);
+					UNUSED(blur_y);
+					UNUSED(angle);
+					UNUSED(distance);
+					UNUSED(strength);
+					UNUSED(inner_shadow);
+					UNUSED(knockout);
+					UNUSED(composite_source);
+					UNUSED(on_top);
+					UNUSED(passes);
+
 					IF_VERBOSE_PARSE(log_msg("  filter = GradientGlowFilter\n" ));
 					break;
 				}
@@ -129,6 +178,12 @@ namespace gameswf
 					bool clamp = in->read_bool();	// UB[1] Clamp mode
 					bool preserve_alpha = in->read_bool();	// UB[1]
 					IF_VERBOSE_PARSE(log_msg("  filter = ConvolutionFilter\n" ));
+
+					UNUSED(divisor);
+					UNUSED(bias);
+					UNUSED(clamp);
+					UNUSED(preserve_alpha);
+
 					break;
 				}
 
@@ -152,6 +207,7 @@ namespace gameswf
 					for (int i = 0; i < num_colors; i++)
 					{
 						int gradient_ratio = in->read_u8();	// UI8[NumColors] Gradient ratios
+						UNUSED(gradient_ratio);
 					}
 					float blur_x = in->read_fixed();	// Horizontal blur amount
 					float blur_y = in->read_fixed();	// Vertical blur amount
@@ -165,6 +221,18 @@ namespace gameswf
 					int passes = in->read_uint(4); // passes
 					in->read_u8();// If not present, when parsing several filters, filter type is not correct
 					IF_VERBOSE_PARSE(log_msg("  filter = GradientBevelFilter\n" ));
+
+					UNUSED(blur_x);
+					UNUSED(blur_y);
+					UNUSED(angle);
+					UNUSED(distance);
+					UNUSED(strength);
+					UNUSED(inner_shadow);
+					UNUSED(knockout);
+					UNUSED(composite_source);
+					UNUSED(on_top);
+					UNUSED(passes);
+
 					break;
 				}
 
@@ -177,7 +245,7 @@ namespace gameswf
 
 // Local Variables:
 // mode: C++
-// c-basic-offset: 8 
+// c-basic-offset: 8
 // tab-width: 8
 // indent-tabs-mode: t
 // End:

@@ -267,7 +267,7 @@ namespace gameswf
 				target->get_member(var, &val);
 				return val;
 			}
-			else if(target=get_player()->get_global()->find_target(path.c_str()))
+			else if ((target = get_player()->get_global()->find_target(path.c_str())))
 			{
 				as_value	val;
 				target->get_member(var, &val);

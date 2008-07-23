@@ -91,9 +91,7 @@ int tu_timer::get_year(Uint64 t)
 Uint64 tu_timer::get_time(Uint64 t)
 // Returns the number of milliseconds since midnight January 1, 1970, universal time
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return t * 1000;	// TODO: add milliseconds
+	return t * 1000;
 }
 
 
@@ -159,7 +157,7 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 
 uint64 tu_timer::get_ticks()
 {
-	return profile_ticks_to_milliseconds(get_profile_ticks());
+	return (uint64) profile_ticks_to_milliseconds(get_profile_ticks());
 }
 
 

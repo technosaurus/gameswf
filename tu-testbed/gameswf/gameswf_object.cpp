@@ -493,7 +493,7 @@ namespace gameswf
 		const char* slash = strchr(path.c_str(), '/');
 		if (slash == NULL)
 		{
-			if (slash = strchr(path.c_str(), '.'))
+			if ((slash = strchr(path.c_str(), '.')))
 			{
 				if (slash[1] == '.')
 				{
