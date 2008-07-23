@@ -74,7 +74,7 @@ namespace gameswf
 		exported_module virtual const char*	to_string() { return "[object Object]"; }
 		exported_module virtual double	to_number();
 		exported_module virtual bool to_bool() { return true; }
-		exported_module virtual const char*	typeof() { return "object"; }
+		exported_module virtual const char*	type_of() { return "object"; }
 
 		exported_module void	builtin_member(const tu_stringi& name, const as_value& val); 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);

@@ -36,7 +36,7 @@ namespace gameswf
 		{
 		}
 
-		virtual const char*	typeof() { return "function"; }
+		virtual const char*	type_of() { return "function"; }
 		virtual const char*	to_string()
 		{
 			// NOT THREAD SAFE!!!
