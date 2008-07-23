@@ -156,6 +156,7 @@ namespace gameswf
 			for (int i = 0; i < num_gradients; i++)
 			{
 				int ratio = in->read_u8();
+				UNUSED(ratio);
 				rgba color;
 				color.read_rgba(in);
 			}

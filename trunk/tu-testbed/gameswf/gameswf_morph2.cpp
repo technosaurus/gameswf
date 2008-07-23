@@ -260,11 +260,18 @@ namespace gameswf
 				int reserved = in->read_uint(1); assert( reserved == 0 );
 				int no_close = in->read_uint(1);
 				int end_cap_style = in->read_uint(2);
+				UNUSED(start_cap_style);
+				UNUSED(no_h_scale_flag);
+				UNUSED(no_v_scale_flag);
+				UNUSED(pixel_hinting_flag);
+				UNUSED(no_close);
+				UNUSED(end_cap_style);
 
 				if( join_style == 2 )
 				{
 					int miter_limit_factor_fixed = in->read_u16(); // 8.8 fixed point format
 					float miter_limit_factor = (float) miter_limit_factor_fixed / 256.0f;
+					UNUSED(miter_limit_factor);
 				}
 
 				if( has_fill_flag == 0 )

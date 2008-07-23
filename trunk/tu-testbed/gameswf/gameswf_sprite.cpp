@@ -160,10 +160,10 @@ namespace gameswf
 	{
 		if (is_enabled())
 		{
-			for (int i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
+			for (size_t i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
 			{
 				as_value dummy;
-				if (get_member(FN_NAMES[i], &dummy)) 
+				if (get_member(FN_NAMES[i], &dummy))
 				{
 					return true;
 				}

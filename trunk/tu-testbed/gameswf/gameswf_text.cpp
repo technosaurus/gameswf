@@ -1522,11 +1522,10 @@ namespace gameswf
 			{
 				p = html_font(p + 6, rec);
 			}
-			else
-			if (strncmp(p, "<a ", 3) == 0)
+			else if (strncmp(p, "<a ", 3) == 0)
 			{
 				p += 3;
-				log_error("html_font: Define a hyperlink is not implemented yet\n", p);
+				log_error("html_font: Define a hyperlink is not implemented yet\n");
 
 				// skip
 				for (; strncmp(p, "</a>", 4); p++) {}

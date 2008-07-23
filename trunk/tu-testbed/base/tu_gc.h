@@ -96,6 +96,9 @@ namespace tu_gc {
 	public:
 		block_construction_locker_base() : m_block(0) {
 		}
+		block_construction_locker_base* get_this() {
+			return this;
+		}
 	protected:
 		friend class collector_access;
 		void* m_block;
@@ -124,13 +127,11 @@ namespace tu_gc {
 		gc_object_base() {
 			garbage_collector::constructing_gc_object_base(this);
 		}
-		
+
 		static void* operator new(size_t sz,
-			block_construction_locker_base* lock = ::new block_construction_locker<garbage_collector>())
+			block_construction_locker_base* lock = block_construction_locker<garbage_collector>().get_this())
 		{
-			void* obj = garbage_collector::allocate(sz, lock);
-			::delete lock;
-			return obj;
+			return garbage_collector::allocate(sz, lock);
 		}
 		static void operator delete(void* p, block_construction_locker_base* lock) {
 			return garbage_collector::deallocate(p);

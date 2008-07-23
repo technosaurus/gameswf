@@ -139,6 +139,7 @@ namespace gameswf
 
 			ch->m_this_ptr = ch;
 			as_object* proto = ch->create_proto(m_registered_class_constructor.get_ptr());
+			UNUSED(proto);
 
 			as_environment env(get_player());
 			call_method(m_registered_class_constructor.get_ptr(), &env, ch, 0, 0);
@@ -1082,6 +1083,7 @@ namespace gameswf
 
 		// if flags == 1 then parse only
 		Uint32 flags = in->read_u32();
+		UNUSED(flags);
 
 		tu_string name;
 		in->read_string(&name);
@@ -1239,6 +1241,8 @@ namespace gameswf
 		// for now this tag is not implemented
 		Uint16 depth = in->read_u16();
 		Uint16 tabindex = in->read_u16();
+		UNUSED(depth);
+		UNUSED(tabindex);
 	}
 
 	void	define_file_attribute_loader(stream* in, int tag_type, movie_definition_sub* m)
@@ -1432,12 +1436,13 @@ namespace gameswf
 				if (has_filter_list)
 				{
 					read_filter_list(in);
-				}	
-				
+				}
+
 				if (has_blend_mode)
 				{
 					// TODO, implement blend_mode
 					Uint8 blend_mode = in->read_u8();
+					UNUSED(blend_mode);
 				}
 
 				if (has_actions)

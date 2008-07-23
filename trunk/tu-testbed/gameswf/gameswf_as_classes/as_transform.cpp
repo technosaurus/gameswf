@@ -47,7 +47,7 @@ namespace gameswf
 	{
 		as_transform_member	member = get_transform_member( name );
 
-		switch( member )
+		switch (member)
 		{
 			case colorTransform:
 			{
@@ -75,6 +75,8 @@ namespace gameswf
 				assert( false && "todo" );
 				return true;
 			}
+			default:
+                                break;
 		};
 
 		return as_object::set_member( name, val );
@@ -111,6 +113,8 @@ namespace gameswf
 				assert( false && "todo" );
 				return true;
 			}
+			default:
+                                break;
 		};
 
 		return as_object::get_member( name, val );
