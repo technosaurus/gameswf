@@ -125,8 +125,12 @@ namespace tu_gc {
 			garbage_collector::constructing_gc_object_base(this);
 		}
 		
-		static void* operator new(size_t sz, block_construction_locker_base* lock = &block_construction_locker<garbage_collector>()) {
-			return garbage_collector::allocate(sz, lock);
+		static void* operator new(size_t sz,
+			block_construction_locker_base* lock = ::new block_construction_locker<garbage_collector>())
+		{
+			void* obj = garbage_collector::allocate(sz, lock);
+			::delete lock;
+			return obj;
 		}
 		static void operator delete(void* p, block_construction_locker_base* lock) {
 			return garbage_collector::deallocate(p);
