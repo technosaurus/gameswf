@@ -581,7 +581,7 @@ namespace gameswf
 		return false;
 	}
 
-	const char*	as_value::typeof() const
+	const char*	as_value::type_of() const
 	{
 		switch (m_type)
 		{
@@ -600,7 +600,7 @@ namespace gameswf
 			case OBJECT:
 				if (m_object)
 				{
-					return m_object->typeof();
+					return m_object->type_of();
 				}
 				return "null";
 
@@ -608,7 +608,7 @@ namespace gameswf
 			{
 				as_value val;
 				get_property(&val);
-				return val.typeof();
+				return val.type_of();
 			}
 
 			default:
@@ -721,7 +721,7 @@ namespace gameswf
 
 	bool as_value::abstract_equality_comparison( const as_value & first, const as_value & second )
 	{
-		if( first.typeof() == second.typeof() )
+		if (first.type_of() == second.type_of())
 		{
 			if( first.is_undefined() ) return true;
 			if( first.is_null() ) return true;
@@ -773,6 +773,7 @@ namespace gameswf
 
 			return false;
 		}
+		return false;
 	}
 
 

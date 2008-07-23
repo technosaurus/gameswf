@@ -238,7 +238,7 @@ namespace gameswf
 		// drawing API
 		canvas* get_canvas();
 
-		virtual const char*	typeof() { return "movieclip"; }
+		virtual const char*	type_of() { return "movieclip"; }
 		virtual	void enumerate(as_environment* env);
 		virtual	bool is_enabled() const;
 

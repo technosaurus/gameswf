@@ -1285,7 +1285,7 @@ namespace gameswf
 				}
 				case 0x44:	// type of
 				{
-					env->top(0).set_string(env->top(0).typeof());
+					env->top(0).set_string(env->top(0).type_of());
 					break;
 				}
 				case 0x45:	// get target
