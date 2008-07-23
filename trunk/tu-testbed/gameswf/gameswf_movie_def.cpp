@@ -695,7 +695,7 @@ namespace gameswf
 			// create traits
 			for (int i = 0; i < ii->m_trait.size(); i++)
 			{
-				gc_ptr<traits_info>& ti = ii->m_trait[i];
+				traits_info* ti = ii->m_trait[i].get();
 				const char* name = m_abc->get_multiname(ti->m_name);
 				as_value val;
 				switch (ti->m_kind)
@@ -711,7 +711,7 @@ namespace gameswf
 					case traits_info::Trait_Method:
 					{
 						int index = ti->trait_method.m_method;
-						val.set_as_object(m_abc->m_method[index].get_ptr());
+						val.set_as_object(m_abc->m_method[index].get());
 						break;
 					}
 

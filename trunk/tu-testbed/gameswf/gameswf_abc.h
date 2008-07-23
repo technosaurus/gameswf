@@ -107,7 +107,7 @@ namespace gameswf
 		int m_protectedNs;
 		array<int> m_interface;
 		int m_iinit;
-		array<gc_ptr<traits_info> > m_trait;
+		gc_array<gc_ptr<traits_info> > m_trait;
 
 		instance_info() :
 			m_name(0),
@@ -124,7 +124,7 @@ namespace gameswf
 	struct class_info : public ref_counted
 	{
 		int m_cinit;
-		array<gc_ptr<traits_info> > m_trait;
+		gc_array<gc_ptr<traits_info> > m_trait;
 
 		void	read(stream* in, abc_def* abc);
 	};
@@ -132,7 +132,7 @@ namespace gameswf
 	struct script_info : public ref_counted
 	{
 		int m_init;
-		array<gc_ptr<traits_info> > m_trait;
+		gc_array<gc_ptr<traits_info> > m_trait;
 
 		void	read(stream* in, abc_def* abc);
 	};
@@ -149,11 +149,11 @@ namespace gameswf
 		array<multiname> m_multiname;
 
 //		array<gc_ptr<method_info> > m_method;
-		array<gc_ptr<as_3_function> > m_method;
-		array<gc_ptr<metadata_info> > m_metadata;
-		array<gc_ptr<instance_info> > m_instance;
-		array<gc_ptr<class_info> > m_class;
-		array<gc_ptr<script_info> > m_script;
+		gc_array<gc_ptr<as_3_function> > m_method;
+		gc_array<gc_ptr<metadata_info> > m_metadata;
+		gc_array<gc_ptr<instance_info> > m_instance;
+		gc_array<gc_ptr<class_info> > m_class;
+		gc_array<gc_ptr<script_info> > m_script;
 
 		inline const char* get_string(int index) const
 		{
@@ -199,7 +199,7 @@ namespace gameswf
 
 		inline as_function* get_class_function( const int class_index ) const
 		{
-			return m_method[ m_class[ class_index ]->m_cinit ].get_ptr();
+			return m_method[m_class[class_index]->m_cinit].get();
 		}
 
 		abc_def(player* player);

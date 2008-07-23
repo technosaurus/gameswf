@@ -39,6 +39,7 @@ struct IDirect3DDevice8;
 namespace gameswf
 {
 	DECLARE_GC_TYPES(tu_gc::singlethreaded_refcount);
+	SPECIALIZE_GC_CONTAINER(gc_array, array);
 
 	// Forward declarations.
 	struct player;

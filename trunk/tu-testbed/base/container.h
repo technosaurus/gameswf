@@ -201,6 +201,8 @@ class array {
 // Default constructor and destructor get called on the elements as
 // they are added or removed from the active part of the array.
 public:
+	typedef T value_type;
+
 	array() : m_buffer(0), m_size(0), m_buffer_size(0) {}
 	array(int size_hint) : m_buffer(0), m_size(0), m_buffer_size(0) { resize(size_hint); }
 	array(const array<T>& a)
@@ -400,6 +402,23 @@ public:
 		a->m_buffer_size = 0;
 	}
 
+	// Iterator API, for STL compatibility.
+	typedef T* iterator;
+	typedef const T* const_iterator;
+
+	iterator begin() {
+		return m_buffer;
+	}
+	iterator end() {
+		return m_buffer + m_size;
+	}
+	const_iterator begin() const {
+		return m_buffer;
+	}
+	const_iterator end() const {
+		return m_buffer + m_size;
+	}
+
 private:
 	T*	m_buffer;
 	int	m_size;
@@ -438,7 +457,7 @@ public:
 	int	size() const { return m_size; }
 
 	void	push_back(const T& val)
-		// Insert the given element at the end of the array.
+	// Insert the given element at the end of the array.
 	{
 		// DO NOT pass elements of your own vector into
 		// push_back()!  Since we're using references,
@@ -466,13 +485,13 @@ public:
 	const T&	back() const { return (*this)[m_size-1]; }
 
 	void	clear()
-		// Empty and destruct all elements.
+	// Empty and destruct all elements.
 	{
 		resize( 0 );
 	}
 
 	void	operator=(const shared_array<T>& a)
-		// Array copy.  Copies the contents of a into this array.
+	// Array copy.  Copies the contents of a into this array.
 	{
 
 		m_buffer = a.m_buffer;
@@ -487,8 +506,8 @@ public:
 
 
 	void	remove(int index)
-		// Removing an element from the array is an expensive operation!
-		// It compacts only after removing the last element.
+	// Removing an element from the array is an expensive operation!
+	// It compacts only after removing the last element.
 	{
 		create_own_copy();
 		assert(index >= 0 && index < m_size);
@@ -508,7 +527,7 @@ public:
 
 
 	void	insert(int index, const T& val = T())
-		// Insert the given object at the given index shifting all the elements up.
+	// Insert the given object at the given index shifting all the elements up.
 	{
 		create_own_copy();
 		assert(index >= 0 && index <= m_size);
@@ -527,14 +546,14 @@ public:
 
 
 	void	append(const shared_array<T>& other)
-		// Append the given data to our array.
+	// Append the given data to our array.
 	{
 		append(other.m_buffer, other.size());
 	}
 
 
 	void	append(const T other[], int count)
-		// Append the given data to our array.
+	// Append the given data to our array.
 	{
 		create_own_copy();
 		if (count > 0)
@@ -551,10 +570,10 @@ public:
 
 
 	void	resize(int new_size)
-		// Preserve existing elements via realloc.
-		// 
-		// Newly created elements are initialized with default element
-		// of T.  Removed elements are destructed.
+	// Preserve existing elements via realloc.
+	// 
+	// Newly created elements are initialized with default element
+	// of T.  Removed elements are destructed.
 	{
 		private_resize( new_size );
 	}

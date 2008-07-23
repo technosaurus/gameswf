@@ -5,16 +5,18 @@
 
 // Some test code for garbage collectors.
 //
-// cl -Zi -GX -GR tu_gc_test.cpp tu_gc_singlethreaded_marksweep.cpp -I.. -DTEST_GC
+// cl -Zi -GX -GR tu_gc_test.cpp tu_gc_singlethreaded_marksweep.cpp container.cpp utf8.cpp -I.. -DTEST_GC
 
 
 #ifdef TEST_GC
 
 #include "base/tu_gc_singlethreaded_marksweep.h"
 #include "base/tu_gc_singlethreaded_refcount.h"
+#include <map>
 #include <stdio.h>
 #include <set>
 #include <vector>
+#include "base/container.h"
 
 namespace test_ms {
 #define GC_COLLECTOR tu_gc::singlethreaded_marksweep
