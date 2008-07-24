@@ -379,7 +379,11 @@ namespace gameswf
 			}
 			else
 			{
-				listeners->push_back(m_listeners);
+				if (m_listeners != NULL)
+				{
+					listeners->push_back(m_listeners);
+				}
+
 				m_playlist.remove(i);
 			}
 
