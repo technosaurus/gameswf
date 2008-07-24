@@ -13,6 +13,7 @@
 #include "base/container.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_mutex.h"
+#include "gameswf/gameswf_listener.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 #include <ffmpeg/avformat.h>
@@ -62,7 +63,7 @@ namespace gameswf
 		virtual void append_sound(int sound_handle, void* data, int data_bytes);
 
 		// Play the index'd sample.
-		virtual void	play_sound(int sound_handle, int loop_count);
+		virtual void	play_sound(as_object* listener_obj, int sound_handle, int loop_count);
 
 		virtual void	set_default_volume(int vol);
 
@@ -115,7 +116,7 @@ namespace gameswf
 
 		void append(void* data, int size, SDL_sound_handler* handler);
 		void play(int loops, SDL_sound_handler* handler);
-		bool mix(Uint8* stream, int len);
+		bool mix(Uint8* stream, int len, array< gc_ptr<listener> >* listeners);
 		void pause(bool paused);
 		int  get_played_bytes();
 
@@ -130,6 +131,7 @@ namespace gameswf
 		bool m_stereo;
 		array<gc_ptr<active_sound> > m_playlist;
 		bool m_is_paused;
+		gc_ptr<listener> m_listeners;	// onSoundComplete event listeners
 	};
 
 

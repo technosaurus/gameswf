@@ -26,7 +26,7 @@ namespace gameswf
 					offset = fn.arg(0).to_int();
 					loops = fn.arg(1).to_int();
 				}
-				s->play_sound(snd->m_id, loops);
+				s->play_sound(snd, snd->m_id, loops);
 			}
 		}
 	}

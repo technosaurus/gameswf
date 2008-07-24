@@ -12,7 +12,7 @@
 
 namespace gameswf
 {
-
+	tu_mutex& gameswf_engine_mutex();
 	static void sdl_audio_callback(void *udata, Uint8 *stream, int len); // SDL C audio handler
 
 	SDL_sound_handler::SDL_sound_handler():
@@ -129,7 +129,7 @@ namespace gameswf
 		m_mutex.unlock();
 	}
 
-	void	SDL_sound_handler::play_sound(int sound_handle, int loops)
+	void	SDL_sound_handler::play_sound(as_object* listener_obj, int sound_handle, int loops)
 	// Play the index'd sample.
 	{
 		m_mutex.lock();
@@ -137,6 +137,16 @@ namespace gameswf
 		hash<int, gc_ptr<sound> >::iterator it = m_sound.find(sound_handle);
 		if (it != m_sound.end())
 		{
+			if (listener_obj)
+			{
+				// create listener
+				if (it->second->m_listeners == NULL)
+				{
+					it->second->m_listeners = new listener();
+				}
+				it->second->m_listeners->add(listener_obj);
+			}
+
 			it->second->play(loops, this);
 		}
 
@@ -350,7 +360,7 @@ namespace gameswf
 	}
 
 	// called from audio callback
-	bool sound::mix(Uint8* stream, int len)
+	bool sound::mix(Uint8* stream, int len, array< gc_ptr<listener> >* listeners)
 	{
 		if (m_is_paused)
 		{
@@ -369,6 +379,7 @@ namespace gameswf
 			}
 			else
 			{
+				listeners->push_back(m_listeners);
 				m_playlist.remove(i);
 			}
 
@@ -404,11 +415,13 @@ namespace gameswf
 		int pause = 1;
 		memset(stream, 0, len);
 
+		array< gc_ptr<listener> > listeners;
+
 		// mix Flash audio
 		for (hash<int, gc_ptr<sound> >::iterator snd = handler->m_sound.begin();
 			snd != handler->m_sound.end(); ++snd)
 		{
-			bool play = snd->second->mix(stream, len);
+			bool play = snd->second->mix(stream, len, &listeners);
 			pause = play ? 0 : pause;
 		}
 
@@ -432,6 +445,15 @@ namespace gameswf
 		}
 		SDL_PauseAudio(pause);
 		handler->m_mutex.unlock();
+
+		// notify onSoundComplete
+		gameswf_engine_mutex().lock();
+		for (int i = 0, n = listeners.size(); i < n; i++)
+		{
+			listeners[i]->notify(event_id::ON_SOUND_COMPLETE);
+		}
+		gameswf_engine_mutex().unlock();
+
 	}
 
 }

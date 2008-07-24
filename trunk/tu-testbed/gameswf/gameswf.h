@@ -462,7 +462,7 @@ namespace gameswf
 		// gameswf calls this when it wants you to play the defined sound.
 		//
 		// loop_count == 0 means play the sound once (1 means play it twice, etc)
-		virtual void	play_sound(int sound_handle, int loop_count /* , volume, pan, etc? */) = 0;
+		virtual void	play_sound(as_object* listener_obj, int sound_handle, int loop_count /* , volume, pan, etc? */) = 0;
 
 		virtual void	set_volume(int sound_handle, int volume) = 0;
 
