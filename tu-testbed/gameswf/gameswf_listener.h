@@ -16,7 +16,7 @@
 namespace gameswf
 {
 
-	struct listener
+	struct listener : public ref_counted
 	{
 		exported_module void add(as_object* listener);
 		exported_module void remove(as_object* listener);

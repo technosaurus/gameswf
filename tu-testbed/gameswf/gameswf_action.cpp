@@ -2416,7 +2416,10 @@ namespace gameswf
 		"onLoadError",
 		"onLoadInit",
 		"onLoadProgress",
-		"onLoadStart"
+		"onLoadStart",
+
+		// sound
+		"onSoundComplete"
 
 	};
 

@@ -461,7 +461,7 @@ namespace gameswf
 								}
 								else
 								{
-									s->play_sound(bs.m_sam->m_sound_handler_id, bs.m_sound_style.m_loop_count);
+									s->play_sound(NULL, bs.m_sam->m_sound_handler_id, bs.m_sound_style.m_loop_count);
 								}
 							}
 						}

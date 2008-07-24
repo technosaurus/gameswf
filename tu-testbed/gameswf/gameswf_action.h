@@ -94,6 +94,9 @@ namespace gameswf
 			ONLOAD_PROGRESS,
 			ONLOAD_START,
 
+			// sound
+			ON_SOUND_COMPLETE,
+
 			EVENT_COUNT
 		};
 

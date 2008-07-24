@@ -418,7 +418,7 @@ namespace gameswf
 					if (m_def->m_ss_id >= 0)
 					{
 						sound->stop_sound(m_def->m_ss_id);
-						sound->play_sound(m_def->m_ss_id, 0);
+						sound->play_sound(NULL, m_def->m_ss_id, 0);
 					}
 				}
 			}
