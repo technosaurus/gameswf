@@ -96,7 +96,7 @@ namespace gameswf
 	void vm_stack::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
 
-		for (int i = 0, n = array<as_value>::size(); i < n; i++)
+		for (int i = 0; i < m_stack_size; i++)
 		{
 			as_object* obj = (*this)[i].to_object();
 			if (obj)

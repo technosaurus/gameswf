@@ -143,6 +143,12 @@ namespace gameswf
 			{
 				m_stack_size = 0;
 			}
+
+			// clear refs to avoid memory leaks
+			for (int i = m_stack_size + 1, n = array<as_value>::size(); i < n; i++)
+			{
+				(*this)[i].set_undefined();
+			}
 		}
 
 		as_value&	top(int dist) { return (*this)[m_stack_size - 1 - dist]; }
