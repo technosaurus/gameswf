@@ -51,7 +51,7 @@ namespace gameswf
 		}
 
 		// line styles
-		for (i=0; i < m_line_styles.size(); i++)
+		for (i = 0; i < m_line_styles.size(); i++)
 		{
 			line_style& ls = m_line_styles[i];
 			const line_style& ls1 = m_shape1->get_line_styles()[i];
@@ -62,7 +62,8 @@ namespace gameswf
 
 		// shape
 		int k = 0, n = 0;
-		for (i = 0; i < m_paths.size(); i++) {
+		for (i = 0; i < m_paths.size(); i++) 
+		{
 			path& p = m_paths[i];
 			const path& p1 = m_shape1->get_paths()[i];
 
@@ -135,9 +136,10 @@ namespace gameswf
 
 		m_offset = in->read_u32();
 
-		m_fill_style_count = in->read_variable_count();
+		int fill_style_count = in->read_variable_count();
 		int i;
-		for (i = 0; i < m_fill_style_count; i++) {
+		for (i = 0; i < fill_style_count; i++)
+		{
 			fill_style fs1, fs2;
 
 			fs1.m_type = in->read_u8();
@@ -228,12 +230,12 @@ namespace gameswf
 			m_shape2->m_fill_styles.push_back(fs2);
 		}
 
-		m_line_style_count = in->read_variable_count();
-		
+		int line_style_count = in->read_variable_count();
 
-		if(tag_type == 46)
+		if (tag_type == 46)
 		{
-			for (i = 0; i < m_line_style_count; i++) {
+			for (i = 0; i < line_style_count; i++)
+			{
 				line_style ls1, ls2;
 				ls1.m_width = in->read_u16();
 				ls2.m_width = in->read_u16();
@@ -244,11 +246,12 @@ namespace gameswf
 			}
 		}
 		else
+		if (tag_type == 84)
 		{
-			assert(tag_type == 84);
-
-			for (i = 0; i < m_line_style_count; i++) {
+			for (i = 0; i < line_style_count; i++)
+			{
 				line_style ls1, ls2;
+
 				ls1.m_width = in->read_u16();
 				ls2.m_width = in->read_u16();
 				int start_cap_style = in->read_uint(2);
@@ -267,17 +270,19 @@ namespace gameswf
 				UNUSED(no_close);
 				UNUSED(end_cap_style);
 
-				if( join_style == 2 )
+				if (join_style == 2)
 				{
 					int miter_limit_factor_fixed = in->read_u16(); // 8.8 fixed point format
 					float miter_limit_factor = (float) miter_limit_factor_fixed / 256.0f;
 					UNUSED(miter_limit_factor);
 				}
 
-				if( has_fill_flag == 0 )
+				if (has_fill_flag == 0)
 				{
-					rgba start_color; start_color.read_rgba( in );
-					rgba end_color; end_color.read_rgba( in );
+					rgba start_color;
+					start_color.read_rgba(in);
+					rgba end_color;
+					end_color.read_rgba(in);
 				}
 				else
 				{
@@ -297,7 +302,8 @@ namespace gameswf
 						IF_VERBOSE_PARSE(log_msg("morph fill style begin color: "); fs1.m_color.print());
 						IF_VERBOSE_PARSE(log_msg("morph fill style end color: "); fs2.m_color.print());
 					}
-					else if (fs1.m_type == 0x10 || fs1.m_type == 0x12)
+					else
+					if (fs1.m_type == 0x10 || fs1.m_type == 0x12)
 					{
 						matrix	input_matrix1, input_matrix2;
 
@@ -349,7 +355,8 @@ namespace gameswf
 							fs2.m_color = fs2.m_gradients[0].m_color;
 						}
 					}
-					else if (fs1.m_type == 0x40 || fs1.m_type == 0x41)
+					else
+					if (fs1.m_type == 0x40 || fs1.m_type == 0x41)
 					{
 
 						int	bitmap_char_id = in->read_u16();
@@ -365,13 +372,15 @@ namespace gameswf
 					}
 				}
 
-				/*
-				ls1.m_color.read(in, tag_type);
-				ls2.m_color.read(in, tag_type);
+//				ls1.m_color.read(in, tag_type);
+//				ls2.m_color.read(in, tag_type);
 				m_shape1->m_line_styles.push_back(ls1);
 				m_shape2->m_line_styles.push_back(ls2);
-				*/
 			}
+		}
+		else
+		{
+			assert(0);
 		}
 
 		m_shape1->read(in, tag_type, false, md);
@@ -379,7 +388,9 @@ namespace gameswf
 		m_shape2->read(in, tag_type, false, md);
 
 		assert(m_shape1->m_fill_styles.size() == m_shape2->m_fill_styles.size());
+		assert(m_shape1->m_fill_styles.size() == fill_style_count);
 		assert(m_shape1->m_line_styles.size() == m_shape2->m_line_styles.size());
+		assert(m_shape1->m_line_styles.size() == line_style_count);
 
 		// setup array size
 		m_fill_styles.resize(m_shape1->m_fill_styles.size());
