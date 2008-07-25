@@ -752,8 +752,7 @@ namespace gameswf
 
 	void player::clear_garbage()
 	{
-		as_object* global = get_global();
-		global->this_alive();
+		m_global->this_alive();
 		for (hash<gc_ptr<as_object>, bool>::iterator it = m_heap.begin();
 			it != m_heap.end(); ++it)
 		{

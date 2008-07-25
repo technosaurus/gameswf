@@ -23,8 +23,6 @@ namespace gameswf
 		shape_character_def* m_shape1;
 		shape_character_def* m_shape2;
 		unsigned int m_offset;
-		int m_fill_style_count;
-		int m_line_style_count;
 		float m_last_ratio;
 		mesh_set*	m_mesh;
 	};
