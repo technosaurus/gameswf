@@ -553,42 +553,6 @@ namespace gameswf
 		m->add_execute_tag(t);
 	}
 
-#if 0
-	// Bitmap character
-	struct bitmap_character : public bitmap_character_def
-	{
-		bitmap_character(bitmap_info* bi)
-			:
-		m_bitmap_info(bi)
-		{
-		}
-
-		//		bitmap_character(image::rgb* image)
-		//		{
-		//			assert(image != 0);
-
-		//			// Create our bitmap info, from our image.
-		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgb(image);
-		//		}
-
-		//		bitmap_character(image::rgba* image)
-		//		{
-		//			assert(image != 0);
-
-		//			// Create our bitmap info, from our image.
-		//			m_bitmap_info = gameswf::render::create_bitmap_info_rgba(image);
-		//		}
-
-		gameswf::bitmap_info*	get_bitmap_info()
-		{
-			return m_bitmap_info.get_ptr();
-		}
-
-	private:
-		gc_ptr<gameswf::bitmap_info>	m_bitmap_info;
-	};
-#endif
-
 	void	jpeg_tables_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Load JPEG compression tables that can be used to load
 	// images further along in the stream.
