@@ -93,10 +93,52 @@ namespace gameswf
 		return NULL;
 	}
 
+	void vm_stack::resize(int new_size)
+	{
+		assert(new_size <= array<as_value>::size());
+
+		if (new_size < m_stack_size)
+		{
+			drop(m_stack_size - new_size);
+		}
+		m_stack_size = new_size; 
+	}
+
+	as_value&	vm_stack::pop()
+	{
+		if (m_stack_size > 0)
+		{
+			m_stack_size--;
+			return (*this)[m_stack_size];
+		}
+
+		// empty stack
+		static as_value undefined;
+		return undefined; 
+	}
+
+	void	vm_stack::drop(int count)
+	{
+		m_stack_size -= count;
+		if (m_stack_size < 0)
+		{
+			m_stack_size = 0;
+		}
+
+		// clear refs to avoid memory leaks
+		for (int i = m_stack_size, n = array<as_value>::size(); i < n; i++)
+		{
+			(*this)[i].set_undefined();
+			if (--count == 0)
+			{
+				break;
+			}
+		}
+	}
+
 	void vm_stack::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
-
-		for (int i = 0; i < m_stack_size; i++)
+		for (int i = 0; i < array<as_value>::size(); i++)
 		{
 			as_object* obj = (*this)[i].to_object();
 			if (obj)

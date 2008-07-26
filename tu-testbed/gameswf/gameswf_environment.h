@@ -123,46 +123,13 @@ namespace gameswf
 			m_stack_size++;
 		}
 
-		as_value&	pop()
-		{
-			if (m_stack_size > 0)
-			{
-				m_stack_size--;
-				return (*this)[m_stack_size];
-			}
-
-			// empty stack
-			static as_value undefined;
-			return undefined; 
-		}
-
-		void	drop(int count)
-		{
-			m_stack_size -= count;
-			if (m_stack_size < 0)
-			{
-				m_stack_size = 0;
-			}
-
-			// clear refs to avoid memory leaks
-			for (int i = m_stack_size + 1, n = array<as_value>::size(); i < n; i++)
-			{
-				(*this)[i].set_undefined();
-			}
-		}
-
+		as_value&	pop();
+		void	drop(int count);
 		as_value&	top(int dist) { return (*this)[m_stack_size - 1 - dist]; }
 		as_value&	bottom(int index) { return (*this)[index]; }
-
 		inline int	get_top_index() const { return m_stack_size - 1; }
 		inline int	size() const { return m_stack_size; }
-
-		void resize(int new_size)
-		{
-			assert(new_size <= array<as_value>::size());
-			m_stack_size = new_size; 
-		}
-
+		void resize(int new_size);
 		void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 
 		// return object that contains the property
