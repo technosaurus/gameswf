@@ -365,7 +365,8 @@ namespace gameswf
 	//
 
 	player::player() :
-		m_force_realtime_framerate(false)
+		m_force_realtime_framerate(false),
+		m_log_bitmap_info(false)
 	{
 		m_global = new as_object(this);
 

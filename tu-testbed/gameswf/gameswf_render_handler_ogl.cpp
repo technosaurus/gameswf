@@ -412,6 +412,20 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 
 	virtual void layout();
 
+	// log bitmap info
+	virtual const char* get_info() const
+	{
+		static int s_texture_memory = 0;
+		s_texture_memory += p2(m_width) * p2(m_height);
+
+		static char s_log_buf[80];
+		snprintf(s_log_buf, 80, "bitmap_info: w=%d,\t h=%d,\t p2w=%d,\t p2h=%d,\t mem=%dK,\t total=%dK",
+			m_width, m_height, p2(m_width), p2(m_height), 
+			(p2(m_width) * p2(m_height)) >> 10, s_texture_memory >> 10);
+
+		return s_log_buf;
+	}
+
 	virtual void activate()
 	{
 		assert(m_texture_id > 0);
@@ -420,7 +434,7 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 	}
 
 	// misc
-	int p2(int n);
+	int p2(int n) const;
 
 	~bitmap_info_ogl()
 	{
@@ -1558,7 +1572,7 @@ void	software_resample(
 	delete [] rescaled;
 }
 
-int bitmap_info_ogl::p2(int n)
+int bitmap_info_ogl::p2(int n) const
 {
 	int	p = 1; while (p < n) { p <<= 1; }
 

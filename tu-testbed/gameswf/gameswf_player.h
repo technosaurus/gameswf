@@ -37,6 +37,9 @@ namespace gameswf
 		tu_string m_flash_vars;
 		bool m_force_realtime_framerate;
 
+		// it's used to watch texture memory
+		bool m_log_bitmap_info;
+
 		// Players count to release all static stuff at the right time
 		static int s_player_count;
 		
@@ -92,6 +95,8 @@ namespace gameswf
 
 		exported_module const bool get_force_realtime_framerate() const;
 		exported_module void set_force_realtime_framerate(const bool force_realtime_framerate);
+		exported_module bool get_log_bitmap_info() const { return m_log_bitmap_info; }
+		exported_module void set_log_bitmap_info(bool log_bitmap_info) { m_log_bitmap_info = log_bitmap_info; }
 
 		// the garbage manager
 		void set_alive(as_object* obj);

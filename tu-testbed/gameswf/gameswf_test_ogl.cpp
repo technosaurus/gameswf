@@ -67,7 +67,8 @@ void	print_usage()
 		"  -u          Allow pass user variables to Flash\n"
 		"  -k          Disables cursor\n"
 		"  -w <w>x<h>  Specify the window size, for example 1024x768\n"
-        "  -f          Force realtime framerate\n"
+		"  -f          Force realtime framerate\n"
+		"  -i          Log bitmap info\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -467,6 +468,10 @@ int	main(int argc, char *argv[])
 				{
 					s_allow_http = true;
 				}
+				else if (argv[arg][1] == 'i')
+				{
+					player->set_log_bitmap_info(true);
+				}
 			}
 			else
 			{
@@ -481,7 +486,7 @@ int	main(int argc, char *argv[])
 			exit(1);
 		}
 
-        player->set_force_realtime_framerate(force_realtime_framerate);
+		player->set_force_realtime_framerate(force_realtime_framerate);
 
 		// use this for multifile games
 		// workdir is used when LoadMovie("myfile.swf", _root) is called

@@ -127,6 +127,10 @@ namespace gameswf
 			bitmap_character_def(player),
 			m_bitmap_info(bi)
 		{
+			if (player->get_log_bitmap_info() == true)
+			{
+				log_msg("%s\n", bi->get_info());
+			}
 		}
 
 		bool	point_test_local(float x, float y)
