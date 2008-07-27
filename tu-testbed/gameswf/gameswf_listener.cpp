@@ -13,14 +13,10 @@ namespace gameswf
 	{
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array<weak_ptr<as_object> > listeners(m_listeners);
+		clone_listener listeners(m_listeners);
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			gc_ptr<as_object> obj(listeners[i].get_ptr());
-			if (obj != NULL)
-			{
-				obj->on_event(ev);
-			}
+			listeners[i]->on_event(ev);
 		}
 	}
 
@@ -36,18 +32,14 @@ namespace gameswf
 
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array<weak_ptr<as_object> > listeners(m_listeners);
+		clone_listener listeners(m_listeners);
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			gc_ptr<as_object> obj(listeners[i].get_ptr());
-			if (obj != NULL)	// is listener destroyed ?
+			as_value function;
+			if (listeners[i]->get_member(event_name, &function))
 			{
-				as_value function;
-				if (obj->get_member(event_name, &function))
-				{
-					call_method(function, fn.env, obj.get_ptr(),
-						fn.nargs, fn.env->get_top_index());
-				}
+				call_method(function, fn.env, listeners[i].get_ptr(),
+					fn.nargs, fn.env->get_top_index());
 			}
 		}
 	}
@@ -57,15 +49,10 @@ namespace gameswf
 	{
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
-		array<weak_ptr<as_object> > listeners;
-		listeners = m_listeners;
+		clone_listener listeners(m_listeners);
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
-			gc_ptr<as_object> obj(listeners[i].get_ptr());
-			if (obj != NULL)
-			{
-				obj->advance(delta_time);
-			}
+			listeners[i]->advance(delta_time);
 		}
 	}
 
