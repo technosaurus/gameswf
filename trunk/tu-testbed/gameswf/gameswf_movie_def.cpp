@@ -615,7 +615,7 @@ namespace gameswf
 			it->second->output_cached_data(out, options);
 		}}
 
-		out->write_le16((Sint16) -1);	// end of characters marker
+		out->write_le16(static_cast<uint16>(-1));	// end of characters marker
 	}
 
 	void	movie_def_impl::input_cached_data(tu_file* in)

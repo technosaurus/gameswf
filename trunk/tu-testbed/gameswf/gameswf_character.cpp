@@ -400,17 +400,17 @@ namespace gameswf
 		// get_bound() & get_world_matrix() are heavy recursive operations
 		return true;
 
-		rect bound;
-		get_bound(&bound);
+//		rect bound;
+//		get_bound(&bound);
 		
-		matrix m;
-		m.set_inverse(get_matrix());
-		m.transform(&bound);
+//		matrix m;
+//		m.set_inverse(get_matrix());
+//		m.transform(&bound);
 
-		m = get_world_matrix();
-		m.transform(&bound);
+//		m = get_world_matrix();
+//		m.transform(&bound);
 
-		return render::is_visible(bound);
+//		return render::is_visible(bound);
 	}
 
 	void character::enumerate(as_environment* env)

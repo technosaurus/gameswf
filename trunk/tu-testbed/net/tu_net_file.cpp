@@ -152,7 +152,7 @@ static int http_seek(int pos, void *appdata)
 static int http_seek_to_end(void *appdata)
 {
 	assert(appdata);
-	netfile* nf = (netfile*) appdata;
+//	netfile* nf = (netfile*) appdata;
 
 	int n = 0;
 	do

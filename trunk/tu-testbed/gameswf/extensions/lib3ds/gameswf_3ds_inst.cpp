@@ -240,7 +240,7 @@ namespace gameswf
 		// get viewport size
 		GLint vp[4]; 
 		glGetIntegerv(GL_VIEWPORT, vp); 
-		int vp_width = vp[2];
+//		int vp_width = vp[2];
 		int vp_height = vp[3];
 
 		bound.twips_to_pixels();

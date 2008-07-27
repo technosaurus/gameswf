@@ -346,7 +346,7 @@ namespace gameswf
 			assert(toRGB_convert_ctx);
 
 			AVPicture* picture = (AVPicture*) m_frame;
-			int ret = sws_scale(toRGB_convert_ctx,
+			sws_scale(toRGB_convert_ctx,
 				picture->data, picture->linesize, 0, 0,
 				picture1.data, picture1.linesize);
 

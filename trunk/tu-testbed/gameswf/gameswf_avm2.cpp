@@ -157,7 +157,8 @@ namespace gameswf
 				{
 					bool taken;
 					//Follows ECMA-262 11.9.3
-					if( taken = !as_value::abstract_equality_comparison(scope[ scope.size() - 2 ], scope[ scope.size() - 1 ]) )
+					taken = !as_value::abstract_equality_comparison(scope[ scope.size() - 2 ], scope[ scope.size() - 1 ]);
+					if (taken)
 					{
 						int offset = m_code[ip] | m_code[ip+1]<<8 | m_code[ip+2]<<16;
 						ip += offset;
@@ -451,8 +452,8 @@ namespace gameswf
 
 					//Search for a script entry to execute
 
-					as_function * func;
-					if( !obj && ( func = m_abc->get_script_function( name ) ) )
+					as_function* func = m_abc->get_script_function(name);
+					if (obj == NULL && func != NULL)
 					{
 						get_global()->set_member( name, new as_object( get_player() ) );
 

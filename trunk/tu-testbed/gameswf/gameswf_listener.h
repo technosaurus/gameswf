@@ -18,6 +18,22 @@ namespace gameswf
 
 	struct listener : public ref_counted
 	{
+
+		// misc
+		struct clone_listener : public array<gc_ptr<as_object> >
+		{
+			clone_listener(const array< weak_ptr<as_object> >& listeners)
+			{
+				for (int i = 0, n = listeners.size(); i < n; i++)
+				{
+					if (listeners[i] != NULL)
+					{
+						push_back(listeners[i].get_ptr());
+					}
+				}
+			}
+		};
+
 		exported_module void add(as_object* listener);
 		exported_module void remove(as_object* listener);
 

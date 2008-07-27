@@ -452,7 +452,7 @@ net_socket* net_interface_tcp::accept()
 
 	return new net_socket_tcp(remote_socket);
 	// TODO implement
-	return NULL;
+//	return NULL;
 }
 
 
@@ -462,7 +462,7 @@ bool net_init()
 	WORD version_requested = MAKEWORD(1, 1);
 	WSADATA wsa;
 
-	int ret = WSAStartup(version_requested, &wsa);
+	WSAStartup(version_requested, &wsa);
 
 	if (wsa.wVersion != version_requested)
 	{	
