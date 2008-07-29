@@ -226,7 +226,7 @@ static gameswf::key::code	translate_key(SDLKey key)
 int	main(int argc, char *argv[])
 {
 
-	tu_memdebug::open(tu_memdebug::ALLOCCHECK);
+	tu_memdebug::open();
 
 	{	// for testing memory leaks
 
@@ -236,13 +236,13 @@ int	main(int argc, char *argv[])
 
 		float	exit_timeout = 0;
 		bool	do_render = true;
-		bool    do_sound = true;
+		bool	do_sound = true;
 		bool	do_loop = true;
 		bool	sdl_abort = true;
 		bool	sdl_cursor = true;
-		int     delay = 10;
+		int		delay = 10;
 		float	tex_lod_bias;
-        bool    force_realtime_framerate = false;
+		bool	force_realtime_framerate = false;
 
 	#ifdef _WIN32
 
