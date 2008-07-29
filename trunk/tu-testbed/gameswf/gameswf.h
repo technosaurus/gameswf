@@ -10,6 +10,11 @@
 #ifndef GAMESWF_H
 #define GAMESWF_H
 
+// for memory leaks debugging
+#if _WIN32 && _DEBUG && !USE_STACKWALKER
+	#include <stdlib.h>
+	#include <crtdbg.h>
+#endif
 
 #include <ctype.h>	// for poxy wchar_t
 #include <assert.h>

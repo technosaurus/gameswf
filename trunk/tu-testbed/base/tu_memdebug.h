@@ -6,34 +6,64 @@
 #ifndef TU_MEMDEBUG_H
 #define TU_MEMDEBUG_H
 
-#ifdef USE_STACKWALKER
+#if _DEBUG && _WIN32
+
+	// Only valid in the following environment: Intel platform, MS VC++ 5/6/7/7.1/8
+	#ifdef USE_STACKWALKER
+
 	#include <windows.h>
 	#include "base/Stackwalker.h"
-#endif
+
+	namespace tu_memdebug
+	{
+		void open()
+		{
+			InitAllocCheck(ACOutput_XML);
+		}
+
+		void close()
+		{
+			DeInitAllocCheck();
+		}
+	}
+
+	#else
+
+	// use VC++ memory leaks debugger
+
+	#ifndef _CRTDBG_MAP_ALLOC
+	#	define _CRTDBG_MAP_ALLOC
+	#endif
+	#include <stdlib.h>
+	#include <crtdbg.h>
+
+	namespace tu_memdebug
+	{
+		void open()
+		{
+			_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);	
+	//		_CrtSetReportMode( _CRT_ERROR, _CRTDBG_MODE_DEBUG );
+		}
+
+		void close()
+		{
+	//		_CrtDumpMemoryLeaks();
+		}
+	}
+
+	#endif	// USE_STACKWALKER
+
+#else	// _DEBUG && _WIN32
+
+// no memory leaks debugger
 
 namespace tu_memdebug
 {
-	enum debug_type
-	{
-		ALLOCCHECK,
-		EXCEPTIONCATCH
-	};
-
-	void open(debug_type)
-	{
-#ifdef USE_STACKWALKER
-		InitAllocCheck(ACOutput_XML);
-#endif
-
-	}
-
-	void close()
-	{
-#ifdef USE_STACKWALKER
-		DeInitAllocCheck();
-#endif
-	}
-
+	void open() {}
+	void close() {}
 }
 
 #endif
+
+#endif	// TU_MEMDEBUG_H
+

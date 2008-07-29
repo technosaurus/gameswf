@@ -695,7 +695,7 @@ namespace gameswf
 		// way to do it.  Everything else just
 		// continues to work.
 
-#if (WCHAR_MAX != MAXINT)
+#if (WCHAR_MAX != MAXLONG)
 		tu_string::encode_utf8_from_wchar(&m_string, (const uint16 *)wstr);
 #else
 # if (WCHAR_MAX != MAXSHORT)
@@ -773,7 +773,6 @@ namespace gameswf
 
 			return false;
 		}
-		return false;
 	}
 
 
