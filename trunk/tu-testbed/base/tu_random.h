@@ -17,9 +17,9 @@
 namespace tu_random
 {
 	// Global generator.
-	Uint32	next_random();
-	void	seed_random(Uint32 seed);
-	float	get_unit_float();
+	exported_module Uint32	next_random();
+	exported_module void	seed_random(Uint32 seed);
+	exported_module float	get_unit_float();
 
 	const int	SEED_COUNT = 8;
 	
