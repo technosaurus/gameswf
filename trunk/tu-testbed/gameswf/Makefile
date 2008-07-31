@@ -53,7 +53,6 @@ LIB_OBJS = \
 	gameswf_as_classes/as_sound.$(OBJ_EXT) \
 	gameswf_as_classes/as_string.$(OBJ_EXT) \
 	gameswf_as_classes/as_textformat.$(OBJ_EXT) \
-	gameswf_as_classes/as_timer.$(OBJ_EXT) \
 	gameswf_as_classes/as_transform.$(OBJ_EXT) \
 	gameswf_as_classes/as_xml.$(OBJ_EXT) \
 	gameswf_as_classes/as_xmlsocket.$(OBJ_EXT) \
