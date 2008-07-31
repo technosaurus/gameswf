@@ -183,7 +183,6 @@ namespace gameswf
 		AS_XML_SOCKET,
 		AS_TEXTFORMAT,
 		AS_MCLOADER,
-		AS_TIMER,
 		AS_LOADVARS,
 
 		// flash9
