@@ -359,6 +359,36 @@ namespace gameswf
 		}
 	}
 
+	void timer::advance(float delta_time)
+	{
+		assert(m_func != NULL);
+
+		m_time_remainder += delta_time;
+		if (m_time_remainder >= m_interval)
+		{
+			m_time_remainder = fmod(m_time_remainder - m_interval, m_interval);
+
+			as_environment env(m_func->get_player());
+			int n = m_arg.size();
+			{
+				for (int i = 0; i < n; i++)
+				{
+					env.push(m_arg[i]);
+				}
+			}
+
+			// keep alive
+			gc_ptr<as_object> obj = m_this_ptr.get_ptr();
+			as_value callback(m_func.get_ptr());
+
+			call_method(callback, &env, obj.get_ptr(), n, env.get_top_index());
+
+			if (m_do_once)
+			{
+				m_func = NULL;
+			}
+		}
+	}
 
 	//
 	//	player
@@ -403,6 +433,8 @@ namespace gameswf
 		m_current_root = NULL;
 		m_global = NULL;
 		--s_player_count;
+		
+		m_timer.resize(0);
 
 		clear_heap();
 
@@ -489,6 +521,8 @@ namespace gameswf
 		// global builtins functions
 		m_global->builtin_member("setInterval",  as_global_setinterval);
 		m_global->builtin_member("clearInterval",  as_global_clearinterval);
+		m_global->builtin_member("setTimeout",  as_global_settimeout);
+		m_global->builtin_member("clearTimeout",  as_global_clearinterval);
 		m_global->builtin_member("getVersion",  as_global_get_version);
 		m_global->builtin_member("parseFloat",  as_global_parse_float);
 		m_global->builtin_member("parseInt",  as_global_parse_int);
@@ -773,6 +807,53 @@ namespace gameswf
 		}
 	}
 
+
+	// return timer_id that is 1-based
+	int player::create_timer()
+	{
+		// try to find free timer_id
+		for (int i = 0; i < m_timer.size(); i++)
+		{
+			if (m_timer[i] == NULL)
+			{
+				m_timer[i] = new timer();
+				return i + 1;
+			}
+		}
+
+		// no free id, append a new
+		m_timer.push_back(new timer());
+		return m_timer.size();
+	}
+
+	timer* player::get_timer(int id)
+	{
+		// timer_id is 1-based
+		id--;
+
+		if (id >=0 && id < m_timer.size())
+		{
+			return m_timer[id];
+		}
+		return NULL;
+	}
+
+	void	player::advance_timer(float delta_time)
+	{
+		for (int i = 0, n = m_timer.size(); i < n; i++)
+		{
+			if (m_timer[i] != NULL)
+			{
+				if (m_timer[i]->m_func == NULL)
+				{
+					// clear timer
+					m_timer[i] = NULL;
+					continue;
+				}
+				m_timer[i]->advance(delta_time);
+			}
+		}
+	}
 
 }
 

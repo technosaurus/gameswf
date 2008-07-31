@@ -270,12 +270,6 @@
 				RelativePath="..\..\gameswf_as_classes\as_textformat.h">
 			</File>
 			<File
-				RelativePath="..\..\gameswf_as_classes\as_timer.cpp">
-			</File>
-			<File
-				RelativePath="..\..\gameswf_as_classes\as_timer.h">
-			</File>
-			<File
 				RelativePath="..\..\gameswf_as_classes\as_transform.cpp">
 			</File>
 			<File

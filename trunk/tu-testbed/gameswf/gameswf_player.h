@@ -26,6 +26,26 @@ namespace gameswf
 	string_hash<tu_loadlib*>* get_shared_libs();
 	void clear_shared_libs();
 
+	// for setInterval and setTimeout
+	struct timer : public ref_counted
+	{
+		weak_ptr<as_object> m_this_ptr;
+		weak_ptr<as_function> m_func;
+		float m_interval;	// sec
+		float m_time_remainder;
+		array<as_value> m_arg;
+		bool m_do_once;
+
+		timer() :
+			m_interval(0.0f),
+			m_time_remainder(0.0f),
+			m_do_once(false)
+		{
+		}
+
+		void advance(float delta_time);
+	};
+
 	struct player : public ref_counted
 	{
 		hash<gc_ptr<as_object>, bool> m_heap;
@@ -42,6 +62,9 @@ namespace gameswf
 
 		// Players count to release all static stuff at the right time
 		static int s_player_count;
+
+		// timers, for setInterval and setTimeout global functions
+		array< gc_ptr<timer> > m_timer;
 		
 		exported_module  player();
 		exported_module  ~player();
@@ -97,6 +120,11 @@ namespace gameswf
 		exported_module void set_force_realtime_framerate(const bool force_realtime_framerate);
 		exported_module bool get_log_bitmap_info() const { return m_log_bitmap_info; }
 		exported_module void set_log_bitmap_info(bool log_bitmap_info) { m_log_bitmap_info = log_bitmap_info; }
+
+		// timing
+		int	create_timer();
+		timer*	get_timer(int timer_id);
+		exported_module void	advance_timer(float delta_time);
 
 		// the garbage manager
 		void set_alive(as_object* obj);
