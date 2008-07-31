@@ -5,7 +5,6 @@
 // Action Script global functions implementation
 
 #include "gameswf/gameswf_action.h"	// for as_object
-#include "gameswf/gameswf_as_classes/as_timer.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_root.h"
 
@@ -36,37 +35,70 @@ namespace gameswf
 		log_msg("%s\n", val);
 	}
 
+	// setInterval(functionReference:Function, interval:Number, [param1:Object, param2, ..., paramN]) : Number
+	// setInterval(objectReference:Object, methodName:String, interval:Number, [param1:Object, param2, ..., paramN]) : Number
 	void  as_global_setinterval(const fn_call& fn)
 	{
-		as_timer* timer = NULL;
-		if (fn.nargs >= 3)
+		if (fn.nargs >= 2)
 		{
-			as_value func;
+			int id = fn.get_player()->create_timer();
+			timer* t = fn.get_player()->get_timer(id);
+
+			int first_arg_index = 2;
+			if (fn.arg(0).is_function())
+			{
+				t->m_func = fn.arg(0).to_function();
+				t->m_interval = fn.arg(1).to_float() / 1000.0f;
+				t->m_this_ptr = fn.this_ptr;
+			}
+			else
 			if (fn.arg(0).is_object())
 			{
-				fn.arg(0).to_object()->get_member(fn.arg(1).to_tu_string(), &func);
+				as_value func;
+				as_object* this_ptr = fn.arg(0).to_object();
+				this_ptr->get_member(fn.arg(1).to_tu_string(), &func);
+
+				t->m_func = func.to_function();
+				t->m_interval = fn.arg(2).to_float() / 1000.0f;
+				t->m_this_ptr = this_ptr;
+				first_arg_index = 3;
 			}
 			else
 			{
-				func = fn.arg(0);
+				// empty timer, will be cleaned up in advance()
 			}
 
-			if (func.is_function())
+			// pass args
+			t->m_arg.resize(fn.nargs - first_arg_index);
+			for (int i = first_arg_index; i < fn.nargs; i++)
 			{
-				timer = new as_timer(func, fn.arg(2).to_number(), fn);
+				t->m_arg.push_back(fn.arg(i));
 			}
+
+			fn.result->set_int(id);
 		}
-		fn.result->set_as_object(timer);
+	}
+
+	// setTimeout(functionReference:Function, interval:Number, [param1:Object, param2, ..., paramN]) : Number
+	// setTimeout(objectReference:Object, methodName:String, interval:Number, [param1:Object, param2, ..., paramN]) : Number
+	void  as_global_settimeout(const fn_call& fn)
+	{
+		as_global_setinterval(fn);
+		assert(fn.result->is_number());
+
+		timer* t = fn.get_player()->get_timer(fn.result->to_int());
+		assert(t);
+		t->m_do_once = true;
 	}
 
 	void  as_global_clearinterval(const fn_call& fn)
 	{
-		if (fn.nargs == 1)
+		if (fn.nargs > 0)
 		{
-			as_timer* timer = cast_to<as_timer>(fn.arg(0).to_object());
-			if (timer)
+			timer* t = fn.get_player()->get_timer(fn.arg(0).to_int());
+			if (t)
 			{
-				timer->clear();
+				t->m_func = NULL;
 			}
 		}
 	}

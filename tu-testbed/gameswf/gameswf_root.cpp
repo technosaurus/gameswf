@@ -389,6 +389,9 @@ namespace gameswf
 		// advance Action script objects
 		m_advance_listener.advance(delta_time);
 
+		// advance timers
+		m_player->advance_timer(delta_time);
+
 		m_time_remainder += delta_time;
 		if (m_time_remainder >= m_frame_time)
 		{

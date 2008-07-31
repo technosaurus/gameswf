@@ -14,8 +14,10 @@ namespace gameswf
 	void	as_global_trace(const fn_call& fn);
 	void	as_global_get_version(const fn_call& fn);
 	void	as_global_assetpropflags(const fn_call& fn);
-  void  as_global_setinterval(const fn_call& fn);
-  void  as_global_clearinterval(const fn_call& fn);
+	void  as_global_setinterval(const fn_call& fn);
+	void  as_global_clearinterval(const fn_call& fn);
+	void  as_global_settimeout(const fn_call& fn);
+	void  as_global_cleartimeout(const fn_call& fn);
 
 
 }	// end namespace gameswf

@@ -22,7 +22,6 @@
 
 #include "gameswf/gameswf_as_classes/as_array.h"
 #include "gameswf/gameswf_as_classes/as_string.h"
-#include "gameswf/gameswf_as_classes/as_timer.h"
 
 // NOTES:
 //
