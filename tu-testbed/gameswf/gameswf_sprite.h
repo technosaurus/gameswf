@@ -67,6 +67,9 @@ namespace gameswf
 		hash<int, gc_ptr<as_function> >* m_script;	// <frame, script>
 		gc_ptr<as_function> m_frame_script;	// current script
 
+		// for setMask
+		weak_ptr<sprite_instance> m_mask_clip;
+
 		sprite_instance(player* player, movie_definition_sub* def, root* r, character* parent, int id);
 		virtual ~sprite_instance();
 

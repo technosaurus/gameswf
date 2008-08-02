@@ -629,7 +629,25 @@ namespace gameswf
 			advance(1);
 		}
 
-		m_display_list.display();
+		// is the movieclip masked ?
+		if (m_mask_clip != NULL)
+		{
+			render::begin_submit_mask();
+
+			m_mask_clip->set_visible(true);
+			m_mask_clip->display();
+			m_mask_clip->set_visible(false);
+
+			render::end_submit_mask();
+
+			m_display_list.display();
+
+			render::disable_mask();
+		}
+		else
+		{
+			m_display_list.display();
+		}
 
 		do_display_callback();
 	}
