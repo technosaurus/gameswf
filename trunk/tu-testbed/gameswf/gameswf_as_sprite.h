@@ -44,6 +44,9 @@ namespace gameswf
 	void sprite_attach_movie(const fn_call& fn);
 	void sprite_local_global(const fn_call& fn);
 	void sprite_global_local(const fn_call& fn);
+	void sprite_get_bounds(const fn_call& fn);
+	void sprite_get_rect(const fn_call& fn);
+	void sprite_set_mask(const fn_call& fn);
 
 	// drawing API
 	void sprite_begin_fill(const fn_call& fn);
@@ -60,9 +63,6 @@ namespace gameswf
 
 	// flash9
 	void sprite_add_script(const fn_call& fn);
-
-	void	sprite_get_bounds(const fn_call& fn);
-	void	sprite_get_rect(const fn_call& fn);
 
 }
 

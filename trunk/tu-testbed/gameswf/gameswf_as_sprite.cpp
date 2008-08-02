@@ -604,4 +604,27 @@ namespace gameswf
 		sprite_get_bounds(fn);
 	}
 
+	// public setMask(mc:Object) : Void
+	void	sprite_set_mask(const fn_call& fn)
+	{
+		sprite_instance* sprite = sprite_getptr(fn);
+		if (fn.nargs > 0)
+		{
+			// end of submit prev mask, setMask(null)
+			if (sprite->m_mask_clip != NULL)
+			{
+				sprite->m_mask_clip->set_visible(true);
+			}
+
+			sprite->m_mask_clip = cast_to<sprite_instance>(fn.arg(0).to_object());
+
+			if (sprite->m_mask_clip != NULL)
+			{
+				// submit mask, setMask(mc)
+				sprite->m_mask_clip->set_visible(false);
+			}
+		}
+
+	}
+
 }
