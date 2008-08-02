@@ -1203,8 +1203,6 @@ namespace gameswf
 	// text_glyph_records to be rendered.
 	void	edit_text_character::format_text()
 	{
-//		printf("%s\n", m_text.c_str());
-
 		if (m_font == NULL)
 		{
 			return;
@@ -1399,9 +1397,17 @@ namespace gameswf
 			}
 			else
 			{
-				// plain text
-				text += *p;
-				p++;
+				if (strncmp(p, "&nbsp;", 5) == 0)
+				{
+					text += " ";
+					p += 6;
+				}
+				else
+				{
+					// plain text
+					text += *p;
+					p++;
+				}
 			}
 		}
 
