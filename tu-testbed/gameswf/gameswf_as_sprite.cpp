@@ -288,7 +288,10 @@ namespace gameswf
 	{ 
 		if (fn.nargs >= 1)
 		{
-			fn.env->load_file(fn.arg(0).to_string(), fn.this_ptr);
+			character* mc = fn.env->load_file(fn.arg(0).to_string(), fn.this_ptr);
+
+			// extension
+			fn.result->set_as_object(mc);
 		}
 
 	} 
