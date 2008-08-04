@@ -9,7 +9,10 @@
 #ifdef _WIN32
 
 #include "Winsock.h"
-#define strdup _strdup
+
+#ifndef strdup
+#	define strdup _strdup
+#endif
 
 #else
 
