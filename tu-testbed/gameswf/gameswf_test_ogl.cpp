@@ -145,18 +145,6 @@ static tu_file*	file_opener(const char* url)
 	}
 }
 
-
-static void	fs_callback(gameswf::character* movie, const char* command, const char* args)
-// For handling notification callbacks from ActionScript.
-{
-//	message_log("fs_callback: '");
-//	message_log(command);
-//	message_log("' '");
-//	message_log(args);
-//	message_log("'\n");
-}
-
-
 static gameswf::key::code	translate_key(SDLKey key)
 // For forwarding SDL key events to gameswf.
 {
@@ -220,8 +208,37 @@ static gameswf::key::code	translate_key(SDLKey key)
 	return c;
 }
 
-// TODO: clean up this interface and re-enable.
-//extern bool gameswf_tesselate_dump_shape;
+static void	fs_callback(gameswf::character* movie, const char* command, const char* args)
+// For handling notification callbacks from ActionScript.
+{
+	assert(movie);
+	gameswf::gc_ptr<gameswf::player> player = movie->get_player();
+
+	if (stricmp(command, "fullscreen") == 0)
+	{
+		// TODO
+	}
+	else
+	if (stricmp(command, "notify_keypress") == 0)
+	{
+		// simulate keypress event
+		for (int i = 0, n = strlen(args); i < n; i++)
+		{
+			// SDL has no uppercase key codes
+			SDLKey key = static_cast<SDLKey>(tolower(args[i]));
+			gameswf::key::code c = translate_key(key);
+			if (c != gameswf::key::INVALID)
+			{
+				player->notify_key_event(c, true);
+			}
+		}
+	}
+	else
+	{
+		// TODO
+	}
+
+}
 
 int	main(int argc, char *argv[])
 {
