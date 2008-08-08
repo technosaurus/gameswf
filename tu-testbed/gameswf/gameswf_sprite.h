@@ -82,7 +82,7 @@ namespace gameswf
 		uint32	get_file_bytes() const;
 		uint32	get_loaded_bytes() const;
 
-		exported_module character*	get_root_movie() { return m_root->get_root_movie(); }
+		exported_module character*	get_root_movie() const { return m_root->get_root_movie(); }
 		movie_definition*	get_movie_definition() { return m_def.get_ptr(); }
 
 		virtual void get_bound(rect* bound);

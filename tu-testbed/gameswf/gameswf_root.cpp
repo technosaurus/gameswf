@@ -309,7 +309,7 @@ namespace gameswf
 		*buttons = m_mouse_buttons;
 	}
 
-	character*	root::get_root_movie() { return m_movie.get_ptr(); }
+	character*	root::get_root_movie() const { return m_movie.get_ptr(); }
 
 	void	root::start_drag(character* ch)
 	{

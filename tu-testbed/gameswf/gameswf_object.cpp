@@ -487,7 +487,7 @@ namespace gameswf
 		// absolute path ?
 		if (*path.c_str() == '/')
 		{
-			return m_player->get_root()->get_root_movie()->find_target(path.c_str() + 1);
+			return m_player->get_root_movie()->find_target(path.c_str() + 1);
 		}
 
 		const char* slash = strchr(path.c_str(), '/');

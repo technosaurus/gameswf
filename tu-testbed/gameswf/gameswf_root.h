@@ -92,7 +92,7 @@ namespace gameswf
 		exported_module void	set_display_viewport(int x0, int y0, int w, int h);
 		exported_module void	notify_mouse_state(int x, int y, int buttons);
 		virtual void	get_mouse_state(int* x, int* y, int* buttons);
-		exported_module character*	get_root_movie();
+		exported_module character*	get_root_movie() const;
 
 		void	start_drag(character* ch);
 		void	stop_drag();

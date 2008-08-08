@@ -72,6 +72,7 @@ namespace gameswf
 		// external interface
 		exported_module root* get_root();
 		exported_module void set_root(root* m);
+		exported_module character*	get_root_movie() const;
 		exported_module void notify_key_event(key::code k, bool down);
 		exported_module void verbose_action(bool val);
 		exported_module void verbose_parse(bool val);

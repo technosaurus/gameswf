@@ -1474,17 +1474,20 @@ void	software_resample(
 	float w1, w2, w3, w4;	// weighting
 	Uint8* psrc;
 	Uint8* pdst = rescaled;
+
 	// i1,i2,i3,i4 are the offsets of the surrounding 4 pixels
 	const int i1 = 0;
 	const int i2 = bytes_per_pixel;
 	int i3 = src_pitch;
 	int i4 = src_pitch + bytes_per_pixel;
+
 	// change in source u and v
-	float dv = (float)(src_height-2) / dst_height;
-	float du = (float)(src_width-2) / dst_width;
+	float dv = (float)(src_height - 2) / dst_height;
+	float du = (float)(src_width - 2) / dst_width;
+
 	// source u and source v
 	float U;
-	float V=0;
+	float V = 0;
 
 #define BYTE_SAMPLE(offset)	\
 	(Uint8) (w1 * psrc[i1 + (offset)] + w2 * psrc[i2 + (offset)] + w3 * psrc[i3 + (offset)] + w4 * psrc[i4 + (offset)])
@@ -1494,13 +1497,13 @@ void	software_resample(
 		for (int v = 0; v < dst_height; ++v)
 		{
 			Vf = modff(V, &Vi);
-			V+=dv;
-			U=0;
+			V += dv;
+			U = 0;
 
 			for (int u = 0; u < dst_width; ++u)
 			{
 				Uf = modff(U, &Ui);
-				U+=du;
+				U += du;
 
 				w1 = (1 - Uf) * (1 - Vf);
 				w2 = Uf * (1 - Vf);
@@ -1508,9 +1511,19 @@ void	software_resample(
 				w4 = Uf * Vf;
 				psrc = &src_data[(int) (Vi * src_pitch) + (int) (Ui * bytes_per_pixel)];
 
-				*pdst++ = BYTE_SAMPLE(0);	// red
-				*pdst++ = BYTE_SAMPLE(1);	// green
-				*pdst++ = BYTE_SAMPLE(2);	// blue
+				// hack: fixed edge artifacts
+				if (v == 0 || u == 0 || v == dst_height - 1 || u == dst_width - 1)
+				{
+					*pdst++ = 0;
+					*pdst++ = 0;
+					*pdst++ = 0;
+				}
+				else
+				{
+					*pdst++ = BYTE_SAMPLE(0);	// red
+					*pdst++ = BYTE_SAMPLE(1);	// green
+					*pdst++ = BYTE_SAMPLE(2);	// blue
+				}
 
 				psrc += 3;
 			}
@@ -1536,13 +1549,13 @@ void	software_resample(
 		for (int v = 0; v < dst_height; ++v)
 		{
 			Vf = modff(V, &Vi);
-			V+=dv;
-			U=0;
+			V += dv;
+			U = 0;
 
 			for (int u = 0; u < dst_width; ++u)
 			{
 				Uf = modff(U, &Ui);
-				U+=du;
+				U += du;
 
 				w1 = (1 - Uf) * (1 - Vf);
 				w2 = Uf * (1 - Vf);
@@ -1550,10 +1563,21 @@ void	software_resample(
 				w4 = Uf * Vf;
 				psrc = &src_data[(int) (Vi * src_pitch) + (int) (Ui * bytes_per_pixel)];
 
-				*pdst++ = BYTE_SAMPLE(0);	// red
-				*pdst++ = BYTE_SAMPLE(1);	// green
-				*pdst++ = BYTE_SAMPLE(2);	// blue
-				*pdst++ = BYTE_SAMPLE(3);	// alpha
+				// hack: fixed edge artifacts
+				if (v == 0 || u == 0 || v == dst_height - 1 || u == dst_width - 1)
+				{
+					*pdst++ = 0;
+					*pdst++ = 0;
+					*pdst++ = 0;
+					*pdst++ = 0;
+				}
+				else
+				{
+					*pdst++ = BYTE_SAMPLE(0);	// red
+					*pdst++ = BYTE_SAMPLE(1);	// green
+					*pdst++ = BYTE_SAMPLE(2);	// blue
+					*pdst++ = BYTE_SAMPLE(3);	// alpha
+				}
 
 				psrc += 4;
 			}
