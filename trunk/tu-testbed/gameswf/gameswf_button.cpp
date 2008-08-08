@@ -238,7 +238,7 @@ namespace gameswf
 		}
 
 		root*	get_root() { return get_parent()->get_root(); }
-		character*	get_root_movie() { return get_parent()->get_root_movie(); }
+		character*	get_root_movie() const { return get_parent()->get_root_movie(); }
 
 		virtual void	advance(float delta_time)
 		{

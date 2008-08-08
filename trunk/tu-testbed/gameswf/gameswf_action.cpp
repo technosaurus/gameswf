@@ -943,7 +943,7 @@ namespace gameswf
 					}
 					env->drop(3);
 
-					character*	root_movie = env->get_target()->get_root_movie();
+					character*	root_movie = env->get_player()->get_root_movie();
 					assert(root_movie);
 
 					if (root_movie && st.m_character)
@@ -956,7 +956,7 @@ namespace gameswf
 
 				case 0x28:	// stop drag movie
 				{
-					character*	root_movie = env->get_target()->get_root_movie();
+					character*	root_movie = env->get_player()->get_root_movie();
 					assert(root_movie);
 
 					root_movie->stop_drag();
@@ -1741,7 +1741,9 @@ namespace gameswf
 						if (get_fscommand_callback())
 						{
 							// Call into the app.
-							(*get_fscommand_callback())(env->get_target()->get_root_movie(), url + 10, target);
+							character* mroot = env->get_player()->get_root_movie();
+							assert(mroot);
+							(*get_fscommand_callback())(mroot, url + 10, target);
 						}
 					}
 					else
@@ -2141,7 +2143,9 @@ namespace gameswf
 						if (get_fscommand_callback())
 						{
 							// Call into the app.
-							(*get_fscommand_callback())(env->get_target()->get_root_movie(), url + 10, target);
+							character* mroot = env->get_player()->get_root_movie();
+							assert(mroot);
+							(*get_fscommand_callback())(mroot, url + 10, target);
 						}
 					}
 					else

@@ -572,6 +572,15 @@ namespace gameswf
 		return m_current_root.get_ptr();
 	}
 
+	character*	player::get_root_movie() const
+	{
+		if (m_current_root != NULL)
+		{
+			return m_current_root->get_root_movie();
+		}
+		return NULL;
+	}
+
 	void player::notify_key_event(key::code k, bool down)
 	{
 		m_current_root->notify_key_event(this, k, down);

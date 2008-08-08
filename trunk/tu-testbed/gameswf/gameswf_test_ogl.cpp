@@ -30,6 +30,9 @@
 
 #ifdef _WIN32
 #	include <Winsock.h>
+#	define stricmp _stricmp
+#else
+#	define stricmp strcasecmp
 #endif
 
 void	print_usage()

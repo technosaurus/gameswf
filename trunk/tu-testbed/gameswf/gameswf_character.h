@@ -488,7 +488,7 @@ namespace gameswf
 		virtual void get_bound(rect* bound);
 		virtual character_def* get_character_def() { assert(0); return 0; }
 
-		virtual character*	get_root_movie() { return m_parent->get_root_movie(); }
+		virtual character*	get_root_movie() const { return m_parent->get_root_movie(); }
 
 		// Frame counts in this API are 0-based (unlike ActionScript)
 		virtual int	get_current_frame() const { return -1; }
