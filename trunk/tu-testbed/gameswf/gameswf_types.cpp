@@ -303,7 +303,7 @@ namespace gameswf
 
 	float	matrix::get_x_scale() const
 	{
-		float	scale = sqrtf(m_[0][0] * m_[0][0] + m_[0][1] * m_[0][1]);
+		float scale = sqrtf(m_[0][0] * m_[0][0] + m_[1][0] * m_[1][0]);
 
 		// Are we turned inside out?
 		if (get_determinant() < 0.f)
@@ -316,7 +316,7 @@ namespace gameswf
 
 	float	matrix::get_y_scale() const
 	{
-		return sqrtf(m_[1][1] * m_[1][1] + m_[1][0] * m_[1][0]);
+		return sqrtf(m_[1][1] * m_[1][1] + m_[0][1] * m_[0][1]);
 	}
 
 	float	matrix::get_rotation() const
