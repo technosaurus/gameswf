@@ -44,8 +44,7 @@ namespace gameswf
 
 		bool	m_mouse_inside_entity_last;	// whether mouse was inside the active_entity last frame
 
-		mouse_button_state()
-			:
+		mouse_button_state() :
 			m_mouse_button_state_last(0),
 			m_mouse_button_state_current(0),
 			m_mouse_inside_entity_last(false)
@@ -78,7 +77,7 @@ namespace gameswf
 
 		// listeners
 		listener m_keypress_listener;
-		listener m_advance_listener;
+		listener m_listener;
 
 		weak_ptr<player> m_player;
 
@@ -147,6 +146,8 @@ namespace gameswf
 		void set_flash_vars(const tu_string& vars);
 		bool is_avm2() const;
 
+		void add_listener(as_object* obj)  { m_listener.add(obj); }
+		void remove_listener(as_object* obj) { m_listener.remove(obj); }
 	};
 }
 

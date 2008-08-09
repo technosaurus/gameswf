@@ -19,6 +19,35 @@ namespace gameswf
 	void  as_global_settimeout(const fn_call& fn);
 	void  as_global_cleartimeout(const fn_call& fn);
 
+	// for setInterval and setTimeout
+	struct as_timer : public as_object
+	{
+		weak_ptr<as_object> m_this_ptr;
+		weak_ptr<as_function> m_func;
+		float m_interval;	// sec
+		float m_time_remainder;
+		array<as_value> m_arg;
+		bool m_do_once;
+
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_TIMER };
+		virtual bool is(int class_id) const
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
+		as_timer(player* player) :
+			as_object(player),
+			m_interval(0.0f),
+			m_time_remainder(0.0f),
+			m_do_once(false)
+		{
+		}
+
+		virtual void advance(float delta_time);
+	};
+
 
 }	// end namespace gameswf
 

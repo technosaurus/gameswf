@@ -86,7 +86,7 @@ namespace gameswf
 		exported_module virtual bool unwatch(const tu_string& name);
 		exported_module virtual void clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr);
 		exported_module virtual void this_alive();
-		exported_module virtual void alive() { return; }
+		exported_module virtual void alive() {}
 		exported_module virtual void copy_to(as_object* target);
 		exported_module virtual void dump(tu_string& tabs);
 		exported_module virtual void dump();

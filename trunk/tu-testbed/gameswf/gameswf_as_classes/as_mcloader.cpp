@@ -25,7 +25,7 @@ namespace gameswf
 		{
 			mcl->m_listeners.add(fn.arg(0).to_object());
 			fn.result->set_bool(true);
-			mcl->get_root()->m_advance_listener.add(mcl);
+			mcl->get_root()->add_listener(mcl);
 			return;
 		}
 		fn.result->set_bool(false);
@@ -128,7 +128,7 @@ namespace gameswf
 	{
 		if (m_lm.size() == 0)
 		{
-			get_root()->m_advance_listener.remove(this);
+			get_root()->remove_listener(this);
 			return;
 		}
 
