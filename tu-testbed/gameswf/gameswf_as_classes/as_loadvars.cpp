@@ -174,7 +174,7 @@ namespace gameswf
 		}
 
 		request.m_target = cast_to<as_loadvars>(target);
-		get_root()->m_advance_listener.add(this);
+		get_root()->add_listener(this);
 
 		m_headers.set("Host", host);
 
@@ -218,7 +218,7 @@ namespace gameswf
 		}
 
 		request.m_target = this;
-		get_root()->m_advance_listener.add(this);
+		get_root()->add_listener(this);
 
 		m_headers.set("Host", host);
 
@@ -299,7 +299,7 @@ namespace gameswf
 						}
 					}
 
-					get_root()->m_advance_listener.remove(this);
+					get_root()->remove_listener(this);
 
 					delete request.m_ns;
 					delete request.m_iface;

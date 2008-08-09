@@ -184,6 +184,7 @@ namespace gameswf
 		AS_TEXTFORMAT,
 		AS_MCLOADER,
 		AS_LOADVARS,
+		AS_TIMER,
 
 		// flash9
 		AS_EVENT,

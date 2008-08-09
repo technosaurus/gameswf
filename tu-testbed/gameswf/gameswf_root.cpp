@@ -386,11 +386,8 @@ namespace gameswf
 		m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
 		generate_mouse_button_events(&m_mouse_button_state);
 
-		// advance Action script objects
-		m_advance_listener.advance(delta_time);
-
-		// advance timers
-		m_player->advance_timer(delta_time);
+		// advance Action script objects (interval timers, xmlsocket, ...)
+		m_listener.advance(delta_time);
 
 		m_time_remainder += delta_time;
 		if (m_time_remainder >= m_frame_time)

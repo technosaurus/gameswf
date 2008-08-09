@@ -7,6 +7,7 @@
 #include "gameswf/gameswf_action.h"	// for as_object
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_root.h"
+#include "as_global.h"
 
 namespace gameswf
 {
@@ -41,8 +42,7 @@ namespace gameswf
 	{
 		if (fn.nargs >= 2)
 		{
-			int id = fn.get_player()->create_timer();
-			timer* t = fn.get_player()->get_timer(id);
+			gc_ptr<as_timer> t = new as_timer(fn.get_player());
 
 			int first_arg_index = 2;
 			if (fn.arg(0).is_function())
@@ -65,7 +65,8 @@ namespace gameswf
 			}
 			else
 			{
-				// empty timer, will be cleaned up in advance()
+				// invalid args
+				return;
 			}
 
 			// pass args
@@ -75,7 +76,8 @@ namespace gameswf
 				t->m_arg.push_back(fn.arg(i));
 			}
 
-			fn.result->set_int(id);
+			fn.get_root()->add_listener(t);
+			fn.result->set_as_object(t);
 		}
 	}
 
@@ -83,23 +85,21 @@ namespace gameswf
 	// setTimeout(objectReference:Object, methodName:String, interval:Number, [param1:Object, param2, ..., paramN]) : Number
 	void  as_global_settimeout(const fn_call& fn)
 	{
+		// create interval timer
 		as_global_setinterval(fn);
-		assert(fn.result->is_number());
+		as_timer* t = cast_to<as_timer>(fn.result->to_object());
 
-		timer* t = fn.get_player()->get_timer(fn.result->to_int());
-		assert(t);
-		t->m_do_once = true;
+		if (t)
+		{
+			t->m_do_once = true;
+		}
 	}
 
 	void  as_global_clearinterval(const fn_call& fn)
 	{
 		if (fn.nargs > 0)
 		{
-			timer* t = fn.get_player()->get_timer(fn.arg(0).to_int());
-			if (t)
-			{
-				t->m_func = NULL;
-			}
+			fn.get_root()->remove_listener(fn.arg(0).to_object());
 		}
 	}
 
@@ -193,6 +193,38 @@ namespace gameswf
 	// Returns a string containing Flash Player version and platform information.
 	{
 		fn.result->set_tu_string(get_gameswf_version());
+	}
+
+
+	void as_timer::advance(float delta_time)
+	{
+		assert(m_func != NULL);
+
+		m_time_remainder += delta_time;
+		if (m_time_remainder >= m_interval)
+		{
+			m_time_remainder = fmod(m_time_remainder - m_interval, m_interval);
+
+			as_environment env(m_func->get_player());
+			int n = m_arg.size();
+			{
+				for (int i = 0; i < n; i++)
+				{
+					env.push(m_arg[i]);
+				}
+			}
+
+			// keep alive
+			gc_ptr<as_object> obj = m_this_ptr.get_ptr();
+			as_value callback(m_func.get_ptr());
+
+			call_method(callback, &env, obj.get_ptr(), n, env.get_top_index());
+
+			if (m_do_once)
+			{
+				m_func->get_root()->remove_listener(this);
+			}
+		}
 	}
 
 

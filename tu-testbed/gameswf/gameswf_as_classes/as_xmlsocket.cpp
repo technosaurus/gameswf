@@ -96,7 +96,7 @@ namespace gameswf
 		// add to net listener
 		if (is_connected && get_root())
 		{
-			get_root()->m_advance_listener.add(this);
+			get_root()->add_listener(this);
 		}
 
 		return is_connected;
@@ -106,7 +106,7 @@ namespace gameswf
 	{
 		if (get_root())
 		{
-			get_root()->m_advance_listener.remove(this);
+			get_root()->remove_listener(this);
 		}
 	}
 
