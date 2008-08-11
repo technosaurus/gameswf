@@ -1511,19 +1511,9 @@ void	software_resample(
 				w4 = Uf * Vf;
 				psrc = &src_data[(int) (Vi * src_pitch) + (int) (Ui * bytes_per_pixel)];
 
-				// hack: fixed edge artifacts
-				if (v == 0 || u == 0 || v == dst_height - 1 || u == dst_width - 1)
-				{
-					*pdst++ = 0;
-					*pdst++ = 0;
-					*pdst++ = 0;
-				}
-				else
-				{
-					*pdst++ = BYTE_SAMPLE(0);	// red
-					*pdst++ = BYTE_SAMPLE(1);	// green
-					*pdst++ = BYTE_SAMPLE(2);	// blue
-				}
+				*pdst++ = BYTE_SAMPLE(0);	// red
+				*pdst++ = BYTE_SAMPLE(1);	// green
+				*pdst++ = BYTE_SAMPLE(2);	// blue
 
 				psrc += 3;
 			}
@@ -1563,21 +1553,10 @@ void	software_resample(
 				w4 = Uf * Vf;
 				psrc = &src_data[(int) (Vi * src_pitch) + (int) (Ui * bytes_per_pixel)];
 
-				// hack: fixed edge artifacts
-				if (v == 0 || u == 0 || v == dst_height - 1 || u == dst_width - 1)
-				{
-					*pdst++ = 0;
-					*pdst++ = 0;
-					*pdst++ = 0;
-					*pdst++ = 0;
-				}
-				else
-				{
-					*pdst++ = BYTE_SAMPLE(0);	// red
-					*pdst++ = BYTE_SAMPLE(1);	// green
-					*pdst++ = BYTE_SAMPLE(2);	// blue
-					*pdst++ = BYTE_SAMPLE(3);	// alpha
-				}
+				*pdst++ = BYTE_SAMPLE(0);	// red
+				*pdst++ = BYTE_SAMPLE(1);	// green
+				*pdst++ = BYTE_SAMPLE(2);	// blue
+				*pdst++ = BYTE_SAMPLE(3);	// alpha
 
 				psrc += 4;
 			}
