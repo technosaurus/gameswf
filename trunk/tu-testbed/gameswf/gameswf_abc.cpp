@@ -113,6 +113,7 @@ namespace gameswf
 	//	}
 	void instance_info::read(stream* in, abc_def* abc)
 	{
+		m_abc = abc;
 		m_name = in->read_vu30();
 		m_super_name = in->read_vu30();
 

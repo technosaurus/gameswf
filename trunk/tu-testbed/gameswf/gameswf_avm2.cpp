@@ -350,6 +350,7 @@ namespace gameswf
 					{
 						new_object = new as_object(get_player());
 						//:TODO: create prototype .... ( move instanciate class from character -> as_object )
+						new_object->set_instance( m_abc->get_instance_info( name ) );
 						call_method( m_abc->get_class_constructor( name ), &env, new_object.get_ptr(), arg_count, 0 );
 					}
 
