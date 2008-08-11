@@ -160,7 +160,7 @@ namespace gameswf
 		for (int i = size() - 1; i >= 0; i--)
 		{
 			as_value val;
-			if ((*this)[i].get_member(name, &val))
+			if ((*this)[i].find_property(name, &val))
 			{
 				return (*this)[i].to_object();
 			}
@@ -172,7 +172,7 @@ namespace gameswf
 	{
 		for (int i = size() - 1; i >= 0; i--)
 		{
-			if ((*this)[i].get_member(name, val))
+			if ((*this)[i].find_property(name, val))
 			{
 				return true;
 			}

@@ -30,6 +30,8 @@ namespace gameswf
 	// flash9
 	exported_module void	as_object_add_event_listener(const fn_call& fn);
 
+	struct instance_info;
+
 	struct as_object : public as_object_interface
 	{
 		// Unique id of a gameswf resource
@@ -68,6 +70,8 @@ namespace gameswf
 		// pointer to owner
 		weak_ptr<player> m_player;
 
+		weak_ptr<instance_info> m_instance;
+
 		exported_module as_object(player* player);
 		exported_module virtual ~as_object();
 		
@@ -79,6 +83,7 @@ namespace gameswf
 		exported_module void	builtin_member(const tu_stringi& name, const as_value& val); 
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
+		exported_module virtual bool	find_property( const tu_stringi & name, as_value * val );
 		exported_module virtual bool	on_event(const event_id& id);
 		exported_module virtual	void enumerate(as_environment* env);
 		exported_module virtual as_object* get_proto() const;
@@ -102,6 +107,7 @@ namespace gameswf
 		// get/set constructor of object
 		bool get_ctor(as_value* val) const;
 		void set_ctor(const as_value& val);
+		void set_instance(instance_info * info);
 
 		as_object* create_proto(const as_value& constructor);
 

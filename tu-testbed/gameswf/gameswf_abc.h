@@ -108,6 +108,7 @@ namespace gameswf
 		array<int> m_interface;
 		int m_iinit;
 		gc_array<gc_ptr<traits_info> > m_trait;
+		weak_ptr<abc_def> m_abc;
 
 		instance_info() :
 			m_name(0),

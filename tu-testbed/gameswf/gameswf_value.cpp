@@ -619,7 +619,7 @@ namespace gameswf
 	}
 
 
-	bool as_value::get_member( const tu_string& name, as_value* val)
+	bool as_value::find_property( const tu_string& name, as_value* val)
 	{
 		switch (m_type)
 		{
@@ -645,7 +645,7 @@ namespace gameswf
 			{
 				if (m_object)
 				{
-					return m_object->get_member(name, val);
+					return m_object->find_property(name, val);
 				}
 			}
 		}

@@ -460,7 +460,7 @@ namespace gameswf
 	{
 		assert(stop_pc <= m_buffer->size());
 
-        membuf &buffer = *m_buffer.get_ptr();
+		membuf &buffer = *m_buffer.get_ptr();
 
 		if (m_decl_dict_processed_at == start_pc)
 		{
@@ -624,14 +624,14 @@ namespace gameswf
 		array<with_stack_entry>	with_stack(initial_with_stack);
 	
 		character*	original_target = env->get_target();
-        membuf & buffer = *m_buffer.get_ptr();
+		membuf & buffer = *m_buffer.get_ptr();
 
 		int	stop_pc = start_pc + exec_bytes;
 		for (int pc = start_pc; pc < stop_pc; )
 		{
 			// Cleanup any expired "with" blocks.
 			while (with_stack.size() > 0
-			       && pc >= with_stack.back().m_block_end_pc)
+				   && pc >= with_stack.back().m_block_end_pc)
 			{
 				// Drop this stack element
 				with_stack.resize(with_stack.size() - 1);
@@ -640,11 +640,6 @@ namespace gameswf
 #if ACTION_BUFFER_PROFILLING
 			Uint64 start_time;
 			start_time = tu_timer::get_profile_ticks();
-#endif
-
-#if ACTION_BUFFER_PROFILLING
-            Uint64 start_time;
-            start_time = tu_timer::get_profile_ticks();
 #endif
 
 			// Get the opcode.
@@ -1365,7 +1360,7 @@ namespace gameswf
 					{
 						// try property/method of a primitive type, like String.length
 						as_value val;
-						env->top(1).get_member(env->top(0).to_tu_string(), &val);
+						env->top(1).find_property(env->top(0).to_tu_string(), &val);
 						if (val.is_property())
 						{
 							val.get_property(env->top(1), &val);
@@ -1451,7 +1446,7 @@ namespace gameswf
 					const tu_string&	method_name = env->top(0).to_tu_string();
 
 					as_value func;
-					if (env->top(1).get_member(method_name, &func))
+					if (env->top(1).find_property(method_name, &func))
 					{
 						result = call_method(
 							func,

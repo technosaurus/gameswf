@@ -155,7 +155,7 @@ namespace gameswf
 
 		const char* type_of() const;
 		bool is_instance_of(const as_function* constructor) const;
-		bool get_member(const tu_string& name, as_value* val);
+		bool find_property(const tu_string& name, as_value* val);
 
 		// flags
 		inline bool is_enum() const { return m_flags & DONT_ENUM ? false : true; }

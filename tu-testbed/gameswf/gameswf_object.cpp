@@ -262,6 +262,37 @@ namespace gameswf
 		return true;
 	}
 
+	bool	as_object::find_property( const tu_stringi & name, as_value * val )
+	{
+		if( get_member(name, val) )
+		{
+			return true;
+		}
+
+		if(m_instance.get_ptr() != NULL)
+		{
+			// create traits
+			for (int i = 0; i < m_instance->m_trait.size(); i++)
+			{
+				traits_info* ti = m_instance->m_trait[i].get();
+				const char* traits_name = m_instance->m_abc->get_multiname(ti->m_name);
+
+				if( name == traits_name)
+				{
+					if(ti->m_kind == traits_info::Trait_Slot)
+					{
+						as_object * object = new as_object( get_player() );
+						set_member(name, object);
+						val->set_as_object( object );
+						return true;
+					}
+					return false;
+				}
+			}
+		}
+		return false;
+	}
+
 	void	as_object::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
 		// Is it a reentrance ?
@@ -611,6 +642,11 @@ namespace gameswf
 	void as_object::set_ctor(const as_value& val)
 	{
 		builtin_member(s_constructor, val);
+	}
+
+	void as_object::set_instance(instance_info * info)
+	{
+		m_instance = info;
 	}
 
 	as_object* as_object::create_proto(const as_value& constructor)
