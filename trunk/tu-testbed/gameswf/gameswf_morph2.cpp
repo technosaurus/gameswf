@@ -157,7 +157,8 @@ namespace gameswf
 				IF_VERBOSE_PARSE(log_msg("morph fill style begin color: "); fs1.m_color.print());
 				IF_VERBOSE_PARSE(log_msg("morph fill style end color: "); fs2.m_color.print());
 			}
-			else if (fs1.m_type == 0x10 || fs1.m_type == 0x12)
+			else
+			if (fs1.m_type == 0x10 || fs1.m_type == 0x12)
 			{
 				matrix	input_matrix1, input_matrix2;
 
@@ -209,7 +210,8 @@ namespace gameswf
 					fs2.m_color = fs2.m_gradients[0].m_color;
 				}
 			}
-			else if (fs1.m_type == 0x40 || fs1.m_type == 0x41)
+			else
+			if (fs1.m_type == 0x40 || fs1.m_type == 0x41)
 			{
 
 				int	bitmap_char_id = in->read_u16();
@@ -228,6 +230,11 @@ namespace gameswf
 				fs1.m_bitmap_matrix.set_inverse(m1);
 				fs2.m_bitmap_matrix.set_inverse(m2);
 			}
+			else
+			{
+				assert(0);
+			}
+
 			m_shape1.m_fill_styles.push_back(fs1);
 			m_shape2.m_fill_styles.push_back(fs2);
 		}
@@ -371,6 +378,10 @@ namespace gameswf
 						matrix	m1, m2;
 						m1.read(in);
 						m2.read(in);
+					}
+					else
+					{
+						assert(0);
 					}
 				}
 
