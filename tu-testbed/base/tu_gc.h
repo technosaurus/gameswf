@@ -310,15 +310,9 @@ namespace tu_gc {
 		template<class T>					\
 		class gc_ptr : public tu_gc::gc_ptr<T, collector_classname> {	\
 		public:							\
+			typedef collector_classname collector;		\
 			gc_ptr() {}					\
 			gc_ptr(T* p) : tu_gc::gc_ptr<T, collector_classname>(p) {} \
-		};							\
-									\
-		template<class T>					\
-		class contained_gc_ptr : public tu_gc::contained_gc_ptr<T, collector_classname> {	\
-		public:							\
-			contained_gc_ptr() {}				\
-			contained_gc_ptr(T* p) : tu_gc::contained_gc_ptr<T, collector_classname>(p) {} \
 		};							\
 									\
 		template<class T>					\
@@ -354,7 +348,7 @@ namespace tu_gc {
 									\
 		template<class T>					\
 		class generated_name<gc_ptr<T> >			\
-			: public gc_container<base_container<contained_gc_ptr<T> > > { \
+			: public gc_container<base_container<tu_gc::contained_gc_ptr<T, typename gc_ptr<T>::collector> > > { \
 		}
 
 	// Generate a pair container that can correctly contain gc_ptr's.
@@ -380,15 +374,15 @@ namespace tu_gc {
 										\
 		template<class T, class U>					\
 		class generated_name<T, gc_ptr<U> >				\
-			: public gc_pair_container< base_container <T, contained_gc_ptr<U> > > { \
+			: public gc_pair_container< base_container <T, tu_gc::contained_gc_ptr<U, typename gc_ptr<T>::collector> > > { \
 		};								\
 		template<class T, class U>					\
 		class generated_name<gc_ptr<T>, U >				\
-			: public gc_pair_container< base_container <contained_gc_ptr<T>, U> > { \
+			: public gc_pair_container< base_container <tu_gc::contained_gc_ptr<T, typename gc_ptr<T>::collector>, U> > { \
 		};								\
 		template<class T, class U>					\
 		class generated_name<gc_ptr<T>, gc_ptr<U> >			\
-			: public gc_pair_container< base_container <contained_gc_ptr<T>, contained_gc_ptr<U> > > { \
+			: public gc_pair_container< base_container <tu_gc::contained_gc_ptr<T, typename gc_ptr<T>::collector>, tu_gc::contained_gc_ptr<U, typename gc_ptr<T>::collector> > > { \
 		}
 
 

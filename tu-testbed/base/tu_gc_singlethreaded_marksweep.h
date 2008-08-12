@@ -51,6 +51,7 @@ namespace tu_gc {
 			size_t garbage_bytes;
 			size_t root_pointers;
 			size_t live_pointers;
+			size_t root_containers;
 		};
 		// Gets basic stats.  garbage_bytes will be zero
 		// (since we don't know what is garbage) and
@@ -156,24 +157,11 @@ namespace tu_gc {
 		};
 
 		// gc_container, for collections of pointers
-		//
-		// Work in progress -- the declaration syntax is subject to change!
-		//
-		// class my_class : public gc_object {
-		//   gc_container<std::vector<contained_gc_ptr<my_class> > > m_other_objects;
-		//     // or
-		//   GC_CONTAINER(std::vector, myclass) m_other_objects;
-		//     ...
-		//     m_other_objects.push_back(ptr);
-		//     ...
-		//     m_other_objects[i]->do_something();
-		// };
 		template<class container_type>
 		class gc_container : public gc_container_base, public container_type {
 		public:
 			// visit contained pointers
 			virtual void visit_contained_ptrs() {
-				(typename container_type::value_type::i_am_a_contained_gc_ptr) 0;  // ensure contained type is a contained_ptr.
 				for (typename container_type::const_iterator it = this->begin();
 				     it != this->end();
 				     ++it) {
@@ -211,7 +199,8 @@ namespace tu_gc {
 		// Notifications from gc_container
 		static void construct_container(gc_container_base* c);
 		static void destruct_container(gc_container_base* c);
-		static void visit_contained_ptr(gc_object_generic_base* obj);
+
+		static void visit_contained_ptr(const gc_object_generic_base* obj);
 
 		template<class T>
 		static void visit_contained_value(T val) {
