@@ -38,7 +38,7 @@ namespace gameswf
 	void	as_object_registerclass(const fn_call& fn)
 	{
 		fn.result->set_bool(false);
-		if (fn.nargs == 2)
+		if (fn.nargs == 2 && fn.env->get_target() != NULL)
 		{
 			character_def* def = fn.env->get_target()->find_exported_resource(fn.arg(0).to_tu_string());
 			if (def)
