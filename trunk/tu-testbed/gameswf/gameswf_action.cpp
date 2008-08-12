@@ -660,19 +660,31 @@ namespace gameswf
 					return;
 
 				case 0x04:	// next frame.
-					env->get_target()->goto_frame(env->get_target()->get_current_frame() + 1);
+					if (env->get_target() != NULL)
+					{
+						env->get_target()->goto_frame(env->get_target()->get_current_frame() + 1);
+					}
 					break;
 
 				case 0x05:	// prev frame.
-					env->get_target()->goto_frame(env->get_target()->get_current_frame() - 1);
+					if (env->get_target() != NULL)
+					{
+						env->get_target()->goto_frame(env->get_target()->get_current_frame() - 1);
+					}
 					break;
 
 				case 0x06:	// action play
-					env->get_target()->set_play_state(character::PLAY);
+					if (env->get_target() != NULL)
+					{
+						env->get_target()->set_play_state(character::PLAY);
+					}
 					break;
 
 				case 0x07:	// action stop
-					env->get_target()->set_play_state(character::STOP);
+					if (env->get_target() != NULL)
+					{
+						env->get_target()->set_play_state(character::STOP);
+					}
 					break;
 
 				case 0x08:	// toggle quality
@@ -1355,7 +1367,8 @@ namespace gameswf
 				}
 				case 0x4E:	// get member
 				{
-					as_object*	obj = env->top(1).to_object();
+					// keep alive 'obj'
+					gc_ptr<as_object>	obj = env->top(1).to_object();
 					if (obj == NULL)
 					{
 						// try property/method of a primitive type, like String.length
@@ -1385,7 +1398,7 @@ namespace gameswf
 								as_function* resolve = cast_to<as_function>(val.to_object());
 								if (resolve)
 								{
-									(*resolve)(fn_call(&val, obj, env, 1, env->get_top_index()));
+									(*resolve)(fn_call(&val, obj.get(), env, 1, env->get_top_index()));
 									env->top(1) = val;
 								}
 							}
@@ -1715,7 +1728,11 @@ namespace gameswf
 					// 0-based already?
 					//// Convert from 1-based to 0-based
 					//frame--;
-					env->get_target()->goto_frame(frame);
+
+					if (env->get_target() != NULL)
+					{
+						env->get_target()->goto_frame(frame);
+					}
 					break;
 				}
 
@@ -1810,7 +1827,10 @@ namespace gameswf
 				case 0x8C:	// go to labeled frame, goto_frame_lbl
 				{
 					char*	frame_label = (char*) &buffer[pc + 3];
-					env->get_target()->goto_labeled_frame(frame_label);
+					if (env->get_target() != NULL)
+					{
+						env->get_target()->goto_labeled_frame(frame_label);
+					}
 					break;
 				}
 

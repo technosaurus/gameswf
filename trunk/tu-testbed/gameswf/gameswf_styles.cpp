@@ -223,7 +223,7 @@ namespace gameswf
 		return m_gradients.back().m_color;
 	}
 
-	gameswf::bitmap_info*	fill_style::create_gradient_bitmap() const
+	bitmap_info*	fill_style::create_gradient_bitmap() const
 	// Make a bitmap_info* corresponding to our gradient.
 	// We can use this to set the gradient fill style.
 	{
@@ -265,7 +265,7 @@ namespace gameswf
 			}
 		}
 
-		gameswf::bitmap_info*	bi = gameswf::render::create_bitmap_info_rgba(im);
+		bitmap_info*	bi = render::create_bitmap_info_rgba(im);
 		delete im;
 
 		return bi;
@@ -279,7 +279,7 @@ namespace gameswf
 		if (m_type == 0x00)
 		{
 			// 0x00: solid fill
-			gameswf::render::fill_style_color(fill_side, m_color);
+			render::fill_style_color(fill_side, m_color);
 		}
 		else if (m_type == 0x10 || m_type == 0x12)
 		{
@@ -297,32 +297,40 @@ namespace gameswf
 
 			if (m_gradient_bitmap_info != NULL)
 			{
-				gameswf::render::fill_style_bitmap(
+				render::fill_style_bitmap(
 					fill_side,
 					m_gradient_bitmap_info.get_ptr(),
 					m_gradient_matrix,
-					gameswf::render_handler::WRAP_CLAMP);
+					render_handler::WRAP_CLAMP);
 			}
 		}
 		else if (m_type >= 0x40 || m_type <= 0x43)
 		{
 			// bitmap fill (either tiled or clipped)
-			gameswf::bitmap_info*	bi = NULL;
+			bitmap_info*	bi = NULL;
 			if (m_bitmap_character != NULL)
 			{
 				bi = m_bitmap_character->get_bitmap_info();
 				if (bi != NULL)
 				{
-					gameswf::render_handler::bitmap_wrap_mode	wmode = gameswf::render_handler::WRAP_REPEAT;
-					if (m_type == 0x41 || m_type == 0x43)
+					render_handler::bitmap_wrap_mode	wmode;
+					switch (m_type)
 					{
-						wmode = gameswf::render_handler::WRAP_CLAMP;
+						case 0x40 :
+						case 0x42 :
+							wmode = render_handler::WRAP_REPEAT;
+							break;
+
+						case 0x41 :
+						case 0x43 :
+							wmode = render_handler::WRAP_CLAMP;
+							break;
+
+						default:
+							assert(0);
 					}
-					gameswf::render::fill_style_bitmap(
-						fill_side,
-						bi,
-						m_bitmap_matrix,
-						wmode);
+
+					render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix, wmode);
 				}
 			}
 		}
@@ -458,8 +466,8 @@ namespace gameswf
 	void	line_style::apply(float ratio) const
 	{
 		UNUSED(ratio);
-		gameswf::render::line_style_color(m_color);
-		gameswf::render::line_style_width(m_width);
+		render::line_style_color(m_color);
+		render::line_style_width(m_width);
 	}
 
 }
