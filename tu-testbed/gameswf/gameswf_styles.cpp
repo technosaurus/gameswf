@@ -314,7 +314,7 @@ namespace gameswf
 				if (bi != NULL)
 				{
 					gameswf::render_handler::bitmap_wrap_mode	wmode = gameswf::render_handler::WRAP_REPEAT;
-					if (m_type == 0x41)
+					if (m_type == 0x41 || m_type == 0x43)
 					{
 						wmode = gameswf::render_handler::WRAP_CLAMP;
 					}
