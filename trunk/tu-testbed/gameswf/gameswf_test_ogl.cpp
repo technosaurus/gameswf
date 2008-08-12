@@ -229,11 +229,16 @@ static void	fs_callback(gameswf::character* movie, const char* command, const ch
 		{
 			// SDL has no uppercase key codes
 			SDLKey key = static_cast<SDLKey>(tolower(args[i]));
-			gameswf::key::code c = translate_key(key);
-			if (c != gameswf::key::INVALID)
-			{
-				player->notify_key_event(c, true);
-			}
+//			gameswf::key::code c = translate_key(key);
+//			if (c != gameswf::key::INVALID)
+//			{
+//				player->notify_key_event(c, true);
+//			}
+			SDL_Event ev;
+			memset(&ev, 0, sizeof(ev));
+			ev.type = SDL_KEYDOWN;
+			ev.key.keysym.sym = key;
+			SDL_PushEvent(&ev);
 		}
 	}
 	else
