@@ -44,6 +44,7 @@ namespace tu_gc {
 			size_t garbage_bytes;
 			size_t root_pointers;
 			size_t live_pointers;
+			size_t root_containers;
 		};
 		// Returns basic stats.  Mostly not applicable to
 		// ref-counting.
@@ -52,6 +53,7 @@ namespace tu_gc {
 			s->garbage_bytes = 0;
 			s->root_pointers = 0;
 			s->live_pointers = 0;  // TODO: could track this
+			s->root_containers = 0;
 		}
 
 		// Collects all garbage.

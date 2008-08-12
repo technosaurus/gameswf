@@ -12,13 +12,13 @@ DECLARE_GC_TYPES(GC_COLLECTOR);
 void collect_and_dump_stats() {
 	gc_collector::stats s;
 	gc_collector::collect_garbage(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	printf("%d %d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers, s.root_containers);
 }
 
 void dump_stats() {
 	gc_collector::stats s;
 	gc_collector::get_stats(&s);
-	printf("%d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers);
+	printf("%d %d %d %d %d\n", s.live_heap_bytes, s.garbage_bytes, s.root_pointers, s.live_pointers, s.root_containers);
 }
 
 struct cons : public gc_object {
@@ -191,6 +191,19 @@ void test_gc_container() {
 	b = NULL;
 
 	collect_and_dump_stats();
+
+	// Containers should act like roots when they are not inside a
+	// gc_object.
+	printf("\ncontainer 2\n");
+	gc_vector<gc_ptr<cons> > c;
+	c.push_back(build_list_of_numbers(10, 20).get());
+	c.push_back(build_list_of_numbers(20, 30).get());
+
+	collect_and_dump_stats();
+
+	c.clear();
+
+	collect_and_dump_stats();
 }
 
 // test gc_pair_container
@@ -220,6 +233,21 @@ void test_gc_map_container() {
 	collect_and_dump_stats();
 
 	b = NULL;
+
+	collect_and_dump_stats();
+}
+
+void test_gc_map_container_root() {
+	// Containers should act like roots when they are not inside a
+	// gc_object.
+	printf("\nmap_container_root\n");
+	gc_map<int, gc_ptr<cons> > c;
+	c[100] = build_cycle(5).get();
+	c[200] = build_cycle(10).get();
+
+	collect_and_dump_stats();
+
+	c.clear();
 
 	collect_and_dump_stats();
 }
@@ -283,5 +311,6 @@ void run_tests() {
 	test_gc_map_container<pairbag>();
 	test_gc_map_container<pairbag2>();
 	test_gc_map_container2<pairbag3>();
+	test_gc_map_container_root();
 	test_weak_ptr();
 }

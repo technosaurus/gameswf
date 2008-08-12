@@ -40,7 +40,7 @@ namespace tu_gc {
 			return p < bi.p;
 		}
 
-		bool is_address_inside(void* ptr) const {
+		bool is_address_inside(const void* ptr) const {
 			return (ptr >= p && ptr < end());
 		}
 	};
@@ -76,10 +76,11 @@ namespace tu_gc {
 		std::map<void*, blockinfo> m_heap_blocks;
 
 		// containers
+		std::set<singlethreaded_marksweep::gc_container_base*> m_root_containers;
 		std::set<singlethreaded_marksweep::gc_container_base*> m_containers;
 
 		// mark state
-		std::vector<gc_object_generic_base*> m_to_mark;
+		std::vector<const gc_object_generic_base*> m_to_mark;
 
 		// Stats & control values.
 		int m_percent_growth;
@@ -153,6 +154,7 @@ namespace tu_gc {
 			s->garbage_bytes = 0;
 			s->root_pointers = m_roots.size();
 			s->live_pointers = s->root_pointers + m_heap_ptrs.size();
+			s->root_containers = m_root_containers.size();
 		}
 
 		void collect_garbage(singlethreaded_marksweep::stats* s) {
@@ -169,6 +171,7 @@ namespace tu_gc {
 				s->garbage_bytes = precollection_heap_bytes - s->live_heap_bytes;
 				s->root_pointers = m_roots.size();
 				s->live_pointers = s->root_pointers + m_heap_ptrs.size();
+				s->root_containers = m_root_containers.size();
 			}
 		}
 
@@ -186,6 +189,13 @@ namespace tu_gc {
 				m_to_mark.push_back(p);
 				//push_heap(m_to_mark);
 			}
+			// Mark all blocks pointed to by root containers.
+			for (container_iterator it_cnt = m_root_containers.begin();
+			     it_cnt != m_root_containers.end();
+			     ++it_cnt) {
+				(*it_cnt)->visit_contained_ptrs();
+			}
+
 
 			// Mark all the floating blocks.
 			for (floating_blocks_iterator it = m_floating_blocks.begin();
@@ -198,36 +208,40 @@ namespace tu_gc {
 			// Flood-fill all reachable objects.
 			while (m_to_mark.size()) {
 				//pop_heap(m_to_mark);
-				gc_object_generic_base* b = m_to_mark.back();
+				const gc_object_generic_base* b = m_to_mark.back();
 				m_to_mark.resize(m_to_mark.size() - 1);
 
-				heap_block_iterator it = find_containing_block(b);
-				assert(it != m_heap_blocks.end());
-				assert(it->second.is_address_inside(b));
-				if (it->second.mark == false) {
-					// Mark this block.
-					it->second.mark = true;
+				mark_object(b);
+			}
+		}
 
-					// Find all gc pointers that are inside this heap block.
-					// Mark the blocks that they point to.
-					ptr_iterator it_ptr = m_heap_ptrs.lower_bound(it->second.p);
+		void mark_object(const gc_object_generic_base* b) {
+			heap_block_iterator it = find_containing_block(b);
+			assert(it != m_heap_blocks.end());
+			assert(it->second.is_address_inside(b));
+			if (it->second.mark == false) {
+				// Mark this block.
+				it->second.mark = true;
+
+				// Find all gc pointers that are inside this heap block.
+				// Mark the blocks that they point to.
+				ptr_iterator it_ptr = m_heap_ptrs.lower_bound(it->second.p);
+				void* block_end = it->second.end();
+				while (it_ptr != m_heap_ptrs.end() && it_ptr->first < block_end) {
+					gc_object_generic_base* p = it_ptr->second;
+					assert(p);
+					m_to_mark.push_back(p);
+					//push_heap(m_to_mark);
+					++it_ptr;
+				}
+
+				// Find all gc containers that are inside this heap block.
+				{
+					container_iterator it_cnt = m_containers.lower_bound((singlethreaded_marksweep::gc_container_base*) it->second.p);
 					void* block_end = it->second.end();
-					while (it_ptr != m_heap_ptrs.end() && it_ptr->first < block_end) {
-						gc_object_generic_base* p = it_ptr->second;
-						assert(p);
-						m_to_mark.push_back(p);
-						//push_heap(m_to_mark);
-						++it_ptr;
-					}
-
-					// Find all gc containers that are inside this heap block.
-					{
-						container_iterator it_cnt = m_containers.lower_bound((singlethreaded_marksweep::gc_container_base*) it->second.p);
-						void* block_end = it->second.end();
-						while (it_cnt != m_containers.end() && *it_cnt < block_end) {
-							(*it_cnt)->visit_contained_ptrs();
-							++it_cnt;
-						}
+					while (it_cnt != m_containers.end() && *it_cnt < block_end) {
+						(*it_cnt)->visit_contained_ptrs();
+						++it_cnt;
 					}
 				}
 			}
@@ -271,8 +285,8 @@ namespace tu_gc {
 			}
 		}
 
-		heap_block_iterator find_containing_block(void* p) {
-			heap_block_iterator it(m_heap_blocks.upper_bound(p));
+		heap_block_iterator find_containing_block(const void* p) {
+			heap_block_iterator it(m_heap_blocks.upper_bound((void*) p));
 			if (it != m_heap_blocks.begin()) {
 				--it;
 				if (p < it->second.end()) {
@@ -321,16 +335,25 @@ namespace tu_gc {
 		}
 
 		void construct_container(singlethreaded_marksweep::gc_container_base* c) {
-			m_containers.insert(c);
+			if (inside_heap_block(c)) {
+				m_containers.insert(c);
+			} else {
+				m_root_containers.insert(c);
+			}
 		}
 
 		void destruct_container(singlethreaded_marksweep::gc_container_base* c) {
 			container_iterator it = m_containers.find(c);
-			assert(it != m_containers.end());
-			m_containers.erase(it);
+			if (it != m_containers.end()) {
+				m_containers.erase(it);
+			} else {
+				it = m_root_containers.find(c);
+				assert(it != m_root_containers.end());
+				m_root_containers.erase(it);
+			}
 		}
 
-		void visit_contained_ptr(gc_object_generic_base* obj) {
+		void visit_contained_ptr(const gc_object_generic_base* obj) {
 			m_to_mark.push_back(obj);
 		}
 
@@ -385,7 +408,7 @@ namespace tu_gc {
 		sm_state.destruct_container(c);
 	}
 
-	/*static*/ void singlethreaded_marksweep::visit_contained_ptr(gc_object_generic_base* obj) {
+	/*static*/ void singlethreaded_marksweep::visit_contained_ptr(const gc_object_generic_base* obj) {
 		sm_state.visit_contained_ptr(obj);
 	}
 

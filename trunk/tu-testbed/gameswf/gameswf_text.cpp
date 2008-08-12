@@ -1483,7 +1483,7 @@ namespace gameswf
 				// reset size
 				double res;
 				string_to_number(&res, size.c_str());
-				rec.m_style.m_text_height = PIXELS_TO_TWIPS(res);
+				rec.m_style.m_text_height = static_cast<float>(PIXELS_TO_TWIPS(res));
 
 				// reset advance
 				rec.m_style.m_scale =  rec.m_style.m_text_height / 1024.0f;
