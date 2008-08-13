@@ -123,7 +123,16 @@ namespace gameswf
 					}
 					else
 					{
-						log_msg( "\t\tmultiname: %s\n", def->m_string[def->m_multiname[value].m_name].c_str());
+						switch( def->m_multiname[value].m_kind )
+						{
+							case multiname::CONSTANT_Multiname:
+							case multiname::CONSTANT_QName:
+								log_msg( "\t\tmultiname: %s\n", def->m_string[def->m_multiname[value].m_name].c_str());
+								break;
+
+							default:
+								log_msg( "\t\tmultiname ( todo kind: %i )\n", def->m_multiname[value].m_kind );
+						};
 					}
 					break;
 
@@ -805,9 +814,9 @@ namespace gameswf
 				bool	suppress_this  = (flags & 0x02) != 0;
 				bool	preload_this   = (flags & 0x01) != 0;
 
-				log_msg("\t\t        pg = %d\n"
-					"\t\t        pp = %d\n"
-					"\t\t        pr = %d\n"
+				log_msg("\t\t		pg = %d\n"
+					"\t\t		pp = %d\n"
+					"\t\t		pr = %d\n"
 					"\t\tss = %d, ps = %d\n"
 					"\t\tsa = %d, pa = %d\n"
 					"\t\tst = %d, pt = %d\n",

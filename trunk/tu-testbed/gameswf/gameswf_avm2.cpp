@@ -153,6 +153,40 @@ namespace gameswf
 			Uint8 opcode = m_code[ip++];
 			switch (opcode)
 			{
+			case 0x11: // iftrue
+				{
+					bool taken;
+					//Follows ECMA-262 11.9.3
+					taken = stack.top(0).to_bool();
+					stack.drop(1);
+					if (taken)
+					{
+						int offset = m_code[ip] | m_code[ip+1]<<8 | m_code[ip+2]<<16;
+						ip += offset;
+					}
+
+					ip += 3;
+
+					IF_VERBOSE_ACTION(log_msg("EX: iftrue\t %s\n", taken? "taken": "not taken"));
+				} break;
+
+				case 0x12: // iffalse
+				{
+					bool taken;
+					//Follows ECMA-262 11.9.3
+					taken = !stack.top(0).to_bool();
+					stack.drop(1);
+					if (taken)
+					{
+						int offset = m_code[ip] | m_code[ip+1]<<8 | m_code[ip+2]<<16;
+						ip += offset;
+					}
+
+					ip += 3;
+
+					IF_VERBOSE_ACTION(log_msg("EX: iffalse\t %s\n", taken? "taken": "not taken"));
+				} break;
+
 				case 0x14: // ifne
 				{
 					bool taken;
@@ -177,6 +211,16 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("EX: popscope\n"));
 					break;
 				}
+
+				case 0x20:  // pushnull
+				{
+					as_value value;
+
+					value.set_null();
+					stack.push( value );
+					IF_VERBOSE_ACTION(log_msg("EX: pushnull\n"));
+
+				} break;
 
 				case 0x24:	// pushbyte
 				{
@@ -220,6 +264,12 @@ namespace gameswf
 					IF_VERBOSE_ACTION(log_msg("EX: pop\n"));
 					break;
 				}
+
+				case 0x2A:  // dup
+				{
+					IF_VERBOSE_ACTION(log_msg("EX: dup %s\n", stack.top(0).to_xstring()));
+					stack.push(stack.top(0));
+				} break;
 
 				case 0x2D:	// pushint
 				{
@@ -267,11 +317,73 @@ namespace gameswf
 					break;
 				}
 
+				case 0x46:  // callproperty
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					int arg_count;
+					ip += read_vu30(arg_count, &m_code[ip]);
+
+					as_environment env(get_player());
+					for (int i = 0; i < arg_count; i++)
+					{
+						env.push(stack.top(i));
+					}
+					stack.drop(arg_count);
+
+					as_value result;
+
+					if( stack.top(0).is_object() )
+					{
+						as_object* obj = stack.top(0).to_object();
+
+						as_value func, func2;
+
+						result.set_undefined();
+
+						if( obj &&  obj->find_property(name, &func))
+						{
+							if( func.is_function() )
+							{
+								result = call_method(func, &env, obj, arg_count, env.get_top_index()); 
+							}
+							else if(func.to_object()->get_member( "__call__", &func2 ) )
+							{
+								//todo patch scope
+								result = call_method(func2, &env, obj, arg_count, env.get_top_index());
+							}
+						}
+					}
+					else
+					{
+						as_value func;
+						if( stack.top(0).find_property( name, &func ) )
+						{
+							result = call_method(func, &env, stack.top(0), arg_count, env.get_top_index()); 
+						}
+					}
+
+					IF_VERBOSE_ACTION(log_msg("EX: callproperty\t 0x%p.%s(args:%d), result %s\n", stack.top(0).to_xstring(), name, arg_count, result.to_xstring()));
+
+					stack.drop(1);
+					stack.push( result );
+					
+				} break;
+
 				case 0x47:	// returnvoid
 				{
 					IF_VERBOSE_ACTION(log_msg("EX: returnvoid\t\n"));
 					result->set_undefined();
-					break;
+					return;
+				}
+
+				case 0x48:	// returnvalue
+				{
+					IF_VERBOSE_ACTION(log_msg("EX: returnvalue \t%s\n", stack.top(0).to_xstring()));
+					*result = stack.pop();
+					return;
 				}
 
 				case 0x49:	// constructsuper
@@ -480,9 +592,16 @@ namespace gameswf
 
 					as_object* obj = scope.find_property(name);
 
-					IF_VERBOSE_ACTION(log_msg("EX: findproperty\t '%s', obj=0x%p\n", name, obj));
-
-					stack.push(obj);
+					if( obj )
+					{
+						IF_VERBOSE_ACTION(log_msg("EX: findproperty\t '%s', obj=0x%p\n", name, obj));
+						stack.push(obj);
+					}
+					else
+					{
+						IF_VERBOSE_ACTION(log_msg("EX: findproperty\t '%s', obj=global\n", name));
+						stack.push(get_global());
+					}
 					break;
 
 				}
@@ -497,11 +616,68 @@ namespace gameswf
 					as_value val;
 					scope.get_property(name, &val);
 
+					if(val.is_undefined())
+					{
+						as_function* func = m_abc->get_script_function(name);
+						if (func != NULL)
+						{
+							as_object * object = new as_object( get_player() );
+							get_global()->set_member(name, object);
+
+							as_environment env( get_player() );
+
+							call_method( func, &env, get_global(), 0, 0 );
+
+							val.set_as_object(object);
+						}
+					}
+
 					IF_VERBOSE_ACTION(log_msg("EX: getlex\t %s, value=%s\n", name, val.to_xstring()));
 
 					stack.push(val);
 					break;
 				}
+
+				case 0x61: // setproperty
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+					const char* name = m_abc->get_multiname(index);
+
+					IF_VERBOSE_ACTION(log_msg("EX: setproperty\t %s.%s, value=%s\n", stack.top(1).to_xstring(), name, stack.top(0).to_xstring()));
+
+					as_object * object = stack.top(1).to_object();
+
+					if( object )
+					{
+						object->set_member( name, stack.top(0) );
+					}
+
+					stack.drop( 2 );
+					
+				} break;
+
+				case 0x62: // getlocal
+					{
+						int index;
+						ip += read_vu30(index, &m_code[ip]);
+
+						IF_VERBOSE_ACTION(log_msg("EX: getlocal\t index=%i, value=%s\n", index, lregister[index].to_xstring()));
+
+						stack.push(lregister[index]);
+
+					} break;
+
+				case 0x63: // setlocal
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+
+					IF_VERBOSE_ACTION(log_msg("EX: setlocal\t index=%i, value=%s\n", index, stack.top(0).to_xstring()));
+
+					lregister[index] = stack.pop();
+
+				} break;
 
 				case 0x65: // getscopeobject
 				{
@@ -520,7 +696,7 @@ namespace gameswf
 				{
 					int index;
 					ip += read_vu30(index, &m_code[ip]);
-					const char* name = m_abc->get_multiname(index);
+					tu_string name = get_multiname(index, stack);
 
 					as_object* obj = stack.top(0).to_object();
 					if (obj)
@@ -532,7 +708,7 @@ namespace gameswf
 						stack.top(0).set_undefined();
 					}
 
-					IF_VERBOSE_ACTION(log_msg("EX: getproperty\t %s, value=%s\n", name, stack.top(0).to_xstring()));
+					IF_VERBOSE_ACTION(log_msg("EX: getproperty\t %s, value=%s\n", name.c_str(), stack.top(0).to_xstring()));
 
 					break;
 				}
@@ -555,6 +731,34 @@ namespace gameswf
 					stack.drop(2);
 					break;
 				}
+
+				case 0x73: //convert_i
+				{
+					stack.top(0).set_int( stack.top(0).to_int() );
+					IF_VERBOSE_ACTION(log_msg("EX: convert_i : %i \n", stack.top(0).to_int())); 
+				} break;
+
+				case 0x80: // coerce
+				{
+					int index;
+					ip += read_vu30( index, &m_code[ip]);
+					const char * type_name = m_abc->get_multiname( index );
+					IF_VERBOSE_ACTION(log_msg("EX: coerce : %s todo\n", type_name)); 
+				} break;
+
+				case 0x85: // coerce_s
+				{
+					stack.top(0).set_string( stack.top(0).to_string() );
+					IF_VERBOSE_ACTION(log_msg("EX: coerce_s : %s\n", stack.top(0).to_string())); 
+				} break;
+
+				case 0x96: // not
+				{
+					stack.top(0).set_bool( !stack.top(0).to_bool() );
+
+					IF_VERBOSE_ACTION(log_msg("EX: not\n"));
+
+				} break;
 
 				case 0xA0:	// Add two values
 				{
@@ -582,6 +786,38 @@ namespace gameswf
 					
 					break;
 				}
+
+				case 0xAB: // equals
+				{
+					bool result = as_value::abstract_equality_comparison( stack.top(1), stack.top(0) );
+
+					IF_VERBOSE_ACTION(log_msg("EX: equals %s & %s : %s\n", stack.top(0).to_xstring(), stack.top(1).to_xstring(), result? "true":"false") );
+
+					stack.drop(1);
+					stack.top(0).set_bool( result );
+				} break;
+
+				case 0xAD: //lessthan
+				{
+					as_value result = as_value::abstract_relational_comparison( stack.top(1), stack.top(0) );
+
+					IF_VERBOSE_ACTION(log_msg("EX: lessthan %s & %s : %s\n", stack.top(1).to_xstring(), stack.top(0).to_xstring(), result.to_string() ) );
+
+					stack.drop(1);
+					stack.top(0) = result;
+				} break;
+
+				case 0xC2:  // inclocal_i
+				{
+					int index;
+					ip += read_vu30(index, &m_code[ip]);
+
+					as_value & reg = lregister[ index ];
+					reg.set_int( reg.to_int() + 1 );
+
+					IF_VERBOSE_ACTION(log_msg("EX: inclocal_i %i\n", index ) );
+					
+				}break;
 
 				case 0xD0:	// getlocal_0
 				case 0xD1:	// getlocal_1
@@ -693,4 +929,23 @@ namespace gameswf
 		IF_VERBOSE_PARSE(log_disasm_avm2(m_code, m_abc.get_ptr()));
 
 	}
+
+	tu_string as_3_function::get_multiname(int index, vm_stack & stack) const
+	{
+		multiname::kind kind = (multiname::kind)m_abc->get_multiname_type( index );
+		switch( kind )
+		{
+		case multiname::CONSTANT_MultinameL :
+			assert(stack.top(0).is_string() || stack.top(0).is_number());
+			return stack.pop().to_string();
+			break;
+		case multiname::CONSTANT_Multiname:
+		case multiname::CONSTANT_QName:
+			return m_abc->get_multiname(index);
+		default:
+			assert(!"todo");
+			return "";
+		}
+	}
 }
+

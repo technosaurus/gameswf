@@ -471,6 +471,10 @@ namespace gameswf
 		m_global->builtin_member("Date", as_global_date_ctor);
 		m_global->builtin_member("Selection", selection_init(this));
 
+		as_object * capabilities = new as_object(this);
+		capabilities->set_member( "version", "WIN 9,0,45,0" );
+		m_global->builtin_member("Capabilities", capabilities);
+
 #if TU_ENABLE_NETWORK == 1
 		m_global->builtin_member("XMLSocket", as_global_xmlsock_ctor);
 		m_global->builtin_member("LoadVars", as_global_loadvars_ctor);

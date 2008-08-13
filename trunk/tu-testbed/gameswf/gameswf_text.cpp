@@ -1277,10 +1277,8 @@ namespace gameswf
 	{
 //		printf("html paragraph\n");
 		const char* pend = p + strlen(p);
-		while (true)
+		while (p <= pend)
 		{
-			assert(p <= pend);
-
 			if (strncmp(p, "<p", 2) == 0)
 			{
 				html_paragraph(p + 3, rec);
@@ -1330,7 +1328,7 @@ namespace gameswf
 			}
 		}
 
-		assert(0);
+		//assert(0);
 		return NULL;
 	}
 
@@ -1563,7 +1561,7 @@ namespace gameswf
 		{
 			p = html_paragraph(p + 3, rec);
 		}
-		while (strncmp(p, "<p", 2) == 0);
+		while (p != NULL && strncmp(p, "<p", 2) == 0);
 
 		return true;
 	}
