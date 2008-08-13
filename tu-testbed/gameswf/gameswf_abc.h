@@ -181,12 +181,19 @@ namespace gameswf
 			return get_string(m_multiname[index].m_name); 
 		}
 
+		inline multiname::kind get_multiname_type(int index) const
+		{
+			return (multiname::kind)m_multiname[index].m_kind; 
+		}
+
 		inline const char* get_multiname_namespace(int index) const
 		{
 			const multiname & mn = m_multiname[index];
 
 			switch( mn.m_kind )
 			{
+				case multiname::CONSTANT_QName:
+					return "";
 				case multiname::CONSTANT_Multiname:
 				case multiname::CONSTANT_MultinameA:
 					return get_namespace( mn.m_ns );

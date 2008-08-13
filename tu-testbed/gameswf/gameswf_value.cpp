@@ -775,6 +775,12 @@ namespace gameswf
 		}
 	}
 
+	//ECMA-262 11.8.5
+	as_value as_value::abstract_relational_comparison( const as_value & first, const as_value & second )
+	{
+		return as_value( first.to_number()  < second.to_number() );
+		// todo
+	}
 
 	//
 	//	as_property

@@ -692,6 +692,8 @@ namespace gameswf
 
 			instance_info* ii = m_abc->get_instance_info(class_name);
 
+			ch->set_instance( ii );
+
 			// create traits
 			for (int i = 0; i < ii->m_trait.size(); i++)
 			{

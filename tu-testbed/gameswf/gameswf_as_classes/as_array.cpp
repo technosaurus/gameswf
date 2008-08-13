@@ -10,6 +10,34 @@ namespace gameswf
 {
 	bool string_to_number(double* result, const char* str);
 
+	void	as_array_join(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+
+		if(a && fn.nargs > 0)
+		{
+			tu_string result;
+			const char * separator = fn.arg(0).to_string();
+
+			int size = a->size();
+			for(int index = 0; index < size; ++index )
+			{
+				as_value _index( index );
+				as_value value;
+				if( index != 0 ) result += separator;
+				a->get_member( _index.to_tu_stringi(), &value );
+
+				result += value.to_tu_string();
+			}
+
+			fn.result->set_tu_string( result );
+		}
+		else
+		{
+			fn.result->set_undefined();
+		}
+	}
+
 	void	as_array_load_from_string(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
@@ -138,7 +166,7 @@ namespace gameswf
 	as_array::as_array(player* player) :
 		as_object(player)
 	{
-		//			this->set_member("join", &array_not_impl);
+		builtin_member("join", as_array_join);
 		//			this->set_member("concat", &array_not_impl);
 		//			this->set_member("slice", &array_not_impl);
 		//			this->set_member("unshift", &array_not_impl);

@@ -153,6 +153,8 @@ namespace gameswf
 		void	read(stream* in);
 		void	read_body(stream* in);
 
+		tu_string get_multiname(int index, vm_stack & stack) const;
+
 	};
 
 }
