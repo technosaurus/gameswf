@@ -471,6 +471,9 @@ namespace gameswf
 
 		virtual void	set_volume(int sound_handle, int volume) = 0;
 
+		// set max volume in percent, [0..100]
+		virtual void	set_max_volume(int vol) = 0;
+
 		// Stop the specified sound if it's playing.
 		// (Normally a full-featured sound API would take a
 		// handle specifying the *instance* of a playing

@@ -313,24 +313,23 @@ namespace gameswf
 				bi = m_bitmap_character->get_bitmap_info();
 				if (bi != NULL)
 				{
-					render_handler::bitmap_wrap_mode	wmode;
 					switch (m_type)
 					{
 						case 0x40 :
 						case 0x42 :
-							wmode = render_handler::WRAP_REPEAT;
+							render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix, 
+								render_handler::WRAP_REPEAT);
 							break;
 
 						case 0x41 :
 						case 0x43 :
-							wmode = render_handler::WRAP_CLAMP;
+							render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix,
+								render_handler::WRAP_CLAMP);
 							break;
 
 						default:
 							assert(0);
 					}
-
-					render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix, wmode);
 				}
 			}
 		}

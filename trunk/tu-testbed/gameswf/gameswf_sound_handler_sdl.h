@@ -34,7 +34,7 @@ namespace gameswf
 		// NetStream audio callbacks
 		hash<as_object* /* netstream */, aux_streamer_ptr /* callback */> m_aux_streamer;
 		hash<int, gc_ptr<sound> > m_sound;
-		int m_defvolume;
+		float m_max_volume;
 		tu_mutex m_mutex;
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
@@ -65,7 +65,7 @@ namespace gameswf
 		// Play the index'd sample.
 		virtual void	play_sound(as_object* listener_obj, int sound_handle, int loop_count);
 
-		virtual void	set_default_volume(int vol);
+		virtual void	set_max_volume(int vol);
 
 		virtual void	stop_sound(int sound_handle);
 
@@ -96,7 +96,7 @@ namespace gameswf
 	struct sound: public gameswf::ref_counted
 	{
 		sound(int size, Uint8* data, sound_handler::format_type format, int sample_count, 
-			int sample_rate, bool stereo, int vol);
+			int sample_rate, bool stereo);
 		~sound();
 
 		inline void clear_playlist()
@@ -104,19 +104,21 @@ namespace gameswf
 			m_playlist.clear();
 		}
 
+		// return value is in [0..100]
 		inline int get_volume() const
 		{
-			return m_volume;
+			return (int) (m_volume * 100.0f);
 		}
 
+		// vol is in [0..100]
 		inline void set_volume(int vol)
 		{
-			m_volume = vol;
+			m_volume = (float) vol / 100.0f;
 		}
 
 		void append(void* data, int size, SDL_sound_handler* handler);
 		void play(int loops, SDL_sound_handler* handler);
-		bool mix(Uint8* stream, int len, array< gc_ptr<listener> >* listeners);
+		bool mix(Uint8* stream,	int len, array< gc_ptr<listener> >* listeners, float max_volume);
 		void pause(bool paused);
 		int  get_played_bytes();
 
@@ -124,7 +126,7 @@ namespace gameswf
 
 		Uint8* m_data;
 		int m_size;
-		int m_volume;
+		float m_volume;
 		gameswf::sound_handler::format_type m_format;
 		int m_sample_count;
 		int m_sample_rate;

@@ -16,7 +16,7 @@ namespace gameswf
 	static void sdl_audio_callback(void *udata, Uint8 *stream, int len); // SDL C audio handler
 
 	SDL_sound_handler::SDL_sound_handler():
-		m_defvolume(100),
+		m_max_volume(1.0f),
 		m_is_open(true)
 	{
 		// This is our sound settings
@@ -90,18 +90,18 @@ namespace gameswf
 		m_mutex.lock();
 
 		int sound_id = m_sound.size();
-		m_sound[sound_id] = new sound(data_bytes, (Uint8*) data, format, sample_count, sample_rate, 
-			stereo, m_defvolume);
+		m_sound[sound_id] = new sound(data_bytes, (Uint8*) data, format,
+			sample_count, sample_rate, stereo);
 
 		m_mutex.unlock();
 		return sound_id;
 	}
 
-	void	SDL_sound_handler::set_default_volume(int vol)
+	void	SDL_sound_handler::set_max_volume(int vol)
 	{
-		if (m_defvolume >= 0 && m_defvolume <= 100)
+		if (vol >= 0 && vol <= 100)
 		{
-			m_defvolume = vol;
+			m_max_volume = (float) vol / 100.0f;
 		}
 	}
 
@@ -290,10 +290,10 @@ namespace gameswf
 	}
 
 	sound::sound(int size, Uint8* data, sound_handler::format_type format, int sample_count, 
-		int sample_rate, bool stereo, int vol):
+		int sample_rate, bool stereo):
 		m_data(data),
 		m_size(size),
-		m_volume(vol),
+		m_volume(1.0f),
 		m_format(format),
 		m_sample_count(sample_count),
 		m_sample_rate(sample_rate),
@@ -360,7 +360,7 @@ namespace gameswf
 	}
 
 	// called from audio callback
-	bool sound::mix(Uint8* stream, int len, array< gc_ptr<listener> >* listeners)
+	bool sound::mix(Uint8* stream, int len, array< gc_ptr<listener> >* listeners, float max_volume)
 	{
 		if (m_is_paused)
 		{
@@ -387,7 +387,7 @@ namespace gameswf
 				m_playlist.remove(i);
 			}
 
-			int volume = (int) floorf(SDL_MIX_MAXVOLUME / 100.0f * m_volume);
+			int volume = (int) floorf(SDL_MIX_MAXVOLUME * max_volume * m_volume);
 			SDL_MixAudio(stream, buf, len, volume);
 		}
 
@@ -425,7 +425,7 @@ namespace gameswf
 		for (hash<int, gc_ptr<sound> >::iterator snd = handler->m_sound.begin();
 			snd != handler->m_sound.end(); ++snd)
 		{
-			bool play = snd->second->mix(stream, len, &listeners);
+			bool play = snd->second->mix(stream, len, &listeners, handler->m_max_volume);
 			pause = play ? 0 : pause;
 		}
 
@@ -442,7 +442,8 @@ namespace gameswf
 				gameswf::sound_handler::aux_streamer_ptr aux_streamer = it->second;
 				(aux_streamer)(it->first, mix_buf, len);
 
-				SDL_MixAudio(stream, mix_buf, len, SDL_MIX_MAXVOLUME);
+				int volume = (int) floorf(SDL_MIX_MAXVOLUME * handler->m_max_volume);
+				SDL_MixAudio(stream, mix_buf, len, volume);
 			}
 			pause = 0;
 			delete [] mix_buf;
