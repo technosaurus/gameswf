@@ -222,6 +222,18 @@ static void	fs_callback(gameswf::character* movie, const char* command, const ch
 		// TODO
 	}
 	else
+	if (stricmp(command, "set_max_volume") == 0)
+	{
+		// set max sound volume in percent, [0..100]
+		// usefull for embedded games
+		gameswf::sound_handler* s = gameswf::get_sound_handler();
+		if (s)
+		{
+			int vol = atoi(args);
+			s->set_max_volume(vol);
+		}
+	}
+	else
 	if (stricmp(command, "notify_keypress") == 0)
 	{
 		// simulate keypress event
