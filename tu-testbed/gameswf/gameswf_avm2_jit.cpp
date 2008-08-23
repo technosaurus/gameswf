@@ -332,7 +332,7 @@ namespace gameswf
 							for (int i = scope.size() - 1; i >= 0; i--)
 							{
 								as_value val;
-								if (scope[i].get_member(name, &val))
+								if (scope[i].find_property(name, &val))
 								{
 									return scope[i].to_object();
 								}
@@ -374,7 +374,7 @@ namespace gameswf
 							for (int i = scope.size() - 1; i >= 0; i--)
 							{
 								as_value val;
-								if (scope[i].get_member(name, &val))
+								if (scope[i].find_property(name, &val))
 								{
 									obj = scope[i].to_object();
 									break;
@@ -413,7 +413,7 @@ namespace gameswf
 							as_value val;
 							for (int i = scope.size() - 1; i >= 0; i--)
 							{
-								if (scope[i].get_member(name, &val))
+								if (scope[i].find_property(name, &val))
 								{
 									break;
 								}

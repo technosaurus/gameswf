@@ -2,7 +2,7 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="8,00"
-	Name="libsysinfo"
+	Name="libmisc"
 	ProjectGUID="{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
 	RootNamespace="randomIndex"
 	Keyword="Win32Proj"
@@ -63,7 +63,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgameswf-d.lib"
-				OutputFile="/WINDOWS/system32/sysinfo.dll"
+				OutputFile="/WINDOWS/system32/misc.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				ModuleDefinitionFile=""
@@ -188,11 +188,11 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\sysinfo\sysinfo.cpp"
+				RelativePath="..\..\plugins\misc\misc.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\plugins\sysinfo\sysinfo.h"
+				RelativePath="..\..\plugins\misc\misc.h"
 				>
 			</File>
 		</Filter>
