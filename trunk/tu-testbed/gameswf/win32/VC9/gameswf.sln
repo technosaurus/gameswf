@@ -8,7 +8,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "gameswf", "gameswf.vcproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgameswf", "libgameswf.vcproj", "{4EFB79AD-644B-42BF-ACE5-57CFB699E236}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsysinfo", "libsysinfo.vcproj", "{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmisc", "libmisc.vcproj", "{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmysql", "libmysql.vcproj", "{224BCA8B-374B-4844-99B7-4DE009912271}"
 	ProjectSection(ProjectDependencies) = postProject

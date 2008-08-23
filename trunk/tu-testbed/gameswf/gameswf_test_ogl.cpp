@@ -92,6 +92,8 @@ void	print_usage()
 
 static bool s_antialiased = true;
 static int s_bit_depth = 16;
+static int s_delay = 10;
+
 
 // by default it's used the simplest and the fastest edge antialiasing method
 // if you have modern video card you can use full screen antialiasing
@@ -253,9 +255,16 @@ static void	fs_callback(gameswf::character* movie, const char* command, const ch
 			SDL_PushEvent(&ev);
 		}
 	}
-	else
+	if (stricmp(command, "set_delay") == 0)
 	{
-		// TODO
+		// set the number of milli-seconds to delay in main loop
+		int delay = atoi(args);
+
+		// sanity check
+		if (delay >= 0 && delay <= 1000)
+		{
+			s_delay = delay;
+		}
 	}
 
 }
@@ -277,7 +286,6 @@ int	main(int argc, char *argv[])
 		bool	do_loop = true;
 		bool	sdl_abort = true;
 		bool	sdl_cursor = true;
-		int		delay = 10;
 		float	tex_lod_bias;
 		bool	force_realtime_framerate = false;
 
@@ -402,7 +410,7 @@ int	main(int argc, char *argv[])
 					arg++;
 					if (arg < argc)
 					{
-						delay = atoi(argv[arg]);
+						s_delay = atoi(argv[arg]);
 					}
 					else
 					{
@@ -1019,7 +1027,7 @@ int	main(int argc, char *argv[])
 					if (s_measure_performance == false)
 					{
 						// Don't hog the CPU.
-						SDL_Delay(delay);
+						SDL_Delay(s_delay);
 					}
 					else
 					{

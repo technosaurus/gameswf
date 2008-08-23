@@ -1,4 +1,4 @@
-// sysinfo.cpp	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
+// misc.cpp	-- Vitaly Alexeev <tishka92@yahoo.com>	2007
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -9,7 +9,7 @@
 #include <dirent.h>
 
 #include "base/tu_file.h"
-#include "sysinfo.h"
+#include "misc.h"
 
 #ifndef WIN32
 	#include <sys/stat.h>
@@ -19,7 +19,7 @@
 	#include "linux/hdreg.h"
 #endif
 
-namespace sysinfo_plugin
+namespace misc_plugin
 {
 
 	// methods that is called from Action Scirpt
@@ -27,7 +27,7 @@ namespace sysinfo_plugin
 	// gets dir entity. It is useful for a preloading of the SWF files
 	void	getDir(const fn_call& fn)
 	{
-		sysinfo* si = cast_to<sysinfo>(fn.this_ptr);
+		misc* si = cast_to<misc>(fn.this_ptr);
 		if (si)
 		{
 			if (fn.nargs > 0)
@@ -42,7 +42,7 @@ namespace sysinfo_plugin
 	// gets HDD serial NO. It is useful for a binding the program to HDD
 	void	getHDDSerNo(const fn_call& fn)
 	{
-		sysinfo* si = cast_to<sysinfo>(fn.this_ptr);
+		misc* si = cast_to<misc>(fn.this_ptr);
 		if (si)
 		{
 			if (fn.nargs > 0)
@@ -57,11 +57,49 @@ namespace sysinfo_plugin
 	// gets available free memory
 	void	getFreeMem(const fn_call& fn)
 	{
-		sysinfo* si = cast_to<sysinfo>(fn.this_ptr);
+		misc* si = cast_to<misc>(fn.this_ptr);
 		if (si)
 		{
 			fn.result->set_int(si->get_freemem());
 		}
+	}
+
+	void	setDateTime(const fn_call& fn)
+	{
+#ifdef WIN32
+		// TODO
+		return;
+#endif
+		assert(fn.this_ptr);
+		assert(fn.env);
+		assert(fn.nargs == 5);
+
+//		tm dt;
+//		dt.tm_sec = 0;
+
+//		dt.tm_min = (int) fn.arg(4).to_number();	// 0..59
+//		dt.tm_hour = (int) fn.arg(3).to_number();				// 0..23
+//		dt.tm_mday = (int) fn.arg(2).to_number();				// 1..31
+//		dt.tm_mon = (int) fn.arg(1).to_number() - 1;			// 0..11
+//		dt.tm_year = (int) fn.arg(0).to_number() - 1900;     // 1900+...
+//		time_t t;
+
+//		t = mktime(&dt);
+//		int rc = stime(&t); 
+//		if (rc == -1)
+//		{
+//		perror("can't set date-time: \n");
+//		}
+
+		char s[80];
+		snprintf(s, 80, "date -s '%s/%s/%s %s:%s' | hwclock --systohc",
+			fn.arg(0).to_string(),
+			fn.arg(1).to_string(),
+			fn.arg(2).to_string(),
+			fn.arg(3).to_string(),
+			fn.arg(4).to_string());
+
+		system(s);
 	}
 
 	// DLL interface
@@ -70,19 +108,20 @@ namespace sysinfo_plugin
 	{
 		exported_module as_object* gameswf_module_init(player* player, const array<as_value>& params)
 		{
-			return new sysinfo(player);
+			return new misc(player);
 		}
 	}
 
-	sysinfo::sysinfo(player* player) :
+	misc::misc(player* player) :
 		as_object(player)
 	{
 		builtin_member("getDir", getDir);
 		builtin_member("getHDDSerNo", getHDDSerNo);
 		builtin_member("getFreeMem", getFreeMem);
+		builtin_member("setDateTime", setDateTime);
 	}
 
-	void sysinfo::get_dir(as_object* info, const tu_string& path)
+	void misc::get_dir(as_object* info, const tu_string& path)
 	{
 		DIR* dir = opendir(path.c_str());
 		if (dir == NULL)
@@ -132,7 +171,7 @@ namespace sysinfo_plugin
 		closedir(dir);
 	}
 
-	bool sysinfo::get_hdd_serno(tu_string* sn, const char* dev)
+	bool misc::get_hdd_serno(tu_string* sn, const char* dev)
 	{
 		assert(sn);
 
@@ -178,7 +217,7 @@ namespace sysinfo_plugin
 	}
 
 	// gets free memory size in KB
-	int sysinfo::get_freemem()
+	int misc::get_freemem()
 	{
 	#ifdef WIN32
 		return 0;		//TODO
