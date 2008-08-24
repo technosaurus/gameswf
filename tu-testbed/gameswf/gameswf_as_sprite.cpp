@@ -100,7 +100,7 @@ namespace gameswf
 		}
 
 		// gotoAndPlay(NaN) will be ignored
-		if (fn.arg(0).is_string() || fn.arg(0).is_number())
+		if (fn.arg(0).is_string() || fn.arg(0).is_number() || fn.arg(0).is_property())
 		{
 			sprite->goto_frame(fn.arg(0).to_tu_string());
 			sprite->set_play_state(character::PLAY);
@@ -117,7 +117,7 @@ namespace gameswf
 		}
 
 		// gotoAndStop(NaN) will be ignored
-		if (fn.arg(0).is_string() || fn.arg(0).is_number())
+		if (fn.arg(0).is_string() || fn.arg(0).is_number() || fn.arg(0).is_property())
 		{
 			sprite->goto_frame(fn.arg(0).to_tu_string());
 			sprite->set_play_state(character::STOP);
