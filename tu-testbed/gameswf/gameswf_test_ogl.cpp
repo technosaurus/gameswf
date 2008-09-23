@@ -255,6 +255,7 @@ static void	fs_callback(gameswf::character* movie, const char* command, const ch
 			SDL_PushEvent(&ev);
 		}
 	}
+	else
 	if (stricmp(command, "set_delay") == 0)
 	{
 		// set the number of milli-seconds to delay in main loop
@@ -264,6 +265,16 @@ static void	fs_callback(gameswf::character* movie, const char* command, const ch
 		if (delay >= 0 && delay <= 1000)
 		{
 			s_delay = delay;
+		}
+	}
+	else
+	if (stricmp(command, "clear_events") == 0)
+	{
+		// clear queue of system events (mouse events, keyboard events, etc)
+		SDL_Event	event;
+		if (SDL_PollEvent(&event) == 0)
+		{
+			return;
 		}
 	}
 

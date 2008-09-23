@@ -12,6 +12,8 @@ namespace gameswf
 
 	// static builtins methods of Number class
 
+	static const char s_hex_digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZW";
+
 	void as_global_parse_float(const fn_call& fn)
 	{
 		if (fn.nargs == 1)  
@@ -28,15 +30,16 @@ namespace gameswf
 
 	void as_global_parse_int(const fn_call& fn)
 	{
-		if( fn.nargs == 2 )
+		if (fn.nargs > 0)
 		{
-			log_error( "parseInt: radix is not yet supported\n" );
-		}
+			int base = 10;
+			if (fn.nargs > 0)
+			{
+				base = fn.arg(1).to_int();
+			}
 
-		if (fn.nargs > 1)
-		{
 			int res;
-			if (string_to_number(&res, fn.arg(0).to_string()))
+			if (string_to_number(&res, fn.arg(0).to_string(), base))
 			{
 				fn.result->set_int(res);
 				return;
@@ -79,7 +82,6 @@ namespace gameswf
 			// radix:Number - Specifies the numeric base (from 2 to 36) to use for 
 			// the number-to-string conversion. 
 			// If you do not specify the radix parameter, the default value is 10.
-			static const char s_hex_digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZW";
 
 			tu_string res;
 			int val = (int) number;

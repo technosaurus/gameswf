@@ -20,6 +20,36 @@
 namespace gameswf
 {
 
+	bool string_to_number(int* result, const char* str, int base)
+	// Utility.  Try to convert str to a number.  If successful,
+	// put the result in *result, and return true.  If not
+	// successful, put 0 in *result, and return false.
+	{
+		char* tail = 0;
+		*result = strtol(str, &tail, base);
+		if (tail == str || *tail != 0)
+		{
+			// Failed conversion to Number.
+			return false;
+		}
+		return true;
+	}
+
+	bool string_to_number(double* result, const char* str)
+	// Utility.  Try to convert str to a number.  If successful,
+	// put the result in *result, and return true.  If not
+	// successful, put 0 in *result, and return false.
+	{
+		char* tail = 0;
+		*result = strtod(str, &tail);
+		if (tail == str || *tail != 0)
+		{
+			// Failed conversion to Number.
+			return false;
+		}
+		return true;
+	}
+
 	as_value::as_value(as_object* obj) :
 		m_type(OBJECT),
 		m_object(obj),

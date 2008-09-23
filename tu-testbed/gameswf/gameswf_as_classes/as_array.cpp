@@ -8,7 +8,6 @@
 
 namespace gameswf
 {
-	bool string_to_number(double* result, const char* str);
 
 	void	as_array_join(const fn_call& fn)
 	{
