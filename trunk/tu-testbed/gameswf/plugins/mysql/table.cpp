@@ -15,21 +15,6 @@ namespace mysql_plugin
 
 	tu_mutex s_mysql_plugin_mutex;
 
-	bool string_to_number(int* result, const char* str)
-	// Utility.  Try to convert str to a number.  If successful,
-	// put the result in *result, and return true.  If not
-	// successful, put 0 in *result, and return false.
-	{
-		char* tail = 0;
-		*result = strtol(str, &tail, 10);
-		if (tail == str || *tail != 0)
-		{
-			// Failed conversion to Number.
-			return false;
-		}
-		return true;
-	}
-
 	void	to_string_method(const fn_call& fn)
 	// Returns amount of the rows in the table
 	{

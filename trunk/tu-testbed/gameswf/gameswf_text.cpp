@@ -15,7 +15,6 @@
 
 namespace gameswf
 {
-	bool string_to_number(double* result, const char* str);
 
 	void	as_global_textfield_ctor(const fn_call& fn)
 	// Constructor for ActionScript class XMLSocket

@@ -32,10 +32,6 @@ namespace gameswf
 	void string_char_at(const fn_call& fn);
 	void string_to_string(const fn_call& fn);
 	void string_length(const fn_call& fn);
-
-	bool string_to_number(double* result, const char* str);
-	bool string_to_number(int* result, const char* str);
-
 }
 
 
