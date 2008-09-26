@@ -343,7 +343,7 @@ namespace gameswf
 
 						result.set_undefined();
 
-						if( obj &&  obj->find_property(name, &func))
+						if( obj &&  obj->get_member(name, &func))
 						{
 							if( func.is_function() )
 							{
@@ -535,21 +535,23 @@ namespace gameswf
 
 				case 0x58: // newclass
 				{
-					// stack:	?, basetype => ?, newclass
+					// stack:	..., basetype => ..., newclass
 					int class_index;
 					ip += read_vu30( class_index, &m_code[ip] );
 
+					IF_VERBOSE_ACTION(log_msg("EX: newclass\t class index:%i\n", class_index));
+
 					as_object* basetype = stack.top(0).to_object();
 
-//					gc_ptr<as_object> new_obj = new as_class(get_player(), scope);
-					gc_ptr<as_object> new_obj = new as_object(get_player());
+					gc_ptr<as_class> new_class = new as_class(get_player());
 
-					new_obj->set_member("__prototype__", basetype);
+					//new_class->set_proto(basetype);
+					new_class->set_class(m_abc->get_class_info(class_index));
 
 					as_environment env( get_player() );
-					call_method( m_abc->get_class_function( class_index ), &env, new_obj.get_ptr(), 0, 0 );
+					call_method( m_abc->get_class_function( class_index ), &env, new_class.get_ptr(), 0, 0 );
 
-					stack.top(0).set_as_object(new_obj.get_ptr());
+					stack.top(0).set_as_object(new_class.get_ptr());
 	
 					break;
 				}
@@ -621,8 +623,8 @@ namespace gameswf
 						as_function* func = m_abc->get_script_function(name);
 						if (func != NULL)
 						{
-							as_object * object = new as_object( get_player() );
-							get_global()->set_member(name, object);
+							gc_ptr<as_object> object = new as_object( get_player() );
+							get_global()->set_member(name, object.get());
 
 							as_environment env( get_player() );
 

@@ -35,6 +35,7 @@
 #include "gameswf/gameswf_as_classes/as_number.h"
 #include "gameswf/gameswf_as_classes/as_boolean.h"
 #include "gameswf/gameswf_as_classes/as_global.h"
+#include "gameswf/gameswf_as_classes/as_sharedobject.h"
 
 namespace gameswf
 {
@@ -461,6 +462,7 @@ namespace gameswf
 		m_global->builtin_member("MovieClip", as_global_movieclip_ctor);
 		m_global->builtin_member("TextField", as_global_textfield_ctor);
 		m_global->builtin_member("TextFormat", as_global_textformat_ctor);
+		m_global->builtin_member( "SharedObject", new as_sharedobject( this ) );
 
 		//			m_global->set_member("XML", as_value(xml_new));
 		m_global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);

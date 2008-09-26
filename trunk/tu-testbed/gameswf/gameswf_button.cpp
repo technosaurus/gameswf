@@ -262,8 +262,8 @@ namespace gameswf
 
 				// Advance characters that are activated by the new mouse state
 				if (((m_mouse_state == UP) && (rec.m_up)) ||
-				    ((m_mouse_state == DOWN) && (rec.m_down)) ||
-				    ((m_mouse_state == OVER) && (rec.m_over)))
+					((m_mouse_state == DOWN) && (rec.m_down)) ||
+					((m_mouse_state == OVER) && (rec.m_over)))
 				{
 					m_record_character[i]->advance(delta_time);
 				}
@@ -290,8 +290,8 @@ namespace gameswf
 					continue;
 				}
 				if ((m_mouse_state == UP && rec.m_up)
-				    || (m_mouse_state == DOWN && rec.m_down)
-				    || (m_mouse_state == OVER && rec.m_over))
+					|| (m_mouse_state == DOWN && rec.m_down)
+					|| (m_mouse_state == OVER && rec.m_over))
 				{
 					m_record_character[i]->display();
 				}
@@ -353,6 +353,8 @@ namespace gameswf
 			{
 				return false;
 			}
+
+			as_object::on_event(id);
 
 			const gc_ptr<button_character_definition> def(m_def);
 
@@ -552,8 +554,8 @@ namespace gameswf
 					continue;
 				}
 				if ((m_mouse_state == UP && rec.m_up)
-				    || (m_mouse_state == DOWN && rec.m_down)
-				    || (m_mouse_state == OVER && rec.m_over))
+					|| (m_mouse_state == DOWN && rec.m_down)
+					|| (m_mouse_state == OVER && rec.m_over))
 				{
 
 					rect ch_bound;
@@ -794,7 +796,7 @@ namespace gameswf
 					m_button_actions.back().read(in, tag_type);
 
 					if (next_action_offset == 0
-					    || in->get_position() >= in->get_tag_end_position())
+						|| in->get_position() >= in->get_tag_end_position())
 					{
 						// done.
 						break;

@@ -160,9 +160,9 @@ namespace gameswf
 		for (int i = size() - 1; i >= 0; i--)
 		{
 			as_value val;
-			if ((*this)[i].find_property(name, &val))
+			if ((*this)[i].find_property_owner(name, &val))
 			{
-				return (*this)[i].to_object();
+				return val.to_object();
 			}
 		}
 		return NULL;

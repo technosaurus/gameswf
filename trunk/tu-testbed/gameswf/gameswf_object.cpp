@@ -264,8 +264,10 @@ namespace gameswf
 
 	bool	as_object::find_property( const tu_stringi & name, as_value * val )
 	{
-		if( get_member(name, val) )
+		as_value dummy;
+		if( get_member(name, &dummy) )
 		{
+			val->set_as_object( this );
 			return true;
 		}
 
@@ -281,15 +283,20 @@ namespace gameswf
 				{
 					if(ti->m_kind == traits_info::Trait_Slot)
 					{
-						as_object * object = new as_object( get_player() );
-						set_member(name, object);
-						val->set_as_object( object );
+						val->set_as_object( this );
 						return true;
 					}
 					return false;
 				}
 			}
 		}
+
+		as_object *proto = get_proto();
+		if( proto )
+		{
+			return proto->find_property( name, val );
+		}
+
 		return false;
 	}
 

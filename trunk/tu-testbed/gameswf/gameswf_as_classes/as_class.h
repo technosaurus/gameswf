@@ -9,21 +9,28 @@
 #define GAMESWF_AS_CLASS_H
 
 #include "gameswf/gameswf_object.h"
+#include "gameswf/gameswf_abc.h"
 
 namespace gameswf
 {
 	class as_class : public as_object
 	{
 	public:
-		as_class( player * player, const vm_stack & scope ) : 
-			as_object( player ),
-			m_scope( scope )
+		as_class( player * player) : 
+			as_object( player )
 		{
 		}
 
+		void set_class( class_info * info )
+		{
+			m_class = info;
+		}
+
+		exported_module virtual bool	find_property( const tu_stringi & name, as_value * val );
+
 	private:
 
-		vm_stack m_scope;
+		gc_ptr<class_info> m_class;
 		
 	};
 
