@@ -366,6 +366,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_sharedobject.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_sharedobject.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_sound.cpp"
 				>
 			</File>

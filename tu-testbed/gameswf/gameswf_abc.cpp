@@ -151,6 +151,7 @@ namespace gameswf
 	{
 		// This is an index into the method array of the abcFile
 		m_cinit = in->read_vu30();
+		m_abc = abc;
 		assert(m_cinit < abc->m_method.size());
 
 		int n = in->read_vu30();
@@ -620,6 +621,11 @@ namespace gameswf
 		return NULL;
 	}
 
+	class_info* abc_def::get_class_info(int class_index) const
+	{
+		return m_class[class_index].get();
+	}
+
 	as_function* abc_def::get_script_function( const tu_string & name ) const
 	{
 		if( name == "" )
@@ -631,7 +637,7 @@ namespace gameswf
 				const script_info & info = *m_script[ script_index ].get();
 				for( int trait_index = 0; trait_index < info.m_trait.size(); ++trait_index )
 				{
-					if( m_string[ info.m_trait[ trait_index ]->m_name ] == name && info.m_trait[ trait_index ]->m_kind == traits_info::Trait_Class )
+					if( m_string[ m_multiname[info.m_trait[ trait_index ]->m_name].m_name ] == name && info.m_trait[ trait_index ]->m_kind == traits_info::Trait_Class )
 					{
 						return m_method[ info.m_init ].get();
 					}

@@ -124,6 +124,7 @@ namespace gameswf
 
 	struct class_info : public ref_counted
 	{
+		weak_ptr<abc_def> m_abc;
 		int m_cinit;
 		gc_array<gc_ptr<traits_info> > m_trait;
 
@@ -229,6 +230,7 @@ namespace gameswf
 		// find instance info by name
 		instance_info* get_instance_info(const tu_string& class_name) const;
 		class_info* get_class_info(const tu_string& full_class_name) const;
+		class_info* get_class_info(int class_index) const;
 	};
 }
 

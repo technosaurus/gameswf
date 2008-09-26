@@ -675,6 +675,62 @@ namespace gameswf
 			{
 				if (m_object)
 				{
+					return m_object->get_member(name, val);
+				}
+			}
+		}
+		return false;
+	}
+
+	bool as_value::find_property_owner(const tu_string& name, as_value* val)
+	{
+		as_value dummy;
+
+		switch (m_type)
+		{
+		default:
+			break;
+
+		case STRING:
+			{
+				if( get_builtin(BUILTIN_STRING_METHOD, name, &dummy) )
+				{
+					*val = *this;
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+		case NUMBER:
+			{
+				if( get_builtin(BUILTIN_NUMBER_METHOD, name, &dummy) )
+				{
+					*val = *this;
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+		case BOOLEAN:
+			{
+				if( get_builtin(BUILTIN_BOOLEAN_METHOD, name, &dummy) )
+				{
+					*val = *this;
+				}
+				else
+				{
+					return false;
+				}
+			}
+
+		case OBJECT:
+			{
+				if (m_object)
+				{
 					return m_object->find_property(name, val);
 				}
 			}
