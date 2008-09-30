@@ -193,7 +193,6 @@ namespace gameswf
 		// plugins
 		AS_PLUGIN_MYDB,
 		AS_PLUGIN_MYTABLE,
-		AS_PLUGIN_MISC,
 		AS_PLUGIN_3DS,
 
 		// user defined plugins

@@ -9,10 +9,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libgameswf", "libgameswf.vc
 	ProjectSection(ProjectDependencies) = postProject
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmisc", "libmisc.vcproj", "{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
-	ProjectSection(ProjectDependencies) = postProject
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libmysql", "libmysql.vcproj", "{224BCA8B-374B-4844-99B7-4DE009912271}"
 	ProjectSection(ProjectDependencies) = postProject
 		{4EFB79AD-644B-42BF-ACE5-57CFB699E236} = {4EFB79AD-644B-42BF-ACE5-57CFB699E236}
@@ -32,10 +28,6 @@ Global
 		{4EFB79AD-644B-42BF-ACE5-57CFB699E236}.Debug.Build.0 = Debug|Win32
 		{4EFB79AD-644B-42BF-ACE5-57CFB699E236}.Release.ActiveCfg = Release|Win32
 		{4EFB79AD-644B-42BF-ACE5-57CFB699E236}.Release.Build.0 = Release|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Debug.ActiveCfg = Debug|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Debug.Build.0 = Debug|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Release.ActiveCfg = Release|Win32
-		{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}.Release.Build.0 = Release|Win32
 		{224BCA8B-374B-4844-99B7-4DE009912271}.Debug.ActiveCfg = Debug|Win32
 		{224BCA8B-374B-4844-99B7-4DE009912271}.Debug.Build.0 = Debug|Win32
 		{224BCA8B-374B-4844-99B7-4DE009912271}.Release.ActiveCfg = Release|Win32
