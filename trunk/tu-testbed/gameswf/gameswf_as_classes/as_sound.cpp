@@ -93,10 +93,15 @@ namespace gameswf
 		snd->clear();
 
 		// sanity check
-		assert(si >= 0 && si < 1000);
-		snd->m_id = si;
-
-		snd->m_is_loaded_sound = false;
+		if (si >= 0 && si < 10000)
+		{
+			snd->m_id = si;
+			snd->m_is_loaded_sound = false;
+		}
+		else
+		{
+			log_error("invalid sound sample id: %d\n", si);
+		}
 	}
 
 	void	sound_volume(const fn_call& fn)
