@@ -33,7 +33,7 @@
 #	define stricmp _stricmp
 #else
 #	define stricmp strcasecmp
-#endif
+#endif                                  
 
 void	print_usage()
 // Brief instructions.
@@ -91,7 +91,7 @@ void	print_usage()
 #define OVERSIZE	1.0f
 
 static bool s_antialiased = true;
-static int s_bit_depth = 16;
+static int s_bit_depth = 24;
 static int s_delay = 10;
 
 
@@ -401,9 +401,9 @@ int	main(int argc, char *argv[])
 					if (arg < argc)
 					{
 						s_bit_depth = atoi(argv[arg]);
-						if (s_bit_depth != 16 && s_bit_depth != 32)
+						if (s_bit_depth != 16 && s_bit_depth != 24 && s_bit_depth != 32)
 						{
-							fprintf(stderr, "Command-line supplied bit depth %d, but it must be 16 or 32", s_bit_depth);
+							fprintf(stderr, "Command-line supplied bit depth %d, but it must be 16, 24 or 32", s_bit_depth);
 							print_usage();
 							exit(1);
 						}
@@ -641,30 +641,43 @@ int	main(int argc, char *argv[])
 				SDL_EnableKeyRepeat(250, 33);
 				SDL_ShowCursor(sdl_cursor ? SDL_ENABLE : SDL_DISABLE);
 
-				if (s_bit_depth == 16)
+				switch (s_bit_depth)
 				{
-					// 16-bit color, surface creation is likely to succeed.
-					SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
-					SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
-					SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
-					SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
-					SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-					SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 5);
-				}
-				else
-				{
-					assert(s_bit_depth == 32);
+					case 16:
+						// 16-bit color, surface creation is likely to succeed.
+						SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 5);
+						SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 5);
+						SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 5);
+						SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 15);
+						SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+						SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 5);
+						break;
 
-					// 32-bit color etc, for getting dest alpha,
-					// for MULTIPASS_ANTIALIASING (see
-					// gameswf_render_handler_ogl.cpp).
-					SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-					SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-					SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-					SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-					SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-					SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-					SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+					case 24:
+						// 24-bit color
+						//	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+						//	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+						//	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+						//	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+						//	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+						SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+						SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 1);
+						break;
+
+					case 32:
+						// 32-bit color etc, for getting dest alpha,
+						// for MULTIPASS_ANTIALIASING (see gameswf_render_handler_ogl.cpp).
+						SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+						SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+						SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+						SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+						SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+						SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+						SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+						break;
+
+					default:
+						assert(0);
 				}
 
 				// try to enable FSAA
