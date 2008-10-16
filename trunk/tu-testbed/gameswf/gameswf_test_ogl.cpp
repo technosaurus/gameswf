@@ -71,7 +71,7 @@ void	print_usage()
 		"  -k          Disables cursor\n"
 		"  -w <w>x<h>  Specify the window size, for example 1024x768\n"
 		"  -f          Force realtime framerate\n"
-		"  -i          Log bitmap info\n"
+		"  -i          Grub bitmaps from swf file\n"
 		"\n"
 		"keys:\n"
 		"  CTRL-Q          Quit/Exit\n"
@@ -526,6 +526,7 @@ int	main(int argc, char *argv[])
 				}
 				else if (argv[arg][1] == 'i')
 				{
+					player->set_separate_thread(false);
 					player->set_log_bitmap_info(true);
 				}
 			}

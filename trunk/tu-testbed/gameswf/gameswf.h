@@ -648,9 +648,8 @@ namespace gameswf
 		virtual void activate() {};
 		virtual int get_width() const { return 0; }
 		virtual int get_height() const { return 0; }
-
-		// it's used to watch texture memory
-		virtual const char* get_info() const { return 0; }
+		virtual unsigned char* get_data() const { return 0; }
+		virtual int get_bpp() const { return 0; }	// byte per pixel
 	};
 
 	// You must define a subclass of render_handler, and pass an

@@ -16,7 +16,6 @@
 
 #include <png.h>
 
-
 namespace png_helper
 {
 	void	write_grayscale(FILE* out, uint8* data, int width, int height)
@@ -73,10 +72,20 @@ namespace png_helper
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 	}
 
-	void	write_rgba(FILE* out, uint8* data, int width, int height)
-	// Writes a 32-bit color image in .png format, to the
-	// given output stream.  Data should be in [RGBA...] byte order.
+	void write_data(png_structp png_ptr, png_bytep data, png_size_t length)
 	{
+		fwrite(data, length, 1, (FILE*) png_ptr->io_ptr);
+	}
+
+	void	write_rgba(FILE* out, uint8* data, int width, int height, int bpp)
+	// Writes a 24 or 32-bit color image in .png format, to the
+	// given output stream.  Data should be in [RGB or RGBA...] byte order.
+	{
+		if (bpp != 3 && bpp != 4)
+		{
+			return;
+		}
+
 		png_structp	png_ptr;
 		png_infop	info_ptr;
 
@@ -103,6 +112,7 @@ namespace png_helper
 		}
 
 		png_init_io(png_ptr, out);
+		png_set_write_fn(png_ptr, (png_voidp) out, write_data, NULL);
 
 		png_set_IHDR(
 			png_ptr,
@@ -110,7 +120,7 @@ namespace png_helper
 			width,
 			height,
 			8,
-			PNG_COLOR_TYPE_RGB_ALPHA,
+			bpp == 3 ? PNG_COLOR_TYPE_RGB : PNG_COLOR_TYPE_RGB_ALPHA,
 			PNG_INTERLACE_NONE,
 			PNG_COMPRESSION_TYPE_DEFAULT,
 			PNG_FILTER_TYPE_DEFAULT);
@@ -122,11 +132,10 @@ namespace png_helper
 		
 		for (int y = 0; y < height; y++)
 		{
-			png_write_row(png_ptr, data + (width * 4) * y);
+			png_write_row(png_ptr, data + (width * bpp) * y);
 		}
 
 		png_write_end(png_ptr, info_ptr);
-
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 	}
 }

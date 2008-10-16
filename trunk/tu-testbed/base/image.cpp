@@ -14,6 +14,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+int p2(int n)
+{
+	int	p = 1; while (p < n) { p <<= 1; }
+
+	// There is no sense to do 2048 from 1025
+	// it is better to take 1024 instead of 1025, for example
+	if ((float) n / (float) p < 0.6f)
+	{
+		p >>= 1;
+	}
+	return p;
+}
 
 namespace image
 {

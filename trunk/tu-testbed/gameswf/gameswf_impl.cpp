@@ -44,6 +44,12 @@
 #include <zlib.h>
 #endif // TU_CONFIG_LINK_TO_ZLIB
 
+// for bitmap grubber
+#if TU_CONFIG_LINK_TO_LIBPNG
+	#include <png.h>
+	#include "base/png_helper.h"
+#endif
+
 namespace gameswf
 {
 	bool	s_verbose_action = false;
@@ -620,7 +626,7 @@ namespace gameswf
 			bi = render::create_bitmap_info_empty();
 		}
 
-		bitmap_character*	ch = new bitmap_character(m->get_player(), bi);
+		bitmap_character*	ch = new bitmap_character(m, bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -674,7 +680,7 @@ namespace gameswf
 			bi = render::create_bitmap_info_empty();
 		}
 
-		bitmap_character*	ch = new bitmap_character(m->get_player(), bi);
+		bitmap_character*	ch = new bitmap_character(m, bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -789,7 +795,7 @@ namespace gameswf
 		}
 
 		// Create bitmap character.
-		bitmap_character*	ch = new bitmap_character(m->get_player(), bi);
+		bitmap_character*	ch = new bitmap_character(m, bi);
 
 		m->add_bitmap_character(character_id, ch);
 	}
@@ -1035,7 +1041,7 @@ namespace gameswf
 			bi = render::create_bitmap_info_empty();
 		}
 
-		bitmap_character*	ch = new bitmap_character(m->get_player(), bi);
+		bitmap_character*	ch = new bitmap_character(m, bi);
 
 		// add image to movie, under character id.
 		m->add_bitmap_character(character_id, ch);
@@ -2090,6 +2096,105 @@ namespace gameswf
 		in->read_string(&str);
 	}
 
+	// Bitmap character implementation
+
+	bitmap_character::bitmap_character(movie_definition* rdef, bitmap_info* bi) :
+		bitmap_character_def(rdef->get_player()),
+		m_bitmap_info(bi)
+	{
+		if (get_player()->get_log_bitmap_info() == true)
+		{
+			static int s_file_no = 1;
+			static int s_total = 0;
+
+			int w = bi->get_width();
+			int h = bi->get_height();
+
+			// log bitmap info
+			s_total += (p2(w) * p2(h)) >> 10;		// KB
+			log_msg("bitmap #%04d: w=%d, h=%d, p2w=%d, p2h=%d, mem=%dK, total=%dK\n",
+				s_file_no, w, h, p2(w), p2(h), (p2(w) * p2(h)) >> 10, s_total);
+
+#if TU_CONFIG_LINK_TO_LIBPNG
+
+			// bitmap grubber
+
+			if (bi->get_data())
+			{
+				tu_string url = get_player()->get_root_filename(rdef);
+				if (url.size() > 4)
+				{
+					url = url.utf8_substring(0, url.size() - 4);	// exclude '.swf'
+				}
+
+				char bitmap_file[256];
+				snprintf(bitmap_file, 256, "%s-%04d-%dx%d.png", url.c_str(), s_file_no++, w, h);
+
+				FILE* out = fopen(bitmap_file, "wb");
+				if (out)
+				{
+					png_helper::write_rgba(out, bi->get_data(), w, h, bi->get_bpp());
+					fclose(out);
+				}
+				else
+				{
+					log_error("can't create '%s' file\n", bitmap_file);
+				}
+			}
+#endif
+
+		}
+	}
+
+	bool	bitmap_character::point_test_local(float x, float y)
+	// Return true if the specified point is on the interior of our shape.
+	// Incoming coords are local coords.
+	{
+		rect coords;
+		coords.m_x_min = 0.0f;
+		coords.m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->get_width());
+		coords.m_y_min = 0.0f;
+		coords.m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->get_height());
+		if (coords.point_test(x, y))
+		{
+			return true;
+		}
+		return false;
+	}
+
+	void bitmap_character::get_bound(rect* bound)
+	{
+		bound->m_x_min = 0.0f;
+		bound->m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->get_width());
+		bound->m_y_min = 0.0f;
+		bound->m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->get_height());
+	}
+
+	void	bitmap_character::display(character* ch)
+	{
+		rect coords;
+		coords.m_x_min = 0.0f;
+		coords.m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->get_width());
+		coords.m_y_min = 0.0f;
+		coords.m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->get_height());
+
+		// show whole picture
+		rect uv_coords;
+		uv_coords.m_x_min = 0.0f;
+		uv_coords.m_x_max = 1.0f;
+		uv_coords.m_y_min = 0.0f;
+		uv_coords.m_y_max = 1.0f;
+
+		cxform cx = ch->get_world_cxform();
+		rgba color = cx.transform(gameswf::rgba());
+		matrix m = ch->get_world_matrix();
+		render::draw_bitmap(m, m_bitmap_info.get_ptr(), coords,	uv_coords, color);
+	}
+
+	gameswf::bitmap_info*	bitmap_character::get_bitmap_info()
+	{
+		return m_bitmap_info.get_ptr();
+	}
 
 }
 

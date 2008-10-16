@@ -1351,9 +1351,12 @@ public:
 		m_local.m_size = 1;
 		m_local.m_buffer[0] = 0;
 
-		int	new_size = (int) strlen(str);
-		resize(new_size);
-		strcpy(get_buffer(), str);
+		if (str)
+		{
+			int	new_size = (int) strlen(str);
+			resize(new_size);
+			strcpy(get_buffer(), str);
+		}
 	}
 	tu_string(const char* buf, int buflen)
 	{

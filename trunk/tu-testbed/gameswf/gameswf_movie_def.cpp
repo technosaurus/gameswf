@@ -417,7 +417,7 @@ namespace gameswf
 	}
 
 	void	movie_def_impl::read(tu_file* in)
-		// Read a .SWF movie.
+	// Read a .SWF movie.
 	{
 		m_origin_in = in;
 		Uint32	file_start_pos = in->get_position();
@@ -470,11 +470,16 @@ namespace gameswf
 		IF_VERBOSE_PARSE(m_frame_size.print());
 		IF_VERBOSE_PARSE(log_msg("frame rate = %f, frames = %d\n", m_frame_rate, get_frame_count()));
 
-		// if you want to use multithread movie loader
-		m_thread = new tu_thread(movie_def_loader, this);
-
-		// if you does not want to use multithread movie loader
-//		read_tags();
+		if (get_player()->use_separate_thread())
+		{
+			// if you want to use multithread movie loader
+			m_thread = new tu_thread(movie_def_loader, this);
+		}
+		else
+		{
+			// if you does not want to use multithread movie loader
+			read_tags();
+		}
 	}
 
 	// is running in loader thread
