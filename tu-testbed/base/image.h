@@ -16,6 +16,8 @@
 class tu_file;
 namespace jpeg { struct input; };
 
+// misc, get power-of-two dimension
+int p2(int n);
 
 namespace image
 {

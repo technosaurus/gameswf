@@ -20,7 +20,7 @@ namespace png_helper
 
 	// Data should be in [RGBA...] byte order.  width and height
 	// in pixels (not bytes).
-	void	write_rgba(FILE* out, uint8* data, int width, int height);
+	void	write_rgba(FILE* out, uint8* data, int width, int height, int bpp);
 
 	// TODO: add more helpers as needed...
 }

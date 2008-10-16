@@ -412,18 +412,29 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 
 	virtual void layout();
 
-	// log bitmap info
-	virtual const char* get_info() const
+	// get byte per pixel
+	virtual int get_bpp() const
 	{
-		static int s_texture_memory = 0;
-		s_texture_memory += p2(m_width) * p2(m_height);
+		if (m_suspended_image)
+		{
+			switch (m_suspended_image->m_type)
+			{
+				default: return 0;
+				case image::image_base::RGB: return 3;
+				case image::image_base::RGBA: return 4;
+				case image::image_base::ALPHA: return 1;
+			};
+		}
+		return 0;
+	}
 
-		static char s_log_buf[80];
-		snprintf(s_log_buf, 80, "bitmap_info: w=%d,\t h=%d,\t p2w=%d,\t p2h=%d,\t mem=%dK,\t total=%dK",
-			m_width, m_height, p2(m_width), p2(m_height), 
-			(p2(m_width) * p2(m_height)) >> 10, s_texture_memory >> 10);
-
-		return s_log_buf;
+	virtual unsigned char* get_data() const
+	{
+		if (m_suspended_image)
+		{
+			return m_suspended_image->m_data;
+		}
+		return NULL;
 	}
 
 	virtual void activate()
@@ -432,9 +443,6 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 		glEnable(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, m_texture_id);
 	}
-
-	// misc
-	int p2(int n) const;
 
 	~bitmap_info_ogl()
 	{
@@ -1573,19 +1581,6 @@ void	software_resample(
 #endif // GENERATE_MIPMAPS
 
 	delete [] rescaled;
-}
-
-int bitmap_info_ogl::p2(int n) const
-{
-	int	p = 1; while (p < n) { p <<= 1; }
-
-	// There is no sense to do 2048 from 1025
-	// it is better to take 1024 instead of 1025, for example
-	if ((float) n / (float) p < 0.6f)
-	{
-		p >>= 1;
-	}
-	return p;
 }
 
 bitmap_info_ogl::bitmap_info_ogl() :

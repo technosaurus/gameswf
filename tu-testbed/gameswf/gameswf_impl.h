@@ -123,67 +123,18 @@ namespace gameswf
 	// Bitmap character
 	struct bitmap_character : public bitmap_character_def
 	{
-		bitmap_character(player* player, bitmap_info* bi) :
-			bitmap_character_def(player),
-			m_bitmap_info(bi)
-		{
-			if (player->get_log_bitmap_info() == true)
-			{
-				log_msg("%s\n", bi->get_info());
-			}
-		}
+		bitmap_character(movie_definition* rdef, bitmap_info* bi);
 
-		bool	point_test_local(float x, float y)
 		// Return true if the specified point is on the interior of our shape.
 		// Incoming coords are local coords.
-		{
-			rect coords;
-			coords.m_x_min = 0.0f;
-			coords.m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->get_width());
-			coords.m_y_min = 0.0f;
-			coords.m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->get_height());
-			if (coords.point_test(x, y))
-			{
-				return true;
-			}
-			return false;
-		}
+		bool	point_test_local(float x, float y);
 
-		virtual void get_bound(rect* bound)
-		{
-			bound->m_x_min = 0.0f;
-			bound->m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->get_width());
-			bound->m_y_min = 0.0f;
-			bound->m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->get_height());
-		}
-
-		virtual void	display(character* ch)
-		{
-			rect coords;
-			coords.m_x_min = 0.0f;
-			coords.m_x_max = PIXELS_TO_TWIPS(m_bitmap_info->get_width());
-			coords.m_y_min = 0.0f;
-			coords.m_y_max = PIXELS_TO_TWIPS(m_bitmap_info->get_height());
-
-			// show whole picture
-			rect uv_coords;
-			uv_coords.m_x_min = 0.0f;
-			uv_coords.m_x_max = 1.0f;
-			uv_coords.m_y_min = 0.0f;
-			uv_coords.m_y_max = 1.0f;
-
-			cxform cx = ch->get_world_cxform();
-			rgba color = cx.transform(gameswf::rgba());
-			matrix m = ch->get_world_matrix();
-			render::draw_bitmap(m, m_bitmap_info.get_ptr(), coords,	uv_coords, color);
-		}
-
-		gameswf::bitmap_info*	get_bitmap_info()
-		{
-			return m_bitmap_info.get_ptr();
-		}
+		virtual void get_bound(rect* bound);
+		virtual void	display(character* ch);
+		gameswf::bitmap_info*	get_bitmap_info();
 
 		private:
+
 			gc_ptr<gameswf::bitmap_info>	m_bitmap_info;
 	};
 

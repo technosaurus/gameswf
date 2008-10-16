@@ -48,7 +48,10 @@ namespace gameswf
 	//	gameswf's statics
 	//
 
-	bool	s_use_cached_movie_def = true;
+	static bool	s_use_cached_movie_def = true;
+
+	// load movies from separate thread
+	static bool	s_use_separate_loader = true;
 
 	//
 	// file_opener callback stuff
@@ -577,16 +580,30 @@ namespace gameswf
 	}
 
 	// library stuff, for sharing resources among different movies.
-	stringi_hash<gc_ptr<character_def> >* player::get_chardef_library()
+	string_hash<gc_ptr<character_def> >* player::get_chardef_library()
 	{
 		return &m_chardef_library;
+	}
+
+	const char* player::get_root_filename(const character_def* rdef)
+	// get filename by root movie definition
+	{
+		for (string_hash<gc_ptr<character_def> >::iterator it = m_chardef_library.begin();
+			it != m_chardef_library.end(); ++it)
+		{
+			if (it->second == rdef)
+			{
+				return it->first.c_str();
+			}
+		}
+		return NULL;
 	}
 
 	void player::clear_library()
 	// Drop all library references to movie_definitions, so they
 	// can be cleaned up.
 	{
-		for (stringi_hash<gc_ptr<character_def> >::iterator it = 
+		for (string_hash<gc_ptr<character_def> >::iterator it = 
 			m_chardef_library.begin(); it != m_chardef_library.end(); ++it)
 		{
 			if (gc_collector::debug_get_ref_count(it->second) > 1)
@@ -646,6 +663,11 @@ namespace gameswf
 
 		movie_def_impl*	m = new movie_def_impl(this, DO_LOAD_BITMAPS, DO_LOAD_FONT_SHAPES);
 
+		if (s_use_cached_movie_def)
+		{
+			get_chardef_library()->add(filename, m);
+		}
+
 		m->read(in);
 
 		// "in" will be deleted after termination of the loader thread
@@ -672,16 +694,6 @@ namespace gameswf
 			}
 
 			delete cache_in;
-		}
-
-		// We should not do m->add_ref() in order to prevent memory leaks
-		// More correctly to do so:
-		// gc_ptr<movie_definition_sub> md = create_movie_sub("my.swf")
-		//		m->add_ref();
-
-		if (s_use_cached_movie_def)
-		{
-			get_chardef_library()->add(filename, m);
 		}
 
 		return m;
@@ -790,6 +802,16 @@ namespace gameswf
 				}
 			}
 		}
+	}
+
+	bool player::use_separate_thread()
+	{
+		return s_use_separate_loader;
+	}
+
+	void player::set_separate_thread(bool flag)
+	{
+		s_use_separate_loader = flag;
 	}
 
 }

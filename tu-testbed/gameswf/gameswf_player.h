@@ -33,7 +33,7 @@ namespace gameswf
 		Uint64 m_start_time;
 		weak_ptr<root> m_current_root;
 		tu_string m_workdir;
-		stringi_hash<gc_ptr<character_def> > m_chardef_library;
+		string_hash<gc_ptr<character_def> > m_chardef_library;
 		tu_string m_flash_vars;
 		bool m_force_realtime_framerate;
 
@@ -56,6 +56,8 @@ namespace gameswf
 		exported_module void set_flash_vars(const tu_string& param);
 		exported_module const char* get_workdir() const;
 		exported_module void set_workdir(const char* dir);
+		exported_module	bool use_separate_thread();
+		exported_module void set_separate_thread(bool flag);
 	
 		// @@ Hm, need to think about these creation API's.  Perhaps
 		// divide it into "low level" and "high level" calls.  Also,
@@ -87,7 +89,8 @@ namespace gameswf
 		exported_module void	action_clear();
 
 		// library stuff, for sharing resources among different movies.
-		stringi_hash<gc_ptr<character_def> >* get_chardef_library();
+		string_hash<gc_ptr<character_def> >* get_chardef_library();
+		const char* get_root_filename(const character_def* rdef);
 		void clear_library();
 
 		as_object* get_global() const;

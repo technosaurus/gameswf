@@ -279,7 +279,9 @@ namespace gameswf
 					bitmap_info* bi = render::create_bitmap_info_rgb(im);
 					delete im;
 
-					bitmap_character*	jpeg = new bitmap_character(get_player(), bi);
+					movie_definition* rdef = get_root()->get_movie_definition();
+					assert(rdef);
+					bitmap_character*	jpeg = new bitmap_character(rdef, bi);
 					return target->replace_me(jpeg);
 				}
 #endif
