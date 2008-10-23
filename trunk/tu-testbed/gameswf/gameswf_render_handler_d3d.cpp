@@ -12,6 +12,7 @@
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_types.h"
+#include "gameswf_video_base.h"
 #include "base/image.h"
 #include "base/container.h"
 
@@ -86,11 +87,19 @@ static inline float clamp( float x,float min,float max ) {
 // bitmap_info_d3d declaration
 struct bitmap_info_d3d : public gameswf::bitmap_info
 {
+  unsigned int	m_texture_id;
+  int m_width;
+  int m_height;
+  image::image_base* m_suspended_image;
+
   bitmap_info_d3d();
   void convert_to_argb(image::rgba* im);
   bitmap_info_d3d(image::rgb* im);
   bitmap_info_d3d(image::rgba* im);
   bitmap_info_d3d(int width, int height, Uint8* data);
+
+  virtual int get_width() const { return m_width; }
+  virtual int get_height() const { return m_height; }
 };
 
 
@@ -100,6 +109,9 @@ struct render_handler_d3d : public gameswf::render_handler
 
   gameswf::matrix m_current_matrix;
   gameswf::cxform m_current_cxform;
+
+  float m_display_width;
+  float m_display_height;
 
   IDirect3DVertexBuffer* m_pVB; // Buffer to hold vertices
   IDirect3DVertexBuffer* m_pVB2; // Buffer to hold vertices
@@ -175,7 +187,7 @@ struct render_handler_d3d : public gameswf::render_handler
     };
     mode  m_mode;
     gameswf::rgba m_color;
-    const gameswf::bitmap_info* m_bitmap_info;
+	const bitmap_info_d3d* m_bitmap_info;
     gameswf::matrix m_bitmap_matrix;
     gameswf::cxform m_bitmap_color_transform;
     bool  m_has_nonzero_bitmap_additive_color;
@@ -248,8 +260,8 @@ struct render_handler_d3d : public gameswf::render_handler
           }
 
           // Set up the bitmap matrix for texgen.
-          float inv_width = 1.0f / m_bitmap_info->m_original_width;
-          float inv_height = 1.0f / m_bitmap_info->m_original_height;
+          float inv_width = 1.0f / m_bitmap_info->get_width();
+          float inv_height = 1.0f / m_bitmap_info->get_height();
 
           gameswf::matrix m = m_bitmap_matrix;
           gameswf::matrix m_cm_inv;
@@ -323,7 +335,7 @@ struct render_handler_d3d : public gameswf::render_handler
     void  set_bitmap(const gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm, const gameswf::cxform& color_transform)
     {
       m_mode = (wm == WRAP_REPEAT) ? BITMAP_WRAP : BITMAP_CLAMP;
-      m_bitmap_info = bi;
+      m_bitmap_info = (bitmap_info_d3d*)bi;
       m_bitmap_matrix = m;
 
       m_bitmap_color_transform.m_[0][0] = clamp(color_transform.m_[0][0], 0, 1);
@@ -427,6 +439,13 @@ struct render_handler_d3d : public gameswf::render_handler
       m_FormatA = D3DFMT_A8R8G8B8;
 
   }
+  	
+  render_handler_d3d() :
+	m_display_width(0),
+	m_display_height(0)
+  {
+  }
+
 
   ~render_handler_d3d()
     // Destructor.
@@ -456,6 +475,93 @@ struct render_handler_d3d : public gameswf::render_handler
     if (m_pd3dDevice)
       m_pd3dDevice->Release();
 
+  }
+
+  void on_reset_device(IDirect3DDevice* device) 
+  {
+	  HRESULT hr;
+
+	  m_pd3dDevice = device;
+	  m_pd3dDevice->AddRef();
+
+	  hr = m_pd3dDevice->CreateVertexBuffer( m_nMaxVertices*sizeof(CUSTOMVERTEX)
+		  , D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, D3DFVF_CUSTOMVERTEX, D3DPOOL_DEFAULT, &m_pVB
+#if DIRECT3D_VERSION >= 0x0900
+		  , NULL 
+#endif
+		  );
+	  assert(hr==S_OK);
+
+	  hr = m_pd3dDevice->CreateVertexBuffer( 4*sizeof(CUSTOMVERTEX2)
+		  , D3DUSAGE_WRITEONLY | D3DUSAGE_DYNAMIC, D3DFVF_CUSTOMVERTEX2, D3DPOOL_DEFAULT, &m_pVB2
+#if DIRECT3D_VERSION >= 0x0900
+		  , NULL 
+#endif
+		  );
+	  assert(hr==S_OK);
+
+	  // Determine texture formats
+	  IDirect3D* l_pD3D;
+	  hr = m_pd3dDevice->GetDirect3D( &l_pD3D );
+	  assert(hr==S_OK);
+
+#if DIRECT3D_VERSION < 0x0900
+	  D3DCAPS8 l_DeviceCaps;
+#else
+	  D3DCAPS9 l_DeviceCaps;
+#endif
+	  ZeroMemory( &l_DeviceCaps, sizeof(l_DeviceCaps) );  
+	  hr = m_pd3dDevice->GetDeviceCaps( &l_DeviceCaps );
+	  assert(hr==S_OK);
+
+	  D3DDISPLAYMODE l_DisplayMode;
+	  hr = m_pd3dDevice->GetDisplayMode( 
+#if DIRECT3D_VERSION >= 0x0900
+		  0, 
+#endif
+		  &l_DisplayMode );
+
+	  if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_DXT1))) 
+		  m_FormatRGB = D3DFMT_DXT1;
+	  else if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_R8G8B8))) 
+		  m_FormatRGB = D3DFMT_R8G8B8;
+	  else       
+		  m_FormatRGB = D3DFMT_A8R8G8B8;
+
+	  if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_DXT5))) 
+		  m_FormatRGBA = D3DFMT_DXT5;
+	  else
+		  m_FormatRGBA  = D3DFMT_A8R8G8B8;
+
+	  if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_A8))) 
+		  m_FormatA = D3DFMT_A8;
+	  else if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_A8L8))) 
+		  m_FormatA = D3DFMT_A8L8;
+	  else if (SUCCEEDED(l_pD3D->CheckDeviceFormat(l_DeviceCaps.AdapterOrdinal, l_DeviceCaps.DeviceType, l_DisplayMode.Format, 0, D3DRTYPE_TEXTURE, D3DFMT_A8P8))) 
+		  m_FormatA = D3DFMT_A8P8;
+	  else 
+		  m_FormatA = D3DFMT_A8R8G8B8;
+  }
+
+  void on_release_device() 
+  {
+	  if (m_pVB)
+	  {
+		  m_pVB->Release();
+		  m_pVB = 0;
+	  }
+
+	  if (m_pVB2)
+	  {
+		  m_pVB2->Release();
+		  m_pVB2 = 0;
+	  }
+
+	  if (m_pd3dDevice)
+	  {
+		  m_pd3dDevice->Release();
+		  m_pd3dDevice = 0;
+	  }
   }
 
   // Style state.
@@ -719,7 +825,7 @@ struct render_handler_d3d : public gameswf::render_handler
     // responsible for calling glSwapBuffers() or whatever.
   {
     // End the scene
-    m_pd3dDevice->EndScene();
+	m_pd3dDevice->EndScene();
 
     // Present the backbuffer contents to the display
     D3DXMATRIX mat;
@@ -796,7 +902,7 @@ struct render_handler_d3d : public gameswf::render_handler
   }
 
 
-  void  fill_style_color(int fill_side, gameswf::rgba color)
+  void  fill_style_color(int fill_side,const gameswf::rgba& color)
     // Set fill style for the left interior of the shape.  If
     // enable is false, turn off fill for the left interior.
   {
@@ -814,7 +920,7 @@ struct render_handler_d3d : public gameswf::render_handler
   }
 
 
-  void  fill_style_bitmap(int fill_side, const gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm)
+  void  fill_style_bitmap(int fill_side, gameswf::bitmap_info* bi, const gameswf::matrix& m, bitmap_wrap_mode wm)
   {
     assert(fill_side >= 0 && fill_side < 2);
     m_current_styles[fill_side].set_bitmap(bi, m, wm, m_current_cxform);
@@ -825,25 +931,35 @@ struct render_handler_d3d : public gameswf::render_handler
     // WK: what to do here???
   }
 
-
-  void  draw_mesh_strip(const void* coords, int vertex_count)
+  void draw_mesh_primitive(D3DPRIMITIVETYPE primitive_type, const void* coords, int vertex_count)
   {
     // Set up current style.
     m_current_styles[LEFT_STYLE].apply(m_current_matrix);
 
     apply_matrix(m_current_matrix);
     prepare_vertex_buffer((Sint16*)coords, vertex_count);
-    HRESULT hr = m_pd3dDevice->DrawPrimitive( D3DPT_TRIANGLESTRIP, 0, vertex_count - 2);
+    HRESULT hr = m_pd3dDevice->DrawPrimitive( primitive_type, 0, vertex_count - 2);
     assert(hr==S_OK);
 
     if (m_current_styles[LEFT_STYLE].needs_second_pass())
     {
       // 2nd pass, if necessary.
       m_current_styles[LEFT_STYLE].apply_second_pass();
-      hr = m_pd3dDevice->DrawPrimitive(D3DPT_TRIANGLESTRIP, 0, vertex_count-2);
+      hr = m_pd3dDevice->DrawPrimitive(primitive_type, 0, vertex_count-2);
       assert(hr==S_OK);
       m_current_styles[LEFT_STYLE].cleanup_second_pass();
     }
+  }
+
+  //mesh strips do the same as triangle
+  void draw_triangle_list(const void *coords,int vertex_count)
+  {
+    draw_mesh_primitive(D3DPT_TRIANGLELIST,coords,vertex_count);
+  }
+
+  void  draw_mesh_strip(const void* coords, int vertex_count)
+  {
+	draw_mesh_primitive(D3DPT_TRIANGLESTRIP,coords,vertex_count);
   }
 
 
@@ -859,10 +975,9 @@ struct render_handler_d3d : public gameswf::render_handler
     assert(hr==S_OK);
   }
 
-
   void  draw_bitmap(
     const gameswf::matrix& m,
-    const gameswf::bitmap_info* bi,
+    gameswf::bitmap_info* bi,
     const gameswf::rect& coords,
     const gameswf::rect& uv_coords,
     gameswf::rgba color)
@@ -873,6 +988,8 @@ struct render_handler_d3d : public gameswf::render_handler
     // Intended for textured glyph rendering.
   {
     assert(bi);
+
+	bitmap_info_d3d* bi_d3d = (bitmap_info_d3d*)bi;
 
     apply_color(color);
     D3DXMATRIX  mat;
@@ -887,7 +1004,7 @@ struct render_handler_d3d : public gameswf::render_handler
     d.m_y = b.m_y + c.m_y - a.m_y;
 
     // Set texture.
-    m_pd3dDevice->SetTexture(0, m_d3d_textures[bi->m_texture_id]);
+    m_pd3dDevice->SetTexture(0, m_d3d_textures[bi_d3d->m_texture_id]);
     m_pd3dDevice->SetTextureStageState( 0, D3DTSS_COLOROP,   D3DTOP_SELECTARG2);
     m_pd3dDevice->SetTextureStageState( 0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
 
@@ -1030,30 +1147,54 @@ struct render_handler_d3d : public gameswf::render_handler
 #endif // 0
   }
 
+  //TODO: Create a D3D video handler implementation
+  gameswf::video_handler* create_video_handler()
+  {
+    return NULL;
+  }
+
+  bool is_visible(const gameswf::rect& bound)
+  {
+	gameswf::rect viewport;
+	viewport.m_x_min = 0;
+	viewport.m_y_min = 0;
+	viewport.m_x_max = m_display_width;
+	viewport.m_y_max = m_display_height;
+	return viewport.bound_test(bound);
+  }
+
+  void open()
+  {
+	  //doesn't need to open anything in directx
+  }
+
+  bool test_stencil_buffer(const gameswf::rect& bound, Uint8 pattern)
+  {
+	  //TODO: implement stencil testing
+	  return false;
+  }
+
 };  // end struct render_handler_d3d
 
 
 // bitmap_info_d3d implementation
 
 
-bitmap_info_d3d::bitmap_info_d3d()
-//bitmap_info_d3d::bitmap_info_d3d(create_empty e)
+bitmap_info_d3d::bitmap_info_d3d() : 
+	m_texture_id(0),
+	m_width(0),
+	m_height(0),
+	m_suspended_image(NULL)
 {
-  // A null texture.  Needs to be initialized later.
-  m_texture_id = 0;
-  m_original_width = 0;
-  m_original_height = 0;
 }
 
 
-bitmap_info_d3d::bitmap_info_d3d(image::rgb* im)
+bitmap_info_d3d::bitmap_info_d3d(image::rgb* im) :
+	m_width(im->m_width),
+	m_height(im->m_height)
 // Image with no alpha.
 {
   assert(im);
-
-  // Rescale.
-  m_original_width = im->m_width;
-  m_original_height = im->m_height;
 
   int w = 1; while (w < im->m_width) { w <<= 1; }
   int h = 1; while (h < im->m_height) { h <<= 1; }
@@ -1061,12 +1202,12 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgb* im)
   // Need to insert a dummy alpha byte in the image data, for
   // D3DXLoadSurfaceFromMemory.
   // @@ this sucks :(
-  Uint8*  expanded_data = new Uint8[m_original_width * m_original_height * 4];
+  Uint8*  expanded_data = new Uint8[m_width * m_height * 4];
   Uint8*  pdata = expanded_data;
-  for (int y = 0; y < m_original_height; y++)
+  for (int y = 0; y < m_height; y++)
   {
     Uint8*  scanline = image::scanline(im, y);
-    for (int x = 0; x < m_original_width; x++)
+    for (int x = 0; x < m_width; x++)
     {
       *pdata++ = scanline[x * 3 + 2]; // blue
       *pdata++ = scanline[x * 3 + 1]; // green
@@ -1120,10 +1261,10 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgb* im)
   RECT  source_rect;
   source_rect.left    = 0;
   source_rect.top     = 0;
-  source_rect.right   = m_original_width;
-  source_rect.bottom  = m_original_height;
+  source_rect.right   = m_width;
+  source_rect.bottom  = m_height;
   result = D3DXLoadSurfaceFromMemory( surf, NULL, NULL, expanded_data, 
-    D3DFMT_A8R8G8B8, m_original_width * 4, NULL, &source_rect, D3DX_DEFAULT, 0 );
+    D3DFMT_A8R8G8B8, m_width * 4, NULL, &source_rect, D3DX_DEFAULT, 0 );
 
   // test
   //D3DXSaveSurfaceToFile( "image.png", D3DXIFF_PNG, surf, NULL, NULL );
@@ -1133,6 +1274,8 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgb* im)
     gameswf::log_error("error: can't load surface from memory, result = %d\n", result);
 
   surf->Release();
+
+    m_suspended_image = new image::image_base(NULL,m_width,m_height,m_width * 4,image::image_base::RGB);
 }
 
 typedef struct
@@ -1162,7 +1305,9 @@ void bitmap_info_d3d::convert_to_argb(image::rgba* im)
   }
 }
 
-bitmap_info_d3d::bitmap_info_d3d(image::rgba* im)
+bitmap_info_d3d::bitmap_info_d3d(image::rgba* im) : 
+	m_width(im->m_width),
+	m_height(im->m_height)
 // Version of the constructor that takes an image with alpha.
 {
   assert(im);
@@ -1170,9 +1315,6 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgba* im)
 #if DIRECT3D_VERSION < 0x0900
   convert_to_argb(im);
 #endif
-
-  m_original_width = im->m_width;
-  m_original_height = im->m_height;
 
   int w = 1; while (w < im->m_width) { w <<= 1; }
   int h = 1; while (h < im->m_height) { h <<= 1; }
@@ -1223,8 +1365,8 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgba* im)
   RECT  source_rect;
   source_rect.left    = 0;
   source_rect.top     = 0;
-  source_rect.right   = m_original_width;
-  source_rect.bottom  = m_original_height;
+  source_rect.right   = m_width;
+  source_rect.bottom  = m_height;
 
   // Set the actual data.
   result = D3DXLoadSurfaceFromMemory( surf, NULL, NULL, im->m_data,
@@ -1239,6 +1381,8 @@ bitmap_info_d3d::bitmap_info_d3d(image::rgba* im)
     gameswf::log_error("error: can't load surface from memory, result = %d\n", result);
 
   surf->Release();
+
+  m_suspended_image = new image::image_base(NULL,m_width,m_height,im->m_pitch,image::image_base::RGBA);
 }
 
 
@@ -1251,8 +1395,8 @@ bitmap_info_d3d::bitmap_info_d3d(int width, int height, Uint8* data)
   assert(data);
 
   // Create the texture.
-  m_original_width = width;
-  m_original_height = height;
+  m_width = width;
+  m_height = height;
 
   // You must use power-of-two dimensions!!
   int w = 1; while (w < width) { w <<= 1; }
@@ -1302,6 +1446,8 @@ bitmap_info_d3d::bitmap_info_d3d(int width, int height, Uint8* data)
 
   surf->Release();
 
+  m_suspended_image = new image::image_base(NULL,width,height,width,image::image_base::ALPHA);
+
   //  glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, width, height, 0, GL_ALPHA, GL_UNSIGNED_BYTE, data);
 
   //  // Build mips.
@@ -1329,6 +1475,24 @@ gameswf::render_handler*  gameswf::create_render_handler_d3d(IDirect3DDevice* de
   return hndlr;
 }
 
+//TODO: These two functions need to be exported so that the program running direct3d
+//			can call these functions whenever the device is lost and regained
+//			there can possibly be a better way of handling this, the way
+//			I have found was just exporting it in the gameswf.h
+//										~Ed Pereira
+void  gameswf::reset_render_handler_d3d(IDirect3DDevice* device,gameswf::render_handler* rend_hndlr)
+{
+	render_handler_d3d* hndlr = dynamic_cast<render_handler_d3d*>(rend_hndlr);
+
+	hndlr->on_reset_device(device);
+}
+
+void  gameswf::release_render_handler_d3d(gameswf::render_handler* rend_hndlr)
+{
+	render_handler_d3d* hndlr = dynamic_cast<render_handler_d3d*>(rend_hndlr);
+	hndlr->on_release_device();
+}
+
 // Local Variables:
 // mode: C++
 // c-basic-offset: 8
@@ -1340,3 +1504,5 @@ gameswf::render_handler*  gameswf::create_render_handler_d3d(IDirect3DDevice* de
 
 
 
+
+ 	  	 
