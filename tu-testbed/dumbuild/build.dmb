@@ -1,0 +1,45 @@
+// Example build file:
+[
+  { "name": "default",
+    "type": "generic",
+    "dep": [
+      //"test"
+      "dmb"
+    ]
+  },
+  
+  { "name": "test",
+    "type": "exe",
+    "src": [
+      "test.cpp"
+    ],
+    "dep": [
+    ]
+  },
+
+  { "name": "dmb",
+    "type": "exe",
+
+    "src": [
+      "config.cpp",
+      "context.cpp",
+      "dumbuild.cpp",
+      "exe_target.cpp",
+      "generic_target.cpp",
+      "object.cpp",
+      "os.cpp",
+      "res.cpp",
+      "target.cpp",
+      "util.cpp",
+      "jsoncpp/src/lib_json/json_reader.cpp",
+      "jsoncpp/src/lib_json/json_value.cpp",
+      "jsoncpp/src/lib_json/json_writer.cpp"
+    ],
+    "dep": [
+    ],
+    "inc_dirs": [
+      "jsoncpp/include",
+      "jsoncpp/src/lib_json"
+    ]
+  }
+]
