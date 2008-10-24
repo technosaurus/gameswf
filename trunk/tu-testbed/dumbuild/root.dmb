@@ -1,0 +1,21 @@
+[
+  { "name": "vc8-debug",
+    "type": "config",
+
+    // This is the environment that the compiler runs in.  dmb's
+    // environment does not leak into the compiler processes, so
+    // the environment must be defined completely here.
+    "compile_environment": {
+      "PATH": "c:/Program Files/Microsoft Visual Studio 8/VC/bin;c:/Program Files/Microsoft Visual Studio 8/Common7/IDE",
+      "INCLUDE": "c:/Program Files/Microsoft Visual Studio 8/VC/include;c:/Program Files/Microsoft Platform SDK/Include",
+      "LIB": "c:/Program Files/Microsoft Visual Studio 8/VC/lib;c:/Program Files/Microsoft Platform SDK/Lib",
+      "SystemRoot": "C:\\WINDOWS"
+    },
+
+    // This is the command-line template used to invoke the compiler.
+    "compile_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -EHsc -I../../../../third_party/jsoncpp/include ${inc_dirs} -D_CRT_SECURE_NO_DEPRECATE -Zi -c ${src_list}",
+
+    // This is the command-line template used to invoke the linker.
+    "link_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -Zi ${obj_list} -Fe${basename}.exe -Fd${basename}.pdb"
+  }
+]
