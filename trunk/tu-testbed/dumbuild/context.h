@@ -26,18 +26,7 @@ class Context {
   Context() : log_verbose_(false) {
   }
 
-  ~Context() {
-    for (std::map<std::string, Target*>::iterator it = targets_.begin();
-         it != targets_.end();
-         ++it) {
-      delete it->second;
-    }
-    for (std::map<std::string, Config*>::iterator it = configs_.begin();
-         it != configs_.end();
-         ++it) {
-      delete it->second;
-    }
-  }
+  ~Context();
 
   Res Init(const std::string& root_path,
            const std::string& config_name);

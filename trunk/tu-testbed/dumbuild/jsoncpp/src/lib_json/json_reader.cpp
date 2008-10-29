@@ -744,7 +744,13 @@ std::istream& operator>>( std::istream &sin, Value &root )
     Json::Reader reader;
     bool ok = reader.parse(sin, root, true);
     //JSON_ASSERT( ok );
-    if (!ok) throw std::runtime_error(reader.getFormatedErrorMessages());
+    //if (!ok) throw std::runtime_error(reader.getFormatedErrorMessages());
+
+    // tulrich: old std libs may not have runtime_error!  Replace w/
+    // std::exception.  BTW I wish this code did not use exceptions at
+    // all.
+    if (!ok) throw std::exception();
+    
     return sin;
 }
 

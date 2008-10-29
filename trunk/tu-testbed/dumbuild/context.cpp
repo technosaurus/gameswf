@@ -5,7 +5,22 @@
 
 #include <vector>
 #include "context.h"
+#include "config.h"
 #include "path.h"
+#include "target.h"
+
+Context::~Context() {
+  for (std::map<std::string, Target*>::iterator it = targets_.begin();
+       it != targets_.end();
+       ++it) {
+    delete it->second;
+  }
+  for (std::map<std::string, Config*>::iterator it = configs_.begin();
+       it != configs_.end();
+       ++it) {
+    delete it->second;
+  }
+}
 
 Res Context::Init(const std::string& root_path,
                   const std::string& config_name) {
