@@ -38,6 +38,7 @@
 
 #include "config.h"
 #include "context.h"
+#include "os.h"
 #include "res.h"
 #include "target.h"
 #include "util.h"
@@ -205,26 +206,7 @@ void ExitIfError(const Res& res) {
 // On success, currdir_relative_to_root will be a canonical path.
 Res FindRoot(std::string* absolute_root,
              std::string* currdir_relative_to_root) {
-  // Allocate a big return buffer for getcwd.
-  const int MAX_CURRDIR_SIZE = 2000;
-  std::string currdir;
-  currdir.resize(MAX_CURRDIR_SIZE);
-  if (!_getcwd(&currdir[0], currdir.size())) {
-    fprintf(stderr, "Internal error: getcwd() larger than %d\n",
-            MAX_CURRDIR_SIZE);
-    exit(1);
-  }
-  // Trim to the correct size.
-  currdir.resize(strlen(currdir.c_str()));
-
-#ifdef _WIN32
-  // Change backslashes to forward slashes.
-  for (size_t pos = currdir.find('\\');
-       pos != std::string::npos;
-       pos = currdir.find('\\', pos)) {
-    currdir[pos] = '/';
-  }
-#endif  // _WIN32
+  std::string currdir = GetCurrentDirectory();
 
   // Look for root dir.  Root dir is marked by the presence of a
   // "root.dmb" file.

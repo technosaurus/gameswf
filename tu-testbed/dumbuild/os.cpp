@@ -85,32 +85,149 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
   return Res(OK);
 }
 
-Res RunCommand(const std::string& dir, const std::vector<std::string>& argv,
-               const std::string& environment) {
-  if (argv.size() < 1) {
-    return Res(ERR_SUBCOMMAND_FAILED, "Empty argv passed to RunCommand()");
-  }
-
-  // Build a appropriately-quoted command-line.
-  std::string cmd_line;
-  for (size_t i = 0; i < argv.size(); i++) {
-    bool need_quote = (strchr(argv[i].c_str(), ' ') != NULL);
-    if (need_quote) {
-      // TODO: properly deal with existing quotes
-      cmd_line += '\"';
-      cmd_line += argv[i];
-      cmd_line += '\"';
-    } else {
-      cmd_line += argv[i];
-    }
-    cmd_line += ' ';
-  }
-
-  return RunCommand(dir, cmd_line, environment);
-}
-
 #else // not _WIN32
 
-// TODO: posix implementation using vfork etc.
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/wait.h>
+
+Res CreatePath(const std::string& root, const std::string& sub_path) {
+  std::string current = root;
+  const char* prev = sub_path.c_str();
+  for (;;) {
+    const char* next_slash = strchr(prev, '/');
+    if (next_slash) {
+      current += "/";
+      current += std::string(prev, next_slash - prev);
+    } else {
+      current += "/";
+      current += prev;
+    }
+    if (mkdir(current.c_str(), 0755) != 0) {
+      if (errno != EEXIST) {
+        // TODO add last_error to res detail.
+        return Res(ERR, StringPrintf("CreatePath '%s' failed, errno = %d", errno));
+      }
+    }
+
+    if (!next_slash) {
+      break;
+    }
+    prev = next_slash + 1;
+  }
+
+  return Res(OK);
+}
+
+Res RunCommand(const std::string& dir, const std::string& cmd_line,
+	       const std::string& environment) {
+  // Split command line on spaces, ignoring any quoting.
+  //
+  // TODO(tulrich): might be good to support quoting someday, to allow
+  // spaces inside individual args.
+  std::vector<std::string> args;
+  {
+    const char* p = cmd_line.c_str();
+    for (;;) {
+      while (*p == ' ') p++;  // skip leading spaces.
+      const char* n = strchr(p, ' ');
+      assert(n != p);
+      if (!n) {
+	// last arg.
+	if (*p) {
+	  args.push_back(p);
+	}
+	break;
+      } else {
+	args.push_back(std::string(p, n - p));
+      }
+      p = n + 1;
+    }
+  }
+  
+  // Set up program, argv and envp.
+  std::string program;
+  std::vector<const char*> argv;
+  std::vector<const char*> envp;
+  if (argv.size()) {
+    program = argv[0];
+  }
+  for (size_t i = 0; i < args.size(); i++) {
+    argv.push_back(args[i].c_str());
+  }
+  argv.push_back(NULL);
+  {
+    const char* p = environment.c_str();
+    const char* e = environment.c_str() + environment.size();
+    while (*p && p < e) {
+      envp.push_back(p);
+      p += strlen(p) + 1;
+    }
+    envp.push_back(NULL);
+  }
+  char* const *argv_p = (char* const*) &argv[0];
+  char* const *envp_p = (char* const*) &envp[0];
+
+  // Fork.
+  pid_t pid = fork();
+  if (pid == 0) {
+    // Child process.
+    if (chdir(dir.c_str()) == 0) {
+      execve(program.c_str(), argv_p, envp_p);
+    }
+    _exit(1);
+  }
+
+  // Parent process.
+  if (pid == -1) {
+    return Res(ERR_SUBCOMMAND_FAILED,
+	       StringPrintf("RunCommand failed to fork, errno = %d\n>>",
+			    errno, cmd_line.c_str()));
+  }
+  int status = 0;
+  if (waitpid(pid, &status, 0) != pid) {
+    return Res(ERR_SUBCOMMAND_FAILED,
+	       StringPrintf("RunCommand failed to get status, "
+			    "errno = %d, cmd =\n>>%s",
+			    errno, cmd_line.c_str()));
+  }
+  if (status != 0) {
+    return Res(ERR_SUBCOMMAND_FAILED,
+	       StringPrintf("RunCommand returned non-zero exit status "
+			    "0x%X:\n>>%s", status, cmd_line.c_str()));
+  }
+
+  return Res(OK);
+}
 
 #endif  // not _WIN32
+
+
+#ifdef _WIN32
+#define GETCWD _getcwd
+#else
+#define GETCWD getcwd
+#endif
+
+std::string GetCurrentDirectory() {
+  // Allocate a big return buffer for getcwd.
+  const int MAX_CURRDIR_SIZE = 2000;
+  std::string currdir;
+  currdir.resize(MAX_CURRDIR_SIZE);
+  if (!GETCWD(&currdir[0], currdir.size())) {
+    fprintf(stderr, "Internal error: getcwd() larger than %d\n",
+            MAX_CURRDIR_SIZE);
+    exit(1);
+  }
+  // Trim to the correct size.
+  currdir.resize(strlen(currdir.c_str()));
+
+#ifdef _WIN32
+  // Change backslashes to forward slashes.
+  for (size_t pos = currdir.find('\\');
+       pos != std::string::npos;
+       pos = currdir.find('\\', pos)) {
+    currdir[pos] = '/';
+  }
+#endif  // _WIN32
+}

@@ -123,6 +123,12 @@ Res ParseValueStringOrMap(const Json::Value& val,
   return Res(OK);
 }
 
+#ifdef _WIN32
+#define VSNPRINTF _vsnprintf
+#else
+#define VSNPRINTF vsnprintf
+#endif
+
 std::string StringPrintf(const char* format, ...) {
   const int BUFSIZE = 4096;
   char buf[BUFSIZE];
@@ -130,7 +136,7 @@ std::string StringPrintf(const char* format, ...) {
   va_list args;
   va_start(args, format);
   
-  int result = _vsnprintf(buf, BUFSIZE, format, args);
+  int result = VSNPRINTF(buf, BUFSIZE, format, args);
   if (result == -1 || result >= BUFSIZE) {
     // Result truncated.  Fail.
     //

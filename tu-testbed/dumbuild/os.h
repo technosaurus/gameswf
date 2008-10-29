@@ -18,22 +18,22 @@
 Res CreatePath(const std::string& root, const std::string& sub_path);
 
 // Execute a sub-process.  dir gives the current directory of the
-// subprocess; argv[0] gives the executable name, and the rest of argv
-// gives the command-line arguments to pass to the subprocess.
+// subprocess; cmd_line gives the command line with arguments.
 //
 // environment is an optional set of environment variable strings to
 // give to the new process.  Pass an empty string to inherit this
-// process' environment.
+// process' environment.  The environment is encoded as a set of
+// null-terminated strings inside the std::string, the whole thing
+// terminated with an extra '\0'.  Each string is of the form
+// "VARNAME=VALUE" (sans quotes).
 //
 // On success, Res.Ok() is true.  On failure, the return value
 // contains error details.
 Res RunCommand(const std::string& dir,
-               const std::vector<std::string>& argv,
-               const std::string& environment);
-
-Res RunCommand(const std::string& dir,
                const std::string& cmd_line,
                const std::string& environment);
+
+std::string GetCurrentDirectory();
 
 #endif  // OS_H_
 
