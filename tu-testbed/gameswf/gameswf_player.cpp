@@ -217,13 +217,16 @@ namespace gameswf
 		s_standard_property_map.clear();
 	}
 
+	const char* get_gameswf_version()
+	{
 #ifdef WIN32
-	static tu_string s_gameswf_version("WIN");
+	static tu_string s_gameswf_version("WIN "__DATE__" "__TIME__);
 #else
-	static tu_string s_gameswf_version("LINUX");
+	static tu_string s_gameswf_version("LINUX "__DATE__" "__TIME__);
 #endif
-
-	const char* get_gameswf_version() {	return s_gameswf_version.c_str(); }
+		
+		return s_gameswf_version.c_str();
+	}
 
 	// dynamic library stuff, for sharing DLL/shared library among different movies.
 
@@ -506,7 +509,7 @@ namespace gameswf
 		m_global->builtin_member("parseFloat",  as_global_parse_float);
 		m_global->builtin_member("parseInt",  as_global_parse_int);
 		m_global->builtin_member("isNaN",  as_global_isnan);
-		m_global->builtin_member("$version",  "gameSWF");
+		m_global->builtin_member("$version", as_value(as_global_get_version, NULL));
 
 	}
 
