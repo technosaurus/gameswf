@@ -708,7 +708,8 @@ int	main(int argc, char *argv[])
 				}
 
 				// Set the video mode.
-				if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL | SDL_RESIZABLE) == 0)
+//				if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL | SDL_RESIZABLE) == 0)
+				if (SDL_SetVideoMode(width, height, s_bit_depth, SDL_OPENGL) == 0)
 				{
 					fprintf(stderr, "SDL_SetVideoMode() failed.");
 					exit(1);
@@ -1041,13 +1042,16 @@ int	main(int argc, char *argv[])
 					// for perfomance testing
 //					printf("advance time: %d, display time %d, swap buffers time = %d\n",
 //						t_advance, t_display, t_swap);
-//					char buffer[8];
-//					snprintf(buffer, 8, "%03d", t_advance);
-//					m->set_variable("t_Advance", buffer);
-//					snprintf(buffer, 8, "%03d", t_display);
-//					m->set_variable("t_Display", buffer);
-//					snprintf(buffer, 8, "%03d", t_swap);
-//					m->set_variable("t_SwapBuffers", buffer);
+
+#ifdef HAVE_PERFOMANCE_INFO
+					char buffer[8];
+					snprintf(buffer, 8, "%03d", t_advance);
+					m->set_variable("t_Advance", buffer);
+					snprintf(buffer, 8, "%03d", t_display);
+					m->set_variable("t_Display", buffer);
+					snprintf(buffer, 8, "%03d", t_swap);
+					m->set_variable("t_SwapBuffers", buffer);
+#endif
 
 					if (s_measure_performance == false)
 					{

@@ -1346,6 +1346,30 @@ class tu_string
 {
 public:
 	tu_string() { m_local.m_size = 1; memset(m_local.m_buffer, 0, 15); }
+	tu_string(int val)
+	{
+		char str[50];
+		snprintf(str, 50, "%d", val);
+
+		m_local.m_size = 1;
+		m_local.m_buffer[0] = 0;
+
+		int	new_size = (int) strlen(str);
+		resize(new_size);
+		strcpy(get_buffer(), str);
+	}
+	tu_string(double val)
+	{
+		char str[50];
+		snprintf(str, 50, "%.14g", val);
+
+		m_local.m_size = 1;
+		m_local.m_buffer[0] = 0;
+
+		int	new_size = (int) strlen(str);
+		resize(new_size);
+		strcpy(get_buffer(), str);
+	}
 	tu_string(const char* str)
 	{
 		m_local.m_size = 1;
