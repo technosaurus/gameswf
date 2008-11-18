@@ -90,6 +90,18 @@ namespace gameswf
 		}
 	}
 
+	// remove the first item of array
+	void	as_array_shift(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		if (a)
+		{
+			as_value val;
+			a->shift(&val);
+			*fn.result = val;
+		}
+	}
+
 	void	as_array_pop(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
@@ -169,11 +181,11 @@ namespace gameswf
 		//			this->set_member("concat", &array_not_impl);
 		//			this->set_member("slice", &array_not_impl);
 		//			this->set_member("unshift", &array_not_impl);
-		//			this->set_member("shift", &array_not_impl);
 		//			this->set_member("splice", &array_not_impl);
 		//			this->set_member("sort", &array_not_impl);
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
+		builtin_member("shift", as_array_shift);
 		builtin_member("toString", as_array_tostring);
 		builtin_member("push", as_array_push);
 		builtin_member("pop", as_array_pop);
@@ -206,10 +218,7 @@ namespace gameswf
 			{
 				if (idx[i] > idx[j])
 				{
-					tu_stringi temp;
-					temp = idx[i];
-					idx[i] = idx[j];
-					idx[j] = temp;
+					swap(&idx[i], &idx[j]);
 				}
 			}
 		}
@@ -250,6 +259,49 @@ namespace gameswf
 	{
 		as_value index(size());
 		set_member(index.to_tu_stringi(), val);
+	}
+
+	void as_array::shift(as_value* val)
+	// Removes the first element from an array and returns the value of that element.
+	{
+		assert(val);
+
+		// receive numerical indexes
+		array<int> idx;
+		for (stringi_hash<as_value>::iterator it = m_members.begin(); it != m_members.end(); ++it)
+		{
+			int index;
+			if (string_to_number(&index, it->first.c_str()) && it->second.is_enum())
+			{
+				idx.push_back(index);
+			}
+		}
+
+		// sort indexes
+		for (int i = 0, n = idx.size(); i < n - 1; i++)
+		{
+			for (int j = i + 1; j < n; j++)
+			{
+				if (idx[i] > idx[j])
+				{
+					swap(&idx[i], &idx[j]);
+				}
+			}
+		}
+
+		// keep the first element
+		get_member(tu_string(idx[0]), val);
+
+		// shift elements
+		for (int i = 1; i < idx.size(); i++)
+		{
+			as_value v;
+			get_member(tu_string(idx[i]), &v);
+			set_member(tu_string(idx[i - 1]), v);
+		}
+
+		// remove the last element
+		erase(tu_string(idx[idx.size() - 1]));
 	}
 
 	void as_array::pop(as_value* val)

@@ -30,6 +30,7 @@ namespace gameswf
 		exported_module virtual const char* to_string();
 
 		exported_module void push(const as_value& val);
+		exported_module void shift(as_value* val);
 		exported_module void pop(as_value* val);
 		exported_module void erase(const tu_stringi& index);
 		exported_module void clear();
