@@ -754,6 +754,7 @@ int	main(int argc, char *argv[])
 			Uint32	last_ticks = start_ticks;
 			int	frame_counter = 0;
 			int	last_logged_fps = last_ticks;
+			int fps = 0;
 
 			//TODO
 	//		gameswf::player* p = gameswf::create_player();
@@ -1030,14 +1031,34 @@ int	main(int argc, char *argv[])
 				m->display();
 				t_display = SDL_GetTicks() - t_display;
 
-				frame_counter++;
-
 				if (do_render)
 				{
 					Uint32 t_swap = SDL_GetTicks();
 					SDL_GL_SwapBuffers();
 					t_swap = SDL_GetTicks() - t_swap;
 					//glPopAttrib ();
+
+
+					frame_counter++;
+
+					// Log the frame rate every second or so.
+					if (last_ticks - last_logged_fps > 1000)
+					{
+						float	delta = (last_ticks - last_logged_fps) / 1000.f;
+						fps = (int) ((float) frame_counter / delta);
+						last_logged_fps = last_ticks;
+						frame_counter = 0;
+					}
+
+					if (s_measure_performance == false)
+					{
+						// Don't hog the CPU.
+						SDL_Delay(s_delay);
+					}
+					else
+					{
+						printf("fps = %d\n", fps);
+					}
 
 					// for perfomance testing
 //					printf("advance time: %d, display time %d, swap buffers time = %d\n",
@@ -1051,33 +1072,9 @@ int	main(int argc, char *argv[])
 					m->set_variable("t_Display", buffer);
 					snprintf(buffer, 8, "%03d", t_swap);
 					m->set_variable("t_SwapBuffers", buffer);
+					snprintf(buffer, 8, "%d", fps);
+					m->set_variable("FPS", buffer);
 #endif
-
-					if (s_measure_performance == false)
-					{
-						// Don't hog the CPU.
-						SDL_Delay(s_delay);
-					}
-					else
-					{
-						// Log the frame rate every second or so.
-						if (last_ticks - last_logged_fps > 1000)
-						{
-							float	delta = (last_ticks - last_logged_fps) / 1000.f;
-
-							if (delta > 0)
-							{
-								printf("fps = %3.1f\n", frame_counter / delta);
-							}
-							else
-							{
-								printf("fps = *inf*\n");
-							}
-
-							last_logged_fps = last_ticks;
-							frame_counter = 0;
-						}
-					}
 				}
 
 				// TODO: clean up this interface and re-enable.
