@@ -617,9 +617,8 @@ namespace gameswf
 	{
 		// for debugging action script
 		// keep the latest var name(to log it if call_method failure)
-#ifdef _DEBUG
 		tu_string last_varname;
-#endif
+
 		assert(env);
 		array<with_stack_entry>	with_stack(initial_with_stack);
 	
@@ -804,9 +803,7 @@ namespace gameswf
 					const tu_string var_string = env->top(0).to_tu_string();
 					
 					// keep the latest var name(to log it if call_method failure)
-#ifdef _DEBUG
 					last_varname = var_string;
-#endif
 
 					as_value variable = env->get_variable(var_string, with_stack);
 					env->top(0) = variable;
@@ -1383,9 +1380,7 @@ namespace gameswf
 					else
 					{
 						// keep the latest var name(to log it if call_method failure)
-#ifdef _DEBUG
 						last_varname = env->top(0).to_tu_string();
-#endif
 
 						env->top(1).set_undefined();
 						if (obj->get_member(env->top(0).to_tu_string(), &(env->top(1))) == false)
@@ -1501,7 +1496,7 @@ namespace gameswf
 					}
 					else
 					{
-#ifdef _DEBUG
+//#ifdef _DEBUG
 						// put as much as possible information
 						if (env->top(1).to_object())
 						{
@@ -1524,9 +1519,9 @@ namespace gameswf
 							log_error("error: can't find %s[0x0].%s\n", 
 								last_varname.c_str(), method_name.c_str());
 						}
-#else
-						log_error("error: can't find method %s\n", method_name.c_str());
-#endif
+//#else
+//						log_error("error: can't find method %s\n", method_name.c_str());
+//#endif
 
 					}
 					env->drop(nargs + 2);
