@@ -99,10 +99,11 @@ namespace gameswf
 			}
 			const char* str = sstr.c_str();
 			const char* last_hit = NULL;
-			const char* haystack = str + start_index;	// FIXME: not UTF-8 correct!
+			const char* haystack = str;
 			for (;;) {
 				const char*	p = strstr(haystack, fn.arg(0).to_string());
-				if (p == NULL) {
+				if (p == NULL || (start_index !=0 && p > str + start_index ) )	// FIXME: not UTF-8 correct!
+				{
 					break;
 				}
 				last_hit = p;
