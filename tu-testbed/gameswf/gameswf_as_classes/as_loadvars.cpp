@@ -358,9 +358,9 @@ namespace gameswf
 			url_decode( &name );
 			url_decode( &value );
 
-			m_received_values.set(name,value);
+			m_received_values.set(name, value);
 
-			start = end+1;
+			start = end + 1;
 			++end;
 		}
 	}
@@ -526,6 +526,14 @@ namespace gameswf
 		free(url);
 		url = NULL;
 		return true;
+	}
+
+	void	as_loadvars::copy_to(as_object* target)
+	{
+		for (string_hash<tu_string>::iterator it = m_received_values.begin(); it != m_received_values.end(); ++it)
+		{
+			target->set_member(it->first, it->second.c_str()); 		
+		}
 	}
 };
 

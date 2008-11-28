@@ -49,7 +49,8 @@ namespace gameswf
 			{
 				t->m_func = fn.arg(0).to_function();
 				t->m_interval = fn.arg(1).to_float() / 1000.0f;
-				t->m_this_ptr = fn.this_ptr;
+				assert(fn.env);
+				t->m_this_ptr = fn.env->get_target();
 			}
 			else
 			if (fn.arg(0).is_object())
