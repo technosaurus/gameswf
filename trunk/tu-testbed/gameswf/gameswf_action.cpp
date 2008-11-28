@@ -2138,12 +2138,10 @@ namespace gameswf
 					// @@ TODO range checks
 					break;
 				}
-				case 0x9A:	// get url 2
+				
+				case 0x9A:	// get url2
 				{
 					int	method = buffer[pc + 3];
-					UNUSED(method);
-
-					const char*	target = env->top(0).to_string();
 					const char*	url = env->top(1).to_string();
 
 					// If the url starts with "FSCommand:", then this is
@@ -2155,12 +2153,12 @@ namespace gameswf
 							// Call into the app.
 							character* mroot = env->get_player()->get_root_movie();
 							assert(mroot);
-							(*get_fscommand_callback())(mroot, url + 10, target);
+							(*get_fscommand_callback())(mroot, url + 10, env->top(0).to_string());
 						}
 					}
 					else
 					{
-						env->load_file(url, env->top(0));
+						env->load_file(url, env->top(0), method);
 					}
 					env->drop(2);
 					break;

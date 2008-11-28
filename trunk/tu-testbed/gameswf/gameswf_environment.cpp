@@ -3,6 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+#include "base/tu_file.h"
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_value.h"
 #include "gameswf/gameswf_character.h"
@@ -10,6 +11,7 @@
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_render.h"
+#include "gameswf/gameswf_as_classes/as_loadvars.h"
 
 #if TU_CONFIG_LINK_TO_LIB3DS == 1
 	#include "extensions/lib3ds/gameswf_3ds_inst.h"
@@ -23,7 +25,8 @@ namespace gameswf
 		UNKNOWN,
 		SWF,
 		JPG,
-		X3DS
+		X3DS,
+		TXT
 	};
 
 	// static
@@ -50,6 +53,11 @@ namespace gameswf
 		if (fn_ext == ".3ds")
 		{
 			return X3DS;
+		}
+		else
+		if (fn_ext == ".txt")
+		{
+			return TXT;
 		}
 		return UNKNOWN;
 	}
@@ -205,9 +213,17 @@ namespace gameswf
 	{
 	}
 
-
+	// Implementation of:
+	//
+	// loadVariables(url:String, target:Object, [method:String]) : Void
+	// loadMovie(url:String, target:Object, [method:String]) : Void
+	// loadMovie(url:String, target:String, [method:String]) : Void
+	// unloadMovie(target:MovieClip) : Void
+	// unloadMovie(target:String) : Void
+	//
 	// url=="" means that the load_file() works as unloadMovie(target)
-	character* as_environment::load_file(const char* url, const as_value& target_value)
+	// TODO: implement [method]
+	character* as_environment::load_file(const char* url, const as_value& target_value, int method)
 	{
 		character* target = cast_to<character>(find_target(target_value));
 		if (target == NULL)
@@ -232,15 +248,40 @@ namespace gameswf
 		}
 
 		// is path relative ?
-		tu_string fn = get_full_url(get_player()->get_workdir(), url);
-		switch (get_file_type(fn.c_str()))
+		tu_string file_name = get_full_url(get_player()->get_workdir(), url);
+		switch (get_file_type(file_name.c_str()))
 		{
 			default:
 				break;
 
+			case TXT:
+			{
+				// Reads data from an external file, such as a text file and sets the values for
+				// variables in a target movie clip. This action can also be used
+				// to update variables in the active SWF file with new values. 
+				tu_file fi(file_name.c_str(), "r");
+				if (fi.get_error() == TU_FILE_NO_ERROR)
+				{
+					fi.go_to_end();
+					int len = fi.get_position();
+					fi.set_position(0);
+
+					char* buf = (char*) malloc(len);
+					if (fi.read_string(buf, len, '\n') > 0)
+					{
+						// decode data in the standard MIME format and copy theirs into target
+						as_loadvars lv(get_player());
+						lv.decode(buf);
+						lv.copy_to(target);
+					}
+					free(buf);
+				}
+				break;
+			}
+
 			case SWF:
 			{
-				movie_definition*	md = get_player()->create_movie(fn.c_str());
+				movie_definition*	md = get_player()->create_movie(file_name.c_str());
 				if (md)
 				{
 					return target->replace_me(md);
@@ -253,7 +294,7 @@ namespace gameswf
 #if TU_CONFIG_LINK_TO_LIB3DS == 0
 				log_error("gameswf is not linked to lib3ds -- can't load 3DS file\n");
 #else
-				x3ds_definition* x3ds = create_3ds_definition(get_player(), fn.c_str());
+				x3ds_definition* x3ds = create_3ds_definition(get_player(), file_name.c_str());
 				if (x3ds)
 				{
 					if (x3ds->is_loaded())
@@ -273,7 +314,7 @@ namespace gameswf
 #if TU_CONFIG_LINK_TO_JPEGLIB == 0
 				log_error("gameswf is not linked to jpeglib -- can't load jpeg image data!\n");
 #else
-				image::rgb* im = image::read_jpeg(fn.c_str());
+				image::rgb* im = image::read_jpeg(file_name.c_str());
 				if (im)
 				{
 					bitmap_info* bi = render::create_bitmap_info_rgb(im);
