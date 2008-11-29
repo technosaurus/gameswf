@@ -222,6 +222,7 @@ namespace gameswf
 		virtual tu_string	call_method(const char* method_name, as_value * arguments, int argument_count );
 		virtual void	attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr);
 		bool	hit_test(character* target);
+		virtual bool	hit_test(double x, double y, bool shape_flag);
 		sprite_instance* attach_movie(const tu_string& id, const tu_string name, int depth);
 
 		void local_to_global(as_object* pt);

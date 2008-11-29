@@ -53,7 +53,7 @@ void	print_usage()
 		"\n"
 		"  -h          Print this info.\n"
 		"  -c          Produce a core file instead of letting SDL trap it\n"
-		"  -d num      Number of milli-seconds to delay in main loop\n"
+		"  -d num      Number of milliseconds to delay in main loop\n"
 		"  -a <level>  Specify the antialiasing level (0,1,2,4,8,16,...)\n"
 		"  -v          Be verbose; i.e. print log messages to stdout\n"
 		"  -va         Be verbose about movie Actions\n"
@@ -61,7 +61,7 @@ void	print_usage()
 		"  -ml <bias>  Specify the texture LOD bias (float, default is -1)\n"
 		"  -p          Run full speed (no sleep) and log frame rate\n"
 		"  -1          Play once; exit when/if movie reaches the last frame\n"
-		"  -r <0|1|2>  0 disables renderering & sound (good for batch tests)\n"
+		"  -r <0|1|2>  0 disables rendering & sound (good for batch tests)\n"
 		"              1 enables rendering & sound (default setting)\n"
 		"              2 enables rendering & disables sound\n"
 		"  -t <sec>    Timeout and exit after the specified number of seconds\n"
@@ -180,21 +180,23 @@ static gameswf::key::code	translate_key(SDLKey key)
 			gameswf::key::code	gs;
 		} table[] =
 			{
-				{ SDLK_RETURN, gameswf::key::ENTER },
-				{ SDLK_ESCAPE, gameswf::key::ESCAPE },
-				{ SDLK_LEFT, gameswf::key::LEFT },
-				{ SDLK_UP, gameswf::key::UP },
-				{ SDLK_RIGHT, gameswf::key::RIGHT },
-				{ SDLK_DOWN, gameswf::key::DOWN },
-				{ SDLK_SPACE, gameswf::key::SPACE },
-        { SDLK_PAGEDOWN, gameswf::key::PGDN },
-        { SDLK_PAGEUP, gameswf::key::PGUP },
-        { SDLK_HOME, gameswf::key::HOME },
-        { SDLK_END, gameswf::key::END },
-        { SDLK_INSERT, gameswf::key::INSERT },
-        { SDLK_DELETE, gameswf::key::DELETEKEY },
-        { SDLK_BACKSPACE, gameswf::key::BACKSPACE },
-        { SDLK_TAB, gameswf::key::TAB },
+                { SDLK_RETURN, gameswf::key::ENTER },
+                { SDLK_ESCAPE, gameswf::key::ESCAPE },
+                { SDLK_LEFT, gameswf::key::LEFT },
+                { SDLK_UP, gameswf::key::UP },
+                { SDLK_RIGHT, gameswf::key::RIGHT },
+                { SDLK_DOWN, gameswf::key::DOWN },
+                { SDLK_SPACE, gameswf::key::SPACE },
+                { SDLK_PAGEDOWN, gameswf::key::PGDN },
+                { SDLK_PAGEUP, gameswf::key::PGUP },
+                { SDLK_HOME, gameswf::key::HOME },
+                { SDLK_END, gameswf::key::END },
+                { SDLK_INSERT, gameswf::key::INSERT },
+                { SDLK_DELETE, gameswf::key::DELETEKEY },
+                { SDLK_BACKSPACE, gameswf::key::BACKSPACE },
+                { SDLK_TAB, gameswf::key::TAB },
+                { SDLK_RSHIFT, gameswf::key::SHIFT },
+                { SDLK_LSHIFT, gameswf::key::SHIFT },
 
 				// @@ TODO fill this out some more
 				{ SDLK_UNKNOWN, gameswf::key::INVALID }

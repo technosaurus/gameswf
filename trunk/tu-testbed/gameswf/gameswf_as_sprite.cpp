@@ -59,7 +59,10 @@ namespace gameswf
 			log_error("hitTest: can't find target\n");
 			return;
 		}
-		log_error("hitTest(x,y,flag) is't implemented yet\n");
+		else
+		{
+			fn.result->set_bool(sprite->hit_test( fn.arg(0).to_number(), fn.arg(1).to_number(), fn.arg(2).to_bool() ) );
+		}
 	}
 
 	void	sprite_start_drag(const fn_call& fn)
@@ -300,7 +303,7 @@ namespace gameswf
 	void sprite_unloadmovie(const fn_call& fn) 
 	{ 
 //		sprite_instance* sprite = sprite_getptr(fn);
-//                UNUSED(sprite);
+//				UNUSED(sprite);
 		fn.env->load_file("", fn.this_ptr);
 	} 
 

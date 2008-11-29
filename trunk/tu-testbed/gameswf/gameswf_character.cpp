@@ -231,16 +231,22 @@ namespace gameswf
 
 			case M_X:
 			{
-				matrix	m = get_matrix();
-				m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-				set_matrix(m);
+				if( !isnan( val.to_number() ) )
+				{
+					matrix	m = get_matrix();
+					m.m_[0][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					set_matrix(m);
+				}
 				return true;
 			}
 			case M_Y:
 			{
-				matrix	m = get_matrix();
-				m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
-				set_matrix(m);
+				if( !isnan( val.to_number() ) )
+				{
+					matrix	m = get_matrix();
+					m.m_[1][2] = (float) PIXELS_TO_TWIPS(val.to_number());
+					set_matrix(m);
+				}
 				return true;
 			}
 			case M_XSCALE:
