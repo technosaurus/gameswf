@@ -1355,6 +1355,65 @@ namespace gameswf
 		return false;
 	}
 
+	bool	sprite_instance::hit_test(double x, double y, bool test_shape)
+	{
+		rect this_bound;
+		
+		get_bound(&this_bound);
+		
+		if (m_parent != NULL)
+		{
+			m_parent->get_world_matrix().transform(&this_bound);
+		}
+		
+		this_bound.twips_to_pixels();
+
+		if (this_bound.point_test( x, y ))
+		{
+			if( !test_shape )
+			{
+				return true;
+			}
+			else
+			{
+				// this hitTest is not compatible with Flash but
+				// it works with absolutely accuracy 
+				// if you want hitTest two bitmaps you should trace they into shapes
+
+				rgba background_color(0, 0, 0, 0);
+				movie_def_impl* def = cast_to<movie_def_impl>(get_root()->get_movie_definition());
+
+				render::begin_display(background_color,
+					get_root()->m_viewport_x0, get_root()->m_viewport_y0,
+					get_root()->m_viewport_width, get_root()->m_viewport_height,
+					def->m_frame_size.m_x_min, def->m_frame_size.m_x_max,
+					def->m_frame_size.m_y_min, def->m_frame_size.m_y_max);
+
+				render::begin_submit_mask();
+				display();
+
+				rect r;
+
+				r.m_x_min = x;
+				r.m_y_min = y;
+
+				r.m_x_max = r.m_x_min + 1;
+				r.m_y_max = r.m_y_min + 1;
+
+
+				bool hittest = render::test_stencil_buffer(r, 1);
+
+				render::end_submit_mask();
+				render::disable_mask();
+
+				render::end_display();
+
+				return hittest;
+			}
+		}
+		return false;
+	}
+
 	uint32	sprite_instance::get_file_bytes() const
 	{
 		movie_def_impl* root_def = cast_to<movie_def_impl>(m_def.get_ptr());
