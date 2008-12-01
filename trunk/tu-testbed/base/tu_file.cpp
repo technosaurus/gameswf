@@ -473,35 +473,29 @@ int	tu_file::copy_bytes(tu_file* src, int byte_count)
 
 void tu_file::write_string(const char* src)
 {
-	for (;;)
+	while (*src)
 	{
 		write8(*src);
-		if (*src == 0)
-		{
-			break;
-		}
 		src++;
 	}
 }
 
-
+// return amount of read bytes
 int tu_file::read_string(char* dst, int max_length, char eol) 
 {
 	int i = 0;
 	while (i < max_length)
 	{
 		dst[i] = read8();
-		if (dst[i] == eol)
+		if (get_eof() == true || dst[i] == eol)
 		{
 			dst[i] = 0;
-			return i;
+			return i + 1;
 		}
 		i++;
 	}
-
-	dst[max_length - 1] = 0;	// force termination.
-
-	return -1;
+	dst[i - 1] = 0;	// force termination.
+	return i;
 }
 
 
