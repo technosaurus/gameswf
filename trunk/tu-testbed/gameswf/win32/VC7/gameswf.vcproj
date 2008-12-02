@@ -159,6 +159,16 @@
 				RelativePath="..\..\gameswf_test_ogl.cpp">
 			</File>
 		</Filter>
+		<Filter
+			Name="StackWalker"
+			Filter="">
+			<File
+				RelativePath="..\..\..\base\Stackwalker.cpp">
+			</File>
+			<File
+				RelativePath="..\..\..\base\Stackwalker.h">
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

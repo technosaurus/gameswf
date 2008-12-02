@@ -1368,7 +1368,7 @@ namespace gameswf
 		
 		this_bound.twips_to_pixels();
 
-		if (this_bound.point_test( x, y ))
+		if (this_bound.point_test((float) x, (float) y))
 		{
 			if( !test_shape )
 			{
@@ -1394,8 +1394,8 @@ namespace gameswf
 
 				rect r;
 
-				r.m_x_min = x;
-				r.m_y_min = y;
+				r.m_x_min = (float) x;
+				r.m_y_min = (float) y;
 
 				r.m_x_max = r.m_x_min + 1;
 				r.m_y_max = r.m_y_min + 1;
