@@ -206,7 +206,7 @@ void ExitIfError(const Res& res) {
 // On success, currdir_relative_to_root will be a canonical path.
 Res FindRoot(std::string* absolute_root,
              std::string* currdir_relative_to_root) {
-  std::string currdir = GetCurrentDirectory();
+  std::string currdir = GetCurrentDir();
 
   // Look for root dir.  Root dir is marked by the presence of a
   // "root.dmb" file.
