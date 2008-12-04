@@ -34,6 +34,6 @@ Res RunCommand(const std::string& dir,
                const std::string& environment);
 
 std::string GetCurrentDirectory();
+Res ChangeDirectory(const char* newdir);
 
 #endif  // OS_H_
-

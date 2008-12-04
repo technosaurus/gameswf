@@ -12,10 +12,31 @@
       "SystemRoot": "C:\\WINDOWS"
     },
 
+    "obj_extension": ".obj",
+
     // This is the command-line template used to invoke the compiler.
     "compile_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -EHsc -I../../../../third_party/jsoncpp/include ${inc_dirs} -D_CRT_SECURE_NO_DEPRECATE -Zi -c ${src_list}",
 
     // This is the command-line template used to invoke the linker.
     "link_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -Zi ${obj_list} -Fe${basename}.exe -Fd${basename}.pdb"
+  },
+
+  { "name": "gcc-debug",
+    "type": "config",
+
+    // This is the environment that the compiler runs in.  dmb's
+    // environment does not leak into the compiler processes, so
+    // the environment must be defined completely here.
+    "compile_environment": {
+      "PATH": "/usr/sbin:/usr/bin:/sbin:/bin"
+    },
+
+    "obj_extension": ".o",
+    
+    // This is the command-line template used to invoke the compiler.
+    "compile_template": "/usr/bin/gcc -Wall -I../../../../third_party/jsoncpp/include ${inc_dirs} -c ${src_list}",
+
+    // This is the command-line template used to invoke the linker.
+    "link_template": "/usr/bin/gcc -o ${basename} -g ${obj_list} -lstdc++"
   }
 ]

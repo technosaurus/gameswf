@@ -40,7 +40,7 @@ Res CreatePath(const std::string& root, const std::string& sub_path) {
 }
 
 Res RunCommand(const std::string& dir, const std::string& cmd_line,
-	       const std::string& environment) {
+               const std::string& environment) {
   PROCESS_INFORMATION proc_info;
   memset(&proc_info, 0, sizeof(proc_info));
 
@@ -53,15 +53,15 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
   startup_info.hStdError = GetStdHandle(STD_ERROR_HANDLE);
 
   BOOL retval = CreateProcess(
-	  NULL,
-	  (LPSTR) cmd_line.c_str(),
-	  NULL, NULL,
-	  TRUE,  /* inherit handles */
-	  0,
-	  environment.length() ? (LPVOID) environment.c_str() : NULL,
-	  dir.c_str(),
-	  &startup_info,
-	  &proc_info);
+          NULL,
+          (LPSTR) cmd_line.c_str(),
+          NULL, NULL,
+          TRUE,  /* inherit handles */
+          0,
+          environment.length() ? (LPVOID) environment.c_str() : NULL,
+          dir.c_str(),
+          &startup_info,
+          &proc_info);
   if (!retval) {
     return Res(ERR_SUBCOMMAND_FAILED, "Failed to invoke " + cmd_line);
   }
@@ -78,8 +78,8 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
   if (exit_code != 0) {
     // TODO: add the exit code to the error detail.
     return Res(ERR_SUBCOMMAND_FAILED,
-	       StringPrintf("RunCommand returned non-zero exit status 0x%X:"
-			    "\n>>%s", exit_code, cmd_line.c_str()));
+               StringPrintf("RunCommand returned non-zero exit status 0x%X:"
+                            "\n>>%s", exit_code, cmd_line.c_str()));
   }
 
   return Res(OK);
@@ -120,7 +120,7 @@ Res CreatePath(const std::string& root, const std::string& sub_path) {
 }
 
 Res RunCommand(const std::string& dir, const std::string& cmd_line,
-	       const std::string& environment) {
+               const std::string& environment) {
   // Split command line on spaces, ignoring any quoting.
   //
   // TODO(tulrich): might be good to support quoting someday, to allow
@@ -133,29 +133,31 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
       const char* n = strchr(p, ' ');
       assert(n != p);
       if (!n) {
-	// last arg.
-	if (*p) {
-	  args.push_back(p);
-	}
-	break;
+        // last arg.
+        if (*p) {
+          args.push_back(p);
+        }
+        break;
       } else {
-	args.push_back(std::string(p, n - p));
+        args.push_back(std::string(p, n - p));
       }
       p = n + 1;
     }
   }
-  
+
   // Set up program, argv and envp.
-  std::string program;
+  const char* program = NULL;
   std::vector<const char*> argv;
   std::vector<const char*> envp;
-  if (argv.size()) {
-    program = argv[0];
-  }
   for (size_t i = 0; i < args.size(); i++) {
     argv.push_back(args[i].c_str());
   }
   argv.push_back(NULL);
+
+  if (argv.size()) {
+    program = argv[0];
+  }
+
   {
     const char* p = environment.c_str();
     const char* e = environment.c_str() + environment.size();
@@ -173,7 +175,7 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
   if (pid == 0) {
     // Child process.
     if (chdir(dir.c_str()) == 0) {
-      execve(program.c_str(), argv_p, envp_p);
+      execve(program, argv_p, envp_p);
     }
     _exit(1);
   }
@@ -181,20 +183,20 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
   // Parent process.
   if (pid == -1) {
     return Res(ERR_SUBCOMMAND_FAILED,
-	       StringPrintf("RunCommand failed to fork, errno = %d\n>>",
-			    errno, cmd_line.c_str()));
+               StringPrintf("RunCommand failed to fork, errno = %d\n>>",
+                            errno, cmd_line.c_str()));
   }
   int status = 0;
   if (waitpid(pid, &status, 0) != pid) {
     return Res(ERR_SUBCOMMAND_FAILED,
-	       StringPrintf("RunCommand failed to get status, "
-			    "errno = %d, cmd =\n>>%s",
-			    errno, cmd_line.c_str()));
+               StringPrintf("RunCommand failed to get status, "
+                            "errno = %d, cmd =\n>>%s",
+                            errno, cmd_line.c_str()));
   }
   if (status != 0) {
     return Res(ERR_SUBCOMMAND_FAILED,
-	       StringPrintf("RunCommand returned non-zero exit status "
-			    "0x%X:\n>>%s", status, cmd_line.c_str()));
+               StringPrintf("RunCommand returned non-zero exit status "
+                            "0x%X:\n>>%s", status, cmd_line.c_str()));
   }
 
   return Res(OK);
@@ -205,8 +207,10 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
 
 #ifdef _WIN32
 #define GETCWD _getcwd
+#define CHDIR _chdir
 #else
 #define GETCWD getcwd
+#define CHDIR chdir
 #endif
 
 std::string GetCurrentDirectory() {
@@ -220,7 +224,8 @@ std::string GetCurrentDirectory() {
     exit(1);
   }
   // Trim to the correct size.
-  currdir.resize(strlen(currdir.c_str()));
+  size_t sz = strlen(currdir.c_str());
+  currdir.resize(sz);
 
 #ifdef _WIN32
   // Change backslashes to forward slashes.
@@ -230,4 +235,14 @@ std::string GetCurrentDirectory() {
     currdir[pos] = '/';
   }
 #endif  // _WIN32
+
+  return currdir;
+}
+
+Res ChangeDirectory(const char* newdir) {
+  if (CHDIR(newdir) == 0) {
+    return Res(OK);
+  }
+
+  return Res(ERR, StringPrintf("chdir(\"%s\") failed", newdir));
 }

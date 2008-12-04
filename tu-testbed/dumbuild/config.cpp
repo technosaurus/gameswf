@@ -49,5 +49,13 @@ Res Config::Init(const Context* context, const std::string& name,
     }
   }
 
+  if (value.isMember("obj_extension")) {
+    if (!value["obj_extension"].isString()) {
+      return Res(ERR_PARSE, "obj_extension must be a string value"
+                 "\nwhile initializing obj_extension of config: " + name_);
+    }
+    obj_extension_ = value["obj_extension"].asString();
+  }
+
   return Res(OK);
 }

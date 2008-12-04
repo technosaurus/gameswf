@@ -237,10 +237,10 @@ Res FindRoot(std::string* absolute_root,
 
 int main(int argc, const char** argv) {
   Context context;
-
-  // TODO argv processing
-
   Res res;
+
+  res = context.ProcessArgs(argc, argv);
+  ExitIfError(res);
 
   std::string absolute_root;
   std::string canonical_currdir;
@@ -252,7 +252,7 @@ int main(int argc, const char** argv) {
   context.LogVerbose(StringPrintf("canonical_currdir = %s\n",
 				  canonical_currdir.c_str()));
 
-  res = context.Init(absolute_root, ":vc8-debug");
+  res = context.Init(absolute_root);
   ExitIfError(res);
 
   res = ReadObjects("", context.AbsoluteFile("", "root.dmb"), &context);
@@ -263,8 +263,10 @@ int main(int argc, const char** argv) {
 		    &context);
   ExitIfError(res);
 
-  // TODO: figure out where the output should go.  Part of
-  // configuration from top/build.dmb I guess?
+  if (!context.GetConfig()) {
+    ExitIfError(Res(ERR, StringPrintf("config '%s' is not defined",
+                                      context.config_name().c_str())));
+  }
 
   // TODO: allow command-line to specify the desired target.
   std::string target_name = canonical_currdir + ":default";

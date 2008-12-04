@@ -23,13 +23,12 @@ class Target;
 // project's build information.
 class Context {
  public:
-  Context() : log_verbose_(false) {
-  }
-
+  Context();
   ~Context();
 
-  Res Init(const std::string& root_path,
-           const std::string& config_name);
+  Res ProcessArgs(int argc, const char** argv);
+
+  Res Init(const std::string& root_path);
 
   // Absolute path of project root dir.
   const std::string& tree_root() const {
@@ -91,8 +90,9 @@ class Context {
   const Config* GetConfig() const {
     std::map<std::string, Config*>::const_iterator it =
       configs_.find(config_name_);
-    // TODO add Res return value
-    assert(it != configs_.end());
+    if (it == configs_.end()) {
+      return NULL;
+    }
     return it->second;
   }
 

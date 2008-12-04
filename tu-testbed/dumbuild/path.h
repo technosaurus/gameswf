@@ -50,7 +50,7 @@ inline bool HasParentDir(const std::string& path) {
 
 // Doesn't work correctly on paths that contain ".." elements.
 inline std::string ParentDir(const std::string& path) {
-  int last_slash = path.rfind('/');
+  size_t last_slash = path.rfind('/');
   assert(last_slash < path.length() - 1);
   if (last_slash == 0) {
     assert(path.length() > 1);
@@ -61,8 +61,8 @@ inline std::string ParentDir(const std::string& path) {
 
 inline void SplitCanonicalName(const std::string& name, std::string* path_part,
 			       std::string* name_part) {
-  int split_point = name.length();
-  int last_colon = name.rfind(':');
+  size_t split_point = name.length();
+  size_t last_colon = name.rfind(':');
   if (last_colon < name.length() - 1) {
     split_point = last_colon;
   }
@@ -135,7 +135,7 @@ inline std::string CanonicalFilePart(const std::string& name) {
 
 inline void SplitFileName(const std::string& name, std::string* path_part,
                           std::string* name_part) {
-  int split_point = name.rfind('/');
+  size_t split_point = name.rfind('/');
 
   if (split_point < name.length() - 1) {
     if (path_part) {

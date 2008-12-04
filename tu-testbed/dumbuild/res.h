@@ -17,6 +17,7 @@
 enum ResValue {
   OK = 0,
   ERR,
+  ERR_COMMAND_LINE,
   ERR_PARSE,
   ERR_SUBCOMMAND_FAILED,
   ERR_FILE_NOT_FOUND,
@@ -33,6 +34,7 @@ class ResValueStrings {
 #define ADD_STR(value) strings_[value] = #value
     ADD_STR(OK);
     ADD_STR(ERR);
+    ADD_STR(ERR_COMMAND_LINE);
     ADD_STR(ERR_PARSE);
     ADD_STR(ERR_SUBCOMMAND_FAILED);
     ADD_STR(ERR_FILE_NOT_FOUND);
