@@ -40,16 +40,23 @@ namespace file_plugin
 		}
 	}
 
-	// file.eof()
-	void file_eof(const fn_call& fn)
+	// file.eof readonly property
+	void file_get_eof(const fn_call& fn)
 	{
 		file* fi = cast_to<file>(fn.this_ptr);
 		if (fi)
 		{
-			if (fi->m_file.get_error() == TU_FILE_NO_ERROR)
-			{
-				fn.result->set_bool(fi->m_file.get_eof());
-			}
+			fn.result->set_bool(fi->m_file.get_eof());
+		}
+	}
+
+	// file.error readonly property
+	void file_get_error(const fn_call& fn)
+	{
+		file* fi = cast_to<file>(fn.this_ptr);
+		if (fi)
+		{
+			fn.result->set_int(fi->m_file.get_error());
 		}
 	}
 
@@ -74,12 +81,13 @@ namespace file_plugin
 		// methods
 		builtin_member("read", file_read);
 		builtin_member("write", file_write);
-		builtin_member("eof", file_eof);
+		builtin_member("eof", as_value(file_get_eof, as_value()));	// readonly property
+		builtin_member("error", as_value(file_get_error, as_value()));	// readonly property
 
-		if (m_file.get_error() != TU_FILE_NO_ERROR)
-		{
-			log_error("can't open '%s'", path.c_str());
-		}
+//		if (m_file.get_error() != TU_FILE_NO_ERROR)
+//		{
+//			log_error("can't open '%s'", path.c_str());
+//		}
 	}
 
 	file::~file()
