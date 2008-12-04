@@ -46,7 +46,7 @@ Res Context::ProcessArgs(int argc, const char** argv) {
           if (i >= argc) {
             return Res(ERR_COMMAND_LINE, "-C option requires a directory");
           }
-          Res res = ChangeDirectory(argv[i]);
+          Res res = ChangeDir(argv[i]);
           if (!res.Ok()) {
             res.AppendDetail("\nWhile processing argument -C");
             return res;

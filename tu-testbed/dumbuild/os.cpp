@@ -9,6 +9,7 @@
 #ifdef _WIN32
 
 #include <windows.h>
+#include <direct.h>
 
 Res CreatePath(const std::string& root, const std::string& sub_path) {
   std::string current = root;
@@ -213,7 +214,7 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
 #define CHDIR chdir
 #endif
 
-std::string GetCurrentDirectory() {
+std::string GetCurrentDir() {
   // Allocate a big return buffer for getcwd.
   const int MAX_CURRDIR_SIZE = 2000;
   std::string currdir;
@@ -239,7 +240,7 @@ std::string GetCurrentDirectory() {
   return currdir;
 }
 
-Res ChangeDirectory(const char* newdir) {
+Res ChangeDir(const char* newdir) {
   if (CHDIR(newdir) == 0) {
     return Res(OK);
   }
