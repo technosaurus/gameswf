@@ -35,10 +35,13 @@ else
   cd dmb_out/bootstrap
 
   # Make lib_json.a
+  echo Compiling lib_json...
   gcc -c -g ../../jsoncpp/src/lib_json/*.cpp -I../../jsoncpp/include
+  echo ar lib_json...
   ar rc lib_json.a json_reader.o json_value.o json_writer.o
 
   # Make dmb executable
+  echo Compiling and linking...
   gcc -o dmb \
     ../../config.cpp \
     ../../context.cpp \
@@ -49,6 +52,6 @@ else
     ../../res.cpp \
     ../../target.cpp \
     ../../util.cpp \
-    -g -I../../jsoncpp/include lib_json.a -lstdc++
+    -g -Wall -I../../jsoncpp/include lib_json.a -lstdc++
 
 fi

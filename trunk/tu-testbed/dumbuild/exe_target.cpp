@@ -18,7 +18,7 @@ Res ExeTarget::Init(const Context* context, const std::string& name,
   if (res.Ok()) {
     // TODO
     // more exe-specific init???
-  }    
+  }
 
   return res;
 }
@@ -79,6 +79,8 @@ Res ExeTarget::Process(const Context* context) {
     }
   }
 
+  const Config* config = context->GetConfig();
+
   // Prepare template replacement vars.
   std::map<std::string, std::string> vars;
   std::string src_list;
@@ -88,7 +90,7 @@ Res ExeTarget::Process(const Context* context) {
     src_list += " ";
     src_list += PathJoin(relative_path_to_tree_root, src()[i]);
     obj_list += " ";
-    obj_list += StripExt(FilenameFilePart(src()[i])) + ".obj";
+    obj_list += StripExt(FilenameFilePart(src()[i])) + config->obj_extension();
   }
   for (size_t i = 0; i < inc_dirs().size(); i++) {
     inc_dirs_str += " -I";
@@ -98,9 +100,7 @@ Res ExeTarget::Process(const Context* context) {
   vars["obj_list"] = obj_list;
   vars["basename"] = CanonicalFilePart(name_);
   vars["inc_dirs"] = inc_dirs_str;
-  
-  const Config* config = context->GetConfig();
-  
+
   std::string cmd;
   res = FillTemplate(config->compile_template(), vars, &cmd);
   if (!res.Ok()) {
