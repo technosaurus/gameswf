@@ -267,7 +267,7 @@ namespace gameswf
 					fi.set_position(0);
 
 					char* buf = (char*) malloc(len);
-					if (fi.read_string(buf, len, '\n') > 0)
+					if (fi.read_string(buf, len) > 0)
 					{
 						// decode data in the standard MIME format and copy theirs into target
 						as_loadvars lv(get_player());

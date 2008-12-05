@@ -480,15 +480,20 @@ void tu_file::write_string(const char* src)
 	}
 }
 
-// return amount of read bytes
-int tu_file::read_string(char* dst, int max_length, char eol) 
+int tu_file::read_string(char* dst, int max_length) 
 {
 	int i = 0;
 	while (i < max_length)
 	{
 		dst[i] = read8();
-		if (get_eof() == true || dst[i] == eol)
+		if (get_eof() == true || dst[i] == '\n' || dst[i] == 0)
 		{
+			// remove the last '\r'
+			if (i > 0 && dst[i - 1] == '\r')
+			{
+				i--;
+			}
+
 			dst[i] = 0;
 			return i + 1;
 		}

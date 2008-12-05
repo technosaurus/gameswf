@@ -112,13 +112,12 @@ public:
 	// write a 0-terminated string.
 	exported_module void 	write_string(const char* src);
 	
-	// Read up to max_length characters, returns the number of characters 
-	// read, or -1 if the string length is longer than max_length.
-	//
-	// Stops at the first \0 character if it comes before max_length.
+	// Read up to max_length characters, returns the number of characters read
+	// Stops at the first '\n' character if it comes before max_length.
+	// Removes the last '\r' character
 	//
 	// Guarantees termination of the string.
-	exported_module int	read_string(char* dst, int max_length, char eol = '\0');
+	exported_module int	read_string(char* dst, int max_length);
 
 	// float/double IO
 	exported_module void	write_float32(float value);

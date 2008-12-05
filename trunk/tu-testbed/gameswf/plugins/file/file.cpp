@@ -12,7 +12,7 @@
 namespace file_plugin
 {
 
-	// file.read()
+	// file.read(), text only
 	void file_read(const fn_call& fn)
 	{
 		file* fi = cast_to<file>(fn.this_ptr);
@@ -21,7 +21,7 @@ namespace file_plugin
 			if (fi->m_file.get_error() == TU_FILE_NO_ERROR)
 			{
 				char buf[256];
-				fi->m_file.read_string(buf, 256, '\n');
+				fi->m_file.read_string(buf, 256);
 				fn.result->set_string(buf);
 			}
 		}
