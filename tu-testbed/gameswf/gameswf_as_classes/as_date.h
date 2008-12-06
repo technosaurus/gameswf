@@ -30,11 +30,15 @@ namespace gameswf
 		}
 
 		as_date(const fn_call& fn);
-		Uint64 get_time() const;
+
+		double get_fulltime() const;
+		time_t get_time() const;
+		time_t* get_time_ptr();
+		void set_time(time_t t);
 
 		private:
 
-		Uint64 m_time;
+		time_t m_time;
 	};
 
 }	// end namespace gameswf

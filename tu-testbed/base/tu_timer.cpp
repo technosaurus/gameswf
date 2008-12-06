@@ -10,7 +10,7 @@
 #include "base/tu_timer.h"
 
 
-Uint64 tu_timer::get_systime()
+time_t tu_timer::get_systime()
 // Returns the time as seconds elapsed since midnight, January 1, 1970.
 {
 	time_t ltime;
@@ -18,82 +18,156 @@ Uint64 tu_timer::get_systime()
 	return ltime;
 }
 
-int tu_timer::get_date(Uint64 t)
+int tu_timer::get_date(time_t t)
 // Returns the day of the month (an integer from 1 to 31)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_mday;
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_mday : -1;
 }
 
-int tu_timer::get_day(Uint64 t)
+void tu_timer::set_date(time_t* t, int day)
+// Sets the day of the month (an integer from 1 to 31)
+{
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_mday = day;
+		*t = mktime(gmt);
+	}
+}
+
+
+int tu_timer::get_day(time_t t)
 // Returns the day of the week (0 for Sunday, 1 for Monday, and so on)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_wday;
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_wday : -1;
 }
 
-int tu_timer::get_hours(Uint64 t)
+void tu_timer::set_day(time_t* t, int day)
+// Sets the day of the week (0 for Sunday, 1 for Monday, and so on)
+{
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_wday = day;
+		*t = mktime(gmt);
+	}
+}
+
+int tu_timer::get_hours(time_t t)
 // Returns the hour (an integer from 0 to 23)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_hour;
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_hour : -1;
 }
 
-int tu_timer::get_fullyear(Uint64 t)
+void tu_timer::set_hours(time_t* t, int hours)
+// Sets the hour (an integer from 0 to 23)
+{
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_hour = hours;
+		*t = mktime(gmt);
+	}
+}
+
+int tu_timer::get_fullyear(time_t t)
 // Returns the full year (a four-digit number, such as 2000)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_year + 1900;
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_year + 1900 : -1;
 }
 
-int tu_timer::get_milli(Uint64 t)
+void tu_timer::set_fullyear(time_t* t, int year)
+// Sets the full year (a four-digit number, such as 2000)
+{
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_year = year - 1900;	// (current year minus 1900).
+		*t = mktime(gmt);
+	}
+}
+
+int tu_timer::get_year(time_t t)
+// Returns year minus 1900
+{
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_year : -1;
+}
+
+void tu_timer::set_year(time_t* t, int year)
+// year minus 1900
+{
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_year = year;
+		*t = mktime(gmt);
+	}
+}
+
+int tu_timer::get_milli(time_t t)
 // Returns the milliseconds (an integer from 0 to 999)
 {
 	return 0;	// TODO
 }
 
-int tu_timer::get_month(Uint64 t)
+int tu_timer::get_month(time_t t)
 // Returns the month (0 for January, 1 for February, and so on)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_mon;
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_mon : -1;
 }
 
-int tu_timer::get_minutes(Uint64 t)
+void tu_timer::set_month(time_t* t, int month)
+// Sets the month (0 for January, 1 for February, and so on)
+{
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_mon = month;
+		*t = mktime(gmt);
+	}
+}
+
+int tu_timer::get_minutes(time_t t)
 // Returns the minutes (an integer from 0 to 59)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_min;
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_min : -1;
 }
 
-int tu_timer::get_seconds(Uint64 t)
+void tu_timer::set_minutes(time_t* t, int minutes)
+// Sets the minutes (an integer from 0 to 59)
+{
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_min = minutes;
+		*t = mktime(gmt);
+	}
+}
+
+int tu_timer::get_seconds(time_t t)
 // Returns the seconds (an integer from 0 to 59)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_sec;
+	struct tm* gmt = localtime(&t);
+	return gmt ? gmt->tm_sec : -1;
 }
 
-int tu_timer::get_year(Uint64 t)
-// Returns the seconds (an integer from 0 to 59)
+void tu_timer::set_seconds(time_t* t, int seconds)
+// Sets the seconds (an integer from 0 to 59)
 {
-	time_t ltime = static_cast<time_t>(t);
-	struct tm* gmt = localtime(&ltime);
-	return gmt->tm_year;
+	struct tm* gmt = localtime(t);
+	if (gmt)
+	{
+		gmt->tm_sec = seconds;
+		*t = mktime(gmt);
+	}
 }
-
-Uint64 tu_timer::get_time(Uint64 t)
-// Returns the number of milliseconds since midnight January 1, 1970, universal time
-{
-	return t * 1000;
-}
-
 
 #ifdef _WIN32
 

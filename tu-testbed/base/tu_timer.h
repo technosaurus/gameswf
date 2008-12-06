@@ -9,6 +9,7 @@
 #ifndef TU_TIMER_H
 #define TU_TIMER_H
 
+#include <time.h>
 #include "base/tu_types.h"
 
 namespace tu_timer
@@ -42,37 +43,42 @@ namespace tu_timer
 	exported_module double	profile_ticks_to_milliseconds(uint64 ticks);
 
 	// Returns the systime
-	exported_module Uint64 get_systime();
+	exported_module time_t get_systime();
 
-	// Returns the day of the month (an integer from 1 to 31)
-	int get_date(Uint64 t);
+	// Get/Set the day of the month (an integer from 1 to 31)
+	exported_module int get_date(time_t t);
+	exported_module void set_date(time_t* t, int day);
 
-	// Returns the day of the week (0 for Sunday, 1 for Monday, and so on)
-	int get_day(Uint64 t);
+	// Get/Set the day of the week (0 for Sunday, 1 for Monday, and so on)
+	exported_module int get_day(time_t t);
+	exported_module void set_day(time_t* t, int day);
 
 	// Returns the hour (an integer from 0 to 23)
-	int get_hours(Uint64 t);
+	exported_module int get_hours(time_t t);
+	exported_module void set_hours(time_t* t, int hours);
 
-	// Returns the full year (a four-digit number, such as 2000)
-	int get_fullyear(Uint64 t);
+	// Get/Set the full year (a four-digit number, such as 2000)
+	exported_module int get_fullyear(time_t t);
+	exported_module void set_fullyear(time_t* t, int year);
 
-	// Returns the year - 1900
-	int get_year(Uint64 t);
+	// Get/Set the year - 1900
+	exported_module int get_year(time_t t);
+	void set_year(time_t* t, int year);
 	
 	// Returns the milliseconds (an integer from 0 to 999)
-	int get_milli(Uint64 t);
+	exported_module int get_milli(time_t t);
 
-	// Returns the month (0 for January, 1 for February, and so on)
-	int get_month(Uint64 t);
+	// Get/Set the month (0 for January, 1 for February, and so on)
+	exported_module int get_month(time_t t);
+	exported_module void set_month(time_t* t, int month);
 
-	// Returns the minutes (an integer from 0 to 59)
-	int get_minutes(Uint64 t);
+	// Get/Set the minutes (an integer from 0 to 59)
+	exported_module int get_minutes(time_t t);
+	exported_module void set_minutes(time_t* t, int hours);
 
-	// Returns the seconds (an integer from 0 to 59)
-	int get_seconds(Uint64 t);
-
-	// Returns the number of milliseconds since midnight January 1, 1970, universal time
-	Uint64 get_time(Uint64 t);
+	// Get/Set the seconds (an integer from 0 to 59)
+	exported_module int get_seconds(time_t t);
+	exported_module void set_seconds(time_t* t, int hours);
 
 };
 
