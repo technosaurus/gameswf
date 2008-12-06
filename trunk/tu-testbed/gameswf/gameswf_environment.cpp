@@ -270,9 +270,13 @@ namespace gameswf
 					if (fi.read_string(buf, len) > 0)
 					{
 						// decode data in the standard MIME format and copy theirs into target
+#if TU_ENABLE_NETWORK == 1
 						as_loadvars lv(get_player());
 						lv.decode(buf);
 						lv.copy_to(target);
+#else
+						log_error("Compile gameswf with TU_ENABLE_NETWORK=1 to use loadVariable() function");
+#endif
 					}
 					free(buf);
 				}
