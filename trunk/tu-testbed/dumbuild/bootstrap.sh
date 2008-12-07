@@ -1,10 +1,14 @@
 #!/bin/bash
 
 # Simple build script to bootstrap a build of dmb.exe
+#
+# This scirpt should work on Linux and other posix systems using gcc.
+#
+# It should also work on cygwin if you have MSVC set up in your path.
 
 sysname=`uname`
 
-# Windows:
+# cygwin with MSVC:
 if echo "$sysname" | grep -q 'CYGWIN' ; then
   mkdir -p dmb_out/bootstrap
   cd dmb_out/bootstrap
