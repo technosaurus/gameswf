@@ -32,8 +32,14 @@ class Config : public Object {
   const std::string& link_template() const {
     return link_template_;
   }
+  const std::string& lib_template() const {
+    return lib_template_;
+  }
   const std::string& obj_extension() const {
     return obj_extension_;
+  }
+  const std::string& lib_extension() const {
+    return lib_extension_;
   }
 
   // TODO
@@ -41,7 +47,9 @@ class Config : public Object {
   std::string compile_environment_;
   std::string compile_template_;
   std::string link_template_;
+  std::string lib_template_;
   std::string obj_extension_;
+  std::string lib_extension_;
 };
 
 #endif  // CONFIG_H_

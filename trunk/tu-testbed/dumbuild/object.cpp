@@ -7,6 +7,7 @@
 #include "config.h"
 #include "exe_target.h"
 #include "generic_target.h"
+#include "lib_target.h"
 #include "target.h"
 
 // Factory.
@@ -30,6 +31,8 @@ Res Object::Create(const Context* context, const std::string& path,
   const std::string& type = value["type"].asString();
   if (type == "exe") {
     *object = new ExeTarget();
+  } else if (type == "lib") {
+    *object = new LibTarget();
   } else if (type == "generic") {
     *object = new GenericTarget();
   } else if (type == "config") {

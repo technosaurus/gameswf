@@ -49,12 +49,30 @@ Res Config::Init(const Context* context, const std::string& name,
     }
   }
 
+  if (value.isMember("lib_template")) {
+    res = ParseValueStringOrMap(value["lib_template"], "=", ";",
+                                &lib_template_);
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile initializing lib_template of config: " +
+                       name_);
+      return res;
+    }
+  }
+
   if (value.isMember("obj_extension")) {
     if (!value["obj_extension"].isString()) {
       return Res(ERR_PARSE, "obj_extension must be a string value"
                  "\nwhile initializing obj_extension of config: " + name_);
     }
     obj_extension_ = value["obj_extension"].asString();
+  }
+
+  if (value.isMember("lib_extension")) {
+    if (!value["lib_extension"].isString()) {
+      return Res(ERR_PARSE, "lib_extension must be a string value"
+                 "\nwhile initializing lib_extension of config: " + name_);
+    }
+    lib_extension_ = value["lib_extension"].asString();
   }
 
   return Res(OK);

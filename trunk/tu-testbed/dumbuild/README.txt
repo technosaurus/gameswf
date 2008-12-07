@@ -55,7 +55,7 @@ goes in dmb_out/&lt;config-name&gt;/
 # dmb -c :vc8-release
 
 Scans build.dmb for the default target, and builds it using the
-:vc8-debug configuration.
+:vc8-release configuration.
 
 Files:
 
