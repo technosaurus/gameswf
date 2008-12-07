@@ -21,6 +21,26 @@
     "link_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -Zi ${obj_list} -Fe${basename}.exe -Fd${basename}.pdb"
   },
 
+  { "name": "vc8-release",
+    "type": "config",
+
+    "compile_environment": {
+      "PATH": "c:/Program Files/Microsoft Visual Studio 8/VC/bin;c:/Program Files/Microsoft Visual Studio 8/Common7/IDE",
+      "INCLUDE": "c:/Program Files/Microsoft Visual Studio 8/VC/include;c:/Program Files/Microsoft Platform SDK/Include",
+      "LIB": "c:/Program Files/Microsoft Visual Studio 8/VC/lib;c:/Program Files/Microsoft Platform SDK/Lib",
+      "SystemRoot": "C:\\WINDOWS"
+    },
+
+    "obj_extension": ".obj",
+
+    // This is the command-line template used to invoke the compiler.
+    "compile_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -EHsc -I../../../../third_party/jsoncpp/include ${inc_dirs} -D_CRT_SECURE_NO_DEPRECATE -Ox -c ${src_list}",
+
+    // This is the command-line template used to invoke the linker.
+    "link_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo ${obj_list} -Fe${basename}.exe -Fd${basename}.pdb"
+  },
+
+
   { "name": "gcc-debug",
     "type": "config",
 

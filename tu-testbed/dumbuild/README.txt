@@ -14,13 +14,48 @@ include:
 
 * Not gratuituously slow.
 
+Getting dumbuild
+================
+
+The code is here:
+http://tu-testbed.svn.sourceforge.net/viewvc/tu-testbed/trunk/tu-testbed/dumbuild/
+
+You can grab it out of SVN or just poke around in there if you're
+curious.
+
+A prebuilt statically-linked windows executable is here:
+http://tulrich.com/geekstuff/dumbuild/dmb.exe
+
+Building dumbuild
+=================
+
+From the dumbuild/ directory, run the bootstrap script.  On Windows:
+
+> bootstrap.bat
+
+On Linux etc:
+
+# ./bootstrap.sh
+
+If all goes well, you should get dmb.exe (Windows) or dmb (Linux etc)
+in the subdirectory dmb_out/bootstrap .
 
 Usage
 =====
 
-> dmb [options] [target-name]
+# dmb [options] [target-name]
 
-// TODO flesh this out (and implement!)
+For example:
+
+# dmb
+
+Builds the default target using the default configuration.  The output
+goes in dmb_out/&lt;config-name&gt;/
+
+# dmb -c :vc8-release
+
+Scans build.dmb for the default target, and builds it using the
+:vc8-debug configuration.
 
 Files:
 
@@ -28,6 +63,8 @@ root.dmb -- put this in the root directory of your project.  All the
   pathnames in dumbuild config are relative to this root.  This is
   also where you put the compiler configuration (command-line
   templates and such).
+  [[http://tu-testbed.svn.sourceforge.net/viewvc/tu-testbed/trunk/tu-testbed/dumbuild/root.dmb?view=markup][Example]]
+
 
 build.dmb -- these files specify your actual "targets" (i.e. libs and
   executables).  Put these throughout your project tree, wherever you
@@ -37,6 +74,7 @@ build.dmb -- these files specify your actual "targets" (i.e. libs and
   target can actually pull sources from outside the directory its
   build.dmb file is in, though this is more intended for special
   circumstances, like building sources from a foreign code tree.
+  [[http://tu-testbed.svn.sourceforge.net/viewvc/tu-testbed/trunk/tu-testbed/dumbuild/build.dmb?view=markup][Example]]
 
 
 Design Principles
@@ -44,6 +82,8 @@ Design Principles
 
 Keep It Simple
 --------------
+
+This is why I called it "dumbuild":
 
 1. If there is a choice between a simple, conservative 80% solution
    and a more complex 100% solution, prefer the 80% solution.
@@ -118,8 +158,48 @@ Notes
   configs & variables, but I really want to avoid the scripting
   rathole.
 
+  My current plan is for each target type to support a fixed set of
+  parameters, which are initialized in a target-dependent way, and
+  substituted into template strings supplied in the project
+  configuration.  We'll see how far that goes.
+
 * For coarse-grained dependency checking, it would be good to enforce
   explicit declaration of dependencies by using symlinks to build
   targets in a little pseudo-tree where only the dependencies are
   mapped in.  That way, if you forget to declare a dependency, the
   compiler won't find the header file and you'll get an error message.
+  (Not implemented.)
+
+
+Why?
+====
+
+Good question.  Because it's more fun to start a project than to
+finish it?
+
+Basically, I was so sick of miserable build tools I thought the world
+might need another one.  Anyway, it's a little hobby project and has
+been fun to mess around with.  At some point I might try to use it as
+the canonical build tool for
+[[http://tulrich.com/geekstuff/gameswf.html][gameswf]] (if the other
+devs will let me).
+
+Alternatives
+------------
+
+[[http://redmine.jamplex.org/projects/show/jamplus][JamPlus]] wasn't
+released when I started working on dumbuild, but the developers have a
+clue and it's probably better in almost every dimension than dumbuild.
+So if you just want a good build tool, I would start there.
+
+[[http://www.scons.org/][Scons]] is much better-developed and
+feature-filled.  But, it's written in Python, it's smallish but not
+tiny, and unfortunately it can be pretty slow on big projects.  I
+don't think it's a great choice for embedding in a small or
+medium-sized open-source project, mainly because it would be bigger
+than the typical host project.
+
+GNU make is what I usually use for my own open-source stuff.  I don't
+mind it too much, but it's not the most elegant thing, and has some
+real shortcomings with dependency checking and it seems to perplex
+most Windows programmers.
