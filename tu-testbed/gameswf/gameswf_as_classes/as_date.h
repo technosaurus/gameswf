@@ -19,7 +19,7 @@ namespace gameswf
 
 	void	as_global_date_ctor(const fn_call& fn);
 
-	struct as_date : public as_object
+	struct as_date : public as_object, tu_datetime
 	{
 		// Unique id of a gameswf resource
 		enum { m_class_id = AS_DATE };
@@ -30,15 +30,6 @@ namespace gameswf
 		}
 
 		as_date(const fn_call& fn);
-
-		double get_fulltime() const;
-		time_t get_time() const;
-		time_t* get_time_ptr();
-		void set_time(time_t t);
-
-		private:
-
-		time_t m_time;
 	};
 
 }	// end namespace gameswf

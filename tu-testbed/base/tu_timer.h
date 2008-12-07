@@ -14,7 +14,6 @@
 
 namespace tu_timer
 {
-
 	// General-purpose wall-clock timer.  May not be hi-res enough
 	// for profiling.
 	exported_module uint64 get_ticks();
@@ -42,44 +41,37 @@ namespace tu_timer
 
 	exported_module double	profile_ticks_to_milliseconds(uint64 ticks);
 
-	// Returns the systime
-	exported_module time_t get_systime();
+	// Return the time as seconds elapsed since midnight, January 1, 1970.
+	Uint64 get_systime();
 
-	// Get/Set the day of the month (an integer from 1 to 31)
-	exported_module int get_date(time_t t);
-	exported_module void set_date(time_t* t, int day);
+};
 
-	// Get/Set the day of the week (0 for Sunday, 1 for Monday, and so on)
-	exported_module int get_day(time_t t);
-	exported_module void set_day(time_t* t, int day);
 
-	// Returns the hour (an integer from 0 to 23)
-	exported_module int get_hours(time_t t);
-	exported_module void set_hours(time_t* t, int hours);
+struct tu_datetime
+{
+	enum part
+	{
+		YEAR,	// year - 1900
+		FULLYEAR,	// a four-digit number, such as 2000
+		MON,
+		MDAY,	// day of a month
+		WDAY,	// day of a week
+		HOUR,
+		MIN,
+		SEC
+	};
 
-	// Get/Set the full year (a four-digit number, such as 2000)
-	exported_module int get_fullyear(time_t t);
-	exported_module void set_fullyear(time_t* t, int year);
+	exported_module tu_datetime();
 
-	// Get/Set the year - 1900
-	exported_module int get_year(time_t t);
-	void set_year(time_t* t, int year);
-	
-	// Returns the milliseconds (an integer from 0 to 999)
-	exported_module int get_milli(time_t t);
+	exported_module double get_time() const;
+	exported_module void set_time(double t);
 
-	// Get/Set the month (0 for January, 1 for February, and so on)
-	exported_module int get_month(time_t t);
-	exported_module void set_month(time_t* t, int month);
+	exported_module int get(part part);
+	exported_module void set(part part, int val);
 
-	// Get/Set the minutes (an integer from 0 to 59)
-	exported_module int get_minutes(time_t t);
-	exported_module void set_minutes(time_t* t, int hours);
+private:
 
-	// Get/Set the seconds (an integer from 0 to 59)
-	exported_module int get_seconds(time_t t);
-	exported_module void set_seconds(time_t* t, int hours);
-
+	time_t m_time;
 };
 
 

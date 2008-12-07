@@ -27,7 +27,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_double(dt->get_fulltime());
+		fn.result->set_double(dt->get_time());
 	}
 
 	// setTime(millisecond:Number) : Number
@@ -38,7 +38,8 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		dt->set_time(static_cast<time_t>(fn.arg(0).to_number() / 1000));
+		dt->set_time(fn.arg(0).to_number());
+		fn.result->set_double(dt->get_time());
 	}
 
 	// getDate() : Number
@@ -48,7 +49,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_date(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::MDAY));
 	}
 
 	void	as_date_setdate(const fn_call& fn)
@@ -57,8 +58,8 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_date(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::MDAY, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
@@ -69,7 +70,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_day(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::WDAY));
 	}
 
 	void	as_date_setday(const fn_call& fn)
@@ -78,8 +79,8 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_day(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::WDAY, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
@@ -90,7 +91,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_fullyear(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::FULLYEAR));
 	}
 
 	void	as_date_setfullyear(const fn_call& fn)
@@ -99,8 +100,8 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_fullyear(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::FULLYEAR, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
@@ -111,7 +112,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_hours(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::HOUR));
 	}
 
 	void	as_date_sethours(const fn_call& fn)
@@ -120,8 +121,8 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_hours(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::HOUR, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
@@ -132,22 +133,28 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_milli(dt->get_time()));
+		fn.result->set_int(0);	// TODO
 	}
 
 	void	as_date_setmilli(const fn_call& fn)
 	{
-		// TODO
+		as_date* dt = cast_to<as_date>(fn.this_ptr);
+		assert(dt);
+		if (fn.nargs > 0)
+		{
+			// TODO
+			fn.result->set_double(dt->get_time());
+		}
 	}
 
 	// getMinutes() : Number
 	// Returns the minutes (an integer from 0 to 59)
- 	void	as_date_getminutes(const fn_call& fn)
+	void	as_date_getminutes(const fn_call& fn)
 	{
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_minutes(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::MIN));
 	}
 
 	void	as_date_setminutes(const fn_call& fn)
@@ -156,8 +163,8 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_minutes(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::MIN, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
@@ -168,7 +175,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_month(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::MON));
 	}
 
 	// public setMonth(month:Number) : Number
@@ -179,8 +186,8 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_month(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::MON, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
@@ -192,7 +199,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_seconds(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::SEC));
 	}
 
 	void	as_date_setseconds(const fn_call& fn)
@@ -201,8 +208,8 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_seconds(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::SEC, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
@@ -213,7 +220,7 @@ namespace gameswf
 		as_date* dt = cast_to<as_date>(fn.this_ptr);
 		assert(dt);
 
-		fn.result->set_int(tu_timer::get_year(dt->get_time()));
+		fn.result->set_int(dt->get(as_date::YEAR));
 	}
 
 	// public setYear(year:Number) : Number
@@ -224,62 +231,47 @@ namespace gameswf
 		assert(dt);
 		if (fn.nargs > 0)
 		{
-			tu_timer::set_year(dt->get_time_ptr(), fn.arg(0).to_int());
-			fn.result->set_double(dt->get_fulltime());
+			dt->set(as_date::YEAR, fn.arg(0).to_int());
+			fn.result->set_double(dt->get_time());
 		}
 	}
 
 	// Date([yearOrTimevalue:Number], [month:Number], [date:Number],
 	// [hour:Number], [minute:Number], [second:Number], [millisecond:Number])
 	as_date::as_date(const fn_call& fn) :
-		as_object(fn.get_player()),
-		m_time(tu_timer::get_systime())
+		as_object(fn.get_player())
 	{
-		// predefined
-		int year = tu_timer::get_fullyear(m_time);
-		int month = tu_timer::get_month(m_time);
-		int day = tu_timer::get_day(m_time);
-		int hour = tu_timer::get_hours(m_time);
-		int minute = tu_timer::get_minutes(m_time);
-		int second = tu_timer::get_seconds(m_time);
-
 		// reset if there are args
 		if (fn.nargs > 0)
 		{
-			year = fn.arg(0).to_int();
-			month = 0;
-			day = 0;
-			hour = 0;
-			minute = 0;
-			second = 0;
+			int arg = fn.arg(0).to_int();
+			set(FULLYEAR, arg);
 			if (fn.nargs > 1)
 			{
-				month = fn.arg(1).to_int();
+				arg = fn.arg(1).to_int();
+				set(MON, arg);
 				if (fn.nargs > 2)
 				{
-					day = fn.arg(2).to_int();
+					arg = fn.arg(2).to_int();
+					set(MDAY, arg);
 					if (fn.nargs > 3)
 					{
-						hour = fn.arg(3).to_int();
+						arg = fn.arg(3).to_int();
+						set(HOUR, arg);
 						if (fn.nargs > 4)
 						{
-							minute = fn.arg(4).to_int();
+							arg = fn.arg(4).to_int();
+							set(MIN, arg);
 							if (fn.nargs > 5)
 							{
-								second = fn.arg(5).to_int();
+								arg = fn.arg(5).to_int();
+								set(SEC, arg);
 							}
 						}
 					}
 				}
 			}
 		}
-
-		tu_timer::set_fullyear(&m_time, year);
-		tu_timer::set_month(&m_time, month);
-		tu_timer::set_date(&m_time, day);
-		tu_timer::set_hours(&m_time, hour);
-		tu_timer::set_minutes(&m_time, minute);
-		tu_timer::set_seconds(&m_time, second);
 
 		builtin_member("getTime", as_date_gettime);
 		builtin_member("setTime", as_date_settime);
@@ -313,23 +305,4 @@ namespace gameswf
 
 	}
 
-		double as_date::get_fulltime() const
-		{
-			return (double) m_time * 1000;	// *1000 means that time in milliseconds
-		}
-
-		time_t as_date::get_time() const
-		{
-			return m_time;
-		}
-
-		void as_date::set_time(time_t t)
-		{
-			m_time = t;
-		}
-
-		time_t* as_date::get_time_ptr()
-		{
-			return &m_time;
-		}
 };
