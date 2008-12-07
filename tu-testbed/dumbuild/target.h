@@ -47,7 +47,7 @@ class Target : public Object {
   }
 
   bool processed() const {
-    return resolved_;
+    return processed_;
   }
 
   // List of src files.
@@ -65,11 +65,26 @@ class Target : public Object {
     return inc_dirs_;
   }
 
+  // Relative path from the target's compile output directory back up
+  // to the tree root.
+  const std::string& relative_path_to_tree_root() const {
+    return relative_path_to_tree_root_;
+  }
+
+  // Absolute path to the target's compile output directory.
+  const std::string& absolute_out_dir() const {
+    return absolute_out_dir_;
+  }
+
   virtual Res Resolve(Context* context);
 
   // Helper: does standard processing of dependencies.
   // Returns Res(OK) on success.
   Res ProcessDependencies(const Context* context);
+
+  // Helper: does standard setup of paths & makes the output
+  // directory.
+  Res BuildOutDirAndSetupPaths(const Context* context);
 
   // Build the target.
   virtual Res Process(const Context* context) = 0;
@@ -78,6 +93,8 @@ class Target : public Object {
   bool resolved_, processed_;
   int resolve_recursion_;
   std::vector<std::string> src_, dep_, inc_dirs_;
+  std::string relative_path_to_tree_root_;
+  std::string absolute_out_dir_;
 };
 
 #endif  // TARGET_H_

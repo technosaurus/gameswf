@@ -19,10 +19,12 @@ if echo "$sysname" | grep -q 'CYGWIN' ; then
 
   # Make dmb.exe
   cl -Fedmb.exe \
+    ../../compile_util.cpp \
     ../../config.cpp \
     ../../context.cpp \
     ../../dumbuild.cpp \
     ../../exe_target.cpp \
+    ../../lib_target.cpp \
     ../../object.cpp \
     ../../os.cpp \
     ../../res.cpp \
@@ -47,10 +49,12 @@ else
   # Make dmb executable
   echo Compiling and linking...
   gcc -o dmb \
+    ../../compile_util.cpp \
     ../../config.cpp \
     ../../context.cpp \
     ../../dumbuild.cpp \
     ../../exe_target.cpp \
+    ../../lib_target.cpp \
     ../../object.cpp \
     ../../os.cpp \
     ../../res.cpp \

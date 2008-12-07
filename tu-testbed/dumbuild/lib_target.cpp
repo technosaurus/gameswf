@@ -1,48 +1,41 @@
-// exe_target.cpp -- Thatcher Ulrich <tu@tulrich.com> 2008
+// lib_target.cpp -- Thatcher Ulrich <tu@tulrich.com> 2008
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include "exe_target.h"
+#include "lib_target.h"
 #include "compile_util.h"
 #include "config.h"
 #include "os.h"
 #include "util.h"
 
-ExeTarget::ExeTarget() {
-  type_ = "exe";
+LibTarget::LibTarget() {
+  type_ = "lib";
 }
 
-Res ExeTarget::Init(const Context* context, const std::string& name,
+Res LibTarget::Init(const Context* context, const std::string& name,
                     const Json::Value& val) {
   Res res = Target::Init(context, name, val);
   if (res.Ok()) {
     // TODO
-    // more exe-specific init???
+    // more lib-specific init???
   }
 
   return res;
 }
 
-Res ExeTarget::Resolve(Context* context) {
-  context->LogVerbose(StringPrintf("ExeTarget Resolve: %s\n", name_.c_str()));
+Res LibTarget::Resolve(Context* context) {
+  context->LogVerbose(StringPrintf("LibTarget Resolve: %s\n", name_.c_str()));
   // Default Resolve() is OK.
   return Target::Resolve(context);
 }
 
-Res BuildLumpFile(const std::string& lump_file,
-                  const std::vector<std::string>& src) {
-  // TODO
-  assert(0);
-  return Res(OK);
-}
-
-Res ExeTarget::Process(const Context* context) {
+Res LibTarget::Process(const Context* context) {
   if (processed()) {
     return Res(OK);
   }
 
-  context->Log(StringPrintf("dmb processing exe %s\n", name_.c_str()));
+  context->Log(StringPrintf("dmb processing lib %s\n", name_.c_str()));
 
   Res res;
   res = Target::ProcessDependencies(context);
@@ -58,28 +51,27 @@ Res ExeTarget::Process(const Context* context) {
 
   const Config* config = context->GetConfig();
 
-  // Compile.
   std::map<std::string, std::string> vars;
   res = PrepareCompileVars(this, config, &vars);
   if (!res.Ok()) {
     return res;
   }
+
   res = DoCompile(this, config, vars);
   if (!res.Ok()) {
     return res;
   }
 
-  // Link.
-  context->Log(StringPrintf("Linking %s\n", name_.c_str()));
+  // Archive the objs to make the lib
   std::string cmd;
-  res = FillTemplate(config->link_template(), vars, &cmd);
+  res = FillTemplate(config->lib_template(), vars, &cmd);
   if (!res.Ok()) {
-    res.AppendDetail("\nwhile preparing linker command line for " + name_);
+    res.AppendDetail("\nwhile preparing lib command line for " + name_);
     return res;
   }
   res = RunCommand(absolute_out_dir(), cmd, config->compile_environment());
   if (!res.Ok()) {
-    res.AppendDetail("\nwhile linking " + name_);
+    res.AppendDetail("\nwhile making lib " + name());
     res.AppendDetail("\nin directory " + absolute_out_dir());
     return res;
   }

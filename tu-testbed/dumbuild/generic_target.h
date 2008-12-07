@@ -29,9 +29,13 @@ class GenericTarget : public Target {
   }
 
   virtual Res Process(const Context* context) {
-    // no-op.
+    if (processed()) {
+      return Res(OK);
+    }
+
     context->LogVerbose(StringPrintf("GenericTarget Process: %s\n",
                                      name_.c_str()));
+    processed_ = true;
     return Res(OK);
   }
 };

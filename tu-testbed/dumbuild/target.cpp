@@ -4,6 +4,7 @@
 // whatever you want with it.
 
 #include "target.h"
+#include "os.h"
 #include "util.h"
 
 Res Target::Init(const Context* context,
@@ -133,19 +134,39 @@ Res Target::Resolve(Context* context) {
 Res Target::ProcessDependencies(const Context* context) {
   context->LogVerbose(StringPrintf("Target ProcessDependencies: %s\n",
                                    name_.c_str()));
-
+  // TODO: once dmb does a topological sort of targets, this can just
+  // be a series of asserts to make sure it worked right.
+  
   // Try to Process() all our dependencies.
   for (size_t i = 0; i < dep().size(); i++) {
     Target* dependency = context->GetTarget(dep()[i]);
     assert(dependency);
-    if (!dependency->processed()) {
-      Res res = dependency->Process(context);
-      if (!res.Ok()) {
-        return res;
-      }
-      assert(dependency->processed());
+    Res res = dependency->Process(context);
+    if (!res.Ok()) {
+      return res;
     }
+    assert(dependency->processed());
   }
 
   return Res(OK);
+}
+
+Res Target::BuildOutDirAndSetupPaths(const Context* context) {
+  std::string out_dir = PathJoin(context->out_root(), CanonicalPathPart(name_));
+  Res res = CreatePath(context->tree_root(), out_dir);
+  if (!res.Ok()) {
+    res.AppendDetail("\nwhile creating output path for " + name_);
+    return res;
+  }
+
+  absolute_out_dir_ = PathJoin(context->tree_root(), out_dir);
+
+  relative_path_to_tree_root_ = "../";
+  const char* slash = strchr(out_dir.c_str(), '/');
+  while (slash && *(slash + 1)) {
+    relative_path_to_tree_root_ += "../";
+    slash = strchr(slash + 1, '/');
+  }
+
+  return res;
 }
