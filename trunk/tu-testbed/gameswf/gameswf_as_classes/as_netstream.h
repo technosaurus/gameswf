@@ -183,13 +183,16 @@ namespace gameswf
 
 		void take(Uint8*& stream, int& len)
 		{
-			int n = imin(m_size, len);
-			memcpy(stream, m_ptr, n);
-			stream += n;
-			m_ptr += n;
-			m_size -= n;
-			len -= n;
-			assert(m_size >= 0 &&	len >= 0);
+			if (m_ptr)
+			{
+				int n = imin(m_size, len);
+				memcpy(stream, m_ptr, n);
+				stream += n;
+				m_ptr += n;
+				m_size -= n;
+				len -= n;
+				assert(m_size >= 0 &&	len >= 0);
+			}
 		}
 	};
 
