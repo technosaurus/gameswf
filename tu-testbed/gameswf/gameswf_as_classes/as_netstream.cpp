@@ -153,7 +153,7 @@ namespace gameswf
 
 				as_environment env(get_player());
 				env.push(infoObject.get_ptr());
-				call_method(function, &env, as_value(), 1, env.get_top_index());
+				call_method(function, &env, this, 1, env.get_top_index());
 			}
 			gameswf_engine_mutex().unlock();
 		}
@@ -174,6 +174,10 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::close_stream()
 	{
+		m_unqueued_data = NULL;
+		m_video_queue.clear();
+		m_audio_queue.clear();
+
 		if (m_frame) av_free(m_frame);
 		m_frame = NULL;
 
@@ -488,7 +492,7 @@ namespace gameswf
 				{
 					sound->detach_aux_streamer(this);
 				}
-	
+
 				close_stream();
 			}
 		}

@@ -13,7 +13,7 @@
 
 tu_datetime::tu_datetime()
 {
-	m_time = tu_timer::get_systime();
+	m_time = (time_t) tu_timer::get_systime();
 }
 
 // Returns the date for the specified Date object in milliseconds since midnight on January 1, 1970, 
