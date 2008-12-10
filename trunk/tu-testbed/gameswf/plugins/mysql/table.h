@@ -39,7 +39,7 @@ namespace mysql_plugin
 		exported_module int fld_count();
 		exported_module bool goto_record(int index);
 		exported_module const char* get_field_title(int n);
-		exported_module void retrieve_data(MYSQL_RES* result);
+		void retrieve_data(MYSQL_RES* result);
 		exported_module int get_recno() const;
 
 

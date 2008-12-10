@@ -53,7 +53,7 @@ namespace gameswf
 				t->m_this_ptr = fn.env->get_target();
 			}
 			else
-			if (fn.arg(0).is_object())
+			if (fn.arg(0).to_object() != NULL)
 			{
 				as_value func;
 				as_object* this_ptr = fn.arg(0).to_object();

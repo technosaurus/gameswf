@@ -18,8 +18,6 @@ namespace mysql_plugin
 	void	to_string_method(const fn_call& fn)
 	// Returns amount of the rows in the table
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -30,8 +28,6 @@ namespace mysql_plugin
 	void	size_method(const fn_call& fn)
 	// Returns amount of the rows in the table
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -42,8 +38,6 @@ namespace mysql_plugin
 	void	next_method(const fn_call& fn)
 	// Moves row pointer to next row
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -54,8 +48,6 @@ namespace mysql_plugin
 	void	prev_method(const fn_call& fn)
 	// Moves row pointer to prev row
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -66,8 +58,6 @@ namespace mysql_plugin
 	void	first_method(const fn_call& fn)
 	// Moves row pointer to the first row
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -78,8 +68,6 @@ namespace mysql_plugin
 	void	field_count_method(const fn_call& fn)
 	// Returns amount of the fields in the table
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -90,8 +78,6 @@ namespace mysql_plugin
 	void	goto_record_method(const fn_call& fn)
 	// Moves row pointer to the fn.arg(0).to_number()
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -103,8 +89,6 @@ namespace mysql_plugin
 	void	get_title_method(const fn_call& fn)
 	// Returns the name of fn.arg(0).to_number() field
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -116,8 +100,6 @@ namespace mysql_plugin
 	void	to_get_recno_method(const fn_call& fn)
 	// Returns the current record number
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mytable* tbl = cast_to<mytable>(fn.this_ptr);
 		if (tbl)
 		{
@@ -149,6 +131,8 @@ namespace mysql_plugin
 
 	bool	mytable::get_member(const tu_stringi& name, as_value* val)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		val->set_undefined();
 
 		// check table methods
@@ -184,16 +168,22 @@ namespace mysql_plugin
 
 	int mytable::size() const
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		return m_data.size();
 	}
 
 	int mytable::get_recno() const
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		return m_index;
 	}
 
 	bool mytable::prev()
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (m_index > 0)
 		{
 			m_index--;
@@ -204,6 +194,8 @@ namespace mysql_plugin
 
 	bool mytable::next()
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (m_index < m_data.size() - 1)
 		{
 			m_index++;
@@ -214,16 +206,22 @@ namespace mysql_plugin
 
 	void mytable::first()
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		m_index = 0;
 	}
 
 	int mytable::fld_count()
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		return m_title.size();
 	}
 
 	bool mytable::goto_record(int index)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (index < (int) m_data.size() && index >= 0)
 		{
 			m_index = index;
@@ -234,6 +232,8 @@ namespace mysql_plugin
 
 	const char* mytable::get_field_title(int n)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (n >= 0 && n < (int) m_title.size())
 		{
 			return m_title[n].c_str();
@@ -243,6 +243,9 @@ namespace mysql_plugin
 
 	void mytable::retrieve_data(MYSQL_RES* result)
 	{
+
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		MYSQL_FIELD* fld = mysql_fetch_fields(result);
 		int num_fields = mysql_num_fields(result);
 		int num_rows =  (int) mysql_num_rows(result);

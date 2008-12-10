@@ -34,7 +34,7 @@ namespace file_plugin
 
 //	private:
 
-		tu_file m_file;
+		tu_file* m_file;
 
 	};
 

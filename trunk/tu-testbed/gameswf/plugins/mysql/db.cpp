@@ -19,8 +19,6 @@ namespace mysql_plugin
 	void	mydb_connect(const fn_call& fn)
 	//  Closes a previously opened connection & create new connection to db
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -43,8 +41,6 @@ namespace mysql_plugin
 
 	void	mydb_disconnect(const fn_call& fn)
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -55,8 +51,6 @@ namespace mysql_plugin
 	void	mydb_open(const fn_call& fn)
 	// Creates new table from sql statement & returns pointer to it
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -78,8 +72,6 @@ namespace mysql_plugin
 	void	mydb_run(const fn_call& fn)
 	// Executes sql statement & returns affected rows
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -95,8 +87,6 @@ namespace mysql_plugin
 
 	void	mydb_commit(const fn_call& fn)
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db)
 		{
@@ -106,8 +96,6 @@ namespace mysql_plugin
 
 	void mydb_autocommit_setter(const fn_call& fn)
 	{
-		tu_autolock locker(s_mysql_plugin_mutex);
-
 		mydb* db = cast_to<mydb>(fn.this_ptr);
 		if (db && fn.nargs == 1)
 		{
@@ -157,6 +145,8 @@ namespace mysql_plugin
 
 	void mydb::disconnect()
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (m_db != NULL)
 		{
 			mysql_close(m_db);    
@@ -167,12 +157,13 @@ namespace mysql_plugin
 	bool mydb::connect(const char* host, const char* dbname, const char* user, 
 											const char* pwd, const char* socket)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		// Closes a previously opened connection &
 		// also deallocates the connection handle
 		disconnect();
 
 		m_db = mysql_init(NULL);
-
 		if ( m_db == NULL )
 		{
 			return false;
@@ -199,6 +190,8 @@ namespace mysql_plugin
 
 	int mydb::run(const char *sql)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (m_trace) log_msg("run: %s\n", sql);
 
 		if (runsql(sql))
@@ -210,6 +203,8 @@ namespace mysql_plugin
 
 	mytable* mydb::open(const char* sql)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (m_trace) log_msg("open: %s\n", sql);
 
 		if (runsql(sql))
@@ -231,6 +226,8 @@ namespace mysql_plugin
 
 	void mydb::set_autocommit(bool autocommit)
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (m_trace) log_msg("set autocommit=%s\n", autocommit ? "true" : "false");
 
 		mysql_autocommit(m_db, autocommit ? 1 : 0);
@@ -238,6 +235,8 @@ namespace mysql_plugin
 
 	void mydb::commit()
 	{
+		tu_autolock locker(s_mysql_plugin_mutex);
+
 		if (m_trace) log_msg("commit\n");
 
 		mysql_commit(m_db);

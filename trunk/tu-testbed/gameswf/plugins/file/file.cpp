@@ -18,10 +18,10 @@ namespace file_plugin
 		file* fi = cast_to<file>(fn.this_ptr);
 		if (fi)
 		{
-			if (fi->m_file.get_error() == TU_FILE_NO_ERROR)
+			if (fi->m_file->get_error() == TU_FILE_NO_ERROR)
 			{
 				char buf[256];
-				fi->m_file.read_string(buf, 256);
+				fi->m_file->read_string(buf, 256);
 				fn.result->set_string(buf);
 			}
 		}
@@ -33,9 +33,9 @@ namespace file_plugin
 		file* fi = cast_to<file>(fn.this_ptr);
 		if (fi && fn.nargs > 0)
 		{
-			if (fi->m_file.get_error() == TU_FILE_NO_ERROR)
+			if (fi->m_file->get_error() == TU_FILE_NO_ERROR)
 			{
-				fi->m_file.write_string(fn.arg(0).to_string());
+				fi->m_file->write_string(fn.arg(0).to_string());
 			}
 		}
 	}
@@ -46,7 +46,7 @@ namespace file_plugin
 		file* fi = cast_to<file>(fn.this_ptr);
 		if (fi)
 		{
-			fn.result->set_bool(fi->m_file.get_eof());
+			fn.result->set_bool(fi->m_file->get_eof());
 		}
 	}
 
@@ -56,7 +56,7 @@ namespace file_plugin
 		file* fi = cast_to<file>(fn.this_ptr);
 		if (fi)
 		{
-			fn.result->set_int(fi->m_file.get_error());
+			fn.result->set_int(fi->m_file->get_error());
 		}
 	}
 
@@ -76,22 +76,29 @@ namespace file_plugin
 
 	file::file(player* player, const tu_string& path, const tu_string& mode) :
 		as_object(player),
-		m_file(path.c_str(), mode.c_str())
+		m_file(NULL)
 	{
+		// is path relative ?
+		tu_string file_name = get_player()->get_workdir();
+		if (strstr(path.c_str(), ":") || *path.c_str() == '/')
+		{
+			file_name = "";
+		}
+		file_name += path;
+
+		m_file = new tu_file(file_name.c_str(), mode.c_str());
+
 		// methods
 		builtin_member("read", file_read);
 		builtin_member("write", file_write);
 		builtin_member("eof", as_value(file_get_eof, as_value()));	// readonly property
 		builtin_member("error", as_value(file_get_error, as_value()));	// readonly property
 
-//		if (m_file.get_error() != TU_FILE_NO_ERROR)
-//		{
-//			log_error("can't open '%s'", path.c_str());
-//		}
 	}
 
 	file::~file()
 	{
+		delete m_file;
 	}
 
 }
