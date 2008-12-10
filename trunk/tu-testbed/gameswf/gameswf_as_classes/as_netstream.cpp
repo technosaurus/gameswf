@@ -445,7 +445,7 @@ namespace gameswf
 								// update video clock with pts, if present
 								if (packet->m_dts != AV_NOPTS_VALUE)
 								{
-									double pts = as_double(m_video_stream->time_base) * packet->m_dts;
+									double pts = as_double(m_video_stream->codec->time_base) * packet->m_dts;
 									m_video_clock = m_start_time + pts;
 								}
 
