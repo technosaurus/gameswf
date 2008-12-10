@@ -129,6 +129,17 @@ Uint64 tu_timer::get_systime()
 	return (Uint64) ltime;
 }
 
+double tu_timer::ticks_to_seconds(uint64 ticks)
+{
+	return 0.001 * ticks;
+}
+
+double tu_timer::ticks_to_seconds()
+{
+	return 0.001 * get_ticks();
+}
+
+
 #ifdef _WIN32
 
 #include <windows.h>
@@ -137,17 +148,6 @@ Uint64 tu_timer::get_systime()
 uint64 tu_timer::get_ticks()
 {
 	return timeGetTime();
-}
-
-
-double tu_timer::ticks_to_seconds(uint64 ticks)
-{
-	return ticks * (1.0f / 1000.f);
-}
-
-double tu_timer::ticks_to_seconds()
-{
-	return get_ticks() * (1.0f / 1000.f);
 }
 
 
@@ -193,13 +193,6 @@ uint64 tu_timer::get_ticks()
 {
 	return (uint64) profile_ticks_to_milliseconds(get_profile_ticks());
 }
-
-
-double tu_timer::ticks_to_seconds(uint64 ticks)
-{
-	return profile_ticks_to_seconds(ticks);
-}
-
 
 void tu_timer::sleep(int milliseconds)
 {
