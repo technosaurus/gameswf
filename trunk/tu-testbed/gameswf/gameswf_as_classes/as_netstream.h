@@ -66,13 +66,12 @@ namespace gameswf
 
 	};
 
-	template<class T>
 	struct audio_queue
 	{
 		tu_mutex m_mutex;
-		tu_queue<T> m_queue;
+		tu_queue< gc_ptr<av_packet> > m_queue;
 
-		bool push(const T& val)
+		bool push(const gc_ptr<av_packet>& val)
 		{
 			tu_autolock locker(m_mutex);
 			if (m_queue.size() < VIDEO_QUEUE_SIZE)
@@ -89,16 +88,16 @@ namespace gameswf
 			return int(m_queue.size());
 		}
 
-		const T& front()
+		bool pop(gc_ptr<av_packet>* val)
 		{
 			tu_autolock locker(m_mutex);
-			return m_queue.front(); 
-		}
-
-		void pop()
-		{
-			tu_autolock locker(m_mutex);
-			m_queue.pop();
+			if (m_queue.size() > 0)
+			{
+				*val = m_queue.front();
+				m_queue.pop(); 
+				return true;
+			}
+			return false;
 		}
 
 		void clear()
@@ -107,24 +106,13 @@ namespace gameswf
 			m_queue.clear();
 		}
 
-		inline void lock()
-		{
-			m_mutex.lock();
-		}
-
-		inline void unlock()
-		{
-			m_mutex.unlock();
-		}
-
 	};
 
-	template<class T>
 	struct video_queue
 	{
-		tu_queue<T> m_queue;
+		tu_queue< gc_ptr<av_packet> > m_queue;
 
-		bool push(const T& val)
+		bool push(const gc_ptr<av_packet>& val)
 		{
 			if (m_queue.size() < VIDEO_QUEUE_SIZE)
 			{
@@ -139,14 +127,15 @@ namespace gameswf
 			return int(m_queue.size());
 		}
 
-		const T& front()
+		bool pop(gc_ptr<av_packet>* val)
 		{
-			return m_queue.front(); 
-		}
-
-		void pop()
-		{
-			m_queue.pop();
+			if (m_queue.size() > 0)
+			{
+				*val = m_queue.front();
+				m_queue.pop(); 
+				return true;
+			}
+			return false;
 		}
 
 		void clear()
@@ -210,8 +199,8 @@ namespace gameswf
 		~as_netstream();
 
 		video_handler* get_video_handler();
-		bool decode_audio(av_packet* packet, Sint16** data, int* size);
-		bool decode_video(av_packet* packet, Uint8** data, int* width, int* height);
+		bool decode_audio(const gc_ptr<av_packet>& packet, Sint16** data, int* size);
+		Uint8* decode_video(const gc_ptr<av_packet>& packet);
 		void run();
 		void pause(int mode);
 		void seek(double seek_time);
@@ -230,7 +219,6 @@ namespace gameswf
 		bool read_frame();
 
 		AVFormatContext *m_FormatCtx;
-		AVFrame* m_frame;
 
 		// video
 		AVCodecContext* m_VCodecCtx;
@@ -256,10 +244,10 @@ namespace gameswf
 		gc_ptr<av_packet> m_unqueued_data;
 
 		// this is used in the decoder & sound threads
-		audio_queue<gc_ptr<av_packet> > m_audio_queue;
+		audio_queue m_audio_queue;
 
 		// this is used in  the decoder thread only
-		video_queue<gc_ptr<av_packet> > m_video_queue;
+		video_queue m_video_queue;
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;

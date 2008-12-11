@@ -27,7 +27,7 @@ namespace gameswf
 
 	video_handler::~video_handler()
 	{
-		tu_autolock locker(m_mutex);
+		tu_autolock locker(m_lock_data);
 		if (m_data)
 		{
 			delete m_data;

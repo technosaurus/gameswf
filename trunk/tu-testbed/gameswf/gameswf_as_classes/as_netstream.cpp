@@ -45,7 +45,6 @@ namespace gameswf
 		m_video_clock(0),
 		m_video_index(-1),              
 		m_audio_index(-1),
-		m_url(""),
 		m_is_alive(true),
 		m_pause(false),
 		m_thread(NULL)
@@ -106,24 +105,16 @@ namespace gameswf
 			// decode sound
 			if (m_sound == NULL)
 			{
-				m_audio_queue.lock();
-				if (m_audio_queue.size() > 0)
+				gc_ptr<av_packet> audio;
+				if (m_audio_queue.pop(&audio))
 				{
-					const gc_ptr<av_packet>& audio = m_audio_queue.front();
-					
 					Sint16* sample;
 					int size;
-					decode_audio(audio.get_ptr(), &sample, &size);
-					m_audio_queue.pop();
+					decode_audio(audio, &sample, &size);
 					m_sound = new decoded_sound(sample, size);
+					continue;
 				}
-				else
-				{
-					m_audio_queue.unlock();
-					break;
-				}
-
-				m_audio_queue.unlock();
+				break;
 			}
 			else
 			{
@@ -177,9 +168,6 @@ namespace gameswf
 		m_unqueued_data = NULL;
 		m_video_queue.clear();
 		m_audio_queue.clear();
-
-		if (m_frame) av_free(m_frame);
-		m_frame = NULL;
 
 		if (m_VCodecCtx) avcodec_close(m_VCodecCtx);
 		m_VCodecCtx = NULL;
@@ -281,9 +269,6 @@ namespace gameswf
 			return false;
 		}
 
-		// Allocate a frame to store the decoded frame in
-		m_frame = avcodec_alloc_frame();
-
 		if (m_audio_index >= 0 && get_sound_handler() != NULL)
 		{
 			// Get a pointer to the audio codec context for the video stream
@@ -291,7 +276,7 @@ namespace gameswf
 
 			// Find the decoder for the audio stream
 			AVCodec* pACodec = avcodec_find_decoder(m_ACodecCtx->codec_id);
-			if(pACodec == NULL)
+			if (pACodec == NULL)
 			{
 				log_error("No available AUDIO decoder to process MPEG file: '%s'\n", c_url);
 				return false;
@@ -309,7 +294,7 @@ namespace gameswf
 
 
 	// it is running in sound mixer thread
-	bool as_netstream::decode_audio(av_packet* packet, Sint16** data, int* size)
+	bool as_netstream::decode_audio(const gc_ptr<av_packet>& packet, Sint16** data, int* size)
 	{
 		bool ok = false;
 		int frame_size;
@@ -329,38 +314,40 @@ namespace gameswf
 	}
 
 	// it is running in decoder thread
-	bool as_netstream::decode_video(av_packet* packet, Uint8** data, int* w, int* h)
+	Uint8* as_netstream::decode_video(const gc_ptr<av_packet>& packet)
 	{
+		int w = m_VCodecCtx->width;
+		int h = m_VCodecCtx->height;
+		Uint8* data = NULL;
 		int got = 0;
-		avcodec_decode_video(m_VCodecCtx, m_frame, &got, packet->m_data, packet->m_size);
+		AVFrame frame;
+
+		avcodec_decode_video(m_VCodecCtx, &frame, &got, packet->m_data, packet->m_size);
 		if (got)
 		{
-			// gets buf size for rgba picture
-			*w = m_VCodecCtx->width;
-			*h = m_VCodecCtx->height;
-			*data = (Uint8*) malloc(avpicture_get_size(PIX_FMT_RGBA32, *w, *h));
+			// get buf for rgba picture
+			// will be freed later in update_video() 
+			data = (Uint8*) malloc(avpicture_get_size(PIX_FMT_RGBA32, w, h));
 
 			AVPicture picture1;
-			avpicture_fill(&picture1, *data, PIX_FMT_RGBA32, *w, *h);
+			avpicture_fill(&picture1, data, PIX_FMT_RGBA32, w, h);
 
 			struct SwsContext* toRGB_convert_ctx = sws_getContext(
-				*w, *h, m_VCodecCtx->pix_fmt,
-				*w, *h, PIX_FMT_RGBA32,
+				w, h, m_VCodecCtx->pix_fmt, w, h, PIX_FMT_RGBA32,
 				SWS_FAST_BILINEAR, NULL, NULL, NULL);
+
 			assert(toRGB_convert_ctx);
 
-			AVPicture* picture = (AVPicture*) m_frame;
-			sws_scale(toRGB_convert_ctx,
-				picture->data, picture->linesize, 0, 0,
+			sws_scale(toRGB_convert_ctx, frame.data, frame.linesize, 0, 0,
 				picture1.data, picture1.linesize);
 
 			sws_freeContext(toRGB_convert_ctx);
 
 			// clear video background
-			Uint8* ptr = *data;
-			for (int y = 0; y < *h; y++)
+			Uint8* ptr = data;
+			for (int y = 0; y < h; y++)
 			{
-				for (int x = 0; x < *w; x++)
+				for (int x = 0; x < w; x++)
 				{
 					swap(ptr, ptr + 2);	// BGR ==> RGB
 
@@ -378,7 +365,7 @@ namespace gameswf
 			}
 			//printf("video advance time: %d\n", SDL_GetTicks()-t);
 		}
-		return true;
+		return data;
 	}
 
 	// it is running in decoder thread
@@ -436,41 +423,23 @@ namespace gameswf
 					// it is time
 					if (m_current_clock >= m_video_clock)
 					{
-						if (m_video_queue.size() > 0)
+						delay = 0;
+						gc_ptr<av_packet> packet;
+						if (m_video_queue.pop(&packet))
 						{
-							if (m_video_handler->m_data == NULL)
+							// update video clock with pts, if present
+							if (packet->m_dts != AV_NOPTS_VALUE)
 							{
-								const gc_ptr<av_packet>& packet = m_video_queue.front();
-
-								// update video clock with pts, if present
-								if (packet->m_dts != AV_NOPTS_VALUE)
-								{
-									double pts = as_double(m_video_stream->codec->time_base) * packet->m_dts;
-									m_video_clock = m_start_time + pts;
-								}
-
-								// update video clock for next frame
-								double frame_delay = as_double(m_video_stream->codec->time_base);
-								m_video_clock += frame_delay;
-
-								Uint8* data = NULL;
-								int width = 0;
-								int height = 0;
-								decode_video(packet.get_ptr(), &data, &width, &height);
-
-								m_video_queue.pop();
-
-								if (data)
-								{
-									m_video_handler->update_video(data, width, height);
-								}
-								delay = 0;
+								double pts = as_double(m_video_stream->codec->time_base) * packet->m_dts;
+								m_video_clock = m_start_time + pts;
 							}
-							else
-							{
-								// printf("wait for video render\n");
-								m_video_clock += tu_timer::ticks_to_seconds(20);
-							}
+
+							// update video clock for next frame
+							double frame_delay = as_double(m_video_stream->codec->time_base);
+							m_video_clock += frame_delay;
+
+							Uint8* data = decode_video(packet);
+							m_video_handler->update_video(data, m_VCodecCtx->width, m_VCodecCtx->height);
 						}
 					}
 					else

@@ -22,7 +22,7 @@ namespace gameswf
 		int m_height;
 		const matrix* m;
 		const rect* m_bounds;
-		tu_mutex m_mutex;
+		tu_mutex m_lock_data;
 
 		video_handler();
 		~video_handler();

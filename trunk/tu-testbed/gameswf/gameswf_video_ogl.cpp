@@ -31,30 +31,29 @@ video_ogl::~video_ogl()
 	glDeleteTextures(1, &m_texture);
 }
 
+// it is running in video decoder thread
 void video_ogl::update_video(Uint8* data, int width, int height)
 {
-	gameswf::tu_autolock locker(m_mutex);
-	if (m_data)
+	if (data)
 	{
-		delete m_data;
-	}
-	m_data = data;
-	m_width = width;
-	m_height = height;
+		gameswf::tu_autolock locker(m_lock_data);
+		if (m_data)
+		{
+			delete m_data;
+		}
+		m_data = data;
+		m_width = width;
+		m_height = height;
 
-	m_width2p = 1; while (m_width2p < m_width) { m_width2p <<= 1; }
-	m_height2p = 1; while (m_height2p < m_height) { m_height2p <<= 1; }
-	m_scoord = (float) m_width / m_width2p;
-	m_tcoord = (float) m_height / m_height2p;
+		m_width2p = 1; while (m_width2p < m_width) { m_width2p <<= 1; }
+		m_height2p = 1; while (m_height2p < m_height) { m_height2p <<= 1; }
+		m_scoord = (float) m_width / m_width2p;
+		m_tcoord = (float) m_height / m_height2p;
+	}
 }
 
 void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds, const gameswf::rgba& color)
 {
-	if (m_width == 0 && m_height == 0)
-	{
-		return;
-	}
-
 	glBindTexture(GL_TEXTURE_2D, m_texture);
 	glEnable(GL_TEXTURE_2D);
 
@@ -63,8 +62,7 @@ void video_ogl::display(const gameswf::matrix* mat, const gameswf::rect* bounds,
 
 	{
 		// lock m_data
-		gameswf::tu_autolock locker(m_mutex);
-
+		gameswf::tu_autolock locker(m_lock_data);
 		if (m_data)
 		{
 
