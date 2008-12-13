@@ -565,15 +565,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_video_base.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_video_impl.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_video_ogl.cpp"
 				>
 			</File>
 		</Filter>
@@ -933,15 +925,7 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_video_base.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_video_impl.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\gameswf_video_ogl.h"
 				>
 			</File>
 			<File

@@ -499,6 +499,16 @@ namespace gameswf
 		virtual int get_position(int sound_handle) { return 0; };
 	};
 
+	struct matrix; 
+	struct rect; 
+
+	// base class for video handler
+	struct video_handler : public ref_counted
+	{
+		virtual void display(Uint8* data, int width, int height, 
+			const matrix* mat, const rect* bounds, const rgba& color) = 0;
+	};
+
 	// tu_float is used in matrix & cxform because
 	// Flash converts inf to zero when works with matrix & cxform
 	struct tu_float

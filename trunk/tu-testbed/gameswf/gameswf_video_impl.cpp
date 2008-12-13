@@ -6,7 +6,6 @@
 // video implementation
 
 #include "gameswf/gameswf_video_impl.h"
-#include "gameswf/gameswf_video_base.h"
 #include "gameswf/gameswf_stream.h"
 #include "gameswf/gameswf_as_classes/as_netstream.h"
 
@@ -68,7 +67,7 @@ namespace gameswf
 		}
 
 		// fn.arg(0) may be null
-		video->attach_netstream((as_netstream*) fn.arg(0).to_object());
+		video->attach_netstream(cast_to<as_netstream>(fn.arg(0).to_object()));
 	}
 
 	video_stream_instance::video_stream_instance(player* player, video_stream_definition* def, 
@@ -77,6 +76,12 @@ namespace gameswf
 		m_def(def)
 	{
 		assert(m_def != NULL);
+
+		m_video_handler = render::create_video_handler();
+		if (m_video_handler == NULL)
+		{
+			log_error("No available video render\n");
+		}
 	}
 
 	video_stream_instance::~video_stream_instance()
@@ -87,9 +92,6 @@ namespace gameswf
 	{
 		if (m_ns != NULL)	// is video attached ?
 		{
-			video_handler* vh = m_ns->get_video_handler();
-			assert(vh != NULL);
-		
 			rect bounds;
 			bounds.m_x_min = 0.0f;
 			bounds.m_y_min = 0.0f;
@@ -100,7 +102,13 @@ namespace gameswf
 			gameswf::rgba color = cx.transform(gameswf::rgba());
 
 			matrix m = get_world_matrix();
-			vh->display(&m, &bounds, color);
+
+			Uint8* video_data = m_ns->get_video_data();
+
+			m_video_handler->display(video_data, m_ns->get_width(), m_ns->get_height(), 
+				&m, &bounds, color);
+
+			free(video_data);
 		}
 	}
 

@@ -90,7 +90,6 @@ LIB_OBJS = \
 	gameswf_tools.$(OBJ_EXT)	\
 	gameswf_types.$(OBJ_EXT)	\
 	gameswf_value.$(OBJ_EXT)	\
-	gameswf_video_base.$(OBJ_EXT)	\
 	gameswf_video_impl.$(OBJ_EXT)	\
 
 
@@ -98,9 +97,6 @@ TEST_PROGRAM_OBJS = \
 	gameswf_test_ogl.$(OBJ_EXT)             \
 	gameswf_render_handler_ogl.$(OBJ_EXT)	\
 	gameswf_sound_handler_sdl.$(OBJ_EXT)	\
-	gameswf_video_ogl.$(OBJ_EXT)
-
-#	gameswf_sound_handler_mp3.$(OBJ_EXT)    \
 
 PARSER_OBJS = \
 	gameswf_parser.$(OBJ_EXT) 
