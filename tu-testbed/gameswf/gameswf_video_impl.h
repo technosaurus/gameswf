@@ -88,6 +88,8 @@ namespace gameswf
 
 		// A Camera object that is capturing video data or a NetStream object.
 		gc_ptr<as_netstream> m_ns;
+
+		gc_ptr<video_handler> m_video_handler;
 	};
 
 }	// end namespace gameswf

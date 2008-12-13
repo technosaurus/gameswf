@@ -9,7 +9,6 @@
 
 #include "gameswf/gameswf_as_classes/as_netstream.h"
 #include "gameswf/gameswf_render.h"
-#include "gameswf/gameswf_video_base.h"
 #include "gameswf/gameswf_function.h"
 #include "gameswf/gameswf_root.h"
 #include "base/tu_timer.h"
@@ -47,17 +46,10 @@ namespace gameswf
 		m_audio_index(-1),
 		m_is_alive(true),
 		m_pause(false),
-		m_thread(NULL)
+		m_thread(NULL),
+		m_data(NULL)
 	{
 		av_register_all();
-
-		m_video_handler = render::create_video_handler();
-		if (m_video_handler == NULL)
-		{
-			log_error("No available video render\n");
-			return;
-		}
-
 		m_thread = new tu_thread(netstream_server, this);
 	}
 
@@ -67,6 +59,8 @@ namespace gameswf
 		m_decoder.signal();
 		m_thread->wait();
 		delete m_thread;
+
+		set_video_data(NULL);
 
 		m_audio_queue.clear();
 		m_video_queue.clear();
@@ -159,6 +153,11 @@ namespace gameswf
 		else
 		{
 			m_pause = (mode == 0) ? true : false;
+		}
+
+		if (m_pause == false)
+		{
+			m_decoder.signal();
 		}
 	}
 
@@ -373,7 +372,7 @@ namespace gameswf
 	{
 		while (m_is_alive)
 		{
-			if (m_url == "")
+			if (m_url.size() == 0)
 			{
 //				printf("waiting a job...\n");
 				m_decoder.wait();
@@ -404,7 +403,7 @@ namespace gameswf
 				{
 					if (m_pause)
 					{
-						tu_timer::sleep(100);
+						m_decoder.wait();
 						m_video_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
 						continue;
 					}
@@ -438,8 +437,7 @@ namespace gameswf
 							double frame_delay = as_double(m_video_stream->codec->time_base);
 							m_video_clock += frame_delay;
 
-							Uint8* data = decode_video(packet);
-							m_video_handler->update_video(data, m_VCodecCtx->width, m_VCodecCtx->height);
+							set_video_data(decode_video(packet));
 						}
 					}
 					else
@@ -465,6 +463,42 @@ namespace gameswf
 				close_stream();
 			}
 		}
+	}
+
+	int as_netstream::get_width() const
+	{
+		if (m_VCodecCtx)
+		{
+			return m_VCodecCtx->width;
+		}
+		return 0;
+	}
+
+	int as_netstream::get_height() const
+	{
+		if (m_VCodecCtx)
+		{
+			return m_VCodecCtx->height;
+		}
+		return 0;
+	}
+
+	Uint8* as_netstream::get_video_data()
+	{
+		tu_autolock locker(m_lock_data);
+		Uint8* video_data = m_data;
+		m_data = NULL;
+		return video_data;
+	}
+
+	void as_netstream::set_video_data(Uint8* data)
+	{
+		tu_autolock locker(m_lock_data);
+		if (m_data)
+		{
+			free(m_data);
+		}
+		m_data = data;
 	}
 
 	// it is running in decoder thread
@@ -519,11 +553,6 @@ namespace gameswf
 				return read_frame();
 			}
 		}
-	}
-
-	video_handler* as_netstream::get_video_handler()
-	{
-		return m_video_handler.get_ptr();
 	}
 
 	void as_netstream::seek(double seek_time)

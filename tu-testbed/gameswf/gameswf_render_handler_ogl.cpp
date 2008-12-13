@@ -10,7 +10,6 @@
 
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_types.h"
-#include "gameswf/gameswf_video_ogl.h"
 #include "base/image.h"
 #include "base/utility.h"
 
@@ -459,6 +458,95 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 
 };
 
+struct video_handler_ogl : public gameswf::video_handler
+{
+	GLuint m_texture;
+	float m_scoord;
+	float m_tcoord;
+
+	video_handler_ogl::video_handler_ogl():
+		m_texture(0),
+		m_scoord(0),
+		m_tcoord(0)
+	{
+	}
+
+	video_handler_ogl::~video_handler_ogl()
+	{
+		glDeleteTextures(1, &m_texture);
+	}
+
+	void video_handler_ogl::display(Uint8* data, int width, int height, 
+		const gameswf::matrix* m, const gameswf::rect* bounds, const gameswf::rgba& color)
+	{
+
+		// this can't be placed in constructor becuase opengl may not be accessible yet
+		if (m_texture == 0)
+		{
+			glEnable(GL_TEXTURE_2D);
+			glGenTextures(1, &m_texture);
+			glBindTexture(GL_TEXTURE_2D, m_texture);
+
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}
+
+		glBindTexture(GL_TEXTURE_2D, m_texture);
+		glEnable(GL_TEXTURE_2D);
+
+		glDisable(GL_TEXTURE_GEN_S);
+		glDisable(GL_TEXTURE_GEN_T);
+
+		// update texture from video frame
+		if (data)
+		{
+			int w2p = p2(width);
+			int h2p = p2(height);
+			m_scoord = (float) width / w2p;
+			m_tcoord = (float) height / h2p;
+
+			// don't use compressed texture for video, it slows down video
+			//			ogl::create_texture(GL_RGBA, m_width2p, m_height2p, NULL);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w2p, h2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		}
+
+		if (m_scoord == 0.0f && m_scoord == 0.0f)
+		{
+			// no data
+			return;
+		}
+
+		gameswf::point a, b, c, d;
+		m->transform(&a, gameswf::point(bounds->m_x_min, bounds->m_y_min));
+		m->transform(&b, gameswf::point(bounds->m_x_max, bounds->m_y_min));
+		m->transform(&c, gameswf::point(bounds->m_x_min, bounds->m_y_max));
+		d.m_x = b.m_x + c.m_x - a.m_x;
+		d.m_y = b.m_y + c.m_y - a.m_y;
+
+		glColor4ub(color.m_r, color.m_g, color.m_b, color.m_a);
+
+		glBegin(GL_TRIANGLE_STRIP);
+		{
+			glTexCoord2f(0, 0);
+			glVertex2f(a.m_x, a.m_y);
+			glTexCoord2f(m_scoord, 0);
+			glVertex2f(b.m_x, b.m_y);
+			glTexCoord2f(0, m_tcoord);
+			glVertex2f(c.m_x, c.m_y);
+			glTexCoord2f(m_scoord, m_tcoord);
+			glVertex2f(d.m_x, d.m_y);
+		}
+		glEnd();
+
+		glDisable(GL_TEXTURE_2D);
+	}
+
+};
+
+
 struct render_handler_ogl : public gameswf::render_handler
 {
 	// Some renderer state.
@@ -818,7 +906,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	gameswf::video_handler*	create_video_handler()
 	{
-		return new video_ogl();
+		return new video_handler_ogl();
 	}
 
 	void	begin_display(

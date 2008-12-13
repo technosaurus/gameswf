@@ -12,7 +12,6 @@
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_log.h"
 #include "gameswf/gameswf_types.h"
-#include "gameswf_video_base.h"
 #include "base/image.h"
 #include "base/container.h"
 

@@ -12,7 +12,6 @@
 
 #include "base/tu_queue.h"
 #include "gameswf/gameswf_video_impl.h"
-#include "gameswf/gameswf_video_base.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
@@ -198,7 +197,6 @@ namespace gameswf
 		as_netstream(player* player);
 		~as_netstream();
 
-		video_handler* get_video_handler();
 		bool decode_audio(const gc_ptr<av_packet>& packet, Sint16** data, int* size);
 		Uint8* decode_video(const gc_ptr<av_packet>& packet);
 		void run();
@@ -209,6 +207,12 @@ namespace gameswf
 		void close();
 		void play(const char* url);
 		double time() const;
+
+		int get_width() const;
+		int get_height() const;
+
+		Uint8* get_video_data();
+		void set_video_data(Uint8* data);
 
 	private:
 
@@ -251,7 +255,11 @@ namespace gameswf
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;
-		gc_ptr<video_handler> m_video_handler;
+
+		// decoded data
+		Uint8* m_data;
+		tu_mutex m_lock_data;
+
 	};
 
 } // end of gameswf namespace
@@ -263,12 +271,6 @@ namespace gameswf
 namespace gameswf
 {
 	void as_global_netstream_ctor(const fn_call& fn);
-
-	struct as_netstream : public as_object
-	{
-		video_handler* get_video_handler() { return NULL; }
-	};
-
 }
 
 #endif
