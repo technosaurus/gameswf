@@ -16,6 +16,7 @@
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
 //#define CLEAR_BLUE_VIDEO_BACKGROUND
+#define AV_QUEUE_SIZE 20
 
 namespace gameswf
 {
@@ -62,8 +63,8 @@ namespace gameswf
 
 		set_video_data(NULL);
 
-		m_audio_queue.clear();
-		m_video_queue.clear();
+		m_aq.clear();
+		m_vq.clear();
 	}
 
 	void as_netstream::play(const char* url)
@@ -100,11 +101,11 @@ namespace gameswf
 			if (m_sound == NULL)
 			{
 				gc_ptr<av_packet> audio;
-				if (m_audio_queue.pop(&audio))
+				if (m_aq.pop(&audio))
 				{
 					Sint16* sample;
 					int size;
-					decode_audio(audio, &sample, &size);
+					decode_audio(audio->get_packet(), &sample, &size);
 					m_sound = new decoded_sound(sample, size);
 					continue;
 				}
@@ -164,9 +165,8 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::close_stream()
 	{
-		m_unqueued_data = NULL;
-		m_video_queue.clear();
-		m_audio_queue.clear();
+		m_vq.clear();
+		m_aq.clear();
 
 		if (m_VCodecCtx) avcodec_close(m_VCodecCtx);
 		m_VCodecCtx = NULL;
@@ -293,13 +293,12 @@ namespace gameswf
 
 
 	// it is running in sound mixer thread
-	bool as_netstream::decode_audio(const gc_ptr<av_packet>& packet, Sint16** data, int* size)
+	bool as_netstream::decode_audio(const AVPacket& pkt, Sint16** data, int* size)
 	{
 		bool ok = false;
 		int frame_size;
 		Uint8* decoder_buf = (Uint8*) malloc((AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2);
-		if (avcodec_decode_audio(m_ACodecCtx, (Sint16*) decoder_buf, &frame_size,
-			packet->m_data, packet->m_size) >= 0)
+		if (avcodec_decode_audio(m_ACodecCtx, (Sint16*) decoder_buf, &frame_size,	pkt.data, pkt.size) >= 0)
 		{
 			sound_handler* sh = get_sound_handler();
 			if (sh)
@@ -313,7 +312,7 @@ namespace gameswf
 	}
 
 	// it is running in decoder thread
-	Uint8* as_netstream::decode_video(const gc_ptr<av_packet>& packet)
+	Uint8* as_netstream::decode_video(const AVPacket& pkt)
 	{
 		int w = m_VCodecCtx->width;
 		int h = m_VCodecCtx->height;
@@ -321,7 +320,7 @@ namespace gameswf
 		int got = 0;
 		AVFrame frame;
 
-		avcodec_decode_video(m_VCodecCtx, &frame, &got, packet->m_data, packet->m_size);
+		avcodec_decode_video(m_VCodecCtx, &frame, &got, pkt.data, pkt.size);
 		if (got)
 		{
 			// get buf for rgba picture
@@ -408,12 +407,34 @@ namespace gameswf
 						continue;
 					}
 
-					if (read_frame() == false)
+					if (m_vq.size() < AV_QUEUE_SIZE && m_aq.size() < AV_QUEUE_SIZE)
 					{
-						if (m_video_queue.size() == 0)
+						AVPacket pkt;
+						int rc = av_read_frame(m_FormatCtx, &pkt);
+						if (rc < 0)
 						{
-							set_status("status", "NetStream.Play.Stop");
-							break;
+							if (m_vq.size() == 0)
+							{
+								set_status("status", "NetStream.Play.Stop");
+								break;
+							}
+						}
+
+						if (pkt.stream_index == m_video_index)
+						{
+							m_vq.push(pkt);
+						}
+						else
+						if (pkt.stream_index == m_audio_index)
+						{
+							if (get_sound_handler())
+							{
+								m_aq.push(pkt);
+							}
+						}
+						else
+						{
+							continue;
 						}
 					}
 
@@ -424,12 +445,14 @@ namespace gameswf
 					{
 						delay = 0;
 						gc_ptr<av_packet> packet;
-						if (m_video_queue.pop(&packet))
+						if (m_vq.pop(&packet))
 						{
+							const AVPacket& pkt = packet->get_packet();
+
 							// update video clock with pts, if present
-							if (packet->m_dts != AV_NOPTS_VALUE)
+							if (pkt.dts != AV_NOPTS_VALUE)
 							{
-								double pts = as_double(m_video_stream->codec->time_base) * packet->m_dts;
+								double pts = as_double(m_video_stream->codec->time_base) * pkt.dts;
 								m_video_clock = m_start_time + pts;
 							}
 
@@ -437,7 +460,7 @@ namespace gameswf
 							double frame_delay = as_double(m_video_stream->codec->time_base);
 							m_video_clock += frame_delay;
 
-							set_video_data(decode_video(packet));
+							set_video_data(decode_video(packet->get_packet()));
 						}
 					}
 					else
@@ -448,8 +471,9 @@ namespace gameswf
 					// Don't hog the CPU.
 					// Queues have filled, video frame have shown
 					// now it is possible and to have a rest
-					if (m_unqueued_data != NULL && delay > 0)
+					if (delay > 0 && (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE))
 					{
+						//	printf("video delay=%d\n", delay);
 						tu_timer::sleep(delay);
 					}
 				}
@@ -499,60 +523,6 @@ namespace gameswf
 			free(m_data);
 		}
 		m_data = data;
-	}
-
-	// it is running in decoder thread
-	// reads audio/video frame from stream and keeps it in queue
-	bool as_netstream::read_frame()
-	{
-		if (m_unqueued_data != NULL)
-		{
-			if (m_unqueued_data->get_stream_index() == m_video_index)
-			{
-				if (m_video_queue.push(m_unqueued_data))
-				{
-					m_unqueued_data = NULL;
-				}
-				return true;
-			}
-			else
-			if (m_unqueued_data->get_stream_index() == m_audio_index)
-			{
-				sound_handler* sound = get_sound_handler();
-				if (sound)
-				{
-					if (m_audio_queue.push(m_unqueued_data))
-					{
-						m_unqueued_data = NULL;
-					}
-				}
-				else
-				{
-					m_unqueued_data = NULL;
-				}
-				return true;
-			}
-			else
-			{
-				assert(0);
-			}
-		}
-
-		AVPacket packet;
-		while (true)
-		{
-			int rc = av_read_frame(m_FormatCtx, &packet);
-			if (rc < 0)
-			{
-				return false;
-			}
-
-			if (packet.stream_index == m_video_index || packet.stream_index == m_audio_index)
-			{
-				m_unqueued_data = new av_packet(packet);
-				return read_frame();
-			}
-		}
 	}
 
 	void as_netstream::seek(double seek_time)

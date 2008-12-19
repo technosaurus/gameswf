@@ -18,8 +18,6 @@
 #include <ffmpeg/avformat.h>
 #include <ffmpeg/swscale.h>
 
-#define VIDEO_QUEUE_SIZE 20
-
 namespace gameswf
 {
 
@@ -31,54 +29,40 @@ namespace gameswf
 	void netstream_seek(const fn_call& fn);
 	void netstream_setbuffertime(const fn_call& fn);
 
+	// helper, for memory management
 	struct av_packet : public ref_counted
 	{
-		Uint8* m_data;
-		int m_size;
-		int m_stream_index;
-		Sint64 m_dts;
-
-		av_packet(const AVPacket& packet)
+		av_packet(const AVPacket& pkt)
 		{
-			m_stream_index = packet.stream_index;
-			m_size = packet.size;
-			m_dts = packet.dts;
-
-			m_data = new Uint8[m_size];
-			memcpy(m_data, packet.data, m_size);
+			av_dup_packet(&(AVPacket&) pkt);
+			m_pkt = pkt;
 		}
 
 		~av_packet()
 		{
-			delete [] m_data;
+			av_free_packet(&m_pkt);
 		}
 
-		int get_stream_index() const
+		const AVPacket& get_packet() const
 		{
-			return m_stream_index;
+			return m_pkt;
 		}
 
-		Uint8* get_packet() const
-		{
-			return m_data;
-		}
+	private:
+
+		AVPacket m_pkt;
 
 	};
 
-	struct audio_queue
+	struct av_queue
 	{
 		tu_mutex m_mutex;
 		tu_queue< gc_ptr<av_packet> > m_queue;
 
-		bool push(const gc_ptr<av_packet>& val)
+		void push(const AVPacket& pkt)
 		{
 			tu_autolock locker(m_mutex);
-			if (m_queue.size() < VIDEO_QUEUE_SIZE)
-			{
-				m_queue.push(val);
-				return true;
-			}
-			return false;
+			m_queue.push(new av_packet(pkt));
 		}
 
 		int size()
@@ -102,43 +86,6 @@ namespace gameswf
 		void clear()
 		{
 			tu_autolock locker(m_mutex);
-			m_queue.clear();
-		}
-
-	};
-
-	struct video_queue
-	{
-		tu_queue< gc_ptr<av_packet> > m_queue;
-
-		bool push(const gc_ptr<av_packet>& val)
-		{
-			if (m_queue.size() < VIDEO_QUEUE_SIZE)
-			{
-				m_queue.push(val);
-				return true;
-			}
-			return false;
-		}
-
-		int size()
-		{
-			return int(m_queue.size());
-		}
-
-		bool pop(gc_ptr<av_packet>* val)
-		{
-			if (m_queue.size() > 0)
-			{
-				*val = m_queue.front();
-				m_queue.pop(); 
-				return true;
-			}
-			return false;
-		}
-
-		void clear()
-		{
 			m_queue.clear();
 		}
 
@@ -197,8 +144,8 @@ namespace gameswf
 		as_netstream(player* player);
 		~as_netstream();
 
-		bool decode_audio(const gc_ptr<av_packet>& packet, Sint16** data, int* size);
-		Uint8* decode_video(const gc_ptr<av_packet>& packet);
+		bool decode_audio(const AVPacket& pkt, Sint16** data, int* size);
+		Uint8* decode_video(const AVPacket& pkt);
 		void run();
 		void pause(int mode);
 		void seek(double seek_time);
@@ -220,7 +167,6 @@ namespace gameswf
 		void set_status(const char* level, const char* code);
 		bool open_stream(const char* url);
 		void close_stream();
-		bool read_frame();
 
 		AVFormatContext *m_FormatCtx;
 
@@ -245,13 +191,8 @@ namespace gameswf
 		volatile bool m_break;
 		volatile bool m_pause;
 
-		gc_ptr<av_packet> m_unqueued_data;
-
-		// this is used in the decoder & sound threads
-		audio_queue m_audio_queue;
-
-		// this is used in  the decoder thread only
-		video_queue m_video_queue;
+		av_queue m_aq;
+		av_queue m_vq;
 
 		tu_thread* m_thread;
 		tu_condition m_decoder;
