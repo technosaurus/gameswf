@@ -59,12 +59,12 @@ Res ExeTarget::Process(const Context* context) {
   const Config* config = context->GetConfig();
 
   // Compile.
-  std::map<std::string, std::string> vars;
-  res = PrepareCompileVars(this, config, &vars);
+  CompileInfo ci;
+  res = PrepareCompileVars(this, config, &ci);
   if (!res.Ok()) {
     return res;
   }
-  res = DoCompile(this, config, vars);
+  res = DoCompile(this, config, ci);
   if (!res.Ok()) {
     return res;
   }
@@ -72,7 +72,7 @@ Res ExeTarget::Process(const Context* context) {
   // Link.
   context->Log(StringPrintf("Linking %s\n", name_.c_str()));
   std::string cmd;
-  res = FillTemplate(config->link_template(), vars, &cmd);
+  res = FillTemplate(config->link_template(), ci.vars_, &cmd);
   if (!res.Ok()) {
     res.AppendDetail("\nwhile preparing linker command line for " + name_);
     return res;
