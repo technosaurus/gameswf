@@ -9,6 +9,10 @@
 #include "os.h"
 #include "util.h"
 
+// Re-archive if:
+// * any source file or dep was recompiled
+// * lib_template changed
+
 LibTarget::LibTarget() {
   type_ = "lib";
 }
@@ -51,29 +55,42 @@ Res LibTarget::Process(const Context* context) {
 
   const Config* config = context->GetConfig();
 
-  std::map<std::string, std::string> vars;
-  res = PrepareCompileVars(this, config, &vars);
-  if (!res.Ok()) {
-    return res;
+  bool any_compile = false;
+  CompileInfo ci;
+  res = PrepareCompileVars(this, config, &ci);
+  if (res.value() == ERR_DONT_REBUILD) {
+    // We don't need to compile here.
+    context->LogVerbose(StringPrintf("skipping compile %s\n", name_.c_str()));
+  } else {
+    // Need to compile some stuff.
+    if (!res.Ok()) {
+      return res;
+    }
+
+    any_compile = true;
+    res = DoCompile(this, config, ci);
+    if (!res.Ok()) {
+      return res;
+    }
   }
 
-  res = DoCompile(this, config, vars);
-  if (!res.Ok()) {
-    return res;
-  }
+  if (any_compile /* TODO || LibTemplateChanged(this, config) */) {
+    // Archive the objs to make the lib
+    std::string cmd;
+    res = FillTemplate(config->lib_template(), ci.vars_, &cmd);
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile preparing lib command line for " + name_);
+      return res;
+    }
+    res = RunCommand(absolute_out_dir(), cmd, config->compile_environment());
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile making lib " + name());
+      res.AppendDetail("\nin directory " + absolute_out_dir());
+      return res;
+    }
 
-  // Archive the objs to make the lib
-  std::string cmd;
-  res = FillTemplate(config->lib_template(), vars, &cmd);
-  if (!res.Ok()) {
-    res.AppendDetail("\nwhile preparing lib command line for " + name_);
-    return res;
-  }
-  res = RunCommand(absolute_out_dir(), cmd, config->compile_environment());
-  if (!res.Ok()) {
-    res.AppendDetail("\nwhile making lib " + name());
-    res.AppendDetail("\nin directory " + absolute_out_dir());
-    return res;
+    // TODO: write hashes for the deps
+    // TODO: write a hash for the lib_template
   }
 
   processed_ = true;

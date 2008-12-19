@@ -21,13 +21,16 @@ if echo "$sysname" | grep -q 'CYGWIN' ; then
   cl -Fedmb.exe \
     ../../compile_util.cpp \
     ../../config.cpp \
+    ../../content_hash.cpp \
     ../../context.cpp \
     ../../dumbuild.cpp \
     ../../exe_target.cpp \
+    ../../hash_util.cpp \
     ../../lib_target.cpp \
     ../../object.cpp \
     ../../os.cpp \
     ../../res.cpp \
+    ../../sha1.cpp \
     ../../target.cpp \
     ../../util.cpp \
     -Zi -GX -I../../jsoncpp/include -link lib_json.lib -subsystem:console
@@ -51,13 +54,16 @@ else
   gcc -o dmb \
     ../../compile_util.cpp \
     ../../config.cpp \
+    ../../content_hash.cpp \
     ../../context.cpp \
     ../../dumbuild.cpp \
     ../../exe_target.cpp \
+    ../../hash_util.cpp \
     ../../lib_target.cpp \
     ../../object.cpp \
     ../../os.cpp \
     ../../res.cpp \
+    ../../sha1.cpp \
     ../../target.cpp \
     ../../util.cpp \
     -g -Wall -I../../jsoncpp/include lib_json.a -lstdc++

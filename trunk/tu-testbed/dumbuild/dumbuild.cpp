@@ -13,18 +13,26 @@
 //
 // Build files are declared using JSON syntax.
 //
-// Possible (future) niceties:
-//
-// * have explicitly-declared library-level dependency analysis.  So
-//   you declare the libraries and binaries, listing their cpp (and
-//   probably also .h) files, and that is the unit of dependency
-//   analysis.  If none of the source files or deps change, the
-//   library or binary doesn't get rebuilt.
 
 // TODO:
+// * write a turd for each .cpp and .h, containing its size and content hash
+//   - that's the basis for change detection
+// * header-changed checks:
+//   - when a header file in a target changes, set header_changed flag
+//   - when a direct dep of a target has header_changed, rebuild whole target
+//   - when a header inside a target changes, rebuild whole target
+//   - All headers in a dir are assumed to be part of targets in that dir?
+//     Or list headers explicitly?
+// * source changed check:
+//   - when a cpp file in a target changes, recompile that cpp
 // * config system
-// * lib_target
-// * no-op check for lib_target and exe_target (relink, recompile+relink)
+//   - config gets an "inherit" keyword, give ordered list of parents
+//   - for string vars, use string template substitution.  "... ${varname} ..."
+//   - ${varname} -- inherits based on declared order
+//   - ${parent_x.varname} -- to inherit from an explicitly named parent?
+//   - for list vars -- may need to implement actual operators
+//     in the config language.  Maybe just punt for now.
+// * dll_target
 
 #include <assert.h>
 #include <json/json.h>
