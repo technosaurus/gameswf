@@ -510,7 +510,7 @@ struct video_handler_ogl : public gameswf::video_handler
 			// don't use compressed texture for video, it slows down video
 			//			ogl::create_texture(GL_RGBA, m_width2p, m_height2p, NULL);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w2p, h2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data);
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, data);
 		}
 
 		if (m_scoord == 0.0f && m_scoord == 0.0f)
