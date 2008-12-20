@@ -57,14 +57,12 @@ namespace gameswf
 	as_netstream::~as_netstream()
 	{
 		m_is_alive = false;
+
 		m_decoder.signal();
 		m_thread->wait();
 		delete m_thread;
 
 		set_video_data(NULL);
-
-		m_aq.clear();
-		m_vq.clear();
 	}
 
 	void as_netstream::play(const char* url)
@@ -90,12 +88,7 @@ namespace gameswf
 	// it is running in sound mixer thread
 	void as_netstream::audio_callback(Uint8* stream, int len)
 	{
-		if (m_pause)
-		{
-			return;
-		}
-
-		while (len > 0)
+		while (len > 0 && m_pause == false)
 		{
 			// decode sound
 			if (m_sound == NULL)
@@ -341,26 +334,24 @@ namespace gameswf
 
 			sws_freeContext(toRGB_convert_ctx);
 
+#ifdef CLEAR_BLUE_VIDEO_BACKGROUND
 			// clear video background
 			Uint8* ptr = data;
 			for (int y = 0; y < h; y++)
 			{
 				for (int x = 0; x < w; x++)
 				{
-					swap(ptr, ptr + 2);	// BGR ==> RGB
-
-#ifdef CLEAR_BLUE_VIDEO_BACKGROUND
-
+//					swap(ptr, ptr + 2);	// BGR ==> RGB
 					Uint16 rg = *(Uint16*) ptr;	// abgr
 					if (ptr[3] >= 0xF0 && rg == 0)
 					{
 						ptr[3] = 0;
 					}
-#endif
-
 					ptr +=4;
 				}
 			}
+#endif
+
 			//printf("video advance time: %d\n", SDL_GetTicks()-t);
 		}
 		return data;
@@ -419,22 +410,24 @@ namespace gameswf
 								break;
 							}
 						}
-
-						if (pkt.stream_index == m_video_index)
-						{
-							m_vq.push(pkt);
-						}
 						else
-						if (pkt.stream_index == m_audio_index)
 						{
-							if (get_sound_handler())
+							if (pkt.stream_index == m_video_index)
 							{
-								m_aq.push(pkt);
+								m_vq.push(pkt);
 							}
-						}
-						else
-						{
-							continue;
+							else
+							if (pkt.stream_index == m_audio_index)
+							{
+								if (get_sound_handler())
+								{
+									m_aq.push(pkt);
+								}
+							}
+							else
+							{
+								continue;
+							}
 						}
 					}
 
@@ -473,7 +466,6 @@ namespace gameswf
 					// now it is possible and to have a rest
 					if (delay > 0 && (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE))
 					{
-						//	printf("video delay=%d\n", delay);
 						tu_timer::sleep(delay);
 					}
 				}
