@@ -329,7 +329,7 @@ namespace gameswf
 		Uint32	m_file_end_pos;
 		tu_file*	m_zlib_in;
 		tu_file*	m_origin_in;
-		tu_thread* m_thread;
+		gc_ptr<tu_thread> m_thread;
 		gc_ptr<root> m_instance;	// cached movie instance.
 
 		// for AVM2, Flash9

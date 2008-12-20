@@ -111,18 +111,16 @@ namespace gameswf
 		m_str(NULL),
 		m_file_end_pos(0),
 		m_zlib_in(NULL),
-		m_origin_in(NULL),
-		m_thread(NULL)
+		m_origin_in(NULL)
 	{
 	}
 
 	movie_def_impl::~movie_def_impl()
 	{
 		break_loading();
-		if (m_thread)
+		if (m_thread != NULL)
 		{
 			m_thread->wait();
-			delete m_thread;
 		}
 
 		// Release our playlist data.

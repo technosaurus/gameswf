@@ -47,8 +47,8 @@ namespace gameswf
 		m_audio_index(-1),
 		m_is_alive(true),
 		m_pause(false),
-		m_thread(NULL),
-		m_data(NULL)
+		m_video_data(NULL),
+		m_convert_ctx(NULL)
 	{
 		av_register_all();
 		m_thread = new tu_thread(netstream_server, this);
@@ -57,12 +57,8 @@ namespace gameswf
 	as_netstream::~as_netstream()
 	{
 		m_is_alive = false;
-
 		m_decoder.signal();
 		m_thread->wait();
-		delete m_thread;
-
-		set_video_data(NULL);
 	}
 
 	void as_netstream::play(const char* url)
@@ -158,6 +154,8 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::close_stream()
 	{
+		set_video_data(NULL);
+
 		m_vq.clear();
 		m_aq.clear();
 
@@ -169,6 +167,12 @@ namespace gameswf
 
 		if (m_FormatCtx) av_close_input_file(m_FormatCtx);
 		m_FormatCtx = NULL;
+
+		if (m_convert_ctx)
+		{
+			sws_freeContext(m_convert_ctx);
+			m_convert_ctx = NULL;
+		}
 	}
 
 	// it is running in decoder thread
@@ -281,6 +285,14 @@ namespace gameswf
 				return false;
 			}
 		}
+
+		m_convert_ctx = sws_getContext(
+			m_VCodecCtx->width, m_VCodecCtx->height, m_VCodecCtx->pix_fmt,
+			m_VCodecCtx->width, m_VCodecCtx->height, PIX_FMT_RGBA32,
+			SWS_BICUBIC, NULL, NULL, NULL);
+
+		assert(m_convert_ctx);
+
 		return true;
 	}
 
@@ -307,32 +319,23 @@ namespace gameswf
 	// it is running in decoder thread
 	Uint8* as_netstream::decode_video(const AVPacket& pkt)
 	{
-		int w = m_VCodecCtx->width;
-		int h = m_VCodecCtx->height;
 		Uint8* data = NULL;
 		int got = 0;
 		AVFrame frame;
-
+//		Uint32 t = SDL_GetTicks();
 		avcodec_decode_video(m_VCodecCtx, &frame, &got, pkt.data, pkt.size);
 		if (got)
 		{
 			// get buf for rgba picture
 			// will be freed later in update_video() 
-			data = (Uint8*) malloc(avpicture_get_size(PIX_FMT_RGBA32, w, h));
+			int size = avpicture_get_size(PIX_FMT_RGBA32, m_VCodecCtx->width, m_VCodecCtx->height);
+			data = (Uint8*) malloc(size);
 
 			AVPicture picture1;
-			avpicture_fill(&picture1, data, PIX_FMT_RGBA32, w, h);
+			avpicture_fill(&picture1, data, PIX_FMT_RGBA32, m_VCodecCtx->width, m_VCodecCtx->height);
 
-			struct SwsContext* toRGB_convert_ctx = sws_getContext(
-				w, h, m_VCodecCtx->pix_fmt, w, h, PIX_FMT_RGBA32,
-				SWS_FAST_BILINEAR, NULL, NULL, NULL);
-
-			assert(toRGB_convert_ctx);
-
-			sws_scale(toRGB_convert_ctx, frame.data, frame.linesize, 0, 0,
+			sws_scale(m_convert_ctx, frame.data, frame.linesize, 0, 0,
 				picture1.data, picture1.linesize);
-
-			sws_freeContext(toRGB_convert_ctx);
 
 #ifdef CLEAR_BLUE_VIDEO_BACKGROUND
 			// clear video background
@@ -352,7 +355,7 @@ namespace gameswf
 			}
 #endif
 
-			//printf("video advance time: %d\n", SDL_GetTicks()-t);
+//			printf("video advance time: %d\n", SDL_GetTicks()-t);
 		}
 		return data;
 	}
@@ -385,7 +388,6 @@ namespace gameswf
 
 				m_start_time = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
 				m_video_clock = m_start_time;
-				int delay = 0;
 				m_break = false;
 				m_pause = false;
 
@@ -433,10 +435,9 @@ namespace gameswf
 
 					m_current_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
 
-					// it is time
-					if (m_current_clock >= m_video_clock)
+					// skip expired video frames
+					while (m_current_clock >= m_video_clock)
 					{
-						delay = 0;
 						gc_ptr<av_packet> packet;
 						if (m_vq.pop(&packet))
 						{
@@ -453,17 +454,18 @@ namespace gameswf
 							double frame_delay = as_double(m_video_stream->codec->time_base);
 							m_video_clock += frame_delay;
 
-							set_video_data(decode_video(packet->get_packet()));
+							set_video_data(decode_video(pkt));
 						}
-					}
-					else
-					{
-						delay = int(1000 * (m_video_clock - m_current_clock));
+						else
+						{
+							break;
+						}
 					}
 
 					// Don't hog the CPU.
 					// Queues have filled, video frame have shown
 					// now it is possible and to have a rest
+					int delay = int(1000 * (m_video_clock - m_current_clock));
 					if (delay > 0 && (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE))
 					{
 						tu_timer::sleep(delay);
@@ -499,22 +501,23 @@ namespace gameswf
 		return 0;
 	}
 
+	// pass video data in video_stream_instance()
 	Uint8* as_netstream::get_video_data()
 	{
-		tu_autolock locker(m_lock_data);
-		Uint8* video_data = m_data;
-		m_data = NULL;
+		tu_autolock locker(m_lock_video);
+		Uint8* video_data = m_video_data;
+		m_video_data = NULL;
 		return video_data;
 	}
 
 	void as_netstream::set_video_data(Uint8* data)
 	{
-		tu_autolock locker(m_lock_data);
-		if (m_data)
+		tu_autolock locker(m_lock_video);
+		if (m_video_data)
 		{
-			free(m_data);
+			free(m_video_data);
 		}
-		m_data = data;
+		m_video_data = data;
 	}
 
 	void as_netstream::seek(double seek_time)

@@ -191,15 +191,18 @@ namespace gameswf
 		volatile bool m_break;
 		volatile bool m_pause;
 
-		av_queue m_aq;
-		av_queue m_vq;
+		av_queue m_aq;	// audio queue
+		av_queue m_vq;	// video queue
 
-		tu_thread* m_thread;
+		gc_ptr<tu_thread> m_thread;
 		tu_condition m_decoder;
 
-		// decoded data
-		Uint8* m_data;
-		tu_mutex m_lock_data;
+		// RGBA video frame 
+		Uint8* m_video_data;
+		tu_mutex m_lock_video;
+
+		// for converting video frame in RGBA
+		SwsContext* m_convert_ctx;
 
 	};
 
