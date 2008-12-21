@@ -56,9 +56,6 @@ namespace gameswf
 
 	struct av_queue
 	{
-		tu_mutex m_mutex;
-		tu_queue< gc_ptr<av_packet> > m_queue;
-
 		void push(const AVPacket& pkt)
 		{
 			tu_autolock locker(m_mutex);
@@ -89,6 +86,10 @@ namespace gameswf
 			m_queue.clear();
 		}
 
+	private:
+
+		tu_mutex m_mutex;
+		tu_queue< gc_ptr<av_packet> > m_queue;
 	};
 
 	// container for the decoded sound
@@ -140,6 +141,14 @@ namespace gameswf
 			if (m_class_id == class_id) return true;
 			else return as_object::is(class_id);
 		}
+		
+		// netstream status
+		enum netstream_status
+		{
+			STOP,
+			PLAY,
+			PAUSE
+		};
 
 		as_netstream(player* player);
 		~as_netstream();
@@ -147,7 +156,6 @@ namespace gameswf
 		bool decode_audio(const AVPacket& pkt, Sint16** data, int* size);
 		Uint8* decode_video(const AVPacket& pkt);
 		void run();
-		void pause(int mode);
 		void seek(double seek_time);
 		void setBufferTime();
 		void audio_callback(Uint8* stream, int len);
@@ -160,6 +168,8 @@ namespace gameswf
 
 		Uint8* get_video_data();
 		void set_video_data(Uint8* data);
+
+		volatile netstream_status m_status;
 
 	private:
 
@@ -187,9 +197,6 @@ namespace gameswf
 		int m_audio_index;
 
 		tu_string m_url;
-		volatile bool m_is_alive;
-		volatile bool m_break;
-		volatile bool m_pause;
 
 		av_queue m_aq;	// audio queue
 		av_queue m_vq;	// video queue
@@ -203,7 +210,6 @@ namespace gameswf
 
 		// for converting video frame in RGBA
 		SwsContext* m_convert_ctx;
-
 	};
 
 } // end of gameswf namespace

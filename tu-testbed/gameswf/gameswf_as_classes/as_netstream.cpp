@@ -45,46 +45,188 @@ namespace gameswf
 		m_video_clock(0),
 		m_video_index(-1),              
 		m_audio_index(-1),
-		m_is_alive(true),
-		m_pause(false),
 		m_video_data(NULL),
-		m_convert_ctx(NULL)
+		m_convert_ctx(NULL),
+		m_status(STOP)
 	{
 		av_register_all();
-		m_thread = new tu_thread(netstream_server, this);
 	}
 
 	as_netstream::~as_netstream()
 	{
-		m_is_alive = false;
-		m_decoder.signal();
-		m_thread->wait();
+		switch (m_status)
+		{
+			default:
+				break;
+			case PLAY:
+				m_status = STOP;
+				m_thread->wait();
+				break;
+			case PAUSE:
+				m_status = STOP;
+				m_decoder.signal();
+				m_thread->wait();
+				break;
+		}
 	}
 
 	void as_netstream::play(const char* url)
 	{
-		// is path relative ?
-		tu_string infile = get_player()->get_workdir();
-		if (strstr(url, ":") || url[0] == '/')
+		switch (m_status)
 		{
-			infile = "";
-		}
-		infile += url;
-		m_url = infile;
+			default:
+				break;
+			case PAUSE:
+				m_status = PLAY;
+				m_decoder.signal();
+				break;
+			case STOP:
+			{
+				// is path relative ?
+				tu_string infile = get_player()->get_workdir();
+				if (strstr(url, ":") || url[0] == '/')
+				{
+					infile = "";
+				}
+				infile += url;
+				m_url = infile;
 
-		m_break = true;
-		m_decoder.signal();
+				if (open_stream(m_url.c_str()) == true)
+				{
+					sound_handler* sound = get_sound_handler();
+					if (sound)
+					{
+						sound->attach_aux_streamer(audio_streamer, this);
+					}
+					m_thread = new tu_thread(netstream_server, this);
+				}
+				break;
+			}
+		}
 	}
 
 	void as_netstream::close()
 	{
-		m_break = true;
+		switch (m_status)
+		{
+			default:
+				break;
+			case PLAY:
+				m_status = STOP;
+				break;
+			case PAUSE:
+				m_status = STOP;
+				m_decoder.signal();
+				break;
+		}
+	}
+
+	// it is running in decoder thread
+	void as_netstream::run()
+	{
+		set_status("status", "NetStream.Play.Start");
+
+		m_start_time = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+		m_video_clock = m_start_time;
+		
+		m_status = PLAY;
+		while (m_status == PLAY || m_status == PAUSE)
+		{
+			if (m_status == PAUSE)
+			{
+				m_decoder.wait();
+				m_video_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+				continue;
+			}
+
+			if (m_vq.size() < AV_QUEUE_SIZE && m_aq.size() < AV_QUEUE_SIZE)
+			{
+				AVPacket pkt;
+				int rc = av_read_frame(m_FormatCtx, &pkt);
+				if (rc < 0)
+				{
+					if (m_vq.size() == 0)
+					{
+						break;
+					}
+				}
+				else
+				{
+					if (pkt.stream_index == m_video_index)
+					{
+						m_vq.push(pkt);
+					}
+					else
+						if (pkt.stream_index == m_audio_index)
+						{
+							if (get_sound_handler())
+							{
+								m_aq.push(pkt);
+							}
+						}
+						else
+						{
+							continue;
+						}
+				}
+			}
+
+			m_current_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+
+			// skip expired video frames
+			while (m_current_clock >= m_video_clock)
+			{
+				gc_ptr<av_packet> packet;
+				if (m_vq.pop(&packet))
+				{
+					const AVPacket& pkt = packet->get_packet();
+
+					// update video clock with pts, if present
+					if (pkt.dts != AV_NOPTS_VALUE)
+					{
+						double pts = as_double(m_video_stream->codec->time_base) * pkt.dts;
+						m_video_clock = m_start_time + pts;
+					}
+
+					// update video clock for next frame
+					double frame_delay = as_double(m_video_stream->codec->time_base);
+					m_video_clock += frame_delay;
+
+					set_video_data(decode_video(pkt));
+				}
+				else
+				{
+					break;
+				}
+			}
+
+			// Don't hog the CPU.
+			// Queues have filled, video frame have shown
+			// now it is possible and to have a rest
+			int delay = int(1000 * (m_video_clock - m_current_clock));
+			if (delay > 0 && (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE))
+			{
+				tu_timer::sleep(delay);
+			}
+		}
+
+		set_status("status", "NetStream.Play.Stop");
+
+		sound_handler* sound = get_sound_handler();
+		if (sound)
+		{
+			sound->detach_aux_streamer(this);
+		}
+
+		close_stream();
+	
+		m_status = STOP;
 	}
 
 	// it is running in sound mixer thread
 	void as_netstream::audio_callback(Uint8* stream, int len)
 	{
-		while (len > 0 && m_pause == false)
+		while (len > 0 && m_status == PLAY)
 		{
 			// decode sound
 			if (m_sound == NULL)
@@ -115,40 +257,19 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::set_status(const char* level, const char* code)
 	{
-		if (m_is_alive)
+		gameswf_engine_mutex().lock();
+		as_value function;
+		if (get_member("onStatus", &function) && get_root())
 		{
-			gameswf_engine_mutex().lock();
+			gc_ptr<as_object> infoObject = new as_object(get_player());
+			infoObject->set_member("level", level);
+			infoObject->set_member("code", code);
 
-			as_value function;
-			if (get_member("onStatus", &function))
-			{
-				gc_ptr<as_object> infoObject = new as_object(get_player());
-				infoObject->set_member("level", level);
-				infoObject->set_member("code", code);
-
-				as_environment env(get_player());
-				env.push(infoObject.get_ptr());
-				call_method(function, &env, this, 1, env.get_top_index());
-			}
-			gameswf_engine_mutex().unlock();
+			as_environment env(get_player());
+			env.push(infoObject.get_ptr());
+			call_method(function, &env, this, 1, env.get_top_index());
 		}
-	}
-
-	void as_netstream::pause(int mode)
-	{
-		if (mode == -1)
-		{
-			m_pause = ! m_pause;
-		}
-		else
-		{
-			m_pause = (mode == 0) ? true : false;
-		}
-
-		if (m_pause == false)
-		{
-			m_decoder.signal();
-		}
+		gameswf_engine_mutex().unlock();
 	}
 
 	// it is running in decoder thread
@@ -360,129 +481,6 @@ namespace gameswf
 		return data;
 	}
 
-	// it is running in decoder thread
-	void as_netstream::run()
-	{
-		while (m_is_alive)
-		{
-			if (m_url.size() == 0)
-			{
-//				printf("waiting a job...\n");
-				m_decoder.wait();
-			}
-
-			bool is_open = open_stream(m_url.c_str());
-			m_url = "";
-
-			if (is_open)
-			{
-				set_status("status", "NetStream.Play.Start");
-
-				{
-					sound_handler* sound = get_sound_handler();
-					if (sound)
-					{
-						sound->attach_aux_streamer(audio_streamer, this);
-					}
-				}
-
-				m_start_time = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-				m_video_clock = m_start_time;
-				m_break = false;
-				m_pause = false;
-
-				while (m_break == false && m_is_alive)
-				{
-					if (m_pause)
-					{
-						m_decoder.wait();
-						m_video_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-						continue;
-					}
-
-					if (m_vq.size() < AV_QUEUE_SIZE && m_aq.size() < AV_QUEUE_SIZE)
-					{
-						AVPacket pkt;
-						int rc = av_read_frame(m_FormatCtx, &pkt);
-						if (rc < 0)
-						{
-							if (m_vq.size() == 0)
-							{
-								set_status("status", "NetStream.Play.Stop");
-								break;
-							}
-						}
-						else
-						{
-							if (pkt.stream_index == m_video_index)
-							{
-								m_vq.push(pkt);
-							}
-							else
-							if (pkt.stream_index == m_audio_index)
-							{
-								if (get_sound_handler())
-								{
-									m_aq.push(pkt);
-								}
-							}
-							else
-							{
-								continue;
-							}
-						}
-					}
-
-					m_current_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-
-					// skip expired video frames
-					while (m_current_clock >= m_video_clock)
-					{
-						gc_ptr<av_packet> packet;
-						if (m_vq.pop(&packet))
-						{
-							const AVPacket& pkt = packet->get_packet();
-
-							// update video clock with pts, if present
-							if (pkt.dts != AV_NOPTS_VALUE)
-							{
-								double pts = as_double(m_video_stream->codec->time_base) * pkt.dts;
-								m_video_clock = m_start_time + pts;
-							}
-
-							// update video clock for next frame
-							double frame_delay = as_double(m_video_stream->codec->time_base);
-							m_video_clock += frame_delay;
-
-							set_video_data(decode_video(pkt));
-						}
-						else
-						{
-							break;
-						}
-					}
-
-					// Don't hog the CPU.
-					// Queues have filled, video frame have shown
-					// now it is possible and to have a rest
-					int delay = int(1000 * (m_video_clock - m_current_clock));
-					if (delay > 0 && (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE))
-					{
-						tu_timer::sleep(delay);
-					}
-				}
-
-				sound_handler* sound = get_sound_handler();
-				if (sound)
-				{
-					sound->detach_aux_streamer(this);
-				}
-
-				close_stream();
-			}
-		}
-	}
-
 	int as_netstream::get_width() const
 	{
 		if (m_VCodecCtx)
@@ -555,18 +553,40 @@ namespace gameswf
 		ns->close();
 	}
 
+	// flag:Boolean [optional] - A Boolean value specifying whether to pause play (true) or resume play (false).
+	// If you omit this parameter, NetStream.pause() acts as a toggle: the first time it is called on a specified stream,
+	// it pauses play, and the next time it is called, it resumes play.
 	void netstream_pause(const fn_call& fn)
 	{
 		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
 		assert(ns);
 
-		// mode: -1 ==> toogle, 0==> pause, 1==> play
-		int mode = -1;
 		if (fn.nargs > 0)
 		{
-			mode = fn.arg(0).to_bool() ? 0 : 1;
+			bool pause = fn.arg(0).to_bool();
+			if (pause == false && ns->m_status == as_netstream::PAUSE)	// play
+			{
+				ns->play(NULL);
+			}
+			else
+			if (pause == true && ns->m_status == as_netstream::PLAY)	// pause
+			{
+				ns->m_status = as_netstream::PAUSE;
+			}
 		}
-		ns->pause(mode);	// toggle mode
+		else
+		{
+			// toggle mode
+			if (ns->m_status == as_netstream::PAUSE)	// play
+			{
+				ns->play(NULL);
+			}
+			else
+			if (ns->m_status == as_netstream::PLAY)	// pause
+			{
+				ns->m_status = as_netstream::PAUSE;
+			}
+		}
 	}
 
 	void netstream_play(const fn_call& fn)
