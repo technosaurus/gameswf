@@ -170,15 +170,19 @@ namespace gameswf
 		void set_video_data(Uint8* data);
 
 		volatile netstream_status m_status;
+		volatile double m_seek_time;
 
 	private:
 
-		inline double as_double(AVRational time){	return time.num / (double) time.den; }
 		void set_status(const char* level, const char* code);
 		bool open_stream(const char* url);
 		void close_stream();
+		double get_duration() const;
 
-		AVFormatContext *m_FormatCtx;
+		// return current time in sec
+		double now() const;
+
+		AVFormatContext* m_FormatCtx;
 
 		// video
 		AVCodecContext* m_VCodecCtx;
@@ -189,9 +193,8 @@ namespace gameswf
 		AVStream* m_audio_stream;
 		gc_ptr<decoded_sound> m_sound;
 
-		double m_start_time;
-		double m_video_clock;
-		double m_current_clock;
+		double m_start_time;	// sec
+		double m_video_time;	// sec
 
 		int m_video_index;
 		int m_audio_index;

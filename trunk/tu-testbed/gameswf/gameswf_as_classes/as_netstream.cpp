@@ -42,12 +42,13 @@ namespace gameswf
 		m_FormatCtx(NULL),
 		m_VCodecCtx(NULL),
 		m_ACodecCtx(NULL),
-		m_video_clock(0),
+		m_video_time(0),
 		m_video_index(-1),              
 		m_audio_index(-1),
 		m_video_data(NULL),
 		m_convert_ctx(NULL),
-		m_status(STOP)
+		m_status(STOP),
+		m_seek_time(-1)
 	{
 		av_register_all();
 	}
@@ -121,22 +122,74 @@ namespace gameswf
 		}
 	}
 
+	// seek_time in sec
+	void as_netstream::seek(double seek_time)
+	{
+		switch (m_status)
+		{
+			default:
+				break;
+
+			case PLAY:
+				if (seek_time < 0)
+				{
+					seek_time = 0;
+				}
+				m_seek_time = seek_time;
+				break;
+
+			case PAUSE:
+				if (seek_time < 0)
+				{
+					seek_time = 0;
+				}
+				m_seek_time = seek_time;
+
+				m_status = PLAY;
+				m_decoder.signal();
+				break;
+		}
+	}
+
+	// return current time in sec
+	double as_netstream::now() const
+	{
+		return (double) tu_timer::get_ticks() / 1000;
+	}
+
 	// it is running in decoder thread
 	void as_netstream::run()
 	{
 		set_status("status", "NetStream.Play.Start");
 
-		m_start_time = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-		m_video_clock = m_start_time;
+		m_start_time = now();
+		m_video_time = 0;
 		
 		m_status = PLAY;
 		while (m_status == PLAY || m_status == PAUSE)
 		{
 			if (m_status == PAUSE)
 			{
+				double paused = now();
 				m_decoder.wait();
-				m_video_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
+				m_start_time += now() - paused;
 				continue;
+			}
+
+			// seek request
+			if (m_seek_time >= 0)
+			{
+				int64 timestamp = (int64) (m_seek_time * AV_TIME_BASE);
+				int flags = m_seek_time > m_video_time ? 0 : AVSEEK_FLAG_BACKWARD;
+				int ret = av_seek_frame(m_FormatCtx, -1, timestamp, flags);
+				if (ret == 0)
+				{
+					m_aq.clear();
+					m_vq.clear();
+					m_start_time += m_video_time - m_seek_time;
+					m_video_time = m_seek_time;
+				}
+				m_seek_time = -1;
 			}
 
 			if (m_vq.size() < AV_QUEUE_SIZE && m_aq.size() < AV_QUEUE_SIZE)
@@ -157,24 +210,23 @@ namespace gameswf
 						m_vq.push(pkt);
 					}
 					else
-						if (pkt.stream_index == m_audio_index)
+					if (pkt.stream_index == m_audio_index)
+					{
+						if (get_sound_handler())
 						{
-							if (get_sound_handler())
-							{
-								m_aq.push(pkt);
-							}
+							m_aq.push(pkt);
 						}
-						else
-						{
-							continue;
-						}
+					}
+					else
+					{
+						continue;
+					}
 				}
 			}
 
-			m_current_clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks());
-
 			// skip expired video frames
-			while (m_current_clock >= m_video_clock)
+			double current_time = now() - m_start_time;
+			while (current_time >= m_video_time)
 			{
 				gc_ptr<av_packet> packet;
 				if (m_vq.pop(&packet))
@@ -184,18 +236,20 @@ namespace gameswf
 					// update video clock with pts, if present
 					if (pkt.dts != AV_NOPTS_VALUE)
 					{
-						double pts = as_double(m_video_stream->codec->time_base) * pkt.dts;
-						m_video_clock = m_start_time + pts;
+						double pts = av_q2d(m_video_stream->time_base) * pkt.dts;
+						m_video_time = pts;
 					}
 
 					// update video clock for next frame
-					double frame_delay = as_double(m_video_stream->codec->time_base);
-					m_video_clock += frame_delay;
+					double frame_delay = av_q2d(m_video_stream->codec->time_base);
+
+					m_video_time += frame_delay;
 
 					set_video_data(decode_video(pkt));
 				}
 				else
 				{
+					// no packets in queue
 					break;
 				}
 			}
@@ -203,10 +257,18 @@ namespace gameswf
 			// Don't hog the CPU.
 			// Queues have filled, video frame have shown
 			// now it is possible and to have a rest
-			int delay = int(1000 * (m_video_clock - m_current_clock));
-			if (delay > 0 && (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE))
+			int delay = (int) (1000 * (m_video_time - current_time));
+			if (delay > 0)
 			{
-				tu_timer::sleep(delay);
+				if (delay > 50)	// hack, adjust m_start_time after seek
+				{
+					m_start_time -= (m_video_time - current_time);
+				}
+				if (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE)
+				{
+					tu_timer::sleep(delay);
+				}
+//				printf("current_time=%f, video_time=%f, delay=%d\n", current_time, m_video_time, delay);
 			}
 		}
 
@@ -518,22 +580,6 @@ namespace gameswf
 		m_video_data = data;
 	}
 
-	void as_netstream::seek(double seek_time)
-	{
-		return;
-		//TODO
-/*		double clock = tu_timer::ticks_to_seconds(tu_timer::get_ticks()) - m_start_clock;
-		clock += seek_time;
-//		int64_t timestamp = (int64_t) clock * AV_TIME_BASE;
-
-//		int flg = seek_time < 0 ? AVSEEK_FLAG_BACKWARD : 0;
-		int rc = av_seek_frame(m_FormatCtx, -1, AV_TIME_BASE, 0);
-		if (rc < 0)
-		{
-			log_error("could not seek to position rc=%d\n", rc);
-		}*/
-	}
-
 	// Specifies how long to buffer messages before starting to display the stream.
 	void as_netstream::setBufferTime()
 	{
@@ -543,7 +589,12 @@ namespace gameswf
 	//	The position of the playhead, in seconds.
 	double as_netstream::time() const
 	{
-		return (double) m_video_clock;
+		return m_video_time;
+	}
+
+	double as_netstream::get_duration() const
+	{
+		return (double) m_FormatCtx->duration / 1000000;
 	}
 
 	void netstream_close(const fn_call& fn)
