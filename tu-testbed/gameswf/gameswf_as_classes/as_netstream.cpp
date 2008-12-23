@@ -160,6 +160,9 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::run()
 	{
+		// keep this alive during execution!
+		gc_ptr<as_object>	this_ptr(this);
+
 		set_status("status", "NetStream.Play.Start");
 
 		m_start_time = now();
@@ -188,6 +191,11 @@ namespace gameswf
 					m_vq.clear();
 					m_start_time += m_video_time - m_seek_time;
 					m_video_time = m_seek_time;
+					set_status("status", "NetStream.Seek.Notify");
+				}
+				else
+				{
+					set_status("error", "NetStream.Seek.InvalidTime");
 				}
 				m_seek_time = -1;
 			}
@@ -200,6 +208,7 @@ namespace gameswf
 				{
 					if (m_vq.size() == 0)
 					{
+						set_status("status", "NetStream.Play.Stop");
 						break;
 					}
 				}
@@ -250,6 +259,7 @@ namespace gameswf
 				else
 				{
 					// no packets in queue
+//					set_status("status", "NetStream.Buffer.Empty");
 					break;
 				}
 			}
@@ -266,13 +276,12 @@ namespace gameswf
 				}
 				if (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE)
 				{
+//					set_status("status", "NetStream.Buffer.Full");
 					tu_timer::sleep(delay);
 				}
 //				printf("current_time=%f, video_time=%f, delay=%d\n", current_time, m_video_time, delay);
 			}
 		}
-
-		set_status("status", "NetStream.Play.Stop");
 
 		sound_handler* sound = get_sound_handler();
 		if (sound)
@@ -281,7 +290,6 @@ namespace gameswf
 		}
 
 		close_stream();
-	
 		m_status = STOP;
 	}
 
