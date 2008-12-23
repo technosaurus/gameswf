@@ -12,9 +12,6 @@
 
 namespace gameswf
 {
-
-	struct as_netstream;
-
 	struct video_stream_definition : public character_def
 	{
 		// Unique id of a gameswf resource

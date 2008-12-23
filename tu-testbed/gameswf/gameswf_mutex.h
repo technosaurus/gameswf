@@ -135,7 +135,7 @@ namespace gameswf
 
 namespace gameswf
 {
-	struct tu_thread
+	struct tu_thread : public ref_counted
 	{
 		tu_thread(int (*fn)(void *), void* data)
 		{

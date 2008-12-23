@@ -11,7 +11,7 @@
 #endif
 
 #include "base/tu_queue.h"
-#include "gameswf/gameswf_video_impl.h"
+#include "gameswf/gameswf_object.h"
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
@@ -219,10 +219,22 @@ namespace gameswf
 
 #else	// ffmpeg is not present
 
-#include "gameswf/gameswf_video_impl.h"
-
 namespace gameswf
 {
+	struct as_netstream : public as_object
+	{
+		int get_width() const {
+			return 0;
+		}
+		int get_height() const {
+			return 0;
+		}
+
+		Uint8* get_video_data() {
+			return NULL;
+		}
+	};
+
 	void as_global_netstream_ctor(const fn_call& fn);
 }
 
