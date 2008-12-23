@@ -42,6 +42,8 @@ void	tu_string::resize(int new_size)
 		return;
 	}
 
+	int old_size = size();
+
 	if (using_heap() == false)
 	{
 		if (new_size < 15)
@@ -57,10 +59,10 @@ void	tu_string::resize(int new_size)
 			// round up.
 			capacity = (capacity + 15) & ~15;
 			char*	buf = (char*) tu_malloc(capacity);
-                        memset(buf, 0, capacity);
+			memset(buf, 0, capacity);
 
 			// Copy existing data.
-			strcpy(buf, m_local.m_buffer);
+			memcpy(buf, m_local.m_buffer, old_size);
 
 			// Set the heap state.
 			m_heap.m_buffer = buf;
@@ -83,7 +85,8 @@ void	tu_string::resize(int new_size)
 
 			// Copy existing string info.
 			m_local.m_size = (char) (new_size + 1);
-			strncpy(m_local.m_buffer, old_buffer, 15);
+			assert(old_size >= 15);
+			memcpy(m_local.m_buffer, old_buffer, 15);
 			m_local.m_buffer[new_size] = 0;	// ensure termination.
 
 			tu_free(old_buffer, old_capacity);
@@ -344,7 +347,7 @@ tu_string string_printf(const char* fmt, ...)
 //
 //    or
 //
-// cl container.cpp utf8.cpp tu_random.cpp dlmalloc.c -Zi -Od -DCONTAINER_UNIT_TEST -DUSE_DL_MALLOC -I..
+// cl container.cpp utf8.cpp tu_random.cpp dlmalloc.c -Zi -Od -DCONTAINER_UNIT_TEST -DUSE_DL_MALLOC -DWIN32 -I..
 
 
 void	test_hash()
@@ -715,6 +718,106 @@ int	main()
 
 	assert(b == "#sacrificial lamb");
 
+	// Test erase()
+	a = "abcdef";
+	a.erase(3, 1);
+	assert(a == "abcef");
+	a = "abcdefghijklmnopqrst";
+	a.erase(12, 6);
+	assert(a == "abcdefghijklst");
+
+	// Test insert()
+	a = "abcdef";
+	a.insert(3, 'z');
+	assert(a == "abczdef");
+	a = "abcdefghijklmn";
+	a.insert(12, 'y');
+	a.insert(13, 'z');
+	assert(a == "abcdefghijklyzmn");
+
+	// Test operator+=(tu_string)
+	a = "abcdef";
+	b = "ghijklmnopqrst";
+	a += b;
+	assert(a == "abcdefghijklmnopqrst");
+
+	// Test operator+(const char*)
+	a = "abcdef";
+	b = "ghi";
+	assert(a + b == "abcdefghi");
+
+	// Test operator<(const char*)
+	a = "abc";
+	assert(a < "def");
+	assert(a < "abd");
+	assert(!(a < "aab"));
+	assert(!(a < "aa"));
+	assert(!(a < "aabz"));
+	assert(a < "abcd");
+
+	// Test operator<(const tu_string&)
+	a = "abc";
+	assert(a < tu_string("def"));
+	assert(a < tu_string("abd"));
+	assert(!(a < tu_string("aab")));
+	assert(!(a < tu_string("aa")));
+	assert(!(a < tu_string("aabz")));
+	assert(a < tu_string("abcd"));
+
+	// Test that we can store strings with embedded \0's.
+	a = "abc";
+	a += '\0';
+	assert(a.length() == 4);
+	a += "def";
+	assert(a.length() == 7);
+	assert(a[4] == 'd');
+	assert(a[5] == 'e');
+	assert(a[6] == 'f');
+	assert(a[7] == 0);
+
+	// Test that we can upsize strings with embedded \0's
+	a = "abc";
+	a += '\0';
+	a += "def";
+	b = a;
+	assert(a == b);
+	assert(b.length() == 7);
+	a = a + b;
+	assert(a.length() == 14);
+	assert(a == (b + b));
+	assert(a > b);
+	a = a + b;
+	assert(a.size() == 21);
+	assert(a == (b + b + b));
+	assert(a > b);
+
+	// Test that we can downsize strings with embedded \0's
+	a = "abc";
+	a += '\0';
+	a += "def";
+	assert(a.length() == 7);
+	b = a + a + a;
+	assert(b.length() == 21);
+	b.resize(14);
+	assert(b.length() == 14);
+	assert(b == (a + a));
+	b.erase(3, 1);
+	assert(b.size() == 13);
+	assert(b == tu_string("abcdef") + a);
+
+	// Test strings that are nothing but \0's.
+	a = "";
+	b = "";
+	for (int i = 0; i < 100; i++) {
+		a += '\0';
+		assert(a.length() == i + 1);
+		assert(a > b);
+		b += '\0';
+		assert(b.length() == i + 1);
+		assert(a == b);
+		assert((a + b).length() == 2 * (i + 1));
+	}
+
 	test_hash();
 	test_stringi();
 	test_stringi_hash();
@@ -725,6 +828,8 @@ int	main()
 #endif
 
 	test_hash_speed();
+
+	printf("OK\n");
 
 	return 0;
 }

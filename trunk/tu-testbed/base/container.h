@@ -1398,7 +1398,7 @@ public:
 		m_local.m_buffer[0] = 0;
 
 		resize(str.size());
-		strcpy(get_buffer(), str.get_buffer());
+		memcpy(get_buffer(), str.get_buffer(), size() + 1);
 	}
 	tu_string(const uint32* wide_char_str)
 	{
@@ -1444,7 +1444,8 @@ public:
 		if (str)
 		{
 			resize((int) strlen(str));
-			strcpy(get_buffer(), str);
+			memcpy(get_buffer(), str, size() + 1);
+			assert(get_buffer()[size()] == 0);
 		}
 	}
 
@@ -1452,7 +1453,8 @@ public:
 	{
 		if (this != &str) {
 			resize(str.size());
-			strcpy(get_buffer(), str.get_buffer());
+			memcpy(get_buffer(), str.get_buffer(), size() + 1);
+			assert(get_buffer()[size()] == 0);
 		}
 	}
 
@@ -1468,12 +1470,15 @@ public:
 
 	exported_module bool	operator==(const tu_string& str) const
 	{
-		return strcmp(*this, str) == 0;
+		if (size() != str.size()) {
+			return false;
+		}
+		return memcmp(*this, str, size()) == 0;
 	}
 
 	exported_module bool	operator!=(const tu_string& str) const
 	{
-		return strcmp(*this, str) != 0;
+		return !(*this == str);
 	}
 
 	exported_module int	length() const
@@ -1488,14 +1493,17 @@ public:
 		}
 	}
 
-	exported_module int	size() const { return length(); }
+	exported_module int	size() const {
+		return length();
+	}
 
 	// index >=0
 	exported_module void erase(int index, int count)
 	{
 		assert(index + count <= length());
-		strcpy(get_buffer() + index, get_buffer() + index + count);
-		resize(length() - count);
+		memmove(get_buffer() + index, get_buffer() + index + count,
+			size() - index - count);
+		resize(size() - count);
 	}
 
 	// insert char before index
@@ -1527,18 +1535,15 @@ public:
 		int	old_length = length();
 		assert(old_length >= 0);
 		resize(old_length + str_length);
-		strcpy(get_buffer() + old_length, str);
+		memcpy(get_buffer() + old_length, str, str_length + 1);
 	}
 
 	exported_module void	operator+=(char ch)
 	{
-		if (ch)
-		{
-			int	old_length = length();
-			assert(old_length >= 0);
-			resize(old_length + 1);
-			strncpy(get_buffer() + old_length, (char *)&ch, 1);
-		}
+		int old_length = length();
+		assert(old_length >= 0);
+		resize(old_length + 1);
+		*(get_buffer() + old_length) = ch;
 	}
 
 	// Append wide char.  Both versions of wide char.
@@ -1547,11 +1552,20 @@ public:
 
 	exported_module void	operator+=(const tu_string& str)
 	{
-		int	str_length = str.length();
-		int	old_length = length();
+		int str_length = str.length();
+		int old_length = length();
 		assert(old_length >= 0);
-		resize(old_length + str_length);
-		strcpy(get_buffer() + old_length, str.c_str());
+		int new_length = old_length + str_length;
+		resize(new_length);
+		memcpy(get_buffer() + old_length, str.c_str(), str_length);
+		get_buffer()[new_length] = 0;
+	}
+
+	exported_module tu_string	operator+(const tu_string& str) const
+	{
+		tu_string	new_string(*this);
+		new_string += str;
+		return new_string;
 	}
 
 	exported_module tu_string	operator+(const char* str) const
@@ -1567,9 +1581,23 @@ public:
 		return strcmp(c_str(), str) < 0;
 	}
 
-	exported_module bool	operator<(const tu_string& str) const
+	exported_module bool operator<(const tu_string& str) const
 	{
-		return *this < str.c_str();
+		const char* p0 = get_buffer();
+		const char* p1 = str.get_buffer();
+		int min_len = length();
+		bool str_longer = true;
+		if (str.length() < min_len) {
+			min_len = str.length();
+			str_longer = false;
+		}
+		int cmp = memcmp(p0, p1, min_len);
+		if (cmp < 0) {
+			return true;
+		} else if (cmp > 0) {
+			return false;
+		}
+		return str_longer;
 	}
 
 	exported_module bool	operator>(const char* str) const
@@ -1579,7 +1607,7 @@ public:
 
 	exported_module bool	operator>(const tu_string& str) const
 	{
-		return *this > str.c_str();
+		return str < *this;
 	}
 
 	exported_module void clear()
