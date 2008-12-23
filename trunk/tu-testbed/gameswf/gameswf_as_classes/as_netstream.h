@@ -17,6 +17,7 @@
 
 #include <ffmpeg/avformat.h>
 #include <ffmpeg/swscale.h>
+#include "gameswf/gameswf_mutex.h"
 
 namespace gameswf
 {
