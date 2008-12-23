@@ -160,9 +160,6 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::run()
 	{
-		// keep this alive during execution!
-		gc_ptr<as_object>	this_ptr(this);
-
 		set_status("status", "NetStream.Play.Start");
 
 		m_start_time = now();
@@ -327,6 +324,9 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::set_status(const char* level, const char* code)
 	{
+		// keep this alive during execution!
+		gc_ptr<as_object>	this_ptr(this);
+
 		gameswf_engine_mutex().lock();
 		as_value function;
 		if (get_member("onStatus", &function) && get_root())
