@@ -104,11 +104,11 @@ namespace gameswf
 			matrix m = get_world_matrix();
 
 			Uint8* video_data = m_ns->get_video_data();
-
-			m_video_handler->display(video_data, m_ns->get_width(), m_ns->get_height(), 
-				&m, &bounds, color);
-
-			free(video_data);
+			if (video_data) {
+				m_video_handler->display(video_data, m_ns->get_width(), m_ns->get_height(), 
+							 &m, &bounds, color);
+				free(video_data);
+			}
 		}
 	}
 

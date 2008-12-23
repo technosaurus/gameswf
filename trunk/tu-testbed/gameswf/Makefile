@@ -32,6 +32,7 @@ LIB_OBJS = \
 	gameswf_as_classes/as_array.$(OBJ_EXT) \
 	gameswf_as_classes/as_boolean.$(OBJ_EXT) \
 	gameswf_as_classes/as_broadcaster.$(OBJ_EXT) \
+	gameswf_as_classes/as_class.$(OBJ_EXT) \
 	gameswf_as_classes/as_color.$(OBJ_EXT) \
 	gameswf_as_classes/as_color_transform.$(OBJ_EXT) \
 	gameswf_as_classes/as_date.$(OBJ_EXT) \
@@ -50,6 +51,7 @@ LIB_OBJS = \
 	gameswf_as_classes/as_number.$(OBJ_EXT)	\
 	gameswf_as_classes/as_point.$(OBJ_EXT) \
 	gameswf_as_classes/as_selection.$(OBJ_EXT) \
+	gameswf_as_classes/as_sharedobject.$(OBJ_EXT) \
 	gameswf_as_classes/as_sound.$(OBJ_EXT) \
 	gameswf_as_classes/as_string.$(OBJ_EXT) \
 	gameswf_as_classes/as_textformat.$(OBJ_EXT) \
