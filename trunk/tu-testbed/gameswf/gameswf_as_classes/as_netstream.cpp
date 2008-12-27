@@ -37,6 +37,9 @@ namespace gameswf
 		ns->audio_callback(stream, len);
 	}
 
+	static hash<int, tu_string> s_netstream_event_level;
+	static hash<int, tu_string> s_netstream_event_code;
+
 	as_netstream::as_netstream(player* player):
 		as_object(player),
 		m_FormatCtx(NULL),
@@ -50,6 +53,24 @@ namespace gameswf
 		m_status(STOP),
 		m_seek_time(-1)
 	{
+		// fill static hash once
+		if (s_netstream_event_level.size() == 0)
+		{
+			s_netstream_event_level.add(status, "status");
+			s_netstream_event_level.add(error, "error");
+		}
+
+		if (s_netstream_event_code.size() == 0)
+		{
+			s_netstream_event_code.add(playStreamNotFound, "NetStream.Play.StreamNotFound");
+			s_netstream_event_code.add(playStart, "NetStream.Play.Start");
+			s_netstream_event_code.add(playStop, "NetStream.Play.Stop");
+			s_netstream_event_code.add(seekNotify, "NetStream.Seek.Notify");
+			s_netstream_event_code.add(seekInvalidTime, "NetStream.Seek.InvalidTime");
+			s_netstream_event_code.add(bufferEmpty, "NetStream.Buffer.Empty");
+			s_netstream_event_code.add(bufferFull, "NetStream.Buffer.Full");
+		}
+
 		av_register_all();
 	}
 
@@ -99,6 +120,8 @@ namespace gameswf
 					{
 						sound->attach_aux_streamer(audio_streamer, this);
 					}
+
+					get_root()->add_listener(this);
 					m_thread = new tu_thread(netstream_server, this);
 				}
 				break;
@@ -160,7 +183,7 @@ namespace gameswf
 	// it is running in decoder thread
 	void as_netstream::run()
 	{
-		set_status("status", "NetStream.Play.Start");
+		set_status(status, playStart);
 
 		m_start_time = now();
 		m_video_time = 0;
@@ -188,11 +211,11 @@ namespace gameswf
 					m_vq.clear();
 					m_start_time += m_video_time - m_seek_time;
 					m_video_time = m_seek_time;
-					set_status("status", "NetStream.Seek.Notify");
+					set_status(status, seekNotify);
 				}
 				else
 				{
-					set_status("error", "NetStream.Seek.InvalidTime");
+					set_status(error, seekInvalidTime);
 				}
 				m_seek_time = -1;
 			}
@@ -205,7 +228,7 @@ namespace gameswf
 				{
 					if (m_vq.size() == 0)
 					{
-						set_status("status", "NetStream.Play.Stop");
+						set_status(status, playStop);
 						break;
 					}
 				}
@@ -213,14 +236,14 @@ namespace gameswf
 				{
 					if (pkt.stream_index == m_video_index)
 					{
-						m_vq.push(pkt);
+						m_vq.push(new av_packet(pkt));
 					}
 					else
 					if (pkt.stream_index == m_audio_index)
 					{
 						if (get_sound_handler())
 						{
-							m_aq.push(pkt);
+							m_aq.push(new av_packet(pkt));
 						}
 					}
 					else
@@ -321,25 +344,43 @@ namespace gameswf
 
 	}
 
-	// it is running in decoder thread
-	void as_netstream::set_status(const char* level, const char* code)
+	void as_netstream::advance(float delta_time)
 	{
-		// keep this alive during execution!
-		gc_ptr<as_object>	this_ptr(this);
-
-		gameswf_engine_mutex().lock();
-		as_value function;
-		if (get_member("onStatus", &function) && get_root())
+		stream_event ev;
+		while(m_event.pop(&ev))
 		{
-			gc_ptr<as_object> infoObject = new as_object(get_player());
-			infoObject->set_member("level", level);
-			infoObject->set_member("code", code);
+//			printf("pop status: %s %s\n", ev.level.c_str(), ev.code.c_str());		
 
-			as_environment env(get_player());
-			env.push(infoObject.get_ptr());
-			call_method(function, &env, this, 1, env.get_top_index());
+			// keep this alive during execution!
+			gc_ptr<as_object>	this_ptr(this);
+
+			as_value function;
+			if (get_member("onStatus", &function))
+			{
+				gc_ptr<as_object> infoObject = new as_object(get_player());
+				infoObject->set_member("level", s_netstream_event_level[ev.level].c_str());
+				infoObject->set_member("code", s_netstream_event_code[ev.code].c_str());
+
+				as_environment env(get_player());
+				env.push(infoObject.get_ptr());
+				call_method(function, &env, this, 1, env.get_top_index());
+			}
+
+			if (ev.code == playStop)
+			{
+				get_root()->remove_listener(this);
+			}
 		}
-		gameswf_engine_mutex().unlock();
+	}
+
+	// it is running in decoder thread
+	void as_netstream::set_status(netstream_event_level level, netstream_event_code code)
+	{
+//		printf("push status: %s %s\n", level, code);
+		stream_event ev;
+		ev.level = level;
+		ev.code = code;
+		m_event.push(ev);
 	}
 
 	// it is running in decoder thread
@@ -381,7 +422,7 @@ namespace gameswf
 		if (av_open_input_file(&m_FormatCtx, c_url, NULL, 0, NULL) != 0)
 		{
 //			log_error("Couldn't open file '%s'\n", c_url);
-			set_status("error", "NetStream.Play.StreamNotFound");
+			set_status(error, playStreamNotFound);
 			return false;
 		}
 
