@@ -1106,12 +1106,12 @@ namespace gameswf
 
 			case M_TEXT:
 				val->set_tu_string(m_text);
-				break;
+				return true;
 
 			case M_TEXTCOLOR:
 				// Return color in 0xRRGGBB format
 				val->set_int((m_color.m_r << 16) + (m_color.m_g << 8) + m_color.m_b);
-				break;
+				return true;
 		
 			case M_TEXTWIDTH:
 				// Return the width, in pixels, of the text as laid out.
@@ -1120,28 +1120,28 @@ namespace gameswf
 				//
 				// In local coords.  Verified against Macromedia Flash.
 				val->set_double(TWIPS_TO_PIXELS(m_text_bounding_box.width()));
-				break;
+				return true;
 
 			case M_BORDER:
 				val->set_bool(m_def->m_border);
-				break;
+				return true;
 
 			case M_MULTILINE:
 				val->set_bool(m_def->m_multiline);
-				break;
+				return true;
 		
 			case M_WORDWRAP:
 				val->set_bool(m_def->m_word_wrap);
-				break;
+				return true;
 
 			case M_TYPE:
 				val->set_tu_string(m_def->m_readonly ? "dynamic" : "input");
-				break;
+				return true;
 
 			case M_BACKGROUNDCOLOR:
 				val->set_int(m_background_color.m_r << 16 | m_background_color.m_g << 8 |
 					m_background_color.m_b);
-				break;
+				return true;
 
 		}
 

@@ -113,6 +113,7 @@ namespace gameswf
 				infile += url;
 				m_url = infile;
 
+				get_root()->add_listener(this);
 				if (open_stream(m_url.c_str()) == true)
 				{
 					sound_handler* sound = get_sound_handler();
@@ -121,7 +122,6 @@ namespace gameswf
 						sound->attach_aux_streamer(audio_streamer, this);
 					}
 
-					get_root()->add_listener(this);
 					m_thread = new tu_thread(netstream_server, this);
 				}
 				break;
@@ -228,7 +228,6 @@ namespace gameswf
 				{
 					if (m_vq.size() == 0)
 					{
-						set_status(status, playStop);
 						break;
 					}
 				}
@@ -310,6 +309,8 @@ namespace gameswf
 		}
 
 		close_stream();
+
+		set_status(status, playStop);
 		m_status = STOP;
 	}
 
@@ -366,7 +367,7 @@ namespace gameswf
 				call_method(function, &env, this, 1, env.get_top_index());
 			}
 
-			if (ev.code == playStop)
+			if (ev.code == playStop || ev.code == playStreamNotFound)
 			{
 				get_root()->remove_listener(this);
 			}
