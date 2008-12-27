@@ -55,12 +55,13 @@ namespace gameswf
 
 	};
 
+	template<class T> 
 	struct av_queue
 	{
-		void push(const AVPacket& pkt)
+		void push(const T& val)
 		{
 			tu_autolock locker(m_mutex);
-			m_queue.push(new av_packet(pkt));
+			m_queue.push(val);
 		}
 
 		int size()
@@ -69,7 +70,7 @@ namespace gameswf
 			return int(m_queue.size());
 		}
 
-		bool pop(gc_ptr<av_packet>* val)
+		bool pop(T* val)
 		{
 			tu_autolock locker(m_mutex);
 			if (m_queue.size() > 0)
@@ -90,7 +91,7 @@ namespace gameswf
 	private:
 
 		tu_mutex m_mutex;
-		tu_queue< gc_ptr<av_packet> > m_queue;
+		tu_queue<T> m_queue;
 	};
 
 	// container for the decoded sound
@@ -132,7 +133,7 @@ namespace gameswf
 			}
 		}
 	};
-
+	
 	struct as_netstream : public as_object
 	{
 		// Unique id of a gameswf resource
@@ -151,8 +152,35 @@ namespace gameswf
 			PAUSE
 		};
 
+		// netstream event levels
+		enum netstream_event_level
+		{
+			status,
+			error
+		};
+
+		// netstream event codes
+		enum netstream_event_code
+		{
+			playStreamNotFound,		// NetStream.Play.StreamNotFound
+			playStart,		// NetStream.Play.Start
+			playStop,		// NetStream.Play.Stop
+			seekNotify,		//NetStream.Seek.Notify
+			seekInvalidTime,		// NetStream.Seek.InvalidTime
+			bufferEmpty,		// NetStream.Buffer.Empty
+			bufferFull		//NetStream.Buffer.Full
+		};
+
+		typedef struct
+		{
+			netstream_event_level level;
+			netstream_event_code code;
+		}
+		stream_event;
+
 		as_netstream(player* player);
 		~as_netstream();
+		void	advance(float delta_time);
 
 		bool decode_audio(const AVPacket& pkt, Sint16** data, int* size);
 		Uint8* decode_video(const AVPacket& pkt);
@@ -175,7 +203,7 @@ namespace gameswf
 
 	private:
 
-		void set_status(const char* level, const char* code);
+		void set_status(netstream_event_level level, netstream_event_code code);
 		bool open_stream(const char* url);
 		void close_stream();
 		double get_duration() const;
@@ -202,8 +230,9 @@ namespace gameswf
 
 		tu_string m_url;
 
-		av_queue m_aq;	// audio queue
-		av_queue m_vq;	// video queue
+		av_queue< gc_ptr<av_packet> > m_aq;	// audio queue
+		av_queue< gc_ptr<av_packet> > m_vq;	// video queue
+		av_queue<stream_event> m_event;	// video stream events
 
 		gc_ptr<tu_thread> m_thread;
 		tu_condition m_decoder;
