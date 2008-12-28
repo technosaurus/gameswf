@@ -262,7 +262,7 @@ namespace gameswf
 					const AVPacket& pkt = packet->get_packet();
 
 					// update video clock with pts, if present
-					if (pkt.dts != AV_NOPTS_VALUE)
+					if (pkt.dts != 0)
 					{
 						double pts = av_q2d(m_video_stream->time_base) * pkt.dts;
 						m_video_time = pts;

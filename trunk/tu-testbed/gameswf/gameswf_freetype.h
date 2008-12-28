@@ -12,6 +12,7 @@
 
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_shape.h"
+#include "gameswf/gameswf_canvas.h"
 
 #if TU_CONFIG_LINK_TO_FREETYPE == 1
 
