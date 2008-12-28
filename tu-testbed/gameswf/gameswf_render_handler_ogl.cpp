@@ -464,19 +464,19 @@ struct video_handler_ogl : public gameswf::video_handler
 	float m_scoord;
 	float m_tcoord;
 
-	video_handler_ogl::video_handler_ogl():
+	video_handler_ogl():
 		m_texture(0),
 		m_scoord(0),
 		m_tcoord(0)
 	{
 	}
 
-	video_handler_ogl::~video_handler_ogl()
+	~video_handler_ogl()
 	{
 		glDeleteTextures(1, &m_texture);
 	}
 
-	void video_handler_ogl::display(Uint8* data, int width, int height, 
+	void display(Uint8* data, int width, int height, 
 		const gameswf::matrix* m, const gameswf::rect* bounds, const gameswf::rgba& color)
 	{
 
