@@ -70,14 +70,13 @@ namespace gameswf
 		// ActionScript overrides
 		//
 
-//		virtual bool set_member(const tu_stringi& name, const as_value& val);
-		virtual bool get_member(const tu_stringi& name, as_value* val);
-
 		// To drop the connection to the Video object, pass null for source.
 		void attach_netstream(as_netstream* ns)
 		{
 			m_ns = ns;
 		}
+
+		gc_ptr<video_handler> m_video_handler;
 
 		private:
 
@@ -85,8 +84,6 @@ namespace gameswf
 
 		// A Camera object that is capturing video data or a NetStream object.
 		gc_ptr<as_netstream> m_ns;
-
-		gc_ptr<video_handler> m_video_handler;
 	};
 
 }	// end namespace gameswf

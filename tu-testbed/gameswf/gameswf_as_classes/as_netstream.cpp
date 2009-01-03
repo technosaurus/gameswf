@@ -15,7 +15,6 @@
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
-//#define CLEAR_BLUE_VIDEO_BACKGROUND
 #define AV_QUEUE_SIZE 20
 
 namespace gameswf
@@ -552,17 +551,15 @@ namespace gameswf
 	// it is running in decoder thread
 	Uint8* as_netstream::decode_video(const AVPacket& pkt)
 	{
-		Uint8* data = NULL;
 		int got = 0;
 		AVFrame frame;
-//		Uint32 t = SDL_GetTicks();
 		avcodec_decode_video(m_VCodecCtx, &frame, &got, pkt.data, pkt.size);
 		if (got)
 		{
 			// get buf for rgba picture
 			// will be freed later in update_video() 
 			int size = avpicture_get_size(PIX_FMT_RGBA32, m_VCodecCtx->width, m_VCodecCtx->height);
-			data = (Uint8*) malloc(size);
+			Uint8* data = (Uint8*) malloc(size);
 
 			AVPicture picture1;
 			avpicture_fill(&picture1, data, PIX_FMT_RGBA32, m_VCodecCtx->width, m_VCodecCtx->height);
@@ -570,27 +567,9 @@ namespace gameswf
 			sws_scale(m_convert_ctx, frame.data, frame.linesize, 0, 0,
 				picture1.data, picture1.linesize);
 
-#ifdef CLEAR_BLUE_VIDEO_BACKGROUND
-			// clear video background
-			Uint8* ptr = data;
-			for (int y = 0; y < h; y++)
-			{
-				for (int x = 0; x < w; x++)
-				{
-//					swap(ptr, ptr + 2);	// BGR ==> RGB
-					Uint16 rg = *(Uint16*) ptr;	// abgr
-					if (ptr[3] >= 0xF0 && rg == 0)
-					{
-						ptr[3] = 0;
-					}
-					ptr +=4;
-				}
-			}
-#endif
-
-//			printf("video advance time: %d\n", SDL_GetTicks()-t);
+			return data;
 		}
-		return data;
+		return NULL;
 	}
 
 	int as_netstream::get_width() const

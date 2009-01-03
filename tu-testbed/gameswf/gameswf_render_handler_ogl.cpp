@@ -463,11 +463,13 @@ struct video_handler_ogl : public gameswf::video_handler
 	GLuint m_texture;
 	float m_scoord;
 	float m_tcoord;
+	gameswf::rgba m_background_color;
 
 	video_handler_ogl():
 		m_texture(0),
 		m_scoord(0),
-		m_tcoord(0)
+		m_tcoord(0),
+		m_background_color(0,0,0,0)	// current background color
 	{
 	}
 
@@ -507,6 +509,39 @@ struct video_handler_ogl : public gameswf::video_handler
 			m_scoord = (float) width / w2p;
 			m_tcoord = (float) height / h2p;
 
+			if (m_clear_background)
+			{
+				// set video background color
+				// assume left-top pixel of the first frame as background color
+				if (m_background_color.m_a == 0)
+				{
+					m_background_color.m_a = 255;
+					m_background_color.m_r = data[2];
+					m_background_color.m_g = data[1];
+					m_background_color.m_b = data[0];
+				}
+
+				// clear video background, input data has BGRA format
+				Uint8* p = data;
+				for (int y = 0; y < height; y++)
+				{
+					for (int x = 0; x < width; x++)
+					{
+						// calculate color distance, dist is in [0..195075]
+						int r = m_background_color.m_r - p[2];
+						int g = m_background_color.m_g - p[1];
+						int b = m_background_color.m_b - p[0];
+						float dist = (float) (r * r + g * g + b * b);
+
+						static int s_min_dist = 3 * 64 * 64;	// hack
+						Uint8 a = (dist < s_min_dist) ? (Uint8) (255 * (dist / s_min_dist)) : 255;
+
+						p[3] = a;		// set alpha
+						p += 4;
+					}
+				}
+			}
+
 			// don't use compressed texture for video, it slows down video
 			//			ogl::create_texture(GL_RGBA, m_width2p, m_height2p, NULL);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w2p, h2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -527,7 +562,6 @@ struct video_handler_ogl : public gameswf::video_handler
 		d.m_y = b.m_y + c.m_y - a.m_y;
 
 		glColor4ub(color.m_r, color.m_g, color.m_b, color.m_a);
-
 		glBegin(GL_TRIANGLE_STRIP);
 		{
 			glTexCoord2f(0, 0);
