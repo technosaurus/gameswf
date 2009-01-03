@@ -1345,25 +1345,30 @@ class tu_stringi;
 class tu_string
 {
 public:
-	tu_string() { m_local.m_size = 1; memset(m_local.m_buffer, 0, 15); }
+	tu_string() {
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
+		m_local.m_buffer[0] = 0;
+	}
+	// TODO: add 'explicit' here
 	tu_string(int val)
 	{
 		char str[50];
 		snprintf(str, 50, "%d", val);
 
-		m_local.m_size = 1;
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
 		m_local.m_buffer[0] = 0;
 
 		int	new_size = (int) strlen(str);
 		resize(new_size);
 		strcpy(get_buffer(), str);
 	}
+	// TODO: add 'explicit' here
 	tu_string(double val)
 	{
 		char str[50];
 		snprintf(str, 50, "%.14g", val);
 
-		m_local.m_size = 1;
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
 		m_local.m_buffer[0] = 0;
 
 		int	new_size = (int) strlen(str);
@@ -1372,7 +1377,7 @@ public:
 	}
 	tu_string(const char* str)
 	{
-		m_local.m_size = 1;
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
 		m_local.m_buffer[0] = 0;
 
 		if (str)
@@ -1384,7 +1389,7 @@ public:
 	}
 	tu_string(const char* buf, int buflen)
 	{
-		m_local.m_size = 1;
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
 		m_local.m_buffer[0] = 0;
 
 		int	new_size = buflen;
@@ -1394,7 +1399,7 @@ public:
 	}
 	tu_string(const tu_string& str)
 	{
-		m_local.m_size = 1;
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
 		m_local.m_buffer[0] = 0;
 
 		resize(str.size());
@@ -1402,14 +1407,14 @@ public:
 	}
 	tu_string(const uint32* wide_char_str)
 	{
-		m_local.m_size = 1;
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
 		m_local.m_buffer[0] = 0;
 
 		*this = wide_char_str;
 	}
 	tu_string(const uint16* wide_char_str)
 	{
-		m_local.m_size = 1;
+		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
 		m_local.m_buffer[0] = 0;
 
 		*this = wide_char_str;
@@ -1485,11 +1490,12 @@ public:
 	{
 		if (using_heap() == false)
 		{
-			return m_local.m_size - 1;
+			return sizeof(m_local.m_buffer) -
+				m_local.m_bufsize_minus_length;
 		}
 		else
 		{
-			return m_heap.m_size - 1;
+			return m_heap.m_size;
 		}
 	}
 
@@ -1677,38 +1683,53 @@ private:
 
 	bool	using_heap() const
 	{
-		bool	heap = (m_heap.m_all_ones == (char) ~0);
+		bool heap = (m_local.m_bufsize_minus_length == (char) ~0);
 		return heap;
 	}
 
-	// The idea here is that tu_string is a 16-byte structure,
-	// which uses internal storage for strings of 14 characters or
-	// less.  For longer strings, it allocates a heap buffer, and
-	// keeps the buffer-tracking info in the same bytes that would
-	// be used for internal string storage.
+	// The idea here is that tu_string is an N-byte structure,
+	// which uses internal storage for strings of N-1 characters
+	// or less.  For longer strings, it allocates a heap buffer,
+	// and keeps the buffer-tracking info in the same bytes that
+	// would be used for internal string storage.
 	//
 	// A string that's implemented like vector<char> is typically
-	// 12 bytes plus heap storage, so this seems like a decent
-	// thing to try.  Also, a zero-length string still needs a
-	// terminator character, which with vector<char> means an
-	// unfortunate heap alloc just to hold a single '0'.
+	// 12 bytes plus heap storage, so storing short strings
+	// directly in the string metadata is usually a big win.
+	// Also, a zero-length string still needs a terminator
+	// character, which with vector<char> means an unfortunate
+	// heap alloc just to hold a single '0'.
 	union
 	{
-		// Internal storage.
-		struct
-		{
-			char	m_size;
-			char	m_buffer[15];
-		} m_local;
-
 		// Heap storage.
-		struct
+		struct heap_metadata
 		{
-			char	m_all_ones;	// flag to indicate heap storage is in effect.
-			int	m_size;
-			int	m_capacity;
-			char*	m_buffer;
+			int m_size;  // not counting terminating \0
+			char* m_buffer;
+			int m_capacity;  // TODO: move this into the heap data, a la Won Chun
+			// m_local uses the last byte of the struct to
+			// signal when it's active, so m_heap can't
+			// put anything there.
+			int m_dummy;
 		} m_heap;
+
+		// Internal storage.
+		struct local_data
+		{
+			char m_buffer[sizeof(heap_metadata) - 1];
+			char m_bufsize_minus_length;
+			// m_bufsize_minus_length holds
+			// ((sizeof(m_buffer) - length).  This is so
+			// that a string of length sizeof(m_buffer)
+			// has a zero byte in the length field, that
+			// does double-duty as the string terminator.
+			// This trick allows us to hold one more byte
+			// than we would otherwise be able to.
+			//
+			// if the m_bufsize_minus_length byte is all
+			// ones, then that's a flag indicating the
+			// active string data is in m_heap.
+		} m_local;
 	};
 };
 

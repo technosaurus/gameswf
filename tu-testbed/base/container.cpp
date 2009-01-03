@@ -46,10 +46,10 @@ void	tu_string::resize(int new_size)
 
 	if (using_heap() == false)
 	{
-		if (new_size < 15)
+		if (new_size <= sizeof(m_local.m_buffer))
 		{
 			// Stay with internal storage.
-			m_local.m_size = (char) (new_size + 1);
+			m_local.m_bufsize_minus_length = (char) (sizeof(m_local.m_buffer) - new_size);
 			m_local.m_buffer[new_size] = 0;	// terminate
 		}
 		else
@@ -57,6 +57,7 @@ void	tu_string::resize(int new_size)
 			// need to allocate heap buffer.
 			int	capacity = new_size + 1;
 			// round up.
+			// TODO: test to see if this rounding-up is actually a performance win.
 			capacity = (capacity + 15) & ~15;
 			char*	buf = (char*) tu_malloc(capacity);
 			memset(buf, 0, capacity);
@@ -65,16 +66,16 @@ void	tu_string::resize(int new_size)
 			memcpy(buf, m_local.m_buffer, old_size);
 
 			// Set the heap state.
+			m_local.m_bufsize_minus_length = char(~0);
 			m_heap.m_buffer = buf;
-			m_heap.m_all_ones = char(~0);
-			m_heap.m_size = new_size + 1;
+			m_heap.m_size = new_size;
 			m_heap.m_capacity = capacity;
 		}
 	}
 	else
 	{
 		// Currently using heap storage.
-		if (new_size < 15)
+		if (new_size <= sizeof(m_local.m_buffer))
 		{
 			// Switch to local storage.
 
@@ -84,9 +85,9 @@ void	tu_string::resize(int new_size)
 			UNUSED(old_capacity);
 
 			// Copy existing string info.
-			m_local.m_size = (char) (new_size + 1);
-			assert(old_size >= 15);
-			memcpy(m_local.m_buffer, old_buffer, 15);
+			m_local.m_bufsize_minus_length = (char) (sizeof(m_local.m_buffer) - new_size);
+			assert(old_size >= new_size);
+			memcpy(m_local.m_buffer, old_buffer, new_size);
 			m_local.m_buffer[new_size] = 0;	// ensure termination.
 
 			tu_free(old_buffer, old_capacity);
@@ -104,10 +105,12 @@ void	tu_string::resize(int new_size)
 			}
 			// else we're OK with existing buffer.
 
-			m_heap.m_size = new_size + 1;
+			m_heap.m_size = new_size;
 
 			// Ensure termination.
 			m_heap.m_buffer[new_size] = 0;
+
+			assert(m_local.m_bufsize_minus_length == (char) ~0);
 		}
 	}
 }
@@ -624,7 +627,6 @@ void test_unicode()
 
 	// TODO add some more tests; should test actual UTF-8 conversions.
 }
-
 
 
 int	main()
