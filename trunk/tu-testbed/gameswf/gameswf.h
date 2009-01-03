@@ -505,8 +505,19 @@ namespace gameswf
 	// base class for video handler
 	struct video_handler : public ref_counted
 	{
+		video_handler() :
+			m_clear_background(false)
+		{
+		}
+
 		virtual void display(Uint8* data, int width, int height, 
 			const matrix* mat, const rect* bounds, const rgba& color) = 0;
+
+		void clear_background(bool clear) { m_clear_background = clear; }
+
+	protected:
+
+		bool m_clear_background;
 	};
 
 	// tu_float is used in matrix & cxform because

@@ -58,16 +58,21 @@ namespace gameswf
 	void attach_video(const fn_call& fn)
 	{
 		video_stream_instance* video = cast_to<video_stream_instance>(fn.this_ptr);
-		assert(video);
-
-		if (fn.nargs != 1)
+		if (video && fn.nargs > 0)
 		{
-			log_error("attachVideo needs 1 arg\n");
-			return;
+			// fn.arg(0) may be null
+			video->attach_netstream(cast_to<as_netstream>(fn.arg(0).to_object()));
 		}
+	}
 
-		// fn.arg(0) may be null
-		video->attach_netstream(cast_to<as_netstream>(fn.arg(0).to_object()));
+	void clear_video_background(const fn_call& fn)
+	{
+		video_stream_instance* video = cast_to<video_stream_instance>(fn.this_ptr);
+		if (video && fn.nargs > 0)
+		{
+			assert(video->m_video_handler);
+			video->m_video_handler->clear_background(fn.arg(0).to_bool());
+		}
 	}
 
 	video_stream_instance::video_stream_instance(player* player, video_stream_definition* def, 
@@ -82,6 +87,11 @@ namespace gameswf
 		{
 			log_error("No available video render\n");
 		}
+
+		builtin_member("attachVideo", attach_video);
+
+		// gameswf extension, set video background cleanup option, true/false
+		builtin_member("clearBackgroundColor", as_value(as_value(), clear_video_background));
 	}
 
 	video_stream_instance::~video_stream_instance()
@@ -114,22 +124,6 @@ namespace gameswf
 				free(video_data);
 			}
 		}
-	}
-
-	bool video_stream_instance::get_member(const tu_stringi& name, as_value* val)
-	{
-		// first try standart members
-		if (character::get_member(name, val))
-		{
-			return true;
-		}
-
-		if (name == "attachVideo")
-		{
-			*val = as_value(attach_video);
-			return true;
-		}
-		return false;
 	}
 
 
