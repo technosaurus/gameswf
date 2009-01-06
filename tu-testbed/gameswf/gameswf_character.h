@@ -532,8 +532,6 @@ namespace gameswf
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 
-		virtual bool	is_visible();
-
 		// Movie info
 		virtual int	get_movie_version() { return 0; }
 		virtual int	get_movie_width() { return 0; }

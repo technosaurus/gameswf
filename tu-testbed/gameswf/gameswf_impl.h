@@ -82,12 +82,6 @@ namespace gameswf
 
 		virtual void	display()
 		{
-			if (is_visible() == false)
-			{
-				// We're invisible, so don't display!
-				return;
-			}
-
 			m_def->display(this);	// pass in transform info
 			do_display_callback();
 		}

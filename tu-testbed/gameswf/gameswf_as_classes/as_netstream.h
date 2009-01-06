@@ -97,41 +97,42 @@ namespace gameswf
 	// container for the decoded sound
 	struct decoded_sound : public ref_counted
 	{
-		int m_size;
-		Sint16* m_data;
-		Uint8* m_ptr;
-
 		decoded_sound(Sint16* sample, int size) :
 			m_size(size),
-			m_data(sample)
+			m_buf(sample)
 		{
-			m_ptr = (Uint8*) sample;
+			m_data = (Uint8*) sample;
 		}
 
 		~decoded_sound()
 		{
 			// We can delete to original WAV data now (created in cvt())
-			free(m_data);
+			free(m_buf);
 		}
 
-		int size() const
+		inline int size() const
 		{
 			return m_size;
 		}
 
-		void take(Uint8*& stream, int& len)
+		int extract(Uint8* stream, int len)
 		{
-			if (m_ptr)
+			int n = imin(m_size, len);
+			if (m_data && n > 0)
 			{
-				int n = imin(m_size, len);
-				memcpy(stream, m_ptr, n);
-				stream += n;
-				m_ptr += n;
+				memcpy(stream, m_data, n);
+				m_data += n;
 				m_size -= n;
-				len -= n;
-				assert(m_size >= 0 &&	len >= 0);
+				return n;
 			}
+			return 0;
 		}
+
+	private:
+
+		int m_size;
+		Sint16* m_buf;
+		Uint8* m_data;
 	};
 	
 	struct as_netstream : public as_object

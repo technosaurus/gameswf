@@ -334,7 +334,9 @@ namespace gameswf
 			}
 			else
 			{
-				m_sound->take(stream, len);
+				int n = m_sound->extract(stream, len);
+				stream += n;
+				len -= n;
 				if (m_sound->size() == 0)
 				{
 					m_sound = NULL;

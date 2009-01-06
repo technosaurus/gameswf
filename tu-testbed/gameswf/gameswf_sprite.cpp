@@ -617,12 +617,6 @@ namespace gameswf
 			return;
 		}
 
-		if (is_visible() == false)
-		{
-			// We're invisible, so don't display!
-			return;
-		}
-
 		// force advance just loaded (by loadMovie(...)) movie
 		if (m_on_event_load_called == false)
 		{

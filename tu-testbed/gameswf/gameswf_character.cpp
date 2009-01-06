@@ -399,12 +399,13 @@ namespace gameswf
 		get_matrix().transform(bound);
 	}
 
-	bool	character::is_visible()
-	{
+
+//	bool	character::is_visible()
+//	{
 		// The increase of performance that gives the skipping of invisible characters
 		// less than expenses for performance of test of visibility
 		// get_bound() & get_world_matrix() are heavy recursive operations
-		return true;
+//		return true;
 
 //		rect bound;
 //		get_bound(&bound);
@@ -417,7 +418,7 @@ namespace gameswf
 //		m.transform(&bound);
 
 //		return render::is_visible(bound);
-	}
+//	}
 
 	void character::enumerate(as_environment* env)
 	{
