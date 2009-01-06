@@ -310,12 +310,6 @@ namespace gameswf
 	void	text_character_def::display(character* inst)
 	// Draw the string.
 	{
-		if (inst->is_visible() == false)
-		{
-			// We're invisible, so don't display!
-			return;
-		}
-
 		display_glyph_records(m_matrix, inst, m_text_glyph_records, m_root_def);
 	}
 
@@ -733,12 +727,6 @@ namespace gameswf
 
 	void edit_text_character::display() 
 	{ 
-		if (is_visible() == false)
-		{
-			// We're invisible, so don't display!
-			return;
-		}
-
 		if (m_def->m_border == true) 
 		{ 
 			matrix  mat = get_world_matrix(); 
