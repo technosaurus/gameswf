@@ -16,7 +16,7 @@ namespace gameswf
 
 	void as_global_parse_float(const fn_call& fn)
 	{
-		if (fn.nargs == 1)  
+		if (fn.nargs > 0)  
 		{
 			double res;
 			if (string_to_number(&res, fn.arg(0).to_string()))
@@ -32,13 +32,8 @@ namespace gameswf
 	{
 		if (fn.nargs > 0)
 		{
-			int base = 10;
-			if (fn.nargs > 0)
-			{
-				base = fn.arg(1).to_int();
-			}
-
 			int res;
+			int base = fn.nargs > 1 ? fn.arg(1).to_int() : 10;
 			if (string_to_number(&res, fn.arg(0).to_string(), base))
 			{
 				fn.result->set_int(res);
