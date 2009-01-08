@@ -46,11 +46,11 @@ void	tu_string::resize(int new_size)
 
 	if (using_heap() == false)
 	{
-		if (new_size <= sizeof(m_local.m_buffer))
+		if (new_size <= sizeof(m_union.m_local.m_buffer))
 		{
 			// Stay with internal storage.
-			m_local.m_bufsize_minus_length = (char) (sizeof(m_local.m_buffer) - new_size);
-			m_local.m_buffer[new_size] = 0;	// terminate
+			m_union.m_local.m_bufsize_minus_length = (char) (sizeof(m_union.m_local.m_buffer) - new_size);
+			m_union.m_local.m_buffer[new_size] = 0;	// terminate
 		}
 		else
 		{
@@ -63,32 +63,32 @@ void	tu_string::resize(int new_size)
 			memset(buf, 0, capacity);
 
 			// Copy existing data.
-			memcpy(buf, m_local.m_buffer, old_size);
+			memcpy(buf, m_union.m_local.m_buffer, old_size);
 
 			// Set the heap state.
-			m_local.m_bufsize_minus_length = char(~0);
-			m_heap.m_buffer = buf;
-			m_heap.m_size = new_size;
-			m_heap.m_capacity = capacity;
+			m_union.m_local.m_bufsize_minus_length = char(~0);
+			m_union.m_heap.m_buffer = buf;
+			m_union.m_heap.m_size = new_size;
+			m_union.m_heap.m_capacity = capacity;
 		}
 	}
 	else
 	{
 		// Currently using heap storage.
-		if (new_size <= sizeof(m_local.m_buffer))
+		if (new_size <= sizeof(m_union.m_local.m_buffer))
 		{
 			// Switch to local storage.
 
 			// Be sure to get stack copies of m_heap info, before we overwrite it.
-			char*	old_buffer = m_heap.m_buffer;
-			int	old_capacity = m_heap.m_capacity;
+			char*	old_buffer = m_union.m_heap.m_buffer;
+			int	old_capacity = m_union.m_heap.m_capacity;
 			UNUSED(old_capacity);
 
 			// Copy existing string info.
-			m_local.m_bufsize_minus_length = (char) (sizeof(m_local.m_buffer) - new_size);
+			m_union.m_local.m_bufsize_minus_length = (char) (sizeof(m_union.m_local.m_buffer) - new_size);
 			assert(old_size >= new_size);
-			memcpy(m_local.m_buffer, old_buffer, new_size);
-			m_local.m_buffer[new_size] = 0;	// ensure termination.
+			memcpy(m_union.m_local.m_buffer, old_buffer, new_size);
+			m_union.m_local.m_buffer[new_size] = 0;	// ensure termination.
 
 			tu_free(old_buffer, old_capacity);
 		}
@@ -98,19 +98,19 @@ void	tu_string::resize(int new_size)
 			int	capacity = new_size + 1;
 			// Round up.
 			capacity = (capacity + 15) & ~15;
-			if (capacity != m_heap.m_capacity)	// @@ TODO should use hysteresis when resizing
+			if (capacity != m_union.m_heap.m_capacity)	// @@ TODO should use hysteresis when resizing
 			{
-				m_heap.m_buffer = (char*) tu_realloc(m_heap.m_buffer, capacity, m_heap.m_capacity);
-				m_heap.m_capacity = capacity;
+				m_union.m_heap.m_buffer = (char*) tu_realloc(m_union.m_heap.m_buffer, capacity, m_heap.m_capacity);
+				m_union.m_heap.m_capacity = capacity;
 			}
 			// else we're OK with existing buffer.
 
-			m_heap.m_size = new_size;
+			m_union.m_heap.m_size = new_size;
 
 			// Ensure termination.
-			m_heap.m_buffer[new_size] = 0;
+			m_union.m_heap.m_buffer[new_size] = 0;
 
-			assert(m_local.m_bufsize_minus_length == (char) ~0);
+			assert(m_union.m_local.m_bufsize_minus_length == (char) ~0);
 		}
 	}
 }

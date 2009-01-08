@@ -1346,8 +1346,8 @@ class tu_string
 {
 public:
 	tu_string() {
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 	}
 	// TODO: add 'explicit' here
 	tu_string(int val)
@@ -1355,8 +1355,8 @@ public:
 		char str[50];
 		snprintf(str, 50, "%d", val);
 
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 
 		int	new_size = (int) strlen(str);
 		resize(new_size);
@@ -1368,8 +1368,8 @@ public:
 		char str[50];
 		snprintf(str, 50, "%.14g", val);
 
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 
 		int	new_size = (int) strlen(str);
 		resize(new_size);
@@ -1377,8 +1377,8 @@ public:
 	}
 	tu_string(const char* str)
 	{
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 
 		if (str)
 		{
@@ -1389,8 +1389,8 @@ public:
 	}
 	tu_string(const char* buf, int buflen)
 	{
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 
 		int	new_size = buflen;
 		resize(new_size);
@@ -1399,23 +1399,23 @@ public:
 	}
 	tu_string(const tu_string& str)
 	{
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 
 		resize(str.size());
 		memcpy(get_buffer(), str.get_buffer(), size() + 1);
 	}
 	tu_string(const uint32* wide_char_str)
 	{
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 
 		*this = wide_char_str;
 	}
 	tu_string(const uint16* wide_char_str)
 	{
-		m_local.m_bufsize_minus_length = sizeof(m_local.m_buffer);
-		m_local.m_buffer[0] = 0;
+		m_union.m_local.m_bufsize_minus_length = sizeof(m_union.m_local.m_buffer);
+		m_union.m_local.m_buffer[0] = 0;
 
 		*this = wide_char_str;
 	}
@@ -1424,7 +1424,7 @@ public:
 	{
 		if (using_heap())
 		{
-			tu_free(m_heap.m_buffer, m_heap.m_capacity);
+			tu_free(m_union.m_heap.m_buffer, m_heap.m_capacity);
 		}
 	}
 
@@ -1490,12 +1490,12 @@ public:
 	{
 		if (using_heap() == false)
 		{
-			return sizeof(m_local.m_buffer) -
-				m_local.m_bufsize_minus_length;
+			return sizeof(m_union.m_local.m_buffer) -
+				m_union.m_local.m_bufsize_minus_length;
 		}
 		else
 		{
-			return m_heap.m_size;
+			return m_union.m_heap.m_size;
 		}
 	}
 
@@ -1667,11 +1667,11 @@ private:
 	{
 		if (using_heap() == false)
 		{
-			return m_local.m_buffer;
+			return m_union.m_local.m_buffer;
 		}
 		else
 		{
-			return m_heap.m_buffer;
+			return m_union.m_heap.m_buffer;
 		}
 	}
 
@@ -1683,7 +1683,7 @@ private:
 
 	bool	using_heap() const
 	{
-		bool heap = (m_local.m_bufsize_minus_length == (char) ~0);
+		bool heap = (m_union.m_local.m_bufsize_minus_length == (char) ~0);
 		return heap;
 	}
 
@@ -1730,7 +1730,7 @@ private:
 			// ones, then that's a flag indicating the
 			// active string data is in m_heap.
 		} m_local;
-	};
+	} m_union;
 };
 
 
