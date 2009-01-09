@@ -17,6 +17,8 @@
 
 namespace gameswf
 {
+	typedef exported_module as_object* (*gameswf_module_init)(player* player, const array<as_value>& params);
+
 	as_value	get_property(as_object* obj, int prop_number);
 	void	set_property(as_object* obj, int prop_number, const as_value& val);
 
@@ -25,6 +27,10 @@ namespace gameswf
 
 	string_hash<tu_loadlib*>* get_shared_libs();
 	void clear_shared_libs();
+
+	void register_type_handler( const tu_string& type_name, gameswf_module_init type_init_func );
+	void clear_registered_type_handlers();
+	gameswf_module_init find_type_handler( const tu_string& type_name );
 
 	struct player : public ref_counted
 	{

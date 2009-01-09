@@ -111,85 +111,6 @@ namespace gameswf
 	// Printf-like vararg interface for calling ActionScript.
 	// Handy for external binding.
 	{
-//		log_msg("FIXME(%d): %s\n", __LINE__, __FUNCTION__);
-
-#if 0
-		static const int	BUFSIZE = 1000;
-		char	buffer[BUFSIZE];
-		array<const char*>	tokens;
-
-		// Brutal crap parsing.  Basically null out any
-		// delimiter characters, so that the method name and
-		// args sit in the buffer as null-terminated C
-		// strings.  Leave an intial ' character as the first
-		// char in a string argument.
-		// Don't verify parens or matching quotes or anything.
-		{
-			strncpy(buffer, method_call, BUFSIZE);
-			buffer[BUFSIZE - 1] = 0;
-			char*	p = buffer;
-
-			char	in_quote = 0;
-			bool	in_arg = false;
-			for (;; p++)
-			{
-				char	c = *p;
-				if (c == 0)
-				{
-					// End of string.
-					break;
-				}
-				else if (c == in_quote)
-				{
-					// End of quotation.
-
-
-					assert(in_arg);
-					*p = 0;
-					in_quote = 0;
-					in_arg = false;
-				}
-				else if (in_arg)
-				{
-					if (in_quote == 0)
-					{
-						if (c == ')' || c == '(' || c == ',' || c == ' ')
-						{
-							// End of arg.
-							*p = 0;
-							in_arg = false;
-						}
-					}
-				}
-				else
-				{
-					// Not in arg.  Watch for start of arg.
-					assert(in_quote == 0);
-					if (c == '\'' || c == '\"')
-					{
-						// Start of quote.
-						in_quote = c;
-						in_arg = true;
-						*p = '\'';	// ' at the start of the arg, so later we know this is a string.
-						tokens.push_back(p);
-					}
-					else if (c == ' ' || c == ',')
-					{
-						// Non-arg junk, null it out.
-						*p = 0;
-					}
-					else
-					{
-						// Must be the start of a numeric arg.
-						in_arg = true;
-						tokens.push_back(p);
-					}
-				}
-			}
-		}
-#endif // 0
-
-
 		// Parse va_list args
 		int	starting_index = env->get_top_index();
 		const char* p = method_arg_fmt;
@@ -564,25 +485,28 @@ namespace gameswf
 		obj->enumerate(env);
 	}
 
-	typedef exported_module as_object* (*gameswf_module_init)(player* player, 
-		const array<as_value>& params);
-
 	as_object* action_buffer::load_as_plugin(player* player, const tu_string& classname,
-						const array<as_value>& params)
+		 const array<as_value>& params)
 	// loads user defined class from DLL / shared library
 	{
+		// look first in app registered
+		gameswf_module_init module_init = find_type_handler(classname);
 
-		tu_loadlib* lib = NULL;
-		if (get_shared_libs()->get(classname, &lib) == false)
+		if (module_init == NULL)
 		{
-			lib = new tu_loadlib(classname.c_str());
-			get_shared_libs()->add(classname, lib);
-		}
-	
-		assert(lib);
+			// try through DLLs
+			tu_loadlib* lib = NULL;
+			if (get_shared_libs()->get(classname, &lib) == false)
+			{
+				lib = new tu_loadlib(classname.c_str());
+				get_shared_libs()->add(classname, lib);
+			}
+		
+			assert(lib);
 
-		// get module interface
-		gameswf_module_init module_init = (gameswf_module_init) lib->get_function("gameswf_module_init");
+			// get module interface
+			module_init = (gameswf_module_init) lib->get_function("gameswf_module_init");
+		}
 
 		// create plugin instance
 		if (module_init)
@@ -926,45 +850,55 @@ namespace gameswf
 
 				case 0x27:	// start drag movie
 				{
-					character::drag_state	st;
+					character::drag_state st;
 
-					st.m_character = cast_to<character>(env->find_target(env->top(0)));
-					if (st.m_character == NULL)
+					character* targetChar = cast_to<character>(env->find_target(env->top(0)));
+					if (targetChar == NULL)
 					{
-						log_error("error: start_drag of invalid target '%s'.\n",
-							  env->top(0).to_string());
+						log_error("error: start_drag of invalid target '%s'.\n",  env->top(0).to_string());
 					}
 
-					st.m_lock_center = env->top(1).to_bool();
-					st.m_bound = env->top(2).to_bool();
-					if (st.m_bound)
+					st.SetCharacter(targetChar);
+					st.SetLockCentered(env->top(1).to_bool());
+					bool hasBounds = env->top(2).to_bool();
+					if (hasBounds)
 					{
-						st.m_bound_x0 = env->top(6).to_float();
-						st.m_bound_y0 = env->top(5).to_float();
-						st.m_bound_x1 = env->top(4).to_float();
-						st.m_bound_y1 = env->top(3).to_float();
+						float bx0 = PIXELS_TO_TWIPS(env->top(6).to_float());
+						float by0 = PIXELS_TO_TWIPS(env->top(5).to_float());
+						float bx1 = PIXELS_TO_TWIPS(env->top(4).to_float());
+						float by1 = PIXELS_TO_TWIPS(env->top(3).to_float());
+						if (bx1 < bx0)
+						{
+							swap(&bx0, &bx1);
+						}
+						if (by1 < by0)
+						{
+							swap(&by0, &by1);
+						}
+						st.SetBounds(bx0, by0, bx1, by1);
+
 						env->drop(4);
 					}
 					env->drop(3);
 
-					character*	root_movie = env->get_player()->get_root_movie();
-					assert(root_movie);
-
-					if (root_movie && st.m_character)
+					if (targetChar)
 					{
-						root_movie->set_drag_state(st);
-					}
-					
+						root* swfRoot = env->get_root();
+						assert( swfRoot );
+						swfRoot->set_drag_state(st);
+					}					
 					break;
 				}
 
 				case 0x28:	// stop drag movie
 				{
-					character*	root_movie = env->get_player()->get_root_movie();
-					assert(root_movie);
-
-					root_movie->stop_drag();
-
+					character* targetChar = env->get_target();
+					if (targetChar)
+					{
+						character *root_movie = targetChar->get_root_movie();
+						assert( root_movie );
+						root_movie->stop_drag();
+					}
 					break;
 				}
 

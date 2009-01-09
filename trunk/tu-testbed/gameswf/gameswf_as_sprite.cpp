@@ -68,17 +68,55 @@ namespace gameswf
 	void	sprite_start_drag(const fn_call& fn)
 	{
 		sprite_instance* sprite = sprite_getptr(fn);
-		fn.get_root()->start_drag(sprite);
+
+		character::drag_state ds;
+		ds.SetCharacter(sprite);
+
+		if (fn.nargs > 0)
+		{
+			// arguments have been given to startDrag
+			ds.SetLockCentered(fn.arg(0).to_bool());
+
+			if (fn.nargs >= 5)
+			{
+				// bounds have been given
+				tu_float x0 = PIXELS_TO_TWIPS(fn.arg(1).to_float());
+				tu_float y0 = PIXELS_TO_TWIPS(fn.arg(2).to_float());
+				tu_float x1 = PIXELS_TO_TWIPS(fn.arg(3).to_float());
+				tu_float y1 = PIXELS_TO_TWIPS(fn.arg(4).to_float());
+
+				float bx0, bx1, by0, by1;
+				if (x0 < x1)
+				{
+					bx0 = x0; bx1 = x1; 
+				}
+				else
+				{
+					bx0 = x1; bx1 = x0; 
+				}
+
+				if (y0 < y1)
+				{
+					by0 = y0; by1 = y1; 
+				}
+				else
+				{
+					by0 = y1; by1 = y0; 
+				}
+
+				// we've got bounds
+				ds.SetBounds(bx0, by0, bx1, by1);
+			}
+		}
+
+		// inform the root
+		fn.get_root()->set_drag_state(ds);
 	}
 
 	void	sprite_stop_drag(const fn_call& fn)
 	{
-		sprite_instance* sprite = sprite_getptr(fn);
-
-		if (fn.get_root()->m_drag_state.m_character == sprite )
-		{
-			fn.get_root()->stop_drag();
-		}
+		//sprite_instance* sprite = sprite_getptr(fn);
+		fn.get_root()->stop_drag();
 	}
 
 	void	sprite_play(const fn_call& fn)

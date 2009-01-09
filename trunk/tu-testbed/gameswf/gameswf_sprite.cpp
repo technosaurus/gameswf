@@ -29,14 +29,13 @@ namespace gameswf
 
 	// this stuff should be high optimized
 	// thus I can't use here set_member(...);
-	sprite_instance::sprite_instance(player* player, movie_definition_sub* def,	root* r, 
-			character* parent, int id) :
+	sprite_instance::sprite_instance(player* player, movie_definition_sub* def,	root* r, character* parent, int id) :
 		character(player, parent, id),
 		m_def(def),
 		m_root(r),
 		m_play_state(PLAY),
 		m_current_frame(0),
-		m_update_frame(true),
+		m_update_frame(true), 
 		m_as_environment(player),
 		m_mouse_state(UP),
 		m_enabled(true),
@@ -60,7 +59,6 @@ namespace gameswf
 
 	sprite_instance::~sprite_instance()
 	{
-//		printf("delete sprite 0x%p\n", this);
 		delete m_script;
 	}
 
@@ -110,14 +108,7 @@ namespace gameswf
 		sprite_instance* sprite =	new sprite_instance(get_player(), empty_sprite_def, m_root, this, 0);
 		sprite->set_name(name);
 
-		m_display_list.add_display_object(
-			sprite,
-			depth,
-			true,
-			color_transform,
-			matrix,
-			0.0f,
-			0); 
+		m_display_list.add_display_object( sprite, depth, true, color_transform, matrix, 0.0f, 0, 0); 
 
 		return sprite;
 	}
@@ -143,21 +134,22 @@ namespace gameswf
 	}
 
 	// Functions that qualify as mouse event handlers.
-	static const tu_stringi FN_NAMES[] =
-	{
-		"onKeyPress",
-		"onRelease",
-		"onDragOver",
-		"onDragOut",
-		"onPress",
-		"onReleaseOutside",
-		"onRollout",
-		"onRollover",
-	};
 
 	bool sprite_instance::can_handle_mouse_event()
 	// Return true if we have any mouse event handlers.
 	{
+		static const tu_stringi FN_NAMES[] =
+		{
+			"onKeyPress",
+			"onRelease",
+			"onDragOver",
+			"onDragOut",
+			"onPress",
+			"onReleaseOutside",
+			"onRollout",
+			"onRollover",
+		};
+
 		if (is_enabled())
 		{
 			for (size_t i = 0; i < TU_ARRAYSIZE(FN_NAMES); i++)
@@ -270,9 +262,6 @@ namespace gameswf
 			on_event(event_id::LOAD);
 		}
 
-		// mouse drag. 
-		character::do_mouse_drag();
-
 		// execute actions from gotoAndPlay(n) or gotoAndStop(n) frame
 		if (m_goto_frame_action_list.size() > 0)
 		{
@@ -362,9 +351,9 @@ namespace gameswf
 		}
 	}
 
-	void	sprite_instance::execute_frame_tags(int frame, bool state_only)
 	// Execute the tags associated with the specified frame.
 	// frame is 0-based
+	void sprite_instance::execute_frame_tags(int frame, bool state_only)
 	{
 		// Keep this (particularly m_as_environment) alive during execution!
 		gc_ptr<as_object>	this_ptr(this);
@@ -396,7 +385,8 @@ namespace gameswf
 		const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
 		for (int i = 0; i < playlist.size(); i++)
 		{
-			execute_tag*	e = playlist[i];
+			execute_tag*    e = playlist[i];
+
 			if (state_only)
 			{
 				e->execute_state(this);
@@ -429,13 +419,12 @@ namespace gameswf
 
 	}
 
-	void	sprite_instance::execute_frame_tags_reverse(int frame)
 	// Execute the tags associated with the specified frame, IN REVERSE.
 	// I.e. if it's an "add" tag, then we do a "remove" instead.
 	// Only relevant to the display-list manipulation tags: add, move, remove, replace.
-	//
-	// frame is 0-based
+	void	sprite_instance::execute_frame_tags_reverse(int frame)
 	{
+		// frame is 0-based
 		// Keep this (particularly m_as_environment) alive during execution!
 		gc_ptr<as_object>	this_ptr(this);
 
@@ -471,10 +460,9 @@ namespace gameswf
 		return NULL;
 	}
 
-
-	void	sprite_instance::execute_remove_tags(int frame)
 	// Execute any remove-object tags associated with the specified frame.
 	// frame is 0-based
+	void	sprite_instance::execute_remove_tags(int frame)
 	{
 		assert(frame >= 0);
 		assert(frame < m_def->get_frame_count());
@@ -525,7 +513,7 @@ namespace gameswf
 		}
 	}
 
-	void	sprite_instance::goto_frame(const tu_string& target_frame)
+	void sprite_instance::goto_frame(const tu_string& target_frame)
 	{
 		// Flash tries to convert STRING to NUMBER,
 		// if the conversion is OK then Flash uses this NUMBER as target_frame.
@@ -542,58 +530,50 @@ namespace gameswf
 		{
 			goto_labeled_frame(target_frame.c_str());
 		}
-
 	}
 
-	void	sprite_instance::goto_frame(int target_frame_number)
 	// Set the sprite state at the specified frame number.
 	// 0-based frame numbers!!  (in contrast to ActionScript and Flash MX)
+	void sprite_instance::goto_frame(int target_frame_number)
 	{
+		//default property is to stop on goto frame
+		m_play_state = STOP;
 
 		// Macromedia Flash ignores goto_frame(bad_frame)
-		if (target_frame_number > m_def->get_frame_count() - 1 ||
-			target_frame_number < 0 ||
-			target_frame_number == m_current_frame)	// to prevent infinitive recursion
+		if (target_frame_number > m_def->get_frame_count() - 1 || target_frame_number < 0 || target_frame_number == m_current_frame)	// to prevent infinitive recursion
 		{
-			m_play_state = STOP;
 			return;
 		}
 
 		if (target_frame_number < m_current_frame)
 		{
-			for (int f = m_current_frame; f > target_frame_number; f--)
+			for (int f = m_current_frame; f > target_frame_number; --f)
 			{
-				execute_frame_tags_reverse(f);
+				execute_frame_tags_reverse(f);	
 			}
-			m_action_list.clear();
-			execute_frame_tags(target_frame_number, false);
 		}
-		else if (target_frame_number > m_current_frame)
+		else
 		{
-			for (int f = m_current_frame + 1; f < target_frame_number; f++)
+			for (int f = m_current_frame + 1; f < target_frame_number; ++f)
 			{
 				execute_frame_tags(f, true);
 			}
-			m_action_list.clear();
-			execute_frame_tags(target_frame_number, false);
 		}
 
-		m_current_frame = target_frame_number;		
+		m_action_list.clear();
+		execute_frame_tags(target_frame_number, false);
 
-		// goto_frame stops by default.
-		m_play_state = STOP;
+		m_current_frame = target_frame_number;
 
 		// actions from gotoFrame() will be executed in advance()
 		// Macromedia Flash does goto_frame then run actions from this frame.
 		// We do too.
-		m_goto_frame_action_list = m_action_list; 
-		m_action_list.clear();
-
+		m_goto_frame_action_list = m_action_list;
 	}
 
 
-	bool	sprite_instance::goto_labeled_frame(const char* label)
 	// Look up the labeled frame, and jump to it.
+	bool sprite_instance::goto_labeled_frame(const char* label)
 	{
 		int	target_frame = -1;
 		if (m_def->get_labeled_frame(label, &target_frame))
@@ -603,13 +583,12 @@ namespace gameswf
 		}
 		else
 		{
-			IF_VERBOSE_ACTION(
-				log_error("error: movie_impl::goto_labeled_frame('%s') unknown label\n", label));
+			IF_VERBOSE_ACTION(log_error("error: movie_impl::goto_labeled_frame('%s') unknown label\n", label));
 			return false;
 		}
 	}
 
-	void	sprite_instance::display()
+	void sprite_instance::display()
 	{
 		if (get_visible() == false)
 		{
@@ -646,16 +625,9 @@ namespace gameswf
 		do_display_callback();
 	}
 
-	character*	sprite_instance::add_display_object(
-		Uint16 character_id,
-		const tu_string& name,
-		const array<swf_event*>& event_handlers,
-		int depth,
-		bool replace_if_depth_is_occupied,
-		const cxform& color_transform,
-		const matrix& matrix,
-		float ratio,
-		Uint16 clip_depth)
+	character* sprite_instance::add_display_object( Uint16 character_id, const tu_string& name,
+		const array<swf_event*>& event_handlers, int depth, bool replace_if_depth_is_occupied,
+		const cxform& color_transform, const matrix& matrix, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 		// Add an object to the display list.
 	{
 		assert(m_def != NULL);
@@ -670,11 +642,9 @@ namespace gameswf
 		// If we already have this object on this
 		// plane, then move it instead of replacing it.
 		character*	existing_char = m_display_list.get_character_at_depth(depth);
-		if (existing_char
-			&& character_id == existing_char->get_id()
-			&& name == existing_char->get_name())
+		if (existing_char && character_id == existing_char->get_id() && name == existing_char->get_name())
 		{
-			move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth);
+			move_display_object(depth, true, color_transform, true, matrix, ratio, clip_depth, blend_mode);
 			return NULL;
 		}
 
@@ -690,14 +660,8 @@ namespace gameswf
 			ch->set_member(name, event_handlers[i]->m_method);
 		}
 
-		m_display_list.add_display_object(
-			ch.get_ptr(),
-			depth,
-			replace_if_depth_is_occupied,
-			color_transform,
-			matrix,
-			ratio,
-			clip_depth);
+		m_display_list.add_display_object( ch.get_ptr(), depth, replace_if_depth_is_occupied, color_transform,
+			matrix, ratio, clip_depth, blend_mode);
 
 		// child clip only
 		ch->on_event(event_id::CONSTRUCT);	// tested, ok
@@ -707,32 +671,19 @@ namespace gameswf
 	}
 
 
-	void	sprite_instance::move_display_object(
-		int depth,
-		bool use_cxform,
-		const cxform& color_xform,
-		bool use_matrix,
-		const matrix& mat,
-		float ratio,
-		Uint16 clip_depth)
+	void sprite_instance::move_display_object( int depth, bool use_cxform, const cxform& color_xform,
+			bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 		// Updates the transform properties of the object at
 		// the specified depth.
 	{
-		m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio, clip_depth);
+		m_display_list.move_display_object(depth, use_cxform, color_xform, use_matrix, mat, ratio, clip_depth, blend_mode);
 	}
 
 
 	/*sprite_instance*/
-	void	sprite_instance::replace_display_object(
-		Uint16 character_id,
-		const char* name,
-		int depth,
-		bool use_cxform,
-		const cxform& color_transform,
-		bool use_matrix,
-		const matrix& mat,
-		float ratio,
-		Uint16 clip_depth)
+	void sprite_instance::replace_display_object( Uint16 character_id, const char* name, int depth,
+		bool use_cxform, const cxform& color_transform, bool use_matrix, const matrix& mat, float ratio,
+		Uint16 clip_depth, Uint8 blend_mode)
 	{
 		assert(m_def != NULL);
 
@@ -752,15 +703,8 @@ namespace gameswf
 			ch->set_name(name);
 		}
 
-		m_display_list.replace_display_object(
-			ch.get_ptr(),
-			depth,
-			use_cxform,
-			color_transform,
-			use_matrix,
-			mat,
-			ratio,
-			clip_depth);
+		m_display_list.replace_display_object( ch.get_ptr(), depth, use_cxform, color_transform, use_matrix,
+			mat, ratio, clip_depth, blend_mode);
 
 //		ch->on_event(event_id::CONSTRUCT);	// isn't tested
 	}
@@ -780,23 +724,13 @@ namespace gameswf
 		character* ch = def->create_character_instance(parent, 0);
 
 		ch->set_parent(parent);
-		parent->replace_display_object(
-			ch,
-			get_name(),
-			get_depth(),
-			false,
-			get_cxform(),
-			false,
-			get_matrix(),
-			get_ratio(),
-			get_clip_depth());
-
-//		ch->on_event(event_id::CONSTRUCT);	// isn't tested
+		parent->replace_display_object(ch, get_name(), get_depth(), false, get_cxform(), false, get_matrix(),
+			get_ratio(), get_clip_depth(), get_blend_mode());
 
 		return ch;
 	}
 
-	character* sprite_instance::replace_me(movie_definition*	md)
+	character* sprite_instance::replace_me(movie_definition* md)
 	{
 		assert(md);
 		character* parent = get_parent();
@@ -808,42 +742,24 @@ namespace gameswf
 			character* ch = new_inst->get_root_movie();
 			m_player->set_root(new_inst);
 
-//			ch->on_event(event_id::LOAD);
 			return ch;
 		}
 
-		sprite_instance* sprite = new sprite_instance(get_player(), cast_to<movie_def_impl>(md), 
-			get_root(),	parent,	-1);
+		sprite_instance* sprite = new sprite_instance(get_player(), cast_to<movie_def_impl>(md), get_root(), parent, -1);
 
 		sprite->set_parent(parent);
 		sprite->set_root(get_root());
 
-		parent->replace_display_object(
-			sprite,
-			get_name(),
-			get_depth(),
-			false,
-			get_cxform(),
-			false,
-			get_matrix(),
-			get_ratio(),
-			get_clip_depth());
+		parent->replace_display_object( sprite, get_name(), get_depth(), false, get_cxform(), false,
+			get_matrix(), get_ratio(), get_clip_depth(), get_blend_mode());
 
 		return sprite;
 	}
 
-	void	sprite_instance::replace_display_object(
-		character* ch,
-		const char* name,
-		int depth,
-		bool use_cxform,
-		const cxform& color_transform,
-		bool use_matrix,
-		const matrix& mat,
-		float ratio,
-		Uint16 clip_depth)
+	void sprite_instance::replace_display_object( character* ch, const char* name, int depth, bool use_cxform,
+			const cxform& color_transform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth,
+			Uint8 blend_mode)
 	{
-
 		assert(ch != NULL);
 
 		if (name != NULL && name[0] != 0)
@@ -851,41 +767,34 @@ namespace gameswf
 			ch->set_name(name);
 		}
 
-		m_display_list.replace_display_object(
-			ch,
-			depth,
-			use_cxform,
-			color_transform,
-			use_matrix,
-			mat,
-			ratio,
-			clip_depth);
+		m_display_list.replace_display_object( ch, depth, use_cxform, color_transform, use_matrix, mat,
+			ratio, clip_depth, blend_mode);
 	}
 
-	void	sprite_instance::remove_display_object(int depth, int id)
 	// Remove the object at the specified depth.
 	// If id != -1, then only remove the object at depth with matching id.
+	void sprite_instance::remove_display_object(int depth, int id)
 	{
 		m_display_list.remove_display_object(depth, id);
 	}
 
-	void	sprite_instance::clear_display_objects()
+	void sprite_instance::clear_display_objects()
 	// Remove all display objects
 	{
 		m_display_list.clear();
 	}
 
-	void	sprite_instance::add_action_buffer(action_buffer* a)
 	// Add the given action buffer to the list of action
 	// buffers to be processed at the end of the next
 	// frame advance.
+	void sprite_instance::add_action_buffer(action_buffer* a)
 	{
 		m_action_list.push_back(a);
 	}
 
-	int	sprite_instance::get_id_at_depth(int depth)
 	// For debugging -- return the id of the character at the specified depth.
 	// Return -1 if nobody's home.
+	int	sprite_instance::get_id_at_depth(int depth)
 	{
 		int	index = m_display_list.get_display_index(depth);
 		if (index == -1)
@@ -907,7 +816,7 @@ namespace gameswf
 	// ActionScript support
 	//
 
-	void	sprite_instance::set_variable(const char* path_to_var, const char* new_value)
+	void sprite_instance::set_variable(const char* path_to_var, const char* new_value)
 	{
 		assert(m_parent == NULL);	// should only be called on the root movie.
 
@@ -929,7 +838,7 @@ namespace gameswf
 		m_as_environment.set_variable(path, val, empty_with_stack);
 	}
 
-	void	sprite_instance::set_variable(const char* path_to_var, const wchar_t* new_value)
+	void sprite_instance::set_variable(const char* path_to_var, const wchar_t* new_value)
 	{
 		if (path_to_var == NULL)
 		{
@@ -970,7 +879,7 @@ namespace gameswf
 	}
 
 	// useful for catching of the calls
-	bool	sprite_instance::set_member(const tu_stringi& name, const as_value& val)
+	bool sprite_instance::set_member(const tu_stringi& name, const as_value& val)
 	{
 		// first try built-ins sprite properties
 		as_standard_member	std_member = get_standard_member(name);
@@ -999,10 +908,10 @@ namespace gameswf
 		return character::set_member(name, val);
 	}
 
-	bool	sprite_instance::get_member(const tu_stringi& name, as_value* val)
 	// Set *val to the value of the named member and
 	// return true, if we have the named member.
 	// Otherwise leave *val alone and return false.
+	bool sprite_instance::get_member(const tu_stringi& name, as_value* val)
 	{
 
 		// first try built-ins sprite methods
@@ -1078,7 +987,7 @@ namespace gameswf
 		return character::get_member(name, val);
 	}
 
-	void	sprite_instance::call_frame_actions(const as_value& frame_spec)
+	void sprite_instance::call_frame_actions(const as_value& frame_spec)
 	// Execute the actions for the specified frame.	 The
 	// frame_spec could be an integer or a string.
 	{
@@ -1131,25 +1040,15 @@ namespace gameswf
 
 
 	/* sprite_instance */
-	void	sprite_instance::set_drag_state(const drag_state& st)
-	{
-		m_root->m_drag_state = st;
-	}
 
-	void	sprite_instance::stop_drag()
+	void sprite_instance::stop_drag()
 	{
 		assert(m_parent == NULL);	// we must be the root movie!!!
 
 		m_root->stop_drag();
 	}
 
-	void	sprite_instance::get_drag_state(drag_state* st)
-	{
-		*st = m_root->m_drag_state;
-	}
-
-
-	character*	sprite_instance::clone_display_object(const tu_string& newname, int depth)
+	character* sprite_instance::clone_display_object(const tu_string& newname, int depth)
 	// Duplicate the object with the specified name and add it with a new name 
 	// at a new depth.
 	{
@@ -1167,14 +1066,8 @@ namespace gameswf
 				ch->set_root(get_root());
 				ch->set_name(newname);
 
-				parent->m_display_list.add_display_object(
-					ch, 
-					depth,
-					true,		// replace_if_depth_is_occupied
-					get_cxform(), 
-					get_matrix(), 
-					get_ratio(), 
-					get_clip_depth()); 
+				parent->m_display_list.add_display_object( ch,  depth, true, get_cxform(),  get_matrix(),
+						get_ratio(),  get_clip_depth(), get_blend_mode()); 
 			}
 			else
 			{
@@ -1189,14 +1082,8 @@ namespace gameswf
 					*ch->get_canvas() = *get_canvas();
 				}
 
-				parent->m_display_list.add_display_object(
-					ch, 
-					depth,
-					true,		// replace_if_depth_is_occupied
-					get_cxform(), 
-					get_matrix(), 
-					get_ratio(), 
-					get_clip_depth()); 
+				parent->m_display_list.add_display_object( ch,  depth, true, get_cxform(),  get_matrix(), 
+							get_ratio(),  get_clip_depth(), get_blend_mode()); 
 			}
 
 			// copy this's members to new created character
@@ -1210,7 +1097,7 @@ namespace gameswf
 		return ch;
 	}
 
-	void	sprite_instance::remove_display_object(const tu_string& name)
+	void sprite_instance::remove_display_object(const tu_string& name)
 	// Remove the object with the specified name.
 	{
 		character* ch = m_display_list.get_character_by_name(name);
@@ -1222,13 +1109,13 @@ namespace gameswf
 		}
 	}
 
-	void	sprite_instance::remove_display_object(character* ch)
+	void sprite_instance::remove_display_object(character* ch)
 	// Remove the object with the specified pointer.
 	{
 		m_display_list.remove_display_object(ch);
 	}
 
-	bool	sprite_instance::on_event(const event_id& id)
+	bool sprite_instance::on_event(const event_id& id)
 	// Dispatch event handler(s), if any.
 	{
 		// Keep m_as_environment alive during any method calls!
@@ -1259,7 +1146,7 @@ namespace gameswf
 		return false;
 	}
 
-	const char*	sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
+	const char* sprite_instance::call_method_args(const char* method_name, const char* method_arg_fmt, va_list args)
 	{
 		// Keep m_as_environment alive during any method calls!
 		gc_ptr<as_object>	this_ptr(this);
@@ -1267,12 +1154,12 @@ namespace gameswf
 		return call_method_parsed(&m_as_environment, this, method_name, method_arg_fmt, args);
 	}
 	
-	tu_string	sprite_instance::call_method(const char* method_name, as_value * arguments, int argument_count )
+	tu_string sprite_instance::call_method(const char* method_name, as_value * arguments, int argument_count )
 	{
 		return gameswf::call_method( &m_as_environment, this, method_name, arguments, argument_count );
 	}
 
-	void	sprite_instance::attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr)
+	void sprite_instance::attach_display_callback(const char* path_to_object, void (*callback)(void*), void* user_ptr)
 	{
 		assert(m_parent == NULL);	// should only be called on the root movie.
 
@@ -1286,7 +1173,7 @@ namespace gameswf
 		}
 	}
 
-	bool	sprite_instance::hit_test(character* ch)
+	bool sprite_instance::hit_test(character* ch)
 	{
 		rect this_bound;
 		get_bound(&this_bound);
@@ -1418,7 +1305,7 @@ namespace gameswf
 		return 0;
 	}
 
-	uint32	sprite_instance::get_loaded_bytes() const
+	uint32 sprite_instance::get_loaded_bytes() const
 	{
 		movie_def_impl* root_def = cast_to<movie_def_impl>(m_def.get_ptr());
 		if (root_def)
@@ -1440,13 +1327,13 @@ namespace gameswf
 		m.concatenate_translation(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
 
 		cxform color_transform;
-		m_display_list.add_display_object(textfield, depth, true, color_transform, m, 0.0f, 0); 
+		m_display_list.add_display_object(textfield, depth, true, color_transform, m, 0.0f, 0, 0); 
 
 //		textfield->on_event(event_id::CONSTRUCT);	// isn't tested
 		return textfield;
 	}
 
-	void	sprite_instance::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
+	void sprite_instance::clear_refs(hash<as_object*, bool>* visited_objects, as_object* this_ptr)
 	{
 		// Is it a reentrance ?
 		if (visited_objects->get(this, NULL))
@@ -1488,20 +1375,13 @@ namespace gameswf
 		sprite_instance* sprite = new sprite_instance(get_player(), sdef, get_root(), this, -1);
 		sprite->set_name(name);
 
-		m_display_list.add_display_object(
-			sprite,
-			depth,
-			true,
-			m_color_transform,
-			m_matrix,
-			0.0f,
-			0); 
+		m_display_list.add_display_object( sprite, depth, true, m_color_transform, m_matrix, 0.0f, 0, 0); 
 
 		sprite->advance(1);	// force advance
 		return sprite;
 	}
 
-	void	sprite_instance::dump(tu_string& tabs)
+	void sprite_instance::dump(tu_string& tabs)
 	{
 		tabs += "  ";
 		printf("%s*** movieclip 0x%p ***\n", tabs.c_str(), this);
@@ -1510,7 +1390,7 @@ namespace gameswf
 		tabs.resize(tabs.size() - 2);
 	}
 
-	character_def*	sprite_instance::find_exported_resource(const tu_string& symbol)
+	character_def* sprite_instance::find_exported_resource(const tu_string& symbol)
 	{
 		movie_definition_sub*	def = cast_to<movie_def_impl>(get_movie_definition());
 		if (def)
@@ -1533,12 +1413,12 @@ namespace gameswf
 		return NULL;
 	}
 
-	void	sprite_instance::set_fps(float fps)
+	void sprite_instance::set_fps(float fps)
 	{
 		get_root()->set_frame_rate(fps);
 	}
 
-	void	sprite_instance::local_to_global(as_object* obj)
+	void sprite_instance::local_to_global(as_object* obj)
 	{
 		as_value x;
 		obj->get_member("x", &x);
@@ -1560,7 +1440,7 @@ namespace gameswf
 		obj->set_member("y", result.m_y);
 	}
 
-	void	sprite_instance::global_to_local(as_object* obj)
+	void sprite_instance::global_to_local(as_object* obj)
 	{
 		as_value x;
 		obj->get_member("x", &x);
@@ -1591,13 +1471,8 @@ namespace gameswf
 			m_canvas = canvas_def->create_character_instance(this, -1);
 
 			matrix identity;
-			m_display_list.add_display_object(
-				m_canvas.get_ptr(),
-				get_highest_depth(),
-				true,
-				m_color_transform,
-				identity,
-				0.0f, 0); 
+			m_display_list.add_display_object( m_canvas.get_ptr(), get_highest_depth(),
+					true, m_color_transform, identity, 0.0f, 0, 0); 
 		}
 		return cast_to<canvas>(m_canvas->get_character_def());
 	}

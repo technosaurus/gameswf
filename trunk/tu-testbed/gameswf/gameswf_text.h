@@ -33,6 +33,7 @@ namespace gameswf
 	{
 		int	m_font_id;
 		mutable font*	m_font;
+		mutable font*   m_lastfont;
 		rgba	m_color;
 		float	m_x_offset;
 		float	m_y_offset;
@@ -45,6 +46,7 @@ namespace gameswf
 		text_style() :
 			m_font_id(-1),
 			m_font(NULL),
+			m_lastfont(NULL),
 			m_x_offset(0),
 			m_y_offset(0),
 			m_text_height(1.0f),
@@ -194,6 +196,7 @@ namespace gameswf
 		rect	m_text_bounding_box;	// bounds of dynamic text, as laid out
 		tu_string	m_text;
 		bool m_has_focus;
+		bool m_password;
 		int m_cursor;
 		float m_xcursor;
 		float m_ycursor;
@@ -216,6 +219,8 @@ namespace gameswf
 
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}
 		void reset_format(as_textformat* tf);
+
+		const char *type_of() { return "edittext";}
 
 		root* get_root();
 		void show_cursor();

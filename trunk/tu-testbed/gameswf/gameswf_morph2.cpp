@@ -108,7 +108,7 @@ namespace gameswf
 			m_last_ratio = ratio;
 			m_mesh = new mesh_set(this, max_error * 0.75f);
 		}
-		m_mesh->display(mat, cx, m_fill_styles, m_line_styles);
+		m_mesh->display(mat, cx, m_fill_styles, m_line_styles, render_handler::BLEND_NORMAL);
 	}
 
   

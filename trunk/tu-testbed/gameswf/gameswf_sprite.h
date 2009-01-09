@@ -100,7 +100,12 @@ namespace gameswf
 		{
 			//			return m_def->get_character_def(character_id);
 			// @@ TODO -- look through our dlist for a match
-			return NULL;
+			if (character_id >= m_display_list.size())
+			{
+				return NULL;
+			}
+
+			return m_display_list.get_character(character_id);
 		}
 
 		float	get_background_alpha() const
@@ -147,48 +152,15 @@ namespace gameswf
 
 		void	display();
 
-		character*	add_display_object(
-			Uint16 character_id,
-			const tu_string& name,
-			const array<swf_event*>& event_handlers,
-			int depth,
-			bool replace_if_depth_is_occupied,
-			const cxform& color_transform,
-			const matrix& matrix,
-			float ratio,
-			Uint16 clip_depth);
-
-		void	move_display_object(
-			int depth,
-			bool use_cxform,
-			const cxform& color_xform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth);
-
-
-		void	replace_display_object(
-			Uint16 character_id,
-			const char* name,
-			int depth,
-			bool use_cxform,
-			const cxform& color_transform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth);
-
-		void	replace_display_object(
-			character* ch,
-			const char* name,
-			int depth,
-			bool use_cxform,
-			const cxform& color_transform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth);
+		character*	add_display_object( Uint16 character_id, const tu_string& name,
+			const array<swf_event*>& event_handlers, int depth, bool replace_if_depth_is_occupied,
+			const cxform& color_transform, const matrix& matrix, float ratio, Uint16 clip_depth, Uint8 blend_mode);
+		void	move_display_object( int depth, bool use_cxform, const cxform& color_xform, bool use_matrix,
+			const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode);
+		void	replace_display_object( Uint16 character_id, const char* name, int depth, bool use_cxform,
+			const cxform& color_transform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode);
+		void	replace_display_object( character* ch, const char* name, int depth, bool use_cxform,
+			const cxform& color_transform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode);
 
 		void	remove_display_object(int depth, int id);
 		void	remove_display_object(const tu_string& name);
@@ -213,9 +185,7 @@ namespace gameswf
 		virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		virtual bool	get_member(const tu_stringi& name, as_value* val);
 		virtual void	call_frame_actions(const as_value& frame_spec);
-		virtual void	set_drag_state(const drag_state& st);
 		virtual void	stop_drag();
-		virtual void	get_drag_state(drag_state* st);
 		character*	clone_display_object(const tu_string& newname, int depth);
 		virtual bool	on_event(const event_id& id);
 		virtual const char*	call_method_args(const char* method_name, const char* method_arg_fmt, va_list args);

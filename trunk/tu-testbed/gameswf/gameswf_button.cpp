@@ -160,7 +160,7 @@ namespace gameswf
 			OVER_UP = FLAG_OVER,
 			OUT_DOWN = FLAG_DOWN
 		};
-		int	m_last_mouse_flags, m_mouse_flags;
+		int	m_last_mouse_flags, m_mouse_flags;		
 		enum e_mouse_state
 		{
 			UP = 0,
@@ -168,13 +168,15 @@ namespace gameswf
 			OVER
 		};
 		e_mouse_state m_mouse_state;
+		bool m_enabled;
 
 		button_character_instance(player* player, button_character_definition* def, character* parent, int id) :
 			character(player, parent, id),
 			m_def(def),
 			m_last_mouse_flags(IDLE),
 			m_mouse_flags(IDLE),
-			m_mouse_state(UP)
+			m_mouse_state(UP),
+			m_enabled(true)
 		{
 			assert(m_def != NULL);
 
@@ -242,9 +244,6 @@ namespace gameswf
 
 		virtual void	advance(float delta_time)
 		{
-			// Implement mouse-drag.
-			character::do_mouse_drag();
-
 			matrix	mat = get_world_matrix();
 
 			// Advance our relevant characters.
@@ -305,7 +304,8 @@ namespace gameswf
 		// Return the topmost entity that the given point covers.  NULL if none.
 		// I.e. check against ourself.
 		{
-			if (get_visible() == false) {
+			if (get_visible() == false || is_enabled() == false)
+			{
 				return false;
 			}
 
@@ -501,30 +501,40 @@ namespace gameswf
 		// ActionScript overrides
 		//
 
-		//virtual bool	set_member(const tu_stringi& name, const as_value& val)
-		//{
-		//	// first try standart properties
-		//	if (character::set_member(name, val))
-		//	{
-		//		return true;
-		//	}
+		virtual bool	set_member(const tu_stringi& name, const as_value& val)
+		{
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
+			{
+				default:
+					break;
 
-		//	log_error("error: button_character_instance::set_member('%s', '%s') not implemented yet\n",
-		//			  name.c_str(), val.to_string());
+				case M_ENABLED:
+				{
+					m_enabled = val.to_bool();
+					return true;
+				}
+			}
+			return character::set_member(name, val);
+		}
 
-		//	return false;
-		//}
+		virtual bool	get_member(const tu_stringi& name, as_value* val)
+		{
+			// first try character members
+			as_standard_member	std_member = get_standard_member(name);
+			switch (std_member)
+			{
+				default:
+					break;
 
-		//virtual bool	get_member(const tu_stringi& name, as_value* val)
-		//{
-		//	// first try standart properties
-		//	if (character::get_member(name, val))
-		//	{
-		//		return true;
-		//	}
-
-		//	return false;
-		//}
+				case M_ENABLED:
+				{
+					val->set_bool( is_enabled() );
+					return true;
+				}
+			}
+			return character::get_member(name, val);
+		}
 
 		virtual void	get_bound(rect* bound)
 		{
@@ -564,7 +574,12 @@ namespace gameswf
 
 		virtual bool can_handle_mouse_event()
 		{
-			return true;
+			return is_enabled();
+		}
+
+		virtual	bool is_enabled() const
+		{
+			return m_enabled;
 		}
 		
 		virtual character_def* get_character_def() { return m_def.get_ptr();	}

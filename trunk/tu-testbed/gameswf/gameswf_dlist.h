@@ -60,31 +60,12 @@ namespace gameswf
 		int	find_display_index(int depth);
 		int	get_display_index(int depth);
 		
-		void	add_display_object(
-			character* ch,
-			int depth,
-			bool replace_if_depth_is_occupied,
-			const cxform& color_xform,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth);
-		void	move_display_object(
-			int depth,
-			bool use_cxform,
-			const cxform& color_xform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth);
-		void	replace_display_object(
-			character* ch,
-			int depth,
-			bool use_cxform,
-			const cxform& color_xform,
-			bool use_matrix,
-			const matrix& mat,
-			float ratio,
-			Uint16 clip_depth);
+		void	add_display_object( character* ch, int depth, bool replace_if_depth_is_occupied, 
+				const cxform& color_xform, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode);
+		void	move_display_object( int depth, bool use_cxform, const cxform& color_xform, bool use_matrix,
+				const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode);
+		void	replace_display_object( character* ch, int depth, bool use_cxform, const cxform& color_xform,
+				bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode);
 
 
 		void	remove_display_object(character* ch);

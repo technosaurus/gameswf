@@ -272,7 +272,7 @@ namespace gameswf
 	}
 
 
-	void	fill_style::apply(int fill_side, float ratio) const
+	void	fill_style::apply(int fill_side, float ratio, render_handler::bitmap_blend_mode bm) const
 	// Push our style parameters into the renderer.
 	{
 		UNUSED(ratio);
@@ -297,11 +297,8 @@ namespace gameswf
 
 			if (m_gradient_bitmap_info != NULL)
 			{
-				render::fill_style_bitmap(
-					fill_side,
-					m_gradient_bitmap_info.get_ptr(),
-					m_gradient_matrix,
-					render_handler::WRAP_CLAMP);
+				render::fill_style_bitmap( fill_side, m_gradient_bitmap_info.get_ptr(), m_gradient_matrix,
+					render_handler::WRAP_CLAMP, bm);
 			}
 		}
 		else if (m_type >= 0x40 || m_type <= 0x43)
@@ -311,20 +308,19 @@ namespace gameswf
 			if (m_bitmap_character != NULL)
 			{
 				bi = m_bitmap_character->get_bitmap_info();
+	
 				if (bi != NULL)
 				{
 					switch (m_type)
 					{
 						case 0x40 :
 						case 0x42 :
-							render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix, 
-								render_handler::WRAP_REPEAT);
+							render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix,  render_handler::WRAP_REPEAT, bm);
 							break;
 
 						case 0x41 :
 						case 0x43 :
-							render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix,
-								render_handler::WRAP_CLAMP);
+							render::fill_style_bitmap(fill_side, bi, m_bitmap_matrix, render_handler::WRAP_CLAMP, bm);
 							break;
 
 						default:

@@ -15,6 +15,68 @@
 
 namespace gameswf
 {
+	// use safe container
+	static array<char> s_gameswf_key_to_ascii;
+	static array<char> s_gameswf_key_to_ascii_shifted;
+
+	static void initialize_key_to_ascii()
+	{
+		if (s_gameswf_key_to_ascii.size() > 0)
+		{
+			return;
+		}
+
+		s_gameswf_key_to_ascii.resize(key::KEYCOUNT);
+		s_gameswf_key_to_ascii_shifted.resize(key::KEYCOUNT);
+
+		// the letters
+		for (int i = 0; i < s_gameswf_key_to_ascii.size(); i++)
+		{
+			if (i >= key::A && i <= key::Z)
+			{
+				s_gameswf_key_to_ascii[i]         = 'a' + ( i - key::A );
+				s_gameswf_key_to_ascii_shifted[i] = 'A' + ( i - key::A );
+			}
+			else
+			{
+				s_gameswf_key_to_ascii[i]         = 0;
+				s_gameswf_key_to_ascii_shifted[i] = 0;
+			}
+		}
+
+		// numbers
+		s_gameswf_key_to_ascii_shifted[key::KP_0] = s_gameswf_key_to_ascii[key::KP_0] = s_gameswf_key_to_ascii[key::_0] = '0'; s_gameswf_key_to_ascii_shifted[key::_0] = ')';
+		s_gameswf_key_to_ascii_shifted[key::KP_1] = s_gameswf_key_to_ascii[key::KP_1] = s_gameswf_key_to_ascii[key::_1] = '1'; s_gameswf_key_to_ascii_shifted[key::_1] = '!';
+		s_gameswf_key_to_ascii_shifted[key::KP_2] = s_gameswf_key_to_ascii[key::KP_2] = s_gameswf_key_to_ascii[key::_2] = '2'; s_gameswf_key_to_ascii_shifted[key::_2] = '@';
+		s_gameswf_key_to_ascii_shifted[key::KP_3] = s_gameswf_key_to_ascii[key::KP_3] = s_gameswf_key_to_ascii[key::_3] = '3'; s_gameswf_key_to_ascii_shifted[key::_3] = '#';
+		s_gameswf_key_to_ascii_shifted[key::KP_4] = s_gameswf_key_to_ascii[key::KP_4] = s_gameswf_key_to_ascii[key::_4] = '4'; s_gameswf_key_to_ascii_shifted[key::_4] = '$';
+		s_gameswf_key_to_ascii_shifted[key::KP_5] = s_gameswf_key_to_ascii[key::KP_5] = s_gameswf_key_to_ascii[key::_5] = '5'; s_gameswf_key_to_ascii_shifted[key::_5] = '%';
+		s_gameswf_key_to_ascii_shifted[key::KP_6] = s_gameswf_key_to_ascii[key::KP_6] = s_gameswf_key_to_ascii[key::_6] = '6'; s_gameswf_key_to_ascii_shifted[key::_6] = '^';
+		s_gameswf_key_to_ascii_shifted[key::KP_7] = s_gameswf_key_to_ascii[key::KP_7] = s_gameswf_key_to_ascii[key::_7] = '7'; s_gameswf_key_to_ascii_shifted[key::_7] = '&';
+		s_gameswf_key_to_ascii_shifted[key::KP_8] = s_gameswf_key_to_ascii[key::KP_8] = s_gameswf_key_to_ascii[key::_8] = '8'; s_gameswf_key_to_ascii_shifted[key::_8] = '*';
+		s_gameswf_key_to_ascii_shifted[key::KP_9] = s_gameswf_key_to_ascii[key::KP_9] = s_gameswf_key_to_ascii[key::_9] = '9'; s_gameswf_key_to_ascii_shifted[key::_9] = '(';
+
+		// number pad others
+		s_gameswf_key_to_ascii_shifted[key::KP_MULTIPLY] = s_gameswf_key_to_ascii[key::KP_MULTIPLY] = '*';
+		s_gameswf_key_to_ascii_shifted[key::KP_ADD]      = s_gameswf_key_to_ascii[key::KP_ADD]      = '+';
+		s_gameswf_key_to_ascii_shifted[key::KP_SUBTRACT] = s_gameswf_key_to_ascii[key::KP_SUBTRACT] = '-';
+		s_gameswf_key_to_ascii_shifted[key::KP_DECIMAL]  = s_gameswf_key_to_ascii[key::KP_DECIMAL]  = '.';
+		s_gameswf_key_to_ascii_shifted[key::KP_DIVIDE]   = s_gameswf_key_to_ascii[key::KP_DIVIDE]   = '/';
+
+		// the rest...
+		s_gameswf_key_to_ascii_shifted[key::SPACE] =  s_gameswf_key_to_ascii[key::SPACE]                     = ' ';
+		s_gameswf_key_to_ascii[key::SEMICOLON]     = ';'; s_gameswf_key_to_ascii_shifted[key::SEMICOLON]     = ':';
+		s_gameswf_key_to_ascii[key::EQUALS]        = '='; s_gameswf_key_to_ascii_shifted[key::EQUALS]        = '+';
+		s_gameswf_key_to_ascii[key::MINUS]         = '-'; s_gameswf_key_to_ascii_shifted[key::MINUS]         = '_';
+		s_gameswf_key_to_ascii[key::SLASH]         = '/'; s_gameswf_key_to_ascii_shifted[key::SLASH]         = '?';
+		s_gameswf_key_to_ascii[key::BACKTICK]      = '`'; s_gameswf_key_to_ascii_shifted[key::BACKTICK]      = '~';
+		s_gameswf_key_to_ascii[key::LEFT_BRACKET]  = '['; s_gameswf_key_to_ascii_shifted[key::LEFT_BRACKET]  = '{';
+		s_gameswf_key_to_ascii[key::BACKSLASH]     = '\\';s_gameswf_key_to_ascii_shifted[key::BACKSLASH]     = '|';
+		s_gameswf_key_to_ascii[key::RIGHT_BRACKET] = ']'; s_gameswf_key_to_ascii_shifted[key::RIGHT_BRACKET] = '}';
+		s_gameswf_key_to_ascii[key::QUOTE]        = '\''; s_gameswf_key_to_ascii_shifted[key::QUOTE]         = '\"';
+		s_gameswf_key_to_ascii[key::COMMA]         = ','; s_gameswf_key_to_ascii_shifted[key::COMMA]         = '<';
+		s_gameswf_key_to_ascii[key::PERIOD]        = '.'; s_gameswf_key_to_ascii_shifted[key::PERIOD]        = '>';
+	}
 
 	void	as_global_textfield_ctor(const fn_call& fn)
 	// Constructor for ActionScript class XMLSocket
@@ -153,17 +215,13 @@ namespace gameswf
 					bounds.m_y_min *= yscale;
 					bounds.m_y_max *= yscale;
 
-					render::draw_bitmap(mat,
-						g.m_fontlib_glyph.get_ptr(),
-						bounds,
-						uv_bounds,
-						transformed_color);
+					render::draw_bitmap(mat, g.m_fontlib_glyph.get_ptr(), bounds, uv_bounds, transformed_color);
 
 				}
 				else
 				if (g.m_shape_glyph != NULL)
 				{
-					g.m_shape_glyph->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
+					g.m_shape_glyph->display(mat, cx, pixel_scale, dummy_style, dummy_line_style, render_handler::BLEND_NORMAL);
 				}
 				else
 				if (g.m_glyph_index >= 0)
@@ -172,7 +230,7 @@ namespace gameswf
 					shape_character_def* sh = fnt->get_glyph_by_index(g.m_glyph_index);
 					if (sh)
 					{
-						sh->display(mat, cx, pixel_scale, dummy_style, dummy_line_style);
+						sh->display(mat, cx, pixel_scale, dummy_style, dummy_line_style, render_handler::BLEND_NORMAL);
 					}
 				}
 
@@ -184,12 +242,7 @@ namespace gameswf
 
 
 	text_character_def::text_character_def(player* player, movie_definition_sub* root_def) :
-		character_def(player),
-		m_root_def(root_def),
-		m_use_flashtype(false),
-		m_grid_fit(0),
-		m_thickness(0.0f),
-		m_sharpness(0.0f)
+		character_def(player), m_root_def(root_def), m_use_flashtype(false), m_grid_fit(0), m_thickness(0.0f), m_sharpness(0.0f)
 	{
 		assert(m_root_def);
 	}
@@ -290,12 +343,6 @@ namespace gameswf
 				last_record_was_style_change = false;
 
 				int	glyph_count = first_byte;
-
-				// 					if (! last_record_was_style_change)
-				// 					{
-				// 						glyph_count &= 0x7F;
-				// 					}
-				// 					// else { Don't mask the top bit; the first record is allowed to have > 127 glyphs. }
 
 				m_text_glyph_records.resize(m_text_glyph_records.size() + 1);
 				m_text_glyph_records.back().m_style = style;
@@ -554,6 +601,7 @@ namespace gameswf
 		character(player, parent, id),
 		m_def(def),
 		m_has_focus(false), 
+		m_password(def->m_password),
 		m_cursor(0), 
 		m_xcursor(0.0f), 
 		m_ycursor(0.0f),
@@ -562,6 +610,9 @@ namespace gameswf
 	{
 		assert(parent);
 		assert(m_def != NULL);
+
+		// make sure the ascii table is initialized
+		initialize_key_to_ascii();
 
 		// defaults
 		m_color = m_def->m_color;
@@ -878,13 +929,17 @@ namespace gameswf
 				case key::RIGHT: 
 					m_cursor = m_cursor < m_text.size() ? m_cursor + 1 : m_text.size(); 
 					format_text(); 
-					break; 
+					break;
 
 				default: 
-					{ 
-						s.insert(m_cursor, id.m_key_code); 
-						m_cursor++; 
-						set_text_value(s); 
+					{
+						char print_char = (get_root()->m_shift_key_state) ? s_gameswf_key_to_ascii_shifted[id.m_key_code] : s_gameswf_key_to_ascii[id.m_key_code];
+						if (print_char)
+						{
+							s.insert(m_cursor, print_char); 
+							m_cursor++; 
+							set_text_value(s); 
+						}
 						break; 
 					} 
 				} 
@@ -1020,6 +1075,11 @@ namespace gameswf
 			default:
 				break;
 
+			case M_PASSWORD:
+				{
+					m_password = val.to_bool();
+				}break;
+
 			case M_TEXT:
 			{
 				set_text_value(val.to_tu_string());
@@ -1091,6 +1151,11 @@ namespace gameswf
 		{
 			default:
 				break;
+
+			case M_PASSWORD:
+				{
+					val->set_bool( m_password );
+				}break;
 
 			case M_TEXT:
 				val->set_tu_string(m_text);
@@ -1212,10 +1277,12 @@ namespace gameswf
 
 		rec.m_style.m_font = m_font.get_ptr();
 		rec.m_style.m_color = m_color;
+
 		rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
-		rec.m_style.m_y_offset = m_text_height
-			+ (m_font->get_leading() - m_font->get_descent()) * rec.m_style.m_scale;
+		rec.m_style.m_y_offset = m_text_height + (m_font->get_leading() - m_font->get_descent()) * rec.m_style.m_scale;
+
 		rec.m_style.m_text_height = m_text_height;
+
 		rec.m_style.m_has_x_offset = true;
 		rec.m_style.m_has_y_offset = true;
 
@@ -1431,6 +1498,11 @@ namespace gameswf
 			else
 			if (strncmp(p, "</font>", 7) == 0)
 			{
+				if (rec.m_style.m_lastfont != NULL)
+				{
+					rec.m_style.m_font = rec.m_style.m_lastfont;
+					rec.m_style.m_lastfont = NULL;
+				}
 				return p + 7;
 			}
 			else
@@ -1448,6 +1520,7 @@ namespace gameswf
 				font* f = md->find_font(face.c_str());
 				if (f)
 				{
+					rec.m_style.m_lastfont = rec.m_style.m_font;
 					rec.m_style.m_font = f;
 				}
 				else
@@ -1481,7 +1554,8 @@ namespace gameswf
 			if (strncmp(p, "color=", 6) == 0)
 			{
 				p += 7;
-				assert(*p++ == '#');
+				assert(*p == '#');
+				++p;
 				
 				Uint32 rgb = strtol(p, 0, 16);
 				rec.m_style.m_color.m_r = rgb >> 16;
@@ -1524,8 +1598,9 @@ namespace gameswf
 			}
 			else
 			{
-				log_error("html_font: unknown keyword %s\n", p);
-				assert(0);
+				p = html_text(p, rec);
+				/*log_error("html_font: unknown keyword %s\n", p);
+				assert(0);*/
 			}
 		}
 
@@ -1555,6 +1630,20 @@ namespace gameswf
 
 	void	edit_text_character::format_plain_text(const tu_string& text, text_glyph_record&	rec)
 	{
+		const tu_string* textPtrToUse = &text;
+
+		tu_string passwordText;
+		if( m_password )
+		{
+			// nice big hack.
+			passwordText = text;
+			int len = passwordText.length();
+			for( int txtIdx = 0; txtIdx < len; ++txtIdx )
+			{
+				passwordText[txtIdx] = '*';
+			}
+			textPtrToUse = &passwordText;
+		}		
 
 		// Start the bbox at the upper-left corner of the first glyph.
 		reset_bounding_box(m_x, m_y - rec.m_style.m_font->get_descent() *
@@ -1567,7 +1656,7 @@ namespace gameswf
 		m_xcursor = m_x; 
 		m_ycursor = m_y; 
 
-		const char*	text_ptr = &text[0];
+		const char*	text_ptr = &((*textPtrToUse)[0]);
 		while (Uint32 code = utf8::decode_next_unicode_character(&text_ptr))
 		{
 			// @@ try to truncate overflow text??

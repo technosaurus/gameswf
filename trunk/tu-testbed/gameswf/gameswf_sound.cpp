@@ -140,7 +140,7 @@ namespace gameswf
 
 	struct start_sound_tag : public execute_tag
 	{
-		Uint16	m_handler_id;
+		int	m_handler_id;
 		int	m_loop_count;
 		bool	m_stop_playback;
 		array<sound_envelope> m_envelopes;

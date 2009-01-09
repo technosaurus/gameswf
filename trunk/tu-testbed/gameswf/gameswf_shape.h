@@ -82,7 +82,7 @@ namespace gameswf
 		void reserve_triangles(int expected_triangle_count);
 		void add_triangle(const coord_component pts[6]);
 
-		void	display(const base_fill_style& style, float ratio) const;
+		void	display(const base_fill_style& style, float ratio, render_handler::bitmap_blend_mode bm) const;
 
 		void	output_cached_data(tu_file* out);
 		void	input_cached_data(tu_file* in);
@@ -120,19 +120,8 @@ namespace gameswf
 
 		float	get_error_tolerance() const { return m_error_tolerance; }
 
-		void display(
-			const matrix& m,
-			const cxform& cx,
-			const array<fill_style>& fills,
-			const array<line_style>& line_styles) const;
-
-		// TODO: get rid of this?  I think it's legacy.
-		void display(
-			const matrix& m,
-			const cxform& cx,
-			const array<morph_fill_style>& fills,
-			const array<morph_line_style>& line_styles,
-			float ratio) const;
+		void display( const matrix& m, const cxform& cx, const array<fill_style>& fills,
+			const array<line_style>& line_styles, render_handler::bitmap_blend_mode bm) const;
 
 		void new_layer();
 		void	set_tri_strip(int style, const point pts[], int count);
@@ -173,14 +162,12 @@ namespace gameswf
 		const rect&	get_bound_local() const { return m_bound; }
 
 		void	read(stream* in, int tag_type, bool with_style, movie_definition_sub* m);
-		void	display(
-			const matrix& mat,
-			const cxform& cx,
-			float pixel_scale,
-			const array<fill_style>& fill_styles,
-			const array<line_style>& line_styles) const;
+		void	display( const matrix& mat, const cxform& cx, float pixel_scale, const array<fill_style>& fill_styles,
+				const array<line_style>& line_styles, render_handler::bitmap_blend_mode bm) const;
+
 		virtual void	tesselate(float error_tolerance, tesselate::trapezoid_accepter* accepter) const;
 		virtual void	tesselate_new(float error_tolerance, tesselate_new::mesh_accepter* accepter) const;
+
 		void	compute_bound(rect* r) const;	// @@ what's the difference between this and get_bound?
 
 		void	output_cached_data(tu_file* out, const cache_options& options);

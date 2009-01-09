@@ -19,6 +19,7 @@ namespace gameswf
 		m_depth(0),
 		m_ratio(0.0f),
 		m_clip_depth(0),
+		m_blend_mode(0),
 		m_visible(true),
 		m_display_callback(NULL),
 		m_display_callback_user_ptr(NULL)

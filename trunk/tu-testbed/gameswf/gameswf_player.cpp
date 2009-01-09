@@ -231,7 +231,6 @@ namespace gameswf
 	// dynamic library stuff, for sharing DLL/shared library among different movies.
 
 	static string_hash<tu_loadlib*> s_shared_libs;
-
 	string_hash<tu_loadlib*>* get_shared_libs()
 	{
 		return &s_shared_libs;
@@ -245,6 +244,50 @@ namespace gameswf
 			delete it->second;
 		}
 		s_shared_libs.clear();
+	}
+
+	struct registered_type_node
+	{
+		registered_type_node( const tu_string& classname, gameswf_module_init type_init_func)
+			: m_next(NULL), m_classname(classname), m_type_init(type_init_func)
+		{
+		}
+
+		registered_type_node *m_next;
+		tu_string             m_classname;
+		gameswf_module_init   m_type_init;
+	};
+	static registered_type_node* s_registered_types = NULL;
+	
+	void register_type_handler( const tu_string& type_name, gameswf_module_init type_init_func )
+	{
+		registered_type_node** node = &s_registered_types;
+		while( *node ) node = &((*node)->m_next);
+		*node = new registered_type_node( type_name, type_init_func );
+	}
+
+	void clear_registered_type_handlers()
+	{
+		registered_type_node *curr = s_registered_types;
+		s_registered_types = NULL;
+		while( curr )
+		{
+			registered_type_node *next = curr->m_next;
+			delete curr;
+			curr = next;
+		}
+	}
+
+	gameswf_module_init find_type_handler( const tu_string& type_name )
+	{
+		registered_type_node *node = s_registered_types;
+		while( node )
+		{
+			if( node->m_classname == type_name )
+				return node->m_type_init;
+			node = node->m_next;
+		}
+		return NULL;
 	}
 
 	// External interface.
@@ -305,6 +348,7 @@ namespace gameswf
 			s_standard_property_map.add("_level0", M_LEVEL0);
 			s_standard_property_map.add("_global", M_GLOBAL);
 			s_standard_property_map.add("enabled", M_ENABLED);
+			s_standard_property_map.add("password", M_PASSWORD);
 		}
 
 		as_standard_member	result = M_INVALID_MEMBER;
@@ -338,7 +382,7 @@ namespace gameswf
 		tu_string("_highquality"),
 		tu_string("_focusrect"),
 		tu_string("_soundbuftime"),
-		tu_string("@@ mystery quality member"),
+		tu_string("mysteryquality"), //tu_string("@@ mystery quality member"),  //this seems like a stupid bug to me . . . but I don't want it accessing the heap yet.
 		tu_string("_xmouse"),
 		tu_string("_ymouse"),
 	};
@@ -424,6 +468,7 @@ namespace gameswf
 		{
 			clears_tag_loaders();
 			clear_shared_libs();
+			clear_registered_type_handlers();
 			close_glyph_provider();
 			clear_standard_method_map();
 			clear_disasm();

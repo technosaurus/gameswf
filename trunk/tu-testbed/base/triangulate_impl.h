@@ -2289,8 +2289,8 @@ static void compute_triangulation(
 				return;
 #endif
 
-				recovery_process(&penv.m_polys, P, &penv.m_sorted_verts, &rand_gen);
-				ear_was_clipped = false;
+				//recovery_process(&penv.m_polys, P, &penv.m_sorted_verts, &rand_gen);
+				//ear_was_clipped = false;
 			}
 		}
 
