@@ -348,6 +348,8 @@ namespace gameswf
 			BACKSLASH = 220,
 			RIGHT_BRACKET = 221,
 			QUOTE = 222,
+			COMMA,
+			PERIOD,
 
 			KEYCOUNT
 		};
@@ -524,8 +526,12 @@ namespace gameswf
 	// Flash converts inf to zero when works with matrix & cxform
 	struct tu_float
 	{
+		tu_float()	{ m_float = 0.0f; }
+		tu_float(float x)	{ operator=(x); }
+		tu_float(double x)	{ operator=((float) x); }
+
 		operator float() const { return m_float; }
-		inline void	operator=(const float x)
+		inline void	operator=(float x)
 		{
 			m_float = x >= -3.402823466e+38F && x <= 3.402823466e+38F ? x : 0.0f;
 		}
@@ -725,9 +731,29 @@ namespace gameswf
 			WRAP_REPEAT,
 			WRAP_CLAMP
 		};
+
+		enum bitmap_blend_mode
+		{
+			BLEND_NORMAL,
+			BLEND_LAYER,
+			BLEND_MULTIPLY,
+			BLEND_SCREEN,
+			BLEND_LIGHTEN,
+			BLEND_DARKEN,
+			BLEND_DIFFERENCE,
+			BLEND_ADD,
+			BLEND_SUBTRACT,
+			BLEND_INVERT,
+			BLEND_ALPHA,
+			BLEND_ERASE,
+			BLEND_OVERLAY,
+			BLEND_HARDLIGHT
+		};
+
 		virtual void	fill_style_disable(int fill_side) = 0;
 		virtual void	fill_style_color(int fill_side, const rgba& color) = 0;
-		virtual void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, bitmap_wrap_mode wm) = 0;
+		virtual void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m,
+							bitmap_wrap_mode wm, bitmap_blend_mode bm) = 0;
 
 		virtual void	line_style_disable() = 0;
 		virtual void	line_style_color(rgba color) = 0;

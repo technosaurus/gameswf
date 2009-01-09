@@ -145,9 +145,9 @@ namespace gameswf
 			if (s_render_handler) s_render_handler->fill_style_color(fill_side, color);
 		}
 
-		void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, render_handler::bitmap_wrap_mode wm)
+		void	fill_style_bitmap(int fill_side, bitmap_info* bi, const matrix& m, render_handler::bitmap_wrap_mode wm, render_handler::bitmap_blend_mode bm)
 		{
-			if (s_render_handler) s_render_handler->fill_style_bitmap(fill_side, bi, m, wm);
+			if (s_render_handler) s_render_handler->fill_style_bitmap(fill_side, bi, m, wm, bm);
 		}
 
 		void	line_style_disable()

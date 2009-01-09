@@ -39,6 +39,7 @@ namespace gameswf
 		m_mouse_buttons(0),
 		m_userdata(NULL),
 		m_on_event_load_called(false),
+		m_shift_key_state(false),
 		m_current_active_entity(NULL),
 
 		// the first time we needs do advance() and
@@ -70,93 +71,70 @@ namespace gameswf
 
 	void	root::generate_mouse_button_events(mouse_button_state* ms)
 	{
-		gc_ptr<character>	active_entity = ms->m_active_entity;
-		gc_ptr<character>	topmost_entity = ms->m_topmost_entity;
+		gc_ptr<character> active_entity  = ms->m_active_entity; // entity that currently owns the mouse pointer
+		gc_ptr<character> topmost_entity = ms->m_topmost_entity;// what's underneath the mouse right now (updated every frame at the beginning)
 
 		// set cursor as passive/active object
-		if (active_entity != NULL)
+		if( active_entity != NULL && active_entity->can_handle_mouse_event() )
 		{
-			if (active_entity->can_handle_mouse_event())
-			{
-				render::set_cursor(render_handler::ACTIVE_CURSOR);
-			}
-			else
-			{
-				render::set_cursor(render_handler::SYSTEM_CURSOR);
-			}
+			render::set_cursor(render_handler::ACTIVE_CURSOR);
 		}
 		else
 		{
 			render::set_cursor(render_handler::SYSTEM_CURSOR);
 		}
 
-		if (ms->m_mouse_button_state_last == 1)
+		if( ms->m_mouse_button_state_last == 1 )
 		{
 			// Mouse button was down.
 
 			// Handle trackAsMenu dragOver
-			if (active_entity == NULL
-				|| active_entity->get_track_as_menu())
+			if( active_entity == NULL || active_entity->get_track_as_menu() )
 			{
-				if (topmost_entity != NULL
-					&& topmost_entity != active_entity
-					&& topmost_entity->get_track_as_menu() == true)
+				if( (topmost_entity != NULL) && (topmost_entity != active_entity) && topmost_entity->get_track_as_menu() )
 				{
 					// Transfer to topmost entity, dragOver
 					active_entity = topmost_entity;
-					active_entity->on_event(event_id::DRAG_OVER);
+					active_entity->on_event( event_id::DRAG_OVER );
 					ms->m_mouse_inside_entity_last = true;
 				}
 			}
 
 			// Handle onDragOut, onDragOver
-			if (ms->m_mouse_inside_entity_last == false)
+			if( !ms->m_mouse_inside_entity_last && (topmost_entity == active_entity) )
 			{
-				if (topmost_entity == active_entity)
+				// onDragOver
+				if (active_entity != NULL)
 				{
-					// onDragOver
-					if (active_entity != NULL)
-					{
-						active_entity->on_event(event_id::DRAG_OVER);
-					}
-					ms->m_mouse_inside_entity_last = true;
+					active_entity->on_event( event_id::DRAG_OVER );
 				}
+				ms->m_mouse_inside_entity_last = true;
 			}
-			else
+			else if( ms->m_mouse_inside_entity_last && (topmost_entity != active_entity) )
 			{
-				// mouse_inside_entity_last == true
-				if (topmost_entity != active_entity)
+				// onDragOut
+				if (active_entity != NULL)
 				{
-					// onDragOut
-					if (active_entity != NULL)
-					{
-						active_entity->on_event(event_id::DRAG_OUT);
-					}
-					ms->m_mouse_inside_entity_last = false;
+					active_entity->on_event( event_id::DRAG_OUT );
 				}
+				ms->m_mouse_inside_entity_last = false;
 			}
 
 			// Handle onRelease, onReleaseOutside
 			if (ms->m_mouse_button_state_current == 0)
 			{
-				// Mouse button just went up.
-				ms->m_mouse_button_state_last = 0;
-
-				if (active_entity != NULL)
+				if( topmost_entity == active_entity )
 				{
-					if (ms->m_mouse_inside_entity_last)
+					// onRelease
+					if( active_entity != NULL )
 					{
-						// onRelease
-						active_entity->on_event(event_id::RELEASE);
+						active_entity->on_event( event_id::RELEASE );
 					}
-					else
-					{
-						// onReleaseOutside
-						if (active_entity->get_track_as_menu() == false)
-						{
-							active_entity->on_event(event_id::RELEASE_OUTSIDE);
-						}
-					}
+				}
+				else if( active_entity != NULL && !active_entity->get_track_as_menu() )
+				{
+					// onReleaseOutside
+					active_entity->on_event( event_id::RELEASE_OUTSIDE );
 				}
 			}
 		}
@@ -165,28 +143,31 @@ namespace gameswf
 		{
 			// Mouse button was up.
 
-			// New active entity is whatever is below the mouse right now.
-			if (topmost_entity != active_entity)
+			// mouse up
+			if( ms->m_mouse_button_state_current == 0 )
 			{
-				// onRollOut
-				if (active_entity != NULL)
+				// New active entity is whatever is below the mouse right now.
+				if (topmost_entity != active_entity)
 				{
-					active_entity->on_event(event_id::ROLL_OUT);
+					// onRollOut
+					if (active_entity != NULL && ms->m_mouse_inside_entity_last)
+					{
+						active_entity->on_event( event_id::ROLL_OUT );
+					}
+
+					active_entity = topmost_entity;
+
+					// onRollOver
+					if (active_entity != NULL)
+					{
+						active_entity->on_event( event_id::ROLL_OVER );
+					}
+
+					ms->m_mouse_inside_entity_last = true;
 				}
-
-				active_entity = topmost_entity;
-
-				// onRollOver
-				if (active_entity != NULL)
-				{
-					active_entity->on_event(event_id::ROLL_OVER);
-				}
-
-				ms->m_mouse_inside_entity_last = true;
 			}
-
+			else
 			// mouse button press
-			if (ms->m_mouse_button_state_current == 1)
 			{
 				// onPress
 
@@ -216,7 +197,6 @@ namespace gameswf
 					active_entity->on_event(event_id::PRESS);
 				}
 				ms->m_mouse_inside_entity_last = true;
-				ms->m_mouse_button_state_last = 1;
 			}
 		}
 
@@ -224,6 +204,7 @@ namespace gameswf
 		// into the state struct.
 		ms->m_active_entity = active_entity;
 		ms->m_topmost_entity = topmost_entity;
+		ms->m_mouse_button_state_last = ms->m_mouse_button_state_current;
 	}
 
 	// movie info
@@ -248,6 +229,59 @@ namespace gameswf
 
 	void notify_key_object(player* player, key::code k, bool down);
 
+	void change_focus_character(character *movie, character *active_entity, bool shift)
+	{
+		bool killfocus = false;
+		int  tab = 0;
+		int  lastvalid = -1;
+
+		// lets see if focus is in the root
+		int i = 0;
+		for (i = 0; movie->get_character(i) != NULL; ++i)
+		{
+			if (!movie->get_character(i)->is(AS_EDIT_TEXT))
+				continue;
+
+			if (!movie->get_character(i)->can_handle_mouse_event())
+				continue;
+
+			if (movie->get_character(i) == active_entity)
+			{
+				if (lastvalid != -1 && shift)
+				{
+					movie->get_character(i)->on_event(event_id::KILLFOCUS);
+					movie->get_character(lastvalid)->on_event(event_id::SETFOCUS);
+				}
+				//now kill focus on current active event
+				tab = i;
+
+				//now i need to find which event to set focus on
+				killfocus = true;
+				continue;
+			}
+
+			lastvalid = i;
+
+			if (killfocus)
+			{
+				movie->get_character(tab)->on_event(event_id::KILLFOCUS);
+				movie->get_character(i)->on_event(event_id::SETFOCUS);
+				killfocus = false;
+			}
+		}
+
+		if (movie->get_character(i) == NULL)
+		{
+			for (i = 0; movie->get_character(i) != NULL; ++i)
+			{
+				if (_stricmp(movie->get_character(i)->type_of(), "movieclip") != 0)
+					continue;
+
+				change_focus_character(movie->get_character(i), active_entity, shift);
+			}
+		}
+	}
+
 	void	root::notify_key_event(player* player, key::code k, bool down)
 	{
 		// multithread plugins can call gameswf core therefore we should 
@@ -262,6 +296,69 @@ namespace gameswf
 		if (down)
 		{
 			m_keypress_listener.notify(event_id(event_id::KEY_PRESS, (key::code) k));
+		}
+
+		// A bit of a hack huh
+		if( k == key::SHIFT )
+		{
+			m_shift_key_state = down;
+		}
+
+		if (((key::code)k == key::TAB) && down)
+		{
+			bool killfocus = false;
+			int	 tab = 0;
+			int  lastvalid = -1;
+
+			// lets see if focus is in the root
+			int i = 0;
+			for (i = 0; get_character(i) != NULL; ++i)
+			{
+				character *movie = get_character(i);
+
+				if ( !movie->is(AS_EDIT_TEXT) )
+					continue;
+
+				if ( !movie->can_handle_mouse_event() )
+					continue;
+
+				if (movie == m_current_active_entity.get_ptr())
+				{
+					if (lastvalid != -1 && m_shift_key_state)
+					{
+						movie->on_event(event_id::KILLFOCUS);
+						get_character(lastvalid)->on_event(event_id::SETFOCUS);
+						break;
+					}
+					//we only want to kill focus if there is another event below this one
+					tab = i;
+
+					//now i need to find which event to set focus on
+					killfocus = true;
+					continue;
+				}
+
+				lastvalid = i;
+
+				if (killfocus)
+				{
+					get_character(tab)->on_event(event_id::KILLFOCUS);
+					movie->on_event(event_id::SETFOCUS);
+					killfocus = false;
+					break;
+				}
+			}
+
+			if (get_character(i) == NULL)
+			{
+				for (int i = 0; get_character(i) != NULL; ++i)
+				{
+					if (_stricmp(get_character(i)->type_of(), "movieclip") != 0)
+						continue;
+
+					change_focus_character(get_character(i), m_current_active_entity.get_ptr(), m_shift_key_state);
+				}
+			}
 		}
 
 		gameswf_engine_mutex().unlock();
@@ -311,23 +408,100 @@ namespace gameswf
 
 	character*	root::get_root_movie() const { return m_movie.get_ptr(); }
 
-	void	root::start_drag(character* ch)
+	void	root::set_drag_state(character::drag_state& ds)
 	{
-		assert(ch);
+		m_drag_state = ds;
 
-		if( m_drag_state.m_character != NULL )
+		// do we need to calculate the offset?
+		character* ch = ds.GetCharacter();
+		if (ch == NULL || ds.IsLockCentered())
 		{
-			stop_drag();
+			return;
 		}
 
-		m_drag_state.m_character = ch;
-		m_drag_state.m_lock_center = true; //TODO
+		// get the character's origin
+		point origin(0, 0);
+		matrix chMatrix = ch->get_world_matrix();
+		point worldOrigin;
+		chMatrix.transform( &worldOrigin, origin );
+
+		// Get current mouse coordinates
+		int x, y, buttons;
+		get_mouse_state( &x, &y, &buttons );
+		// ... in 'world' space (i.e. twips)
+		point worldMouse( PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y) );
+
+		// we need the offset from the origin of the character
+		float xOffset = int( worldMouse.m_x - worldOrigin.m_x );
+		float yOffset = int( worldMouse.m_y - worldOrigin.m_y );
+		m_drag_state.SetOffset( xOffset, yOffset );
 	}
 
 	void	root::stop_drag()
 	{
-		m_drag_state.m_character = NULL;
+		m_drag_state.Reset();
 	}
+
+	// Implement mouse-dragging for this movie.
+	void	root::do_mouse_drag()		
+	{
+		character* draggingChar = m_drag_state.GetCharacter();
+		if (draggingChar == NULL)
+		{
+			return;
+		}
+
+		// handle if the character isn't valid anymore
+		if (draggingChar->is_alive() == false)
+		{
+			// no longer valid
+			m_drag_state.Reset();
+			return;
+		}
+
+		// get the current mouse
+		int	x, y, buttons;
+		get_mouse_state( &x, &y, &buttons );
+
+		// ... in world coordinates (twips)
+		point worldMouse( PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y) );
+
+		matrix parentWorldMat;
+		if (draggingChar->m_parent != NULL)
+		{
+			parentWorldMat = draggingChar->m_parent->get_world_matrix();
+		}
+
+		// if we're not locked to the center - adjust by the offset we started dragging by
+		if(m_drag_state.IsLockCentered() == false)
+		{
+			worldMouse.m_x -= m_drag_state.OffsetX();
+			worldMouse.m_y -= m_drag_state.OffsetY();
+		}
+
+		rect origBoundRect;
+		if (m_drag_state.GetBounds(&origBoundRect))
+		{
+			// bounds are in local coordinate space
+			rect bounds;
+			bounds.enclose_transformed_rect( parentWorldMat, origBoundRect );
+
+			// Clamp mouse coords within a defined rect.
+			worldMouse.m_x = fclamp(worldMouse.m_x, bounds.m_x_min, bounds.m_x_max);
+			worldMouse.m_y = fclamp(worldMouse.m_y, bounds.m_y_min, bounds.m_y_max);
+		}
+
+		point parentMouse;
+		parentWorldMat.transform_by_inverse( &parentMouse, worldMouse );
+
+		// Place our origin so that it coincides with the mouse coords
+		// in our parent frame.
+		matrix local = draggingChar->get_matrix();
+		local.m_[0][2] = parentMouse.m_x;//set translation x
+		local.m_[1][2] = parentMouse.m_y;//set translation y
+		draggingChar->set_matrix( local );
+	}
+
 
 	movie_definition*	root::get_movie_definition() { return m_movie->get_movie_definition(); }
 
@@ -379,9 +553,11 @@ namespace gameswf
 		// status of netstream object
 		gameswf_engine_mutex().lock();
 
+		// Handle mouse dragging
+		do_mouse_drag();
+
 		// Handle the mouse.
-		m_mouse_button_state.m_topmost_entity =
-			m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
+		m_mouse_button_state.m_topmost_entity = m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
 
 		m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
 		generate_mouse_button_events(&m_mouse_button_state);
@@ -542,6 +718,7 @@ namespace gameswf
 	{
 		for (const char* word = vars.c_str(); *word; )
 		{
+			bool nullDel = false;
 			const char* delimiter = strchr(word, '=');
 			if (delimiter == NULL)
 			{
@@ -555,11 +732,17 @@ namespace gameswf
 			if (delimiter == NULL)
 			{
 				delimiter = vars.c_str() + vars.size();
+				nullDel = true;
 			}
 			tu_string value(word, int(delimiter - word));
 		
 			get_root_movie()->set_member(varname, value.c_str());
+
+			if (nullDel)
+				return;
+
 			word = delimiter + 1;
+			
 		}
 
 	}

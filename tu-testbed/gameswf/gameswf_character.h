@@ -132,25 +132,84 @@ namespace gameswf
 		matrix		m_matrix;
 		float		m_ratio;
 		Uint16		m_clip_depth;
+		Uint8       m_blend_mode;
 		bool		m_visible;
 		void		(*m_display_callback)(void*);
 		void*		m_display_callback_user_ptr;
 
 		struct drag_state
 		{
+		private:
 			character*	m_character;
-			bool	m_lock_center;
-			bool	m_bound;
-			float	m_bound_x0;
-			float	m_bound_y0;
-			float	m_bound_x1;
-			float	m_bound_y1;
+			bool		m_lock_center;
+			bool		m_bound;
+			rect		m_bound_rect;
+			float		m_offset_x;
+			float		m_offset_y;
 
-			drag_state()
-				:
-				m_character(0), m_lock_center(0), m_bound(0),
-				m_bound_x0(0), m_bound_y0(0), m_bound_x1(1), m_bound_y1(1)
+		public:
+			drag_state() :
+				m_character(NULL),
+				m_lock_center(false), 
+				m_bound(false),
+				m_offset_x(0.0f),
+				m_offset_y(0.0f)
 			{
+			}
+
+			void Reset()
+			{
+				m_bound = false;
+				m_character = NULL;
+				m_lock_center = false;
+			}
+
+			bool IsLockCentered() const
+			{
+				return m_lock_center;
+			}
+
+			void SetLockCentered(bool locked)
+			{
+				m_lock_center = locked;
+			}
+
+			void SetOffset(float x, float y)
+			{
+				m_offset_x = x;
+				m_offset_y = y;
+			}
+
+			float OffsetX() const { return m_offset_x; }
+			float OffsetY() const { return m_offset_y; }
+
+			bool GetBounds(rect* bounds) const
+			{
+				if (m_bound)
+				{
+					*bounds = m_bound_rect;
+					return true;
+				}
+				return false;
+			}
+			
+			void SetBounds(float x0, float y0, float x1, float y1)
+			{
+				m_bound_rect.m_x_min = x0;
+				m_bound_rect.m_x_max = x1;
+				m_bound_rect.m_y_min = y0;
+				m_bound_rect.m_y_max = y1;
+				m_bound = true;
+			}
+
+			character* GetCharacter() const
+			{
+				return m_character;
+			}
+
+			void SetCharacter(character* ch)
+			{
+				m_character = ch;
 			}
 		};
 
@@ -173,9 +232,6 @@ namespace gameswf
 		{
 			get_parent()->get_mouse_state(x, y, buttons); 
 		}
-
-		// Utility.
-		void	do_mouse_drag();
 
 		virtual bool	get_track_as_menu() const { return false; }
 
@@ -292,54 +348,20 @@ namespace gameswf
 		virtual character* replace_me(character_def*	def) { assert(0); return NULL; }
 		virtual character* replace_me(movie_definition*	md) { assert(0); return NULL; }
 
-		virtual character*	add_display_object(
-			Uint16 character_id,
-			const tu_string& name,
-			const array<swf_event*>& event_handlers,
-			int			 depth,
-			bool			 replace_if_depth_is_occupied,
-			const cxform&		 color_transform,
-			const matrix&		 mat,
-			float			 ratio,
-			Uint16			clip_depth)
+		virtual character*	add_display_object( Uint16 character_id, const tu_string& name, const array<swf_event*>& event_handlers, int depth, bool replace_if_depth_is_occupied, const cxform& color_transform, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 		{
 			return NULL;
 		}
 
-		virtual void	move_display_object(
-			int		depth,
-			bool		use_cxform,
-			const cxform&	color_transform,
-			bool		use_matrix,
-			const matrix&	mat,
-			float		ratio,
-			Uint16		clip_depth)
+		virtual void	move_display_object( int depth,	bool use_cxform, const cxform& color_transform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 		{
 		}
 
-		virtual void	replace_display_object(
-			Uint16		character_id,
-			const char*	name,
-			int		depth,
-			bool		use_cxform,
-			const cxform&	color_transform,
-			bool		use_matrix,
-			const matrix&	mat,
-			float		ratio,
-			Uint16		clip_depth)
+		virtual void	replace_display_object( Uint16 character_id, const char* name, int depth, bool use_cxform, const cxform& color_transform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 		{
 		}
 
-		virtual void	replace_display_object(
-			character*	ch,
-			const char*	name,
-			int		depth,
-			bool		use_cxform,
-			const cxform&	color_transform,
-			bool		use_matrix,
-			const matrix&	mat,
-			float		ratio,
-			Uint16		clip_depth)
+		virtual void	replace_display_object( character* ch, const char* name, int depth, bool use_cxform, const cxform& color_transform, bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 		{
 		}
 
@@ -357,8 +379,6 @@ namespace gameswf
 
 		virtual void	remove_display_object(const tu_string& name) { assert(0); }
 
-		virtual void	get_drag_state(drag_state* st) { assert(m_parent != 0); m_parent->get_drag_state(st); }
-		virtual void	set_drag_state(const drag_state& st) { assert(0); }
 		virtual void	stop_drag() { assert(0); }
 //		virtual character*	get_root_interface() { return NULL; }
 		virtual void	call_frame_actions(const as_value& frame_spec) { assert(0); }
@@ -449,6 +469,8 @@ namespace gameswf
 		void	set_ratio(float f) { m_ratio = f; }
 		Uint16	get_clip_depth() const { return m_clip_depth; }
 		void	set_clip_depth(Uint16 d) { m_clip_depth = d; }
+		Uint8   get_blend_mode() const { return m_blend_mode; }
+		void    set_blend_mode(Uint8 d) { m_blend_mode = d; }
 
 		void	set_name(const tu_string& name) { m_name = name; }
 		const tu_string&	get_name() const { return m_name; }
@@ -489,7 +511,7 @@ namespace gameswf
 		virtual character_def* get_character_def() { assert(0); return 0; }
 
 		virtual character*	get_root_movie() const { return m_parent->get_root_movie(); }
-
+		
 		// Frame counts in this API are 0-based (unlike ActionScript)
 		virtual int	get_current_frame() const { return -1; }
 

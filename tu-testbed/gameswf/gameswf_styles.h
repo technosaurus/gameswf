@@ -31,7 +31,7 @@ namespace gameswf
 	struct base_fill_style
 	{
 		virtual ~base_fill_style() {}
-		virtual void apply(int fill_side, float ratio) const = 0;
+		virtual void apply(int fill_side, float ratio, render_handler::bitmap_blend_mode bm) const = 0;
 	};
 
 	struct fill_style : public base_fill_style
@@ -43,11 +43,12 @@ namespace gameswf
 		void	read(stream* in, int tag_type, movie_definition_sub* m);
 		rgba	sample_gradient(int ratio) const;
 		gameswf::bitmap_info*	create_gradient_bitmap() const;
-		virtual void	apply(int fill_side, float ratio) const;
+		virtual void	apply(int fill_side, float ratio, render_handler::bitmap_blend_mode bm) const;
 
 		rgba	get_color() const { return m_color; }
 		void	set_color(rgba new_color) { m_color = new_color; }
-		int	get_type() const { return m_type; }
+		int	    get_type() const { return m_type; }
+		void    set_blend_mode(Uint8 bm) {m_blend_mode = bm;}
 
 		// For shape morphing
 		void	set_lerp(const fill_style& a, const fill_style& b, float t);
@@ -57,6 +58,7 @@ namespace gameswf
 		friend struct canvas;
 
 		int	m_type;
+		Uint8 m_blend_mode;
 		rgba	m_color;
 		matrix	m_gradient_matrix;
 		array<gradient_record>	m_gradients;
@@ -75,7 +77,7 @@ namespace gameswf
 		void read(stream* in, movie_definition_sub* m);
 		rgba sample_gradient(int ratio, float morph);
 		bitmap_info* create_gradient_bitmap(float morph) const;
-		virtual void apply(int fill_side, float morph) const;
+		virtual void apply(int fill_side, float morph, render_handler::bitmap_blend_mode bm) const;
 		rgba get_color(float morph) const;
 		void set_colors(rgba new_color_orig, rgba new_color_target);
 	private:

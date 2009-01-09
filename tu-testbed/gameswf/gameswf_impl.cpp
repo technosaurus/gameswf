@@ -157,57 +157,6 @@ namespace gameswf
 	// character
 	//
 
-
-	void	character::do_mouse_drag()
-		// Implement mouse-dragging for this movie.
-	{
-		drag_state	st;
-		get_drag_state(&st);
-		if (this == st.m_character)
-		{
-			// We're being dragged!
-			int	x, y, buttons;
-			get_root_movie()->get_mouse_state(&x, &y, &buttons);
-
-			point	world_mouse(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
-			if (st.m_bound)
-			{
-				// Clamp mouse coords within a defined rect.
-				world_mouse.m_x =
-					fclamp(world_mouse.m_x, st.m_bound_x0, st.m_bound_x1);
-				world_mouse.m_y =
-					fclamp(world_mouse.m_y, st.m_bound_y0, st.m_bound_y1);
-			}
-
-			if (st.m_lock_center)
-			{
-				matrix	world_mat = get_world_matrix();
-				point	local_mouse;
-				world_mat.transform_by_inverse(&local_mouse, world_mouse);
-
-				matrix	parent_world_mat;
-				if (m_parent != NULL)
-				{
-					parent_world_mat = m_parent->get_world_matrix();
-				}
-
-				point	parent_mouse;
-				parent_world_mat.transform_by_inverse(&parent_mouse, world_mouse);
-
-				// Place our origin so that it coincides with the mouse coords
-				// in our parent frame.
-				matrix	local = get_matrix();
-				local.m_[0][2] = parent_mouse.m_x;
-				local.m_[1][2] = parent_mouse.m_y;
-				set_matrix(local);
-			}
-			else
-			{
-				// Implement relative drag...
-			}
-		}
-	}
-
 	void	ensure_loaders_registered()
 	{
 		static bool	s_registered = false;
@@ -1283,6 +1232,7 @@ namespace gameswf
 		int 	m_depth;
 		Uint16	m_character_id;
 		Uint16	m_clip_depth;
+		Uint8   m_blend_mode;
 		enum place_type {
 			PLACE,
 			MOVE,
@@ -1291,14 +1241,8 @@ namespace gameswf
 		array<swf_event*>	m_event_handlers;
 
 		place_object_2() :
-			m_tag_type(0),
-			m_ratio(0),
-			m_has_matrix(false),
-			m_has_cxform(false),
-			m_depth(0),
-			m_character_id(0),
-			m_clip_depth(0),
-			m_place_type(PLACE)
+			m_tag_type(0), m_ratio(0), m_has_matrix(false), m_has_cxform(false), m_depth(0),
+			m_character_id(0), m_clip_depth(0), m_blend_mode(0), m_place_type(PLACE)
 		{
 		}
 
@@ -1372,23 +1316,27 @@ namespace gameswf
 				m_depth = in->read_u16();
 				IF_VERBOSE_PARSE(log_msg("  depth = %d\n", m_depth));
 
-				if (has_char) {
+				if (has_char)
+				{
 					m_character_id = in->read_u16();
 					IF_VERBOSE_PARSE(log_msg("  char id = %d\n", m_character_id));
 				}
 
-				if (has_matrix) {
+				if (has_matrix)
+				{
 					m_has_matrix = true;
 					m_matrix.read(in);
 					IF_VERBOSE_PARSE(log_msg("  mat:\n"); m_matrix.print());
 				}
-				if (has_cxform) {
+				if (has_cxform)
+				{
 					m_has_cxform = true;
 					m_color_transform.read_rgba(in);
 					IF_VERBOSE_PARSE(log_msg("  cxform:\n"); m_color_transform.print());
 				}
 
-				if (has_ratio) {
+				if (has_ratio)
+				{
 					m_ratio = (float)in->read_u16() / (float)65535;
 					IF_VERBOSE_PARSE(log_msg("  ratio: %f\n", m_ratio));
 				}
@@ -1398,7 +1346,8 @@ namespace gameswf
 					in->read_string(&m_character_name);
 					IF_VERBOSE_PARSE(log_msg("  name = %s\n", m_character_name.c_str()));
 				}
-				if (has_clip_bracket) {
+				if (has_clip_bracket)
+				{
 					m_clip_depth = in->read_u16(); 
 					IF_VERBOSE_PARSE(log_msg("  clip_depth = %d\n", m_clip_depth));
 				}
@@ -1411,8 +1360,7 @@ namespace gameswf
 				if (has_blend_mode)
 				{
 					// TODO, implement blend_mode
-					Uint8 blend_mode = in->read_u8();
-					UNUSED(blend_mode);
+					m_blend_mode = in->read_u8();
 				}
 
 				if (has_actions)
@@ -1553,40 +1501,29 @@ namespace gameswf
 					break;
 
 				case PLACE:
-					m->add_display_object(
-						m_character_id,
-						m_character_name.c_str(),
-						m_event_handlers,
-						m_depth,
-						m_tag_type != 4,	// original place_object doesn't do replacement
-						m_color_transform,
-						m_matrix,
-						m_ratio,
-						m_clip_depth);
+					if ((m_blend_mode == 0) && (m->m_blend_mode != 0))
+					{
+						m->add_display_object( m_character_id, m_character_name.c_str(), m_event_handlers, m_depth, m_tag_type != 4, m_color_transform, m_matrix, m_ratio, m_clip_depth, m->m_blend_mode);
+					}
+					else
+					{
+						m->add_display_object( m_character_id, m_character_name.c_str(), m_event_handlers, m_depth, m_tag_type != 4, m_color_transform, m_matrix, m_ratio, m_clip_depth, m_blend_mode);
+					}
 					break;
 
 				case MOVE:
-					m->move_display_object(
-						m_depth,
-						m_has_cxform,
-						m_color_transform,
-						m_has_matrix,
-						m_matrix,
-						m_ratio,
-						m_clip_depth);
+					if ((m_blend_mode == 0) && (m->m_blend_mode != 0))
+					{
+						m->move_display_object( m_depth, m_has_cxform, m_color_transform, m_has_matrix, m_matrix, m_ratio, m_clip_depth, m->m_blend_mode);
+					}
+					else
+					{
+						m->move_display_object( m_depth, m_has_cxform, m_color_transform, m_has_matrix, m_matrix, m_ratio, m_clip_depth, m_blend_mode);
+					}
 					break;
 
 				case REPLACE:
-					m->replace_display_object(
-						m_character_id,
-						m_character_name.c_str(),
-						m_depth,
-						m_has_cxform,
-						m_color_transform,
-						m_has_matrix,
-						m_matrix,
-						m_ratio,
-						m_clip_depth);
+					m->replace_display_object( m_character_id, m_character_name.c_str(), m_depth, m_has_cxform, m_color_transform, m_has_matrix, m_matrix, m_ratio, m_clip_depth, m_blend_mode);
 					break;
 				}
 		}
@@ -1605,19 +1542,16 @@ namespace gameswf
 
 				case PLACE:
 					// reverse of add is remove
-					m->remove_display_object(m_depth, m_tag_type == 4 ? m_character_id : -1);
+					// NOTE:  this line used to read m->remove_display_object(m_depth, m_tag_type == 4 ? m_character : -1);
+					// we were having problems with in certain cases remove_display_object removing the incorrect object,
+					// the line was returning -1 frequently and inside remove_display_object it would pick an incorrect object
+					// at the same depth
+					m->remove_display_object(m_depth, m_character_id);
 					break;
 
 				case MOVE:
 					// reverse of move is move
-					m->move_display_object(
-						m_depth,
-						m_has_cxform,
-						m_color_transform,
-						m_has_matrix,
-						m_matrix,
-						m_ratio,
-						m_clip_depth);
+					m->move_display_object( m_depth, m_has_cxform, m_color_transform, m_has_matrix, m_matrix, m_ratio, m_clip_depth, m->m_blend_mode);
 					break;
 
 				case REPLACE:
@@ -1630,9 +1564,7 @@ namespace gameswf
 						}
 						else
 						{
-							log_error("reverse REPLACE can't find previous replace or add tag(%d, %d)\n",
-								frame, m_depth);
-
+							log_error("reverse REPLACE can't find previous replace or add tag(%d, %d)\n", frame, m_depth);
 						}
 						break;
 					}
@@ -1674,10 +1606,10 @@ namespace gameswf
 		m->add_execute_tag(ch);
 	}
 
+	// Create a (mutable) instance of our definition.  The
+	// instance is created to live (temporarily) on some level on
+	// the parent movie's display list.
 	character*	sprite_definition::create_character_instance(character* parent, int id)
-		// Create a (mutable) instance of our definition.  The
-		// instance is created to live (temporarily) on some level on
-		// the parent movie's display list.
 	{
 		sprite_instance*	si = new sprite_instance(get_player(), this, parent->get_root(), parent, id);
 		return si;
@@ -1696,7 +1628,6 @@ namespace gameswf
 
 	root*	movie_def_impl::create_root()
 	{
-
 		// Is the movie instance already in the library?
 		if (s_use_cached_movie_instance)
 		{
@@ -1726,8 +1657,8 @@ namespace gameswf
 	}
 
 
-	void	sprite_loader(stream* in, int tag_type, movie_definition_sub* m)
 	// Create and initialize a sprite, and add it to the movie.
+	void	sprite_loader(stream* in, int tag_type, movie_definition_sub* m)
 	{
 		assert(tag_type == 39);
 
@@ -1765,7 +1696,7 @@ namespace gameswf
 
 		remove_object_2() : m_depth(-1), m_id(-1) {}
 
-		void	read(stream* in, int tag_type)
+		void read(stream* in, int tag_type)
 		{
 			assert(tag_type == 5 || tag_type == 28);
 
@@ -1779,33 +1710,31 @@ namespace gameswf
 			m_depth = in->read_u16();
 		}
 
-		virtual void	execute(character* m)
+		virtual void execute(character* m)
 		{
 			m->remove_display_object(m_depth, m_id);
 		}
 
-		virtual void	execute_state(character* m)
+		virtual void execute_state(character* m)
 		{
 			execute(m);
 		}
 
-		virtual void	execute_state_reverse(character* m, int frame)
+		virtual void execute_state_reverse(character* m, int frame)
 		{
 			// reverse of remove is to re-add the previous object.
-			execute_tag*	last_add = m->find_previous_replace_or_add_tag(frame, m_depth, m_id);
+			execute_tag* last_add = m->find_previous_replace_or_add_tag(frame, m_depth, m_id);
 			if (last_add)
 			{
 				last_add->execute_state(m);
 			}
 			else
 			{
-				log_error("reverse REMOVE can't find previous replace or add tag(%d, %d)\n",
-					frame, m_depth);
-
+				log_error("reverse REMOVE can't find previous replace or add tag(%d, %d)\n", frame, m_depth);
 			}
 		}
 
-		virtual bool	is_remove_tag() const { return true; }
+		virtual bool is_remove_tag() const { return true; }
 	};
 
 
@@ -1854,8 +1783,7 @@ namespace gameswf
 	//
 
 
-	void	export_loader(stream* in, int tag_type, movie_definition_sub* m)
-		// Load an export tag (for exposing internal resources of m)
+	void	export_loader(stream* in, int tag_type, movie_definition_sub* m) // Load an export tag (for exposing internal resources of m)
 	{
 		assert(tag_type == 56);
 
@@ -1898,8 +1826,7 @@ namespace gameswf
 	//
 
 
-	void	import_loader(stream* in, int tag_type, movie_definition_sub* m)
-		// Load an import tag (for pulling in external resources)
+	void	import_loader(stream* in, int tag_type, movie_definition_sub* m) // Load an import tag (for pulling in external resources)
 	{
 		assert(tag_type == 57);
 
@@ -1907,8 +1834,7 @@ namespace gameswf
 		in->read_string(&source_url);
 		int	count = in->read_u16();
 
-		IF_VERBOSE_PARSE(log_msg("  import: source_url = %s, count = %d\n", 
-			source_url.c_str(), count));
+		IF_VERBOSE_PARSE(log_msg("  import: source_url = %s, count = %d\n", source_url.c_str(), count));
 
 		// Try to load the source movie into the movie library.
 		movie_definition*	source_movie = NULL;
@@ -1955,12 +1881,10 @@ namespace gameswf
 				// create_movie_sub().
 
 				assert(cast_to<movie_def_impl>(source_movie));
-				character_def* res =
-					cast_to<movie_def_impl>(source_movie)->get_exported_resource(symbol_name);
+				character_def* res = cast_to<movie_def_impl>(source_movie)->get_exported_resource(symbol_name);
 				if (res == NULL)
 				{
-					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n",
-						symbol_name.c_str(), source_url.c_str()));
+					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported from movie '%s'\n", symbol_name.c_str(), source_url.c_str()));
 				}
 				else if (font* f = cast_to<font>(res))
 				{
@@ -1974,8 +1898,7 @@ namespace gameswf
 				}
 				else
 				{
-					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' from movie '%s' has unknown type\n",
-						symbol_name.c_str(), source_url.c_str()));
+					IF_VERBOSE_ACTION(log_msg("import error: resource '%s' from movie '%s' has unknown type\n", symbol_name.c_str(), source_url.c_str()));
 				}
 			}
 		}
@@ -2021,21 +1944,14 @@ namespace gameswf
 			latency_seek = in->read_s16();
 		}
 
-		IF_VERBOSE_PARSE(log_msg("define stream sound: format=%d, rate=%d, 16=%d, stereo=%d, ct=%d\n",
-			 int(format), sample_rate, int(sample_16bit), int(stereo), sample_count));
+		IF_VERBOSE_PARSE(log_msg("define stream sound: format=%d, rate=%d, 16=%d, stereo=%d, ct=%d\n", int(format), sample_rate, int(sample_16bit), int(stereo), sample_count));
 
 
 		sound_handler* sound = get_sound_handler();
 //	where will be deleted sound ?
 		if (sound)
 		{
-			int	handler_id = sound->create_sound(
-				NULL, //	data
-				0, //	size
-				sample_count,
-				format,
-				get_sample_rate(sample_rate),
-				stereo);
+			int	handler_id = sound->create_sound(NULL, 0, sample_count, format, get_sample_rate(sample_rate), stereo);
 
 			m->m_ss_id = handler_id;
 			m->m_ss_format = format;

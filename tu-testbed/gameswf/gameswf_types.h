@@ -62,9 +62,9 @@ namespace gameswf
 		void	set(double color)
 		{
 			int rgb = int(color);
-			m_r = (rgb >> 16) & 0xFF;
-			m_g = (rgb >> 8) & 0xFF;
-			m_b = rgb & 0xFF;
+			m_r = (Uint8)(rgb >> 16) & 0xFF;
+			m_g = (Uint8)(rgb >> 8) & 0xFF;
+			m_b = (Uint8)rgb & 0xFF;
 			m_a = 255;
 		}
 

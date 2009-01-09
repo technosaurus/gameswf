@@ -70,6 +70,7 @@ namespace gameswf
 		character::drag_state	m_drag_state;	// @@ fold this into m_mouse_button_state?
 		mouse_button_state m_mouse_button_state;
 		bool		m_on_event_load_called;
+		bool        m_shift_key_state;
 
 		gc_ptr<character> m_current_active_entity;
 		float	m_time_remainder;
@@ -93,7 +94,8 @@ namespace gameswf
 		virtual void	get_mouse_state(int* x, int* y, int* buttons);
 		exported_module character*	get_root_movie() const;
 
-		void	start_drag(character* ch);
+		void	do_mouse_drag();
+		void	set_drag_state(character::drag_state& ds);
 		void	stop_drag();
 		movie_definition*	get_movie_definition();
 

@@ -429,16 +429,16 @@ namespace gameswf
 	}
 
 
-	void	mesh::display(const base_fill_style& style, float ratio) const
+	void	mesh::display(const base_fill_style& style, float ratio, render_handler::bitmap_blend_mode bm) const
 	{
 		// pass mesh to renderer.
 		if (m_triangle_strip.size() > 0)
 		{
-			style.apply(0, ratio);
+			style.apply(0, ratio, bm);
 			render::draw_mesh_strip(&m_triangle_strip[0], m_triangle_strip.size() >> 1);
 		}
 		if (m_triangle_list.size() > 0) {
-			style.apply(0, ratio);
+			style.apply(0, ratio, bm);
 			render::draw_triangle_list(&m_triangle_list[0], m_triangle_list.size() >> 1);
 		}
 	}
@@ -848,7 +848,7 @@ namespace gameswf
 		const matrix& mat,
 		const cxform& cx,
 		const array<fill_style>& fills,
-		const array<line_style>& line_styles) const
+		const array<line_style>& line_styles, render_handler::bitmap_blend_mode bm) const
 	// Throw our meshes at the renderer.
 	{
 		assert(m_error_tolerance > 0);
@@ -864,7 +864,7 @@ namespace gameswf
 			// Dump meshes into renderer, one mesh per style.
 			for (int i = 0; i < l.m_meshes.size(); i++) {
 				if (l.m_meshes[i]) {
-					l.m_meshes[i]->display(fills[i], 1.0f);
+					l.m_meshes[i]->display(fills[i], 1.0f, bm);
 				}
 			}
 
@@ -877,39 +877,6 @@ namespace gameswf
 		}
 	}
 
-	void	mesh_set::display(
-		const matrix& mat,
-		const cxform& cx,
-		const array<morph_fill_style>& fills,
-		const array<morph_line_style>& line_styles,
-		float ratio) const
-	// Throw our meshes at the renderer.
-	{
-		assert(m_error_tolerance > 0);
-
-		// Setup transforms.
-		render::set_matrix(mat);
-		render::set_cxform(cx);
-
-		// Dump layers into renderer.
-		for (int j = 0; j < m_layers.size(); j++) {
-			const layer& l = m_layers[j];
-			
-			// Dump meshes into renderer, one mesh per style.
-			for (int i = 0; i < l.m_meshes.size(); i++) {
-				if (l.m_meshes[i]) {
-					l.m_meshes[i]->display(fills[i], ratio);
-				}
-			}
-
-			// Dump line-strips into renderer.
-			{for (int i = 0; i < l.m_line_strips.size(); i++)
-			{
-				int	style = l.m_line_strips[i]->get_style();
-				l.m_line_strips[i]->display(line_styles[style], ratio);
-			}}
-		}
-	}
 
 	void mesh_set::expand_styles_to_include(int style)
 	// 
@@ -1346,7 +1313,56 @@ namespace gameswf
 		cxform	cx = inst->get_world_cxform();
 
 		float	pixel_scale = inst->get_parent()->get_pixel_scale();
-		display(mat, cx, pixel_scale, m_fill_styles, m_line_styles);
+
+		switch(inst->get_blend_mode())
+		{
+		case 0:
+		case 1:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_NORMAL);
+			break;
+		case 2:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_LAYER);
+			break;
+		case 3:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_MULTIPLY);
+			break;
+		case 4:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_SCREEN);
+			break;
+		case 5:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_LIGHTEN);
+			break;
+		case 6:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_DARKEN);
+			break;
+		case 7:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_DIFFERENCE);
+			break;
+		case 8:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_ADD);
+			break;
+		case 9:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_SUBTRACT);
+			break;
+		case 10:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_INVERT);
+			break;
+		case 11:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_ALPHA);
+			break;
+		case 12:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_ERASE);
+			break;
+		case 13:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_OVERLAY);
+			break;
+		case 14:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_HARDLIGHT);
+			break;
+		default:
+			display(mat, cx, pixel_scale, m_fill_styles, m_line_styles, render_handler::BLEND_NORMAL);
+			break;
+		}
 	}
 
 
@@ -1518,12 +1534,7 @@ namespace gameswf
 #endif // DEBUG_DISPLAY_SHAPE_PATHS
 
 
-	void	shape_character_def::display(
-		const matrix& mat,
-		const cxform& cx,
-		float pixel_scale,
-		const array<fill_style>& fill_styles,
-		const array<line_style>& line_styles) const
+	void	shape_character_def::display( const matrix& mat, const cxform& cx, float pixel_scale, const array<fill_style>& fill_styles, const array<line_style>& line_styles, render_handler::bitmap_blend_mode bm) const
 	// Display our shape.  Use the fill_styles arg to
 	// override our default set of fill styles (e.g. when
 	// rendering text).
@@ -1577,7 +1588,7 @@ namespace gameswf
 			if (object_space_max_error > candidate->get_error_tolerance())
 			{
 				// Do it.
-				candidate->display(mat, cx, fill_styles, line_styles);
+				candidate->display(mat, cx, fill_styles, line_styles, bm);
 				return;
 			}
 		}
@@ -1585,7 +1596,7 @@ namespace gameswf
 		// Construct a new mesh to handle this error tolerance.
 		mesh_set*	m = new mesh_set(this, object_space_max_error * 0.75f);
 		m_cached_meshes.push_back(m);
-		m->display(mat, cx, fill_styles, line_styles);
+		m->display(mat, cx, fill_styles, line_styles, bm);
 		
 		sort_and_clean_meshes();
 	}

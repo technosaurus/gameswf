@@ -102,8 +102,7 @@ namespace gameswf
 
 		// 'm_unused' was added because of problem with hash<event_id, ...>
 		// the reason: sizeof(unsigned char+unsigned char+character*)  == 8 
-		// and
-		//						 sizeof(unsigned char+unsigned char+Uint16+character*)  == 8
+		// and sizeof(unsigned char+unsigned char+Uint16+character*)  == 8
 		// I think that compiler do aligment
 		unsigned char	m_id;
 		unsigned char	m_key_code;
@@ -261,6 +260,7 @@ namespace gameswf
 		M_LEVEL0,
 		M_GLOBAL,
 		M_ENABLED,
+		M_PASSWORD,
 
 		AS_STANDARD_MEMBER_COUNT
 	};

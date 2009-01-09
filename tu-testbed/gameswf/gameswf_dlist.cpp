@@ -197,14 +197,8 @@ namespace gameswf
 		m_display_object_array.remove(index);
 	}
 
-	void	display_list::add_display_object(
-		character* ch, 
-		int depth,
-		bool replace_if_depth_is_occupied,
-		const cxform& color_xform, 
-		const matrix& mat, 
-		float ratio,
-		Uint16 clip_depth)
+	void	display_list::add_display_object( character* ch,  int depth, bool replace_if_depth_is_occupied,
+			 const cxform& color_xform,  const matrix& mat,  float ratio, Uint16 clip_depth, Uint8 blend_mode)
 	{
 //		IF_VERBOSE_DEBUG(log_msg("dl::add(%d, '%s')\n", depth, ch->get_name()));//xxxxx
 
@@ -247,6 +241,7 @@ namespace gameswf
 		di.m_character->set_matrix(mat);
 		di.m_character->set_ratio(ratio);
 		di.m_character->set_clip_depth(clip_depth);
+		di.m_character->set_blend_mode(blend_mode);
 
 		// Insert into the display list...
 		assert(index == find_display_index(depth));
@@ -257,14 +252,8 @@ namespace gameswf
 		add_keypress_listener(ch);
 	}
 	
-	void	display_list::move_display_object(
-		int depth,
-		bool use_cxform,
-		const cxform& color_xform,
-		bool use_matrix,
-		const matrix& mat,
-		float ratio,
-		Uint16 clip_depth)
+	void	display_list::move_display_object( int depth, bool use_cxform, const cxform& color_xform,
+					 bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 	// Updates the transform properties of the object at
 	// the specified depth.
 	{
@@ -315,18 +304,12 @@ namespace gameswf
 		ch->set_ratio(ratio);
 		// move_display_object apparently does not change clip depth!  Thanks to Alexeev Vitaly.
 		// ch->set_clip_depth(clip_depth);
+		ch->set_blend_mode(blend_mode);
 	}
 	
 	
-	void	display_list::replace_display_object(
-		character* ch,
-		int depth,
-		bool use_cxform,
-		const cxform& color_xform,
-		bool use_matrix,
-		const matrix& mat,
-		float ratio,
-		Uint16 clip_depth)
+	void	display_list::replace_display_object( character* ch, int depth, bool use_cxform, const cxform& color_xform,
+			 bool use_matrix, const matrix& mat, float ratio, Uint16 clip_depth, Uint8 blend_mode)
 	// Puts a new character at the specified depth, replacing any
 	// existing character.  If use_cxform or use_matrix are false,
 	// then keep those respective properties from the existing
@@ -338,7 +321,7 @@ namespace gameswf
 		int	index = find_display_index(depth);
 		if (index < 0 || index >= size)
 		{
-			add_display_object(ch, depth, true, color_xform, mat, ratio, clip_depth);
+			add_display_object(ch, depth, true, color_xform, mat, ratio, clip_depth, blend_mode);
 			return;
 		}
 		
@@ -365,7 +348,7 @@ namespace gameswf
 			m = old_ch->get_matrix();
 		}
 
-		add_display_object(ch, depth, true, cx, m, ratio, clip_depth);
+		add_display_object(ch, depth, true, cx, m, ratio, clip_depth, blend_mode);
 	}
 	
 

@@ -116,7 +116,7 @@ namespace gameswf
 
 			if (retCode == ERROR_SUCCESS) 
 			{ 
-				if (fontname == (char*) achValue)
+				if ((fontname == (char*) achValue) || ((strstr(achValue, font_name) != NULL) && !is_italic && !is_bold))
 				{
 					file_name = windir + tu_string("\\Fonts\\") + (char*) szValueData;
 					RegCloseKey(hKey);
@@ -127,27 +127,6 @@ namespace gameswf
 
 		RegCloseKey(hKey);
 		return false;
- 
-		// font file is not found, take default value - 'Times New Roman'
-/*		file_name = windir + tu_string("\\Fonts\\Times");
-		if (is_bold && is_italic)
-		{
-			file_name += "BI";
-		}
-		else
-		if (is_bold)
-		{
-			file_name +=  "B";
-		}
-		else
-		if (is_italic)
-		{
-			file_name +=  "I";
-		}
-		file_name += ".ttf";
-		log_error("can't find font file for '%s'\nit's used '%s' file\n", fontname.c_str(), file_name.c_str());
-
-		return true;*/
 
 #else
 
@@ -233,9 +212,8 @@ namespace gameswf
 	// Get image of character as bitmap
 	//
 
-	bitmap_info* glyph_provider::get_char_image(Uint16 code, 
-		const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
-		rect* bounds, float* advance)
+	bitmap_info* glyph_provider::get_char_image(Uint16 code, const tu_string& fontname, bool is_bold,
+			bool is_italic, int fontsize, rect* bounds, float* advance)
 	{
 		face_entity* fe = get_face_entity(fontname, is_bold, is_italic);
 		if (fe == NULL)
@@ -250,7 +228,7 @@ namespace gameswf
 		glyph_entity* ge = NULL;
 		if (fe->m_ge.get(key, &ge) == false)
 		{
-			FT_Set_Pixel_Sizes(fe->m_face, 0, fontsize);
+			FT_Set_Pixel_Sizes(fe->m_face, fontsize, fontsize);
 			if (FT_Load_Char(fe->m_face, code, FT_LOAD_RENDER))
 			{
 				return NULL;
@@ -260,16 +238,15 @@ namespace gameswf
 
 			image::alpha* im = draw_bitmap(fe->m_face->glyph->bitmap);
 			ge->m_bi = render::create_bitmap_info_alpha(im->m_width, im->m_height, im->m_data);
+
 			delete im;
 
-			ge->m_bounds.m_x_max = float(fe->m_face->glyph->bitmap.width) /
-				float(ge->m_bi->get_width());
-			ge->m_bounds.m_y_max = float(fe->m_face->glyph->bitmap.rows) /
-				float(ge->m_bi->get_height());
+			ge->m_bounds.m_x_max = float(fe->m_face->glyph->bitmap.width) /float(ge->m_bi->get_width());
+			ge->m_bounds.m_y_max = float(fe->m_face->glyph->bitmap.rows) / float(ge->m_bi->get_height());
 
 			ge->m_bounds.m_x_min = float(fe->m_face->glyph->metrics.horiBearingX) / float(fe->m_face->glyph->metrics.width);
 			ge->m_bounds.m_y_min = float(fe->m_face->glyph->metrics.horiBearingY) / float(fe->m_face->glyph->metrics.height);
-			ge->m_bounds.m_x_min *= - ge->m_bounds.m_x_max;
+			ge->m_bounds.m_x_min *= -ge->m_bounds.m_x_max;
 			ge->m_bounds.m_y_min *= ge->m_bounds.m_y_max;
 
 			float scale = 16.0f / fontsize;	// hack
@@ -281,13 +258,12 @@ namespace gameswf
 
 		*bounds = ge->m_bounds;
 		*advance = ge->m_advance;
+
 		return ge->m_bi.get_ptr();
 	}
 
-	face_entity* glyph_provider::get_face_entity(const tu_string& fontname, 
-		bool is_bold, bool is_italic)
+	face_entity* glyph_provider::get_face_entity(const tu_string& fontname, bool is_bold, bool is_italic)
 	{
-
 		// form hash key
 		tu_string key = fontname;
 		if (is_bold)
@@ -318,6 +294,11 @@ namespace gameswf
 		FT_New_Face(m_lib, font_filename.c_str(), 0, &face);
 		if (face)
 		{
+			if (is_bold)
+				face->style_flags |= FT_STYLE_FLAG_BOLD;
+			if (is_italic)
+				face->style_flags |= FT_STYLE_FLAG_ITALIC;
+
 			fe = new face_entity(face);
 			m_face_entity.add(key, fe);
 		}
@@ -331,21 +312,18 @@ namespace gameswf
 	image::alpha* glyph_provider::draw_bitmap(const FT_Bitmap& bitmap)
 	{
 		// You must use power-of-two dimensions!!
-		int	w = 1; while (w < bitmap.pitch) { w <<= 1; }
-		int	h = 1; while (h < bitmap.rows) { h <<= 1; }
+		int	w = 1; while (w <= bitmap.width) { w <<= 1; }
+		int	h = 1; while (h <= bitmap.rows)  { h <<= 1; }
 
 		image::alpha* alpha = image::create_alpha(w, h);
-		memset(alpha->m_data, 0, alpha->m_width * alpha->m_height);
+		memset(alpha->m_data, 0,  w * h);
 
-		// copy image to alpha
-		for (int i = 0; i < bitmap.rows; i++)
+		for (int j = 0; j < h; ++j)
 		{
-			uint8*	src = bitmap.buffer + bitmap.pitch * i;
-			uint8*	dst = alpha->m_data + alpha->m_pitch * i;
-			int	x = bitmap.width;
-			while (x-- > 0)
+			for (int i = 0; i < w; ++i)
 			{
-				*dst++ = *src++;
+				//since w and h have a good chance of getting larger than the bitmaps height and/or width
+				alpha->m_data[(i +j*w)] = (i >= bitmap.width || j >= bitmap.rows) ? 0 : bitmap.buffer[i + bitmap.width * j];
 			}
 		}
 
