@@ -248,8 +248,10 @@ namespace gameswf
 
 	struct registered_type_node
 	{
-		registered_type_node( const tu_string& classname, gameswf_module_init type_init_func)
-			: m_next(NULL), m_classname(classname), m_type_init(type_init_func)
+		registered_type_node(const tu_string& classname, gameswf_module_init type_init_func) :
+			m_next(NULL),
+			m_classname(classname),
+			m_type_init(type_init_func)
 		{
 		}
 
@@ -257,20 +259,24 @@ namespace gameswf
 		tu_string             m_classname;
 		gameswf_module_init   m_type_init;
 	};
+
 	static registered_type_node* s_registered_types = NULL;
-	
-	void register_type_handler( const tu_string& type_name, gameswf_module_init type_init_func )
+
+	void register_type_handler(const tu_string& type_name, gameswf_module_init type_init_func )
 	{
 		registered_type_node** node = &s_registered_types;
-		while( *node ) node = &((*node)->m_next);
-		*node = new registered_type_node( type_name, type_init_func );
+		while(*node)
+		{
+			node = &((*node)->m_next);
+		}
+		*node = new registered_type_node(type_name, type_init_func);
 	}
 
 	void clear_registered_type_handlers()
 	{
 		registered_type_node *curr = s_registered_types;
 		s_registered_types = NULL;
-		while( curr )
+		while(curr)
 		{
 			registered_type_node *next = curr->m_next;
 			delete curr;
@@ -278,13 +284,15 @@ namespace gameswf
 		}
 	}
 
-	gameswf_module_init find_type_handler( const tu_string& type_name )
+	gameswf_module_init find_type_handler(const tu_string& type_name)
 	{
 		registered_type_node *node = s_registered_types;
-		while( node )
+		while(node)
 		{
-			if( node->m_classname == type_name )
+			if (node->m_classname == type_name)
+			{
 				return node->m_type_init;
+			}
 			node = node->m_next;
 		}
 		return NULL;

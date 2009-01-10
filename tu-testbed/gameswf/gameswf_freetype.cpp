@@ -295,9 +295,14 @@ namespace gameswf
 		if (face)
 		{
 			if (is_bold)
+			{
 				face->style_flags |= FT_STYLE_FLAG_BOLD;
+			}
+
 			if (is_italic)
+			{
 				face->style_flags |= FT_STYLE_FLAG_ITALIC;
+			}
 
 			fe = new face_entity(face);
 			m_face_entity.add(key, fe);
@@ -318,12 +323,14 @@ namespace gameswf
 		image::alpha* alpha = image::create_alpha(w, h);
 		memset(alpha->m_data, 0,  w * h);
 
-		for (int j = 0; j < h; ++j)
+		for (int j = 0; j < bitmap.rows; ++j)
 		{
-			for (int i = 0; i < w; ++i)
+			Uint8* dst = alpha->m_data + j * w;
+			const Uint8* src = bitmap.buffer + j * bitmap.width;
+			for (int i = 0; i < bitmap.width; ++i)
 			{
 				//since w and h have a good chance of getting larger than the bitmaps height and/or width
-				alpha->m_data[(i +j*w)] = (i >= bitmap.width || j >= bitmap.rows) ? 0 : bitmap.buffer[i + bitmap.width * j];
+				*dst++ = *src++;
 			}
 		}
 
