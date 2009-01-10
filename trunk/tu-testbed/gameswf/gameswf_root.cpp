@@ -16,6 +16,12 @@
 #include "gameswf/gameswf_sprite.h"
 #include "base/tu_random.h"
 
+#ifdef _WIN32
+#	define stricmp _stricmp
+#else
+#	define stricmp strcasecmp
+#endif                                  
+
 namespace gameswf
 {
 
@@ -218,10 +224,12 @@ namespace gameswf
 	{
 		return (int) m_def->get_width_pixels();
 	}
+
 	int	root::get_movie_height()
 	{
 		return (int) m_def->get_height_pixels();
 	}
+
 	float	root::get_movie_fps()
 	{
 		return m_def->get_frame_rate();
@@ -239,11 +247,15 @@ namespace gameswf
 		int i = 0;
 		for (i = 0; movie->get_character(i) != NULL; ++i)
 		{
-			if (!movie->get_character(i)->is(AS_EDIT_TEXT))
+			if (movie->get_character(i)->is(AS_EDIT_TEXT) == false)
+			{
 				continue;
+			}
 
-			if (!movie->get_character(i)->can_handle_mouse_event())
+			if (movie->get_character(i)->can_handle_mouse_event() == false)
+			{
 				continue;
+			}
 
 			if (movie->get_character(i) == active_entity)
 			{
@@ -252,6 +264,7 @@ namespace gameswf
 					movie->get_character(i)->on_event(event_id::KILLFOCUS);
 					movie->get_character(lastvalid)->on_event(event_id::SETFOCUS);
 				}
+
 				//now kill focus on current active event
 				tab = i;
 
@@ -274,8 +287,10 @@ namespace gameswf
 		{
 			for (i = 0; movie->get_character(i) != NULL; ++i)
 			{
-				if (_stricmp(movie->get_character(i)->type_of(), "movieclip") != 0)
+				if (stricmp(movie->get_character(i)->type_of(), "movieclip") != 0)
+				{
 					continue;
+				}
 
 				change_focus_character(movie->get_character(i), active_entity, shift);
 			}
@@ -314,13 +329,18 @@ namespace gameswf
 			int i = 0;
 			for (i = 0; get_character(i) != NULL; ++i)
 			{
-				character *movie = get_character(i);
+				character* movie = get_character(i);
+				assert(movie);
 
-				if ( !movie->is(AS_EDIT_TEXT) )
+				if (movie->is(AS_EDIT_TEXT) == false)
+				{
 					continue;
+				}
 
-				if ( !movie->can_handle_mouse_event() )
+				if (movie->can_handle_mouse_event() == false)
+				{
 					continue;
+				}
 
 				if (movie == m_current_active_entity.get_ptr())
 				{
@@ -353,8 +373,10 @@ namespace gameswf
 			{
 				for (int i = 0; get_character(i) != NULL; ++i)
 				{
-					if (_stricmp(get_character(i)->type_of(), "movieclip") != 0)
+					if (stricmp(get_character(i)->type_of(), "movieclip") != 0)
+					{
 						continue;
+					}
 
 					change_focus_character(get_character(i), m_current_active_entity.get_ptr(), m_shift_key_state);
 				}
