@@ -397,11 +397,10 @@ namespace gameswf
 				{
 					break;
 				}
-				if (index + 1 >= size
-				    || get_character(index + 1)->get_depth() != depth)
+				if (index + 1 >= size || get_character(index + 1)->get_depth() != depth)
 				{
 					// Didn't find a match!
-					log_error("remove_display_object: no character at depth %d with id %d\n", depth, id);
+//					log_error("remove_display_object: no character at depth %d with id %d\n", depth, id);
 					return;
 				}
 				index++;

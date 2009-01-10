@@ -427,14 +427,15 @@ namespace gameswf
 
 		// Get current mouse coordinates
 		int x, y, buttons;
-		get_mouse_state( &x, &y, &buttons );
+		get_mouse_state(&x, &y, &buttons);
+
 		// ... in 'world' space (i.e. twips)
-		point worldMouse( PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y) );
+		point worldMouse(PIXELS_TO_TWIPS(x), PIXELS_TO_TWIPS(y));
 
 		// we need the offset from the origin of the character
-		float xOffset = int( worldMouse.m_x - worldOrigin.m_x );
-		float yOffset = int( worldMouse.m_y - worldOrigin.m_y );
-		m_drag_state.SetOffset( xOffset, yOffset );
+		float xOffset = worldMouse.m_x - worldOrigin.m_x;
+		float yOffset = worldMouse.m_y - worldOrigin.m_y;
+		m_drag_state.SetOffset(xOffset, yOffset);
 	}
 
 	void	root::stop_drag()
