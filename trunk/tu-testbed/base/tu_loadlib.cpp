@@ -49,12 +49,16 @@ tu_loadlib::tu_loadlib(const char* library_name) :
 {
 	tu_string path = "lib";
 	path += library_name;
-	path += ".so";
-
 	m_hlib = dlopen(path.c_str(), RTLD_LAZY);
 	if (m_hlib == NULL)
 	{
-		printf("can't load shared library '%s'\n", path.c_str());
+		// try .so
+		path += ".so";
+		m_hlib = dlopen(path.c_str(), RTLD_LAZY);
+		if (m_hlib == NULL)
+		{
+			printf("can't load shared library '%s'\n", library_name);
+		}
 	}
 }
 
