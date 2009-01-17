@@ -56,32 +56,45 @@ Res ExeTarget::Process(const Context* context) {
     return res;
   }
 
-  const Config* config = context->GetConfig();
-
-  // Compile.
+  bool do_link = false;
   CompileInfo ci;
-  res = PrepareCompileVars(this, config, &ci);
-  if (!res.Ok()) {
-    return res;
-  }
-  res = DoCompile(this, config, ci);
-  if (!res.Ok()) {
-    return res;
+  res = PrepareCompileVars(this, context, &ci);
+  if (res.value() == ERR_DONT_REBUILD) {
+    context->LogVerbose(name_ + " -- skipping compile and link\n");
+  } else if (res.value() == ERR_LINK_ONLY) {
+    context->LogVerbose(name_ + " -- skipping compile but doing link\n");
+    do_link = true;
+  } else {
+    if (!res.Ok()) {
+      return res;
+    }
+
+    do_link = true;
+    res = DoCompile(this, context, ci);
+    if (!res.Ok()) {
+      return res;
+    }
   }
 
   // Link.
-  context->Log(StringPrintf("Linking %s\n", name_.c_str()));
-  std::string cmd;
-  res = FillTemplate(config->link_template(), ci.vars_, &cmd);
-  if (!res.Ok()) {
-    res.AppendDetail("\nwhile preparing linker command line for " + name_);
-    return res;
-  }
-  res = RunCommand(absolute_out_dir(), cmd, config->compile_environment());
-  if (!res.Ok()) {
-    res.AppendDetail("\nwhile linking " + name_);
-    res.AppendDetail("\nin directory " + absolute_out_dir());
-    return res;
+  const Config* config = context->GetConfig();
+  if (do_link) {
+    context->Log(StringPrintf("Linking %s\n", name_.c_str()));
+    std::string cmd;
+    res = FillTemplate(config->link_template(), ci.vars_, &cmd);
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile preparing linker command line for " + name_);
+      return res;
+    }
+    res = RunCommand(absolute_out_dir(), cmd, config->compile_environment());
+    if (!res.Ok()) {
+      res.AppendDetail("\nwhile linking " + name_);
+      res.AppendDetail("\nin directory " + absolute_out_dir());
+      return res;
+    }
+
+    // TODO: write a hash for the link product(s) so we know we linked
+    // successfully.
   }
 
   processed_ = true;

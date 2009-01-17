@@ -1,17 +1,22 @@
+@echo off
 rem Simple Windows batch file to bootstrap a build of dmb.exe
 
 rem It assumes you have MSVC set up in your path (i.e. with PATH, LIB
 rem and INCLUDE set appropriately).
+rem TODO: add some heuristics for finding the compiler automatically.
 
-mkdir dmb_out
-mkdir dmb_out\bootstrap
-cd dmb_out/bootstrap
+set origdir=%CD%
+cd %~dp0
+
+mkdir dmb-out
+mkdir dmb-out\bootstrap
+cd dmb-out/bootstrap
 
 rem Make lib_json.lib
-cl -c -GX ../../jsoncpp/src/lib_json/*.cpp -I../../jsoncpp/include
+cl -nologo -c -GX ../../jsoncpp/src/lib_json/*.cpp -I../../jsoncpp/include
 lib /OUT:lib_json.lib json_reader.obj json_value.obj json_writer.obj
 
 rem Make dmb.exe
-cl -Fedmb.exe ../../compile_util.cpp ../../config.cpp ../../content_hash.cpp ../../context.cpp ../../dumbuild.cpp ../../exe_target.cpp ../../hash_util.cpp ../../lib_target.cpp ../../object.cpp ../../os.cpp ../../res.cpp ../../sha1.cpp ../../target.cpp ../../util.cpp -Zi -GX -I../../jsoncpp/include -link lib_json.lib -subsystem:console
+cl -nologo -Fedmb.exe ../../compile_util.cpp ../../config.cpp ../../content_hash.cpp ../../context.cpp ../../dumbuild.cpp ../../exe_target.cpp ../../file_deps.cpp ../../hash_util.cpp ../../lib_target.cpp ../../object.cpp ../../object_store.cpp ../../os.cpp ../../res.cpp ../../sha1.cpp ../../target.cpp ../../util.cpp -Zi -GX -I../../jsoncpp/include -link lib_json.lib -subsystem:console
 
-cd ../..
+cd %origdir%

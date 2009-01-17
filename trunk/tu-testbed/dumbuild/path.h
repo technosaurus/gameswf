@@ -32,7 +32,7 @@ inline std::string GetPath(const std::string& filename) {
 }
 
 inline std::string PathJoin(const std::string& a, const std::string& b) {
-  // TODO deal with cwd and "/" and ".." and so on
+  // TODO deal with cwd and "/" and ".." and so on; i.e. normalize the path.
   if (a.length() == 0 || a[a.length() - 1] == '/') {
     return a + b;
   } else {

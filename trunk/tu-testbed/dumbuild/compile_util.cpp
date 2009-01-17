@@ -3,41 +3,39 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+// Dependency checking and code to launch the compiler are in here.
+
 #include "compile_util.h"
 #include "config.h"
+#include "file_deps.h"
 #include "hash_util.h"
+#include "object_store.h"
 #include "os.h"
 #include "target.h"
 #include "util.h"
 
-// build all, if any of these changed since last successful compile:
-// * header files in header_dirs (including local dir)
-// * compile template
-// * compile environment
-// * inc_dirs
-//
-// Compile a source file if:
-// * build_all is true
-// * source changed since last successfully compiled
-//
-// Re-link/re-archive if any of these changed since last link/archive:
-// * any source file compiled
-// * any deps compiled
-
-Res PrepareCompileVars(const Target* t, const Config* config,
+Res PrepareCompileVars(const Target* t, const Context* context,
                        CompileInfo* ci) {
-  bool build_all = false;  // TODO CompileTemplateChanged(t, config);
+  const Config* config = context->GetConfig();
+
+  bool build_all = context->rebuild_all();
+  // TODO build_all = build_all || CompileTemplateChanged(t, config);
 
   std::string inc_dirs_str;
   for (size_t i = 0; i < t->inc_dirs().size(); i++) {
     inc_dirs_str += " -I";
-    inc_dirs_str += PathJoin(t->relative_path_to_tree_root(), t->inc_dirs()[i]);
+    // TODO: handle absolute inc_dirs
+    std::string inc_dir = PathJoin(t->relative_path_to_tree_root(),
+				   t->inc_dirs()[i]);
+    inc_dirs_str += inc_dir;
   }
 
   // TODO: more checks for build_all
   // build_all = build_all || IncludeDirsStringChanged(t, inc_dirs_str());
   // build_all = build_all || HeaderFilesChanged(t, header_dirs());
 
+  Res res;
+  
   std::string src_list;
   std::string obj_list;
   std::string lib_list;
@@ -50,19 +48,33 @@ Res PrepareCompileVars(const Target* t, const Config* config,
     bool do_compile = true;
     if (!build_all) {
       ContentHash previous_hash;
-      ReadFileHash(t->absolute_out_dir(), src_path, &previous_hash);
-      if (!previous_hash.IsZero()) {
-        ComputeFileHash(t->absolute_out_dir(), src_path, &src_hash);
-        if (previous_hash == src_hash) {
-          // Skip this one.
-          do_compile = false;
+      res = ReadFileHash(t->absolute_out_dir(), src_path, &previous_hash);
+      if (res.Ok()) {
+        res = context->ComputeOrGetFileContentHash(
+            PathJoin(t->absolute_out_dir(), src_path), &src_hash);
+        if (!res.Ok()) {
+          return res;
         }
-        // else this file has changed
+        //ComputeFileHash(t->absolute_out_dir(), src_path, &src_hash);
+        if (previous_hash == src_hash) {
+          // File has not changed.
+          //
+          // What about dependencies?
+          if (AnyIncludesChanged(t, context, inc_dirs_str, src_path,
+                                 src_hash)) {
+            // Need to compile.
+          } else {
+            // Skip this one.
+            do_compile = false;
+          }
+        }
+        // else this file has changed, so we have to compile the file.
       }
+      // else no existing hash, so we have to compile the file.
     }
 
     if (do_compile) {
-      ci->src_list_.push_back(std::make_pair(src_path, src_hash));
+      ci->src_list_.push_back(src_path);
       src_list += " ";
       src_list += src_path;
     }
@@ -71,12 +83,14 @@ Res PrepareCompileVars(const Target* t, const Config* config,
     obj_list += StripExt(FilenameFilePart(t->src()[i])) +
                 config->obj_extension();
   }
+
+  // Check deps.
   bool deps_changed = false;
   for (size_t i = 0; i < t->dep().size(); i++) {
-    // TODO:
-    // deps_changed = deps_changed || this dep was recompiled;
-    deps_changed = true;
-    
+    Target* this_dep = context->GetTarget(t->dep()[i]);
+    assert(this_dep);
+    deps_changed = deps_changed || this_dep->did_rebuild();
+
     lib_list += " ";
     const std::string& dep = t->dep()[i];
     lib_list += PathJoin(PathJoin(t->absolute_out_dir(),
@@ -91,18 +105,24 @@ Res PrepareCompileVars(const Target* t, const Config* config,
   ci->vars_["basename"] = CanonicalFilePart(t->name());
   ci->vars_["inc_dirs"] = inc_dirs_str;
 
-  if (!build_all && src_list.size() == 0 && !deps_changed) {
-    return Res(ERR_DONT_REBUILD);
+  if (!build_all && src_list.size() == 0) {
+    if (!deps_changed) {
+      return Res(ERR_DONT_REBUILD);
+    } else {
+      return Res(ERR_LINK_ONLY);
+    }
   }
 
   return Res(OK);
 }
 
-Res DoCompile(const Target* t, const Config* config, const CompileInfo& ci) {
+Res DoCompile(const Target* t, const Context* context, const CompileInfo& ci) {
   if (ci.src_list_.size() == 0) {
     // Nothing to compile.
     return Res(OK);
   }
+
+  const Config* config = context->GetConfig();
 
   std::string cmd;
   Res res = FillTemplate(config->compile_template(), ci.vars_, &cmd);
@@ -119,16 +139,40 @@ Res DoCompile(const Target* t, const Config* config, const CompileInfo& ci) {
     return res;
   }
 
+  const std::string inc_dirs_str = ci.vars_.find("inc_dirs")->second;
+
   // Write hashes for the just-compiled sources.
+  ContentHash src_hash;
   for (int i = 0; i < ci.src_list_.size(); i++) {
-    ComputeIfNecessaryAndWriteFileHash(t->absolute_out_dir(),
-                                       ci.src_list_[i].first,
-                                       ci.src_list_[i].second);
+    const std::string& src_path = ci.src_list_[i];
+    Res res = context->ComputeOrGetFileContentHash(
+        PathJoin(t->absolute_out_dir(), src_path), &src_hash);
+    if (!res.Ok()) {
+      return res;
+    }
+    res = WriteFileHash(t->absolute_out_dir(), src_path, src_hash);
+    if (!res.Ok()) {
+      return res;
+    }
+
+    // TODO: Write deps files, recursively, for the just-compiled
+    // sources.
+    res = GenerateDepsFile(t, context, inc_dirs_str,
+                           PathJoin(t->absolute_out_dir(), src_path),
+                           src_hash);
+    if (!res.Ok()) {
+      return res;
+    }
   }
 
-  // TODO: write a hash for the inc_dirs?
-  // TODO: write a hash for the compile_template + compile_environment
-  // TODO: write hashes for the header_dirs
+  // TODO: write a hash for the inc_dirs?  I don't think it's
+  // necessary since it's mixed into the deps id for each source file.
+
+  // TODO: write a hash for the compile_template +
+  // compile_environment?  Should mix that stuff into deps id instead,
+  // right?  No, probably not, though it would do the job.
+
+  // TODO: write a hash for the link template and deps list?  Yes.
 
   return res;
 }

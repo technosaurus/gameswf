@@ -53,28 +53,34 @@ Res LibTarget::Process(const Context* context) {
     return res;
   }
 
-  const Config* config = context->GetConfig();
-
-  bool any_compile = false;
+  bool do_link = false;
+  //TODO
+  // do_link = do_link || LibTemplateChanged(this, config)
   CompileInfo ci;
-  res = PrepareCompileVars(this, config, &ci);
+  res = PrepareCompileVars(this, context, &ci);
   if (res.value() == ERR_DONT_REBUILD) {
     // We don't need to compile here.
     context->LogVerbose(StringPrintf("skipping compile %s\n", name_.c_str()));
+  } else if (res.value() == ERR_LINK_ONLY) {
+    // Some dependency changed, but none of our sources need to be
+    // recompiled.
+    do_link = true;
   } else {
     // Need to compile some stuff.
     if (!res.Ok()) {
       return res;
     }
 
-    any_compile = true;
-    res = DoCompile(this, config, ci);
+    do_link = true;
+    res = DoCompile(this, context, ci);
     if (!res.Ok()) {
       return res;
     }
   }
 
-  if (any_compile /* TODO || LibTemplateChanged(this, config) */) {
+  const Config* config = context->GetConfig();
+
+  if (do_link) {
     // Archive the objs to make the lib
     std::string cmd;
     res = FillTemplate(config->lib_template(), ci.vars_, &cmd);
@@ -89,6 +95,9 @@ Res LibTarget::Process(const Context* context) {
       return res;
     }
 
+    did_rebuild_ = true;
+    // TODO: write a hash for the lib product(s) so we know we lib'd
+    // successfully.
     // TODO: write hashes for the deps
     // TODO: write a hash for the lib_template
   }

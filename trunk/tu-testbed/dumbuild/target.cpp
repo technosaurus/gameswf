@@ -7,6 +7,12 @@
 #include "os.h"
 #include "util.h"
 
+Target::Target()
+    : resolved_(false), processed_(false), resolve_recursion_(0),
+      did_rebuild_(false) {
+}
+
+
 Res Target::Init(const Context* context,
                  const std::string& name,
                  const Json::Value& value) {

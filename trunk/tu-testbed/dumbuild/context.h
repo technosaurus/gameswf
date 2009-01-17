@@ -17,6 +17,9 @@
 #include "util.h"
 
 class Config;
+class ContentHash;
+class ContentHashCache;
+class ObjectStore;
 class Target;
 
 // Context is the whole set of targets and metadata that defines the
@@ -49,11 +52,29 @@ class Context {
     return targets_;
   }
 
+  bool rebuild_all() const {
+    return rebuild_all_;
+  }
+
+  void set_rebuild_all(bool ra) {
+    rebuild_all_ = ra;
+  }
+
   std::string AbsoluteFile(const std::string& canonical_path,
                            const std::string& filename);
   std::string AbsoluteFile(const char* canonical_path, const char* filename) {
     return AbsoluteFile(std::string(canonical_path), std::string(filename));
   }
+
+  // Parses build config from the specified file.
+  Res ReadObjects(const std::string& path, const std::string& filename);
+
+  // Call this when you're done reading configs and are ready to
+  // proceed with the build.
+  void DoneReading();
+
+  // Does the build.
+  Res ProcessTargets() const;
 
   // Takes ownership of c.
   void AddConfig(const std::string& name, Config* c) {
@@ -87,29 +108,44 @@ class Context {
     return NULL;
   }
 
+  // Returns the active config, if any.
   const Config* GetConfig() const {
-    std::map<std::string, Config*>::const_iterator it =
-      configs_.find(config_name_);
-    if (it == configs_.end()) {
-      return NULL;
-    }
-    return it->second;
+    assert(done_reading_);
+    return active_config_;
   }
 
-  void SetLogVerbose(bool verbose) {
+  Res ComputeOrGetFileContentHash(const std::string& filename,
+                                  ContentHash* out) const;
+
+  // Access to the persistent object store.
+  ObjectStore* GetObjectStore() const {
+    return object_store_;
+  }
+
+  void set_log_verbose(bool verbose) {
     log_verbose_ = verbose;
   }
 
+  // TODO: add printf-style formatting.
   void Log(const std::string& msg) const;
   void LogVerbose(const std::string& msg) const;
 
  private:
+  Res ParseValue(const std::string& path, const Json::Value& value);
+  Res ParseGroup(const std::string& path, const Json::Value& value);
+
   std::string tree_root_;
   std::string config_name_;
   std::string out_root_;
+  bool done_reading_;
+  bool rebuild_all_;
+  const Config* active_config_;
   std::map<std::string, Config*> configs_;
   std::map<std::string, Target*> targets_;
   bool log_verbose_;
+
+  ContentHashCache* content_hash_cache_;
+  ObjectStore* object_store_;
 };
 
 #endif  // CONTEXT_H_

@@ -17,6 +17,11 @@
 // absolute root.
 Res CreatePath(const std::string& root, const std::string& sub_path);
 
+// Try to erase the specified file.
+Res EraseFile(const std::string& path);
+
+bool FileExists(const std::string& path);
+
 // Execute a sub-process.  dir gives the current directory of the
 // subprocess; cmd_line gives the command line with arguments.
 //

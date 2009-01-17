@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "hash_util.h"
 #include "path.h"
+#include "util.h"
 
 // Given a file path, normalize it to a valid local filename that
 // represents the path.
@@ -17,45 +18,46 @@ static std::string LocalFileStemFromPath(const std::string& path) {
   return FilenameFilePart(path);
 }
 
-void ComputeIfNecessaryAndWriteFileHash(const std::string& out_dir,
-					const std::string& file_path,
-					const ContentHash& hash_in) {
-  ContentHash hash = hash_in;
-  if (hash.IsZero()) {
-    ComputeFileHash(out_dir, file_path, &hash);
-  }
-
+Res WriteFileHash(const std::string& out_dir,
+		   const std::string& file_path,
+		   const ContentHash& hash) {
   std::string hash_fname = PathJoin(out_dir, LocalFileStemFromPath(file_path));
   hash_fname += ".hash";
 
   FILE* f = fopen(hash_fname.c_str(), "w");
-  if (f) {
-    fwrite(hash.data(), hash.size(), 1, f);
-    fclose(f);
+  if (!f) {
+    return Res(ERR_FILE_ERROR, "WriteFileHash can't open file " + hash_fname);
+  } else {
+    size_t wrote = fwrite(hash.data(), hash.size(), 1, f);
+    if (wrote != 1) {
+      return Res(ERR_FILE_ERROR, "WriteFileHash couldn't write to file " +
+                 hash_fname);
+    }
+    int closed_code = fclose(f);
+    if (closed_code != 0) {
+      return Res(ERR_FILE_ERROR, "WriteFileHash couldn't close " + hash_fname);
+    }
   }
+
+  return Res(OK);
 }
 
-void ReadFileHash(const std::string& out_dir,
-		  const std::string& file_path,
-		  ContentHash* hash) {
+Res ReadFileHash(const std::string& out_dir,
+                 const std::string& file_path,
+                 ContentHash* hash) {
   std::string hash_fname = PathJoin(out_dir, LocalFileStemFromPath(file_path));
   hash_fname += ".hash";
 
   hash->Reset();
   FILE* f = fopen(hash_fname.c_str(), "r");
   if (f) {
-    if (fread(hash->data(), hash->size(), 1, f)) {
+    if (fread((void*) hash->data(), hash->size(), 1, f)) {
       // OK
     } else {
       hash->Reset();
+      return Res(ERR_FILE_ERROR, "ReadFileHash: " + hash_fname);
     }
     fclose(f);
   }
-}
-
-void ComputeFileHash(const std::string& out_dir,
-		     const std::string& file_path,
-		     ContentHash* hash) {
-  std::string full_path = PathJoin(out_dir, file_path);
-  hash->InitFromFile(full_path.c_str());
+  return Res(OK);
 }

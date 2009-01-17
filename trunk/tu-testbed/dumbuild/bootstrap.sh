@@ -8,18 +8,7 @@
 
 sysname=`uname`
 
-# cygwin with MSVC:
-if echo "$sysname" | grep -q 'CYGWIN' ; then
-  mkdir -p dmb_out/bootstrap
-  cd dmb_out/bootstrap
-
-  # Make lib_json.lib
-  cl -c -GX ../../jsoncpp/src/lib_json/*.cpp -I../../jsoncpp/include
-  lib /OUT:lib_json.lib json_reader.obj json_value.obj json_writer.obj
-
-  # Make dmb.exe
-  cl -Fedmb.exe \
-    ../../compile_util.cpp \
+sources=../../compile_util.cpp \
     ../../config.cpp \
     ../../content_hash.cpp \
     ../../context.cpp \
@@ -28,11 +17,25 @@ if echo "$sysname" | grep -q 'CYGWIN' ; then
     ../../hash_util.cpp \
     ../../lib_target.cpp \
     ../../object.cpp \
+    ../../object_store.cpp \
     ../../os.cpp \
     ../../res.cpp \
     ../../sha1.cpp \
     ../../target.cpp \
-    ../../util.cpp \
+    ../../util.cpp
+
+
+# cygwin with MSVC:
+if echo "$sysname" | grep -q 'CYGWIN' ; then
+  mkdir -p dmb-out/bootstrap
+  cd dmb-out/bootstrap
+
+  # Make lib_json.lib
+  cl -c -GX ../../jsoncpp/src/lib_json/*.cpp -I../../jsoncpp/include
+  lib /OUT:lib_json.lib json_reader.obj json_value.obj json_writer.obj
+
+  # Make dmb.exe
+  cl -Fedmb.exe ${sources} \
     -Zi -GX -I../../jsoncpp/include -link lib_json.lib -subsystem:console
 
   cd ../..
@@ -40,8 +43,8 @@ if echo "$sysname" | grep -q 'CYGWIN' ; then
 else
   # Non-windows.  Assume gcc is going to work.
 
-  mkdir -p dmb_out/bootstrap
-  cd dmb_out/bootstrap
+  mkdir -p dmb-out/bootstrap
+  cd dmb-out/bootstrap
 
   # Make lib_json.a
   echo Compiling lib_json...
@@ -51,21 +54,7 @@ else
 
   # Make dmb executable
   echo Compiling and linking...
-  gcc -o dmb \
-    ../../compile_util.cpp \
-    ../../config.cpp \
-    ../../content_hash.cpp \
-    ../../context.cpp \
-    ../../dumbuild.cpp \
-    ../../exe_target.cpp \
-    ../../hash_util.cpp \
-    ../../lib_target.cpp \
-    ../../object.cpp \
-    ../../os.cpp \
-    ../../res.cpp \
-    ../../sha1.cpp \
-    ../../target.cpp \
-    ../../util.cpp \
+  gcc -o dmb ${sources} \
     -g -Wall -I../../jsoncpp/include lib_json.a -lstdc++
 
 fi

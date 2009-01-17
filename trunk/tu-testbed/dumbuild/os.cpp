@@ -8,6 +8,8 @@
 
 #ifdef _WIN32
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <windows.h>
 #include <direct.h>
 
@@ -246,4 +248,20 @@ Res ChangeDir(const char* newdir) {
   }
 
   return Res(ERR, StringPrintf("chdir(\"%s\") failed", newdir));
+}
+
+bool FileExists(const std::string& path) {
+  struct stat stat_info;
+  int err = stat(path.c_str(), &stat_info);
+  if (err) {
+    return false;
+  }
+  return true;
+}
+
+Res EraseFile(const std::string& path) {
+  if (_unlink(path.c_str()) == 0) {
+    return Res(OK);
+  }
+  return Res(ERR_FILE_ERROR, "Can't unlink " + path);
 }

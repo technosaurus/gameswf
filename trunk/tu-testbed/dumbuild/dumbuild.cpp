@@ -93,113 +93,6 @@ void PrintUsage() {
 
 */
 
-Res ParseValue(const std::string& path, const Json::Value& value,
-	       Context* out) {
-  if (!value.isObject()) {
-    return Res(ERR_PARSE, "object is not a JSON object");
-  }
-
-  if (!value.isMember("name")) {
-    return Res(ERR_PARSE, "object lacks a name");
-  }
-
-  // TODO store the current path with the object.
-  Object* object = NULL;
-  Res create_result = Object::Create(out, path, value, &object);
-  if (create_result.Ok()) {
-    assert(object);
-    Target* target = object->CastToTarget();
-    if (target) {
-      out->AddTarget(target->name(), target);
-    } else {
-      Config* config = object->CastToConfig();
-      if (config) {
-        out->AddConfig(config->name(), config);
-      } else {
-        return Res(ERR, "Object is neither config nor target, name = " +
-		   object->name());
-      }
-    }
-  } else {
-    delete object;
-  }
-
-  return create_result;
-}
-
-Res ParseGroup(const std::string& path, const Json::Value& value,
-	       Context* out) {
-  if (!value.isObject() && !value.isArray()) {
-    return Res(ERR_PARSE, "group is not an object or array");
-  }
-
-  // iterate
-  for (Json::Value::const_iterator it = value.begin();
-       it != value.end();
-       ++it) {
-    Res result = ParseValue(path, *it, out);
-    if (!result.Ok()) {
-      return result;
-    }
-  }
-
-  return Res(OK);
-}
-
-Res ReadObjects(const std::string& path, const std::string& filename,
-		Context* out) {
-  assert(out);
-
-  // Slurp in the file.
-  std::string file_data;
-  FILE* fp = fopen(filename.c_str(), "r");
-  if (!fp) {
-    fprintf(stderr, "Can't open build file '%s'\n", filename.c_str());
-    exit(1);
-  }
-  for (;;) {
-    int c = fgetc(fp);
-    if (c == EOF) {
-      break;
-    }
-    file_data += c;
-  }
-  fclose(fp);
-
-  // Parse.
-  Json::Reader reader;
-  Json::Value root;
-  if (reader.parse(file_data, root, false)) {
-    // Parse OK.
-    // Iterate through the values and store the objects.
-    Res result = ParseGroup(path, root, out);
-    if (!result.Ok()) {
-      return result;
-    }
-  } else {
-    return Res(ERR_PARSE, "Parse error in file " + filename + "\n" +
-               reader.getFormatedErrorMessages());
-  }
-
-  return Res(OK);
-}
-
-Res ProcessTargets(const Context* context) {
-  const std::map<std::string, Target*>& targets = context->targets();
-  for (std::map<std::string, Target*>::const_iterator it = targets.begin();
-       it != targets.end();
-       ++it) {
-    Target* t = it->second;
-    if (t->resolved()) {
-      Res res = t->Process(context);
-      if (!res.Ok()) {
-        return res;
-      }
-    }
-  }
-  return Res(OK);
-}
-
 void ExitIfError(const Res& res) {
   if (res.Ok()) {
     return;
@@ -263,13 +156,15 @@ int main(int argc, const char** argv) {
   res = context.Init(absolute_root);
   ExitIfError(res);
 
-  res = ReadObjects("", context.AbsoluteFile("", "root.dmb"), &context);
+  res = context.ReadObjects("", context.AbsoluteFile("", "root.dmb"));
   ExitIfError(res);
 
-  res = ReadObjects(canonical_currdir,
-		    context.AbsoluteFile(canonical_currdir, "build.dmb"),
-		    &context);
+  res = context.ReadObjects(
+	  canonical_currdir,
+	  context.AbsoluteFile(canonical_currdir, "build.dmb"));
   ExitIfError(res);
+
+  context.DoneReading();
 
   if (!context.GetConfig()) {
     ExitIfError(Res(ERR, StringPrintf("config '%s' is not defined",
@@ -287,9 +182,7 @@ int main(int argc, const char** argv) {
   res = target->Resolve(&context);
   ExitIfError(res);
 
-  //ResolveReferences(target_list);
-  //SortTargets(target_list);  // topological sort
-  res = ProcessTargets(&context);
+  res = context.ProcessTargets();
   ExitIfError(res);
 
   context.Log("dmb OK\n");

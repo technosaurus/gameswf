@@ -17,6 +17,8 @@
 // Return the filename with the extension (if any) removed.
 std::string StripExt(const std::string& filename);
 
+void TrimTrailingWhitespace(std::string* str);
+
 // Does variable replacement on the given template using the given
 // vars, putting the results in *out.
 //
@@ -51,8 +53,6 @@ Res ParseValueStringOrMap(const Json::Value& val,
 
 // printf-alike that returns a std::string.
 std::string StringPrintf(const char* format, ...);
-
-bool FileExists(const std::string& path);
 
 // Increments on construction; decrements on destruction.
 class ScopedIncrement {
