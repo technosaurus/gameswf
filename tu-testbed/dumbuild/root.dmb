@@ -16,7 +16,7 @@
     "lib_extension": ".lib",
 
     // This is the command-line template used to invoke the compiler.
-    "compile_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -EHsc -I../../../../third_party/jsoncpp/include ${inc_dirs} -D_CRT_SECURE_NO_DEPRECATE -Zi -c ${src_list} -Fd${basename}.pdb",
+    "compile_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -EHsc ${inc_dirs} -D_CRT_SECURE_NO_DEPRECATE -Zi -c ${src_list} -Fd${basename}.pdb",
 
     // This is the command-line template used to invoke the linker.
     "link_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -Zi ${obj_list} ${lib_list} -Fe${basename}.exe -Fd${basename}.pdb",
@@ -39,7 +39,7 @@
     "lib_extension": ".lib",
 
     // This is the command-line template used to invoke the compiler.
-    "compile_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -EHsc -I../../../../third_party/jsoncpp/include ${inc_dirs} -D_CRT_SECURE_NO_DEPRECATE -Ox -c ${src_list} -Fd${basename}.pdb",
+    "compile_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo -EHsc ${inc_dirs} -D_CRT_SECURE_NO_DEPRECATE -Ox -c ${src_list} -Fd${basename}.pdb",
 
     // This is the command-line template used to invoke the linker.
     "link_template": "\"c:/Program Files/Microsoft Visual Studio 8/VC/bin/cl.exe\" -nologo ${obj_list} ${lib_list} -Fe${basename}.exe -Fd${basename}.pdb",
@@ -63,7 +63,7 @@
     "lib_extension": ".a",
     
     // This is the command-line template used to invoke the compiler.
-    "compile_template": "/usr/bin/gcc -Wall -I../../../../third_party/jsoncpp/include ${inc_dirs} -c ${src_list}",
+    "compile_template": "/usr/bin/gcc -Wall ${inc_dirs} -c ${src_list}",
 
     // This is the command-line template used to invoke the linker.
     "link_template": "/usr/bin/gcc -o ${basename} -g ${obj_list} ${lib_list} -lstdc++",

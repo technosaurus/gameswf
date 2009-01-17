@@ -21,6 +21,17 @@ std::string StripExt(const std::string& filename) {
   return filename;
 }
 
+void TrimTrailingWhitespace(std::string* str) {
+  while (str->length()) {
+    char c = (*str)[str->length() - 1];
+    if (c == ' ' || c == '\n' || c == '\r' || c == '\t') {
+      str->resize(str->length() - 1);
+    } else {
+      break;
+    }
+  }
+}
+
 static bool IsValidVarname(const std::string& varname) {
   if (varname.length() == 0) {
     return false;
@@ -148,14 +159,5 @@ std::string StringPrintf(const char* format, ...) {
   buf[BUFSIZE - 1] = 0;
 
   return std::string(buf);
-}
-
-bool FileExists(const std::string& path) {
-  struct stat stat_info;
-  int err = stat(path.c_str(), &stat_info);
-  if (err) {
-    return false;
-  }
-  return true;
 }
 

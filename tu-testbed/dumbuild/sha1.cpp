@@ -35,7 +35,7 @@ typedef unsigned char stb_uchar;
 
 #define stb_big32(c)    (((c)[0]<<24) + (c)[1]*65536 + (c)[2]*256 + (c)[3])
 
-static void stb__sha1(stb_uchar *chunk, stb_uint h[5])
+static void stb__sha1(const stb_uchar *chunk, stb_uint h[5])
 {
    int i;
    stb_uint a,b,c,d,e;
@@ -80,19 +80,19 @@ static void stb__sha1(stb_uchar *chunk, stb_uint h[5])
    h[4] += e;
 }
 
-void stb_sha1(stb_uchar output[20], stb_uchar *buffer, stb_uint len)
+void stb_sha1(stb_uchar input_output[20], const stb_uchar *buffer, stb_uint len)
 {
    unsigned char final_block[128];
    stb_uint end_start, final_len, j;
    int i;
 
    stb_uint h[5];
-
-   h[0] = 0x67452301;
-   h[1] = 0xefcdab89;
-   h[2] = 0x98badcfe;
-   h[3] = 0x10325476;
-   h[4] = 0xc3d2e1f0;
+   const stb_uint* uint_io = (stb_uint*) input_output;
+   h[0] = uint_io[0];
+   h[1] = uint_io[1];
+   h[2] = uint_io[2];
+   h[3] = uint_io[3];
+   h[4] = uint_io[4];
 
    // we need to write padding to the last one or two
    // blocks, so build those first into 'final_block'
@@ -139,14 +139,23 @@ void stb_sha1(stb_uchar output[20], stb_uchar *buffer, stb_uint len)
    }
 
    for (i=0; i < 5; ++i) {
-      output[i*4 + 0] = h[i] >> 24;
-      output[i*4 + 1] = h[i] >> 16;
-      output[i*4 + 2] = h[i] >>  8;
-      output[i*4 + 3] = h[i] >>  0;
+      input_output[i*4 + 0] = h[i] >> 24;
+      input_output[i*4 + 1] = h[i] >> 16;
+      input_output[i*4 + 2] = h[i] >>  8;
+      input_output[i*4 + 3] = h[i] >>  0;
    }
 }
 
-int stb_sha1_file(stb_uchar output[20], const char *file)
+void stb_sha1_init(stb_uchar output[20]) {
+   stb_uint* uint_io = (stb_uint*) output;
+   uint_io[0] = 0x67452301;
+   uint_io[1] = 0xefcdab89;
+   uint_io[2] = 0x98badcfe;
+   uint_io[3] = 0x10325476;
+   uint_io[4] = 0xc3d2e1f0;
+}
+
+int stb_sha1_file(stb_uchar input_output[20], const char *file)
 {
    int i;
    stb__64 length=0;
@@ -157,11 +166,12 @@ int stb_sha1_file(stb_uchar output[20], const char *file)
 
    if (f == NULL) return 0; // file not found
 
-   h[0] = 0x67452301;
-   h[1] = 0xefcdab89;
-   h[2] = 0x98badcfe;
-   h[3] = 0x10325476;
-   h[4] = 0xc3d2e1f0;
+   const stb_uint* uint_io = (const stb_uint*) input_output;
+   h[0] = uint_io[0];
+   h[1] = uint_io[1];
+   h[2] = uint_io[2];
+   h[3] = uint_io[3];
+   h[4] = uint_io[4];
 
    for(;;) {
       int n = fread(buffer, 1, 64, f);
@@ -176,7 +186,7 @@ int stb_sha1_file(stb_uchar output[20], const char *file)
          buffer[n++] = 0x80;
 
          // if there isn't enough room for the length, double the block
-         if (n + 8 > 64) 
+         if (n + 8 > 64)
             block = 128;
 
          // pad to end
@@ -203,20 +213,22 @@ int stb_sha1_file(stb_uchar output[20], const char *file)
    fclose(f);
 
    for (i=0; i < 5; ++i) {
-      output[i*4 + 0] = h[i] >> 24;
-      output[i*4 + 1] = h[i] >> 16;
-      output[i*4 + 2] = h[i] >>  8;
-      output[i*4 + 3] = h[i] >>  0;
+      input_output[i*4 + 0] = h[i] >> 24;
+      input_output[i*4 + 1] = h[i] >> 16;
+      input_output[i*4 + 2] = h[i] >>  8;
+      input_output[i*4 + 3] = h[i] >>  0;
    }
 
    return 1;
 }
 
+char stb_sha1_readable_encoding[65] =
+	"0123456789abcdefghijklmnopqrstuv"
+	"wxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%$";
+
 // client can truncate this wherever they like
-void stb_sha1_readable(char display[27], unsigned char sha[20])
+void stb_sha1_readable(char display[27], const unsigned char sha[20])
 {
-   char encoding[65] = "0123456789abcdefghijklmnopqrstuv"
-                       "wxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%$";
    int num_bits = 0, acc=0;
    int i=0,o=0;
    while (o < 26) {
@@ -228,10 +240,51 @@ void stb_sha1_readable(char display[27], unsigned char sha[20])
          num_bits += 8;
       }
       v = acc & ((1 << 6) - 1);
-      display[o++] = encoding[v];
+      display[o++] = stb_sha1_readable_encoding[v];
       acc >>= 6;
       num_bits -= 6;
    }
    assert(num_bits == 20*8 - 26*6);
-   display[o++] = encoding[acc];   
+   display[o++] = stb_sha1_readable_encoding[acc];
+}
+
+// Returns true if display[] was a valid readable sha1 value.  If
+// display[] is not valid, returns false and fills sha[] with 0.
+bool stb_sha1_from_readable(const char display[27], unsigned char sha[20])
+{
+   static unsigned char decode_table[256] = { 0 };
+   if (decode_table[0] == 0) {
+      memset(decode_table, 0xFF, sizeof(decode_table));
+      int i = 0;
+      while (char c = stb_sha1_readable_encoding[i]) {
+         decode_table[(unsigned char) c] = i;
+	 i++;
+      }
+   }
+
+   int num_bits = 0, acc = 0;
+   int i = 0, o = 0;
+   while (o < 20) {
+      // expand the accumulator
+      while (num_bits < 8) {
+         assert(i <= 26);
+	 unsigned char val = decode_table[(unsigned char) display[i++]];
+	 if (val & 0xC0) {
+	    memset(sha, 0, sizeof(sha));
+	    return false;
+	 }
+         acc += val << num_bits;
+         num_bits += 6;
+      }
+      sha[o++] = acc & 0xFF;
+      acc >>= 8;
+      num_bits -= 8;
+   }
+   if (acc) {
+      // Bits left over! Display[] is invalid.
+      memset(sha, 0, sizeof(sha));
+      return false;
+   }
+
+   return true;
 }

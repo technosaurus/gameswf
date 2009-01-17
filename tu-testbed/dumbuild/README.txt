@@ -29,16 +29,16 @@ http://tulrich.com/geekstuff/dumbuild/dmb.exe
 Building dumbuild
 =================
 
-From the dumbuild/ directory, run the bootstrap script.  On Windows:
+From the dumbuild/ directory, run the build script.  On Windows:
 
-> bootstrap.bat
+> dmb.bat
 
 On Linux etc:
 
-# ./bootstrap.sh
+# ./dmb
 
 If all goes well, you should get dmb.exe (Windows) or dmb (Linux etc)
-in the subdirectory dmb_out/bootstrap .
+in the subdirectory dmb-out/bootstrap .
 
 Usage
 =====
@@ -50,7 +50,7 @@ For example:
 # dmb
 
 Builds the default target using the default configuration.  The output
-goes in dmb_out/&lt;config-name&gt;/
+goes in dmb-out/&lt;config-name&gt;/
 
 # dmb -c :vc8-release
 
@@ -168,7 +168,8 @@ Notes
   targets in a little pseudo-tree where only the dependencies are
   mapped in.  That way, if you forget to declare a dependency, the
   compiler won't find the header file and you'll get an error message.
-  (Not implemented.)
+  (Not implemented currently, because Windows/NTFS does not have
+  reasonable symlinks yet.)
 
 
 Why?

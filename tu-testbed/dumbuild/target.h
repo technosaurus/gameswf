@@ -31,8 +31,7 @@
 
 class Target : public Object {
  public:
-  Target() : resolved_(false), processed_(false), resolve_recursion_(0) {
-  }
+  Target();
   
   virtual Res Init(const Context* context,
 		   const std::string& name,
@@ -89,8 +88,14 @@ class Target : public Object {
   // Build the target.
   virtual Res Process(const Context* context) = 0;
 
+  // Link dependencies will need to re-link.
+  bool did_rebuild() const {
+    return did_rebuild_;
+  }
+
  protected:
   bool resolved_, processed_;
+  bool did_rebuild_;
   int resolve_recursion_;
   std::vector<std::string> src_, dep_, inc_dirs_;
   std::string relative_path_to_tree_root_;

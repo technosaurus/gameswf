@@ -6,16 +6,24 @@
 #include <vector>
 #include "context.h"
 #include "config.h"
+#include "content_hash.h"
+#include "hash_util.h"
+#include "object_store.h"
 #include "os.h"
 #include "path.h"
 #include "target.h"
 
-Context::Context() : log_verbose_(false) {
+Context::Context() : log_verbose_(false), done_reading_(false),
+                     rebuild_all_(false),
+                     active_config_(NULL), content_hash_cache_(NULL),
+                     object_store_(NULL) {
 #ifdef _WIN32
   config_name_ = ":vc8-debug";
 #else
   config_name_ = ":gcc-debug";
 #endif
+
+  content_hash_cache_ = new ContentHashCache();
 }
 
 Context::~Context() {
@@ -29,6 +37,9 @@ Context::~Context() {
        ++it) {
     delete it->second;
   }
+
+  delete object_store_;
+  delete content_hash_cache_;
 }
 
 Res Context::ProcessArgs(int argc, const char** argv) {
@@ -61,6 +72,14 @@ Res Context::ProcessArgs(int argc, const char** argv) {
           }
           config_name_ = argv[i];
           break;
+        case 'r':
+          // Rebuild all.
+          set_rebuild_all(true);
+          break;
+        case 'v':
+          // Verbose.
+          set_log_verbose(true);
+          break;
       }
     }
   }
@@ -70,7 +89,128 @@ Res Context::ProcessArgs(int argc, const char** argv) {
 
 Res Context::Init(const std::string& root_path) {
   tree_root_ = root_path;
-  out_root_ = PathJoin("dmb_out", CanonicalFilePart(config_name_));
+  out_root_ = PathJoin("dmb-out", CanonicalFilePart(config_name_));
+
+  Res res = CreatePath(tree_root_, "dmb-out/ostore");
+  if (!res.Ok()) {
+    return res;
+  }
+  object_store_ = new ObjectStore((tree_root_ + "/dmb-out/ostore").c_str());
+
+  return Res(OK);
+}
+
+Res Context::ReadObjects(const std::string& path, const std::string& filename) {
+  assert(!done_reading_);
+
+  // Slurp in the file.
+  std::string file_data;
+  FILE* fp = fopen(filename.c_str(), "r");
+  if (!fp) {
+    fprintf(stderr, "Can't open build file '%s'\n", filename.c_str());
+    exit(1);
+  }
+  for (;;) {
+    int c = fgetc(fp);
+    if (c == EOF) {
+      break;
+    }
+    file_data += c;
+  }
+  fclose(fp);
+
+  // Parse.
+  Json::Reader reader;
+  Json::Value root;
+  if (reader.parse(file_data, root, false)) {
+    // Parse OK.
+    // Iterate through the values and store the objects.
+    Res result = ParseGroup(path, root);
+    if (!result.Ok()) {
+      return result;
+    }
+  } else {
+    return Res(ERR_PARSE, "Parse error in file " + filename + "\n" +
+               reader.getFormatedErrorMessages());
+  }
+
+  return Res(OK);
+}
+
+void Context::DoneReading() {
+  done_reading_ = true;
+
+  // Look up the active config.
+  std::map<std::string, Config*>::const_iterator it =
+    configs_.find(config_name_);
+  if (it != configs_.end()) {
+    active_config_ = it->second;
+  }
+}
+
+Res Context::ProcessTargets() const {
+  const std::map<std::string, Target*>& targs = targets();
+  for (std::map<std::string, Target*>::const_iterator it = targs.begin();
+       it != targs.end();
+       ++it) {
+    Target* t = it->second;
+    if (t->resolved()) {
+      Res res = t->Process(this);
+      if (!res.Ok()) {
+        return res;
+      }
+    }
+  }
+  return Res(OK);
+}
+
+Res Context::ParseValue(const std::string& path, const Json::Value& value) {
+  if (!value.isObject()) {
+    return Res(ERR_PARSE, "object is not a JSON object");
+  }
+
+  if (!value.isMember("name")) {
+    return Res(ERR_PARSE, "object lacks a name");
+  }
+
+  // TODO store the current path with the object.
+  Object* object = NULL;
+  Res create_result = Object::Create(this, path, value, &object);
+  if (create_result.Ok()) {
+    assert(object);
+    Target* target = object->CastToTarget();
+    if (target) {
+      AddTarget(target->name(), target);
+    } else {
+      Config* config = object->CastToConfig();
+      if (config) {
+        AddConfig(config->name(), config);
+      } else {
+        return Res(ERR, "Object is neither config nor target, name = " +
+		   object->name());
+      }
+    }
+  } else {
+    delete object;
+  }
+
+  return create_result;
+}
+
+Res Context::ParseGroup(const std::string& path, const Json::Value& value) {
+  if (!value.isObject() && !value.isArray()) {
+    return Res(ERR_PARSE, "group is not an object or array");
+  }
+
+  // iterate
+  for (Json::Value::const_iterator it = value.begin();
+       it != value.end();
+       ++it) {
+    Res result = ParseValue(path, *it);
+    if (!result.Ok()) {
+      return result;
+    }
+  }
 
   return Res(OK);
 }
@@ -78,6 +218,21 @@ Res Context::Init(const std::string& root_path) {
 std::string Context::AbsoluteFile(const std::string& canonical_path,
                                   const std::string& filename) {
   return PathJoin(tree_root(), PathJoin(canonical_path, filename));
+}
+
+Res Context::ComputeOrGetFileContentHash(const std::string& filename,
+                                         ContentHash* out) const {
+  if (content_hash_cache_->Get(filename, out)) {
+    return Res(OK);
+  }
+  out->Reset();
+  Res res = out->AppendFile(filename);
+  if (!res.Ok()) {
+    return res;
+  }
+
+  content_hash_cache_->Insert(filename, *out);
+  return Res(OK);
 }
 
 void Context::Log(const std::string& msg) const {

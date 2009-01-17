@@ -14,22 +14,26 @@
 #include "content_hash.h"
 #include "res.h"
 
-class Config;
+class Context;
 class Target;
 
 struct CompileInfo {
+  CompileInfo() {
+  }
+
   // Variables for template replacement.
   std::map<std::string, std::string> vars_;
-  // Specific source files to be compiled.
-  std::vector<std::pair<std::string, ContentHash> > src_list_;
+  // Specific source files to be compiled.  Expressed relative to
+  // output dir.
+  std::vector<std::string> src_list_;
   // TODO: header_dir list?
 };
 
 // Set up the standard variables for building a compiler command line.
-Res PrepareCompileVars(const Target* t, const Config* config,
+Res PrepareCompileVars(const Target* t, const Context* context,
                        CompileInfo* compile_info);
 
-Res DoCompile(const Target* t, const Config* config,
+Res DoCompile(const Target* t, const Context* context,
               const CompileInfo& compile_info);
 
 #endif  // COMPILE_UTIL_H_
