@@ -23,7 +23,8 @@ Context::Context() : log_verbose_(false), done_reading_(false),
   config_name_ = ":gcc-debug";
 #endif
 
-  content_hash_cache_ = new HashCache();
+  content_hash_cache_ = new HashCache<string>();
+  dep_hash_cache_ = new HashCache<Hash>();
 }
 
 Context::~Context() {
@@ -40,6 +41,7 @@ Context::~Context() {
 
   delete object_store_;
   delete content_hash_cache_;
+  delete dep_hash_cache_;
 }
 
 Res Context::ProcessArgs(int argc, const char** argv) {

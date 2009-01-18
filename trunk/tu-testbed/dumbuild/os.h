@@ -40,3 +40,4 @@ string GetCurrentDir();
 Res ChangeDir(const char* newdir);
 
 #endif  // OS_H_
+

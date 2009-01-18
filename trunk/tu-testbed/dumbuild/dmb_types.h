@@ -15,3 +15,4 @@ using std::string;
 using std::vector;
 
 #endif  // DMB_TYPES_H_
+

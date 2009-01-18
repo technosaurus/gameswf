@@ -19,7 +19,6 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   const Config* config = context->GetConfig();
 
   bool build_all = context->rebuild_all();
-  // TODO build_all = build_all || CompileTemplateChanged(t, config);
 
   string inc_dirs_str;
   for (size_t i = 0; i < t->inc_dirs().size(); i++) {
@@ -30,10 +29,6 @@ Res PrepareCompileVars(const Target* t, const Context* context,
     inc_dirs_str += inc_dir;
   }
 
-  // TODO: more checks for build_all
-  // build_all = build_all || IncludeDirsStringChanged(t, inc_dirs_str());
-  // build_all = build_all || HeaderFilesChanged(t, header_dirs());
-
   Res res;
   
   string src_list;
@@ -42,7 +37,7 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   for (size_t i = 0; i < t->src().size(); i++) {
     string src_path = PathJoin(t->relative_path_to_tree_root(),
                                     t->src()[i]);
-    Hash src_hash;
+    Hash current_hash;
 
     // See if we should compile this file.
     bool do_compile = true;
@@ -50,27 +45,28 @@ Res PrepareCompileVars(const Target* t, const Context* context,
       Hash previous_hash;
       res = ReadFileHash(t->absolute_out_dir(), src_path, &previous_hash);
       if (res.Ok()) {
-        res = context->ComputeOrGetFileContentHash(
-            PathJoin(t->absolute_out_dir(), src_path), &src_hash);
+        current_hash.Reset();
+        res = AccumulateObjFileDepHash(
+            t, context, PathJoin(t->absolute_out_dir(), src_path),
+            inc_dirs_str, &current_hash);
         if (!res.Ok()) {
           return res;
         }
-        //ComputeFileHash(t->absolute_out_dir(), src_path, &src_hash);
-        if (previous_hash == src_hash) {
-          // File has not changed.
-          //
-          // What about dependencies?
-          if (AnyIncludesChanged(t, context, inc_dirs_str, src_path,
-                                 src_hash)) {
-            // Need to compile.
-          } else {
-            // Skip this one.
-            do_compile = false;
-          }
+        if (previous_hash == current_hash) {
+          // Flags/environment, file, and dependencies have not
+          // changed.
+          do_compile = false;
+          context->LogVerbose("file hash unchanged: " + src_path + "\n");
+        } else {
+          // This file has changed, so we have to compile the file.
+          context->LogVerbose("file hash changed:   " + src_path + "\n");
         }
-        // else this file has changed, so we have to compile the file.
+
+      } else {
+        // No existing hash, so we have to compile the file.
+        context->LogVerbose(StringPrintf("no file hash, %s: %s\n",
+                                         res.ValueString(), res.detail()));
       }
-      // else no existing hash, so we have to compile the file.
     }
 
     if (do_compile) {
@@ -141,38 +137,22 @@ Res DoCompile(const Target* t, const Context* context, const CompileInfo& ci) {
 
   const string inc_dirs_str = ci.vars_.find("inc_dirs")->second;
 
-  // Write hashes for the just-compiled sources.
-  Hash src_hash;
+  // Write build markers for the just-compiled sources.
+  Hash obj_dep_hash;
   for (int i = 0; i < ci.src_list_.size(); i++) {
     const string& src_path = ci.src_list_[i];
-    Res res = context->ComputeOrGetFileContentHash(
-        PathJoin(t->absolute_out_dir(), src_path), &src_hash);
+    obj_dep_hash.Reset();
+    Res res = AccumulateObjFileDepHash(
+        t, context, PathJoin(t->absolute_out_dir(), src_path), inc_dirs_str,
+        &obj_dep_hash);
     if (!res.Ok()) {
       return res;
     }
-    res = WriteFileHash(t->absolute_out_dir(), src_path, src_hash);
-    if (!res.Ok()) {
-      return res;
-    }
-
-    // TODO: Write deps files, recursively, for the just-compiled
-    // sources.
-    res = GenerateDepsFile(t, context, inc_dirs_str,
-                           PathJoin(t->absolute_out_dir(), src_path),
-                           src_hash);
+    res = WriteFileHash(t->absolute_out_dir(), src_path, obj_dep_hash);
     if (!res.Ok()) {
       return res;
     }
   }
-
-  // TODO: write a hash for the inc_dirs?  I don't think it's
-  // necessary since it's mixed into the deps id for each source file.
-
-  // TODO: write a hash for the compile_template +
-  // compile_environment?  Should mix that stuff into deps id instead,
-  // right?  No, probably not, though it would do the job.
-
-  // TODO: write a hash for the link template and deps list?  Yes.
 
   return res;
 }

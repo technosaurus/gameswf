@@ -24,7 +24,7 @@ Res WriteFileHash(const string& out_dir,
   string hash_fname = PathJoin(out_dir, LocalFileStemFromPath(file_path));
   hash_fname += ".hash";
 
-  FILE* f = fopen(hash_fname.c_str(), "w");
+  FILE* f = fopen(hash_fname.c_str(), "wb");
   if (!f) {
     return Res(ERR_FILE_ERROR, "WriteFileHash can't open file " + hash_fname);
   } else {
@@ -49,7 +49,7 @@ Res ReadFileHash(const string& out_dir,
   hash_fname += ".hash";
 
   hash->Reset();
-  FILE* f = fopen(hash_fname.c_str(), "r");
+  FILE* f = fopen(hash_fname.c_str(), "rb");
   if (f) {
     if (fread((void*) hash->data(), hash->size(), 1, f)) {
       // OK
