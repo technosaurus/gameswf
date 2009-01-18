@@ -94,8 +94,10 @@ Res ExeTarget::Process(const Context* context) {
       return res;
     }
 
-    // TODO: write a hash for the link product(s) so we know we linked
-    // successfully.
+    did_rebuild_ = true;
+    // TODO: write a build marker for the link product(s) so we know
+    // we linked successfully, and to detect when we might need to
+    // re-link.
   }
 
   processed_ = true;

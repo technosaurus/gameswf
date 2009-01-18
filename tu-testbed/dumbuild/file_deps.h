@@ -26,23 +26,28 @@ Res GenerateDepsFile(const Target* t, const Context* context,
                      const string& src_path,
                      const Hash& src_hash);
 
+
+Res AccumulateObjFileDepHash(const Target* t, const Context* context,
+                             const string& src_path,
+                             const string& inc_dirs_str, Hash* dep_hash);
+
 // TODO: above code is not correct yet.  Need to do this instead:
 
-// CumHash == Cumulative Hash ==
+// DepHash == Cumulative Dependency Hash ==
 //   cumulative hash of all content that goes into some build product
 //
-// CumHash(src_file) = Hash(src_file) + sum(for d in deps: CumHash(d))
+// DepHash(src_file) = Hash(src_file) + sum(for d in deps: DepHash(d))
 //
-// When CumHash(file) changes, anything that depends on file must be
-// rebuilt.  CumHash() can be used as a reliable id for a build
+// When DepHash(file) changes, anything that depends on file must be
+// rebuilt.  DepHash() can be used as a reliable id for a build
 // product.
 
-// CumHash(obj_file) = Hash(compile_flags & environment) + CumHash(src_file)
+// DepHash(obj_file) = Hash(compile_flags & environment) + DepHash(src_file)
 
-// CumHash(lib_or_exe_file) = Hash(link_flags & environment) +
-//    sum(d in deps: CumHash(d)) +
+// DepHash(lib_or_exe_file) = Hash(link_flags & environment) +
+//    sum(d in deps: DepHash(d)) +
 
-// A build cache would be: map<CumHash, content>
+// A build cache would be: map<DepHash, content>
 
 // Deps(src_file):
 //   for each #include in src_file:
@@ -55,19 +60,19 @@ Res GenerateDepsFile(const Target* t, const Context* context,
 //   list of obj files
 // (these come directly out of build.dmb files)
 
-// Build marker: under obj_file_name.dmb.hash
-//   CumHash(obj_file)
+// Build marker: under obj_file_name.hash
+//   DepHash(obj_file)
 
-// Build marker: under lib_or_exe_file_name.dmb.hash
-//   CumHash(lib_or_exe_target)
+// Build marker: under lib_or_exe_file_name.hash
+//   DepHash(lib_or_exe_target)
 
 // Rebuild rule:
-//   rebuild(target) = BuildMarker(target) != CumHash(target)
+//   rebuild(target) = BuildMarker(target) != DepHash(target)
 
-//Res GetCumHashForObjectFile(const Target* t, const Context* context,
+//Res GetDepHashForObjectFile(const Target* t, const Context* context,
 //			      const string& src_path);
 
-//Res AccumulateDepsCumHash(, hash* h);
+//Res AccumulateDepsDepHash(, hash* h);
 
 //Res AppendDeps(src_file, FILE* fp_out);
 

@@ -96,10 +96,8 @@ Res LibTarget::Process(const Context* context) {
     }
 
     did_rebuild_ = true;
-    // TODO: write a hash for the lib product(s) so we know we lib'd
-    // successfully.
-    // TODO: write hashes for the deps
-    // TODO: write a hash for the lib_template
+    // TODO: write a build marker for the lib product(s) so we know we lib'd
+    // successfully, and when we might need to re-lib.
   }
 
   processed_ = true;

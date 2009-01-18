@@ -32,6 +32,7 @@ class Hash {
   bool operator!=(const Hash& b) const {
     return !(*this == b);
   }
+  bool operator<(const Hash& b) const;
 
   const unsigned char* data() const {
     return &h_[0];
@@ -49,16 +50,17 @@ class Hash {
   unsigned char h_[20];  // sha1
 };
 
-// Helper class. Holds a map from string to computed hash.
+// Helper class. Holds a map from a key type to a computed hash.
+template<class T>
 class HashCache {
  public:
-  void Insert(const string& key, const Hash& h) {
+  void Insert(const T& key, const Hash& h) {
     map_.insert(std::make_pair(key, h));
   }
 
-  bool Get(const string& key, Hash* h) {
+  bool Get(const T& key, Hash* h) {
     assert(h);
-    map<string, Hash>::const_iterator it = map_.find(key);
+    map<T, Hash>::const_iterator it = map_.find(key);
     if (it != map_.end()) {
       *h = it->second;
       return true;
@@ -67,7 +69,7 @@ class HashCache {
   }
 
  private:
-  map<string, Hash> map_;
+  map<T, Hash> map_;
 };
 
 #endif  // HASH_H_

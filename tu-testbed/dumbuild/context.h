@@ -11,12 +11,11 @@
 #define CONTEXT_H_
 
 #include "dmb_types.h"
+#include "hash.h"
 #include "res.h"
 #include "util.h"
 
 class Config;
-class Hash;
-class HashCache;
 class ObjectStore;
 class Target;
 
@@ -120,6 +119,11 @@ class Context {
     return object_store_;
   }
 
+  // Access to the dep_hash cache.
+  HashCache<Hash>* GetDepHashCache() const {
+    return dep_hash_cache_;
+  }
+
   void set_log_verbose(bool verbose) {
     log_verbose_ = verbose;
   }
@@ -142,7 +146,8 @@ class Context {
   map<string, Target*> targets_;
   bool log_verbose_;
 
-  HashCache* content_hash_cache_;
+  HashCache<string>* content_hash_cache_;
+  HashCache<Hash>* dep_hash_cache_;
   ObjectStore* object_store_;
 };
 

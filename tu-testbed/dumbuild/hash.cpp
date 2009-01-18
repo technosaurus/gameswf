@@ -52,6 +52,18 @@ bool Hash::operator==(const Hash& b) const {
   return true;
 }
 
+bool Hash::operator<(const Hash& b) const {
+  for (int i = 0; i < sizeof(h_); i++) {
+    if (h_[i] < b.h_[i]) {
+      return true;
+    } else if (h_[i] > b.h_[i]) {
+      return false;
+    } // else bytes are equal, keep checking.
+  }
+  // They're equal.
+  return false;
+}
+
 void Hash::GetReadable(char readable[27]) {
   stb_sha1_readable(readable, h_);
 }

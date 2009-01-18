@@ -4,27 +4,13 @@
 // whatever you want with it.
 
 #include "file_deps.h"
+#include "config.h"
 #include "context.h"
 #include "hash_util.h"
 #include "object_store.h"
 #include "os.h"
 #include "target.h"
 #include "util.h"
-
-// build all, if any of these changed since last successful compile:
-// * compile template
-// * compile environment
-// * inc_dirs
-//
-// Compile a source file if:
-// * build_all is true
-// * source changed since last successfully compiled
-// * any of its headers changed (recursive check)
-//
-// Re-link/re-archive a target if any of these changed since last link/archive:
-// * any source file compiled
-// * any deps compiled
-
 
 // #include path search order (observed in both cygwin gcc 3.4.4 and
 // Visual Studio 2005):
@@ -40,130 +26,9 @@
 // * paths in -I options are expressed relative to the current working
 //   dir of the compiler process.
 
-// Returns ERR_PARSE if the line was invalid.
-Res NextDepsLine(Hash* hash, string* dep_path, FILE* fp) {
-  static const int BUFSIZE = 1000;
-  char linebuf[BUFSIZE];
-  while (fgets(linebuf, BUFSIZE, fp)) {
-    if (linebuf[0] == '\r' || linebuf[0] == '\n' || linebuf[0] == '#') {
-      // Skip.
-      continue;
-    }
-    int len = strlen(linebuf);
-
-    // Trim.
-    while (len >= 0 && (linebuf[len - 1] == '\n' || linebuf[len - 1] == '\r')) {
-      linebuf[len - 1] = 0;
-      len--;
-    }
-
-    // Deps line should look like:
-    //
-    // abcdef[27 chars of sha1]012345 path/to/some/header/file.h
-    if (len < 29 || !hash->InitFromReadable(linebuf)) {
-      // Malformed deps line; need at least 27 chars for the sha1
-      // content hash, plus a space, plus at least one char for the
-      // dep filename.
-      return Res(ERR_PARSE, string("bad deps line: ") + linebuf);
-    }
-
-    *dep_path = (linebuf + 28);
-    return Res(OK);
-  }
-
-  return Res(ERR_END_OF_FILE);
-}
-
-bool AnyIncludesChanged(const Target* t, const Context* context,
-                        const string& inc_dirs_str,
-                        const string& src_path,
-                        const Hash& src_hash) {
-  Res res;
-  Hash deps_file_id;
-  deps_file_id.AppendString("src_deps");
-  deps_file_id.AppendHash(src_hash);
-  deps_file_id.AppendString(inc_dirs_str);
-
-  ObjectStore* ostore = context->GetObjectStore();
-  FILE* fp = ostore->Read(deps_file_id);
-  if (!fp) {
-    // No deps file; assume that deps may have changed.
-    context->LogVerbose("no deps file for " + src_path +
-                        "; assuming changed\n");
-    return true;
-  }
-
-  // Read the deps file, and recursively check the deps.
-  vector<string> to_check;
-  int linenum = 0;
-  Hash previous_dep_hash;
-  string dep_path;
-  for (;;) {
-    res = NextDepsLine(&previous_dep_hash, &dep_path, fp);
-    if (res.value() == ERR_END_OF_FILE) {
-      // Done.
-      break;
-    }
-    if (res.value() == ERR_PARSE) {
-      fclose(fp);
-      context->LogVerbose("parse error while processing deps for " + src_path +
-                          "; " + res.detail());
-      // Wipe this deps file since it's not valid.
-      ostore->Erase(deps_file_id);
-      // Need to assume something changed.
-      return true;
-    }
-
-    Hash current_dep_hash;
-    res = context->ComputeOrGetFileContentHash(dep_path, &current_dep_hash);
-    if (!res.Ok()) {
-      context->LogVerbose("While processing deps for " + src_path +
-                          ", couldn't get content hash of " + dep_path);
-      fclose(fp);
-      return true;
-    }
-    if (current_dep_hash != previous_dep_hash) {
-      // The dependency changed.
-      fclose(fp);
-
-      char previous_hash_readable[28];
-      previous_dep_hash.GetReadable(previous_hash_readable);
-      previous_hash_readable[27] = 0;
-      char current_hash_readable[28];
-      current_dep_hash.GetReadable(current_hash_readable);
-      current_hash_readable[27] = 0;
-      context->LogVerbose("found deps change while processing " + src_path +
-                          "; line:\n" + previous_hash_readable + " " +
-                          dep_path + "\n" +
-                          current_hash_readable + "\n");
-
-      return true;
-    }
-
-    // The dependency hasn't changed itself.  Check *its* dependencies
-    // recursively.
-    to_check.push_back(dep_path);
-  }
-  fclose(fp);
-
-  Hash dep_hash;
-  for (size_t i = 0; i < to_check.size(); i++) {
-    // TODO: don't re-check files we've already checked.
-
-    if (!context->ComputeOrGetFileContentHash(to_check[i], &dep_hash).Ok()) {
-      context->LogVerbose("can't get hash while processing " + src_path +
-                          " for file " + to_check[i] + "\n");
-      return true;
-    }
-    if (AnyIncludesChanged(t, context, inc_dirs_str, to_check[i], dep_hash)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 // Return true and fill *header_file if we found an #include line.
+// Set *is_quoted to true if the file was surrounded by double-quotes;
+// set to false if it was surrounded by angle brackets.
 bool ParseIncludeLine(const char* line, string* header_file, bool* is_quoted) {
   assert(header_file);
   assert(is_quoted);
@@ -209,7 +74,6 @@ bool ParseIncludeLine(const char* line, string* header_file, bool* is_quoted) {
     }
     line++;
   }
-
   return false;
 }
 
@@ -246,99 +110,149 @@ bool FindHeader(const string& src_dir, const Target* t,
   return false;
 }
 
-Res GenerateDepsFile(const Target* t, const Context* context,
-                     const string& inc_dirs_str,
-                     const string& src_path,
-                     const Hash& src_hash) {
-  Res res;
+Res GetIncludes(const Target* t, const Context* context,
+                const string& src_path, const string& inc_dirs_str,
+                vector<string>* includes) {
+  Hash src_hash;
+  Res res = context->ComputeOrGetFileContentHash(src_path, &src_hash);
+  if (!res.Ok()) {
+    return res;
+  }
+
   Hash deps_file_id;
-  deps_file_id.AppendString("src_deps");
+  deps_file_id.AppendString("includes");
   deps_file_id.AppendHash(src_hash);
   deps_file_id.AppendString(inc_dirs_str);
 
   ObjectStore* ostore = context->GetObjectStore();
-  if (ostore->Exists(deps_file_id)) {
-    if (context->rebuild_all()) {
-      // Regenerate.
-      ostore->Erase(deps_file_id);
-    } else {
-      // Recursively check the contents.
-      return Res(OK);
+  FILE* fp = ostore->Read(deps_file_id);
+  if (fp) {
+    // Read the deps file.
+    static const int BUFSIZE = 1000;
+    char linebuf[BUFSIZE];
+    while (fgets(linebuf, BUFSIZE, fp)) {
+      if (linebuf[0] == '\r' || linebuf[0] == '\n' || linebuf[0] == '#') {
+        // Skip.
+        continue;
+      }
+      int len = strlen(linebuf);
+
+      // Trim.
+      while (len >= 0 && (linebuf[len - 1] == '\n' ||
+                          linebuf[len - 1] == '\r')) {
+        linebuf[len - 1] = 0;
+        len--;
+      }
+
+      includes->push_back(linebuf);
     }
-  }
+    fclose(fp);
+  } else {
+    // Scan the source file.
+    FILE* fp_src = fopen(src_path.c_str(), "rb");
+    if (!fp_src) {
+      return Res(ERR_FILE_ERROR, "Couldn't open file for include scanning: " +
+                 src_path);
+    }
 
-  // Create the deps file.
-  FILE* fp_out = ostore->Write(deps_file_id);
-  if (!fp_out) {
-    return Res(ERR_FILE_ERROR, "Couldn't open deps file output for: " +
-               src_path);
-  }
-
-  // Just for debugging.
-  fprintf(fp_out, "# src_deps %s\n", src_path.c_str());
-
-  FILE* fp_src = fopen(src_path.c_str(), "rb");
-  if (!fp_src) {
-    fclose(fp_out);
-    return Res(ERR_FILE_ERROR, "Couldn't open file for include scanning: " +
-               src_path);
-  }
-
-  // Scan the source file for #include lines.
-  vector<string> include_paths;
-  static const int BUFSIZE = 1000;
-  char linebuf[BUFSIZE];
-  Hash header_hash;
-  string header_file;
-  string header_path;
-  char readable_hash[27];
-
-  string src_dir = FilenamePathPart(src_path);
-  
-  while (fgets(linebuf, BUFSIZE, fp_src)) {
+    string src_dir = FilenamePathPart(src_path);
+    static const int BUFSIZE = 1000;
+    char linebuf[BUFSIZE];
+    string header_file;
+    string header_path;
     bool is_quoted = false;
-    if (ParseIncludeLine(linebuf, &header_file, &is_quoted)) {
-      if (FindHeader(src_dir, t, context, header_file, is_quoted, &header_path)) {
-        include_paths.push_back(header_path);
-        res = context->ComputeOrGetFileContentHash(header_path,
-                                                   &header_hash);
-        if (!res.Ok()) {
-          return res;
+    while (fgets(linebuf, BUFSIZE, fp_src)) {
+      if (ParseIncludeLine(linebuf, &header_file, &is_quoted)) {
+        if (FindHeader(src_dir, t, context, header_file, is_quoted,
+                       &header_path)) {
+          includes->push_back(header_path);
         }
+      }
+    }
+    fclose(fp_src);
 
-        header_hash.GetReadable(readable_hash);
+    // Write the deps file.
+    FILE* fp = ostore->Write(deps_file_id);
+    if (!fp) {
+      context->LogVerbose("Unabled to write deps to ostore for file: " + src_path);
+    } else {
+      fprintf(fp, "# includes %s\n", src_path.c_str());
+      for (size_t i = 0; i < includes->size(); i++) {
+        const string& header_path = (*includes)[i];
         bool ok =
-          (fwrite(readable_hash, sizeof(readable_hash),
-                  1, fp_out) == 1) &&
-          (fputc(' ', fp_out) != EOF) &&
-          (fwrite(header_path.c_str(), header_path.size(), 1, fp_out) == 1) &&
-          (fputc('\n', fp_out) != EOF);
+          (fwrite(header_path.c_str(), header_path.size(), 1, fp) == 1) &&
+          (fputc('\n', fp) != EOF);
         if (!ok) {
-          fclose(fp_src);
-          fclose(fp_out);
+          fclose(fp);
           return Res(ERR_FILE_ERROR, "Error writing to deps file for " +
                      src_path);
         }
       }
-    }
-  }
-  fclose(fp_src);
-  fclose(fp_out);
-
-  // Recurse to process the various headers we found.
-  for (size_t i = 0; i < include_paths.size(); i++) {
-    res = context->ComputeOrGetFileContentHash(include_paths[i], &header_hash);
-    if (!res.Ok()) {
-      return res;
-    }
-    res = GenerateDepsFile(t, context, inc_dirs_str, include_paths[i],
-                           header_hash);
-    if (!res.Ok()) {
-      return res;
+      fclose(fp);
     }
   }
 
   return Res(OK);
 }
 
+// DepHash(src_file) = Hash(src_file) + sum(for d in deps: DepHash(d))
+Res AccumulateSrcFileDepHash(const Target* t, const Context* context,
+                             const string& src_path, const string& inc_dirs_str,
+                             Hash* dep_hash) {
+  Hash content_hash;
+  Res res = context->ComputeOrGetFileContentHash(src_path, &content_hash);
+  if (!res.Ok()) {
+    return res;
+  }
 
+  // Check to see if we've already computed this dep hash.
+  HashCache<Hash>* dep_hash_cache = context->GetDepHashCache();
+  assert(dep_hash_cache);
+  Hash dep_cache_key;
+  dep_cache_key.AppendString("dep_cache_key");
+  dep_cache_key.AppendString(src_path);
+  dep_cache_key.AppendHash(content_hash);
+  dep_cache_key.AppendString(inc_dirs_str);
+  Hash cached_dep_hash;
+  if (dep_hash_cache->Get(dep_cache_key, &cached_dep_hash)) {
+    dep_hash->AppendHash(cached_dep_hash);
+    return Res(OK);
+  }
+
+  // Compute the dep hash.
+  Hash computed_dep_hash;
+  computed_dep_hash.AppendHash(content_hash);
+
+  vector<string> includes;
+  res = GetIncludes(t, context, src_path, inc_dirs_str, &includes);
+  if (!res.Ok()) {
+    return res;
+  }
+  for (size_t i = 0; i < includes.size(); i++) {
+    res = AccumulateSrcFileDepHash(t, context, includes[i], inc_dirs_str,
+                                   &computed_dep_hash);
+    if (!res.Ok()) {
+      return res;
+    }
+  }
+
+  // Write the computed hash back to the cache, for re-use.
+  dep_hash_cache->Insert(dep_cache_key, computed_dep_hash);
+
+  dep_hash->AppendHash(computed_dep_hash);
+
+  return Res(OK);
+}
+
+// DepHash(obj_file) = Hash(compile_flags & environment) + DepHash(src_file)
+Res AccumulateObjFileDepHash(const Target* t, const Context* context,
+                             const string& src_path,
+                             const string& inc_dirs_str, Hash* dep_hash) {
+  const Config* config = context->GetConfig();
+  dep_hash->AppendString(src_path);
+  dep_hash->AppendString(inc_dirs_str);
+  dep_hash->AppendString(config->compile_environment());
+  dep_hash->AppendString(config->compile_template());
+
+  return AccumulateSrcFileDepHash(t, context, src_path, inc_dirs_str, dep_hash);
+}
