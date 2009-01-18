@@ -12,7 +12,7 @@ class LibTarget : public Target {
  public:
   LibTarget();
   Res Init(const Context* context,
-	   const std::string& name,
+	   const string& name,
 	   const Json::Value& val);
   virtual Res Resolve(Context* context);
   virtual Res Process(const Context* context);

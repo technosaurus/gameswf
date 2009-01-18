@@ -10,7 +10,7 @@
 
 // Given a file path, normalize it to a valid local filename that
 // represents the path.
-static std::string LocalFileStemFromPath(const std::string& path) {
+static string LocalFileStemFromPath(const string& path) {
   // TODO: for now we're just taking the file part, but in the future
   // we might want to take the whole path and normalize it to a valid
   // local file name (i.e. replace slashes and ".." with other
@@ -18,10 +18,10 @@ static std::string LocalFileStemFromPath(const std::string& path) {
   return FilenameFilePart(path);
 }
 
-Res WriteFileHash(const std::string& out_dir,
-		   const std::string& file_path,
-		   const ContentHash& hash) {
-  std::string hash_fname = PathJoin(out_dir, LocalFileStemFromPath(file_path));
+Res WriteFileHash(const string& out_dir,
+		   const string& file_path,
+		   const Hash& hash) {
+  string hash_fname = PathJoin(out_dir, LocalFileStemFromPath(file_path));
   hash_fname += ".hash";
 
   FILE* f = fopen(hash_fname.c_str(), "w");
@@ -42,10 +42,10 @@ Res WriteFileHash(const std::string& out_dir,
   return Res(OK);
 }
 
-Res ReadFileHash(const std::string& out_dir,
-                 const std::string& file_path,
-                 ContentHash* hash) {
-  std::string hash_fname = PathJoin(out_dir, LocalFileStemFromPath(file_path));
+Res ReadFileHash(const string& out_dir,
+                 const string& file_path,
+                 Hash* hash) {
+  string hash_fname = PathJoin(out_dir, LocalFileStemFromPath(file_path));
   hash_fname += ".hash";
 
   hash->Reset();

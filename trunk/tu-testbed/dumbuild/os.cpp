@@ -13,14 +13,14 @@
 #include <windows.h>
 #include <direct.h>
 
-Res CreatePath(const std::string& root, const std::string& sub_path) {
-  std::string current = root;
+Res CreatePath(const string& root, const string& sub_path) {
+  string current = root;
   const char* prev = sub_path.c_str();
   for (;;) {
     const char* next_slash = strchr(prev, '/');
     if (next_slash) {
       current += "/";
-      current += std::string(prev, next_slash - prev);
+      current += string(prev, next_slash - prev);
     } else {
       current += "/";
       current += prev;
@@ -42,8 +42,8 @@ Res CreatePath(const std::string& root, const std::string& sub_path) {
   return Res(OK);
 }
 
-Res RunCommand(const std::string& dir, const std::string& cmd_line,
-               const std::string& environment) {
+Res RunCommand(const string& dir, const string& cmd_line,
+               const string& environment) {
   PROCESS_INFORMATION proc_info;
   memset(&proc_info, 0, sizeof(proc_info));
 
@@ -94,14 +94,14 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-Res CreatePath(const std::string& root, const std::string& sub_path) {
-  std::string current = root;
+Res CreatePath(const string& root, const string& sub_path) {
+  string current = root;
   const char* prev = sub_path.c_str();
   for (;;) {
     const char* next_slash = strchr(prev, '/');
     if (next_slash) {
       current += "/";
-      current += std::string(prev, next_slash - prev);
+      current += string(prev, next_slash - prev);
     } else {
       current += "/";
       current += prev;
@@ -122,13 +122,13 @@ Res CreatePath(const std::string& root, const std::string& sub_path) {
   return Res(OK);
 }
 
-Res RunCommand(const std::string& dir, const std::string& cmd_line,
-               const std::string& environment) {
+Res RunCommand(const string& dir, const string& cmd_line,
+               const string& environment) {
   // Split command line on spaces, ignoring any quoting.
   //
   // TODO(tulrich): might be good to support quoting someday, to allow
   // spaces inside individual args.
-  std::vector<std::string> args;
+  vector<string> args;
   {
     const char* p = cmd_line.c_str();
     for (;;) {
@@ -142,7 +142,7 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
         }
         break;
       } else {
-        args.push_back(std::string(p, n - p));
+        args.push_back(string(p, n - p));
       }
       p = n + 1;
     }
@@ -150,8 +150,8 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
 
   // Set up program, argv and envp.
   const char* program = NULL;
-  std::vector<const char*> argv;
-  std::vector<const char*> envp;
+  vector<const char*> argv;
+  vector<const char*> envp;
   for (size_t i = 0; i < args.size(); i++) {
     argv.push_back(args[i].c_str());
   }
@@ -216,10 +216,10 @@ Res RunCommand(const std::string& dir, const std::string& cmd_line,
 #define CHDIR chdir
 #endif
 
-std::string GetCurrentDir() {
+string GetCurrentDir() {
   // Allocate a big return buffer for getcwd.
   const int MAX_CURRDIR_SIZE = 2000;
-  std::string currdir;
+  string currdir;
   currdir.resize(MAX_CURRDIR_SIZE);
   if (!GETCWD(&currdir[0], currdir.size())) {
     fprintf(stderr, "Internal error: getcwd() larger than %d\n",
@@ -233,7 +233,7 @@ std::string GetCurrentDir() {
 #ifdef _WIN32
   // Change backslashes to forward slashes.
   for (size_t pos = currdir.find('\\');
-       pos != std::string::npos;
+       pos != string::npos;
        pos = currdir.find('\\', pos)) {
     currdir[pos] = '/';
   }
@@ -250,7 +250,7 @@ Res ChangeDir(const char* newdir) {
   return Res(ERR, StringPrintf("chdir(\"%s\") failed", newdir));
 }
 
-bool FileExists(const std::string& path) {
+bool FileExists(const string& path) {
   struct stat stat_info;
   int err = stat(path.c_str(), &stat_info);
   if (err) {
@@ -259,7 +259,7 @@ bool FileExists(const std::string& path) {
   return true;
 }
 
-Res EraseFile(const std::string& path) {
+Res EraseFile(const string& path) {
   if (_unlink(path.c_str()) == 0) {
     return Res(OK);
   }

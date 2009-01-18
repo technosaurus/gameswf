@@ -10,18 +10,18 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-std::string StripExt(const std::string& filename) {
+string StripExt(const string& filename) {
   size_t last_slash = filename.rfind('/');
   size_t last_dot = filename.rfind('.');
-  if (last_dot != std::string::npos
-      && (last_slash == std::string::npos || last_slash < last_dot)) {
-    return std::string(filename, 0, last_dot);
+  if (last_dot != string::npos
+      && (last_slash == string::npos || last_slash < last_dot)) {
+    return string(filename, 0, last_dot);
   }
   
   return filename;
 }
 
-void TrimTrailingWhitespace(std::string* str) {
+void TrimTrailingWhitespace(string* str) {
   while (str->length()) {
     char c = (*str)[str->length() - 1];
     if (c == ' ' || c == '\n' || c == '\r' || c == '\t') {
@@ -32,7 +32,7 @@ void TrimTrailingWhitespace(std::string* str) {
   }
 }
 
-static bool IsValidVarname(const std::string& varname) {
+static bool IsValidVarname(const string& varname) {
   if (varname.length() == 0) {
     return false;
   }
@@ -51,9 +51,9 @@ static bool IsValidVarname(const std::string& varname) {
   return true;
 }
 
-Res FillTemplate(const std::string& template_string,
-		 const std::map<std::string, std::string>& vars,
-		 std::string* out) {
+Res FillTemplate(const string& template_string,
+		 const map<string, string>& vars,
+		 string* out) {
   assert(out);
   out->clear();
 
@@ -73,10 +73,10 @@ Res FillTemplate(const std::string& template_string,
       break;
     }
 
-    std::string varname(begin + 2, end - (begin + 2));
+    string varname(begin + 2, end - (begin + 2));
     if (IsValidVarname(varname)) {
       // See if we can replace this slot.
-      std::map<std::string, std::string>::const_iterator it =
+      map<string, string>::const_iterator it =
         vars.find(varname);
       if (it == vars.end()) {
         out->clear();
@@ -99,9 +99,9 @@ Res FillTemplate(const std::string& template_string,
 }
 
 Res ParseValueStringOrMap(const Json::Value& val,
-                          const std::string& equals_string,
-			  const std::string& separator_string,
-                          std::string* out) {
+                          const string& equals_string,
+			  const string& separator_string,
+                          string* out) {
   if (val.isString()) {
     *out = val.asString();
   } else if (val.isArray()) {
@@ -140,7 +140,7 @@ Res ParseValueStringOrMap(const Json::Value& val,
 #define VSNPRINTF vsnprintf
 #endif
 
-std::string StringPrintf(const char* format, ...) {
+string StringPrintf(const char* format, ...) {
   const int BUFSIZE = 4096;
   char buf[BUFSIZE];
 
@@ -153,11 +153,11 @@ std::string StringPrintf(const char* format, ...) {
     //
     // TODO: could try again with larger buffer, but for normal uses
     // of this function there is likely to be some other problem.
-    return std::string("(StringPrintf truncated)");
+    return string("(StringPrintf truncated)");
   }
   // Make extra double certain the string is terminated.
   buf[BUFSIZE - 1] = 0;
 
-  return std::string(buf);
+  return string(buf);
 }
 

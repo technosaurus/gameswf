@@ -21,10 +21,9 @@
 
 #include <assert.h>
 #include <json/json.h>
-#include <map>
-#include <string>
 
 #include "context.h"
+#include "dmb_types.h"
 #include "object.h"
 #include "path.h"
 #include "res.h"
@@ -34,7 +33,7 @@ class Target : public Object {
   Target();
   
   virtual Res Init(const Context* context,
-		   const std::string& name,
+		   const string& name,
 		   const Json::Value& value);
 
   virtual Target* CastToTarget() {
@@ -50,28 +49,28 @@ class Target : public Object {
   }
 
   // List of src files.
-  const std::vector<std::string>& src() const {
+  const vector<string>& src() const {
     return src_;
   }
 	
   // List of other targets we depend on.
-  const std::vector<std::string>& dep() const {
+  const vector<string>& dep() const {
     return dep_;
   }
 
   // List of include dirs.
-  const std::vector<std::string>& inc_dirs() const {
+  const vector<string>& inc_dirs() const {
     return inc_dirs_;
   }
 
   // Relative path from the target's compile output directory back up
   // to the tree root.
-  const std::string& relative_path_to_tree_root() const {
+  const string& relative_path_to_tree_root() const {
     return relative_path_to_tree_root_;
   }
 
   // Absolute path to the target's compile output directory.
-  const std::string& absolute_out_dir() const {
+  const string& absolute_out_dir() const {
     return absolute_out_dir_;
   }
 
@@ -97,9 +96,9 @@ class Target : public Object {
   bool resolved_, processed_;
   bool did_rebuild_;
   int resolve_recursion_;
-  std::vector<std::string> src_, dep_, inc_dirs_;
-  std::string relative_path_to_tree_root_;
-  std::string absolute_out_dir_;
+  vector<string> src_, dep_, inc_dirs_;
+  string relative_path_to_tree_root_;
+  string absolute_out_dir_;
 };
 
 #endif  // TARGET_H_

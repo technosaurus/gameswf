@@ -41,7 +41,7 @@
 //   dir of the compiler process.
 
 // Returns ERR_PARSE if the line was invalid.
-Res NextDepsLine(ContentHash* hash, std::string* dep_path, FILE* fp) {
+Res NextDepsLine(Hash* hash, string* dep_path, FILE* fp) {
   static const int BUFSIZE = 1000;
   char linebuf[BUFSIZE];
   while (fgets(linebuf, BUFSIZE, fp)) {
@@ -64,7 +64,7 @@ Res NextDepsLine(ContentHash* hash, std::string* dep_path, FILE* fp) {
       // Malformed deps line; need at least 27 chars for the sha1
       // content hash, plus a space, plus at least one char for the
       // dep filename.
-      return Res(ERR_PARSE, std::string("bad deps line: ") + linebuf);
+      return Res(ERR_PARSE, string("bad deps line: ") + linebuf);
     }
 
     *dep_path = (linebuf + 28);
@@ -75,11 +75,11 @@ Res NextDepsLine(ContentHash* hash, std::string* dep_path, FILE* fp) {
 }
 
 bool AnyIncludesChanged(const Target* t, const Context* context,
-                        const std::string& inc_dirs_str,
-                        const std::string& src_path,
-                        const ContentHash& src_hash) {
+                        const string& inc_dirs_str,
+                        const string& src_path,
+                        const Hash& src_hash) {
   Res res;
-  ContentHash deps_file_id;
+  Hash deps_file_id;
   deps_file_id.AppendString("src_deps");
   deps_file_id.AppendHash(src_hash);
   deps_file_id.AppendString(inc_dirs_str);
@@ -94,10 +94,10 @@ bool AnyIncludesChanged(const Target* t, const Context* context,
   }
 
   // Read the deps file, and recursively check the deps.
-  std::vector<std::string> to_check;
+  vector<string> to_check;
   int linenum = 0;
-  ContentHash previous_dep_hash;
-  std::string dep_path;
+  Hash previous_dep_hash;
+  string dep_path;
   for (;;) {
     res = NextDepsLine(&previous_dep_hash, &dep_path, fp);
     if (res.value() == ERR_END_OF_FILE) {
@@ -114,7 +114,7 @@ bool AnyIncludesChanged(const Target* t, const Context* context,
       return true;
     }
 
-    ContentHash current_dep_hash;
+    Hash current_dep_hash;
     res = context->ComputeOrGetFileContentHash(dep_path, &current_dep_hash);
     if (!res.Ok()) {
       context->LogVerbose("While processing deps for " + src_path +
@@ -146,7 +146,7 @@ bool AnyIncludesChanged(const Target* t, const Context* context,
   }
   fclose(fp);
 
-  ContentHash dep_hash;
+  Hash dep_hash;
   for (size_t i = 0; i < to_check.size(); i++) {
     // TODO: don't re-check files we've already checked.
 
@@ -164,7 +164,7 @@ bool AnyIncludesChanged(const Target* t, const Context* context,
 }
 
 // Return true and fill *header_file if we found an #include line.
-bool ParseIncludeLine(const char* line, std::string* header_file, bool* is_quoted) {
+bool ParseIncludeLine(const char* line, string* header_file, bool* is_quoted) {
   assert(header_file);
   assert(is_quoted);
 
@@ -215,15 +215,15 @@ bool ParseIncludeLine(const char* line, std::string* header_file, bool* is_quote
 
 // Searches for an existing header file.  Returns true and fills in
 // *header_path if it finds one.
-bool FindHeader(const std::string& src_dir, const Target* t,
-                const Context* context, const std::string& header_file,
-                bool is_quoted, std::string* header_path) {
+bool FindHeader(const string& src_dir, const Target* t,
+                const Context* context, const string& header_file,
+                bool is_quoted, string* header_path) {
   // TODO: handle absolute header file names,
   // (e.g. #include "/abs/path/header.h" or "c:/somefile.h")
 
   if (is_quoted) {
     // First look in the directory where the source file was found.
-    std::string path = PathJoin(src_dir, header_file);
+    string path = PathJoin(src_dir, header_file);
     if (FileExists(path)) {
       *header_path = path;
       return true;
@@ -235,7 +235,7 @@ bool FindHeader(const std::string& src_dir, const Target* t,
 
     // TODO: tulrich: hm, shouldn't these be relative to the abs
     // output dir???
-    std::string path = PathJoin(context->tree_root(),
+    string path = PathJoin(context->tree_root(),
                                 t->inc_dirs()[i]);
     path = PathJoin(path, header_file);
     if (FileExists(path)) {
@@ -247,11 +247,11 @@ bool FindHeader(const std::string& src_dir, const Target* t,
 }
 
 Res GenerateDepsFile(const Target* t, const Context* context,
-                     const std::string& inc_dirs_str,
-                     const std::string& src_path,
-                     const ContentHash& src_hash) {
+                     const string& inc_dirs_str,
+                     const string& src_path,
+                     const Hash& src_hash) {
   Res res;
-  ContentHash deps_file_id;
+  Hash deps_file_id;
   deps_file_id.AppendString("src_deps");
   deps_file_id.AppendHash(src_hash);
   deps_file_id.AppendString(inc_dirs_str);
@@ -285,15 +285,15 @@ Res GenerateDepsFile(const Target* t, const Context* context,
   }
 
   // Scan the source file for #include lines.
-  std::vector<std::string> include_paths;
+  vector<string> include_paths;
   static const int BUFSIZE = 1000;
   char linebuf[BUFSIZE];
-  ContentHash header_hash;
-  std::string header_file;
-  std::string header_path;
+  Hash header_hash;
+  string header_file;
+  string header_path;
   char readable_hash[27];
 
-  std::string src_dir = FilenamePathPart(src_path);
+  string src_dir = FilenamePathPart(src_path);
   
   while (fgets(linebuf, BUFSIZE, fp_src)) {
     bool is_quoted = false;

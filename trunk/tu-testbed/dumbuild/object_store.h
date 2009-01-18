@@ -9,25 +9,25 @@
 #ifndef OBJECT_STORE_H_
 #define OBJECT_STORE_H_
 
-#include <string>
+#include "dmb_types.h"
 
-class ContentHash;
+class Hash;
 
 class ObjectStore {
  public:
   explicit ObjectStore(const char* root_path);
 
-  FILE* Read(const ContentHash& key) const;
-  FILE* Write(const ContentHash& key);
-  bool Exists(const ContentHash& key) const;
+  FILE* Read(const Hash& key) const;
+  FILE* Write(const Hash& key);
+  bool Exists(const Hash& key) const;
   // Returns true if it erased something.
-  bool Erase(const ContentHash& key);
+  bool Erase(const Hash& key);
 
  private:
-  void MakePath(const ContentHash& key, std::string* path,
-                std::string* subdir) const;
+  void MakePath(const Hash& key, string* path,
+                string* subdir) const;
 
-  std::string root_path_;
+  string root_path_;
 };
 
 #endif  // OBJECT_STORE_H_

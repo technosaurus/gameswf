@@ -6,7 +6,7 @@
 #include "config.h"
 #include "util.h"
 
-Res Config::Init(const Context* context, const std::string& name,
+Res Config::Init(const Context* context, const string& name,
                  const Json::Value& value) {
   Res res = Object::Init(context, name, value);
   if (!res.Ok()) {
@@ -15,7 +15,7 @@ Res Config::Init(const Context* context, const std::string& name,
 
   assert(value.isObject() || value.isArray());
 
-  std::string null_char;
+  string null_char;
   null_char += '\0';
 
   if (value.isMember("compile_environment")) {

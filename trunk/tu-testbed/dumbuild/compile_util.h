@@ -6,12 +6,8 @@
 #ifndef COMPILE_UTIL_H_
 #define COMPILE_UTIL_H_
 
-#include <map>
-#include <string>
-#include <utility>  // for std::pair
-#include <vector>
-
-#include "content_hash.h"
+#include "dmb_types.h"
+#include "hash.h"
 #include "res.h"
 
 class Context;
@@ -22,10 +18,10 @@ struct CompileInfo {
   }
 
   // Variables for template replacement.
-  std::map<std::string, std::string> vars_;
+  map<string, string> vars_;
   // Specific source files to be compiled.  Expressed relative to
   // output dir.
-  std::vector<std::string> src_list_;
+  vector<string> src_list_;
   // TODO: header_dir list?
 };
 

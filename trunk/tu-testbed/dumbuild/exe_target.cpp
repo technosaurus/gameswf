@@ -6,6 +6,7 @@
 #include "exe_target.h"
 #include "compile_util.h"
 #include "config.h"
+#include "dmb_types.h"
 #include "os.h"
 #include "util.h"
 
@@ -13,7 +14,7 @@ ExeTarget::ExeTarget() {
   type_ = "exe";
 }
 
-Res ExeTarget::Init(const Context* context, const std::string& name,
+Res ExeTarget::Init(const Context* context, const string& name,
                     const Json::Value& val) {
   Res res = Target::Init(context, name, val);
   if (res.Ok()) {
@@ -30,8 +31,8 @@ Res ExeTarget::Resolve(Context* context) {
   return Target::Resolve(context);
 }
 
-Res BuildLumpFile(const std::string& lump_file,
-                  const std::vector<std::string>& src) {
+Res BuildLumpFile(const string& lump_file,
+                  const vector<string>& src) {
   // TODO
   assert(0);
   return Res(OK);
@@ -80,7 +81,7 @@ Res ExeTarget::Process(const Context* context) {
   const Config* config = context->GetConfig();
   if (do_link) {
     context->Log(StringPrintf("Linking %s\n", name_.c_str()));
-    std::string cmd;
+    string cmd;
     res = FillTemplate(config->link_template(), ci.vars_, &cmd);
     if (!res.Ok()) {
       res.AppendDetail("\nwhile preparing linker command line for " + name_);

@@ -12,9 +12,9 @@
 
 #include <assert.h>
 #include <json/json.h>
-#include <string>
 
 #include "context.h"
+#include "dmb_types.h"
 #include "path.h"
 #include "res.h"
 
@@ -25,7 +25,7 @@ class Object {
  public:
   // Factory.
   static Res Create(const Context* context,
-		    const std::string& path,
+		    const string& path,
 		    const Json::Value& value,
 		    Object** object);
 
@@ -33,14 +33,14 @@ class Object {
   }
   
   virtual Res Init(const Context* context,
-		   const std::string& name,
+		   const string& name,
 		   const Json::Value& value);
 
-  const std::string& name() const {
+  const string& name() const {
     return name_;
   }
 
-  const std::string& type() const {
+  const string& type() const {
     return type_;
   }
 
@@ -53,7 +53,7 @@ class Object {
   }
 
  protected:
-  std::string name_, type_;
+  string name_, type_;
 };
 
 #endif  // TARGET_H_

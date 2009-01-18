@@ -10,14 +10,13 @@
 
 #include <assert.h>
 #include <json/json.h>
-#include <map>
-#include <string>
+#include "dmb_types.h"
 #include "res.h"
 
 // Return the filename with the extension (if any) removed.
-std::string StripExt(const std::string& filename);
+string StripExt(const string& filename);
 
-void TrimTrailingWhitespace(std::string* str);
+void TrimTrailingWhitespace(string* str);
 
 // Does variable replacement on the given template using the given
 // vars, putting the results in *out.
@@ -31,9 +30,9 @@ void TrimTrailingWhitespace(std::string* str);
 //
 // Returns an error if a replacement token occurs with no
 // corresponding value in vars.
-Res FillTemplate(const std::string& template_string,
-		 const std::map<std::string, std::string> & vars,
-		 std::string* out);
+Res FillTemplate(const string& template_string,
+		 const map<string, string> & vars,
+		 string* out);
 
 // This takes a Json::Value that could be a string or an array or a
 // map, and parses it into *out.
@@ -47,12 +46,12 @@ Res FillTemplate(const std::string& template_string,
 // with equals_string separating the key and value, and
 // separator_string separating the pairs.
 Res ParseValueStringOrMap(const Json::Value& val,
-			  const std::string& equals_string,
-			  const std::string& separator_string,
-			  std::string* out);
+			  const string& equals_string,
+			  const string& separator_string,
+			  string* out);
 
-// printf-alike that returns a std::string.
-std::string StringPrintf(const char* format, ...);
+// printf-alike that returns a string.
+string StringPrintf(const char* format, ...);
 
 // Increments on construction; decrements on destruction.
 class ScopedIncrement {

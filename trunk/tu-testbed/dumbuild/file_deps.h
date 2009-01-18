@@ -9,22 +9,22 @@
 #ifndef FILE_DEPS_H_
 #define FILE_DEPS_H_
 
-#include <string>
+#include "dmb_types.h"
 #include "res.h"
 
-class ContentHash;
+class Hash;
 class Context;
 class Target;
 
 bool AnyIncludesChanged(const Target* t, const Context* context,
-                        const std::string& inc_dirs_str,
-                        const std::string& src_path,
-                        const ContentHash& src_hash);
+                        const string& inc_dirs_str,
+                        const string& src_path,
+                        const Hash& src_hash);
 
 Res GenerateDepsFile(const Target* t, const Context* context,
-                     const std::string& inc_dirs_str,
-                     const std::string& src_path,
-                     const ContentHash& src_hash);
+                     const string& inc_dirs_str,
+                     const string& src_path,
+                     const Hash& src_hash);
 
 // TODO: above code is not correct yet.  Need to do this instead:
 
@@ -65,7 +65,7 @@ Res GenerateDepsFile(const Target* t, const Context* context,
 //   rebuild(target) = BuildMarker(target) != CumHash(target)
 
 //Res GetCumHashForObjectFile(const Target* t, const Context* context,
-//			      const std::string& src_path);
+//			      const string& src_path);
 
 //Res AccumulateDepsCumHash(, hash* h);
 

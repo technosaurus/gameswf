@@ -3,10 +3,10 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include <vector>
 #include "context.h"
 #include "config.h"
-#include "content_hash.h"
+#include "dmb_types.h"
+#include "hash.h"
 #include "hash_util.h"
 #include "object_store.h"
 #include "os.h"
@@ -23,16 +23,16 @@ Context::Context() : log_verbose_(false), done_reading_(false),
   config_name_ = ":gcc-debug";
 #endif
 
-  content_hash_cache_ = new ContentHashCache();
+  content_hash_cache_ = new HashCache();
 }
 
 Context::~Context() {
-  for (std::map<std::string, Target*>::iterator it = targets_.begin();
+  for (map<string, Target*>::iterator it = targets_.begin();
        it != targets_.end();
        ++it) {
     delete it->second;
   }
-  for (std::map<std::string, Config*>::iterator it = configs_.begin();
+  for (map<string, Config*>::iterator it = configs_.begin();
        it != configs_.end();
        ++it) {
     delete it->second;
@@ -87,7 +87,7 @@ Res Context::ProcessArgs(int argc, const char** argv) {
   return Res(OK);
 }
 
-Res Context::Init(const std::string& root_path) {
+Res Context::Init(const string& root_path) {
   tree_root_ = root_path;
   out_root_ = PathJoin("dmb-out", CanonicalFilePart(config_name_));
 
@@ -100,11 +100,11 @@ Res Context::Init(const std::string& root_path) {
   return Res(OK);
 }
 
-Res Context::ReadObjects(const std::string& path, const std::string& filename) {
+Res Context::ReadObjects(const string& path, const string& filename) {
   assert(!done_reading_);
 
   // Slurp in the file.
-  std::string file_data;
+  string file_data;
   FILE* fp = fopen(filename.c_str(), "r");
   if (!fp) {
     fprintf(stderr, "Can't open build file '%s'\n", filename.c_str());
@@ -141,7 +141,7 @@ void Context::DoneReading() {
   done_reading_ = true;
 
   // Look up the active config.
-  std::map<std::string, Config*>::const_iterator it =
+  map<string, Config*>::const_iterator it =
     configs_.find(config_name_);
   if (it != configs_.end()) {
     active_config_ = it->second;
@@ -149,8 +149,8 @@ void Context::DoneReading() {
 }
 
 Res Context::ProcessTargets() const {
-  const std::map<std::string, Target*>& targs = targets();
-  for (std::map<std::string, Target*>::const_iterator it = targs.begin();
+  const map<string, Target*>& targs = targets();
+  for (map<string, Target*>::const_iterator it = targs.begin();
        it != targs.end();
        ++it) {
     Target* t = it->second;
@@ -164,7 +164,7 @@ Res Context::ProcessTargets() const {
   return Res(OK);
 }
 
-Res Context::ParseValue(const std::string& path, const Json::Value& value) {
+Res Context::ParseValue(const string& path, const Json::Value& value) {
   if (!value.isObject()) {
     return Res(ERR_PARSE, "object is not a JSON object");
   }
@@ -197,7 +197,7 @@ Res Context::ParseValue(const std::string& path, const Json::Value& value) {
   return create_result;
 }
 
-Res Context::ParseGroup(const std::string& path, const Json::Value& value) {
+Res Context::ParseGroup(const string& path, const Json::Value& value) {
   if (!value.isObject() && !value.isArray()) {
     return Res(ERR_PARSE, "group is not an object or array");
   }
@@ -215,13 +215,13 @@ Res Context::ParseGroup(const std::string& path, const Json::Value& value) {
   return Res(OK);
 }
 
-std::string Context::AbsoluteFile(const std::string& canonical_path,
-                                  const std::string& filename) {
+string Context::AbsoluteFile(const string& canonical_path,
+                                  const string& filename) {
   return PathJoin(tree_root(), PathJoin(canonical_path, filename));
 }
 
-Res Context::ComputeOrGetFileContentHash(const std::string& filename,
-                                         ContentHash* out) const {
+Res Context::ComputeOrGetFileContentHash(const string& filename,
+                                         Hash* out) const {
   if (content_hash_cache_->Get(filename, out)) {
     return Res(OK);
   }
@@ -235,12 +235,12 @@ Res Context::ComputeOrGetFileContentHash(const std::string& filename,
   return Res(OK);
 }
 
-void Context::Log(const std::string& msg) const {
+void Context::Log(const string& msg) const {
   fputs(msg.c_str(), stdout);
   fflush(stdout);
 }
 
-void Context::LogVerbose(const std::string& msg) const {
+void Context::LogVerbose(const string& msg) const {
   if (log_verbose_) {
     Log(msg);
   }

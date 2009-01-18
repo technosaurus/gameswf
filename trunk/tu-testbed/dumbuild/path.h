@@ -22,16 +22,15 @@
 #ifndef PATH_H_
 #define PATH_H_
 
-#include <string>
-
+#include "dmb_types.h"
 #include "res.h"
 
-inline std::string GetPath(const std::string& filename) {
+inline string GetPath(const string& filename) {
   // TODO
   return "./";
 }
 
-inline std::string PathJoin(const std::string& a, const std::string& b) {
+inline string PathJoin(const string& a, const string& b) {
   // TODO deal with cwd and "/" and ".." and so on; i.e. normalize the path.
   if (a.length() == 0 || a[a.length() - 1] == '/') {
     return a + b;
@@ -40,27 +39,27 @@ inline std::string PathJoin(const std::string& a, const std::string& b) {
   }
 }
 
-inline bool HasParentDir(const std::string& path) {
+inline bool HasParentDir(const string& path) {
   size_t last_slash = path.rfind('/');
-  if (last_slash == std::string::npos || last_slash == path.length() - 1) {
+  if (last_slash == string::npos || last_slash == path.length() - 1) {
     return false;
   }
   return true;
 }
 
 // Doesn't work correctly on paths that contain ".." elements.
-inline std::string ParentDir(const std::string& path) {
+inline string ParentDir(const string& path) {
   size_t last_slash = path.rfind('/');
   assert(last_slash < path.length() - 1);
   if (last_slash == 0) {
     assert(path.length() > 1);
     return "/";
   }
-  return std::string(path, 0, last_slash);
+  return string(path, 0, last_slash);
 }
 
-inline void SplitCanonicalName(const std::string& name, std::string* path_part,
-			       std::string* name_part) {
+inline void SplitCanonicalName(const string& name, string* path_part,
+			       string* name_part) {
   size_t split_point = name.length();
   size_t last_colon = name.rfind(':');
   if (last_colon < name.length() - 1) {
@@ -69,10 +68,10 @@ inline void SplitCanonicalName(const std::string& name, std::string* path_part,
 
   if (split_point < name.length() - 1) {
     if (path_part) {
-      *path_part = std::string(name, 0, split_point);
+      *path_part = string(name, 0, split_point);
     }
     if (name_part) {
-      *name_part = std::string(name, split_point + 1, name.length());
+      *name_part = string(name, split_point + 1, name.length());
     }
   } else {
     if (path_part) {
@@ -84,7 +83,7 @@ inline void SplitCanonicalName(const std::string& name, std::string* path_part,
   }
 }
 
-inline bool IsCanonicalPath(const std::string& path) {
+inline bool IsCanonicalPath(const string& path) {
   if (path == "") {  // root
     return true;
   }
@@ -98,7 +97,7 @@ inline bool IsCanonicalPath(const std::string& path) {
   return true;
 }
 
-inline bool IsCanonicalNamePart(const std::string& path) {
+inline bool IsCanonicalNamePart(const string& path) {
   if (path.rfind('/') < path.length()
       || path.rfind(':') < path.length()) {
     return false;
@@ -106,43 +105,43 @@ inline bool IsCanonicalNamePart(const std::string& path) {
   return true;
 }
 
-inline bool IsCanonicalName(const std::string& name) {
-  std::string path_part, name_part;
+inline bool IsCanonicalName(const string& name) {
+  string path_part, name_part;
   SplitCanonicalName(name, &path_part, &name_part);
   return IsCanonicalPath(path_part) && IsCanonicalNamePart(name_part);
 }
 
-inline Res CanonicalizeName(const std::string& base_path,
-                     const std::string& relative_path,
-                     std::string* out) {
+inline Res CanonicalizeName(const string& base_path,
+                     const string& relative_path,
+                     string* out) {
   assert(IsCanonicalPath(base_path));
   // TODO: deal with relative stuff in relative_path, etc.
   *out = base_path + ":" + relative_path;
   return Res(OK);
 }
 
-inline std::string CanonicalPathPart(const std::string& name) {
-  std::string path_part;
+inline string CanonicalPathPart(const string& name) {
+  string path_part;
   SplitCanonicalName(name, &path_part, NULL);
   return path_part;
 }
 
-inline std::string CanonicalFilePart(const std::string& name) {
-  std::string file_part;
+inline string CanonicalFilePart(const string& name) {
+  string file_part;
   SplitCanonicalName(name, NULL, &file_part);
   return file_part;
 }
 
-inline void SplitFileName(const std::string& name, std::string* path_part,
-                          std::string* name_part) {
+inline void SplitFileName(const string& name, string* path_part,
+                          string* name_part) {
   size_t split_point = name.rfind('/');
 
   if (split_point < name.length() - 1) {
     if (path_part) {
-      *path_part = std::string(name, 0, split_point);
+      *path_part = string(name, 0, split_point);
     }
     if (name_part) {
-      *name_part = std::string(name, split_point + 1, name.length());
+      *name_part = string(name, split_point + 1, name.length());
     }
   } else {
     if (path_part) {
@@ -154,14 +153,14 @@ inline void SplitFileName(const std::string& name, std::string* path_part,
   }
 }
 
-inline std::string FilenamePathPart(const std::string& name) {
-  std::string path_part;
+inline string FilenamePathPart(const string& name) {
+  string path_part;
   SplitFileName(name, &path_part, NULL);
   return path_part;
 }
 
-inline std::string FilenameFilePart(const std::string& name) {
-  std::string file_part;
+inline string FilenameFilePart(const string& name) {
+  string file_part;
   SplitFileName(name, NULL, &file_part);
   return file_part;
 }

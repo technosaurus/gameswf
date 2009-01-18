@@ -11,11 +11,11 @@
 #include "target.h"
 
 // Factory.
-Res Object::Create(const Context* context, const std::string& path,
+Res Object::Create(const Context* context, const string& path,
                    const Json::Value& value, Object** object) {
   *object = NULL;
 
-  std::string name;
+  string name;
   Res res = CanonicalizeName(path, value["name"].asString(), &name);
   if (!res.Ok()) {
     return res;
@@ -28,7 +28,7 @@ Res Object::Create(const Context* context, const std::string& path,
     return Res(ERR_PARSE, "object type is not a string");
   }
 
-  const std::string& type = value["type"].asString();
+  const string& type = value["type"].asString();
   if (type == "exe") {
     *object = new ExeTarget();
   } else if (type == "lib") {
@@ -45,7 +45,7 @@ Res Object::Create(const Context* context, const std::string& path,
   return (*object)->Init(context, name, value);
 }
 
-Res Object::Init(const Context* context, const std::string& name,
+Res Object::Init(const Context* context, const string& name,
                  const Json::Value& value) {
   name_ = name;
   context->LogVerbose(StringPrintf("Object::Init(): %s\n", name_.c_str()));
