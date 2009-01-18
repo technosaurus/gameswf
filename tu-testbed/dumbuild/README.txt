@@ -4,15 +4,17 @@ dumbuild
 dumbuild is a minimal build tool for building C++ programs.  The goals
 include:
 
-* Small and self-contained.
+* Small and self-contained.  Easy to embed in larger open-source
+  projects -- no external dependencies, no license restrictions.
 
 * Simple and sane config language.
 
 * Easily hackable and extendable by C++ programmers.
 
-* Support Windows, Linux and Mac OSX out of the box.
+* Support Windows, Linux and Mac OSX out of the box.  Bootstraps
+  itself if necessary using a simple batch file or shell script.
 
-* Not gratuituously slow.
+* Reliable and fast.  Use it as your everyday build tool.
 
 Getting dumbuild
 ================
@@ -22,6 +24,8 @@ http://tu-testbed.svn.sourceforge.net/viewvc/tu-testbed/trunk/tu-testbed/dumbuil
 
 You can grab it out of SVN or just poke around in there if you're
 curious.
+
+When it's more mature I'll provide .zip and .tar.gz archives.
 
 A prebuilt statically-linked windows executable is here:
 http://tulrich.com/geekstuff/dumbuild/dmb.exe
@@ -45,6 +49,7 @@ Usage
 
 # dmb [options] [target-name]
 
+(Where "dmb" refers to wherever the dmb script or executable exists.)
 For example:
 
 # dmb
@@ -61,19 +66,19 @@ Files:
 
 root.dmb -- put this in the root directory of your project.  All the
   pathnames in dumbuild config are relative to this root.  This is
-  also where you put the compiler configuration (command-line
-  templates and such).
+  also where you probably want to put the compiler configuration
+  (command-line templates and such).
   [[http://tu-testbed.svn.sourceforge.net/viewvc/tu-testbed/trunk/tu-testbed/dumbuild/root.dmb?view=markup][Example]]
-
 
 build.dmb -- these files specify your actual "targets" (i.e. libs and
   executables).  Put these throughout your project tree, wherever you
   need them.  The recommended pattern is to put one in each source
   directory.  You can have more than one target in a single directory;
-  this is normal if you want some structure inside the directory.  A
-  target can actually pull sources from outside the directory its
-  build.dmb file is in, though this is more intended for special
-  circumstances, like building sources from a foreign code tree.
+  this is normal if you want some additional structure inside the
+  directory.  A target can actually pull sources from outside the
+  directory its build.dmb file is in, though this is more intended for
+  special circumstances, like building sources from a foreign code
+  tree.
   [[http://tu-testbed.svn.sourceforge.net/viewvc/tu-testbed/trunk/tu-testbed/dumbuild/build.dmb?view=markup][Example]]
 
 
@@ -85,16 +90,15 @@ Keep It Simple
 
 This is why I called it "dumbuild":
 
-1. If there is a choice between a simple, conservative 80% solution
-   and a more complex 100% solution, prefer the 80% solution.
+1. Small source, small executable.
 
-2. Don't build too much compiler/platform knowledge into the tool.
-   Push that into config files.  But the config files need to be brain
-   dead and explicit.
+2. Contains no scripting language.
 
-3. Don't support every clever build-tool feature.  That means no
-   fine-grained implicit dependency checking, no parallel build
-   support, no networked object cache.  At least not initially.
+3. No extraneous dependencies.  If you have a desktop OS and a
+   compiler, you should be able to download dumbuild and then use it
+   with a single command.
+
+4. Config files are brain-dead simple and explicit.
 
 Written in C++
 --------------
@@ -120,19 +124,17 @@ I'm trying with the configuration semantics to stay close to the task
 of building C++ libraries and executables.  I want to avoid a lot of
 implicit behavior, without making it too general and verbose.
 
-Coarse-grained
---------------
+Fast and Reliable
+-----------------
 
-The basic unit of dependency checking in dumbuild is the "target".
-Libraries and executables are types of targets.  The user has to
-explicitly declare the dependencies between targets.
-
-dumbuild does not try to do file-level dependency checking.  I think
-that would be complicated and a waste of time.  Here's a simple
-conservative 80% rule to use instead: if a target depends on another
-target, or declares an include dir, dumbuild just checks to see if
-*any* header file in those dependency directories is new -- if so, it
-assumes that the target is stale.  (NOTE: not implemented yet!!)
+dumbuild wants to be usable as an everyday build tool.  The compile
+tools are invoked hermetically; i.e. dumbuild does not let your
+environment variables leak into the build.  It uses content-based
+dependency checking (using SHA1 hashes).  It understands C/C++ syntax
+just enough to collect the #include files for any source file, in
+order to implement fine-grained dependency checking.  When something
+changes, it quickly and accurately determines what files need to be
+recompiled.  (WORK IN PROGRESS)
 
 Fine-grained
 ------------
@@ -163,14 +165,9 @@ Notes
   substituted into template strings supplied in the project
   configuration.  We'll see how far that goes.
 
-* For coarse-grained dependency checking, it would be good to enforce
-  explicit declaration of dependencies by using symlinks to build
-  targets in a little pseudo-tree where only the dependencies are
-  mapped in.  That way, if you forget to declare a dependency, the
-  compiler won't find the header file and you'll get an error message.
-  (Not implemented currently, because Windows/NTFS does not have
-  reasonable symlinks yet.)
-
+* The .exe is currently TOO BIG!  I think the main culprit is STL.  I
+  need to replace STL with tu-testbed base containers, which compile
+  relatively small, and should provide everything necessary.
 
 Why?
 ====

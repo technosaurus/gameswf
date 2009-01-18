@@ -17,7 +17,7 @@ class GenericTarget : public Target {
   }
 
   Res Init(const Context* context,
-           const std::string& name,
+           const string& name,
            const Json::Value& val) {
     return Target::Init(context, name, val);
   }

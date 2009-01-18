@@ -10,8 +10,7 @@
 #define RES_H_
 
 #include <assert.h>
-#include <map>
-#include <string>
+#include "dmb_types.h"
 
 // For error codes, with optional additional info.
 enum ResValue {
@@ -54,7 +53,7 @@ class ResValueStrings {
   }
 
   const char* ValueString(ResValue val) {
-    std::map<int, std::string>::iterator it = strings_.find(val);
+    map<int, string>::iterator it = strings_.find(val);
     if (it == strings_.end()) {
       assert(0);
     }
@@ -62,7 +61,7 @@ class ResValueStrings {
   }
 
  private:
-  std::map<int, std::string> strings_;
+  map<int, string> strings_;
 };
 extern ResValueStrings g_res_value_strings;
 
@@ -74,14 +73,14 @@ class Res {
   Res(ResValue val) : value_(val), detail_(NULL) {
   }
   Res(ResValue val, const char* detail)
-      : value_(val), detail_(new std::string(detail)) {
+      : value_(val), detail_(new string(detail)) {
   }
-  Res(ResValue val, const std::string& detail)
-      : value_(val), detail_(new std::string(detail)) {
+  Res(ResValue val, const string& detail)
+      : value_(val), detail_(new string(detail)) {
   }
   Res(const Res& res) : value_(res.value_), detail_(NULL) {
     if (res.detail_) {
-      detail_ = new std::string(*res.detail_);
+      detail_ = new string(*res.detail_);
     }
   }
 
@@ -93,7 +92,7 @@ class Res {
     ReleaseDetail();
     value_ = res.value();
     if (res.detail_) {
-      detail_ = new std::string(*res.detail_);
+      detail_ = new string(*res.detail_);
     }
   }
 
@@ -116,9 +115,9 @@ class Res {
     return value_ == OK;
   }
 
-  void AppendDetail(const std::string& str) {
+  void AppendDetail(const string& str) {
     if (!detail_) {
-      detail_ = new std::string(str);
+      detail_ = new string(str);
     } else {
       *detail_ += str;
     }
@@ -136,7 +135,7 @@ class Res {
   }
 
   ResValue value_;
-  std::string* detail_;
+  string* detail_;
 };
 
 #endif  // RES_H_

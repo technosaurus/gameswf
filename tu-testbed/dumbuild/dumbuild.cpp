@@ -37,7 +37,6 @@
 #include <assert.h>
 #include <json/json.h>
 #include <stdio.h>
-#include <string>
 #ifdef _WIN32
 #include <direct.h>
 #else  // not _WIN32
@@ -46,6 +45,7 @@
 
 #include "config.h"
 #include "context.h"
+#include "dmb_types.h"
 #include "os.h"
 #include "res.h"
 #include "target.h"
@@ -105,13 +105,13 @@ void ExitIfError(const Res& res) {
 }
 
 // On success, currdir_relative_to_root will be a canonical path.
-Res FindRoot(std::string* absolute_root,
-             std::string* currdir_relative_to_root) {
-  std::string currdir = GetCurrentDir();
+Res FindRoot(string* absolute_root,
+             string* currdir_relative_to_root) {
+  string currdir = GetCurrentDir();
 
   // Look for root dir.  Root dir is marked by the presence of a
   // "root.dmb" file.
-  std::string root = currdir;
+  string root = currdir;
   for (;;) {
     if (FileExists(PathJoin(root, "root.dmb"))) {
       break;
@@ -143,8 +143,8 @@ int main(int argc, const char** argv) {
   res = context.ProcessArgs(argc, argv);
   ExitIfError(res);
 
-  std::string absolute_root;
-  std::string canonical_currdir;
+  string absolute_root;
+  string canonical_currdir;
   res = FindRoot(&absolute_root, &canonical_currdir);
   ExitIfError(res);
 
@@ -172,7 +172,7 @@ int main(int argc, const char** argv) {
   }
 
   // TODO: allow command-line to specify the desired target.
-  std::string target_name = canonical_currdir + ":default";
+  string target_name = canonical_currdir + ":default";
   Target* target = context.GetTarget(target_name);
   if (!target) {
     ExitIfError(Res(ERR_UNKNOWN_TARGET, target_name));

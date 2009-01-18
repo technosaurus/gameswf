@@ -21,11 +21,11 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   bool build_all = context->rebuild_all();
   // TODO build_all = build_all || CompileTemplateChanged(t, config);
 
-  std::string inc_dirs_str;
+  string inc_dirs_str;
   for (size_t i = 0; i < t->inc_dirs().size(); i++) {
     inc_dirs_str += " -I";
     // TODO: handle absolute inc_dirs
-    std::string inc_dir = PathJoin(t->relative_path_to_tree_root(),
+    string inc_dir = PathJoin(t->relative_path_to_tree_root(),
 				   t->inc_dirs()[i]);
     inc_dirs_str += inc_dir;
   }
@@ -36,18 +36,18 @@ Res PrepareCompileVars(const Target* t, const Context* context,
 
   Res res;
   
-  std::string src_list;
-  std::string obj_list;
-  std::string lib_list;
+  string src_list;
+  string obj_list;
+  string lib_list;
   for (size_t i = 0; i < t->src().size(); i++) {
-    std::string src_path = PathJoin(t->relative_path_to_tree_root(),
+    string src_path = PathJoin(t->relative_path_to_tree_root(),
                                     t->src()[i]);
-    ContentHash src_hash;
+    Hash src_hash;
 
     // See if we should compile this file.
     bool do_compile = true;
     if (!build_all) {
-      ContentHash previous_hash;
+      Hash previous_hash;
       res = ReadFileHash(t->absolute_out_dir(), src_path, &previous_hash);
       if (res.Ok()) {
         res = context->ComputeOrGetFileContentHash(
@@ -92,7 +92,7 @@ Res PrepareCompileVars(const Target* t, const Context* context,
     deps_changed = deps_changed || this_dep->did_rebuild();
 
     lib_list += " ";
-    const std::string& dep = t->dep()[i];
+    const string& dep = t->dep()[i];
     lib_list += PathJoin(PathJoin(t->absolute_out_dir(),
                                   CanonicalPathPart(dep)),
                          CanonicalFilePart(dep)) +
@@ -124,7 +124,7 @@ Res DoCompile(const Target* t, const Context* context, const CompileInfo& ci) {
 
   const Config* config = context->GetConfig();
 
-  std::string cmd;
+  string cmd;
   Res res = FillTemplate(config->compile_template(), ci.vars_, &cmd);
   if (!res.Ok()) {
     res.AppendDetail("\nwhile preparing compiler command line for " +
@@ -139,12 +139,12 @@ Res DoCompile(const Target* t, const Context* context, const CompileInfo& ci) {
     return res;
   }
 
-  const std::string inc_dirs_str = ci.vars_.find("inc_dirs")->second;
+  const string inc_dirs_str = ci.vars_.find("inc_dirs")->second;
 
   // Write hashes for the just-compiled sources.
-  ContentHash src_hash;
+  Hash src_hash;
   for (int i = 0; i < ci.src_list_.size(); i++) {
-    const std::string& src_path = ci.src_list_[i];
+    const string& src_path = ci.src_list_[i];
     Res res = context->ComputeOrGetFileContentHash(
         PathJoin(t->absolute_out_dir(), src_path), &src_hash);
     if (!res.Ok()) {

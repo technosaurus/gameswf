@@ -5,7 +5,7 @@
 
 #include <stdio.h>
 #include "object_store.h"
-#include "content_hash.h"
+#include "hash.h"
 #include "os.h"
 #include "sha1.h"
 #include "util.h"
@@ -13,21 +13,21 @@
 ObjectStore::ObjectStore(const char* root_path) : root_path_(root_path) {
 }
 
-FILE* ObjectStore::Read(const ContentHash& key) const {
-  std::string path;
+FILE* ObjectStore::Read(const Hash& key) const {
+  string path;
   MakePath(key, &path, NULL);
   return fopen(path.c_str(), "rb");
 }
 
-FILE* ObjectStore::Write(const ContentHash& key) {
-  std::string fullpath, subdir;
+FILE* ObjectStore::Write(const Hash& key) {
+  string fullpath, subdir;
   MakePath(key, &fullpath, &subdir);
   CreatePath(root_path_, subdir);
   return fopen(fullpath.c_str(), "wb");
 }
 
-bool ObjectStore::Erase(const ContentHash& key) {
-  std::string path;
+bool ObjectStore::Erase(const Hash& key) {
+  string path;
   MakePath(key, &path, NULL);
   if (EraseFile(path).Ok()) {
     return true;
@@ -35,8 +35,8 @@ bool ObjectStore::Erase(const ContentHash& key) {
   return false;
 }
 
-bool ObjectStore::Exists(const ContentHash& key) const {
-  std::string path;
+bool ObjectStore::Exists(const Hash& key) const {
+  string path;
   MakePath(key, &path, NULL);
   if (FileExists(path)) {
     return true;
@@ -44,8 +44,8 @@ bool ObjectStore::Exists(const ContentHash& key) const {
   return false;
 }
 
-void ObjectStore::MakePath(const ContentHash& key, std::string* path,
-                           std::string* subdir) const {
+void ObjectStore::MakePath(const Hash& key, string* path,
+                           string* subdir) const {
   char readable[27];
   stb_sha1_readable(readable, key.data());
   *path = root_path_;

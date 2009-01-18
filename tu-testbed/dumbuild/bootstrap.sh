@@ -10,10 +10,10 @@ sysname=`uname`
 
 sources=../../compile_util.cpp \
     ../../config.cpp \
-    ../../content_hash.cpp \
     ../../context.cpp \
     ../../dumbuild.cpp \
     ../../exe_target.cpp \
+    ../../hash.cpp \
     ../../hash_util.cpp \
     ../../lib_target.cpp \
     ../../object.cpp \

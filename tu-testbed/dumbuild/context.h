@@ -10,15 +10,13 @@
 #ifndef CONTEXT_H_
 #define CONTEXT_H_
 
-#include <map>
-#include <string>
-
+#include "dmb_types.h"
 #include "res.h"
 #include "util.h"
 
 class Config;
-class ContentHash;
-class ContentHashCache;
+class Hash;
+class HashCache;
 class ObjectStore;
 class Target;
 
@@ -31,24 +29,24 @@ class Context {
 
   Res ProcessArgs(int argc, const char** argv);
 
-  Res Init(const std::string& root_path);
+  Res Init(const string& root_path);
 
   // Absolute path of project root dir.
-  const std::string& tree_root() const {
+  const string& tree_root() const {
     return tree_root_;
   }
 
   // Output dir, relative to tree_root.
-  const std::string& out_root() const {
+  const string& out_root() const {
     return out_root_;
   }
 
   // "vc8", "gcc", etc
-  const std::string& config_name() const {
+  const string& config_name() const {
     return config_name_;
   }
 
-  const std::map<std::string, Target*>& targets() const {
+  const map<string, Target*>& targets() const {
     return targets_;
   }
 
@@ -60,14 +58,14 @@ class Context {
     rebuild_all_ = ra;
   }
 
-  std::string AbsoluteFile(const std::string& canonical_path,
-                           const std::string& filename);
-  std::string AbsoluteFile(const char* canonical_path, const char* filename) {
-    return AbsoluteFile(std::string(canonical_path), std::string(filename));
+  string AbsoluteFile(const string& canonical_path,
+                           const string& filename);
+  string AbsoluteFile(const char* canonical_path, const char* filename) {
+    return AbsoluteFile(string(canonical_path), string(filename));
   }
 
   // Parses build config from the specified file.
-  Res ReadObjects(const std::string& path, const std::string& filename);
+  Res ReadObjects(const string& path, const string& filename);
 
   // Call this when you're done reading configs and are ready to
   // proceed with the build.
@@ -77,25 +75,25 @@ class Context {
   Res ProcessTargets() const;
 
   // Takes ownership of c.
-  void AddConfig(const std::string& name, Config* c) {
+  void AddConfig(const string& name, Config* c) {
     configs_.insert(make_pair(name, c));
     // TODO
   }
 
   // Takes ownership of t.
-  void AddTarget(const std::string& name, Target* t) {
+  void AddTarget(const string& name, Target* t) {
     targets_.insert(make_pair(name, t));
   }
 
-  Target* GetTarget(const std::string& name) const {
-    std::map<std::string, Target*>::const_iterator it = targets_.find(name);
+  Target* GetTarget(const string& name) const {
+    map<string, Target*>::const_iterator it = targets_.find(name);
     if (it == targets_.end()) {
       return NULL;
     }
     return it->second;
   }
 
-  Target* GetOrLoadTarget(const std::string& name) {
+  Target* GetOrLoadTarget(const string& name) {
     Target* target = GetTarget(name);
     if (target) {
       return target;
@@ -114,8 +112,8 @@ class Context {
     return active_config_;
   }
 
-  Res ComputeOrGetFileContentHash(const std::string& filename,
-                                  ContentHash* out) const;
+  Res ComputeOrGetFileContentHash(const string& filename,
+                                  Hash* out) const;
 
   // Access to the persistent object store.
   ObjectStore* GetObjectStore() const {
@@ -127,24 +125,24 @@ class Context {
   }
 
   // TODO: add printf-style formatting.
-  void Log(const std::string& msg) const;
-  void LogVerbose(const std::string& msg) const;
+  void Log(const string& msg) const;
+  void LogVerbose(const string& msg) const;
 
  private:
-  Res ParseValue(const std::string& path, const Json::Value& value);
-  Res ParseGroup(const std::string& path, const Json::Value& value);
+  Res ParseValue(const string& path, const Json::Value& value);
+  Res ParseGroup(const string& path, const Json::Value& value);
 
-  std::string tree_root_;
-  std::string config_name_;
-  std::string out_root_;
+  string tree_root_;
+  string config_name_;
+  string out_root_;
   bool done_reading_;
   bool rebuild_all_;
   const Config* active_config_;
-  std::map<std::string, Config*> configs_;
-  std::map<std::string, Target*> targets_;
+  map<string, Config*> configs_;
+  map<string, Target*> targets_;
   bool log_verbose_;
 
-  ContentHashCache* content_hash_cache_;
+  HashCache* content_hash_cache_;
   ObjectStore* object_store_;
 };
 

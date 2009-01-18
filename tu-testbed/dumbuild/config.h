@@ -9,47 +9,46 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#include <map>
-#include <string>
+#include "dmb_types.h"
 #include "object.h"
 
 class Config : public Object {
  public:
   virtual Res Init(const Context* context,
-		   const std::string& name,
+		   const string& name,
 		   const Json::Value& value);
 
   virtual Config* CastToConfig() {
     return this;
   }
 
-  const std::string& compile_environment() const {
+  const string& compile_environment() const {
     return compile_environment_;
   }
-  const std::string& compile_template() const {
+  const string& compile_template() const {
     return compile_template_;
   }
-  const std::string& link_template() const {
+  const string& link_template() const {
     return link_template_;
   }
-  const std::string& lib_template() const {
+  const string& lib_template() const {
     return lib_template_;
   }
-  const std::string& obj_extension() const {
+  const string& obj_extension() const {
     return obj_extension_;
   }
-  const std::string& lib_extension() const {
+  const string& lib_extension() const {
     return lib_extension_;
   }
 
   // TODO
  private:
-  std::string compile_environment_;
-  std::string compile_template_;
-  std::string link_template_;
-  std::string lib_template_;
-  std::string obj_extension_;
-  std::string lib_extension_;
+  string compile_environment_;
+  string compile_template_;
+  string link_template_;
+  string lib_template_;
+  string obj_extension_;
+  string lib_extension_;
 };
 
 #endif  // CONFIG_H_

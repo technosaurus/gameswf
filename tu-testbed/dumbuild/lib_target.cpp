@@ -17,7 +17,7 @@ LibTarget::LibTarget() {
   type_ = "lib";
 }
 
-Res LibTarget::Init(const Context* context, const std::string& name,
+Res LibTarget::Init(const Context* context, const string& name,
                     const Json::Value& val) {
   Res res = Target::Init(context, name, val);
   if (res.Ok()) {
@@ -82,7 +82,7 @@ Res LibTarget::Process(const Context* context) {
 
   if (do_link) {
     // Archive the objs to make the lib
-    std::string cmd;
+    string cmd;
     res = FillTemplate(config->lib_template(), ci.vars_, &cmd);
     if (!res.Ok()) {
       res.AppendDetail("\nwhile preparing lib command line for " + name_);

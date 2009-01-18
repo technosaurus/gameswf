@@ -1,26 +1,25 @@
-// content_hash.cpp -- Thatcher Ulrich <tu@tulrich.com> 2008
+// hash.cpp -- Thatcher Ulrich <tu@tulrich.com> 2008
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#include <string.h>
-
-#include "content_hash.h"
+#include "dmb_types.h"
+#include "hash.h"
 #include "sha1.h"
 
-ContentHash::ContentHash() {
+Hash::Hash() {
   Reset();
 }
 
-void ContentHash::Reset() {
+void Hash::Reset() {
   stb_sha1_init(h_);
 }
 
-bool ContentHash::InitFromReadable(const char readable[27]) {
+bool Hash::InitFromReadable(const char readable[27]) {
   return stb_sha1_from_readable(readable, h_);
 }
 
-Res ContentHash::AppendFile(const char* filename) {
+Res Hash::AppendFile(const char* filename) {
   if (!stb_sha1_file(h_, filename)) {
     Reset();
     return Res(ERR_FILE_ERROR, filename);
@@ -28,23 +27,23 @@ Res ContentHash::AppendFile(const char* filename) {
   return Res(OK);
 }
 
-Res ContentHash::AppendFile(const std::string& filename) {
+Res Hash::AppendFile(const string& filename) {
   return AppendFile(filename.c_str());
 }
 
-void ContentHash::AppendData(const char* data, int size) {
+void Hash::AppendData(const char* data, int size) {
   stb_sha1(h_, (const unsigned char*) data, size);
 }
 
-void ContentHash::AppendString(const std::string& str) {
+void Hash::AppendString(const string& str) {
   AppendData(str.c_str(), str.length());
 }
 
-void ContentHash::operator=(const ContentHash& b) {
+void Hash::operator=(const Hash& b) {
   memcpy(h_, b.h_, sizeof(h_));
 }
 
-bool ContentHash::operator==(const ContentHash& b) const {
+bool Hash::operator==(const Hash& b) const {
   for (int i = 0; i < sizeof(h_); i++) {
     if (h_[i] != b.h_[i]) {
       return false;
@@ -53,6 +52,6 @@ bool ContentHash::operator==(const ContentHash& b) const {
   return true;
 }
 
-void ContentHash::GetReadable(char readable[27]) {
+void Hash::GetReadable(char readable[27]) {
   stb_sha1_readable(readable, h_);
 }

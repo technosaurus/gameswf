@@ -14,7 +14,7 @@ Target::Target()
 
 
 Res Target::Init(const Context* context,
-                 const std::string& name,
+                 const string& name,
                  const Json::Value& value) {
   Res res = Object::Init(context, name, value);
   if (!res.Ok()) {
@@ -40,7 +40,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": dep list value is not a string: " +
                    (*it).toStyledString());
       }
-      std::string depname;
+      string depname;
       Res res = CanonicalizeName(CanonicalPathPart(name_), (*it).asString(),
                                  &depname);
       if (!res.Ok()) {
@@ -68,7 +68,7 @@ Res Target::Init(const Context* context,
         return Res(ERR_PARSE, name_ + ": src list value is not a string: " +
                    (*it).toStyledString());
       }
-      std::string srcname = PathJoin(CanonicalPathPart(name_),
+      string srcname = PathJoin(CanonicalPathPart(name_),
                                      (*it).asString());
       src_.push_back(srcname);
     }
@@ -91,7 +91,7 @@ Res Target::Init(const Context* context,
                    ": inc_dirs list value is not a string: " +
                    (*it).toStyledString());
       }
-      std::string inc_dir_name = PathJoin(CanonicalPathPart(name_),
+      string inc_dir_name = PathJoin(CanonicalPathPart(name_),
                                           (*it).asString());
       inc_dirs_.push_back(inc_dir_name);
     }
@@ -158,7 +158,7 @@ Res Target::ProcessDependencies(const Context* context) {
 }
 
 Res Target::BuildOutDirAndSetupPaths(const Context* context) {
-  std::string out_dir = PathJoin(context->out_root(), CanonicalPathPart(name_));
+  string out_dir = PathJoin(context->out_root(), CanonicalPathPart(name_));
   Res res = CreatePath(context->tree_root(), out_dir);
   if (!res.Ok()) {
     res.AppendDetail("\nwhile creating output path for " + name_);
