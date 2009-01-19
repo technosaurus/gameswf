@@ -16,31 +16,19 @@ class Hash;
 class Context;
 class Target;
 
-bool AnyIncludesChanged(const Target* t, const Context* context,
-                        const string& inc_dirs_str,
-                        const string& src_path,
-                        const Hash& src_hash);
-
-Res GenerateDepsFile(const Target* t, const Context* context,
-                     const string& inc_dirs_str,
-                     const string& src_path,
-                     const Hash& src_hash);
-
-
 Res AccumulateObjFileDepHash(const Target* t, const Context* context,
                              const string& src_path,
                              const string& inc_dirs_str, Hash* dep_hash);
 
-// TODO: above code is not correct yet.  Need to do this instead:
-
 // DepHash == Cumulative Dependency Hash ==
-//   cumulative hash of all content that goes into some build product
+//   cumulative hash of all content+config that goes into some build product
 //
-// DepHash(src_file) = Hash(src_file) + sum(for d in deps: DepHash(d))
+// DepHash(src_file) = Hash(src_file) + Hash(inc_dirs) +
+//     sum(for i in includes: DepHash(i))
 //
 // When DepHash(file) changes, anything that depends on file must be
-// rebuilt.  DepHash() can be used as a reliable id for a build
-// product.
+// rebuilt.  DepHash() can also be used as a reliable id for a build
+// product (i.e. as a key to a built-products cache).
 
 // DepHash(obj_file) = Hash(compile_flags & environment) + DepHash(src_file)
 
@@ -49,22 +37,15 @@ Res AccumulateObjFileDepHash(const Target* t, const Context* context,
 
 // A build cache would be: map<DepHash, content>
 
-// Deps(src_file):
-//   for each #include in src_file:
-//     full inc_filename
-// (these get cached in the ostore, indexed by Hash(contents of src_file))
-
 // Deps(obj_file): implicitly, src_file
 
 // Deps(lib_file or exe_file):
 //   list of obj files
+//   list of libraries
 // (these come directly out of build.dmb files)
 
-// Build marker: under obj_file_name.hash
-//   DepHash(obj_file)
-
-// Build marker: under lib_or_exe_file_name.hash
-//   DepHash(lib_or_exe_target)
+// Build marker: under obj_or_lib_or_exe_file_name.hash
+//   DepHash(file)
 
 // Rebuild rule:
 //   rebuild(target) = BuildMarker(target) != DepHash(target)

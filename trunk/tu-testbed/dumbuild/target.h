@@ -24,6 +24,7 @@
 
 #include "context.h"
 #include "dmb_types.h"
+#include "hash.h"
 #include "object.h"
 #include "path.h"
 #include "res.h"
@@ -87,18 +88,20 @@ class Target : public Object {
   // Build the target.
   virtual Res Process(const Context* context) = 0;
 
-  // Link dependencies will need to re-link.
-  bool did_rebuild() const {
-    return did_rebuild_;
+  // The dep_hash is a hash of everything that goes into a target.  If
+  // the target changes at all, then the dep hash will change.
+  const Hash& dep_hash() const {
+    assert(dep_hash_was_set_);
+    return dep_hash_;
   }
 
  protected:
-  bool resolved_, processed_;
-  bool did_rebuild_;
+  bool resolved_, processed_, dep_hash_was_set_;
   int resolve_recursion_;
   vector<string> src_, dep_, inc_dirs_;
   string relative_path_to_tree_root_;
   string absolute_out_dir_;
+  Hash dep_hash_;
 };
 
 #endif  // TARGET_H_

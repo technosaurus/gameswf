@@ -9,6 +9,7 @@
 #define HASH_H_
 
 #include <assert.h>
+#include <string.h>
 #include "dmb_types.h"
 #include "res.h"
 
@@ -26,6 +27,21 @@ class Hash {
   void AppendString(const string& str);
   void AppendHash(const Hash& h) {
     AppendData((const char*) h.data(), h.size());
+  }
+
+  // Shorthand, so you can do things like:
+  //   Hash h; h << "key_id" << some_string << some_hash;
+  Hash& operator<<(const string& str) {
+    AppendString(str);
+    return *this;
+  }
+  Hash& operator<<(const char* str) {
+    AppendData(str, strlen(str));
+    return *this;
+  }
+  Hash& operator<<(const Hash& h) {
+    AppendHash(h);
+    return *this;
   }
 
   bool operator==(const Hash& b) const;

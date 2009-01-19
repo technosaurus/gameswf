@@ -75,5 +75,13 @@ Res Config::Init(const Context* context, const string& name,
     lib_extension_ = value["lib_extension"].asString();
   }
 
+  if (value.isMember("exe_extension")) {
+    if (!value["exe_extension"].isString()) {
+      return Res(ERR_PARSE, "exe_extension must be a string value"
+                 "\nwhile initializing exe_extension of config: " + name_);
+    }
+    exe_extension_ = value["exe_extension"].asString();
+  }
+
   return Res(OK);
 }

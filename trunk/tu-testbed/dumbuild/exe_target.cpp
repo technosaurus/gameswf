@@ -7,6 +7,7 @@
 #include "compile_util.h"
 #include "config.h"
 #include "dmb_types.h"
+#include "hash_util.h"
 #include "os.h"
 #include "util.h"
 
@@ -38,6 +39,7 @@ Res BuildLumpFile(const string& lump_file,
   return Res(OK);
 }
 
+// TODO combine this with ExeTarget::Process which is very similar.
 Res ExeTarget::Process(const Context* context) {
   if (processed()) {
     return Res(OK);
@@ -57,29 +59,45 @@ Res ExeTarget::Process(const Context* context) {
     return res;
   }
 
-  bool do_link = false;
-  CompileInfo ci;
-  res = PrepareCompileVars(this, context, &ci);
-  if (res.value() == ERR_DONT_REBUILD) {
-    context->LogVerbose(name_ + " -- skipping compile and link\n");
-  } else if (res.value() == ERR_LINK_ONLY) {
-    context->LogVerbose(name_ + " -- skipping compile but doing link\n");
-    do_link = true;
-  } else {
-    if (!res.Ok()) {
-      return res;
-    }
+  const Config* config = context->GetConfig();
 
-    do_link = true;
-    res = DoCompile(this, context, ci);
-    if (!res.Ok()) {
-      return res;
+  // Read existing build marker, if any.
+  string output_fname = CanonicalFilePart(name_) + config->exe_extension();
+  Hash previous_dep_hash;
+  res = ReadFileHash(absolute_out_dir(), output_fname, &previous_dep_hash);
+  // Ignore return value; we don't care!
+
+  assert(dep_hash_was_set_ == false);
+  dep_hash_.Reset();
+  dep_hash_ << "exe_dep_hash" << name_ << config->link_template();
+
+  CompileInfo ci;
+  res = PrepareCompileVars(this, context, &ci, &dep_hash_);
+  if (!res.Ok()) {
+    return res;
+  }
+
+  dep_hash_was_set_ = true;
+
+  bool do_build = context->rebuild_all() || (previous_dep_hash != dep_hash_);
+  if (do_build) {
+    if (ci.src_list_.size()) {
+      res = DoCompile(this, context, ci);
+      if (!res.Ok()) {
+        return res;
+      }
+    }
+  } else {
+    if (ci.src_list_.size()) {
+      // This is sort of unexpected; let's print something.
+      context->Log("warning: exe_target " + name_ + " has apparently "
+                   "not changed, but some component obj files may "
+                   "be missing!\n");
     }
   }
 
-  // Link.
-  const Config* config = context->GetConfig();
-  if (do_link) {
+  if (do_build) {
+    // Link.
     context->Log(StringPrintf("Linking %s\n", name_.c_str()));
     string cmd;
     res = FillTemplate(config->link_template(), ci.vars_, &cmd);
@@ -94,10 +112,11 @@ Res ExeTarget::Process(const Context* context) {
       return res;
     }
 
-    did_rebuild_ = true;
-    // TODO: write a build marker for the link product(s) so we know
-    // we linked successfully, and to detect when we might need to
-    // re-link.
+    // Write a build marker.
+    res = WriteFileHash(absolute_out_dir(), output_fname, dep_hash_);
+    if (!res.Ok()) {
+      return res;
+    }
   }
 
   processed_ = true;
