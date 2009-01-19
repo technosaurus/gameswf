@@ -120,9 +120,7 @@ Res GetIncludes(const Target* t, const Context* context,
   }
 
   Hash deps_file_id;
-  deps_file_id.AppendString("includes");
-  deps_file_id.AppendHash(src_hash);
-  deps_file_id.AppendString(inc_dirs_str);
+  deps_file_id << "includes" << src_hash << inc_dirs_str;
 
   ObjectStore* ostore = context->GetObjectStore();
   FILE* fp = ostore->Read(deps_file_id);
@@ -209,19 +207,16 @@ Res AccumulateSrcFileDepHash(const Target* t, const Context* context,
   HashCache<Hash>* dep_hash_cache = context->GetDepHashCache();
   assert(dep_hash_cache);
   Hash dep_cache_key;
-  dep_cache_key.AppendString("dep_cache_key");
-  dep_cache_key.AppendString(src_path);
-  dep_cache_key.AppendHash(content_hash);
-  dep_cache_key.AppendString(inc_dirs_str);
+  dep_cache_key << "dep_cache_key" << src_path << content_hash << inc_dirs_str;
   Hash cached_dep_hash;
   if (dep_hash_cache->Get(dep_cache_key, &cached_dep_hash)) {
-    dep_hash->AppendHash(cached_dep_hash);
+    *dep_hash << cached_dep_hash;
     return Res(OK);
   }
 
   // Compute the dep hash.
   Hash computed_dep_hash;
-  computed_dep_hash.AppendHash(content_hash);
+  computed_dep_hash << content_hash;
 
   vector<string> includes;
   res = GetIncludes(t, context, src_path, inc_dirs_str, &includes);
@@ -238,8 +233,7 @@ Res AccumulateSrcFileDepHash(const Target* t, const Context* context,
 
   // Write the computed hash back to the cache, for re-use.
   dep_hash_cache->Insert(dep_cache_key, computed_dep_hash);
-
-  dep_hash->AppendHash(computed_dep_hash);
+  *dep_hash << computed_dep_hash;
 
   return Res(OK);
 }
@@ -249,10 +243,8 @@ Res AccumulateObjFileDepHash(const Target* t, const Context* context,
                              const string& src_path,
                              const string& inc_dirs_str, Hash* dep_hash) {
   const Config* config = context->GetConfig();
-  dep_hash->AppendString(src_path);
-  dep_hash->AppendString(inc_dirs_str);
-  dep_hash->AppendString(config->compile_environment());
-  dep_hash->AppendString(config->compile_template());
+  *dep_hash << src_path << inc_dirs_str << config->compile_environment() <<
+    config->compile_template();
 
   return AccumulateSrcFileDepHash(t, context, src_path, inc_dirs_str, dep_hash);
 }

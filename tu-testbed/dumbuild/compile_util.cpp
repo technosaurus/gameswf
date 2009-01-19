@@ -15,7 +15,7 @@
 #include "util.h"
 
 Res PrepareCompileVars(const Target* t, const Context* context,
-                       CompileInfo* ci) {
+                       CompileInfo* ci, Hash* dep_hash) {
   const Config* config = context->GetConfig();
 
   bool build_all = context->rebuild_all();
@@ -38,6 +38,15 @@ Res PrepareCompileVars(const Target* t, const Context* context,
     string src_path = PathJoin(t->relative_path_to_tree_root(),
                                     t->src()[i]);
     Hash current_hash;
+    res = AccumulateObjFileDepHash(
+        t, context, PathJoin(t->absolute_out_dir(), src_path),
+        inc_dirs_str, &current_hash);
+    if (!res.Ok()) {
+      return res;
+    }
+
+    // Append this obj's dephash into the target dep_hash.
+    *dep_hash << current_hash;
 
     // See if we should compile this file.
     bool do_compile = true;
@@ -45,13 +54,6 @@ Res PrepareCompileVars(const Target* t, const Context* context,
       Hash previous_hash;
       res = ReadFileHash(t->absolute_out_dir(), src_path, &previous_hash);
       if (res.Ok()) {
-        current_hash.Reset();
-        res = AccumulateObjFileDepHash(
-            t, context, PathJoin(t->absolute_out_dir(), src_path),
-            inc_dirs_str, &current_hash);
-        if (!res.Ok()) {
-          return res;
-        }
         if (previous_hash == current_hash) {
           // Flags/environment, file, and dependencies have not
           // changed.
@@ -61,7 +63,6 @@ Res PrepareCompileVars(const Target* t, const Context* context,
           // This file has changed, so we have to compile the file.
           context->LogVerbose("file hash changed:   " + src_path + "\n");
         }
-
       } else {
         // No existing hash, so we have to compile the file.
         context->LogVerbose(StringPrintf("no file hash, %s: %s\n",
@@ -85,7 +86,7 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   for (size_t i = 0; i < t->dep().size(); i++) {
     Target* this_dep = context->GetTarget(t->dep()[i]);
     assert(this_dep);
-    deps_changed = deps_changed || this_dep->did_rebuild();
+    *dep_hash << this_dep->dep_hash();
 
     lib_list += " ";
     const string& dep = t->dep()[i];
@@ -100,14 +101,6 @@ Res PrepareCompileVars(const Target* t, const Context* context,
   ci->vars_["lib_list"] = lib_list;
   ci->vars_["basename"] = CanonicalFilePart(t->name());
   ci->vars_["inc_dirs"] = inc_dirs_str;
-
-  if (!build_all && src_list.size() == 0) {
-    if (!deps_changed) {
-      return Res(ERR_DONT_REBUILD);
-    } else {
-      return Res(ERR_LINK_ONLY);
-    }
-  }
 
   return Res(OK);
 }

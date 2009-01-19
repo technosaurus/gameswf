@@ -52,12 +52,13 @@ Res ReadFileHash(const string& out_dir,
   FILE* f = fopen(hash_fname.c_str(), "rb");
   if (f) {
     if (fread((void*) hash->data(), hash->size(), 1, f)) {
-      // OK
+      fclose(f);
+      return Res(OK);
     } else {
+      fclose(f);
       hash->Reset();
       return Res(ERR_FILE_ERROR, "ReadFileHash: " + hash_fname);
     }
-    fclose(f);
   }
-  return Res(OK);
+  return Res(ERR_FILE_ERROR, "ReadFileHash: file open failed: " + hash_fname);
 }

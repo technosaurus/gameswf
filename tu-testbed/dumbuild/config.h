@@ -40,6 +40,9 @@ class Config : public Object {
   const string& lib_extension() const {
     return lib_extension_;
   }
+  const string& exe_extension() const {
+    return exe_extension_;
+  }
 
   // TODO
  private:
@@ -49,6 +52,7 @@ class Config : public Object {
   string lib_template_;
   string obj_extension_;
   string lib_extension_;
+  string exe_extension_;
 };
 
 #endif  // CONFIG_H_

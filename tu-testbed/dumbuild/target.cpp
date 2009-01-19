@@ -8,8 +8,8 @@
 #include "util.h"
 
 Target::Target()
-    : resolved_(false), processed_(false), resolve_recursion_(0),
-      did_rebuild_(false) {
+    : resolved_(false), processed_(false), dep_hash_was_set_(false),
+      resolve_recursion_(0) {
 }
 
 

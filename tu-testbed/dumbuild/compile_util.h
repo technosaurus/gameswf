@@ -26,8 +26,10 @@ struct CompileInfo {
 };
 
 // Set up the standard variables for building a compiler command line.
+// Append the dep hashes of all sources and dependencies to the given
+// *dep_hash.
 Res PrepareCompileVars(const Target* t, const Context* context,
-                       CompileInfo* compile_info);
+                       CompileInfo* compile_info, Hash* dep_hash);
 
 Res DoCompile(const Target* t, const Context* context,
               const CompileInfo& compile_info);

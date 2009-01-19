@@ -1,20 +1,23 @@
 dumbuild
 ========
 
-dumbuild is a minimal build tool for building C++ programs.  The goals
-include:
+dumbuild is a small build tool for building C++ programs, written in
+C++.  The goals include:
 
-* Small and self-contained.  Easy to embed in larger open-source
-  projects -- no external dependencies, no license restrictions.
+* Small and self-contained.  The code is Public Domain.  Easy to embed
+  in larger open-source projects -- no external dependencies, no
+  license restrictions.
 
-* Simple and sane config language.
+* Simple and sane config language (based on JSON syntax).
 
-* Easily hackable and extendable by C++ programmers.
+* Written in garden-variety C++ -- hackable and extendable by C++
+  programmers.
 
 * Support Windows, Linux and Mac OSX out of the box.  Bootstraps
-  itself if necessary using a simple batch file or shell script.
+  itself if necessary using a small included batch file or shell
+  script.
 
-* Reliable and fast.  Use it as your everyday build tool.
+* Reliable and fast.  May be usable as your everyday build tool.
 
 Getting dumbuild
 ================
@@ -47,17 +50,50 @@ in the subdirectory dmb-out/bootstrap .
 Usage
 =====
 
-# dmb [options] [target-name]
+On Windows:
 
-(Where "dmb" refers to wherever the dmb script or executable exists.)
-For example:
+> dmb [options] [target-name]
 
-# dmb
+(Where "dmb" refers to the dmb.bat file in the dumbuild source tree.)
 
-Builds the default target using the default configuration.  The output
-goes in dmb-out/&lt;config-name&gt;/
+On Linux etc:
 
-# dmb -c :vc8-release
+# ./dmb [options] [target-name]
+
+(Where "./dmb" refers to the dmb shell script in the dumbuild source
+tree.)
+
+ ----
+Options:
+
+  -C <dir>      Change to the specified directory before starting work.
+                This should have the effect of invoking dmb from that
+		directory.
+
+  -c <config>   Specify the name of a build configuration (i.e. compiler & mode)
+                Supplied configurations in the default root.dmb include
+		  gcc-debug
+		  gcc-release
+		  vc8-debug
+		  vc8-release
+
+  -r            Rebuild all, whether or not source files have changed.
+
+  -v            Verbose.  Does a lot of extra logging.
+
+ ----
+
+If necessary, the dmb script first bootstraps a build of the dmb
+executable.  After the executable is built, the dmb script uses it for
+subsequent builds.  You can also invoke the executable directly if you
+want, though the wrapper script overhead is very small.
+
+Without any options, "dmb" builds the default target using the default
+configuration.  The output goes in dmb-out/&lt;config-name&gt;/
+
+Example:
+
+> dmb -c :vc8-release
 
 Scans build.dmb for the default target, and builds it using the
 :vc8-release configuration.
@@ -107,8 +143,8 @@ dumbuild is written 100% in straightforward C++, and there is no
 scripting language lurking within it.  This allows it to be
 distributed (if desired) as a single statically-linked executable.  It
 also helps guard against slowness and bloat.  And it helps the
-intended users, C++ programmers, easily understand and hack the code
-if necessary.
+intended users, C++ programmers, to be able to understand and hack the
+code if necessary.
 
 I'm using the Google C++ Style Guide:
 http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml
@@ -127,17 +163,28 @@ implicit behavior, without making it too general and verbose.
 Fast and Reliable
 -----------------
 
-dumbuild wants to be usable as an everyday build tool.  The compile
-tools are invoked hermetically; i.e. dumbuild does not let your
-environment variables leak into the build.  It uses content-based
-dependency checking (using SHA1 hashes).  It understands C/C++ syntax
-just enough to collect the #include files for any source file, in
-order to implement fine-grained dependency checking.  When something
-changes, it quickly and accurately determines what files need to be
-recompiled.  (WORK IN PROGRESS)
+dumbuild wants to be usable as an everyday build tool.
 
-Fine-grained
-------------
+* The compile tools are invoked hermetically; i.e. dumbuild does not
+  let your environment variables leak into the build.
+
+* It understands C/C++ syntax just enough to collect the #include
+  files for any source file, in order to implement fine-grained
+  dependency checking.  (You can deceive the #include file finder with
+  tricky syntax, like using macros in the include file name.  So don't
+  do that!)
+
+* It uses content-based dependency checking (using SHA1 hashes).  When
+  something changes, it quickly and accurately determines what files
+  need to be recompiled and relinked.
+
+Lib and Exe Oriented
+--------------------
+
+Dumbuild doesn't dignify individual .obj files as distinct targets.
+The two main target types are "lib" (library) and "exe" (executable),
+which can have any number of source files, and can depend on any
+number of other targets.
 
 The intention is to make it really easy to declare targets, so the
 user can organize their code into libraries and executables in the
@@ -153,7 +200,7 @@ Notes
   works, it's written in C++, and it's Public Domain.  No urgent need
   to fix or replace.
 
-* I think specifying config is a hard problem, that I haven't really
+* I think specifying config is a hard problem, that I have not really
   tackled yet.  Inheritance seems like a good way to avoid repetition
   for config, but inheritance can also sometimes be obtuse.  One
   alternative is to support script-like expressions for combining
@@ -165,9 +212,30 @@ Notes
   substituted into template strings supplied in the project
   configuration.  We'll see how far that goes.
 
-* The .exe is currently TOO BIG!  I think the main culprit is STL.  I
-  need to replace STL with tu-testbed base containers, which compile
+* The .exe is currently TOO BIG (> 250K)!  And takes TOO LONG to
+  compile (> 10 seconds)!  I think the main culprit is STL.  I need to
+  replace STL with tu-testbed base containers, which compile
   relatively small, and should provide everything necessary.
+
+* Partly inspired by git, I use SHA1 hashes to identify a build
+  product, by hashing the contents of all the ingredients that go into
+  the build product.  I call that a "DepHash".  DepHash definitely
+  simplified the ode, and it should make dependency checking very
+  reliable.
+
+* I'm intrigued by the notion of mating dumbuild to a git backend,
+  where git would serve two purposes: 1) a networked/distributed cache
+  of built products (i.e. so that if someone has already built a
+  particular version of a library, you just pull the pre-built lib
+  file instead of rebuilding it locally) and 2) a hash-aware
+  filesystem, that would help to quickly compute the DepHash for a lib
+  or exe, without necessarily having to pull the actual source file
+  contents.  Imagine building a complete modified Linux kernel very
+  quickly, while only having a few source files stored locally.
+
+  I don't hack the Linux kernel, so I'm not even sure if that would be
+  useful, but I can definitely picture other situations where it would
+  be handy.
 
 Why?
 ====
@@ -187,15 +255,15 @@ Alternatives
 
 [[http://redmine.jamplex.org/projects/show/jamplus][JamPlus]] wasn't
 released when I started working on dumbuild, but the developers have a
-clue and it's probably better in almost every dimension than dumbuild.
-So if you just want a good build tool, I would start there.
+clue and it's probably better than dumbuild in most dimensions.  So if
+you just want a good build tool, I would start there.
 
 [[http://www.scons.org/][Scons]] is much better-developed and
 feature-filled.  But, it's written in Python, it's smallish but not
 tiny, and unfortunately it can be pretty slow on big projects.  I
 don't think it's a great choice for embedding in a small or
 medium-sized open-source project, mainly because it would be bigger
-than the typical host project.
+than the typical host project.  It's also no speed demon.
 
 GNU make is what I usually use for my own open-source stuff.  I don't
 mind it too much, but it's not the most elegant thing, and has some
