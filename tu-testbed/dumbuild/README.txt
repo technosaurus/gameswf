@@ -68,14 +68,14 @@ Options:
 
   -C <dir>      Change to the specified directory before starting work.
                 This should have the effect of invoking dmb from that
-		directory.
+                directory.
 
   -c <config>   Specify the name of a build configuration (i.e. compiler & mode)
                 Supplied configurations in the default root.dmb include
-		  gcc-debug
-		  gcc-release
-		  vc8-debug
-		  vc8-release
+                  gcc-debug
+                  gcc-release
+                  vc8-debug
+                  vc8-release
 
   -r            Rebuild all, whether or not source files have changed.
 
