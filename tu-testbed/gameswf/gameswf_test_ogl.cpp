@@ -1092,7 +1092,6 @@ int	main(int argc, char *argv[])
 
 	done:
 
-			//SDL_Quit();
 
 			gameswf::set_sound_handler(NULL);
 			delete sound;
@@ -1100,6 +1099,7 @@ int	main(int argc, char *argv[])
 			gameswf::set_render_handler(NULL);
 			delete render;
 
+			SDL_Quit();
 		}
 
 	}	// for testing memory leaks
