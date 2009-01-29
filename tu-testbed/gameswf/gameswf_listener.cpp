@@ -33,13 +33,22 @@ namespace gameswf
 		// event handler may affects m_listeners using addListener & removeListener
 		// iterate through a copy of it
 		clone_listener listeners(m_listeners);
+
+		// iterate through a copy of environment
+		int nargs = fn.nargs;
+		as_environment env(fn.get_player());
+		for (int i = 0; i < nargs; i++)
+		{
+			env.push(fn.env->top(nargs - i - 1));
+		}
+
 		for (int i = 0, n = listeners.size(); i < n; i++)
 		{
 			as_value function;
 			if (listeners[i]->get_member(event_name, &function))
 			{
-				call_method(function, fn.env, listeners[i].get_ptr(),
-					fn.nargs, fn.env->get_top_index());
+				call_method(function, &env, listeners[i].get_ptr(),
+					nargs, env.get_top_index());
 			}
 		}
 	}
