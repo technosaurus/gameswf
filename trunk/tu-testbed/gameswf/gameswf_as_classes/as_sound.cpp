@@ -60,6 +60,7 @@ namespace gameswf
 		character* target = snd->m_target.get_ptr();
 		if (target == NULL)
 		{
+			// try to find a sound from the caller target
 			target = fn.env->get_target();
 		}
 			
@@ -72,8 +73,7 @@ namespace gameswf
 
 		if (res == NULL)
 		{
-			IF_VERBOSE_ACTION(log_msg("import error: resource '%s' is not exported\n",
-				fn.arg(0).to_string()));
+			log_error("can't find sound '%s'\n", fn.arg(0).to_string());
 			return;
 		}
 
@@ -171,6 +171,8 @@ namespace gameswf
 	void	as_global_sound_ctor(const fn_call& fn)
 	{
 		gc_ptr<as_sound> snd = new as_sound(fn.get_player());
+
+		snd->m_target = fn.env->get_target();	// initial value
 		if (fn.nargs > 0)
 		{
 			assert(fn.env);
