@@ -29,6 +29,7 @@ namespace gameswf
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 		avcodec_init();
+		av_log_set_level(-1);		// do not print ffmeg messages
 		avcodec_register_all();
 		m_MP3_codec = avcodec_find_decoder(CODEC_ID_MP3);
 #endif
