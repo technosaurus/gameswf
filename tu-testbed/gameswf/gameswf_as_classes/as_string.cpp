@@ -275,7 +275,7 @@ namespace gameswf
 			end = iclamp(end, 0, utf8_len);
 		}
 
-		if (end < start) swap(&start, &end);	// dumb, but that's what the docs say
+		if (end < start) tu_swap(&start, &end);	// dumb, but that's what the docs say
 		assert(end >= start);
 
 		fn.result->set_tu_string(this_str.utf8_substring(start, end));

@@ -199,7 +199,7 @@ namespace gameswf
 			int	i1 = starting_index + nargs - i;
 			assert(i0 < i1);
 
-			swap(&(env->bottom(i0)), &(env->bottom(i1)));
+			tu_swap(&(env->bottom(i0)), &(env->bottom(i1)));
 		}
 
 		// Do the call.
@@ -869,11 +869,11 @@ namespace gameswf
 						float by1 = PIXELS_TO_TWIPS(env->top(3).to_float());
 						if (bx1 < bx0)
 						{
-							swap(&bx0, &bx1);
+							tu_swap(&bx0, &bx1);
 						}
 						if (by1 < by0)
 						{
-							swap(&by0, &by1);
+							tu_swap(&by0, &by1);
 						}
 						st.SetBounds(bx0, by0, bx1, by1);
 

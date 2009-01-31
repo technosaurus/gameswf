@@ -218,7 +218,7 @@ namespace gameswf
 			{
 				if (idx[i] > idx[j])
 				{
-					swap(&idx[i], &idx[j]);
+					tu_swap(&idx[i], &idx[j]);
 				}
 			}
 		}
@@ -284,7 +284,7 @@ namespace gameswf
 			{
 				if (idx[i] > idx[j])
 				{
-					swap(&idx[i], &idx[j]);
+					tu_swap(&idx[i], &idx[j]);
 				}
 			}
 		}
