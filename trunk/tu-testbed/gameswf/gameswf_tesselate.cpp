@@ -166,10 +166,10 @@ namespace tesselate
 		void	flip()
 		// Exchange end points, and reverse fill sides.
 		{
-			swap(&m_begin, &m_end);
+			tu_swap(&m_begin, &m_end);
 
 			// swap fill styles...
-			swap(&m_left_style, &m_right_style);
+			tu_swap(&m_left_style, &m_right_style);
 		}
 
 		float	get_height() const
@@ -730,7 +730,7 @@ namespace tesselate_new
 					int n = s_path_parts[i].m_verts.size();
 					for (int j = 0, k = n >> 1; j < k; j++)
 					{
-						swap(&s_path_parts[i].m_verts[j], &s_path_parts[i].m_verts[n - j - 1]);
+						tu_swap(&s_path_parts[i].m_verts[j], &s_path_parts[i].m_verts[n - j - 1]);
 					}
 				}
 				else
