@@ -28,7 +28,7 @@ class Context {
 
   Res ProcessArgs(int argc, const char** argv);
 
-  Res Init(const string& root_path);
+  Res Init(const string& root_path, const string& canonical_currdir);
 
   // Absolute path of project root dir.
   const string& tree_root() const {
@@ -145,6 +145,9 @@ class Context {
   map<string, Config*> configs_;
   map<string, Target*> targets_;
   bool log_verbose_;
+  string specified_target_;
+  string main_target_name_;
+  Target* main_target_;
 
   HashCache<string>* content_hash_cache_;
   HashCache<Hash>* dep_hash_cache_;
