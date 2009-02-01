@@ -220,7 +220,7 @@ Notes
 * Partly inspired by git, I use SHA1 hashes to identify a build
   product, by hashing the contents of all the ingredients that go into
   the build product.  I call that a "DepHash".  DepHash definitely
-  simplified the ode, and it should make dependency checking very
+  simplified the code, and it should make dependency checking very
   reliable.
 
 * I'm intrigued by the notion of mating dumbuild to a git backend,

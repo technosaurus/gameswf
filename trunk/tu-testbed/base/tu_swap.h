@@ -15,7 +15,7 @@
 
 
 template<class T>
-void	swap(T* a, T* b)
+void tu_swap(T* a, T* b)
 // Convenient swap function.
 {
 	T	temp(*a);

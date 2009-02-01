@@ -1367,14 +1367,14 @@ bool	poly<coord_t>::vert_can_see_cone_a(const array<vert_t>& sorted_verts, int v
 	vec2<coord_t>	cone_a[3] = { sorted_verts[pa->m_prev].m_v, pa->m_v, sorted_verts[pa->m_next].m_v };
 	if (vertex_left_test(cone_a[0], cone_a[1], cone_a[2]) < 0)
 	{
-		swap(&cone_a[0], &cone_a[2]);
+		tu_swap(&cone_a[0], &cone_a[2]);
 	}
 
 	const vert_t*	pb = &sorted_verts[cone_b_vert];
 	vec2<coord_t>	cone_b[3] = { sorted_verts[pb->m_prev].m_v, pb->m_v, sorted_verts[pb->m_next].m_v };
 	if (vertex_left_test(cone_b[0], cone_b[1], cone_b[2]) < 0)
 	{
-		swap(&cone_b[0], &cone_b[2]);
+		tu_swap(&cone_b[0], &cone_b[2]);
 	}
 
 	// Characterize the cones w/r/t each other.
@@ -2041,7 +2041,7 @@ void	poly_env<coord_t>::dupe_two_verts(int v0, int v1)
 	// Order the verts.
 	if (v0 > v1)
 	{
-		swap(&v0, &v1);
+		tu_swap(&v0, &v1);
 	}
 	assert(v0 < v1);
 

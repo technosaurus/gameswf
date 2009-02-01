@@ -13,9 +13,13 @@
 #include "path.h"
 #include "target.h"
 
-Context::Context() : log_verbose_(false), done_reading_(false),
+Context::Context() : done_reading_(false),
                      rebuild_all_(false),
-                     active_config_(NULL), content_hash_cache_(NULL),
+                     active_config_(NULL),
+                     log_verbose_(false),
+                     main_target_(NULL),
+                     content_hash_cache_(NULL),
+                     dep_hash_cache_(NULL),
                      object_store_(NULL) {
 #ifdef _WIN32
   config_name_ = ":vc8-debug";
@@ -89,7 +93,7 @@ Res Context::ProcessArgs(int argc, const char** argv) {
   return Res(OK);
 }
 
-Res Context::Init(const string& root_path) {
+Res Context::Init(const string& root_path, const string& canonical_currdir) {
   tree_root_ = root_path;
   out_root_ = PathJoin("dmb-out", CanonicalFilePart(config_name_));
 
@@ -98,6 +102,32 @@ Res Context::Init(const string& root_path) {
     return res;
   }
   object_store_ = new ObjectStore((tree_root_ + "/dmb-out/ostore").c_str());
+
+  res = ReadObjects("", AbsoluteFile("", "root.dmb"));
+  if (!res.Ok()) {
+    return res;
+  }
+
+  //xxxxxxx
+  xxxxxx;
+  split(specified_target, &target_path, &target_name);
+  if (!target_name.length()) {
+    target_name = "default";
+  }
+  target_dir = join (canonical_currdir, target_path);
+  res = ReadObjects(target_dir, AbsoluteFile(target_dir, "build.dmb"));
+  if (!res.Ok()) {
+    return res;
+  }
+
+  main_target_name_ = join (target_dir ":" target_name);
+  main_target_ = GetTarget(main_target_name_);
+
+  DoneReading();
+  if (!context.GetConfig()) {
+    return Res(ERR, StringPrintf("config '%s' is not defined",
+                                 config_name().c_str()));
+  }
 
   return Res(OK);
 }

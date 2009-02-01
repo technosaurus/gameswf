@@ -233,7 +233,7 @@ static bool any_edge_intersects(const tristate* ts, const edge& e, grid_index_bo
 		vec2_t eev1(it->bound.get_max().x, it->bound.get_max().y);
 		if (it->value == false) {
 			// Edge crosses the indexed bounding box w/ negative slope, not positive.
-			swap(&eev0.y, &eev1.y);
+			tu_swap(&eev0.y, &eev1.y);
 		}
 
 		int e_vs_ee, ee_vs_e;
