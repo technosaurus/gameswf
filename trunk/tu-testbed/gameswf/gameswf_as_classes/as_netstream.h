@@ -187,11 +187,17 @@ namespace gameswf
 		Uint8* decode_video(const AVPacket& pkt);
 		void run();
 		void seek(double seek_time);
-		void setBufferTime();
+
+		double get_buffertime() const { return m_buffer_time; }
+		void set_buffertime(double sec) { m_buffer_time = sec; }
+		double get_bufferlength();
+
 		void audio_callback(Uint8* stream, int len);
 		void close();
 		void play(const char* url);
-		double time() const;
+
+		//	The position of the playhead, in seconds.
+		double time() const { return m_video_time; }
 
 		int get_width() const;
 		int get_height() const;
@@ -244,6 +250,9 @@ namespace gameswf
 
 		// for converting video frame in RGBA
 		SwsContext* m_convert_ctx;
+
+		// Specifies how long(in sec.) to buffer messages before starting to display the stream.
+		double m_buffer_time;
 	};
 
 } // end of gameswf namespace
