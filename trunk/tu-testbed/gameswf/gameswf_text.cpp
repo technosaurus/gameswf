@@ -215,8 +215,10 @@ namespace gameswf
 					bounds.m_y_min *= yscale;
 					bounds.m_y_max *= yscale;
 
+					// for device font xscale = yscale
+					yscale = mat.get_y_scale();
+					mat.set_scale_rotation(yscale, yscale, 0);
 					render::draw_bitmap(mat, g.m_fontlib_glyph.get_ptr(), bounds, uv_bounds, transformed_color);
-
 				}
 				else
 				if (g.m_shape_glyph != NULL)
@@ -627,14 +629,8 @@ namespace gameswf
 
 		builtin_member("setTextFormat", set_textformat);
 
-		// first set default text value
-		set_text(def->m_default_text.c_str());
-
-		// then reset VAR / TEXT_FIELD value
-		set_text_value(to_string());
-
-		m_dummy_style.push_back(fill_style());
-		reset_bounding_box(0, 0);
+		// Initial actions are moved to 'on_event(CONSTRUCT)'
+		// because in this point the character's matrix is not set yet
 	}
 
 	edit_text_character::~edit_text_character() 
@@ -832,13 +828,27 @@ namespace gameswf
 
 	bool edit_text_character::on_event(const event_id& id) 
 	{ 
-		if (m_def->m_readonly == true) 
+		if (m_def->m_readonly == true && id.m_id != event_id::CONSTRUCT) 
 		{ 
 			return false; 
 		} 
 
 		switch (id.m_id) 
 		{ 
+			case event_id::CONSTRUCT:
+			{
+				// first set default text value
+				set_text(m_def->m_default_text.c_str());
+
+				// then reset VAR / TEXT_FIELD value
+				set_text_value(to_string());
+
+				m_dummy_style.push_back(fill_style());
+				reset_bounding_box(0, 0);
+
+				break;
+			}
+
 			case event_id::SETFOCUS: 
 			{ 
 				get_root()->set_active_entity(this);
@@ -1630,15 +1640,20 @@ namespace gameswf
 
 	void	edit_text_character::format_plain_text(const tu_string& text, text_glyph_record&	rec)
 	{
-		const tu_string* textPtrToUse = &text;
+		// get actual size of characters in pixels
+		matrix mat = get_world_matrix();
+		float xscale = mat.get_x_scale();
+		float yscale = mat.get_y_scale();
+		int fontsize = (int) TWIPS_TO_PIXELS(yscale * rec.m_style.m_text_height);
 
+		const tu_string* textPtrToUse = &text;
 		tu_string passwordText;
-		if( m_password )
+		if (m_password)
 		{
 			// nice big hack.
 			passwordText = text;
 			int len = passwordText.length();
-			for( int txtIdx = 0; txtIdx < len; ++txtIdx )
+			for (int txtIdx = 0; txtIdx < len; ++txtIdx)
 			{
 				passwordText[txtIdx] = '*';
 			}
@@ -1744,8 +1759,7 @@ namespace gameswf
 
 			// find glyph
 			glyph	g;
-			if (rec.m_style.m_font->get_glyph(&g, (Uint16) code, 
-				(int) TWIPS_TO_PIXELS(rec.m_style.m_text_height)) == false)
+			if (rec.m_style.m_font->get_glyph(&g, (Uint16) code, fontsize) == false)
 			{
 				// error -- missing glyph!
 				// Log an error, but don't log too many times.
@@ -1761,8 +1775,9 @@ namespace gameswf
 				}
 			}
 
-			g.m_glyph_advance *= rec.m_style.m_scale;
-			g.m_fontsize = (int) TWIPS_TO_PIXELS(rec.m_style.m_text_height);
+			// for device font set xscale = yscale 
+			g.m_glyph_advance *= yscale * rec.m_style.m_scale / xscale;
+			g.m_fontsize = fontsize;
 
 			rec.m_glyphs.push_back(g);
 
