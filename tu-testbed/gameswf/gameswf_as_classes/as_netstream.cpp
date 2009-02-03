@@ -15,8 +15,6 @@
 
 #if TU_CONFIG_LINK_TO_FFMPEG == 1
 
-#define AV_QUEUE_SIZE 20
-
 namespace gameswf
 {
 
@@ -43,14 +41,18 @@ namespace gameswf
 		as_object(player),
 		m_FormatCtx(NULL),
 		m_VCodecCtx(NULL),
+		m_video_stream(NULL),
 		m_ACodecCtx(NULL),
-		m_video_time(0),
+		m_audio_stream(NULL),
+		m_start_time(0.0f),
+		m_video_time(0.0f),
 		m_video_index(-1),              
 		m_audio_index(-1),
 		m_video_data(NULL),
 		m_convert_ctx(NULL),
 		m_status(STOP),
-		m_seek_time(-1)
+		m_seek_time(-1.0f),
+		m_buffer_time(0.1f)	// The default value is 0.1 second
 	{
 		// fill static hash once
 		if (s_netstream_event_level.size() == 0)
@@ -219,8 +221,10 @@ namespace gameswf
 				m_seek_time = -1;
 			}
 
-			if (m_vq.size() < AV_QUEUE_SIZE && m_aq.size() < AV_QUEUE_SIZE)
+			if (get_bufferlength() < m_buffer_time)
 			{
+				//printf("m_buffer_length=%f, queue_size=%d\n", get_bufferlength(), m_vq.size()); 
+
 				AVPacket pkt;
 				int rc = av_read_frame(m_FormatCtx, &pkt);
 				if (rc < 0)
@@ -261,16 +265,15 @@ namespace gameswf
 					const AVPacket& pkt = packet->get_packet();
 
 					// update video clock with pts, if present
-					if (pkt.dts != 0)
+					double prev_time = m_video_time;
+					if (pkt.dts > 0)
 					{
-						double pts = av_q2d(m_video_stream->time_base) * pkt.dts;
-						m_video_time = pts;
+						m_video_time = av_q2d(m_video_stream->time_base) * pkt.dts;
 					}
+					m_video_time += av_q2d(m_video_stream->codec->time_base);	// +frame_delay
 
-					// update video clock for next frame
-					double frame_delay = av_q2d(m_video_stream->codec->time_base);
-
-					m_video_time += frame_delay;
+					// sanity check
+					assert(m_video_time - prev_time >= 0 && m_video_time - prev_time <= 7200);	// 3 hour of video
 
 					set_video_data(decode_video(pkt));
 				}
@@ -292,7 +295,8 @@ namespace gameswf
 				{
 					m_start_time -= (m_video_time - current_time);
 				}
-				if (m_vq.size() >= AV_QUEUE_SIZE || m_aq.size() >= AV_QUEUE_SIZE)
+
+				if (get_bufferlength() >= m_buffer_time)
 				{
 //					set_status("status", "NetStream.Buffer.Full");
 					tu_timer::sleep(delay);
@@ -611,21 +615,20 @@ namespace gameswf
 		m_video_data = data;
 	}
 
-	// Specifies how long to buffer messages before starting to display the stream.
-	void as_netstream::setBufferTime()
-	{
-		log_msg("%s:unimplemented \n", __FUNCTION__);
-	}
-
-	//	The position of the playhead, in seconds.
-	double as_netstream::time() const
-	{
-		return m_video_time;
-	}
-
 	double as_netstream::get_duration() const
 	{
 		return (double) m_FormatCtx->duration / 1000000;
+	}
+
+	double as_netstream::get_bufferlength()
+	{
+		if (m_video_stream != NULL)
+		{
+			// hack,
+			// TODO: take account of PTS (presentaion time stamp)
+			return m_vq.size() * av_q2d(m_video_stream->codec->time_base);	// frame_delay
+		}
+		return 0;
 	}
 
 	void netstream_close(const fn_call& fn)
@@ -701,9 +704,22 @@ namespace gameswf
 		ns->seek(fn.arg(0).to_number());
 	}
 
-	void netstream_setbuffertime(const fn_call& /*fn*/)
+	// public setBufferTime(bufferTime:Number) : Void
+	// bufferTime:Number - The number of seconds of data to be buffered before 
+	// Flash begins displaying data.
+	// The default value is 0.1 (one-tenth of a second).
+	void netstream_setbuffertime(const fn_call& fn)
 	{
-		log_msg("%s:unimplemented \n", __FUNCTION__);
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
+		assert(ns);
+
+		if (fn.nargs < 1)
+		{
+			log_error("setBufferTime needs args\n");
+			return;
+		}
+
+		ns->set_buffertime(fn.arg(0).to_number());
 	}
 
 	void netstream_time(const fn_call& fn)
@@ -713,6 +729,33 @@ namespace gameswf
 		fn.result->set_double(ns->time());
 	}
 
+	void netstream_buffer_length(const fn_call& fn)
+	{
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
+		assert(ns);
+		fn.result->set_double(ns->get_bufferlength());
+	}
+
+	void netstream_buffer_time(const fn_call& fn)
+	{
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
+		assert(ns);
+		fn.result->set_double(ns->get_buffertime());
+	}
+
+	void netstream_video_width(const fn_call& fn)
+	{
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
+		assert(ns);
+		fn.result->set_int(ns->get_width());
+	}
+
+	void netstream_video_height(const fn_call& fn)
+	{
+		as_netstream* ns = cast_to<as_netstream>(fn.this_ptr);
+		assert(ns);
+		fn.result->set_int(ns->get_height());
+	}
 
 	void	as_global_netstream_ctor(const fn_call& fn)
 	// Constructor for ActionScript class NetStream.
@@ -721,6 +764,8 @@ namespace gameswf
 
 		// properties
 		netstream->builtin_member("time", as_value(netstream_time, as_value()));
+		netstream->builtin_member("bufferLength", as_value(netstream_buffer_length, as_value()));
+		netstream->builtin_member("bufferTime", as_value(netstream_buffer_time, as_value()));
 
 		// methods
 		netstream->builtin_member("close", netstream_close);
@@ -728,6 +773,10 @@ namespace gameswf
 		netstream->builtin_member("play", netstream_play);
 		netstream->builtin_member("seek", netstream_seek);
 		netstream->builtin_member("setbuffertime", netstream_setbuffertime);
+
+		// gameswf extension, video width & height
+		netstream->builtin_member("_width", as_value(netstream_video_width, as_value()));
+		netstream->builtin_member("_height", as_value(netstream_video_height, as_value()));
 
 		fn.result->set_as_object(netstream);
 	}
