@@ -265,15 +265,11 @@ namespace gameswf
 					const AVPacket& pkt = packet->get_packet();
 
 					// update video clock with pts, if present
-					double prev_time = m_video_time;
 					if (pkt.dts > 0)
 					{
 						m_video_time = av_q2d(m_video_stream->time_base) * pkt.dts;
 					}
 					m_video_time += av_q2d(m_video_stream->codec->time_base);	// +frame_delay
-
-					// sanity check
-					assert(m_video_time - prev_time >= 0 && m_video_time - prev_time <= 7200);	// 3 hour of video
 
 					set_video_data(decode_video(pkt));
 				}
@@ -288,14 +284,21 @@ namespace gameswf
 			// Don't hog the CPU.
 			// Queues have filled, video frame have shown
 			// now it is possible and to have a rest
+
 			int delay = (int) (1000 * (m_video_time - current_time));
+			
+			// hack, adjust m_start_time after seek
+			if (delay > 50)
+			{
+				m_start_time -= (m_video_time - current_time);
+				current_time = now() - m_start_time;
+				delay = (int) (1000 * (m_video_time - current_time));
+			}
+
+			assert(delay <= 50);
+
 			if (delay > 0)
 			{
-				if (delay > 50)	// hack, adjust m_start_time after seek
-				{
-					m_start_time -= (m_video_time - current_time);
-				}
-
 				if (get_bufferlength() >= m_buffer_time)
 				{
 //					set_status("status", "NetStream.Buffer.Full");

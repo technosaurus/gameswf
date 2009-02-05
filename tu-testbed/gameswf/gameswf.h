@@ -578,6 +578,23 @@ namespace gameswf
 		float	get_x_scale() const;	// return the magnitude scale of our x coord output
 		float	get_y_scale() const;	// return the magnitude scale of our y coord output
 		float	get_rotation() const;	// return our rotation component (in radians)
+
+		bool operator==(const matrix& m) const
+		{
+			return 
+				m_[0][0] == m.m_[0][0] &&
+				m_[0][1] == m.m_[0][1] &&
+				m_[0][2] == m.m_[0][2] &&
+				m_[1][0] == m.m_[1][0] &&
+				m_[1][1] == m.m_[1][1] &&
+				m_[1][2] == m.m_[1][2];
+		}
+
+		bool operator!=(const matrix& m) const
+		{
+			return ! (*this == m);
+		}
+
 	};
 
 

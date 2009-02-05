@@ -188,6 +188,8 @@ namespace gameswf
 
 				if (g.m_fontlib_glyph != NULL)
 				{
+					// device font
+
 					rect uv_bounds;
 					uv_bounds.m_x_min = 0;
 					uv_bounds.m_y_min = 0;
@@ -217,7 +219,8 @@ namespace gameswf
 
 					// for device font xscale = yscale
 					yscale = mat.get_y_scale();
-					mat.set_scale_rotation(yscale, yscale, 0);
+					float radians = mat.get_rotation();
+					mat.set_scale_rotation(yscale, yscale, radians);
 					render::draw_bitmap(mat, g.m_fontlib_glyph.get_ptr(), bounds, uv_bounds, transformed_color);
 				}
 				else
@@ -774,10 +777,16 @@ namespace gameswf
 
 	void edit_text_character::display() 
 	{ 
+		// if world matrix was updated we should reformat a text
+		matrix  mat = get_world_matrix(); 
+		if (mat != m_world_matrix)
+		{
+			m_world_matrix = mat;
+			format_text();
+		}
+		
 		if (m_def->m_border == true) 
 		{ 
-			matrix  mat = get_world_matrix(); 
-
 			// @@ hm, should we apply the color xform?  It seems logical; need to test. 
 			// cxform       cx = get_world_cxform(); 
 
