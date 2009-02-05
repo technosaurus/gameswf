@@ -197,6 +197,14 @@ static gameswf::key::code	translate_key(SDLKey key)
                 { SDLK_TAB, gameswf::key::TAB },
                 { SDLK_RSHIFT, gameswf::key::SHIFT },
                 { SDLK_LSHIFT, gameswf::key::SHIFT },
+                { SDLK_PERIOD, gameswf::key::PERIOD },
+                { SDLK_SLASH, gameswf::key::SLASH },
+                { SDLK_BACKSLASH, gameswf::key::BACKSLASH },
+                { SDLK_SEMICOLON, gameswf::key::SEMICOLON },
+                { SDLK_QUOTE, gameswf::key::QUOTE },
+                { SDLK_LEFTBRACKET, gameswf::key::LEFT_BRACKET },
+                { SDLK_RIGHTBRACKET, gameswf::key::RIGHT_BRACKET },
+                { SDLK_COMMA, gameswf::key::COMMA },
 
 				// @@ TODO fill this out some more
 				{ SDLK_UNKNOWN, gameswf::key::INVALID }

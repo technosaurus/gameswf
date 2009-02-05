@@ -213,6 +213,7 @@ namespace gameswf
 		float	m_indent;
 		float	m_leading;
 		rgba m_background_color;
+		matrix m_world_matrix;	// current world matrix, for dynamic scaling
 
 		edit_text_character(player* player, character* parent, edit_text_character_def* def, int id);
 		~edit_text_character();
