@@ -188,10 +188,27 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 
 // The profile ticks implementation is just fine for a normal timer.
 
-
+static	timeval s_start_time;
 uint64 tu_timer::get_ticks()
 {
-	return (uint64) profile_ticks_to_milliseconds(get_profile_ticks());
+	if (s_start_time.tv_sec == 0)
+	{
+		gettimeofday(&s_start_time, 0);
+		return 0;
+	}
+
+	struct timeval tv;
+	uint64 result;
+	
+	gettimeofday(&tv, 0);
+
+	result = (tv.tv_sec - s_start_time.tv_sec) * 1000000;
+	result += tv.tv_usec - s_start_time.tv_usec;
+
+	// Return milliseconds.
+	result = (uint64) (result / 1000.0);
+	
+	return result;
 }
 
 void tu_timer::sleep(int milliseconds)
