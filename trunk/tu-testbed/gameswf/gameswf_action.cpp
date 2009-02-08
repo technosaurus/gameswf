@@ -973,7 +973,7 @@ namespace gameswf
 
 				case 0x34:	// get timer
 					// Push milliseconds since we started playing.
-					env->push((double) (tu_timer::get_ticks() - env->get_player()->get_start_time()));
+					env->push((double) (tu_timer::get_ticks()));
 					break;
 
 				case 0x35:	// mb substring

@@ -178,7 +178,7 @@ namespace gameswf
 	// return current time in sec
 	double as_netstream::now() const
 	{
-		return (double) tu_timer::get_ticks() / 1000;
+		return (double) tu_timer::get_ticks() / 1000.0;
 	}
 
 	// it is running in decoder thread

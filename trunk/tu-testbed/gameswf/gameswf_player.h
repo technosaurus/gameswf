@@ -36,7 +36,6 @@ namespace gameswf
 	{
 		hash<gc_ptr<as_object>, bool> m_heap;
 		gc_ptr<as_object>	m_global;
-		Uint64 m_start_time;
 		weak_ptr<root> m_current_root;
 		tu_string m_workdir;
 		string_hash<gc_ptr<character_def> > m_chardef_library;
@@ -101,7 +100,6 @@ namespace gameswf
 
 		as_object* get_global() const;
 		void notify_key_object(key::code k, bool down);
-		Uint64 get_start_time()	{ return m_start_time; }
 
 		exported_module const bool get_force_realtime_framerate() const;
 		exported_module void set_force_realtime_framerate(const bool force_realtime_framerate);

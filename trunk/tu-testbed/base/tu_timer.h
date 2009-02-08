@@ -16,11 +16,10 @@ namespace tu_timer
 {
 	// General-purpose wall-clock timer.  May not be hi-res enough
 	// for profiling.
-	exported_module uint64 get_ticks();
-	exported_module double ticks_to_seconds(uint64 ticks);
+	exported_module void init_timer();
 
-	// current ticks to seconds
-	exported_module double ticks_to_seconds();
+	// milliseconds since we started playing.
+	exported_module Uint32 get_ticks();
 
 	// Sleep the current thread for the given number of
 	// milliseconds.  Don't rely on the sleep period being very
