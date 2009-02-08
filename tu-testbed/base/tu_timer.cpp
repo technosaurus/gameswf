@@ -5,11 +5,23 @@
 
 // Utility/profiling timer.
 
-
 #include <time.h>	// [ANSI/System V]
+#include <sys/timeb.h>	// ANSI
 #include <assert.h>
 #include "base/tu_timer.h"
 
+static timeb s_start_time;
+void tu_timer::init_timer()
+{
+	ftime(&s_start_time);
+}
+
+Uint32 tu_timer::get_ticks()
+{
+	struct timeb tv;
+	ftime(&tv);
+	return  (tv.time - s_start_time.time) * 1000 + (tv.millitm - s_start_time.millitm);
+}
 
 tu_datetime::tu_datetime()
 {
@@ -129,27 +141,9 @@ Uint64 tu_timer::get_systime()
 	return (Uint64) ltime;
 }
 
-double tu_timer::ticks_to_seconds(uint64 ticks)
-{
-	return 0.001 * ticks;
-}
-
-double tu_timer::ticks_to_seconds()
-{
-	return 0.001 * get_ticks();
-}
-
-
 #ifdef _WIN32
 
 #include <windows.h>
-
-
-uint64 tu_timer::get_ticks()
-{
-	return timeGetTime();
-}
-
 
 void tu_timer::sleep(int milliseconds)
 {
@@ -187,29 +181,6 @@ double	tu_timer::profile_ticks_to_seconds(uint64 ticks)
 
 
 // The profile ticks implementation is just fine for a normal timer.
-
-static	timeval s_start_time;
-uint64 tu_timer::get_ticks()
-{
-	if (s_start_time.tv_sec == 0)
-	{
-		gettimeofday(&s_start_time, 0);
-		return 0;
-	}
-
-	struct timeval tv;
-	uint64 result;
-	
-	gettimeofday(&tv, 0);
-
-	result = (tv.tv_sec - s_start_time.tv_sec) * 1000000;
-	result += tv.tv_usec - s_start_time.tv_usec;
-
-	// Return milliseconds.
-	result = (uint64) (result / 1000.0);
-	
-	return result;
-}
 
 void tu_timer::sleep(int milliseconds)
 {

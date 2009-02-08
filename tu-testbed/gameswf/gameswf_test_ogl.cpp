@@ -18,6 +18,7 @@
 #include "base/container.h"
 #include "base/tu_file.h"
 #include "base/tu_types.h"
+#include "base/tu_timer.h"
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_impl.h"
 #include "gameswf/gameswf_root.h"
@@ -758,8 +759,7 @@ int	main(int argc, char *argv[])
 			Uint32	start_ticks = 0;
 			if (do_render)
 			{
-				start_ticks = SDL_GetTicks();
-
+				start_ticks = tu_timer::get_ticks();
 			}
 			Uint32	last_ticks = start_ticks;
 			int	frame_counter = 0;
@@ -776,7 +776,7 @@ int	main(int argc, char *argv[])
 				Uint32	ticks;
 				if (do_render)
 				{
-					ticks = SDL_GetTicks();
+					ticks = tu_timer::get_ticks();
 				}
 				else
 				{
@@ -1033,19 +1033,19 @@ int	main(int argc, char *argv[])
 
 				m->notify_mouse_state(mouse_x, mouse_y, mouse_buttons);
 
-				Uint32 t_advance = SDL_GetTicks();
+				Uint32 t_advance = tu_timer::get_ticks();
 				m->advance(delta_t * speed_scale);
-				t_advance = SDL_GetTicks() - t_advance;
+				t_advance = tu_timer::get_ticks() - t_advance;
 
-				Uint32 t_display = SDL_GetTicks();
+				Uint32 t_display = tu_timer::get_ticks();
 				m->display();
-				t_display = SDL_GetTicks() - t_display;
+				t_display = tu_timer::get_ticks() - t_display;
 
 				if (do_render)
 				{
-					Uint32 t_swap = SDL_GetTicks();
+					Uint32 t_swap = tu_timer::get_ticks();
 					SDL_GL_SwapBuffers();
-					t_swap = SDL_GetTicks() - t_swap;
+					t_swap = tu_timer::get_ticks() - t_swap;
 					//glPopAttrib ();
 
 

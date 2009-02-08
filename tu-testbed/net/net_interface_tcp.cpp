@@ -83,7 +83,7 @@ int net_socket_tcp::read(void* data, int bytes, float timeout_seconds)
 // Try to read the requested number of bytes.  Returns the
 // number of bytes actually read.
 {
-	uint64 start = tu_timer::get_ticks();
+	Uint32 start = tu_timer::get_ticks();
 
 	int total_bytes_read = 0;
 
@@ -105,8 +105,8 @@ int net_socket_tcp::read(void* data, int bytes, float timeout_seconds)
 				m_error = 0;
 
 				// Timeout?
-				uint64 now = tu_timer::get_ticks();
-				double elapsed = tu_timer::ticks_to_seconds(now - start);
+				Uint32 now = tu_timer::get_ticks();
+				double elapsed = (now - start) / 1000.0;	// convert to second
 
 				if (elapsed < timeout_seconds)
 				{
@@ -155,7 +155,7 @@ int net_socket_tcp::read_line(tu_string* str, int maxbytes, float timeout_second
 {
 	assert(str);
 
-	uint64 start = tu_timer::get_ticks();
+	Uint32 start = tu_timer::get_ticks();
 	int timeout = int(timeout_seconds * 1000);	// ticks, ms
 	int total_bytes_read = 0;
 
@@ -244,7 +244,7 @@ int net_socket_tcp::write(const void* data, int bytes, float timeout_seconds)
 // Try to write the given data buffer.  Return the number of
 // bytes actually written.
 {
-	uint64 start = tu_timer::get_ticks();
+	Uint32 start = tu_timer::get_ticks();
 
 	int total_bytes_written = 0;
 
@@ -259,8 +259,8 @@ int net_socket_tcp::write(const void* data, int bytes, float timeout_seconds)
 				// Non-fatal.
 				m_error = 0;
 
-				uint64 now = tu_timer::get_ticks();
-				double elapsed = tu_timer::ticks_to_seconds(now - start);
+				Uint32 now = tu_timer::get_ticks();
+				double elapsed = (now - start) / 1000.0;	// convert to second
 
 				if (elapsed < timeout_seconds)
 				{

@@ -429,6 +429,8 @@ namespace gameswf
 		m_force_realtime_framerate(false),
 		m_log_bitmap_info(false)
 	{
+		tu_timer::init_timer();
+
 		m_global = new as_object(this);
 
 		action_init();
@@ -507,8 +509,6 @@ namespace gameswf
 	void	player::action_init()
 	// Create/hook built-ins.
 	{
-		m_start_time = tu_timer::get_ticks();
-
 		//
 		// global init
 		//
