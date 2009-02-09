@@ -429,14 +429,15 @@ namespace gameswf
 		m_force_realtime_framerate(false),
 		m_log_bitmap_info(false)
 	{
-		tu_timer::init_timer();
-
 		m_global = new as_object(this);
 
 		action_init();
 
-		if( s_player_count == 0 )
+		if (s_player_count == 0)
 		{
+			// timer should be inited only once
+			tu_timer::init_timer();
+
 			standard_method_map_init();
 		}
 
@@ -562,7 +563,7 @@ namespace gameswf
 		m_global->builtin_member("parseFloat",  as_global_parse_float);
 		m_global->builtin_member("parseInt",  as_global_parse_int);
 		m_global->builtin_member("isNaN",  as_global_isnan);
-		m_global->builtin_member("$version", as_value(as_global_get_version, NULL));
+		m_global->builtin_member("$version", as_value(as_global_get_version, as_value()));
 
 	}
 
