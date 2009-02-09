@@ -60,7 +60,7 @@ namespace gameswf
 
 		if (SDL_LoadWAV(url, &wav_spec, &data, &data_bytes) == NULL)
 		{
-		  // printf("Could not open test.wav: %s\n", SDL_GetError());
+			log_error("loadSound: can't load %s\n", url);
 			return -1;
 		}
 

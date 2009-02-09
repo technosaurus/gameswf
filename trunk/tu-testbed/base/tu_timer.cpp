@@ -5,8 +5,7 @@
 
 // Utility/profiling timer.
 
-#include <time.h>	// [ANSI/System V]
-#include <sys/timeb.h>	// ANSI
+#include <sys/timeb.h>	// for ftime()
 #include <assert.h>
 #include "base/tu_timer.h"
 
