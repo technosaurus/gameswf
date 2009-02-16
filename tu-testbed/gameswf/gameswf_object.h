@@ -81,6 +81,7 @@ namespace gameswf
 		exported_module virtual const char*	type_of() { return "object"; }
 
 		exported_module void	builtin_member(const tu_stringi& name, const as_value& val); 
+		exported_module void	call_watcher(const tu_stringi& name, const as_value& old_val, as_value* new_val);
 		exported_module virtual bool	set_member(const tu_stringi& name, const as_value& val);
 		exported_module virtual bool	get_member(const tu_stringi& name, as_value* val);
 		exported_module virtual bool	find_property( const tu_stringi & name, as_value * val );

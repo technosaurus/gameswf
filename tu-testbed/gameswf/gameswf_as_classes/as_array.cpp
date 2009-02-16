@@ -37,37 +37,6 @@ namespace gameswf
 		}
 	}
 
-	void	as_array_load_from_string(const fn_call& fn)
-	{
-		as_array* a = cast_to<as_array>(fn.this_ptr);
-		if (a && fn.nargs > 0)
-		{
-			// clear array
-			a->clear();
-
-			const char* str = fn.arg(0).to_string();
-			for (const char* p = str; *p; str = p + 1)
-			{
-				// seach for ','
-				for (p = str; *p != ',' && *p; p++) {}
-
-				// take substr
-				tu_string s(str, int(p - str));
-
-				// push into array
-				double res;
-				if (string_to_number(&res, s.c_str()))
-				{
-					a->push(res);
-				}
-				else
-				{
-					a->push(s.c_str());
-				}
-			}
-		}
-	}
-
 	void	as_array_tostring(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
@@ -190,9 +159,6 @@ namespace gameswf
 		builtin_member("push", as_array_push);
 		builtin_member("pop", as_array_pop);
 		builtin_member("length", as_value(as_array_length, as_value()));
-
-		// gameswf extension, create array from string similar to "1,22,23,422,522,65,777"
-		builtin_member("loadFromString", as_array_load_from_string);
 
 		set_ctor(as_global_array_ctor);
 	}

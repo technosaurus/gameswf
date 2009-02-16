@@ -511,7 +511,9 @@ namespace gameswf
 
 				case M_ENABLED:
 				{
-					m_enabled = val.to_bool();
+					as_value new_val(val);
+					call_watcher(name, as_value(m_enabled), &new_val);
+					m_enabled = new_val.to_bool();
 					return true;
 				}
 			}

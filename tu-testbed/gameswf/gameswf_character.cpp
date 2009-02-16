@@ -221,6 +221,7 @@ namespace gameswf
 		return as_object::get_member(name, val);
 	}
 
+	// TODO: call_watcher
 	bool	character::set_member(const tu_stringi& name, const as_value& val)
 	{
 		// first try character members

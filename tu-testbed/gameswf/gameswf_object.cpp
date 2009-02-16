@@ -176,6 +176,25 @@ namespace gameswf
 		m_members.set(name, val);
 	}
 
+	void as_object::call_watcher(const tu_stringi& name, const as_value& old_val, as_value* new_val)
+	{
+		if (m_watch)
+		{
+			as_watch watch;
+			m_watch->get(name, &watch);
+			if (watch.m_func)
+			{
+				as_environment env(get_player());
+				env.push(watch.m_user_data);	// params
+				env.push(*new_val);		// newVal
+				env.push(old_val);	// oldVal
+				env.push(name);	// property
+				new_val->set_undefined();
+				(*watch.m_func)(fn_call(new_val, this, &env, 4, env.get_top_index()));
+			}
+		}
+	}
+
 	bool	as_object::set_member(const tu_stringi& name, const as_value& new_val)
 	{
 //		printf("SET MEMBER: %s at %p for object %p\n", name.c_str(), val.to_object(), this);
@@ -190,22 +209,8 @@ namespace gameswf
 			}
 		}
 
-		// try watch
-		if (m_watch)
-		{
-			as_watch watch;
-			m_watch->get(name, &watch);
-			if (watch.m_func)
-			{
-				as_environment env(get_player());
-				env.push(watch.m_user_data);	// params
-				env.push(val);		// newVal
-				env.push(old_val);	// oldVal
-				env.push(name);	// property
-				val.set_undefined();
-				(*watch.m_func)(fn_call(&val, this, &env, 4, env.get_top_index()));
-			}
-		}
+		// try watcher
+		call_watcher(name, old_val, &val);
 
 		stringi_hash<as_value>::const_iterator it = this->m_members.find(name);
 		if (it != this->m_members.end())
