@@ -1300,6 +1300,9 @@ namespace gameswf
 		rec.m_style.m_x_offset = fmax(0, m_left_margin + m_indent);
 		rec.m_style.m_y_offset = m_text_height + (m_font->get_leading() - m_font->get_descent()) * rec.m_style.m_scale;
 
+		rec.m_style.m_x_offset += m_def->m_rect.m_x_min;
+		rec.m_style.m_y_offset += m_def->m_rect.m_y_min;
+
 		rec.m_style.m_text_height = m_text_height;
 
 		rec.m_style.m_has_x_offset = true;
