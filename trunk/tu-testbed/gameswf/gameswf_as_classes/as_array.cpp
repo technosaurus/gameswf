@@ -66,8 +66,69 @@ namespace gameswf
 		if (a)
 		{
 			as_value val;
-			a->shift(&val);
+			a->remove(0, &val);
 			*fn.result = val;
+		}
+	}
+
+	// public splice(startIndex:Number, [deleteCount:Number], [value:Object]) : Array
+	// adds elements to and removes elements from an array.
+	// This method modifies the array without making a copy.
+	void	as_array_splice(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		if (a && fn.nargs >= 1)
+		{
+			int index = fn.arg(0).to_int();
+			int asize = a->size();	// for optimization
+			if (index >=0 && index < asize)
+			{
+
+				// delete items
+
+				as_array* deleted_items = new as_array(a->get_player());
+				fn.result->set_as_object(deleted_items);
+
+				int delete_count = asize - index;
+				if (fn.nargs >= 2)
+				{
+					delete_count = fn.arg(1).to_int();
+					if (delete_count > asize - index)
+					{
+						delete_count = asize - index;
+					}
+				}
+
+				for (int i = 0; i < delete_count; i++)
+				{
+					as_value val;
+					a->remove(index, &val);
+					deleted_items->push(val);
+				}
+
+				// insert values
+
+				if (fn.nargs >= 3)
+				{
+					const as_value& val = fn.arg(2);
+					as_array* obj = cast_to<as_array>(val.to_object());
+					if (obj)
+					{
+						// insert an array
+						for (int i = obj->size() - 1; i >= 0; i--)
+						{
+							as_value val;
+							obj->get_member(tu_string(i), &val);
+							a->insert(index, val);
+						}
+					}
+					else
+					{
+						// insert an item
+						a->insert(index, val);
+					}
+				}
+			}
 		}
 	}
 
@@ -150,7 +211,6 @@ namespace gameswf
 		//			this->set_member("concat", &array_not_impl);
 		//			this->set_member("slice", &array_not_impl);
 		//			this->set_member("unshift", &array_not_impl);
-		//			this->set_member("splice", &array_not_impl);
 		//			this->set_member("sort", &array_not_impl);
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
@@ -159,6 +219,7 @@ namespace gameswf
 		builtin_member("push", as_array_push);
 		builtin_member("pop", as_array_pop);
 		builtin_member("length", as_value(as_array_length, as_value()));
+		builtin_member("splice", as_array_splice);
 
 		set_ctor(as_global_array_ctor);
 	}
@@ -227,8 +288,8 @@ namespace gameswf
 		set_member(index.to_tu_stringi(), val);
 	}
 
-	void as_array::shift(as_value* val)
-	// Removes the first element from an array and returns the value of that element.
+	void as_array::remove(int index, as_value* val)
+	// Removes the element starting from 'index' and returns the value of that element.
 	{
 		assert(val);
 
@@ -243,32 +304,91 @@ namespace gameswf
 			}
 		}
 
-		// sort indexes
-		for (int i = 0, n = idx.size(); i < n - 1; i++)
+		if (index >= 0 && index < idx.size())
 		{
-			for (int j = i + 1; j < n; j++)
+			// sort indexes
+			for (int i = 0, n = idx.size(); i < n - 1; i++)
 			{
-				if (idx[i] > idx[j])
+				for (int j = i + 1; j < n; j++)
 				{
-					tu_swap(&idx[i], &idx[j]);
+					if (idx[i] > idx[j])
+					{
+						tu_swap(&idx[i], &idx[j]);
+					}
 				}
+			}
+
+			// keep the element starting from 'index'
+			get_member(tu_string(idx[index]), val);
+
+			// shift elements
+			for (int i = index + 1; i < idx.size(); i++)
+			{
+				as_value v;
+				get_member(tu_string(idx[i]), &v);
+				set_member(tu_string(idx[i - 1]), v);
+			}
+
+			// remove the last element
+			erase(tu_string(idx[idx.size() - 1]));
+		}
+		else
+		{
+			//assert(0);
+		}
+	}
+
+
+	void as_array::insert(int index, const as_value& val)
+	// Inserts the element after 'index'
+	{
+		// receive numerical indexes
+		array<int> idx;
+		for (stringi_hash<as_value>::iterator it = m_members.begin(); it != m_members.end(); ++it)
+		{
+			int index;
+			if (string_to_number(&index, it->first.c_str()) && it->second.is_enum())
+			{
+				idx.push_back(index);
 			}
 		}
 
-		// keep the first element
-		get_member(tu_string(idx[0]), val);
-
-		// shift elements
-		for (int i = 1; i < idx.size(); i++)
+		if (index >= 0 && index < idx.size())
 		{
-			as_value v;
-			get_member(tu_string(idx[i]), &v);
-			set_member(tu_string(idx[i - 1]), v);
-		}
+			// add new index
+			idx.push_back(idx.size());
 
-		// remove the last element
-		erase(tu_string(idx[idx.size() - 1]));
+			// sort indexes
+			for (int i = 0, n = idx.size(); i < n - 1; i++)
+			{
+				for (int j = i + 1; j < n; j++)
+				{
+					if (idx[i] > idx[j])
+					{
+						tu_swap(&idx[i], &idx[j]);
+					}
+				}
+			}
+
+			// shift elements
+			for (int i = idx.size() - 1; i > index; i--)
+			{
+				as_value v;
+				get_member(tu_string(idx[i - 1]), &v);
+				set_member(tu_string(idx[i]), v);
+			}
+
+			// insert
+			set_member(tu_string(idx[index]), val);
+
+		}
+		else
+		{
+			//assert(0);
+		}
 	}
+
+
 
 	void as_array::pop(as_value* val)
 	// Removes the last element from an array and returns the value of that element.
