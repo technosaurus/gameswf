@@ -35,7 +35,7 @@ namespace gameswf
 		};
 
 		exported_module void add(as_object* listener);
-		exported_module void remove(as_object* listener);
+		exported_module bool remove(as_object* listener);
 
 		exported_module void notify(const event_id& ev);
 		exported_module void notify(const tu_string& event_name, const fn_call& fn);

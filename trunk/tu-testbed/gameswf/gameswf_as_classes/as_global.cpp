@@ -104,6 +104,11 @@ namespace gameswf
 		}
 	}
 
+	void	as_global_update_after_event(const fn_call& fn)
+	{
+		// isn't required for gameswf
+	}
+	
 	void	as_global_assetpropflags(const fn_call& fn)
 	// Undocumented ASSetPropFlags function
 	// Works only for as_object for now

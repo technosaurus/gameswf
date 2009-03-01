@@ -185,6 +185,7 @@ namespace gameswf
 		AS_MCLOADER,
 		AS_LOADVARS,
 		AS_TIMER,
+		AS_MOUSE,
 
 		// flash9
 		AS_EVENT,
@@ -796,7 +797,9 @@ namespace gameswf
 		enum cursor_type
 		{
 			SYSTEM_CURSOR,
-			ACTIVE_CURSOR
+			ACTIVE_CURSOR,
+			VISIBLE_CURSOR,			// show cursor
+			INVISIBLE_CURSOR		// hide cursor
 		};
 		virtual void set_cursor(cursor_type cursor) {}
 		virtual bool is_visible(const rect& bound) = 0;

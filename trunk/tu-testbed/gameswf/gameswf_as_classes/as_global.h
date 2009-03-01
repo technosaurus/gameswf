@@ -18,6 +18,7 @@ namespace gameswf
 	void  as_global_clearinterval(const fn_call& fn);
 	void  as_global_settimeout(const fn_call& fn);
 	void  as_global_cleartimeout(const fn_call& fn);
+	void	as_global_update_after_event(const fn_call& fn);
 
 	// for setInterval and setTimeout
 	struct as_timer : public as_object
