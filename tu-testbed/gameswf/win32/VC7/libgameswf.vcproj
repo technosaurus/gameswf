@@ -222,6 +222,12 @@
 				RelativePath="..\..\gameswf_as_classes\as_mcloader.h">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_as_classes\as_mouse.cpp">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_as_classes\as_mouse.h">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_as_classes\as_mouse_event.cpp">
 			</File>
 			<File

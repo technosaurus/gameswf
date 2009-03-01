@@ -129,6 +129,8 @@ namespace gameswf
 			// Handle onRelease, onReleaseOutside
 			if (ms->m_mouse_button_state_current == 0)
 			{
+				m_mouse_listener.notify(event_id::MOUSE_UP);
+
 				if( topmost_entity == active_entity )
 				{
 					// onRelease
@@ -176,6 +178,8 @@ namespace gameswf
 			// mouse button press
 			{
 				// onPress
+
+				m_mouse_listener.notify(event_id::MOUSE_DOWN);
 
 				// set/kill focus
 				// It's another entity ?
@@ -410,9 +414,15 @@ namespace gameswf
 	// The host app uses this to tell the movie where the
 	// user's mouse pointer is.
 	{
+		bool is_mouse_moved = (x !=  m_mouse_x) || (y != m_mouse_y);
 		m_mouse_x = x;
 		m_mouse_y = y;
 		m_mouse_buttons = buttons;
+
+		if (is_mouse_moved)
+		{
+			m_mouse_listener.notify(event_id::MOUSE_MOVE);
+		}
 	}
 
 	void	root::get_mouse_state(int* x, int* y, int* buttons)

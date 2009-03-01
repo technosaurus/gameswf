@@ -97,16 +97,20 @@ namespace gameswf
 		}
 	} 
 
-	void listener::remove(as_object* listener) 
+	bool listener::remove(as_object* listener) 
 	{
+		bool is_removed = false;
+
 		// null out a item
 		for (int i = 0, n = m_listeners.size(); i < n; i++)
 		{
 			if (m_listeners[i] == listener)
 			{
 				m_listeners[i] = NULL;
+				is_removed = true;
 			}
 		}
+		return is_removed;
 	} 
 
 	as_object*	listener::operator[](const tu_stringi& name) const

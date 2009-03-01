@@ -79,6 +79,7 @@ namespace gameswf
 		// listeners
 		listener m_keypress_listener;
 		listener m_listener;
+		listener m_mouse_listener;
 
 		weak_ptr<player> m_player;
 
@@ -149,7 +150,11 @@ namespace gameswf
 		bool is_avm2() const;
 
 		void add_listener(as_object* obj)  { m_listener.add(obj); }
-		void remove_listener(as_object* obj) { m_listener.remove(obj); }
+		bool remove_listener(as_object* obj) { return m_listener.remove(obj); }
+		void add_mouse_listener(as_object* obj)  { m_mouse_listener.add(obj); }
+		bool remove_mouse_listener(as_object* obj) { return m_mouse_listener.remove(obj); }
+		void add_keypress_listener(as_object* obj)  { m_keypress_listener.add(obj); }
+		bool remove_keypress_listener(as_object* obj) { return m_keypress_listener.remove(obj); }
 	};
 }
 

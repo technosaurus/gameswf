@@ -36,6 +36,7 @@
 #include "gameswf/gameswf_as_classes/as_boolean.h"
 #include "gameswf/gameswf_as_classes/as_global.h"
 #include "gameswf/gameswf_as_classes/as_sharedobject.h"
+#include "gameswf/gameswf_as_classes/as_mouse.h"
 
 namespace gameswf
 {
@@ -522,7 +523,8 @@ namespace gameswf
 		m_global->builtin_member("MovieClip", as_global_movieclip_ctor);
 		m_global->builtin_member("TextField", as_global_textfield_ctor);
 		m_global->builtin_member("TextFormat", as_global_textformat_ctor);
-		m_global->builtin_member( "SharedObject", new as_sharedobject( this ) );
+		m_global->builtin_member("SharedObject", new as_sharedobject(this));
+		m_global->builtin_member("Mouse", new as_mouse(this));
 
 		//			m_global->set_member("XML", as_value(xml_new));
 		m_global->builtin_member("MovieClipLoader", as_global_mcloader_ctor);
@@ -564,7 +566,7 @@ namespace gameswf
 		m_global->builtin_member("parseInt",  as_global_parse_int);
 		m_global->builtin_member("isNaN",  as_global_isnan);
 		m_global->builtin_member("$version", as_value(as_global_get_version, as_value()));
-
+		m_global->builtin_member("updateAfterEvent", as_global_update_after_event);
 	}
 
 

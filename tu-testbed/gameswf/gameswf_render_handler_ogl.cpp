@@ -343,27 +343,39 @@ struct sdl_cursor_handler {
 	}
 
 
-	void set_cursor(gameswf::render_handler::cursor_type cursor) {
-		if (!m_inited)
+	void set_cursor(gameswf::render_handler::cursor_type cursor)
+	{
+		if (m_inited == false)
 		{
 			init();
 		}
 		
 		switch (cursor)
 		{
-		case gameswf::render_handler::SYSTEM_CURSOR:
-			if (m_system_cursor) {
-				SDL_SetCursor(m_system_cursor);
-			}
-			break;
+			case gameswf::render_handler::SYSTEM_CURSOR:
+				if (m_system_cursor)
+				{
+					SDL_SetCursor(m_system_cursor);
+				}
+				break;
 
-		case gameswf::render_handler::ACTIVE_CURSOR:
-			if (m_active_cursor) {
-				SDL_SetCursor(m_active_cursor);
-			}
-			break;
-		default:
-			assert(0);
+			case gameswf::render_handler::ACTIVE_CURSOR:
+				if (m_active_cursor)
+				{
+					SDL_SetCursor(m_active_cursor);
+				}
+				break;
+
+			case gameswf::render_handler::INVISIBLE_CURSOR:
+				SDL_ShowCursor(SDL_DISABLE);
+				break;
+
+			case gameswf::render_handler::VISIBLE_CURSOR:
+				SDL_ShowCursor(SDL_ENABLE);
+				break;
+
+			default:
+				assert(0);
 		}
 	}
 };

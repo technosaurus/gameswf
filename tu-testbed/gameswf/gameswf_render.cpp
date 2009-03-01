@@ -213,13 +213,14 @@ namespace gameswf
 		{
 			if (s_render_handler)
 			{
-				s_render_handler->draw_bitmap(
-					m, bi, coords, uv_coords, color);
+				s_render_handler->draw_bitmap(m, bi, coords, uv_coords, color);
 			}
 		}
 
-		void set_cursor(render_handler::cursor_type cursor) {
-			if (s_render_handler) {
+		void set_cursor(render_handler::cursor_type cursor)
+		{
+			if (s_render_handler)
+			{
 				s_render_handler->set_cursor(cursor);
 			}
 		}
