@@ -354,18 +354,29 @@ namespace gameswf
 				as_value	method;
 				if (get_member(method_name, &method))
 				{
-					as_environment env(get_player());
+//					as_environment env(get_player());
+
+					// use _root environment
+					character* mroot = get_player()->get_root_movie();
+					as_environment* env = mroot->get_environment();
+					
+					// keep stack size
+					int stack_size = env->get_stack_size();
+
 					int nargs = 0;
 					if (id.m_args)
 					{
 						nargs = id.m_args->size();
 						for (int i = nargs - 1; i >=0; i--)
 						{
-							env.push((*id.m_args)[i]);
+							env->push((*id.m_args)[i]);
 						}
 					}
-					call_method(method, &env, this, nargs, env.get_top_index());
+					call_method(method, env, this, nargs, env->get_top_index());
 					called = true;
+
+					// restore stack size
+					env->set_stack_size(stack_size);
 				}
 			}
 		}
