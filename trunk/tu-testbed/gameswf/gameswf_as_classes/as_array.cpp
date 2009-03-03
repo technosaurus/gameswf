@@ -5,6 +5,7 @@
 
 #include "gameswf/gameswf_as_classes/as_array.h"
 #include "gameswf/gameswf_function.h"
+#include "gameswf/gameswf_character.h"
 
 namespace gameswf
 {
@@ -132,6 +133,157 @@ namespace gameswf
 		}
 	}
 
+	// public concat([value:Object]) : Array
+	// Concatenates the elements specified in the parameters with the elements
+	// in an array and creates a new array. 
+	// If the value parameters specify an array, the elements of that array are concatenated,
+	// rather than the array itself. The array my_array is left unchanged.
+	void	as_array_concat(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		if (a && fn.nargs > 0)
+		{
+			as_array* res = new as_array(a->get_player());
+			fn.result->set_as_object(res);
+
+			a->copy_to(res);
+
+			for (int i = 0; i < fn.nargs; i++)
+			{
+				as_array* arg = cast_to<as_array>(fn.arg(i).to_object());
+				if (arg)
+				{
+					for (int j = 0, n = arg->size(); j < n; j++)
+					{
+						as_value val;
+						arg->get_member(tu_string(j), &val);
+						res->push(val);
+					}
+				}
+				else
+				{
+					res->push(fn.arg(i));
+				}
+			}
+		}
+	}
+
+	// public slice([startIndex:Number], [endIndex:Number]) : Array
+	// Returns a new array that consists of a range of elements from the original array,
+	// without modifying the original array. The returned array includes the startIndex 
+	// element and all elements up to, but not including, the endIndex element. 
+	void	as_array_slice(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		if (a)
+		{
+			as_array* res = new as_array(a->get_player());
+			fn.result->set_as_object(res);
+
+			// If you don't pass any parameters, a duplicate of the original array is created.
+			if (fn.nargs == 0)
+			{
+				a->copy_to(res);
+				return;
+			}
+
+			// If start is a negative number, the starting point begins at the end of the array,
+			// where -1 is the last element.
+			int start = fn.arg(0).to_int();
+			if (start < 0)
+			{
+				start += a->size();
+			}
+
+			// If you omit this parameter, the slice includes all elements
+			int end = a->size();
+			if (fn.nargs >= 2)
+			{
+				end = fn.arg(1).to_int();
+				if (end < 0)
+				{
+					end += a->size();
+				}
+			}
+
+			for (int i = start; i < end; i++)
+			{
+				as_value val;
+				if (a->get_member(tu_string(i), &val))
+				{
+					res->push(val);
+				}
+			}
+		}
+	}
+
+	// public unshift(value:Object) : Number
+	// Adds one or more elements to the beginning of an array and returns the new length
+	void	as_array_unshift(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		if (a)
+		{
+			for (int i = fn.nargs - 1; i >= 0; i--)
+			{
+				as_array* arg = cast_to<as_array>(fn.arg(i).to_object());
+				if (arg)
+				{
+					for (int j = arg->size() - 1; j >= 0; j--)
+					{
+						as_value val;
+						if (arg->get_member(tu_string(j), &val))
+						{
+							a->insert(0, val);
+						}
+					}
+				}
+				else
+				{
+					a->insert(0, fn.arg(i));
+				}
+			}
+			fn.result->set_int(a->size());
+		}
+	}
+
+	// public sort([compareFunction:Object], [options:Number]) : Array
+	// Sorts the elements in an array according to Unicode values.
+	void	as_array_sort(const fn_call& fn)
+	{
+		as_array* a = cast_to<as_array>(fn.this_ptr);
+		if (a)
+		{
+			int options = 0;
+			as_function* compare_function = NULL;
+
+			if (fn.nargs > 0)
+			{
+				if (fn.arg(0).is_number())
+				{
+					options = fn.arg(0).to_int();
+				}
+				else
+				{
+					compare_function = fn.arg(0).to_function();
+				}
+
+				if (fn.nargs > 1)
+				{
+					if (fn.arg(1).is_number())
+					{
+						options = fn.arg(1).to_int();
+					}
+					else
+					{
+						compare_function = fn.arg(1).to_function();
+					}
+				}
+			}
+			a->sort(options, compare_function);
+		}
+	}
+
 	void	as_array_pop(const fn_call& fn)
 	{
 		as_array* a = cast_to<as_array>(fn.this_ptr);
@@ -203,15 +355,24 @@ namespace gameswf
 		fn.result->set_as_object(ao.get_ptr());
 	}
 
+	as_global_array::as_global_array(player* player) :
+		as_c_function(player, as_global_array_ctor)
+	{
+		builtin_member("CASEINSENSITIVE", CASEINSENSITIVE);
+		builtin_member("DESCENDING", DESCENDING);
+		builtin_member("UNIQUESORT", UNIQUESORT);
+		builtin_member("RETURNINDEXEDARRAY ", RETURNINDEXEDARRAY);
+		builtin_member("NUMERIC", NUMERIC);
+	}
 
 	as_array::as_array(player* player) :
 		as_object(player)
 	{
 		builtin_member("join", as_array_join);
-		//			this->set_member("concat", &array_not_impl);
-		//			this->set_member("slice", &array_not_impl);
-		//			this->set_member("unshift", &array_not_impl);
-		//			this->set_member("sort", &array_not_impl);
+		builtin_member("concat", as_array_concat);
+		builtin_member("slice", as_array_slice);
+		builtin_member("unshift", as_array_unshift);
+		builtin_member("sort", as_array_sort);
 		//			this->set_member("sortOn", &array_not_impl);
 		//			this->set_member("reverse", &array_not_impl);
 		builtin_member("shift", as_array_shift);
@@ -414,6 +575,89 @@ namespace gameswf
 		{
 			as_value index(i);
 			m_members.erase(index.to_tu_stringi());
+		}
+	}
+
+	void as_array::copy_to(as_object* target)
+	// Copy items from 'this' to target
+	{
+		if (target)
+		{
+			for (stringi_hash<as_value>::const_iterator it = m_members.begin(); 
+				it != m_members.end(); ++it ) 
+			{ 
+				if (it->second.is_enum())
+				{
+					target->set_member(it->first, it->second); 
+				}
+			} 
+		}
+	}
+
+	// By default, Array.sort() works as described in the following list:
+	// Sorting is case-sensitive (Z precedes a). 
+	// Sorting is ascending (a precedes b). 
+	// Numeric fields are sorted as if they were strings, so 100 precedes 99
+	void as_array::sort(int options, as_function* compare_function)
+	{
+		int n = size();
+		for (int i = 0; i < n - 1; i++)
+		{
+			as_value ival;
+			get_member(tu_string(i), &ival);
+			for (int j = i + 1; j < n; j++)
+			{
+				as_value jval;
+				get_member(tu_string(j), &jval);
+
+				bool do_swap = false;
+				if (compare_function == NULL)
+				{
+					if (ival.to_tu_string() > jval.to_tu_string())
+					{
+						do_swap = true;
+					}
+				}
+				else
+				{
+					// -1, if A should appear before B in the sorted sequence 
+					// 0, if A equals B 
+					// 1, if A should appear after B in the sorted sequence 
+
+					// use _root environment
+					character* mroot = get_player()->get_root_movie();
+					as_environment* env = mroot->get_environment();
+					
+					// keep stack size
+					int stack_size = env->get_stack_size();
+
+					env->push(jval);
+					env->push(ival);
+					as_value ret = call_method(compare_function, env, this, 2, env->get_top_index());
+
+					// restore stack size
+					env->set_stack_size(stack_size);
+
+					if (ret.to_int() > 0)
+					{
+						do_swap = true;
+					}
+				}
+
+				if (options & as_global_array::DESCENDING)
+				{
+					do_swap = ! do_swap;
+				}
+
+				if (do_swap)
+				{
+					as_value tmp(ival);
+					ival = jval;
+					jval = tmp;
+					set_member(tu_string(i), ival);
+					set_member(tu_string(j), jval);
+				}
+			}
 		}
 	}
 
