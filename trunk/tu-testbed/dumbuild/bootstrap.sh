@@ -19,9 +19,11 @@ sources=../../compile_util.cpp \
     ../../object.cpp \
     ../../object_store.cpp \
     ../../os.cpp \
+    ../../path.cpp \
     ../../res.cpp \
     ../../sha1.cpp \
     ../../target.cpp \
+    ../../test.cpp \
     ../../util.cpp
 
 

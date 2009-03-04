@@ -57,6 +57,10 @@ class Context {
     rebuild_all_ = ra;
   }
 
+  Target* main_target() const {
+    return main_target_;
+  }
+
   string AbsoluteFile(const string& canonical_path,
                            const string& filename);
   string AbsoluteFile(const char* canonical_path, const char* filename) {

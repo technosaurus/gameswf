@@ -153,33 +153,13 @@ int main(int argc, const char** argv) {
   context.LogVerbose(StringPrintf("canonical_currdir = %s\n",
 				  canonical_currdir.c_str()));
 
-  res = context.Init(absolute_root);
+  res = context.Init(absolute_root, canonical_currdir);
   ExitIfError(res);
 
-  res = context.ReadObjects("", context.AbsoluteFile("", "root.dmb"));
-  ExitIfError(res);
+  assert(context.GetConfig());
+  assert(context.main_target());
 
-  res = context.ReadObjects(
-	  canonical_currdir,
-	  context.AbsoluteFile(canonical_currdir, "build.dmb"));
-  ExitIfError(res);
-
-  context.DoneReading();
-
-  if (!context.GetConfig()) {
-    ExitIfError(Res(ERR, StringPrintf("config '%s' is not defined",
-                                      context.config_name().c_str())));
-  }
-
-  // TODO: allow command-line to specify the desired target.
-  string target_name = canonical_currdir + ":default";
-  Target* target = context.GetTarget(target_name);
-  if (!target) {
-    ExitIfError(Res(ERR_UNKNOWN_TARGET, target_name));
-  }
-  assert(target);
-
-  res = target->Resolve(&context);
+  res = context.main_target()->Resolve(&context);
   ExitIfError(res);
 
   res = context.ProcessTargets();

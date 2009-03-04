@@ -1,7 +1,11 @@
+// test.cpp -- Thatcher Ulrich <tu@tulrich.com> 2008
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
 #include <stdio.h>
+#include "test.h"
 
-int main() {
-  printf("Hello\n");
-
-  return 0;
+void RunSelfTests() {
+  TestPath();
 }

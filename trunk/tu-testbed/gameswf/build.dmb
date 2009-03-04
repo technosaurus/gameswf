@@ -1,0 +1,26 @@
+// gameswf build file
+[
+  { "name": "gameswf",
+    "type": "lib",
+    "src": [
+      "gameswf.cpp",
+    ],
+    "dep": [
+      "#base:base",
+      "#net:net"
+    ],
+    "inc_dirs": [
+      "#"
+    ]
+  },
+
+  { "name": "gameswf_test_ogl",
+    "type": "exe",
+    "src": [
+      "gameswf_test_ogl.cpp"
+    ],
+    "dep": [
+      "gameswf"
+    ]
+  }
+]

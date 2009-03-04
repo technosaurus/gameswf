@@ -30,9 +30,11 @@ set srcs=^
  ../../object.cpp ^
  ../../object_store.cpp ^
  ../../os.cpp ^
+ ../../path.cpp ^
  ../../res.cpp ^
  ../../sha1.cpp ^
  ../../target.cpp ^
+ ../../test.cpp ^
  ../../util.cpp 
 cl -nologo %srcs% -Fedmb.exe -Zi -GX -I../../jsoncpp/include -link lib_json.lib -subsystem:console
 
