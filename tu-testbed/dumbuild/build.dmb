@@ -3,20 +3,10 @@
   { "name": "default",
     "type": "generic",
     "dep": [
-      // "test"
       "dmb"
     ]
   },
   
-  { "name": "test",
-    "type": "exe",
-    "src": [
-      "test.cpp"
-    ],
-    "dep": [
-    ]
-  },
-
   { "name": "jsonlib",
     "type": "lib",
     "src": [
@@ -47,9 +37,11 @@
       "object.cpp",
       "object_store.cpp",
       "os.cpp",
+      "path.cpp",
       "res.cpp",
       "sha1.cpp",
       "target.cpp",
+      "test.cpp",
       "util.cpp"
           ],
     "dep": [

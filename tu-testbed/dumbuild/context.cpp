@@ -3,6 +3,7 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
+#include <stdio.h>
 #include "context.h"
 #include "config.h"
 #include "dmb_types.h"
@@ -12,6 +13,7 @@
 #include "os.h"
 #include "path.h"
 #include "target.h"
+#include "test.h"
 
 Context::Context() : done_reading_(false),
                      rebuild_all_(false),
@@ -55,6 +57,15 @@ Res Context::ProcessArgs(int argc, const char** argv) {
       switch (arg[1]) {
         case '-':
           // long-form arguments.
+          if (strcmp(arg, "--test") == 0) {
+            // Run the self-tests.
+            RunSelfTests();
+            printf("Self tests OK\n");
+            exit(0);
+          } else {
+            return Res(ERR_COMMAND_LINE, StringPrintf("Unknown arg %s", arg));
+          }
+          break;
         default:
           return Res(ERR_COMMAND_LINE, StringPrintf("Unknown arg %s", arg));
         case 'C': {
@@ -108,23 +119,32 @@ Res Context::Init(const string& root_path, const string& canonical_currdir) {
     return res;
   }
 
-  //xxxxxxx
-  xxxxxx;
-  split(specified_target, &target_path, &target_name);
-  if (!target_name.length()) {
-    target_name = "default";
-  }
-  target_dir = join (canonical_currdir, target_path);
+  // TODO parse specified target
+//   //xxxxxxx
+//   xxxxxx;
+//   split(specified_target, &target_path, &target_name);
+//   if (!target_name.length()) {
+//     target_name = "default";
+//   }
+//   target_dir = join (canonical_currdir, target_path);
+  string target_dir = "";
+  main_target_name_ = ":default";
+
   res = ReadObjects(target_dir, AbsoluteFile(target_dir, "build.dmb"));
   if (!res.Ok()) {
     return res;
   }
 
-  main_target_name_ = join (target_dir ":" target_name);
+  // TODO
+//   main_target_name_ = join (target_dir ":" target_name);
+//   main_target_ = GetTarget(main_target_name_);
   main_target_ = GetTarget(main_target_name_);
+  if (!main_target_) {
+    return Res(ERR_UNKNOWN_TARGET, main_target_name_);
+  }
 
   DoneReading();
-  if (!context.GetConfig()) {
+  if (!GetConfig()) {
     return Res(ERR, StringPrintf("config '%s' is not defined",
                                  config_name().c_str()));
   }

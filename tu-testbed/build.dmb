@@ -1,0 +1,10 @@
+// tu-testbed builds
+[
+  // A default build-everything target.
+  { "name": "default",
+    "type": "generic",
+    "dep": [
+      "gameswf/default"
+    ]
+  }
+]
