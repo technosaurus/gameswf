@@ -342,15 +342,15 @@ namespace gameswf
 			NUM_LOCK = 144,
 			SEMICOLON = 186,
 			EQUALS = 187,
+			COMMA = 188,
 			MINUS = 189,
+			PERIOD = 190,
 			SLASH = 191,
 			BACKTICK = 192,
 			LEFT_BRACKET = 219,
 			BACKSLASH = 220,
 			RIGHT_BRACKET = 221,
 			QUOTE = 222,
-			COMMA,
-			PERIOD,
 
 			KEYCOUNT
 		};
