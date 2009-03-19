@@ -1793,7 +1793,7 @@ namespace gameswf
 			rec.m_glyphs.push_back(g);
 
 			m_x += g.m_glyph_advance;
-			if (m_x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE && m_def->m_multiline == true)
+			if (m_x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE) // && m_def->m_multiline == true)
 			{
 				// Whoops, we just exceeded the box width.  Do word-wrap.
 
