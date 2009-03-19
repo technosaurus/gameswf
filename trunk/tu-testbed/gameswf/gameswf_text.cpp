@@ -82,8 +82,7 @@ namespace gameswf
 	// Constructor for ActionScript class XMLSocket
 	{
 		edit_text_character_def* empty_text_def = new edit_text_character_def(fn.get_player(), 0, 0);
-		character* ch = new edit_text_character(fn.get_player(),
-			NULL, empty_text_def, 0);
+		character* ch = new edit_text_character(fn.get_player(), NULL, empty_text_def, 0);
 		fn.result->set_as_object(ch);
 	}
 
@@ -1794,7 +1793,7 @@ namespace gameswf
 			rec.m_glyphs.push_back(g);
 
 			m_x += g.m_glyph_advance;
-			if (m_x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE)
+			if (m_x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE && m_def->m_multiline == true)
 			{
 				// Whoops, we just exceeded the box width.  Do word-wrap.
 

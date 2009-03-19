@@ -83,7 +83,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgameswf.lib libmysql.lib"
-				OutputFile="$(OutDir)/mydb.dll"
+				OutputFile="/WINDOWS/system32/mydb.dll"
 				LinkIncremental="1"
 				ModuleDefinitionFile=""
 				GenerateDebugInformation="TRUE"
