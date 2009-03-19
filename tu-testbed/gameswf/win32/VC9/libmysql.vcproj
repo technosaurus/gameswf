@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgameswf-d.lib libmysql.lib"
+				AdditionalDependencies="libgameswf.lib libmysql.lib"
 				OutputFile="/WINDOWS/system32/mydb.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""

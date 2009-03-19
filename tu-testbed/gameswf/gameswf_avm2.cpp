@@ -541,7 +541,7 @@ namespace gameswf
 
 					IF_VERBOSE_ACTION(log_msg("EX: newclass\t class index:%i\n", class_index));
 
-					as_object* basetype = stack.top(0).to_object();
+//					as_object* basetype = stack.top(0).to_object();
 
 					gc_ptr<as_class> new_class = new as_class(get_player());
 

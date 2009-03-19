@@ -44,7 +44,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib libmysql.lib avutil-49.lib avcodec-51.lib avformat-50.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib libgameswf.lib"
-				OutputFile=".\Release/gameswf.exe"
+				OutputFile="/WINDOWS/system32/gameswf.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
 				AdditionalLibraryDirectories=""

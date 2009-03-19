@@ -63,7 +63,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgameswf-d.lib"
+				AdditionalDependencies="libgameswf.lib"
 				OutputFile="/WINDOWS/system32/file.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""

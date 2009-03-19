@@ -83,7 +83,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="libgameswf.lib"
-				OutputFile="$(OutDir)/file.dll"
+				OutputFile="/WINDOWS/system32/file.dll"
 				LinkIncremental="1"
 				ModuleDefinitionFile=""
 				GenerateDebugInformation="TRUE"
