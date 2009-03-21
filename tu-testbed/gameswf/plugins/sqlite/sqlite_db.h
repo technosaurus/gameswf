@@ -1,0 +1,52 @@
+// sqlite_db.cpp	-- Vitaly Alexeev <tishka92@yahoo.com>	2009
+
+// This source code has been donated to the Public Domain.  Do
+// whatever you want with it.
+
+// sqlite plugin implementation for the gameswf SWF player library.
+
+#ifndef GAMESWF_SQLITE_DB_H
+#define GAMESWF_SQLITE_DB_H
+
+#include <sqlite3.h>
+#include "sqlite_table.h"
+
+using namespace gameswf;
+
+namespace sqlite_plugin
+{
+
+	struct sqlite_db : public as_object
+	{
+
+		// Unique id of a gameswf resource
+		enum { m_class_id = AS_PLUGIN_SQLITE_DB };
+		virtual bool is(int class_id) const
+		{
+			if (m_class_id == class_id) return true;
+			else return as_object::is(class_id);
+		}
+
+		exported_module sqlite_db(player* player);
+		exported_module ~sqlite_db();
+
+		exported_module bool connect(const char* dbfile);
+		exported_module void disconnect();
+		exported_module sqlite_table* open(const char* sql);
+		exported_module int run(const char *sql);
+		exported_module void set_autocommit(bool autocommit);
+		exported_module void commit();
+
+		bool m_trace;
+		gc_ptr<sqlite_table> m_result;
+
+	private:
+
+		bool runsql(const char* sql);
+		sqlite3* m_db;
+		bool m_autocommit;
+	};
+
+}
+
+#endif // GAMESWF_SQLITE_DB_H

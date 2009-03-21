@@ -74,7 +74,7 @@
 				SubSystem="2"
 				RandomizedBaseAddress="1"
 				DataExecutionPrevention="0"
-				ImportLibrary="c:\libgame\lib\libgameswf-d.lib"
+				ImportLibrary="c:\libgame\lib\libgameswf.lib"
 				TargetMachine="1"
 			/>
 			<Tool
