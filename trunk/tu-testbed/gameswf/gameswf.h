@@ -196,6 +196,8 @@ namespace gameswf
 		AS_PLUGIN_MYTABLE,
 		AS_PLUGIN_3DS,
 		AS_PLUGIN_FILE,
+		AS_PLUGIN_SQLITE_DB,
+		AS_PLUGIN_SQLITE_TABLE,
 
 		// user defined plugins
 		// should be the last in this enum

@@ -2,8 +2,8 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="9,00"
-	Name="libmisc"
-	ProjectGUID="{BEAF3A14-27F7-4981-9AE3-4F1A9BCDC1F6}"
+	Name="libsqlite"
+	ProjectGUID="{7192F1EE-48F7-4C8D-B7E4-A70750D1B0CC}"
 	RootNamespace="randomIndex"
 	Keyword="Win32Proj"
 	TargetFrameworkVersion="131072"
@@ -63,8 +63,8 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgameswf-d.lib"
-				OutputFile="/WINDOWS/system32/misc.dll"
+				AdditionalDependencies="libgameswf.lib sqlite3.lib"
+				OutputFile="/WINDOWS/system32/sqlite.dll"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories=""
 				ModuleDefinitionFile=""
@@ -140,7 +140,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="libgameswf.lib"
+				AdditionalDependencies="libgameswf.lib libsqlite.lib"
 				LinkIncremental="1"
 				ModuleDefinitionFile=""
 				GenerateDebugInformation="true"
@@ -177,24 +177,22 @@
 	<References>
 	</References>
 	<Files>
-		<Filter
-			Name="Source Files"
-			Filter="cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx"
-			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
+		<File
+			RelativePath="..\..\plugins\sqlite\sqlite_db.cpp"
 			>
-			<File
-				RelativePath="..\..\plugins\dirinfo\dirent.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\plugins\misc\misc.cpp"
-				>
-			</File>
-			<File
-				RelativePath="..\..\plugins\misc\misc.h"
-				>
-			</File>
-		</Filter>
+		</File>
+		<File
+			RelativePath="..\..\plugins\sqlite\sqlite_db.h"
+			>
+		</File>
+		<File
+			RelativePath="..\..\plugins\sqlite\sqlite_table.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\..\plugins\sqlite\sqlite_table.h"
+			>
+		</File>
 	</Files>
 	<Globals>
 	</Globals>

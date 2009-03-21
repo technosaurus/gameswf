@@ -170,7 +170,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib sdlmain.lib opengl32.lib WinMM.lib ws2_32.lib libgameswf-d.lib"
+				AdditionalDependencies="sdl.lib sdlmain.lib opengl32.lib WinMM.lib ws2_32.lib libgameswf.lib"
 				OutputFile="/WINDOWS/system32/gameswf.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
