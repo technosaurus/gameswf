@@ -241,34 +241,53 @@ namespace sqlite_plugin
 		return NULL;
 	}
 
-	void sqlite_table::retrieve_data(int columns, char **vals, char **column_names)
+	void sqlite_table::retrieve_data(sqlite3_stmt* stmt)
 	{
 		tu_autolock locker(s_sqlite_plugin_mutex);
 
-//		for (int i = 0; i < rows; i++)
-//		{
-//			printf("%s = %s\n", colname[i], val[i] ? val[i] : "NULL");
-//			this_ptr->m_result->
-//		}
-//		printf("\n");
-
-		if (m_title.size() == 0)
+		int col_count = sqlite3_column_count(stmt);
+		m_title.resize(col_count);
+		for (int i = 0; i < col_count; i++)
 		{
-			m_title.resize(columns);
-			for (int i = 0; i < columns; i++)
+			m_title[i] = sqlite3_column_name(stmt, i);
+		}
+ 
+		int rc;
+		do
+		{
+			as_object* row = new as_object(get_player());
+			m_data.push_back(row);
+
+			for (int i = 0; i < col_count; i++)
 			{
-				m_title[i] = column_names[i];
+				as_value val;
+				int col_type = sqlite3_column_type(stmt, i);
+				switch (col_type)
+				{
+					case SQLITE_INTEGER :
+						val.set_int(sqlite3_column_int(stmt, i));
+						break;
+					case SQLITE_FLOAT :
+						val.set_double(sqlite3_column_double(stmt, i));
+						break;
+					case SQLITE_BLOB :
+// FIXME:						val.set_string((const char*) sqlite3_column_blob(stmt, i));
+						break;
+					case SQLITE_NULL :
+						val.set_null();
+						break;
+					case SQLITE3_TEXT :
+						val.set_string((const char*) sqlite3_column_text(stmt, i));
+						break;
+					default:
+						assert(0);
+						break;
+				}
+				row->set_member(m_title[i], val);
 			}
+			rc = sqlite3_step(stmt);
 		}
-
-		as_object* row = new as_object(get_player());
-		m_data.push_back(row);
-
-		for (int j = 0; j < columns; j++)
-		{
-			as_value val(vals[j] == NULL ? "" : vals[j]);
-			row->set_member(m_title[j], val);
-		}
+		while (rc != SQLITE_DONE);
 	}
 }
 

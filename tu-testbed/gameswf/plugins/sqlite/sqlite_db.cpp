@@ -102,6 +102,17 @@ namespace sqlite_plugin
 		}
 	}
 
+	void sqlite_create_function(const fn_call& fn)
+	{
+		tu_autolock locker(s_sqlite_plugin_mutex);
+
+		sqlite_db* db = cast_to<sqlite_db>(fn.this_ptr);
+		if (db && fn.nargs >= 2)
+		{
+			db->create_function(fn.arg(0).to_string(), fn.arg(1).to_function());
+		}
+	}
+
 	// DLL interface
 	extern "C"
 	{
@@ -125,6 +136,7 @@ namespace sqlite_plugin
 		builtin_member("commit", sqlite_commit);
 		builtin_member("auto_commit", as_value(as_value(), sqlite_autocommit_setter));
 		builtin_member("trace", as_value(as_value(), sqlite_trace_setter));
+		builtin_member("createFunction", sqlite_create_function);
 	}
 
 	sqlite_db::~sqlite_db()
@@ -151,7 +163,7 @@ namespace sqlite_plugin
 		// also deallocates the connection handle
 		disconnect();
 
-	  int rc = sqlite3_open(dbfile, &m_db);
+	  int rc = sqlite3_open_v2(dbfile, &m_db, SQLITE_OPEN_READWRITE, NULL);
 	  if (rc != SQLITE_OK)
 		{
 			log_error("Can't open sqlite database: %s\n", sqlite3_errmsg(m_db));
@@ -163,32 +175,42 @@ namespace sqlite_plugin
 		return true;
 	}
 
-	static int sqlite_callback(void* ptr, int columns, char **val, char **column_names)
-	{
-		sqlite_db* this_ptr = (sqlite_db*) ptr;
-		this_ptr->m_result = new sqlite_table(this_ptr->get_player());
-		this_ptr->m_result->retrieve_data(columns, val, column_names);
-		return 0;
-	}
-
 	bool sqlite_db::runsql(const char* sql)
 	{
 		if (m_db == NULL)
 		{
-			log_error("missing connection\n");
 			log_error("%s\n", sql);
+			log_error("missing connection\n");
 			return false;
 		}
 
-		char* msg = NULL;
-		int rc = sqlite3_exec(m_db, sql, sqlite_callback, this, &msg);
+		sqlite3_stmt* stmt;		// Statement handle
+		int rc = sqlite3_prepare_v2(m_db, sql, -1, &stmt, NULL);
 	  if (rc != SQLITE_OK)
 		{
-			log_error("%s\n%s\n", sql, msg);
-		  sqlite3_free(msg);
+			log_error("%s\n%s\n", sql, sqlite3_errmsg(m_db));
 			return false;
 		}
-		return true;
+
+		rc = sqlite3_step(stmt);
+		switch (rc)
+		{
+			case SQLITE_DONE:	// has finished executing
+				sqlite3_finalize(stmt);
+				return true;
+
+			case SQLITE_ROW:	// has another row ready
+				assert(m_result);
+				m_result->retrieve_data(stmt);
+				sqlite3_finalize(stmt);
+				return true;
+
+			default:
+				log_error("%s\nerror #%d:%s\n", sql, rc, sqlite3_errmsg(m_db));
+				sqlite3_finalize(stmt);
+				return false;
+		}
+		return false;
 	}
 
 	int sqlite_db::run(const char *sql)
@@ -196,11 +218,8 @@ namespace sqlite_plugin
 		tu_autolock locker(s_sqlite_plugin_mutex);
 		if (m_trace) log_msg("run: %s\n", sql);
 
-		if (runsql(sql))
-		{
-	//		return (int) mysql_affected_rows(m_db);
-		}
-		return 0;
+		runsql(sql);
+		return sqlite3_changes(m_db);
 	}
 
 	sqlite_table* sqlite_db::open(const char* sql)
@@ -208,7 +227,7 @@ namespace sqlite_plugin
 		tu_autolock locker(s_sqlite_plugin_mutex);
 		if (m_trace) log_msg("open: %s\n", sql);
 
-		m_result = NULL;
+		m_result = new sqlite_table(get_player());
 		runsql(sql);
 		return m_result;
 	}
@@ -222,10 +241,53 @@ namespace sqlite_plugin
 	void sqlite_db::commit()
 	{
 		tu_autolock locker(s_sqlite_plugin_mutex);
-		if (m_trace) log_msg("commit\n");
 
-		run(m_autocommit ? "COMMIT" : "COMMIT; BEGIN");
+		run("commit");
+		if (m_autocommit == false)
+		{
+			run("begin");
+		}
 	}
 
+	void sqlite_func(sqlite3_context *context, int argc, sqlite3_value **argv)
+	{
+		// TODO
+		switch (sqlite3_value_type(argv[0]))
+		{
+			case SQLITE_INTEGER:
+			{
+				long long int iVal = sqlite3_value_int64(argv[0]);
+				iVal = ( iVal > 0) ? 1: ( iVal < 0 ) ? -1: 0;
+				sqlite3_result_int64(context, iVal);
+				break;
+			}
+			case SQLITE_NULL:
+			{
+				sqlite3_result_null(context);
+				break;
+			}
+			case SQLITE3_TEXT:
+			{
+				const unsigned char* str = sqlite3_value_text(argv[0]);
+				sqlite3_result_text(context, (const char*) str, -1, NULL);
+				break;
+			}
+			default:
+			{
+				double rVal = sqlite3_value_double(argv[0]);
+				rVal = ( rVal > 0) ? 1: ( rVal < 0 ) ? -1: 0;
+				sqlite3_result_double(context, rVal);
+				break;
+			}
+		}
+	}
+
+	void sqlite_db::create_function(const char* name, as_function* func)
+	{
+		if (m_db)
+		{
+			sqlite3_create_function(m_db, name, -1, SQLITE_UTF8, this, sqlite_func, NULL, NULL);
+		}
+	}
 }
 
