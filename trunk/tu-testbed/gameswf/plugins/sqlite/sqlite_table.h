@@ -39,7 +39,7 @@ namespace sqlite_plugin
 		exported_module int fld_count();
 		exported_module bool goto_record(int index);
 		exported_module const char* get_field_title(int n);
-		void retrieve_data(int columns, char **val, char **column_names);
+		void retrieve_data(sqlite3_stmt* stmt);
 		exported_module int get_recno() const;
 
 

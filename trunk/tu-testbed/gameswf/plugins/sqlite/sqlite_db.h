@@ -36,6 +36,7 @@ namespace sqlite_plugin
 		exported_module int run(const char *sql);
 		exported_module void set_autocommit(bool autocommit);
 		exported_module void commit();
+		exported_module void create_function(const char* name, as_function* func);
 
 		bool m_trace;
 		gc_ptr<sqlite_table> m_result;
