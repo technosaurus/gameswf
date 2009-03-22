@@ -274,7 +274,8 @@ namespace sqlite_plugin
 // FIXME:						val.set_string((const char*) sqlite3_column_blob(stmt, i));
 						break;
 					case SQLITE_NULL :
-						val.set_null();
+//						val.set_null();
+						val.set_string("");
 						break;
 					case SQLITE3_TEXT :
 						val.set_string((const char*) sqlite3_column_text(stmt, i));

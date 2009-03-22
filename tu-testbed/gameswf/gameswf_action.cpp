@@ -78,6 +78,30 @@ namespace gameswf
 	//
 
 	as_value	call_method(
+		as_function* func,
+		as_environment* env,
+		const as_value& this_ptr,
+		int nargs,
+		int first_arg_bottom_index)
+	// first_arg_bottom_index is the stack index, from the bottom, of the first argument.
+	// Subsequent arguments are at *lower* indices.  E.g. if first_arg_bottom_index = 7,
+	// then arg1 is at env->bottom(7), arg2 is at env->bottom(6), etc.
+	{
+		as_value	val;
+		if (func)
+		{
+			// It's a function.  Call it.
+			(*func)(fn_call(&val, this_ptr, env, nargs, first_arg_bottom_index));
+		}
+		else
+		{
+			IF_VERBOSE_ACTION(log_error("error in call_method(): method is not a function\n"));
+		}
+
+		return val;
+	}
+
+	as_value	call_method(
 		const as_value& method,
 		as_environment* env,
 		const as_value& this_ptr,

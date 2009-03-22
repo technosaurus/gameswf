@@ -124,7 +124,7 @@ namespace gameswf
 		}
 
 		as_value&	pop();
-		void	drop(int count);
+		exported_module void	drop(int count);
 		as_value&	top(int dist) { return (*this)[m_stack_size - 1 - dist]; }
 		as_value&	bottom(int index) { return (*this)[index]; }
 		inline int	get_top_index() const { return m_stack_size - 1; }

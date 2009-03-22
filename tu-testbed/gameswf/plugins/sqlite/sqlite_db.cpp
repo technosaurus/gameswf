@@ -8,6 +8,7 @@
 
 #include "sqlite_db.h"
 #include "gameswf/gameswf_mutex.h"
+#include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_log.h"
 
 #define ulong Uint32
@@ -249,44 +250,72 @@ namespace sqlite_plugin
 		}
 	}
 
-	void sqlite_func(sqlite3_context *context, int argc, sqlite3_value **argv)
+	// sqlite callback function
+	static void sqlite_func(sqlite3_context *context, int argc, sqlite3_value **argv)
 	{
-		// TODO
-		switch (sqlite3_value_type(argv[0]))
+		func_context* ctx = (func_context*) sqlite3_user_data(context);
+
+		// keep alive
+		gc_ptr<sqlite_db> this_ptr = ctx->m_this_ptr.get_ptr();
+		gc_ptr<as_function> func = ctx->m_func.get_ptr();
+		if (this_ptr == NULL || func == NULL)
 		{
-			case SQLITE_INTEGER:
+			return;
+		}
+
+		// use _root environment
+		character* mroot = this_ptr->get_player()->get_root_movie();
+		as_environment* env = mroot->get_environment();
+					
+		for (int i = 0; i < argc; i++)
+		{
+			as_value val;
+			switch (sqlite3_value_type(argv[i]))
 			{
-				long long int iVal = sqlite3_value_int64(argv[0]);
-				iVal = ( iVal > 0) ? 1: ( iVal < 0 ) ? -1: 0;
-				sqlite3_result_int64(context, iVal);
-				break;
+				case SQLITE_INTEGER:
+					val.set_double(sqlite3_value_int64(argv[i]));
+					break;
+				case SQLITE_FLOAT:
+					val.set_double(sqlite3_value_double(argv[i]));
+					break;
+				case SQLITE_NULL:
+					val.set_null();
+					break;
+				case SQLITE3_TEXT:
+					val.set_string((const char*) sqlite3_value_text(argv[i]));
+					break;
+				case SQLITE_BLOB:
+// FIXME					val.set_string(sqlite3_value_text(argv[i]));
+					break;
+				default:
+					assert(0);
 			}
-			case SQLITE_NULL:
-			{
-				sqlite3_result_null(context);
-				break;
-			}
-			case SQLITE3_TEXT:
-			{
-				const unsigned char* str = sqlite3_value_text(argv[0]);
-				sqlite3_result_text(context, (const char*) str, -1, NULL);
-				break;
-			}
-			default:
-			{
-				double rVal = sqlite3_value_double(argv[0]);
-				rVal = ( rVal > 0) ? 1: ( rVal < 0 ) ? -1: 0;
-				sqlite3_result_double(context, rVal);
-				break;
-			}
+			env->push(val);
+		}
+
+		as_value ret = call_method(func, env, mroot, argc, env->get_top_index());
+		env->drop(argc);
+
+		if (ret.is_number())
+		{
+			sqlite3_result_double(context, ret.to_number());
+		}
+		else
+		{
+			sqlite3_result_text(context, ret.to_string(), -1, NULL);
 		}
 	}
 
 	void sqlite_db::create_function(const char* name, as_function* func)
 	{
-		if (m_db)
+		if (m_db && func && name)
 		{
-			sqlite3_create_function(m_db, name, -1, SQLITE_UTF8, this, sqlite_func, NULL, NULL);
+			func_context* ctx = new func_context(this, func);
+			int rc = sqlite3_create_function(m_db, name, -1, SQLITE_UTF8, ctx, sqlite_func, NULL, NULL);
+			if (rc == SQLITE_OK)
+			{
+				m_callback_context[name] = ctx;
+			}
 		}
 	}
 }
