@@ -49,6 +49,10 @@ namespace gameswf
 		const as_value& method,	as_environment* env, const as_value& this_ptr,
 		int nargs, int first_arg_bottom_index);
 
+	exported_module as_value	call_method(
+		as_function* func,	as_environment* env, const as_value& this_ptr,
+		int nargs, int first_arg_bottom_index);
+
 	//
 	// event_id
 	//

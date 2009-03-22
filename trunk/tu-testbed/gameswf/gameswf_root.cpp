@@ -615,7 +615,7 @@ namespace gameswf
 				if (m_def->m_is_avm2)
 				{
 					as_environment env(m_player.get_ptr());
-					gameswf::call_method(as_value(m_def->get_abc()->get_script_function()), 
+					gameswf::call_method(m_def->get_abc()->get_script_function(), 
 						&env, as_value(m_movie.get_ptr()), 0, 0);
 				}
 			}

@@ -46,7 +46,26 @@ namespace sqlite_plugin
 		bool runsql(const char* sql);
 		sqlite3* m_db;
 		bool m_autocommit;
+		string_hash< gc_ptr<as_object_interface> > m_callback_context;
 	};
+
+	struct func_context : public as_object_interface
+	{
+		func_context(sqlite_db* this_ptr, as_function* func) :
+			m_this_ptr(this_ptr),
+			m_func(func)
+		{
+		}
+		
+		virtual bool is(int class_id) const
+		{
+			return false;
+		}
+
+		weak_ptr<sqlite_db> m_this_ptr;
+		weak_ptr<as_function> m_func;
+	};
+
 
 }
 
