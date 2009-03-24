@@ -11,8 +11,6 @@
 #include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_log.h"
 
-#define ulong Uint32
-
 namespace sqlite_plugin
 {
 	extern tu_mutex s_sqlite_plugin_mutex;
@@ -302,7 +300,8 @@ namespace sqlite_plugin
 		}
 		else
 		{
-			sqlite3_result_text(context, ret.to_string(), -1, NULL);
+			// SQLITE_TRANSIENT - makes a copy of the result
+			sqlite3_result_text(context, ret.to_string(), -1, SQLITE_TRANSIENT);
 		}
 	}
 
