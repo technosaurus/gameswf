@@ -30,7 +30,7 @@ namespace sqlite_plugin
 		exported_module sqlite_db(player* player);
 		exported_module ~sqlite_db();
 
-		exported_module bool connect(const char* dbfile);
+		exported_module bool connect(const char* dbfile, bool read_only, const char* vfs);
 		exported_module void disconnect();
 		exported_module sqlite_table* open(const char* sql);
 		exported_module int run(const char *sql);
