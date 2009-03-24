@@ -7,6 +7,7 @@
 // for the gameswf SWF player library.
 
 #include "sqlite_db.h"
+
 #include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_character.h"
 #include "gameswf/gameswf_log.h"
@@ -22,7 +23,19 @@ namespace sqlite_plugin
 		fn.result->set_bool(false);
 		if (db && fn.nargs > 0)
 		{
-			fn.result->set_bool(db->connect(fn.arg(0).to_string()));
+			// connect(db_name, read_only, vfs_name)
+			bool read_only = false;
+			const char* vfs = NULL;		// by default is used OS file system
+			if (fn.nargs > 1)
+			{
+				read_only = fn.arg(1).to_bool();
+			}
+			if (fn.nargs > 2 && fn.arg(2).to_tu_string().size() > 0)
+			{
+				vfs = fn.arg(2).to_string();
+			}
+
+			fn.result->set_bool(db->connect(fn.arg(0).to_string(), read_only, vfs));
 		}
 	}
 
@@ -154,7 +167,7 @@ namespace sqlite_plugin
 		}
 	}
 
-	bool sqlite_db::connect(const char* dbfile)
+	bool sqlite_db::connect(const char* dbfile, bool read_only, const char* vfs)
 	{
 		tu_autolock locker(s_sqlite_plugin_mutex);
 
@@ -162,7 +175,7 @@ namespace sqlite_plugin
 		// also deallocates the connection handle
 		disconnect();
 
-	  int rc = sqlite3_open_v2(dbfile, &m_db, SQLITE_OPEN_READWRITE, NULL);
+		int rc = sqlite3_open_v2(dbfile, &m_db, read_only ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE, vfs);
 	  if (rc != SQLITE_OK)
 		{
 			log_error("Can't open sqlite database: %s\n", sqlite3_errmsg(m_db));
