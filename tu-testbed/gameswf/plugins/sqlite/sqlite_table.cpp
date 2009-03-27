@@ -288,7 +288,7 @@ namespace sqlite_plugin
 			}
 			rc = sqlite3_step(stmt);
 		}
-		while (rc != SQLITE_DONE);
+		while (rc == SQLITE_ROW);
 	}
 }
 
