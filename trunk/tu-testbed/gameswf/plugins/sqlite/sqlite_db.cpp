@@ -175,7 +175,8 @@ namespace sqlite_plugin
 		// also deallocates the connection handle
 		disconnect();
 
-		int rc = sqlite3_open_v2(dbfile, &m_db, read_only ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE, vfs);
+		tu_string file_name = get_full_url(get_player()->get_workdir(), dbfile);
+		int rc = sqlite3_open_v2(file_name.c_str(), &m_db, read_only ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE, vfs);
 	  if (rc != SQLITE_OK)
 		{
 			log_error("Can't open sqlite database: %s\n", sqlite3_errmsg(m_db));
@@ -254,7 +255,17 @@ namespace sqlite_plugin
 	{
 		tu_autolock locker(s_sqlite_plugin_mutex);
 
-		run("commit");
+		// The sqlite3_get_autocommit() interface returns non-zero or zero
+		// if the given database connection is or is not in autocommit mode, respectively
+		// Autocommit mode is disabled by a BEGIN statement
+		int rc = sqlite3_get_autocommit(m_db);
+
+		// was a BEGIN statement ?
+		if (rc == 0)
+		{
+			run("commit");
+		}
+
 		if (m_autocommit == false)
 		{
 			run("begin");

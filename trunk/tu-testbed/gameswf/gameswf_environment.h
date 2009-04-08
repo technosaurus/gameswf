@@ -21,7 +21,7 @@ namespace gameswf
 	struct sprite_instance;
 	struct as_object;
 
-	tu_string get_full_url(const tu_string& workdir, const char* url);
+	exported_module tu_string get_full_url(const tu_string& workdir, const char* url);
 
 	//
 	// with_stack_entry
