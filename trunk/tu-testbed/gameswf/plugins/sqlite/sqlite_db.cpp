@@ -179,7 +179,8 @@ namespace sqlite_plugin
 		int rc = sqlite3_open_v2(file_name.c_str(), &m_db, read_only ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE, vfs);
 	  if (rc != SQLITE_OK)
 		{
-			log_error("Can't open sqlite database: %s\n", sqlite3_errmsg(m_db));
+			log_error("Can't open sqlite database %s(VFS=%s): %s\n",
+				file_name.c_str(), vfs, sqlite3_errmsg(m_db));
 			sqlite3_close(m_db);
 			return false;
 		}
@@ -201,7 +202,10 @@ namespace sqlite_plugin
 		int rc = sqlite3_prepare_v2(m_db, sql, -1, &stmt, NULL);
 	  if (rc != SQLITE_OK)
 		{
-			log_error("%s\n%s\n", sql, sqlite3_errmsg(m_db));
+			if (m_trace)
+			{
+				log_error("%s\n%s\n", sql, sqlite3_errmsg(m_db));
+			}
 			return false;
 		}
 
