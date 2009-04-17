@@ -9,6 +9,8 @@
 #define GAMESWF_MYDB_H
 
 #include <mysql/mysql.h>
+#include "../sql_db.h"
+#include "../sql_table.h"
 #include "table.h"
 
 using namespace gameswf;
@@ -16,7 +18,7 @@ using namespace gameswf;
 namespace mysql_plugin
 {
 
-	struct mydb : public as_object
+	struct mydb : public sql_db
 	{
 
 		// Unique id of a gameswf resource
@@ -24,7 +26,7 @@ namespace mysql_plugin
 		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
-			else return as_object::is(class_id);
+			else return sql_db::is(class_id);
 		}
 
 		exported_module mydb(player* player);
@@ -33,7 +35,7 @@ namespace mysql_plugin
 		exported_module bool connect(const char* host, const char* dbname, const char* user,
 			const char* pwd, const char* socket);
 		exported_module void disconnect();
-		exported_module mytable* open(const char* sql);
+		exported_module sql_table* open(const char* sql);
 		exported_module int run(const char *sql);
 		exported_module void set_autocommit(bool autocommit);
 		exported_module void commit();

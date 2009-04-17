@@ -111,7 +111,7 @@ namespace mysql_plugin
 	}
 
 	mytable::mytable(player* player) :
-		as_object(player),
+		sql_table(player),
 		m_index(0)
 	{
 		builtin_member("size", size_method);

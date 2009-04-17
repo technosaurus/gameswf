@@ -60,7 +60,7 @@ namespace mysql_plugin
 				return;
 			}
 
-			mytable* tbl = db == NULL ? NULL : db->open(fn.arg(0).to_string());
+			sql_table* tbl = db == NULL ? NULL : db->open(fn.arg(0).to_string());
 			if (tbl)
 			{
 				fn.result->set_as_object(tbl);
@@ -124,7 +124,7 @@ namespace mysql_plugin
 	}
 
 	mydb::mydb(player* player) :
-		as_object(player),
+		sql_db(player),
 		m_trace(false),
 		m_db(NULL)
 	{
@@ -201,7 +201,7 @@ namespace mysql_plugin
 		return 0;
 	}
 
-	mytable* mydb::open(const char* sql)
+	sql_table* mydb::open(const char* sql)
 	{
 		tu_autolock locker(s_mysql_plugin_mutex);
 

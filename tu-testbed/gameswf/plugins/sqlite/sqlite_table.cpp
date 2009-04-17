@@ -111,7 +111,7 @@ namespace sqlite_plugin
 	}
 
 	sqlite_table::sqlite_table(player* player) :
-		as_object(player),
+		sql_table(player),
 		m_index(0)
 	{
 		builtin_member("size", size_method);

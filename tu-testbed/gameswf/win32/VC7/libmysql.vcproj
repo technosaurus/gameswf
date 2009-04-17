@@ -127,6 +127,12 @@
 				RelativePath="..\..\plugins\mysql\db.h">
 			</File>
 			<File
+				RelativePath="..\..\plugins\sql_db.h">
+			</File>
+			<File
+				RelativePath="..\..\plugins\sql_table.h">
+			</File>
+			<File
 				RelativePath="..\..\plugins\mysql\table.cpp">
 			</File>
 			<File
