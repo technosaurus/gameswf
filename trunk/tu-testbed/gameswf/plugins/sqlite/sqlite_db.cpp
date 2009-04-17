@@ -60,7 +60,7 @@ namespace sqlite_plugin
 				return;
 			}
 
-			sqlite_table* tbl = (db == NULL) ? NULL : db->open(fn.arg(0).to_string());
+			sql_table* tbl = (db == NULL) ? NULL : db->open(fn.arg(0).to_string());
 			if (tbl)
 			{
 				fn.result->set_as_object(tbl);
@@ -135,7 +135,7 @@ namespace sqlite_plugin
 	}
 
 	sqlite_db::sqlite_db(player* player) :
-		as_object(player),
+		sql_db(player),
 		m_trace(false),
 		m_db(NULL),
 		m_autocommit(true)
@@ -239,7 +239,7 @@ namespace sqlite_plugin
 		return sqlite3_changes(m_db);
 	}
 
-	sqlite_table* sqlite_db::open(const char* sql)
+	sql_table* sqlite_db::open(const char* sql)
 	{
 		tu_autolock locker(s_sqlite_plugin_mutex);
 		if (m_trace) log_msg("open: %s\n", sql);

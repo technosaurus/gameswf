@@ -9,6 +9,7 @@
 #define GAMESWF_SQLITE_DB_H
 
 #include <sqlite3.h>
+#include "../sql_db.h"
 #include "sqlite_table.h"
 
 using namespace gameswf;
@@ -16,7 +17,7 @@ using namespace gameswf;
 namespace sqlite_plugin
 {
 
-	struct sqlite_db : public as_object
+	struct sqlite_db : public sql_db
 	{
 
 		// Unique id of a gameswf resource
@@ -24,7 +25,7 @@ namespace sqlite_plugin
 		virtual bool is(int class_id) const
 		{
 			if (m_class_id == class_id) return true;
-			else return as_object::is(class_id);
+			else return sql_db::is(class_id);
 		}
 
 		exported_module sqlite_db(player* player);
@@ -32,7 +33,7 @@ namespace sqlite_plugin
 
 		exported_module bool connect(const char* dbfile, bool read_only, const char* vfs);
 		exported_module void disconnect();
-		exported_module sqlite_table* open(const char* sql);
+		exported_module sql_table* open(const char* sql);
 		exported_module int run(const char *sql);
 		exported_module void set_autocommit(bool autocommit);
 		exported_module void commit();

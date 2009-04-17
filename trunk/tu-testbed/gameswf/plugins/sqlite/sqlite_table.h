@@ -10,13 +10,14 @@
 
 #include <sqlite3.h>
 #include "gameswf/gameswf_action.h"	// for as_object
+#include "../sql_table.h"
 
 using namespace gameswf;
 
 namespace sqlite_plugin
 {
 
-	struct sqlite_table: public as_object
+	struct sqlite_table: public sql_table
 	{
 
 		// Unique id of a gameswf resource

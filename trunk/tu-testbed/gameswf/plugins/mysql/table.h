@@ -10,13 +10,14 @@
 
 #include <mysql/mysql.h>
 #include "gameswf/gameswf_action.h"	// for as_object
+#include "../sql_table.h"
 
 using namespace gameswf;
 
 namespace mysql_plugin
 {
 
-	struct mytable: public as_object
+	struct mytable: public sql_table
 	{
 
 		// Unique id of a gameswf resource
