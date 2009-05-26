@@ -137,8 +137,8 @@ void http_server::update()
 	
 	// Update any active requests.
 	static const float UPDATE_TIMEOUT_SECONDS = 0.100f;
-	uint64 start = tu_timer::get_ticks();
-	uint64 last_activity_ticks = start;
+	uint32 start = tu_timer::get_ticks();
+	uint32 last_activity_ticks = start;
 	for (;;) {
 		int active_requests = 0;
 		
@@ -162,8 +162,8 @@ void http_server::update()
 		
 		// Even when there are pending requests, don't block
 		// for very long.
-		uint64 now = tu_timer::get_ticks();
-		if (tu_timer::ticks_to_seconds(now - start) >= UPDATE_TIMEOUT_SECONDS)
+		uint32 now = tu_timer::get_ticks();
+		if ((now - start) / 1000.0f >= UPDATE_TIMEOUT_SECONDS)
 		{
 			printf("state long timed out ****\n");//xxxxxx
 			break;
@@ -272,8 +272,8 @@ void http_server::http_request_state::update(http_server* server)
 	if (m_request_state == IDLE) {
 		// Watch for the start of a new request.
 		if (m_req.m_sock->is_readable() == false) {
-			uint64 now = tu_timer::get_ticks();
-			if (tu_timer::ticks_to_seconds(now - m_last_activity) > CONNECTION_TIMEOUT) {
+			uint32 now = tu_timer::get_ticks();
+			if ((now - m_last_activity) / 1000.0f > CONNECTION_TIMEOUT) {
 				// Timed out; close the socket.
 				deactivate();
 				printf("socket timed out, deactivating.\n");//xxxxxx
