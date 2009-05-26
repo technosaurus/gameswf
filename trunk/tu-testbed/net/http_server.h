@@ -273,7 +273,7 @@ private:
 		request_state m_request_state;
 		int m_content_length;
 
-		uint64 m_last_activity;
+		uint32 m_last_activity;
 
 		http_request_state()
 			:

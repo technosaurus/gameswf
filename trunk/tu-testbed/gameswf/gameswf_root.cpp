@@ -614,9 +614,13 @@ namespace gameswf
 				set_flash_vars(m_player->m_flash_vars);
 				if (m_def->m_is_avm2)
 				{
-					as_environment env(m_player.get_ptr());
-					gameswf::call_method(m_def->get_abc()->get_script_function(), 
-						&env, as_value(m_movie.get_ptr()), 0, 0);
+					const abc_def* adef  = m_def->get_abc();
+					if (adef)
+					{
+						as_environment env(m_player.get_ptr());
+						gameswf::call_method(adef->get_script_function(), 
+							&env, as_value(m_movie.get_ptr()), 0, 0);
+					}
 				}
 			}
 

@@ -25,7 +25,7 @@ struct my_handler : public http_handler
 
 		// Show the current timer.
 		char buf[200];
-		sprintf(buf, "Current timer: %f<br>\n", tu_timer::ticks_to_seconds(tu_timer::get_ticks()));
+		sprintf(buf, "Current timer: %f<br>\n", tu_timer::get_ticks() / 1000.0f);
 		out += buf;
 
 		out += "</body></html>\n";
