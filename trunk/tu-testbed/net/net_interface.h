@@ -83,12 +83,12 @@ struct net_socket
 // Factories for some concrete net_interfaces.
 
 // TCP server interface.
-net_interface* tu_create_net_interface_tcp(int port_number);
+exported_module net_interface* tu_create_net_interface_tcp(int port_number);
 
 // Handy for testing.
 //
 // Either arg can be NULL, to have no input or discard output.
-net_interface* tu_create_net_interface_file(tu_file* in, tu_file* out);
+exported_module net_interface* tu_create_net_interface_file(tu_file* in, tu_file* out);
 
 
 #endif // NET_INTERFACE_H
