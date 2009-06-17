@@ -1042,14 +1042,14 @@ int	main(int argc, char *argv[])
 				m->advance(delta_t * speed_scale);
 				t_advance = tu_timer::get_ticks() - t_advance;
 
-				Uint32 t_display = tu_timer::get_ticks();
-				m->display();
-				t_display = tu_timer::get_ticks() - t_display;
-
 				if (do_sound && sound)
 				{
 					sound->advance(delta_t * speed_scale);
 				}
+
+				Uint32 t_display = tu_timer::get_ticks();
+				m->display();
+				t_display = tu_timer::get_ticks() - t_display;
 
 				if (do_render)
 				{
