@@ -136,9 +136,11 @@ namespace gameswf
 	// version of the library, depending on platform etc.
 	exported_module render_handler*	create_render_handler_xbox();
 	exported_module render_handler*	create_render_handler_ogl();
+	exported_module render_handler*	create_render_handler_iphone();
 	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice9* _pDevice);
 	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice8* _pDevice);
 	exported_module sound_handler*	create_sound_handler_sdl();
+	exported_module sound_handler*	create_sound_handler_openal();
 
 
 	// For things that should be automatically garbage-collected.
@@ -504,6 +506,9 @@ namespace gameswf
 		// The number of milliseconds a sound has been playing. 
 		// If the sound is looped, the position is reset to 0 at the beginning of each loop.
 		virtual int get_position(int sound_handle) { return 0; };
+
+		// openAL sound handler uses this function to handle sound events
+		virtual void advance(float delta_time) {};
 	};
 
 	struct matrix; 

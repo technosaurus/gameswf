@@ -6,6 +6,10 @@
 #ifndef SOUND_HANDLER_SDL_H
 #define SOUND_HANDLER_SDL_H
 
+#include "base/tu_config.h"
+
+#if TU_USE_OPENAL_SOUND_HANDLER == 0
+
 #include <SDL_audio.h>
 #include <SDL_thread.h>
 
@@ -387,7 +391,7 @@ namespace gameswf
 
 #endif // SOUND_HANDLER_SDL_H
 
-
+#endif // TU_USE_OPENAL_SOUND_HANDLER
 
 // Local Variables:
 // mode: C++
