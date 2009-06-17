@@ -10,6 +10,8 @@
 
 #include "gameswf/gameswf_sound_handler_sdl.h"
 
+#if TU_USE_OPENAL_SOUND_HANDLER == 0
+
 namespace gameswf
 {
 	tu_mutex& gameswf_engine_mutex();
@@ -464,7 +466,7 @@ namespace gameswf
 
 }
 
-
+#endif  // TU_USE_OPENAL_SOUND_HANDLER
 
 // Local Variables:
 // mode: C++

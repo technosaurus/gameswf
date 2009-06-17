@@ -583,8 +583,13 @@ int	main(int argc, char *argv[])
 		gameswf::render_handler*	render = NULL;
 		if (do_render)
 		{
-			if (do_sound) {
+			if (do_sound)
+			{
+#if TU_USE_OPENAL_SOUND_HANDLER == 1
+				sound = gameswf::create_sound_handler_openal();
+#else
 				sound = gameswf::create_sound_handler_sdl();
+#endif
 				gameswf::set_sound_handler(sound);
 			}
 			render = gameswf::create_render_handler_ogl();
@@ -1040,6 +1045,11 @@ int	main(int argc, char *argv[])
 				Uint32 t_display = tu_timer::get_ticks();
 				m->display();
 				t_display = tu_timer::get_ticks() - t_display;
+
+				if (do_sound && sound)
+				{
+					sound->advance(delta_t * speed_scale);
+				}
 
 				if (do_render)
 				{

@@ -121,4 +121,9 @@
 #	define TU_USE_FLASH_COMPATIBLE_HITTEST 1
 #endif
 
+// define TU_USE_OPENAL_SOUND_HANDLER to 0 to use SDL sound subsystem
+#ifndef TU_USE_OPENAL_SOUND_HANDLER
+#	define TU_USE_OPENAL_SOUND_HANDLER 1
+#endif
+
 #endif // TU_CONFIG_H

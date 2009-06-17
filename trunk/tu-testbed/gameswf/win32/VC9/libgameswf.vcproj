@@ -66,7 +66,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib avutil-49.lib avformat-50.lib avcodec-51.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib swscale-0.lib libpng.lib"
+				AdditionalDependencies="sdl.lib zlib.lib jpeg.lib sdlmain.lib opengl32.lib avutil-49.lib avformat-50.lib avcodec-51.lib WinMM.lib ws2_32.lib lib3ds-1_3.lib freetype.lib swscale-0.lib libpng.lib openAL32.lib"
 				OutputFile="/WINDOWS/system32/libgameswf.dll"
 				LinkIncremental="2"
 				IgnoreDefaultLibraryNames="LIBCMT.lib"
@@ -533,10 +533,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_sound_handler_sdl.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_sprite.cpp"
 				>
 			</File>
@@ -897,10 +893,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_sound_handler_sdl.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_sprite.h"
 				>
 			</File>
@@ -1002,10 +994,6 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="Resource Files"
-			>
-		</Filter>
-		<Filter
 			Name="JIT-compiler"
 			>
 			<File
@@ -1026,6 +1014,26 @@
 			</File>
 			<File
 				RelativePath="..\..\platforms\gameswf_jit_x86.hpp"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="sound"
+			>
+			<File
+				RelativePath="..\..\gameswf_sound_handler_openal.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_sound_handler_openal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_sound_handler_sdl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_sound_handler_sdl.h"
 				>
 			</File>
 		</Filter>
