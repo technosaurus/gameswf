@@ -1,14 +1,20 @@
-// gameswf_render_handler_ogl.cpp	-- Willem Kokke <willem@mindparity.com> 2003
+// gameswf_render_handler_ogles.cpp	-- Willem Kokke <willem@mindparity.com> 2003
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
 // A gameswf::render_handler that uses SDL & OpenGL
 
-#if TU_USE_SDL == 1
+#if TU_USE_SDL == 0
 
-#include <SDL.h>  // for cursor handling & the scanning for extensions.
-#include <SDL_opengl.h>	// for opengl const
+#ifdef WIN32	// for debugging
+	#include <SDL.h>  // for cursor handling & the scanning for extensions.
+	#include <SDL_opengl.h>	// for opengl const
+#else
+//	#include <OpenGLES/EAGL.h>
+//	#include <OpenGLES/ES1/gl.h>
+	#include <OpenGLES/ES1/glext.h>
+#endif
 
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_types.h"
@@ -20,369 +26,11 @@
 // Pointers to opengl extension functions.
 typedef char GLchar;
 
-typedef void (APIENTRY* PFNGLACTIVETEXTUREPROC) (GLenum texture);
-PFNGLACTIVETEXTUREPROC _glActiveTexture = 0;
-
-typedef void (APIENTRY* PFNGLACTIVETEXTUREARBPROC) (GLenum texture);
-PFNGLACTIVETEXTUREARBPROC	_glActiveTextureARB = 0;
-
-typedef void (APIENTRY* PFNGLCLIENTACTIVETEXTUREARBPROC) (GLenum texture);
-PFNGLCLIENTACTIVETEXTUREARBPROC	_glClientActiveTextureARB = 0;
-
-typedef void (APIENTRY* PFNGLMULTITEXCOORD2FARBPROC) (GLenum target, GLfloat s, GLfloat t);
-PFNGLMULTITEXCOORD2FARBPROC	_glMultiTexCoord2fARB = 0;
-
-typedef void (APIENTRY* PFNGLMULTITEXCOORD2FVARBPROC) (GLenum target, const GLfloat *v);
-PFNGLMULTITEXCOORD2FVARBPROC	_glMultiTexCoord2fvARB = 0;
-
-typedef void (APIENTRY* PFNGLGENFRAMEBUFFERSEXTPROC) (GLsizei n, GLuint *framebuffers);
-PFNGLGENFRAMEBUFFERSEXTPROC glGenFramebuffersEXT = 0;
-
-typedef void (APIENTRY* PFNGLBINDFRAMEBUFFEREXTPROC) (GLenum target, GLuint framebuffer);
-PFNGLBINDFRAMEBUFFEREXTPROC glBindFramebufferEXT = 0;
-
-typedef void (APIENTRY* PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
-PFNGLFRAMEBUFFERTEXTURE2DEXTPROC glFramebufferTexture2DEXT = 0;
-
-typedef GLenum (APIENTRY* PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) (GLenum target);
-PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC glCheckFramebufferStatusEXT = 0;
-
-typedef void (APIENTRY* PFNGLDELETEPROGRAMPROC) (GLuint program);
-PFNGLDELETEPROGRAMPROC glDeleteProgram = 0;
-
-typedef void (APIENTRY* PFNGLDELETESHADERPROC) (GLuint shader);
-PFNGLDELETESHADERPROC glDeleteShader = 0;
-
-typedef GLuint (APIENTRY* PFNGLCREATESHADERPROC) (GLenum type);
-PFNGLCREATESHADERPROC glCreateShader = 0;
-
-typedef void (APIENTRY* PFNGLSHADERSOURCEPROC) (GLuint shader, GLsizei count, const GLchar* *string, const GLint *length);
-PFNGLSHADERSOURCEPROC glShaderSource = 0;
-
-typedef void (APIENTRY* PFNGLCOMPILESHADERPROC) (GLuint shader);
-PFNGLCOMPILESHADERPROC glCompileShader = 0;
-
-typedef void (APIENTRY* PFNGLGETSHADERIVPROC) (GLuint shader, GLenum pname, GLint *params);
-PFNGLGETSHADERIVPROC glGetShaderiv = 0;
-
-typedef void (APIENTRY* PFNGLGETSHADERINFOLOGPROC) (GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-PFNGLGETSHADERINFOLOGPROC glGetShaderInfoLog = 0;
-
-typedef GLuint (APIENTRY* PFNGLCREATEPROGRAMPROC) (void);
-PFNGLCREATEPROGRAMPROC glCreateProgram = 0;
-
-typedef void (APIENTRY* PFNGLATTACHSHADERPROC) (GLuint program, GLuint shader);
-PFNGLATTACHSHADERPROC glAttachShader = 0;
-
-typedef void (APIENTRY* PFNGLLINKPROGRAMPROC) (GLuint program);
-PFNGLLINKPROGRAMPROC glLinkProgram = 0;
-
-typedef void (APIENTRY* PFNGLGETPROGRAMIVPROC) (GLuint program, GLenum pname, GLint *params);
-PFNGLGETPROGRAMIVPROC glGetProgramiv = 0;
-
-typedef void (APIENTRY* PFNGLGETPROGRAMINFOLOGPROC) (GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-PFNGLGETPROGRAMINFOLOGPROC glGetProgramInfoLog = 0;
-
-typedef void (APIENTRY* PFNGLVALIDATEPROGRAMPROC) (GLuint program);
-PFNGLVALIDATEPROGRAMPROC glValidateProgram = 0;
-
-typedef GLint (APIENTRY* PFNGLGETUNIFORMLOCATIONPROC) (GLuint program, const GLchar *name);
-PFNGLGETUNIFORMLOCATIONPROC glGetUniformLocation = 0;
-
-typedef void (APIENTRY* PFNGLUNIFORM1FPROC) (GLint location, GLfloat v0);
-PFNGLUNIFORM1FPROC glUniform1f = 0;
-
-typedef void (APIENTRY* PFNGLUNIFORM1IPROC) (GLint location, GLint v0);
-PFNGLUNIFORM1IPROC glUniform1i = 0;
-
-typedef void (APIENTRY* PFNGLUSEPROGRAMPROC) (GLuint program);
-PFNGLUSEPROGRAMPROC glUseProgram = 0;
-
-static GLint s_num_compressed_format = 0;
 void create_texture(int format, int w, int h, void* data, int level)
 {
 	int internal_format = format;
-	if (s_num_compressed_format > 0)
-	{
-		switch (format)
-		{
-			default:
-				break;
-			case GL_RGB :
-				internal_format = GL_COMPRESSED_RGB_ARB;
-				break;
-			case GL_RGBA :
-				internal_format = GL_COMPRESSED_RGBA_ARB;
-				break;
-			case GL_ALPHA :
-				internal_format = GL_COMPRESSED_ALPHA_ARB;
-				break;
-			case GL_LUMINANCE :
-				internal_format = GL_COMPRESSED_LUMINANCE_ARB;
-				break;
-		}
-	}
 	glTexImage2D(GL_TEXTURE_2D, level, internal_format, w, h, 0, format, GL_UNSIGNED_BYTE, data);
 }
-
-// We do not want to use GLU library
-// gluPerspective ==> glFrustum
-void gluPerspective(float fov, float aspect, float znear, float zfar)
-{
-	//	gluPerspective(fov, aspect, nnear, ffar) ==> glFrustum(left, right, bottom, top, nnear, ffar);
-	//	fov * 0.5 = arctan ((top-bottom)*0.5 / near)
-	//	Since bottom == -top for the symmetrical projection that gluPerspective() produces, then:
-	//	top = tan(fov * 0.5) * near
-	//	bottom = -top
-	//	Note: fov must be in radians for the above formulae to work with the C math library. 
-	//	If you have comnputer your fov in degrees (as in the call to gluPerspective()), 
-	//	then calculate top as follows:
-	//	top = tan(fov*3.14159/360.0) * near
-	//	The left and right parameters are simply functions of the top, bottom, and aspect:
-	//	left = aspect * bottom
-	//	right = aspect * top
-
-	float top = tan(fov * 3.141592f / 360.0f) * znear;
-	float bottom = - top;
-	float left = aspect* bottom;
-	float right = aspect * top;
-	glFrustum(left, right, bottom, top, znear, zfar);
-}
-
-// used by gluLookAt
-void normalize(float v[3])
-{
-	float r = sqrt( v[0]*v[0] + v[1]*v[1] + v[2]*v[2] );
-	if (r == 0.0f) return;
-	v[0] /= r; v[1] /= r; v[2] /= r;
-}
-
-// used by gluLookAt
-void cross(float v1[3], float v2[3], float result[3])
-{
-	result[0] = v1[1] * v2[2] - v1[2] * v2[1];
-	result[1] = v1[2] * v2[0] - v1[0] * v2[2];
-	result[2] = v1[0] * v2[1] - v1[1] * v2[0];
-}
-
-// We do not want to use GLU library
-void gluLookAt(float eyex, float eyey, float eyez, float centerx, float centery, 
-							 float centerz, float upx, float upy, float upz)
-{
-    float forward[3];
-    forward[0] = centerx - eyex;
-    forward[1] = centery - eyey;
-    forward[2] = centerz - eyez;
-
-    float up[3];
-    up[0] = upx;
-    up[1] = upy;
-    up[2] = upz;
-
-    normalize(forward);
-
-    // Side = forward x up
-    float side[3];
-    cross(forward, up, side);
-    normalize(side);
-
-    // Recompute up as: up = side x forward
-    cross(side, forward, up);
-
-    GLfloat m[4][4];
-
-		// make identity
-		memset(&m[0], 0, sizeof(m));
-		for (int i = 0; i < 4; i++)
-		{
-			m[i][i] = 1;
-		}
-
-    m[0][0] = side[0];
-    m[1][0] = side[1];
-    m[2][0] = side[2];
-
-    m[0][1] = up[0];
-    m[1][1] = up[1];
-    m[2][1] = up[2];
-
-    m[0][2] = -forward[0];
-    m[1][2] = -forward[1];
-    m[2][2] = -forward[2];
-
-    glMultMatrixf(&m[0][0]);
-    glTranslated(-eyex, -eyey, -eyez);
-}
-
-#define SDL_CURSOR_HANDLING
-#ifdef SDL_CURSOR_HANDLING
-
-// XPM
-static const char *s_hand_image[] = {
-	// width height num_colors chars_per_pixel
-	"    32    32        3            1",
-	// colors
-	"X c #000000",
-	". c #ffffff",
-	"  c None",
-	// pixels
-	"   XX                           ",
-	"  X..X                          ",
-	"  X..X                          ",
-	"  X..X                          ",
-	"  X..X                          ",
-	"  X..XXX                        ",
-	"  X..X..XXX                     ",
-	"XXX..X..X..XXX                  ",
-	"X.X..X..X..X..X                 ",
-	"X.X..X..X..X..X                 ",
-	"X....X..X..X..X                 ",
-	"X..........X..X                 ",
-	" X............X                 ",
-	" X...........X                  ",
-	" X...........X                  ",
-	" X...........X                  ",
-	" XXXXXXXXXXXXX                  ",
-	" XXXXXXXXXXXXX                  ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"                                ",
-	"3,0"
-};
-
-struct sdl_cursor_handler {
-	bool m_inited;
-	SDL_Cursor* m_system_cursor;
-	SDL_Cursor* m_active_cursor;
-
-	sdl_cursor_handler() :
-		m_inited(false),
-		m_system_cursor(NULL),
-		m_active_cursor(NULL)
-	{
-	}
-
-	void init()
-	{
-		assert(!m_inited);
-		m_inited = true;
-		
-		// store system cursor
-		m_system_cursor = SDL_GetCursor();
-
-		// Init active cursor.
-		int i, row, col;
-		Uint8 data[4 * 32];
-		Uint8 mask[4 * 32];
-		int hot_x, hot_y;
-
-		i = -1;
-		for (row=0; row<32; ++row) {
-			for (col=0; col<32; ++col)
-			{
-				if (col % 8)
-				{
-					data[i] <<= 1;
-					mask[i] <<= 1;
-				} 
-				else
-				{
-					++i;
-					data[i] = mask[i] = 0;
-				}
-
-				switch (s_hand_image[4 + row][col])
-				{
-					default:
-						break;
-
-					case 'X':
-						// black
-						data[i] |= 0x01;
-						mask[i] |= 0x01;
-						break;
-
-					case '.':
-						// white
-						mask[i] |= 0x01;
-						break;
-
-					case ' ':
-						// transparent
-						break;
-				}
-			}
-		}
-		sscanf(s_hand_image[4 + row], "%d,%d", &hot_x, &hot_y);
-		
-		m_active_cursor = SDL_CreateCursor(data, mask, 32, 32, hot_x, hot_y);
-	}
-
-	~sdl_cursor_handler()
-	{
-		m_inited = false;
-		if (m_system_cursor)
-		{
-			SDL_SetCursor(m_system_cursor);
-			m_system_cursor = NULL;
-		}
-		if (m_active_cursor)
-		{
-			SDL_FreeCursor(m_active_cursor);
-			m_active_cursor = NULL;
-		}
-	}
-
-
-	void set_cursor(gameswf::render_handler::cursor_type cursor)
-	{
-		if (m_inited == false)
-		{
-			init();
-		}
-		
-		switch (cursor)
-		{
-			case gameswf::render_handler::SYSTEM_CURSOR:
-				if (m_system_cursor)
-				{
-					SDL_SetCursor(m_system_cursor);
-				}
-				break;
-
-			case gameswf::render_handler::ACTIVE_CURSOR:
-				if (m_active_cursor)
-				{
-					SDL_SetCursor(m_active_cursor);
-				}
-				break;
-
-			case gameswf::render_handler::INVISIBLE_CURSOR:
-				SDL_ShowCursor(SDL_DISABLE);
-				break;
-
-			case gameswf::render_handler::VISIBLE_CURSOR:
-				SDL_ShowCursor(SDL_ENABLE);
-				break;
-
-			default:
-				assert(0);
-		}
-	}
-};
-
-#endif  // SDL_CURSOR_HANDLING
 
 // choose the resampling method:
 // 1 = hardware (experimental, should be fast, somewhat buggy)
@@ -472,130 +120,8 @@ struct bitmap_info_ogl : public gameswf::bitmap_info
 
 };
 
-struct video_handler_ogl : public gameswf::video_handler
-{
-	GLuint m_texture;
-	float m_scoord;
-	float m_tcoord;
-	gameswf::rgba m_background_color;
 
-	video_handler_ogl():
-		m_texture(0),
-		m_scoord(0),
-		m_tcoord(0),
-		m_background_color(0,0,0,0)	// current background color
-	{
-	}
-
-	~video_handler_ogl()
-	{
-		glDeleteTextures(1, &m_texture);
-	}
-
-	void display(Uint8* data, int width, int height, 
-		const gameswf::matrix* m, const gameswf::rect* bounds, const gameswf::rgba& color)
-	{
-
-		// this can't be placed in constructor becuase opengl may not be accessible yet
-		if (m_texture == 0)
-		{
-			glEnable(GL_TEXTURE_2D);
-			glGenTextures(1, &m_texture);
-			glBindTexture(GL_TEXTURE_2D, m_texture);
-
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);	// GL_NEAREST ?
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		}
-
-		glBindTexture(GL_TEXTURE_2D, m_texture);
-		glEnable(GL_TEXTURE_2D);
-
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-
-		// update texture from video frame
-		if (data)
-		{
-			int w2p = p2(width);
-			int h2p = p2(height);
-			m_scoord = (float) width / w2p;
-			m_tcoord = (float) height / h2p;
-
-			if (m_clear_background)
-			{
-				// set video background color
-				// assume left-top pixel of the first frame as background color
-				if (m_background_color.m_a == 0)
-				{
-					m_background_color.m_a = 255;
-					m_background_color.m_r = data[2];
-					m_background_color.m_g = data[1];
-					m_background_color.m_b = data[0];
-				}
-
-				// clear video background, input data has BGRA format
-				Uint8* p = data;
-				for (int y = 0; y < height; y++)
-				{
-					for (int x = 0; x < width; x++)
-					{
-						// calculate color distance, dist is in [0..195075]
-						int r = m_background_color.m_r - p[2];
-						int g = m_background_color.m_g - p[1];
-						int b = m_background_color.m_b - p[0];
-						float dist = (float) (r * r + g * g + b * b);
-
-						static int s_min_dist = 3 * 64 * 64;	// hack
-						Uint8 a = (dist < s_min_dist) ? (Uint8) (255 * (dist / s_min_dist)) : 255;
-
-						p[3] = a;		// set alpha
-						p += 4;
-					}
-				}
-			}
-
-			// don't use compressed texture for video, it slows down video
-			//			ogl::create_texture(GL_RGBA, m_width2p, m_height2p, NULL);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w2p, h2p, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, data);
-		}
-
-		if (m_scoord == 0.0f && m_scoord == 0.0f)
-		{
-			// no data
-			return;
-		}
-
-		gameswf::point a, b, c, d;
-		m->transform(&a, gameswf::point(bounds->m_x_min, bounds->m_y_min));
-		m->transform(&b, gameswf::point(bounds->m_x_max, bounds->m_y_min));
-		m->transform(&c, gameswf::point(bounds->m_x_min, bounds->m_y_max));
-		d.m_x = b.m_x + c.m_x - a.m_x;
-		d.m_y = b.m_y + c.m_y - a.m_y;
-
-		glColor4ub(color.m_r, color.m_g, color.m_b, color.m_a);
-		glBegin(GL_TRIANGLE_STRIP);
-		{
-			glTexCoord2f(0, 0);
-			glVertex2f(a.m_x, a.m_y);
-			glTexCoord2f(m_scoord, 0);
-			glVertex2f(b.m_x, b.m_y);
-			glTexCoord2f(0, m_tcoord);
-			glVertex2f(c.m_x, c.m_y);
-			glTexCoord2f(m_scoord, m_tcoord);
-			glVertex2f(d.m_x, d.m_y);
-		}
-		glEnd();
-
-		glDisable(GL_TEXTURE_2D);
-	}
-
-};
-
-
-struct render_handler_ogl : public gameswf::render_handler
+struct render_handler_ogles : public gameswf::render_handler
 {
 	// Some renderer state.
 
@@ -611,8 +137,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	int m_mask_level;	// nested mask level
 
-
-	render_handler_ogl() :
+	render_handler_ogles() :
 		m_enable_antialias(false),
 		m_display_width(0),
 		m_display_height(0),
@@ -620,63 +145,17 @@ struct render_handler_ogl : public gameswf::render_handler
 	{
 	}
 
-	~render_handler_ogl()
+	~render_handler_ogles()
 	{
 	}
 
 	void open()
 	{
 		// Scan for extensions used by gameswf
-		_glActiveTexture =  (PFNGLACTIVETEXTUREPROC) SDL_GL_GetProcAddress("glActiveTexture");
-		_glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glActiveTextureARB");
-		_glClientActiveTextureARB = (PFNGLCLIENTACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glClientActiveTextureARB");
-		_glMultiTexCoord2fARB = (PFNGLMULTITEXCOORD2FARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fARB");
-		_glMultiTexCoord2fvARB = (PFNGLMULTITEXCOORD2FVARBPROC) SDL_GL_GetProcAddress("glMultiTexCoord2fvARB");
-		glGenFramebuffersEXT = (PFNGLGENFRAMEBUFFERSEXTPROC) SDL_GL_GetProcAddress("glGenFramebuffersEXT");
-		glBindFramebufferEXT = (PFNGLBINDFRAMEBUFFEREXTPROC) SDL_GL_GetProcAddress("glBindFramebufferEXT");
-		glFramebufferTexture2DEXT = (PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) SDL_GL_GetProcAddress("glFramebufferTexture2DEXT");
-		glCheckFramebufferStatusEXT = (PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) SDL_GL_GetProcAddress("glCheckFramebufferStatusEXT");
-		glDeleteProgram = (PFNGLDELETEPROGRAMPROC) SDL_GL_GetProcAddress("glDeleteProgram");
-		glDeleteShader = (PFNGLDELETESHADERPROC) SDL_GL_GetProcAddress("glDeleteShader");
-		glCreateShader = (PFNGLCREATESHADERPROC) SDL_GL_GetProcAddress("glCreateShader");
-		glShaderSource = (PFNGLSHADERSOURCEPROC) SDL_GL_GetProcAddress("glShaderSource");
-		glCompileShader = (PFNGLCOMPILESHADERPROC) SDL_GL_GetProcAddress("glCompileShader");
-		glGetShaderiv = (PFNGLGETSHADERIVPROC) SDL_GL_GetProcAddress("glGetShaderiv");
-		glGetShaderInfoLog = (PFNGLGETSHADERINFOLOGPROC) SDL_GL_GetProcAddress("glGetShaderInfoLog");
-		glCreateProgram = (PFNGLCREATEPROGRAMPROC) SDL_GL_GetProcAddress("glCreateProgram");
-		glAttachShader = (PFNGLATTACHSHADERPROC) SDL_GL_GetProcAddress("glAttachShader");
-		glLinkProgram = (PFNGLLINKPROGRAMPROC) SDL_GL_GetProcAddress("glLinkProgram");
-		glGetProgramiv = (PFNGLGETPROGRAMIVPROC) SDL_GL_GetProcAddress("glGetProgramiv");
-		glGetProgramInfoLog = (PFNGLGETPROGRAMINFOLOGPROC) SDL_GL_GetProcAddress("glGetProgramInfoLog");
-		glValidateProgram = (PFNGLVALIDATEPROGRAMPROC) SDL_GL_GetProcAddress("glValidateProgram");
-		glGetUniformLocation = (PFNGLGETUNIFORMLOCATIONPROC) SDL_GL_GetProcAddress("glGetUniformLocation");
-		glUniform1f = (PFNGLUNIFORM1FPROC) SDL_GL_GetProcAddress("glUniform1f");
-		glUniform1i = (PFNGLUNIFORM1IPROC) SDL_GL_GetProcAddress("glUniform1i");
-		glUseProgram = (PFNGLUSEPROGRAMPROC) SDL_GL_GetProcAddress("glUseProgram");
-
-		glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS_ARB, &s_num_compressed_format);
 	}
 
 	void set_antialiased(bool enable)
 	{
-		// first try hardware FSAA (full screen antialiasing)
-		int aa_samples;
-		SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &aa_samples);
-		if (aa_samples > 0)
-		{
-			if (enable)
-			{
-				glEnable(GL_MULTISAMPLE_ARB);
-			}
-			else
-			{
-				glDisable(GL_MULTISAMPLE_ARB);
-			}
-			return;
-		}
-
-		// there are no hardware antialiasing
-		// use edge antialiasing
 		m_enable_antialias = enable;
 	}
 
@@ -741,6 +220,8 @@ struct render_handler_ogl : public gameswf::render_handler
 		gameswf::cxform	m_bitmap_color_transform;
 		bool	m_has_nonzero_bitmap_additive_color;
 		float m_width;	// for line style
+		mutable float	pS[4];
+		mutable float	pT[4];
 		
 		fill_style() :
 			m_mode(INVALID),
@@ -748,6 +229,36 @@ struct render_handler_ogl : public gameswf::render_handler
 		{
 		}
 
+		void	applyTexture(int primitive_type, const void* coords, int vertex_count) const
+		// Push our style into OpenGL.
+		// coords is a list of (x,y) coordinate pairs, in triangle-strip order.
+		{
+			if (m_mode == BITMAP_WRAP || m_mode == BITMAP_CLAMP)
+			{
+				assert(m_bitmap_info != NULL);
+
+				GLfloat* tcoord = new GLfloat[2 * vertex_count];
+				Sint16* vcoord = (Sint16*) coords;
+				for (int i = 0; i < 2 * vertex_count; i = i + 2)
+				{
+					tcoord[i] = vcoord[i] * pS[0] + vcoord[i+1] * pS[1] + pS[3];
+					tcoord[i+1] = vcoord[i] * pT[0] + vcoord[i+1] * pT[1] + pT[3];
+				}
+
+				glTexCoordPointer(2, GL_FLOAT, 0, tcoord);
+				glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+
+				glEnable(GL_LINE_SMOOTH);
+				glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+				glDrawArrays(primitive_type, 0, vertex_count);
+				glDisable(GL_LINE_SMOOTH);
+				
+				glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
+				delete tcoord;
+			}
+		}		
+		
 		void	apply(/*const matrix& current_matrix*/) const
 		// Push our style into OpenGL.
 		{
@@ -785,11 +296,6 @@ struct render_handler_ogl : public gameswf::render_handler
 					}
 
 					m_bitmap_info->layout();
-//					glBindTexture(GL_TEXTURE_2D, m_bitmap_info->m_texture_id);
-//					glEnable(GL_TEXTURE_2D);
-					glEnable(GL_TEXTURE_GEN_S);
-					glEnable(GL_TEXTURE_GEN_T);
-				
 					if (m_mode == BITMAP_CLAMP)
 					{	
 						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -808,18 +314,19 @@ struct render_handler_ogl : public gameswf::render_handler
 					float	inv_height = 1.0f / m_bitmap_info->get_height();
 
 					const gameswf::matrix&	m = m_bitmap_matrix;
-					glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-					float	p[4] = { 0, 0, 0, 0 };
-					p[0] = m.m_[0][0] * inv_width;
-					p[1] = m.m_[0][1] * inv_width;
-					p[3] = m.m_[0][2] * inv_width;
-					glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
-
-					glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-					p[0] = m.m_[1][0] * inv_height;
-					p[1] = m.m_[1][1] * inv_height;
-					p[3] = m.m_[1][2] * inv_height;
-					glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
+					//		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+					//	float	p[4] = { 0, 0, 0, 0 };
+					pS[0] = m.m_[0][0] * inv_width;
+					pS[1] = m.m_[0][1] * inv_width;
+					pS[2] = 0;
+					pS[3] = m.m_[0][2] * inv_width;
+					//	glTexGenfv(GL_S, GL_OBJECT_PLANE, p);
+					//	glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
+					pT[0] = m.m_[1][0] * inv_height;
+					pT[1] = m.m_[1][1] * inv_height;
+					pT[2] = 0;
+					pT[3] = m.m_[1][2] * inv_height;
+					//	glTexGenfv(GL_T, GL_OBJECT_PLANE, p);
 				}
 			}
 		}
@@ -954,7 +461,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	gameswf::video_handler*	create_video_handler()
 	{
-		return new video_handler_ogl();
+		return NULL;
 	}
 
 	void	begin_display(
@@ -982,7 +489,12 @@ struct render_handler_ogl : public gameswf::render_handler
 
 		glMatrixMode(GL_MODELVIEW);
 		glPushMatrix();
+
+#ifdef WIN32	// for debugging
 		glOrtho(x0, x1, y0, y1, -1, 1);
+#else
+		glOrthof(x0, x1, y1, y0, -1, 1);
+#endif
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -996,58 +508,31 @@ struct render_handler_ogl : public gameswf::render_handler
 		{
 			// Draw a big quad.
 			apply_color(background_color);
-			glBegin(GL_QUADS);
-			glVertex2f(x0, y0);
-			glVertex2f(x1, y0);
-			glVertex2f(x1, y1);
-			glVertex2f(x0, y1);
-			glEnd();
+			
+//			glBegin(GL_QUADS);
+//			glVertex2f(x0, y0);
+//			glVertex2f(x1, y0);
+//			glVertex2f(x1, y1);
+//			glVertex2f(x0, y1);
+//			glEnd();
+				
+			GLfloat squareVertices[8]; 
+			squareVertices[0] = x0;
+			squareVertices[1] = y0;
+			squareVertices[2] = x1;
+			squareVertices[3] = y0;
+			squareVertices[4] = x0;
+			squareVertices[5] = y1;
+			squareVertices[6] = x1;
+			squareVertices[7] = y1;
+		
+			glVertexPointer(2, GL_FLOAT, 0, squareVertices);
+			glEnableClientState(GL_VERTEX_ARRAY);
+			glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+			glDisableClientState(GL_VERTEX_ARRAY);
 		}
-
-		// Old unused code.  Might get revived someday.
-		#if 0
-				// See if we want to, and can, use multitexture
-				// antialiasing.
-				s_multitexture_antialias = false;
-				if (m_enable_antialias)
-				{
-					int	tex_units = 0;
-					glGetIntegerv(GL_MAX_TEXTURE_UNITS_ARB, &tex_units);
-					if (tex_units >= 2)
-					{
-						s_multitexture_antialias = true;
-					}
-
-					// Make sure we have an edge texture available.
-					if (s_multitexture_antialias == true
-						&& s_edge_texture_id == 0)
-					{
-						// Very simple texture: 2 texels wide, 1 texel high.
-						// Both texels are white; left texel is all clear, right texel is all opaque.
-						unsigned char	edge_data[8] = { 255, 255, 255, 0, 255, 255, 255, 255 };
-
-						ogl::active_texture(GL_TEXTURE1_ARB);
-						glEnable(GL_TEXTURE_2D);
-						glGenTextures(1, &s_edge_texture_id);
-						glBindTexture(GL_TEXTURE_2D, s_edge_texture_id);
-
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-						glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-						glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, edge_data);
-
-						glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);	// @@ should we use a 1D texture???
-
-						glDisable(GL_TEXTURE_2D);
-						ogl::active_texture(GL_TEXTURE0_ARB);
-						glDisable(GL_TEXTURE_2D);
-					}
-				}
-		#endif // 0
 	}
-
 
 	void	end_display()
 	// Clean up after rendering a frame.  Client program is still
@@ -1097,7 +582,6 @@ struct render_handler_ogl : public gameswf::render_handler
 	// Don't fill on the {0 == left, 1 == right} side of a path.
 	{
 		assert(fill_side >= 0 && fill_side < 2);
-
 		m_current_styles[fill_side].disable();
 	}
 
@@ -1143,10 +627,6 @@ struct render_handler_ogl : public gameswf::render_handler
 	void	draw_mesh_primitive(int primitive_type, const void* coords, int vertex_count)
 	// Helper for draw_mesh_strip and draw_triangle_list.
 	{
-#define NORMAL_RENDERING
-//#define MULTIPASS_ANTIALIASING
-
-#ifdef NORMAL_RENDERING
 		// Set up current style.
 		m_current_styles[LEFT_STYLE].apply();
 
@@ -1162,7 +642,10 @@ struct render_handler_ogl : public gameswf::render_handler
 		#else
 			glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
 		#endif
-
+		
+		glEnable(GL_LINE_SMOOTH);
+		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+		
 		glDrawArrays(primitive_type, 0, vertex_count);
 
 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
@@ -1171,108 +654,12 @@ struct render_handler_ogl : public gameswf::render_handler
 			glDrawArrays(primitive_type, 0, vertex_count);
 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
 		}
-
-		// the antialiasing of polygon edges
-		if (m_enable_antialias)
-		{
-			glEnable(GL_POLYGON_SMOOTH);
-			glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);	// GL_NICEST, GL_FASTEST, GL_DONT_CARE
-			glDrawArrays(primitive_type, 0, vertex_count);
-			glDisable(GL_POLYGON_SMOOTH);
-		}
-
-		glDisableClientState(GL_VERTEX_ARRAY);
-
-		glPopMatrix();
-#endif // NORMAL_RENDERING
-
-#ifdef MULTIPASS_ANTIALIASING
-		// So this approach basically works.  This
-		// implementation is not totally finished; two pass
-		// materials (i.e. w/ additive color) aren't correct,
-		// and there are some texture etc issues because I'm
-		// just hosing state uncarefully here.  It needs the
-		// optimization of only filling the bounding box of
-		// the shape.  You must have destination alpha.
-		//
-		// It doesn't look quite perfect on my GF4.  For one
-		// thing, you kinda want to crank down the max curve
-		// subdivision error, because suddenly you can see
-		// sub-pixel shape much better.  For another thing,
-		// the antialiasing isn't quite perfect, to my eye.
-		// It could be limited alpha precision, imperfections
-		// GL_POLYGON_SMOOTH, and/or my imagination.
-
-		glDisable(GL_TEXTURE_2D);
-
-		glEnable(GL_POLYGON_SMOOTH);
-		glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);	// GL_NICEST, GL_FASTEST, GL_DONT_CARE
-
-		// Clear destination alpha.
-		//
-		// @@ TODO Instead of drawing this huge screen-filling
-		// quad, we should take a bounding-box param from the
-		// caller, and draw the box (after apply_matrix;
-		// i.e. the box is in object space).  The point being,
-		// to only fill the part of the screen that the shape
-		// is in.
-		glBlendFunc(GL_ZERO, GL_SRC_COLOR);
-		glColor4f(1, 1, 1, 0);
-		glBegin(GL_QUADS);
-		glVertex2f(0, 0);
-		glVertex2f(100000, 0);
-		glVertex2f(100000, 100000);
-		glVertex2f(0, 100000);
-		glEnd();
-
-		// Set mode for drawing alpha mask.
-		glBlendFunc(GL_ONE, GL_ONE);	// additive blending
-		glColor4f(0, 0, 0, m_current_styles[LEFT_STYLE].m_color.m_a / 255.0f);
-
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		apply_matrix(m_current_matrix);
-
-		// Send the tris to OpenGL.  This produces an
-		// antialiased alpha mask of the mesh shape, in the
-		// destination alpha channel.
-		glEnableClientState(GL_VERTEX_ARRAY);
-		#if TU_USES_FLOAT_AS_COORDINATE_COMPONENT
-			glVertexPointer(2, GL_FLOAT, sizeof(float) * 2, coords);
-		#else
-			glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
-		#endif
-		glDrawArrays(primitive_type, 0, vertex_count);
-		glDisableClientState(GL_VERTEX_ARRAY);
-
-		glPopMatrix();
 		
-		// Set up desired fill style.
-		m_current_styles[LEFT_STYLE].apply();
-
-		// Apply fill, modulated with alpha mask.
-		//
-		// @@ TODO see note above about filling bounding box only.
-		glBlendFunc(GL_DST_ALPHA, GL_ONE_MINUS_DST_ALPHA);
-		glBegin(GL_QUADS);
-		glVertex2f(0, 0);
-		glVertex2f(100000, 0);
-		glVertex2f(100000, 100000);
-		glVertex2f(0, 100000);
-		glEnd();
-
-// xxxxx ??? Hm, is our mask still intact, or did we just erase it?
-// 		if (m_current_styles[LEFT_STYLE].needs_second_pass())
-// 		{
-// 			m_current_styles[LEFT_STYLE].apply_second_pass();
-// 			glDrawArrays(primitive_type, 0, vertex_count);
-// 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
-// 		}
-
-		// @@ hm, there is perhaps more state that needs
-		// fixing here, or setting elsewhere.
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-#endif // MULTIPASS_ANTIALIASING
+		glDisable(GL_LINE_STRIP);
+		
+		m_current_styles[LEFT_STYLE].applyTexture(primitive_type, coords, vertex_count);
+		glDisableClientState(GL_VERTEX_ARRAY);
+		glPopMatrix();
 	}
 
 	void draw_mesh_strip(const void* coords, int vertex_count)
@@ -1298,8 +685,8 @@ struct render_handler_ogl : public gameswf::render_handler
 		float w = m_current_styles[LINE_STYLE].m_width * scale / 2.0f;
     w = TWIPS_TO_PIXELS(w);
 
-		GLfloat width_info[2];
-		glGetFloatv(GL_LINE_WIDTH_RANGE, width_info); 
+//		GLfloat width_info[2];
+//		glGetFloatv(GL_LINE_WIDTH_RANGE, width_info); 
 //		if (w > width_info[1])
 //		{
 //			printf("Your OpenGL implementation does not support the line width"
@@ -1319,8 +706,12 @@ struct render_handler_ogl : public gameswf::render_handler
 		#else
 			glVertexPointer(2, GL_SHORT, sizeof(Sint16) * 2, coords);
 		#endif
+		
+		glEnable(GL_LINE_SMOOTH);
+		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 		glDrawArrays(GL_LINE_STRIP, 0, vertex_count);
-
+		glDisable(GL_LINE_STRIP);
+		
     // Draw a round dot on the beginning and end coordinates to lines.
     glPointSize(w);
 		glEnable(GL_POINT_SMOOTH);
@@ -1362,31 +753,32 @@ struct render_handler_ogl : public gameswf::render_handler
 		d.m_y = b.m_y + c.m_y - a.m_y;
 
 		bi->layout();
-//		glBindTexture(GL_TEXTURE_2D, bi->m_texture_id);
-//		glEnable(GL_TEXTURE_2D);
+		
+		GLfloat squareTextureCoords[8];
+		squareTextureCoords[0] = uv_coords.m_x_min;
+		squareTextureCoords[1] = uv_coords.m_y_min;
+		squareTextureCoords[2] = uv_coords.m_x_max;
+		squareTextureCoords[3] = uv_coords.m_y_min;
+		squareTextureCoords[4] = uv_coords.m_x_min;
+		squareTextureCoords[5] = uv_coords.m_y_max;
+		squareTextureCoords[6] = uv_coords.m_x_max;
+		squareTextureCoords[7] = uv_coords.m_y_max;
 
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
+		glTexCoordPointer(2, GL_SHORT, 0, squareTextureCoords);
+		glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 
-		glBegin(GL_TRIANGLE_STRIP);
+		glEnable(GL_LINE_SMOOTH);
+		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		glDisable(GL_LINE_SMOOTH);
 
-		glTexCoord2f(uv_coords.m_x_min, uv_coords.m_y_min);
-		glVertex2f(a.m_x, a.m_y);
-
-		glTexCoord2f(uv_coords.m_x_max, uv_coords.m_y_min);
-		glVertex2f(b.m_x, b.m_y);
-
-		glTexCoord2f(uv_coords.m_x_min, uv_coords.m_y_max);
-		glVertex2f(c.m_x, c.m_y);
-
-		glTexCoord2f(uv_coords.m_x_max, uv_coords.m_y_max);
-		glVertex2f(d.m_x, d.m_y);
-
-		glEnd();
+		glDisableClientState(GL_TEXTURE_COORD_ARRAY);
 	}
 	
 	bool test_stencil_buffer(const gameswf::rect& bound, Uint8 pattern)
 	{
+		return false;
+/*		
 		// get viewport size
 		GLint vp[4]; 
 		glGetIntegerv(GL_VIEWPORT, vp); 
@@ -1407,7 +799,8 @@ struct render_handler_ogl : public gameswf::render_handler
 			int bufsize = width * height;
 			Uint8* buf = (Uint8*) malloc(4 * bufsize);
 
-			glReadPixels(x0, vp[3] - y0 - height, width, height, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, buf);
+			assert(0);	//TODO
+//			glReadPixels(x0, vp[3] - y0 - height, width, height, GL_STENCIL_INDEX, GL_UNSIGNED_BYTE, buf);
 
 			for (int i = 0; i < bufsize; i++)
 			{
@@ -1421,7 +814,7 @@ struct render_handler_ogl : public gameswf::render_handler
 			free(buf);
 		}
 
-		return ret;
+		return ret;*/
 	}
 
 	void begin_submit_mask()
@@ -1473,12 +866,29 @@ struct render_handler_ogl : public gameswf::render_handler
 		glStencilOp(GL_KEEP, GL_KEEP, GL_DECR); 
 
 		// draw the quad to fill stencil buffer
-		glBegin(GL_QUADS);
-		glVertex2f(0, 0);
-		glVertex2f(m_display_width, 0);
-		glVertex2f(m_display_width, m_display_height);
-		glVertex2f(0, m_display_height);
-		glEnd();
+
+//		glBegin(GL_QUADS);
+//		glVertex2f(0, 0);
+//		glVertex2f(m_display_width, 0);
+//		glVertex2f(m_display_width, m_display_height);
+//		glVertex2f(0, m_display_height);
+//		glEnd();
+		
+		Sint16 squareVertices[8]; 
+		squareVertices[0] = 0;
+		squareVertices[1] = 0;
+		squareVertices[2] = m_display_width;
+		squareVertices[3] = 0;
+		squareVertices[4] = 0;
+		squareVertices[5] = m_display_height;
+		squareVertices[6] = m_display_width;
+		squareVertices[7] = m_display_height;
+		
+		glVertexPointer(2, GL_SHORT, 0, squareVertices);
+		glEnableClientState(GL_VERTEX_ARRAY);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+		glDisableClientState(GL_VERTEX_ARRAY);
 
 		end_submit_mask();
 	}
@@ -1503,7 +913,7 @@ struct render_handler_ogl : public gameswf::render_handler
 	}
 #endif  // SDL_CURSOR_HANDLING
 
-};	// end struct render_handler_ogl
+};	// end struct render_handler_ogles
 
 
 // bitmap_info_ogl implementation
@@ -1819,7 +1229,7 @@ void bitmap_info_ogl::layout()
 				int	level = 1;
 				while (w > 1 || h > 1)
 				{
-					render_handler_ogl::make_next_miplevel(&w, &h, m_suspended_image->m_data);
+					render_handler_ogles::make_next_miplevel(&w, &h, m_suspended_image->m_data);
 					create_texture(GL_ALPHA, w, h, m_suspended_image->m_data, level);
 					level++;
 				}
@@ -1841,13 +1251,16 @@ void bitmap_info_ogl::layout()
 	}
 }
 
-gameswf::render_handler*	gameswf::create_render_handler_ogl()
+namespace gameswf
+{
+render_handler*	create_render_handler_ogles()
 // Factory.
 {
-	return new render_handler_ogl;
+	return new render_handler_ogles();
+}
 }
 
-#endif //TU_USE_SDL
+#endif	// USE_SDL
 
 // Local Variables:
 // mode: C++

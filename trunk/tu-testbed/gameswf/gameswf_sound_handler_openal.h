@@ -10,7 +10,7 @@
 
 #include "base/tu_config.h"
 
-#if TU_USE_OPENAL_SOUND_HANDLER == 1
+#if TU_USE_SDL == 0
 
 #include "gameswf/gameswf.h"
 #include "base/container.h"
@@ -18,8 +18,8 @@
 #include "gameswf/gameswf_mutex.h"
 #include "gameswf/gameswf_listener.h"
 
-#include <al.h>
-#include <alc.h>
+#include <OpenAL/al.h>
+#include <OpenAL/alc.h>
 
 namespace gameswf
 {

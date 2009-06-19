@@ -136,7 +136,7 @@ namespace gameswf
 	// version of the library, depending on platform etc.
 	exported_module render_handler*	create_render_handler_xbox();
 	exported_module render_handler*	create_render_handler_ogl();
-	exported_module render_handler*	create_render_handler_iphone();
+	exported_module render_handler*	create_render_handler_ogles();
 	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice9* _pDevice);
 	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice8* _pDevice);
 	exported_module sound_handler*	create_sound_handler_sdl();

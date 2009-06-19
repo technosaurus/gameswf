@@ -11,7 +11,7 @@
 
 #include "gameswf/gameswf_sound_handler_openal.h"
 
-#if TU_USE_OPENAL_SOUND_HANDLER == 1
+#if TU_USE_SDL == 0
 
 namespace gameswf
 {
@@ -400,7 +400,10 @@ namespace gameswf
 				m_loops = 0;
 
 				// notify onSoundComplete
-				m_listeners->notify(event_id::ON_SOUND_COMPLETE);
+				if (m_listeners)
+				{
+					m_listeners->notify(event_id::ON_SOUND_COMPLETE);
+				}
 			}
 		}
 	}

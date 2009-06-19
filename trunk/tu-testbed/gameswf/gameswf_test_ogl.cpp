@@ -585,14 +585,20 @@ int	main(int argc, char *argv[])
 		{
 			if (do_sound)
 			{
-#if TU_USE_OPENAL_SOUND_HANDLER == 1
+#if TU_USE_SDL == 0
 				sound = gameswf::create_sound_handler_openal();
 #else
 				sound = gameswf::create_sound_handler_sdl();
 #endif
 				gameswf::set_sound_handler(sound);
 			}
+
+#if TU_USE_SDL == 0
+			render = gameswf::create_render_handler_ogles();
+#else
 			render = gameswf::create_render_handler_ogl();
+#endif
+
 			gameswf::set_render_handler(render);
 			gameswf::create_glyph_provider();
 		}

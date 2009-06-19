@@ -517,10 +517,6 @@
 				>
 			</File>
 			<File
-				RelativePath="..\..\gameswf_render_handler_ogl.cpp"
-				>
-			</File>
-			<File
 				RelativePath="..\..\gameswf_root.cpp"
 				>
 			</File>
@@ -1034,6 +1030,18 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_sound_handler_sdl.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="render"
+			>
+			<File
+				RelativePath="..\..\gameswf_render_handler_ogl.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\gameswf_render_handler_ogles.cpp"
 				>
 			</File>
 		</Filter>
