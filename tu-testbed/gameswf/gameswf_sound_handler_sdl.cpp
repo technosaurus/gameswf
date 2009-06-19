@@ -10,7 +10,7 @@
 
 #include "gameswf/gameswf_sound_handler_sdl.h"
 
-#if TU_USE_OPENAL_SOUND_HANDLER == 0
+#if TU_USE_SDL == 1
 
 namespace gameswf
 {
@@ -466,7 +466,7 @@ namespace gameswf
 
 }
 
-#endif  // TU_USE_OPENAL_SOUND_HANDLER
+#endif  // TU_USE_SDL
 
 // Local Variables:
 // mode: C++
