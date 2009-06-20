@@ -10,6 +10,8 @@
 #include "gameswf/gameswf_types.h"
 #include "gameswf/gameswf_log.h"
 
+typedef void (*thread_start_func)(void* arg);
+
 #if TU_CONFIG_LINK_TO_THREAD == 1
 
 #include <SDL.h>
@@ -17,77 +19,38 @@
 
 namespace gameswf
 {
-
+	int sdl_thread_start_func(void* ptr);
 	struct tu_thread : public ref_counted
 	{
-		tu_thread(int (*fn)(void *), void* data)
-		{
-			IF_VERBOSE_ACTION(log_msg("gameswf is in multi thread mode\n"));
-			m_thread = SDL_CreateThread(fn, data);
-			assert(m_thread);
-		}
+		tu_thread(void (*fn)(void *), void* data);
+		~tu_thread();
 
-		~tu_thread()
-		{
-			kill();
-		}
-
-		void wait()
-		{
-			SDL_WaitThread(m_thread, NULL);
-			m_thread = NULL;
-		}
-
-		void kill()
-		{
-			SDL_KillThread(m_thread);
-			m_thread = NULL;
-		}
+		void wait();
+		void kill();
+		void start();
 
 	private:
-
 		SDL_Thread* m_thread;
-
+		thread_start_func m_func;
+		void* m_arg;
 	};
 
 	struct tu_mutex
 	{
-		tu_mutex()
-		{
-			m_mutex = SDL_CreateMutex();
-		}
+		tu_mutex();
+		~tu_mutex(); 
 
-		~tu_mutex() 
-		{
-			SDL_DestroyMutex(m_mutex);
-		}
+		void lock();
+		void unlock();
 
-		inline void lock() 
-		{
-			SDL_LockMutex(m_mutex);
-		}
-
-		inline void unlock() 
-		{
-			SDL_UnlockMutex(m_mutex);
-		}
-
-		SDL_mutex* get_ptr()
-		{
-			return m_mutex;
-		}
-
-		private:
-
-			SDL_mutex* m_mutex;
+		SDL_mutex* m_mutex;
 	};
 
 	// like autoptr
 	struct tu_autolock
 	{
 		tu_mutex& m_mutex;
-		tu_autolock(tu_mutex& mutex) :
-			m_mutex(mutex)
+		tu_autolock(tu_mutex& mutex) : m_mutex(mutex)
 		{
 			m_mutex.lock();
 		}
@@ -100,28 +63,13 @@ namespace gameswf
 
 	struct tu_condition
 	{
-		tu_condition()
-		{
-			m_cond = SDL_CreateCond();
-		}
-
-		~tu_condition()
-		{
-			SDL_DestroyCond(m_cond);
-		}
+		tu_condition();
+		~tu_condition();
 
 		// Wait on the condition variable cond and unlock the provided mutex.
 		// The mutex must the locked before entering this function.
-		void wait()
-		{
-			m_cond_mutex.lock();
-			SDL_CondWait(m_cond, m_cond_mutex.get_ptr());
-		}
-
-		void signal()
-		{
-			SDL_CondSignal(m_cond);
-		}
+		void wait();
+		void signal();
 
 		SDL_cond* m_cond;
 		tu_mutex m_cond_mutex;
@@ -130,14 +78,76 @@ namespace gameswf
 }
 
 #elif TU_CONFIG_LINK_TO_THREAD == 2	// libpthread
-// TODO
+
+#include <pthread.h>
+
+namespace gameswf
+{
+	void* pthread_start_func(void* ptr);
+	struct tu_thread : public ref_counted
+	{
+		tu_thread(void (*fn)(void *), void* data);
+		~tu_thread();
+
+		void wait();
+		void kill();
+		void start();
+
+	private:
+		pthread_t m_thread;
+		thread_start_func m_func;
+		void* m_arg;
+	};
+
+	struct tu_mutex
+	{
+		tu_mutex();
+		~tu_mutex(); 
+
+		void lock();
+		void unlock();
+
+		pthread_mutex_t m_mutex;
+	};
+
+	// like autoptr
+	struct tu_autolock
+	{
+		tu_mutex& m_mutex;
+		tu_autolock(tu_mutex& mutex) :
+		m_mutex(mutex)
+		{
+			m_mutex.lock();
+		}
+
+		~tu_autolock()
+		{
+			m_mutex.unlock();
+		}
+	};
+
+	struct tu_condition
+	{
+		tu_condition();
+		~tu_condition();
+
+		// Wait on the condition variable cond and unlock the provided mutex.
+		// The mutex must the locked before entering this function.
+		void wait();
+		void signal();
+
+		pthread_cond_t m_cond;
+		tu_mutex m_cond_mutex;
+	};
+}
+
 #else
 
 namespace gameswf
 {
 	struct tu_thread : public ref_counted
 	{
-		tu_thread(int (*fn)(void *), void* data)
+		tu_thread(void (*fn)(void *), void* data)
 		{
 			IF_VERBOSE_ACTION(log_msg("gameswf is in single thread mode\n"));
 			(fn)(data);
@@ -162,26 +172,24 @@ namespace gameswf
 		tu_condition() {}
 		~tu_condition() {}
 
-		// Wait on the condition variable cond and unlock the provided mutex.
-		// The mutex must the locked before entering this function.
 		void wait() {}
 		void signal() {}
 	};
 
-    struct tu_autolock
-    {
-        tu_mutex& m_mutex;
-        tu_autolock(tu_mutex& mutex) :
-        m_mutex(mutex)
-        {
-            m_mutex.lock();
-        }
+	struct tu_autolock
+	{
+		tu_mutex& m_mutex;
+		tu_autolock(tu_mutex& mutex) :
+		m_mutex(mutex)
+		{
+			m_mutex.lock();
+		}
 
-        ~tu_autolock()
-        {
-            m_mutex.unlock();
-        }
-    };
+		~tu_autolock()
+		{
+			m_mutex.unlock();
+		}
+	};
 
 }
 

@@ -19,11 +19,10 @@ namespace gameswf
 {
 
 	// it is running in decoder thread
-	static int netstream_server(void* arg)
+	static void netstream_server(void* arg)
 	{
 		as_netstream* ns = (as_netstream*) arg;
 		ns->run();
-		return 0;
 	}
 
 	// audio callback is running in sound handler thread

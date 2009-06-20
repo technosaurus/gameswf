@@ -229,21 +229,21 @@ namespace gameswf
 		assert(ptr);
 
 		m_mutex.lock();
-		assert(0);	//TODO
+		//TODO
 		m_mutex.unlock();
 	}
 
 	void openal_sound_handler::detach_aux_streamer(as_object* netstream)
 	{
 		m_mutex.lock();
-		assert(0);	//TODO
+		//TODO
 		m_mutex.unlock();
 	}
 
 	void openal_sound_handler::cvt(short int** adjusted_data, int* adjusted_size, unsigned char* data, 
 		int size, int channels, int freq)
 	{
-		assert(0);	//TODO
+		//TODO
 		*adjusted_data = NULL;
 		*adjusted_size = 0;
 	}
