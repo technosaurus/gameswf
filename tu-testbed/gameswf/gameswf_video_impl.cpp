@@ -100,7 +100,7 @@ namespace gameswf
 
 	void video_stream_instance::display()
 	{
-		if (m_ns != NULL)	// is video attached ?
+		if (m_ns != NULL && m_video_handler != NULL)	// is video attached ?
 		{
 			rect bounds;
 			bounds.m_x_min = 0.0f;

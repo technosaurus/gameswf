@@ -29,11 +29,10 @@ namespace gameswf
 {
 
 	// it's running in loader thread
-	int movie_def_loader(void* arg)
+	void movie_def_loader(void* arg)
 	{
 		movie_def_impl* m = (movie_def_impl*) arg;
 		m->read_tags();
-		return 0;
 	}
 
 	// Keep a table of loader functions for the different tag types.

@@ -402,7 +402,7 @@ namespace gameswf
 		virtual as_function* instanciate_class(character* ch) const;
 	};
 
-	int movie_def_loader(void* arg);
+	void movie_def_loader(void* arg);
 
 	typedef void (*loader_function)(stream* input, int tag_type, movie_definition_sub* m);
 	bool get_tag_loader(int tag_type, loader_function* lf);

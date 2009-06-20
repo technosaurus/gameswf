@@ -228,7 +228,8 @@ public:
 		// DO NOT pass elements of your own vector into
 		// push_back()!  Since we're using references,
 		// resize() may munge the element storage!
-		assert(&val < &m_buffer[0] || &val > &m_buffer[m_buffer_size]);
+		// this is irrelevant to MAC OS !!!
+//		assert(&val < &m_buffer[0] || &val > &m_buffer[m_buffer_size]);
 
 		int	new_size = m_size + 1;
 		resize(new_size);
