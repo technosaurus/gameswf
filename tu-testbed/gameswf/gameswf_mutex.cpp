@@ -97,6 +97,7 @@ namespace gameswf
 	void* pthread_start_func(void* ptr)
 	{
 		((tu_thread*) ptr)->start();
+		pthread_exit(NULL);
 		return NULL;
 	};
 
@@ -107,7 +108,7 @@ namespace gameswf
 		m_arg = data;
 		if (pthread_create(&m_thread, NULL, pthread_start_func, this))
 		{
-			log_msg("Couldn't create the thread, %s\n", strerror(errno));
+			log_msg("Couldn't create the pthread\n");
 		}
 	}
 
@@ -118,8 +119,8 @@ namespace gameswf
 
 	void tu_thread::wait()
 	{
-		// TODO
-		kill();
+		// blocks the calling thread until the specified threadid thread terminates. 
+		pthread_join(m_thread, NULL);
 	}
 
 	void tu_thread::kill()
@@ -139,26 +140,17 @@ namespace gameswf
 
 	tu_mutex::~tu_mutex() 
 	{
-		if (m_mutex != NULL)
-		{
-			pthread_mutex_destroy(&m_mutex);
-		}
+		pthread_mutex_destroy(&m_mutex);
 	}
 
 	void tu_mutex::lock() 
 	{
-		if (m_mutex != NULL)
-		{
-			pthread_mutex_lock(&m_mutex);
-		}
+		pthread_mutex_lock(&m_mutex);
 	}
 
 	void tu_mutex::unlock() 
 	{
-		if (m_mutex != NULL)
-		{
-			pthread_mutex_unlock(&m_mutex);
-		}
+		pthread_mutex_unlock(&m_mutex);
 	}
 
 	tu_condition::tu_condition()
