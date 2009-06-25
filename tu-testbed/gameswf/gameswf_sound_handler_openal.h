@@ -10,7 +10,7 @@
 
 #include "base/tu_config.h"
 
-#if TU_USE_SDL == 0
+#ifdef TU_USE_OPENAL
 
 #include "gameswf/gameswf.h"
 #include "base/container.h"
@@ -129,4 +129,4 @@ namespace gameswf
 
 #endif
 
-#endif //TU_USE_OPENAL_SOUND_HANDLER
+#endif //TU_USE_SDL

@@ -4,13 +4,12 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "gameswf/gameswf_sound_handler_sdl.h"
 
-#if TU_USE_SDL == 1
+#ifdef TU_USE_SDL
+
+#pragma comment (lib, "SDL.lib")
+
 
 namespace gameswf
 {

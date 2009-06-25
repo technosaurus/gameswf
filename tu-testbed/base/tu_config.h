@@ -79,8 +79,9 @@
 // define TU_CONFIG_LINK_TO_THREAD to 1 to include SDL thread & mutex support in gameswf
 // define TU_CONFIG_LINK_TO_THREAD to 2 to include ... (TODO: pthread support)
 #ifndef TU_CONFIG_LINK_TO_THREAD
-#define TU_CONFIG_LINK_TO_THREAD 0
+#	define TU_CONFIG_LINK_TO_THREAD 1
 #endif
+
 #if TU_CONFIG_LINK_TO_THREAD == 0 && TU_CONFIG_LINK_TO_FFMPEG == 1
 #error video & MP3 requires multi thread support
 #endif
@@ -121,9 +122,8 @@
 #	define TU_USE_FLASH_COMPATIBLE_HITTEST 1
 #endif
 
-// define TU_USE_SDL to 1 to use SDL sound/render handler
-#ifndef TU_USE_SDL
-#	define TU_USE_SDL 0
-#endif
+// SDL is used by default
+//#define TU_USE_OPENAL
+#define TU_USE_SDL
 
 #endif // TU_CONFIG_H

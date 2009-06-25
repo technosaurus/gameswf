@@ -5,13 +5,9 @@
 
 // OpenAL based sound handler for mobile units
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #include "gameswf/gameswf_sound_handler_openal.h"
 
-#if TU_USE_SDL == 0
+#ifdef TU_USE_OPENAL
 
 namespace gameswf
 {
@@ -416,4 +412,4 @@ namespace gameswf
 
 }
 
-#endif // TU_USE_OPENAL_SOUND_HANDLER
+#endif // TU_USE_SDL

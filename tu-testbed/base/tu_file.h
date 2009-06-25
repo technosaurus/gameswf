@@ -18,7 +18,10 @@
 #include "base/container.h"
 
 struct membuf;
+
+#ifdef TU_USE_SDL
 struct SDL_RWops;
+#endif
 
 
 enum
@@ -61,9 +64,11 @@ public:
 	// Make a file from an ordinary FILE*.
 	exported_module tu_file(FILE* fp, bool autoclose);
 
+#ifdef TU_USE_SDL
 	// Optional: if you're using SDL, this is a constructor to create
 	// a tu_file from an SDL_RWops* stream.
 	exported_module tu_file(SDL_RWops* sdl_stream, bool autoclose);
+#endif
 
 	// Open a file using ordinary fopen().  Automatically closes the
 	// file when we are destroyed.
