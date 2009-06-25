@@ -8,7 +8,7 @@
 
 #include "base/tu_config.h"
 
-#if TU_USE_SDL == 1
+#ifdef TU_USE_SDL
 
 #include <SDL_audio.h>
 #include <SDL_thread.h>

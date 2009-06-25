@@ -139,7 +139,9 @@ namespace gameswf
 	exported_module render_handler*	create_render_handler_ogles();
 	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice9* _pDevice);
 	exported_module render_handler* create_render_handler_d3d(IDirect3DDevice8* _pDevice);
+#ifdef TU_USE_SDL
 	exported_module sound_handler*	create_sound_handler_sdl();
+#endif
 	exported_module sound_handler*	create_sound_handler_openal();
 
 

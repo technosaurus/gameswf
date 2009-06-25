@@ -37,11 +37,11 @@ namespace gameswf
 
 	struct tu_mutex
 	{
-		tu_mutex();
-		~tu_mutex(); 
+		exported_module tu_mutex();
+		exported_module ~tu_mutex(); 
 
-		void lock();
-		void unlock();
+		exported_module void lock();
+		exported_module void unlock();
 
 		SDL_mutex* m_mutex;
 	};
@@ -101,11 +101,11 @@ namespace gameswf
 
 	struct tu_mutex
 	{
-		tu_mutex();
-		~tu_mutex(); 
+		exported_module tu_mutex();
+		exported_module ~tu_mutex(); 
 
-		void lock();
-		void unlock();
+		exported_module void lock();
+		exported_module void unlock();
 
 		pthread_mutex_t m_mutex;
 	};
@@ -161,10 +161,10 @@ namespace gameswf
 
 	struct tu_mutex
 	{
-		tu_mutex() {}
-		~tu_mutex() {}
-		void lock() {}
-		void unlock() {}
+		exported_module tu_mutex() {}
+		exported_module ~tu_mutex() {}
+		exported_module void lock() {}
+		exported_module void unlock() {}
 	};
 
 	struct tu_condition

@@ -8,6 +8,7 @@
 // library don't call it, it won't get pulled in by the linker and
 // won't try to link with SDL.
 
+#ifdef TU_USE_SDL
 
 #include "base/tu_file.h"
 #include "base/utility.h"
@@ -118,3 +119,4 @@ tu_file::tu_file(SDL_RWops* sdl_stream, bool autoclose)
 // tab-width: 8
 // indent-tabs-mode: t
 // End:
+#endif //#ifdef TU_USE_SDL

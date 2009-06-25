@@ -5,10 +5,15 @@
 
 // A gameswf::render_handler that uses SDL & OpenGL
 
-#if TU_USE_SDL == 1
+#include "base/tu_config.h"
 
+#ifdef TU_USE_SDL
 #include <SDL.h>  // for cursor handling & the scanning for extensions.
 #include <SDL_opengl.h>	// for opengl const
+#else
+#include "base/tu_opengl_includes.h"
+#include <gl/glext.h>
+#endif //TU_USE_SDL
 
 #include "gameswf/gameswf.h"
 #include "gameswf/gameswf_types.h"
@@ -19,6 +24,8 @@
 
 // Pointers to opengl extension functions.
 typedef char GLchar;
+
+#ifdef TU_USE_SDL
 
 typedef void (APIENTRY* PFNGLACTIVETEXTUREPROC) (GLenum texture);
 PFNGLACTIVETEXTUREPROC _glActiveTexture = 0;
@@ -97,6 +104,7 @@ PFNGLUNIFORM1IPROC glUniform1i = 0;
 
 typedef void (APIENTRY* PFNGLUSEPROGRAMPROC) (GLuint program);
 PFNGLUSEPROGRAMPROC glUseProgram = 0;
+#endif //TU_USE_SDL
 
 static GLint s_num_compressed_format = 0;
 void create_texture(int format, int w, int h, void* data, int level)
@@ -214,7 +222,12 @@ void gluLookAt(float eyex, float eyey, float eyez, float centerx, float centery,
     glTranslated(-eyex, -eyey, -eyez);
 }
 
+#ifdef TU_USE_SDL
 #define SDL_CURSOR_HANDLING
+#else
+#undef SDL_CURSOR_HANDLING
+#endif
+
 #ifdef SDL_CURSOR_HANDLING
 
 // XPM
@@ -626,6 +639,7 @@ struct render_handler_ogl : public gameswf::render_handler
 
 	void open()
 	{
+#ifdef TU_USE_SDL
 		// Scan for extensions used by gameswf
 		_glActiveTexture =  (PFNGLACTIVETEXTUREPROC) SDL_GL_GetProcAddress("glActiveTexture");
 		_glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC) SDL_GL_GetProcAddress("glActiveTextureARB");
@@ -653,7 +667,7 @@ struct render_handler_ogl : public gameswf::render_handler
 		glUniform1f = (PFNGLUNIFORM1FPROC) SDL_GL_GetProcAddress("glUniform1f");
 		glUniform1i = (PFNGLUNIFORM1IPROC) SDL_GL_GetProcAddress("glUniform1i");
 		glUseProgram = (PFNGLUSEPROGRAMPROC) SDL_GL_GetProcAddress("glUseProgram");
-
+#endif
 		glGetIntegerv(GL_NUM_COMPRESSED_TEXTURE_FORMATS_ARB, &s_num_compressed_format);
 	}
 
@@ -661,7 +675,14 @@ struct render_handler_ogl : public gameswf::render_handler
 	{
 		// first try hardware FSAA (full screen antialiasing)
 		int aa_samples;
+
+#ifdef TU_USE_SDL
 		SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &aa_samples);
+#else
+		// Here is where you have to inset the alternative to SDL
+		aa_samples=0;
+#endif
+
 		if (aa_samples > 0)
 		{
 			if (enable)
@@ -1847,7 +1868,7 @@ gameswf::render_handler*	gameswf::create_render_handler_ogl()
 	return new render_handler_ogl;
 }
 
-#endif //TU_USE_SDL
+//#endif //TU_USE_SDL
 
 // Local Variables:
 // mode: C++

@@ -3,9 +3,9 @@
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
 
-// A gameswf::render_handler that uses SDL & OpenGL
+// OpenGL ES based video handler for mobile units
 
-#if TU_USE_SDL == 0
+#ifdef TU_USE_OGLES
 
 #ifdef WIN32	// for debugging
 	#include <SDL.h>  // for cursor handling & the scanning for extensions.
@@ -814,7 +814,7 @@ struct render_handler_ogles : public gameswf::render_handler
 			m_current_styles[LEFT_STYLE].cleanup_second_pass();
 		}
 		
-		glDisable(GL_LINE_STRIP);
+		glDisable(GL_LINE_SMOOTH);
 		
 		m_current_styles[LEFT_STYLE].applyTexture(primitive_type, coords, vertex_count);
 		glDisableClientState(GL_VERTEX_ARRAY);
@@ -869,7 +869,7 @@ struct render_handler_ogles : public gameswf::render_handler
 		glEnable(GL_LINE_SMOOTH);
 		glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 		glDrawArrays(GL_LINE_STRIP, 0, vertex_count);
-		glDisable(GL_LINE_STRIP);
+		glDisable(GL_LINE_SMOOTH);
 		
     // Draw a round dot on the beginning and end coordinates to lines.
     glPointSize(w);
