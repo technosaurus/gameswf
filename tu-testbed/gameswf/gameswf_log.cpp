@@ -33,7 +33,7 @@ namespace gameswf
 	static void (*s_log_callback)(bool error, const char* message) = standard_logger;
 
 	// Workspace for vsnprintf formatting.
-	static const int	BUFFER_SIZE = 500;
+	static const int	BUFFER_SIZE = 4096;
 	static char	s_buffer[BUFFER_SIZE];
 
 
