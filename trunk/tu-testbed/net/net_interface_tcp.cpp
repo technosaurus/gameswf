@@ -214,18 +214,15 @@ int net_socket_tcp::read_line(tu_string* str, int maxbytes, float timeout_second
 		assert(bytes_read == 1);
 		total_bytes_read++;
 
-		if (c == '\n')
+		// printable char ?
+		if (c < ' ')
 		{
 			// Done.
 //			printf("recv: '%s'\n", str->c_str());
 			return total_bytes_read;
 		}
 
-		// '\n'(0x0D) and '\r'(0x0A) are not written into str
-		if (c != '\r')
-		{
-			(*str) += c;
-		}
+		(*str) += c;
 
 		if (maxbytes > 0 && total_bytes_read >= maxbytes)
 		{

@@ -734,7 +734,7 @@ namespace gameswf
 		{
 			return m_target->find_target(target);
 		}
-		return NULL;
+		return target.to_object();
 	}
 
 	bool	as_environment::set_member(const tu_stringi& name, const as_value& val)
