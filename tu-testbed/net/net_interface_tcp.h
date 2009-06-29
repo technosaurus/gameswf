@@ -51,8 +51,9 @@ struct net_socket_tcp : public net_socket
 {
 	SOCKET m_sock;
 	int m_error;
+	tu_string m_client_ip;
 	
-	net_socket_tcp(SOCKET sock);
+	net_socket_tcp(SOCKET sock, const char* client_ip);
 	~net_socket_tcp();
 
 	virtual int get_error() const;
@@ -61,6 +62,8 @@ struct net_socket_tcp : public net_socket
 	virtual int read(void* data, int bytes, float timeout_seconds);
 	virtual int read_line(tu_string* data, int maxbytes, float timeout_seconds);
 	virtual int write(const void* data, int bytes, float timeout_seconds);
+
+	const char* get_ip() const { return m_client_ip.c_str(); };
 };
 
 struct net_interface_tcp : public net_interface
