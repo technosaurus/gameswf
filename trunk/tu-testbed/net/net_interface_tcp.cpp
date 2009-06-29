@@ -29,10 +29,10 @@ const char* get_proxy()
 	return s_proxy.c_str();
 }
 
-net_socket_tcp::net_socket_tcp(SOCKET sock)
-:
-m_sock(sock),
-m_error(0)
+net_socket_tcp::net_socket_tcp(SOCKET sock, const char* client_ip) :
+	m_sock(sock),
+	m_error(0),
+	m_client_ip(client_ip)
 {
 }
 
@@ -417,7 +417,7 @@ net_socket* net_interface_tcp::connect(const char* c_host, int port)
 	// connection.
 	set_nonblock();
 
-	return new net_socket_tcp(m_socket);
+	return new net_socket_tcp(m_socket, NULL);	// fixme: IP address
 }
 
 net_interface_tcp::~net_interface_tcp()
@@ -439,19 +439,24 @@ net_socket* net_interface_tcp::accept()
 {
 	// Accept an incoming request.
 	SOCKET	remote_socket;
-
-	remote_socket = ::accept(m_socket, NULL, NULL);
+	struct sockaddr_in client;
+	int ln = sizeof(sockaddr_in);
+	remote_socket = ::accept(m_socket, (sockaddr*) &client, &ln);
 	if (remote_socket == INVALID_SOCKET)
 	{
 		// No connection pending, or some other error.
 		return NULL;
 	}
 
-	return new net_socket_tcp(remote_socket);
-	// TODO implement
-//	return NULL;
-}
+	char buf[16];
+	snprintf(buf, 16, "%d.%d.%d.%d",
+		client.sin_addr.S_un.S_un_b.s_b1,
+		client.sin_addr.S_un.S_un_b.s_b2,
+		client.sin_addr.S_un.S_un_b.s_b3,
+		client.sin_addr.S_un.S_un_b.s_b4);
 
+	return new net_socket_tcp(remote_socket, buf);
+}
 
 bool net_init()
 {
