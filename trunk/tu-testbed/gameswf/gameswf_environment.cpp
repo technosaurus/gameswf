@@ -68,8 +68,9 @@ namespace gameswf
 		 tu_string fn;
 
 		// is path relative ?
-		if (url[1] == ':' || url[0] == '/')	// like c:\my.swf or /home/my.swf
+		if (url[1] == ':' || url[0] == '/' || stricmp(url, "http://"))
 		{
+			// path like c:\my.swf or /home/my.swf or URL is absolute
 			fn = "";
 		}
 		else

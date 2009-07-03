@@ -5,6 +5,8 @@
 
 // OpenGL ES based video handler for mobile units
 
+#include "base/tu_config.h"
+
 #ifdef TU_USE_OGLES
 
 #ifdef WIN32	// for debugging

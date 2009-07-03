@@ -1,4 +1,4 @@
-// tu_types.h	-- Ignacio Castaño, Thatcher Ulrich 2003
+// tu_types.h	-- Ignacio CastaÃ’o, Thatcher Ulrich 2003
 
 // This source code has been donated to the Public Domain.  Do
 // whatever you want with it.
@@ -15,7 +15,7 @@
 #include <stdio.h>
 
 
-#if defined(__i386__) || defined(_WIN32)
+#if defined(__i386__) || defined(_WIN32) || defined(__GNUC__)
 
 	// On known little-endian platforms, define this stuff.
 	#define _TU_LITTLE_ENDIAN_	1
