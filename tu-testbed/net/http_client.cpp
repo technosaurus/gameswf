@@ -152,8 +152,6 @@ bool http_connection::read_response()
 			break;
 		}
 
-		printf("%s", s.c_str());
-
 		// set retcode
 		if (strncmp(s.c_str(), "HTTP/", 5) == 0)
 		{
