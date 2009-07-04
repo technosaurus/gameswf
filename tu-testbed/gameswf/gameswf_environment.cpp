@@ -26,7 +26,8 @@ namespace gameswf
 		SWF,
 		JPG,
 		X3DS,
-		TXT
+		TXT,
+		URL
 	};
 
 	// static
@@ -38,8 +39,12 @@ namespace gameswf
 			return UNKNOWN;
 		}
 
-		tu_stringi fn_ext = fn.utf8_substring(fn.size() - 4, fn.size());
+		if (strncasecmp(url, "http://", 7) == 0)
+		{
+			return URL;
+		}
 
+		tu_stringi fn_ext = fn.utf8_substring(fn.size() - 4, fn.size());
 		if (fn_ext == ".swf")
 		{
 			return SWF;
@@ -68,7 +73,7 @@ namespace gameswf
 		 tu_string fn;
 
 		// is path relative ?
-		if (url[1] == ':' || url[0] == '/' || stricmp(url, "http://"))
+		if (url[1] == ':' || url[0] == '/' || strncasecmp(url, "http://", 7) == 0)
 		{
 			// path like c:\my.swf or /home/my.swf or URL is absolute
 			fn = "";
@@ -284,6 +289,7 @@ namespace gameswf
 				break;
 			}
 
+			case URL:
 			case SWF:
 			{
 				movie_definition*	md = get_player()->create_movie(file_name.c_str());

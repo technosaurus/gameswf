@@ -176,7 +176,7 @@ static bool http_get_eof(void *appdata)
 // starts with "http").  Otherwise it behavies like a regular tu_file.
 tu_file* new_tu_net_file(const char* filename_or_url, const char* mode)
 {
-	if (strncmp(filename_or_url, "http://", 7) == 0 && mode[0] != 'w') {
+	if (strncasecmp(filename_or_url, "http://", 7) == 0 && mode[0] != 'w') {
 		// Create a file from a URL using HTTP protocol
 		netfile* nf = new netfile(filename_or_url + 7);
 		if (nf->m_nc) {
