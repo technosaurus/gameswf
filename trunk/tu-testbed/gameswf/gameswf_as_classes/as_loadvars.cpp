@@ -503,7 +503,7 @@ namespace gameswf
 		// remove the http:// if it exists
 
 		int start = 0;
-		if( memcmp( url, "http://", 7 ) == 0 )
+		if (strncasecmp(url, "http://", 7 ) == 0)
 		{
 			start = 7;
 		}
