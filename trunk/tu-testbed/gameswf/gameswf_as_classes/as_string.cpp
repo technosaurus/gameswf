@@ -244,6 +244,12 @@ namespace gameswf
 			len = iclamp(len, 0, utf8_len);
 		}
 
+		if (len <= 0)
+		{
+			fn.result->set_tu_string("");
+			return;
+		}
+
 		int end = start + len;
 		if (end > utf8_len)
 		{
