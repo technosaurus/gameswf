@@ -293,7 +293,7 @@ namespace gameswf
 			case SWF:
 			{
 				movie_definition*	md = get_player()->create_movie(file_name.c_str());
-				if (md)
+				if (md && md->get_frame_count() > 0)
 				{
 					return target->replace_me(md);
 				}
