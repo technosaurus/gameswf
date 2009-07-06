@@ -108,6 +108,15 @@ public:
 	// read/write a single byte
 	exported_module Uint8 	read_byte() { return read8(); }
 	exported_module void	write_byte(Uint8 u) { write8(u); }
+
+	exported_module int	size()
+	{
+		int current = get_position();
+		go_to_end();
+		int file_size = get_position();
+		set_position(current);
+		return file_size;
+	}
 	
 	// Read/write a byte buffer.
 	// Returns number of bytes read/written.
