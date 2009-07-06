@@ -888,6 +888,19 @@ namespace gameswf
 			default:
 				break;
 
+			case M_MOUSE_MOVE:
+			{
+				if (val.is_function())
+				{
+					m_root->add_mouse_listener(this);
+				}
+				else
+				{
+					m_root->remove_mouse_listener(this);
+				}
+				break;
+			}
+		
 			case M_ENABLED:
 			{
 				as_value new_val(val);

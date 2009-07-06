@@ -265,6 +265,7 @@ namespace gameswf
 		M_GLOBAL,
 		M_ENABLED,
 		M_PASSWORD,
+		M_MOUSE_MOVE,
 
 		AS_STANDARD_MEMBER_COUNT
 	};
