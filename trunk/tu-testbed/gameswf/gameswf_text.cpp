@@ -783,37 +783,37 @@ namespace gameswf
 			m_world_matrix = mat;
 			format_text();
 		}
-		
+
+		// @@ hm, should we apply the color xform?  It seems logical; need to test. 
+		// cxform       cx = get_world_cxform(); 
+
+		// Show white background + black bounding box. 
+		render::set_matrix(mat); 
+
+		point   coords[4]; 
+		coords[0] = m_def->m_rect.get_corner(0); 
+		coords[1] = m_def->m_rect.get_corner(1); 
+		coords[2] = m_def->m_rect.get_corner(3); 
+		coords[3] = m_def->m_rect.get_corner(2); 
+
+		coord_component icoords[18] = 
+		{ 
+			// strip (fill in) 
+			(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
+			(coord_component) coords[1].m_x, (coord_component) coords[1].m_y, 
+			(coord_component) coords[2].m_x, (coord_component) coords[2].m_y, 
+			(coord_component) coords[3].m_x, (coord_component) coords[3].m_y, 
+
+			// outline 
+			(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
+			(coord_component) coords[1].m_x, (coord_component) coords[1].m_y, 
+			(coord_component) coords[3].m_x, (coord_component) coords[3].m_y, 
+			(coord_component) coords[2].m_x, (coord_component) coords[2].m_y, 
+			(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
+		}; 
+
 		if (m_def->m_border == true) 
 		{ 
-			// @@ hm, should we apply the color xform?  It seems logical; need to test. 
-			// cxform       cx = get_world_cxform(); 
-
-			// Show white background + black bounding box. 
-			render::set_matrix(mat); 
-
-			point   coords[4]; 
-			coords[0] = m_def->m_rect.get_corner(0); 
-			coords[1] = m_def->m_rect.get_corner(1); 
-			coords[2] = m_def->m_rect.get_corner(3); 
-			coords[3] = m_def->m_rect.get_corner(2); 
-
-			coord_component icoords[18] = 
-			{ 
-				// strip (fill in) 
-				(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
-				(coord_component) coords[1].m_x, (coord_component) coords[1].m_y, 
-				(coord_component) coords[2].m_x, (coord_component) coords[2].m_y, 
-				(coord_component) coords[3].m_x, (coord_component) coords[3].m_y, 
-
-				// outline 
-				(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
-				(coord_component) coords[1].m_x, (coord_component) coords[1].m_y, 
-				(coord_component) coords[3].m_x, (coord_component) coords[3].m_y, 
-				(coord_component) coords[2].m_x, (coord_component) coords[2].m_y, 
-				(coord_component) coords[0].m_x, (coord_component) coords[0].m_y, 
-			}; 
-
 			render::fill_style_color(0,	m_background_color);
 			render::draw_mesh_strip(&icoords[0], 4); 
 
@@ -822,9 +822,18 @@ namespace gameswf
 			render::draw_line_strip(&icoords[8], 5); 
 		} 
 
+		//  text should not exceed the bounds of the box
+		render::begin_submit_mask();
+		render::fill_style_color(0,	m_background_color);
+		render::draw_mesh_strip(&icoords[0], 4); 
+		render::end_submit_mask();
+
 		// Draw our actual text. 
 		display_glyph_records(matrix::identity, this, m_text_glyph_records, 
 			m_def->m_root_def); 
+
+		// turn off mask
+		render::disable_mask();
 
 		if (m_has_focus) 
 		{ 
@@ -1793,7 +1802,7 @@ namespace gameswf
 			rec.m_glyphs.push_back(g);
 
 			m_x += g.m_glyph_advance;
-			if (m_x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE) // && m_def->m_multiline == true)
+			if (m_x >= m_def->m_rect.width() - m_right_margin - WIDTH_FUDGE && m_def->m_multiline == true)
 			{
 				// Whoops, we just exceeded the box width.  Do word-wrap.
 
