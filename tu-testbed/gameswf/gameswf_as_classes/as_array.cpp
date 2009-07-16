@@ -446,7 +446,11 @@ namespace gameswf
 	// Insert the given value at the end of the array.
 	{
 		as_value index(size());
-		set_member(index.to_tu_stringi(), val);
+
+		as_value enum_val(val);
+		enum_val.set_flags(0);
+
+		set_member(index.to_tu_stringi(), enum_val);
 	}
 
 	void as_array::remove(int index, as_value* val)
