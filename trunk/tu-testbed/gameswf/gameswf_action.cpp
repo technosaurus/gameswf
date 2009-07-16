@@ -1237,7 +1237,10 @@ namespace gameswf
 					// Set members
 					for (int i = 0; i < n; i++)
 					{
-						obj->builtin_member(env->top(1).to_tu_string(), env->top(0));
+						// a new item must be ENUM
+//						obj->builtin_member(env->top(1).to_tu_string(), env->top(0));
+						obj->set_member(env->top(1).to_tu_string(), env->top(0));
+
 						env->drop(2);
 					}
 
