@@ -298,10 +298,20 @@ namespace gameswf
 	as_object*	as_value::to_object() const
 	// Return value as an object.
 	{
-		if (m_type == OBJECT)
+		switch (m_type)
 		{
-			// OK.
-			return m_object;
+			case OBJECT:
+				return m_object;
+
+			case PROPERTY:
+			{
+				as_value val;
+				get_property(&val);
+				return val.to_object();
+			}
+
+			default:
+				break;
 		}
 		return NULL;
 	}
@@ -309,10 +319,20 @@ namespace gameswf
 	as_function*	as_value::to_function() const
 	// Return value as an function.
 	{
-		if (m_type == OBJECT)
+		switch (m_type)
 		{
-			// OK.
-			return cast_to<as_function>(m_object);
+			case OBJECT:
+				return cast_to<as_function>(m_object);
+
+			case PROPERTY:
+			{
+				as_value val;
+				get_property(&val);
+				return val.to_function();
+			}
+
+			default:
+				break;
 		}
 		return NULL;
 	}
@@ -884,20 +904,25 @@ namespace gameswf
 
 	void	as_property::set(as_object* target, const as_value& val)
 	{
-		assert(target);
-
-		as_environment env(target->get_player());
-		env.push(val);
-		if (m_setter != NULL)
+		if (target != NULL)
 		{
-			gc_ptr<as_object> tar = target;
-			(*m_setter.get_ptr())(fn_call(NULL, tar.get_ptr(),	&env, 1, env.get_top_index()));
+			as_environment env(target->get_player());
+			env.push(val);
+			if (m_setter != NULL)
+			{
+				gc_ptr<as_object> tar = target;
+				(*m_setter.get_ptr())(fn_call(NULL, tar.get_ptr(),	&env, 1, env.get_top_index()));
+			}
 		}
 	}
 
 	void as_property::get(as_object* target, as_value* val) const
 	{
-		assert(target);
+		if (target == NULL)
+		{
+			val->set_undefined();
+			return;
+		}
 
 		// env is used when m_getter->m_env is NULL
 		as_environment env(target->get_player());
