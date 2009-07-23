@@ -663,9 +663,6 @@ namespace gameswf
 		m_display_list.add_display_object( ch.get_ptr(), depth, replace_if_depth_is_occupied, color_transform,
 			matrix, ratio, clip_depth, blend_mode);
 
-		// child clip only
-		ch->on_event(event_id::CONSTRUCT);	// tested, ok
-
 		assert(ch == NULL || gc_collector::debug_get_ref_count(ch) > 1);
 		return ch.get_ptr();
 	}

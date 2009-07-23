@@ -22,12 +22,12 @@ namespace gameswf
 	int sdl_thread_start_func(void* ptr);
 	struct tu_thread : public ref_counted
 	{
-		tu_thread(void (*fn)(void *), void* data);
-		~tu_thread();
+		exported_module tu_thread(void (*fn)(void *), void* data);
+		exported_module ~tu_thread();
 
-		void wait();
-		void kill();
-		void start();
+		exported_module void wait();
+		exported_module void kill();
+		exported_module void start();
 
 	private:
 		SDL_Thread* m_thread;
@@ -50,12 +50,12 @@ namespace gameswf
 	struct tu_autolock
 	{
 		tu_mutex& m_mutex;
-		tu_autolock(tu_mutex& mutex) : m_mutex(mutex)
+		exported_module tu_autolock(tu_mutex& mutex) : m_mutex(mutex)
 		{
 			m_mutex.lock();
 		}
 
-		~tu_autolock()
+		exported_module ~tu_autolock()
 		{
 			m_mutex.unlock();
 		}
@@ -63,13 +63,13 @@ namespace gameswf
 
 	struct tu_condition
 	{
-		tu_condition();
-		~tu_condition();
+		exported_module tu_condition();
+		exported_module ~tu_condition();
 
 		// Wait on the condition variable cond and unlock the provided mutex.
 		// The mutex must the locked before entering this function.
-		void wait();
-		void signal();
+		exported_module void wait();
+		exported_module void signal();
 
 		SDL_cond* m_cond;
 		tu_mutex m_cond_mutex;
@@ -86,12 +86,12 @@ namespace gameswf
 	void* pthread_start_func(void* ptr);
 	struct tu_thread : public ref_counted
 	{
-		tu_thread(void (*fn)(void *), void* data);
-		~tu_thread();
+		exported_module tu_thread(void (*fn)(void *), void* data);
+		exported_module ~tu_thread();
 
-		void wait();
-		void kill();
-		void start();
+		exported_module void wait();
+		exported_module void kill();
+		exported_module void start();
 
 	private:
 		pthread_t m_thread;
@@ -114,13 +114,13 @@ namespace gameswf
 	struct tu_autolock
 	{
 		tu_mutex& m_mutex;
-		tu_autolock(tu_mutex& mutex) :
+		exported_module tu_autolock(tu_mutex& mutex) :
 		m_mutex(mutex)
 		{
 			m_mutex.lock();
 		}
 
-		~tu_autolock()
+		exported_module ~tu_autolock()
 		{
 			m_mutex.unlock();
 		}
@@ -128,13 +128,13 @@ namespace gameswf
 
 	struct tu_condition
 	{
-		tu_condition();
-		~tu_condition();
+		exported_module tu_condition();
+		exported_module ~tu_condition();
 
 		// Wait on the condition variable cond and unlock the provided mutex.
 		// The mutex must the locked before entering this function.
-		void wait();
-		void signal();
+		exported_module void wait();
+		exported_module void signal();
 
 		pthread_cond_t m_cond;
 		tu_mutex m_cond_mutex;
@@ -147,16 +147,16 @@ namespace gameswf
 {
 	struct tu_thread : public ref_counted
 	{
-		tu_thread(void (*fn)(void *), void* data)
+		exported_module tu_thread(void (*fn)(void *), void* data)
 		{
 			IF_VERBOSE_ACTION(log_msg("gameswf is in single thread mode\n"));
 			(fn)(data);
 		}
 
-		~tu_thread() {}
+		exported_module ~tu_thread() {}
 
-		void wait() {}
-		void kill() {}
+		exported_module void wait() {}
+		exported_module void kill() {}
 	};
 
 	struct tu_mutex
@@ -169,23 +169,23 @@ namespace gameswf
 
 	struct tu_condition
 	{
-		tu_condition() {}
-		~tu_condition() {}
+		exported_module tu_condition() {}
+		exported_module ~tu_condition() {}
 
-		void wait() {}
-		void signal() {}
+		exported_module void wait() {}
+		exported_module void signal() {}
 	};
 
 	struct tu_autolock
 	{
 		tu_mutex& m_mutex;
-		tu_autolock(tu_mutex& mutex) :
+		exported_module tu_autolock(tu_mutex& mutex) :
 		m_mutex(mutex)
 		{
 			m_mutex.lock();
 		}
 
-		~tu_autolock()
+		exported_module ~tu_autolock()
 		{
 			m_mutex.unlock();
 		}
