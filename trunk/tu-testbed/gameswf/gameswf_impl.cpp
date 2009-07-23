@@ -147,6 +147,9 @@ namespace gameswf
 			as_object* proto = ch->create_proto(m_registered_class_constructor.get_ptr());
 			UNUSED(proto);
 
+			// exec constructor
+			ch->on_event(event_id::CONSTRUCT);	// set component args
+
 			as_environment env(get_player());
 			call_method(m_registered_class_constructor.get_ptr(), &env, ch, 0, 0);
 		}
