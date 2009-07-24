@@ -631,8 +631,14 @@ namespace gameswf
 
 		builtin_member("setTextFormat", set_textformat);
 
-		// Initial actions are moved to 'on_event(CONSTRUCT)'
-		// because in this point the character's matrix is not set yet
+		// first set default text value
+		set_text(m_def->m_default_text.c_str());
+
+		// then reset VAR / TEXT_FIELD value
+		set_text_value(to_string());
+
+		m_dummy_style.push_back(fill_style());
+		reset_bounding_box(0, 0);
 	}
 
 	edit_text_character::~edit_text_character() 
@@ -845,27 +851,13 @@ namespace gameswf
 
 	bool edit_text_character::on_event(const event_id& id) 
 	{ 
-		if (m_def->m_readonly == true && id.m_id != event_id::CONSTRUCT) 
+		if (m_def->m_readonly == true) 
 		{ 
 			return false; 
 		} 
 
 		switch (id.m_id) 
 		{ 
-			case event_id::CONSTRUCT:
-			{
-				// first set default text value
-				set_text(m_def->m_default_text.c_str());
-
-				// then reset VAR / TEXT_FIELD value
-				set_text_value(to_string());
-
-				m_dummy_style.push_back(fill_style());
-				reset_bounding_box(0, 0);
-
-				break;
-			}
-
 			case event_id::SETFOCUS: 
 			{ 
 				get_root()->set_active_entity(this);
