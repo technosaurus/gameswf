@@ -101,8 +101,6 @@ namespace gameswf
 		{
 			return m_movie_def->get_character_def(id);
 		}
-//		virtual void	generate_font_bitmaps() { assert(0); }
-
 
 		virtual void	output_cached_data(tu_file* out, const cache_options& options)
 		{

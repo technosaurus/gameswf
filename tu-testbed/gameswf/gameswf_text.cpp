@@ -162,7 +162,7 @@ namespace gameswf
 				mat.concatenate_translation(x, y);
 				mat.concatenate_scale(scale);
 
-				if (g.m_glyph_index == -1 && g.m_fontlib_glyph == NULL)
+				if (g.m_glyph_index == -1 && g.m_bitmap_info == NULL)
 				{
 					// Invalid glyph; render it as an empty box.
 					render::set_matrix(mat);
@@ -185,7 +185,7 @@ namespace gameswf
 					continue;
 				}
 
-				if (g.m_fontlib_glyph != NULL)
+				if (g.m_bitmap_info != NULL)
 				{
 					// device font
 
@@ -202,8 +202,8 @@ namespace gameswf
 					bounds.m_y_min = - g.m_bounds.m_y_min;
 
 					float s_EM_scale = 1024.0f / g.m_fontsize;
-					float	xscale = g.m_fontlib_glyph->get_width() * s_EM_scale;
-					float yscale = g.m_fontlib_glyph->get_height() * s_EM_scale;
+					float	xscale = g.m_bitmap_info->get_width() * s_EM_scale;
+					float yscale = g.m_bitmap_info->get_height() * s_EM_scale;
 
 					if (fnt->is_define_font3())
 					{
@@ -220,7 +220,7 @@ namespace gameswf
 					yscale = mat.get_y_scale();
 					float radians = mat.get_rotation();
 					mat.set_scale_rotation(yscale, yscale, radians);
-					render::draw_bitmap(mat, g.m_fontlib_glyph.get_ptr(), bounds, uv_bounds, transformed_color);
+					render::draw_bitmap(mat, g.m_bitmap_info.get_ptr(), bounds, uv_bounds, transformed_color);
 				}
 				else
 				if (g.m_shape_glyph != NULL)

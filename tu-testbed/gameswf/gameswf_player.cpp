@@ -41,13 +41,22 @@
 namespace gameswf
 {
 
-	void close_glyph_provider();
 	void clears_tag_loaders();
 	void clear_disasm();
 
 	//
 	//	gameswf's statics
 	//
+
+	static glyph_provider* s_glyph_provider;
+	void set_glyph_provider(glyph_provider* gp)
+	{
+		s_glyph_provider = gp;
+	}
+	glyph_provider* get_glyph_provider()
+	{
+		return s_glyph_provider;
+	}
 
 	static bool	s_use_cached_movie_def = true;
 
@@ -482,9 +491,10 @@ namespace gameswf
 			clears_tag_loaders();
 			clear_shared_libs();
 			clear_registered_type_handlers();
-			close_glyph_provider();
 			clear_standard_method_map();
 			clear_disasm();
+			delete s_glyph_provider;
+			s_glyph_provider = NULL;
 		}
 
 		gameswf_engine_mutex().unlock();
@@ -745,8 +755,6 @@ namespace gameswf
 			{
 				// Can't open cache file; don't sweat it.
 				IF_VERBOSE_PARSE(log_msg("note: couldn't open cache file '%s'\n", cache_filename.c_str()));
-
-//				m->generate_font_bitmaps();	// can't read cache, so generate font texture data.
 			}
 			else
 			{

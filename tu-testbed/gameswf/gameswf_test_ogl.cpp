@@ -598,7 +598,12 @@ int	main(int argc, char *argv[])
 			}
 			render = gameswf::create_render_handler_ogl();
 			gameswf::set_render_handler(render);
-			gameswf::create_glyph_provider();
+
+#if TU_CONFIG_LINK_TO_FREETYPE == 1
+			gameswf::set_glyph_provider(gameswf::create_glyph_provider_freetype());
+#else
+			//	TODO:			gameswf::glyph_provider* gp = gameswf::create_glyph_provider_tu();
+#endif
 		}
 
 		//

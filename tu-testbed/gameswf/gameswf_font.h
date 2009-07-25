@@ -24,14 +24,17 @@ namespace gameswf
 	struct stream;
 	struct bitmap_info;
 
+	// Struct for holding (cached) textured glyph info.
 	struct glyph
 	{
 		int m_glyph_index;
 		float	m_glyph_advance;
 		gc_ptr<shape_character_def>	m_shape_glyph;
-		gc_ptr<bitmap_info> m_fontlib_glyph;
+		gc_ptr<bitmap_info> m_bitmap_info;
 		rect m_bounds;
 		int m_fontsize;
+		rect	m_uv_bounds;
+		point	m_uv_origin;	// the origin of the glyph box, in uv coords
 
 		glyph() :
 			m_glyph_index(-1),
@@ -41,6 +44,17 @@ namespace gameswf
 	
 		~glyph()
 		{
+		}
+
+		bool	is_renderable() const
+		// Return true if this can be used for rendering.
+		{
+			return m_bitmap_info != NULL;
+		}
+
+		void	set_bitmap_info(bitmap_info* bi)
+		{
+			m_bitmap_info = bi;
 		}
 
 	};
