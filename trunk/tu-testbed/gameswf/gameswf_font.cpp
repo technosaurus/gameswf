@@ -309,13 +309,18 @@ namespace gameswf
 		g->m_glyph_index = -1;
 		g->m_glyph_advance = 512;
 
-		// first try font device
+		if (m_code_table.get(code, &g->m_glyph_index))
+		{
+			g->m_shape_glyph = m_glyphs[g->m_glyph_index];
+		}
+
+		// first try glyph provider
 		glyph_provider* fp = get_glyph_provider();
 		if (fp)
 		{
-			g->m_fontlib_glyph = fp->get_char_image(code, m_fontname, m_is_bold, m_is_italic, 
+			g->m_bitmap_info = fp->get_char_image(g->m_shape_glyph, code, m_fontname, m_is_bold, m_is_italic, 
 				fontsize,	&g->m_bounds, &g->m_glyph_advance);
-			if (g->m_fontlib_glyph != NULL)
+			if (g->m_bitmap_info != NULL)
 			{
 				if (is_define_font3())
 				{
@@ -325,10 +330,9 @@ namespace gameswf
 			}
 		}
 
-		// then try the embedded character
-		if (m_code_table.get(code, &g->m_glyph_index))
+		// then use an embedded character
+		if (g->m_glyph_index >= 0)
 		{
-			g->m_shape_glyph = m_glyphs[g->m_glyph_index];
 			if (g->m_glyph_index < m_advance_table.size())
 			{
 				g->m_glyph_advance = m_advance_table[g->m_glyph_index];

@@ -23,13 +23,9 @@
 namespace gameswf
 {
 
-	static glyph_provider* s_glyph_provider = NULL;
-	glyph_provider* get_glyph_provider()
-	{
-		return s_glyph_provider;
-	}
-
 #if TU_CONFIG_LINK_TO_FREETYPE == 1
+
+	static FT_Library	m_lib;
 
 	bool get_fontfile(const char* font_name, tu_string& file_name, bool is_bold, bool is_italic)
 	// gets font file name by font name
@@ -173,46 +169,29 @@ namespace gameswf
 	//	glyph provider implementation
 	//
 
-	static FT_Library	s_freetype_lib;
-
-	void create_glyph_provider()
-	{
-		int	error = FT_Init_FreeType(&s_freetype_lib);
-		if (error)
-		{
-			fprintf(stderr, "can't init FreeType!  error = %d\n", error);
-			exit(1);
-		}
-		s_glyph_provider = new glyph_provider(s_freetype_lib);
-	}
-
-	void close_glyph_provider()
-	{
-		delete s_glyph_provider;
-
-		int error = FT_Done_FreeType(s_freetype_lib);
-		if (error)
-		{
-			fprintf(stderr, "can't close FreeType!  error = %d\n", error);
-		}
-		s_freetype_lib = NULL;
-	}
-
-	glyph_provider::glyph_provider(FT_Library	lib) :
-		m_lib(lib),
+	glyph_freetype_provider::glyph_freetype_provider() :
 		m_scale(0)
 	{
 	}
 
-	glyph_provider::~glyph_provider()
+	glyph_freetype_provider::~glyph_freetype_provider()
 	{
+		m_face_entity.clear();
+
+		int error = FT_Done_FreeType(m_lib);
+		if (error)
+		{
+			fprintf(stderr, "FreeType provider: can't close FreeType!  error = %d\n", error);
+		}
+		m_lib = NULL;
 	}
 
 	//
 	// Get image of character as bitmap
 	//
 
-	bitmap_info* glyph_provider::get_char_image(Uint16 code, const tu_string& fontname, bool is_bold,
+	bitmap_info* glyph_freetype_provider::get_char_image(character_def* shape_glyph, Uint16 code, 
+			const tu_string& fontname, bool is_bold,
 			bool is_italic, int fontsize, rect* bounds, float* advance)
 	{
 		face_entity* fe = get_face_entity(fontname, is_bold, is_italic);
@@ -262,7 +241,7 @@ namespace gameswf
 		return ge->m_bi.get_ptr();
 	}
 
-	face_entity* glyph_provider::get_face_entity(const tu_string& fontname, bool is_bold, bool is_italic)
+	face_entity* glyph_freetype_provider::get_face_entity(const tu_string& fontname, bool is_bold, bool is_italic)
 	{
 		// form hash key
 		tu_string key = fontname;
@@ -314,7 +293,7 @@ namespace gameswf
 		return fe.get_ptr();
 	}
 
-	image::alpha* glyph_provider::draw_bitmap(const FT_Bitmap& bitmap)
+	image::alpha* glyph_freetype_provider::draw_bitmap(const FT_Bitmap& bitmap)
 	{
 		// You must use power-of-two dimensions!!
 		int	w = 1; while (w <= bitmap.width) { w <<= 1; }
@@ -342,36 +321,36 @@ namespace gameswf
 	//
 
 	// static
-	int glyph_provider::move_to_callback(FT_CONST FT_Vector* to, void* user)
+	int glyph_freetype_provider::move_to_callback(FT_CONST FT_Vector* to, void* user)
 	{
-		glyph_provider* _this = static_cast<glyph_provider*>(user);
+		glyph_freetype_provider* _this = static_cast<glyph_freetype_provider*>(user);
 		_this->m_canvas->move_to(to->x * _this->m_scale, - to->y * _this->m_scale);
 		return 0;
 	}
 	
 	// static 
-	int glyph_provider::line_to_callback(FT_CONST FT_Vector* to, void* user)
+	int glyph_freetype_provider::line_to_callback(FT_CONST FT_Vector* to, void* user)
 	{
-		glyph_provider* _this = static_cast<glyph_provider*>(user);
+		glyph_freetype_provider* _this = static_cast<glyph_freetype_provider*>(user);
 		_this->m_canvas->line_to(to->x * _this->m_scale, - to->y * _this->m_scale);
 		return 0;
 	}
 
 	//static
-	int glyph_provider::conic_to_callback(FT_CONST FT_Vector* ctrl, FT_CONST FT_Vector* to,
+	int glyph_freetype_provider::conic_to_callback(FT_CONST FT_Vector* ctrl, FT_CONST FT_Vector* to,
 		void* user)
 	{
-		glyph_provider* _this = static_cast<glyph_provider*>(user);
+		glyph_freetype_provider* _this = static_cast<glyph_freetype_provider*>(user);
 		_this->m_canvas->curve_to(ctrl->x * _this->m_scale, - ctrl->y * _this->m_scale, 
 				to->x * _this->m_scale, - to->y * _this->m_scale);
 		return 0;
 	}
 
 	//static
-	int glyph_provider::cubic_to_callback(FT_CONST FT_Vector* ctrl1, FT_CONST FT_Vector* ctrl2,
+	int glyph_freetype_provider::cubic_to_callback(FT_CONST FT_Vector* ctrl1, FT_CONST FT_Vector* ctrl2,
 			FT_CONST FT_Vector* to, void* user)
 	{
-		glyph_provider* _this = static_cast<glyph_provider*>(user);
+		glyph_freetype_provider* _this = static_cast<glyph_freetype_provider*>(user);
 		float x = float(ctrl1->x + ((ctrl2->x - ctrl1->x) * 0.5));
 		float y = float(ctrl1->y + ((ctrl2->y - ctrl1->y) * 0.5));
 		_this->m_canvas->curve_to(x * _this->m_scale, - y * _this->m_scale, 
@@ -383,7 +362,7 @@ namespace gameswf
 	// Get image of character as shape
 	//
 
-	shape_character_def* glyph_provider::get_char_def(Uint16 code, 
+	shape_character_def* glyph_freetype_provider::get_char_def(Uint16 code, 
 		const char* fontname, bool is_bold, bool is_italic, int fontsize,
 		rect* box, float* advance)
 	{
@@ -427,11 +406,16 @@ namespace gameswf
 		return 0;
 	}
 
-#else	// TU_CONFIG_LINK_TO_FREETYPE == 1
-
-	void create_glyph_provider() {}
-	void close_glyph_provider() {}
-
+	glyph_provider*	create_glyph_provider_freetype()
+	{
+		int	error = FT_Init_FreeType(&m_lib);
+		if (error)
+		{
+			fprintf(stderr, "FreeType provider: can't init FreeType!  error = %d\n", error);
+			return NULL;
+		}
+		return new glyph_freetype_provider();
+	}
 #endif
 
 }	// end of namespace gameswf

@@ -342,6 +342,9 @@
 				RelativePath="..\..\gameswf_font.cpp">
 			</File>
 			<File
+				RelativePath="..\..\gameswf_fontlib.cpp">
+			</File>
+			<File
 				RelativePath="..\..\gameswf_freetype.cpp">
 			</File>
 			<File
@@ -610,6 +613,9 @@
 			</File>
 			<File
 				RelativePath="..\..\gameswf_font.h">
+			</File>
+			<File
+				RelativePath="..\..\gameswf_fontlib.h">
 			</File>
 			<File
 				RelativePath="..\..\gameswf_freetype.h">

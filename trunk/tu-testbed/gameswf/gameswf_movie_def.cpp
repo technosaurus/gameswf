@@ -17,6 +17,7 @@
 #include "gameswf/gameswf_font.h"
 #include "gameswf/gameswf_sound.h"
 #include "gameswf/gameswf_stream.h"
+#include "gameswf/gameswf_fontlib.h"
 #include "base/jpeg.h"
 #include "base/zlib_adapter.h"
 
@@ -544,7 +545,7 @@ namespace gameswf
 
 
 	void	movie_def_impl::get_owned_fonts(array<font*>* fonts)
-		// Fill up *fonts with fonts that we own.
+	// Fill up *fonts with fonts that we own.
 	{
 		assert(fonts);
 		fonts->resize(0);
@@ -579,15 +580,14 @@ namespace gameswf
 	}
 
 
-//	void	movie_def_impl::generate_font_bitmaps()
-		// Generate bitmaps for our fonts, if necessary.
-//	{
+	void	movie_def_impl::generate_font_bitmaps()
+	// Generate bitmaps for our fonts, if necessary.
+	{
 		// Collect list of fonts.
-//		array<font*>	fonts;
-//		get_owned_fonts(&fonts);
-//		fontlib::generate_font_bitmaps(fonts, this);
-//	}
-
+		array<font*>	fonts;
+		get_owned_fonts(&fonts);
+//		generate_font_bitmaps(fonts, this);
+	}
 
 	// Increment this when the cache data format changes.
 #define CACHE_FILE_VERSION 6

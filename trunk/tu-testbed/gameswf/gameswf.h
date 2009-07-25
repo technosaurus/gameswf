@@ -843,6 +843,30 @@ namespace gameswf
 		int	process_swf(tu_file* swf_out, tu_file* swf_in, const process_options& options);
 	}
 
+	// helper
+	struct glyph_entity
+	{
+		gc_ptr<bitmap_info> m_bi;
+		float m_advance;
+		rect m_bounds;
+	};
+
+	struct glyph_provider : public ref_counted
+	{
+		glyph_provider() {}
+		virtual ~glyph_provider() {}
+		
+		virtual bitmap_info* get_char_image(character_def* shape_glyph, Uint16 code, 
+			const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
+			rect* bounds, float* advance) = 0;
+
+	};
+
+	exported_module glyph_provider*	get_glyph_provider();
+	exported_module void	set_glyph_provider(glyph_provider* gp);
+	exported_module glyph_provider*	create_glyph_provider_freetype();
+	exported_module glyph_provider*	create_glyph_provider_tu();
+
 }	// namespace gameswf
 
 
