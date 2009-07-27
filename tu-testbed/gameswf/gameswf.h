@@ -844,7 +844,7 @@ namespace gameswf
 	}
 
 	// helper
-	struct glyph_entity
+	struct glyph_entity : public ref_counted
 	{
 		gc_ptr<bitmap_info> m_bi;
 		float m_advance;
