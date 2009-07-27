@@ -579,18 +579,8 @@ namespace gameswf
 		}
 	}
 
-
-	void	movie_def_impl::generate_font_bitmaps()
-	// Generate bitmaps for our fonts, if necessary.
-	{
-		// Collect list of fonts.
-		array<font*>	fonts;
-		get_owned_fonts(&fonts);
-//		generate_font_bitmaps(fonts, this);
-	}
-
 	// Increment this when the cache data format changes.
-#define CACHE_FILE_VERSION 6
+	#define CACHE_FILE_VERSION 6
 
 	void	movie_def_impl::output_cached_data(tu_file* out, const cache_options& options)
 	// Dump our cached data into the given stream.
