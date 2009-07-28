@@ -228,7 +228,7 @@ namespace gameswf
 		void display();
 		virtual bool on_event(const event_id& id);
 		virtual bool can_handle_mouse_event();
-		character*  get_topmost_mouse_entity(float x, float y);
+		virtual bool get_topmost_mouse_entity( character * &te, float x, float y);
 		const tu_string&	get_var_name() const;
 		void	reset_bounding_box(float x, float y);
 		void	set_text_value(const tu_string& new_text);

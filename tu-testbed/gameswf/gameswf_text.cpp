@@ -975,7 +975,7 @@ namespace gameswf
 		return m_def->m_readonly == false;
 	}
 
-	character*  edit_text_character::get_topmost_mouse_entity(float x, float y) 
+	bool edit_text_character::get_topmost_mouse_entity( character * &te, float x, float y)
 	{ 
 		if (get_visible() == false) 
 		{ 
@@ -988,10 +988,12 @@ namespace gameswf
 		m.transform_by_inverse(&p, point(x, y)); 
 
 		if (m_def->m_rect.point_test(p.m_x, p.m_y)) 
-		{ 
-			return this; 
+		{
+			te = this;
+			return true; 
 		} 
-		return NULL; 
+
+		return false; 
 	} 
 
 	const tu_string&	edit_text_character::get_var_name() const

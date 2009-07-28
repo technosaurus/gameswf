@@ -86,7 +86,7 @@ namespace gameswf
 			do_display_callback();
 		}
 
-		virtual character*	get_topmost_mouse_entity(float x, float y)
+		virtual bool get_topmost_mouse_entity( character * &te, float x, float y)
 		{
 			assert(get_visible());	// caller should check this.
 
@@ -97,9 +97,10 @@ namespace gameswf
 			if (m_def->point_test_local(p.m_x, p.m_y))
 			{
 				// The mouse is inside the shape.
-				return this;
+				te = this;
+				return true;
 			}
-			return NULL;
+			return false;
 		}
 	};
 

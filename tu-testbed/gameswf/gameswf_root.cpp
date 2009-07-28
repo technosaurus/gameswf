@@ -590,7 +590,9 @@ namespace gameswf
 		do_mouse_drag();
 
 		// Handle the mouse.
-		m_mouse_button_state.m_topmost_entity = m_movie->get_topmost_mouse_entity(PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
+		character *te;
+		m_movie->get_topmost_mouse_entity(te, PIXELS_TO_TWIPS(m_mouse_x), PIXELS_TO_TWIPS(m_mouse_y));
+		m_mouse_button_state.m_topmost_entity = te;
 
 		m_mouse_button_state.m_mouse_button_state_current = (m_mouse_buttons & 1);
 		generate_mouse_button_events(&m_mouse_button_state);
