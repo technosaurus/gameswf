@@ -16,14 +16,7 @@
 
 namespace gameswf
 {
-
-	// Return the pixel height of text, such that the
-	// texture glyphs are sampled 1-to-1 texels-to-pixels.
-	// I.e. the height of the glyph box, in texels.
-	float	get_glyph_max_height(const font* f);
-
 	typedef hash<int, glyph_entity> glyph_array;
-
 	struct glyph_provider_tu : public glyph_provider
 	{
 		glyph_provider_tu();
@@ -33,9 +26,8 @@ namespace gameswf
 			const tu_string& fontname, bool is_bold, bool is_italic, int fontsize,
 			rect* bounds, float* advance);
 
-	private:
-		
-		stringi_hash<glyph_array*> m_glyph;	// fontame-glyphs-glyph
+		private:
+			stringi_hash<glyph_array*> m_glyph;	// fontame-glyphs-glyph
 	};
 
 }	// end namespace gameswf

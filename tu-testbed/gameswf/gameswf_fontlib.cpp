@@ -24,8 +24,9 @@ namespace gameswf
 {
 
 	// Size (in TWIPS) of the box that the glyph should stay within.
-//	static float	s_rendering_box = 1536.0f;	// this *should* be 1024, but some glyphs in some fonts exceed it!
-	static float	s_rendering_box = 1024;	// this *should* be 1024, but some glyphs in some fonts exceed it!
+
+	static const int	OVERSAMPLE_BITS = 2;
+	static const int	OVERSAMPLE_FACTOR = (1 << OVERSAMPLE_BITS);
 
 	// The nominal size of the final antialiased glyphs stored in
 	// the texture.  This parameter controls how large the very
@@ -33,16 +34,10 @@ namespace gameswf
 	// considerably smaller.  This is also the parameter that
 	// controls the tradeoff between texture RAM usage and
 	// sharpness of large text.
-	static int	s_glyph_nominal_size =
-#ifndef GAMESWF_FONT_NOMINAL_GLYPH_SIZE_DEFAULT
-	96
-#else
-	GAMESWF_FONT_NOMINAL_GLYPH_SIZE_DEFAULT
-#endif
-	;
+	static int	s_glyph_nominal_size = 96;
 
-	static const int	OVERSAMPLE_BITS = 2;
-	static const int	OVERSAMPLE_FACTOR = (1 << OVERSAMPLE_BITS);
+	static int	s_rendering_box = OVERSAMPLE_FACTOR * s_glyph_nominal_size;
+	static int	s_image_box = s_glyph_nominal_size;
 
 	// The dimensions of the textures that the glyphs get packed into.
 	static const int	GLYPH_CACHE_TEXTURE_SIZE = 256;
@@ -61,6 +56,7 @@ namespace gameswf
 	//
 
 	static Uint8*	s_render_buffer = NULL;
+	static Uint8*	s_image_buffer = NULL;	// antialiased image from s_render_buffer
 	static matrix	s_render_matrix;
 
 	// Integer-bounded 2D rectangle.
@@ -298,9 +294,7 @@ namespace gameswf
 
 			if (xr > xl)
 			{
-				memset(s_render_buffer + y * (int)s_rendering_box + xl,
-				       255,
-				       xr - xl);
+				memset(s_render_buffer + y * s_rendering_box + xl, 255, xr - xl);
 			}
 		}
 	}
@@ -338,7 +332,7 @@ namespace gameswf
 	};
 
 	// for debugging
-	static void print_glyph()
+	static void print_glyph(Uint8* data, int w, int h)
 	{
 		static int s_image_sequence = 0;
 		char fi[256];
@@ -346,26 +340,52 @@ namespace gameswf
 		FILE*	fp = fopen(fi, "wb");
 		if (fp)
 		{
-			fprintf(fp, "P6\n%d %d\n255\n", (int) s_rendering_box, (int) s_rendering_box);
-			for (int i = 0; i < s_rendering_box * s_rendering_box; i++)
+			fprintf(fp, "P6\n%d %d\n255\n", w, h);
+			for (int i = 0; i < w * h; i++)
 			{
-				fputc(s_render_buffer[i], fp);
-				fputc(s_render_buffer[i], fp);
-				fputc(s_render_buffer[i], fp);
+				fputc(data[i], fp);
+				fputc(data[i], fp);
+				fputc(data[i], fp);
 			}
 			fclose(fp);
 		}
 	}
 
-	static bool	render_glyph(glyph_entity* rgi, const shape_character_def* sh)
-	// Render the given outline shape into a cached font texture.
-	// Return true if the glyph is not empty; false if it's
-	// totally empty.
-	// 
-	// Return fill in the image and offset members of the given
-	// rgi.
+	static void antialias()
+	// Shrink the results down by a factor of 4x, to get antialiasing.
 	{
-		assert(rgi);
+		int ia = 0;
+		int ja = 0;
+		for (int j = 0; j < s_rendering_box; j = j + OVERSAMPLE_FACTOR)
+		{
+			ia = 0;
+			for (int i = 0; i < s_rendering_box; i = i + OVERSAMPLE_FACTOR)
+			{
+				// Sum up the contribution to this output texel.
+				int	sum = 0;
+				for (int jj = j; jj < j + OVERSAMPLE_FACTOR; jj++)
+				{
+					for (int ii = i; ii < i + OVERSAMPLE_FACTOR; ii++)
+					{
+						sum += s_render_buffer[jj * s_rendering_box + ii];	// texel
+					}
+				}
+
+				assert(ja < s_image_box);
+				assert(ia < s_image_box);
+
+				sum >>= OVERSAMPLE_FACTOR;
+				s_image_buffer[ja * s_image_box + ia] = (Uint8) sum;
+				ia++;
+			}
+			ja++;
+		}
+	}
+
+	static void	render_glyph(glyph_entity* ge, const shape_character_def* sh, int fontsize)
+	// Render the given outline shape into a antialiased bitmap
+	{
+		assert(ge);
 		assert(sh);
 		assert(s_render_buffer);
 
@@ -376,123 +396,57 @@ namespace gameswf
 		// Clear the render output to 0.
 		memset(s_render_buffer, 0, s_rendering_box * s_rendering_box);
 
+		float scale = OVERSAMPLE_FACTOR * fontsize / 1024.0f;		// the EM square is 1024 x 1024
+ 
 		// Look at glyph bounds; adjust origin to make sure
 		// the shape will fit in our output.
-		float	offset_x = 0.f;
-		float	offset_y = s_rendering_box * 20;
 		rect	glyph_bounds;
 		sh->compute_bound(&glyph_bounds);
+		float	offset_x = 0.f;
+		float	offset_y = s_rendering_box * 20;	// in twips
 		if (glyph_bounds.m_x_min < 0)
 		{
-	//		offset_x = - glyph_bounds.m_x_min;
+			offset_x -= glyph_bounds.m_x_min;
 		}
 		if (glyph_bounds.m_y_max > 0)
 		{
-	//		offset_y = s_rendering_box - glyph_bounds.m_y_max;
+			// lift
+			offset_y -= glyph_bounds.m_y_max;
 		}
 
 		s_render_matrix.set_identity();
-		s_render_matrix.concatenate_scale(1.0/20.0f);
-		s_render_matrix.concatenate_translation(offset_x, offset_y);
-//		s_render_matrix.concatenate_scale(s_glyph_render_size / s_rendering_box);
-	//	s_render_matrix.concatenate_translation(offset_x, offset_y);
+		s_render_matrix.concatenate_scale(scale / 20.f);
+		s_render_matrix.concatenate_translation(offset_x / scale, offset_y / scale);
 
 		// Tesselate & draw the shape.
 		draw_into_software_buffer	accepter;
-		sh->tesselate(s_rendering_box / s_glyph_render_size * 0.5f, &accepter);
-		print_glyph();
-		//
-		// Process the results of rendering.
-		//
+		sh->tesselate( (float) s_rendering_box / (float) s_glyph_render_size * 0.5f, &accepter);
 
-		// Shrink the results down by a factor of 4x, to get
-		// antialiasing.  Also, analyze the data boundaries.
-		bool	any_nonzero_pixels = false;
-		int	min_x = s_glyph_nominal_size;
-		int	max_x = 0;
-		int	min_y = s_glyph_nominal_size;
-		int	max_y = 0;
+		antialias();
 
-		Uint8*	output = new Uint8[s_glyph_nominal_size * s_glyph_nominal_size];
-		for (int j = 0; j < s_glyph_nominal_size; j++)
-		{
-			for (int i = 0; i < s_glyph_nominal_size; i++)
-			{
-				// Sum up the contribution to this output texel.
-				int	sum = 0;
-				for (int jj = 0; jj < OVERSAMPLE_FACTOR; jj++)
-				{
-					for (int ii = 0; ii < OVERSAMPLE_FACTOR; ii++)
-					{
-						Uint8	texel = s_render_buffer[
-							((j << OVERSAMPLE_BITS) + jj) * s_glyph_render_size
-							+ ((i << OVERSAMPLE_BITS) + ii)];
-						sum += texel;
-					}
-				}
-				sum >>= OVERSAMPLE_BITS;
-				sum >>= OVERSAMPLE_BITS;
-				if (sum > 0)
-				{
-					any_nonzero_pixels = true;
-					min_x = imin(min_x, i);
-					max_x = imax(max_x, i);
-					min_y = imin(min_y, j);
-					max_y = imax(max_y, j);
-				}
-				output[j * s_glyph_nominal_size + i] = (Uint8) sum;
-			}
-		}
+//		print_glyph(s_render_buffer, s_rendering_box, s_rendering_box);
+//		print_glyph(s_image_buffer, s_image_box, s_image_box);
 
-		if (any_nonzero_pixels)
-		{
-			// Fill in rendered_glyph_info.
-			image::alpha* im = new image::alpha(max_x - min_x + 1, max_y - min_y + 1);
-//vv			rgi->m_offset_x = offset_x / s_rendering_box * s_glyph_nominal_size - min_x;
-//vv			rgi->m_offset_y = offset_y / s_rendering_box * s_glyph_nominal_size - min_y;
+		ge->m_bi = render::create_bitmap_info_alpha(s_image_box, s_image_box, s_image_buffer);
 
-			// Copy the rendered glyph into the new image.
-			for (int j = 0, n = im->m_height; j < n; j++)
-			{
-				memcpy(
-					image::scanline(im, j),
-					output + (min_y + j) * s_glyph_nominal_size + min_x,
-					im->m_width);
-			}
-			rgi->m_bi = render::create_bitmap_info_alpha(im->m_width, im->m_height, im->m_data);
-		}
-
-		delete [] output;	// @@ TODO should keep this around longer, instead of new/delete for each glyph
-
-	//	rgi->m_image_hash = rgi->m_image->compute_hash();
-
-		return any_nonzero_pixels;
-	}
-
-	float	get_glyph_max_height(const font* f)
-	{
-		return 1024.0f; //vv / s_rendering_box * f->get_glyph_nominal_size(); //  s_glyph_nominal_size;
-	}
-
-	const char*	get_font_name(const font* f)
-	// Return the name of the given font.  (This basically exists
-	// so that font* can be opaque to the host app).
-	{
-		if (f == NULL)
-		{
-			return "<null>";
-		}
-		return f->get_name();
+		// Fill in rendered_glyph_info.
+		ge->m_bounds.m_x_min = 0;
+		ge->m_bounds.m_x_max = 1;
+		ge->m_bounds.m_y_min = 1;
+		ge->m_bounds.m_y_max = 0.9999999;
 	}
 
 	glyph_provider_tu::glyph_provider_tu()
 	{
 		s_render_buffer = new Uint8[s_rendering_box * s_rendering_box];
+		s_image_buffer = new Uint8[s_image_box * s_image_box];
 	}
 
 	glyph_provider_tu::~glyph_provider_tu()
 	{
 		delete s_render_buffer;
+		delete s_image_buffer;
+
 		for (stringi_hash<glyph_array*>::iterator it = m_glyph.begin(); it != m_glyph.end(); ++it)
 		{
 			delete it->second;
@@ -513,6 +467,8 @@ namespace gameswf
 		{
 			if (ga->get(glyph_code, &ge))
 			{
+				*bounds = ge.m_bounds;
+				*advance = ge.m_advance;
 				return ge.m_bi;
 			}
 		}
@@ -526,18 +482,16 @@ namespace gameswf
 		shape_character_def*	sh = cast_to<shape_character_def>(shape_glyph);
 		if (sh)
 		{
-			if (render_glyph(&ge, sh) == true)
-			{
-				// store glyph
-				ge.m_advance = 0;
-				ge.m_bounds.m_x_min = 0;
-				ge.m_bounds.m_y_min = 0;
-				ge.m_bounds.m_x_max = 1;
-				ge.m_bounds.m_y_max *= 1;
-				ga->add(glyph_code, ge);
+			render_glyph(&ge, sh, fontsize);
 
-				return ge.m_bi;
-			}
+			// store glyph
+			ge.m_advance = 0;
+			ga->add(glyph_code, ge);
+
+			*bounds = ge.m_bounds;
+			*advance = ge.m_advance;
+			return ge.m_bi;
+
 		}
 		return NULL;
 	}
