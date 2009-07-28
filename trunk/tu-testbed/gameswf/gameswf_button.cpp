@@ -300,7 +300,7 @@ namespace gameswf
 		}
 
 
-		virtual character*	get_topmost_mouse_entity(float x, float y)
+		virtual bool get_topmost_mouse_entity( character * &te, float x, float y)
 		// Return the topmost entity that the given point covers.  NULL if none.
 		// I.e. check against ourself.
 		{
@@ -312,7 +312,7 @@ namespace gameswf
 			point	p;
 			get_matrix().transform_by_inverse(&p, point(x, y));
 
-			{for (int i = 0; i < m_def->m_button_records.size(); i++)
+			for (int i = 0; i < m_def->m_button_records.size(); i++)
 			{
 				button_record&	rec = m_def->m_button_records[i];
 				if (rec.m_character_id < 0 || rec.m_hit_test == false)
@@ -327,13 +327,14 @@ namespace gameswf
 				if (rec.m_character_def->point_test_local(sub_p.m_x, sub_p.m_y))
 				{
 					// The mouse is inside the shape.
-					return this;
+					te = this;
+					return true;
 					// @@ Are there any circumstances where this is correct:
 					//return m_record_character[i].get_ptr();
 				}
-			}}
+			}
 
-			return NULL;
+			return false;
 		}
 
 		virtual bool	on_event(const event_id& id)

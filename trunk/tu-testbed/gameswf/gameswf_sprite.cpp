@@ -165,7 +165,7 @@ namespace gameswf
 	}
 
 
-	character*	sprite_instance::get_topmost_mouse_entity(float x, float y)
+	bool sprite_instance::get_topmost_mouse_entity( character * &top_ent, float x, float y)
 	// Return the topmost entity that the given point
 	// covers that can receive mouse events.  NULL if
 	// none.  Coords are in parent's frame.
@@ -179,24 +179,25 @@ namespace gameswf
 		m.transform_by_inverse(&p, point(x, y));
 
 		character*	top_te = NULL;
-		character* te = NULL;
 		bool this_has_focus = false;
 		int i, n = m_display_list.size();
+
+		top_ent = NULL;
 
 		// Go backwards, to check higher objects first.
 		for (i = n - 1; i >= 0; i--)
 		{
 			character* ch = m_display_list.get_character(i);
+			character* te = NULL;
 
 			if (ch != NULL && ch->get_visible())
 			{
-				te = ch->get_topmost_mouse_entity(p.m_x, p.m_y);
-				if (te)
+				if (ch->get_topmost_mouse_entity(te, p.m_x, p.m_y))
 				{
 					this_has_focus = true;
 					// The containing entity that 1) is closest to root and 2) can
 					// handle mouse events takes precedence.
-					if (te->can_handle_mouse_event())
+					if (te && te->can_handle_mouse_event())
 					{
 						top_te = te;
 						break;
@@ -208,17 +209,17 @@ namespace gameswf
 		//  THIS is closest to root
 		if (this_has_focus && can_handle_mouse_event())
 		{
-			return this;
+			top_ent = this;
 		}
 
 		// else character which has event is closest to root
 		if (top_te)
 		{
-			return top_te;
+			top_ent = top_te;
 		}
 
 		// else if we have focus then return not NULL
-		return te;
+		return this_has_focus;
 	}
 
 
@@ -385,7 +386,7 @@ namespace gameswf
 		const array<execute_tag*>&	playlist = m_def->get_playlist(frame);
 		for (int i = 0; i < playlist.size(); i++)
 		{
-			execute_tag*    e = playlist[i];
+			execute_tag*	e = playlist[i];
 
 			if (state_only)
 			{

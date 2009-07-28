@@ -224,7 +224,7 @@ namespace gameswf
 		//
 		// Mouse/Button interface.
 		//
-		virtual character* get_topmost_mouse_entity(float x, float y) { return NULL; }
+		virtual bool get_topmost_mouse_entity( character * &te, float x, float y) { return false; }
 
 		// The host app uses this to tell the movie where the
 		// user's mouse pointer is.
@@ -475,16 +475,24 @@ namespace gameswf
 		void	set_name(const tu_string& name) { m_name = name; }
 		const tu_string&	get_name() const { return m_name; }
 
-		virtual matrix	get_world_matrix() const
+		matrix	get_world_matrix() const
 		// Get our concatenated matrix (all our ancestor transforms, times our matrix).	 Maps
 		// from our local space into "world" space (i.e. root movie space).
 		{
 			matrix	m;
-			if (m_parent != NULL)
+			const character * current = m_parent.get_ptr();
+
+			m = get_matrix();
+			
+			while (current != NULL)
 			{
-				m = m_parent->get_world_matrix();
+				matrix new_m;
+
+				new_m = current->get_matrix();
+				new_m.concatenate( m );
+				m = new_m;
+				current = current->m_parent.get_ptr();
 			}
-			m.concatenate(get_matrix());
 
 			return m;
 		}
