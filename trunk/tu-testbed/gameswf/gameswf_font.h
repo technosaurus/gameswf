@@ -31,10 +31,8 @@ namespace gameswf
 		float	m_glyph_advance;
 		gc_ptr<shape_character_def>	m_shape_glyph;
 		gc_ptr<bitmap_info> m_bitmap_info;
-		rect m_bounds;
+		rect m_bounds;	// the origin of the glyph box, in uv coords
 		int m_fontsize;
-		rect	m_uv_bounds;
-		point	m_uv_origin;	// the origin of the glyph box, in uv coords
 
 		glyph() :
 			m_glyph_index(-1),

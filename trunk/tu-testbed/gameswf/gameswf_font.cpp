@@ -326,6 +326,13 @@ namespace gameswf
 				{
 					g->m_glyph_advance *= 20.0f;
 				}
+
+				// for embedded characters use advance value from 'm_advance_table'
+				if (g->m_glyph_index >= 0 && g->m_glyph_index < m_advance_table.size())
+				{
+					g->m_glyph_advance = m_advance_table[g->m_glyph_index];
+				}
+
 				return true;
 			}
 		}

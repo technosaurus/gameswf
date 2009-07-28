@@ -649,6 +649,14 @@ namespace gameswf
 	{
 		float	m_x_min, m_x_max, m_y_min, m_y_max;
 
+		rect() :
+			m_x_min(0.0f),
+			m_x_max(0.0f),
+			m_y_min(0.0f),
+			m_y_max(0.0f)
+		{
+		}
+
 		void	read(stream* in);
 		void	print() const;
 		bool	point_test(float x, float y) const;
